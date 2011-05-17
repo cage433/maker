@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry kind="src" path="src"/>
+	<classpathentry kind="lib" path="jars/jcommon-1.0.0.jar"/>
+	<classpathentry kind="lib" path="jars/jfreechart-1.0.0.jar"/>
+	<classpathentry kind="lib" path="jars/jxlayer-4.0.jar"/>
+	<classpathentry kind="lib" path="jars/looks-2.3.1.jar"/>
+	<classpathentry kind="lib" path="jars/Miglayout-3-7-3-1-nick.jar"/>
+	<classpathentry kind="lib" path="jars/org.eclipse.mylyn.wikitext.core_1.4.0.I20100805-0500-e3x.jar"/>
+	<classpathentry kind="lib" path="jars/org.eclipse.mylyn.wikitext.textile.core_1.4.0.I20100805-0500-e3x.jar"/>
+	<classpathentry kind="lib" path="jars/swingx-core-1.6.2.jar"/>
+	<classpathentry kind="lib" path="jars/timingframework-1.0.jar"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+	<classpathentry kind="con" path="org.scala-ide.sdt.launching.SCALA_CONTAINER"/>
+	<classpathentry combineaccessrules="false" exported="true" kind="src" path="/gui.api"/>
+	<classpathentry kind="output" path="target/classes"/>
+</classpath>

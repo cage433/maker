@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>     
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <name>quantity</name>
+    <groupId>starling</groupId>
+    <parent>
+        <groupId>starling</groupId>
+        <artifactId>starling</artifactId>
+        <version>1.0</version>
+    </parent>
+    <artifactId>quantity</artifactId>              
+    <version>1.0</version>    
+    <properties>
+      <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
+    <dependencies>
+        <dependency>
+             <groupId>starling</groupId>
+             <artifactId>utils</artifactId>
+             <version>1.0</version>
+         </dependency>
+        <dependency>
+          <groupId>trafigura</groupId>
+          <artifactId>tradinghub_model</artifactId>
+          <version>1.0</version>
+        </dependency>
+    </dependencies>
+</project>

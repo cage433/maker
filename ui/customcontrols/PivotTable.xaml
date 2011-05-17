@@ -1,0 +1,12 @@
+﻿<UserControl x:Class="com.trafigura.ui.customcontrols.PivotTable"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:pgc="clr-namespace:PivotGridLibrary;assembly=PivotGridControl">
+    <Grid>
+        <WindowsFormsHost Name="pivotTableHost">
+            <pgc:PivotGridControl x:Name="pivotTableControl" 
+                 PanelRBVisible="False" GrandTotalString="Total">
+            </pgc:PivotGridControl>
+        </WindowsFormsHost>
+   </Grid>
+</UserControl>

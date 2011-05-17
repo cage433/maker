@@ -1,0 +1,23 @@
+Client {
+  com.sun.security.auth.module.Krb5LoginModule Required
+    Debug=false
+    storeKey=false
+    useKeyTab=false
+    doNotPrompt=true
+    tryFirstPass=false
+    useFirstPass = false
+    storePass =false
+    clearPass =false
+    useTicketCache=true
+    useDefaultCcache=true
+    renewTGT=true;
+};
+
+Server {
+   com.sun.security.auth.module.Krb5LoginModule required
+     useKeyTab=false
+     isInitiator=false
+     storeKey=true
+     useTicketCache=false
+     principal="STARLING-TEST/dave-linux";
+};
