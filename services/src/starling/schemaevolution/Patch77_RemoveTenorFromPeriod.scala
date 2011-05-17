@@ -21,7 +21,7 @@ class Patch77_RemoveTenorFromPeriod extends Patch {
       classOf[Spread[_]],
       new Reader(){
         def create(fields: Fields) = {
-          fields.getFieldValue("tenor") match {
+          (fields.getFieldValue("tenor"): @unchecked) match {
             case Some(t) => {
               val tt = t.asInstanceOf[TenorType]
               val first = fields.getFieldValue("first").get.asInstanceOf[tt.T]

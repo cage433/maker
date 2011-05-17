@@ -110,6 +110,16 @@ class Day private (@transient val year : Int, @transient val month : Int, @trans
     Day.fromJulianDayNumber(Day.julianDayNumber(this) + n)
   }
 
+  def +(tenor: Tenor): Day = tenor.tenorType match {
+    case Day       => this + tenor.value
+    case Week      => this + (7 * tenor.value)
+    case HalfMonth => this + (15 * tenor.value)
+    case Month     => this.addMonths(tenor.value)
+    case Quarter   => this.addMonths(3 * tenor.value)
+    case HalfYear  => this.addMonths(6 * tenor.value)
+    case Year      => new Day(year + tenor.value, month, dayNumber)
+  }
+
   /// returns a day +n+ days before this
   def - (n : Int) = this.+(-n)
 

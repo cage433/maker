@@ -1,23 +1,19 @@
 package starling.curves.readers
 
+import collection.immutable.List
+
+import starling.{LIMConnection, LimNode, LIMServer}
+import starling.daterange._
+import starling.db.{MarketDataEntry, MarketDataSource}
 import starling.market._
 import starling.marketdata._
-import starling.db.{MarketDataEntry, MarketDataSource}
-import starling.utils.ImplicitConversions._
-import starling.daterange._
-import collection.immutable.List
-import starling.quantity.{Quantity, UOM}
-import starling.{LIMConnection, LimNode, LIMServer}
-import LIMServer._
-import starling.utils.Log
 import starling.pivot.MarketValue
+import starling.quantity.{Quantity, UOM}
+import starling.utils.Log
+
+import LIMServer._
 import starling.utils.ClosureUtil._
 import starling.utils.ImplicitConversions._
-import collection.mutable.ListBuffer
-import starling.concurrent.MP._
-import UOM._
-import starling.calendar.{BusinessCalendarSet, HolidayTablesFactory, BusinessCalendar}
-import Day._
 
 
 case class RefinedMetalsLimMarketDataSource(limServer: LIMServer)
@@ -226,83 +222,5 @@ object ECBSpotFXFixings extends HierarchicalLimSource {
           Quantity(priceByLevel(Level.Spot), currency / UOM.EUR))
       )
     }
-  }
-}
-
-object LIBORFixings extends HierarchicalLimSource {
-  type Relation = LIBORFixingRelation
-
-  case class LIBORFixingRelation(interestRateType: String, currency: UOM, period: StoredFixingPeriod) {
-    val group = (interestRateType, currency)
-  }
-
-  private val Regex = """TRAF\.(\w+)\.(\w+)\.(\w+)""".r
-  private val TenorRegex = """(\d+)(\w)""".r
-
-  val parentNodes = List(TopRelation.Trafigura.Bloomberg.InterestRates.Libor, TopRelation.Trafigura.Bloomberg.InterestRates.Swaps)
-  val levels = List(Level.Close)
-
-  def fixingRelationFrom(childRelation: String): Option[(LIBORFixingRelation, String)] = childRelation partialMatch {
-    case Regex(rateType, currency, tenor) if parseTenor(tenor).isDefined =>
-      (LIBORFixingRelation(rateType, UOM.fromString(currency), StoredFixingPeriod.tenor(parseTenor(tenor).get)), childRelation)
-  }
-
-  def marketDataEntriesFrom(fixings: List[Prices[LIBORFixingRelation]]): List[MarketDataEntry] = {
-    fixings.groupBy(group(_)).map { case ((rateType, currency, observationDay), grouped) =>
-      MarketDataEntry(observationDay.atTimeOfDay(ObservationTimeOfDay.LiborClose),
-        PriceFixingsHistoryDataKey(currency.toString, Some(rateType)),
-        PriceFixingsHistoryData.create(grouped.map(fixings => (Level.Close, fixings.relation.period) → marketValue(fixings)))
-      )
-    }.toList
-  }
-
-  private def parseTenor(tenor: String): Option[Tenor] = tenor partialMatch {
-    case TenorRegex(value, tenorType) => Tenor(TenorType.typesByShortName(tenorType), value.toInt)
-  }
-
-  def group(fixings: Prices[LIBORFixingRelation]) = {
-    (fixings.relation.interestRateType, fixings.relation.currency, fixings.observationDay)
-  }
-
-  def marketValue(fixings: Prices[LIBORFixingRelation]) = MarketValue.percentage(fixings.priceByLevel(Level.Close) / 100)
-}
-
-case class LIBORFixing(value: Quantity, fixingDay: Day) {
-  val currency = value.uom
-  lazy val calendar = LIBORFixing.calendars.getOrElse(currency, throw new Exception("No calendar for: " + this))
-  private lazy val gbpCalendar = LIBORFixing.calendars(GBP)
-
-  def valueDay(tenor: Tenor = Tenor(Day, 0)): Day = (tenor, currency) match {
-    case (_, GBP)                  => fixingDay
-    case (Tenor.ON, ONCurrency(_)) => fixingDay
-    case (_, EUR)                  => fixingDay.addBusinessDays(calendar, 2)
-    case _                         => fixingDay.addBusinessDays(gbpCalendar, 2).thisOrNextBusinessDay(calendar && gbpCalendar)
-  }
-
-  def currency_=(currency: UOM) = copy(value.copy(uom = currency))
-
-  private object ONCurrency {
-    def unapply(currency: UOM): Option[UOM] = currency.isOneOf(USD, CAD, EUR, GBP).toOption(currency)
-  }
-}
-
-object LIBORFixing {
-  import HolidayTablesFactory._
-  val calendars = {
-    Map(
-      // O/N
-      CAD → BusinessCalendarSet("CAD LIBOR", Location.Unknown, Set(21 Feb 2011, 23 May 2011, 1 Jul 2011, 1 Aug 2011, 5 Sep 2011, 10 Oct 2011, 11 Nov 2011)),
-      EUR → BusinessCalendarSet("EUR LIBOR", Location.Unknown, Set(22 Apr 2011, 25 Apr 2011, 29 Aug 2011, 26 Dec 2011, 27 Dec 2011, 02 Jan 2012)),
-      GBP → BusinessCalendarSet("GBP LIBOR", Location.London,  Set(3 Jan 2011, 22 Apr 2011, 25 Apr 2011, 29 Apr 2011, 2 May 2011, 30 May 2011, 29 Aug 2011, 26 Dec 2011, 27 Dec 2011, 2 Jan 2012)),
-      USD → BusinessCalendarSet("USD LIBOR", Location.Unknown, Set(17 Jan 2011, 21 Feb 2011, 4 Jul 2011, 5 Sep 2011, 10 Oct 2011, 11 Nov 2011, 24 Nov 2011)),
-
-      // S/N
-      AUD → BusinessCalendarSet("AUD LIBOR", Location.Unknown, Set(26 Jan 2011, 13 Jun 2011, 1 Aug 2011, 3 Oct 2011)),
-      CHF → BusinessCalendarSet("CHF LIBOR", Location.Unknown, Set(2 Jun 2011, 13 Jun 2011, 1 Aug 2011)),
-      DKK → BusinessCalendarSet("DKK LIBOR", Location.Unknown, Set(20 May 2011, 2 Jun 2011, 13 Jun 2011)),
-      JPY → BusinessCalendarSet("JPY LIBOR", Location.Unknown, Set(10 Jan 2011, 11 Feb 2011, 21 Mar 2011, 3 May 2011, 4 May 2011, 5 May 2011, 18 Jul 2011, 19 Sep 2011, 23 Sep 2011, 10 Oct 2011, 3 Nov 2011, 23 Nov 2011)),
-      NZD → BusinessCalendarSet("NZD LIBOR", Location.Unknown, Set(24 Jan 2011, 31 Jan 2011, 6 Jun 2011, 24 Oct 2011)),
-      SEK → BusinessCalendarSet("SEK LIBOR", Location.Unknown, Set(6 Jan 2011, 2 Jun 2011, 24 Jun 2011))
-    )
   }
 }
