@@ -155,7 +155,7 @@ class ReportPivotTableDataSource(tradePivotTable:PivotTableDataSource, reports:L
     val groupedCombinedFieldBindingsBuilder = new GroupedAndCombinedFieldBindingsBuilder(
       tradeFilters = allFilterPathsUpToFirstReportFilter.toFilterSet.toList,
       tradeFieldsToGroupBy = otherTradeFields,
-      tradeFieldsToCombine = pfs.columns.dataFields.filter(f => tradeFields.contains(f)),
+      tradeFieldsToCombine = pfs.columns.measureFields.filter(f => tradeFields.contains(f)),
       pfs.reportSpecificChoices.toMap
     )
 

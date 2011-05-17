@@ -462,10 +462,10 @@ class NewTradesPivotReport(environment: Environment, currency: UOM, utps : Map[U
 
 class TradeChangesPivotTableDataSource(tradeChanges: TradeChanges) extends UnfilteredPivotTableDataSource {
   override def initialState = {
-    val columns = fieldDetails.map(_.field).filter(f => f.name != "Trade ID" && f.name != "Action").map(field => ColumnStructure(field, true, Nil))
+    val columns = fieldDetails.map(_.field).filter(f => f.name != "Trade ID" && f.name != "Action").map(field => ColumnTree(field, true))
     new PivotFieldsState(
       rowFields = List(Field("Trade ID"), actionField),
-      columns = ColumnStructure(ColumnStructure.RootField, false, columns)
+      columns = ColumnStructure(columns)
     )
   }
 

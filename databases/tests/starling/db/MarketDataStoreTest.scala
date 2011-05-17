@@ -143,7 +143,7 @@ class MarketDataStoreTest extends StarlingTest with ShouldMatchers {
     }
     val pfs1 = new PivotFieldsState(
       rowFields = List(Field("Currency")),
-      columns = ColumnStructure(ColumnStructure.RootField, false, List(ColumnStructure.dataField(Field("Rate")))),
+      columns = ColumnStructure.dataField(Field("Rate")),
       filters = (Field("Observation Time"), SomeSelection(Set(ObservationTimeOfDay.Default.name))) :: Nil
     )
 

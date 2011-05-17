@@ -4,9 +4,9 @@ import net.miginfocom.swing.MigLayout
 import collection.mutable.ListBuffer
 import javax.swing.{JLabel, JPanel}
 import java.awt.Dimension
-import starling.pivot.{HasChildren, Field, ColumnStructure}
-import starling.pivot.Position._
 import starling.gui.GuiUtils
+import starling.pivot._
+import swing.Label
 
 object MigTree {
   trait Command
@@ -42,7 +42,8 @@ object MigTree {
       }
     }
 
-    val allCommands = recurse(column.children)
+//    val allCommands = recurse(column.children)
+    val allCommands = recurse(List(column))
     val finalCommands = allCommands.foldLeft((List[Constraint](), List[Add[T]]()))(gatherConstraints)._2
 
     finalCommands
@@ -52,43 +53,62 @@ object MigTree {
 import MigTree._
 
 case class GUITreeField(column:ColumnStructure, guiFieldsMap:Map[Field, GuiFieldComponent], showFilter:Boolean, defaultText:String, parent:PivotTableView) {
-  private val components = new ListBuffer[Add[ColumnStructure]]
+  private val components = new ListBuffer[List[Add[ColumnTree]]]
   private val allGuiFields = guiFieldsMap.values.toSet
 
   def containsGuiField(guiField:GuiFieldComponent) = allGuiFields.contains(guiField)
   
   def populateComponents(columnStructure:ColumnStructure) {
-    components.clear
-    components ++= generateCommands(columnStructure)
+    components.clear()
+//    components ++= generateCommands(columnStructure.oldStyle)
+    components ++= columnStructure.trees.map(generateCommands(_))
   }
 
-  def resetComponents {
-    populateComponents(column)
+  def resetComponents() {
+//    populateComponents(column)
   }
 
-  def resetImageState {
-    allGuiFields.foreach(_.namePanel.resetImageState)
+  def resetImageState() {
+//    allGuiFields.foreach(_.namePanel.resetImageState)
   }
 
-  def reset {
-    resetComponents
-    updateLayout()
+  def reset() {
+    /*resetComponents()
+    updateLayout()*/
   }
 
-  val mainComponent = new JPanel(new MigLayout("insets 0, gap 0px")) {
-    setOpaque(false)
-  }
+  val mainComponent = new MigPanel("insets 0, gap 0px") {
+    opaque = false
 
-  def updateLayout(tempGuiComponent:Option[(TempGuiFieldNamePanel, Option[GuiFieldComponent], Position)] = None) {
-    mainComponent.removeAll
+    column.trees.foreach(tree => {
+      
+    })
+
+  }.peer
+
+
+
+
+  def updateLayout(tempGuiComponent:Option[(TempGuiFieldNamePanel, Option[GuiFieldComponent], Position.Position)] = None) {
+    /*mainComponent.removeAll()
     if (components.nonEmpty) {
       components.foreach(a => {
-        val comp = if (guiFieldsMap.contains(a.field.field)) {
-          guiFieldsMap(a.field.field).peer
-        } else {
-          tempGuiComponent.get._1.peer
-        }
-        mainComponent.add(comp, a.constraints.mkString(",") + ",grow")
+        a.foreach(b => {
+          b.field.fieldOrColumnStructure.value match {
+            case Left(f) => {
+              val comp = if (guiFieldsMap.contains(f.field)) {
+                guiFieldsMap(f.field).peer
+              } else {
+                tempGuiComponent.get._1.peer
+              }
+              mainComponent.add(comp, b.constraints.mkString(",") + ",grow")
+            }
+            case Right(cs) => {
+              val cmds = cs.trees.map(generateCommands(_))
+
+            }
+          }
+        })
       })
     } else {
       val label = new JLabel(defaultText) {
@@ -100,7 +120,7 @@ case class GUITreeField(column:ColumnStructure, guiFieldsMap:Map[Field, GuiField
       label.setEnabled(false)
       mainComponent.add(label)
     }
-    resetDropBounds
+    resetDropBounds()
     tempGuiComponent match {
       case None =>
       case Some(tup) => {
@@ -113,11 +133,11 @@ case class GUITreeField(column:ColumnStructure, guiFieldsMap:Map[Field, GuiField
         }
       }
     }
-    mainComponent.revalidate
+    mainComponent.revalidate()
     mainComponent.repaint()
-    parent.updateColumnAndMeasureScrollPane(false)
+    parent.updateColumnAndMeasureScrollPane(false)*/
   }
 
-  private def resetDropBounds = allGuiFields.foreach(_.setDrawDropBounds(false, Other))
-  reset
+  private def resetDropBounds() {allGuiFields.foreach(_.setDrawDropBounds(false, Position.Other))}
+  reset()
 }

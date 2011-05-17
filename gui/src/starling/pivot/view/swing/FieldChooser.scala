@@ -9,14 +9,12 @@ import starling.pivot.FieldChooserType._
 import starling.gui.GuiUtils._
 import collection.mutable.{ListBuffer}
 import java.awt.{AWTEvent, Dimension}
-import starling.pivot.ColumnStructure
 import starling.pivot.Position._
-import ColumnStructure._
 import starling.pivot.model.PivotTableModel
 import GuiFieldComponent._
 import starling.gui.{GuiUtils, StarlingIcons}
-import starling.pivot.{OtherLayoutInfo, Field}
 import swing.event.{Event, MouseClicked}
+import starling.pivot.{FieldOrColumnStructure, ColumnStructure, OtherLayoutInfo, Field}
 
 object FieldChooser {
   def apply(layoutManager:MigLayout, dragInfo:DragInfo, defaultText:String, showFilter:Boolean,
@@ -102,7 +100,7 @@ class FieldChooser(layoutManager: MigLayout, dragInfo: DragInfo, val defaultText
     case _ => false
   }
   private val fieldList = model.getFields(fieldChooserType)
-  private val currentColumnDataFields = model.columns.dataFields.toSet
+  private val currentColumnDataFields = model.columns.measureFields.toSet
   private val guiFieldsMap = Map() ++ fieldList.fields.map(field => {
     val shouldShowDepthPanel = ((fieldChooserType == Rows || fieldChooserType == Columns) && model.treeDetails.maxTreeDepths.getOrElse(field, 0) > 1)
     val filterData = FilterData(model.possibleValuesAndSelection(field), (_field, selection) => model.setFilter(_field, selection))
@@ -129,7 +127,7 @@ class FieldChooser(layoutManager: MigLayout, dragInfo: DragInfo, val defaultText
 
   private var collapsedGroups = Set[String]()
 
-  private val columnDataFieldsSet = model.columns.dataFields.toSet
+  private val columnDataFieldsSet = model.columns.measureFields.toSet
   private def switchMeasureField(field:Field, from:FieldChooserType) {
     val newCS = model.columns.flipIsData(field)
     publishFieldStateChange(field, newCS, from)
@@ -139,7 +137,7 @@ class FieldChooser(layoutManager: MigLayout, dragInfo: DragInfo, val defaultText
   }
   private val columnField:Option[GUITreeField] = {
     if (col) {
-      val colGuiFields = Map() ++ (RootField :: model.columns.allFields).map(field => {
+      val colGuiFields = Map() ++ model.columns.allFields.map(field => {
         val shouldShowDepthPanel = model.treeDetails.maxTreeDepths.getOrElse(field, 0) > 1
         val filterData = FilterData(model.possibleValuesAndSelection(field), (_field, selection) => model.setFilter(_field, selection))
         val showOther = (fieldChooserType == Rows || fieldChooserType == Columns)
@@ -147,7 +145,7 @@ class FieldChooser(layoutManager: MigLayout, dragInfo: DragInfo, val defaultText
         val currentlyActingAsMeasure = currentColumnDataFields.contains(field)
         val realMeasureField = model.isDataField(field)
         val subTotalToggleVisible = {
-          otherLayoutInfo.totals.columnSubTotals && !model.columns.isBottomField(field)
+          otherLayoutInfo.totals.columnSubTotals
         }
         val props = GuiFieldComponentProps(field, fieldChooserType, shouldShowDepthPanel,
           currentlyActingAsMeasure, realMeasureField,
@@ -471,11 +469,11 @@ class FieldChooser(layoutManager: MigLayout, dragInfo: DragInfo, val defaultText
               val children = columnField.get.column.children
               if (children.nonEmpty) {
                 val rightColStructure = children.reverse.head
-                val fieldToUse = rightColStructure.field
+                val fieldToUse = rightColStructure.oldStyle.field
                 val guiField = columnField.get.guiFieldsMap(fieldToUse)
                 (Some(guiField), Right, Valid)
               } else {
-                (Some(columnField.get.guiFieldsMap(RootField)), Bottom, Valid)
+                (None, Bottom, Valid)
               }
             }
           }
@@ -502,7 +500,7 @@ class FieldChooser(layoutManager: MigLayout, dragInfo: DragInfo, val defaultText
                 val children = columnField.get.column.children
                 if (children.nonEmpty) {
                   val rightColStructure = children.reverse.head
-                  val fieldToUse = rightColStructure.field
+                  val fieldToUse = rightColStructure.oldStyle.field
                   // We don't want the temp gui field draw if it is just going to be in the same place as the original field.
                   if (rightColStructure.children.nonEmpty || (fieldToUse != draggedField.props.field)) {
                     val guiField = columnField.get.guiFieldsMap(fieldToUse)
@@ -511,7 +509,7 @@ class FieldChooser(layoutManager: MigLayout, dragInfo: DragInfo, val defaultText
                     (None, Other, InValid)
                   }
                 } else {
-                  (Some(columnField.get.guiFieldsMap(RootField)), Bottom, RemoveReplace)
+                  (None, Bottom, RemoveReplace)
                 }
               }
             }
@@ -525,7 +523,7 @@ class FieldChooser(layoutManager: MigLayout, dragInfo: DragInfo, val defaultText
                   val pos = getPosDumbBell(gf)
                   val currentStructure = columnField.get.column
                   val isData = columnDataFieldsSet.contains(draggedField.props.field)
-                  val newStructure = currentStructure.remove(draggedField.props.field).add(draggedField.props.field, isData, gf.props.field, pos)
+                  val newStructure = currentStructure.remove(draggedField.props.field).add(draggedField.props.field, isData, FieldOrColumnStructure(gf.props.field, gf.props.measureField), pos)
                   if (currentStructure != newStructure) {
                     (Some(gf), pos, RemoveReplace)
                   } else {
@@ -557,7 +555,7 @@ class FieldChooser(layoutManager: MigLayout, dragInfo: DragInfo, val defaultText
                 } else {
                   model.isDataField(draggedField.props.field)
                 }
-                val newColumnStructure = currentColumnStructure.add(TempField, isData, gf.props.field, pos)
+                val newColumnStructure = currentColumnStructure.add(ColumnStructure.TempField, isData, FieldOrColumnStructure(gf.props.field, gf.props.measureField), pos)
                 tempColComponent = TempGuiFieldNamePanel(draggedField.props.field.name)
                 colField.resetImageState
                 colField.populateComponents(newColumnStructure)
@@ -575,7 +573,7 @@ class FieldChooser(layoutManager: MigLayout, dragInfo: DragInfo, val defaultText
         columnField match {
           case None => throw new Exception("We should always be able to find the column field here")
           case Some(colField) => {
-            val newColumnStructure = colField.column.remove(TempField)
+            val newColumnStructure = colField.column.remove(ColumnStructure.TempField)
             colField.resetImageState
             colField.populateComponents(newColumnStructure)
             colField.updateLayout()
@@ -590,7 +588,7 @@ class FieldChooser(layoutManager: MigLayout, dragInfo: DragInfo, val defaultText
     if (col) {
       val colField = columnField.get
       val cs = colField.column
-      val newColumnStructure = cs.addDataField(TempField)
+      val newColumnStructure = cs.addDataField(ColumnStructure.TempField)
       tempColComponent = TempGuiFieldNamePanel(name)
       colField.resetImageState
       colField.populateComponents(newColumnStructure)
@@ -646,10 +644,10 @@ class FieldChooser(layoutManager: MigLayout, dragInfo: DragInfo, val defaultText
         } else {
           // The destination is the column and data area.
           if (dragInfo.getColumnDragAction == Valid) {
-            val newColumnStructure = dragInfo.getColumnData.replace(TempField, draggedField.props.field)
+            val newColumnStructure = dragInfo.getColumnData.replace(ColumnStructure.TempField, draggedField.props.field)
             destinationPanel.publishFieldStateChange(draggedField.props.field, newColumnStructure, fieldChooserType)
           } else if (dragInfo.getColumnDragAction == RemoveReplace) {
-            val newColumnStructure = dragInfo.getColumnData.remove(draggedField.props.field).replace(TempField, draggedField.props.field)
+            val newColumnStructure = dragInfo.getColumnData.remove(draggedField.props.field).replace(ColumnStructure.TempField, draggedField.props.field)
             destinationPanel.publishFieldStateChange(draggedField.props.field, newColumnStructure, fieldChooserType)
           } else {
             draggedField.namePanel.reset
