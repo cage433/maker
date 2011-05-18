@@ -55,14 +55,14 @@ class PropsHelper(props : Map[String,String]) {
 
   class ServerNameStringProperty() extends StringProperty(
       {
-        val pwd = new File(".").getAbsoluteFile.getParentFile.getParentFile
-        if (pwd.getName == "starling") {
-          val headFile = new File(new File(pwd, ".git"), "HEAD")
+        val gitRoot = new File(".").getAbsoluteFile.getParentFile.getParentFile.getParentFile
+        if (gitRoot.getName == "starling") {
+          val headFile = new File(new File(gitRoot, ".git"), "HEAD")
           val text = IOUtils.toString(new FileInputStream(headFile))
           val slash = text.lastIndexOf("/")
           text.substring(slash+1).trim
         } else {
-          pwd.getName
+          gitRoot.getName
         }
       })
 

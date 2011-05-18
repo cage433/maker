@@ -74,7 +74,7 @@ class CurveViewerInputsPivotTableDataSource(inputs:Set[(ObservationPoint, Market
   import CurveViewerFields._
 
   val fieldDetailsGroups = {
-    new FieldDetailsGroup("Fields", List(market, exchange, marketTenor, commodity, period, input, timeOfDay)) :: Nil
+    FieldDetailsGroup("Fields", market, exchange, marketTenor, commodity, period, input, timeOfDay) :: Nil
   }
 
   val allRows = {
@@ -145,7 +145,7 @@ class PriceCurveViewerOutputsPivotTableDataSource(observationDay: Day, rule: Env
   import CurveViewerFields._
 
   val fieldDetailsGroups = {
-    new FieldDetailsGroup("Fields", List(market, exchange, marketTenor, commodity, period, price, timeOfDay)) :: Nil
+    FieldDetailsGroup("Fields", market, exchange, marketTenor, commodity, period, price, timeOfDay) :: Nil
   }
 
   override def reportSpecificOptions = List(showInterpolatedReportOption → List(false, true),

@@ -31,6 +31,10 @@ trait RichOrdering {
       def compare(x: T, y: T) = ordering.compare(x, y)
     }
 
+    def extendTo[S](f: S => T): Ordering[S] = new Ordering[S] {
+      def compare(x: S, y: S) = ordering.compare(f(x), f(y))
+    }
+
     abstract class NamedOrdering[A](name : String, ordering : Ordering[_]) extends Ordering[A] {
       override def toString = "%s (%s)" % (name, ordering.toString)
     }

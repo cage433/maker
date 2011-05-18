@@ -195,9 +195,7 @@ class ReferenceData(businessCalendars: BusinessCalendars, marketDataStore: Marke
       val dayField  = FieldDetails("Day")
       val year      = FieldDetails("Year")
 
-      def fieldDetailsGroups = List(FieldDetailsGroup("Calendar",
-        calendar :: dayField :: year :: isHoliday :: Nil
-      ))
+      def fieldDetailsGroups = List(FieldDetailsGroup("Calendar", calendar, dayField, year, isHoliday))
 
       private val initialYears = (Day.today.year until Day.today.year + 3).toSet.asInstanceOf[Set[Any]]
       override val initialState = PivotFieldsState(dataFields=List(isHoliday.field), rowFields=List(dayField.field), columnFields=List(calendar.field), filters=List( (year.field, new SomeSelection(initialYears)) ))
@@ -221,9 +219,7 @@ class ReferenceData(businessCalendars: BusinessCalendars, marketDataStore: Marke
       val pricingGroup = FieldDetails("Pricing Group")
       val source       = FieldDetails("Source")
 
-      def fieldDetailsGroups = List(FieldDetailsGroup("Pricing Groups",
-        pricingGroup :: source :: Nil
-      ))
+      def fieldDetailsGroups = List(FieldDetailsGroup("Pricing Groups", pricingGroup, source))
 
       override val initialState = PivotFieldsState(rowFields = fields(pricingGroup, source))
 
@@ -240,12 +236,9 @@ class ReferenceData(businessCalendars: BusinessCalendars, marketDataStore: Marke
   }
 
   def schedules(scheduler: Scheduler) = new UnfilteredPivotTableDataSource() {
-    val name   = FieldDetails("Name")
-    val timing = FieldDetails("Scheduled Time")
-    val period = FieldDetails("Period")
-    val calendar = FieldDetails("Calendar")
+    val List(name, timing, period, calendar, from, to) = fieldDetails("Task", "Scheduled Time", "Period", "Calendar", "From", "To")
     override val initialState = PivotFieldsState(rowFields = fields(name), dataFields = fields(timing, period, calendar))
-    def fieldDetailsGroups = List(FieldDetailsGroup("Schedule", List(name, timing, period, calendar)))
+    def fieldDetailsGroups = List(FieldDetailsGroup("Schedule", name, timing, period, calendar))
     def unfilteredData(pfs: PivotFieldsState) =
       scheduler.tasks.map(task => fields(name → task.name, timing → task.time.prettyTime, period → task.time.description,
         calendar → task.cal.name))

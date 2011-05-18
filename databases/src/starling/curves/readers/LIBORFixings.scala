@@ -72,7 +72,7 @@ case class LIBORFixing(value: Quantity, fixingDay: Day) {
   def maturityDay(theValueDay: Day, tenor: Tenor): Day = {
     val maturityDay = theValueDay + tenor
 
-    if (tenor.isOneOf(Tenor.ON, Tenor.SN, Tenor.OneWeek, Tenor.TwoWeek)) {
+    if (tenor.isOneOf(Tenor.ON, Tenor.SN, Tenor.OneWeek, Tenor.TwoWeeks)) {
       maturityDay.thisOrNextBusinessDay(combinedCalendar)
     } else if (tenor.tenorType == Month && theValueDay == theValueDay.containingMonth.lastDay) {
       maturityDay.containingMonth.lastDay

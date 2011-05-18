@@ -1,11 +1,11 @@
 package starling.db
 
-import starling.marketdata._
-import starling.daterange.{ObservationTimeOfDay, Day, ObservationPoint}
 import starling.curves.{MissingMarketDataException, ObservationDay}
+import starling.daterange.{ObservationTimeOfDay, Day, ObservationPoint}
+import starling.marketdata._
+
 
 trait MarketDataReader {
-
   //Abstract
   def identifier:String
 
@@ -36,11 +36,14 @@ trait MarketDataReader {
     }
   }
 
+  def readAs[T <: MarketData](observationPoint:ObservationPoint, key:MarketDataKey) = read(observationPoint, key).asInstanceOf[T]
+
   def readAllPrices(observationPoint:ObservationPoint):List[(PriceDataKey, PriceData)] = {
     read(PriceDataType, Some(Set(observationPoint.day)), Some(Set(observationPoint.timeOfDay))).map {
       case (point,key:PriceDataKey,data:PriceData) => (key,data)
     }
   }
+
   def readAllVols(observationPoint: ObservationPoint):List[(OilVolSurfaceDataKey, OilVolSurfaceData)] = {
     read(OilVolSurfaceDataType, Some(Set(observationPoint.day)), Some(Set(observationPoint.timeOfDay))).map {
       case (point,key:OilVolSurfaceDataKey,data:OilVolSurfaceData) => (key,data)

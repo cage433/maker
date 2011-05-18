@@ -463,7 +463,7 @@ abstract class TradeStore(db: RichDB, broadcaster:Broadcaster, tradeSystem: Trad
       val fieldDetailsGroups0 = createFieldDetailGroups(allTradeableTypes)
       val ds = new UnfilteredPivotTableDataSource() {
         val fieldDetailsGroups = {
-          FieldDetailsGroup("Magic", List(FieldDetails("Version"), FieldDetails("Import Time"))) :: fieldDetailsGroups0
+          FieldDetailsGroup("Magic", FieldDetails("Version"), FieldDetails("Import Time")) :: fieldDetailsGroups0
         }
         def unfilteredData(pfs: PivotFieldsState) = mapList
       }

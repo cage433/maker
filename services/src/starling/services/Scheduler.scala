@@ -1,19 +1,21 @@
 package starling.services
 
-import starling.calendar.{BusinessCalendar, BusinessCalendars}
-import starling.db.MarketDataStore
-import starling.pivot._
-import starling.utils.ImplicitConversions._
-import starling.daterange.Day
 import java.util.{TimerTask, Timer}
 import org.joda.time._
-import format.DateTimeFormat
-import starling.market.{FuturesExchange, FuturesExchangeFactory}
-import starling.props.Props._
-import starling.utils.{Broadcaster, Log, Stoppable}
+import org.joda.time.format.DateTimeFormat
 import swing.event.Event
-import starling.rmi.TrinityUploader
+
+import starling.calendar.{BusinessCalendar, BusinessCalendars}
+import starling.daterange.Day
+import starling.db.MarketDataStore
 import starling.gui.api._
+import starling.market.{FuturesExchange, FuturesExchangeFactory}
+import starling.pivot._
+import starling.props.Props
+import starling.rmi.TrinityUploader
+import starling.utils.{Broadcaster, Log, Stoppable}
+
+import starling.utils.ImplicitConversions._
 
 
 class Scheduler(val tasks: List[TaskDescription]) extends Stoppable {
@@ -29,14 +31,14 @@ object Scheduler {
   import ScheduledTime._
 
   def create(businessCalendars: BusinessCalendars, marketDataStore: MarketDataStore, broadcaster: Broadcaster,
-             trinityUploader: TrinityUploader): Scheduler = {
+             trinityUploader: TrinityUploader, props: Props): Scheduler = {
 
-    def verifyPricesAvailable(pricingGroup: PricingGroup, exchange: FuturesExchange, to: PropAccessor) = {
-      new VerifyPriceAvailable(marketDataStore, pricingGroup, exchange, broadcaster, _.MetalsEmailAddress, to)
+    def verifyPricesAvailable(pricingGroup: PricingGroup, exchange: FuturesExchange, to: String) = {
+      new VerifyPriceAvailable(marketDataStore, pricingGroup, exchange, broadcaster, props.MetalsEmailAddress(), to)
     }
 
-    def verifyPricesValid(pricingGroup: PricingGroup, exchange: FuturesExchange, to: PropAccessor) = {
-      VerifyPricesValid(marketDataStore, pricingGroup, exchange, broadcaster, _.MetalsEmailAddress, _.WuXiEmailAddress)
+    def verifyPricesValid(pricingGroup: PricingGroup, exchange: FuturesExchange, to: String) = {
+      VerifyPricesValid(marketDataStore, pricingGroup, exchange, broadcaster, props.MetalsEmailAddress(), props.WuXiEmailAddress())
     }
 
     def importMarketData(pricingGroup: PricingGroup) = {
@@ -47,24 +49,29 @@ object Scheduler {
       new UploadCurveToTrinityTask(trinityUploader, marketDataStore.latestMarketDataIdentifier(MarketDataSelection(Some(pricingGroup))))
     }
 
+    def verifyLiborMaturities = {
+      new VerifyLiborMaturitiesAvailable(marketDataStore, broadcaster, props.MetalsEmailAddress(), props.LimEmailAddress())
+    }
+
     def tasks(time: ScheduledTime, tasks: (String, ScheduledTask)*) =
       tasks.toList.map(nameTask => TaskDescription(nameTask._1, time, nameTask._2))
 
     new Scheduler(
       TaskDescription("Import LIM", hourly(businessCalendars.LME), importMarketData(Metals)) ::-
       tasks(daily(businessCalendars.SFE, 16 H 30),
-        "Verify WuXi prices available" → verifyPricesAvailable(Metals, EXBXG, _.WuXiEmailAddress),
-        "Verify WuXi prices valid"     → verifyPricesValid(Metals, EXBXG,_.MetalsEmailAddress)
+        "Verify WuXi prices available" → verifyPricesAvailable(Metals, EXBXG, props.WuXiEmailAddress()),
+        "Verify WuXi prices valid"     → verifyPricesValid(Metals, EXBXG, props.MetalsEmailAddress())
       ) ::-
       tasks(daily(businessCalendars.LME, 23 H 30),
-        "Verify LME LIM Metals available"   → verifyPricesAvailable(Metals, LME, _.LimEmailAddress),
-        "Verify LME LIM Metals valid"       → verifyPricesValid(Metals, LME, _.LimEmailAddress),
-        "Verify SHFE LIM Metals available"  → verifyPricesAvailable(Metals, SFS, _.LimEmailAddress),
-        "Verify SHFE LIM Metals valid"      → verifyPricesValid(Metals, SFS, _.LimEmailAddress),
-        "Verify COMEX LIM Metals available" → verifyPricesAvailable(Metals, COMEX, _.LimEmailAddress),
-        "Verify COMEX LIM Metals valid"     → verifyPricesValid(Metals, COMEX, _.LimEmailAddress)
+        "Verify LME LIM Metals available"   → verifyPricesAvailable(Metals, LME, props.LimEmailAddress()),
+        "Verify LME LIM Metals valid"       → verifyPricesValid(Metals, LME, props.LimEmailAddress()),
+        "Verify SHFE LIM Metals available"  → verifyPricesAvailable(Metals, SFS, props.LimEmailAddress()),
+        "Verify SHFE LIM Metals valid"      → verifyPricesValid(Metals, SFS, props.LimEmailAddress()),
+        "Verify COMEX LIM Metals available" → verifyPricesAvailable(Metals, COMEX, props.LimEmailAddress()),
+        "Verify COMEX LIM Metals valid"     → verifyPricesValid(Metals, COMEX, props.LimEmailAddress())
       ) ::-
-      TaskDescription("Upload to Trinity", everyMinute(businessCalendars.LME), uploadToTrinity(Metals))
+      TaskDescription("Verify Libor maturities available", daily(businessCalendars.LME, 12 H 15), verifyLiborMaturities) ::-
+      TaskDescription("Upload to Trinity", daily(businessCalendars.LME, 12 H 30), uploadToTrinity(Metals))
     )
   }
 }
@@ -135,4 +142,5 @@ abstract class BroadcastingScheduledTask(broadcaster: Broadcaster) extends Sched
   def execute(observationDay: Day) = eventFor(observationDay).map(broadcaster.broadcast)
 
   protected def eventFor(observationDay: Day): Option[Event]
+  protected def emailFor(from: String, to: Seq[String]) = EmailEvent(from, to)
 }

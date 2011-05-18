@@ -113,7 +113,7 @@ object MarketDataStore {
 
   val manuallyEditableMarketDataSets = Set(ManualMetals, Starling)
 
-  require(pricingGroupsDefinitions.keySet == PricingGroup.all.toSet, "Need to add PricingGroups in two places")
+  require(pricingGroupsDefinitions.keySet == PricingGroup.values.toSet, "Need to add PricingGroups in two places")
   val pricingGroups = pricingGroupsDefinitions.keySet.toList
 
   def pricingGroupForName(name: String): PricingGroup = pricingGroups.find(_.name == name).get

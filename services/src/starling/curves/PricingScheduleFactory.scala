@@ -84,7 +84,7 @@ class PricingSchedulePivotDataSource(context: EnvironmentWithDomain) extends Unf
   }).getOrElse(List(None))
 
   val fieldDetailsGroups = {
-    new FieldDetailsGroup("Fields", List(payoffRule, swapRule, rounding, period, day, market, observedPeriod, price, priceInRuleUOM, forward, holiday, average)) :: Nil
+    FieldDetailsGroup("Fields", payoffRule, swapRule, rounding, period, day, market, observedPeriod, price, priceInRuleUOM, forward, holiday, average) :: Nil
   }
 
   def monthsFor(index: Index) = {

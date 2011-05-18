@@ -1,5 +1,7 @@
 package starling.utils.conversions
 import starling.utils.ImplicitConversions._
+import collection.SortedMap
+import collection.immutable.TreeMap
 
 trait RichMap {
   implicit def enrichMap[K, V](value : Map[K,V]) = new RichMap(value)
@@ -22,6 +24,8 @@ trait RichMap {
       val (m, o) = (map.filterKeys(other.keySet), other.filterKeys(map.keySet))
       m.map { case (key, value) => (key, (value, o(key)))}.toMap
     }
+    def sortBy(implicit ordering: Ordering[K]): SortedMap[K, V] = TreeMap.empty[K, V](ordering) ++ map
+    def sortBy[S](f: K => S)(implicit ordering: Ordering[S]): SortedMap[K, V] = sortBy(ordering.extendTo(f))
   }
 
   class RichMultiMap[K, V](map : Map[K, Set[V]]) extends RichMap[K, Set[V]](map) {

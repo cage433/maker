@@ -14,6 +14,9 @@ import starling.market.{Level, FuturesMarket, Market}
 import starling.pivot.{MarketValue, ColumnStructure, Field, PivotFieldsState}
 import starling.db.{NormalMarketDataReader, MarketDataStore, MarketDataReader, DB}
 import starling.gui.api.{PricingGroup, MarketDataSelection, MarketDataIdentifier, CurveLabel}
+import starling.curves.readers.LIBORFixing
+import starling.quantity.{UOM, Quantity}
+import collection.immutable.Map
 
 class TrinityUploadCodeMapper(trinityDB:DB) {
 
@@ -71,23 +74,5 @@ object FCLGenerator {
   }
 }
 
-class XRTGenerator(marketDataStore: MarketDataStore) {
-  private val key = PriceFixingsHistoryDataKey("EUR", Some("LIBOR"))
-  private val periods = List(Tenor(Month, 1), Tenor(Month, 2), Tenor(Month, 3)).map(tenor => (Level.Close, StoredFixingPeriod.tenor(tenor)))
 
-  def marketDataReader(): MarketDataReader = {
-    new NormalMarketDataReader(marketDataStore, marketDataStore.latestMarketDataIdentifier(MarketDataSelection(Some(PricingGroup.LimOnly))))
-  }
 
-  def generate(observationDay: Day) = {
-    val data = marketDataReader.read(observationDay.atTimeOfDay(ObservationTimeOfDay.LiborClose), key).asInstanceOf[PriceFixingsHistoryData]
-    val x: Map[(Level, StoredFixingPeriod), MarketValue] = data.fixings.toMap.filterKeys(periods)
-    val t: Map[Tenor, MarketValue] = x.mapKeys { case (_, StoredFixingPeriod.Tenor(tenor)) => tenor }
-
-    t.map { case (tenor, marketValue) => {
-      "3301EUR08121900001.2862004.786971000.993398CN"
-    }}
-
-    List("3301EUR08121900001.2862004.786971000.993398CN")
-  }
-}

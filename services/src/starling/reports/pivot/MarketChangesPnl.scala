@@ -355,16 +355,15 @@ class TradeChangesPnlPivotTableDataSource(tradeChangesFields:List[FieldDetailsGr
   val fieldDetailsGroups =
     FieldDetailsGroup(
       "Report Fields", 
-      List(
-        new SumPivotQuantityFieldDetails("Day Change"),
-        FieldDetails("Day Change Component"),
-        FieldDetails("Risk Market"),
-        FieldDetails("Risk Commodity"),
-        FieldDetails("Risk Type"),
-        new FieldDetails("Risk Period"){
-          override def nullValue = OptionalPeriodLabel.Null
-        }
-    )) :: tradeChangesFields
+      new SumPivotQuantityFieldDetails("Day Change"),
+      FieldDetails("Day Change Component"),
+      FieldDetails("Risk Market"),
+      FieldDetails("Risk Commodity"),
+      FieldDetails("Risk Type"),
+      new FieldDetails("Risk Period"){
+        override def nullValue = OptionalPeriodLabel.Null
+      }
+    ) :: tradeChangesFields
 
   private val fieldsByName = Map() ++ fieldDetails.map(f => f.field.name -> f.field)
 

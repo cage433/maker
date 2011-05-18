@@ -21,7 +21,7 @@ class VerifyPricesValidTests extends StarlingSpec with ShouldMatchers {
     val futuresExchange = mock(classOf[FuturesExchange])
     val broadcaster = mock(classOf[Broadcaster])
 
-    new VerifyPricesValid(dataSource, futuresExchange, broadcaster, props => props.MetalsEmailAddress) {
+    new VerifyPricesValid(dataSource, futuresExchange, broadcaster, "from@example.org") {
       val verify = DelayedVerifier()
       val emptyGrid = PivotGrid(Array(), Array(), Array())
 
