@@ -80,7 +80,7 @@ class EAIAutoImport(runEvery: Int, starlingDB: RichDB, externalDB: RichDB, eaiSt
       eaiStrategyDB.refresh
       Log.info("We need to import " + newerBookCloses.size + " book closes for EAI")
 
-      val backOffMs = 15 * 1000
+      val backOffMs = 60 * 1000
       // this is crazy but we need to wait for a small amount of time so that we don't jump on top of the
       // finishing backup sql running on EAIStarling. The stored procedure could be finished but the index
       // could still be being created.
