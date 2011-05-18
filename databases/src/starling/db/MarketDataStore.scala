@@ -828,7 +828,10 @@ class DBMarketDataStore(db: DBTrait[RichResultSetRow], val marketDataSources: Ma
   def conditionsFromMap(conditions:Map[String,Any]) = {
     import QueryBuilder._
 
-    conditions.map { case (k, v) => k eql literal(v) }.reduceLeft((a:Clause, b:Clause) => a and b)
+    conditions.map {
+      case (k, null) => k isNull 
+      case (k, v) => k eql literal(v)
+    }.reduceLeft((a:Clause, b:Clause) => a and b)
   }
 
   /**
