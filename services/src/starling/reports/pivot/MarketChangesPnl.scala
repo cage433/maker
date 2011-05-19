@@ -133,15 +133,9 @@ class MarketChangesPnl(d1: AtomicEnvironment, d2: AtomicEnvironment, utps : Map[
 
         val (envDiffs, curveKeys) = environmentDiffsAndCurveKeys(unitUTP, reportSpecificChoices)
         val pnlBreakDown = unitUTP.explain(d1EnvFwd, d2Env, environmentFor, UOM.USD, envDiffs, curveKeys, atmVega = atmVega)
-        val d1Mtm = PivotQuantity.calcOrCatch(unitUTP.cachedMtm(d1EnvFwd, UOM.USD))
-        val plainPnl = PivotQuantity.calcOrCatch(unitUTP.cachedMtm(d2Env, UOM.USD)) - d1Mtm
-        val allCurveKeysMtm = PivotQuantity.calcOrCatch({
-          unitUTP.cachedMtm(environmentFor(curveKeys), UOM.USD)
-        })
-        val allCurvesPnl = allCurveKeysMtm - d1Mtm
         val explainedTotal = pnlBreakDown.map {_.value}.toList.sum
-        val crossTerms = allCurvesPnl - explainedTotal
-        val unexplained = plainPnl - allCurvesPnl
+
+        val (crossTerms, rounding, unexplained) = unitUTP.components(d1EnvFwd, d2Env, environmentFor, UOM.USD, explainedTotal, curveKeys)
 
         def makeRow(
           componentName : String, riskType : Option[String], 
@@ -170,16 +164,17 @@ class MarketChangesPnl(d1: AtomicEnvironment, d2: AtomicEnvironment, utps : Map[
           if (diffs.isEmpty)
             List(makeRow(name, None, None, "", None, value, priceChange = None, d1Price = None, volChange = None))
           else
-            diffs.map{
+            diffs.map {
               diff => makeRow(name, None, Some(diff.riskCommodity), diff.riskMarket, diff.periodKey, value / diffs.size,
                 priceChange = None, d1Price = None, volChange = None)
             }
         }
         val crossTermComponents = shareAcrossDiff("Cross Terms", crossTerms)
+        val roundingComponents = shareAcrossDiff("Rounding", rounding)
 
         var pnlComponents =
           makeRow("Other changes", None, None, "", None, unexplained, None, None, None) ::
-          crossTermComponents :::
+          roundingComponents ::: crossTermComponents :::
           pnlBreakDown.flatMap{
             // Split discount and fixing pnl across markets and periods
             explanation => 

@@ -5,6 +5,8 @@ import starling.marketdata.MarketData
 import cern.colt.matrix.DoubleMatrix2D
 import starling.utils.AtomicDatumKeyUtils
 import starling.quantity.{Percentage, UOM, Quantity}
+import starling.quantity.UOM._
+import starling.quantity.RichQuantity._
 import starling.curves._
 import starling.utils.CollectionUtils
 import starling.pivot.PivotQuantity
@@ -83,9 +85,9 @@ trait PnlExplanation {
             envDiff => {
               val greeksPnl = {
                 val (foChange, soChange, valueChange, d1PriceX) = try {
-                  
+
                   val (valueChange, d1Price) = (atmVega, envDiff) match {
-                    case(false, volKey : EnvironmentDifferentiable with VolKey) => {
+                    case (false, volKey: EnvironmentDifferentiable with VolKey) => {
                       (interpolatedVol(d2Env, volKey) - interpolatedVol(d1EnvFwd, volKey), None)
                     }
                     case _ => {
@@ -127,4 +129,39 @@ trait PnlExplanation {
           envDiffsPnl
       }.toList
   }
+
+  /**
+   * Breaks the explanation out into
+   * - crossTerms - cross and higher order terms
+   * - rounding - difference in pnl explanation due to rounding happening in valuation but not in the explanation
+   * - unexplained
+   */
+  def components(
+                  d1EnvFwd: Environment, d2Env: Environment,
+                  environmentFor: (Set[CurveKey]) => Environment,
+                  ccy: UOM,
+                  explainedTotal: PivotQuantity,
+                  curveKeys: Set[CurveKey]) = {
+    val d1Mtm = PivotQuantity.calcOrCatch(cachedMtm(d1EnvFwd, ccy))
+    val plainPnl = PivotQuantity.calcOrCatch(cachedMtm(d2Env, ccy)) - d1Mtm
+    val allCurveKeysMtm = PivotQuantity.calcOrCatch({
+      cachedMtm(environmentFor(curveKeys), ccy)
+    })
+    val allCurvesPnl = allCurveKeysMtm - d1Mtm
+    val (rounding, crossTerms) = {
+      val term = allCurvesPnl - explainedTotal
+      priceRounding match {
+        case Some(_) => {
+          assert(isLinear(d1EnvFwd.marketDay), "This wasn't designed for explaining options that have rounding. Needs to be re-visited.")
+          // we're assuming the cross term is due to rounding which is true for linear instruments with rounding.
+          (term, PivotQuantity(0 (USD)))
+        }
+        case _ => (PivotQuantity(0 (USD)), term)
+      }
+    }
+    val unexplained = plainPnl - allCurvesPnl
+
+    (crossTerms, rounding, unexplained)
+  }
+
 }

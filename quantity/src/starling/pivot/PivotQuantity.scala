@@ -42,7 +42,7 @@ case class PivotQuantity(values:Map[UOM,Double], errors:Map[String,List[StackTra
       errors ++ other.errors
     ).filterNulls
   }
-  def -(other: PivotQuantity) = this.+(other * -1.0)
+  def -(other: PivotQuantity):PivotQuantity = this.+(other * -1.0)
   def /(other:Quantity) = {
     new PivotQuantity(
       values.map{
