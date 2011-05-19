@@ -6,8 +6,8 @@ import starling.gui.api.EmailEvent
 import starling.utils.Broadcaster
 
 import starling.curves.readers.LIBORFixing._
+import starling.services.trinity.XRTGenerator._
 import starling.utils.ImplicitConversions._
-import XRTGenerator._
 
 
 class VerifyLiborMaturitiesAvailable(marketDataStore: MarketDataStore, broadcaster: Broadcaster, from: String, to: String*)

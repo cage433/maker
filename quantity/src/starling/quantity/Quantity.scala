@@ -8,6 +8,7 @@ import starling.utils.ImplicitConversions._
 import starling.pivot.{StackTrace, PivotQuantity}
 import java.lang.String
 import starling.utils.ImplicitConversions._
+import java.text.DecimalFormat
 
 class QuantityDouble(d : Double){
   def apply(uom : UOM) = Quantity(d, uom)
@@ -83,6 +84,7 @@ class Quantity(val value : Double, val uom : UOM) extends Ordered[Quantity] with
     val uomPart = if (useUOM && !uom.isScalar) " " + uom else ""
     value.format(fmt, addSpace) + uomPart
   }
+  def format(decimalFormat: DecimalFormat) = decimalFormat.format(value)
   def formatNoUOM(fmt:String) = format(fmt, false)
   override def toString = format(Quantity.FormatString)
   def toStringWithSpace = format(Quantity.FormatString, addSpace = true)

@@ -5,20 +5,20 @@ import collection.immutable.List
 import starling.calendar.BusinessCalendars
 import starling.daterange.Day
 import starling.db.MarketDataStore
-import starling.gui.api.ReferenceDataLabel
 import starling.eai.EAIStrategyDB
-import starling.pivot._
-import starling.pivot.model.PivotTableModel
+import starling.gui.api.ReferenceDataLabel
 import starling.market._
 import starling.market.formula.FormulaIndex
-
+import starling.pivot._
+import starling.pivot.model.PivotTableModel
+import starling.services.trinity.TrinityUploadCodeMapper
 import starling.utils.ImplicitConversions._
 
 /**
  * Represents reference data (calendars, markets, ...) as pivots where possible
  */
 class ReferenceData(businessCalendars: BusinessCalendars, marketDataStore: MarketDataStore, strategyDB: EAIStrategyDB,
-                    scheduler: Scheduler, trinityUploadMapper:TrinityUploadCodeMapper) {
+                    scheduler: Scheduler, trinityUploadMapper: TrinityUploadCodeMapper) {
 
   val referenceDatas = List(
     "Futures Markets"   → futuresMarketPivot(trinityUploadMapper),
@@ -38,7 +38,7 @@ class ReferenceData(businessCalendars: BusinessCalendars, marketDataStore: Marke
     PivotTableModel.createPivotData(dataSource, pivotFieldParams)
   }
 
-  def futuresMarketPivot(trinityUploadMapper:TrinityUploadCodeMapper) = {
+  def futuresMarketPivot(trinityUploadMapper: TrinityUploadCodeMapper) = {
     new UnfilteredPivotTableDataSource() {
       val name       = FieldDetails("Name")
       val lotSize    = FieldDetails("Lot Size")

@@ -7,7 +7,7 @@ import starling.db.MarketDataStore
 import starling.gui.api._
 import starling.market.{FuturesExchange, FuturesExchangeFactory}
 import starling.props.Props
-import starling.rmi.TrinityUploader
+import starling.services.trinity.TrinityUploader
 import starling.utils.{Broadcaster, Log, Stoppable}
 
 import starling.utils.ImplicitConversions._
