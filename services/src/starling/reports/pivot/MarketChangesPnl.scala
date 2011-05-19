@@ -245,8 +245,7 @@ case class MarketChangesPnlRow(
 case class TimeChangesPnlRow(
   utpID : UTPIdentifier,
   utp : UTP,
-  groupName: String,
-  label: String, 
+  label: String,
   pnl: PivotQuantity,
   diff : Option[EnvironmentDifferentiable] = None,
   period : Option[Period] = None,
@@ -255,6 +254,8 @@ case class TimeChangesPnlRow(
 ) 
   extends PivotRowShareableByRiskFactor[TimeChangesPnlRow] with PivotRowWithEnvironmentDifferentiable[TimeChangesPnlRow]
 {
+  def groupName: String = "Time"
+
   def *(volume: Double) = copy(scale = scale * volume)
   def setPeriod(period : Option[Period]) = copy(period = period)
   def setCollapseOptions(co : Boolean) = copy(collapseOptions = co)
@@ -284,7 +285,7 @@ class TimeChangesPnl(d1:Environment, forwardDay:Day, utps : Map[UTPIdentifier, U
   def scale(row: TimeChangesPnlRow, volume: Double) = row * volume
 
   def rows(utpID : UTPIdentifier, utp:UTP) = {
-    List(TimeChangesPnlRow(utpID, utp, "", "", PivotQuantity.NULL))
+    List(TimeChangesPnlRow(utpID, utp, "", PivotQuantity.NULL))
   }
 
   override def combine(rows : List[TimeChangesPnlRow], reportSpecificChoices : ReportSpecificChoices) = {
@@ -304,8 +305,8 @@ class TimeChangesPnl(d1:Environment, forwardDay:Day, utps : Map[UTPIdentifier, U
         val theta = d1FwdValueFwdInstrument - d1Value  //eg. value of the future exercised into - value of the futures option
         val expiry = totalChange - theta
         List(
-          TimeChangesPnlRow(utpID, utp, "Time", "Theta DC", theta),
-          TimeChangesPnlRow(utpID, utp, "Time", "Expiry DC", expiry)
+          TimeChangesPnlRow(utpID, utp, "Theta DC", theta),
+          TimeChangesPnlRow(utpID, utp, "Expiry DC", expiry)
         ).filterNot(_.pnl.isAlmostZero).map (_ * volume)
       }
     }
