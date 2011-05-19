@@ -18,11 +18,15 @@ import starling.utils.{Broadcaster, Log, Stoppable}
 import starling.utils.ImplicitConversions._
 
 
-class Scheduler(val tasks: List[TaskDescription]) extends Stoppable {
-  private val timer = new Timer(true)
+class Scheduler(props: Props, forwardCurveTasks: List[TaskDescription] = Nil) extends Stoppable {
+  private lazy val timer = new Timer(true)
+  val tasks = if (props.ServerType() == "FC2") forwardCurveTasks else Nil
+
+  def start = Log.infoF("Scheduling %s tasks for ServerType: %s" % (tasks.size, props.ServerType())) {
+    tasks.map { case task => task.schedule(timer) }
+  }
 
   def stop = timer.cancel
-  def start = tasks.map { case task => task.schedule(timer) }
 }
 
 object Scheduler {
@@ -56,7 +60,7 @@ object Scheduler {
     def tasks(time: ScheduledTime, tasks: (String, ScheduledTask)*) =
       tasks.toList.map(nameTask => TaskDescription(nameTask._1, time, nameTask._2))
 
-    new Scheduler(
+    new Scheduler(props, forwardCurveTasks =
       TaskDescription("Import LIM", hourly(businessCalendars.LME), importMarketData(Metals)) ::-
       tasks(daily(businessCalendars.SFE, 16 H 30),
         "Verify WuXi prices available" → verifyPricesAvailable(Metals, EXBXG, props.WuXiEmailAddress()),
@@ -139,8 +143,7 @@ trait ScheduledTask {
 }
 
 abstract class BroadcastingScheduledTask(broadcaster: Broadcaster) extends ScheduledTask {
-  def execute(observationDay: Day) = eventFor(observationDay).map(broadcaster.broadcast)
+  final def execute(observationDay: Day) = eventFor(observationDay).map(broadcaster.broadcast)
 
   protected def eventFor(observationDay: Day): Option[Event]
-  protected def emailFor(from: String, to: Seq[String]) = EmailEvent(from, to)
 }
