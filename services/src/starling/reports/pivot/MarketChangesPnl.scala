@@ -124,6 +124,9 @@ class MarketChangesPnl(d1: AtomicEnvironment, d2: AtomicEnvironment, utps : Map[
   }
 
   override def combine(rows : List[MarketChangesPnlRow], reportSpecificChoices : ReportSpecificChoices) = {
+    require(!reportSpecificChoices.getOrElse(futuresAsSwaps_str, false), "Can't do day change report with futures as swaps")
+    require(!reportSpecificChoices.getOrElse(futuresAsSpreads_str, false), "Can't do day change report with futures as spreads")
+
     val showEqFutures = reportSpecificChoices.getOrElse(showEqFutures_str, false)
     val useSkew = reportSpecificChoices.getOrElse(useSkew_str, true)
     val collapseOptions = reportSpecificChoices.getOrElse(collapseOptions_str, true)
