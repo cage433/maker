@@ -84,10 +84,10 @@ class PropsHelper(props : Map[String,String]) {
     def this(defaultValue:String) = this(()=>defaultValue)
     def value() : String = MyPropertiesFile.getProperty(name, defaultGenerator())
     def name() = {
-      val objectName = getClass().getName()
+      val objectName = getClass.getName
       objectName.substring(objectName.indexOf("$")+1, objectName.length()-1)
     }
-    def isSet = MyPropertiesFile.hasProperty(name) 
+    def isSet = MyPropertiesFile.hasProperty(name)
     override def toString = {
       name + " = " + value
     }
@@ -105,6 +105,18 @@ class PropsHelper(props : Map[String,String]) {
     def this(defaultValue:String) = this(()=>defaultValue)
     def apply() = {
       value()
+    }
+  }
+
+  abstract class EnumProperty(values0: String*)
+    extends Property(values0.headOption.getOrElse("<MISSING>")) {
+
+    private val values = values0.toSet
+    def apply() = {
+      require(value != "<MISSING>", "EnumProperty '%s' must be constructed with a list of valid values" % name)
+      require(values.contains(value), "%s: %s is invalid, valid values are: %s" % (name, value, values.mkString(", ")))
+
+      value
     }
   }
 

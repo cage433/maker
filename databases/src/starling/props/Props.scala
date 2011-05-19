@@ -8,6 +8,7 @@ import java.io.File
 
 class Props(props:Map[String,String]) extends PropsHelper(props) {
   object ServerName extends ServerNameStringProperty()
+  object ServerType extends EnumProperty("Dev", "FC2", "Oil")
   object ServerNameOrBlank extends StringProperty(ServerName())
   object ServerColour extends StringProperty(PropsHelper.createColourString(ServerName()))
   object UseProductionColour extends BooleanProperty(false)
