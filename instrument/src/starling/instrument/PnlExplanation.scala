@@ -161,6 +161,12 @@ trait PnlExplanation {
     }
     val unexplained = plainPnl - allCurvesPnl
 
+    val pnlExplanationTotal = explainedTotal + crossTerms + rounding + unexplained
+
+    // if we have no warnings or errors this is just a sanity check to make sure we have explained the actual pnl.
+    if(!plainPnl.hasWarningOrErrors && !pnlExplanationTotal.hasWarningOrErrors)
+      assume((plainPnl - pnlExplanationTotal).isAlmostZero, plainPnl + " != " + pnlExplanationTotal)
+
     (crossTerms, rounding, unexplained)
   }
 
