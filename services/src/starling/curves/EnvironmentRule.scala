@@ -27,7 +27,7 @@ object EnvironmentRule {
   val Default = new VanillaEnvironmentRule((day)=>ObservationPoint(day, ObservationTimeOfDay.Default), TimeOfDay.EndOfDay, EnvironmentRuleLabel.COB)
   val RealTime = new VanillaEnvironmentRule((day)=>ObservationPoint.RealTime, TimeOfDay.StartOfDay, EnvironmentRuleLabel.RealTime)
   private val defaultRules = List(Default, RealTime)
-  private val lookup = (metalRules ::: defaultRules).asMap(_.label)
+  private val lookup = (metalRules ::: defaultRules).asMap(_.label) + EnvironmentRuleLabel.Default → Default
 
   val exchangeCloses = Map(SFS → SHFEClose, LME → LMEClose, COMEX → COMEXClose)
   val marketCloses = exchangeCloses.extendKey((market: FuturesMarket) => market.exchange)

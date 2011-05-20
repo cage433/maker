@@ -281,11 +281,11 @@ class PivotTableTest extends TestNGSuite {
     assertEquals(
       flatRows.map(_.map(_.toString)),
       List(
-        List("",       "Brent", "", "", "WTI"),
-        List("",       "Delta", "Price", "Vol", "Delta"),
-        List("Period", "",      "Day Change", "Day Change", ""),
-        List("Feb",    "", "", "", "7"),
-        List("Jan",    "4", "100", "18", "1")
+        List("",       "Brent", "Brent",      "Brent",      "WTI"  ),
+        List("",       "Delta", "Price",      "Vol",        "Delta"),
+        List("Period", "",      "Day Change", "Day Change", ""     ),
+        List("Feb",    "",      "",           "",           "7"    ),
+        List("Jan",    "4",     "100",        "18",         "1"    )
       )
     )
   }

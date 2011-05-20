@@ -175,7 +175,11 @@ case class PivotTableConverter(otherLayoutInfo:OtherLayoutInfo = OtherLayoutInfo
     }
     cd.zipWithIndex.foreach { case(row, r) => {
       row.zipWithIndex.foreach { case (value, c) => {
-        colData(c)(r) = value
+        for (span <- value.span) {
+          for (offset <- 0 until span) {
+            colData(c)(r + offset) = value
+          }
+        }
       }}
     }}
 

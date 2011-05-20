@@ -2,8 +2,13 @@ package starling.pivot
 
 import java.io.Serializable
 import model.UndefinedValue
-import starling.utils.StarlingObject
+
 import starling.quantity.{Percentage, Quantity}
+import starling.utils.StarlingObject
+
+import starling.utils.Pattern._
+import starling.utils.ImplicitConversions._
+
 
 object EditableCellState extends Enumeration {
   type EditableCellState = Value
@@ -69,6 +74,8 @@ object TableCell {
     val t = longText(pq)
     new TableCell(pq, PivotFormatter.formatPivotQuantity(pq, formatInfo), RightTextPosition, pq.hasErrors, longText = t, warning = pq.warning)
   }
+
+  val PivotQuantity = Extractor.from[TableCell](_.safeCast[PivotQuantity])
 }
 class TotalState extends Serializable
 object NotTotal extends TotalState with StarlingObject

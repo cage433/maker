@@ -6,7 +6,9 @@ import starling.gui.api.{EmailEvent, MarketDataSelection, PricingGroup}
 import starling.market.FuturesExchange
 import starling.marketdata.PriceDataType
 import starling.pivot._
+import controller.CombinedCell
 import starling.utils.Broadcaster
+
 import starling.utils.ImplicitConversions._
 
 
@@ -38,14 +40,9 @@ class VerifyPricesValid(dataSource: PivotTableDataSource, exchange: FuturesExcha
     }
   }
 
-  private def createCell(cell: Any) = <td bgcolor={pivotQuantityCellColour(cell).getOrElse("white")}>{cell}</td>
-  private def pivotQuantityCellColour(cell: Any): Option[String] = cell partialMatch {
-    case PivotQuantityCell(pq) => if (pq.hasErrors) "red" else if (pq.hasWarning) "orange" else "white"
-  }
-
-  object PivotQuantityCell {
-    def unapply(cell: Any): Option[PivotQuantity] = cell partialMatch {
-      case tc: TableCell if tc.value.isInstanceOf[PivotQuantity] => tc.value.asInstanceOf[PivotQuantity]
-    }
+  private def createCell(cell: CombinedCell) = <td bgcolor={cellColour(cell)}>{cell}</td>
+  private def cellColour(cell: CombinedCell): String = cell match {
+    case CombinedCell.TableCell(TableCell.PivotQuantity(pq)) => if (pq.hasErrors) "red" else if (pq.hasWarning) "orange" else "white"
+    case CombinedCell.AxisCell(_) => "white"
   }
 }

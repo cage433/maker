@@ -1,5 +1,7 @@
 package starling.daterange
 
+import starling.utils.Pattern._
+
 
 case class Tenor(tenorName: String, value: Int) extends Ordered[Tenor] {
   lazy val tenorType = TenorType.typesByShortName(tenorName)
@@ -30,7 +32,7 @@ object Tenor {
 }
 
 case class StoredFixingPeriod(period: Either[DateRange, Tenor]) extends Ordered[StoredFixingPeriod] {
-  lazy val (dateRange, tenor) = (period.left.toOption, period.right.toOption)
+  val (dateRange, tenor) = (period.left.toOption, period.right.toOption)
   def compare(that: StoredFixingPeriod) = (period, that.period) match {
     case (Left(leftDR), Left(rightDR)) => leftDR.compare(rightDR)
     case (Right(leftOffset), Right(rightOffset)) => leftOffset.compare(rightOffset)
@@ -45,6 +47,6 @@ object StoredFixingPeriod {
   def dateRange(dateRange: DateRange) = StoredFixingPeriod(Left(dateRange))
   def tenor(tenor: Tenor)             = StoredFixingPeriod(Right(tenor))
 
-  object DateRange { def unapply(value: StoredFixingPeriod) = value.dateRange }
-  object Tenor     { def unapply(value: StoredFixingPeriod) = value.tenor     }
+  val DateRange = Extractor.from[StoredFixingPeriod](_.dateRange)
+  val Tenor     = Extractor.from[StoredFixingPeriod](_.tenor)
 }

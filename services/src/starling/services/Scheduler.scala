@@ -67,8 +67,8 @@ object Scheduler {
         "Verify SHFE LIM Metals valid"      → verifyPricesValid(Metals, SFS,   props.LimEmailAddress()).withSource("LIM"),
         "Verify COMEX LIM Metals valid"     → verifyPricesValid(Metals, COMEX, props.LimEmailAddress()).withSource("LIM")
       ) ::-
-      TaskDescription("Verify Libor maturities available", daily(businessCalendars.LME, 23 H 30), verifyLiborMaturities) ::-
-      TaskDescription("Upload Libor to Trinity", daily(businessCalendars.LME, 23 H 45), uploadLibor)
+      TaskDescription("Verify Libor maturities available", daily(businessCalendars.LME, 13 H 15), verifyLiborMaturities) ::-
+      TaskDescription("Upload Libor to Trinity", daily(businessCalendars.LME, 13 H 30), uploadLibor)
     )
   }
 }
