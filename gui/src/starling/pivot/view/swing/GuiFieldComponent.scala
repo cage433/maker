@@ -327,6 +327,7 @@ case class GuiFieldNamePanel(props:GuiFieldComponentProps, guiComp:GuiFieldCompo
     override def componentResized(e:ComponentEvent) {
       if ((image == null) || (image.getWidth != size.width) || (image.getHeight != size.height)) {
         image = null
+        tintedImage = null
         repaint()
       }
     }
@@ -349,6 +350,7 @@ case class GuiFieldNamePanel(props:GuiFieldComponentProps, guiComp:GuiFieldCompo
       offSet = p
     }
     case MouseClicked(_,_,_,2,_) => {
+      reset()
       props.tableView.fieldDoubleClicked(props.field, props.locationOfField)
     }
     case MouseEntered(_, _, _) if !props.tableView.fieldBeingDragged => {

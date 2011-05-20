@@ -424,11 +424,11 @@ class PivotTablePageComponent(
 
   add(pivotTableComponent, "push, grow")
 
-  override def restoreToCorrectViewForBack = {pivotComp.reverse}
-  override def resetDynamicState = {pivotComp.resetDynamicState}
+  override def restoreToCorrectViewForBack  {pivotComp.reverse()}
+  override def resetDynamicState  {pivotComp.resetDynamicState()}
   def selection = {pivotComp.selection}
 
-  override def setState(state:Option[ComponentState]) = {
+  override def setState(state:Option[ComponentState]) {
     state match {
       case Some(AbstractPivotComponentState(filterText, colScrollPos, mainScrollPos, rsScrollPos, selectedCells, configPanelState)) => {
         pivotComp.filterText = filterText

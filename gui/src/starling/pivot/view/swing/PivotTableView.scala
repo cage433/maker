@@ -74,10 +74,12 @@ class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSiz
     fieldBeingDragged0 = b
   }
 
+  private def hideDropTargets() {allDropTargets.foreach(_.hide())}
+
   def fieldDropped(field:Field, from:FieldChooserType, screenPoint:Point) {
     if (!model.getFields(FieldList).fields.contains(field) && fieldListComponent.dropBounds(field).exists(_.contains(screenPoint))) {
       model.publishFieldStateChange(field, 0, from, FieldList)
-      allDropTargets.foreach(_.hide())
+      hideDropTargets()
     } else if (columnAndMeasureComponent.dropBounds(field).exists(_.contains(screenPoint))) {
       val newColumnStructure = columnAndMeasureComponent.newColumnStructure(screenPoint, field)
       model.publishFieldStateChange(field, newColumnStructure, from)
@@ -88,11 +90,12 @@ class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSiz
       val pos = rowComponent.indexOfDrop(screenPoint, field)
       model.publishFieldStateChange(field, pos, from, Rows)
     } else {
-      allDropTargets.foreach(_.hide())
+      hideDropTargets()
     }
   }
 
   def fieldDoubleClicked(field:Field, from:FieldChooserType) {
+    viewUI.resetImageProperties()
     if (from != FieldList) {
       model.publishFieldStateChange(field, 0, from, FieldList)
     } else {
@@ -779,7 +782,7 @@ class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSiz
       } else {
         sizerPanel.preferredSize = new Dimension(rowComponent.size.width-1, sizerPanel.size.height)
       }
-      revalidate
+      revalidate()
     }
   }
 
@@ -794,7 +797,7 @@ class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSiz
           sizerPanel.preferredSize = new Dimension(10, sizerPanel.preferredSize.height)
         }
       }
-      revalidate
+      revalidate()
     }
   }
   updateColumnAndMeasureScrollPane(true)
@@ -862,13 +865,14 @@ class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSiz
   add(contentPanel, "push, grow")
 
   def resetDynamicState() {
-    println("Reset Dynamic State")
+    viewUI.resetImageProperties()
+    allDropTargets.foreach(_.reset())
   }
 
   def reverse() {
-    allDropTargets.foreach(_.hide())
+    hideDropTargets()
     if (toolbarPanel.visible) reverseToolBarState()
-    configPanels.foreach(_.revert)
+    configPanels.foreach(_.revert())
     reportSpecificPanels.foreach(_.resetButton)
     tableModelsHelper.resetEdits
     publish(PivotEditEvent(false, false, false))

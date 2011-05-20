@@ -95,10 +95,7 @@ class FieldListComponent(model:PivotTableModel, otherLayoutInfo:OtherLayoutInfo,
 
   def show(draggedField:Field) {}
   def hide() {}
-
-  def reset() {
-    guiFieldsMap.values.foreach(_.namePanel.reset())
-  }
+  def reset() {guiFieldsMap.values.foreach(_.namePanel.reset())}
 }
 
 case class SpacerPanel(constraints:String) extends MigPanel(constraints) {

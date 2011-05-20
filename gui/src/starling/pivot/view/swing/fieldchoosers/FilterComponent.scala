@@ -43,7 +43,7 @@ class FilterComponent(model:PivotTableModel, otherLayoutInfo:OtherLayoutInfo,
 
   private val dropPanels = new ListBuffer[DropPanel]()
   if (fields.isEmpty) {
-    val text = " Drop Filter Fields Here"
+    val text = "Drop Filter Fields Here"
     val prefSize = ColumnDropPanel.prefSize(text)
     val l = new Label(text) {
       font = GuiUtils.GuiFieldFont
@@ -88,6 +88,7 @@ class FilterComponent(model:PivotTableModel, otherLayoutInfo:OtherLayoutInfo,
   def hide() {
     dropPanels.foreach(_.visible = false)
   }
+  def reset() {guiFieldsMap.values.foreach(_.namePanel.reset())}
 
   private def filteredDropPanels(field:Field) = {
     dropPanels.toList.filterNot(dp => {dp.fieldAndPositions.map(_._1).contains(field)})

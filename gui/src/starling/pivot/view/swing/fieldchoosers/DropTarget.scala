@@ -10,4 +10,5 @@ trait DropTarget {
   def fieldChooserType:FieldChooserType
   def show(draggedField:Field)
   def hide()
+  def reset()
 }

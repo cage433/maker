@@ -51,7 +51,7 @@ class RowComponent(model:PivotTableModel,  otherLayoutInfo:OtherLayoutInfo, view
 
   if (fields.isEmpty) {
     setAlignment("al left bottom")
-    val text = " Drop Row Fields Here"
+    val text = "Drop Row Fields Here"
     val prefSize = ColumnDropPanel.prefSize(text)
     val l = new Label(text) {
       font = GuiUtils.GuiFieldFont
@@ -97,6 +97,7 @@ class RowComponent(model:PivotTableModel,  otherLayoutInfo:OtherLayoutInfo, view
   def hide() {
     dropPanels.foreach(_.visible = false)
   }
+  def reset() {guiFieldsMap.values.foreach(_.namePanel.reset())}
 
   private def rowDropPanels(field:Field) = {
     dropPanels.toList.filterNot(dp => {dp.fieldAndPositions.map(_._1).contains(field)})
