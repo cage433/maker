@@ -136,12 +136,6 @@ object FieldOrColumnStructure {
 
 case class ColumnTree(fieldOrColumnStructure:FieldOrColumnStructure, childStructure:ColumnStructure) extends HasChildren[ColumnTree] {
 
-  def oldStyle:OldStyleColumnStructure = {
-    fieldOrColumnStructure.value match {
-      case Left(FieldAndIsMeasure(field, isMeasure)) => OldStyleColumnStructure(field, isMeasure, childStructure.trees.map(_.oldStyle))
-    }
-  }
-
   def children = childStructure.trees
 
   def hasMeasure = {
@@ -206,12 +200,7 @@ object ColumnTree {
   def dataField(field:Field) = apply(field, true)
 }
 
-case class OldStyleColumnStructure(field:Field, isData:Boolean, children:List[OldStyleColumnStructure]) extends HasChildren[OldStyleColumnStructure] {
-
-}
 case class ColumnStructure(trees:List[ColumnTree]) {
-
-  def oldStyle = OldStyleColumnStructure(Field("oldNull"), false, trees.map(_.oldStyle))
 
   def buildPaths():List[ColumnStructurePath] = {
     var previousWidth = 0

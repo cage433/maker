@@ -3,15 +3,15 @@ package starling.pivot.view.swing
 import starling.pivot.FieldChooserType._
 import swing.Swing._
 import java.awt.image.BufferedImage
-import java.awt.{GradientPaint, Graphics2D, Dimension, Color, RenderingHints, MouseInfo, Point, KeyboardFocusManager}
+import java.awt.{GradientPaint, Graphics2D, Dimension, Color, RenderingHints, Point, KeyboardFocusManager}
 import java.awt.event.{ComponentEvent, ComponentAdapter}
 import org.jdesktop.swingx.image.ColorTintFilter
 import starling.gui.GuiUtils._
 import starling.gui.StarlingIcons
 import starling.pivot.model.TreeDetails
 import org.jdesktop.swingx.graphics.ShadowRenderer
-import swing.event._
 import swing._
+import swing.event._
 import starling.pivot.controller.{TreePivotFilterNode, TreePivotFilter}
 import javax.swing.event.{PopupMenuListener, PopupMenuEvent}
 import javax.swing.{JPopupMenu, SwingUtilities}
@@ -21,10 +21,10 @@ import starling.pivot._
 case class GuiFieldComponentProps(field:Field, locationOfField:FieldChooserType,
                                   showDepthPanel:Boolean, measureField:Boolean, realMeasureField:Boolean,
                                   treeDetails:TreeDetails, onDepthChange:((Field, (Int, Int)) => Unit),
-                                  onMeasureChange:(Field, FieldChooserType) => Unit, dragInfo:PivotTableLayerUI,
-                                  parentFieldChooser:FieldChooser, filterData:FilterData, transformData:TransformData,
+                                  onMeasureChange:(Field, FieldChooserType) => Unit,
+                                  filterData:FilterData, transformData:TransformData,
                                   otherLayoutInfo:OtherLayoutInfo, onSubTotalToggle:(Field, FieldChooserType) => Unit,
-                                  showSubTotalToggle:Boolean)
+                                  showSubTotalToggle:Boolean, viewUI:PivotTableViewUI, tableView:PivotTableView)
 
 case class FilterData(possibleValuesAndSelection:Option[(TreePivotFilter, Selection)], onFilterChange:((Field, Selection) => Unit))
 case class TransformData(showOther:Boolean, transforms:Option[FilterWithOtherTransform], onTransformChange:((Field,FilterWithOtherTransform) => Unit))
@@ -67,15 +67,7 @@ object GuiFieldComponent {
 import GuiFieldComponent._
 
 case class GuiFieldComponent(props:GuiFieldComponentProps) extends MigPanel("insets 0, hidemode 3", "[p]0[p]0[p]0[p]0[p]0[p]") {
-  import starling.pivot.Position._
-
   opaque = false
-  background = ClearColour
-
-  private var drawDropBounds = false
-  private var dropPosition = Other
-
-  def setDrawDropBounds(ddb:Boolean, pos:Position) = {drawDropBounds = ddb; dropPosition = pos}
 
   val namePanel = GuiFieldNamePanel(props, this)
   val treeLevelPanel = TreeLevelPanel(props)
@@ -96,13 +88,13 @@ case class GuiFieldComponent(props:GuiFieldComponentProps) extends MigPanel("ins
   val popupMenu = new JPopupMenu {
     add(filterPopupPanel.peer)
     addPopupMenuListener(new PopupMenuListener {
-      def popupMenuCanceled(e:PopupMenuEvent) = {}
-      def popupMenuWillBecomeInvisible(e:PopupMenuEvent) = {
+      def popupMenuCanceled(e:PopupMenuEvent) {}
+      def popupMenuWillBecomeInvisible(e:PopupMenuEvent) {
         // Whenever the popup panel is hidden, ensure it represents the state of the page.
         filterPopupPanel.filterPanel.textField.text = ""
         filterPopupPanel.filterHelper.resetPopup(getPossibleValuesAndSelection, props.transformData.transforms)
       }
-      def popupMenuWillBecomeVisible(e:PopupMenuEvent) = {}
+      def popupMenuWillBecomeVisible(e:PopupMenuEvent) {}
     })
   }
   val filterButtonPanel = FilterButtonPanel(props)
@@ -134,7 +126,7 @@ case class GuiFieldComponent(props:GuiFieldComponentProps) extends MigPanel("ins
       popupMenu.show(filterButtonPanel.peer, xPos, yPos)
       onEDT({
         KeyboardFocusManager.getCurrentKeyboardFocusManager.focusNextComponent(popupMenu)
-        filterPopupPanel.filterPanel.textField.requestFocusInWindow
+        filterPopupPanel.filterPanel.textField.requestFocusInWindow()
       })
     }
     case FilterSelectionChanged(`filterPopupPanel`, sel) => props.filterData.onFilterChange(props.field, sel)
@@ -170,61 +162,6 @@ case class GuiFieldComponent(props:GuiFieldComponentProps) extends MigPanel("ins
     minimumSize = sizeToUse
     maximumSize = sizeToUse
     namePanel.setMaxSizeForLabel(sizeToUse)
-  }
-
-  override protected def paintComponent(g:Graphics2D) = {
-    if (drawDropBounds) {
-      super.paintChildren(g)
-      // Draw the drop bounds on top of everything else.
-      val w = size.width
-      val h = size.height
-
-      val sx, sy = 1
-      val cy = h / 2
-
-      val ey = h - VerticalGap
-      val ex = w - HorizontalGap
-
-      // Draw the drop area
-      g.setColor(new Color(255, 0, 0, 128))
-
-      // Left loop.
-      g.drawLine(sx, VerticalGap, HorizontalGap - 1, VerticalGap)
-      g.drawLine(HorizontalGap, VerticalGap, HorizontalGap, ey)
-      g.drawLine(sx, ey, HorizontalGap - 1, ey)
-
-      // Horizontal line.
-      g.drawLine(HorizontalGap + 1, cy, ex - 1, cy)
-
-      // Right loop.
-      g.drawLine(ex + 1, VerticalGap, w - 2, VerticalGap)
-      g.drawLine(ex, VerticalGap, ex, ey)
-      g.drawLine(ex + 1, ey, w - 2, ey)
-
-      // Draw the position of the drop
-      g.setColor(new Color(0, 0, 0, 30))
-      dropPosition match {
-        case Left => g.fillRect(sx, VerticalGap + 1, HorizontalGap - 1, ey - VerticalGap - 1)
-        case Right => g.fillRect(ex + 1, VerticalGap + 1, HorizontalGap - 2, ey - VerticalGap - 1)
-        case Top => {
-          g.fillRect(sx, sy, w - 2, VerticalGap - 1)
-          g.fillRect(HorizontalGap + 1, VerticalGap, w - 2 * HorizontalGap - 1, cy - VerticalGap)
-        }
-        case Bottom => {
-          g.fillRect(HorizontalGap + 1, cy + 1, w - 2 * HorizontalGap - 1, cy - VerticalGap + 1)
-          g.fillRect(sx, ey + 1, w - 2, VerticalGap - 2)
-        }
-        case _ =>
-      }
-    } else {
-      super.paintComponent(g)
-    }
-  }
-
-  override protected def paintChildren(g:Graphics2D) = {
-    if (!drawDropBounds) {
-      super.paintChildren(g)
-    }
   }
 
   val initialPreferredSize = preferredSize
@@ -266,7 +203,7 @@ case class TempGuiFieldNamePanel(fieldName:String) extends MigPanel {
     g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_OFF)
     g2.setColor(oldColour)
 
-    g2.dispose
+    g2.dispose()
 
     val colorTintFilter = new ColorTintFilter(Color.BLUE, 0.1f)
 
@@ -305,62 +242,11 @@ case class GuiFieldNamePanel(props:GuiFieldComponentProps, guiComp:GuiFieldCompo
 
   def setDisplay(display:Boolean) {this.display = display}
 
-  def setDragging(dragging:Boolean) = {this.dragging = dragging}
+  def setDragging(dragging:Boolean) {this.dragging = dragging}
 
-  def getImage = if (image != null) image else createMainImage
+  def getImage:BufferedImage = if (image != null) image else createMainImage
 
-  def setMaxSizeForLabel(size:Dimension) = {label.maximumSize = new Dimension(size.width - 10, size.height)}
-
-  def resetImageState = {
-    tintedImage = null
-    image = null
-  }
-
-  def mouseInComponent {
-    if (!props.dragInfo.isBeingDragged && display) {
-      val shadowRenderer = new ShadowRenderer(2, 0.5f, Color.BLACK)
-      val shadowImage = shadowRenderer.createShadow(getImage)
-      val g = shadowImage.getGraphics
-      g.drawImage(image, 0, 0, null)
-      g.dispose
-
-      props.dragInfo.setCurrentOverImageSource(this)
-      props.dragInfo.setOverImage(shadowImage, peer.getLocationOnScreen)
-      display = false
-    }
-  }
-
-  def resetDisplayState {
-    display = true
-    dragging = false
-    props.dragInfo.resetOverImageSource
-  }
-
-  def initiateDragAndDrop(positionOnComponent:Point) {
-    val initialLocation = peer.getLocationOnScreen
-    val shadowRenderer = new ShadowRenderer(2, 0.5f, Color.BLACK)
-    val shadowImage = shadowRenderer.createShadow(image)
-    val g = shadowImage.getGraphics
-    g.drawImage(image, 0, 0, null)
-    g.dispose
-
-    props.dragInfo.initiateImage(shadowImage, positionOnComponent, guiComp, props.parentFieldChooser, initialLocation)
-    dragging = true
-  }
-
-  def reset {
-    val mouseLocation = MouseInfo.getPointerInfo.getLocation
-    SwingUtilities.convertPointFromScreen(mouseLocation, peer)
-    if (peer.contains(mouseLocation)) {
-      display = true
-      dragging = false
-      mouseInComponent
-    } else {
-      props.dragInfo.resetOverImageSource
-      display = true
-      dragging = false
-    }
-  }
+  def setMaxSizeForLabel(size:Dimension) {label.maximumSize = new Dimension(size.width - 10, size.height)}
 
   private val arc = GuiFieldArc
 
@@ -431,13 +317,14 @@ case class GuiFieldNamePanel(props:GuiFieldComponentProps, guiComp:GuiFieldCompo
       val sx = width - MeasureWidth - 3
       drawMeasure(g2, height, sx)
     }
-    g2.dispose
+    g2.dispose()
+    shadowImage = generateShadowImage
     image
   }
 
   // TODO - change this to a UI element reaction
   peer.addComponentListener(new ComponentAdapter {
-    override def componentResized(e:ComponentEvent) = {
+    override def componentResized(e:ComponentEvent) {
       if ((image == null) || (image.getWidth != size.width) || (image.getHeight != size.height)) {
         image = null
         repaint()
@@ -445,29 +332,54 @@ case class GuiFieldNamePanel(props:GuiFieldComponentProps, guiComp:GuiFieldCompo
     }
   })
 
+  private def generateShadowImage = {
+    val shadowRenderer = new ShadowRenderer(2, 0.5f, Color.BLACK)
+    val shadowImage = shadowRenderer.createShadow(getImage)
+    val g = shadowImage.getGraphics
+    g.drawImage(image, 0, 0, null)
+    g.dispose()
+    shadowImage
+  }
+
+  private var shadowImage:BufferedImage = null
+  private var offSet = PivotTableViewUI.NullPoint
+
   reactions += {
-    case MousePressed(_, p, _, _, _) => initiateDragAndDrop(p)
-    case MouseClicked(_, _, _, 2, _) => {
-      props.dragInfo.resetOverImage
-      display = true
-      props.dragInfo.resetOverImageSource
-      val desFieldChooser = props.parentFieldChooser.fieldChooserThatThisFieldWillAutoMoveTo(props.field)
-      desFieldChooser.addGuiComponentToEndOfChooser(props.field.name)
-      props.parentFieldChooser.autoMoveField(props.field)
+    case MousePressed(_,p,_,_,_) => {
+      offSet = p
     }
-    case MouseEntered(_, _, _) => mouseInComponent
-    case MouseExited(_, _, _) => {
-      if (!props.dragInfo.isBeingDragged) {
-        props.dragInfo.resetOverImage
-        display = true
-        props.dragInfo.resetOverImageSource
+    case MouseClicked(_,_,_,2,_) => {
+      props.tableView.fieldDoubleClicked(props.field, props.locationOfField)
+    }
+    case MouseEntered(_, _, _) if !props.tableView.fieldBeingDragged => {
+      display = false
+      val displayPoint = SwingUtilities.convertPoint(peer, 0, -2, props.tableView.peer)
+      props.viewUI.setImageProperties(shadowImage, displayPoint, 1.0f)
+    }
+    case MouseExited(_, _, _) if !props.tableView.fieldBeingDragged => {
+      display = true
+      props.viewUI.resetImageProperties()
+    }
+    case MouseReleased(_,p,_,_,_) => {
+      if (dragging) {
+        val screenPoint = new Point(p)
+        SwingUtilities.convertPointToScreen(screenPoint, peer)
+        props.tableView.fieldDropped(props.field, props.locationOfField, screenPoint)
+        reset()
       }
+    }
+    case MouseDragged(_,p,_) => {
+      props.tableView.draggedField = props.field
+      props.tableView.fieldBeingDragged = true
+      dragging = true
+      val displayPoint = SwingUtilities.convertPoint(peer, p.x - offSet.x, p.y - offSet.y - 2, props.tableView.peer)
+      props.viewUI.setImageProperties(shadowImage, displayPoint, 0.6f)
     }
   }
   listenTo(mouse.clicks, mouse.moves)
 
-  override protected def paintComponent(g:Graphics2D) = {
-    if (display) {
+  override protected def paintComponent(g:Graphics2D) {
+    if (display && !dragging) {
       if (image == null) {
         image = createMainImage
       }
@@ -482,6 +394,14 @@ case class GuiFieldNamePanel(props:GuiFieldComponentProps, guiComp:GuiFieldCompo
       }
       g.drawImage(tintedImage, 0, 0, null)
     }
+  }
+
+  def reset() {
+    dragging = false
+    display = true
+    props.tableView.fieldBeingDragged = false
+    props.viewUI.resetImageProperties()
+    repaint()
   }
 }
 
@@ -501,7 +421,7 @@ class GuiFieldPanel(constraints:String, isMeasure:Boolean, isSubTotalToggle:Bool
     
   private val arc = GuiFieldArc
 
-  override protected def paintComponent(g2:Graphics2D) = {
+  override protected def paintComponent(g2:Graphics2D) {
     if (!endPiece) {
       val (x, y, w, h) = dim
       val bottomColour = if (isMeasure) {
@@ -557,7 +477,7 @@ class GuiFieldPanel(constraints:String, isMeasure:Boolean, isSubTotalToggle:Bool
     }
   }
 
-  override protected def paintBorder(g2:Graphics2D) = {
+  override protected def paintBorder(g2:Graphics2D) {
     if (!endPiece) {
       val (x, y, w, h) = dim
       g2.setColor(GuiFieldBorderColour)
@@ -633,19 +553,19 @@ case class MeasureTogglePanel(props:GuiFieldComponentProps) extends GuiFieldPane
 
   private var mouseOver = false
   reactions += {
-    case MouseEntered(_, _, _) => mouseOver = true; repaint
-    case MouseExited(_, _, _) => mouseOver = false; repaint
-    case MouseClicked(_, _, _, _, _) => mouseOver = false; repaint; props.onMeasureChange(props.field, props.locationOfField)
+    case MouseEntered(_, _, _) => mouseOver = true; repaint()
+    case MouseExited(_, _, _) => mouseOver = false; repaint()
+    case MouseClicked(_, _, _, _, _) => mouseOver = false; repaint(); props.onMeasureChange(props.field, props.locationOfField)
   }
   listenTo(mouse.moves, mouse.clicks)
 
-  override protected def paintComponent(g:Graphics2D) = {
+  override protected def paintComponent(g:Graphics2D) {
     val image = new BufferedImage(size.width, size.height, BufferedImage.TYPE_INT_ARGB)
     val imG = image.getGraphics.asInstanceOf[Graphics2D]
     super.paintComponent(imG)
-    imG.dispose
+    imG.dispose()
 
-    val imageToDraw = if (mouseOver && !props.dragInfo.isBeingDragged) {
+    val imageToDraw = if (mouseOver && !props.tableView.fieldBeingDragged) {
       val colorTintFilter = new ColorTintFilter(Color.GRAY, 0.1f)
       colorTintFilter.filter(image, null)
     } else {
@@ -674,9 +594,9 @@ case class SubTotalTogglePanel(props:GuiFieldComponentProps)
 
   private var mouseOver = false
   reactions += {
-    case MouseEntered(_, _, _) => mouseOver = true; repaint
-    case MouseExited(_, _, _) => mouseOver = false; repaint
-    case MouseClicked(_, _, _, _, _) => mouseOver = false; repaint; props.onSubTotalToggle(props.field, props.locationOfField)
+    case MouseEntered(_, _, _) => mouseOver = true; repaint()
+    case MouseExited(_, _, _) => mouseOver = false; repaint()
+    case MouseClicked(_, _, _, _, _) => mouseOver = false; repaint(); props.onSubTotalToggle(props.field, props.locationOfField)
   }
   listenTo(mouse.moves, mouse.clicks)
 
@@ -684,9 +604,9 @@ case class SubTotalTogglePanel(props:GuiFieldComponentProps)
     val image = new BufferedImage(size.width, size.height, BufferedImage.TYPE_INT_ARGB)
     val imG = image.getGraphics.asInstanceOf[Graphics2D]
     super.paintComponent(imG)
-    imG.dispose
+    imG.dispose()
 
-    val imageToDraw = if (mouseOver && !props.dragInfo.isBeingDragged) {
+    val imageToDraw = if (mouseOver && !props.tableView.fieldBeingDragged) {
       val colorTintFilter = new ColorTintFilter(Color.GRAY, 0.1f)
       colorTintFilter.filter(image, null)
     } else {
@@ -708,7 +628,7 @@ case class FilterLabelPanel(props:GuiFieldComponentProps)
     foreground = Color.BLUE.darker
     maximumSize = new Dimension(150, Integer.MAX_VALUE)
 
-    override def text_=(s:String) = {
+    override def text_=(s:String) {
       super.text = s
       tooltip = s
     }
@@ -736,12 +656,12 @@ case class FilterButtonPanel(props:GuiFieldComponentProps) extends MigPanel {
 
   reactions += {
     case MouseClicked(_, _, _, _, _) if enabled => publish(DisplayPopupEvent(this))
-    case MouseEntered(_, _, _) if enabled && !props.dragInfo.isBeingDragged => mouseInPanel = true; repaint
-    case MouseExited(_, _, _) if enabled && !props.dragInfo.isBeingDragged => mouseInPanel = false; repaint
+    case MouseEntered(_, _, _) if enabled && !props.tableView.fieldBeingDragged => mouseInPanel = true; repaint()
+    case MouseExited(_, _, _) if enabled && !props.tableView.fieldBeingDragged => mouseInPanel = false; repaint()
   }
   listenTo(mouse.moves, mouse.clicks)
 
-  override protected def paintComponent(g2:Graphics2D) = {
+  override protected def paintComponent(g2:Graphics2D) {
     val x = 0
     val y = 1
     val w = size.width - 2
@@ -792,7 +712,7 @@ case class FilterButtonPanel(props:GuiFieldComponentProps) extends MigPanel {
     g2.drawString(numberText, 1,lm.getHeight.round)
   }
 
-  override def enabled_=(b:Boolean) = {
+  override def enabled_=(b:Boolean) {
     super.enabled = b
     downArrow.enabled = b
   }

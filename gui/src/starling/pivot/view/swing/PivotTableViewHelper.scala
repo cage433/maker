@@ -144,7 +144,7 @@ object PivotTableViewHelper {
     (mainTableScrollPane, fakeHScrollBarHolder, fakeVScrollBarHolder)
   }
 
-  def generateScrollableFieldChooser(comp:Component, scrollingNotifier:{def scrolling:Unit}, layerUI:DragInfo) = {
+  def generateScrollableFieldChooser(comp:Component, scrollingNotifier:{def scrolling()}, tableView:PivotTableView) = {
     val leftButton = ArrowButton(true)
     val rightButton = ArrowButton(false)
     new CrazyScrollPane(comp, leftButton, rightButton) {
@@ -165,8 +165,8 @@ object PivotTableViewHelper {
       horizontalScrollBar.preferredSize = new Dimension(0,0)
       horizontalScrollBar.unitIncrement = 40
       horizontalScrollBar.peer.addAdjustmentListener(new AdjustmentListener{
-        def adjustmentValueChanged(e: AdjustmentEvent) = {
-          scrollingNotifier.scrolling
+        def adjustmentValueChanged(e: AdjustmentEvent) {
+          scrollingNotifier.scrolling()
         }
       })
 
@@ -208,14 +208,14 @@ object PivotTableViewHelper {
           rButtonListeners.foreach(_.mouseReleased(e))
         }
         case m @ MouseEntered(`leftButton`,_,_) => {
-          if (layerUI.isBeingDragged) {
+          if (tableView.fieldBeingDragged) {
             val e = m.peer
             e.setSource(lButton)
             lButtonListeners.foreach(_.mousePressed(e))
           }
         }
         case m @ MouseExited(`leftButton`,_,_) => {
-          if (layerUI.isBeingDragged) {
+          if (tableView.fieldBeingDragged) {
             val e = m.peer
             e.setSource(lButton)
             lButtonListeners.foreach(_.mouseReleased(e))
@@ -223,14 +223,14 @@ object PivotTableViewHelper {
           }
         }
         case m @ MouseEntered(`rightButton`,_,_) => {
-          if (layerUI.isBeingDragged) {
+          if (tableView.fieldBeingDragged) {
             val e = m.peer
             e.setSource(rButton)
             rButtonListeners.foreach(_.mousePressed(e))
           }
         }
         case m @ MouseExited(`rightButton`,_,_) => {
-          if (layerUI.isBeingDragged) {
+          if (tableView.fieldBeingDragged) {
             val e = m.peer
             e.setSource(rButton)
             rButtonListeners.foreach(_.mouseReleased(e))

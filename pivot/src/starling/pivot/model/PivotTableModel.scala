@@ -108,7 +108,7 @@ class PivotTableModel(data:PivotData) {
 
   val filterFields = new FieldList(this, fieldState.filters.map(_._1).filterNot(f => rowFields.contains(f) || columns.contains(f)), Filter)
 
-  def isDataField(field:Field) = data.dataFields.contains(field)
+  def isMeasureField(field:Field) = data.dataFields.contains(field)
 
   def getFields(fieldChooserType:FieldChooserType) = {
     fieldChooserType match {
