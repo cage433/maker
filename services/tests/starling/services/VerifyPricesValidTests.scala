@@ -8,12 +8,12 @@ import starling.daterange.Day
 import starling.pivot.{PivotFieldsState, PivotTableDataSource}
 import starling.pivot.controller.PivotGrid
 import swing.event.Event
-import starling.utils.{DelayedVerifier, Broadcaster, StarlingSpec}
+import starling.utils.{Broadcaster, StarlingSpec}
 
 
 class VerifyPricesValidTests extends StarlingSpec with ShouldMatchers {
   "should send no emails when no prices available" in {
-    verifier.withNoPrices.shouldBroadcastNoEvents.execute(Day.today)
+    verifier.withNoPrices.eventFor(Day.today) should be === None
   }
 
   def verifier() = {
@@ -21,18 +21,11 @@ class VerifyPricesValidTests extends StarlingSpec with ShouldMatchers {
     val futuresExchange = mock(classOf[FuturesExchange])
     val broadcaster = mock(classOf[Broadcaster])
 
-    new VerifyPricesValid(dataSource, futuresExchange, broadcaster, props => props.MetalsEmailAddress) {
-      val verify = DelayedVerifier()
+    new VerifyPricesValid(dataSource, futuresExchange, broadcaster, "from@example.org") {
       val emptyGrid = PivotGrid(Array(), Array(), Array())
-
-      override def execute(observationDay: Day) = { super.execute(observationDay); verify() }
 
       def withNoPrices = updateThis {
         when(dataSource.gridFor(any(classOf[Option[PivotFieldsState]]))) thenReturn emptyGrid
-      }
-
-      def shouldBroadcastNoEvents = updateThis {
-        verify.later(broadcaster, never)(_.broadcast(anyEvent))
       }
 
       private def updateThis(action: Any) = { action; this }

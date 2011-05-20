@@ -182,7 +182,7 @@ trait RiskPivotFields[T <: RiskPivotReportRow[T]]{
 
 object OptionalPeriodLabelComparator extends Ordering[Any] {
   def compare(x: Any, y: Any) = {
-    (x,y) match {
+    ((x,y): @unchecked) match {
       case (OptionalPeriodLabel(Some(p1)), OptionalPeriodLabel(Some(p2))) => {
         PeriodComparator.compare(p1,p2)
       }

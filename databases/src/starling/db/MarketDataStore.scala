@@ -113,7 +113,7 @@ object MarketDataStore {
 
   val manuallyEditableMarketDataSets = Set(ManualMetals, Starling)
 
-  require(pricingGroupsDefinitions.keySet == PricingGroup.all.toSet, "Need to add PricingGroups in two places")
+  require(pricingGroupsDefinitions.keySet == PricingGroup.values.toSet, "Need to add PricingGroups in two places")
   val pricingGroups = pricingGroupsDefinitions.keySet.toList
 
   def pricingGroupForName(name: String): PricingGroup = pricingGroups.find(_.name == name).get
@@ -828,7 +828,10 @@ class DBMarketDataStore(db: DBTrait[RichResultSetRow], val marketDataSources: Ma
   def conditionsFromMap(conditions:Map[String,Any]) = {
     import QueryBuilder._
 
-    conditions.map { case (k, v) => k eql literal(v) }.reduceLeft((a:Clause, b:Clause) => a and b)
+    conditions.map {
+      case (k, null) => k isNull 
+      case (k, v) => k eql literal(v)
+    }.reduceLeft((a:Clause, b:Clause) => a and b)
   }
 
   /**

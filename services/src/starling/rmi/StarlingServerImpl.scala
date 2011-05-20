@@ -1,29 +1,31 @@
 package starling.rmi
 
-import starling.pivot._
-import controller.{PivotTableConverter, PivotTable}
-import model._
-import starling.gui.UserSettings
-import starling.db._
-import starling.gui.api._
-import starling.reports.pivot._
-import java.util.concurrent.ConcurrentHashMap
-import starling.services._
-import starling.utils.sql.{FalseClause, From, RealTable}
 import collection.immutable.{Set, List}
-import starling.utils.sql.QueryBuilder._
-import starling.daterange._
-import starling.utils._
+import java.util.UUID
+import java.util.concurrent.ConcurrentHashMap
+
 import starling.auth.{LdapUserLookup, User}
 import starling.calendar.BusinessCalendarSet
+import starling.curves.{EnvironmentRule, CurveViewer}
+import starling.daterange._
+import starling.db._
+import starling.eai.{Book, Traders}
+import starling.gui.UserSettings
+import starling.gui.api._
+import starling.pivot._
+import starling.pivot.controller.PivotTable
+import starling.pivot.model._
+import starling.reports.pivot._
+import starling.marketdata._
+import starling.services._
 import starling.trade.{Trade, TradeID, TradeSystem}
 import starling.tradestore.{TradeSet, TradePredicate, TradeStores}
-import starling.curves.{EnvironmentSpecification, EnvironmentRule, CurveViewer}
 import starling.tradestore.intraday.IntradayTradeAttributes
-import starling.eai.{Book, Traders}
-import java.util.UUID
-import starling.eai.{Book, Traders}
-import starling.marketdata._
+import starling.utils._
+import starling.utils.sql.{FalseClause, From, RealTable}
+
+import starling.utils.sql.QueryBuilder._
+
 
 class UserReportsService(
   val ukHolidayCalendar: BusinessCalendarSet,
@@ -680,21 +682,4 @@ class StarlingServerImpl(
   }
 
   def storeSystemInfo(info:OSInfo) = userSettingsDatabase.storeSystemInfo(User.currentlyLoggedOn, info)
-}
-
-class TrinityUploader(fclGenerator: FCLGenerator, xrtGenerator: XRTGenerator) {
-  def uploadCurve(curveLabel: CurveLabel) = {
-    upload(fclGenerator.generate(curveLabel), "curveFromStarling" + curveLabel.observationDay + ".fcl")
-  }
-
-  def uploadLibor(observationDay: Day) = {
-    upload(xrtGenerator.generate(observationDay), "liborFromStarling" + "??" + ".xrt")
-  }
-
-  private def upload(lines: List[String], fileName: String) {
-    println("TODO: Write the trinity file")
-//    val result = TrinityUpload.upload(lines)
-//    println("Uploaded to trinity: Here are the logs")
-//    println(result)
-  }
 }

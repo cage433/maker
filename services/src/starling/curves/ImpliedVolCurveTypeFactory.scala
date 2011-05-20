@@ -47,7 +47,7 @@ class ImpliedVolPivotDataSource(context: EnvironmentWithDomain) extends Unfilter
   val marketsData = context.marketVols.map(m => m.market -> m).toMap
 
   val fieldDetailsGroups = {
-    new FieldDetailsGroup("Fields", List(period, marketField, price, volatility, delta, diff)) :: Nil
+    FieldDetailsGroup("Fields", period, marketField, price, volatility, delta, diff) :: Nil
   }
 
   val marketSelection = marketsData.keys.headOption match {

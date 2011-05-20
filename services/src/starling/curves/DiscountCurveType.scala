@@ -19,9 +19,7 @@ class DiscountCurvePivotTableDataSource(context:EnvironmentWithDomain) extends U
   val rateField = FieldDetails.createMeasure("Rate")
   val discountField = new PivotQuantityFieldDetails("Discount")
 
-  def fieldDetailsGroups = List(
-    FieldDetailsGroup("Discount", List(currencyField, dayField, rateField, discountField))
-  )
+  def fieldDetailsGroups = List(FieldDetailsGroup("Discount", currencyField, dayField, rateField, discountField))
 
   val allRows: List[Map[Field, Any]] = {
     val marketDay = context.environment.marketDay.day

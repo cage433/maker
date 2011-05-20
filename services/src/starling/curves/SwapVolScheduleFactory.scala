@@ -58,7 +58,7 @@ class SwapVolSchedulePivotDataSource(context: EnvironmentWithDomain) extends Unf
   }
 
   val fieldDetailsGroups = {
-    new FieldDetailsGroup("Fields", List(indexField, period, dayField, marketField, observedPeriodField, forwardPrice, holiday, average, impliedVol, fixed)) :: Nil
+    FieldDetailsGroup("Fields", indexField, period, dayField, marketField, observedPeriodField, forwardPrice, holiday, average, impliedVol, fixed) :: Nil
   }
 
   private def averageUnfixedPrice(index: SingleIndex, averagingPeriod: DateRange): Quantity = {

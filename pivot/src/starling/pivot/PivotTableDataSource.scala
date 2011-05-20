@@ -11,6 +11,9 @@ case class FieldDetailsGroup(name:String, fields:List[FieldDetails]) {
   }
   def fieldMap = fields.map(fd=>fd.field→fd).toMap
 }
+object FieldDetailsGroup {
+  def apply(name: String, fields: FieldDetails*): FieldDetailsGroup = FieldDetailsGroup(name, fields.toList)
+}
 
 case class FieldGroup(name:String, fields:List[Field])
 
@@ -97,7 +100,8 @@ abstract class PivotTableDataSource extends PivotGridSource {
     PivotTableConverter(table = PivotTableModel.createPivotTableData(this, pivotState)).createGrid()
   }
 
-  protected def fields(fieldDetails: FieldDetails*) = fieldDetails.map(_.field).toList
+  protected def fieldDetails(names: String*) = names.toList.map(FieldDetails(_))
+  protected def fields(fieldDetails: FieldDetails*): List[Field] = fieldDetails.map(_.field).toList
   protected def fields(fieldDetails: List[FieldDetails]) = fieldDetails.map(_.field).toList
   protected def fields(map: (FieldDetails, Any)*) = map.toMap.mapKeys(_.field)
 }

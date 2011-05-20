@@ -1,21 +1,14 @@
 package starling.services
 
-import starling.pivot._
 import starling.daterange.Day
-import starling.rmi.TrinityUploader
 import starling.gui.api._
 import starling.curves.ClosesEnvironmentRule
+import starling.services.trinity.TrinityUploader
 
 
 class UploadCurveToTrinityTask(uploader: TrinityUploader, marketDataIdentifier: => MarketDataIdentifier) extends ScheduledTask {
-  def execute(observationDay: Day) = {
-    uploader.uploadCurve(CurveLabel(CurveTypeLabel("Price"), marketDataIdentifier,
-      EnvironmentSpecificationLabel(observationDay, ClosesEnvironmentRule.label)))
-  }
-}
+  override def attributes = super.attributes + "DataSink" → "Trinity"
 
-class UploadLiborToTrinityTask(uploader: TrinityUploader) extends ScheduledTask {
-  def execute(observationDay: Day) = {
-    uploader.uploadLibor(observationDay)
-  }
+  def execute(observationDay: Day) = uploader.uploadCurve(CurveLabel(CurveTypeLabel("Price"), marketDataIdentifier,
+    EnvironmentSpecificationLabel(observationDay, ClosesEnvironmentRule.label)))
 }

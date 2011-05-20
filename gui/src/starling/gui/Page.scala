@@ -148,7 +148,7 @@ case class LocalCache(localCache:HeterogeneousMap[Key]) {
   def groupToDesksMap = localCache(GroupToDesksMap)
   def isStarlingDeveloper = localCache(IsStarlingDeveloper)
 
-  private def validGroups(maybeDesk:Option[Desk]) = maybeDesk.map(_.pricingGroups).getOrElse(PricingGroup.all)
+  private def validGroups(maybeDesk:Option[Desk]) = maybeDesk.map(_.pricingGroups).getOrElse(PricingGroup.values)
 }
 
 trait PageData

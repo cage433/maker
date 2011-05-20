@@ -19,7 +19,7 @@ class OrgPivotTableDataSource extends UnfilteredPivotTableDataSource {
   val department = FieldDetails("Department")
 
   def fieldDetailsGroups = {
-    List(FieldDetailsGroup("Organisation", List(name,phone,email,manager,department)))
+    List(FieldDetailsGroup("Organisation", name,phone,email,manager,department))
   }
   def unfilteredData(pfs : PivotFieldsState) = {
     val maps = OrgPivotTableDataSource.Users.map(user => {

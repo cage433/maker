@@ -15,6 +15,7 @@ import starling.neptune.{RefinedFixationSystemOfRecord, RefinedFixationTradeStor
 import starling.utils.ImplicitConversions._
 import starling.curves.readers._
 import trade.ExcelTradeReader
+import trinity.{TrinityUploader, XRTGenerator, TrinityUploadCodeMapper, FCLGenerator}
 import xml.{Node, Utility}
 import javax.xml.transform.stream.{StreamResult, StreamSource}
 import java.io.{ByteArrayInputStream, File}
@@ -42,6 +43,7 @@ import starling.eai.{Book, Traders, EAIAutoImport, EAIStrategyDB}
 import com.jolbox.bonecp.BoneCP
 import org.springframework.mail.javamail.{MimeMessageHelper, JavaMailSender, JavaMailSenderImpl}
 import starling.rmi._
+
 
 class StarlingInit( props: Props,
                     dbMigration: Boolean = true,
@@ -249,8 +251,8 @@ class StarlingInit( props: Props,
 
   val trinityUploadCodeMapper = new TrinityUploadCodeMapper(trinityDB)
   val curveViewer = new CurveViewer(marketDataStore)
-  val trinityUploader = new TrinityUploader(new FCLGenerator(trinityUploadCodeMapper, curveViewer), new XRTGenerator(marketDataStore))
-  val scheduler = Scheduler.create(businessCalendars, marketDataStore, broadcaster, trinityUploader)
+  val trinityUploader = new TrinityUploader(new FCLGenerator(trinityUploadCodeMapper, curveViewer), new XRTGenerator(marketDataStore), props)
+  val scheduler = Scheduler.create(businessCalendars, marketDataStore, broadcaster, trinityUploader, props)
 
   val referenceData = new ReferenceData(businessCalendars, marketDataStore, strategyDB, scheduler, trinityUploadCodeMapper)
 
