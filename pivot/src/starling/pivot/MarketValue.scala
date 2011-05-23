@@ -7,7 +7,7 @@ import starling.utils.Pattern._
 
 
 case class MarketValue(value: Either[Quantity, Percentage]) extends Serializable {
-  val (quantity, percentage) = (value.left.toOption, value.right.toOption)
+  lazy val (quantity, percentage) = (value.left.toOption, value.right.toOption)
   override def toString = value.fold(_.toString, _.toString)
   def toQuantity = value.fold(identity, _.toQuantity)
   def pivotValue = value.fold(_.pq, identity)

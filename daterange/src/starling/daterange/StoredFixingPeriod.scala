@@ -32,7 +32,7 @@ object Tenor {
 }
 
 case class StoredFixingPeriod(period: Either[DateRange, Tenor]) extends Ordered[StoredFixingPeriod] {
-  val (dateRange, tenor) = (period.left.toOption, period.right.toOption)
+  lazy val (dateRange, tenor) = (period.left.toOption, period.right.toOption)
   def compare(that: StoredFixingPeriod) = (period, that.period) match {
     case (Left(leftDR), Left(rightDR)) => leftDR.compare(rightDR)
     case (Right(leftOffset), Right(rightOffset)) => leftOffset.compare(rightOffset)

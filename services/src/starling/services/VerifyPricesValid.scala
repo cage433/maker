@@ -24,20 +24,21 @@ class VerifyPricesValid(dataSource: PivotTableDataSource, exchange: FuturesExcha
   private val pfs = PivotFieldsState(rowFields = fields("Market", "Period"), dataFields = fields("Price"))
 
   def eventFor(observationDay: Day): Option[EmailEvent] = {
-    val filter = filters("Exchange" → exchange.name, "Observation Day" → observationDay)
-    val grid = dataSource.gridFor(Some(pfs.copy(filters = filter ++ filters("Validity" → "Invalid"))))
-
-    (grid.hasData).toOption {
-      EmailEvent(from, to).copy(subject = "Validation errors for: %s" % filterToString(filter),
-        body = <html>
-                 <p>Validation errors for: { filterToString(filter) }</p>
-                 <table border="1">
-                   {for (row <- grid.combinedData) yield
-                     <tr>{ row.map(createCell) }</tr>
-                   }
-                 </table>
-               </html>.toString)
-    }
+//    val filter = filters("Exchange" → exchange.name, "Observation Day" → observationDay)
+//    val grid = dataSource.gridFor(Some(pfs.copy(filters = filter ++ filters("Validity" → "Invalid"))))
+//
+//    (grid.hasData).toOption {
+//      EmailEvent(from, to).copy(subject = "Validation errors for: %s" % filterToString(filter),
+//        body = <html>
+//                 <p>Validation errors for: { filterToString(filter) }</p>
+//                 <table border="1">
+//                   {for (row <- grid.combinedData) yield
+//                     <tr>{ row.map(createCell) }</tr>
+//                   }
+//                 </table>
+//               </html>.toString)
+//    }
+    None
   }
 
   private def createCell(cell: CombinedCell) = <td bgcolor={cellColour(cell)}>{cell}</td>
