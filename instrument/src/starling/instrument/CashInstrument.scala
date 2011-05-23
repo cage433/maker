@@ -53,6 +53,10 @@ object CashInstrumentType {
   val General = CashInstrumentType("General")
   val Premium = CashInstrumentType("Premium")
   val Commission = CashInstrumentType("Commission")
+
+  val costTypes = Set(BrokerPayment, ClearingHousePayment, Premium, Commission)
+
+  def isCost(cashInstrumentType: CashInstrumentType) = costTypes.contains(cashInstrumentType)
 }
 
 object CashInstrument extends InstrumentType[CashInstrument] {

@@ -98,9 +98,9 @@ class RiskPivotReportTests extends TestExpiryRules with StarlingTest{
     val greeks = pivotReport.combine(pivotReport.rows(UTPIdentifier(1), option), ReportSpecificChoices(showEqFutures_str -> true))
 
     val gamma1 = option.gamma(env, PriceDifferentiable(market, nov), USD, List(PriceDifferentiable(market, nov), PriceDifferentiable(market, dec)))
-    assertEquals(risk(greeks, nov, "gamma"), gamma1)
+    assertQtyClose(risk(greeks, nov, "gamma"), gamma1)
     val gamma2 = option.gamma(env, PriceDifferentiable(market, dec), USD, List(PriceDifferentiable(market, nov), PriceDifferentiable(market, dec)))
-    assertEquals(risk(greeks, dec, "gamma"), gamma2)
+    assertQtyClose(risk(greeks, dec, "gamma"), gamma2)
   }
 
   def risk(greeks: List[GreekValues], dr: DateRange, riskType: String) = {

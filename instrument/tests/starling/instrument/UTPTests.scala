@@ -237,7 +237,7 @@ class UTPTests extends IndexTest {
         val forwardEnv = zeroVolsEnv.forwardState(forwardDayAndTime)
         val forwardUtp = utp.forwardState(zeroVolsEnv, forwardDayAndTime)
         val forwardMtm = forwardUtp.mtm(forwardEnv, USD)
-        assertEquals(forwardMtm, mtm, "forwardmtm " + forwardMtm + " != mtm " + mtm)
+        assertQtyClose(forwardMtm, mtm, message = "forwardmtm " + forwardMtm + " != mtm " + mtm)
       }
     }
   }

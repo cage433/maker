@@ -13,7 +13,7 @@ object TradeSystems {
   // note: intraday is missing here because it isn't a "primary" trade store - it's desgined to
   // be combined with other trade stores to provide the difference between real-time position
   // and close of book the previous day.
-  val systems = List(RefinedAssignmentTradeSystem, RefinedFixationTradeSystem)
+  val systems = List(EAITradeSystem, RefinedAssignmentTradeSystem, RefinedFixationTradeSystem)
   private val allSystems = IntradayTradeSystem :: systems
 
   def fromName(name:String) = allSystems.find(_.name == name) match {

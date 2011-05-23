@@ -14,6 +14,8 @@ import starling.concurrent.MP._
 
 
 class OilAndMetalsVARLimMarketDataSource(limServer: LIMServer) extends MarketDataSource {
+  val daysInThePast = 100
+
   def read(day:Day) = {
     val (futuresFrontPeriodIndexes, publishedIndexes) = {
       val futuresFrontPeriodIndexes =
@@ -62,7 +64,7 @@ class OilAndMetalsVARLimMarketDataSource(limServer: LIMServer) extends MarketDat
 
       pubMarkets.flatMap { case (market, levels) => {
         val pricesByObservationDay = levels.flatMap { level =>
-          limServer.getSpotData(market.limSymbol.get, level, day - 10, day).map {
+          limServer.getSpotData(market.limSymbol.get, level, day - daysInThePast, day).map {
             case (d: Day, p: Double) => (d, (level, p * market.limSymbol.get.multiplier))
           }
         }.groupInto(_._1, _._2)
@@ -78,7 +80,7 @@ class OilAndMetalsVARLimMarketDataSource(limServer: LIMServer) extends MarketDat
     }.toList
 
     val fixingsForFrontMonthIndexes = futuresFrontPeriodIndexes.mapDistinct(_.market)
-      .mpFlatMap(market => readFuturesFixingsFromLim(day, market, Level.Close)).toList
+      .flatMap(market => readFuturesFixingsFromLim(day, market, Level.Close)).toList
 
     val fixings = fixingsForPublishedIndex ::: fixingsForFrontMonthIndexes
 
@@ -91,7 +93,7 @@ class OilAndMetalsVARLimMarketDataSource(limServer: LIMServer) extends MarketDat
       }
     }.map{ case(key, data) => MarketDataEntry(ObservationPoint(day), key, data) }
 
-    Map((day - 10, day, PriceFixingsHistoryDataType) → fixings,
+    Map((day - daysInThePast, day, PriceFixingsHistoryDataType) → fixings,
         (day, day, PriceDataType) → prices)
   }
 
@@ -111,21 +113,25 @@ class OilAndMetalsVARLimMarketDataSource(limServer: LIMServer) extends MarketDat
 
       ReutersDeliveryMonthCodes.parse(monthPart).map(month => relation → month.asInstanceOf[DateRange])
     }
+    val pricesByObservationPoint = limServer.query {
+      connection =>
+        val relationToDeliveryMonth = connection.getAllRelChildren(limSymbol.name).map(parseRelation).somes.toMap
 
-    val pricesByObservationPoint = limServer.query { connection =>
-      val relationToDeliveryMonth = connection.getAllRelChildren(limSymbol.name).map(parseRelation).somes.toMap
-
-      connection.getPrices(relationToDeliveryMonth.keys, level, lastObservationDay - 30, lastObservationDay)
-        .groupInto { case ((relation, observationDay), price) =>
-          (ObservationPoint(observationDay), relationToDeliveryMonth(relation) →
-            MarketValue.quantity(price * limSymbol.multiplier, market.priceUOM))
+        val prices = connection.getPrices(relationToDeliveryMonth.keys, level, lastObservationDay - daysInThePast, lastObservationDay)
+          .groupInto {
+          case ((relation, observationDay), price) => {
+            (ObservationPoint(observationDay), relationToDeliveryMonth(relation) → MarketValue.quantity(price * limSymbol.multiplier, market.priceUOM))
+          }
         }
+        prices
     }
 
-    pricesByObservationPoint.map { case (observationPoint, deliveryMonthToPrice) =>
-      val fixings = deliveryMonthToPrice.toMap.mapKeys(deliveryMonth => (level, StoredFixingPeriod.dateRange(deliveryMonth)))
+    val allFixings = pricesByObservationPoint.map {
+      case (observationPoint, deliveryMonthToPrice) =>
+        val fixings = deliveryMonthToPrice.toMap.mapKeys(deliveryMonth => (level, StoredFixingPeriod.dateRange(deliveryMonth)))
 
-      MarketDataEntry(observationPoint, PriceFixingsHistoryDataKey(market), PriceFixingsHistoryData.create(fixings))
+        MarketDataEntry(observationPoint, PriceFixingsHistoryDataKey(market), PriceFixingsHistoryData.create(fixings))
     }.toList
+    allFixings
   }
 }
