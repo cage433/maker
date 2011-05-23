@@ -242,8 +242,6 @@ case class GuiFieldNamePanel(props:GuiFieldComponentProps, guiComp:GuiFieldCompo
 
   def setDisplay(display:Boolean) {this.display = display}
 
-  def setDragging(dragging:Boolean) {this.dragging = dragging}
-
   def getImage:BufferedImage = if (image != null) image else createMainImage
 
   def setMaxSizeForLabel(size:Dimension) {label.maximumSize = new Dimension(size.width - 10, size.height)}
@@ -348,21 +346,24 @@ case class GuiFieldNamePanel(props:GuiFieldComponentProps, guiComp:GuiFieldCompo
   reactions += {
     case MousePressed(_,p,_,_,_) => {
       offSet = p
+      props.tableView.mouseDown = true
+      props.tableView.draggedField = props.field
     }
     case MouseClicked(_,_,_,2,_) => {
       reset()
       props.tableView.fieldDoubleClicked(props.field, props.locationOfField)
     }
-    case MouseEntered(_, _, _) if !props.tableView.fieldBeingDragged => {
+    case MouseEntered(_, _, _) if !props.tableView.drag => {
       display = false
       val displayPoint = SwingUtilities.convertPoint(peer, 0, -2, props.tableView.peer)
       props.viewUI.setImageProperties(shadowImage, displayPoint, 1.0f)
     }
-    case MouseExited(_, _, _) if !props.tableView.fieldBeingDragged => {
+    case MouseExited(_, _, _) if !props.tableView.drag => {
       display = true
       props.viewUI.resetImageProperties()
     }
     case MouseReleased(_,p,_,_,_) => {
+      props.tableView.mouseDown = false
       if (dragging) {
         val screenPoint = new Point(p)
         SwingUtilities.convertPointToScreen(screenPoint, peer)
@@ -371,7 +372,6 @@ case class GuiFieldNamePanel(props:GuiFieldComponentProps, guiComp:GuiFieldCompo
       }
     }
     case MouseDragged(_,p,_) => {
-      props.tableView.draggedField = props.field
       props.tableView.fieldBeingDragged = true
       dragging = true
       val displayPoint = SwingUtilities.convertPoint(peer, p.x - offSet.x, p.y - offSet.y - 2, props.tableView.peer)
@@ -401,6 +401,8 @@ case class GuiFieldNamePanel(props:GuiFieldComponentProps, guiComp:GuiFieldCompo
   def reset() {
     dragging = false
     display = true
+    image = null
+    tintedImage = null
     props.tableView.fieldBeingDragged = false
     props.viewUI.resetImageProperties()
     repaint()
@@ -567,7 +569,7 @@ case class MeasureTogglePanel(props:GuiFieldComponentProps) extends GuiFieldPane
     super.paintComponent(imG)
     imG.dispose()
 
-    val imageToDraw = if (mouseOver && !props.tableView.fieldBeingDragged) {
+    val imageToDraw = if (mouseOver && !props.tableView.drag) {
       val colorTintFilter = new ColorTintFilter(Color.GRAY, 0.1f)
       colorTintFilter.filter(image, null)
     } else {
@@ -608,7 +610,7 @@ case class SubTotalTogglePanel(props:GuiFieldComponentProps)
     super.paintComponent(imG)
     imG.dispose()
 
-    val imageToDraw = if (mouseOver && !props.tableView.fieldBeingDragged) {
+    val imageToDraw = if (mouseOver && !props.tableView.drag) {
       val colorTintFilter = new ColorTintFilter(Color.GRAY, 0.1f)
       colorTintFilter.filter(image, null)
     } else {
@@ -658,8 +660,8 @@ case class FilterButtonPanel(props:GuiFieldComponentProps) extends MigPanel {
 
   reactions += {
     case MouseClicked(_, _, _, _, _) if enabled => publish(DisplayPopupEvent(this))
-    case MouseEntered(_, _, _) if enabled && !props.tableView.fieldBeingDragged => mouseInPanel = true; repaint()
-    case MouseExited(_, _, _) if enabled && !props.tableView.fieldBeingDragged => mouseInPanel = false; repaint()
+    case MouseEntered(_, _, _) if enabled && !props.tableView.drag => mouseInPanel = true; repaint()
+    case MouseExited(_, _, _) if enabled && !props.tableView.drag => mouseInPanel = false; repaint()
   }
   listenTo(mouse.moves, mouse.clicks)
 

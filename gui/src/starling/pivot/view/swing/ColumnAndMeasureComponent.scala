@@ -1,13 +1,12 @@
 package starling.pivot.view.swing
 
-import fieldchoosers.DropTarget
+import fieldchoosers.{DropPanel, DropTarget}
 import starling.pivot._
 import model.PivotTableModel
-import swing.Swing._
 import starling.pivot.FieldChooserType._
 import collection.mutable.ListBuffer
 import scala.{Right, Left}
-import java.awt.{Point, Rectangle, Dimension, Color}
+import java.awt.{Point, Rectangle, Dimension, Graphics2D, RenderingHints}
 import swing.event._
 import swing.Label
 import starling.gui.GuiUtils
@@ -18,23 +17,70 @@ object ColumnDropPanel {
 
 case class ColumnDropPanel(fieldOrColumnStructure:FieldOrColumnStructure, position:Position.Position) extends MigPanel("insets 0, gap 0px") {
   opaque = false
-  border = LineBorder(Color.RED)
+  border = DropPanel.NormalBorder
   preferredSize = new Dimension(15,15)
   minimumSize = preferredSize
   visible = false
 
+  private var mouseIn = false
+  private var valid0 = true
+  def valid = valid0
+  def valid_=(b:Boolean) {
+    valid0 = b
+    if (b) {
+      border = DropPanel.NormalBorder
+    } else {
+      border = DropPanel.InvalidBorder
+    }
+  }
+
   reactions += {
     case MouseEntered(_,_,_) => {
-      opaque = true
+      if (valid) {
+        border = DropPanel.OverBorder
+      } else {
+        border = DropPanel.InvalidBorder
+      }
+      mouseIn = true
       repaint()
     }
     case MouseExited(_,_,_) => {
-      opaque = false
-      repaint()
+      reset()
     }
-    case MouseClicked(_,_,_,_,_) => println(position + " : " + fieldOrColumnStructure)
   }
-  listenTo(mouse.moves, mouse.clicks)
+  listenTo(mouse.moves)
+
+  def reset() {
+    if (valid0) {
+      border = DropPanel.NormalBorder
+    } else {
+      border = DropPanel.InvalidBorder
+    }
+    mouseIn = false
+    repaint()
+  }
+
+  override def visible_=(b:Boolean) {
+    super.visible = b
+    if (!b) {
+      reset()
+    }
+  }
+
+  override protected def paintComponent(g:Graphics2D) {
+    if (!mouseIn) {
+      super.paintComponent(g)
+    } else {
+      super.paintComponent(g)
+      g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON)
+      if (valid) {
+        g.setColor(GuiUtils.DropPanelOverColour)
+      } else {
+        g.setColor(GuiUtils.DropPanelOverColourInvalid)
+      }
+      g.fillRoundRect(1,1,size.width-2, size.height-2,GuiUtils.GuiFieldArc,GuiUtils.GuiFieldArc)
+    }
+  }
 }
 
 class FieldComponent(field:FieldAndIsMeasure, guiFieldsMap:Map[Field, GuiFieldComponent]) extends MigPanel("insets 0, gap 0px") {
@@ -48,11 +94,9 @@ class ColumnTreeComponent(tree:ColumnTree, guiFieldsMap:Map[Field, GuiFieldCompo
   private val topDropPanel = new ColumnDropPanel(tree.fieldOrColumnStructure, Position.Top)
   private val leftDropPanel = new ColumnDropPanel(tree.fieldOrColumnStructure, Position.Left)
   private val rightDropPanel = new ColumnDropPanel(tree.fieldOrColumnStructure, Position.Right)
-  private val bottomDropPanel = new ColumnDropPanel(tree.fieldOrColumnStructure, Position.Bottom)
   dropPanels += topDropPanel
   dropPanels += leftDropPanel
   dropPanels += rightDropPanel
-  dropPanels += bottomDropPanel
 
   add(topDropPanel, "skip 1, growx, hidemode 2, wrap")
   add(leftDropPanel, "growy, hidemode 2")
@@ -67,11 +111,13 @@ class ColumnTreeComponent(tree:ColumnTree, guiFieldsMap:Map[Field, GuiFieldCompo
   }
 
   add(rightDropPanel, "growy, hidemode 2, wrap")
-  val extraConstraints = if (tree.childStructure.trees.isEmpty) "" else ",wrap"
-  add(bottomDropPanel, "growx, hidemode 2, skip 1" + extraConstraints)
 
   if (tree.childStructure.trees.nonEmpty) {
     add(new ColumnStructureComponent(tree.childStructure, guiFieldsMap, dropPanels), "spanx,push,grow")
+  } else {
+    val bottomDropPanel = new ColumnDropPanel(tree.fieldOrColumnStructure, Position.Bottom)
+    dropPanels += bottomDropPanel
+    add(bottomDropPanel, "growx, hidemode 2, skip 1, wrap")
   }
 }
 
@@ -147,7 +193,13 @@ case class ColumnAndMeasureComponent(model:PivotTableModel, otherLayoutInfo:Othe
   }
 
   def show(draggedField:Field) {
-    dropPanels.foreach(_.visible = true)
+    dropPanels.foreach(dp => {
+      dp.fieldOrColumnStructure.value match {
+        case Left(f) if f.field == draggedField => dp.valid = false
+        case _ => dp.valid = true
+      }
+      dp.visible = true
+    })
     tableView.updateColumnAndMeasureScrollPane(true)
   }
   def hide() {

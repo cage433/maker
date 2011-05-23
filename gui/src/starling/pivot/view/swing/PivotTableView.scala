@@ -3,7 +3,6 @@ package starling.pivot.view.swing
 import fieldchoosers.{RowComponent, FilterComponent, FieldListComponent}
 import scala.swing._
 import javax.swing.event.{ListSelectionEvent, ListSelectionListener}
-import net.miginfocom.swing.MigLayout
 import javax.swing._
 import starling.pivot.model._
 import starling.pivot._
@@ -73,6 +72,10 @@ class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSiz
     }
     fieldBeingDragged0 = b
   }
+  private var mouseDown0 = false
+  def mouseDown = mouseDown0
+  def mouseDown_=(b:Boolean) {mouseDown0 = b}
+  def drag = fieldBeingDragged0 || mouseDown0
 
   private def hideDropTargets() {allDropTargets.foreach(_.hide())}
 
@@ -871,6 +874,7 @@ class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSiz
 
   def reverse() {
     hideDropTargets()
+    allDropTargets.foreach(_.reset())
     if (toolbarPanel.visible) reverseToolBarState()
     configPanels.foreach(_.revert())
     reportSpecificPanels.foreach(_.resetButton)

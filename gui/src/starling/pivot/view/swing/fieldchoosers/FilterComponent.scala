@@ -3,23 +3,68 @@ package starling.pivot.view.swing.fieldchoosers
 import starling.pivot.model.PivotTableModel
 import starling.pivot.FieldChooserType.Filter
 import starling.pivot.view.swing._
-import starling.gui.GuiUtils
 import swing.Label
 import starling.pivot.{Position, Field, OtherLayoutInfo}
-import swing.Swing._
 import collection.mutable.ListBuffer
-import java.awt.{Point, Dimension, Color, Rectangle}
+import java.awt.{Point, Dimension, Color, Rectangle, Graphics2D, RenderingHints}
+import swing.event.{MouseExited, MouseEntered}
+import starling.gui.{RoundedBorder, GuiUtils}
+
+object DropPanel {
+  val NormalBorder = RoundedBorder(Color.LIGHT_GRAY)
+  val OverBorder = RoundedBorder(GuiUtils.GuiFieldFilterNumberColour)
+  val InvalidBorder = RoundedBorder(Color.RED)
+}
 
 case class DropPanel(fieldAndPositions:List[(Field,Position.Position)]) extends MigPanel("insets 0, gap 0px") {
+  import DropPanel._
+  
   opaque = false
   visible = false
-  border = LineBorder(Color.RED)
+  border = NormalBorder
   preferredSize = new Dimension(15,15)
   minimumSize = preferredSize
+  private var mouseIn = false
+
+  reactions += {
+    case MouseEntered(_,_,_) => {
+      border = OverBorder
+      mouseIn = true
+      repaint()
+    }
+    case MouseExited(_,_,_) => {
+      reset()
+    }
+  }
+  listenTo(mouse.moves)
+
+  def reset() {
+    border = DropPanel.NormalBorder
+    mouseIn = false
+    repaint()
+  }
+
+  override def visible_=(b:Boolean) {
+    super.visible = b
+    if (!b) {
+      reset()
+    }
+  }
+
+  override protected def paintComponent(g:Graphics2D) {
+    if (!mouseIn) {
+      super.paintComponent(g)
+    } else {
+      super.paintComponent(g)
+      g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON)
+      g.setColor(GuiUtils.DropPanelOverColour)
+      g.fillRoundRect(1,1,size.width-2, size.height-2,GuiUtils.GuiFieldArc,GuiUtils.GuiFieldArc)
+    }
+  }
 }
 
 class FilterComponent(model:PivotTableModel, otherLayoutInfo:OtherLayoutInfo,
-                         viewUI:PivotTableViewUI, mainComponent:PivotTableView)
+                         viewUI:PivotTableViewUI, tableView:PivotTableView)
         extends MigPanel("insets 1, gap 0px") with DropTarget {
   opaque = false
 
@@ -37,7 +82,7 @@ class FilterComponent(model:PivotTableModel, otherLayoutInfo:OtherLayoutInfo,
       currentlyActingAsMeasure, realMeasureField,
       model.treeDetails, (_field,depth) => {model.setDepth(_field,depth)},
       (_field, from) => (), filterData, transformData, otherLayoutInfo,
-      (_field, from) => (), subTotalToggleVisible, viewUI, mainComponent)
+      (_field, from) => (), subTotalToggleVisible, viewUI, tableView)
     (field -> new GuiFieldComponent(props))
   })
 
