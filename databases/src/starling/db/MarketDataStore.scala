@@ -201,6 +201,20 @@ case class MarketDataUpdate(observationPoint: ObservationPoint, marketDataKey: M
 class DBMarketDataStore(db: DBTrait[RichResultSetRow], val marketDataSources: Map[MarketDataSet, MarketDataSource],
                         broadcaster: Broadcaster = Broadcaster.Null) extends MarketDataStore {
 
+  val q = (select("observationDay, observationTime, marketDataSet, marketDataType, marketDataKey")
+            from "MarketData"
+            where ("childVersion" isNull)
+            groupBy("observationDay, observationTime, marketDataSet, marketDataType, marketDataKey")
+            having ("COUNT(marketDataKey)" gt 1))
+
+  val duplicates = db.queryWithResult(q){
+    rs => {
+      println("!!! :" + rs)
+      rs.getString("marketDataSet")
+    }
+  }
+  assert(duplicates.isEmpty, "The MDS is corrupt")
+
   val importer = new MarketDataImporter(this)
 
   val tableName = "MarketData"
@@ -395,7 +409,7 @@ class DBMarketDataStore(db: DBTrait[RichResultSetRow], val marketDataSources: Ma
     saveActions(setToUpdates)
   }
 
-  def saveActions(marketDataSetToData : Map[MarketDataSet, Iterable[MarketDataUpdate]]) : (Int, Boolean) = {
+  def saveActions(marketDataSetToData : Map[MarketDataSet, Iterable[MarketDataUpdate]]) : (Int, Boolean) = this.synchronized {
     val changedMarketDataSets = new scala.collection.mutable.HashMap[MarketDataSet, (Set[Day], Int)]()
     var maxVersion = 0
     for ((marketDataSet, data) <- marketDataSetToData.toList.sortBy(_._1.name)) {
@@ -464,10 +478,13 @@ class DBMarketDataStore(db: DBTrait[RichResultSetRow], val marketDataSources: Ma
     importFor(observationDay, marketDataSets(marketDataSelection) : _*)
   }
 
-  def importFor(observationDay: Day, marketDataSets: MarketDataSet*) = Log.infoWithTime("saving market data") {
-    val updates = importer.getUpdates(observationDay, marketDataSets: _*)
-    Log.debug("Number of updates: " + updates.mapValues(_.toList.size))
-    saveActions(updates)
+  val importLock = new Object
+  def importFor(observationDay: Day, marketDataSets: MarketDataSet*) = importLock.synchronized {
+    Log.infoWithTime("saving market data") {
+      val updates = importer.getUpdates(observationDay, marketDataSets: _*)
+      Log.debug("Number of updates: " + updates.mapValues(_.toList.size))
+      saveActions(updates)
+    }
   }
 
   def snapshot(marketDataSelection:MarketDataSelection, doImport:Boolean, observationDay : Day) : SnapshotID = {
@@ -570,11 +587,20 @@ class DBMarketDataStore(db: DBTrait[RichResultSetRow], val marketDataSources: Ma
         and ("data" isNotNull)
         and ("childVersion" isNull)
     )
-    db.queryWithResult(query) { rs => {
+    val results = db.queryWithResult(query) { rs => {
       val key: MarketDataKey = rs.getObject[MarketDataKey]("marketDataKey")
       (ObservationPoint(rs.getDay("observationDay"), ObservationTimeOfDay.fromName(rs.getString("observationTime"))),
         key, VersionedMarketData(rs.getTimestamp(), rs.getInt("version"), key.unmarshallDB(rs.getObject[Any]("data"))))
     }}
+    val check = results.groupBy(e => (e._1, e._2))
+    check.foreach {
+      case (k, v) if v.size > 1 => {
+        Log.error("MDS has gotten corrupt: " + (marketDataSet, marketDataType, k, v))
+        throw new Exception("Duplicate data in MDS for " + (marketDataSet, marketDataType, k, v))
+      }
+      case _ =>
+    }
+    results
   }
 
   private def queryForMarketDataIdentifier[T](
