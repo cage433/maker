@@ -6,7 +6,7 @@ import org.testng.Assert._
 import starling.pivot._
 import controller.PivotTableConverter
 import org.scalatest.testng.TestNGSuite
-import starling.pivot.ColumnStructure._
+import starling.pivot.ColumnTrees._
 
 /**
  */
@@ -99,7 +99,7 @@ class PivotTableTest extends TestNGSuite {
     check(
       pivotTableDataSource,
       new PivotFieldsState(columns=
-        ColumnStructure(
+        ColumnTrees(
           List(ColumnTree(Field("Delta"), true,
             ColumnTree(Field("Market"), false,
               ColumnTree(Field("Period"), false)))))),
@@ -172,7 +172,7 @@ class PivotTableTest extends TestNGSuite {
   def testTwoDataFieldsWithDifferentCombiningBehaviour {
     check(
       pivotTableDataSource,
-      new PivotFieldsState(columns=ColumnStructure(List(
+      new PivotFieldsState(columns=ColumnTrees(List(
         ColumnTree.dataField(Field("Delta")),
         ColumnTree.dataField(Field("Period"))
       ))),
@@ -187,7 +187,7 @@ class PivotTableTest extends TestNGSuite {
   def testDataFieldsOrderIsPreserved {
     check(
       pivotTableDataSource,
-      new PivotFieldsState(columns=ColumnStructure(List(
+      new PivotFieldsState(columns=ColumnTrees(List(
         ColumnTree.dataField(Field("Day Change")),
         ColumnTree.dataField(Field("Delta"))
       ))),
@@ -250,7 +250,7 @@ class PivotTableTest extends TestNGSuite {
   def testColumnTreeWithDifferentDepths {
     check(
       pivotTableDataSource,
-      new PivotFieldsState(columns=ColumnStructure(List(
+      new PivotFieldsState(columns=ColumnTrees(List(
         ColumnTree(Field("Market"), false,
           ColumnTree.dataField(Field("Delta")),
           ColumnTree(Field("Day Change Component"), false, ColumnTree.dataField(Field("Day Change"))))
@@ -268,7 +268,7 @@ class PivotTableTest extends TestNGSuite {
   @Test
   def testToFlatRows() {
     val fieldsState = new PivotFieldsState(
-      columns=ColumnStructure(List(
+      columns=ColumnTrees(List(
         ColumnTree(Field("Market"), false,
           ColumnTree.dataField(Field("Delta")),
           ColumnTree(Field("Day Change Component"), false, ColumnTree.dataField(Field("Day Change")))

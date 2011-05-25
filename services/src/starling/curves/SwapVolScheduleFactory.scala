@@ -49,7 +49,7 @@ class SwapVolSchedulePivotDataSource(context: EnvironmentWithDomain) extends Unf
 
   override def initialState = {
     new PivotFieldsState(
-      columns = ColumnStructure(List(
+      columns = ColumnTrees(List(
         ColumnTree(average.field, true),
         ColumnTree(marketField.field, false, List(forwardPrice, observedPeriodField, impliedVol, fixed, holiday).map(f => ColumnTree(f.field, true)) : _*))),
       rowFields = List(period, dayField).map(_.field),

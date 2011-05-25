@@ -140,7 +140,7 @@ object SingleTradePageComponent {
       Field("Risk Market"),
       Field("Risk Period")
     ),
-    columns = ColumnStructure(List(
+    columns = ColumnTrees(List(
     ColumnTree(Field("Instrument"), false,
       List("Position", "Market Price", "Initial Price", "P&L", "Quantity").map(f=>ColumnTree(Field(f), true)): _*)
     )),

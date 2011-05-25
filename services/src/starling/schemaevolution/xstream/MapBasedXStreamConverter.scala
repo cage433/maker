@@ -7,6 +7,7 @@ import com.thoughtworks.xstream.converters.{UnmarshallingContext, Converter, Mar
 import java.lang.Class
 import collection.immutable.HashMap
 import starling.utils.StarlingXStream
+import javax.management.remote.rmi._RMIConnection_Stub
 
 class UnknownObjectType(field : String) {
 
@@ -95,6 +96,9 @@ class MapBasedConverter(
     }
     if ("set".equals(className)) {
       return classOf[scala.collection.immutable.TreeSet[_]]
+    }
+    if ("map".equals(className)) {
+      return classOf[scala.collection.immutable.TreeMap[_,_]]
     }
     aliases.get(className) match {
       case Some(klass) => klass

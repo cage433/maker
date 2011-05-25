@@ -69,7 +69,7 @@ class PnLReconciliation(reportContext: AbstractReportContext, tradeSet: TradeSet
   override def initialState = {
     new PivotFieldsState(
       columns =
-        ColumnStructure(List(ColumnTree(pnlField, true)))
+        ColumnTrees(List(ColumnTree(pnlField, true)))
     )
   }
 

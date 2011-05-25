@@ -5,9 +5,6 @@ import starling.utils.StarlingObject
 import collection.immutable.TreeMap
 import collection.SortedMap
 import starling.utils.ImplicitConversions._
-import starling.pivot.ColumnStructure._
-import starling.pivot.ColumnTree._
-import collection.immutable.List._
 
 object FieldChooserType extends Enumeration {
   type FieldChooserType = Value
@@ -60,10 +57,6 @@ object Position extends Enumeration {
   val Top,Left,Bottom,Right,Other = Value
 }
 
-trait HasChildren[T] {
-  def children : List[T]
-}
-
 case class FiltersList(filters:List[List[(Field,Selection)]]) extends Iterable[List[(Field,Selection)]] {
   def toFilterSet = filters.flatten.toSet
   def allFields = toFilterSet.map(_._1)
@@ -106,28 +99,35 @@ case class ColumnStructurePath(dataField:Option[Field], path:List[(Field, Int)])
   }
 }
 
-object ColumnStructure {
-  val Null = new ColumnStructure(List[ColumnTree]())
+// Only used for schema evolution.
+case class ColumnStructure(field:Field, isData:Boolean, children:List[ColumnStructure]) {
+  def toColumnTree:ColumnTree = {
+    ColumnTree(field, isData, ColumnTrees(children.map(_.toColumnTree)))
+  }
+}
+
+object ColumnTrees {
+  val Null = new ColumnTrees(List[ColumnTree]())
   val TempField = Field("temp")
-  def dataField(field:Field) = ColumnStructure(field, true)
+  def dataField(field:Field) = ColumnTrees(field, true)
 
   def createFlat(columnFields:List[Field], dataFields:List[Field]) = {
     var cses = dataFields.map(f=>ColumnTree(f, true))
     columnFields.reverse.foreach(f=> cses = List(ColumnTree(f, false, cses : _*)))
-    ColumnStructure(cses)
+    ColumnTrees(cses)
   }
 
-  def apply(field:Field, isData:Boolean, trees:List[ColumnTree]=Nil):ColumnStructure = {
-    ColumnStructure(List(ColumnTree(field, isData, ColumnStructure(trees))))
+  def apply(field:Field, isData:Boolean, trees:List[ColumnTree]=Nil):ColumnTrees = {
+    ColumnTrees(List(ColumnTree(field, isData, ColumnTrees(trees))))
   }
   def apply() = Null
   //def apply(list:List[ColumnStructure]) = new ColumnStructure(list.flatMap(_.trees))
-  def apply(tree:ColumnTree) = new ColumnStructure(List(tree))
+  def apply(tree:ColumnTree) = new ColumnTrees(List(tree))
 }
 
 case class FieldAndIsMeasure(field:Field, isMeasure:Boolean)
 
-case class FieldOrColumnStructure(value:Either[FieldAndIsMeasure,ColumnStructure]) {
+case class FieldOrColumnStructure(value:Either[FieldAndIsMeasure,ColumnTrees]) {
   value match {
     case Right(cs) => /*assert(cs.trees.size > 1, "Not enough trees (" + cs.trees.size + ")")*/
     case _ =>
@@ -150,13 +150,10 @@ case class FieldOrColumnStructure(value:Either[FieldAndIsMeasure,ColumnStructure
 
 object FieldOrColumnStructure {
   def apply(field:Field, isMeasure:Boolean):FieldOrColumnStructure = FieldOrColumnStructure(Left(FieldAndIsMeasure(field,isMeasure)))
-  def apply(columnStructure:ColumnStructure):FieldOrColumnStructure = FieldOrColumnStructure(Right(columnStructure))
+  def apply(columnStructure:ColumnTrees):FieldOrColumnStructure = FieldOrColumnStructure(Right(columnStructure))
 }
 
-case class ColumnTree(fieldOrColumnStructure:FieldOrColumnStructure, childStructure:ColumnStructure) extends HasChildren[ColumnTree] {
-
-  def children = childStructure.trees
-
+case class ColumnTree(fieldOrColumnStructure:FieldOrColumnStructure, childStructure:ColumnTrees) {
   def hasMeasure = {
     fieldOrColumnStructure.value match {
       case Left(FieldAndIsMeasure(_, isData)) => isData
@@ -214,13 +211,13 @@ case class ColumnTree(fieldOrColumnStructure:FieldOrColumnStructure, childStruct
 
 }
 object ColumnTree {
-  def apply(field:Field, isData:Boolean):ColumnTree = new ColumnTree(FieldOrColumnStructure(field, isData), ColumnStructure.Null)
-  def apply(field:Field, isData:Boolean, children:ColumnTree*):ColumnTree = ColumnTree(field, isData, new ColumnStructure(children.toList))
-  def apply(field:Field, isData:Boolean, childStructure:ColumnStructure):ColumnTree = new ColumnTree(FieldOrColumnStructure(field, isData), childStructure)
+  def apply(field:Field, isData:Boolean):ColumnTree = new ColumnTree(FieldOrColumnStructure(field, isData), ColumnTrees.Null)
+  def apply(field:Field, isData:Boolean, children:ColumnTree*):ColumnTree = ColumnTree(field, isData, new ColumnTrees(children.toList))
+  def apply(field:Field, isData:Boolean, childStructure:ColumnTrees):ColumnTree = new ColumnTree(FieldOrColumnStructure(field, isData), childStructure)
   def dataField(field:Field) = apply(field, true)
 }
 
-case class ColumnStructure(trees:List[ColumnTree]) {
+case class ColumnTrees(trees:List[ColumnTree]) {
 
   def buildPaths(extra:Int=0):List[ColumnStructurePath] = {
     var previousWidth = extra
@@ -231,15 +228,13 @@ case class ColumnStructure(trees:List[ColumnTree]) {
     }}
   }
 
-  def children = trees
-
   private def buildPaths(tree:ColumnTree, position:Int):List[ColumnStructurePath] = {
     tree match {
-      case ColumnTree(FieldOrColumnStructure(Left(FieldAndIsMeasure(field, true))), ColumnStructure(Nil)) => List(ColumnStructurePath(Some(field), (field, position) :: Nil))
-      case ColumnTree(FieldOrColumnStructure(Left(FieldAndIsMeasure(field, false))), ColumnStructure(Nil)) => List(ColumnStructurePath(None, (field, position) :: Nil))
+      case ColumnTree(FieldOrColumnStructure(Left(FieldAndIsMeasure(field, true))), ColumnTrees(Nil)) => List(ColumnStructurePath(Some(field), (field, position) :: Nil))
+      case ColumnTree(FieldOrColumnStructure(Left(FieldAndIsMeasure(field, false))), ColumnTrees(Nil)) => List(ColumnStructurePath(None, (field, position) :: Nil))
       case ColumnTree(FieldOrColumnStructure(Left(FieldAndIsMeasure(field, true))), cs) => cs.buildPaths().map(_.addDataField(field, position))
       case ColumnTree(FieldOrColumnStructure(Left(FieldAndIsMeasure(field, false))), cs) => cs.buildPaths().map(_.addField(field, position))
-      case ColumnTree(FieldOrColumnStructure(Right(csX:ColumnStructure)), cs) => {
+      case ColumnTree(FieldOrColumnStructure(Right(csX:ColumnTrees)), cs) => {
         val pathsForTopColumnStructure:List[ColumnStructurePath] = csX.buildPaths(position)
         val pathsForChildren:List[ColumnStructurePath] = cs.buildPaths()
         pathsForTopColumnStructure.flatMap { p => pathsForChildren.map( c=> p join c)}
@@ -253,57 +248,57 @@ case class ColumnStructure(trees:List[ColumnTree]) {
   def measureFields:List[Field] = allFieldAndIsMeasures.filter(_.isMeasure).map(_.field)
   def hasMeasureFields = measureFields.nonEmpty
   def hasColumnField = false // TODO - tells us whether we can rotate the pivot report.
-  def keep(fields:Set[Field]):ColumnStructure = {
+  def keep(fields:Set[Field]):ColumnTrees = {
     val newTrees = trees.flatMap(_.keep(fields))
     if (newTrees.forall(_.childStructure.trees.isEmpty)) {
-      ColumnStructure(newTrees.flatMap(ct => {
+      ColumnTrees(newTrees.flatMap(ct => {
         ct.fieldOrColumnStructure.value match {
           case Left(f) => List(ct)
           case Right(cs) => cs.trees
         }
       }))
     } else {
-      ColumnStructure(newTrees)
+      ColumnTrees(newTrees)
     }
   }
-  def addParents(columns:List[Field]):ColumnStructure = {
+  def addParents(columns:List[Field]):ColumnTrees = {
     columns.reverse match {
       case Nil => this
       case head :: tail => addParent(head).addParents(tail.reverse)
     }
   }
   def rename(field:Field, name:String) = {
-    ColumnStructure(trees.map(_.rename(field, name)))
+    ColumnTrees(trees.map(_.rename(field, name)))
   }
   def addParent(parent:Field) = {
-    ColumnStructure(parent, false, this.trees)
+    ColumnTrees(parent, false, this.trees)
   }
 
-  def addDataField(dataField:Field):ColumnStructure = {
+  def addDataField(dataField:Field):ColumnTrees = {
     // This is called when double clicking on a measure field - I'll just add it to the far right of the column/measure area for now.
-    ColumnStructure(trees ::: List(ColumnTree(dataField, true)))
+    ColumnTrees(trees ::: List(ColumnTree(dataField, true)))
   }
 
-  def add(newField:Field, newIsData:Boolean, relativeTo:FieldOrColumnStructure, position:Position.Position):ColumnStructure = {
+  def add(newField:Field, newIsData:Boolean, relativeTo:FieldOrColumnStructure, position:Position.Position):ColumnTrees = {
     val topLevel = FieldOrColumnStructure(this)
     if (topLevel == relativeTo) {
       position match {
-        case Position.Top => ColumnStructure(ColumnTree(newField, newIsData, this))
-        case Position.Bottom => ColumnStructure(ColumnTree(FieldOrColumnStructure(this), ColumnStructure(ColumnTree(newField, newIsData))))
-        case Position.Right => ColumnStructure(trees ::: List(ColumnTree(newField, newIsData)))
-        case Position.Left => ColumnStructure(ColumnTree(newField, newIsData) :: trees)
+        case Position.Top => ColumnTrees(ColumnTree(newField, newIsData, this))
+        case Position.Bottom => ColumnTrees(ColumnTree(FieldOrColumnStructure(this), ColumnTrees(ColumnTree(newField, newIsData))))
+        case Position.Right => ColumnTrees(trees ::: List(ColumnTree(newField, newIsData)))
+        case Position.Left => ColumnTrees(ColumnTree(newField, newIsData) :: trees)
       }
     } else {
-      ColumnStructure(trees.flatMap { tree => {
+      ColumnTrees(trees.flatMap { tree => {
         if (tree.fieldOrColumnStructure == relativeTo) {
           position match {
             case Position.Top => List(ColumnTree(newField, newIsData, tree))
-            case Position.Bottom => List(ColumnTree(tree.fieldOrColumnStructure, ColumnStructure(List( ColumnTree(newField, newIsData, tree.childStructure)))))
+            case Position.Bottom => List(ColumnTree(tree.fieldOrColumnStructure, ColumnTrees(List( ColumnTree(newField, newIsData, tree.childStructure)))))
             case Position.Right => {
               if (tree.childStructure.trees.isEmpty) {
                 List(tree, ColumnTree(newField, newIsData))
               } else {
-                val cs = ColumnStructure(List(tree.copy(childStructure = ColumnStructure.Null), ColumnTree(newField, newIsData)))
+                val cs = ColumnTrees(List(tree.copy(childStructure = ColumnTrees.Null), ColumnTree(newField, newIsData)))
                 List(ColumnTree(FieldOrColumnStructure(cs), tree.childStructure))
               }
             }
@@ -311,7 +306,7 @@ case class ColumnStructure(trees:List[ColumnTree]) {
               if (tree.childStructure.trees.isEmpty) {
                 List(ColumnTree(newField, newIsData), tree)
               } else {
-                val cs = ColumnStructure(List(ColumnTree(newField, newIsData), tree.copy(childStructure = ColumnStructure.Null)))
+                val cs = ColumnTrees(List(ColumnTree(newField, newIsData), tree.copy(childStructure = ColumnTrees.Null)))
                 List(ColumnTree(FieldOrColumnStructure(cs), tree.childStructure))
               }
             }
@@ -329,14 +324,14 @@ case class ColumnStructure(trees:List[ColumnTree]) {
   def contains(testField:Field):Boolean = {
     allFields.contains(testField)
   }
-  def removeAllChildren(fields:Set[Field]):ColumnStructure = {
+  def removeAllChildren(fields:Set[Field]):ColumnTrees = {
     keep(allFields.toSet -- fields)
   }
-  def remove(removeField:Field):ColumnStructure = {
+  def remove(removeField:Field):ColumnTrees = {
     keep(allFields.toSet - removeField)
   }
-  def flipIsData(fieldToFlip:Field):ColumnStructure = {
-    ColumnStructure(trees.map(_.flipIsData(fieldToFlip)))
+  def flipIsData(fieldToFlip:Field):ColumnTrees = {
+    ColumnTrees(trees.map(_.flipIsData(fieldToFlip)))
   }
 
   def isInvalid:Boolean = {
@@ -354,7 +349,7 @@ case class ColumnStructure(trees:List[ColumnTree]) {
 //for that reason there are many case like methods (ie copy, equals and hashCode)
 class PivotFieldsState(
         val rowFields:List[Field]=List(),
-        val columns:ColumnStructure=ColumnStructure.Null,
+        val columns:ColumnTrees=ColumnTrees.Null,
         val filters:List[(Field,Selection)]=List(),
         val treeDepths:SortedMap[Field,(Int,Int)]=TreeMap.empty,
         val reportSpecificChoices:SortedMap[String,Any]=TreeMap.empty,
@@ -377,7 +372,7 @@ class PivotFieldsState(
 
   def copy(
                   rowFields:List[Field] = rowFields,
-                  columns:ColumnStructure = columns,
+                  columns:ColumnTrees = columns,
                   reportSpecificChoices:SortedMap[String,Any]=reportSpecificChoices,
                   filters:List[(Field,Selection)]=filters,
                   treeDepths:SortedMap[Field,(Int,Int)]=treeDepths,
@@ -408,14 +403,14 @@ class PivotFieldsState(
     val newFilterFields = newFilters.map(_._1).toSet
     new PivotFieldsState(
       (rowFields.filterNot(newFilters.toList.map(_._1).contains)) ::: newAxisFields.rowFields,
-      ColumnStructure.createFlat(newAxisFields.columnFields, dataFieldsToUse),
+      ColumnTrees.createFlat(newAxisFields.columnFields, dataFieldsToUse),
       filters.filterNot(f=> newFilterFields.contains(f._1)) ::: newFilters.toList,
       treeDepths,
       reportSpecificChoices,
       transforms
     )
   }
-  def rotate = new PivotFieldsState(columns.columnFields, ColumnStructure.createFlat(rowFields, columns.measureFields), filters, treeDepths, reportSpecificChoices, transforms)
+  def rotate = new PivotFieldsState(columns.columnFields, ColumnTrees.createFlat(rowFields, columns.measureFields), filters, treeDepths, reportSpecificChoices, transforms)
   def hasRowOrColumnFields = !rowFields.isEmpty || columns.hasColumnField
   def moveField(field:Field, from:FieldChooserType, to:FieldChooserType, pos:Int):PivotFieldsState = {
     val newFilterFields = if (to == FieldList) {
@@ -439,7 +434,7 @@ class PivotFieldsState(
     new PivotFieldsState(newRowFields, newColumns, newFilterFields, treeDepths, reportSpecificChoices, newTransforms)
   }
 
-  def moveField(field:Field, from:FieldChooserType, newColumnStructure:ColumnStructure):PivotFieldsState = {
+  def moveField(field:Field, from:FieldChooserType, newColumnStructure:ColumnTrees):PivotFieldsState = {
     // If the field has been changed into a measure field, remove any filters that it might have.
     val newFilters = if (newColumnStructure.measureFields.contains(field)) {
       filters.filterNot{case (_field, _) => _field == field}
@@ -559,7 +554,7 @@ object PivotFieldsState {
         transforms : SortedMap[Field, FilterWithOtherTransform] = TreeMap.empty
   ) = {
     new PivotFieldsState(
-      columns=ColumnStructure.createFlat(columnFields, dataFields),
+      columns=ColumnTrees.createFlat(columnFields, dataFields),
       rowFields=rowFields,
       filters=filters,
       treeDepths=treeDepths,

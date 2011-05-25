@@ -477,7 +477,7 @@ class TradeChangesPivotTableDataSource(tradeChanges: TradeChanges) extends Unfil
     val columns = fieldDetails.map(_.field).filter(f => f.name != "Trade ID" && f.name != "Action").map(field => ColumnTree(field, true))
     new PivotFieldsState(
       rowFields = List(Field("Trade ID"), actionField),
-      columns = ColumnStructure(columns)
+      columns = ColumnTrees(columns)
     )
   }
 

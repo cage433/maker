@@ -108,7 +108,7 @@ class PricingSchedulePivotDataSource(context: EnvironmentWithDomain) extends Unf
 
   override def initialState = {
     new PivotFieldsState(
-      columns = ColumnStructure(
+      columns = ColumnTrees(
         List(ColumnTree(average.field, true),
           ColumnTree(market.field, false, List(price, observedPeriod, holiday).map(f => ColumnTree(f.field, true)) : _*))),
       rowFields = List(period, day, forward).map(_.field),

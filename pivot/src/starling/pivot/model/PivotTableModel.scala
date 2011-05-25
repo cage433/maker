@@ -137,7 +137,7 @@ class PivotTableModel(data:PivotData) {
     publishFieldStateUpdated(updatedState)
   }
 
-  def publishFieldStateChange(field:Field, newColumnStructure:ColumnStructure, from:FieldChooserType) {
+  def publishFieldStateChange(field:Field, newColumnStructure:ColumnTrees, from:FieldChooserType) {
     val updatedState = getCurrentPivotFieldsState.moveField(field, from, newColumnStructure)
     publishFieldStateUpdated(updatedState)
   }

@@ -266,11 +266,11 @@ class CannedDataSource extends UnfilteredPivotTableDataSource {
     }, rowFields = List(Field("Trader"), Field("Strike")))*/
 
   override def initialState = new PivotFieldsState(columns = {
-    val c31 = ColumnStructure(List(
+    val c31 = ColumnTrees(List(
       ColumnTree(Field("PV"), true), ColumnTree(Field("Gamma"), true)
     ))
-    ColumnStructure(List(
-      ColumnTree(FieldOrColumnStructure(Right(c31)), ColumnStructure(Field("Product"), false, List(ColumnTree(Field("Lots"), false)))), ColumnTree(Field("Delta"), true)
+    ColumnTrees(List(
+      ColumnTree(FieldOrColumnStructure(Right(c31)), ColumnTrees(Field("Product"), false, List(ColumnTree(Field("Lots"), false)))), ColumnTree(Field("Delta"), true)
       ))
     }, rowFields = List(Field("Trader"), Field("Strike")))
 

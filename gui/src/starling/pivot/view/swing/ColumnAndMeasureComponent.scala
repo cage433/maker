@@ -112,23 +112,23 @@ class ColumnTreeComponent(tree:ColumnTree, guiFieldsMap:Map[Field, GuiFieldCompo
                           dropPanels:ListBuffer[ColumnDropPanel]) extends MigPanel("insets 0, gap 0px") {
   opaque = false
 
+  val bottomDropPanel = tree.childStructure.trees.size != 1
   tree.fieldOrColumnStructure.value match {
     case Left(f) => {
-      val bottomDropPanel = tree.childStructure.trees.size != 1
       add(new FieldComponent(f, tree.fieldOrColumnStructure, guiFieldsMap, dropPanels, bottomDropPanel), "push,grow")
     }
     case Right(cs) => {
-      add(new ColumnStructureComponent(cs, guiFieldsMap, dropPanels), "push,grow")
+      add(new ColumnStructureComponent(cs, guiFieldsMap, dropPanels, bottomDropPanel), "push,grow")
     }
   }
   
   if (tree.childStructure.trees.nonEmpty) {
-    add(new ColumnStructureComponent(tree.childStructure, guiFieldsMap, dropPanels), "newline,spanx,push,grow")
+    add(new ColumnStructureComponent(tree.childStructure, guiFieldsMap, dropPanels, true), "newline,spanx,push,grow")
   }
 }
 
-class ColumnStructureComponent(columnStructure:ColumnStructure, guiFieldsMap:Map[Field, GuiFieldComponent],
-                               dropPanels:ListBuffer[ColumnDropPanel]) extends MigPanel("insets 0, gap 0px") {
+class ColumnStructureComponent(columnStructure:ColumnTrees, guiFieldsMap:Map[Field, GuiFieldComponent],
+                               dropPanels:ListBuffer[ColumnDropPanel], showBottomDropPanel:Boolean) extends MigPanel("insets 0, gap 0px") {
   opaque = false
 
   {
@@ -138,11 +138,9 @@ class ColumnStructureComponent(columnStructure:ColumnStructure, guiFieldsMap:Map
       val topDropPanel = new ColumnDropPanel(fieldOrCS, Position.Top)
       val leftDropPanel = new ColumnDropPanel(fieldOrCS, Position.Left)
       val rightDropPanel = new ColumnDropPanel(fieldOrCS, Position.Right)
-      val bottomDropPanel = new ColumnDropPanel(fieldOrCS, Position.Bottom)
       dropPanels += topDropPanel
       dropPanels += leftDropPanel
       dropPanels += rightDropPanel
-      dropPanels += bottomDropPanel
       val holderPanel = new MigPanel("insets 0, gap 0px", "[p][fill,grow][p]") {
         opaque = false
         add(topDropPanel, "skip 1, growx, hidemode 2, wrap")
@@ -151,8 +149,12 @@ class ColumnStructureComponent(columnStructure:ColumnStructure, guiFieldsMap:Map
         columnStructure.trees.foreach(tree => {
           add(new ColumnTreeComponent(tree, guiFieldsMap, dropPanels), "gap 0px,push,grow" + splitConstraint)
         })
-        add(rightDropPanel, "growy, hidemode 2,wrap")
-        add(bottomDropPanel, "growx, hidemode 2, skip 1")
+        add(rightDropPanel, "growy, hidemode 2")
+        if (showBottomDropPanel) {
+          val bottomDropPanel = new ColumnDropPanel(fieldOrCS, Position.Bottom)
+          dropPanels += bottomDropPanel
+          add(bottomDropPanel, "newline,growx, hidemode 2, skip 1")
+        }
       }
       add(holderPanel, "push,grow")
     } else {
@@ -172,7 +174,7 @@ case class ColumnAndMeasureComponent(model:PivotTableModel, otherLayoutInfo:Othe
     val newCS = model.columns.flipIsData(field)
     publishFieldStateChange(field, newCS, from)
   }
-  private def publishFieldStateChange(field:Field, newColumnStructure:ColumnStructure, from:FieldChooserType) {
+  private def publishFieldStateChange(field:Field, newColumnStructure:ColumnTrees, from:FieldChooserType) {
     model.publishFieldStateChange(field, newColumnStructure, from)
   }
   private def subTotalSubTotalToggle(field:Field, from:FieldChooserType) {
@@ -210,7 +212,7 @@ case class ColumnAndMeasureComponent(model:PivotTableModel, otherLayoutInfo:Othe
     }
     add(l)
   } else {
-    add(new ColumnStructureComponent(cs, guiFieldsMap, dropPanels), "pushy,growy")
+    add(new ColumnStructureComponent(cs, guiFieldsMap, dropPanels, true), "pushy,growy")
   }
 
   def scrolling() {}
@@ -238,6 +240,7 @@ case class ColumnAndMeasureComponent(model:PivotTableModel, otherLayoutInfo:Othe
   def hide() {
     dropPanels.foreach(_.visible = false)
     tableView.updateColumnAndMeasureScrollPane(true)
+    reset()
   }
   def reset() {guiFieldsMap.values.foreach(_.namePanel.reset())}
 
@@ -259,7 +262,7 @@ case class ColumnAndMeasureComponent(model:PivotTableModel, otherLayoutInfo:Othe
   def newColumnStructure(screenPoint:Point, field:Field) = {
     val measureField = model.isMeasureField(field) || cs.measureFields.contains(field)
     if (fields.isEmpty) {
-      ColumnStructure(field, measureField)
+      ColumnTrees(field, measureField)
     } else {
       val (_, panel) = dropBoundsAndPanels(field).find{case (bound, panel) => bound.contains(screenPoint)}.get
       val fieldOrColumnStructure = panel.fieldOrColumnStructure
