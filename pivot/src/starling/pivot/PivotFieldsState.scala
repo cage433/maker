@@ -301,9 +301,9 @@ case class ColumnStructure(trees:List[ColumnTree]) {
             case Position.Bottom => List(ColumnTree(tree.fieldOrColumnStructure, ColumnStructure(List( ColumnTree(newField, newIsData, tree.childStructure)))))
             case Position.Right => {
               if (tree.childStructure.trees.isEmpty) {
-                List(tree.copy(childStructure = ColumnStructure.Null), ColumnTree(newField, newIsData))
+                List(tree, ColumnTree(newField, newIsData))
               } else {
-                val cs = ColumnStructure(List(tree, ColumnTree(newField, newIsData)))
+                val cs = ColumnStructure(List(tree.copy(childStructure = ColumnStructure.Null), ColumnTree(newField, newIsData)))
                 List(ColumnTree(FieldOrColumnStructure(cs), tree.childStructure))
               }
             }
