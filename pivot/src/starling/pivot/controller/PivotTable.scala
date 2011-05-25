@@ -2,9 +2,8 @@ package starling.pivot.controller
 
 import starling.pivot.model._
 import starling.pivot._
-import starling.utils.Utils
-
 import starling.utils.ImplicitConversions._
+import starling.utils.{GridConverter, Utils}
 
 
 case class TreePivotFilter(root:TreePivotFilterNode)
@@ -62,11 +61,9 @@ case class PivotTable(rowFields:List[Field], rowFieldHeadingCount:Array[Int], ro
                       editableInfo:Option[EditableInfo], formatInfo:FormatInfo,
                       aggregatedMainBucket:Map[(List[AxisValue],List[AxisValue]),Any] = Map()) {
 
-  def asCSV:String = Utils.toCSV(toFlatRows(Totals.Null))
-
-  def toFlatRows(totals:Totals):List[List[Any]] = {
-    toFlatRows(totals, (tc:TableCell)=>tc.text, (ac:AxisCell)=>ac.text)
-  }
+  def asCSV:String = convertUsing(Utils.csvConverter)
+  def convertUsing(converter: GridConverter) = converter.convert(toFlatRows(Totals.Null))
+  def toFlatRows(totals:Totals): List[List[Any]] = toFlatRows(totals, (tc:TableCell)=>tc.text, (ac:AxisCell)=>ac.text)
 
   def cell(measure: AnyRef, filters: (Field, AnyRef)*): Any = {
     def filter(name: String, value: AnyRef, index: Int)(input: Map[(List[AxisValue], List[AxisValue]), Any]) =

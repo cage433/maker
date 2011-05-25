@@ -9,6 +9,7 @@ class SqlRenderer {
   var sequence = 0
   def render(query: Query): SQL = {
     val (where, whereParams) = renderClause(query.where)
+    val (having, havingParams) = renderHaving(query.havingClause)
     val (join, joinParams) = expandJoins(query.joins)
     val (tableText, tableParams) = expandTable(query.from.table)
     val sql =
@@ -17,9 +18,10 @@ class SqlRenderer {
       join +
       where +
       expandGroupBy(query.groupBy) +
+      having +
       expandOrder(query)
 
-    SQL(sql, whereParams ++ tableParams ++ joinParams)
+    SQL(sql, whereParams ++ tableParams ++ joinParams ++ havingParams)
   }
 
   def render(modify: Modify) : SQL = {
@@ -99,7 +101,7 @@ class SqlRenderer {
   def expandGroupBy(fields:List[String]) = {
     fields match {
       case Nil => ""
-      case _ => " group by " + fields.mkString(", ")
+      case _ => "\ngroup by\n\t" + fields.mkString(", ")
     }
   }
 
@@ -108,6 +110,14 @@ class SqlRenderer {
     case Some(clause) => {
       val (str, map) = expandClause(clause)
       ("where\n\t" + str, map)
+    }
+  }
+
+  def renderHaving(clause: Option[Clause]): (String, Map[String, Any]) = clause match {
+    case None => ("", Map())
+    case Some(clause) => {
+      val (str, map) = expandClause(clause)
+      ("\nhaving \n\t" + str, map)
     }
   }
 

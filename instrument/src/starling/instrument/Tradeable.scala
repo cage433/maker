@@ -64,7 +64,8 @@ object TradeableType {
     FXOption,
     RefinedAssignment,
     RefinedFixationsForSplit,
-    NetEquityPosition
+    NetEquityPosition,
+    CashInstrument
   )
   def fromName(name : String) = types.find(_.name == name) match {
     case Some(t) => types.find(_.name == name).get // some scala bug means have to do it this way
@@ -80,7 +81,7 @@ object TradeableType {
     ("Exercise Day",classOf[Day]),
 //    ("Spread", classOf[Quantity]),
     ("Maturity Day", classOf[Day]),
-//    ("Delivery Day", classOf[Day]),
+    ("Delivery Day", classOf[Day]),
     ("Call Put", classOf[String]),
     ("Exercise Type", classOf[String]),
     ("Cleared", classOf[Boolean]),
@@ -89,7 +90,8 @@ object TradeableType {
     ("RIC", classOf[String]),
     ("Error", classOf[String]),
     ("Estimated Delivery", classOf[Day]),
-    ("Fixations", classOf[List[RefinedFixation]])
+    ("Fixations", classOf[List[RefinedFixation]]),
+    ("Cash Instrument Type", classOf[CashInstrumentType])
   )
   val fields = fieldsWithType.map(_._1)
   val drillDownFields = fields.filterNot(List("Float Payment Freq", "Fixed Basis", "Fixed Payment Freq", "Fixed Rate",

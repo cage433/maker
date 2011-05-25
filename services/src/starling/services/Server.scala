@@ -307,7 +307,6 @@ class StarlingInit( props: Props,
   val reportServlet = new ReportServlet("reports", userReportsService) //Don't add to main web server (as this has no authentication)
 
   val httpServer = locally {
-
     val externalURL = props.ExternalUrl()
     val externalHostname = props.ExternalHostname()
     val xlloopUrl = props.XLLoopUrl()
@@ -316,12 +315,7 @@ class StarlingInit( props: Props,
     val webStartServlet = new WebStartServlet("webstart", props.ServerName(), externalURL, "starling.gui.Launcher", List(externalHostname, rmiPort.toString), xlloopUrl)
     val cannedWebStartServlet = new WebStartServlet("cannedwebstart", props.ServerName(), externalURL, "starling.gui.CannedLauncher", List(), xlloopUrl)
 
-    val servlets = List(
-      (webStartServlet, "webstart"),
-      (cannedWebStartServlet, "cannedwebstart"),
-      (classesServlet, "classes"))
-
-    new HttpServer(props, servlets)
+    new HttpServer(props, "webstart" → webStartServlet, "cannedwebstart" → cannedWebStartServlet, "classes" → classesServlet)
   }
 
   val regressionServer = locally {

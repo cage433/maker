@@ -101,7 +101,9 @@ class UTPTests extends IndexTest {
       new SwapCalendarSpread(brentIndex, Quantity(.9, USD/BBL), Quantity(1000, BBL), SpreadPeriod(DateRange(1 Jan 2011, 13 Jan 2011), Month(2011, 3)), cleared = true),
 
       RefinedAssignment(leadMarket, Day(2010, 1, 1), Quantity(100, MT)),
-      RefinedFixationsForSplit(List(RefinedFixation(leadMarket, Day(2010, 1, 1), "Y", Quantity(100, MT))))
+      RefinedFixationsForSplit(List(RefinedFixation(leadMarket, Day(2010, 1, 1), "Y", Quantity(100, MT)))),
+
+      CashInstrument(CashInstrumentType.Ordinary, Quantity(100, USD), Day(2011, 1, 1))
     ).map(Array[Tradeable](_))
   }
 

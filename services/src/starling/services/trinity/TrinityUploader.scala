@@ -19,7 +19,7 @@ class TrinityUploader(fclGenerator: FCLGenerator, xrtGenerator: XRTGenerator, pr
   private def upload(lines: List[String], fileName: String) {
     Log.debug("Uploading trinity file: %s/%s (lines: %d)" % (props.TrinityUploadDirectory(), "starling-" + fileName, lines.size))
 
-    using(new FileWriter(props.TrinityUploadDirectory() + fileName, true)) { fileWriter =>
+    using(new FileWriter(props.TrinityUploadDirectory() + "starling-" + fileName, true)) { fileWriter =>
       using(new PrintWriter(fileWriter)) { printWriter => printWriter.println(lines.mkString("\n")) }
     }
   }
