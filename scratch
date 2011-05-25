@@ -1,0 +1,17 @@
+UTP     Position Instrument     Hedging Instrument
+
+CSO     CSO                     FS
+CSO     FS                      FS
+
+S       S                       S
+S       2F                      2F
+
+A       A                       S
+A       S                       S
+A       2F                      2F
+
+FO      FO                      F
+FO      F                       F
+
+FS      FS                      FS
+FS      2F                      2F

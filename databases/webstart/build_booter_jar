@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+#
+# This compiles the booter java code, adds it to a jar and signs it.
+# This creates a jar which can be run by webstart
+# The jar is checked in because it is a pain to add to the build process
+# and rarely changed
+# This booter.jar then loads the application classes at runtime using a URLClassLoader
+#
+WEBSTART_DIR=$(dirname $0)
+cd $WEBSTART_DIR
+if [ ! -d out ]; then
+  mkdir out
+fi
+BOOTERJAR=../resources/webstart/booter.jar
+javac -d out BootstrapGUI.java
+jar cfm $BOOTERJAR MANIFEST.MF -C out bootstrap
+jarsigner -keystore starling.jks -storepass password -keypass password $BOOTERJAR mykey
+cp $BOOTERJAR ../target/classes/webstart
+echo "remember to commit changes to resources/webstart/booter.jar"

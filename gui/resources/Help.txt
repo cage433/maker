@@ -1,0 +1,119 @@
+h1. Quick Overview
+
+Starling is an application for reporting market risk.
+It is developed internally at Trafigura, London.
+
+h1. Key features
+
+* Trades and market data are read from a number of different systems (EAI/Pluto, Trinity, Forward Curve Database, LIM, Softmar...)
+* Trades and market data are versioned.
+* The usual risk reports are included: Delta, P&L, VAR, Vega, Gamma... and slide reports/stress/scenario analysis.
+* Reports and displayed using a drag and drop pivot table.
+* Trades and market data can be uploaded via an excel addin.
+
+h1. 30 second help
+
+* You use the application is like a web browser (forward, back, stop)
+* Trades, market data and reports are presented like excel pivot tables (drag fields around to change the view)
+* To run a report: click "Trades" -> choose the trades -> "Advanced Olap" -> select market data and valuation params then click -> "Run"
+* Drag fields around to change the layout and grouping. You can also set the layout before clicking "Run".
+* Double clicking on cells in the pivot table usually provides a drill down
+* Definition: Pricing Group - a complete set of market data (price,fx,vols,...) for all days (today and the past) (can include market data from more than one system)
+* Hint: If you deselect 'Pricing Group' it will run the report with dummy prices which is fine if all that is needed is position on some linear instruments.
+
+h1. Report params
+
+* Pricing group: the forward curve app pricing group to use prices from. If it is deselected then dummy prices will be used.
+* Execl Market data: Excel can be used to provide the input curves to a report.
+* Zero interet rates: Select to see the report without the effect of discounting, dummy market data provides zero interest rates anyway so in that case this button is redundant.
+* Zero vols: Select for intrinsic valuation, dummy market data provides zero vols anyway so in that case this button is redundant.
+* Observation day: The day the trades are observed. So any trades with a trade day after this day will not be included in the report.
+* Forward observation: Usually the same as 'Observation day' but can be moved forward. This day is used as the trade valuation date.
+* EoD/SoD: Start of day or end of day. At the start of the day prices have not fixed and expiry has not happened (for the 'forward observation' day). At the 'end of day' both have happened.
+* Market data: This specifies to use market data for the given day and pricing group (or dummy if no pricing group is selected). The refresh button next to it updates the market data for that day.
+* Theta to: Calculates theta between 'forward observation' and this day. This day is also used for delta and gamma bleed. End of Day is assumed.
+* Live on: Usually defaulted to 'observation day'. A trade is considered live if it was done on or before this day and it still has a position on this day. End of day is assumed.
+* Book close: This shows the day a book was closed for. We consider a book close to happen the day following trading. So the book close that happened on the 13thJan will have been for the 12th and the 12th will be displayed. A report is run on the set of trades that were booked at the given book close.
+* Day change: This is used for PnL reporting. Once selected it runs a report showing the changes between the two days and book closes.
+
+h1. General use of the application
+
+The application behaves like a web browser. 
+* You can move back and forwards using the arrow buttons (or shortcut keys Alt+Left and Alt+Right).
+* You can also undo (Control+z) and redo (Control+Shift+z) changes made within the page.
+* If you make several changes within a page and you move back, you'll first move to the current page without any changes, and then going back again will take you to the previous page.
+* If a page load is taking too long you can always press stop. 
+* You can also open another window (Control+n)
+* or another tab in the same window (Control+t) at any time.
+
+h1. Pivot Tables
+
+Most data is presented in a pivot report. This behaves like pivot reports in excel. The best way to learn how a pivot report works is by dragging fields around for a few minutes.
+
+The list of available fields is on the left. These can be dragged to the following areas to change the
+data displayed
+* Data Area: the values show in the main table (typically values like VAR95, Delta, PV)
+* Filter Area: After putting a field here the drop down list shows all the available values for this field You then use the checkboxes to filter on these values (typically used to only show one strategy or market)
+* Row/Colum Areas: The data is grouped by these fields (typically used to group deltas by market and period or VAR by stragegy)
+
+For example to see delta by market and period for trades in a specific portfolio you would put delta in the data area, market and period in the row and column area and portfolio in the filter area.
+
+Here are some of the additional features available on pivot tables:
+* !SaveLayout!. Save layout. You can save the current layout so you can use it at a later date
+* !SubTotals!. Sub totals: Shows sub totals for each row group in a new row
+* !RowGrandTotals!. Row totals: Shows totals at the bottom of the table
+* !ColumnTotals!. Column totals: Shows totals at the right of the table
+* !Chart!. Chart: Presents the data as a chart
+* !Calculate!. Disable calculate: Switches off calculation so you can move several fields around without waiting for calculation after each drop.
+* !Lock!. Lock/Unlock: changes the scrolling so that the row headers can be scrolled off the page
+
+
+h1. Live updates
+
+When you choose 'Current' as the version for trades or market data the report will be based on a the latest data at that time.
+If newer trades or market data are available the refresh button will be enabled. !Refresh!
+Pressing refresh will update the page to use the new market data or trades.
+If you check the 'Live' checkbox the refresh will happen automatically.
+This enables the display of realtime reports which are updated when the trades are entered.
+It is particularly useful when uploading trades from Excel.
+
+Note: The selection controls (snapshots chooser, saved layouts chooser, excel data drop down lists) are updated without a refresh
+
+h1. Reports
+
+The Star button !SaveReportConfiguration! on a report saves this report as a preset report which means it can be re-run from the home page using a different market day.
+It will ask you if the current layout should also be saved and associated with the report. Just saving the report on its own will save all the paramaters at the top
+of the page (all the days, the pricing group etc.). The layout is separate and covers how the report is displayed in the pivot table. So the common usage is to have
+one report and many different layouts for it.
+The Market Data button !MarketData! takes you to the viewer for the market data used by the report.
+
+h1. Slide/Stress reports
+
+When running a report you can chose the 'Slides' tab. This allows you to run the report under different scenarios. For example, if you chose a 1-D slide and slide
+on 'Price (commodity)' you can chose the commodity's price to move and by how much. In the pivot table you can then pivot on the different results by chosing the 'Slide 1'
+field from the Field list.
+The stress test is a specific type of slide. If you chose, for example, to slide WTI by 1$/bbl it will slide all other commodities by the equivalent price.
+
+h1. Shortcuts
+
+If you use Starling regularly it's worth keeping in mind the following short cuts
+
+h2. Page navigation
+
+| Alt + left arrow | back a page |
+| Alt + right arrow | forward a page |
+| Control + z | Undo |
+| Control + shift + z | Redo |
+| Control + t | open a new tab |
+| Control + w | close active tab |
+| Control + n | open a new window |
+| Control + page down | next tab |
+| Control + page up | previous tab |
+
+h2. Pivot tables
+
+| Control + a | select all whole table |
+| Control + c | copy selection to clipboard (including headers if all rows are selected ) |
+| field double click | adds/removes field |
+| cell double click | drill down | 
+| Control double click | drill down in a new tab |

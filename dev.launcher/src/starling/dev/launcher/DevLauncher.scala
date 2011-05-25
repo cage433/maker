@@ -1,0 +1,60 @@
+package starling.dev.launcher
+
+import starling.gui.Launcher
+import starling.http.GUICode
+import starling.services.Server
+import starling.bouncyrmi.BouncyRMI
+import starling.props.{PropsHelper, Props}
+import java.net.{BindException, ServerSocket}
+
+object DevLauncher {
+  def main(args:Array[String]) {
+    System.setProperty("log4j.configuration", "utils/resources/log4j.properties")
+    val props = propsWithUnusedPort()
+    Server.run(props)
+    System.setProperty(BouncyRMI.CodeVersionKey, GUICode.latestTimestamp.toString())
+    Launcher.start(props.ExternalHostname(), props.RmiPort(), props.ServerPrincipalName())
+  }
+
+  private def rmiPortAvailable(props:Props) = {
+    try {
+      try {
+        new ServerSocket(props.RmiPort()).close()
+        true
+      } catch {
+        case e : BindException => false
+      }
+    }
+  }
+
+  private def propsWithUnusedPort() = {
+    val fileProps = PropsHelper.propsFromFile(PropsHelper.defaultPropsFile)
+    var counter = 1
+    var props = new Props(fileProps)
+
+    val localPorts = props.propertiesOfType(classOf[PropsHelper#LocalPort]).keySet
+
+    val serverName = props.ServerName()
+    while (!rmiPortAvailable(props)) {
+      counter += 1
+      props = new Props(fileProps.filterKeys(p=>{!localPorts.contains(p.toLowerCase)}) + ("ServerName"->(serverName + " " + counter)))
+    }
+    props
+  }
+}
+
+object LauncherAlone{
+  def main(args: Array[String]) {
+    val props = PropsHelper.defaultProps
+    Launcher.start(props.ExternalHostname(), props.RmiPort(), props.ServerPrincipalName())
+  }
+}
+
+object DevRMILauncher {
+  def main(args:Array[String]) {
+    System.setProperty("log4j.configuration", "utils/resources/log4j.properties")
+    val props = PropsHelper.defaultProps
+    System.setProperty(BouncyRMI.CodeVersionKey, GUICode.latestTimestamp.toString())
+    Launcher.start(props.ExternalHostname(), props.RmiPort(), props.ServerPrincipalName())
+  }
+}

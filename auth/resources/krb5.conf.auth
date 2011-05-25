@@ -1,0 +1,28 @@
+[libdefaults]
+default_realm = GLOBAL.TRAFIGURA.COM
+default_tkt_enctypes = rc4-hmac des-cbc-md5 des-cbc-crc des3-cbc-sha1
+default_tgs_enctypes = rc4-hmac des-cbc-md5 des-cbc-crc des3-cbc-sha1
+permitted_enctypes = rc4-hmac des-cbc-md5 des-cbc-crc des3-cbc-sha1
+default_checksum = rsa-md5
+kdc_timesync = 0
+kdc_default_options = 0x40000010
+clockskew = 300
+check_delegate = 0
+ccache_type = 3
+kdc_timeout = 60000
+forwardable = true
+dns_lookup_realm = true
+dns_lookup_kdc = true
+ticket_lifetime = 24h
+#udp_preference_limit=1
+
+[realms]
+GLOBAL.TRAFIGURA.COM = {
+kdc = londonad.global.trafigura.com
+}
+
+[domain_realm]
+.global.trafigura.com = GLOBAL.TRAFIGURA.COM
+global.trafigura.com = GLOBAL.TRAFIGURA.COM
+.londonad.global.trafigura.com = GLOBAL.TRAFIGURA.COM
+londonad.global.trafigura.com = GLOBAL.TRAFIGURA.COM
