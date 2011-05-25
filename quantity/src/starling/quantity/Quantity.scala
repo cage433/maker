@@ -172,11 +172,11 @@ class Quantity(val value : Double, val uom : UOM) extends Ordered[Quantity] with
   def copy(value:Double = this.value, uom:UOM = this.uom) = Quantity(value, uom)
 
   override def equals(other: Any) = other match {
-    case q : Quantity => q.isAlmostEqual(this, MathUtil.EPSILON)
+    case Quantity(this.value, this.uom) => true
     case _ => false
   }
 
-  override val hashCode = (value / MathUtil.EPSILON).round.hashCode
+  override val hashCode = value.hashCode
 
   def isAlmostZero : Boolean = value.abs < MathUtil.EPSILON
   def isZero : Boolean = value == 0.0

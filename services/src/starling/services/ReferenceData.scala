@@ -162,8 +162,9 @@ class ReferenceData(businessCalendars: BusinessCalendars, marketDataStore: Marke
       val currency   = FieldDetails("Currency")
       val tenor      = FieldDetails("Tenor")
       val commodity  = FieldDetails("Commodity")
+      val rounding  = FieldDetails("Rounding")
 
-      private val otherFields = List(market, eaiQuoteID, level, volumeUnit, currency, tenor, commodity)
+      private val otherFields = List(market, eaiQuoteID, level, volumeUnit, currency, tenor, commodity, rounding)
       def fieldDetailsGroups = List(FieldDetailsGroup("Forward Market",
         name :: otherFields
       ))
@@ -181,7 +182,8 @@ class ReferenceData(businessCalendars: BusinessCalendars, marketDataStore: Marke
             volumeUnit → pi.market.currency,
             currency   → pi.market.currency,
             tenor      → pi.market.tenor.toString,
-            commodity  → pi.market.commodity.toString
+            commodity  → pi.market.commodity.toString,
+            rounding  → pi.precision.toString
           )
         } }
         data

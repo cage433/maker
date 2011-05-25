@@ -44,8 +44,11 @@ trait MarketDataSource { self =>
   def read(day:Day): Map[(Day, Day, MarketDataType), List[MarketDataEntry]]
 
   def asserting(): MarketDataSource = new MarketDataSource {
-    def read(day: Day) = self.read(day)
-      .updateIt(r => duplicateTimedKeys(r).require(_.isEmpty, "source: %s produced duplicate 'timed' keys: " % self))
+    def read(day: Day) = {
+      val map: Map[(Day, Day, MarketDataType), List[MarketDataEntry]] = self.read(day)
+      val result = map.updateIt(r => duplicateTimedKeys(r).require(_.isEmpty, "source: %s produced duplicate 'timed' keys: " % self))
+      result
+    }
 
     def duplicateTimedKeys(map: Map[(Day, Day, MarketDataType), List[MarketDataEntry]]): List[(ObservationPoint, MarketDataKey)] =
       map.values.flatMap(duplicateTimedKeys).toList

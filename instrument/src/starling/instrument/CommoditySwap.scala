@@ -85,24 +85,23 @@ case class SingleCommoditySwap(
 
   val settlementDay = CommoditySwap.swapSettlementDate(averagingPeriod.lastDay)
 
+  override def priceRounding = index.precision.map {
+    case Precision(defaultRounding, clearportRounding) => {
+      if (cleared) {
+        clearportRounding
+      } else {
+        defaultRounding
+      }
+    }
+  }
+
   def assets(env: Environment) = {
     val assets = {
       val days = pricingRule.observationDays(index.markets, averagingPeriod)
       if (days.isEmpty) {
         List()
       } else {
-        val price = {
-          val rounding = index.precision.map {
-            case Precision(defaultRounding, clearportRounding) => {
-              if (cleared) {
-                clearportRounding
-              } else {
-                defaultRounding
-              }
-            }
-          }
-          env.averagePrice(index, averagingPeriod, pricingRule, priceUOM, rounding)
-        }
+        val price = env.averagePrice(index, averagingPeriod, pricingRule, priceUOM, priceRounding)
 
         val payment = (price - strike) * volume
         if (env.marketDay < days.last.endOfDay) {

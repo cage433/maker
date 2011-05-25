@@ -74,9 +74,18 @@ case class OilAtmVol(marketDayAndTime : DayAndTime, market : CommodityMarket, da
         data.atmVols(data.periods.indexOf(point))
     }
     case Day => {
-      val times = data.periods.map(_.asInstanceOf[Day].endOfDay.timeSince(marketDayAndTime))
-      val t = point.asInstanceOf[Day].endOfDay.timeSince(marketDayAndTime)
-      Percentage(SplineInterpolator.interpolate(times, data.atmVols.map(_.decimalValue), t))
+      if (data.isDaily) {
+        val times = data.periods.map(_.asInstanceOf[Day].endOfDay.timeSince(marketDayAndTime))
+        val t = point.asInstanceOf[Day].endOfDay.timeSince(marketDayAndTime)
+        Percentage(SplineInterpolator.interpolate(times, data.atmVols.map(_.decimalValue), t))
+      } else {
+        val day = point.asInstanceOf[Day]
+        val index = data.periods.findIndexOf {
+          case m: Month => m.contains(day)
+        }
+        if(index == -1) throw new MissingMarketDataException("No oil atm for " + market + " - " + point + " in " + data)
+        data.atmVols(index)
+      }
     }
   }
 
@@ -120,13 +129,22 @@ case class OilVolSkew(marketDayAndTime : DayAndTime, market : CommodityMarket, d
       else
         throw new MissingMarketDataException("No oil vol skew for " + market + " - " + m)
     }
-    case (d : Day, Day) => {
-      val times = data.days.map(_.endOfDay.timeSince(marketDayAndTime))
-      val t = d.endOfDay.timeSince(marketDayAndTime)
-      val skews = skewsAsDoubles.map(
+    case (d: Day, Day) => {
+      if (data.isDaily) {
+        val times = data.days.map(_.endOfDay.timeSince(marketDayAndTime))
+        val t = d.endOfDay.timeSince(marketDayAndTime)
+        val skews = skewsAsDoubles.map(
           SplineInterpolator.interpolate(times, _, t)
-      )
-      skewMap(skews)
+        )
+        skewMap(skews)
+      } else {
+        val index = data.periods.findIndexOf {
+          case m: Month => m.contains(d)
+        }
+        if (index == -1) throw new MissingMarketDataException("No oil vol skew for " + market + " - " + d)
+        skewMap(skewsAsDoubles.map(_(index)))
+      }
+
     }
   }
 

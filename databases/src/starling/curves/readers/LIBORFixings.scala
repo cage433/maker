@@ -16,6 +16,7 @@ import LIMServer._
 import UOM._
 import starling.utils.ImplicitConversions._
 import java.text.DecimalFormat
+import starling.utils.Pattern._
 
 
 object LIBORFixings extends HierarchicalLimSource {
@@ -87,7 +88,7 @@ case class LIBORFixing(value: Quantity, fixingDay: Day) {
   def isBusinessDay = fixingDay.isBusinessDay(combinedCalendar)
   def format(format: DecimalFormat) = value.format(format)
 
-  private object ONCurrency { def unapply(currency: UOM): Option[UOM] = supportsOvernight.toOption(currency) }
+  private val ONCurrency = Extractor.from[UOM](supportsOvernight.toOption(_))
 
   private def modifiedFollowingBusinessDay(day: Day): Day = {
     val firstFollowingBusinessDay = day.thisOrNextBusinessDay(combinedCalendar)

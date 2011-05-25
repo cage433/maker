@@ -129,13 +129,20 @@ case class Environment(
 
   private var averagePriceCache = CacheFactory.getCache("Environment.averagePrice", unique = true)
 
-  def averagePrice(index: SingleIndex, averagingPeriod: DateRange): Quantity = averagePriceCache.memoize(
+  def averagePrice(index: SingleIndex, averagingPeriod: DateRange): Quantity = averagePrice(index, averagingPeriod, None)
+
+  def averagePrice(index: SingleIndex, averagingPeriod: DateRange, rounding: Option[Int]): Quantity = averagePriceCache.memoize(
     (index, averagingPeriod),
-    (tuple : (Index, DateRange)) =>
-      {
-        val observationDays = index.observationDays(averagingPeriod)
-        Quantity.average(observationDays.map(index.fixingOrForwardPrice(this, _)))
+    (tuple: (Index, DateRange)) => {
+      val observationDays = index.observationDays(averagingPeriod)
+      val price = Quantity.average(observationDays.map(index.fixingOrForwardPrice(this, _)))
+      rounding match {
+        case Some(dp) if environmentParameters.swapRoundingOK => {
+          price.round(dp)
+        }
+        case _ => price
       }
+    }
   )
 
   /**

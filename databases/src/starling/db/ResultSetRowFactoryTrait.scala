@@ -34,6 +34,9 @@ object ResultSetRow {
 class ResultSetRow(resultSet: ResultSet) {
   def wasNull() = resultSet.wasNull()
 
+  /**
+   * Note: does not work on columns of basic types. e.g. int
+   */
   def isNull(column: String) = {
     val obj = resultSet.getObject(column)
     obj == null

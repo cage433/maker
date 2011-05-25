@@ -37,7 +37,7 @@ class SwapVolSchedulePivotDataSource(context: EnvironmentWithDomain) extends Unf
 
   private val env = context.environment
   private val markets = context.marketVols.flatMap(_.market match {
-    case k: CommodityMarket with KnownExpiry => Some(k)
+    case k: CommodityMarket => Some(k)
     case _ => None
   })
   private val marketsData = context.marketVols.map(m => m.market -> m).toMap

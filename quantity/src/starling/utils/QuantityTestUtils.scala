@@ -20,9 +20,16 @@ object QuantityTestUtils{
     assertEquals(actual.uom, expected.uom, message)
   }
 
+  def assertQtyOptionClose(actual : Option[Quantity], expected : Option[Quantity], tol : Double = 1e-3, min : Double = 1e-9, message : String = ""){
+    assert(actual.isDefined, "Actual is None")
+    assert(expected.isDefined, "Expected is None")
+    assertQtyClose(actual get, expected get, tol, min, message)
+  }
+
+
   /** Assert that the percentage difference between two quantities is small
    */
-  def assertQtyClose(actual : Quantity, expected : Quantity, tol : Double = 0.0, min : Double = 1e-9, message : String = ""){
+  def assertQtyClose(actual : Quantity, expected : Quantity, tol : Double = 1e-8, min : Double = 1e-9, message : String = ""){
     assertEquals(actual.uom, expected.uom, message)
     val (a, e) = (actual.value, expected.value)
     if (a.abs < min){

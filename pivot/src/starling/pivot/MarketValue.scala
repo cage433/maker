@@ -3,6 +3,7 @@ package starling.pivot
 import java.io.Serializable
 
 import starling.quantity.{Percentage, UOM, Quantity}
+import starling.utils.Pattern._
 
 
 case class MarketValue(value: Either[Quantity, Percentage]) extends Serializable {
@@ -17,6 +18,6 @@ object MarketValue {
   def quantity(value: Double, uom: UOM): MarketValue = quantity(starling.quantity.Quantity(value, uom))
   def percentage(value: Percentage): MarketValue = new MarketValue(Right(value))
   def percentage(value: Double): MarketValue = percentage(starling.quantity.Percentage(value))
-  object Quantity   { def unapply(value: MarketValue) = value.quantity   }
-  object Percentage { def unapply(value: MarketValue) = value.percentage }
+  val Quantity   = Extractor.from[MarketValue](_.quantity)
+  val Percentage = Extractor.from[MarketValue](_.percentage)
 }

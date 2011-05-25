@@ -1,5 +1,8 @@
 package starling.utils
 
+import ImplicitConversions._
+
+
 object Utils {
   case object Linux
   trait Windows
@@ -48,4 +51,7 @@ object Utils {
     result.get
   }
 
+  def toCSV(rows: List[List[Any]]): String = rows.map(row => rowToCSV(row)).mkString("\n")
+  def rowToCSV(row: scala.List[Any]): String = row.map(_.toString).map(escape).mkString(",")
+  private def escape(item: String): String = if (item.matches(".*(,|\n).*")) '\"' + item.replace("\"", "\"\"") + '\"' else item
 }

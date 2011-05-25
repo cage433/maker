@@ -487,6 +487,8 @@ object Day extends TenorType {
     }
   }
 
+  def parseWithFormat(dayStr: String, format: String): Day = parseWithFormat(dayStr, DateTimeFormat.forPattern(format))
+
   def parseWithFormat(dayStr:String, format:DateTimeFormatter) = {
     val dateTime = format.parseDateTime(dayStr)
     Day(dateTime.getYear, dateTime.getMonthOfYear, dateTime.getDayOfMonth)
