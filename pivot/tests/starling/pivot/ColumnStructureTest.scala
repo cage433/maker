@@ -451,51 +451,28 @@ class ColumnStructureTest extends TestNGSuite {
     assertEquals(result5, expected5)
   }
 
-  // TODO write this test.
-  /*@Test
-  def testReplace() {
-    val c1 = ColumnStructure(List(
-      ColumnTree(Field("PV"), true)
-    ))
-    val result1 = c1.replace(Field("PV"), Field("Gamma"))
-    val expected1 = ColumnStructure(List(
-      ColumnTree(Field("Gamma"), true)
-    ))
-    assertEquals(result1, expected1)
+  @Test
+  def testRemove01() {
+    val newCS = ColumnStructure(
+      ColumnTree(
+        FieldOrColumnStructure(
+          ColumnStructure(
+            List(ColumnTree(Field("PV"), true), ColumnTree(Field("Gamma"), true))
+          )
+        ), ColumnStructure.Null
+      )
+    )
+    val expectedCS = ColumnStructure(
+      ColumnTree(
+        Field("PV"), true
+      )
+    )
+    val result = newCS.remove(Field("Gamma"))
+    assertEquals(result, expectedCS)
+  }
 
-
-    val c2 = ColumnStructure(List(
-      ColumnTree(Field("PV"), true,
-        ColumnTree(Field("Product"), false)
-      ))
-    ))
-    val result2 = c2.replace(Field("Product"), Field("Strike"))
-    val expected2 = ColumnStructure(List(
-      ColumnTree(Field("PV"), true,
-        ColumnTree(Field("Strike"), false, Nil)
-      ))
-    ))
-    assertEquals(result2, expected2)
-
-    val c31 = ColumnStructure(List(
-      ColumnTree(Field("PV"), true), ColumnTree(Field("Gamma"), true, Nil)
-    ))
-    val c3 = ColumnStructure(List(
-      ColumnStructure(Right(c31),
-        ColumnTree(Field("Product"), false)
-      ))
-    ))
-    val result3 = c2.replace(Field("Gamma"), Field("Delta"))
-    val expected3 = {
-      val c31 = ColumnStructure(List(
-        ColumnTree(Field("PV"), true), ColumnTree(Field("Delta"), true, Nil)
-      ))
-      ColumnStructure(List(
-        ColumnStructure(Right(c31),
-          ColumnTree(Field("Product"), false)
-        ))
-      ))
-    }
-    assertEquals(result3, expected3)
-  }*/
+  @Test
+  def testMovingAFieldInternally() {
+    
+  }
 }
