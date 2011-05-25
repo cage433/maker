@@ -27,6 +27,7 @@ object MtmPivotReport extends PivotReportType {
 
   val pnlFieldName = "P&L"
   val pnlNoCostsFieldName = "P&L (No Costs)"
+  val costsFieldsName = "Costs"
 
   override def fields = List(
     new PivotReportField[Mtm]("Known/Estimate") {
@@ -75,6 +76,14 @@ object MtmPivotReport extends PivotReportType {
         case _ => PivotQuantity.NULL
       }
       override def pivotFieldDetails = new SumPivotQuantityFieldDetails(name)
+    },
+    new PivotReportField[Mtm](costsFieldsName) {
+      def value(row: Mtm) = row.costs match {
+        case Some(Left(asset)) => PivotQuantity(asset.mtm * row.scale)
+        case Some(Right(e)) => new PivotQuantity(e)
+        case _ => PivotQuantity.NULL
+      }
+      override def pivotFieldDetails = new SumPivotQuantityFieldDetails(name)
     }
   ) ::: MtmRiskFields.riskFields
 }
@@ -84,6 +93,7 @@ case class Mtm(
   utp : UTP,
   asset : Either[Asset, Throwable],
   assetNoCosts : Option[Either[Asset, Throwable]] = None,
+  costs : Option[Either[Asset, Throwable]] = None,
   diff : Option[EnvironmentDifferentiable] = None,
   period : Option[Period] = None,
   collapseOptions : Boolean = true,
@@ -146,7 +156,7 @@ class MtmPivotReport(@transient environment:Environment, @transient utps : Map[U
           asset=> {
             utp match {
               case ci: CashInstrument if CashInstrumentType.isCost(ci.cashInstrumentType) => {
-                Mtm(utpID, utp, asset) * volume
+                Mtm(utpID, utp, asset, None, Some(asset)) * volume
               }
               case _ => Mtm(utpID, utp, asset, Some(asset)) * volume
             }

@@ -19,9 +19,6 @@ abstract class Costs(cashInstrumentType: CashInstrumentType, counterParty: Strin
     mtm * env.spotFXRate(ccy, mtm.uom)
   }))
 
-
-  def details: Map[String, Any] = costs.map(_.details).foldLeft(Map[String, Any]())(_ ++ _)
-
   def asUtpPortfolio(tradeDay:Day) = {
     val utps = Map[UTP, Double]() ++ costs.map {
       case b: CashInstrument => {
@@ -54,6 +51,17 @@ case class PremiumCosts(settlementDay: Day, counterParty: String, volume: Quanti
 case class CommissionCosts(name: String, code: String, settlementDay: Day, counterParty: String, commission: Quantity)
         extends Costs(Commission, counterParty, new SinglePayment(settlementDay), new CommissionLumpSum(commission)) {
   override def toString = code + "(" + name + ", " + commission + ", " + settlementDay + ")"
+  def info() = List(
+    ("Name", name),
+    ("Settlement Day", settlementDay.toString),
+    ("Counter Party", counterParty)
+  )
+}
+
+case class OrdinaryCost(name: String, code: String, settlementDay: Day, counterParty: String, quantity: Quantity)
+  extends Costs(Ordinary, counterParty, new SinglePayment(settlementDay), new CommissionLumpSum(quantity)) {
+  override def toString = code + "(" + name + ", " + quantity + ", " + settlementDay + ")"
+
   def info() = List(
     ("Name", name),
     ("Settlement Day", settlementDay.toString),

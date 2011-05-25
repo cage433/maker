@@ -76,7 +76,7 @@ case class ExcelTradesRange(subgroupName : String,
         case other => throw new Exception("The value " + other + " for " + name + " is not a double")
       }
     }
-    private def getUOM(name: String) : UOM = {
+    def getUOM(name: String) : UOM = {
       UOM.fromString(getString(name))
     }
     def exists(name: String) = {
@@ -136,6 +136,7 @@ case class ExcelTradesRange(subgroupName : String,
         def getMarket(name: String) = row.getMarket(name)
         def getCallPut(name: String) = row.getCallPut(name)
         def getDay(name: String) = row.getDay(name)
+        def getUOM(name: String) = row.getUOM(name)
         def getQuantity(name: String) = row.getQuantity(name)
         def getStrikes = row.getStrikes
         def getForwardMarket(name: String) = Market.forwardMarketFromName(row.getString(name))
