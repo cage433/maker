@@ -47,7 +47,7 @@ class Starling(info : ProjectInfo) extends ParentProject(info) {
     defineScala("2.8.1.final-local", new File("lib/scala/scala-2.8.1.final/")) :: Nil
   }
 
-  var parExec = true
+  var parExec = false
   override def parallelExecution = parExec
   def parallel(b : Boolean){parExec = b}
 
