@@ -52,5 +52,8 @@ trait RichString {
       val pos = s.lastIndexOf(searchFor)
       if (pos == -1) s else s.substring(0, pos) + replaceWith + s.substring(pos + searchFor.size)
     }
+
+    def containsOneOf(searchFor: String*) = searchFor.exists(s.contains(_))
+    def emptyTo(alternative: String) = if (s.trim.isEmpty) alternative else s
 	}
 }
