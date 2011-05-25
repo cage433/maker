@@ -39,16 +39,37 @@ trait QuantityIsNumeric extends Numeric[Quantity] {
 }
 
 object Quantity {
+  val mc = java.math.MathContext.DECIMAL128
+
   val NULL = Quantity(0, UOM.NULL)
   val ONE = Quantity(1, UOM.SCALAR)
   implicit object QuantityIsNumeric extends QuantityIsNumeric
   implicit object NumericOptionQuantity extends OptionNumeric[Quantity]
   val FormatString = "#,##0.00"
   def fromString(text : String, uom : UOM) = Quantity(new java.lang.Double(text).asInstanceOf[Double], uom)
-  def sum(quantities : Iterable[Quantity]) = (Quantity.NULL /: quantities)(_+_)
+
+  private def sumAsBigDecimal(quantities: Iterable[Quantity]) = {
+    if(quantities.nonEmpty) {
+      val uoms = quantities.map(_.uom).toSet
+      assert(uoms.size == 1, "Can't sum quantities of different units: " + uoms)
+      val sum = (BigDecimal("0") /: quantities.map(q => BigDecimal(q.value)))(_ + _)
+      (sum, uoms.head)
+    } else {
+      (BigDecimal("0"), UOM.NULL)
+    }
+  }
+
+  def sum(quantities: Iterable[Quantity]) = {
+    val (sum, uom) = sumAsBigDecimal(quantities)
+    Quantity(sum.toDouble, uom)
+  }
+
   def average(quantities : Seq[Quantity]) = quantities match {
     case Nil => throw new Exception("Can't get average of empty sequence")
-    case _ => sum(quantities) / quantities.size
+    case _ => {
+      val (sum, uom) = sumAsBigDecimal(quantities)
+      Quantity((sum(mc) / quantities.size).toDouble, uom)
+    }
   }
 
   implicit def doubleToScalarQuantity(d : Double) : Quantity = Quantity(d, UOM.SCALAR)
