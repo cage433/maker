@@ -110,6 +110,15 @@
     <orderEntry type="module" module-name="pivot" exported="" />
     <orderEntry type="module" module-name="gui.api" exported="" />
     <orderEntry type="module" module-name="concurrent" exported="" />
+    <orderEntry type="module-library" scope="TEST">
+      <library>
+        <CLASSES>
+          <root url="file://$MODULE_DIR$/test-resources" />
+        </CLASSES>
+        <JAVADOC />
+        <SOURCES />
+      </library>
+    </orderEntry>
   </component>
 </module>
 
