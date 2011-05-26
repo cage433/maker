@@ -7,8 +7,9 @@ import starling.pivot.view.swing.{FixedImagePanel, MigPanel}
 import java.awt.image.BufferedImage
 import swing.Swing._
 import javax.swing.JPopupMenu
-import java.awt.{KeyboardFocusManager, Cursor, Color}
 import starling.daterange._
+import java.awt.{Dimension, KeyboardFocusManager, Cursor, Color}
+import starling.utils.Utils
 
 class DayChooser(day0:Day = Day.today, enableFlags:Boolean = true) extends MigPanel("insets 0", "[p]0[p]") {
 
@@ -33,9 +34,16 @@ class DayChooser(day0:Day = Day.today, enableFlags:Boolean = true) extends MigPa
     endPanel.background = c
   }
 
-  val dayField = new TextField(7) {
+  val (numberOfChars, extraWidth) = Utils.os match {
+    case Utils.Windows7 => (5,7)
+    case Utils.WindowsXP | Utils.WindowsUnknown => (7,1)
+    case Utils.Linux => (6,7)
+  }
+
+  val dayField = new TextField(numberOfChars) {
     editable = false
     cursor = Cursor.getPredefinedCursor(Cursor.TEXT_CURSOR)
+    minimumSize = new Dimension(preferredSize.width + extraWidth, preferredSize.height)
 
     override protected def paintBorder(g:Graphics2D) = {
       super.paintBorder(g)
