@@ -54,7 +54,7 @@ object Scheduler {
 
     new Scheduler(props, forwardCurveTasks =
       TaskDescription("Import LIM", hourly(businessCalendars.LME), importMarketData(Metals)) ::-
-      TaskDescription("Upload Curves to Trinity", daily(businessCalendars.LME, 12 H 30), uploadCurvesToTrinity(Metals)) ::-
+      //TaskDescription("Upload Curves to Trinity", daily(businessCalendars.LME, 12 H 30), uploadCurvesToTrinity(Metals)) ::-
       tasks(daily(businessCalendars.SFE, 16 H 30),
         "Verify WuXi prices available" → verifyPricesAvailable(Metals, EXBXG, props.WuXiEmailAddress()).withSource("Excel"),
         "Verify WuXi prices valid"     → verifyPricesValid(Metals, EXBXG, props.MetalsEmailAddress()).withSource("Excel")
@@ -67,8 +67,8 @@ object Scheduler {
         "Verify SHFE LIM Metals valid"      → verifyPricesValid(Metals, SFS,   props.LimEmailAddress()).withSource("LIM"),
         "Verify COMEX LIM Metals valid"     → verifyPricesValid(Metals, COMEX, props.LimEmailAddress()).withSource("LIM")
       ) ::-
-      TaskDescription("Verify Libor maturities available", daily(businessCalendars.LME, 23 H 30), verifyLiborMaturities) ::-
-      TaskDescription("Upload Libor to Trinity", daily(businessCalendars.LME, 23 H 45), uploadLibor)
+      TaskDescription("Verify Libor maturities available", daily(businessCalendars.LME, 23 H 30), verifyLiborMaturities) //::-
+      //TaskDescription("Upload Libor to Trinity", daily(businessCalendars.LME, 23 H 45), uploadLibor)
     )
   }
 }

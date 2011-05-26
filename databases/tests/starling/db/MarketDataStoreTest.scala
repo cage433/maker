@@ -59,7 +59,7 @@ class MarketDataStoreTest extends StarlingTest with ShouldMatchers {
     versionAfterDelete should not be === (None)
 
     val versionInt = versionAfterDelete.get.version
-    val versionedData1 = VersionedMarketData(Timestamp.now, versionInt, data1)
+    val versionedData1 = VersionedMarketData(Timestamp.now, versionInt, Some(data1))
     marketDataStore.saveActions(Map(MarketDataSet.Starling -> List(MarketDataUpdate(observationPoint, key, None, Some(versionedData1)))))
     val read2:Option[SpotFXData] = marketDataStore.readLatest(MarketDataSet.Starling, observationPoint, key)
     read2 should equal( None )

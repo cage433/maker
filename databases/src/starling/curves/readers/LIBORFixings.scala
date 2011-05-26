@@ -106,7 +106,7 @@ object LIBORFixing {
     CAD → BusinessCalendarSet("CAD LIBOR", Location.Unknown, Set(21 Feb 2011, 23 May 2011, 1 Jul 2011, 1 Aug 2011, 5 Sep 2011, 10 Oct 2011, 11 Nov 2011)),
     //// TARGET calendar (Trans-European Automated Real-time Gross settlement Express Transfer)
     EUR → BusinessCalendarSet("EUR LIBOR", Location.Unknown, Set(22 Apr 2011, 25 Apr 2011, 29 Aug 2011, 26 Dec 2011, 27 Dec 2011, 02 Jan 2012)),
-    GBP → BusinessCalendarSet("GBP LIBOR", Location.Unknown,  Set(3 Jan 2011, 22 Apr 2011, 25 Apr 2011, 29 Apr 2011, 2 May 2011, 30 May 2011, 29 Aug 2011, 26 Dec 2011, 27 Dec 2011, 2 Jan 2012)),
+    GBP → BusinessCalendarSet("GBP LIBOR", Location.Unknown, Set(3 Jan 2011, 22 Apr 2011, 25 Apr 2011, 29 Apr 2011, 2 May 2011, 30 May 2011, 29 Aug 2011, 26 Dec 2011, 27 Dec 2011, 2 Jan 2012)),
     USD → BusinessCalendarSet("USD LIBOR", Location.Unknown, Set(17 Jan 2011, 21 Feb 2011, 4 Jul 2011, 5 Sep 2011, 10 Oct 2011, 11 Nov 2011, 24 Nov 2011))
   )
 

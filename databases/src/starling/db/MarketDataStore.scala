@@ -17,6 +17,8 @@ import collection.mutable.{ListBuffer, HashSet => MSet}
 import starling.utils.{Stopwatch, Broadcaster, Log, StarlingXStream}
 import starling.calendar.Clock
 
+import starling.utils.Pattern._
+
 
 // TODO: move me somewhere proper
 case class RelativeImpliedVolData(vols: Map[DateRange,Map[Double,Percentage]]) {
@@ -177,9 +179,14 @@ trait MarketDataStore {
   def sourceFor(marketDataSet: MarketDataSet): Option[MarketDataSource]
 }
 
-case class VersionedMarketData(timestamp : Timestamp, version : Int, data : MarketData)
+case class VersionedMarketData(timestamp: Timestamp, version: Int, data: Option[MarketData])
 
+object VersionedMarketData {
+  def apply(key: MarketDataKey, rs: ResultSetRow) = new VersionedMarketData(rs.getTimestamp("timestamp"), rs.getInt("version"),
+    rs.getObjectOption[MarketData]("data").map(key.unmarshallDB(_)))
 
+  val Save = Extractor.when[VersionedMarketData](_.data.isDefined)
+}
 
 case class MarketDataEntry(observationPoint: ObservationPoint, key: MarketDataKey, data: MarketData) {
   val dataType = key.dataType
@@ -235,7 +242,7 @@ class DBMarketDataStore(db: DBTrait[RichResultSetRow], val marketDataSources: Ma
             //marketDataSet
             val marketDataType = rs.getObject[MarketDataType]("marketDataType")
             val key = rs.getObject[MarketDataKey]("marketDataKey")
-            val data = key.unmarshallDB(rs.getObject[Any]("data"))
+            val data = rs.getObjectOption[Any]("data").map(key.unmarshallDB(_))
             observationDay match {
               case None =>
               case Some(day) => {
@@ -584,13 +591,12 @@ class DBMarketDataStore(db: DBTrait[RichResultSetRow], val marketDataSources: Ma
         and ("observationDay" gte from)
         and ("observationDay" lte to)
         and ("marketDataType" eql AnObject(marketDataType))
-        and ("data" isNotNull)
         and ("childVersion" isNull)
     )
     val results = db.queryWithResult(query) { rs => {
       val key: MarketDataKey = rs.getObject[MarketDataKey]("marketDataKey")
       (ObservationPoint(rs.getDay("observationDay"), ObservationTimeOfDay.fromName(rs.getString("observationTime"))),
-        key, VersionedMarketData(rs.getTimestamp(), rs.getInt("version"), key.unmarshallDB(rs.getObject[Any]("data"))))
+        key, VersionedMarketData(key, rs))
     }}
     val check = results.groupBy(e => (e._1, e._2))
     check.foreach {
@@ -609,7 +615,7 @@ class DBMarketDataStore(db: DBTrait[RichResultSetRow], val marketDataSources: Ma
         clause:Option[Clause],
         f:RichResultSetRow=>T) = {
     val version = versionForMarketDataVersion(marketDataIdentifier.marketDataVersion)
-    val versionClause = (("version" lte version) and ( (("childVersion") isNull) or ("childVersion" gt version)) and ("data" isNotNull) )
+    val versionClause = (("version" lte version) and ( (("childVersion") isNull) or ("childVersion" gt version)) )
     val query = (
       select (selectQuery)
       from "MarketData"
@@ -694,26 +700,28 @@ class DBMarketDataStore(db: DBTrait[RichResultSetRow], val marketDataSources: Ma
         val observationDay = rs.getDayOption("observationDay")
         val observationTime = rs.getString("observationTime")
         val marketDataKey = rs.getObject[MarketDataKey]("marketDataKey")
-        val data = rs.getObject[Any]("data")
-        val marketData = marketDataKey.unmarshallDB(data)
+        val data = rs.getObjectOption[Any]("data")
+        val optionMarketData = data.map(marketDataKey.unmarshallDB(_))
         val marketDataSet = rs.getString("marketDataSet")
 
         val key = (observationTime, observationDay, marketDataKey)
 
-        latestKey match {
-          case None => {
-            latestKey = Some(key)
-            latestValues.clear()
-            latestValues(marketDataSet) = marketData
-          }
-          case Some(`key`) => {
-            latestValues(marketDataSet) = marketData
-          }
-          case Some((timeOfDay,day,k)) => {
-            addEntry(timeOfDay,day,k)
-            latestKey = Some(key)
-            latestValues.clear()
-            latestValues(marketDataSet) = marketData
+        optionMarketData.map { marketData =>
+          latestKey match {
+            case None => {
+              latestKey = Some(key)
+              latestValues.clear()
+              latestValues(marketDataSet) = marketData
+            }
+            case Some(`key`) => {
+              latestValues(marketDataSet) = marketData
+            }
+            case Some((timeOfDay,day,k)) => {
+              addEntry(timeOfDay,day,k)
+              latestKey = Some(key)
+              latestValues.clear()
+              latestValues(marketDataSet) = marketData
+            }
           }
         }
       }
@@ -731,7 +739,7 @@ class DBMarketDataStore(db: DBTrait[RichResultSetRow], val marketDataSources: Ma
     val version = versionForMarketDataVersion(marketDataIdentifier.marketDataVersion)
 
     (("marketDataSet" in marketDataSets(marketDataIdentifier).map(_.name))
-       and (("version" lte version) and ( (("childVersion") isNull) or ("childVersion" gt version)) and ("data" isNotNull) )
+       and (("version" lte version) and ( (("childVersion") isNull) or ("childVersion" gt version)) )
        and ("marketDataType" eql LiteralString(StarlingXStream.write(marketDataType))))
   }
 
@@ -763,19 +771,13 @@ class DBMarketDataStore(db: DBTrait[RichResultSetRow], val marketDataSources: Ma
     (select ("timestamp, version, data")
        from (tableName)
        where (conditions(key)
-         and ("data" isNotNull)
          and version.map("version" eql _).getOrElse("childVersion" isNull)))
   }
 
   // gets the specified version of the curve. If the version is None then the latest
   // available version is fetched.
   def apply(id: MarketDataID, version : Option[Int] = None) : Option[VersionedMarketData] = {
-    db.queryWithOneResult(queryForVersion(id, version)) {
-      rs => VersionedMarketData(
-        rs.getTimestamp("timestamp"),
-        rs.getInt("version"),
-        id.subTypeKey.unmarshallDB(rs.getObject[MarketData]("data")))
-    }
+    db.queryWithOneResult(queryForVersion(id, version)) { VersionedMarketData(id.subTypeKey, _) }
   }
 
   def currentVersions(ids: Iterable[MarketDataID]) = {
@@ -789,8 +791,7 @@ class DBMarketDataStore(db: DBTrait[RichResultSetRow], val marketDataSources: Ma
     val keyToVersionedData: Map[MarketDataKey, VersionedMarketData] = db.queryWithResult(query) { rs => {
       val id = rs.getObject[MarketDataKey]("marketDataKey")
 
-      id → VersionedMarketData(rs.getTimestamp("timestamp"),
-        rs.getInt("version"), id.unmarshallDB(rs.getObject[MarketData]("data")))
+      id → VersionedMarketData(id, rs)
     }}.toMap
 
     ids.toMapWithValues(id => keyToVersionedData.get(id.subTypeKey))
@@ -805,19 +806,19 @@ class DBMarketDataStore(db: DBTrait[RichResultSetRow], val marketDataSources: Ma
     val query =
       (select ("data")
          from (tableName)
-        where (("data" isNotNull) and conditions(key) and versionClause)
+        where (conditions(key) and versionClause)
       )
 
-    db.queryWithOneResult(query)(rs => unmarshallar(rs.getObject[Any]("data")))
+    db.queryWithOneResult(query)(rs => rs.getObjectOption[Any]("data")).flatOpt.map(unmarshallar)
   }
 
   def updateIt(dbWriter: DBWriter, id: MarketDataID, existingData: Option[VersionedMarketData], maybeData: Option[MarketData]) = {
     val timestamp = Clock.timestamp
 
-    (maybeData, existingData) match {
+    (existingData, maybeData) match {
       case (None, None) => None
-      case (Some(data), Some(VersionedMarketData(timestamp, v, d))) if d == data => Some( (false, v) )
-      case (x, _) => {
+      case (Some(VersionedMarketData(timestamp, v, Some(d))), Some(data)) if d == data => Some( (false, v) )
+      case (_, x) => {
         val valueForDataColumn = x.map(v => StarlingXStream.write(v.marshall)).getOrElse(null) // null means delete
         import QueryBuilder._
 

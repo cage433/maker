@@ -1,5 +1,8 @@
 package starling.utils
 
+import ImplicitConversions._
+
+
 object Pattern {
   case class Extractor[A, B](f: A => Option[B]) {
     def unapply(a: A) = f(a)
@@ -12,9 +15,13 @@ object Pattern {
 
   object Extractor {
     def from[A] = new From[A]
+    def when[A] = new {
+      def apply(f: A => Boolean) = from[A]((a:A) => f(a).toOption(a))
+    }
 
     class From[A] {
       def apply[B](f: A => Option[B]) = new Extractor[A, B](f)
+
       def partial = new {
         def apply[B](pf: PartialFunction[A, B]) = new Extractor[A, B](pf.lift)
       }
