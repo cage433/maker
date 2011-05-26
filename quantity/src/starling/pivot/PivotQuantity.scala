@@ -1,10 +1,10 @@
 package starling.pivot
 
 import math.abs
-import starling.utils.StackTraceToString
 import java.io.Serializable
 import starling.quantity._
 import collection.immutable.Map
+import starling.utils.{Named, StarlingEnum, StackTraceToString}
 
 case class PivotPercentage(percent:Option[Percentage]) {
   override def toString = percent match {
@@ -24,6 +24,20 @@ object StackTrace {
       new StackTrace(t.toString, StackTraceToString.string(t))
     }
   }
+}
+
+case class ErrorState(name: String) extends Named {
+  import ErrorState._
+
+  def fold[A](g: => A, w: => A, e: => A) = if (this == Warning) w else if (this == Error) e else g
+}
+
+object ErrorState extends StarlingEnum(classOf[ErrorState]) {
+  val Good    = ErrorState("Good")
+  val Warning = ErrorState("Warning")
+  val Error   = ErrorState("Error")
+
+  def apply(hasWarnings: Boolean, hasErrors: Boolean): ErrorState = if (hasErrors) Error else if (hasWarnings) Warning else Good
 }
 
 case class PivotQuantity(values:Map[UOM,Double], errors:Map[String,List[StackTrace]], warning:Option[String]=None) extends Serializable {
@@ -84,6 +98,7 @@ case class PivotQuantity(values:Map[UOM,Double], errors:Map[String,List[StackTra
   }
   def <(other: PivotQuantity): Boolean = quantityValue < other.quantityValue
   def >(other: PivotQuantity): Boolean = quantityValue > other.quantityValue
+  def errorState = ErrorState(hasWarning, hasErrors)
   def hasErrors = !errors.isEmpty
   def hasWarning = warning.isDefined
   def hasWarningOrErrors = hasWarning || hasErrors

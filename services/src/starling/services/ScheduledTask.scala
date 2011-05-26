@@ -7,9 +7,17 @@ import starling.pivot._
 import starling.utils.Broadcaster
 
 import starling.utils.ImplicitConversions._
+import starling.gui.api.EmailEvent
 
 
-trait ScheduledTask { self =>
+trait ScheduledTaskAttributes {
+  val DataSource = "DataSource"
+  val DataSink   = "DataSink"
+  val EmailFrom  = "EmailFrom"
+  val EmailTo    = "EmailTo"
+}
+
+trait ScheduledTask extends ScheduledTaskAttributes { self =>
   def attribute(name: String, alternative: String = "") = attributes.getOrElse(name, alternative)
   def attributes: Map[String, String] = Map()
   def execute(observationDay: Day)
@@ -23,11 +31,11 @@ trait ScheduledTask { self =>
 
   def withAttributes(additionalAttributes: (String, String)*) = new ScheduledTask {
     def execute(observationDay: Day) = self.execute(observationDay)
-    override def attributes = super.attributes ++ additionalAttributes
+    override def attributes = self.attributes ++ additionalAttributes
   }
 
-  def withSource(name: String) = withAttributes("DataSource" → name)
-  def withSink(name: String) = withAttributes("DataSink" → name)
+  def withSource(name: String) = withAttributes(DataSource → name)
+  def withSink(name: String) = withAttributes(DataSink → name)
 }
 
 case class SimpleScheduledTask(task: Day => Unit) extends ScheduledTask {
@@ -38,4 +46,13 @@ abstract class BroadcastingScheduledTask(broadcaster: Broadcaster) extends Sched
   final def execute(observationDay: Day) = eventFor(observationDay).map(broadcaster.broadcast)
 
   protected def eventFor(observationDay: Day): Option[Event]
+}
+
+abstract class EmailingScheduledTask(broadcaster: Broadcaster, from: String, to: Seq[String])
+  extends BroadcastingScheduledTask(broadcaster) {
+
+  final protected def eventFor(observationDay: Day) = eventFor(observationDay, EmailEvent(from, to))
+  override def attributes = super.attributes + (EmailFrom → from) + (EmailTo → to.mkString(", "))
+
+  protected def eventFor(observationDay: Day, email: EmailEvent): Option[EmailEvent]
 }

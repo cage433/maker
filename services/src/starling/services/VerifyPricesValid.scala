@@ -18,17 +18,17 @@ object VerifyPricesValid {
     marketDataStore.pivot(MarketDataSelection(Some(pricingGroup)), PriceDataType), exchange, broadcaster, from, to : _*)
 }
 
-class VerifyPricesValid(dataSource: PivotTableDataSource, exchange: FuturesExchange,  broadcaster: Broadcaster, from: String, to: String*)
-  extends BroadcastingScheduledTask(broadcaster) {
+class VerifyPricesValid(dataSource: PivotTableDataSource, exchange: FuturesExchange, broadcaster: Broadcaster,
+                        from: String, to: String*) extends EmailingScheduledTask(broadcaster, from, to) {
 
   private val pfs = PivotFieldsState(rowFields = fields("Market", "Period"), dataFields = fields("Price"))
 
-  def eventFor(observationDay: Day): Option[EmailEvent] = {
+  def eventFor(observationDay: Day, email: EmailEvent): Option[EmailEvent] = {
     val filter = filters("Exchange" → exchange.name, "Observation Day" → observationDay)
     val grid = dataSource.gridFor(Some(pfs.copy(filters = filter ++ filters("Validity" → "Invalid"))))
 
     (grid.hasData).toOption {
-      EmailEvent(from, to).copy(subject = "Validation errors for: %s" % filterToString(filter),
+      email.copy(subject = "Validation errors for: %s" % filterToString(filter),
         body = <html>
                  <p>Validation errors for: { filterToString(filter) }</p>
                  <table border="1">
@@ -42,7 +42,7 @@ class VerifyPricesValid(dataSource: PivotTableDataSource, exchange: FuturesExcha
 
   private def createCell(cell: CombinedCell) = <td bgcolor={cellColour(cell)}>{cell}</td>
   private def cellColour(cell: CombinedCell): String = cell match {
-    case CombinedCell.TableCell(TableCell.PivotQuantity(pq)) => if (pq.hasErrors) "red" else if (pq.hasWarning) "orange" else "white"
+    case CombinedCell.TableCell(TableCell.PivotQuantity(pq)) => pq.errorState.fold("white", "orange", "red")
     case CombinedCell.AxisCell(_) => "white"
   }
 }

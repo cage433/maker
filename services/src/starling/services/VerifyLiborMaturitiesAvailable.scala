@@ -11,14 +11,14 @@ import starling.utils.ImplicitConversions._
 
 
 class VerifyLiborMaturitiesAvailable(marketDataStore: MarketDataStore, broadcaster: Broadcaster, from: String, to: String*)
-  extends BroadcastingScheduledTask(broadcaster) {
+  extends EmailingScheduledTask(broadcaster, from, to) {
 
-  protected def eventFor(observationDay: Day) = {
+  protected def eventFor(observationDay: Day, email: EmailEvent) = {
     val tenorsByCurrency = latestLiborFixings(marketDataStore, observationDay).mapValues(_.keys.toList).withDefaultValue(Nil)
     val missingTenorsByCurrency = currencies.toMapWithValues(currency => tenors \\ tenorsByCurrency(currency)).sortBy(_.toString)
 
     (missingTenorsByCurrency.size > 0).toOption {
-      EmailEvent(from, to).copy(subject = "Missing Libor Maturities in LIM, observation day: " + observationDay,
+      email.copy(subject = "Missing Libor Maturities in LIM, observation day: " + observationDay,
         body = <html>
                  <p>The following LIBOR tenors are required by Trinity but are missing in LIM</p>
                  <table>

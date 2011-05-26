@@ -268,7 +268,7 @@ class StarlingInit( props: Props,
 
   val users = new CopyOnWriteArraySet[User]
 
-  val jmx = new StarlingJMX(users)
+  val jmx = new StarlingJMX(users, scheduler)
 
   val auth:ServerAuthHandler = props.UseAuth() match {
     case false => {

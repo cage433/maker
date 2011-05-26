@@ -12,19 +12,19 @@ import starling.utils.ImplicitConversions._
 
 class VerifyPriceAvailable(marketDataStore: MarketDataStore, pricingGroup: PricingGroup, exchange: FuturesExchange,
                            broadcaster: Broadcaster, from: String, to: String*)
-  extends BroadcastingScheduledTask(broadcaster) {
+  extends EmailingScheduledTask(broadcaster, from, to) {
 
   private val pfs = PivotFieldsState(dataFields = fields("Market", "Price"), rowFields = fields("Period"))
 
-  def eventFor(observationDay: Day): Option[EmailEvent] = {
+  def eventFor(observationDay: Day, email: EmailEvent): Option[EmailEvent] = {
     val filter = filters("Exchange" → exchange.name, "Observation Day" → observationDay)
 
     val dataSource = marketDataStore.pivot(MarketDataSelection(Some(pricingGroup)), PriceDataType)
     val prices = dataSource.data(pfs.copy(filters = filter))
 
     (prices.numberOfRows == 0).toOption {
-      EmailEvent(from, to).copy(subject = "Missing Prices for: %s" % filterToString(filter),
-                                body = "<p>No Prices have been uploaded for %s</p>" % filterToString(filter))
+      email.copy(subject = "Missing Prices for: %s" % filterToString(filter),
+                    body = "<p>No Prices have been uploaded for %s</p>" % filterToString(filter))
     }
   }
 }

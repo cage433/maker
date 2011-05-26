@@ -9,11 +9,12 @@ import starling.pivot.{PivotFieldsState, PivotTableDataSource}
 import starling.pivot.controller.PivotGrid
 import swing.event.Event
 import starling.utils.{Broadcaster, StarlingSpec}
+import starling.gui.api.EmailEvent
 
 
 class VerifyPricesValidTests extends StarlingSpec with ShouldMatchers {
   "should send no emails when no prices available" in {
-    verifier.withNoPrices.eventFor(Day.today) should be === None
+    verifier.withNoPrices.eventFor(Day.today, EmailEvent()) should be === None
   }
 
   def verifier() = {
