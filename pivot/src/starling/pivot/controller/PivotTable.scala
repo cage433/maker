@@ -89,6 +89,25 @@ case class PivotTable(rowFields:List[Field], rowFieldHeadingCount:Array[Int], ro
     val pivotTableConverter = PivotTableConverter(OtherLayoutInfo(totals = totals), this)
 
     val (rowHeaderCells, columnHeaderCells, mainTableCells) = pivotTableConverter.allTableCells()
+    // Unlike the gui, the spread sheets don't want columns or rows spanned, they want the value repeated.
+    /*for (j <- 0 until rowHeaderCells.length) {
+      val row = rowHeaderCells(j)
+      for (i <- 0 until row.length) {
+        row(i).span match {
+          case Some(s) => for (delta <- (j + 1) until (j + s)) rowHeaderCells(delta)(i) = row(i).copy(span = None)
+          case _ =>
+        }
+      }
+    }*/
+    for (j <- 0 until columnHeaderCells.length) {
+      val row = columnHeaderCells(j)
+      for (i <- 0 until row.length) {
+        row(i).span match {
+          case Some(s) => for (delta <- (i + 1) until (i + s)) row(delta) = row(i).copy(span = None)
+          case _ =>
+        }
+      }
+    }
 
     val rowHeaders = if (rowHeaderCells.isEmpty) rowFields.map(_.name) else {
       rowHeaderCells(0).map(_.value.field.name).toList

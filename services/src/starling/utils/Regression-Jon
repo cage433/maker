@@ -1,5 +1,5 @@
-,,,ICE Brent (bbl),ICE WTI (bbl),NYMEX WTI (bbl),NYMEX WTI (USD),NYMEX WTI (bbl^2/USD),NYMEX WTI (USD)
-Strategy,Strategy,Risk Period,Position,Position,Position,Vega,Gamma,Theta
+,,,ICE Brent (bbl),ICE WTI (bbl),NYMEX WTI,NYMEX WTI,NYMEX WTI,NYMEX WTI
+Strategy,Strategy,Risk Period,Position,Position,Position (bbl),Vega (USD),Gamma (bbl^2/USD),Theta (USD)
 Flat Price,Outrights,JUN 2011,,,0 ,,,
 ,,DEC 2011,,,0 ,,,
 ,Spreads,MAR 2011,,,0 ,,,
