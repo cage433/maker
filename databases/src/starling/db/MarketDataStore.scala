@@ -213,19 +213,22 @@ case class MarketDataUpdate(timedKey: TimedMarketDataKey, data: Option[MarketDat
 class DBMarketDataStore(db: DBTrait[RichResultSetRow], val marketDataSources: Map[MarketDataSet, MarketDataSource],
                         broadcaster: Broadcaster = Broadcaster.Null) extends MarketDataStore {
 
-  val q = (select("observationDay, observationTime, marketDataSet, marketDataType, marketDataKey")
-            from "MarketData"
-            where ("childVersion" isNull)
-            groupBy("observationDay, observationTime, marketDataSet, marketDataType, marketDataKey")
-            having ("COUNT(marketDataKey)" gt 1))
+  locally {
+    val q = (select("observationDay, observationTime, marketDataSet, marketDataType, marketDataKey")
+              from "MarketData"
+              where ("childVersion" isNull)
+              groupBy("observationDay, observationTime, marketDataSet, marketDataType, marketDataKey")
+              having ("COUNT(marketDataKey)" gt 1))
 
-  val duplicates = db.queryWithResult(q){
-    rs => {
-      println("!!! :" + rs)
-      rs.getString("marketDataSet")
+    val duplicates = db.queryWithResult(q){
+      rs => {
+        println("!!! :" + rs)
+        rs.getString("marketDataSet")
+      }
     }
+
+    assert(duplicates.isEmpty, "The MDS is corrupt\n" + q)
   }
-  assert(duplicates.isEmpty, "The MDS is corrupt")
 
   val importer = new MarketDataImporter(this)
 
