@@ -182,6 +182,7 @@ case class ColumnAndMeasureComponent(model:PivotTableModel, otherLayoutInfo:Othe
   }
   private val dropPanels = new ListBuffer[ColumnDropPanel]()
 
+  private val bottomNonMeasureFields = cs.bottomNonMeasureFields
   private val fields = cs.allFields
   private val guiFieldsMap = Map() ++ fields.map(field => {
     val shouldShowDepthPanel = model.treeDetails.maxTreeDepths.getOrElse(field, 0) > 1
@@ -191,7 +192,7 @@ case class ColumnAndMeasureComponent(model:PivotTableModel, otherLayoutInfo:Othe
     val currentlyActingAsMeasure = cs.measureFields.contains(field)
     val realMeasureField = model.isMeasureField(field)
     val subTotalToggleVisible = {
-      otherLayoutInfo.totals.columnSubTotals
+      otherLayoutInfo.totals.columnSubTotals && !currentlyActingAsMeasure && !realMeasureField && !bottomNonMeasureFields.contains(field)
     }
     val props = GuiFieldComponentProps(field, fieldChooserType, shouldShowDepthPanel,
       currentlyActingAsMeasure, realMeasureField,

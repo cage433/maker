@@ -97,14 +97,22 @@ object AxisNodeBuilder {
 
   def flatten(nodes:List[AxisNode], grandTotals:Boolean, subTotals:Boolean, collapsedState:CollapsedState,
               disabledSubTotals:List[Field], formatInfo:FormatInfo, extraFormatInfo:ExtraFormatInfo):List[List[AxisCell]] = {
-    val fakeNode = AxisNode(AxisValue(Field("N"), NullAxisValueType, 0), nodes)
+    val fakeField = Field("N")
+    val disabledSubTotalsToUse = Field.NullField :: fakeField :: disabledSubTotals
+
+    println("")
+    println(disabledSubTotalsToUse)
+    println("")
+
+
+    val fakeNode = AxisNode(AxisValue(fakeField, NullAxisValueType, 0), nodes)
     val grandTotalRows = if (grandTotals) {
-      val rows = fakeNode.flatten(List(), false, true, collapsedState, disabledSubTotals, formatInfo, extraFormatInfo)
+      val rows = fakeNode.flatten(List(), false, true, collapsedState, disabledSubTotalsToUse, formatInfo, extraFormatInfo)
       rows.map(_.map(_.copy(totalState=Total)))
     } else {
       List()
     }
-    val cellsWithNull = fakeNode.flatten(List(), subTotals, false, collapsedState, disabledSubTotals, formatInfo, extraFormatInfo) ::: grandTotalRows
+    val cellsWithNull = fakeNode.flatten(List(), subTotals, false, collapsedState, disabledSubTotalsToUse, formatInfo, extraFormatInfo) ::: grandTotalRows
     cellsWithNull.map(r=>r.tail)
   }
 }
@@ -113,12 +121,11 @@ object AxisNodeBuilder {
  * Supplies data for the pivot table view converted using totals and expand/collapse state.
  */
 case class PivotTableConverter(otherLayoutInfo:OtherLayoutInfo = OtherLayoutInfo(), table:PivotTable,
-                               extraFormatInfo:ExtraFormatInfo=PivotFormatter.DefaultExtraFormatInfo) {
+                               extraFormatInfo:ExtraFormatInfo=PivotFormatter.DefaultExtraFormatInfo,
+                               fieldState:PivotFieldsState=PivotFieldsState()) {
   val totals = otherLayoutInfo.totals
   val collapsedRowState = otherLayoutInfo.rowCollapsedState
   val collapsedColState = otherLayoutInfo.columnCollapsedState
-  val disabledRowSubTotals = otherLayoutInfo.rowSubTotalsDisabled
-  val disabledColumnSubTotals = otherLayoutInfo.columnSubTotalsDisabled
 
   def allTableCells(extractUOMs:Boolean = true) = {
     val grid = createGrid(extractUOMs)
@@ -132,7 +139,7 @@ case class PivotTableConverter(otherLayoutInfo:OtherLayoutInfo = OtherLayoutInfo
 
   def createGrid(extractUOMs:Boolean = true, addExtraColumnRow:Boolean = true):PivotGrid ={
     val rowDataX = AxisNodeBuilder.flatten(table.rowAxis, totals.rowGrandTotal, totals.rowSubTotals, collapsedRowState,
-      disabledRowSubTotals, table.formatInfo, extraFormatInfo)
+      otherLayoutInfo.disabledSubTotals, table.formatInfo, extraFormatInfo)
     def insertNull(grid:List[List[AxisCell]], nullCount:Int) = {
       grid.map{ r=> {
         if (r.isEmpty) List.fill(math.max(1, nullCount))(AxisCell.Null) else r
@@ -155,8 +162,21 @@ case class PivotTableConverter(otherLayoutInfo:OtherLayoutInfo = OtherLayoutInfo
         }
       }
     }
+    // We never want to show sub totals for top level measure fields.
+    val extraDisabledSubTotals = {
+      val topLevelMeasureFields = table.columnAxis.flatMap(an => {
+        if (an.axisValue.isMeasure) {
+          Some(an.axisValue.field)
+        } else {
+          None
+        }
+      })
+      val measureFieldsBeneathFields = otherLayoutInfo.disabledSubTotals.flatMap(f => fieldState.columns.measureFieldsDirectlyBeneath(f))
+      topLevelMeasureFields ::: measureFieldsBeneathFields
+    }
     val cdX = AxisNodeBuilder.flatten(table.columnAxis, totals.columnGrandTotal, totals.columnSubTotals, collapsedColState,
-      disabledColumnSubTotals, table.formatInfo, extraFormatInfo)
+       extraDisabledSubTotals ::: otherLayoutInfo.disabledSubTotals, table.formatInfo, extraFormatInfo)
+    
     val cd = {
       val r = insertNull(cdX, 1)
       // I always want there to be at least 2 rows in the column header table area so that the row field drop area is visible.

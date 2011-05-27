@@ -444,7 +444,7 @@ class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSiz
     background = GuiUtils.PivotTableBackgroundColour
   }
 
-  private val viewConverter = PivotTableConverter(otherLayoutInfo, data.pivotTable, extraFormatInfo)
+  private val viewConverter = PivotTableConverter(otherLayoutInfo, data.pivotTable, extraFormatInfo, data.pivotFieldsState)
   private val (rowHeaderData, colHeaderData, mainData, colUOMs) = viewConverter.allTableCellsAndUOMs
 
   private def resizeColumnHeaderAndMainTableColumns {

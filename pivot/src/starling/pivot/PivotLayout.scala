@@ -5,7 +5,7 @@ import model.CollapsedState
 case class OtherLayoutInfo(totals:Totals=Totals.Null, frozen:Boolean=true, fieldPanelCollapsed:Boolean=false,
                            rowCollapsedState:CollapsedState=CollapsedState.None,
                            columnCollapsedState:CollapsedState=CollapsedState.None,
-                           rowSubTotalsDisabled:List[Field]=List(), columnSubTotalsDisabled:List[Field]=List())
+                           disabledSubTotals:List[Field]=List())
 
 case class PivotLayout(layoutName:String, pivotFieldState:PivotFieldsState, userLayout:Boolean,
                        otherLayoutInfo:OtherLayoutInfo, layoutType:String, associatedReports:List[String])

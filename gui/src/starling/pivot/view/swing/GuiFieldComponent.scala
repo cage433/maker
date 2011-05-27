@@ -584,8 +584,7 @@ case class MeasureTogglePanel(props:GuiFieldComponentProps) extends GuiFieldPane
 
 case class SubTotalTogglePanel(props:GuiFieldComponentProps)
         extends GuiFieldPanel("insets 2 0 2 1", false,
-          !(props.otherLayoutInfo.rowSubTotalsDisabled.contains(props.field) ||
-                  props.otherLayoutInfo.columnSubTotalsDisabled.contains(props.field)),
+          !props.otherLayoutInfo.disabledSubTotals.contains(props.field),
           endPiece = props.realMeasureField) {
   visible = props.showSubTotalToggle
   tooltip = "Toggle whether subtotals should be shown for this field"

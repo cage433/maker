@@ -337,7 +337,7 @@ object PivotTableModel {
       val rowAxisValues = scala.collection.mutable.HashSet[AxisValueList[AxisValue]]()
       val columnAxisValues = scala.collection.mutable.HashSet[AxisValueList[AxisValue]]()
 
-      val allPaths = pivotState.columns.buildPaths()
+      val allPaths = pivotState.columns.buildPathsWithPadding
 
       val maxColumnDepth = if (allPaths.isEmpty) 0 else allPaths.maximum(_.path.size)
 

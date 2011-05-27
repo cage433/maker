@@ -4,6 +4,7 @@ import org.scalatest.testng.TestNGSuite
 import org.testng.annotations._
 import org.testng.Assert._
 import starling.pivot.ColumnTrees._
+import starling.pivot.PivotFieldsState._
 
 class ColumnStructureTest extends TestNGSuite {
   val cs = ColumnTrees(
@@ -472,7 +473,16 @@ class ColumnStructureTest extends TestNGSuite {
   }
 
   @Test
-  def testMovingAFieldInternally() {
-    
+  def testBuildPathsWithPadding() {
+    val unevenTree = ColumnTrees(List(
+      ColumnTree(Field("PV"), true), ColumnTree(Field("Gamma"), true, ColumnTrees(ColumnTree(Field("Expiry"), false)))
+    ))
+    val columnTrees = ColumnTrees(List(ColumnTree(FieldOrColumnStructure(Right(unevenTree)), ColumnTrees(Field("Product"), false))))
+
+    val expected = List(ColumnStructurePath(Some(Field("PV")),List((Field("PV"),0), (Field.NullField,0), (Field("Product"),0))),
+      ColumnStructurePath(Some(Field("Gamma")),List((Field("Gamma"),1), (Field("Expiry"),0), (Field("Product"),0))))
+
+    val result = columnTrees.buildPathsWithPadding
+    assertEquals(result, expected)
   }
 }

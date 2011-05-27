@@ -2,9 +2,9 @@ package starling.pivot
 
 import java.io.Serializable
 import starling.utils.StarlingObject
-import collection.immutable.TreeMap
 import collection.SortedMap
 import starling.utils.ImplicitConversions._
+import collection.immutable.{Map, TreeMap}
 
 object FieldChooserType extends Enumeration {
   type FieldChooserType = Value
@@ -208,7 +208,42 @@ case class ColumnTree(fieldOrColumnStructure:FieldOrColumnStructure, childStruct
       childStructure.isInvalid
     }
   }
-
+  def bottomNonMeasureFields:List[Field] = {
+    val childFields = childStructure.bottomNonMeasureFields
+    if (childFields.nonEmpty) {
+      childFields
+    } else {
+      fieldOrColumnStructure.value match {
+        case Left(f) => {
+          if (f.isMeasure) {
+            List()
+          } else {
+            List(f.field)
+          }
+        }
+        case Right(cs) => cs.bottomNonMeasureFields
+      }
+    }
+  }
+  def measureFieldsDirectlyBeneath(field:Field):List[Field] = {
+    val childMeasures = childStructure.measureFieldsDirectlyBeneath(field)
+    fieldOrColumnStructure.value match {
+      case Left(f) => {
+        if (f.field == field) {
+          childStructure.topMeasureFields
+        } else {
+          childMeasures
+        }
+      }
+      case Right(cs) => cs.measureFieldsDirectlyBeneath(field)
+    }
+  }
+  def topMeasureFields:List[Field] = {
+    fieldOrColumnStructure.value match {
+      case Left(f) => if (f.isMeasure) List(f.field) else List()
+      case Right(cs) => cs.topMeasureFields
+    }
+  }
 }
 object ColumnTree {
   def apply(field:Field, isData:Boolean):ColumnTree = new ColumnTree(FieldOrColumnStructure(field, isData), ColumnTrees.Null)
@@ -218,6 +253,26 @@ object ColumnTree {
 }
 
 case class ColumnTrees(trees:List[ColumnTree]) {
+
+  def bottomNonMeasureFields:List[Field] = trees.flatMap(_.bottomNonMeasureFields)
+  def measureFieldsDirectlyBeneath(field:Field):List[Field] = trees.flatMap(_.measureFieldsDirectlyBeneath(field))
+  def topMeasureFields:List[Field] = trees.flatMap(_.topMeasureFields)
+
+  def buildPathsWithPadding:List[ColumnStructurePath] = {
+    val paths = buildPaths()
+
+    val foo:Map[Field, List[(Field, Int)]] = paths.flatMap(_.path.zipWithIndex.map{case ((f,pos), i) => {
+      (f, i)
+    }}).groupBy(_._1)
+    val bar:Map[Field, Int] = foo.mapValues( list => list.map(_._2).max)
+    paths.map { path => {
+      val paddedPath = path.path.zipWithIndex.flatMap { case ((field,pos),index) => {
+        val nullsRequired = bar(field) - index
+        List.fill(nullsRequired)( (Field.NullField, pos)) ::: List( (field,pos))
+      }}
+      path.copy(path=paddedPath)
+    }}
+  }
 
   def buildPaths(extra:Int=0):List[ColumnStructurePath] = {
     var previousWidth = extra
