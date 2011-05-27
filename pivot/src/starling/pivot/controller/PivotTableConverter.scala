@@ -99,12 +99,6 @@ object AxisNodeBuilder {
               disabledSubTotals:List[Field], formatInfo:FormatInfo, extraFormatInfo:ExtraFormatInfo):List[List[AxisCell]] = {
     val fakeField = Field("N")
     val disabledSubTotalsToUse = Field.NullField :: fakeField :: disabledSubTotals
-
-    println("")
-    println(disabledSubTotalsToUse)
-    println("")
-
-
     val fakeNode = AxisNode(AxisValue(fakeField, NullAxisValueType, 0), nodes)
     val grandTotalRows = if (grandTotals) {
       val rows = fakeNode.flatten(List(), false, true, collapsedState, disabledSubTotalsToUse, formatInfo, extraFormatInfo)
