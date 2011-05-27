@@ -17,7 +17,7 @@ object ClosesEnvironmentRule extends EnvironmentRule {
   def createEnv(observationDay: Day, marketDataReader: MarketDataReader): EnvironmentWithDomain = {
     val priceDataMap = marketsWithCloseTimeOfDay.flatMap {
       case (market, timeOfDay) => try {
-        val marketData = marketDataReader.read(ObservationPoint(observationDay, timeOfDay), PriceDataKey(market))
+        val marketData = marketDataReader.read(TimedMarketDataKey(observationDay.atTimeOfDay(timeOfDay), PriceDataKey(market)))
         Some(PriceDataKey(market) → marketData.asInstanceOf[PriceData])
       } catch {
         case e: MissingMarketDataException => None
@@ -35,8 +35,8 @@ object ClosesEnvironmentRule extends EnvironmentRule {
             priceDataMap.getOrElse(priceDataKey,
               throw new Exception("No price for " + futuresMarket + "@" + marketCloses.contains(futuresMarket)))
           }
-          case key:ForwardRateDataKey => marketDataReader.read(observationDay.atTimeOfDay(ObservationTimeOfDay.Default), key)
-          case key:SpotFXDataKey => marketDataReader.read(observationDay.atTimeOfDay(ObservationTimeOfDay.LondonClose), key)
+          case key:ForwardRateDataKey => marketDataReader.read(TimedMarketDataKey(observationDay.atTimeOfDay(ObservationTimeOfDay.Default), key))
+          case key:SpotFXDataKey => marketDataReader.read(TimedMarketDataKey(observationDay.atTimeOfDay(ObservationTimeOfDay.LondonClose), key))
           case _ => throw new Exception(name + " only has rules for futures Prices")
         }
       }

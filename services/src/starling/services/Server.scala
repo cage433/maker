@@ -173,16 +173,12 @@ class StarlingInit( props: Props,
   val refinedFixationSystemOfRecord = new RefinedFixationSystemOfRecord(neptuneRichDB)
   val refinedFixationImporter = new TradeImporter(refinedFixationSystemOfRecord, refinedFixationTradeStore)
 
-  val tradeImporterFactory = new TradeImporterFactory(
-    refinedAssignmentImporter, refinedFixationImporter
-  )
+  val tradeImporterFactory = new TradeImporterFactory(refinedAssignmentImporter, refinedFixationImporter)
 
-  val enabledDesks: Set[Desk] = {
-    props.EnabledDesks() match {
-      case "" => Desk.all.toSet
-      case "none" => Set.empty
-      case names => names.split(",").toList.map(Desk.fromName).toSet
-    }
+  val enabledDesks: Set[Desk] = props.EnabledDesks() match {
+    case "" => Desk.values.toSet
+    case "none" => Set.empty
+    case names => names.split(",").toList.map(Desk.fromName).toSet
   }
 
   val closedDesks = new ClosedDesks(broadcaster, starlingDB)

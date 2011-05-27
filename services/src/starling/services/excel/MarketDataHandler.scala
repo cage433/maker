@@ -228,7 +228,7 @@ class MarketDataHandler(broadcaster : Broadcaster,
     val observationPoint = ObservationPoint.parse(observationDate)
     val currency = UOM.parseCurrency(currencyName).getOrElse(throw new Exception("Unknown currency " + currencyName))
     val fxRate = new SpotFXData(Quantity(rate, UOM.USD/ currency))
-    val result = marketDataStore.save(MarketDataSet.excel(label), observationPoint, SpotFXDataKey(currency), fxRate)
+    val result = marketDataStore.save(MarketDataSet.excel(label), TimedMarketDataKey(observationPoint, SpotFXDataKey(currency)), fxRate)
     "OK:" + result
   }
 
@@ -256,7 +256,7 @@ class MarketDataHandler(broadcaster : Broadcaster,
     val priceRows: Array[(DateRange, Double)] = joinedPriceRange.flatMap{
       row => extractPeriodPricePair(observationPoint, market.tenor, row, 1)
     }
-    val result = marketDataStore.save(MarketDataSet.excel(label), observationPoint, PriceDataKey(market),
+    val result = marketDataStore.save(MarketDataSet.excel(label), TimedMarketDataKey(observationPoint, PriceDataKey(market)),
       PriceData.create(priceRows, market.priceUOM))
 
     val dates: Array[Day] = priceRows.map(_._1.firstDay)
@@ -310,7 +310,7 @@ class MarketDataHandler(broadcaster : Broadcaster,
         }
       }
     }
-    val result = marketDataStore.save(MarketDataSet.excel(label), observationPoint, ForwardRateDataKey(ccy), ForwardRateData(rows.toList))
+    val result = marketDataStore.save(MarketDataSet.excel(label), TimedMarketDataKey(observationPoint, ForwardRateDataKey(ccy)), ForwardRateData(rows.toList))
 
     val dates = periods.map((d: Double) => Day.fromExcel(d))
     broadcaster.broadcast(UploadInterestRatesUpdate(User.currentlyLoggedOn, label, observationPoint.day, dates, currency, rates))
@@ -361,7 +361,7 @@ class MarketDataHandler(broadcaster : Broadcaster,
 
     val key = SpreadStdDevSurfaceDataKey(market)
     val data = SpreadStdDevSurfaceData(months, atm, call, put, market.priceUOM)
-    val result = marketDataStore.save(MarketDataSet.excel(label), observationPoint, key, data)
+    val result = marketDataStore.save(MarketDataSet.excel(label), TimedMarketDataKey(observationPoint, key), data)
 
     val sds: Array[Array[Double]] = Array(Array(0.5, 0, 1)) ++ standardDeviations.tail.map(_.map(_.asInstanceOf[Double]))
 
@@ -403,7 +403,7 @@ class MarketDataHandler(broadcaster : Broadcaster,
       }
     })
     val marketDataSet = MarketDataSet.excel(label)
-    val result = marketDataStore.save(marketDataSet, observationPoint, EquityPricesMarketDataKey, equityPrices)
+    val result = marketDataStore.save(marketDataSet, TimedMarketDataKey(observationPoint, EquityPricesMarketDataKey), equityPrices)
     "OK:" + result
   }
 

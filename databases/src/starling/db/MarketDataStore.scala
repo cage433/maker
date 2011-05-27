@@ -14,10 +14,10 @@ import starling.pivot.{Field => PField}
 import starling.utils.cache.CacheFactory
 import starling.daterange._
 import collection.mutable.{ListBuffer, HashSet => MSet}
-import starling.utils.{Stopwatch, Broadcaster, Log, StarlingXStream}
 import starling.calendar.Clock
 
 import starling.utils.Pattern._
+import starling.utils._
 
 
 // TODO: move me somewhere proper
@@ -52,7 +52,7 @@ trait MarketDataSource { self =>
       result
     }
 
-    def duplicateTimedKeys(map: Map[(Day, Day, MarketDataType), List[MarketDataEntry]]): List[(ObservationPoint, MarketDataKey)] =
+    def duplicateTimedKeys(map: Map[(Day, Day, MarketDataType), List[MarketDataEntry]]): List[TimedMarketDataKey] =
       map.values.flatMap(duplicateTimedKeys).toList
   }
 
@@ -64,9 +64,9 @@ class AdaptingMarketDataSource(adaptee: MarketDataSource) extends MarketDataSour
   def read(day: Day) = adaptee.read(day)
 }
 
-case class MarketDataSet(name:String)
+case class MarketDataSet(name: String) extends Named
 
-object MarketDataSet {
+object MarketDataSet extends StarlingEnum(classOf[MarketDataSet]) {
   val excelPrefix = "Excel:"
   def excel(name:String) = {
     if (name == "Official:Metals") {
@@ -106,7 +106,6 @@ object MarketDataStore {
 
   val pricingGroupsDefinitions = Map[PricingGroup,List[MarketDataSet]](
     PricingGroup.Metals -> List(ManualMetals, LimMetals, TrinityDiscountFactorCSV),
-    PricingGroup.Starling -> List(Starling),
     PricingGroup.LimOnly -> List(LIM),
     PricingGroup.System -> List(Starling, LIM, System),
     PricingGroup.Crude-> List(Starling, LIM, Crude),
@@ -115,6 +114,12 @@ object MarketDataStore {
     PricingGroup.BarryEckstein -> List(Starling, BarryEckstein, LIM),
     PricingGroup.LondonDerivativesOptions -> List(Starling, LondonDerivativesOptions, LIM, System)
   )
+
+  val orphanedPricingGroups = (PricingGroup.values \\ Desk.pricingGroups.intersect(pricingGroupsDefinitions.keys.toList))
+    .desire(_.isEmpty, "Orphaned Pricing Groups:")
+
+  val orphanedMarketDataSets = (MarketDataSet.values \\ Desk.pricingGroups.flatMap(pricingGroupsDefinitions).distinct)
+    .desire(_.isEmpty, "Orphaned Market Data Sets:")
 
   val manuallyEditableMarketDataSets = Set(ManualMetals, Starling)
 
@@ -149,7 +154,7 @@ trait MarketDataStore {
   def latestPricingGroupVersions: Map[PricingGroup, Int]
   def latestSnapshot(pricingGroup: PricingGroup, observationDay: Day): Option[SnapshotID]
 
-  def marketData(from: Day, to: Day, marketDataType: MarketDataType, marketDataSet: MarketDataSet): List[(ObservationPoint, MarketDataKey, VersionedMarketData)]
+  def marketData(from: Day, to: Day, marketDataType: MarketDataType, marketDataSet: MarketDataSet): List[(TimedMarketDataKey, VersionedMarketData)]
   def marketDataTypes(marketDataIdentifier: MarketDataIdentifier): List[MarketDataType]
 
   def observationDays(pricingGroup: PricingGroup, from: Day, to: Day): List[Day]
@@ -162,14 +167,14 @@ trait MarketDataStore {
 
   def query(marketDataIdentifier: MarketDataIdentifier, marketDataType: MarketDataType,
             observationDays: Option[Set[Option[Day]]] = None, observationTimes: Option[Set[ObservationTimeOfDay]] = None,
-            marketDataKeys: Option[Set[MarketDataKey]] = None): List[(ObservationPoint, MarketDataKey, MarketData)]
+            marketDataKeys: Option[Set[MarketDataKey]] = None): List[(TimedMarketDataKey, MarketData)]
 
-  def queryForObservationDayAndMarketDataKeys(marketDataIdentifier: MarketDataIdentifier, marketDataType: MarketDataType): List[(ObservationPoint, MarketDataKey)]
+  def queryForObservationDayAndMarketDataKeys(marketDataIdentifier: MarketDataIdentifier, marketDataType: MarketDataType): List[TimedMarketDataKey]
 
-  def readLatest[T <: MarketData](marketDataSet: MarketDataSet, observationPoint: ObservationPoint, marketDataKey: MarketDataKey): Option[T]
+  def readLatest[T <: MarketData](marketDataSet: MarketDataSet, timedKey: TimedMarketDataKey): Option[T]
 
   def save(marketDataSetToData: Map[MarketDataSet, Iterable[MarketDataEntry]]): (Int, Boolean)
-  def save(marketDataSet: MarketDataSet, observationPoint: ObservationPoint, marketDataKey: MarketDataKey, marketData: MarketData): Int
+  def save(marketDataSet: MarketDataSet, timedKey: TimedMarketDataKey, marketData: MarketData): Int
   def saveAll(marketDataSet: MarketDataSet, observationPoint: ObservationPoint, data: Map[MarketDataKey,MarketData]): (Int, Boolean)
 
   def snapshot(marketDataSelection: MarketDataSelection, doImport: Boolean, observationDay: Day) : SnapshotID
@@ -183,7 +188,7 @@ case class VersionedMarketData(timestamp: Timestamp, version: Int, data: Option[
 
 object VersionedMarketData {
   def apply(key: MarketDataKey, rs: ResultSetRow) = new VersionedMarketData(rs.getTimestamp("timestamp"), rs.getInt("version"),
-    rs.getObjectOption[MarketData]("data").map(key.unmarshallDB(_)))
+    rs.getObjectOption[Any]("data").map(key.unmarshallDB(_)))
 
   val Save = Extractor.when[VersionedMarketData](_.data.isDefined)
 }
@@ -191,18 +196,18 @@ object VersionedMarketData {
 case class MarketDataEntry(observationPoint: ObservationPoint, key: MarketDataKey, data: MarketData) {
   val dataType = key.dataType
   def isEmpty = key.castRows(data).isEmpty
-  def toSave(existingData: Option[VersionedMarketData]) = if (isEmpty) None else Some(MarketDataUpdate(observationPoint, key, Some(data), existingData))
-  def toUpdate(existingData: Option[VersionedMarketData]) = toSave(existingData).getOrElse(MarketDataUpdate(observationPoint, key, None, existingData))
-  def timedKey = (observationPoint, key)
-  def dataIdFor(marketDataSet: MarketDataSet) = MarketDataID(observationPoint, marketDataSet, key)
+  def toSave(existingData: Option[VersionedMarketData]) = if (isEmpty) None else Some(MarketDataUpdate(timedKey, Some(data), existingData))
+  def toUpdate(existingData: Option[VersionedMarketData]) = toSave(existingData).getOrElse(MarketDataUpdate(timedKey, None, existingData))
+  def timedKey = TimedMarketDataKey(observationPoint, key)
+  def dataIdFor(marketDataSet: MarketDataSet) = MarketDataID(timedKey, marketDataSet)
 }
 
-case class MarketDataUpdate(observationPoint: ObservationPoint, marketDataKey: MarketDataKey, data: Option[MarketData], existingData: Option[VersionedMarketData]) {
-  def dataIdFor(marketDataSet: MarketDataSet) = MarketDataID(observationPoint, marketDataSet, marketDataKey)
-  def timedKey = (observationPoint, marketDataKey)
+case class MarketDataUpdate(timedKey: TimedMarketDataKey, data: Option[MarketData], existingData: Option[VersionedMarketData]) {
+  def observationPoint = timedKey.observationPoint
+  def marketDataKey = timedKey.key
+  def dataIdFor(marketDataSet: MarketDataSet) = MarketDataID(timedKey, marketDataSet)
   def indexedData(marketDataSet: MarketDataSet) = dataIdFor(marketDataSet) → data
 }
-
 
 // TODO: move me somewhere proper
 class DBMarketDataStore(db: DBTrait[RichResultSetRow], val marketDataSources: Map[MarketDataSet, MarketDataSource],
@@ -338,9 +343,9 @@ class DBMarketDataStore(db: DBTrait[RichResultSetRow], val marketDataSources: Ma
     }
   }
 
-  def readLatest[T <: MarketData](marketDataSet:MarketDataSet, observationPoint:ObservationPoint, marketDataKey : MarketDataKey) : Option[T] = {
-    val id = MarketDataID(observationPoint, marketDataSet, marketDataKey)
-    readFoo(id, None, marketDataKey.unmarshallDB(_)).asInstanceOf[Option[T]]
+  def readLatest[T <: MarketData](marketDataSet:MarketDataSet, timedKey: TimedMarketDataKey) : Option[T] = {
+    val id = MarketDataID(timedKey.observationPoint, marketDataSet, timedKey.key)
+    readFoo(id, None, timedKey.unmarshallDB(_)).asInstanceOf[Option[T]]
   }
 
   def applyOverrideRule(marketDataType:MarketDataType, allDataForKeyAndDay:List[Map[PField,Any]]): List[Map[PField, Any]] = {
@@ -477,8 +482,8 @@ class DBMarketDataStore(db: DBTrait[RichResultSetRow], val marketDataSources: Ma
     (maxVersion, changedMarketDataSets.nonEmpty)
   }
 
-  def save(marketDataSet:MarketDataSet, observationPoint:ObservationPoint, marketDataKey:MarketDataKey, marketData:MarketData):Int = {
-    save(Map(marketDataSet -> List( MarketDataEntry(observationPoint, marketDataKey, marketData) ) ))._1
+  def save(marketDataSet:MarketDataSet, timedKey: TimedMarketDataKey, marketData:MarketData):Int = {
+    save(Map(marketDataSet -> List( MarketDataEntry(timedKey.observationPoint, timedKey.key, marketData) ) ))._1
   }
 
   def importData(marketDataSelection:MarketDataSelection, observationDay : Day) = {
@@ -583,7 +588,7 @@ class DBMarketDataStore(db: DBTrait[RichResultSetRow], val marketDataSources: Ma
     )
   }
 
-  def marketData(from: Day, to: Day, marketDataType: MarketDataType, marketDataSet: MarketDataSet): List[(ObservationPoint, MarketDataKey, VersionedMarketData)] = {
+  def marketData(from: Day, to: Day, marketDataType: MarketDataType, marketDataSet: MarketDataSet): List[(TimedMarketDataKey, VersionedMarketData)] = {
     val query = (
       select ("observationDay, observationTime, marketDataKey, data, timestamp, version")
       from "MarketData"
@@ -595,8 +600,7 @@ class DBMarketDataStore(db: DBTrait[RichResultSetRow], val marketDataSources: Ma
     )
     val results = db.queryWithResult(query) { rs => {
       val key: MarketDataKey = rs.getObject[MarketDataKey]("marketDataKey")
-      (ObservationPoint(rs.getDay("observationDay"), ObservationTimeOfDay.fromName(rs.getString("observationTime"))),
-        key, VersionedMarketData(key, rs))
+      (TimedMarketDataKey(observationPoint(rs), key), VersionedMarketData(key, rs))
     }}
     val check = results.groupBy(e => (e._1, e._2))
     check.foreach {
@@ -608,6 +612,9 @@ class DBMarketDataStore(db: DBTrait[RichResultSetRow], val marketDataSources: Ma
     }
     results
   }
+
+  private def observationPoint(rs: ResultSetRow) =
+    ObservationPoint(rs.getDay("observationDay"), ObservationTimeOfDay.fromName(rs.getString("observationTime")))
 
   private def queryForMarketDataIdentifier[T](
         marketDataIdentifier:MarketDataIdentifier,
@@ -624,7 +631,7 @@ class DBMarketDataStore(db: DBTrait[RichResultSetRow], val marketDataSources: Ma
     db.queryWithResult(query) { rs => f(rs) }
   }
 
-  def queryForObservationDayAndMarketDataKeys(marketDataIdentifier: MarketDataIdentifier, marketDataType: MarketDataType): List[(ObservationPoint, MarketDataKey)] = {
+  def queryForObservationDayAndMarketDataKeys(marketDataIdentifier: MarketDataIdentifier, marketDataType: MarketDataType): List[TimedMarketDataKey] = {
     val version = versionForMarketDataVersion(marketDataIdentifier.marketDataVersion)
 
     db.queryWithResult(
@@ -641,14 +648,14 @@ class DBMarketDataStore(db: DBTrait[RichResultSetRow], val marketDataSources: Ma
         }
         val marketDataKey = rs.getObject[MarketDataKey]("marketDataKey")
 
-        (observationPoint, marketDataKey)
+        TimedMarketDataKey(observationPoint, marketDataKey)
       }
     }
   }
 
   def query(marketDataIdentifier: MarketDataIdentifier, marketDataType: MarketDataType,
             observationDays: Option[Set[Option[Day]]] = None, observationTimes: Option[Set[ObservationTimeOfDay]] = None,
-            marketDataKeys: Option[Set[MarketDataKey]] = None): List[(ObservationPoint, MarketDataKey, MarketData)] = {
+            marketDataKeys: Option[Set[MarketDataKey]] = None): List[(TimedMarketDataKey, MarketData)] = {
 
     val observationDayClause = {
       observationDays.map { days => {
@@ -673,7 +680,7 @@ class DBMarketDataStore(db: DBTrait[RichResultSetRow], val marketDataSources: Ma
        orderBy "observationDay, marketDataKey, marketDataSet".desc
     )
 
-    val data = new ListBuffer[(ObservationPoint, MarketDataKey, MarketData)]()
+    val data = new ListBuffer[(TimedMarketDataKey, MarketData)]()
     var latestKey:Option[(String,Option[Day],MarketDataKey)] = None
     val latestValues = new scala.collection.mutable.HashMap[String,(MarketData)]()
 
@@ -688,7 +695,7 @@ class DBMarketDataStore(db: DBTrait[RichResultSetRow], val marketDataSources: Ma
           case None => ObservationPoint.RealTime
           case Some(day) => ObservationPoint(day, ObservationTimeOfDay.fromName(timeOfDay))
         }
-        data.append( (observationPoint, key, marketData) )
+        data.append(TimedMarketDataKey(observationPoint, key) → marketData)
       }
     }
 

@@ -22,6 +22,8 @@ case class PriceFixingsHistoryData(fixings: SortedMap[(Level, StoredFixingPeriod
   def +(other: PriceFixingsHistoryData) = {
     val combinedFixings = fixings ++ other.fixings; PriceFixingsHistoryData.create(combinedFixings)
   }
+
+  override def size = Some(fixings.size)
 }
 
 object PriceFixingsHistoryData {

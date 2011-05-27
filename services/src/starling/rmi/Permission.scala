@@ -23,8 +23,8 @@ object Permission {
       StarlingLondonDerivatives -> Set(Desk.LondonDerivativesOptions, Desk.LondonDerivatives),
       StarlingGasolineSpec -> Set(Desk.GasolineSpec),
       StarlingHoustonDerivatives -> Set(Desk.HoustonDerivatives),
-      StarlingDevelopers -> Desk.all.toSet,
-      StarlingAdmin -> Desk.all.toSet
+      StarlingDevelopers -> Desk.values.toSet,
+      StarlingAdmin -> Desk.values.toSet
     )
 
   def isAdmin(user: User): Boolean = {

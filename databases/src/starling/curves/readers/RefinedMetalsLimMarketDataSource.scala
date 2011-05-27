@@ -43,7 +43,7 @@ case class RefinedMetalsLimMarketDataSource(limServer: LIMServer)
         MarketDataEntry(day.atTimeOfDay(limRelation.observationTimeOfDay), PriceDataKey(market),
           PriceData.create(prices.map { case (price, _, day) => day → price}, market.priceUOM))
       }
-    } }
+    } }.info(entries => logCountData(entries, limRelations.map(_.parent.name)))
   }
 
   private def getValues(day: Day, sources: List[LimSource]): List[MarketDataEntry] =
@@ -55,7 +55,9 @@ case class RefinedMetalsLimMarketDataSource(limServer: LIMServer)
   }
 
   private def getValues(source: LimSource, start: Day, end: Day): List[MarketDataEntry] = limServer.query { connection =>
-    val prices = source.relationsFrom(connection).flatMap { case (fixingRelation, childRelation) => {
+    val relations = source.relationsFrom(connection)
+
+    val prices = relations.flatMap { case (fixingRelation, childRelation) => {
       val prices = source.levels.valuesToMap(level => connection.getPrices(childRelation, level, start, end))
 
       val groupedPrices = prices.toList.flatMap {
@@ -69,7 +71,13 @@ case class RefinedMetalsLimMarketDataSource(limServer: LIMServer)
 
     source.marketDataEntriesFrom(prices)
       .require(containsDistinctTimedKeys, "source: %s produced duplicate MarketDataKeys: " % source)
+      .info(entries => logCountData(entries, relations.map(_.tail)))
   }
+
+  private def logCountData(entries: List[MarketDataEntry], relations: List[String]) =
+    "Obtained %d values from: %s..." % (countData(entries), relations.take(5).mkString(", "))
+
+  private def countData(entries: List[MarketDataEntry]) = entries.map(_.data.size.getOrElse(0)).sum
 }
 
 case class Prices[Relation](relation: Relation, priceByLevel: Map[Level, Double], observationDay: Day)
@@ -77,9 +85,7 @@ case class Prices[Relation](relation: Relation, priceByLevel: Map[Level, Double]
 trait LimSource {
   type Relation
   val levels: List[Level]
-
   def relationsFrom(connection: LIMConnection): List[(Relation, String)]
-
   def marketDataEntriesFrom(fixings: List[Prices[Relation]]): List[MarketDataEntry]
 }
 
@@ -88,9 +94,7 @@ trait HierarchicalLimSource extends LimSource {
 
   def fixingRelationFrom(childRelation: String): Option[(Relation, String)]
 
-  def relationsFrom(connection: LIMConnection) = {
-    connection.getAllRelChildren(parentNodes : _*).flatMap(safeFixingRelationFrom)
-  }
+  def relationsFrom(connection: LIMConnection) = connection.getAllRelChildren(parentNodes : _*).flatMap(safeFixingRelationFrom)
 
   private def safeFixingRelationFrom(childRelation: String) = safely(fixingRelationFrom(childRelation)) match {
     case Left(exception) => { Log.debug("Malformed LIM relation: " + childRelation, exception); None }

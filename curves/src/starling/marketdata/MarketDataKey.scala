@@ -33,11 +33,25 @@ trait MarketDataKey {
   def fieldValues:Map[Field,Any]
 
   def read(slice:MarketDataSlice):marketDataType = cast(slice.read(this))
-  def read(observationPoint: ObservationPoint, reader:MarketDataReader):marketDataType = cast(reader.read(observationPoint, this))
+  def read(observationPoint: ObservationPoint, reader: MarketDataReader): marketDataType =
+    cast(reader.read(TimedMarketDataKey(observationPoint, this)))
 
   private def cast(marketData:MarketData):marketDataType = marketData.asInstanceOf[marketDataType]
 
   def dataTypeKey = dataType.name
 
   def unmarshallDB(dbValue: Any): marketDataType = dbValue.asInstanceOf[marketDataType]
+}
+
+case class TimedMarketDataKey(observationPoint: ObservationPoint, key: MarketDataKey) {
+  def day = observationPoint.day
+  def timeOfDay = observationPoint.timeOfDay
+  def timeName = observationPoint.timeName
+
+  def dataType = key.dataType
+  def fieldValues = key.fieldValues
+  def castRows(marketData: MarketData) = key.castRows(marketData)
+  def unmarshallDB(dbValue: Any) = key.unmarshallDB(dbValue)
+
+  def asTuple = (observationPoint, key)
 }

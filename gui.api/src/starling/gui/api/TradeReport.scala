@@ -64,7 +64,6 @@ case class PricingGroup(name:String) extends Named {
 
 object PricingGroup extends StarlingEnum(classOf[PricingGroup]) {
   val Metals = PricingGroup("Metals")
-  val Starling = PricingGroup("Starling Overrides")
   val System = PricingGroup("System")
   val LimOnly = PricingGroup("LIM Only")
   val Crude = PricingGroup("Crude")
@@ -89,7 +88,7 @@ case class SnapshotIDLabel(observationDay: Day, id: Int, timestamp : Timestamp, 
 }
 
 
-sealed case class Desk(name: String) {
+sealed case class Desk(name: String) extends Named {
   import Desk._
   import PricingGroup._
 
@@ -101,11 +100,11 @@ sealed case class Desk(name: String) {
     case Desk.GasolineSpec                        => List(PricingGroup.GasolineRoW, LimOnly)
     case CrudeSpecNorthSea                        => List(Crude, LimOnly)
     case HoustonDerivatives                       => List(BarryEckstein, LimOnly)
-    case Refined                                  => List(System)
+    case Refined                                  => List(System, Metals)
   }
 }
 
-object Desk {
+object Desk extends StarlingEnum(classOf[Desk]) {
   val LondonDerivativesOptions = Desk("London Derivatives Options")
   val LondonDerivatives = Desk("London Derivatives")
   val GasolineSpec = Desk("Gasoline Spec Global")
@@ -113,13 +112,7 @@ object Desk {
   val HoustonDerivatives = Desk("Houston Derivatives")
   val Refined = Desk("Refined")
 
-  val all = List(
-    LondonDerivativesOptions, LondonDerivatives,
-    GasolineSpec,
-    CrudeSpecNorthSea, HoustonDerivatives,
-    Refined)
-
-  def fromName(name:String) = all.find(_.name == name).getOrElse(throw new Exception("Unknown desk: " + name + "."))
+  val pricingGroups = values.flatMap(_.pricingGroups).distinct
 
   private def label(tradeSystem:String, shortCode: String) = TradeSystemLabel(tradeSystem, shortCode)
 }

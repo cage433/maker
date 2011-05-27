@@ -4,6 +4,7 @@ package starling.utils.conversions
 trait RichOption {
   implicit def enrichOption[A](option: Option[A]) = new {
     def optPair[B](b: B): Option[(A, B)] = option.map(a => (a,b))
+    def flatMapL[B](f: A => List[B]): List[B] = option.map(f).getOrElse(Nil)
   }
   implicit def enrichTraversableOption[A](option : Option[Traversable[A]]) =
     new RichTraversableOption(option)

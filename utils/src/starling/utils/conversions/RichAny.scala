@@ -24,11 +24,14 @@ trait RichAny {
     def update[V](actions: (T => V)*): T = { actions.foreach(_.apply(value)); value }
     def updateIt[V](actions: (T => V)*): T = update(actions : _*)
     def compareTo(other : T)(implicit ev : Ordering[T]) = ev.compare(value, other)
+
     def debug[V <: AnyRef](action : T => V) : T = perform(Log.debug(action(value)))
+    def info[V <: AnyRef](action : T => V) : T = perform(Log.info(action(value)))
 
     def assert(assertion: T => Boolean, message: => Any) : T = perform(Predef.assert(assertion(value), message))
     def deny(denial: T => Boolean, message: => Any) : T = perform(Predef.assert(!denial(value), message))
     def require(requirement: T => Boolean, message: => Any): T = perform(Predef.require(requirement(value), message + " " + trimmed))
+    def desire(wish: T => Boolean, message: => Any): T = perform(if (!wish(value)) Log.warn(message + " " + trimmed))
 
     def isOneOf(values : T*) = values.contains(value)
     val repeat : Seq[T] = Stream.continually(value).toSeq

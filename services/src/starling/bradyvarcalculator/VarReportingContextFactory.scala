@@ -10,6 +10,8 @@ import starling.daterange._
 import starling.reports.pivot.{CurveIdentifier, ReportContextBuilder}
 import starling.curves.EnvironmentRule
 
+import starling.utils.ImplicitConversions._
+
 
 abstract class AbstractReportContext(
         curveIdentifier:CurveIdentifier,
@@ -62,8 +64,7 @@ class MarketDataStoreReportContext(
 
   lazy val recordingReader = new RecordingMarketDataReader(new NormalMarketDataReader(db, curveIdentifier.marketDataIdentifier))
 
-
-  def recorded = recordingReader.recorded
+  def recorded = recordingReader.recorded.toList.mapFirst(_.asTuple).map(_.flatten).toSet
 
   def atomicEnvironment(day:Day) = curveIdentifier.environmentRule.createEnv(day, recordingReader).environment.atomicEnv
 
