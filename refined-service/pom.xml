@@ -207,14 +207,14 @@
                 <include>*.jar</include>
               </includes>
             </resource> 
-            <!--<resource> -->
-              <!--<directory>../refined-service/jars</directory> -->
-              <!--<target-path>webstart</target-path>-->
-              <!--<includes>-->
-                <!--<include>scala-swing-2.8.1.jar</include>-->
-                <!--<include>scala-library-2.8.1.jar</include>-->
-                <!--</includes>-->
-              <!--</resource> -->
+            <resource>
+              <directory>../lib/scala/scala-2.8.1.final/lib</directory>
+              <target-path>webstart</target-path>
+              <includes>
+                <include>scala-swing.jar</include>
+                <include>scala-library.jar</include>
+                </includes>
+              </resource>
             <resource> 
               <directory>../utils/jars</directory> 
               <target-path>webstart</target-path>

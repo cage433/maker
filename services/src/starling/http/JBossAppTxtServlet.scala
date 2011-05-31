@@ -32,8 +32,8 @@ netty-3.2.3.Final.jar compilation-time
 org.eclipse.mylyn.wikitext.core_1.4.0.I20100805-0500-e3x.jar compilation-time
 org.eclipse.mylyn.wikitext.textile.core_1.4.0.I20100805-0500-e3x.jar compilation-time
 platform.jar compilation-time
-scala-library-2.8.1.jar compilation-time
-scala-swing-2.8.1.jar compilation-time
+scala-library.jar compilation-time
+scala-swing.jar compilation-time
 sjson-0.8-2.8.0.jar compilation-time
 starling-auth-developer.jar compilation-time
 starling-bouncy-rmi-developer.jar compilation-time
