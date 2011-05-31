@@ -31,9 +31,6 @@ import starling.http._
 import starling.trade.TradeSystem
 import starling.reports.pivot.{ReportContextBuilder, ReportService}
 import starling.LIMServer
-import org.mortbay.jetty.bio.{SocketConnector}
-import org.mortbay.jetty.servlet.{ServletHolder, Context}
-import org.mortbay.jetty.{Server => JettyServer}
 import starling.gui.api._
 import starling.daterange.Day
 import starling.calendar.{BusinessCalendar, DBHolidayTables, BusinessCalendars, HolidayTablesFactory}
@@ -52,17 +49,25 @@ class StarlingInit( props: Props,
                     startXLLoop: Boolean = true,
                     startStarlingJMX: Boolean = true,
                     forceGUICompatability: Boolean = true,
-                    startEAIAutoImportThread: Boolean = true
+                    startEAIAutoImportThread: Boolean = true,
+                    runningInJBoss : Boolean = false
                     ) {
 
   def stop = {
-    excelLoopReceiver.stop
-    loopyXLReceiver.stop
-    rmiServer.stop()
-    httpServer.stop
-    regressionServer.stop
-    scheduler.stop
-    regressionServer.stop
+    if (startXLLoop) {
+      excelLoopReceiver.stop
+      loopyXLReceiver.stop
+    }
+    if (startRMI) {
+      rmiServer.stop()
+    }
+    if (startHttp) {
+      httpServer.stop
+//      regressionServer.stop
+    }
+    if (!runningInJBoss){
+      scheduler.stop
+    }
     ConnectionParams.shutdown
   }
 
@@ -84,7 +89,7 @@ class StarlingInit( props: Props,
 
     if (startHttp) {
       httpServer.run
-      regressionServer.start
+//      regressionServer.start
     }
 
     if (startStarlingJMX) {
@@ -101,8 +106,9 @@ class StarlingInit( props: Props,
       fwdCurveAutoImport.schedule
     }
 
-    scheduler.start
-    regressionServer.start
+    if (!runningInJBoss){
+      scheduler.start
+    }
 
     this
   }
@@ -225,8 +231,7 @@ class StarlingInit( props: Props,
     tradeImporters,
     closedDesks,
     eaiTradeStores, intradayTradesDB,
-    refinedAssignmentTradeStore, refinedFixationTradeStore
-  )
+    refinedAssignmentTradeStore, refinedFixationTradeStore)
 
   val reportContextBuilder = new ReportContextBuilder(marketDataStore)
   val reportService = new ReportService(
@@ -288,7 +293,14 @@ class StarlingInit( props: Props,
   val loopyXLReceiver = new LoopyXLReceiver(props.LoopyXLPort(), auth,
     new CurveHandler(curveViewer, marketDataStore))
 
-  val latestTimestamp = if (forceGUICompatability) GUICode.latestTimestamp.toString else BouncyRMI.CodeVersionUndefined
+   val latestTimestamp = if (runningInJBoss) {
+    JBossAppTxtServlet.launchTime
+   }
+   else if (forceGUICompatability) 
+     GUICode.latestTimestamp.toString 
+   else 
+     BouncyRMI.CodeVersionUndefined
+
   val rmiServer:BouncyRMIServer[StarlingServer] = new BouncyRMIServer(
     rmiPort,
     ThreadNamingProxy.proxy(starlingServer, classOf[StarlingServer]),
@@ -302,28 +314,27 @@ class StarlingInit( props: Props,
 
   val reportServlet = new ReportServlet("reports", userReportsService) //Don't add to main web server (as this has no authentication)
 
-  val httpServer = locally {
+  lazy val httpServer = locally {
     val externalURL = props.ExternalUrl()
     val externalHostname = props.ExternalHostname()
     val xlloopUrl = props.XLLoopUrl()
     val rmiPort = props.RmiPort()
-    val classesServlet = new ClassesServlet("classes")
     val webStartServlet = new WebStartServlet("webstart", props.ServerName(), externalURL, "starling.gui.Launcher", List(externalHostname, rmiPort.toString), xlloopUrl)
     val cannedWebStartServlet = new WebStartServlet("cannedwebstart", props.ServerName(), externalURL, "starling.gui.CannedLauncher", List(), xlloopUrl)
 
-    new HttpServer(props, "webstart" → webStartServlet, "cannedwebstart" → cannedWebStartServlet, "classes" → classesServlet)
+    new HttpServer(props, "webstart" → webStartServlet, "cannedwebstart" → cannedWebStartServlet)
   }
 
-  val regressionServer = locally {
-    val server = new JettyServer()
-    val connector = new SocketConnector()
-    connector.setHost("127.0.0.1")
-    connector.setPort(props.RegressionPort())
-    server.addConnector(connector)
-    val rootContext = new Context(server, "/", Context.SESSIONS);
-    rootContext.addServlet(new ServletHolder(reportServlet), "/reports/*")
-    server
-  }
+//  lazy val regressionServer = locally {
+//    val server = new JettyServer()
+//    val connector = new SocketConnector()
+//    connector.setHost("127.0.0.1")
+//    connector.setPort(props.RegressionPort())
+//    server.addConnector(connector)
+//    val rootContext = new Context(server, "/", Context.SESSIONS);
+//    rootContext.addServlet(new ServletHolder(reportServlet), "/reports/*")
+//    server
+//  }
 }
 
 object StarlingInit{

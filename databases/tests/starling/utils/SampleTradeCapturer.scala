@@ -7,10 +7,9 @@ import starling.utils.ImplicitConversions._
 
 
 class SampleTradeCapturer extends Application {
-  var factory = new ConnectionFactory
-  factory.setHost("tradinghub-test")
+  var factory = new ConnectionFactory()
 
-  val conn = factory.newConnection
+  val conn = factory.newConnection("tradinghub-test")
   var chan = conn.createChannel
 
   val doNotCreateQueue: Boolean = true

@@ -7,10 +7,9 @@ import java.io.IOException
 
 object ConnectionPool {
   def openConnection(host : String) = {
-    val factory = new ConnectionFactory
-    factory.setHost(host)
+    val factory = new ConnectionFactory()
 
-    val connection = factory.newConnection
+    val connection = factory.newConnection(host)
 
     if (!connection.isOpen) {
       throw new IOException("Could not open connection to host: " + host)

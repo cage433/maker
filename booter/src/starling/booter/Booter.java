@@ -28,7 +28,7 @@ class Booter {
                 (appBaseURL.getPort() == 80 ? "" : ("-" + appBaseURL.getPort())) +
                 (appBaseURL.getPath().equals("") ? "" : "-" + appBaseURL.getPath());
 
-        File cacheDir = new File(parentCacheDir, cacheDirName);
+        File cacheDir = new File(parentCacheDir, cacheDirName.replaceAll("/", "-"));
         if (!cacheDir.exists()) cacheDir.mkdir();
         File logFile = new File(cacheDir, "log.txt");
         System.setOut(new java.io.PrintStream(new TeeOutputStream(System.out, new FileOutputStream(logFile))));

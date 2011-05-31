@@ -179,7 +179,7 @@ class PivotReportData[R <: PivotReportRow](data: Map[UTPIdentifier, Either[List[
     var resultRowsWithoutError: scala.collection.mutable.ListBuffer[R] = scala.collection.mutable.ListBuffer[R]()
     utpIdMap.foreach {
       case (id, (volume, _)) => data(id) match {
-        case Left(rows:List[R]) => resultRowsWithoutError ++= rows.map(r => report.scale(r, volume))
+        case Left(rows:List[_]) => resultRowsWithoutError ++= rows.map(r => report.scale(r, volume))
         case Right(_) => 
       }
     }

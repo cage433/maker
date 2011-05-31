@@ -2,49 +2,40 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    <name>curves</name>
-    <groupId>starling</groupId>
+
+
+  <name>Starling Curves</name>
+    <groupId>com.trafigura.services</groupId>
     <parent>
-        <groupId>starling</groupId>
-        <artifactId>starling</artifactId>
-        <version>1.0</version>
+      <groupId>com.trafigura.services</groupId>
+      <artifactId>starling-pom</artifactId>
+      <version>${buildversion}</version>
     </parent>
-    <artifactId>curves</artifactId>              
-    <version>1.0</version>    
-    <properties>
-      <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    </properties>
-    <dependencies>
-        <dependency>
-             <groupId>starling</groupId>
-             <artifactId>utils</artifactId>
-             <version>1.0</version>
-         </dependency>
-        <dependency>
-             <groupId>starling</groupId>
-             <artifactId>daterange</artifactId>
-             <version>1.0</version>
-         </dependency>
-        <dependency>
-             <groupId>starling</groupId>
-             <artifactId>quantity</artifactId>
-             <version>1.0</version>
-         </dependency>
-        <dependency>
-             <groupId>starling</groupId>
-             <artifactId>maths</artifactId>
-             <version>1.0</version>
-         </dependency>
-        <dependency>
-          <groupId>trafigura</groupId>
-          <artifactId>tradinghub_model</artifactId>
-          <version>1.0</version>
-        </dependency>
-        <dependency>
-            <scope>test</scope>
-            <groupId>org.mockito</groupId>
-            <artifactId>mockito-all</artifactId>
-            <version>1.8.2</version>
-        </dependency>
-    </dependencies>
+    <artifactId>starling-curves</artifactId>              
+    <version>${buildversion}</version>
+    <packaging>jar</packaging>
+    
+
+  <dependencies>
+
+    <dependency>
+      <groupId>com.trafigura.services</groupId>
+      <artifactId>starling-maths</artifactId>
+      <version>${buildversion}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.trafigura.services</groupId>
+      <artifactId>starling-pivot</artifactId>
+      <version>${buildversion}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.trafigura.services</groupId>
+      <artifactId>starling-gui.api</artifactId>
+      <version>${buildversion}</version>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <sourceDirectory>src</sourceDirectory>
+  </build>
 </project>

@@ -39,6 +39,8 @@ class Starling(info : ProjectInfo) extends ParentProject(info) {
 
   lazy val devlauncher = starlingProject("dev.launcher", services, gui)
 
+//  lazy val webServices = project("starlingWebProject", "starlingWebProject", new DefaultWebProject(_), services)
+
 
   lazy val starling = this
 
