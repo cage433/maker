@@ -50,6 +50,7 @@ class SettingsPageComponent(context:PageContext) extends MigPanel("insets 0") wi
     val priceSpinner = createSpinner(numFromText(dp.priceFormat))
     val currencySpinner = createSpinner(numFromText(dp.currencyFormat))
     val lotsSpinner = createSpinner(numFromText(dp.lotsFormat))
+    val percentSpinner = createSpinner(numFromText(dp.percentageFormat))
 
     add(LabelWithSeparator("Decimal Places"), "spanx, growx, wrap")
     add(new Label("Default:"), "skip 1")
@@ -59,14 +60,17 @@ class SettingsPageComponent(context:PageContext) extends MigPanel("insets 0") wi
     add(new Label("Currency:"), "skip 1")
     add(currencySpinner, "wrap")
     add(new Label("Lots:"), "skip 1")
-    add(lotsSpinner)
+    add(lotsSpinner, "wrap")
+    add(new Label("Percent:"), "skip 1")
+    add(percentSpinner)
 
-    def decimalPlaces = DecimalPlaces(defaultSpinner.format, lotsSpinner.format, priceSpinner.format, currencySpinner.format)
+    def decimalPlaces = DecimalPlaces(defaultSpinner.format, lotsSpinner.format, priceSpinner.format, currencySpinner.format, percentSpinner.format)
     def decimalPlaces_=(dp:DecimalPlaces) {
       defaultSpinner.setValue(numFromText(dp.defaultFormat))
       priceSpinner.setValue(numFromText(dp.priceFormat))
       currencySpinner.setValue(numFromText(dp.currencyFormat))
       lotsSpinner.setValue(numFromText(dp.lotsFormat))
+      percentSpinner.setValue(numFromText(dp.percentageFormat))
     }
   }
 

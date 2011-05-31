@@ -101,7 +101,7 @@ object PivotQuantityPivotParser extends PivotParser {
   }
 }
 
-case class DecimalPlaces(defaultFormat:String, lotsFormat:String, priceFormat:String, currencyFormat:String) {
+case class DecimalPlaces(defaultFormat:String, lotsFormat:String, priceFormat:String, currencyFormat:String, percentageFormat:String) {
   def format(uom:UOM) = {
     if (uom.scale == Ratio(1000,1) || (uom == UOM.K_BBL || uom == UOM.C_M3 || uom == UOM.K_MT))
       lotsFormat
@@ -127,8 +127,9 @@ object PivotFormatter {
   val PriceFormat = "#,##0.0000"
   val CurrencyFormat = "#,##0"
   val LotsFormat = "#,##0.0"
+  val PercentFormat = "#0.00"
 
-  val DefaultDecimalPlaces = DecimalPlaces(DefaultFormat, LotsFormat, PriceFormat, CurrencyFormat)
+  val DefaultDecimalPlaces = DecimalPlaces(DefaultFormat, LotsFormat, PriceFormat, CurrencyFormat, PercentFormat)
   val DefaultExtraFormatInfo = ExtraFormatInfo(DefaultDecimalPlaces)
 
   def formatPivotQuantity(pq:PivotQuantity, formatInfo:ExtraFormatInfo, includeUOM:Boolean=true) = {
@@ -376,7 +377,7 @@ object PercentagePivotFormatter extends PivotFormatter {
     value match {
       case s:Set[_] if s.size > PivotFormatter.MaxSetSize => new TableCell(s, s.size + " values")
       case s:Set[_] => new TableCell(s, s.map(_.asInstanceOf[Percentage].toShortString).mkString(","))
-      case p:Percentage => new TableCell(p, p.toShortString, RightTextPosition)
+      case p:Percentage => new TableCell(p, p.toShortString(formatInfo.decimalPlaces.percentageFormat), RightTextPosition)
     }
   }
 }
