@@ -280,15 +280,15 @@ object Market {
     eaiQuoteID: Int,
     expiryRule: FuturesExpiryRule,
     commodity: Commodity,
-    limSuffix: String)
+    limSymbol: String)
   = new FuturesMarket(name, Some(lotSize), uom, USD, cals.COMEX, Some(eaiQuoteID),
-      MetalsPriceTable, Month, expiryRule, COMEX, commodity, true, limSymbol = Some(LimSymbol(limSuffix, 0.01)), precision = precisionRules.rule(eaiQuoteID)
+      MetalsPriceTable, Month, expiryRule, COMEX, commodity, true, limSymbol = Some(LimSymbol(limSymbol, 0.01)), precision = precisionRules.rule(eaiQuoteID)
     )
 
-  lazy val COMEX_GOLD : FuturesMarket = comexFuturesMarket("COMEX Gold", 100, OZ, 546, expiry.COMEX_GOLD, Gold, "COMEX.GCC")
-  lazy val COMEX_SILVER : FuturesMarket = comexFuturesMarket("COMEX Silver", 5000, OZ, 547, expiry.COMEX_SILVER, Silver, "COMEX.SIC")
+  lazy val COMEX_GOLD : FuturesMarket = comexFuturesMarket("COMEX Gold", 100, OZ, 546, expiry.COMEX_GOLD, Gold, "GC")
+  lazy val COMEX_SILVER : FuturesMarket = comexFuturesMarket("COMEX Silver", 5000, OZ, 547, expiry.COMEX_SILVER, Silver, "SI")
   lazy val COMEX_PALLADIUM : FuturesMarket = comexFuturesMarket("COMEX Palladium", 100, OZ, 683, expiry.COMEX_PT_PA, Palladium, "COMEX.PAC")
-  lazy val COMEX_PLATINUM : FuturesMarket = comexFuturesMarket("COMEX Platinum", 50, OZ, 684, expiry.COMEX_PT_PA, Platinum, "COMEX.PLC")
+  lazy val COMEX_PLATINUM : FuturesMarket = comexFuturesMarket("COMEX Platinum", 50, OZ, 684, expiry.COMEX_PT_PA, Platinum, "PL")
   lazy val COMEX_HIGH_GRADE_COPPER : FuturesMarket = comexFuturesMarket(
     "COMEX High Grade Copper", 25000, LB, 545, expiry.COMEX_HG_COPPER, Copper, "HG")
 
