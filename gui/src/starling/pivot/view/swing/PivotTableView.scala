@@ -869,6 +869,8 @@ class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSiz
 
   def resetDynamicState() {
     viewUI.resetImageProperties()
+    fieldBeingDragged = false
+    mouseDown = false
     allDropTargets.foreach(_.reset())
   }
 

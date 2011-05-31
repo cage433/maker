@@ -5,10 +5,9 @@ import collection.mutable.ListBuffer
 import starling.pivot.view.swing._
 import starling.pivot.FieldChooserType._
 import net.miginfocom.swing.MigLayout
-import swing.Label
-import starling.gui.GuiUtils
 import starling.pivot.{Position, Field, OtherLayoutInfo}
 import java.awt.{Point, Rectangle}
+import scala.Some
 
 class RowComponent(model:PivotTableModel,  otherLayoutInfo:OtherLayoutInfo, viewUI:PivotTableViewUI, tableView:PivotTableView)
         extends MigPanel("insets 1 1 1 " + (if (otherLayoutInfo.frozen) "1" else "0") + ", gap 0px") with DropTarget {
@@ -48,37 +47,36 @@ class RowComponent(model:PivotTableModel,  otherLayoutInfo:OtherLayoutInfo, view
   }
 
   private val dropPanels = new ListBuffer[DropPanel]()
-
-  if (fields.isEmpty) {
-    setAlignment("al left bottom")
-    val text = "Drop Row Fields Here"
-    val prefSize = ColumnDropPanel.prefSize(text)
-    val l = new Label(text) {
-      font = GuiUtils.GuiFieldFont
-      preferredSize = prefSize
-      minimumSize = prefSize
-      enabled = false
-    }
-    add(l)
+  private val blankDropLabel = if (fields.isEmpty) {
+    Some(EmptyDropLabel("Drop Row Fields Here", tableView))
   } else {
-    setAlignment("al right")
-    fields.fields.zipWithIndex.foreach{case (f,i) => {
-      if (i == 0) {
-        val dropPanel = DropPanel((f, Position.Left) :: Nil)
-        dropPanels += dropPanel
-        add(dropPanel, "grow, hidemode 3")
-      }
-      add(guiFieldsMap(f))
-      if ((i + 1) < fields.fields.size) {
-        val dropPanel = DropPanel((f, Position.Right) :: (fields.fields(i + 1), Position.Left) :: Nil)
-        dropPanels += dropPanel
-        add(dropPanel, "grow, hidemode 3")
-      } else {
-        val dropPanel = DropPanel((f, Position.Right) :: Nil)
-        dropPanels += dropPanel
-        add(dropPanel, "grow, hidemode 3")
-      }
-    }}
+    None
+  }
+  blankDropLabel match {
+    case Some(l) => {
+      setAlignment("al left bottom")
+      add(l)
+    }
+    case _ => {
+      setAlignment("al right")
+      fields.fields.zipWithIndex.foreach{case (f,i) => {
+        if (i == 0) {
+          val dropPanel = DropPanel((f, Position.Left) :: Nil)
+          dropPanels += dropPanel
+          add(dropPanel, "grow, hidemode 3")
+        }
+        add(guiFieldsMap(f))
+        if ((i + 1) < fields.fields.size) {
+          val dropPanel = DropPanel((f, Position.Right) :: (fields.fields(i + 1), Position.Left) :: Nil)
+          dropPanels += dropPanel
+          add(dropPanel, "grow, hidemode 3")
+        } else {
+          val dropPanel = DropPanel((f, Position.Right) :: Nil)
+          dropPanels += dropPanel
+          add(dropPanel, "grow, hidemode 3")
+        }
+      }}
+    }
   }
 
   def fieldChooserType = Rows
@@ -97,7 +95,14 @@ class RowComponent(model:PivotTableModel,  otherLayoutInfo:OtherLayoutInfo, view
   def hide() {
     dropPanels.foreach(_.visible = false)
   }
-  def reset() {guiFieldsMap.values.foreach(_.namePanel.reset())}
+  def reset() {
+    blankDropLabel.foreach(_.reset())
+    dropPanels.foreach(dp => {
+      dp.visible = false
+      dp.reset()
+    })
+    guiFieldsMap.values.foreach(_.namePanel.reset())
+  }
 
   private def rowDropPanels(field:Field) = {
     dropPanels.toList.filterNot(dp => {dp.fieldAndPositions.map(_._1).contains(field)})

@@ -1,6 +1,7 @@
 package starling.pivot.view.swing
 
-import fieldchoosers.{DropPanel, DropTarget}
+import fieldchoosers.EmptyDropLabel._
+import fieldchoosers.{EmptyDropLabel, DropPanel, DropTarget}
 import starling.pivot._
 import model.PivotTableModel
 import starling.pivot.FieldChooserType._
@@ -202,18 +203,14 @@ case class ColumnAndMeasureComponent(model:PivotTableModel, otherLayoutInfo:Othe
     (field -> new GuiFieldComponent(props))
   })
 
-  if (fields.isEmpty) {
-    val text = "Drop Column and Measure Fields Here"
-    val prefSize = ColumnDropPanel.prefSize(text)
-    val l = new Label(text) {
-      font = GuiUtils.GuiFieldFont
-      preferredSize = prefSize
-      minimumSize = prefSize
-      enabled = false
-    }
-    add(l)
+  private val blankDropLabel = if (fields.isEmpty) {
+    Some(EmptyDropLabel("Drop Column and Measure Fields Here", tableView))
   } else {
-    add(new ColumnStructureComponent(cs, guiFieldsMap, dropPanels, true), "pushy,growy")
+    None
+  }
+  blankDropLabel match {
+    case Some(l) => add(l)
+    case _ => add(new ColumnStructureComponent(cs, guiFieldsMap, dropPanels, true), "pushy,growy")
   }
 
   def scrolling() {}
@@ -243,7 +240,15 @@ case class ColumnAndMeasureComponent(model:PivotTableModel, otherLayoutInfo:Othe
     tableView.updateColumnAndMeasureScrollPane(true)
     reset()
   }
-  def reset() {guiFieldsMap.values.foreach(_.namePanel.reset())}
+  def reset() {
+    blankDropLabel.foreach(_.reset())
+    dropPanels.foreach(dp => {
+      dp.visible = false
+      dp.reset()
+    })
+    guiFieldsMap.values.foreach(_.namePanel.reset())
+    tableView.updateColumnAndMeasureScrollPane(true)
+  }
 
   private def filteredDropPanels(field:Field) = {
     dropPanels.toList.filterNot(p => {
