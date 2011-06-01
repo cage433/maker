@@ -265,18 +265,18 @@ class CannedDataSource extends UnfilteredPivotTableDataSource {
     )
     }, rowFields = List(Field("Trader"), Field("Strike")))*/
 
-  override def initialState = new PivotFieldsState(columns = {
+/*  override def initialState = new PivotFieldsState(columns = {
     val c31 = ColumnTrees(List(
       ColumnTree(Field("PV"), true), ColumnTree(Field("Gamma"), true)
     ))
     ColumnTrees(List(
       ColumnTree(FieldOrColumnStructure(Right(c31)), ColumnTrees(Field("Product"), false, List(ColumnTree(Field("Lots"), false)))), ColumnTree(Field("Delta"), true)
       ))
-    }, rowFields = List(Field("Trader"), Field("Strike")))
+    }, rowFields = List(Field("Trader"), Field("Strike")))*/
 
-  /*override def initialState = new PivotFieldsState(columns = {
-    ColumnStructure(List(ColumnTree(Field("Product"), false, ColumnStructure(List(ColumnTree(Field("PV"), true), ColumnTree(Field("Gamma"), true), ColumnTree(Field("Delta"), true))))))
-  }, rowFields = List(Field("Trader"), Field("Strike")))*/
+  override def initialState = new PivotFieldsState(columns = {
+    ColumnTrees(ColumnTree(Field("PV"), true, ColumnTrees(ColumnTree(Field("Product"), false))))
+  }, rowFields = List(Field("Trader"), Field("Strike")))
 
   def unfilteredData(pfs : PivotFieldsState) = theData
 
