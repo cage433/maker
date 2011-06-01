@@ -327,8 +327,8 @@ class PresetReportConfigPanel(context:PageContext, reportParameters:ReportParame
       buttonPanel.group.select(buttonPanel.cobButton)
       buttonPanel.contentPanel.update(buttonPanel.cobPanel)
       val canUseExcel = rp.curveIdentifier.marketDataIdentifier.selection.excel.isDefined
-      buttonPanel.cobPanel.dayChangePanel.setDays(canUseExcel, rp.pnlParameters)
       buttonPanel.cobPanel.dayPanel.setDays(rp.curveIdentifier, rp.expiryDay)
+      buttonPanel.cobPanel.dayChangePanel.setDays(canUseExcel, rp.pnlParameters)
     } else {
       buttonPanel.group.select(buttonPanel.manualButton)
       buttonPanel.contentPanel.update(buttonPanel.manualPanel)
