@@ -166,7 +166,18 @@ case class PivotTableConverter(otherLayoutInfo:OtherLayoutInfo = OtherLayoutInfo
         }
       })
       val measureFieldsBeneathFields = otherLayoutInfo.disabledSubTotals.flatMap(f => fieldState.columns.measureFieldsDirectlyBeneath(f))
-      topLevelMeasureFields ::: measureFieldsBeneathFields
+
+      def findFieldsWithNullChildren(an0:AxisNode):List[Field] = {
+        if (an0.children.isEmpty) {
+          Nil
+        } else if (an0.children.exists(_.axisValue.field == Field.NullField)) {
+          List(an0.axisValue.field)
+        } else {
+          an0.children.flatMap(findFieldsWithNullChildren(_))
+        }
+      }
+      val fieldsDirectlyAboveNulls = table.columnAxis.flatMap(an => findFieldsWithNullChildren(an)).distinct
+      topLevelMeasureFields ::: measureFieldsBeneathFields ::: fieldsDirectlyAboveNulls
     }
     val cdX = AxisNodeBuilder.flatten(table.columnAxis, totals.columnGrandTotal, totals.columnSubTotals, collapsedColState,
        extraDisabledSubTotals ::: otherLayoutInfo.disabledSubTotals, table.formatInfo, extraFormatInfo)
