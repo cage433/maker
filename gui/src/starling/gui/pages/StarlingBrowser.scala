@@ -52,7 +52,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
   }
   listenTo(starBrows)
 
-  private var componentCaching = true
+  private val componentCaching = true
 
   private val starlingBrowserUI = new StarlingBrowserUI
   val starlingBrowserLayer = new SXLayerScala(this, starlingBrowserUI)

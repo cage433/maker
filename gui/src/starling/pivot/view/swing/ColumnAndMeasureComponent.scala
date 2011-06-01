@@ -204,9 +204,9 @@ case class ColumnAndMeasureComponent(model:PivotTableModel, otherLayoutInfo:Othe
   }
 
   def show(draggedField:Field) {
-
+    val draggedFieldIsMeasure = model.isMeasureField(draggedField) || cs.measureFields.contains(draggedField)
     val dropPanelToResultMap = Map() ++ dropPanels.map(dp => {
-      (dp,cs.add(draggedField, false, dp.fieldOrColumnStructure, dp.position))
+      (dp,cs.add(draggedField, draggedFieldIsMeasure, dp.fieldOrColumnStructure, dp.position))
     })
 
     val grouped:Map[ColumnTrees, Map[ColumnDropPanel, ColumnTrees]] = dropPanelToResultMap.groupBy{case (p,t) => t}
@@ -216,14 +216,23 @@ case class ColumnAndMeasureComponent(model:PivotTableModel, otherLayoutInfo:Othe
       if (panels.exists(p => p.position == Position.Left || p.position == Position.Right)) {
         panels.foreach(_.visible = true)
       } else {
-        panels.head.visible = true
-      }
-      panels.filter(p => {
-        p.fieldOrColumnStructure.value match {
-          case Left(f) if f.field == draggedField => true
-          case _ => false
+        val closeByPanels = panels.filter(p => {
+          p.fieldOrColumnStructure.value match {
+            case Left(f) if f.field == draggedField && (p.position == Position.Top || p.position == Position.Bottom) => true
+            case _ => false
+          }
+        })
+        val special = closeByPanels.nonEmpty
+        if (special) {
+          // Ensure the panels to the top and to the bottom of the dragged field are shown, but nothing else.
+          closeByPanels.foreach(_.visible = true)
+        } else {
+          panels.find(_.position == Position.Top) match {
+            case Some(p) => p.visible = true
+            case _ => panels.head.visible = true
+          }
         }
-      }).foreach(_.visible = true)
+      }
     }}
 
     tableView.updateColumnAndMeasureScrollPane(true)

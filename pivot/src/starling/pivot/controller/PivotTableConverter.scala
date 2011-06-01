@@ -228,7 +228,7 @@ case class PivotTableConverter(otherLayoutInfo:OtherLayoutInfo = OtherLayoutInfo
 
           var columnsNotHandled = (0 until columnUOMs.length).toSet.filter(n => columnUOMs(n).asString.length() > 0)
           var currentRow = startRow
-          while (columnsNotHandled.nonEmpty) {
+          while (columnsNotHandled.nonEmpty && (currentRow < colData.length)) {
             val spans = getSpans(colData(currentRow)).filter{case (start, end) => columnsNotHandled.contains(start)}
             spans.foreach{case (start, end) => {
               if ((start to end).map(c => columnUOMs(c)).distinct.size == 1) {
@@ -249,10 +249,6 @@ case class PivotTableConverter(otherLayoutInfo:OtherLayoutInfo = OtherLayoutInfo
   }
 
   private def nMainTableCells(flattenedRowValues:List[List[AxisCell]], flattenedColValues:List[List[AxisCell]], extractUOMs:Boolean = true) = {
-    val numCols = flattenedColValues.size
-    val numRows = flattenedRowValues.size
-    val numRowHeaderColumns = if (flattenedRowValues.size==0) 0 else flattenedRowValues(0).size
-    
     val aggregatedMainBucket = table.aggregatedMainBucket
 
     //create the main table looping through the flattened rows and columns and looking up the sums in mainTableBucket
