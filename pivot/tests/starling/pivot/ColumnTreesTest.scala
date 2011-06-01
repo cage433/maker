@@ -6,7 +6,7 @@ import org.testng.Assert._
 import starling.pivot.ColumnTrees._
 import starling.pivot.PivotFieldsState._
 
-class ColumnStructureTest extends TestNGSuite {
+class ColumnTreesTest extends TestNGSuite {
   val cs = ColumnTrees(
       Field("Product"), true,
       List(
@@ -483,6 +483,32 @@ class ColumnStructureTest extends TestNGSuite {
       ColumnStructurePath(Some(Field("Gamma")),List((Field("Gamma"),1), (Field("Expiry"),0), (Field("Product"),0))))
 
     val result = columnTrees.buildPathsWithPadding
+    assertEquals(result, expected)
+  }
+  @Test
+  def testAddCreatesTheSame() {
+    val init = ColumnTrees(ColumnTree(Field("PV"), true, ColumnTrees(ColumnTree(Field("Product"), false))))
+    val result1 = init.add(Field("Lots"), false, FieldOrColumnStructure(Field("Product"), false), Position.Bottom)
+    val result2 = init.add(Field("Lots"), false, FieldOrColumnStructure(ColumnTrees(Field("Product"), false)), Position.Bottom)
+    val expected = ColumnTrees(ColumnTree(Field("PV"), true, ColumnTrees(ColumnTree(Field("Product"), false, ColumnTrees(ColumnTree(Field("Lots"), false))))))
+    assertEquals(result1, expected)
+    assertEquals(result2, expected)
+    assertTrue(result1 == result2)
+  }
+
+  @Test
+  def testAddCreatesTheSame2() {
+    val init = ColumnTrees(List(ColumnTree(FieldOrColumnStructure(Left(FieldAndIsMeasure(Field("PV"),true))),
+      ColumnTrees(List(ColumnTree(FieldOrColumnStructure(Left(FieldAndIsMeasure(Field("Product"),false))),
+        ColumnTrees(List())))))))
+    val relative = FieldOrColumnStructure(Right(ColumnTrees(List(ColumnTree(FieldOrColumnStructure(Left(FieldAndIsMeasure(Field("PV"),true))),
+      ColumnTrees(List(ColumnTree(FieldOrColumnStructure(Left(FieldAndIsMeasure(Field("Product"),false))),
+        ColumnTrees(List())))))))))
+    val result = init.add(Field("Lots"), false, relative, Position.Bottom)
+    val expected = ColumnTrees(List(ColumnTree(FieldOrColumnStructure(Left(FieldAndIsMeasure(Field("PV"),true))),
+      ColumnTrees(List(ColumnTree(FieldOrColumnStructure(Left(FieldAndIsMeasure(Field("Product"),false))),
+        ColumnTrees(List(ColumnTree(FieldOrColumnStructure(Left(FieldAndIsMeasure(Field("Lots"),false))),
+          ColumnTrees(List()))))))))))
     assertEquals(result, expected)
   }
 }

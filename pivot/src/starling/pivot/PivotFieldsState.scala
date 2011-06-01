@@ -154,6 +154,17 @@ object FieldOrColumnStructure {
 }
 
 case class ColumnTree(fieldOrColumnStructure:FieldOrColumnStructure, childStructure:ColumnTrees) {
+  def addAsFinalChild(f:Field, isM:Boolean):ColumnTree = {
+    if (childStructure.trees.isEmpty) {
+      ColumnTree(fieldOrColumnStructure, ColumnTrees(f, isM))
+    } else {
+      if (childStructure.oneTree) {
+        ColumnTree(fieldOrColumnStructure, childStructure.addChildAtEndOfTree(f, isM))
+      } else {
+        ColumnTree(fieldOrColumnStructure, ColumnTrees(ColumnTree(f, isM, childStructure)))
+      }
+    }
+  }
   def hasMeasure = {
     fieldOrColumnStructure.value match {
       case Left(FieldAndIsMeasure(_, isData)) => isData
@@ -339,7 +350,13 @@ case class ColumnTrees(trees:List[ColumnTree]) {
     if (topLevel == relativeTo) {
       position match {
         case Position.Top => ColumnTrees(ColumnTree(newField, newIsData, this))
-        case Position.Bottom => ColumnTrees(ColumnTree(FieldOrColumnStructure(this), ColumnTrees(ColumnTree(newField, newIsData))))
+        case Position.Bottom => {
+          if (oneTree) {
+            addChildAtEndOfTree(newField, newIsData)
+          } else {
+            ColumnTrees(ColumnTree(topLevel, ColumnTrees(ColumnTree(newField, newIsData))))
+          }
+        }
         case Position.Right => ColumnTrees(trees ::: List(ColumnTree(newField, newIsData)))
         case Position.Left => ColumnTrees(ColumnTree(newField, newIsData) :: trees)
       }
@@ -348,7 +365,16 @@ case class ColumnTrees(trees:List[ColumnTree]) {
         if (tree.fieldOrColumnStructure == relativeTo) {
           position match {
             case Position.Top => List(ColumnTree(newField, newIsData, tree))
-            case Position.Bottom => List(ColumnTree(tree.fieldOrColumnStructure, ColumnTrees(List( ColumnTree(newField, newIsData, tree.childStructure)))))
+            case Position.Bottom => {
+              tree.fieldOrColumnStructure.value match {
+                case Right(cs) if cs.oneTree => {
+                  List(cs.trees.head.addAsFinalChild(newField, newIsData))
+                }
+                case _ => {
+                  List(ColumnTree(tree.fieldOrColumnStructure, ColumnTrees(List( ColumnTree(newField, newIsData, tree.childStructure)))))
+                }
+              }
+            }
             case Position.Right => {
               if (tree.childStructure.trees.isEmpty) {
                 List(tree, ColumnTree(newField, newIsData))
@@ -396,6 +422,11 @@ case class ColumnTrees(trees:List[ColumnTree]) {
   def hasPathContaining(fields:Set[Field]) : Boolean = {
     val fieldsInPaths = buildPaths().map(_.path.map(_._1).toSet)
     fieldsInPaths.exists(s => fields.subsetOf(s))
+  }
+  def oneTree:Boolean = (trees.size == 1)
+  def addChildAtEndOfTree(f:Field, isM:Boolean):ColumnTrees = {
+    assert(trees.size == 1, "addChildAtEndOfTree can only be called when there is 1 tree, here we have " + trees.size + " trees")
+    ColumnTrees(trees.head.addAsFinalChild(f, isM))
   }
 }
 
