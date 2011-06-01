@@ -4,6 +4,9 @@ import starling.utils.CaseInsensitive
 import starling.utils.CaseInsensitive._
 import starling.utils.cache.CacheFactory
 
+import starling.utils.ImplicitConversions._
+
+
 object UOM {
   def apply(numerator : Long, denominator : Long) : UOM = UOM(Ratio(1,1), Ratio(numerator, denominator))
 
@@ -110,6 +113,7 @@ object UOM {
   }
 
   private var uomCache = CacheFactory.getCache("UOM.fromString", unique = true)
+  private val FXRegex = """(.*)( per |/)(.*)""".r
 
   def fromStringOption(text: String): Option[UOM] = {
     uomCache.memoize((text), (tuple: (String)) => {
@@ -118,18 +122,14 @@ object UOM {
       } else {
         (1, text)
       }
-      val index = uomString.indexOf('/')
-      val unScaledUOM = if (index == -1) {
-        getSymbolOption(uomString.trim) match {
-          case Some(u) => Some(u.asUOM)
-          case _ => None
+
+      val unScaledUOM = uomString match {
+        case FXRegex(num, _, dem) => (getSymbolOption(num.trim), getSymbolOption(dem.trim)) partialMatch {
+          case (Some(n), Some(d)) => n.asUOM / d.asUOM
         }
-      } else {
-        (getSymbolOption(uomString.substring(0, index).trim), getSymbolOption(uomString.substring(index + 1).trim)) match {
-          case (Some(u1), Some(u2)) => Some(u1.asUOM / u2.asUOM)
-          case _ => None
-        }
+        case _ => getSymbolOption(uomString.trim).map(_.asUOM)
       }
+
       unScaledUOM.map(_ * scale)
     })
   }
@@ -199,14 +199,16 @@ case class UOM private (scale : Ratio, value : Ratio) extends RatioT[UOM] {
       case _ => ""
     }.foldLeft("")(_+_)
 
+    val sep = if (isFX) " per " else "/"
+
     (scale.reduce, den) match {
       case (Ratio(1000, 1), "") => "K " + num
       case (Ratio(1, 1), "")    => num
       case (other, "")          => other + " " + num
-      case (Ratio(1000, 1), _)  => "K " + num + "/" + den
-      case (Ratio(1, 1), _)     => num + "/" + den
-      case (Ratio(1, 1000), _)  => num + "/K " + den
-      case (other, _)           => other + " " + num + "/" + den
+      case (Ratio(1000, 1), _)  => "K " + num + sep + den
+      case (Ratio(1, 1), _)     => num + sep + den
+      case (Ratio(1, 1000), _)  => num + sep + "K " + den
+      case (other, _)           => other + " " + num + sep + den
     }
   }
 
@@ -239,6 +241,7 @@ case class UOM private (scale : Ratio, value : Ratio) extends RatioT[UOM] {
   def isScalar = this.value == SCALAR.value
   def isCurrency = currencies.contains(this)
   def isProperUOM = !(isScalar || isNull)
+  def isFX = numeratorUOM.isCurrency && denominatorUOM.isCurrency
 }
 
 object UOMParse {

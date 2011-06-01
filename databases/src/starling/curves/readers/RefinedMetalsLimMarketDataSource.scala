@@ -111,7 +111,7 @@ object MonthlyFuturesFixings extends HierarchicalLimSource {
   def fixingRelationFrom(childRelation: String) = (childRelation partialMatch {
     case Regex(exchange, limSymbol, reutersDeliveryMonth) => {
       val optMarket: Option[FuturesMarket] = Market.futuresMarkets.find(market =>
-        market.exchange.name == exchange && market.limSymbol.map(_.name) == Some(limSymbol))
+        market.exchange.name == exchangeLookup(exchange) && market.limSymbol.map(_.name) == Some(limSymbol))
       val optMonth: Option[Month] = ReutersDeliveryMonthCodes.parse(reutersDeliveryMonth)
 
       (optMarket, optMonth) partialMatch {
@@ -124,7 +124,7 @@ object MonthlyFuturesFixings extends HierarchicalLimSource {
     fixings.groupBy(f => (f.relation.market, f.observationDay)).toList.map { case ((market, observationDay), prices) => {
       val data = prices.flatMap { price =>
         price.priceByLevel.toList.map { case (level, priceAtLevel) =>
-          (level, StoredFixingPeriod.dateRange(price.relation.month)) → MarketValue.quantity(priceAtLevel, price.relation.market.priceUOM)
+          (level, StoredFixingPeriod.dateRange(price.relation.month)) → MarketValue.quantity(priceAtLevel, market.priceUOM)
         }
       }.toMap
 
@@ -135,6 +135,8 @@ object MonthlyFuturesFixings extends HierarchicalLimSource {
 
   val parentNodes = List(TopRelation.Trafigura.Bloomberg.Futures.Shfe, TopRelation.Trafigura.Bloomberg.Futures.Comex)
   val levels = List(Level.Close, Level.Settle)
+
+  private def exchangeLookup(exchange: String) = if (exchange == "SHFE") "SFS" else exchange
 }
 
 object LMEFixings extends LimSource {
