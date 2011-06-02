@@ -25,6 +25,8 @@ else
       JMX_PORT=$DEFAULT_JMX_PORT
     fi
 
+    SERVERNAME=`cat props.conf | grep -i ServerName | sed -r 's/ServerName\s*=\s*//i'`
+
     mkdir -p booter/out/
 
     # I'm actually going to compile the whole project here because the server needs to serve up gui class files but
@@ -39,6 +41,7 @@ else
 
     echo "Starting..."
     nohup java $1 \
+       -DserverName=$SERVERNAME \
        -server \
        -Xmx6000m \
       -XX:MaxPermSize=256m \
