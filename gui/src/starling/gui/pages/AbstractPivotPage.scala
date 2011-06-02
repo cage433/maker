@@ -264,8 +264,8 @@ class PivotTablePageComponent(
     add(rotateButton)
     addSeparator
     add(bottomTotalsButton)
-    add(rightTotalsButton)
     add(rowSubTotalsButton)
+    add(rightTotalsButton)
     add(columnSubTotalsButton)
     addSeparator
     add(chartButton)

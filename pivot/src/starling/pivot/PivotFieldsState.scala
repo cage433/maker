@@ -5,6 +5,7 @@ import starling.utils.StarlingObject
 import collection.SortedMap
 import starling.utils.ImplicitConversions._
 import collection.immutable.{Map, TreeMap}
+import javax.management.remote.rmi._RMIConnection_Stub
 
 object FieldChooserType extends Enumeration {
   type FieldChooserType = Value
@@ -219,6 +220,31 @@ case class ColumnTree(fieldOrColumnStructure:FieldOrColumnStructure, childStruct
       childStructure.isInvalid
     }
   }
+  def hasSingleMeasureChild(f0:Field):Boolean = {
+    fieldOrColumnStructure.value match {
+      case Left(f) => {
+        if (f.field == f0) {
+          (childStructure.trees.size == 1) && (childStructure.trees.head.fieldOrColumnStructure.value match {
+            case Left(f1) if f1.isMeasure => true
+            case _ => false
+          })
+        } else {
+          false
+        }
+      }
+      case Right(cs) =>  cs.hasSingleMeasureChild(f0)
+    }
+  }
+  def fieldsOnBottomRow:List[(Field,Boolean)] = {
+    if (childStructure.trees.isEmpty) {
+      fieldOrColumnStructure.value match {
+        case Left(f) => List((f.field, f.isMeasure))
+        case Right(cs) => cs.fieldsOnBottomRow
+      }
+    } else {
+      childStructure.fieldsOnBottomRow
+    }
+  }
   def bottomNonMeasureFields:List[Field] = {
     val childFields = childStructure.bottomNonMeasureFields
     if (childFields.nonEmpty) {
@@ -264,7 +290,9 @@ object ColumnTree {
 }
 
 case class ColumnTrees(trees:List[ColumnTree]) {
-
+  def hasSingleMeasureChild(f:Field):Boolean = trees.exists(_.hasSingleMeasureChild(f))
+  def fieldsOnBottomRow:List[(Field,Boolean)] = trees.flatMap(_.fieldsOnBottomRow)
+  def measureFieldsOnBottomRow:List[Field] = fieldsOnBottomRow.filter{case (_,m) => m}.map(_._1)
   def bottomNonMeasureFields:List[Field] = trees.flatMap(_.bottomNonMeasureFields)
   def measureFieldsDirectlyBeneath(field:Field):List[Field] = trees.flatMap(_.measureFieldsDirectlyBeneath(field))
   def topMeasureFields:List[Field] = trees.flatMap(_.topMeasureFields)

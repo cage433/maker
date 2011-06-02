@@ -6,6 +6,7 @@ import starling.utils.{STable, SColumn}
 import starling.quantity.{SpreadOrQuantity, Quantity, UOM}
 import starling.utils.ImplicitConversions._
 import collection.mutable.ListBuffer
+import sun.reflect.FieldInfo
 
 object AxisNode {
   def textAndAlignment(value:AxisValue, formatInfo:FormatInfo, extraFormatInfo:ExtraFormatInfo) = {
@@ -98,9 +99,8 @@ object AxisNodeBuilder {
   def flatten(nodes:List[AxisNode], grandTotals:Boolean, subTotals:Boolean, collapsedState:CollapsedState,
               disabledSubTotals:List[Field], formatInfo:FormatInfo, extraFormatInfo:ExtraFormatInfo,
               grandTotalsOnEachSide:Boolean):List[List[AxisCell]] = {
-    val fakeField = Field("N")
-    val disabledSubTotalsToUse = Field.NullField :: fakeField :: disabledSubTotals
-    val fakeNode = AxisNode(AxisValue(fakeField, NullAxisValueType, 0), nodes)
+    val disabledSubTotalsToUse = Field.NullField :: Field.RootField :: disabledSubTotals
+    val fakeNode = AxisNode(AxisValue(Field.RootField, NullAxisValueType, 0), nodes)
     val grandTotalRows = if (grandTotals) {
       val rows = fakeNode.flatten(List(), false, true, collapsedState, disabledSubTotalsToUse, formatInfo, extraFormatInfo)
       rows.map(_.map(_.copy(totalState=Total)))
@@ -162,17 +162,7 @@ case class PivotTableConverter(otherLayoutInfo:OtherLayoutInfo = OtherLayoutInfo
         }
       }
     }
-    // We never want to show sub totals for top level measure fields.
-    val extraDisabledSubTotals = {
-      val topLevelMeasureFields = table.columnAxis.flatMap(an => {
-        if (an.axisValue.isMeasure) {
-          Some(an.axisValue.field)
-        } else {
-          None
-        }
-      })
-      val measureFieldsBeneathFields = otherLayoutInfo.disabledSubTotals.flatMap(f => fieldState.columns.measureFieldsDirectlyBeneath(f))
-
+    val extraDisabledSubTotals:List[Field] = {
       def findFieldsWithNullChildren(an0:AxisNode):List[Field] = {
         if (an0.children.isEmpty) {
           Nil
@@ -182,8 +172,7 @@ case class PivotTableConverter(otherLayoutInfo:OtherLayoutInfo = OtherLayoutInfo
           an0.children.flatMap(findFieldsWithNullChildren(_))
         }
       }
-      val fieldsDirectlyAboveNulls = table.columnAxis.flatMap(an => findFieldsWithNullChildren(an)).distinct
-      topLevelMeasureFields ::: measureFieldsBeneathFields ::: fieldsDirectlyAboveNulls
+      table.columnAxis.flatMap(an => findFieldsWithNullChildren(an)).distinct
     }
     val cdX = AxisNodeBuilder.flatten(table.columnAxis, totals.columnGrandTotal, totals.columnSubTotals, collapsedColState,
        extraDisabledSubTotals ::: otherLayoutInfo.disabledSubTotals, table.formatInfo, extraFormatInfo, false)

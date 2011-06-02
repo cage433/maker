@@ -75,6 +75,7 @@ object Field{
   }
 
   val NullField = Field("Null")
+  val RootField = Field("ROOT_FIELD")
 
   implicit object ordering extends Ordering[Field]{
     def compare(lhs:Field, rhs:Field) : Int = lhs.name.compare(rhs.name)
