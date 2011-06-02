@@ -44,14 +44,14 @@
 
     <!--Internal dependencies-->
 
-    <!--<dependency>-->
-      <!--<groupId>com.trafigura.services</groupId>-->
-      <!--<artifactId>titan-core</artifactId>-->
-      <!--</dependency>-->
-    <!--<dependency>-->
-      <!--<groupId>com.trafigura.services</groupId>-->
-      <!--<artifactId>titan-security</artifactId>-->
-      <!--</dependency>-->
+    <dependency>
+      <groupId>com.trafigura.services</groupId>
+      <artifactId>titan-core</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.trafigura.services</groupId>
+      <artifactId>titan-security</artifactId>
+    </dependency>
 <!--
     <dependency>
       <groupId>com.trafigura.tradinghub</groupId>
