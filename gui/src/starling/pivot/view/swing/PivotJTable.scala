@@ -185,8 +185,8 @@ class PivotJTable(tableModel:TableModel, pivotTableView:PivotTableView, model:Pi
       val point = e.getPoint
       val table = e.getSource.asInstanceOf[JXTable]
       val (row, col) = (table.rowAtPoint(point), table.columnAtPoint(point))
-      if (SwingUtilities.isLeftMouseButton(e)) {
-        if ((row != -1) && (col != -1)) {
+      if ((row != -1) && (col != -1)) {
+        if (SwingUtilities.isLeftMouseButton(e)) {
           if (e.getClickCount() == 2) {
             val tableSelection = getModel.asInstanceOf[PivotJTableModel].mapCellToFields(row, col)
             if (tableSelection.nonEmpty) {
@@ -217,52 +217,52 @@ class PivotJTable(tableModel:TableModel, pivotTableView:PivotTableView, model:Pi
               }
             }
           }
-        }
-      } else if (SwingUtilities.isRightMouseButton(e)) {
-        // If the cell that was clicked on is outside the current selection, select just it, otherwise leave the selection as is.
-        if (!getSelectedCells.contains((row,col))) {
-          setRowSelectionInterval(row,row)
-          setColumnSelectionInterval(col,col)
-        }
-
-        val selectedCells = getSelectedCells
-
-        val deletableCells = selectedCells.filter{case (row0,col0) => {
-          getValueAt(row0,col0) match {
-            case ac:AxisCell => ac.editable && ac.state != EditableCellState.Deleted
-            case tc:TableCell => tc.editable && tc.state != EditableCellState.Deleted
+        } else if (SwingUtilities.isRightMouseButton(e)) {
+          // If the cell that was clicked on is outside the current selection, select just it, otherwise leave the selection as is.
+          if (!getSelectedCells.contains((row,col))) {
+            setRowSelectionInterval(row,row)
+            setColumnSelectionInterval(col,col)
           }
-        }}
 
-        val resetableCells = selectedCells.filter{case (row0,col0) => {
-          getValueAt(row0,col0) match {
-            case ac:AxisCell => (ac.state != EditableCellState.Normal) && (if (ac.state == EditableCellState.Added) ac.label.nonEmpty else true)
-            case tc:TableCell => (tc.state != EditableCellState.Normal) && (if (tc.state == EditableCellState.Added) tc.text.nonEmpty else true)
-          }
-        }}
+          val selectedCells = getSelectedCells
 
-        if (deletableCells.nonEmpty || resetableCells.nonEmpty) {
-          val popup = new JPopupMenu
-
-          if (deletableCells.nonEmpty) {
-            val deleteActionName = if (deletableCells.size == 1) "Delete Cell" else "Delete Cells"
-            val deleteAction = Action(deleteActionName) {
-              getModel.asInstanceOf[PivotJTableModel].deleteCells(deletableCells)
+          val deletableCells = selectedCells.filter{case (row0,col0) => {
+            getValueAt(row0,col0) match {
+              case ac:AxisCell => ac.editable && ac.state != EditableCellState.Deleted
+              case tc:TableCell => tc.editable && tc.state != EditableCellState.Deleted
             }
-            val deleteItem = new MenuItem(deleteAction)
-            popup.add(deleteItem.peer)
-          }
+          }}
 
-          if (resetableCells.nonEmpty) {
-            val resetActionName = if (resetableCells.size == 1) "Reset Cell" else "Reset Cells"
-            val resetAction = Action(resetActionName) {
-              getModel.asInstanceOf[PivotJTableModel].resetCells(resetableCells)
+          val resetableCells = selectedCells.filter{case (row0,col0) => {
+            getValueAt(row0,col0) match {
+              case ac:AxisCell => (ac.state != EditableCellState.Normal) && (if (ac.state == EditableCellState.Added) ac.label.nonEmpty else true)
+              case tc:TableCell => (tc.state != EditableCellState.Normal) && (if (tc.state == EditableCellState.Added) tc.text.nonEmpty else true)
             }
-            val resetItem = new MenuItem(resetAction)
-            popup.add(resetItem.peer)
-          }
+          }}
 
-          popup.show(e.getComponent, point.x, point.y)
+          if (deletableCells.nonEmpty || resetableCells.nonEmpty) {
+            val popup = new JPopupMenu
+
+            if (deletableCells.nonEmpty) {
+              val deleteActionName = if (deletableCells.size == 1) "Delete Cell" else "Delete Cells"
+              val deleteAction = Action(deleteActionName) {
+                getModel.asInstanceOf[PivotJTableModel].deleteCells(deletableCells)
+              }
+              val deleteItem = new MenuItem(deleteAction)
+              popup.add(deleteItem.peer)
+            }
+
+            if (resetableCells.nonEmpty) {
+              val resetActionName = if (resetableCells.size == 1) "Reset Cell" else "Reset Cells"
+              val resetAction = Action(resetActionName) {
+                getModel.asInstanceOf[PivotJTableModel].resetCells(resetableCells)
+              }
+              val resetItem = new MenuItem(resetAction)
+              popup.add(resetItem.peer)
+            }
+
+            popup.show(e.getComponent, point.x, point.y)
+          }
         }
       }
     }
