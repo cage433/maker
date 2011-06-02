@@ -390,6 +390,24 @@ class CommoditySwapTests extends JonTestEnv {
   }
 
   @Test
+  def testPositionWhenBrentInMT {
+    val index = FuturesFrontPeriodIndex.BRT11
+    val period = Month(2012, 1)
+    val strike = Quantity(1, USD / BBL)
+    val volume = Quantity(16000, MT)
+    val cs = CommoditySwap(index, strike, volume, period, true).asUtpPortfolio(Day(2011, 1, 1))
+
+    val marketDayAndTime = (7 Feb 2011).endOfDay
+    val env = makeEnv(marketDayAndTime)
+
+    val janSens = SwapPrice(index, Month(2012, 1))
+
+    val janPos = cs.position(env, janSens)
+    val mtPos = janPos / Quantity(7.57, BBL/MT)
+    assertQtyEquals(mtPos, volume, 1e-7)
+  }
+
+  @Test
   def testMogasVsBrentCanBeInMT {
     // Seetal can enter the trade in either MT or BBL
     val mogas = PublishedIndex.MOGAS_95_UNL_10PPM_NWE_BARGES
