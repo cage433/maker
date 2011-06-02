@@ -1,7 +1,6 @@
 package starling.db
 
 import starling.utils.sql.QueryBuilder._
-import java.lang.String
 import collection.immutable.TreeMap
 import starling.quantity.Percentage
 import starling.marketdata._
@@ -18,6 +17,9 @@ import starling.calendar.Clock
 
 import starling.utils.Pattern._
 import starling.utils._
+import org.springframework.dao.DuplicateKeyException
+import java.lang.{RuntimeException, String}
+import java.util.concurrent.atomic.AtomicInteger
 
 
 // TODO: move me somewhere proper
@@ -190,7 +192,8 @@ object VersionedMarketData {
   def apply(key: MarketDataKey, rs: ResultSetRow) = new VersionedMarketData(rs.getTimestamp("timestamp"), rs.getInt("version"),
     rs.getObjectOption[Any]("data").map(key.unmarshallDB(_)))
 
-  val Save = Extractor.when[VersionedMarketData](_.data.isDefined)
+  val Delete = Extractor.when[VersionedMarketData](_.data.isEmpty)
+  val Save   = Extractor.when[VersionedMarketData](_.data.isDefined)
 }
 
 case class MarketDataEntry(observationPoint: ObservationPoint, key: MarketDataKey, data: MarketData) {
@@ -230,10 +233,10 @@ class DBMarketDataStore(db: DBTrait[RichResultSetRow], val marketDataSources: Ma
     assert(duplicates.isEmpty, "The MDS is corrupt\n" + q)
   }
 
+  private val currentVersion = new AtomicInteger(
+    db.queryWithOneResult[Int]("SELECT MAX(version) as version from MarketData")(_.getInt("version")).getOrElse(1))
+
   val importer = new MarketDataImporter(this)
-
-  val tableName = "MarketData"
-
   val pivotCache = CacheFactory.getCache("MarketDataStore.pivotCache")
 
   def readAll() {
@@ -428,44 +431,7 @@ class DBMarketDataStore(db: DBTrait[RichResultSetRow], val marketDataSources: Ma
     val changedMarketDataSets = new scala.collection.mutable.HashMap[MarketDataSet, (Set[Day], Int)]()
     var maxVersion = 0
     for ((marketDataSet, data) <- marketDataSetToData.toList.sortBy(_._1.name)) {
-      var update = false
-      var innerMaxVersion = 0
-
-      db.inTransaction(dbWriter => {
-        data.map{ action => {
-        updateIt(dbWriter, action.dataIdFor(marketDataSet), action.existingData, action.data).foreach { result => {
-          if (result._1) update=true
-          innerMaxVersion = scala.math.max(innerMaxVersion, result._2)
-        } }
-      } }
-      })
-
-      if (update) {
-        changedMarketDataSets(marketDataSet) = (data.flatMap(_.observationPoint.day.toList).toSet, innerMaxVersion)
-      }
-
-      MarketDataSet.fromExcel(marketDataSet) match {
-        case Some(name) => {
-          if (!excelDataSetsCache.contains(name)) {
-            excelDataSetsCache.append(name)
-            excelDataSetsCache = excelDataSetsCache.sortWith(_ < _)
-            broadcaster.broadcast(ExcelMarketListUpdate(excelDataSetsCache.toList))
-          }
-          val days = observationDaysByExcelCache.getOrElse(name, MSet[Day]())
-
-          data.flatMap(_.observationPoint.day.toList).filterNot(day => days.contains(day)).foreach(day => {
-            days += day
-            broadcaster.broadcast(ExcelObservationDay(name, day))
-          })
-
-          if (update) {
-            broadcaster.broadcast(ExcelMarketDataUpdate(name, innerMaxVersion))
-          }
-        }
-        case None =>
-      }
-
-      maxVersion = scala.math.max(maxVersion, innerMaxVersion)
+      maxVersion = scala.math.max(maxVersion, saveActions(data, marketDataSet, changedMarketDataSets))
     }
 
     for ((pricingGroup, marketDataSets) <- pricingGroupsDefinitions) {
@@ -485,6 +451,46 @@ class DBMarketDataStore(db: DBTrait[RichResultSetRow], val marketDataSources: Ma
     (maxVersion, changedMarketDataSets.nonEmpty)
   }
 
+
+  private def saveActions(data: Iterable[MarketDataUpdate], marketDataSet: MarketDataSet,
+                          changedMarketDataSets: scala.collection.mutable.HashMap[MarketDataSet, (Set[Day], Int)]): Int = {
+    var update = false
+    var innerMaxVersion = 0
+
+    db.inTransaction( dbWriter =>
+      data.map { action =>
+        updateIt(dbWriter, action.dataIdFor(marketDataSet), action.existingData, action.data).foreach { result =>
+          if (result._1) update = true
+          innerMaxVersion = scala.math.max(innerMaxVersion, result._2)
+        }
+      }
+    )
+
+    if (update) {
+      changedMarketDataSets(marketDataSet) = (data.flatMap(_.observationPoint.day.toList).toSet, innerMaxVersion)
+    }
+
+    MarketDataSet.fromExcel(marketDataSet).map { name =>
+      if (!excelDataSetsCache.contains(name)) {
+        excelDataSetsCache.append(name)
+        excelDataSetsCache = excelDataSetsCache.sortWith(_ < _)
+        broadcaster.broadcast(ExcelMarketListUpdate(excelDataSetsCache.toList))
+      }
+      // TODO: [2 Jun 2011, Stacy]: Should this be getOrElseUpdate ?
+      val days = observationDaysByExcelCache.getOrElse(name, MSet[Day]())
+
+      data.flatMap(_.observationPoint.day.toList).filterNot(day => days.contains(day)).foreach(day => {
+        days += day
+        broadcaster.broadcast(ExcelObservationDay(name, day))
+      })
+
+      if (update) {
+        broadcaster.broadcast(ExcelMarketDataUpdate(name, innerMaxVersion))
+      }
+    }
+    innerMaxVersion
+  }
+
   def save(marketDataSet:MarketDataSet, timedKey: TimedMarketDataKey, marketData:MarketData):Int = {
     save(Map(marketDataSet -> List( MarketDataEntry(timedKey.observationPoint, timedKey.key, marketData) ) ))._1
   }
@@ -494,10 +500,13 @@ class DBMarketDataStore(db: DBTrait[RichResultSetRow], val marketDataSources: Ma
   }
 
   val importLock = new Object
+
+
   def importFor(observationDay: Day, marketDataSets: MarketDataSet*) = importLock.synchronized {
-    Log.infoWithTime("saving market data") {
-      val updates = importer.getUpdates(observationDay, marketDataSets: _*)
+    Log.infoWithTime("saving market data: " + observationDay) {
+      val updates: Map[MarketDataSet, scala.List[MarketDataUpdate]] = importer.getUpdates(observationDay, marketDataSets: _*)
       Log.debug("Number of updates: " + updates.mapValues(_.toList.size))
+
       saveActions(updates)
     }
   }
@@ -779,7 +788,7 @@ class DBMarketDataStore(db: DBTrait[RichResultSetRow], val marketDataSources: Ma
     import QueryBuilder._
 
     (select ("timestamp, version, data")
-       from (tableName)
+       from ("MarketData")
        where (conditions(key)
          and version.map("version" eql _).getOrElse("childVersion" isNull)))
   }
@@ -793,7 +802,7 @@ class DBMarketDataStore(db: DBTrait[RichResultSetRow], val marketDataSources: Ma
   def currentVersions(ids: Iterable[MarketDataID]) = {
     val query = (
       select ("timestamp, version, data, marketDataKey")
-      from (tableName)
+      from ("MarketData")
       where ("marketDataKey" in (ids.map(_.subTypeKey)))
       and ("childVersion" isNull)
     )
@@ -815,7 +824,7 @@ class DBMarketDataStore(db: DBTrait[RichResultSetRow], val marketDataSources: Ma
     }
     val query =
       (select ("data")
-         from (tableName)
+         from ("MarketData")
         where (conditions(key) and versionClause)
       )
 
@@ -835,15 +844,21 @@ class DBMarketDataStore(db: DBTrait[RichResultSetRow], val marketDataSources: Ma
         var result: Option[Int] = None
         //timer {
           // insert new row into table, returning new version ID.
-          val values = id.conditions + ("timestamp" -> timestamp) + ("data" -> valueForDataColumn)
-          val nextVersion = dbWriter.insertAndReturnKey(tableName, "version", values)
+
+          val nextVersion = currentVersion.incrementAndGet
 
           if (existingData.isDefined) {
             // update previous version to point to new version ID.
             dbWriter.queryWithNoResults(
-              QueryBuilder.update(tableName)
+              QueryBuilder.update("MarketData")
                 set ("childVersion" eql nextVersion)
                 where ("version" eql existingData.get.version))
+          }
+
+          dbWriter.withIdentityInsert("MarketData") {
+            val values = id.conditions + ("timestamp" →  timestamp) + ("data" →  valueForDataColumn) + ("version" → nextVersion)
+
+            dbWriter.insert("MarketData", values)
           }
 
           result = Some(nextVersion.toInt)

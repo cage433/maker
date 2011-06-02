@@ -183,7 +183,7 @@ case class TradeChanges(
 /**
  * A wrapper around the starling Trade tables.
  */
-abstract class TradeStore(db: RichDB, broadcaster:Broadcaster, tradeSystem: TradeSystem, bookID:Option[Int], inTest: Boolean) {
+abstract class TradeStore(db: RichDB, broadcaster:Broadcaster, tradeSystem: TradeSystem, bookID:Option[Int]) {
 
   lazy val cachedLatestTimestamp:AtomicReference[Timestamp] = new AtomicReference(maxTimestamp())
 
@@ -216,15 +216,8 @@ abstract class TradeStore(db: RichDB, broadcaster:Broadcaster, tradeSystem: Trad
   def inTransaction(isolationLevel: Int)(f: Writer => Unit) {
     val oldLatestTimestamp = cachedLatestTimestamp.get
     db.inTransaction(isolationLevel) {
-      dbWriter => {
-        try {
-          if (!inTest) dbWriter.setIdentityInsert(tableName, true)
-          val writer = new Writer(dbWriter)
-          f(writer)
-          writer.flushToDB
-        } finally {
-          if (!inTest) dbWriter.setIdentityInsert(tableName, false)
-        }
+      dbWriter => dbWriter.withIdentityInsert(tableName) {
+        new Writer(dbWriter).flushToDB(f)
       }
     }
     val newMax = maxTimestamp
@@ -786,6 +779,12 @@ abstract class TradeStore(db: RichDB, broadcaster:Broadcaster, tradeSystem: Trad
       if(toInsertTradeTable.size > 100) {
         flushToDB
       }
+    }
+
+    def flushToDB[A](f: Writer => A): A = {
+      val result = f(this)
+      flushToDB
+      result
     }
 
     def flushToDB = {

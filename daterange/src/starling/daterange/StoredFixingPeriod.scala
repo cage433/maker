@@ -11,7 +11,13 @@ case class Tenor(tenorName: String, value: Int) extends Ordered[Tenor] {
     case other => other
   }
 
-  override def toString = value + tenorName
+  override def toString = this match {
+    case Tenor.ON   => "ON"
+    case Tenor.SN   => "SN"
+    case Tenor.CASH => "CASH"
+    case _          => value + tenorName
+  }
+
   private def indexOf(tenor: String) = TenorType.ALL_IN_ORDER.indexOf(tenor)
 }
 
@@ -19,7 +25,8 @@ object Tenor {
   def apply(tenorType: TenorType, value: Int): Tenor = Tenor(tenorType.shortName, value)
 
   val ON          = Tenor(Day, 0)   // Overnight
-  val SN          = Tenor(Day, 0)   // Spot Next
+  val SN          = Tenor(Day, 2)   // Spot Next
+  val CASH        = Tenor(Month, 0)
   val OneDay      = Tenor(Day, 1)
   val OneWeek     = Tenor(Week, 1)
   val TwoWeeks    = Tenor(Week, 2)
@@ -40,7 +47,7 @@ case class StoredFixingPeriod(period: Either[DateRange, Tenor]) extends Ordered[
     case (Right(_), Left(_)) => -1
   }
 
-  override def toString = period.fold(_.toString, tenor => if (tenor.value == 0) "CASH" else tenor.toString)
+  override def toString = period.fold(_.toString, _.toString)
 }
 
 object StoredFixingPeriod {

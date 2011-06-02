@@ -14,6 +14,7 @@ import starling.utils.Log
 import LIMServer._
 import starling.utils.ClosureUtil._
 import starling.utils.ImplicitConversions._
+import FuturesExchangeFactory._
 
 
 case class RefinedMetalsLimMarketDataSource(limServer: LIMServer)
@@ -141,36 +142,28 @@ object MonthlyFuturesFixings extends HierarchicalLimSource {
 
 object LMEFixings extends LimSource {
   type Relation = LMEFixingRelation
-  case class LMEFixingRelation(ring: ObservationTimeOfDay, market: CommodityMarket, month:LimMonth)
-  case class LimMonth(offset: Int, name: String)
+  case class LMEFixingRelation(ring: ObservationTimeOfDay, market: CommodityMarket, tenor:Tenor)
 
-  private val months = List(LimMonth(0, "CASH"), LimMonth(3, "3M"), LimMonth(15, "15M"), LimMonth(27, "27M"))
+  private val tenors = List(Tenor.CASH, Tenor(Month, 3), Tenor(Month, 15), Tenor(Month, 27))
   private val rings = List(ObservationTimeOfDay.AMR1, ObservationTimeOfDay.Official, ObservationTimeOfDay.PMR1, ObservationTimeOfDay.Unofficial)
 
   val levels = List(Level.Ask, Level.Bid)
 
-  def relationsFrom(connection: LIMConnection) = {
-    for (market <- FuturesExchangeFactory.LME.markets; ring <- rings; month <- months) yield {
-      val relation = "TRAF.LME.%s.%s.%s" % (market.commodity.name.toUpperCase, ring.name.toUpperCase, month.name)
-      (LMEFixingRelation(ring, market, month), relation)
-    }
+  def relationsFrom(connection: LIMConnection) = for (market <- LME.markets; ring <- rings; tenor <- tenors) yield {
+    (LMEFixingRelation(ring, market, tenor), "TRAF.LME.%s.%s.%s" % (market.commodity.name.toUpperCase, ring.name.toUpperCase, tenor.toString))
   }
 
   def marketDataEntriesFrom(fixings: List[Prices[LMEFixingRelation]]): List[MarketDataEntry] = {
-    val groupedFixings = fixings.groupInto(keyGroup, fixing => (fixing.relation.month, fixing.priceByLevel))
+    val groupedFixings = fixings.groupInto(keyGroup, fixing => (fixing.relation.tenor, fixing.priceByLevel))
 
     groupedFixings.map { case ((observationPoint, market), fixingsInGroup) =>
-      val data = fixingsInGroup.flatMap { case (month, priceByLevel) =>
+      val data = fixingsInGroup.flatMap { case (tenor, priceByLevel) =>
         priceByLevel.toList.map { case (level, price) =>
-          (level, StoredFixingPeriod.tenor(Tenor(Month, month.offset))) → MarketValue.quantity(price, market.priceUOM)
+          (level, StoredFixingPeriod.tenor(tenor)) → MarketValue.quantity(price, market.priceUOM)
         }
       }.toMap
 
-      MarketDataEntry(
-        observationPoint,
-        PriceFixingsHistoryDataKey(market),
-        PriceFixingsHistoryData.create(data)
-      )
+      MarketDataEntry(observationPoint, PriceFixingsHistoryDataKey(market), PriceFixingsHistoryData.create(data))
     }.toList
   }
 

@@ -48,6 +48,8 @@ object LIBORFixings extends HierarchicalLimSource {
 
   private def parseTenor(tenor: String): Option[Tenor] = tenor partialMatch {
     case TenorRegex(value, tenorType) => Tenor(TenorType.typesByShortName(tenorType), value.toInt)
+    case "ON" => Tenor.ON
+    case "SN" => Tenor.SN
   }
 
   def group(fixings: Prices[LIBORFixingRelation]) = {

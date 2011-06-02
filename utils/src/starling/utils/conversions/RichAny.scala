@@ -42,7 +42,9 @@ trait RichAny {
 
     def safeCast[V](implicit m: Manifest[V]): Option[V] = m.cast(value)
 
-    def optPair[V](option: Option[V]): Option[(T, V)] = option.map(o => (value, o))
+    def pair[V](f: T => V): (T, V) = value → f(value)
+    def optPair[V](option: Option[V]): Option[(T, V)] = option.map(value → _)
+    def optPair[V](f: T => Option[V]): Option[(T, V)] = value.optPair(f(value))
 
     def appendToStream(stream: Stream[T]): Stream[T] = stream.append(value #:: Stream.empty)
 

@@ -15,7 +15,6 @@ import starling.pivot._
 import java.lang.String
 import starling.richdb.{RichResultSetRowFactory, RichDB}
 import collection.immutable.{Nil, Map}
-import starling.utils.sql.ConnectionParams
 import starling.utils.{StarlingTest, Broadcaster}
 
 
@@ -30,7 +29,7 @@ class MarketDataStoreTest extends StarlingTest with ShouldMatchers {
   def initialise {
     connection = DBTest.getConnection("jdbc:h2:mem:marketDataStoreTest;create=true")
     val ds = new SingleConnectionDataSource(connection, true)
-    db = new RichDB(ds, new RichResultSetRowFactory)
+    db = new TestDB(ds, new RichResultSetRowFactory)
     db.inTransaction{
       writer => {
         writer.update(create_table)

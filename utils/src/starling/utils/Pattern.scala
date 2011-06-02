@@ -75,4 +75,6 @@ object Pattern {
 
     None
   }
+
+  val NestedException = Extractor.from[Throwable](t => t.optPair(t.getCause.safeCast[Throwable]))
 }
