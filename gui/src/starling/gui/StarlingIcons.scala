@@ -10,7 +10,7 @@ object StarlingIcons {
   val Refresh = "/icons/22x22/actions/view-refresh.png"
   val MarketData = "/icons/16x16_market_data.png"
 
-  lazy val RowGrandTotals = StarlingIcons.icon("/icons/16x16_stock_bottom_totals.png")
+  lazy val RowGrandTotals = StarlingIcons.icon("/icons/16x16_stock_top_bottom_totals.png")
   lazy val ColumnTotals = StarlingIcons.icon("/icons/16x16_stock_right_totals.png")
   lazy val RowSubTotals = StarlingIcons.icon("/icons/16x16_stock_sub_totals.png")
   lazy val ColumnSubTotals = StarlingIcons.icon("/icons/16x16_stock_col_sub.png")

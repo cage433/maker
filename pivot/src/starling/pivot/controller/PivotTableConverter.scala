@@ -96,7 +96,8 @@ object AxisNodeBuilder {
   }
 
   def flatten(nodes:List[AxisNode], grandTotals:Boolean, subTotals:Boolean, collapsedState:CollapsedState,
-              disabledSubTotals:List[Field], formatInfo:FormatInfo, extraFormatInfo:ExtraFormatInfo):List[List[AxisCell]] = {
+              disabledSubTotals:List[Field], formatInfo:FormatInfo, extraFormatInfo:ExtraFormatInfo,
+              grandTotalsOnEachSide:Boolean):List[List[AxisCell]] = {
     val fakeField = Field("N")
     val disabledSubTotalsToUse = Field.NullField :: fakeField :: disabledSubTotals
     val fakeNode = AxisNode(AxisValue(fakeField, NullAxisValueType, 0), nodes)
@@ -106,7 +107,12 @@ object AxisNodeBuilder {
     } else {
       List()
     }
-    val cellsWithNull = fakeNode.flatten(List(), subTotals, false, collapsedState, disabledSubTotalsToUse, formatInfo, extraFormatInfo) ::: grandTotalRows
+    val frontCells = if (grandTotalsOnEachSide) {
+      grandTotalRows
+    } else {
+      List()
+    }
+    val cellsWithNull = frontCells ::: fakeNode.flatten(List(), subTotals, false, collapsedState, disabledSubTotalsToUse, formatInfo, extraFormatInfo) ::: grandTotalRows
     cellsWithNull.map(r=>r.tail)
   }
 }
@@ -133,7 +139,7 @@ case class PivotTableConverter(otherLayoutInfo:OtherLayoutInfo = OtherLayoutInfo
 
   def createGrid(extractUOMs:Boolean = true, addExtraColumnRow:Boolean = true):PivotGrid ={
     val rowDataX = AxisNodeBuilder.flatten(table.rowAxis, totals.rowGrandTotal, totals.rowSubTotals, collapsedRowState,
-      otherLayoutInfo.disabledSubTotals, table.formatInfo, extraFormatInfo)
+      otherLayoutInfo.disabledSubTotals, table.formatInfo, extraFormatInfo, true)
     def insertNull(grid:List[List[AxisCell]], nullCount:Int) = {
       grid.map{ r=> {
         if (r.isEmpty) List.fill(math.max(1, nullCount))(AxisCell.Null) else r
@@ -180,7 +186,7 @@ case class PivotTableConverter(otherLayoutInfo:OtherLayoutInfo = OtherLayoutInfo
       topLevelMeasureFields ::: measureFieldsBeneathFields ::: fieldsDirectlyAboveNulls
     }
     val cdX = AxisNodeBuilder.flatten(table.columnAxis, totals.columnGrandTotal, totals.columnSubTotals, collapsedColState,
-       extraDisabledSubTotals ::: otherLayoutInfo.disabledSubTotals, table.formatInfo, extraFormatInfo)
+       extraDisabledSubTotals ::: otherLayoutInfo.disabledSubTotals, table.formatInfo, extraFormatInfo, false)
     
     val cd = {
       val r = insertNull(cdX, 1)
