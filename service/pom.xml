@@ -56,7 +56,7 @@
       <groupId>com.trafigura.services</groupId>
       <artifactId>titan-security</artifactId>
     </dependency>
-<!--
+
     <dependency>
       <groupId>com.trafigura.tradinghub</groupId>
       <artifactId>scala-model-with-persistence</artifactId>
@@ -68,7 +68,6 @@
         </exclusion>
       </exclusions>
     </dependency>
--->
 
     <!--External dependencies-->
   <dependency>
