@@ -588,6 +588,10 @@ object Market {
     NonMetalsPriceTable, Day, GasOil(7.45), limSymbol = Some(LimSymbol("AAYWT00")), precision = precisionRules.rule(1011)) with HasInterpolation {
     def interpolation = InverseConstantInterpolation
   }
+  lazy val GAS_OIL_ULSD_USGC_PIPELINE = new ForwardMarket("Gas Oil ULSD USGC Pipeline (Platts)", None, GAL, USD, cals.PLH, Some(1039),
+    NonMetalsPriceTable, Day, GasOil(7.44), limSymbol = Some(LimSymbol("AATGY00")), precision = precisionRules.rule(1039)) with HasInterpolation {
+    def interpolation = InverseConstantInterpolation
+  }
   lazy val GAS_OIL_0_1_CIF_NWE_CARGOES = new ForwardMarket("Gas Oil 0.1% CIF NWE Cargoes (Platts)", None, MT, USD, cals.PLE, Some(1049),
     NonMetalsPriceTable, Day, GasOil(7.45), limSymbol = Some(LimSymbol("AAYWS00")), precision = precisionRules.rule(1049)) with HasInterpolation {
     def interpolation = InverseConstantInterpolation
@@ -688,7 +692,7 @@ object Market {
   private lazy val otherMarkets = List(FUEL_FOB_ROTTERDAM_BARGES_3_5, HSFO_180_CST_Singapore, MDEX_CRUDE_PALM_OIL, PLATTS_DUBAI,
     DATED_BRENT, FUEL_FOB_ROTTERDAM_BARGES_3_5, PREM_UNL_FOB_ROTTERDAM_BARGES, FUEL_FOB_NWE_CARGOES_1, NAPHTHA_CIF_NWE_CARGOES,
     GAS_OIL_0_5_SINGAPORE, MOGAS_95_UNL_10PPM_NWE_BARGES, UNL_92_SINGAPORE_CARGOES, GAS_OIL_0_1_FOB_ROTTERDAM_BARGES,
-  GAS_OIL_0_1_CIF_NWE_CARGOES, PREM_UNL_10PPM_FOB_MED_CARGOES, PREM_UNL_EURO_BOB_OXY_NWE_BARGES, HSFO_380_CST_Singapore,
+  GAS_OIL_ULSD_USGC_PIPELINE, GAS_OIL_0_1_CIF_NWE_CARGOES, PREM_UNL_10PPM_FOB_MED_CARGOES, PREM_UNL_EURO_BOB_OXY_NWE_BARGES, HSFO_380_CST_Singapore,
     JET_CIF_NWE_CARGOES, GAS_OIL_ULSD_10PPM_CIF_NWE_CARGOES, GAS_OIL_ULSD_10PPM_FOB_ROTTERDAM_BARGES, PLATTS_BRENT,
     No_6_3PC_USGC_Waterborne, UNL_87_USGC_PIPELINE, NYMEX_BRENT, URALS_CIF_MED, ICE_RBOB, ICE_HEATING) ::: EXBXG_MARKETS
   

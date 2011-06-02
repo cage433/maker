@@ -194,6 +194,7 @@ object PublishedIndex{
   val MOGAS_95_UNL_10PPM_NWE_BARGES = new PublishedIndex("Mogas 95 Unl 10ppm NWE Barges (Argus)", 88, Market.MOGAS_95_UNL_10PPM_NWE_BARGES)
   val UNL_92_SINGAPORE_CARGOES = new PublishedIndex("Unl 92 Singapore Cargoes", 198, Market.UNL_92_SINGAPORE_CARGOES)
   val GAS_OIL_0_1_FOB_ROTTERDAM_BARGES = new PublishedIndex("Gas Oil 0.1% FOB Rotterdam Barges (Platts)", 1011, Market.GAS_OIL_0_1_FOB_ROTTERDAM_BARGES)
+  val GAS_OIL_ULSD_USGC_PIPELINE = new PublishedIndex("Gas Oil ULSD USGC Pipeline (Platts)", 1039, Market.GAS_OIL_ULSD_USGC_PIPELINE)
   val GAS_OIL_0_1_CIF_NWE_CARGOES = new PublishedIndex("Gas Oil 0.1% CIF NWE Cargoes (Platts)", 1049, Market.GAS_OIL_0_1_CIF_NWE_CARGOES)
   val PREM_UNL_10PPM_FOB_MED_CARGOES = new PublishedIndex("Prem Unl 10ppm FOB Med Cargoes (Platts)", 1183, Market.PREM_UNL_10PPM_FOB_MED_CARGOES)
   val PREM_UNL_EURO_BOB_OXY_NWE_BARGES = new PublishedIndex("Prem Unl Euro-Bob Oxy NWE Barges (Argus)", 1312, Market.PREM_UNL_EURO_BOB_OXY_NWE_BARGES)
@@ -234,6 +235,7 @@ object PublishedIndex{
     MOGAS_95_UNL_10PPM_NWE_BARGES,
     UNL_92_SINGAPORE_CARGOES,
     GAS_OIL_0_1_FOB_ROTTERDAM_BARGES,
+    GAS_OIL_ULSD_USGC_PIPELINE,
     GAS_OIL_0_1_CIF_NWE_CARGOES,
     PREM_UNL_10PPM_FOB_MED_CARGOES,
     PREM_UNL_EURO_BOB_OXY_NWE_BARGES,
