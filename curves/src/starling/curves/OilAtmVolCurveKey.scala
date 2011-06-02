@@ -93,7 +93,7 @@ case class OilAtmVol(marketDayAndTime : DayAndTime, market : CommodityMarket, da
 }
 
 case class OilVolSkewCurveKey(market : CommodityMarket) extends NonHistoricalCurveKey[OilVolSurfaceData]{
-  def marketDataKey = OilVolSurfaceDataKey(market)
+  def marketDataKey = OilVolSurfaceDataKey(market.marketDataMarket)
 
   def buildFromMarketData(marketDayAndTime: DayAndTime, marketData: OilVolSurfaceData) = new OilVolSkew(marketDayAndTime, market, marketData)
 
