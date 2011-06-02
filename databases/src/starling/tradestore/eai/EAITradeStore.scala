@@ -45,8 +45,8 @@ case class EAITradeAttributes(strategyID: TreeID, bookID: TreeID, dealID: TreeID
 }
 
 
-class EAITradeStore(db: RichDB, broadcaster:Broadcaster, eaiStrategyDB:EAIStrategyDB, book:Book) extends
-    TradeStore(db, broadcaster, EAITradeSystem, false, Some( book.bookID )) {
+class EAITradeStore(db: RichDB, broadcaster:Broadcaster, eaiStrategyDB:EAIStrategyDB, book:Book, inTest: Boolean = false) extends
+    TradeStore(db, broadcaster, EAITradeSystem, Some( book.bookID ), inTest) {
   lazy val usedStrategyIDs = new scala.collection.mutable.HashSet[Int]()
   val tableName = "EAITrade"
   val tradeAttributesFactory = EAITradeAttributes

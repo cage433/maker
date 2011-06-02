@@ -37,7 +37,7 @@ object RefinedFixationTradeStore {
 }
 
 class RefinedFixationTradeStore(db: RichDB, broadcaster:Broadcaster)
-  extends TradeStore(db, broadcaster, RefinedFixationTradeSystem, false, None)
+  extends TradeStore(db, broadcaster, RefinedFixationTradeSystem, None, false)
 {
 
   override val tradeAttributeFieldDetails = List(groupCompany_str, exchange_str, contractNo_str, pricingType_str).map(n=>FieldDetails(n))
