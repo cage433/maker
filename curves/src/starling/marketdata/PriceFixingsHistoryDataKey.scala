@@ -2,6 +2,7 @@ package starling.marketdata
 
 import starling.market._
 import starling.utils.ImplicitConversions._
+import starling.quantity.UOM
 
 
 case class PriceFixingsHistoryDataKey(marketName: String, exchangeName: Option[String] = None) extends MarketDataKey {

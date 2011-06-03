@@ -42,6 +42,7 @@ trait RichAny {
       try { apply(pfn) } catch { case _ => Log.warn(message + ": " + value); None }
 
     def safeCast[V](implicit m: Manifest[V]): Option[V] = m.cast(value)
+    def cast[V](alternative: T => V)(implicit m: Manifest[V]): V = m.cast(value).getOrElse(alternative(value))
 
     def pair[V](f: T => V): (T, V) = value → f(value)
     def pair[V](t: Traversable[V]) = t.pair(value).swap

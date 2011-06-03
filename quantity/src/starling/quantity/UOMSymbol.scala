@@ -84,7 +84,7 @@ object UOMSymbol{
 
   val MILLISECONDS_SYMBOL = UOMSymbol("ms")
 
-  val currencySymbols = zCurrencies ++ zCurrencies2 ++ zCurrencies3 ++ List(US_CENT_SYMBOL)
+  val currencySymbols : List[UOMSymbol] = zCurrencies ++ zCurrencies2 ++ zCurrencies3 ++ List(US_CENT_SYMBOL)
 
   val nonCurrencySymbols = List(
     TONNE_SYMBOL,

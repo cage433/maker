@@ -706,17 +706,11 @@ object Market {
 
   def marketsForExchange(exchange:FuturesExchange) = futuresMarkets.filter(_.exchange==exchange)
 
-  def fromTrinityCode(code : String): CommodityMarket = {
-    trinityCodeMap.get(code.trim) match {
-      case Some(market) => market
-      case None => throw new UnknownTrinityMarketException(code)
-    }
-  }
+  def fromTrinityCode(code : String): CommodityMarket =
+    trinityCodeMap.getOrElse(code.trim, throw new UnknownTrinityMarketException(code))
 
-  def futuresMarketFromTrinityCode(code : String) : FuturesMarket = fromTrinityCode(code) match {
-    case m: FuturesMarket => m
-    case o => throw new Exception("Market " + o + " is not a FuturesMarket")
-  }
+  def futuresMarketFromTrinityCode(code : String) : FuturesMarket = fromTrinityCode(code).
+    cast[FuturesMarket](o => throw new Exception("Market " + o + " is not a FuturesMarket"))
 
   def fromEAIQuoteID(id: Int) = eaiCodeMap(id)
 
@@ -735,21 +729,29 @@ object Market {
    * given that the market names can be checked for uniqueness?
    */
   private val usedOrUnusedMarkets = markets ++ unusedMarketsWithOldData
-  def fromName(marketName : String) : CommodityMarket = usedOrUnusedMarkets.find(_.name.equalsIgnoreCase(marketName)) match {
-    case None => {
-      val nameWithoutIdentifier = new Regex(" - [0-9]*$").replaceFirstIn(marketName, "")
-      markets.find(_.name.equalsIgnoreCase(nameWithoutIdentifier)) match {
-        case None => throw new IllegalStateException("No known market with name '" + marketName + "' or '" + nameWithoutIdentifier + "'")
-        case Some(market) => market
+  private def fromNameEither(marketName : String) : Either[Failure, CommodityMarket] = {
+    val nameWithoutIdentifier = new Regex(" - [0-9]*$").replaceFirstIn(marketName, "")
+
+    usedOrUnusedMarkets.find(_.name.equalsIgnoreCase(marketName)) match {
+      case Some(market) => Right(market)
+      case None => markets.find(_.name.equalsIgnoreCase(nameWithoutIdentifier)) match {
+        case Some(market) => Right(market)
+        case None => Left(Failure("No known market with name '" + marketName + "' or '" + nameWithoutIdentifier + "'"))
       }
     }
-    case Some(market) => market
   }
 
-  def futuresMarketFromName(marketName : String): FuturesMarket = fromName(marketName) match {
-    case m: FuturesMarket => m
-    case o => throw new Exception("Market " + o + " is not a FuturesMarket")
-  }
+  def fromName(marketName: String) = fromNameEither(marketName).getOrThrow
+
+  private def fromCommodityEither(exchangeName: String, commodityName: String) = futuresMarkets.find(market =>
+    market.exchange.name.equalsIgnoreCase(exchangeName) && market.commodity.name.equalsIgnoreCase(commodityName))
+      .toRight(Failure("Exchange: %s does not have a market for commodity: %s" % (exchangeName, commodityName)))
+
+  def fromNameOrCommodity(exchangeName: String, name: String): CommodityMarket =
+    fromNameEither(name).orElse(fromCommodityEither(exchangeName, name)).getOrThrow
+
+  def futuresMarketFromName(marketName : String): FuturesMarket = fromName(marketName).
+    cast[FuturesMarket](o => throw new Exception("Market " + o + " is not a FuturesMarket"))
 
   def forwardMarketFromName(marketName : String): ForwardMarket = forwardMarkets.find(_.name.equalsIgnoreCase(marketName)) match {
     case None => {

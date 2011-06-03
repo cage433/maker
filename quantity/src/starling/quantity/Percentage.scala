@@ -59,5 +59,6 @@ object Percentage {
     assert(q.uom == UOM.SCALAR, "Percentage cannot be constructed from quantity " + q)
     Percentage(q.value)
   }
+  val Regex = """(.*) %""".r
 }
 

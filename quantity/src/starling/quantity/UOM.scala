@@ -109,7 +109,7 @@ object UOM {
 
   val MILLISECONDS = MILLISECONDS_SYMBOL.asUOM
 
-  lazy val currencies = currencySymbols.map(_.asUOM) 
+  lazy val currencies = currencySymbols.map(_.asUOM)
 
   def build(numerator : Int, denominator : Int) : UOM = {
   		UOM(numerator, denominator).reduce
@@ -158,10 +158,8 @@ object UOM {
 
   def fromIdentifier(uomString : String) = fromString(uomString)
 
-  private val allCurrencies = currencies.map(ccy => ccy.toString -> ccy).toMap
-  def parseCurrency(text:String) = {
-    allCurrencies.get(text.toUpperCase)
-  }
+  private val allCurrencies = currencies.toMapWithKeys(_.toString)
+  def parseCurrency(text:String) = allCurrencies.get(text.toUpperCase)
 }
 
 case class UOM private (scale : Ratio, value : Ratio) extends RatioT[UOM] {

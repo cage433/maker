@@ -155,7 +155,8 @@ object Commodity{
   }
 
   private lazy val CommodityNameToCommodity = Map() ++ markets.map(m => (m.commodity.name -> m.commodity))
-  def fromName(name:String) = CommodityNameToCommodity(name)
+  def fromName(name:String) = fromNameOption(name).getOrElse(throw new Exception("No such commodity"))
+  def fromNameOption(name: String) = CommodityNameToCommodity.get(name)
 
   def hasStandardFuturesMarket(commodity:Commodity) = {
     try {
