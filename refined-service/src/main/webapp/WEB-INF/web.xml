@@ -16,6 +16,7 @@
     <param-value>/RPC</param-value>
   </context-param>
 
+ <!--
   <filter>
     <filter-name>springSecurityFilterChain</filter-name>
     <filter-class>
@@ -46,6 +47,7 @@
     </servlet-class>
     <load-on-startup>2</load-on-startup>
   </servlet>
+-->
   <servlet>
     <servlet-name>Info</servlet-name>
     <servlet-class>
@@ -76,10 +78,11 @@
     <servlet-name>Info</servlet-name>
     <url-pattern>/info</url-pattern>
   </servlet-mapping>
+<!--
   <servlet-mapping>
     <servlet-name>Resteasy</servlet-name>
     <url-pattern>/RPC/*</url-pattern>
-  </servlet-mapping>
+  </servlet-mapping> -->
   <servlet-mapping>
     <servlet-name>AppTxt</servlet-name>
     <url-pattern>/webstart/app.txt</url-pattern>

@@ -12,14 +12,16 @@
        http://www.springframework.org/schema/jee/spring-jee-2.0.xsd http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-2.0.xsd">
 
     <import resource="classpath:config-properties.xml"/>
-    <import resource="classpath:security.xml"/>
-    <import resource="classpath:serviceFilters.xml"/>
-    <!--<import resource="classpath:ds.xml"/>-->
+    <!-- <import resource="classpath:security.xml"/> -->
+
+    <!-- <import resource="classpath:serviceFilters.xml"/> -->
+
+    <!--<import resource="classpath:ds.xml"/>
     <import resource="classpath:cacheManager.xml"/>
     <import resource="classpath:userCache.xml"/>
     <import resource="classpath:rabbitmq.xml"/>
     <import resource="classpath:events.xml"/>
-<!-- 000000000000000000000000000000000000000000000000000 -->
+
     <import resource="classpath:services/tradeservice.xml"/>
     <import resource="classpath:system-users.xml"/>
 
@@ -27,6 +29,8 @@
       <constructor-arg index="0" value="titan.tradecapture"/>
       <constructor-arg index="1" ref="securityComponent"/>
     </bean>
+    -->
+
  <!-- 000000000000000000000000000000000000000000000000000 -->
 
     <!--
