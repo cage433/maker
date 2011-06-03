@@ -37,7 +37,7 @@ case class CalendarSpreadOption(
     case DateRangePeriod(period) if period.canSplitIntoMonths => { // date ranges are always monthly
       period.toListOfMonths.map(m => Spread(m, m + 1))
     }
-    case _ => List()
+    case _ => throw new Exception("Invalid period for CSO: " + period)
   }
 
   override def expiryDay = Some(market.csoOptionExpiry(spreads.last))
