@@ -30,14 +30,25 @@ case class EAISystemOfRecord(externalDB: RichDB, bookID: Int, downloadID: Int) e
   private val otcOptions = ((select("tradeType =  " + OTC_OPTION + ",*") from ("tblPlutoOTCOptions t")), ("expiryDate" gt (31 Sep 2009)))
   private val cfds = ((select("tradeType =  " + CFD_SWAP + ",*") from ("tblPlutoCFDTrades t")), ("1" eql "1"))
   private val cargos = ((select("tradeType =  " + CARGO + ",*") from ("tblPlutoCargos t")), ("1" eql "1"))
+  private val costs = ((select("tradeType =  " + COST + ",*") from ("tblPlutoCosts t")), ("1" eql "1"))
 
-  private def queries = generateQueries(List(swaps, clearportSwaps, otcOptions, etOptions, futures, cfds, swapSpreads/*, cargos*/))
+  private def queries = generateQueriesWithCosts(List(swaps, clearportSwaps, otcOptions, etOptions, futures, cfds, swapSpreads/*, cargos*/)) :::
+    generateQueries(List(costs))
 
-  private def generateQueries(list: List[(Query, Clause)]) = {
+  private def generateQueriesWithCosts(list: List[(Query, Clause)]): List[Query] = {
     list.map {
       case (q, cl) =>
         (q
           leftJoin ("EAI.dbo.vwCostTypes cts", ("cts.ID" eql "t.CommissionCostTypeID"))
+          where (("t.downloadid" eql downloadID) and ("bookid" eql bookID) and ("isdeleted" eql 0) and ("deletedinaspect" eql 0) and cl)
+          )
+    }
+  }
+
+  private def generateQueries(list: List[(Query, Clause)]): List[Query] = {
+    list.map {
+      case (q, cl) =>
+        (q
           where (("t.downloadid" eql downloadID) and ("bookid" eql bookID) and ("isdeleted" eql 0) and ("deletedinaspect" eql 0) and cl)
           )
     }
@@ -59,6 +70,7 @@ case class EAISystemOfRecord(externalDB: RichDB, bookID: Int, downloadID: Int) e
       case 'S' => List(swaps, swapSpreads, cfds)
       case 'C' => List(clearportSwaps)
       case 'P' => List(cargos)
+      case 'N' => List(costs)
     })
     var found = List[Trade]()
     queries.foreach(query => allTrades(query and ("aspectid" eql tradeID))(t => found ::= t))
@@ -72,7 +84,7 @@ case class EAISystemOfRecord(externalDB: RichDB, bookID: Int, downloadID: Int) e
   protected def createNullTrade(rs: RichResultSetRow) = {
     val tradeID = TradeID(rs.getString("aspectid"), EAITradeSystem)
     val tradeDay = rs.getDay("TradeDate")
-    val counterParty = if(rs.hasColumn("counterparty")) {
+    val counterParty = if(rs.hasColumn("counterparty") && !rs.isNull("counterparty")) {
       rs.getString("counterparty")
     } else {
       "No CounterParty"
@@ -120,7 +132,6 @@ case class EAISystemOfRecord(externalDB: RichDB, bookID: Int, downloadID: Int) e
         costs ::= commissionCosts
       }
     }
-
     trade.copy(costs = costs)
   }
 
@@ -149,6 +160,7 @@ object EAISystemOfRecord {
   val CFD_SWAP = 6
   val SWAP_SPREAD = 7
   val CARGO = 8
+  val COST = 9
 
   val CALENDAR_SPREAD_TYPE = "Calendar Spread"
   val ASIAN_TYPE = "Asian"

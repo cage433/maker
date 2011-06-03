@@ -1,16 +1,18 @@
 package starling.gui.api
 
-import java.io.Serializable
-import starling.tradestore.TradePredicate
-import starling.varcalculator.NAhead
-import starling.quantity.Quantity
-import starling.collection.TreeSelection
-import starling.calendar.BusinessCalendar
 import collection.immutable.{TreeSet, SortedSet}
-import starling.utils.{ImplicitConversions, STable}
-import ImplicitConversions._
-import starling.rmi.StarlingServer
+import java.io.Serializable
+
+import starling.calendar.BusinessCalendar
 import starling.daterange._
+import starling.quantity.Quantity
+import starling.rmi.StarlingServer
+import starling.tradestore.TradePredicate
+import starling.utils.{Named, StarlingEnum, ImplicitConversions, STable}
+import starling.varcalculator.NAhead
+
+import ImplicitConversions._
+
 
 class TradeReport
 
@@ -56,10 +58,11 @@ case class MarketDataIdentifier(selection: MarketDataSelection, marketDataVersio
 
 class TradeValuation(val valuationParameters:STable) extends Serializable
 
-case class PricingGroup(name:String) {
+case class PricingGroup(name:String) extends Named {
   override def toString = name
 }
-object PricingGroup {
+
+object PricingGroup extends StarlingEnum(classOf[PricingGroup]) {
   val Metals = PricingGroup("Metals")
   val Starling = PricingGroup("Starling Overrides")
   val System = PricingGroup("System")
@@ -69,11 +72,6 @@ object PricingGroup {
   val LondonDerivatives = PricingGroup("London Derivatives")
   val BarryEckstein = PricingGroup("Barry Eckstein")
   val GasolineRoW = PricingGroup("Gasoline RoW")
-
-  val all = List(Metals, Starling, LimOnly, System, Crude,
-    LondonDerivativesOptions, LondonDerivatives, BarryEckstein, GasolineRoW)
-
-  def fromName(name:String) = all.find(_.name == name).getOrElse(throw new Exception("Unknown pricinggroup: " + name))
 }
 
 case class FieldDetailsGroupLabel(groupName:String, childNames:List[String])

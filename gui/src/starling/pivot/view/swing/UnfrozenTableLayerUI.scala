@@ -1,5 +1,6 @@
 package starling.pivot.view.swing
 
+import fieldchoosers.RowComponent
 import org.jdesktop.jxlayer.plaf.AbstractLayerUI
 import starling.gui.GuiUtils
 import javax.swing.{JPanel, JComponent}
@@ -7,10 +8,10 @@ import net.miginfocom.swing.MigLayout
 import org.jdesktop.jxlayer.JXLayer
 import java.awt.{BorderLayout, FlowLayout}
 
-class UnfrozenTableLayerUI(rowFieldChooser:SXLayer[FieldChooser]) extends AbstractLayerUI[JComponent] {
+class UnfrozenTableLayerUI(rowComponent:RowComponent) extends AbstractLayerUI[JComponent] {
   private val contentPanel = new JPanel(new MigLayout("insets 0")) {
     setBackground(GuiUtils.ClearColour)
-    add(rowFieldChooser.peer)
+    add(rowComponent.peer)
   }
 
   override def installUI(c: JComponent) = {

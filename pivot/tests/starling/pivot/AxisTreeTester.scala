@@ -6,7 +6,7 @@ import org.testng.annotations.Test
 import org.testng.Assert._
 import starling.pivot._
 import org.scalatest.testng.TestNGSuite
-import starling.pivot.ColumnStructure._
+import starling.pivot.ColumnTrees._
 
 /**
  */

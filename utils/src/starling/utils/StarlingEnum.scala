@@ -18,9 +18,10 @@ class StarlingEnum[T <: Named](theType:Class[T], ignoreCase: Boolean = false) {
   lazy val sortIndex = values.zipWithIndex.toMap
   private lazy val valuesByName = values.asMap(v => toCase(v.name))
 
-  def fromName(name: String) = find(name).getOrElse(throw new Exception("Unknown " + this.getClass.getSimpleName + ": " + name))
+  def fromName(name: String) = find(name).getOrElse(throwUnknown(name))
   def find(name: String) = valuesByName.get(toCase(name))
 
   private def toCase(name: String) = if (ignoreCase) name.toLowerCase else name
   private def isFieldAccessor(method: Method) = method.getReturnType == theType && method.getParameterTypes.isEmpty
+  private def throwUnknown(name: String): T = throw new Exception("Unknown " + this.getClass.getSimpleName + ": " + name)
 }

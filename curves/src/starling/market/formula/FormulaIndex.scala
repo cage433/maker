@@ -52,7 +52,8 @@ case class FormulaIndex(formulaName: CaseInsensitive, formula: Formula, ccy: UOM
 
   /**
    * Verify that we have all the indexes we need for this formula.
-   */  def verify: this.type = try {
+   */
+  def verify: this.type = try {
     indexes
     this
   } catch {

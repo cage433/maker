@@ -84,7 +84,7 @@ class MarketDataImporterTests extends StarlingSpec with ShouldMatchers with Befo
   private def saveFor(oldEntry: MarketDataEntry, newEntry: MarketDataEntry) = MarketDataUpdate(observationPoint, newEntry.key, Some(newEntry.data), optVersioned(oldEntry))
   private def deletesFor(entries: MarketDataEntry*) = Map(LIM → entries.map(deleteFor).toList)
   private def deleteFor(entry: MarketDataEntry) = MarketDataUpdate(observationPoint, entry.key, None, Some(versioned(entry)))
-  private def versioned(entry: MarketDataEntry) = VersionedMarketData(Clock.timestamp, 0, entry.data)
+  private def versioned(entry: MarketDataEntry) = VersionedMarketData(Clock.timestamp, 0, Some(entry.data))
   private def optVersioned(entry: MarketDataEntry) = if (entry == null) None else Some(versioned(entry))
 
   private def importer() = {

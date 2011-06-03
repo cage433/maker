@@ -113,6 +113,7 @@ case class OilVolSurfaceData(
 )
   extends MarketData
 {
+  assert(periods.map(_.tenor).toSet.size <= 1, "Tenors need to be the same for all periods: " + periods.toList)
   assert(atmVols.forall(_ != null), "Null vol: " + atmVols)
   assert(periods.size == atmVols.size, "The number of periods (" + periods.size + ") " +
     "must match the number of atm vols (" + atmVols.size + ")")
@@ -122,6 +123,12 @@ case class OilVolSurfaceData(
   def nonEmpty = periods.nonEmpty
 
   if (skews.size > 0) assert(skews(0).size == periods.size, "The number of skew columns (" + skews(0).size + ") must match the number of periods (" + periods.size + ")")
+
+  def isDaily = periods.headOption match {
+    case Some(d: Day) => true
+    case _ => false
+  }
+
   def days = periods.map(_.asInstanceOf[Day])
   def months = periods.map(_.asInstanceOf[Month])
 

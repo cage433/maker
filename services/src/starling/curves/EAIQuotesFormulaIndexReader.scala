@@ -3,13 +3,13 @@ package starling.curves
 import starling.db.DB
 import starling.utils.sql.QueryBuilder._
 import starling.utils.Log
-import starling.market.Index
 import starling.market.formula._
 import starling.calendar.BusinessCalendars
 import collection.MapProxy
 import starling.market.rules.Precision
 import starling.quantity.{UOM, Conversions, Quantity}
 import starling.quantity.UOM._
+import starling.market.{Commodity, OilCommodity, Index}
 
 class EAIQuotesFormulaIndexReader(eai: DB, calendars: BusinessCalendars) extends FormulaIndexes {
   /**
@@ -20,11 +20,12 @@ class EAIQuotesFormulaIndexReader(eai: DB, calendars: BusinessCalendars) extends
   def loadEAIFormula = {
     var formulae = Map[Int, FormulaIndex]()
     eai.query((
-            select("*, u.name as units")
+            select("*, u.name as units, pc.name as productcategory")
                     from ("tblquotes q")
                     innerJoin ("tblCurrencies c", ("q.currencyid" eql "c.id"))
                     innerJoin ("tblCalendars cal", ("cal.ID" eql "q.CalendarID"))
                     innerJoin ("tblFCcalendars h", ("h.id" eql "cal.FCCalendarID"))
+                    innerJoin ("tblProductCategories pc", ("pc.id" eql "q.ProductCategoryID"))
                     innerJoin ("tblUnits u", ("u.id" eql "q.unitid"))
                     where ("formulaid" isNotNull)
             )) {
@@ -64,12 +65,11 @@ class EAIQuotesFormulaIndexReader(eai: DB, calendars: BusinessCalendars) extends
         val clearport = rs.getInt("clearportdefaultprecision")
         val prec = Some(Precision(default, clearport))
 
-        val conversion = uom match {
-          case MT => {
-            // it's not clear what the conversion is for when the index is in MT already
-            None
-          }
-          case _ => Some(Conversions(Map(uom/MT -> rs.getDouble("conversionFactor"))))
+        val conversion = if(oilCommodities.contains(rs.getString("productcategory"))) {
+          // tblquotes has a bbl/mt conversion for oil commodities
+          Some(Conversions(Map(BBL/MT -> rs.getDouble("conversionFactor"))))
+        } else {
+          None
         }
 
         getFormula(rs.getInt("formulaid")).foreach { formula =>
@@ -80,4 +80,15 @@ class EAIQuotesFormulaIndexReader(eai: DB, calendars: BusinessCalendars) extends
     formulae
   }
 
+  // this is a hack that will get nicer when alex's market reading code is done
+  val oilCommodities = List(
+    "Crude",
+    "Freight",
+    "Fuel Oil",
+    "Gas Oil",
+    "Gasoline",
+    "Jet / Kero",
+    "Metal",
+    "Naphtha",
+    "Vegetable Oil")
 }

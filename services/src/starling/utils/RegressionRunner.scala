@@ -2,14 +2,16 @@ package starling.utils
 
 import scala.io.Source
 
-import java.net.URL
 import starling.daterange.Day
 import starling.utils.ImplicitConversions._
 import starling.services.StarlingInit
 import starling.props.PropsHelper
 import starling.http.HttpServer
 import starling.concurrent.MP
-import java.io.{File, PrintStream, PrintWriter, Writer}
+import java.io._
+import java.net.{HttpURLConnection, URLConnection, URL}
+import starling.utils.ImplicitConversions._
+
 
 trait ReportSource {
   def name:String
@@ -32,9 +34,14 @@ class HttpReportSource(url:String) extends ReportSource {
   }
   def report(name: String, day:Day) = {
     val reportURL = new URL(url + "/reports/" + name + "/" + day)
-    Source.fromURL(reportURL).getLines.map(_.trim).mkString("\n")
+    Source.fromInputStream(open(reportURL, "Accept" → "text/csv")).getLines.map(_.trim).mkString("\n")
   }
+
+  private def open(url: URL, headers: (String, String)*) = url.openConnection.asInstanceOf[HttpURLConnection].update {
+    connection => headers.foreach { case (key, value) => connection.addRequestProperty(key, value) }
+  }.getInputStream
 }
+
 object CheckedInReports extends ReportSource {
   def name = "checked in"
   def reports = Set() ++ Set("Thomas.Rynne/Regression-Jon", "Thomas.Rynne/Regression-Seetal")

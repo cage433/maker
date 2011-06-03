@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry kind="src" path="src"/>
+	<classpathentry kind="lib" path="jars/mockito-all-1.8.2.jar"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+	<classpathentry kind="con" path="org.scala-ide.sdt.launching.SCALA_CONTAINER"/>
+	<classpathentry combineaccessrules="false" exported="true" kind="src" path="/datarange"/>
+	<classpathentry combineaccessrules="false" exported="true" kind="src" path="/maths"/>
+	<classpathentry combineaccessrules="false" exported="true" kind="src" path="/pivot"/>
+	<classpathentry kind="output" path="target/classes"/>
+</classpath>

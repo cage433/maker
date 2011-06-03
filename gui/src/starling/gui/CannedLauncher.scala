@@ -231,21 +231,51 @@ class CannedDataSource extends UnfilteredPivotTableDataSource {
     DrillDownInfo(PivotAxis(List(), List(Field("Expiry")),List(), false)),
     DrillDownInfo(PivotAxis(List(), List(Field("Trade")),List(), false)))
   
-  override def initialState = new PivotFieldsState(columns = {
-    ColumnStructure(ColumnStructure.RootField, false, List(
-      ColumnStructure(Field("PV"), true, List())
-    ))
-  }, rowFields = List(Field("Trader"), Field("Strike")))
+  /*override def initialState = new PivotFieldsState(columns = {
+    ColumnStructure(List(ColumnTree(Field("PV"), true), ColumnTree(Field("Gamma"), true)))
+  }, rowFields = List(Field("Trader"), Field("Strike")))*/
 
   /*override def initialState = new PivotFieldsState(columns = {
-    ColumnStructure(ColumnStructure.RootField, false, List(
-      ColumnStructure(Field("PV"), true, List(
-        ColumnStructure(Field("Product"), false, List())
-      )),
-      ColumnStructure(Field("Gamma"), true, List(
-        ColumnStructure(Field("Product"), false, List())
-      ))
+    val c31 = ColumnStructure(List(
+      ColumnTree(Field("PV"), true), ColumnTree(Field("Gamma"), true)
     ))
+    ColumnStructure(List(
+      ColumnTree(FieldOrColumnStructure(Right(c31)), ColumnStructure(Field("Product"), false, List()))
+      ))
+    }, rowFields = List(Field("Trader"), Field("Strike")))*/
+
+  /*override def initialState = new PivotFieldsState(columns = {
+    val c31 = ColumnStructure(List(
+      ColumnTree(Field("PV"), true), ColumnTree(Field("Gamma"), true)
+    ))
+    ColumnStructure(List(
+      ColumnTree(FieldOrColumnStructure(Right(c31)), ColumnStructure(Field("Product"), false, List())), ColumnTree(Field("Delta"), true)
+      ))
+    }, rowFields = List(Field("Trader"), Field("Strike")))*/
+
+  /*override def initialState = new PivotFieldsState(columns = {
+    ColumnStructure(
+      ColumnTree(
+        FieldOrColumnStructure(
+          ColumnStructure(
+            List(ColumnTree(Field("PV"), true), ColumnTree(Field("Gamma"), true))
+          )
+        ), ColumnStructure.Null
+      )
+    )
+    }, rowFields = List(Field("Trader"), Field("Strike")))*/
+
+  override def initialState = new PivotFieldsState(columns = {
+    val c31 = ColumnTrees(List(
+      ColumnTree(Field("PV"), true), ColumnTree(Field("Gamma"), true)
+    ))
+    ColumnTrees(List(
+      ColumnTree(FieldOrColumnStructure(Right(c31)), ColumnTrees(Field("Product"), false, List(ColumnTree(Field("Lots"), false)))), ColumnTree(Field("Delta"), true)
+      ))
+    }, rowFields = List(Field("Trader"), Field("Strike")))
+
+  /*override def initialState = new PivotFieldsState(columns = {
+    ColumnStructure(List(ColumnTree(Field("Product"), false, ColumnStructure(List(ColumnTree(Field("PV"), true), ColumnTree(Field("Gamma"), true), ColumnTree(Field("Delta"), true))))))
   }, rowFields = List(Field("Trader"), Field("Strike")))*/
 
   def unfilteredData(pfs : PivotFieldsState) = theData

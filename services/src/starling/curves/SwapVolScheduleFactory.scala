@@ -37,7 +37,7 @@ class SwapVolSchedulePivotDataSource(context: EnvironmentWithDomain) extends Unf
 
   private val env = context.environment
   private val markets = context.marketVols.flatMap(_.market match {
-    case k: CommodityMarket with KnownExpiry => Some(k)
+    case k: CommodityMarket => Some(k)
     case _ => None
   })
   private val marketsData = context.marketVols.map(m => m.market -> m).toMap
@@ -49,16 +49,16 @@ class SwapVolSchedulePivotDataSource(context: EnvironmentWithDomain) extends Unf
 
   override def initialState = {
     new PivotFieldsState(
-      columns = ColumnStructure(ColumnStructure.RootField, false,
-        List(ColumnStructure.dataField(average.field),
-          ColumnStructure(marketField.field, false, List(forwardPrice, observedPeriodField, impliedVol, fixed, holiday).map(f => ColumnStructure(f.field, true, List()))))),
+      columns = ColumnTrees(List(
+        ColumnTree(average.field, true),
+        ColumnTree(marketField.field, false, List(forwardPrice, observedPeriodField, impliedVol, fixed, holiday).map(f => ColumnTree(f.field, true)) : _*))),
       rowFields = List(period, dayField).map(_.field),
       filters = List((indexField.field, indexSelection))
     )
   }
 
   val fieldDetailsGroups = {
-    new FieldDetailsGroup("Fields", List(indexField, period, dayField, marketField, observedPeriodField, forwardPrice, holiday, average, impliedVol, fixed)) :: Nil
+    FieldDetailsGroup("Fields", indexField, period, dayField, marketField, observedPeriodField, forwardPrice, holiday, average, impliedVol, fixed) :: Nil
   }
 
   private def averageUnfixedPrice(index: SingleIndex, averagingPeriod: DateRange): Quantity = {

@@ -5,13 +5,13 @@ import starling.curves.{ReportContext, Environment}
 import starling.quantity.{UOM, Quantity}
 import starling.pivot.{NullableDayFieldDetails, NullableDay, PivotQuantity, SumPivotQuantityFieldDetails}
 import starling.utils.Stopwatch
-import starling.instrument.{UTP, Assets, Asset, Instrument}
 import starling.curves.EnvironmentDifferentiable
 import starling.daterange.Period
 import starling.reports.pivot.PivotReport._
 import starling.utils.cache.CacheFactory
 import starling.curves.AtomicEnvironment
 import starling.gui.api.{ReportSpecificChoices, UTPIdentifier}
+import starling.instrument._
 
 /**
  * Shows the mtm and undiscounted mtm for an instrument
@@ -26,6 +26,8 @@ object MtmPivotReport extends PivotReportType {
   }
 
   val pnlFieldName = "P&L"
+  val pnlNoCostsFieldName = "P&L (No Costs)"
+  val costsFieldsName = "Costs"
 
   override def fields = List(
     new PivotReportField[Mtm]("Known/Estimate") {
@@ -66,6 +68,22 @@ object MtmPivotReport extends PivotReportType {
         case Right(e) => new PivotQuantity(e)
       }
       override def pivotFieldDetails = new SumPivotQuantityFieldDetails(name)
+    },
+    new PivotReportField[Mtm](pnlNoCostsFieldName) {
+      def value(row: Mtm) = row.assetNoCosts match {
+        case Some(Left(asset)) => PivotQuantity(asset.mtm * row.scale)
+        case Some(Right(e)) => new PivotQuantity(e)
+        case _ => PivotQuantity.NULL
+      }
+      override def pivotFieldDetails = new SumPivotQuantityFieldDetails(name)
+    },
+    new PivotReportField[Mtm](costsFieldsName) {
+      def value(row: Mtm) = row.costs match {
+        case Some(Left(asset)) => PivotQuantity(asset.mtm * row.scale)
+        case Some(Right(e)) => new PivotQuantity(e)
+        case _ => PivotQuantity.NULL
+      }
+      override def pivotFieldDetails = new SumPivotQuantityFieldDetails(name)
     }
   ) ::: MtmRiskFields.riskFields
 }
@@ -74,6 +92,8 @@ case class Mtm(
   utpID : UTPIdentifier,
   utp : UTP,
   asset : Either[Asset, Throwable],
+  assetNoCosts : Option[Either[Asset, Throwable]] = None,
+  costs : Option[Either[Asset, Throwable]] = None,
   diff : Option[EnvironmentDifferentiable] = None,
   period : Option[Period] = None,
   collapseOptions : Boolean = true,
@@ -89,6 +109,7 @@ case class Mtm(
     "utpID " + utpID + "\n" +
     "utp   " + utp + "\n" +
     "asset " + asset + "\n" +
+    "assetNoCosts " + assetNoCosts + "\n" +
     "diff  " + diff + "\n" +
     "period " + period + "\n" +
     "collapseOptions " + collapseOptions + "\n" +
@@ -130,8 +151,16 @@ class MtmPivotReport(@transient environment:Environment, @transient utps : Map[U
     val combinedRows = new PivotUTPRestructurer(environment, reportSpecificChoices, spreadMonthsByStrategyAndMarket, swapIndices).transformUTPs(rows).mpFlatMap{
       case UTPWithIdentifier(utpID, utp) => {
         val (unitUTP, volume) = utp.asUnitUTP
+
         calcAssets(unitUTP).map{
-          Mtm(utpID, utp, _) * volume
+          asset=> {
+            utp match {
+              case ci: CashInstrument if CashInstrumentType.isCost(ci.cashInstrumentType) => {
+                Mtm(utpID, utp, asset, None, Some(asset)) * volume
+              }
+              case _ => Mtm(utpID, utp, asset, Some(asset)) * volume
+            }
+          }
         }
       }
     }

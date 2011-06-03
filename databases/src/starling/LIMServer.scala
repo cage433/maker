@@ -4,9 +4,9 @@ import curves.MissingMarketDataException
 import com.lim.mimapi._
 import daterange.Day
 import market._
-import utils.Log
 import starling.utils.ImplicitConversions._
 import starling.utils.ClosureUtil._
+import utils.{MathUtil, Log}
 
 
 class LIMServer(hostname: String, port: Int) {
@@ -30,23 +30,6 @@ class LIMServer(hostname: String, port: Int) {
     val limQL = "Show " + symbols.zipWithIndex.map{case (sym, i) => i + ": " + sym}.mkString("\n") + " when date is from " + startDate.toLIM + " to " + endDate.toLIM
 
     query(_.getData(limQL))
-  }
-
-  def getFrontlineData(index : FuturesFrontPeriodIndex, startDate: Day, endDate: Day) : Map[Day, Double] = {
-    val promptness = index.promptness
-    val rollBeforeDays = index.rollBeforeDays
-    val futuresSymbol = index.market.limSymbol.get.name
-    val rolloverDate = if (rollBeforeDays > 0)
-      rollBeforeDays + " days before expiration day"
-    else
-      "expiration day"
-    val rolloverPolicy = promptness + " nearby, Actual Prices"
-    val letClause = "LET XvarA = " + futuresSymbol + "(ROLLOVER_DATE = \"" + rolloverDate + "\", ROLLOVER_POLICY = \"" + rolloverPolicy + "\")\n"
-    val limQL = letClause + "SHOW 1: XvarA WHEN Date is from " + startDate.toLIM + " to " + endDate.toLIM
-    val data = query(conn => conn.getData(limQL)).mapValues(_(0)).filterNot{
-      case (_, p) => p.isNaN || p.isInfinity
-    }
-    data
   }
 
   def query[T](query: LIMConnection => T): T = using(openConnection)(query)
@@ -91,7 +74,10 @@ class LIMConnection(connection: MimConnection) {
       val result = dataManager.getRecords(parameters)
 
       val dates = (result.getDateTimes ?? Array()).toList.map(fromLIM)
-      val values = (result.getValues ?? Array()).toList
+      // Note:
+      // We're doing rounding here as LIM is giving back numbers with floating errors. For fixings it's
+      // giving back numbers like 123.24999999991232, which is clearly supposed to be 123.2500
+      val values = (result.getValues ?? Array()).toList.map(MathUtil.roundToNdp(_, 4))
 
       dates.zip(values).filterNot(_._2.isNaN).toMap
     } catch {
@@ -120,7 +106,8 @@ class LIMConnection(connection: MimConnection) {
         val numCols = block.getNumCols
         for (row <- 0 until numRows)  {
           val day = fromLIM(dates(row))
-          val prices = (0 until numCols).toArray.map(block.getValue(row, _))
+          // see rounding comment above
+          val prices = (0 until numCols).toArray.map(block.getValue(row, _)).map(MathUtil.roundToNdp(_, 4))
           result += day -> prices
         }
         result

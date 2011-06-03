@@ -69,7 +69,7 @@ class PnLReconciliation(reportContext: AbstractReportContext, tradeSet: TradeSet
   override def initialState = {
     new PivotFieldsState(
       columns =
-        ColumnStructure(ColumnStructure.RootField, false, List(ColumnStructure(pnlField, true, Nil)))
+        ColumnTrees(List(ColumnTree(pnlField, true)))
     )
   }
 
@@ -122,7 +122,8 @@ class PnLReconciliation(reportContext: AbstractReportContext, tradeSet: TradeSet
     val rows = trades.flatMap{
       case TradeAndFields(_, trade: Trade, tradeFields) => {
         val mtm = try {
-          PivotQuantity(trade.mtm(env, UOM.USD))
+          val t = trade.copy(costs = Nil) // aspect has no costs in the pnl table
+          PivotQuantity(t.mtm(env, UOM.USD))
         } catch {
           case e => {
             println("ex: " + e)

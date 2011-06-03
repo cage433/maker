@@ -303,7 +303,7 @@ class PnlExplanationReportTests extends StarlingTest {
     val pnlExplanation = marketChangesPnl.combine(marketChangesPnl.rows(UTPIdentifier(1), swap), choices)
     val components = pnlExplanation.map(_.componentName).toSet
     // Should only have price change and fixing components - nothing unexplained
-    assertEquals(components, Set("Delta DC", "PriceFixingsHistory DC"))
+    assertEquals(components, Set("Delta DC", "Fixings DC"))
   }
 
   @Test

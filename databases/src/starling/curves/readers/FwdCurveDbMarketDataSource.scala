@@ -27,7 +27,7 @@ case class FwdCurveDbMarketDataSource(varSqlDB: DB, businessCalendars: BusinessC
     }
 
     val spotFXKeys: List[SpotFXDataKey] = FwdCurveAppExternalMarketDataReader.currencyCurveIDs.keysIterator.map{ccy=>SpotFXDataKey(ccy)}.toList
-    val priceKeys: List[PriceDataKey] = PriceDataType.keys.filter(_.market.pricesTable != null)
+    val priceKeys: List[PriceDataKey] = PriceDataType.keys.filter(m => m.market.pricesTable != null && m.market.eaiQuoteID.isDefined)
     val indexes: List[SingleIndex] = Index.indicesToImportFixingsForFromEAI.filter { index => {
       index match {
         case publishedIndex: PublishedIndex => publishedIndex.market.limSymbol.isEmpty
@@ -249,12 +249,7 @@ case class FwdCurveDbMarketDataSource(varSqlDB: DB, businessCalendars: BusinessC
         case f: CommodityMarket => f
         case _ => throw new Exception("Only works for CommodityMarkets: " + pdk.market)
       }
-      val eaiQuoteID = (pricingGroupID, market) match {
-      //hack because LDO has no ICE WTI prices
-        case (45, Market.ICE_WTI) => Market.NYMEX_WTI.eaiQuoteID
-        case (4, Market.ICE_WTI) => Market.NYMEX_WTI.eaiQuoteID
-        case _ => market.eaiQuoteID
-      }
+      val eaiQuoteID = market.eaiQuoteID
       var pricePoints = TreeMap.empty[DateRange, Double](DateRange.ordering)
       val query = """
                       select ForwardDate, Price, ForwardYear, IntervalNumber, isMonthDay, isCashDay
@@ -267,7 +262,7 @@ case class FwdCurveDbMarketDataSource(varSqlDB: DB, businessCalendars: BusinessC
 
 
       try {
-        varSqlDB.query(query, Map("EAIQuoteID" -> eaiQuoteID, "PricingGroupID" -> pricingGroupID, "ObservationDate" -> observationDay)) {
+        varSqlDB.query(query, Map("EAIQuoteID" -> eaiQuoteID.get, "PricingGroupID" -> pricingGroupID, "ObservationDate" -> observationDay)) {
           rs => {
             val delivery = deliveryPeriod(market, rs)
             var price = rs.getDouble("Price")

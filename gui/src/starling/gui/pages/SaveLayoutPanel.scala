@@ -213,30 +213,6 @@ class SaveLayoutPanel(pageContext:PageContext, pageData:PivotTablePageData, pivo
     }
   }
 
-  val cantReplacePanel = new MigPanel {
-    border = LineBorder(new Color(158,16,40), 2)
-    private val stopIcon = new Label {
-      icon = StarlingIcons.icon("/icons/128x128_stop.png")
-    }
-    val label = new Label("A layout already exists with that name") {
-      horizontalAlignment = Alignment.Left
-      font = font.deriveFont(java.awt.Font.BOLD)
-    }
-    val textArea = starling.gui.GuiUtils.LabelTextArea("You can't replace it because it is associated with another report")
-    val okButton = new Button {
-      text = "OK"
-      reactions += {
-        case ButtonClicked(b) => {
-          setSavePanel(true)
-        }
-      }
-    }
-    add(stopIcon, "spany")
-    add(label, "pushx, growx, wrap unrel, w " + label.preferredSize.width)
-    add(textArea, "push, grow, wrap unrel")
-    add(okButton, "skip 1, split, al right")
-  }
-
   val replacePanel = new MigPanel {
     border = LineBorder(new Color(158,16,40), 2)
     private val questionIcon = new Label {
@@ -246,14 +222,16 @@ class SaveLayoutPanel(pageContext:PageContext, pageData:PivotTablePageData, pivo
       horizontalAlignment = Alignment.Left
       font = font.deriveFont(java.awt.Font.BOLD)
     }
-    val textArea = starling.gui.GuiUtils.LabelTextArea("Would you like to replace it?")
+    val standardText = "Would you like to replace it?"
+    val textArea = starling.gui.GuiUtils.LabelTextArea(standardText)
+    var associatedReports = List[String]()
     val yesButton = new Button {
       text = "Yes"
       reactions += {
         case ButtonClicked(e) => {
           def saveLayout(a:Unit) {
             pageContext.submit(SavePivotLayoutRequest(PivotLayout(getText.trim, data.pivotFieldsState, true,
-              pivotPageState.otherLayoutInfo, layoutType, getExtraLayoutInfo)))
+              pivotPageState.otherLayoutInfo, layoutType, associatedReports)))
             clearUp
           }
           pageContext.submit(DeletePivotLayoutRequest(getText.trim), saveLayout)
@@ -310,16 +288,17 @@ class SaveLayoutPanel(pageContext:PageContext, pageData:PivotTablePageData, pivo
                 case head :: _ => associatedReports.contains(head)
               }
 
-              if (associatedReports.size == 1 && associatedWithThisReport) {
-                // Show a replace dialog.
-                holderPanel.update(replacePanel, true)
-                pageContext.setDefaultButton(Some(replacePanel.yesButton))
-                replacePanel.yesButton.requestFocusInWindow
-              } else {
-                holderPanel.update(cantReplacePanel, true)
-                pageContext.setDefaultButton(Some(cantReplacePanel.okButton))
-                cantReplacePanel.okButton.requestFocusInWindow()
-              }
+              val textToUse = if (associatedReports.size <= 1 && associatedWithThisReport)
+                replacePanel.standardText
+              else
+                replacePanel.standardText + "\n\n(This will also change the layout in the " + (associatedReports.size - 1) +
+                        " other report(s) associated with this layout)"
+              replacePanel.textArea.text = textToUse
+              replacePanel.associatedReports = associatedReports
+
+              holderPanel.update(replacePanel, true)
+              pageContext.setDefaultButton(Some(replacePanel.yesButton))
+              replacePanel.yesButton.requestFocusInWindow()
             }
           }
         }

@@ -8,6 +8,7 @@ import starling.utils.ImplicitConversions._
 import starling.pivot.{StackTrace, PivotQuantity}
 import java.lang.String
 import starling.utils.ImplicitConversions._
+import java.text.DecimalFormat
 
 class QuantityDouble(d : Double){
   def apply(uom : UOM) = Quantity(d, uom)
@@ -38,16 +39,37 @@ trait QuantityIsNumeric extends Numeric[Quantity] {
 }
 
 object Quantity {
+  val mc = java.math.MathContext.DECIMAL128
+
   val NULL = Quantity(0, UOM.NULL)
   val ONE = Quantity(1, UOM.SCALAR)
   implicit object QuantityIsNumeric extends QuantityIsNumeric
   implicit object NumericOptionQuantity extends OptionNumeric[Quantity]
   val FormatString = "#,##0.00"
   def fromString(text : String, uom : UOM) = Quantity(new java.lang.Double(text).asInstanceOf[Double], uom)
-  def sum(quantities : Iterable[Quantity]) = (Quantity.NULL /: quantities)(_+_)
+
+  private def sumAsBigDecimal(quantities: Iterable[Quantity]) = {
+    if(quantities.nonEmpty) {
+      val uoms = quantities.map(_.uom).toSet
+      assert(uoms.size == 1, "Can't sum quantities of different units: " + uoms)
+      val sum = (BigDecimal("0") /: quantities.map(q => BigDecimal(q.value)))(_ + _)
+      (sum, uoms.head)
+    } else {
+      (BigDecimal("0"), UOM.NULL)
+    }
+  }
+
+  def sum(quantities: Iterable[Quantity]) = {
+    val (sum, uom) = sumAsBigDecimal(quantities)
+    Quantity(sum.toDouble, uom)
+  }
+
   def average(quantities : Seq[Quantity]) = quantities match {
     case Nil => throw new Exception("Can't get average of empty sequence")
-    case _ => sum(quantities) / quantities.size
+    case _ => {
+      val (sum, uom) = sumAsBigDecimal(quantities)
+      Quantity((sum(mc) / quantities.size).toDouble, uom)
+    }
   }
 
   implicit def doubleToScalarQuantity(d : Double) : Quantity = Quantity(d, UOM.SCALAR)
@@ -83,6 +105,7 @@ class Quantity(val value : Double, val uom : UOM) extends Ordered[Quantity] with
     val uomPart = if (useUOM && !uom.isScalar) " " + uom else ""
     value.format(fmt, addSpace) + uomPart
   }
+  def format(decimalFormat: DecimalFormat) = decimalFormat.format(value)
   def formatNoUOM(fmt:String) = format(fmt, false)
   override def toString = format(Quantity.FormatString)
   def toStringWithSpace = format(Quantity.FormatString, addSpace = true)
@@ -170,11 +193,11 @@ class Quantity(val value : Double, val uom : UOM) extends Ordered[Quantity] with
   def copy(value:Double = this.value, uom:UOM = this.uom) = Quantity(value, uom)
 
   override def equals(other: Any) = other match {
-    case q : Quantity => q.isAlmostEqual(this, MathUtil.EPSILON)
+    case Quantity(this.value, this.uom) => true
     case _ => false
   }
 
-  override val hashCode = (value / MathUtil.EPSILON).round.hashCode
+  override val hashCode = value.hashCode
 
   def isAlmostZero : Boolean = value.abs < MathUtil.EPSILON
   def isZero : Boolean = value == 0.0

@@ -21,15 +21,4 @@ if [ "$?" -ne "0" ]; then
 else
   echo "##teamcity[progressFinish 'compile']"
   java -Xmx2024M -XX:+CMSClassUnloadingEnabled -XX:MaxPermSize=650m -jar sbt/sbt-launch-0.7.4.jar  "test"
-  if [ "$?" -ne "0" ]; then
-    echo "Some tests failed"
-    #don't send a teamcity message. Teamcity will know that the tests failed and produces the appropriate buildStatus message
-  else
-    echo "##teamcity[progressStart 'regression']"
-    java -Xmx2024M -XX:+CMSClassUnloadingEnabled -XX:MaxPermSize=650m -jar sbt/sbt-launch-0.7.4.jar  "run-regression"
-    echo "##teamcity[progressFinish 'regression']"
-    echo "##teamcity[progressStart 'readAll']"
-    java -Xmx2024M -XX:+CMSClassUnloadingEnabled -XX:MaxPermSize=650m -jar sbt/sbt-launch-0.7.4.jar  "run-read-all"
-    echo "##teamcity[progressFinish 'readAll']"
-  fi
 fi

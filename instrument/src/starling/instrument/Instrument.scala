@@ -69,8 +69,8 @@ object InstrumentType {
     ("PricingRule", classOf[SwapPricingRule]),
     ("Quantity", classOf[Quantity]),
     ("Period", classOf[DateRange]),
-    ("Settlement Date", classOf[Day]),
-//    ("Delivery Day", classOf[Day]),
+//    ("Settlement Date", classOf[Day]),
+    ("Delivery Day", classOf[Day]),
     ("Amount", classOf[Quantity]),
     ("Maturity Day", classOf[Day]),
     ("Call Put", classOf[String]),
@@ -116,6 +116,10 @@ trait Instrument extends Ordered[Instrument] with Greeks with PnlExplanation {
     val record = KeyRecordingCurveObjectEnvironment(new NullAtomicEnvironment(marketDay))
     mtm(Environment(record), ccy)
     record.keys.map(_.clearProperties)
+  }
+
+  def environmentDifferentiables(marketDay: DayAndTime, ccy : UOM = UOM.USD): Set[EnvironmentDifferentiable] = {
+    atomicMarketDataKeys(marketDay, ccy).flatMap(EnvironmentDifferentiable.toEnvironmentDifferentiable)
   }
 
   def pricePeriods(marketDay : DayAndTime) : Map[CommodityMarket, DateRange] = {
@@ -363,6 +367,21 @@ trait Instrument extends Ordered[Instrument] with Greeks with PnlExplanation {
   def interpolatedVol(env : Environment, volKey : EnvironmentDifferentiable with VolKey) : Quantity = {
     throw new UnsupportedOperationException(this + " does not know how to calculate interpolatedVol")
   }
+
+  /**
+   * Some instruments round when working out the MTM which makes the mtm non-differentiable and the pnl
+   * explanation have rounding errors.
+   *
+   * By specifying the rounding used the pnl explanation can at least bucket the explanation
+   * difference in the correct place.
+   */
+  def priceRounding: Option[Int] = None
+
+  /**
+   * True if this instrument is a linear instrument on this market day. So it will return true
+   * for an expired option, for example. 
+   */
+  def isLinear(marketDay: DayAndTime) = !environmentDifferentiables(marketDay).exists(_.isInstanceOf[VolKey])
 }
 
 

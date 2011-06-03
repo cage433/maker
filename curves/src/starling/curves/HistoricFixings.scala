@@ -38,9 +38,9 @@ case class FixingsHistoryKey(market:CommodityMarket, period: FixingPeriod, level
 
 case class FixingKey(key: FixingsHistoryKey, day: Day) extends AtomicDatumKey(key, day) {
   def forwardStateValue(originalAtomicEnv: AtomicEnvironment, forwardDayAndTime: DayAndTime) = {
-    if (day <= originalAtomicEnv.marketDay.day) {
+    if (day.endOfDay <= originalAtomicEnv.marketDay) {
       originalAtomicEnv(this)
-    } else if (day <= forwardDayAndTime.day) {
+    } else if (day.endOfDay <= forwardDayAndTime) {
       val env = Environment(originalAtomicEnv)
       env.forwardPrice(key.market, key.period.period(day))
     } else {

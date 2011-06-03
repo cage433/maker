@@ -15,6 +15,7 @@ import starling.neptune.{RefinedFixationSystemOfRecord, RefinedFixationTradeStor
 import starling.utils.ImplicitConversions._
 import starling.curves.readers._
 import trade.ExcelTradeReader
+import trinity.{TrinityUploader, XRTGenerator, TrinityUploadCodeMapper, FCLGenerator}
 import xml.{Node, Utility}
 import javax.xml.transform.stream.{StreamResult, StreamSource}
 import java.io.{ByteArrayInputStream, File}
@@ -42,6 +43,7 @@ import starling.eai.{Book, Traders, EAIAutoImport, EAIStrategyDB}
 import com.jolbox.bonecp.BoneCP
 import org.springframework.mail.javamail.{MimeMessageHelper, JavaMailSender, JavaMailSenderImpl}
 import starling.rmi._
+
 
 class StarlingInit( props: Props,
                     dbMigration: Boolean = true,
@@ -249,8 +251,8 @@ class StarlingInit( props: Props,
 
   val trinityUploadCodeMapper = new TrinityUploadCodeMapper(trinityDB)
   val curveViewer = new CurveViewer(marketDataStore)
-  val trinityUploader = new TrinityUploader(new FCLGenerator(trinityUploadCodeMapper, curveViewer), new XRTGenerator(marketDataStore))
-  val scheduler = Scheduler.create(businessCalendars, marketDataStore, broadcaster, trinityUploader)
+  val trinityUploader = new TrinityUploader(new FCLGenerator(trinityUploadCodeMapper, curveViewer), new XRTGenerator(marketDataStore), props)
+  val scheduler = Scheduler.create(businessCalendars, marketDataStore, broadcaster, trinityUploader, props)
 
   val referenceData = new ReferenceData(businessCalendars, marketDataStore, strategyDB, scheduler, trinityUploadCodeMapper)
 
@@ -266,7 +268,7 @@ class StarlingInit( props: Props,
 
   val users = new CopyOnWriteArraySet[User]
 
-  val jmx = new StarlingJMX(users)
+  val jmx = new StarlingJMX(users, scheduler)
 
   val auth:ServerAuthHandler = props.UseAuth() match {
     case false => {
@@ -305,7 +307,6 @@ class StarlingInit( props: Props,
   val reportServlet = new ReportServlet("reports", userReportsService) //Don't add to main web server (as this has no authentication)
 
   val httpServer = locally {
-
     val externalURL = props.ExternalUrl()
     val externalHostname = props.ExternalHostname()
     val xlloopUrl = props.XLLoopUrl()
@@ -314,12 +315,7 @@ class StarlingInit( props: Props,
     val webStartServlet = new WebStartServlet("webstart", props.ServerName(), externalURL, "starling.gui.Launcher", List(externalHostname, rmiPort.toString), xlloopUrl)
     val cannedWebStartServlet = new WebStartServlet("cannedwebstart", props.ServerName(), externalURL, "starling.gui.CannedLauncher", List(), xlloopUrl)
 
-    val servlets = List(
-      (webStartServlet, "webstart"),
-      (cannedWebStartServlet, "cannedwebstart"),
-      (classesServlet, "classes"))
-
-    new HttpServer(props, servlets)
+    new HttpServer(props, "webstart" → webStartServlet, "cannedwebstart" → cannedWebStartServlet, "classes" → classesServlet)
   }
 
   val regressionServer = locally {

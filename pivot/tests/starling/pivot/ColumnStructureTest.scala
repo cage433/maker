@@ -3,16 +3,21 @@ package starling.pivot
 import org.scalatest.testng.TestNGSuite
 import org.testng.annotations._
 import org.testng.Assert._
-import starling.pivot.ColumnStructure._
+import starling.pivot.ColumnTrees._
 
 class ColumnStructureTest extends TestNGSuite {
-  val cs = ColumnStructure(RootField, true, List(ColumnStructure(Field("Product"), true, List(
-    ColumnStructure(Field("Trade"), true, List()),
-    ColumnStructure(Field("Lots"), true, List(
-      ColumnStructure(Field("Trader"), true, List()),
-      ColumnStructure(Field("Expiry"), true, List(
-        ColumnStructure(Field("Strike"), true, List()))))),
-    ColumnStructure(Field("PV"), true, List())))))
+  val cs = ColumnTrees(
+      Field("Product"), true,
+      List(
+        ColumnTree(Field("Trade"), true),
+        ColumnTree(Field("Lots"), true, 
+          ColumnTree(Field("Trader"), true),
+          ColumnTree(Field("Expiry"), true, 
+            ColumnTree(Field("Strike"), true)
+          )
+        ),
+        ColumnTree(Field("PV"), true)
+      ))
 
   @Test
   def testContains() {
@@ -29,42 +34,40 @@ class ColumnStructureTest extends TestNGSuite {
 
   @Test
   def testAddDataField() {
-    val csRoot = ColumnStructure(RootField, true, List())
-    val expectedRoot = ColumnStructure(RootField, true, List(ColumnStructure(Field("PV"), true, List())))
+    val csRoot = ColumnTrees()
+    val expectedRoot = ColumnTrees(ColumnTree(Field("PV"), true))
     val actualRoot = csRoot.addDataField(Field("PV"))
     assertEquals(actualRoot, expectedRoot)
 
-    val csNonMeasure = ColumnStructure(RootField, true, List(ColumnStructure(Field("Lots"), false, List())))
-    val expectedNonMeasure = ColumnStructure(RootField, true, List(ColumnStructure(Field("Lots"), false, List(
-      ColumnStructure(Field("PV"), true, List())
-      ))))
+    val csNonMeasure = ColumnTrees(List(ColumnTree(Field("Lots"), false)))
+    val expectedNonMeasure = ColumnTrees(List(
+      ColumnTree(Field("Lots"), false),
+      ColumnTree(Field("PV"), true)))
     val actualNonMeasure = csNonMeasure.addDataField(Field("PV"))
     assertEquals(actualNonMeasure, expectedNonMeasure)
 
-    val csNonMeasureWithData = ColumnStructure(RootField, true, List(
-      ColumnStructure(Field("Lots"), false, List(
-        ColumnStructure(Field("PV"), true, List())
-        ))))
-    val expectedNonMeasureWithData = ColumnStructure(RootField, true, List(
-      ColumnStructure(Field("Lots"), false, List(
-        ColumnStructure(Field("PV"), true, List()),
-        ColumnStructure(Field("Delta"), true, List())      
-        ))))
+    val csNonMeasureWithData = ColumnTrees(List(
+      ColumnTree(Field("Lots"), false,
+        ColumnTree(Field("PV"), true)
+        )))
+    val expectedNonMeasureWithData = ColumnTrees(List(
+      ColumnTree(Field("Lots"), false,
+        ColumnTree(Field("PV"), true)
+        ), ColumnTree(Field("Delta"), true)))
     val actualNonMeasureWithData = csNonMeasureWithData.addDataField(Field("Delta"))
     assertEquals(actualNonMeasureWithData, expectedNonMeasureWithData)
 
 
-    val csNonMeasureWithData2 = ColumnStructure(RootField, true, List(
-      ColumnStructure(Field("Lots"), false, List(
-        ColumnStructure(Field("PV"), true, List()),
-        ColumnStructure(Field("Product"), false, List())
-        ))))
-    val expectedNonMeasureWithData2 = ColumnStructure(RootField, true, List(
-      ColumnStructure(Field("Lots"), false, List(
-        ColumnStructure(Field("PV"), true, List()),
-        ColumnStructure(Field("Product"), false, List()),
-        ColumnStructure(Field("Delta"), true, List())      
-        ))))
+    val csNonMeasureWithData2 = ColumnTrees(List(
+      ColumnTree(Field("Lots"), false,
+        ColumnTree(Field("PV"), true),
+        ColumnTree(Field("Product"), false)
+        )))
+    val expectedNonMeasureWithData2 = ColumnTrees(List(
+      ColumnTree(Field("Lots"), false,
+        ColumnTree(Field("PV"), true),
+        ColumnTree(Field("Product"), false)
+        ), ColumnTree(Field("Delta"), true)))
     val actualNonMeasureWithData2 = csNonMeasureWithData2.addDataField(Field("Delta"))
     assertEquals(actualNonMeasureWithData2, expectedNonMeasureWithData2)
   }
@@ -72,13 +75,13 @@ class ColumnStructureTest extends TestNGSuite {
   @Test
   def testRemoveTopField() {
     val newCS = cs.remove(Field("Product"))
-    val expected = ColumnStructure(RootField, true, List(
-      ColumnStructure(Field("Trade"), true, List()),
-      ColumnStructure(Field("Lots"), true, List(
-        ColumnStructure(Field("Trader"), true, List()),
-        ColumnStructure(Field("Expiry"), true, List(
-          ColumnStructure(Field("Strike"), true, List()))))),
-      ColumnStructure(Field("PV"), true, List())))
+    val expected = ColumnTrees(List(
+      ColumnTree(Field("Trade"), true),
+      ColumnTree(Field("Lots"), true,
+        ColumnTree(Field("Trader"), true),
+        ColumnTree(Field("Expiry"), true,
+          ColumnTree(Field("Strike"), true))),
+      ColumnTree(Field("PV"), true)))
     
     assertEquals(newCS, expected)
   }
@@ -86,12 +89,12 @@ class ColumnStructureTest extends TestNGSuite {
   @Test
   def testRemoveBottomField() {
     val newCS = cs.remove(Field("Strike"))
-    val expected = ColumnStructure(RootField, true, List(ColumnStructure(Field("Product"), true, List(
-      ColumnStructure(Field("Trade"), true, List()),
-      ColumnStructure(Field("Lots"), true, List(
-        ColumnStructure(Field("Trader"), true, List()),
-        ColumnStructure(Field("Expiry"), true, List()))),
-      ColumnStructure(Field("PV"), true, List())))))
+    val expected = ColumnTrees(List(ColumnTree(Field("Product"), true,
+      ColumnTree(Field("Trade"), true),
+      ColumnTree(Field("Lots"), true,
+        ColumnTree(Field("Trader"), true),
+        ColumnTree(Field("Expiry"), true)),
+      ColumnTree(Field("PV"), true))))
 
     assertEquals(newCS, expected)
   }
@@ -99,12 +102,12 @@ class ColumnStructureTest extends TestNGSuite {
   @Test
   def removeSecondLevelField1() {
     val newCS = cs.remove(Field("Lots"))
-    val expected = ColumnStructure(RootField, true, List(ColumnStructure(Field("Product"), true, List(
-      ColumnStructure(Field("Trade"), true, List()),
-      ColumnStructure(Field("Trader"), true, List()),
-      ColumnStructure(Field("Expiry"), true, List(
-        ColumnStructure(Field("Strike"), true, List()))),
-      ColumnStructure(Field("PV"), true, List())))))
+    val expected = ColumnTrees(List(ColumnTree(Field("Product"), true,
+      ColumnTree(Field("Trade"), true),
+      ColumnTree(Field("Trader"), true),
+      ColumnTree(Field("Expiry"), true,
+        ColumnTree(Field("Strike"), true)),
+      ColumnTree(Field("PV"), true))))
     
     assertEquals(newCS, expected)
   }
@@ -112,12 +115,12 @@ class ColumnStructureTest extends TestNGSuite {
   @Test
   def removeSecondLevelField2() {
     val newCS = cs.remove(Field("Trade"))
-    val expected = ColumnStructure(RootField, true, List(ColumnStructure(Field("Product"), true, List(
-      ColumnStructure(Field("Lots"), true, List(
-        ColumnStructure(Field("Trader"), true, List()),
-        ColumnStructure(Field("Expiry"), true, List(
-          ColumnStructure(Field("Strike"), true, List()))))),
-      ColumnStructure(Field("PV"), true, List())))))
+    val expected = ColumnTrees(List(ColumnTree(Field("Product"), true,
+      ColumnTree(Field("Lots"), true,
+        ColumnTree(Field("Trader"), true),
+        ColumnTree(Field("Expiry"), true,
+          ColumnTree(Field("Strike"), true))),
+      ColumnTree(Field("PV"), true))))
 
     assertEquals(newCS, expected)
   }
@@ -125,12 +128,12 @@ class ColumnStructureTest extends TestNGSuite {
   @Test
   def removeSecondLevelField3() {
     val newCS = cs.remove(Field("PV"))
-    val expected = ColumnStructure(RootField, true, List(ColumnStructure(Field("Product"), true, List(
-      ColumnStructure(Field("Trade"), true, List()),
-      ColumnStructure(Field("Lots"), true, List(
-        ColumnStructure(Field("Trader"), true, List()),
-        ColumnStructure(Field("Expiry"), true, List(
-          ColumnStructure(Field("Strike"), true, List())))))))))
+    val expected = ColumnTrees(List(ColumnTree(Field("Product"), true,
+      ColumnTree(Field("Trade"), true),
+      ColumnTree(Field("Lots"), true,
+        ColumnTree(Field("Trader"), true),
+        ColumnTree(Field("Expiry"), true,
+          ColumnTree(Field("Strike"), true))))))
 
     assertEquals(newCS, expected)
   }
@@ -138,25 +141,25 @@ class ColumnStructureTest extends TestNGSuite {
   @Test
   def removeMiddleLevelField() {
     val newCS = cs.remove(Field("Expiry"))
-    val expected = ColumnStructure(RootField, true, List(ColumnStructure(Field("Product"), true, List(
-      ColumnStructure(Field("Trade"), true, List()),
-      ColumnStructure(Field("Lots"), true, List(
-        ColumnStructure(Field("Trader"), true, List()),
-        ColumnStructure(Field("Strike"), true, List()))),
-      ColumnStructure(Field("PV"), true, List())))))
+    val expected = ColumnTrees(List(ColumnTree(Field("Product"), true,
+      ColumnTree(Field("Trade"), true),
+      ColumnTree(Field("Lots"), true,
+        ColumnTree(Field("Trader"), true),
+        ColumnTree(Field("Strike"), true)),
+      ColumnTree(Field("PV"), true))))
 
     assertEquals(newCS, expected)
   }
 
   @Test
   def testFlipIsData() {
-    val expectedCS1 = ColumnStructure(RootField, true, List(ColumnStructure(Field("Product"), true, List(
-      ColumnStructure(Field("Trade"), true, List()),
-      ColumnStructure(Field("Lots"), false, List(
-        ColumnStructure(Field("Trader"), true, List()),
-        ColumnStructure(Field("Expiry"), true, List(
-          ColumnStructure(Field("Strike"), true, List()))))),
-      ColumnStructure(Field("PV"), true, List())))))
+    val expectedCS1 = ColumnTrees(List(ColumnTree(Field("Product"), true,
+      ColumnTree(Field("Trade"), true),
+      ColumnTree(Field("Lots"), false,
+        ColumnTree(Field("Trader"), true),
+        ColumnTree(Field("Expiry"), true,
+          ColumnTree(Field("Strike"), true))),
+      ColumnTree(Field("PV"), true))))
 
     val res1 = cs.flipIsData(Field("Lots"))
     assertEquals(res1, expectedCS1)
@@ -164,13 +167,13 @@ class ColumnStructureTest extends TestNGSuite {
     val res2 = res1.flipIsData(Field("Lots"))
     assertEquals(res2, cs)
 
-    val expectedCS2 = ColumnStructure(RootField, true, List(ColumnStructure(Field("Product"), true, List(
-      ColumnStructure(Field("Trade"), true, List()),
-      ColumnStructure(Field("Lots"), true, List(
-        ColumnStructure(Field("Trader"), true, List()),
-        ColumnStructure(Field("Expiry"), true, List(
-          ColumnStructure(Field("Strike"), true, List()))))),
-      ColumnStructure(Field("PV"), false, List())))))
+    val expectedCS2 = ColumnTrees(List(ColumnTree(Field("Product"), true,
+      ColumnTree(Field("Trade"), true),
+      ColumnTree(Field("Lots"), true,
+        ColumnTree(Field("Trader"), true),
+        ColumnTree(Field("Expiry"), true,
+          ColumnTree(Field("Strike"), true))),
+      ColumnTree(Field("PV"), false))))
 
     val res3 = cs.flipIsData(Field("PV"))
     assertEquals(res3, expectedCS2)
@@ -178,124 +181,124 @@ class ColumnStructureTest extends TestNGSuite {
 
   @Test
   def testRemoveAll() {
-    val cs = ColumnStructure(RootField, false, List(
-      ColumnStructure(Field("Slide1"), false, List(
-        ColumnStructure(Field("Slide2"), false, List(
-          ColumnStructure(Field("Position"), true, List())))))))
-    val expected = ColumnStructure(RootField, false, List(
-          ColumnStructure(Field("Position"), true, List())))
+    val cs = ColumnTrees(List(
+      ColumnTree(Field("Slide1"), false,
+        ColumnTree(Field("Slide2"), false,
+          ColumnTree(Field("Position"), true)))))
+    val expected = ColumnTrees(List(
+          ColumnTree(Field("Position"), true)))
 
     assertEquals(cs.removeAllChildren(Set(Field("Slide1"), Field("Slide2"))), expected)
   }
 
   @Test
   def testFlippable() {
-    val csToUse1 = ColumnStructure(RootField, false, List(
-      ColumnStructure(Field("Product"), false, List(
-        ColumnStructure(Field("PV"), true, List())))))
+    val csToUse1 = ColumnTrees(List(
+      ColumnTree(Field("Product"), false,
+        ColumnTree(Field("PV"), true))))
 
     val res1 = csToUse1.isInvalid
     assertEquals(res1, false)
 
-    val csToUse2 = ColumnStructure(RootField, false, List(
-      ColumnStructure(Field("Product"), false, List(
-        ColumnStructure(Field("PV"), false, List())))))
+    val csToUse2 = ColumnTrees(List(
+      ColumnTree(Field("Product"), false,
+        ColumnTree(Field("PV"), false))))
 
     val res2 = csToUse2.isInvalid
     assertEquals(res2, false)
 
-    val csToUse3 = ColumnStructure(RootField, false, List(
-      ColumnStructure(Field("Product"), false, List(
-        ColumnStructure(Field("Trade"), false, List()),
-        ColumnStructure(Field("Lots"), false, List(
-          ColumnStructure(Field("Trader"), false, List()),
-          ColumnStructure(Field("Expiry"), false, List(
-            ColumnStructure(Field("Strike"), false, List()))))),
-        ColumnStructure(Field("PV"), true, List())))))
+    val csToUse3 = ColumnTrees(List(
+      ColumnTree(Field("Product"), false,
+        ColumnTree(Field("Trade"), false),
+        ColumnTree(Field("Lots"), false,
+          ColumnTree(Field("Trader"), false),
+          ColumnTree(Field("Expiry"), false,
+            ColumnTree(Field("Strike"), false))),
+        ColumnTree(Field("PV"), true))))
 
     val res3 = csToUse3.isInvalid
     assertEquals(res3, false)
 
-    val csToUse4 = ColumnStructure(RootField, false, List(
-      ColumnStructure(Field("Product"), true, List(
-        ColumnStructure(Field("Trade"), false, List()),
-        ColumnStructure(Field("Lots"), false, List(
-          ColumnStructure(Field("Trader"), false, List()),
-          ColumnStructure(Field("Expiry"), false, List(
-            ColumnStructure(Field("Strike"), false, List()))))),
-        ColumnStructure(Field("PV"), false, List())))))
+    val csToUse4 = ColumnTrees(List(
+      ColumnTree(Field("Product"), true,
+        ColumnTree(Field("Trade"), false),
+        ColumnTree(Field("Lots"), false,
+          ColumnTree(Field("Trader"), false),
+          ColumnTree(Field("Expiry"), false,
+            ColumnTree(Field("Strike"), false))),
+        ColumnTree(Field("PV"), false))))
 
     val res4 = csToUse4.isInvalid
     assertEquals(res4, false)
 
-    val csToUse5 = ColumnStructure(RootField, false, List(
-      ColumnStructure(Field("Product"), false, List(
-        ColumnStructure(Field("Trade"), false, List()),
-        ColumnStructure(Field("Lots"), false, List(
-          ColumnStructure(Field("Trader"), false, List()),
-          ColumnStructure(Field("Expiry"), true, List(
-            ColumnStructure(Field("Strike"), false, List()))))),
-        ColumnStructure(Field("PV"), true, List())))))
+    val csToUse5 = ColumnTrees(List(
+      ColumnTree(Field("Product"), false,
+        ColumnTree(Field("Trade"), false),
+        ColumnTree(Field("Lots"), false,
+          ColumnTree(Field("Trader"), false),
+          ColumnTree(Field("Expiry"), true,
+            ColumnTree(Field("Strike"), false))),
+        ColumnTree(Field("PV"), true))))
 
     val res5 = csToUse5.isInvalid
     assertEquals(res5, false)
 
-    val csToUse6 = ColumnStructure(RootField, false, List(
-      ColumnStructure(Field("Product"), false, List(
-        ColumnStructure(Field("Trade"), false, List()),
-        ColumnStructure(Field("Lots"), false, List(
-          ColumnStructure(Field("Trader"), false, List()),
-          ColumnStructure(Field("Expiry"), false, List(
-            ColumnStructure(Field("Strike"), true, List()))))),
-        ColumnStructure(Field("PV"), true, List())))))
+    val csToUse6 = ColumnTrees(List(
+      ColumnTree(Field("Product"), false,
+        ColumnTree(Field("Trade"), false),
+        ColumnTree(Field("Lots"), false,
+          ColumnTree(Field("Trader"), false),
+          ColumnTree(Field("Expiry"), false,
+            ColumnTree(Field("Strike"), true))),
+        ColumnTree(Field("PV"), true))))
 
     val res6 = csToUse6.isInvalid
     assertEquals(res6, false)
 
-    val csToUse7 = ColumnStructure(RootField, false, List(
-      ColumnStructure(Field("Product"), false, List(
-        ColumnStructure(Field("Trade"), false, List()),
-        ColumnStructure(Field("Lots"), true, List(
-          ColumnStructure(Field("Trader"), false, List()),
-          ColumnStructure(Field("Expiry"), false, List(
-            ColumnStructure(Field("Strike"), false, List()))))),
-        ColumnStructure(Field("PV"), true, List())))))
+    val csToUse7 = ColumnTrees(List(
+      ColumnTree(Field("Product"), false,
+        ColumnTree(Field("Trade"), false),
+        ColumnTree(Field("Lots"), true,
+          ColumnTree(Field("Trader"), false),
+          ColumnTree(Field("Expiry"), false,
+            ColumnTree(Field("Strike"), false))),
+        ColumnTree(Field("PV"), true))))
 
     val res7 = csToUse7.isInvalid
     assertEquals(res7, false)
 
-    val csToUse8 = ColumnStructure(RootField, false, List(
-      ColumnStructure(Field("Product"), true, List(
-        ColumnStructure(Field("Trade"), false, List()),
-        ColumnStructure(Field("Lots"), true, List(
-          ColumnStructure(Field("Trader"), false, List()),
-          ColumnStructure(Field("Expiry"), false, List(
-            ColumnStructure(Field("Strike"), false, List()))))),
-        ColumnStructure(Field("PV"), true, List())))))
+    val csToUse8 = ColumnTrees(List(
+      ColumnTree(Field("Product"), true,
+        ColumnTree(Field("Trade"), false),
+        ColumnTree(Field("Lots"), true,
+          ColumnTree(Field("Trader"), false),
+          ColumnTree(Field("Expiry"), false,
+            ColumnTree(Field("Strike"), false))),
+        ColumnTree(Field("PV"), true))))
 
     val res8 = csToUse8.isInvalid
     assertEquals(res8, true)
 
-    val csToUse9 = ColumnStructure(RootField, false, List(
-      ColumnStructure(Field("Product"), false, List(
-        ColumnStructure(Field("Trade"), false, List()),
-        ColumnStructure(Field("Lots"), true, List(
-          ColumnStructure(Field("Trader"), false, List()),
-          ColumnStructure(Field("Expiry"), true, List(
-            ColumnStructure(Field("Strike"), true, List()))))),
-        ColumnStructure(Field("PV"), false, List())))))
+    val csToUse9 = ColumnTrees(List(
+      ColumnTree(Field("Product"), false,
+        ColumnTree(Field("Trade"), false),
+        ColumnTree(Field("Lots"), true,
+          ColumnTree(Field("Trader"), false),
+          ColumnTree(Field("Expiry"), true,
+            ColumnTree(Field("Strike"), true))),
+        ColumnTree(Field("PV"), false))))
 
     val res9 = csToUse9.isInvalid
     assertEquals(res9, true)
 
-    val csToUse10 = ColumnStructure(RootField, false, List(
-      ColumnStructure(Field("Product"), false, List(
-        ColumnStructure(Field("Trade"), false, List()),
-        ColumnStructure(Field("Lots"), true, List(
-          ColumnStructure(Field("Trader"), false, List()),
-          ColumnStructure(Field("Expiry"), false, List(
-            ColumnStructure(Field("Strike"), true, List()))))),
-        ColumnStructure(Field("PV"), false, List())))))
+    val csToUse10 = ColumnTrees(List(
+      ColumnTree(Field("Product"), false,
+        ColumnTree(Field("Trade"), false),
+        ColumnTree(Field("Lots"), true,
+          ColumnTree(Field("Trader"), false),
+          ColumnTree(Field("Expiry"), false,
+            ColumnTree(Field("Strike"), true))),
+        ColumnTree(Field("PV"), false))))
 
     val res10 = csToUse10.isInvalid
     assertEquals(res10, true)
@@ -309,101 +312,167 @@ class ColumnStructureTest extends TestNGSuite {
     val lots = Field("Lots")
     val strike = Field("Strike")
 
-    val c1 = ColumnStructure(RootField, true, List(
-      ColumnStructure(pv, true, List(
-        ColumnStructure(product, false, List())
+    val c1 = ColumnTrees(List(
+      ColumnTree(pv, true,
+        ColumnTree(product, false)
       ))
-    ))
+    )
     assertTrue(c1.hasPathContaining(Set(pv, product)))
 
-    val c2 = ColumnStructure(RootField, true, List(
-      ColumnStructure(pv, true, List()), ColumnStructure(product, false, List()))
+    val c2 = ColumnTrees(List(
+      ColumnTree(pv, true), ColumnTree(product, false))
     )
     assertFalse(c2.hasPathContaining(Set(pv, product)))
 
-    val c3 = ColumnStructure(RootField, true, List(
-      ColumnStructure(product, false, List()), ColumnStructure(pv, true, List()))
+    val c3 = ColumnTrees(List(
+      ColumnTree(product, false), ColumnTree(pv, true))
     )
     assertFalse(c3.hasPathContaining(Set(pv, product)))
 
-    val c4 = ColumnStructure(RootField, true, List(
-      ColumnStructure(product, false, List(
-        ColumnStructure(pv, true, List())
-      )))
+    val c4 = ColumnTrees(List(
+      ColumnTree(product, false,
+        ColumnTree(pv, true)
+      ))
     )
     assertTrue(c4.hasPathContaining(Set(pv, product)))
 
-    val c6 = ColumnStructure(RootField, true, List(
-      ColumnStructure(pv, true, List(
-        ColumnStructure(product, false, List())
-      )),
-      ColumnStructure(lots, false, List()))
+    val c6 = ColumnTrees(List(
+      ColumnTree(pv, true,
+        ColumnTree(product, false)
+      ),
+      ColumnTree(lots, false))
     )
     assertFalse(c6.hasPathContaining(Set(pv, product, lots)))
 
-    val c8 = ColumnStructure(RootField, true, List(
-      ColumnStructure(pv, true, List(
-        ColumnStructure(product, false, List())
-      ))
+    val c8 = ColumnTrees(List(
+      ColumnTree(pv, true,
+        ColumnTree(product, false)
+      )
     ))
     assertFalse(c8.hasPathContaining(Set(pv, product, lots)))
 
-    val c9 = ColumnStructure(RootField, true, List(
-      ColumnStructure(product, false, List(
-        ColumnStructure(pv, true, List()),
-        ColumnStructure(lots, false, List())
-      ))
+    val c9 = ColumnTrees(List(
+      ColumnTree(product, false,
+        ColumnTree(pv, true),
+        ColumnTree(lots, false)
+      )
     ))
     assertFalse(c9.hasPathContaining(Set(pv, product, lots)))
 
-    val c10 = ColumnStructure(RootField, true, List(
-      ColumnStructure(product, false, List()), ColumnStructure(pv, true, List())
+    val c10 = ColumnTrees(List(
+      ColumnTree(product, false), ColumnTree(pv, true)
     ))
     assertFalse(c10.hasPathContaining(Set(pv, product)))
   }
 
   @Test
-  def testIsBottomNonMeasureField() {
-    val c = ColumnStructure(RootField, true, List(
-      ColumnStructure(Field("PV"), true, List(
-        ColumnStructure(Field("Product"), false, List())
-      ))
+  def testBuildPathsFor() {
+    val c1 = ColumnTrees(List(
+      ColumnTree(Field("PV"), true,
+        ColumnTree(Field("Product"), false)
+      )
     ))
 
-    assertTrue(c.isBottomField(Field("Product")))
+    val expected1 = List(
+      ColumnStructurePath(Some(Field("PV")),List((Field("PV"),0), (Field("Product"),0)))
+    )
+    val result1 = c1.buildPaths()
+    assertEquals(result1, expected1)
 
-    val c1 = ColumnStructure(RootField, true, List(
-      ColumnStructure(Field("Product"), false, List(
-        ColumnStructure(Field("PV"), true, List())
-      ))
+    val c2 = ColumnTrees(List(
+      ColumnTree(Field("PV"), true,
+        ColumnTree(Field("Product"), false)
+      ),
+      ColumnTree(Field("Gamma"), true)
     ))
 
-    assertTrue(c1.isBottomField(Field("PV")))
+    val expected2 = List(
+      ColumnStructurePath(Some(Field("PV")),List((Field("PV"),0), (Field("Product"),0))),
+      ColumnStructurePath(Some(Field("Gamma")),List((Field("Gamma"), 1)))
+    )
+    val result2 = c2.buildPaths()
+    assertEquals(result2, expected2)
 
-    val c2 = ColumnStructure(RootField, true, List(
-      ColumnStructure(Field("PV"), true, List(
-        ColumnStructure(Field("Product"), false, List(
-          ColumnStructure(Field("Lots"), false, List())
-        ))
-      ))
+
+    val c31 = ColumnTrees(List(
+      ColumnTree(Field("PV"), true), ColumnTree(Field("Gamma"), true)
+    ))
+    val c3 = ColumnTrees(List(
+      ColumnTree(FieldOrColumnStructure(c31),
+        ColumnTrees(ColumnTree(Field("Product"), false))
+      )
+    ))
+    val expected3 = List(
+      ColumnStructurePath(Some(Field("PV")),List((Field("PV"),0), (Field("Product"),0))),
+      ColumnStructurePath(Some(Field("Gamma")),List((Field("Gamma"),1), (Field("Product"),0)))
+    )
+    val result3 = c3.buildPaths()
+    assertEquals(result3, expected3)
+
+
+    val c41 = ColumnTrees(List(
+      ColumnTree(Field("PV"), true,
+        ColumnTree(Field("Strike"), false)
+      ),
+      ColumnTree(Field("Gamma"), true)
     ))
 
-    assertTrue(c2.isBottomField(Field("Lots")))
-    assertFalse(c2.isBottomField(Field("Product")))
+    val c4 = ColumnTrees(List(
+      ColumnTree(FieldOrColumnStructure(c41),
+        ColumnTrees(ColumnTree(Field("Product"), false))
+    )))
+    val expected4 = List(
+      ColumnStructurePath(Some(Field("PV")),List((Field("PV"),0), (Field("Strike"), 0), (Field("Product"),0))),
+      ColumnStructurePath(Some(Field("Gamma")),List((Field("Gamma"),1), (Field("Product"),0)))
+    )
+    val result4 = c4.buildPaths()
+    assertEquals(result4, expected4)
 
 
-    val c3 = ColumnStructure(RootField, true, List(
-      ColumnStructure(Field("PV"), true, List(
-        ColumnStructure(Field("Product"), false, List(
-          ColumnStructure(Field("Lots"), false, List())
-        )),
-        ColumnStructure(Field("Other"), false, List())
-      ))
+    val c51 = ColumnTrees(List(
+      ColumnTree(Field("PV"), true,
+        ColumnTree(Field("Strike"), false)
+      ),
+      ColumnTree(Field("Gamma"), true)
     ))
 
-    assertTrue(c3.isBottomField(Field("Lots")))
-    assertTrue(c3.isBottomField(Field("Other")))
-    assertFalse(c3.isBottomField(Field("PV")))
-    assertFalse(c3.isBottomField(Field("Product")))
+    val c5 = ColumnTrees(List(
+      ColumnTree(FieldOrColumnStructure(c51),
+        ColumnTrees(ColumnTree(Field("Product"), false))
+      ),
+      ColumnTree(Field("Delta"), true))
+    )
+    val expected5 = List(
+      ColumnStructurePath(Some(Field("PV")),List((Field("PV"),0), (Field("Strike"), 0), (Field("Product"),0))),
+      ColumnStructurePath(Some(Field("Gamma")),List((Field("Gamma"),1), (Field("Product"),0))),
+      ColumnStructurePath(Some(Field("Delta")),List((Field("Delta"), 2)))
+    )
+    val result5 = c5.buildPaths()
+    assertEquals(result5, expected5)
+  }
+
+  @Test
+  def testRemove01() {
+    val newCS = ColumnTrees(
+      ColumnTree(
+        FieldOrColumnStructure(
+          ColumnTrees(
+            List(ColumnTree(Field("PV"), true), ColumnTree(Field("Gamma"), true))
+          )
+        ), ColumnTrees.Null
+      )
+    )
+    val expectedCS = ColumnTrees(
+      ColumnTree(
+        Field("PV"), true
+      )
+    )
+    val result = newCS.remove(Field("Gamma"))
+    assertEquals(result, expectedCS)
+  }
+
+  @Test
+  def testMovingAFieldInternally() {
+    
   }
 }

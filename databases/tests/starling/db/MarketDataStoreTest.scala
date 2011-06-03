@@ -59,7 +59,7 @@ class MarketDataStoreTest extends StarlingTest with ShouldMatchers {
     versionAfterDelete should not be === (None)
 
     val versionInt = versionAfterDelete.get.version
-    val versionedData1 = VersionedMarketData(Timestamp.now, versionInt, data1)
+    val versionedData1 = VersionedMarketData(Timestamp.now, versionInt, Some(data1))
     marketDataStore.saveActions(Map(MarketDataSet.Starling -> List(MarketDataUpdate(observationPoint, key, None, Some(versionedData1)))))
     val read2:Option[SpotFXData] = marketDataStore.readLatest(MarketDataSet.Starling, observationPoint, key)
     read2 should equal( None )
@@ -143,18 +143,18 @@ class MarketDataStoreTest extends StarlingTest with ShouldMatchers {
     }
     val pfs1 = new PivotFieldsState(
       rowFields = List(Field("Currency")),
-      columns = ColumnStructure(ColumnStructure.RootField, false, List(ColumnStructure.dataField(Field("Rate")))),
+      columns = ColumnTrees.dataField(Field("Rate")),
       filters = (Field("Observation Time"), SomeSelection(Set(ObservationTimeOfDay.Default.name))) :: Nil
     )
 
-    check(pfs1, ", \nCurrency, Rate (EUR/USD)\nEUR, 3.0000 \n")
+    check(pfs1, ",\nCurrency,Rate (EUR/USD)\nEUR,3.0000 ")
 
     val pfs2 = new PivotFieldsState(
       rowFields = List(Field("Currency")),
-      columns = ColumnStructure.createFlat(List(Field("Observation Time")), List(Field("Rate")))
+      columns = ColumnTrees.createFlat(List(Field("Observation Time")), List(Field("Rate")))
     )
 
-    check(pfs2, ", Default (EUR/USD), LME Close (EUR/USD)\nCurrency, Rate, Rate\nEUR, 3.0000 , 7.0000 \n")
+    check(pfs2, ",Default (EUR/USD),LME Close (EUR/USD)\nCurrency,Rate,Rate\nEUR,3.0000 ,7.0000 ")
   }
 
   private val create_table = """

@@ -1,12 +1,11 @@
 package starling.richdb
 
-import starling.quantity.{Percentage, Quantity}
 import starling.curves.interestrate.{DayCount}
 import starling.market._
 import rules.{NoPricingRule, SwapPricingRule}
 import starling.models._
 import starling.daterange._
-import starling.quantity.{SpreadQuantity, Percentage, Quantity}
+import starling.quantity._
 
 trait RichInstrumentResultSetRow {
   def getInt(name:String):Int
@@ -14,6 +13,7 @@ trait RichInstrumentResultSetRow {
   def getBoolean(name:String):Boolean
   def getTimestamp(name:String):Timestamp
   def getQuantity(name : String) : Quantity
+  def getUOM(name : String) : UOM
   def getDay(name : String) : Day
   def getDateRange(name : String, tenor : Option[TenorType] = None) : DateRange
   def getSpread(name: String) = {

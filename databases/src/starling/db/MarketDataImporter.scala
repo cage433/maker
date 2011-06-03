@@ -9,7 +9,7 @@ import starling.utils.Log
 class MarketDataImporter(marketDataStore: MarketDataStore) {
   def getUpdates(observationDay: Day, marketDataSets: MarketDataSet*): Map[MarketDataSet, Iterable[MarketDataUpdate]] = {
     marketDataSets.map(marketDataSet => {
-      val marketDataForSet = (marketDataStore.marketData _).applyLast(marketDataSet)
+      val getMarketData = (marketDataStore.marketData _).applyLast(marketDataSet)
 
       marketDataStore.sourceFor(marketDataSet).map { marketDataSource =>
         Log.infoWithTime("importing market data " + marketDataSet + " for " + observationDay) {
@@ -18,7 +18,9 @@ class MarketDataImporter(marketDataStore: MarketDataStore) {
 
           val keysWhichShouldBePresent = externalData.values.flatMap(_.map(_.timedKey)).toList
           val presentData: Map[(ObservationPoint, MarketDataKey), VersionedMarketData] =
-            externalData.keys.flatMap(marketDataForSet).toList.map { case (point, key, data) => (point,key) → data }.toMap
+            externalData.keys.flatMap(getMarketData).toList.collect {
+              case (point, key, VersionedMarketData.Save(savedData)) => (point,key) → savedData
+            }.toMap
 
           val presentKeys = presentData.keySet
           val extraKeys = presentKeys \\ keysWhichShouldBePresent

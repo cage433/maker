@@ -16,8 +16,7 @@ import starling.props.Props
 import xml._
 
 
-class HttpServer(props:Props, servlets : List[(Servlet, String)]) {
-  
+class HttpServer(props:Props, servlets: (String, Servlet)*) {
   val server = new JettyServer(props.HttpPort())
   var servletPaths = List[String]()
 
@@ -35,7 +34,7 @@ class HttpServer(props:Props, servlets : List[(Servlet, String)]) {
   registerServlet(new RestfulServlet("Some Test String"), "test")
   registerServlet(new org.jminix.console.servlet.MiniConsoleServlet(), "jmx")
 
-  for((servlet, path) <- servlets) {
+  for((path, servlet) <- servlets) {
     val className : String = servlet.getClass.getName
     registerServlet(servlet, path)
   }

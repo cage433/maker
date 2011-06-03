@@ -106,6 +106,8 @@ object GuiUtils {
   lazy val GuiFieldFont = new Label("test").font.deriveFont(11.0f)
   lazy val GuiFieldFilterNumberFont = GuiFieldFont.deriveFont(10.0f)
   val GuiFieldFilterNumberColour = Color.GREEN.darker
+  val DropPanelOverColour = new Color(0,0,255,50)
+  val DropPanelOverColourInvalid = new Color(255,0,0,50)
 
   val TableSelectedColour = new Color(195, 212, 232)
 
