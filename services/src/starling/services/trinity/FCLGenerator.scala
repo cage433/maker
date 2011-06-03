@@ -35,7 +35,7 @@ object FCLGenerator {
 
     val rows = data.rowData.zip(data.mainData)
 
-    rows.map { case (Array(marketName, periodCell), Array(priceCell)) => {
+    rows.toList.flatMapO { case (Array(marketName, periodCell), Array(priceCell)) => {
       try {
         val market = Market.futuresMarketFromName(marketName.valueText)
         val trinityCode = codeLookup(market)
@@ -48,7 +48,7 @@ object FCLGenerator {
       } catch {
         case e: Exception => None
       }
-    } }.toList.somes
+    } }
   }
 }
 

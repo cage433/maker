@@ -25,7 +25,8 @@ trait RichTraversable {
     def toMapWithValues[V](valueF: A => V):              Map[A, V]      = pair(valueF).toMap
     def toMapWithSomeValues[V](valueF: A => Option[V]):  Map[A, V]      = optPair(valueF).toMap;
 
-    def pair[B](f: A => B): Traversable[(A,B)] = traversable.map(_.pair(f))
+    def pair[B](f: A => B): Traversable[(A, B)] = traversable.map(_.pair(f))
+    def pair[B](b: B): Traversable[(A, B)] = traversable.map(_ → b)
     def optPair[B](f: A => Option[B]): Traversable[(A, B)] = traversable.flatMap(_.optPair(f))
 
     def groupInto[B, C](keyF: A => B, valueF: A => C): Map[B, Traversable[C]] = {

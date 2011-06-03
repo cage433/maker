@@ -229,11 +229,16 @@ object DefaultPivotFormatter extends PivotFormatter {
         }
         new TableCell(s, s.size + " values", longText = Some(longText))
       }
+      case l:HasLongText => new TableCell(l, l.toString, longText = Some(l.longText))
       case v => new TableCell(v)
     }
   } catch {
     case t:Throwable => TableCell("Error during formatting:" + t.getMessage)
   }
+}
+
+trait HasLongText extends Serializable {
+  def longText: String
 }
 
 case class FieldDetails(field:Field) {

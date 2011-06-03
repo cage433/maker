@@ -283,8 +283,8 @@ case class NamedQuantity(expr: String, quantity: Quantity) extends Quantity(quan
     "(%s %c %s)" % (expr, op, rhsVal)
   }
 
-  private val superscripts = Map('-' -> '⁻',
-    '0' -> '⁰', '1' -> '¹', '2' -> '²', '3' -> '³', '4' -> '⁴', '5' -> '⁵', '6' -> '⁶', '7' -> '⁷', '8' -> '⁸', '9' -> '⁹')
+  private val superscripts = Map('-' → '⁻',
+    '0' → '⁰', '1' → '¹', '2' → '²', '3' → '³', '4' → '⁴', '5' → '⁵', '6' → '⁶', '7' → '⁷', '8' → '⁸', '9' → '⁹')
 
   private def isAlmostOne(value: Double): Boolean          = (value - 1).abs < MathUtil.EPSILON
   private def isAlmostOne(percentage: Percentage): Boolean = isAlmostOne(percentage.value)

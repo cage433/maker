@@ -115,7 +115,7 @@ class OilAndMetalsVARLimMarketDataSource(limServer: LIMServer) extends MarketDat
     }
     val pricesByObservationPoint = limServer.query {
       connection =>
-        val relationToDeliveryMonth = connection.getAllRelChildren(limSymbol.name).map(parseRelation).somes.toMap
+        val relationToDeliveryMonth = connection.getAllRelChildren(limSymbol.name).flatMapO(parseRelation).toMap
 
         val prices = connection.getPrices(relationToDeliveryMonth.keys, level, lastObservationDay - daysInThePast, lastObservationDay)
           .groupInto {

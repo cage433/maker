@@ -240,13 +240,15 @@ class ReferenceData(businessCalendars: BusinessCalendars, marketDataStore: Marke
 
   def schedules(scheduler: Scheduler) = new UnfilteredPivotTableDataSource() with ScheduledTaskAttributes {
     val group@List(name, timing, period, calendar, producer, consumer, sender, recipients) =
-      fieldDetails("Task", "Scheduled Time", "Period", "Calendar", "Producer", "Consumer", "Sender", "Receipients")
+      fieldDetails("Task", "Starting Time", "Period", "Calendar", "Producer", "Consumer", "Sender", "Receipients")
     val fieldDetailsGroups = List(FieldDetailsGroup("Schedule", group))
     override val initialState = PivotFieldsState(rowFields = fields(name), dataFields = fields(group.tail))
     def unfilteredData(pfs: PivotFieldsState) = scheduler.tasks.map(task => fields(name → task.name, timing → task.time.prettyTime,
       period → task.time.description, calendar → task.cal.name, producer → task.attribute(DataSource),
       consumer → task.attribute(DataSink), sender → task.attribute(EmailFrom), recipients → task.attribute(EmailTo)))
   }
+
+
 
 //  def strategies(strategyDB:EAIStrategyDB) = {
 //    new UnfilteredPivotTableDataSource() {
@@ -283,5 +285,4 @@ class ReferenceData(businessCalendars: BusinessCalendars, marketDataStore: Marke
 //      }
 //    }
 //  }
-
 }

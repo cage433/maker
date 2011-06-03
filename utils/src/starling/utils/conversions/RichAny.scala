@@ -8,7 +8,7 @@ trait RichAny {
   implicit def enrichAny[T](value: T) = new RichAny(value)
 
   class RichAny[T](value: T) {
-    lazy val trimmed = value.toString.applyIf(_.length > 500, _.substring(0, 496) + " ...")
+    lazy val trimmed = if (value == null) "" else value.toString.applyIf(_.length > 500, _.substring(0, 496) + " ...")
 
     def add[A, B](tuple: (A, B)): (T, A, B) = (value, tuple._1, tuple._2)
     def add[A, B, C](tuple: (A, B, C)): (T, A, B, C) = (value, tuple._1, tuple._2, tuple._3)
@@ -37,12 +37,14 @@ trait RichAny {
     val repeat : Seq[T] = Stream.continually(value).toSeq
     def replicate(count: Int): Seq[T] = repeat.take(count)
     def partialMatch[V](pfn: PartialFunction[T, V]): Option[V] = apply(pfn)
+    def partialMatchO[V](pfn: PartialFunction[T, Option[V]]): Option[V] = partialMatch(pfn).flatOpt
     def safePartialMatch[V](message: => String)(pfn: PartialFunction[T, V]): Option[V] =
       try { apply(pfn) } catch { case _ => Log.warn(message + ": " + value); None }
 
     def safeCast[V](implicit m: Manifest[V]): Option[V] = m.cast(value)
 
     def pair[V](f: T => V): (T, V) = value → f(value)
+    def pair[V](t: Traversable[V]) = t.pair(value).swap
     def optPair[V](option: Option[V]): Option[(T, V)] = option.map(value → _)
     def optPair[V](f: T => Option[V]): Option[(T, V)] = value.optPair(f(value))
 

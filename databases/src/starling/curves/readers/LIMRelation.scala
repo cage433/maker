@@ -9,14 +9,14 @@ import starling.LimNode
 
 
 trait LIMRelation {
-  val parent: LimNode
+  val node: LimNode
   val observationTimeOfDay: ObservationTimeOfDay
   def parse(childRelation: String): Option[(String, FuturesMarket, DateRange)]
 
   protected def debug[T](message: String): Option[T] = { Log.debug(message); None }
 }
 
-class LMELIMRelation(val parent: LimNode, val observationTimeOfDay: ObservationTimeOfDay) extends LIMRelation {
+class LMELIMRelation(val node: LimNode, val observationTimeOfDay: ObservationTimeOfDay) extends LIMRelation {
   private lazy val lmeMarkets = FuturesExchangeFactory.LME.marketsByCommodityName + "steelbillet" → Market.LME_STEEL_BILLETS
   private val Regex = """TRAF\.LME\.(\w+)\.(\d+)\.(\d+)\.(\d+)""".r
 
@@ -25,7 +25,7 @@ class LMELIMRelation(val parent: LimNode, val observationTimeOfDay: ObservationT
   }
 }
 
-class MonthlyLIMRelation(val parent: LimNode, val observationTimeOfDay: ObservationTimeOfDay) extends LIMRelation {
+class MonthlyLIMRelation(val node: LimNode, val observationTimeOfDay: ObservationTimeOfDay) extends LIMRelation {
   private val Regex = """TRAF\.(\w+)\.(\w+)_(\w+)""".r
 
   def parse(childRelation: String) = (childRelation partialMatch {

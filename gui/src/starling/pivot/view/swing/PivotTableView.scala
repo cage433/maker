@@ -556,20 +556,17 @@ class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSiz
         val selection:Option[(String,Boolean)] = table.getSelectedCells match {
           case Nil => None
           case (row, col) :: Nil => {
-            table.getValueAt(row, col) match {
-              case tc:TableCell => Some((tc.longText.getOrElse(tc.text),false))
-              case ac:AxisCell => Some((ac.text,false))
-              case _ => None
+            table.getValueAt(row, col) partialMatch {
+              case tc:TableCell => (tc.longText.getOrElse(tc.text), false)
+              case ac:AxisCell => (ac.text, false)
             }
           }
           case many => {
-            val values = many.map { case (row,col) => {
-              table.getValueAt(row, col) match {
+            val values = many.flatMapO { case (row, col) => {
+              table.getValueAt(row, col) partialMatchO {
                 case tc:TableCell => tc.doubleValue
-                case ac:AxisCell => None
-                case _ => None
               }
-            }}.somes
+            }}
             if (values.isEmpty) {
               None
             } else {

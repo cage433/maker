@@ -9,7 +9,7 @@ import starling.utils.ImplicitConversions._
 
 case class TaskDescription(name: String, time: ScheduledTime, task: ScheduledTask) extends TimerTask {
   val cal = time.cal
-  def attribute(name: String, alternative: String = "") = task.attribute(name, alternative)
+  def attribute(name: String, alternative: String = ""): ScheduledTaskAttribute = task.attribute(name, alternative)
 
   def schedule(timer: Timer) = Log.infoF("Scheduled: %s @ %s, %s %s" % (name, time.prettyTime, time.description, time.cal.name)) {
     time.schedule(this, timer)

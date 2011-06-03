@@ -20,7 +20,7 @@ object Trinity {
 
     val rows = data.rowData.zip(data.mainData)
 
-    rows.map { case (Array(marketName, periodCell), Array(priceCell)) => {
+    rows.toList.flatMapO { case (Array(marketName, periodCell), Array(priceCell)) => {
       try {
         val trinityCode = Market.marketToTrinityCode(Market.fromName(marketName.value.value.value.toString))
         val price = format.format(priceCell.doubleValue.get)
@@ -30,6 +30,6 @@ object Trinity {
       } catch {
         case e: Exception => None
       }
-    } }.toList.somes
+    } }
   }
 }

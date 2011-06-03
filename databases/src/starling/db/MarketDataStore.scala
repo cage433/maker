@@ -60,6 +60,8 @@ trait MarketDataSource { self =>
 
   protected def containsDistinctTimedKeys(entries: List[MarketDataEntry]): Boolean = duplicateTimedKeys(entries).isEmpty
   protected def duplicateTimedKeys(entries: List[MarketDataEntry]) = entries.map(_.timedKey).duplicates
+
+  def description: List[String] = Nil
 }
 
 class AdaptingMarketDataSource(adaptee: MarketDataSource) extends MarketDataSource {
@@ -184,6 +186,7 @@ trait MarketDataStore {
   def snapshotFromID(snapshotID: Int): Option[SnapshotID]
 
   def sourceFor(marketDataSet: MarketDataSet): Option[MarketDataSource]
+  def sourcesFor(pricingGroup: PricingGroup): List[MarketDataSource]
 }
 
 case class VersionedMarketData(timestamp: Timestamp, version: Int, data: Option[MarketData])
@@ -285,6 +288,7 @@ class DBMarketDataStore(db: DBTrait[RichResultSetRow], val marketDataSources: Ma
   }
 
   def sourceFor(marketDataSet:MarketDataSet) = marketDataSources.get(marketDataSet)
+  def sourcesFor(pricingGroup: PricingGroup) = marketDataSets(MarketDataSelection(Some(pricingGroup))).flatMap(sourceFor(_))
 
   private var excelDataSetsCache = {
     scala.collection.mutable.ArrayBuffer[String]() ++ db.queryWithResult("select distinct marketDataSet from MarketData order by marketDataSet", Map()) {
