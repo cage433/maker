@@ -68,7 +68,7 @@ case class CurvePage(curveLabel: CurveLabel, pivotPageState: PivotPageState) ext
       case EnvironmentSpecificationLabelChangedEvent(ruleChooser, envSpec) => pageContext.goTo(latest(copyEnv(envSpec)))
     }
 
-    val configPanel = new MigPanel with ConfigPanel {
+    val configPanel = new MigPanel("gapx unrel") with ConfigPanel {
       add(marketDataSelectionPanel)
       add(curveTypeChooser)
       add(envSpecChooser)
