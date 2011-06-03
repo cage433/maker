@@ -63,7 +63,7 @@ class StarlingInit( props: Props,
     }
     if (startHttp) {
       httpServer.stop
-//      regressionServer.stop
+      regressionServer.stop
     }
     if (!runningInJBoss){
       scheduler.stop
@@ -89,7 +89,7 @@ class StarlingInit( props: Props,
 
     if (startHttp) {
       httpServer.run
-//      regressionServer.start
+      regressionServer.start
     }
 
     if (startStarlingJMX) {
@@ -325,16 +325,7 @@ class StarlingInit( props: Props,
     new HttpServer(props, "webstart" → webStartServlet, "cannedwebstart" → cannedWebStartServlet)
   }
 
-//  lazy val regressionServer = locally {
-//    val server = new JettyServer()
-//    val connector = new SocketConnector()
-//    connector.setHost("127.0.0.1")
-//    connector.setPort(props.RegressionPort())
-//    server.addConnector(connector)
-//    val rootContext = new Context(server, "/", Context.SESSIONS);
-//    rootContext.addServlet(new ServletHolder(reportServlet), "/reports/*")
-//    server
-//  }
+  lazy val regressionServer = new RegressionServer(props.RegressionPort(), reportServlet)
 }
 
 object StarlingInit{
