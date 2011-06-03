@@ -184,12 +184,17 @@ case class ColumnTree(fieldOrColumnStructure:FieldOrColumnStructure, childStruct
       case Left(f) => childStructure.keep(fields).trees
       case Right(cs) => {
         val newCS = cs.keep(fields)
-        val newFieldOrColumnStructure = if (newCS.trees.size == 1 && newCS.trees.head.childStructure.trees.isEmpty) {
-          newCS.trees.head.fieldOrColumnStructure
+        if (newCS.trees.size == 1 && newCS.trees.head.childStructure.trees.isEmpty) {
+          val newFieldOrColumnStructure = newCS.trees.head.fieldOrColumnStructure
+          List(ColumnTree(newFieldOrColumnStructure, childStructure.keep(fields)))
         } else {
-          FieldOrColumnStructure(newCS)
+          val filteredChild = childStructure.keep(fields)
+          if (filteredChild.trees.isEmpty) {
+            newCS.trees
+          } else {
+            List(ColumnTree(FieldOrColumnStructure(newCS), filteredChild))
+          }
         }
-        List(ColumnTree(newFieldOrColumnStructure, childStructure.keep(fields)))
       }
     })
   }

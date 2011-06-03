@@ -511,4 +511,22 @@ class ColumnTreesTest extends TestNGSuite {
           ColumnTrees(List()))))))))))
     assertEquals(result, expected)
   }
+
+  @Test
+  def testTreesGetNormalised() {
+    val init = ColumnTrees(List(ColumnTree(FieldOrColumnStructure(Left(FieldAndIsMeasure(Field("Day Change"),true))),
+      ColumnTrees(List(ColumnTree(FieldOrColumnStructure(Left(FieldAndIsMeasure(Field("Day Change Component"),false))),ColumnTrees(List()))))),
+      ColumnTree(FieldOrColumnStructure(
+        Right(ColumnTrees(List(ColumnTree(FieldOrColumnStructure(Left(FieldAndIsMeasure(Field("Market Price"),true))),ColumnTrees(List())),
+          ColumnTree(FieldOrColumnStructure(Left(FieldAndIsMeasure(Field("Position"),true))),
+            ColumnTrees(List(ColumnTree(FieldOrColumnStructure(Left(FieldAndIsMeasure(Field("fhsdvbhsvuilh"),false))),ColumnTrees(List()))))))))),
+        ColumnTrees(List(ColumnTree(FieldOrColumnStructure(Left(FieldAndIsMeasure(Field("Risk Period"),false))),ColumnTrees(List())))))))
+    val result = init.remove(Field("Risk Period"))
+    val expected = ColumnTrees(List(ColumnTree(FieldOrColumnStructure(Left(FieldAndIsMeasure(Field("Day Change"),true))),
+      ColumnTrees(List(ColumnTree(FieldOrColumnStructure(Left(FieldAndIsMeasure(Field("Day Change Component"),false))),ColumnTrees(List()))))),
+      ColumnTree(FieldOrColumnStructure(Left(FieldAndIsMeasure(Field("Market Price"),true))),ColumnTrees(List())),
+      ColumnTree(FieldOrColumnStructure(Left(FieldAndIsMeasure(Field("Position"),true))),
+        ColumnTrees(List(ColumnTree(FieldOrColumnStructure(Left(FieldAndIsMeasure(Field("fhsdvbhsvuilh"),false))),ColumnTrees(List())))))))
+    assertEquals(result, expected)
+  }
 }
