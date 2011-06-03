@@ -105,10 +105,10 @@ class PivotTableTest extends TestNGSuite {
               ColumnTree(Field("Period"), false)))))),
       Totals(false, false, false, true),
       List( List("") ),
-      List( List("Delta", "Delta", "Delta", "Delta", "Delta"),
-            List("Brent", "Brent", "WTI",   "WTI",   "WTI"),
-            List("Total", "Jan",   "Total", "Feb",   "Jan") ),
-      List( List(  4,        4,       7+1,      7,       1) )
+      List( List("Delta", "Delta", "Delta", "Delta", "Delta", "Delta"),
+            List("Total", "Brent", "Brent", "WTI",   "WTI",   "WTI"),
+            List("Total", "Total", "Jan",   "Total", "Feb",   "Jan") ),
+      List( List( 7+1+4,      4,        4,       7+1,      7,       1) )
     )
   }
 
