@@ -7,7 +7,6 @@ import starling.calendar.BusinessCalendarSet
 import starling.daterange._
 import starling.db.MarketDataEntry
 import starling.market._
-import starling.marketdata._
 import starling.pivot.MarketValue
 import starling.quantity.{Quantity, UOM}
 
@@ -17,7 +16,7 @@ import UOM._
 import starling.utils.ImplicitConversions._
 import java.text.DecimalFormat
 import starling.utils.Pattern._
-
+import starling.marketdata.{PriceFixingsHistoryData, PriceFixingsHistoryDataKey}
 
 object LIBORFixings extends HierarchicalLimSource {
   type Relation = LIBORFixingRelation

@@ -11,9 +11,17 @@ trait MarketDataType {
   type dataType <: MarketData
 
   val name: String = getClass.getName.substring(getClass.getName.lastIndexOf(".") + 1).stripSuffix("DataType$")
+
+  // Fields needed to uniquely define some market datum. For prices it would be market and period.
   def keyFields:Set[Field]
+
+  // The field (always one?) for the market data - e.g. price
   def valueFields:Set[Field]
   def createKey(values:Map[Field,Any]):MarketDataKey
+
+  /** Creates a market data type from the list of field values. Typically these
+    * contain user overrides and data from Lim
+   */
   def createValue(values:List[Map[Field,Any]]):dataType
   override val toString = name
 

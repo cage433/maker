@@ -31,7 +31,7 @@ trait InstrumentLevelEnvironment extends AtomicEnvironmentHelper {
   def apply(key : AtomicDatumKey) : Any 
   def marketDay() : DayAndTime 
   def discount(ccy : UOM, day : Day, ignoreShiftsIfPermitted : Boolean = false) : Double
-  def fixing(fixingHistoryKey : FixingsHistoryKey, fixingDay : Day) : Quantity
+  def fixing(index : SingleIndex, fixingDay : Day) : Quantity
 
   def indexForwardPrice(index : SingleIndex, observationDay : Day, ignoreShiftsIfPermitted : Boolean = false) : Quantity 
   def interpolatedVol(market : HasImpliedVol, period : DateRange, exerciseDay : Option[Day], strike : Option[Quantity], isIndexVol : Boolean, forwardPrice: Option[Quantity]) : Percentage
@@ -57,12 +57,12 @@ class DefaultInstrumentLevelEnvironment(underlyingAtomicEnv : AtomicEnvironment)
   def shiftAtomicEnv(fn : AtomicEnvironment => AtomicEnvironment) = copy(fn(atomicEnv))
   def marketDay() : DayAndTime = atomicEnv().marketDay
   def discount(ccy : UOM, day : Day, ignoreShiftsIfPermitted : Boolean = false) : Double = atomicEnv.double(DiscountRateKey(ccy, day, ignoreShiftsIfPermitted))
-  def fixing(fixingHistoryKey : FixingsHistoryKey, fixingDay : Day) : Quantity = {
-    atomicEnv.quantity(FixingKey(fixingHistoryKey, fixingDay))
+  def fixing(index : SingleIndex, fixingDay : Day) : Quantity = {
+    index.fixing(this, fixingDay)
   }
 
   def indexForwardPrice(index : SingleIndex, observationDay : Day, ignoreShiftsIfPermitted : Boolean = false) : Quantity = {
-    quantity(ForwardPriceKey(index.market, index.observedPeriod(observationDay), ignoreShiftsIfPermitted))
+    index.forwardPrice(this, observationDay, ignoreShiftsIfPermitted)
   }
 
   def spreadPrice(market : FuturesMarket, firstMonth : Month, secondMonth : Month) = quantity(ForwardPriceKey(market, firstMonth)) - quantity(ForwardPriceKey(market, secondMonth))
@@ -190,7 +190,7 @@ class DefaultInstrumentLevelEnvironment(underlyingAtomicEnv : AtomicEnvironment)
     val stdDev = volSurface.volatilityByStrike(strike.value, F.value)
     Quantity(stdDev, market.priceUOM)
   }
-  def indexVol(index : SingleIndex, observationDay : Day, strike : Quantity, averagePrice : Quantity) = {
+  def indexVol(index : SimpleSingleIndex, observationDay : Day, strike : Quantity, averagePrice : Quantity) = {
     def expiry(period : DateRange) = index.market match {
       case k: KnownExpiry => k.optionExpiry(period)
       case _ => period.firstDay // HACk
@@ -386,8 +386,8 @@ object ShiftMarketDayAtInstrumentLevel{
             }
             case `fixing` => {
               args match {
-                case Array(fixingHistoryKey: FixingsHistoryKey, fixingDay : Day) =>
-                  forwardAtomicEnv.quantity(FixingKey(fixingHistoryKey, fixingDay))
+                case Array(index : SingleIndex, fixingDay : Day) =>
+                  forwardAtomicEnv.quantity(FixingKey(index, fixingDay))
               }
             }
             case `copy` => ShiftMarketDayAtInstrumentLevel(originalEnv.copy(args(0).asInstanceOf[AtomicEnvironment]), newMarketDay)
@@ -420,7 +420,7 @@ class CacheEnvironmentDifferentiables(originalEnv : InstrumentLevelEnvironment) 
     cache.add(SpreadAtmStdDevAtomicDatumKey(market, spread))
     originalEnv.spreadStdDev(market, spread, exerciseDay, strike)
   }
-  def indexVol(index : SingleIndex, observationDay : Day, strike : Quantity, averagePrice : Quantity) = {
+  def indexVol(index : SimpleSingleIndex, observationDay : Day, strike : Quantity, averagePrice : Quantity) = {
     cache.add(SwapVol(index, observationDay))
     originalEnv.indexVol(index, observationDay, strike, averagePrice)
   }
@@ -449,5 +449,5 @@ class CacheEnvironmentDifferentiables(originalEnv : InstrumentLevelEnvironment) 
   
   def copy(newAtomicEnv : AtomicEnvironment) = new CacheEnvironmentDifferentiables(originalEnv.copy(newAtomicEnv))
   def discount(ccy : UOM, day : Day, ignoreShiftsIfPermitted : Boolean = false) = originalEnv.discount(ccy, day, ignoreShiftsIfPermitted)
-  def fixing(fixingHistoryKey: FixingsHistoryKey, fixingDay : Day) = originalEnv.fixing(fixingHistoryKey, fixingDay)
+  def fixing(index : SingleIndex, fixingDay : Day) = originalEnv.fixing(index, fixingDay)
 }

@@ -123,10 +123,6 @@ case class Environment(
       throw new Exception("Can't convert " + market + " price (" + market.priceUOM + ") to " + unit))
   }
 
-  def indexForwardPrice(index : SingleIndex, observationDay : Day, ignoreShiftsIfPermitted : Boolean = false) : Quantity = {
-    instrumentLevelEnv.indexForwardPrice(index, observationDay, ignoreShiftsIfPermitted)
-  }
-
   private var averagePriceCache = CacheFactory.getCache("Environment.averagePrice", unique = true)
 
   def averagePrice(index: SingleIndex, averagingPeriod: DateRange): Quantity = averagePrice(index, averagingPeriod, None)
@@ -135,7 +131,7 @@ case class Environment(
     (index, averagingPeriod),
     (tuple: (Index, DateRange)) => {
       val observationDays = index.observationDays(averagingPeriod)
-      val price = Quantity.average(observationDays.map(index.fixingOrForwardPrice(this, _)))
+      val price = Quantity.average(observationDays.map(fixingOrForwardPrice(index, _)))
       rounding match {
         case Some(dp) if environmentParameters.swapRoundingOK => {
           price.round(dp)
@@ -143,7 +139,17 @@ case class Environment(
         case _ => price
       }
     }
-  )
+   )
+
+   def fixingOrForwardPrice(index : SingleIndex, observationDay : Day) = {
+     val price = if (observationDay.endOfDay <= marketDay) {
+       indexFixing(index, observationDay)
+     } else {
+       instrumentLevelEnv.indexForwardPrice(index, observationDay, ignoreShiftsIfPermitted = false)
+     }
+     price
+  }
+
 
   /**
    * Average price for the period.
@@ -221,11 +227,7 @@ case class Environment(
   }
 
   def indexFixing(index : SingleIndex, fixingDay : Day) : Quantity = {
-    fixing(index.fixingHistoryKey(fixingDay), fixingDay)
-  }
-
-  def fixing(key:FixingsHistoryKey, day:Day) = {
-    instrumentLevelEnv.fixing(key, day)
+    index.fixing(instrumentLevelEnv, fixingDay)
   }
 
   /**
@@ -237,7 +239,7 @@ case class Environment(
   def swapVol(index: SingleIndex, averagingPeriod: DateRange, strike: Quantity): Percentage = {
     val unfixedDays = index.observationDays(averagingPeriod).filter(_.endOfDay > marketDay)
 
-    val averageUnfixedPrice = unfixedDays.map{d => indexForwardPrice(index, d, ignoreShiftsIfPermitted = true)}.sum / unfixedDays.size
+    val averageUnfixedPrice = unfixedDays.map{d => instrumentLevelEnv.indexForwardPrice(index, d, ignoreShiftsIfPermitted = true)}.sum / unfixedDays.size
     Percentage.average(unfixedDays.map(instrumentLevelEnv.indexVol(index, _, strike, averageUnfixedPrice)))
   }
 

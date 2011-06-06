@@ -275,8 +275,11 @@ case class MarketDataCurveObjectEnvironment(
   def setShiftsCanBeIgnored(canBeIgnored : Boolean) = copy(shiftsCanBeIgnored = canBeIgnored)
 }
 
+/**
+ * Contains all market data needed for a standard Environment
+ */
 trait MarketDataSlice {
   def read(key:MarketDataKey): MarketData
   // throw new MissingMarketDataException("No " + index + " fixing for " + day)
-  def fixings(market: CommodityMarket, observationPoint: ObservationPoint): PriceFixingsHistoryData
+  def fixings(key : PriceFixingsHistoryDataKey, observationPoint: ObservationPoint): PriceFixingsHistoryData
 }

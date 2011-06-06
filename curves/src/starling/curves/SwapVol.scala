@@ -1,12 +1,12 @@
 package starling.curves
 
-import starling.market.SingleIndex
 import starling.quantity.Percentage
 import starling.daterange._
 import starling.quantity.Quantity
 import starling.quantity.UOM
+import starling.market.SimpleSingleIndex
 
-case class SwapVol(index : SingleIndex, averagingPeriod : DateRange) extends VolKey with EnvironmentDifferentiable{
+case class SwapVol(index : SimpleSingleIndex, averagingPeriod : DateRange) extends VolKey with EnvironmentDifferentiable{
   private val averagingDays : List[Day] = index.observationDays(averagingPeriod)
 
   def volMarket = index.market

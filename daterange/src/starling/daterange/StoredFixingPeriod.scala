@@ -22,6 +22,10 @@ case class Tenor(tenorName: String, value: Int) extends Ordered[Tenor] {
 }
 
 object Tenor {
+  /**
+   * Value doesn't mean anything outside the context of a particular index. It is used just for
+   * sorting tenors in a reasonable way
+   */
   def apply(tenorType: TenorType, value: Int): Tenor = Tenor(tenorType.shortName, value)
 
   val ON          = Tenor(Day, 0)   // Overnight
@@ -38,6 +42,9 @@ object Tenor {
   val OneYear     = Tenor(Year, 1)
 }
 
+/**
+ * How an index's fixing period is represented in the database
+ */
 case class StoredFixingPeriod(period: Either[DateRange, Tenor]) extends Ordered[StoredFixingPeriod] {
   lazy val (dateRange, tenor) = (period.left.toOption, period.right.toOption)
   def compare(that: StoredFixingPeriod) = (period, that.period) match {

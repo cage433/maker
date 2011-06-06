@@ -8,12 +8,11 @@ import starling.daterange._
 
 case class SwapPrice(index : SingleIndex, averagingPeriod : DateRange) extends EnvironmentDifferentiable with PriceKey{
 
-  val market = index.market
+  def market = index.market
   private lazy val averagingDays = averagingPeriod.days.filter(index.isObservationDay)
-  private lazy val observedPeriods = averagingDays.map(index.observedPeriod(_)).distinct.toList
 
-  def curveKey = ForwardCurveKey(market)
-  def calc_dP(env : Environment)  = PriceDifferentiable(market, observedPeriods.last).calc_dP(env)
+  def curveKey = index.forwardPriceCurveKey
+  def calc_dP(env : Environment)  = index.forwardPriceMarket.standardShift
 
   def shiftedEnvs(env : Environment, dP : Quantity)  = {
     (
@@ -31,7 +30,7 @@ case class SwapPrice(index : SingleIndex, averagingPeriod : DateRange) extends E
       case day : Day => {
         SwapPrice(
           index,
-          EnvironmentDifferentiable.containingDifferentiablePeriod(index.market.businessCalendar, marketDay, tenor, day)
+          EnvironmentDifferentiable.containingDifferentiablePeriod(index.businessCalendar, marketDay, tenor, day)
         )
       }
       case _ => this

@@ -42,7 +42,7 @@ class BradyFXVolsTests extends TestExpiryRules{
           case BradyFXVolSurfaceDataKey(_) => volSurface
           case SpotFXDataKey(_) => SpotFXData(Quantity(1.5, USD/EUR))
         })
-        def fixings(market: CommodityMarket, observationPoint: ObservationPoint) = throw new Exception("Not implemented")
+        def fixings(key : PriceFixingsHistoryDataKey, observationPoint: ObservationPoint) = throw new Exception("Not implemented")
       }
       )
 
