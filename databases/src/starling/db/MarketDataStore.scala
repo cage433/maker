@@ -115,8 +115,8 @@ object MarketDataStore {
     PricingGroup.Crude-> List(Starling, LIM, Crude),
     PricingGroup.LondonDerivatives -> List(Starling, LondonDerivatives, LIM),
     PricingGroup.GasolineRoW -> List(Starling, GasolineRoW, LIM),
-    PricingGroup.BarryEckstein -> List(Starling, BarryEckstein, LIM),
-    PricingGroup.LondonDerivativesOptions -> List(Starling, LondonDerivativesOptions, LIM, System)
+    PricingGroup.BarryEckstein -> List(Starling, BarryEckstein, System, LIM),
+    PricingGroup.LondonDerivativesOptions -> List(Starling, LondonDerivativesOptions, System, LIM)
   )
 
   val orphanedPricingGroups = (PricingGroup.values \\ Desk.pricingGroups.intersect(pricingGroupsDefinitions.keys.toList))

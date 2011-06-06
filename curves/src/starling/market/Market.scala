@@ -467,10 +467,10 @@ object Market {
 
   lazy val NYMEX_WTI = nymexFuturesMarket("NYMEX WTI", 1000, BBL, 2, WTI, expiry.rule(2), limSymbol = Some(LimSymbol("CL")), volID = Some(25))
   lazy val NYMEX_BRENT = nymexFuturesMarket("NYMEX Brent", 1000, BBL, 605, Brent, expiry.rule(Market.ICE_BRENT.eaiQuoteID.get), limSymbol = Some(LimSymbol("PCAJG00", 1)), volID = Some(20))
-  lazy val NYMEX_HEATING = nymexFuturesMarket("NYMEX Heat", 42000, GAL, 15, HeatingOil, expiry.rule(15), volID = Some(22), limSymbol = Some(LimSymbol("HO")))
+  lazy val NYMEX_HEATING = nymexFuturesMarket("NYMEX Heat", 42000, GAL, 15, HeatingOil, expiry.rule(15), volID = Some(22), limSymbol = Some(LimSymbol("HO", 0.01)))
   lazy val NYMEX_SINGAPORE_FUEL_OIL = nymexFuturesMarket("NYMEX Singapore 380 Fuel Oil", 100, MT, 1310, FuelOil(6.35), expiry.rule(1310), limSymbol = Some(LimSymbol("HZ", 1)))
   lazy val NYMEX_GASOLINE = nymexFuturesMarket("RBOB", 42000, GAL, 880, Gasoline(8.33), expiry.rule(880), volID = Some(23), limSymbol = Some(LimSymbol("RB.UNL", 0.01)))
-  lazy val NYMEX_NAT_GAS = nymexFuturesMarket("NYMEX Nat Gas", 1000, MMBTU, 140, NatGas, expiry.rule(140))
+  lazy val NYMEX_NAT_GAS = nymexFuturesMarket("NYMEX Nat Gas", 10000, MMBTU, 140, NatGas, expiry.rule(140), limSymbol = Some(LimSymbol("NG", 0.1)))
 
 
   /*
@@ -483,19 +483,19 @@ object Market {
     eaiQuoteID: Int,
     commodity: Commodity,
     expiry: FuturesExpiryRule,
-    limSymbol: Option[String] = None,
+    limSymbol: Option[LimSymbol] = None,
     volID: Option[Int] = None)
   = new FuturesMarket(name, Some(lotSize), uom, USD, cals.ICE, Some(eaiQuoteID),
     NonMetalsPriceTable, Month, expiry, ICE, commodity, true,
-    limSymbol = LimSymbol.fromOpt(limSymbol, 1), precision = precisionRules.rule(eaiQuoteID)) {
+    limSymbol = limSymbol, precision = precisionRules.rule(eaiQuoteID)) {
     override def volatilityID = volID
   }
 
-  lazy val ICE_BRENT = iceFuturesMarket("ICE Brent", 1000, BBL, 1, Brent, expiry.rule(1), limSymbol = Some("FB"), Some(20))
-  lazy val ICE_GAS_OIL = iceFuturesMarket("ICE Gas Oil", 100, MT, 14, GasOil(7.45), expiry.rule(14), limSymbol = Some("FP"), Some(21))
-  lazy val ICE_WTI = iceFuturesMarket("ICE WTI", 1000, BBL, 890, WTI, expiry.ICE_WTI(cals.ICE, expiry.rule(890)), limSymbol = Some("CL"), volID = Some(25))
-  lazy val ICE_RBOB = iceFuturesMarket("ICE RBOB", 42000, GAL, 913, Gasoline(8.33), expiry.rule(913), volID = Some(23))
-  lazy val ICE_HEATING = iceFuturesMarket("ICE Heat", 42000, GAL, 914, HeatingOil, expiry.rule(914), volID = Some(22))
+  lazy val ICE_BRENT = iceFuturesMarket("ICE Brent", 1000, BBL, 1, Brent, expiry.rule(1), limSymbol = Some(LimSymbol("FB")), Some(20))
+  lazy val ICE_GAS_OIL = iceFuturesMarket("ICE Gas Oil", 100, MT, 14, GasOil(7.45), expiry.rule(14), limSymbol = Some(LimSymbol("FP")), Some(21))
+  lazy val ICE_WTI = iceFuturesMarket("ICE WTI", 1000, BBL, 890, WTI, expiry.ICE_WTI(cals.ICE, expiry.rule(890)), limSymbol = Some(LimSymbol("CL")), volID = Some(25))
+  lazy val ICE_RBOB = iceFuturesMarket("ICE RBOB", 42000, GAL, 913, Gasoline(8.33), expiry.rule(913), volID = Some(23), limSymbol = Some(LimSymbol("RB.UNL", 0.01)))
+  lazy val ICE_HEATING = iceFuturesMarket("ICE Heat", 42000, GAL, 914, HeatingOil, expiry.rule(914), volID = Some(22), limSymbol = Some(LimSymbol("HO", 0.01)))
 
   /**
    * MDEX Crude Palm Oil
@@ -589,7 +589,7 @@ object Market {
     def interpolation = InverseConstantInterpolation
   }
   lazy val GAS_OIL_ULSD_USGC_PIPELINE = new ForwardMarket("Gas Oil ULSD USGC Pipeline (Platts)", None, GAL, USD, cals.PLH, Some(1039),
-    NonMetalsPriceTable, Day, GasOil(7.44), limSymbol = Some(LimSymbol("AATGY00")), precision = precisionRules.rule(1039)) with HasInterpolation {
+    NonMetalsPriceTable, Day, GasOil(7.44), limSymbol = Some(LimSymbol("AATGY00", 0.01)), precision = precisionRules.rule(1039)) with HasInterpolation {
     def interpolation = InverseConstantInterpolation
   }
   lazy val GAS_OIL_0_1_CIF_NWE_CARGOES = new ForwardMarket("Gas Oil 0.1% CIF NWE Cargoes (Platts)", None, MT, USD, cals.PLE, Some(1049),
