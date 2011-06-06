@@ -1,33 +1,22 @@
 package starling.curves
 
-import starling.market.SingleIndex
 import starling.daterange.Day
-import starling.market.HasImpliedVol
 import starling.daterange.DateRange
 import starling.quantity.Quantity
 import starling.quantity.Percentage
-import starling.market.CommodityMarket
 import cern.colt.matrix.DoubleMatrix2D
 import starling.models.BlackScholes
-import starling.market.FuturesMarket
-import starling.market.FXMarket
 import starling.models.Call
 import starling.daterange.Month
-import starling.market.Freight
-import starling.market.OilCommodity
-import starling.market.ForwardMarket
 import starling.daterange.DayAndTime
 import starling.maths.LeastSquaresFit
-import starling.market.ProxyForwardMarket
 import starling.daterange.Spread
 import starling.curves.models.SpreadVolatilitySkew
-import starling.market.KnownExpiry
 import starling.quantity.UOM
 import java.lang.reflect.Method
 import net.sf.cglib.proxy.{MethodProxy, MethodInterceptor, Enhancer}
 import java.lang.reflect.InvocationTargetException
-import starling.market.Freight
-import starling.market.MetalCommodity
+import starling.market._
 
 /**
  * This class lies between Environment and AtomicEnvironment. It exists in order to perform perturbations
@@ -149,7 +138,7 @@ class DefaultInstrumentLevelEnvironment(underlyingAtomicEnv : AtomicEnvironment)
     (market, period) match {
       case (mkt : FuturesMarket, period : DateRange) => {
         mkt.commodity match {
-          case _: OilCommodity => {
+          case _: OilCommodity | NatGas => {
             impliedOilVol(mkt, period)
           }
           case _ => impliedMetalVol(mkt, period)

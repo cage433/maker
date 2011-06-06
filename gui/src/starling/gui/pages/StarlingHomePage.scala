@@ -75,11 +75,7 @@ class StarlingHomePageComponent(context:PageContext, browserSize:Dimension, page
       val observationDaysForPricingGroup = context.localCache.populatedObservationDaysForPricingGroup
       context.createAndGoTo((server) => {
         val reportParameters = server.createReportParameters(userReport.data, baseDay)
-
-
-        // check to see if we have market data for the observation day and pnl from day, if we don't, import it
-        // making new copies of the ReportParameters is the really ugly bit
-        MainPivotReportPage(userReport.showParameters, reportParameters.importMissing(server, observationDaysForPricingGroup),
+        MainPivotReportPage(userReport.showParameters, reportParameters,
           PivotPageState(false, PivotFieldParams(true, Some(userLayout.pivotFieldState)), userLayout.otherLayoutInfo))
       })
     }

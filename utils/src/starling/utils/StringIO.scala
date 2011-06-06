@@ -59,7 +59,8 @@ object StringIO {
 
   def readStringFromResource(resource : String) = {
     val buffer = new StringBuffer
-    val iStream = new InputStreamReader(getClass.getResourceAsStream(resource))
+    val asStream = getClass.getResourceAsStream(resource)
+    val iStream = new InputStreamReader(asStream)
     val tmp = new Array[Char](4096)
     while(iStream.ready) {
       val read: Int = iStream.read(tmp)

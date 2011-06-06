@@ -5,6 +5,12 @@ import starling.utils.ImplicitConversions._
 
 case class BusinessCalendarSet(name: String, location: Location, days: Set[Day]) extends BusinessCalendar {
   def isHoliday(day: Day) = days.contains(day)
+
+  def +(other: BusinessCalendarSet):BusinessCalendarSet = other.location match {
+    case `location` if other == this => this
+    case `location` => BusinessCalendarSet(name + other.name, location, days ++ other.days)
+    case _ => BusinessCalendarSet(name + other.name, Location.Unknown, days ++ other.days)
+  }
 }
 
 trait BusinessCalendar { self =>

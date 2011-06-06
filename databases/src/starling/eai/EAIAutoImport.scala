@@ -38,6 +38,17 @@ class EAIAutoImport(runEvery: Int, starlingDB: RichDB, externalDB: RichDB, eaiSt
   case class Closed(bookID: Int, downloadID: Int, when: Timestamp, error: Option[String])
 
   def task {
+    try {
+      runTask
+    } catch {
+      case e => {
+        // the task can sometimes throw exceptions when the db is in a bad state (shutting down, off and being patched etc.)
+        // so just ignore the exception, the task will run again later.
+        Log.warn("Failed with eaiautoimport, will try again later.", e)
+      }
+    }
+  }
+  private def runTask {
 
     // book closes is an order list (newest last) of the downloads (bookid, downloadid, timestamp)
     val bookCloses: List[Closed] = (externalDB.queryWithResult((

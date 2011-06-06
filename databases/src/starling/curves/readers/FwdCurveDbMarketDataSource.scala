@@ -23,7 +23,7 @@ case class FwdCurveDbMarketDataSource(varSqlDB: DB, businessCalendars: BusinessC
 
     import FwdCurveDbMarketDataSource._
     if(!anyPrices(varSqlDB, MetalsPriceTable, observationDay, pricingGroupID) && !anyPrices(varSqlDB, NonMetalsPriceTable, observationDay, pricingGroupID)) {
-      throw new NoMarketDataForDayException(observationDay, "There is no market data in the Forward Curve Application for this observation day: " + observationDay)
+      throw new NoMarketDataForDayException(observationDay, "There is no market data in the Forward Curve Application for this observation day: " + (observationDay, this))
     }
 
     val spotFXKeys: List[SpotFXDataKey] = FwdCurveAppExternalMarketDataReader.currencyCurveIDs.keysIterator.map{ccy=>SpotFXDataKey(ccy)}.toList
