@@ -319,10 +319,15 @@ class StarlingInit( props: Props,
     val externalHostname = props.ExternalHostname()
     val xlloopUrl = props.XLLoopUrl()
     val rmiPort = props.RmiPort()
-    val webStartServlet = new WebStartServlet("webstart", props.ServerName(), externalURL, "starling.gui.Launcher", List(externalHostname, rmiPort.toString), xlloopUrl)
-    val cannedWebStartServlet = new WebStartServlet("cannedwebstart", props.ServerName(), externalURL, "starling.gui.CannedLauncher", List(), xlloopUrl)
+    val webStartServlet = new WebStartServlet("webstart", props.ServerName(), externalURL, "starling.gui.Launcher",
+      List(externalHostname, rmiPort.toString), xlloopUrl)
+    val cannedWebStartServlet = new WebStartServlet("cannedwebstart", props.ServerName(), externalURL,
+      "starling.gui.CannedLauncher", List(), xlloopUrl)
 
-    new HttpServer(props, "webstart" → webStartServlet, "cannedwebstart" → cannedWebStartServlet)
+    new HttpServer(props,
+      "webstart"       → webStartServlet,
+      "cannedwebstart" → cannedWebStartServlet,
+      "marketdata"     → new MarketDataServlet(marketDataStore))
   }
 
   lazy val regressionServer = new RegressionServer(props.RegressionPort(), reportServlet)

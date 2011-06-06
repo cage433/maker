@@ -40,5 +40,8 @@ object MarketDataTypes {
     PriceFixingsHistoryDataType,
     SpreadStdDevSurfaceDataType,
     EquityPricesDataType)
+
+  def fromName(name: String) = types.find(_.name == name).getOrElse(
+    throw new Exception("No market data type found for name: " + name + ", available: " + types.map(_.name).mkString(", ")))
 }
 

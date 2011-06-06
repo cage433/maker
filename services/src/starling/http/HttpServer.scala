@@ -14,6 +14,7 @@ import starling.props.Props
 import org.mortbay.jetty.security._
 import starling.props.Props
 import xml._
+import starling.utils.Log
 
 
 class HttpServer(props:Props, servlets: (String, Servlet)*) {
@@ -95,6 +96,8 @@ class HttpServer(props:Props, servlets: (String, Servlet)*) {
     server.addHandler(rootContext)
 
     server.start()
+
+    Log.info("HttpServer stared on port: " + props.HttpPort())
   }
 
   class RootServlet(servletPaths : List[String]) extends HttpServlet {

@@ -59,17 +59,17 @@ abstract class RabbitEvent(val queueName : String) extends Event {
   def toMap : Map[String, Object]
 
   protected def priceEventMap(user : User, label : String, observationDate : Option[Day], dates : Array[Day]) = Map(
-    "userName" -> user.username,
-    "label" -> label,
-    "observationDate" -> observationDate.map(_.toString("dd MMM yyyy")).getOrElse(""),
-    "dates" -> dates.map(_.toString("dd MMM yyyy"))
+    "userName"        → user.username,
+    "label"           → label,
+    "observationDate" → observationDate.map(_.toString("dd MMM yyyy")).getOrElse(""),
+    "dates"           → dates.map(_.toString("dd MMM yyyy"))
   )
 }
 
 case class BlotterTradeUpdate(user : User, subGroupName : String, data : List[List[String]])
   extends RabbitEvent("Trafigura.Raw.Trade.RiskManagement") {
 
-  def toMap = Map("userName" -> user.username, "subGroupName" -> subGroupName, "data" -> data)
+  def toMap = Map("userName" → user.username, "subGroupName" → subGroupName, "data" → data)
 }
 
 case class UploadPricesUpdate(user : User, label : String, observationPoint : ObservationPoint, dates : Array[Day],
@@ -77,7 +77,7 @@ case class UploadPricesUpdate(user : User, label : String, observationPoint : Ob
   extends RabbitEvent("Trafigura.Raw.Price.RiskManagement") {
 
   def toMap = priceEventMap(user, label, observationPoint.day, dates) ++
-    Map("marketName" -> marketName, "prices" -> prices.map(_.toString))
+    Map("marketName" → marketName, "prices" → prices.map(_.toString))
 }
 
 case class UploadStandardDeviationsUpdate(user : User, label : String, observationDate : Option[Day], dates : Array[Day],
@@ -85,7 +85,7 @@ case class UploadStandardDeviationsUpdate(user : User, label : String, observati
   extends RabbitEvent("Trafigura.Raw.StandardDeviations.RiskManagement") {
 
   def toMap = priceEventMap(user, label, observationDate, dates) ++
-    Map("marketName" -> marketName, "standardDeviations" -> standardDeviations.map(_.map(_.toString)))
+    Map("marketName" → marketName, "standardDeviations" → standardDeviations.map(_.map(_.toString)))
 }
 
 case class UploadVolsUpdate(user : User, label : String, observationDate : Option[Day], dates : Array[Day],
@@ -93,7 +93,7 @@ case class UploadVolsUpdate(user : User, label : String, observationDate : Optio
   extends RabbitEvent("Trafigura.Raw.Vols.RiskManagement") {
 
   def toMap = priceEventMap(user, label, observationDate, dates) ++
-    Map("marketName" -> marketName, "vols" -> vols.map(_.map(_.toString)))
+    Map("marketName" → marketName, "vols" → vols.map(_.map(_.toString)))
 }
 
 case class UploadInterestRatesUpdate(user : User, label : String, observationDate : Option[Day], dates : Array[Day],
@@ -101,7 +101,7 @@ case class UploadInterestRatesUpdate(user : User, label : String, observationDat
   extends RabbitEvent("Trafigura.Raw.InterestRates.RiskManagement") {
 
   def toMap = priceEventMap(user, label, observationDate, dates) ++
-    Map("currency" -> currency, "interestRates" -> interestRates.map(_.toString))
+    Map("currency" → currency, "interestRates" → interestRates.map(_.toString))
 }
 
 case class EmailEvent(from: String = "", to: Seq[String] = Nil, subject: String = "", body: String = "") extends Event

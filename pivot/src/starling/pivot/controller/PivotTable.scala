@@ -64,26 +64,25 @@ case class PivotTable(rowFields:List[Field], rowFieldHeadingCount:Array[Int], ro
   }
 
   private def toFlatRows(totals:Totals, tableCell:(TableCell)=>Any, axisCell:(AxisCell)=>Any):List[List[Any]] = {
-    val rowsBuffer = new scala.collection.mutable.ArrayBuffer[List[Any]]()
     val pivotTableConverter = PivotTableConverter(OtherLayoutInfo(totals = totals), this)
 
     val (rowHeaderCells, columnHeaderCells, mainTableCells) = pivotTableConverter.allTableCells()
+
     // Unlike the gui, the spread sheets don't want columns or rows spanned, they want the value repeated.
-    /*for (j <- 0 until rowHeaderCells.length) {
-      val row = rowHeaderCells(j)
-      for (i <- 0 until row.length) {
-        row(i).span match {
-          case Some(s) => for (delta <- (j + 1) until (j + s)) rowHeaderCells(delta)(i) = row(i).copy(span = None)
-          case _ =>
-        }
-      }
-    }*/
     for (j <- 0 until columnHeaderCells.length) {
       val row = columnHeaderCells(j)
       for (i <- 0 until row.length) {
-        row(i).span match {
-          case Some(s) => for (delta <- (i + 1) until (i + s)) row(delta) = row(i).copy(span = None)
-          case _ =>
+        row(i).span.map { span =>
+          for (delta <- (i + 1) until (i + span)) row(delta) = row(i).copy(span = None)
+        }
+      }
+    }
+
+    for (i <- 0 until rowHeaderCells.length) {
+      val row = rowHeaderCells(i)
+      for (j <- 0 until row.length) {
+        row(j).span.map { span =>
+          for (delta <- (i + 1) until (i + span)) rowHeaderCells(delta)(j) = row(j).copy(span = None)
         }
       }
     }
@@ -91,6 +90,8 @@ case class PivotTable(rowFields:List[Field], rowFieldHeadingCount:Array[Int], ro
     val rowHeaders = if (rowHeaderCells.isEmpty) rowFields.map(_.name) else {
       rowHeaderCells(0).map(_.value.field.name).toList
     }
+
+    val rowsBuffer = new scala.collection.mutable.ArrayBuffer[List[Any]]()
 
     for ((row,index) <- columnHeaderCells.zipWithIndex) {
       val rowBuffer = new scala.collection.mutable.ArrayBuffer[Any]()
@@ -103,12 +104,14 @@ case class PivotTable(rowFields:List[Field], rowFieldHeadingCount:Array[Int], ro
       rowBuffer ++= row.map(acv => axisCell(acv))
       rowsBuffer += rowBuffer.toList
     }
-    for ((row,data) <- rowHeaderCells zip mainTableCells) {
+
+    for ((row, data) <- rowHeaderCells zip mainTableCells) {
       val rowBuffer = new scala.collection.mutable.ArrayBuffer[Any]()
-      rowBuffer ++= row.map(ac=>axisCell(ac))
-      rowBuffer ++= data.map(tc=> tableCell(tc))
+      rowBuffer ++= row.map(ac => axisCell(ac))
+      rowBuffer ++= data.map(tc => tableCell(tc))
       rowsBuffer += rowBuffer.toList
     }
+
     rowsBuffer.toList
   }
 }
