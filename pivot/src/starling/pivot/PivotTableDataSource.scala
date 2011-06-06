@@ -92,6 +92,7 @@ abstract class PivotTableDataSource extends PivotGridSource {
   def drillDownGroups:List[DrillDownInfo] = List()
   def initialState: PivotFieldsState = PivotFieldsState()
   def lookup(field: Field) = fieldDetails.find(_.field == field).get
+  def lookup(fieldName: String): FieldDetails = lookup(Field(fieldName))
 
   def editable:Option[EditPivot] = None
   def availablePages:List[String] = List()

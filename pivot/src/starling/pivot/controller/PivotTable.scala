@@ -41,8 +41,8 @@ case class PivotTable(rowFields:List[Field], rowFieldHeadingCount:Array[Int], ro
                       aggregatedMainBucket:Map[(List[AxisValue],List[AxisValue]),Any] = Map()) {
 
   def asCSV:String = convertUsing(Utils.csvConverter)
-  def convertUsing(converter: GridConverter) = converter.convert(toFlatRows(Totals.Null))
-  def toFlatRows(totals:Totals): List[List[Any]] = toFlatRows(totals, (tc:TableCell)=>tc.text, (ac:AxisCell)=>ac.text)
+  def convertUsing(converter: GridConverter, decimalPlaces: DecimalPlaces = PivotFormatter.DefaultDecimalPlaces) =
+    converter.convert(toFlatRows(Totals.Null, decimalPlaces))
 
   def cell(measure: AnyRef, filters: (Field, AnyRef)*): Any = {
     def filter(name: String, value: AnyRef, index: Int)(input: Map[(List[AxisValue], List[AxisValue]), Any]) =
@@ -63,8 +63,8 @@ case class PivotTable(rowFields:List[Field], rowFieldHeadingCount:Array[Int], ro
     matches.iterator.next._2
   }
 
-  private def toFlatRows(totals:Totals, tableCell:(TableCell)=>Any, axisCell:(AxisCell)=>Any):List[List[Any]] = {
-    val pivotTableConverter = PivotTableConverter(OtherLayoutInfo(totals = totals), this)
+  def toFlatRows(totals:Totals, decimalPlaces: DecimalPlaces = PivotFormatter.DefaultDecimalPlaces): List[List[Any]] = {
+    val pivotTableConverter = PivotTableConverter(OtherLayoutInfo(totals = totals), this, ExtraFormatInfo(decimalPlaces))
 
     val (rowHeaderCells, columnHeaderCells, mainTableCells) = pivotTableConverter.allTableCells()
 
@@ -101,14 +101,14 @@ case class PivotTable(rowFields:List[Field], rowFieldHeadingCount:Array[Int], ro
       } else {
         rowBuffer ++= rowHeaders //use the last row for the row field names
       }
-      rowBuffer ++= row.map(acv => axisCell(acv))
+      rowBuffer ++= row.map(_.text)
       rowsBuffer += rowBuffer.toList
     }
 
     for ((row, data) <- rowHeaderCells zip mainTableCells) {
       val rowBuffer = new scala.collection.mutable.ArrayBuffer[Any]()
-      rowBuffer ++= row.map(ac => axisCell(ac))
-      rowBuffer ++= data.map(tc => tableCell(tc))
+      rowBuffer ++= row.map(_.text)
+      rowBuffer ++= data.map(_.text)
       rowsBuffer += rowBuffer.toList
     }
 

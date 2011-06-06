@@ -19,6 +19,7 @@ class StarlingEnum[T <: Named](theType:Class[T], ignoreCase: Boolean = false) {
   private lazy val valuesByName = values.toMapWithKeys(v => toCase(v.name))
 
   def fromName(name: String) = find(name).getOrElse(throwUnknown(name))
+  def fromName(name: Option[String]): Option[T] = name.map(fromName)
   def find(name: String) = valuesByName.get(toCase(name))
 
   private def toCase(name: String) = if (ignoreCase) name.toLowerCase else name

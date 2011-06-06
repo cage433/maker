@@ -16,10 +16,10 @@ trait RichList {
   }
 
   class RichList[A](list : List[A]) {
-    // TODO: Drop when we use scala 2.9
+    // TODO [1 Apr 2011]: Drop when we use scala 2.9
     def inits = list.reverse.tails.reverse.map(_.reverse)
 
-    // TODO: Drop when we use scala 2.9
+    // TODO [1 Apr 2011]: Drop when we use scala 2.9
     def tails = {
       def recurse(list : List[A]) : List[List[A]] = list match {
         case Nil => Nil

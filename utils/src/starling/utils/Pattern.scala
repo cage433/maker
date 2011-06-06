@@ -17,6 +17,11 @@ object Pattern {
     def from[A] = new From[A]
     def when[A] = new {
       def apply(f: A => Boolean) = from[A]((a:A) => f(a).toOption(a))
+      def apply[B](f: A => Boolean, g: A => B) = from[A]((a:A) => f(a).toOption(g(a)))
+    }
+
+    def map[A] = new {
+      def apply[B](f: A => B) = new Extractor[A, B]((a:A) => Some(f(a)))
     }
 
     class From[A] {
