@@ -16,7 +16,7 @@ class StarlingEnum[T <: Named](theType:Class[T], ignoreCase: Boolean = false) {
     }.asInstanceOf[T]).toList
   }
   lazy val sortIndex = values.zipWithIndex.toMap
-  private lazy val valuesByName = values.asMap(v => toCase(v.name))
+  private lazy val valuesByName = values.toMapWithKeys(v => toCase(v.name))
 
   def fromName(name: String) = find(name).getOrElse(throwUnknown(name))
   def find(name: String) = valuesByName.get(toCase(name))

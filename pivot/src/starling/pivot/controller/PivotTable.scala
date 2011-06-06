@@ -4,7 +4,7 @@ import starling.pivot.model._
 import starling.pivot._
 import starling.utils.ImplicitConversions._
 import starling.utils.{GridConverter, Utils}
-
+import collection.immutable.List._
 
 case class TreePivotFilter(root:TreePivotFilterNode)
 case class TreePivotFilterNode(value:Any, label:String, children:List[TreePivotFilterNode]) {
@@ -13,41 +13,20 @@ case class TreePivotFilterNode(value:Any, label:String, children:List[TreePivotF
 }
 
 object TreePivotFilterNode {
-  def mergeForests(forest : List[TreePivotFilterNode]) : List[TreePivotFilterNode] = {
-    def merge(tree : TreePivotFilterNode, forest : List[TreePivotFilterNode]) : List[TreePivotFilterNode] = {
-      forest match {
-        case Nil => List(tree)
-        case first :: rest => {
-          if (tree.label == first.label) {
-            merge(tree.copy(children = mergeForests(first.children ++ tree.children)), rest)
-          } else {
-            first :: merge(tree, rest)
-          }
-        }
-      }
-    }
+  def mergeForests(forest: List[TreePivotFilterNode]) = mergeForestsBy(forest, _.label)
+  def mergeForestsValues(forest: List[TreePivotFilterNode]) = mergeForestsBy(forest, _.value)
 
-    forest.foldLeft(List[TreePivotFilterNode]())((subForest,tree) => merge(tree, subForest))
-  }
-
-  def mergeForestsValues(forest : List[TreePivotFilterNode]) : List[TreePivotFilterNode] = {
-    def merge(tree : TreePivotFilterNode, forest : List[TreePivotFilterNode]) : List[TreePivotFilterNode] = {
-      forest match {
-        case Nil => List(tree)
-        case first :: rest => {
-          if (tree.value == first.value) {
-            merge(tree.copy(children = mergeForests(first.children ++ tree.children)), rest)
-          } else {
-            first :: merge(tree, rest)
-          }
-        }
-      }
+  private def mergeForestsBy[A](forest: List[TreePivotFilterNode], prop: TreePivotFilterNode => A): List[TreePivotFilterNode] = {
+    def merge(tree: TreePivotFilterNode, forest: List[TreePivotFilterNode]): List[TreePivotFilterNode] = forest match {
+      case Nil => List(tree)
+      case first :: rest if (prop(tree) == prop(first)) =>
+        merge(tree.copy(children = mergeForestsBy(first.children ++ tree.children, prop)), rest)
+      case first :: rest => first :: merge(tree, rest)
     }
 
     forest.foldLeft(List[TreePivotFilterNode]())((subForest,tree) => merge(tree, subForest))
   }
 }
-
 
 
 /**

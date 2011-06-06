@@ -52,7 +52,7 @@ object ExcelInstrumentReader {
         conflictingAliases => require(conflictingAliases.isEmpty, "These market aliases conflict: " + conflictingAliases)
       }
 
-      aliases.map { case (market, alias) => (alias.toLowerCase, market) }.toMap ++ Market.markets.asMap(_.name.toLowerCase)
+      aliases.map { case (market, alias) => (alias.toLowerCase, market) }.toMap ++ Market.markets.toMapWithKeys(_.name.toLowerCase)
     }
 
     alias(

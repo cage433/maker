@@ -63,7 +63,7 @@ case class RefinedMetalsLimMarketDataSource(limServer: LIMServer)
     val relations = source.relationsFrom(connection)
 
     val prices = relations.flatMap { case (fixingRelation, childRelation) => {
-      val prices = source.levels.valuesToMap(level => connection.getPrices(childRelation, level, start, end))
+      val prices = source.levels.toMapWithValues(level => connection.getPrices(childRelation, level, start, end))
 
       val groupedPrices = prices.toList.flatMap {
         case (level, prices) => prices.map { case (day, price) => (day, (level, price)) }
