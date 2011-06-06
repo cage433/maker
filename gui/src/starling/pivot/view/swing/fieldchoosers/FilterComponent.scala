@@ -9,6 +9,7 @@ import collection.mutable.ListBuffer
 import java.awt.{Point, Dimension, Color, Rectangle, Graphics2D, RenderingHints}
 import starling.gui.{RoundedBorder, GuiUtils}
 import swing.event.{MouseExited, MouseEntered}
+import swing.Swing._
 
 object DropPanel {
   val NormalBorder = RoundedBorder(Color.LIGHT_GRAY)
@@ -106,6 +107,7 @@ class FilterComponent(model:PivotTableModel, otherLayoutInfo:OtherLayoutInfo,
                          viewUI:PivotTableViewUI, tableView:PivotTableView)
         extends MigPanel("insets 1, gap 0px") with DropTarget {
   opaque = false
+  border = MatteBorder(0,0,1,0,GuiUtils.BorderColour)
 
   private val fields = model.getFields(Filter)
 

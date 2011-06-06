@@ -749,8 +749,8 @@ class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSiz
     add(fullScreenButton, "growy, ay top")
   }
   // I shouldn't be doing this here but if we don't have report specific panels, the filter field chooser should have a different border.
-  if (!reportPanelsAvailable) {
-    filterComponent.border = MatteBorder(0,0,1,0,BorderColour)
+  if (reportPanelsAvailable) {
+    filterComponent.border = MatteBorder(1,0,1,0,BorderColour)
   }
 
   private def gotoFullScreen {
