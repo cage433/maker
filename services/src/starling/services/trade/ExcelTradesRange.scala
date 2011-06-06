@@ -189,5 +189,3 @@ case class ExcelTradesRange(subgroupName : String,
     }).toList
   }
 }
-
-// TODO: move to appropriate location

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 
-<!--TODO May be able to make use of some inheritance here in the spring configuration files to prevent duplicating
+<!--TODO [31 May 2011] May be able to make use of some inheritance here in the spring configuration files to prevent duplicating
 some of this-->
 <beans xmlns="http://www.springframework.org/schema/beans"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"

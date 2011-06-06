@@ -320,7 +320,7 @@ case class GuiFieldNamePanel(props:GuiFieldComponentProps, guiComp:GuiFieldCompo
     image
   }
 
-  // TODO - change this to a UI element reaction
+  // TODO [24 Nev 2010] change this to a UI element reaction
   peer.addComponentListener(new ComponentAdapter {
     override def componentResized(e:ComponentEvent) {
       if ((image == null) || (image.getWidth != size.width) || (image.getHeight != size.height)) {

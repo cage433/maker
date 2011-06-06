@@ -442,7 +442,7 @@ object Day extends TenorType {
   import TimeOfDay._
 //  def timeBetween(dayAndTime: DayAndTime, day2: Day) = dayAndTime match {
 //    case DayAndTime(other, EndOfDay) => (julianDayNumber(day2) - julianDayNumber(dayAndTime.day)) / daysInYear
-//    // TODO The difference between the same day on Start of day and End of day should be > 0
+//    // TODO [09 Mar 2011] The difference between the same day on Start of day and End of day should be > 0
 //    case DayAndTime(other, StartOfDay) => (julianDayNumber(day2) - julianDayNumber(dayAndTime.day)) / daysInYear
 //  }
 

@@ -26,7 +26,7 @@ abstract class Index(val name : CaseInsensitive) {
   /**
    * Hack so I can change how indices are displayed in pvot reports.This should be replaced with 'name',
    * and the strings used in Starling DB changed, however I don't know if this will mess up reading
-   * from Trinity. TODO - findout 
+   * from Trinity. TODO [26 Nov 2010] findout
    */
   def reportDisplayName = name
 
@@ -178,9 +178,9 @@ object PublishedIndex{
    */
   val ROTTERDAM_BARGES = new PublishedIndex("3.5% Fuel FOB Rotterdam Barges", 5, Market.FUEL_FOB_ROTTERDAM_BARGES_3_5)
 //  val LBMA_GOLD_AM = new PublishedIndex("Gold AM", 804, Market.LBMA_GOLD)
-//  val LBMA_GOLD_AVG = new PublishedIndex("Gold Avg", 804, Market.LBMA_GOLD) // TODO This needs to be an average!
+//  val LBMA_GOLD_AVG = new PublishedIndex("Gold Avg", 804, Market.LBMA_GOLD) // TODO [07 Jul 2010] This needs to be an average!
 //  val LBMA_GOLD_PM = new PublishedIndex("Gold PM", 847, Market.LBMA_GOLD)
-//  val SILVER_BULL = new PublishedIndex("Silver (Bull)", 805, Market.LBMA_SILVER) // TODO what's the difference between these 2?
+//  val SILVER_BULL = new PublishedIndex("Silver (Bull)", 805, Market.LBMA_SILVER) // TODO [07 Jul 2010] what's the difference between these 2?
 //  val SILVER_LOW_4_LME = new PublishedIndex("Silver low 4 LME", 805, Market.LBMA_SILVER)
   val No_6_3PC_USGC_Waterborne = new PublishedIndex("No.6 3% USGC Waterborne", 11, Market.No_6_3PC_USGC_Waterborne)
   val UNL_87_USGC_PIPELINE = new PublishedIndex("Unl 87 USGC Pipeline", 34, Market.UNL_87_USGC_PIPELINE)
@@ -202,7 +202,7 @@ object PublishedIndex{
   val GAS_OIL_ULSD_10PPM_CIF_NWE_CARGOES = new PublishedIndex("Gas Oil ULSD 10ppm CIF NWE Cargoes", 598, Market.GAS_OIL_ULSD_10PPM_CIF_NWE_CARGOES)
   val GAS_OIL_ULSD_10PPM_FOB_ROTTERDAM_BARGES = new PublishedIndex("Gas Oil ULSD 10ppm FOB Rotterdam Barges", 883, Market.GAS_OIL_ULSD_10PPM_FOB_ROTTERDAM_BARGES)
 
-  // TODO -- WRONG! -- We have changed the market from PLATTS_BRENT to DATED_BRENT because the latter has the matching LIM Symbol
+  // TODO [08 Apr 2011] -- WRONG! -- We have changed the market from PLATTS_BRENT to DATED_BRENT because the latter has the matching LIM Symbol
   val FORTIES_CRUDE_1ST_MONTH = new PublishedIndex("Forties Crude 1st month (Platts)", 332, Market.DATED_BRENT)
 
   val DATED_BRENT = new PublishedIndex("Dated Brent", 40, Market.DATED_BRENT)
@@ -360,7 +360,7 @@ object FuturesFrontPeriodIndex{
 
   lazy val futuresMarketToIndexMap = Map(
     Market.ICE_BRENT -> BRT11,
-    Market.ICE_GAS_OIL -> GO11, // TODO - should this be NYMGO11
+    Market.ICE_GAS_OIL -> GO11, // TODO [29 Jun 2010] should this be NYMGO11
     Market.NYMEX_GASOLINE -> RBOB10,
     Market.NYMEX_HEATING -> HO10,
     Market.NYMEX_WTI -> WTI10,

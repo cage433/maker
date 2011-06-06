@@ -83,7 +83,7 @@ class RichResultSetRow(resultSet: ResultSet)
 
   def getForwardMarketFromTrinityCode(column: String) = getCommodityMarketFromTrinityCode(column) match {
     case m: ForwardMarket => m
-    case f: FuturesMarket => new ProxyForwardMarket(f) // TODO until we know what they mean in trinity this is a guess
+    case f: FuturesMarket => new ProxyForwardMarket(f) // TODO [15 Apr 2010] until we know what they mean in trinity this is a guess
   }
 
   def isForwardMarketFromTrinityCode(column: String) = getCommodityMarketFromTrinityCode(column) match {
@@ -128,7 +128,7 @@ class RichResultSetRow(resultSet: ResultSet)
     getString(column).head.toUpper match {
       case 'C' => Call
       case 'P' => Put
-      //@TODO - find out if these are right
+      //@TODO [17 Mar 2010] find out if these are right
       case 'R' => Call
       case 'Y' => Put
       case _ => throw new Exception("Bad Call/Put value: " + getString(column))

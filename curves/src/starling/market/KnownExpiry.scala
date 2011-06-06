@@ -83,7 +83,7 @@ trait KnownExpiry {
       tenor match {
         case Month => frontMonth(day.startOfDay)
         // daily markets like LME have a front period of next business day
-        // TODO - Jerome check this is right. I wrote the code some time ago but I would have
+        // TODO [13 Oct 2010] Jerome check this is right. I wrote the code some time ago but I would have
         // expected it to be the same day
         case Day => day.nextBusinessDay(businessCalendar)
       }

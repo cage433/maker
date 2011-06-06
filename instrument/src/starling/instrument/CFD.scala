@@ -66,7 +66,7 @@ case class SingleCFD(index: Index,
 
   override def priceRounding = index.precision.map {
     case Precision(defaultRounding, clearportRounding) => {
-      if (cleared) { // TODO check this
+      if (cleared) { // TODO [23 May 2011] check this
         clearportRounding
       } else {
         defaultRounding

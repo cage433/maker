@@ -34,7 +34,7 @@ object PatchUtils {
     readEntireInputStream("", bufferedInputStream)
   }
 
-  //TODO:KMD This is a bit dodgy, the suggestion is that we se how this goes and if it causes problems we should run the
+  //TODO [25 Jan 2010] KMD This is a bit dodgy, the suggestion is that we se how this goes and if it causes problems we should run the
   //mysql script from the command line.  At the moment this script will fail if we have embedded ;'s in strings.  Or
   //if we start using triggers, stored procedures etc. Maybe we can come up with a better regular expression
   def executeUpdateSQLFileFromClasspath(writer: DBWriter, path: String) = {

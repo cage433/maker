@@ -133,9 +133,6 @@ abstract class AtomicDatumKey(val curveKey : CurveKey, val point : AnyRef, val i
   def clearProperties : AtomicDatumKey = this
   def nullValue:Any
 
-  // TODO: [8 Apr 2011, Stacy]: Remove unused
-  def periodKey: Option[Period]
-
   /**
    * Same except for ignoreShiftsIfPermitted
    */

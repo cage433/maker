@@ -74,9 +74,9 @@ trait PivotReport[R <: PivotReportRow] {
 
 /**
  * Reports which extend this get some combining implemented here.
- * TODO - move this to an objects static method, as all reports which extend it
  * also override combine and then call super.combine
  */
+// TODO [01 Dec 2010] move this to an objects static method, as all reports which extend it
 trait RiskFactorSplittingPivotReport[R <: RiskPivotReportRow[R] with PivotRowShareableByRiskFactor[R]] extends PivotReport[R]{
   def marketDay : DayAndTime
   override def combine(rows : List[R], reportSpecificChoices : ReportSpecificChoices) = {

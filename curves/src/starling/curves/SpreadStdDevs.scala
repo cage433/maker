@@ -191,8 +191,6 @@ case class SpreadSkewStdDevAtomicDatumKey(market : FuturesMarket, spread : Sprea
   }
 
   def nullValue = Map(0.5 -> Percentage(0))
-
-  def periodKey = Some(spread)
 }
 
 case class SpreadAtmStdDevCurveKey(market : FuturesMarket)

@@ -15,7 +15,7 @@ import starling.curves.Environment
 import starling.daterange.DateRangePeriod
 
 /**
- * TODO - find out what it is that is fixed for daily markets. e.g. third wednesday. It is it the Thursday futures
+ * TODO [11 Aug 2010] find out what it is that is fixed for daily markets. e.g. third wednesday. It is it the Thursday futures
  * price observed on Wednesday, or the Wednesday price observed on Tuesday, or even the Wednesday price observed on Wednesday
  * For now we will assume the first
  *
@@ -28,7 +28,7 @@ import starling.daterange.DateRangePeriod
  *  else
  *    normally (but not always) the last calendar day (not business day) of the fixation date month
  *
- * TODO - speak to Chris G about all this
+ * TODO [11 Aug 2010] speak to Chris G about all this
  *
  */
 
@@ -104,7 +104,7 @@ case class RefinedFixation(
 
   private val fixingDayForPeriod = market.lastTradingDay(pricePeriod)
 
-  // TODO - find out the correct settlement day
+  // TODO [11 Aug 2010] find out the correct settlement day
   private val settlementDay = fixingDayForPeriod
 
   def isLive(dayAndTime: DayAndTime) = fixationDate.endOfDay > dayAndTime

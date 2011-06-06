@@ -49,5 +49,4 @@ case class FixingKey(key: FixingsHistoryKey, day: Day) extends AtomicDatumKey(ke
     
   }
   def nullValue = Quantity(1, key.market.priceUOM)
-  def periodKey = Some(day)
 }

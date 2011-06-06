@@ -1,6 +1,6 @@
 package starling.daterange
 
-// TODO: should be an enum?
+// TODO [22 Jan 2010] should be an enum?
 object DayOfWeek {
   val List(monday, tuesday, wednesday, thursday, friday, saturday, sunday) =
     (0 until 7).toList.map(DayOfWeek(_))

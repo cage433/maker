@@ -161,8 +161,8 @@ class FuturesMarket(
       case Freight => {
         // Freight trades have the maturity date set to the settlement date
         // Settlement is usually the first tuesday but is sometimes wrong
-        // TODO Jerome check settlement days
-        // TODO Jerome these are probably FFAs or maybe cleared contracts, need to check
+        // TODO [07 Jul 2010] Jerome check settlement days
+        // TODO [07 Jul 2010] Jerome these are probably FFAs or maybe cleared contracts, need to check
         // http://www.balticexchange.com/default.asp?action=article&ID=35
         maturityDay.containingMonth - 1
       }
@@ -506,7 +506,7 @@ object Market {
   /**
    * Dubai Crude - I can't find much about this. I'm not sure where the futures contracts are traded.
    * I'm guessing at the expiry rule based on what the FCA has
-   * TODO Jerome
+   * TODO [21 Sep 2010] Jerome
    */
   lazy val PLATTS_DUBAI = new FuturesMarket("Platts Dubai", Some(1000.0), BBL, USD, cals.PLD, Some(141),
     NonMetalsPriceTable, Month, expiry.dubaiCrudeExpiryRule, NYMEX, DubaiCrude, false, limSymbol = Some(LimSymbol("PCAAT00")), precision = precisionRules.rule(141))
@@ -514,7 +514,7 @@ object Market {
 
   /**
    * Another platts 'futures' market that I don't understand
-   * TODO Jerome
+   * TODO [21 Sep 2010] Jerome
    */
   lazy val PLATTS_BRENT = new FuturesMarket("Platts Brent", None, BBL, USD, cals.PLE, Some(101),
     NonMetalsPriceTable, Month, expiry.plattsBrentExpiryRule, NYMEX, Brent, false, limSymbol = Some(LimSymbol("PCAAP00")), precision = precisionRules.rule(101))
@@ -558,11 +558,11 @@ object Market {
                                                 NonMetalsPriceTable, Day, FuelOil(6.35), Some(LimSymbol("PUABC00")), precision = precisionRules.rule(5)) with HasInterpolation {
     override def volatilityID = Some(18)
 
-    def interpolation = InverseConstantInterpolation // TODO Jerome FCA has monthly forward prices but we need daily - this isn't right
+    def interpolation = InverseConstantInterpolation // TODO [11 Feb 2011] Jerome FCA has monthly forward prices but we need daily - this isn't right
   }
   lazy val PREM_UNL_FOB_ROTTERDAM_BARGES = new ForwardMarket("Prem Unl FOB Rotterdam Barges", Some(1000.0), MT, USD, cals.ICE, Some(17),
     NonMetalsPriceTable, Day, FuelOil(6.35), limSymbol = Some(LimSymbol("PGABM00")), precision = precisionRules.rule(17)) with HasInterpolation {
-    def interpolation = InverseConstantInterpolation // TODO Jerome FCA has monthly forward prices but we need daily - this isn't right
+    def interpolation = InverseConstantInterpolation // TODO [08 Apr 2011] Jerome FCA has monthly forward prices but we need daily - this isn't right
   }
   lazy val FUEL_FOB_NWE_CARGOES_1 = new ForwardMarket("1% Fuel FOB NWE Cargoes", Some(1000.0), MT, USD, cals.PLE, Some(3),
     NonMetalsPriceTable, Day, FuelOil(6.35), limSymbol = Some(LimSymbol("PUAAM00")), precision = precisionRules.rule(3)) with HasInterpolation {
@@ -627,7 +627,7 @@ object Market {
    */
   lazy val No_6_3PC_USGC_Waterborne = new ForwardMarket("No.6 3% USGC Waterborne", Some(1000.0), BBL, USD, cals.PLH, Some(11),
     NonMetalsPriceTable, Day, FuelOil(6.35), limSymbol = Some(LimSymbol("PUAFZ00")), precision = precisionRules.rule(11)) with HasInterpolation {
-    def interpolation = LinearInterpolation // TODO Jerome FCA has monthly forward prices but we need daily - this isn't right
+    def interpolation = LinearInterpolation // TODO [28 Oct 2010] Jerome FCA has monthly forward prices but we need daily - this isn't right
 
     override def volatilityID = Some(26)
   }
@@ -637,18 +637,18 @@ object Market {
    */
   lazy val UNL_87_USGC_PIPELINE = new ForwardMarket("Unl 87 USGC Pipeline", Some(42000), GAL, USD, cals.PLH, Some(34),
     NonMetalsPriceTable, Day, new Gasoline(8.33), limSymbol = Some(LimSymbol("PGACT00", 0.01)), precision = precisionRules.rule(34)) with HasInterpolation {
-    def interpolation = LinearInterpolation // TODO Jerome FCA has monthly forward prices but we need daily - this isn't right
+    def interpolation = LinearInterpolation // TODO [11 Nov 2010] Jerome FCA has monthly forward prices but we need daily - this isn't right
   }
 
   lazy val HSFO_180_CST_Singapore = new ForwardMarket("HSFO 180 CST Singapore", Some(1000.0), MT, USD, cals.PLD, Some(8),
     NonMetalsPriceTable, Day, FuelOil(6.5), limSymbol = Some(LimSymbol("PUADV00")), precision = precisionRules.rule(8)) with HasInterpolation {
-    def interpolation = LinearInterpolation // TODO Jerome FCA has monthly forward prices but we need daily - this isn't right
+    def interpolation = LinearInterpolation // TODO [28 Oct 2010] Jerome FCA has monthly forward prices but we need daily - this isn't right
 
     override def volatilityID = Some(36)
   }
   lazy val HSFO_380_CST_Singapore = new ForwardMarket("HSFO 380 CST Singapore", Some(1000.0), MT, USD, cals.PLD, Some(134),
     NonMetalsPriceTable, Day, FuelOil(6.35), limSymbol = Some(LimSymbol("PPXDK00")), precision = precisionRules.rule(134)) with HasInterpolation {
-    def interpolation = LinearInterpolation // TODO Jerome FCA has monthly forward prices but we need daily - this isn't right
+    def interpolation = LinearInterpolation // TODO [08 Apr 2011] Jerome FCA has monthly forward prices but we need daily - this isn't right
   }
 
   // CME EuroDollar market only needs a calendar
@@ -725,7 +725,7 @@ object Market {
 
   /**
    * Find the market for a given market name
-   * TODO: better place to implement? should maybe try and get this resolved - do we even need identifiers any more
+   * TODO [14 May 2010] better place to implement? should maybe try and get this resolved - do we even need identifiers any more
    * given that the market names can be checked for uniqueness?
    */
   private val usedOrUnusedMarkets = markets ++ unusedMarketsWithOldData
@@ -756,7 +756,7 @@ object Market {
   def forwardMarketFromName(marketName : String): ForwardMarket = forwardMarkets.find(_.name.equalsIgnoreCase(marketName)) match {
     case None => {
       val market = futuresMarketFromName(marketName)
-      new ProxyForwardMarket(market) // TODO hack until we figure out what trinity means with forward on futures markets
+      new ProxyForwardMarket(market) // TODO [15 Apr 2010] hack until we figure out what trinity means with forward on futures markets
     }
     case Some(market) => market
   }

@@ -12,7 +12,7 @@ class CostReader extends InstrumentReader {
   def canHandle(rs: RichResultSetRow) = rs.getInt("TradeType") == COST
 
   override def create(rs: RichResultSetRow) = {
-    // TODO should add code and name
+    // TODO [25 May 2011] should add code and name
 //    val name = rs.getString("costtype")
 //    val code = rs.getString("suncostcode")
 

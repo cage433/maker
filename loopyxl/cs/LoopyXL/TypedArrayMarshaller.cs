@@ -10,7 +10,7 @@ namespace LoopyXL
 
         public InvocationValue From(object[] parameters)
         {
-            // TODO [26 Apr 2011]: Return an empty 'objectArray' when it only contains 'ExcelMissing' or 'ExcelEmpty'
+            // TODO [26 Apr 2011] Return an empty 'objectArray' when it only contains 'ExcelMissing' or 'ExcelEmpty'
             return new InvocationValue {type = InvocationValue.Type.OBJECT_ARRAY}
                 .Update(r => r.objectArray.AddRange(parameters.Select(parameter => marshaller.From(parameter))));
         }

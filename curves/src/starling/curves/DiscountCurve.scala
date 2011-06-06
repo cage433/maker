@@ -31,7 +31,7 @@ object SimpleDiscountCurve{
  
 	/** The interest rate data may be any combination of swap rates, deposit rates and futures yields. This
   * 	converts them into an equivalent continuously compounded rate.
-  * 	@todo - Find out what products futures  def toDSL = {
+  * 	@todo [01 Apr 2010] Find out what products futures  def toDSL = {
     com.trafigura.tradinghub.model.LinearInterpolationMethod
   }
  yields represent. From the data it seems clear that they represent
@@ -175,7 +175,7 @@ case class DiscountCurveKey(ccy : UOM) extends NonHistoricalCurveKey[ForwardRate
     * 	bootstrapping a curve from a combination can lead to unrealistic forward rates. To avoid this we look at
     * 	the product type at the latest point on the curve, and then remove data for all other product types. This
     * 	wouldn't be acceptable for an interest rate system, but should be 'good enough' for commodities.
-    * 	@todo - check the above assumption is OK
+    * 	@todo [17 Dec 2009] check the above assumption is OK
     */
     var points = Map.empty[Day, Double]
     val lastType = results.last.trinityInstrumentType
@@ -210,8 +210,6 @@ case class DiscountRateKey(
   }
   override def clearProperties : AtomicDatumKey = copy(ignoreShiftsIfPermitted = false)
   def nullValue = 0.9
-
-  def periodKey = Some(forwardDate)
 }
 
 //object DiscountRateKey{

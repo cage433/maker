@@ -48,7 +48,7 @@ class MarketDataHandler(broadcaster : Broadcaster,
 
     val observationPoint = ObservationPoint.parse(observationDate)
 
-    // TODO: remove hard-coded months - needs to get base tenor from "market"
+    // TODO [07 Jan 2011] remove hard-coded months - needs to get base tenor from "market"
     val dates = doubleDates.map((d: Double) => Day.fromExcel(d))
     val months = dates.map(_.containingMonth)
 

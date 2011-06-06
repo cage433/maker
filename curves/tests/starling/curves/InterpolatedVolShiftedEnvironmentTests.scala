@@ -34,7 +34,7 @@ class InterpolatedVolShiftedEnvironmentTests extends StarlingTest{
     assertEquals(shiftedEnv.impliedVol(NYMEX_WTI, july, june.firstDay - 1, strike), vol, 1e-6)
 
     // Swap vol should be unchanged, even though we've perturbed the underlying futures vol
-    //TODO check with alex. This assertion now fails following the fix
+    //TODO [02 Feb 2011] check with alex. This assertion now fails following the fix
     // so that 'Show Eq. Futures' + Not 'ATM Vega' does not give a zero vega
     //assertEquals(shiftedEnv.averageImpliedVol(WTI10, may, strike), vol, 1e-6)
   }
