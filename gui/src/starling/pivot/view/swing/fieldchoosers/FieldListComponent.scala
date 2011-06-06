@@ -89,8 +89,12 @@ class FieldListComponent(model:PivotTableModel, otherLayoutInfo:OtherLayoutInfo,
   def fieldChooserType = FieldList
 
   def dropBounds(draggedField:Field) = {
-    val screenPoint = peer.getLocationOnScreen
-    new Rectangle(screenPoint.x, screenPoint.y, size.width, size.height) :: Nil
+    if (peer.isShowing) {
+      val screenPoint = peer.getLocationOnScreen
+      new Rectangle(screenPoint.x, screenPoint.y, size.width, size.height) :: Nil
+    } else {
+      Nil
+    }
   }
 
   def show(draggedField:Field) {}
