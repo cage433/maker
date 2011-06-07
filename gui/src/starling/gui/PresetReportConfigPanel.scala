@@ -381,7 +381,7 @@ class PresetReportConfigPanel(context:PageContext, reportParameters:ReportParame
       nextBusinessDay.endOfDay(),
       envMods)
 
-    val newReportOptions = ReportOptions.Blank
+    val newReportOptions = reportParameters.reportOptions
 
     val pnlParams = if (buttonPanel.realTimePanel.dayChangeCheckBox.selected) {
       val fromMarketDataSelection = marketDataSelection.noExcel
@@ -447,7 +447,7 @@ class PresetReportConfigPanel(context:PageContext, reportParameters:ReportParame
       nextBusinessDay.endOfDay(),
       envMods)
 
-    val newReportOptions = ReportOptions.Blank
+    val newReportOptions = reportParameters.reportOptions
 
     val pnlParams = if (buttonPanel.cobPanel.dayChangePanel.dayChangeCheckBox.selected) {
       val marketDataSelection = generateMarketDataSelection
