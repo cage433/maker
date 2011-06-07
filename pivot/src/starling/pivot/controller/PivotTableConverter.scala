@@ -112,7 +112,12 @@ object AxisNodeBuilder {
     } else {
       List()
     }
-    val cellsWithNull = frontCells ::: fakeNode.flatten(List(), subTotals, false, collapsedState, disabledSubTotalsToUse, formatInfo, extraFormatInfo) ::: grandTotalRows
+    val cells = fakeNode.flatten(List(), subTotals, false, collapsedState, disabledSubTotalsToUse, formatInfo, extraFormatInfo)
+    val cellsWithNull = if (cells.length > 1) {
+      frontCells ::: cells ::: grandTotalRows
+    } else {
+      cells
+    }
     cellsWithNull.map(r=>r.tail)
   }
 }
