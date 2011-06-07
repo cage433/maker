@@ -28,8 +28,6 @@ case class BradyMetalVolAtomicDatumKey(market : CommodityMarket, period : DateRa
   def forwardStateValue(originalAtomicEnv: AtomicEnvironment, forwardDayAndTime: DayAndTime) = originalAtomicEnv(this)
   def nullValue = Percentage(0.10)
 
-  def volMarket = market
-
   def periodKey = Some(period)
 
   def underlying = market.name

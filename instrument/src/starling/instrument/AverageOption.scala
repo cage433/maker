@@ -55,7 +55,7 @@ abstract class SingleAverageOption(
 
   val settlementDate: Day
 
-  val expiryDay: Day
+  def expiryDay: Day = averagingDays.last
 
   def assets(env: Environment) = if (env.marketDay < averagingDays.last.endOfDay) {
     Assets(Asset.estimatedCash(settlementDate, undiscountedMtm(env), env))

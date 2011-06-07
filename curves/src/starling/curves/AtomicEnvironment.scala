@@ -153,10 +153,7 @@ abstract class AtomicDatumKey(val curveKey : CurveKey, val point : AnyRef, val i
 /**
  * Indicates this is an AtomicDatumKey for vols
  */
-trait VolKey {
-
-  def volMarket: HasImpliedVol
-}
+trait VolKey
 
 /**
  * Indicates this key can be bucketed

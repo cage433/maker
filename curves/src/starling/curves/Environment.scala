@@ -227,7 +227,7 @@ case class Environment(
   }
 
   def indexFixing(index : SingleIndex, fixingDay : Day) : Quantity = {
-    index.fixing(instrumentLevelEnv, fixingDay)
+    instrumentLevelEnv.fixing(index, fixingDay)
   }
 
   /**

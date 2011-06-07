@@ -145,7 +145,7 @@ class DefaultInstrumentLevelEnvironment(underlyingAtomicEnv : AtomicEnvironment)
         }
       }
       case (mkt @ ProxyForwardMarket(futuresMarket), period : Day) =>
-        interpolatedVol(futuresMarket, mkt.underlying(period), exerciseDay, strike, false)
+        interpolatedVol(futuresMarket, mkt.underlying(period), exerciseDay, strike, isIndexVol = false)
 
       case (mkt : ForwardMarket, period : Day) => {
         mkt.commodity match {
@@ -190,19 +190,12 @@ class DefaultInstrumentLevelEnvironment(underlyingAtomicEnv : AtomicEnvironment)
     val stdDev = volSurface.volatilityByStrike(strike.value, F.value)
     Quantity(stdDev, market.priceUOM)
   }
-  def indexVol(index : SimpleSingleIndex, observationDay : Day, strike : Quantity, averagePrice : Quantity) = {
-    def expiry(period : DateRange) = index.market match {
-      case k: KnownExpiry => k.optionExpiry(period)
-      case _ => period.firstDay // HACk
-    }
-    val observedPeriod = index.observedOptionPeriod(observationDay)
-    //val expiryDay = expiry(observedPeriod)
-    val vol = interpolatedVol(index.market, observedPeriod, Some(observationDay), Some(strike), true, Some(averagePrice))
-    vol
+
+  def indexVol(index : SingleIndex, observationDay : Day, strike : Quantity, averagePrice : Quantity) = {
+    index.volatility(this, observationDay, strike, averagePrice)
   }
 
   def copy(newAtomicEnv : AtomicEnvironment) = new DefaultInstrumentLevelEnvironment(newAtomicEnv)
-
   override def toString = "InstrumentLevelEnvironment " + getClass + ", atomic " + atomicEnv.getClass
 }
 
@@ -267,6 +260,11 @@ object ShiftInstrumentLevelVol{
   }
 }
 
+/**
+ * This shifts a swap price based on its observation days, NOT any underlying period. Yes the great
+ * gods of arbitrage are looking down and weeping, however it's pretty much impossible to show positions
+ * as traders like them without this kind of hack.
+ */
 object ShiftSwapPrice{
 
   val overridenMethodNames = List("atomicEnv", "indexForwardPrice", "copy")
@@ -392,7 +390,9 @@ object ShiftMarketDayAtInstrumentLevel{
             }
             case `copy` => ShiftMarketDayAtInstrumentLevel(originalEnv.copy(args(0).asInstanceOf[AtomicEnvironment]), newMarketDay)
 
-            case _ => originalMethod.invoke(originalEnv, args : _*)
+            case _ => {
+              originalMethod.invoke(originalEnv, args : _*)
+            }
           }
         } catch {
           case e : InvocationTargetException => throw e.getCause
@@ -420,7 +420,7 @@ class CacheEnvironmentDifferentiables(originalEnv : InstrumentLevelEnvironment) 
     cache.add(SpreadAtmStdDevAtomicDatumKey(market, spread))
     originalEnv.spreadStdDev(market, spread, exerciseDay, strike)
   }
-  def indexVol(index : SimpleSingleIndex, observationDay : Day, strike : Quantity, averagePrice : Quantity) = {
+  def indexVol(index : SingleIndex, observationDay : Day, strike : Quantity, averagePrice : Quantity) = {
     cache.add(SwapVol(index, observationDay))
     originalEnv.indexVol(index, observationDay, strike, averagePrice)
   }

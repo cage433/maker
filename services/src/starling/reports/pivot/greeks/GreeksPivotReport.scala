@@ -98,7 +98,7 @@ class GreeksPivotReport(@transient environment : Environment, thetaDayAndTime : 
     rows.map{
       row =>
       val mkt : Option[CommodityMarket] = row.diff match {
-        case Some(pk : PriceKey) => pk.market
+        case Some(pk : PriceKey) => Some(pk.market)
         case Some(sk : SpreadAtmStdDevAtomicDatumKey) => Some(sk.market)
         case _ => None
       }

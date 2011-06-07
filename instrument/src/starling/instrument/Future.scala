@@ -39,7 +39,7 @@ case class Future(market: FuturesMarket, delivery: DateRange, strike: Quantity, 
     //the trouble is the trade day becomes a valuation parameter 
     Assets(
       Asset.estimatedCash(env.marketDay.day,
-        env.fixing(FuturesFrontPeriodIndex(market).fixingHistoryKey(lastTradingDay), lastTradingDay) * volume, env),
+        env.indexFixing(FuturesFrontPeriodIndex(market), lastTradingDay) * volume, env),
       Asset.estimatedCash(env.marketDay.day, -strike * volume, env) //strike is always zero because of the utps
     )
   }
