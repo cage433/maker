@@ -65,6 +65,7 @@ trait PivotReport[R <: PivotReportRow] {
     useSkew_str -> List(true, false),
     tenor_str -> List(MonthChoiceText, WeekChoiceText, DayChoiceText)
   )
+  def zeroFields:Set[Field] = Set()
 }
 
 

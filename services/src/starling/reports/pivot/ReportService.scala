@@ -425,11 +425,14 @@ class ReportService(
         val list = List(PivotReportData.run(newTradesReport, utps, SlideDetails.Null, List()))
         val tradePivot = newTradesTradeSet.reportPivot(curveIdentifierD.tradesUpToDay, expiryDay, t, addRows)
         new ReportPivotTableDataSource(tradePivot, list) {
+          val dayChangeText = "Day Change"
           override def initialState = PivotFieldsState(
-            dataFields=List(Field("Day Change")),
+            dataFields=List(Field(dayChangeText)),
             rowFields=List(Field("Risk Period")),
             columnFields=List(Field("Risk Market"), Field("Day Change Component"))
           )
+
+          override def zeroFields = Set(Field(dayChangeText))
         }
       }
       val tradeChangesPivot = {

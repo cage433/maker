@@ -183,6 +183,8 @@ class ReportPivotTableDataSource(tradePivotTable:PivotTableDataSource, reports:L
 
   override def reportSpecificOptions = reports.map(_.report.reportSpecificOptions).reduceLeft(_++_).distinct.stringValues
 
+  override def zeroFields = reports.flatMap(_.report.zeroFields).toSet
+
   override def initialState = {
     val initialReportSpecificChoices = reports.map(_.report.reportSpecificOptions.default).reduceLeft(_++_)
     PivotFieldsState(reportSpecificChoices = TreeMap(initialReportSpecificChoices.toArray:_*))

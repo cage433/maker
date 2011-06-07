@@ -135,18 +135,6 @@ class PivotTablePageComponent(
   val drillDownGroups = data.drillDownGroups
   val user = pageContext.localCache.currentUser
 
-  val toggleCalculateButton = new ToggleToolBarButton {
-    selected = !pivotPageState.pivotFieldParams.calculate
-    tooltip = "Enable or disable calculation on the fly"
-    icon = StarlingIcons.Calculate
-    // If the button is deselected it means we need to calculate with the new layout.
-    reactions += {
-      case ButtonClicked(_) => {
-        pageContext.goTo(selfPage(pivotPageState.flipCalculate))
-      }
-    }
-  }
-
   val toolBar = new MigPanel("insets 1 1 1 1, gap 1") {
     val lockScreenButton = new ToggleToolBarButton {
       icon = StarlingIcons.Lock
@@ -210,8 +198,29 @@ class PivotTablePageComponent(
       reactions += {
         case ButtonClicked(b) => {
           // Clear the local cache.
-          pageContext.clearCache
+          pageContext.clearCache()
           pageContext.submit(ClearServerSideCache)
+        }
+      }
+    }
+    val toggleCalculateButton = new ToggleToolBarButton {
+      selected = !pivotPageState.pivotFieldParams.calculate
+      tooltip = "Enable or disable calculation on the fly"
+      icon = StarlingIcons.Calculate
+      // If the button is deselected it means we need to calculate with the new layout.
+      reactions += {
+        case ButtonClicked(_) => {
+          pageContext.goTo(selfPage(pivotPageState.flipCalculate))
+        }
+      }
+    }
+    val removeZerosButton = new ToggleToolBarButton {
+      selected = currentFieldState.removeZeros
+      tooltip = "Remove or show rows that contain zeros"
+      icon = StarlingIcons.icon("/icons/16x16_remove_zeros.png")
+      reactions += {
+        case ButtonClicked(_) => {
+          pageContext.goTo(selfPage(pivotPageState.copyPivotFieldsState(currentFieldState.copy(removeZeros = !currentFieldState.removeZeros))))
         }
       }
     }
@@ -271,6 +280,8 @@ class PivotTablePageComponent(
     add(chartButton)
     addSeparator
     add(toggleCalculateButton)
+    addSeparator
+    add(removeZerosButton)
     addSeparator
     if (data.pivotTable.editableInfo == None) {
       if (pageContext.localCache.version.production) {

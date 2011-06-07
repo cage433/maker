@@ -5,7 +5,6 @@ import starling.utils.StarlingObject
 import collection.SortedMap
 import starling.utils.ImplicitConversions._
 import collection.immutable.{Map, TreeMap}
-import javax.management.remote.rmi._RMIConnection_Stub
 
 object FieldChooserType extends Enumeration {
   type FieldChooserType = Value
@@ -65,7 +64,7 @@ case class FiltersList(filters:List[List[(Field,Selection)]]) extends Iterable[L
   def chopUpToFirstNon(fields:Set[Field]) = {
     val chopped = filters.map {
       path => {
-        val (before,after) = path.span{ case(f,_)=>fields.contains(f) }
+        val (before,_) = path.span{ case(f,_)=>fields.contains(f) }
         before
       }
     }
@@ -472,13 +471,14 @@ class PivotFieldsState(
         val filters:List[(Field,Selection)]=List(),
         val treeDepths:SortedMap[Field,(Int,Int)]=TreeMap.empty,
         val reportSpecificChoices:SortedMap[String,Any]=TreeMap.empty,
-        val transforms:SortedMap[Field,FilterWithOtherTransform]=TreeMap.empty
+        val transforms:SortedMap[Field,FilterWithOtherTransform]=TreeMap.empty,
+        val removeZeros:Boolean=false
   ) extends Serializable {
 
-  assert(filters.size == filters.map(_._1).toSet.size, {Thread.dumpStack; "There are duplicated filter fields"})
+  assert(filters.size == filters.map(_._1).toSet.size, {Thread.dumpStack(); "There are duplicated filter fields"})
 
   override def toString = "r: " + rowFields + " c: " + columns + " f: " + filters  + " treeDep: " +
-          treeDepths + " rpc: " + reportSpecificChoices
+          treeDepths + " rpc: " + reportSpecificChoices + " removeZeros: " + removeZeros
   def allFieldsUsed = columns.allFields ::: rowFields ::: filters.map(_._1)
 
   def filterAreaFields = {
@@ -495,8 +495,9 @@ class PivotFieldsState(
                   reportSpecificChoices:SortedMap[String,Any]=reportSpecificChoices,
                   filters:List[(Field,Selection)]=filters,
                   treeDepths:SortedMap[Field,(Int,Int)]=treeDepths,
-                  transforms:SortedMap[Field,FilterWithOtherTransform]=transforms) = {
-    new PivotFieldsState(rowFields, columns, filters, treeDepths, reportSpecificChoices, transforms)
+                  transforms:SortedMap[Field,FilterWithOtherTransform]=transforms,
+                  removeZeros:Boolean=removeZeros) = {
+    new PivotFieldsState(rowFields, columns, filters, treeDepths, reportSpecificChoices, transforms, removeZeros)
   }
 
   override def equals(o: Any) = o match {
@@ -506,7 +507,8 @@ class PivotFieldsState(
       this.filters == other.filters &&
       this.treeDepths == other.treeDepths &&
       this.reportSpecificChoices == other.reportSpecificChoices &&
-      this.transforms == other.transforms
+      this.transforms == other.transforms &&
+      this.removeZeros == other.removeZeros
     }
     case _ => false
   }
@@ -526,10 +528,11 @@ class PivotFieldsState(
       filters.filterNot(f=> newFilterFields.contains(f._1)) ::: newFilters.toList,
       treeDepths,
       reportSpecificChoices,
-      transforms
+      transforms,
+      removeZeros
     )
   }
-  def rotate = new PivotFieldsState(columns.columnFields, ColumnTrees.createFlat(rowFields, columns.measureFields), filters, treeDepths, reportSpecificChoices, transforms)
+  def rotate = new PivotFieldsState(columns.columnFields, ColumnTrees.createFlat(rowFields, columns.measureFields), filters, treeDepths, reportSpecificChoices, transforms, removeZeros)
   def hasRowOrColumnFields = !rowFields.isEmpty || columns.hasColumnField
   def moveField(field:Field, from:FieldChooserType, to:FieldChooserType, pos:Int):PivotFieldsState = {
     val newFilterFields = if (to == FieldList) {
@@ -550,7 +553,7 @@ class PivotFieldsState(
 
     val newTransforms = transforms.filter(t => newColumns.contains(t._1) || newRowFields.contains(t._1))
 
-    new PivotFieldsState(newRowFields, newColumns, newFilterFields, treeDepths, reportSpecificChoices, newTransforms)
+    new PivotFieldsState(newRowFields, newColumns, newFilterFields, treeDepths, reportSpecificChoices, newTransforms, removeZeros)
   }
 
   def moveField(field:Field, from:FieldChooserType, newColumnStructure:ColumnTrees):PivotFieldsState = {
@@ -569,7 +572,7 @@ class PivotFieldsState(
 
     val newTransforms = transforms.filter(t => newColumnStructure.contains(t._1) || rFields.contains(t._1))
 
-    new PivotFieldsState(rFields, newColumnStructure, newFilters, treeDepths, reportSpecificChoices, newTransforms)
+    new PivotFieldsState(rFields, newColumnStructure, newFilters, treeDepths, reportSpecificChoices, newTransforms, removeZeros)
   }
 
   def mapSelectionValues(f:Any=>Any) = {
@@ -592,7 +595,8 @@ class PivotFieldsState(
       filters.filterNot(f=>fields.contains(f._1)),
       treeDepths,
       reportSpecificChoices,
-      transforms.filterNot(f=>fields.contains(f._1))
+      transforms.filterNot(f=>fields.contains(f._1)),
+      removeZeros
     )
   }
 
@@ -603,7 +607,8 @@ class PivotFieldsState(
       filters.filter(f=>validFields.contains(f._1)),
       treeDepths,
       reportSpecificChoices,
-      transforms.filter(f=>validFields.contains(f._1))
+      transforms.filter(f=>validFields.contains(f._1)),
+      removeZeros
     )
   }
 
@@ -670,7 +675,8 @@ object PivotFieldsState {
         filters:List[(Field,Selection)]=List(),
         treeDepths:SortedMap[Field,(Int,Int)]=TreeMap.empty,
         reportSpecificChoices : SortedMap[String, Any] = TreeMap.empty,
-        transforms : SortedMap[Field, FilterWithOtherTransform] = TreeMap.empty
+        transforms : SortedMap[Field, FilterWithOtherTransform] = TreeMap.empty,
+        removeZeros:Boolean = false
   ) = {
     new PivotFieldsState(
       columns=ColumnTrees.createFlat(columnFields, dataFields),
@@ -678,7 +684,8 @@ object PivotFieldsState {
       filters=filters,
       treeDepths=treeDepths,
       reportSpecificChoices=reportSpecificChoices,
-      transforms=transforms
+      transforms=transforms,
+      removeZeros = removeZeros
     )
   }
 }

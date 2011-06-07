@@ -6,12 +6,12 @@ import controller._
 import starling.pivot.FieldChooserType._
 import starling.rmi.PivotData
 import java.io.Serializable
-import collection.mutable.HashMap
 import collection.immutable.{List, TreeMap}
 import java.lang.String
 import starling.utils.ImplicitConversions._
 import starling.utils.Log
 import starling.quantity.{SpreadOrQuantity, Quantity}
+import collection.mutable.{ListBuffer, HashMap}
 
 
 class FieldList(pivotTableModel:PivotTableModel, _fields:Seq[Field], fieldChooserType:FieldChooserType) {
@@ -226,6 +226,26 @@ class DataFieldTotal(var foo:Option[(FieldDetails, Any)]) {
   def this() = this (None)
 
   var mixed = false
+
+  def isAlmostZero:Boolean = {
+    foo match {
+      case None => true
+      case Some((_,v)) => {
+        v match {
+          case q:Quantity => q.isAlmostZero
+          case pq:PivotQuantity => pq.isAlmostZero
+          case _ => false
+        }
+      }
+    }
+  }
+
+  def isOneOfTheseFields(fields:Set[Field]):Boolean = {
+    foo match {
+      case Some((fd,v)) if fields.contains(fd.field) => true
+      case _ => false
+    }
+  }
 
   def addValue(value:Any) {
     if (!mixed) {
@@ -503,6 +523,21 @@ object PivotTableModel {
               current.mutatingCombineGroup(sum)
             }
           }
+        }
+      }
+      
+      if (pivotState.removeZeros) {
+        val zeroFields = dataSource.zeroFields
+        if (zeroFields.nonEmpty) {
+          val rows = mainTableBucket.groupBy{case ((r,c),v) => r}.keySet
+          val rowsToRemove = rows.flatMap(row => {
+            val allColumnsForRowMap = mainTableBucket.filter{case ((r,_),_) => r == row}
+            val onlyZeroFieldColumnsMap = allColumnsForRowMap.filter{case(_,v) => v.isOneOfTheseFields(zeroFields)}
+            if (onlyZeroFieldColumnsMap.forall{case (k,v) => v.isAlmostZero}) Some(row) else None
+          })
+          rowAxisValues --= rowsToRemove
+          val keysToRemove = mainTableBucket.filter{case ((r,_),_) => rowsToRemove.contains(r)}.keySet
+          mainTableBucket --= keysToRemove
         }
       }
 

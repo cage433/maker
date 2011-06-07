@@ -97,6 +97,7 @@ abstract class PivotTableDataSource extends PivotGridSource {
   def editable:Option[EditPivot] = None
   def availablePages:List[String] = List()
   def reportSpecificOptions : List[(String, List[Any])] = Nil
+  def zeroFields:Set[Field] = Set()
 
   def gridFor(pivotState: Option[PivotFieldsState]) = {
     PivotTableConverter(table = PivotTableModel.createPivotTableData(this, pivotState)).createGrid()
