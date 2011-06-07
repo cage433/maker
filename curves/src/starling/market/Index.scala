@@ -7,10 +7,9 @@ import starling.utils.ImplicitConversions._
 import starling.curves._
 import starling.daterange._
 import starling.marketdata.PriceFixingsHistoryDataKey
-import starling.calendar.{BusinessCalendar, BrentMonth}
 import starling.utils.cache.CacheFactory
 import starling.quantity.{Percentage, Quantity, UOM}
-
+import starling.calendar.{HolidayTablesFactory, BusinessCalendars, BusinessCalendar, BrentMonth}
 
 case class UnknownIndexException(msg: String, eaiQuoteID: Option[Int] = None) extends Exception(msg)
 
@@ -79,14 +78,14 @@ case class IndexSensitivity(coefficient : Double, index : Index)
  * An index whose forward prices come from a single market. It is possible that many indices, e.g. LME fixings
  * for different rings, will all have the same forward prices
  */
-abstract class SingleIndex(val forwardPriceMarket : CommodityMarket, name : String) extends Index(name){
+abstract class SingleIndex(val forwardPriceMarket : CommodityMarket, val businessCalendar : BusinessCalendar, name : String) extends Index(name){
   @transient protected lazy val observationDayCache = CacheFactory.getCache(name, unique = true)
   def observationDays(period : DateRange) : List[Day] = observationDayCache.memoize(period, period.days.filter(isObservationDay).toList)
 
   def fixing(slice : MarketDataSlice, observationDay : Day) : Quantity
   def fixing(env : InstrumentLevelEnvironment, observationDay : Day) : Quantity
   def forwardPrice(env : InstrumentLevelEnvironment, observationDay : Day, ignoreShiftsIfPermitted : Boolean) : Quantity
-  def businessCalendar : BusinessCalendar
+//  def businessCalendar : BusinessCalendar
   def isObservationDay(day: Day): Boolean = businessCalendar.isBusinessDay(day)
   /**
    * Kind of sucks having to pass in average price. It's the forward price, not necessarily for the observed
@@ -115,8 +114,8 @@ abstract class SingleIndex(val forwardPriceMarket : CommodityMarket, name : Stri
 /**
  * An Index with a single underlying market
  */
-abstract class SimpleSingleIndex(name: String, forwardPriceMarket : CommodityMarket, val lotSizeOverride: Option[Double] = None,
-                           val level: Level = Level.Unknown) extends SingleIndex(forwardPriceMarket, name) {
+abstract class SimpleSingleIndex(name: String, forwardPriceMarket : CommodityMarket, businessCalendar : BusinessCalendar, val lotSizeOverride: Option[Double] = None,
+                           val level: Level = Level.Unknown) extends SingleIndex(forwardPriceMarket, businessCalendar, name) {
 
 
   def precision = forwardPriceMarket.precision
@@ -187,7 +186,6 @@ abstract class SimpleSingleIndex(name: String, forwardPriceMarket : CommodityMar
   def possiblePricingRules = List(NoPricingRule)
 
   def indexes = Set(this)
-  def businessCalendar = forwardPriceMarket.businessCalendar
 }
 
 object SingleIndex{
@@ -202,11 +200,12 @@ case class PublishedIndex(
   indexName: String,
   eaiQuoteID: Option[Int],
   market: CommodityMarket,
+  override val businessCalendar : BusinessCalendar,
   indexLevel: Level = Level.Mid
 )
-  extends SimpleSingleIndex(indexName, market, level = indexLevel)
+  extends SimpleSingleIndex(indexName, market, businessCalendar, level = indexLevel)
 {
-  def this(indexName: String, eaiQuoteID: Int, market: CommodityMarket) = this(indexName, Some(eaiQuoteID), market)
+  def this(indexName: String, eaiQuoteID: Int, market: CommodityMarket, businessCalendar : BusinessCalendar) = this(indexName, Some(eaiQuoteID), market, businessCalendar)
 
   def observedPeriod(day : Day) = market match {
     case f: FuturesMarket => f.frontPeriod(day)
@@ -222,58 +221,56 @@ case class PublishedIndex(
 
 object PublishedIndex{
 
+  lazy val cals = new BusinessCalendars(HolidayTablesFactory.holidayTables)
+
+
   // Fur unit tests
-  def apply(name : String, market : CommodityMarket) : PublishedIndex = PublishedIndex(name, None, market)
+  def apply(name : String, market : CommodityMarket) : PublishedIndex = PublishedIndex(name, None, market, cals.ICE)
 
   /**
    * Published Indexes
    */
-  val ROTTERDAM_BARGES = new PublishedIndex("3.5% Fuel FOB Rotterdam Barges", 5, Market.FUEL_FOB_ROTTERDAM_BARGES_3_5)
-//  val LBMA_GOLD_AM = new PublishedIndex("Gold AM", 804, Market.LBMA_GOLD)
-//  val LBMA_GOLD_AVG = new PublishedIndex("Gold Avg", 804, Market.LBMA_GOLD) // TODO [07 Jul 2010] This needs to be an average!
-//  val LBMA_GOLD_PM = new PublishedIndex("Gold PM", 847, Market.LBMA_GOLD)
-//  val SILVER_BULL = new PublishedIndex("Silver (Bull)", 805, Market.LBMA_SILVER) // TODO [07 Jul 2010] what's the difference between these 2?
-//  val SILVER_LOW_4_LME = new PublishedIndex("Silver low 4 LME", 805, Market.LBMA_SILVER)
-  val No_6_3PC_USGC_Waterborne = new PublishedIndex("No.6 3% USGC Waterborne", 11, Market.No_6_3PC_USGC_Waterborne)
-  val UNL_87_USGC_PIPELINE = new PublishedIndex("Unl 87 USGC Pipeline", 34, Market.UNL_87_USGC_PIPELINE)
-  val HSFO_180_CST_Singapore = new PublishedIndex("HSFO 180 CST Singapore", 8, Market.HSFO_180_CST_Singapore)
-  val HSFO_380_CST_Singapore = new PublishedIndex("HSFO 380 CST Singapore", 134, Market.HSFO_380_CST_Singapore)
-  val PREM_UNL_FOB_ROTTERDAM_BARGES = new PublishedIndex("Prem Unl FOB Rotterdam Barges", 17, Market.PREM_UNL_FOB_ROTTERDAM_BARGES)
+  val ROTTERDAM_BARGES = new PublishedIndex("3.5% Fuel FOB Rotterdam Barges", 5, Market.FUEL_FOB_ROTTERDAM_BARGES_3_5, cals.PLE)
+  val No_6_3PC_USGC_Waterborne = new PublishedIndex("No.6 3% USGC Waterborne", 11, Market.No_6_3PC_USGC_Waterborne, cals.PLH)
+  val UNL_87_USGC_PIPELINE = new PublishedIndex("Unl 87 USGC Pipeline", 34, Market.UNL_87_USGC_PIPELINE, cals.PLH)
+  val HSFO_180_CST_Singapore = new PublishedIndex("HSFO 180 CST Singapore", 8, Market.HSFO_180_CST_Singapore, cals.PLD)
+  val HSFO_380_CST_Singapore = new PublishedIndex("HSFO 380 CST Singapore", 134, Market.HSFO_380_CST_Singapore, cals.PLD)
+  val PREM_UNL_FOB_ROTTERDAM_BARGES = new PublishedIndex("Prem Unl FOB Rotterdam Barges", 17, Market.PREM_UNL_FOB_ROTTERDAM_BARGES, cals.ICE)
 
-  val FUEL_FOB_NWE_CARGOES_1 = new PublishedIndex("1% Fuel FOB NWE Cargoes", 3, Market.FUEL_FOB_NWE_CARGOES_1)
-  val NAPHTHA_CIF_NWE_CARGOES = new PublishedIndex("Naphtha CIF NWE Cargoes", 37, Market.NAPHTHA_CIF_NWE_CARGOES)
-  val GAS_OIL_0_5_SINGAPORE = new PublishedIndex("Gas Oil 0.5 Singapore", 52, Market.GAS_OIL_0_5_SINGAPORE)
-  val MOGAS_95_UNL_10PPM_NWE_BARGES = new PublishedIndex("Mogas 95 Unl 10ppm NWE Barges (Argus)", 88, Market.MOGAS_95_UNL_10PPM_NWE_BARGES)
-  val UNL_92_SINGAPORE_CARGOES = new PublishedIndex("Unl 92 Singapore Cargoes", 198, Market.UNL_92_SINGAPORE_CARGOES)
-  val GAS_OIL_0_1_FOB_ROTTERDAM_BARGES = new PublishedIndex("Gas Oil 0.1% FOB Rotterdam Barges (Platts)", 1011, Market.GAS_OIL_0_1_FOB_ROTTERDAM_BARGES)
-  val GAS_OIL_ULSD_USGC_PIPELINE = new PublishedIndex("Gas Oil ULSD USGC Pipeline (Platts)", 1039, Market.GAS_OIL_ULSD_USGC_PIPELINE)
-  val GAS_OIL_0_1_CIF_NWE_CARGOES = new PublishedIndex("Gas Oil 0.1% CIF NWE Cargoes (Platts)", 1049, Market.GAS_OIL_0_1_CIF_NWE_CARGOES)
-  val PREM_UNL_10PPM_FOB_MED_CARGOES = new PublishedIndex("Prem Unl 10ppm FOB Med Cargoes (Platts)", 1183, Market.PREM_UNL_10PPM_FOB_MED_CARGOES)
-  val PREM_UNL_EURO_BOB_OXY_NWE_BARGES = new PublishedIndex("Prem Unl Euro-Bob Oxy NWE Barges (Argus)", 1312, Market.PREM_UNL_EURO_BOB_OXY_NWE_BARGES)
-  val JET_CIF_NWE_CARGOES = new PublishedIndex("Jet CIF NWE Cargoes", 18, Market.JET_CIF_NWE_CARGOES)
-  val GAS_OIL_ULSD_10PPM_CIF_NWE_CARGOES = new PublishedIndex("Gas Oil ULSD 10ppm CIF NWE Cargoes", 598, Market.GAS_OIL_ULSD_10PPM_CIF_NWE_CARGOES)
-  val GAS_OIL_ULSD_10PPM_FOB_ROTTERDAM_BARGES = new PublishedIndex("Gas Oil ULSD 10ppm FOB Rotterdam Barges", 883, Market.GAS_OIL_ULSD_10PPM_FOB_ROTTERDAM_BARGES)
+  val FUEL_FOB_NWE_CARGOES_1 = new PublishedIndex("1% Fuel FOB NWE Cargoes", 3, Market.FUEL_FOB_NWE_CARGOES_1, cals.PLE)
+  val NAPHTHA_CIF_NWE_CARGOES = new PublishedIndex("Naphtha CIF NWE Cargoes", 37, Market.NAPHTHA_CIF_NWE_CARGOES, cals.PLE)
+  val GAS_OIL_0_5_SINGAPORE = new PublishedIndex("Gas Oil 0.5 Singapore", 52, Market.GAS_OIL_0_5_SINGAPORE, cals.PLD)
+  val MOGAS_95_UNL_10PPM_NWE_BARGES = new PublishedIndex("Mogas 95 Unl 10ppm NWE Barges (Argus)", 88, Market.MOGAS_95_UNL_10PPM_NWE_BARGES, cals.ARE)
+  val UNL_92_SINGAPORE_CARGOES = new PublishedIndex("Unl 92 Singapore Cargoes", 198, Market.UNL_92_SINGAPORE_CARGOES,cals.PLD)
+  val GAS_OIL_0_1_FOB_ROTTERDAM_BARGES = new PublishedIndex("Gas Oil 0.1% FOB Rotterdam Barges (Platts)", 1011, Market.GAS_OIL_0_1_FOB_ROTTERDAM_BARGES, cals.PLE)
+  val GAS_OIL_0_1_CIF_NWE_CARGOES = new PublishedIndex("Gas Oil 0.1% CIF NWE Cargoes (Platts)", 1049, Market.GAS_OIL_0_1_CIF_NWE_CARGOES, cals.PLE)
+  val GAS_OIL_ULSD_USGC_PIPELINE = new PublishedIndex("Gas Oil ULSD USGC Pipeline (Platts)", 1039, Market.GAS_OIL_ULSD_USGC_PIPELINE, cals.PLE)
+  val PREM_UNL_10PPM_FOB_MED_CARGOES = new PublishedIndex("Prem Unl 10ppm FOB Med Cargoes (Platts)", 1183, Market.PREM_UNL_10PPM_FOB_MED_CARGOES, cals.PLE)
+  val PREM_UNL_EURO_BOB_OXY_NWE_BARGES = new PublishedIndex("Prem Unl Euro-Bob Oxy NWE Barges (Argus)", 1312, Market.PREM_UNL_EURO_BOB_OXY_NWE_BARGES, cals.ARE)
+  val JET_CIF_NWE_CARGOES = new PublishedIndex("Jet CIF NWE Cargoes", 18, Market.JET_CIF_NWE_CARGOES, cals.PLE)
+  val GAS_OIL_ULSD_10PPM_CIF_NWE_CARGOES = new PublishedIndex("Gas Oil ULSD 10ppm CIF NWE Cargoes", 598, Market.GAS_OIL_ULSD_10PPM_CIF_NWE_CARGOES, cals.PLE)
+  val GAS_OIL_ULSD_10PPM_FOB_ROTTERDAM_BARGES = new PublishedIndex("Gas Oil ULSD 10ppm FOB Rotterdam Barges", 883, Market.GAS_OIL_ULSD_10PPM_FOB_ROTTERDAM_BARGES, cals.PLE)
 
   // TODO [08 Apr 2011] -- WRONG! -- We have changed the market from PLATTS_BRENT to DATED_BRENT because the latter has the matching LIM Symbol
-  val FORTIES_CRUDE_1ST_MONTH = new PublishedIndex("Forties Crude 1st month (Platts)", 332, Market.DATED_BRENT)
+  val FORTIES_CRUDE_1ST_MONTH = new PublishedIndex("Forties Crude 1st month (Platts)", 332, Market.DATED_BRENT, cals.PLE)
 
-  val DATED_BRENT = new PublishedIndex("Dated Brent", 40, Market.DATED_BRENT)
-  val URALS_CIF_MED = new PublishedIndex("Urals CIF Med Recombined (RCMB)", 159, Market.URALS_CIF_MED)
+  val DATED_BRENT = new PublishedIndex("Dated Brent", 40, Market.DATED_BRENT, cals.PLE)
+  val URALS_CIF_MED = new PublishedIndex("Urals CIF Med Recombined (RCMB)", 159, Market.URALS_CIF_MED, cals.PLATTS_EUROPEAN_CRUDE)
 
   val PLATTS_BRENT: Map[BrentMonth, PublishedIndex] = {
     (1 to 12).map {
       i => {
         val month = new BrentMonth(i)
-        (month -> new PublishedIndex("Platts " + month, None, Market.PLATTS_BRENT_MONTH_MARKETS(month), indexLevel = Level.MidPoint)
+        (month -> new PublishedIndex("Platts " + month, None, Market.PLATTS_BRENT_MONTH_MARKETS(month), cals.PLE,indexLevel = Level.MidPoint)
     )
       }
     }
   }.toMap
 
-  val PANAMAX_TC_AVG = PublishedIndex("Panamax T/C Avg", Some(511), Market.BALTIC_PANAMAX, Level.Val)
-  val SUPRAMAX_TC_AVG = new PublishedIndex("Supramax T/C Avg", Some(1306), Market.BALTIC_SUPRAMAX, Level.Val)
-  val CAPSIZE_TC_AVG = new PublishedIndex("Capsize T/C Avg", Some(512), Market.BALTIC_CAPESIZE, Level.Val)
-  val C7_TC_AVG = new PublishedIndex("C7 T/C Avg", Some(524), Market.BALTIC_CAPESIZE_C7, Level.Val)
+  val PANAMAX_TC_AVG = PublishedIndex("Panamax T/C Avg", Some(511), Market.BALTIC_PANAMAX, cals.BALTIC, Level.Val)
+  val SUPRAMAX_TC_AVG = new PublishedIndex("Supramax T/C Avg", Some(1306), Market.BALTIC_SUPRAMAX, cals.BALTIC, Level.Val)
+  val CAPSIZE_TC_AVG = new PublishedIndex("Capsize T/C Avg", Some(512), Market.BALTIC_CAPESIZE, cals.BALTIC, Level.Val)
+  val C7_TC_AVG = new PublishedIndex("C7 T/C Avg", Some(524), Market.BALTIC_CAPESIZE_C7, cals.BALTIC, Level.Val)
 
   val publishedIndexes:List[PublishedIndex] = List(
     ROTTERDAM_BARGES,
@@ -315,6 +312,7 @@ case class FuturesFrontPeriodIndex(
  ) extends SimpleSingleIndex(
   "%s %s %s price" % (market.name, FuturesFrontPeriodIndex.promptnessString(promptness), market.tenor.toString.toLowerCase),
   market,
+  market.businessCalendar,
   level = Level.Close
  ){
 
@@ -515,7 +513,7 @@ object Index {
 }
 
 
-case class LmeCashSettlementIndex(futuresMarket : FuturesMarket) extends SimpleSingleIndex("LME " + futuresMarket.commodity + " cash", futuresMarket, level = Level.Ask){
+case class LmeCashSettlementIndex(futuresMarket : FuturesMarket) extends SimpleSingleIndex("LME " + futuresMarket.commodity + " cash", futuresMarket, futuresMarket.businessCalendar, level = Level.Ask){
   def observedOptionPeriod(observationDay: Day) = throw new Exception("Options not supported for LME indices")
 
   def observedPeriod(day : Day) = {
@@ -532,7 +530,7 @@ case class LmeCashSettlementIndex(futuresMarket : FuturesMarket) extends SimpleS
   override def observationTimeOfDay = ObservationTimeOfDay.Official
 }
 
-case class LmeThreeMonthBuyerIndex(futuresMarket : FuturesMarket) extends SimpleSingleIndex("LME " + futuresMarket.commodity + " 3m Buyer", futuresMarket, level = Level.Bid){
+case class LmeThreeMonthBuyerIndex(futuresMarket : FuturesMarket) extends SimpleSingleIndex("LME " + futuresMarket.commodity + " 3m Buyer", futuresMarket, futuresMarket.businessCalendar, level = Level.Bid){
   def observedOptionPeriod(observationDay: Day) = throw new Exception("Options not supported for LME indices")
 
   def observedPeriod(day : Day) = {
