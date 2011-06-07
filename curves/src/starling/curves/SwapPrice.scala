@@ -11,7 +11,7 @@ case class SwapPrice(index : SingleIndex, averagingPeriod : DateRange) extends E
   def market = index.forwardPriceMarket
   private lazy val averagingDays = averagingPeriod.days.filter(index.isObservationDay)
 
-  def curveKey = index.forwardPriceCurveKey
+  def curveKey = ForwardCurveKey(index.forwardPriceMarket)
   def calc_dP(env : Environment)  = index.forwardPriceMarket.standardShift
 
   def shiftedEnvs(env : Environment, dP : Quantity)  = {
