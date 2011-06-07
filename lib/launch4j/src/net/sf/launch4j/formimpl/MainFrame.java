@@ -308,7 +308,7 @@ public class MainFrame extends JFrame {
 				Builder b = new Builder(log);
 				_outfile = b.build();
 				setRunEnabled(ConfigPersister.getInstance().getConfig()
-						.getHeaderType() == Config.GUI_HEADER	// TODO fix console app test
+						.getHeaderType() == Config.GUI_HEADER	// TODO [20 Sep 2010] fix console app test
 						&& (Util.WINDOWS_OS || !ConfigPersister.getInstance()
 												.getConfig().isDontWrapJar()));
 			} catch (InvariantViolationException ex) {

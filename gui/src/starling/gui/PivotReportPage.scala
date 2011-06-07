@@ -96,7 +96,7 @@ case class MainPivotReportPage(showParameters:Boolean, reportParameters:ReportPa
       } }
     }
 
-    //TODO: respond to PricingGroup market data changes
+    //TODO [02 Dec 2010] respond to PricingGroup market data changes
 
     functions.toList
   }
@@ -173,7 +173,7 @@ case class MainPivotReportPage(showParameters:Boolean, reportParameters:ReportPa
           server => {
             // check to see if we have market data for the observation day and pnl from day, if we don't, import it
             // making new copies of the ReportParameters is the really ugly bit
-            selfReportPage(rp = rp.importMissing(server, observationDaysForPricingGroup), pps = newPivotPageState)
+            selfReportPage(rp = rp, pps = newPivotPageState)
           }
         }
       }

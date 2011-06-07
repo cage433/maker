@@ -107,8 +107,6 @@ case class OilVolSkewAtomicDatumKey(market : CommodityMarket, period : DateRange
   }
 
   def nullValue = Map(0.5 -> Percentage(0))
-
-  def periodKey = Some(period)
 }
 
 case class OilVolSkew(marketDayAndTime : DayAndTime, market : CommodityMarket, data : OilVolSurfaceData) extends CurveObject{

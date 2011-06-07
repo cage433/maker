@@ -105,7 +105,7 @@ class MarketDataChooser(maybeDesk:Option[Desk], pageContext:PageContext, snapsho
       val envModifiers = TreeSet[EnvironmentModifierLabel]() ++
         (if (zeroInterestRatesCheckbox.selected) Some(EnvironmentModifierLabel.zeroInterestRates) else None).toList ++
         (if (zeroVolsCheckbox.selected) Some(EnvironmentModifierLabel.zeroVols) else None).toList
-      val tradeDay = marketDataDayPicker.day //TODO should be selected by the user
+      val tradeDay = marketDataDayPicker.day //TODO [19 Oct 2010] should be selected by the user
       action(CurveIdentifierLabel(marketDataIdentifier, EnvironmentRuleLabel.COB, tradeDay, valuationDayPicker.dayAndTime,
         thetaDayPicker.dayAndTime, envModifiers))
     }

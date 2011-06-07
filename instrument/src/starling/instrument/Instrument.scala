@@ -140,10 +140,10 @@ trait Instrument extends Ordered[Instrument] with Greeks with PnlExplanation {
   /** Returns the relevant VaR risk factors as of the given market day, when the deal is
    * valued in the given currency
    * <p>
-   * TODO - This kind of sucks - either
-   *        a) Lose atomicMarketDataKeys and put this method in the Instrument sub classes
-   *        b) pass the request to the key itself 
    */
+   //TODO [21 Oct 2009] This kind of sucks - either
+   //TODO [21 Oct 2009]       a) Lose atomicMarketDataKeys and put this method in the Instrument sub classes
+   //TODO [21 Oct 2009]       b) pass the request to the key itself
   def riskFactors(env: Environment, ccy : UOM) : Set[RiskFactor] = {
     val marketDayAndTime : DayAndTime = env.marketDay
     val marketDay: Day = marketDayAndTime.day
@@ -290,9 +290,9 @@ trait Instrument extends Ordered[Instrument] with Greeks with PnlExplanation {
   /**
    * Total position wrt to some risk factor type, i.e. parallel shift delta wrt WTI prices,
    * or parallel shift vega wrt WTI vols
-   * TODO - distinguish between Vol and Prices - are they the same RiskFactorMarket?
-   * TODO - ensure maximalRiskFactors returns a single risk factor per market/risk type
    */
+  // TODO [20 May 2010] distinguish between Vol and Prices - are they the same RiskFactorMarket?
+  // TODO [20 May 2010] ensure maximalRiskFactors returns a single risk factor per market/risk type
   def riskFactorTypePosition(env : Environment, rfType : RiskFactorType, valCCY : UOM) : Quantity = {
     mergedVaRRiskFactors(env, valCCY).find(_.riskFactorType == rfType) match {
       case Some(rf) => riskFactorPosition(env, rf, valCCY)

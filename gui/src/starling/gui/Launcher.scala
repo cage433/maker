@@ -90,7 +90,7 @@ object Launcher {
     numberOfClientsLaunched += 1
 
     def logger(message:String) {
-      // TODO - do something clever with this message.
+      // TODO [03 Feb 2011] do something clever with this message.
 //      println(message)
     }
     val client = new BouncyRMIClient(rmiHost, rmiPort, classOf[StarlingServer], auth(servicePrincipalName), logger, overriddenUser)
@@ -521,7 +521,7 @@ class StarlingBrowserFrame(homePage: Page, pageBuilder: PageBuilder, lCache: Loc
   }
 
   private def regenerateFromBuffer(focusComponent: Component = tabbedPaneBuffer.last.selection.page.content) {
-    // TODO - ensure the correct size is used for the components in the split panes.
+    // TODO [16 Apr 2010] ensure the correct size is used for the components in the split panes.
     val componentToAdd = tabbedPaneBuffer.reduceRight[Component](new SplitPane(Orientation.Vertical, _, _) {
       border = EmptyBorder
     })

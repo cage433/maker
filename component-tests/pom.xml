@@ -11,7 +11,7 @@
     <relativePath>../../../buildtools/services/pom.xml</relativePath>
   </parent>
 
-  <!--TODO It would be nice not to have to specify a packaging as we don't want one loaded into nexus-->
+  <!--TODO [31 May 2011] It would be nice not to have to specify a packaging as we don't want one loaded into nexus-->
   <name>Permissions Service</name>
   <groupId>com.trafigura.services</groupId>
   <artifactId>permission-test</artifactId>

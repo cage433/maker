@@ -23,7 +23,7 @@ case class FwdCurveDbMarketDataSource(varSqlDB: DB, businessCalendars: BusinessC
 
     import FwdCurveDbMarketDataSource._
     if(!anyPrices(varSqlDB, MetalsPriceTable, observationDay, pricingGroupID) && !anyPrices(varSqlDB, NonMetalsPriceTable, observationDay, pricingGroupID)) {
-      throw new NoMarketDataForDayException(observationDay, "There is no market data in the Forward Curve Application for this observation day: " + observationDay)
+      throw new NoMarketDataForDayException(observationDay, "There is no market data in the Forward Curve Application for this observation day: " + (observationDay, this))
     }
 
     val spotFXKeys: List[SpotFXDataKey] = FwdCurveAppExternalMarketDataReader.currencyCurveIDs.keysIterator.map{ccy=>SpotFXDataKey(ccy)}.toList
@@ -35,7 +35,7 @@ case class FwdCurveDbMarketDataSource(varSqlDB: DB, businessCalendars: BusinessC
         case _ => true
       }
     } }.filter(_.market.pricesTable != null)
-    val forwardRateKeys: List[ForwardRateDataKey] = List(ForwardRateDataKey(UOM.USD)) // TODO We only have USD at the moment. Fix this once we have more
+    val forwardRateKeys: List[ForwardRateDataKey] = List(ForwardRateDataKey(UOM.USD)) // TODO [05 Apr 2011] We only have USD at the moment. Fix this once we have more
     val volSurfaceKeys: scala.List[OilVolSurfaceDataKey] = OilVolSurfaceDataType.keys
     val spredStdKeys: List[SpreadStdDevSurfaceDataKey] = SpreadStdDevSurfaceDataType.keys
 
@@ -134,12 +134,12 @@ case class FwdCurveDbMarketDataSource(varSqlDB: DB, businessCalendars: BusinessC
                       where CurveID = :CurveID
                             and PricingGroupID = 1
                            and ObservationDate = '2010-01-26'
-                      """ % (NonMetalsPriceTable) // TODO magic table knowledge
-      // TODO hard coded observation date until we get full data from LIM
+                      """ % (NonMetalsPriceTable) // TODO [05 Apr 2011] magic table knowledge
+      // TODO [05 Apr 2011] hard coded observation date until we get full data from LIM
 
       val entries = varSqlDB.queryWithResult(query, Map("CurveID" -> curveID, "PricingGroupID" -> pricingGroupID)) {
         rs => {
-          // TODO this needs to be looked at when we have real data in the FCA
+          // TODO [05 Apr 2011] this needs to be looked at when we have real data in the FCA
           new ForwardRateDataEntry(rs.getDay("ForwardDate"), "Annual", "SWAP", rs.getDouble("price"))
         }
       }
@@ -158,16 +158,16 @@ case class FwdCurveDbMarketDataSource(varSqlDB: DB, businessCalendars: BusinessC
                             and PricingGroupID = :PricingGroupID
                            and ObservationDate = :ObservationDate
                            and ForwardDate = :ObservationDate
-                      """ % (NonMetalsPriceTable) // TODO magic table knowledge
+                      """ % (NonMetalsPriceTable) // TODO [05 Apr 2011] magic table knowledge
 
-      varSqlDB.queryWithOneResult[MarketData](query, Map("CurveID" -> curveID, "PricingGroupID" -> 1, // tODO magic pricing group
+      varSqlDB.queryWithOneResult[MarketData](query, Map("CurveID" -> curveID, "PricingGroupID" -> 1, // TODO [05 Apr 2011] magic pricing group
         "ObservationDate" -> observationDay)) {
         rs => {
           SpotFXData(Quantity(rs.getDouble("price"), ccy / USD).invert)
         }
       } match {
-      // TODO - the SpotFXData object should contain an optional quantity - so as not to throw an exception
-      // TODO - until we actually need that rate
+      // TODO [05 Apr 2011] the SpotFXData object should contain an optional quantity - so as not to throw an exception
+      // TODO [05 Apr 2011] until we actually need that rate
         case None => throw new MissingMarketDataException("Couldn't find spotfx for " + ccy + " on " + observationDay)
         case Some(rate: MarketData) => (sdk, rate)
       }

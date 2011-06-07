@@ -19,7 +19,7 @@ case class ForwardCurveStagingPricingGroup(
   def useForwardCurveAppPrices = false
 }
 
-// TODO: remove as soon as you have a better idea
+// TODO [08 Jun 2010] remove as soon as you have a better idea
 //trait ForwardCurveStagingInterface {
 //  def apply(curveID:Int, observationDate:Day, pricingGroupID:Int, subgroupName:Option[String]) : Option[PriceData]
 //}
@@ -34,7 +34,7 @@ case class ForwardCurveStagingPricingGroup(
 //        ) extends MarketDataSource {
 //
 //  def read(observationDay: Day) = {
-//    // TODO: this is a copy of the forward curve data - should be rewritten to take into account
+//    // TODO [07 Sep 2010] this is a copy of the forward curve data - should be rewritten to take into account
 //    // what the user has acutally provided.
 //    val reader = new ForwardCurveStagingMarketDataReader(fcspg, observationDay, fcStagingDB, fcDB, limServer, eaiDB, fcInterface)
 //    val spotFXKeys:List[MarketDataKey] = FwdCurveAppExternalMarketDataReader.currencyCurveIDs.keysIterator.map{ccy=>SpotFXDataKey(ccy)}.toList

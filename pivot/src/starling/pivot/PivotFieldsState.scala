@@ -346,7 +346,7 @@ case class ColumnTrees(trees:List[ColumnTree]) {
   def columnFields:List[Field] = allFieldAndIsMeasures.filterNot(_.isMeasure).map(_.field)
   def measureFields:List[Field] = allFieldAndIsMeasures.filter(_.isMeasure).map(_.field)
   def hasMeasureFields = measureFields.nonEmpty
-  def hasColumnField = false // TODO - tells us whether we can rotate the pivot report.
+  def hasColumnField = false // TODO [16 May 2011] tells us whether we can rotate the pivot report.
   def keep(fields:Set[Field]):ColumnTrees = {
     val newTrees = trees.flatMap(_.keep(fields))
     if (newTrees.forall(_.childStructure.trees.isEmpty)) {

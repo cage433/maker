@@ -196,8 +196,8 @@ abstract class FuturesExpiryRules(businessCalendars: BusinessCalendars) {
   /**
    * Platts Dubai or Dubai Crude
    * No idea what the expiry rule is
-   * TODO Jerome
    */
+  // TODO [21 Sep 2010] Jerome
   val dubaiCrudeExpiryRule = new MonthFuturesExpiryRule {
     // The last trading day of the month before the spot month (postponed if legal holidays)
     // http://www.shfe.com.cn/Ehome/contracts.jsp?&subjectpid=9&subjectid=904&startpage=7###
@@ -209,8 +209,8 @@ abstract class FuturesExpiryRules(businessCalendars: BusinessCalendars) {
   /**
    * Platts Brent
    * No idea what the expiry rule is
-   * TODO Jerome
    */
+  // TODO [21 Sep 2010] Jerome
   val plattsBrentExpiryRule = new MonthFuturesExpiryRule {
     // The last trading day of the month before the spot month (postponed if legal holidays)
     // http://www.shfe.com.cn/Ehome/contracts.jsp?&subjectpid=9&subjectid=904&startpage=7###

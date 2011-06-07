@@ -131,9 +131,9 @@ object CommoditySwap extends InstrumentType[SingleCommoditySwap] with TradeableT
   /**
    * The default settlement date for swaps is (I believe) generally the
    * fifth business day of the following month.
-   * TODO - check this, although the consequences of getting it wrong
-   * shouldn't be dire. Mtm will just have a slightly incorrect discount
    */
+  // TODO [07 Jan 2010] check this, although the consequences of getting it wrong
+  // TODO [07 Jan 2010]  shouldn't be dire. Mtm will just have a slightly incorrect discount
   def swapSettlementDate(dayInSwap: Day): Day = {
     dayInSwap.containingMonth.lastDay.addBusinessDays(BusinessCalendar.NONE, 5)
   }

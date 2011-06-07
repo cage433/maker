@@ -33,7 +33,7 @@ class DiffPivotTableDataSourceTest extends StarlingTest {
 
   @Test
   def testSimpleDifference() {
-    // TODO - The diff data source currently throws an exception. I don't think anyone uses it at the moment so I won't fix it.
+    // TODO [16 May 2011] The diff data source currently throws an exception. I don't think anyone uses it at the moment so I won't fix it.
     /*val dsA = new PivotTableDataSource {
       def fieldDetailsGroups = List(FieldDetailsGroup("Test", List( FieldDetails("Name"), new SumIntFieldDetails("Height"))))
       def data(pfs : PivotFieldsState) = {

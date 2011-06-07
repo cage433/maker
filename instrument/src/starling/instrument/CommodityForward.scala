@@ -36,14 +36,14 @@ case class CommodityForward(
 
   def valuationCCY : UOM = strike.numeratorUOM
 
-  def isLive(dayAndTime: DayAndTime) : Boolean = dayAndTime < deliveryDay.endOfDay // TODO what should this be - need Steven to look at forwards
+  def isLive(dayAndTime: DayAndTime) : Boolean = dayAndTime < deliveryDay.endOfDay // TODO [15 Apr 2010] what should this be - need Steven to look at forwards
 
   override def expiryDay() = Some(deliveryDay)
 
   def instrumentType = CommodityForward
   def tradeableType = CommodityForward
 
-  //TODO - check this
+  //TODO [21 Oct 2009] check this
   private lazy val settlementDate = deliveryDay
   def details :Map[String, Any] = Map("Market" -> market, "Period" -> deliveryDay, "Strike" -> strike)
   def tradeableDetails :Map[String, Any] = Map("Market" -> market, "Period" -> deliveryDay, "Initial Price" -> strike, "Quantity" -> volume)

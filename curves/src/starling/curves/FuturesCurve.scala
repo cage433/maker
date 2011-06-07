@@ -139,9 +139,6 @@ case class ForwardPriceKey(
   def bucketGroup = (this.getClass, market)
 
   def nullValue = Quantity(10, market.priceUOM)
-
-  def periodKey = Some(period)
-
 }
 
 trait ForwardCurveTrait{
@@ -170,7 +167,6 @@ object ForwardCurve {
 }
 /** A simple forward curve. Interpolation between the supplied day prices is handled by the market.
  * <p>
- * TODO - prices should be quantities.
  */
 case class ForwardCurve(
   market : CommodityMarket,

@@ -16,7 +16,7 @@ abstract class UnfilteredPivotTableDataSource extends PivotTableDataSource {
   def unfilteredData(pfs : PivotFieldsState) : List[Map[Field,Any]]
 
   def data(pfs : PivotFieldsState):PivotResult = {
-    //TODO remove the pfs argument as it shouldn't be needed
+    //TODO [24 Nov 2010] remove the pfs argument as it shouldn't be needed
     UnfilteredPivotTableDataSource.applyFiltersAndCalculatePossibleValues(fieldDetails, unfilteredData(pfs), pfs)
   }
 }

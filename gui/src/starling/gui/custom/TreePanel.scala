@@ -578,7 +578,7 @@ class TreePanelButtonPanel extends MigPanel("insets 0, al right", "[p]2lp[p]") {
 
 class Tree extends Component {
   var rootNode:DefaultMutableTreeNode = null
-  // TODO - get rid of the magic number and put in the proper number.
+  // TODO [08 Dec 2010] get rid of the magic number and put in the proper number.
   val magicNumberForTreeSize = 20
   lazy val treeCellRenderer = new CheckBoxElementTreeCellRenderer
 

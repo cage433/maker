@@ -22,7 +22,7 @@ import java.lang.{RuntimeException, String}
 import java.util.concurrent.atomic.AtomicInteger
 
 
-// TODO: move me somewhere proper
+// TODO [07 Sep 2010] move me somewhere proper
 case class RelativeImpliedVolData(vols: Map[DateRange,Map[Double,Percentage]]) {
   def absolute(prices : PriceData) : ImpliedVolData = {
     val data = vols.flatMap {
@@ -115,8 +115,8 @@ object MarketDataStore {
     PricingGroup.Crude-> List(Starling, LIM, Crude),
     PricingGroup.LondonDerivatives -> List(Starling, LondonDerivatives, LIM),
     PricingGroup.GasolineRoW -> List(Starling, GasolineRoW, LIM),
-    PricingGroup.BarryEckstein -> List(Starling, BarryEckstein, LIM),
-    PricingGroup.LondonDerivativesOptions -> List(Starling, LondonDerivativesOptions, LIM, System)
+    PricingGroup.BarryEckstein -> List(Starling, BarryEckstein, System, LIM),
+    PricingGroup.LondonDerivativesOptions -> List(Starling, LondonDerivativesOptions, System, LIM)
   )
 
   val orphanedPricingGroups = (PricingGroup.values \\ Desk.pricingGroups.intersect(pricingGroupsDefinitions.keys.toList))
@@ -215,7 +215,7 @@ case class MarketDataUpdate(timedKey: TimedMarketDataKey, data: Option[MarketDat
   def indexedData(marketDataSet: MarketDataSet) = dataIdFor(marketDataSet) → data
 }
 
-// TODO: move me somewhere proper
+// TODO [12 May 2011] move me somewhere proper
 class DBMarketDataStore(db: DBTrait[RichResultSetRow], val marketDataSources: Map[MarketDataSet, MarketDataSource],
                         broadcaster: Broadcaster = Broadcaster.Null) extends MarketDataStore {
 
@@ -480,7 +480,7 @@ class DBMarketDataStore(db: DBTrait[RichResultSetRow], val marketDataSources: Ma
         excelDataSetsCache = excelDataSetsCache.sortWith(_ < _)
         broadcaster.broadcast(ExcelMarketListUpdate(excelDataSetsCache.toList))
       }
-      // TODO: [2 Jun 2011, Stacy]: Should this be getOrElseUpdate ?
+      // TODO [02 Jun 2011] Should this be getOrElseUpdate ? Stacy
       val days = observationDaysByExcelCache.getOrElse(name, MSet[Day]())
 
       data.flatMap(_.observationPoint.day.toList).filterNot(day => days.contains(day)).foreach(day => {

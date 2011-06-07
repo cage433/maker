@@ -10,10 +10,8 @@ import starling.quantity.{Quantity, UOM}
 
 /**
  * The definition of the spread is market1 - market2
- *
- * TODO!!
- * this needs to be renamed to SpreadIndex after Alex's refactor
  */
+// TODO [26 Jan 2011] this needs to be renamed to SpreadIndex after Alex's refactor
 case class FuturesSpreadIndex(spreadName: CaseInsensitive, index1: SingleIndex, index2: SingleIndex, ccy: UOM, uom: UOM, precision: Option[Precision]) extends MultiIndex(spreadName) {
   def indexes = Set(index1, index2)
 

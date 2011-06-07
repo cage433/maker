@@ -75,7 +75,7 @@ case class DeletePivotEdit(values:Map[Field,Any]) extends PivotEdit {//Just key 
 }
 
 //Measure is editable if all key fields are in row or column or have single filter area selection
-//Row is deletable when // TODO we'll decide later
+//Row is deletable when // TODO [21 Jan 2011] we'll decide later
 trait EditPivot {
   def editableToKeyFields:Map[Field,Set[Field]]
   def save(edits:Set[PivotEdit]):Boolean

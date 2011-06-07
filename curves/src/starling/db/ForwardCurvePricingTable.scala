@@ -18,6 +18,6 @@ case object NonMetalsCurvesTable extends ForwardCurvePricingTable("ForwardCurves
 
 /**
  * For CME Eurodollar futures, which are a market as they need holidays, but don't require a price table
- * @TODO - refactor the market class to avoid this
  */
+// TODO [17 Mar 2010] refactor the market class to avoid this
 case object NoPriceTable extends ForwardCurvePricingTable("This market has no associated price table")
