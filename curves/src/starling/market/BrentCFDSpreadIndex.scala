@@ -13,10 +13,10 @@ case class BrentCFDSpreadIndex(forwardBrent: PublishedIndex) extends MultiIndex(
     assert(rule == CommonPricingRule, "Only Common Rule makes sense for Brent CFD")
     val observationDays = rule.observationDays(markets, averagingPeriod)
 
-    val prices1 = observationDays.map(DATED_BRENT.fixingOrForwardPrice(env, _))
+    val prices1 = observationDays.map(env.fixingOrForwardPrice(DATED_BRENT, _))
     val avg1 = checkedConvert(DATED_BRENT, Quantity.average(prices1), priceUOM)
 
-    val prices2 = observationDays.map(forwardBrent.fixingOrForwardPrice(env, _))
+    val prices2 = observationDays.map(env.fixingOrForwardPrice(forwardBrent, _))
     val avg2 = checkedConvert(forwardBrent, Quantity.average(prices2), priceUOM)
 
     avg1 - avg2

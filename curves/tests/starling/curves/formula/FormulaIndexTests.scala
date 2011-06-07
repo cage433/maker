@@ -58,8 +58,8 @@ class FormulaIndexTests extends TestExpiryRules with ShouldMatchers {
     assertNotSame(rule.observationDays(index.markets, period), index1.observationDays(period))
     assertEquals(rule.observationDays(index.markets, period), index2.observationDays(period))
 
-    val avg1 = Quantity.average(index1.observationDays(period).map(index1.fixingOrForwardPrice(env, _)))
-    val avg2 = Quantity.average(index2.observationDays(period).map(index2.fixingOrForwardPrice(env, _)))
+    val avg1 = Quantity.average(index1.observationDays(period).map(env.fixingOrForwardPrice(index1, _)))
+    val avg2 = Quantity.average(index2.observationDays(period).map(env.fixingOrForwardPrice(index2, _)))
 
     assertQtyEquals(forwardPrice, avg1 * 1.2 - avg2 * 0.8)
   }
@@ -77,12 +77,12 @@ class FormulaIndexTests extends TestExpiryRules with ShouldMatchers {
 
     val forwardPrice = index.averagePrice(env, period, rule, index.priceUOM)
 
-    val avg1 = Quantity.average(rule.observationDays(index.markets, period).map(index1.fixingOrForwardPrice(env, _)))
-    val avg2 = Quantity.average(rule.observationDays(index.markets, period).map(index2.fixingOrForwardPrice(env, _)))
+    val avg1 = Quantity.average(rule.observationDays(index.markets, period).map(env.fixingOrForwardPrice(index1, _)))
+    val avg2 = Quantity.average(rule.observationDays(index.markets, period).map(env.fixingOrForwardPrice(index2, _)))
 
     val commonObDays = index1.observationDays(period).intersect(index2.observationDays(period))
-    assertEquals(Quantity.average(commonObDays.map(d => index1.fixingOrForwardPrice(env, d))), avg1)
-    assertEquals(Quantity.average(commonObDays.map(d => index2.fixingOrForwardPrice(env, d))), avg2)
+    assertEquals(Quantity.average(commonObDays.map(d => env.fixingOrForwardPrice(index1, d))), avg1)
+    assertEquals(Quantity.average(commonObDays.map(d => env.fixingOrForwardPrice(index2, d))), avg2)
 
     assertQtyEquals(forwardPrice, avg1 * 1.2 - avg2 * 0.8)
   }
@@ -100,9 +100,9 @@ class FormulaIndexTests extends TestExpiryRules with ShouldMatchers {
     val period = Month(2010, 2)
     val forwardPrice = index.averagePrice(env, period, rule, index.priceUOM)
 
-    val avg1 = Quantity.average(rule.observationDays(index.markets, period).map(index1.fixingOrForwardPrice(env, _)))
-    val avg2 = Quantity.average(rule.observationDays(index.markets, period).map(index2.fixingOrForwardPrice(env, _)))
-    val avg3 = Quantity.average(rule.observationDays(index.markets, period).map(index3.fixingOrForwardPrice(env, _)))
+    val avg1 = Quantity.average(rule.observationDays(index.markets, period).map(env.fixingOrForwardPrice(index1, _)))
+    val avg2 = Quantity.average(rule.observationDays(index.markets, period).map(env.fixingOrForwardPrice(index2, _)))
+    val avg3 = Quantity.average(rule.observationDays(index.markets, period).map(env.fixingOrForwardPrice(index3, _)))
 
     assertQtyEquals(forwardPrice, avg1 * .5 - avg2 * .4 - avg3 * 1.2)
   }

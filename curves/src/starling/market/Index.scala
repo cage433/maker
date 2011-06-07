@@ -86,7 +86,7 @@ abstract class SingleIndex(val forwardPriceMarket : CommodityMarket, name : Stri
   def fixing(slice : MarketDataSlice, observationDay : Day) : Quantity
   def fixing(env : InstrumentLevelEnvironment, observationDay : Day) : Quantity
   // TODO - remove this
-  def fixingOrForwardPrice(env : Environment, observationDay : Day) = env.fixingOrForwardPrice(this, observationDay)
+//  def fixingOrForwardPrice(env : Environment, observationDay : Day) = env.fixingOrForwardPrice(this, observationDay)
   def forwardPrice(env : InstrumentLevelEnvironment, observationDay : Day, ignoreShiftsIfPermitted : Boolean) : Quantity
   def businessCalendar : BusinessCalendar
   def isObservationDay(day: Day): Boolean = businessCalendar.isBusinessDay(day)

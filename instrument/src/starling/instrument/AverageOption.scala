@@ -122,7 +122,7 @@ abstract class SingleAverageOption(
     val marketDay = env.marketDay
     val daysInFuture = pricingDays.filter(_.endOfDay > marketDay)
     val r = env.forwardRate(valuationCCY, env.marketDay.day, settlementDate)
-    val prices = pricingDays.map(d => d.endOfDay.timeSince(marketDay) -> index.fixingOrForwardPrice(env, d)).toMap
+    val prices = pricingDays.map(d => d.endOfDay.timeSince(marketDay) -> env.fixingOrForwardPrice(index, d)).toMap
     val unfixed = prices.filterKeys(_ > 0.0)
     val vol = (if (daysInFuture.isEmpty) Percentage(1e-6) else env.swapVol(index, SimpleDateRange.containingRange(daysInFuture), strike))
     Quantity(Curran(callPut, prices, strike, r, vol).undiscountedValue, strike.uom)
@@ -142,7 +142,7 @@ abstract class SingleAverageOption(
       this
     } else {
       val exerciseDayEnv = env.forwardState(expiryDay.endOfDay)
-      val prices = averagingDays.map(d => index.fixingOrForwardPrice(exerciseDayEnv, d))
+      val prices = averagingDays.map(d => exerciseDayEnv.fixingOrForwardPrice(index, d))
       val average = Quantity.average(prices)
       val value = callPut.payoff(average, strike) match {
         case Some(v) => v * volume

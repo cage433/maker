@@ -40,7 +40,7 @@ case class FixingKey(index : SingleIndex, observationDay: Day) extends AtomicDat
       originalAtomicEnv(this)
     } else if (observationDay.endOfDay <= forwardDayAndTime) {
       val env = Environment(originalAtomicEnv)
-      index.fixingOrForwardPrice(env, observationDay)
+      env.fixingOrForwardPrice(index, observationDay)
     } else {
       throw new Exception("Can't get fixing for day in the future")
     }

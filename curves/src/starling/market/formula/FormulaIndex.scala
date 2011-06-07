@@ -26,7 +26,7 @@ case class FormulaIndex(formulaName: CaseInsensitive, formula: Formula, ccy: UOM
     formula.price(priceUOM) {
       case index: SingleIndex => {
         val observationDays = index.observationDays(averagingPeriod).intersect(rule.observationDays(markets, averagingPeriod))
-        val prices = observationDays.map(index.fixingOrForwardPrice(env, _))
+        val prices = observationDays.map(env.fixingOrForwardPrice(index, _))
         checkedConvert(index, Quantity.average(prices), priceUOM)
       }
       case _ => throw new Exception("Couldn't work out price for formula index on complex indices: " + this)
