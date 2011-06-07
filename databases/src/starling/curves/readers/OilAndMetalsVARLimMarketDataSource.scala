@@ -4,13 +4,13 @@ import starling.LIMServer
 import starling.market._
 import collection.SortedMap
 import starling.marketdata._
-import starling.db.{MarketDataEntry, MarketDataSource}
 import starling.utils.ImplicitConversions._
 import collection.immutable.Map
 import starling.daterange._
 import java.lang.String
 import starling.pivot.MarketValue
 import starling.concurrent.MP._
+import starling.db.{NoMarketDataForDayException, MarketDataEntry, MarketDataSource}
 
 
 class OilAndMetalsVARLimMarketDataSource(limServer: LIMServer) extends MarketDataSource {
@@ -98,7 +98,10 @@ class OilAndMetalsVARLimMarketDataSource(limServer: LIMServer) extends MarketDat
   }
 
   private def readFreightPricesFromLim(day:Day, mkt : Market.BalticFuturesMarket) : PriceData = {
-    val rawLimPriceData : Array[Double] = limServer.getMultipleData(mkt.limSymbols.map(_.name), day, day)(day)
+    val rawLimPriceData : Array[Double] = limServer.getMultipleData(mkt.limSymbols.map(_.name), day, day).get(day) match {
+      case Some(p) => p
+      case None => throw new NoMarketDataForDayException(day, "No LIM Freight Prices for " + mkt)
+    }
     val rawPriceMap = mkt.limSymbols.map{ls => mkt.periodForLimSymbol(day.endOfDay, ls)}.zip(rawLimPriceData).filter{
       case (_, price) => ! price.isNaN && ! price.isInfinity && price > 0
     }.toMap

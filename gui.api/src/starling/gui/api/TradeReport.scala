@@ -175,11 +175,7 @@ case class TradeSelectionWithTimestamp(deskAndTimestamp:Option[(Desk, TradeTimes
   }
 }
 
-case class PnlFromParameters(tradeTimestampFrom: Option[TradeTimestamp], curveIdentifierFrom:CurveIdentifierLabel) {
-  def importMissing(server : StarlingServer, observationDaysForPricingGroup : Map[PricingGroup, Set[Day]]) = {
-    copy(curveIdentifierFrom = curveIdentifierFrom.importMissing(server, observationDaysForPricingGroup))
-  }
-}
+case class PnlFromParameters(tradeTimestampFrom: Option[TradeTimestamp], curveIdentifierFrom:CurveIdentifierLabel)
 
 case class ReportParameters(tradeSelectionWithTimestamp:TradeSelectionWithTimestamp, curveIdentifier:CurveIdentifierLabel,
                             reportOptions:ReportOptions, expiryDay:Day,
@@ -200,11 +196,6 @@ case class ReportParameters(tradeSelectionWithTimestamp:TradeSelectionWithTimest
   def copyWithIntradayTimestamp(timestamp: Timestamp) = {
     copy(tradeSelectionWithTimestamp = tradeSelectionWithTimestamp.copyWithNewIntradaySubgroupTimestamp(timestamp))
   }
-
-  def importMissing(server : StarlingServer, observationDaysForPricingGroup : Map[PricingGroup, Set[Day]]) = {
-    copy(curveIdentifier = curveIdentifier.importMissing(server, observationDaysForPricingGroup),
-         pnlParameters = pnlParameters.map(pnlParams => pnlParams.importMissing(server, observationDaysForPricingGroup)))
-  }
 }
 
 case class EnvironmentModifierLabel(name:String)
@@ -224,21 +215,6 @@ case class CurveIdentifierLabel(
         valuationDayAndTime:DayAndTime, //typically the same as tradesUpToDay but can be moved forward
         thetaDayAndTime:DayAndTime,
         envModifiers:SortedSet[EnvironmentModifierLabel]) {
-//  override def toString = marketDataIdentifier.toString + " " + tradesUpToDay + " " + envModifiers.mkString(", ")
-
-  /**
-   * This will import any missing market data for the given curveIdentifier and return an updated CurveIdentifierLabel
-   */
-  def importMissing(server : StarlingServer, observationDaysForPricingGroup : Map[PricingGroup, Set[Day]]) = {
-    if (marketDataIdentifier.selection.pricingGroup.isDefined && !contains(observationDaysForPricingGroup)) {
-      val label = server.snapshot(MarketDataSelection(marketDataIdentifier.selection.pricingGroup), tradesUpToDay)
-
-      copyMarketDataVersion(SpecificMarketDataVersion(label.version))
-    }
-    else {
-      this
-    }
-  }
 
   def copyMarketDataVersion(version: MarketDataVersion): CurveIdentifierLabel =
     copy(marketDataIdentifier = marketDataIdentifier.copy(marketDataVersion = version))

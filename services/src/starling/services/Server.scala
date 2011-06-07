@@ -33,13 +33,14 @@ import starling.reports.pivot.{ReportContextBuilder, ReportService}
 import starling.LIMServer
 import starling.gui.api._
 import starling.daterange.Day
-import starling.calendar.{BusinessCalendar, DBHolidayTables, BusinessCalendars, HolidayTablesFactory}
 import starling.bouncyrmi._
 import starling.curves.{FwdCurveAutoImport, EAIQuotesFormulaIndexReader, CurveViewer}
 import starling.eai.{Book, Traders, EAIAutoImport, EAIStrategyDB}
 import com.jolbox.bonecp.BoneCP
 import org.springframework.mail.javamail.{MimeMessageHelper, JavaMailSender, JavaMailSenderImpl}
 import starling.rmi._
+import starling.calendar._
+import java.lang.String
 
 
 class StarlingInit( props: Props,
@@ -129,7 +130,7 @@ class StarlingInit( props: Props,
   val eaiStarlingSqlServerDB = DB(props.EAIStarlingSqlServer())
 
   // Things that need access to a DB like portfolios, holidays, markets, indexes...
-  val holidayTables = new DBHolidayTables(eaiSqlServerDB)
+  val holidayTables = new Holidays(eaiSqlServerDB)
   HolidayTablesFactory.registerHolidayTablesImpl(holidayTables)
   val businessCalendars = new BusinessCalendars(holidayTables)
   val expiryRules = new FuturesExpiryRulesImpl(eaiSqlServerDB, businessCalendars)
@@ -214,10 +215,10 @@ class StarlingInit( props: Props,
       marketDataSources,
       broadcaster)
 
-    val fwdCurveAutoImport = new FwdCurveAutoImport(60, mds, marketDataSources.flatMap {
-      case (k, f: FwdCurveDbMarketDataSource) => Some(k, f)
+    val fwdCurveAutoImport = new FwdCurveAutoImport(60*15, mds, marketDataSources.flatMap {
+      case (k, f: FwdCurveDbMarketDataSource) => Some(k)
       case _ => None
-    }, varSqlServerDB)
+    }.toSet, businessCalendars.US_UK)
     (fwdCurveAutoImport, mds)
   }
 

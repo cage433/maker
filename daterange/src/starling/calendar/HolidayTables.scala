@@ -9,7 +9,6 @@ trait HolidayTables{
   def regionHolidays(name: String) : BusinessCalendarSet
   def financialHolidays(name: String) : BusinessCalendarSet
 
-  lazy val AT : BusinessCalendarSet = regionHolidays("AT")
   val UK : BusinessCalendarSet = regionHolidays("UK")
   val US : BusinessCalendarSet = regionHolidays("US")
 
