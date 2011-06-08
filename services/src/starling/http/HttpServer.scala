@@ -15,15 +15,24 @@ import org.mortbay.jetty.security._
 import starling.props.Props
 import xml._
 import starling.utils.Log
+import org.mortbay.component.LifeCycle
+import org.mortbay.component.LifeCycle.Listener
+import java.util.EventListener
 
 
-class HttpServer(props:Props, servlets: (String, Servlet)*) {
-  val server = new JettyServer(props.HttpPort())
+class HttpServer(portNo : Int,
+                 val externalURL : String,
+                 serverName : String,
+                 //listeners : List[EventListener] = Nil,
+                 servlets: (String, Servlet)*) {
+
+  def this(props : Props, servlets: (String, Servlet)*) = 
+    this(props.HttpPort(), props.ExternalUrl(), props.ServerName(), servlets:_*)
+
+  val server = new JettyServer(portNo)
   var servletPaths = List[String]()
 
   val rootContext = new Context(server, "/", Context.SESSIONS);
-
-  val externalURL = props.ExternalUrl()
 
   def stop {
     server.stop
@@ -39,6 +48,12 @@ class HttpServer(props:Props, servlets: (String, Servlet)*) {
     val className : String = servlet.getClass.getName
     registerServlet(servlet, path)
   }
+
+/*
+  for (listener <- listeners) {
+    rootContext.addEventListener(listener)
+  }
+*/
 
   def errorHandler = new ErrorHandler {
     override def handleErrorPage(request:HttpServletRequest, writer:Writer, code:Int, message:String) = {
@@ -97,13 +112,13 @@ class HttpServer(props:Props, servlets: (String, Servlet)*) {
 
     server.start()
 
-    Log.info("HttpServer stared on port: " + props.HttpPort())
+    Log.info("HttpServer stared on port: " + portNo)
   }
 
   class RootServlet(servletPaths : List[String]) extends HttpServlet {
     override def doGet(request: HttpServletRequest, response: HttpServletResponse) = {
       if (request.getRequestURI == "/") {
-        val name = "starling - " + props.ServerName()
+        val name = "starling - " + serverName
         response.setStatus(200)
         response.getWriter.println("<html><title>"+name+"</title>")
         response.getWriter.println("<html><body><ul>")

@@ -267,6 +267,7 @@
         <SOURCES />
       </library>
     </orderEntry>
+    <orderEntry type="library" exported="" name="scala_model_with_persistence" level="project" />
   </component>
 </module>
 
