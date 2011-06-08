@@ -12,7 +12,7 @@ trait MarketDataType {
 
   val name: String = getClass.getName.substring(getClass.getName.lastIndexOf(".") + 1).stripSuffix("DataType$")
   def keyFields:Set[Field]
-  def valueFields:Set[Field]
+  def valueFields:Set[Field] // TODO [08 Jun 2011] Shouldn't valueFields be everything other than the keyFields ?
   def createKey(values:Map[Field,Any]):MarketDataKey
   def createValue(values:List[Map[Field,Any]]):dataType
   override val toString = name
@@ -23,6 +23,8 @@ trait MarketDataType {
 
   //The initial state to use in the market data viewer for this type of market data
   val initialPivotState:PivotFieldsState
+
+  def splitByFieldType[T](map: Map[Field, T]) = map.filterKeys(keyFields) → map.filterKeys(f => !keyFields.contains(f))
 }
 
 object MarketDataTypes {
