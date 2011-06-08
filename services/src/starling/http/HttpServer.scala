@@ -23,11 +23,11 @@ import java.util.EventListener
 class HttpServer(portNo : Int,
                  val externalURL : String,
                  serverName : String,
-                 //listeners : List[EventListener] = Nil,
+                 listeners : Option[EventListener],
                  servlets: (String, Servlet)*) {
 
   def this(props : Props, servlets: (String, Servlet)*) = 
-    this(props.HttpPort(), props.ExternalUrl(), props.ServerName(), servlets:_*)
+    this(props.HttpPort(), props.ExternalUrl(), props.ServerName(), None, servlets:_*)
 
   val server = new JettyServer(portNo)
   var servletPaths = List[String]()
@@ -49,11 +49,9 @@ class HttpServer(portNo : Int,
     registerServlet(servlet, path)
   }
 
-/*
   for (listener <- listeners) {
     rootContext.addEventListener(listener)
   }
-*/
 
   def errorHandler = new ErrorHandler {
     override def handleErrorPage(request:HttpServletRequest, writer:Writer, code:Int, message:String) = {
