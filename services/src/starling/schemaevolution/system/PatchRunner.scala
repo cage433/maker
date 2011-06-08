@@ -79,7 +79,7 @@ class PatchRunner(starling: RichDB, readOnlyMode: Boolean, startlingInit: Starli
     val packageDirectoryClassesWithNoInnerClasses = packageDirectoryClasses.filter(className => !className.contains("$"))
 
     //Remove the .class part of the file name
-    val classes = packageDirectoryClassesWithNoInnerClasses.map(className => className.substring(0, className.length - ".class".length))
+    val classes = packageDirectoryClassesWithNoInnerClasses.map(_.stripSuffix(".class"))
 
     //Remove any classes we are explicitly not interested in
     val explicitlyRemoveClasses = List("Patch0_ExamplePatch")

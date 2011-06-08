@@ -21,7 +21,7 @@ object PriceFixingsHistoryDataType extends MarketDataType {
 
   val fields = List(exchangeField, marketField, levelField, periodField, priceField)
 
-  def keyFields = Set(marketField.field, levelField.field, periodField.field)
+  def keyFields = Set(exchangeField.field, marketField.field, levelField.field, periodField.field)
   def valueFields = Set(priceField.field)
   def createKey(values: Map[Field, Any]) = PriceFixingsHistoryDataKey(
     Market.fromNameOrCommodity(values(exchangeField.field).asInstanceOf[String], values(marketField.field).asInstanceOf[String]))

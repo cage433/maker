@@ -9,19 +9,19 @@ import starling.market._
 import starling.marketdata._
 import starling.pivot.MarketValue
 import starling.quantity.{Quantity, UOM}
-import starling.utils.Log
-
 import LIMServer._
 import starling.utils.ClosureUtil._
 import starling.utils.ImplicitConversions._
 import FuturesExchangeFactory._
-
+import starling.utils.{Pattern, Log}
+import Pattern._
 
 case class RefinedMetalsLimMarketDataSource(limServer: LIMServer)
   extends MarketDataSource {
 
   private val fixingsSources: List[LimSource] = List(ECBSpotFXFixings, LMEFixings, LIBORFixings, MonthlyFuturesFixings)
   private val fxSources = List(BloombergFXRates)
+  private val priceRelations = List(new LMELIMRelation(TopRelation.Trafigura.Bloomberg.Metals.Lme, ObservationTimeOfDay.LMEClose))
 
   override def description = ("Fixing".pair(fixingsSources.flatMap(_.description)) ++
                               "SpotFX".pair(fxSources.flatMap(_.description)) ++
@@ -33,8 +33,6 @@ case class RefinedMetalsLimMarketDataSource(limServer: LIMServer)
         (day.startOfFinancialYear, day, PriceFixingsHistoryDataType) → getValues(day.startOfFinancialYear, day, fixingsSources)
     )
   }
-
-  private val priceRelations = List(new LMELIMRelation(TopRelation.Trafigura.Bloomberg.Metals.Lme, ObservationTimeOfDay.LMEClose))
 
   private def getPrices(day: Day) = limServer.query { connection =>
     priceRelations.flatMap { priceRelation => {
@@ -67,7 +65,7 @@ case class RefinedMetalsLimMarketDataSource(limServer: LIMServer)
 
       val groupedPrices = prices.toList.flatMap {
         case (level, prices) => prices.map { case (day, price) => (day, (level, price)) }
-      }.groupInto(_._1, _._2)
+      }.groupInto(_.head, _.tail)
 
       groupedPrices.toList.flatMapO { case (observationDay, pricesForLevel) => {
         if (pricesForLevel.isEmpty) None else Some(Prices(fixingRelation, pricesForLevel.toMap, observationDay))
@@ -98,34 +96,29 @@ trait LimSource {
 trait HierarchicalLimSource extends LimSource {
   val parentNodes: List[LimNode]
   def description = parentNodes.map(_.name)
+  def relationsFrom(connection: LIMConnection) = connection.getAllRelChildren(parentNodes : _*).flatMap(safeRelationFrom)
+  def relationExtractor: Extractor[String, Option[Relation]]
 
-  def fixingRelationFrom(childRelation: String): Option[(Relation, String)]
-
-  def relationsFrom(connection: LIMConnection) = connection.getAllRelChildren(parentNodes : _*).flatMap(safeFixingRelationFrom)
-
-  private def safeFixingRelationFrom(childRelation: String) = safely(fixingRelationFrom(childRelation)) match {
+  private def safeRelationFrom(childRelation: String) = safely(relationExtractor.unapply(childRelation).flatOpt) match {
     case Left(exception) => { Log.debug("Malformed LIM relation: " + childRelation, exception); None }
-    case Right(fixingRelation) => fixingRelation
+    case Right(fixingRelation) => fixingRelation.optPair(childRelation)
   }
 }
 
 object MonthlyFuturesFixings extends HierarchicalLimSource {
   type Relation = MonthlyFuturesRelation
+  val parentNodes = List(TopRelation.Trafigura.Bloomberg.Futures.Shfe, TopRelation.Trafigura.Bloomberg.Futures.Comex)
+  val levels = List(Level.Close, Level.Settle)
+
   case class MonthlyFuturesRelation(market: FuturesMarket, month: Month)
 
-  private val Regex = """TRAF\.(\w+)\.(\w+)_(\w+)""".r
+  def relationExtractor = Extractor.regex("""TRAF\.(\w+)\.(\w+)_(\w+)""") { case List(exchange, limSymbol, deliveryMonth) => {
+    val optMarket: Option[FuturesMarket] = Market.futuresMarkets.find(market =>
+      market.exchange.name == exchangeLookup(exchange) && market.limSymbol.map(_.name) == Some(limSymbol))
+    val optMonth: Option[Month] = ReutersDeliveryMonthCodes.parse(deliveryMonth)
 
-  def fixingRelationFrom(childRelation: String) = (childRelation partialMatch {
-    case Regex(exchange, limSymbol, reutersDeliveryMonth) => {
-      val optMarket: Option[FuturesMarket] = Market.futuresMarkets.find(market =>
-        market.exchange.name == exchangeLookup(exchange) && market.limSymbol.map(_.name) == Some(limSymbol))
-      val optMonth: Option[Month] = ReutersDeliveryMonthCodes.parse(reutersDeliveryMonth)
-
-      (optMarket, optMonth) partialMatch {
-        case (Some(market), Some(month)) => (MonthlyFuturesRelation(market, month), childRelation)
-      }
-    }
-  }).flatOpt
+    (optMarket, optMonth) partialMatch { case (Some(market), Some(month)) => MonthlyFuturesRelation(market, month) }
+  } }
 
   def marketDataEntriesFrom(fixings: List[Prices[MonthlyFuturesRelation]]) = {
     fixings.groupBy(f => (f.relation.market, f.observationDay)).toList.map { case ((market, observationDay), prices) => {
@@ -140,21 +133,18 @@ object MonthlyFuturesFixings extends HierarchicalLimSource {
     } }
   }
 
-  val parentNodes = List(TopRelation.Trafigura.Bloomberg.Futures.Shfe, TopRelation.Trafigura.Bloomberg.Futures.Comex)
-  val levels = List(Level.Close, Level.Settle)
-
   private def exchangeLookup(exchange: String) = if (exchange == "SHFE") "SFS" else exchange
 }
 
 object LMEFixings extends LimSource {
   type Relation = LMEFixingRelation
+  def description = List("TRAF.LME.<commodity>.<ring>.<tenor>")
+  val levels = List(Level.Ask, Level.Bid)
+
   case class LMEFixingRelation(ring: ObservationTimeOfDay, market: CommodityMarket, tenor:Tenor)
 
   private val tenors = List(Tenor.CASH, Tenor(Month, 3), Tenor(Month, 15), Tenor(Month, 27))
   private val rings = List(ObservationTimeOfDay.AMR1, ObservationTimeOfDay.Official, ObservationTimeOfDay.PMR1, ObservationTimeOfDay.Unofficial)
-
-  def description = List("TRAF.LME.<commodity>.<ring>.<tenor>")
-  val levels = List(Level.Ask, Level.Bid)
 
   def relationsFrom(connection: LIMConnection) = for (market <- LME.markets; ring <- rings; tenor <- tenors) yield {
     (LMEFixingRelation(ring, market, tenor), "TRAF.LME.%s.%s.%s" % (market.commodity.name.toUpperCase, ring.name.toUpperCase, tenor.toString))
@@ -174,14 +164,14 @@ object LMEFixings extends LimSource {
     }.toList
   }
 
-  private def keyGroup(fixing: Prices[LMEFixingRelation]) = {
+  private def keyGroup(fixing: Prices[LMEFixingRelation]) =
     (fixing.observationDay.atTimeOfDay(fixing.relation.ring), fixing.relation.market)
-  }
 }
 
 object BloombergFXRates extends HierarchicalLimSource {
   type Relation = FXRelation
-  private val Regex = """TRAF\.BGNL\.(...)(...)""".r
+  val parentNodes = List(TopRelation.Trafigura.Bloomberg.Currencies.Composite)
+  val levels = List(Level.Close)
 
   case class FXRelation(from: UOM, to: UOM) {
     def againstUSD(rate: Double): Option[Quantity] = (from, to) partialMatch {
@@ -190,43 +180,28 @@ object BloombergFXRates extends HierarchicalLimSource {
     }
   }
 
-  def marketDataEntriesFrom(allRates: List[Prices[FXRelation]]) = {
-    allRates.flatMapO { rates =>
-      rates.relation.againstUSD(rates.priceByLevel(Level.Close)).map(fx =>
-        MarketDataEntry(rates.observationDay.atTimeOfDay(ObservationTimeOfDay.LondonClose),
-          SpotFXDataKey(fx.denominatorUOM), SpotFXData(fx)))
-    }
+  def relationExtractor = Extractor.regex("""TRAF\.BGNL\.(...)(...)""") { case List(from, to) =>
+    (UOM.fromStringOption(from), UOM.fromStringOption(to)) partialMatch { case (Some(f), Some(t)) => FXRelation(f, t) }
   }
 
-  def fixingRelationFrom(childRelation: String) = (childRelation partialMatch {
-    case Regex(from, to) => (UOM.fromStringOption(from), UOM.fromStringOption(to)) partialMatch {
-      case (Some(f), Some(t)) => (FXRelation(f, t), childRelation)
-    }
-  }).flatOpt
-
-  val parentNodes = List(TopRelation.Trafigura.Bloomberg.Currencies.Composite)
-  val levels = List(Level.Close)
+  def marketDataEntriesFrom(allRates: List[Prices[FXRelation]]) = allRates.flatMapO { rates =>
+    rates.relation.againstUSD(rates.priceByLevel(Level.Close)).map(fx =>
+      MarketDataEntry(rates.observationDay.atTimeOfDay(ObservationTimeOfDay.LondonClose),
+        SpotFXDataKey(fx.denominatorUOM), SpotFXData(fx)))
+  }
 }
 
 object ECBSpotFXFixings extends HierarchicalLimSource {
   type Relation = UOM
-
-  private val Regex = """ECB(\w+)""".r
   val parentNodes = List(TopRelation.ForeignExchange.Ecb)
   val levels = List(Level.Spot)
 
-  def fixingRelationFrom(childRelation: String): Option[(UOM, String)] = (childRelation partialMatch {
-    case Regex(currency) => UOM.fromStringOption(currency)
-  }).flatOpt.optPair(childRelation)
+  def relationExtractor = Extractor.regex("""ECB(\w+)""") { case List(currency) => UOM.fromStringOption(currency) }
 
-  def marketDataEntriesFrom(prices: List[Prices[UOM]]): List[MarketDataEntry] = {
-      prices.map { case Prices(currency, priceByLevel, observationDay) =>
-      MarketDataEntry(
-        observationDay.atTimeOfDay(ObservationTimeOfDay.ECBPublicationTime),
-        PriceFixingsHistoryDataKey(currency.toString, Some("ECB")),
-        PriceFixingsHistoryData.create(Level.Spot, StoredFixingPeriod.tenor(Tenor(Day, 1)),
-          Quantity(priceByLevel(Level.Spot), currency / UOM.EUR))
-      )
-    }
+  def marketDataEntriesFrom(prices: List[Prices[UOM]]) = prices.map { case Prices(currency, priceByLevel, observationDay) =>
+    MarketDataEntry(observationDay.atTimeOfDay(ObservationTimeOfDay.ECBPublicationTime),
+      PriceFixingsHistoryDataKey(currency.toString, Some("ECB")),
+      PriceFixingsHistoryData.create(Level.Spot, StoredFixingPeriod.tenor(Tenor(Day, 1)),
+        Quantity(priceByLevel(Level.Spot), currency / UOM.EUR)))
   }
 }

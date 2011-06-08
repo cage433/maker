@@ -81,7 +81,7 @@ object MarketDataSet extends StarlingEnum(classOf[MarketDataSet]) {
   }
   def fromExcel(marketDataSet:MarketDataSet) = {
     if (marketDataSet.name.startsWith(excelPrefix)) {
-      Some( marketDataSet.name.substring(excelPrefix.length) )
+      Some( marketDataSet.name.stripPrefix(excelPrefix) )
     } else {
       None
     }
@@ -295,7 +295,7 @@ class DBMarketDataStore(db: DBTrait[RichResultSetRow], val marketDataSources: Ma
       rs => rs.getString("marketDataSet")
     }.flatMap { name => {
       if (name.startsWith(MarketDataSet.excelPrefix)) {
-        Some(name.substring(MarketDataSet.excelPrefix.length))
+        Some(name.stripPrefix(MarketDataSet.excelPrefix))
       } else {
         None
       }
@@ -315,7 +315,7 @@ class DBMarketDataStore(db: DBTrait[RichResultSetRow], val marketDataSources: Ma
 
   private val observationDaysByExcelCache = {
     val list: scala.List[(String, Option[Day])] = db.queryWithResult( (select ("distinct marketDataSet, observationDay") from "MarketData" where ("marketDataSet" like "Excel:%")) ) {
-      rs => (rs.getString("marketDataSet").substring(MarketDataSet.excelPrefix.length), rs.getDayOption("observationDay"))
+      rs => (rs.getString("marketDataSet").stripPrefix(MarketDataSet.excelPrefix), rs.getDayOption("observationDay"))
     }
     new scala.collection.mutable.HashMap() ++ list.groupBy(_._1).mapValues(new MSet() ++ _.flatMap(_._2.toList))
   }
@@ -386,7 +386,7 @@ class DBMarketDataStore(db: DBTrait[RichResultSetRow], val marketDataSources: Ma
 
   def latestExcelVersions: Map[String, Int] = {
     Map() ++ db.queryWithResult("select marketDataSet, max(version) m from MarketData where marketDataSet like 'Excel:%' group by marketDataSet ", Map()) {
-      rs=> rs.getString("marketDataSet").substring("Excel:".length) -> rs.getInt("m")
+      rs => rs.getString("marketDataSet").stripPrefix("Excel:") → rs.getInt("m")
     }
   }
 

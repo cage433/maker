@@ -1,15 +1,21 @@
 package starling.utils
 
 import collection.mutable.{HashMap, ListBuffer}
-import java.util.concurrent.Executors
 import java.util.concurrent.atomic.{AtomicBoolean, AtomicInteger}
 import scala.collection.JavaConversions._
+
+import ImplicitConversions._
+
 
 object DebugUtil {
   private lazy val util = new DebugUtil
 
   def count = util.count
   def track[T <: AnyRef, P](value : T)(finder : T => P => Boolean)(implicit mv : Manifest[T]) = util.track(value, finder)
+}
+
+class DebugArrayUtil {
+  def toArray(obj: AnyRef): Array[AnyRef] = obj.safeCast[List[AnyRef]].mapOrElse(_.toArray, Array())
 }
 
 class DebugUtil {

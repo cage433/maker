@@ -14,5 +14,5 @@ case class IndexFixingPeriod(index:SingleIndex, storedPeriod:StoredFixingPeriod)
 
 case class DateRangeFixingPeriod(dateRange:DateRange) extends FixingPeriod {
   def period(day: Day) = dateRange
-  def storedPeriod = new StoredFixingPeriod(Left(dateRange))
+  def storedPeriod = StoredFixingPeriod.dateRange(dateRange)
 }

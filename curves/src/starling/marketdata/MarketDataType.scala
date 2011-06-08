@@ -10,10 +10,7 @@ import starling.market.EquityPricesDataType
 trait MarketDataType {
   type dataType <: MarketData
 
-  val name: String = {
-    val className = getClass.getName.substring(getClass.getName.lastIndexOf(".") + 1)
-    className.substring(0, className.length-"DataType$".length)
-  }
+  val name: String = getClass.getName.substring(getClass.getName.lastIndexOf(".") + 1).stripSuffix("DataType$")
   def keyFields:Set[Field]
   def valueFields:Set[Field]
   def createKey(values:Map[Field,Any]):MarketDataKey

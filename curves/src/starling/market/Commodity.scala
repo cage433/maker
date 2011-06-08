@@ -3,7 +3,7 @@ package starling.market
 import starling.quantity.UOM._
 import starling.market.Market._
 import starling.quantity.{Conversions, UOM, Quantity}
-import starling.utils.StarlingObject
+
 
 class Commodity {
   lazy val representativeMarket = Commodity.standardFuturesMarket(this)
@@ -38,13 +38,7 @@ class Commodity {
 
   def conversions = Conversions.default
 
-  lazy val name = {
-    val className = getClass.getName.substring(getClass.getName.lastIndexOf(".") + 1)
-    if(className.last == '$')
-      className.substring(0, className.length-1)
-    else
-      className
-  }
+  lazy val name = getClass.getName.substring(getClass.getName.lastIndexOf(".") + 1).stripSuffix("$")
   override def toString = name
 }
 

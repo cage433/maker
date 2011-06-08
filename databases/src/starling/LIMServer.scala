@@ -154,6 +154,7 @@ object LIMServer {
         }
         val InterestRates = new LimNode(this) {
           val Libor = new LimNode(this)
+          val Liborlike = new LimNode(this)
           val Swaps = new LimNode(this)
         }
         val Metals = new LimNode(this) {
@@ -165,11 +166,8 @@ object LIMServer {
 }
 
 class LimNode(parent: Object) {
-  def name: String = {
-    val name = parent.getClass.getDeclaredFields.find(field => field.update(_.setAccessible(true)).get(parent) == this).get.getName
-    parent match {
-      case limNode: LimNode => limNode.name + ":" + name
-      case _ => name
-    }
-  }
+  def name: String = parent.safeCast[LimNode].mapOrElse(_.name + ":", "") + fields(parent).find(_.get(parent) == this).get.getName
+  def children = fields(this).map(_.get(this)).toList.asInstanceOf[List[LimNode]]
+
+  private def fields(owner: AnyRef) = owner.getClass.getDeclaredFields.map(_.update(_.setAccessible(true)))
 }

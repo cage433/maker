@@ -21,14 +21,18 @@ object Pattern {
     }
 
     def map[A] = new {
-      def apply[B](f: A => B) = new Extractor[A, B]((a:A) => Some(f(a)))
+      def apply[B](f: A => B) = new Extractor((a:A) => Some(f(a)))
+    }
+
+    def regex(regex: String) = new {
+      def apply[A](pf: PartialFunction[List[String], A]) = from[String](s => regex.r.unapplySeq(s).flatMap(pf.lift(_)))
     }
 
     class From[A] {
-      def apply[B](f: A => Option[B]) = new Extractor[A, B](f)
+      def apply[B](f: A => Option[B]) = new Extractor(f)
 
       def partial = new {
-        def apply[B](pf: PartialFunction[A, B]) = new Extractor[A, B](pf.lift)
+        def apply[B](pf: PartialFunction[A, B]) = new Extractor(pf.lift)
       }
     }
   }

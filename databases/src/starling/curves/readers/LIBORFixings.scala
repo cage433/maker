@@ -26,15 +26,13 @@ object LIBORFixings extends HierarchicalLimSource {
     val group = (interestRateType, currency)
   }
 
-  private val Regex = """TRAF\.(\w+)\.(\w+)\.(\w+)""".r
   private val TenorRegex = """(\d+)(\w)""".r
 
-  val parentNodes = List(TopRelation.Trafigura.Bloomberg.InterestRates.Libor, TopRelation.Trafigura.Bloomberg.InterestRates.Swaps)
+  val parentNodes = TopRelation.Trafigura.Bloomberg.InterestRates.children
   val levels = List(Level.Close)
 
-  def fixingRelationFrom(childRelation: String): Option[(LIBORFixingRelation, String)] = childRelation partialMatch {
-    case Regex(rateType, currency, tenor) if parseTenor(tenor).isDefined =>
-      (LIBORFixingRelation(rateType, UOM.fromString(currency), StoredFixingPeriod.tenor(parseTenor(tenor).get)), childRelation)
+  def relationExtractor = Extractor.regex("""TRAF\.(\w+)\.(\w+)\.(\w+)""") { case List(rateType, currency, tenor) =>
+    parseTenor(tenor).map { tenor => LIBORFixingRelation(rateType, UOM.fromString(currency), StoredFixingPeriod.tenor(tenor)) }
   }
 
   def marketDataEntriesFrom(fixings: List[Prices[LIBORFixingRelation]]): List[MarketDataEntry] = {

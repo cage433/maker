@@ -15,7 +15,7 @@ import starling.utils.Pattern._
 
 
 class MarketDataServlet(marketDataStore:MarketDataStore) extends HttpServlet {
-  private val FilterField = Extractor.when[String](_.startsWith("@"), _.substring(1).replaceAll("_", " "))
+  private val FilterField = Extractor.when[String](_.startsWith("@"), _.stripPrefix("@").replaceAll("_", " "))
   private val ConcatenatedFields = Extractor.map[Array[String]](_.flatMap(_.split(":")).toList)
   private val decimalPlaces = PivotFormatter.DefaultDecimalPlaces.copy(percentageFormat = "#0.0000")
 

@@ -55,8 +55,8 @@ case class EAISystemOfRecord(externalDB: RichDB, bookID: Int, downloadID: Int) e
   }
 
   protected val readers: List[InstrumentReader] = {
-    new Reflection().listClassesOfType("starling.eai.instrumentreaders", classOf[InstrumentReader]).map(c => c.newInstance) :::
-    new Reflection().listClassesOfType("starling.eai.instrumentreaders.physical", classOf[InstrumentReader]).map(c => c.newInstance)
+    Reflection.listClassesOfType("starling.eai.instrumentreaders", classOf[InstrumentReader]).map(c => c.newInstance) :::
+    Reflection.listClassesOfType("starling.eai.instrumentreaders.physical", classOf[InstrumentReader]).map(c => c.newInstance)
   }
 
   def allTrades(f: (Trade) => Unit): (Int, Set[String]) = {
