@@ -697,12 +697,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
 
   def setDefaultButton(button:Option[Button]) {windowMethods.setDefaultButton(button)}
   def getDefaultButton = windowMethods.getDefaultButton
-  def requestFocusInCurrentPage() {
-    val r = currentComponent.requestFocusInWindow()
-    println("")
-    println(r)
-    println("")
-  }
+  def requestFocusInCurrentPage() {currentComponent.requestFocusInWindow()}
 
   def submit[R](submitRequest:SubmitRequest[R], awaitRefresh:R=>Boolean, onComplete:R => Unit, keepScreenLocked:Boolean) {
     genericLockedUI.setLocked(true)
