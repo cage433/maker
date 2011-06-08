@@ -2,6 +2,7 @@ package starling.services
 
 import excel._
 import jmx.StarlingJMX
+import rpc.marketdata.MarketDataServiceRPC
 import starling.schemaevolution.system.PatchRunner
 import starling.db._
 import starling.richdb.{RichDB, RichResultSetRowFactory}
@@ -41,6 +42,9 @@ import org.springframework.mail.javamail.{MimeMessageHelper, JavaMailSender, Jav
 import starling.rmi._
 import starling.calendar._
 import java.lang.String
+import starling.services.rpc.marketdata._
+import com.trafigura.edm.marketdata._
+import org.mortbay.component.LifeCycle
 
 
 class StarlingInit( props: Props,
@@ -330,6 +334,32 @@ class StarlingInit( props: Props,
       "cannedwebstart" → cannedWebStartServlet,
       "marketdata"     → new MarketDataServlet(marketDataStore))
   }
+
+//  val filters = null // todo
+//  val marketDataService = new MarketDataServiceRPC()
+//  val marketDataStubImpl = new MarketDataServiceResourceStub(marketDataService, filters)
+//
+//  <listener>
+//        <listener-class>org.jboss.resteasy.plugins.server.servlet.ResteasyBootstrap</listener-class>
+//    </listener>
+//
+//    <servlet>
+//        <servlet-name>Resteasy</servlet-name>
+//        <servlet-class>org.jboss.resteasy.plugins.server.servlet.HttpServletDispatcher</servlet-class>
+//    </servlet>
+//
+//    <servlet-mapping>
+//        <servlet-name>Resteasy</servlet-name>
+//        <url-pattern>/*</url-pattern>
+//    </servlet-mapping>
+//
+//  lazy val httpEdmServiceServer = {
+//    val restEasyServlet = new org.jboss.resteasy.plugins.server.servlet.HttpServletDispatcher()
+//    val listener = new org.jboss.resteasy.plugins.server.servlet.ResteasyBootstrap()
+//    new HttpServer(props.HttpEdmServicePort(), props.ExternalUrl(), props.ServerName(),
+//      listener,
+//      "Resteasy" -> restEasyServlet)
+//  }
 
   lazy val regressionServer = new RegressionServer(props.RegressionPort(), reportServlet)
 }
