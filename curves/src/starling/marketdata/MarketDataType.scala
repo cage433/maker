@@ -23,6 +23,10 @@ trait MarketDataType {
 
   //The initial state to use in the market data viewer for this type of market data
   val initialPivotState:PivotFieldsState
+
+  def splitByFieldType[T](map: Map[Field, T]): (Map[Field, T], Map[Field, T]) = {
+    map.filterKeys(keyFields) → map.filterKeys(f => !keyFields.contains(f))
+  }
 }
 
 object MarketDataTypes {
