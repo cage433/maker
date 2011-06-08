@@ -47,7 +47,7 @@ case class SingleCFD(index: Index,
 
   def assets(env: Environment) = {
     val assets = {
-      val days = pricingRule.observationDays(index.markets, averagingPeriod)
+      val days = pricingRule.observationDays(index.calendars, averagingPeriod)
       if (days.isEmpty) {
         List()
       } else {

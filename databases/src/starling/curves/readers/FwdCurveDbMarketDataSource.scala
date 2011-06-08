@@ -28,7 +28,7 @@ case class FwdCurveDbMarketDataSource(varSqlDB: DB, businessCalendars: BusinessC
 
     val spotFXKeys: List[SpotFXDataKey] = FwdCurveAppExternalMarketDataReader.currencyCurveIDs.keysIterator.map{ccy=>SpotFXDataKey(ccy)}.toList
     val priceKeys: List[PriceDataKey] = PriceDataType.keys.filter(m => m.market.pricesTable != null && m.market.eaiQuoteID.isDefined)
-    val indexes: List[SimpleSingleIndex] = Index.indicesToImportFixingsForFromEAI.filter { index => {
+    val indexes: List[SingleIndex] = Index.indicesToImportFixingsForFromEAI.filter { index => {
       index match {
         case publishedIndex: PublishedIndex => publishedIndex.market.limSymbol.isEmpty
         case futuresFrontPeriodIndex: FuturesFrontPeriodIndex => futuresFrontPeriodIndex.market.limSymbol.isEmpty
@@ -175,7 +175,7 @@ case class FwdCurveDbMarketDataSource(varSqlDB: DB, businessCalendars: BusinessC
   }
 
   case class FixingsReader(observationDay: Day) {
-    def read(indexes: List[SimpleSingleIndex]): ((Day, Day, MarketDataType), List[MarketDataEntry]) = {
+    def read(indexes: List[SingleIndex]): ((Day, Day, MarketDataType), List[MarketDataEntry]) = {
 
       val a = indexes.flatMap { index => {
         val eaiQuoteID : Option[Int] = index match {

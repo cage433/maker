@@ -11,15 +11,15 @@ sealed trait SwapPricingRule extends Serializable {
 
   override def toString = name
 
-  def isObservationDay(markets: List[CommodityMarket], day: Day): Boolean
+  def isObservationDay(calendars: Iterable[BusinessCalendar], day: Day): Boolean
 
-  def isValid(markets: List[CommodityMarket]) = true
+  def isValid(calendars: Iterable[BusinessCalendar]) = true
 
   @transient protected lazy val observationDayCache = CacheFactory.getCache("SwapPricingRule", unique = true)
 
-  def observationDays(markets: List[CommodityMarket], period: DateRange): List[Day] = observationDayCache.memoize((period, markets), period.days.filter(isObservationDay(markets, _)).toList)
+  def observationDays(calendars: Iterable[BusinessCalendar], period: DateRange): List[Day] = observationDayCache.memoize((period, calendars), period.days.filter(isObservationDay(calendars, _)).toList)
   
-  def calendar(markets: List[CommodityMarket]): BusinessCalendar
+  def calendar(calendars: Iterable[BusinessCalendar]): BusinessCalendar
 }
 
 object SwapPricingRule {
@@ -36,28 +36,33 @@ object SwapPricingRule {
 case object CommonPricingRule extends SwapPricingRule {
   val name = "Common"
 
-  def isObservationDay(markets: List[CommodityMarket], day: Day) = {
-    markets.forall(m => m.isObservationDay(day))
+  def isObservationDay(calendars: Iterable[BusinessCalendar], day: Day) = {
+    calendars.forall(m => m.isBusinessDay(day))
   }
 
-  def calendar(markets: List[CommodityMarket]) = {
-    var hols = markets.head.businessCalendar.days
-    markets.foreach(m => hols = hols.intersect(m.businessCalendar.days))
-    new BusinessCalendarSet("CommonPricing for " + markets, Location.Unknown, hols)
+  def calendar(calendars: Iterable[BusinessCalendar]) : BusinessCalendar = {
+    new BusinessCalendar{
+      val name = "Common Pricing for " + calendars.map(_.name)
+      def location = Location.Unknown
+      def isHoliday(day: Day) = calendars.forall(_.isHoliday(day))
+    }
   }
 }
 
 case object NonCommonPricingRule extends SwapPricingRule {
   val name = "Non-common"
 
-  def isObservationDay(markets: List[CommodityMarket], day: Day) = {
-    markets.exists(m => m.isObservationDay(day))
+  def isObservationDay(calendars: Iterable[BusinessCalendar], day: Day) = {
+    calendars.exists(m => m.isBusinessDay(day))
+  }
+  def calendar(calendars: Iterable[BusinessCalendar]) : BusinessCalendar = {
+    new BusinessCalendar{
+      val name = "Non Common Pricing for " + calendars.map(_.name)
+      def location = Location.Unknown
+      def isHoliday(day: Day) = calendars.exists(_.isHoliday(day))
+    }
   }
 
-  def calendar(markets: List[CommodityMarket]) = {
-    val hols = markets.map(_.businessCalendar.days).flatten.toSet
-    new BusinessCalendarSet("NonCommonPricing for " + markets, Location.Unknown, hols)
-  }
 }
 
 /**
@@ -67,15 +72,15 @@ case object NonCommonPricingRule extends SwapPricingRule {
 case object NoPricingRule extends SwapPricingRule {
   val name = "NoRule"
 
-  def isObservationDay(markets: List[CommodityMarket], day: Day) = {
-    assert(markets.size == 1, "This swap pricing rule is only valid on single indexes: " + markets)
-    markets.exists(m => m.isObservationDay(day))
+  def isObservationDay(calendars: Iterable[BusinessCalendar], day: Day) = {
+    assert(calendars.size == 1, "This swap pricing rule is only valid on single calendars: " + calendars)
+    calendars.exists(m => m.isBusinessDay(day))
   }
 
-  def calendar(markets: List[CommodityMarket]) = {
-    assert(markets.size == 1, "This swap pricing rule is only valid on single indexes: " + markets)
-    markets.head.businessCalendar
+  def calendar(calendars: Iterable[BusinessCalendar]) = {
+    assert(calendars.size == 1, "This swap pricing rule is only valid on single calendars: " + calendars)
+    calendars.head
   }
 
-  override def isValid(markets: List[CommodityMarket]) = markets.size == 1
+  override def isValid(calendars: Iterable[BusinessCalendar]) = calendars.size == 1
 }

@@ -205,7 +205,7 @@ class ReferenceData(businessCalendars: BusinessCalendars, marketDataStore: Marke
 
       def unfilteredData(pfs : PivotFieldsState) = {
         val data = businessCalendars.calendars.flatMap { c =>
-          c.days.map { day => fields(
+          c.holidays.map { day => fields(
             calendar  → c.name,
             dayField  → day,
             year      → day.year,

@@ -88,7 +88,7 @@ class CFDTests extends TestExpiryRules {
   @Test
   def testSpreadIndexSwapMidPeriod {
     val marketDay = Day(2011, 1, 12)
-    val observationDays = CommonPricingRule.observationDays(spreadIndex.markets, period)
+    val observationDays = CommonPricingRule.observationDays(spreadIndex.calendars, period)
     val numFixed = observationDays.filter(_ < marketDay).size
     val numUnfixed = observationDays.filter(_ >= marketDay).size
 
@@ -108,7 +108,7 @@ class CFDTests extends TestExpiryRules {
   @Test
   def testSpreadIndexPast {
     val marketDay = Day(2011, 1, 17)
-    val observationDays = CommonPricingRule.observationDays(spreadIndex.markets, period)
+    val observationDays = CommonPricingRule.observationDays(spreadIndex.calendars, period)
 
     val environment = env(marketDay)
     val swapSingle1Mtm = swapSingle1.mtm(environment)
@@ -126,7 +126,7 @@ class CFDTests extends TestExpiryRules {
   @Test
   def testSpreadIndexSwapSensitivitiesMidPeriod {
     val marketDay = Day(2011, 1, 12)
-    val observationDays = CommonPricingRule.observationDays(spreadIndex.markets, period)
+    val observationDays = CommonPricingRule.observationDays(spreadIndex.calendars, period)
     val numFixed = observationDays.filter(_ < marketDay).size
     val numUnfixed = observationDays.filter(_ >= marketDay).size
 

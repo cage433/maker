@@ -18,11 +18,11 @@ case class FuturesSpreadIndex(spreadName: CaseInsensitive, index1: SingleIndex, 
   def priceUOM = ccy / uom
 
   def averagePrice(env: Environment, averagingPeriod: DateRange, rule: SwapPricingRule, priceUOM: UOM) = {
-    val observationDays1 = index1.observationDays(averagingPeriod).intersect(rule.observationDays(markets, averagingPeriod))
+    val observationDays1 = index1.observationDays(averagingPeriod).intersect(rule.observationDays(calendars, averagingPeriod))
     val prices1 = observationDays1.map(env.fixingOrForwardPrice(index1, _))
     val avg1 = checkedConvert(index1, Quantity.average(prices1), priceUOM)
     
-    val observationDays2 = index2.observationDays(averagingPeriod).intersect(rule.observationDays(markets, averagingPeriod))
+    val observationDays2 = index2.observationDays(averagingPeriod).intersect(rule.observationDays(calendars, averagingPeriod))
     val prices2 = observationDays2.map(env.fixingOrForwardPrice(index2, _))
     val avg2 = checkedConvert(index2, Quantity.average(prices2), priceUOM)
 
