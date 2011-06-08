@@ -359,18 +359,9 @@ class DBMarketDataStore(db: DBTrait[RichResultSetRow], val marketDataSources: Ma
   }
 
   def applyOverrideRule(marketDataType:MarketDataType, allDataForKeyAndDay:List[Map[PField,Any]]): List[Map[PField, Any]] = {
-    val dataAsMaps:Map[Map[PField,Any],Map[PField,Any]] =
-      Map() ++ allDataForKeyAndDay.map {
-        dataAsMap => {
-          val keys = marketDataType.keyFields.map(f=> f->dataAsMap(f)).toMap
-          val values = dataAsMap.filterKeys(f => !marketDataType.keyFields.contains(f))
-          keys -> values
-        }
-      }
+    val dataAsMaps: Map[Map[PField, Any], Map[PField, Any]] = Map() ++ allDataForKeyAndDay.map(marketDataType.splitByFieldType(_))
     val m = scala.collection.mutable.HashMap[Map[PField,Any],Map[PField,Any]]()
-    dataAsMaps.foreach { case(k,v) => {
-      m(k) = v
-    }}
+    dataAsMaps.foreach { case(k,v) => { m(k) = v }}
     m.map{ case(k,v)=> k++v }.toList
   }
 
