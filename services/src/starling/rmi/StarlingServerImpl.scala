@@ -126,8 +126,14 @@ class UserReportsService(
           )
         }
 
+        val tradeTS = bookCloseOffset match {
+          case Left(offset) => createTradeTimestamp(applyOffset(baseDay, offset))
+          case Right(_) if desk.isDefined => tradeStores.closedDesks.latestTradeTimestamp(desk.get)
+          case _ => createTradeTimestamp(baseDay) // this doesn't matter as it'll never be used
+        }
+
         PnlFromParameters(
-          Some(createTradeTimestamp(applyOffset(baseDay, bookCloseOffset))),
+          Some(tradeTS),
           fromCurveIdentifierLabel
         )
       }
@@ -143,17 +149,36 @@ class UserReportsService(
       })
     }
 
-    val bookCloseDay = applyOffset(baseDay, userReportData.tradeVersionOffSetOrLive)
-    val tradeSelectionWithTimestamp = new TradeSelectionWithTimestamp(desk.map((_, createTradeTimestamp(bookCloseDay))),
+    val bookCloseDay = {
+      userReportData.tradeVersionOffSetOrLive match {
+        case Left(offset) => createTradeTimestamp(applyOffset(baseDay, offset))
+        case Right(_) if desk.isDefined => tradeStores.closedDesks.latestTradeTimestamp(desk.get)
+        case _ => createTradeTimestamp(baseDay) // this doesn't matter as it'll never be used
+      }
+    }
+    val tradeSelectionWithTimestamp = new TradeSelectionWithTimestamp(desk.map((_, bookCloseDay)),
       tradeSelection.tradePredicate, intradaySubgroup.map((_, latestIntradayTimestamp.get)))
 
-    val tradeExpiryDay = applyOffset(baseDay, userReportData.liveOnOffSet)
+    val tradeExpiryDay = userReportData.liveOnOffSet match {
+      case Left(offset) => applyOffset(baseDay, offset)
+      case Right(_) => baseDay.startOfFinancialYear
+    }
     ReportParameters(tradeSelectionWithTimestamp, curveIdentifierLabel, userReportData.reportOptions, tradeExpiryDay, pnlOptions)
   }
 
   def createUserReport(reportParameters:ReportParameters):UserReportData = {
     val baseDay = reportParameters.curveIdentifier.tradesUpToDay
-    val bookCloseOffset = reportParameters.tradeSelectionWithTimestamp.deskAndTimestamp.map(d => businessDaysBetween(baseDay, d._2.closeDay)).getOrElse(0)
+    val bookCloseOffset = reportParameters.tradeSelectionWithTimestamp.deskAndTimestamp match {
+      case Some((d,ts)) => {
+        val latestClose = tradeStores.closedDesks.latestTradeTimestamp(d)
+        if (ts.closeDay == latestClose.closeDay) {
+          Right(true)
+        } else {
+          Left(businessDaysBetween(baseDay, ts.closeDay))
+        }
+      }
+      case None => Left(0)
+    }
     UserReportData(
       tradeSelection = reportParameters.tradeSelectionWithTimestamp.asTradeSelection,
       marketDataSelection = reportParameters.curveIdentifier.marketDataIdentifier.selection,
@@ -165,14 +190,32 @@ class UserReportsService(
       thetaDayOffset = businessDaysBetween(baseDay, reportParameters.curveIdentifier.thetaDayAndTime.day),
       thetaDayTimeOfDay = reportParameters.curveIdentifier.thetaDayAndTime.timeOfDay,
       tradeVersionOffSetOrLive = bookCloseOffset,
-      liveOnOffSet = businessDaysBetween(baseDay, reportParameters.expiryDay),
+      liveOnOffSet = {
+        if (baseDay.startOfFinancialYear == reportParameters.expiryDay) {
+          Right(true)
+        } else {
+          Left(businessDaysBetween(baseDay, reportParameters.expiryDay))
+        }
+      },
       pnl = reportParameters.pnlParameters.map {
         case pnl => {
           val marketDayOffset = businessDaysBetween(baseDay, pnl.curveIdentifierFrom.tradesUpToDay)
           val timeOfDay = pnl.curveIdentifierFrom.valuationDayAndTime.timeOfDay
           val bookCloseOffset = pnl.tradeTimestampFrom match {
-            case Some(ts) => businessDaysBetween(baseDay, ts.closeDay)
-            case None => 0
+            case Some(ts) => {
+              reportParameters.tradeSelectionWithTimestamp.deskAndTimestamp match {
+                case Some((d,_)) => {
+                  val latestClose = tradeStores.closedDesks.latestTradeTimestamp(d)
+                  if (ts.closeDay == latestClose.closeDay) {
+                    Right(true)
+                  } else {
+                    Left(businessDaysBetween(baseDay, ts.closeDay))
+                  }
+                }
+                case None => Left(0)
+              }
+            }
+            case None => Left(0)
           }
           (marketDayOffset, bookCloseOffset, pnl.curveIdentifierFrom.marketDataIdentifier.selection.excel != None, timeOfDay)
         }

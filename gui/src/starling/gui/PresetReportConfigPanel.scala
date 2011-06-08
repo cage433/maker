@@ -292,7 +292,6 @@ class PresetReportConfigPanel(context:PageContext, reportParameters:ReportParame
     val cob = new ListBuffer[Boolean]()
 
     val observationDayUsed = rp.curveIdentifier.tradesUpToDay
-    val previousBusinessDay = observationDayUsed.previousBusinessDay(context.localCache.ukBusinessCalendar)
     val nextBusinessDay = observationDayUsed.nextBusinessDay(context.localCache.ukBusinessCalendar)
 
     cob += ((rp.expiryDay == observationDayUsed) || (rp.expiryDay == observationDayUsed.startOfFinancialYear))

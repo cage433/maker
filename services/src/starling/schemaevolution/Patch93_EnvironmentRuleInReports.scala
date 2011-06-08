@@ -11,17 +11,9 @@ import collection.immutable.SortedSet
 import starling.gui.api._
 import starling.utils.sql.AnObject
 
-/**
- * Created by IntelliJ IDEA.
- * User: thomas
- * Date: 28/04/11
- * Time: 11:40
- * To change this template use File | Settings | File Templates.
- */
-
 class Patch93_EnvironmentRuleInReports extends Patch {
 
-  val convertingXStream = StarlingXStream.createXStream
+  /*val convertingXStream = StarlingXStream.createXStream
   convertingXStream.registerConverter(new MapBasedConverter(
       StarlingXStream.createXStream,
       classOf[UserReportData],
@@ -55,17 +47,19 @@ class Patch93_EnvironmentRuleInReports extends Patch {
         }
       },
       Map("marketDataDayOffset" -> classOf[Int])
-    ))
+    ))*/
 
   protected def runPatch(starlingInit: StarlingInit, starling:RichDB, writer:DBWriter) {
 
-    writer.queryForUpdate("select report from UserReports") {
+    throw new Exception("I've changed the format of UserReportData and can't be bothered changing this evolution.")
+
+    /*writer.queryForUpdate("select report from UserReports") {
       rs => {
         val reportText = rs.getString("report")
         println("ReportText\n" + reportText + "\n\n")
         val newReport = convertingXStream.fromXML(reportText)
         rs.update(Map("report" -> AnObject(newReport)))
       }
-    }
+    }*/
   }
 }

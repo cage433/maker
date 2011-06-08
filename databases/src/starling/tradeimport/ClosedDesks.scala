@@ -87,4 +87,11 @@ class ClosedDesks(broadcaster: Broadcaster, db: DB) {
     val dayToUse = sortedDays.span(_ <= closeDay)._1.last
     booksByDay(dayToUse).last
   }
+
+  def latestTradeTimestamp(desk:Desk):TradeTimestamp = {
+    val booksByDay = closedDesksByDay(desk)
+    val sortedDays = booksByDay.keys.toList.sorted
+    val dayToUse = sortedDays.last
+    booksByDay(dayToUse).last
+  }
 }
