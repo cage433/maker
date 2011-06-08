@@ -50,10 +50,13 @@ case class ReportMarketDataPageIdentifier(reportParameters:ReportParameters) ext
 
 case class MarketDataIdentifier(selection: MarketDataSelection, marketDataVersion: MarketDataVersion) {
   def isNull = selection.isNull
-
   def pricingGroupMatches(predicate : PricingGroup => Boolean) = selection.pricingGroupMatches(predicate)
+  def copyVersion(version: Int) = copy(marketDataVersion = SpecificMarketDataVersion(version))
+}
 
-  def copyVersion(version : Int) = copy(marketDataVersion=SpecificMarketDataVersion(version))
+object MarketDataIdentifier {
+  def apply(selection: MarketDataSelection, version: Int) =
+    new MarketDataIdentifier(selection, new SpecificMarketDataVersion(version))
 }
 
 class TradeValuation(val valuationParameters:STable) extends Serializable
@@ -95,12 +98,12 @@ sealed case class Desk(name: String) extends Named {
   override def toString = name
 
   def pricingGroups = this match {
-    case Desk.LondonDerivativesOptions            => List(PricingGroup.LondonDerivativesOptions, System, LimOnly)
-    case Desk.LondonDerivatives                   => List(PricingGroup.LondonDerivatives, System, LimOnly)
-    case Desk.GasolineSpec                        => List(PricingGroup.GasolineRoW, LimOnly)
-    case CrudeSpecNorthSea                        => List(Crude, LimOnly)
-    case HoustonDerivatives                       => List(BarryEckstein, LimOnly)
-    case Refined                                  => List(System, Metals)
+    case Desk.LondonDerivativesOptions => List(PricingGroup.LondonDerivativesOptions, System, LimOnly)
+    case Desk.LondonDerivatives        => List(PricingGroup.LondonDerivatives, System, LimOnly)
+    case Desk.GasolineSpec             => List(PricingGroup.GasolineRoW, LimOnly)
+    case CrudeSpecNorthSea             => List(Crude, LimOnly)
+    case HoustonDerivatives            => List(BarryEckstein, LimOnly)
+    case Refined                       => List(System, Metals)
   }
 }
 
@@ -216,8 +219,7 @@ case class CurveIdentifierLabel(
         thetaDayAndTime:DayAndTime,
         envModifiers:SortedSet[EnvironmentModifierLabel]) {
 
-  def copyMarketDataVersion(version: MarketDataVersion): CurveIdentifierLabel =
-    copy(marketDataIdentifier = marketDataIdentifier.copy(marketDataVersion = version))
+  def copyVersion(version: Int) = copy(marketDataIdentifier = marketDataIdentifier.copyVersion(version))
 
   private def contains(daysForPricingGroup: Map[PricingGroup, Set[Day]]) : Boolean = {
     marketDataIdentifier.pricingGroupMatches(pricingGroup => daysForPricingGroup.contains(pricingGroup, tradesUpToDay))

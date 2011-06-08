@@ -4,7 +4,7 @@ import javax.servlet.http.{HttpServletResponse, HttpServletRequest, HttpServlet}
 import scala.collection.JavaConversions
 
 import starling.db.MarketDataStore
-import starling.gui.api.{SpecificMarketDataVersion, MarketDataIdentifier, MarketDataSelection, PricingGroup}
+import starling.gui.api.{MarketDataIdentifier, MarketDataSelection, PricingGroup}
 import starling.marketdata.MarketDataTypes
 import starling.pivot.model.PivotTableModel
 import starling.utils.Utils
@@ -28,7 +28,7 @@ class MarketDataServlet(marketDataStore:MarketDataStore) extends HttpServlet {
     params.getFirst("version") match {
       case None => response.sendRedirect("?" + params.replace("version", marketDataStore.latest(selection)).toUrl)
       case Some(version) => {
-        val mdi = MarketDataIdentifier(selection, new SpecificMarketDataVersion(version.toInt))
+        val mdi = MarketDataIdentifier(selection, version.toInt)
 
         val marketDataType = MarketDataTypes.fromName(request.getParameter("type"))
 

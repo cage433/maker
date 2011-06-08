@@ -247,7 +247,7 @@ class SingleTradePageComponent(context:PageContext, pageData:PageData) extends M
             StandardUserSettingKeys.InitialMarketDataSelection,
             MarketDataSelection(context.localCache.pricingGroups(desk).headOption)
           )
-          val version = SpecificMarketDataVersion(context.localCache.latestMarketDataVersion(marketDataSelection))
+          val version = context.localCache.latestMarketDataVersion(marketDataSelection)
 
           val ci = CurveIdentifierLabel.defaultLabelFromSingleDay(
             MarketDataIdentifier(marketDataSelection, version),

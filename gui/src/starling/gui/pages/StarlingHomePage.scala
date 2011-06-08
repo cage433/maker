@@ -328,7 +328,7 @@ class StarlingHomePageComponent(context:PageContext, browserSize:Dimension, page
       MarketDataSelection(context.localCache.pricingGroups(None).headOption))
     val latestMarketDataVersion = context.localCache.latestMarketDataVersion(initialSelection)
 
-    MarketDataIdentifier(initialSelection, SpecificMarketDataVersion(latestMarketDataVersion))
+    MarketDataIdentifier(initialSelection, latestMarketDataVersion)
   }
 
   add(c, "push,grow")

@@ -70,7 +70,7 @@ class MarketDataStoreTest extends StarlingTest with ShouldMatchers {
     )
     val marketDataIdentifier = MarketDataIdentifier(
       MarketDataSelection(Some(PricingGroup.System)),
-      SpecificMarketDataVersion(marketDataStore.latestPricingGroupVersions(PricingGroup.System))
+      marketDataStore.latestPricingGroupVersions(PricingGroup.System)
     )
 
     val pivotData = marketDataStore.pivot(marketDataIdentifier, SpotFXDataType).data(pfs)
@@ -135,7 +135,7 @@ class MarketDataStoreTest extends StarlingTest with ShouldMatchers {
 
     val pivot = marketDataStore.pivot(MarketDataIdentifier(
         MarketDataSelection(Some(PricingGroup.System)),
-        SpecificMarketDataVersion(marketDataStore.latestPricingGroupVersions(PricingGroup.System))
+        marketDataStore.latestPricingGroupVersions(PricingGroup.System)
       ),
       SpotFXDataType
     )

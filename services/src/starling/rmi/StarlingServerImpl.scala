@@ -88,7 +88,7 @@ class UserReportsService(
       }
     }
 
-    val marketDataVersion = SpecificMarketDataVersion(marketDataStore.latest(userReportData.marketDataSelection))
+    val marketDataVersion = marketDataStore.latest(userReportData.marketDataSelection)
 
     val curveIdentifierLabel = CurveIdentifierLabel(
       MarketDataIdentifier(userReportData.marketDataSelection, marketDataVersion),

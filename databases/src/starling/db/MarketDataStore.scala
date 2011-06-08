@@ -374,7 +374,6 @@ class DBMarketDataStore(db: DBTrait[RichResultSetRow], val marketDataSources: Ma
     m.map{ case(k,v)=> k++v }.toList
   }
 
-
   def latestPricingGroupVersions: Map[PricingGroup, Int] = {
     val lookup = Map() ++ db.queryWithResult("select marketDataSet, max(version) m from MarketData where marketDataSet not like 'Excel:%' group by marketDataSet ", Map()) {
       rs=> MarketDataSet(rs.getString("marketDataSet")) -> rs.getInt("m")
@@ -390,16 +389,12 @@ class DBMarketDataStore(db: DBTrait[RichResultSetRow], val marketDataSources: Ma
     }
   }
 
-  def latestMarketDataIdentifier(selection:MarketDataSelection) = {
-    MarketDataIdentifier(selection, SpecificMarketDataVersion(latest(selection)))
-  }
+  def latestMarketDataIdentifier(selection: MarketDataSelection) = MarketDataIdentifier(selection, latest(selection))
 
   def latest(selection:MarketDataSelection): Int = {
-    val versions = selection.pricingGroup.toList.map { pg =>
-      latestPricingGroupVersions(pg)
-    } ::: selection.excel.toList.map { excel =>
-      latestExcelVersions(excel)
-    }
+    val versions = latestPricingGroupVersions.get(selection.pricingGroup).toList :::
+                   latestExcelVersions.get(selection.excel).toList
+
     if (versions.isEmpty) 0 else versions.max
   }
 
@@ -767,7 +762,7 @@ class DBMarketDataStore(db: DBTrait[RichResultSetRow], val marketDataSources: Ma
   }
 
   def observationDays(pricingGroup:PricingGroup, from : Day, to :Day) : List[Day] = {
-    observationDays(MarketDataIdentifier(MarketDataSelection(Some(pricingGroup)), SpecificMarketDataVersion(latestPricingGroupVersions(pricingGroup))), from, to)
+    observationDays(MarketDataIdentifier(MarketDataSelection(Some(pricingGroup)), latestPricingGroupVersions(pricingGroup)), from, to)
   }
 
   def observationDays(marketDataIdentifier:MarketDataIdentifier, from : Day, to :Day) : List[Day] = {

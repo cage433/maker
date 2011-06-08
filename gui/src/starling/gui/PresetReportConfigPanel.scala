@@ -361,7 +361,7 @@ class PresetReportConfigPanel(context:PageContext, reportParameters:ReportParame
     }
 
     val marketDataSelection = generateMarketDataSelection
-    val marketDataVersion = SpecificMarketDataVersion(context.localCache.latestMarketDataVersion(marketDataSelection))
+    val marketDataVersion = context.localCache.latestMarketDataVersion(marketDataSelection)
     val pricingGroup = marketDataSelection.pricingGroup
 
     val excel = marketDataSelection.excel
@@ -451,7 +451,7 @@ class PresetReportConfigPanel(context:PageContext, reportParameters:ReportParame
 
     val pnlParams = if (buttonPanel.cobPanel.dayChangePanel.dayChangeCheckBox.selected) {
       val marketDataSelection = generateMarketDataSelection
-      val marketDataVersion = SpecificMarketDataVersion(context.localCache.latestMarketDataVersion(marketDataSelection))
+      val marketDataVersion = context.localCache.latestMarketDataVersion(marketDataSelection)
       val fromMarketDataSelection = if (buttonPanel.cobPanel.dayChangePanel.useExcelButton.selected) {
         marketDataSelection
       } else {
@@ -495,7 +495,7 @@ class PresetReportConfigPanel(context:PageContext, reportParameters:ReportParame
 
   def generateMarketDataIdentifier = {
     val marketDataSelection = generateMarketDataSelection
-    val marketDataVersion = SpecificMarketDataVersion(context.localCache.latestMarketDataVersion(marketDataSelection))
+    val marketDataVersion = context.localCache.latestMarketDataVersion(marketDataSelection)
     val pricingGroup = marketDataSelection.pricingGroup
 
     val excel = marketDataSelection.excel

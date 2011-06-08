@@ -361,7 +361,7 @@ class MarketDataPageComponent(
     case SelectionChanged(`snapshotsComboBox`) =>
       pageContext.goTo(thisPage.copy(marketDataIdentifier=StandardMarketDataPageIdentifier(thisPage.marketDataIdentifier.marketDataIdentifier.copy(marketDataVersion = snapshotsComboBox.value))))
     case MarketDataSelectionChanged(selection) => pageContext.goTo(
-      thisPage.copy(marketDataIdentifier=StandardMarketDataPageIdentifier(MarketDataIdentifier(selection, SpecificMarketDataVersion(pageContext.localCache.latestMarketDataVersion(selection)))))
+      thisPage.copy(marketDataIdentifier=StandardMarketDataPageIdentifier(MarketDataIdentifier(selection, pageContext.localCache.latestMarketDataVersion(selection))))
     )
   }
   listenTo(dataTypeCombo.selection, marketDataSelectionComponent, snapshotsComboBox.selection)

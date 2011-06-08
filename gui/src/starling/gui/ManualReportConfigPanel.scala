@@ -263,7 +263,7 @@ class ManualReportConfigPanel(context:PageContext, reportParameters:ReportParame
     val forwardValuationDayAndTime = day2Panel.forwardObservationDayAndTimeChooser.dayAndTime
     val thetaDayAndTime: DayAndTime = day2Panel.thetaToDayChooser.day.endOfDay()
 
-    val marketDataVersion = SpecificMarketDataVersion(context.localCache.latestMarketDataVersion(marketDataSelection))
+    val marketDataVersion = context.localCache.latestMarketDataVersion(marketDataSelection)
 
     val pnlParams = if (day1Panel.pnlFromCheckbox.selected) {
       val fromMarketDataSelection = if (day1Panel.useExcelButton.selected) {

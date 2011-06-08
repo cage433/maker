@@ -394,13 +394,10 @@ class TradeSelectionComponent(
               StandardUserSettingKeys.InitialMarketDataSelection,
               defaultSelection
             )
-            pageContext.localCache.latestMarketDataVersionIfValid(selection) match {
-              case None => {
-                MarketDataIdentifier(defaultSelection,
-                  SpecificMarketDataVersion(pageContext.localCache.latestMarketDataVersion(defaultSelection)))
-              }
-              case Some(v) => MarketDataIdentifier(selection, SpecificMarketDataVersion(v))
-            }
+            val version = pageContext.localCache.latestMarketDataVersionIfValid(selection)
+               .getOrElse(pageContext.localCache.latestMarketDataVersion(defaultSelection))
+
+            MarketDataIdentifier(defaultSelection, version)
           }
           CurveIdentifierLabel.defaultLabelFromSingleDay(marketDataIdentifier, expiry.exp, pageContext.localCache.ukBusinessCalendar)
         }

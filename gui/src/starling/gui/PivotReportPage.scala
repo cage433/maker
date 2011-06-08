@@ -83,13 +83,13 @@ case class MainPivotReportPage(showParameters:Boolean, reportParameters:ReportPa
         val pnlParameters = reportParameters.pnlParameters.map {
           pnlParameters => {
             pnlParameters.curveIdentifierFrom.marketDataIdentifier.selection.excel match {
-              case Some(`name`) => pnlParameters.copy(curveIdentifierFrom=pnlParameters.curveIdentifierFrom.copyMarketDataVersion(SpecificMarketDataVersion(version)))
+              case Some(`name`) => pnlParameters.copy(curveIdentifierFrom=pnlParameters.curveIdentifierFrom.copyVersion(version))
               case _ => pnlParameters
             }
           }
         }
         val curveIdentifier = reportParameters.curveIdentifier.marketDataIdentifier.selection.excel match {
-          case Some(`name`) => reportParameters.curveIdentifier.copyMarketDataVersion(SpecificMarketDataVersion(version))
+          case Some(`name`) => reportParameters.curveIdentifier.copyVersion(version)
           case None => reportParameters.curveIdentifier
         }
         selfReportPage(reportParameters.copy(curveIdentifier=curveIdentifier, pnlParameters=pnlParameters))

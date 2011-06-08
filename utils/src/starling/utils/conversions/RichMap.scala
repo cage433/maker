@@ -8,6 +8,7 @@ trait RichMap {
   implicit def enrichMultiMap[K, V](value : Map[K, Set[V]]) = new RichMultiMap[K, V](value)
 
   class RichMap[K,V](map : Map[K,V]) {
+    def get(key: Option[K]) = key.map(map.get(_)).flatOpt
     def slice(keys : Any*) : Map[K,V] = if (keys.isEmpty) map else map.filterKeys(key => keys.contains(key))
     def mapValue(key: K, f: V => V): Map[K,V] = map.updated(key, f(map(key)))
     def mapKeys[C](f: K => C): Map[C, V] = map.map(kv => (f(kv._1), kv._2))
