@@ -90,9 +90,9 @@ case class EAISystemOfRecord(externalDB: RichDB, bookID: Int, downloadID: Int) e
       "No CounterParty"
     }
 
-    val trader = rs.getString("trader") // Not available yet in EAI Archive, usually the same as tradedFor
-    val tradedFor = rs.getString("trader") // who this trade was traded for
-    val broker = rs.getString("broker")
+    val trader = rs.getStringOrBlank("trader") // Not available yet in EAI Archive, usually the same as tradedFor
+    val tradedFor = rs.getStringOrBlank("trader") // who this trade was traded for
+    val broker = rs.getStringOrBlank("broker")
     val timestamp = Timestamp.parse("01Jan1970 12:21:12.999")// Not available in EAI Archive
 
     val strategyID = TreeID(rs.getInt("StrategyID"))
