@@ -493,6 +493,7 @@ object PivotQuantitySetPivotFormatter extends PivotFormatter {
       case s:Set[PivotQuantity] if s.size == 0 => TableCell.Null
       case s:Set[PivotQuantity] if s.size == 1 => TableCell.fromPivotQuantity(s.iterator.next, formatInfo)
       case s:Set[PivotQuantity] => new TableCell(s, s.size + " values", longText = Some(s.map(TableCell.longText).flatten.mkString(", ")))
+      case pq:PivotQuantity => TableCell.fromPivotQuantity(pq, formatInfo)
     }
   }
 }
