@@ -154,8 +154,21 @@ object PivotFormatter {
 
 object TreePivotFormatter extends PivotFormatter {
   def format(value:Any, formatInfo:ExtraFormatInfo) = {
-    val pivotTreePath = value.asInstanceOf[PivotTreePath]
-    new TableCell(pivotTreePath, pivotTreePath.lastElement, LeftTextPosition)
+    value match {
+      case pivotTreePath:PivotTreePath => new TableCell(pivotTreePath, pivotTreePath.lastElement, LeftTextPosition)
+      case s:Set[_] => {
+        val longText = {
+          val list = s.toList
+          if (list.size <= 20) {
+            list.map(_.toString).mkString(", ")
+          } else {
+            val firstTwenty = list.slice(0, 20)
+            s.size + " values: " + firstTwenty.map(_.toString).mkString(", ") + " ..."
+          }
+        }
+        new TableCell(s, s.size + " values", longText = Some(longText))
+      }
+    }
   }
 }
 
@@ -449,10 +462,13 @@ class MarketValueFieldDetails(name: String) extends FieldDetails(Field(name)) {
 }
 
 object MarketValueSetPivotFormatter extends PivotFormatter {
-  def format(value: Any, formatInfo: ExtraFormatInfo) = value.asInstanceOf[Set[_]].toList match {
-    case List(pq: PivotQuantity) => TableCell.fromPivotQuantity(pq, formatInfo)
-    case List(p: Percentage) => PercentagePivotFormatter.format(p, formatInfo)
-    case list:List[_] => new TableCell(list.size + " values")
+  def format(value: Any, formatInfo: ExtraFormatInfo) = value match {
+    case s:Set[_] => s.toList match {
+      case List(pq: PivotQuantity) => TableCell.fromPivotQuantity(pq, formatInfo)
+      case List(p: Percentage) => PercentagePivotFormatter.format(p, formatInfo)
+      case list:List[_] => new TableCell(list.size + " values")
+    }
+    case pq:PivotQuantity => TableCell.fromPivotQuantity(pq, formatInfo)
   }
 }
 
