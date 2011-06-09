@@ -154,8 +154,21 @@ object PivotFormatter {
 
 object TreePivotFormatter extends PivotFormatter {
   def format(value:Any, formatInfo:ExtraFormatInfo) = {
-    val pivotTreePath = value.asInstanceOf[PivotTreePath]
-    new TableCell(pivotTreePath, pivotTreePath.lastElement, LeftTextPosition)
+    value match {
+      case pivotTreePath:PivotTreePath => new TableCell(pivotTreePath, pivotTreePath.lastElement, LeftTextPosition)
+      case s:Set[_] => {
+        val longText = {
+          val list = s.toList
+          if (list.size <= 20) {
+            list.map(_.toString).mkString(", ")
+          } else {
+            val firstTwenty = list.slice(0, 20)
+            s.size + " values: " + firstTwenty.map(_.toString).mkString(", ") + " ..."
+          }
+        }
+        new TableCell(s, s.size + " values", longText = Some(longText))
+      }
+    }
   }
 }
 
