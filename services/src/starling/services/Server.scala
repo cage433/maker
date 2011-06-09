@@ -335,34 +335,35 @@ class StarlingInit( props: Props,
       "marketdata"     → new MarketDataServlet(marketDataStore))
   }
 
-  val filters = null // todo
-  val marketDataService = new MarketDataServiceRPC(marketDataStore)
-  val marketDataStubImpl = new MarketDataServiceResourceStubEx(marketDataService, filters)
-
-//  LB: temporary included for reference purposes, this
-//   is how resteasy is plumbed into te container (web.xml) currently using
-//   conventional xml deployed app server config
-//
-//  <listener>
-//        <listener-class>org.jboss.resteasy.plugins.server.servlet.ResteasyBootstrap</listener-class>
-//    </listener>
-//
-//    <servlet>
-//        <servlet-name>Resteasy</servlet-name>
-//        <servlet-class>org.jboss.resteasy.plugins.server.servlet.HttpServletDispatcher</servlet-class>
-//    </servlet>
-//
-//    <servlet-mapping>
-//        <servlet-name>Resteasy</servlet-name>
-//        <url-pattern>/*</url-pattern>
-//    </servlet-mapping>
-
-  Log.info("StarlingInit: EDM service port %d, external url = '%s', server name = '%s'".format(props.HttpEdmServicePort(), props.ExternalUrl(), props.ServerName()))
-  
   lazy val httpEdmServiceServer = {
+    val filters = null // todo
+    val marketDataService = new MarketDataServiceRPC(marketDataStore)
+    val marketDataStubImpl = new MarketDataServiceResourceStubEx(marketDataService, filters)
+
+  //  LB: temporary included for reference purposes, this
+  //   is how resteasy is plumbed into te container (web.xml) currently using
+  //   conventional xml deployed app server config
+  //
+  //  <listener>
+  //        <listener-class>org.jboss.resteasy.plugins.server.servlet.ResteasyBootstrap</listener-class>
+  //    </listener>
+  //
+  //    <servlet>
+  //        <servlet-name>Resteasy</servlet-name>
+  //        <servlet-class>org.jboss.resteasy.plugins.server.servlet.HttpServletDispatcher</servlet-class>
+  //    </servlet>
+  //
+  //    <servlet-mapping>
+  //        <servlet-name>Resteasy</servlet-name>
+  //        <url-pattern>/*</url-pattern>
+  //    </servlet-mapping>
+
+    Log.info("StarlingInit: EDM service port %d, external url = '%s', server name = '%s'".format(props.HttpEdmServicePort(), props.ExternalUrl(), props.ServerName()))
+
     val restEasyServlet = new org.jboss.resteasy.plugins.server.servlet.HttpServletDispatcher()
-    val listener = Some(new org.jboss.resteasy.plugins.server.servlet.ResteasyBootstrap())
-    new HttpServer(props.HttpEdmServicePort(), props.ExternalUrl(), props.ServerName(),
+    val listener = List(new org.jboss.resteasy.plugins.server.servlet.ResteasyBootstrap())
+
+    new HttpServer(props.HttpEdmServicePort(), props.EdmExternalUrl(), props.ServerName(),
       listener,
       "Resteasy" -> restEasyServlet)
   }

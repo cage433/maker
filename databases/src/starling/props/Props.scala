@@ -44,6 +44,7 @@ class Props(props:Map[String,String]) extends PropsHelper(props) {
 
   object ExternalHostname extends StringProperty(InetAddress.getLocalHost().getHostName)
   object ExternalUrl extends StringProperty("http://" + ExternalHostname() + ":" + HttpPort())
+  object EdmExternalUrl extends StringProperty("http://" + ExternalHostname() + ":" + HttpEdmServicePort())
   object XLLoopUrl extends StringProperty(ExternalHostname() + ":" + XLLoopPort())
 
   object RabbitHost extends StringProperty("")

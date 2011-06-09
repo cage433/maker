@@ -26,7 +26,6 @@ class MarketDataServiceRPC(marketDataStore: MarketDataStore) extends MarketDataS
   }
 
   private def fields(names: List[String]) = names.map(Field(_))
-  //override def requireFilters(filterClasses:String*) {}
 }
 
 /**

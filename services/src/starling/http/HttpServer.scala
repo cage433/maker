@@ -23,11 +23,11 @@ import java.util.EventListener
 class HttpServer(portNo : Int,
                  val externalURL : String,
                  serverName : String,
-                 listeners : Option[EventListener],
+                 listeners : List[EventListener],
                  servlets: (String, Servlet)*) {
 
   def this(props : Props, servlets: (String, Servlet)*) = 
-    this(props.HttpPort(), props.ExternalUrl(), props.ServerName(), None, servlets:_*)
+    this(props.HttpPort(), props.ExternalUrl(), props.ServerName(), Nil, servlets:_*)
 
   val server = new JettyServer(portNo)
   var servletPaths = List[String]()
