@@ -449,10 +449,13 @@ class MarketValueFieldDetails(name: String) extends FieldDetails(Field(name)) {
 }
 
 object MarketValueSetPivotFormatter extends PivotFormatter {
-  def format(value: Any, formatInfo: ExtraFormatInfo) = value.asInstanceOf[Set[_]].toList match {
-    case List(pq: PivotQuantity) => TableCell.fromPivotQuantity(pq, formatInfo)
-    case List(p: Percentage) => PercentagePivotFormatter.format(p, formatInfo)
-    case list:List[_] => new TableCell(list.size + " values")
+  def format(value: Any, formatInfo: ExtraFormatInfo) = value match {
+    case s:Set[_] => s.toList match {
+      case List(pq: PivotQuantity) => TableCell.fromPivotQuantity(pq, formatInfo)
+      case List(p: Percentage) => PercentagePivotFormatter.format(p, formatInfo)
+      case list:List[_] => new TableCell(list.size + " values")
+    }
+    case pq:PivotQuantity => TableCell.fromPivotQuantity(pq, formatInfo)
   }
 }
 
