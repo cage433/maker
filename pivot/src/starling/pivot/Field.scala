@@ -175,6 +175,8 @@ object TreePivotFormatter extends PivotFormatter {
 object SetSizePivotFormatter extends PivotFormatter {
   def format(value:Any, formatInfo:ExtraFormatInfo) = value match {
     case s:Set[_] => new TableCell(s, s.size.toString)
+    case pq:PivotQuantity => TableCell.fromPivotQuantity(pq, formatInfo)
+    case s:String => new TableCell(s, s)
   }
 }
 
@@ -418,7 +420,10 @@ class SumPivotQuantityFieldDetails(name:String) extends FieldDetails(Field(name)
 
 object StandardPivotQuantityFormatter extends PivotFormatter {
   def format(value:Any, formatInfo:ExtraFormatInfo) = {
-    TableCell.fromPivotQuantity(value.asInstanceOf[PivotQuantity], formatInfo)
+    value match {
+      case pq:PivotQuantity => TableCell.fromPivotQuantity(pq, formatInfo)
+      case q:Quantity => QuantityLabelPivotFormatter.format(q, formatInfo)
+    }
   }
 }
 
@@ -448,7 +453,8 @@ class TradeIDGroupingSumPivotQuantityFieldDetails(name:String) extends FieldDeta
         assert(map.size == 1, "Map should only have one value")
         map.valuesIterator.next
       }
-      case _ => throw new IllegalArgumentException("Don't know how to handle something that isn't a Quantity or Map")
+      case UndefinedValue => UndefinedValue
+      case o => throw new IllegalArgumentException("Don't know how to handle something that isn't a Quantity or Map : " + o.asInstanceOf[AnyRef].getClass.getName)
     }
   }
   override def comparator = QuantityComparator
