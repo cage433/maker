@@ -519,7 +519,7 @@ case class LmeThreeMonthBuyerIndex(futuresMarket : FuturesMarket) extends Single
 
   def observedPeriod(day : Day) = {
     assert(isObservationDay(day), day + " is not an observation day for " + this)
-    throw new Exception("Implement me")
+    FuturesExchangeFactory.LME.threeMonthDate(day)
   }
 
   def storedFixingPeriod(day: Day) = StoredFixingPeriod.tenor(Tenor.ThreeMonths)

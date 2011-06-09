@@ -14,7 +14,6 @@ import starling.models._
 import starling.utils._
 import starling.gui.api._
 import starling.curves.Environment
-import starling.db.SnapshotMarketDataReaderFactory
 import starling.curves.MarketDataCurveObjectEnvironment
 
 def setNullHolidays{
@@ -29,16 +28,3 @@ def setNullHolidays{
 
 }
 
-def init() = starling.services.StarlingInit.devInstance
-
-lazy val devInstance = init()
-
-def makeEnv(pricingGroup : PricingGroup, marketDay : Day) : Environment = {
-  val marketDataStore = devInstance.marketDataStore
-
-  val marketDataSelection = MarketDataSelection(Some(pricingGroup), None)
-  val marketDataID = marketDataStore.latestMarketDataIdentifier(marketDataSelection)
-
-  val marketDataSlice = new SnapshotMarketDataReaderFactory(marketDataStore, marketDataID).create(ObservationPoint(marketDay))
-  Environment(MarketDataCurveObjectEnvironment(marketDay.endOfDay, marketDataSlice))
-}

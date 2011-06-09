@@ -1,10 +1,10 @@
 package starling.market
 
 import java.lang.String
-import starling.daterange.ObservationTimeOfDay
 import starling.daterange.ObservationTimeOfDay._
 import starling.utils.{Named, StarlingEnum}
 import starling.utils.ImplicitConversions._
+import starling.daterange.{Day, ObservationTimeOfDay}
 
 trait DeliveryType {
   val name: String
@@ -64,7 +64,39 @@ object FuturesExchangeFactory extends StarlingEnum(classOf[FuturesExchange]) {
       case "STL"	            => Market.LME_STEEL_BILLETS
       case _ => throw new IllegalStateException("No known LME market for Neptune commodity code " + neptuneCommodityCode)
     }
+
+    /**
+     * The three month data follows something like this rule
+     * 1. Shift today's month by three
+     * 2. If the date produced has a day number greater than the last day of the month (e.g. 30th Feb), then move to the month's last day
+     * 3. If the day is a non-working day then
+     *  a) For Friday/Saturday (bank holiday) - move to the previous business day
+     *  b) For Sunday/Monday (bank holiday) - move to the next business day, unless this would move us to the next month in which case move back
+     *  c) Any other holiday - just move back
+     *
+     * These are based on a chat with the LME, the holiday behaviour I've made up - but not the weekends.
+     * TODO - put in exact rule once we've received the copy of the regs from the LME
+     */
+    def threeMonthDate(marketDay : Day) : Day = {
+      val month = marketDay.containingMonth + 3
+      val d : Int = month.lastDay.dayNumber min marketDay.dayNumber
+      val cal = Market.cals.LME
+      val firstBusDayInMonth = cal.thisOrNextBusinessDay(month.firstDay)
+      val lastBusDayInMonth = cal.thisOrPreviousBusinessDay(month.lastDay)
+
+      var day = Day(month.y, month.m, d)
+      if (!cal.isBusinessDay(day)) {
+        if (day.isSaturday || day.isFriday)
+          day = cal.previousBusinessDay(day)
+        else if (day.isSunday || day.isMonday)
+          day = cal.nextBusinessDay(day)
+        else
+          day = cal.previousBusinessDay(day)
+      }
+      (day max firstBusDayInMonth) min lastBusDayInMonth
+    }
   }
+
   val COMEX = new FuturesExchange("COMEX", MonthlyDelivery, COMEXClose) with NeptunePricingExchange{
     def inferMarketFromCommodityName(neptuneCommodityName: String) = neptuneCommodityName match {
       case "Copper"	            => Market.COMEX_HIGH_GRADE_COPPER
