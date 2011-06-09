@@ -8,6 +8,12 @@
   </component>
   <component name="FacetAutodetectingManager">
     <autodetection-disabled>
+      <facet-type id="JRUBY">
+        <modules>
+          <module name="databases" />
+          <module name="starling" />
+        </modules>
+      </facet-type>
       <facet-type id="Scala">
         <modules>
           <module name="gui">
