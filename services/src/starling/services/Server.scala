@@ -335,6 +335,8 @@ class StarlingInit( props: Props,
       "marketdata"     → new MarketDataServlet(marketDataStore))
   }
 
+  Log.info("StarlingInit: EDM service port %d, external url = '%s', server name = '%s'".format(props.HttpEdmServicePort(), props.EdmExternalUrl(), props.ServerName()))
+  
   lazy val httpEdmServiceServer = {
     val filters = null // todo
     val marketDataService = new MarketDataServiceRPC(marketDataStore)
@@ -358,7 +360,6 @@ class StarlingInit( props: Props,
   //        <url-pattern>/*</url-pattern>
   //    </servlet-mapping>
 
-    Log.info("StarlingInit: EDM service port %d, external url = '%s', server name = '%s'".format(props.HttpEdmServicePort(), props.ExternalUrl(), props.ServerName()))
 
     val restEasyServlet = new org.jboss.resteasy.plugins.server.servlet.HttpServletDispatcher()
     val listener = List(new org.jboss.resteasy.plugins.server.servlet.ResteasyBootstrap())
