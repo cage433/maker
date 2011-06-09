@@ -509,7 +509,7 @@ case class LmeCashSettlementIndex(futuresMarket : FuturesMarket) extends SingleI
     day.addBusinessDays(businessCalendar, 2)
   }
 
-  def storedFixingPeriod(day: Day) = StoredFixingPeriod.tenor(Tenor.cash)
+  def storedFixingPeriod(day: Day) = StoredFixingPeriod.tenor(Tenor.CASH)
 
   override def observationTimeOfDay = ObservationTimeOfDay.Official
 }

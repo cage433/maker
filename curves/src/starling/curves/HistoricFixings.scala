@@ -46,5 +46,5 @@ case class FixingKey(index : SingleIndex, observationDay: Day) extends AtomicDat
     }
     
   }
-  def nullValue = Quantity(1, key.market.priceUOM)
+  def nullValue = Quantity(1, index.priceUOM)
 }
