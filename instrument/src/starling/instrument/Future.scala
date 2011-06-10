@@ -21,13 +21,7 @@ case class Future(market: FuturesMarket, delivery: DateRange, strike: Quantity, 
   def *(x : Double) = copy(volume = volume * x)
 
   def assets(env : Environment) = if (env.marketDay < lastTradingDay.endOfDay) {
-	  var F = env.forwardPrice(market, delivery)
-    if (market.currency != valuationCCY){
-      // For cross currency futures I don't think we should ne using a forward price, i.e. multiplying by the forward fx rate,
-      // because of novation. Multiplying by spot is the only thing that makes sense to me.
-      F *= env.spotFXRate(valuationCCY, market.currency)
-    }
-    F = market.convertUOM(F, strike.uom)
+    val F = convertPrice(env, env.forwardPrice(market, delivery))
     Assets(
       Asset.estimatedCash(env.marketDay.day, F * volume, F * volume),
       Asset.estimatedCash(env.marketDay.day, -strike * volume, -strike * volume)
@@ -37,13 +31,24 @@ case class Future(market: FuturesMarket, delivery: DateRange, strike: Quantity, 
     //as the settlement day is market day
     //maybe we should try to create the correct margining payments using the fixings?
     //the trouble is the trade day becomes a valuation parameter 
+    var fixings = convertPrice(env, env.fixing(FuturesFrontPeriodIndex(market).fixingHistoryKey(lastTradingDay), lastTradingDay))
     Assets(
       Asset.estimatedCash(env.marketDay.day,
-        env.fixing(FuturesFrontPeriodIndex(market).fixingHistoryKey(lastTradingDay), lastTradingDay) * volume, env),
+        fixings * volume, env),
       Asset.estimatedCash(env.marketDay.day, -strike * volume, env) //strike is always zero because of the utps
     )
   }
 
+  private def convertPrice(env: Environment, price: Quantity) = {
+    var result = price
+    if (market.currency != valuationCCY){
+      // For cross currency futures I don't think we should ne using a forward price, i.e. multiplying by the forward fx rate,
+      // because of novation. Multiplying by spot is the only thing that makes sense to me.
+      result *= env.spotFXRate(valuationCCY, market.currency)
+    }
+    result = market.convertUOM(result, strike.uom)
+    result
+  }
 
   override def expiryDay() = Some(lastTradingDay)
 
