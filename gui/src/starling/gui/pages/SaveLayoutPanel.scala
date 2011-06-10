@@ -9,7 +9,6 @@ import swing.Swing._
 import starling.pivot.{PivotFieldsState, PivotLayout}
 import starling.gui._
 import api.{UserReportUpdate, PivotLayoutUpdate}
-import starling.pivot.view.swing.MigPanel._
 
 class SaveLayoutPanel(pageContext:PageContext, pageData:PivotTablePageData, pivotPageState:PivotPageState, layoutType:String,
                       selfPage:(PivotPageState)=>Page, selectFocus: =>Unit) extends MigPanel("insets 0, gap 1") {
@@ -28,6 +27,8 @@ class SaveLayoutPanel(pageContext:PageContext, pageData:PivotTablePageData, pivo
       allFieldsAreValid && allReportChoicesAreValid
     })
   }
+
+  def allUserLayouts = blankLayout :: pageContext.localCache.userPivotLayouts
 
   def checkCustomLayout = {
     !layouts.map(l => {(l.pivotFieldState, l.otherLayoutInfo)}).contains((data.pivotFieldsState, pivotPageState.otherLayoutInfo))
@@ -273,14 +274,14 @@ class SaveLayoutPanel(pageContext:PageContext, pageData:PivotTablePageData, pivo
         case ButtonClicked(e) => {
           val newLayoutName = nameField.text
           if (newLayoutName.nonEmpty) {
-            val currentLayouts = layouts.map(_.layoutName.trim)
+            val currentLayouts = allUserLayouts.map(_.layoutName.trim)
             if (!currentLayouts.contains(newLayoutName.trim)) {
               pageContext.submit(SavePivotLayoutRequest(PivotLayout(newLayoutName.trim, data.pivotFieldsState, true,
                 pivotPageState.otherLayoutInfo, layoutType, getExtraLayoutInfo)))
               clearUp
             } else {
               // Check to see if this layout is associated with any other reports. If it isn't apart from this report, allow replacement. If it is, don't.
-              val layout = layouts.find(_.layoutName.trim == newLayoutName.trim).get
+              val layout = allUserLayouts.find(_.layoutName.trim == newLayoutName.trim).get
               val associatedReports = layout.associatedReports
               val reportNameList = getExtraLayoutInfo
               val associatedWithThisReport = reportNameList match {
@@ -288,11 +289,17 @@ class SaveLayoutPanel(pageContext:PageContext, pageData:PivotTablePageData, pivo
                 case head :: _ => associatedReports.contains(head)
               }
 
-              val textToUse = if (associatedReports.size <= 1 && associatedWithThisReport)
+              val textToUse = if (associatedReports.size <= 1 && associatedWithThisReport) {
                 replacePanel.standardText
-              else
+              }
+              else if (associatedReports.size == 0) {
+                // This is probably a non report layout. (trade / market data etc) layout.
+                replacePanel.standardText
+              }
+              else {
                 replacePanel.standardText + "\n\n(This will also change the layout in the " + (associatedReports.size - 1) +
                         " other report(s) associated with this layout)"
+              }
               replacePanel.textArea.text = textToUse
               replacePanel.associatedReports = associatedReports
 
