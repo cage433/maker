@@ -399,7 +399,8 @@ class TradeSelectionComponent(
 
             MarketDataIdentifier(defaultSelection, version)
           }
-          CurveIdentifierLabel.defaultLabelFromSingleDay(marketDataIdentifier, expiry.exp, pageContext.localCache.ukBusinessCalendar)
+
+          CurveIdentifierLabel.defaultLabelFromSingleDay(marketDataIdentifier, pageContext.localCache.ukBusinessCalendar)
         }
 
         val rp = ReportParameters(
