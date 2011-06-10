@@ -225,7 +225,8 @@ case class CurveIdentifierLabel(
 }
 
 object CurveIdentifierLabel{
-  def defaultLabelFromSingleDay(marketDataIdentifier : MarketDataIdentifier, day : Day, calendar : BusinessCalendar) = {
+  def defaultLabelFromSingleDay(marketDataIdentifier : MarketDataIdentifier, calendar : BusinessCalendar) = {
+    val day = Day.today.previousWeekday // don't use a calendar as we don't know which one
     val timeOfDayToUse = if (day >= Day.today) TimeOfDay.StartOfDay else TimeOfDay.EndOfDay
     CurveIdentifierLabel(
       marketDataIdentifier,

@@ -14,10 +14,10 @@ import org.jdesktop.swingx.decorator.{ColorHighlighter, HighlightPredicate}
 import java.awt.event.{MouseEvent, MouseAdapter}
 import collection.mutable.ListBuffer
 import starling.utils.{SColumn, STable}
-import starling.daterange.{TimeOfDay, Timestamp}
 import collection.immutable.TreeMap
 import swing.{Component, Button, Label}
 import starling.quantity.Quantity
+import starling.daterange.{Day, TimeOfDay, Timestamp}
 
 case class SingleTradePage(tradeID:TradeIDLabel, desk:Option[Desk], tradeExpiryDay:TradeExpiryDay, intradayGroups:Option[IntradayGroups]) extends Page {
   def text = "Trade " + tradeID
@@ -231,16 +231,22 @@ class SingleTradePageComponent(context:PageContext, pageData:PageData) extends M
             }
           }
           case Some(d) => {
-            val (timestamps, _) = context.localCache.deskCloses(desk).span(_.timestamp >= rowTimeStamp)
-            val tradeTimestamp = timestamps.reverse.head
-            (Some((d, tradeTimestamp)), None)
+            if(historyTable.jTable.getRowCount() - 1 == selection) {
+              // we've selected the most up to date
+               val tradeTimestamp = context.localCache.deskCloses(desk).sortWith(_.timestamp >= _.timestamp).head
+              (Some((d, tradeTimestamp)), None)
+            } else {
+              val (timestamps, _) = context.localCache.deskCloses(desk).span(_.timestamp >= rowTimeStamp)
+              val tradeTimestamp = timestamps.reverse.head
+              (Some((d, tradeTimestamp)), None)
+            }
           }
         }
         val tradePredicate = TradePredicate(List(), List(List((Field("Trade ID"), SomeSelection(Set(data.tradeID))))))
         val tradeSelection = TradeSelectionWithTimestamp(deskAndTimestamp, tradePredicate, intradaySubgroupAndTimestamp)
         val prl = context.localCache.reportOptionsAvailable.options.filter(_.slidable)
         val initialFieldsState = SingleTradePageComponent.GreeksLayout
-        val expiry = data.tradeExpiryDay
+        val expiry = data.tradeExpiryDay.exp.startOfFinancialYear
 
         val curveIdentifier = {
           val marketDataSelection = context.getSetting(
@@ -251,7 +257,7 @@ class SingleTradePageComponent(context:PageContext, pageData:PageData) extends M
 
           val ci = CurveIdentifierLabel.defaultLabelFromSingleDay(
             MarketDataIdentifier(marketDataSelection, version),
-            expiry.exp, context.localCache.ukBusinessCalendar)
+            context.localCache.ukBusinessCalendar)
           ci.copy(thetaDayAndTime = ci.thetaDayAndTime.copyTimeOfDay(TimeOfDay.EndOfDay))
         }
 
@@ -259,7 +265,7 @@ class SingleTradePageComponent(context:PageContext, pageData:PageData) extends M
           tradeSelection,
           curveIdentifier,
           ReportOptions(prl,None,None),
-          expiry.exp,
+          expiry,
           None,
           runReports = true)
 
