@@ -23,9 +23,7 @@ trait CollectionsSyntacticSugar {
       builder.result
     }
 
-    def initOption() = {
-      if (tl.isEmpty) None else Some(tl.init)
-    }
+    def initOption() = if (tl.isEmpty) None else Some(tl.init)
   }
 
   implicit def collectionExtras[A](xs: Iterable[A]) = new {

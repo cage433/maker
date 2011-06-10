@@ -35,13 +35,13 @@ object LIBORFixings extends HierarchicalLimSource {
     parseTenor(tenor).map { tenor => LIBORFixingRelation(rateType, UOM.fromString(currency), StoredFixingPeriod.tenor(tenor)) }
   }
 
-  def marketDataEntriesFrom(fixings: List[Prices[LIBORFixingRelation]]): List[MarketDataEntry] = {
+  def marketDataEntriesFrom(fixings: List[Prices[LIBORFixingRelation]]) = {
     fixings.groupBy(group(_)).map { case ((rateType, currency, observationDay), grouped) =>
       MarketDataEntry(observationDay.atTimeOfDay(ObservationTimeOfDay.LiborClose),
         PriceFixingsHistoryDataKey(currency.toString, Some(rateType)),
         PriceFixingsHistoryData.create(grouped.map(fixings => (Level.Close, fixings.relation.period) → marketValue(fixings)))
       )
-    }.toList
+    }
   }
 
   private def parseTenor(tenor: String): Option[Tenor] = tenor partialMatch {
@@ -50,9 +50,8 @@ object LIBORFixings extends HierarchicalLimSource {
     case "SN" => Tenor.SN
   }
 
-  def group(fixings: Prices[LIBORFixingRelation]) = {
+  def group(fixings: Prices[LIBORFixingRelation]) =
     (fixings.relation.interestRateType, fixings.relation.currency, fixings.observationDay)
-  }
 
   def marketValue(fixings: Prices[LIBORFixingRelation]) = MarketValue.percentage(fixings.priceByLevel(Level.Close) / 100)
 }

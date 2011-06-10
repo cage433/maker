@@ -8,9 +8,9 @@ import starling.daterange._
 import starling.richdb.RichInstrumentResultSetRow
 import starling.eai.{TreeID, EAIStrategyDB}
 import starling.models.{Put, Call, CallOrPut}
-import starling.market.{Market, Index}
 import starling.quantity.{SpreadQuantity, UOM, Quantity, Percentage}
 import starling.trade.{TradeID, Trade}
+import starling.market.{FuturesMarket, Market, Index}
 
 case class ExcelTradesRange(subgroupName : String,
                             headers: Array[String],
@@ -140,7 +140,7 @@ case class ExcelTradesRange(subgroupName : String,
         def getQuantity(name: String) = row.getQuantity(name)
         def getStrikes = row.getStrikes
         def getForwardMarket(name: String) = Market.forwardMarketFromName(row.getString(name))
-        def getFuturesMarket(name: String) = Market.futuresMarketFromName(row.getString(name))
+        def getFuturesMarket(name: String) = FuturesMarket.fromName(row.getString(name))
         def getDateRange(name: String, tenor : Option[TenorType] = None) = row.getDateRange(name, tenor)
         override def getSpread(name:String) = {
           row.getObject(name) match {

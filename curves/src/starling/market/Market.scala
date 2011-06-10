@@ -180,7 +180,6 @@ class FuturesMarket(
     case Day => lastTradingDay(maturityDay)
     case Month => maturityDay
   }
-
 }
 
 /**
@@ -701,23 +700,13 @@ object Market {
 
   val unusedMarketsWithOldData:List[CommodityMarket] = List(BALTIC_HANDYMAX)
 
-  lazy val forwardMarkets:List[ForwardMarket] = (Set() ++ markets.flatMap{case (m: ForwardMarket) => Some(m); case _ => None}).toList.sortWith(_.name < _.name)
-  lazy val futuresMarkets:List[FuturesMarket] = (Set() ++ markets.flatMap{case (m: FuturesMarket) => Some(m); case _ => None}).toList.sortWith(_.name < _.name)
-
-  def marketsForExchange(exchange:FuturesExchange) = futuresMarkets.filter(_.exchange==exchange)
+  lazy val forwardMarkets: List[ForwardMarket] = markets.filterCast[ForwardMarket].sortWith(_.name < _.name)
+  lazy val futuresMarkets: List[FuturesMarket] = markets.filterCast[FuturesMarket].sortWith(_.name < _.name)
 
   def fromTrinityCode(code : String): CommodityMarket =
     trinityCodeMap.getOrElse(code.trim, throw new UnknownTrinityMarketException(code))
 
-  def futuresMarketFromTrinityCode(code : String) : FuturesMarket = fromTrinityCode(code).
-    cast[FuturesMarket](o => throw new Exception("Market " + o + " is not a FuturesMarket"))
-
   def fromEAIQuoteID(id: Int) = eaiCodeMap(id)
-
-  def futuresMarketFromEAIQuoteID(id: Int) = commodityMarketOptionFromEAIQuoteID(id) match {
-    case Some(f: FuturesMarket) => f
-    case None => throw new Exception("No futures market for " + id)
-  }
 
   def commodityMarketOptionFromEAIQuoteID(id: Int) = eaiCodeMap.get(id)
 
@@ -750,22 +739,19 @@ object Market {
   def fromNameOrCommodity(exchangeName: String, name: String): CommodityMarket =
     fromNameEither(name).orElse(fromCommodityEither(exchangeName, name)).getOrThrow
 
-  def futuresMarketFromName(marketName : String): FuturesMarket = fromName(marketName).
-    cast[FuturesMarket](o => throw new Exception("Market " + o + " is not a FuturesMarket"))
-
   def forwardMarketFromName(marketName : String): ForwardMarket = forwardMarkets.find(_.name.equalsIgnoreCase(marketName)) match {
     case None => {
-      val market = futuresMarketFromName(marketName)
+      val market = FuturesMarket.fromName(marketName)
       new ProxyForwardMarket(market) // TODO [15 Apr 2010] hack until we figure out what trinity means with forward on futures markets
     }
     case Some(market) => market
   }
-
-
 }
 
 object FuturesMarket {
-  def fromName(name:String) = Market.futuresMarketFromName(name)
+  def fromName(marketName : String): FuturesMarket = Market.fromName(marketName).
+    cast[FuturesMarket](o => throw new Exception("Market " + o + " is not a FuturesMarket"))
+
   def testMarket(name : String, currency : UOM, uom : UOM) : FuturesMarket = {
     testMarket(name, currency, uom, -1, Day)
   }
@@ -785,6 +771,17 @@ object FuturesMarket {
       def interpolation = LinearInterpolation
     }
   }
+
+  def fromExchangeAndLimSymbol(exchange: String, limSymbol: String) =
+    Market.futuresMarkets.find(market => market.exchange.name == exchange && market.limSymbol == Some(limSymbol))
+
+  def fromEAIQuoteID(id: Int) = Market.commodityMarketOptionFromEAIQuoteID(id) match {
+    case Some(f: FuturesMarket) => f
+    case None => throw new Exception("No futures market for " + id)
+  }
+
+  def fromTrinityCode(code : String): FuturesMarket = Market.fromTrinityCode(code).
+    cast[FuturesMarket](o => throw new Exception("Market " + o + " is not a FuturesMarket"))
 }
 
 object ForwardMarket {

@@ -147,6 +147,8 @@ object LIMServer {
       val Bloomberg = new LimNode(this) {
         val Currencies = new LimNode(this) {
           val Composite = new LimNode(this)
+          val LME = new LimNode(this)
+          val Lme = new LimNode(this)
         }
         val Futures = new LimNode(this) {
           val Comex = new LimNode(this)

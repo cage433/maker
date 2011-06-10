@@ -31,13 +31,10 @@ object PriceFixingsHistoryData {
     data.foldLeft(PriceFixingsHistoryData(emptyFixings))(_ + _)
   }
 
-  def create(prices: Map[(Level, StoredFixingPeriod), MarketValue]): PriceFixingsHistoryData = {
-    PriceFixingsHistoryData(emptyFixings ++ prices)
-  }
+  def create(level:Level, period:StoredFixingPeriod, value:Quantity): PriceFixingsHistoryData =
+    create(Map( (level,period) → MarketValue.quantity(value)))
 
-  def create(level:Level, period:StoredFixingPeriod, value:Quantity):PriceFixingsHistoryData = create(Map( (level,period) → MarketValue.quantity(value)))
-
-  def create(prices: List[((Level, StoredFixingPeriod), MarketValue)]): PriceFixingsHistoryData = {
+  def create(prices: Traversable[((Level, StoredFixingPeriod), MarketValue)]): PriceFixingsHistoryData = {
     PriceFixingsHistoryData(emptyFixings ++ prices)
   }
 

@@ -465,6 +465,7 @@ class MarketValueFieldDetails(name: String) extends FieldDetails(Field(name)) {
   override def formatter = MarketValueSetPivotFormatter
   override def isDataField = true
   override def comparator = new MarketValueComparer(super.comparator)
+  override def parser = MarketValuePivotParser
 }
 
 object MarketValueSetPivotFormatter extends PivotFormatter {
@@ -483,6 +484,10 @@ class MarketValueComparer(backup: Ordering[Any]) extends Ordering[Any] {
     case (left: PivotQuantity, right:PivotQuantity) => PivotQuantityComparator.compare(left, right)
     case _ => backup.compare(x, y)
   }
+}
+
+object MarketValuePivotParser extends PivotParser {
+  def parse(text: String) = (MarketValue.fromString(text).pivotValue, text)
 }
 
 class PivotQuantityFieldDetails(name:String) extends FieldDetails(Field(name)) {

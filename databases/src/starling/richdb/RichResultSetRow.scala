@@ -65,7 +65,7 @@ class RichResultSetRow(resultSet: ResultSet)
 {
   def getMarket(column: String): CommodityMarket = Market.fromName(getString(column))
 
-  def getFuturesMarket(column: String) = Market.futuresMarketFromName(getString(column))
+  def getFuturesMarket(column: String) = FuturesMarket.fromName(getString(column))
 
   def getFuturesSpreadMarket(column: String) = FuturesSpreadMarket.find(getString(column)) match {
     case Some(m) => m
@@ -91,7 +91,7 @@ class RichResultSetRow(resultSet: ResultSet)
     case o => false
   }
 
-  def getFuturesMarketFromEAIQuoteID(column: String) = Market.futuresMarketFromEAIQuoteID(getInt(column))
+  def getFuturesMarketFromEAIQuoteID(column: String) = FuturesMarket.fromEAIQuoteID(getInt(column))
 
   def getSingleIndexFromEAIQuoteID(column: String) = Index.singleIndexFromEAIQuoteID(getInt(column))
 
