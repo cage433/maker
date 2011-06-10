@@ -289,16 +289,15 @@ class SaveLayoutPanel(pageContext:PageContext, pageData:PivotTablePageData, pivo
                 case head :: _ => associatedReports.contains(head)
               }
 
-              val textToUse = if (associatedReports.size <= 1 && associatedWithThisReport) {
+              val extraText = "\n\n(This will also change the %s report(s) associated with this layout name)"
+              val textToUse = if (associatedWithThisReport && associatedReports.size == 1) {
                 replacePanel.standardText
-              }
-              else if (associatedReports.size == 0) {
-                // This is probably a non report layout. (trade / market data etc) layout.
+              } else if (!associatedWithThisReport && associatedReports.size > 0) {
+                replacePanel.standardText + extraText.format(associatedReports.size.toString)
+              } else if (associatedReports.size == 0) {
                 replacePanel.standardText
-              }
-              else {
-                replacePanel.standardText + "\n\n(This will also change the layout in the " + (associatedReports.size - 1) +
-                        " other report(s) associated with this layout)"
+              } else {
+                replacePanel.standardText + extraText.format((associatedReports.size - 1).toString)
               }
               replacePanel.textArea.text = textToUse
               replacePanel.associatedReports = associatedReports
