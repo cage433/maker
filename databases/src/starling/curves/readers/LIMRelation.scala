@@ -11,17 +11,20 @@ import starling.LimNode
 trait LIMRelation {
   val node: LimNode
   val observationTimeOfDay: ObservationTimeOfDay
-  def parse(childRelation: String): Option[(String, FuturesMarket, DateRange)]
+  def parse(childRelation: String): Option[LimPrice]
 
   protected def debug[T](message: String): Option[T] = { Log.debug(message); None }
 }
+
+case class LimPrice(futuresMarket: FuturesMarket, period: DateRange, observationTimeOfDay: ObservationTimeOfDay)
 
 class LMELIMRelation(val node: LimNode, val observationTimeOfDay: ObservationTimeOfDay) extends LIMRelation {
   private lazy val lmeMarkets = FuturesExchangeFactory.LME.marketsByCommodityName + "steelbillet" → Market.LME_STEEL_BILLETS
   private val Regex = """TRAF\.LME\.(\w+)\.(\d+)\.(\d+)\.(\d+)""".r
 
   def parse(childRelation: String) = childRelation.safePartialMatch("Missing LME market for LIM Relation") {
-    case Regex(commodity, year, month, day) => (childRelation, lmeMarkets(commodity.toLowerCase), Day(year, month, day))
+    case Regex(commodity, year, month, day) =>
+      LimPrice(lmeMarkets(commodity.toLowerCase), Day(year, month, day), observationTimeOfDay)
   }
 }
 
@@ -34,7 +37,7 @@ class MonthlyLIMRelation(val node: LimNode, val observationTimeOfDay: Observatio
       val optMonth = ReutersDeliveryMonthCodes.parse(reutersDeliveryMonth)
 
       (optMarket, optMonth) match {
-        case (Some(market), Some(month)) => Some(childRelation, market, month)
+        case (Some(market), Some(month)) => Some(LimPrice(market, month, observationTimeOfDay))
         case (None, _) => debug("No Market with exchange: %s and LIM Symbol: %s" % (exchange, limSymbol))
         case (_, None) => debug("Cannot parse Reuters delivery month: " + reutersDeliveryMonth)
       }
