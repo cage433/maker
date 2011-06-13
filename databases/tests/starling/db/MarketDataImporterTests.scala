@@ -3,13 +3,13 @@ package starling.db
 import org.mockito.Mockito._
 import org.scalatest.matchers.ShouldMatchers
 import starling.daterange._
-import starling.marketdata._
 import collection.immutable.{Nil, Map}
 import starling.market.Market
 import starling.utils.StarlingSpec
 import starling.utils.ImplicitConversions._
 import starling.calendar.Clock
 import org.scalatest.BeforeAndAfterAll
+import starling.marketdata._
 
 
 class MarketDataImporterTests extends StarlingSpec with ShouldMatchers with BeforeAndAfterAll {
@@ -81,10 +81,10 @@ class MarketDataImporterTests extends StarlingSpec with ShouldMatchers with Befo
   private val noData: MarketDataEntry = null
 
   private def savesFor(entries: (MarketDataEntry, MarketDataEntry)*) = Map(LIM → entries.map((saveFor _).tupled).toList)
-  private def saveFor(oldEntry: MarketDataEntry, newEntry: MarketDataEntry) = MarketDataUpdate(observationPoint, newEntry.key, Some(newEntry.data), optVersioned(oldEntry))
+  private def saveFor(oldEntry: MarketDataEntry, newEntry: MarketDataEntry) = MarketDataUpdate(TimedMarketDataKey(observationPoint, newEntry.key), Some(newEntry.data), optVersioned(oldEntry))
   private def deletesFor(entries: MarketDataEntry*) = Map(LIM → entries.map(deleteFor).toList)
-  private def deleteFor(entry: MarketDataEntry) = MarketDataUpdate(observationPoint, entry.key, None, Some(versioned(entry)))
-  private def versioned(entry: MarketDataEntry) = VersionedMarketData(Clock.timestamp, 0, entry.data)
+  private def deleteFor(entry: MarketDataEntry) = MarketDataUpdate(TimedMarketDataKey(observationPoint, entry.key), None, Some(versioned(entry)))
+  private def versioned(entry: MarketDataEntry) = VersionedMarketData(Clock.timestamp, 0, Some(entry.data))
   private def optVersioned(entry: MarketDataEntry) = if (entry == null) None else Some(versioned(entry))
 
   private def importer() = {
@@ -99,7 +99,7 @@ class MarketDataImporterTests extends StarlingSpec with ShouldMatchers with Befo
 
       def withExistingData(entries: MarketDataEntry*) = updateThis {
         when(marketDataStore.marketData(observationDay, observationDay, marketDataType, marketDataSet))
-          .thenReturn(entries.map(entry => (observationPoint, entry.key, versioned(entry))).toList)
+          .thenReturn(entries.map(entry => (TimedMarketDataKey(observationPoint, entry.key), versioned(entry))).toList)
       }
 
       def withNoSource = updateThis {

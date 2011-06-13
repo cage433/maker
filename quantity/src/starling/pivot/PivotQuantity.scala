@@ -1,10 +1,10 @@
 package starling.pivot
 
 import math.abs
-import starling.utils.StackTraceToString
 import java.io.Serializable
 import starling.quantity._
 import collection.immutable.Map
+import starling.utils.{Named, StarlingEnum, StackTraceToString}
 
 case class PivotPercentage(percent:Option[Percentage]) {
   override def toString = percent match {
@@ -26,6 +26,20 @@ object StackTrace {
   }
 }
 
+case class ErrorState(name: String) extends Named {
+  import ErrorState._
+
+  def fold[A](g: => A, w: => A, e: => A) = if (this == Warning) w else if (this == Error) e else g
+}
+
+object ErrorState extends StarlingEnum(classOf[ErrorState]) {
+  val Good    = ErrorState("Good")
+  val Warning = ErrorState("Warning")
+  val Error   = ErrorState("Error")
+
+  def apply(hasWarnings: Boolean, hasErrors: Boolean): ErrorState = if (hasErrors) Error else if (hasWarnings) Warning else Good
+}
+
 case class PivotQuantity(values:Map[UOM,Double], errors:Map[String,List[StackTrace]], warning:Option[String]=None) extends Serializable {
   def this(values:Map[UOM,Double], errors:Set[Throwable]) = this(values, Map() ++ PivotQuantity.throwableToError(errors))
   def this(value:Double, errors:Set[Throwable]) = this(Map(UOM.SCALAR->value), errors)
@@ -42,7 +56,7 @@ case class PivotQuantity(values:Map[UOM,Double], errors:Map[String,List[StackTra
       errors ++ other.errors
     ).filterNulls
   }
-  def -(other: PivotQuantity) = this.+(other * -1.0)
+  def -(other: PivotQuantity):PivotQuantity = this.+(other * -1.0)
   def /(other:Quantity) = {
     new PivotQuantity(
       values.map{
@@ -84,8 +98,10 @@ case class PivotQuantity(values:Map[UOM,Double], errors:Map[String,List[StackTra
   }
   def <(other: PivotQuantity): Boolean = quantityValue < other.quantityValue
   def >(other: PivotQuantity): Boolean = quantityValue > other.quantityValue
+  def errorState = ErrorState(hasWarning, hasErrors)
   def hasErrors = !errors.isEmpty
   def hasWarning = warning.isDefined
+  def hasWarningOrErrors = hasWarning || hasErrors
   def doubleValue:Option[Double] = {
     if (hasErrors) {
       None

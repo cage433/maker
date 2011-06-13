@@ -1,5 +1,6 @@
 package starling.pivot.view.swing
 
+import fieldchoosers.RowComponent
 import starling.quantity.UOM
 import starling.pivot._
 import javax.swing.table.AbstractTableModel
@@ -725,7 +726,7 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
     fullTableModel.fireTableDataChanged
   }
 
-  def resizeRowHeaderColumns(fullTable:JTable, rowHeaderTable:JTable, rowFieldChooser:FieldChooser,
+  def resizeRowHeaderColumns(fullTable:JTable, rowHeaderTable:JTable, rowComponent:RowComponent,
                              rowFieldHeadingCount:Array[Int], sizerPanel:Panel, rowHeaderScrollPane:JScrollPane) {
     def getRowHeaderMaxColumnWidth(col:Int) = {
       val numRows = rowHeaderTable.getRowCount
@@ -754,11 +755,11 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
     val rowHeaderColumnModel = rowHeaderTable.getColumnModel
     val numCols = rowHeaderColCount0
     var col = 0
-    if ((rowFieldChooser.getNumberOfFields == 0) ||
-            ((numCols == 1) && (rowFieldChooser.getNumberOfFields > 0) &&
-                    (getRowHeaderMaxColumnWidth(0) < rowFieldChooser.getPreferredSize.width))) {
-      fullColumnModel.getColumn(0).setPreferredWidth(rowFieldChooser.getPreferredSize.width)
-      rowHeaderColumnModel.getColumn(0).setPreferredWidth(rowFieldChooser.getPreferredSize.width)
+    if ((rowComponent.numberOfFields == 0) ||
+            ((numCols == 1) && (rowComponent.numberOfFields > 0) &&
+                    (getRowHeaderMaxColumnWidth(0) < rowComponent.preferredSize.width))) {
+      fullColumnModel.getColumn(0).setPreferredWidth(rowComponent.preferredSize.width)
+      rowHeaderColumnModel.getColumn(0).setPreferredWidth(rowComponent.preferredSize.width)
     } else {
       for ((count, fieldIndex) <- rowFieldHeadingCount.zipWithIndex) {
         val widths = new Array[Int](count)
@@ -775,7 +776,7 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
         }
 
         val totalWidth = widths.sum
-        val fieldCompPrefWidth = rowFieldChooser.getGUIField(fieldIndex).initialPreferredSize.width
+        val fieldCompPrefWidth = rowComponent.guiField(fieldIndex).initialPreferredSize.width
         if (totalWidth < fieldCompPrefWidth) {
           // Need to add some space to each column.
           val perColDiff = ((fieldCompPrefWidth - totalWidth) / count)
@@ -795,21 +796,21 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
             rowHeaderColumnModel.getColumn(0).setPreferredWidth(rowHeaderColumnModel.getColumn(0).getPreferredWidth + extraWidth)
           }
         } else {
-          rowFieldChooser.getGUIField(fieldIndex).setPreferredWidth(totalWidth)
+          rowComponent.guiField(fieldIndex).setPreferredWidth(totalWidth)
         }
       }
 
       val firstAxisCell = rowHeaderTable.getValueAt(0,0).asInstanceOf[AxisCell]
-      if (!(firstAxisCell.hidden || firstAxisCell.value.value == NullAxisValueType) || rowFieldChooser.getNumberOfFields == 1) {
+      if (!(firstAxisCell.hidden || firstAxisCell.value.value == NullAxisValueType) || rowComponent.numberOfFields == 1) {
         val firstColWidth = fullColumnModel.getColumn(0).getPreferredWidth + 2
         fullColumnModel.getColumn(0).setPreferredWidth(firstColWidth)
         rowHeaderColumnModel.getColumn(0).setPreferredWidth(firstColWidth)
       }
     }
-    val width = math.max(rowFieldChooser.getPreferredSize.width, (0 until numCols).map(c => rowHeaderColumnModel.getColumn(c).getPreferredWidth).sum)
+    val width = math.max(rowComponent.preferredSize.width, (0 until numCols).map(c => rowHeaderColumnModel.getColumn(c).getPreferredWidth).sum)
     val height = colHeaderRowCount0 * PivotJTable.RowHeight
     sizerPanel.preferredSize = new Dimension(width-1,10)
-    rowFieldChooser.setPreferredSize(new Dimension(width,height))
+    rowComponent.preferredSize = new Dimension(width,height)
 
     val viewport = rowHeaderScrollPane.getViewport
     viewport.setPreferredSize(rowHeaderTable.getPreferredSize)

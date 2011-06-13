@@ -17,7 +17,7 @@ class ForwardFXCurveTypePivotTableDataSource(context:EnvironmentWithDomain) exte
   val cc2Field = FieldDetails("per CCY2")
   val dayField = FieldDetails("Day")
   val rateField = new PivotQuantityFieldDetails("Rate")
-  val fieldDetailsGroups = List(FieldDetailsGroup("Forward FX", List(cc1Field, cc2Field, dayField, rateField)))
+  val fieldDetailsGroups = List(FieldDetailsGroup("Forward FX", cc1Field, cc2Field, dayField, rateField))
 
   val allRows = {
     val currencies = {

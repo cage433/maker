@@ -108,7 +108,7 @@ class PivotTableModel(data:PivotData) {
 
   val filterFields = new FieldList(this, fieldState.filters.map(_._1).filterNot(f => rowFields.contains(f) || columns.contains(f)), Filter)
 
-  def isDataField(field:Field) = data.dataFields.contains(field)
+  def isMeasureField(field:Field) = data.dataFields.contains(field)
 
   def getFields(fieldChooserType:FieldChooserType) = {
     fieldChooserType match {
@@ -137,7 +137,7 @@ class PivotTableModel(data:PivotData) {
     publishFieldStateUpdated(updatedState)
   }
 
-  def publishFieldStateChange(field:Field, newColumnStructure:ColumnStructure, from:FieldChooserType) {
+  def publishFieldStateChange(field:Field, newColumnStructure:ColumnTrees, from:FieldChooserType) {
     val updatedState = getCurrentPivotFieldsState.moveField(field, from, newColumnStructure)
     publishFieldStateUpdated(updatedState)
   }
@@ -337,8 +337,7 @@ object PivotTableModel {
       val rowAxisValues = scala.collection.mutable.HashSet[AxisValueList[AxisValue]]()
       val columnAxisValues = scala.collection.mutable.HashSet[AxisValueList[AxisValue]]()
 
-      // The first column is always the ROOT column so just look at the children.
-      val allPaths = ColumnStructure.buildPathsFor(pivotState.columns.children)
+      val allPaths = pivotState.columns.buildPathsWithPadding
 
       val maxColumnDepth = if (allPaths.isEmpty) 0 else allPaths.maximum(_.path.size)
 
@@ -385,7 +384,7 @@ object PivotTableModel {
         }
 
         val rowValuesOption:Option[AxisValueList[AxisValue]] = {
-          val dataFields = pivotState.columns.dataFields
+          val dataFields = pivotState.columns.measureFields
 
           def buildRow(soFar:List[AxisValue], left:List[Field]):Option[List[AxisValue]] = {
             left match {

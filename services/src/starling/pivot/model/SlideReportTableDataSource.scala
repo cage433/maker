@@ -82,7 +82,7 @@ class SlideReportTableDataSource(reportTableDataSources:List[(List[Int], ReportP
       val filteredRows = rows.map {
         map => {
           map.filter {
-            case (field, value) if pfs.columns.dataFields.contains(field) => {
+            case (field, value) if pfs.columns.measureFields.contains(field) => {
               lSlideFields.forall {
                 case f if !(pfs.columns.hasPathContaining(Set(field, f)) || pfs.rowFields.contains(f))=> {
                   val value = map(f)

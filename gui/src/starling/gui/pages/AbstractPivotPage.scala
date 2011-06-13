@@ -181,7 +181,9 @@ class PivotTablePageComponent(
       icon = StarlingIcons.RowSubTotals
       tooltip = "Display or hide the row sub totals"
       reactions += { case ButtonClicked(_) => {
-        val newOtherLayoutInfo = pivotPageState.otherLayoutInfo.copy(rowSubTotalsDisabled = List())
+        val rowFields = data.pivotFieldsState.rowFields
+        val newDisabledSubTotals = pivotPageState.otherLayoutInfo.disabledSubTotals.filterNot(rowFields.contains(_))
+        val newOtherLayoutInfo = pivotPageState.otherLayoutInfo.copy(disabledSubTotals = newDisabledSubTotals)
         val newPivotPageState = pivotPageState.copy(otherLayoutInfo = newOtherLayoutInfo)
         pageContext.goTo(selfPage(newPivotPageState.copyTotals(_.toggleRowSubTotals)))
       } }
@@ -190,7 +192,9 @@ class PivotTablePageComponent(
       icon = StarlingIcons.ColumnSubTotals
       tooltip = "Display or hide the column sub totals"
       reactions += { case ButtonClicked(_) => {
-        val newOtherLayoutInfo = pivotPageState.otherLayoutInfo.copy(columnSubTotalsDisabled = List())
+        val colFields = data.pivotFieldsState.columns.allFields
+        val newDisabledSubTotals = pivotPageState.otherLayoutInfo.disabledSubTotals.filterNot(colFields.contains(_))
+        val newOtherLayoutInfo = pivotPageState.otherLayoutInfo.copy(disabledSubTotals = newDisabledSubTotals)
         val newPivotPageState = pivotPageState.copy(otherLayoutInfo = newOtherLayoutInfo)
         pageContext.goTo(selfPage(newPivotPageState.copyTotals(_.toggleColumnSubTotals)))
       } }
@@ -393,26 +397,13 @@ class PivotTablePageComponent(
       pageContext.goTo(selfPage(pivotPageState.copy(otherLayoutInfo = newOtherLayoutInfo)))
     }
     case SubTotalToggled(field, location) => {
-      val newOtherLayoutInfo = location match {
-        case FieldChooserType.Rows => {
-          val subTotalsDisabled = pivotPageState.otherLayoutInfo.rowSubTotalsDisabled
-          val newSubTotalsDisabled = if (subTotalsDisabled.contains(field)) {
-            subTotalsDisabled.filterNot(_ == field)
-          } else {
-            field :: subTotalsDisabled
-          }
-          pivotPageState.otherLayoutInfo.copy(rowSubTotalsDisabled = newSubTotalsDisabled)
-        }
-        case FieldChooserType.Columns => {
-          val subTotalsDisabled = pivotPageState.otherLayoutInfo.columnSubTotalsDisabled
-          val newSubTotalsDisabled = if (subTotalsDisabled.contains(field)) {
-            subTotalsDisabled.filterNot(_ == field)
-          } else {
-            field :: subTotalsDisabled
-          }
-          pivotPageState.otherLayoutInfo.copy(columnSubTotalsDisabled = newSubTotalsDisabled)
-        }
+      val subTotalsDisabled = pivotPageState.otherLayoutInfo.disabledSubTotals
+      val newDisabledSubTotals = if (subTotalsDisabled.contains(field)) {
+        subTotalsDisabled.filterNot(_ == field)
+      } else {
+        field :: subTotalsDisabled
       }
+      val newOtherLayoutInfo = pivotPageState.otherLayoutInfo.copy(disabledSubTotals = newDisabledSubTotals)
       pageContext.goTo(selfPage(pivotPageState.copy(otherLayoutInfo = newOtherLayoutInfo)))
     }
     case UserSettingUpdated(StandardUserSettingKeys.ExtraFormattingInfo) => {
@@ -424,11 +415,11 @@ class PivotTablePageComponent(
 
   add(pivotTableComponent, "push, grow")
 
-  override def restoreToCorrectViewForBack = {pivotComp.reverse}
-  override def resetDynamicState = {pivotComp.resetDynamicState}
+  override def restoreToCorrectViewForBack  {pivotComp.reverse()}
+  override def resetDynamicState  {pivotComp.resetDynamicState()}
   def selection = {pivotComp.selection}
 
-  override def setState(state:Option[ComponentState]) = {
+  override def setState(state:Option[ComponentState]) {
     state match {
       case Some(AbstractPivotComponentState(filterText, colScrollPos, mainScrollPos, rsScrollPos, selectedCells, configPanelState)) => {
         pivotComp.filterText = filterText

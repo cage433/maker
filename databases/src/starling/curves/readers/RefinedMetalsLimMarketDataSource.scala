@@ -43,7 +43,7 @@ case class RefinedMetalsLimMarketDataSource(limServer: LIMServer)
         MarketDataEntry(day.atTimeOfDay(limRelation.observationTimeOfDay), PriceDataKey(market),
           PriceData.create(prices.map { case (price, _, day) => day → price}, market.priceUOM))
       }
-    } }
+    } }.info(entries => logCountData(entries, limRelations.map(_.parent.name)))
   }
 
   private def getValues(day: Day, sources: List[LimSource]): List[MarketDataEntry] =
@@ -55,7 +55,9 @@ case class RefinedMetalsLimMarketDataSource(limServer: LIMServer)
   }
 
   private def getValues(source: LimSource, start: Day, end: Day): List[MarketDataEntry] = limServer.query { connection =>
-    val prices = source.relationsFrom(connection).flatMap { case (fixingRelation, childRelation) => {
+    val relations = source.relationsFrom(connection)
+
+    val prices = relations.flatMap { case (fixingRelation, childRelation) => {
       val prices = source.levels.valuesToMap(level => connection.getPrices(childRelation, level, start, end))
 
       val groupedPrices = prices.toList.flatMap {
@@ -65,11 +67,17 @@ case class RefinedMetalsLimMarketDataSource(limServer: LIMServer)
       groupedPrices.toList.flatMapO { case (observationDay, pricesForLevel) => {
         if (pricesForLevel.isEmpty) None else Some(Prices(fixingRelation, pricesForLevel.toMap, observationDay))
       } }
-    }}
+    } }
 
     source.marketDataEntriesFrom(prices)
       .require(containsDistinctTimedKeys, "source: %s produced duplicate MarketDataKeys: " % source)
+      .info(entries => logCountData(entries, relations.map(_.tail)))
   }
+
+  private def logCountData(entries: List[MarketDataEntry], relations: List[String]) =
+    "Obtained %d values from: %s..." % (countData(entries), relations.take(5).mkString(", "))
+
+  private def countData(entries: List[MarketDataEntry]) = entries.map(_.data.size.getOrElse(0)).sum
 }
 
 case class Prices[Relation](relation: Relation, priceByLevel: Map[Level, Double], observationDay: Day)
@@ -77,9 +85,7 @@ case class Prices[Relation](relation: Relation, priceByLevel: Map[Level, Double]
 trait LimSource {
   type Relation
   val levels: List[Level]
-
   def relationsFrom(connection: LIMConnection): List[(Relation, String)]
-
   def marketDataEntriesFrom(fixings: List[Prices[Relation]]): List[MarketDataEntry]
 }
 
@@ -88,9 +94,7 @@ trait HierarchicalLimSource extends LimSource {
 
   def fixingRelationFrom(childRelation: String): Option[(Relation, String)]
 
-  def relationsFrom(connection: LIMConnection) = {
-    connection.getAllRelChildren(parentNodes : _*).flatMap(safeFixingRelationFrom)
-  }
+  def relationsFrom(connection: LIMConnection) = connection.getAllRelChildren(parentNodes : _*).flatMap(safeFixingRelationFrom)
 
   private def safeFixingRelationFrom(childRelation: String) = safely(fixingRelationFrom(childRelation)) match {
     case Left(exception) => { Log.debug("Malformed LIM relation: " + childRelation, exception); None }
@@ -99,38 +103,40 @@ trait HierarchicalLimSource extends LimSource {
 }
 
 object MonthlyFuturesFixings extends HierarchicalLimSource {
-  type Relation = SHFERelation
-  case class SHFERelation(market: FuturesMarket, month: Month)
+  type Relation = MonthlyFuturesRelation
+  case class MonthlyFuturesRelation(market: FuturesMarket, month: Month)
 
   private val Regex = """TRAF\.(\w+)\.(\w+)_(\w+)""".r
 
   def fixingRelationFrom(childRelation: String) = (childRelation partialMatch {
     case Regex(exchange, limSymbol, reutersDeliveryMonth) => {
-      val optMarket: Option[FuturesMarket] = Market.futuresMarkets.find(market => market.limSymbol.map(_.name) == Some(limSymbol))
+      val optMarket: Option[FuturesMarket] = Market.futuresMarkets.find(market =>
+        market.exchange.name == exchangeLookup(exchange) && market.limSymbol.map(_.name) == Some(limSymbol))
       val optMonth: Option[Month] = ReutersDeliveryMonthCodes.parse(reutersDeliveryMonth)
 
       (optMarket, optMonth) partialMatch {
-        case (Some(market), Some(month)) => (SHFERelation(market, month), childRelation)
+        case (Some(market), Some(month)) => (MonthlyFuturesRelation(market, month), childRelation)
       }
     }
   }).flatOpt
 
-  def marketDataEntriesFrom(fixings: List[Prices[SHFERelation]]) = {
+  def marketDataEntriesFrom(fixings: List[Prices[MonthlyFuturesRelation]]) = {
     fixings.groupBy(f => (f.relation.market, f.observationDay)).toList.map { case ((market, observationDay), prices) => {
-        val data = prices.flatMap { price =>
-          price.priceByLevel.toList.map { case (level, priceAtLevel) =>
-            (level, StoredFixingPeriod.dateRange(price.relation.month)) → MarketValue.quantity(priceAtLevel, price.relation.market.priceUOM)
-          }
-        }.toMap
+      val data = prices.flatMap { price =>
+        price.priceByLevel.toList.map { case (level, priceAtLevel) =>
+          (level, StoredFixingPeriod.dateRange(price.relation.month)) → MarketValue.quantity(priceAtLevel, market.priceUOM)
+        }
+      }.toMap
 
-        MarketDataEntry(observationDay.atTimeOfDay(market.closeTime), PriceFixingsHistoryDataKey(market),
-          PriceFixingsHistoryData.create(data))
-      }
-    }
+      MarketDataEntry(observationDay.atTimeOfDay(market.closeTime), PriceFixingsHistoryDataKey(market),
+        PriceFixingsHistoryData.create(data))
+    } }
   }
 
   val parentNodes = List(TopRelation.Trafigura.Bloomberg.Futures.Shfe, TopRelation.Trafigura.Bloomberg.Futures.Comex)
   val levels = List(Level.Close, Level.Settle)
+
+  private def exchangeLookup(exchange: String) = if (exchange == "SHFE") "SFS" else exchange
 }
 
 object LMEFixings extends LimSource {

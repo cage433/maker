@@ -2,11 +2,11 @@ package starling.db
 
 import starling.richdb.RichDB
 import starling.utils.StarlingXStream
-import starling.marketdata.{MarketData, MarketDataType, MarketDataKey}
 import starling.utils.sql.QueryBuilder
 import starling.curves.{MissingMarketDataException, MarketDataSlice}
 import starling.gui.api.PricingGroup
 import starling.daterange.{ObservationPoint}
+import starling.marketdata.{TimedMarketDataKey, MarketData, MarketDataType, MarketDataKey}
 
 /**
  * Uniquely identifies a market data object in the database. Versioning is added
@@ -23,4 +23,9 @@ case class MarketDataID(
     "marketDataSet" -> marketDataSet.name,
     "marketDataType" -> StarlingXStream.write(subTypeKey.dataType),
     "marketDataKey" -> StarlingXStream.write(subTypeKey))
+}
+
+object MarketDataID {
+  def apply(timedKey: TimedMarketDataKey, marketDataSet: MarketDataSet) =
+    new MarketDataID(timedKey.observationPoint, marketDataSet, timedKey.key)
 }

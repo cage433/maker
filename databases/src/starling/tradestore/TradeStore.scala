@@ -452,6 +452,7 @@ abstract class TradeStore(db: RichDB, broadcaster:Broadcaster, tradeSystem: Trad
           val value = cost match {
             case commission:CommissionCosts => commission.commission
             case premium:PremiumCosts => premium.premium
+            case ordinary: OrdinaryCost => ordinary.quantity
             case _ => Quantity.NULL
           }
           CostsInfo(cost.costType, value, cost.info)
@@ -463,7 +464,7 @@ abstract class TradeStore(db: RichDB, broadcaster:Broadcaster, tradeSystem: Trad
       val fieldDetailsGroups0 = createFieldDetailGroups(allTradeableTypes)
       val ds = new UnfilteredPivotTableDataSource() {
         val fieldDetailsGroups = {
-          FieldDetailsGroup("Magic", List(FieldDetails("Version"), FieldDetails("Import Time"))) :: fieldDetailsGroups0
+          FieldDetailsGroup("Magic", FieldDetails("Version"), FieldDetails("Import Time")) :: fieldDetailsGroups0
         }
         def unfilteredData(pfs: PivotFieldsState) = mapList
       }

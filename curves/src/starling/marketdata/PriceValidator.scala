@@ -4,13 +4,11 @@ import starling.utils.ImplicitConversions._
 import starling.db.MarketDataReader
 import starling.curves.MissingMarketDataException
 import starling.quantity.Quantity
-import java.util.concurrent.atomic.AtomicInteger
 import starling.daterange.{DateRange, Day, ObservationPoint}
-import starling.utils.Log
 
 
 trait PriceValidator {
-  def validate(key: MarketDataKey, observationPoint: ObservationPoint, priceData: PriceData): PriceData
+  def validate(timedKey: TimedMarketDataKey, priceData: PriceData): PriceData
 
   def +(that: PriceValidator): PriceValidator = (this, that) match {
     case (PriceValidator.Null, _) => that
@@ -21,20 +19,20 @@ trait PriceValidator {
 
 object PriceValidator {
   val Null = new PriceValidator {
-    def validate(key: MarketDataKey, observationPoint: ObservationPoint, priceData: PriceData) = priceData
+    def validate(timedKey: TimedMarketDataKey, priceData: PriceData) = priceData
   }
 }
 
 class CompositePriceValidator(validators: Seq[PriceValidator]) extends PriceValidator {
-  def validate(key: MarketDataKey, observationPoint: ObservationPoint, priceData: PriceData): PriceData = {
-    val vs = validators.map(validator => (validator.validate _).curried(key)(observationPoint))
+  def validate(timedKey: TimedMarketDataKey, priceData: PriceData): PriceData = {
+    val vs = validators.map(validator => (validator.validate _).curried(timedKey))
 
     priceData.applyAll(vs : _*)
   }
 }
 
 object MeanPriceValidator extends PriceValidator {
-  def validate(key: MarketDataKey, observationPoint: ObservationPoint, priceData: PriceData) = {
+  def validate(timedKey: TimedMarketDataKey, priceData: PriceData) = {
     val prices = priceData.prices
     lazy val mean = prices.values.map(_.value).sum / prices.size
 
@@ -50,7 +48,7 @@ object MeanPriceValidator extends PriceValidator {
 }
 
 object RollingAveragePriceValidator extends PriceValidator {
-  def validate(key: MarketDataKey, observationPoint: ObservationPoint, priceData: PriceData) = {
+  def validate(timedKey: TimedMarketDataKey, priceData: PriceData) = {
     val prices: List[(DateRange, PriceValue)] = priceData.prices.toList.sortBy(_._1)
     val values = prices.map(_._2.value.value)
 
@@ -106,9 +104,9 @@ class DayChangePriceValidator(reader: MarketDataReader) extends PriceValidator {
     PriceData(anotatedPrices.toMap)
   }
 
-  def validate(key: MarketDataKey, observationPoint: ObservationPoint, current: PriceData) = {
-    observationPoint.day match {
-      case Some(day) => readPrevious(day, key).map(anotate(_, current)).getOrElse(current)
+  def validate(timedKey: TimedMarketDataKey, current: PriceData) = {
+    timedKey.day match {
+      case Some(day) => readPrevious(day, timedKey.key).map(anotate(_, current)).getOrElse(current)
       case _ => current
     }
   }
@@ -116,8 +114,8 @@ class DayChangePriceValidator(reader: MarketDataReader) extends PriceValidator {
   private def readPrevious(day: Day, key: MarketDataKey): Option[PriceData] = {
     try {
       val recentDays: Set[Option[Day]] = (day - 5 until day).map(d => Some(d)).toSet
-      val days = reader.read(PriceDataType, Some(recentDays), None, Some(Set(key))).sortBy(_._1.day)
-      days.lastOption.map(_._3.asInstanceOf[PriceData])
+      val days = reader.read(PriceDataType, Some(recentDays), None, Some(Set(key))).sortBy(_.head.day)
+      days.lastOption.map(_.last.asInstanceOf[PriceData])
     } catch {
       case e: MissingMarketDataException => None
     }

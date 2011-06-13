@@ -1,6 +1,5 @@
 package starling.auth
 
-import org.springframework.ldap.core.simple.{ParameterizedContextMapper, SimpleLdapTemplate}
 import org.apache.commons.io.IOUtils
 
 class Ldap {

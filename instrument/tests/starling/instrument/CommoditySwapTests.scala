@@ -7,7 +7,7 @@ import starling.quantity.RichQuantity._
 import starling.utils.ScalaTestUtils._
 import starling.utils.QuantityTestUtils._
 import starling.market._
-import rules.CommonPricingRule
+import rules.{Precision, CommonPricingRule}
 import starling.curves._
 import starling.market.formula._
 import starling.daterange._
@@ -16,6 +16,9 @@ import starling.quantity.RichQuantity._
 import starling.pivot.PivotQuantity
 import starling.utils.{AtomicDatumKeyUtils, StarlingTest}
 import starling.quantity.{Conversions, Quantity}
+import starling.varcalculator.{ForwardPriceRiskFactor, RiskFactorUtils}
+import java.util.Random
+import starling.models.DefaultRiskParameters
 
 class CommoditySwapTests extends JonTestEnv {
 
@@ -550,6 +553,64 @@ class CommoditySwapTests extends JonTestEnv {
   }
 
   @Test
+  def testBrentExplainRounding {
+    val index = new FuturesFrontPeriodIndex(Market.ICE_BRENT, 0, 1) {
+      override def precision = Some(Precision(2, 2))
+    }
+    val market = index.market
+    val period = Month(2011, 8)
+
+    val volume = 10000(index.uom)
+    val swap = SingleCommoditySwap(index, 0(index.priceUOM), volume, period, cleared = true)
+
+    def make(md: DayAndTime, price: Quantity, fixing: Quantity) = Environment(UnitTestingAtomicEnvironment(
+    md, {
+      case ForwardPriceKey(`market`, d, _) => {
+        price
+      }
+      case FixingKey(_, d) => fixing
+    }
+    )).undiscounted
+
+    val marketDay1 = (13 Apr 2011).endOfDay
+    val marketDay2 = (14 Apr 2011).endOfDay
+    val f1 = Quantity(103.3333, USD / BBL)
+    val env1 = make(marketDay1, f1, Quantity(102.231, USD/BBL))
+    val f2 = Quantity(110.5555, USD / BBL)
+    val env2 = make(marketDay2, f2, Quantity(103.321, USD/BBL))
+
+    val d1 = env1.atomicEnv
+    val d2 = env2.atomicEnv
+
+    val d2MTM = PivotQuantity.calcOrCatch({
+      swap.mtm(env2)
+    })
+
+    val curveKeys = AtomicDatumKeyUtils.curveKeys(swap, d1.marketDay, USD)
+
+    def environmentFor(curveKeys: Set[CurveKey]) = Environment(OverrideForCurveKeysEnvironment(d1, curveKeys, d2))
+    val explanation = swap.explain(env1, env2, environmentFor, USD)
+
+    val explainedTotal = explanation.map {
+      _.value
+    }.toList.sum
+    println("et: " + explainedTotal)
+
+
+    val env1NoRounding = env1.copy(environmentParameters = DefaultRiskParameters)
+    val env2NoRounding = env2.copy(environmentParameters = DefaultRiskParameters)
+
+    val noRoundingPnl = PivotQuantity.calcOrCatch(swap.mtm(env2NoRounding) - swap.mtm(env1NoRounding))
+    val plainPnl = PivotQuantity.calcOrCatch(swap.mtm(env2) - swap.mtm(env1))
+
+    val (crossTerms, rounding, unexplained) = swap.components(env1, env2, environmentFor, USD, explainedTotal, curveKeys)
+
+    assertQtyEquals((noRoundingPnl  + rounding).quantityValue.get, plainPnl.quantityValue.get, 1e-5)
+    assertQtyEquals(crossTerms.quantityValue.get, 0(USD), 1e-5)
+    assertQtyEquals(unexplained.quantityValue.get, 0(USD), 1e-5)
+  }
+
+  @Test
   def testPREM_UNL_EURO_BOB_OXY_NWE_BARGES__vs__Brent {
     // volume in MT, strike in USD/BBL
 
@@ -605,8 +666,6 @@ class CommoditySwapTests extends JonTestEnv {
     assertQtyEquals(mtm, s1mtm + s2mtm, 1e-5)
   }
 
-
-
   @Test
   def testPnLAndRounding {
     val marketDayAndTime = Day(2011, 4, 18).startOfDay
@@ -648,5 +707,55 @@ class CommoditySwapTests extends JonTestEnv {
     val mtm = cs.asUtpPortfolio(Day(2011, 4, 15)).mtm(env)
 
     assertQtyEquals(mtm, Quantity(171040, USD), 1e-5)
+  }
+
+  @Test
+  def testDelta_PREM_UNL_EURO_BOB_OXY_NWE_BARGES__vs__Rbob {
+    val marketDayAndTime = Day(2009, 9, 15).startOfDay
+    val env = Environment(
+      new TestingAtomicEnvironment() {
+        def applyOrMatchError(key: AtomicDatumKey) = key match {
+          case ForwardPriceKey(m, d, _) => {
+            200 (m.priceUOM)
+          }
+        }
+
+        def marketDay = marketDayAndTime
+      }
+    ).undiscounted
+
+    val c = new Conversions(Map(BBL / MT -> 8.33))
+    val formula = new Formula("MKT(933)- MKT(1312)")
+    val index = new FormulaIndex("NYMEX RBOB vs Prem Unl Euro-Bob Oxy NWE Barges (Argus)", formula, USD, GAL, None, None)
+    val oxy = Market.PREM_UNL_EURO_BOB_OXY_NWE_BARGES
+    val rbob = Market.NYMEX_GASOLINE
+
+    val oct = Month(2011, 10)
+    val period = oct
+    val volume = -(6000)(MT)
+    val strike = -(4)(USD / GAL)
+
+    val swap = new CommoditySwap(
+      index,
+      strike,
+      volume,
+      period,
+      false,
+      CommonPricingRule
+    )
+
+    val s = swap.asUtpPortfolio(marketDayAndTime.day)
+    val rfs = s.riskFactors(env, USD).toArray
+    val basd = RiskFactorUtils.bucketRiskFactors(marketDayAndTime, rfs.toSet).flatMap {
+      case f:ForwardPriceRiskFactor => Some(f)
+      case _ => throw new Exception("???")
+    }
+    val brfs = basd.toArray
+    val delta1 = s.riskFactorDerivative(env, brfs(0), USD)
+    val delta2 = s.riskFactorDerivative(env, brfs(1), USD)
+    val delta3 = s.riskFactorDerivative(env, brfs(2), USD)
+
+    assertQtyEquals(delta1, -volume)
+    assertQtyEquals(delta2 + delta3, rbob.convertUOM(volume, GAL), 1e-4)
   }
 }

@@ -132,26 +132,24 @@ class DiffPivotTableDataSource(a:PivotTableDataSource, b:PivotTableDataSource, l
           underlyingDataSource:PivotTableDataSource,
           pfs : PivotFieldsState) = {
 
-    def fix(children:List[ColumnStructure], soFar:List[ColumnStructure]):List[ColumnStructure] = {
-      children match {
-        case Nil => soFar
-        case head :: tail => {
-          val fd = fieldDetailsMap.getOrElse(head.field, throw new Exception("No fieldDetails found for " + head.field))
-          (fd match {
-            case r:RawField => if (r.isA == isA) Some(r.underlyingField.field) else None
-            case d:DiffField => Some(d.underlyingField.field)
-            case p:PercentageDiffField => Some(p.underlyingField.field)
-            case _ => Some(head.field)
-          }) match {
-            case None => fix(tail, soFar)
-            case Some(field) => fix(tail, ColumnStructure(field, head.isData, fix(head.children, List())) :: soFar)
-          }
-        }
-      }
+    def fix(trees:List[ColumnTree]):List[ColumnTree] = {
+//      trees.map { tree => {
+//        val fd = fieldDetailsMap.getOrElse(head.field, throw new Exception("No fieldDetails found for " + head.field))
+//        (fd match {
+//          case r:RawField => if (r.isA == isA) Some(r.underlyingField.field) else None
+//          case d:DiffField => Some(d.underlyingField.field)
+//          case p:PercentageDiffField => Some(p.underlyingField.field)
+//          case _ => Some(head.field)
+//        }) match {
+//          case None => fix(tail, soFar)
+//          case Some(field) => fix(tail, ColumnStructure(field, head.isData, fix(head.children, List())) :: soFar)
+//        }
+//      } }
+      throw new Exception("Fix if this is ever used")
     }
-    val fixedUpColumns = pfs.columns.copy(children=fix(pfs.columns.children, List()))
+    val fixedUpColumns = pfs.columns.copy(trees=fix(pfs.columns.trees))
     val underlyingResult = underlyingDataSource.data(pfs.copy(columns = fixedUpColumns))
-    val dataFields = pfs.columns.dataFields
+    val dataFields = pfs.columns.measureFields
     val dataFieldDetails = dataFields.map(fieldDetailsMap)
     val data = underlyingResult.data.map {
       row => {

@@ -15,6 +15,7 @@ import starling.neptune.{RefinedFixationSystemOfRecord, RefinedFixationTradeStor
 import starling.utils.ImplicitConversions._
 import starling.curves.readers._
 import trade.ExcelTradeReader
+import trinity.{TrinityUploader, XRTGenerator, TrinityUploadCodeMapper, FCLGenerator}
 import xml.{Node, Utility}
 import javax.xml.transform.stream.{StreamResult, StreamSource}
 import java.io.{ByteArrayInputStream, File}
@@ -30,9 +31,6 @@ import starling.http._
 import starling.trade.TradeSystem
 import starling.reports.pivot.{ReportContextBuilder, ReportService}
 import starling.LIMServer
-import org.mortbay.jetty.bio.{SocketConnector}
-import org.mortbay.jetty.servlet.{ServletHolder, Context}
-import org.mortbay.jetty.{Server => JettyServer}
 import starling.gui.api._
 import starling.daterange.Day
 import starling.calendar.{BusinessCalendar, DBHolidayTables, BusinessCalendars, HolidayTablesFactory}
@@ -43,6 +41,7 @@ import com.jolbox.bonecp.BoneCP
 import org.springframework.mail.javamail.{MimeMessageHelper, JavaMailSender, JavaMailSenderImpl}
 import starling.rmi._
 
+
 class StarlingInit( props: Props,
                     dbMigration: Boolean = true,
                     startRMI: Boolean = true,
@@ -50,17 +49,25 @@ class StarlingInit( props: Props,
                     startXLLoop: Boolean = true,
                     startStarlingJMX: Boolean = true,
                     forceGUICompatability: Boolean = true,
-                    startEAIAutoImportThread: Boolean = true
+                    startEAIAutoImportThread: Boolean = true,
+                    runningInJBoss : Boolean = false
                     ) {
 
   def stop = {
-    excelLoopReceiver.stop
-    loopyXLReceiver.stop
-    rmiServer.stop()
-    httpServer.stop
-    regressionServer.stop
-    scheduler.stop
-    regressionServer.stop
+    if (startXLLoop) {
+      excelLoopReceiver.stop
+      loopyXLReceiver.stop
+    }
+    if (startRMI) {
+      rmiServer.stop()
+    }
+    if (startHttp) {
+      httpServer.stop
+//      regressionServer.stop
+    }
+    if (!runningInJBoss){
+      scheduler.stop
+    }
     ConnectionParams.shutdown
   }
 
@@ -82,7 +89,7 @@ class StarlingInit( props: Props,
 
     if (startHttp) {
       httpServer.run
-      regressionServer.start
+//      regressionServer.start
     }
 
     if (startStarlingJMX) {
@@ -99,8 +106,9 @@ class StarlingInit( props: Props,
       fwdCurveAutoImport.schedule
     }
 
-    scheduler.start
-    regressionServer.start
+    if (!runningInJBoss){
+      scheduler.start
+    }
 
     this
   }
@@ -171,16 +179,12 @@ class StarlingInit( props: Props,
   val refinedFixationSystemOfRecord = new RefinedFixationSystemOfRecord(neptuneRichDB)
   val refinedFixationImporter = new TradeImporter(refinedFixationSystemOfRecord, refinedFixationTradeStore)
 
-  val tradeImporterFactory = new TradeImporterFactory(
-    refinedAssignmentImporter, refinedFixationImporter
-  )
+  val tradeImporterFactory = new TradeImporterFactory(refinedAssignmentImporter, refinedFixationImporter)
 
-  val enabledDesks: Set[Desk] = {
-    props.EnabledDesks() match {
-      case "" => Desk.all.toSet
-      case "none" => Set.empty
-      case names => names.split(",").toList.map(Desk.fromName).toSet
-    }
+  val enabledDesks: Set[Desk] = props.EnabledDesks() match {
+    case "" => Desk.values.toSet
+    case "none" => Set.empty
+    case names => names.split(",").toList.map(Desk.fromName).toSet
   }
 
   val closedDesks = new ClosedDesks(broadcaster, starlingDB)
@@ -227,8 +231,7 @@ class StarlingInit( props: Props,
     tradeImporters,
     closedDesks,
     eaiTradeStores, intradayTradesDB,
-    refinedAssignmentTradeStore, refinedFixationTradeStore
-  )
+    refinedAssignmentTradeStore, refinedFixationTradeStore)
 
   val reportContextBuilder = new ReportContextBuilder(marketDataStore)
   val reportService = new ReportService(
@@ -249,8 +252,8 @@ class StarlingInit( props: Props,
 
   val trinityUploadCodeMapper = new TrinityUploadCodeMapper(trinityDB)
   val curveViewer = new CurveViewer(marketDataStore)
-  val trinityUploader = new TrinityUploader(new FCLGenerator(trinityUploadCodeMapper, curveViewer), new XRTGenerator(marketDataStore))
-  val scheduler = Scheduler.create(businessCalendars, marketDataStore, broadcaster, trinityUploader)
+  val trinityUploader = new TrinityUploader(new FCLGenerator(trinityUploadCodeMapper, curveViewer), new XRTGenerator(marketDataStore), props)
+  val scheduler = Scheduler.create(businessCalendars, marketDataStore, broadcaster, trinityUploader, props)
 
   val referenceData = new ReferenceData(businessCalendars, marketDataStore, strategyDB, scheduler, trinityUploadCodeMapper)
 
@@ -266,7 +269,7 @@ class StarlingInit( props: Props,
 
   val users = new CopyOnWriteArraySet[User]
 
-  val jmx = new StarlingJMX(users)
+  val jmx = new StarlingJMX(users, scheduler)
 
   val auth:ServerAuthHandler = props.UseAuth() match {
     case false => {
@@ -290,7 +293,14 @@ class StarlingInit( props: Props,
   val loopyXLReceiver = new LoopyXLReceiver(props.LoopyXLPort(), auth,
     new CurveHandler(curveViewer, marketDataStore))
 
-  val latestTimestamp = if (forceGUICompatability) GUICode.latestTimestamp.toString else BouncyRMI.CodeVersionUndefined
+   val latestTimestamp = if (runningInJBoss) {
+    JBossAppTxtServlet.launchTime
+   }
+   else if (forceGUICompatability) 
+     GUICode.latestTimestamp.toString 
+   else 
+     BouncyRMI.CodeVersionUndefined
+
   val rmiServer:BouncyRMIServer[StarlingServer] = new BouncyRMIServer(
     rmiPort,
     ThreadNamingProxy.proxy(starlingServer, classOf[StarlingServer]),
@@ -304,34 +314,27 @@ class StarlingInit( props: Props,
 
   val reportServlet = new ReportServlet("reports", userReportsService) //Don't add to main web server (as this has no authentication)
 
-  val httpServer = locally {
-
+  lazy val httpServer = locally {
     val externalURL = props.ExternalUrl()
     val externalHostname = props.ExternalHostname()
     val xlloopUrl = props.XLLoopUrl()
     val rmiPort = props.RmiPort()
-    val classesServlet = new ClassesServlet("classes")
     val webStartServlet = new WebStartServlet("webstart", props.ServerName(), externalURL, "starling.gui.Launcher", List(externalHostname, rmiPort.toString), xlloopUrl)
     val cannedWebStartServlet = new WebStartServlet("cannedwebstart", props.ServerName(), externalURL, "starling.gui.CannedLauncher", List(), xlloopUrl)
 
-    val servlets = List(
-      (webStartServlet, "webstart"),
-      (cannedWebStartServlet, "cannedwebstart"),
-      (classesServlet, "classes"))
-
-    new HttpServer(props, servlets)
+    new HttpServer(props, "webstart" → webStartServlet, "cannedwebstart" → cannedWebStartServlet)
   }
 
-  val regressionServer = locally {
-    val server = new JettyServer()
-    val connector = new SocketConnector()
-    connector.setHost("127.0.0.1")
-    connector.setPort(props.RegressionPort())
-    server.addConnector(connector)
-    val rootContext = new Context(server, "/", Context.SESSIONS);
-    rootContext.addServlet(new ServletHolder(reportServlet), "/reports/*")
-    server
-  }
+//  lazy val regressionServer = locally {
+//    val server = new JettyServer()
+//    val connector = new SocketConnector()
+//    connector.setHost("127.0.0.1")
+//    connector.setPort(props.RegressionPort())
+//    server.addConnector(connector)
+//    val rootContext = new Context(server, "/", Context.SESSIONS);
+//    rootContext.addServlet(new ServletHolder(reportServlet), "/reports/*")
+//    server
+//  }
 }
 
 object StarlingInit{

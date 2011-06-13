@@ -26,8 +26,8 @@ class TradeReconciliation(tradeDiff: TradeDiff) extends UnfilteredPivotTableData
   val groupField = Field("Group")
 
   val fieldDetailsGroups = {
-    FieldDetailsGroup("Reconciliation Fields", List(FieldDetails(reconciliationField))) ::
-    FieldDetailsGroup("Group Fields", List(FieldDetails(groupField))) ::
+    FieldDetailsGroup("Reconciliation Fields", FieldDetails(reconciliationField)) ::
+    FieldDetailsGroup("Group Fields", FieldDetails(groupField)) ::
     tradeDiff.fields
   }
 

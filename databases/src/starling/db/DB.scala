@@ -53,7 +53,7 @@ trait DBTrait[RSR <: ResultSetRow] {
     tt.setReadOnly(readonly)
     tt.setIsolationLevel(isolationLevel)
     tt.setPropagationBehavior(TransactionDefinition.PROPAGATION_NESTED)
-    tt.execute(new TransactionCallback {
+    tt.execute(new TransactionCallback[Object] {
       def doInTransaction(status: TransactionStatus) = {
         try {
           f
@@ -74,9 +74,9 @@ trait DBTrait[RSR <: ResultSetRow] {
   def query(sql: String, parameters: Map[String, Any] = Map[String, Any]())(f: RSR => Unit) {
     try {
       withTransaction(DB.DefaultIsolationLevel, true) {
-        new NamedParameterJdbcTemplate(dataSource).query(sql, convertTypes(parameters), new RowMapper() {
+        new NamedParameterJdbcTemplate(dataSource).query(sql, convertTypes(parameters), new RowMapper[Unit]() {
           def mapRow(rs: ResultSet, rowNum: Int) = {
-            f(resultSetFactory.create(rs)); null
+            f(resultSetFactory.create(rs)); Unit
           }
         })
         null
@@ -93,7 +93,7 @@ trait DBTrait[RSR <: ResultSetRow] {
    */
   def queryWithResult[T](sql: String, parameters: Map[String, Any] = Map[String, Any]())(f: RSR => T): List[T] = {
     withTransaction(DB.DefaultIsolationLevel, true) {
-      new NamedParameterJdbcTemplate(dataSource).query(sql, convertTypes(parameters), new RowMapper() {
+      new NamedParameterJdbcTemplate(dataSource).query(sql, convertTypes(parameters), new RowMapper[Object]() {
         def mapRow(rs: ResultSet, rowNum: Int) = f(resultSetFactory.create(rs)).asInstanceOf[Object]
       })
     }.asInstanceOf[java.util.List[T]].toList
@@ -343,8 +343,8 @@ class DBWriter protected[db](dbTrait: DBTrait[_ <: ResultSetRow], dataSource: Da
   // execute a query which returns no results - at time of writing, that's just an update statement
   def queryWithNoResults(sql : String, parameters : Map[String, Any] = Map[String, Any]()) {
     new NamedParameterJdbcTemplate(dataSource).execute(sql, dbTrait.convertTypes(parameters),
-      new PreparedStatementCallback {
-        def doInPreparedStatement(p1: PreparedStatement) = {p1.execute; null}
+      new PreparedStatementCallback[Unit] {
+        def doInPreparedStatement(p1: PreparedStatement) = {p1.execute; Unit}
       })
   }
 

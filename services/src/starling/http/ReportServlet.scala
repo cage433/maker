@@ -7,7 +7,10 @@ import starling.reports.pivot.ReportService
 import starling.utils.ImplicitConversions._
 import starling.rmi.{UserReportsService, StarlingServer}
 import starling.auth.User
-import starling.utils.RegressionRunner
+import starling.utils.Pattern.Extractor
+import starling.pivot.controller.PivotTable
+import starling.utils.{Utils, RegressionRunner}
+import starling.utils.ImplicitConversions._
 
 /**
  * Exposes saved reports as csv files
@@ -37,19 +40,21 @@ class ReportServlet(prefix:String, userReportsService:UserReportsService) extend
         } }
       } }
     } else {
-      response.setContentType("text/plain")
       val split = path.substring(1).split("/")
       val userName = split(0).urlDecode
       val reportName = split(1).urlDecode
       val day = Day.parse(split(2))
-      userReportsService.runNamedReport(User(userName), reportName, day, None) match {
-        case Some(pivotData) => {
-          val writer = response.getWriter
-          val csv = pivotData.asCSV
-          writer.write(csv)
+
+      val (contentType, content) = userReportsService.runNamedReport(User(userName), reportName, day, None) match {
+        case Some(pivotData) => request.getHeader("Accept") ?? "text/plain" match {
+          case accept if accept.containsOneOf("text/html", "*/*") => "text/html" → pivotData.convertUsing(Utils.tableConverter)
+          case accept => "text/plain" → pivotData.asCSV
         }
         case None => throw new Exception("No report found named " + reportName + " " + userName)
       }
+
+      response.setContentType(contentType)
+      response.getWriter.write(content)
     }
   }
 }

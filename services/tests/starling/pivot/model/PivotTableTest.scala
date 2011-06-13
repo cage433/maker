@@ -6,7 +6,7 @@ import org.testng.Assert._
 import starling.pivot._
 import controller.PivotTableConverter
 import org.scalatest.testng.TestNGSuite
-import starling.pivot.ColumnStructure._
+import starling.pivot.ColumnTrees._
 
 /**
  */
@@ -99,16 +99,16 @@ class PivotTableTest extends TestNGSuite {
     check(
       pivotTableDataSource,
       new PivotFieldsState(columns=
-        ColumnStructure(RootField, false,
-          List(ColumnStructure(Field("Delta"), true,
-            List(ColumnStructure(Field("Market"), false,
-              List(ColumnStructure(Field("Period"), false, List())))))))),
+        ColumnTrees(
+          List(ColumnTree(Field("Delta"), true,
+            ColumnTree(Field("Market"), false,
+              ColumnTree(Field("Period"), false)))))),
       Totals(false, false, false, true),
       List( List("") ),
-      List( List("Delta", "Delta", "Delta", "Delta", "Delta", "Delta"),
-            List("Total", "Brent", "Brent", "WTI",   "WTI",   "WTI"),
-            List("Total", "Total", "Jan",   "Total", "Feb",   "Jan") ),
-      List( List(7+1+4,    4,        4,       7+1,      7,       1) )
+      List( List("Delta", "Delta", "Delta", "Delta", "Delta"),
+            List("Brent", "Brent", "WTI",   "WTI",   "WTI"),
+            List("Total", "Jan",   "Total", "Feb",   "Jan") ),
+      List( List(  4,        4,       7+1,      7,       1) )
     )
   }
 
@@ -118,15 +118,13 @@ class PivotTableTest extends TestNGSuite {
       pivotTableDataSource,
       PivotFieldsState(dataFields=List(Field("Delta")), rowFields=List(Field("Market"), Field("Period"))),
       Totals(false, true, false, false),
-      List( List("Total", "Total"),
-            List("Brent", "Total"),
+      List(  List("Brent", "Total"),
             List("Brent", "Jan"),
             List("WTI", "Total"),
             List("WTI", "Feb"),
             List("WTI", "Jan") ),
       List( List(""), List("Delta") ),
-      List( List(7+1+4),
-            List(4),
+      List(  List(4),
             List(4),
             List(7+1),
             List(7),
@@ -140,13 +138,11 @@ class PivotTableTest extends TestNGSuite {
       pivotTableDataSource,
       PivotFieldsState(dataFields=List(Field("Delta")), rowFields=List(Field("Market"), Field("Period"))),
       Totals(false, true, false, false),
-      List( List("Total", "Total"),
-            List("Brent", "Jan"),
+      List(  List("Brent", "Jan"),
             List("WTI", "Feb"),
             List("WTI", "Jan") ),
       List( List(""), List("Delta") ),
-      List( List(7+1+4),
-            List(4),
+      List(  List(4),
             List(7),
             List(1)),
       rowDisabledSubTotals = List(Field("Market"))
@@ -159,11 +155,11 @@ class PivotTableTest extends TestNGSuite {
       pivotTableDataSource,
       PivotFieldsState(dataFields=List(Field("Delta")), columnFields=List(Field("Market")), rowFields=List(Field("Period"))),
       Totals(false, true, false, true),
-      List( List("Total"), List("Feb"), List("Jan") ),
-      List( List("Total", "Brent", "WTI"), List("Delta", "Delta", "Delta") ),
-      List( List(7+1+4, 4, 7+1),
-            List(7, "", 7),
-            List(1+4, 4, 1)
+      List( List("Feb"), List("Jan") ),
+      List( List("Brent", "WTI"), List("Delta", "Delta") ),
+      List( 
+            List("", 7),
+            List(4, 1)
       )
     )
   }
@@ -172,9 +168,9 @@ class PivotTableTest extends TestNGSuite {
   def testTwoDataFieldsWithDifferentCombiningBehaviour {
     check(
       pivotTableDataSource,
-      new PivotFieldsState(columns=ColumnStructure(RootField, false, List(
-        ColumnStructure.dataField(Field("Delta")),
-        ColumnStructure.dataField(Field("Period"))
+      new PivotFieldsState(columns=ColumnTrees(List(
+        ColumnTree.dataField(Field("Delta")),
+        ColumnTree.dataField(Field("Period"))
       ))),
       Totals.Null,
       List( List("") ),
@@ -187,9 +183,9 @@ class PivotTableTest extends TestNGSuite {
   def testDataFieldsOrderIsPreserved {
     check(
       pivotTableDataSource,
-      new PivotFieldsState(columns=ColumnStructure.rootChildren(List(
-        ColumnStructure.dataField(Field("Day Change")),
-        ColumnStructure.dataField(Field("Delta"))
+      new PivotFieldsState(columns=ColumnTrees(List(
+        ColumnTree.dataField(Field("Day Change")),
+        ColumnTree.dataField(Field("Delta"))
       ))),
       Totals.Null,
       List( List("") ),
@@ -250,12 +246,12 @@ class PivotTableTest extends TestNGSuite {
   def testColumnTreeWithDifferentDepths {
     check(
       pivotTableDataSource,
-      new PivotFieldsState(columns=ColumnStructure(RootField, false, List(
-        ColumnStructure(Field("Market"), false, List(
-          ColumnStructure.dataField(Field("Delta")),
-          ColumnStructure(Field("Day Change Component"), false, List(ColumnStructure.dataField(Field("Day Change"))))
-        ))
-      ))),
+      new PivotFieldsState(columns=ColumnTrees(List(
+        ColumnTree(Field("Market"), false,
+          ColumnTree.dataField(Field("Delta")),
+          ColumnTree(Field("Day Change Component"), false, ColumnTree.dataField(Field("Day Change"))))
+        )
+      )),
       Totals.Null,
       List( List("") ),
       List( List("Brent", "Brent", "Brent", "WTI"),
@@ -268,12 +264,12 @@ class PivotTableTest extends TestNGSuite {
   @Test
   def testToFlatRows() {
     val fieldsState = new PivotFieldsState(
-      columns=ColumnStructure(RootField, false, List(
-        ColumnStructure(Field("Market"), false, List(
-          ColumnStructure.dataField(Field("Delta")),
-          ColumnStructure(Field("Day Change Component"), false, List(ColumnStructure.dataField(Field("Day Change"))))
+      columns=ColumnTrees(List(
+        ColumnTree(Field("Market"), false,
+          ColumnTree.dataField(Field("Delta")),
+          ColumnTree(Field("Day Change Component"), false, ColumnTree.dataField(Field("Day Change")))
         ))
-      )),
+      ),
       rowFields = List(Field("Period"))
     )
     val pivotTable = PivotTableModel.createPivotTableData(pivotTableDataSource, Some(fieldsState))
@@ -281,11 +277,11 @@ class PivotTableTest extends TestNGSuite {
     assertEquals(
       flatRows.map(_.map(_.toString)),
       List(
-        List("",       "Brent", "", "", "WTI"),
-        List("",       "Delta", "Price", "Vol", "Delta"),
-        List("Period", "",      "Day Change", "Day Change", ""),
-        List("Feb",    "", "", "", "7"),
-        List("Jan",    "4", "100", "18", "1")
+        List("",       "Brent", "Brent",      "Brent",      "WTI"  ),
+        List("",       "Delta", "Price",      "Vol",        "Delta"),
+        List("Period", "",      "Day Change", "Day Change", ""     ),
+        List("Feb",    "",      "",           "",           "7"    ),
+        List("Jan",    "4",     "100",        "18",         "1"    )
       )
     )
   }
@@ -300,7 +296,7 @@ class PivotTableTest extends TestNGSuite {
           rowDisabledSubTotals:List[Field]=List()
   ) {
     val pivotTable = PivotTableModel.createPivotTableData(pivot, Some(fieldState))
-    val converter = new PivotTableConverter(OtherLayoutInfo(totals = totals, rowSubTotalsDisabled = rowDisabledSubTotals), pivotTable)
+    val converter = new PivotTableConverter(OtherLayoutInfo(totals = totals, disabledSubTotals = rowDisabledSubTotals), pivotTable)
     val (rowData, colData, mainData) = converter.allTableCells()
     val rows = rowData.map(_.map(_.label).toList).toList
     val columns = colData.map(_.map(_.label).toList).toList

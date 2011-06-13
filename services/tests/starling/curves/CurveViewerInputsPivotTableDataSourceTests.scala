@@ -23,8 +23,8 @@ class CurveViewerInputsPivotTableDataSourceTests  extends StarlingTest with Shou
   val day = Day.today
 
   val inputs = List(
-    (ObservationPoint(day, ObservationTimeOfDay.Default), SpotFXDataKey(UOM.CNY), spotFXData),
-    (ObservationPoint(day, ObservationTimeOfDay.LMEClose), PriceDataKey(market), priceData)
+    TimedMarketDataKey(ObservationPoint(day, ObservationTimeOfDay.Default), SpotFXDataKey(UOM.CNY)) → spotFXData,
+    TimedMarketDataKey(ObservationPoint(day, ObservationTimeOfDay.LMEClose), PriceDataKey(market)) → priceData
   )
 
   @Test

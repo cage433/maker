@@ -14,9 +14,9 @@ import starling.loopyxl.ExcelMethod
 import starling.quantity.{UOM, Quantity}
 import collection.immutable.TreeMap
 import starling.market.{EquityPrices, EquityPricesMarketDataKey, RIC}
-import starling.marketdata.{SpotFXData, SpotFXDataKey}
 import starling.db.{MarketDataEntry, MarketDataStore, MarketDataSet}
 import starling.pivot._
+import starling.marketdata.{TimedMarketDataKey, SpotFXData, SpotFXDataKey}
 
 /**
  * The handler for the very custom excel functions used by the special sits spreadsheet
@@ -154,7 +154,7 @@ class SpecialSitsHandler(userReportsService : UserReportsService,
       }
     })
     val marketDataSet = MarketDataSet.excel(label)
-    val result = marketDataStore.save(marketDataSet, observationPoint, EquityPricesMarketDataKey, equityPrices)
+    val result = marketDataStore.save(marketDataSet, TimedMarketDataKey(observationPoint, EquityPricesMarketDataKey), equityPrices)
     "OK:" + result
   }
 

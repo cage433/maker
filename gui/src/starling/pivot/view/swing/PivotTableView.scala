@@ -1,8 +1,8 @@
 package starling.pivot.view.swing
 
+import fieldchoosers.{RowComponent, FilterComponent, FieldListComponent}
 import scala.swing._
 import javax.swing.event.{ListSelectionEvent, ListSelectionListener}
-import net.miginfocom.swing.MigLayout
 import javax.swing._
 import starling.pivot.model._
 import starling.pivot._
@@ -16,7 +16,6 @@ import org.jdesktop.animation.timing.{TimingTargetAdapter, Animator}
 import starling.rmi.PivotData
 import scala.swing.Swing._
 import starling.gui.GuiUtils._
-import collection.mutable.HashMap
 import starling.gui.{GuiUtils, OldPageData, ComponentRefreshState, StarlingIcons}
 import java.awt.datatransfer.StringSelection
 import java.awt.event._
@@ -24,14 +23,14 @@ import starling.gui.api.ReportSpecificOptions
 import starling.gui.pages.ConfigPanels
 import collection.immutable.List
 import starling.utils.ImplicitConversions._
+import collection.mutable.{ListBuffer, HashMap}
 
 object PivotTableView {
   def createWithLayer(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSize:Dimension,
                       configPanels:Option[ConfigPanels], extraFormatInfo:ExtraFormatInfo, embedded:Boolean = true) = {
-    val layerUI = new PivotTableLayerUI
-    val view = new PivotTableView(layerUI, data, otherLayoutInfo, browserSize, configPanels, extraFormatInfo, embedded)
-    val layer = new SXLayerScala(view, layerUI)
-    layerUI.setJXLayer(layer.peer)
+    val viewUI = new PivotTableViewUI
+    val view = new PivotTableView(data, otherLayoutInfo, browserSize, configPanels, extraFormatInfo, embedded, viewUI)
+    val layer = new SXLayerScala(view, viewUI)
     layer
   }
 
@@ -48,28 +47,78 @@ case class FieldPanelEvent(collapse:Boolean) extends Event
 case class CollapsedStateUpdated(rowCollapsedState:Option[CollapsedState]=None, columnCollapsedState:Option[CollapsedState]=None) extends Event
 case class GridSelectionEvent(selection:Option[(String,Boolean)]) extends Event
 
-class PivotTableView(layerUI:PivotTableLayerUI, data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSize0:Dimension,
-                     configPanels:Option[ConfigPanels], extraFormatInfo:ExtraFormatInfo, embedded:Boolean)
+class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSize0:Dimension,
+                     configPanels:Option[ConfigPanels], extraFormatInfo:ExtraFormatInfo, embedded:Boolean, viewUI:PivotTableViewUI)
         extends MigPanel("insets 0, gap 0") {
   private var browserSize = browserSize0
   private val model = new starling.pivot.model.PivotTableModel(data)
   private var reverseToolBarState:()=>Unit = null
-  private val fieldsState = data.pivotFieldsState
-  private val allFieldChoosers = new HashMap[FieldChooserType,FieldChooser]
 
-  private val chooserLayer = FieldChooser(new MigLayout("insets 1, wrap 1, gap 0px", "fill, grow"), layerUI,
-    " No Fields Available", false, FieldList, model, layerUI, this, otherLayoutInfo)
-  private  val chooserPanel: FieldChooser = chooserLayer.getView
-  allFieldChoosers(FieldList) = chooserPanel
+  private val fieldListComponent = new FieldListComponent(model, otherLayoutInfo, viewUI, this)
+  private val columnAndMeasureComponent = new ColumnAndMeasureComponent(model, otherLayoutInfo, viewUI, this)
+  private val filterComponent = new FilterComponent(model, otherLayoutInfo, viewUI, this)
+  private val rowComponent = new RowComponent(model, otherLayoutInfo, viewUI, this)
 
-  private val chooserLayerScrollPane = new ScrollPane(chooserLayer) {
+  private val allDropTargets = List(fieldListComponent, columnAndMeasureComponent, filterComponent, rowComponent)
+
+  private var draggedField0:Field = null
+  def draggedField = draggedField0
+  def draggedField_=(f:Field) {draggedField0 = f}
+  private var fieldBeingDragged0 = false
+  def fieldBeingDragged = fieldBeingDragged0
+  def fieldBeingDragged_=(b:Boolean) {
+    if (!fieldBeingDragged0 && b) {
+      allDropTargets.foreach(_.show(draggedField0))
+    }
+    fieldBeingDragged0 = b
+  }
+  private var mouseDown0 = false
+  def mouseDown = mouseDown0
+  def mouseDown_=(b:Boolean) {mouseDown0 = b}
+  def drag = fieldBeingDragged0 || mouseDown0
+
+  private def hideDropTargets() {allDropTargets.foreach(_.hide())}
+
+  def fieldDropped(field:Field, from:FieldChooserType, screenPoint:Point) {
+    if (!model.getFields(FieldList).fields.contains(field) && fieldListComponent.dropBounds(field).exists(_.contains(screenPoint))) {
+      model.publishFieldStateChange(field, 0, from, FieldList)
+      hideDropTargets()
+    } else if (columnAndMeasureComponent.dropBounds(field).exists(_.contains(screenPoint))) {
+      val newColumnStructure = columnAndMeasureComponent.newColumnStructure(screenPoint, field)
+      model.publishFieldStateChange(field, newColumnStructure, from)
+    } else if (filterComponent.dropBounds(field).exists(_.contains(screenPoint))) {
+      val pos = filterComponent.indexOfDrop(screenPoint, field)
+      model.publishFieldStateChange(field, pos, from, Filter)
+    } else if (rowComponent.dropBounds(field).exists(_.contains(screenPoint))) {
+      val pos = rowComponent.indexOfDrop(screenPoint, field)
+      model.publishFieldStateChange(field, pos, from, Rows)
+    } else {
+      hideDropTargets()
+    }
+  }
+
+  def fieldDoubleClicked(field:Field, from:FieldChooserType) {
+    viewUI.resetImageProperties()
+    if (from != FieldList) {
+      model.publishFieldStateChange(field, 0, from, FieldList)
+    } else {
+      if (model.isMeasureField(field)) {
+        model.publishFieldStateChange(field, model.columns.addDataField(field), from)
+      } else {
+        model.publishFieldStateChange(field, rowComponent.numberOfFields, from, Rows)
+      }
+    }
+  }
+
+  private val chooserLayerScrollPane = new ScrollPane(fieldListComponent) {
     border = MatteBorder(1,1,1,0,BorderColour)
     verticalScrollBar.preferredSize = new Dimension(0,0)
     verticalScrollBar.unitIncrement = 10
     horizontalScrollBar.unitIncrement = 10
     peer.getVerticalScrollBar.addAdjustmentListener(new AdjustmentListener{
-      def adjustmentValueChanged(e: AdjustmentEvent) = {
-        chooserPanel.scrolling
+      def adjustmentValueChanged(e: AdjustmentEvent) {
+        viewUI.resetImageProperties()
+        fieldListComponent.reset()
       }
     })
   }
@@ -84,7 +133,7 @@ class PivotTableView(layerUI:PivotTableLayerUI, data:PivotData, otherLayoutInfo:
     add(fakeVChooserScrollBar, "push,grow")
   }
 
-  def getFieldChooser(fieldChooserType:FieldChooserType) = allFieldChoosers(fieldChooserType)
+  def getFieldChooser(fieldChooserType:FieldChooserType) = Rows
   
   def filtersWithSome = model.filtersWithSome
 
@@ -173,12 +222,12 @@ class PivotTableView(layerUI:PivotTableLayerUI, data:PivotData, otherLayoutInfo:
         case KeyPressed(`textField`, scala.swing.event.Key.Escape, _, _) => textField.text = ""
         case KeyReleased(`textField`, _, _, _) => {
           // Ensure the fields aren't being displayed here.
-          chooserPanel.resetImage
-          chooserPanel.setTextFilter(textField.text)
+//          chooserPanel.resetImage
+          fieldListComponent.setTextFilter(textField.text)
         }
         case MouseClicked(`clearImage`,_,_,_,_) => {
           textField.text = ""
-          chooserPanel.setTextFilter(textField.text)
+          fieldListComponent.setTextFilter(textField.text)
         }
       }
       listenTo(textField.keys, clearImage.mouse.clicks)
@@ -206,7 +255,7 @@ class PivotTableView(layerUI:PivotTableLayerUI, data:PivotData, otherLayoutInfo:
 
   def filterText_=(text:String) {
     fieldPanel.filterPanel.textField.text = text
-    chooserPanel.setTextFilter(text)
+    fieldListComponent.setTextFilter(text)
   }
   def filterText = fieldPanel.filterPanel.textField.text
 
@@ -226,8 +275,8 @@ class PivotTableView(layerUI:PivotTableLayerUI, data:PivotData, otherLayoutInfo:
     add(verticalButton)
   }
 
-  def getColScrollPos = columnFieldChooserScrollPane.peer.getViewport.getViewPosition.x
-  def setColScrollPos(pos:Int) = columnFieldChooserScrollPane.peer.getViewport.setViewPosition(new Point(pos,0))
+  def getColScrollPos = columnAndMeasureScrollPane.peer.getViewport.getViewPosition.x
+  def setColScrollPos(pos:Int) = columnAndMeasureScrollPane.peer.getViewport.setViewPosition(new Point(pos,0))
   def getRSScrollPos = reportSpecificOptionsScrollPane.peer.getViewport.getViewPosition.x
   def setRSScrollPos(pos:Int) = reportSpecificOptionsScrollPane.peer.getViewport.setViewPosition(new Point(pos,0))
   def getMainScrollPos = if (otherLayoutInfo.frozen) {
@@ -375,18 +424,9 @@ class PivotTableView(layerUI:PivotTableLayerUI, data:PivotData, otherLayoutInfo:
     this.reverseToolBarState = reverseToolBarState
   }
 
-  private val filterFieldChooser = FieldChooser(new MigLayout("insets 1, gap 0px"), layerUI, " Drop Filter Fields Here",
-    true, Filter, model, layerUI, this, otherLayoutInfo)
-  private val filterFieldPanel = filterFieldChooser.getView
-  allFieldChoosers(Filter) = filterFieldPanel
+  private val columnAndMeasureScrollPane = PivotTableViewHelper.generateScrollableFieldChooser(columnAndMeasureComponent, columnAndMeasureComponent, this)
 
-  private val columnFieldChooser = FieldChooser(new MigLayout("insets 0, gap 0px"), layerUI, "Drop Column and Measure Fields Here",
-    true, Columns, model, layerUI, this, otherLayoutInfo)
-  private val columnFieldPanel = columnFieldChooser.getView
-  allFieldChoosers(Columns) = columnFieldPanel
-  private val columnFieldChooserScrollPane = PivotTableViewHelper.generateScrollableFieldChooser(columnFieldChooser, columnFieldPanel, layerUI)
-
-  private val rowFieldChooserInsets = if (otherLayoutInfo.frozen) {
+  /*private val rowFieldChooserInsets = if (otherLayoutInfo.frozen) {
     "insets 1 1 1 1"
   } else {
     "insets 1 1 1 0"
@@ -394,19 +434,17 @@ class PivotTableView(layerUI:PivotTableLayerUI, data:PivotData, otherLayoutInfo:
   private val rowFieldChooser = FieldChooser(new MigLayout(rowFieldChooserInsets + ", gap 0px"), layerUI, " Drop Row Fields Here",
     true, Rows, model, layerUI, this, otherLayoutInfo)
   private val rowFieldPanel = rowFieldChooser.getView
+  allFieldChoosers(Rows) = rowFieldPanel*/
   if (!otherLayoutInfo.frozen) {
-    rowFieldPanel.setOpaque(true)
-    rowFieldPanel.setBackground(PivotTableBackgroundColour)
-    rowFieldPanel.setBorder(BorderFactory.createMatteBorder(0,0,1,1,GuiUtils.BorderColour))
+    rowComponent.opaque = true
+    rowComponent.background = PivotTableBackgroundColour
+    rowComponent.border = BorderFactory.createMatteBorder(0,0,1,1,GuiUtils.BorderColour)
   }
-  allFieldChoosers(Rows) = rowFieldPanel
   val sizerPanel = new FlowPanel {
     background = GuiUtils.PivotTableBackgroundColour
   }
 
-  private val choosers = allFieldChoosers.values.toList
-
-  private val viewConverter = PivotTableConverter(otherLayoutInfo, data.pivotTable, extraFormatInfo)
+  private val viewConverter = PivotTableConverter(otherLayoutInfo, data.pivotTable, extraFormatInfo, data.pivotFieldsState)
   private val (rowHeaderData, colHeaderData, mainData, colUOMs) = viewConverter.allTableCellsAndUOMs
 
   private def resizeColumnHeaderAndMainTableColumns {
@@ -415,21 +453,21 @@ class PivotTableView(layerUI:PivotTableLayerUI, data:PivotData, otherLayoutInfo:
   }
 
   private def resizeRowHeaderTableColumns {
-    tableModelsHelper.resizeRowHeaderColumns(fullTable, rowHeaderTable, rowFieldPanel, data.pivotTable.rowFieldHeadingCount, sizerPanel, rowHeaderTableScrollPane)
+    tableModelsHelper.resizeRowHeaderColumns(fullTable, rowHeaderTable, rowComponent, data.pivotTable.rowFieldHeadingCount, sizerPanel, rowHeaderTableScrollPane)
     contentPanel.revalidate()
     contentPanel.repaint()
   }
 
   private val tableModelsHelper = new PivotJTableModelHelper(mainData, data.pivotTable.editableInfo,
     rowHeaderData, colHeaderData, colUOMs, (hasEdits, hasErrors, hasAdded) => {publish(PivotEditEvent(hasEdits, hasErrors, hasAdded))},
-    resizeColumnHeaderAndMainTableColumns, resizeRowHeaderTableColumns, fieldsState, extraFormatInfo)
+    resizeColumnHeaderAndMainTableColumns, resizeRowHeaderTableColumns, data.pivotFieldsState, extraFormatInfo)
 
   def edits = tableModelsHelper.pivotEdits
   def resetEdits = {
     val (fullSelCells, mainSelCells, rowHeaderSelCells) = (fullTable.getSelectedCells, mainTable.getSelectedCells, rowHeaderTable.getSelectedCells)
     tableModelsHelper.resetEdits
     tableModelsHelper.resizeColumnHeaderAndMainTableColumns(fullTable, mainTable, colHeaderTable, columnHeaderScrollPane, columnHeaderScrollPanePanel, mainTableScrollPane)
-    tableModelsHelper.resizeRowHeaderColumns(fullTable, rowHeaderTable, rowFieldPanel, data.pivotTable.rowFieldHeadingCount, sizerPanel, rowHeaderTableScrollPane)
+    tableModelsHelper.resizeRowHeaderColumns(fullTable, rowHeaderTable, rowComponent, data.pivotTable.rowFieldHeadingCount, sizerPanel, rowHeaderTableScrollPane)
     fullTable.setSelectedCells(fullSelCells)
     mainTable.setSelectedCells(mainSelCells)
     rowHeaderTable.setSelectedCells(rowHeaderSelCells)
@@ -565,7 +603,7 @@ class PivotTableView(layerUI:PivotTableLayerUI, data:PivotData, otherLayoutInfo:
 
 
   private val (fullTableScrollPane, fullHScrollBarHolder, fullVScrollBarHolder) = {
-    val tableLayerUI = new UnfrozenTableLayerUI(rowFieldChooser)
+    val tableLayerUI = new UnfrozenTableLayerUI(rowComponent)
     val layer = new SXLayer(fullTable, tableLayerUI) {
       setLayerEventMask(AWTEvent.MOUSE_EVENT_MASK | AWTEvent.MOUSE_MOTION_EVENT_MASK
               //| AWTEvent.MOUSE_WHEEL_EVENT_MASK - mouse wheel event's will pass through
@@ -614,10 +652,9 @@ class PivotTableView(layerUI:PivotTableLayerUI, data:PivotData, otherLayoutInfo:
   private val columnHeaderHorizontalScrollBar = columnHeaderScrollPane.getHorizontalScrollBar
   columnHeaderHorizontalScrollBar.setPreferredSize(new Dimension(0, 0))
   columnHeaderHorizontalScrollBar.setModel(mainTableScrollPane.getHorizontalScrollBar.getModel)
-  
-  for (chooser <- choosers) chooser.updateLayout()
+
   tableModelsHelper.fullTableModel.fireTableStructureChanged
-  tableModelsHelper.resizeRowHeaderColumns(fullTable, rowHeaderTable, rowFieldPanel, data.pivotTable.rowFieldHeadingCount, sizerPanel, rowHeaderTableScrollPane)
+  tableModelsHelper.resizeRowHeaderColumns(fullTable, rowHeaderTable, rowComponent, data.pivotTable.rowFieldHeadingCount, sizerPanel, rowHeaderTableScrollPane)
   tableModelsHelper.resizeColumnHeaderAndMainTableColumns(fullTable, mainTable, colHeaderTable, columnHeaderScrollPane,
     columnHeaderScrollPanePanel, mainTableScrollPane)
   
@@ -697,7 +734,7 @@ class PivotTableView(layerUI:PivotTableLayerUI, data:PivotData, otherLayoutInfo:
     publish(FieldsChangedEvent(pivotFieldsState))
   })
 
-  val reportSpecificPanels = PivotTableViewHelper.generateReportSpecificPanels(fieldsState,
+  val reportSpecificPanels = PivotTableViewHelper.generateReportSpecificPanels(data.pivotFieldsState,
     new ReportSpecificOptions(data.reportSpecificOptions), model)
   val reportPanelsAvailable = reportSpecificPanels.nonEmpty
 
@@ -716,7 +753,7 @@ class PivotTableView(layerUI:PivotTableLayerUI, data:PivotData, otherLayoutInfo:
   }
   // I shouldn't be doing this here but if we don't have report specific panels, the filter field chooser should have a different border.
   if (!reportPanelsAvailable) {
-    filterFieldPanel.setBorder(MatteBorder(0,0,1,0,BorderColour))
+    filterComponent.border = MatteBorder(0,0,1,0,BorderColour)
   }
 
   private def gotoFullScreen {
@@ -729,9 +766,9 @@ class PivotTableView(layerUI:PivotTableLayerUI, data:PivotData, otherLayoutInfo:
       add(rp)
     }
 
-    def scrolling {}
+    def scrolling() {}
   }
-  val reportSpecificOptionsScrollPane = PivotTableViewHelper.generateScrollableFieldChooser(reportsPanel, reportsPanel, layerUI)
+  val reportSpecificOptionsScrollPane = PivotTableViewHelper.generateScrollableFieldChooser(reportsPanel, reportsPanel, this)
   reportSpecificOptionsScrollPane.preferredSize = new Dimension(reportSpecificOptionsScrollPane.preferredSize.width, reportsPanel.preferredSize.height)
   reportSpecificOptionsScrollPane.minimumSize = new Dimension(10, reportsPanel.preferredSize.height)
   val rsScrollPaneHolder = new MigPanel("insets 1") {
@@ -743,27 +780,27 @@ class PivotTableView(layerUI:PivotTableLayerUI, data:PivotData, otherLayoutInfo:
     browserSize = newSize
     if (!otherLayoutInfo.frozen) {
       val extraWidth = if (otherLayoutInfo.fieldPanelCollapsed) hiddenFieldPanel.size.width else fieldPanel.size.width
-      if (extraWidth + rowFieldChooser.size.width + columnFieldChooser.preferredSize.width > (browserSize.width - browserSize.width / 4)) {
+      if (extraWidth + rowComponent.size.width + columnAndMeasureComponent.preferredSize.width > (browserSize.width - browserSize.width / 4)) {
         sizerPanel.preferredSize = new Dimension(10, sizerPanel.size.height)
       } else {
-        sizerPanel.preferredSize = new Dimension(rowFieldChooser.size.width-1, sizerPanel.size.height)
+        sizerPanel.preferredSize = new Dimension(rowComponent.size.width-1, sizerPanel.size.height)
       }
-      revalidate
+      revalidate()
     }
   }
 
   def updateColumnAndMeasureScrollPane(updateSizerPanel:Boolean) {
-    if (columnFieldChooser != null) {
-      columnFieldChooserScrollPane.preferredSize = new Dimension(columnFieldChooserScrollPane.preferredSize.width, columnFieldChooser.preferredSize.height)
-      columnFieldChooserScrollPane.minimumSize = new Dimension(10, columnFieldChooser.preferredSize.height)
+    if (columnAndMeasureComponent != null) {
+      columnAndMeasureScrollPane.preferredSize = new Dimension(columnAndMeasureScrollPane.preferredSize.width, columnAndMeasureComponent.preferredSize.height)
+      columnAndMeasureScrollPane.minimumSize = new Dimension(10, columnAndMeasureComponent.preferredSize.height)
 
       if (!otherLayoutInfo.frozen && updateSizerPanel) {
         val extraWidth = if (otherLayoutInfo.fieldPanelCollapsed) hiddenFieldPanel.preferredSize.width else fieldPanel.preferredSize.width
-        if (extraWidth + rowFieldChooser.preferredSize.width + columnFieldChooser.preferredSize.width > (browserSize.width - browserSize.width / 4)) {
+        if (extraWidth + rowComponent.preferredSize.width + columnAndMeasureComponent.preferredSize.width > (browserSize.width - browserSize.width / 4)) {
           sizerPanel.preferredSize = new Dimension(10, sizerPanel.preferredSize.height)
         }
       }
-      revalidate
+      revalidate()
     }
   }
   updateColumnAndMeasureScrollPane(true)
@@ -777,13 +814,13 @@ class PivotTableView(layerUI:PivotTableLayerUI, data:PivotData, otherLayoutInfo:
       if (reportPanelsAvailable) {
         add(rsScrollPaneHolder, "spanx, split, growx")
         add(fullScreenButtonPanel, "gapleft 0, growy, wrap")
-        add(filterFieldChooser, "spanx, split, growx, wrap")
+        add(filterComponent, "spanx, split, growx, wrap")
       } else {
-        add(filterFieldChooser, "spanx, split, growx")
+        add(filterComponent, "spanx, split, growx")
         add(fullScreenButtonPanel, "gapleft 0, growy, wrap")
       }
-      add(rowFieldChooser, "spany 2, growx, ay bottom, ax left")
-      add(columnFieldChooserScrollPane, "spanx, growx, wrap")
+      add(rowComponent, "spany 2, growx, ay bottom, ax left")
+      add(columnAndMeasureScrollPane, "spanx, growx, wrap")
       add(columnHeaderScrollPanePanel, "skip 1, pushx, growx")
       
       add(mainVScrollBarHolder, "spany 2, growy, wrap")
@@ -798,13 +835,13 @@ class PivotTableView(layerUI:PivotTableLayerUI, data:PivotData, otherLayoutInfo:
       if (reportPanelsAvailable) {
         add(rsScrollPaneHolder, "spanx, split, growx")
         add(fullScreenButtonPanel, "gapleft 0, growy, wrap")
-        add(filterFieldChooser, "spanx, split, growx, wrap")
+        add(filterComponent, "spanx, split, growx, wrap")
       } else {
-        add(filterFieldChooser, "spanx, split, growx")
+        add(filterComponent, "spanx, split, growx")
         add(fullScreenButtonPanel, "gapleft 0, growy, wrap")
       }
       add(sizerPanel, "split, spanx, gapright 0")
-      add(columnFieldChooserScrollPane, "growx, wrap")
+      add(columnAndMeasureScrollPane, "growx, wrap")
       add(fullTableScrollPane, "push, grow, spanx 2")
       add(fullVScrollBarHolder, "growy, wrap")
       add(fullHScrollBarHolder, "growx, spanx 2")
@@ -830,14 +867,18 @@ class PivotTableView(layerUI:PivotTableLayerUI, data:PivotData, otherLayoutInfo:
   add(formulaBar, "growx, wrap")
   add(contentPanel, "push, grow")
 
-  def resetDynamicState = {
-    for (chooser <- choosers) chooser.resetImage
+  def resetDynamicState() {
+    viewUI.resetImageProperties()
+    fieldBeingDragged = false
+    mouseDown = false
+    allDropTargets.foreach(_.reset())
   }
 
-  def reverse {
-    for (chooser <- choosers) chooser.resetPanelState
+  def reverse() {
+    hideDropTargets()
+    allDropTargets.foreach(_.reset())
     if (toolbarPanel.visible) reverseToolBarState()
-    configPanels.foreach(_.revert)
+    configPanels.foreach(_.revert())
     reportSpecificPanels.foreach(_.resetButton)
     tableModelsHelper.resetEdits
     publish(PivotEditEvent(false, false, false))

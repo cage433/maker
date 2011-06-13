@@ -8,9 +8,9 @@ class PivotFieldsStateTests extends TestNGSuite {
 
   @Test
   def testRotate() {
-    val pfs = new PivotFieldsState(rowFields=List(Field("A"), Field("B")), columns=ColumnStructure.createFlat(List(Field("X"), Field("Y")), List(Field("i"))))
+    val pfs = new PivotFieldsState(rowFields=List(Field("A"), Field("B")), columns=ColumnTrees.createFlat(List(Field("X"), Field("Y")), List(Field("i"))))
     val rotated = pfs.rotate
-    val expected = new PivotFieldsState(rowFields=List(Field("X"), Field("Y")), columns=ColumnStructure.createFlat(List(Field("A"), Field("B")), List(Field("i"))))
+    val expected = new PivotFieldsState(rowFields=List(Field("X"), Field("Y")), columns=ColumnTrees.createFlat(List(Field("A"), Field("B")), List(Field("i"))))
     assertEquals(rotated, expected)
   }
 
@@ -27,12 +27,12 @@ class PivotFieldsStateTests extends TestNGSuite {
   def testAllFilterPathsWithComplexColumns() {
     val pfs = new PivotFieldsState(
       rowFields = List(Field("Risk Market")),
-      columns = ColumnStructure(ColumnStructure.RootField, true, List(
-        ColumnStructure(Field("Position"), true, List()),
-        ColumnStructure(Field("Day Change"), true, List(
-          ColumnStructure(Field("Day Change Component"), false, List())
+      columns = ColumnTrees(List(
+        ColumnTree(Field("Position"), true),
+        ColumnTree(Field("Day Change"), true,
+          ColumnTree(Field("Day Change Component"), false)
         ))
-      )),
+      ),
       filters = List(Field("Day Change Component") -> SomeSelection(Set("n/a"))))
 
     val expected = FiltersList(List(
@@ -47,11 +47,11 @@ class PivotFieldsStateTests extends TestNGSuite {
   def testAllFilterPathsWithFilterAreaFilter() {
     val pfs = new PivotFieldsState(
       rowFields = List(Field("Risk Market")),
-      columns = ColumnStructure(ColumnStructure.RootField, true, List(
-        ColumnStructure(Field("Position"), true, List()),
-        ColumnStructure(Field("Day Change"), true, List(
-          ColumnStructure(Field("Day Change Component"), false, List())
-        ))
+      columns = ColumnTrees(List(
+        ColumnTree(Field("Position"), true),
+        ColumnTree(Field("Day Change"), true,
+          ColumnTree(Field("Day Change Component"), false)
+        )
       )),
       filters = List(Field("Instrument") -> SomeSelection(Set("Future"))))
 
@@ -75,12 +75,12 @@ class PivotFieldsStateTests extends TestNGSuite {
   @Test
   def testAllFilterPathsNoRows() {
     val pfs = new PivotFieldsState(
-      columns = ColumnStructure(ColumnStructure.RootField, true, List(
-        ColumnStructure(Field("Position"), true, List()),
-        ColumnStructure(Field("Day Change"), true, List(
-          ColumnStructure(Field("Day Change Component"), false, List())
+      columns = ColumnTrees(List(
+        ColumnTree(Field("Position"), true),
+        ColumnTree(Field("Day Change"), true,
+          ColumnTree(Field("Day Change Component"), false)
         ))
-      )),
+      ),
       filters = List(Field("Day Change Component") -> SomeSelection(Set("n/a"))))
 
     val expected = FiltersList(List(

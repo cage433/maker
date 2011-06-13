@@ -3,6 +3,7 @@ package starling.pivot.controller
 import starling.pivot.model._
 import starling.pivot._
 import starling.utils.ImplicitConversions._
+import starling.utils.{GridConverter, Utils}
 
 
 case class TreePivotFilter(root:TreePivotFilterNode)
@@ -60,18 +61,9 @@ case class PivotTable(rowFields:List[Field], rowFieldHeadingCount:Array[Int], ro
                       editableInfo:Option[EditableInfo], formatInfo:FormatInfo,
                       aggregatedMainBucket:Map[(List[AxisValue],List[AxisValue]),Any] = Map()) {
 
-  def asCSV:String = {
-    val builder = new StringBuilder
-    val rows = toFlatRows(Totals.Null)
-    rows.foreach {
-      row => builder.append( row.mkString(", ") + "\n")
-    }
-    builder.toString
-  }
-
-  def toFlatRows(totals:Totals):List[List[Any]] = {
-    toFlatRows(totals, (tc:TableCell)=>tc.text, (ac:AxisCell)=>ac.text)
-  }
+  def asCSV:String = convertUsing(Utils.csvConverter)
+  def convertUsing(converter: GridConverter) = converter.convert(toFlatRows(Totals.Null))
+  def toFlatRows(totals:Totals): List[List[Any]] = toFlatRows(totals, (tc:TableCell)=>tc.text, (ac:AxisCell)=>ac.text)
 
   def cell(measure: AnyRef, filters: (Field, AnyRef)*): Any = {
     def filter(name: String, value: AnyRef, index: Int)(input: Map[(List[AxisValue], List[AxisValue]), Any]) =
@@ -95,16 +87,41 @@ case class PivotTable(rowFields:List[Field], rowFieldHeadingCount:Array[Int], ro
   private def toFlatRows(totals:Totals, tableCell:(TableCell)=>Any, axisCell:(AxisCell)=>Any):List[List[Any]] = {
     val rowsBuffer = new scala.collection.mutable.ArrayBuffer[List[Any]]()
     val pivotTableConverter = PivotTableConverter(OtherLayoutInfo(totals = totals), this)
+
     val (rowHeaderCells, columnHeaderCells, mainTableCells) = pivotTableConverter.allTableCells()
+    // Unlike the gui, the spread sheets don't want columns or rows spanned, they want the value repeated.
+    /*for (j <- 0 until rowHeaderCells.length) {
+      val row = rowHeaderCells(j)
+      for (i <- 0 until row.length) {
+        row(i).span match {
+          case Some(s) => for (delta <- (j + 1) until (j + s)) rowHeaderCells(delta)(i) = row(i).copy(span = None)
+          case _ =>
+        }
+      }
+    }*/
+    for (j <- 0 until columnHeaderCells.length) {
+      val row = columnHeaderCells(j)
+      for (i <- 0 until row.length) {
+        row(i).span match {
+          case Some(s) => for (delta <- (i + 1) until (i + s)) row(delta) = row(i).copy(span = None)
+          case _ =>
+        }
+      }
+    }
+
+    val rowHeaders = if (rowHeaderCells.isEmpty) rowFields.map(_.name) else {
+      rowHeaderCells(0).map(_.value.field.name).toList
+    }
+
     for ((row,index) <- columnHeaderCells.zipWithIndex) {
       val rowBuffer = new scala.collection.mutable.ArrayBuffer[Any]()
       //Not: the column/data field names do not apear anywhere as in the general case they can not be mapped
       if (index != columnHeaderCells.size-1) { //blank cells in the to left area before the column headings
-        rowBuffer ++= (0 until rowFields.size).map((_)=>"")
+        rowBuffer ++= Array.fill(rowHeaders.size)("")
       } else {
-        rowBuffer ++= rowFields.map(f=>f.name) //use the last row for the row field names
+        rowBuffer ++= rowHeaders //use the last row for the row field names
       }
-      rowBuffer ++= row.map(acv=>axisCell(acv))
+      rowBuffer ++= row.map(acv => axisCell(acv))
       rowsBuffer += rowBuffer.toList
     }
     for ((row,data) <- rowHeaderCells zip mainTableCells) {

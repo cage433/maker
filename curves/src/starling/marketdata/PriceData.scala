@@ -100,6 +100,7 @@ case class PriceData(prices: Map[DateRange, PriceValue]) extends MarketData {
   override def marshall = PriceDataDTO(TreeMap.empty[DateRange, Double] ++ prices.mapValues(_.value.value))
 
   lazy val sortedKeys = marshall.prices.keySet
+  override def size = Some(prices.size)
 }
 
 object PriceData {

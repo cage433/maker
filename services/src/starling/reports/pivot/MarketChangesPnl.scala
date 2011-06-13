@@ -47,6 +47,9 @@ class MarketChangesPnl(d1: AtomicEnvironment, d2: AtomicEnvironment, utps : Map[
   }
 
   def fields = List(
+    new PivotReportField[MarketChangesPnlRow]("Day Change Type") {
+      def value(reportRow: MarketChangesPnlRow) = reportRow.groupName
+    },
     new PivotReportField[MarketChangesPnlRow]("Day Change Component") {
       def value(reportRow: MarketChangesPnlRow) = reportRow.componentName
     },
@@ -84,32 +87,33 @@ class MarketChangesPnl(d1: AtomicEnvironment, d2: AtomicEnvironment, utps : Map[
 
   def scale(row: MarketChangesPnlRow, volume: Double) = row * volume
 
-  private def derivName(curveKey: CurveKey, order: Option[Int]) = (curveKey, order) match {
-    case (_: SpreadAtmStdDevCurveKey, None) => "Spread StdDev Delta"
-    case (_: ForwardCurveKey, None) => "Delta"
-    case (_: OilAtmVolCurveKey, None) => "Vega"
-    case (_: DiscountCurveKey, None) => "Rho"
-    case (k, None) => curveKey.typeName
+  private def derivNameAndType(curveKey: CurveKey, order: Option[Int]): (String, String) = (curveKey, order) match {
+    case (_: SpreadAtmStdDevCurveKey, None) => ("Spread StdDev Delta", "Vol")
+    case (_: ForwardCurveKey, None) => ("Delta", "Price")
+    case (_: OilAtmVolCurveKey, None) => ("Vega", "Vol")
+    case (_: DiscountCurveKey, None) => ("Rho", "Time")
+    case (_: FixingsHistoryKey, None) => ("Fixings", "Price")
+    case (k, None) => (curveKey.typeName, curveKey.typeName)
 
-    case (_: ForwardCurveKey, Some(1)) => "Delta"
-    case (_: OilAtmVolCurveKey, Some(1)) => "Vega"
-    case (_: BradyMetalVolCurveKey, Some(1)) => "Vega"
-    case (_: USDFXRateCurveKey, Some(1)) => "USD FX Delta"
-    case (_: SpreadAtmStdDevCurveKey, Some(1)) => "Spread StdDev Delta"
-    case (_: OilVolSkewCurveKey, Some(1)) => "Vol skew Delta"
+    case (_: ForwardCurveKey, Some(1)) => ("Delta", "Price")
+    case (_: OilAtmVolCurveKey, Some(1)) => ("Vega", "Vol")
+    case (_: BradyMetalVolCurveKey, Some(1)) => ("Vega", "Vol")
+    case (_: USDFXRateCurveKey, Some(1)) => ("USD FX Delta", "FX")
+    case (_: SpreadAtmStdDevCurveKey, Some(1)) => ("Spread StdDev Delta", "Vol")
+    case (_: OilVolSkewCurveKey, Some(1)) => ("Vol skew Delta", "Vol")
 
-    case (_: ForwardCurveKey, Some(2)) => "Gamma"
-    case (_: OilAtmVolCurveKey, Some(2)) => "Vomma"
-    case (_: BradyMetalVolCurveKey, Some(2)) => "Vega"
-    case (_: USDFXRateCurveKey, Some(2)) => "USD FX Gamma"
-    case (_: SpreadAtmStdDevCurveKey, Some(2)) => "Spread StdDev Gamma"
-    case (_: OilVolSkewCurveKey, Some(2)) => "Vol skew Gamma"
+    case (_: ForwardCurveKey, Some(2)) => ("Gamma", "Price")
+    case (_: OilAtmVolCurveKey, Some(2)) => ("Vomma", "Vol")
+    case (_: BradyMetalVolCurveKey, Some(2)) => ("Vomma", "Vol")
+    case (_: USDFXRateCurveKey, Some(2)) => ("USD FX Gamma", "FX")
+    case (_: SpreadAtmStdDevCurveKey, Some(2)) => ("Spread StdDev Gamma", "Vol")
+    case (_: OilVolSkewCurveKey, Some(2)) => ("Vol skew Gamma", "Vol")
   }
 
   val ignore:Set[Class[_]] = Set(classOf[DiscountRateKey], classOf[FixingKey])
 
   def rows(utpID: UTPIdentifier, instrument: UTP) = {
-    List(MarketChangesPnlRow(utpID, instrument, componentName = null))
+    List(MarketChangesPnlRow(utpID, instrument, groupName = null, componentName = null))
   } 
 
   private def environmentDiffsAndCurveKeys(utp : UTP, reportSpecificChoices : ReportSpecificChoices) : (Set[EnvironmentDifferentiable], Set[CurveKey]) = {
@@ -120,6 +124,9 @@ class MarketChangesPnl(d1: AtomicEnvironment, d2: AtomicEnvironment, utps : Map[
   }
 
   override def combine(rows : List[MarketChangesPnlRow], reportSpecificChoices : ReportSpecificChoices) = {
+//    require(!reportSpecificChoices.getOrElse(futuresAsSwaps_str, false), "Can't do day change report with futures as swaps")
+//    require(!reportSpecificChoices.getOrElse(futuresAsSpreads_str, false), "Can't do day change report with futures as spreads")
+
     val showEqFutures = reportSpecificChoices.getOrElse(showEqFutures_str, false)
     val useSkew = reportSpecificChoices.getOrElse(useSkew_str, true)
     val collapseOptions = reportSpecificChoices.getOrElse(collapseOptions_str, true)
@@ -133,22 +140,17 @@ class MarketChangesPnl(d1: AtomicEnvironment, d2: AtomicEnvironment, utps : Map[
 
         val (envDiffs, curveKeys) = environmentDiffsAndCurveKeys(unitUTP, reportSpecificChoices)
         val pnlBreakDown = unitUTP.explain(d1EnvFwd, d2Env, environmentFor, UOM.USD, envDiffs, curveKeys, atmVega = atmVega)
-        val d1Mtm = PivotQuantity.calcOrCatch(unitUTP.cachedMtm(d1EnvFwd, UOM.USD))
-        val plainPnl = PivotQuantity.calcOrCatch(unitUTP.cachedMtm(d2Env, UOM.USD)) - d1Mtm
-        val allCurveKeysMtm = PivotQuantity.calcOrCatch({
-          unitUTP.cachedMtm(environmentFor(curveKeys), UOM.USD)
-        })
-        val allCurvesPnl = allCurveKeysMtm - d1Mtm
         val explainedTotal = pnlBreakDown.map {_.value}.toList.sum
-        val crossTerms = allCurvesPnl - explainedTotal
-        val unexplained = plainPnl - allCurvesPnl
 
-        def makeRow(
+        val (crossTerms, rounding, unexplained) = unitUTP.components(d1EnvFwd, d2Env, environmentFor, UOM.USD, explainedTotal, curveKeys)
+
+        def makeRow(groupName: String,
           componentName : String, riskType : Option[String], 
           riskCommodity : Option[String], marketName : String, period : Option[Period], 
           pnl : PivotQuantity, priceChange : Option[PivotQuantity], d1Price : Option[PivotQuantity], volChange : Option[PivotQuantity]) = {
           MarketChangesPnlRow(
-            utpID, utp, 
+            utpID, utp,
+            groupName = groupName,
             componentName = componentName, 
             riskType = riskType,
             riskCommodity = riskCommodity,
@@ -166,28 +168,30 @@ class MarketChangesPnl(d1: AtomicEnvironment, d2: AtomicEnvironment, utps : Map[
         val (priceDiffs, volDiffs) = PivotReportUtils.priceAndVolKeys(unitUTP, d1EnvFwd.marketDay, reportSpecificChoices)
         val diffs = (priceDiffs ++ volDiffs).toList
 
-        def shareAcrossDiff(name : String, value : PivotQuantity) : List[MarketChangesPnlRow] = {
+        def shareAcrossDiff(groupName: String, name : String, value : PivotQuantity) : List[MarketChangesPnlRow] = {
           if (diffs.isEmpty)
-            List(makeRow(name, None, None, "", None, value, priceChange = None, d1Price = None, volChange = None))
+            List(makeRow(groupName, name, None, None, "", None, value, priceChange = None, d1Price = None, volChange = None))
           else
-            diffs.map{
-              diff => makeRow(name, None, Some(diff.riskCommodity), diff.riskMarket, diff.periodKey, value / diffs.size,
+            diffs.map {
+              diff => makeRow(groupName, name, None, Some(diff.riskCommodity), diff.riskMarket, diff.periodKey, value / diffs.size,
                 priceChange = None, d1Price = None, volChange = None)
             }
         }
-        val crossTermComponents = shareAcrossDiff("Cross Terms", crossTerms)
+        val crossTermComponents = shareAcrossDiff("Cross Terms", "Cross Terms", crossTerms)
+        val roundingComponents = shareAcrossDiff("Price", "Rounding", rounding)
 
         var pnlComponents =
-          makeRow("Other changes", None, None, "", None, unexplained, None, None, None) ::
-          crossTermComponents :::
+          makeRow("Other", "Other changes", None, None, "", None, unexplained, None, None, None) ::
+          roundingComponents ::: crossTermComponents :::
           pnlBreakDown.flatMap{
             // Split discount and fixing pnl across markets and periods
-            explanation => 
-              val name = derivName(explanation.curveKeys.head, explanation.order) + " DC"
+            explanation =>
+              val (n, group) = derivNameAndType(explanation.curveKeys.head, explanation.order)
+              val name = n + " DC"
               explanation.curveKeys.head match {
-                case _ : DiscountCurveKey => shareAcrossDiff(name, explanation.value)
-                case _ : FixingsHistoryKey => shareAcrossDiff(name, explanation.value)
-                case _ => List(makeRow(name, explanation.riskType, explanation.riskCommodity, explanation.riskMarket,
+                case _: DiscountCurveKey => shareAcrossDiff(group, name, explanation.value)
+                case _: FixingsHistoryKey => shareAcrossDiff(group, name, explanation.value)
+                case _ => List(makeRow(group, name, explanation.riskType, explanation.riskCommodity, explanation.riskMarket,
                                         explanation.period, explanation.value, explanation.priceChange, explanation.d1Price, explanation.volChange))
               }
           }
@@ -215,6 +219,7 @@ class MarketChangesPnl(d1: AtomicEnvironment, d2: AtomicEnvironment, utps : Map[
 case class MarketChangesPnlRow(
   utpID : UTPIdentifier,
   utp : UTP,
+  groupName: String,
   componentName: String, 
   marketName: String = "", 
   riskType : Option[String] = None,
@@ -243,7 +248,7 @@ case class MarketChangesPnlRow(
 case class TimeChangesPnlRow(
   utpID : UTPIdentifier,
   utp : UTP,
-  label: String, 
+  label: String,
   pnl: PivotQuantity,
   diff : Option[EnvironmentDifferentiable] = None,
   period : Option[Period] = None,
@@ -252,6 +257,8 @@ case class TimeChangesPnlRow(
 ) 
   extends PivotRowShareableByRiskFactor[TimeChangesPnlRow] with PivotRowWithEnvironmentDifferentiable[TimeChangesPnlRow]
 {
+  def groupName: String = "Time"
+
   def *(volume: Double) = copy(scale = scale * volume)
   def setPeriod(period : Option[Period]) = copy(period = period)
   def setCollapseOptions(co : Boolean) = copy(collapseOptions = co)
@@ -265,6 +272,9 @@ class TimeChangesPnl(d1:Environment, forwardDay:Day, utps : Map[UTPIdentifier, U
   val swapIndices = PivotReport.swapIndicesByStrategy(utps)
 
   def fields = List(
+    new PivotReportField[TimeChangesPnlRow]("Day Change Type") {
+      def value(reportRow: TimeChangesPnlRow) = reportRow.groupName
+    },
     new PivotReportField[TimeChangesPnlRow]("Day Change Component") {
       def value(reportRow: TimeChangesPnlRow) = reportRow.label
     },
@@ -355,16 +365,15 @@ class TradeChangesPnlPivotTableDataSource(tradeChangesFields:List[FieldDetailsGr
   val fieldDetailsGroups =
     FieldDetailsGroup(
       "Report Fields", 
-      List(
-        new SumPivotQuantityFieldDetails("Day Change"),
-        FieldDetails("Day Change Component"),
-        FieldDetails("Risk Market"),
-        FieldDetails("Risk Commodity"),
-        FieldDetails("Risk Type"),
-        new FieldDetails("Risk Period"){
-          override def nullValue = OptionalPeriodLabel.Null
-        }
-    )) :: tradeChangesFields
+      new SumPivotQuantityFieldDetails("Day Change"),
+      FieldDetails("Day Change Component"),
+      FieldDetails("Risk Market"),
+      FieldDetails("Risk Commodity"),
+      FieldDetails("Risk Type"),
+      new FieldDetails("Risk Period"){
+        override def nullValue = OptionalPeriodLabel.Null
+      }
+    ) :: tradeChangesFields
 
   private val fieldsByName = Map() ++ fieldDetails.map(f => f.field.name -> f.field)
 
@@ -432,6 +441,9 @@ class NewTradesPivotReport(environment: Environment, currency: UOM, utps : Map[U
   val swapIndices = PivotReport.swapIndicesByStrategy(utps)
 
   def fields = List(
+    new PivotReportField[NewTradesRow]("Day Change Type") {
+      def value(reportRow: NewTradesRow) = "New Trades"
+    },
     new PivotReportField[NewTradesRow]("Day Change Component") {
       def value(reportRow: NewTradesRow) = "New Trades"
     },
@@ -462,10 +474,10 @@ class NewTradesPivotReport(environment: Environment, currency: UOM, utps : Map[U
 
 class TradeChangesPivotTableDataSource(tradeChanges: TradeChanges) extends UnfilteredPivotTableDataSource {
   override def initialState = {
-    val columns = fieldDetails.map(_.field).filter(f => f.name != "Trade ID" && f.name != "Action").map(field => ColumnStructure(field, true, Nil))
+    val columns = fieldDetails.map(_.field).filter(f => f.name != "Trade ID" && f.name != "Action").map(field => ColumnTree(field, true))
     new PivotFieldsState(
       rowFields = List(Field("Trade ID"), actionField),
-      columns = ColumnStructure(ColumnStructure.RootField, false, columns)
+      columns = ColumnTrees(columns)
     )
   }
 

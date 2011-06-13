@@ -7,7 +7,7 @@ import starling.utils.ImplicitConversions._
 import starling.richdb.RichInstrumentResultSetRow
 import starling.curves._
 import starling.market._
-import rules.{NoPricingRule, CommonPricingRule, SwapPricingRule}
+import rules.{Precision, NoPricingRule, CommonPricingRule, SwapPricingRule}
 import starling.daterange._
 import starling.daterange.DateRangePeriod
 import starling.calendar.{BrentMonth, BusinessCalendar}
@@ -62,6 +62,16 @@ case class SingleCFD(index: Index,
       }
     }
     Assets(assets)
+  }
+
+  override def priceRounding = index.precision.map {
+    case Precision(defaultRounding, clearportRounding) => {
+      if (cleared) { // TODO check this
+        clearportRounding
+      } else {
+        defaultRounding
+      }
+    }
   }
 }
 

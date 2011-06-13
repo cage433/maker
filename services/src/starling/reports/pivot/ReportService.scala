@@ -23,7 +23,7 @@ import starling.rmi.PivotData
 import starling.quantity.{Percentage, UOM, Quantity}
 import collection.mutable.ListBuffer
 import starling.market._
-import starling.marketdata.{PriceDataType, MarketDataPivotTableDataSource, MarketDataKey, MarketData}
+import starling.marketdata._
 
 case class CurveIdentifier(
         marketDataIdentifier:MarketDataIdentifier,
@@ -305,7 +305,9 @@ class ReportService(
 
   def recordedMarketDataReader(reportParameters: ReportParameters) = {
     cache.memoize( ("recordMarketData", reportParameters), {
-      val recorded = reportPivotTableDataSource(reportParameters)._1
+      val recorded = reportPivotTableDataSource(reportParameters)._1.map {
+        case (observationPoint, key, data) => TimedMarketDataKey(observationPoint, key) → data
+      }
       new RecordedMarketDataReader("Recorded from report using " + reportParameters.curveIdentifier.marketDataIdentifier, recorded.toList)
     } )
   }

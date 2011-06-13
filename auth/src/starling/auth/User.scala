@@ -1,6 +1,5 @@
 package starling.auth
 
-import org.springframework.ldap.core.ContextSource
 import javax.naming.directory.{BasicAttribute, Attribute}
 import scala.collection.JavaConversions._
 import collection.mutable.ListBuffer

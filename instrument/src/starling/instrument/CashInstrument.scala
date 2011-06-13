@@ -16,7 +16,7 @@ case class CashInstrument(
   index : Option[Either[Index,Market]] = None,
   averagingPeriod : Option[Period] = None
 )
-	extends UTP 
+	extends UTP with Tradeable
 {
   def this(amount : Quantity, settlementDate : Day) = this(CashInstrumentType.General, amount, settlementDate)
 
@@ -28,7 +28,7 @@ case class CashInstrument(
 	def isLive(dayAndTime : DayAndTime) : Boolean = dayAndTime <= settlementDate.startOfDay
   
   def details :Map[String, Any] = 
-    Map("CashInstrumentType" -> cashInstrumentType.name, "Amount" -> volume, "Settlement Date" -> settlementDate) ++
+    Map("CashInstrumentType" -> cashInstrumentType.name, "Quantity" -> volume, "Delivery Day" -> settlementDate) ++
       index.map("Market" -> _).toMap ++
       averagingPeriod.map("Period" -> _).toMap
 
@@ -39,6 +39,43 @@ case class CashInstrument(
   def periodKey = Some(DateRangePeriod(settlementDate))
 
   def price(env : Environment) = Quantity.NULL
+
+  def asUtpPortfolio(tradeDay: Day) = {
+    val unit = copy(volume = Quantity(1, valuationCCY))
+    UTP_Portfolio(Map(unit -> volume.value))
+  }
+
+  def tradeableDetails = details
+
+  def tradeableType = CashInstrument
+
+  override def expiryDay() = Some(settlementDate)
+}
+
+object CashInstrument extends InstrumentType[CashInstrument] with TradeableType[CashInstrument]  {
+
+  def sample = CashInstrument(CashInstrumentType.Ordinary, Quantity(1, USD), Day(2011, 1, 1))
+
+  def createTradeable(row: RichInstrumentResultSetRow) = {
+    val ciType = CashInstrumentType.fromString(row.getString("CashInstrumentType")).get
+    val quantity = row.getQuantity("quantity")
+    val settlementDay = row.getDay("deliveryDay")
+
+    val market = try {
+      Some(Right(row.getMarket("market")))
+    } catch {
+      case _ => try {
+        Some(Left(row.getIndexFromName("market")))
+      } catch {
+        case _ => None
+      }
+    }
+    val period = if(row.isNull("period")) None else Some(row.getPeriod("period"))
+
+    CashInstrument(ciType, quantity, settlementDay, market, period)
+  }
+
+  val name = "Cash Instrument"
 }
 
 /**
@@ -50,11 +87,20 @@ case class CashInstrumentType(name: String, isNegative: Boolean = false)
 object CashInstrumentType {
   val BrokerPayment = CashInstrumentType("Broker Payment", true)
   val ClearingHousePayment = CashInstrumentType("Clearing House Payment", true)
-  val General = CashInstrumentType("General")
   val Premium = CashInstrumentType("Premium")
   val Commission = CashInstrumentType("Commission")
-}
+  val Ordinary = CashInstrumentType("Ordinary Cost")
 
-object CashInstrument extends InstrumentType[CashInstrument] {
-  val name = "Cash Instrument"
+  val costTypes = Set(BrokerPayment, ClearingHousePayment, Premium, Commission, Ordinary)
+
+  val General = CashInstrumentType("General")
+  val nonCostTypes = Set(General)
+
+  val allTypes = costTypes ++ nonCostTypes
+
+  def isCost(cashInstrumentType: CashInstrumentType) = costTypes.contains(cashInstrumentType)
+
+  def fromString(s: String): Option[CashInstrumentType] = {
+    allTypes.find(_.name.equalsIgnoreCase(s))
+  }
 }

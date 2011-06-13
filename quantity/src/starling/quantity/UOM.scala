@@ -4,35 +4,53 @@ import starling.utils.CaseInsensitive
 import starling.utils.CaseInsensitive._
 import starling.utils.cache.CacheFactory
 
+import starling.utils.ImplicitConversions._
+
+
 object UOM {
   def apply(numerator : Long, denominator : Long) : UOM = UOM(Ratio(1,1), Ratio(numerator, denominator))
 
   import UOMSymbol._
   val NULL = UOM.build(0, 1)
   val SCALAR = UOM.build(1, 1)
-  val AUD = AUD_SYMBOL.asUOM
-  val BGN = BGN_SYMBOL.asUOM
-  val CAD = CAD_SYMBOL.asUOM
-  val CHF = CHF_SYMBOL.asUOM
-  val CNY = CNY_SYMBOL.asUOM
-  val DKK = DKK_SYMBOL.asUOM
-  val EUR = EUR_SYMBOL.asUOM
-  val GBP = GBP_SYMBOL.asUOM
-  val HUF = HUF_SYMBOL.asUOM
-  val JPY = JPY_SYMBOL.asUOM
-  val MXN = MXN_SYMBOL.asUOM
-  val MYR = MYR_SYMBOL.asUOM
-  val NAD = NAD_SYMBOL.asUOM
-  val NOK = NOK_SYMBOL.asUOM
-  val NZD = NZD_SYMBOL.asUOM
-  val PLN = PLN_SYMBOL.asUOM
-  val RON = RON_SYMBOL.asUOM
-  val SEK = SEK_SYMBOL.asUOM
-  val SGD = SGD_SYMBOL.asUOM
-  val TRY = TRY_SYMBOL.asUOM
-  val USD = USD_SYMBOL.asUOM
+
+  val AED = aed.asUOM
+  val AUD = aud.asUOM
+  val BGN = bgn.asUOM
+  val BRL = brl.asUOM
+  val CAD = cad.asUOM
+  val CHF = chf.asUOM
+  val CNY = cny.asUOM
+  val CZK = czk.asUOM
+  val DKK = dkk.asUOM
+  val EUR = eur.asUOM
+  val GBP = gbp.asUOM
+  val HKD = hkd.asUOM
+  val HRK = hrk.asUOM
+  val HUF = huf.asUOM
+  val IDR = idr.asUOM
+  val ILS = ils.asUOM
+  val INR = inr.asUOM
+  val JPY = jpy.asUOM
+  val KRW = krw.asUOM
+  val LTL = ltl.asUOM
+  val LVL = lvl.asUOM
+  val MXN = mxn.asUOM
+  val MYR = myr.asUOM
+  val NAD = nad.asUOM
+  val NOK = nok.asUOM
+  val NZD = nzd.asUOM
+  val PHP = php.asUOM
+  val PLN = pln.asUOM
+  val RON = ron.asUOM
+  val RUB = rub.asUOM
+  val SEK = sek.asUOM
+  val SGD = sgd.asUOM
+  val THB = thb.asUOM
+  val TRY = trySymbol.asUOM
+  val USD = usd.asUOM
   val WSC = WSC_SYMBOL.asUOM
-  val ZAR = ZAR_SYMBOL.asUOM
+  val ZAR = zar.asUOM
   val US_CENT = US_CENT_SYMBOL.asUOM
   val SHARE = SHARE_SYMBOL.asUOM
 
@@ -110,6 +128,7 @@ object UOM {
   }
 
   private var uomCache = CacheFactory.getCache("UOM.fromString", unique = true)
+  private val FXRegex = """(.*)( per |/)(.*)""".r
 
   def fromStringOption(text: String): Option[UOM] = {
     uomCache.memoize((text), (tuple: (String)) => {
@@ -118,18 +137,14 @@ object UOM {
       } else {
         (1, text)
       }
-      val index = uomString.indexOf('/')
-      val unScaledUOM = if (index == -1) {
-        getSymbolOption(uomString.trim) match {
-          case Some(u) => Some(u.asUOM)
-          case _ => None
+
+      val unScaledUOM = uomString match {
+        case FXRegex(num, _, dem) => (getSymbolOption(num.trim), getSymbolOption(dem.trim)) partialMatch {
+          case (Some(n), Some(d)) => n.asUOM / d.asUOM
         }
-      } else {
-        (getSymbolOption(uomString.substring(0, index).trim), getSymbolOption(uomString.substring(index + 1).trim)) match {
-          case (Some(u1), Some(u2)) => Some(u1.asUOM / u2.asUOM)
-          case _ => None
-        }
+        case _ => getSymbolOption(uomString.trim).map(_.asUOM)
       }
+
       unScaledUOM.map(_ * scale)
     })
   }
@@ -199,14 +214,16 @@ case class UOM private (scale : Ratio, value : Ratio) extends RatioT[UOM] {
       case _ => ""
     }.foldLeft("")(_+_)
 
+    val sep = if (isFX) " per " else "/"
+
     (scale.reduce, den) match {
       case (Ratio(1000, 1), "") => "K " + num
       case (Ratio(1, 1), "")    => num
       case (other, "")          => other + " " + num
-      case (Ratio(1000, 1), _)  => "K " + num + "/" + den
-      case (Ratio(1, 1), _)     => num + "/" + den
-      case (Ratio(1, 1000), _)  => num + "/K " + den
-      case (other, _)           => other + " " + num + "/" + den
+      case (Ratio(1000, 1), _)  => "K " + num + sep + den
+      case (Ratio(1, 1), _)     => num + sep + den
+      case (Ratio(1, 1000), _)  => num + sep + "K " + den
+      case (other, _)           => other + " " + num + sep + den
     }
   }
 
@@ -239,6 +256,7 @@ case class UOM private (scale : Ratio, value : Ratio) extends RatioT[UOM] {
   def isScalar = this.value == SCALAR.value
   def isCurrency = currencies.contains(this)
   def isProperUOM = !(isScalar || isNull)
+  def isFX = numeratorUOM.isCurrency && denominatorUOM.isCurrency
 }
 
 object UOMParse {

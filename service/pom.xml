@@ -1,0 +1,454 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>com.trafigura</groupId>
+    <artifactId>buildtools-server</artifactId>
+    <version>2.0</version>
+    <relativePath>../../../buildtools/services/pom.xml</relativePath>
+  </parent>
+
+  <name>Starling</name>
+  <groupId>com.trafigura.services</groupId>
+  <artifactId>starling-pom</artifactId>
+  <version>${buildversion}</version>
+  <packaging>pom</packaging>
+
+
+  <modules>
+      <module>../utils</module>
+      <module>../refined-service</module>
+      <module>../auth</module>
+      <module>../bouncyrmi</module>
+      <module>../loopyxl</module>
+      <module>../concurrent</module>
+      <module>../quantity</module>
+      <module>../daterange</module>
+      <module>../pivot</module>
+      <module>../maths</module>
+      <module>../curves</module>
+      <module>../gui.api</module>
+      <module>../instrument</module>
+      <module>../trade</module>
+      <module>../var</module>
+      <module>../databases</module>
+      <module>../services</module>
+      <module>../gui</module>
+  </modules>
+
+
+  <dependencies>
+    <dependency>
+       <groupId>commons-lang</groupId>                                                                               
+       <artifactId>commons-lang</artifactId>
+    </dependency>
+
+    <!--Internal dependencies-->
+
+    <dependency>
+      <groupId>com.trafigura.services</groupId>
+      <artifactId>titan-core</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.trafigura.services</groupId>
+      <artifactId>titan-security</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>com.trafigura.tradinghub</groupId>
+      <artifactId>scala-model-with-persistence</artifactId>
+      <version>${trafigura.model.version}</version>
+      <exclusions>
+        <exclusion>
+          <groupId>javassist</groupId>
+          <artifactId>javassist</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+
+    <!--External dependencies-->
+  <dependency>
+    <groupId>org.apache.commons</groupId>
+    <artifactId>commons-math</artifactId>
+    <version>2.1</version>
+  </dependency>
+    <dependency>
+      <groupId>org.scala-lang</groupId>
+      <artifactId>scala-compiler</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.scala-lang</groupId>
+      <artifactId>scala-library</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>log4j</groupId>
+      <artifactId>log4j</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-context-support</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-web</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-orm</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.rabbitmq</groupId>
+      <artifactId>amqp-client</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.hibernate</groupId>
+      <artifactId>hibernate-core</artifactId>
+      <exclusions>
+        <exclusion>
+          <groupId>xml-apis</groupId>
+          <artifactId>xml-apis</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>org.hibernate</groupId>
+      <artifactId>hibernate-annotations</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.hibernate</groupId>
+      <artifactId>hibernate-entitymanager</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.hibernate</groupId>
+      <artifactId>hibernate-validator</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.hibernate</groupId>
+      <artifactId>hibernate-search</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.lucene</groupId>
+      <artifactId>lucene-core</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.jboss.resteasy</groupId>
+      <artifactId>resteasy-jaxrs</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.jboss.resteasy</groupId>
+      <artifactId>resteasy-spring</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>joda-time</groupId>
+      <artifactId>joda-time</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-simple</artifactId>
+    </dependency>
+    <!-- provided External dependencies-->
+    <dependency>
+      <groupId>javax.servlet</groupId>
+      <artifactId>servlet-api</artifactId>
+    </dependency>
+
+    <!--External dependencies for testing -->
+    <dependency>
+      <groupId>org.apache.derby</groupId>
+      <artifactId>derby</artifactId>
+      <version>10.7.1.1</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>commons-dbcp</groupId>
+      <artifactId>commons-dbcp</artifactId>
+      <version>1.2.2</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+        <groupId>org.mockito</groupId>
+        <artifactId>mockito-all</artifactId>
+    </dependency>
+
+    <!--copied from utils-->
+
+    <dependency>
+      <groupId>colt</groupId>
+      <artifactId>colt</artifactId>
+      <version>1.2.0</version>
+    </dependency>
+    <dependency>
+      <groupId>com.thoughtworks.xstream</groupId>
+      <artifactId>xstream</artifactId>
+      <version>1.3.1</version>
+    </dependency>
+    <dependency>
+      <groupId>commons-collections</groupId>
+      <artifactId>commons-collections</artifactId>
+      <version>3.2.1</version>
+    </dependency>
+    <dependency>
+      <groupId>com.google.collections</groupId>
+      <artifactId>google-collections</artifactId>
+      <version>1.0</version>
+    </dependency>
+    <dependency>
+      <groupId>org.testng</groupId>
+      <artifactId>testng</artifactId>
+      <version>5.14.1</version>
+    </dependency>
+    <dependency>
+      <groupId>starling-external-jars</groupId>
+      <artifactId>memcached</artifactId>
+      <version>2.5</version>
+    </dependency>
+
+  <!--end copied from utils-->
+
+  <!-- needed for auth-->
+    <dependency>
+      <groupId>starling-external-jars</groupId>
+      <artifactId>jna</artifactId>
+      <version>3.2.7</version>
+    </dependency>
+    <dependency>
+      <groupId>starling-external-jars</groupId>
+      <artifactId>jna-platform</artifactId>
+      <version>3.2.7</version>
+    </dependency>
+  <!-- end needed for auth-->
+
+  <!-- needed for bouncyrmi-->
+  <dependency>
+    <groupId>org.jboss.netty</groupId>
+    <artifactId>netty</artifactId>
+    <version>3.2.1.Final</version>
+  </dependency>
+  <dependency>
+    <groupId>org.scala-lang</groupId>
+    <artifactId>scala-swing</artifactId>
+    <version>2.8.1</version>
+  </dependency>
+  <!-- end needed for bouncyrmi-->
+
+  <!-- needed for loopyxl-->
+  <dependency>
+    <groupId>com.google.protobuf</groupId>
+    <artifactId>protobuf-java</artifactId>
+    <version>2.3.0</version>
+  </dependency>
+  <!-- end needed for loopyxl-->
+
+  <!-- needed for concurrent-->
+  <dependency>
+    <groupId>se.scalablesolutions.akka</groupId>
+    <artifactId>akka-actor</artifactId>
+    <version>1.0</version>
+  </dependency>
+  <!-- end needed for concurrent-->
+
+  <!-- needed for maths -->
+  <dependency>
+    <groupId>org.scalatest</groupId>
+    <artifactId>scalatest</artifactId>
+    <version>1.2</version>
+  </dependency>
+  <!-- end needed for maths -->
+
+
+  <!-- needed for gui.api -->
+  <dependency>
+    <groupId>net.debasishg</groupId>
+    <artifactId>sjson_2.8.0</artifactId>
+    <version>0.8</version>
+  </dependency>
+  <!-- end needed for gui.api -->
+
+  <!-- needed for curves -->
+  <dependency>
+    <groupId>starling-external-jars</groupId>
+    <artifactId>jeksparser</artifactId>
+    <version>1.0</version>
+  </dependency>
+  <!-- end needed for curves -->
+
+  <!-- needed for databases -->
+  <dependency>
+    <groupId>starling-external-jars</groupId>
+    <artifactId>mimapi</artifactId>
+    <version>2.2.0</version>
+  </dependency>
+  <dependency>
+    <groupId>org.springframework</groupId>
+    <artifactId>spring-jdbc</artifactId>
+    <!--<version>2.5.6</version>-->
+  </dependency>
+  <dependency>
+    <groupId>starling-external-jars</groupId>
+    <artifactId>bonecp</artifactId>
+    <version>0.7.1.RELEASE</version>
+  </dependency>
+  <!-- end needed for datsbases -->
+  
+  <!-- needed for services -->
+  <dependency>
+    <groupId>org.mortbay.jetty</groupId>
+    <artifactId>jetty</artifactId>
+    <version>6.1.21</version>
+    <scope>provided</scope>
+  </dependency>
+  <dependency>
+    <groupId>starling-external-jars</groupId>
+    <artifactId>xlloop</artifactId>
+    <version>0.3.1</version>
+  </dependency>
+  <dependency>
+    <groupId>javax.mail</groupId>
+    <artifactId>mail</artifactId>
+    <version>1.4</version>
+  </dependency>
+  <dependency>
+    <groupId>starling-external-jars</groupId>
+    <artifactId>jminix</artifactId>
+    <version>0.9</version>
+  </dependency>
+  <dependency>
+    <groupId>starling-external-jars</groupId>
+    <artifactId>jminx-org.restlet</artifactId>
+    <version>1.1.5</version>
+  </dependency>
+  <dependency>
+    <groupId>starling-external-jars</groupId>
+    <artifactId>jminx-org.restlet.ext.velocity</artifactId>
+    <version>1.1.5</version>
+  </dependency>
+  <dependency>
+    <groupId>starling-external-jars</groupId>
+    <artifactId>jminix-com.noelios.restlet</artifactId>
+    <version>1.1.5</version>
+  </dependency>
+  <dependency>
+    <groupId>starling-external-jars</groupId>
+    <artifactId>jminix-com.noelios.restlet.ext.servlet</artifactId>
+    <version>1.1.5</version>
+  </dependency>
+  <dependency>
+    <groupId>com.jcraft</groupId>
+    <artifactId>jsch</artifactId>
+    <version>0.1.44-1</version>
+  </dependency>
+    <!--end needed for services -->
+  
+  <!-- needed for gui-->
+  <dependency>
+    <groupId>cglib</groupId>
+    <artifactId>cglib-nodep</artifactId>
+    <version>2.2</version>
+  </dependency>
+  <dependency>
+    <groupId>jfree</groupId>
+    <artifactId>jfreechart</artifactId>
+    <version>1.0.0</version>
+  </dependency>
+  <dependency>
+    <groupId>jfree</groupId>
+    <artifactId>jcommon</artifactId>
+    <version>1.0.0</version>
+  </dependency>
+  <dependency>
+    <groupId>net.java.dev.timingframework</groupId>
+    <artifactId>timingframework</artifactId>
+    <version>1.0</version>
+  </dependency>
+  <dependency>
+    <groupId>jxlayer</groupId>
+    <artifactId>jxlayer</artifactId>
+    <version>4.0</version>
+  </dependency>
+  <dependency>
+    <groupId>jgoodies</groupId>
+    <artifactId>looks</artifactId>
+    <version>2.3.1</version>
+  </dependency>
+  <dependency>
+      <groupId>org.swinglabs</groupId>
+      <artifactId>swingx</artifactId>
+      <version>1.6</version>
+  </dependency>
+  <dependency>
+    <groupId>starling-external-jars</groupId>
+    <artifactId>org.eclipse.mylyn.wikitext.core</artifactId>
+    <version>1.4</version>
+  </dependency>
+  <dependency>
+    <groupId>starling-external-jars</groupId>
+    <artifactId>org.eclipse.mylyn.wikitext.textile.core</artifactId>
+    <version>1.4</version>
+  </dependency>
+  <dependency>
+    <groupId>starling-external-jars</groupId>
+    <artifactId>miglayout</artifactId>
+    <version>3.7.3.1</version>
+  </dependency>
+    <!-- endneeded for gui-->
+
+		<!-- Oracle JDBC, UCP and ONS -->
+    <dependency>
+      <groupId>com.oracle</groupId>
+      <artifactId>ojdbc6</artifactId>
+    </dependency>
+		<dependency>
+      <groupId>com.oracle</groupId>
+      <artifactId>ucp</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.oracle</groupId>
+      <artifactId>ons</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>net.sourceforge.jtds</groupId>
+      <artifactId>jtds</artifactId>
+      <version>1.2.4</version>
+    </dependency>
+
+  </dependencies>
+
+
+
+
+  <build>
+    <plugins>
+      <plugin>
+        <artifactId>maven-antrun-plugin</artifactId>
+        <executions>
+          <execution>
+            <phase>compile</phase>
+            <configuration>
+              <tasks>
+                <exec executable="date" failonerror="true" output="build-time"> 
+                </exec>
+              </tasks>
+            </configuration>
+            <goals>
+              <goal>run</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>2.0.2</version>
+                <configuration>
+                    <source>1.6</source>
+                    <target>1.6</target>
+                </configuration>
+            </plugin>
+    </plugins>
+  </build>
+</project>

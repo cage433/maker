@@ -140,9 +140,9 @@ object SingleTradePageComponent {
       Field("Risk Market"),
       Field("Risk Period")
     ),
-    columns = ColumnStructure(ColumnStructure.RootField, false, List(
-    ColumnStructure(Field("Instrument"), false,
-      List("Position", "Market Price", "Initial Price", "P&L", "Quantity").map(f=>ColumnStructure(Field(f), true, List())))
+    columns = ColumnTrees(List(
+    ColumnTree(Field("Instrument"), false,
+      List("Position", "Market Price", "Initial Price", "P&L", "Quantity").map(f=>ColumnTree(Field(f), true)): _*)
     )),
     reportSpecificChoices = DefaultReportSpecificChoices
   )

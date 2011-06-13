@@ -77,14 +77,14 @@ import starling.quantity.RichQuantity._
     // check that compound units also work
     assertEquals(10.0 (US_CENT/MT) in (USD/MT), Some(0.1 (USD/MT)))
     assertEquals(1.0 (USD/MT) in (US_CENT/MT), Some(100.0 (US_CENT/MT)))
-    assertEquals(31.1034768 (USD/OZ) in (USD/LB), Some(453.59237 (USD/LB)))
+    assertQtyOptionClose(31.1034768 (USD/OZ) in (USD/LB), Some(453.59237 (USD/LB)))
 
     // note: at the moment it doesn't seem like it can do conversions via third units on
     // compount units. hopefully this will work in the future.
-    assertEquals(31.1034768 (USD/OZ) in (US_CENT/LB), Some(45359.237 (US_CENT/LB)))
-    assertEquals(1.0 (KL^2) in (L^2), Some(1000000.0 (L^2)))
-    assertEquals(1000.0 (OZ/GAL) in (LB/BBL), Some(2880.0 (LB/BBL)))
-    assertEquals(1.0 (USD/GAL) in (USD/BBL), Some(42.0 (USD/BBL)))
+    assertQtyOptionClose(31.1034768 (USD/OZ) in (US_CENT/LB), Some(45359.237 (US_CENT/LB)))
+    assertQtyOptionClose(1.0 (KL^2) in (L^2), Some(1000000.0 (L^2)))
+    assertQtyOptionClose(1000.0 (OZ/GAL) in (LB/BBL), Some(2880.0 (LB/BBL)))
+    assertQtyOptionClose(1.0 (USD/GAL) in (USD/BBL), Some(42.0 (USD/BBL)))
   }
 
   @Test
@@ -119,6 +119,13 @@ import starling.quantity.RichQuantity._
     q3.compareTo(q4)
     assert(false, "failed")
   }
+
+  @Test
+  def testRounding = {
+    assertQtyEquals(123.0725(USD).round(3), 123.073(USD))
+    assertQtyEquals(123.072499(USD).round(3), 123.072(USD))
+  }
+
 
   @Test
   def uomScaling {

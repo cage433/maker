@@ -5,15 +5,13 @@ import scala.collection.SortedSet
 import starling.daterange._
 import starling.marketdata._
 import starling.pivot._
-import starling.pivot.model.PivotTableModel
-import controller.PivotTable
-import starling.utils.ImplicitConversions._
 import starling.quantity.Quantity
-import starling.utils.cache.CacheFactory
 import collection.immutable.List
-import starling.gui.api.MarketDataIdentifier
-import starling.db.{MarketDataReader, MarketDataStore}
+import starling.db.MarketDataReader
 import starling.market.{CommodityMarket, FuturesMarket}
+import starling.utils.Pattern.Extractor
+
+import starling.utils.ImplicitConversions._
 
 
 object PriceCurveFactory extends CurveType {
@@ -69,22 +67,22 @@ case class MarketFixingPeriods(market:CommodityMarket, days:SortedSet[Day])
 case class CurvePrice(price:PivotQuantity, interpolated:Boolean)
 
 
-class CurveViewerInputsPivotTableDataSource(inputs:Set[(ObservationPoint, MarketDataKey, MarketData)]) extends UnfilteredPivotTableDataSource {
+class CurveViewerInputsPivotTableDataSource(inputs:Set[(TimedMarketDataKey, MarketData)]) extends UnfilteredPivotTableDataSource {
 
   import CurveViewerFields._
 
   val fieldDetailsGroups = {
-    new FieldDetailsGroup("Fields", List(market, exchange, marketTenor, commodity, period, input, timeOfDay)) :: Nil
+    FieldDetailsGroup("Fields", market, exchange, marketTenor, commodity, period, input, timeOfDay) :: Nil
   }
 
   val allRows = {
     inputs.toList.flatMap {
-      case (observationPoint, SpotFXDataKey(ccy), SpotFXData(rate)) => {
+      case (TimedMarketDataKey(observationPoint, SpotFXDataKey(ccy)), SpotFXData(rate)) => {
         List( Map(marketField -> ccy.toString,
               inputField -> PivotQuantity(rate),
               timeOfDayField -> observationPoint.timeOfDay) )
       }
-      case (observationPoint, PriceDataKey(market:FuturesMarket), priceData:PriceData) => {
+      case (TimedMarketDataKey(observationPoint, PriceDataKey(market:FuturesMarket)), priceData:PriceData) => {
         priceData.prices.map { case (period, quantity) => {
           Map(marketField -> market.name,
               marketTenor.field -> market.tenor.toString,
@@ -95,7 +93,7 @@ class CurveViewerInputsPivotTableDataSource(inputs:Set[(ObservationPoint, Market
               timeOfDayField -> observationPoint.timeOfDay)
         } }
       }
-      case (observationPoint, PriceDataKey(market:CommodityMarket), priceData:PriceData) => {
+      case (TimedMarketDataKey(observationPoint, PriceDataKey(market:CommodityMarket)), priceData:PriceData) => {
         List()
       }
     }
@@ -145,7 +143,7 @@ class PriceCurveViewerOutputsPivotTableDataSource(observationDay: Day, rule: Env
   import CurveViewerFields._
 
   val fieldDetailsGroups = {
-    new FieldDetailsGroup("Fields", List(market, exchange, marketTenor, commodity, period, price, timeOfDay)) :: Nil
+    FieldDetailsGroup("Fields", market, exchange, marketTenor, commodity, period, price, timeOfDay) :: Nil
   }
 
   override def reportSpecificOptions = List(showInterpolatedReportOption → List(false, true),
@@ -199,17 +197,9 @@ class PriceCurveViewerOutputsPivotTableDataSource(observationDay: Day, rule: Env
     case ThirdWednesday(row) => row.mapValue(periodField, _.asInstanceOf[DateRange].firstMonth)
   }
 
-  private object Month {
-    def unapply(row: Map[Field, Object]): Option[Map[Field, Object]] = {
-      row(periodField) partialMatch { case month: Month => row }
-    }
-  }
-
-  private object ThirdWednesday {
-    def unapply(row: Map[Field, Object]): Option[Map[Field, Object]] = {
-      row(periodField) partialMatch { case day: Day if day.containingMonth.thirdWednesday == day => row }
-    }
-  }
+  private val Month = Extractor((row: Map[Field, Object]) => row(periodField) partialMatch { case month: Month => row })
+  private val ThirdWednesday = Extractor((row: Map[Field, Object]) =>
+    row(periodField) partialMatch { case day: Day if day.containingMonth.thirdWednesday == day => row })
 
   def showInterpolated(pfs: PivotFieldsState) =
     pfs.reportSpecificChoices.getOrElse(showInterpolatedReportOption, false).asInstanceOf[Boolean]

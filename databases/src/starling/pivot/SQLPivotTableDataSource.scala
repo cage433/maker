@@ -295,9 +295,9 @@ class OnTheFlySQLPivotTableDataSource(
 
   def data(pfs : PivotFieldsState): PivotResult = {
 
-    val dataAreaFields = fieldsToDatabaseFields(pfs.columns.children.flatMap(_.dataFields))
+    val dataAreaFields = fieldsToDatabaseFields(pfs.columns.measureFields)
     val rowAreaFields = fieldsToDatabaseFields(pfs.rowFields)
-    val columnAreaFields = fieldsToDatabaseFields(pfs.columns.children.flatMap(_.columnFields))
+    val columnAreaFields = fieldsToDatabaseFields(pfs.columns.columnFields)
     val filterAreaFields = pfs.filtersInTheFilterArea.map(entry=>columnDefinitions(entry._1) -> entry._2).toList
 
     val showFields = rowAreaFields ::: columnAreaFields ::: dataAreaFields

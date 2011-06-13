@@ -92,15 +92,6 @@
     <orderEntry type="module-library">
       <library>
         <CLASSES>
-          <root url="jar://$MODULE_DIR$/jars/spring-context-support-2.5.6.jar!/" />
-        </CLASSES>
-        <JAVADOC />
-        <SOURCES />
-      </library>
-    </orderEntry>
-    <orderEntry type="module-library">
-      <library>
-        <CLASSES>
           <root url="jar://$MODULE_DIR$/jars/jetty-6.1.21.jar!/" />
         </CLASSES>
         <JAVADOC />
@@ -267,6 +258,15 @@
     <orderEntry type="module" module-name="gui.api" />
     <orderEntry type="module" module-name="pivot" />
     <orderEntry type="module" module-name="databases" />
+    <orderEntry type="module-library" exported="">
+      <library>
+        <CLASSES>
+          <root url="jar://$MODULE_DIR$/jars/spring-context-support-3.0.5.RELEASE.jar!/" />
+        </CLASSES>
+        <JAVADOC />
+        <SOURCES />
+      </library>
+    </orderEntry>
   </component>
 </module>
 

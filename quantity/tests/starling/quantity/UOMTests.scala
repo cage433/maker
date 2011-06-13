@@ -42,8 +42,8 @@ class UOMTests extends TestNGSuite with ShouldMatchers {
 
   @Test
   def testFromString {
-    assertEquals(UOM.getSymbol("RMB"), UOMSymbol.CNY_SYMBOL)
-    assertEquals(UOM.getSymbol("CNY"), UOMSymbol.CNY_SYMBOL)
+    assertEquals(UOM.getSymbol("RMB"), UOMSymbol.cny)
+    assertEquals(UOM.getSymbol("CNY"), UOMSymbol.cny)
     assertEquals(UOM.getSymbol("GRAM"), UOMSymbol.GRAM_SYMBOL)
     assertEquals(UOM.getSymbol("g"), UOMSymbol.GRAM_SYMBOL)
     assertEquals(UOM.getSymbol("G"), UOMSymbol.GRAM_SYMBOL)
@@ -105,4 +105,19 @@ class UOMTests extends TestNGSuite with ShouldMatchers {
     uom.numeratorUOM / uom.denominatorUOM should be === uom
   }
 
+  @Test
+  def shouldDisplayCurrencyConversionRatesUnambiguously {
+    val gbpPerEur = Quantity(0.87, UOM.GBP / UOM.EUR)
+
+    gbpPerEur.toString should be === "0.87 GBP per EUR"
+  }
+
+  @Test
+  def parseFX {
+    UOM.GBP.isFX should be === false
+    (UOM.GBP / UOM.USD).isFX should be === true
+
+    UOM.fromIdentifier("EUR/GBP") should be === UOM.EUR / UOM.GBP
+    UOM.fromIdentifier("EUR per GBP") should be === UOM.EUR / UOM.GBP
+  }
 }

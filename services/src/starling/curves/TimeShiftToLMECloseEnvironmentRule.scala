@@ -18,7 +18,7 @@ object TimeShiftToLMECloseEnvironmentRule extends EnvironmentRule {
     val pricesForLastClose = Market.futuresMarkets.filter(_.exchange != FuturesExchangeFactory.COMEX).flatMap { market => {
       val closeDay = market.businessCalendar.thisOrPreviousBusinessDay(observationDay)
       try {
-        val priceDataAtLastClose = reader.read(ObservationPoint(closeDay, market.closeTime), PriceDataKey(market)).asInstanceOf[PriceData]
+        val priceDataAtLastClose = reader.read(TimedMarketDataKey(closeDay.atTimeOfDay(market.closeTime), PriceDataKey(market))).asInstanceOf[PriceData]
         List( market -> (closeDay, priceDataAtLastClose) )
       } catch {
         case e:MissingMarketDataException => Nil

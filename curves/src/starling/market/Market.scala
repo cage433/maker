@@ -280,15 +280,15 @@ object Market {
     eaiQuoteID: Int,
     expiryRule: FuturesExpiryRule,
     commodity: Commodity,
-    limSuffix: String)
+    limSymbol: String)
   = new FuturesMarket(name, Some(lotSize), uom, USD, cals.COMEX, Some(eaiQuoteID),
-      MetalsPriceTable, Month, expiryRule, COMEX, commodity, true, limSymbol = Some(LimSymbol(limSuffix, 0.01)), precision = precisionRules.rule(eaiQuoteID)
+      MetalsPriceTable, Month, expiryRule, COMEX, commodity, true, limSymbol = Some(LimSymbol(limSymbol, 0.01)), precision = precisionRules.rule(eaiQuoteID)
     )
 
-  lazy val COMEX_GOLD : FuturesMarket = comexFuturesMarket("COMEX Gold", 100, OZ, 546, expiry.COMEX_GOLD, Gold, "COMEX.GCC")
-  lazy val COMEX_SILVER : FuturesMarket = comexFuturesMarket("COMEX Silver", 5000, OZ, 547, expiry.COMEX_SILVER, Silver, "COMEX.SIC")
+  lazy val COMEX_GOLD : FuturesMarket = comexFuturesMarket("COMEX Gold", 100, OZ, 546, expiry.COMEX_GOLD, Gold, "GC")
+  lazy val COMEX_SILVER : FuturesMarket = comexFuturesMarket("COMEX Silver", 5000, OZ, 547, expiry.COMEX_SILVER, Silver, "SI")
   lazy val COMEX_PALLADIUM : FuturesMarket = comexFuturesMarket("COMEX Palladium", 100, OZ, 683, expiry.COMEX_PT_PA, Palladium, "COMEX.PAC")
-  lazy val COMEX_PLATINUM : FuturesMarket = comexFuturesMarket("COMEX Platinum", 50, OZ, 684, expiry.COMEX_PT_PA, Platinum, "COMEX.PLC")
+  lazy val COMEX_PLATINUM : FuturesMarket = comexFuturesMarket("COMEX Platinum", 50, OZ, 684, expiry.COMEX_PT_PA, Platinum, "PL")
   lazy val COMEX_HIGH_GRADE_COPPER : FuturesMarket = comexFuturesMarket(
     "COMEX High Grade Copper", 25000, LB, 545, expiry.COMEX_HG_COPPER, Copper, "HG")
 
@@ -531,7 +531,7 @@ object Market {
       NonMetalsPriceTable, 
       Day, 
       Brent,
-      limSymbol = Some(LimSymbol("PLATTS_BRENT." + brentMonth.monthName))) with IsBrentMonth with HasInterpolation{
+      limSymbol = Some(LimSymbol("PLATTS_BRENT." + brentMonth.monthName)), precision = precisionRules.rule(PLATTS_BRENT.eaiQuoteID.get)) with IsBrentMonth with HasInterpolation{
         def month = brentMonth
         def marketDataKey = PLATTS_BRENT.curveKey.marketDataKey
         def interpolation = InverseConstantInterpolation
@@ -555,66 +555,66 @@ object Market {
    * Distilates
    */
   lazy val FUEL_FOB_ROTTERDAM_BARGES_3_5 = new ForwardMarket("3.5% Fuel FOB Rotterdam Barges", Some(1000.0), MT, USD, cals.PLE, Some(5),
-                                                NonMetalsPriceTable, Day, FuelOil(6.35), Some(LimSymbol("PUABC00"))) with HasInterpolation {
+                                                NonMetalsPriceTable, Day, FuelOil(6.35), Some(LimSymbol("PUABC00")), precision = precisionRules.rule(5)) with HasInterpolation {
     override def volatilityID = Some(18)
 
     def interpolation = InverseConstantInterpolation // TODO Jerome FCA has monthly forward prices but we need daily - this isn't right
   }
   lazy val PREM_UNL_FOB_ROTTERDAM_BARGES = new ForwardMarket("Prem Unl FOB Rotterdam Barges", Some(1000.0), MT, USD, cals.ICE, Some(17),
-    NonMetalsPriceTable, Day, FuelOil(6.35), limSymbol = Some(LimSymbol("PGABM00"))) with HasInterpolation {
+    NonMetalsPriceTable, Day, FuelOil(6.35), limSymbol = Some(LimSymbol("PGABM00")), precision = precisionRules.rule(17)) with HasInterpolation {
     def interpolation = InverseConstantInterpolation // TODO Jerome FCA has monthly forward prices but we need daily - this isn't right
   }
   lazy val FUEL_FOB_NWE_CARGOES_1 = new ForwardMarket("1% Fuel FOB NWE Cargoes", Some(1000.0), MT, USD, cals.PLE, Some(3),
-    NonMetalsPriceTable, Day, FuelOil(6.35), limSymbol = Some(LimSymbol("PUAAM00"))) with HasInterpolation {
+    NonMetalsPriceTable, Day, FuelOil(6.35), limSymbol = Some(LimSymbol("PUAAM00")), precision = precisionRules.rule(3)) with HasInterpolation {
     def interpolation = InverseConstantInterpolation
   }
   lazy val NAPHTHA_CIF_NWE_CARGOES = new ForwardMarket("Naphtha CIF NWE Cargoes", Some(1000.0), MT, USD, cals.PLE, Some(37),
-    NonMetalsPriceTable, Day, Naphtha(8.9), limSymbol = Some(LimSymbol("PAAAL00"))) with HasInterpolation {
+    NonMetalsPriceTable, Day, Naphtha(8.9), limSymbol = Some(LimSymbol("PAAAL00")), precision = precisionRules.rule(37)) with HasInterpolation {
     def interpolation = InverseConstantInterpolation
   }
   lazy val GAS_OIL_0_5_SINGAPORE = new ForwardMarket("Gas Oil 0.5 Singapore", Some(1000.0), BBL, USD, cals.PLD, Some(52),
-    NonMetalsPriceTable, Day, GasOil(7.45), limSymbol = Some(LimSymbol("POABC00"))) with HasInterpolation {
+    NonMetalsPriceTable, Day, GasOil(7.45), limSymbol = Some(LimSymbol("POABC00")), precision = precisionRules.rule(52)) with HasInterpolation {
     def interpolation = InverseConstantInterpolation
   }
   lazy val MOGAS_95_UNL_10PPM_NWE_BARGES = new ForwardMarket("Mogas 95 Unl 10ppm NWE Barges (Argus)", Some(1000.0), MT, USD, cals.ARE, Some(88),
-    NonMetalsPriceTable, Day, Gasoline(8.33), limSymbol = Some(LimSymbol("GPTZNESB"))) with HasInterpolation {
+    NonMetalsPriceTable, Day, Gasoline(8.33), limSymbol = Some(LimSymbol("GPTZNESB")), precision = precisionRules.rule(88)) with HasInterpolation {
     def interpolation = InverseConstantInterpolation
   }
   lazy val UNL_92_SINGAPORE_CARGOES = new ForwardMarket("Unl 92 Singapore Cargoes", Some(1000.0), BBL, USD, cals.PLD, Some(198),
-    NonMetalsPriceTable, Day, Gasoline(8.33), limSymbol = Some(LimSymbol("PGAEY00"))) with HasInterpolation {
+    NonMetalsPriceTable, Day, Gasoline(8.33), limSymbol = Some(LimSymbol("PGAEY00")), precision = precisionRules.rule(198)) with HasInterpolation {
     def interpolation = InverseConstantInterpolation
   }
   lazy val GAS_OIL_0_1_FOB_ROTTERDAM_BARGES = new ForwardMarket("Gas Oil 0.1% FOB Rotterdam Barges (Platts)", None, MT, USD, cals.PLE, Some(1011),
-    NonMetalsPriceTable, Day, GasOil(7.45), limSymbol = Some(LimSymbol("AAYWT00"))) with HasInterpolation {
+    NonMetalsPriceTable, Day, GasOil(7.45), limSymbol = Some(LimSymbol("AAYWT00")), precision = precisionRules.rule(1011)) with HasInterpolation {
     def interpolation = InverseConstantInterpolation
   }
   lazy val GAS_OIL_0_1_CIF_NWE_CARGOES = new ForwardMarket("Gas Oil 0.1% CIF NWE Cargoes (Platts)", None, MT, USD, cals.PLE, Some(1049),
-    NonMetalsPriceTable, Day, GasOil(7.45), limSymbol = Some(LimSymbol("AAYWS00"))) with HasInterpolation {
+    NonMetalsPriceTable, Day, GasOil(7.45), limSymbol = Some(LimSymbol("AAYWS00")), precision = precisionRules.rule(1049)) with HasInterpolation {
     def interpolation = InverseConstantInterpolation
   }
   lazy val PREM_UNL_10PPM_FOB_MED_CARGOES = new ForwardMarket("Prem Unl 10ppm FOB Med Cargoes (Platts)", Some(1000.0), MT, USD, cals.PLE, Some(1183),
-    NonMetalsPriceTable, Day, Gasoline(8.33), limSymbol = Some(LimSymbol("AAWZA00"))) with HasInterpolation {
+    NonMetalsPriceTable, Day, Gasoline(8.33), limSymbol = Some(LimSymbol("AAWZA00")), precision = precisionRules.rule(1183)) with HasInterpolation {
     def interpolation = InverseConstantInterpolation
   }
   lazy val PREM_UNL_EURO_BOB_OXY_NWE_BARGES = new ForwardMarket("Prem Unl Euro-Bob Oxy NWE Barges (Argus)", Some(1000.0), MT, USD, cals.ARE, Some(1312),
-    NonMetalsPriceTable, Day, Gasoline(8.33), limSymbol = Some(LimSymbol("GP5643A0"))) with HasInterpolation {
+    NonMetalsPriceTable, Day, Gasoline(8.33), limSymbol = Some(LimSymbol("GP5643A0")), precision = precisionRules.rule(1312)) with HasInterpolation {
     def interpolation = InverseConstantInterpolation
   }
   lazy val JET_CIF_NWE_CARGOES = new ForwardMarket("Jet CIF NWE Cargoes", Some(1000.0), MT, USD, cals.PLE, Some(18),
-    NonMetalsPriceTable, Day, JetKero(7.878), limSymbol = Some(LimSymbol("PJAAU00"))) with HasInterpolation {
+    NonMetalsPriceTable, Day, JetKero(7.878), limSymbol = Some(LimSymbol("PJAAU00")), precision = precisionRules.rule(18)) with HasInterpolation {
     def interpolation = InverseConstantInterpolation
   }
   lazy val GAS_OIL_ULSD_10PPM_CIF_NWE_CARGOES = new ForwardMarket("Gas Oil ULSD 10ppm CIF NWE Cargoes", None, MT, USD, cals.PLE, Some(598),
-    NonMetalsPriceTable, Day, GasOil(7.45), limSymbol = Some(LimSymbol("AAVBG00"))) with HasInterpolation {
+    NonMetalsPriceTable, Day, GasOil(7.45), limSymbol = Some(LimSymbol("AAVBG00")), precision = precisionRules.rule(598)) with HasInterpolation {
     def interpolation = LinearInterpolation
   }
   lazy val GAS_OIL_ULSD_10PPM_FOB_ROTTERDAM_BARGES = new ForwardMarket("Gas Oil ULSD 10ppm FOB Rotterdam Barges", Some(1000.0), MT, USD, cals.PLE, Some(883),
-    NonMetalsPriceTable, Day, GasOil(7.45), limSymbol = Some(LimSymbol("AAJUS00"))) with HasInterpolation {
+    NonMetalsPriceTable, Day, GasOil(7.45), limSymbol = Some(LimSymbol("AAJUS00")), precision = precisionRules.rule(883)) with HasInterpolation {
     def interpolation = InverseConstantInterpolation
   }
 
   lazy val DATED_BRENT = new ForwardMarket("Dated Brent", Some(1000.0), BBL, USD, cals.PLE, Some(40),
-    NonMetalsPriceTable, Day, Brent, limSymbol = Some(LimSymbol("PCAAS00"))) with HasInterpolation {
+    NonMetalsPriceTable, Day, Brent, limSymbol = Some(LimSymbol("PCAAS00")), precision = precisionRules.rule(40)) with HasInterpolation {
     def interpolation = InverseConstantInterpolation
   }
 
@@ -622,7 +622,7 @@ object Market {
    * A swap based on the Platts daily assessment price for FOB Gulf Coast for No.6 3% (Waterborne).
    */
   lazy val No_6_3PC_USGC_Waterborne = new ForwardMarket("No.6 3% USGC Waterborne", Some(1000.0), BBL, USD, cals.PLH, Some(11),
-    NonMetalsPriceTable, Day, FuelOil(6.35), limSymbol = Some(LimSymbol("PUAFZ00"))) with HasInterpolation {
+    NonMetalsPriceTable, Day, FuelOil(6.35), limSymbol = Some(LimSymbol("PUAFZ00")), precision = precisionRules.rule(11)) with HasInterpolation {
     def interpolation = LinearInterpolation // TODO Jerome FCA has monthly forward prices but we need daily - this isn't right
 
     override def volatilityID = Some(26)
@@ -632,18 +632,18 @@ object Market {
    * A swap based on the Platts daily assessment price for Unl 87 USGC Pipeline
    */
   lazy val UNL_87_USGC_PIPELINE = new ForwardMarket("Unl 87 USGC Pipeline", Some(42000), GAL, USD, cals.PLH, Some(34),
-    NonMetalsPriceTable, Day, new Gasoline(8.33), limSymbol = Some(LimSymbol("PGACT00", 0.01))) with HasInterpolation {
+    NonMetalsPriceTable, Day, new Gasoline(8.33), limSymbol = Some(LimSymbol("PGACT00", 0.01)), precision = precisionRules.rule(34)) with HasInterpolation {
     def interpolation = LinearInterpolation // TODO Jerome FCA has monthly forward prices but we need daily - this isn't right
   }
 
   lazy val HSFO_180_CST_Singapore = new ForwardMarket("HSFO 180 CST Singapore", Some(1000.0), MT, USD, cals.PLD, Some(8),
-    NonMetalsPriceTable, Day, FuelOil(6.5), limSymbol = Some(LimSymbol("PUADV00"))) with HasInterpolation {
+    NonMetalsPriceTable, Day, FuelOil(6.5), limSymbol = Some(LimSymbol("PUADV00")), precision = precisionRules.rule(8)) with HasInterpolation {
     def interpolation = LinearInterpolation // TODO Jerome FCA has monthly forward prices but we need daily - this isn't right
 
     override def volatilityID = Some(36)
   }
   lazy val HSFO_380_CST_Singapore = new ForwardMarket("HSFO 380 CST Singapore", Some(1000.0), MT, USD, cals.PLD, Some(134),
-    NonMetalsPriceTable, Day, FuelOil(6.35), limSymbol = Some(LimSymbol("PPXDK00"))) with HasInterpolation {
+    NonMetalsPriceTable, Day, FuelOil(6.35), limSymbol = Some(LimSymbol("PPXDK00")), precision = precisionRules.rule(134)) with HasInterpolation {
     def interpolation = LinearInterpolation // TODO Jerome FCA has monthly forward prices but we need daily - this isn't right
   }
 

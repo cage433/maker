@@ -48,20 +48,21 @@ class MarketDataStoreTest extends StarlingTest with ShouldMatchers {
 
     val observationPoint = ObservationPoint(Day(2011, 1, 1), ObservationTimeOfDay.Default)
     val key = SpotFXDataKey(UOM.EUR)
+    val timedKey = TimedMarketDataKey(observationPoint, key)
 
     val data1 = SpotFXData(Quantity(1, UOM.EUR / UOM.USD))
 
-    val existingVersion = marketDataStore(MarketDataID(observationPoint, MarketDataSet.Starling, key))
+    val existingVersion = marketDataStore(MarketDataID(timedKey, MarketDataSet.Starling))
     existingVersion should be === None
 
-    marketDataStore.saveActions(Map(MarketDataSet.Starling -> List(MarketDataUpdate(observationPoint, key, Some(data1), None))))
-    val versionAfterDelete = marketDataStore(MarketDataID(observationPoint, MarketDataSet.Starling, key))
+    marketDataStore.saveActions(Map(MarketDataSet.Starling -> List(MarketDataUpdate(timedKey, Some(data1), None))))
+    val versionAfterDelete = marketDataStore(MarketDataID(timedKey, MarketDataSet.Starling))
     versionAfterDelete should not be === (None)
 
     val versionInt = versionAfterDelete.get.version
-    val versionedData1 = VersionedMarketData(Timestamp.now, versionInt, data1)
-    marketDataStore.saveActions(Map(MarketDataSet.Starling -> List(MarketDataUpdate(observationPoint, key, None, Some(versionedData1)))))
-    val read2:Option[SpotFXData] = marketDataStore.readLatest(MarketDataSet.Starling, observationPoint, key)
+    val versionedData1 = VersionedMarketData(Timestamp.now, versionInt, Some(data1))
+    marketDataStore.saveActions(Map(MarketDataSet.Starling -> List(MarketDataUpdate(timedKey, None, Some(versionedData1)))))
+    val read2:Option[SpotFXData] = marketDataStore.readLatest(MarketDataSet.Starling, timedKey)
     read2 should equal( None )
 
     val pfs = PivotFieldsState(
@@ -69,8 +70,8 @@ class MarketDataStoreTest extends StarlingTest with ShouldMatchers {
       rowFields=List(SpotFXDataType.currencyField.field)
     )
     val marketDataIdentifier = MarketDataIdentifier(
-      MarketDataSelection(Some(PricingGroup.Starling)),
-      SpecificMarketDataVersion(marketDataStore.latestPricingGroupVersions(PricingGroup.Starling))
+      MarketDataSelection(Some(PricingGroup.System)),
+      SpecificMarketDataVersion(marketDataStore.latestPricingGroupVersions(PricingGroup.System))
     )
 
     val pivotData = marketDataStore.pivot(marketDataIdentifier, SpotFXDataType).data(pfs)
@@ -86,15 +87,16 @@ class MarketDataStoreTest extends StarlingTest with ShouldMatchers {
   def testWritingSinglePriceIsPersistent() {
     val observationPoint = ObservationPoint(Day(2011, 1, 1), ObservationTimeOfDay.Default)
     val key = SpotFXDataKey(UOM.EUR)
+    val timedKey = TimedMarketDataKey(observationPoint, key)
 
     val data1 = SpotFXData(Quantity(1, UOM.EUR / UOM.USD))
-    marketDataStore.save(MarketDataSet.Starling, observationPoint, key, data1)
-    val read1:SpotFXData = marketDataStore.readLatest(MarketDataSet.Starling, observationPoint, key).get
+    marketDataStore.save(MarketDataSet.Starling, timedKey, data1)
+    val read1:SpotFXData = marketDataStore.readLatest(MarketDataSet.Starling, timedKey).get
     read1 should equal( data1 )
 
     val data2 = SpotFXData(Quantity(2, UOM.EUR / UOM.USD))
-    marketDataStore.save(MarketDataSet.Starling, observationPoint, key, data2)
-    val read2:SpotFXData = marketDataStore.readLatest(MarketDataSet.Starling, observationPoint, key).get
+    marketDataStore.save(MarketDataSet.Starling, timedKey, data2)
+    val read2:SpotFXData = marketDataStore.readLatest(MarketDataSet.Starling, timedKey).get
     read2 should equal( data2 )
   }
 
@@ -102,17 +104,18 @@ class MarketDataStoreTest extends StarlingTest with ShouldMatchers {
   def testOverridenPricesAreMerged() {
     val observationPoint = ObservationPoint(Day(2011, 1, 1), ObservationTimeOfDay.Default)
     val key = PriceDataKey(Market.LME_LEAD)
+    val timedKey = TimedMarketDataKey(observationPoint, key)
 
     val excelSet = MarketDataSet.excel("Override")
 
     val blah: Map[DateRange, Double] = Map(Month(2010, 1) -> 50.0, Month(2010, 2) -> 60.0)
     val basePrices = PriceData.fromMap(blah, key.market.priceUOM)
     val overridingPrices = PriceData.fromMap(Map(Month(2010, 2) -> 80.0, Month(2010, 3) -> 70.0), key.market.priceUOM)
-    marketDataStore.save(MarketDataSet.Starling, observationPoint, key, basePrices)
-    marketDataStore.save(excelSet, observationPoint, key, overridingPrices)
-    val selection = MarketDataSelection(Some(PricingGroup.Starling), Some("Override"))
+    marketDataStore.save(MarketDataSet.Starling, timedKey, basePrices)
+    marketDataStore.save(excelSet, timedKey, overridingPrices)
+    val selection = MarketDataSelection(Some(PricingGroup.System), Some("Override"))
     val marketDataIdentifier = marketDataStore.latestMarketDataIdentifier(selection)
-    val read: MarketData = new NormalMarketDataReader(marketDataStore, marketDataIdentifier).read(observationPoint, key)
+    val read: MarketData = new NormalMarketDataReader(marketDataStore, marketDataIdentifier).read(timedKey)
 
     val expected = PriceData.create(List(Month(2010, 1) -> 50.0, Month(2010, 2) -> 80.0, Month(2010, 3) -> 70.0), key.market.priceUOM)
     read should be === expected
@@ -123,15 +126,17 @@ class MarketDataStoreTest extends StarlingTest with ShouldMatchers {
     val observationPoint = ObservationPoint(Day(2011, 1, 1), ObservationTimeOfDay.Default)
     val observationPoint2 = ObservationPoint(Day(2011, 1, 1), ObservationTimeOfDay.LMEClose)
     val key = SpotFXDataKey(UOM.EUR)
+    val timedKey = TimedMarketDataKey(observationPoint, key)
+    val timedKey2 = TimedMarketDataKey(observationPoint2, key)
 
     val data1 = SpotFXData(Quantity(3, UOM.EUR / UOM.USD))
     val data2 = SpotFXData(Quantity(7, UOM.EUR / UOM.USD))
-    marketDataStore.save(MarketDataSet.Starling, observationPoint, key, data1)
-    marketDataStore.save(MarketDataSet.Starling, observationPoint2, key, data2)
+    marketDataStore.save(MarketDataSet.Starling, timedKey, data1)
+    marketDataStore.save(MarketDataSet.Starling, timedKey2, data2)
 
     val pivot = marketDataStore.pivot(MarketDataIdentifier(
-        MarketDataSelection(Some(PricingGroup.Starling)),
-        SpecificMarketDataVersion(marketDataStore.latestPricingGroupVersions(PricingGroup.Starling))
+        MarketDataSelection(Some(PricingGroup.System)),
+        SpecificMarketDataVersion(marketDataStore.latestPricingGroupVersions(PricingGroup.System))
       ),
       SpotFXDataType
     )
@@ -143,18 +148,18 @@ class MarketDataStoreTest extends StarlingTest with ShouldMatchers {
     }
     val pfs1 = new PivotFieldsState(
       rowFields = List(Field("Currency")),
-      columns = ColumnStructure(ColumnStructure.RootField, false, List(ColumnStructure.dataField(Field("Rate")))),
+      columns = ColumnTrees.dataField(Field("Rate")),
       filters = (Field("Observation Time"), SomeSelection(Set(ObservationTimeOfDay.Default.name))) :: Nil
     )
 
-    check(pfs1, ", \nCurrency, Rate (EUR/USD)\nEUR, 3.0000 \n")
+    check(pfs1, ",\nCurrency,Rate (EUR per USD)\nEUR,3.0000 ")
 
     val pfs2 = new PivotFieldsState(
       rowFields = List(Field("Currency")),
-      columns = ColumnStructure.createFlat(List(Field("Observation Time")), List(Field("Rate")))
+      columns = ColumnTrees.createFlat(List(Field("Observation Time")), List(Field("Rate")))
     )
 
-    check(pfs2, ", Default (EUR/USD), LME Close (EUR/USD)\nCurrency, Rate, Rate\nEUR, 3.0000 , 7.0000 \n")
+    check(pfs2, ",Default (EUR per USD),LME Close (EUR per USD)\nCurrency,Rate,Rate\nEUR,3.0000 ,7.0000 ")
   }
 
   private val create_table = """

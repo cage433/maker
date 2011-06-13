@@ -39,6 +39,8 @@ class Starling(info : ProjectInfo) extends ParentProject(info) {
 
   lazy val devlauncher = starlingProject("dev.launcher", services, gui)
 
+//  lazy val webServices = project("starlingWebProject", "starlingWebProject", new DefaultWebProject(_), services)
+
 
   lazy val starling = this
 
@@ -47,7 +49,7 @@ class Starling(info : ProjectInfo) extends ParentProject(info) {
     defineScala("2.8.1.final-local", new File("lib/scala/scala-2.8.1.final/")) :: Nil
   }
 
-  var parExec = true
+  var parExec = false
   override def parallelExecution = parExec
   def parallel(b : Boolean){parExec = b}
 

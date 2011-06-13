@@ -153,32 +153,32 @@ class EnvironmentTests extends TestExpiryRules {
     }
     )).undiscounted
 
-    assertEquals(env.spreadStdDev(NymexWTI, Spread1, Day(2011, 1, 3), Quantity(1, priceUOM)), Quantity(.2, priceUOM))
-    assertEquals(env.spreadStdDev(NymexWTI, Spread2, Day(2011, 1, 3), Quantity(1, priceUOM)), Quantity(.25, priceUOM))
-    assertEquals(env.spreadStdDev(IceWTI, Spread1, Day(2011, 1, 3), Quantity(1, priceUOM)), Quantity(.21, priceUOM))
-    assertEquals(env.spreadStdDev(IceWTI, Spread2, Day(2011, 1, 3), Quantity(1, priceUOM)), Quantity(.26, priceUOM))
-    assertEquals(env.spreadStdDev(IceBrent, Spread1, Day(2011, 1, 3), Quantity(1, priceUOM)), Quantity(.3, priceUOM))
+    assertQtyEquals(env.spreadStdDev(NymexWTI, Spread1, Day(2011, 1, 3), Quantity(1, priceUOM)), Quantity(.2, priceUOM))
+    assertQtyEquals(env.spreadStdDev(NymexWTI, Spread2, Day(2011, 1, 3), Quantity(1, priceUOM)), Quantity(.25, priceUOM))
+    assertQtyEquals(env.spreadStdDev(IceWTI, Spread1, Day(2011, 1, 3), Quantity(1, priceUOM)), Quantity(.21, priceUOM))
+    assertQtyEquals(env.spreadStdDev(IceWTI, Spread2, Day(2011, 1, 3), Quantity(1, priceUOM)), Quantity(.26, priceUOM))
+    assertQtyEquals(env.spreadStdDev(IceBrent, Spread1, Day(2011, 1, 3), Quantity(1, priceUOM)), Quantity(.3, priceUOM))
 
     val shiftedFebMarWTI = env.shiftSpreadStdDevs(NymexWTI.commodity, Spread1, Quantity(-.05, priceUOM))
-    assertEquals(shiftedFebMarWTI.spreadStdDev(NymexWTI, Spread1, Day(2011, 1, 3), Quantity(1, priceUOM)), Quantity(.15, priceUOM))
-    assertEquals(shiftedFebMarWTI.spreadStdDev(NymexWTI, Spread2, Day(2011, 1, 3), Quantity(1, priceUOM)), Quantity(.25, priceUOM))
-    assertEquals(shiftedFebMarWTI.spreadStdDev(IceWTI, Spread1, Day(2011, 1, 3), Quantity(1, priceUOM)), Quantity(.16, priceUOM))
-    assertEquals(shiftedFebMarWTI.spreadStdDev(IceWTI, Spread2, Day(2011, 1, 3), Quantity(1, priceUOM)), Quantity(.26, priceUOM))
-    assertEquals(shiftedFebMarWTI.spreadStdDev(IceBrent, Spread1, Day(2011, 1, 3), Quantity(1, priceUOM)), Quantity(.3, priceUOM))
+    assertQtyClose(shiftedFebMarWTI.spreadStdDev(NymexWTI, Spread1, Day(2011, 1, 3), Quantity(1, priceUOM)), Quantity(.15, priceUOM))
+    assertQtyClose(shiftedFebMarWTI.spreadStdDev(NymexWTI, Spread2, Day(2011, 1, 3), Quantity(1, priceUOM)), Quantity(.25, priceUOM))
+    assertQtyClose(shiftedFebMarWTI.spreadStdDev(IceWTI, Spread1, Day(2011, 1, 3), Quantity(1, priceUOM)), Quantity(.16, priceUOM))
+    assertQtyClose(shiftedFebMarWTI.spreadStdDev(IceWTI, Spread2, Day(2011, 1, 3), Quantity(1, priceUOM)), Quantity(.26, priceUOM))
+    assertQtyClose(shiftedFebMarWTI.spreadStdDev(IceBrent, Spread1, Day(2011, 1, 3), Quantity(1, priceUOM)), Quantity(.3, priceUOM))
 
     val shiftedWTI = env.parallelShiftSpreadStdDevs(NymexWTI.commodity, Quantity(-.05, priceUOM))
-    assertEquals(shiftedWTI.spreadStdDev(NymexWTI, Spread1, Day(2011, 1, 3), Quantity(1, priceUOM)), Quantity(.15, priceUOM))
-    assertEquals(shiftedWTI.spreadStdDev(NymexWTI, Spread2, Day(2011, 1, 3), Quantity(1, priceUOM)), Quantity(.20, priceUOM))
-    assertEquals(shiftedWTI.spreadStdDev(IceWTI, Spread1, Day(2011, 1, 3), Quantity(1, priceUOM)), Quantity(.16, priceUOM))
-    assertEquals(shiftedWTI.spreadStdDev(IceWTI, Spread2, Day(2011, 1, 3), Quantity(1, priceUOM)), Quantity(.21, priceUOM))
-    assertEquals(shiftedWTI.spreadStdDev(IceBrent, Spread1, Day(2011, 1, 3), Quantity(1, priceUOM)), Quantity(.3, priceUOM))
+    assertQtyClose(shiftedWTI.spreadStdDev(NymexWTI, Spread1, Day(2011, 1, 3), Quantity(1, priceUOM)), Quantity(.15, priceUOM))
+    assertQtyClose(shiftedWTI.spreadStdDev(NymexWTI, Spread2, Day(2011, 1, 3), Quantity(1, priceUOM)), Quantity(.20, priceUOM))
+    assertQtyClose(shiftedWTI.spreadStdDev(IceWTI, Spread1, Day(2011, 1, 3), Quantity(1, priceUOM)), Quantity(.16, priceUOM))
+    assertQtyClose(shiftedWTI.spreadStdDev(IceWTI, Spread2, Day(2011, 1, 3), Quantity(1, priceUOM)), Quantity(.21, priceUOM))
+    assertQtyClose(shiftedWTI.spreadStdDev(IceBrent, Spread1, Day(2011, 1, 3), Quantity(1, priceUOM)), Quantity(.3, priceUOM))
 
     val shiftedIceBrent = env.parallelShiftSpreadStdDevs(IceBrent, Quantity(-.05, priceUOM))
-    assertEquals(shiftedIceBrent.spreadStdDev(NymexWTI, Spread1, Day(2011, 1, 3), Quantity(1, priceUOM)), Quantity(.2, priceUOM))
-    assertEquals(shiftedIceBrent.spreadStdDev(NymexWTI, Spread2, Day(2011, 1, 3), Quantity(1, priceUOM)), Quantity(.25, priceUOM))
-    assertEquals(shiftedIceBrent.spreadStdDev(IceWTI, Spread1, Day(2011, 1, 3), Quantity(1, priceUOM)), Quantity(.21, priceUOM))
-    assertEquals(shiftedIceBrent.spreadStdDev(IceWTI, Spread2, Day(2011, 1, 3), Quantity(1, priceUOM)), Quantity(.26, priceUOM))
-    assertEquals(shiftedIceBrent.spreadStdDev(IceBrent, Spread1, Day(2011, 1, 3), Quantity(1, priceUOM)), Quantity(.25, priceUOM))
+    assertQtyClose(shiftedIceBrent.spreadStdDev(NymexWTI, Spread1, Day(2011, 1, 3), Quantity(1, priceUOM)), Quantity(.2, priceUOM))
+    assertQtyClose(shiftedIceBrent.spreadStdDev(NymexWTI, Spread2, Day(2011, 1, 3), Quantity(1, priceUOM)), Quantity(.25, priceUOM))
+    assertQtyClose(shiftedIceBrent.spreadStdDev(IceWTI, Spread1, Day(2011, 1, 3), Quantity(1, priceUOM)), Quantity(.21, priceUOM))
+    assertQtyClose(shiftedIceBrent.spreadStdDev(IceWTI, Spread2, Day(2011, 1, 3), Quantity(1, priceUOM)), Quantity(.26, priceUOM))
+    assertQtyClose(shiftedIceBrent.spreadStdDev(IceBrent, Spread1, Day(2011, 1, 3), Quantity(1, priceUOM)), Quantity(.25, priceUOM))
 
   }
 

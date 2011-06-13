@@ -143,7 +143,7 @@ class LiborFixingTests extends WordSpec with ShouldMatchers with Checkers with H
   private def getValueDays(data: List[String]): List[List[(Day, Option[Day])]] = {
     val parsedDays = data.split(item => item.isEmpty, false).map(_.map(Day.unapply(_)))
 
-    parsedDays match {
+    (parsedDays: @unchecked) match {
       case (Some(fixingDay) :: vOne) :: valueDayGroups => (vOne :: valueDayGroups).map(_.map(x => (fixingDay, x)))
     }
   }

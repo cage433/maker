@@ -19,10 +19,10 @@ object RepopulateMarketData {
     val init = new StarlingInit(PropsHelper.defaultProps, false, false, false, false).start
     if (args.length < 1) {
       Log.error("Need a pricing group:")
-      PricingGroup.all.map(p => println(p.name))
+      PricingGroup.values.map(p => println(p.name))
       exit(-1)
     }
-    PricingGroup.all.find(p => p.name.equalsIgnoreCase(args(0))) match {
+    PricingGroup.values.find(p => p.name.equalsIgnoreCase(args(0))) match {
       case Some(pg) => {
         val mds = MarketDataSelection(Some(pg))
 
