@@ -13,6 +13,8 @@ class VanillaEnvironmentRule(
     timeOfDay:TimeOfDay,
     val label: EnvironmentRuleLabel) extends EnvironmentRule {
 
+  override def createNullAtomicEnvironment(observationDay: Day) = new NullAtomicEnvironment(observationDay.atTimeOfDay(timeOfDay))
+
   def createEnv(observationDay: Day, marketDataReader: MarketDataReader) = {
     val observationPoint = pointRule(observationDay)
 
