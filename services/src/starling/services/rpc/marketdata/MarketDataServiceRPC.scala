@@ -2,7 +2,7 @@ package starling.services.rpc.marketdata
 
 import com.trafigura.edm.marketdata._
 import com.trafigura.tradinghub.support._
-
+import scala.collection.JavaConversions.asJavaList
 import starling.db.MarketDataStore
 import starling.gui.api.{MarketDataSelection, PricingGroup, MarketDataIdentifier}
 import starling.marketdata.MarketDataTypes
@@ -10,6 +10,7 @@ import starling.pivot.model.PivotTableModel
 import starling.utils.ImplicitConversions._
 import starling.services.Server
 import starling.pivot._
+import starling.utils.Log
 
 
 /**
@@ -20,6 +21,9 @@ class MarketDataServiceRPC(marketDataStore: MarketDataStore) extends MarketDataS
 
   // TODO [10 Jun 2011] Ensure missing or invalid data causes nice exceptions to be thrown
   def marketData(parameters: MarketDataRequestParameters): MarketDataResponse = {
+
+    Log.info("%s called with parameters %s".format(this.getClass.getName, parameters))
+
     val selection = MarketDataSelection(Some(PricingGroup.fromName(parameters.pricingGroup)))
     val version = parameters.version.getOrElse(marketDataStore.latest(selection))
 
@@ -38,12 +42,12 @@ class MarketDataServiceRPC(marketDataStore: MarketDataStore) extends MarketDataS
   private def fields(names: List[String]) = names.map(Field(_))
 }
 
-
 /**
-* temporary service stub impl that overrides the filter chain with a null implementation
-*/
+ * Market data service stub
+ *  this service stub impl that overrides the filter chain with a null implementation
+ */
 class MarketDataServiceResourceStubEx()
-    extends MarketDataServiceResourceStub(new MarketDataServiceRPC(Server.server.marketDataStore), new java.util.LinkedList[ServiceFilter]()) {
+    extends MarketDataServiceResourceStub(new MarketDataServiceRPC(Server.server.marketDataStore), List[ServiceFilter]()) {
 
   // this is deliberately stubbed out as the exact requirements on permissions and it's implementation for this service is TBD
   override def requireFilters(filterClasses:String*) {}

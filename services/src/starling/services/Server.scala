@@ -344,7 +344,7 @@ class StarlingInit( props: Props,
       props.HttpEdmServicePort(),
       props.EdmExternalUrl(),
       props.ServerName(),
-      Some(webXmlUrl),
+      Some(webXmlUrl.toExternalForm()),
       Nil)
   }
 
