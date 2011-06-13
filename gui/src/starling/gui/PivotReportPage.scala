@@ -183,6 +183,7 @@ case class MainPivotReportPage(showParameters:Boolean, reportParameters:ReportPa
         manualConfigPanel.generateReportParams(slideConfigPanel.slideConfig)
       }
       val presetReportPanel = new PresetReportConfigPanel(context, reportParameters, pivotPageState)
+      val tradeInfoPanel = userReportData.map(urd => new TradeInfoConfigPanel(urd.tradeSelection, context, reportParameters))
 
       val runPanel = new MigPanel("insets 0","[p]1lp[p]push") {
         reactions += {
@@ -257,7 +258,9 @@ case class MainPivotReportPage(showParameters:Boolean, reportParameters:ReportPa
         }
       }
 
-      Some(ConfigPanels(List(presetReportPanel, manualConfigPanel, slideConfigPanel), runPanel, Action("runReportAction") {runPanel.run()}))
+      Some(ConfigPanels(
+        List(Some(presetReportPanel), Some(manualConfigPanel), Some(slideConfigPanel), tradeInfoPanel).flatten,
+        runPanel, Action("runReportAction") {runPanel.run()}))
     } else {
       None
     }

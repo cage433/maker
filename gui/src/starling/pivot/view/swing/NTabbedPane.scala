@@ -200,6 +200,7 @@ class NTabbedPane(configPanels:ConfigPanels, initiallyExpanded:Boolean)
     } else {
       hideTabs
     }
+    repaint()
   }
 
   add(tabPanel, "wrap")

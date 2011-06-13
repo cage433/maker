@@ -296,8 +296,7 @@ class StarlingHomePageComponent(context:PageContext, browserSize:Dimension, page
 
       TradeSelectionPage(
         deskWithTime, intradayWithTime,
-        TradeSelectionComponentState(initial._1.isDefined, initial._2.isDefined, PivotPageState(false, PivotFieldParams(true, None))),
-        TradeExpiryDay(Day.today))
+        TradeExpiryDay(Day.today), PivotPageState(false, PivotFieldParams(true, None)))
     }, ctrlDown)
   }
 

@@ -24,7 +24,7 @@ import ReportPreset._
 
 class PresetReportConfigPanel(context:PageContext, reportParameters:ReportParameters, pivotPageState:PivotPageState)
         extends MigPanel(columnConstraints = "[p]push[p]") with ConfigPanel {
-  def displayName = "Presets"
+  val displayName = "Presets"
 
   val pricingGroupPanel = new MigPanel {
     border = RoundedBorder(colour = PivotTableBackgroundColour)
