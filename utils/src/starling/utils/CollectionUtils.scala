@@ -180,7 +180,7 @@ object CollectionUtils {
     collection.filter(m.erasure.isInstance(_)).map(_.asInstanceOf[T])
   }
 
-  def levenshtein(s: Array[Any], t: Array[Any]): Int = {
+  def levenshtein(s: Array[_], t: Array[_]): Int = {
     val m = s.size
     val n = t.size
     val d = Array.ofDim[Int](m + 1, n + 1)
@@ -206,6 +206,18 @@ object CollectionUtils {
       }
     }
     d(m)(n)
+  }
+
+  def closestLevenshtein(possible: Iterable[Array[_]], t: Array[_], threshHold: Int): Iterable[Array[_]] = {
+    possible.map(p => {
+      (levenshtein(p, t), p)
+    }).toList.sortWith(_._1 < _._1).filter(_._1 <= threshHold).map(_._2)
+  }
+
+  def closestLevenshteinString(possible: Iterable[String], t: String, threshHold: Int): Iterable[String] = {
+    possible.map(p => {
+      (levenshtein(p.toCharArray, t.toCharArray), p)
+    }).toList.sortWith(_._1 < _._1).filter(_._1 <= threshHold).map(_._2)
   }
 
   def min(a: Int, b: Int, c: Int): Int = {

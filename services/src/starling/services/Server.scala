@@ -42,9 +42,6 @@ import org.springframework.mail.javamail.{MimeMessageHelper, JavaMailSender, Jav
 import starling.rmi._
 import starling.calendar._
 import java.lang.String
-import starling.services.rpc.marketdata._
-import com.trafigura.edm.marketdata._
-import org.mortbay.component.LifeCycle
 
 
 class StarlingInit( props: Props,

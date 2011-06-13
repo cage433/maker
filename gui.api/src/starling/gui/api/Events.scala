@@ -5,9 +5,9 @@ import starling.auth.User
 import starling.utils.ImplicitConversions._
 import java.lang.String
 import collection.immutable.Map
-import starling.daterange.{ObservationPoint, Day, Timestamp}
 import starling.pivot.{ExtraFormatInfo, PivotLayout}
 import starling.gui.Key
+import starling.daterange._
 
 class Events //The is just here as I find this class using "^n Events"
 
@@ -58,11 +58,11 @@ abstract class RabbitEvent(val queueName : String) extends Event {
   def toMap(keys : String*) : Map[String, Object] = toMap.slice(keys : _*)
   def toMap : Map[String, Object]
 
-  protected def priceEventMap(user : User, label : String, observationDate : Option[Day], dates : Array[Day]) = Map(
-    "userName"        → user.username,
-    "label"           → label,
-    "observationDate" → observationDate.map(_.toString("dd MMM yyyy")).getOrElse(""),
-    "dates"           → dates.map(_.toString("dd MMM yyyy"))
+  protected def priceEventMap(user : User, label : String, observationDate : Option[Day], dates : Array[_]) = Map(
+    "userName" -> user.username,
+    "label" -> label,
+    "observationDate" -> observationDate.map(_.toString("dd MMM yyyy")).getOrElse(""),
+    "dates" -> dates.map(_.toString)
   )
 }
 
@@ -80,7 +80,7 @@ case class UploadPricesUpdate(user : User, label : String, observationPoint : Ob
     Map("marketName" → marketName, "prices" → prices.map(_.toString))
 }
 
-case class UploadStandardDeviationsUpdate(user : User, label : String, observationDate : Option[Day], dates : Array[Day],
+case class UploadStandardDeviationsUpdate(user : User, label : String, observationDate : Option[Day], dates : Array[Spread[Month]],
                                           marketName : String, standardDeviations : Array[Array[Double]])
   extends RabbitEvent("Trafigura.Raw.StandardDeviations.RiskManagement") {
 

@@ -53,7 +53,7 @@ object Scheduler {
       tasks.toList.map(nameTask => TaskDescription(nameTask._1, time, nameTask._2))
 
     new Scheduler(props, forwardCurveTasks =
-      TaskDescription("Import LIM", daily(businessCalendars.LME), importMarketData(Metals)) ::-
+      TaskDescription("Import LIM", everyFiveMinutes(businessCalendars.LME), importMarketData(Metals)) ::-
       //TaskDescription("Upload Curves to Trinity", daily(businessCalendars.LME, 12 H 30), uploadCurvesToTrinity(Metals)) ::-
       tasks(daily(businessCalendars.SFE, 16 H 30),
         "Verify WuXi prices available" → verifyPricesAvailable(Metals, EXBXG, props.WuXiEmailAddress()).withSource("Excel"),

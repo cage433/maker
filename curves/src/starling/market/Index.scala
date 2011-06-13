@@ -437,6 +437,11 @@ object Index {
     FormulaIndexList.formulaIndexes :::
     BrentCFDSpreadIndex.named.values.toList
 
+  val singleIndexes = namedIndexes.flatMap{
+    case si: SingleIndex => Some(si)
+    case _ => None
+  }
+
   def fromNameOption(name : String) = namedIndexes.find(_.name == name)
 
   def fromName(name : String) = namedIndexes.find(_.name == name) match {

@@ -37,7 +37,7 @@ object FCLGenerator {
 
     rows.toList.flatMapO { case (Array(marketName, periodCell), Array(priceCell)) => {
       try {
-        val market = Market.futuresMarketFromName(marketName.valueText)
+        val market = FuturesMarket.fromName(marketName.valueText)
         val trinityCode = codeLookup(market)
         val price = format.format(priceCell.doubleValue.get)
         val period = periodCell.value.value.value.asInstanceOf[DateRange].firstDay

@@ -168,7 +168,6 @@ case class MainPivotReportPage(showParameters:Boolean, reportParameters:ReportPa
           pivotPageState
         }
 
-        val observationDaysForPricingGroup = context.localCache.populatedObservationDaysForPricingGroup
         context.createAndGoTo{
           server => {
             // check to see if we have market data for the observation day and pnl from day, if we don't, import it
@@ -233,10 +232,10 @@ case class MainPivotReportPage(showParameters:Boolean, reportParameters:ReportPa
         }
 
         def updateRunButton(rps:ReportParameters) {
-          runButton.enabled = (rps != reportParameters)
+          runButton.enabled = (rps != reportParameters || !reportParameters.runReports)
         }
         def updateRunButton(mds:MarketDataSelection) {
-          runButton.enabled = (mds != reportParameters.curveIdentifier.marketDataIdentifier.selection)
+          runButton.enabled = (mds != reportParameters.curveIdentifier.marketDataIdentifier.selection || !reportParameters.runReports)
         }
 
         val saveReportButton = new SaveReportButton(context, userReportData, pivotData, pivotPageState,

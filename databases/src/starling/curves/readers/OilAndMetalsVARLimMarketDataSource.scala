@@ -84,14 +84,8 @@ class OilAndMetalsVARLimMarketDataSource(limServer: LIMServer) extends MarketDat
 
     val fixings = fixingsForPublishedIndex ::: fixingsForFrontMonthIndexes
 
-    val prices: List[MarketDataEntry] = Market.futuresMarkets.flatMap {
-      market => {
-        market match {
-          case mkt : Market.BalticFuturesMarket => Some(PriceDataKey(mkt) -> readFreightPricesFromLim(day, mkt))
-          case _ => None
-        }
-      }
-    }.map{ case(key, data) => MarketDataEntry(ObservationPoint(day), key, data) }
+    val prices = Market.futuresMarkets.filterCast[Market.BalticFuturesMarket].map(bfMarket =>
+      MarketDataEntry(ObservationPoint(day), PriceDataKey(bfMarket), readFreightPricesFromLim(day, bfMarket)))
 
     Map((day - daysInThePast, day, PriceFixingsHistoryDataType) → fixings,
         (day, day, PriceDataType) → prices)

@@ -2,6 +2,8 @@ package starling.utils.conversions
 
 
 trait RichOption {
+  def some[A](a: A): Option[A] = Some(a)
+
   implicit def enrichOption[A](option: Option[A]) = new {
     def optPair[B](b: B): Option[(A, B)] = option.map(_ → b)
     def flatMapL[B](f: A => List[B]): List[B] = mapOrElse(f, Nil)
