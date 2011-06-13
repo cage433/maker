@@ -500,6 +500,46 @@ object Index {
   }
 }
 
+object LmeSingleIndices{
+  abstract class LMEIndex(name : String, market : FuturesMarket, level : Level) extends SingleIndex(name, market, market.businessCalendar, level = level){
+    def observedOptionPeriod(observationDay: Day) = throw new Exception("Options not supported for LME indices")
+    override def observationTimeOfDay = ObservationTimeOfDay.Official
+  }
+
+  class LMECashIndex(name : String, market : FuturesMarket, level : Level) extends LMEIndex(name, market, level){
+    def observedPeriod(day : Day) = {
+      assert(isObservationDay(day), day + " is not an observation day for " + this)
+      day.addBusinessDays(businessCalendar, 2)
+    }
+
+    def storedFixingPeriod(day: Day) = StoredFixingPeriod.tenor(Tenor.CASH)
+  }
+
+  class LMEThreeMonthIndex(name : String, market : FuturesMarket, level : Level) extends LMEIndex(name, market, level){
+    def observedPeriod(day : Day) = {
+      assert(isObservationDay(day), day + " is not an observation day for " + this)
+      FuturesExchangeFactory.LME.threeMonthDate(day)
+    }
+
+    def storedFixingPeriod(day: Day) = StoredFixingPeriod.tenor(Tenor.ThreeMonths)
+  }
+  val cuCashBid = new LMECashIndex("CU Cash Bid", Market.LME_COPPER, level = Level.Bid)
+  val cuCashOffer = new LMECashIndex("CU Settlement", Market.LME_COPPER, level = Level.Ask)
+  val cu3MBid = new LMEThreeMonthIndex("CU 3m Seller", Market.LME_COPPER, level = Level.Bid)
+  val cu3MOffer = new LMEThreeMonthIndex("CU 3m Buyer", Market.LME_COPPER, level = Level.Ask)
+
+  val alCashBid = new LMECashIndex("CU Cash Bid", Market.LME_ALUMINIUM, level = Level.Bid)
+  val alCashOffer = new LMECashIndex("CU Settlement", Market.LME_ALUMINIUM, level = Level.Ask)
+  val al3MBid = new LMEThreeMonthIndex("CU 3m Seller", Market.LME_ALUMINIUM, level = Level.Bid)
+  val al3MOffer = new LMEThreeMonthIndex("CU 3m Buyer", Market.LME_ALUMINIUM, level = Level.Ask)
+
+  val niCashBid = new LMECashIndex("CU Cash Bid", Market.LME_NICKEL, level = Level.Bid)
+
+  val niCashOffer = new LMECashIndex("CU Settlement", Market.LME_NICKEL, level = Level.Ask)
+  val ni3MBid = new LMEThreeMonthIndex("CU 3m Seller", Market.LME_NICKEL, level = Level.Bid)
+  val ni3MOffer = new LMEThreeMonthIndex("CU 3m Buyer", Market.LME_NICKEL, level = Level.Ask)
+
+}
 
 case class LmeCashSettlementIndex(futuresMarket : FuturesMarket) extends SingleIndex("LME " + futuresMarket.commodity + " cash", futuresMarket, futuresMarket.businessCalendar, level = Level.Ask){
   def observedOptionPeriod(observationDay: Day) = throw new Exception("Options not supported for LME indices")
@@ -526,3 +566,4 @@ case class LmeThreeMonthBuyerIndex(futuresMarket : FuturesMarket) extends Single
 
   override def observationTimeOfDay = ObservationTimeOfDay.Official
 }
+

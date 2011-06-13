@@ -66,8 +66,8 @@ object FuturesExchangeFactory extends StarlingEnum(classOf[FuturesExchange]) {
     }
 
     /**
-     * The three month data follows something like this rule
-     * 1. Shift today's month by three
+     * The month dates follows something like this rule
+     * 1. Shift today's month by 'nMonthsAhead'
      * 2. If the date produced has a day number greater than the last day of the month (e.g. 30th Feb), then move to the month's last day
      * 3. If the day is a non-working day then
      *  a) For Friday/Saturday (bank holiday) - move to the previous business day
@@ -77,8 +77,8 @@ object FuturesExchangeFactory extends StarlingEnum(classOf[FuturesExchange]) {
      * These are based on a chat with the LME, the holiday behaviour I've made up - but not the weekends.
      * TODO - put in exact rule once we've received the copy of the regs from the LME
      */
-    def threeMonthDate(marketDay : Day) : Day = {
-      val month = marketDay.containingMonth + 3
+    def monthDate(marketDay : Day, nMonthsAhead : Int) : Day = {
+      val month = marketDay.containingMonth + nMonthsAhead
       val d : Int = month.lastDay.dayNumber min marketDay.dayNumber
       val cal = Market.cals.LME
       val firstBusDayInMonth = cal.thisOrNextBusinessDay(month.firstDay)
@@ -95,6 +95,10 @@ object FuturesExchangeFactory extends StarlingEnum(classOf[FuturesExchange]) {
       }
       (day max firstBusDayInMonth) min lastBusDayInMonth
     }
+
+    def threeMonthDate(marketDay : Day) = monthDate(marketDay, nMonthsAhead = 3)
+    def twoMonthDate(marketDay : Day) = monthDate(marketDay, nMonthsAhead = 2)
+
   }
 
   val COMEX = new FuturesExchange("COMEX", MonthlyDelivery, COMEXClose) with NeptunePricingExchange{
