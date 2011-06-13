@@ -338,14 +338,13 @@ class StarlingInit( props: Props,
   
   lazy val httpEdmServiceServer = {
 
-    val restEasyServlet = new org.jboss.resteasy.plugins.server.servlet.HttpServletDispatcher()
-    val listener = List(new org.jboss.resteasy.plugins.server.servlet.ResteasyBootstrap())
-
+    val webXmlUrl = this.getClass.getResource("../../webapp/WEB-INF/web.xml")
+    
     new HttpServer(
       props.HttpEdmServicePort(),
       props.EdmExternalUrl(),
       props.ServerName(),
-      Some("/home/louis/dev-starling/services/starling/services/resources/webapp/WEB-INF/web.xml"), // WEB-INF/web.xml"),
+      Some(webXmlUrl),
       Nil)
   }
 
