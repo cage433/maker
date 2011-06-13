@@ -23,16 +23,30 @@ import java.util.EventListener
 class HttpServer(portNo : Int,
                  val externalURL : String,
                  serverName : String,
+                 descriptor : Option[String],
                  listeners : List[EventListener],
                  servlets: (String, Servlet)*) {
 
   def this(props : Props, servlets: (String, Servlet)*) = 
-    this(props.HttpPort(), props.ExternalUrl(), props.ServerName(), Nil, servlets:_*)
+    this(props.HttpPort(), props.ExternalUrl(), props.ServerName(), None, Nil, servlets:_*)
 
   val server = new JettyServer(portNo)
   var servletPaths = List[String]()
 
   val rootContext = new Context(server, "/", Context.SESSIONS);
+
+  descriptor match {
+    case Some(desc) => {
+      Log.info("Applying descriptor '%s' to web app context".format(desc))
+      val wac : WebAppContext = new WebAppContext()
+      wac.setResourceBase(".")
+      wac.setDescriptor(desc)
+      wac.setContextPath("/")
+      wac.setParentLoaderPriority(true)
+      server.setHandler(wac)
+    }
+    case _ =>
+  }
 
   def stop {
     server.stop
@@ -46,10 +60,12 @@ class HttpServer(portNo : Int,
 
   for((path, servlet) <- servlets) {
     val className : String = servlet.getClass.getName
+    Log.info("Registering servlet %s @ %s ".format(className, path))
     registerServlet(servlet, path)
   }
 
   for (listener <- listeners) {
+    Log.info("Registering listener %s".format(listener.getClass.getName))
     rootContext.addEventListener(listener)
   }
 

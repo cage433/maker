@@ -68,6 +68,7 @@ class StarlingInit( props: Props,
     }
     if (startHttp) {
       httpServer.stop
+      httpEdmServiceServer.stop
       regressionServer.stop
     }
     if (!runningInJBoss){
@@ -94,6 +95,7 @@ class StarlingInit( props: Props,
 
     if (startHttp) {
       httpServer.run
+      httpEdmServiceServer.run
       regressionServer.start
     }
 
@@ -338,35 +340,16 @@ class StarlingInit( props: Props,
   Log.info("StarlingInit: EDM service port %d, external url = '%s', server name = '%s'".format(props.HttpEdmServicePort(), props.EdmExternalUrl(), props.ServerName()))
   
   lazy val httpEdmServiceServer = {
-    val filters = null // todo
-    val marketDataService = new MarketDataServiceRPC(marketDataStore)
-    val marketDataStubImpl = new MarketDataServiceResourceStubEx(marketDataService, filters)
-
-  //  LB: temporary included for reference purposes, this
-  //   is how resteasy is plumbed into te container (web.xml) currently using
-  //   conventional xml deployed app server config
-  //
-  //  <listener>
-  //        <listener-class>org.jboss.resteasy.plugins.server.servlet.ResteasyBootstrap</listener-class>
-  //    </listener>
-  //
-  //    <servlet>
-  //        <servlet-name>Resteasy</servlet-name>
-  //        <servlet-class>org.jboss.resteasy.plugins.server.servlet.HttpServletDispatcher</servlet-class>
-  //    </servlet>
-  //
-  //    <servlet-mapping>
-  //        <servlet-name>Resteasy</servlet-name>
-  //        <url-pattern>/*</url-pattern>
-  //    </servlet-mapping>
-
 
     val restEasyServlet = new org.jboss.resteasy.plugins.server.servlet.HttpServletDispatcher()
     val listener = List(new org.jboss.resteasy.plugins.server.servlet.ResteasyBootstrap())
 
-    new HttpServer(props.HttpEdmServicePort(), props.EdmExternalUrl(), props.ServerName(),
-      listener,
-      "Resteasy" -> restEasyServlet)
+    new HttpServer(
+      props.HttpEdmServicePort(),
+      props.EdmExternalUrl(),
+      props.ServerName(),
+      Some("/home/louis/dev-starling/services/starling/services/resources/webapp/WEB-INF/web.xml"), // WEB-INF/web.xml"),
+      Nil)
   }
 
   lazy val regressionServer = new RegressionServer(props.RegressionPort(), reportServlet)
@@ -400,8 +383,10 @@ object Server extends OutputPIDToFile {
     run(PropsHelper.defaultProps)
     ServerHelper.createRunningFile
   }
+  var server : StarlingInit = null
   def run(props:Props) {
-    new StarlingInit(props, true, true, true, startEAIAutoImportThread = true).start
+    server = new StarlingInit(props, true, true, true, startEAIAutoImportThread = true)
+    server.start
   }
 }
 
