@@ -97,7 +97,7 @@ case class RefinedFixation(
       case (COMEX, _) => month
     }
   }
-  private val index = FuturesFrontPeriodIndex(market)
+  private val index = FuturesFrontPeriodIndex("HACK!" + market.name, None, market, 0, 1, None)
   // Currently Starling only has indices for front periods. Not sure that pricePeriods are in fact front periods,
   // until we understand properly how refined contracts are priced, we'll use the price for the riskPeriod observed
   // on its last trading day.

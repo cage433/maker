@@ -10,7 +10,7 @@ class PriceDifferentiableTests extends StarlingTest{
   def testQuantityValueForDailyMarket{
     val marketDay: DayAndTime = Day(2010, 1, 1).endOfDay
     val env = Environment(new NullAtomicEnvironment(marketDay))
-    val diff = new PriceDifferentiable(Market.PREM_UNL_EURO_BOB_OXY_NWE_BARGES, Month(2010, 12))
+    val diff = new PriceDifferentiable(Market.ICE_WTI, Month(2010, 12))
     val price = diff.quantityValue(env)
     println("Price = " + price)
   }

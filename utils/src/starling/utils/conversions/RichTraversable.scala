@@ -19,6 +19,12 @@ trait RichTraversable {
     def minimum[B](f: A => B)(implicit cmp: Ordering[B]): B = traversable.map(f).min
     def mapDistinct[B](f: A => B): Set[B] = traversable.map(f).toSeq.distinct.toSet
 
+    def findEnsureOnlyOne(p: A => Boolean) = traversable.filter(p) match {
+      case e :: Nil => Some(e)
+      case Nil => None
+      case m => throw new Exception("Multiple instances match: " + m)
+    }
+
     def toMapWithKeys[K](keyF: A => K):                  Map[K, A]      = pair(keyF).swap.toMap
     def toMapWithSomeKeys[K](keyF: A => Option[K]):      Map[K, A]      = optPair(keyF).swap.toMap
     def toMultiMapWithSomeKeys[K](keyF: A => Option[K]): Map[K, Set[A]] = optPair(keyF).swap.toMultiMap

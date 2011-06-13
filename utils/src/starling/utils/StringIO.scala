@@ -5,6 +5,7 @@ import java.io._
 import java.util.zip.{GZIPOutputStream, GZIPInputStream}
 import org.apache.commons.io.FileUtils
 import java.net.URL
+import io.Source
 
 object StringIO {
 
@@ -60,6 +61,7 @@ object StringIO {
   def readStringFromResource(resource : String) = {
     val buffer = new StringBuffer
     val asStream = getClass.getResourceAsStream(resource)
+    assert(asStream != null, "Couldn't load resource: " + resource)
     val iStream = new InputStreamReader(asStream)
     val tmp = new Array[Char](4096)
     while(iStream.ready) {
@@ -76,5 +78,9 @@ object StringIO {
 
   def url(resource: String) = {
     getClass.getResource(resource)
+  }
+
+  def lines(resource: String) = {
+    Source.fromURL(getClass.getResource(resource)).getLines
   }
 }

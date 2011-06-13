@@ -11,12 +11,12 @@ import starling.market.{FuturesMarket, Market, CommodityMarket}
 
 
 object ValidMarketParserObject {
-  val Parser = new ValidMarketParser(Market.markets.map(_.name.trim.toLowerCase).toSet)
+  val Parser = new ValidMarketParser(Market.all.map(_.name.trim.toLowerCase).toSet)
 }
 
 object PriceDataType extends MarketDataType {
   type dataType = PriceData
-  val keys = Market.futuresMarkets.map(PriceDataKey) ++ Market.forwardMarkets.map(PriceDataKey)
+  val keys = Market.all.map(PriceDataKey)
   val exchangeField = FieldDetails("Exchange")
   val marketField = FieldDetails("Market", ValidMarketParserObject.Parser)
   val marketCommodityField = FieldDetails("Market Commodity")

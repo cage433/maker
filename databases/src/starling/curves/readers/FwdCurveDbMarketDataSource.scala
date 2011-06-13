@@ -17,6 +17,11 @@ import starling.daterange.ObservationPoint._
 
 case class FwdCurveDbMarketDataSource(varSqlDB: DB, businessCalendars: BusinessCalendars, pricingGroupID: Int) extends MarketDataSource {
 
+  def table(market: CommodityMarket) = market.commodity match {
+    case _: MetalCommodity => MetalsPriceTable
+    case _ => NonMetalsPriceTable
+  }
+
   def read(day: Day) = {
     val observationPoint = ObservationPoint(day)
     val observationDay = day
@@ -27,14 +32,14 @@ case class FwdCurveDbMarketDataSource(varSqlDB: DB, businessCalendars: BusinessC
     }
 
     val spotFXKeys: List[SpotFXDataKey] = FwdCurveAppExternalMarketDataReader.currencyCurveIDs.keysIterator.map{ccy=>SpotFXDataKey(ccy)}.toList
-    val priceKeys: List[PriceDataKey] = PriceDataType.keys.filter(m => m.market.pricesTable != null && m.market.eaiQuoteID.isDefined)
+    val priceKeys: List[PriceDataKey] = PriceDataType.keys.filter(m => m.market.eaiQuoteID.isDefined)
     val indexes: List[SingleIndex] = Index.indicesToImportFixingsForFromEAI.filter { index => {
       index match {
         case publishedIndex: PublishedIndex => publishedIndex.market.limSymbol.isEmpty
         case futuresFrontPeriodIndex: FuturesFrontPeriodIndex => futuresFrontPeriodIndex.market.limSymbol.isEmpty
         case _ => true
       }
-    } }.filter(_.forwardPriceMarket.pricesTable != null)
+    } }
     val forwardRateKeys: List[ForwardRateDataKey] = List(ForwardRateDataKey(UOM.USD)) // TODO [05 Apr 2011] We only have USD at the moment. Fix this once we have more
     val volSurfaceKeys: scala.List[OilVolSurfaceDataKey] = OilVolSurfaceDataType.keys
     val spredStdKeys: List[SpreadStdDevSurfaceDataKey] = SpreadStdDevSurfaceDataType.keys
@@ -99,11 +104,7 @@ case class FwdCurveDbMarketDataSource(varSqlDB: DB, businessCalendars: BusinessC
 
   private def deliveryPeriod(market: CommodityMarket, rs: ResultSetRow): DateRange = {
     val forwardDay = rs.getDay("ForwardDate")
-    val realMarket = market match {
-      case f: ProxyForwardMarket => f.proxy
-      case o => o
-    }
-    (realMarket, market.tenor) match {
+    (market, market.tenor) match {
       case (f:FuturesMarket, Month) => {
         // isMonthDay defines if the date is in as the last trading day or as just the start day of the delivery month
         rs.getInt("isMonthDay") match {
@@ -180,10 +181,10 @@ case class FwdCurveDbMarketDataSource(varSqlDB: DB, businessCalendars: BusinessC
       val a = indexes.flatMap { index => {
         val eaiQuoteID : Option[Int] = index match {
           case p:PublishedIndex => p.eaiQuoteID
-          case _ => index.forwardPriceMarket.eaiQuoteID
+          case _ => index.market.eaiQuoteID
         }
-        val cashLogic = cashDayLogic(index.forwardPriceMarket, Some(index))
-        eaiQuoteID.map(eai => (index.forwardPriceMarket, (eai, cashLogic, index.level)))
+        val cashLogic = cashDayLogic(index.market, Some(index))
+        eaiQuoteID.map(eai => (index.market, (eai, cashLogic, index.level)))
       }}.groupInto(_.head, _.tail)
 
       val entries = a.flatMap { case (market, otherDetails) => readSingle(otherDetails, market) }
@@ -202,7 +203,7 @@ case class FwdCurveDbMarketDataSource(varSqlDB: DB, businessCalendars: BusinessC
     }
 
     def readSingle(market:CommodityMarket, crazyCashLogic:String, level:Level, eaiQuoteID:Int): List[(Day, PriceFixingsHistoryData)] = {
-      val tableName = market.pricesTable
+      val tableName = table(market)
 
       varSqlDB.queryWithResult(
         """     select op.CurveID, op.ObservationDate, op.ForwardDate, op.Price, op.ForwardYear, op.IntervalNumber, op.isMonthDay from
@@ -257,15 +258,16 @@ case class FwdCurveDbMarketDataSource(varSqlDB: DB, businessCalendars: BusinessC
                       where EAIQuoteID = :EAIQuoteID
                             and PricingGroupID = :PricingGroupID
                            and ObservationDate = :ObservationDate
+                           and ForwardDate is not null
                            %s
-                      """ % (market.pricesTable, cashDayLogic(market))
+                      """ % (table(market), cashDayLogic(market))
 
 
       try {
         varSqlDB.query(query, Map("EAIQuoteID" -> eaiQuoteID.get, "PricingGroupID" -> pricingGroupID, "ObservationDate" -> observationDay)) {
           rs => {
             val delivery = deliveryPeriod(market, rs)
-            var price = rs.getDouble("Price")
+            val price = rs.getDouble("Price")
             pricePoints += (delivery -> price)
           }
         }

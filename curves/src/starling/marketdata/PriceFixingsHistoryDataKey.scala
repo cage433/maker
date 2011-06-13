@@ -34,7 +34,8 @@ object PriceFixingsHistoryDataKey {
   }
 
   private def tradeableNameOf(market: CommodityMarket): String = market match {
-    case futuresMarket: FuturesMarket => futuresMarket.commodity.name
+      // TODO I don't understand the logic here but I know it doesn't work for Oil markets so I'll restrict it to metal
+    case futuresMarket: FuturesMarket if futuresMarket.commodity.isInstanceOf[MetalCommodity] => futuresMarket.commodity.name
     case _ => market.name
   }
 }

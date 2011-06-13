@@ -48,7 +48,7 @@ object ClosesEnvironmentRule extends EnvironmentRule {
 
     val marketsX = {
       priceDataMap.toList.map { case (PriceDataKey(futuresMarket: FuturesMarket), priceData) => {
-        MarketDeliveryPeriods(marketCloses(futuresMarket), futuresMarket, priceData.sortedKeys)
+        UnderlyingDeliveryPeriods(marketCloses(futuresMarket), futuresMarket, priceData.sortedKeys)
       }}
     }
 

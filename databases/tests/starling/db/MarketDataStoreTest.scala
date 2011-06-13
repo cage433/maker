@@ -5,7 +5,6 @@ import org.scalatest.matchers.ShouldMatchers
 import org.springframework.jdbc.datasource.SingleConnectionDataSource
 import org.testng.annotations.{AfterTest, BeforeTest, Test}
 
-import starling.market.Market
 import starling.pivot.model.PivotTableModel
 import starling.quantity.{Quantity, UOM}
 import starling.daterange._
@@ -16,9 +15,10 @@ import java.lang.String
 import starling.richdb.{RichResultSetRowFactory, RichDB}
 import collection.immutable.{Nil, Map}
 import starling.utils.{StarlingTest, Broadcaster}
+import starling.market.{TestMarketSpec, Market}
 
 
-class MarketDataStoreTest extends StarlingTest with ShouldMatchers {
+class MarketDataStoreTest extends TestMarketSpec with ShouldMatchers {
 
   lazy val marketDataStore = new DBMarketDataStore(db, Map(), Broadcaster.Null)
 

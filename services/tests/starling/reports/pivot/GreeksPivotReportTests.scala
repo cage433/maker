@@ -12,7 +12,7 @@ import starling.models.Call
 import org.testng.Assert._
 import starling.instrument.FuturesCalendarSpread
 import starling.instrument.UTP
-import starling.market.FuturesFrontPeriodIndex
+import starling.market.Index
 import starling.instrument.Future
 import starling.models.European
 import starling.instrument.FuturesOption
@@ -87,7 +87,7 @@ class GreeksPivotReportTests extends StarlingTest {
   lazy val mkt =  Market.NYMEX_WTI
   lazy val List(month1, month2) = List( Month(2010, 7), Month(2010, 8))
   lazy val atmPrice = env.forwardPrice(mkt, Month(2010, 11))
-  lazy val idx = FuturesFrontPeriodIndex.WTI10
+  lazy val idx = Index.WTI10
   lazy val asian = SingleAsianOption(
     idx, Month(2010, 10), atmPrice, Quantity(100, idx.uom), Call)
   lazy val cso = SingleCalendarSpreadOption(mkt, Day(2010, 6, 6), month1, month2, Quantity(0, mkt.priceUOM), Quantity(10, mkt.uom), Call)
@@ -102,7 +102,7 @@ class GreeksPivotReportTests extends StarlingTest {
   )
 
   lazy val cfd = SingleCFD(
-    BrentCFDSpreadIndex(PublishedIndex.PLATTS_BRENT(BrentMonth(4))),
+    BrentCFDSpreadIndex.indexFor(BrentMonth(4)),
     0.54 (USD/BBL),
     1030000 (BBL),
     DateRange(24 Feb 2011, 2 Mar 2011)
@@ -243,7 +243,7 @@ class GreeksPivotReportTests extends StarlingTest {
   def testFuturesToSwaps{
     val strategyIds = Map[String, String]() :: List("a", "b", "c").map{name => Map("strategy ID" -> name)}
     val months = Month(2010, 1) upto Month(2011, 6)
-    val markets = List(Market.NYMEX_WTI, Market.NYMEX_BRENT, Market.NYMEX_GASOLINE, Market.LME_ZINC, Market.BALTIC_PANAMAX)
+    val markets = List(Market.NYMEX_WTI, Market.NYMEX_BRENT, Market.NYMEX_GASOLINE, Market.LME_ZINC)
     var seed = 12345
     val u = RandomVariables.standardUniform(9999)
     val randomMarkets = new RandomThing(markets, 34824)
@@ -257,9 +257,9 @@ class GreeksPivotReportTests extends StarlingTest {
 
     val swaps = markets.map{
       mkt => 
-        val index : SingleIndex = FuturesFrontPeriodIndex.futuresMarketToIndexMap.get(mkt) match {
+        val index : SingleIndex = Index.futuresMarketToIndexMap.get(mkt) match {
           case Some(idx) => idx
-          case _ => PublishedIndex(mkt.name, mkt.eaiQuoteID, mkt, mkt.businessCalendar)
+          case _ => PublishedIndex(mkt.name, mkt.eaiQuoteID, mkt.lotSize, mkt.uom, mkt.currency, mkt.businessCalendar, mkt.commodity)
         }
         SingleCommoditySwap(index, Quantity(0, mkt.priceUOM), Quantity((u.nextDouble - 0.5) * 100, mkt.uom), randomMonths.next, cleared = false)
     }
@@ -322,8 +322,8 @@ class GreeksPivotReportTests extends StarlingTest {
       }
       positions
     }
-    val datedBrent = Market.DATED_BRENT.name
-    val platts_april = Market.PLATTS_BRENT_MONTH_MARKETS(BrentMonth(4)).name
+    val datedBrent = Index.DATED_BRENT.name
+    val platts_april = Index.publishedIndexFromName("Platts Brent (April)").name
 
     val w9_2011 = Week(2011, 9)
     val w8_2011 = Week(2011, 8)
@@ -367,7 +367,7 @@ class GreeksPivotReportTests extends StarlingTest {
   @Test
   def testNetAsianVegaWithAllSettings {
 
-    val idx = FuturesFrontPeriodIndex.WTI10
+    val idx = Index.WTI10
     val fwdPrice = 100(idx.priceUOM)
     val asian = SingleAsianOption(
       idx, Month(2010, 10), fwdPrice, 100(idx.uom), Call)

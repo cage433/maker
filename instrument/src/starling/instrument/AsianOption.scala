@@ -78,7 +78,7 @@ object AsianOption extends InstrumentType[SingleAsianOption] with TradeableType[
   def sample = {
     import starling.quantity.Quantity._
     import starling.quantity.UOM._
-    AsianOption(PublishedIndex.PREM_UNL_EURO_BOB_OXY_NWE_BARGES, Month(2009, 2), 98(USD/MT), 222(MT), Put)
+    AsianOption(Index.DATED_BRENT, Month(2009, 2), 98(USD/MT), 222(MT), Put)
   }
 
 }

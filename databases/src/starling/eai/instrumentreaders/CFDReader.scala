@@ -20,7 +20,7 @@ class CFDReader extends InstrumentReader {
     val index = rs.getString("CFDType") match {
       case "Dated Brent vs Platts Brent fixed month" => {
         val brentMonth = new BrentMonth(rs.getInt("BrentMonthID"))
-        BrentCFDSpreadIndex.indexFor(brentMonth) match {
+        BrentCFDSpreadIndex.indexForOption(brentMonth) match {
           case Some(i) => i
           case None => throw new Exception("Failed to create BrentCFDSpreadIndex: " + brentMonth)
         }

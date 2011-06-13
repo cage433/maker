@@ -25,7 +25,7 @@ case class SwapVol(index : SingleIndex, averagingPeriod : DateRange) extends Vol
 
   val periodKey = Some(DateRangePeriod(averagingPeriod))
 
-  val curveKey = OilAtmVolCurveKey(index.forwardPriceMarket)
+  val curveKey = OilAtmVolCurveKey(index.market)
 
   def shiftedEnvs(env : Environment, dP : Quantity) = {
     index.shiftedUnderlyingVols(env, averagingPeriod, dP)

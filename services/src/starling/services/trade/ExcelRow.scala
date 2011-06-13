@@ -179,7 +179,7 @@ case class ExcelRow(row: Map[String, Any], traders: Traders) {
     case None => {
       marketAliases.get(marketStr) match {
         case Some(market) => {
-          val matches = Index.singleIndexes.filter(_.markets.contains(market)).mkString(" or ")
+          val matches = Index.singleIndexes.filter(_.market == market).mkString(" or ")
           throw ExcelInstrumentReaderException("Couldn't find index with name: " + marketStr + ", did you mean '" + matches + "'?")
         }
         case _ => throw ExcelInstrumentReaderException("Couldn't find index with name: " + marketStr)
@@ -199,7 +199,7 @@ case class ExcelRow(row: Map[String, Any], traders: Traders) {
       val lots = (marketAliases.get(name), indexAliases.get(name)) match {
         case (Some(market), None) => market.lotSize
         case (None, Some(index: SingleIndex)) => index.lotSize
-        case (Some(market), Some(index: SingleIndex)) if market == index.forwardPriceMarket => market.lotSize
+        case (Some(market), Some(index: SingleIndex)) if market == index.market => market.lotSize
         case _ => throw new Exception("Can't figure out lot size for: " + name)
       }
       lots match {
@@ -311,7 +311,7 @@ case class ExcelRow(row: Map[String, Any], traders: Traders) {
       (marketAliases.get(name), indexAliases.get(name)) match {
         case (Some(market), None) => market.priceUOM
         case (None, Some(index)) => index.priceUOM
-        case (Some(market), Some(index: SingleIndex)) if market == index.forwardPriceMarket => market.priceUOM
+        case (Some(market), Some(index: SingleIndex)) if market == index.market => market.priceUOM
         case _ => throw new Exception("Unexpected market name: " + name)
       }
     }

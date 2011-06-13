@@ -40,7 +40,7 @@ object NeptunePricingExchange{
   }
 }
 
-object FuturesExchangeFactory extends StarlingEnum(classOf[FuturesExchange], (f: FuturesExchange) => f.name) {
+object FuturesExchangeFactory extends StarlingEnum(classOf[FuturesExchange], (f: FuturesExchange) => f.name, otherTypes = List(classOf[NeptunePricingExchange])) {
   val LME = new FuturesExchange("LME", DailyDelivery, LMEClose) with NeptunePricingExchange{
     def inferMarketFromCommodityName(neptuneCommodityName: String) = neptuneCommodityName match {
       case "Copper"	            => Market.LME_COPPER
@@ -112,9 +112,13 @@ object FuturesExchangeFactory extends StarlingEnum(classOf[FuturesExchange], (f:
     }
   }
   val NYMEX = new FuturesExchange("NYMEX", MonthlyDelivery, Default)
-  val SFS = new FuturesExchange("SFS", MonthlyDelivery, SHFEClose)
+  val SFS = new FuturesExchange("SFS", MonthlyDelivery, SHFEClose) // Shanghai futures exchange
   val BALTIC = new FuturesExchange("Baltic Exchange", MonthlyDelivery, Default)
   val ICE = new FuturesExchange("ICE", MonthlyDelivery, Default)
-  val MDEX = new FuturesExchange("MDEX", MonthlyDelivery, Default)
-  val EXBXG = new FuturesExchange("EXBXG", MonthlyDelivery, Default)
+  val MDEX = new FuturesExchange("MDEX", MonthlyDelivery, Default) // Malaysia Derivatives Exchange
+  val TOCOM = new FuturesExchange("TOCOM", MonthlyDelivery, Default) // Tokyo Commodity Exchange
+  val DCE = new FuturesExchange("DCE", MonthlyDelivery, Default) // Dalian Commodity Exchange
+  val DME = new FuturesExchange("DME", MonthlyDelivery, Default) // Dubai Mercantile Exchange
+  val EXBXG = new FuturesExchange("EXBXG", MonthlyDelivery, Default) // China Stainless Steel Exchange
+  val NYSE = new FuturesExchange("NYSE", MonthlyDelivery, Default)
 }

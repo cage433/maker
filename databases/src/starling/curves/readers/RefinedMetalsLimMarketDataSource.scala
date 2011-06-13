@@ -108,7 +108,7 @@ class MonthlyFuturesFixings(parentNodes: List[LimNode], levels: List[Level]) ext
   case class MonthlyFuturesRelation(market: FuturesMarket, month: Month)
 
   def relationExtractor = Extractor.regex("""TRAF\.(\w+)\.(\w+)_(\w+)""") { case List(exchange, limSymbol, deliveryMonth) => {
-    val optMarket = FuturesMarket.fromExchangeAndLimSymbol(exchangeLookup(exchange), limSymbol)
+    val optMarket = Market.fromExchangeAndLimSymbol(exchangeLookup(exchange), limSymbol)
     val optMonth = ReutersDeliveryMonthCodes.parse(deliveryMonth)
 
     (optMarket, optMonth) partialMatch { case (Some(market), Some(month)) => MonthlyFuturesRelation(market, month) }

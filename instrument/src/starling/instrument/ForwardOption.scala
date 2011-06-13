@@ -6,12 +6,12 @@ import starling.models._
 import starling.daterange.TimeOfDay._
 import starling.quantity.Percentage._
 import starling.curves._
-import starling.market.{ProxyForwardMarket, Market, ForwardMarket}
 import starling.daterange.{DateRangePeriod, DayAndTime, Day}
 import starling.daterange.DateRangePeriod
+import starling.market.{CommodityMarket, Market}
 
 case class ForwardOption(
-  market : ForwardMarket, 
+  market : CommodityMarket,
   exerciseDay : Day,
   deliveryDay : Day,
   strike : Quantity,
@@ -25,7 +25,7 @@ case class ForwardOption(
 
   val valuationCCY = strike.uom * market.uom
 
-  lazy val settlementDay = market.settlementDay(deliveryDay)
+  lazy val settlementDay = deliveryDay
 
   override def forwardState(env: Environment, dayAndTime: DayAndTime) = {
     if (dayAndTime < exerciseDay.endOfDay) {
@@ -42,7 +42,7 @@ case class ForwardOption(
   def assets(env : Environment) = {
     if(isLive(env.marketDay)) {
       val disc = env.discount(valuationCCY, exerciseDay)
-      var F = env.forwardPrice(market, market.underlying(deliveryDay))
+      var F = env.forwardPrice(market, deliveryDay)
       val Array(probOfExercise, exercisePriceRatio, undiscProbOfExercise) = pricer(env) match {
         case Left(cn) => cn.americanAssetsWithCorrection
         case Right(bs) => 
@@ -87,7 +87,7 @@ case class ForwardOption(
     val vol = env.impliedVol(market, deliveryDay, exerciseDay, strike)
     val T = exerciseDay.endOfDay.timeSince(env.marketDay)
     val r = env.zeroRate(valuationCCY, exerciseDay)
-    var F = env.forwardPrice(market, market.underlying(deliveryDay))
+    var F = env.forwardPrice(market, deliveryDay)
     exerciseType match {
       case American =>
         Left(new CrankNicholsonOptionPricer(
@@ -138,11 +138,11 @@ object ForwardOption extends InstrumentType[ForwardOption] with TradeableType[Fo
   val name = "Forward Option"
 
   def createTradeable(row: RichInstrumentResultSetRow) = {
-    new ForwardOption(row.getForwardMarket("Market"), row.getDay("ExerciseDay"), row.getDeliveryDay("Period"), row.getQuantity("Strike"), row.getQuantity("Quantity"), row.getCallPut("CallPut"), row.getExerciseType("exercisetype"))
+    new ForwardOption(row.getCommodityMarket("Market"), row.getDay("ExerciseDay"), row.getDeliveryDay("Period"), row.getQuantity("Strike"), row.getQuantity("Quantity"), row.getCallPut("CallPut"), row.getExerciseType("exercisetype"))
   }
   def sample = {
     import starling.quantity.UOM._
-    new ForwardOption(new ProxyForwardMarket(Market.LME_ALUMINIUM), Day(2009, 8, 1), Day(2009, 8, 20),
+    new ForwardOption(Market.LME_ALUMINIUM, Day(2009, 8, 1), Day(2009, 8, 20),
       Quantity(100, USD/MT), Quantity(100, MT), Call, European)
   }
 

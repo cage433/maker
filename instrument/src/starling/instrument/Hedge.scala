@@ -8,11 +8,12 @@ import starling.quantity.Quantity._
 import starling.curves.ForwardPriceKey
 import starling.curves.FuturesSpreadPrice
 import starling.curves.PriceDifferentiable
-import starling.market.FuturesFrontPeriodIndex
 import starling.curves.SwapPrice
-import starling.market.FuturesMarket
 import starling.daterange._
 import starling.utils.{CollectionUtils, SummingMap}
+import starling.utils.SummingMap
+import starling.daterange._
+import starling.market.{Index, FuturesFrontPeriodIndex, FuturesMarket}
 
 object Hedge{
   private def calcHedge(
@@ -138,12 +139,12 @@ object Hedge{
     val market = liveFutures.head.market
     assert(liveFutures.forall(_.market == market), "All liveFutures must be for the same market")
 
-    if (! FuturesFrontPeriodIndex.futuresMarketToIndexMap.contains(market))
+    if (!Index.futuresMarketToIndexMap.contains(market))
       return List(liveFutures.map(_ -> 1.0).toMap)
     if (market.tenor != Month)
       return List(liveFutures.map(_ -> 1.0).toMap)
 
-    val index = FuturesFrontPeriodIndex.futuresMarketToIndexMap(market)
+    val index = Index.futuresMarketToIndexMap(market)
     netFuturesByContiguousMonths(env.marketDay, liveFutures).flatMap(breakContiguousFuturesBySign).map{
       case contiguousFutures => {
         val months = contiguousFutures.map(_.delivery.asInstanceOf[Month])

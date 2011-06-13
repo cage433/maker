@@ -49,7 +49,7 @@ case class NamingAtomicEnvironment(atomicEnv: AtomicEnvironment, prefix:String) 
   }
 }
 
-case class MarketDeliveryPeriods(observationTimeOfDay:ObservationTimeOfDay, market:CommodityMarket, periods:SortedSet[DateRange]) {
+case class UnderlyingDeliveryPeriods(observationTimeOfDay:ObservationTimeOfDay, market:CommodityMarket, periods:SortedSet[DateRange]) {
   require(market.tenor.isOneOf(Day, Month), "Only daily and monthly markets are supported")
 
   def dateRangesFrom(startDay: Day) = market.tenor match {

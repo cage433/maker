@@ -2,8 +2,9 @@ package starling.instrument
 
 import starling.daterange.Day
 import starling.quantity.{UOM, Quantity}
-import starling.market.ForwardMarket
 import starling.curves.Environment
+import starling.market.{CommodityMarket}
+
 object Asset {
   def estimatedCash(settlementDay:Day, amount:Quantity, mtm:Quantity) = Asset(false, false, amount.uom, settlementDay, amount, mtm)
   def estimatedCash(settlementDay:Day, amount:Quantity, env:Environment) = cash(false, settlementDay, amount, env)
@@ -21,14 +22,14 @@ object Asset {
   def estimatedPhysical(market:String, settlementDay:Day, amount:Quantity, mtm:Quantity) =
     Asset(false, false, market.toString, settlementDay, amount, mtm)
 
-  def knownPhysical(market:ForwardMarket, deliveryDay:Day, amount:Quantity, env:Environment) = {
+  def knownPhysical(market: CommodityMarket, deliveryDay:Day, amount:Quantity, env:Environment) = {
     val stuffMtm = {
       if (env.marketDay < deliveryDay.endOfDay) {
-        var price = env.forwardPrice(market, market.underlying(deliveryDay))
-        val discount = env.discount(market.currency, market.settlementDay(deliveryDay))
+        val price = env.forwardPrice(market, deliveryDay)
+        val discount = env.discount(market.currency, deliveryDay)
         price * amount * discount
       } else {
-        amount * env.forwardPrice(market, market.underlying(env.marketDay.day))
+        amount * env.forwardPrice(market, env.marketDay.day)
       }
     }
     Asset(true, deliveryDay < env.marketDay.day, market, deliveryDay, amount, stuffMtm)

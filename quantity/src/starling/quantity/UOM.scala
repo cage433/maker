@@ -57,6 +57,7 @@ object UOM {
   val US_CENT = US_CENT_SYMBOL.asUOM
   val SHARE = SHARE_SYMBOL.asUOM
 
+  val ST = SHORT_TONNE_SYMBOL.asUOM
   val MT = TONNE_SYMBOL.asUOM
   val C_MT = C_TONNE_SYMBOL.asUOM
   val K_MT = KILO_TONNE_SYMBOL.asUOM
@@ -142,7 +143,8 @@ object UOM {
       }
 
       val unScaledUOM = uomString match {
-        case FXRegex(num, _, dem) => (getSymbolOption(num.trim), getSymbolOption(dem.trim)) partialMatch {
+          // check the length so that S/T doesn't fall in here. I don't know any FX that is 3 chars or less
+        case FXRegex(num, _, dem) if uomString.length > 3 => (getSymbolOption(num.trim), getSymbolOption(dem.trim)) partialMatch {
           case (Some(n), Some(d)) => n.asUOM / d.asUOM
         }
         case _ => getSymbolOption(uomString.trim).map(_.asUOM)

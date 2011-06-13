@@ -1,6 +1,8 @@
 package starling.calendar
 
 class BusinessCalendars(val holidayTables : HolidayTables) {
+  def financialHolidaysOption(code: String)= holidayTables.financialHolidaysOption(code)
+
   // Countries
   lazy val UK = holidayTables.UK
   lazy val US = holidayTables.US

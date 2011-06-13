@@ -136,7 +136,7 @@ class DefaultInstrumentLevelEnvironment(underlyingAtomicEnv : AtomicEnvironment)
     }
 
     (market, period) match {
-      case (mkt : FuturesMarket, period : DateRange) => {
+      case (mkt : CommodityMarket, period : DateRange) => {
         mkt.commodity match {
           case _: OilCommodity | NatGas => {
             impliedOilVol(mkt, period)
@@ -144,18 +144,6 @@ class DefaultInstrumentLevelEnvironment(underlyingAtomicEnv : AtomicEnvironment)
           case _ => impliedMetalVol(mkt, period)
         }
       }
-      case (mkt @ ProxyForwardMarket(futuresMarket), period : Day) =>
-        interpolatedVol(futuresMarket, mkt.underlying(period), exerciseDay, strike, isIndexVol = false)
-
-      case (mkt : ForwardMarket, period : Day) => {
-        mkt.commodity match {
-          case c : OilCommodity => {
-            impliedOilVol(mkt, period)
-          }
-          case _ => impliedMetalVol(mkt, period)
-        }
-      }
-
       case (mkt : FXMarket, forwardDay : Day) => {
         impliedFXVol(mkt, forwardDay)
       }

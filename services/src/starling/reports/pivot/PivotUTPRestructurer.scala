@@ -3,7 +3,6 @@ package starling.reports.pivot
 import starling.market.FuturesFrontPeriodIndex
 import starling.utils.cache.CacheFactory
 import starling.pivot.PivotQuantity
-import starling.market.FuturesSpreadIndex
 import starling.reports.pivot.PivotReport._
 import starling.quantity.{UOM, Quantity}
 import starling.curves._

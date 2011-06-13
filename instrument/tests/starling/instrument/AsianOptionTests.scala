@@ -88,7 +88,7 @@ class AsianOptionTests extends JonTestEnv {
   def testAsianPriceDuringLife {
     val sep09 = Month(2009, 9)
     val su = RandomVariables.standardUniform(12345)
-    val index = PublishedIndex.PREM_UNL_EURO_BOB_OXY_NWE_BARGES
+    val index = Index.PREM_UNL_EURO_BOB_OXY_NWE_BARGES
     val market = index.market
     val averagingDays = index.observationDays(sep09)
     val prices = Map[DateRange, Quantity]() ++ averagingDays.map{d => index.observedPeriod(d) -> Quantity(100.0 * su.nextDouble, USD/ MT)}
@@ -161,7 +161,7 @@ class AsianOptionTests extends JonTestEnv {
       }
       )
 
-    val index = FuturesFrontPeriodIndex.GO11
+    val index = Index.GO11
     val market = index.market
 
     val strikeQty = Quantity(strike, USD / MT)
@@ -185,9 +185,8 @@ class AsianOptionTests extends JonTestEnv {
   def testFreightEquivalentAsian {
     val period = Month(2009, 10)
     val middleDay = period.firstDay + period.days.size / 2
-    val freightMarket = Market.BALTIC_CAPESIZE
-    val freightIndex = PublishedIndex.CAPSIZE_TC_AVG
-    val index = PublishedIndex.PREM_UNL_EURO_BOB_OXY_NWE_BARGES
+    val freightIndex = Index.CAPSIZE_TC_AVG
+    val index = Index.PREM_UNL_EURO_BOB_OXY_NWE_BARGES
     val market = index.market
     val md = Day(2009, 9, 10)
 
@@ -206,7 +205,7 @@ class AsianOptionTests extends JonTestEnv {
           case _ : OilAtmVolAtomicDatumKey => Percentage(0.8)
           case _: OilVolSkewAtomicDatumKey => Map[Double, Percentage]()
           case _: BradyMetalVolAtomicDatumKey => Percentage(.8)
-          case ForwardPriceKey(`freightMarket`, _, _) => Quantity(65, freightMarket.priceUOM)
+          case ForwardPriceKey(`freightIndex`, _, _) => Quantity(65, freightIndex.priceUOM)
           case ForwardPriceKey(market, _, _) => {
             val n = nFixings / (nFixings + nUnfixed * 1.0)
             val m = nUnfixed / (nFixings + nUnfixed * 1.0)
@@ -214,14 +213,14 @@ class AsianOptionTests extends JonTestEnv {
             val forwardPrice = fixedAverage * n + 65.0 * m
             Quantity(forwardPrice, market.priceUOM)
           }
-          case FixingKey(`freightIndex`, _) => Quantity(50, freightMarket.priceUOM)
+          case FixingKey(`freightIndex`, _) => Quantity(50, freightIndex.priceUOM)
           case FixingKey(`index`, _) => Quantity(50, market.priceUOM)
         }
       }
       )
 
     val metalsAO = SingleAsianOption(index, period, Quantity(60, market.priceUOM), Quantity(1, market.uom), Call)
-    val freightAO = SingleAsianOption(freightIndex, period, Quantity(60, freightMarket.priceUOM), Quantity(1, freightMarket.uom), Call)
+    val freightAO = SingleAsianOption(freightIndex, period, Quantity(60, freightIndex.priceUOM), Quantity(1, freightIndex.uom), Call)
 
     val mtm1 = metalsAO.mtm(env)
     val mtm2 = freightAO.mtm(env)
@@ -232,7 +231,7 @@ class AsianOptionTests extends JonTestEnv {
   @Test
   def testAsianStrip {
     val env = makeEnv(Day(2010, 1, 1).endOfDay)
-    val index = FuturesFrontPeriodIndex.WTI10
+    val index = Index.WTI10
     val jan = Month(2010, 1)
     val feb = Month(2010, 2)
     val mar = Month(2010, 3)
@@ -272,7 +271,7 @@ class AsianOptionTests extends JonTestEnv {
     val march = feb + 1
     val april = feb + 2
 
-    val index = FuturesFrontPeriodIndex.WTI10
+    val index = Index.WTI10
     val option = SingleAsianOption(
       index,
       feb,

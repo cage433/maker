@@ -7,7 +7,7 @@ import starling.quantity.Quantity
 import starling.utils.ScalaTestUtils._
 import starling.utils.QuantityTestUtils._
 import starling.market._
-import starling.market.PublishedIndex._
+import starling.market.Index._
 import rules.CommonPricingRule
 import starling.curves._
 import starling.market.formula._
@@ -16,16 +16,16 @@ import starling.daterange._
 import starling.daterange.Day._
 import starling.utils.{AtomicDatumKeyUtils, StarlingTest}
 
-class CFDTests extends TestExpiryRules {
-  val platts_brent = PublishedIndex.PLATTS_BRENT(new BrentMonth(4))
-  val spreadIndex = BrentCFDSpreadIndex(platts_brent)
+class CFDTests extends TestMarketSpec {
+  val platts_brent = Index.publishedIndexFromName("Platts Brent (April)")
+  val spreadIndex = BrentCFDSpreadIndex.indexFor(new BrentMonth(4))
 
   val index1 = DATED_BRENT
   val index2 = platts_brent
 
   assertEquals(spreadIndex.indexes, Set(index1, index2))
-  val market1 = index1.forwardPriceMarket
-  val market2 = index2.forwardPriceMarket
+  val market1 = index1.market
+  val market2 = index2.market
 
   // platts forward price is higher, in contango
   val fwdPrice1 = Quantity(10, USD / BBL)
@@ -134,9 +134,9 @@ class CFDTests extends TestExpiryRules {
 
     val differentiables = AtomicDatumKeyUtils.environmentDifferentiables(swapSpread, marketDay.endOfDay, USD)
 
-    val platts_brent_april = Market.PLATTS_BRENT_MONTH_MARKETS(BrentMonth(4))
+    val platts_brent_april = Index.publishedIndexFromName("Platts Brent (April)")
     val diffs = Set(
-      PriceDifferentiable(Market.DATED_BRENT, 13 Jan 2011), PriceDifferentiable(Market.DATED_BRENT, 14 Jan 2011),
+      PriceDifferentiable(Index.DATED_BRENT, 13 Jan 2011), PriceDifferentiable(Index.DATED_BRENT, 14 Jan 2011),
       PriceDifferentiable(platts_brent_april, 13 Jan 2011), PriceDifferentiable(platts_brent_april, 14 Jan 2011))
     assertEquals(differentiables, diffs)
   }

@@ -6,13 +6,13 @@ import org.testng.annotations.Test
 import starling.quantity.RichQuantity._
 import starling.quantity.UOM._
 import starling.quantity.Percentage
-import starling.market.{TestExpiryRules, Market}
 import starling.daterange.{Day, Year}
 import starling.daterange.Day._
 import starling.curves.{USDFXRateKey, AtomicDatumKey, Environment, TestingAtomicEnvironment}
 import starling.instrument.CashInstrumentType._
+import starling.market.{Index, TestMarketSpec, Market}
 
-class BrokerCostTests extends TestExpiryRules {
+class BrokerCostTests extends TestMarketSpec {
   val env = Environment(
     new TestingAtomicEnvironment() {
       def marketDay = (1 Jan 2010).endOfDay
@@ -43,7 +43,7 @@ class BrokerCostTests extends TestExpiryRules {
   @Test
   def testAtMonthEnd {
     val period = Year(2011)
-    val mkt = Market.BALTIC_CAPESIZE
+    val mkt = Index.CAPSIZE_TC_AVG
     val vol = 15(DAY)
     val volume = new FreightVolume(mkt.uom, vol, period)
     val atMonthEnd = new AtMonthEndFreight(period, volume)
@@ -64,7 +64,7 @@ class BrokerCostTests extends TestExpiryRules {
   @Test
   def testAtMonthEndPercentVolume {
     val period = Year(2011)
-    val mkt = Market.BALTIC_CAPESIZE
+    val mkt = Index.CAPSIZE_TC_AVG
     val vol = 100(PERCENT)
     val strike = 14000(USD / DAY)
     val volume = new FreightVolume(mkt.uom, vol, period)
@@ -84,7 +84,7 @@ class BrokerCostTests extends TestExpiryRules {
   @Test
   def testSinglePayment {
     val period = Year(2011)
-    val mkt = Market.BALTIC_CAPESIZE
+    val mkt = Index.CAPSIZE_TC_AVG
     val vol = 100(DAY)
     val volume = new FreightVolume(mkt.uom, vol, period)
     val singlePayment = new SingleFreightPayment(Day.today, volume)

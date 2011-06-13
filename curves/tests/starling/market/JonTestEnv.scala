@@ -8,15 +8,17 @@ import org.testng.annotations.AfterClass
 import cern.colt.matrix.impl.DenseDoubleMatrix2D
 import starling.utils.StarlingTest
 
-trait JonTestEnv extends TestExpiryRules {
+trait JonTestEnv extends TestMarketSpec {
   def makeEnv(marketDay: DayAndTime, dVol: Double = 0.0, dPrice: Quantity = Quantity.NULL, dStdDev: Quantity = Quantity.NULL) = {
     import JonTestData._
 
     val wti = Market.NYMEX_WTI
     val rbob = Market.NYMEX_GASOLINE
-    val index = FuturesFrontPeriodIndex.WTI10
-    val brent = FuturesFrontPeriodIndex.BRT11
-    val datedBrent = PublishedIndex.DATED_BRENT
+    val index = Index.WTI10
+    val brent = Index.BRT11
+    val brentMarket = Index.BRT11.market
+    val datedBrent = Index.DATED_BRENT
+    val datedBrentMarket = datedBrent.market
     Environment(
       new UnitTestingAtomicEnvironment(marketDay, {
         case DiscountRateKey(`USD`, day, _) => math.exp(-interp(day) * day.daysSinceInYears(marketDay.day))
@@ -26,12 +28,12 @@ trait JonTestEnv extends TestExpiryRules {
         case ForwardPriceKey(`rbob`, forwardDate, _) => {
           Quantity(rbobForward(forwardDate.asInstanceOf[Month]), rbob.priceUOM) + dPrice
         }
-        case ForwardPriceKey(brent.market, forwardDate, _) => {
+        case ForwardPriceKey(`brentMarket`, forwardDate, _) => {
           val month = forwardDate.asInstanceOf[Month]
           val carry = month.lastDay.daysSinceInYears(Day(2011, 2, 1))
           Quantity(100 + carry, brent.priceUOM) + dPrice
         }
-        case ForwardPriceKey(datedBrent.market, forwardDate, _) => {
+        case ForwardPriceKey(`datedBrentMarket`, forwardDate, _) => {
           val day = forwardDate.asInstanceOf[Day]
           val carry = day.daysSinceInYears(Day(2011, 2, 1))
           Quantity(99.1965 + carry, datedBrent.priceUOM) + dPrice
@@ -68,7 +70,7 @@ trait JonTestEnv extends TestExpiryRules {
     import JonTestData._
 
     val market = Market.NYMEX_WTI
-    val index = FuturesFrontPeriodIndex.WTI10
+    val index = Index.WTI10
     Environment(
       new UnitTestingAtomicEnvironment(marketDay, {
         case DiscountRateKey(`USD`, day, _) => math.exp(-interp(day) * day.daysSinceInYears(marketDay.day))

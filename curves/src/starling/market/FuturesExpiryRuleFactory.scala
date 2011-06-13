@@ -23,7 +23,7 @@ object FuturesExpiryRuleFactory {
 
   def expiryRuleOpton = expiryRulesImpl
 
-	def expiryRules = {
+	def expiryRules: FuturesExpiryRules = {
 		expiryRulesImpl match {
       // If you hit this from a test try extending the test class from TestExpiryRules
 			case None => throw new Exception("Implementation not yet registered")

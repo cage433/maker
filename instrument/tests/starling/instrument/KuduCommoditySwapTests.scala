@@ -7,10 +7,10 @@ import starling.curves._
 import starling.daterange.{Day, Month}
 import starling.quantity.UOM._
 import starling.utils.QuantityTestUtils._
-import starling.market.{FuturesFrontPeriodIndex, TestExpiryRules}
+import starling.market.{Index, TestMarketSpec}
 
-class KuduCommoditySwapTests extends TestExpiryRules {
-  val index = FuturesFrontPeriodIndex.WTI10
+class KuduCommoditySwapTests extends TestMarketSpec {
+  val index = Index.WTI10
   val market = index.market
   val env = Environment(new TestingAtomicEnvironment() {
     def marketDay = Day(2010, 1, 5).startOfDay
@@ -32,7 +32,7 @@ class KuduCommoditySwapTests extends TestExpiryRules {
     val strike = Quantity(0, USD / BBL)
 
     val swap = new SingleCommoditySwap(index,strike,volume,month, cleared = false)
-    assertQtyEquals(swap.mtm(env), Quantity(86.483333, USD), 1e-6)
+    assertQtyEquals(swap.mtm(env), Quantity(86.483, USD), 1e-6)
   }
 
   @Test

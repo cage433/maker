@@ -2,9 +2,9 @@ package starling.db
 
 import org.springframework.jdbc.datasource.SingleConnectionDataSource
 import starling.richdb.{RichResultSetRowFactory, RichDB}
-import starling.market.TestExpiryRules
+import starling.market.TestMarketSpec
 
-trait MockDB extends TestExpiryRules {
+trait MockDB extends TestMarketSpec {
 
   /**
    * Creates a fresh db and allows it to be used with access through a RichDB. Then cleans it up later.

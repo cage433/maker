@@ -9,10 +9,10 @@ import scala.collection.immutable.{TreeSet, TreeMap}
 import starling.db.MarketDataReader
 import org.mockito.Mockito._
 import starling.daterange._
-import starling.market.{FuturesMarket, FuturesExchangeFactory, Market}
 import starling.marketdata._
+import starling.market.{TestMarketSpec, FuturesMarket, FuturesExchangeFactory, Market}
 
-class TimeShiftingEnvironmentRuleTests extends StarlingTest with ShouldMatchers {
+class TimeShiftingEnvironmentRuleTests extends TestMarketSpec with ShouldMatchers {
 
   val timeShiftingRule = TimeShiftToLMECloseEnvironmentRule
 

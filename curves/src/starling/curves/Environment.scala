@@ -74,6 +74,12 @@ case class Environment(
 
   def shiftsCanBeIgnored = atomicEnv.shiftsCanBeIgnored
   def setShiftsCanBeIgnored(canBeIgnored : Boolean) : Environment = copy(instrumentLevelEnv = instrumentLevelEnv.setShiftsCanBeIgnored(canBeIgnored))
+
+  /**
+   * Used by some of the tests, it means that averagePrice doesn't use the rounding rules of the market
+   */
+  def ignoreSwapRounding = copy(environmentParameters = environmentParameters.copy(swapRoundingOK = false))
+
   /**	Returns the current spot fx rate in units ccy1 / ccy2
    */
   def spotFXRate(ccy1: UOM, ccy2: UOM): Quantity = {
@@ -111,11 +117,7 @@ case class Environment(
   /** Returns the futures/forward price for the given market and forward date
    */
   def forwardPrice(market: CommodityMarket, forwardDate : DateRange) : Quantity = {
-    val realMarket = market match {
-      case ProxyForwardMarket(futuresMarket) => futuresMarket
-      case _ => market
-    }
-    instrumentLevelEnv.quantity(ForwardPriceKey(realMarket, forwardDate))
+    instrumentLevelEnv.quantity(ForwardPriceKey(market, forwardDate))
   }
 
   def forwardPrice(market: CommodityMarket, forwardDate : DateRange, unit: UOM) : Quantity = {

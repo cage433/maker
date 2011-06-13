@@ -70,6 +70,6 @@ object SwapCalendarSpread extends InstrumentType[SwapCalendarSpread] with Tradea
   def sample = {
     import starling.quantity.Quantity._
     import starling.quantity.UOM._
-    SwapCalendarSpread(PublishedIndex.DATED_BRENT, 123(USD/BBL), 77000(BBL), SpreadPeriod(Month(2015, 1), Month(2015, 1)), cleared = true)
+    SwapCalendarSpread(Index.DATED_BRENT, 123(USD/BBL), 77000(BBL), SpreadPeriod(Month(2015, 1), Month(2015, 1)), cleared = true)
   }
 }

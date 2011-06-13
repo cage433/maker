@@ -20,7 +20,7 @@ import starling.daterange.{ObservationPoint, Day, DateRange}
  * To change this template use File | Settings | File Templates.
  */
 
-class BradyFXVolsTests extends TestExpiryRules{
+class BradyFXVolsTests extends TestMarketSpec{
   @Test
   def testFromMarketDataToEnvironment{
     val days = Array(Day(2010, 2, 13), Day(2010, 4, 20), Day(2010, 8, 8), Day(2012, 12, 31))

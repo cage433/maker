@@ -26,9 +26,9 @@ class PriceCurveViewerOutputsPivotTableDataSourceTests extends StarlingTest with
 
   def environmentDay = Day(2010, 1, 1)
   def markets = List(
-    MarketDeliveryPeriods(observationPoint.timeOfDay, Market.LME_LEAD, TreeSet(Day(2010, 1, 1), Day(2010, 1, 2), lastDay)),
-    MarketDeliveryPeriods(observationPoint.timeOfDay, Market.LME_TIN, TreeSet(Day(2010, 1, 2), Day(2010, 1, 2), lastDay)),
-    MarketDeliveryPeriods(observationPoint.timeOfDay, Market.LME_ZINC, TreeSet(Day(2010, 1, 2), Day(2010, 1, 2), lastDay))
+    UnderlyingDeliveryPeriods(observationPoint.timeOfDay, Market.LME_LEAD, TreeSet(Day(2010, 1, 1), Day(2010, 1, 2), lastDay)),
+    UnderlyingDeliveryPeriods(observationPoint.timeOfDay, Market.LME_TIN, TreeSet(Day(2010, 1, 2), Day(2010, 1, 2), lastDay)),
+    UnderlyingDeliveryPeriods(observationPoint.timeOfDay, Market.LME_ZINC, TreeSet(Day(2010, 1, 2), Day(2010, 1, 2), lastDay))
   )
 
 

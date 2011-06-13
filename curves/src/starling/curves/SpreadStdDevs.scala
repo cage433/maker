@@ -120,7 +120,7 @@ object SpreadStdDevSurfaceDataType extends MarketDataType {
 
   override def keyFields = Set(marketField.field, firstPeriodField.field, lastPeriodField.field, deltaField.field)
   override def valueFields = Set(stdDevField.field)
-  override def createKey(values: Map[Field, Any]) = SpreadStdDevSurfaceDataKey(FuturesMarket.fromName(values(marketField.field).asInstanceOf[String]))
+  override def createKey(values: Map[Field, Any]) = SpreadStdDevSurfaceDataKey(Market.futuresMarketFromName(values(marketField.field).asInstanceOf[String]))
   def createValue(values: List[Map[Field, Any]]) = {
     val builder = new SpreadStdDevSurfaceDataBuilder()
     values.foreach { row => {

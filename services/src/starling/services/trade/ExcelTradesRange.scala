@@ -139,8 +139,8 @@ case class ExcelTradesRange(subgroupName : String,
         def getUOM(name: String) = row.getUOM(name)
         def getQuantity(name: String) = row.getQuantity(name)
         def getStrikes = row.getStrikes
-        def getForwardMarket(name: String) = Market.forwardMarketFromName(row.getString(name))
-        def getFuturesMarket(name: String) = FuturesMarket.fromName(row.getString(name))
+        def getCommodityMarket(name: String) = Market.fromName(row.getString(name))
+        def getFuturesMarket(name: String) = Market.futuresMarketFromName(row.getString(name))
         def getDateRange(name: String, tenor : Option[TenorType] = None) = row.getDateRange(name, tenor)
         override def getSpread(name:String) = {
           row.getObject(name) match {

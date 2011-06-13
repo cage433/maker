@@ -9,7 +9,7 @@ import starling.utils.ScalaTestUtils._
 import starling.utils.QuantityTestUtils._
 import starling.curves._
 import starling.daterange.{Month, Day}
-import starling.market.{TestExpiryRules, FuturesMarket, Market}
+import starling.market.{TestMarketSpec, FuturesMarket, Market}
 import starling.quantity.{UOM, Percentage, Quantity}
 import starling.varcalculator.ForwardPriceRiskFactor
 import starling.models._
@@ -36,7 +36,7 @@ class FuturesOptionTests extends StarlingTest {
     expectedCallPrice : Double,
     expectedPutPrice : Double
   ){
-    val mkt = FuturesMarket.testMarket("A Test Market", USD, MT)
+    val mkt = Market.testMarket("A Test Market", USD, MT)
     val env = Environment(
       new TestingAtomicEnvironment(){
         val marketDay = Day(2009, 1, 10).endOfDay
@@ -88,7 +88,7 @@ class FuturesOptionTests extends StarlingTest {
 
     val exerciseDay = env.marketDay.day + 100
     val option = new FuturesOption(
-      	FuturesMarket.testMarket("A Test Market", USD, MT, Month),
+      	Market.testMarket("A Test Market", USD, MT, Month),
       	exerciseDay,
       	Month(2012, 10),
       	Quantity(100, USD / MT),

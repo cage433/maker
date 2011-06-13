@@ -16,9 +16,7 @@ import rules.SwapPricingRule
  */
 object IndexRuleEvaluation {
 
-  case class Row(day: Day, index : SingleIndex, value: PQ, valueInIndexUOM: PQ) {
-    def forwardPriceMarket = index.forwardPriceMarket
-  }
+  case class Row(day: Day, index : SingleIndex, value: PQ, valueInIndexUOM: PQ)
 
   def rows(index: Index, period: DateRange, pricingRule: SwapPricingRule, rounding: Option[Int], environment: Environment): (Iterable[Row], PQ) = {
     case class Entry(method: String, params: List[Object], result: Object, keysAndValues: Map[AtomicDatumKey, Any])

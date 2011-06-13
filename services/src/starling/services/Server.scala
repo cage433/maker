@@ -35,13 +35,13 @@ import starling.LIMServer
 import starling.gui.api._
 import starling.daterange.Day
 import starling.bouncyrmi._
-import starling.curves.{FwdCurveAutoImport, EAIQuotesFormulaIndexReader, CurveViewer}
 import starling.eai.{Book, Traders, EAIAutoImport, EAIStrategyDB}
 import com.jolbox.bonecp.BoneCP
 import org.springframework.mail.javamail.{MimeMessageHelper, JavaMailSender, JavaMailSenderImpl}
 import starling.rmi._
 import starling.calendar._
 import java.lang.String
+import starling.curves.{EAIMarketLookup, FwdCurveAutoImport, CurveViewer}
 
 
 class StarlingInit( val props: Props,
@@ -138,11 +138,9 @@ class StarlingInit( val props: Props,
   val businessCalendars = new BusinessCalendars(holidayTables)
   val expiryRules = new FuturesExpiryRulesImpl(eaiSqlServerDB, businessCalendars)
   FuturesExpiryRuleFactory.registerRulesImpl(expiryRules)
-  val precisionRulesLoader = new PrecisionRulesLoader(eaiSqlServerDB)
-  MarketPrecisionFactory.registerRulesImpl(precisionRulesLoader)
+  val marketLookup = new EAIMarketLookup(eaiSqlServerDB, expiryRules)
+  MarketProvider.registerImpl(marketLookup)
   val richResultSetRowFactory = new RichResultSetRowFactory
-  val formulaIndexesReader = new EAIQuotesFormulaIndexReader(eaiSqlServerDB, businessCalendars)
-  FormulaIndexList.set(Some(formulaIndexesReader))
 
   // Rich DB Connections. Which use things like market factories for smarter deserialization
   val starlingRichDB = new RichDB(props.StarlingDatabase(), richResultSetRowFactory)
