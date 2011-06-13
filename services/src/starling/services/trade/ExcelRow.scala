@@ -10,10 +10,11 @@ import starling.auth.User
 import starling.trade.TradeID
 import starling.eai.{Traders, TreeID, EAIStrategyDB}
 import starling.market.rules.{CommonPricingRule, SwapPricingRule}
-import starling.market.{FuturesSpreadMarket, MultiIndex, FuturesMarket, SingleIndex}
-import starling.utils.{StringToInt, StringToDouble}
 import starling.quantity.{UOM, UOMParse, Quantity}
 import starling.quantity.UOM._
+import starling.utils.{StringToInt, StringToDouble}
+import starling.utils.CollectionUtils._
+import starling.market._
 
 case class ExcelRow(row: Map[String, Any], traders: Traders) {
 
@@ -26,6 +27,8 @@ case class ExcelRow(row: Map[String, Any], traders: Traders) {
   assert(row.contains(InstrumentColumn), "No Instrument column, or wrong name, should be called: " + InstrumentColumn)
   assert(row.contains(MarketColumn), "No Market column, or wrong name, should be called: " + MarketColumn)
   assert(row.contains(PeriodColumn), "No volume column, or wrong name, should be called: " + PeriodColumn)
+  checkMarket
+  checkInstrument
 
   val sys = IntradayTradeSystem
 
@@ -68,7 +71,7 @@ case class ExcelRow(row: Map[String, Any], traders: Traders) {
     val instr = string(InstrumentColumn)
     instrumentAliases.get(instr.toLowerCase) match {
       case Some(i) => i
-      case None => InstrumentType.fromName(instr)
+      case None => InstrumentType.fromName(instr).get
     }
   }
 
@@ -173,7 +176,16 @@ case class ExcelRow(row: Map[String, Any], traders: Traders) {
 
   def index = indexAliases.get(marketStr) match {
     case Some(i) => i
-    case None => throw ExcelInstrumentReaderException("Couldn't find index with name: " + marketStr)
+    case None => {
+      marketAliases.get(marketStr) match {
+        case Some(market) => {
+          val matches = Index.singleIndexes.filter(_.markets.contains(market)).mkString(" or ")
+          throw ExcelInstrumentReaderException("Couldn't find index with name: " + marketStr + ", did you mean '" + matches + "'?")
+        }
+        case _ => throw ExcelInstrumentReaderException("Couldn't find index with name: " + marketStr)
+      }
+
+    }
   }
 
 
@@ -254,6 +266,41 @@ case class ExcelRow(row: Map[String, Any], traders: Traders) {
   }
 
   protected def double(name: String) = doubleFromString(row(name).toString, name)
+
+  def checkMarket {
+    val name = marketStr
+    val all = FuturesSpreadMarket.values.map(_.toString.toLowerCase).toSet ++ marketAliases.keys ++ indexAliases.keys
+    if (!all.contains(name)) {
+      val closest = closestLevenshteinString(all, name, 4)
+
+      if (closest.nonEmpty) {
+        val matches = closest.mkString(" or ")
+        throw new Exception("Unexpected market name: " + name + " maybe: '" + matches + "'?")
+      } else {
+        throw new Exception("Unexpected market name: " + name)
+      }
+    }
+  }
+
+  def checkInstrument {
+    val name = string(InstrumentColumn)
+
+    try {
+      instrumentType
+    } catch {
+      case _ => {
+        val names = InstrumentType.types.map(_.name.toLowerCase)
+          val closest = closestLevenshteinString(names, name, 4).map(new String(_))
+          if (closest.nonEmpty) {
+            val matches = closest.mkString(" or ")
+            throw new Exception("Unexpected instrument name: " + name + " maybe: '" + matches + "'?")
+          } else {
+            throw new Exception("Unexpected instrument name: " + name)
+          }
+      }
+    }
+
+  }
 
   def marketPriceUOM = {
     val name = marketStr
