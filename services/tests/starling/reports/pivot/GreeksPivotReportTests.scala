@@ -259,7 +259,7 @@ class GreeksPivotReportTests extends StarlingTest {
       mkt => 
         val index : SingleIndex = FuturesFrontPeriodIndex.futuresMarketToIndexMap.get(mkt) match {
           case Some(idx) => idx
-          case _ => PublishedIndex(mkt.name, mkt.eaiQuoteID, mkt)
+          case _ => PublishedIndex(mkt.name, mkt.eaiQuoteID, mkt, mkt.businessCalendar)
         }
         SingleCommoditySwap(index, Quantity(0, mkt.priceUOM), Quantity((u.nextDouble - 0.5) * 100, mkt.uom), randomMonths.next, cleared = false)
     }

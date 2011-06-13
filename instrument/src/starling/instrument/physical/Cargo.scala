@@ -13,7 +13,7 @@ import starling.richdb.RichInstrumentResultSetRow
 case class Cargo(quantity: Quantity, incoterm: Incoterm, blDate: Day, index: FormulaIndex, pricingSchedule: PricingSchedule, pricingRule: SwapPricingRule)
   extends UTP with Tradeable {
 
-  val calendar = pricingRule.calendar(index.markets)
+  val calendar = pricingRule.calendar(index.calendars)
   val algorithm = pricingSchedule.algorithm
   val pricingPeriod = algorithm.calculateSchedule(calendar)
   val pricingDaysAndRatios = algorithm.applyPricingRule(calendar, pricingPeriod)

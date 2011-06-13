@@ -34,7 +34,7 @@ case class FwdCurveDbMarketDataSource(varSqlDB: DB, businessCalendars: BusinessC
         case futuresFrontPeriodIndex: FuturesFrontPeriodIndex => futuresFrontPeriodIndex.market.limSymbol.isEmpty
         case _ => true
       }
-    } }.filter(_.market.pricesTable != null)
+    } }.filter(_.forwardPriceMarket.pricesTable != null)
     val forwardRateKeys: List[ForwardRateDataKey] = List(ForwardRateDataKey(UOM.USD)) // TODO [05 Apr 2011] We only have USD at the moment. Fix this once we have more
     val volSurfaceKeys: scala.List[OilVolSurfaceDataKey] = OilVolSurfaceDataType.keys
     val spredStdKeys: List[SpreadStdDevSurfaceDataKey] = SpreadStdDevSurfaceDataType.keys
@@ -178,12 +178,12 @@ case class FwdCurveDbMarketDataSource(varSqlDB: DB, businessCalendars: BusinessC
     def read(indexes: List[SingleIndex]): ((Day, Day, MarketDataType), List[MarketDataEntry]) = {
 
       val a = indexes.flatMap { index => {
-        val eaiQuoteID = index match {
+        val eaiQuoteID : Option[Int] = index match {
           case p:PublishedIndex => p.eaiQuoteID
-          case _ => index.market.eaiQuoteID
+          case _ => index.forwardPriceMarket.eaiQuoteID
         }
-        val cashLogic = cashDayLogic(index.market, Some(index))
-        eaiQuoteID.map(eai => (index.market, (eai, cashLogic, index.level)))
+        val cashLogic = cashDayLogic(index.forwardPriceMarket, Some(index))
+        eaiQuoteID.map(eai => (index.forwardPriceMarket, (eai, cashLogic, index.level)))
       }}.groupInto(_.head, _.tail)
 
       val entries = a.flatMap { case (market, otherDetails) => readSingle(otherDetails, market) }

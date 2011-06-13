@@ -25,7 +25,7 @@ class FuturesTests extends TestExpiryRules {
 	  Map(
       ForwardPriceKey(mkt, d) -> price,
       USDFXRateKey(EUR) -> fxRate,
-      FixingKey(FuturesFrontPeriodIndex.WTI10.fixingHistoryKey(d), Market.NYMEX_WTI.lastTradingDay(Month(2009, 1))) -> fixing
+      FixingKey(FuturesFrontPeriodIndex.WTI10, Market.NYMEX_WTI.lastTradingDay(Month(2009, 1))) -> fixing
     ),
    marketDay.endOfDay
 	)

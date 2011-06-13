@@ -119,8 +119,8 @@ class CommoditySwapTests extends JonTestEnv {
     val spreadIndex = FuturesSpreadIndex.GAS_OIL_CRACK
     val index1 = spreadIndex.index1
     val index2 = spreadIndex.index2
-    val market1 = spreadIndex.index1.market
-    val market2 = spreadIndex.index2.market
+    val market1 = spreadIndex.index1.forwardPriceMarket
+    val market2 = spreadIndex.index2.forwardPriceMarket
 
     val env = Environment(new TestingAtomicEnvironment() {
       def marketDay = Day(2009, 9, 15).startOfDay
@@ -128,8 +128,8 @@ class CommoditySwapTests extends JonTestEnv {
       def applyOrMatchError(key: AtomicDatumKey) = key match {
         case ForwardPriceKey(`market1`, _, _) => Quantity(200, USD / MT)
         case ForwardPriceKey(`market2`, _, _) => Quantity(250, USD / BBL)
-        case FixingKey(key, _) if key.market == index1.market => Quantity(100, USD / MT)
-        case FixingKey(key, _) if key.market == index2.market => Quantity(150, USD / BBL)
+        case FixingKey(`index1`, _) => Quantity(100, USD / MT)
+        case FixingKey(`index2`, _) => Quantity(150, USD / BBL)
         case DiscountRateKey(_, day, _) => scala.math.exp(-0.05 * day.daysSinceInYears(marketDay.day))
       }
     })
@@ -141,7 +141,7 @@ class CommoditySwapTests extends JonTestEnv {
     val swapSingle1 = new SingleCommoditySwap(
       index1,
       Quantity(0, USD / MT),
-      index1.market.convert(volume, MT).get,
+      index1.forwardPriceMarket.convert(volume, MT).get,
       sep09,
       false
     )
@@ -707,7 +707,7 @@ class CommoditySwapTests extends JonTestEnv {
       new TestingAtomicEnvironment() {
         def applyOrMatchError(key: AtomicDatumKey) = key match {
           case ForwardPriceKey(market, _, _) => Quantity(123.45, USD / BBL)
-          case FixingKey(key, day) if key.market == market => {
+          case FixingKey(`index`, day) => {
             fixings(day)
           }
         }

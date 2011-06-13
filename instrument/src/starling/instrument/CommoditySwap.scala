@@ -32,7 +32,7 @@ case class CommoditySwap(
   extends Swap(index, strike, _volume, averagingPeriod, cleared, pricingRule) with MultiLeg {
 
   require(index.convert(_volume, strike.denominatorUOM).isDefined, "Couldn't convert volume into strike uom: " + (_volume, strike) + ", " + index)
-  require(pricingRule.isValid(index.markets), "Invalid pricing rule for " + index)
+  require(pricingRule.isValid(index.calendars), "Invalid pricing rule for " + index)
 
   // volume converted so everything is in the context of the strike uom
   val volume = index.convert(_volume, strike.denominatorUOM).get
@@ -97,7 +97,7 @@ case class SingleCommoditySwap(
 
   def assets(env: Environment) = {
     val assets = {
-      val days = pricingRule.observationDays(index.markets, averagingPeriod)
+      val days = pricingRule.observationDays(index.calendars, averagingPeriod)
       if (days.isEmpty) {
         List()
       } else {

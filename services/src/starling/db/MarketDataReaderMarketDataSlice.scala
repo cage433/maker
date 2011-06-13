@@ -9,8 +9,8 @@ import starling.market.CommodityMarket
 class MarketDataReaderMarketDataSlice(reader:MarketDataReader, observationPoint:ObservationPoint) extends MarketDataSlice {
   def read(key: MarketDataKey) = reader.read(TimedMarketDataKey(observationPoint, key))
 
-  def fixings(market:CommodityMarket, observationPoint: ObservationPoint) = {
-    PriceFixingsHistoryDataKey(market).read(observationPoint, reader)
+  def fixings(key : PriceFixingsHistoryDataKey, observationPoint: ObservationPoint) : PriceFixingsHistoryData = {
+    key.read(observationPoint, reader)
   }
 }
 

@@ -24,7 +24,7 @@ trait HolidayTables{
   val KLS: BusinessCalendarSet = financialHolidays("KLS")
 
   // Hack for LBMA as we don't have old holiday data before apr 2nd
-  val LBMA: BusinessCalendarSet = BusinessCalendarSet("LBMA", London, financialHolidays("LBM").days ++ UK.days.filter(_ < (2 Apr 2010)))
+  val LBMA: BusinessCalendarSet = BusinessCalendarSet("LBMA", London, financialHolidays("LBM").holidays ++ UK.holidays.filter(_ < (2 Apr 2010)))
 }
 
 object NullHolidays extends HolidayTables{

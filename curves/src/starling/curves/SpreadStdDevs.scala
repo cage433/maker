@@ -158,8 +158,6 @@ case class SpreadAtmStdDevAtomicDatumKey (
     period
    ) with VolKey with EnvironmentDifferentiable
 {
-  def volMarket = market
-
   def forwardStateValue(originalAtomicEnv: AtomicEnvironment, forwardDayAndTime: DayAndTime) = {
     originalAtomicEnv(this)
   }
