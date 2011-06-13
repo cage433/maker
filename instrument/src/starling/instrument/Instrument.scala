@@ -54,10 +54,7 @@ object InstrumentType {
     FuturesCommoditySpread
   )
 
-  def fromName(name : String) = types.find(_.name.toLowerCase == name.toLowerCase) match {
-    case Some(t) => t
-    case None => throw new Exception("Couldn't find instrument with name " + name)
-  }
+  def fromName(name : String) = types.find(_.name.toLowerCase == name.toLowerCase)
 
   //the union of the keys in the Instrument#details method
   val fieldsWithType = List(
