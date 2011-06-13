@@ -30,7 +30,7 @@ case class SwapCalendarSpread(index: SingleIndex,
 
   def assets(env: Environment) = asUtpPortfolio(env.marketDay.day).assets(env)
 
-  def price(env: Environment) = env.forwardPrice(index.market, period.front) - env.forwardPrice(index.market, period.back)
+  def price(env: Environment) = env.averagePrice(index, period.front) - env.averagePrice(index, period.back)
 
   def periodKey = Some(period)
 

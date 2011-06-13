@@ -703,6 +703,8 @@ object Market {
   lazy val forwardMarkets: List[ForwardMarket] = markets.filterCast[ForwardMarket].sortWith(_.name < _.name)
   lazy val futuresMarkets: List[FuturesMarket] = markets.filterCast[FuturesMarket].sortWith(_.name < _.name)
 
+  def marketsForExchange(exchange:FuturesExchange) = futuresMarkets.filter(_.exchange==exchange)
+
   def fromTrinityCode(code : String): CommodityMarket =
     trinityCodeMap.getOrElse(code.trim, throw new UnknownTrinityMarketException(code))
 

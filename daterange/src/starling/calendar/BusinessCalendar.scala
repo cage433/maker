@@ -3,13 +3,13 @@ package starling.calendar
 import starling.daterange.{Location, DateRange, Day}
 import starling.utils.ImplicitConversions._
 
-case class BusinessCalendarSet(name: String, location: Location, days: Set[Day]) extends BusinessCalendar {
-  def isHoliday(day: Day) = days.contains(day)
+case class BusinessCalendarSet(name: String, location: Location, holidays: Set[Day]) extends BusinessCalendar {
+  def isHoliday(day: Day) = holidays.contains(day)
 
   def +(other: BusinessCalendarSet):BusinessCalendarSet = other.location match {
     case `location` if other == this => this
-    case `location` => BusinessCalendarSet(name + other.name, location, days ++ other.days)
-    case _ => BusinessCalendarSet(name + other.name, Location.Unknown, days ++ other.days)
+    case `location` => BusinessCalendarSet(name + other.name, location, holidays ++ other.holidays)
+    case _ => BusinessCalendarSet(name + other.name, Location.Unknown, holidays ++ other.holidays)
   }
 }
 

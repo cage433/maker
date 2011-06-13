@@ -15,13 +15,11 @@ case class FixingsHistory(marketDayAndTime: DayAndTime, marketDataSlice: MarketD
   type CurveValuesType = Quantity
 
   def apply(point : AnyRef) : Quantity = point match {
-    case day: Day => marketDataSlice.fixings(key.market, ObservationPoint(day, key.observationTime))
-                                    .fixingFor(key.level, key.period.storedPeriod)
-                                    .toQuantity
+    case observationDay: Day => key.index.fixing(marketDataSlice, observationDay)
   }
 }
 
-case class FixingsHistoryKey(market:CommodityMarket, period: FixingPeriod, level:Level, observationTime:ObservationTimeOfDay)
+case class FixingsHistoryKey(index : SingleIndex)
   extends CurveKey {
 
   def buildFromMarketData(marketDayAndTime: DayAndTime, marketDataSlice: MarketDataSlice): CurveObject = {
@@ -32,21 +30,21 @@ case class FixingsHistoryKey(market:CommodityMarket, period: FixingPeriod, level
 
   def typeName = "PriceFixingsHistory"
 
-  def priceUOM = market.priceUOM
+  def priceUOM = index.priceUOM
 }
 
 
-case class FixingKey(key: FixingsHistoryKey, day: Day) extends AtomicDatumKey(key, day) {
+case class FixingKey(index : SingleIndex, observationDay: Day) extends AtomicDatumKey(FixingsHistoryKey(index), observationDay) {
   def forwardStateValue(originalAtomicEnv: AtomicEnvironment, forwardDayAndTime: DayAndTime) = {
-    if (day.endOfDay <= originalAtomicEnv.marketDay) {
+    if (observationDay.endOfDay <= originalAtomicEnv.marketDay) {
       originalAtomicEnv(this)
-    } else if (day.endOfDay <= forwardDayAndTime) {
+    } else if (observationDay.endOfDay <= forwardDayAndTime) {
       val env = Environment(originalAtomicEnv)
-      env.forwardPrice(key.market, key.period.period(day))
+      env.fixingOrForwardPrice(index, observationDay)
     } else {
       throw new Exception("Can't get fixing for day in the future")
     }
     
   }
-  def nullValue = Quantity(1, key.market.priceUOM)
+  def nullValue = Quantity(1, index.priceUOM)
 }

@@ -204,7 +204,7 @@ trait Greeks {
    **/
   def parallelVega(env: Environment, shiftInterpolatedVols : Boolean): Quantity = {
     val vks = volKeys(this, env.marketDay, valuationCCY).toList
-    assert(vks.groupBy(_.volMarket).size == 1, "Can't get parallel vega when there are multiple underyling markets: " + vks)
+    assert(vks.groupBy(_.curveKey).size == 1, "Can't get parallel vega when there are multiple underyling curve keys: " + vks)
     firstOrderParallelDerivative(env, vks.head.curveKey, valuationCCY, shiftInterpolatedVols = shiftInterpolatedVols) / 100.0
   }
 

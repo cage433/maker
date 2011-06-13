@@ -115,7 +115,7 @@ case class RefinedFixation(
     if (env.marketDay < fixingDayForPeriod.endOfDay) {
       env.forwardPrice(market, pricePeriod)
     } else {
-      index.fixingOrForwardPrice(env, fixingDayForPeriod)
+      env.fixingOrForwardPrice(index, fixingDayForPeriod)
     }
   }
 

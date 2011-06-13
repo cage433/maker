@@ -153,10 +153,10 @@ class PricingSchedulePivotDataSource(context: EnvironmentWithDomain) extends Unf
     new scala.collection.immutable.Map[Field, Any]() {
       lazy val map = {
         val isHoliday = !commMarket.isObservationDay(obDay)
-        rows.find(r => r.day == obDay && r.market == commMarket) match {
+        rows.find(r => r.day == obDay && r.forwardPriceMarket == commMarket) match {
           case Some(row) => {
             fields(
-              observedPeriod -> row.observed.period(row.day),
+              observedPeriod -> row.index.observedPeriod(row.day),
               price -> row.value,
               priceInRuleUOM -> row.valueInIndexUOM,
               holiday -> isHoliday

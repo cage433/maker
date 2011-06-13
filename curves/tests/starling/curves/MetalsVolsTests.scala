@@ -25,7 +25,7 @@ class MetalsVolsTests extends TestExpiryRules {
           }
         })
 
-        def fixings(market: CommodityMarket, observationPoint: ObservationPoint) = throw new Exception("Not implemented")
+        def fixings(key : PriceFixingsHistoryDataKey, observationPoint: ObservationPoint) = throw new Exception("Not implemented")
       }
       )
     val env = Environment(atomicEnv)

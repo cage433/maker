@@ -32,10 +32,7 @@ extends AverageOption(index, averagingPeriod, strike, volume, callPut) with Mult
 
   def isLive(dayAndTime: DayAndTime) = dayAndTime < periods.last.lastDay.endOfDay // was settlementDate.endOfDay
 
-  override def expiryDay() = index.market match {
-    case f:FuturesMarket => Some(f.asianOptionExpiry(periods.last))
-    case _ => Some(periods.last.lastDay)
-  }
+  override def expiryDay() = Some(index.observationDays(periods.last).last)
 
   def tradeableType =  AsianOption
 
@@ -54,16 +51,8 @@ case class SingleAsianOption(
   volume : Quantity,
   callPut : CallOrPut
 ) extends SingleAverageOption(index, averagingPeriod, strike, volume, callPut) {
-  val market = index.market
 
-  val averagingDays: List[Day] = market.observationDays(averagingPeriod)
-
-  val expiryDay = {
-    market match {
-      case k: KnownExpiry => k.asianOptionExpiry(averagingPeriod)
-      case _ => averagingDays.sorted.last
-    }
-  }
+  val averagingDays: List[Day] = index.observationDays(averagingPeriod)
 
   def instrumentType =  AsianOption
 

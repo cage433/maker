@@ -31,10 +31,9 @@ case class Future(market: FuturesMarket, delivery: DateRange, strike: Quantity, 
     //as the settlement day is market day
     //maybe we should try to create the correct margining payments using the fixings?
     //the trouble is the trade day becomes a valuation parameter 
-    var fixings = convertPrice(env, env.fixing(FuturesFrontPeriodIndex(market).fixingHistoryKey(lastTradingDay), lastTradingDay))
+    var fixings = convertPrice(env, env.indexFixing(FuturesFrontPeriodIndex(market), lastTradingDay))
     Assets(
-      Asset.estimatedCash(env.marketDay.day,
-        fixings * volume, env),
+      Asset.estimatedCash(env.marketDay.day, fixings * volume, env),
       Asset.estimatedCash(env.marketDay.day, -strike * volume, env) //strike is always zero because of the utps
     )
   }

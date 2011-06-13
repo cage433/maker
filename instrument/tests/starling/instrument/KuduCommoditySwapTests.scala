@@ -16,7 +16,7 @@ class KuduCommoditySwapTests extends TestExpiryRules {
     def marketDay = Day(2010, 1, 5).startOfDay
 
     def applyOrMatchError(key: AtomicDatumKey) = key match {
-      case FixingKey(key, Day(2010, 1, 4)) if key.market == index.market => Quantity(81.51, USD / BBL)
+      case FixingKey(`index`, Day(2010, 1, 4)) => Quantity(81.51, USD / BBL)
       case ForwardPriceKey(`market`, Month(2010, 2), _) => Quantity(81.77, USD / BBL)
       case ForwardPriceKey(`market`, Month(2010, 3), _) => Quantity(82.34, USD / BBL)
       case ForwardPriceKey(`market`, Month(2011, 1), _) => Quantity(86.4, USD / BBL)

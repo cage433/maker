@@ -214,8 +214,8 @@ class AsianOptionTests extends JonTestEnv {
             val forwardPrice = fixedAverage * n + 65.0 * m
             Quantity(forwardPrice, market.priceUOM)
           }
-          case FixingKey(key, _) if key.market == freightIndex.market => Quantity(50, freightMarket.priceUOM)
-          case FixingKey(key, _) if key.market == index.market => Quantity(50, market.priceUOM)
+          case FixingKey(`freightIndex`, _) => Quantity(50, freightMarket.priceUOM)
+          case FixingKey(`index`, _) => Quantity(50, market.priceUOM)
         }
       }
       )

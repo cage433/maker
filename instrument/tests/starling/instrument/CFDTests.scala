@@ -24,8 +24,8 @@ class CFDTests extends TestExpiryRules {
   val index2 = platts_brent
 
   assertEquals(spreadIndex.indexes, Set(index1, index2))
-  val market1 = index1.market
-  val market2 = index2.market
+  val market1 = index1.forwardPriceMarket
+  val market2 = index2.forwardPriceMarket
 
   // platts forward price is higher, in contango
   val fwdPrice1 = Quantity(10, USD / BBL)
@@ -66,8 +66,8 @@ class CFDTests extends TestExpiryRules {
       def applyOrMatchError(key: AtomicDatumKey) = key match {
         case ForwardPriceKey(`market1`, _, _) => fwdPrice1
         case ForwardPriceKey(`market2`, _, _) => fwdPrice2
-        case FixingKey(key, _) if key.market == index1.market => fixed1
-        case FixingKey(key, _) if key.market == index2.market => fixed2
+        case FixingKey(`index1`, _) => fixed1
+        case FixingKey(`index2`, _) => fixed2
       }
     })
   }
@@ -88,7 +88,7 @@ class CFDTests extends TestExpiryRules {
   @Test
   def testSpreadIndexSwapMidPeriod {
     val marketDay = Day(2011, 1, 12)
-    val observationDays = CommonPricingRule.observationDays(spreadIndex.markets, period)
+    val observationDays = CommonPricingRule.observationDays(spreadIndex.calendars, period)
     val numFixed = observationDays.filter(_ < marketDay).size
     val numUnfixed = observationDays.filter(_ >= marketDay).size
 
@@ -108,7 +108,7 @@ class CFDTests extends TestExpiryRules {
   @Test
   def testSpreadIndexPast {
     val marketDay = Day(2011, 1, 17)
-    val observationDays = CommonPricingRule.observationDays(spreadIndex.markets, period)
+    val observationDays = CommonPricingRule.observationDays(spreadIndex.calendars, period)
 
     val environment = env(marketDay)
     val swapSingle1Mtm = swapSingle1.mtm(environment)
@@ -126,7 +126,7 @@ class CFDTests extends TestExpiryRules {
   @Test
   def testSpreadIndexSwapSensitivitiesMidPeriod {
     val marketDay = Day(2011, 1, 12)
-    val observationDays = CommonPricingRule.observationDays(spreadIndex.markets, period)
+    val observationDays = CommonPricingRule.observationDays(spreadIndex.calendars, period)
     val numFixed = observationDays.filter(_ < marketDay).size
     val numUnfixed = observationDays.filter(_ >= marketDay).size
 
