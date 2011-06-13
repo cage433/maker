@@ -14,6 +14,7 @@ trait EnvironmentRule {
   val label: EnvironmentRuleLabel
   def name: String = label.name
   def createEnv(observationDay: Day, marketDataReader: MarketDataReader): EnvironmentWithDomain
+  def createNullAtomicEnvironment(observationDay: Day):NullAtomicEnvironment = throw new Exception("Not implemented for " + this)
 }
 
 object EnvironmentRule {

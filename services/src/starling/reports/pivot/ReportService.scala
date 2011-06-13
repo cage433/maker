@@ -57,7 +57,9 @@ class ReportContextBuilder(marketDataStore:MarketDataStore) {
 
     if (curveIdentifier.marketDataIdentifier.isNull) {
       new AbstractReportContext(curveIdentifier, environmentSliders.toList) {
-        def atomicEnvironment(day: Day) = new NullAtomicEnvironment(day.endOfDay)
+        def atomicEnvironment(day: Day) = {
+          curveIdentifier.environmentRule.createNullAtomicEnvironment(day)
+        }
         def observationDays(from: Day, to: Day) = SimpleDateRange(from, to).days.toList.map(ObservationDay)
         def recorded : Set[(ObservationPoint, MarketDataKey, MarketData)] = Set()
       }
