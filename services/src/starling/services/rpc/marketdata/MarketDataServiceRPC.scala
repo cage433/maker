@@ -31,13 +31,13 @@ class MarketDataServiceRPC(marketDataStore: MarketDataStore) extends MarketDataS
     val pivot = marketDataStore.pivot(MarketDataIdentifier(selection, version), MarketDataTypes.fromName(parameters.dataType))
 
     val filters = parameters.filters.map(filter =>
-      (Field(filter.name), SomeSelection(filter.value.map(v => pivot.lookup(filter.name).parser.parse(v)._1).toSet)))
+      (Field(filter.name), SomeSelection(filter.values.map(v => pivot.lookup(filter.name).parser.parse(v)._1).toSet)))
 
     val pfs = PivotFieldsState(fields(parameters.measures), fields(parameters.rows), fields(parameters.columns), filters)
 
     val data = PivotTableModel.createPivotData(pivot, PivotFieldParams(true, Some(pfs))).pivotTable.toFlatRows(Totals.Null)
 
-    MarketDataResponse(parameters.update(_.version = Some(version)), data.map(row => MarketDataColumnData(row.map(_.toString))))
+    MarketDataResponse(parameters.update(_.version = Some(version)), data.map(row => MarketDataRow(row.map(_.toString))))
   }
 
   /**
