@@ -151,12 +151,12 @@ class UserReportsService(
 
     val bookCloseDay = {
       userReportData.tradeVersionOffSetOrLive match {
-        case Left(offset) => createTradeTimestamp(applyOffset(baseDay, offset))
-        case Right(_) if desk.isDefined => tradeStores.closedDesks.latestTradeTimestamp(desk.get)
-        case _ => createTradeTimestamp(baseDay) // this doesn't matter as it'll never be used
+        case Left(offset) if desk.isDefined => Some(createTradeTimestamp(applyOffset(baseDay, offset)))
+        case Right(_) if desk.isDefined => Some(tradeStores.closedDesks.latestTradeTimestamp(desk.get))
+        case _ => None
       }
     }
-    val tradeSelectionWithTimestamp = new TradeSelectionWithTimestamp(desk.map((_, bookCloseDay)),
+    val tradeSelectionWithTimestamp = new TradeSelectionWithTimestamp(desk.map((_, bookCloseDay.get)),
       tradeSelection.tradePredicate, intradaySubgroup.map((_, latestIntradayTimestamp.get)))
 
     val tradeExpiryDay = userReportData.liveOnOffSet match {
