@@ -46,13 +46,13 @@ class MarketDataServiceRPC(marketDataStore: MarketDataStore) extends MarketDataS
   def getFixings(quota: EDMQuota) : MarketDataResponse = {
 
     val mdParams = new MarketDataRequestParameters() {
-      pricingGroup:String = null
-      dataType:String = null
-      version:scala.Option[Int] = None
-      filters:List[com.trafigura.edm.marketdata.MarketDataFilter] = null
-      columns:List[String] = null
-      rows:List[String] = null
-      measures:List[String] = null
+      pricingGroup = "System"
+      dataType = "PriceFixingsHistory"
+      version = None
+      filters = List()
+      columns = List()
+      rows = List("Level", "Period")
+      measures = List("Price")
     }
 
     marketData(mdParams)
