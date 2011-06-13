@@ -52,11 +52,8 @@ case class RefinedMetalsLimMarketDataSource(limServer: LIMServer) extends Market
 
     source.marketDataEntriesFrom(prices).toList
       .require(containsDistinctTimedKeys, "source: %s produced duplicate MarketDataKeys: " % source)
-      .info(entries => logCountData(entries, relations.map(_.tail)))
+      .info(entries => "%s (%s): %s values" % (source.getClass.getSimpleName, source.description.mkString(", "), countData(entries)))
   }
-
-  private def logCountData(entries: List[MarketDataEntry], relations: List[String]) =
-    "Obtained %d values from: %s..." % (countData(entries), relations.take(5).mkString(", "))
 
   private def countData(entries: List[MarketDataEntry]) = entries.map(_.data.size.getOrElse(0)).sum
 }
@@ -72,11 +69,12 @@ trait LimSource {
   def relationsFrom(connection: LIMConnection): List[(Relation, String)]
   def marketDataEntriesFrom(fixings: List[Prices[Relation]]): Iterable[MarketDataEntry]
   def description: List[String]
+  protected def levelDescription = "(" + levels.map(_.name).mkString(", ") + ")"
 }
 
 trait HierarchicalLimSource extends LimSource {
   val parentNodes: List[LimNode]
-  def description = parentNodes.map(_.name)
+  def description = parentNodes.map(node => node.name + " " + levelDescription)
   def relationsFrom(connection: LIMConnection) = connection.getAllRelChildren(parentNodes : _*).flatMap(safeRelationFrom)
   def relationExtractor: Extractor[String, Option[Relation]]
 
@@ -89,7 +87,7 @@ trait HierarchicalLimSource extends LimSource {
 class PriceLimSource(relations: LIMRelation*) extends LimSource {
   val levels = List(Level.Close)
   type Relation = LimPrice
-  def description = relations.map(_.node.name).toList
+  def description = relations.map(_.node.name).toList.map(name => name + " " + levelDescription)
 
   def relationsFrom(connection: LIMConnection) = relations.toList.flatMap(relation =>
     connection.getAllRelChildren(relation.node).flatMap(childRelation => relation.parse(childRelation).optPair(childRelation)))
@@ -134,7 +132,7 @@ class MonthlyFuturesFixings(val parentNodes: List[LimNode], val levels: List[Lev
 
 object LMEFixings extends LimSource {
   type Relation = LMEFixingRelation
-  def description = List("TRAF.LME.<commodity>.<ring>.<tenor>")
+  def description = List("TRAF.LME.<commodity>.<ring>.<tenor>" + " " + levelDescription)
   val levels = List(Level.Ask, Level.Bid)
 
   case class LMEFixingRelation(ring: ObservationTimeOfDay, market: CommodityMarket, tenor:Tenor)
