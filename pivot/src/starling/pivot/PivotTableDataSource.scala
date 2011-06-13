@@ -94,6 +94,9 @@ abstract class PivotTableDataSource extends PivotGridSource {
   def lookup(field: Field) = fieldDetails.find(_.field == field).get
   def lookup(fieldName: String): FieldDetails = lookup(Field(fieldName))
 
+  def parseFilter(field: Field, values: List[String]) =
+    (field, SomeSelection(values.map(value => lookup(field).parser.parse(value)._1).toSet))
+
   def editable:Option[EditPivot] = None
   def availablePages:List[String] = List()
   def reportSpecificOptions : List[(String, List[Any])] = Nil

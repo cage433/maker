@@ -1,64 +1,71 @@
 package starling.services.rpc.marketdata
 
 import com.trafigura.edm.marketdata._
-import com.trafigura.tradinghub.support._
-import scala.collection.JavaConversions.asJavaList
+import com.trafigura.edm.physicaltradespecs.EDMQuota
+import com.trafigura.tradinghub.support.ServiceFilter
+import scala.collection.JavaConversions._
+
 import starling.db.MarketDataStore
 import starling.gui.api.{MarketDataSelection, PricingGroup, MarketDataIdentifier}
-import starling.marketdata.MarketDataTypes
+import starling.marketdata.{PriceFixingsHistoryDataType, MarketDataTypes}
 import starling.pivot.model.PivotTableModel
-import starling.utils.ImplicitConversions._
-import starling.services.Server
 import starling.pivot._
+import starling.services.Server
 import starling.utils.Log
-import com.trafigura.edm.physicaltradespecs.EDMQuota
+
+import starling.utils.ImplicitConversions._
+import PriceFixingsHistoryDataType._
+import starling.daterange.Day
 
 
-/**
- * Implementation of the market data service stub, provides market data using supplied parameters,
- *   this service operation is generic and covers all market data
- */
+/** Generic Market data service, covering all market data */
 class MarketDataServiceRPC(marketDataStore: MarketDataStore) extends MarketDataService {
+  implicit def enrichMarketDataRequestParameters(parameters: MarketDataRequestParameters) = new {
+    def filterExchange(exchangeNames: String*) = addFilters(MarketDataFilter(exchangeField.name, exchangeNames.toList))
+    def addFilters(filter: MarketDataFilter*) = parameters.filters = parameters.filters ::: filter.toList
+  }
 
-  // TODO [10 Jun 2011] Ensure missing or invalid data causes nice exceptions to be thrown
-  def marketData(parameters: MarketDataRequestParameters) : MarketDataResponse = {
-
-    Log.info("%s called with parameters %s".format(this.getClass.getName, parameters))
+  def marketData(parameters: MarketDataRequestParameters): MarketDataResponse = try {
+    Log.info("MarketDataServiceRPC called with parameters " + parameters)
+    parameters.notNull("Missing parameters")
 
     val selection = MarketDataSelection(Some(PricingGroup.fromName(parameters.pricingGroup)))
-    val version = parameters.version.getOrElse(marketDataStore.latest(selection))
-
-    val pivot = marketDataStore.pivot(MarketDataIdentifier(selection, version), MarketDataTypes.fromName(parameters.dataType))
-
-    val filters = parameters.filters.map(filter =>
-      (Field(filter.name), SomeSelection(filter.values.map(v => pivot.lookup(filter.name).parser.parse(v)._1).toSet)))
-
-    val pfs = PivotFieldsState(fields(parameters.measures), fields(parameters.rows), fields(parameters.columns), filters)
-
-    val data = PivotTableModel.createPivotData(pivot, PivotFieldParams(true, Some(pfs))).pivotTable.toFlatRows(Totals.Null)
+    val version   = parameters.version.getOrElse(marketDataStore.latest(selection))
+    val pivot     = marketDataStore.pivot(MarketDataIdentifier(selection, version), MarketDataTypes.fromName(parameters.dataType))
+    val filters   = parameters.filters.map(filter => pivot.parseFilter(Field(filter.name), filter.values))
+    val pfs       = PivotFieldsState(fields(parameters.measures), fields(parameters.rows), fields(parameters.columns), filters)
+    val data      = PivotTableModel.createPivotTableData(pivot, Some(pfs)).toFlatRows(Totals.Null)
 
     MarketDataResponse(parameters.update(_.version = Some(version)), data.map(row => MarketDataRow(row.map(_.toString))))
-  }
+  } catch { case exception => MarketDataResponse(parameters, errors = List(exception.getMessage)) }
 
   /**
    * get price fixings for the supplied EDM Quota
    */
   def getFixings(quota: EDMQuota) : MarketDataResponse = {
 
-    val mdParams = new MarketDataRequestParameters() {
-      pricingGroup = "System"
-      dataType = "PriceFixingsHistory"
-      version = None
-      filters = List()
-      columns = List()
-      rows = List("Level", "Period")
-      measures = List("Price")
-    }
+    val mdParams = fixingRequest.update(
+      _.addFilters(MarketDataFilter(marketField.name, List("<market>"))),
+      _.columns = List(),
+      _.rows = names(levelField, periodField)
+    )
 
     marketData(mdParams)
   }
 
+  def latestLiborFixings() = marketData(fixingRequest.update(_.filterExchange("LIBOR", "IRS"),
+    _.rows = names(levelField, periodField), _.columns = names(marketField)))
+
+  def latestECBFXFixings() = marketData(fixingRequest.update(_.filterExchange("ECB"), _.rows = names(marketField, periodField)))
+
+  def latestLMEFixings() = marketData(fixingRequest.update(_.filterExchange("LME"),
+    _.rows = names(marketField, periodField), _.columns = List(levelField.name, "Observation Time")))
+
+  private def fixingRequest = MarketDataRequestParameters(PricingGroup.Metals.name, PriceFixingsHistoryDataType.name, None,
+    measures = names(priceField), filters = List(MarketDataFilter("Observation Day", List(Day.today.toString))))
+
   private def fields(names: List[String]) = names.map(Field(_))
+  private def names(fields: FieldDetails*) = fields.map(_.name).toList
 }
 
 /**

@@ -269,7 +269,7 @@
         </SOURCES>
       </library>
     </orderEntry>
-    <orderEntry type="module-library" exported="" scope="RUNTIME">
+    <orderEntry type="module-library" exported="">
       <library>
         <CLASSES>
           <root url="jar://$MODULE_DIR$/jars/scala-hub-support-2.3.jar!/" />

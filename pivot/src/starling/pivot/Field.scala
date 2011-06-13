@@ -258,13 +258,13 @@ trait HasLongText extends Serializable {
 
 case class FieldDetails(field:Field) {
   def this(name:String) = this(Field(name))
+  def name = field.name
   def nullValue():Any = "n/a"
   def nullGroup():Any = Set()
-  def combine(group:Any,value:Any):Any =
-    value match {
-      case set:Set[_] => group.asInstanceOf[Set[Any]].union(set.asInstanceOf[Set[Any]])
-      case _ => group.asInstanceOf[Set[Any]] + value 
-    }
+  def combine(group:Any,value:Any):Any = value match {
+    case set:Set[_] => group.asInstanceOf[Set[Any]].union(set.asInstanceOf[Set[Any]])
+    case _ => group.asInstanceOf[Set[Any]] + value
+  }
 
   def fixEditedValue(value:Any) = value
   
