@@ -11,6 +11,7 @@ import starling.utils.ImplicitConversions._
 import starling.services.Server
 import starling.pivot._
 import starling.utils.Log
+import com.trafigura.edm.physicaltradespecs.EDMQuota
 
 
 /**
@@ -20,7 +21,7 @@ import starling.utils.Log
 class MarketDataServiceRPC(marketDataStore: MarketDataStore) extends MarketDataService {
 
   // TODO [10 Jun 2011] Ensure missing or invalid data causes nice exceptions to be thrown
-  def marketData(parameters: MarketDataRequestParameters): MarketDataResponse = {
+  def marketData(parameters: MarketDataRequestParameters) : MarketDataResponse = {
 
     Log.info("%s called with parameters %s".format(this.getClass.getName, parameters))
 
@@ -37,6 +38,13 @@ class MarketDataServiceRPC(marketDataStore: MarketDataStore) extends MarketDataS
     val data = PivotTableModel.createPivotData(pivot, PivotFieldParams(true, Some(pfs))).pivotTable.toFlatRows(Totals.Null)
 
     MarketDataResponse(parameters.update(_.version = Some(version)), data.map(row => MarketDataColumnData(row.map(_.toString))))
+  }
+
+  /**
+   * get price fixings for the supplied EDM Quota
+   */
+  def getFixings(parameters: EDMQuota) : MarketDataResponse = {
+    new MarketDataResponse()
   }
 
   private def fields(names: List[String]) = names.map(Field(_))
