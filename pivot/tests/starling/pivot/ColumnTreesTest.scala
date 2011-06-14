@@ -230,7 +230,7 @@ class ColumnTreesTest extends TestNGSuite {
         ColumnTree(Field("PV"), false))))
 
     val res4 = csToUse4.isInvalid
-    assertEquals(res4, true)
+    assertEquals(res4, false)
 
     val csToUse5 = ColumnTrees(List(
       ColumnTree(Field("Product"), false,
