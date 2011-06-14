@@ -221,6 +221,7 @@ case class ExcelRow(row: Map[String, Any], traders: Traders) {
         }
         case _ => p
       }
+      case s: String if s.equalsIgnoreCase("BOM") => BOM(tradeDay)
       case _ => throw new Exception("Couldn't parse '" + string(PeriodColumn) + "' in column " + PeriodColumn)
     }
   }
