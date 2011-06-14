@@ -16,6 +16,7 @@ import starling.utils.Log
 import starling.utils.ImplicitConversions._
 import PriceFixingsHistoryDataType._
 import starling.daterange.Day
+import com.trafigura.edm.shared.types.{Quantity => EDMQuantity}
 
 
 /** Generic Market data service, covering all market data */
@@ -52,6 +53,12 @@ class MarketDataServiceRPC(marketDataStore: MarketDataStore) extends MarketDataS
 
     marketData(mdParams)
   }
+
+  def getQuotaValue(quotaId : Int) : EDMQuantity = {
+
+    new EDMQuantity() {}
+  }
+
 
   def latestLiborFixings() = marketData(fixingRequest.update(_.filterExchange("LIBOR", "IRS"),
     _.rows = names(levelField, periodField), _.columns = names(marketField)))
