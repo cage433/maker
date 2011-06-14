@@ -37,7 +37,7 @@ class JBossStarlingServlet extends HttpServlet{
       startEAIAutoImportThread = false,
       runningInJBoss = true).start
     )
-
+    println("*** Starling launched ***")
   }
 }
 
@@ -49,11 +49,12 @@ object JBossStarlingServlet{
 
   val defaultEnvironment: String = "users/alex.mcguire"
   val databases = {
+    val alexm1_db: String = "jdbc:jtds:sqlserver://TTRAFLOCOSQL08.global.trafigura.com/starling_AlexM1;instance=DB08 starling ng1lr4ts123!Y^%&$"
     Map[String, String](
-      defaultEnvironment -> "jdbc:jtds:sqlserver://TTRAFLOCOSQL08.global.trafigura.com/starling_AlexM1;instance=DB08 starling ng1lr4ts123!Y^%&$",
-      "integration-test" -> "jdbc:jtds:sqlserver://TTRAFLOCOSQL08.global.trafigura.com/starling_ThomasR1;instance=DB08 starling ng1lr4ts123!Y^%&$",
-      "pre-prod" -> "jdbc:jtds:sqlserver://TTRAFLOCOSQL08.global.trafigura.com/starling_AlexM1;instance=DB08 starling ng1lr4ts123!Y^%&$",
-      "prod" -> "jdbc:jtds:sqlserver://TTRAFLOCOSQL08.global.trafigura.com/starling_AlexM1;instance=DB08 starling ng1lr4ts123!Y^%&$"
+      defaultEnvironment -> alexm1_db,
+      "integration-test" -> alexm1_db,
+      "pre-prod" -> alexm1_db,
+      "prod" -> alexm1_db
     )
   }
   val jbossEnv = trafProperties.getOrElse("trafigura.env", "users/alex.mcguire")

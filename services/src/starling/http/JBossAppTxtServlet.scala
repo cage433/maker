@@ -32,17 +32,17 @@ netty-3.2.3.Final.jar compilation-time
 org.eclipse.mylyn.wikitext.core_1.4.0.I20100805-0500-e3x.jar compilation-time
 org.eclipse.mylyn.wikitext.textile.core_1.4.0.I20100805-0500-e3x.jar compilation-time
 platform.jar compilation-time
-scala-library-2.8.1.jar compilation-time
-scala-swing-2.8.1.jar compilation-time
+scala-library.jar compilation-time
+scala-swing.jar compilation-time
 sjson-0.8-2.8.0.jar compilation-time
-starling-auth-developer.jar compilation-time
-starling-bouncy-rmi-developer.jar compilation-time
-starling-daterange-developer.jar compilation-time
-starling-gui.api-developer.jar compilation-time
-starling-gui-developer.jar compilation-time
-starling-pivot-developer.jar compilation-time
-starling-quantity-developer.jar compilation-time
-starling-utils-developer.jar compilation-time
+starling-auth-1.0.jar compilation-time
+starling-bouncy-rmi-1.0.jar compilation-time
+starling-daterange-1.0.jar compilation-time
+starling-gui.api-1.0.jar compilation-time
+starling-gui-1.0.jar compilation-time
+starling-pivot-1.0.jar compilation-time
+starling-quantity-1.0.jar compilation-time
+starling-utils-1.0.jar compilation-time
 swingx-core-1.6.2.jar compilation-time
 timingframework-1.0.jar compilation-time
 """
