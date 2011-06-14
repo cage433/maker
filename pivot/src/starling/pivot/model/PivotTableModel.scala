@@ -54,7 +54,10 @@ case class AxisValue(field:Field, value:AxisValueType, position:Int) {
   def valueText = value.value.toString
   def toTotal = copy(value = TotalAxisValueType)
   def isTotal = value == TotalAxisValueType
-  def isOtherValue = value.value == FilterWithOtherTransform.OtherValue
+  def isOtherValue = (value.value == FilterWithOtherTransform.OtherValue) || (value.value match {
+    case p:PivotTreePath if p.isOther => true
+    case _ => false
+  })
   def isMeasure = value.isInstanceOf[MeasureAxisValueType]
 
   def <(other:AxisValue, comparator:Ordering[Any]):Boolean = {
