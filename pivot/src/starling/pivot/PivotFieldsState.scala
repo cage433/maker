@@ -211,14 +211,11 @@ case class ColumnTree(fieldOrColumnStructure:FieldOrColumnStructure, childStruct
     ColumnTree(fieldOrColumnStructure.rename(field, name), childStructure.rename(field, name))
   }
   def isInvalid:Boolean = {
-    val numMeasureFields = {
-      fieldOrColumnStructure.value match {
-        case Right(cs) => cs.measureFields.size
-        case Left(FieldAndIsMeasure(_, true)) => 1
-        case Left(FieldAndIsMeasure(_, false)) => 0
-      }
+    fieldOrColumnStructure.value match {
+      case Right(cs) => cs.isInvalid || childStructure.isInvalid
+      case Left(FieldAndIsMeasure(_, true)) => childStructure.measureFields.nonEmpty
+      case Left(FieldAndIsMeasure(_, false)) => childStructure.isInvalid
     }
-    (childStructure.measureFields.size + numMeasureFields) > 1
   }
   def hasSingleMeasureChild(f0:Field):Boolean = {
     fieldOrColumnStructure.value match {
