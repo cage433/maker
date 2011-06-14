@@ -373,16 +373,16 @@ object ServerHelper {
  */
 object Server extends OutputPIDToFile {
   def main(args: Array[String]) {
-    val disableEAIImporter = args.map(_.toUpperCase).contains("--NO-EAI-IMPORTS")
     System.setProperty("log4j.configuration", "utils/resources/log4j.properties")
     ServerHelper.deleteRunningFile
     PropsHelper.writeDefaults
-    run(PropsHelper.defaultProps, !disableEAIImporter)
+    run(PropsHelper.defaultProps, args)
     ServerHelper.createRunningFile
   }
   var server : StarlingInit = null
-  def run(props:Props, startEAIAutoImportThread : Boolean = true) {
-    server = new StarlingInit(props, true, true, true, startEAIAutoImportThread = startEAIAutoImportThread)
+  def run(props:Props, args: Array[String] = Array[String]()) {
+    val disableEAIImporter = args.map(_.toUpperCase).contains("--NO-EAI-IMPORTS")
+    server = new StarlingInit(props, true, true, true, startEAIAutoImportThread = !disableEAIImporter)
     server.start
   }
 }
