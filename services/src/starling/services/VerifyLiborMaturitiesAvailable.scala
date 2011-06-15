@@ -10,7 +10,7 @@ import starling.services.trinity.XRTGenerator._
 import starling.utils.ImplicitConversions._
 
 
-class VerifyLiborMaturitiesAvailable(marketDataStore: MarketDataStore, broadcaster: Broadcaster, from: String, to: String*)
+class VerifyLiborMaturitiesAvailable(marketDataStore: MarketDataStore, broadcaster: Broadcaster, from: String, to: String)
   extends EmailingScheduledTask(broadcaster, from, to) {
 
   protected def eventFor(observationDay: Day, email: EmailEvent) = {

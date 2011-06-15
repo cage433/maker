@@ -10,7 +10,7 @@ class MarketDataImporter(marketDataStore: MarketDataStore) {
   def getUpdates(observationDay: Day, marketDataSets: MarketDataSet*) = marketDataSets.toMapWithValues(marketDataSet => {
     val getMarketData = (marketDataStore.marketData _).applyLast(marketDataSet)
 
-    marketDataStore.sourceFor(marketDataSet).flatMapL { marketDataSource => Log.infoWithTime("importing: " + (observationDay, marketDataSet)) {
+    marketDataStore.sourceFor(marketDataSet).flatMapL { marketDataSource => Log.infoWithTime("importing: " + marketDataSet.name) {
       val externalData = marketDataSource.asserting.read(observationDay).mapValues(_.filterNot(_.isEmpty))
       val existingData = externalData.keys.flatMap(getMarketData).toMap
 

@@ -17,7 +17,7 @@ class EmailBroadcaster(sender: JavaMailSender, props: Props = PropsHelper.defaul
     val message = sender.createMimeMessage
     val helper = new MimeMessageHelper(message, true)
     helper.setFrom(email.from)
-    helper.setTo(email.to.toArray)
+    helper.setTo(email.to)
     helper.setSubject(email.subject)
     helper.setText(email.body + footer, true)
 
