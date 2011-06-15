@@ -18,20 +18,15 @@ import java.text.DecimalFormat
 import starling.utils.Pattern._
 import starling.marketdata.{PriceFixingsHistoryData, PriceFixingsHistoryDataKey}
 
-object LIBORFixings extends HierarchicalLimSource {
+object LIBORFixings extends HierarchicalLimSource(TopRelation.Trafigura.Bloomberg.InterestRates.children, List(Level.Close)) {
   type Relation = LIBORFixingRelation
 
   case class LIBORFixingRelation(interestRateType: String, currency: UOM, period: StoredFixingPeriod) {
     val group = (interestRateType, currency)
   }
 
-  private val TenorRegex = """(\d+)(\w)""".r
-
-  val parentNodes = TopRelation.Trafigura.Bloomberg.InterestRates.children
-  val levels = List(Level.Close)
-
   def relationExtractor = Extractor.regex("""TRAF\.(\w+)\.(\w+)\.(\w+)""") { case List(rateType, currency, tenor) =>
-    parseTenor(tenor).map { tenor => LIBORFixingRelation(rateType, UOM.fromString(currency), StoredFixingPeriod.tenor(tenor)) }
+    Tenor.parse(tenor).map { tenor => LIBORFixingRelation(rateType, UOM.fromString(currency), StoredFixingPeriod.tenor(tenor)) }
   }
 
   def marketDataEntriesFrom(fixings: List[Prices[LIBORFixingRelation]]) = {
@@ -41,12 +36,6 @@ object LIBORFixings extends HierarchicalLimSource {
         PriceFixingsHistoryData.create(grouped.map(fixings => (Level.Close, fixings.relation.period) → marketValue(fixings)))
       )
     }
-  }
-
-  private def parseTenor(tenor: String): Option[Tenor] = tenor partialMatch {
-    case TenorRegex(value, tenorType) => Tenor(TenorType.typesByShortName(tenorType), value.toInt)
-    case "ON" => Tenor.ON
-    case "SN" => Tenor.SN
   }
 
   def group(fixings: Prices[LIBORFixingRelation]) =

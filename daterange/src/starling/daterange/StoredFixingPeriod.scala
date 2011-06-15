@@ -1,5 +1,6 @@
 package starling.daterange
 
+import starling.utils.ImplicitConversions._
 import starling.utils.Pattern._
 
 
@@ -22,6 +23,14 @@ case class Tenor(tenorName: String, value: Int) extends Ordered[Tenor] {
 }
 
 object Tenor {
+  private val Regex = """(\d+)(\w)""".r
+
+  def parse(tenor: String): Option[Tenor] = tenor partialMatch {
+    case Regex(value, tenorType) => Tenor(TenorType.typesByShortName(tenorType), value.toInt)
+    case "ON" => Tenor.ON
+    case "SN" => Tenor.SN
+  }
+
   /**
    * Value doesn't mean anything outside the context of a particular index. It is used just for
    * sorting tenors in a reasonable way
