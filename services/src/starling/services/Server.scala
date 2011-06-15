@@ -384,6 +384,7 @@ object Server extends OutputPIDToFile {
     val disableEAIImporter = args.map(_.toUpperCase).contains("--NO-EAI-IMPORTS")
     server = new StarlingInit(props, true, true, true, startEAIAutoImportThread = !disableEAIImporter)
     server.start
+    Log.info("Starling Server Launched")
   }
 }
 
