@@ -2,7 +2,7 @@ package starling.edm
 
 import starling.quantity.UOMSymbol._
 import com.trafigura.edm.shared.types.{Quantity => EDMQuantity, CompoundUOM, UnitComponent, FundamentalUOM}
-import starling.quantity.{UOMSymbol, Quantity}
+import starling.quantity.{UOM, Quantity}
 
 
 /**
@@ -15,6 +15,15 @@ import starling.quantity.{UOMSymbol, Quantity}
 
 object EDMConversions {
 
+  def fromEDMQuantity(q : EDMQuantity) : Quantity = {
+    val amount = q.amount.get  // No idea why this is optional in EDM
+    val uom = UOM.fromSymbolMap(q.uom.components.map {
+      case uc => edmToStarlingUomSymbol(uc.fundamental) -> uc.exponent
+    }.toMap)
+    Quantity(amount, uom)
+
+  }
+
   def toEDMQuantity(q : Quantity) : EDMQuantity = {
     val symbolPowers = q.uom.asSymbolMap()
 
@@ -24,7 +33,7 @@ object EDMConversions {
       case (starlingUOMSymbol, power) => UnitComponent(
         oid = 0,
         exponent = power,
-        fundamental = FundamentalUOM(starlingToEdmUomMap(starlingUOMSymbol))
+        fundamental = starlingToEdmUom.getOrElse(starlingUOMSymbol, FundamentalUOM(starlingUOMSymbol.toString))
        )
     }.toList
 
@@ -32,14 +41,14 @@ object EDMConversions {
   }
 
   // EDM UOM to Starling UOM
-    val edmToStarlingUomMap = Map[String, UOMSymbol](
-      "GBP" -> gbp,
-      "USD" -> usd,
-      "JPY" -> jpy,
-      "RMB" -> cny,
-      "MTS" -> TONNE_SYMBOL,
-      "LBS" -> POUND_SYMBOL)
+  val starlingToEdmUom = Map(
+    gbp -> "GBP",
+    usd -> "USD",
+    jpy -> "JPY",
+    cny -> "RMB",
+    TONNE_SYMBOL -> "MTS",
+    POUND_SYMBOL -> "LBS"
+  ).mapValues(FundamentalUOM(_))
 
-    // Starling to EDM UOM
-    val starlingToEdmUomMap : Map[UOMSymbol, String] = edmToStarlingUomMap.map(_.swap)
+  val edmToStarlingUomSymbol = starlingToEdmUom.map(_.swap)
 }
