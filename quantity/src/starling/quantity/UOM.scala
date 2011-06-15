@@ -160,6 +160,19 @@ object UOM {
 
   private val allCurrencies = currencies.toMapWithKeys(_.toString)
   def parseCurrency(text:String) = allCurrencies.get(text.toUpperCase)
+
+  def fromSymbolMap(symbolMap : Map[UOMSymbol, Int]) : UOM = {
+    if (symbolMap.isEmpty)
+      // We could equally return SCALAR here - not sure it matters
+      UOM.NULL
+    else {
+      (UOM.SCALAR /: symbolMap.toList){
+        case (accumulator, (sym, power)) =>
+          accumulator * (sym.asUOM ^ power)
+      }
+    }
+  }
+
 }
 
 /**
@@ -228,8 +241,8 @@ case class UOM private (scale : Ratio, value : Ratio) extends RatioT[UOM] {
     }
   }
 
-  
   def asSymbolMap() : Map[UOMSymbol, Int] = {
+    // Note - both NULL and SCALAR become an empty map
   	def recurse (n : Long, primes : List[Int], acc : Map[Int, Int]) : Map[Int, Int] = n match {
       case 0 => acc		// Should only happen for the null unit
       case 1 => acc
@@ -249,7 +262,8 @@ case class UOM private (scale : Ratio, value : Ratio) extends RatioT[UOM] {
     val primePowers = decompose(reducedUOM.value.numerator) ++ negativePowers
     Map.empty ++ primePowers.map{case (p, n) => (UOMSymbol.symbolForPrice(p) -> n)}
   }
-  
+
+
   def numeratorUOM : UOM = UOM(scale.numeratorRatio, Ratio(reduce.value.numerator, 1))
   def denominatorUOM : UOM = UOM(scale.denominatorRatio, Ratio(reduce.value.denominator, 1))
 
