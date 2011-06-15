@@ -17,11 +17,6 @@ trait ScheduledTaskAttributes {
   val EmailTo    = "EmailTo"
 }
 
-case class ScheduledTaskAttribute(value: String, details: String*) extends HasLongText {
-  val longText = if (details.isEmpty) value else details.mkString("\n")
-  override def toString = value
-}
-
 trait ScheduledTask extends ScheduledTaskAttributes { self =>
   def attribute(name: String, alternative: String = ""): ScheduledTaskAttribute = attributes.getOrElse(name, ScheduledTaskAttribute(alternative))
   def attributes: Map[String, ScheduledTaskAttribute] = Map()

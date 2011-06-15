@@ -346,6 +346,39 @@ class CommoditySwapTests extends JonTestEnv {
   }
 
   @Test
+  def testSwapBOMPositionMidPricing {
+    val index = FuturesFrontPeriodIndex.WTI10
+    val period = BOM(14 Apr 2011)
+    val apr = Month(2011, 4)
+    val strike = Quantity(1, USD / BBL)
+    val volume = Quantity(1000, BBL)
+    val cs = SingleCommoditySwap(index, strike, volume, period, true)
+
+    for (marketDay <- apr.days; timeOfDay <- List(TimeOfDay.StartOfDay, TimeOfDay.EndOfDay)) {
+      val marketDayAndTime = marketDay.atTimeOfDay(timeOfDay)
+      val env = makeEnv(marketDayAndTime)
+
+      val position = cs.position(env, SwapPrice(index, period))
+
+      val obDays = index.observationDays(cs.averagingPeriod)
+      val liveDays = cs.liveAveragingDays(marketDayAndTime).toList
+      val fixedDays = obDays.filter(_.endOfDay <= marketDayAndTime)
+      assertEquals(liveDays, obDays.filter(_.endOfDay > marketDayAndTime))
+      assertEquals(fixedDays ::: liveDays, obDays)
+
+      assertQtyEquals(position, volume * (liveDays.size.toDouble / obDays.size.toDouble), 1e-8)
+
+      if(marketDayAndTime < period.firstDay.endOfDay) {
+        assertQtyEquals(position, volume)
+      }
+
+      if(marketDayAndTime >= period.lastDay.endOfDay) {
+        assertQtyEquals(position, Quantity(0, BBL))
+      }
+    }
+  }
+
+  @Test
   def testPrice {
     val index = FuturesFrontPeriodIndex.WTI10
     val period = Month(2011, 4)

@@ -450,7 +450,7 @@ object Day extends TenorType {
   def laterOf(a:Day, b:Day) = if (a > b) a else b
 
   @transient
-  val patterns = List("ddMMMyy", "dd'-'MMM'-'yy", "yyyy'-'MM'-'dd")
+  val patterns = List("ddMMMyy", "dd'-'MMM'-'yy", "yyyy'-'MM'-'dd", "dd MMM yy", "dd/mm/yyyy", "dd/MMM/yyyy")
 
   private def readResolve() : Object = Day
 

@@ -87,7 +87,8 @@ trait DateRange extends Iterable[Day] with OrderedComparable[DateRange] with Ite
   }
 
   def normalise: Option[DateRange] = {
-    TenorType.ALL.flatMap {
+    // don't want to try to normalise to BOM
+    TenorType.ALL.filterNot(_ == BOM).flatMap {
       tenor =>
         val tenor1 = tenor.containing(firstDay)
         val tenor2 = tenor.containing(lastDay)

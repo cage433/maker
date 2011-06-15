@@ -5,6 +5,8 @@ import controller.PivotTableConverter._
 import controller.{PivotTableConverter, PivotGrid, TreePivotFilterNode}
 import model.PivotTableModel
 import starling.utils.ImplicitConversions._
+import starling.pivot.FilterWithOtherTransform.OtherValue
+
 case class FieldDetailsGroup(name:String, fields:List[FieldDetails]) {
   def toFieldGroup = {
     FieldGroup(name, fields.map(_.field))
@@ -113,6 +115,7 @@ abstract class PivotTableDataSource extends PivotGridSource {
 }
 
 case class PivotTreePath(path:List[String]) {
+  def isOther = path.forall(_==FilterWithOtherTransform.Other.toString)
   def between(start:Int,end:Int) : List[PivotTreePath] = {
     (for (i <- start to end) yield { if (path.size <= i) {
       PivotTreePath(path)

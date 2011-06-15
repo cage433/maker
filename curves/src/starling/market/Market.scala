@@ -775,7 +775,7 @@ object FuturesMarket {
   }
 
   def fromExchangeAndLimSymbol(exchange: String, limSymbol: String) =
-    Market.futuresMarkets.find(market => market.exchange.name == exchange && market.limSymbol == Some(limSymbol))
+    Market.futuresMarkets.find(market => market.exchange.name == exchange && market.limSymbol.map(_.name) == Some(limSymbol))
 
   def fromEAIQuoteID(id: Int) = Market.commodityMarketOptionFromEAIQuoteID(id) match {
     case Some(f: FuturesMarket) => f

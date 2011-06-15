@@ -193,7 +193,7 @@ class ColumnTreesTest extends TestNGSuite {
   }
 
   @Test
-  def testFlippable() {
+  def testIsInvalid() {
     val csToUse1 = ColumnTrees(List(
       ColumnTree(Field("Product"), false,
         ColumnTree(Field("PV"), true))))
@@ -303,6 +303,12 @@ class ColumnTreesTest extends TestNGSuite {
 
     val res10 = csToUse10.isInvalid
     assertEquals(res10, true)
+
+    val csToUse11 = ColumnTrees(Field("Product"), false,
+      List(ColumnTree.dataField(Field("PV")), ColumnTree.dataField(Field("Gamma"))))
+
+    val res11 = csToUse11.isInvalid
+    assertEquals(res11, false)
   }
 
   @Test

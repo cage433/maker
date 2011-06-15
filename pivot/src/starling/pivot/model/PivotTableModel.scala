@@ -54,7 +54,10 @@ case class AxisValue(field:Field, value:AxisValueType, position:Int) {
   def valueText = value.value.toString
   def toTotal = copy(value = TotalAxisValueType)
   def isTotal = value == TotalAxisValueType
-  def isOtherValue = value.value == FilterWithOtherTransform.OtherValue
+  def isOtherValue = (value.value == FilterWithOtherTransform.OtherValue) || (value.value match {
+    case p:PivotTreePath if p.isOther => true
+    case _ => false
+  })
   def isMeasure = value.isInstanceOf[MeasureAxisValueType]
 
   def <(other:AxisValue, comparator:Ordering[Any]):Boolean = {
@@ -64,6 +67,7 @@ case class AxisValue(field:Field, value:AxisValueType, position:Int) {
           case TotalAxisValueType => 0
           case ValueAxisValueType(UndefinedValue) => 1
           case ValueAxisValueType(FilterWithOtherTransform.OtherValue) => 3
+          case ValueAxisValueType(ptp:PivotTreePath) if ptp.isOther => 3
           case _ => 2
         }
       }
@@ -375,11 +379,15 @@ object PivotTableModel {
               val (start, end) = treeDepths(field)
               pivotState.transforms.get(field) match {
                 case Some(FilterWithOtherTransform(selection)) => {
-                  if (selection.contains(path)) {
+                  val selectedPaths = selection.asInstanceOf[Set[PivotTreePath]]
+                  if (selectedPaths.exists(_.equalOrParentOf(path))) {
                     maxDepths.getOrElseUpdate(field, {scala.math.max(maxDepths.getOrElse(field, 0), path.size)})
                     path.between(start, end).reverse
                   } else {
-                    FilterWithOtherTransform.treeNode :: (for (i <- start until end) yield "").toList
+                    (start to end).map(c => {
+                      val paths = List.fill(c)(FilterWithOtherTransform.Other.toString)
+                      PivotTreePath(paths)
+                    }).toList.reverse
                   }
                 }
                 case None => {
