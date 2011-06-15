@@ -104,4 +104,4 @@ case class UploadInterestRatesUpdate(user : User, label : String, observationDat
     Map("currency" → currency, "interestRates" → interestRates.map(_.toString))
 }
 
-case class EmailEvent(from: String = "", to: Seq[String] = Nil, subject: String = "", body: String = "") extends Event
+case class EmailEvent(from: String = "", to: String = "", subject: String = "", body: String = "") extends Event

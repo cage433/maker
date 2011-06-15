@@ -41,7 +41,7 @@ class FwdCurveAutoImport(runEvery: Int, marketDataStore: MarketDataStore, market
   private def runTask {
     val days = importDays
     days.map {
-      importDay => {
+      importDay => Log.infoWithTime("observationDay: " + importDay.toString) {
 
         // import for each mds
         marketDataSources.map {

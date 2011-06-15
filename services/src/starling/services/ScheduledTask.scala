@@ -48,12 +48,12 @@ abstract class BroadcastingScheduledTask(broadcaster: Broadcaster) extends Sched
   protected def eventFor(observationDay: Day): Option[Event]
 }
 
-abstract class EmailingScheduledTask(broadcaster: Broadcaster, from: String, to: Seq[String])
+abstract class EmailingScheduledTask(broadcaster: Broadcaster, from: String, to: String)
   extends BroadcastingScheduledTask(broadcaster) {
 
   final protected def eventFor(observationDay: Day) = eventFor(observationDay, EmailEvent(from, to))
   override def attributes =
-    super.attributes + (EmailFrom → ScheduledTaskAttribute(from)) + (EmailTo → ScheduledTaskAttribute(to.mkString(", ")))
+    super.attributes + (EmailFrom → ScheduledTaskAttribute(from)) + (EmailTo → ScheduledTaskAttribute(to))
 
-  protected def eventFor(observationDay: Day, email: EmailEvent): Option[EmailEvent]
+  protected def eventFor(observationDay: Day, email: EmailEvent): Option[Event]
 }

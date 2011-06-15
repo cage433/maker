@@ -5,7 +5,7 @@ import starling.utils._
 import starling.pivot.{Field => PField}
 import starling.pivot._
 import controller.PivotTableConverter
-import model.{CollapsedState, PivotTableModel}
+import model.{UndefinedValue, CollapsedState, PivotTableModel}
 import starling.pivot.Field._
 import starling.db.DBWriter
 import collection.immutable.Set
@@ -139,7 +139,7 @@ case class FieldDetailsTradeSelection(filter:List[(FieldDetails,Selection)], sel
     def matches(fs: (FieldDetails, Selection)): Boolean = {
       try {
         val (fieldDetail, selection) = fs
-        val value = data(fieldDetail.field)
+        val value = data.getOrElse(fieldDetail.field, UndefinedValue)
         val r = selection.matches(fieldDetail, value)
         if (!r) {
           val b = 1

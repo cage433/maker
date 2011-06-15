@@ -11,7 +11,7 @@ import starling.utils.ImplicitConversions._
 
 
 class VerifyPriceAvailable(marketDataStore: MarketDataStore, pricingGroup: PricingGroup, exchange: FuturesExchange,
-                           broadcaster: Broadcaster, from: String, to: String*)
+                           broadcaster: Broadcaster, from: String, to: String)
   extends EmailingScheduledTask(broadcaster, from, to) {
 
   private val pfs = PivotFieldsState(dataFields = fields("Market", "Price"), rowFields = fields("Period"))
