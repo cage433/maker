@@ -215,12 +215,13 @@ class PivotTablePageComponent(
       }
     }
     val removeZerosButton = new ToggleToolBarButton {
-      selected = currentFieldState.removeZeros
+      selected = pivotPageState.otherLayoutInfo.removeZeros
       tooltip = "Remove or show rows that contain zeros"
       icon = StarlingIcons.icon("/icons/16x16_remove_zeros.png")
       reactions += {
         case ButtonClicked(_) => {
-          pageContext.goTo(selfPage(pivotPageState.copyPivotFieldsState(currentFieldState.copy(removeZeros = !currentFieldState.removeZeros))))
+          val newOtherLayoutInfo = pivotPageState.otherLayoutInfo.copy(removeZeros = !pivotPageState.otherLayoutInfo.removeZeros)
+          pageContext.goTo(selfPage(pivotPageState.copy(otherLayoutInfo = newOtherLayoutInfo)))
         }
       }
     }

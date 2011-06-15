@@ -28,17 +28,11 @@ object TreePivotFilterNode {
   }
 }
 
-
-/**
- * this is the Pivot Table as returned by the controller
- * and used by the view. Use this *and not* the PivotTableModel
- * This should contain all the info required for rendering the
- * table in whatever fashion
- */
 case class PivotTable(rowFields:List[Field], rowFieldHeadingCount:Array[Int], rowAxis:List[AxisNode],
                       columnAxis:List[AxisNode], possibleValues:Map[Field,TreePivotFilter], treeDetails:TreeDetails,
                       editableInfo:Option[EditableInfo], formatInfo:FormatInfo,
-                      aggregatedMainBucket:Map[(List[AxisValue],List[AxisValue]),Any] = Map()) {
+                      aggregatedMainBucket:Map[(List[AxisValue],List[AxisValue]),Any] = Map(),
+                      zeroFields:Set[Field]=Set()) {
 
   def asCSV:String = convertUsing(Utils.csvConverter)
   def convertUsing(converter: GridConverter, decimalPlaces: DecimalPlaces = PivotFormatter.DefaultDecimalPlaces) =
