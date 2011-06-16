@@ -33,7 +33,7 @@ class LMELIMRelation(val node: LimNode, observationTimeOfDay: ObservationTimeOfD
 
 class MonthlyLIMRelation(val node: LimNode, observationTimeOfDay: ObservationTimeOfDay) extends LIMRelation {
   protected val extractor = Extractor.regex("""TRAF\.(\w+)\.(\w+)_(\w+)""") { case List(exchange, lim, deliveryMonth) =>
-    val optMarket = FuturesMarket.fromExchangeAndLimSymbol(exchange, lim)
+    val optMarket = FuturesMarket.fromExchangeAndLimSymbol(exchangeLookup(exchange), lim)
     val optMonth = ReutersDeliveryMonthCodes.parse(deliveryMonth)
 
     (optMarket, optMonth) match {
@@ -42,6 +42,8 @@ class MonthlyLIMRelation(val node: LimNode, observationTimeOfDay: ObservationTim
       case (_, None) => debug("Cannot parse Reuters delivery month: " + deliveryMonth)
     }
   }
+
+  def exchangeLookup(exchange: String) = if (exchange == "SHFE") "SFS" else exchange
 }
 
 object CMPTLIMRelation extends LIMRelation {
