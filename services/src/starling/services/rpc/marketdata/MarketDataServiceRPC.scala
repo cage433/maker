@@ -86,6 +86,8 @@ class MarketDataServiceRPC(marketDataStore: MarketDataStore, val props : Props) 
       Log.info("getQuotaValue for %s".format(quotaId))
       val q = quotaById(quotaId)
 
+      Log.info("Found requested quota by id %s { %s }".format(quotaId, q.toString))
+
       val trades = allTrades()
       Log.info("Got %d  edm trades".format(trades.size))
 
@@ -146,11 +148,12 @@ class MarketDataServiceRPC(marketDataStore: MarketDataStore, val props : Props) 
     }
   }
 
-  var quotasMap = quotasSrc()
-  Log.debug(quotasMap.values.mkString("\n"))
+  /**
+   * tactical ref-data handling...
+   */
+  lazy val quotasSrc : () => Map[String, QuotaDetail] = () => Map[String, QuotaDetail]() ++ allTrades().flatMap(_.quotas.map(q => (q.detail.identifier, q.detail)))
 
   // maps of tactical ref-data by id
-  lazy val quotasSrc : () => Map[String, QuotaDetail] = () => Map[String, QuotaDetail]() ++ allTrades().flatMap(_.quotas.map(q => (q.detail.identifier, q.detail)))
   lazy val commoditiesSrc : () => Map[GUID, Metal] = () => Map[GUID, Metal]() ++ allCommodities().map(e => (e.guid , e))
   lazy val exchangesSrc : () => Map[GUID, Market] = () => Map[GUID, Market]() ++ allExchanges().map(e => (e.guid , e))
 
@@ -159,12 +162,18 @@ class MarketDataServiceRPC(marketDataStore: MarketDataStore, val props : Props) 
   lazy val allCommodities  = () => tacticalRefdataMetalsService.getMetals()
   lazy val allExchanges  = () => tacticalRefdataMarketsService.getMarkets()
 
-
   val clientExecutor : ClientExecutor = new ComponentTestClientExecutor(rmetadminuser)
 
-  val edmGetTradesService : EdmGetTrades = getEdmGetTradesServiceProxy(clientExecutor)
-  val tacticalRefdataMetalsService : MetalService = getTacticalRefdataMetalServiceProxy(clientExecutor)
-  val tacticalRefdataMarketsService : MarketService = getTacticalRefdataMarketServiceProxy(clientExecutor)
+  lazy val edmGetTradesService : EdmGetTrades = getEdmGetTradesServiceProxy(clientExecutor)
+  lazy val tacticalRefdataMetalsService : MetalService = getTacticalRefdataMetalServiceProxy(clientExecutor)
+  lazy val tacticalRefdataMarketsService : MarketService = getTacticalRefdataMarketServiceProxy(clientExecutor)
+
+  // maps of tactical ref-data by id
+  var quotasMap = quotasSrc()
+
+  // debug output received trade quotas
+  //Log.debug(quotasMap.values.mkString("\n"))
+
 
   /**
    * get proxies for services
