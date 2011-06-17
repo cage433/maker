@@ -110,6 +110,17 @@ class Starling(info : ProjectInfo) extends ParentProject(info) {
       services.runClasspath,
       Array[String]()
     ) dependsOn(compile) }
+
+    lazy val writeClasspathScript = task { 
+      // writes a shell script that sets the classpath so I can run from the command line, compile in Vim etc
+      import java.io._
+      val file = new PrintWriter(new FileOutputStream(new File("set-classpath.sh")))
+      file.println("export CLASSPATH=" + services.testClasspath.getFiles.toList.mkString(":"))
+      file.println("export JAVA_OPTS='-server -XX:MaxPermSize=512m -Xss128k -Xmx6000m'")
+      file.close()
+      None
+    }
+
   }
 }
 
