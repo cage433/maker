@@ -1,7 +1,7 @@
 package starling.gui
 
 import api.{TradeExpiryDay, ReportParameters, TradeSelection}
-import pages.{PivotPageState, TradeSelectionComponentState, TradeSelectionPage, ConfigPanel}
+import pages.{PivotPageState, TradeSelectionPage, ConfigPanel}
 import starling.pivot.view.swing.MigPanel
 import starling.gui.GuiUtils._
 import swing.{Button, Label}

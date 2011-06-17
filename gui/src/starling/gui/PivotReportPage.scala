@@ -303,7 +303,7 @@ object PivotReportPage {
         icon = StarlingIcons.icon("/icons/16x16_market_data.png")
         reactions += {
           case ButtonClicked(b) => {
-            pageContext.goTo(MarketDataPage(ReportMarketDataPageIdentifier(reportParameters), MarketDataPageState()))
+            MarketDataPage.goTo(pageContext, ReportMarketDataPageIdentifier(reportParameters), None, None)
           }
         }
       }

@@ -24,11 +24,11 @@ case class RefinedMetalsLimMarketDataSource(limServer: LIMServer) extends Market
     new MonthlyFuturesFixings(Trafigura.Bloomberg.Futures.Shfe, Settle),
     new MonthlyFuturesFixings(Trafigura.Bloomberg.Futures.Comex, Close)) ::: SpotFXFixings.all)
   private val spotFXSources = SpotFXDataType → List(BloombergGenericFXRates, CFETSSpotFXFixings)
-  private val priceSources = PriceDataType → List(new PriceLimSource(
-    new LMELIMRelation(Trafigura.Bloomberg.Metals.Lme, LMEClose),
-    new MonthlyLIMRelation(Trafigura.Bloomberg.Futures.Comex, COMEXClose),
-    new MonthlyLIMRelation(Trafigura.Bloomberg.Futures.Shfe, SHFEClose)
-  ))
+  private val priceSources = PriceDataType → List(
+    new PriceLimSource(new LMELIMRelation(Trafigura.Bloomberg.Metals.Lme, LMEClose)),
+    new PriceLimSource(new MonthlyLIMRelation(Trafigura.Bloomberg.Futures.Comex, COMEXClose)),
+    new PriceLimSource(new MonthlyLIMRelation(Trafigura.Bloomberg.Futures.Shfe, SHFEClose))
+  )
 
   override def description = List(fixingsSources, spotFXSources, priceSources).flatMap
     { case (marketDataType, sources) => marketDataType.name.pair(sources.flatMap(_.description)).map("%s → %s" % _) }
@@ -71,6 +71,7 @@ abstract class LimSource(val levels: List[Level]) {
   def marketDataEntriesFrom(fixings: List[Prices[Relation]]): Iterable[MarketDataEntry]
   def description: List[String]
   protected def levelDescription = "(" + levels.map(_.name).mkString(", ") + ")"
+  protected def exchangeLookup(exchange: String) = if (exchange == "SHFE") "SFS" else exchange
 }
 
 abstract class HierarchicalLimSource(val parentNodes: List[LimNode], levels: List[Level]) extends LimSource(levels) {
@@ -123,7 +124,6 @@ class MonthlyFuturesFixings(parentNodes: List[LimNode], levels: List[Level]) ext
     } }
   }
 
-  private def exchangeLookup(exchange: String) = if (exchange == "SHFE") "SFS" else exchange
   private def group(prices: Prices[MonthlyFuturesRelation]) =
     (prices.relation.market, prices.observationDay.atTimeOfDay(prices.relation.market.closeTime))
 }

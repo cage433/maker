@@ -533,21 +533,6 @@ object PivotTableModel {
           }
         }
       }
-      
-      if (pivotState.removeZeros) {
-        val zeroFields = dataSource.zeroFields
-        if (zeroFields.nonEmpty) {
-          val rows = mainTableBucket.groupBy{case ((r,c),v) => r}.keySet
-          val rowsToRemove = rows.flatMap(row => {
-            val allColumnsForRowMap = mainTableBucket.filter{case ((r,_),_) => r == row}
-            val onlyZeroFieldColumnsMap = allColumnsForRowMap.filter{case(_,v) => v.isOneOfTheseFields(zeroFields)}
-            if (onlyZeroFieldColumnsMap.forall{case (k,v) => v.isAlmostZero}) Some(row) else None
-          })
-          rowAxisValues --= rowsToRemove
-          val keysToRemove = mainTableBucket.filter{case ((r,_),_) => rowsToRemove.contains(r)}.keySet
-          mainTableBucket --= keysToRemove
-        }
-      }
 
       val allColumnValues = columnAxisValues.toList ::: mainTableBucket.map(_._1._2).toList
       val maxSize = if (allColumnValues.isEmpty) 0 else allColumnValues.maximum { col => col.list.size }
@@ -694,7 +679,7 @@ object PivotTableModel {
       Log.debug("Pivot Table Model generated in " + (now - then) + "ms")
       PivotTable(pivotState.rowFields, fieldIndexes(pivotState.rowFields), rowAxis, columnAxis, possibleValuesConvertedToTree,
         TreeDetails(treeDepths, maxDepths.toMap), editableInfo, formatInfo,
-        Map() ++ aggregatedMainBucket.map { case ((r,c),v) => (r.list, c.list) -> v })
+        Map() ++ aggregatedMainBucket.map { case ((r,c),v) => (r.list, c.list) -> v }, dataSource.zeroFields)
     }
   }
 
