@@ -32,6 +32,7 @@ import com.trafigura.tradecapture.internal.refinedmetalreferencedataservice.{Tra
 import com.trafigura.edm.tradeservice.{EdmGetTradesResource, EdmGetTradesResourceProxy, EdmGetTrades}
 import com.trafigura.services.security.ComponentTestClientExecutor
 import com.trafigura.services.security._
+import com.trafigura.timer.Timer._
 
 
 /**
@@ -77,26 +78,37 @@ class MarketDataServiceRPC(marketDataStore: MarketDataStore, val props : Props) 
    /*
     * valuation of an Edm quota service
     */
-  def getQuotaValue(quotaId : Int) : EDMQuantity = {
+  def getQuotaValue(quotaId : String) : EDMQuantity = time(getQuotaValueImpl(quotaId), "Took %d ms to execute getQuotaValue")
 
-    val trades = allTrades()
-    Log.info("Got %d  edm trades".format(trades.size))
+  private def getQuotaValueImpl(quotaId : String) : EDMQuantity = {
 
-    val commodities = commoditiesMap()
+    try {
+      Log.info("getQuotaValue for %s".format(quotaId))
+      val q = quotaById(quotaId)
 
-    Log.info("Got %d  commodities".format(commodities.size))
-    val commodityNames = commodities.map(_._2.name).mkString("\n")
-    Log.info("Commodities: \n%s".format(commodityNames))
+      val trades = allTrades()
+      Log.info("Got %d  edm trades".format(trades.size))
 
-    val exchanges = exchangesMap()
+      val commodities = commoditiesSrc()
 
-    Log.info("Got %d  commodities".format(exchanges.size))
-    val exchangeNames = exchanges.map(_._2.name).mkString("\n")
-    Log.info("Exchanges: \n%s".format(exchanges))
+      Log.info("Got %d  commodities".format(commodities.size))
+      val commodityNames = commodities.map(_._2.name).mkString("\n")
+      Log.info("Commodities: \n%s".format(commodityNames))
 
-    EDMConversions.toEDMQuantity(
-      Quantity(trades.size, UOM.USD)
-    )
+      val exchanges = exchangesSrc()
+
+      Log.info("Got %d  commodities".format(exchanges.size))
+      val exchangeNames = exchanges.map(_._2.name).mkString("\n")
+      Log.info("Exchanges: \n%s".format(exchanges))
+
+      EDMConversions.toEDMQuantity(
+        Quantity(trades.size, UOM.USD)
+      )
+    }
+    catch {
+      case e : Exception =>  Log.error("getQuotaValue for %s failed, error: ".format(e.getMessage(), e))
+      throw e
+    }
   }
 
   def latestLiborFixings() = marketData(fixingRequest.update(_.filterExchange("LIBOR", "IRS"),
@@ -121,10 +133,26 @@ class MarketDataServiceRPC(marketDataStore: MarketDataStore, val props : Props) 
   val tradeServiceURL = props.EdmTradeServiceUrl()
   val refdataServiceURL = props.TacticalRefDataServiceUrl()
 
+
+  private def quotaById(id : String) = {
+
+    if (quotasMap.contains(id)) {
+      quotasMap(id)
+    }
+    else {
+      Log.info("quota cache miss for quota %s, refeshing cache".format(id))
+      quotasMap = quotasSrc()
+      quotasMap(id)
+    }
+  }
+
+  var quotasMap = quotasSrc()
+  Log.debug(quotasMap.values.mkString("\n"))
+
   // maps of tactical ref-data by id
-  lazy val quotasMap : () => Map[String, QuotaDetail] = () => Map[String, QuotaDetail]() ++ allTrades().flatMap(_.quotas.map(q => (q.detail.identifier, q.detail)))
-  lazy val commoditiesMap : () => Map[GUID, Metal] = () => Map[GUID, Metal]() ++ allCommodities().map(e => (e.guid , e))
-  lazy val exchangesMap : () => Map[GUID, Market] = () => Map[GUID, Market]() ++ allExchanges().map(e => (e.guid , e))
+  lazy val quotasSrc : () => Map[String, QuotaDetail] = () => Map[String, QuotaDetail]() ++ allTrades().flatMap(_.quotas.map(q => (q.detail.identifier, q.detail)))
+  lazy val commoditiesSrc : () => Map[GUID, Metal] = () => Map[GUID, Metal]() ++ allCommodities().map(e => (e.guid , e))
+  lazy val exchangesSrc : () => Map[GUID, Market] = () => Map[GUID, Market]() ++ allExchanges().map(e => (e.guid , e))
 
   // set up a client executor and edm trade proxy
   lazy val allTrades : () => List[PhysicalTrade] = () => edmGetTradesService.getAll().map(_.asInstanceOf[PhysicalTrade])
@@ -138,20 +166,17 @@ class MarketDataServiceRPC(marketDataStore: MarketDataStore, val props : Props) 
   val tacticalRefdataMetalsService : MetalService = getTacticalRefdataMetalServiceProxy(clientExecutor)
   val tacticalRefdataMarketsService : MarketService = getTacticalRefdataMarketServiceProxy(clientExecutor)
 
-  private def getEdmGetTradesServiceProxy(executor : ClientExecutor) : EdmGetTrades = {
-    val proxy : EdmGetTradesResource = ProxyFactory.create(classOf[EdmGetTradesResource], tradeServiceURL, executor)
-    new EdmGetTradesResourceProxy(proxy)
-  }
+  /**
+   * get proxies for services
+   */
+  private def getEdmGetTradesServiceProxy(executor : ClientExecutor) : EdmGetTrades =
+    new EdmGetTradesResourceProxy(ProxyFactory.create(classOf[EdmGetTradesResource], tradeServiceURL, executor))
 
-  private def getTacticalRefdataMetalServiceProxy(executor : ClientExecutor) : MetalService = {
-    val proxy : MetalServiceResource = ProxyFactory.create(classOf[MetalServiceResource], refdataServiceURL, executor)
-    new MetalServiceResourceProxy(proxy)
-  }
+  private def getTacticalRefdataMetalServiceProxy(executor : ClientExecutor) : MetalService =
+    new MetalServiceResourceProxy(ProxyFactory.create(classOf[MetalServiceResource], refdataServiceURL, executor))
 
-  private def getTacticalRefdataMarketServiceProxy(executor : ClientExecutor) : MarketService = {
-    val proxy : MarketServiceResource = ProxyFactory.create(classOf[MarketServiceResource], refdataServiceURL, executor)
-    new MarketServiceResourceProxy(proxy)
-  }
+  private def getTacticalRefdataMarketServiceProxy(executor : ClientExecutor) : MarketService =
+    new MarketServiceResourceProxy(ProxyFactory.create(classOf[MarketServiceResource], refdataServiceURL, executor))
 }
 
 /**
