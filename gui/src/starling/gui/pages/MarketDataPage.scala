@@ -49,7 +49,7 @@ case class MarketDataPage(
   //private def copyVersion(version : Int) = copy(marketDataIdentifier = marketDataIdentifier.copyVersion(version))
 
   override def subClassesPageData(pageBuildingContext:PageBuildingContext) = {
-    val avaliableMarketDataTypes = pageBuildingContext.starlingServer.marketDataTypeLabels(marketDataIdentifier)
+    val avaliableMarketDataTypes = pageBuildingContext.cachingStarlingServer.marketDataTypeLabels(marketDataIdentifier)
     val selected = pageState.marketDataType match {
       case Some(mdt) => Some(mdt)
       case None => avaliableMarketDataTypes.headOption
@@ -69,6 +69,33 @@ case class MarketDataPage(
       PivotComponent(text, pageContext, toolbarButtons(pageContext, data), None, finalDrillDownPage, selfPage, data,
         pageState.pivotPageState, save, browserSize),
       pageState, marketDataPagePageData)
+  }
+}
+
+object MarketDataPage {
+  //Goes to the MarketDataPage and picks the default market data type (if not specified) and pivot field state
+  def goTo(
+            pageContext:PageContext,
+            marketDataIdentifier:MarketDataPageIdentifier,
+            marketDataType:Option[MarketDataTypeLabel],
+            observationDays:Option[Set[Day]],
+            ctrlDown:Boolean=false) {
+    pageContext.createAndGoTo( (server) => {
+      val mdt = marketDataType.getOrElse(server.marketDataTypeLabels(marketDataIdentifier).head) //<!--
+      var fs = pageContext.getSetting(
+        StandardUserSettingKeys.UserMarketDataTypeLayout, Map[MarketDataTypeLabel,PivotFieldsState]()
+      ).get(mdt)
+
+      val fieldsState = (fs, observationDays) match {
+        case (Some(fs), Some(days)) => Some(fs.addFilter(Field("Observation Day") -> days.asInstanceOf[Set[Any]]))
+        case _ => fs
+      }
+
+      new MarketDataPage(marketDataIdentifier, MarketDataPageState(
+        marketDataType = Some(mdt),
+        pivotPageState = PivotPageState(false, PivotFieldParams(true, fieldsState))
+      ))
+    }, newTab = ctrlDown)
   }
 }
 
@@ -342,21 +369,11 @@ class MarketDataPageComponent(
 
   reactions += {
     case SelectionChanged(`dataTypeCombo`) => {
-      var fieldsState = pageContext.getSetting(StandardUserSettingKeys.UserMarketDataTypeLayout, Map[MarketDataTypeLabel,PivotFieldsState]()).get(dataTypeCombo.selection.item)
-      fieldsState.foreach { fs => {
-        thisPage.pageState.pivotPageState.pivotFieldParams.pivotFieldState.foreach {
-          pfs => {
-            pfs.fieldSelection(Field("Observation Day")).foreach { observationDays => {
-              fieldsState = Some(fs.addFilter(Field("Observation Day") -> observationDays))
-            } }
-          }
-        }
-      } }
+      val days = thisPage.pageState.pivotPageState.pivotFieldParams.pivotFieldState.flatMap {
+        _.fieldSelection(Field("Observation Day")).asInstanceOf[Option[Set[Day]]]
+      }
 
-      pageContext.goTo(new MarketDataPage(thisPage.marketDataIdentifier, MarketDataPageState(
-        marketDataType = Some(dataTypeCombo.selection.item),
-        pivotPageState = PivotPageState(false, PivotFieldParams(true, fieldsState))
-      )))
+      MarketDataPage.goTo(pageContext, thisPage.marketDataIdentifier, Some(dataTypeCombo.selection.item), days)
     }
     case SelectionChanged(`snapshotsComboBox`) =>
       pageContext.goTo(thisPage.copy(marketDataIdentifier=StandardMarketDataPageIdentifier(thisPage.marketDataIdentifier.marketDataIdentifier.copy(marketDataVersion = snapshotsComboBox.value))))
