@@ -276,7 +276,7 @@
         </CLASSES>
         <JAVADOC />
         <SOURCES>
-          <root url="file://$USER_HOME$/dev/model/tooling/scala-hub-support/src/main/scala" />
+          <root url="file://$MODULE_DIR$/../../../model/tooling/scala-hub-support/src/main/scala" />
         </SOURCES>
       </library>
     </orderEntry>

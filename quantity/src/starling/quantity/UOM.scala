@@ -162,6 +162,9 @@ object UOM {
   def parseCurrency(text:String) = allCurrencies.get(text.toUpperCase)
 }
 
+/**
+ * scale is e.g kilo, centi, mega etc
+ */
 case class UOM private (scale : Ratio, value : Ratio) extends RatioT[UOM] {
   import UOM._
 
