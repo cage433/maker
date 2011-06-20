@@ -20,6 +20,7 @@ import starling.utils._
 import org.springframework.dao.DuplicateKeyException
 import java.lang.{RuntimeException, String}
 import java.util.concurrent.atomic.AtomicInteger
+import starling.curves.Environment
 
 
 // TODO [07 Sep 2010] move me somewhere proper
@@ -182,6 +183,7 @@ trait MarketDataStore {
   def saveAll(marketDataSet: MarketDataSet, observationPoint: ObservationPoint, data: Map[MarketDataKey,MarketData]): (Int, Boolean)
 
   def snapshot(marketDataSelection: MarketDataSelection, doImport: Boolean, observationDay: Day) : SnapshotID
+  def snapshots() : List[SnapshotID]
   def snapshotsByMarketDataSelection(): Map[MarketDataSelection, List[SnapshotIDLabel]]
   def snapshotFromID(snapshotID: Int): Option[SnapshotID]
 
@@ -545,10 +547,14 @@ class DBMarketDataStore(db: DBTrait[RichResultSetRow], val marketDataSources: Ma
     """, Map("snapshotID" -> snapshotID))(snapshotIDFromResultSetRow)
   }
 
-  def snapshotsByMarketDataSelection(): Map[MarketDataSelection, List[SnapshotIDLabel]] = {
+  def snapshots() : List[SnapshotID] = {
     db.queryWithResult("select * from MarketDataTag order by snapshotID desc", Map()) {
       rs => snapshotIDFromResultSetRow(rs)
-    }.groupBy(_.marketDataSelection).map{ case(selection, snapshots) => selection -> snapshots.map(_.label).sortWith(_ > _) }
+    }
+  }
+
+  def snapshotsByMarketDataSelection(): Map[MarketDataSelection, List[SnapshotIDLabel]] = {
+    snapshots().groupBy(_.marketDataSelection).map{ case(selection, snapshots) => selection -> snapshots.map(_.label).sortWith(_ > _) }
   }
 
   def observationDaysByPricingGroup():Map[PricingGroup,Set[Day]] = Map() ++ observationDaysByPricingGroupCache.mapValues(Set() ++ _)
@@ -888,4 +894,5 @@ class DBMarketDataStore(db: DBTrait[RichResultSetRow], val marketDataSources: Ma
     case s : String => LiteralString(s)
     case _ => v
   }
+
 }

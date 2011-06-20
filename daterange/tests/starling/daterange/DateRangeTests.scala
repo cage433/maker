@@ -196,7 +196,7 @@ class DateRangeTests extends TestNGSuite {
     assertEquals(Month(2009, 1), yearMonths.head)
     assertEquals(Month(2009, 12), yearMonths.last)
     assertEquals(yearMonths, yearMonths.sortWith(_<_))
-  }
+  Day}
 
   @Test
   def testContainingQuarter{
@@ -206,6 +206,15 @@ class DateRangeTests extends TestNGSuite {
         assertEquals(qtr, d.containingQuarter)
       }
     }
+  }
+
+  @DataProvider(name = "testJodaRoundTripProvider")
+  def testJodaRoundTripProvider = constructDataProviderArgs(List(
+    Day(2009, 1, 1), Day(2010, 10, 10), Day(1990, 8, 13)
+  ))
+  @Test(dataProvider = "testJodaRoundTripProvider")
+  def testJodaRoundTrip(day : Day){
+    assertEquals(day, Day.fromJodaDate(day.toJodaLocalDate))
   }
 }
 
