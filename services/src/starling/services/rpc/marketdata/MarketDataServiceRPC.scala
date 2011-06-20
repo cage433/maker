@@ -9,8 +9,6 @@ import starling.marketdata.{PriceFixingsHistoryDataType, MarketDataTypes}
 import starling.pivot.model.PivotTableModel
 import starling.pivot._
 import starling.services.Server
-import starling.utils.Log
-
 import starling.utils.ImplicitConversions._
 import PriceFixingsHistoryDataType._
 import starling.daterange.Day
@@ -21,7 +19,6 @@ import com.trafigura.services.security.IProvideSecurityContext
 import org.jboss.resteasy.client.{ClientExecutor, ProxyFactory}
 import com.trafigura.services.referencedata.ReferenceData
 import com.trafigura.tradecapture.internal.refinedmetalreferencedataservice._
-import com.trafigura.tradinghub.support.{GUID, ServiceFilter}
 import com.trafigura.edm.physicaltradespecs.{PhysicalTradeSpec, QuotaDetail, EDMQuota}
 import javax.management.remote.rmi._RMIConnection_Stub
 import com.trafigura.edm.trades.PhysicalTrade
@@ -33,7 +30,16 @@ import com.trafigura.edm.tradeservice.{EdmGetTradesResource, EdmGetTradesResourc
 import com.trafigura.services.security.ComponentTestClientExecutor
 import com.trafigura.services.security._
 import com.trafigura.timer.Timer._
-
+import java.lang.Thread
+import java.io._
+import xml.Source
+import starling.curves.{Environment, NullAtomicEnvironment}
+import org.apache.commons.io.FileUtils
+import org.codehaus.jettison.json.JSONObject
+import com.trafigura.tradinghub.support.{JSONConversions, GUID, ServiceFilter}
+import starling.utils.{Stopwatch, StarlingXStream, Log}
+import org.apache.commons.codec.net.QCodec
+import starling.services.rpc.valuation.QuotaValuer
 
 /**
  * Generic Market data service, covering all market data
@@ -89,6 +95,17 @@ class MarketDataServiceRPC(marketDataStore: MarketDataStore, val props : Props) 
       Log.info("Found requested quota by id %s { %s }".format(quotaId, q.toString))
 
       val trades = allTrades()
+
+      val tradeString = StarlingXStream.write(trades)
+
+      val fstream = new FileWriter("/tmp/edmtrades.xml")
+      val out = new BufferedWriter(fstream)
+      out.write(tradeString)
+
+      out.close()
+      fstream.close()
+
+
       Log.info("Got %d  edm trades".format(trades.size))
 
       val commodities = commoditiesSrc()
@@ -210,6 +227,60 @@ class MarketDataServiceRPC(marketDataStore: MarketDataStore, val props : Props) 
 
   def getQuotaValue(quotaId: Int) = null
 }
+
+object MarketDataService extends Application {
+
+  def loadAndValue() {
+
+//    val tradeXml = io.Source.fromFile("/tmp/edmtrades.xml").getLines().mkString("\n")
+    val tradeXmlTmp = FileUtils.readFileToString(new File("/tmp/edmtrades.json"))
+
+    val sw = new Stopwatch()
+    val trades = tradeXmlTmp.split('\n').map{
+      l =>
+        PhysicalTrade.fromJson(JSONConversions.parseJSON(l).asInstanceOf[org.codehaus.jettison.json.JSONObject])
+    }
+    println(sw)
+
+    val env = Environment(new NullAtomicEnvironment(Day(2010, 1, 1).endOfDay))
+    val qv = new QuotaValuer(env)
+    trades.foreach{
+      physTrade =>
+        physTrade.quotas.foreach { q =>
+            println(qv.value(q))
+        }
+    }
+  }
+
+  //readAndStore()
+  loadAndValue()
+
+
+
+  def readAndStore() {
+    new Thread(new Runnable() {
+      def run() {  Server.main(Array()) }
+    }).start()
+
+    while (Server.server == null){
+      Thread.sleep(1000)
+    }
+
+    val md = new MarketDataServiceRPC(Server.server.marketDataStore, Server.server.props)
+
+    val trades = md.allTrades()
+
+    val tradeStrings = trades.map(_.toJson())  //  StarlingXStream.write(trades)
+
+    val fstream = new FileWriter("/tmp/edmtrades.json")
+    val out = new BufferedWriter(fstream)
+    out.write(tradeStrings.mkString("\n"))
+
+    out.close()
+    fstream.close()
+  }
+}
+
 
 /**
  * Market data service stub

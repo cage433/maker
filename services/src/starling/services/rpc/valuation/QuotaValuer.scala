@@ -43,9 +43,14 @@ case class WeightedPricingSpec(specs : List[(Double, PricingSpec)]) extends Pric
 case class FixedPricingSpec (prices : List[(Quantity, Quantity)]) extends PricingSpec{
   def price(env: Environment) = {
     val totalQuantity = prices.map(_._1).sum
-    prices.map{
-      case (qty, prc) => qty * prc
-    }.sum / totalQuantity
+    if (totalQuantity.isZero){
+        println("Have no fixed prices")
+        Quantity.NULL
+    } else {
+      prices.map{
+        case (qty, prc) => qty * prc
+      }.sum / totalQuantity
+    }
   }
 }
 
@@ -176,16 +181,20 @@ object EnvironmentLocator{
   }
 }
 
-class QuotaValuer {
+class QuotaValuer(env : Environment) {
   def commodityFromGUID(guid : GUID) : Commodity = Aluminium
   def getQuota(quotaID : Int) : EDMQuota   = null
   def value(quotaID : Int) : Quantity = value(getQuota(quotaID))
   def value(quota : EDMQuota) : Quantity = {
     val detail = quota.detail
-    val commodityGUIDs = detail.deliverySpecs.map(_.asInstanceOf[CommoditySpec].commodity).toSet
+    val commodityGUIDs = detail.deliverySpecs.map(_.materialSpec.asInstanceOf[CommoditySpec].commodity).toSet
     assert(commodityGUIDs.size == 1, "Quota can only have a single commodity, received " + commodityGUIDs)
-    val pricingSpec = PricingSpecConverter(commodityGUIDs.head).fromEdmPricingSpec(detail.pricingSpec)
-    null
-
+    if (detail.pricingSpec == null){
+      println(quota.quotaNumber  + " has no pricing spec")
+      Quantity.NULL
+    } else {
+      val pricingSpec = PricingSpecConverter(commodityGUIDs.head).fromEdmPricingSpec(detail.pricingSpec)
+      pricingSpec.price(env)
+    }
   }
 }
