@@ -37,8 +37,8 @@ class PivotUTPRestructurer(
   /**
     Given a list of UTPs, return an equivalent list (in terms of position and MTM) such that
     futures are replaced by futures spreads. A similar transformation is applied to bank accounts 
-    (these will have come from the cash part of a Futures's UTP portfolio. The reason for the latter
-    is to prevent a proliferation of riks periods in the advanced OLAP report
+    (these will have come from the cash part of a Future's UTP portfolio. The reason for the latter
+    is to prevent a proliferation of risk periods in the advanced OLAP report
   **/
   def convertFuturesToFuturesSpreads(utps : List[UTPWithIdentifier]) : List[UTPWithIdentifier] = {
 
