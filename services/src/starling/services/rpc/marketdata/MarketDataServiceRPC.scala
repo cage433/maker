@@ -1,8 +1,6 @@
 package starling.services.rpc.marketdata
 
 import com.trafigura.edm.marketdata._
-import com.trafigura.edm.physicaltradespecs.EDMQuota
-import com.trafigura.tradinghub.support.ServiceFilter
 import scala.collection.JavaConversions._
 
 import starling.db.MarketDataStore
@@ -19,14 +17,36 @@ import starling.daterange.Day
 import starling.edm.EDMConversions
 import com.trafigura.edm.shared.types.{Quantity => EDMQuantity}
 import starling.quantity.{UOM, Quantity}
+import com.trafigura.services.security.IProvideSecurityContext
+import org.jboss.resteasy.client.{ClientExecutor, ProxyFactory}
+import com.trafigura.services.referencedata.ReferenceData
+import com.trafigura.tradecapture.internal.refinedmetalreferencedataservice._
+import com.trafigura.tradinghub.support.{GUID, ServiceFilter}
+import com.trafigura.edm.physicaltradespecs.{PhysicalTradeSpec, QuotaDetail, EDMQuota}
+import javax.management.remote.rmi._RMIConnection_Stub
+import com.trafigura.edm.trades.PhysicalTrade
+import com.trafigura.tradecapture.internal.refinedmetal.{Market, Metal}
+import starling.props.{Props, PropsHelper}
 
-/** Generic Market data service, covering all market data */
-class MarketDataServiceRPC(marketDataStore: MarketDataStore) extends MarketDataService {
+import com.trafigura.tradecapture.internal.refinedmetalreferencedataservice.{TranslationsServiceResource, TranslationsServiceResourceProxy}
+import com.trafigura.edm.tradeservice.{EdmGetTradesResource, EdmGetTradesResourceProxy, EdmGetTrades}
+import com.trafigura.services.security.ComponentTestClientExecutor
+import com.trafigura.services.security._
+import com.trafigura.timer.Timer._
+
+
+/**
+ * Generic Market data service, covering all market data
+ */
+class MarketDataServiceRPC(marketDataStore: MarketDataStore, val props : Props) extends MarketDataService {
   implicit def enrichMarketDataRequestParameters(parameters: MarketDataRequestParameters) = new {
     def filterExchange(exchangeNames: String*) = addFilters(MarketDataFilter(exchangeField.name, exchangeNames.toList))
     def addFilters(filter: MarketDataFilter*) = parameters.filters = parameters.filters ::: filter.toList
   }
 
+  /*
+   * a generic (untyped) market data service (unsupported)
+   */
   def marketData(parameters: MarketDataRequestParameters): MarketDataResponse = try {
     Log.info("MarketDataServiceRPC called with parameters " + parameters)
     parameters.notNull("Missing parameters")
@@ -55,13 +75,43 @@ class MarketDataServiceRPC(marketDataStore: MarketDataStore) extends MarketDataS
     marketData(mdParams)
   }
 
-  def getQuotaValue(quotaId : Int) : EDMQuantity = {
+   /*
+    * valuation of an Edm quota service
+    */
+  def getQuotaValue(quotaId : String) : EDMQuantity = time(getQuotaValueImpl(quotaId), "Took %d ms to execute getQuotaValue")
 
-    EDMConversions.toEDMQuantity(
-      Quantity(1, UOM.USD)
-    )
+  private def getQuotaValueImpl(quotaId : String) : EDMQuantity = {
+
+    try {
+      Log.info("getQuotaValue for %s".format(quotaId))
+      val q = quotaById(quotaId)
+
+      Log.info("Found requested quota by id %s { %s }".format(quotaId, q.toString))
+
+      val trades = allTrades()
+      Log.info("Got %d  edm trades".format(trades.size))
+
+      val commodities = commoditiesSrc()
+
+      Log.info("Got %d  commodities".format(commodities.size))
+      val commodityNames = commodities.map(_._2.name).mkString("\n")
+      Log.info("Commodities: \n%s".format(commodityNames))
+
+      val exchanges = exchangesSrc()
+
+      Log.info("Got %d  commodities".format(exchanges.size))
+      val exchangeNames = exchanges.map(_._2.name).mkString("\n")
+      Log.info("Exchanges: \n%s".format(exchanges))
+
+      EDMConversions.toEDMQuantity(
+        Quantity(trades.size, UOM.USD)
+      )
+    }
+    catch {
+      case e : Exception =>  Log.error("getQuotaValue for %s failed, error: ".format(e.getMessage(), e))
+      throw e
+    }
   }
-
 
   def latestLiborFixings() = marketData(fixingRequest.update(_.filterExchange("LIBOR", "IRS"),
     _.rows = names(levelField, periodField), _.columns = names(marketField)))
@@ -76,6 +126,66 @@ class MarketDataServiceRPC(marketDataStore: MarketDataStore) extends MarketDataS
 
   private def fields(names: List[String]) = names.map(Field(_))
   private def names(fields: FieldDetails*) = fields.map(_.name).toList
+
+
+  /**
+   * tactical ref-data derived maps of ref-data, this could be tidied and made generic etc but it's to be replaced with SRD soon...
+   */
+  val rmetadminuser = props.ServiceInternalAdminUser()
+  val tradeServiceURL = props.EdmTradeServiceUrl()
+  val refdataServiceURL = props.TacticalRefDataServiceUrl()
+
+
+  private def quotaById(id : String) = {
+
+    if (quotasMap.contains(id)) {
+      quotasMap(id)
+    }
+    else {
+      Log.info("quota cache miss for quota %s, refeshing cache".format(id))
+      quotasMap = quotasSrc()
+      quotasMap(id)
+    }
+  }
+
+  /**
+   * tactical ref-data handling...
+   */
+  lazy val quotasSrc : () => Map[String, QuotaDetail] = () => Map[String, QuotaDetail]() ++ allTrades().flatMap(_.quotas.map(q => (q.detail.identifier, q.detail)))
+
+  // maps of tactical ref-data by id
+  lazy val commoditiesSrc : () => Map[GUID, Metal] = () => Map[GUID, Metal]() ++ allCommodities().map(e => (e.guid , e))
+  lazy val exchangesSrc : () => Map[GUID, Market] = () => Map[GUID, Market]() ++ allExchanges().map(e => (e.guid , e))
+
+  // set up a client executor and edm trade proxy
+  lazy val allTrades : () => List[PhysicalTrade] = () => edmGetTradesService.getAll().map(_.asInstanceOf[PhysicalTrade])
+  lazy val allCommodities  = () => tacticalRefdataMetalsService.getMetals()
+  lazy val allExchanges  = () => tacticalRefdataMarketsService.getMarkets()
+
+  val clientExecutor : ClientExecutor = new ComponentTestClientExecutor(rmetadminuser)
+
+  lazy val edmGetTradesService : EdmGetTrades = getEdmGetTradesServiceProxy(clientExecutor)
+  lazy val tacticalRefdataMetalsService : MetalService = getTacticalRefdataMetalServiceProxy(clientExecutor)
+  lazy val tacticalRefdataMarketsService : MarketService = getTacticalRefdataMarketServiceProxy(clientExecutor)
+
+  // maps of tactical ref-data by id
+  var quotasMap = quotasSrc()
+
+  // debug output received trade quotas
+  //Log.debug(quotasMap.values.mkString("\n"))
+
+
+  /**
+   * get proxies for services
+   */
+  private def getEdmGetTradesServiceProxy(executor : ClientExecutor) : EdmGetTrades =
+    new EdmGetTradesResourceProxy(ProxyFactory.create(classOf[EdmGetTradesResource], tradeServiceURL, executor))
+
+  private def getTacticalRefdataMetalServiceProxy(executor : ClientExecutor) : MetalService =
+    new MetalServiceResourceProxy(ProxyFactory.create(classOf[MetalServiceResource], refdataServiceURL, executor))
+
+  private def getTacticalRefdataMarketServiceProxy(executor : ClientExecutor) : MarketService =
+    new MarketServiceResourceProxy(ProxyFactory.create(classOf[MarketServiceResource], refdataServiceURL, executor))
 }
 
 /**
@@ -83,7 +193,7 @@ class MarketDataServiceRPC(marketDataStore: MarketDataStore) extends MarketDataS
  *  this service stub impl that overrides the filter chain with a null implementation
  */
 class MarketDataServiceResourceStubEx()
-    extends MarketDataServiceResourceStub(new MarketDataServiceRPC(Server.server.marketDataStore), List[ServiceFilter]()) {
+    extends MarketDataServiceResourceStub(new MarketDataServiceRPC(Server.server.marketDataStore, Server.server.props), List[ServiceFilter]()) {
 
   // this is deliberately stubbed out as the exact requirements on permissions and it's implementation for this service is TBD
   override def requireFilters(filterClasses:String*) {}

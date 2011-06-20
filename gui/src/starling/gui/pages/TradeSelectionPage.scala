@@ -109,12 +109,6 @@ case class TradeSelectionPageData(desk:Option[Desk], desks:List[Desk],
                                intradaySubgroup:Option[IntradayGroups],
                                admin: Boolean, pivotPageState:PivotPageState) extends PageData
 
-case class TradeSelectionComponentState(
-  deskSelected:Boolean,
-  intradaySubgroupSelected:Boolean,
-  pivotPageState:PivotPageState
- )
-
 object TimestampChooser {
   val defaultUnitialisedValue: TradeTimestamp = TradeTimestamp(new Timestamp, Day(1980, 1, 1), -1, None)
 }

@@ -301,10 +301,7 @@ class StarlingHomePageComponent(context:PageContext, browserSize:Dimension, page
   }
 
   def gotoMarketDataPage(ctrlDown:Boolean) {
-    context.goTo(new MarketDataPage(
-      defaultMarketDataIdentifier,
-      MarketDataPageState()
-    ), ctrlDown)
+    MarketDataPage.goTo(context, StandardMarketDataPageIdentifier(defaultMarketDataIdentifier), None, None, ctrlDown)
   }
 
   def gotoCurvePage(ctrlDown: Boolean) {

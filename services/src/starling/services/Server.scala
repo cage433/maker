@@ -2,7 +2,6 @@ package starling.services
 
 import excel._
 import jmx.StarlingJMX
-import rpc.marketdata.MarketDataServiceRPC
 import starling.schemaevolution.system.PatchRunner
 import starling.db._
 import starling.richdb.{RichDB, RichResultSetRowFactory}
@@ -44,7 +43,7 @@ import starling.calendar._
 import java.lang.String
 
 
-class StarlingInit( props: Props,
+class StarlingInit( val props: Props,
                     dbMigration: Boolean = true,
                     startRMI: Boolean = true,
                     startHttp: Boolean = true,
@@ -330,8 +329,7 @@ class StarlingInit( props: Props,
 
     new HttpServer(props,
       "webstart"       → webStartServlet,
-      "cannedwebstart" → cannedWebStartServlet,
-      "marketdata"     → new MarketDataServlet(marketDataStore))
+      "cannedwebstart" → cannedWebStartServlet)
   }
 
   Log.info("StarlingInit: EDM service port %d, external url = '%s', server name = '%s'".format(props.HttpEdmServicePort(), props.EdmExternalUrl(), props.ServerName()))

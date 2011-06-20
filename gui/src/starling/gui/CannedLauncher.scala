@@ -289,7 +289,7 @@ class CannedDataSource extends UnfilteredPivotTableDataSource {
     val (group1Fields, group2Fields) = localFields.splitAt(localFields.size / 2)
     List(FieldDetailsGroup("Group 1", group1Fields), FieldDetailsGroup("Group 2", group2Fields))
   }
-
+  override def zeroFields = Set(Field("Delta"))
   override def toString = "BigCannedDataSource"
 }
 

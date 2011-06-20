@@ -140,11 +140,7 @@ case class FieldDetailsTradeSelection(filter:List[(FieldDetails,Selection)], sel
       try {
         val (fieldDetail, selection) = fs
         val value = data.getOrElse(fieldDetail.field, UndefinedValue)
-        val r = selection.matches(fieldDetail, value)
-        if (!r) {
-          val b = 1
-        }
-        r
+        selection.matches(fieldDetail, value)
       } catch {
         case e => {
           println("data is ")
