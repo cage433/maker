@@ -1,19 +1,28 @@
 package starling.edm
 
-import starling.quantity.UOMSymbol._
 import com.trafigura.edm.shared.types.{Quantity => EDMQuantity, CompoundUOM, UnitComponent, FundamentalUOM}
+import com.trafigura.edm.marketdata.{MarketDataRow, MarketDataResponse}
+
+import starling.daterange.Day
 import starling.quantity.{UOM, Quantity}
 
+import starling.quantity.UOMSymbol._
 
-/**
- * Created by IntelliJ IDEA.
- * User: louis
- * Date: 14/06/11
- * Time: 16:16
- * To change this template use File | Settings | File Templates.
- */
 
 object EDMConversions {
+  implicit def enrichQuantity(q: Quantity) = new {
+    def toEDM = toEDMQuantity(q)
+  }
+  implicit def enrichEDMQuantity(q: EDMQuantity) = new {
+    def fromEDM = fromEDMQuantity(q)
+  }
+  implicit def enrichEDMDate(date: com.trafigura.edm.shared.types.Date) = new {
+    def fromEDM = Day.fromLocal(date.datex)
+  }
+  implicit def enrichMarketDataResponse(response: MarketDataResponse) = new {
+    def map[A](f: MarketDataRow => A) = response.rows.map(f)
+    def collect[A](f: PartialFunction[List[String], A]) = response.rows.flatMap(row => f.lift(row.data))
+  }
 
   def fromEDMQuantity(q : EDMQuantity) : Quantity = {
     val amount = q.amount.get  // No idea why this is optional in EDM

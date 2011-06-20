@@ -8,6 +8,7 @@ import starling.utils.ImplicitConversions._
 import starling.pivot.{StackTrace, PivotQuantity}
 import java.lang.String
 import starling.utils.ImplicitConversions._
+import starling.utils.Pattern._
 import java.text.DecimalFormat
 
 class QuantityDouble(d : Double){
@@ -48,6 +49,8 @@ object Quantity {
   implicit object NumericOptionQuantity extends OptionNumeric[Quantity]
   val FormatString = "#,##0.00"
   def fromString(text : String, uom : UOM) = Quantity(new java.lang.Double(text).asInstanceOf[Double], uom)
+  val Parse: Extractor[String, Quantity] =
+    Extractor.from[String](_.partialMatch { case Regex(value, UOM.Parse(uom)) => fromString(value, uom) })
 
   private def sumAsBigDecimal(quantities: Iterable[Quantity]) = {
     if(quantities.nonEmpty) {

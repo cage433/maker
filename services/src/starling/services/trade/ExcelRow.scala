@@ -10,7 +10,7 @@ import starling.auth.User
 import starling.trade.TradeID
 import starling.eai.{Traders, TreeID, EAIStrategyDB}
 import starling.market.rules.{CommonPricingRule, SwapPricingRule}
-import starling.quantity.{UOM, UOMParse, Quantity}
+import starling.quantity.{UOM, Quantity}
 import starling.quantity.UOM._
 import starling.utils.{StringToInt, StringToDouble}
 import starling.utils.CollectionUtils._
@@ -84,7 +84,7 @@ case class ExcelRow(row: Map[String, Any], traders: Traders) {
       case "lot" | "lots" => {
         Quantity(size * lotSize, volumeUOM)
       }
-      case UOMParse(uom) => {
+      case UOM.Parse(uom) => {
         // try to convert things to 'kb' to 1000 bbls, and 'kt' to 1000 mts. the conversion
         // won't try to convert things like bbls into mt etc as we want to preserve those units.
         val q = fromLots(Quantity(size, uom))

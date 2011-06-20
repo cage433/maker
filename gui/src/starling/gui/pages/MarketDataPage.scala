@@ -30,7 +30,7 @@ case class MarketDataPage(
   def selfPage(pivotPageState: PivotPageState) = new MarketDataPage(marketDataIdentifier, MarketDataPageState(pivotPageState, pageState.marketDataType))
 
   def dataRequest(pageBuildingContext: PageBuildingContext) = {
-    pageBuildingContext.starlingServer.readAllMarketData(marketDataIdentifier, pageState.marketDataType, pageState.pivotPageState.pivotFieldParams)
+    pageBuildingContext.cachingStarlingServer.readAllMarketData(marketDataIdentifier, pageState.marketDataType, pageState.pivotPageState.pivotFieldParams)
   }
 
   override def save(starlingServer:StarlingServer, edits:Set[PivotEdit]) = {

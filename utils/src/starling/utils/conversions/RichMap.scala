@@ -21,13 +21,9 @@ trait RichMap {
     def addSome(key: K, value: Option[V]): Map[K,V] = value.map(v => map + key → v).getOrElse(map)
     def addSome(keyValue: (K, Option[V])): Map[K,V] = addSome(keyValue._1, keyValue._2)
     def reverse: Map[V, K] = map.map(_.swap)
-    def collectKeys[C](collector: PartialFunction[K, C]): Map[C, V] = {
-      map.toList.map { case (key, value) => collector.lift(key).optPair(value) }.somes.toMap
-    }
-    def collectValues[W](collector: PartialFunction[V, W]): Map[K, W] = {
-      map.toList.map { case (key, value) => key.optPair(collector.lift(value)) }.somes.toMap
-    }
-    def filterKeys(keys: Seq[K]) = map.filterKeys(keys.contains)
+    def collectKeys[C](pf: PartialFunction[K, C]): Map[C, V] = map.collect(pf *** identity[V] _)
+    def collectValues[W](pf: PartialFunction[V, W]): Map[K, W] = map.collect(identity[K] _ *** pf)
+    def collectValuesO[W](f: V => Option[W]): Map[K, W] = map.mapValues(f).collectValues { case value if value.isDefined => value.get }
     def zipMap[W](other: Map[K, W]): Map[K, (V, W)] = {
       val (m, o) = (map.filterKeys(other.keySet), other.filterKeys(map.keySet))
       m.map { case (key, value) => (key, (value, o(key)))}.toMap

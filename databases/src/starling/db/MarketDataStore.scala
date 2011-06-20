@@ -425,7 +425,7 @@ class DBMarketDataStore(db: DBTrait[RichResultSetRow], val marketDataSources: Ma
     }
 
     for ((pricingGroup, marketDataSets) <- pricingGroupsDefinitions) {
-      val changesForThisPricingGroup = changedMarketDataSets.filterKeys( mds => marketDataSets.contains(mds) )
+      val changesForThisPricingGroup = changedMarketDataSets.filterKeys(marketDataSets)
       if (changesForThisPricingGroup.nonEmpty) {
         val maxVersion = changesForThisPricingGroup.values.maximum(_._2)
         broadcaster.broadcast(PricingGroupMarketDataUpdate(pricingGroup, maxVersion))

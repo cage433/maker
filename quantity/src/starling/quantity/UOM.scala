@@ -5,10 +5,13 @@ import starling.utils.CaseInsensitive._
 import starling.utils.cache.CacheFactory
 
 import starling.utils.ImplicitConversions._
+import starling.utils.Pattern._
 
 
 object UOM {
   def apply(numerator : Long, denominator : Long) : UOM = UOM(Ratio(1,1), Ratio(numerator, denominator))
+
+  val Parse = Extractor.from[String](fromStringOption)
 
   import UOMSymbol._
   val NULL = UOM.build(0, 1)
@@ -272,8 +275,4 @@ case class UOM private (scale : Ratio, value : Ratio) extends RatioT[UOM] {
   def isCurrency = currencies.contains(this)
   def isProperUOM = !(isScalar || isNull)
   def isFX = numeratorUOM.isCurrency && denominatorUOM.isCurrency
-}
-
-object UOMParse {
-  def unapply(s: String) = UOM.fromStringOption(s)
 }

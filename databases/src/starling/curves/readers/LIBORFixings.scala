@@ -19,17 +19,17 @@ import starling.utils.Pattern._
 import starling.marketdata.{PriceFixingsHistoryData, PriceFixingsHistoryDataKey}
 
 object LIBORFixings extends HierarchicalLimSource(TopRelation.Trafigura.Bloomberg.InterestRates.children, List(Level.Close)) {
-  type Relation = LIBORFixingRelation
+  type Relation = LIBORRelation
 
-  case class LIBORFixingRelation(interestRateType: String, currency: UOM, period: StoredFixingPeriod) {
+  case class LIBORRelation(interestRateType: String, currency: UOM, period: StoredFixingPeriod) {
     val group = (interestRateType, currency)
   }
 
-  def relationExtractor = Extractor.regex("""TRAF\.(\w+)\.(\w+)\.(\w+)""") { case List(rateType, currency, tenor) =>
-    Tenor.parse(tenor).map { tenor => LIBORFixingRelation(rateType, UOM.fromString(currency), StoredFixingPeriod.tenor(tenor)) }
+  def relationExtractor = Extractor.regex("""TRAF\.(\w+)\.(\w+)\.(\w+)""") {
+    case List(rateType, UOM.Parse(ccy), Tenor.Parse(tenor)) => Some(LIBORRelation(rateType, ccy, StoredFixingPeriod.tenor(tenor)))
   }
 
-  def marketDataEntriesFrom(fixings: List[Prices[LIBORFixingRelation]]) = {
+  def marketDataEntriesFrom(fixings: List[Prices[LIBORRelation]]) = {
     fixings.groupBy(group(_)).map { case ((rateType, currency, observationDay), grouped) =>
       MarketDataEntry(observationDay.atTimeOfDay(ObservationTimeOfDay.LiborClose),
         PriceFixingsHistoryDataKey(currency.toString, Some(rateType)),
@@ -38,10 +38,10 @@ object LIBORFixings extends HierarchicalLimSource(TopRelation.Trafigura.Bloomber
     }
   }
 
-  def group(fixings: Prices[LIBORFixingRelation]) =
+  def group(fixings: Prices[LIBORRelation]) =
     (fixings.relation.interestRateType, fixings.relation.currency, fixings.observationDay)
 
-  def marketValue(fixings: Prices[LIBORFixingRelation]) = MarketValue.percentage(fixings.priceByLevel(Level.Close) / 100)
+  def marketValue(fixings: Prices[LIBORRelation]) = MarketValue.percentage(fixings.priceByLevel(Level.Close) / 100)
 }
 
 case class LIBORFixing(value: Quantity, fixingDay: Day) {

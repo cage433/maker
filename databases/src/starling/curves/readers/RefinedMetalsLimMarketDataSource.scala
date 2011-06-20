@@ -167,8 +167,8 @@ object BloombergGenericFXRates extends HierarchicalLimSource(List(Trafigura.Bloo
     }
   }
 
-  def relationExtractor = Extractor.regex("""TRAF\.BGNL\.(...)(...)""") { case List(from, to) =>
-    (UOM.fromStringOption(from), UOM.fromStringOption(to)) partialMatch { case (Some(f), Some(t)) => FXRelation(f, t) }
+  def relationExtractor = Extractor.regex("""TRAF\.BGNL\.(...)(...)""") {
+    case List(UOM.Parse(from), UOM.Parse(to)) => Some(FXRelation(from, to))
   }
 
   def marketDataEntriesFrom(allRates: List[Prices[FXRelation]]) = allRates.flatMap { rates =>
@@ -181,7 +181,7 @@ class SpotFXFixings(exchange: String, timeOfDay: ObservationTimeOfDay, level: Le
   extends HierarchicalLimSource(nodes.toList, List(level)) {
 
   type Relation = UOM
-  def relationExtractor = Extractor.regex(regex) { case List(currency) => UOM.fromStringOption(currency) }
+  def relationExtractor = Extractor.regex(regex) { case List(UOM.Parse(currency)) => Some(currency) }
 
   def marketDataEntriesFrom(prices: List[Prices[UOM]]) = prices.map { case Prices(currency, priceByLevel, observationDay) =>
     MarketDataEntry(observationDay.atTimeOfDay(timeOfDay), key(currency), value(priceByLevel(level), currency))
@@ -211,9 +211,8 @@ object BloombergTokyoCompositeFXRates extends HierarchicalLimSource(List(Trafigu
   type Relation = Rate
   case class Rate(currency: UOM, tenor: Tenor)
 
-  def relationExtractor = Extractor.regex("""TRAF.CMPT.(\w+).(\w+)""") { case List(currency, tenor) =>
-    (UOM.fromStringOption(currency), Tenor.parse(tenor)) partialMatch { case (Some(c), Some(t)) => Rate(c, t) }
-  }
+  def relationExtractor = Extractor.regex("""TRAF.CMPT.(\w+).(\w+)""")
+    { case List(UOM.Parse(currency), Tenor.Parse(tenor)) => Some(Rate(currency, tenor)) }
 
   def marketDataEntriesFrom(fixings: List[Prices[Rate]]) = fixings.groupBy(keyGroup).map {
     case((currency, observationPoint), fixingsForCurrency) => {

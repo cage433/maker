@@ -329,6 +329,7 @@ object Day extends TenorType {
 
   def fromSqlDate(date : java.sql.Date) = fromMillis(date.getTime)
   def fromJavaDate(date : java.util.Date) = fromMillis(date.getTime)
+  def fromLocal(date: LocalDate) = fromJavaDate(date.toDateMidnight.toDate)
   private val milliCache = CacheFactory.getCache("Day.millis")
   def fromMillis(millis: Long) : Day = {
 //    milliCache.memoize( (millis), {

@@ -24,6 +24,7 @@ import starling.tradestore.intraday.IntradayTradeAttributes
 import starling.utils._
 import starling.utils.sql.{FalseClause, From, RealTable}
 
+import starling.utils.ImplicitConversions._
 import starling.utils.sql.QueryBuilder._
 
 
@@ -407,7 +408,7 @@ class StarlingServerImpl(
   }
 
   def excelLatestMarketDataVersions = snapshotDatabase.latestExcelVersions
-  def pricingGroupLatestMarketDataVersions = snapshotDatabase.latestPricingGroupVersions
+  def pricingGroupLatestMarketDataVersions = snapshotDatabase.latestPricingGroupVersions.filterKeys(pricingGroups()).toMap
 
   def latestSnapshotID(pricingGroup:PricingGroup, observationDay:Day) = {
     snapshotDatabase.latestSnapshot(pricingGroup, observationDay) match {

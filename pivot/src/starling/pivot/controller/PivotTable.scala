@@ -36,7 +36,7 @@ case class PivotTable(rowFields:List[Field], rowFieldHeadingCount:Array[Int], ro
 
   def asCSV:String = convertUsing(Utils.csvConverter)
   def convertUsing(converter: GridConverter, decimalPlaces: DecimalPlaces = PivotFormatter.DefaultDecimalPlaces) =
-    converter.convert(toFlatRows(Totals.Null, decimalPlaces))
+    converter.convert(toFlatRows(Totals.Null, decimalPlaces, true))
 
   def cell(measure: AnyRef, filters: (Field, AnyRef)*): Any = {
     def filter(name: String, value: AnyRef, index: Int)(input: Map[(List[AxisValue], List[AxisValue]), Any]) =
@@ -57,7 +57,9 @@ case class PivotTable(rowFields:List[Field], rowFieldHeadingCount:Array[Int], ro
     matches.iterator.next._2
   }
 
-  def toFlatRows(totals:Totals, decimalPlaces: DecimalPlaces = PivotFormatter.DefaultDecimalPlaces): List[List[Any]] = {
+  def toFlatRows(totals: Totals, decimalPlaces: DecimalPlaces = PivotFormatter.DefaultDecimalPlaces, trimBlank: Boolean = false):
+    List[List[Any]] = {
+
     val pivotTableConverter = PivotTableConverter(OtherLayoutInfo(totals = totals), this, ExtraFormatInfo(decimalPlaces))
 
     val (rowHeaderCells, columnHeaderCells, mainTableCells) = pivotTableConverter.allTableCells()
@@ -106,7 +108,11 @@ case class PivotTable(rowFields:List[Field], rowFieldHeadingCount:Array[Int], ro
       rowsBuffer += rowBuffer.toList
     }
 
-    rowsBuffer.toList
+    if (trimBlank) {
+      rowsBuffer.toList.filterNot(_.forall(_.toString.trim == ""))
+    } else {
+      rowsBuffer.toList
+    }
   }
 }
 

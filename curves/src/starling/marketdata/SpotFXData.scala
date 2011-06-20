@@ -8,7 +8,7 @@ object SpotFXDataType extends MarketDataType {
   type dataType = SpotFXData
   val keys = UOMSymbol.currencySymbols.filterNot(_ == UOMSymbol.usd).map(s=>SpotFXDataKey(s.asUOM))
   val currencyField = FieldDetails("Currency")
-  val rateField = new SumPivotQuantityFieldDetails("Rate")
+  val rateField = FieldDetails("Rate")
   override def createKey(values:Map[Field,Any]):MarketDataKey = SpotFXDataKey(UOM.parseCurrency(values(currencyField.field).asInstanceOf[String]).get)
   override def createValue(values:List[Map[Field,Any]]):dataType = {
     values match {
