@@ -9,6 +9,7 @@ object HolidayTablesFactory {
   def registerHolidayTablesImpl(holidayTables: HolidayTables) {
     holidayTablesImpl match {
       case None => holidayTablesImpl = Some(holidayTables)
+      case Some(registeredHolidayTables) if registeredHolidayTables == holidayTables => {}
       case Some(holidayTable) => throw new Exception("Implementation already registered")
     }
   }

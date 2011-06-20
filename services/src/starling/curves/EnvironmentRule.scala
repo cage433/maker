@@ -7,8 +7,7 @@ import starling.utils.ImplicitConversions._
 import starling.gui.api.EnvironmentRuleLabel
 import starling.marketdata.{PriceFixingsHistoryDataKey, MarketDataKey}
 import starling.market.{CommodityMarket, FuturesMarket}
-import starling.db.{MarketDataReaderMarketDataSlice, MarketDataReader}
-
+import starling.db.{SnapshotID, MarketDataReaderMarketDataSlice, MarketDataReader}
 
 trait EnvironmentRule {
   val label: EnvironmentRuleLabel
