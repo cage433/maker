@@ -162,7 +162,7 @@ class MarketDataServiceRPC(marketDataStore: MarketDataStore, val props : Props) 
   lazy val allCommodities  = () => tacticalRefdataMetalsService.getMetals()
   lazy val allExchanges  = () => tacticalRefdataMarketsService.getMarkets()
 
-  val clientExecutor : ClientExecutor = new ComponentTestClientExecutor(rmetadminuser)
+  implicit val clientExecutor : ClientExecutor = new ComponentTestClientExecutor(rmetadminuser)
 
   lazy val edmGetTradesService : EdmGetTrades = getEdmGetTradesServiceProxy(clientExecutor)
   lazy val tacticalRefdataMetalsService : MetalService = getTacticalRefdataMetalServiceProxy(clientExecutor)
@@ -186,6 +186,27 @@ class MarketDataServiceRPC(marketDataStore: MarketDataStore, val props : Props) 
 
   private def getTacticalRefdataMarketServiceProxy(executor : ClientExecutor) : MarketService =
     new MarketServiceResourceProxy(ProxyFactory.create(classOf[MarketServiceResource], refdataServiceURL, executor))
+
+  /**
+   * generic get proxy utils
+   */
+  private def getProxy[T : Manifest] : String => AnyRef = getProxy[T](clientExecutor) _
+
+  private def getProxy[T : Manifest](executor : ClientExecutor)(url : String) : AnyRef = {
+
+    val serviceClassName = cname[T]
+
+    val serviceClassResource = serviceClassName + "Resource"
+    val serviceClassResourceProxy = serviceClassResource + "Proxy"
+    val serviceClazz = Class.forName(serviceClassResource)
+    val serviceClazzProxy = Class.forName(serviceClassResourceProxy)
+    val constructor = serviceClazzProxy.getConstructor(serviceClazz)
+    val proxy = ProxyFactory.create(serviceClazz, url, executor)
+
+    constructor.newInstance(proxy.asInstanceOf[AnyRef]).asInstanceOf[AnyRef]
+  }
+
+  def cname[T : Manifest]() = manifest[T].erasure.getName
 }
 
 /**
