@@ -207,6 +207,8 @@ class MarketDataServiceRPC(marketDataStore: MarketDataStore, val props : Props) 
   }
 
   def cname[T : Manifest]() = manifest[T].erasure.getName
+
+  def getQuotaValue(quotaId: Int) = null
 }
 
 /**
