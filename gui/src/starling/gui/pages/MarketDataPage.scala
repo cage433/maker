@@ -14,6 +14,8 @@ import RichReactor._
 import starling.rmi.StarlingServer
 import starling.daterange.Day
 
+import starling.utils.ImplicitConversions._
+
 /**
  * For viewing (and uploading?) market data.
  */
@@ -90,18 +92,18 @@ object MarketDataPage {
             observationDays:Option[Set[Day]],
             ctrlDown:Boolean=false) {
     pageContext.createAndGoTo( (server) => {
-      val mdt = marketDataType.getOrElse(server.marketDataTypeLabels(marketDataIdentifier).head) //<!--
-      var fs = pageContext.getSetting(
-        StandardUserSettingKeys.UserMarketDataTypeLayout, Map[MarketDataTypeLabel,PivotFieldsState]()
+      val mdt = marketDataType.orElse(server.marketDataTypeLabels(marketDataIdentifier).headOption)
+      val fs = pageContext.getSetting(
+        StandardUserSettingKeys.UserMarketDataTypeLayout, Map[MarketDataTypeLabel, PivotFieldsState]()
       ).get(mdt)
 
       val fieldsState = (fs, observationDays) match {
-        case (Some(fs), Some(days)) => Some(fs.addFilter(Field("Observation Day") -> days.asInstanceOf[Set[Any]]))
+        case (Some(fs), Some(days)) => Some(fs.addFilter(Field("Observation Day") → days.asInstanceOf[Set[Any]]))
         case _ => fs
       }
 
       new MarketDataPage(marketDataIdentifier, MarketDataPageState(
-        marketDataType = Some(mdt),
+        marketDataType = mdt,
         pivotPageState = PivotPageState(false, PivotFieldParams(true, fieldsState))
       ))
     }, newTab = ctrlDown)
