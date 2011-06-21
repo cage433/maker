@@ -1,6 +1,6 @@
 package secure
 
-import starling.utils.ImplicitConversions._
+//import starling.utils.ImplicitConversions._
 import collection.immutable.LinearSeq
 
 trait User
@@ -37,8 +37,8 @@ class SecureSeq[+A](seq: Seq[SecureValue[A]]) extends LinearSeq[A] {
 
 case class SecureMap[A, +B](map: Map[A, SecureValue[B]]) extends Map[A, B] {
   def get: Map[A, B] = get(User.get)
-  def get(user: User): Map[A, B] = map.collectValuesO(_.get(user))
-  def get(user: User, key: A): Option[B] = map.get(key).map(_.get(user)).flatOpt
+  def get(user: User): Map[A, B] = /*map.collectValuesO(_.get(user))*/ null
+  def get(user: User, key: A): Option[B] = /*map.get(key).map(_.get(user)).flatOpt*/ null
   override def mapValues[C](f: (B) => C): SecureMap[A, C] = new SecureMap[A, C](map.mapValues(_.map(f)))
   def +[B1 >: B](kv: (A, B1)): SecureMap[A, B1] = copy(map = map + ((kv._1, new SecureValue(kv._2, AuthorizationChecker.Allow))))
   def -(key: A): SecureMap[A, B] = copy(map - key)
