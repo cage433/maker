@@ -246,6 +246,7 @@ object MarketDataService extends Application {
     val qv = new QuotaValuer(env)
     trades.foreach{
       physTrade =>
+        println("Trade " + physTrade.tradeId)
         physTrade.quotas.foreach { q =>
             println(qv.value(q))
         }

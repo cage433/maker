@@ -18,7 +18,7 @@ object EDMConversions {
   def fromEDMQuantity(q : EDMQuantity) : Quantity = {
     val amount = q.amount.get  // No idea why this is optional in EDM
     val uom = UOM.fromSymbolMap(q.uom.components.map {
-      case uc => edmToStarlingUomSymbol(uc.fundamental) -> uc.exponent
+      case uc => edmToStarlingUomSymbol(uc.fundamental.name) -> uc.exponent
     }.toMap)
     Quantity(amount, uom)
 
@@ -33,7 +33,7 @@ object EDMConversions {
       case (starlingUOMSymbol, power) => UnitComponent(
         oid = 0,
         exponent = power,
-        fundamental = starlingToEdmUom.getOrElse(starlingUOMSymbol, FundamentalUOM(starlingUOMSymbol.toString))
+        fundamental = FundamentalUOM(starlingToEdmUom.getOrElse(starlingUOMSymbol, starlingUOMSymbol.toString))
        )
     }.toList
 
@@ -46,9 +46,10 @@ object EDMConversions {
     usd -> "USD",
     jpy -> "JPY",
     cny -> "RMB",
+    eur -> "EUR",
     TONNE_SYMBOL -> "MTS",
     POUND_SYMBOL -> "LBS"
-  ).mapValues(FundamentalUOM(_))
+  )
 
   val edmToStarlingUomSymbol = starlingToEdmUom.map(_.swap)
 }
