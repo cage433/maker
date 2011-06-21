@@ -107,7 +107,7 @@ sealed case class Desk(name: String) extends Named {
   }
 }
 
-object Desk extends StarlingEnum(classOf[Desk]) {
+object Desk extends StarlingEnum(classOf[Desk], true) {
   val LondonDerivativesOptions = Desk("London Derivatives Options")
   val LondonDerivatives = Desk("London Derivatives")
   val GasolineSpec = Desk("Gasoline Spec Global")
