@@ -24,7 +24,7 @@ import starling.utils.ImplicitConversions._
  */
 
 abstract class AbstractPivotPage(pivotPageState:PivotPageState) extends Page {
-  val icon = StarlingIcons.im("/icons/stock_chart-reorganize.png")
+  def icon = StarlingIcons.im("/icons/stock_chart-reorganize.png")
   def dataRequest(pageBuildingContext:PageBuildingContext):PivotData
   def save(starlingServer:StarlingServer, edits:Set[PivotEdit]):Boolean = throw new Exception("No implementation of save for this page")
   def selfPage(pivotPageState:PivotPageState):Page
@@ -34,9 +34,9 @@ abstract class AbstractPivotPage(pivotPageState:PivotPageState) extends Page {
   def toolbarButtons(pageContext: PageContext, data:PageData):List[Button] = List()
   def configPanel(pageContext:PageContext, data:PageData):Option[ConfigPanels] = None
   def build(reader: PageBuildingContext) = PivotTablePageData(dataRequest(reader), subClassesPageData(reader), layoutType)
-  def createComponent(pageContext:PageContext, data:PageData, browserSize:Dimension) : PageComponent = {
+  def createComponent(pageContext:PageContext, data:PageData, bookmark:Bookmark, browserSize:Dimension) : PageComponent = {
     PivotComponent(text, pageContext, toolbarButtons(pageContext, data), configPanel(pageContext, data), finalDrillDownPage, selfPage,
-      data, pivotPageState, save, browserSize, false)
+      data, pivotPageState, save, bookmark, browserSize, false)
   }
 }
 
@@ -87,6 +87,7 @@ object PivotComponent {
         pageData:PageData,
         pivotPageState:PivotPageState,
         save:(StarlingServer, Set[PivotEdit]) => Boolean,
+        bookmark:Bookmark,
         browserSize:Dimension,
         embedded:Boolean = true):PivotComponent = {
 
@@ -96,7 +97,7 @@ object PivotComponent {
       PivotTablePageGraphComponent(data.pivotData.pivotTable)
     } else {
       new PivotTablePageComponent(text, pageContext, toolbarButtons, configPanel, finalDrillDown, selfPage, data,
-        pivotPageState, save, browserSize, embedded)
+        pivotPageState, save, bookmark, browserSize, embedded)
     }
   }
 }
@@ -123,6 +124,7 @@ class PivotTablePageComponent(
         pivotTablePageData:PivotTablePageData,
         pivotPageState:PivotPageState,
         save:(StarlingServer, Set[PivotEdit]) => Boolean,
+        bookmark:Bookmark,
         browserSize:Dimension,
         embedded:Boolean) extends PivotComponent {
 
@@ -260,7 +262,7 @@ class PivotTablePageComponent(
     val layoutComponent = pivotTablePageData.layoutType match {
       case None => None
       case Some(layoutType) => Some(new SaveLayoutPanel(
-        pageContext, pivotTablePageData, pivotPageState, layoutType, pps => selfPage(pps), pivotComp.giveDefaultFocus))
+        pageContext, pivotTablePageData, pivotPageState, layoutType, pps => selfPage(pps), pivotComp.giveDefaultFocus, bookmark))
     }
     layoutComponent match {
       case None =>

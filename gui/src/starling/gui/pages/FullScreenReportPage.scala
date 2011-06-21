@@ -7,7 +7,7 @@ import starling.utils.{SColumn, STable}
 
 class FullScreenReportPage(title:String, tableAsString:String) extends Page {
   def text = title
-  val icon = StarlingIcons.im("/icons/stock_chart-reorganize.png")
+  def icon = StarlingIcons.im("/icons/stock_chart-reorganize.png")
   def build(reader:PageBuildingContext) = {
     val ls = System.getProperty("line.separator")    
     val data = tableAsString.split(ls).toList.map(_.split("\t").toList)
@@ -21,7 +21,7 @@ class FullScreenReportPage(title:String, tableAsString:String) extends Page {
     val columns = List.fill(colCount)(TableTable.EmptyColumnHeader).map(SColumn(_))
     FullScreenReportPageData(new STable(title, columns, data))
   }
-  def createComponent(context:PageContext, data:PageData, browserSize:Dimension) = new FullScreenReportComponent(data)
+  def createComponent(context:PageContext, data:PageData, bookmark:Bookmark, browserSize:Dimension) = new FullScreenReportComponent(data)
 }
 
 case class FullScreenReportPageData(table:STable) extends PageData

@@ -59,8 +59,6 @@ trait StarlingServer {
   def userReports:List[UserReport]
   def createReportParameters(userReportData:UserReportData, observationDay:Day):ReportParameters
   def createUserReport(reportParameters:ReportParameters):UserReportData
-  def deleteUserReport(reportName:String):Unit
-  def saveUserReport(reportName:String, data:UserReportData, showParameters:Boolean):Unit
   def referenceDataTables():List[ReferenceDataLabel]
   def referencePivot(table:ReferenceDataLabel, pivotFieldParams:PivotFieldParams):PivotData
   def ukBusinessCalendar:BusinessCalendar
@@ -77,4 +75,12 @@ trait StarlingServer {
   def userStatsPivot(pivotFieldParams:PivotFieldParams):PivotData
 
   def storeSystemInfo(info:OSInfo)
+
+  def saveBookmark(bookmark:BookmarkLabel)
+  def deleteBookmark(name:String)
+
+  def bookmarks:List[BookmarkLabel]
+
+  def createTradeSelectionBookmarkData(tpp:TradePageParameters):TradeSelectionBookmarkData
+  def createTradePageParameters(tradeSelectionBookmarkData:TradeSelectionBookmarkData, observationDay:Day):TradePageParameters
 }

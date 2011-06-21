@@ -78,17 +78,6 @@ class UserReportsService(
     val desk = tradeSelection.desk
     val intradaySubgroup = tradeSelection.intradaySubgroup
 
-    def applyOffset(base:Day,numberOfDays:Int) = {
-      base.addBusinessDays(ukHolidayCalendar, numberOfDays)
-    }
-
-    def createTradeTimestamp(closeDay:Day) = {
-      desk match {
-        case Some(d) => tradeStores.deskDefinitions(d).tradeTimestampForOffset(closeDay)
-        case None => throw new Exception("No desk")
-      }
-    }
-
     val marketDataVersion = marketDataStore.latest(userReportData.marketDataSelection)
 
     val curveIdentifierLabel = CurveIdentifierLabel(
@@ -128,9 +117,9 @@ class UserReportsService(
         }
 
         val tradeTS = bookCloseOffset match {
-          case Left(offset) => createTradeTimestamp(applyOffset(baseDay, offset))
+          case Left(offset) => createTradeTimestamp(desk, applyOffset(baseDay, offset))
           case Right(_) if desk.isDefined => tradeStores.closedDesks.latestTradeTimestamp(desk.get)
-          case _ => createTradeTimestamp(baseDay) // this doesn't matter as it'll never be used
+          case _ => createTradeTimestamp(desk, baseDay) // this doesn't matter as it'll never be used
         }
 
         PnlFromParameters(
@@ -140,46 +129,17 @@ class UserReportsService(
       }
     }
 
-    val latestIntradayTimestamp = {
-      val groupsToUserTimestamp = tradeStores.intradayTradeStore.intradayLatest
-      intradaySubgroup.map(intra => {
-        val validGroups = groupsToUserTimestamp.keySet.filter(g => {
-          intra.subgroups.toSet.exists(t => g.startsWith(t))
-        })
-        validGroups.map(g => groupsToUserTimestamp(g)._2).max
-      })
-    }
+    val bookCloseDay0 = bookCloseDay(desk, userReportData.tradeVersionOffSetOrLive, baseDay)
+    val tradeSelectionWithTimestamp = new TradeSelectionWithTimestamp(desk.map((_, bookCloseDay0.get)),
+      tradeSelection.tradePredicate, intradaySubgroupAndTimestamp(intradaySubgroup))
 
-    val bookCloseDay = {
-      userReportData.tradeVersionOffSetOrLive match {
-        case Left(offset) if desk.isDefined => Some(createTradeTimestamp(applyOffset(baseDay, offset)))
-        case Right(_) if desk.isDefined => Some(tradeStores.closedDesks.latestTradeTimestamp(desk.get))
-        case _ => None
-      }
-    }
-    val tradeSelectionWithTimestamp = new TradeSelectionWithTimestamp(desk.map((_, bookCloseDay.get)),
-      tradeSelection.tradePredicate, intradaySubgroup.map((_, latestIntradayTimestamp.get)))
-
-    val tradeExpiryDay = userReportData.liveOnOffSet match {
-      case Left(offset) => applyOffset(baseDay, offset)
-      case Right(_) => baseDay.startOfFinancialYear
-    }
-    ReportParameters(tradeSelectionWithTimestamp, curveIdentifierLabel, userReportData.reportOptions, tradeExpiryDay, pnlOptions)
+    val tradeExpiryDay0 = tradeExpiryDay(baseDay, userReportData.liveOnOffSet)
+    ReportParameters(tradeSelectionWithTimestamp, curveIdentifierLabel, userReportData.reportOptions, tradeExpiryDay0, pnlOptions)
   }
 
   def createUserReport(reportParameters:ReportParameters):UserReportData = {
     val baseDay = reportParameters.curveIdentifier.tradesUpToDay
-    val bookCloseOffset = reportParameters.tradeSelectionWithTimestamp.deskAndTimestamp match {
-      case Some((d,ts)) => {
-        val latestClose = tradeStores.closedDesks.latestTradeTimestamp(d)
-        if (ts.closeDay == latestClose.closeDay) {
-          Right(true)
-        } else {
-          Left(businessDaysBetween(baseDay, ts.closeDay))
-        }
-      }
-      case None => Left(0)
-    }
+    val bookCloseOffset = tradeVersionOffsetOrLatest(baseDay, reportParameters.tradeSelectionWithTimestamp.deskAndTimestamp)
     UserReportData(
       tradeSelection = reportParameters.tradeSelectionWithTimestamp.asTradeSelection,
       marketDataSelection = reportParameters.curveIdentifier.marketDataIdentifier.selection,
@@ -191,13 +151,7 @@ class UserReportsService(
       thetaDayOffset = businessDaysBetween(baseDay, reportParameters.curveIdentifier.thetaDayAndTime.day),
       thetaDayTimeOfDay = reportParameters.curveIdentifier.thetaDayAndTime.timeOfDay,
       tradeVersionOffSetOrLive = bookCloseOffset,
-      liveOnOffSet = {
-        if (baseDay.startOfFinancialYear == reportParameters.expiryDay) {
-          Right(true)
-        } else {
-          Left(businessDaysBetween(baseDay, reportParameters.expiryDay))
-        }
-      },
+      liveOnOffSet = liveOnOffsetOrStartOfYear(baseDay, reportParameters.expiryDay),
       pnl = reportParameters.pnlParameters.map {
         case pnl => {
           val marketDayOffset = businessDaysBetween(baseDay, pnl.curveIdentifierFrom.tradesUpToDay)
@@ -224,8 +178,6 @@ class UserReportsService(
     )
   }
 
-  def saveUserReport(reportName:String, data:UserReportData, showParameters:Boolean) =
-    userSettingsDatabase.saveUserReport(User.currentlyLoggedOn, reportName, data, showParameters)
   private def businessDaysBetween(day1:Day, day2:Day) = {
     if (!ukHolidayCalendar.isBusinessDay(day1) || !ukHolidayCalendar.isBusinessDay(day2) ) {
       0 //A hack just to stop exceptions if ever run on a holiday. I don't know what the correct behaviour is
@@ -234,6 +186,66 @@ class UserReportsService(
     }
   }
 
+  def tradeVersionOffsetOrLatest(baseDay:Day, deskAndTimestamp:Option[(Desk, TradeTimestamp)]) = {
+    deskAndTimestamp match {
+      case Some((d,ts)) => {
+        val latestClose = tradeStores.closedDesks.latestTradeTimestamp(d)
+        if (ts.closeDay == latestClose.closeDay) {
+          Right(true)
+        } else {
+          Left(businessDaysBetween(baseDay, ts.closeDay))
+        }
+      }
+      case None => Left(0)
+    }
+  }
+
+  def liveOnOffsetOrStartOfYear(baseDay:Day, expiryDay:Day) = {
+    if (baseDay.startOfFinancialYear == expiryDay) {
+      Right(true)
+    } else {
+      Left(businessDaysBetween(baseDay, expiryDay))
+    }
+  }
+
+  def createTradeTimestamp(desk:Option[Desk], closeDay:Day) = {
+    desk match {
+      case Some(d) => tradeStores.deskDefinitions(d).tradeTimestampForOffset(closeDay)
+      case None => throw new Exception("No desk")
+    }
+  }
+
+  def bookCloseDay(desk:Option[Desk], tradeVersionOffSetOrLive:Either[Int,Boolean], baseDay:Day) = {
+    tradeVersionOffSetOrLive match {
+      case Left(offset) if desk.isDefined => Some(createTradeTimestamp(desk, applyOffset(baseDay, offset)))
+      case Right(_) if desk.isDefined => Some(tradeStores.closedDesks.latestTradeTimestamp(desk.get))
+      case _ => None
+    }
+  }
+
+  def applyOffset(base:Day,numberOfDays:Int) = {
+    base.addBusinessDays(ukHolidayCalendar, numberOfDays)
+  }
+
+  def intradaySubgroupAndTimestamp(intradaySubgroup:Option[IntradayGroups]):Option[(IntradayGroups, Timestamp)] = {
+    intradaySubgroup.map(intra => {
+      val latestIntradayTimestamp = {
+        val groupsToUserTimestamp = tradeStores.intradayTradeStore.intradayLatest
+        val validGroups = groupsToUserTimestamp.keySet.filter(g => {
+          intra.subgroups.toSet.exists(t => g.startsWith(t))
+        })
+        validGroups.map(g => groupsToUserTimestamp(g)._2).max
+      }
+      (intra, latestIntradayTimestamp)
+    })
+  }
+
+  def tradeExpiryDay(baseDay:Day, either:Either[Int,Boolean]):Day = {
+    either match {
+      case Left(offset) => applyOffset(baseDay, offset)
+      case Right(_) => baseDay.startOfFinancialYear
+    }
+  }
 }
 
 class StarlingServerImpl(
@@ -335,10 +347,7 @@ class StarlingServerImpl(
   }
 
   def reportErrors(reportParameters:ReportParameters):ReportErrors = reportService.reportErrors(reportParameters)
-
-  def saveUserReport(reportName: String, data: UserReportData, showParameters: Boolean) =
-    userSettingsDatabase.saveUserReport(User.currentlyLoggedOn, reportName, data, showParameters)
-  def deleteUserReport(reportName: String) = userSettingsDatabase.deleteUserReport(User.currentlyLoggedOn, reportName)
+    
   def createUserReport(reportParameters: ReportParameters) = userReportsService.createUserReport(reportParameters)
   def createReportParameters(userReportData: UserReportData, observationDay: Day) = userReportsService.createReportParameters(userReportData, observationDay)
 
@@ -726,4 +735,27 @@ class StarlingServerImpl(
   }
 
   def storeSystemInfo(info:OSInfo) = userSettingsDatabase.storeSystemInfo(User.currentlyLoggedOn, info)
+
+  def deleteBookmark(name:String) {userSettingsDatabase.deleteBookmark(User.currentlyLoggedOn, name)}
+  def saveBookmark(bookmark:BookmarkLabel) {userSettingsDatabase.saveBookmark(User.currentlyLoggedOn, bookmark)}
+  def bookmarks = userSettingsDatabase.bookmarks(User.currentlyLoggedOn)
+
+  def createTradeSelectionBookmarkData(tpp:TradePageParameters) = {
+    val desk = tpp.deskAndTimestamp.map(_._1)
+    val intradayGroups = tpp.intradaySubgroupAndTimestamp.map(_._1)
+    val baseDay = Day.today()
+    val tradeVersionOffsetOrLatest = userReportsService.tradeVersionOffsetOrLatest(baseDay, tpp.deskAndTimestamp)
+    val liveOnOffsetOrStartOfYear = userReportsService.liveOnOffsetOrStartOfYear(baseDay, tpp.expiry.exp)
+    TradeSelectionBookmarkData(desk, intradayGroups, tradeVersionOffsetOrLatest, liveOnOffsetOrStartOfYear)
+  }
+  def createTradePageParameters(d:TradeSelectionBookmarkData, baseDay:Day) = {
+    val deskAndTimestamp = d.desk.map(desk => {
+      val bookClose = userReportsService.bookCloseDay(Some(desk), d.tradeVersionOffSetOrLatest, baseDay)
+      (desk, bookClose.get)
+    })
+    val intradaySubgroupAndTimestamp = userReportsService.intradaySubgroupAndTimestamp(d.intradayGroups)
+    val tradeExpiry = userReportsService.tradeExpiryDay(baseDay, d.liveOnOffSetOrStartOfYear)
+
+    TradePageParameters(deskAndTimestamp, intradaySubgroupAndTimestamp, TradeExpiryDay(tradeExpiry))
+  }
 }

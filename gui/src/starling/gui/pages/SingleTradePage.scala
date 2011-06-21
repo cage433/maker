@@ -18,12 +18,13 @@ import collection.immutable.TreeMap
 import swing.{Component, Button, Label}
 import starling.quantity.Quantity
 import starling.daterange.{Day, TimeOfDay, Timestamp}
+import starling.rmi.StarlingServer
 
 case class SingleTradePage(tradeID:TradeIDLabel, desk:Option[Desk], tradeExpiryDay:TradeExpiryDay, intradayGroups:Option[IntradayGroups]) extends Page {
   def text = "Trade " + tradeID
   def icon = StarlingIcons.im("/icons/tablenew_16x16.png")
   def build(reader:PageBuildingContext) = TradeData(tradeID, reader.cachingStarlingServer.readTradeVersions(tradeID), desk, tradeExpiryDay, intradayGroups)
-  def createComponent(context:PageContext, data:PageData, browserSize:Dimension) = new SingleTradePageComponent(context, data)
+  def createComponent(context:PageContext, data:PageData, bookmark:Bookmark, browserSize:Dimension) = new SingleTradePageComponent(context, data)
 }
 
 object SingleTradePageComponent {
@@ -314,6 +315,23 @@ class SingleTradeMainPivotReportPage(val tradeID:TradeIDLabel, val tradeRow:List
     }
     case _ => false
   }
+  override def bookmark(server:StarlingServer):Bookmark = {
+    SingleTradeReportBookmark(tradeID, tradeRow, fieldDetailsGroups, columns, server.createUserReport(reportParameters0), pivotPageState)
+  }
+}
+
+case class SingleTradeReportBookmark(tradeID:TradeIDLabel, tradeRow:List[Any], fieldDetailsGroups:List[FieldDetailsGroupLabel],
+                                     columns:List[SColumn], data:UserReportData, pps:PivotPageState) extends Bookmark {
+  def daySensitive = true
+  def createPage(day:Option[Day], server:StarlingServer, context:PageContext) = {
+    day match {
+      case None => throw new Exception("We need a day")
+      case Some(d) => {
+        val reportParameters = server.createReportParameters(data, d)
+        new SingleTradeMainPivotReportPage(tradeID, tradeRow, fieldDetailsGroups, columns, reportParameters, pps)
+      }
+    }
+  }
 }
 
 case class ValuationParametersPage(tradeID:TradeIDLabel, tradeRow:List[Any], fieldDetailsGroups:List[FieldDetailsGroupLabel],
@@ -334,7 +352,7 @@ case class ValuationParametersPage(tradeID:TradeIDLabel, tradeRow:List[Any], fie
       reader.cachingStarlingServer.tradeValuation(tradeID, reportParameters.curveIdentifier, timestampToUse),
       tradeRow, fieldDetailsGroups, columns, reportParameters)
   }
-  def createComponent(context:PageContext, data:PageData, browserSize:Dimension) = {
+  def createComponent(context:PageContext, data:PageData, bookmark:Bookmark, browserSize:Dimension) = {
     new ValuationParametersPageComponent(context, data)
   }
 }

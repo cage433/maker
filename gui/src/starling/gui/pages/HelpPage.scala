@@ -19,10 +19,10 @@ import swing.EditorPane
 import starling.pivot.view.swing.MigPanel
 
 case object HelpPage extends Page {
-  val text = "Help"
-  val icon = StarlingIcons.im("/icons/16x16_Help.png")
+  def text = "Help"
+  def icon = StarlingIcons.im("/icons/16x16_Help.png")
 
-  def createComponent(pageContext: PageContext, data: PageData, browserSize: Dimension) = {
+  def createComponent(pageContext: PageContext, data: PageData, bookmark:Bookmark, browserSize: Dimension) = {
     val component = new WikiPageComponent(pageContext)
     val markup = Source.fromURL(getClass.getResource("/Help.txt")).getLines.mkString("\n")
 

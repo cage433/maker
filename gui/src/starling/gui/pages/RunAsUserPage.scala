@@ -12,7 +12,7 @@ case class RunAsUserPage() extends Page {
   def text = "Run as another user"
   def icon = StarlingIcons.im("/icons/16x16_user_dark.png")
   def build(reader:PageBuildingContext) = null
-  def createComponent(context:PageContext, data:PageData, browserSize:Dimension) = new RunAsUserPageComponent(context)
+  def createComponent(context:PageContext, data:PageData, bookmark:Bookmark, browserSize:Dimension) = new RunAsUserPageComponent(context)
 }
 
 class RunAsUserPageComponent(context:PageContext) extends MigPanel("insets n n n 0", "[" + StandardLeftIndent + "][p][p]unrel[grow]") with PageComponent {

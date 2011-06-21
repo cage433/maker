@@ -68,10 +68,10 @@ class NullPageData extends PageData
 case class CannedHomePage() extends Page {
   def text = "Home"
   def build(reader: PageBuildingContext) = { new PageData{} }
-  def createComponent(context: PageContext, data:PageData, browserSize:Dimension) = {
+  def createComponent(context: PageContext, data:PageData, bookmark:Bookmark, browserSize:Dimension) = {
     new CannedHomePagePageComponent(context)
   }
-  val icon = StarlingIcons.im("/icons/tablenew_16x16.png")
+  def icon = StarlingIcons.im("/icons/tablenew_16x16.png")
 }
 
 class CannedHomePagePageComponent(pageContext:PageContext) extends MigPanel("") with PageComponent {
@@ -113,7 +113,7 @@ class CannedHomePagePageComponent(pageContext:PageContext) extends MigPanel("") 
 case class CannedDrilldownPage(fields:Seq[(Field,Any)]) extends Page {
   def text = "Canned drilldown"
   def build(reader: PageBuildingContext) = new PageData() {}
-  def createComponent(context: PageContext, data:PageData, browserSize:Dimension) = {
+  def createComponent(context: PageContext, data:PageData, bookmark:Bookmark, browserSize:Dimension) = {
     new MigPanel("") with PageComponent {
       add(new Label("Drilldown"), "span")
       for ((field,value) <- fields) {
@@ -121,7 +121,7 @@ case class CannedDrilldownPage(fields:Seq[(Field,Any)]) extends Page {
       }
     }
   }
-  val icon = StarlingIcons.im("/icons/tablenew_16x16.png")
+  def icon = StarlingIcons.im("/icons/tablenew_16x16.png")
 }
 
 case class SlowCannedPivotReportPage(pivotPageState:PivotPageState) extends AbstractPivotPage(pivotPageState) {

@@ -178,6 +178,10 @@ case class TradeSelectionWithTimestamp(deskAndTimestamp:Option[(Desk, TradeTimes
   }
 }
 
+case class TradePageParameters(deskAndTimestamp:Option[(Desk, TradeTimestamp)],
+        intradaySubgroupAndTimestamp:Option[(IntradayGroups, Timestamp)],
+        expiry:TradeExpiryDay)
+
 case class PnlFromParameters(tradeTimestampFrom: Option[TradeTimestamp], curveIdentifierFrom:CurveIdentifierLabel)
 
 case class ReportParameters(tradeSelectionWithTimestamp:TradeSelectionWithTimestamp, curveIdentifier:CurveIdentifierLabel,

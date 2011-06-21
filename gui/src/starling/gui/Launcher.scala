@@ -23,6 +23,7 @@ import starling.daterange.Day
 import starling.auth.{Client, ClientLogin}
 import management.ManagementFactory
 import java.awt.{GraphicsEnvironment, Color}
+import xstream.GuiStarlingXStream
 
 /**
  * The entry point into the starling gui
@@ -230,14 +231,22 @@ object Launcher {
 
       val username = starlingServer.whoAmI.username
 
+      def toBookmarks(labels:List[BookmarkLabel]) = {
+        labels.map(s => {
+          val bookmark = GuiStarlingXStream.read(s.bookmark).asInstanceOf[Bookmark]
+          val bookmarkName = s.name
+          BookmarkData(bookmarkName, bookmark)
+        })
+      }
+
       // We want to set up a local cache so that we don't always have to hit the server. This cache is populated on startup and then listens to
       // the publisher to stay fresh.
       localCacheUpdatePublisher.reactions += {
         case e: PivotLayoutUpdate if (e.user == username) => {
           cacheMap(UserPivotLayouts) = e.userLayouts
         }
-        case e: UserReportUpdate if (e.user == username) => {
-          cacheMap(UserReports) = e.userReports
+        case e: BookmarksUpdate if e.user == username => {
+          cacheMap(Bookmarks) = toBookmarks(e.bookmarks)
         }
         case ExcelMarketListUpdate(values) => {
           cacheMap(ExcelDataSets) = values
@@ -301,7 +310,6 @@ object Launcher {
       }
 
       cacheMap(UserPivotLayouts) = starlingServer.extraLayouts
-      cacheMap(UserReports) = starlingServer.userReports
       cacheMap(PricingGroups) = starlingServer.pricingGroups
       cacheMap(ExcelDataSets) = starlingServer.excelDataSets
       cacheMap(Snapshots) = starlingServer.snapshots
@@ -325,6 +333,7 @@ object Launcher {
       cacheMap(IsStarlingDeveloper) = starlingServer.isStarlingDeveloper
       cacheMap(EnvironmentRules) = starlingServer.environmentRules
       cacheMap(CurveTypes) = starlingServer.curveTypes
+      cacheMap(Bookmarks) = toBookmarks(starlingServer.bookmarks)
 
       GuiUtils.setLookAndFeel
 

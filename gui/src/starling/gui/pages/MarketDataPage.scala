@@ -25,7 +25,7 @@ case class MarketDataPage(
 
   def text = "Market Data Viewer"
   override def layoutType = Some("MarketData")
-  override val icon = StarlingIcons.im("/icons/16x16_market_data.png")
+  override def icon = StarlingIcons.im("/icons/16x16_market_data.png")
 
   def selfPage(pivotPageState: PivotPageState) = new MarketDataPage(marketDataIdentifier, MarketDataPageState(pivotPageState, pageState.marketDataType))
 
@@ -57,7 +57,7 @@ case class MarketDataPage(
     Some(MarketDataPagePageData(avaliableMarketDataTypes, selected))
   }
 
-  override def createComponent(pageContext: PageContext, data: PageData, browserSize:Dimension) = {
+  override def createComponent(pageContext: PageContext, data: PageData, bookmark:Bookmark, browserSize:Dimension) = {
     val marketDataPagePageData = data match {
       case v:PivotTablePageData => v.subClassesPageData match {
         case x:Option[_] => x.get.asInstanceOf[MarketDataPagePageData]
@@ -67,9 +67,18 @@ case class MarketDataPage(
       pageContext,
       this,
       PivotComponent(text, pageContext, toolbarButtons(pageContext, data), None, finalDrillDownPage, selfPage, data,
-        pageState.pivotPageState, save, browserSize),
+        pageState.pivotPageState, save, bookmark, browserSize),
       pageState, marketDataPagePageData)
   }
+
+  override def bookmark(server:StarlingServer):Bookmark = {
+    MarketDataBookmark(marketDataIdentifier, pageState)
+  }
+}
+
+case class MarketDataBookmark(marketDataIdentifier:MarketDataPageIdentifier, pageState:MarketDataPageState) extends Bookmark {
+  def daySensitive = false // TODO - make this day sensitive
+  def createPage(day:Option[Day], server:StarlingServer, context:PageContext) = MarketDataPage(marketDataIdentifier, pageState)
 }
 
 object MarketDataPage {

@@ -184,6 +184,14 @@ class Day private (@transient val year : Int, @transient val month : Int, @trans
     }
   }
 
+  def weekdaysBetween(day:Day) = {
+    businessDaysBetween(day, BusinessCalendar.WeekdayBusinessCalendar)
+  }
+
+  def addWeekdays(n:Int):Day = {
+    addBusinessDays(BusinessCalendar.WeekdayBusinessCalendar, n)
+  }
+
   def previousWeekday : Day = {
     previousBusinessDay(BusinessCalendar.NONE)
   }

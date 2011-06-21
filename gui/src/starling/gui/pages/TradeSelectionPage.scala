@@ -24,35 +24,33 @@ import starling.daterange.{Timestamp, Day}
  * Page that allows you to select trades.
  */
 case class TradeSelectionPage(
-        deskAndTimestamp:Option[(Desk, TradeTimestamp)],
-        intradaySubgroupAndTimestamp:Option[(IntradayGroups, Timestamp)],
-        expiry:TradeExpiryDay,
+        tpp:TradePageParameters,
         pivotPageState:PivotPageState
         ) extends AbstractPivotPage(pivotPageState) {
-  val text = "Select Trades"
-  override val icon = StarlingIcons.im("/icons/16x16_trades.png")
+  def text = "Select Trades"
+  override def icon = StarlingIcons.im("/icons/16x16_trades.png")
   override def layoutType = Some("TradeSelection")
   def selfPage(pps:PivotPageState) = copy(pivotPageState = pps)
 
-  private val tradeSelection = {
-    val deskToUse = deskAndTimestamp.map(_._1)
-    val intradaySubgroupToUse = intradaySubgroupAndTimestamp.map(_._1)
+  private def tradeSelection = {
+    val deskToUse = tpp.deskAndTimestamp.map(_._1)
+    val intradaySubgroupToUse = tpp.intradaySubgroupAndTimestamp.map(_._1)
     TradeSelection(deskToUse, TradePredicate(List(), List()), intradaySubgroupToUse)
   }
 
-  private val tradeSelectionWithTimestamp = {
-    TradeSelectionWithTimestamp(deskAndTimestamp, TradePredicate(List(), List()), intradaySubgroupAndTimestamp)
+  private def tradeSelectionWithTimestamp = {
+    TradeSelectionWithTimestamp(tpp.deskAndTimestamp, TradePredicate(List(), List()), tpp.intradaySubgroupAndTimestamp)
   }
 
   def dataRequest(pageBuildingContext:PageBuildingContext) = {
-    val expiryDay = expiry.exp
+    val expiryDay = tpp.expiry.exp
     pageBuildingContext.cachingStarlingServer.tradePivot(tradeSelectionWithTimestamp, expiryDay, pivotPageState.pivotFieldParams)
   }
   
   override def subClassesPageData(pageBuildingContext:PageBuildingContext) = {
     val desks = pageBuildingContext.starlingServer.desks
     val admin = pageBuildingContext.starlingServer.permissionToDoAdminLikeThings
-    Some(TradeSelectionPageData(deskAndTimestamp.map(_._1), desks, intradaySubgroupAndTimestamp.map(_._1), admin, pivotPageState))
+    Some(TradeSelectionPageData(tpp.deskAndTimestamp.map(_._1), desks, tpp.intradaySubgroupAndTimestamp.map(_._1), admin, pivotPageState))
   }
 
   override def finalDrillDownPage(fields:Seq[(Field, Selection)], pageContext:PageContext, ctrlDown:Boolean) = {
@@ -70,24 +68,24 @@ case class TradeSelectionPage(
       case Some(trID) => {
         pageContext.createAndGoTo(
           (starlingServer:StarlingServer) => {
-            SingleTradePage(trID, tradeSelection.desk, expiry, tradeSelection.intradaySubgroup)
+            SingleTradePage(trID, tradeSelection.desk, tpp.expiry, tradeSelection.intradaySubgroup)
           }, newTab = ctrlDown)
       }
       case None => None
     }
   }
 
-  override def createComponent(context:PageContext, data:PageData, browserSize:Dimension) = {
+  override def createComponent(context:PageContext, data:PageData, bookmark:Bookmark, browserSize:Dimension) = {
     val tradeSelectionPageData = data match {
       case v:PivotTablePageData => v.subClassesPageData match {
         case x:Option[_] => x.get.asInstanceOf[TradeSelectionPageData]
       }
     }
     new TradeSelectionComponent(
-      text, context, tradeSelectionPageData, deskAndTimestamp.map(_._2), intradaySubgroupAndTimestamp.map(_._2),
-      expiry,
+      text, context, tradeSelectionPageData, tpp.deskAndTimestamp.map(_._2), tpp.intradaySubgroupAndTimestamp.map(_._2),
+      tpp.expiry,
       PivotComponent(text, context, toolbarButtons(context, data), None, finalDrillDownPage, selfPage, data,
-        pivotPageState, save, browserSize))
+        pivotPageState, save, bookmark, browserSize))
   }
 
   override def refreshFunctions = {
@@ -95,13 +93,27 @@ case class TradeSelectionPage(
     tradeSelectionWithTimestamp.intradaySubgroupAndTimestamp match {
       case Some((groups, _)) => functions += {
         case IntradayUpdated(group, _, timestamp) if groups.subgroups.contains(group) => {
-          this.copy(intradaySubgroupAndTimestamp = tradeSelectionWithTimestamp.copyWithNewIntradaySubgroupTimestamp(timestamp).intradaySubgroupAndTimestamp)
+          val newTPP = tpp.copy(intradaySubgroupAndTimestamp = tradeSelectionWithTimestamp.copyWithNewIntradaySubgroupTimestamp(timestamp).intradaySubgroupAndTimestamp)
+          this.copy(tpp = newTPP)
         }
       }
       case _ =>
     }
 
     functions.toList
+  }
+
+  override def bookmark(server:StarlingServer):Bookmark = {
+    val d = server.createTradeSelectionBookmarkData(tpp)
+    TradeSelectionBookmark(d, pivotPageState)
+  }
+}
+
+case class TradeSelectionBookmark(data:TradeSelectionBookmarkData, pivotPageState:PivotPageState) extends Bookmark {
+  def daySensitive = true
+  def createPage(day:Option[Day], server:StarlingServer, context:PageContext) = {
+    val d = server.createTradePageParameters(data, day.get)
+    TradeSelectionPage(d, pivotPageState)
   }
 }
 
@@ -336,8 +348,8 @@ class TradeSelectionComponent(
         timestampsCombo.selection.item
       }
     }))
-    pageContext.goTo(TradeSelectionPage(deskWithTimestamp,
-      intradayItem.map(g => (g, pageContext.localCache.latestTimestamp(g))), expiry, data.pivotPageState))
+    pageContext.goTo(TradeSelectionPage(TradePageParameters(deskWithTimestamp,
+      intradayItem.map(g => (g, pageContext.localCache.latestTimestamp(g))), expiry), data.pivotPageState))
   }
 
   private val reportButton = new NewPageButton {

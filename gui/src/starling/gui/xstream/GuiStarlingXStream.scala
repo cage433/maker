@@ -1,27 +1,20 @@
-package starling.utils
+package starling.gui.xstream
 
-import collection.immutable.TreeMap
-import collection.SortedMap
-import com.thoughtworks.xstream.converters.{Converter, MarshallingContext, UnmarshallingContext}
-import com.thoughtworks.xstream.io.{HierarchicalStreamWriter, HierarchicalStreamReader}
 import com.thoughtworks.xstream.XStream
-import scala.collection.JavaConversions
-import starling.market.{Index, CommodityMarket, Market, FuturesMarket}
-import java.io.StringWriter
-import com.thoughtworks.xstream.io.xml.{XppDriver, CompactWriter}
+import com.thoughtworks.xstream.io.{HierarchicalStreamReader, HierarchicalStreamWriter}
+import com.thoughtworks.xstream.converters.{UnmarshallingContext, MarshallingContext, Converter}
 import com.thoughtworks.xstream.mapper.{MapperWrapper, Mapper}
-import java.lang.Class
-import annotation.tailrec
-import starling.pivot.MarketValue
 import starling.xstream.{XstreamUOMConverter, XstreamDayConverter}
-import xstream.ScalaXStream
-
-//import starling.db.FwdCurveAppPricingGroup
+import starling.pivot.MarketValue
+import java.io.StringWriter
+import com.thoughtworks.xstream.io.xml.{CompactWriter, XppDriver}
+import starling.utils.xstream.ScalaXStream
+import starling.utils.{CaseInsensitive, Log}
 
 /**
  * A wrapper around XStream which adds conversions to make the xml more readable
  */
-object StarlingXStream {
+object GuiStarlingXStream {
   private var xstream:Option[XStream] = None
   private var converters: List[Converter] = List()
 
@@ -30,24 +23,12 @@ object StarlingXStream {
     case Some(_) => throw new Exception("XStream has already been configured.")
   }
 
-  object CommodityMarketConverter extends Converter {
-    def canConvert(theType:Class[_]) = {
-        classOf[CommodityMarket].isAssignableFrom(theType)
-    }
-    def marshal(obj:Object, writer:HierarchicalStreamWriter, context:MarshallingContext) {
-      writer.setValue(obj.asInstanceOf[CommodityMarket].name)
-    }
-    def unmarshal(reader:HierarchicalStreamReader , context:UnmarshallingContext ) = {
-      Market.fromName(reader.getValue)
-    }
-  }
-
   object NamedConverter extends Converter {
     def canConvert(theType:Class[_]) = {
       try {
         theType.getMethod("name", Array[Class[_]]() : _*)
         theType.getMethod("fromName", Array[Class[_]](classOf[String]) : _*)
-        !classOf[CommodityMarket].isAssignableFrom(theType)
+        true
       } catch {
         case e:NoSuchMethodException => false
       }
@@ -76,7 +57,7 @@ object StarlingXStream {
         klazz
       }
       else {
-        if (!NamedConverter.canConvert(klazz) && !CommodityMarketConverter.canConvert(klazz)) {
+        if (!NamedConverter.canConvert(klazz)) {
           throw new Exception("Cannot persist this anonymous class: " + klazz.getName)
         }
         getNamedClass(klazz.getSuperclass)
@@ -95,7 +76,6 @@ object StarlingXStream {
     xs.registerConverter(new XstreamDayConverter)
     xs.registerConverter(new XstreamUOMConverter)
 
-    xs.registerConverter(CommodityMarketConverter)
     xs.registerConverter(NamedConverter)
 
     //On the fly schema changes
