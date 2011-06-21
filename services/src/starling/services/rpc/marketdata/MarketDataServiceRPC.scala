@@ -4,7 +4,8 @@ import scala.collection.JavaConversions._
 
 import com.trafigura.edm.marketdata._
 import com.trafigura.edm.physicaltradespecs.EDMQuota
-import com.trafigura.edm.shared.types.{Currency => ECurrency, Date => EDate, Quantity => EDMQuantity}
+import com.trafigura.edm.shared.types.{Currency => ECurrency, Date => EDate, DateRange => EDateRange,
+                                       Quantity => EDMQuantity, Percentage => EPercentage}
 import com.trafigura.tradinghub.support.ServiceFilter
 
 import starling.edm.EDMConversions._
@@ -16,21 +17,64 @@ import starling.pivot._
 import starling.pivot.model.PivotTableModel
 import starling.quantity.{Quantity, UOM}
 import starling.services.Server
-import starling.utils.Log
-
 import starling.utils.ImplicitConversions._
 import PriceFixingsHistoryDataType._
 import SpotFXDataType._
+import starling.utils.{Named, StarlingEnum, Log}
 
+case class EInterestRateType(name: String) extends Named
+object EInterestRateType extends StarlingEnum(classOf[EInterestRateType], true) {
+  val Unknown = EInterestRateType("Unknown")
+}
+case class EInterestRatePoint(value: EPercentage, dateRange: EDateRange)
 
-case class SpotFXRate(currency: ECurrency, rate: Double)
 
 /** Generic Market data service, covering all market data */
 class MarketDataServiceRPC(marketDataStore: MarketDataStore) extends MarketDataService {
-  def getMetalsSpotFX(observationDate: EDate) = marketData(spotFXRequest.copyObservationDay(observationDate.fromEDM))
-    .collect { case List(UOM.Parse(currency), DoubleParse(rate)) => Quantity(rate, currency).toEDM }
+  def marketData(parameters: MarketDataRequestParameters) = throw new Exception("Not available")
 
-  def marketData(parameters: MarketDataRequestParameters): MarketDataResponse = try {
+  def getMetalsSpotFXRate(from: ECurrency, to: ECurrency, observationDate: EDate): EDMQuantity = {
+    val rates = getMetalsSpotFXRates(observationDate.fromEDM).toMapWithKeys(_.uom)
+
+    (rates(from.fromEDM) / rates(to.fromEDM)).toEDM
+  }
+
+  def getMetalsSpotFXRates(observationDate: EDate): List[EDMQuantity] = getMetalsSpotFXRates(observationDate.fromEDM).map(_.toEDM)
+
+  def getInterestRates(currency: ECurrency, rateType: EInterestRateType, dateRange: EDateRange): List[EInterestRatePoint] =
+    getInterestRates(currency.fromEDM, rateType, dateRange.startDay, dateRange.endDay)
+
+  def getInterestRate(currency: ECurrency, rateType: EInterestRateType, date: EDate): EInterestRatePoint = {
+    val rates = getInterestRates(currency.fromEDM, rateType, date.fromEDM, date.fromEDM)
+
+    rates.find(_.dateRange.contains(date)).getOrElse(throw new Exception("No rate for %s, available dates: %s" %
+      (date, rates.map(_.dateRange.fromEDM).mkString(", "))))
+  }
+
+  private def getInterestRates(currency: UOM, rateType: EInterestRateType, from: Day, to: Day): List[EInterestRatePoint] = Nil
+
+  def getFixings(quota: EDMQuota): MarketDataResponse = getMarketData(fixingRequest.addFilter(marketField.name, "<market>")
+    .copy(columns = List(), rows = List(levelField, periodField)).toEDM)
+
+  def getQuotaValue(quotaId : Int) : EDMQuantity = Quantity(1, UOM.USD).toEDM
+
+  def latestLiborFixings() = getMarketData(fixingRequest.copyExchange("LIBOR", "IRE")
+    .copy(rows = List(levelField, periodField), columns = List(marketField)).toEDM)
+
+  def latestECBFXFixings() = getMarketData(fixingRequest.copyExchange("ECB").copy(rows = List(marketField, periodField)).toEDM)
+
+  def latestLMEFixings() = getMarketData(fixingRequest.copyExchange("LME").copy(rows = List(marketField, periodField),
+    columns = List(levelField, FieldDetails("Observation Time"))).toEDM)
+
+  implicit def enrichMarketDataResponse(response: MarketDataResponse) = new {
+    def map[A](f: MarketDataRow => A) = response.rows.map(f)
+    def collect[A](f: PartialFunction[List[String], A]) = response.rows.flatMap(row => f.lift(row.data))
+  }
+
+  private def getMetalsSpotFXRates(obseravtionDay: Day) = getMarketData(spotFXRequest.copyObservationDay(obseravtionDay).toEDM)
+    .collect { case List(UOM.Parse(currency), DoubleParse(rate)) => Quantity(rate, currency) }
+
+  private def getMarketData(parameters: MarketDataRequestParameters): MarketDataResponse = try {
     Log.info("MarketDataServiceRPC called with parameters " + parameters)
     parameters.notNull("Missing parameters")
 
@@ -43,29 +87,6 @@ class MarketDataServiceRPC(marketDataStore: MarketDataStore) extends MarketDataS
 
     MarketDataResponse(parameters.update(_.version = Some(version)), data.map(row => MarketDataRow(row.map(_.toString))))
   } catch { case exception => MarketDataResponse(parameters, errors = List(exception.getMessage)) }
-
-  def marketData(parameters: MarketDataRequestParametersCC): MarketDataResponse = marketData(parameters.toEDM)
-
-  /**
-   * get price fixings for the supplied EDM Quota
-   */
-  def getFixings(quota: EDMQuota) : MarketDataResponse = {
-
-    val mdParams = fixingRequest.addFilter(marketField.name, "<market>")
-      .copy(columns = List(), rows = List(levelField, periodField))
-
-    marketData(mdParams)
-  }
-
-  def getQuotaValue(quotaId : Int) : EDMQuantity = Quantity(1, UOM.USD).toEDM
-
-  def latestLiborFixings() = marketData(fixingRequest.copyExchange("LIBOR", "IRE")
-    .copy(rows = List(levelField, periodField), columns = List(marketField)))
-
-  def latestECBFXFixings() = marketData(fixingRequest.copyExchange("ECB").copy(rows = List(marketField, periodField)))
-
-  def latestLMEFixings() = marketData(fixingRequest.copyExchange("LME").copy(rows = List(marketField, periodField),
-    columns = List(levelField, FieldDetails("Observation Time"))))
 
   private def fixingRequest = MarketDataRequestParametersCC(PricingGroup.Metals, PriceFixingsHistoryDataType, None,
     measures = List(priceField), filters = Map("Observation Day" → List(Day.today.toString)))

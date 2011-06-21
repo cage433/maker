@@ -3,11 +3,10 @@ package starling.edm
 import com.trafigura.edm.shared.types.{Quantity => EDMQuantity, CompoundUOM, UnitComponent, FundamentalUOM}
 import com.trafigura.edm.marketdata.{MarketDataRow, MarketDataResponse}
 
-import starling.daterange.Day
 import starling.quantity.{UOM, Quantity}
 
 import starling.quantity.UOMSymbol._
-
+import starling.daterange.{SimpleDateRange, DateRange, Day}
 
 object EDMConversions {
   implicit def enrichQuantity(q: Quantity) = new {
@@ -19,9 +18,14 @@ object EDMConversions {
   implicit def enrichEDMDate(date: com.trafigura.edm.shared.types.Date) = new {
     def fromEDM = Day.fromLocal(date.datex)
   }
-  implicit def enrichMarketDataResponse(response: MarketDataResponse) = new {
-    def map[A](f: MarketDataRow => A) = response.rows.map(f)
-    def collect[A](f: PartialFunction[List[String], A]) = response.rows.flatMap(row => f.lift(row.data))
+  implicit def enrichEDMDateRange(dateRange: com.trafigura.edm.shared.types.DateRange) = new {
+    def fromEDM = new SimpleDateRange(startDay, endDay)
+    def contains(date: com.trafigura.edm.shared.types.Date) = fromEDM.contains(date.fromEDM)
+    def startDay = Day.fromLocal(dateRange.startDate)
+    def endDay = Day.fromLocal(dateRange.endDate)
+  }
+  implicit def enrichFundamentalUOM(uom: com.trafigura.edm.shared.types.FundamentalUOM) = new {
+    def fromEDM = edmToStarlingUomSymbol(uom).asUOM
   }
 
   def fromEDMQuantity(q : EDMQuantity) : Quantity = {

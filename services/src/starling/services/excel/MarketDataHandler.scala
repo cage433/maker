@@ -12,10 +12,10 @@ import starling.gui.api._
 import starling.rmi.StarlingServerImpl
 import starling.services.PricingGroupIDUtil
 import starling.auth.User
-import starling.utils.Broadcaster
 import starling.loopyxl.ExcelMethod
 import starling.services.trade.instrumentreaders.ExcelInstrumentReader
 import starling.curves.{USDFXRateCurveKey, SpreadStdDevSurfaceData, SpreadStdDevSurfaceDataKey}
+import starling.utils.{Log, Broadcaster}
 
 class MarketDataHandler(broadcaster : Broadcaster,
                    starlingServer : StarlingServerImpl,
@@ -26,7 +26,7 @@ class MarketDataHandler(broadcaster : Broadcaster,
     name = "observationPoint",
     category = "Starling")
   def observationPoint(day:Double, time:String) = {
-    ObservationPoint(Day.fromExcel(day), ObservationTimeOfDay(time)).unparse
+    ObservationPoint(Day.fromExcel(day), ObservationTimeOfDay.fromName(time)).unparse
   }
 
   @ExcelMethod
