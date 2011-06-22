@@ -18,11 +18,8 @@ case class PivotPercentage(percent:Option[Percentage]) {
 case class StackTrace(message:String, stackTrace:String)
 object StackTrace {
   def apply(t:Throwable) = {
-    if (false && t.getClass.getName == "starling.curves.MissingMarketDataException") {
-      new StackTrace(t.toString, "")
-    } else {
-      new StackTrace(t.toString, StackTraceToString.string(t))
-    }
+    val message = if (t.getMessage == null) t.toString else t.getMessage
+    new StackTrace(message, StackTraceToString.string(t))
   }
 }
 

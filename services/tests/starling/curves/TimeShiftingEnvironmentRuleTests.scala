@@ -47,7 +47,7 @@ class TimeShiftingEnvironmentRuleTests extends StarlingTest with ShouldMatchers 
         priceEntry(environmentDay, SHFEClose, Market.SHANGHAI_COPPER, shanghaiPriceAtShanghaiClose),
         priceEntry(environmentDay, SHFEClose, Market.LME_COPPER, lmePriceAtShanghaiClose),
         priceEntry(environmentDay, LMEClose, Market.LME_COPPER, lmePriceAtLmeClose),
-        fxEntry(environmentDay, LMEClose, fxAtLmeClose),
+        fxEntry(environmentDay, LondonClose, fxAtLmeClose),
         fxEntry(environmentDay, SHFEClose, fxAtShanghaiClose)
       )
     )
@@ -73,7 +73,7 @@ class TimeShiftingEnvironmentRuleTests extends StarlingTest with ShouldMatchers 
         priceEntry(lastShanghaiDay, SHFEClose, Market.SHANGHAI_COPPER, shanghaiPriceAtShanghaiClose),
         priceEntry(lastShanghaiDay, SHFEClose, Market.LME_COPPER, lmePriceAtShanghaiClose),
         priceEntry(environmentDay, LMEClose, Market.LME_COPPER, lmePriceAtLmeClose),
-        fxEntry(environmentDay, LMEClose, fxAtLmeClose),
+        fxEntry(environmentDay, LondonClose, fxAtLmeClose),
         fxEntry(lastShanghaiDay, SHFEClose, fxAtShanghaiClose)
       )
     )

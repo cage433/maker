@@ -161,9 +161,9 @@ object BloombergGenericFXRates extends HierarchicalLimSource(List(Trafigura.Bloo
   type Relation = FXRelation
 
   case class FXRelation(from: UOM, to: UOM) {
-    def againstUSD(rate: Double): Option[Quantity] = (from, to) partialMatch {
-      case (UOM.USD, _) => Quantity(rate, to / from).invert
-      case (_, UOM.USD) => Quantity(rate, to / from)
+    def againstUSD(rate: Double): Option[(UOM,Quantity)] = (from, to) partialMatch {
+      case (UOM.USD, ccy) => (ccy, Quantity(rate, to / from))
+      case (ccy, UOM.USD) => (ccy, Quantity(rate, to / from))
     }
   }
 
@@ -172,8 +172,8 @@ object BloombergGenericFXRates extends HierarchicalLimSource(List(Trafigura.Bloo
   }
 
   def marketDataEntriesFrom(allRates: List[Prices[FXRelation]]) = allRates.flatMap { rates =>
-    rates.relation.againstUSD(rates.priceByLevel(Close)).filterNot(_.uom == UOM.CNY / UOM.USD).toList.map(fx =>
-      MarketDataEntry(rates.observationDay.atTimeOfDay(LondonClose), SpotFXDataKey(fx.denominatorUOM), SpotFXData(fx)))
+    rates.relation.againstUSD(rates.priceByLevel(Close)).filterNot(_._1 == UOM.CNY).toList.map{ case (ccy,fx) =>
+      MarketDataEntry(rates.observationDay.atTimeOfDay(LondonClose), SpotFXDataKey(ccy), SpotFXData(fx))}
   }
 }
 
