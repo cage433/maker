@@ -291,20 +291,31 @@ object Market {
   lazy val COMEX_HIGH_GRADE_COPPER : FuturesMarket = comexFuturesMarket(
     "COMEX High Grade Copper", 25000, LB, 545, expiry.COMEX_HG_COPPER, Copper, "HG")
 
-  lazy val EXBXG_MARKETS = List(  //http://www.exbxg.com/en/services.html
-    ("CR", Steel, MT),    //304 Stainless Steel Cold Rolling Coil
-    ("Ni", Nickel, KG),   //Electrolytic Nickel Plate
-    ("HR", Steel, MT),    //304 Stainless Steel Hot Rolling Coil
-    ("4FHR", Steel, MT),   //4 Feet Stainless Steel Hot Rolling Coil
-    ("Pb", Lead, MT),
-    ("Sn", Tin, KG),
-    ("In", Indium, KG),
-    ("Co", Cobalt, MT),
-    ("FeMo", Ferromolybdenum, KG)
-   ).map { case(code, commodity, uom) => new FuturesMarket(
+
+
+  //http://www.exbxg.com/en/services.html - called WUXI at Traf - no idea why as google knows nothing of this
+  lazy val EXBG_STEEL_CR = exbgFuturesMarket("CR", Steel, MT) //304 Stainless Steel Cold Rolling Coil
+  lazy val EXBG_NICKEL = exbgFuturesMarket("Ni", Nickel, KG)  //Electrolytic Nickel Plate
+  lazy val EXBG_STEEL_HR = exbgFuturesMarket("HR", Steel, MT) //304 Stainless Steel Hot Rolling Coil
+  lazy val EXBG_STEEL_4FHR = exbgFuturesMarket("4FHR", Steel, MT) //4 Feet Stainless Steel Hot Rolling Coil
+  lazy val EXBG_LEAD = exbgFuturesMarket("Pb", Lead, MT)
+  lazy val EXBG_TIN = exbgFuturesMarket("Sn", Tin, KG)
+  lazy val EXBG_INDIUM = exbgFuturesMarket("In", Indium, KG)
+  lazy val EXBG_COBALT = exbgFuturesMarket("Co", Cobalt, MT)
+  lazy val EXBG_FERROMOLYBDENIUM = exbgFuturesMarket("FeMo", Ferromolybdenum, KG)
+
+  lazy val EXBXG_MARKETS = List(EXBG_STEEL_CR, EXBG_NICKEL, EXBG_STEEL_HR, EXBG_STEEL_4FHR, EXBG_LEAD, EXBG_TIN, EXBG_INDIUM, EXBG_COBALT, EXBG_FERROMOLYBDENIUM)
+  def exbgFuturesMarket(code: String,commodity: Commodity, uom: UOM) = {
+    new FuturesMarket(
       "EXBXG " + code, Some(1.0), uom, CNY, cals.CHINESE_STATE_HOLIDAYS,
-      None, null, Month, FuturesExpiryRule.Null, FuturesExchangeFactory.EXBXG, commodity, false
-    ) }
+      None, null, Month,
+      new FuturesExpiryRule(){
+        // TODO - find the correct rule - for now we're going with last working day of previous month
+        def lastTradingDay(d: DateRange) = d.firstDay.previousBusinessDay(cals.CHINESE_STATE_HOLIDAYS)
+      },
+      FuturesExchangeFactory.EXBXG, commodity, false
+    )
+  }
 
   /**
    * LME Markets

@@ -26,7 +26,6 @@ import com.trafigura.tradecapture.internal.refinedmetal.{Market, Metal}
 import starling.props.{Props, PropsHelper}
 
 import com.trafigura.tradecapture.internal.refinedmetalreferencedataservice.{TranslationsServiceResource, TranslationsServiceResourceProxy}
-import com.trafigura.edm.tradeservice.{EdmGetTradesResource, EdmGetTradesResourceProxy, EdmGetTrades}
 import com.trafigura.services.security.ComponentTestClientExecutor
 import com.trafigura.services.security._
 import com.trafigura.timer.Timer._
@@ -39,7 +38,8 @@ import org.codehaus.jettison.json.JSONObject
 import com.trafigura.tradinghub.support.{JSONConversions, GUID, ServiceFilter}
 import starling.utils.{Stopwatch, StarlingXStream, Log}
 import org.apache.commons.codec.net.QCodec
-import starling.services.rpc.valuation.QuotaValuer
+import com.trafigura.edm.tradeservice.{TradeResults, EdmGetTradesResource, EdmGetTradesResourceProxy, EdmGetTrades}
+import starling.services.rpc.valuation.{InvalidPricingSpecException, QuotaValuer}
 
 /**
  * Generic Market data service, covering all market data
@@ -108,17 +108,6 @@ class MarketDataServiceRPC(marketDataStore: MarketDataStore, val props : Props) 
 
       Log.info("Got %d  edm trades".format(trades.size))
 
-      val commodities = commoditiesSrc()
-
-      Log.info("Got %d  commodities".format(commodities.size))
-      val commodityNames = commodities.map(_._2.name).mkString("\n")
-      Log.info("Commodities: \n%s".format(commodityNames))
-
-      val exchanges = exchangesSrc()
-
-      Log.info("Got %d  commodities".format(exchanges.size))
-      val exchangeNames = exchanges.map(_._2.name).mkString("\n")
-      Log.info("Exchanges: \n%s".format(exchanges))
 
       EDMConversions.toEDMQuantity(
         Quantity(trades.size, UOM.USD)
@@ -171,22 +160,33 @@ class MarketDataServiceRPC(marketDataStore: MarketDataStore, val props : Props) 
   lazy val quotasSrc : () => Map[String, QuotaDetail] = () => Map[String, QuotaDetail]() ++ allTrades().flatMap(_.quotas.map(q => (q.detail.identifier, q.detail)))
 
   // maps of tactical ref-data by id
-  lazy val commoditiesSrc : () => Map[GUID, Metal] = () => Map[GUID, Metal]() ++ allCommodities().map(e => (e.guid , e))
-  lazy val exchangesSrc : () => Map[GUID, Market] = () => Map[GUID, Market]() ++ allExchanges().map(e => (e.guid , e))
+  lazy val commoditiesSrc : Map[GUID, Metal] = Map[GUID, Metal]() ++ allCommodities.map(e => (e.guid , e))
+  lazy val exchangesSrc : Map[GUID, Market] = Map[GUID, Market]() ++ allExchanges.map(e => (e.guid , e))
 
   // set up a client executor and edm trade proxy
-  lazy val allTrades : () => List[PhysicalTrade] = () => edmGetTradesService.getAll().map(_.asInstanceOf[PhysicalTrade])
-  lazy val allCommodities  = () => tacticalRefdataMetalsService.getMetals()
-  lazy val allExchanges  = () => tacticalRefdataMarketsService.getMarkets()
+  lazy val tradeResults : () => TradeResults = () => edmGetTradesService.getAll()
+  lazy val allTrades : () => List[PhysicalTrade] = () => {
+    var tr : TradeResults = TradeResults(cached = false)
+    val sw = new Stopwatch()
+    while (tr.cached == false){
+      println("Waitng for trades " + sw)
+      Thread.sleep(5000)
+      tr = tradeResults()
+    }
+    tr.results.map(_.trade.asInstanceOf[PhysicalTrade])
+  }
+
 
   implicit val clientExecutor : ClientExecutor = new ComponentTestClientExecutor(rmetadminuser)
 
   lazy val edmGetTradesService : EdmGetTrades = getEdmGetTradesServiceProxy(clientExecutor)
   lazy val tacticalRefdataMetalsService : MetalService = getTacticalRefdataMetalServiceProxy(clientExecutor)
   lazy val tacticalRefdataMarketsService : MarketService = getTacticalRefdataMarketServiceProxy(clientExecutor)
+  def allCommodities() = tacticalRefdataMetalsService.getMetals()
+  def allExchanges() = tacticalRefdataMarketsService.getMarkets()
 
   // maps of tactical ref-data by id
-  var quotasMap = quotasSrc()
+  var quotasMap = Map[String, QuotaDetail]() //quotasSrc()
 
   // debug output received trade quotas
   //Log.debug(quotasMap.values.mkString("\n"))
@@ -230,6 +230,59 @@ class MarketDataServiceRPC(marketDataStore: MarketDataStore, val props : Props) 
 
 object MarketDataService extends Application {
 
+  def loadAndValueAll() {
+
+    val sw = new Stopwatch()
+
+    new Thread(new Runnable() {
+      def run() {  Server.main(Array()) }
+    }).start()
+
+    while (Server.server == null){
+      Thread.sleep(1000)
+    }
+
+    val md = new MarketDataServiceRPC(Server.server.marketDataStore, Server.server.props)
+
+    val trades = md.allTrades()
+
+    val env = Environment(new NullAtomicEnvironment(Day(2010, 1, 1).endOfDay))
+    val qv = new QuotaValuer(env, md.exchangesSrc, md.commoditiesSrc)
+    println("Exchanges")
+    md.allExchanges.foreach(println)
+    println("Metals")
+    md.allCommodities().foreach(println)
+
+    val valuedTrades = //: List[Either[(Exception, PhysicalTrade), (Quantity, QuotaDetail)]] =
+      trades.flatMap(physTrade => {
+        physTrade.quotas.map(q => {
+          try {
+            val value = qv.value(q, physTrade.tradeId)
+//            println("Trade " + physTrade.tradeId + ", quota " + q.quotaNumber + ", value = " + value)
+            Left((value, q))
+          }
+          catch {
+            case ex : InvalidPricingSpecException => Right((ex, physTrade))
+            case ex : NullPointerException => throw ex
+            case ex : NoSuchElementException => {
+              println("trade id " + physTrade.tradeId + " failed ex : " + ex)
+              throw ex
+            }
+            case ex : Exception => {
+              println("trade id " + physTrade.tradeId + " failed ex : " + ex)
+              Right((ex, physTrade))
+            }
+            case _ => Right((null, physTrade))
+          }
+        })
+      })
+
+    val (errors, valuations) = valuedTrades.partition(_ match { case Right(x) => true; case _ => false } )
+
+    println("Worked " + valuations.size + ", failed " + errors.size + ", took " + sw)
+  }
+
+  /*
   def loadAndValue() {
 
 //    val tradeXml = io.Source.fromFile("/tmp/edmtrades.xml").getLines().mkString("\n")
@@ -243,7 +296,7 @@ object MarketDataService extends Application {
     println(sw)
 
     val env = Environment(new NullAtomicEnvironment(Day(2010, 1, 1).endOfDay))
-    val qv = new QuotaValuer(env)
+    val qv = new QuotaValuer(env, md.allExchanges(), md.allCommodities())
     trades.foreach{
       physTrade =>
         println("Trade " + physTrade.tradeId)
@@ -252,9 +305,9 @@ object MarketDataService extends Application {
         }
     }
   }
-
-  //readAndStore()
-  loadAndValue()
+*/
+ // readAndStore()
+  loadAndValueAll()
 
 
 

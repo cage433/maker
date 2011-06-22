@@ -29,7 +29,7 @@ trait FuturesExpiryRule {
 
 object FuturesExpiryRule {
   val Null = new FuturesExpiryRule {
-    def lastTradingDay(d: DateRange) = throw new Exception("Not implemented")
+    def lastTradingDay(d: DateRange) = throw new Exception("Null expiry rule doesn't implement lastTradingDay")
   }
 }
 

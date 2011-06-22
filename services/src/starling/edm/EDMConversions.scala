@@ -3,7 +3,8 @@ package starling.edm
 import starling.quantity.UOMSymbol._
 import com.trafigura.edm.shared.types.{Quantity => EDMQuantity, CompoundUOM, UnitComponent, FundamentalUOM}
 import starling.quantity.{UOM, Quantity}
-
+import org.mockito.exceptions.misusing.InvalidUseOfMatchersException
+import starling.services.rpc.valuation._
 
 /**
  * Created by IntelliJ IDEA.
@@ -16,9 +17,17 @@ import starling.quantity.{UOM, Quantity}
 object EDMConversions {
 
   def fromEDMQuantity(q : EDMQuantity) : Quantity = {
-    val amount = q.amount.get  // No idea why this is optional in EDM
+    val amount = q.amount match {
+      case Some(amt) => amt
+      case None => throw new Exception("Invalid quantity - no amount")
+    }  // No idea why this is optional in EDM
     val uom = UOM.fromSymbolMap(q.uom.components.map {
-      case uc => edmToStarlingUomSymbol(uc.fundamental.name) -> uc.exponent
+      case uc => {
+        edmToStarlingUomSymbol.get(uc.fundamental.name) match {
+          case Some(uomSymbol) => uomSymbol -> uc.exponent
+          case None => throw new InvalidUomException(uc.fundamental.name)
+        }
+      }
     }.toMap)
     Quantity(amount, uom)
 
