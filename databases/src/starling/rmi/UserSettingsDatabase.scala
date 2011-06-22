@@ -17,7 +17,7 @@ case class DayOffSet(offset:Int)
 
 class UserSettingsDatabase(val db:DB, broadcaster:Broadcaster) {
   // This is the standard number of characters in a var char column.
-  private val colSize = 30
+  private val colSize = 300
 
   def loadSettings:UserSettings = {
     val user = User.currentlyLoggedOn.username.take(colSize)
