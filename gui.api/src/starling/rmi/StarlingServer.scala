@@ -56,7 +56,6 @@ trait StarlingServer {
   def extraLayouts:List[PivotLayout]
   def saveLayout(pivotLayout:PivotLayout):Unit
   def deleteLayout(layoutName:String):Unit
-  def userReports:List[UserReport]
   def createReportParameters(userReportData:UserReportData, observationDay:Day):ReportParameters
   def createUserReport(reportParameters:ReportParameters):UserReportData
   def referenceDataTables():List[ReferenceDataLabel]

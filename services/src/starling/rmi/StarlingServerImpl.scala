@@ -648,7 +648,6 @@ class StarlingServerImpl(
   def extraLayouts(userName:String):List[PivotLayout] = userSettingsDatabase.readPivotLayouts(User(userName))
   def saveLayout(pivotLayout:PivotLayout) = userSettingsDatabase.savePivotLayout(User.currentlyLoggedOn, pivotLayout)
   def deleteLayout(layoutName:String) = userSettingsDatabase.deletePivotLayout(User.currentlyLoggedOn, layoutName)
-  def userReports = userSettingsDatabase.userReports(User.currentlyLoggedOn)
 
   def referenceDataTables() = referenceData.referenceDataTables()
   def referencePivot(table: ReferenceDataLabel, pivotFieldParams: PivotFieldParams) = referenceData.referencePivot(table, pivotFieldParams)
