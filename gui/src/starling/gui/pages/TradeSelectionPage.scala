@@ -580,7 +580,7 @@ class TradeSelectionComponent(
 }
 
 case class SnapshotSubmitRequest(marketDataSelection:MarketDataSelection, observationDay:Day)
-  extends SubmitRequest[SnapshotIDLabel] {
+  extends SubmitRequest[Option[SnapshotIDLabel]] {
 
   def submit(server: StarlingServer) = server.snapshot(marketDataSelection, observationDay)
 }

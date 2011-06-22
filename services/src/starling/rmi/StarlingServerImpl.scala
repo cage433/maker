@@ -412,8 +412,8 @@ class StarlingServerImpl(
 
   private def versionForMarketDataVersion(marketDataVersion:MarketDataVersion):Int = throw new Exception
 
-  def snapshot(marketDataSelection:MarketDataSelection, observationDay:Day):SnapshotIDLabel = {
-    label(snapshotDatabase.snapshot(marketDataSelection, true, observationDay))
+  def snapshot(marketDataSelection:MarketDataSelection, observationDay:Day): Option[SnapshotIDLabel] = {
+    snapshotDatabase.snapshot(marketDataSelection, true, observationDay).map(label)
   }
 
   def excelLatestMarketDataVersions = snapshotDatabase.latestExcelVersions

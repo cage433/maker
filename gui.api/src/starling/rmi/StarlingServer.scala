@@ -31,7 +31,7 @@ trait StarlingServer {
   def environmentRules():Map[PricingGroup,List[EnvironmentRuleLabel]]
   def curveTypes():List[CurveTypeLabel]
   def excelDataSets():List[String]
-  def snapshot(marketDataSelection:MarketDataSelection, observationDay:Day):SnapshotIDLabel
+  def snapshot(marketDataSelection:MarketDataSelection, observationDay:Day): Option[SnapshotIDLabel]
   def excelLatestMarketDataVersions:Map[String,Int]
   def pricingGroupLatestMarketDataVersions:Map[PricingGroup,Int]
   def readSettings:UserSettings

@@ -35,6 +35,9 @@ case class SpecificMarketDataVersion(version:Int) extends MarketDataVersion {
 case class SnapshotMarketDataVersion(snapshotLabel:SnapshotIDLabel) extends MarketDataVersion {
   def label = "s" + snapshotLabel.id
 }
+object SnapshotMarketDataVersion {
+  def apply(optLabel: Option[SnapshotIDLabel]): Option[SnapshotMarketDataVersion] = optLabel.map(SnapshotMarketDataVersion(_))
+}
 trait MarketDataPageIdentifier {
   def filteredMarketData:Boolean
   def selection:MarketDataSelection = marketDataIdentifier.selection

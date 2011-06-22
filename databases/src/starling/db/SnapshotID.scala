@@ -22,3 +22,8 @@ case class SnapshotID(
 
   def label = SnapshotIDLabel(observationDay, id, timestamp, version)
 }
+
+object SnapshotID {
+  def apply(rs: ResultSetRow): SnapshotID = SnapshotID(rs.getDay("observationDay"), rs.getInt("snapshotID"),
+    rs.getTimestamp("snapshotTime"), rs.getObject[MarketDataSelection]("marketDataSelection"), rs.getInt("version"))
+}
