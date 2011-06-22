@@ -15,7 +15,9 @@ import starling.pivot.PivotLayout
 class BookmarkButton(currentBookmark: => Bookmark, pageContext:PageContext) extends NavigationButton {
 //  val noBookmarkIcon = StarlingIcons.icon("/icons/22x22_empty_bookmark.png")
   val noBookmarkIcon = StarlingIcons.icon("/icons/22x22_empty_star.png")
+  val noBookmarkIconCal = StarlingIcons.icon("/icons/22x22_empty_star_cal.png")
   val bookmarkedIcon = StarlingIcons.icon("/icons/22x22_bookmark.png")
+  val bookmarkedIconCal = StarlingIcons.icon("/icons/22x22_bookmark_cal.png")
 
   def setSavePanel(setup:Boolean) {
     holderPanel.update(savePanel, setup)
@@ -163,7 +165,6 @@ class BookmarkButton(currentBookmark: => Bookmark, pageContext:PageContext) exte
         val heightToUse = math.max(c.preferredSize.height, size.height)
         c.preferredSize = new Dimension(widthToUse, heightToUse)
       }
-//      refresh
       add(c, "push,grow")
       revalidate()
       repaint()
@@ -174,15 +175,25 @@ class BookmarkButton(currentBookmark: => Bookmark, pageContext:PageContext) exte
   def knownBookmark_=(b:Boolean) {
     knownBookmark0 = b
     if (knownBookmark0) {
-      icon = bookmarkedIcon
+      if (currentBookmark.daySensitive) {
+        icon = bookmarkedIconCal
+      } else {
+        icon = bookmarkedIcon
+      }
       tooltip = "Clear this bookmark"
     } else {
-      icon = noBookmarkIcon
-      tooltip = "Bookmark this page"
+      if (currentBookmark.daySensitive) {
+        icon = noBookmarkIconCal
+        tooltip = "Bookmark this day sensitive page"
+      } else {
+        icon = noBookmarkIcon
+        tooltip = "Bookmark this page"
+      }
     }
   }
   def knownBookmark = knownBookmark0
-  knownBookmark = false
+  icon = noBookmarkIcon
+  tooltip = "Bookmark this page"
 
   def refresh() {
     knownBookmark = checkIfBookmarkIsKnown
@@ -195,7 +206,7 @@ class BookmarkButton(currentBookmark: => Bookmark, pageContext:PageContext) exte
 
   reactions += {
     case ButtonClicked(b) => {
-      if (knownBookmark) {
+      if (knownBookmark0) {
         val bookmarkName = pageContext.localCache.bookmarks.find(_.bookmark == currentBookmark).get.name
         pageContext.submitYesNo("Delete Bookmark?",
           "Are you sure you want to delete the \"" + bookmarkName + "\" bookmark?",

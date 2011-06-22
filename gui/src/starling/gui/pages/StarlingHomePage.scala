@@ -10,11 +10,11 @@ import starling.auth.User
 import org.jdesktop.swingx.painter.{CompoundPainter, GlossPainter}
 import collection.immutable.TreeMap
 import scala.swing._
-import event._
-import javax.swing.{KeyStroke, JComponent}
+import swing.event._
 import starling.daterange.{ObservationTimeOfDay, ObservationPoint, Day}
 import starling.pivot.view.swing._
 import starling.pivot._
+import javax.swing.{JList, DefaultListCellRenderer, JLabel, JComponent, KeyStroke}
 
 case class StarlingHomePage() extends Page {
   def build(reader:PageBuildingContext) = {HomePagePageData(reader.cachingStarlingServer.version, reader.cachingStarlingServer.desks.headOption)}
@@ -40,8 +40,24 @@ class StarlingHomePageComponent(context:PageContext, browserSize:Dimension, page
 
     val bkColour = new Color(228, 231, 246)
     val bookmarksListView = new NListView(bookmarks) {
-      renderer = ListView.Renderer(_.name)
       background = bkColour
+      val bookmarkDataListCellRenderer = new DefaultListCellRenderer {
+        val emptyBorder = EmptyBorder(0, 2, 0, 0)
+        override def getListCellRendererComponent(list:JList, value:AnyRef, index:Int, isSelected:Boolean, cellHasFocus:Boolean) = {
+          val l = super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus).asInstanceOf[JLabel]
+          val bookmarkData = value.asInstanceOf[BookmarkData]
+          l.setText(bookmarkData.name)
+          val iconToUse = if (bookmarkData.bookmark.daySensitive) {
+            StarlingIcons.icon("/icons/10x10_calendar.png")
+          } else {
+            StarlingIcons.Blank10
+          }
+          l.setIcon(iconToUse)
+          l.setBorder(emptyBorder)
+          l
+        }
+      }
+      renderer = ListView.Renderer.wrap(bookmarkDataListCellRenderer)
     }
     val valuationDayChooser = new DayChooser(enableFlags = false) {
       background = bkColour

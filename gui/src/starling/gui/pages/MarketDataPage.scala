@@ -94,10 +94,12 @@ case class MarketDataPage(
 case class MarketDataBookmark(marketDataIdentifier:MarketDataPageIdentifier, pageState:MarketDataPageState) extends Bookmark {
   def daySensitive = true
   def createPage(day:Option[Day], server:StarlingServer, context:PageContext) = {
-    pageState.pivotPageState.pivotFieldParams.pivotFieldState.map(pfs => {
+    val newPFS = pageState.pivotPageState.pivotFieldParams.pivotFieldState.map(pfs => {
       pfs.addFilter((Field("Observation Day"), Set(day.get)))
     })
-    MarketDataPage(marketDataIdentifier, pageState)
+    val newPivotFieldParams = pageState.pivotPageState.pivotFieldParams.copy(pivotFieldState = newPFS)
+    val newPivotPageState = pageState.pivotPageState.copy(pivotFieldParams = newPivotFieldParams)
+    MarketDataPage(marketDataIdentifier, pageState.copy(pivotPageState = newPivotPageState))
   }
 }
 

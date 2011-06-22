@@ -21,6 +21,7 @@ object StarlingIcons {
   lazy val Calculate = StarlingIcons.icon("/icons/16x16_calculator.png")
   lazy val SaveLayout = StarlingIcons.icon("/icons/16x16_layout_add.png")
   lazy val ValidationError = StarlingIcons.icon("/icons/validation.png")
+  lazy val Blank10 = StarlingIcons.icon("/icons/10x10_blank.png")
 
   val SaveReportConfiguration = "/icons/16x16_star_add.png"
 
