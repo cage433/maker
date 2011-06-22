@@ -18,9 +18,3 @@ case class UserReportData(
         liveOnOffSet:Either[Int,Boolean],
         pnl:Option[(Int,Either[Int,Boolean],Boolean,TimeOfDay)]
     )
-
-case class TradeSelectionBookmarkData(
-        desk:Option[Desk],
-        intradayGroups:Option[IntradayGroups],
-        tradeVersionOffSetOrLatest:Either[Int,Boolean],
-        liveOnOffSetOrStartOfYear:Either[Int,Boolean])

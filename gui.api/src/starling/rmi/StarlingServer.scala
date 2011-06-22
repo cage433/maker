@@ -50,6 +50,7 @@ trait StarlingServer {
 
   def version:Version
   def deskCloses: Map[Desk, Map[Day, List[TradeTimestamp]]]
+  def latestTradeTimestamp(desk:Desk):TradeTimestamp
   def intradayLatest: Map[String, (User, Timestamp)]
   def clearCache:Unit
   def marketDataTypeLabels(marketDataIdentifier:MarketDataPageIdentifier):List[MarketDataTypeLabel]
@@ -79,7 +80,6 @@ trait StarlingServer {
   def deleteBookmark(name:String)
 
   def bookmarks:List[BookmarkLabel]
-
-  def createTradeSelectionBookmarkData(tpp:TradePageParameters):TradeSelectionBookmarkData
-  def createTradePageParameters(tradeSelectionBookmarkData:TradeSelectionBookmarkData, observationDay:Day):TradePageParameters
+  def deleteUserReport(reportName:String)
+  def saveUserReport(reportName:String, data:UserReportData, showParameters:Boolean)
 }

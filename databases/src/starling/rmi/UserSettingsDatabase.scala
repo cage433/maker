@@ -200,7 +200,7 @@ class UserSettingsDatabase(val db:DB, broadcaster:Broadcaster) {
     val userName = user.username.take(colSize)
     db.inTransaction {
       writer => {
-        writer.delete("Bookmarks", ("starlingUser" eql userName) and ("bookmarkName" eql bookmarkName))
+        writer.delete("Bookmarks", ("starlingUser" eql LiteralString(userName)) and ("bookmarkName" eql LiteralString(bookmarkName)))
       }
     }
     broadcaster.broadcast(BookmarksUpdate(user.username, bookmarks(user)))
@@ -236,6 +236,26 @@ class UserSettingsDatabase(val db:DB, broadcaster:Broadcaster) {
     db.inTransaction {
       writer => {
         writer.insert("UserSystemInfo", Map("starlingUser" -> userName, "logOnTime" -> timestamp, "info" -> info.toString))
+      }
+    }
+  }
+
+  def deleteUserReport(user:User, reportName:String) {
+    val userName = user.username.take(colSize)
+    db.inTransaction {
+      writer => {
+        writer.delete("UserReports", ("starlingUser" eql LiteralString(userName)) and ("reportName" eql LiteralString(reportName)))
+      }
+    }
+  }
+
+  def saveUserReport(user:User, reportName0:String, data:UserReportData, showParameters:Boolean) {
+    val username = user.username.take(colSize)
+    val reportName = reportName0.take(colSize)
+    db.inTransaction {
+      writer => {
+        writer.insert("UserReports", Map("starlingUser" -> username, "reportName" -> reportName,
+          "report" -> StarlingXStream.write(data), "showParameters" -> showParameters))
       }
     }
   }

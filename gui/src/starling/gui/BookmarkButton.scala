@@ -1,7 +1,7 @@
 package starling.gui
 
-import api.{BookmarksUpdate, BookmarkLabel}
-import pages.{DeleteBookmarkRequest, SaveBookmarkRequest, NavigationButton}
+import api.{UserReportData, BookmarksUpdate, BookmarkLabel}
+import pages.NavigationButton
 import swing.event.ButtonClicked
 import starling.pivot.view.swing.MigPanel
 import javax.swing.BorderFactory
@@ -9,9 +9,12 @@ import javax.swing.event.{DocumentEvent, DocumentListener}
 import swing._
 import java.awt.{Dimension, Color}
 import xstream.GuiStarlingXStream
+import starling.rmi.StarlingServer
+import starling.pivot.PivotLayout
 
 class BookmarkButton(currentBookmark: => Bookmark, pageContext:PageContext) extends NavigationButton {
-  val noBookmarkIcon = StarlingIcons.icon("/icons/22x22_empty_bookmark.png")
+//  val noBookmarkIcon = StarlingIcons.icon("/icons/22x22_empty_bookmark.png")
+  val noBookmarkIcon = StarlingIcons.icon("/icons/22x22_empty_star.png")
   val bookmarkedIcon = StarlingIcons.icon("/icons/22x22_bookmark.png")
 
   def setSavePanel(setup:Boolean) {
@@ -46,6 +49,24 @@ class BookmarkButton(currentBookmark: => Bookmark, pageContext:PageContext) exte
           def saveBookmark(a:Unit) {
             val bookmark = GuiStarlingXStream.write(currentBookmark)
             pageContext.submit(SaveBookmarkRequest(BookmarkLabel(bookmarkName, bookmark)))
+
+            // This is a hack to save the report to the server as well as the bookmark.
+            currentBookmark match {
+              case rb:ReportBookmark => {
+                def saveReport(a:Unit) {
+                  val userReportData = rb.userReportData
+                  val pivotLayout = rb.pivotPageState.pivotFieldParams.pivotFieldState match {
+                    case None => throw new Exception("I should have a layout at this stage")
+                    case Some(pfs) => PivotLayout("special-" + bookmarkName, pfs, true,
+                      rb.pivotPageState.otherLayoutInfo, "special", Nil)
+                  }
+                  pageContext.submit(SaveReportRequest(bookmarkName, userReportData, pivotLayout, true, true, true))
+                }
+                pageContext.submit(DeleteReportRequest(bookmarkName), saveReport)
+              }
+              case _ =>
+            }
+
             clearUp()
           }
           pageContext.submit(DeleteBookmarkRequest(bookmarkName), saveBookmark)
@@ -90,6 +111,20 @@ class BookmarkButton(currentBookmark: => Bookmark, pageContext:PageContext) exte
               val bookmark = GuiStarlingXStream.write(currentBookmark)
               val bookmarkLabel = BookmarkLabel(bookmarkName, bookmark)
               pageContext.submit(SaveBookmarkRequest(bookmarkLabel))
+
+              currentBookmark match {
+                case rb:ReportBookmark => {
+                  val userReportData = rb.userReportData
+                  val pivotLayout = rb.pivotPageState.pivotFieldParams.pivotFieldState match {
+                    case None => throw new Exception("I should have a layout at this stage")
+                    case Some(pfs) => PivotLayout("special-" + bookmarkName, pfs, true,
+                      rb.pivotPageState.otherLayoutInfo, "special", Nil)
+                  }
+                  pageContext.submit(SaveReportRequest(bookmarkName, userReportData, pivotLayout, true, true, true))
+                }
+                case _ =>
+              }
+
               clearUp()
             } else {
               // Show a replace dialog.
@@ -180,4 +215,31 @@ class BookmarkButton(currentBookmark: => Bookmark, pageContext:PageContext) exte
     }
   }
   listenTo(pageContext.remotePublisher)
+}
+
+case class SaveBookmarkRequest(savedBookmark:BookmarkLabel) extends SubmitRequest[Unit] {
+  def submit(server:StarlingServer) {server.saveBookmark(savedBookmark)}
+}
+
+case class DeleteBookmarkRequest(name:String) extends SubmitRequest[Unit] {
+  def submit(server:StarlingServer) {server.deleteBookmark(name)}
+}
+
+case class SaveReportRequest(reportName:String, userReportData:UserReportData, pivotLayout:PivotLayout,
+                             shouldSaveLayout:Boolean, shouldAssociateLayout:Boolean, showParameters:Boolean) extends SubmitRequest[Unit] {
+  def submit(server:StarlingServer) {
+    server.saveUserReport(reportName, userReportData, showParameters)
+    if (shouldSaveLayout && shouldAssociateLayout) {
+      // This is the case where it is a custom layout so we want to save the layout and associate it with this report
+      server.saveLayout(pivotLayout.copy(associatedReports = List(reportName)))
+    } else if (shouldAssociateLayout) {
+      // This is the case where the layout is already saved but we want to associate it with this report.
+      server.deleteLayout(pivotLayout.layoutName)
+      server.saveLayout(pivotLayout.copy(associatedReports = reportName :: pivotLayout.associatedReports))
+    }
+  }
+}
+
+case class DeleteReportRequest(reportName:String) extends SubmitRequest[Unit] {
+  def submit(server:StarlingServer) {server.deleteUserReport(reportName)}
 }

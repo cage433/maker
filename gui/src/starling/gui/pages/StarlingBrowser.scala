@@ -966,6 +966,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
                       forwardSlideClient.setX(-width)
                       refreshButtonStatus
                       onEDT({
+                        bookmarkButton.refresh()
                         setScreenLocked(false)
                         forwardSlideClient.reset
                         sortOutFocus
@@ -1109,7 +1110,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
     }
   }
 
-  def showPage(pageInfo: PageInfo, requestFocus:Boolean=true) {
+  def showPage(pageInfo: PageInfo, buildingPage:Boolean=true) {
     // Get any state from the component and save it.
     for (pI <- history) {
       if (pI != pageInfo) {
@@ -1163,7 +1164,9 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
     mainPanel.revalidate()
     mainPanel.repaint()
 
-    bookmarkButton.refresh()
+    if (buildingPage) {
+      bookmarkButton.refresh()
+    }
 
     // We don't want to keep components hanging about as they take up a lot of memory.
     for (i <- 0 to (current - componentBufferWindow)) {
@@ -1174,7 +1177,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
     }
 
     // Let the page know that it has been shown.
-    if (requestFocus) {
+    if (buildingPage) {
       onEDT(sortOutFocus)
     }
   }
@@ -1341,12 +1344,4 @@ class NavigationButton extends Button {
   focusable = false
   background = GuiUtils.ClearColour
   opaque = false
-}
-
-case class SaveBookmarkRequest(savedBookmark:BookmarkLabel) extends SubmitRequest[Unit] {
-  def submit(server:StarlingServer) {server.saveBookmark(savedBookmark)}
-}
-
-case class DeleteBookmarkRequest(name:String) extends SubmitRequest[Unit] {
-  def submit(server:StarlingServer) {server.deleteBookmark(name)}
 }

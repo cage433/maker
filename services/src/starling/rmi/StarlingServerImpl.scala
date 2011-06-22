@@ -619,6 +619,7 @@ class StarlingServerImpl(
   def version = versionInfo
 
   def deskCloses = tradeStores.closedDesks.closedDesksByDay
+  def latestTradeTimestamp(desk:Desk):TradeTimestamp = tradeStores.closedDesks.latestTradeTimestamp(desk)
 
   def intradayLatest = tradeStores.intradayTradeStore.intradayLatest
   def clearCache = reportService.clearCache
@@ -739,22 +740,7 @@ class StarlingServerImpl(
   def saveBookmark(bookmark:BookmarkLabel) {userSettingsDatabase.saveBookmark(User.currentlyLoggedOn, bookmark)}
   def bookmarks = userSettingsDatabase.bookmarks(User.currentlyLoggedOn)
 
-  def createTradeSelectionBookmarkData(tpp:TradePageParameters) = {
-    val desk = tpp.deskAndTimestamp.map(_._1)
-    val intradayGroups = tpp.intradaySubgroupAndTimestamp.map(_._1)
-    val baseDay = Day.today()
-    val tradeVersionOffsetOrLatest = userReportsService.tradeVersionOffsetOrLatest(baseDay, tpp.deskAndTimestamp)
-    val liveOnOffsetOrStartOfYear = userReportsService.liveOnOffsetOrStartOfYear(baseDay, tpp.expiry.exp)
-    TradeSelectionBookmarkData(desk, intradayGroups, tradeVersionOffsetOrLatest, liveOnOffsetOrStartOfYear)
-  }
-  def createTradePageParameters(d:TradeSelectionBookmarkData, baseDay:Day) = {
-    val deskAndTimestamp = d.desk.map(desk => {
-      val bookClose = userReportsService.bookCloseDay(Some(desk), d.tradeVersionOffSetOrLatest, baseDay)
-      (desk, bookClose.get)
-    })
-    val intradaySubgroupAndTimestamp = userReportsService.intradaySubgroupAndTimestamp(d.intradayGroups)
-    val tradeExpiry = userReportsService.tradeExpiryDay(baseDay, d.liveOnOffSetOrStartOfYear)
-
-    TradePageParameters(deskAndTimestamp, intradaySubgroupAndTimestamp, TradeExpiryDay(tradeExpiry))
-  }
+  def saveUserReport(reportName:String, data:UserReportData, showParameters:Boolean) =
+    userSettingsDatabase.saveUserReport(User.currentlyLoggedOn, reportName, data, showParameters)
+  def deleteUserReport(reportName:String) = userSettingsDatabase.deleteUserReport(User.currentlyLoggedOn, reportName)
 }

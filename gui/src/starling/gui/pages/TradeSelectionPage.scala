@@ -104,16 +104,44 @@ case class TradeSelectionPage(
   }
 
   override def bookmark(server:StarlingServer):Bookmark = {
-    val d = server.createTradeSelectionBookmarkData(tpp)
-    TradeSelectionBookmark(d, pivotPageState)
+    val today = Day.today()
+    val isLatestLiveOn = tpp.expiry.exp == today
+    val latestTimestamp = tpp.deskAndTimestamp.map{case (desk, t) => (t, server.latestTradeTimestamp(desk))}
+    val isLatestBookClose = latestTimestamp match {
+      case Some((t1,t2)) => t1 == t2
+      case _ => true
+    }
+
+    if (isLatestLiveOn && isLatestBookClose) {
+      TradeSelectionBookmark(tpp, pivotPageState, false)
+    } else {
+      val isLiveOnStartOfYear = latestTimestamp match {
+        case Some((ts, _)) => ts.closeDay.startOfFinancialYear == tpp.expiry.exp
+        case None => today.startOfFinancialYear == tpp.expiry.exp
+      }
+      if (isLiveOnStartOfYear && isLatestBookClose) {
+        TradeSelectionBookmark(tpp, pivotPageState, true)
+      } else {
+        PageBookmark(this)
+      }
+    }
   }
 }
 
-case class TradeSelectionBookmark(data:TradeSelectionBookmarkData, pivotPageState:PivotPageState) extends Bookmark {
-  def daySensitive = true
+case class TradeSelectionBookmark(tpp:TradePageParameters, pivotPageState:PivotPageState, useStartOfYear:Boolean) extends Bookmark {
+  def daySensitive = false
   def createPage(day:Option[Day], server:StarlingServer, context:PageContext) = {
-    val d = server.createTradePageParameters(data, day.get)
-    TradeSelectionPage(d, pivotPageState)
+    val latestBookClose = tpp.deskAndTimestamp.map{case (desk,_) => (desk, context.localCache.latestTimestamp(desk).get)}
+    val today = Day.today()
+    val tradesLiveOn = if (useStartOfYear) {
+      latestBookClose match {
+        case Some((_,timestamp)) => timestamp.closeDay.startOfFinancialYear
+        case _ => today.startOfFinancialYear
+      }
+    } else {
+      today
+    }
+    TradeSelectionPage(tpp.copy(deskAndTimestamp = latestBookClose, expiry = TradeExpiryDay(tradesLiveOn)), pivotPageState)
   }
 }
 
