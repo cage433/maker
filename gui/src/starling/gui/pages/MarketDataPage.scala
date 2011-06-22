@@ -74,13 +74,31 @@ case class MarketDataPage(
   }
 
   override def bookmark(server:StarlingServer):Bookmark = {
-    MarketDataBookmark(marketDataIdentifier, pageState)
+    val singleObservationDay = pageState.pivotPageState.pivotFieldParams.pivotFieldState match {
+      case None => false
+      case Some(pfs) => {
+        pfs.fieldSelection(Field("Observation Day")) match {
+          case Some(s) if s.size == 1 => true
+          case _ => false
+        }
+      }
+    }
+    if (singleObservationDay && marketDataIdentifier.isCurrent) {
+      MarketDataBookmark(marketDataIdentifier, pageState)
+    } else {
+      PageBookmark(this)
+    }
   }
 }
 
 case class MarketDataBookmark(marketDataIdentifier:MarketDataPageIdentifier, pageState:MarketDataPageState) extends Bookmark {
-  def daySensitive = false // TODO - make this day sensitive
-  def createPage(day:Option[Day], server:StarlingServer, context:PageContext) = MarketDataPage(marketDataIdentifier, pageState)
+  def daySensitive = true
+  def createPage(day:Option[Day], server:StarlingServer, context:PageContext) = {
+    pageState.pivotPageState.pivotFieldParams.pivotFieldState.map(pfs => {
+      pfs.addFilter((Field("Observation Day"), Set(day.get)))
+    })
+    MarketDataPage(marketDataIdentifier, pageState)
+  }
 }
 
 object MarketDataPage {

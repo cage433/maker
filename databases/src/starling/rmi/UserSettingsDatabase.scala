@@ -35,7 +35,7 @@ class UserSettingsDatabase(val db:DB, broadcaster:Broadcaster) {
   def readAll() {
     allSettings
     allPivotLayouts
-    allUserReports
+    allBookmarks
   }
 
   def allSettings:List[UserSettings] = {
@@ -152,13 +152,6 @@ class UserSettingsDatabase(val db:DB, broadcaster:Broadcaster) {
     }
   }
 
-  def bookmarks(user:User):List[BookmarkLabel] = {
-    val userName = user.username.take(colSize)
-    db.queryWithResult("SELECT * FROM Bookmarks where starlingUser = :user", Map("user" -> userName)) {
-      rs => BookmarkLabel(rs.getString("bookmarkName"), rs.getString("bookmark"))
-    }
-  }
-
   def findReport(user:User, reportName:String) = {
     val userReportPairs = allUserReports.toList.flatMap{ case(username, reports) => reports.map(r=>(username, r)) }
     userReportPairs.find { case(un, report) => un==user.username && report.reportName==reportName }.map(_._2)
@@ -171,6 +164,23 @@ class UserSettingsDatabase(val db:DB, broadcaster:Broadcaster) {
         val report = UserReport(rs.getString("reportName"), StarlingXStream.read(rs.getString("report")).asInstanceOf[UserReportData],
           rs.getBoolean("showParameters"))
         (user, report)
+      }
+    }.groupBy(_._1).mapValues(_.map(_._2))
+  }
+
+  def bookmarks(user:User):List[BookmarkLabel] = {
+    val userName = user.username.take(colSize)
+    db.queryWithResult("SELECT * FROM Bookmarks where starlingUser = :user", Map("user" -> userName)) {
+      rs => BookmarkLabel(rs.getString("bookmarkName"), rs.getString("bookmark"))
+    }
+  }
+
+  def allBookmarks:Map[String, List[BookmarkLabel]] = {
+    db.queryWithResult("SELECT * FROM Bookmarks", Map()) {
+      rs => {
+        val user = rs.getString("starlingUser")
+        val bookmark = BookmarkLabel(rs.getString("bookmarkName"), rs.getString("bookmark"))
+        (user, bookmark)
       }
     }.groupBy(_._1).mapValues(_.map(_._2))
   }

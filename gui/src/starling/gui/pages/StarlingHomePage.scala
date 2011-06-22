@@ -46,6 +46,7 @@ class StarlingHomePageComponent(context:PageContext, browserSize:Dimension, page
     val valuationDayChooser = new DayChooser(enableFlags = false) {
       background = bkColour
       enabled = valuationDayShouldBeEnabled
+      day = day.previousWeekday
     }
 
     def deleteBookmark() {

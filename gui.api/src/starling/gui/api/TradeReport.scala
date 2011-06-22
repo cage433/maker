@@ -42,6 +42,7 @@ trait MarketDataPageIdentifier {
   def filteredMarketData:Boolean
   def selection:MarketDataSelection = marketDataIdentifier.selection
   def marketDataIdentifier:MarketDataIdentifier
+  def isCurrent:Boolean = marketDataIdentifier.isCurrent
 }
 case class StandardMarketDataPageIdentifier(marketDataIdentifier:MarketDataIdentifier) extends MarketDataPageIdentifier {
   def filteredMarketData = false
@@ -55,6 +56,10 @@ case class MarketDataIdentifier(selection: MarketDataSelection, marketDataVersio
   def isNull = selection.isNull
   def pricingGroupMatches(predicate : PricingGroup => Boolean) = selection.pricingGroupMatches(predicate)
   def copyVersion(version: Int) = copy(marketDataVersion = SpecificMarketDataVersion(version))
+  def isCurrent:Boolean = marketDataVersion match {
+    case x:SpecificMarketDataVersion => true
+    case _ => false
+  }
 }
 
 object MarketDataIdentifier {

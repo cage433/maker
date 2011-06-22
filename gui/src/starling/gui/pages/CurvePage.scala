@@ -80,19 +80,15 @@ case class CurvePage(curveLabel: CurveLabel, pivotPageState: PivotPageState) ext
   }
 
   override def bookmark(server:StarlingServer):Bookmark = {
-    val observationDay = curveLabel.environmentSpecification.observationDay
-    val today = Day.today()
-    val offset = today.weekdaysBetween(observationDay)
-    CurveBookmark(curveLabel, pivotPageState, offset)
+    CurveBookmark(curveLabel, pivotPageState)
   }
 }
 
-case class CurveBookmark(curveLabel:CurveLabel, pivotPageState:PivotPageState, offset:Int) extends Bookmark {
+case class CurveBookmark(curveLabel:CurveLabel, pivotPageState:PivotPageState) extends Bookmark {
   def daySensitive = true
   def createPage(day0:Option[Day], server:StarlingServer, context:PageContext) = {
     val day = day0.get
-    val newObservationDay = day.addWeekdays(offset)
-    val newEnvironmentSpecification = curveLabel.environmentSpecification.copy(observationDay = newObservationDay)
+    val newEnvironmentSpecification = curveLabel.environmentSpecification.copy(observationDay = day)
     val newCurveLabel = curveLabel.copy(environmentSpecification = newEnvironmentSpecification)
     CurvePage(newCurveLabel, pivotPageState)
   }
