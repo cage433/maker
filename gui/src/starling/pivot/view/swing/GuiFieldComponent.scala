@@ -398,6 +398,14 @@ case class GuiFieldNamePanel(props:GuiFieldComponentProps, guiComp:GuiFieldCompo
     }
   }
 
+  def clearImage() {
+    dragging = false
+    display = true
+    props.tableView.fieldBeingDragged = false
+    props.viewUI.resetImageProperties()
+    repaint()
+  }
+
   def reset() {
     dragging = false
     display = true
