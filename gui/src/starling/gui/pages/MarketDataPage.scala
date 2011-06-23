@@ -366,7 +366,7 @@ class MarketDataPageComponent(
 
   private val importButton = new Button {
     val observationDay = Day.today.previousWeekday
-    enabled = true
+    enabled = !thisPage.marketDataIdentifier.selection.isNull
     tooltip = "Import and snapshot market data for previous weekday"
     icon = StarlingIcons.icon("/icons/14x14_download_data.png")
 

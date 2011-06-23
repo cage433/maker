@@ -8,6 +8,8 @@ object Pattern {
     def unapply(a: A) = f(a)
     def unapply[C](ta: Traversable[A])(implicit g: Flattener[B, C]): Option[C] = g(ta.view.map(f))
 
+    def compose[C](g: C => A) = new Extractor[C, B](f compose g)
+
     object Pick {
       def unapply(ta: Traversable[A]) = pick(ta)(f)
     }

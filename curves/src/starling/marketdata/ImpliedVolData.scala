@@ -3,7 +3,6 @@ package starling.marketdata
 
 import collection.SortedMap
 import starling.quantity.{UOM, Percentage}
-import starling.utils.{OrderedComparable}
 import starling.daterange.{DateRange, Day}
 import starling.market.{InterestRateMarket, Market, FXMarket, HasImpliedVol}
 import collection.immutable.TreeMap

@@ -576,11 +576,10 @@ class DBMarketDataStore(db: DBTrait[RichResultSetRow], val marketDataSources: Ma
 
   private def marketDataSets(marketDataIdentifier:MarketDataIdentifier):List[MarketDataSet] = marketDataSets(marketDataIdentifier.selection)
 
-  def marketDataSets(marketDataSelection:MarketDataSelection):List[MarketDataSet] = {
-    val pgmds:List[MarketDataSet] = marketDataSelection.pricingGroup.toList.flatMap {
-      pgl=> pricingGroupsDefinitions(PricingGroup(pgl.name))
-    }
-    val excelmds:List[MarketDataSet] = marketDataSelection.excel.toList.map(excel=>MarketDataSet.excel(excel))
+  def marketDataSets(marketDataSelection: MarketDataSelection): List[MarketDataSet] = {
+    val pgmds = marketDataSelection.pricingGroup.flatMapL(pgl => pricingGroupsDefinitions(PricingGroup(pgl.name)))
+    val excelmds = marketDataSelection.excel.toList.map(MarketDataSet.excel(_))
+
     excelmds ::: pgmds
   }
 

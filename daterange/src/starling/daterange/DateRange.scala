@@ -1,5 +1,4 @@
 package starling.daterange
-import starling.utils.OrderedComparable
 import collection.IterableView
 import starling.calendar.BusinessCalendar
 import starling.utils.cache.CacheFactory
@@ -9,7 +8,7 @@ import starling.utils.cache.CacheFactory
  * IterableView is implemented purely to avoid a problem with using days in the repl.
  * see https://lampsvn.epfl.ch/trac/scala/ticket/3710#comment:14
  */
-trait DateRange extends Iterable[Day] with OrderedComparable[DateRange] with IterableView[Day, Seq[Day]]{
+trait DateRange extends Iterable[Day] with Ordered[DateRange] with IterableView[Day, Seq[Day]]{
   
   def firstDay : Day
   def lastDay : Day

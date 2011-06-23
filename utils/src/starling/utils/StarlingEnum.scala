@@ -1,7 +1,10 @@
 package starling.utils
 
-import starling.utils.ImplicitConversions._
 import java.lang.reflect.Method
+
+import starling.utils.ImplicitConversions._
+import starling.utils.Pattern._
+
 
 trait Named {
   def name(): String
@@ -22,6 +25,7 @@ class StarlingEnum[T <: Named](theType:Class[T], ignoreCase: Boolean = false) {
   def fromName(name: String) = find(name).getOrElse(throwUnknown(name))
   def fromName(name: Option[String]): Option[T] = name.map(fromName)
   def find(name: String) = valuesByName.get(toCase(name))
+  val Parse: Extractor[Any, T] = Extractor.from[Any](value => find((value ?? "").toString))
 
   private def toCase(name: String) = if (ignoreCase) name.toLowerCase else name
   private def isFieldAccessor(method: Method) = method.getReturnType == theType && method.getParameterTypes.isEmpty

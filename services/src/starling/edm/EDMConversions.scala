@@ -1,17 +1,32 @@
 package starling.edm
 
-import com.trafigura.edm.shared.types.{Quantity => EDMQuantity, CompoundUOM, UnitComponent, FundamentalUOM}
+import com.trafigura.edm.shared.types.{Quantity => EDMQuantity, Currency => ECurrency, Percentage => EPercentage,
+                                       CompoundUOM, UnitComponent, FundamentalUOM}
 import com.trafigura.edm.marketdata.{MarketDataRow, MarketDataResponse}
 
-import starling.quantity.{UOM, Quantity}
-
 import starling.quantity.UOMSymbol._
-import starling.daterange.{SimpleDateRange, DateRange, Day}
+import starling.daterange.{Tenor, SimpleDateRange, DateRange, Day}
+
+import starling.utils.ImplicitConversions._
+import starling.quantity.{UOMSymbol, Percentage, UOM, Quantity}
+
+case class EMaturity(value: String)
 
 object EDMConversions {
   implicit def enrichQuantity(q: Quantity) = new {
     def toEDM = toEDMQuantity(q)
   }
+  implicit def enrichTenor(tenor: Tenor) = new {
+    def toEDM = EMaturity(tenor.toString)
+  }
+  implicit def enrichUOM(uom: UOM) = new {
+    def toCurrency = enrichFundamentalUOM(toEDM).toCurrency
+    def toEDM = starlingUomToEdmUom(uom)
+  }
+  implicit def enrichPercentage(percentage: Percentage) = new {
+    def toEDM = EPercentage(Some(percentage.value))
+  }
+
   implicit def enrichEDMQuantity(q: EDMQuantity) = new {
     def fromEDM = fromEDMQuantity(q)
   }
@@ -26,6 +41,7 @@ object EDMConversions {
   }
   implicit def enrichFundamentalUOM(uom: com.trafigura.edm.shared.types.FundamentalUOM) = new {
     def fromEDM = edmToStarlingUomSymbol(uom).asUOM
+    def toCurrency: ECurrency = ECurrency().update(_.name = uom.name)
   }
 
   def fromEDMQuantity(q : EDMQuantity) : Quantity = {
@@ -46,15 +62,14 @@ object EDMConversions {
       case (starlingUOMSymbol, power) => UnitComponent(
         oid = 0,
         exponent = power,
-        fundamental = starlingToEdmUom.getOrElse(starlingUOMSymbol, FundamentalUOM(starlingUOMSymbol.toString))
+        fundamental = starlingUomSymbolToEdmUom.getOrElse(starlingUOMSymbol, FundamentalUOM(starlingUOMSymbol.toString))
        )
     }.toList
 
     EDMQuantity(Some(q.value), CompoundUOM(unitComponents))
   }
 
-  // EDM UOM to Starling UOM
-  val starlingToEdmUom = Map(
+  val starlingUomSymbolToEdmUom = Map(
     gbp -> "GBP",
     usd -> "USD",
     jpy -> "JPY",
@@ -63,5 +78,6 @@ object EDMConversions {
     POUND_SYMBOL -> "LBS"
   ).mapValues(FundamentalUOM(_))
 
-  val edmToStarlingUomSymbol = starlingToEdmUom.map(_.swap)
+  val starlingUomToEdmUom: Map[UOM, FundamentalUOM] = starlingUomSymbolToEdmUom.mapKeys(_.asUOM)
+  val edmToStarlingUomSymbol: Map[FundamentalUOM, UOMSymbol] = starlingUomSymbolToEdmUom.map(_.swap)
 }

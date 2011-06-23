@@ -67,9 +67,9 @@ class RichResultSetRow(resultSet: ResultSet)
 
   def getFuturesMarket(column: String) = FuturesMarket.fromName(getString(column))
 
-  def getFuturesSpreadMarket(column: String) = FuturesSpreadMarket.find(getString(column)) match {
-    case Some(m) => m
-    case None => throw new Exception("Not a recognised futures spread market: " + getString(column))
+  def getFuturesSpreadMarket(column: String) = getString(column) match {
+    case FuturesSpreadMarket.Parse(market) => market
+    case unknown => throw new Exception("Not a recognised futures spread market: " + unknown)
   }
 
   def getForwardMarket(column: String) = Market.forwardMarketFromName(getString(column))

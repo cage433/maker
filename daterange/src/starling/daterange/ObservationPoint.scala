@@ -1,7 +1,7 @@
 package starling.daterange
 
 import starling.utils.ImplicitConversions._
-import starling.utils.{Named, StarlingEnum, OrderedComparable}
+import starling.utils.{Named, StarlingEnum}
 
 case class ObservationPoint(point:Option[(Day,ObservationTimeOfDay)]) {
   def this(day:Day) = this(Some((day, ObservationTimeOfDay.Default)))
@@ -36,7 +36,7 @@ object ObservationPoint {
   }
 }
 
-case class ObservationTimeOfDay(name:String) extends OrderedComparable[ObservationTimeOfDay] with Named {
+case class ObservationTimeOfDay private (name: String) extends Ordered[ObservationTimeOfDay] with Named {
   override def toString = name
   def compare(that: ObservationTimeOfDay) = {
     val lhsIndex = ObservationTimeOfDay.sortIndex(that)

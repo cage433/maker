@@ -11,7 +11,7 @@ import starling.utils.Pattern._
 object UOM {
   def apply(numerator : Long, denominator : Long) : UOM = UOM(Ratio(1,1), Ratio(numerator, denominator))
 
-  val Parse = Extractor.from[String](fromStringOption)
+  val Parse = Extractor.from[Any](value => fromStringOption(value.toString))
 
   import UOMSymbol._
   val NULL = UOM.build(0, 1)

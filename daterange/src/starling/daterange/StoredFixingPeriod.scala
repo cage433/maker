@@ -27,7 +27,7 @@ object Tenor {
     case "ON" :: _ => Tenor.ON
     case "SN" :: _ => Tenor.SN
     case List(_, value, tenorType) => Tenor(TenorType.typesByShortName(tenorType), value.toInt)
-  }
+  } compose ((any: Any) => any.toString)
 
   /**
    * Value doesn't mean anything outside the context of a particular index. It is used just for
