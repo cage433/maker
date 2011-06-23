@@ -321,7 +321,10 @@ class TradeSelectionComponent(
 
   private val refreshTradesButton = new Button {
     enabled = {
-      deskCheckBox.selected && deskCombo.selection.item == Desk.GasolineSpec
+      deskCheckBox.selected && {
+        deskCombo.selection.item == Desk.GasolineSpec ||
+        deskCombo.selection.item == Desk.LondonDerivatives
+      }
     }
     icon = StarlingIcons.icon("/icons/14x14_download_data.png")
     tooltip = "Force book close"
