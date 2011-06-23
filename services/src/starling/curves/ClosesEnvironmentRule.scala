@@ -43,7 +43,7 @@ object ClosesEnvironmentRule extends EnvironmentRule {
         }
       }
 
-      def fixings(key : PriceFixingsHistoryDataKey, observationPoint: ObservationPoint) = throw new Exception("Not implemented")
+      def fixings(key : PriceFixingsHistoryDataKey, observationPoint: ObservationPoint): PriceFixingsHistoryData = key.read(observationPoint, marketDataReader)
     }
 
     val marketsX = {

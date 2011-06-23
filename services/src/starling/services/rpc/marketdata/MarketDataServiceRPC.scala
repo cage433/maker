@@ -18,7 +18,6 @@ import org.jboss.resteasy.client.{ClientExecutor, ProxyFactory}
 import com.trafigura.services.referencedata.ReferenceData
 import com.trafigura.tradecapture.internal.refinedmetalreferencedataservice._
 import com.trafigura.edm.physicaltradespecs.{PhysicalTradeSpec, QuotaDetail, EDMQuota}
-import javax.management.remote.rmi._RMIConnection_Stub
 import com.trafigura.edm.trades.PhysicalTrade
 import com.trafigura.tradecapture.internal.refinedmetal.{Market, Metal}
 import starling.props.{Props, PropsHelper}
@@ -27,26 +26,24 @@ import com.trafigura.tradecapture.internal.refinedmetalreferencedataservice.{Tra
 import com.trafigura.services.security.ComponentTestClientExecutor
 import com.trafigura.services.security._
 import com.trafigura.timer.Timer._
-import java.lang.Thread
 import java.io._
-import xml.Source
-import starling.curves.{Environment, NullAtomicEnvironment}
-import org.apache.commons.io.FileUtils
-import org.codehaus.jettison.json.JSONObject
 import com.trafigura.tradinghub.support.{JSONConversions, GUID, ServiceFilter}
 import starling.utils.{Stopwatch, StarlingXStream, Log}
-import org.apache.commons.codec.net.QCodec
 import com.trafigura.edm.tradeservice.{TradeResults, EdmGetTradesResource, EdmGetTradesResourceProxy, EdmGetTrades}
-import starling.db.{SnapshotID, MarketDataStore}
-import starling.instrument.PhysicalMetalForward
 import starling.services.{StarlingInit, Server}
+import starling.instrument.{CostsAndIncomeQuotaValuation, PhysicalMetalForward}
+import com.trafigura.edm.trades.{Trade => EDMTrade, PhysicalTrade => EDMPhysicalTrade}
+import starling.db.{NormalMarketDataReader, SnapshotID, MarketDataStore}
+import starling.curves.{ClosesEnvironmentRule, Environment, NullAtomicEnvironment}
+import java.lang.{IllegalStateException, Thread}
 
 /**
  * Generic Market data service, covering all market data
  */
-class MarketDataServiceRPC(marketDataStore: MarketDataStore, val props : Props) extends MarketDataService {
+class MarketDataServiceRPC(marketDataStore: MarketDataStore, val props: Props) extends MarketDataService {
   implicit def enrichMarketDataRequestParameters(parameters: MarketDataRequestParameters) = new {
     def filterExchange(exchangeNames: String*) = addFilters(MarketDataFilter(exchangeField.name, exchangeNames.toList))
+
     def addFilters(filter: MarketDataFilter*) = parameters.filters = parameters.filters ::: filter.toList
   }
 
@@ -58,19 +55,21 @@ class MarketDataServiceRPC(marketDataStore: MarketDataStore, val props : Props) 
     parameters.notNull("Missing parameters")
 
     val selection = MarketDataSelection(Some(PricingGroup.fromName(parameters.pricingGroup)))
-    val version   = parameters.version.getOrElse(marketDataStore.latest(selection))
-    val pivot     = marketDataStore.pivot(MarketDataIdentifier(selection, version), MarketDataTypes.fromName(parameters.dataType))
-    val filters   = parameters.filters.map(filter => pivot.parseFilter(Field(filter.name), filter.values))
-    val pfs       = PivotFieldsState(fields(parameters.measures), fields(parameters.rows), fields(parameters.columns), filters)
-    val data      = PivotTableModel.createPivotTableData(pivot, Some(pfs)).toFlatRows(Totals.Null)
+    val version = parameters.version.getOrElse(marketDataStore.latest(selection))
+    val pivot = marketDataStore.pivot(MarketDataIdentifier(selection, version), MarketDataTypes.fromName(parameters.dataType))
+    val filters = parameters.filters.map(filter => pivot.parseFilter(Field(filter.name), filter.values))
+    val pfs = PivotFieldsState(fields(parameters.measures), fields(parameters.rows), fields(parameters.columns), filters)
+    val data = PivotTableModel.createPivotTableData(pivot, Some(pfs)).toFlatRows(Totals.Null)
 
     MarketDataResponse(parameters.update(_.version = Some(version)), data.map(row => MarketDataRow(row.map(_.toString))))
-  } catch { case exception => MarketDataResponse(parameters, errors = List(exception.getMessage)) }
+  } catch {
+    case exception => MarketDataResponse(parameters, errors = List(exception.getMessage))
+  }
 
   /**
    * get price fixings for the supplied EDM Quota
    */
-  def getFixings(quota: EDMQuota) : MarketDataResponse = {
+  def getFixings(quota: EDMQuota): MarketDataResponse = {
 
     val mdParams = fixingRequest.update(
       _.addFilters(MarketDataFilter(marketField.name, List("<market>"))),
@@ -84,7 +83,7 @@ class MarketDataServiceRPC(marketDataStore: MarketDataStore, val props : Props) 
   /**
    * valuation of all Edm quotsa service
    */
-  def getAllQuotaValues() : Either[List[Either[EDMQuantity, String]], Boolean] = time(getAllQuotaValuesImpl(), "Took %d ms to execute getAllQuotaValues")
+  def getAllQuotaValues(): Either[List[Either[EDMQuantity, String]], Boolean] = time(getAllQuotaValuesImpl(), "Took %d ms to execute getAllQuotaValues")
 
   private def getAllQuotaValuesImpl() = {
     null
@@ -93,9 +92,9 @@ class MarketDataServiceRPC(marketDataStore: MarketDataStore, val props : Props) 
   /**
    * valuation of an Edm quota service
    */
-  def getQuotaValue(quotaId : String) : EDMQuantity = time(getQuotaValueImpl(quotaId), "Took %d ms to execute getQuotaValue")
+  def getQuotaValue(quotaId: String): EDMQuantity = time(getQuotaValueImpl(quotaId), "Took %d ms to execute getQuotaValue")
 
-  private def getQuotaValueImpl(quotaId : String) : EDMQuantity = {
+  private def getQuotaValueImpl(quotaId: String): EDMQuantity = {
 
     try {
       Log.info("getQuotaValue for %s".format(quotaId))
@@ -123,7 +122,7 @@ class MarketDataServiceRPC(marketDataStore: MarketDataStore, val props : Props) 
       )
     }
     catch {
-      case e : Exception =>  Log.error("getQuotaValue for %s failed, error: ".format(e.getMessage(), e))
+      case e: Exception => Log.error("getQuotaValue for %s failed, error: ".format(e.getMessage(), e))
       throw e
     }
   }
@@ -140,6 +139,7 @@ class MarketDataServiceRPC(marketDataStore: MarketDataStore, val props : Props) 
     measures = names(priceField), filters = List(MarketDataFilter("Observation Day", List(Day.today.toString))))
 
   private def fields(names: List[String]) = names.map(Field(_))
+
   private def names(fields: FieldDetails*) = fields.map(_.name).toList
 
   val rmetadminuser = props.ServiceInternalAdminUser()
@@ -147,7 +147,7 @@ class MarketDataServiceRPC(marketDataStore: MarketDataStore, val props : Props) 
   val refdataServiceURL = props.TacticalRefDataServiceUrl()
 
 
-  private def quotaById(id : String) = {
+  private def quotaById(id: String) = {
 
     if (titanEdmQuotaDetailByIdentifier.contains(id)) {
       titanEdmQuotaDetailByIdentifier(id)
@@ -159,15 +159,15 @@ class MarketDataServiceRPC(marketDataStore: MarketDataStore, val props : Props) 
     }
   }
 
-  lazy val futuresMarketByGUID : Map[GUID, Metal] = Map[GUID, Metal]() ++ allTacticalRefDataFuturesMarkets.map(e => (e.guid , e))
-  lazy val futuresExchangeByGUID : Map[GUID, Market] = Map[GUID, Market]() ++ allTacticalRefDataExchanges.map(e => (e.guid , e))
+  lazy val futuresMarketByGUID: Map[GUID, Metal] = Map[GUID, Metal]() ++ allTacticalRefDataFuturesMarkets.map(e => (e.guid, e))
+  lazy val futuresExchangeByGUID: Map[GUID, Market] = Map[GUID, Market]() ++ allTacticalRefDataExchanges.map(e => (e.guid, e))
 
   // set up a client executor and edm trade proxy
-  def readAllTradesFromTitan() : List[PhysicalTrade] = {
-    def titanTradeResults() : TradeResults = titanGetEdmTradesService.getAll()
-    var tr : TradeResults = TradeResults(cached = false)
+  def readAllTradesFromTitan(): List[PhysicalTrade] = {
+    def titanTradeResults(): TradeResults = titanGetEdmTradesService.getAll()
+    var tr: TradeResults = TradeResults(cached = false)
     val sw = new Stopwatch()
-    while (tr.cached == false){
+    while (tr.cached == false) {
       println("Waitng for trades " + sw)
       Thread.sleep(5000)
       tr = titanTradeResults()
@@ -176,41 +176,92 @@ class MarketDataServiceRPC(marketDataStore: MarketDataStore, val props : Props) 
   }
 
 
-  private lazy val clientExecutor : ClientExecutor = new ComponentTestClientExecutor(rmetadminuser)
+  private lazy val clientExecutor: ClientExecutor = new ComponentTestClientExecutor(rmetadminuser)
 
-  private lazy val titanGetEdmTradesService : EdmGetTrades = new EdmGetTradesResourceProxy(ProxyFactory.create(classOf[EdmGetTradesResource], tradeServiceURL, clientExecutor))
-  private lazy val tacticalRefdataMetalsService : MetalService = new MetalServiceResourceProxy(ProxyFactory.create(classOf[MetalServiceResource], refdataServiceURL, clientExecutor))
-  private lazy val tacticalRefdataMarketsService : MarketService = new MarketServiceResourceProxy(ProxyFactory.create(classOf[MarketServiceResource], refdataServiceURL, clientExecutor))
+  private lazy val titanGetEdmTradesService: EdmGetTrades = new EdmGetTradesResourceProxy(ProxyFactory.create(classOf[EdmGetTradesResource], tradeServiceURL, clientExecutor))
+  private lazy val tacticalRefdataMetalsService: MetalService = new MetalServiceResourceProxy(ProxyFactory.create(classOf[MetalServiceResource], refdataServiceURL, clientExecutor))
+  private lazy val tacticalRefdataMarketsService: MarketService = new MarketServiceResourceProxy(ProxyFactory.create(classOf[MarketServiceResource], refdataServiceURL, clientExecutor))
+
   def allTacticalRefDataFuturesMarkets() = tacticalRefdataMetalsService.getMetals()
+
   def allTacticalRefDataExchanges() = tacticalRefdataMarketsService.getMarkets()
 
   var titanEdmQuotaDetailByIdentifier = Map[String, QuotaDetail]()
 
 
+  def valueAllQuotas(maybeSnapshotIdentifier : Option[String] = None): Either[List[Either[List[CostsAndIncomeQuotaValuation], String]], String] = {
+    try {
+      val snapshotID = if (maybeSnapshotIdentifier.isDefined) maybeSnapshotIdentifier else mostRecentSnapshotIdentifier()
+      println(snapshotID)
+      if (! snapshotID.isDefined)
+        throw new IllegalStateException("No market data snapshots")
+      val sw = new Stopwatch()
 
-  /**
-   * generic get proxy utils
-   */
-//  private def getProxy[T : Manifest] : String => AnyRef = getProxy[T](clientExecutor) _
-//
-//  private def getProxy[T : Manifest](executor : ClientExecutor)(url : String) : AnyRef = {
-//
-//    val serviceClassName = cname[T]
-//
-//    val serviceClassResource = serviceClassName + "Resource"
-//    val serviceClassResourceProxy = serviceClassResource + "Proxy"
-//    val serviceClazz = Class.forName(serviceClassResource)
-//    val serviceClazzProxy = Class.forName(serviceClassResourceProxy)
-//    val constructor = serviceClazzProxy.getConstructor(serviceClazz)
-//    val proxy = ProxyFactory.create(serviceClazz, url, executor)
-//
-//    constructor.newInstance(proxy.asInstanceOf[AnyRef]).asInstanceOf[AnyRef]
-//  }
-//
-//  def cname[T : Manifest]() = manifest[T].erasure.getName
+      val edmTradeResult = titanGetEdmTradesService.getAll()
+      println("Got Edm Trade result " + edmTradeResult.cached + ", took " + sw)
 
-  
-  def getQuotaValue(quotaId: Int) = null
+      if (!edmTradeResult.cached)
+        Right("Trade Management building trade cache. This takes a few minutes")
+      else {
+        println("Got Edm Trade results " + edmTradeResult.cached + ", trade result count = " + edmTradeResult.results.size)
+        val env = environment(snapshotStringToID(snapshotID.get))
+        val tradeValuer = PhysicalMetalForward.value(futuresExchangeByGUID, futuresMarketByGUID, env, snapshotID.get) _
+
+        val edmTrades: List[EDMPhysicalTrade] = edmTradeResult.results.map(_.trade.asInstanceOf[EDMPhysicalTrade])
+        val valuations = edmTrades.map(tradeValuer)
+
+        val (errors, worked) = valuations.partition(_ match {
+          case Right(x) => true;
+          case _ => false
+        })
+        println("Worked " + worked.size + ", failed " + errors.size + ", took " + sw)
+        errors.foreach{case Right(msg) => println(msg)}
+        Left(valuations)
+      }
+
+    } catch {
+      case ex =>
+        Right(ex.getMessage())
+        throw ex
+    }
+  }
+
+  private val snapshotNameToID = scala.collection.mutable.Map[String, SnapshotID]()
+  val lock = new Object()
+
+  def updateSnapshotCache() {
+    lock.synchronized {
+      marketDataStore.snapshots().foreach {
+        s: SnapshotID =>
+          snapshotNameToID += s.id.toString -> s
+      }
+    }
+  }
+
+  private def mostRecentSnapshotIdentifier() : Option[String] = {
+    updateSnapshotCache()
+    snapshotNameToID.values.toList.sortWith(_>_).headOption.map(_.id.toString)
+  }
+
+  def snapshotStringToID(id: String): SnapshotID = {
+    snapshotNameToID.getOrElse(id, {
+      updateSnapshotCache()
+      assert(snapshotNameToID.contains(id), "Snapshot ID " + id + " not found")
+      snapshotNameToID(id)
+    }
+    )
+  }
+
+  def snapshotIDsForDay(day: Day): List[String] = {
+    snapshotNameToID.filter {
+      case (id, snapshotID) => snapshotID.marketDataSelection.pricingGroup == Some(PricingGroup.Metals)
+    }.map(_._1).toList
+  }
+
+  private def environment(snapshot: SnapshotID): Environment = {
+    val reader = new NormalMarketDataReader(marketDataStore, MarketDataIdentifier(snapshot.marketDataSelection, snapshot.version))
+    ClosesEnvironmentRule.createEnv(snapshot.observationDay, reader).environment
+  }
 }
 
 object MarketDataService extends Application {
@@ -218,37 +269,19 @@ object MarketDataService extends Application {
   lazy val server = StarlingInit.devInstance
   lazy val md = new MarketDataServiceRPC(server.marketDataStore, server.props)
 
-  def valueAllQuotas() = {
-
-    val sw = new Stopwatch()
-
-
-
-    val edmTrades = md.readAllTradesFromTitan()
-    val env = Environment(new NullAtomicEnvironment(Day(2010, 1, 1).endOfDay))
-
-    val tradeValuer = PhysicalMetalForward.value(md.futuresExchangeByGUID, md.futuresMarketByGUID, env, "Dummy Snapshot")_
-
-    val valuations = edmTrades.map(tradeValuer)
-
-    val (errors, worked) = valuations.partition(_ match { case Right(x) => true; case _ => false } )
-    println("Worked " + worked.size + ", failed " + errors.size + ", took " + sw)
-    valuations
-  }
-
-
 
   //readAndStore()
-  valueAllQuotas()
-
+  md.valueAllQuotas(Some("4400"))
 
 
   def readAndStore() {
     new Thread(new Runnable() {
-      def run() {  Server.main(Array()) }
+      def run() {
+        Server.main(Array())
+      }
     }).start()
 
-    while (Server.server == null){
+    while (Server.server == null) {
       Thread.sleep(1000)
     }
 
@@ -256,7 +289,7 @@ object MarketDataService extends Application {
 
     val trades = md.readAllTradesFromTitan()
 
-    val tradeStrings = trades.map(_.toJson())  //  StarlingXStream.write(trades)
+    val tradeStrings = trades.map(_.toJson()) //  StarlingXStream.write(trades)
 
     val fstream = new FileWriter("/tmp/edmtrades.json")
     val out = new BufferedWriter(fstream)
@@ -273,8 +306,8 @@ object MarketDataService extends Application {
  *  this service stub impl that overrides the filter chain with a null implementation
  */
 class MarketDataServiceResourceStubEx()
-    extends MarketDataServiceResourceStub(new MarketDataServiceRPC(Server.server.marketDataStore, Server.server.props), List[ServiceFilter]()) {
+  extends MarketDataServiceResourceStub(new MarketDataServiceRPC(Server.server.marketDataStore, Server.server.props), List[ServiceFilter]()) {
 
   // this is deliberately stubbed out as the exact requirements on permissions and it's implementation for this service is TBD
-  override def requireFilters(filterClasses:String*) {}
+  override def requireFilters(filterClasses: String*) {}
 }

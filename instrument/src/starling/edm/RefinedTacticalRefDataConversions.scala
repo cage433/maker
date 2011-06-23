@@ -59,7 +59,8 @@ object RefinedTacticalRefDataConversions {
 
     exchange.mappingCode match {
       case `LME` => LmeCashSettlementIndex(futuresMarket)
-      case _ => FuturesFrontPeriodIndex(futuresMarket)
+      case `SHFE` | `WUXI` => new FuturesFrontPeriodIndex(futuresMarket){override val level = Level.Settle}
+      case _ => new FuturesFrontPeriodIndex(futuresMarket)
     }
 
   }

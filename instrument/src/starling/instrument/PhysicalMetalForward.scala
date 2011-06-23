@@ -182,7 +182,7 @@ object PhysicalMetalForward{
       }
       PhysicalMetalForward(trade.tradeId, quotas, isPurchase)
     } catch {
-      case ex => throw new Exception("Trade " + trade.tradeId + " failed to construct from EDM", ex)
+      case ex => throw new Exception("Trade " + trade.tradeId + " failed to construct from EDM. " + ex.getMessage, ex)
     }
   }
   def value(exchangesByGUID : Map[GUID, EDMMarket], futuresMetalMarketByGUID : Map[GUID, EDMMetal], env : Environment, snapshotID : String)(trade : EDMPhysicalTrade) : Either[List[CostsAndIncomeQuotaValuation], String] =  {
