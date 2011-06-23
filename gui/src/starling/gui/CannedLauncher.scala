@@ -47,6 +47,8 @@ object CannedLauncher {
               (Map(),Map())
             } else if (name=="whoAmI") {
               User.Dev
+            } else if (name=="bookmarks") {
+              List()
             } else {
               null
             }
@@ -278,9 +280,14 @@ class CannedDataSource extends UnfilteredPivotTableDataSource {
     ColumnTrees(ColumnTree(Field("PV"), true, ColumnTrees(ColumnTree(Field("Product"), false))))
   }, rowFields = List(Field("Trader"), Field("Strike")))*/
 
-  override def initialState = new PivotFieldsState(columns = {
+  /*override def initialState = new PivotFieldsState(columns = {
     ColumnTrees(List(ColumnTree(Field("PV"), true, ColumnTrees(ColumnTree(Field("Product"), false))),
       ColumnTree(Field("Gamma"), true, ColumnTrees(ColumnTree(Field("Lots"), false)))))
+  }, rowFields = List(Field("Trader"), Field("Strike")))*/
+
+  override def initialState = new PivotFieldsState(columns = {
+    ColumnTrees(ColumnTree(FieldOrColumnStructure(ColumnTrees(List(ColumnTree(Field("PV"), true), ColumnTree(Field("Gamma"), true)))),
+      ColumnTrees(Nil)))
   }, rowFields = List(Field("Trader"), Field("Strike")))
 
   def unfilteredData(pfs : PivotFieldsState) = theData

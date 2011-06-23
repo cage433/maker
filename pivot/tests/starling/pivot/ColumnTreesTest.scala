@@ -309,6 +309,11 @@ class ColumnTreesTest extends TestNGSuite {
 
     val res11 = csToUse11.isInvalid
     assertEquals(res11, false)
+
+    val csToUse12 = ColumnTrees(ColumnTree(FieldOrColumnStructure(ColumnTrees(List(ColumnTree(Field("PV"), true), ColumnTree(Field("Gamma"), true)))),
+      ColumnTrees(Field("Delta"), true)))
+    val res12 = csToUse12.isInvalid
+    assertEquals(res12, true)
   }
 
   @Test
