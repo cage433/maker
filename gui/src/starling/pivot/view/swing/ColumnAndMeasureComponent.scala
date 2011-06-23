@@ -205,7 +205,7 @@ case class ColumnAndMeasureComponent(model:PivotTableModel, otherLayoutInfo:Othe
     case _ => add(new ColumnStructureComponent(cs, guiFieldsMap, dropPanels, true), "pushy,growy")
   }
 
-  def scrolling() {}
+  def scrolling() {guiFieldsMap.values.foreach(_.namePanel.reset())}
 
   def fieldChooserType = FieldChooserType.Columns
   def dropBounds(draggedField:Field) = {
