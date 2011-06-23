@@ -18,6 +18,7 @@ import javax.swing.TransferHandler.TransferSupport
 import java.awt.datatransfer.{Clipboard, DataFlavor, StringSelection}
 import starling.utils.Log
 import java.util.{StringTokenizer, Hashtable}
+import starling.gui.GuiUtils
 
 object PivotJTable {
   val RowHeight = 16
@@ -242,6 +243,7 @@ class PivotJTable(tableModel:TableModel, pivotTableView:PivotTableView, model:Pi
 
           if (deletableCells.nonEmpty || resetableCells.nonEmpty) {
             val popup = new JPopupMenu
+            popup.setBorder(LineBorder(GuiUtils.BorderColour))
 
             if (deletableCells.nonEmpty) {
               val deleteActionName = if (deletableCells.size == 1) "Delete Cell" else "Delete Cells"

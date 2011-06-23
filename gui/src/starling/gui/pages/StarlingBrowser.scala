@@ -516,6 +516,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
 
   private def showAddressPopup {
     val historySelector = new JPopupMenu
+    historySelector.setBorder(LineBorder(GuiUtils.BorderColour))
     for ((pageInfo, index) <- history.zipWithIndex.reverse) {
       val page = pageInfo.page
       val ac = new Action(page.text) {

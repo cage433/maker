@@ -76,6 +76,7 @@ class DayChooser(day0:Day = Day.today(), enableFlags:Boolean = true, showDay:Boo
 
     val popupMenu = new JPopupMenu
     popupMenu.add(monthView.peer)
+    popupMenu.setBorder(LineBorder(GuiUtils.BorderColour))
 
     reactions += {
       case MouseClicked(_,_,_,_,_) => {
