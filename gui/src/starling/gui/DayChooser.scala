@@ -9,24 +9,33 @@ import swing.Swing._
 import javax.swing.JPopupMenu
 import starling.daterange._
 import java.awt.{Dimension, KeyboardFocusManager, Cursor, Color}
-import starling.utils.Utils
 
-class DayChooser(day0:Day = Day.today, enableFlags:Boolean = true) extends MigPanel("insets 0", "[p]0[p]") {
+class DayChooser(day0:Day = Day.today(), enableFlags:Boolean = true, showDay:Boolean=false) extends MigPanel("insets 0", "[p]0[p]") {
 
   val enabledBorderColour = GuiUtils.BorderColour
   val disabledBorderColour = GuiUtils.DisabledBorderColour
 
   private var currentDay = day0
 
+  private val minimumWidth = {
+    val text = if (showDay) {
+      "Mon 30 May"
+    } else {
+      "03 May"
+    }
+    val tmpLabel = new Label(text)
+    tmpLabel.preferredSize.width + 7
+  }
+
   def day = currentDay
   def day_=(d:Day) {
     currentDay = d
-    dayField.text = d.toString
+    dayField.text = if (showDay) d.toString("EEE dd MMM") else d.toString("dd MMM")
     dayField.monthView.day = d
     publish(DayChangedEvent(this, d))
   }
 
-  override def background_=(c:Color) = {
+  override def background_=(c:Color) {
     super.background = c
     dayField.background = c
     leftPanel.background = c
@@ -34,18 +43,12 @@ class DayChooser(day0:Day = Day.today, enableFlags:Boolean = true) extends MigPa
     endPanel.background = c
   }
 
-  val (numberOfChars, extraWidth) = Utils.os match {
-    case Utils.Windows7 => (5,7)
-    case Utils.WindowsXP | Utils.WindowsUnknown => (7,1)
-    case Utils.Linux => (6,7)
-  }
-
-  val dayField = new TextField(numberOfChars) {
+  val dayField = new TextField {
     editable = false
     cursor = Cursor.getPredefinedCursor(Cursor.TEXT_CURSOR)
-    minimumSize = new Dimension(preferredSize.width + extraWidth, preferredSize.height)
+    minimumSize = new Dimension(minimumWidth, preferredSize.height)
 
-    override protected def paintBorder(g:Graphics2D) = {
+    override protected def paintBorder(g:Graphics2D) {
       super.paintBorder(g)
       val width = size.width - 1
       val height = size.height - 2
@@ -56,7 +59,7 @@ class DayChooser(day0:Day = Day.today, enableFlags:Boolean = true) extends MigPa
     val monthView = new SXMonthView {
       traversable = true
       preferredColumnCount = 2
-      val today = Day.today
+      val today = Day.today()
       if (showPreviousMonth) {
         firstDisplayedDay = Month(today.year, today.month).previous.firstDay
       }
@@ -67,7 +70,7 @@ class DayChooser(day0:Day = Day.today, enableFlags:Boolean = true) extends MigPa
     }
 
     private def showPreviousMonth = {
-      val today = Day.today
+      val today = Day.today()
       today.dayNumber < 15
     }
 
@@ -79,10 +82,10 @@ class DayChooser(day0:Day = Day.today, enableFlags:Boolean = true) extends MigPa
         if (popupMenu.isShowing) {
           popupMenu.setVisible(false)
         } else {
-          showPopup
+          showPopup()
         }
       }
-      case KeyPressed(_, scala.swing.event.Key.Down, _, _) => showPopup
+      case KeyPressed(_, scala.swing.event.Key.Down, _, _) => showPopup()
       case MonthViewCommitEvent(`monthView`, d) => {
         popupMenu.setVisible(false)
         day = d
@@ -93,7 +96,7 @@ class DayChooser(day0:Day = Day.today, enableFlags:Boolean = true) extends MigPa
 
     listenTo(mouse.clicks, keys, monthView)
 
-    def showPopup {
+    def showPopup() {
       if (enabled) {
         val xPos = if (showPreviousMonth) {
           (0.0 - (monthView.preferredSize.width / 2.0)).toInt - 8
@@ -108,7 +111,7 @@ class DayChooser(day0:Day = Day.today, enableFlags:Boolean = true) extends MigPa
     }
   }
 
-  def flagged_=(days:Set[Day]) = dayField.monthView.flagged = days
+  def flagged_=(days:Set[Day]) {dayField.monthView.flagged = days}
   def flagged = dayField.monthView.flagged
 
   class ArrowPanel(constraints:String, image:BufferedImage, action: => Unit, focusOwner:Component) extends MigPanel(constraints) {
@@ -116,7 +119,7 @@ class DayChooser(day0:Day = Day.today, enableFlags:Boolean = true) extends MigPa
     cursor = Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)
     background = dayField.background
     add(arrow, "push, grow, al center")
-    override protected def paintBorder(g:Graphics2D) = {
+    override protected def paintBorder(g:Graphics2D) {
       if (enabled) {
         g.setColor(enabledBorderColour)
       } else {
@@ -130,12 +133,12 @@ class DayChooser(day0:Day = Day.today, enableFlags:Boolean = true) extends MigPa
     reactions += {
       case MouseClicked(_,_,_,_,false) => {
         if (enabled) action
-        focusOwner.requestFocusInWindow
+        focusOwner.requestFocusInWindow()
       }
     }
     listenTo(mouse.clicks)
 
-    override def enabled_=(b:Boolean) = {
+    override def enabled_=(b:Boolean) {
       super.enabled = b
       arrow.enabled = b
     }
@@ -144,12 +147,12 @@ class DayChooser(day0:Day = Day.today, enableFlags:Boolean = true) extends MigPa
   val leftIcon = StarlingIcons.im("/icons/5x10_bullet-arrow-left.png")
   val rightIcon = StarlingIcons.im("/icons/5x10_bullet-arrow-right.png")
 
-  def previousDay {
+  def previousDay() {
     val d = dayField.monthView.day.previousWeekday
     day = d
   }
 
-  def nextDay {
+  def nextDay() {
     val d = dayField.monthView.day.nextWeekday
     day = d
   }
@@ -159,7 +162,7 @@ class DayChooser(day0:Day = Day.today, enableFlags:Boolean = true) extends MigPa
 
   val endPanel = new MigPanel("insets 0 0 0 2lp") {
     background = dayField.background
-    override protected def paintBorder(g:Graphics2D) = {
+    override protected def paintBorder(g:Graphics2D) {
       if (enabled) {
         g.setColor(enabledBorderColour)
       } else {
@@ -173,7 +176,7 @@ class DayChooser(day0:Day = Day.today, enableFlags:Boolean = true) extends MigPa
     }
   }
 
-  override def enabled_=(b:Boolean) = {
+  override def enabled_=(b:Boolean) {
     super.enabled = b
     dayField.enabled = b
     leftPanel.enabled = b

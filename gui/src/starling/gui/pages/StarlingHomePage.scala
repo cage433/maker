@@ -59,7 +59,7 @@ class StarlingHomePageComponent(context:PageContext, browserSize:Dimension, page
       }
       renderer = ListView.Renderer.wrap(bookmarkDataListCellRenderer)
     }
-    val valuationDayChooser = new DayChooser(enableFlags = false) {
+    val valuationDayChooser = new DayChooser(enableFlags = false, showDay = true) {
       background = bkColour
       enabled = valuationDayShouldBeEnabled
       day = day.previousWeekday
