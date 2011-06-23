@@ -103,7 +103,7 @@ class MarketDataServiceRPC(marketDataStore: MarketDataStore, val props : Props) 
 
       Log.info("Found requested quota by id %s { %s }".format(quotaId, q.toString))
 
-      val trades = allTrades()
+      val trades = readAllTradesFromTitan()
 
       val tradeString = StarlingXStream.write(trades)
 
@@ -142,10 +142,6 @@ class MarketDataServiceRPC(marketDataStore: MarketDataStore, val props : Props) 
   private def fields(names: List[String]) = names.map(Field(_))
   private def names(fields: FieldDetails*) = fields.map(_.name).toList
 
-
-  /**
-   * tactical ref-data derived maps of ref-data, this could be tidied and made generic etc but it's to be replaced with SRD soon...
-   */
   val rmetadminuser = props.ServiceInternalAdminUser()
   val tradeServiceURL = props.EdmTradeServiceUrl()
   val refdataServiceURL = props.TacticalRefDataServiceUrl()
@@ -153,87 +149,67 @@ class MarketDataServiceRPC(marketDataStore: MarketDataStore, val props : Props) 
 
   private def quotaById(id : String) = {
 
-    if (quotasMap.contains(id)) {
-      quotasMap(id)
+    if (titanEdmQuotaDetailByIdentifier.contains(id)) {
+      titanEdmQuotaDetailByIdentifier(id)
     }
     else {
       Log.info("quota cache miss for quota %s, refeshing cache".format(id))
-      quotasMap = quotasSrc()
-      quotasMap(id)
+      titanEdmQuotaDetailByIdentifier = readAllTradesFromTitan().flatMap(_.quotas.map(q => (q.detail.identifier, q.detail))).toMap
+      titanEdmQuotaDetailByIdentifier(id)
     }
   }
 
-  /**
-   * tactical ref-data handling...
-   */
-  lazy val quotasSrc : () => Map[String, QuotaDetail] = () => Map[String, QuotaDetail]() ++ allTrades().flatMap(_.quotas.map(q => (q.detail.identifier, q.detail)))
-
-  // maps of tactical ref-data by id
-  lazy val commoditiesSrc : Map[GUID, Metal] = Map[GUID, Metal]() ++ allCommodities.map(e => (e.guid , e))
-  lazy val exchangesSrc : Map[GUID, Market] = Map[GUID, Market]() ++ allExchanges.map(e => (e.guid , e))
+  lazy val futuresMarketByGUID : Map[GUID, Metal] = Map[GUID, Metal]() ++ allTacticalRefDataFuturesMarkets.map(e => (e.guid , e))
+  lazy val futuresExchangeByGUID : Map[GUID, Market] = Map[GUID, Market]() ++ allTacticalRefDataExchanges.map(e => (e.guid , e))
 
   // set up a client executor and edm trade proxy
-  lazy val tradeResults : () => TradeResults = () => edmGetTradesService.getAll()
-  lazy val allTrades : () => List[PhysicalTrade] = () => {
+  def readAllTradesFromTitan() : List[PhysicalTrade] = {
+    def titanTradeResults() : TradeResults = titanGetEdmTradesService.getAll()
     var tr : TradeResults = TradeResults(cached = false)
     val sw = new Stopwatch()
     while (tr.cached == false){
       println("Waitng for trades " + sw)
       Thread.sleep(5000)
-      tr = tradeResults()
+      tr = titanTradeResults()
     }
     tr.results.map(_.trade.asInstanceOf[PhysicalTrade])
   }
 
 
-  implicit val clientExecutor : ClientExecutor = new ComponentTestClientExecutor(rmetadminuser)
+  private lazy val clientExecutor : ClientExecutor = new ComponentTestClientExecutor(rmetadminuser)
 
-  lazy val edmGetTradesService : EdmGetTrades = getEdmGetTradesServiceProxy(clientExecutor)
-  lazy val tacticalRefdataMetalsService : MetalService = getTacticalRefdataMetalServiceProxy(clientExecutor)
-  lazy val tacticalRefdataMarketsService : MarketService = getTacticalRefdataMarketServiceProxy(clientExecutor)
-  def allCommodities() = tacticalRefdataMetalsService.getMetals()
-  def allExchanges() = tacticalRefdataMarketsService.getMarkets()
+  private lazy val titanGetEdmTradesService : EdmGetTrades = new EdmGetTradesResourceProxy(ProxyFactory.create(classOf[EdmGetTradesResource], tradeServiceURL, clientExecutor))
+  private lazy val tacticalRefdataMetalsService : MetalService = new MetalServiceResourceProxy(ProxyFactory.create(classOf[MetalServiceResource], refdataServiceURL, clientExecutor))
+  private lazy val tacticalRefdataMarketsService : MarketService = new MarketServiceResourceProxy(ProxyFactory.create(classOf[MarketServiceResource], refdataServiceURL, clientExecutor))
+  def allTacticalRefDataFuturesMarkets() = tacticalRefdataMetalsService.getMetals()
+  def allTacticalRefDataExchanges() = tacticalRefdataMarketsService.getMarkets()
 
-  // maps of tactical ref-data by id
-  var quotasMap = Map[String, QuotaDetail]() //quotasSrc()
-
-  // debug output received trade quotas
-  //Log.debug(quotasMap.values.mkString("\n"))
+  var titanEdmQuotaDetailByIdentifier = Map[String, QuotaDetail]()
 
 
-  /**
-   * get proxies for services
-   */
-  private def getEdmGetTradesServiceProxy(executor : ClientExecutor) : EdmGetTrades =
-    new EdmGetTradesResourceProxy(ProxyFactory.create(classOf[EdmGetTradesResource], tradeServiceURL, executor))
-
-  private def getTacticalRefdataMetalServiceProxy(executor : ClientExecutor) : MetalService =
-    new MetalServiceResourceProxy(ProxyFactory.create(classOf[MetalServiceResource], refdataServiceURL, executor))
-
-  private def getTacticalRefdataMarketServiceProxy(executor : ClientExecutor) : MarketService =
-    new MarketServiceResourceProxy(ProxyFactory.create(classOf[MarketServiceResource], refdataServiceURL, executor))
 
   /**
    * generic get proxy utils
    */
-  private def getProxy[T : Manifest] : String => AnyRef = getProxy[T](clientExecutor) _
+//  private def getProxy[T : Manifest] : String => AnyRef = getProxy[T](clientExecutor) _
+//
+//  private def getProxy[T : Manifest](executor : ClientExecutor)(url : String) : AnyRef = {
+//
+//    val serviceClassName = cname[T]
+//
+//    val serviceClassResource = serviceClassName + "Resource"
+//    val serviceClassResourceProxy = serviceClassResource + "Proxy"
+//    val serviceClazz = Class.forName(serviceClassResource)
+//    val serviceClazzProxy = Class.forName(serviceClassResourceProxy)
+//    val constructor = serviceClazzProxy.getConstructor(serviceClazz)
+//    val proxy = ProxyFactory.create(serviceClazz, url, executor)
+//
+//    constructor.newInstance(proxy.asInstanceOf[AnyRef]).asInstanceOf[AnyRef]
+//  }
+//
+//  def cname[T : Manifest]() = manifest[T].erasure.getName
 
-  private def getProxy[T : Manifest](executor : ClientExecutor)(url : String) : AnyRef = {
-
-    val serviceClassName = cname[T]
-
-    val serviceClassResource = serviceClassName + "Resource"
-    val serviceClassResourceProxy = serviceClassResource + "Proxy"
-    val serviceClazz = Class.forName(serviceClassResource)
-    val serviceClazzProxy = Class.forName(serviceClassResourceProxy)
-    val constructor = serviceClazzProxy.getConstructor(serviceClazz)
-    val proxy = ProxyFactory.create(serviceClazz, url, executor)
-
-    constructor.newInstance(proxy.asInstanceOf[AnyRef]).asInstanceOf[AnyRef]
-  }
-
-  def cname[T : Manifest]() = manifest[T].erasure.getName
-
+  
   def getQuotaValue(quotaId: Int) = null
 }
 
@@ -253,14 +229,14 @@ object MarketDataService extends Application {
 
     val md = new MarketDataServiceRPC(Server.server.marketDataStore, Server.server.props)
 
-    val trades = md.allTrades()
+    val trades = md.readAllTradesFromTitan()
 
     val env = Environment(new NullAtomicEnvironment(Day(2010, 1, 1).endOfDay))
-    val qv = new QuotaValuer(env, md.exchangesSrc, md.commoditiesSrc)
+    val qv = new QuotaValuer(env, md.futuresExchangeByGUID, md.futuresMarketByGUID)
     println("Exchanges")
-    md.allExchanges.foreach(println)
+    md.allTacticalRefDataExchanges.foreach(println)
     println("Metals")
-    md.allCommodities().foreach(println)
+    md.allTacticalRefDataFuturesMarkets().foreach(println)
 
     val valuedTrades = //: List[Either[(Exception, PhysicalTrade), (Quantity, QuotaDetail)]] =
       trades.flatMap(physTrade => {
@@ -330,7 +306,7 @@ object MarketDataService extends Application {
 
     val md = new MarketDataServiceRPC(Server.server.marketDataStore, Server.server.props)
 
-    val trades = md.allTrades()
+    val trades = md.readAllTradesFromTitan()
 
     val tradeStrings = trades.map(_.toJson())  //  StarlingXStream.write(trades)
 
