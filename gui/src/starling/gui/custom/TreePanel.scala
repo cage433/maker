@@ -48,13 +48,31 @@ case class TreePanel(initialValuesAndSelection:(TreePivotFilter, Selection),
     case GenerateFromSelectionEvent => generateFromSelection
     case SelectFiltered(filterText) => selectFiltered(filterText)
 
+    case KeyPressed(`treeComponent`, scala.swing.event.Key.Enter, scala.swing.event.Key.Modifier.Control, _) => {
+      // Ctrl-Enter is the same as clicking on the right of a node - it selects just the node.
+      val selectedValues = treeComponent.peer.getSelectionPaths.map(_.getLastPathComponent.asInstanceOf[DefaultMutableTreeNode]).toList
+      val enabledSelectedValues = selectedValues.filter(sv => sv.getUserObject.asInstanceOf[CheckBoxListElement].enabled)
+      if (enabledSelectedValues.nonEmpty) {
+        val (otherValues, rest) = enabledSelectedValues.partition(_.getUserObject.asInstanceOf[CheckBoxListElement].value == OtherValue)
+        val (finalValuesToUse, enableOtherValue) = if (otherValues.nonEmpty && rest.nonEmpty) {
+          (otherValues ::: rest, true)
+        } else {
+          (rest, false)
+        }
+        if (finalValuesToUse.nonEmpty) {
+          filterHelper.setOtherValueEnabled(enableOtherValue)
+          selectSingleItems(finalValuesToUse)
+          generateFromSelection
+        }
+      }
+    }
     case KeyPressed(`treeComponent`, scala.swing.event.Key.Enter, _, _) => generateFromSelection
     case KeyPressed(`treeComponent`, scala.swing.event.Key.Space, _, _) => {
       // For any selected rows, enable or disable them.
       val selectionPaths = treeComponent.peer.getSelectionPaths
       if (selectionPaths != null) {
         val selectedItems = selectionPaths.map(_.getLastPathComponent.asInstanceOf[DefaultMutableTreeNode])
-        selectItems(selectedItems.toList.filter(_.getUserObject.asInstanceOf[CheckBoxListElement].enabled))
+        flipSelectionForItems(selectedItems.toList.filter(_.getUserObject.asInstanceOf[CheckBoxListElement].enabled))
       }
     }
     case MouseClicked(`treeComponent`, point, _, 2, _) => {
@@ -86,7 +104,7 @@ case class TreePanel(initialValuesAndSelection:(TreePivotFilter, Selection),
             // If you click on the tick, you want to select without going to the next page, but if you click anywhere else, you want to go to the
             // next page with the item you clicked on selected.
             if (point.x < (level * treeComponent.magicNumberForTreeSize + TreePanel.CheckBoxWidth)) {
-              selectItems(List(selectedValue))
+              flipSelectionForItems(List(selectedValue))
             } else {
               if (element.value != OtherValue) {
                 filterHelper.setOtherValueEnabled(false)
@@ -148,9 +166,13 @@ case class TreePanel(initialValuesAndSelection:(TreePivotFilter, Selection),
 
   def selectSingleItem(nodeToSelect:DefaultMutableTreeNode) {
     // Go over the entire tree and deselect everything apart from the node passed in.
+    selectSingleItems(List(nodeToSelect))
+  }
+
+  private def selectSingleItems(nodesToSelect:List[DefaultMutableTreeNode]) {
     recurse(treeComponent.rootNode)
     def recurse(node:DefaultMutableTreeNode) {
-      if (node == nodeToSelect) {
+      if (nodesToSelect.contains(node)) {
         node.getUserObject.asInstanceOf[CheckBoxListElement].selected = true
       } else {
         node.getUserObject.asInstanceOf[CheckBoxListElement].selected = false
@@ -161,7 +183,7 @@ case class TreePanel(initialValuesAndSelection:(TreePivotFilter, Selection),
       }
     }
     // Ensure the children of the selected node are selected as well.
-    recurse2(nodeToSelect)
+    nodesToSelect.foreach(n => recurse2(n))
     def recurse2(node:DefaultMutableTreeNode) {
       node.getUserObject.asInstanceOf[CheckBoxListElement].selected = true
       val enum = node.children
@@ -172,7 +194,7 @@ case class TreePanel(initialValuesAndSelection:(TreePivotFilter, Selection),
     treeComponent.repaint()
   }
 
-  def selectItems(selectedItems:List[DefaultMutableTreeNode]) {
+  def flipSelectionForItems(selectedItems:List[DefaultMutableTreeNode]) {
     // As the model can be filtered, I need to get the nodes from the unfiltered tree.
     val selectedItemsCBLE = selectedItems.map(_.getUserObject.asInstanceOf[CheckBoxListElement]).toSet
     val unfilteredSelectedItems = new ListBuffer[DefaultMutableTreeNode]
