@@ -205,6 +205,7 @@ class Quantity(val value : Double, val uom : UOM) extends Ordered[Quantity] with
   def isPositve : Boolean = value >= 0.0
   def isNegative : Boolean = !isPositve
   def isNegativeOrZero: Boolean = value <= 0
+  def isNonNegative: Boolean = isPositve || isZero
   def percentageDifference(other:Quantity) = {
     (this.value, other.value) match {
       case (0, 0) => Percentage(0)

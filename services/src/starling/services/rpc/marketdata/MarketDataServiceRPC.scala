@@ -3,12 +3,10 @@ package starling.services.rpc.marketdata
 import com.trafigura.edm.marketdata._
 import scala.collection.JavaConversions._
 
-import starling.db.MarketDataStore
 import starling.gui.api.{MarketDataSelection, PricingGroup, MarketDataIdentifier}
 import starling.marketdata.{PriceFixingsHistoryDataType, MarketDataTypes}
 import starling.pivot.model.PivotTableModel
 import starling.pivot._
-import starling.services.Server
 import starling.utils.ImplicitConversions._
 import PriceFixingsHistoryDataType._
 import starling.daterange.Day
@@ -39,7 +37,9 @@ import com.trafigura.tradinghub.support.{JSONConversions, GUID, ServiceFilter}
 import starling.utils.{Stopwatch, StarlingXStream, Log}
 import org.apache.commons.codec.net.QCodec
 import com.trafigura.edm.tradeservice.{TradeResults, EdmGetTradesResource, EdmGetTradesResourceProxy, EdmGetTrades}
-import starling.services.rpc.valuation.{InvalidPricingSpecException, QuotaValuer}
+import starling.db.{SnapshotID, MarketDataStore}
+import starling.instrument.PhysicalMetalForward
+import starling.services.{StarlingInit, Server}
 
 /**
  * Generic Market data service, covering all market data
@@ -84,9 +84,9 @@ class MarketDataServiceRPC(marketDataStore: MarketDataStore, val props : Props) 
   /**
    * valuation of all Edm quotsa service
    */
-  def getAllQuotaValues() : Either[List[Either[EDMQuantity, String], Boolean] = time(getAllQuotaValuesImpl(), "Took %d ms to execute getAllQuotaValues")
+  def getAllQuotaValues() : Either[List[Either[EDMQuantity, String]], Boolean] = time(getAllQuotaValuesImpl(), "Took %d ms to execute getAllQuotaValues")
 
-  private def getAllQuotaValuesImpl() : EDMQuantity = {
+  private def getAllQuotaValuesImpl() = {
     null
   }
 
@@ -215,83 +215,31 @@ class MarketDataServiceRPC(marketDataStore: MarketDataStore, val props : Props) 
 
 object MarketDataService extends Application {
 
-  def loadAndValueAll() {
+  lazy val server = StarlingInit.devInstance
+  lazy val md = new MarketDataServiceRPC(server.marketDataStore, server.props)
+
+  def valueAllQuotas() = {
 
     val sw = new Stopwatch()
 
-    new Thread(new Runnable() {
-      def run() {  Server.main(Array()) }
-    }).start()
 
-    while (Server.server == null){
-      Thread.sleep(1000)
-    }
 
-    val md = new MarketDataServiceRPC(Server.server.marketDataStore, Server.server.props)
-
-    val trades = md.readAllTradesFromTitan()
-
+    val edmTrades = md.readAllTradesFromTitan()
     val env = Environment(new NullAtomicEnvironment(Day(2010, 1, 1).endOfDay))
-    val qv = new QuotaValuer(env, md.futuresExchangeByGUID, md.futuresMarketByGUID)
-    println("Exchanges")
-    md.allTacticalRefDataExchanges.foreach(println)
-    println("Metals")
-    md.allTacticalRefDataFuturesMarkets().foreach(println)
 
-    val valuedTrades = //: List[Either[(Exception, PhysicalTrade), (Quantity, QuotaDetail)]] =
-      trades.flatMap(physTrade => {
-        physTrade.quotas.map(q => {
-          try {
-            val value = qv.value(q, physTrade.tradeId)
-//            println("Trade " + physTrade.tradeId + ", quota " + q.quotaNumber + ", value = " + value)
-            Left((value, q))
-          }
-          catch {
-            case ex : InvalidPricingSpecException => Right((ex, physTrade))
-            case ex : NullPointerException => throw ex
-            case ex : NoSuchElementException => {
-              println("trade id " + physTrade.tradeId + " failed ex : " + ex)
-              throw ex
-            }
-            case ex : Exception => {
-              println("trade id " + physTrade.tradeId + " failed ex : " + ex)
-              Right((ex, physTrade))
-            }
-            case _ => Right((null, physTrade))
-          }
-        })
-      })
+    val tradeValuer = PhysicalMetalForward.value(md.futuresExchangeByGUID, md.futuresMarketByGUID, env, "Dummy Snapshot")_
 
-    val (errors, valuations) = valuedTrades.partition(_ match { case Right(x) => true; case _ => false } )
+    val valuations = edmTrades.map(tradeValuer)
 
-    println("Worked " + valuations.size + ", failed " + errors.size + ", took " + sw)
+    val (errors, worked) = valuations.partition(_ match { case Right(x) => true; case _ => false } )
+    println("Worked " + worked.size + ", failed " + errors.size + ", took " + sw)
+    valuations
   }
 
-  def loadAndValue() {
 
-    //val tradeXml = io.Source.fromFile("/tmp/edmtrades.xml").getLines().mkString("\n")
-    val tradeXmlTmp = FileUtils.readFileToString(new File("/tmp/edmtrades.json"))
-
-    val sw = new Stopwatch()
-    val trades = tradeXmlTmp.split('\n').map{
-      l =>
-        PhysicalTrade.fromJson(JSONConversions.parseJSON(l).asInstanceOf[org.codehaus.jettison.json.JSONObject])
-    }
-    println(sw)
-
-    val env = Environment(new NullAtomicEnvironment(Day(2010, 1, 1).endOfDay))
-    val qv = new QuotaValuer(env, md.allExchanges(), md.allCommodities())
-    trades.foreach{
-      physTrade =>
-        println("Trade " + physTrade.tradeId)
-        physTrade.quotas.foreach { q =>
-            println(qv.value(q))
-        }
-    }
-  }
 
   //readAndStore()
-  //loadAndValueAll()
+  valueAllQuotas()
 
 
 

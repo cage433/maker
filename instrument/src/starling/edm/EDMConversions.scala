@@ -3,8 +3,6 @@ package starling.edm
 import starling.quantity.UOMSymbol._
 import com.trafigura.edm.shared.types.{Quantity => EDMQuantity, CompoundUOM, UnitComponent, FundamentalUOM}
 import starling.quantity.{UOM, Quantity}
-import org.mockito.exceptions.misusing.InvalidUseOfMatchersException
-import starling.services.rpc.valuation._
 
 /**
  * Created by IntelliJ IDEA.
@@ -14,9 +12,11 @@ import starling.services.rpc.valuation._
  * To change this template use File | Settings | File Templates.
  */
 
+case class InvalidUomException(msg : String) extends Exception(msg)
+
 object EDMConversions {
 
-  def fromEDMQuantity(q : EDMQuantity) : Quantity = {
+  implicit def fromEDMQuantity(q : EDMQuantity) : Quantity = {
     val amount = q.amount match {
       case Some(amt) => amt
       case None => throw new Exception("Invalid quantity - no amount")
@@ -33,7 +33,7 @@ object EDMConversions {
 
   }
 
-  def toEDMQuantity(q : Quantity) : EDMQuantity = {
+  implicit def toEDMQuantity(q : Quantity) : EDMQuantity = {
     val symbolPowers = q.uom.asSymbolMap()
 
     // create edm UOMs, EDM symbol list is GBP, USD, JPY, RMB, MTS, LBS
