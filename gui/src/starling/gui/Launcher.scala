@@ -467,7 +467,7 @@ class StarlingBrowserFrame(homePage: Page, pageBuilder: PageBuilder, lCache: Loc
   iconImage = mainIcon
 
   private val initialStarlingBrowser = new StarlingBrowserTabbedPane(homePage, pageBuilder, lCache, userSettings,
-    remotePublisher, this, extraInfo)
+    remotePublisher, this, extraInfo, containerMethods, this)
 
   private val notificationPanel = new NotificationPanel(size.width, lCache, containerMethods)
   private val mainPanel = new MigPanel("insets 0, hidemode 3", "[p]", "[p]0[p]") {
@@ -495,7 +495,7 @@ class StarlingBrowserFrame(homePage: Page, pageBuilder: PageBuilder, lCache: Loc
 
   def splitVertically(eventFrom: StarlingBrowserTabbedPane) = {
     val starlingBrowserTabbedPane = new StarlingBrowserTabbedPane(homePage, pageBuilder, lCache, userSettings,
-      remotePublisher, this, extraInfo)
+      remotePublisher, this, extraInfo, containerMethods, this)
     reactions += {
       case MouseClicked(`starlingBrowserTabbedPane`, _, _, 2, _) => {
         // If the user double clicks to the right of the tab, create a new tab.
@@ -521,7 +521,7 @@ class StarlingBrowserFrame(homePage: Page, pageBuilder: PageBuilder, lCache: Loc
 
   def canClose = ((for (starlingTabbedPane <- tabbedPaneBuffer) yield starlingTabbedPane.pages.length).sum > 2)
 
-  def tabClosed = {
+  def tabClosed() {
     val starlingTabbedPanesToRemove = tabbedPaneBuffer.filter(_.pages.length == 1)
     if (starlingTabbedPanesToRemove.size > 0) {
       tabbedPaneBuffer --= starlingTabbedPanesToRemove
@@ -547,33 +547,29 @@ class StarlingBrowserFrame(homePage: Page, pageBuilder: PageBuilder, lCache: Loc
 }
 
 trait WindowMethods {
-  def setBusy(busy: Boolean): Unit
-
-  def splitVertically(eventFrom: StarlingBrowserTabbedPane): Unit
-
-  def canClose: Boolean
-
-  def tabClosed: Unit
-
-  def setDefaultButton(button: Option[Button]): Unit
-
-  def getDefaultButton: Option[Button]
+  def setBusy(busy: Boolean)
+  def splitVertically(eventFrom: StarlingBrowserTabbedPane)
+  def canClose:Boolean
+  def tabClosed()
+  def setDefaultButton(button:Option[Button])
+  def getDefaultButton:Option[Button]
 }
 
 class StarlingBrowserTabbedPane(homePage: Page, pageBuilder: PageBuilder, lCache: LocalCache, userSettings:UserSettings,
-                                remotePublisher: Publisher, windowMethods: WindowMethods, extraInfo:Option[String]) extends TabbedPane {
+                                remotePublisher: Publisher, windowMethods: WindowMethods, extraInfo:Option[String],
+                                containerMethods:ContainerMethods, parentFrame:StarlingBrowserFrame) extends TabbedPane {
   focusable = false
   peer.setUI(new StarlingTabbedPaneUI)
   peer.addMouseListener(new MouseAdapter {
-    override def mousePressed(e: MouseEvent) = {
+    override def mousePressed(e: MouseEvent) {
       if (e.isPopupTrigger) {
         tabPopupMenu.show(e.getComponent, e.getX, e.getY)
       } else {
-        selection.page.content.requestFocusInWindow
+        selection.page.content.requestFocusInWindow()
       }
     }
 
-    override def mouseReleased(e: MouseEvent) = {
+    override def mouseReleased(e: MouseEvent) {
       if (e.isPopupTrigger) {
         tabPopupMenu.show(e.getComponent, e.getX, e.getY)
       }
@@ -620,6 +616,8 @@ class StarlingBrowserTabbedPane(homePage: Page, pageBuilder: PageBuilder, lCache
       val c = pages(newSelection).self.asInstanceOf[SXLayerScala[StarlingBrowser]].getScalaComponent
       c.currentComponent.requestFocusInWindow
       c.currentComponent.pageShown
+    } else {
+      containerMethods.closeFrame(parentFrame)
     }
   }
   peer.getInputMap(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT).put(KeyStroke.getKeyStroke(KeyEvent.VK_F4, InputEvent.CTRL_DOWN_MASK), "closeTabAction")
