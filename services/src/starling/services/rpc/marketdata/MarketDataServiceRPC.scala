@@ -81,9 +81,18 @@ class MarketDataServiceRPC(marketDataStore: MarketDataStore, val props : Props) 
     marketData(mdParams)
   }
 
-   /*
-    * valuation of an Edm quota service
-    */
+  /**
+   * valuation of all Edm quotsa service
+   */
+  def getAllQuotaValues() : Either[List[Either[EDMQuantity, String], Boolean] = time(getAllQuotaValuesImpl(), "Took %d ms to execute getAllQuotaValues")
+
+  private def getAllQuotaValuesImpl() : EDMQuantity = {
+    null
+  }
+
+  /**
+   * valuation of an Edm quota service
+   */
   def getQuotaValue(quotaId : String) : EDMQuantity = time(getQuotaValueImpl(quotaId), "Took %d ms to execute getQuotaValue")
 
   private def getQuotaValueImpl(quotaId : String) : EDMQuantity = {
@@ -282,10 +291,9 @@ object MarketDataService extends Application {
     println("Worked " + valuations.size + ", failed " + errors.size + ", took " + sw)
   }
 
-  /*
   def loadAndValue() {
 
-//    val tradeXml = io.Source.fromFile("/tmp/edmtrades.xml").getLines().mkString("\n")
+    //val tradeXml = io.Source.fromFile("/tmp/edmtrades.xml").getLines().mkString("\n")
     val tradeXmlTmp = FileUtils.readFileToString(new File("/tmp/edmtrades.json"))
 
     val sw = new Stopwatch()
@@ -305,9 +313,9 @@ object MarketDataService extends Application {
         }
     }
   }
-*/
- // readAndStore()
-  loadAndValueAll()
+
+  //readAndStore()
+  //loadAndValueAll()
 
 
 
