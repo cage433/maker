@@ -138,12 +138,7 @@ class PropsHelper(props : Map[String,String]) {
 }
 
 object PropsHelper {
-  val defaultPropsFile = {
-    // If there is a system property set, use that.
-    val propsLocation = System.getProperties.getProperty("props.location")
-    println("Location = " + propsLocation)
-    new File(if (propsLocation != null) propsLocation else "props.conf")
-  }
+  val defaultPropsFile = new File("props.conf")
 
   val defaultProps = {
     new Props(propsFromFile(defaultPropsFile))

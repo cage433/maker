@@ -173,13 +173,18 @@ class MarketDataServiceRPC(marketDataStore: MarketDataStore, val props: Props) e
 object MarketDataService extends Application {
 
   lazy val server = StarlingInit.devInstance
-  lazy val md = new ValuationService(server.marketDataStore, server.props)
+  lazy val vs = new ValuationService(server.marketDataStore, server.props)
 
 
   //readAndStore()
-  md.valueAllQuotas(Some("4400"))
+  val valuations = vs.valueAllQuotas()
+  
+//  valuations match {
+//    case Left(result) => result.foreach(println)
+//    case Right(error) => println(error)
+//  }
 
-
+/*
   def readAndStore() {
     new Thread(new Runnable() {
       def run() {
@@ -204,6 +209,7 @@ object MarketDataService extends Application {
     out.close()
     fstream.close()
   }
+*/
 }
 
 

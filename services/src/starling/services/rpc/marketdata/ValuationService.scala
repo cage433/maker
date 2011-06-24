@@ -10,6 +10,8 @@ import starling.gui.api.MarketDataIdentifier._
 import starling.curves.{ClosesEnvironmentRule, Environment}
 import com.trafigura.edm.trades.{Trade => EDMTrade, PhysicalTrade => EDMPhysicalTrade}
 import starling.gui.api.{MarketDataIdentifier, PricingGroup}
+import java.lang.Throwable
+import org.joda.time.LocalDate
 
 /**
  * Created by IntelliJ IDEA.
@@ -19,52 +21,61 @@ import starling.gui.api.{MarketDataIdentifier, PricingGroup}
  * To change this template use File | Settings | File Templates.
  */
 
+
+/**
+ * These are the market data snapshot identifiers as viewed outside of starling.
+ * id is unique across all days.
+ */
+case class TitanSnapshotIdentifier(id : String, observationDay : LocalDate)
+
 /**
  * Valuation services
  */
 trait IValuationService {
-  def valueAllQuotas(maybeSnapshotIdentifier : Option[String] = None): Either[List[Either[List[CostsAndIncomeQuotaValuation], String]], String]
+  def valueAllQuotas(maybeSnapshotIdentifier : Option[String] = None): CostsAndIncomeQuotaValuationServiceResults
+
+  /**
+   * Return all snapshots for a given observation day, or every snapshot if no day is supplied
+   */
+  def marketDataSnapshotIDs(observationDay : Option[LocalDate] = None): List[TitanSnapshotIdentifier]
 }
 
 /**
  * Valuation service implementations
  */
-class ValuationService(marketDataStore: MarketDataStore, val props: Props) extends TacticalRefData(props: Props) with IValuationService {
-  def valueAllQuotas(maybeSnapshotIdentifier : Option[String] = None): Either[List[Either[List[CostsAndIncomeQuotaValuation], String]], String] = {
-    try {
-      val snapshotID = if (maybeSnapshotIdentifier.isDefined) maybeSnapshotIdentifier else mostRecentSnapshotIdentifier()
-      println(snapshotID)
-      if (! snapshotID.isDefined)
-        throw new IllegalStateException("No market data snapshots")
-      val sw = new Stopwatch()
+case class CostsAndIncomeQuotaValuationServiceResults(snapshotID : String, tradeResults : List[Either[List[CostsAndIncomeQuotaValuation], String]])
+object TradeManagamentCacheNotReady extends Throwable
 
-      val edmTradeResult = titanGetEdmTradesService.getAll()
-      println("Got Edm Trade result " + edmTradeResult.cached + ", took " + sw)
+class ValuationService(marketDataStore: MarketDataStore, val props: Props) extends TacticalRefData(props: Props)  {
+  def valueAllQuotas(maybeSnapshotIdentifier : Option[String] = None): CostsAndIncomeQuotaValuationServiceResults = {
+    val snapshotIDString = maybeSnapshotIdentifier.orElse(mostRecentSnapshotIdentifierBeforeToday()) match {
+      case Some(id) => id
+      case _ => throw new IllegalStateException("No market data snapshots")
+    }
+    println(snapshotIDString)
+    val sw = new Stopwatch()
 
-      if (!edmTradeResult.cached)
-        Right("Trade Management building trade cache. This takes a few minutes")
-      else {
-        println("Got Edm Trade results " + edmTradeResult.cached + ", trade result count = " + edmTradeResult.results.size)
-        val env = environment(snapshotStringToID(snapshotID.get))
-        val tradeValuer = PhysicalMetalForward.value(futuresExchangeByGUID, futuresMarketByGUID, env, snapshotID.get) _
+    val edmTradeResult = titanGetEdmTradesService.getAll()
+    println("Got Edm Trade result " + edmTradeResult.cached + ", took " + sw)
 
-        val edmTrades: List[EDMPhysicalTrade] = edmTradeResult.results.map(_.trade.asInstanceOf[EDMPhysicalTrade])
-        sw.reset()
-        val valuations = edmTrades.map(tradeValuer)
-        println("Valuation took " + sw)
-        val (errors, worked) = valuations.partition(_ match {
-          case Right(x) => true;
-          case _ => false
-        })
-        println("Worked " + worked.size + ", failed " + errors.size + ", took " + sw)
-        errors.foreach{case Right(msg) => println(msg); case _ => }
-        Left(valuations)
-      }
+    if (!edmTradeResult.cached)
+      throw TradeManagamentCacheNotReady
+    else {
+      println("Got Edm Trade results " + edmTradeResult.cached + ", trade result count = " + edmTradeResult.results.size)
+      val env = environment(snapshotStringToID(snapshotIDString))
+      val tradeValuer = PhysicalMetalForward.value(futuresExchangeByGUID, futuresMarketByGUID, env, snapshotIDString) _
 
-    } catch {
-      case ex =>
-        Right(ex.getMessage())
-        throw ex
+      val edmTrades: List[EDMPhysicalTrade] = edmTradeResult.results.map(_.trade.asInstanceOf[EDMPhysicalTrade])
+      sw.reset()
+      val valuations = edmTrades.map(tradeValuer)
+      println("Valuation took " + sw)
+      val (errors, worked) = valuations.partition(_ match {
+        case Right(x) => true;
+        case _ => false
+      })
+      println("Worked " + worked.size + ", failed " + errors.size + ", took " + sw)
+      //errors.foreach{case Right(msg) => println(msg); case _ => }
+      CostsAndIncomeQuotaValuationServiceResults(snapshotIDString, valuations)
     }
   }
 
@@ -80,9 +91,9 @@ class ValuationService(marketDataStore: MarketDataStore, val props: Props) exten
     }
   }
 
-  private def mostRecentSnapshotIdentifier() : Option[String] = {
+  private def mostRecentSnapshotIdentifierBeforeToday() : Option[String] = {
     updateSnapshotCache()
-    snapshotNameToID.values.toList.sortWith(_>_).headOption.map(_.id.toString)
+    snapshotNameToID.values.toList.filter(_.observationDay < Day.today()).sortWith(_>_).headOption.map(_.id.toString)
   }
 
   def snapshotStringToID(id: String): SnapshotID = {
@@ -94,10 +105,17 @@ class ValuationService(marketDataStore: MarketDataStore, val props: Props) exten
     )
   }
 
-  def snapshotIDsForDay(day: Day): List[String] = {
-    snapshotNameToID.filter {
-      case (id, snapshotID) => snapshotID.marketDataSelection.pricingGroup == Some(PricingGroup.Metals)
-    }.map(_._1).toList
+  /**
+   * Return all snapshots for a given observation day, or every snapshot if no day is supplied
+   */
+  def marketDataSnapshotIDService(observationDay : Option[LocalDate] = None): List[TitanSnapshotIdentifier] = {
+    updateSnapshotCache()
+    snapshotNameToID.values.filter {
+      starlingSnapshotID =>
+        starlingSnapshotID.marketDataSelection.pricingGroup == Some(PricingGroup.Metals) && (observationDay.isEmpty || (starlingSnapshotID.observationDay.toJodaLocalDate == observationDay.get))
+    }.map{
+      starlingSnapshotID => TitanSnapshotIdentifier(starlingSnapshotID.id.toString, starlingSnapshotID.observationDay.toJodaLocalDate)
+    }.toList
   }
 
   private def environment(snapshot: SnapshotID): Environment = {
