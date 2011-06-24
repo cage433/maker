@@ -17,7 +17,6 @@ import starling.utils.{Log, Stopwatch}
 /**
  * Valuation service implementations
  */
-
 class ValuationService(marketDataStore: MarketDataStore, val props: Props) extends TacticalRefData(props: Props) with ValuationServiceApi {
   def log(msg : String) = Log.info("ValuationService: " + msg)
 
@@ -34,7 +33,7 @@ class ValuationService(marketDataStore: MarketDataStore, val props: Props) exten
     log("Are EDM Trades available " + edmTradeResult.cached + ", took " + sw)
 
     if (!edmTradeResult.cached)
-      throw new TradeManagamentCacheNotReady
+      throw new TradeManagementCacheNotReady
     else {
       log("Got Edm Trade results " + edmTradeResult.cached + ", trade result count = " + edmTradeResult.results.size)
       val env = environment(snapshotStringToID(snapshotIDString))
@@ -45,7 +44,7 @@ class ValuationService(marketDataStore: MarketDataStore, val props: Props) exten
       val valuations = edmTrades.map{trade => (trade.tradeId, tradeValuer(trade))}.toMap
       log("Valuation took " + sw)
       val (errors, worked) = valuations.values.partition(_ match {
-        case Right(_) => true;
+        case Right(_) => true
         case Left(_) => false
       })
       log("Worked " + worked.size + ", failed " + errors.size + ", took " + sw)
@@ -54,9 +53,9 @@ class ValuationService(marketDataStore: MarketDataStore, val props: Props) exten
   }
 
   private val snapshotNameToID = scala.collection.mutable.Map[String, SnapshotID]()
-  val lock = new Object()
+  private val lock = new Object()
 
-  def updateSnapshotCache() {
+  private def updateSnapshotCache() {
     lock.synchronized {
       marketDataStore.snapshots().foreach {
         s: SnapshotID =>
@@ -70,7 +69,7 @@ class ValuationService(marketDataStore: MarketDataStore, val props: Props) exten
     snapshotNameToID.values.toList.filter(_.observationDay < Day.today()).sortWith(_>_).headOption.map(_.id.toString)
   }
 
-  def snapshotStringToID(id: String): SnapshotID = {
+  private def snapshotStringToID(id: String): SnapshotID = {
     snapshotNameToID.getOrElse(id, {
       updateSnapshotCache()
       assert(snapshotNameToID.contains(id), "Snapshot ID " + id + " not found")
@@ -103,5 +102,5 @@ object ValuationService extends Application{
 
   val valuations = vs.valueAllQuotas()
   //vs.marketDataSnapshotIDs().foreach(println)
-
 }
+

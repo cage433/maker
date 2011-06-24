@@ -41,7 +41,7 @@ import org.springframework.mail.javamail.{MimeMessageHelper, JavaMailSender, Jav
 import starling.rmi._
 import starling.calendar._
 import java.lang.String
-import com.trafigura.valuationservice.{ValuationServiceApi, TradeManagamentCacheNotReady}
+import com.trafigura.valuationservice.{ValuationServiceApi, TradeManagementCacheNotReady}
 import starling.curves.{EAIMarketLookup, FwdCurveAutoImport, CurveViewer}
 
 
@@ -326,7 +326,7 @@ class StarlingInit( val props: Props,
     rmiStarlingValuationServicePort,
     ThreadNamingProxy.proxy(valuationService, classOf[ValuationServiceApi]),
     nullHandler, BouncyRMI.CodeVersionUndefined, users,
-    Set(classOf[TradeManagamentCacheNotReady])
+    Set(classOf[TradeManagementCacheNotReady])
   )
 
   val eaiAutoImport = new EAIAutoImport(15, starlingRichDB, eaiStarlingRichSqlServerDB, strategyDB, eaiTradeStores, closedDesks, enabledDesks)

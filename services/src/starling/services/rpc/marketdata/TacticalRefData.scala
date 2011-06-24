@@ -11,14 +11,6 @@ import com.trafigura.edm.physicaltradespecs.QuotaDetail
 
 
 /**
- * Created by IntelliJ IDEA.
- * User: louis
- * Date: 24/06/11
- * Time: 11:00
- * To change this template use File | Settings | File Templates.
- */
-
-/**
  * Tactical ref data, service proxies / data
  */
 class TacticalRefData(props: Props) {
@@ -38,7 +30,7 @@ class TacticalRefData(props: Props) {
   def allTacticalRefDataFuturesMarkets() = tacticalRefdataMetalsService.getMetals()
   def allTacticalRefDataExchanges() = tacticalRefdataMarketsService.getMarkets()
 
-  var titanEdmQuotaDetailByIdentifier = Map[String, QuotaDetail]()
+  //var titanEdmQuotaDetailByIdentifier = Map[String, QuotaDetail]()
 }
 
 object TacticalRefData {
