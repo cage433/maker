@@ -26,8 +26,8 @@ class ReferenceData(businessCalendars: BusinessCalendars, marketDataStore: Marke
     "Formula Indexes"   → formulaIndexes(),
     "Published Indexes" → publishedIndexes(),
     "Pricing Groups"    → pricingGroups(),
-    "Calendars"         → calendars(businessCalendars),
-    "Schedules"         → schedules(scheduler)
+    "Schedules"         → schedules(scheduler),
+    "Calendars"         → calendars(businessCalendars)
 //    "Strategies"        → strategies(strategyDB))
     )
 

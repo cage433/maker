@@ -635,6 +635,7 @@ class StarlingBrowserTabbedPane(homePage: Page, pageBuilder: PageBuilder, lCache
   private val closeTabItem = new MenuItem(closeTabAction)
   private val splitVerticallyItem = new MenuItem(splitVerticallyAction)
   private val tabPopupMenu = new JPopupMenu
+  tabPopupMenu.setBorder(LineBorder(GuiUtils.BorderColour))
   tabPopupMenu.add(newTabItem.peer)
   tabPopupMenu.addSeparator
   tabPopupMenu.add(closeTabItem.peer)

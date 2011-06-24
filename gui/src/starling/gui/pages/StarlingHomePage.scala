@@ -6,15 +6,13 @@ import custom.painters.StripedCornerPainter
 import scala.swing.Swing._
 import java.awt.{Font, Color, Dimension, Cursor}
 import java.awt.event.KeyEvent
-import starling.auth.User
 import org.jdesktop.swingx.painter.{CompoundPainter, GlossPainter}
-import collection.immutable.TreeMap
 import scala.swing._
 import swing.event._
-import starling.daterange.{ObservationTimeOfDay, ObservationPoint, Day}
+import starling.daterange.Day
 import starling.pivot.view.swing._
 import starling.pivot._
-import javax.swing.{JList, DefaultListCellRenderer, JLabel, JComponent, KeyStroke}
+import javax.swing.{JComponent, KeyStroke}
 
 case class StarlingHomePage() extends Page {
   def build(reader:PageBuildingContext) = {HomePagePageData(reader.cachingStarlingServer.version, reader.cachingStarlingServer.desks.headOption)}
@@ -28,122 +26,13 @@ case class HomePagePageData(version:Version, initialDesk:Option[Desk]) extends P
 class StarlingHomePageComponent(context:PageContext, browserSize:Dimension, pageData:PageData) extends MigPanel("insets 0") with PageComponent {
   private val data = pageData match {case d:HomePagePageData => {d}}
 
-  private val bookmarksPanel = new MigPanel("") {
-    border = LineBorder(GuiUtils.TaskPageButtonBorderColour)
-    background = GuiUtils.TaskPageButtonBackgroundColour
-
-    val iconLabel = new Label {
-      icon = StarlingIcons.icon("/icons/32x32_report_star.png")
-    }
-    val textLabel = new Label("Select a bookmark (and valuation day if required) to go to")
-    val bookmarks = context.localCache.bookmarks
-
-    val bkColour = new Color(228, 231, 246)
-    val bookmarksListView = new NListView(bookmarks) {
-      background = bkColour
-      val bookmarkDataListCellRenderer = new DefaultListCellRenderer {
-        val emptyBorder = EmptyBorder(0, 2, 0, 0)
-        override def getListCellRendererComponent(list:JList, value:AnyRef, index:Int, isSelected:Boolean, cellHasFocus:Boolean) = {
-          val l = super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus).asInstanceOf[JLabel]
-          val bookmarkData = value.asInstanceOf[BookmarkData]
-          l.setText(bookmarkData.name)
-          val iconToUse = if (bookmarkData.bookmark.daySensitive) {
-            StarlingIcons.icon("/icons/10x10_calendar.png")
-          } else {
-            StarlingIcons.Blank10
-          }
-          l.setIcon(iconToUse)
-          l.setBorder(emptyBorder)
-          l
-        }
-      }
-      renderer = ListView.Renderer.wrap(bookmarkDataListCellRenderer)
-    }
-    val valuationDayChooser = new DayChooser(enableFlags = false) {
-      background = bkColour
-      enabled = valuationDayShouldBeEnabled
-      day = day.previousWeekday
-    }
-
-    def deleteBookmark() {
-      val bookmarkSelected = bookmarksListView.selected
-      context.submitYesNo("Delete Bookmark?",
-          "Are you sure you want to delete the \"" + bookmarkSelected.name + "\" bookmark?",
-          DeleteBookmarkRequest(bookmarkSelected.name), (u:Unit) => {false}, (u:Unit) => {})
-    }
-
-    def goToBookmark() {
-      val bookmark = bookmarksListView.selected
-      val baseDay = if (bookmark.bookmark.daySensitive) {
-        Some(valuationDayChooser.day)
-      } else {
-        None
-      }
-      context.createAndGoTo(server => {
-        bookmark.bookmark.createPage(baseDay, server, context)
-      })
-    }
-
-    val goToBookmarkAction = Action("Go"){goToBookmark()}
-    goToBookmarkAction.toolTip = "Go to the selected bookmark (F9)"
-    goToBookmarkAction.icon = NewPageButton.arrowImage
-
-    val goToBookmarkButton = new NewPageButton {
-      background = GuiUtils.TaskPageBackgroundColour
-      action = goToBookmarkAction
-    }
-    val bookmarkScrollPane = new ScrollPane(bookmarksListView)
-    if (bookmarks.size <= 3) {
-      bookmarkScrollPane.preferredSize = new Dimension(preferredSize.width, 100)
-    }
-
-    add(iconLabel, "split 3, spanx")
-    add(textLabel, "gapright unrel")
-    add(goToBookmarkButton, "wrap")
-    add(bookmarkScrollPane, "split, spanx, gapleft 10lp, push, grow")
-    add(valuationDayChooser, "ay top")
-
-    def componentsEnabled = false // Not used
-    def componentsEnabled_=(b:Boolean) {
-      goToBookmarkAction.enabled = b
-      bookmarkScrollPane.enabled = b
-      bookmarksListView.enabled = b
-      valuationDayChooser.enabled = b && valuationDayShouldBeEnabled
-      iconLabel.enabled = b
-      textLabel.enabled = b
-    }
-
-    def valuationDayShouldBeEnabled = {
-      bookmarksListView.selectedOption match {
-        case Some(bookmark) => bookmark.bookmark.daySensitive
-        case _ => false
-      }
-    }
-
-    reactions += {
-      case BookmarksUpdate(username, _) if username == context.localCache.currentUser.username => {
-        val newBookmarks = context.localCache.bookmarks
-        val currentSelectedItem = bookmarksListView.selectedOption
-        bookmarksListView.listData = newBookmarks
-        if (bookmarksListView.listData.isEmpty) {
-          componentsEnabled = false
-        } else {
-          componentsEnabled = true
-        }
-        bookmarksListView.selectedOption = currentSelectedItem
-      }
-      case MouseClicked(`bookmarksListView`,_,_,2,_) => {goToBookmark()}
-      case KeyPressed(`bookmarksListView`, scala.swing.event.Key.Delete, _, _) => {deleteBookmark()}
-      case SelectionChanged(`bookmarksListView`) => valuationDayChooser.enabled = valuationDayShouldBeEnabled
-    }
-    listenTo(context.remotePublisher, bookmarksListView.keys, bookmarksListView.mouse.clicks, bookmarksListView.selection)
-
-    if (!bookmarks.isEmpty) {
-      bookmarksListView.selectIndices(0)
-    }
-
-    componentsEnabled = bookmarks.nonEmpty
-  }
+  private val bookmarksPanel = new BookmarksPanel(context)
+  bookmarksPanel.background = GuiUtils.TaskPageButtonBackgroundColour
+  bookmarksPanel.border = LineBorder(GuiUtils.TaskPageButtonBorderColour)
+  val componentsBkColour = new Color(228, 231, 246)
+  bookmarksPanel.bookmarksListView.background = componentsBkColour
+  bookmarksPanel.valuationDayChooser.background = componentsBkColour
+  bookmarksPanel.goToBookmarkButton.background = GuiUtils.TaskPageBackgroundColour
 
   override def getState = {
     Some(StarlingHomePageComponentState(bookmarksPanel.bookmarksListView.selectedOption))
@@ -247,7 +136,7 @@ class StarlingHomePageComponent(context:PageContext, browserSize:Dimension, page
     add(actionsPanelHolder)
   }
 
-  override def pageShown = bookmarksPanel.goToBookmarkButton.requestFocusInWindow
+  override def pageShown {bookmarksPanel.goToBookmarkButton.requestFocusInWindow()}
 
   peer.getInputMap(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT).put(KeyStroke.getKeyStroke(KeyEvent.VK_1, 0), "tradesAction")
   peer.getInputMap(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT).put(KeyStroke.getKeyStroke(KeyEvent.VK_2, 0), "refDataAction")
@@ -281,7 +170,7 @@ class StarlingHomePageComponent(context:PageContext, browserSize:Dimension, page
 
       TradeSelectionPage(TradePageParameters(
         deskWithTime, intradayWithTime,
-        TradeExpiryDay(Day.today)), PivotPageState(false, PivotFieldParams(true, None)))
+        TradeExpiryDay(Day.today())), PivotPageState(false, PivotFieldParams(true, None)))
     }, ctrlDown)
   }
 
@@ -291,7 +180,7 @@ class StarlingHomePageComponent(context:PageContext, browserSize:Dimension, page
 
   def gotoCurvePage(ctrlDown: Boolean) {
     val curveLabel = CurveLabel(CurveTypeLabel("Price"), defaultMarketDataIdentifier, EnvironmentSpecificationLabel(
-      context.localCache.populatedDays(defaultMarketDataIdentifier.selection).lastOption.getOrElse(Day.today),
+      context.localCache.populatedDays(defaultMarketDataIdentifier.selection).lastOption.getOrElse(Day.today()),
       context.localCache.environmentRulesForPricingGroup(defaultMarketDataIdentifier.selection.pricingGroup).head
     ))
 

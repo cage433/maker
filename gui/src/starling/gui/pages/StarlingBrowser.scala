@@ -163,6 +163,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
     settingsButton.enabled = enabled
     liveUpdateCheckbox.enabled = enabled
     bookmarkButton.enabled = enabled
+    bookmarkDropDownButton.enabled = enabled
     enableAddressBar(enabled)
   }
 
@@ -515,6 +516,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
 
   private def showAddressPopup {
     val historySelector = new JPopupMenu
+    historySelector.setBorder(LineBorder(GuiUtils.BorderColour))
     for ((pageInfo, index) <- history.zipWithIndex.reverse) {
       val page = pageInfo.page
       val ac = new Action(page.text) {
@@ -612,6 +614,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
 
   private val bookmarkButton = new BookmarkButton(currentBookmark, pageContext)
   def currentBookmark = history(current).bookmark
+  private val bookmarkDropDownButton = new BookmarkDropDownButton(pageContext)
 
   refreshButtonStatus
 
@@ -627,7 +630,8 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
     add(addressBar, "pushx, growx, ay center")
     add(extraInfoLabel, "hidemode 3")
     add(settingsButton)
-    add(bookmarkButton)
+    add(bookmarkButton, "split 2, gap after 0")
+    add(bookmarkDropDownButton, "gap before 0, growy")
 
     val version = lCache.version
     val (topColour,bottomColour) = version.colour match {
@@ -666,6 +670,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
     redoButton.enabled = (current < (history.size-1))
     settingsButton.enabled = true
     bookmarkButton.enabled = true
+    bookmarkDropDownButton.enabled = true
     enableAddressBar(true)
     homeButton.enabled = true
     liveUpdateCheckbox.enabled = true

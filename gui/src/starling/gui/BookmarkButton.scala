@@ -2,18 +2,18 @@ package starling.gui
 
 import api.{UserReportData, BookmarksUpdate, BookmarkLabel}
 import pages.NavigationButton
-import swing.event.ButtonClicked
 import starling.pivot.view.swing.MigPanel
-import javax.swing.BorderFactory
 import javax.swing.event.{DocumentEvent, DocumentListener}
 import swing._
-import java.awt.{Dimension, Color}
+import event.{MousePressed, ButtonClicked}
+import java.awt.{Dimension, Color, Polygon, RenderingHints, KeyboardFocusManager}
 import xstream.GuiStarlingXStream
 import starling.rmi.StarlingServer
 import starling.pivot.PivotLayout
+import javax.swing.{JPopupMenu, BorderFactory}
+import swing.Swing._
 
-class BookmarkButton(currentBookmark: => Bookmark, pageContext:PageContext) extends NavigationButton {
-//  val noBookmarkIcon = StarlingIcons.icon("/icons/22x22_empty_bookmark.png")
+class BookmarkButton(currentBookmark: => Bookmark, context:PageContext) extends NavigationButton {
   val noBookmarkIcon = StarlingIcons.icon("/icons/22x22_empty_star.png")
   val noBookmarkIconCal = StarlingIcons.icon("/icons/22x22_empty_star_cal.png")
   val bookmarkedIcon = StarlingIcons.icon("/icons/22x22_bookmark.png")
@@ -24,7 +24,7 @@ class BookmarkButton(currentBookmark: => Bookmark, pageContext:PageContext) exte
     if (setup) {
       savePanel.nameField.requestFocusInWindow()
       savePanel.nameField.selectAll()
-      pageContext.setDefaultButton(Some(savePanel.okButton))
+      context.setDefaultButton(Some(savePanel.okButton))
     }
   }
   def setReplacePanel() {
@@ -50,7 +50,7 @@ class BookmarkButton(currentBookmark: => Bookmark, pageContext:PageContext) exte
           val bookmarkName = getText.trim()
           def saveBookmark(a:Unit) {
             val bookmark = GuiStarlingXStream.write(currentBookmark)
-            pageContext.submit(SaveBookmarkRequest(BookmarkLabel(bookmarkName, bookmark)))
+            context.submit(SaveBookmarkRequest(BookmarkLabel(bookmarkName, bookmark)))
 
             // This is a hack to save the report to the server as well as the bookmark.
             currentBookmark match {
@@ -62,16 +62,16 @@ class BookmarkButton(currentBookmark: => Bookmark, pageContext:PageContext) exte
                     case Some(pfs) => PivotLayout("special-" + bookmarkName, pfs, true,
                       rb.pivotPageState.otherLayoutInfo, "special", Nil)
                   }
-                  pageContext.submit(SaveReportRequest(bookmarkName, userReportData, pivotLayout, true, true, true))
+                  context.submit(SaveReportRequest(bookmarkName, userReportData, pivotLayout, true, true, true))
                 }
-                pageContext.submit(DeleteReportRequest(bookmarkName), saveReport)
+                context.submit(DeleteReportRequest(bookmarkName), saveReport)
               }
               case _ =>
             }
 
             clearUp()
           }
-          pageContext.submit(DeleteBookmarkRequest(bookmarkName), saveBookmark)
+          context.submit(DeleteBookmarkRequest(bookmarkName), saveBookmark)
         }
       }
     }
@@ -108,11 +108,11 @@ class BookmarkButton(currentBookmark: => Bookmark, pageContext:PageContext) exte
         case ButtonClicked(e) => {
           val bookmarkName = getText
           if (bookmarkName.nonEmpty) {
-            val currentBookmarkNames = pageContext.localCache.bookmarks.map(_.name.trim)
+            val currentBookmarkNames = context.localCache.bookmarks.map(_.name.trim)
             if (!currentBookmarkNames.contains(bookmarkName)) {
               val bookmark = GuiStarlingXStream.write(currentBookmark)
               val bookmarkLabel = BookmarkLabel(bookmarkName, bookmark)
-              pageContext.submit(SaveBookmarkRequest(bookmarkLabel))
+              context.submit(SaveBookmarkRequest(bookmarkLabel))
 
               currentBookmark match {
                 case rb:ReportBookmark => {
@@ -122,7 +122,7 @@ class BookmarkButton(currentBookmark: => Bookmark, pageContext:PageContext) exte
                     case Some(pfs) => PivotLayout("special-" + bookmarkName, pfs, true,
                       rb.pivotPageState.otherLayoutInfo, "special", Nil)
                   }
-                  pageContext.submit(SaveReportRequest(bookmarkName, userReportData, pivotLayout, true, true, true))
+                  context.submit(SaveReportRequest(bookmarkName, userReportData, pivotLayout, true, true, true))
                 }
                 case _ =>
               }
@@ -131,7 +131,7 @@ class BookmarkButton(currentBookmark: => Bookmark, pageContext:PageContext) exte
             } else {
               // Show a replace dialog.
               holderPanel.update(replacePanel, true)
-              pageContext.setDefaultButton(Some(replacePanel.yesButton))
+              context.setDefaultButton(Some(replacePanel.yesButton))
               replacePanel.yesButton.requestFocusInWindow()
             }
           }
@@ -151,9 +151,9 @@ class BookmarkButton(currentBookmark: => Bookmark, pageContext:PageContext) exte
     add(cancelButton, "al right bottom, sg button")
 
     def clearUp() {
-      pageContext.clearContent()
-      pageContext.setDefaultButton(oldDefaultButton)
-      pageContext.requestFocusInCurrentPage()
+      context.clearContent()
+      context.setDefaultButton(oldDefaultButton)
+      context.requestFocusInCurrentPage()
     }
   }
 
@@ -200,32 +200,32 @@ class BookmarkButton(currentBookmark: => Bookmark, pageContext:PageContext) exte
   }
 
   private def checkIfBookmarkIsKnown = {
-    val bookmarks = pageContext.localCache.bookmarks.map(_.bookmark)
+    val bookmarks = context.localCache.bookmarks.map(_.bookmark)
     bookmarks.contains(currentBookmark)
   }
 
   reactions += {
     case ButtonClicked(b) => {
       if (knownBookmark0) {
-        val bookmarkName = pageContext.localCache.bookmarks.find(_.bookmark == currentBookmark).get.name
-        pageContext.submitYesNo("Delete Bookmark?",
+        val bookmarkName = context.localCache.bookmarks.find(_.bookmark == currentBookmark).get.name
+        context.submitYesNo("Delete Bookmark?",
           "Are you sure you want to delete the \"" + bookmarkName + "\" bookmark?",
           DeleteBookmarkRequest(bookmarkName), (u:Unit) => {false}, (u:Unit) => {})
       } else {
-        val oldDefaultButton = pageContext.getDefaultButton
+        val oldDefaultButton = context.getDefaultButton
         savePanel.oldDefaultButton = oldDefaultButton
         setSavePanel(false)
-        pageContext.setContent(holderPanel, Some(savePanel.clearUp))
-        pageContext.setDefaultButton(Some(savePanel.okButton))
+        context.setContent(holderPanel, Some(savePanel.clearUp))
+        context.setDefaultButton(Some(savePanel.okButton))
         savePanel.nameField.requestFocusInWindow()
       }
     }
-    case BookmarksUpdate(user, bookmarks) if user == pageContext.localCache.currentUser.username => {
+    case BookmarksUpdate(user, bookmarks) if user == context.localCache.currentUser.username => {
       refresh()
       repaint()
     }
   }
-  listenTo(pageContext.remotePublisher)
+  listenTo(context.remotePublisher)
 }
 
 case class SaveBookmarkRequest(savedBookmark:BookmarkLabel) extends SubmitRequest[Unit] {
@@ -253,4 +253,51 @@ case class SaveReportRequest(reportName:String, userReportData:UserReportData, p
 
 case class DeleteReportRequest(reportName:String) extends SubmitRequest[Unit] {
   def submit(server:StarlingServer) {server.deleteUserReport(reportName)}
+}
+
+class BookmarkDropDownButton(context:PageContext) extends Button {
+  tooltip = "Choose a bookmark to go to"
+  focusable = false
+  background = GuiUtils.ClearColour
+  opaque = false
+
+  maximumSize = new Dimension(10, Integer.MAX_VALUE)
+
+  val bookmarkPanel = new BookmarksPanel(context)
+  val popupMenu = new JPopupMenu()
+  popupMenu.add(bookmarkPanel.peer)
+  popupMenu.setBorder(LineBorder(GuiUtils.BorderColour))
+
+  reactions += {
+    case MousePressed(_,_,_,_,_) if enabled => {
+      val x = size.width - popupMenu.getPreferredSize.width
+      popupMenu.show(peer, x, size.height)
+      onEDT({
+        KeyboardFocusManager.getCurrentKeyboardFocusManager.focusNextComponent(popupMenu)
+      })
+    }
+    case GoingToBookmark => popupMenu.setVisible(false)
+  }
+  listenTo(mouse.clicks, bookmarkPanel)
+
+  def col = if (enabled) GuiUtils.BorderColour else GuiUtils.DisabledBorderColour
+
+  override protected def paintComponent(g:Graphics2D) {
+    super.paintComponent(g)
+    g.setColor(col)
+    g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON)
+    val y = size.height / 2 - 1
+    val triangle = new Polygon(Array(2,6,4), Array(y,y,y+3), 3)
+    g.draw(triangle)
+  }
+
+  override protected def paintBorder(g:Graphics2D) {
+    val h = size.height
+    g.setClip(2, 0, size.width-2, h)
+    super.paintBorder(g)
+    g.setColor(col)
+    g.setClip(0,0,2,h)
+    g.drawLine(0,0,1,0)
+    g.drawLine(0,h-1,1,h-1)
+  }
 }
