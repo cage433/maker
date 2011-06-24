@@ -3,9 +3,11 @@ package starling.services.rpc.marketdata
 import com.trafigura.edm.marketdata._
 import scala.collection.JavaConversions._
 
+import com.trafigura.edm.shared.types.{Currency => ECurrency, Date => EDate, Quantity => EDMQuantity, Percentage => EPercentage}
+import starling.edm.EDMConversions._
+import starling.db.MarketDataStore
 import starling.gui.api.{MarketDataSelection, PricingGroup, MarketDataIdentifier}
-import starling.marketdata.{PriceFixingsHistoryDataType, MarketDataTypes}
-import starling.pivot.model.PivotTableModel
+import starling.marketdata.{SpotFXDataType, MarketDataType, PriceFixingsHistoryDataType}
 import starling.pivot._
 import starling.utils.ImplicitConversions._
 import PriceFixingsHistoryDataType._
@@ -36,180 +38,156 @@ import com.trafigura.edm.trades.{Trade => EDMTrade, PhysicalTrade => EDMPhysical
 import starling.db.{NormalMarketDataReader, SnapshotID, MarketDataStore}
 import starling.curves.{ClosesEnvironmentRule, Environment, NullAtomicEnvironment}
 import java.lang.{IllegalStateException, Thread}
+import starling.pivot.model.PivotTableModel
+import starling.utils.ImplicitConversions._
+import PriceFixingsHistoryDataType._
+import SpotFXDataType._
+import starling.utils.Log
+import starling.daterange.{Tenor, Day}
+import starling.quantity.{Percentage, Quantity, UOM}
+import com.trafigura.marketdataservice.{ReferenceInterestRate, ReferenceRateSource, Maturity}
+
+//case class EInterestRateType(name: String) extends Named
+//object EInterestRateType extends StarlingEnum(classOf[EInterestRateType], true) {
+//  val Unknown = EInterestRateType("Unknown")
+//}
+//case class EInterestRatePoint(value: EPercentage, dateRange: EDateRange)
+
+
+
+
+
+abstract class Matcher[A] {
+  def matches(value: A): Boolean
+}
+
+case class Match[A](pattern: A) extends Matcher[A] {
+  def matches(value: A) = pattern == value
+}
+
+case class Ignore[A] extends Matcher[A] {
+  def matches(value: A) = true
+}
 
 /**
  * Generic Market data service, covering all market data
  */
 class MarketDataServiceRPC(marketDataStore: MarketDataStore, val props: Props) extends TacticalRefData(props: Props) with MarketDataService {
 
-  implicit def enrichMarketDataRequestParameters(parameters: MarketDataRequestParameters) = new {
-    def filterExchange(exchangeNames: String*) = addFilters(MarketDataFilter(exchangeField.name, exchangeNames.toList))
+/** Generic Market data service, covering all market data */
+class MarketDataServiceRPC(marketDataStore: MarketDataStore) {
+  implicit def enrichReferenceInterestRate(self: ReferenceInterestRate) = new {
+    def matches(observationDate: Matcher[EDate], source: Matcher[ReferenceRateSource], maturity: Matcher[Maturity],
+              currency: Matcher[ECurrency], rate: Matcher[EPercentage])
 
-    def addFilters(filter: MarketDataFilter*) = parameters.filters = parameters.filters ::: filter.toList
+    = observationDate.matches(self.observationDate) && source.matches(self.source) && maturity.matches(self.maturity) &&
+      currency.matches(self.currency)
   }
 
-  /*
-   * a generic (untyped) market data service (unsupported)
-   */
-  def marketData(parameters: MarketDataRequestParameters): MarketDataResponse = try {
+  def getSpotFXRate(from: ECurrency, to: ECurrency, observationDate: EDate): EDMQuantity =
+    getSpotFXRate(from.fromEDM, to.fromEDM, observationDate.fromEDM).toEDM
+
+  def getSpotFXRates(observationDate: EDate): List[EDMQuantity] = getSpotFXRates(observationDate.fromEDM).map(_.toEDM)
+
+//  def getInterestRates(currency: ECurrency, rateType: EInterestRateType, dateRange: EDateRange): List[EInterestRatePoint] =
+//    getInterestRates(currency.fromEDM, rateType, dateRange.startDay, dateRange.endDay)
+//
+//  def getInterestRate(currency: ECurrency, rateType: EInterestRateType, date: EDate): EInterestRatePoint = {
+//    val rates = getInterestRates(currency.fromEDM, rateType, date.fromEDM, date.fromEDM)
+//
+//    rates.find(_.dateRange.contains(date)).getOrElse(throw new Exception("No Interest Rate for %s, available dates: %s" %
+//      (date, rates.map(_.dateRange.fromEDM).mkString(", "))))
+//  }
+
+//  private def getInterestRates(currency: UOM, rateType: EInterestRateType, from: Day, to: Day): List[EInterestRatePoint] = Nil
+
+//  def getFixings(quota: EDMQuota): MarketDataResponse = getMarketData(fixingRequest.addFilter(marketField.name, "<market>")
+//    .copy(columns = List(), rows = List(levelField, periodField))).toEDM
+
+  def getQuotaValue(quotaId : Int) : EDMQuantity = Quantity(1, UOM.USD).toEDM
+
+  def getReferenceInterestRate(observationDate: EDate, source: ReferenceRateSource, maturity: Maturity, currency: ECurrency) = {
+    val results = getReferenceInterestRates(observationDate)
+
+    results.find(_.matches(Ignore[EDate], Match(source), Match(maturity), Match(currency), Ignore[EPercentage])).getOrElse(
+      throw new IllegalArgumentException(
+        "No Reference Interest Rate observed on %s with source: %s, maturity: %s, currency: %s" %
+          (observationDate, source, maturity, currency) +
+        (", valid sources: %s, maturities: %s, currencies: %s" %
+            results.map(_.source.name), results.map(_.maturity), results.map(_.currency.name))))
+  }
+
+  def getReferenceInterestRates(observationDate: EDate): List[ReferenceInterestRate] = {
+    val response = getMarketData(fixingRequest.copyObservationDay(observationDate.fromEDM)
+      .copy(rows = List(exchangeField, marketField, periodField)))
+
+    val rates = response.data.collect {
+      case List(exchange, UOM.Parse(uom), tenor: Tenor, percentage: Percentage) =>
+        ReferenceInterestRate(observationDate, ReferenceRateSource(exchange.toString), tenor.toEDM, uom.toCurrency, percentage.toEDM)
+    }
+
+    if (rates.isEmpty) throw new IllegalArgumentException("No Reference Interest Rates observed on: " + observationDate.fromEDM)
+
+    rates
+  }
+
+//  def latestLiborFixings() = getMarketData(fixingRequest.copyExchange("LIBOR", "IRS")
+//    .copy(rows = List(levelField, periodField), columns = List(marketField)))
+//
+//  def latestECBFXFixings() = getMarketData(fixingRequest.copyExchange("ECB").copy(rows = List(marketField, periodField)))
+//
+//  def latestLMEFixings() = getMarketData(fixingRequest.copyExchange("LME").copy(rows = List(marketField, periodField),
+//    columns = List(levelField, FieldDetails("Observation Time"))))
+
+  private def getSpotFXRate(from: UOM, to: UOM, observationDay: Day): Quantity = {
+    val rates = getSpotFXRates(observationDay).toMapWithKeys(_.uom)
+
+    (rates.get(from), rates.get(to)) match {
+      case (Some(from), Some(to)) => from / to
+      case _ => throw new IllegalArgumentException("No Spot FX Rate for %s/%s observed on %s, valid currencies: %s" %
+        (from, to, observationDay))
+    }
+  }
+
+  private def getSpotFXRates(observationDay: Day) = getMarketData(spotFXRequest.copyObservationDay(observationDay))
+    .data.collect { case List(currency: UOM, rate: Double) => Quantity(rate, currency) }
+
+  private def getMarketData(parameters: MarketDataRequestParametersCC): MarketDataResponseCC = {
     Log.info("MarketDataServiceRPC called with parameters " + parameters)
     parameters.notNull("Missing parameters")
 
-    val selection = MarketDataSelection(Some(PricingGroup.fromName(parameters.pricingGroup)))
-    val version = parameters.version.getOrElse(marketDataStore.latest(selection))
-    val pivot = marketDataStore.pivot(MarketDataIdentifier(selection, version), MarketDataTypes.fromName(parameters.dataType))
-    val filters = parameters.filters.map(filter => pivot.parseFilter(Field(filter.name), filter.values))
-    val pfs = PivotFieldsState(fields(parameters.measures), fields(parameters.rows), fields(parameters.columns), filters)
-    val data = PivotTableModel.createPivotTableData(pivot, Some(pfs)).toFlatRows(Totals.Null)
+    val selection = MarketDataSelection(Some(parameters.pricingGroup))
+    val version   = parameters.version.getOrElse(marketDataStore.latest(selection))
+    val pivot     = marketDataStore.pivot(MarketDataIdentifier(selection, version), parameters.dataType)
+    val pfs       = parameters.pivotFieldsState(pivot)
+    val data      = PivotTableModel.createPivotTableData(pivot, Some(pfs)).toFlatRows(Totals.Null, trimBlank = true)
 
-    MarketDataResponse(parameters.update(_.version = Some(version)), data.map(row => MarketDataRow(row.map(_.toString))))
-  } catch {
-    case exception => MarketDataResponse(parameters, errors = List(exception.getMessage))
+    MarketDataResponseCC(parameters.copy(version = Some(version)), data)
   }
 
-  /**
-   * get price fixings for the supplied EDM Quota
-   */
-  def getFixings(quota: EDMQuota): MarketDataResponse = {
+  private val fixingRequest = MarketDataRequestParametersCC(PricingGroup.Metals, PriceFixingsHistoryDataType, None,
+    measures = List(priceField), filters = Map("Observation Day" → List(Day.today.toString)))
 
-    val mdParams = fixingRequest.update(
-      _.addFilters(MarketDataFilter(marketField.name, List("<market>"))),
-      _.columns = List(),
-      _.rows = names(levelField, periodField)
-    )
-
-    marketData(mdParams)
-  }
-
-  /**
-   * valuation of all Edm quotsa service
-   */
-  def getAllQuotaValues(): Either[List[Either[EDMQuantity, String]], Boolean] = time(getAllQuotaValuesImpl(), "Took %d ms to execute getAllQuotaValues")
-
-  private def getAllQuotaValuesImpl() = {
-    null
-  }
-
-  /**
-   * valuation of an Edm quota service
-   */
-  def getQuotaValue(quotaId: String): EDMQuantity = time(getQuotaValueImpl(quotaId), "Took %d ms to execute getQuotaValue")
-
-  private def getQuotaValueImpl(quotaId: String): EDMQuantity = {
-
-    try {
-      Log.info("getQuotaValue for %s".format(quotaId))
-      val q = quotaById(quotaId)
-
-      Log.info("Found requested quota by id %s { %s }".format(quotaId, q.toString))
-
-      val trades = readAllTradesFromTitan()
-
-      val tradeString = StarlingXStream.write(trades)
-
-      val fstream = new FileWriter("/tmp/edmtrades.xml")
-      val out = new BufferedWriter(fstream)
-      out.write(tradeString)
-
-      out.close()
-      fstream.close()
-
-
-      Log.info("Got %d  edm trades".format(trades.size))
-
-
-      EDMConversions.toEDMQuantity(
-        Quantity(trades.size, UOM.USD)
-      )
-    }
-    catch {
-      case e: Exception => Log.error("getQuotaValue for %s failed, error: ".format(e.getMessage(), e))
-      throw e
-    }
-  }
-
-  def latestLiborFixings() = marketData(fixingRequest.update(_.filterExchange("LIBOR", "IRS"),
-    _.rows = names(levelField, periodField), _.columns = names(marketField)))
-
-  def latestECBFXFixings() = marketData(fixingRequest.update(_.filterExchange("ECB"), _.rows = names(marketField, periodField)))
-
-  def latestLMEFixings() = marketData(fixingRequest.update(_.filterExchange("LME"),
-    _.rows = names(marketField, periodField), _.columns = List(levelField.name, "Observation Time")))
-
-  private def fixingRequest = MarketDataRequestParameters(PricingGroup.Metals.name, PriceFixingsHistoryDataType.name, None,
-    measures = names(priceField), filters = List(MarketDataFilter("Observation Day", List(Day.today.toString))))
-
-  private def fields(names: List[String]) = names.map(Field(_))
-
-  private def names(fields: FieldDetails*) = fields.map(_.name).toList
-
-  private def quotaById(id: String) = {
-
-    if (titanEdmQuotaDetailByIdentifier.contains(id)) {
-      titanEdmQuotaDetailByIdentifier(id)
-    }
-    else {
-      Log.info("quota cache miss for quota %s, refeshing cache".format(id))
-      titanEdmQuotaDetailByIdentifier = readAllTradesFromTitan().flatMap(_.quotas.map(q => (q.detail.identifier, q.detail))).toMap
-      titanEdmQuotaDetailByIdentifier(id)
-    }
-  }
-
-  // set up a client executor and edm trade proxy
-  def readAllTradesFromTitan(): List[PhysicalTrade] = {
-    def titanTradeResults(): TradeResults = titanGetEdmTradesService.getAll()
-    var tr: TradeResults = TradeResults(cached = false)
-    val sw = new Stopwatch()
-    while (tr.cached == false) {
-      println("Waitng for trades " + sw)
-      Thread.sleep(5000)
-      tr = titanTradeResults()
-    }
-    tr.results.map(_.trade.asInstanceOf[PhysicalTrade])
-  }
+  private val spotFXRequest = MarketDataRequestParametersCC(PricingGroup.Metals, SpotFXDataType, None,
+    measures = List(rateField), rows = List(currencyField))
 }
 
+case class MarketDataResponseCC(parameters: MarketDataRequestParametersCC, data: List[List[Any]])
 
-object MarketDataService extends Application {
+case class MarketDataRequestParametersCC(pricingGroup: PricingGroup, dataType: MarketDataType, version: Option[Int] = None,
+  measures: List[FieldDetails] = Nil, filters: Map[String, List[String]] = Map(), rows: List[FieldDetails] = Nil,
+  columns: List[FieldDetails] = Nil) {
 
-  lazy val server = StarlingInit.devInstance
-  lazy val vs = new ValuationService(server.marketDataStore, server.props)
+  def copyExchange(exchangeNames: String*) = addFilter(exchangeField.name, exchangeNames : _*)
+  def copyObservationDay(day: Day) = addFilter("Observation Day", day.toString)
+  def addFilter(name: String, values: String*) = copy(filters = filters + (name → values.toList))
 
+  def pivotFieldsState(pivot: PivotTableDataSource) =
+    PivotFieldsState(fields(measures), fields(rows), fields(columns), filters.map {
+      case (name, values) => pivot.parseFilter(Field(name), values)
+    }.toList)
 
-  //readAndStore()
-  val valuations = vs.valueAllQuotas()
-  
-//  valuations match {
-//    case Left(result) => result.foreach(println)
-//    case Right(error) => println(error)
-//  }
-
-/*
-  def readAndStore() {
-    new Thread(new Runnable() {
-      def run() {
-        Server.main(Array())
-      }
-    }).start()
-
-    while (Server.server == null) {
-      Thread.sleep(1000)
-    }
-
-    val md = new MarketDataServiceRPC(Server.server.marketDataStore, Server.server.props)
-
-    val trades = md.readAllTradesFromTitan()
-
-    val tradeStrings = trades.map(_.toJson()) //  StarlingXStream.write(trades)
-
-    val fstream = new FileWriter("/tmp/edmtrades.json")
-    val out = new BufferedWriter(fstream)
-    out.write(tradeStrings.mkString("\n"))
-
-    out.close()
-    fstream.close()
-  }
-*/
+  private def fields(names: List[FieldDetails]) = names.map(_.field)
 }
 
 
@@ -217,9 +195,9 @@ object MarketDataService extends Application {
  * Market data service stub
  *  this service stub impl that overrides the filter chain with a null implementation
  */
-class MarketDataServiceResourceStubEx()
-  extends MarketDataServiceResourceStub(new MarketDataServiceRPC(Server.server.marketDataStore, Server.server.props), List[ServiceFilter]()) {
+class MarketDataServiceResourceStubEx {
+  //extends MarketDataServiceResourceStub(new MarketDataServiceRPC(Server.server.marketDataStore), List[ServiceFilter]()) {
 
   // this is deliberately stubbed out as the exact requirements on permissions and it's implementation for this service is TBD
-  override def requireFilters(filterClasses: String*) {}
+//  override def requireFilters(filterClasses:String*) {}
 }

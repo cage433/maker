@@ -63,7 +63,7 @@ class ManualReportConfigPanel(context:PageContext, reportParameters:ReportParame
       tooltip = "Import and snapshot market data for the day selected"
       icon = StarlingIcons.icon("/icons/14x14_download_data.png")
       reactions += {
-        case ButtonClicked(b) => {
+        case ButtonClicked(_) => {
           context.submit(SnapshotSubmitRequest(generateMarketDataSelection, observationDayChooser.day))
         }
       }

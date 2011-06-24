@@ -212,7 +212,7 @@ case class ColumnTree(fieldOrColumnStructure:FieldOrColumnStructure, childStruct
   }
   def isInvalid:Boolean = {
     fieldOrColumnStructure.value match {
-      case Right(cs) => cs.isInvalid || childStructure.isInvalid
+      case Right(cs) => cs.isInvalid || childStructure.isInvalid || (childStructure.measureFields.nonEmpty && cs.measureFields.nonEmpty)
       case Left(FieldAndIsMeasure(_, true)) => childStructure.measureFields.nonEmpty
       case Left(FieldAndIsMeasure(_, false)) => childStructure.isInvalid
     }

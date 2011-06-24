@@ -10,9 +10,9 @@ import starling.curves.FuturesSpreadPrice
 import starling.curves.PriceDifferentiable
 import starling.market.FuturesFrontPeriodIndex
 import starling.curves.SwapPrice
-import starling.utils.SummingMap
 import starling.market.FuturesMarket
 import starling.daterange._
+import starling.utils.{CollectionUtils, SummingMap}
 
 object Hedge{
   private def calcHedge(
@@ -44,7 +44,8 @@ object Hedge{
 
     val months = spreadMonths.toList.sortWith(_<_)
     val diffs = months.map(PriceDifferentiable(market, _))
-    val newDiffs = PriceDifferentiable(market, months.last) :: months.dropRight(1).map{m => FuturesSpreadPrice(market, m, m+1)}
+
+    val newDiffs = PriceDifferentiable(market, months.last) :: months.zip(months.tail).map{case (m1, m2) => FuturesSpreadPrice(market, m1, m2)}
 
     val strike = Quantity(0, market.priceUOM)
     val spreads = calcHedge(env, diffs, CompositeInstrument(liveFutures), newDiffs).map{
@@ -56,7 +57,21 @@ object Hedge{
 
   def futuresSpreadHedgeUTPs(env : Environment, futures : List[Future], spreadMonths : Set[Month]) : List[UTP] = {
     val liveOrDead = futures.groupBy(_.isLive(env.marketDay))
-    asListOfUTPS(futuresSpreadHedge(env, liveOrDead.getOrElse(true, Nil), spreadMonths)) ::: liveOrDead.getOrElse(false, Nil)
+    val spreadHedgeUTPs = asListOfUTPS(futuresSpreadHedge(env, liveOrDead.getOrElse(true, Nil), spreadMonths)) ::: liveOrDead.getOrElse(false, Nil)
+
+    def assertFuturesAndSpreadsHaveTheSameDeltas() {
+      val futuresComp = CompositeInstrument(futures)
+      val spreadComp = CompositeInstrument(spreadHedgeUTPs)
+      for (
+        key <- CollectionUtils.filterOnType[PriceDifferentiable](futuresComp.environmentDifferentiables(env.marketDay) ++ spreadComp.environmentDifferentiables(env.marketDay))
+      ) {
+        val delta = futuresComp.firstOrderDerivative(env, key, USD)
+        val hedgeDelta = spreadComp.firstOrderDerivative(env, key, USD)
+        assert((delta - hedgeDelta).abs.value < 1e-5, "Converting futures to spreads has failed to make a portfolio with the same delta")
+      }
+    }
+    assertFuturesAndSpreadsHaveTheSameDeltas()
+    spreadHedgeUTPs
   }
 
   def hedgeBankAccountsLikeSpreads(acc : List[BankAccount]) : List[BankAccount] = {

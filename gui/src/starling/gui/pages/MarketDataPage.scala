@@ -14,6 +14,8 @@ import RichReactor._
 import starling.rmi.StarlingServer
 import starling.daterange.Day
 
+import starling.utils.ImplicitConversions._
+
 /**
  * For viewing (and uploading?) market data.
  */
@@ -25,12 +27,12 @@ case class MarketDataPage(
 
   def text = "Market Data Viewer"
   override def layoutType = Some("MarketData")
-  override val icon = StarlingIcons.im("/icons/16x16_market_data.png")
+  override def icon = StarlingIcons.im("/icons/16x16_market_data.png")
 
   def selfPage(pivotPageState: PivotPageState) = new MarketDataPage(marketDataIdentifier, MarketDataPageState(pivotPageState, pageState.marketDataType))
 
   def dataRequest(pageBuildingContext: PageBuildingContext) = {
-    pageBuildingContext.starlingServer.readAllMarketData(marketDataIdentifier, pageState.marketDataType, pageState.pivotPageState.pivotFieldParams)
+    pageBuildingContext.cachingStarlingServer.readAllMarketData(marketDataIdentifier, pageState.marketDataType, pageState.pivotPageState.pivotFieldParams)
   }
 
   override def save(starlingServer:StarlingServer, edits:Set[PivotEdit]) = {
@@ -57,7 +59,7 @@ case class MarketDataPage(
     Some(MarketDataPagePageData(avaliableMarketDataTypes, selected))
   }
 
-  override def createComponent(pageContext: PageContext, data: PageData, browserSize:Dimension) = {
+  override def createComponent(pageContext: PageContext, data: PageData, bookmark:Bookmark, browserSize:Dimension) = {
     val marketDataPagePageData = data match {
       case v:PivotTablePageData => v.subClassesPageData match {
         case x:Option[_] => x.get.asInstanceOf[MarketDataPagePageData]
@@ -67,8 +69,37 @@ case class MarketDataPage(
       pageContext,
       this,
       PivotComponent(text, pageContext, toolbarButtons(pageContext, data), None, finalDrillDownPage, selfPage, data,
-        pageState.pivotPageState, save, browserSize),
+        pageState.pivotPageState, save, bookmark, browserSize),
       pageState, marketDataPagePageData)
+  }
+
+  override def bookmark(server:StarlingServer):Bookmark = {
+    val singleObservationDay = pageState.pivotPageState.pivotFieldParams.pivotFieldState match {
+      case None => false
+      case Some(pfs) => {
+        pfs.fieldSelection(Field("Observation Day")) match {
+          case Some(s) if s.size == 1 => true
+          case _ => false
+        }
+      }
+    }
+    if (singleObservationDay && marketDataIdentifier.isCurrent) {
+      MarketDataBookmark(marketDataIdentifier, pageState)
+    } else {
+      PageBookmark(this)
+    }
+  }
+}
+
+case class MarketDataBookmark(marketDataIdentifier:MarketDataPageIdentifier, pageState:MarketDataPageState) extends Bookmark {
+  def daySensitive = true
+  def createPage(day:Option[Day], server:StarlingServer, context:PageContext) = {
+    val newPFS = pageState.pivotPageState.pivotFieldParams.pivotFieldState.map(pfs => {
+      pfs.addFilter((Field("Observation Day"), Set(day.get)))
+    })
+    val newPivotFieldParams = pageState.pivotPageState.pivotFieldParams.copy(pivotFieldState = newPFS)
+    val newPivotPageState = pageState.pivotPageState.copy(pivotFieldParams = newPivotFieldParams)
+    MarketDataPage(marketDataIdentifier, pageState.copy(pivotPageState = newPivotPageState))
   }
 }
 
@@ -81,18 +112,18 @@ object MarketDataPage {
             observationDays:Option[Set[Day]],
             ctrlDown:Boolean=false) {
     pageContext.createAndGoTo( (server) => {
-      val mdt = marketDataType.getOrElse(server.marketDataTypeLabels(marketDataIdentifier).head) //<!--
-      var fs = pageContext.getSetting(
-        StandardUserSettingKeys.UserMarketDataTypeLayout, Map[MarketDataTypeLabel,PivotFieldsState]()
+      val mdt = marketDataType.orElse(server.marketDataTypeLabels(marketDataIdentifier).headOption)
+      val fs = pageContext.getSetting(
+        StandardUserSettingKeys.UserMarketDataTypeLayout, Map[MarketDataTypeLabel, PivotFieldsState]()
       ).get(mdt)
 
       val fieldsState = (fs, observationDays) match {
-        case (Some(fs), Some(days)) => Some(fs.addFilter(Field("Observation Day") -> days.asInstanceOf[Set[Any]]))
+        case (Some(fs), Some(days)) => Some(fs.addFilter(Field("Observation Day") → days.asInstanceOf[Set[Any]]))
         case _ => fs
       }
 
       new MarketDataPage(marketDataIdentifier, MarketDataPageState(
-        marketDataType = Some(mdt),
+        marketDataType = mdt,
         pivotPageState = PivotPageState(false, PivotFieldParams(true, fieldsState))
       ))
     }, newTab = ctrlDown)
@@ -335,7 +366,7 @@ class MarketDataPageComponent(
 
   private val importButton = new Button {
     val observationDay = Day.today.previousWeekday
-    enabled = true
+    enabled = !thisPage.marketDataIdentifier.selection.isNull
     tooltip = "Import and snapshot market data for previous weekday"
     icon = StarlingIcons.icon("/icons/14x14_download_data.png")
 

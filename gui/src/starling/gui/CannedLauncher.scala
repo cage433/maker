@@ -47,6 +47,8 @@ object CannedLauncher {
               (Map(),Map())
             } else if (name=="whoAmI") {
               User.Dev
+            } else if (name=="bookmarks") {
+              List()
             } else {
               null
             }
@@ -68,10 +70,10 @@ class NullPageData extends PageData
 case class CannedHomePage() extends Page {
   def text = "Home"
   def build(reader: PageBuildingContext) = { new PageData{} }
-  def createComponent(context: PageContext, data:PageData, browserSize:Dimension) = {
+  def createComponent(context: PageContext, data:PageData, bookmark:Bookmark, browserSize:Dimension) = {
     new CannedHomePagePageComponent(context)
   }
-  val icon = StarlingIcons.im("/icons/tablenew_16x16.png")
+  def icon = StarlingIcons.im("/icons/tablenew_16x16.png")
 }
 
 class CannedHomePagePageComponent(pageContext:PageContext) extends MigPanel("") with PageComponent {
@@ -113,7 +115,7 @@ class CannedHomePagePageComponent(pageContext:PageContext) extends MigPanel("") 
 case class CannedDrilldownPage(fields:Seq[(Field,Any)]) extends Page {
   def text = "Canned drilldown"
   def build(reader: PageBuildingContext) = new PageData() {}
-  def createComponent(context: PageContext, data:PageData, browserSize:Dimension) = {
+  def createComponent(context: PageContext, data:PageData, bookmark:Bookmark, browserSize:Dimension) = {
     new MigPanel("") with PageComponent {
       add(new Label("Drilldown"), "span")
       for ((field,value) <- fields) {
@@ -121,7 +123,7 @@ case class CannedDrilldownPage(fields:Seq[(Field,Any)]) extends Page {
       }
     }
   }
-  val icon = StarlingIcons.im("/icons/tablenew_16x16.png")
+  def icon = StarlingIcons.im("/icons/tablenew_16x16.png")
 }
 
 case class SlowCannedPivotReportPage(pivotPageState:PivotPageState) extends AbstractPivotPage(pivotPageState) {
@@ -278,9 +280,14 @@ class CannedDataSource extends UnfilteredPivotTableDataSource {
     ColumnTrees(ColumnTree(Field("PV"), true, ColumnTrees(ColumnTree(Field("Product"), false))))
   }, rowFields = List(Field("Trader"), Field("Strike")))*/
 
-  override def initialState = new PivotFieldsState(columns = {
+  /*override def initialState = new PivotFieldsState(columns = {
     ColumnTrees(List(ColumnTree(Field("PV"), true, ColumnTrees(ColumnTree(Field("Product"), false))),
       ColumnTree(Field("Gamma"), true, ColumnTrees(ColumnTree(Field("Lots"), false)))))
+  }, rowFields = List(Field("Trader"), Field("Strike")))*/
+
+  override def initialState = new PivotFieldsState(columns = {
+    ColumnTrees(ColumnTree(FieldOrColumnStructure(ColumnTrees(List(ColumnTree(Field("PV"), true), ColumnTree(Field("Gamma"), true)))),
+      ColumnTrees(Nil)))
   }, rowFields = List(Field("Trader"), Field("Strike")))
 
   def unfilteredData(pfs : PivotFieldsState) = theData

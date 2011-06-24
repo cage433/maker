@@ -3,7 +3,7 @@ package starling.services.trade.instrumentreaders
 import starling.models._
 import starling.instrument._
 import starling.daterange._
-import starling.quantity.{UOMParse, Quantity}
+import starling.quantity.Quantity
 import starling.services.trade.ExcelRow
 import starling.market._
 import starling.utils.ImplicitConversions._

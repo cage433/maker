@@ -53,4 +53,9 @@ object BusinessCalendar{
     def isHoliday(day : Day) = false
     def location = Location.Unknown
   }
+  val WeekdayBusinessCalendar = new BusinessCalendar {
+    def name = "Weekday"
+    def location = Location.Unknown
+    def isHoliday(day:Day) = day.isWeekendDay
+  }
 }

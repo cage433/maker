@@ -15,7 +15,7 @@ case class SettingsPage() extends Page {
   def text = "Settings"
   def icon = StarlingIcons.im("/icons/16x16_settings.png")
   def build(reader:PageBuildingContext) = null
-  def createComponent(context:PageContext, data:PageData, browserSize:Dimension) = new SettingsPageComponent(context)
+  def createComponent(context:PageContext, data:PageData, bookmark:Bookmark, browserSize:Dimension) = new SettingsPageComponent(context)
 }
 
 class SettingsPageComponent(context:PageContext) extends MigPanel("insets 0") with PageComponent {

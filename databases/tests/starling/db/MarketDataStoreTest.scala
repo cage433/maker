@@ -151,7 +151,7 @@ class MarketDataStoreTest extends StarlingTest with ShouldMatchers {
       filters = (Field("Observation Time"), SomeSelection(Set(ObservationTimeOfDay.Default.name))) :: Nil
     )
 
-    check(pfs1, ",\nCurrency,Rate (EUR per USD)\nEUR,3.0000 ")
+    check(pfs1, "Currency,Rate (EUR per USD)\nEUR,3.0000 ")
 
     val pfs2 = new PivotFieldsState(
       rowFields = List(Field("Currency")),

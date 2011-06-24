@@ -7,7 +7,6 @@ import java.awt.{GradientPaint, Graphics2D, Dimension, Color, RenderingHints, Po
 import java.awt.event.{ComponentEvent, ComponentAdapter}
 import org.jdesktop.swingx.image.ColorTintFilter
 import starling.gui.GuiUtils._
-import starling.gui.StarlingIcons
 import starling.pivot.model.TreeDetails
 import org.jdesktop.swingx.graphics.ShadowRenderer
 import swing._
@@ -17,6 +16,7 @@ import javax.swing.event.{PopupMenuListener, PopupMenuEvent}
 import javax.swing.{JPopupMenu, SwingUtilities}
 import starling.gui.custom._
 import starling.pivot._
+import starling.gui.{GuiUtils, StarlingIcons}
 
 case class GuiFieldComponentProps(field:Field, locationOfField:FieldChooserType,
                                   showDepthPanel:Boolean, measureField:Boolean, realMeasureField:Boolean,
@@ -97,6 +97,7 @@ case class GuiFieldComponent(props:GuiFieldComponentProps) extends MigPanel("ins
       def popupMenuWillBecomeVisible(e:PopupMenuEvent) {}
     })
   }
+  popupMenu.setBorder(CompoundBorder(LineBorder(GuiUtils.BorderColour), LineBorder(GuiUtils.PanelBackgroundColour, 2)))
   val filterButtonPanel = FilterButtonPanel(props)
 
   val (values, selection) = possibleValuesAndSelectionToUse
@@ -396,6 +397,14 @@ case class GuiFieldNamePanel(props:GuiFieldComponentProps, guiComp:GuiFieldCompo
       }
       g.drawImage(tintedImage, 0, 0, null)
     }
+  }
+
+  def clearImage() {
+    dragging = false
+    display = true
+    props.tableView.fieldBeingDragged = false
+    props.viewUI.resetImageProperties()
+    repaint()
   }
 
   def reset() {

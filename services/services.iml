@@ -324,6 +324,7 @@
       </library>
     </orderEntry>
     <orderEntry type="module" module-name="instrument" />
+    <orderEntry type="module" module-name="starling.api" />
   </component>
 </module>
 

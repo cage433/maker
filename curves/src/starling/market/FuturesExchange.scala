@@ -2,7 +2,7 @@ package starling.market
 
 import java.lang.String
 import starling.daterange.ObservationTimeOfDay._
-import starling.utils.{Named, StarlingEnum}
+import starling.utils.StarlingEnum
 import starling.utils.ImplicitConversions._
 import starling.daterange.{Day, ObservationTimeOfDay}
 
@@ -17,7 +17,7 @@ case object MonthlyDelivery extends DeliveryType {
   val name = "Monthly Delivery"
 }
 
-case class FuturesExchange(name: String, deliveryType: DeliveryType, closeTime:ObservationTimeOfDay) extends Named {
+case class FuturesExchange(name: String, deliveryType: DeliveryType, closeTime:ObservationTimeOfDay) {
   lazy val markets = Market.futuresMarkets.filter(_.exchange == this)
   lazy val marketsByCommodityName = markets.toMapWithKeys(_.commodity.name.toLowerCase)
 }
@@ -40,7 +40,7 @@ object NeptunePricingExchange{
   }
 }
 
-object FuturesExchangeFactory extends StarlingEnum(classOf[FuturesExchange]) {
+object FuturesExchangeFactory extends StarlingEnum(classOf[FuturesExchange], (f: FuturesExchange) => f.name) {
   val LME = new FuturesExchange("LME", DailyDelivery, LMEClose) with NeptunePricingExchange{
     def inferMarketFromCommodityName(neptuneCommodityName: String) = neptuneCommodityName match {
       case "Copper"	            => Market.LME_COPPER

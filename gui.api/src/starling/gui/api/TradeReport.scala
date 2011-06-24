@@ -8,7 +8,7 @@ import starling.daterange._
 import starling.quantity.Quantity
 import starling.rmi.StarlingServer
 import starling.tradestore.TradePredicate
-import starling.utils.{Named, StarlingEnum, ImplicitConversions, STable}
+import starling.utils.{StarlingEnum, ImplicitConversions, STable}
 import starling.varcalculator.NAhead
 
 import ImplicitConversions._
@@ -35,10 +35,14 @@ case class SpecificMarketDataVersion(version:Int) extends MarketDataVersion {
 case class SnapshotMarketDataVersion(snapshotLabel:SnapshotIDLabel) extends MarketDataVersion {
   def label = "s" + snapshotLabel.id
 }
+object SnapshotMarketDataVersion {
+  def apply(optLabel: Option[SnapshotIDLabel]): Option[SnapshotMarketDataVersion] = optLabel.map(SnapshotMarketDataVersion(_))
+}
 trait MarketDataPageIdentifier {
   def filteredMarketData:Boolean
   def selection:MarketDataSelection = marketDataIdentifier.selection
   def marketDataIdentifier:MarketDataIdentifier
+  def isCurrent:Boolean = marketDataIdentifier.isCurrent
 }
 case class StandardMarketDataPageIdentifier(marketDataIdentifier:MarketDataIdentifier) extends MarketDataPageIdentifier {
   def filteredMarketData = false
@@ -52,6 +56,10 @@ case class MarketDataIdentifier(selection: MarketDataSelection, marketDataVersio
   def isNull = selection.isNull
   def pricingGroupMatches(predicate : PricingGroup => Boolean) = selection.pricingGroupMatches(predicate)
   def copyVersion(version: Int) = copy(marketDataVersion = SpecificMarketDataVersion(version))
+  def isCurrent:Boolean = marketDataVersion match {
+    case x:SpecificMarketDataVersion => true
+    case _ => false
+  }
 }
 
 object MarketDataIdentifier {
@@ -61,11 +69,11 @@ object MarketDataIdentifier {
 
 class TradeValuation(val valuationParameters:STable) extends Serializable
 
-case class PricingGroup(name:String) extends Named {
+case class PricingGroup(name:String) {
   override def toString = name
 }
 
-object PricingGroup extends StarlingEnum(classOf[PricingGroup]) {
+object PricingGroup extends StarlingEnum(classOf[PricingGroup], (pg: PricingGroup) => pg.name) {
   val Metals = PricingGroup("Metals")
   val System = PricingGroup("System")
   val LimOnly = PricingGroup("LIM Only")
@@ -91,7 +99,7 @@ case class SnapshotIDLabel(observationDay: Day, id: Int, timestamp : Timestamp, 
 }
 
 
-sealed case class Desk(name: String) extends Named {
+sealed case class Desk(name: String) {
   import Desk._
   import PricingGroup._
 
@@ -107,7 +115,7 @@ sealed case class Desk(name: String) extends Named {
   }
 }
 
-object Desk extends StarlingEnum(classOf[Desk]) {
+object Desk extends StarlingEnum(classOf[Desk], (d: Desk) => d.name, true) {
   val LondonDerivativesOptions = Desk("London Derivatives Options")
   val LondonDerivatives = Desk("London Derivatives")
   val GasolineSpec = Desk("Gasoline Spec Global")
@@ -177,6 +185,10 @@ case class TradeSelectionWithTimestamp(deskAndTimestamp:Option[(Desk, TradeTimes
     copy(intradaySubgroupAndTimestamp = Some((intradaySubgroupAndTimestamp.get._1, timestamp)))
   }
 }
+
+case class TradePageParameters(deskAndTimestamp:Option[(Desk, TradeTimestamp)],
+        intradaySubgroupAndTimestamp:Option[(IntradayGroups, Timestamp)],
+        expiry:TradeExpiryDay)
 
 case class PnlFromParameters(tradeTimestampFrom: Option[TradeTimestamp], curveIdentifierFrom:CurveIdentifierLabel)
 

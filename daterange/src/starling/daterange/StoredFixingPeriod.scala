@@ -23,13 +23,11 @@ case class Tenor(tenorName: String, value: Int) extends Ordered[Tenor] {
 }
 
 object Tenor {
-  private val Regex = """(\d+)(\w)""".r
-
-  def parse(tenor: String): Option[Tenor] = tenor partialMatch {
-    case Regex(value, tenorType) => Tenor(TenorType.typesByShortName(tenorType), value.toInt)
-    case "ON" => Tenor.ON
-    case "SN" => Tenor.SN
-  }
+  val Parse = Extractor.regex("""(ON|SN|(\d+)(\w))""") {
+    case "ON" :: _ => Tenor.ON
+    case "SN" :: _ => Tenor.SN
+    case List(_, value, tenorType) => Tenor(TenorType.typesByShortName(tenorType), value.toInt)
+  } compose ((any: Any) => any.toString)
 
   /**
    * Value doesn't mean anything outside the context of a particular index. It is used just for

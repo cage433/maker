@@ -2,7 +2,7 @@ package starling.gui
 
 import api._
 import java.awt.image.BufferedImage
-import pages.{TimestampChooser, PageResponse}
+import pages.{PivotPageState, TimestampChooser, PageResponse}
 import starling.rmi.StarlingServer
 import swing.event.Event
 import starling.utils.HeterogeneousMap
@@ -23,20 +23,31 @@ import starling.auth.User
 /**
  * The StarlingBrowser models everything as a Page (defined here)
  *
- * A page defines its name, how to get its data and how to display it
- * The pageContext is a way for a page component to tell the browser to go to a new page
+ * IMPORTANT - I page should usually be a case class with the whole page described by parameters passed into it. No other vals should exist
+ * and everything else in the page class should be a def.
  */
-
 trait Page {
   def icon:BufferedImage
   def text:String
   def shortText:String = text
-  def createComponent(context:PageContext, data:PageData, browserSize:Dimension):PageComponent
+  def createComponent(context:PageContext, data:PageData, bookmark:Bookmark, browserSize:Dimension):PageComponent
   def build(reader:PageBuildingContext):PageData
-  def refresh = None
-//  def registerRefresh(reactions:Reactions, newPage:(Page=>Unit)) = {}
   def refreshFunctions:Iterable[PartialFunction[Event,Page]] = Nil
+  def bookmark(server:StarlingServer):Bookmark = new PageBookmark(this)
 }
+
+trait Bookmark {
+  def daySensitive:Boolean
+  def createPage(day:Option[Day], server:StarlingServer, context:PageContext):Page
+}
+
+case class BookmarkData(name:String, bookmark:Bookmark)
+
+case class PageBookmark(page:Page) extends Bookmark {
+  def daySensitive = false
+  def createPage(day:Option[Day], server:StarlingServer, context:PageContext) = page
+}
+
 trait PageContext {
 	def goTo(page:Page, newTab:Boolean=false)
   def createAndGoTo(buildPage:StarlingServer=>Page, onException:PartialFunction[Throwable, Unit] = { case e:UnsupportedOperationException => {}}, newTab:Boolean = false)
@@ -64,7 +75,7 @@ trait PageContext {
 case class LocalCache(localCache:HeterogeneousMap[Key]) {
   import starling.gui.LocalCacheKeys._
   def userPivotLayouts = localCache(UserPivotLayouts)
-  def userReports = localCache(UserReports)
+  def bookmarks = localCache(Bookmarks)
   def pricingGroups(maybeDesk:Option[Desk]):List[PricingGroup] = localCache(PricingGroups).intersect(validGroups(maybeDesk))
   def excelDataSets = localCache(ExcelDataSets)
 
@@ -171,7 +182,7 @@ trait PageComponent extends Component {
   def setOldPageDataOnRefresh(pageData:Option[OldPageData], refreshState:Option[ComponentRefreshState], componentState:Option[ComponentState]) {}
   def pageResized(newSize:Dimension):Unit = {}
 }
-class PageInfo(val page: Page, val pageResponse:PageResponse, var pageComponent:Option[PageComponent],
+class PageInfo(val page: Page, val pageResponse:PageResponse, val bookmark:Bookmark, var pageComponent:Option[PageComponent],
                var pageComponentSoft:SoftReference[PageComponent], var componentState:Option[ComponentState],
                var refreshPage:Option[Page], var autoRefresh:Option[CountDownLatch]=None) {
   def image:BufferedImage = {

@@ -160,8 +160,10 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
     refreshButton.enabled = enabled
     stopButton.enabled = enabled
     homeButton.enabled = enabled
-    selectPageButton.enabled = enabled
+    settingsButton.enabled = enabled
     liveUpdateCheckbox.enabled = enabled
+    bookmarkButton.enabled = enabled
+    bookmarkDropDownButton.enabled = enabled
     enableAddressBar(enabled)
   }
 
@@ -228,13 +230,14 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
     def actionPerformed(p1: ActionEvent) = {
       val info = history(current)
       val currentPage = info.page
+      val currentBookmark = info.bookmark
       val currentState = info.pageComponent match {
         case None => None
         case Some(pc) => pc.getState
       }
       val rebuiltPageComponent = createPopulatedComponent(currentPage, info.pageResponse)
       rebuiltPageComponent.setState(currentState)
-      val pageInfo = new PageInfo(currentPage, info.pageResponse, Some(rebuiltPageComponent),
+      val pageInfo = new PageInfo(currentPage, info.pageResponse, currentBookmark, Some(rebuiltPageComponent),
         new SoftReference(rebuiltPageComponent), currentState, info.refreshPage)
       history(current) = pageInfo
       showPage(pageInfo)
@@ -513,6 +516,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
 
   private def showAddressPopup {
     val historySelector = new JPopupMenu
+    historySelector.setBorder(LineBorder(GuiUtils.BorderColour))
     for ((pageInfo, index) <- history.zipWithIndex.reverse) {
       val page = pageInfo.page
       val ac = new Action(page.text) {
@@ -541,7 +545,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
     historySelector.show(addressBar.peer, 5, addressBar.size.height)
   }
 
-  private val selectPageButton = new NavigationButton {
+  private val settingsButton = new NavigationButton {
     icon = StarlingIcons.icon("/icons/22x22/categories/preferences-system.png")
     tooltip = "Go to the settings page"
     reactions += {
@@ -554,8 +558,6 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
   var currentComponent:PageComponent = new NullPageComponent()
   mainPanel.peer.add(currentComponent.peer)
   var waitingFor:Set[Option[Int]] = Set()
-
-  refreshButtonStatus
 
   def setScreenLocked(locked: Boolean) {
     genericLockedUI.setLocked(locked)
@@ -579,44 +581,6 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
     }
 
     foreground = Color.RED
-  }
-
-  private val actionPanel = new MigXPanel("", "[p]0[p][p]0[p][p]") {
-    add(backButton)
-    add(undoButton)
-    add(redoButton)
-    add(forwardButton)
-    add(stopButton)
-    add(homeButton)
-    add(refreshButton)
-    add(liveUpdateCheckbox, "ay center")
-    add(addressBar, "pushx, growx, ay center")
-    add(extraInfoLabel, "hidemode 3")
-    add(selectPageButton)
-
-    val version = lCache.version
-    val (topColour,bottomColour) = version.colour match {
-      case None => (GuiUtils.StarlingBrowserTopFadeColour, GuiUtils.StarlingBrowserBottomFadeColour)
-      case Some(c) => (c, c)
-    }     
-    backgroundPainter = new VerticalGradientPaint(topColour, bottomColour)
-  }
-
-  peer.add(actionPanel.peer, "pushx, growx, wrap 0")
-  peer.add(mainPanelLayer.peer, "pushy, grow")
-
-  class ExceptionPageComponent(errorType:String, t:Throwable)  extends MigPanel("") with PageComponent {
-    private val stackTraceComponent = new ScrollPane(new TextArea() {
-      text = errorType + "\n\n" + StackTraceToString.string(t)
-      editable = false
-      wordWrap = true
-    })
-    add(new Label() {
-      icon = StarlingIcons.icon("/icons/22x22/emblems/emblem-important.png")
-    })
-    add(new Label("The previous action failed. Please contact a developer."), "wrap")    
-    add(stackTraceComponent, "skip 1, push, grow")
-    onEDT(stackTraceComponent.peer.getViewport.setViewPosition(new Point(0,0)))
   }
 
   private val pageContext = new PageContext {
@@ -648,6 +612,52 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
     }
   }
 
+  private val bookmarkButton = new BookmarkButton(currentBookmark, pageContext)
+  def currentBookmark = history(current).bookmark
+  private val bookmarkDropDownButton = new BookmarkDropDownButton(pageContext)
+
+  refreshButtonStatus
+
+  private val actionPanel = new MigXPanel("", "[p]0[p][p]0[p][p]") {
+    add(backButton)
+    add(undoButton)
+    add(redoButton)
+    add(forwardButton)
+    add(stopButton)
+    add(homeButton)
+    add(refreshButton)
+    add(liveUpdateCheckbox, "ay center")
+    add(addressBar, "pushx, growx, ay center")
+    add(extraInfoLabel, "hidemode 3")
+    add(settingsButton)
+    add(bookmarkButton, "split 2, gap after 0")
+    add(bookmarkDropDownButton, "gap before 0, growy")
+
+    val version = lCache.version
+    val (topColour,bottomColour) = version.colour match {
+      case None => (GuiUtils.StarlingBrowserTopFadeColour, GuiUtils.StarlingBrowserBottomFadeColour)
+      case Some(c) => (c, c)
+    }     
+    backgroundPainter = new VerticalGradientPaint(topColour, bottomColour)
+  }
+
+  peer.add(actionPanel.peer, "pushx, growx, wrap 0")
+  peer.add(mainPanelLayer.peer, "pushy, grow")
+
+  class ExceptionPageComponent(errorType:String, t:Throwable)  extends MigPanel("") with PageComponent {
+    private val stackTraceComponent = new ScrollPane(new TextArea() {
+      text = errorType + "\n\n" + StackTraceToString.string(t)
+      editable = false
+      wordWrap = true
+    })
+    add(new Label() {
+      icon = StarlingIcons.icon("/icons/22x22/emblems/emblem-important.png")
+    })
+    add(new Label("The previous action failed. Please contact a developer."), "wrap")    
+    add(stackTraceComponent, "skip 1, push, grow")
+    onEDT(stackTraceComponent.peer.getViewport.setViewPosition(new Point(0,0)))
+  }
+
   def clearCache {
     pageBuilder.clearCaches
     ThreadSafeCachingProxy.clearCache
@@ -658,14 +668,16 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
     undoButton.enabled = (current > 0)
     forwardButton.enabled = (current < (history.size-1))
     redoButton.enabled = (current < (history.size-1))
-    selectPageButton.enabled = true
+    settingsButton.enabled = true
+    bookmarkButton.enabled = true
+    bookmarkDropDownButton.enabled = true
     enableAddressBar(true)
     homeButton.enabled = true
     liveUpdateCheckbox.enabled = true
     stopButton.enabled = false
   }
 
-  def submitYesNo[R](message:String, description:String, submitRequest:SubmitRequest[R], awaitRefresh:R=>Boolean, onComplete:R => Unit, keepScreenLocked:Boolean) {
+  def submitYesNo[R](message0:String, description:String, submitRequest:SubmitRequest[R], awaitRefresh:R=>Boolean, onComplete:R => Unit, keepScreenLocked:Boolean) {
     genericLockedUI.setClient(greyClient)
     genericLockedUI.setLocked(true)
     setButtonsEnabled(false)
@@ -677,6 +689,12 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
         refreshButtonStatus
         refreshButton.enabled = history(current).refreshPage.isDefined
       }
+    }
+    val messageLength = 70
+    val message = if (message0.length() < messageLength) {
+      message0 + List.fill(messageLength - message0.length())(" ").mkString
+    } else {
+      message0.take(messageLength)
     }
     starlingBrowserUI.setYesNoMessage(message, description, b => userSelected(b), windowMethods)
   }
@@ -900,7 +918,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
           pageResponse match {
             case FailurePageResponse(t:OfflineException) => showError("Cannot Connect to Starling", "Starling is currently offline, please try again later or contact a developer.")
             case FailurePageResponse(t:ServerUpgradeException) => showError("Starling has been Upgraded", "Starling has been upgraded. Please restart your gui.")
-            case _ => {
+            case SuccessPageResponse(_,bookmark) => {
               // Generate the image here.
               val currentTypeState = currentComponent.getTypeState
               val width = currentComponent.peer.getWidth
@@ -919,7 +937,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
 
               val pageComponent = createPopulatedComponent(page, pageResponse)
               pageComponent.setTypeState(currentTypeState)
-              val pageInfo = new PageInfo(page, pageResponse, Some(pageComponent), new SoftReference(pageComponent), None, None)
+              val pageInfo = new PageInfo(page, pageResponse, bookmark, Some(pageComponent), new SoftReference(pageComponent), None, None)
               history.append(pageInfo)
               current+=1
 
@@ -953,6 +971,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
                       forwardSlideClient.setX(-width)
                       refreshButtonStatus
                       onEDT({
+                        bookmarkButton.refresh()
                         setScreenLocked(false)
                         forwardSlideClient.reset
                         sortOutFocus
@@ -1020,6 +1039,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
 
     val pageInfo = history(current)
     val currentPageComponent = pageInfo.pageComponent.get
+    val currentBookmark = pageInfo.bookmark
     val currentState = currentPageComponent.getState
     val currentTypeState = currentPageComponent.getTypeState
     val currentOldPageData = currentPageComponent.getOldPageData
@@ -1044,11 +1064,16 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
       timer.stop
       if (waitingFor.contains(Some(threadID))) {
         waitingFor -= Some(threadID)
+        // TODO - is this really the thing I want to do if I can't get a bookmark?
+        val newBookmark = pageResponse match {
+          case SuccessPageResponse(_,b) => b
+          case _ => currentBookmark
+        }
         val pageComponent = createPopulatedComponent(newPage, pageResponse)
         pageComponent.setState(currentState)
         pageComponent.setTypeState(currentTypeState)
         pageComponent.setOldPageDataOnRefresh(currentOldPageData, currentRefreshState, currentState)
-        val pageInfo = new PageInfo(newPage, pageResponse, Some(pageComponent), new SoftReference(pageComponent), currentState, None)
+        val pageInfo = new PageInfo(newPage, pageResponse, newBookmark, Some(pageComponent), new SoftReference(pageComponent), currentState, None)
         history(current) = pageInfo
         showPage(pageInfo)
         if (lockAndUnlockScreen) {
@@ -1073,9 +1098,9 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
 
   def createPopulatedComponent(page:Page, pageResponse:PageResponse) = {
     pageResponse match {
-      case SuccessPageResponse(pageData) => {
+      case SuccessPageResponse(pageData, bookmark) => {
         try {
-          page.createComponent(pageContext, pageData, size)
+          page.createComponent(pageContext, pageData, bookmark, size)
         } catch {
           case t => {
             t.printStackTrace
@@ -1090,7 +1115,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
     }
   }
 
-  def showPage(pageInfo: PageInfo, requestFocus:Boolean=true) {
+  def showPage(pageInfo: PageInfo, buildingPage:Boolean=true) {
     // Get any state from the component and save it.
     for (pI <- history) {
       if (pI != pageInfo) {
@@ -1141,8 +1166,12 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
       case None =>
     }
     mainPanel.peer.add(currentComponent.peer)
-    mainPanel.revalidate
-    mainPanel.repaint
+    mainPanel.revalidate()
+    mainPanel.repaint()
+
+    if (buildingPage) {
+      bookmarkButton.refresh()
+    }
 
     // We don't want to keep components hanging about as they take up a lot of memory.
     for (i <- 0 to (current - componentBufferWindow)) {
@@ -1153,13 +1182,13 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
     }
 
     // Let the page know that it has been shown.
-    if (requestFocus) {
+    if (buildingPage) {
       onEDT(sortOutFocus)
     }
   }
 
   private def sortOutFocus {
-    currentComponent.requestFocusInWindow
+    currentComponent.requestFocusInWindow()
     currentComponent.pageShown
   }
 }
@@ -1203,7 +1232,9 @@ class PageBuilder(val pageBuildingContext:PageBuildingContext) {
         val pageResponse:PageResponse = Log.infoWithTime("BuildNoCache page " + page.text) {
           try {
             logPageView(page, pageBuildingContext.starlingServer)
-            SuccessPageResponse(page.build(pageBuildingContext))
+            val builtPage = page.build(pageBuildingContext)
+            val bookmark = page.bookmark(pageBuildingContext.starlingServer)
+            SuccessPageResponse(builtPage, bookmark)
           } catch {
             case t => FailurePageResponse(t)
           }
@@ -1223,7 +1254,9 @@ class PageBuilder(val pageBuildingContext:PageBuildingContext) {
         val pageResponse:PageResponse =
           try {
             logPageView(newPage, pageBuildingContext.starlingServer)
-            SuccessPageResponse(newPage.build(pageBuildingContext))
+            val builtPage = newPage.build(pageBuildingContext)
+            val bookmark = newPage.bookmark(pageBuildingContext.starlingServer)
+            SuccessPageResponse(builtPage, bookmark)
           } catch {
             case t => FailurePageResponse(t)
           }
@@ -1271,7 +1304,9 @@ class PageBuilder(val pageBuildingContext:PageBuildingContext) {
             val pageResponse:PageResponse = Log.infoWithTime("Build page " + page.text) {
               try {
                 logPageView(page, pageBuildingContext.starlingServer)
-                SuccessPageResponse(page.build(pageBuildingContext))
+                val builtPage = page.build(pageBuildingContext)
+                val bookmark = page.bookmark(pageBuildingContext.starlingServer)
+                SuccessPageResponse(builtPage, bookmark)
               } catch {
                 case t:TooLongFrameException => FailurePageResponse(new Exception("Too much data, try refining pivot view", t))
                 case t => FailurePageResponse(t)
@@ -1296,7 +1331,7 @@ class PageBuilder(val pageBuildingContext:PageBuildingContext) {
 }
 
 class PageResponse
-case class SuccessPageResponse(data:PageData) extends PageResponse
+case class SuccessPageResponse(data:PageData, bookmark:Bookmark) extends PageResponse
 case class FailurePageResponse(t:Throwable) extends PageResponse
 case object NullPageResponse extends PageResponse
 

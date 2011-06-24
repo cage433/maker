@@ -2,12 +2,12 @@ package starling.services
 
 import starling.daterange.Day
 import starling.db.MarketDataStore
-import starling.gui.api.{EmailEvent, MarketDataSelection, PricingGroup}
 import starling.pivot._
 import starling.market.FuturesExchange
 import starling.marketdata.PriceDataType
 import starling.utils.Broadcaster
 import starling.utils.ImplicitConversions._
+import starling.gui.api.{RabbitEvent, EmailEvent, MarketDataSelection, PricingGroup}
 
 
 class VerifyPriceAvailable(marketDataStore: MarketDataStore, pricingGroup: PricingGroup, exchange: FuturesExchange,

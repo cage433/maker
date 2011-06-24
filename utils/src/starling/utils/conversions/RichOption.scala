@@ -24,10 +24,7 @@ trait RichOption {
   implicit def enrichOptionalOption[A](option: Option[Option[A]]) = new RichOptionalOption(option)
 
   class RichOptionalOption[A](option: Option[Option[A]]) {
-    def flatOpt(): Option[A] = option match {
-      case Some(x) => x
-      case None => None
-    }
+    def flatOpt() = option.getOrElse(None)
   }
 
   class RichNumericOption[A : Numeric](option: Option[A]) {

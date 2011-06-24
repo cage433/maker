@@ -185,8 +185,9 @@ class StarlingInit( val props: Props,
 
   val tradeImporterFactory = new TradeImporterFactory(refinedAssignmentImporter, refinedFixationImporter)
 
-  val enabledDesks: Set[Desk] = props.EnabledDesks() match {
-    case "" => Desk.values.toSet
+  val enabledDesks: Set[Desk] = props.EnabledDesks().trim.toLowerCase match {
+    case "" => throw new Exception("EnabledDesks property not set, valid values: all, none, " + Desk.names.mkString(", "))
+    case "all" => Desk.values.toSet
     case "none" => Set.empty
     case names => names.split(",").toList.map(Desk.fromName).toSet
   }

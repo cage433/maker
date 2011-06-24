@@ -1,6 +1,6 @@
 package starling.gui
 
-import api.{TradeExpiryDay, ReportParameters, TradeSelection}
+import api.{TradePageParameters, TradeExpiryDay, ReportParameters, TradeSelection}
 import pages.{PivotPageState, TradeSelectionPage, ConfigPanel}
 import starling.pivot.view.swing.MigPanel
 import starling.gui.GuiUtils._
@@ -8,7 +8,8 @@ import swing.{Button, Label}
 import swing.event.ButtonClicked
 import starling.pivot._
 
-class TradeInfoConfigPanel(tradeSelection:TradeSelection, context:PageContext, rp:ReportParameters) extends MigPanel() with ConfigPanel{
+class TradeInfoConfigPanel(context:PageContext, rp:ReportParameters) extends MigPanel() with ConfigPanel{
+  val tradeSelection = rp.tradeSelectionWithTimestamp.asTradeSelection
   val displayName = "Trade Info"
   val c = new MigPanel() {
     border = RoundedBorder(colour = PivotTableBackgroundColour)
@@ -84,9 +85,9 @@ class TradeInfoConfigPanel(tradeSelection:TradeSelection, context:PageContext, r
           val pfp = PivotFieldParams(true, pfs)
           val pps = PivotPageState(pivotFieldParams = pfp)
 
-          context.goTo(TradeSelectionPage(rp.tradeSelectionWithTimestamp.deskAndTimestamp,
+          context.goTo(TradeSelectionPage(TradePageParameters(rp.tradeSelectionWithTimestamp.deskAndTimestamp,
             rp.tradeSelectionWithTimestamp.intradaySubgroupAndTimestamp,
-            TradeExpiryDay(rp.expiryDay), pps
+            TradeExpiryDay(rp.expiryDay)), pps
           ))
         }
       }
