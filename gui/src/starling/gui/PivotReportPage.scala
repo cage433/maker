@@ -262,15 +262,19 @@ case class MainPivotReportPage(showParameters:Boolean, reportParameters:ReportPa
 }
 
 case class ReportBookmark(showParameters:Boolean, userReportData:UserReportData, pivotPageState:PivotPageState) extends Bookmark {
-  def daySensitive = true
-  def createPage(day:Option[Day], server:StarlingServer, context:PageContext) = {
-    day match {
-      case None => throw new Exception("We need a day")
-      case Some(d) => {
-        val reportParameters = server.createReportParameters(userReportData, d)
-        MainPivotReportPage(showParameters, reportParameters, pivotPageState)
-      }
+  def daySensitive = {
+    userReportData.environmentRule match {
+      case EnvironmentRuleLabel.RealTime => false
+      case _ => true
     }
+  }
+  def createPage(day:Option[Day], server:StarlingServer, context:PageContext) = {
+    val dayToUse = day match {
+      case None => Day.today() // Real time
+      case Some(d) => d
+    }
+    val reportParameters = server.createReportParameters(userReportData, dayToUse)
+    MainPivotReportPage(showParameters, reportParameters, pivotPageState)
   }
 }
 
