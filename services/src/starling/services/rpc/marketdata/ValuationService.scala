@@ -105,3 +105,10 @@ class ValuationService(marketDataStore: MarketDataStore, val props: Props) exten
     ClosesEnvironmentRule.createEnv(snapshot.observationDay, reader).environment
   }
 }
+
+object ValuationService {
+
+  // factory for creating client proxy for valuation services
+  def create() : IValuationService = null
+  def create(serviceUri : String) : IValuationService = null
+}
