@@ -576,6 +576,15 @@ class PivotFieldsState(
     copy(filters = modifiedFilters)
   }
 
+  def removeFilter(field:Field) = {
+    new PivotFieldsState(
+      rowFields,
+      columns,
+      filters.filterNot(f=>field == f._1),
+      treeDepths,
+      reportSpecificChoices,
+      transforms)
+  }
 
   def removeAll(fields:Set[Field]) = {
     new PivotFieldsState(
@@ -609,7 +618,7 @@ class PivotFieldsState(
         }
       } }
     } else {
-      filter._1 -> SomeSelection(Set(filter._2)) :: filters
+      filter._1 -> SomeSelection(filter._2) :: filters
     }
     copy(filters=newFilters)
   }

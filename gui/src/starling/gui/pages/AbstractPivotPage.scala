@@ -61,6 +61,9 @@ case class PivotPageState(showChart:Boolean=false, pivotFieldParams:PivotFieldPa
   def copyPivotFieldsState(pivotFieldsState : PivotFieldsState) =
     copy(pivotFieldParams = pivotFieldParams.copy(pivotFieldState = Some(pivotFieldsState)))
 
+  def copyPivotFieldsState(pivotFieldsState:Option[PivotFieldsState]) =
+    copy(pivotFieldParams = pivotFieldParams.copy(pivotFieldState = pivotFieldsState))
+
   def copyLayout(pivotLayout: PivotLayout) =
     copy(pivotFieldParams = pivotFieldParams.copy(pivotFieldState = Some(pivotLayout.pivotFieldState)),
          otherLayoutInfo = pivotLayout.otherLayoutInfo)

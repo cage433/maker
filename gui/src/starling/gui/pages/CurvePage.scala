@@ -80,16 +80,18 @@ case class CurvePage(curveLabel: CurveLabel, pivotPageState: PivotPageState) ext
   }
 
   override def bookmark(server:StarlingServer):Bookmark = {
-    CurveBookmark(curveLabel, pivotPageState)
+    CurveBookmark(curveLabel.curveType, curveLabel.environmentSpecification.environmentRule,
+      curveLabel.marketDataIdentifier.selection, pivotPageState)
   }
 }
 
-case class CurveBookmark(curveLabel:CurveLabel, pivotPageState:PivotPageState) extends Bookmark {
+case class CurveBookmark(curveType:CurveTypeLabel, envRuleLabel:EnvironmentRuleLabel, selection:MarketDataSelection, pivotPageState:PivotPageState) extends Bookmark {
   def daySensitive = true
   def createPage(day0:Option[Day], server:StarlingServer, context:PageContext) = {
     val day = day0.get
-    val newEnvironmentSpecification = curveLabel.environmentSpecification.copy(observationDay = day)
-    val newCurveLabel = curveLabel.copy(environmentSpecification = newEnvironmentSpecification)
+    val newEnvironmentSpecification = EnvironmentSpecificationLabel(day, envRuleLabel)
+    val newMarketDataIdentifier = server.latestMarketDataIdentifier(selection)
+    val newCurveLabel = CurveLabel(curveType, newMarketDataIdentifier, newEnvironmentSpecification)
     CurvePage(newCurveLabel, pivotPageState)
   }
 }

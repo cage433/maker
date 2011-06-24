@@ -122,6 +122,35 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
     case e@UserSettingUpdated(_) => publisherForPageContext.publish(e)
   }
   listenTo(remotePublisher)
+
+  private val pageContext = new PageContext {
+    def goTo(page:Page, newTab:Boolean=false) { if (newTab) openTab(true, Left(page)) else StarlingBrowser.this.goTo(page, false) }
+    def createAndGoTo(buildPage:StarlingServer=>Page, onException:PartialFunction[Throwable, Unit], newTab:Boolean = false) { if (newTab) openTab(true, Right((buildPage, onException))) else StarlingBrowser.this.goTo(Right((buildPage, onException)), false) }
+    def submit[R](submitRequest:SubmitRequest[R], onComplete:R => Unit, keepScreenLocked:Boolean, awaitRefresh:R=>Boolean=(r:R)=>false) {StarlingBrowser.this.submit(submitRequest, awaitRefresh, onComplete, keepScreenLocked)}
+    def submitYesNo[R](message:String, description:String, submitRequest:SubmitRequest[R], awaitRefresh:R=>Boolean, onComplete:R => Unit, keepScreenLocked:Boolean) = {StarlingBrowser.this.submitYesNo(message, description, submitRequest, awaitRefresh, onComplete, keepScreenLocked)}
+    def clearCache() {StarlingBrowser.this.clearCache}
+    def setContent(content:Component, cancelAction:Option[()=> Unit]) {StarlingBrowser.this.setContent(content, cancelAction)}
+    def clearContent() {StarlingBrowser.this.clearContent}
+    def setDefaultButton(button:Option[Button]) {StarlingBrowser.this.setDefaultButton(button)}
+    def getDefaultButton = {StarlingBrowser.this.getDefaultButton}
+    def localCache = lCache
+    val remotePublisher = publisherForPageContext
+    def requestFocusInCurrentPage() {StarlingBrowser.this.requestFocusInCurrentPage()}
+    def getSetting[T](key:Key[T])(implicit m:Manifest[T]) = userSettings.getSetting(key)
+    def getSetting[T](key:Key[T], default: => T)(implicit m:Manifest[T]) = userSettings.getSetting(key, default)
+    def getSettingOption[T](key:Key[T])(implicit m:Manifest[T]) = userSettings.getSettingOption(key)
+    def putSetting[T](key:Key[T], value:T)(implicit m:Manifest[T]) {
+      val oldValue = getSettingOption(key)
+      userSettings.putSetting(key, value)
+      oldValue match {
+        case None if value != None => StarlingBrowser.this.remotePublisher.publish(UserSettingUpdated(key))
+        case Some(old) => if (value != old) {
+          StarlingBrowser.this.remotePublisher.publish(UserSettingUpdated(key))
+        }
+        case _ =>
+      }
+    }
+  }
     
   private val undoAction = Action("undoAction") {
     currentComponent.resetDynamicState
@@ -377,6 +406,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
     opaque = false
     focusable = false
     tooltip = "Automatically update page when relavent events occur"
+    selected = pageContext.getSetting(StandardUserSettingKeys.LiveDefault, false)
   }
   listenTo(liveUpdateCheckbox)
   reactions += { case ButtonClicked(`liveUpdateCheckbox`) => { if (refreshButton.enabled) refresh() } }
@@ -542,7 +572,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
     }
     val prefSize = historySelector.getPreferredSize
     historySelector.setPreferredSize(new Dimension(addressBar.size.width - 5, prefSize.height))
-    historySelector.show(addressBar.peer, 5, addressBar.size.height)
+    historySelector.show(addressBar.peer, 5, addressBar.size.height-1)
   }
 
   private val settingsButton = new NavigationButton {
@@ -581,35 +611,6 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
     }
 
     foreground = Color.RED
-  }
-
-  private val pageContext = new PageContext {
-    def goTo(page:Page, newTab:Boolean=false) { if (newTab) openTab(true, Left(page)) else StarlingBrowser.this.goTo(page, false) }
-    def createAndGoTo(buildPage:StarlingServer=>Page, onException:PartialFunction[Throwable, Unit], newTab:Boolean = false) { if (newTab) openTab(true, Right((buildPage, onException))) else StarlingBrowser.this.goTo(Right((buildPage, onException)), false) }
-    def submit[R](submitRequest:SubmitRequest[R], onComplete:R => Unit, keepScreenLocked:Boolean, awaitRefresh:R=>Boolean=(r:R)=>false) {StarlingBrowser.this.submit(submitRequest, awaitRefresh, onComplete, keepScreenLocked)}
-    def submitYesNo[R](message:String, description:String, submitRequest:SubmitRequest[R], awaitRefresh:R=>Boolean, onComplete:R => Unit, keepScreenLocked:Boolean) = {StarlingBrowser.this.submitYesNo(message, description, submitRequest, awaitRefresh, onComplete, keepScreenLocked)}
-    def clearCache() {StarlingBrowser.this.clearCache}
-    def setContent(content:Component, cancelAction:Option[()=> Unit]) {StarlingBrowser.this.setContent(content, cancelAction)}
-    def clearContent() {StarlingBrowser.this.clearContent}
-    def setDefaultButton(button:Option[Button]) {StarlingBrowser.this.setDefaultButton(button)}
-    def getDefaultButton = {StarlingBrowser.this.getDefaultButton}
-    def localCache = lCache
-    val remotePublisher = publisherForPageContext
-    def requestFocusInCurrentPage() {StarlingBrowser.this.requestFocusInCurrentPage()}
-    def getSetting[T](key:Key[T])(implicit m:Manifest[T]) = userSettings.getSetting(key)
-    def getSetting[T](key:Key[T], default: => T)(implicit m:Manifest[T]) = userSettings.getSetting(key, default)
-    def getSettingOption[T](key:Key[T])(implicit m:Manifest[T]) = userSettings.getSettingOption(key)
-    def putSetting[T](key:Key[T], value:T)(implicit m:Manifest[T]) {
-      val oldValue = getSettingOption(key)
-      userSettings.putSetting(key, value)
-      oldValue match {
-        case None if value != None => StarlingBrowser.this.remotePublisher.publish(UserSettingUpdated(key))
-        case Some(old) => if (value != old) {
-          StarlingBrowser.this.remotePublisher.publish(UserSettingUpdated(key))
-        }
-        case _ =>
-      }
-    }
   }
 
   private val bookmarkButton = new BookmarkButton(currentBookmark, pageContext)

@@ -31,7 +31,7 @@ class StarlingHomePageComponent(context:PageContext, browserSize:Dimension, page
   bookmarksPanel.border = LineBorder(GuiUtils.TaskPageButtonBorderColour)
   val componentsBkColour = new Color(228, 231, 246)
   bookmarksPanel.bookmarksListView.background = componentsBkColour
-  bookmarksPanel.valuationDayChooser.background = componentsBkColour
+  bookmarksPanel.dayPicker.background = componentsBkColour
   bookmarksPanel.goToBookmarkButton.background = GuiUtils.TaskPageBackgroundColour
 
   override def getState = {
@@ -126,7 +126,7 @@ class StarlingHomePageComponent(context:PageContext, browserSize:Dimension, page
         add(marketDataButton, "sg")
         add(curveViewerButton, "sg, wrap unrel")
 
-        add(bookmarksPanel, "spanx, ax center, wrap")
+        add(bookmarksPanel, "skip 1, spanx 4, growx, wrap")
         add(versionPanel, "newline, split, spanx, ax center, gapbottom 5lp")
       }
       add(actionsPanel, "push,grow")

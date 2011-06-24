@@ -1,18 +1,20 @@
 package starling.gui
 
 import api.BookmarksUpdate
+import custom.{SXMonthView, TitledDayPicker}
 import swing.Swing._
 import starling.pivot.view.swing.{NListView, MigPanel}
 import javax.swing.{JLabel, JList, DefaultListCellRenderer}
 import java.awt.{Dimension, Color}
 import swing.{Action, ScrollPane, ListView, Label}
 import swing.event.{Event, SelectionChanged, KeyPressed, MouseClicked}
+import starling.daterange.Day
 
 class BookmarksPanel(context:PageContext) extends MigPanel("") {
   val iconLabel = new Label {
     icon = StarlingIcons.icon("/icons/32x32_report_star.png")
   }
-  val textLabel = new Label("Select a bookmark (and valuation day if required) to go to")
+  val textLabel = new Label("Select a bookmark (and observation day if required) to go to")
   val bookmarks = context.localCache.bookmarks
 
   val bookmarksListView = new NListView(bookmarks) {
@@ -34,9 +36,12 @@ class BookmarksPanel(context:PageContext) extends MigPanel("") {
     }
     renderer = ListView.Renderer.wrap(bookmarkDataListCellRenderer)
   }
-  val valuationDayChooser = new DayChooser(enableFlags = false, showDay = true) {
+
+  val dayPicker = new SXMonthView {
+    border = LineBorder(GuiUtils.BorderColour)
     enabled = valuationDayShouldBeEnabled
-    day = day.previousWeekday
+    day = Day.today().previousWeekday
+    traversable = true
   }
     
   def deleteBookmark() {
@@ -49,7 +54,7 @@ class BookmarksPanel(context:PageContext) extends MigPanel("") {
   def goToBookmark() {
     val bookmark = bookmarksListView.selected
     val baseDay = if (bookmark.bookmark.daySensitive) {
-      Some(valuationDayChooser.day)
+      Some(dayPicker.day)
     } else {
       None
     }
@@ -72,17 +77,17 @@ class BookmarksPanel(context:PageContext) extends MigPanel("") {
   }
 
   add(iconLabel, "split 3, spanx")
-  add(textLabel, "gapright unrel")
-  add(goToBookmarkButton, "wrap")
+  add(textLabel)
+  add(goToBookmarkButton, "gapbefore push, wrap")
   add(bookmarkScrollPane, "split, spanx, gapleft 10lp, push, grow")
-  add(valuationDayChooser, "ay top")
+  add(dayPicker)
 
   def componentsEnabled = false // Not used
   def componentsEnabled_=(b:Boolean) {
     goToBookmarkAction.enabled = b
     bookmarkScrollPane.enabled = b
     bookmarksListView.enabled = b
-    valuationDayChooser.enabled = b && valuationDayShouldBeEnabled
+    dayPicker.enabled = b && valuationDayShouldBeEnabled
     iconLabel.enabled = b
     textLabel.enabled = b
   }
@@ -108,7 +113,7 @@ class BookmarksPanel(context:PageContext) extends MigPanel("") {
     }
     case MouseClicked(`bookmarksListView`,_,_,2,_) => {goToBookmark()}
     case KeyPressed(`bookmarksListView`, scala.swing.event.Key.Delete, _, _) => {deleteBookmark()}
-    case SelectionChanged(`bookmarksListView`) => valuationDayChooser.enabled = valuationDayShouldBeEnabled
+    case SelectionChanged(`bookmarksListView`) => dayPicker.enabled = valuationDayShouldBeEnabled
   }
   listenTo(context.remotePublisher, bookmarksListView.keys, bookmarksListView.mouse.clicks, bookmarksListView.selection)
 

@@ -73,6 +73,8 @@ class UserReportsService(
     }
   }
 
+  def latestMarketDataIdentifier(selection:MarketDataSelection) = marketDataStore.latestMarketDataIdentifier(selection)
+
   def createReportParameters(userReportData:UserReportData, baseDay:Day) = {
     val tradeSelection = userReportData.tradeSelection
     val desk = tradeSelection.desk
@@ -743,4 +745,6 @@ class StarlingServerImpl(
   def saveUserReport(reportName:String, data:UserReportData, showParameters:Boolean) =
     userSettingsDatabase.saveUserReport(User.currentlyLoggedOn, reportName, data, showParameters)
   def deleteUserReport(reportName:String) = userSettingsDatabase.deleteUserReport(User.currentlyLoggedOn, reportName)
+
+  def latestMarketDataIdentifier(selection:MarketDataSelection):MarketDataIdentifier = userReportsService.latestMarketDataIdentifier(selection)
 }

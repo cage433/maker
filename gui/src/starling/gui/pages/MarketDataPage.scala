@@ -75,31 +75,53 @@ case class MarketDataPage(
 
   override def bookmark(server:StarlingServer):Bookmark = {
     val singleObservationDay = pageState.pivotPageState.pivotFieldParams.pivotFieldState match {
-      case None => false
+      case None => None
       case Some(pfs) => {
         pfs.fieldSelection(Field("Observation Day")) match {
-          case Some(s) if s.size == 1 => true
-          case _ => false
+          case Some(s) if s.size == 1 => Some(s.head)
+          case _ => None
         }
       }
     }
-    if (singleObservationDay && marketDataIdentifier.isCurrent) {
-      MarketDataBookmark(marketDataIdentifier, pageState)
+    if (singleObservationDay.isDefined && marketDataIdentifier.isCurrent) {
+      val newPivotFieldState = pageState.pivotPageState.pivotFieldParams.pivotFieldState.get.removeFilter(Field("Observation Day"))
+      val newPivotPageState = pageState.pivotPageState.copyPivotFieldsState(newPivotFieldState)
+      val newPageState = pageState.copy(pivotPageState = newPivotPageState)
+      marketDataIdentifier match {
+        case x:StandardMarketDataPageIdentifier => MarketDataBookmark(marketDataIdentifier.selection, newPageState)
+        case x:ReportMarketDataPageIdentifier if x.reportParameters.curveIdentifier.tradesUpToDay == singleObservationDay.get => {
+          ReportMarketDataBookmark(marketDataIdentifier.selection, newPageState, server.createUserReport(x.reportParameters))
+        }
+        case _ => PageBookmark(this)
+      }
     } else {
       PageBookmark(this)
     }
   }
 }
 
-case class MarketDataBookmark(marketDataIdentifier:MarketDataPageIdentifier, pageState:MarketDataPageState) extends Bookmark {
+case class ReportMarketDataBookmark(selection:MarketDataSelection, pageState:MarketDataPageState,
+                                    userReportData:UserReportData) extends Bookmark {
   def daySensitive = true
   def createPage(day:Option[Day], server:StarlingServer, context:PageContext) = {
     val newPFS = pageState.pivotPageState.pivotFieldParams.pivotFieldState.map(pfs => {
       pfs.addFilter((Field("Observation Day"), Set(day.get)))
     })
-    val newPivotFieldParams = pageState.pivotPageState.pivotFieldParams.copy(pivotFieldState = newPFS)
-    val newPivotPageState = pageState.pivotPageState.copy(pivotFieldParams = newPivotFieldParams)
-    MarketDataPage(marketDataIdentifier, pageState.copy(pivotPageState = newPivotPageState))
+    val newPivotPageState = pageState.pivotPageState.copyPivotFieldsState(newPFS)
+    val newSelection = ReportMarketDataPageIdentifier(server.createReportParameters(userReportData, day.get))
+    MarketDataPage(newSelection, pageState.copy(pivotPageState = newPivotPageState))
+  }
+}
+
+case class MarketDataBookmark(selection:MarketDataSelection, pageState:MarketDataPageState) extends Bookmark {
+  def daySensitive = true
+  def createPage(day:Option[Day], server:StarlingServer, context:PageContext) = {
+    val newPFS = pageState.pivotPageState.pivotFieldParams.pivotFieldState.map(pfs => {
+      pfs.addFilter((Field("Observation Day"), Set(day.get)))
+    })
+    val newPivotPageState = pageState.pivotPageState.copyPivotFieldsState(newPFS)
+    val newSelection = StandardMarketDataPageIdentifier(server.latestMarketDataIdentifier(selection))
+    MarketDataPage(newSelection, pageState.copy(pivotPageState = newPivotPageState))
   }
 }
 

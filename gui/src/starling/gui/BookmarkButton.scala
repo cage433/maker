@@ -264,6 +264,7 @@ class BookmarkDropDownButton(context:PageContext) extends Button {
   maximumSize = new Dimension(10, Integer.MAX_VALUE)
 
   val bookmarkPanel = new BookmarksPanel(context)
+  bookmarkPanel.background = Color.WHITE
   val popupMenu = new JPopupMenu()
   popupMenu.add(bookmarkPanel.peer)
   popupMenu.setBorder(LineBorder(GuiUtils.BorderColour))
@@ -271,7 +272,7 @@ class BookmarkDropDownButton(context:PageContext) extends Button {
   reactions += {
     case MousePressed(_,_,_,_,_) if enabled => {
       val x = size.width - popupMenu.getPreferredSize.width
-      popupMenu.show(peer, x, size.height)
+      popupMenu.show(peer, x, size.height-1)
       onEDT({
         KeyboardFocusManager.getCurrentKeyboardFocusManager.focusNextComponent(popupMenu)
       })
