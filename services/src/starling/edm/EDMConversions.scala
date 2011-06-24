@@ -2,22 +2,25 @@ package starling.edm
 
 import com.trafigura.edm.shared.types.{Quantity => EDMQuantity, Currency => ECurrency, Percentage => EPercentage,
                                        CompoundUOM, UnitComponent, FundamentalUOM}
-import com.trafigura.edm.marketdata.{MarketDataRow, MarketDataResponse}
 
 import starling.quantity.UOMSymbol._
 import starling.daterange.{Tenor, SimpleDateRange, DateRange, Day}
 
 import starling.utils.ImplicitConversions._
 import starling.quantity.{UOMSymbol, Percentage, UOM, Quantity}
-
-case class EMaturity(value: String)
+import starling.utils.StarlingEnum
+import com.trafigura.marketdataservice.{MaturityType, Maturity, NamedMaturity, RelativeMaturity}
 
 object EDMConversions {
   implicit def enrichQuantity(q: Quantity) = new {
     def toEDM = toEDMQuantity(q)
   }
   implicit def enrichTenor(tenor: Tenor) = new {
-    def toEDM = EMaturity(tenor.toString)
+    def toEDM: Maturity = (tenor, tenor.tenorType.toString) match {
+      case (Tenor.ON, _) => NamedMaturity.ON
+      case (Tenor.SN, _) => NamedMaturity.SN
+      case (tenor, MaturityType.Parse(maturityType)) => RelativeMaturity(tenor.value, maturityType)
+    }
   }
   implicit def enrichUOM(uom: UOM) = new {
     def toCurrency = enrichFundamentalUOM(toEDM).toCurrency

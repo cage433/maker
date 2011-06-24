@@ -68,9 +68,9 @@ class AdaptingMarketDataSource(adaptee: MarketDataSource) extends MarketDataSour
   def read(day: Day) = adaptee.read(day)
 }
 
-case class MarketDataSet(name: String) extends Named
+case class MarketDataSet(name: String)
 
-object MarketDataSet extends StarlingEnum(classOf[MarketDataSet]) {
+object MarketDataSet extends StarlingEnum(classOf[MarketDataSet], (m: MarketDataSet) => m.name) {
   val excelPrefix = "Excel:"
   def excel(name:String) = {
     if (name == "Official:Metals") {

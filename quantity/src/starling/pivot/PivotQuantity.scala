@@ -4,7 +4,7 @@ import math.abs
 import java.io.Serializable
 import starling.quantity._
 import collection.immutable.Map
-import starling.utils.{Named, StarlingEnum, StackTraceToString}
+import starling.utils.{StarlingEnum, StackTraceToString}
 
 case class PivotPercentage(percent:Option[Percentage]) {
   override def toString = percent match {
@@ -23,13 +23,13 @@ object StackTrace {
   }
 }
 
-case class ErrorState(name: String) extends Named {
+case class ErrorState(name: String) {
   import ErrorState._
 
   def fold[A](g: => A, w: => A, e: => A) = if (this == Warning) w else if (this == Error) e else g
 }
 
-object ErrorState extends StarlingEnum(classOf[ErrorState]) {
+object ErrorState extends StarlingEnum(classOf[ErrorState], (es: ErrorState) => es.name) {
   val Good    = ErrorState("Good")
   val Warning = ErrorState("Warning")
   val Error   = ErrorState("Error")

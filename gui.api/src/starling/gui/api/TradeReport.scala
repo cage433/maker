@@ -8,7 +8,7 @@ import starling.daterange._
 import starling.quantity.Quantity
 import starling.rmi.StarlingServer
 import starling.tradestore.TradePredicate
-import starling.utils.{Named, StarlingEnum, ImplicitConversions, STable}
+import starling.utils.{StarlingEnum, ImplicitConversions, STable}
 import starling.varcalculator.NAhead
 
 import ImplicitConversions._
@@ -69,11 +69,11 @@ object MarketDataIdentifier {
 
 class TradeValuation(val valuationParameters:STable) extends Serializable
 
-case class PricingGroup(name:String) extends Named {
+case class PricingGroup(name:String) {
   override def toString = name
 }
 
-object PricingGroup extends StarlingEnum(classOf[PricingGroup]) {
+object PricingGroup extends StarlingEnum(classOf[PricingGroup], (pg: PricingGroup) => pg.name) {
   val Metals = PricingGroup("Metals")
   val System = PricingGroup("System")
   val LimOnly = PricingGroup("LIM Only")
@@ -99,7 +99,7 @@ case class SnapshotIDLabel(observationDay: Day, id: Int, timestamp : Timestamp, 
 }
 
 
-sealed case class Desk(name: String) extends Named {
+sealed case class Desk(name: String) {
   import Desk._
   import PricingGroup._
 
@@ -115,7 +115,7 @@ sealed case class Desk(name: String) extends Named {
   }
 }
 
-object Desk extends StarlingEnum(classOf[Desk], true) {
+object Desk extends StarlingEnum(classOf[Desk], (d: Desk) => d.name, true) {
   val LondonDerivativesOptions = Desk("London Derivatives Options")
   val LondonDerivatives = Desk("London Derivatives")
   val GasolineSpec = Desk("Gasoline Spec Global")
