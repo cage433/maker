@@ -1,19 +1,17 @@
 package starling.services.rpc.marketdata
 
 import starling.props.Props
-import starling.utils.Stopwatch
-import starling.instrument.{PhysicalMetalForward, CostsAndIncomeQuotaValuation}
-import com.trafigura.edm.trades.PhysicalTrade
+import starling.instrument.PhysicalMetalForward
 import starling.daterange.Day
 import starling.db.{NormalMarketDataReader, SnapshotID, MarketDataStore}
 import starling.gui.api.MarketDataIdentifier._
 import starling.curves.{ClosesEnvironmentRule, Environment}
 import com.trafigura.edm.trades.{Trade => EDMTrade, PhysicalTrade => EDMPhysicalTrade}
 import starling.gui.api.{MarketDataIdentifier, PricingGroup}
-import java.lang.Throwable
 import org.joda.time.LocalDate
 import starling.services.StarlingInit
-import com.sun.corba.se.spi.presentation.rmi.IDLNameTranslator
+import com.trafigura.valuationservice._
+import starling.utils.{Log, Stopwatch}
 
 /**
  * Created by IntelliJ IDEA.
@@ -24,60 +22,43 @@ import com.sun.corba.se.spi.presentation.rmi.IDLNameTranslator
  */
 
 
-/**
- * These are the market data snapshot identifiers as viewed outside of starling.
- * id is unique across all days.
- */
-case class TitanSnapshotIdentifier(id : String, observationDay : LocalDate)
 
-/**
- * Valuation services
- */
-trait IValuationService {
-  def valueAllQuotas(maybeSnapshotIdentifier : Option[String] = None): CostsAndIncomeQuotaValuationServiceResults
-
-  /**
-   * Return all snapshots for a given observation day, or every snapshot if no day is supplied
-   */
-  def marketDataSnapshotIDs(observationDay : Option[LocalDate] = None): List[TitanSnapshotIdentifier]
-}
 
 /**
  * Valuation service implementations
  */
-case class CostsAndIncomeQuotaValuationServiceResults(snapshotID : String, tradeResults : Map[Int, Either[List[CostsAndIncomeQuotaValuation], String]])
-object TradeManagamentCacheNotReady extends Throwable
 
-class ValuationService(marketDataStore: MarketDataStore, val props: Props) extends TacticalRefData(props: Props)  {
+class ValuationService(marketDataStore: MarketDataStore, val props: Props) extends TacticalRefData(props: Props) with ValuationServices {
+  def log(msg : String) = Log.info("ValuationService: " + msg)
+
   def valueAllQuotas(maybeSnapshotIdentifier : Option[String] = None): CostsAndIncomeQuotaValuationServiceResults = {
+    log("valueAllQuotas called with snapshot id " + maybeSnapshotIdentifier)
     val snapshotIDString = maybeSnapshotIdentifier.orElse(mostRecentSnapshotIdentifierBeforeToday()) match {
       case Some(id) => id
       case _ => throw new IllegalStateException("No market data snapshots")
     }
-    println(snapshotIDString)
+    log("Actual snapshot ID " + snapshotIDString)
     val sw = new Stopwatch()
 
     val edmTradeResult = titanGetEdmTradesService.getAll()
-    println("Got Edm Trade result " + edmTradeResult.cached + ", took " + sw)
+    log("Are EDM Trades available " + edmTradeResult.cached + ", took " + sw)
 
     if (!edmTradeResult.cached)
       throw TradeManagamentCacheNotReady
     else {
-      println("Got Edm Trade results " + edmTradeResult.cached + ", trade result count = " + edmTradeResult.results.size)
+      log("Got Edm Trade results " + edmTradeResult.cached + ", trade result count = " + edmTradeResult.results.size)
       val env = environment(snapshotStringToID(snapshotIDString))
       val tradeValuer = PhysicalMetalForward.value(futuresExchangeByGUID, futuresMarketByGUID, env, snapshotIDString) _
 
       val edmTrades: List[EDMPhysicalTrade] = edmTradeResult.results.map(_.trade.asInstanceOf[EDMPhysicalTrade])
       sw.reset()
       val valuations = edmTrades.map{trade => (trade.tradeId, tradeValuer(trade))}.toMap
-      println("Valuation took " + sw)
+      log("Valuation took " + sw)
       val (errors, worked) = valuations.values.partition(_ match {
         case Right(_) => true;
         case Left(_) => false
       })
-      println("Worked " + worked.size + ", failed " + errors.size + ", took " + sw)
-      //errors.foreach{case Right(msg) => println(msg); case _ => }
-      worked.foreach(println)
+      log("Worked " + worked.size + ", failed " + errors.size + ", took " + sw)
       CostsAndIncomeQuotaValuationServiceResults(snapshotIDString, valuations)
     }
   }
@@ -111,7 +92,7 @@ class ValuationService(marketDataStore: MarketDataStore, val props: Props) exten
   /**
    * Return all snapshots for a given observation day, or every snapshot if no day is supplied
    */
-  def marketDataSnapshotIDService(observationDay : Option[LocalDate] = None): List[TitanSnapshotIdentifier] = {
+  def marketDataSnapshotIDs(observationDay : Option[LocalDate] = None): List[TitanSnapshotIdentifier] = {
     updateSnapshotCache()
     snapshotNameToID.values.filter {
       starlingSnapshotID =>
@@ -135,7 +116,4 @@ object ValuationService extends Application{
    //readAndStore()
    val valuations = vs.valueAllQuotas()
 
-  // factory for creating client proxy for valuation services
-  def create() : IValuationService = null
-  def create(serviceUri : String) : IValuationService = null
 }

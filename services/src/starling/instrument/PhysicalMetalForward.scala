@@ -21,6 +21,7 @@ import com.trafigura.edm.materialspecification.CommoditySpec
 import com.trafigura.edm.trades.{Trade => EDMTrade, PhysicalTrade => EDMPhysicalTrade}
 import java.lang.Exception
 import EDMConversions._
+import com.trafigura.valuationservice.CostsAndIncomeQuotaValuation
 
 case class InvalidPricingSpecException(msg : String) extends Exception(msg)
 
@@ -134,17 +135,6 @@ case class UnknownPricingSpecification(
   def dummyTransferPricingSpec = copy(premium = Quantity.NULL)
 }
 
-case class CostsAndIncomeQuotaValuation(
-  quotaID : String,
-  snapshotID : String,
-  quantity : EDMQuantity,
-  value : EDMQuantity,
-  purchasePrice : EDMQuantity,
-  salePrice : EDMQuantity,
-  benchmark : EDMQuantity,
-  freightParity : EDMQuantity,
-  isComplete : Boolean
-)
 
 case class PhysicalMetalQuota(
   quotaID : String,
