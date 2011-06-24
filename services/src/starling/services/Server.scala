@@ -42,6 +42,7 @@ import org.springframework.mail.javamail.{MimeMessageHelper, JavaMailSender, Jav
 import starling.rmi._
 import starling.calendar._
 import java.lang.String
+import com.trafigura.valuationservice.{ValuationServiceApi, TradeManagamentCacheNotReady}
 
 
 class StarlingInit( val props: Props,
@@ -61,7 +62,7 @@ class StarlingInit( val props: Props,
       loopyXLReceiver.stop
     }
     if (startRMI) {
-      rmiServer.stop()
+      rmiValuationServerForTitan.stop()
     }
     if (startHttp) {
       httpServer.stop
@@ -101,7 +102,7 @@ class StarlingInit( val props: Props,
     }
 
     if (startRMI) {
-      rmiServer.start
+      rmiValuationServerForTitan.start
       Log.info("RMI started on port " + rmiPort)
     }
 
@@ -162,7 +163,7 @@ class StarlingInit( val props: Props,
   val mailSender = new JavaMailSenderImpl().update(_.setHost(props.SmtpServerHost()), _.setPort(props.SmtpServerPort()))
 
   val broadcaster = new CompositeBroadcaster(
-    true                             → new RMIBroadcaster(rmiServer),
+    true                             → new RMIBroadcaster(rmiServerForGUI),
     props.rabbitHostSet              → new RabbitBroadcaster(new RabbitMessageSender(props.RabbitHost())),
     props.EnableVerificationEmails() → new EmailBroadcaster(mailSender)
   )
@@ -309,11 +310,25 @@ class StarlingInit( val props: Props,
    else 
      BouncyRMI.CodeVersionUndefined
 
-  val rmiServer:BouncyRMIServer[StarlingServer] = new BouncyRMIServer(
+  val rmiServerForGUI:BouncyRMIServer[StarlingServer] = new BouncyRMIServer(
     rmiPort,
     ThreadNamingProxy.proxy(starlingServer, classOf[StarlingServer]),
     auth, latestTimestamp, users,
     Set(classOf[UnrecognisedTradeIDException])
+  )
+
+  /**
+   * start up public services for Titan components
+   */
+  val rmiStarlingValuationServicePort = props.StarlingValuationServiceRmiPort()
+  println("Valuation service port " + rmiStarlingValuationServicePort)
+  val nullHandler = new ServerAuthHandler(new NullAuthHandler(Some(User.Dev)), users, ldapUserLookup,
+        user => broadcaster.broadcast(UserLoggedIn(user)))
+  val rmiValuationServerForTitan : BouncyRMIServer[ValuationServiceApi] = new BouncyRMIServer(
+    rmiStarlingValuationServicePort,
+    ThreadNamingProxy.proxy(valuationService, classOf[ValuationServiceApi]),
+    nullHandler, BouncyRMI.CodeVersionUndefined, users,
+    Set(classOf[TradeManagamentCacheNotReady])
   )
 
   val eaiAutoImport = new EAIAutoImport(15, starlingRichDB, eaiStarlingRichSqlServerDB, strategyDB, eaiTradeStores, closedDesks, enabledDesks)
@@ -347,7 +362,7 @@ class StarlingInit( val props: Props,
       props.HttpEdmServicePort(),
       props.EdmExternalUrl(),
       props.ServerName(),
-      Some(webXmlUrl.toExternalForm()),
+      None,
       Nil)
   }
 
@@ -384,8 +399,7 @@ object Server extends OutputPIDToFile {
   }
   var server : StarlingInit = null
   def run(props:Props, args: Array[String] = Array[String]()) {
-    val disableEAIImporter = args.map(_.toUpperCase).contains("--NO-EAI-IMPORTS")
-    server = new StarlingInit(props, true, true, true, startEAIAutoImportThread = !disableEAIImporter)
+    server = new StarlingInit(props, true, true, true, startEAIAutoImportThread = props.ImportsBookClosesFromEAI())
     server.start
     Log.info("Starling Server Launched")
   }

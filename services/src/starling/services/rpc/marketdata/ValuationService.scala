@@ -18,7 +18,7 @@ import starling.utils.{Log, Stopwatch}
  * Valuation service implementations
  */
 
-class ValuationService(marketDataStore: MarketDataStore, val props: Props) extends TacticalRefData(props: Props) with ValuationServices {
+class ValuationService(marketDataStore: MarketDataStore, val props: Props) extends TacticalRefData(props: Props) with ValuationServiceApi {
   def log(msg : String) = Log.info("ValuationService: " + msg)
 
   def valueAllQuotas(maybeSnapshotIdentifier : Option[String] = None): CostsAndIncomeQuotaValuationServiceResults = {
@@ -34,7 +34,7 @@ class ValuationService(marketDataStore: MarketDataStore, val props: Props) exten
     log("Are EDM Trades available " + edmTradeResult.cached + ", took " + sw)
 
     if (!edmTradeResult.cached)
-      throw TradeManagamentCacheNotReady
+      throw new TradeManagamentCacheNotReady
     else {
       log("Got Edm Trade results " + edmTradeResult.cached + ", trade result count = " + edmTradeResult.results.size)
       val env = environment(snapshotStringToID(snapshotIDString))

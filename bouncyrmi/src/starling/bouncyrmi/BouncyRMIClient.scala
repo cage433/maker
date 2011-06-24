@@ -21,7 +21,7 @@ import starling.auth.{User, Client}
 
 case class StateChangeEvent(previous: State, current: State) extends Event
 
-class BouncyRMIClient[C](host: String, port: Int, interface: Class[C], auth: Client, logger:(String)=>Unit=(x)=>{}, overriddenUser:Option[String]) {
+class BouncyRMIClient[C](host: String, port: Int, interface: Class[C], auth: Client, logger:(String)=>Unit=(x)=>{}, overriddenUser:Option[String] = None) {
   private val client = new Client(overriddenUser)
   lazy val clientTimer = new HashedWheelTimer
 

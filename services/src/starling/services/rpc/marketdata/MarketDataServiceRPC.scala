@@ -25,7 +25,6 @@ import com.trafigura.tradinghub.support.{JSONConversions, GUID, ServiceFilter}
 import starling.utils.{Stopwatch, StarlingXStream, Log}
 import com.trafigura.edm.tradeservice.{TradeResults, EdmGetTradesResource, EdmGetTradesResourceProxy, EdmGetTrades}
 import starling.services.{StarlingInit, Server}
-import starling.instrument.{CostsAndIncomeQuotaValuation, PhysicalMetalForward}
 import com.trafigura.edm.trades.{Trade => EDMTrade, PhysicalTrade => EDMPhysicalTrade}
 import starling.db.{NormalMarketDataReader, SnapshotID, MarketDataStore}
 import starling.curves.{ClosesEnvironmentRule, Environment, NullAtomicEnvironment}

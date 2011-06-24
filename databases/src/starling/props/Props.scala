@@ -41,6 +41,7 @@ class Props(props:Map[String,String]) extends PropsHelper(props) {
   object RegressionPort extends LocalPort(1024 + ((ServerName().hashCode.abs % 6400) * 10) + 4)
   object LoopyXLPort extends LocalPort(1024 + ((ServerName().hashCode.abs % 6400) * 10) + 5)
   object HttpEdmServicePort extends LocalPort(1024 + ((ServerName().hashCode.abs % 6400) * 10) + 6)
+  object StarlingValuationServiceRmiPort extends LocalPort(1024 + ((ServerName().hashCode.abs % 6400) * 10) +7)
 
   object ExternalHostname extends StringProperty(InetAddress.getLocalHost().getHostName)
   object ExternalUrl extends StringProperty("http://" + ExternalHostname() + ":" + HttpPort())
@@ -77,6 +78,7 @@ class Props(props:Map[String,String]) extends PropsHelper(props) {
   object ServerPrincipalName extends StringProperty("STARLING-TEST/dave-linux")
   object UseAuth extends BooleanProperty(false)
   object NoMP extends BooleanProperty(false)
+  object ImportsBookClosesFromEAI extends BooleanProperty(true)
 
   object LIMHost extends StringProperty("lim-london-live")
   object LIMPort extends IntProperty(6400)
