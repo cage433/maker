@@ -173,7 +173,7 @@ class MarketDataServiceRPC(marketDataStore: MarketDataStore, val props: Props) e
 object MarketDataService extends Application {
 
   lazy val server = StarlingInit.devInstance
-  lazy val md = new MarketDataServiceRPC(server.marketDataStore, server.props)
+  lazy val md = new ValuationService(server.marketDataStore, server.props)
 
 
   //readAndStore()

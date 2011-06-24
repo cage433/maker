@@ -5,10 +5,11 @@ import starling.utils.Stopwatch
 import starling.instrument.{PhysicalMetalForward, CostsAndIncomeQuotaValuation}
 import com.trafigura.edm.trades.PhysicalTrade
 import starling.daterange.Day
-import starling.gui.api.PricingGroup
 import starling.db.{NormalMarketDataReader, SnapshotID, MarketDataStore}
 import starling.gui.api.MarketDataIdentifier._
 import starling.curves.{ClosesEnvironmentRule, Environment}
+import com.trafigura.edm.trades.{Trade => EDMTrade, PhysicalTrade => EDMPhysicalTrade}
+import starling.gui.api.{MarketDataIdentifier, PricingGroup}
 
 /**
  * Created by IntelliJ IDEA.
@@ -29,7 +30,6 @@ trait IValuationService {
  * Valuation service implementations
  */
 class ValuationService(marketDataStore: MarketDataStore, val props: Props) extends TacticalRefData(props: Props) with IValuationService {
-  import TacticalRefData._
   def valueAllQuotas(maybeSnapshotIdentifier : Option[String] = None): Either[List[Either[List[CostsAndIncomeQuotaValuation], String]], String] = {
     try {
       val snapshotID = if (maybeSnapshotIdentifier.isDefined) maybeSnapshotIdentifier else mostRecentSnapshotIdentifier()
@@ -57,7 +57,7 @@ class ValuationService(marketDataStore: MarketDataStore, val props: Props) exten
           case _ => false
         })
         println("Worked " + worked.size + ", failed " + errors.size + ", took " + sw)
-        errors.foreach{case Right(msg) => println(msg)}
+        errors.foreach{case Right(msg) => println(msg); case _ => }
         Left(valuations)
       }
 
