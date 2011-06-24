@@ -77,10 +77,10 @@ class ReportContextBuilder(marketDataStore:MarketDataStore) {
  * Just returns the ReportData which is used in ReportPivotTableDataSource to create a pivot
  */
 class PivotReportRunner(reportContextBuilder:ReportContextBuilder) {
-  val marketSlideAttributes = Market.markets.map(m => SlideAttributes(m.name, Some(m.standardShift.uom.toString), m.standardShift.value.toString))
+  val marketSlideAttributes = Market.all.map(m => SlideAttributes(m.name, Some(m.standardShift.uom.toString), m.standardShift.value.toString))
 
   // We only want to slide commodities that have a standard futures market and all a commodities future markets have the same uom.
-  val commodityMarketsWithFuture = Market.markets.map(_.commodity).distinct.filter(Commodity.hasStandardFuturesMarket(_))
+  val commodityMarketsWithFuture = Market.all.map(_.commodity).distinct.filter(Commodity.hasStandardFuturesMarket(_))
   val commodityToUOMMap = commodityMarketsWithFuture.foldLeft(Map[Commodity, ListBuffer[UOM]]())((map,commodity) => {
     val currentUOMs = map.getOrElse(commodity, new ListBuffer[UOM]())
     val thisUOM = Commodity.standardFuturesMarket(commodity).standardShift.uom
@@ -91,7 +91,7 @@ class PivotReportRunner(reportContextBuilder:ReportContextBuilder) {
   val commodityMarketSlideAttributes = validCommodityMarketsToSlide.map(c =>
     SlideAttributes(c.name, Some(c.representativeMarket.standardShift.uom.toString), c.representativeMarket.standardShift.value.toString))
 
-  val marketSlideAttributesForVol = Market.markets.map(m => SlideAttributes(m.name, Some("%"), "1"))
+  val marketSlideAttributesForVol = Market.all.map(m => SlideAttributes(m.name, Some("%"), "1"))
   val futuresMarketSlideAttributes = Market.futuresMarkets.map(m => SlideAttributes(m.name, Some(m.standardShift.uom.toString), m.standardShift.value.toString))
   val marketText = "Market:"
   val priceSlideParameters = SlideParametersAvailable(Price.toString, Some(marketSlideAttributes), "3", "3", None, None, None, marketText)
@@ -485,7 +485,7 @@ object ConvertedSlideParams {
     }
 
     val market = params.market.map(mar => Market.fromName(mar))
-    val commodity = params.commodity.map(com => Commodity.fromName(com))
+    val commodity = params.commodity.flatMap(com => Commodity.fromNameOption(com))
     new ConvertedSlideParams(slideType, market, params.stepSize, uom, stepIndexList, commodity)
   }
 }

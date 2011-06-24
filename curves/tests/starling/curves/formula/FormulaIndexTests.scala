@@ -9,7 +9,7 @@ import starling.market.Market._
 import starling.daterange.{Month, Day}
 import starling.daterange.Day._
 import starling.utils.QuantityTestUtils._
-import starling.market.FuturesFrontPeriodIndex._
+import starling.market.Index._
 import org.testng.annotations.Test
 import org.testng.Assert._
 import starling.market._
@@ -19,7 +19,7 @@ import collection.immutable.List
 import rules.{NoPricingRule, NonCommonPricingRule, CommonPricingRule}
 import starling.quantity.{Conversions, Quantity}
 
-class FormulaIndexTests extends TestExpiryRules with ShouldMatchers {
+class FormulaIndexTests extends TestMarketSpec with ShouldMatchers {
 
   val env = Environment(
     new TestingAtomicEnvironment() {
@@ -36,14 +36,14 @@ class FormulaIndexTests extends TestExpiryRules with ShouldMatchers {
 
         case FixingKey(`WTI10`, day) => assert(WTI10.isObservationDay(day)); Quantity(8, USD / BBL)
         case FixingKey(`BRT11`, day) => assert(BRT11.isObservationDay(day)); Quantity(12, USD / BBL)
-        case FixingKey(`NYMGO11`, day) => assert(NYMGO11.isObservationDay(day)); Quantity(15, USD / BBL)
+        case FixingKey(`GO11`, day) => assert(GO11.isObservationDay(day)); Quantity(15, USD / BBL)
       }
     }
   )
 
   @Test
   def testSimpleNonCommon {
-    val index = FormulaIndex("WTI vs BRT11", Formula("1.2 * MKT(7) - .8*MKT(28)"), USD, BBL, None, None)
+    val index = FormulaIndex("WTI vs BRT11", Formula("1.2 * MKT(7) - .8*MKT(28)"), USD, BBL, None, None, None)
     index.verify
 
     val index1 = WTI10
@@ -66,7 +66,7 @@ class FormulaIndexTests extends TestExpiryRules with ShouldMatchers {
 
   @Test
   def testSimple {
-    val index = FormulaIndex("WTI vs BRT11", Formula("1.2 * MKT(7) - .8*MKT(28)"), USD, BBL, None, None)
+    val index = FormulaIndex("WTI vs BRT11", Formula("1.2 * MKT(7) - .8*MKT(28)"), USD, BBL, None, None, None)
     index.verify
 
     val index1 = WTI10
@@ -89,7 +89,7 @@ class FormulaIndexTests extends TestExpiryRules with ShouldMatchers {
 
   @Test
   def testComplex {
-    val index = FormulaIndex("0.5 WTI - 0.4 BRT11 - 1.2 GO", Formula("0.5*MKT(7) - 0.4*MKT(28) - 1.2*MKT(1431)"), USD, BBL, None, None)
+    val index = FormulaIndex("0.5 WTI - 0.4 BRT11 - 1.2 GO", Formula("0.5*MKT(7) - 0.4*MKT(28) - 1.2*MKT(58)"), USD, BBL, None, None, None)
     index.verify
 
     val index1 = WTI10
@@ -109,7 +109,7 @@ class FormulaIndexTests extends TestExpiryRules with ShouldMatchers {
 
   @Test(expectedExceptions = Array(classOf[InvalidFormulaIndexException]))
   def testVerify {
-    val index = FormulaIndex("0.5 WTI vs 0.4 HO + 1.2 ?", Formula("0.5 MKT(7) - 0.4 MKT(29) - 1.2 MKT(1432)"), USD, BBL, None, None)
+    val index = FormulaIndex("0.5 WTI vs 0.4 HO + 1.2 ?", Formula("0.5 MKT(7) - 0.4 MKT(29) - 1.2 MKT(1432)"), USD, BBL, None, None, None)
     index.verify
   }
 

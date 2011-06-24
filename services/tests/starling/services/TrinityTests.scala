@@ -4,7 +4,6 @@ import org.scalatest.matchers.ShouldMatchers
 import starling.pivot.controller.PivotGrid
 import starling.utils.ImplicitConversions._
 import starling.daterange.Day._
-import starling.market.Market
 import starling.pivot.model.{ValueAxisValueType, AxisValue, AxisCell}
 import starling.pivot.{PivotQuantity, TableCell, Field}
 import starling.quantity.UOM
@@ -12,12 +11,13 @@ import starling.utils.StarlingTest
 import org.testng.annotations.Test
 import collection.immutable.List
 import java.lang.String
+import starling.market.{TrinityMarket, Market}
 
 
 class TrinityTests extends StarlingTest with ShouldMatchers {
   val period = 12 Mar 2045
   val market = Market.LME_COPPER
-  val trinityCode = Market.marketToTrinityCode(market)
+  val trinityCode = TrinityMarket.marketToTrinityCode(market)
 
   @Test
   def shouldGenerateFuturesPricesExportFile {

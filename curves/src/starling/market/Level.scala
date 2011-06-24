@@ -9,7 +9,7 @@ case class Level(name: String) extends Ordered[Level] {
   def compare(that: Level) = this.name.compare(that.name)
 }
 
-object Level extends StarlingEnum(classOf[Level], (l: Level) => l.name) {
+object Level extends StarlingEnum(classOf[Level], (l: Level) => l.name, ignoreCase = true) {
   val Live = Level("Live")
   val Close = Level("Close")
   val IndexLevel = Level("Index")
@@ -22,6 +22,10 @@ object Level extends StarlingEnum(classOf[Level], (l: Level) => l.name) {
   val Ask = Level("Ask")
   val Spot = Level("Spot")
   val Settle = Level("Settle")
+  val Marker1Minute = Level("Marker1Minute")
+  val Asia1Minute = Level("Asia1Minute")
+  val RecentWklyIndices = Level("RecentWklyIndices")
+  val RecentMthlyIndices = Level("RecentMthlyIndices")
   val Unknown = Level("Unknown")
 }
 

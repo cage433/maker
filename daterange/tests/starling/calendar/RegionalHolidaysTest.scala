@@ -8,7 +8,7 @@ import starling.daterange.{Location, Day}
 class RegionalHolidaysTest extends TestNGSuite {
 
   class TestHols extends RegionalHolidays {
-    def financialHolidays(name: String) = BusinessCalendarSet("", Location.Unknown, Set())
+    def financialHolidaysOption(name: String) = Some(BusinessCalendarSet("", Location.Unknown, Set()))
   }
 
   @Test

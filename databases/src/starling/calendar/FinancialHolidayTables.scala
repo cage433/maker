@@ -10,7 +10,7 @@ import starling.daterange.{Location, Day}
 trait FinancialHolidayTables extends HolidayTables {
   val db: DB
 
-  def financialHolidays(name: String) = BusinessCalendarSet(name, Location.Unknown, financialHolMap(name))
+  def financialHolidaysOption(name: String) = financialHolMap.get(name).map(BusinessCalendarSet(name, Location.Unknown, _))
 
   lazy val financialHolMap : Map[String, Set[Day]] = {
     val table = mutable.Map.empty[String, Set[Day]]

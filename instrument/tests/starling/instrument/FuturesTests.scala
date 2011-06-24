@@ -10,12 +10,12 @@ import starling.quantity.{UOM, Quantity}
 import starling.market._
 import starling.varcalculator.ForwardPriceRiskFactor
 
-class FuturesTests extends TestExpiryRules {
+class FuturesTests extends TestMarketSpec {
 	import org.testng.annotations._
 	import org.testng.Assert._
 
 	val lotSize = 100;
-	val mkt = FuturesMarket.testMarket("Test", EUR, MT)
+	val mkt = Market.testMarket("Test", EUR, MT)
 	val d = Day(2009, 12, 10)
 	val price = Quantity(99.0, mkt.priceUOM)
   val fxRate = Quantity(.5, USD/EUR)
@@ -25,7 +25,7 @@ class FuturesTests extends TestExpiryRules {
 	  Map(
       ForwardPriceKey(mkt, d) -> price,
       USDFXRateKey(EUR) -> fxRate,
-      FixingKey(FuturesFrontPeriodIndex.WTI10, Market.NYMEX_WTI.lastTradingDay(Month(2009, 1))) -> fixing
+      FixingKey(Index.WTI10, Market.NYMEX_WTI.lastTradingDay(Month(2009, 1))) -> fixing
     ),
    marketDay.endOfDay
 	)

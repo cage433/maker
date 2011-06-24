@@ -85,7 +85,7 @@ object MarketDataXStreamConverters {
       reader.moveDown
       val text = reader.getValue()
       reader.moveUp
-      SpreadStdDevSurfaceDataKey(FuturesMarket.fromName(text))
+      SpreadStdDevSurfaceDataKey(Market.futuresMarketFromName(text))
     }
   }
 

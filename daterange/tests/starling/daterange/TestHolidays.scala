@@ -68,13 +68,13 @@ trait HolidaysSpec {
   val ARE = Set(Day(2011, 1, 3), Day(2011, 1, 3), Day(2011, 4, 22), Day(2011, 4, 25), Day(2011, 4, 29))
 
   HolidayTablesFactory.registerNewHolidayTablesImplForTesting(Some(new HolidayTables {
-    def financialHolidays(name: String) = name match {
+    def financialHolidaysOption(name: String) = Some(name match {
       case "NYM" => BusinessCalendarSet(name, Location.Unknown, nymex)
       case "ARE" => BusinessCalendarSet(name, Location.Unknown, ARE)
       case "IPE" => BusinessCalendarSet(name, Location.Unknown, Set(Day(2011, 4, 22)))
       case "SFS" => BusinessCalendarSet(name, Location.Unknown, Set(Day(2011, 4, 4), Day(2011, 4, 5)))
       case _ => BusinessCalendarSet(name, Location.Unknown, Set())
-    }
+    })
 
     def regionHolidays(name: String) = BusinessCalendarSet(name, Location.Unknown, Set())
   }))

@@ -13,10 +13,10 @@ import starling.curves.interestrate.{DayCountActual365}
 import starling.maths.{AcklamInverseNormal, RandomVariables, MatrixUtils}
 import starling.calendar.NilCalendar
 import starling.db.MetalsPriceTable
-import starling.market.{ForwardMarket, FuturesMarket, Market}
 import starling.curves.{Environment, InverseConstantInterpolation, TestEnvironmentBuilder}
 import starling.quantity.{UOM, Percentage, Quantity}
 import starling.daterange.{DayAndTime, Month, Day}
+import starling.market.{TestMarketSpec, FuturesMarket, Market}
 
 
 /**
@@ -34,13 +34,13 @@ case class DollarValuedInstrument(inst : Instrument) extends Instrument{
     ))
 }
 
-class ParametricVarTests extends StarlingTest {
+class ParametricVarTests extends TestMarketSpec {
 
   val marketDay = Day(2009, 11, 2)
   val envBldr = TestEnvironmentBuilder(marketDay.endOfDay)
-  val market1 = FuturesMarket.testMarket("Fred", USD, MT)
-  val forwardMarket1 = ForwardMarket.testMarket("Fred", USD, MT)
-  val market2 = FuturesMarket.testMarket("Ginger", USD, MT)
+  val market1 = Market.testMarket("Fred", USD, MT)
+  val forwardMarket1 = Market.testMarket("Fred", USD, MT)
+  val market2 = Market.testMarket("Ginger", USD, MT)
   envBldr.setConstantPrice(market1, 50.0)
   envBldr.setConstantPrice(market2, 85.0)
   envBldr.setUSDPerCCYSpotRate(EUR, Quantity(1.3, USD / EUR))

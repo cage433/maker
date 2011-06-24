@@ -16,7 +16,7 @@ import org.scalatest.matchers.ShouldMatchers
 import MapMatcher._
 import starling.eai.TreeID
 
-class TradeableFieldsTest extends TestExpiryRules with ShouldMatchers {
+class TradeableFieldsTest extends TestMarketSpec with ShouldMatchers {
   val trade: Trade = Trade(TradeID(1, EAITradeSystem), Day(2009, 1, 1), "cp",
     EAITradeAttributes(TreeID(1), TreeID(2), TreeID(3), "trader", "tradedfor", "broker", "clearinghouse"), ErrorInstrument("error1"))
   val fxOption = FXOption(1.3(EUR/USD), 999(USD), Day(2009, 9, 8), Day(2009, 10, 10), Put)

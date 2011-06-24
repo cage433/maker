@@ -21,7 +21,7 @@ class MarketDataImporter(marketDataStore: MarketDataStore) {
       val deletes = {
         val existingSaves = existingData.collectValues { case VersionedMarketData.Save(savedData) => savedData }
         val keysWhichShouldBePresent = externalData.values.flatMap(_.map(_.timedKey)).toList
-        val extraKeys = existingSaves.keySet \\ keysWhichShouldBePresent
+        val extraKeys = existingSaves.keySet -- keysWhichShouldBePresent.toSet
 
         extraKeys.map(timedKey => MarketDataUpdate(timedKey, None, existingSaves.get(timedKey))).toList
       }

@@ -8,7 +8,7 @@ import starling.quantity.UOM._
 import org.testng.annotations.{AfterClass, AfterMethod, BeforeMethod, Test}
 import starling.varcalculator.{RiskFactor, ForwardPriceRiskFactor}
 import starling.utils.QuantityTestUtils._
-import starling.market.{Market, FuturesFrontPeriodIndex, JonTestEnv}
+import starling.market.{Market, Index, JonTestEnv}
 import starling.models.{DefaultRiskParameters, Call, Put}
 import starling.varcalculator.RiskFactorUtils._
 import starling.utils.AtomicDatumKeyUtils._
@@ -29,7 +29,7 @@ class JonAsianOptionTests extends JonTestEnv {
     val may = Month(2010, 5)
     val jun = Month(2010, 6)
     val market = Market.NYMEX_WTI
-    val index = FuturesFrontPeriodIndex.WTI10
+    val index = Index.WTI10
     val asian = SingleAsianOption(index, apr, Quantity(80.0, market.priceUOM), Quantity(1, market.uom), Call)
 
     val env = makeEnv(valuationDate.endOfDay)
@@ -52,7 +52,7 @@ class JonAsianOptionTests extends JonTestEnv {
     val env = makeEnv(valuationDate.endOfDay)
 
     val market = Market.NYMEX_WTI
-    val index = FuturesFrontPeriodIndex.WTI10
+    val index = Index.WTI10
     val asian = SingleAsianOption(index, Month(2010, 12), Quantity(82.50, market.priceUOM), Quantity(1, market.uom), Call)
     assertEquals(asian.mtm(env).value, 13.5616056093, 1e-10)
     assertEquals(asian.centreGamma(env, USD).value, 0.0140696868009, 1e-10)
@@ -68,7 +68,7 @@ class JonAsianOptionTests extends JonTestEnv {
     val env = makeEnv(valuationDate.endOfDay)
 
     val market = Market.NYMEX_WTI
-    val index = FuturesFrontPeriodIndex.WTI10
+    val index = Index.WTI10
     val asian = SingleAsianOption(index, Month(2010, 12), Quantity(82.50, market.priceUOM), Quantity(1, market.uom), Put)
 
     assertEquals(asian.mtm(env).value, 9.6012714918, 1e-10)
@@ -84,7 +84,7 @@ class JonAsianOptionTests extends JonTestEnv {
     val env = makeEnv(valuationDate.endOfDay)
 
     val market = Market.NYMEX_WTI
-    val index = FuturesFrontPeriodIndex.WTI10
+    val index = Index.WTI10
     val asian = SingleAsianOption(index, Month(2010, 12), Quantity(100, market.priceUOM), Quantity(1, market.uom), Call)
 
     //assertEquals(asian.mtm(env).value, 6.2604682476, 1e-10)
@@ -101,7 +101,7 @@ class JonAsianOptionTests extends JonTestEnv {
     val env = makeEnv(valuationDate.endOfDay)
 
     val market = Market.NYMEX_WTI
-    val index = FuturesFrontPeriodIndex.WTI10
+    val index = Index.WTI10
     val asian = SingleAsianOption(index, Month(2010, 12), Quantity(100, market.priceUOM), Quantity(1, market.uom), Put)
 
     assertEquals(asian.mtm(env).value, 19.6990915503, 1e-10)
@@ -117,7 +117,7 @@ class JonAsianOptionTests extends JonTestEnv {
     val env = makeEnv(valuationDate.endOfDay)
 
     val market = Market.NYMEX_WTI
-    val index = FuturesFrontPeriodIndex.WTI10
+    val index = Index.WTI10
     val asian = SingleAsianOption(index, Month(2010, 12), Quantity(50, market.priceUOM), Quantity(1, market.uom), Call)
 
     assertEquals(asian.mtm(env).value, 37.5833636486, 1e-10)
@@ -134,7 +134,7 @@ class JonAsianOptionTests extends JonTestEnv {
     val env = makeEnv(valuationDate.endOfDay)
 
     val market = Market.NYMEX_WTI
-    val index = FuturesFrontPeriodIndex.WTI10
+    val index = Index.WTI10
     val asian = SingleAsianOption(index, Month(2010, 12), Quantity(50, market.priceUOM), Quantity(1, market.uom), Put)
 
     assertEquals(asian.mtm(env).value, 1.3106800363, 1e-10)
@@ -150,7 +150,7 @@ class JonAsianOptionTests extends JonTestEnv {
     val env = makeEnv(valuationDate.endOfDay)
 
     val market = Market.NYMEX_WTI
-    val index = FuturesFrontPeriodIndex.WTI10
+    val index = Index.WTI10
     val asian = SingleAsianOption(index, Month(2010, 12), Quantity(82.50, market.priceUOM), Quantity(1, market.uom), Call)
 
     val pfs = priceKeys(asian, env.marketDay, USD).map(rf => (rf.periodKey.get -> rf)).toMap

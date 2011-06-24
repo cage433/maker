@@ -40,9 +40,7 @@ object InstrumentType {
     SwapCalendarSpread,
     FuturesOption,
     CalendarSpreadOption,
-    ForwardOption,
     AsianOption,
-    CommodityForward,
     FXOption,
     ErrorInstrument,
     CashInstrument,
@@ -245,15 +243,9 @@ trait Instrument extends Ordered[Instrument] with Greeks with PnlExplanation {
     }
     val hedge = diff match {
       case PriceDifferentiable(market: FuturesMarket, period) => Some(Future(market, period, 0.0(market.priceUOM), 1.0(market.uom)))
-      case PriceDifferentiable(market : CommodityMarket, period) if PublishedIndex.marketToPublishedIndexMap.contains(market) => {
-        buildSwap(PublishedIndex.marketToPublishedIndexMap(market), period)
+      case PriceDifferentiable(market : CommodityMarket, period) if Index.marketToPublishedIndexMap.contains(market) => {
+        buildSwap(Index.marketToPublishedIndexMap(market), period)
       }
-      case PriceDifferentiable(market: ForwardMarket, day: Day) => Some(CommodityForward(market, day, 0.0(market.priceUOM), 1.0(market.uom)))
-      // This sucks but should be gotten rid of once ForwardMarket goes
-      case PriceDifferentiable(market: ForwardMarket, period : DateRange) => {
-        val days = period.days.filter(market.businessCalendar.isBusinessDay)
-        Some(CommodityForward(market, days.last, 0.0(market.priceUOM), 1.0(market.uom)))
-    }
       case FuturesSpreadPrice(market, m1, m2) => Some(FuturesCalendarSpread(market, m1, m2, 0.0(market.priceUOM), 0.0(market.priceUOM), 1.0(market.uom)))
       case SwapPrice(index, period) => {
         buildSwap(index, period)
@@ -270,7 +262,6 @@ trait Instrument extends Ordered[Instrument] with Greeks with PnlExplanation {
       case ForwardPriceRiskFactor(market, nDaysToStart, nDaysToEnd)
       => market match {
         case f: FuturesMarket => Future(f, f.nthPeriod(env.marketDay, nDaysToEnd), 0(market.priceUOM), 1(market.uom))
-        case f: ForwardMarket => CommodityForward(f, f.nthPeriod(env.marketDay, nDaysToEnd), 0(market.priceUOM), 1(market.uom))
       }
       case EquityRiskFactor(ric) => NetEquityPosition(ric, Quantity(1, UOM.SHARE))
       case SpotFXRiskFactor(ccy) => new FXForward(env.spotFXRate(USD, ccy), 1.0 (ccy), marketDay)
@@ -338,7 +329,7 @@ trait Instrument extends Ordered[Instrument] with Greeks with PnlExplanation {
   def commodityFuturesPosition(rf: RiskFactor, position: Quantity): Quantity = {
     rf match {
       case prf : ForwardPriceRiskFactor => {
-         prf.market.commodity.toStandardFuturesLots(position)
+         prf.market.commodity.toStandardFuturesLots(position)(prf.market.conversions)
       }
       case _ => Quantity.NULL
     }

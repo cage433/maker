@@ -70,6 +70,8 @@ class Conversions(val conversions: Map[UOM, Double]) extends Serializable {
     }
   }
 
+  def + (conv: (UOM, Double)): Conversions = new Conversions(conversions + conv)
+
   override def toString = conversions.map(_.toString).mkString(", ")
 }
 

@@ -1,12 +1,13 @@
 package starling.market.rules
 
-import starling.market.TestExpiryRules
+import starling.market.TestMarketSpec
 import starling.market.Market._
 import starling.daterange.Month
 import org.testng.Assert._
 import org.testng.annotations.Test
+import starling.calendar.BusinessCalendarSet
 
-class SwapPricingRuleTests extends TestExpiryRules {
+class SwapPricingRuleTests extends TestMarketSpec {
 
   @Test
   def testCommon {
@@ -14,7 +15,7 @@ class SwapPricingRuleTests extends TestExpiryRules {
     val markets = List(NYMEX_WTI, ICE_BRENT)
 
     // any days they observe in common are pricing days.
-    val allHolidays = NYMEX_WTI.businessCalendar.holidays.filter(_.month == 1).union(ICE_BRENT.businessCalendar.holidays.filter(_.month == 1))
+    val allHolidays = NYMEX_WTI.businessCalendar.asInstanceOf[BusinessCalendarSet].holidays.filter(_.month == 1).union(ICE_BRENT.businessCalendar.asInstanceOf[BusinessCalendarSet].holidays.filter(_.month == 1))
 
     // pricing days is is a weekday and any day that is a holiday in *either* market
     val commonDays = period.days.filter(d => d.isWeekday && !allHolidays.contains(d))
@@ -28,7 +29,7 @@ class SwapPricingRuleTests extends TestExpiryRules {
     val markets = List(NYMEX_WTI, ICE_BRENT)
 
     // any day that is a pricing day in either market is a pricing day for non-common
-    val intersectionHols = NYMEX_WTI.businessCalendar.holidays.filter(_.month == 1).intersect(ICE_BRENT.businessCalendar.holidays.filter(_.month == 1))
+    val intersectionHols = NYMEX_WTI.businessCalendar.asInstanceOf[BusinessCalendarSet].holidays.filter(_.month == 1).intersect(ICE_BRENT.businessCalendar.asInstanceOf[BusinessCalendarSet].holidays.filter(_.month == 1))
 
     // pricing days is is a weekday and any day that is a holiday in *both* markets
     val pricingDays = period.days.filter(d => d.isWeekday && !intersectionHols.contains(d))

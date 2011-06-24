@@ -147,6 +147,6 @@ object CommoditySwap extends InstrumentType[SingleCommoditySwap] with TradeableT
   def sample: CommoditySwap = {
     import starling.quantity.Quantity._
     import starling.quantity.UOM._
-    CommoditySwap(FuturesFrontPeriodIndex.WTI10, 123(USD / BBL), 77000(BBL), Month(2015, 1), true, CommonPricingRule)
+    CommoditySwap(Index.WTI10, 123(USD / BBL), 77000(BBL), Month(2015, 1), true, CommonPricingRule)
   }
 }

@@ -66,7 +66,7 @@ object TimeShiftToLMECloseEnvironmentRule extends EnvironmentRule {
     }
 
     val marketsX = pricesForLastClose.map { case (market, (closeDay, priceData)) => {
-      MarketDeliveryPeriods(observationTimeOfDay, market, priceData.sortedKeys)
+      UnderlyingDeliveryPeriods(observationTimeOfDay, market, priceData.sortedKeys)
     } }
 
     new EnvironmentWithDomain {

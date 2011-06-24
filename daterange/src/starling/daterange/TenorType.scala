@@ -70,6 +70,12 @@ object TenorType {
     case _ => throw new IllegalStateException("Can't parse text " + text)
   }
 
+  def parseTenorName(tenorName: String) = ALL.filter(_.toString.toLowerCase == tenorName.toLowerCase) match {
+    case m :: Nil => m
+    case Nil => throw new Exception("Tenor name " + tenorName + " doesn't match any tenors.")
+    case o => throw new Exception("Tenor name " + tenorName + " doesn't matches too many tenors: " + o)
+  }
+
   def parseInterval(text: String): (Int, TenorType) = {
     val num = text.substring(0, text.size - 1).toInt
     val tenor = text.last match {

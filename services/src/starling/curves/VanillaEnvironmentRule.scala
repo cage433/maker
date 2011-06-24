@@ -30,7 +30,7 @@ class VanillaEnvironmentRule(
         marketDataReader.readAllPrices(observationPoint).collect {
           case (PriceDataKey(market: CommodityMarket), priceData: PriceData)
             if market.tenor.isOneOf(Day, Month) && priceData.nonEmpty => {
-              MarketDeliveryPeriods(observationPoint.timeOfDay, market, priceData.sortedKeys)
+              UnderlyingDeliveryPeriods(observationPoint.timeOfDay, market, priceData.sortedKeys)
             }
         }
       }

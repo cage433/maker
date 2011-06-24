@@ -58,4 +58,13 @@ object BusinessCalendar{
     def location = Location.Unknown
     def isHoliday(day:Day) = day.isWeekendDay
   }
+  def error(code: String) = new BusinessCalendar() {
+    def location = Location.Unknown
+
+    def isHoliday(day: Day) = throw new Exception("No holidays for this calendar: " + code)
+
+    def name = {
+      "Error no calendar for: " + code
+    }
+  }
 }

@@ -3,12 +3,12 @@ package starling.market
 import rules.{Precision, CommonPricingRule, SwapPricingRule}
 import starling.curves.Environment
 import starling.daterange.DateRange
-import PublishedIndex._
 import starling.quantity.UOM._
+import starling.market.Index._
 import starling.calendar.BrentMonth
 import starling.quantity.{UOM, Quantity}
 
-case class BrentCFDSpreadIndex(forwardBrent: PublishedIndex) extends MultiIndex(DATED_BRENT + " vs " + forwardBrent) {
+case class BrentCFDSpreadIndex(forwardBrent: PublishedIndex, month: BrentMonth) extends MultiIndex(DATED_BRENT + " vs " + forwardBrent) {
   def averagePrice(env: Environment, averagingPeriod: DateRange, rule: SwapPricingRule, priceUOM: UOM) = {
     assert(rule == CommonPricingRule, "Only Common Rule makes sense for Brent CFD")
     val observationDays = rule.observationDays(calendars, averagingPeriod)
@@ -30,21 +30,26 @@ case class BrentCFDSpreadIndex(forwardBrent: PublishedIndex) extends MultiIndex(
 
   def priceUOM = USD / BBL
 
-  lazy val brentMonth: BrentMonth = PLATTS_BRENT.find(_._2 == forwardBrent) match {
-    case Some((month, _)) => month
-    case _ => throw new Exception("Invalid index? " + forwardBrent)
-  }
+  val eaiQuoteID = None
 }
 
 object BrentCFDSpreadIndex {
   lazy val named: Map[String, BrentCFDSpreadIndex] = {
-    PublishedIndex.PLATTS_BRENT.values.map(i => {
-      val index = BrentCFDSpreadIndex(i)
-      (index.name.s -> index)
-    }).toMap
+    (1 to 12).map {
+      i => {
+        val month = new BrentMonth(i)
+        val index = Index.publishedIndexFromName("Platts Brent (" + month.monthName + ")")
+        val cfd = new BrentCFDSpreadIndex(index, month)
+        (cfd.name -> cfd)
+      }
+    } toMap
   }
 
-  def indexFor(brentMonth: BrentMonth): Option[BrentCFDSpreadIndex] = {
-    named.values.find(i => i.brentMonth == brentMonth)
+  lazy val all = named.values.toList
+
+  def indexFor(brentMonth: BrentMonth): BrentCFDSpreadIndex = indexForOption(brentMonth).get
+
+  def indexForOption(brentMonth: BrentMonth): Option[BrentCFDSpreadIndex] = {
+    named.values.find(i => i.month == brentMonth)
   }
 }

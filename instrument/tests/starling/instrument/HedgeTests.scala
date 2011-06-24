@@ -6,7 +6,6 @@ import starling.curves.Environment
 import starling.curves.NullAtomicEnvironment
 import starling.utils.StarlingTest
 import starling.quantity.UOM._
-import starling.market.Market
 import starling.market.Market._
 import starling.daterange.Month
 import starling.quantity.Quantity
@@ -27,8 +26,9 @@ import starling.curves.PriceDifferentiable
 import starling.curves.FixingKey
 import org.testng.Assert._
 import javax.management.remote.rmi._RMIConnection_Stub
+import starling.market.{TestMarketSpec, Market}
 
-class HedgeTests extends StarlingTest{
+class HedgeTests extends TestMarketSpec {
 
   def buildMonthGroups(
     u : Uniform = RandomVariables.standardUniform(12345),
@@ -131,7 +131,7 @@ class HedgeTests extends StarlingTest{
   def testSwapHedgeDeltasAreConsistent{
     val randomMonths = new RandomThing((Month(2011, 1) upto Month(2011, 12)).toList, seed = 98765)
     val randomMarkets = new RandomThing(
-      List(Market.NYMEX_WTI, Market.ICE_BRENT, Market.ICE_GAS_OIL, Market.BALTIC_HANDYMAX, Market.LME_LEAD), 
+      List(Market.NYMEX_WTI, Market.ICE_BRENT, Market.ICE_GAS_OIL, Market.LME_LEAD),
       seed = 345)
     val u = RandomVariables.standardUniform(43434)
     val marketDay = Day(2010, 3, 13).endOfDay

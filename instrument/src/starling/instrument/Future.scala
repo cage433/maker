@@ -7,9 +7,9 @@ import starling.utils.ImplicitConversions._
 import Math._
 import starling.richdb.RichInstrumentResultSetRow
 import starling.daterange._
-import starling.market.{FuturesFrontPeriodIndex, FuturesMarket, Market}
 import starling.curves._
 import starling.daterange.DateRangePeriod
+import starling.market.{Index, FuturesFrontPeriodIndex, FuturesMarket, Market}
 
 /** A class which represents a futures trade
  */
@@ -30,8 +30,12 @@ case class Future(market: FuturesMarket, delivery: DateRange, strike: Quantity, 
     //The cash for futures after the last trading day is probably wrong
     //as the settlement day is market day
     //maybe we should try to create the correct margining payments using the fixings?
-    //the trouble is the trade day becomes a valuation parameter 
-    var fixings = convertPrice(env, env.indexFixing(FuturesFrontPeriodIndex(market), lastTradingDay))
+    //the trouble is the trade day becomes a valuation parameter
+    val index = Index.futuresMarketToFuturesFrontPeriodIndexMap.get(market) match {
+      case Some(i) => i
+      case _ => FuturesFrontPeriodIndex(market.name + " front period", None, market, 0, 1, None)
+    }
+    val fixings = convertPrice(env, env.indexFixing(index, lastTradingDay))
     Assets(
       Asset.estimatedCash(env.marketDay.day, fixings * volume, env),
       Asset.estimatedCash(env.marketDay.day, -strike * volume, env) //strike is always zero because of the utps

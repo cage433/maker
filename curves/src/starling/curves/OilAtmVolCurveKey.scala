@@ -4,7 +4,7 @@ import starling.marketdata.{OilVolSurfaceDataKey, OilVolSurfaceData}
 import starling.daterange._
 import starling.maths.SplineInterpolator
 import starling.quantity.{UOM, Percentage}
-import starling.market.{ForwardMarket, Market, FuturesMarket, CommodityMarket}
+import starling.market.{Market, FuturesMarket, CommodityMarket}
 import cern.colt.matrix.DoubleMatrix2D
 import cern.colt.matrix.impl.DenseDoubleMatrix2D
 import starling.quantity.Quantity

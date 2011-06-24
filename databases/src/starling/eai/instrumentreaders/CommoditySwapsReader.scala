@@ -26,7 +26,8 @@ class CommoditySwapsReader extends InstrumentReader {
     } else {
       rs.getSwapPricingRule("PricingRule", "PricingRuleDefault")
     }
-    val averaging = index.makeAveragingPeriodMonthIfPossible(DateRange(start, end), rule)
+//    val averaging = index.makeAveragingPeriodMonthIfPossible(DateRange(start, end), rule)
+    val averaging = DateRange(start, end)
 
     CommoditySwap(index, strike, amount, averaging, cleared, rule)
   }

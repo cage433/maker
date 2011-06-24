@@ -6,16 +6,16 @@ import org.testng.annotations.Test
 import starling.quantity.RichQuantity._
 import starling.quantity.UOM._
 import starling.quantity.Percentage
-import starling.market.{TestExpiryRules, Market}
+import starling.market.{TestMarketSpec, Market}
 import starling.daterange.{Day, Year}
 import starling.instrument.CashInstrumentType._
 
-class ClearingHouseCostsTests extends TestExpiryRules {
+class ClearingHouseCostsTests extends TestMarketSpec {
 
   @Test
   def testSinglePayment {
     val period = Year(2011)
-    val mkt = Market.BALTIC_CAPESIZE
+    val mkt = Market.LME_NASAAC
     val vol = 100(DAY)
     val volume = new FreightVolume(mkt.uom, vol, period)
     val singlePayment = new SingleFreightPayment(Day.today, volume)

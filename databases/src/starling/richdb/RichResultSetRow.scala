@@ -65,33 +65,16 @@ class RichResultSetRow(resultSet: ResultSet)
 {
   def getMarket(column: String): CommodityMarket = Market.fromName(getString(column))
 
-  def getFuturesMarket(column: String) = FuturesMarket.fromName(getString(column))
+  def getFuturesMarket(column: String) = Market.futuresMarketFromName(getString(column))
 
   def getFuturesSpreadMarket(column: String) = getString(column) match {
     case FuturesSpreadMarket.Parse(market) => market
     case unknown => throw new Exception("Not a recognised futures spread market: " + unknown)
   }
 
-  def getForwardMarket(column: String) = Market.forwardMarketFromName(getString(column))
+  def getCommodityMarket(column: String) = Market.fromName(getString(column))
 
-  def getCommodityMarketFromTrinityCode(column: String): CommodityMarket = Market.fromTrinityCode(getString(column))
-
-  def getFuturesMarketFromTrinityCode(column: String) = getCommodityMarketFromTrinityCode(column) match {
-    case m: FuturesMarket => m
-    case o => throw new Exception("Market " + o + " is not a FuturesMarket")
-  }
-
-  def getForwardMarketFromTrinityCode(column: String) = getCommodityMarketFromTrinityCode(column) match {
-    case m: ForwardMarket => m
-    case f: FuturesMarket => new ProxyForwardMarket(f) // TODO [15 Apr 2010] until we know what they mean in trinity this is a guess
-  }
-
-  def isForwardMarketFromTrinityCode(column: String) = getCommodityMarketFromTrinityCode(column) match {
-    case m: ForwardMarket => true
-    case o => false
-  }
-
-  def getFuturesMarketFromEAIQuoteID(column: String) = FuturesMarket.fromEAIQuoteID(getInt(column))
+  def getFuturesMarketFromEAIQuoteID(column: String) = Market.futuresMarketFromQuoteID(getInt(column))
 
   def getSingleIndexFromEAIQuoteID(column: String) = Index.singleIndexFromEAIQuoteID(getInt(column))
 

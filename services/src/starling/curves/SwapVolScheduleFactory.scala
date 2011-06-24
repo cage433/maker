@@ -41,8 +41,8 @@ class SwapVolSchedulePivotDataSource(context: EnvironmentWithDomain) extends Unf
     case _ => None
   })
   private val marketsData = context.marketVols.map(m => m.market -> m).toMap
-  private val indexes = Index.namedIndexes.flatMap {
-    case (si: SingleIndex) if markets.contains(si.forwardPriceMarket) => Some(si)
+  private val indexes = Index.all.flatMap {
+    case (si: SingleIndex) if markets.contains(si.market) => Some(si)
     case _ => None
   }
   private val indexSelection = indexes.headOption.map(i => SomeSelection(Set(i.name))).getOrElse(AllSelection)
@@ -72,7 +72,7 @@ class SwapVolSchedulePivotDataSource(context: EnvironmentWithDomain) extends Unf
   def unfilteredData(pfs: PivotFieldsState): List[Map[Field, Any]] = {
     indexes.flatMap {
       index => {
-        val market = index.forwardPriceMarket
+        val market = index.market
         val marketData = marketsData(market)
         val data = marketData.oilVolSurfaceData
         val months = marketDay.day.containingMonth upto data.periods.last.firstDay.containingMonth

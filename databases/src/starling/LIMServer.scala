@@ -117,6 +117,9 @@ class LIMConnection(connection: MimConnection) {
           throw new MissingMarketDataException("No LIM data for " + query)
       }
     } catch {
+      case e: MimException => {
+        throw new MissingMarketDataException("LIM Error: No LIM data for " + query, e)
+      }
       case e => {
         Log.error("Failed to get LIM data, " + query, e)
         throw e
