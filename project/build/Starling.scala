@@ -6,12 +6,12 @@ class Starling(info : ProjectInfo) extends ParentProject(info) {
   def starlingProject(name : String, dependencies : Project*) = project(name, name, new StarlingProject(name, _), dependencies :_*)
   def swingStarlingProject(name : String, dependencies : Project*) = project(name, name, new SwingStarlingProject(name, _), dependencies :_*)
 
-  lazy val starlingApi = starlingProject("starling.api")
 
   // BouncyRMI is largely independent of everything else
   lazy val auth = starlingProject("auth", utils)
   lazy val bouncyrmi = swingStarlingProject("bouncyrmi", utils, auth)
 
+  lazy val starlingApi = starlingProject("starling.api", bouncyrmi)
   // projects organised by layer
   lazy val utils = starlingProject("utils")
 
