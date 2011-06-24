@@ -38,3 +38,4 @@ starling_*
 external_imports
 .idea
 build-time
+!*.iml

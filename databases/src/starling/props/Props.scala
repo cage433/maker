@@ -82,7 +82,7 @@ class Props(props:Map[String,String]) extends PropsHelper(props) {
   object LIMPort extends IntProperty(6400)
 
   object NeptuneDatabase extends DatabaseProperty(
-    "jdbc:jtds:sqlserver://TTRAFLON2K97.global.trafigura.com/Neptune",
+    "jdbc:jtds:sqlserver://TTRAFLONSQL12.global.trafigura.com/;instance=db12",
     "starling_neptune",
     "1234142dfSdfS&%&^%£)"
    )

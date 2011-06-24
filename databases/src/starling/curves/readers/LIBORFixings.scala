@@ -7,6 +7,7 @@ import starling.calendar.BusinessCalendarSet
 import starling.daterange._
 import starling.db.MarketDataEntry
 import starling.market._
+import starling.marketdata.{PriceFixingsHistoryData, PriceFixingsHistoryDataKey}
 import starling.pivot.MarketValue
 import starling.quantity.{Quantity, UOM}
 

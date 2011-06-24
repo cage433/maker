@@ -1,8 +1,8 @@
 package starling.marketdata
 
 import starling.pivot.{Field, SomeSelection, PivotFieldsState, FieldDetails}
-import starling.curves.SpreadStdDevSurfaceDataType
 import starling.market.EquityPricesDataType
+import starling.curves.{SpreadStdDevSurfaceDataType}
 
 /**
  * There is one of these for each time of market data. eg. prices, spotfx, forward rates...
@@ -37,6 +37,7 @@ trait MarketDataType {
 object MarketDataTypes {
   //This list is indirectly used to populate the drop down list in the market data viewer
   val types = List(
+    GradeHubBenchmarkDataType,
     PriceDataType,
     BradyFXVolSurfaceDataType,
     BradyMetalVolsDataType,
