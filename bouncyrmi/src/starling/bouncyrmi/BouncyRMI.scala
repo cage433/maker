@@ -17,6 +17,7 @@ import java.util.concurrent.{TimeUnit, Executors, ThreadFactory}
 import starling.auth.User
 import starling.utils.ClosureUtil._
 import starling.utils.ImplicitConversions._
+import java.lang.Boolean
 
 
 //Message classes
@@ -83,16 +84,16 @@ object BouncyRMI {
   }
 }
 
-class ServerPipelineFactory(authHandler: ServerAuthHandler, handler: SimpleChannelUpstreamHandler, timer:HashedWheelTimer) extends ChannelPipelineFactory {
+class ServerPipelineFactory(authHandler: ServerAuthHandler, handler: SimpleChannelUpstreamHandler, timer:HashedWheelTimer, secured : Boolean = true) extends ChannelPipelineFactory {
   def getPipeline() = {
     val pipeline = Channels.pipeline
     val engine = SslContextFactory.serverContext.createSSLEngine
     engine.setUseClientMode(false)
 
-    pipeline.addLast("ssl", new SslHandler(engine))
+    if (secured == true) pipeline.addLast("ssl", new SslHandler(engine))
     BouncyRMI.addCommon(pipeline, timer, (x)=>{})
     pipeline.addLast("threadPool", new ExecutionHandler(Executors.newCachedThreadPool(new NamedDaemonThreadFactory("Server worker"))))
-    pipeline.addLast("authHandler", authHandler)
+    if (secured == true) pipeline.addLast("authHandler", authHandler)
     pipeline.addLast("handler", handler)
     pipeline
   }

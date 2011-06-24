@@ -40,7 +40,8 @@ import java.lang.{IllegalStateException, Thread}
 /**
  * Generic Market data service, covering all market data
  */
-class MarketDataServiceRPC(marketDataStore: MarketDataStore, val props: Props) extends MarketDataService {
+class MarketDataServiceRPC(marketDataStore: MarketDataStore, val props: Props) extends TacticalRefData(props: Props) with MarketDataService {
+
   implicit def enrichMarketDataRequestParameters(parameters: MarketDataRequestParameters) = new {
     def filterExchange(exchangeNames: String*) = addFilters(MarketDataFilter(exchangeField.name, exchangeNames.toList))
 
@@ -142,11 +143,6 @@ class MarketDataServiceRPC(marketDataStore: MarketDataStore, val props: Props) e
 
   private def names(fields: FieldDetails*) = fields.map(_.name).toList
 
-  val rmetadminuser = props.ServiceInternalAdminUser()
-  val tradeServiceURL = props.EdmTradeServiceUrl()
-  val refdataServiceURL = props.TacticalRefDataServiceUrl()
-
-
   private def quotaById(id: String) = {
 
     if (titanEdmQuotaDetailByIdentifier.contains(id)) {
@@ -158,9 +154,6 @@ class MarketDataServiceRPC(marketDataStore: MarketDataStore, val props: Props) e
       titanEdmQuotaDetailByIdentifier(id)
     }
   }
-
-  lazy val futuresMarketByGUID: Map[GUID, Metal] = Map[GUID, Metal]() ++ allTacticalRefDataFuturesMarkets.map(e => (e.guid, e))
-  lazy val futuresExchangeByGUID: Map[GUID, Market] = Map[GUID, Market]() ++ allTacticalRefDataExchanges.map(e => (e.guid, e))
 
   // set up a client executor and edm trade proxy
   def readAllTradesFromTitan(): List[PhysicalTrade] = {
@@ -174,95 +167,8 @@ class MarketDataServiceRPC(marketDataStore: MarketDataStore, val props: Props) e
     }
     tr.results.map(_.trade.asInstanceOf[PhysicalTrade])
   }
-
-
-  private lazy val clientExecutor: ClientExecutor = new ComponentTestClientExecutor(rmetadminuser)
-
-  private lazy val titanGetEdmTradesService: EdmGetTrades = new EdmGetTradesResourceProxy(ProxyFactory.create(classOf[EdmGetTradesResource], tradeServiceURL, clientExecutor))
-  private lazy val tacticalRefdataMetalsService: MetalService = new MetalServiceResourceProxy(ProxyFactory.create(classOf[MetalServiceResource], refdataServiceURL, clientExecutor))
-  private lazy val tacticalRefdataMarketsService: MarketService = new MarketServiceResourceProxy(ProxyFactory.create(classOf[MarketServiceResource], refdataServiceURL, clientExecutor))
-
-  def allTacticalRefDataFuturesMarkets() = tacticalRefdataMetalsService.getMetals()
-
-  def allTacticalRefDataExchanges() = tacticalRefdataMarketsService.getMarkets()
-
-  var titanEdmQuotaDetailByIdentifier = Map[String, QuotaDetail]()
-
-
-  def valueAllQuotas(maybeSnapshotIdentifier : Option[String] = None): Either[List[Either[List[CostsAndIncomeQuotaValuation], String]], String] = {
-    try {
-      val snapshotID = if (maybeSnapshotIdentifier.isDefined) maybeSnapshotIdentifier else mostRecentSnapshotIdentifier()
-      println(snapshotID)
-      if (! snapshotID.isDefined)
-        throw new IllegalStateException("No market data snapshots")
-      val sw = new Stopwatch()
-
-      val edmTradeResult = titanGetEdmTradesService.getAll()
-      println("Got Edm Trade result " + edmTradeResult.cached + ", took " + sw)
-
-      if (!edmTradeResult.cached)
-        Right("Trade Management building trade cache. This takes a few minutes")
-      else {
-        println("Got Edm Trade results " + edmTradeResult.cached + ", trade result count = " + edmTradeResult.results.size)
-        val env = environment(snapshotStringToID(snapshotID.get))
-        val tradeValuer = PhysicalMetalForward.value(futuresExchangeByGUID, futuresMarketByGUID, env, snapshotID.get) _
-
-        val edmTrades: List[EDMPhysicalTrade] = edmTradeResult.results.map(_.trade.asInstanceOf[EDMPhysicalTrade])
-        val valuations = edmTrades.map(tradeValuer)
-
-        val (errors, worked) = valuations.partition(_ match {
-          case Right(x) => true;
-          case _ => false
-        })
-        println("Worked " + worked.size + ", failed " + errors.size + ", took " + sw)
-        errors.foreach{case Right(msg) => println(msg)}
-        Left(valuations)
-      }
-
-    } catch {
-      case ex =>
-        Right(ex.getMessage())
-        throw ex
-    }
-  }
-
-  private val snapshotNameToID = scala.collection.mutable.Map[String, SnapshotID]()
-  val lock = new Object()
-
-  def updateSnapshotCache() {
-    lock.synchronized {
-      marketDataStore.snapshots().foreach {
-        s: SnapshotID =>
-          snapshotNameToID += s.id.toString -> s
-      }
-    }
-  }
-
-  private def mostRecentSnapshotIdentifier() : Option[String] = {
-    updateSnapshotCache()
-    snapshotNameToID.values.toList.sortWith(_>_).headOption.map(_.id.toString)
-  }
-
-  def snapshotStringToID(id: String): SnapshotID = {
-    snapshotNameToID.getOrElse(id, {
-      updateSnapshotCache()
-      assert(snapshotNameToID.contains(id), "Snapshot ID " + id + " not found")
-      snapshotNameToID(id)
-    }
-    )
-  }
-
-  def snapshotIDsForDay(day: Day): List[String] = {
-    snapshotNameToID.filter {
-      case (id, snapshotID) => snapshotID.marketDataSelection.pricingGroup == Some(PricingGroup.Metals)
-    }.map(_._1).toList
-  }
-
-  private def environment(snapshot: SnapshotID): Environment = {
-    val reader = new NormalMarketDataReader(marketDataStore, MarketDataIdentifier(snapshot.marketDataSelection, snapshot.version))
-    ClosesEnvironmentRule.createEnv(snapshot.observationDay, reader).environment
-  }
 }
+
 
 object MarketDataService extends Application {
 
