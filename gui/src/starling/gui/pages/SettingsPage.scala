@@ -6,10 +6,10 @@ import api.UserSettingUpdated
 import starling.pivot.view.swing.MigPanel
 import swing.event.ButtonClicked
 import starling.gui.GuiUtils._
-import StandardUserSettingKeys.ExtraFormattingInfo
-import swing.{Label, Button}
+import StandardUserSettingKeys.{ExtraFormattingInfo, LiveDefault}
 import javax.swing.{SpinnerNumberModel, JSpinner}
 import starling.pivot.{DecimalPlaces, ExtraFormatInfo, PivotFormatter}
+import swing.{CheckBox, Label, Button}
 
 case class SettingsPage() extends Page {
   def text = "Settings"
@@ -74,23 +74,39 @@ class SettingsPageComponent(context:PageContext) extends MigPanel("insets 0") wi
     }
   }
 
+  val currentLiveSetting = context.getSetting(LiveDefault, false)
+  val generalPanel = new MigPanel("insets n n n 0", "[" + StandardLeftIndent + "][p]") {
+    val defaultLiveCheckbox = new CheckBox("Default Live") {
+      selected = currentLiveSetting
+    }
+
+    add(LabelWithSeparator("General"), "spanx, growx, wrap")
+    add(defaultLiveCheckbox, "skip 1")
+  }
+
   val saveButton = new Button {
     text = "Save Settings"
     tooltip = "Save the specified settings and update affected pages"
     reactions += {
       case ButtonClicked(b) => {
         context.putSetting(ExtraFormattingInfo, ExtraFormatInfo(decimalPlacesPanel.decimalPlaces))
+        context.putSetting(LiveDefault, generalPanel.defaultLiveCheckbox.selected)
       }
     }
   }
 
-  add(decimalPlacesPanel, "wrap")
-  add(saveButton, "ax right")
+  add(generalPanel, "gapright unrel, ay top")
+  add(decimalPlacesPanel, "wrap unrel")
+  add(saveButton, "spanx, ax right")
 
   reactions += {
     case UserSettingUpdated(ExtraFormattingInfo) => {
       val dp = context.getSetting(ExtraFormattingInfo).decimalPlaces
       decimalPlacesPanel.decimalPlaces = dp
+    }
+    case UserSettingUpdated(LiveDefault) => {
+      val b = context.getSetting(LiveDefault, false)
+      generalPanel.defaultLiveCheckbox.selected = b
     }
   }
   listenTo(context.remotePublisher)
