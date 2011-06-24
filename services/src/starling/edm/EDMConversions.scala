@@ -24,7 +24,7 @@ object EDMConversions {
   }
   implicit def enrichUOM(uom: UOM) = new {
     def toCurrency: ECurrency = ECurrency().update(_.name = toEDM.name)
-    def toEDM: FundamentalUOM = starlingUomToEdmUom(uom)
+    def toEDM: FundamentalUOM = FundamentalUOM(starlingUomToEdmUomName(uom))
   }
   implicit def enrichPercentage(percentage: Percentage) = new {
     def toEDM = EPercentage(Some(percentage.value))
@@ -43,7 +43,7 @@ object EDMConversions {
     def endDay = Day.fromLocal(dateRange.endDate)
   }
   implicit def enrichFundamentalUOM(uom: com.trafigura.edm.shared.types.FundamentalUOM) = new {
-    def fromEDM = edmToStarlingUomSymbol(uom).asUOM
+    def fromEDM = edmToStarlingUomSymbol(uom.name).asUOM
     def toCurrency: ECurrency = ECurrency().update(_.name = uom.name)
   }
 
@@ -54,7 +54,7 @@ object EDMConversions {
     }  // No idea why this is optional in EDM
     val uom = UOM.fromSymbolMap(q.uom.components.map {
       case uc => {
-        edmToStarlingUomSymbol.get(uc.fundamental) match {
+        edmToStarlingUomSymbol.get(uc.fundamental.name) match {
           case Some(uomSymbol) => uomSymbol -> uc.exponent
           case None => throw new InvalidUomException(uc.fundamental.name)
         }
@@ -73,7 +73,7 @@ object EDMConversions {
       case (starlingUOMSymbol, power) => UnitComponent(
         oid = 0,
         exponent = power,
-        fundamental = starlingUomSymbolToEdmUom.getOrElse(starlingUOMSymbol, FundamentalUOM(starlingUOMSymbol.toString))
+        fundamental = FundamentalUOM(starlingUomSymbolToEdmUom.getOrElse(starlingUOMSymbol, starlingUOMSymbol.toString))
        )
     }.toList
 
@@ -87,8 +87,8 @@ object EDMConversions {
     cny -> "RMB",
     TONNE_SYMBOL -> "MTS",
     POUND_SYMBOL -> "LBS"
-  ).mapValues(FundamentalUOM(_))
+  )
 
-  val starlingUomToEdmUom: Map[UOM, FundamentalUOM] = starlingUomSymbolToEdmUom.mapKeys(_.asUOM)
-  val edmToStarlingUomSymbol: Map[FundamentalUOM, UOMSymbol] = starlingUomSymbolToEdmUom.map(_.swap)
+  val starlingUomToEdmUomName: Map[UOM, String] = starlingUomSymbolToEdmUom.mapKeys(_.asUOM)
+  val edmToStarlingUomSymbol: Map[String, UOMSymbol] = starlingUomSymbolToEdmUom.map(_.swap)
 }

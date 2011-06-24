@@ -12,6 +12,8 @@ import com.trafigura.edm.trades.{Trade => EDMTrade, PhysicalTrade => EDMPhysical
 import starling.gui.api.{MarketDataIdentifier, PricingGroup}
 import java.lang.Throwable
 import org.joda.time.LocalDate
+import starling.services.StarlingInit
+import com.sun.corba.se.spi.presentation.rmi.IDLNameTranslator
 
 /**
  * Created by IntelliJ IDEA.
@@ -43,7 +45,7 @@ trait IValuationService {
 /**
  * Valuation service implementations
  */
-case class CostsAndIncomeQuotaValuationServiceResults(snapshotID : String, tradeResults : List[Either[List[CostsAndIncomeQuotaValuation], String]])
+case class CostsAndIncomeQuotaValuationServiceResults(snapshotID : String, tradeResults : Map[Int, Either[List[CostsAndIncomeQuotaValuation], String]])
 object TradeManagamentCacheNotReady extends Throwable
 
 class ValuationService(marketDataStore: MarketDataStore, val props: Props) extends TacticalRefData(props: Props)  {
@@ -67,14 +69,15 @@ class ValuationService(marketDataStore: MarketDataStore, val props: Props) exten
 
       val edmTrades: List[EDMPhysicalTrade] = edmTradeResult.results.map(_.trade.asInstanceOf[EDMPhysicalTrade])
       sw.reset()
-      val valuations = edmTrades.map(tradeValuer)
+      val valuations = edmTrades.map{trade => (trade.tradeId, tradeValuer(trade))}.toMap
       println("Valuation took " + sw)
-      val (errors, worked) = valuations.partition(_ match {
-        case Right(x) => true;
-        case _ => false
+      val (errors, worked) = valuations.values.partition(_ match {
+        case Right(_) => true;
+        case Left(_) => false
       })
       println("Worked " + worked.size + ", failed " + errors.size + ", took " + sw)
       //errors.foreach{case Right(msg) => println(msg); case _ => }
+      worked.foreach(println)
       CostsAndIncomeQuotaValuationServiceResults(snapshotIDString, valuations)
     }
   }
@@ -124,7 +127,13 @@ class ValuationService(marketDataStore: MarketDataStore, val props: Props) exten
   }
 }
 
-object ValuationService {
+object ValuationService extends Application{
+  lazy val server = StarlingInit.devInstance
+   lazy val vs = new ValuationService(server.marketDataStore, server.props)
+
+
+   //readAndStore()
+   val valuations = vs.valueAllQuotas()
 
   // factory for creating client proxy for valuation services
   def create() : IValuationService = null
