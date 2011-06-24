@@ -212,7 +212,8 @@ class StarlingInit( props: Props,
       //TrinityLive → new TrinityMarketDataSource(trintityRichDB, BradyProfilePricingGroup.liveBradyProfilePricingGroup),
       //GalenaLive → new GalenaMarketDataSource(galenaRichDB, BradyProfilePricingGroup.liveBradyProfilePricingGroup),
       //GalenaFullCurve → new GalenaMarketDataSource(galenaRichDB, BradyProfilePricingGroup.fullCurveBradyProfilePricingGroup),
-      TrinityDiscountFactorCSV → new TrinityDiscountFactorCSVDataSource()
+      TrinityDiscountFactorCSV → new TrinityDiscountFactorCSVDataSource()//,
+      //Neptune -> new NeptuneBenchmarksMarketDataSource(neptuneRichDB) I don't want this persisted yet as it is likely to change
     )
 
     val mds = new DBMarketDataStore(starlingRichDB,

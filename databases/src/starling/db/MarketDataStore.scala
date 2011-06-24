@@ -103,13 +103,14 @@ object MarketDataSet extends StarlingEnum(classOf[MarketDataSet], (m: MarketData
   val ManualMetals = MarketDataSet("ManualMetals")
   val Starling = MarketDataSet("Starling")
   val TrinityDiscountFactorCSV = MarketDataSet("TrinityDiscountFactorCSV")
+  val Neptune = MarketDataSet("TrinityDiscountFactorCSV")
 }
 
 object MarketDataStore {
   import MarketDataSet._
 
   val pricingGroupsDefinitions = Map[PricingGroup,List[MarketDataSet]](
-    PricingGroup.Metals -> List(ManualMetals, LimMetals, TrinityDiscountFactorCSV),
+    PricingGroup.Metals -> List(ManualMetals, LimMetals, TrinityDiscountFactorCSV, Neptune),
     PricingGroup.LimOnly -> List(LIM),
     PricingGroup.System -> List(Starling, LIM, System),
     PricingGroup.Crude-> List(Starling, LIM, Crude),

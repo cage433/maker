@@ -918,6 +918,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
           pageResponse match {
             case FailurePageResponse(t:OfflineException) => showError("Cannot Connect to Starling", "Starling is currently offline, please try again later or contact a developer.")
             case FailurePageResponse(t:ServerUpgradeException) => showError("Starling has been Upgraded", "Starling has been upgraded. Please restart your gui.")
+            case FailurePageResponse(t:Exception) => showError("Error", t.getMessage)
             case SuccessPageResponse(_,bookmark) => {
               // Generate the image here.
               val currentTypeState = currentComponent.getTypeState
