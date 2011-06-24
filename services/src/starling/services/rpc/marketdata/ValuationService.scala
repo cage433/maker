@@ -13,16 +13,6 @@ import starling.services.StarlingInit
 import com.trafigura.valuationservice._
 import starling.utils.{Log, Stopwatch}
 
-/**
- * Created by IntelliJ IDEA.
- * User: louis
- * Date: 24/06/11
- * Time: 11:02
- * To change this template use File | Settings | File Templates.
- */
-
-
-
 
 /**
  * Valuation service implementations
@@ -109,11 +99,9 @@ class ValuationService(marketDataStore: MarketDataStore, val props: Props) exten
 }
 
 object ValuationService extends Application{
-  lazy val server = StarlingInit.devInstance
-   lazy val vs = new ValuationService(server.marketDataStore, server.props)
+  lazy val vs = StarlingInit.devInstance.valuationService
 
-
-   //readAndStore()
-   val valuations = vs.valueAllQuotas()
+  val valuations = vs.valueAllQuotas()
+  //vs.marketDataSnapshotIDs().foreach(println)
 
 }

@@ -2,7 +2,7 @@ package starling.services
 
 import excel._
 import jmx.StarlingJMX
-import rpc.marketdata.MarketDataServiceRPC
+import rpc.marketdata.{ValuationService, MarketDataServiceRPC}
 import starling.schemaevolution.system.PatchRunner
 import starling.db._
 import starling.richdb.{RichDB, RichResultSetRowFactory}
@@ -227,7 +227,7 @@ class StarlingInit( val props: Props,
     (fwdCurveAutoImport, mds)
   }
 
-  val strategicServicesRPC = new MarketDataServiceRPC(marketDataStore, props)
+  val valuationService = new ValuationService(marketDataStore, props)
   
   val userSettingsDatabase = new UserSettingsDatabase(starlingDB, broadcaster)
 
