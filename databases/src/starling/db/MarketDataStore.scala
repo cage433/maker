@@ -552,17 +552,12 @@ class DBMarketDataStore(db: DBTrait[RichResultSetRow], val marketDataSources: Ma
 
   def snapshots() : List[SnapshotID] = {
     db.queryWithResult("select * from MarketDataTag order by snapshotID desc", Map()) {
-<<<<<<< HEAD
       rs => snapshotIDFromResultSetRow(rs)
     }
   }
 
   def snapshotsByMarketDataSelection(): Map[MarketDataSelection, List[SnapshotIDLabel]] = {
     snapshots().groupBy(_.marketDataSelection).map{ case(selection, snapshots) => selection -> snapshots.map(_.label).sortWith(_ > _) }
-=======
-      rs => SnapshotID(rs)
-    }.groupBy(_.marketDataSelection).map{ case(selection, snapshots) => selection -> snapshots.map(_.label).sortWith(_ > _) }
->>>>>>> starling-branch-copy
   }
 
   def observationDaysByPricingGroup():Map[PricingGroup,Set[Day]] = Map() ++ observationDaysByPricingGroupCache.mapValues(Set() ++ _)

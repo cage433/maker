@@ -16,7 +16,6 @@ import com.trafigura.edm.shared.types.{Quantity => EDMQuantity, CompoundUOM, Uni
 import starling.daterange.{DayOfWeek, Month, Day}
 import com.trafigura.tradinghub.support.GUID
 import com.trafigura.tradecapture.internal.refinedmetal.{Market => EDMMarket, Metal => EDMMetal}
-import com.trafigura.model.trades.convertors.PricingSpecConvertor
 import starling.edm.{EDMPricingSpecConverter, EDMConversions}
 import com.trafigura.edm.materialspecification.CommoditySpec
 import com.trafigura.edm.trades.{Trade => EDMTrade, PhysicalTrade => EDMPhysicalTrade}

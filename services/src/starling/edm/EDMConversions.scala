@@ -1,8 +1,5 @@
 package starling.edm
 
-import com.trafigura.edm.shared.types.{Quantity => EDMQuantity, Currency => ECurrency, Percentage => EPercentage,
-                                       CompoundUOM, UnitComponent, FundamentalUOM}
-
 import starling.quantity.UOMSymbol._
 import starling.daterange.{Tenor, SimpleDateRange, DateRange, Day}
 
@@ -10,6 +7,9 @@ import starling.utils.ImplicitConversions._
 import starling.quantity.{UOMSymbol, Percentage, UOM, Quantity}
 import starling.utils.StarlingEnum
 import com.trafigura.marketdataservice.{MaturityType, Maturity, NamedMaturity, RelativeMaturity}
+import com.trafigura.edm.shared.types.{Quantity => EDMQuantity, Currency => ECurrency, Percentage => EPercentage, CompoundUOM, UnitComponent, FundamentalUOM}
+
+case class InvalidUomException(msg : String) extends Exception(msg)
 
 object EDMConversions {
   implicit def enrichQuantity(q: Quantity) = new {
@@ -23,8 +23,8 @@ object EDMConversions {
     }
   }
   implicit def enrichUOM(uom: UOM) = new {
-    def toCurrency = enrichFundamentalUOM(toEDM).toCurrency
-    def toEDM = starlingUomToEdmUom(uom)
+    def toCurrency: ECurrency = ECurrency().update(_.name = toEDM.name)
+    def toEDM: FundamentalUOM = starlingUomToEdmUom(uom)
   }
   implicit def enrichPercentage(percentage: Percentage) = new {
     def toEDM = EPercentage(Some(percentage.value))
@@ -47,16 +47,24 @@ object EDMConversions {
     def toCurrency: ECurrency = ECurrency().update(_.name = uom.name)
   }
 
-  def fromEDMQuantity(q : EDMQuantity) : Quantity = {
-    val amount = q.amount.get  // No idea why this is optional in EDM
+  implicit def fromEDMQuantity(q : EDMQuantity) : Quantity = {
+    val amount = q.amount match {
+      case Some(amt) => amt
+      case None => throw new Exception("Invalid quantity - no amount")
+    }  // No idea why this is optional in EDM
     val uom = UOM.fromSymbolMap(q.uom.components.map {
-      case uc => edmToStarlingUomSymbol(uc.fundamental) -> uc.exponent
+      case uc => {
+        edmToStarlingUomSymbol.get(uc.fundamental) match {
+          case Some(uomSymbol) => uomSymbol -> uc.exponent
+          case None => throw new InvalidUomException(uc.fundamental.name)
+        }
+      }
     }.toMap)
     Quantity(amount, uom)
 
   }
 
-  def toEDMQuantity(q : Quantity) : EDMQuantity = {
+  implicit def toEDMQuantity(q : Quantity) : EDMQuantity = {
     val symbolPowers = q.uom.asSymbolMap()
 
     // create edm UOMs, EDM symbol list is GBP, USD, JPY, RMB, MTS, LBS
