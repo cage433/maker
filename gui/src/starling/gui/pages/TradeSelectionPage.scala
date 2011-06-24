@@ -111,16 +111,17 @@ case class TradeSelectionPage(
       case Some((t1,t2)) => t1 == t2
       case _ => true
     }
-
+    val desk = tpp.deskAndTimestamp.map(_._1)
+    val intraday = tpp.intradaySubgroupAndTimestamp.map(_._1)
     if (isLatestLiveOn && isLatestBookClose) {
-      TradeSelectionBookmark(tpp, pivotPageState, false)
+      TradeSelectionBookmark(desk, intraday, pivotPageState, false)
     } else {
       val isLiveOnStartOfYear = latestTimestamp match {
         case Some((ts, _)) => ts.closeDay.startOfFinancialYear == tpp.expiry.exp
         case None => today.startOfFinancialYear == tpp.expiry.exp
       }
       if (isLiveOnStartOfYear && isLatestBookClose) {
-        TradeSelectionBookmark(tpp, pivotPageState, true)
+        TradeSelectionBookmark(desk, intraday, pivotPageState, true)
       } else {
         PageBookmark(this)
       }
@@ -128,10 +129,12 @@ case class TradeSelectionPage(
   }
 }
 
-case class TradeSelectionBookmark(tpp:TradePageParameters, pivotPageState:PivotPageState, useStartOfYear:Boolean) extends Bookmark {
+case class TradeSelectionBookmark(desk:Option[Desk], intradaySubgroups:Option[IntradayGroups],
+                                  pivotPageState:PivotPageState, useStartOfYear:Boolean) extends Bookmark {
   def daySensitive = false
   def createPage(day:Option[Day], server:StarlingServer, context:PageContext) = {
-    val latestBookClose = tpp.deskAndTimestamp.map{case (desk,_) => (desk, context.localCache.latestTimestamp(desk).get)}
+    val latestBookClose = desk.map{desk => (desk, context.localCache.latestTimestamp(desk).get)}
+    val latestIntraday = intradaySubgroups.map(intra => (intra, context.localCache.latestTimestamp(intra)))
     val today = Day.today()
     val tradesLiveOn = if (useStartOfYear) {
       latestBookClose match {
@@ -141,7 +144,9 @@ case class TradeSelectionBookmark(tpp:TradePageParameters, pivotPageState:PivotP
     } else {
       today
     }
-    TradeSelectionPage(tpp.copy(deskAndTimestamp = latestBookClose, expiry = TradeExpiryDay(tradesLiveOn)), pivotPageState)
+
+    val tpp = TradePageParameters(latestBookClose, latestIntraday, TradeExpiryDay(tradesLiveOn))
+    TradeSelectionPage(tpp, pivotPageState)
   }
 }
 

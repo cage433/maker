@@ -286,8 +286,8 @@ class CannedDataSource extends UnfilteredPivotTableDataSource {
   }, rowFields = List(Field("Trader"), Field("Strike")))*/
 
   override def initialState = new PivotFieldsState(columns = {
-    ColumnTrees(ColumnTree(FieldOrColumnStructure(ColumnTrees(List(ColumnTree(Field("PV"), true), ColumnTree(Field("Gamma"), true)))),
-      ColumnTrees(Nil)))
+    ColumnTrees(List(
+      ColumnTree(Field("PV"), true), ColumnTree(Field("Gamma"), true)))
   }, rowFields = List(Field("Trader"), Field("Strike")))
 
   def unfilteredData(pfs : PivotFieldsState) = theData

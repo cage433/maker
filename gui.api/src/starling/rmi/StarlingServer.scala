@@ -82,4 +82,6 @@ trait StarlingServer {
   def bookmarks:List[BookmarkLabel]
   def deleteUserReport(reportName:String)
   def saveUserReport(reportName:String, data:UserReportData, showParameters:Boolean)
+
+  def latestMarketDataIdentifier(selection:MarketDataSelection):MarketDataIdentifier
 }

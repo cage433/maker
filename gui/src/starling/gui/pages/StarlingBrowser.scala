@@ -542,7 +542,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
     }
     val prefSize = historySelector.getPreferredSize
     historySelector.setPreferredSize(new Dimension(addressBar.size.width - 5, prefSize.height))
-    historySelector.show(addressBar.peer, 5, addressBar.size.height)
+    historySelector.show(addressBar.peer, 5, addressBar.size.height-1)
   }
 
   private val settingsButton = new NavigationButton {

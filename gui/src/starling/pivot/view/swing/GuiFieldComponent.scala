@@ -124,7 +124,7 @@ case class GuiFieldComponent(props:GuiFieldComponentProps) extends MigPanel("ins
       val yPos = filterButtonPanel.size.height - 1
       val xPos = filterButtonPanel.size.width - filterPopupPanel.preferredSize.width - 7
       filterPopupPanel.scrollToFirstSelectedNode
-      popupMenu.show(filterButtonPanel.peer, xPos, yPos)
+      popupMenu.show(filterButtonPanel.peer, xPos, yPos-1)
       onEDT({
         KeyboardFocusManager.getCurrentKeyboardFocusManager.focusNextComponent(popupMenu)
         filterPopupPanel.filterPanel.textField.requestFocusInWindow()
