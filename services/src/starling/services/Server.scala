@@ -341,13 +341,11 @@ class StarlingInit( val props: Props,
   
   lazy val httpEdmServiceServer = {
 
-    val webXmlUrl = this.getClass.getResource("../../webapp/WEB-INF/web.xml")
-    
     new HttpServer(
       props.HttpEdmServicePort(),
       props.EdmExternalUrl(),
       props.ServerName(),
-      Some(webXmlUrl.toExternalForm()),
+      None,
       Nil)
   }
 
