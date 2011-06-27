@@ -336,9 +336,18 @@ class MarketDataHandler(broadcaster : Broadcaster,
       "The periods (1 column)",
       "The standard deviations with the header 'ATM, CALL, PUT' and rows matching the periods"))
   def uploadStandardDeviations(label: String, observationDate: Object, marketName: String, _periods: Array[Any],
-                               standardDeviations: Array[Array[Object]]) = {
+                               _standardDeviations: Array[Array[Object]]) = {
     assert(label.nonEmpty, "Can't have an empty label for the market data")
-    val periods = _periods.map("" + _)
+
+    // remove empty rows
+    var missingRows = Set[Int]()
+    val periods = _periods.zipWithIndex.flatMap{
+      case (null, i) => missingRows += i; None
+      case (a, _) => Some(a.toString)
+    }
+    val headers = _standardDeviations.head.map(_.toString.toLowerCase)
+    val standardDeviations = _standardDeviations.tail.zipWithIndex.filterNot{case (_, i) => missingRows.contains(i)}.map(_._1)
+
     val observationPoint = ObservationPoint.parse(observationDate)
     val market = (ExcelInstrumentReader.marketOption(marketName) match {
       case Some(m) => m
@@ -356,18 +365,17 @@ class MarketDataHandler(broadcaster : Broadcaster,
       case SpreadParse(s) => s.asInstanceOf[Spread[Month]]
       case "null" => throw new Exception("Range includes empty cells")
     }
-    val headers = standardDeviations.head.map(_.toString.toLowerCase)
     val atmIndex = headers.indexOf("atm")
     val callIndex = headers.indexOf("call")
     val putIndex = headers.indexOf("put")
 
-    val atm = standardDeviations.tail.map{
+    val atm = standardDeviations.map{
       row => row(atmIndex).asInstanceOf[Double]
     }
-    val call = standardDeviations.tail.map{
+    val call = standardDeviations.map{
       row => row(callIndex).asInstanceOf[Double]
     }
-    val put = standardDeviations.tail.map{
+    val put = standardDeviations.map{
       row => row(putIndex).asInstanceOf[Double]
     }
 
@@ -375,7 +383,7 @@ class MarketDataHandler(broadcaster : Broadcaster,
     val data = SpreadStdDevSurfaceData(spreads, atm, call, put, market.priceUOM)
     val result = marketDataStore.save(MarketDataSet.excel(label), TimedMarketDataKey(observationPoint, key), data)
 
-    val sds: Array[Array[Double]] = Array(Array(0.5, 0, 1)) ++ standardDeviations.tail.map(_.map(_.asInstanceOf[Double]))
+    val sds: Array[Array[Double]] = Array(Array(0.5, 0, 1)) ++ standardDeviations.map(_.map(_.asInstanceOf[Double]))
 
     broadcaster.broadcast(UploadStandardDeviationsUpdate(User.currentlyLoggedOn, label, observationPoint.day, spreads, marketName, sds))
 
