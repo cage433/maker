@@ -74,7 +74,7 @@ case class EmptyDropLabel(text0:String, view:PivotTableView) extends Label(text0
   enabled = false
   var mouseIn = false
   reactions += {
-    case MouseEntered(_,_,_) if view.mouseDown && view.fieldBeingDragged => {
+    case MouseEntered(_,_,_) if view.fieldBeingDragged => {
       mouseIn = true
       border = OverBorder
       repaint()

@@ -75,14 +75,13 @@ class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSiz
   private var mouseDown0 = false
   def mouseDown = mouseDown0
   def mouseDown_=(b:Boolean) {mouseDown0 = b}
-  def drag = fieldBeingDragged0 || mouseDown0
+  def drag = mouseDown0
 
   private def hideDropTargets() {allDropTargets.foreach(_.hide())}
 
   def fieldDropped(field:Field, from:FieldChooserType, screenPoint:Point) {
     if (!model.getFields(FieldList).fields.contains(field) && fieldListComponent.dropBounds(field).exists(_.contains(screenPoint))) {
       model.publishFieldStateChange(field, 0, from, FieldList)
-      hideDropTargets()
     } else if (columnAndMeasureComponent.dropBounds(field).exists(_.contains(screenPoint))) {
       val newColumnStructure = columnAndMeasureComponent.newColumnStructure(screenPoint, field)
       model.publishFieldStateChange(field, newColumnStructure, from)
@@ -867,7 +866,6 @@ class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSiz
   def resetDynamicState() {
     viewUI.resetImageProperties()
     fieldBeingDragged = false
-    mouseDown = false
     allDropTargets.foreach(_.reset())
   }
 

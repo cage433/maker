@@ -205,7 +205,14 @@ case class ColumnAndMeasureComponent(model:PivotTableModel, otherLayoutInfo:Othe
     case _ => add(new ColumnStructureComponent(cs, guiFieldsMap, dropPanels, true), "pushy,growy")
   }
 
-  def scrolling() {guiFieldsMap.values.foreach(_.namePanel.clearImage())}
+  def scrolling() {
+    // If the mouse is currently over the column area, reset the display state.
+    val mousePos = peer.getMousePosition(true)
+    if (mousePos != null) {
+      guiFieldsMap.map(_._2.namePanel.showComponent())
+      viewUI.resetImageProperties()
+    }
+  }
 
   def fieldChooserType = FieldChooserType.Columns
   def dropBounds(draggedField:Field) = {
@@ -254,7 +261,7 @@ case class ColumnAndMeasureComponent(model:PivotTableModel, otherLayoutInfo:Othe
   def hide() {
     dropPanels.foreach(_.visible = false)
     tableView.updateColumnAndMeasureScrollPane(true)
-    reset()
+//    reset()
   }
   def reset() {
     blankDropLabel.foreach(_.reset())
