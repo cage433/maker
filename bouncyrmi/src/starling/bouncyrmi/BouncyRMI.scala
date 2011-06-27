@@ -14,9 +14,6 @@ import org.jboss.netty.handler.timeout._
 import org.jboss.netty.util.{HashedWheelTimer, Timer}
 import org.jboss.netty.handler.execution.{OrderedMemoryAwareThreadPoolExecutor, ExecutionHandler}
 import java.util.concurrent.{TimeUnit, Executors, ThreadFactory}
-import starling.auth.User
-import starling.utils.ClosureUtil._
-import starling.utils.ImplicitConversions._
 import java.lang.Boolean
 
 
@@ -65,10 +62,28 @@ class ClientPipelineFactory(handler: SimpleChannelHandler, timer:HashedWheelTime
   }
 }
 
-object BouncyRMI {    
-  // who is logged in on this channel
-  val loggedIn = new ChannelLocal[User]()
+//trait User
+//object User {
+//  def setLoggedOn(user: Option[User]) {}
+//}
 
+trait LoggedIn[User] {
+  def get(channel: Channel): User
+  def set(channel: Channel, user: User): User
+  def remove(channel: Channel): User
+
+  def setLoggedOn(user: Option[User])
+}
+
+
+
+//class LoggedIn[User] {
+//  def apply() = loggedIn
+//  // who is logged in on this channel
+//  val loggedIn = new ChannelLocal[User]()
+//}
+
+object BouncyRMI {
   val CodeVersionUndefined = "undefined"
   val CodeVersionKey = "starling.codeversion.timestamp"
   def CodeVersion = System.getProperty(CodeVersionKey, CodeVersionUndefined)
@@ -84,7 +99,7 @@ object BouncyRMI {
   }
 }
 
-class ServerPipelineFactory(authHandler: ServerAuthHandler, handler: SimpleChannelUpstreamHandler, timer:HashedWheelTimer, secured : Boolean = true) extends ChannelPipelineFactory {
+class ServerPipelineFactory[User](authHandler: ServerAuthHandler[User], handler: SimpleChannelUpstreamHandler, timer:HashedWheelTimer, secured : Boolean = true) extends ChannelPipelineFactory {
   def getPipeline() = {
     val pipeline = Channels.pipeline
     val engine = SslContextFactory.serverContext.createSSLEngine
@@ -102,7 +117,12 @@ class ServerPipelineFactory(authHandler: ServerAuthHandler, handler: SimpleChann
 class NamedDaemonThreadFactory(name: String) extends ThreadFactory {
   val sequence = new java.util.concurrent.atomic.AtomicInteger(0)
 
-  def newThread(r: Runnable) = daemon(r).update(_.setName(sequence.getAndIncrement + " " + name))
+  def newThread(r: Runnable) = {
+    val t = new Thread(r)
+    t.setDaemon(true)
+    t.setName(sequence.getAndIncrement + " " + name)
+    t
+  }
 }
 
 // gzip

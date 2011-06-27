@@ -124,8 +124,8 @@ object EndToEndTest {
     }
   }
 
-  val clientAuth = new Client(null, null) {
-    override def ticket = None
+  val clientAuth = new starling.bouncyrmi.Client {
+    def ticket = null
   }
   val props = PropsHelper.defaultProps
   lazy val client = new BouncyRMIClient(props.ExternalHostname.value, props.RmiPort.value.toInt, classOf[StarlingServer], clientAuth, overriddenUser = None)

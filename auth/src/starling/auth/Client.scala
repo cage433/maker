@@ -23,7 +23,7 @@ class ClientLogin {
   }
 }
 
-class Client(servicePrincipalName: String, subject: Subject) {
+class Client(servicePrincipalName: String, subject: Subject) extends starling.bouncyrmi.Client {
 
   /**
    * Returns a ticket that grants access to `servicePrincipalName`

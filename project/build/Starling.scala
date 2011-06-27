@@ -6,36 +6,32 @@ class Starling(info : ProjectInfo) extends ParentProject(info) {
   def starlingProject(name : String, dependencies : Project*) = project(name, name, new StarlingProject(name, _), dependencies :_*)
   def swingStarlingProject(name : String, dependencies : Project*) = project(name, name, new SwingStarlingProject(name, _), dependencies :_*)
 
-
-  // BouncyRMI is largely independent of everything else
-  lazy val auth = starlingProject("auth", utils)
-  lazy val bouncyrmi = swingStarlingProject("bouncyrmi", utils, auth)
-
-  lazy val starlingApi = starlingProject("starling.api", bouncyrmi)
-  // projects organised by layer
+  // Modules organised by layer
+  lazy val bouncyrmi = swingStarlingProject("bouncyrmi")
   lazy val utils = starlingProject("utils")
 
-  lazy val loopyxl = starlingProject("loopyxl", bouncyrmi)
+  lazy val auth = starlingProject("auth", utils, bouncyrmi)
   lazy val concurrent = starlingProject("concurrent", utils)
-  lazy val quantity = starlingProject("quantity", utils)
   lazy val daterange = starlingProject("daterange", utils)
+  lazy val quantity = starlingProject("quantity", utils)
+  lazy val starlingApi = starlingProject("starling.api", bouncyrmi)
 
-  lazy val pivot = starlingProject("pivot", quantity)
+  lazy val loopyxl = starlingProject("loopyxl", bouncyrmi, auth)
+
   lazy val maths = starlingProject("maths", quantity, daterange)
+  lazy val pivot = starlingProject("pivot", quantity)
 
   lazy val curves = starlingProject("curves", maths, pivot, guiapi)
+  lazy val guiapi = starlingProject("gui.api", daterange, pivot, quantity, auth, bouncyrmi)
 
   lazy val instrument = starlingProject("instrument", curves)
+  lazy val gui = starlingProject("gui", guiapi)
 
   lazy val trade = starlingProject("trade", instrument)
 
   lazy val VaR = starlingProject("var", trade)
 
-  lazy val guiapi = starlingProject("gui.api", daterange, pivot, quantity, bouncyrmi)
-
-  lazy val gui = starlingProject("gui", guiapi)
-
-  lazy val databases = starlingProject("databases", VaR, pivot, guiapi, concurrent)
+  lazy val databases = starlingProject("databases", VaR, pivot, guiapi, concurrent, auth)
 
   lazy val services = project("services", "services", new Services(_), databases, concurrent, utils, loopyxl, starlingApi)
 
@@ -43,9 +39,7 @@ class Starling(info : ProjectInfo) extends ParentProject(info) {
 
 //  lazy val webServices = project("starlingWebProject", "starlingWebProject", new DefaultWebProject(_), services)
 
-
   lazy val starling = this
-
 
   override def localScala = {
     defineScala("2.8.1.final-local", new File("lib/scala/scala-2.8.1.final/")) :: Nil

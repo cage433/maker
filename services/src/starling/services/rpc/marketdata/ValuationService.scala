@@ -10,8 +10,9 @@ import com.trafigura.edm.trades.{Trade => EDMTrade, PhysicalTrade => EDMPhysical
 import starling.gui.api.{MarketDataIdentifier, PricingGroup}
 import org.joda.time.LocalDate
 import starling.services.StarlingInit
-import com.trafigura.valuationservice._
+import com.trafigura.services.valuation._
 import starling.utils.{Log, Stopwatch}
+import com.trafigura.services.valuation.CostsAndIncomeQuotaValuationServiceResults
 
 
 /**

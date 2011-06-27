@@ -1,13 +1,5 @@
 package starling.instrument
 
-/**
- * Created by IntelliJ IDEA.
- * User: louis
- * Date: 23/06/11
- * Time: 10:19
- * To change this template use File | Settings | File Templates.
- */
-
 import starling.quantity.Quantity
 import starling.quantity.Quantity._
 import starling.curves.Environment
@@ -21,7 +13,7 @@ import com.trafigura.edm.materialspecification.CommoditySpec
 import com.trafigura.edm.trades.{Trade => EDMTrade, PhysicalTrade => EDMPhysicalTrade}
 import java.lang.Exception
 import EDMConversions._
-import com.trafigura.valuationservice.CostsAndIncomeQuotaValuation
+import com.trafigura.services.valuation.CostsAndIncomeQuotaValuation
 
 case class InvalidPricingSpecException(msg : String) extends Exception(msg)
 
@@ -152,7 +144,7 @@ object PhysicalMetalForward{
       val quotas : List[PhysicalMetalQuota] = {
         trade.quotas.map(_.detail).map{
           detail =>
-            val deliveryQuantity = detail.deliverySpecs.map{ds => fromEDMQuantity(ds.quantity)}.sum
+            val deliveryQuantity = detail.deliverySpecs.map{ds => fromQuantityE(ds.quantity)}.sum
             val commodityGUIDs : Set[GUID] = detail.deliverySpecs.map(_.materialSpec.asInstanceOf[CommoditySpec].commodity).toSet
             assert(commodityGUIDs.size == 1, "Trade " + trade.tradeId + " has multiple commodities")
             val pricingSpec = EDMPricingSpecConverter(futuresMetalMarketByGUID(commodityGUIDs.head), exchangesByGUID).fromEdmPricingSpec(deliveryQuantity, detail.pricingSpec)

@@ -41,9 +41,9 @@ import org.springframework.mail.javamail.{MimeMessageHelper, JavaMailSender, Jav
 import starling.rmi._
 import starling.calendar._
 import java.lang.String
-import com.trafigura.valuationservice.{ValuationServiceApi, TradeManagementCacheNotReady}
+import com.trafigura.services.valuation.{ValuationServiceApi, TradeManagementCacheNotReady}
 import starling.curves.{EAIMarketLookup, FwdCurveAutoImport, CurveViewer}
-
+import org.jboss.netty.channel.{ChannelLocal, Channel}
 
 class StarlingInit( val props: Props,
                     dbMigration: Boolean = true,
@@ -124,7 +124,7 @@ class StarlingInit( val props: Props,
   Log.info("StarlingInit: maxMemory %sMB" % (runtime.maxMemory / 1024 / 1024))
 
   val name = props.ServerName()
-  val ldapUserLookup = new LdapUserLookup
+  val ldapUserLookup = new LdapUserLookup with BouncyLdapUserLookup[User]
 
   // basic DB connections
   val starlingDB = DB(props.StarlingDatabase())
@@ -281,11 +281,11 @@ class StarlingInit( val props: Props,
 
   val jmx = new StarlingJMX(users, scheduler)
 
-  val auth:ServerAuthHandler = props.UseAuth() match {
+  val auth:ServerAuthHandler[User] = props.UseAuth() match {
     case false => {
       Log.warn("Auth disabled")
-      new ServerAuthHandler(new NullAuthHandler(Some(User.Dev)), users, ldapUserLookup,
-        user => broadcaster.broadcast(UserLoggedIn(user)))
+      new ServerAuthHandler[User](new NullAuthHandler(Some(User.Dev)), users, ldapUserLookup,
+        user => broadcaster.broadcast(UserLoggedIn(user)), ChannelLoggedIn)
     }
     case true => {
       val kerberos = new ServerLogin(props.KerberosPassword())
@@ -311,24 +311,26 @@ class StarlingInit( val props: Props,
    else 
      BouncyRMI.CodeVersionUndefined
 
-  val rmiServerForGUI:BouncyRMIServer[StarlingServer] = new BouncyRMIServer(
+  val rmiServerForGUI:BouncyRMIServer[StarlingServer, User] = new BouncyRMIServer(
     rmiPort,
     ThreadNamingProxy.proxy(starlingServer, classOf[StarlingServer]),
     auth, latestTimestamp, users,
-    Set(classOf[UnrecognisedTradeIDException])
+    Set(classOf[UnrecognisedTradeIDException]),
+    ChannelLoggedIn
   )
 
   /**
    * start up public services for Titan components
    */
   println("Valuation service port " + rmiStarlingValuationServicePort)
-  val nullHandler = new ServerAuthHandler(new NullAuthHandler(Some(User.Dev)), users, ldapUserLookup,
-        user => broadcaster.broadcast(UserLoggedIn(user)))
-  val rmiValuationServerForTitan : BouncyRMIServer[ValuationServiceApi] = new BouncyRMIServer(
+  val nullHandler = new ServerAuthHandler[User](new NullAuthHandler(Some(User.Dev)), users, ldapUserLookup,
+        user => broadcaster.broadcast(UserLoggedIn(user)), ChannelLoggedIn)
+  val rmiValuationServerForTitan : BouncyRMIServer[ValuationServiceApi, User] = new BouncyRMIServer(
     rmiStarlingValuationServicePort,
     ThreadNamingProxy.proxy(valuationService, classOf[ValuationServiceApi]),
     nullHandler, BouncyRMI.CodeVersionUndefined, users,
-    Set(classOf[TradeManagementCacheNotReady])
+    Set(classOf[TradeManagementCacheNotReady]),
+    ChannelLoggedIn
   )
 
   val eaiAutoImport = new EAIAutoImport(15, starlingRichDB, eaiStarlingRichSqlServerDB, strategyDB, eaiTradeStores, closedDesks, enabledDesks)
@@ -454,3 +456,15 @@ object Foo {
 //  })
   }
 }
+
+object ChannelLoggedIn extends LoggedIn[User] {
+  private val loggedIn = new ChannelLocal[User]()
+
+  def get(channel: Channel): User = loggedIn.get(channel)
+  def set(channel: Channel, user: User): User = loggedIn.set(channel, user)
+  def remove(channel: Channel): User = loggedIn.remove(channel)
+  def setLoggedOn(user: Option[User]) {
+    User.setLoggedOn(user)
+  }
+}
+

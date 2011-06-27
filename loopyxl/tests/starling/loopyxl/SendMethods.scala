@@ -8,11 +8,12 @@ import starling.utils.ClosureUtil
 import LoopyXL.MessageType._
 import starling.bouncyrmi.AuthHandler
 import java.util.concurrent.atomic.AtomicInteger
+import starling.auth.User
 
 object SendMethods extends Application {
   private val methodSource = new ReflectiveMethodSource(new MethodImplementation)
 
-  private val loggingHandler = new AuthHandler {
+  private val loggingHandler = new AuthHandler[User] {
     def authorized(ticket: Option[Array[Byte]]) = {
       println("authorized: " + ticket)
       None
