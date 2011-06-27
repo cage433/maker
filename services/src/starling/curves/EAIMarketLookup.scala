@@ -112,7 +112,6 @@ class EAIMarketLookup(eai: DB, expiryRules: FuturesExpiryRules) extends MarketLo
                   case FuturesExchangeFactory.COMEX if nameLower.contains("um") => expiryRules.COMEX_PT_PA
                   case FuturesExchangeFactory.SFS if nameLower.contains("fuel") => expiryRules.SHANGHAI_FUEL_OIL
                   case FuturesExchangeFactory.SFS => expiryRules.SHANGHAI
-                  case FuturesExchangeFactory.ICE if nameLower.contains("wti") => expiryRules.ICE_WTI
                   case _ => expiry.ruleOrEmptyRule(quoteId, name)
                 }
               }

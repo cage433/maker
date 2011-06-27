@@ -206,21 +206,6 @@ abstract class FuturesExpiryRules(businessCalendars: BusinessCalendars) {
     def expiryDayOfMonth(m: Month) = throw new Exception("No options")
   }
 
-  val ICE_WTI = new MonthFuturesExpiryRule {
-    val bc = businessCalendars.ICE
-    val name = "ICE WTI"
-
-    def expiryDayOfMonth(m: Month) = {
-      //https://www.theice.com/productguide/ProductDetails.shtml?specId=908
-      lastTradingDayOfMonth(m).addBusinessDays(bc, -2)
-    }
-
-    def lastTradingDayOfMonth(m: Month): Day = {
-      //https://www.theice.com/productguide/ProductDetails.shtml?specId=213
-      ((m - 1).firstDay + 24).thisOrPreviousBusinessDay(bc).addBusinessDays(bc, -4)
-    }
-  }
-
   /**
    * Platts Dubai or Dubai Crude
    * No idea what the expiry rule is
@@ -253,7 +238,7 @@ abstract class FuturesExpiryRules(businessCalendars: BusinessCalendars) {
   }
 
   val all = List(NoRule, SHANGHAI, SHANGHAI_FUEL_OIL, LME, BALTIC,
-    COMEX_G_S_HG_COPPER, COMEX_PT_PA, ICE_WTI,
+    COMEX_G_S_HG_COPPER, COMEX_PT_PA,
     DubaiCrudeExpiryRule, PlattsBrentExpiryRule)
 
   val EAIRuleRegex = """EAIExpiryRule\((\d+)\)""".r
