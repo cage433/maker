@@ -92,7 +92,7 @@ class BouncyRMITests extends StarlingTest {
   }, new CopyOnWriteArraySet[User], new LdapUserLookup() with BouncyLdapUserLookup[User], x=>(), ChannelLoggedIn)
 
   var someService:SomeService = null
-  var server:BouncyRMIServer[SomeService, User] = null
+  var server:BouncyRMIServer[User] = null
   var client: BouncyRMIClient[Service] = null
   val port1 = BouncyRMITestsObj.nextPort
   val port2 = BouncyRMITestsObj.nextPort
@@ -100,8 +100,7 @@ class BouncyRMITests extends StarlingTest {
   @BeforeMethod
   def before() {
     someService = new SomeService()
-    server = new BouncyRMIServer(port1, someService, version = BouncyRMI.CodeVersion, authHandler =auth, users =new CopyOnWriteArraySet[User],
-      loggedIn = ChannelLoggedIn)
+    server = new BouncyRMIServer(port1, auth, BouncyRMI.CodeVersion, new CopyOnWriteArraySet[User], Set(), ChannelLoggedIn, someService)
     client = new BouncyRMIClient("localhost", port1, classOf[Service], auth = Client.Null, overriddenUser = None)
   }
 
@@ -151,7 +150,7 @@ class BouncyRMITests extends StarlingTest {
 
   @Test
   def testClientConnectFailsIfVersionsDoNotMatch() {
-    val server = new BouncyRMIServer(port1, new SomeService(), version = "Two", authHandler = auth, users =new CopyOnWriteArraySet[User], loggedIn = ChannelLoggedIn)
+    val server = new BouncyRMIServer(port1, auth, "Two", new CopyOnWriteArraySet[User], Set(), ChannelLoggedIn, new SomeService())
     server.start
 
     val needsReboot = new WaitForFlag
@@ -202,7 +201,7 @@ class BouncyRMITests extends StarlingTest {
     server.stop()
     disconnected.waitForFlip
     Thread.sleep(1000) // client has to try a few times
-    server = new BouncyRMIServer(port1, new SomeService(), version = BouncyRMI.CodeVersion, authHandler =auth, users =new CopyOnWriteArraySet[User], loggedIn = ChannelLoggedIn)
+    server = new BouncyRMIServer(port1, auth, BouncyRMI.CodeVersion, new CopyOnWriteArraySet[User], Set(), ChannelLoggedIn, new SomeService())
     server.start
     secondConnect.waitForFlip
     client.stop
@@ -277,7 +276,7 @@ class BouncyRMITests extends StarlingTest {
     println("flipping wait")
     disconnected.waitForFlip
 
-    server = new BouncyRMIServer(port1, new SomeService(), version = BouncyRMI.CodeVersion, authHandler =auth, users =new CopyOnWriteArraySet[User], loggedIn = ChannelLoggedIn)
+    server = new BouncyRMIServer(port1, auth, BouncyRMI.CodeVersion, new CopyOnWriteArraySet[User], Set(), ChannelLoggedIn, new SomeService())
     server.start
 
     Thread.sleep(2000)
@@ -409,7 +408,7 @@ class BouncyRMITests extends StarlingTest {
     connected.waitForFlip
     server.stop()
     disconnected.waitForFlip
-    val serverOne = new BouncyRMIServer(port1, new SomeService(), version = "One", authHandler = auth, users =new CopyOnWriteArraySet[User], loggedIn = ChannelLoggedIn)
+    val serverOne = new BouncyRMIServer(port1, auth, "One", new CopyOnWriteArraySet[User], Set(), ChannelLoggedIn, new SomeService())
     serverOne.start
     try {
       Thread.sleep(2000) // wait for reconnect

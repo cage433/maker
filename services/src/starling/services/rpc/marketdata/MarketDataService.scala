@@ -13,7 +13,7 @@ import SpotFXDataType._
 import starling.utils.Log
 import starling.daterange.{Tenor, Day}
 import starling.quantity.{Percentage, Quantity, UOM}
-import com.trafigura.services.marketdata.{MarketDataService, ReferenceInterestRate, ReferenceRateSource, Maturity}
+import com.trafigura.services.marketdata.{MarketDataServiceApi, ReferenceInterestRate, ReferenceRateSource, Maturity}
 
 abstract class Matcher[A] {
   def matches(value: A): Boolean
@@ -27,7 +27,7 @@ case class Ignore[A] extends Matcher[A] {
   def matches(value: A) = true
 }
 
-class MarketDataServiceRPC(marketDataStore: MarketDataStore) extends MarketDataService  {
+class MarketDataService(marketDataStore: MarketDataStore) extends MarketDataServiceApi  {
   implicit def enrichReferenceInterestRate(self: ReferenceInterestRate) = new {
     def matches(observationDate: Matcher[DateE], source: Matcher[ReferenceRateSource], maturity: Matcher[Maturity],
                 currency: Matcher[CurrencyE], rate: Matcher[PercentageE])

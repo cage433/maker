@@ -18,7 +18,7 @@ import java.lang.Boolean
 
 
 //Message classes
-case class MethodInvocationRequest(version: String, id: Int, method: String, parameters: Array[String], arguments: Array[Object])
+case class MethodInvocationRequest(version: String, id: Int, declaringClass: String, method: String, parameters: Array[String], arguments: Array[Object])
 case class MethodInvocationResult(id: Int, result: Object)
 case class MethodInvocationException(id: Int, t: Throwable)
 case class ServerException(t: Throwable)

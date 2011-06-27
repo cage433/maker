@@ -18,11 +18,13 @@ import org.jboss.netty.channel.MessageEvent;
 import org.jboss.netty.channel.SimpleChannelUpstreamHandler;
 
 import java.lang.reflect.InvocationTargetException
+import collection.mutable.HashMap
 
-class BouncyRMIServer[C, User](port: Int, serverContext: C, authHandler: ServerAuthHandler[User], version: String,
-                         users:java.util.Set[User], knownExceptionClasses:Set[Class[_]]=Set(), loggedIn: LoggedIn[User]) {
+class BouncyRMIServer[User](port: Int, authHandler: ServerAuthHandler[User], version: String, users:java.util.Set[User],
+                            knownExceptionClasses:Set[Class[_]], loggedIn: LoggedIn[User], serverContexts: AnyRef*) {
 
   lazy val serverTimer = new HashedWheelTimer
+  private val serverContextsMap = new HashMap[String, AnyRef]
   
   class Binding {
     val group = new DefaultChannelGroup("server")
@@ -94,6 +96,17 @@ class BouncyRMIServer[C, User](port: Int, serverContext: C, authHandler: ServerA
     serverTimer.stop
   }
 
+  def getServerContext(declaringClassName: String): AnyRef = {
+    def findAssignableContext = {
+      val declaringClass = Class.forName(declaringClassName)
+
+      serverContexts.find(context => declaringClass.isAssignableFrom(context.getClass))
+        .getOrElse(throw new Exception("Unknown service: " + declaringClassName))
+    }
+
+    serverContextsMap.getOrElseUpdate(declaringClassName, findAssignableContext)
+  }
+
   class ServerHandler(group: DefaultChannelGroup) extends SimpleChannelUpstreamHandler {
     override def channelConnected(ctx: ChannelHandlerContext, e: ChannelStateEvent) = {
       val sslHandler = ctx.getPipeline().get(classOf[SslHandler])
@@ -131,7 +144,7 @@ class BouncyRMIServer[C, User](port: Int, serverContext: C, authHandler: ServerA
         case PingMessage => {
           e.getChannel.write(PongMessage)
         }
-        case MethodInvocationRequest(clientVersion, id, name, params, args) => {
+        case MethodInvocationRequest(clientVersion, id, declaringClassName, name, params, args) => {
           def write(result: AnyRef) {
             val future = e.getChannel.write(result)
             future.addListener(new ChannelFutureListener() {
@@ -143,12 +156,12 @@ class BouncyRMIServer[C, User](port: Int, serverContext: C, authHandler: ServerA
               }
             })
           }
+
           if (clientVersion != version) {
             write(MethodInvocationBadVersion(id, version))
           } else {
             val buffer = new StringBuilder
             val paramClasses = params.map(classForNameWithPrimitiveCheck(_))
-            val method = serverContext.asInstanceOf[AnyRef].getClass.getMethod(name, paramClasses: _*)
 
             def makeExceptionForClient(t : Throwable) : MethodInvocationException = {
               // No way currently of knowing whether the exception contains
@@ -164,7 +177,11 @@ class BouncyRMIServer[C, User](port: Int, serverContext: C, authHandler: ServerA
                 MethodInvocationException(id, exceptionWithoutStarlingData)
               }
             }
+
             val result = try {
+              val serverContext = getServerContext(declaringClassName)
+
+              val method = serverContext.asInstanceOf[AnyRef].getClass.getMethod(name, paramClasses: _*)
               StdOut.setTee(line => e.getChannel.write(StdOutMessage(id, line)))
               val r = method.invoke(serverContext, args: _ *)
               StdOut.reset
@@ -174,7 +191,6 @@ class BouncyRMIServer[C, User](port: Int, serverContext: C, authHandler: ServerA
                 e.getCause.printStackTrace()
                 makeExceptionForClient(e.getCause)
               }
-
               case t: Throwable => {
                 t.printStackTrace()
                 makeExceptionForClient(t)
@@ -182,6 +198,7 @@ class BouncyRMIServer[C, User](port: Int, serverContext: C, authHandler: ServerA
             } finally {
               StdOut.setTee(c => {})
             }
+
             write(result)
           }
         }

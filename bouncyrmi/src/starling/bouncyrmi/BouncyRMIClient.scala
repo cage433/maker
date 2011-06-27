@@ -189,6 +189,7 @@ class BouncyRMIClient[C](host: String, port: Int, interface: Class[C], auth: Cli
       val methodRequest = new MethodInvocationRequest(
         BouncyRMI.CodeVersion,
         id,
+        method.getDeclaringClass.getName,
         method.getName,
         method.getParameterTypes.map(_.getName),
         if (args == null) new Array(0) else args)

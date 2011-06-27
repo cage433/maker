@@ -33,7 +33,7 @@ abstract class TypedBroadcaster[T](implicit manifest: Manifest[T]) extends Broad
   def typedBroadcast(t: T) : Unit
 }
 
-class RMIBroadcaster(rmiServer0: => BouncyRMIServer[StarlingServer, User]) extends Broadcaster {
+class RMIBroadcaster(rmiServer0: => BouncyRMIServer[User]) extends Broadcaster {
   lazy val executor = Executors.newCachedThreadPool()
   lazy val rmiServer = rmiServer0
 

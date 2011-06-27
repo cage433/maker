@@ -2,7 +2,7 @@ package starling.services
 
 import excel._
 import jmx.StarlingJMX
-import rpc.marketdata.{ValuationService}
+import rpc.marketdata.{MarketDataService, ValuationService}
 import starling.schemaevolution.system.PatchRunner
 import starling.db._
 import starling.richdb.{RichDB, RichResultSetRowFactory}
@@ -44,6 +44,7 @@ import java.lang.String
 import com.trafigura.services.valuation.{ValuationServiceApi, TradeManagementCacheNotReady}
 import starling.curves.{EAIMarketLookup, FwdCurveAutoImport, CurveViewer}
 import org.jboss.netty.channel.{ChannelLocal, Channel}
+import com.trafigura.services.marketdata.MarketDataServiceApi
 
 class StarlingInit( val props: Props,
                     dbMigration: Boolean = true,
@@ -62,7 +63,7 @@ class StarlingInit( val props: Props,
       loopyXLReceiver.stop
     }
     if (startRMI) {
-      rmiValuationServerForTitan.stop()
+      rmiServerForTitan.stop()
     }
     if (startHttp) {
       httpServer.stop
@@ -102,10 +103,10 @@ class StarlingInit( val props: Props,
     }
 
     if (startRMI) {
-      rmiValuationServerForTitan.start
-      Log.info("Titan RMI started on port " + rmiStarlingValuationServicePort)
+      rmiServerForTitan.start
+      Log.info("Titan RMI started on port " + rmiTitanServicePort)
       rmiServerForGUI.start
-      Log.info("RMI started on port " + rmiPort)
+      Log.info("GUI RMI started on port " + rmiPort)
     }
 
     if (startEAIAutoImportThread) {
@@ -229,6 +230,7 @@ class StarlingInit( val props: Props,
   }
 
   val valuationService = new ValuationService(marketDataStore, props)
+  val marketDataService = new MarketDataService(marketDataStore)
   
   val userSettingsDatabase = new UserSettingsDatabase(starlingDB, broadcaster)
 
@@ -275,7 +277,7 @@ class StarlingInit( val props: Props,
     version, referenceData, businessCalendars.UK, ldapUserLookup, eaiStarlingSqlServerDB, traders)
 
   val rmiPort = props.RmiPort()
-  val rmiStarlingValuationServicePort = props.StarlingValuationServiceRmiPort()
+  val rmiTitanServicePort = props.StarlingServiceRmiPort()
 
   val users = new CopyOnWriteArraySet[User]
 
@@ -311,26 +313,27 @@ class StarlingInit( val props: Props,
    else 
      BouncyRMI.CodeVersionUndefined
 
-  val rmiServerForGUI:BouncyRMIServer[StarlingServer, User] = new BouncyRMIServer(
+  val rmiServerForGUI:BouncyRMIServer[User] = new BouncyRMIServer(
     rmiPort,
-    ThreadNamingProxy.proxy(starlingServer, classOf[StarlingServer]),
     auth, latestTimestamp, users,
     Set(classOf[UnrecognisedTradeIDException]),
-    ChannelLoggedIn
+    ChannelLoggedIn,
+    ThreadNamingProxy.proxy(starlingServer, classOf[StarlingServer])
   )
 
   /**
    * start up public services for Titan components
    */
-  println("Valuation service port " + rmiStarlingValuationServicePort)
+  println("Titan service port " + rmiTitanServicePort)
   val nullHandler = new ServerAuthHandler[User](new NullAuthHandler(Some(User.Dev)), users, ldapUserLookup,
         user => broadcaster.broadcast(UserLoggedIn(user)), ChannelLoggedIn)
-  val rmiValuationServerForTitan : BouncyRMIServer[ValuationServiceApi, User] = new BouncyRMIServer(
-    rmiStarlingValuationServicePort,
-    ThreadNamingProxy.proxy(valuationService, classOf[ValuationServiceApi]),
+  val rmiServerForTitan : BouncyRMIServer[User] = new BouncyRMIServer(
+    rmiTitanServicePort,
     nullHandler, BouncyRMI.CodeVersionUndefined, users,
-    Set(classOf[TradeManagementCacheNotReady]),
-    ChannelLoggedIn
+    Set(classOf[TradeManagementCacheNotReady], classOf[IllegalArgumentException]),
+    ChannelLoggedIn,
+    ThreadNamingProxy.proxy(valuationService, classOf[ValuationServiceApi]),
+    ThreadNamingProxy.proxy(marketDataService, classOf[MarketDataServiceApi])
   )
 
   val eaiAutoImport = new EAIAutoImport(15, starlingRichDB, eaiStarlingRichSqlServerDB, strategyDB, eaiTradeStores, closedDesks, enabledDesks)
