@@ -2,7 +2,7 @@ package starling.services
 
 import excel._
 import jmx.StarlingJMX
-import rpc.marketdata.{ValuationService, MarketDataServiceRPC}
+import rpc.marketdata.{ValuationService}
 import starling.schemaevolution.system.PatchRunner
 import starling.db._
 import starling.richdb.{RichDB, RichResultSetRowFactory}
