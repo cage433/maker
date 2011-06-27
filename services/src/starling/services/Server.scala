@@ -103,6 +103,8 @@ class StarlingInit( val props: Props,
 
     if (startRMI) {
       rmiValuationServerForTitan.start
+      Log.info("Titan RMI started on port " + rmiStarlingValuationServicePort)
+      rmiServerForGUI.start
       Log.info("RMI started on port " + rmiPort)
     }
 
@@ -273,6 +275,7 @@ class StarlingInit( val props: Props,
     version, referenceData, businessCalendars.UK, ldapUserLookup, eaiStarlingSqlServerDB, traders)
 
   val rmiPort = props.RmiPort()
+  val rmiStarlingValuationServicePort = props.StarlingValuationServiceRmiPort()
 
   val users = new CopyOnWriteArraySet[User]
 
@@ -318,7 +321,6 @@ class StarlingInit( val props: Props,
   /**
    * start up public services for Titan components
    */
-  val rmiStarlingValuationServicePort = props.StarlingValuationServiceRmiPort()
   println("Valuation service port " + rmiStarlingValuationServicePort)
   val nullHandler = new ServerAuthHandler(new NullAuthHandler(Some(User.Dev)), users, ldapUserLookup,
         user => broadcaster.broadcast(UserLoggedIn(user)))
