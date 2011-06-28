@@ -1,6 +1,5 @@
 package starling.services.rpc.marketdata
 
-import com.trafigura.edm.shared.types.{Currency => CurrencyE, Date => DateE, Quantity => QuantityE, Percentage => PercentageE}
 import starling.edm.EDMConversions._
 import starling.gui.api.{MarketDataSelection, PricingGroup, MarketDataIdentifier}
 import starling.marketdata.{SpotFXDataType, MarketDataType, PriceFixingsHistoryDataType}
@@ -13,6 +12,8 @@ import SpotFXDataType._
 import starling.utils.Log
 import starling.daterange.{Tenor, Day}
 import starling.quantity.{Percentage, Quantity, UOM}
+
+import com.trafigura.services._
 import com.trafigura.services.marketdata.{MarketDataServiceApi, ReferenceInterestRate, ReferenceRateSource, Maturity}
 
 abstract class Matcher[A] {
@@ -29,17 +30,19 @@ case class Ignore[A] extends Matcher[A] {
 
 class MarketDataService(marketDataStore: MarketDataStore) extends MarketDataServiceApi  {
   implicit def enrichReferenceInterestRate(self: ReferenceInterestRate) = new {
-    def matches(observationDate: Matcher[DateE], source: Matcher[ReferenceRateSource], maturity: Matcher[Maturity],
-                currency: Matcher[CurrencyE], rate: Matcher[PercentageE])
+    def matches(observationDate: Matcher[TitanSerializableDate], source: Matcher[ReferenceRateSource], maturity: Matcher[Maturity],
+                currency: Matcher[TitanSerializableCurrency], rate: Matcher[TitanSerializablePercentage])
 
     = observationDate.matches(self.observationDate) && source.matches(self.source) && maturity.matches(self.maturity) &&
       currency.matches(self.currency)
   }
 
-  def getSpotFXRate(from: CurrencyE, to: CurrencyE, observationDate: DateE): QuantityE =
-    getSpotFXRate(from.fromEDM, to.fromEDM, observationDate.fromEDM).toEDM
+  def getSpotFXRate(from: TitanSerializableCurrency, to: TitanSerializableCurrency, observationDate: TitanSerializableDate)
+    : TitanSerializableQuantity =
+    getSpotFXRate(from.fromSerializable, to.fromSerializable, observationDate.fromSerializable).toSerializable
 
-  def getSpotFXRates(observationDate: DateE): List[QuantityE] = getSpotFXRates(observationDate.fromEDM).map(_.toEDM)
+  def getSpotFXRates(observationDate: TitanSerializableDate): List[TitanSerializableQuantity] =
+    getSpotFXRates(observationDate.fromSerializable).map(_.toSerializable)
 
   //  def getInterestRates(currency: CurrencyE, rateType: EInterestRateType, dateRange: DateERange): List[EInterestRatePoint] =
   //    getInterestRates(currency.fromEDM, rateType, dateRange.startDay, dateRange.endDay)
@@ -47,7 +50,7 @@ class MarketDataService(marketDataStore: MarketDataStore) extends MarketDataServ
   //  def getInterestRate(currency: CurrencyE, rateType: EInterestRateType, date: DateE): EInterestRatePoint = {
   //    val rates = getInterestRates(currency.fromEDM, rateType, date.fromEDM, date.fromEDM)
   //
-  //    rates.find(_.dateRange.contains(date)).getOrElse(throw new Exception("No Interest Rate for %s, available dates: %s" %
+  //    rates.find(_.dateRange.contains(date)).getOrElse(throw new Exception("No Interest Rate for %s, available SerializableDate: %s" %
   //      (date, rates.map(_.dateRange.fromEDM).mkString(", "))))
   //  }
 
@@ -56,27 +59,30 @@ class MarketDataService(marketDataStore: MarketDataStore) extends MarketDataServ
   //  def getFixings(quota: EDMQuota): MarketDataResponse = getMarketData(fixingRequest.addFilter(marketField.name, "<market>")
   //    .copy(columns = List(), rows = List(levelField, periodField))).toEDM
 
-  def getReferenceInterestRate(observationDate: DateE, source: ReferenceRateSource, maturity: Maturity, currency: CurrencyE) = {
+  def getReferenceInterestRate(observationDate: TitanSerializableDate, source: ReferenceRateSource, maturity: Maturity,
+                               currency: TitanSerializableCurrency) = {
+
     val results = getReferenceInterestRates(observationDate)
 
-    results.find(_.matches(Ignore[DateE], Match(source), Match(maturity), Match(currency), Ignore[PercentageE])).getOrElse(
+    results.find(_.matches(Ignore[TitanSerializableDate], Match(source), Match(maturity), Match(currency), Ignore[TitanSerializablePercentage])).getOrElse(
       throw new IllegalArgumentException(
         "No Reference Interest Rate observed on %s with source: %s, maturity: %s, currency: %s" %
           (observationDate, source, maturity, currency) +
           (", valid sources: %s, maturities: %s, currencies: %s" %
-            results.map(_.source.name), results.map(_.maturity), results.map(_.currency.name))))
+            (results.map(_.source.name).distinct, results.map(_.maturity).distinct, results.map(_.currency.name).distinct))))
   }
 
-  def getReferenceInterestRates(observationDate: DateE): List[ReferenceInterestRate] = {
-    val response = getMarketData(fixingRequest.copyObservationDay(observationDate.fromEDM)
+  def getReferenceInterestRates(observationDate: TitanSerializableDate): List[ReferenceInterestRate] = {
+    val response = getMarketData(fixingRequest.copyObservationDay(observationDate.fromSerializable)
       .copy(rows = List(exchangeField, marketField, periodField)))
 
-    val rates = response.data.collect {
-      case List(exchange, UOM.Parse(uom), tenor: Tenor, percentage: Percentage) =>
-        ReferenceInterestRate(observationDate, ReferenceRateSource(exchange.toString), tenor.toEDM, uom.toCurrency, percentage.toEDM)
+    val rates = response.data.map(_.map(_.toString)).collect {
+      case List(exchange, TitanSerializableCurrency.Parse(currency), Tenor.Parse(tenor), Percentage.Parse(percentage)) =>
+        ReferenceInterestRate(observationDate, ReferenceRateSource(exchange.toString), tenor.toTitan, currency,
+          percentage.toSerializable)
     }
 
-    if (rates.isEmpty) throw new IllegalArgumentException("No Reference Interest Rates observed on: " + observationDate.fromEDM)
+    if (rates.isEmpty) throw new IllegalArgumentException("No Reference Interest Rates observed on: " + observationDate.fromSerializable)
 
     rates
   }

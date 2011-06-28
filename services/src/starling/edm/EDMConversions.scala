@@ -5,50 +5,74 @@ import starling.daterange.{Tenor, SimpleDateRange, Day}
 
 import starling.utils.ImplicitConversions._
 import starling.quantity.{UOMSymbol, Percentage, UOM, Quantity}
-import com.trafigura.services.marketdata.{MaturityType, NamedMaturity, RelativeMaturity}
-import com.trafigura.edm.shared.types.{Quantity => TitanQuantity, Currency => TitanCurrency, Percentage => TitanPercentage, CompoundUOM, UnitComponent, FundamentalUOM}
+import com.trafigura.edm.shared.types.{Currency => TitanCurrency, Date => TitanDate, DateRange => TitanDateRange,
+                                       Percentage => TitanPercentage, Quantity => TitanQuantity,
+                                       CompoundUOM, UnitComponent, FundamentalUOM}
+
+import com.trafigura.services._
 import com.trafigura.services.marketdata.Maturity
-import com.trafigura.services.TitanSerializableQuantity
 
 case class InvalidUomException(msg : String) extends Exception(msg)
 
 object EDMConversions {
+  // Starling implicits
   implicit def enrichQuantity(q: Quantity) = new {
-    def toEDM = toTitanQuantity(q)
+    def toTitan = toTitanQuantity(q)
+    def toSerializable = toTitanSerializableQuantity(q)
   }
+
   implicit def enrichTenor(tenor: Tenor) = new {
-    def toEDM: Maturity = (tenor, tenor.tenorType.toString) match {
-      case (Tenor.ON, _) => NamedMaturity.ON
-      case (Tenor.SN, _) => NamedMaturity.SN
-      case (tenor, MaturityType.Parse(maturityType)) => RelativeMaturity(tenor.value, maturityType)
-    }
+    def toTitan: Maturity = Maturity.get(tenor.toString)
   }
+
   implicit def enrichUOM(uom: UOM) = new {
-    def toCurrency: TitanCurrency = TitanCurrency().update(_.name = toEDM.name)
-    def toEDM: FundamentalUOM = FundamentalUOM(starlingUomToEdmUomName(uom))
+    def titanCurrency: Option[TitanCurrency] = toTitan.map(edm => TitanCurrency().update(_.name = edm.name))
+    def serializableCurrency: Option[TitanSerializableCurrency] =
+      starlingUomToEdmUomName.get(uom).map(fuom => TitanSerializableCurrency(fuom))
+    def toTitan: Option[FundamentalUOM] = starlingUomToEdmUomName.get(uom).map(FundamentalUOM(_))
   }
+
   implicit def enrichPercentage(percentage: Percentage) = new {
-    def toEDM = TitanPercentage(Some(percentage.value))
+    def toTitan = TitanPercentage(Some(percentage.value))
+    def toSerializable = TitanSerializablePercentage(percentage.value)
   }
 
-  implicit def enrichQuantityE(q: TitanQuantity) = new {
-    def fromEDM = fromQuantityE(q)
-  }
-  implicit def enrichEDMDate(date: com.trafigura.edm.shared.types.Date) = new {
-    def fromEDM = Day.fromLocal(date.datex)
-  }
-  implicit def enrichEDMDateRange(dateRange: com.trafigura.edm.shared.types.DateRange) = new {
-    def fromEDM = new SimpleDateRange(startDay, endDay)
-    def contains(date: com.trafigura.edm.shared.types.Date) = fromEDM.contains(date.fromEDM)
-    def startDay = Day.fromLocal(dateRange.startDate)
-    def endDay = Day.fromLocal(dateRange.endDate)
-  }
-  implicit def enrichFundamentalUOM(uom: com.trafigura.edm.shared.types.FundamentalUOM) = new {
-    def fromEDM = edmToStarlingUomSymbol(uom.name).asUOM
-    def toCurrency: TitanCurrency = TitanCurrency().update(_.name = uom.name)
+  implicit def enrichDay(day: Day) = new {
+    def toTitan = TitanDate(day.toLocalDate)
+    def toSerializable = TitanSerializableDate(day.toLocalDate)
   }
 
-  implicit def fromQuantityE(q : TitanQuantity) : Quantity = {
+  // 'Serializable' implicits
+  implicit def enrichSerializableDate(date: TitanSerializableDate) = new {
+    def fromSerializable = Day.fromLocalDate(date.value)
+  }
+
+  implicit def enrichSerializableCurrency(currency: TitanSerializableCurrency) = new {
+    def fromSerializable = edmToStarlingUomSymbol(currency.name).asUOM
+  }
+
+  // Titan implicits
+  implicit def enrichTitanQuantity(q: TitanQuantity) = new {
+    def fromTitan = fromTitanQuantity(q)
+  }
+
+  implicit def enrichTitanDate(date: TitanDate) = new {
+    def fromTitan = Day.fromLocalDate(date.datex)
+  }
+
+  implicit def enrichTitanDateRange(dateRange: TitanDateRange) = new {
+    def fromTitan = new SimpleDateRange(startDay, endDay)
+    def contains(date: TitanDate) = fromTitan.contains(date.fromTitan)
+    def startDay = Day.fromLocalDate(dateRange.startDate)
+    def endDay = Day.fromLocalDate(dateRange.endDate)
+  }
+
+  implicit def enrichFundamentalUOM(uom: FundamentalUOM) = new {
+    def fromTitan = edmToStarlingUomSymbol(uom.name).asUOM
+    def titanCurrency: TitanCurrency = TitanCurrency().update(_.name = uom.name)
+  }
+
+  implicit def fromTitanQuantity(q : TitanQuantity) : Quantity = {
     val amount = q.amount match {
       case Some(amt) => amt
       case None => throw new Exception("Invalid quantity - no amount")
@@ -61,8 +85,8 @@ object EDMConversions {
         }
       }
     }.toMap)
-    Quantity(amount, uom)
 
+    Quantity(amount, uom)
   }
 
   implicit def toTitanQuantity(q : Quantity) : TitanQuantity = {
@@ -81,7 +105,7 @@ object EDMConversions {
     TitanQuantity(Some(q.value), CompoundUOM(unitComponents))
   }
 
-   implicit def toTitanSerializableQuantity(q : Quantity) : TitanSerializableQuantity = {
+  implicit def toTitanSerializableQuantity(q : Quantity) : TitanSerializableQuantity = {
     val symbolPowers = q.uom.asSymbolMap()
 
     val uomMap = symbolPowers.map{

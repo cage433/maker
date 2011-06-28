@@ -3,9 +3,10 @@ package starling.quantity
 import starling.utils.MathUtil
 import collection.IterableLike
 import math.abs
+
 import starling.utils.ImplicitConversions._
 import starling.utils.Pattern._
-import starling.quantity.Percentage
+
 
 /**
  * value is the decimal value of a percentage: e.g. 10% = 0.1

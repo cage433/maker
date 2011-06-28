@@ -17,6 +17,6 @@ class EDMConversionsTests extends StarlingTest{
   @Test(dataProvider = "testConversionRoundTripProvider")
   def testConversionRoundTrip(q : Quantity){
     import starling.edm.EDMConversions._
-     assertEquals(q, fromQuantityE(toTitanQuantity(q)))
+     assertEquals(q, fromTitanQuantity(toTitanQuantity(q)))
   }
 }

@@ -32,7 +32,7 @@ case class EDMPricingSpecConverter(metal : Metal, exchanges : Map[GUID, Market])
       }
       case spec : EDMPartAvePrcSpec => {
         val dayQuantities = spec.dayQtyMap.map{
-          case dayQty => Day.fromJodaDate(dayQty.date) -> fromQuantityE(dayQty.quantity)
+          case dayQty => Day.fromJodaDate(dayQty.date) -> fromTitanQuantity(dayQty.quantity)
         }.toMap
         val totalQuantity = dayQuantities.map(_._2).sum
         PartialAveragePricingSpec(
@@ -75,7 +75,7 @@ case class EDMPricingSpecConverter(metal : Metal, exchanges : Map[GUID, Market])
            deliveryQuantity,
            spec.fixations.map{
              case fixation =>
-              UnknownPricingFixation(fromQuantityE(fixation.fixedQuantity), fromQuantityE(fixation.observedPrice))
+              UnknownPricingFixation(fromTitanQuantity(fixation.fixedQuantity), fromTitanQuantity(fixation.observedPrice))
            },
            declarationBy,
            spec.premium
@@ -86,7 +86,7 @@ case class EDMPricingSpecConverter(metal : Metal, exchanges : Map[GUID, Market])
           deliveryQuantity,
           spec.comps.map{
             case comp =>
-              (fromQuantityE(comp.quantity), fromQuantityE(comp.price))
+              (fromTitanQuantity(comp.quantity), fromTitanQuantity(comp.price))
           }
         )
       }

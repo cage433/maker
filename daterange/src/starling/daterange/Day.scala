@@ -63,6 +63,7 @@ class Day private (@transient val year : Int, @transient val month : Int, @trans
   def millis = toJodaDateTime.getMillis
   def toTimestamp = new Timestamp(millis)
   def toJavaDate = new java.util.Date(calendar.getTimeInMillis)
+  def toLocalDate = new LocalDate(calendar.getTimeInMillis)
 
   def week = Week.containing(this)
 
@@ -338,7 +339,7 @@ object Day extends TenorType {
   def fromSqlDate(date : java.sql.Date) = fromMillis(date.getTime)
   def fromJavaDate(date : java.util.Date) = fromMillis(date.getTime)
   def fromJodaDate(date : LocalDate) = Day(date.getYear, date.getMonthOfYear, date.getDayOfMonth)
-  def fromLocal(date: LocalDate) = fromJavaDate(date.toDateMidnight.toDate)
+  def fromLocalDate(date: LocalDate) = fromJavaDate(date.toDateMidnight.toDate)
   private val milliCache = CacheFactory.getCache("Day.millis")
   def fromMillis(millis: Long) : Day = {
 //    milliCache.memoize( (millis), {

@@ -144,7 +144,7 @@ object PhysicalMetalForward{
       val quotas : List[PhysicalMetalQuota] = {
         trade.quotas.map(_.detail).map{
           detail =>
-            val deliveryQuantity = detail.deliverySpecs.map{ds => fromQuantityE(ds.quantity)}.sum
+            val deliveryQuantity = detail.deliverySpecs.map{ds => fromTitanQuantity(ds.quantity)}.sum
             val commodityGUIDs : Set[GUID] = detail.deliverySpecs.map(_.materialSpec.asInstanceOf[CommoditySpec].commodity).toSet
             assert(commodityGUIDs.size == 1, "Trade " + trade.tradeId + " has multiple commodities")
             val pricingSpec = EDMPricingSpecConverter(futuresMetalMarketByGUID(commodityGUIDs.head), exchangesByGUID).fromEdmPricingSpec(deliveryQuantity, detail.pricingSpec)
