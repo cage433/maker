@@ -25,7 +25,7 @@ NYMEX Brent	Some(605)	FuturesMarket	bbl	USD	NYM	Some(1000.0)	Month	Brent	Some(FB
 COMEX Palladium	Some(683)	FuturesMarket	oz	USD	NYM	Some(1.0)	Month	Palladium	Some(COMEX.PAC)	Some(1.0)	Some(3)	Some(2)	Comex PT/PA	COMEX	None							None
 COMEX Platinum	Some(684)	FuturesMarket	oz	USD	NYM	Some(1.0)	Month	Platinum	Some(COMEX.PLC)	Some(1.0)	Some(3)	Some(2)	Comex PT/PA	COMEX	None							None
 NYMEX RBOB	Some(880)	FuturesMarket	gal	USD	NYM	Some(42000.0)	Month	Gasoline	Some(RB.UNL)	Some(0.01)	Some(4)	Some(4)	EAIExpiryRule(880)	NYMEX	Some(23)							Some(8.33)
-ICE WTI	Some(890)	FuturesMarket	bbl	USD	IPE	Some(1000.0)	Month	WTI	Some(WI)	Some(1.0)	Some(3)	Some(4)	ICE WTI	ICE	Some(12)							Some(7.6)
+ICE WTI	Some(890)	FuturesMarket	bbl	USD	IPE	Some(1000.0)	Month	WTI	Some(WI)	Some(1.0)	Some(3)	Some(4)	EAIExpiryRule(890)	ICE	Some(12)							Some(7.6)
 ICE RBOB	Some(913)	FuturesMarket	gal	USD	IPE	Some(1000.0)	Month	Gasoline	Some(IPRBOB)	Some(0.01)	Some(4)	Some(4)	EAIExpiryRule(913)	ICE	None							Some(8.33)
 ICE Heat	Some(914)	FuturesMarket	gal	USD	IPE	Some(1000.0)	Month	HeatingOil	Some(IPHO)	Some(0.01)	Some(4)	Some(4)	EAIExpiryRule(914)	ICE	None							Some(7.45)
 LME NASAAC	Some(927)	FuturesMarket	MT	USD	LME	Some(20.0)	Day	NASAAC	Some(LCH.LME.NASAAC)	Some(1.0)	Some(3)	Some(2)	LME	LME	None							None
@@ -1033,7 +1033,7 @@ Prem Unl 10ppm FOB Rotterdam Barges (Argus) vs Naphtha CIF NWE 1st month	Some(10
 Gas Oil 0.1% FOB Rotterdam Barges [High] (Platts)	Some(1087)	PublishedIndex	MT	USD	PLE	None	Day	GasOil	Some(AAYWT00)	Some(1.0)	Some(3)	Some(2)			None	High						Some(7.45)
 Gasoil 0.1% CIF Med Cargoes (Platts)	Some(1089)	PublishedIndex	MT	USD	PLE	None	Day	GasOil	Some(AAVJJ00)	Some(1.0)	Some(3)	Some(2)			None	Mid						Some(7.45)
 Gasoil 0.1% FOB Med Cargoes (Platts)	Some(1090)	PublishedIndex	MT	USD	PLE	None	Day	GasOil	Some(AAVJI00)	Some(1.0)	Some(3)	Some(2)			None	Mid						Some(7.45)
-ICE WTI 1st month	Some(1091)	FuturesFrontPeriodIndex									Some(3)	Some(4)				Close	ICE WTI			0	1		
+ICE WTI 1st month	Some(1091)	FuturesFrontPeriodIndex									Some(3)	Some(4)				Close	ICE WTI			0	1
 Unl H4 Colonial Pipeline	Some(1092)	PublishedIndex	gal	USD	PLH	None	Day	Gasoline	None	None	Some(4)	Some(4)			None	Close						Some(8.45)
 LLS 1st month weighted average (Argus)	Some(1094)	PublishedIndex	bbl	USD	ARG	Some(1000.0)	Day	Crude	Some(GCDHC537A)	Some(1.0)	Some(3)	Some(2)			None	Close						Some(7.57)
 NYMEX WTI 1st month (Argus) [DO NOT USE]	Some(1095)	PublishedIndex	bbl	USD	NYM	Some(1000.0)	Day	Crude	Some(GCDHC045$)	Some(1.0)	Some(3)	Some(4)			None	Close						Some(7.6)
