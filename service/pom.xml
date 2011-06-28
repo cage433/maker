@@ -23,6 +23,7 @@
       <module>../refined-service</module>
       <module>../auth</module>
       <module>../bouncyrmi</module>
+      <module>../starling.api</module>
       <module>../loopyxl</module>
       <module>../concurrent</module>
       <module>../quantity</module>

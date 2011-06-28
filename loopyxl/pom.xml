@@ -23,6 +23,11 @@
       <artifactId>starling-bouncy-rmi</artifactId>
       <version>${buildversion}</version>
     </dependency>
+    <dependency>
+      <groupId>com.trafigura.services</groupId>
+      <artifactId>starling-auth</artifactId>
+      <version>${buildversion}</version>
+    </dependency>
   </dependencies>
 
   <build>
