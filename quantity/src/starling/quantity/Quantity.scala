@@ -40,7 +40,7 @@ trait QuantityIsNumeric extends Numeric[Quantity] {
 }
 
 object Quantity {
-  val Regex = """(.*) (.*)""".r
+  val Regex = """([0-9.,]*) (.*)""".r
   val mc = java.math.MathContext.DECIMAL128
 
   val NULL = Quantity(0, UOM.NULL)

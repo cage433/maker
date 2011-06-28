@@ -15,7 +15,7 @@ object DebugUtil {
 }
 
 class DebugArrayUtil {
-  def toArray(obj: AnyRef): Array[AnyRef] = obj.safeCast[List[AnyRef]].mapOrElse(_.toArray, Array())
+  def toArray(obj: AnyRef): Array[AnyRef] = obj.safeCast[List[AnyRef]].map(_.toArray).getOrElse(Array())
 }
 
 class DebugUtil {
