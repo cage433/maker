@@ -161,7 +161,7 @@ class SaveLayoutPanel(pageContext:PageContext, pageData:PivotTablePageData, pivo
               pivotPageState.otherLayoutInfo, layoutType, Nil)))
             clearUp
           }
-          pageContext.submit(DeletePivotLayoutRequest(getText.trim), saveLayout)
+          pageContext.submit(DeletePivotLayoutRequest(getText.trim), saveLayout, keepScreenLocked = true)
         }
       }
     }

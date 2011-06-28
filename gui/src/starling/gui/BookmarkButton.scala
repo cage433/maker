@@ -64,7 +64,7 @@ class BookmarkButton(currentBookmark: => Bookmark, context:PageContext) extends 
                   }
                   context.submit(SaveReportRequest(bookmarkName, userReportData, pivotLayout, true, true, true))
                 }
-                context.submit(DeleteReportRequest(bookmarkName), saveReport)
+                context.submit(DeleteReportRequest(bookmarkName), saveReport, keepScreenLocked = true)
               }
               case _ =>
             }
