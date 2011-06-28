@@ -6,14 +6,13 @@ import starling.daterange.Day
 import starling.db.{NormalMarketDataReader, SnapshotID, MarketDataStore}
 import starling.gui.api.MarketDataIdentifier._
 import starling.curves.{ClosesEnvironmentRule, Environment}
-import com.trafigura.edm.trades.{Trade => EDMTrade, PhysicalTrade => EDMPhysicalTrade}
 import starling.gui.api.{MarketDataIdentifier, PricingGroup}
 import org.joda.time.LocalDate
 import starling.services.StarlingInit
 import com.trafigura.services.valuation._
 import starling.utils.{Log, Stopwatch}
 import com.trafigura.services.valuation.CostsAndIncomeQuotaValuationServiceResults
-
+import com.trafigura.edm.trades.{CompletedTradeTstate, TradeTstateEnum, Trade => EDMTrade, PhysicalTrade => EDMPhysicalTrade}
 
 /**
  * Valuation service implementations
@@ -40,7 +39,8 @@ class ValuationService(marketDataStore: MarketDataStore, val props: Props) exten
       val env = environment(snapshotStringToID(snapshotIDString))
       val tradeValuer = PhysicalMetalForward.value(futuresExchangeByGUID, futuresMarketByGUID, env, snapshotIDString) _
 
-      val edmTrades: List[EDMPhysicalTrade] = edmTradeResult.results.map(_.trade.asInstanceOf[EDMPhysicalTrade])
+      val edmTrades: List[EDMPhysicalTrade] = edmTradeResult.results.map(_.trade.asInstanceOf[EDMPhysicalTrade]).filter(pt => pt.tstate == CompletedTradeTstate)
+      log("Got %d completed physical trades".format(edmTrades.size))
       sw.reset()
       val valuations = edmTrades.map{trade => (trade.tradeId, tradeValuer(trade))}.toMap
       log("Valuation took " + sw)
