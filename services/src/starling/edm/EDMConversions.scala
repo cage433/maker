@@ -8,6 +8,7 @@ import starling.quantity.{UOMSymbol, Percentage, UOM, Quantity}
 import com.trafigura.services.marketdata.{MaturityType, NamedMaturity, RelativeMaturity}
 import com.trafigura.edm.shared.types.{Quantity => TitanQuantity, Currency => TitanCurrency, Percentage => TitanPercentage, CompoundUOM, UnitComponent, FundamentalUOM}
 import com.trafigura.services.marketdata.Maturity
+import com.trafigura.services.TitanSerializableQuantity
 
 case class InvalidUomException(msg : String) extends Exception(msg)
 
@@ -80,6 +81,18 @@ object EDMConversions {
     TitanQuantity(Some(q.value), CompoundUOM(unitComponents))
   }
 
+   implicit def toTitanSerializableQuantity(q : Quantity) : TitanSerializableQuantity = {
+    val symbolPowers = q.uom.asSymbolMap()
+
+    val uomMap = symbolPowers.map{
+      case (starlingUOMSymbol, power) => (
+        starlingUomSymbolToEdmUom.getOrElse(starlingUOMSymbol, starlingUOMSymbol.toString),
+        power
+      )
+    }.toMap
+    TitanSerializableQuantity(q.value, uomMap)
+  }
+  
   val starlingUomSymbolToEdmUom = Map(
     gbp -> "GBP",
     usd -> "USD",
