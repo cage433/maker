@@ -75,6 +75,7 @@ class PropsHelper(props : Map[String,String]) {
           case "keith" => "Keith.Davies"
           case "nick" => "Nick.DArcy"
           case "stacy" => "Stacy.Curl"
+          case "louis" => "Louis.Botterill"
           case _ => "Thomas.Rynne"
         }
       fullname + "@trafigura.com"
