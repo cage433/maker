@@ -571,8 +571,11 @@ class StarlingServerImpl(
   }
 
   def bookClose(desk: Desk) {
-    assert(desk == Desk.GasolineSpec, "Only used for Gasoline spec as Seetal has no control over book close and it happens too late.")
-    val bookID = Book.GasolineSpec.bookID
+    val bookID = desk match {
+      case Desk.GasolineSpec => Book.GasolineSpec.bookID
+      case Desk.LondonDerivatives => Book.LondonDerivatives.bookID
+      case _ => throw new Exception("Book close is not enabled for " + desk)
+    }
     val uuid = UUID.randomUUID.toString
     try {
       eaiStarlingDB.inTransaction {
