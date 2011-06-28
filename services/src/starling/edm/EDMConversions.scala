@@ -118,14 +118,28 @@ object EDMConversions {
   }
   
   val starlingUomSymbolToEdmUom = Map(
+    aed -> "AED",
     gbp -> "GBP",
+    eur -> "EUR",
+    zar -> "ZAR",
     usd -> "USD",
     jpy -> "JPY",
     cny -> "RMB",
     TONNE_SYMBOL -> "MTS",
     POUND_SYMBOL -> "LBS"
+
+//    LegacyCurrency.Aed -> "AED",
+//    LegacyCurrency.Ecb -> "ECB",
+//    LegacyCurrency.Eur -> "EUR",
+//    LegacyCurrency.Fx1 -> "FX1",
+//    LegacyCurrency.Gbp -> "GBP",
+//    LegacyCurrency.Itl -> "ITL",
+//    LegacyCurrency.Jpy -> "JPY",
+//    LegacyCurrency.Rmb -> "RMB",
+//    LegacyCurrency.Usd -> "USD",
+//    LegacyCurrency.Zar -> "ZAR"
   )
 
   val starlingUomToEdmUomName: Map[UOM, String] = starlingUomSymbolToEdmUom.mapKeys(_.asUOM)
-  val edmToStarlingUomSymbol: Map[String, UOMSymbol] = starlingUomSymbolToEdmUom.map(_.swap)
+  val edmToStarlingUomSymbol: Map[String, UOMSymbol] = starlingUomSymbolToEdmUom.map(_.swap) + ("ECB" -> eur)
 }

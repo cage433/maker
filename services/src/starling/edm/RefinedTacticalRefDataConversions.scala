@@ -54,7 +54,7 @@ object RefinedTacticalRefDataConversions {
     }
 
     if (! metalToMarketMap.contains(metal.name))
-      throw new Exception("NOTICE market found for " + exchange.mappingCode + ", " + metal.name)
+      throw new Exception("No market found for " + exchange.mappingCode + ", " + metal.name)
     val futuresMarket = metalToMarketMap(metal.name)
 
     exchange.mappingCode match {
