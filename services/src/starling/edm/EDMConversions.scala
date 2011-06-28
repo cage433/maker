@@ -139,7 +139,6 @@ object EDMConversions {
 //    LegacyCurrency.Usd -> "USD",
 //    LegacyCurrency.Zar -> "ZAR"
   )
-
   val starlingUomToEdmUomName: Map[UOM, String] = starlingUomSymbolToEdmUom.mapKeys(_.asUOM)
   val edmToStarlingUomSymbol: Map[String, UOMSymbol] = starlingUomSymbolToEdmUom.map(_.swap) + ("ECB" -> eur)
 }

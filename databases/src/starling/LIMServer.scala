@@ -171,7 +171,8 @@ object LIMServer {
 }
 
 class LimNode(parent: Object) {
-  def name: String = parent.safeCast[LimNode].mapOrElse(_.name + ":", "") + fields(parent).find(_.get(parent) == this).get.getName
+  private val parentNode : Option[LimNode] = parent.safeCast[LimNode]
+  def name: String = parentNode.map(_.name + ":").getOrElse("") + fields(parent).find(_.get(parent) == this).get.getName
   def children = fields(this).map(_.get(this)).toList.asInstanceOf[List[LimNode]]
   override def toString = name
   private def fields(owner: AnyRef) = owner.getClass.getDeclaredFields.map(_.update(_.setAccessible(true)))

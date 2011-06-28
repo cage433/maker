@@ -85,6 +85,7 @@ object Field{
 // NOTE - The implementations of Parser must be serializable (and easily serializable at that). i.e. an Object like TextPivotParser.
 trait PivotParser extends Serializable {
   def parse(text:String):(Any,String)
+  def acceptableValues:Set[String] = Set.empty
 }
 object TextPivotParser extends PivotParser {
   def parse(text:String) = (text,text)

@@ -42,9 +42,9 @@ import starling.rmi._
 import starling.calendar._
 import java.lang.String
 import com.trafigura.services.valuation.{ValuationServiceApi, TradeManagementCacheNotReady}
-import starling.curves.{EAIMarketLookup, FwdCurveAutoImport, CurveViewer}
 import org.jboss.netty.channel.{ChannelLocal, Channel}
 import com.trafigura.services.marketdata.MarketDataServiceApi
+import starling.curves.{StarlingMarketLookup, EAIMarketLookup, FwdCurveAutoImport, CurveViewer}
 
 class StarlingInit( val props: Props,
                     dbMigration: Boolean = true,
@@ -77,11 +77,6 @@ class StarlingInit( val props: Props,
   }
 
   def start = {
-    if (dbMigration) {
-      //Ensure the schema is up to date
-      new PatchRunner(starlingRichDB, props.ReadonlyMode(), this).updateSchemaIfRequired
-    }
-
     locally {
       // Load all user settings, pivot layouts and user reports here to ensure we don't have any de-serialization issues. Do this before anyone can connect.
       userSettingsDatabase.readAll()
@@ -142,7 +137,7 @@ class StarlingInit( val props: Props,
   val businessCalendars = new BusinessCalendars(holidayTables)
   val expiryRules = new FuturesExpiryRulesImpl(eaiSqlServerDB, businessCalendars)
   FuturesExpiryRuleFactory.registerRulesImpl(expiryRules)
-  val marketLookup = new EAIMarketLookup(eaiSqlServerDB, expiryRules)
+  val marketLookup = new StarlingMarketLookup(starlingDB, businessCalendars, expiryRules)
   MarketProvider.registerImpl(marketLookup)
   val richResultSetRowFactory = new RichResultSetRowFactory
 
@@ -157,6 +152,10 @@ class StarlingInit( val props: Props,
   val eaiRichSqlServerDB = new RichDB(props.EAIReplica(), richResultSetRowFactory)
   val eaiStarlingRichSqlServerDB = new RichDB(props.EAIStarlingSqlServer(), richResultSetRowFactory)
 
+  if (dbMigration) {
+    //Ensure the schema is up to date
+    new PatchRunner(starlingRichDB, props.ReadonlyMode(), this).updateSchemaIfRequired
+  }
 
   // The Market data store needs some of it's own xstream converters
   MarketDataXStreamConverters.converters.foreach(StarlingXStream.registerConverter)

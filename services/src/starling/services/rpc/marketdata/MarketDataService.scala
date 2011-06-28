@@ -9,12 +9,13 @@ import starling.pivot.model.PivotTableModel
 import starling.utils.ImplicitConversions._
 import PriceFixingsHistoryDataType._
 import SpotFXDataType._
-import starling.utils.Log
 import starling.daterange.{Tenor, Day}
 import starling.quantity.{Percentage, Quantity, UOM}
 
 import com.trafigura.services._
 import com.trafigura.services.marketdata.{MarketDataServiceApi, ReferenceInterestRate, ReferenceRateSource, Maturity}
+import starling.utils.{Double, Log}
+import collection.immutable.List
 
 abstract class Matcher[A] {
   def matches(value: A): Boolean
@@ -37,7 +38,7 @@ class MarketDataService(marketDataStore: MarketDataStore) extends MarketDataServ
       currency.matches(self.currency)
   }
 
-  def getSpotFXRate(from: TitanSerializableCurrency, to: TitanSerializableCurrency, observationDate: TitanSerializableDate)
+  def getSpotFXRate(observationDate: TitanSerializableDate, from: TitanSerializableCurrency, to: TitanSerializableCurrency)
     : TitanSerializableQuantity =
     getSpotFXRate(from.fromSerializable, to.fromSerializable, observationDate.fromSerializable).toSerializable
 
@@ -96,17 +97,19 @@ class MarketDataService(marketDataStore: MarketDataStore) extends MarketDataServ
   //    columns = List(levelField, FieldDetails("Observation Time"))))
 
   private def getSpotFXRate(from: UOM, to: UOM, observationDay: Day): Quantity = {
-    val rates = getSpotFXRates(observationDay).toMapWithKeys(_.uom)
+    val rates = getSpotFXRates(observationDay).toMapWithKeys(_.uom.denominatorUOM) + (UOM.USD → Quantity(1, UOM.SCALAR))
 
     (rates.get(from), rates.get(to)) match {
       case (Some(from), Some(to)) => from / to
-      case _ => throw new IllegalArgumentException("No Spot FX Rate for %s/%s observed on %s, valid currencies: %s" %
-        (from, to, observationDay))
+      case _ => throw new IllegalArgumentException("No Spot FX Rate for %s/%s observed on %s, valid currencies: [%s]" %
+        (from, to, observationDay, rates.keySet.mkString(", ")))
     }
   }
 
   private def getSpotFXRates(observationDay: Day) = getMarketData(spotFXRequest.copyObservationDay(observationDay))
-    .data.collect { case List(currency: UOM, rate: Double) => Quantity(rate, currency) }
+    .data.map(_.map(_.toString)).collect {
+      case List(_, Quantity.Parse(rate)) => if (rate.denominatorUOM == UOM.USD) rate.invert else rate
+    }
 
   private def getMarketData(parameters: MarketDataRequestParameters) = {
     Log.info("MarketDataServiceRPC called with parameters " + parameters)
