@@ -1,5 +1,6 @@
 #!/bin/bash
 
+TARGET=${1-clean compile}
 BUILD_PATH=$(dirname $0)
 cd $BUILD_PATH
 NAME=$(dirname $(dirname $(pwd)))
@@ -31,8 +32,8 @@ else
 
     # I'm actually going to compile the whole project here because the server needs to serve up gui class files but
     # because it doesn't depend on it, they don't get compiled automatically when you start the server.
-    echo "Compiling..."
-    nohup java -jar sbt/sbt-launch.jar clean compile >> logs/fullCompile.log 2>&1 &&
+    echo "Compiling... [targets: $TARGET]"
+    nohup java -jar sbt/sbt-launch.jar $TARGET >> logs/fullCompile.log 2>&1 &&
 
     # Want to compile the booter module (and jar it). It is written in java and used in the exe generation. This should
     # probably be done in SBT.
