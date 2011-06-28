@@ -157,9 +157,9 @@ object PhysicalMetalForward{
       }
 
       val isPurchase = trade.direction match {
-        case EDMTrade.PURCHASE | "P" => true
-        case EDMTrade.SALE | "S" => false
-        case _ => throw new Exception("Trade " + trade.tradeId + " has no direction")
+        case EDMTrade.PURCHASE => true // | "P" => true
+        case EDMTrade.SALE => false // | "S" => false
+        case _ => throw new Exception("Trade " + trade.tradeId + " has no direction " + trade.direction)
       }
       PhysicalMetalForward(trade.tradeId, quotas, isPurchase)
     } catch {
