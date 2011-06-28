@@ -25,6 +25,7 @@ import net.miginfocom.layout.LinkHandler
 import starling.utils.{Log, StackTraceToString}
 import starling.bouncyrmi.{ServerUpgradeException, OfflineException}
 import swing.event.{UIElementResized, MouseClicked, ButtonClicked}
+import java.lang.reflect.UndeclaredThrowableException
 
 /**
  * All on the swing thread
@@ -901,7 +902,13 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
         tabComponent.setTextFromPage(page)
       })
     }
-
+    def showError(title: String, message: String) {
+      starlingBrowserUI.setError(title, message, {
+        setScreenLocked(false)
+        refreshButtonStatus
+        refreshButton.enabled = history(current).refreshPage.isDefined
+      })
+    }
     def withBuiltPage(page:Page, pageResponse:PageResponse) {
       timer.stop
       stopButton.enabled = false
@@ -909,17 +916,13 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
         waitingFor -= Some(threadID)
         onEDT({
           // If we have an error and apply special processing here if required, otherwise display page as desired.
-          def showError(title:String, message:String) {
-            starlingBrowserUI.setError(title, message, {
-              setScreenLocked(false)
-              refreshButtonStatus
-              refreshButton.enabled = history(current).refreshPage.isDefined
-            })
-          }
           pageResponse match {
             case FailurePageResponse(t:OfflineException) => showError("Cannot Connect to Starling", "Starling is currently offline, please try again later or contact a developer.")
             case FailurePageResponse(t:ServerUpgradeException) => showError("Starling has been Upgraded", "Starling has been upgraded. Please restart your gui.")
-            case FailurePageResponse(t:Exception) => showError("Error", t.getMessage)
+            case FailurePageResponse(t:Exception) => t match {
+              case e: UndeclaredThrowableException => showError("Error", e.getUndeclaredThrowable.getMessage)
+              case e => showError("Error", e.getMessage)
+            }
             case SuccessPageResponse(_,bookmark) => {
               // Generate the image here.
               val currentTypeState = currentComponent.getTypeState

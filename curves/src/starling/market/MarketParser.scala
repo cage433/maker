@@ -32,9 +32,11 @@ class MarketParser(businessCalendars: BusinessCalendars, futuresExpiryRules: Fut
             val uom = line.getUOM("uom")
             val ccy = line.getUOM("ccy")
             val lotSize = line.getFromOption[Double]("lotSize")
-            val calendar = businessCalendars.financialHolidaysOption(line.get("businessCalendar")) match {
+            val businessCalendarString = line.get("businessCalendar")
+            val calendar = businessCalendars.financialHolidaysOption(businessCalendarString) match {
               case Some(c) => c
-              case None => BusinessCalendar.error(line.get("businessCalendar"))
+              case None if businessCalendarString != "null" => BusinessCalendar.error(businessCalendarString)
+              case _ => BusinessCalendar.NONE
             }
             val tenor = TenorType.parseTenorName(line.get("tenor"))
             val commodity = Commodity.fromName(line.get("commodity"))
@@ -65,7 +67,7 @@ class MarketParser(businessCalendars: BusinessCalendars, futuresExpiryRules: Fut
                 Left(futuresMarket)
               }
               case "PublishedIndex" => {
-                val level = line.get("level") match {
+                val level = line.get("indexLevel") match {
                   case "" => Level.Close
                   case s => Level.fromName(s)
                 }

@@ -220,7 +220,10 @@ object PivotReportData {
         utp.priceAndVolKeys(Day(2001, 1, 1).endOfDay)
         Left(report.rows(instrumentid, utp))
       } catch {
-        case t: Throwable => t.printStackTrace; Right(t)
+        case t: Throwable => {
+//          Log.error("Throwable caught from valuing UTP: " + utp, t)
+          Right(t)
+        }
       })
     })
 

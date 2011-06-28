@@ -31,6 +31,10 @@ class EAIMarketLookup(eai: DB, expiryRules: FuturesExpiryRules) extends MarketLo
 
   // EAI has duplicate incorrect quotes that they don't want to remove (even though they're unused and wrong)
   val exludeIDs = List(137, 174, 756, 759)
+  // ids that are broken for various reasons
+  val brokenIDS = List(
+    1123, 1124, 1138, 1139, 1442, 1443, 1534, 1535 // cbot soy and corn, all have conversions to bbl, don't make sense and we don't trade them yet in Starling
+  )
 
   private def load: List[Either[CommodityMarket, Index]] = {
     var all = List[Either[CommodityMarket, Index]]()
@@ -52,6 +56,8 @@ class EAIMarketLookup(eai: DB, expiryRules: FuturesExpiryRules) extends MarketLo
           ("u.name" isNotNull) // stuff like CDSs have a null unit|
           and
           ("q.id" notIn exludeIDs)
+          and
+          ("q.id" notIn brokenIDS)
         )
         orderBy ("q.id" asc)
       )) {
@@ -77,9 +83,11 @@ class EAIMarketLookup(eai: DB, expiryRules: FuturesExpiryRules) extends MarketLo
           val precision = Some(Precision(default, clearport))
           val limMultiplier = rs.getDouble("LIMPriceMultiplier")
           val limSymbol = rs.getStringOption("LimSymbol").map(LimSymbol(_, limMultiplier))
-          val calendar = cals.financialHolidaysOption(rs.getString("calendarCode")) match {
+          val calendarCode = rs.getString("calendarCode")
+          val calendar = cals.financialHolidaysOption(calendarCode) match {
             case Some(c) => c
-            case None => BusinessCalendar.error(rs.getString("calendarCode"))
+            case None if calendarCode != null => BusinessCalendar.error(calendarCode)
+            case _ => BusinessCalendar.NONE
           }
 
           val product = rs.getString("productcategory")

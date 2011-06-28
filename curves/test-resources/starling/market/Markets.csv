@@ -1,4 +1,4 @@
-name	eaiquoteid	type	uom	ccy	businessCalendar	lotSize	tenor	commodity	limSymbol	limMultiplier	defaultPrecision	clearPortPrecision	expiryRule	exchange	volatilityID	level	forwardMarket	pricingRule	formula	rollBefore	promptness	bblPerMT
+name	eaiquoteid	type	uom	ccy	businessCalendar	lotSize	tenor	commodity	limSymbol	limMultiplier	defaultPrecision	clearPortPrecision	expiryRule	exchange	volatilityID	indexlevel	forwardMarket	pricingRule	formula	rollBefore	promptness	bblPerMT
 IPE Brent	Some(1)	FuturesMarket	bbl	USD	IPE	Some(1000.0)	Month	Brent	Some(FB)	Some(1.0)	Some(3)	Some(2)	EAIExpiryRule(1)	ICE	Some(20)							Some(7.57)
 NYMEX WTI	Some(2)	FuturesMarket	bbl	USD	NYM	Some(1000.0)	Month	WTI	Some(CL)	Some(1.0)	Some(3)	Some(2)	EAIExpiryRule(2)	NYMEX	Some(25)							Some(7.6)
 IPE Gas Oil	Some(14)	FuturesMarket	MT	USD	IPE	Some(100.0)	Month	GasOil	Some(FP)	Some(1.0)	Some(3)	Some(2)	EAIExpiryRule(14)	ICE	Some(21)							Some(7.45)
@@ -21,7 +21,7 @@ LME Lead	Some(551)	FuturesMarket	MT	USD	LME	Some(25.0)	Day	Lead	Some(LCH.LME.LEA
 LME Nickel	Some(552)	FuturesMarket	MT	USD	LME	Some(6.0)	Day	Nickel	Some(LCH.LME.NICKEL)	Some(1.0)	Some(3)	Some(2)	LME	LME	None							None
 LME Tin	Some(553)	FuturesMarket	MT	USD	LME	Some(5.0)	Day	Tin	Some(LCH.LME.TIN)	Some(1.0)	Some(3)	Some(2)	LME	LME	None							None
 LME Zinc	Some(554)	FuturesMarket	MT	USD	LME	Some(25.0)	Day	Zinc	Some(LCH.LME.ZINC)	Some(1.0)	Some(3)	Some(2)	LME	LME	None							None
-NYMEX Brent	Some(605)	FuturesMarket	bbl	USD	NYM	Some(1000.0)	Month	Brent	Some(FB)	Some(1.0)	Some(3)	Some(2)	EAIExpiryRule(605)	NYMEX	Some(37)							Some(7.57)
+NYMEX Brent	Some(605)	FuturesMarket	bbl	USD	NYM	Some(1000.0)	Month	Brent	Some(FB)	Some(1.0)	Some(3)	Some(2)	EAIExpiryRule(1)	NYMEX	Some(37)							Some(7.57)
 COMEX Palladium	Some(683)	FuturesMarket	oz	USD	NYM	Some(1.0)	Month	Palladium	Some(COMEX.PAC)	Some(1.0)	Some(3)	Some(2)	Comex PT/PA	COMEX	None							None
 COMEX Platinum	Some(684)	FuturesMarket	oz	USD	NYM	Some(1.0)	Month	Platinum	Some(COMEX.PLC)	Some(1.0)	Some(3)	Some(2)	Comex PT/PA	COMEX	None							None
 NYMEX RBOB	Some(880)	FuturesMarket	gal	USD	NYM	Some(42000.0)	Month	Gasoline	Some(RB.UNL)	Some(0.01)	Some(4)	Some(4)	EAIExpiryRule(880)	NYMEX	Some(23)							Some(8.33)
@@ -40,7 +40,7 @@ DME Oman	Some(1093)	FuturesMarket	bbl	USD	NYM	Some(1000.0)	Month	Crude	Some(DME.
 MDEX Crude Palm Oil	Some(1125)	FuturesMarket	MT	MYR	KLS	Some(25.0)	Month	VegetableOil	Some(PO)	Some(1.0)	Some(4)	Some(0)	EAIExpiryRule(1125)	MDEX	None							Some(7.05)
 Shanghai Fuel Oil	Some(1126)	FuturesMarket	MT	CNY	SFS	Some(10.0)	Month	FuelOil	Some(SHFE.FU)	Some(1.0)	Some(3)	Some(2)	SFS Fuel Oil	SFS	None							Some(6.2)
 NYMEX Ethanol	Some(1127)	FuturesMarket	gal	USD	NYM	Some(42000.0)	Month	Gasoline	Some(NYM.QE)	Some(0.01)	Some(3)	Some(2)	No Rule	NYMEX	None							Some(7.972)
-DME Oman OSP [Sing Close]	Some(1144)	FuturesMarket	bbl	USD	Error no calendar for: DME (custom)	Some(1000.0)	Month	Crude	Some(DME.OQ)	Some(1.0)	Some(2)	Some(2)	No Rule	DME	None							Some(7.51)
+DME Oman OSP [Sing Close]	Some(1144)	FuturesMarket	bbl	USD	DME (custom)	Some(1000.0)	Month	Crude	Some(DME.OQ)	Some(1.0)	Some(2)	Some(2)	No Rule	DME	None							Some(7.51)
 Shanghai Gold	Some(1148)	FuturesMarket	g	CNY	SFS	Some(1000.0)	Month	Gold	None	None	Some(4)	Some(2)	SFS	SFS	None							None
 Shanghai Gold (London close)	Some(1222)	FuturesMarket	g	CNY	SFS	Some(1000.0)	Month	Gold	None	None	Some(4)	Some(2)	SFS	SFS	None							None
 Shanghai Copper (London close)	Some(1223)	FuturesMarket	MT	CNY	SFS	Some(5.0)	Month	Copper	None	None	Some(4)	Some(2)	SFS	SFS	None							None
@@ -880,7 +880,7 @@ Silver Forward Rates	Some(923)	PublishedIndex	MT	USD	LME	None	Day	Silver	None	No
 No.2 ULSD LA Pipeline (OPIS)	Some(924)	PublishedIndex	gal	USD	OPI	None	Day	GasOil	Some(LA2.ULSD)	Some(0.01)	Some(4)	Some(4)			None	Mid						Some(7.45)
 No.2 ULSD San Francisco Pipeline (OPIS)	Some(925)	PublishedIndex	gal	USD	OPI	None	Day	GasOil	Some(SF2.ULSD)	Some(0.01)	Some(4)	Some(4)			None	Mid						Some(7.45)
 Urals Rotterdam Differential to Dated Brent	Some(926)	PublishedIndex	bbl	USD	PLE	None	Day	Crude	Some(AAGXJ00)	Some(1.0)	Some(3)	Some(2)			None	Mid						Some(7.284)
-Zero Value Quote	Some(928)	PublishedIndex	bbl	USD	Error no calendar for: null	None	Day	Crude	None	None	Some(3)	Some(2)			None	Close						Some(1.0)
+Zero Value Quote	Some(928)	PublishedIndex	bbl	USD	null	None	Day	Crude	None	None	Some(3)	Some(2)			None	Close						Some(1.0)
 Petroecuador Tax Reference Price	Some(929)	PublishedIndex	bbl	USD	PLH	None	Day	Crude	None	None	Some(3)	Some(2)			None	Close						Some(7.57)
 Butane FOB Seagoing NWE Cargoes (Platts)	Some(930)	PublishedIndex	MT	USD	PLE	None	Day	Butane	Some(PMAAL00)	Some(1.0)	Some(3)	Some(3)			None	Mid						Some(10.78571429)
 Propane FOB Seagoing NWE Cargoes (Platts)	Some(931)	PublishedIndex	MT	USD	PLE	None	Day	Propane	Some(PMABB00)	Some(1.0)	Some(3)	Some(2)			None	Mid						Some(12.4047619)
@@ -1026,7 +1026,7 @@ Unl 87 USGC Pipeline (Platts) vs NYMEX RBOB 2nd month	Some(1079)	FormulaIndex	ga
 Gas Oil 0.1% CIF NWE Cargoes [High] (Platts)	Some(1080)	PublishedIndex	MT	USD	PLE	None	Day	GasOil	Some(AAYWS00)	Some(1.0)	Some(3)	Some(2)			None	High						Some(7.45)
 Tapis Premium (RIM)	Some(1081)	PublishedIndex	bbl	USD	RIM	None	Day	Crude	Some(RIM_RC040T1I)	Some(1.0)	Some(3)	Some(2)			None	Mid						Some(7.33)
 Platts  Brent 2nd month Asia Close (Platts)	Some(1082)	PublishedIndex	bbl	USD	PLD	None	Day	Crude	Some(PCAJG00)	Some(1.0)	Some(3)	Some(2)			None	Mid						Some(7.45)
-IPE Brent (Argus)	Some(1083)	PublishedIndex	bbl	USD	Error no calendar for: ICE (Argus)	None	Day	Crude	Some(GCDHC068$)	Some(1.0)	Some(3)	Some(2)			None	Close						Some(7.45)
+IPE Brent (Argus)	Some(1083)	PublishedIndex	bbl	USD	ICE (Argus)	None	Day	Crude	Some(GCDHC068$)	Some(1.0)	Some(3)	Some(2)			None	Close						Some(7.45)
 Dubai 2nd month (Platts)	Some(1084)	PublishedIndex	bbl	USD	PLD	None	Day	Crude	Some(PCAAU00)	Some(1.0)	Some(3)	Some(0)			None	Mid						Some(7.45)
 Dubai 3rd month (Platts)	Some(1085)	PublishedIndex	bbl	USD	PLD	None	Day	Crude	Some(PCAAV00)	Some(1.0)	Some(3)	Some(0)			None	Mid						Some(7.45)
 Prem Unl 10ppm FOB Rotterdam Barges (Argus) vs Naphtha CIF NWE 1st month	Some(1086)	FormulaIndex	MT	USD							Some(3)	Some(2)							1.0* MKT(920)- 1.0* MKT(432) 			Some(8.33)
@@ -1132,7 +1132,7 @@ MDEX Crude Palm Oil 2nd month	Some(1205)	FuturesFrontPeriodIndex									Some(4)
 Unl 95 10ppm CIF NWE basis Thames Cargoes (Platts) [High]	Some(1206)	PublishedIndex	MT	USD	PLE	None	Day	Gasoline	Some(AAXFQ00)	Some(1.0)	Some(3)	Some(2)			None	High						Some(8.33)
 FSU Dominican Republic Propane mark	Some(1207)	PublishedIndex	gal	USD	PLH	None	Day	Propane	None	None	Some(4)	Some(4)			None	Close						Some(12.4047619047)
 FSU Dominican Republic Butane mark	Some(1208)	PublishedIndex	gal	USD	PLH	None	Day	Butane	None	None	Some(4)	Some(4)			None	Close						Some(10.7857142857)
-SME CIF ARA vs ICE Gas Oil 1st month diff	Some(1211)	PublishedIndex	MT	USD	Error no calendar for: null	None	Day	VegetableOil	None	None	Some(3)	Some(2)			None	Close						Some(7.45)
+SME CIF ARA vs ICE Gas Oil 1st month diff	Some(1211)	PublishedIndex	MT	USD	null	None	Day	VegetableOil	None	None	Some(3)	Some(2)			None	Close						Some(7.45)
 Zero PME/SME CIF ARA vs ICE Gas Oil 1st month diff	Some(1212)	PublishedIndex	MT	USD	PLE	None	Day	VegetableOil	None	None	Some(3)	Some(2)			None	Close						Some(7.45)
 Crude Soybean Oil FOB Argentina to CBOT diff	Some(1213)	PublishedIndex	MT	USD	PLE	None	Day	VegetableOil	None	None	Some(3)	Some(2)			None	Close						Some(7.45)
 Zero Crude Soybean Oil FOB Argentina to CBOT diff	Some(1214)	PublishedIndex	MT	USD	PLE	None	Day	VegetableOil	None	None	Some(3)	Some(2)			None	Close						Some(7.45)
@@ -1158,8 +1158,8 @@ Minas (APPI) v IPE Brent 1st month	Some(1243)	FormulaIndex	bbl	USD							Some(3)
 Propane CIF NWE 7000+ (Platts)	Some(1244)	PublishedIndex	MT	USD	PLE	None	Day	Propane	Some(PMABA00)	Some(1.0)	Some(3)	Some(2)			None	Mid						Some(9.8278)
 Unl RBOB NYH Cargoes (Platts)	Some(1245)	PublishedIndex	gal	USD	PLH	None	Day	Gasoline	Some(AAVKS00)	Some(0.01)	Some(4)	Some(4)			None	Mid						Some(8.33)
 30% Dated Brent + 70% Naphtha Singapore	Some(1259)	FormulaIndex	bbl	USD							Some(3)	Some(4)							0.3* MKT(40)+ 0.7* MKT(24) 			Some(7.57)
-TC20 Amsterdam to New York 37kt (Internal)	Some(1260)	PublishedIndex	MT	USD	Error no calendar for: null	None	Day	Freight	None	None	Some(4)	Some(4)			None	Close						None
-TC22 Houston to Amsterdam 38kt (Internal)	Some(1261)	PublishedIndex	MT	USD	Error no calendar for: null	None	Day	Freight	None	None	Some(4)	Some(4)			None	Close						None
+TC20 Amsterdam to New York 37kt (Internal)	Some(1260)	PublishedIndex	MT	USD	null	None	Day	Freight	None	None	Some(4)	Some(4)			None	Close						None
+TC22 Houston to Amsterdam 38kt (Internal)	Some(1261)	PublishedIndex	MT	USD	null	None	Day	Freight	None	None	Some(4)	Some(4)			None	Close						None
 Prem Unl Non-Oxy FOB NWE (Platts)	Some(1262)	PublishedIndex	MT	USD	PLE	None	Day	Gasoline	Some(AAVJE00)	Some(1.0)	Some(3)	Some(2)			None	Mid						Some(8.35)
 Reg Unl Non-Oxy FOB NWE (Platts)	Some(1263)	PublishedIndex	MT	USD	PLE	None	Day	Gasoline	Some(AAOVN00)	Some(1.0)	Some(3)	Some(2)			None	Mid						Some(8.4427)
 CME CIF ARA vs ICE Gas Oil 1st month diff	Some(1264)	PublishedIndex	MT	USD	PLE	None	Day	VegetableOil	None	None	Some(3)	Some(2)			None	Close						Some(7.45)
@@ -1173,7 +1173,7 @@ Platts Dubai 1st month (VaR)	Some(1274)	PublishedIndex	bbl	USD	IPE	None	Day	Crud
 Gas Oil ULSD 10ppm CIF Med (Platts) vs ICE Gas Oil 1st month	Some(1275)	FormulaIndex	MT	USD							Some(3)	Some(0)							1.0* MKT(1191)- 1.0* MKT(58) 			Some(7.45)
 No.6 3.0% USGC Waterborne [Low] (Platts)	Some(1276)	PublishedIndex	bbl	USD	PLH	None	Day	FuelOil	Some(PUAFZ00)	Some(1.0)	Some(3)	Some(2)			None	Low						Some(6.35)
 Bonito Sour weighted average (Argus)	Some(1277)	PublishedIndex	bbl	USD	ARG	None	Day	Crude	Some(GCDHC541A)	Some(1.0)	Some(3)	Some(0)			None	Close						Some(7.57)
-Tapis OSP Premium diff	Some(1278)	PublishedIndex	bbl	USD	Error no calendar for: null	None	Day	Crude	Some(AAQTJ00)	Some(1.0)	Some(3)	Some(0)			None	Index						Some(7.91)
+Tapis OSP Premium diff	Some(1278)	PublishedIndex	bbl	USD	null	None	Day	Crude	Some(AAQTJ00)	Some(1.0)	Some(3)	Some(0)			None	Index						Some(7.91)
 Tapis (APPI) + Tapis OSP Premium	Some(1279)	FormulaIndex	bbl	USD							Some(3)	Some(0)							1.0* MKT(376)+ 1.0* MKT(1278) 			Some(7.91)
 Bonito Pipeline	Some(1280)	PublishedIndex	bbl	USD	ARG	None	Day	Crude	None	None	Some(3)	Some(0)			None	Close						Some(7.91)
 ICE Brent 1st month Asia 1 minute marker	Some(1281)	PublishedIndex	bbl	USD	IPE	None	Day	Crude	Some(FB)	Some(1.0)	Some(3)	Some(0)			None	Asia1Minute						Some(7.57)
@@ -1292,7 +1292,7 @@ Panamax Yuzhni to Jorf	Some(1397)	PublishedIndex	MT	USD	IcS	None	Day	Freight	Non
 Panamax Murmansk to Jorf	Some(1398)	PublishedIndex	MT	USD	IcS	None	Day	Freight	None	None	Some(4)	Some(2)			None	Close						None
 Panamax Gdansk to Jorf	Some(1399)	PublishedIndex	MT	USD	IcS	None	Day	Freight	None	None	Some(4)	Some(2)			None	Close						None
 HLS weighted average (Argus)	Some(1400)	PublishedIndex	bbl	USD	ARG	None	Day	Crude	Some(GCDHC539A)	Some(1.0)	Some(3)	Some(2)			None	Close						Some(6.981)
-Coal API 4 FOB Richards Bay (Argus) (VaR only)	Some(1402)	PublishedIndex	MT	USD	Error no calendar for: null	Some(1000.0)	Day	Coal	Some(GPCAPI4WX)	Some(1.0)	Some(3)	Some(2)			None	Close						None
+Coal API 4 FOB Richards Bay (Argus) (VaR only)	Some(1402)	PublishedIndex	MT	USD	null	Some(1000.0)	Day	Coal	Some(GPCAPI4WX)	Some(1.0)	Some(3)	Some(2)			None	Close						None
 No.6 0.7% H/P NYH Cargoes (Argus)	Some(1403)	PublishedIndex	bbl	USD	ARG	None	Day	FuelOil	Some(GPF4NYDC)	Some(1.0)	Some(3)	Some(2)			None	Mid						Some(6.7)
 Fuel 0.5% FOB NYH PREPA formula	Some(1404)	FormulaIndex	bbl	USD							Some(3)	Some(3)							0.25* MKT(160)+ 0.25* MKT(279)+ 0.25* MKT(183)+ 0.25* MKT(1403) 			Some(6.7)
 Reg Unl LV LA pipeline (OPIS)	Some(1405)	PublishedIndex	gal	USD	OPI	None	Day	Gasoline	Some(LA.LVUNL)	Some(0.01)	Some(4)	Some(4)			None	Mid						Some(8.33)
@@ -1307,8 +1307,8 @@ ULS Kerosene NYH Cargoes (Platts)	Some(1414)	PublishedIndex	gal	USD	PLH	None	Day
 Prem Unl 10ppm FOB Rotterdam Barges (Platts) vs Prem Unl Euro-Bob Oxy NWE Barges (Argus)	Some(1415)	FormulaIndex	MT	USD							Some(3)	Some(0)							1.0* MKT(17)- 1.0* MKT(1312) 			Some(8.33)
 ICE Gas Oil 2nd month 16:30 marker(Platts)	Some(1417)	PublishedIndex	MT	USD	PLE	Some(100.0)	Day	GasOil	Some(AARIO00)	Some(1.0)	Some(3)	Some(2)			None	Index						Some(7.45)
 ICE Gas Oil 3rd month 16:30 marker(Platts)	Some(1418)	PublishedIndex	MT	USD	PLE	Some(100.0)	Day	GasOil	Some(AARIP00)	Some(1.0)	Some(3)	Some(2)			None	Index						Some(7.45)
-Coal NEWC Index FOB Newcastle [RecentWklyIndices] (globalCOAL)	Some(1419)	PublishedIndex	MT	USD	Error no calendar for: globalCOAL Coal Market Report	None	Day	Coal	Some(GLOBALCOAL_NEWC)	Some(1.0)	Some(2)	Some(2)			None	RecentWklyIndices						None
-Coal API 6 FOB Newcastle (Argus) (VaR Only)	Some(1420)	PublishedIndex	MT	USD	Error no calendar for: null	Some(1000.0)	Day	Coal	Some(GPCARMCWX)	Some(1.0)	Some(3)	Some(2)			None	Close						None
+Coal NEWC Index FOB Newcastle [RecentWklyIndices] (globalCOAL)	Some(1419)	PublishedIndex	MT	USD	globalCOAL Coal Market Report	None	Day	Coal	Some(GLOBALCOAL_NEWC)	Some(1.0)	Some(2)	Some(2)			None	RecentWklyIndices						None
+Coal API 6 FOB Newcastle (Argus) (VaR Only)	Some(1420)	PublishedIndex	MT	USD	null	Some(1000.0)	Day	Coal	Some(GPCARMCWX)	Some(1.0)	Some(3)	Some(2)			None	Close						None
 Eurobob FOB ARA Barges (Platts)	Some(1421)	PublishedIndex	MT	USD	PLE	None	Day	Gasoline	Some(AAQZV00)	Some(1.0)	Some(3)	Some(0)			None	Mid						Some(8.33)
 Jet 15ppm ULSK FOB NYH Barges (Argus)	Some(1422)	PublishedIndex	gal	USD	ARG	None	Day	JetKero	Some(GP04977O)	Some(0.01)	Some(3)	Some(0)			None	Mid						Some(7.878)
 IPE Gas Oil 2nd Month	Some(1423)	FuturesFrontPeriodIndex									Some(3)	Some(2)				Close	IPE Gas Oil			1	2		
@@ -1316,7 +1316,7 @@ Off Road LSD FOB USG Pipeline (Platts)	Some(1424)	PublishedIndex	gal	USD	PLH	Non
 No.6 0.3% NYH Cargoes (Platts) [Low]	Some(1427)	PublishedIndex	bbl	USD	PLH	None	Day	FuelOil	Some(PUAAE00)	Some(1.0)	Some(3)	Some(2)			None	Low						Some(6.7)
 No.6 0.3% H/P NYH Cargoes (Bloomberg) [Low]	Some(1428)	PublishedIndex	bbl	USD	PLH	None	Day	FuelOil	Some(TRAF.N6NY.3HC)	Some(1.0)	Some(3)	Some(2)			None	Low						Some(6.7)
 No.6 0.3% H/P NYH Cargoes (Argus) [Low]	Some(1429)	PublishedIndex	bbl	USD	ARG	None	Day	FuelOil	Some(GPF2NYDC)	Some(1.0)	Some(3)	Some(2)			None	Low						Some(6.7)
-Coal API 2 CIF ARA (Argus) (VaR Only)	Some(1430)	PublishedIndex	MT	USD	Error no calendar for: null	Some(1000.0)	Day	Coal	Some(GPCAPI2WX)	Some(1.0)	Some(3)	Some(4)			None	Close						None
+Coal API 2 CIF ARA (Argus) (VaR Only)	Some(1430)	PublishedIndex	MT	USD	null	Some(1000.0)	Day	Coal	Some(GPCAPI2WX)	Some(1.0)	Some(3)	Some(4)			None	Close						None
 NYMEX Gas Oil 1st month	Some(1431)	FuturesFrontPeriodIndex									Some(3)	Some(2)				Close	IPE Gas Oil			1	1		
 Tapis (APPI) vs Dubai 1st Month (Platts)	Some(1432)	FormulaIndex	bbl	USD							Some(3)	Some(2)							1.0* MKT(376)- 1.0* MKT(6) 			Some(7.91)
 NYMEX WTI 1st month (Argus)	Some(1434)	FuturesFrontPeriodIndex									Some(3)	Some(2)				Close	NYMEX WTI			0	1		
@@ -1327,7 +1327,7 @@ Tapis (Platts/APPI)	Some(1438)	FormulaIndex	bbl	USD							Some(3)	Some(0)							
 Coal API 2 CIF ARA [Month Average Index] (Argus)	Some(1439)	PublishedIndex	MT	USD	ARK	Some(1000.0)	Day	Coal	Some(GPCAPI2MA)	Some(1.0)	Some(3)	Some(2)			None	Close						None
 Propane Saudi Aramco (Argus)	Some(1440)	PublishedIndex	MT	USD	ARD	Some(1000.0)	Day	Propane	Some(GTPRSB$PM)	Some(1.0)	Some(3)	Some(3)			None	Close						Some(12.4033)
 Iron Ore CFR China 62% Fe	Some(1444)	PublishedIndex	MT	USD	SIO	Some(10.0)	Day	IronOre	None	None	Some(3)	Some(0)			None	Close						None
-Coal NEWC Index FOB Newcastle [RecentMthlyIndices] (globalCOAL)	Some(1446)	PublishedIndex	MT	USD	Error no calendar for: globalCOAL Coal Market Report	Some(1000.0)	Day	Coal	Some(GLOBALCOAL_NEWC)	Some(1.0)	Some(2)	Some(2)			None	RecentMthlyIndices						None
+Coal NEWC Index FOB Newcastle [RecentMthlyIndices] (globalCOAL)	Some(1446)	PublishedIndex	MT	USD	globalCOAL Coal Market Report	Some(1000.0)	Day	Coal	Some(GLOBALCOAL_NEWC)	Some(1.0)	Some(2)	Some(2)			None	RecentMthlyIndices						None
 Coal NEWC Index FOB Newcastle [RecentMthlyIndices] (globalCOAL) (VaR Only)	Some(1447)	PublishedIndex	MT	USD	IPE	Some(1000.0)	Day	Coal	Some(GLOBALCOAL_NEWC)	Some(1.0)	Some(2)	Some(2)			None	RecentMthlyIndices						None
 Gas Oil 10ppm FOB Singapore (Platts)	Some(1448)	PublishedIndex	bbl	USD	PLD	None	Day	GasOil	Some(AAOVC00)	Some(1.0)	Some(3)	Some(0)			None	Mid						Some(7.45)
 TC11 South Korea to Singapore (Baltic)	Some(1449)	PublishedIndex	MT	USD	IcS	None	Day	Freight	Some(BALTIC.CLEAN.TANKER.ROUTE.TC11)	Some(0.01)	Some(4)	Some(0)			None	Val						None
@@ -1345,7 +1345,7 @@ UHC	Some(1460)	PublishedIndex	bbl	USD	NYM	None	Day	Crude	None	None	Some(3)	Some(
 FAME 0 RME:PME CIF ARA vs ICE Gas Oil 1st month diff	Some(1461)	PublishedIndex	MT	USD	PLE	None	Day	VegetableOil	None	None	Some(3)	Some(2)			None	Close						Some(7.45)
 Unl 93 9.0 RVP Supplemental Colonial Pipeline (Argus)	Some(1462)	PublishedIndex	gal	USD	ARG	None	Day	Gasoline	Some(GPUSP305)	Some(0.01)	Some(4)	Some(0)			None	Mid						Some(8.45)
 LLS 1st month (Argus) vs WTI 1st month (Argus)	Some(1465)	PublishedIndex	bbl	USD	ARG	None	Day	Crude	Some(GCDHC537$)	Some(1.0)	Some(3)	Some(2)			None	Close						Some(7.57)
-WTS Midland Enterprise Pipeline	Some(1467)	PublishedIndex	bbl	USD	Error no calendar for: null	None	Day	Crude	None	None	Some(3)	Some(2)			None	Close						Some(7.33)
+WTS Midland Enterprise Pipeline	Some(1467)	PublishedIndex	bbl	USD	null	None	Day	Crude	None	None	Some(3)	Some(2)			None	Close						Some(7.33)
 SME CIF ARA to FAME 0 FOB Rotterdam Barges (Argus) diff	Some(1468)	PublishedIndex	MT	USD	ARE	None	Day	VegetableOil	None	None	Some(3)	Some(2)			None	Close						Some(7.45)
 PME CIF ARA to FAME 0 FOB Rotterdam Barges (Argus) diff	Some(1469)	PublishedIndex	MT	USD	ARE	None	Day	VegetableOil	None	None	Some(3)	Some(2)			None	Close						Some(7.45)
 FAME + 5 CIF ARA to FAME 0 FOB Rotterdam Barges (Argus) diff	Some(1470)	PublishedIndex	MT	USD	ARE	None	Day	VegetableOil	None	None	Some(3)	Some(2)			None	Close						Some(7.45)
@@ -1353,7 +1353,7 @@ FAME - 5 CIF ARA to FAME 0 FOB Rotterdam Barges (Argus) diff	Some(1471)	Publishe
 FAME - 10 CIF ARA to FAME 0 FOB Rotterdam Barges (Argus) diff	Some(1472)	PublishedIndex	MT	USD	ARE	None	Day	VegetableOil	None	None	Some(3)	Some(2)			None	Close						Some(7.45)
 LBMA Gold	Some(1473)	PublishedIndex	oz	USD	LME	Some(1.0)	Day	Gold	None	None	Some(4)	Some(2)			None	Close						None
 LBMA Silver	Some(1474)	PublishedIndex	oz	USD	LME	Some(1.0)	Day	Silver	None	None	Some(4)	Some(2)			None	Close						None
-Alumina	Some(1475)	PublishedIndex	MT	USD	Error no calendar for: null	None	Day	Alumina	None	None	Some(4)	Some(2)			None	Close						None
+Alumina	Some(1475)	PublishedIndex	MT	USD	null	None	Day	Alumina	None	None	Some(4)	Some(2)			None	Close						None
 Unl 87 9.0 RVP Supplemental Colonial Pipeline (Argus)	Some(1476)	PublishedIndex	gal	USD	ARG	None	Day	Gasoline	Some(GPUSP303)	Some(0.01)	Some(4)	Some(0)			None	Mid						Some(8.45)
 WCS v Nymex WTI diff	Some(1477)	PublishedIndex	bbl	USD	NYM	None	Day	Crude	None	None	Some(3)	Some(0)			None	Close						Some(7.6)
 Mogas 92 Unl Singapore vs Prem Unl Euro-Bob Oxy NWE Barges Rotterdam (Argus)	Some(1478)	FormulaIndex	bbl	USD							Some(3)	Some(2)							1.0* MKT(198)- 1.0* MKT(1312) 			Some(8.49)
@@ -1364,7 +1364,7 @@ Minas Vietnamese formula vs IPE Brent 1st month	Some(1483)	FormulaIndex	bbl	USD	
 Minas Vietnamese formula vs Platts Dubai 1st month	Some(1484)	FormulaIndex	bbl	USD							Some(3)	Some(2)							1.0* MKT(566)- 1.0* MKT(6) 			Some(7.46)
 Gas Oil ULSD 10ppm CIF NWE basis ARA Cargoes (Platts) [High]	Some(1485)	PublishedIndex	MT	USD	PLE	None	Day	GasOil	Some(AAVBG00)	Some(1.0)	Some(3)	Some(2)			None	High						Some(7.45)
 Prem Unl 10ppm FOB Med Cargoes (Platts) vs Eurobob FOB ARA Barges (Platts)	Some(1486)	FormulaIndex	MT	USD							Some(3)	Some(2)							1.0* MKT(1183)- 1.0* MKT(1421) 			Some(8.33)
-AOA/USD FX rate (Monthly)	Some(1487)	PublishedIndex	MT	USD	Error no calendar for: null	None	Day	GasOil	Some(TRAF.AOAUSD)	Some(1.0)	Some(3)	Some(0)			None	Close						Some(1.0)
+AOA/USD FX rate (Monthly)	Some(1487)	PublishedIndex	MT	USD	null	None	Day	GasOil	Some(TRAF.AOAUSD)	Some(1.0)	Some(3)	Some(0)			None	Close						Some(1.0)
 Unl 87 NYH Barges (Argus)	Some(1488)	PublishedIndex	gal	USD	ARG	None	Day	Gasoline	Some(GPGUNY1B)	Some(0.01)	Some(4)	Some(4)			None	Mid						Some(8.45)
 Unl 87 NYH Barges (Argus) vs NYMEX RBOB 1st month	Some(1489)	FormulaIndex	gal	USD							Some(4)	Some(4)							1.0* MKT(1488)- 1.0* MKT(933) 			Some(8.45)
 Prem Unl 10ppm FOB Rotterdam Barges (Platts) vs Eurobob FOB ARA Barges (Platts)	Some(1490)	FormulaIndex	MT	USD							Some(3)	Some(0)							1.0* MKT(17)- 1.0* MKT(1421) 			Some(8.33)
@@ -1417,8 +1417,8 @@ Jet FOB Med Premium Cargo (Platts)	Some(1541)	PublishedIndex	MT	USD	PLE	None	Day
 Canadian Heavy Crude Oil (Net Energy)	Some(1542)	PublishedIndex	bbl	USD	NYM	None	Day	Crude	Some(NYMEX.WCC)	Some(1.0)	Some(3)	Some(2)			None	Close						Some(9.25)
 No.2 LS NYH Barges (Platts)	Some(1543)	PublishedIndex	gal	USD	PLH	None	Day	GasOil	Some(POAEU00)	Some(0.01)	Some(4)	Some(4)			None	Mid						Some(7.31373345)
 Ekofisk Dated (Argus)	Some(1544)	PublishedIndex	bbl	USD	ARF	None	Day	Crude	Some(GC073$A$)	Some(1.0)	Some(3)	Some(2)			None	Mid						Some(7.74)
-Eugene Island	Some(1545)	PublishedIndex	bbl	USD	Error no calendar for: null	None	Day	Crude	Some(AAGWD00)	Some(1.0)	Some(3)	Some(4)			None	Mid						Some(7.45)
-TCE TC2 (Internal)	Some(1546)	PublishedIndex	MT	USD	Error no calendar for: null	None	Day	Freight	None	None	Some(4)	Some(4)			None	Close						None
+Eugene Island	Some(1545)	PublishedIndex	bbl	USD	null	None	Day	Crude	Some(AAGWD00)	Some(1.0)	Some(3)	Some(4)			None	Mid						Some(7.45)
+TCE TC2 (Internal)	Some(1546)	PublishedIndex	MT	USD	null	None	Day	Freight	None	None	Some(4)	Some(4)			None	Close						None
 Unl 87 USGC Waterborne (Argus)	Some(1547)	PublishedIndex	gal	USD	ARG	None	Day	Gasoline	Some(PA0000906.2.0)	Some(0.01)	Some(4)	Some(4)			None	Mid						Some(8.33)
 RSA Basic Fuels Price Basis Durban Mogas 93 (CEF)	Some(1548)	PublishedIndex	m3	ZAR	PLE	None	Day	Gasoline	None	None	Some(4)	Some(0)			None	Close						Some(8.384)
 RSA Basic Fuels Price Basis Durban Mogas 95 (CEF)	Some(1549)	PublishedIndex	m3	ZAR	PLE	None	Day	Gasoline	None	None	Some(4)	Some(0)			None	Close						Some(8.384)
@@ -1464,7 +1464,7 @@ Gas Oil ULSD 10ppm FOB Singapore vs Gasoil 0.5 Singapore	Some(1591)	FormulaIndex
 TD3 AG to Japan 260KT $/MT (Baltic)	Some(1592)	PublishedIndex	MT	USD	IcS	Some(1000.0)	Day	Freight	Some(BALTIC.DIRTY.TANKER.ROUTE.TD3.USDMT.CURMON)	Some(1.0)	Some(4)	Some(2)			None	Val						None
 Unl 92 FOB Singapore Cargoes (Platts) vs Naphtha FOB Singapore Cargoes (Platts)	Some(1593)	FormulaIndex	bbl	USD							Some(3)	Some(0)							1.0* MKT(198)- 1.0* MKT(24) 			Some(8.33)
 Argus Far East Index Propane/Butane Mixed	Some(1617)	PublishedIndex	MT	USD	ARH	None	Day	Propane	Some(GP7413MND)	Some(1.0)	Some(3)	Some(0)			None	Close						Some(12.4047619)
-NYMEX RBOB 1st Month vs IPE Brent 1st Month	Some(1618)	FormulaIndex	gal	USD							Some(4)	Some(4)							1.0* MKT(933)- 1.0* MKT(28) 			Some(8.33)
+NYMEX RBOB 1st Month vs IPE Brent 1st Month	Some(1618)	FormulaIndex	bbl	USD							Some(4)	Some(4)							1.0* MKT(933)- 1.0* MKT(28) 			Some(8.33)
 Jet 54 FOB USGC Cargo (Argus)	Some(1619)	PublishedIndex	gal	USD	ARG	None	Day	JetKero	Some(GPUSP277)	Some(0.01)	Some(4)	Some(4)			None	Mid						Some(7.45)
 Henry Financial LD1 Fixed Price	Some(1620)	PublishedIndex	MT	USD	PLH	Some(25000.0)	Day	NatGas	Some(NG)	Some(0.1)	Some(6)	Some(6)			None	Close						Some(1.0)
 Houston Ship Channel (monthly)	Some(1621)	PublishedIndex	MT	USD	PLH	None	Day	NatGas	Some(IGBAP03)	Some(0.1)	Some(6)	Some(6)			None	Index						Some(1.0)
