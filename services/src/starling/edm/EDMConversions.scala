@@ -6,14 +6,14 @@ import starling.daterange.{Tenor, SimpleDateRange, Day}
 import starling.utils.ImplicitConversions._
 import starling.quantity.{UOMSymbol, Percentage, UOM, Quantity}
 import com.trafigura.services.marketdata.{MaturityType, NamedMaturity, RelativeMaturity}
-import com.trafigura.edm.shared.types.{Quantity => QuantityE, Currency => CurrencyE, Percentage => PercentageE, CompoundUOM, UnitComponent, FundamentalUOM}
+import com.trafigura.edm.shared.types.{Quantity => TitanQuantity, Currency => TitanCurrency, Percentage => TitanPercentage, CompoundUOM, UnitComponent, FundamentalUOM}
 import com.trafigura.services.marketdata.Maturity
 
 case class InvalidUomException(msg : String) extends Exception(msg)
 
 object EDMConversions {
   implicit def enrichQuantity(q: Quantity) = new {
-    def toEDM = toQuantityE(q)
+    def toEDM = toTitanQuantity(q)
   }
   implicit def enrichTenor(tenor: Tenor) = new {
     def toEDM: Maturity = (tenor, tenor.tenorType.toString) match {
@@ -23,14 +23,14 @@ object EDMConversions {
     }
   }
   implicit def enrichUOM(uom: UOM) = new {
-    def toCurrency: CurrencyE = CurrencyE().update(_.name = toEDM.name)
+    def toCurrency: TitanCurrency = TitanCurrency().update(_.name = toEDM.name)
     def toEDM: FundamentalUOM = FundamentalUOM(starlingUomToEdmUomName(uom))
   }
   implicit def enrichPercentage(percentage: Percentage) = new {
-    def toEDM = PercentageE(Some(percentage.value))
+    def toEDM = TitanPercentage(Some(percentage.value))
   }
 
-  implicit def enrichQuantityE(q: QuantityE) = new {
+  implicit def enrichQuantityE(q: TitanQuantity) = new {
     def fromEDM = fromQuantityE(q)
   }
   implicit def enrichEDMDate(date: com.trafigura.edm.shared.types.Date) = new {
@@ -44,10 +44,10 @@ object EDMConversions {
   }
   implicit def enrichFundamentalUOM(uom: com.trafigura.edm.shared.types.FundamentalUOM) = new {
     def fromEDM = edmToStarlingUomSymbol(uom.name).asUOM
-    def toCurrency: CurrencyE = CurrencyE().update(_.name = uom.name)
+    def toCurrency: TitanCurrency = TitanCurrency().update(_.name = uom.name)
   }
 
-  implicit def fromQuantityE(q : QuantityE) : Quantity = {
+  implicit def fromQuantityE(q : TitanQuantity) : Quantity = {
     val amount = q.amount match {
       case Some(amt) => amt
       case None => throw new Exception("Invalid quantity - no amount")
@@ -64,7 +64,7 @@ object EDMConversions {
 
   }
 
-  implicit def toQuantityE(q : Quantity) : QuantityE = {
+  implicit def toTitanQuantity(q : Quantity) : TitanQuantity = {
     val symbolPowers = q.uom.asSymbolMap()
 
     // create edm UOMs, EDM symbol list is GBP, USD, JPY, RMB, MTS, LBS
@@ -77,7 +77,7 @@ object EDMConversions {
        )
     }.toList
 
-    QuantityE(Some(q.value), CompoundUOM(unitComponents))
+    TitanQuantity(Some(q.value), CompoundUOM(unitComponents))
   }
 
   val starlingUomSymbolToEdmUom = Map(
