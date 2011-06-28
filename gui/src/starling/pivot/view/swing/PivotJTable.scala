@@ -83,9 +83,13 @@ class PivotJTable(tableModel:PivotJTableModel, pivotTableView:PivotTableView, mo
 
     override def canImport(support:TransferSupport) = {
       def checkValue(r:Int,c:Int) = {
-        getValueAt(r,c) match {
-          case ac:AxisCell => ac.editable
-          case tc:TableCell => tc.editable
+        if (r >= 0 && c >= 0) {
+          getValueAt(r,c) match {
+            case ac:AxisCell => ac.editable
+            case tc:TableCell => tc.editable
+          }
+        } else {
+          false
         }
       }
       if (support.isDrop) {
@@ -96,11 +100,7 @@ class PivotJTable(tableModel:PivotJTableModel, pivotTableView:PivotTableView, mo
         // From a paste.
         val minRow = getSelectionModel.getMinSelectionIndex
         val minCol = getColumnModel.getSelectionModel.getMinSelectionIndex
-        if (minRow >= 0 && minCol >= 0) {
-          checkValue(minRow, minCol)
-        } else {
-          false
-        }
+        checkValue(minRow, minCol)
       }
     }
     override def exportToClipboard(comp:JComponent, clip:Clipboard, action:Int) = clip.setContents(new StringSelection(convertSelectedCellsToString), null)
