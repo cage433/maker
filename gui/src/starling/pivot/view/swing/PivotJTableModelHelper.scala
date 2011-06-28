@@ -537,10 +537,23 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
           if (currentListData != sortedVals) {
             popupListView.listData = sortedVals
           }
-          if (!popupMenu.isVisible) {
+          if (!popupMenu.isShowing) {
+            val selectionAtTimeOfPopup = textField.getSelectedText
+            val caretPositionAtTimeOfPopup = textField.getCaretPosition
+
             popupMenu.setMinimumSize(viewScrollPane.preferredSize)
             popupMenu.show(textField, cellEditor, tableFrom, textField, 0, textField.getSize().height-1)
             focusOwner.map(_.requestFocusInWindow())
+
+            onEDT(onEDT({
+              val currentSelection = textField.getSelectedText
+              if (selectionAtTimeOfPopup == null && currentSelection != null) {
+                // It is likely we are on windows and we need to do something funky so that we don't select the whole text field.
+                val l = textField.getText.length()
+                val posToUse = if (caretPositionAtTimeOfPopup <= l) caretPositionAtTimeOfPopup else l
+                textField.setCaretPosition(posToUse)
+              }
+            }))
           }
         }
       }
