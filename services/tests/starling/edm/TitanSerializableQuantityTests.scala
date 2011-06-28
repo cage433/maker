@@ -18,7 +18,7 @@ class TitanSerializableQuantityTests {
   def testRoundTrip(qty : Quantity){
     val titanSerializableQuantity = EDMConversions.toTitanSerializableQuantity(qty)
     val titanQuantity = TitanSerializableQuantity.toTitanQuantity(titanSerializableQuantity)
-    val qty2 = EDMConversions.fromQuantityE(titanQuantity)
+    val qty2 = EDMConversions.fromTitanQuantity(titanQuantity)
     assertEquals(qty, qty2)
   }
 }
