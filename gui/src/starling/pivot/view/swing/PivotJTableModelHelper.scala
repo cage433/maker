@@ -4,21 +4,26 @@ import fieldchoosers.RowComponent
 import starling.quantity.UOM
 import starling.pivot._
 import javax.swing.table.AbstractTableModel
-import java.awt.{Dimension, Graphics}
+import java.awt.{Dimension, Graphics, Component => AWTComp, Color, KeyboardFocusManager}
 import model.{NullAxisValueType, EditableInfo, ValueAxisValueType, AxisCell}
-import swing.Panel
-import javax.swing._
 import collection.mutable.{ListBuffer, HashMap}
 import scala.Array
-
+import javax.swing._
+import scala.swing.Swing._
+import swing.{ScrollPane, ListView, Panel}
+import swing.event.{KeyPressed, KeyTyped}
 
 abstract class PivotJTableModel extends AbstractTableModel {
   def paintTable(g:Graphics, table:JTable, rendererPane:CellRendererPane, rMin:Int, rMax:Int, cMin:Int, cMax:Int)
   def rowHeader(row:Int, col:Int):Boolean
   def mapCellToFields(row:Int, col:Int):List[(Field, Selection)]
-  def collapseOrExpand(row:Int, col:Int, pivotTableView:PivotTableView):Unit
-  def deleteCells(cells:List[(Int,Int)]):Unit
-  def resetCells(cells:List[(Int,Int)]):Unit
+  def collapseOrExpand(row:Int, col:Int, pivotTableView:PivotTableView)
+  def deleteCells(cells:List[(Int,Int)])
+  def resetCells(cells:List[(Int,Int)])
+  def textTyped(textField:JTextField, cellEditor:CellEditor , r:Int, c:Int, focusOwner:Option[AWTComp], tableFrom:AWTComp)
+  def finishedEditing()
+  def popupShowing:Boolean
+  def focusPopup()
 }
 
 class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
@@ -280,36 +285,65 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
       addedRows0.clear()
       addedRows0 ++= newAddedRows
     }
+
+    def textTyped(textField:JTextField, cellEditor:CellEditor, r:Int, c:Int, focusOwner:Option[AWTComp], tableFrom:AWTComp) {
+      // Using a zero row index here as it doesn't really matter as long as it is the correct column.
+      val rowHeaderField = rowHeaderData0(0)(c).value.field
+      val parser = editableInfo.get.editableKeyFields(rowHeaderField)
+    }
+    def finishedEditing() {popupMenu setVisible false}
+    def popupShowing = popupMenu.isShowing
+    def focusPopup() {
+      KeyboardFocusManager.getCurrentKeyboardFocusManager.focusNextComponent(popupMenu)
+      popupListView.requestFocusInWindow()
+      popupListView.selectIndices(0)
+    }
   }
 
   val colHeaderTableModel = new PivotJTableModel {
     def getRowCount = colHeaderData0.length
     def getColumnCount = colHeaderData0(0).length
     def getValueAt(rowIndex:Int, columnIndex:Int) = colHeaderData0(rowIndex)(columnIndex)
-    def paintTable(g:Graphics, table:JTable, rendererPane:CellRendererPane, rMin:Int, rMax:Int, cMin:Int, cMax:Int) = {
+    def paintTable(g:Graphics, table:JTable, rendererPane:CellRendererPane, rMin:Int, rMax:Int, cMin:Int, cMax:Int) {
       PivotTableUI.colHeaderPaintGrid(g, table, rMin, rMax, cMin, cMax)
       PivotTableUI.colHeaderPaintCells(g, table, rendererPane, rMin, rMax, cMin, cMax)
     }
     def rowHeader(row:Int,col:Int) = false
     def mapCellToFields(row:Int, col:Int) = List()
-    def collapseOrExpand(row:Int, col:Int, pivotTableView:PivotTableView) = {
+    def collapseOrExpand(row:Int, col:Int, pivotTableView:PivotTableView) {
       val path = (0 to row).map(rowIndex => {getValueAt(rowIndex, col).asInstanceOf[AxisCell].value}).toList
       pivotTableView.collapseOrExpandCol(path)
     }
-    def deleteCells(cells:List[(Int,Int)]) = {}
-    def resetCells(cells:List[(Int,Int)]) = {}
+    def deleteCells(cells:List[(Int,Int)]) {}
+    def resetCells(cells:List[(Int,Int)]) {}
+    def textTyped(textField:JTextField, cellEditor:CellEditor, r:Int, c:Int, focusOwner:Option[AWTComp], tableFrom:AWTComp) {}
+    def finishedEditing() {popupMenu setVisible false}
+    def popupShowing = popupMenu.isShowing
+    def focusPopup() {
+      KeyboardFocusManager.getCurrentKeyboardFocusManager.focusNextComponent(popupMenu)
+      popupListView.requestFocusInWindow()
+      popupListView.selectIndices(0)
+    }
   }
 
   val blankAxisCellTableModel = new PivotJTableModel {
     def getRowCount = colHeaderData0.length
     def getColumnCount = rowHeaderData0(0).length
     def getValueAt(rowIndex:Int, columnIndex:Int) = AxisCell.Null
-    def paintTable(g:Graphics, table:JTable, rendererPane:CellRendererPane, rMin:Int, rMax:Int, cMin:Int, cMax:Int) = {}
+    def paintTable(g:Graphics, table:JTable, rendererPane:CellRendererPane, rMin:Int, rMax:Int, cMin:Int, cMax:Int) {}
     def rowHeader(row:Int,col:Int) = false
     def mapCellToFields(row:Int, col:Int) = List()
-    def collapseOrExpand(row:Int, col:Int, pivotTableView:PivotTableView) = {}
+    def collapseOrExpand(row:Int, col:Int, pivotTableView:PivotTableView) {}
     def deleteCells(cells:List[(Int,Int)]) {}
-    def resetCells(cells:List[(Int,Int)]) = {}
+    def resetCells(cells:List[(Int,Int)]) {}
+    def textTyped(textField:JTextField, cellEditor:CellEditor, r:Int, c:Int, focusOwner:Option[AWTComp], tableFrom:AWTComp) {}
+    def finishedEditing() {popupMenu setVisible false}
+    def popupShowing = popupMenu.isShowing
+    def focusPopup() {
+      KeyboardFocusManager.getCurrentKeyboardFocusManager.focusNextComponent(popupMenu)
+      popupListView.requestFocusInWindow()
+      popupListView.selectIndices(0)
+    }
   }
 
   val mainTableModel = new PivotJTableModel {
@@ -324,8 +358,8 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
     setupExtraRow
 
     def reset {
-      overrideMap.clear
-      addedRows0.clear
+      overrideMap.clear()
+      addedRows0.clear()
       setupExtraRow
     }
     def overriddenValues = overriddenCells.values
@@ -386,7 +420,7 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
       addedRows0 ++= newAddedRows
     }
 
-    override def setValueAt(value:AnyRef, rowIndex:Int, columnIndex:Int) = {
+    override def setValueAt(value:AnyRef, rowIndex:Int, columnIndex:Int) {
       val s = value.asInstanceOf[String].trim
       val measureInfo = colHeaderData0.find(_(columnIndex).value.isMeasure).get(columnIndex)
       val parser = editableInfo.get.editableMeasures(measureInfo.value.field)
@@ -413,7 +447,7 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
           }
         }
 
-        def updateEdited {
+        def updateEdited() {
           val state = if (addedRow) EditableCellState.Added else (if (newLabel.trim.isEmpty) EditableCellState.Deleted else EditableCellState.Edited)
           if (addedRow) {
             addedRows0(rowIndex - data0.length)(columnIndex) = currentCell.copy(value = newValue, text = newLabel, state = state)
@@ -432,12 +466,12 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
               resetCells(List((rowIndex, columnIndex)))
             } else {
               // It's gone from an error to an edited state.
-              updateEdited
+              updateEdited()
             }
           }
         } else if (originalCell.text != newLabel) {
           // It's been edited.
-          updateEdited
+          updateEdited()
         } else {
           // It's been reset.
           resetCells(List((rowIndex, columnIndex)))
@@ -490,7 +524,68 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
       }}
       updateTable(cells)
     }
+    def textTyped(textField:JTextField, cellEditor:CellEditor, r:Int, c:Int, focusOwner:Option[AWTComp], tableFrom:AWTComp) {
+      val measureInfo = colHeaderData0.find(_(c).value.isMeasure).get(c)
+      val parser = editableInfo.get.editableMeasures(measureInfo.value.field)
+      val t = textField.getText.toLowerCase
+      val vals = parser.acceptableValues
+      if (vals.nonEmpty) {
+        val filteredVals = vals.filter(_.toLowerCase.startsWith(t))
+        if (filteredVals.nonEmpty) {
+          val sortedVals = filteredVals.toList.sortWith(_.toLowerCase < _.toLowerCase)
+          val currentListData = popupListView.listData.toList
+          if (currentListData != sortedVals) {
+            popupListView.listData = sortedVals
+          }
+          if (!popupMenu.isVisible) {
+            popupMenu.setMinimumSize(viewScrollPane.preferredSize)
+            popupMenu.show(textField, cellEditor, tableFrom, textField, 0, textField.getSize().height-1)
+            focusOwner.map(_.requestFocusInWindow())
+          }
+        }
+      }
+    }
+    def finishedEditing() {popupMenu setVisible false}
+    def popupShowing = popupMenu.isShowing
+    def focusPopup() {
+      KeyboardFocusManager.getCurrentKeyboardFocusManager.focusNextComponent(popupMenu)
+      popupListView.requestFocusInWindow()
+      popupListView.selectIndices(0)
+    }
   }
+
+  private val popupMenu = new JPopupMenu {
+    var editor:JTextField = _
+    var cellEditor:CellEditor = _
+    var tableToFocus:AWTComp = _
+
+    def show(ed:JTextField, cEditor:CellEditor, tToFocus:AWTComp, invoker:AWTComp, x:Int, y:Int) {
+      editor = ed
+      cellEditor = cEditor
+      tableToFocus = tToFocus
+      show(invoker, x, y)
+    }
+  }
+  private val popupListView = new ListView(List(" ")) {
+    fixedCellWidth = 300
+    selection.intervalMode = ListView.IntervalMode.Single
+    peer.setFocusTraversalKeysEnabled(false)
+    def selectText(t:String) {
+      popupMenu.editor.setText(t)
+      popupMenu.cellEditor.stopCellEditing()
+      popupMenu.tableToFocus.requestFocusInWindow()
+    }
+    reactions += {
+      case KeyPressed(_,scala.swing.event.Key.Enter,_,_) => selectText(selection.items.head)
+      case KeyPressed(_,scala.swing.event.Key.Tab,_,_) => selectText(selection.items.head)
+    }
+    listenTo(keys)
+  }
+  private val viewScrollPane = new ScrollPane(popupListView) {
+    horizontalScrollBarPolicy = ScrollPane.BarPolicy.Never
+  }
+  popupMenu.add(viewScrollPane.peer)
+  popupMenu.setBorder(EmptyBorder)
 
   private val allModels = List(rowHeaderTableModel, colHeaderTableModel, mainTableModel, blankAxisCellTableModel)
 
@@ -605,6 +700,18 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
     override def fireTableDataChanged = {
       super.fireTableDataChanged
       allModels.foreach(_.fireTableDataChanged)
+    }
+
+    def textTyped(textField:JTextField, cellEditor:CellEditor, r:Int, c:Int, focusOwner:Option[AWTComp], tableFrom:AWTComp) {
+      val (m,row,col) = getTableModel(r, c)
+      m.textTyped(textField, cellEditor, row, col, focusOwner, tableFrom)
+    }
+    def finishedEditing() {popupMenu setVisible false}
+    def popupShowing = popupMenu.isShowing
+    def focusPopup() {
+      KeyboardFocusManager.getCurrentKeyboardFocusManager.focusNextComponent(popupMenu)
+      popupListView.requestFocusInWindow()
+      popupListView.selectIndices(0)
     }
   }
 

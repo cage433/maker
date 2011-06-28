@@ -2,23 +2,23 @@ package starling.pivot.view.swing
 
 import collection.mutable.ListBuffer
 import org.jdesktop.swingx.JXTable
-import java.awt.event._
 import javax.swing._
 import table.{TableModel, TableCellEditor}
 import text.JTextComponent
 import swing.Swing._
 import org.jdesktop.jxlayer.JXLayer
 import java.awt.Cursor
-import starling.pivot.model.{AxisCell, PivotTableModel}
-import swing.{MenuItem, Action}
 import starling.pivot.{EditableCellState, TableCell}
 import org.jdesktop.swingx.table.NumberEditorExt
 import org.jdesktop.swingx.JXTable.{BooleanEditor, GenericEditor}
 import javax.swing.TransferHandler.TransferSupport
 import java.awt.datatransfer.{Clipboard, DataFlavor, StringSelection}
 import starling.utils.Log
-import java.util.{StringTokenizer, Hashtable}
 import starling.gui.GuiUtils
+import java.util.{StringTokenizer, Hashtable}
+import swing.{ScrollPane, ListView, MenuItem, Action}
+import starling.pivot.model.{EditableInfo, AxisCell, PivotTableModel}
+import java.awt.event._
 
 object PivotJTable {
   val RowHeight = 16
@@ -28,7 +28,7 @@ object PivotJTable {
 
 import PivotJTable._
 
-class PivotJTable(tableModel:TableModel, pivotTableView:PivotTableView, model:PivotTableModel,
+class PivotJTable(tableModel:PivotJTableModel, pivotTableView:PivotTableView, model:PivotTableModel,
                   indentColumns:Array[Boolean]) extends JXTable(tableModel) {
   setUI(new PivotTableUI)
   setAutoResizeMode(JTable.AUTO_RESIZE_OFF)
@@ -41,7 +41,7 @@ class PivotJTable(tableModel:TableModel, pivotTableView:PivotTableView, model:Pi
 
   // If the delete key is pressed when more than one cell is selected, delete all deletable cells.
   addKeyListener(new KeyAdapter {
-    override def keyPressed(e:KeyEvent) = {
+    override def keyPressed(e:KeyEvent) {
       if (e.getKeyCode == KeyEvent.VK_DELETE) {
         val selectedCells = getSelectedCells
         if (selectedCells.size < 2) {
@@ -54,11 +54,16 @@ class PivotJTable(tableModel:TableModel, pivotTableView:PivotTableView, model:Pi
               case tc:TableCell => tc.editable
             }
           }}
-          getModel.asInstanceOf[PivotJTableModel].deleteCells(editableCells)
+          tableModel.deleteCells(editableCells)
         }
       } else if (e.getKeyCode == KeyEvent.VK_S && (e.getModifiersEx & InputEvent.CTRL_DOWN_MASK) == InputEvent.CTRL_DOWN_MASK) {
         putClientProperty("JTable.autoStartsEdit", false)
         pivotTableView.publish(SavePivotEdits)
+      } else if (e.getKeyCode == KeyEvent.VK_DOWN) {
+        if (tableModel.popupShowing) {
+          e.consume()
+          tableModel.focusPopup()
+        }
       } else {
         putClientProperty("JTable.autoStartsEdit", true)
       }
@@ -146,12 +151,48 @@ class PivotJTable(tableModel:TableModel, pivotTableView:PivotTableView, model:Pi
     }
   })
 
-  override def createDefaultEditors = {
+  override def createDefaultEditors() {
     defaultEditorsByColumnClass = new UIDefaults(3, 0.75f)
     val temp = defaultEditorsByColumnClass.asInstanceOf[Hashtable[AnyRef,AnyRef]]
-    temp.put(classOf[Object], new GenericEditor())
+
+    val textField = new JTextField() {
+      override def processKeyBinding(ks:KeyStroke, e:KeyEvent, condition:Int, pressed:Boolean) = {
+        val r = super.processKeyBinding(ks, e, condition, pressed)
+        if (ks.getKeyCode == KeyEvent.VK_UNDEFINED) {
+          val focusOwner = if (isFocusOwner) {
+            Some(this)
+          } else if (PivotJTable.this.isFocusOwner) {
+            Some(PivotJTable.this)
+          } else {
+            None
+          }
+
+          val r = getEditingRow
+          val c = getEditingColumn
+
+          tableModel.textTyped(this, PivotJTable.this.getCellEditor, r, c, focusOwner, PivotJTable.this)
+        }
+        r
+      }
+
+      addKeyListener(new KeyAdapter {
+        override def keyPressed(e:KeyEvent) {
+          if (e.getKeyCode == KeyEvent.VK_DOWN && tableModel.popupShowing) {
+            e.consume()
+            tableModel.focusPopup()
+          }
+        }
+      })
+    }
+
+    temp.put(classOf[Object], new GenericEditor(textField))
     temp.put(classOf[Number], new NumberEditorExt(true))
     temp.put(classOf[Boolean], new BooleanEditor())
+  }
+
+  override def removeEditor() {
+    super.removeEditor()
+    tableModel.finishedEditing
   }
 
   def getSelectedCells = {
@@ -189,7 +230,7 @@ class PivotJTable(tableModel:TableModel, pivotTableView:PivotTableView, model:Pi
       if ((row != -1) && (col != -1)) {
         if (SwingUtilities.isLeftMouseButton(e)) {
           if (e.getClickCount() == 2) {
-            val tableSelection = getModel.asInstanceOf[PivotJTableModel].mapCellToFields(row, col)
+            val tableSelection = tableModel.mapCellToFields(row, col)
             if (tableSelection.nonEmpty) {
               val controlDown = (e.getModifiers & InputEvent.CTRL_MASK) == InputEvent.CTRL_MASK
               pivotTableView.publish(TableDoubleClickEvent(model.getCurrentPivotFieldsState.filters, tableSelection, controlDown))
@@ -212,7 +253,7 @@ class PivotJTable(tableModel:TableModel, pivotTableView:PivotTableView, model:Pi
                 if (axisCell.collapsible.isDefined) {
                   val iconWidth = MainTableCellRenderer.LeftIconWidth
                   if (point.x < (cellRect.x + iconWidth + 4)) {
-                    getModel.asInstanceOf[PivotJTableModel].collapseOrExpand(row, col, pivotTableView)
+                    tableModel.collapseOrExpand(row, col, pivotTableView)
                   }
                 }
               }
@@ -248,7 +289,7 @@ class PivotJTable(tableModel:TableModel, pivotTableView:PivotTableView, model:Pi
             if (deletableCells.nonEmpty) {
               val deleteActionName = if (deletableCells.size == 1) "Delete Cell" else "Delete Cells"
               val deleteAction = Action(deleteActionName) {
-                getModel.asInstanceOf[PivotJTableModel].deleteCells(deletableCells)
+                tableModel.deleteCells(deletableCells)
               }
               val deleteItem = new MenuItem(deleteAction)
               popup.add(deleteItem.peer)
@@ -257,7 +298,7 @@ class PivotJTable(tableModel:TableModel, pivotTableView:PivotTableView, model:Pi
             if (resetableCells.nonEmpty) {
               val resetActionName = if (resetableCells.size == 1) "Reset Cell" else "Reset Cells"
               val resetAction = Action(resetActionName) {
-                getModel.asInstanceOf[PivotJTableModel].resetCells(resetableCells)
+                tableModel.resetCells(resetableCells)
               }
               val resetItem = new MenuItem(resetAction)
               popup.add(resetItem.peer)
