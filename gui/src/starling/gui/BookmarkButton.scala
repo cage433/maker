@@ -50,26 +50,27 @@ class BookmarkButton(currentBookmark: => Bookmark, context:PageContext) extends 
           val bookmarkName = getText.trim()
           def saveBookmark(a:Unit) {
             val bookmark = GuiStarlingXStream.write(currentBookmark)
-            context.submit(SaveBookmarkRequest(BookmarkLabel(bookmarkName, bookmark)))
 
-            // This is a hack to save the report to the server as well as the bookmark.
-            currentBookmark match {
-              case rb:ReportBookmark => {
-                def saveReport(a:Unit) {
-                  val userReportData = rb.userReportData
-                  val pivotLayout = rb.pivotPageState.pivotFieldParams.pivotFieldState match {
-                    case None => throw new Exception("I should have a layout at this stage")
-                    case Some(pfs) => PivotLayout("special-" + bookmarkName, pfs, true,
-                      rb.pivotPageState.otherLayoutInfo, "special", Nil)
+            def saveOldReport(a:Unit) {
+              // This is a hack to save the report to the server as well as the bookmark.
+              currentBookmark match {
+                case rb:ReportBookmark => {
+                  def saveReport(a:Unit) {
+                    val userReportData = rb.userReportData
+                    val pivotLayout = rb.pivotPageState.pivotFieldParams.pivotFieldState match {
+                      case None => throw new Exception("I should have a layout at this stage")
+                      case Some(pfs) => PivotLayout(bookmarkName, pfs, true,
+                        rb.pivotPageState.otherLayoutInfo, "special", Nil)
+                    }
+                    context.submit(SaveReportRequest(bookmarkName, userReportData, pivotLayout, true, true, true), onComplete = (u:Unit) => {clearUp()})
                   }
-                  context.submit(SaveReportRequest(bookmarkName, userReportData, pivotLayout, true, true, true))
+                  context.submit(DeleteReportRequest(bookmarkName), saveReport, keepScreenLocked = true)
                 }
-                context.submit(DeleteReportRequest(bookmarkName), saveReport, keepScreenLocked = true)
+                case _ => clearUp()
               }
-              case _ =>
             }
 
-            clearUp()
+            context.submit(SaveBookmarkRequest(BookmarkLabel(bookmarkName, bookmark)), saveOldReport, keepScreenLocked = true)
           }
           context.submit(DeleteBookmarkRequest(bookmarkName), saveBookmark)
         }
@@ -112,22 +113,22 @@ class BookmarkButton(currentBookmark: => Bookmark, context:PageContext) extends 
             if (!currentBookmarkNames.contains(bookmarkName)) {
               val bookmark = GuiStarlingXStream.write(currentBookmark)
               val bookmarkLabel = BookmarkLabel(bookmarkName, bookmark)
-              context.submit(SaveBookmarkRequest(bookmarkLabel))
 
-              currentBookmark match {
-                case rb:ReportBookmark => {
-                  val userReportData = rb.userReportData
-                  val pivotLayout = rb.pivotPageState.pivotFieldParams.pivotFieldState match {
-                    case None => throw new Exception("I should have a layout at this stage")
-                    case Some(pfs) => PivotLayout("special-" + bookmarkName, pfs, true,
-                      rb.pivotPageState.otherLayoutInfo, "special", Nil)
+              def saveReport(a:Unit) {
+                currentBookmark match {
+                  case rb:ReportBookmark => {
+                    val userReportData = rb.userReportData
+                    val pivotLayout = rb.pivotPageState.pivotFieldParams.pivotFieldState match {
+                      case None => throw new Exception("I should have a layout at this stage")
+                      case Some(pfs) => PivotLayout(bookmarkName, pfs, true,
+                        rb.pivotPageState.otherLayoutInfo, "special", Nil)
+                    }
+                    context.submit(SaveReportRequest(bookmarkName, userReportData, pivotLayout, true, true, true), onComplete = (u:Unit) => {clearUp()})
                   }
-                  context.submit(SaveReportRequest(bookmarkName, userReportData, pivotLayout, true, true, true))
+                  case _ => clearUp()
                 }
-                case _ =>
               }
-
-              clearUp()
+              context.submit(SaveBookmarkRequest(bookmarkLabel), saveReport, keepScreenLocked = true)
             } else {
               // Show a replace dialog.
               holderPanel.update(replacePanel, true)
@@ -208,9 +209,19 @@ class BookmarkButton(currentBookmark: => Bookmark, context:PageContext) extends 
     case ButtonClicked(b) => {
       if (knownBookmark0) {
         val bookmarkName = context.localCache.bookmarks.find(_.bookmark == currentBookmark).get.name
+
+        def deleteOldReport() {
+          currentBookmark match {
+            case rb:ReportBookmark => {
+              context.submit(DeleteReportRequest(bookmarkName), onComplete = (u:Unit) => {clearUp()})
+            }
+            case _ => clearUp()
+          }
+        }
+
         context.submitYesNo("Delete Bookmark?",
           "Are you sure you want to delete the \"" + bookmarkName + "\" bookmark?",
-          DeleteBookmarkRequest(bookmarkName), (u:Unit) => {false}, (u:Unit) => {})
+          DeleteBookmarkRequest(bookmarkName), awaitRefresh = (u:Unit) => {false}, onComplete = (u:Unit) => {deleteOldReport}, keepScreenLocked = true)
       } else {
         val oldDefaultButton = context.getDefaultButton
         savePanel.oldDefaultButton = oldDefaultButton
@@ -252,7 +263,10 @@ case class SaveReportRequest(reportName:String, userReportData:UserReportData, p
 }
 
 case class DeleteReportRequest(reportName:String) extends SubmitRequest[Unit] {
-  def submit(server:StarlingServer) {server.deleteUserReport(reportName)}
+  def submit(server:StarlingServer) {
+    server.deleteLayout(reportName)
+    server.deleteUserReport(reportName)
+  }
 }
 
 class BookmarkDropDownButton(context:PageContext) extends Button {

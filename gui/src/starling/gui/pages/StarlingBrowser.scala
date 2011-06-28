@@ -741,6 +741,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
           case SuccessSubmitResponse(data) => {
             timer.stop
             onComplete(data.asInstanceOf[R])
+            starlingBrowserUI.clearContentPanel
             if (!keepScreenLocked) {
               setScreenLocked(false)
             }
