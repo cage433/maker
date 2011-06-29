@@ -290,6 +290,36 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
       // Using a zero row index here as it doesn't really matter as long as it is the correct column.
       val rowHeaderField = rowHeaderData0(0)(c).value.field
       val parser = editableInfo.get.editableKeyFields(rowHeaderField)
+      val t = textField.getText.toLowerCase
+      val vals = parser.acceptableValues
+      if (vals.nonEmpty) {
+        val filteredVals = vals.filter(_.toLowerCase.startsWith(t))
+        if (filteredVals.nonEmpty) {
+          val sortedVals = filteredVals.toList.sortWith(_.toLowerCase < _.toLowerCase)
+          val currentListData = popupListView.listData.toList
+          if (currentListData != sortedVals) {
+            popupListView.listData = sortedVals
+          }
+          if (!popupMenu.isShowing) {
+            val selectionAtTimeOfPopup = textField.getSelectedText
+            val caretPositionAtTimeOfPopup = textField.getCaretPosition
+
+            popupMenu.setMinimumSize(viewScrollPane.preferredSize)
+            popupMenu.show(textField, cellEditor, tableFrom, textField, 0, textField.getSize().height-1)
+            focusOwner.map(_.requestFocusInWindow())
+
+            onEDT(onEDT({
+              val currentSelection = textField.getSelectedText
+              if (selectionAtTimeOfPopup == null && currentSelection != null) {
+                // It is likely we are on windows and we need to do something funky so that we don't select the whole text field.
+                val l = textField.getText.length()
+                val posToUse = if (caretPositionAtTimeOfPopup <= l) caretPositionAtTimeOfPopup else l
+                textField.setCaretPosition(posToUse)
+              }
+            }))
+          }
+        }
+      }
     }
     def finishedEditing() {popupMenu setVisible false}
     def popupShowing = popupMenu.isShowing
