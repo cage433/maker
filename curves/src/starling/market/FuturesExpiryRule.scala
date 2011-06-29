@@ -67,13 +67,20 @@ trait MonthFuturesExpiryRule extends FuturesExpiryRule {
 }
 
 abstract class FuturesExpiryRules(businessCalendars: BusinessCalendars) {
-  def rule(eaiQuoteID: Int): FuturesExpiryRule = ruleOption(eaiQuoteID) match {
-    case Some(r) => r
-    case None => throw new Exception("No rule for eaiQuoteID: " + eaiQuoteID)
+  def rule(eaiQuoteID: Int): Option[FuturesExpiryRule] = {
+    val rule = ruleOption(eaiQuoteID)
+    eaiQuoteID match {
+      case 890 => rule.map(ICE_WTI) // EAI is missing some older ICE WTI rules
+      case _ => rule
+    }
   }
-  def ruleOption(eaiQuoteID: Int): Option[FuturesExpiryRule]
 
-  def ruleOrEmptyRule(eaiQuoteID: Int, marketName: String): FuturesExpiryRule = ruleOption(eaiQuoteID) match {
+  /**
+   * don't call this method directly, call 'rule' above as it has overrides in it.
+   */
+  protected def ruleOption(eaiQuoteID: Int): Option[FuturesExpiryRule]
+
+  def ruleOrEmptyRule(eaiQuoteID: Int, marketName: String): FuturesExpiryRule = rule(eaiQuoteID) match {
     case Some(r) => r
     case None => NoRule
   }
@@ -82,6 +89,24 @@ abstract class FuturesExpiryRules(businessCalendars: BusinessCalendars) {
 
   val SHANGHAI = new ShanghaiExpiryRule
   val SHANGHAI_FUEL_OIL = new ShanghaiFuelOilExpiryRule
+
+  /**
+   * Tries to use DB for expiry rules but falls back on definition
+   */
+  private def ICE_WTI(futuresExpiryRule: FuturesExpiryRule) = new MonthFuturesExpiryRule {
+    val name = futuresExpiryRule.name
+
+    def expiryDayOfMonth(m: Month) = try {
+      futuresExpiryRule.expiryDay(m)
+    } catch {
+      case _:NoExpiryDataException => {
+        //https://www.theice.com/productguide/ProductDetails.shtml?specId=908
+        lastTradingDayOfMonth(m).addBusinessDays(businessCalendars.ICE, -2)
+      }
+    }
+
+    def lastTradingDayOfMonth(m: Month): Day = futuresExpiryRule.lastTradingDay(m)
+  }
 
   val LME = new FuturesExpiryRule {
     val name = "LME"
@@ -243,7 +268,7 @@ abstract class FuturesExpiryRules(businessCalendars: BusinessCalendars) {
 
   val EAIRuleRegex = """EAIExpiryRule\((\d+)\)""".r
   def fromName(name: String) = name match {
-    case EAIRuleRegex(quoteID) => ruleOption(quoteID.toInt)
+    case EAIRuleRegex(quoteID) => rule(quoteID.toInt)
     case _ => all.findEnsureOnlyOne(_.name.equalsIgnoreCase(name))
   }
 }
