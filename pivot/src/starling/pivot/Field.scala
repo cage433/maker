@@ -145,9 +145,12 @@ object PivotFormatter {
         "E (" + pq.errors.size + ")"
       }
     } else {
-      (for ((uom, value) <- pq.values) yield {
+      val warning = pq.warning.isDefined
+      val l = pq.values.size - 1
+      (for (((uom, value), i) <- pq.values.zipWithIndex) yield {
         val format = formatInfo.decimalPlaces.format(uom)
-        value.format(format)  + (if (includeUOM) uom else "")
+        val space = if (warning && i == l) false else true
+        value.format(format, space)  + (if (includeUOM) uom else "")
       }).mkString(", ")
     }
   }
