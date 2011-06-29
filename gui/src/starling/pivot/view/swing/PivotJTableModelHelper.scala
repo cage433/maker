@@ -621,6 +621,15 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
     reactions += {
       case KeyPressed(_,scala.swing.event.Key.Enter,_,_) => selectText(selection.items.head)
       case KeyPressed(_,scala.swing.event.Key.Tab,_,_) => selectText(selection.items.head)
+      case e@KeyPressed(_,scala.swing.event.Key.BackSpace,_,_) => e.consume()
+      case e@KeyPressed(_,scala.swing.event.Key.Escape,_,_) => {
+        e.consume()
+        selectIndices(-1)
+        popupMenu.editor.requestFocusInWindow()
+        onEDT({
+          popupMenu.editor.setCaretPosition(popupMenu.editor.getText.length())
+        })
+      }
       case KeyPressed(_,scala.swing.event.Key.Up,_,_) if selection.indices.head == 0 => {
         selectIndices(-1)
         popupMenu.editor.requestFocusInWindow()
