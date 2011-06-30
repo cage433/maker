@@ -1,21 +1,30 @@
 import sbt._
-import java.io.File
+import java.io.{File, FileInputStream}
+import java.util.{Properties => JProperties}
+
 
 class Starling(info : ProjectInfo) extends ParentProject(info) {
 
   def starlingProject(name : String, dependencies : Project*) = project(name, name, new StarlingProject(name, _), dependencies :_*)
   def swingStarlingProject(name : String, dependencies : Project*) = project(name, name, new SwingStarlingProject(name, _), dependencies :_*)
 
-  lazy val scalaModelWithPersistence = project("titan-scala-model-with-persistence", "ScalaModelWithPersistence", new ScalaModelWithPersistence(_))
-  // Modules organised by layer
   lazy val bouncyrmi = swingStarlingProject("bouncyrmi")
   lazy val utils = starlingProject("utils")
+  lazy val scalaModelWithPersistence = project("titan-scala-model-with-persistence", "ScalaModelWithPersistence", new ScalaModelWithPersistence(_))
 
   lazy val auth = starlingProject("auth", utils, bouncyrmi)
   lazy val concurrent = starlingProject("concurrent", utils)
   lazy val daterange = starlingProject("daterange", utils)
   lazy val quantity = starlingProject("quantity", utils)
-  lazy val starlingApi = starlingProject("starling.api", bouncyrmi)
+  lazy val starlingApi = {
+    // until building the EDM source is fast, or the model is replaced entirely, the following hack
+    // is used to prevent non-FC2 builds from compiling the model - which takes a few minutes
+    val name = "starling.api"
+    if (starlingProperties.getOrElse("ServerType", "Dev") == "FC2")
+      project(name, name, {info : ProjectInfo => new StarlingProject(name, info)}, bouncyrmi, scalaModelWithPersistence)
+    else
+      project(name, name, new StarlingProject(name, _){override val unmanagedClasspath = super.unmanagedClasspath +++ ("scala-model-jars" / "scala-model-with-persistence.jar")}, bouncyrmi)
+  }
 
   lazy val loopyxl = starlingProject("loopyxl", bouncyrmi, auth)
 
@@ -37,8 +46,6 @@ class Starling(info : ProjectInfo) extends ParentProject(info) {
   lazy val services = project("services", "services", new Services(_), databases, concurrent, utils, loopyxl, starlingApi)
 
   lazy val devlauncher = starlingProject("dev.launcher", services, gui)
-
-//  lazy val webServices = project("starlingWebProject", "starlingWebProject", new DefaultWebProject(_), services)
 
   lazy val starling = this
 
@@ -133,6 +140,24 @@ class Starling(info : ProjectInfo) extends ParentProject(info) {
       (parentPath ** "*.rb")
     }
 
+  }
+
+  lazy val starlingProperties = {
+    val propsFile = new File("props.conf")
+    val p = new JProperties()
+    if(propsFile.exists) {
+      p.load(new FileInputStream(propsFile))
+    }
+    // Nastiness as SBT uses scala 2.7
+    val javaMap = p.asInstanceOf[java.util.Map[String,String]]
+    var result = Map[String, String]()
+    val iter = javaMap.keySet.iterator
+    while (iter.hasNext){
+      val k = iter.next
+      result = result + (k -> javaMap.get(k))
+    }
+    result
+    //Map() ++ JavaConversions.asScalaMap(p.asInstanceOf[java.util.Map[String,String]])
   }
 }
 

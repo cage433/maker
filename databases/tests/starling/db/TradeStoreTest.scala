@@ -23,7 +23,7 @@ import starling.pivot.{PivotTreePath, SomeSelection, Field}
 import starling.eai.{Book, EAIStrategyDB, TreeID}
 import org.mockito.Mockito._
 import org.mockito.Matchers._
-import org.testng.annotations.{AfterTest, BeforeTest, Test}
+import org.testng.annotations.{AfterMethod, BeforeMethod, Test}
 import java.sql.Connection
 
 class EAITradeStoreTest extends TestMarketSpec {
@@ -33,7 +33,7 @@ class EAITradeStoreTest extends TestMarketSpec {
   var db : RichDB = _
   var connection : Connection = _
 
-  @BeforeTest
+  @BeforeMethod
   def initialise {
     connection = DBTest.getConnection("jdbc:h2:mem:EAITradeStoreTest;create=true")
     val ds = new SingleConnectionDataSource(connection, true)
@@ -45,7 +45,7 @@ class EAITradeStoreTest extends TestMarketSpec {
     }
   }
 
-  @AfterTest
+  @AfterMethod
   def tearDown() {
     connection.close()
   }

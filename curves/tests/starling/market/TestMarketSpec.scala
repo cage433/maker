@@ -2,7 +2,7 @@ package starling.market
 
 import starling.calendar.{HolidayTablesFactory, BusinessCalendars}
 import starling.daterange.{TestHolidays, Day, Month, DateRange}
-import org.testng.annotations.{BeforeTest, AfterTest, AfterSuite, BeforeSuite}
+import org.testng.annotations.{AfterTest, AfterSuite, BeforeSuite}
 import org.scalatest.testng.TestNGSuite
 
 trait TestMarketSpec extends ExpiryRulesSpec with TestNGSuite {
