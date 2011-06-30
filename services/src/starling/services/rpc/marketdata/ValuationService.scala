@@ -8,15 +8,16 @@ import starling.gui.api.MarketDataIdentifier._
 import starling.curves.{ClosesEnvironmentRule, Environment}
 import starling.gui.api.{MarketDataIdentifier, PricingGroup}
 import org.joda.time.LocalDate
-import starling.services.StarlingInit
-import com.trafigura.services.valuation._
 import starling.utils.{Log, Stopwatch}
-import com.trafigura.services.valuation.CostsAndIncomeQuotaValuationServiceResults
 import com.trafigura.edm.trades.{CompletedTradeTstate, TradeTstateEnum, Trade => EDMTrade, PhysicalTrade => EDMPhysicalTrade}
 import com.trafigura.shared.events.{UpdatedEventVerb, NewEventVerb, Event}
 import com.trafigura.services.rabbit.{RabbitPublisher, RabbitListener, RabbitConnector}
 import com.rabbitmq.client.AMQP.BasicProperties
 import com.trafigura.events.{EventDemultiplexer, DemultiplexerClient}
+import starling.services.{Server, StarlingInit}
+import com.trafigura.tradinghub.support.ServiceFilter
+import com.trafigura.services.valuation._
+import com.trafigura.edm.valuation.{ValuationServiceResourceStub, ValuationService => EdmValuationService, CostsAndIncomeQuotaValuationServiceResults => EdmCostsAndIncomeQuotaValuationServiceResults }
 
 /**
  * Valuation service implementations
@@ -157,13 +158,16 @@ class ValuationService(marketDataStore: MarketDataStore, val props: Props) exten
   }
 }
 
-/*
-class ValuationServiceResourceStubEx {
-  extends ValuationServiceResourceStub(new ValuationService(Server.server.marketDataStore), List[ServiceFilter]()) {
+class ValuationServiceResourceStubEx
+  extends ValuationServiceResourceStub(new ValuationServiceRpc(Server.server.marketDataStore, Server.server.props, Server.server.valuationService), new java.util.ArrayList[ServiceFilter]()) {
 
   override def requireFilters(filterClasses:String*) {}
 }
-*/
+
+class ValuationServiceRpc(marketDataStore: MarketDataStore, val props: Props, valuationService : ValuationService) extends EdmValuationService {
+
+  def valueAllQuotas(maybeSnapshotIdentifier: String): EdmCostsAndIncomeQuotaValuationServiceResults = null
+}
 
 object Rabbit {
 

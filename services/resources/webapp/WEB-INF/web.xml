@@ -6,12 +6,10 @@
 
     <display-name>Starling EDM Service</display-name>
 
-<!--
     <context-param>
         <param-name>resteasy.resources</param-name>
         <param-value>starling.services.rpc.marketdata.ValuationServiceResourceStubEx</param-value>
     </context-param>
--->
 
     <listener>
         <listener-class>
