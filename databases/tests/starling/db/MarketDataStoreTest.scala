@@ -3,8 +3,6 @@ package starling.db
 import java.sql.Connection
 import org.scalatest.matchers.ShouldMatchers
 import org.springframework.jdbc.datasource.SingleConnectionDataSource
-import org.testng.annotations.{AfterMethod, BeforeMethod, Test}
-
 import starling.pivot.model.PivotTableModel
 import starling.quantity.{Quantity, UOM}
 import starling.daterange._
@@ -16,50 +14,47 @@ import starling.richdb.{RichResultSetRowFactory, RichDB}
 import collection.immutable.{Nil, Map}
 import starling.utils.{StarlingTest, Broadcaster}
 import starling.market.{TestMarketSpec, Market}
-
+import org.testng.annotations._
 
 class MarketDataStoreTest extends TestMarketSpec with ShouldMatchers {
 
-//  lazy val marketDataStore = new DBMarketDataStore(db, Map(), Broadcaster.Null)
-//
-//  var db : RichDB = _
-//  var connection : Connection = _
-//
-//  @BeforeMethod
-//  def initialise {
-//    connection = DBTest.getConnection("jdbc:h2:mem:marketDataStoreTest;create=true")
-//    val ds = new SingleConnectionDataSource(connection, true)
-//    db = new TestDB(ds, new RichResultSetRowFactory)
-//    db.inTransaction{
-//      writer => {
-//        writer.update(create_table)
-//      }
-//    }
-//  }
-//
-//  @AfterMethod
-//  def tearDown() {
-//    connection.close()
-//  }
+  lazy val marketDataStore = new DBMarketDataStore(db, Map(), Broadcaster.Null)
 
-  private def makeDB(name : String) = {
-    //val connection = DBTest.getConnection("jdbc:h2:mem:marketDataStoreTest" + name + ";create=true")
-    val connection = DBTest.getConnection("jdbc:h2:mem:")
+  var db : RichDB = _
+  var connection : Connection = _
+
+  @BeforeTest
+  def initialise {
+    connection = DBTest.getConnection("jdbc:h2:mem:marketDataStoreTest;create=true")
     val ds = new SingleConnectionDataSource(connection, true)
-    val db = new TestDB(ds, new RichResultSetRowFactory)
+    db = new TestDB(ds, new RichResultSetRowFactory)
     db.inTransaction{
       writer => {
         writer.update(create_table)
       }
     }
-    (db, connection, new DBMarketDataStore(db, Map(), Broadcaster.Null))
+  }
+
+  @AfterTest
+  def tearDown() {
+    connection.close()
+  }
+
+  private def clearMarketData(){
+    db.inTransaction{
+      writer => {
+        writer.update(clear_table)
+      }
+    }
+
   }
   @Test
   def testDeletingPricesIsPersistent() {
-    val (db, connection, marketDataStore) = makeDB("testDeletingPricesIsPersistent")
+    clearMarketData()
     val observationPoint = ObservationPoint(Day(2011, 1, 1), ObservationTimeOfDay.Default)
     val key = SpotFXDataKey(UOM.EUR)
     val timedKey = TimedMarketDataKey(observationPoint, key)
+    clearMarketData()
 
     val data1 = SpotFXData(Quantity(1, UOM.EUR / UOM.USD))
 
@@ -92,12 +87,11 @@ class MarketDataStoreTest extends TestMarketSpec with ShouldMatchers {
     priceData should equal (Nil)
 
     marketDataStore.query(marketDataIdentifier, PriceDataType) should equal (Nil)
-    connection.close
   }
 
   @Test
   def testWritingSinglePriceIsPersistent() {
-    val (db, connection, marketDataStore) = makeDB("testWritingSinglePriceIsPersistent")
+    clearMarketData()
     val observationPoint = ObservationPoint(Day(2011, 1, 1), ObservationTimeOfDay.Default)
     val key = SpotFXDataKey(UOM.EUR)
     val timedKey = TimedMarketDataKey(observationPoint, key)
@@ -111,12 +105,11 @@ class MarketDataStoreTest extends TestMarketSpec with ShouldMatchers {
     marketDataStore.save(MarketDataSet.Starling, timedKey, data2)
     val read2:SpotFXData = marketDataStore.readLatest(MarketDataSet.Starling, timedKey).get
     read2 should equal( data2 )
-    connection.close
   }
 
   @Test
   def testOverridenPricesAreMerged() {
-    val (db, connection, marketDataStore) = makeDB("testOverridenPricesAreMerged")
+    clearMarketData()
     val observationPoint = ObservationPoint(Day(2011, 1, 1), ObservationTimeOfDay.Default)
     val key = PriceDataKey(Market.LME_LEAD)
     val timedKey = TimedMarketDataKey(observationPoint, key)
@@ -133,13 +126,13 @@ class MarketDataStoreTest extends TestMarketSpec with ShouldMatchers {
 
     val expected = PriceData.create(List(Month(2010, 1) -> 50.0, Month(2010, 2) -> 80.0, Month(2010, 3) -> 70.0), key.market.priceUOM)
     read should be === expected
-    connection.close
+//    connection.close
   }
 
 
   @Test
   def testPivotOverObservationTime() {
-    val (db, connection, marketDataStore) = makeDB("testPivotOverObservationTime")
+    clearMarketData()
     val observationPoint = ObservationPoint(Day(2011, 1, 1), ObservationTimeOfDay.Default)
     val observationPoint2 = ObservationPoint(Day(2011, 1, 1), ObservationTimeOfDay.LMEClose)
     val key = SpotFXDataKey(UOM.EUR)
@@ -177,7 +170,6 @@ class MarketDataStoreTest extends TestMarketSpec with ShouldMatchers {
     )
 
     check(pfs2, ",Default (EUR per USD),LME Close (EUR per USD)\nCurrency,Rate,Rate\nEUR,3.0000 ,7.0000 ")
-    //connection.close
   }
 
   private val create_table = """
@@ -194,5 +186,8 @@ class MarketDataStoreTest extends TestMarketSpec with ShouldMatchers {
     )
   """
 
+  private val clear_table = """
+    truncate table MarketData
+  """
 }
 
