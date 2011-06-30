@@ -55,13 +55,6 @@ object MtmPivotReport extends PivotReportType {
         case _ => "E"
       }
     },
-    new PivotReportField[Mtm]("Amount") {
-      def value(row: Mtm) = row.asset match {
-        case Left(asset) => PivotQuantity(asset.amount * row.scale)
-        case Right(e) => new PivotQuantity(e)
-      }
-      override def pivotFieldDetails = new SumPivotQuantityFieldDetails(name)
-    },
     new PivotReportField[Mtm](pnlFieldName) {
       def value(row: Mtm) = row.asset match {
         case Left(asset) => PivotQuantity(asset.mtm * row.scale)
