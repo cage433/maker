@@ -23,9 +23,9 @@ import com.trafigura.events.{EventDemultiplexer, DemultiplexerClient}
  */
 class ValuationService(marketDataStore: MarketDataStore, val props: Props) extends TacticalRefData(props: Props) with ValuationServiceApi {
 
-  val eventHandler = new EventHandler
+  //val eventHandler = new EventHandler
 
-  Rabbit.eventDemux.addClient(eventHandler)
+  //Rabbit.eventDemux.addClient(eventHandler)
 
   /**
    * value all edm trade quotas (that are completed) and return a structure containing a
@@ -218,11 +218,11 @@ object Rabbit {
     rabbitmq_exclusive,
     false)
 
-  rabbitListener.connect()
-  rabbitEventPublisher.connect()
+  //rabbitListener.connect()
+  //rabbitEventPublisher.connect()
 
   // the demux for listener clients...
-  lazy val eventDemux = new EventDemultiplexer(serviceName, rabbitListener)
+  //lazy val eventDemux = new EventDemultiplexer(serviceName, rabbitListener)
 
   
   <!--
