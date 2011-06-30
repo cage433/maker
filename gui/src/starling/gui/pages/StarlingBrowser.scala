@@ -23,9 +23,9 @@ import org.jboss.netty.handler.codec.frame.TooLongFrameException
 import PageLogger.logPageView
 import net.miginfocom.layout.LinkHandler
 import starling.utils.{Log, StackTraceToString}
-import starling.bouncyrmi.{ServerUpgradeException, OfflineException}
 import swing.event.{UIElementResized, MouseClicked, ButtonClicked}
 import java.lang.reflect.UndeclaredThrowableException
+import starling.bouncyrmi.{ClientOfflineException, ServerUpgradeException, OfflineException}
 
 /**
  * All on the swing thread
@@ -919,6 +919,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
           // If we have an error and apply special processing here if required, otherwise display page as desired.
           pageResponse match {
             case FailurePageResponse(t:OfflineException) => showError("Cannot Connect to Starling", "Starling is currently offline, please try again later or contact a developer.")
+            case FailurePageResponse(t:ClientOfflineException) => showError("Not connected to Starling", "The client can't connect to Starling, trying restarting the client, if that fails contact a developer.")
             case FailurePageResponse(t:ServerUpgradeException) => showError("Starling has been Upgraded", "Starling has been upgraded. Please restart your gui.")
             case FailurePageResponse(t:Exception) => t match {
               case e: UndeclaredThrowableException => showError("Error", e.getUndeclaredThrowable.getMessage)
