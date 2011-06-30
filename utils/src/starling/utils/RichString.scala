@@ -57,5 +57,7 @@ trait RichString {
 
     def containsOneOf(searchFor: String*) = searchFor.exists(s.contains(_))
     def emptyTo(alternative: String) = if (s.trim.isEmpty) alternative else s
+
+    def uncapitalize: String = if (s.isEmpty) s else s.charAt(0).toLower + s.substring(1)
 	}
 }
