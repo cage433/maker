@@ -7,7 +7,7 @@ import RichJValue._
 
 case class JsonSerializer(clazz: Class[_])(implicit formats: Formats) {
   def serialize(value: Any): String = Printer.compact(render(toJValue(value)))
-  def toJValue(value: Any): JValue = Extraction.decompose(value).mapFieldNames(_.capitalize)
+  def toJValue(value: Any): JValue = Extraction.decompose(value).capitalize
 }
 
 object JsonSerializer {

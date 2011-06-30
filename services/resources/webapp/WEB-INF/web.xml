@@ -9,6 +9,7 @@
     <context-param>
         <param-name>resteasy.resources</param-name>
         <param-value>starling.services.rpc.valuation.ValuationServiceResourceStubEx</param-value>
+        <param-value>starling.services.rpc.marketdata.MarketDataServiceResourceStubEx</param-value>
     </context-param>
 
     <listener>
