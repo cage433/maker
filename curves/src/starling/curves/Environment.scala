@@ -147,7 +147,7 @@ case class Environment(
      val price = if (observationDay.endOfDay <= marketDay) {
        indexFixing(index, observationDay)
      } else {
-       instrumentLevelEnv.indexForwardPrice(index, observationDay, ignoreShiftsIfPermitted = false)
+       indexForwardPrice(index, observationDay, ignoreShiftsIfPermitted = false)
      }
      price
   }
@@ -231,6 +231,11 @@ case class Environment(
   def indexFixing(index : SingleIndex, fixingDay : Day) : Quantity = {
     instrumentLevelEnv.fixing(index, fixingDay)
   }
+
+  def indexForwardPrice(index : SingleIndex, observationDay : Day, ignoreShiftsIfPermitted : Boolean = false) : Quantity = {
+    instrumentLevelEnv.indexForwardPrice(index, observationDay, ignoreShiftsIfPermitted)
+  }
+
 
   /**
    * Vols
