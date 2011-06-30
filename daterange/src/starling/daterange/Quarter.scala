@@ -50,7 +50,7 @@ object Quarter extends TenorType {
   def difference(to: Quarter, from: Quarter) = to - from
 
   val yearFirstQuarterRegex = new Regex("(?i)(.*)[ -]?q([1-4])")
-  val yearLastQuarterRegex = new Regex("(?i)q([1-4])[ -]?(.*)")
+  val yearLastQuarterRegex = new Regex("(?i)q([1-4])[ -]?(.{2,})")
 
   def parse(s : String) = s match {
     case yearFirstQuarterRegex(yString, qString) => {

@@ -6,6 +6,7 @@ class Starling(info : ProjectInfo) extends ParentProject(info) {
   def starlingProject(name : String, dependencies : Project*) = project(name, name, new StarlingProject(name, _), dependencies :_*)
   def swingStarlingProject(name : String, dependencies : Project*) = project(name, name, new SwingStarlingProject(name, _), dependencies :_*)
 
+  lazy val scalaModelWithPersistence = project("titan-scala-model-with-persistence", "ScalaModelWithPersistence", new ScalaModelWithPersistence(_))
   // Modules organised by layer
   lazy val bouncyrmi = swingStarlingProject("bouncyrmi")
   lazy val utils = starlingProject("utils")
@@ -92,6 +93,16 @@ class Starling(info : ProjectInfo) extends ParentProject(info) {
       testClasspath +++ testCompilePath, 
       Array("-listener", "starling.utils.SBTTestListener", "-testclass", className)
     ) dependsOn(testCompile)
+
+    lazy val writeClasspathScript = task { 
+      // writes a shell script that sets the classpath so I can run from the command line, compile in Vim etc
+      import java.io._
+      val file = new PrintWriter(new FileOutputStream(new File("set-classpath.sh")))
+      file.println("export CLASSPATH=" + services.testClasspath.getFiles.toList.mkString(":"))
+      file.println("export JAVA_OPTS='-server -XX:MaxPermSize=512m -Xss128k -Xmx6000m'")
+      file.close()
+      None
+    }
   }
 
   class Services(info : ProjectInfo) extends StarlingProject("services", info){
@@ -107,14 +118,19 @@ class Starling(info : ProjectInfo) extends ParentProject(info) {
       Array[String]()
     ) dependsOn(compile) }
 
-    lazy val writeClasspathScript = task { 
-      // writes a shell script that sets the classpath so I can run from the command line, compile in Vim etc
-      import java.io._
-      val file = new PrintWriter(new FileOutputStream(new File("set-classpath.sh")))
-      file.println("export CLASSPATH=" + services.testClasspath.getFiles.toList.mkString(":"))
-      file.println("export JAVA_OPTS='-server -XX:MaxPermSize=512m -Xss128k -Xmx6000m'")
-      file.close()
-      None
+
+  }
+
+
+  class ScalaModelWithPersistence(info: ProjectInfo) extends DefaultProject(info) with ModelSourceGeneratingProject with ModelDependencies{
+
+    private lazy val projectRoot = path(".").asFile.toString
+
+    override protected val generateModelMainSourceCmd = Some(new java.lang.ProcessBuilder("ruby", "model/bindinggen.rb", "-o", modelMainScalaSourcePath.projectRelativePath, "-b", "model/scala-model-with-persistence/src/codegen/bindings.rb", "model/master-model.rb") directory (new File(projectRoot)))
+
+    lazy val rubyModelPathFinder = {
+      val parentPath = Path.fromFile(new java.io.File(projectRoot + "/model/"))
+      (parentPath ** "*.rb")
     }
 
   }
