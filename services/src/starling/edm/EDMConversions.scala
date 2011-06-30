@@ -11,6 +11,9 @@ import com.trafigura.edm.shared.types.{Currency => TitanCurrency, Date => TitanD
 
 import com.trafigura.services._
 import com.trafigura.services.marketdata.Maturity
+import valuation.CostsAndIncomeQuotaValuationServiceResults
+import com.trafigura.edm.valuation.{CostsAndIncomeQuotaValuation => EdmCostsAndIncomeQuotaValuation, EitherListCostsAndIncomeQuotaValuationOrErrorString, TradeValuationTuple, CostsAndIncomeQuotaValuationServiceResults => EdmCostsAndIncomeQuotaValuationServiceResults}
+
 
 case class InvalidUomException(msg : String) extends Exception(msg)
 
@@ -116,7 +119,25 @@ object EDMConversions {
     }.toMap
     TitanSerializableQuantity(q.value, uomMap)
   }
-  
+
+
+  implicit def toTitanCostsAndIncomeQuotaValuationServiceResults(valuationResults : CostsAndIncomeQuotaValuationServiceResults) : EdmCostsAndIncomeQuotaValuationServiceResults = {
+    EdmCostsAndIncomeQuotaValuationServiceResults(
+      valuationResults.snapshotID,
+      valuationResults.tradeResults.map(tr => {
+        TradeValuationTuple(
+          tr._1,
+          tr._2 match {
+            case Left(vs) => EitherListCostsAndIncomeQuotaValuationOrErrorString(
+              vs.map(v => EdmCostsAndIncomeQuotaValuation(
+                v.quotaID, v.snapshotID, v.quantity, v.value, v.purchasePrice, v.salePrice, v.benchmark, v.freightParity, v.isComplete)), null)
+            case Right(s) => EitherListCostsAndIncomeQuotaValuationOrErrorString(List(), s)
+          }
+        )
+      }).toList
+    )
+  }
+
   val starlingUomSymbolToEdmUom = Map(
     aed -> "AED",
     gbp -> "GBP",

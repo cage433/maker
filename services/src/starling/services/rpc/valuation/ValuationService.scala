@@ -19,6 +19,7 @@ import com.trafigura.tradinghub.support.ServiceFilter
 import com.trafigura.services.valuation._
 import com.trafigura.edm.valuation.{ValuationServiceResourceStub, ValuationService => EdmValuationService, CostsAndIncomeQuotaValuationServiceResults => EdmCostsAndIncomeQuotaValuationServiceResults }
 import starling.services.rpc.refdata.TacticalRefData
+import starling.edm.EDMConversions._
 
 /**
  * Valuation service implementations
@@ -175,7 +176,7 @@ class ValuationServiceRpc(marketDataStore: MarketDataStore, val props: Props, va
 
     Log.info("got valuationResult %d".format(valuationResult))
 
-    null
+    valuationResult
   }
 }
 
