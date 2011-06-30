@@ -157,6 +157,14 @@ class ValuationService(marketDataStore: MarketDataStore, val props: Props) exten
   }
 }
 
+/*
+class ValuationServiceResourceStubEx {
+  extends ValuationServiceResourceStub(new ValuationService(Server.server.marketDataStore), List[ServiceFilter]()) {
+
+  override def requireFilters(filterClasses:String*) {}
+}
+*/
+
 object Rabbit {
 
   val rabbitmq_host="louis-dev-ubuntu"
