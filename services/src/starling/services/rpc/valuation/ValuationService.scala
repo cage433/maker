@@ -167,7 +167,16 @@ class ValuationServiceResourceStubEx
 
 class ValuationServiceRpc(marketDataStore: MarketDataStore, val props: Props, valuationService : ValuationService) extends EdmValuationService {
 
-  def valueAllQuotas(maybeSnapshotIdentifier: String): EdmCostsAndIncomeQuotaValuationServiceResults = null
+  def valueAllQuotas(maybeSnapshotIdentifier: String): EdmCostsAndIncomeQuotaValuationServiceResults = {
+
+    Log.info("ValuationServiceRpc valueAllQuotas".format(maybeSnapshotIdentifier))
+
+    val valuationResult = valuationService.valueAllQuotas(Some(maybeSnapshotIdentifier))
+
+    Log.info("got valuationResult %d".format(valuationResult))
+
+    null
+  }
 }
 
 object Rabbit {
