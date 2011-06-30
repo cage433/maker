@@ -11,8 +11,11 @@ import com.trafigura.edm.shared.types.{Currency => TitanCurrency, Date => TitanD
 
 import com.trafigura.services._
 import com.trafigura.services.marketdata.Maturity
-import valuation.CostsAndIncomeQuotaValuationServiceResults
-import com.trafigura.edm.valuation.{CostsAndIncomeQuotaValuation => EdmCostsAndIncomeQuotaValuation, EitherListCostsAndIncomeQuotaValuationOrErrorString, TradeValuationTuple, CostsAndIncomeQuotaValuationServiceResults => EdmCostsAndIncomeQuotaValuationServiceResults}
+import com.trafigura.edm.valuation.{CostsAndIncomeQuotaValuation => EdmCostsAndIncomeQuotaValuation,
+  EitherListCostsAndIncomeQuotaValuationOrErrorString, TradeValuationTuple,
+  CostsAndIncomeQuotaValuationServiceResults => EdmCostsAndIncomeQuotaValuationServiceResults,
+  CostsAndIncomeSingleTradeQuotaValuationServiceResults => EdmCostsAndIncomeSingleTradeQuotaValuationServiceResults}
+import valuation.{CostsAndIncomeQuotaValuation, CostsAndIncomeQuotaValuationServiceResults}
 
 
 case class InvalidUomException(msg : String) extends Exception(msg)
@@ -121,10 +124,10 @@ object EDMConversions {
   }
 
 
-  implicit def toTitanCostsAndIncomeQuotaValuationServiceResults(valuationResults : CostsAndIncomeQuotaValuationServiceResults) : EdmCostsAndIncomeQuotaValuationServiceResults = {
+  implicit def toTitanCostsAndIncomeQuotaValuationServiceResults(tradeValuationsResult : CostsAndIncomeQuotaValuationServiceResults) : EdmCostsAndIncomeQuotaValuationServiceResults = {
     EdmCostsAndIncomeQuotaValuationServiceResults(
-      valuationResults.snapshotID,
-      valuationResults.tradeResults.map(tr => {
+      tradeValuationsResult.snapshotID,
+      tradeValuationsResult.tradeResults.map(tr => {
         TradeValuationTuple(
           tr._1,
           tr._2 match {
@@ -136,6 +139,37 @@ object EDMConversions {
         )
       }).toList
     )
+  }
+
+  implicit def toTitanCostsAndIncomeSingleTradeQuotaValuationServiceResults(tradeValuationResult : (String, Either[List[CostsAndIncomeQuotaValuation], String])) : EdmCostsAndIncomeSingleTradeQuotaValuationServiceResults = {
+    EdmCostsAndIncomeSingleTradeQuotaValuationServiceResults(
+      tradeValuationResult._1,
+      (1, tradeValuationResult._2) // todo, tweak types to get a meaningful tradeId here
+    )
+  }
+
+  implicit def toTitanTradeValuationTuple(tradeResult : (Int, Either[List[CostsAndIncomeQuotaValuation], String])) : TradeValuationTuple = {
+    TradeValuationTuple(
+      tradeResult._1,
+      tradeResult._2 match {
+        case Left(vs) => EitherListCostsAndIncomeQuotaValuationOrErrorString(
+          vs.map(v => EdmCostsAndIncomeQuotaValuation(
+            v.quotaID, v.snapshotID, v.quantity, v.value, v.purchasePrice, v.salePrice, v.benchmark, v.freightParity, v.isComplete)), null)
+        case Right(s) => EitherListCostsAndIncomeQuotaValuationOrErrorString(List(), s)
+      }
+    )
+  }
+
+  implicit def toTitanEitherListCostsAndIncomeQuotaValuationOrErrorString(either : Either[List[CostsAndIncomeQuotaValuation], String]) : EitherListCostsAndIncomeQuotaValuationOrErrorString = {
+    either match {
+      case Left(vs) => EitherListCostsAndIncomeQuotaValuationOrErrorString(vs.map(v => toTitanCostsAndIncomeQuotaValuation(v)), null)
+      case Right(s) => EitherListCostsAndIncomeQuotaValuationOrErrorString(List(), s)
+    }
+  }
+
+  implicit def toTitanCostsAndIncomeQuotaValuation(v : CostsAndIncomeQuotaValuation) : EdmCostsAndIncomeQuotaValuation = {
+    EdmCostsAndIncomeQuotaValuation(
+      v.quotaID, v.snapshotID, v.quantity, v.value, v.purchasePrice, v.salePrice, v.benchmark, v.freightParity, v.isComplete)
   }
 
   val starlingUomSymbolToEdmUom = Map(

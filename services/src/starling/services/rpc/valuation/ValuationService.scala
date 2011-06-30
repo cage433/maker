@@ -17,7 +17,7 @@ import com.trafigura.events.{EventDemultiplexer, DemultiplexerClient}
 import starling.services.{Server, StarlingInit}
 import com.trafigura.tradinghub.support.ServiceFilter
 import com.trafigura.services.valuation._
-import com.trafigura.edm.valuation.{ValuationServiceResourceStub, ValuationService => EdmValuationService, CostsAndIncomeQuotaValuationServiceResults => EdmCostsAndIncomeQuotaValuationServiceResults }
+import com.trafigura.edm.valuation.{ValuationServiceResourceStub, ValuationService => EdmValuationService, CostsAndIncomeQuotaValuationServiceResults => EdmCostsAndIncomeQuotaValuationServiceResults, CostsAndIncomeSingleTradeQuotaValuationServiceResults => EdmCostsAndIncomeSingleTradeQuotaValuationServiceResults }
 import starling.services.rpc.refdata.TacticalRefData
 import starling.edm.EDMConversions._
 
@@ -68,7 +68,6 @@ class ValuationService(marketDataStore: MarketDataStore, val props: Props) exten
    * value the quotas of a specified trade
    */
   def valueTradeQuotas(tradeId : Int, maybeSnapshotIdentifier : Option[String] = None) : (String, Either[List[CostsAndIncomeQuotaValuation], String]) = {
-
     log("valueTradeQuotas called for trade %d with snapshot id %s".format(tradeId, maybeSnapshotIdentifier))
     val snapshotIDString = resolveSnapshotIdString(maybeSnapshotIdentifier)
 
@@ -160,6 +159,10 @@ class ValuationService(marketDataStore: MarketDataStore, val props: Props) exten
   }
 }
 
+
+/**
+ * Titan EDM model exposed services wrappers
+ */
 class ValuationServiceResourceStubEx
   extends ValuationServiceResourceStub(new ValuationServiceRpc(Server.server.marketDataStore, Server.server.props, Server.server.valuationService), new java.util.ArrayList[ServiceFilter]()) {
 
@@ -170,9 +173,20 @@ class ValuationServiceRpc(marketDataStore: MarketDataStore, val props: Props, va
 
   def valueAllQuotas(maybeSnapshotIdentifier: String): EdmCostsAndIncomeQuotaValuationServiceResults = {
 
-    Log.info("ValuationServiceRpc valueAllQuotas".format(maybeSnapshotIdentifier))
+    Log.info("ValuationServiceRpc valueAllQuotas %s".format(maybeSnapshotIdentifier))
 
     val valuationResult = valuationService.valueAllQuotas(Some(maybeSnapshotIdentifier))
+
+    Log.info("got valuationResult %d".format(valuationResult))
+
+    valuationResult
+  }
+
+  def valueTradeQuotas(tradeId : Int, maybeSnapshotIdentifier : String) : EdmCostsAndIncomeSingleTradeQuotaValuationServiceResults = {
+
+    Log.info("ValuationServiceRpc valueTradeQuotas %s %s".format(tradeId, maybeSnapshotIdentifier))
+
+    val valuationResult = valuationService.valueTradeQuotas(tradeId, Some(maybeSnapshotIdentifier))
 
     Log.info("got valuationResult %d".format(valuationResult))
 
