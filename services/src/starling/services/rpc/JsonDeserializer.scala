@@ -1,32 +1,19 @@
 package starling.services.rpc
 
-import net.liftweb.json.TypeInfo._
 import net.liftweb.json._
 
 import RichJValue._
-import starling.utils.ImplicitConversions._
 
 
 object JsonDeserializer {
+  def deserialize(text: String)(implicit formats: Formats): Any = extract(JsonParser.parse(text).uncapitalize)
   def pretty(text: String)(implicit formats: Formats): String = Printer.compact(render(JsonParser.parse(text)))
 
-  def deserialize(text: String)(implicit formats: Formats): Any = {
-    val json = JsonParser.parse(text)
-    val ujson = uncapitalize(json)
+  private def extract(json: JValue)(implicit formats: Formats): Any =
+    Extraction.extract(json, TypeInfo(classFrom(json, formats.typeHintFieldName), None))
 
-    Extraction.extract(ujson, TypeInfo(classFrom(ujson), None))
+  private def classFrom(value: JValue, TypeHintFieldName: String): Class[_] = value match {
+    case JObject(JField(TypeHintFieldName, JString(className)) :: _) => Class.forName(className)
+    case _ => throw new Exception("Could not obtain type information from: " + value)
   }
-
-  private def classFrom(jvalue: JValue): Class[_] = jvalue match {
-    case JObject(fields) => {
-      val typeValues = fields.find(_.name == "type").getOrElse(throw new Exception("Missing type information")).value
-
-      typeValues match {
-        case JString(className) => Class.forName(className)
-        case _ => throw new Exception("Missing type information")
-      }
-    }
-  }
-
-  private def uncapitalize(input: JValue): JValue = input.mapFieldNames(_.uncapitalize)
 }
