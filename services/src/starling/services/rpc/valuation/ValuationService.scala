@@ -1,4 +1,4 @@
-package starling.services.rpc.marketdata
+package starling.services.rpc.valuation
 
 import starling.props.Props
 import starling.instrument.PhysicalMetalForward
@@ -18,6 +18,7 @@ import starling.services.{Server, StarlingInit}
 import com.trafigura.tradinghub.support.ServiceFilter
 import com.trafigura.services.valuation._
 import com.trafigura.edm.valuation.{ValuationServiceResourceStub, ValuationService => EdmValuationService, CostsAndIncomeQuotaValuationServiceResults => EdmCostsAndIncomeQuotaValuationServiceResults }
+import starling.services.rpc.refdata.TacticalRefData
 
 /**
  * Valuation service implementations
@@ -177,7 +178,7 @@ object Rabbit {
   val rabbitmq_password="trafiguraDev"
   val rabbitmq_routingKey="RoutingKey"
   val rabbitmq_connectAttempts=1
-  val rabbitmq_virtualHost="/"
+  val rabbitmq_virtualHost= "/"
   val rabbitmq_exchangeName="Trafigura.Events"
   val rabbitmq_baseQueueName="Trafigura.Events"
   val rabbitmq_durable=true

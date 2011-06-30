@@ -1,4 +1,4 @@
-package starling.services.rpc.marketdata
+package starling.services.rpc.refdata
 
 import starling.props.Props
 import com.trafigura.services.security.ComponentTestClientExecutor
