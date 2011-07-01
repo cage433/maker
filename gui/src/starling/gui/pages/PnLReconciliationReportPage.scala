@@ -3,15 +3,15 @@ package starling.gui.pages
 import starling.daterange.Day
 import starling.gui.api._
 import starling.gui.{PageContext, PageBuildingContext}
-import starling.pivot.{SomeSelection, Selection, Field}
 import starling.rmi.StarlingServer
+import starling.pivot.{PivotEdit, SomeSelection, Selection, Field}
 
 case class PnLReconciliationReportPage(tradeSelectionWithTimestamp: TradeSelectionWithTimestamp, curveIdentifier: CurveIdentifierLabel,
                                        expiryDay: Day, pivotPageState: PivotPageState) extends AbstractPivotPage(pivotPageState) {
   def text = "PnL Trade Reconciliation"
   override def layoutType = Some("PnLTradeReconciliation")
 
-  def selfPage(pivotPageState: PivotPageState) = copy(pivotPageState = pivotPageState)
+  def selfPage(pivotPageState: PivotPageState, edits:Set[PivotEdit]) = copy(pivotPageState = pivotPageState)
 
   def dataRequest(pageBuildingContext: PageBuildingContext) = {
     pageBuildingContext.cachingStarlingServer.pnlReconciliation(tradeSelectionWithTimestamp, curveIdentifier, expiryDay, pivotPageState.pivotFieldParams)

@@ -31,7 +31,7 @@ object TreePivotFilterNode {
 case class PivotTable(rowFields:List[Field], rowFieldHeadingCount:Array[Int], rowAxis:List[AxisNode],
                       columnAxis:List[AxisNode], possibleValues:Map[Field,TreePivotFilter], treeDetails:TreeDetails,
                       editableInfo:Option[EditableInfo], formatInfo:FormatInfo,
-                      aggregatedMainBucket:Map[(List[AxisValue],List[AxisValue]),Any] = Map(),
+                      aggregatedMainBucket:Map[(List[AxisValue],List[AxisValue]),MeasureCell] = Map(),
                       zeroFields:Set[Field]=Set()) {
 
   def asCSV:String = convertUsing(Utils.csvConverter)
@@ -39,7 +39,7 @@ case class PivotTable(rowFields:List[Field], rowFieldHeadingCount:Array[Int], ro
     converter.convert(toFlatRows(Totals.Null, decimalPlaces, true))
 
   def cell(measure: AnyRef, filters: (Field, AnyRef)*): Any = {
-    def filter(name: String, value: AnyRef, index: Int)(input: Map[(List[AxisValue], List[AxisValue]), Any]) =
+    def filter(name: String, value: AnyRef, index: Int)(input: Map[(List[AxisValue], List[AxisValue]), MeasureCell]) =
       input.filter { case ((rows, cols_), tableCell) => {
         val axisValue = rows(index)
         val field = axisValue.field
@@ -118,7 +118,7 @@ case class PivotTable(rowFields:List[Field], rowFieldHeadingCount:Array[Int], ro
 
 object PivotTable {
   def singleCellPivotTable(text:String) = {
-    val bucket = Map( (List(AxisValue.Null), List(AxisValue.Null)) -> TableCell(text))
+    val bucket = Map( (List(AxisValue.Null), List(AxisValue.Null)) -> MeasureCell(Some(text), EditableCellState.Normal))
     PivotTable(List(), Array(), List(AxisNode(AxisValue.Null, List())), List(AxisNode(AxisValue.Null, List())), Map(), TreeDetails(Map(), Map()), None, FormatInfo.Blank, bucket)
   }
 }

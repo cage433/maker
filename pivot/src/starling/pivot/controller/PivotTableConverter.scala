@@ -6,7 +6,6 @@ import starling.utils.{STable, SColumn}
 import starling.quantity.{SpreadOrQuantity, Quantity, UOM}
 import starling.utils.ImplicitConversions._
 import collection.mutable.ListBuffer
-import sun.reflect.FieldInfo
 import collection.Set
 
 object AxisNode {
@@ -161,7 +160,7 @@ case class PivotTableConverter(otherLayoutInfo:OtherLayoutInfo = OtherLayoutInfo
     val aggregatedMainBucket = table.aggregatedMainBucket
     val zeroFields = table.zeroFields
     val rowsToRemove:Set[List[AxisValue]] = if (otherLayoutInfo.removeZeros && (fieldState.columns.allFields.toSet & zeroFields).nonEmpty) {
-      val rows = aggregatedMainBucket.groupBy{case ((r,c),v) => r}.keySet
+      val rows:Set[List[AxisValue]] = aggregatedMainBucket.groupBy{case ((r,c),v) => r}.keySet
       rows.flatMap(row => {
         val onlyZeroFieldColumnsMap = aggregatedMainBucket.filter{case ((r,c),_) => {
           (r == row) && (c.find(_.isMeasure) match {
@@ -321,18 +320,21 @@ case class PivotTableConverter(otherLayoutInfo:OtherLayoutInfo = OtherLayoutInfo
           }
 
           val tableCell = aggregatedMainBucket.get(key) match {
-            case Some(value) => {
-              value match {
-                case s:Set[_] => s.foreach(appendUOM)
-                case v => appendUOM(v)
+            case Some(measureCell) => {
+              measureCell.value match {
+                case Some(s:Set[_]) => s.foreach(appendUOM)
+                case Some(v) => appendUOM(v)
+                case None =>
               }
               columnValues.find(ac => ac.value.isMeasure) match {
-                case None => TableCell(value)
+                case None => throw new Exception("Got a measure cell but no measure field")
                 case Some(measureAxisCell) => {
-                  value match {
-                    case UndefinedValue => TableCell.Undefined
-                    case other => table.formatInfo.fieldToFormatter(measureAxisCell.value.field).format(other, extraFormatInfo)
+                  val tc = measureCell.value match {
+                    case None => TableCell.Null
+                    case Some(UndefinedValue) => TableCell.Undefined
+                    case Some(other) => table.formatInfo.fieldToFormatter(measureAxisCell.value.field).format(other, extraFormatInfo)
                   }
+                  tc.copy(state = measureCell.cellType, edits = measureCell.edits)
                 }
               }
             }

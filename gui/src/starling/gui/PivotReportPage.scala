@@ -45,7 +45,7 @@ case class DifferenceMainPivotReportPage(
   }
 
   def text = tradeSelection + " " + curveIdentifierD + " vs " + curveIdentifierDm1
-  def selfPage(pps:PivotPageState) = copy(pivotPageState = pps)
+  def selfPage(pps:PivotPageState, edits:Set[PivotEdit]) = copy(pivotPageState = pps)
   override def toolbarButtons(pageContext:PageContext, data:PageData) =
     PivotReportPage.toolbarButtons(
       pageContext,
@@ -132,7 +132,7 @@ case class MainPivotReportPage(showParameters:Boolean, reportParameters:ReportPa
   def dataRequest(pageBuildingContext: PageBuildingContext) = {
     pageBuildingContext.cachingStarlingServer.reportPivot(reportParameters, pivotPageState.pivotFieldParams)
   }
-  def selfPage(pps:PivotPageState) = copy(pivotPageState = pps)
+  def selfPage(pps:PivotPageState, edits:Set[PivotEdit]) = copy(pivotPageState = pps)
   def selfReportPage(rp:ReportParameters, pps:PivotPageState = pivotPageState) = copy(reportParameters = rp, pivotPageState = pps)
   override def toolbarButtons(pageContext:PageContext, data:PageData) =
     PivotReportPage.toolbarButtons(pageContext, reportParameters, data, showParameters, pivotPageState)

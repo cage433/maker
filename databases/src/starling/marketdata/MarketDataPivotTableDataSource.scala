@@ -75,6 +75,10 @@ class MarketDataPivotTableDataSource(reader: MarketDataReader, marketDataStore:O
       new EditPivot {
         private def keyFields = Set(observationDayField.field, observationTimeField.field) ++ marketDataType.keyFields
         def editableToKeyFields = Map() ++ marketDataType.valueFields.map((_ -> keyFields))
+        def withEdits(edits:Set[PivotEdit]):PivotTableDataSource = {
+          val readerWithEdits = new WithEditsMarketDataReader(reader, marketDataType, edits)
+          new MarketDataPivotTableDataSource(readerWithEdits, Some(marketDataStore), marketDataIdentifier, marketDataType)
+        }
         def save(ungroupedEdits:Set[PivotEdit]) = {
 
           val groupedEdits: Map[(ObservationPoint, MarketDataKey), List[PivotEdit]] = ungroupedEdits.groupBy(edit => {
@@ -101,7 +105,7 @@ class MarketDataPivotTableDataSource(reader: MarketDataReader, marketDataStore:O
                 // Add amendments
                 val amendments = edits.filterCast[AmendPivotEdit]
                 val newRows = amendments.toList.map(_.values)
-                val mixedRows = marketDataStore.applyOverrideRule(marketDataType, currentRowsWithDeletesRemoved.toList ::: newRows.toList).toList
+                val mixedRows = MarketDataStore.applyOverrideRule(marketDataType, currentRowsWithDeletesRemoved.toList ::: newRows.toList).toList
 
                 marketDataType.createValue(mixedRows)
               }
