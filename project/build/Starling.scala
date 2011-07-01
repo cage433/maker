@@ -23,7 +23,7 @@ class Starling(info : ProjectInfo) extends ParentProject(info) {
     if (starlingProperties.getOrElse("ServerType", "Dev") == "FC2")
       project(name, name, {info : ProjectInfo => new StarlingProject(name, info)}, bouncyrmi, scalaModelWithPersistence)
     else
-      project(name, name, new StarlingProject(name, _){override val unmanagedClasspath = super.unmanagedClasspath +++ ("scala-model-jars" / "scala-model-with-persistence.jar")}, bouncyrmi)
+      project(name, name, new StarlingProject(name, _){override val unmanagedClasspath = super.unmanagedClasspath +++ ("scala-model-jars" ** "*.jar")}, bouncyrmi)
   }
 
   lazy val loopyxl = starlingProject("loopyxl", bouncyrmi, auth)
