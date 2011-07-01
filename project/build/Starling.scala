@@ -133,10 +133,10 @@ class Starling(info : ProjectInfo) extends ParentProject(info) {
 
     private lazy val projectRoot = path(".").asFile.toString
 
-    override protected val generateModelMainSourceCmd = Some(new java.lang.ProcessBuilder("ruby", "model/bindinggen.rb", "-o", modelMainScalaSourcePath.projectRelativePath, "-b", "model/scala-model-with-persistence/src/codegen/bindings.rb", "model/master-model.rb") directory (new File(projectRoot)))
+    override protected val generateModelMainSourceCmd = Some(new java.lang.ProcessBuilder("ruby", "../../../model/model/bindinggen.rb", "-o", modelMainScalaSourcePath.projectRelativePath, "-b", "../../../model/model/scala-model-with-persistence/src/codegen/bindings.rb", "../../../model/model/master-model.rb") directory (new File(projectRoot)))
 
     lazy val rubyModelPathFinder = {
-      val parentPath = Path.fromFile(new java.io.File(projectRoot + "/model/"))
+      val parentPath = Path.fromFile(new java.io.File(projectRoot + "/../../../model/model/"))
       (parentPath ** "*.rb")
     }
 
