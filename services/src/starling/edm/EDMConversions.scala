@@ -12,9 +12,8 @@ import com.trafigura.edm.shared.types.{Currency => TitanCurrency, Date => TitanD
 import com.trafigura.services._
 import com.trafigura.services.marketdata.Maturity
 import com.trafigura.edm.valuation.{CostsAndIncomeQuotaValuation => EdmCostsAndIncomeQuotaValuation,
-  EitherListCostsAndIncomeQuotaValuationOrErrorString, TradeValuationTuple,
-  CostsAndIncomeQuotaValuationServiceResults => EdmCostsAndIncomeQuotaValuationServiceResults,
-  CostsAndIncomeSingleTradeQuotaValuationServiceResults => EdmCostsAndIncomeSingleTradeQuotaValuationServiceResults}
+  EitherListCostsAndIncomeQuotaValuationOrErrorString, ValuationTuple,
+  CostsAndIncomeQuotaValuationServiceResults => EdmCostsAndIncomeQuotaValuationServiceResults}
 import valuation.{CostsAndIncomeQuotaValuation, CostsAndIncomeQuotaValuationServiceResults}
 
 
@@ -128,7 +127,7 @@ object EDMConversions {
     EdmCostsAndIncomeQuotaValuationServiceResults(
       tradeValuationsResult.snapshotID,
       tradeValuationsResult.tradeResults.map(tr => {
-        TradeValuationTuple(
+        ValuationTuple(
           tr._1,
           tr._2 match {
             case Left(vs) => EitherListCostsAndIncomeQuotaValuationOrErrorString(
@@ -141,15 +140,8 @@ object EDMConversions {
     )
   }
 
-  implicit def toTitanCostsAndIncomeSingleTradeQuotaValuationServiceResults(tradeValuationResult : (String, Either[List[CostsAndIncomeQuotaValuation], String])) : EdmCostsAndIncomeSingleTradeQuotaValuationServiceResults = {
-    EdmCostsAndIncomeSingleTradeQuotaValuationServiceResults(
-      tradeValuationResult._1,
-      (1, tradeValuationResult._2) // todo, tweak types to get a meaningful tradeId here
-    )
-  }
-
-  implicit def toTitanTradeValuationTuple(tradeResult : (Int, Either[List[CostsAndIncomeQuotaValuation], String])) : TradeValuationTuple = {
-    TradeValuationTuple(
+  implicit def toTitanTradeValuationTuple(tradeResult : (String, Either[List[CostsAndIncomeQuotaValuation], String])) : ValuationTuple = {
+    ValuationTuple(
       tradeResult._1,
       tradeResult._2 match {
         case Left(vs) => EitherListCostsAndIncomeQuotaValuationOrErrorString(
