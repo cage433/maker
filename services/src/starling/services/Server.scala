@@ -154,11 +154,6 @@ class StarlingInit( val props: Props,
   val eaiRichSqlServerDB = new RichDB(props.EAIReplica(), richResultSetRowFactory)
   val eaiStarlingRichSqlServerDB = new RichDB(props.EAIStarlingSqlServer(), richResultSetRowFactory)
 
-  if (dbMigration) {
-    //Ensure the schema is up to date
-    new PatchRunner(starlingRichDB, props.ReadonlyMode(), this).updateSchemaIfRequired
-  }
-
   // The Market data store needs some of it's own xstream converters
   MarketDataXStreamConverters.converters.foreach(StarlingXStream.registerConverter)
 
@@ -169,33 +164,6 @@ class StarlingInit( val props: Props,
     props.rabbitHostSet              → new RabbitBroadcaster(new RabbitMessageSender(props.RabbitHost())),
     props.EnableVerificationEmails() → new EmailBroadcaster(mailSender)
   )
-
-  val strategyDB = new EAIStrategyDB(eaiSqlServerDB)
-
-  val intradayTradesDB = new IntradayTradeStore(starlingRichDB, strategyDB, broadcaster, ldapUserLookup)
-
-  // Brady trade stores, system of records, trade importers
-
-  val eaiTradeStores = Book.all.map(book=> book-> new EAITradeStore(starlingRichDB, broadcaster, strategyDB, book)).toMap
-
-  val refinedAssignmentTradeStore = new RefinedAssignmentTradeStore(starlingRichDB, broadcaster)
-  val refinedAssignmentSystemOfRecord = new RefinedAssignmentSystemOfRecord(neptuneRichDB)
-  val refinedAssignmentImporter = new TradeImporter(refinedAssignmentSystemOfRecord, refinedAssignmentTradeStore)
-
-  val refinedFixationTradeStore = new RefinedFixationTradeStore(starlingRichDB, broadcaster)
-  val refinedFixationSystemOfRecord = new RefinedFixationSystemOfRecord(neptuneRichDB)
-  val refinedFixationImporter = new TradeImporter(refinedFixationSystemOfRecord, refinedFixationTradeStore)
-
-  val tradeImporterFactory = new TradeImporterFactory(refinedAssignmentImporter, refinedFixationImporter)
-
-  val enabledDesks: Set[Desk] = props.EnabledDesks().trim.toLowerCase match {
-    case "" => throw new Exception("EnabledDesks property not set, valid values: all, none, " + Desk.names.mkString(", "))
-    case "all" => Desk.values.toSet
-    case "none" => Set.empty
-    case names => names.split(",").toList.map(Desk.fromName).toSet
-  }
-
-  val closedDesks = new ClosedDesks(broadcaster, starlingDB)
 
   val revalSnapshotDb = new RevalSnapshotDB(starlingDB)
   val limServer = new LIMServer(props.LIMHost(), props.LIMPort())
@@ -229,6 +197,38 @@ class StarlingInit( val props: Props,
     }.toSet, businessCalendars.US_UK)
     (fwdCurveAutoImport, mds)
   }
+
+  if (dbMigration) {
+    //Ensure the schema is up to date
+    new PatchRunner(starlingRichDB, props.ReadonlyMode(), this).updateSchemaIfRequired
+  }
+
+  val strategyDB = new EAIStrategyDB(eaiSqlServerDB)
+
+  val intradayTradesDB = new IntradayTradeStore(starlingRichDB, strategyDB, broadcaster, ldapUserLookup)
+
+  // Brady trade stores, system of records, trade importers
+
+  val eaiTradeStores = Book.all.map(book=> book-> new EAITradeStore(starlingRichDB, broadcaster, strategyDB, book)).toMap
+
+  val refinedAssignmentTradeStore = new RefinedAssignmentTradeStore(starlingRichDB, broadcaster)
+  val refinedAssignmentSystemOfRecord = new RefinedAssignmentSystemOfRecord(neptuneRichDB)
+  val refinedAssignmentImporter = new TradeImporter(refinedAssignmentSystemOfRecord, refinedAssignmentTradeStore)
+
+  val refinedFixationTradeStore = new RefinedFixationTradeStore(starlingRichDB, broadcaster)
+  val refinedFixationSystemOfRecord = new RefinedFixationSystemOfRecord(neptuneRichDB)
+  val refinedFixationImporter = new TradeImporter(refinedFixationSystemOfRecord, refinedFixationTradeStore)
+
+  val tradeImporterFactory = new TradeImporterFactory(refinedAssignmentImporter, refinedFixationImporter)
+
+  val enabledDesks: Set[Desk] = props.EnabledDesks().trim.toLowerCase match {
+    case "" => throw new Exception("EnabledDesks property not set, valid values: all, none, " + Desk.names.mkString(", "))
+    case "all" => Desk.values.toSet
+    case "none" => Set.empty
+    case names => names.split(",").toList.map(Desk.fromName).toSet
+  }
+
+  val closedDesks = new ClosedDesks(broadcaster, starlingDB)
 
   val valuationService = new ValuationService(marketDataStore, props)
   val marketDataService = new MarketDataService(marketDataStore)

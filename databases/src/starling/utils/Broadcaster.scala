@@ -38,7 +38,11 @@ class RMIBroadcaster(rmiServer0: => BouncyRMIServer[User]) extends Broadcaster {
   lazy val rmiServer = rmiServer0
 
   def broadcast(event: Event) = if (!event.isInstanceOf[RabbitEvent]) {
-    executor.execute { rmiServer.publish(EventBatch(List(event))); }
+    executor.execute {
+      if(rmiServer0 != null) {
+        rmiServer.publish(EventBatch(List(event)))
+      }
+    }
   }
 }
 
