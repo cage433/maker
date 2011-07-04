@@ -327,7 +327,13 @@ case class PivotTableConverter(otherLayoutInfo:OtherLayoutInfo = OtherLayoutInfo
                 case None =>
               }
               columnValues.find(ac => ac.value.isMeasure) match {
-                case None => throw new Exception("Got a measure cell but no measure field")
+                case None => {
+                  // This is probably a "fake" message cell.
+                  measureCell.value match {
+                    case Some(v) => TableCell(v)
+                    case _ => TableCell.Null
+                  }
+                }
                 case Some(measureAxisCell) => {
                   val tc = measureCell.value match {
                     case None => TableCell.Null
