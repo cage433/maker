@@ -22,7 +22,6 @@ import starling.edm.EDMConversions._
 import com.trafigura.tradinghub.support.{ModelObject, ServiceFilter}
 import com.trafigura.edm.trades.{CompletedTradeTstate, TradeTstateEnum, Trade => EDMTrade, PhysicalTrade => EDMPhysicalTrade}
 import scala.Either
-import javax.management.remote.rmi._RMIConnection_Stub
 import java.lang.Exception
 
 /**
@@ -30,7 +29,8 @@ import java.lang.Exception
  */
 class ValuationService(marketDataStore: MarketDataStore, val props: Props) extends TacticalRefData(props: Props) with ValuationServiceApi {
 
-
+  type TradeValuationResult = Either[List[CostsAndIncomeQuotaValuation], String]
+  
   private var tradeMap: Map[String, EDMPhysicalTrade] = Map[String, EDMPhysicalTrade]()
   private var quotaIDToTradeIDMap: Map[String, String] = Map[String, String]()
 
@@ -43,7 +43,7 @@ class ValuationService(marketDataStore: MarketDataStore, val props: Props) exten
     Log.info("Got Edm Trade results " + edmTradeResult.cached + ", trade result count = " + edmTradeResult.results.size)
     tradeMap = edmTradeResult.results.map(_.trade.asInstanceOf[EDMPhysicalTrade]).filter(pt => pt.tstate == CompletedTradeTstate).map(t => (t.tradeId.toString, t)).toMap
     quotaIDToTradeIDMap = tradeMap.flatMap{
-      case (tradeID, trade) => trade.quotas.map{quota => (tradeID, quota.detail.identifier)}
+      case (tradeID, trade) => trade.quotas.map{quota => (quota.detail.identifier, tradeID)}
     }.toMap
   }
 
@@ -99,7 +99,7 @@ class ValuationService(marketDataStore: MarketDataStore, val props: Props) exten
   /**
    * value the quotas of a specified trade
    */
-  def valueTradeQuotas(tradeId: Int, maybeSnapshotIdentifier: Option[String] = None): (String, Either[List[CostsAndIncomeQuotaValuation], String]) = {
+  def valueTradeQuotas(tradeId: Int, maybeSnapshotIdentifier: Option[String] = None): (String, TradeValuationResult) = {
     log("valueTradeQuotas called for trade %d with snapshot id %s".format(tradeId, maybeSnapshotIdentifier))
     val snapshotIDString = resolveSnapshotIdString(maybeSnapshotIdentifier)
 
@@ -137,11 +137,10 @@ class ValuationService(marketDataStore: MarketDataStore, val props: Props) exten
     val sw = new Stopwatch()
 
     val idsToUse = costableIds match {
-      case Nil => {updateTradeMap(); tradeMap.keys.toList}
+      case Nil => getAllTrades().map{trade => trade.tradeId.toString}
       case list => list
     }
 
-    type TradeValuationResult = Either[List[CostsAndIncomeQuotaValuation], String]
     var tradeValueCache = Map[String, TradeValuationResult]()
     val snapshotIDString = resolveSnapshotIdString(maybeSnapshotIdentifier)
     val env = environment(snapshotStringToID(snapshotIDString))
@@ -175,15 +174,16 @@ class ValuationService(marketDataStore: MarketDataStore, val props: Props) exten
         (id, quotaValue(id))
     }
 
+    val valuations = tradeValues ::: quotaValues
+
     log("Valuation took " + sw)
-    val (errors, worked) = (tradeValues ::: quotaValues).partition(_._2 match {
+    val (errors, worked) = valuations.partition(_._2 match {
       case Right(_) => true
       case Left(_) => false
     })
     log("Worked " + worked.size + ", failed " + errors.size + ", took " + sw)
 
-    CostsAndIncomeQuotaValuationServiceResults(snapshotIDString, (tradeValues ::: quotaValues).take(5440).toMap)
-
+    CostsAndIncomeQuotaValuationServiceResults(snapshotIDString, valuations.toMap)
   }
 
   /**
@@ -274,7 +274,7 @@ class ValuationServiceRpc(marketDataStore: MarketDataStore, val props: Props, va
 
     Log.info("ValuationServiceRpc valueAllQuotas %s".format(maybeSnapshotIdentifier))
 
-    val valuationResult = valuationService.valueAllQuotas(if (maybeSnapshotIdentifier  == null) None else Some(maybeSnapshotIdentifier))
+    val valuationResult = valuationService.valueAllQuotas(Option(maybeSnapshotIdentifier))
 
     Log.info("got valuationResult, size %d".format(valuationResult.tradeResults.size))
 
@@ -283,7 +283,7 @@ class ValuationServiceRpc(marketDataStore: MarketDataStore, val props: Props, va
 
   def valueCostables(costableIds: List[String], maybeSnapshotIdentifier: String): EdmCostsAndIncomeQuotaValuationServiceResults = {
 
-    valuationService.valueCostables(costableIds, if (maybeSnapshotIdentifier == null) None else Some(maybeSnapshotIdentifier))
+    valuationService.valueCostables(costableIds, Option(maybeSnapshotIdentifier))
   }
 }
 
