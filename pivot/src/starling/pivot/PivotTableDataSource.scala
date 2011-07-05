@@ -138,7 +138,7 @@ case class PivotTreePath(path:List[String]) {
       case first :: rest => TreePivotFilterNode(PivotTreePath(first), first.last, List(recurse(rest)))
     }
 
-    recurse(path.inits)
+    recurse(path.inits.toList)
   }
 }
 object PivotTreePath {
