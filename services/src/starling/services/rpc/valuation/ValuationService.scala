@@ -27,6 +27,7 @@ import com.trafigura.process.Pid
 import java.net.InetAddress
 import org.codehaus.jettison.json.JSONArray
 import com.trafigura.common.control.PipedControl._
+import starling.utils.cache.CacheFactory
 
 /**
  * Valuation service implementations
@@ -42,6 +43,9 @@ class ValuationService(marketDataStore: MarketDataStore, val props: Props) exten
 
   RabbitEvents.eventDemux.addClient(eventHandler)
 
+  /*
+    Read all trades from Titan and blast our cache
+  */
   private def updateTradeMap() {
     val sw = new Stopwatch()
     val edmTradeResult = titanGetEdmTradesService.getAll()
@@ -238,10 +242,15 @@ class ValuationService(marketDataStore: MarketDataStore, val props: Props) exten
     })
   }
 
-  private def environment(snapshot: SnapshotID): Environment = {
-    val reader = new NormalMarketDataReader(marketDataStore, MarketDataIdentifier(snapshot.marketDataSelection, snapshot.version))
-    ClosesEnvironmentRule.createEnv(snapshot.observationDay, reader).environment
-  }
+  private var environmentCache = CacheFactory.getCache("ValuationService.environment", unique = true)
+  private def environment(snapshotID: SnapshotID): Environment = environmentCache.memoize(
+    snapshotID,
+    {snapshotID : SnapshotID => {
+      val reader = new NormalMarketDataReader(marketDataStore, MarketDataIdentifier(snapshotID.marketDataSelection, snapshotID.version))
+      ClosesEnvironmentRule.createEnv(snapshotID.observationDay, reader).environment
+    }}
+  )
+
 
   private def diffValuations(newValuations : CostsAndIncomeQuotaValuationServiceResults) : Map[String, Either[List[CostsAndIncomeQuotaValuation], String]] =
     Map[String, Either[List[CostsAndIncomeQuotaValuation], String]]()
@@ -252,15 +261,28 @@ class ValuationService(marketDataStore: MarketDataStore, val props: Props) exten
   class EventHandler extends DemultiplexerClient {
     def handle(ev: Event) {
       require(ev != null, "Got a null event ?!")
-      if ((Event.TradeSubject == ev.subject) && // Must be a trade event
-        (UpdatedEventVerb == ev.verb)) { // and an update event only (not interested in revaluing new trades)
+      if (Event.TradeSubject == ev.subject) { // Must be a trade event
         Log.info("handler: Got a trade event to process %s".format(ev.toString))
 
         val tradePayloads = ev.content.body.payloads.filter(p => Event.RefinedMetalTradeIdPayload == p.payloadType)
+        val tradePayloads = ev.content.body.payloads.filter(p => "Refined Metal Trade" == p.payloadType)
         val tradeIds = tradePayloads.map(p => p.key.identifier)
         Log.info("Trade event received for ids { %s }".format(tradeIds.mkString(", ")))
-        val tradeValuations = valueCostables(tradeIds, None)
-        Log.info("Trades revalued for received event using snapshot %s number of valuations %d".format(tradeValuations.snapshotID, tradeValuations.tradeResults.size))
+
+        ev.verb match {
+          case UpdatedEventVerb =>
+
+            val tradeValuations = valueCostables(tradeIds, None)
+            Log.info("Trades revalued for received event using snapshot %s number of valuations %d".format(tradeValuations.snapshotID, tradeValuations.tradeResults.size))
+        }
+        //(UpdatedEventVerb == ev.verb)) { // and an update event only (not interested in revaluing new trades)
+      //Log.info("handler: Got a trade event to process %s".format(ev.toString))
+      //
+      //val tradePayloads = ev.content.body.payloads.filter(p => "Refined Metal Trade" == p.payloadType)
+      //val tradeIds = tradePayloads.map(p => p.key.identifier)
+      //Log.info("Trade event received for ids { %s }".format(tradeIds.mkString(", ")))
+    //val tradeValuations = valueCostables(tradeIds, None)
+    //Log.info("Trades revalued for received event using snapshot %s number of valuations %d".format(tradeValuations.snapshotID, tradeValuations.tradeResults.size))
 
         // get a map of updated valuations compared to last valuation...
         val updatedTrades = diffValuations(tradeValuations)
