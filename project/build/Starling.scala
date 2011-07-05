@@ -140,6 +140,23 @@ class Starling(info : ProjectInfo) extends ParentProject(info) {
       (parentPath ** "*.rb")
     }
 
+    lazy val nonModelSourcePath = path("src")
+    def copyNonModelSource  = {
+      if (! (new java.io.File(projectRoot + "/src").exists)) {
+        import FileUtilities._
+        val originalSourcePath = Path.fromFile(new java.io.File(projectRoot + "../../../../model/model/scala-model-with-persistence/src/"))
+        copyDirectory(originalSourcePath, nonModelSourcePath, new ConsoleLogger)
+      }
+      None
+    }
+
+    lazy val cleanNonModelSource = task {cleanPath(nonModelSourcePath)}
+    override def cleanAction = super.cleanAction dependsOn(cleanNonModelSource)
+
+    lazy val copyNonModelSourceTask = task {copyNonModelSource}
+    override def compileAction = super.compileAction dependsOn(
+      copyNonModelSourceTask
+    )
   }
 
   lazy val starlingProperties = {

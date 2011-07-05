@@ -265,14 +265,13 @@ class ValuationService(marketDataStore: MarketDataStore, val props: Props) exten
         Log.info("handler: Got a trade event to process %s".format(ev.toString))
 
         val tradePayloads = ev.content.body.payloads.filter(p => Event.RefinedMetalTradeIdPayload == p.payloadType)
-        val tradePayloads = ev.content.body.payloads.filter(p => "Refined Metal Trade" == p.payloadType)
         val tradeIds = tradePayloads.map(p => p.key.identifier)
         Log.info("Trade event received for ids { %s }".format(tradeIds.mkString(", ")))
 
+        val tradeValuations = valueCostables(tradeIds, None)
         ev.verb match {
           case UpdatedEventVerb =>
 
-            val tradeValuations = valueCostables(tradeIds, None)
             Log.info("Trades revalued for received event using snapshot %s number of valuations %d".format(tradeValuations.snapshotID, tradeValuations.tradeResults.size))
         }
         //(UpdatedEventVerb == ev.verb)) { // and an update event only (not interested in revaluing new trades)
