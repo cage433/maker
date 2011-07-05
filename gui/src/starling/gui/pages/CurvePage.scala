@@ -6,6 +6,7 @@ import api._
 import swing._
 import starling.daterange.Day
 import starling.rmi.StarlingServer
+import starling.pivot.PivotEdit
 
 
 case class CurvePage(curveLabel: CurveLabel, pivotPageState: PivotPageState) extends AbstractPivotPage(pivotPageState) {
@@ -28,7 +29,7 @@ case class CurvePage(curveLabel: CurveLabel, pivotPageState: PivotPageState) ext
   private def copySelection(selection: MarketDataSelection) = copy(curveLabel = curveLabel.copySelection(selection))
   private def copyEnv(envSpec: EnvironmentSpecificationLabel) = copy(curveLabel = curveLabel.copy(environmentSpecification = envSpec))
 
-  def selfPage(pivotPageState: PivotPageState) = copy(pivotPageState = pivotPageState)
+  def selfPage(pivotPageState: PivotPageState, edits:Set[PivotEdit]) = copy(pivotPageState = pivotPageState)
 
   def dataRequest(pageBuildingContext: PageBuildingContext) = {
     pageBuildingContext.starlingServer.curvePivot(curveLabel, pivotPageState.pivotFieldParams)

@@ -131,6 +131,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
     def submitYesNo[R](message:String, description:String, submitRequest:SubmitRequest[R], awaitRefresh:R=>Boolean, onComplete:R => Unit, keepScreenLocked:Boolean) = {StarlingBrowser.this.submitYesNo(message, description, submitRequest, awaitRefresh, onComplete, keepScreenLocked)}
     def clearCache() {StarlingBrowser.this.clearCache}
     def setContent(content:Component, cancelAction:Option[()=> Unit]) {StarlingBrowser.this.setContent(content, cancelAction)}
+    def setErrorMessage(title:String, error:String) {StarlingBrowser.this.setError(title, error)}
     def clearContent() {StarlingBrowser.this.clearContent}
     def setDefaultButton(button:Option[Button]) {StarlingBrowser.this.setDefaultButton(button)}
     def getDefaultButton = {StarlingBrowser.this.getDefaultButton}
@@ -708,6 +709,20 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
     starlingBrowserUI.setContent(content, cancelAction)
   }
 
+  def setError(title:String="Error", error:String="") {
+    genericLockedUI.setClient(greyClient)
+    genericLockedUI.setLocked(true)
+    setButtonsEnabled(false)
+
+    def reset() {
+      setScreenLocked(false)
+      refreshButtonStatus
+      refreshButton.enabled = history(current).refreshPage.isDefined
+    }
+
+    starlingBrowserUI.setError(title, error, reset)
+  }
+
   def clearContent {
     starlingBrowserUI.clearContentPanel
     setScreenLocked(false)
@@ -903,19 +918,20 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
         tabComponent.setTextFromPage(page)
       })
     }
-    def showError(title: String, message: String) {
-      starlingBrowserUI.setError(title, message, {
-        setScreenLocked(false)
-        refreshButtonStatus
-        refreshButton.enabled = history(current).refreshPage.isDefined
-      })
-    }
     def withBuiltPage(page:Page, pageResponse:PageResponse) {
       timer.stop
       stopButton.enabled = false
       if (waitingFor.contains(Some(threadID))) {
         waitingFor -= Some(threadID)
         onEDT({
+          def showError(title: String, message: String) {
+            starlingBrowserUI.setError(title, message, {
+              setScreenLocked(false)
+              refreshButtonStatus
+              refreshButton.enabled = history(current).refreshPage.isDefined
+            })
+          }
+
           // If we have an error and apply special processing here if required, otherwise display page as desired.
           pageResponse match {
             case FailurePageResponse(t:OfflineException) => showError("Cannot Connect to Starling", "Starling is currently offline, please try again later or contact a developer.")
@@ -923,7 +939,10 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
             case FailurePageResponse(t:ServerUpgradeException) => showError("Starling has been Upgraded", "Starling has been upgraded. Please restart your gui.")
             case FailurePageResponse(t:Exception) => t match {
               case e: UndeclaredThrowableException => showError("Error", e.getUndeclaredThrowable.getMessage)
-              case e => showError("Error", e.getMessage)
+              case e => {
+                e.printStackTrace()
+                showError("Error", e.getMessage)
+              }
             }
             case SuccessPageResponse(_,bookmark) => {
               // Generate the image here.

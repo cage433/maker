@@ -118,7 +118,8 @@ object MarketDataStore {
     PricingGroup.LondonDerivatives -> List(Starling, LondonDerivatives, LIM),
     PricingGroup.GasolineRoW -> List(Starling, GasolineRoW, LIM),
     PricingGroup.BarryEckstein -> List(Starling, BarryEckstein, System, LIM),
-    PricingGroup.LondonDerivativesOptions -> List(Starling, LondonDerivativesOptions, System, LIM)
+    PricingGroup.LondonDerivativesOptions -> List(Starling, LondonDerivativesOptions, System, LIM),
+    PricingGroup.Starling -> List(Starling)
   )
 
   val orphanedPricingGroups = (PricingGroup.values \\ Desk.pricingGroups.intersect(pricingGroupsDefinitions.keys.toList))
@@ -136,6 +137,13 @@ object MarketDataStore {
   def editableMarketDataSetFor(pricingGroup: PricingGroup) = {
     pricingGroupsDefinitions.get(pricingGroup).flatMap{ sets => (manuallyEditableMarketDataSets & sets.toSet).headOption }
   }
+
+  def applyOverrideRule(marketDataType:MarketDataType, allDataForKeyAndDay:List[Map[PField,Any]]): List[Map[PField, Any]] = {
+    val dataAsMaps: Map[Map[PField, Any], Map[PField, Any]] = Map() ++ allDataForKeyAndDay.map(marketDataType.splitByFieldType(_))
+    val m = scala.collection.mutable.HashMap[Map[PField,Any],Map[PField,Any]]()
+    dataAsMaps.foreach { case(k,v) => { m(k) = v }}
+    m.map{ case(k,v)=> k++v }.toList
+  }
 }
 
 /**
@@ -145,8 +153,6 @@ object MarketDataStore {
 trait MarketDataStore {
   val pricingGroupsDefinitions = MarketDataStore.pricingGroupsDefinitions
   val pricingGroups = MarketDataStore.pricingGroups
-
-  def applyOverrideRule(marketDataType: MarketDataType, allDataForKeyAndDay: List[Map[PField, Any]]): List[Map[PField, Any]]
 
   def excelDataSets: List[String]
 
@@ -359,13 +365,6 @@ class DBMarketDataStore(db: DBTrait[RichResultSetRow], val marketDataSources: Ma
   def readLatest[T <: MarketData](marketDataSet:MarketDataSet, timedKey: TimedMarketDataKey) : Option[T] = {
     val id = MarketDataID(timedKey.observationPoint, marketDataSet, timedKey.key)
     readFoo(id, None, timedKey.unmarshallDB(_)).asInstanceOf[Option[T]]
-  }
-
-  def applyOverrideRule(marketDataType:MarketDataType, allDataForKeyAndDay:List[Map[PField,Any]]): List[Map[PField, Any]] = {
-    val dataAsMaps: Map[Map[PField, Any], Map[PField, Any]] = Map() ++ allDataForKeyAndDay.map(marketDataType.splitByFieldType(_))
-    val m = scala.collection.mutable.HashMap[Map[PField,Any],Map[PField,Any]]()
-    dataAsMaps.foreach { case(k,v) => { m(k) = v }}
-    m.map{ case(k,v)=> k++v }.toList
   }
 
   def latestPricingGroupVersions: Map[PricingGroup, Int] = {
@@ -699,7 +698,7 @@ class DBMarketDataStore(db: DBTrait[RichResultSetRow], val marketDataSources: Ma
       val allDataForKeyAndDay: List[Map[PField, Any]] = mds.reverse.flatMap(mds => {
         latestValues.get(mds.name).toList.flatMap(data => key.castRows(data))
       })
-      val rowsFromOneMap = applyOverrideRule(marketDataType, allDataForKeyAndDay)
+      val rowsFromOneMap = MarketDataStore.applyOverrideRule(marketDataType, allDataForKeyAndDay)
       if (rowsFromOneMap.nonEmpty) {
         val marketData = marketDataType.createValue(rowsFromOneMap)
         val observationPoint = day match {

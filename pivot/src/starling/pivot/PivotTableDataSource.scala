@@ -3,9 +3,10 @@ package starling.pivot
 import collection.immutable.TreeMap
 import controller.PivotTableConverter._
 import controller.{PivotTableConverter, PivotGrid, TreePivotFilterNode}
-import model.PivotTableModel
+import model.{UndefinedValue, PivotTableModel}
 import starling.utils.ImplicitConversions._
 import starling.pivot.FilterWithOtherTransform.OtherValue
+import starling.pivot.EditableCellState._
 
 case class FieldDetailsGroup(name:String, fields:List[FieldDetails]) {
   def toFieldGroup = {
@@ -61,19 +62,22 @@ object PivotTableDataSource {
 }
 
 trait PivotEdit {
-  val values:Map[Field,Any]
-
-  def value[T](field : Field) : T = values(field).asInstanceOf[T]
+  val keys:Map[Field,Any]
+  def values:Map[Field,Any]
+  def value[T](field:Field) = values(field).asInstanceOf[T]
 }
-case class AmendPivotEdit(values:Map[Field,Any]) extends PivotEdit //keyFields + editableFields
-case class DeletePivotEdit(values:Map[Field,Any]) extends PivotEdit {//Just key fields
+case class AmendPivotEdit(keys:Map[Field,Any], measureValues:Map[Field,Any]) extends PivotEdit { //keyFields + editableFields
+  def values = keys ++ measureValues
+}
+case class DeletePivotEdit(keys:Map[Field,Any]) extends PivotEdit {//Just key fields
   def matches(other : Map[Field, Any], ignoredFields : Field*) = {
-    val filteredValues = values -- ignoredFields
+    val filteredValues = keys -- ignoredFields
 
     filteredValues.forall{case (field, value) => {
       other.get(field) == Some(value)
     }}
   }
+  def values = keys
 }
 
 //Measure is editable if all key fields are in row or column or have single filter area selection
@@ -81,6 +85,7 @@ case class DeletePivotEdit(values:Map[Field,Any]) extends PivotEdit {//Just key 
 trait EditPivot {
   def editableToKeyFields:Map[Field,Set[Field]]
   def save(edits:Set[PivotEdit]):Boolean
+  def withEdits(edits:Set[PivotEdit]):PivotTableDataSource
 }
 
 trait PivotGridSource {
@@ -152,6 +157,45 @@ case class PivotTreePath(path:List[String]) {
 }
 object PivotTreePath {
   def apply(path:String) = {val b = new PivotTreePath(path.split("/").toList); println(b); b}
+}
+
+trait PivotValue {
+  def cellType:EditableCellState
+  def value:Option[Any]
+  def originalValue:Option[Any]
+  def edit:Option[PivotEdit]
+}
+
+case class StandardPivotValue(value0:Any) extends PivotValue {
+  val cellType = Normal
+  val value = Some(value0)
+  val originalValue = None
+  val edit = None
+}
+
+case class DeletedValue(original:Any, e:PivotEdit) extends PivotValue {
+  val cellType = Deleted
+  val value = None
+  val edit = Some(e)
+  val originalValue = Some(original)
+}
+case class EditedValue(value0:Any, original:Any, e:PivotEdit) extends PivotValue {
+  val cellType = Edited
+  val value = Some(value0)
+  val edit = Some(e)
+  val originalValue = Some(original)
+}
+case class NewValue(value0:Any, e:PivotEdit) extends PivotValue {
+  val cellType = Added
+  val value = Some(value0)
+  val edit = Some(e)
+  val originalValue = None
+}
+
+case class MeasureCell(value:Option[Any], cellType:EditableCellState, edits:Set[PivotEdit]=Set.empty)
+object MeasureCell {
+  val Null = MeasureCell(None, Normal)
+  val Undefined = MeasureCell(Some(UndefinedValue), Normal)
 }
 
 case class PivotResult(data:Seq[Map[Field,Any]], possibleValues:Map[Field,List[Any]]){

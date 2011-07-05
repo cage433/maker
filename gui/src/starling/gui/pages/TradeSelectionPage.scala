@@ -30,7 +30,7 @@ case class TradeSelectionPage(
   def text = "Select Trades"
   override def icon = StarlingIcons.im("/icons/16x16_trades.png")
   override def layoutType = Some("TradeSelection")
-  def selfPage(pps:PivotPageState) = copy(pivotPageState = pps)
+  def selfPage(pps:PivotPageState, edits:Set[PivotEdit]) = copy(pivotPageState = pps)
 
   private def tradeSelection = {
     val deskToUse = tpp.deskAndTimestamp.map(_._1)
@@ -85,7 +85,7 @@ case class TradeSelectionPage(
       text, context, tradeSelectionPageData, tpp.deskAndTimestamp.map(_._2), tpp.intradaySubgroupAndTimestamp.map(_._2),
       tpp.expiry,
       PivotComponent(text, context, toolbarButtons(context, data), None, finalDrillDownPage, selfPage, data,
-        pivotPageState, save, bookmark, browserSize))
+        pivotPageState, Set.empty, save, bookmark, browserSize))
   }
 
   override def refreshFunctions = {
