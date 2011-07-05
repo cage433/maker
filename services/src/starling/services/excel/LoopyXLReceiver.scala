@@ -13,7 +13,7 @@ import MessageType._
 import ClosureUtil._
 
 
-class LoopyXLReceiver(port : Int, authHandler: AuthHandler, owners: AnyRef*) extends StoppableThread(isRunning =>
+class LoopyXLReceiver(port : Int, authHandler: AuthHandler[User], owners: AnyRef*) extends StoppableThread(isRunning =>
   Log.infoF("LoopyXLReceiver started listening on port: " + port) {
     val id = new AtomicInteger();
     val methodSource = new ReflectiveMethodSource(owners : _*)

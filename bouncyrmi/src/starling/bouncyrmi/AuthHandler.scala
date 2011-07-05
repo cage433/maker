@@ -1,11 +1,18 @@
 package starling.bouncyrmi
 
-import starling.utils.Log
-import starling.utils.ImplicitConversions._
 import org.jboss.netty.channel._
-import starling.auth.{LdapUserLookup, User}
 
-trait AuthHandler {
+object Logger {
+  def info(s: String, cause: Throwable = null) {}
+  def warn(s: String, cause: Throwable = null) {}
+  def error(s: String, cause: Throwable = null) {}
+}
+
+trait BouncyLdapUserLookup[User] {
+  def user(userName: String): Option[User]
+}
+
+trait AuthHandler[User] {
   /**
    * If authorized a User should be returned. Otherwise
    * None.
@@ -15,48 +22,53 @@ trait AuthHandler {
   def withCallback(callback : Option[User] => Unit) = new CallbackAuthHandler(this, callback)
 }
 
-class NullAuthHandler(user: Option[User]) extends AuthHandler {
+class NullAuthHandler[User](user: Option[User]) extends AuthHandler[User] {
   def authorized(ticket: Option[Array[Byte]]) = user
 }
 
-class CallbackAuthHandler(delegate: AuthHandler, callback: Option[User] => Unit) extends AuthHandler {
-  def authorized(ticket: Option[Array[Byte]]) = delegate.authorized(ticket).update(callback(_))
+class CallbackAuthHandler[User](delegate: AuthHandler[User], callback: Option[User] => Unit) extends AuthHandler[User] {
+  def authorized(ticket: Option[Array[Byte]]) = {
+    val user = delegate.authorized(ticket)
+    callback(user)
+    user
+  }
 }
 
-class ServerAuthHandler(auth: AuthHandler, users:java.util.Set[User], ldapUserLookup:LdapUserLookup, userConnected:(User) => Unit)
-  extends SimpleChannelUpstreamHandler with AuthHandler {
+class ServerAuthHandler[User](auth: AuthHandler[User], users:java.util.Set[User], ldapUserLookup:BouncyLdapUserLookup[User],
+                              userConnected:(User) => Unit, loggedIn: LoggedIn[User])
+  extends SimpleChannelUpstreamHandler with AuthHandler[User] {
 
   override def messageReceived(ctx: ChannelHandlerContext, e: MessageEvent) = {
     val channel = ctx.getChannel
-    BouncyRMI.loggedIn.get(channel) match {
+    loggedIn.get(channel) match {
       case null => {
         e.getMessage match {
           case AuthMessage(ticket, overriddenUser) => {
-            Log.info("Server: User login message found")
+            Logger.info("Server: User login message found")
             authorized(ticket) match {
               case Some(user) => {
-                Log.info("Server: User auth successful for " + user)
+                Logger.info("Server: User auth successful for " + user)
                 userConnected(user)
                 val userToUse = overriddenUser match {
                   case None => user
                   case Some(oUser) => {
-                    Log.info("Server: Overriding User to " + oUser)
+                    Logger.info("Server: Overriding User to " + oUser)
                     ldapUserLookup.user(oUser) match {
-                      case None => Log.warn("Server: Couldn't override user to " + oUser + ", reverting to " + user);user
+                      case None => Logger.warn("Server: Couldn't override user to " + oUser + ", reverting to " + user);user
                       case Some(u) => u
                     }
                   }
                 }
-                Log.info("Server: Actually using the user " + userToUse)
-                BouncyRMI.loggedIn.set(channel, userToUse)
+                Logger.info("Server: Actually using the user " + userToUse)
+                loggedIn.set(channel, userToUse)
                 users.add(userToUse)
                 channel.write(AuthSuccessfulMessage)
               }
               case None => {
                 if(ticket != null && ticket.isDefined) {
-                  Log.info("Server: User auth failed, disconnecting client")
+                  Logger.info("Server: User auth failed, disconnecting client")
                 } else {
-                  Log.info("Server: User auth failed, no kerberos ticket sent, disconnecting client")
+                  Logger.info("Server: User auth failed, no kerberos ticket sent, disconnecting client")
                 }
                 val future = channel.write(AuthFailedMessage)
                 future.addListener(new ChannelFutureListener {
@@ -68,15 +80,15 @@ class ServerAuthHandler(auth: AuthHandler, users:java.util.Set[User], ldapUserLo
             }
           }
           case m => {
-            Log.error("Unrecognised message on unauthorized channel, closing: " + m)
+            Logger.error("Unrecognised message on unauthorized channel, closing: " + m)
             channel.close
           }
         }
       }
       case user => {
-        User.setLoggedOn(Some(user))
+        loggedIn.setLoggedOn(Some(user))
         ctx.sendUpstream(e)
-        User.setLoggedOn(None)
+        loggedIn.setLoggedOn(None)
       }
     }
   }

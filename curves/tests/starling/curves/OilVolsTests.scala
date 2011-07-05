@@ -83,7 +83,7 @@ class OilVolsTests extends JonTestEnv {
           case o : OilVolSurfaceDataKey => volSurfaceData
           case p : PriceDataKey => PriceData.create(periods.map(_ -> 100.0), market.priceUOM)
         })
-        def fixings(market: CommodityMarket, observationPoint: ObservationPoint) = throw new Exception("Not implemented")
+        def fixings(key : PriceFixingsHistoryDataKey, observationPoint: ObservationPoint) = throw new Exception("Not implemented")
       }
     )
     val env = Environment(atomicEnv).undiscounted

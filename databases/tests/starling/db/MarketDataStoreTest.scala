@@ -5,7 +5,6 @@ import org.scalatest.matchers.ShouldMatchers
 import org.springframework.jdbc.datasource.SingleConnectionDataSource
 import org.testng.annotations.{AfterTest, BeforeTest, Test}
 
-import starling.market.Market
 import starling.pivot.model.PivotTableModel
 import starling.quantity.{Quantity, UOM}
 import starling.daterange._
@@ -15,11 +14,11 @@ import starling.pivot._
 import java.lang.String
 import starling.richdb.{RichResultSetRowFactory, RichDB}
 import collection.immutable.{Nil, Map}
-import starling.utils.sql.ConnectionParams
 import starling.utils.{StarlingTest, Broadcaster}
+import starling.market.{TestMarketSpec, Market}
 
 
-class MarketDataStoreTest extends StarlingTest with ShouldMatchers {
+class MarketDataStoreTest extends TestMarketSpec with ShouldMatchers {
 
   lazy val marketDataStore = new DBMarketDataStore(db, Map(), Broadcaster.Null)
 
@@ -30,7 +29,7 @@ class MarketDataStoreTest extends StarlingTest with ShouldMatchers {
   def initialise {
     connection = DBTest.getConnection("jdbc:h2:mem:marketDataStoreTest;create=true")
     val ds = new SingleConnectionDataSource(connection, true)
-    db = new RichDB(ds, new RichResultSetRowFactory)
+    db = new TestDB(ds, new RichResultSetRowFactory)
     db.inTransaction{
       writer => {
         writer.update(create_table)
@@ -71,7 +70,7 @@ class MarketDataStoreTest extends StarlingTest with ShouldMatchers {
     )
     val marketDataIdentifier = MarketDataIdentifier(
       MarketDataSelection(Some(PricingGroup.System)),
-      SpecificMarketDataVersion(marketDataStore.latestPricingGroupVersions(PricingGroup.System))
+      marketDataStore.latestPricingGroupVersions(PricingGroup.System)
     )
 
     val pivotData = marketDataStore.pivot(marketDataIdentifier, SpotFXDataType).data(pfs)
@@ -136,7 +135,7 @@ class MarketDataStoreTest extends StarlingTest with ShouldMatchers {
 
     val pivot = marketDataStore.pivot(MarketDataIdentifier(
         MarketDataSelection(Some(PricingGroup.System)),
-        SpecificMarketDataVersion(marketDataStore.latestPricingGroupVersions(PricingGroup.System))
+        marketDataStore.latestPricingGroupVersions(PricingGroup.System)
       ),
       SpotFXDataType
     )
@@ -152,7 +151,7 @@ class MarketDataStoreTest extends StarlingTest with ShouldMatchers {
       filters = (Field("Observation Time"), SomeSelection(Set(ObservationTimeOfDay.Default.name))) :: Nil
     )
 
-    check(pfs1, ",\nCurrency,Rate (EUR per USD)\nEUR,3.0000 ")
+    check(pfs1, "Currency,Rate (EUR per USD)\nEUR,3.0000 ")
 
     val pfs2 = new PivotFieldsState(
       rowFields = List(Field("Currency")),

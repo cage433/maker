@@ -14,12 +14,12 @@ import starling.utils.ImplicitConversions._
 
 object VerifyPricesValid {
   def apply(marketDataStore: MarketDataStore, pricingGroup: PricingGroup, exchange: FuturesExchange, broadcaster: Broadcaster,
-            from: String, to: String*) = new VerifyPricesValid(
-    marketDataStore.pivot(MarketDataSelection(Some(pricingGroup)), PriceDataType), exchange, broadcaster, from, to : _*)
+            from: String, to: String) = new VerifyPricesValid(
+    marketDataStore.pivot(MarketDataSelection(Some(pricingGroup)), PriceDataType), exchange, broadcaster, from, to)
 }
 
 class VerifyPricesValid(dataSource: PivotTableDataSource, exchange: FuturesExchange, broadcaster: Broadcaster,
-                        from: String, to: String*) extends EmailingScheduledTask(broadcaster, from, to) {
+                        from: String, to: String) extends EmailingScheduledTask(broadcaster, from, to) {
 
   private val pfs = PivotFieldsState(rowFields = fields("Market", "Period"), dataFields = fields("Price"))
 

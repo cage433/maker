@@ -80,7 +80,7 @@ class MarketDataPivotTableDataSource(reader: MarketDataReader, marketDataStore:O
           val groupedEdits: Map[(ObservationPoint, MarketDataKey), List[PivotEdit]] = ungroupedEdits.groupBy(edit => {
             val observationPoint = ObservationPoint(
               edit.value[Day](observationDayField.field),
-              ObservationTimeOfDay(edit.value[String](observationTimeField.field))
+              ObservationTimeOfDay.fromName(edit.value[String](observationTimeField.field))
             )
 
             val key: MarketDataKey = marketDataType.createKey(edit.values)

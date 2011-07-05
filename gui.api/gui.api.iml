@@ -21,6 +21,7 @@
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="library" name="scala-lib" level="project" />
+    <orderEntry type="module" module-name="auth" exported="" />
     <orderEntry type="module" module-name="daterange" exported="" />
     <orderEntry type="module" module-name="pivot" exported="" />
     <orderEntry type="module" module-name="quantity" exported="" />

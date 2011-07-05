@@ -2,13 +2,13 @@ package starling.market
 
 import starling.quantity.UOM
 import starling.quantity.UOM._
-import starling.utils.{Named, StarlingEnum}
+import starling.utils.StarlingEnum
 
-case class FuturesSpreadMarket(name: String, market1: FuturesMarket, market2: FuturesMarket, priceUOM: UOM, lotSize: Double) extends Named {
+case class FuturesSpreadMarket(name: String, market1: FuturesMarket, market2: FuturesMarket, priceUOM: UOM, lotSize: Double) {
   override def toString = name
 }
 
-object FuturesSpreadMarket extends StarlingEnum(classOf[FuturesSpreadMarket], true) {
+object FuturesSpreadMarket extends StarlingEnum(classOf[FuturesSpreadMarket], (f: FuturesSpreadMarket) => f.name, true) {
   import Market._
 
   /**

@@ -32,7 +32,7 @@ case class CommoditySwap(
   extends Swap(index, strike, _volume, averagingPeriod, cleared, pricingRule) with MultiLeg {
 
   require(index.convert(_volume, strike.denominatorUOM).isDefined, "Couldn't convert volume into strike uom: " + (_volume, strike) + ", " + index)
-  require(pricingRule.isValid(index.markets), "Invalid pricing rule for " + index)
+  require(pricingRule.isValid(index.calendars), "Invalid pricing rule for " + index)
 
   // volume converted so everything is in the context of the strike uom
   val volume = index.convert(_volume, strike.denominatorUOM).get
@@ -97,7 +97,7 @@ case class SingleCommoditySwap(
 
   def assets(env: Environment) = {
     val assets = {
-      val days = pricingRule.observationDays(index.markets, averagingPeriod)
+      val days = pricingRule.observationDays(index.calendars, averagingPeriod)
       if (days.isEmpty) {
         List()
       } else {
@@ -131,9 +131,9 @@ object CommoditySwap extends InstrumentType[SingleCommoditySwap] with TradeableT
   /**
    * The default settlement date for swaps is (I believe) generally the
    * fifth business day of the following month.
-   * TODO - check this, although the consequences of getting it wrong
-   * shouldn't be dire. Mtm will just have a slightly incorrect discount
    */
+  // TODO [07 Jan 2010] check this, although the consequences of getting it wrong
+  // TODO [07 Jan 2010]  shouldn't be dire. Mtm will just have a slightly incorrect discount
   def swapSettlementDate(dayInSwap: Day): Day = {
     dayInSwap.containingMonth.lastDay.addBusinessDays(BusinessCalendar.NONE, 5)
   }
@@ -144,9 +144,9 @@ object CommoditySwap extends InstrumentType[SingleCommoditySwap] with TradeableT
       row.getPeriod("Period"), row.getBoolean("Cleared"), row.getSwapPricingRule("PricingRule"))
   }
 
-  def sample = {
+  def sample: CommoditySwap = {
     import starling.quantity.Quantity._
     import starling.quantity.UOM._
-    CommoditySwap(FuturesFrontPeriodIndex.WTI10, 123(USD / BBL), 77000(BBL), Month(2015, 1), true, CommonPricingRule)
+    CommoditySwap(Index.WTI10, 123(USD / BBL), 77000(BBL), Month(2015, 1), true, CommonPricingRule)
   }
 }

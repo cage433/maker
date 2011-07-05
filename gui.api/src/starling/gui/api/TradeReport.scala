@@ -8,7 +8,7 @@ import starling.daterange._
 import starling.quantity.Quantity
 import starling.rmi.StarlingServer
 import starling.tradestore.TradePredicate
-import starling.utils.{Named, StarlingEnum, ImplicitConversions, STable}
+import starling.utils.{StarlingEnum, ImplicitConversions, STable}
 import starling.varcalculator.NAhead
 
 import ImplicitConversions._
@@ -35,10 +35,14 @@ case class SpecificMarketDataVersion(version:Int) extends MarketDataVersion {
 case class SnapshotMarketDataVersion(snapshotLabel:SnapshotIDLabel) extends MarketDataVersion {
   def label = "s" + snapshotLabel.id
 }
+object SnapshotMarketDataVersion {
+  def apply(optLabel: Option[SnapshotIDLabel]): Option[SnapshotMarketDataVersion] = optLabel.map(SnapshotMarketDataVersion(_))
+}
 trait MarketDataPageIdentifier {
   def filteredMarketData:Boolean
   def selection:MarketDataSelection = marketDataIdentifier.selection
   def marketDataIdentifier:MarketDataIdentifier
+  def isCurrent:Boolean = marketDataIdentifier.isCurrent
 }
 case class StandardMarketDataPageIdentifier(marketDataIdentifier:MarketDataIdentifier) extends MarketDataPageIdentifier {
   def filteredMarketData = false
@@ -50,19 +54,26 @@ case class ReportMarketDataPageIdentifier(reportParameters:ReportParameters) ext
 
 case class MarketDataIdentifier(selection: MarketDataSelection, marketDataVersion: MarketDataVersion) {
   def isNull = selection.isNull
-
   def pricingGroupMatches(predicate : PricingGroup => Boolean) = selection.pricingGroupMatches(predicate)
+  def copyVersion(version: Int) = copy(marketDataVersion = SpecificMarketDataVersion(version))
+  def isCurrent:Boolean = marketDataVersion match {
+    case x:SpecificMarketDataVersion => true
+    case _ => false
+  }
+}
 
-  def copyVersion(version : Int) = copy(marketDataVersion=SpecificMarketDataVersion(version))
+object MarketDataIdentifier {
+  def apply(selection: MarketDataSelection, version: Int) =
+    new MarketDataIdentifier(selection, new SpecificMarketDataVersion(version))
 }
 
 class TradeValuation(val valuationParameters:STable) extends Serializable
 
-case class PricingGroup(name:String) extends Named {
+case class PricingGroup(name:String) {
   override def toString = name
 }
 
-object PricingGroup extends StarlingEnum(classOf[PricingGroup]) {
+object PricingGroup extends StarlingEnum(classOf[PricingGroup], (pg: PricingGroup) => pg.name) {
   val Metals = PricingGroup("Metals")
   val System = PricingGroup("System")
   val LimOnly = PricingGroup("LIM Only")
@@ -88,23 +99,23 @@ case class SnapshotIDLabel(observationDay: Day, id: Int, timestamp : Timestamp, 
 }
 
 
-sealed case class Desk(name: String) extends Named {
+sealed case class Desk(name: String) {
   import Desk._
   import PricingGroup._
 
   override def toString = name
 
   def pricingGroups = this match {
-    case Desk.LondonDerivativesOptions            => List(PricingGroup.LondonDerivativesOptions, System, LimOnly)
-    case Desk.LondonDerivatives                   => List(PricingGroup.LondonDerivatives, System, LimOnly)
-    case Desk.GasolineSpec                        => List(PricingGroup.GasolineRoW, LimOnly)
-    case CrudeSpecNorthSea                        => List(Crude, LimOnly)
-    case HoustonDerivatives                       => List(BarryEckstein, LimOnly)
-    case Refined                                  => List(System, Metals)
+    case Desk.LondonDerivativesOptions => List(PricingGroup.LondonDerivativesOptions, System, LimOnly)
+    case Desk.LondonDerivatives        => List(PricingGroup.LondonDerivatives, System, LimOnly)
+    case Desk.GasolineSpec             => List(PricingGroup.GasolineRoW, LimOnly)
+    case CrudeSpecNorthSea             => List(Crude, LimOnly)
+    case HoustonDerivatives            => List(BarryEckstein, LimOnly)
+    case Refined                       => List(System, Metals)
   }
 }
 
-object Desk extends StarlingEnum(classOf[Desk]) {
+object Desk extends StarlingEnum(classOf[Desk], (d: Desk) => d.name, true) {
   val LondonDerivativesOptions = Desk("London Derivatives Options")
   val LondonDerivatives = Desk("London Derivatives")
   val GasolineSpec = Desk("Gasoline Spec Global")
@@ -175,11 +186,11 @@ case class TradeSelectionWithTimestamp(deskAndTimestamp:Option[(Desk, TradeTimes
   }
 }
 
-case class PnlFromParameters(tradeTimestampFrom: Option[TradeTimestamp], curveIdentifierFrom:CurveIdentifierLabel) {
-  def importMissing(server : StarlingServer, observationDaysForPricingGroup : Map[PricingGroup, Set[Day]]) = {
-    copy(curveIdentifierFrom = curveIdentifierFrom.importMissing(server, observationDaysForPricingGroup))
-  }
-}
+case class TradePageParameters(deskAndTimestamp:Option[(Desk, TradeTimestamp)],
+        intradaySubgroupAndTimestamp:Option[(IntradayGroups, Timestamp)],
+        expiry:TradeExpiryDay)
+
+case class PnlFromParameters(tradeTimestampFrom: Option[TradeTimestamp], curveIdentifierFrom:CurveIdentifierLabel)
 
 case class ReportParameters(tradeSelectionWithTimestamp:TradeSelectionWithTimestamp, curveIdentifier:CurveIdentifierLabel,
                             reportOptions:ReportOptions, expiryDay:Day,
@@ -200,11 +211,6 @@ case class ReportParameters(tradeSelectionWithTimestamp:TradeSelectionWithTimest
   def copyWithIntradayTimestamp(timestamp: Timestamp) = {
     copy(tradeSelectionWithTimestamp = tradeSelectionWithTimestamp.copyWithNewIntradaySubgroupTimestamp(timestamp))
   }
-
-  def importMissing(server : StarlingServer, observationDaysForPricingGroup : Map[PricingGroup, Set[Day]]) = {
-    copy(curveIdentifier = curveIdentifier.importMissing(server, observationDaysForPricingGroup),
-         pnlParameters = pnlParameters.map(pnlParams => pnlParams.importMissing(server, observationDaysForPricingGroup)))
-  }
 }
 
 case class EnvironmentModifierLabel(name:String)
@@ -224,24 +230,8 @@ case class CurveIdentifierLabel(
         valuationDayAndTime:DayAndTime, //typically the same as tradesUpToDay but can be moved forward
         thetaDayAndTime:DayAndTime,
         envModifiers:SortedSet[EnvironmentModifierLabel]) {
-//  override def toString = marketDataIdentifier.toString + " " + tradesUpToDay + " " + envModifiers.mkString(", ")
 
-  /**
-   * This will import any missing market data for the given curveIdentifier and return an updated CurveIdentifierLabel
-   */
-  def importMissing(server : StarlingServer, observationDaysForPricingGroup : Map[PricingGroup, Set[Day]]) = {
-    if (marketDataIdentifier.selection.pricingGroup.isDefined && !contains(observationDaysForPricingGroup)) {
-      val label = server.snapshot(MarketDataSelection(marketDataIdentifier.selection.pricingGroup), tradesUpToDay)
-
-      copyMarketDataVersion(SpecificMarketDataVersion(label.version))
-    }
-    else {
-      this
-    }
-  }
-
-  def copyMarketDataVersion(version: MarketDataVersion): CurveIdentifierLabel =
-    copy(marketDataIdentifier = marketDataIdentifier.copy(marketDataVersion = version))
+  def copyVersion(version: Int) = copy(marketDataIdentifier = marketDataIdentifier.copyVersion(version))
 
   private def contains(daysForPricingGroup: Map[PricingGroup, Set[Day]]) : Boolean = {
     marketDataIdentifier.pricingGroupMatches(pricingGroup => daysForPricingGroup.contains(pricingGroup, tradesUpToDay))
@@ -249,7 +239,8 @@ case class CurveIdentifierLabel(
 }
 
 object CurveIdentifierLabel{
-  def defaultLabelFromSingleDay(marketDataIdentifier : MarketDataIdentifier, day : Day, calendar : BusinessCalendar) = {
+  def defaultLabelFromSingleDay(marketDataIdentifier : MarketDataIdentifier, calendar : BusinessCalendar) = {
+    val day = Day.today.previousWeekday // don't use a calendar as we don't know which one
     val timeOfDayToUse = if (day >= Day.today) TimeOfDay.StartOfDay else TimeOfDay.EndOfDay
     CurveIdentifierLabel(
       marketDataIdentifier,

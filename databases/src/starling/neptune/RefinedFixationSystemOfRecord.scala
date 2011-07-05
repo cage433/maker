@@ -106,7 +106,7 @@ class RefinedFixationSystemOfRecord(externalDB : RichDB) extends SystemOfRecord(
     val contractDate = rs.getDay("CONTRACTDATE")
     val counterparty = rs.getString("COUNTERPARTY")
 
-    // TODO - add month in extraColumns - and allocated also
+    // TODO [11 Aug 2010] add month in extraColumns - and allocated also
     val groupCompany = rs.getString("COMPANY_CODE")
     val exchange = rs.getString("EXCHANGE")
     val pricingType = (rs.getInt("PRICING_TYPE_NUMBER"), rs.getString("MONTHLY_AVERAGE")) match {

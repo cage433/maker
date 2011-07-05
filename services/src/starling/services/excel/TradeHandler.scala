@@ -75,7 +75,7 @@ class TradeHandler(broadcaster : Broadcaster,
 
     val tradesHash: Long = {
       val allTrades = tradeReader.allTrades(header, trades, name)
-      intradayTradeStore.storeTrades(loggedOnUser, name, allTrades)._1
+      intradayTradeStore.storeTrades(loggedOnUser, name, allTrades).hash
     }
 
     broadcaster.broadcast(BlotterTradeUpdate(loggedOnUser, name, concat(header, trades)))

@@ -57,7 +57,9 @@ class ReportContextBuilder(marketDataStore:MarketDataStore) {
 
     if (curveIdentifier.marketDataIdentifier.isNull) {
       new AbstractReportContext(curveIdentifier, environmentSliders.toList) {
-        def atomicEnvironment(day: Day) = new NullAtomicEnvironment(day.endOfDay)
+        def atomicEnvironment(day: Day) = {
+          curveIdentifier.environmentRule.createNullAtomicEnvironment(day)
+        }
         def observationDays(from: Day, to: Day) = SimpleDateRange(from, to).days.toList.map(ObservationDay)
         def recorded : Set[(ObservationPoint, MarketDataKey, MarketData)] = Set()
       }
@@ -75,10 +77,10 @@ class ReportContextBuilder(marketDataStore:MarketDataStore) {
  * Just returns the ReportData which is used in ReportPivotTableDataSource to create a pivot
  */
 class PivotReportRunner(reportContextBuilder:ReportContextBuilder) {
-  val marketSlideAttributes = Market.markets.map(m => SlideAttributes(m.name, Some(m.standardShift.uom.toString), m.standardShift.value.toString))
+  val marketSlideAttributes = Market.all.map(m => SlideAttributes(m.name, Some(m.standardShift.uom.toString), m.standardShift.value.toString))
 
   // We only want to slide commodities that have a standard futures market and all a commodities future markets have the same uom.
-  val commodityMarketsWithFuture = Market.markets.map(_.commodity).distinct.filter(Commodity.hasStandardFuturesMarket(_))
+  val commodityMarketsWithFuture = Market.all.map(_.commodity).distinct.filter(Commodity.hasStandardFuturesMarket(_))
   val commodityToUOMMap = commodityMarketsWithFuture.foldLeft(Map[Commodity, ListBuffer[UOM]]())((map,commodity) => {
     val currentUOMs = map.getOrElse(commodity, new ListBuffer[UOM]())
     val thisUOM = Commodity.standardFuturesMarket(commodity).standardShift.uom
@@ -89,7 +91,7 @@ class PivotReportRunner(reportContextBuilder:ReportContextBuilder) {
   val commodityMarketSlideAttributes = validCommodityMarketsToSlide.map(c =>
     SlideAttributes(c.name, Some(c.representativeMarket.standardShift.uom.toString), c.representativeMarket.standardShift.value.toString))
 
-  val marketSlideAttributesForVol = Market.markets.map(m => SlideAttributes(m.name, Some("%"), "1"))
+  val marketSlideAttributesForVol = Market.all.map(m => SlideAttributes(m.name, Some("%"), "1"))
   val futuresMarketSlideAttributes = Market.futuresMarkets.map(m => SlideAttributes(m.name, Some(m.standardShift.uom.toString), m.standardShift.value.toString))
   val marketText = "Market:"
   val priceSlideParameters = SlideParametersAvailable(Price.toString, Some(marketSlideAttributes), "3", "3", None, None, None, marketText)
@@ -205,7 +207,7 @@ class ReportService(
     } catch {
       case e =>
     }
-    // TODO Nick -- str-401
+    // TODO [13 Jan 2011] Nick -- str-401
     // record has all the data needed to display the inputs
 
     val atomicData = (for ((key, value) <- atomicRecorder.keysAndValues) yield List(key.curveKey.toString, key.point.toString, value.toString)).toList
@@ -425,11 +427,14 @@ class ReportService(
         val list = List(PivotReportData.run(newTradesReport, utps, SlideDetails.Null, List()))
         val tradePivot = newTradesTradeSet.reportPivot(curveIdentifierD.tradesUpToDay, expiryDay, t, addRows)
         new ReportPivotTableDataSource(tradePivot, list) {
+          val dayChangeText = "Day Change"
           override def initialState = PivotFieldsState(
-            dataFields=List(Field("Day Change")),
+            dataFields=List(Field(dayChangeText)),
             rowFields=List(Field("Risk Period")),
             columnFields=List(Field("Risk Market"), Field("Day Change Component"))
           )
+
+          override def zeroFields = Set(Field(dayChangeText))
         }
       }
       val tradeChangesPivot = {
@@ -480,7 +485,7 @@ object ConvertedSlideParams {
     }
 
     val market = params.market.map(mar => Market.fromName(mar))
-    val commodity = params.commodity.map(com => Commodity.fromName(com))
+    val commodity = params.commodity.flatMap(com => Commodity.fromNameOption(com))
     new ConvertedSlideParams(slideType, market, params.stepSize, uom, stepIndexList, commodity)
   }
 }

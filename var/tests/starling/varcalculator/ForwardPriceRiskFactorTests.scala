@@ -6,9 +6,9 @@ import org.testng.annotations.Test
 import starling.quantity.UOM._
 import org.testng.Assert._
 import collection.immutable.TreeSet
-import starling.market.{TestExpiryRules, FuturesMarket, Market}
+import starling.market.{TestMarketSpec, FuturesMarket, Market}
 
-class ForwardPriceRiskFactorTests extends TestExpiryRules{
+class ForwardPriceRiskFactorTests extends TestMarketSpec{
 
   @Test
   def testOffset {
@@ -25,8 +25,8 @@ class ForwardPriceRiskFactorTests extends TestExpiryRules{
 
   @Test
   def testSetBehaviour(){
-    val market1 = FuturesMarket.testMarket("fred", USD, MT)
-    val market2 = FuturesMarket.testMarket("ginger", USD, MT)
+    val market1 = Market.testMarket("fred", USD, MT)
+    val market2 = Market.testMarket("ginger", USD, MT)
 
 
     val rf1 = ForwardPriceRiskFactor(market1, 180, 180)

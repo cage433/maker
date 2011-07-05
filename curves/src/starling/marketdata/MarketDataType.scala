@@ -1,8 +1,8 @@
 package starling.marketdata
 
 import starling.pivot.{Field, SomeSelection, PivotFieldsState, FieldDetails}
-import starling.curves.SpreadStdDevSurfaceDataType
 import starling.market.EquityPricesDataType
+import starling.curves.{SpreadStdDevSurfaceDataType}
 
 /**
  * There is one of these for each time of market data. eg. prices, spotfx, forward rates...
@@ -10,13 +10,17 @@ import starling.market.EquityPricesDataType
 trait MarketDataType {
   type dataType <: MarketData
 
-  val name: String = {
-    val className = getClass.getName.substring(getClass.getName.lastIndexOf(".") + 1)
-    className.substring(0, className.length-"DataType$".length)
-  }
+  val name: String = getClass.getName.substring(getClass.getName.lastIndexOf(".") + 1).stripSuffix("DataType$")
+
+  // Fields needed to uniquely define some market datum. For prices it would be market and period.
   def keyFields:Set[Field]
-  def valueFields:Set[Field]
+  // The field (always one?) for the market data - e.g. price
+  def valueFields:Set[Field] // TODO [08 Jun 2011] Shouldn't valueFields be everything other than the keyFields ?
   def createKey(values:Map[Field,Any]):MarketDataKey
+
+  /** Creates a market data type from the list of field values. Typically these
+    * contain user overrides and data from Lim
+   */
   def createValue(values:List[Map[Field,Any]]):dataType
   override val toString = name
 
@@ -26,11 +30,14 @@ trait MarketDataType {
 
   //The initial state to use in the market data viewer for this type of market data
   val initialPivotState:PivotFieldsState
+
+  def splitByFieldType[T](map: Map[Field, T]) = map.filterKeys(keyFields) → map.filterKeys(f => !keyFields.contains(f))
 }
 
 object MarketDataTypes {
   //This list is indirectly used to populate the drop down list in the market data viewer
   val types = List(
+    GradeHubBenchmarkDataType,
     PriceDataType,
     BradyFXVolSurfaceDataType,
     BradyMetalVolsDataType,
@@ -40,5 +47,8 @@ object MarketDataTypes {
     PriceFixingsHistoryDataType,
     SpreadStdDevSurfaceDataType,
     EquityPricesDataType)
+
+  def fromName(name: String) = types.find(_.name == name).getOrElse(
+    throw new Exception("No market data type found for name: " + name + ", available: " + types.map(_.name).mkString(", ")))
 }
 

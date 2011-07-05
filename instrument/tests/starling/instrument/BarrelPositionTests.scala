@@ -4,7 +4,6 @@ import starling.utils.StarlingTest
 import org.testng.annotations.Test
 import starling.quantity.UOM._
 import starling.market.Market._
-import starling.market.ForwardMarket
 import org.testng.Assert._
 import starling.utils.QuantityTestUtils._
 import starling.curves._
@@ -13,7 +12,7 @@ import starling.daterange.{TestHolidays, DayAndTime, Day, Month}
 import starling.quantity.{Percentage, Quantity}
 import starling.models.{European, Call}
 
-class BarrelPositionTests extends TestExpiryRules {
+class BarrelPositionTests extends TestMarketSpec {
 
 	private val prices:Map[CommodityMarket, Double] = Map(
     LME_LEAD -> 123.0, NYMEX_WTI -> 108.0,

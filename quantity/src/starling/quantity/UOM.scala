@@ -5,10 +5,13 @@ import starling.utils.CaseInsensitive._
 import starling.utils.cache.CacheFactory
 
 import starling.utils.ImplicitConversions._
+import starling.utils.Pattern._
 
 
 object UOM {
   def apply(numerator : Long, denominator : Long) : UOM = UOM(Ratio(1,1), Ratio(numerator, denominator))
+
+  val Parse = Extractor.from[String](value => fromStringOption(value))
 
   import UOMSymbol._
   val NULL = UOM.build(0, 1)
@@ -54,6 +57,7 @@ object UOM {
   val US_CENT = US_CENT_SYMBOL.asUOM
   val SHARE = SHARE_SYMBOL.asUOM
 
+  val ST = SHORT_TONNE_SYMBOL.asUOM
   val MT = TONNE_SYMBOL.asUOM
   val C_MT = C_TONNE_SYMBOL.asUOM
   val K_MT = KILO_TONNE_SYMBOL.asUOM
@@ -109,7 +113,7 @@ object UOM {
 
   val MILLISECONDS = MILLISECONDS_SYMBOL.asUOM
 
-  lazy val currencies = currencySymbols.map(_.asUOM) 
+  lazy val currencies = currencySymbols.map(_.asUOM)
 
   def build(numerator : Int, denominator : Int) : UOM = {
   		UOM(numerator, denominator).reduce
@@ -139,7 +143,8 @@ object UOM {
       }
 
       val unScaledUOM = uomString match {
-        case FXRegex(num, _, dem) => (getSymbolOption(num.trim), getSymbolOption(dem.trim)) partialMatch {
+          // check the length so that S/T doesn't fall in here. I don't know any FX that is 3 chars or less
+        case FXRegex(num, _, dem) if uomString.length > 3 => (getSymbolOption(num.trim), getSymbolOption(dem.trim)) partialMatch {
           case (Some(n), Some(d)) => n.asUOM / d.asUOM
         }
         case _ => getSymbolOption(uomString.trim).map(_.asUOM)
@@ -158,12 +163,26 @@ object UOM {
 
   def fromIdentifier(uomString : String) = fromString(uomString)
 
-  private val allCurrencies = currencies.map(ccy => ccy.toString -> ccy).toMap
-  def parseCurrency(text:String) = {
-    allCurrencies.get(text.toUpperCase)
+  private val allCurrencies = currencies.toMapWithKeys(_.toString)
+  def parseCurrency(text:String) = allCurrencies.get(text.toUpperCase)
+
+  def fromSymbolMap(symbolMap : Map[UOMSymbol, Int]) : UOM = {
+    if (symbolMap.isEmpty)
+      // We could equally return SCALAR here - not sure it matters
+      UOM.NULL
+    else {
+      (UOM.SCALAR /: symbolMap.toList){
+        case (accumulator, (sym, power)) =>
+          accumulator * (sym.asUOM ^ power)
+      }
+    }
   }
+
 }
 
+/**
+ * scale is e.g kilo, centi, mega etc
+ */
 case class UOM private (scale : Ratio, value : Ratio) extends RatioT[UOM] {
   import UOM._
 
@@ -227,8 +246,8 @@ case class UOM private (scale : Ratio, value : Ratio) extends RatioT[UOM] {
     }
   }
 
-  
   def asSymbolMap() : Map[UOMSymbol, Int] = {
+    // Note - both NULL and SCALAR become an empty map
   	def recurse (n : Long, primes : List[Int], acc : Map[Int, Int]) : Map[Int, Int] = n match {
       case 0 => acc		// Should only happen for the null unit
       case 1 => acc
@@ -248,7 +267,8 @@ case class UOM private (scale : Ratio, value : Ratio) extends RatioT[UOM] {
     val primePowers = decompose(reducedUOM.value.numerator) ++ negativePowers
     Map.empty ++ primePowers.map{case (p, n) => (UOMSymbol.symbolForPrice(p) -> n)}
   }
-  
+
+
   def numeratorUOM : UOM = UOM(scale.numeratorRatio, Ratio(reduce.value.numerator, 1))
   def denominatorUOM : UOM = UOM(scale.denominatorRatio, Ratio(reduce.value.denominator, 1))
 
@@ -257,8 +277,4 @@ case class UOM private (scale : Ratio, value : Ratio) extends RatioT[UOM] {
   def isCurrency = currencies.contains(this)
   def isProperUOM = !(isScalar || isNull)
   def isFX = numeratorUOM.isCurrency && denominatorUOM.isCurrency
-}
-
-object UOMParse {
-  def unapply(s: String) = UOM.fromStringOption(s)
 }

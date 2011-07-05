@@ -17,7 +17,7 @@ case class DayOffSet(offset:Int)
 
 class UserSettingsDatabase(val db:DB, broadcaster:Broadcaster) {
   // This is the standard number of characters in a var char column.
-  private val colSize = 30
+  private val colSize = 300
 
   def loadSettings:UserSettings = {
     val user = User.currentlyLoggedOn.username.take(colSize)
@@ -35,7 +35,7 @@ class UserSettingsDatabase(val db:DB, broadcaster:Broadcaster) {
   def readAll() {
     allSettings
     allPivotLayouts
-    allUserReports
+    allBookmarks
   }
 
   def allSettings:List[UserSettings] = {
@@ -168,45 +168,42 @@ class UserSettingsDatabase(val db:DB, broadcaster:Broadcaster) {
     }.groupBy(_._1).mapValues(_.map(_._2))
   }
 
-  def deleteUserReport(user:User, reportName:String) {
+  def bookmarks(user:User):List[BookmarkLabel] = {
+    val userName = user.username.take(colSize)
+    db.queryWithResult("SELECT * FROM Bookmarks where starlingUser = :user", Map("user" -> userName)) {
+      rs => BookmarkLabel(rs.getString("bookmarkName"), rs.getString("bookmark"))
+    }
+  }
+
+  def allBookmarks:Map[String, List[BookmarkLabel]] = {
+    db.queryWithResult("SELECT * FROM Bookmarks", Map()) {
+      rs => {
+        val user = rs.getString("starlingUser")
+        val bookmark = BookmarkLabel(rs.getString("bookmarkName"), rs.getString("bookmark"))
+        (user, bookmark)
+      }
+    }.groupBy(_._1).mapValues(_.map(_._2))
+  }
+
+  def saveBookmark(user:User, bookmarkLabel:BookmarkLabel) {
+    val username = user.username.take(colSize)
+    val bookmarkName = bookmarkLabel.name.take(colSize)
+    db.inTransaction {
+      writer => {
+        writer.insert("Bookmarks", Map("starlingUser" -> username, "bookmarkName" -> bookmarkName, "bookmark" -> bookmarkLabel.bookmark))
+      }
+    }
+    broadcaster.broadcast(BookmarksUpdate(user.username, bookmarks(user)))
+  }
+
+  def deleteBookmark(user:User, bookmarkName:String) {
     val userName = user.username.take(colSize)
     db.inTransaction {
       writer => {
-        writer.delete("UserReports", ("starlingUser" eql user) and ("reportName" eql reportName))
-        // Also delete user layouts that are associated with this report.
-        val layoutsToDelete = new ListBuffer[String]
-        writer.queryForUpdate("select * from PivotLayouts where starlingUser = '" + userName +"'") {
-          rs => {
-            val associatedReport = rs.getString("associatedReport")
-            if (associatedReport != null) {
-              val associatedReports = associatedReport.split(PivotLayout.AssociatedReportsDelimiter).toList
-              if (associatedReports.contains(reportName)) {
-                val newAssociatedReports = associatedReports.filterNot(_ == reportName)
-                if (newAssociatedReports.isEmpty) {
-                  layoutsToDelete += rs.getString("layoutName")
-                }
-                rs.update(Map("associatedReport" -> newAssociatedReports.mkString(PivotLayout.AssociatedReportsDelimiter)))
-              }
-            }
-          }
-        }
-        writer.delete("PivotLayouts", ("starlingUser" eql user) and ("layoutName" in layoutsToDelete.toList))
+        writer.delete("Bookmarks", ("starlingUser" eql LiteralString(userName)) and ("bookmarkName" eql LiteralString(bookmarkName)))
       }
     }
-    broadcaster.broadcast(UserReportUpdate(user.username, userReports(user)))
-    broadcaster.broadcast(PivotLayoutUpdate(user.username, readPivotLayouts(user)))
-  }
-
-  def saveUserReport(user:User, reportName0:String, data:UserReportData, showParameters:Boolean) {
-    val username = user.username.take(colSize)
-    val reportName = reportName0.take(colSize)
-    db.inTransaction {
-      writer => {
-        writer.insert("UserReports", Map("starlingUser" -> username, "reportName" -> reportName,
-          "report" -> StarlingXStream.write(data), "showParameters" -> showParameters))
-      }
-    }
-    broadcaster.broadcast(UserReportUpdate(user.username, userReports(user)))
+    broadcaster.broadcast(BookmarksUpdate(user.username, bookmarks(user)))
   }
 
   def logPageView(info:PageLogInfo) {
@@ -239,6 +236,26 @@ class UserSettingsDatabase(val db:DB, broadcaster:Broadcaster) {
     db.inTransaction {
       writer => {
         writer.insert("UserSystemInfo", Map("starlingUser" -> userName, "logOnTime" -> timestamp, "info" -> info.toString))
+      }
+    }
+  }
+
+  def deleteUserReport(user:User, reportName:String) {
+    val userName = user.username.take(colSize)
+    db.inTransaction {
+      writer => {
+        writer.delete("UserReports", ("starlingUser" eql LiteralString(userName)) and ("reportName" eql LiteralString(reportName)))
+      }
+    }
+  }
+
+  def saveUserReport(user:User, reportName0:String, data:UserReportData, showParameters:Boolean) {
+    val username = user.username.take(colSize)
+    val reportName = reportName0.take(colSize)
+    db.inTransaction {
+      writer => {
+        writer.insert("UserReports", Map("starlingUser" -> username, "reportName" -> reportName,
+          "report" -> StarlingXStream.write(data), "showParameters" -> showParameters))
       }
     }
   }

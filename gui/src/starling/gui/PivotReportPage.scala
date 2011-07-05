@@ -55,13 +55,13 @@ case class DifferenceMainPivotReportPage(
       pivotPageState)
 }
 
-case class PivotReportTablePageData(numErrors:Int, userReportData:UserReportData) extends PageData
+case class PivotReportTablePageData(numErrors:Int) extends PageData
 
 case class MainPivotReportPage(showParameters:Boolean, reportParameters:ReportParameters, pivotPageState:PivotPageState) extends AbstractPivotPage(pivotPageState) {
-  private val shortTitle = "Risk Report"
-  val text = if (showParameters) shortTitle else reportParameters.text
-  override val icon = StarlingIcons.im("/icons/16x16_report.png")
-  override val shortText = if (showParameters) shortTitle else reportParameters.shortText
+  private def shortTitle = "Risk Report"
+  def text = if (showParameters) shortTitle else reportParameters.text
+  override def icon = StarlingIcons.im("/icons/16x16_report.png")
+  override def shortText = if (showParameters) shortTitle else reportParameters.shortText
   override def layoutType = Some(PivotLayout.ReportLayoutType)
 
   override def refreshFunctions = {
@@ -83,20 +83,20 @@ case class MainPivotReportPage(showParameters:Boolean, reportParameters:ReportPa
         val pnlParameters = reportParameters.pnlParameters.map {
           pnlParameters => {
             pnlParameters.curveIdentifierFrom.marketDataIdentifier.selection.excel match {
-              case Some(`name`) => pnlParameters.copy(curveIdentifierFrom=pnlParameters.curveIdentifierFrom.copyMarketDataVersion(SpecificMarketDataVersion(version)))
+              case Some(`name`) => pnlParameters.copy(curveIdentifierFrom=pnlParameters.curveIdentifierFrom.copyVersion(version))
               case _ => pnlParameters
             }
           }
         }
         val curveIdentifier = reportParameters.curveIdentifier.marketDataIdentifier.selection.excel match {
-          case Some(`name`) => reportParameters.curveIdentifier.copyMarketDataVersion(SpecificMarketDataVersion(version))
+          case Some(`name`) => reportParameters.curveIdentifier.copyVersion(version)
           case None => reportParameters.curveIdentifier
         }
         selfReportPage(reportParameters.copy(curveIdentifier=curveIdentifier, pnlParameters=pnlParameters))
       } }
     }
 
-    //TODO: respond to PricingGroup market data changes
+    //TODO [02 Dec 2010] respond to PricingGroup market data changes
 
     functions.toList
   }
@@ -126,9 +126,7 @@ case class MainPivotReportPage(showParameters:Boolean, reportParameters:ReportPa
   }
 
   override def subClassesPageData(reader:PageBuildingContext):Option[PageData] = {
-    Some(PivotReportTablePageData(
-      reader.cachingStarlingServer.reportErrors(reportParameters).errors.size,
-      reader.starlingServer.createUserReport(reportParameters)))
+    Some(PivotReportTablePageData(reader.cachingStarlingServer.reportErrors(reportParameters).errors.size))
   }
 
   def dataRequest(pageBuildingContext: PageBuildingContext) = {
@@ -141,14 +139,14 @@ case class MainPivotReportPage(showParameters:Boolean, reportParameters:ReportPa
 
   override def configPanel(context:PageContext, data:PageData) = {
     if (showParameters) {
-      val (pivotData, userReportData, user0, layoutTypeOption) = data match {
+      val pivotData = data match {
         case PivotTablePageData(pivData,Some(pd),layoutTypeOption) => pd match {
-          case PivotReportTablePageData(_, userReportData) => {
-            (pivData, Some(userReportData), context.localCache.currentUser, layoutTypeOption)
+          case PivotReportTablePageData(_) => {
+            pivData
           }
           case scd => throw new Exception("Don't know how to handle this type of subclass page data: " + scd.getClass)
         }
-        case PivotTablePageData(pivData,None,layoutTypeOption) => (pivData,None,context.localCache.currentUser, layoutTypeOption)
+        case PivotTablePageData(pivData,None,layoutTypeOption) => pivData
         case _ => throw new Exception("Don't know how to handle this type of page data")
       }
       
@@ -168,12 +166,11 @@ case class MainPivotReportPage(showParameters:Boolean, reportParameters:ReportPa
           pivotPageState
         }
 
-        val observationDaysForPricingGroup = context.localCache.populatedObservationDaysForPricingGroup
         context.createAndGoTo{
           server => {
             // check to see if we have market data for the observation day and pnl from day, if we don't, import it
             // making new copies of the ReportParameters is the really ugly bit
-            selfReportPage(rp = rp.importMissing(server, observationDaysForPricingGroup), pps = newPivotPageState)
+            selfReportPage(rp = rp, pps = newPivotPageState)
           }
         }
       }
@@ -184,6 +181,7 @@ case class MainPivotReportPage(showParameters:Boolean, reportParameters:ReportPa
         manualConfigPanel.generateReportParams(slideConfigPanel.slideConfig)
       }
       val presetReportPanel = new PresetReportConfigPanel(context, reportParameters, pivotPageState)
+      val tradeInfoPanel = new TradeInfoConfigPanel(context, reportParameters)
 
       val runPanel = new MigPanel("insets 0","[p]1lp[p]push") {
         reactions += {
@@ -233,19 +231,13 @@ case class MainPivotReportPage(showParameters:Boolean, reportParameters:ReportPa
         }
 
         def updateRunButton(rps:ReportParameters) {
-          runButton.enabled = (rps != reportParameters)
+          runButton.enabled = (rps != reportParameters || !reportParameters.runReports)
         }
         def updateRunButton(mds:MarketDataSelection) {
-          runButton.enabled = (mds != reportParameters.curveIdentifier.marketDataIdentifier.selection)
-        }
-
-        val saveReportButton = new SaveReportButton(context, userReportData, pivotData, pivotPageState,
-          showParameters, user0, layoutTypeOption.get) {
-          enabled = reportParameters.runReports
+          runButton.enabled = (mds != reportParameters.curveIdentifier.marketDataIdentifier.selection || !reportParameters.runReports)
         }
 
         add(runButton, "ay center, tag ok")
-        add(saveReportButton, "ay center")
 
         updateRunButton(generateRPs)
 
@@ -258,10 +250,31 @@ case class MainPivotReportPage(showParameters:Boolean, reportParameters:ReportPa
         }
       }
 
-      Some(ConfigPanels(List(presetReportPanel, manualConfigPanel, slideConfigPanel), runPanel, Action("runReportAction") {runPanel.run()}))
+      Some(ConfigPanels(
+        List(presetReportPanel, manualConfigPanel, slideConfigPanel, tradeInfoPanel),
+        runPanel, Action("runReportAction") {runPanel.run()}))
     } else {
       None
     }
+  }
+
+  override def bookmark(server:StarlingServer):Bookmark = ReportBookmark(showParameters, server.createUserReport(reportParameters), pivotPageState)
+}
+
+case class ReportBookmark(showParameters:Boolean, userReportData:UserReportData, pivotPageState:PivotPageState) extends Bookmark {
+  def daySensitive = {
+    userReportData.environmentRule match {
+      case EnvironmentRuleLabel.RealTime => false
+      case _ => true
+    }
+  }
+  def createPage(day:Option[Day], server:StarlingServer, context:PageContext) = {
+    val dayToUse = day match {
+      case None => Day.today() // Real time
+      case Some(d) => d
+    }
+    val reportParameters = server.createReportParameters(userReportData, dayToUse)
+    MainPivotReportPage(showParameters, reportParameters, pivotPageState)
   }
 }
 
@@ -270,7 +283,7 @@ object PivotReportPage {
                             pivotPageState:PivotPageState) = {
     val (pivotData, numErrors) = data match {
       case PivotTablePageData(pivData,Some(pd),_) => pd match {
-        case PivotReportTablePageData(numErrors, _) => {
+        case PivotReportTablePageData(numErrors) => {
           (pivData, numErrors)
         }
         case scd => throw new Exception("Don't know how to handle this type of subclass page data: " + scd.getClass)
@@ -301,7 +314,7 @@ object PivotReportPage {
         icon = StarlingIcons.icon("/icons/16x16_market_data.png")
         reactions += {
           case ButtonClicked(b) => {
-            pageContext.goTo(MarketDataPage(ReportMarketDataPageIdentifier(reportParameters), MarketDataPageState()))
+            MarketDataPage.goTo(pageContext, ReportMarketDataPageIdentifier(reportParameters), None, None)
           }
         }
       }
@@ -315,34 +328,15 @@ object PivotReportPage {
   }
 }
 
-case class SaveReportRequest(reportName:String, userReportData:UserReportData, pivotLayout:PivotLayout,
-                             shouldSaveLayout:Boolean, shouldAssociateLayout:Boolean, showParameters:Boolean) extends SubmitRequest[Unit] {
-  def submit(server:StarlingServer) {
-    server.saveUserReport(reportName, userReportData, showParameters)
-    if (shouldSaveLayout && shouldAssociateLayout) {
-      // This is the case where it is a custom layout so we want to save the layout and associate it with this report
-      server.saveLayout(pivotLayout.copy(associatedReports = List(reportName)))
-    } else if (shouldAssociateLayout) {
-      // This is the case where the layout is already saved but we want to associate it with this report.
-      server.deleteLayout(pivotLayout.layoutName)
-      server.saveLayout(pivotLayout.copy(associatedReports = reportName :: pivotLayout.associatedReports))
-    }
-  }
-}
-
-case class DeleteReportRequest(reportName:String) extends SubmitRequest[Unit] {
-  def submit(server:StarlingServer) {server.deleteUserReport(reportName)}
-}
-
 case class ReportErrorsPage(reportParameters:ReportParameters) extends Page {
-  val text = "Errors in " + reportParameters.text
-  def createComponent(context: PageContext, data: PageData, browserSize:Dimension) = new PivotReportErrorPageComponent(context, data, browserSize)
+  def text = "Errors in " + reportParameters.text
+  def createComponent(context: PageContext, data: PageData, bookmark:Bookmark, browserSize:Dimension) = new PivotReportErrorPageComponent(context, data, browserSize)
   def build(pageBuildingContext: PageBuildingContext) = {
     val errors = pageBuildingContext.cachingStarlingServer.reportErrors(reportParameters)
     val errorsToUse = errors.errors.map(e => ErrorViewElement(e.instrumentText, e.message))
     PivotReportErrorPageData(errorsToUse)
   }
-  val icon = StarlingIcons.im("/icons/error.png")
+  def icon = StarlingIcons.im("/icons/error.png")
 }
 case class PivotReportErrorPageData(reportErrors:List[ErrorViewElement]) extends PageData
 
@@ -356,9 +350,9 @@ class PivotReportErrorPageComponent(pageContext:PageContext, data:PageData, brow
 }
 
 case class ReportCellErrorsPage(errors:List[StackTrace]) extends Page {
-  val text = "Errors"
-  val icon = StarlingIcons.im("/icons/error.png")
-  def createComponent(context:PageContext, data:PageData, browserSize:Dimension) = {
+  def text = "Errors"
+  def icon = StarlingIcons.im("/icons/error.png")
+  def createComponent(context:PageContext, data:PageData, bookmark:Bookmark, browserSize:Dimension) = {
     val errorsToUse = data match {
       case d:ReportCellErrorData => d.errors
     }

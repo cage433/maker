@@ -3,8 +3,14 @@ package starling.calendar
 import starling.daterange.{Location, DateRange, Day}
 import starling.utils.ImplicitConversions._
 
-case class BusinessCalendarSet(name: String, location: Location, days: Set[Day]) extends BusinessCalendar {
-  def isHoliday(day: Day) = days.contains(day)
+case class BusinessCalendarSet(name: String, location: Location, holidays: Set[Day]) extends BusinessCalendar {
+  def isHoliday(day: Day) = holidays.contains(day)
+
+  def +(other: BusinessCalendarSet):BusinessCalendarSet = other.location match {
+    case `location` if other == this => this
+    case `location` => BusinessCalendarSet(name + other.name, location, holidays ++ other.holidays)
+    case _ => BusinessCalendarSet(name + other.name, Location.Unknown, holidays ++ other.holidays)
+  }
 }
 
 trait BusinessCalendar { self =>
@@ -47,4 +53,21 @@ object BusinessCalendar{
     def isHoliday(day : Day) = false
     def location = Location.Unknown
   }
+  val WeekdayBusinessCalendar = new BusinessCalendar {
+    def name = "Weekday"
+    def location = Location.Unknown
+    def isHoliday(day:Day) = day.isWeekendDay
+  }
+
+  case class ErrorCalendar(code: String) extends BusinessCalendar {
+    def location = Location.Unknown
+
+    def isHoliday(day: Day) = throw new Exception("No holidays for this calendar: " + code)
+
+    def name = {
+      "Error no calendar for: " + code
+    }
+  }
+
+  def error(code: String) = ErrorCalendar(code)
 }

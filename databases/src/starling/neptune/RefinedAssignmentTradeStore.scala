@@ -43,7 +43,7 @@ object RefinedAssignmentTradeAttributes {
 
 
 class RefinedAssignmentTradeStore(db: RichDB, broadcaster:Broadcaster)
-  extends TradeStore(db, broadcaster, RefinedAssignmentTradeSystem, false, None)
+  extends TradeStore(db, broadcaster, RefinedAssignmentTradeSystem, None)
 {
   val tradeAttributesFactory = RefinedAssignmentTradeAttributes
 

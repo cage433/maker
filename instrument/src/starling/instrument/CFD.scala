@@ -47,7 +47,7 @@ case class SingleCFD(index: Index,
 
   def assets(env: Environment) = {
     val assets = {
-      val days = pricingRule.observationDays(index.markets, averagingPeriod)
+      val days = pricingRule.observationDays(index.calendars, averagingPeriod)
       if (days.isEmpty) {
         List()
       } else {
@@ -66,7 +66,7 @@ case class SingleCFD(index: Index,
 
   override def priceRounding = index.precision.map {
     case Precision(defaultRounding, clearportRounding) => {
-      if (cleared) { // TODO check this
+      if (cleared) { // TODO [23 May 2011] check this
         clearportRounding
       } else {
         defaultRounding
@@ -90,6 +90,6 @@ object CFD extends InstrumentType[SingleCFD] with TradeableType[CFD] {
   def sample = {
     import starling.quantity.Quantity._
     import starling.quantity.UOM._
-    CFD(BrentCFDSpreadIndex(PublishedIndex.PLATTS_BRENT(new BrentMonth(4))), 123(USD / BBL), 77000(BBL), Quarter(2015, 1), CommonPricingRule)
+    CFD(BrentCFDSpreadIndex.indexFor(new BrentMonth(4)), 123(USD / BBL), 77000(BBL), Quarter(2015, 1), CommonPricingRule)
   }
 }

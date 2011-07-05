@@ -1,18 +1,19 @@
 package starling.services
 
-import starling.bouncyrmi.{AuthHandler, ServerAuthHandler}
 import starling.utils.Log
 import starling.auth.{User, LdapUserLookup, ServerLogin}
+import starling.bouncyrmi.{BouncyLdapUserLookup, AuthHandler, ServerAuthHandler}
 
-class ServerAuth(login: ServerLogin, ldap: LdapUserLookup, users:java.util.Set[User], userConnected:(User) => Unit) {
+class ServerAuth(login: ServerLogin, ldap: LdapUserLookup with BouncyLdapUserLookup[User], users:java.util.Set[User],
+                 userConnected:(User) => Unit) {
 
   // The ticket username comes in the form of an email address
   val UserName = """([\w._-]+)@[\w.-]+\.[\w]{2,4}""".r
 
-  def handler: ServerAuthHandler = {
+  def handler: ServerAuthHandler[User] = {
     val subject = login.login
 
-    new ServerAuthHandler(new AuthHandler {
+    new ServerAuthHandler(new AuthHandler[User] {
       def authorized(ticket: Option[Array[Byte]]) = {
         try {
           ticket match {
@@ -36,6 +37,6 @@ class ServerAuth(login: ServerLogin, ldap: LdapUserLookup, users:java.util.Set[U
         }
 
       }
-    }, users, ldap, userConnected)
+    }, users, ldap, userConnected, ChannelLoggedIn)
   }
 }

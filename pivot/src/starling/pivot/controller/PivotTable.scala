@@ -4,7 +4,7 @@ import starling.pivot.model._
 import starling.pivot._
 import starling.utils.ImplicitConversions._
 import starling.utils.{GridConverter, Utils}
-
+import collection.immutable.List._
 
 case class TreePivotFilter(root:TreePivotFilterNode)
 case class TreePivotFilterNode(value:Any, label:String, children:List[TreePivotFilterNode]) {
@@ -13,57 +13,30 @@ case class TreePivotFilterNode(value:Any, label:String, children:List[TreePivotF
 }
 
 object TreePivotFilterNode {
-  def mergeForests(forest : List[TreePivotFilterNode]) : List[TreePivotFilterNode] = {
-    def merge(tree : TreePivotFilterNode, forest : List[TreePivotFilterNode]) : List[TreePivotFilterNode] = {
-      forest match {
-        case Nil => List(tree)
-        case first :: rest => {
-          if (tree.label == first.label) {
-            merge(tree.copy(children = mergeForests(first.children ++ tree.children)), rest)
-          } else {
-            first :: merge(tree, rest)
-          }
-        }
-      }
-    }
+  def mergeForests(forest: List[TreePivotFilterNode]) = mergeForestsBy(forest, _.label)
+  def mergeForestsValues(forest: List[TreePivotFilterNode]) = mergeForestsBy(forest, _.value)
 
-    forest.foldLeft(List[TreePivotFilterNode]())((subForest,tree) => merge(tree, subForest))
-  }
-
-  def mergeForestsValues(forest : List[TreePivotFilterNode]) : List[TreePivotFilterNode] = {
-    def merge(tree : TreePivotFilterNode, forest : List[TreePivotFilterNode]) : List[TreePivotFilterNode] = {
-      forest match {
-        case Nil => List(tree)
-        case first :: rest => {
-          if (tree.value == first.value) {
-            merge(tree.copy(children = mergeForests(first.children ++ tree.children)), rest)
-          } else {
-            first :: merge(tree, rest)
-          }
-        }
-      }
+  private def mergeForestsBy[A](forest: List[TreePivotFilterNode], prop: TreePivotFilterNode => A): List[TreePivotFilterNode] = {
+    def merge(tree: TreePivotFilterNode, forest: List[TreePivotFilterNode]): List[TreePivotFilterNode] = forest match {
+      case Nil => List(tree)
+      case first :: rest if (prop(tree) == prop(first)) =>
+        merge(tree.copy(children = mergeForestsBy(first.children ++ tree.children, prop)), rest)
+      case first :: rest => first :: merge(tree, rest)
     }
 
     forest.foldLeft(List[TreePivotFilterNode]())((subForest,tree) => merge(tree, subForest))
   }
 }
 
-
-
-/**
- * this is the Pivot Table as returned by the controller
- * and used by the view. Use this *and not* the PivotTableModel
- * This should contain all the info required for rendering the
- * table in whatever fashion
- */
 case class PivotTable(rowFields:List[Field], rowFieldHeadingCount:Array[Int], rowAxis:List[AxisNode],
                       columnAxis:List[AxisNode], possibleValues:Map[Field,TreePivotFilter], treeDetails:TreeDetails,
                       editableInfo:Option[EditableInfo], formatInfo:FormatInfo,
-                      aggregatedMainBucket:Map[(List[AxisValue],List[AxisValue]),Any] = Map()) {
+                      aggregatedMainBucket:Map[(List[AxisValue],List[AxisValue]),Any] = Map(),
+                      zeroFields:Set[Field]=Set()) {
 
   def asCSV:String = convertUsing(Utils.csvConverter)
-  def convertUsing(converter: GridConverter) = converter.convert(toFlatRows(Totals.Null))
-  def toFlatRows(totals:Totals): List[List[Any]] = toFlatRows(totals, (tc:TableCell)=>tc.text, (ac:AxisCell)=>ac.text)
+  def convertUsing(converter: GridConverter, decimalPlaces: DecimalPlaces = PivotFormatter.DefaultDecimalPlaces) =
+    converter.convert(toFlatRows(Totals.Null, decimalPlaces, true))
 
   def cell(measure: AnyRef, filters: (Field, AnyRef)*): Any = {
     def filter(name: String, value: AnyRef, index: Int)(input: Map[(List[AxisValue], List[AxisValue]), Any]) =
@@ -84,27 +57,28 @@ case class PivotTable(rowFields:List[Field], rowFieldHeadingCount:Array[Int], ro
     matches.iterator.next._2
   }
 
-  private def toFlatRows(totals:Totals, tableCell:(TableCell)=>Any, axisCell:(AxisCell)=>Any):List[List[Any]] = {
-    val rowsBuffer = new scala.collection.mutable.ArrayBuffer[List[Any]]()
-    val pivotTableConverter = PivotTableConverter(OtherLayoutInfo(totals = totals), this)
+  def toFlatRows(totals: Totals, decimalPlaces: DecimalPlaces = PivotFormatter.DefaultDecimalPlaces, trimBlank: Boolean = false):
+    List[List[Any]] = {
+
+    val pivotTableConverter = PivotTableConverter(OtherLayoutInfo(totals = totals), this, ExtraFormatInfo(decimalPlaces))
 
     val (rowHeaderCells, columnHeaderCells, mainTableCells) = pivotTableConverter.allTableCells()
+
     // Unlike the gui, the spread sheets don't want columns or rows spanned, they want the value repeated.
-    /*for (j <- 0 until rowHeaderCells.length) {
-      val row = rowHeaderCells(j)
-      for (i <- 0 until row.length) {
-        row(i).span match {
-          case Some(s) => for (delta <- (j + 1) until (j + s)) rowHeaderCells(delta)(i) = row(i).copy(span = None)
-          case _ =>
-        }
-      }
-    }*/
     for (j <- 0 until columnHeaderCells.length) {
       val row = columnHeaderCells(j)
       for (i <- 0 until row.length) {
-        row(i).span match {
-          case Some(s) => for (delta <- (i + 1) until (i + s)) row(delta) = row(i).copy(span = None)
-          case _ =>
+        row(i).span.map { span =>
+          for (delta <- (i + 1) until (i + span)) row(delta) = row(i).copy(span = None)
+        }
+      }
+    }
+
+    for (i <- 0 until rowHeaderCells.length) {
+      val row = rowHeaderCells(i)
+      for (j <- 0 until row.length) {
+        row(j).span.map { span =>
+          for (delta <- (i + 1) until (i + span)) rowHeaderCells(delta)(j) = row(j).copy(span = None)
         }
       }
     }
@@ -112,6 +86,8 @@ case class PivotTable(rowFields:List[Field], rowFieldHeadingCount:Array[Int], ro
     val rowHeaders = if (rowHeaderCells.isEmpty) rowFields.map(_.name) else {
       rowHeaderCells(0).map(_.value.field.name).toList
     }
+
+    val rowsBuffer = new scala.collection.mutable.ArrayBuffer[List[Any]]()
 
     for ((row,index) <- columnHeaderCells.zipWithIndex) {
       val rowBuffer = new scala.collection.mutable.ArrayBuffer[Any]()
@@ -121,16 +97,22 @@ case class PivotTable(rowFields:List[Field], rowFieldHeadingCount:Array[Int], ro
       } else {
         rowBuffer ++= rowHeaders //use the last row for the row field names
       }
-      rowBuffer ++= row.map(acv => axisCell(acv))
+      rowBuffer ++= row.map(_.text)
       rowsBuffer += rowBuffer.toList
     }
-    for ((row,data) <- rowHeaderCells zip mainTableCells) {
+
+    for ((row, data) <- rowHeaderCells zip mainTableCells) {
       val rowBuffer = new scala.collection.mutable.ArrayBuffer[Any]()
-      rowBuffer ++= row.map(ac=>axisCell(ac))
-      rowBuffer ++= data.map(tc=> tableCell(tc))
+      rowBuffer ++= row.map(_.text)
+      rowBuffer ++= data.map(_.text)
       rowsBuffer += rowBuffer.toList
     }
-    rowsBuffer.toList
+
+    if (trimBlank) {
+      rowsBuffer.toList.filterNot(_.forall(_.toString.trim == ""))
+    } else {
+      rowsBuffer.toList
+    }
   }
 }
 

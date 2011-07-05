@@ -1,7 +1,6 @@
 package starling.db
 
 import starling.utils.sql.QueryBuilder._
-import java.lang.String
 import collection.immutable.TreeMap
 import starling.quantity.Percentage
 import starling.marketdata._
@@ -18,9 +17,13 @@ import starling.calendar.Clock
 
 import starling.utils.Pattern._
 import starling.utils._
+import org.springframework.dao.DuplicateKeyException
+import java.lang.{RuntimeException, String}
+import java.util.concurrent.atomic.AtomicInteger
+import starling.curves.Environment
 
 
-// TODO: move me somewhere proper
+// TODO [07 Sep 2010] move me somewhere proper
 case class RelativeImpliedVolData(vols: Map[DateRange,Map[Double,Percentage]]) {
   def absolute(prices : PriceData) : ImpliedVolData = {
     val data = vols.flatMap {
@@ -58,15 +61,17 @@ trait MarketDataSource { self =>
 
   protected def containsDistinctTimedKeys(entries: List[MarketDataEntry]): Boolean = duplicateTimedKeys(entries).isEmpty
   protected def duplicateTimedKeys(entries: List[MarketDataEntry]) = entries.map(_.timedKey).duplicates
+
+  def description: List[String] = Nil
 }
 
 class AdaptingMarketDataSource(adaptee: MarketDataSource) extends MarketDataSource {
   def read(day: Day) = adaptee.read(day)
 }
 
-case class MarketDataSet(name: String) extends Named
+case class MarketDataSet(name: String)
 
-object MarketDataSet extends StarlingEnum(classOf[MarketDataSet]) {
+object MarketDataSet extends StarlingEnum(classOf[MarketDataSet], (m: MarketDataSet) => m.name) {
   val excelPrefix = "Excel:"
   def excel(name:String) = {
     if (name == "Official:Metals") {
@@ -77,7 +82,7 @@ object MarketDataSet extends StarlingEnum(classOf[MarketDataSet]) {
   }
   def fromExcel(marketDataSet:MarketDataSet) = {
     if (marketDataSet.name.startsWith(excelPrefix)) {
-      Some( marketDataSet.name.substring(excelPrefix.length) )
+      Some( marketDataSet.name.stripPrefix(excelPrefix) )
     } else {
       None
     }
@@ -99,20 +104,21 @@ object MarketDataSet extends StarlingEnum(classOf[MarketDataSet]) {
   val ManualMetals = MarketDataSet("ManualMetals")
   val Starling = MarketDataSet("Starling")
   val TrinityDiscountFactorCSV = MarketDataSet("TrinityDiscountFactorCSV")
+  val Neptune = MarketDataSet("TrinityDiscountFactorCSV")
 }
 
 object MarketDataStore {
   import MarketDataSet._
 
   val pricingGroupsDefinitions = Map[PricingGroup,List[MarketDataSet]](
-    PricingGroup.Metals -> List(ManualMetals, LimMetals, TrinityDiscountFactorCSV),
+    PricingGroup.Metals -> List(ManualMetals, LimMetals, TrinityDiscountFactorCSV, Neptune),
     PricingGroup.LimOnly -> List(LIM),
     PricingGroup.System -> List(Starling, LIM, System),
     PricingGroup.Crude-> List(Starling, LIM, Crude),
     PricingGroup.LondonDerivatives -> List(Starling, LondonDerivatives, LIM),
     PricingGroup.GasolineRoW -> List(Starling, GasolineRoW, LIM),
-    PricingGroup.BarryEckstein -> List(Starling, BarryEckstein, LIM),
-    PricingGroup.LondonDerivativesOptions -> List(Starling, LondonDerivativesOptions, LIM, System)
+    PricingGroup.BarryEckstein -> List(Starling, BarryEckstein, System, LIM),
+    PricingGroup.LondonDerivativesOptions -> List(Starling, LondonDerivativesOptions, System, LIM)
   )
 
   val orphanedPricingGroups = (PricingGroup.values \\ Desk.pricingGroups.intersect(pricingGroupsDefinitions.keys.toList))
@@ -177,11 +183,13 @@ trait MarketDataStore {
   def save(marketDataSet: MarketDataSet, timedKey: TimedMarketDataKey, marketData: MarketData): Int
   def saveAll(marketDataSet: MarketDataSet, observationPoint: ObservationPoint, data: Map[MarketDataKey,MarketData]): (Int, Boolean)
 
-  def snapshot(marketDataSelection: MarketDataSelection, doImport: Boolean, observationDay: Day) : SnapshotID
+  def snapshot(marketDataSelection: MarketDataSelection, doImport: Boolean, observationDay: Day): Option[SnapshotID]
+  def snapshots() : List[SnapshotID]
   def snapshotsByMarketDataSelection(): Map[MarketDataSelection, List[SnapshotIDLabel]]
   def snapshotFromID(snapshotID: Int): Option[SnapshotID]
 
   def sourceFor(marketDataSet: MarketDataSet): Option[MarketDataSource]
+  def sourcesFor(pricingGroup: PricingGroup): List[MarketDataSource]
 }
 
 case class VersionedMarketData(timestamp: Timestamp, version: Int, data: Option[MarketData])
@@ -190,7 +198,8 @@ object VersionedMarketData {
   def apply(key: MarketDataKey, rs: ResultSetRow) = new VersionedMarketData(rs.getTimestamp("timestamp"), rs.getInt("version"),
     rs.getObjectOption[Any]("data").map(key.unmarshallDB(_)))
 
-  val Save = Extractor.when[VersionedMarketData](_.data.isDefined)
+  val Delete = Extractor.when[VersionedMarketData](_.data.isEmpty)
+  val Save   = Extractor.when[VersionedMarketData](_.data.isDefined)
 }
 
 case class MarketDataEntry(observationPoint: ObservationPoint, key: MarketDataKey, data: MarketData) {
@@ -209,7 +218,7 @@ case class MarketDataUpdate(timedKey: TimedMarketDataKey, data: Option[MarketDat
   def indexedData(marketDataSet: MarketDataSet) = dataIdFor(marketDataSet) → data
 }
 
-// TODO: move me somewhere proper
+// TODO [12 May 2011] move me somewhere proper
 class DBMarketDataStore(db: DBTrait[RichResultSetRow], val marketDataSources: Map[MarketDataSet, MarketDataSource],
                         broadcaster: Broadcaster = Broadcaster.Null) extends MarketDataStore {
 
@@ -230,10 +239,10 @@ class DBMarketDataStore(db: DBTrait[RichResultSetRow], val marketDataSources: Ma
     assert(duplicates.isEmpty, "The MDS is corrupt\n" + q)
   }
 
+  private val currentVersion = new AtomicInteger(
+    db.queryWithOneResult[Int]("SELECT MAX(version) as version from MarketData")(_.getInt("version")).getOrElse(1))
+
   val importer = new MarketDataImporter(this)
-
-  val tableName = "MarketData"
-
   val pivotCache = CacheFactory.getCache("MarketDataStore.pivotCache")
 
   def readAll() {
@@ -282,13 +291,14 @@ class DBMarketDataStore(db: DBTrait[RichResultSetRow], val marketDataSources: Ma
   }
 
   def sourceFor(marketDataSet:MarketDataSet) = marketDataSources.get(marketDataSet)
+  def sourcesFor(pricingGroup: PricingGroup) = marketDataSets(MarketDataSelection(Some(pricingGroup))).flatMap(sourceFor(_))
 
   private var excelDataSetsCache = {
     scala.collection.mutable.ArrayBuffer[String]() ++ db.queryWithResult("select distinct marketDataSet from MarketData order by marketDataSet", Map()) {
       rs => rs.getString("marketDataSet")
     }.flatMap { name => {
       if (name.startsWith(MarketDataSet.excelPrefix)) {
-        Some(name.substring(MarketDataSet.excelPrefix.length))
+        Some(name.stripPrefix(MarketDataSet.excelPrefix))
       } else {
         None
       }
@@ -308,7 +318,7 @@ class DBMarketDataStore(db: DBTrait[RichResultSetRow], val marketDataSources: Ma
 
   private val observationDaysByExcelCache = {
     val list: scala.List[(String, Option[Day])] = db.queryWithResult( (select ("distinct marketDataSet, observationDay") from "MarketData" where ("marketDataSet" like "Excel:%")) ) {
-      rs => (rs.getString("marketDataSet").substring(MarketDataSet.excelPrefix.length), rs.getDayOption("observationDay"))
+      rs => (rs.getString("marketDataSet").stripPrefix(MarketDataSet.excelPrefix), rs.getDayOption("observationDay"))
     }
     new scala.collection.mutable.HashMap() ++ list.groupBy(_._1).mapValues(new MSet() ++ _.flatMap(_._2.toList))
   }
@@ -352,21 +362,11 @@ class DBMarketDataStore(db: DBTrait[RichResultSetRow], val marketDataSources: Ma
   }
 
   def applyOverrideRule(marketDataType:MarketDataType, allDataForKeyAndDay:List[Map[PField,Any]]): List[Map[PField, Any]] = {
-    val dataAsMaps:Map[Map[PField,Any],Map[PField,Any]] =
-      Map() ++ allDataForKeyAndDay.map {
-        dataAsMap => {
-          val keys = marketDataType.keyFields.map(f=> f->dataAsMap(f)).toMap
-          val values = dataAsMap.filterKeys(f => !marketDataType.keyFields.contains(f))
-          keys -> values
-        }
-      }
+    val dataAsMaps: Map[Map[PField, Any], Map[PField, Any]] = Map() ++ allDataForKeyAndDay.map(marketDataType.splitByFieldType(_))
     val m = scala.collection.mutable.HashMap[Map[PField,Any],Map[PField,Any]]()
-    dataAsMaps.foreach { case(k,v) => {
-      m(k) = v
-    }}
+    dataAsMaps.foreach { case(k,v) => { m(k) = v }}
     m.map{ case(k,v)=> k++v }.toList
   }
-
 
   def latestPricingGroupVersions: Map[PricingGroup, Int] = {
     val lookup = Map() ++ db.queryWithResult("select marketDataSet, max(version) m from MarketData where marketDataSet not like 'Excel:%' group by marketDataSet ", Map()) {
@@ -379,20 +379,16 @@ class DBMarketDataStore(db: DBTrait[RichResultSetRow], val marketDataSources: Ma
 
   def latestExcelVersions: Map[String, Int] = {
     Map() ++ db.queryWithResult("select marketDataSet, max(version) m from MarketData where marketDataSet like 'Excel:%' group by marketDataSet ", Map()) {
-      rs=> rs.getString("marketDataSet").substring("Excel:".length) -> rs.getInt("m")
+      rs => rs.getString("marketDataSet").stripPrefix("Excel:") → rs.getInt("m")
     }
   }
 
-  def latestMarketDataIdentifier(selection:MarketDataSelection) = {
-    MarketDataIdentifier(selection, SpecificMarketDataVersion(latest(selection)))
-  }
+  def latestMarketDataIdentifier(selection: MarketDataSelection) = MarketDataIdentifier(selection, latest(selection))
 
   def latest(selection:MarketDataSelection): Int = {
-    val versions = selection.pricingGroup.toList.map { pg =>
-      latestPricingGroupVersions(pg)
-    } ::: selection.excel.toList.map { excel =>
-      latestExcelVersions(excel)
-    }
+    val versions = latestPricingGroupVersions.get(selection.pricingGroup).toList :::
+                   latestExcelVersions.get(selection.excel).toList
+
     if (versions.isEmpty) 0 else versions.max
   }
 
@@ -405,7 +401,7 @@ class DBMarketDataStore(db: DBTrait[RichResultSetRow], val marketDataSources: Ma
       and observationDay = :observationDay
     order by snapshotTime desc
     """, Map("pricingGroup" -> StarlingXStream.write(pricingGroup), "observationDay" -> observationDay)) {
-      rs => snapshotIDFromResultSetRow(rs)
+      rs => SnapshotID(rs)
     }
   }
 
@@ -428,48 +424,11 @@ class DBMarketDataStore(db: DBTrait[RichResultSetRow], val marketDataSources: Ma
     val changedMarketDataSets = new scala.collection.mutable.HashMap[MarketDataSet, (Set[Day], Int)]()
     var maxVersion = 0
     for ((marketDataSet, data) <- marketDataSetToData.toList.sortBy(_._1.name)) {
-      var update = false
-      var innerMaxVersion = 0
-
-      db.inTransaction(dbWriter => {
-        data.map{ action => {
-        updateIt(dbWriter, action.dataIdFor(marketDataSet), action.existingData, action.data).foreach { result => {
-          if (result._1) update=true
-          innerMaxVersion = scala.math.max(innerMaxVersion, result._2)
-        } }
-      } }
-      })
-
-      if (update) {
-        changedMarketDataSets(marketDataSet) = (data.flatMap(_.observationPoint.day.toList).toSet, innerMaxVersion)
-      }
-
-      MarketDataSet.fromExcel(marketDataSet) match {
-        case Some(name) => {
-          if (!excelDataSetsCache.contains(name)) {
-            excelDataSetsCache.append(name)
-            excelDataSetsCache = excelDataSetsCache.sortWith(_ < _)
-            broadcaster.broadcast(ExcelMarketListUpdate(excelDataSetsCache.toList))
-          }
-          val days = observationDaysByExcelCache.getOrElse(name, MSet[Day]())
-
-          data.flatMap(_.observationPoint.day.toList).filterNot(day => days.contains(day)).foreach(day => {
-            days += day
-            broadcaster.broadcast(ExcelObservationDay(name, day))
-          })
-
-          if (update) {
-            broadcaster.broadcast(ExcelMarketDataUpdate(name, innerMaxVersion))
-          }
-        }
-        case None =>
-      }
-
-      maxVersion = scala.math.max(maxVersion, innerMaxVersion)
+      maxVersion = scala.math.max(maxVersion, saveActions(data, marketDataSet, changedMarketDataSets))
     }
 
     for ((pricingGroup, marketDataSets) <- pricingGroupsDefinitions) {
-      val changesForThisPricingGroup = changedMarketDataSets.filterKeys( mds => marketDataSets.contains(mds) )
+      val changesForThisPricingGroup = changedMarketDataSets.filterKeys(marketDataSets)
       if (changesForThisPricingGroup.nonEmpty) {
         val maxVersion = changesForThisPricingGroup.values.maximum(_._2)
         broadcaster.broadcast(PricingGroupMarketDataUpdate(pricingGroup, maxVersion))
@@ -485,6 +444,46 @@ class DBMarketDataStore(db: DBTrait[RichResultSetRow], val marketDataSources: Ma
     (maxVersion, changedMarketDataSets.nonEmpty)
   }
 
+
+  private def saveActions(data: Iterable[MarketDataUpdate], marketDataSet: MarketDataSet,
+                          changedMarketDataSets: scala.collection.mutable.HashMap[MarketDataSet, (Set[Day], Int)]): Int = {
+    var update = false
+    var innerMaxVersion = 0
+
+    db.inTransaction( dbWriter =>
+      data.map { action =>
+        updateIt(dbWriter, action.dataIdFor(marketDataSet), action.existingData, action.data).foreach { result =>
+          if (result._1) update = true
+          innerMaxVersion = scala.math.max(innerMaxVersion, result._2)
+        }
+      }
+    )
+
+    if (update) {
+      changedMarketDataSets(marketDataSet) = (data.flatMap(_.observationPoint.day.toList).toSet, innerMaxVersion)
+    }
+
+    MarketDataSet.fromExcel(marketDataSet).map { name =>
+      if (!excelDataSetsCache.contains(name)) {
+        excelDataSetsCache.append(name)
+        excelDataSetsCache = excelDataSetsCache.sortWith(_ < _)
+        broadcaster.broadcast(ExcelMarketListUpdate(excelDataSetsCache.toList))
+      }
+      // TODO [02 Jun 2011] Should this be getOrElseUpdate ? Stacy
+      val days = observationDaysByExcelCache.getOrElse(name, MSet[Day]())
+
+      data.flatMap(_.observationPoint.day.toList).filterNot(day => days.contains(day)).foreach(day => {
+        days += day
+        broadcaster.broadcast(ExcelObservationDay(name, day))
+      })
+
+      if (update) {
+        broadcaster.broadcast(ExcelMarketDataUpdate(name, innerMaxVersion))
+      }
+    }
+    innerMaxVersion
+  }
+
   def save(marketDataSet:MarketDataSet, timedKey: TimedMarketDataKey, marketData:MarketData):Int = {
     save(Map(marketDataSet -> List( MarketDataEntry(timedKey.observationPoint, timedKey.key, marketData) ) ))._1
   }
@@ -494,31 +493,27 @@ class DBMarketDataStore(db: DBTrait[RichResultSetRow], val marketDataSources: Ma
   }
 
   val importLock = new Object
+
+
   def importFor(observationDay: Day, marketDataSets: MarketDataSet*) = importLock.synchronized {
-    Log.infoWithTime("saving market data") {
-      val updates = importer.getUpdates(observationDay, marketDataSets: _*)
+    Log.infoWithTime("saving market data: " + observationDay) {
+      val updates: Map[MarketDataSet, scala.List[MarketDataUpdate]] = importer.getUpdates(observationDay, marketDataSets: _*)
       Log.debug("Number of updates: " + updates.mapValues(_.toList.size))
+
       saveActions(updates)
     }
   }
 
-  def snapshot(marketDataSelection:MarketDataSelection, doImport:Boolean, observationDay : Day) : SnapshotID = {
-
+  def snapshot(marketDataSelection: MarketDataSelection, doImport: Boolean, observationDay: Day): Option[SnapshotID] = {
     importData(marketDataSelection, observationDay)
 
-    val version = db.queryWithOneResult(
-      "select max(version) m from MarketData where marketDataSet in (:mds)",
-      Map("mds"->marketDataSets(marketDataSelection).map(_.name))) {
-      rs => rs.getInt("m")
-    }.get
+    getMaxVersion(marketDataSelection).map { version =>
+      import QueryBuilder._
+      val optSnapshot = db.queryWithOneResult((select("*") from "MarketDataTag" where (("version" eql version)
+        and ("marketDataSelection" eql LiteralString(StarlingXStream.write(marketDataSelection)))
+        and ("observationDay" eql observationDay)))) { rs => SnapshotID(rs) }
 
-    import QueryBuilder._
-    val snapshotID = db.queryWithOneResult(
-      (select ("*") from "MarketDataTag" where (("version" eql version) and ("marketDataSelection" eql LiteralString(StarlingXStream.write(marketDataSelection))) and ("observationDay" eql observationDay)))) {
-       rs => snapshotIDFromResultSetRow(rs)
-    } match {
-      case Some(ss) => ss
-      case None => {
+      val snapshotID = optSnapshot.getOrElse {
         val timestamp = new Timestamp()
         val params = Map("snapshotTime"->timestamp, "version" -> version, "marketDataSelection"->StarlingXStream.write(marketDataSelection), "observationDay"->observationDay)
         var id:Option[Long] = None
@@ -526,11 +521,21 @@ class DBMarketDataStore(db: DBTrait[RichResultSetRow], val marketDataSources: Ma
         broadcaster.broadcast(MarketDataSnapshot(snapshotsByMarketDataSelection))
         SnapshotID(observationDay, id.get.toInt, timestamp, marketDataSelection, version)
       }
+
+      println("snapshotid: " + snapshotID)
+
+      snapshotID
     }
+  }
 
-    println("snapshotid: " + snapshotID)
+  private def getMaxVersion(marketDataSelection: MarketDataSelection): Option[Int] = {
+    val names = marketDataSets(marketDataSelection).map(_.name)
 
-    snapshotID
+    if (names.isEmpty) None else {
+      db.queryWithOneResult("select max(version) m from MarketData where marketDataSet in (:mds)", Map("mds" → names)) {
+        _.getInt("m")
+      }
+    }
   }
 
   def latestSnapshotID = {
@@ -543,13 +548,17 @@ class DBMarketDataStore(db: DBTrait[RichResultSetRow], val marketDataSources: Ma
     from MarketDataTag
     where
       snapshotID = :snapshotID
-    """, Map("snapshotID" -> snapshotID))(snapshotIDFromResultSetRow)
+    """, Map("snapshotID" -> snapshotID))(SnapshotID(_))
+  }
+
+  def snapshots() : List[SnapshotID] = {
+    db.queryWithResult("select * from MarketDataTag order by snapshotID desc", Map()) {
+      rs => snapshotIDFromResultSetRow(rs)
+    }
   }
 
   def snapshotsByMarketDataSelection(): Map[MarketDataSelection, List[SnapshotIDLabel]] = {
-    db.queryWithResult("select * from MarketDataTag order by snapshotID desc", Map()) {
-      rs => snapshotIDFromResultSetRow(rs)
-    }.groupBy(_.marketDataSelection).map{ case(selection, snapshots) => selection -> snapshots.map(_.label).sortWith(_ > _) }
+    snapshots().groupBy(_.marketDataSelection).map{ case(selection, snapshots) => selection -> snapshots.map(_.label).sortWith(_ > _) }
   }
 
   def observationDaysByPricingGroup():Map[PricingGroup,Set[Day]] = Map() ++ observationDaysByPricingGroupCache.mapValues(Set() ++ _)
@@ -569,16 +578,15 @@ class DBMarketDataStore(db: DBTrait[RichResultSetRow], val marketDataSources: Ma
 
   def snapshots(pricingGroup : PricingGroup):List[SnapshotID] = {
     val snapshotsQuery = (select ("*") from "MarketDataTag" where ("pricingGroup" eql LiteralString(StarlingXStream.write(pricingGroup))) orderBy Desc("snapshotID"))
-    db.queryWithResult(snapshotsQuery)(snapshotIDFromResultSetRow)
+    db.queryWithResult(snapshotsQuery)(SnapshotID(_))
   }
 
   private def marketDataSets(marketDataIdentifier:MarketDataIdentifier):List[MarketDataSet] = marketDataSets(marketDataIdentifier.selection)
 
-  def marketDataSets(marketDataSelection:MarketDataSelection):List[MarketDataSet] = {
-    val pgmds:List[MarketDataSet] = marketDataSelection.pricingGroup.toList.flatMap {
-      pgl=> pricingGroupsDefinitions(PricingGroup(pgl.name))
-    }
-    val excelmds:List[MarketDataSet] = marketDataSelection.excel.toList.map(excel=>MarketDataSet.excel(excel))
+  def marketDataSets(marketDataSelection: MarketDataSelection): List[MarketDataSet] = {
+    val pgmds = marketDataSelection.pricingGroup.flatMapL(pgl => pricingGroupsDefinitions(PricingGroup(pgl.name)))
+    val excelmds = marketDataSelection.excel.toList.map(MarketDataSet.excel(_))
+
     excelmds ::: pgmds
   }
 
@@ -754,7 +762,7 @@ class DBMarketDataStore(db: DBTrait[RichResultSetRow], val marketDataSources: Ma
   }
 
   def observationDays(pricingGroup:PricingGroup, from : Day, to :Day) : List[Day] = {
-    observationDays(MarketDataIdentifier(MarketDataSelection(Some(pricingGroup)), SpecificMarketDataVersion(latestPricingGroupVersions(pricingGroup))), from, to)
+    observationDays(MarketDataIdentifier(MarketDataSelection(Some(pricingGroup)), latestPricingGroupVersions(pricingGroup)), from, to)
   }
 
   def observationDays(marketDataIdentifier:MarketDataIdentifier, from : Day, to :Day) : List[Day] = {
@@ -766,9 +774,7 @@ class DBMarketDataStore(db: DBTrait[RichResultSetRow], val marketDataSources: Ma
     )
   }
 
-  private def snapshotIDFromResultSetRow(rs : RichResultSetRow) : SnapshotID = {
-    SnapshotID(rs.getDay("observationDay"), rs.getInt("snapshotID"), rs.getTimestamp("snapshotTime"), rs.getObject[MarketDataSelection]("marketDataSelection"), rs.getInt("version"))
-  }
+  private def snapshotIDFromResultSetRow(rs: RichResultSetRow) = SnapshotID(rs)
 
   // VersionedDatabase
 
@@ -779,7 +785,7 @@ class DBMarketDataStore(db: DBTrait[RichResultSetRow], val marketDataSources: Ma
     import QueryBuilder._
 
     (select ("timestamp, version, data")
-       from (tableName)
+       from ("MarketData")
        where (conditions(key)
          and version.map("version" eql _).getOrElse("childVersion" isNull)))
   }
@@ -793,7 +799,7 @@ class DBMarketDataStore(db: DBTrait[RichResultSetRow], val marketDataSources: Ma
   def currentVersions(ids: Iterable[MarketDataID]) = {
     val query = (
       select ("timestamp, version, data, marketDataKey")
-      from (tableName)
+      from ("MarketData")
       where ("marketDataKey" in (ids.map(_.subTypeKey)))
       and ("childVersion" isNull)
     )
@@ -815,7 +821,7 @@ class DBMarketDataStore(db: DBTrait[RichResultSetRow], val marketDataSources: Ma
     }
     val query =
       (select ("data")
-         from (tableName)
+         from ("MarketData")
         where (conditions(key) and versionClause)
       )
 
@@ -835,15 +841,21 @@ class DBMarketDataStore(db: DBTrait[RichResultSetRow], val marketDataSources: Ma
         var result: Option[Int] = None
         //timer {
           // insert new row into table, returning new version ID.
-          val values = id.conditions + ("timestamp" -> timestamp) + ("data" -> valueForDataColumn)
-          val nextVersion = dbWriter.insertAndReturnKey(tableName, "version", values)
+
+          val nextVersion = currentVersion.incrementAndGet
 
           if (existingData.isDefined) {
             // update previous version to point to new version ID.
             dbWriter.queryWithNoResults(
-              QueryBuilder.update(tableName)
+              QueryBuilder.update("MarketData")
                 set ("childVersion" eql nextVersion)
                 where ("version" eql existingData.get.version))
+          }
+
+          dbWriter.withIdentityInsert("MarketData") {
+            val values = id.conditions + ("timestamp" →  timestamp) + ("data" →  valueForDataColumn) + ("version" → nextVersion)
+
+            dbWriter.insert("MarketData", values)
           }
 
           result = Some(nextVersion.toInt)
@@ -883,4 +895,5 @@ class DBMarketDataStore(db: DBTrait[RichResultSetRow], val marketDataSources: Ma
     case s : String => LiteralString(s)
     case _ => v
   }
+
 }

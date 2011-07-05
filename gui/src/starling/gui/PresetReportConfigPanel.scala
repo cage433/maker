@@ -24,7 +24,7 @@ import ReportPreset._
 
 class PresetReportConfigPanel(context:PageContext, reportParameters:ReportParameters, pivotPageState:PivotPageState)
         extends MigPanel(columnConstraints = "[p]push[p]") with ConfigPanel {
-  def displayName = "Presets"
+  val displayName = "Presets"
 
   val pricingGroupPanel = new MigPanel {
     border = RoundedBorder(colour = PivotTableBackgroundColour)
@@ -292,7 +292,6 @@ class PresetReportConfigPanel(context:PageContext, reportParameters:ReportParame
     val cob = new ListBuffer[Boolean]()
 
     val observationDayUsed = rp.curveIdentifier.tradesUpToDay
-    val previousBusinessDay = observationDayUsed.previousBusinessDay(context.localCache.ukBusinessCalendar)
     val nextBusinessDay = observationDayUsed.nextBusinessDay(context.localCache.ukBusinessCalendar)
 
     cob += ((rp.expiryDay == observationDayUsed) || (rp.expiryDay == observationDayUsed.startOfFinancialYear))
@@ -327,8 +326,8 @@ class PresetReportConfigPanel(context:PageContext, reportParameters:ReportParame
       buttonPanel.group.select(buttonPanel.cobButton)
       buttonPanel.contentPanel.update(buttonPanel.cobPanel)
       val canUseExcel = rp.curveIdentifier.marketDataIdentifier.selection.excel.isDefined
-      buttonPanel.cobPanel.dayChangePanel.setDays(canUseExcel, rp.pnlParameters)
       buttonPanel.cobPanel.dayPanel.setDays(rp.curveIdentifier, rp.expiryDay)
+      buttonPanel.cobPanel.dayChangePanel.setDays(canUseExcel, rp.pnlParameters)
     } else {
       buttonPanel.group.select(buttonPanel.manualButton)
       buttonPanel.contentPanel.update(buttonPanel.manualPanel)
@@ -361,7 +360,7 @@ class PresetReportConfigPanel(context:PageContext, reportParameters:ReportParame
     }
 
     val marketDataSelection = generateMarketDataSelection
-    val marketDataVersion = SpecificMarketDataVersion(context.localCache.latestMarketDataVersion(marketDataSelection))
+    val marketDataVersion = context.localCache.latestMarketDataVersion(marketDataSelection)
     val pricingGroup = marketDataSelection.pricingGroup
 
     val excel = marketDataSelection.excel
@@ -381,7 +380,7 @@ class PresetReportConfigPanel(context:PageContext, reportParameters:ReportParame
       nextBusinessDay.endOfDay(),
       envMods)
 
-    val newReportOptions = ReportOptions.Blank
+    val newReportOptions = reportParameters.reportOptions
 
     val pnlParams = if (buttonPanel.realTimePanel.dayChangeCheckBox.selected) {
       val fromMarketDataSelection = marketDataSelection.noExcel
@@ -447,11 +446,11 @@ class PresetReportConfigPanel(context:PageContext, reportParameters:ReportParame
       nextBusinessDay.endOfDay(),
       envMods)
 
-    val newReportOptions = ReportOptions.Blank
+    val newReportOptions = reportParameters.reportOptions
 
     val pnlParams = if (buttonPanel.cobPanel.dayChangePanel.dayChangeCheckBox.selected) {
       val marketDataSelection = generateMarketDataSelection
-      val marketDataVersion = SpecificMarketDataVersion(context.localCache.latestMarketDataVersion(marketDataSelection))
+      val marketDataVersion = context.localCache.latestMarketDataVersion(marketDataSelection)
       val fromMarketDataSelection = if (buttonPanel.cobPanel.dayChangePanel.useExcelButton.selected) {
         marketDataSelection
       } else {
@@ -495,7 +494,7 @@ class PresetReportConfigPanel(context:PageContext, reportParameters:ReportParame
 
   def generateMarketDataIdentifier = {
     val marketDataSelection = generateMarketDataSelection
-    val marketDataVersion = SpecificMarketDataVersion(context.localCache.latestMarketDataVersion(marketDataSelection))
+    val marketDataVersion = context.localCache.latestMarketDataVersion(marketDataSelection)
     val pricingGroup = marketDataSelection.pricingGroup
 
     val excel = marketDataSelection.excel

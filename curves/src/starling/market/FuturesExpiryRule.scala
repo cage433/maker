@@ -1,10 +1,13 @@
 package starling.market
 
-import starling.utils.Log
 import starling.daterange.{DateRange, Month, Day}
 import starling.calendar.{BusinessCalendar, BusinessCalendars}
+import starling.utils.{StarlingEnum, Log}
+import starling.utils.ImplicitConversions._
 
 trait FuturesExpiryRule {
+  val name: String
+
   /**
    * Last trading day of the future that has delivery in d
    */
@@ -25,12 +28,22 @@ trait FuturesExpiryRule {
    * Expiry day for Asian Option.
    */
   def asianExpiryDay(d: DateRange): Day = d.lastDay
+
+  override def toString = name
 }
 
 object FuturesExpiryRule {
   val Null = new FuturesExpiryRule {
+    val name = "Null"
+
     def lastTradingDay(d: DateRange) = throw new Exception("Not implemented")
   }
+}
+
+class NoFuturesExpiryRules extends FuturesExpiryRule {
+  val name = "No Rule"
+
+  def lastTradingDay(d: DateRange) = throw new Exception("No expiry rule data")
 }
 
 class NoExpiryDataException(d: DateRange) extends Exception("No expiry data found for expiry " + d)
@@ -54,12 +67,25 @@ trait MonthFuturesExpiryRule extends FuturesExpiryRule {
 }
 
 abstract class FuturesExpiryRules(businessCalendars: BusinessCalendars) {
-  def rule(eaiQuoteID: Int): FuturesExpiryRule
+  def rule(eaiQuoteID: Int): FuturesExpiryRule = ruleOption(eaiQuoteID) match {
+    case Some(r) => r
+    case None => throw new Exception("No rule for eaiQuoteID: " + eaiQuoteID)
+  }
+  def ruleOption(eaiQuoteID: Int): Option[FuturesExpiryRule]
+
+  def ruleOrEmptyRule(eaiQuoteID: Int, marketName: String): FuturesExpiryRule = ruleOption(eaiQuoteID) match {
+    case Some(r) => r
+    case None => NoRule
+  }
+
+  val NoRule = new NoFuturesExpiryRules
 
   val SHANGHAI = new ShanghaiExpiryRule
   val SHANGHAI_FUEL_OIL = new ShanghaiFuelOilExpiryRule
 
   val LME = new FuturesExpiryRule {
+    val name = "LME"
+
     val bc = businessCalendars.LME
 
     def lastTradingDay(d: DateRange) = d match {
@@ -94,6 +120,8 @@ abstract class FuturesExpiryRules(businessCalendars: BusinessCalendars) {
    * the final daily avg will be produced and we will know the monthly settlement average.
    */
   val BALTIC = new MonthFuturesExpiryRule {
+
+    val name = "Baltic"
     val cal = businessCalendars.BALTIC
 
     def lastTradingDayOfMonth(m: Month) = m.lastDay.thisOrPreviousBusinessDay(cal)
@@ -116,11 +144,14 @@ abstract class FuturesExpiryRules(businessCalendars: BusinessCalendars) {
     }
   }
 
-  val COMEX_GOLD = new Comex {
+  val COMEX_G_S_HG_COPPER = new Comex {
+    val name = "Comex Gold/Silver/HG Copper"
+
     // Trading terminates on the fourth business day prior to the underlying futures delivery month.
     // If the expiration day falls on a Friday or immediately prior to an Exchange holiday,
     // expiration will occur on the previous business day.
     // http://www.cmegroup.com/trading/metals/base/copper_contractSpecs_options.html
+
     def expiryDayOfMonth(m: Month) = {
       val exp = m.firstDay.addBusinessDays(cal, -4)
       if(exp.isFriday || exp.nextDay.isHoliday(cal)) {
@@ -130,9 +161,10 @@ abstract class FuturesExpiryRules(businessCalendars: BusinessCalendars) {
       }
     }
   }
-  val COMEX_SILVER = COMEX_GOLD
-  val COMEX_HG_COPPER = COMEX_GOLD
+
   val COMEX_PT_PA = new Comex {
+    val name = "Comex PT/PA"
+
     // Trading terminates on the third Wednesday of the month preceding the option contract month.
     // In the event that such business day precedes an Exchange holiday,
     // the expiration date shall be the preceding business day.
@@ -149,6 +181,8 @@ abstract class FuturesExpiryRules(businessCalendars: BusinessCalendars) {
   }
 
   class ShanghaiExpiryRule extends MonthFuturesExpiryRule {
+    val name = "SFS"
+
     // The 15th day of the spot month (postponed if legal holidays)
     // http://www.shfe.com.cn/Ehome/contracts.jsp?&subjectpid=9&subjectid=904&startpage=8####
     def lastTradingDayOfMonth(m: Month): Day = {
@@ -162,6 +196,8 @@ abstract class FuturesExpiryRules(businessCalendars: BusinessCalendars) {
   }
 
   class ShanghaiFuelOilExpiryRule extends MonthFuturesExpiryRule {
+    val name = "SFS Fuel Oil"
+
     // The last trading day of the month before the spot month (postponed if legal holidays)
     // http://www.shfe.com.cn/Ehome/contracts.jsp?&subjectpid=9&subjectid=904&startpage=7###
     def lastTradingDayOfMonth(m: Month): Day = {
@@ -171,34 +207,13 @@ abstract class FuturesExpiryRules(businessCalendars: BusinessCalendars) {
   }
 
   /**
-   * Tries to use DB for expiry rules but falls back on definition
-   */
-  def ICE_WTI(bc: BusinessCalendar, futuresExpiryRule: FuturesExpiryRule) = new MonthFuturesExpiryRule {
-    def expiryDayOfMonth(m: Month) = try {
-      futuresExpiryRule.expiryDay(m)
-    } catch {
-      case _:NoExpiryDataException => {
-        //https://www.theice.com/productguide/ProductDetails.shtml?specId=908
-        lastTradingDayOfMonth(m).addBusinessDays(bc, -2)
-      }
-    }
-
-    def lastTradingDayOfMonth(m: Month): Day = try {
-      futuresExpiryRule.lastTradingDay(m)
-    } catch {
-      case _:NoExpiryDataException => {
-        //https://www.theice.com/productguide/ProductDetails.shtml?specId=213
-        ((m - 1).firstDay + 24).thisOrPreviousBusinessDay(bc).addBusinessDays(bc, -4)
-      }
-    }
-  }
-
-  /**
    * Platts Dubai or Dubai Crude
    * No idea what the expiry rule is
-   * TODO Jerome
    */
-  val dubaiCrudeExpiryRule = new MonthFuturesExpiryRule {
+  // TODO [21 Sep 2010] Jerome
+  val DubaiCrudeExpiryRule = new MonthFuturesExpiryRule {
+    val name = "Dubai Crude"
+
     // The last trading day of the month before the spot month (postponed if legal holidays)
     // http://www.shfe.com.cn/Ehome/contracts.jsp?&subjectpid=9&subjectid=904&startpage=7###
     def lastTradingDayOfMonth(m: Month): Day = {
@@ -209,14 +224,26 @@ abstract class FuturesExpiryRules(businessCalendars: BusinessCalendars) {
   /**
    * Platts Brent
    * No idea what the expiry rule is
-   * TODO Jerome
    */
-  val plattsBrentExpiryRule = new MonthFuturesExpiryRule {
+  // TODO [21 Sep 2010] Jerome
+  val PlattsBrentExpiryRule = new MonthFuturesExpiryRule {
+    val name = "Platts Brent"
+
     // The last trading day of the month before the spot month (postponed if legal holidays)
     // http://www.shfe.com.cn/Ehome/contracts.jsp?&subjectpid=9&subjectid=904&startpage=7###
     def lastTradingDayOfMonth(m: Month): Day = {
       m.lastDay.thisOrPreviousBusinessDay(businessCalendars.PLATTS_EUROPEAN_CRUDE)
     }
     def expiryDayOfMonth(m: Month) = throw new Exception("No options")
+  }
+
+  val all = List(NoRule, SHANGHAI, SHANGHAI_FUEL_OIL, LME, BALTIC,
+    COMEX_G_S_HG_COPPER, COMEX_PT_PA,
+    DubaiCrudeExpiryRule, PlattsBrentExpiryRule)
+
+  val EAIRuleRegex = """EAIExpiryRule\((\d+)\)""".r
+  def fromName(name: String) = name match {
+    case EAIRuleRegex(quoteID) => ruleOption(quoteID.toInt)
+    case _ => all.findEnsureOnlyOne(_.name.equalsIgnoreCase(name))
   }
 }

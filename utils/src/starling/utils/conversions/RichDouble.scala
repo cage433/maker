@@ -5,6 +5,7 @@ import java.text.DecimalFormat
 import starling.utils.MathUtil
 import java.math.RoundingMode
 
+
 trait RichDouble {
   implicit def DoubleToRichDouble(d : Double) = new RichDouble(d)
 
@@ -34,5 +35,9 @@ trait RichDouble {
     } else {
       d
     }
+  }
+
+  object DoubleParse {
+    def unapply(text: String): Option[Double] = try { Some(text.toDouble) } catch { case _ => None }
   }
 }

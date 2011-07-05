@@ -60,6 +60,6 @@ timingframework-1.0.jar compilation-time
 }
 
 object JBossAppTxtServlet{
-  // TODO - build time would be better
+  // TODO [31 May 2011] build time would be better
   val launchTime = System.currentTimeMillis.toString
 }

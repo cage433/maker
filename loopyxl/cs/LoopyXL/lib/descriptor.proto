@@ -124,7 +124,7 @@ message FieldDescriptorProto {
     LABEL_OPTIONAL      = 1;
     LABEL_REQUIRED      = 2;
     LABEL_REPEATED      = 3;
-    // TODO(sanjay): Should we add LABEL_MAP?
+    // TO DO(sanjay): Should we add LABEL_MAP?
   };
 
   optional string name = 1;
@@ -150,7 +150,7 @@ message FieldDescriptorProto {
   // For booleans, "true" or "false".
   // For strings, contains the default text contents (not escaped in any way).
   // For bytes, contains the C escaped value.  All bytes >= 128 are escaped.
-  // TODO(kenton):  Base-64 encode?
+  // TO DO(kenton):  Base-64 encode?
   optional string default_value = 7;
 
   optional FieldOptions options = 8;
@@ -323,7 +323,7 @@ message FieldOptions {
   //     repeated Item items = 1 [experimental_map_key="name"];
   //   }
   // In this situation, the map key for Item will be set to "name".
-  // TODO: Fully-implement this, then remove the "experimental_" prefix.
+  // TO DO: Fully-implement this, then remove the "experimental_" prefix.
   optional string experimental_map_key = 9;
 
   // The parser stores options it doesn't recognize here. See above.

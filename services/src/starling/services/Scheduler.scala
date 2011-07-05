@@ -38,8 +38,8 @@ object Scheduler {
     def verifyPricesValid(pricingGroup: PricingGroup, exchange: FuturesExchange, to: String) =
       VerifyPricesValid(marketDataStore, pricingGroup, exchange, broadcaster, props.MetalsEmailAddress(), props.WuXiEmailAddress())
 
-    // TODO [19 May 2011, Stacy]: Consider breaking this up so different sources of data can be shown in the Reference Data page
-    def importMarketData(pricingGroup: PricingGroup) = new ImportMarketDataTask(marketDataStore, pricingGroup).withSource("Starling")
+    def importMarketData(pricingGroup: PricingGroup) = new ImportMarketDataTask(marketDataStore, pricingGroup).
+      withSource("LIM", marketDataStore.sourcesFor(pricingGroup).flatMap(_.description) : _*)
 
     def uploadCurvesToTrinity(pricingGroup: PricingGroup) =
       new UploadCurveToTrinityTask(trinityUploader, marketDataStore.latestMarketDataIdentifier(MarketDataSelection(Some(pricingGroup))))
@@ -53,7 +53,7 @@ object Scheduler {
       tasks.toList.map(nameTask => TaskDescription(nameTask._1, time, nameTask._2))
 
     new Scheduler(props, forwardCurveTasks =
-      TaskDescription("Import LIM", hourly(businessCalendars.LME), importMarketData(Metals)) ::-
+      TaskDescription("Import LIM", everyFiveMinutes(businessCalendars.LME), importMarketData(Metals)) ::-
       //TaskDescription("Upload Curves to Trinity", daily(businessCalendars.LME, 12 H 30), uploadCurvesToTrinity(Metals)) ::-
       tasks(daily(businessCalendars.SFE, 16 H 30),
         "Verify WuXi prices available" → verifyPricesAvailable(Metals, EXBXG, props.WuXiEmailAddress()).withSource("Excel"),
