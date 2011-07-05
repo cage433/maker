@@ -34,6 +34,9 @@ class ValuationService(marketDataStore: MarketDataStore, val props: Props) exten
   private var tradeMap: Map[String, EDMPhysicalTrade] = Map[String, EDMPhysicalTrade]()
   private var quotaIDToTradeIDMap: Map[String, String] = Map[String, String]()
 
+  val eventHandler = new EventHandler
+
+  RabbitEvents.eventDemux.addClient(eventHandler)
 
   private def updateTradeMap() {
     val sw = new Stopwatch()
@@ -67,7 +70,6 @@ class ValuationService(marketDataStore: MarketDataStore, val props: Props) exten
       tradeMap(id)
     }
   }
-
 
 
   /**
@@ -112,7 +114,7 @@ class ValuationService(marketDataStore: MarketDataStore, val props: Props) exten
     val tradeValuer = PhysicalMetalForward.value(futuresExchangeByGUID, futuresMarketByGUID, env, snapshotIDString) _
 
     val edmTrade: EDMPhysicalTrade = edmTradeResult.asInstanceOf[EDMPhysicalTrade]
-    log("Got %d physical trade".format(edmTrade))
+    log("Got %s physical trade".format(edmTrade.toString))
     sw.reset()
     val valuation = tradeValuer(edmTrade)
     log("Valuation took " + sw)
@@ -137,7 +139,7 @@ class ValuationService(marketDataStore: MarketDataStore, val props: Props) exten
     val sw = new Stopwatch()
 
     val idsToUse = costableIds match {
-      case Nil => getAllTrades().map{trade => trade.tradeId.toString}
+      case Nil | null => getAllTrades().map{trade => trade.tradeId.toString}
       case list => list
     }
 
@@ -145,6 +147,7 @@ class ValuationService(marketDataStore: MarketDataStore, val props: Props) exten
     val snapshotIDString = resolveSnapshotIdString(maybeSnapshotIdentifier)
     val env = environment(snapshotStringToID(snapshotIDString))
     val tradeValuer = PhysicalMetalForward.value(futuresExchangeByGUID, futuresMarketByGUID, env, snapshotIDString) _
+
     def tradeValue(id: String): TradeValuationResult = {
       if (!tradeValueCache.contains(id))
         tradeValueCache += (id -> tradeValuer(getTrade(id)))
@@ -153,7 +156,7 @@ class ValuationService(marketDataStore: MarketDataStore, val props: Props) exten
 
     def quotaValue(id: String) = {
       tradeValue(tradeIDFromQuotaID(id)) match {
-        case Left(list) => Left(list.filter(_.quotaID == id))
+        case Left(list) => Left(list.filter(_ .quotaID == id))
         case other => other
       }
     }
@@ -165,14 +168,9 @@ class ValuationService(marketDataStore: MarketDataStore, val props: Props) exten
         case _: NumberFormatException => false
       }
     }
-    val tradeValues = tradeIDs.map {
-      case id =>
-        (id, tradeValue(id))
-    }
-    val quotaValues = quotaIDs.map {
-      case id =>
-        (id, quotaValue(id))
-    }
+
+    val tradeValues = tradeIDs.map { case id => (id, tradeValue(id)) }
+    val quotaValues = quotaIDs.map { case id => (id, quotaValue(id)) }
 
     val valuations = tradeValues ::: quotaValues
 
@@ -241,7 +239,6 @@ class ValuationService(marketDataStore: MarketDataStore, val props: Props) exten
     ClosesEnvironmentRule.createEnv(snapshot.observationDay, reader).environment
   }
 
-
   /**
    * handler for events
    */
@@ -249,13 +246,29 @@ class ValuationService(marketDataStore: MarketDataStore, val props: Props) exten
     def handle(ev: Event) {
       require(ev != null, "Got a null event ?!")
       if ((Event.TradeSubject == ev.subject) && // Must be a trade event
-        (UpdatedEventVerb == ev.verb)) {
+        (UpdatedEventVerb == ev.verb)) { // and an update event only (not interested in revaluing new trades)
         Log.info("handler: Got a trade event to process %s".format(ev.toString))
-        val tradeValuation = valueTradeQuotas(1)
+
+        val tradePayloads = ev.content.body.payloads.filter(p => "Refined Metal Trade" == p.payloadType)
+        val tradeIds = tradePayloads.map(p => p.key.identifier)
+        Log.info("Trade event received for ids { %s }".format(tradeIds.mkString(", ")))
+        val tradeValuations = valueCostables(tradeIds, None)
+        Log.info("Trades revalued for received event using snapshot %s number of valuations %d".format(tradeValuations.snapshotID, tradeValuations.tradeResults.size))
+
+        /*
+        publish(subject : String, verb : EventVerbEnum)
+
+        // publishes out a NEW event (one payload)
+        publishNew(subject : String, payload : Payload)
+
+        // publishes out a UPDATE event (one payload)
+        def publishUpdate(subject : String, payload : Payload)
+
+        RabbitEvents.rabbitEventPublisher.publish()
+        */
       }
     }
   }
-
 }
 
 
@@ -291,7 +304,7 @@ class ValuationServiceRpc(marketDataStore: MarketDataStore, val props: Props, va
 /**
  * Rabbit glue / config module
  */
-object Rabbit {
+object RabbitEvents {
 
   val rabbitmq_host = "louis-dev-ubuntu"
   val rabbitmq_port = 5672
@@ -352,11 +365,12 @@ object Rabbit {
     rabbitmq_exclusive,
     false)
 
-  //rabbitListener.connect()
-  //rabbitEventPublisher.connect()
+  rabbitListener.connect()
+
+  rabbitEventPublisher.connect()
 
   // the demux for listener clients...
-  //lazy val eventDemux = new EventDemultiplexer(serviceName, rabbitListener)
+  lazy val eventDemux : EventDemultiplexer = { val demux = new EventDemultiplexer(serviceName, rabbitListener); demux.startup; demux }
 
 
   <!--
