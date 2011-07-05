@@ -380,6 +380,11 @@ case class GuiFieldNamePanel(props:GuiFieldComponentProps, guiComp:GuiFieldCompo
         } else {
           props.viewUI.resetImageProperties()
         }
+      } else {
+        // We have just clicked on the field
+        display = false
+        val displayPoint = SwingUtilities.convertPoint(peer, 0, -2, props.tableView.peer)
+        props.viewUI.setImageProperties(shadowImage, displayPoint, 1.0f)
       }
       repaint()
     }
