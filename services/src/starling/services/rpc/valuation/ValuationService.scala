@@ -7,9 +7,7 @@ import starling.db.{NormalMarketDataReader, SnapshotID, MarketDataStore}
 import starling.gui.api.MarketDataIdentifier._
 import starling.curves.{ClosesEnvironmentRule, Environment}
 import starling.gui.api.{MarketDataIdentifier, PricingGroup}
-import org.joda.time.LocalDate
 import starling.utils.{Log, Stopwatch}
-import com.trafigura.shared.events.{UpdatedEventVerb, NewEventVerb, Event}
 import com.trafigura.services.rabbit.{RabbitPublisher, RabbitListener, RabbitConnector}
 import com.rabbitmq.client.AMQP.BasicProperties
 import com.trafigura.events.{EventDemultiplexer, DemultiplexerClient}
@@ -23,6 +21,11 @@ import com.trafigura.tradinghub.support.{ModelObject, ServiceFilter}
 import com.trafigura.edm.trades.{CompletedTradeTstate, TradeTstateEnum, Trade => EDMTrade, PhysicalTrade => EDMPhysicalTrade}
 import scala.Either
 import java.lang.Exception
+import com.trafigura.shared.events._
+import org.joda.time.{DateTime, LocalDate}
+import com.trafigura.process.Pid
+import java.net.InetAddress
+import org.codehaus.jettison.json.JSONArray
 
 /**
  * Valuation service implementations
@@ -249,23 +252,36 @@ class ValuationService(marketDataStore: MarketDataStore, val props: Props) exten
         (UpdatedEventVerb == ev.verb)) { // and an update event only (not interested in revaluing new trades)
         Log.info("handler: Got a trade event to process %s".format(ev.toString))
 
-        val tradePayloads = ev.content.body.payloads.filter(p => "Refined Metal Trade" == p.payloadType)
+        val tradePayloads = ev.content.body.payloads.filter(p => Event.RefinedMetalTradeIdPayload == p.payloadType)
         val tradeIds = tradePayloads.map(p => p.key.identifier)
         Log.info("Trade event received for ids { %s }".format(tradeIds.mkString(", ")))
         val tradeValuations = valueCostables(tradeIds, None)
         Log.info("Trades revalued for received event using snapshot %s number of valuations %d".format(tradeValuations.snapshotID, tradeValuations.tradeResults.size))
 
-        /*
-        publish(subject : String, verb : EventVerbEnum)
+        // publish the valuation updated event contaning payloads of the trade id's whose trade valuations have changed
+        val newValuationEvent =
+          new Event() {
+            verb = UpdatedEventVerb
+            subject = Event.StarlingValuationServiceSubject
+            key = EventKey(System.currentTimeMillis.toString)
+            source = Event.StarlingSource
+            content = new Content() {
+              header = new Header() {
+                timestamp = new DateTime
+                pid = Pid.getPid
+                host = InetAddress.getLocalHost.getCanonicalHostName
+              }
+              body = Body(tradeIds.map(id => new Payload() {
+                payloadType = Event.RefinedMetalTradeIdPayload
+                key = EventKey(id)
+                source = Event.StarlingSource
+              }))
+            }
+          }
 
-        // publishes out a NEW event (one payload)
-        publishNew(subject : String, payload : Payload)
-
-        // publishes out a UPDATE event (one payload)
-        def publishUpdate(subject : String, payload : Payload)
-
-        RabbitEvents.rabbitEventPublisher.publish()
-        */
+        val eventArray = new JSONArray
+        eventArray.put(newValuationEvent.toJson)
+        RabbitEvents.rabbitEventPublisher.publish(eventArray)
       }
     }
   }
