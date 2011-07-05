@@ -26,6 +26,7 @@ import org.joda.time.{DateTime, LocalDate}
 import com.trafigura.process.Pid
 import java.net.InetAddress
 import org.codehaus.jettison.json.JSONArray
+import com.trafigura.common.control.PipedControl._
 
 /**
  * Valuation service implementations
@@ -242,6 +243,9 @@ class ValuationService(marketDataStore: MarketDataStore, val props: Props) exten
     ClosesEnvironmentRule.createEnv(snapshot.observationDay, reader).environment
   }
 
+  private def diffValuations(newValuations : CostsAndIncomeQuotaValuationServiceResults) : Map[String, Either[List[CostsAndIncomeQuotaValuation], String]] =
+    Map[String, Either[List[CostsAndIncomeQuotaValuation], String]]()
+
   /**
    * handler for events
    */
@@ -257,6 +261,9 @@ class ValuationService(marketDataStore: MarketDataStore, val props: Props) exten
         Log.info("Trade event received for ids { %s }".format(tradeIds.mkString(", ")))
         val tradeValuations = valueCostables(tradeIds, None)
         Log.info("Trades revalued for received event using snapshot %s number of valuations %d".format(tradeValuations.snapshotID, tradeValuations.tradeResults.size))
+
+        // get a map of updated valuations compared to last valuation...
+        val updatedTrades = diffValuations(tradeValuations)
 
         // publish the valuation updated event contaning payloads of the trade id's whose trade valuations have changed
         val newValuationEvent =
@@ -279,8 +286,7 @@ class ValuationService(marketDataStore: MarketDataStore, val props: Props) exten
             }
           }
 
-        val eventArray = new JSONArray
-        eventArray.put(newValuationEvent.toJson)
+        val eventArray = ||> { new JSONArray } { r => r.put(newValuationEvent.toJson) }
         RabbitEvents.rabbitEventPublisher.publish(eventArray)
       }
     }
