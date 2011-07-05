@@ -15,10 +15,10 @@ free -m
 echo "------------------------------------------------------"
 echo
 echo "##teamcity[progressStart 'compile']"
-java -Xmx2024M -XX:+CMSClassUnloadingEnabled -XX:MaxPermSize=650m -jar sbt/sbt-launch-0.7.4.jar "test-compile"
+java -Xmx2024M -XX:+CMSClassUnloadingEnabled -XX:MaxPermSize=650m -jar sbt/sbt-launch-0.7.4.jar 'project dev.launcher' "test-compile"
 if [ "$?" -ne "0" ]; then
   echo "##teamcity[buildStatus status='FAILURE' text='Compile failed']"
 else
   echo "##teamcity[progressFinish 'compile']"
-  java -Xmx2024M -XX:+CMSClassUnloadingEnabled -XX:MaxPermSize=650m -jar sbt/sbt-launch-0.7.4.jar  "test"
+  java -Xmx2024M -XX:+CMSClassUnloadingEnabled -XX:MaxPermSize=650m -jar sbt/sbt-launch-0.7.4.jar  'project dev.launcher' "test"
 fi
