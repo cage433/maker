@@ -506,7 +506,6 @@ object RabbitEvents {
 object ValuationService extends Application {
 
   import org.codehaus.jettison.json.JSONObject
-  //import scala.util.parsing.json.JSONObject
 
   println("Here")
   lazy val vs = StarlingInit.devInstance.valuationService
