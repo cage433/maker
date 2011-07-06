@@ -17,7 +17,8 @@ class InvalidFormulaException(msg: String, t: Throwable) extends Exception(msg, 
  * An index based on a given formula. The formula is usually something like A - B. Where A and B are indexes (and
  * may be FormulaIndexes)
  */
-case class FormulaIndex(formulaName: CaseInsensitive, formula: Formula, ccy: UOM, uom: UOM, precision: Option[Precision], conversion: Option[Conversions]) extends MultiIndex(formulaName) {
+case class FormulaIndex(formulaName: String, formula: Formula, ccy: UOM, uom: UOM, precision: Option[Precision], conversion: Option[Conversions], eaiQuoteID: Option[Int])
+  extends MultiIndex(formulaName) {
   def indexes = formula.indexes
 
   def formulaString = formula.toString
@@ -25,8 +26,8 @@ case class FormulaIndex(formulaName: CaseInsensitive, formula: Formula, ccy: UOM
   def averagePrice(env: Environment, averagingPeriod: DateRange, rule: SwapPricingRule, priceUOM: UOM) = {
     formula.price(priceUOM) {
       case index: SingleIndex => {
-        val observationDays = index.observationDays(averagingPeriod).intersect(rule.observationDays(markets, averagingPeriod))
-        val prices = observationDays.map(index.fixingOrForwardPrice(env, _))
+        val observationDays = index.observationDays(averagingPeriod).intersect(rule.observationDays(calendars, averagingPeriod))
+        val prices = observationDays.map(env.fixingOrForwardPrice(index, _))
         checkedConvert(index, Quantity.average(prices), priceUOM)
       }
       case _ => throw new Exception("Couldn't work out price for formula index on complex indices: " + this)
@@ -116,4 +117,6 @@ case class Formula(formula: String) {
     val value1 = parser.computeExpression(formula.toString, mktInterp)
     indexes
   }
+
+  override def toString = formula
 }

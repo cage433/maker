@@ -14,10 +14,12 @@ object ClosesEnvironmentRule extends EnvironmentRule {
   val label = EnvironmentRuleLabel("All Closes")
   lazy val marketsWithCloseTimeOfDay = Market.futuresMarkets.optPair(marketCloses.get(_)).toList
 
+  override def createNullAtomicEnvironment(observationDay: Day) = new NullAtomicEnvironment(observationDay.endOfDay)
+
   def createEnv(observationDay: Day, marketDataReader: MarketDataReader): EnvironmentWithDomain = {
     val priceDataMap = marketsWithCloseTimeOfDay.flatMap {
       case (market, timeOfDay) => try {
-        val marketData = marketDataReader.read(ObservationPoint(observationDay, timeOfDay), PriceDataKey(market))
+        val marketData = marketDataReader.read(TimedMarketDataKey(observationDay.atTimeOfDay(timeOfDay), PriceDataKey(market)))
         Some(PriceDataKey(market) → marketData.asInstanceOf[PriceData])
       } catch {
         case e: MissingMarketDataException => None
@@ -35,18 +37,18 @@ object ClosesEnvironmentRule extends EnvironmentRule {
             priceDataMap.getOrElse(priceDataKey,
               throw new Exception("No price for " + futuresMarket + "@" + marketCloses.contains(futuresMarket)))
           }
-          case key:ForwardRateDataKey => marketDataReader.read(observationDay.atTimeOfDay(ObservationTimeOfDay.Default), key)
-          case key:SpotFXDataKey => marketDataReader.read(observationDay.atTimeOfDay(ObservationTimeOfDay.LondonClose), key)
+          case key:ForwardRateDataKey => marketDataReader.read(TimedMarketDataKey(observationDay.atTimeOfDay(ObservationTimeOfDay.Default), key))
+          case key:SpotFXDataKey => marketDataReader.read(TimedMarketDataKey(observationDay.atTimeOfDay(ObservationTimeOfDay.LondonClose), key))
           case _ => throw new Exception(name + " only has rules for futures Prices")
         }
       }
 
-      def fixings(market: CommodityMarket, observationPoint: ObservationPoint) = throw new Exception("Not implemented")
+      def fixings(key : PriceFixingsHistoryDataKey, observationPoint: ObservationPoint): PriceFixingsHistoryData = key.read(observationPoint, marketDataReader)
     }
 
     val marketsX = {
       priceDataMap.toList.map { case (PriceDataKey(futuresMarket: FuturesMarket), priceData) => {
-        MarketDeliveryPeriods(marketCloses(futuresMarket), futuresMarket, priceData.sortedKeys)
+        UnderlyingDeliveryPeriods(marketCloses(futuresMarket), futuresMarket, priceData.sortedKeys)
       }}
     }
 

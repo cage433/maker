@@ -130,10 +130,7 @@ class LiborFixingTests extends WordSpec with ShouldMatchers with Checkers with H
     }
   }
 
-  private def createFixingEntries(data: List[String]): List[FixingEntry] = {
-    data.map(fromStringOption(_)).somes.map(FixingEntry(_))
-  }
-
+  private def createFixingEntries(data: List[String]): List[FixingEntry] = data.flatMapO(fromStringOption(_)).map(FixingEntry(_))
   private def fromStringOption(text: String) = if (text.isEmpty) None else UOM.fromStringOption(text)
 
   private def getTenors(data: List[String]) = {

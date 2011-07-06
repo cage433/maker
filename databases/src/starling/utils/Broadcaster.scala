@@ -9,7 +9,8 @@ import starling.rmi.StarlingServer
 import collection.immutable.List
 import ClosureUtil._
 import ImplicitConversions._
-import starling.gui.api.{EmailEvent, RabbitEvent, EventBatch}
+import starling.gui.api.{RabbitEvent, EventBatch}
+import starling.auth.User
 
 
 trait Broadcaster {
@@ -32,7 +33,7 @@ abstract class TypedBroadcaster[T](implicit manifest: Manifest[T]) extends Broad
   def typedBroadcast(t: T) : Unit
 }
 
-class RMIBroadcaster(rmiServer0: => BouncyRMIServer[StarlingServer]) extends Broadcaster {
+class RMIBroadcaster(rmiServer0: => BouncyRMIServer[User]) extends Broadcaster {
   lazy val executor = Executors.newCachedThreadPool()
   lazy val rmiServer = rmiServer0
 
@@ -44,4 +45,3 @@ class RMIBroadcaster(rmiServer0: => BouncyRMIServer[StarlingServer]) extends Bro
 class RabbitBroadcaster(sender: RabbitMessageSender) extends TypedBroadcaster[RabbitEvent] {
   def typedBroadcast(rabbitEvent: RabbitEvent) = safely { sender.send(rabbitEvent.queueName, rabbitEvent.toMessage) }
 }
-

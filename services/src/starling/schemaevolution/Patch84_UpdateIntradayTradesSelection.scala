@@ -14,8 +14,12 @@ import starling.daterange.{TimeOfDay, Timestamp}
 
 class Patch84_UpdateIntradayTradesSelection extends Patch {
   def patchDescription = "Updates the intra day selection that is stored in the report parameters and user settings"
+
   protected def runPatch(starlingInit: StarlingInit, starling:RichDB, writer:DBWriter) {
-    val convertingXStream = StarlingXStream.createXStream
+    
+    throw new Exception("I've changed the format of UserReportData and can't be bothered changing this evolution.")
+
+    /*val convertingXStream = StarlingXStream.createXStream
 
     convertingXStream.registerConverter(new MapBasedConverter(
         StarlingXStream.createXStream,
@@ -93,6 +97,6 @@ class Patch84_UpdateIntradayTradesSelection extends Patch {
           }
         }
       }
-    }
+    }*/
   }
 }

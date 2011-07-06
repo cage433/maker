@@ -20,7 +20,7 @@ import starling.gui.api.MarketDataIdentifier
 
 
 object FwdCurveAppExternalMarketDataReader {
-  // TODO refactor somewhere sensible
+  // TODO [25 Mar 2010] refactor somewhere sensible
   val currencyCurveIDs = Map(JPY -> 10010, MYR -> 10020, GBP -> 10011, CAD -> 10013, EUR -> 10014, CNY -> 10015)
   val forwardRateCurveIDs = Map(USD -> 1911)
   // note: is a map of market to a Map of spread size to List(atm, call, put) of curve IDs

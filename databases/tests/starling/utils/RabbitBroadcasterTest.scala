@@ -8,8 +8,8 @@ import starling.auth.User
 import org.scalatest.matchers.ShouldMatchers
 import JsonMatcher._
 import swing.event.Event
-import starling.daterange.{ObservationTimeOfDay, TimeOfDay, ObservationPoint}
 import starling.gui.api._
+import starling.daterange._
 
 class RabbitBroadcasterTest extends TestNGSuite with ShouldMatchers {
   lazy val broadcaster = new RabbitBroadcaster(sender)
@@ -68,7 +68,7 @@ class UploadPricesUpdateTest extends TestNGSuite with ShouldMatchers {
       "label" -> "<label>",
       "observationDate" -> "21 Jan 2011",
       "marketName" -> "<market>",
-      "dates" -> Array("01 Jan 2011","02 Jan 2011"),
+      "dates" -> Array("01Jan2011","02Jan2011"),
       "prices" -> Array(123.45, 456.12)
     )
   }
@@ -84,7 +84,7 @@ class UploadStandardDeviationsUpdateTest extends TestNGSuite with ShouldMatchers
     val standardDeviations: Array[Array[Double]] = Array(Array(0.5, 0, 1), Array(2, 2, 2))
 
     val update = UploadStandardDeviationsUpdate(
-      User("<userName>", "<name>"), "<label>", Some(21 Jan 2011), Array(1 Jan 2011, 2 Jan 2011),
+      User("<userName>", "<name>"), "<label>", Some(21 Jan 2011), Array(Spread(Month(2011, 1), Month(2011, 2)), Spread(Month(2011, 2), Month(2011, 3))),
       "<market>", standardDeviations)
 
     update.toJSON should matchJSON(
@@ -92,7 +92,7 @@ class UploadStandardDeviationsUpdateTest extends TestNGSuite with ShouldMatchers
       "label" -> "<label>",
       "observationDate" -> "21 Jan 2011",
       "marketName" -> "<market>",
-      "dates" -> Array("01 Jan 2011","02 Jan 2011"),
+      "dates" -> Array("JANUARY 2011\\/FEBRUARY 2011","FEBRUARY 2011\\/MARCH 2011"),
       "standardDeviations" -> standardDeviations
     )
   }
@@ -103,19 +103,19 @@ class UploadVolsUpdateTest extends TestNGSuite with ShouldMatchers {
 
   @Test
   def shouldBeConvertibleToJSON {
-    val standardDeviations: Array[Array[Double]] = Array(Array(0.5, 0, 1), Array(2, 2, 2))
+    val vols: Array[Array[Double]] = Array(Array(0.5, 0, 1), Array(2, 2, 2))
 
-    val update = UploadStandardDeviationsUpdate(
+    val update = UploadVolsUpdate(
       User("<userName>", "<name>"), "<label>", Some(21 Jan 2011), Array(1 Jan 2011, 2 Jan 2011),
-      "<market>", standardDeviations)
+      "<market>", vols)
 
     update.toJSON should matchJSON(
       "userName" -> "<userName>",
       "label" -> "<label>",
       "observationDate" -> "21 Jan 2011",
       "marketName" -> "<market>",
-      "dates" -> Array("01 Jan 2011","02 Jan 2011"),
-      "standardDeviations" -> standardDeviations
+      "dates" -> Array("01Jan2011","02Jan2011"),
+      "vols" -> vols
     )
   }
 }
@@ -136,7 +136,7 @@ class UploadInterestRatesUpdateTest extends TestNGSuite with ShouldMatchers {
       "label" -> "<label>",
       "observationDate" -> "21 Jan 2011",
       "currency" -> "<currency>",
-      "dates" -> Array("01 Jan 2011","02 Jan 2011"),
+      "dates" -> Array("01Jan2011","02Jan2011"),
       "interestRates" -> Array(123.45, 456.12)
     )
   }

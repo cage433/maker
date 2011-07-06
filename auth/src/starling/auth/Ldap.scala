@@ -1,6 +1,5 @@
 package starling.auth
 
-import org.springframework.ldap.core.simple.{ParameterizedContextMapper, SimpleLdapTemplate}
 import org.apache.commons.io.IOUtils
 
 class Ldap {
@@ -10,7 +9,7 @@ class Ldap {
   def query(filter: String, f: (Map[String, Set[String]]) => Unit) {
     val proc = Runtime.getRuntime.exec((Ldap.ldapsearch :+ filter).toArray)
 
-    // TODO- fixme this will break if there's lots of output. need threads
+    // TODO [17 Sep 2010] fixme this will break if there's lots of output. need threads
     val stdOut = IOUtils.toByteArray(proc.getInputStream)
     val stdErr = IOUtils.toByteArray(proc.getErrorStream)
 

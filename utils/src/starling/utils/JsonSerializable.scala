@@ -7,7 +7,7 @@ object JsonSerializable {
     def this() = this(new JSONWriter)
     
     override def write(a: Any) = {
-      // TODO - check whether we needed to convert to Java collections for more than readability
+      // TODO [01 Apr 2010] check whether we needed to convert to Java collections for more than readability
 //      if (a.isInstanceOf[Collection[_]]) {
 //        w.write(a.asInstanceOf[Collection[_]])
 //      } else {

@@ -1,35 +1,32 @@
 package starling.db
 
-import starling.marketdata._
-import starling.utils.ImplicitConversions._
 import starling.daterange._
 import starling.utils.Log
 
+import starling.utils.ImplicitConversions._
+
 
 class MarketDataImporter(marketDataStore: MarketDataStore) {
-  def getUpdates(observationDay: Day, marketDataSets: MarketDataSet*): Map[MarketDataSet, Iterable[MarketDataUpdate]] = {
-    marketDataSets.map(marketDataSet => {
-      val getMarketData = (marketDataStore.marketData _).applyLast(marketDataSet)
+  def getUpdates(observationDay: Day, marketDataSets: MarketDataSet*) = marketDataSets.toMapWithValues(marketDataSet => {
+    val getMarketData = (marketDataStore.marketData _).applyLast(marketDataSet)
 
-      marketDataStore.sourceFor(marketDataSet).map { marketDataSource =>
-        Log.infoWithTime("importing market data " + marketDataSet + " for " + observationDay) {
-          val externalData = marketDataSource.asserting.read(observationDay).mapValues(_.filterNot(_.isEmpty))
-          Log.debug("Amount of external data: " + externalData.mapValues(_.size))
+    marketDataStore.sourceFor(marketDataSet).flatMapL { marketDataSource => Log.infoWithTime("importing: " + marketDataSet.name) {
+      val externalData = marketDataSource.asserting.read(observationDay).mapValues(_.filterNot(_.isEmpty))
+      val existingData = externalData.keys.flatMap(getMarketData).toMap
 
-          val keysWhichShouldBePresent = externalData.values.flatMap(_.map(_.timedKey)).toList
-          val presentData: Map[(ObservationPoint, MarketDataKey), VersionedMarketData] =
-            externalData.keys.flatMap(getMarketData).toList.collect {
-              case (point, key, VersionedMarketData.Save(savedData)) => (point,key) → savedData
-            }.toMap
+      val saves = externalData.values.flatten.collect {
+        case entry if existingData.get(entry.timedKey) != Some(entry.data) => entry.toSave(existingData.get(entry.timedKey))
+      }.toList.somes
 
-          val presentKeys = presentData.keySet
-          val extraKeys = presentKeys \\ keysWhichShouldBePresent
-          val deletes = extraKeys.map{ case(observationPoint, key) => MarketDataUpdate(observationPoint, key, None, presentData.get((observationPoint, key))) }.toList
-          val filtered = externalData.values.flatten.filter { entry => presentData.get(entry.timedKey) != Some(entry.data) }
-          val saves = filtered.toList.flatMapO(entry => entry.toSave(presentData.get(entry.timedKey))).toList
-          marketDataSet → (saves ::: deletes)
-        }
-      }.getOrElse(marketDataSet → Nil)
-    } ).toMap
-  }
+      val deletes = {
+        val existingSaves = existingData.collectValues { case VersionedMarketData.Save(savedData) => savedData }
+        val keysWhichShouldBePresent = externalData.values.flatMap(_.map(_.timedKey)).toList
+        val extraKeys = existingSaves.keySet -- keysWhichShouldBePresent.toSet
+
+        extraKeys.map(timedKey => MarketDataUpdate(timedKey, None, existingSaves.get(timedKey))).toList
+      }
+
+      saves ::: deletes
+    } }
+  } )
 }

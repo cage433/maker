@@ -7,7 +7,7 @@ import starling.quantity.Quantity
 import starling.utils.ScalaTestUtils._
 import starling.utils.QuantityTestUtils._
 import starling.market._
-import starling.market.PublishedIndex._
+import starling.market.Index._
 import rules.CommonPricingRule
 import starling.curves._
 import starling.market.formula._
@@ -16,9 +16,9 @@ import starling.daterange._
 import starling.daterange.Day._
 import starling.utils.{AtomicDatumKeyUtils, StarlingTest}
 
-class CFDTests extends TestExpiryRules {
-  val platts_brent = PublishedIndex.PLATTS_BRENT(new BrentMonth(4))
-  val spreadIndex = BrentCFDSpreadIndex(platts_brent)
+class CFDTests extends TestMarketSpec {
+  val platts_brent = Index.publishedIndexFromName("Platts Brent (April)")
+  val spreadIndex = BrentCFDSpreadIndex.indexFor(new BrentMonth(4))
 
   val index1 = DATED_BRENT
   val index2 = platts_brent
@@ -66,8 +66,8 @@ class CFDTests extends TestExpiryRules {
       def applyOrMatchError(key: AtomicDatumKey) = key match {
         case ForwardPriceKey(`market1`, _, _) => fwdPrice1
         case ForwardPriceKey(`market2`, _, _) => fwdPrice2
-        case FixingKey(key, _) if key.market == index1.market => fixed1
-        case FixingKey(key, _) if key.market == index2.market => fixed2
+        case FixingKey(`index1`, _) => fixed1
+        case FixingKey(`index2`, _) => fixed2
       }
     })
   }
@@ -88,7 +88,7 @@ class CFDTests extends TestExpiryRules {
   @Test
   def testSpreadIndexSwapMidPeriod {
     val marketDay = Day(2011, 1, 12)
-    val observationDays = CommonPricingRule.observationDays(spreadIndex.markets, period)
+    val observationDays = CommonPricingRule.observationDays(spreadIndex.calendars, period)
     val numFixed = observationDays.filter(_ < marketDay).size
     val numUnfixed = observationDays.filter(_ >= marketDay).size
 
@@ -108,7 +108,7 @@ class CFDTests extends TestExpiryRules {
   @Test
   def testSpreadIndexPast {
     val marketDay = Day(2011, 1, 17)
-    val observationDays = CommonPricingRule.observationDays(spreadIndex.markets, period)
+    val observationDays = CommonPricingRule.observationDays(spreadIndex.calendars, period)
 
     val environment = env(marketDay)
     val swapSingle1Mtm = swapSingle1.mtm(environment)
@@ -126,7 +126,7 @@ class CFDTests extends TestExpiryRules {
   @Test
   def testSpreadIndexSwapSensitivitiesMidPeriod {
     val marketDay = Day(2011, 1, 12)
-    val observationDays = CommonPricingRule.observationDays(spreadIndex.markets, period)
+    val observationDays = CommonPricingRule.observationDays(spreadIndex.calendars, period)
     val numFixed = observationDays.filter(_ < marketDay).size
     val numUnfixed = observationDays.filter(_ >= marketDay).size
 
@@ -134,9 +134,9 @@ class CFDTests extends TestExpiryRules {
 
     val differentiables = AtomicDatumKeyUtils.environmentDifferentiables(swapSpread, marketDay.endOfDay, USD)
 
-    val platts_brent_april = Market.PLATTS_BRENT_MONTH_MARKETS(BrentMonth(4))
+    val platts_brent_april = Index.publishedIndexFromName("Platts Brent (April)")
     val diffs = Set(
-      PriceDifferentiable(Market.DATED_BRENT, 13 Jan 2011), PriceDifferentiable(Market.DATED_BRENT, 14 Jan 2011),
+      PriceDifferentiable(Index.DATED_BRENT, 13 Jan 2011), PriceDifferentiable(Index.DATED_BRENT, 14 Jan 2011),
       PriceDifferentiable(platts_brent_april, 13 Jan 2011), PriceDifferentiable(platts_brent_april, 14 Jan 2011))
     assertEquals(differentiables, diffs)
   }

@@ -8,6 +8,9 @@ trait RichTuple {
   implicit def enrichOptionalMapTuple[K, V](t: (K, Option[V])) = new {
     def +:[W >: V](map: Map[K, W]) = t._2.map(v => map + t._1 → v).getOrElse(map)
   }
+  implicit def enrichTuple2OfTuple2[A, B, C](t: ((A, B), C)) = new RichTuple2[(A, B), C](t) {
+    def flatten = (t.head.head, t.head.tail, t.tail)
+  }
 
   class RichTuple2[A, B](t: (A, B)) {
     def add[C](c: C) = (t._1, t._2, c)

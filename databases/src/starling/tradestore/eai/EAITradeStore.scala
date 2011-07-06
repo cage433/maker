@@ -22,6 +22,14 @@ object EAITradeStore {
 }
 case class EAITradeAttributes(strategyID: TreeID, bookID: TreeID, dealID: TreeID,
                               trader: String, tradedFor: String, broker: String, clearingHouse: String) extends TradeAttributes {
+  require(strategyID != null)
+  require(bookID != null)
+  require(dealID != null)
+  require(trader != null)
+  require(tradedFor != null)
+  require(broker != null)
+  require(clearingHouse != null)
+
   import EAITradeStore._
   def details = Map(
     bookID_col -> bookID.id,
@@ -46,7 +54,7 @@ case class EAITradeAttributes(strategyID: TreeID, bookID: TreeID, dealID: TreeID
 
 
 class EAITradeStore(db: RichDB, broadcaster:Broadcaster, eaiStrategyDB:EAIStrategyDB, book:Book) extends
-    TradeStore(db, broadcaster, EAITradeSystem, false, Some( book.bookID )) {
+    TradeStore(db, broadcaster, EAITradeSystem, Some( book.bookID )) {
   lazy val usedStrategyIDs = new scala.collection.mutable.HashSet[Int]()
   val tableName = "EAITrade"
   val tradeAttributesFactory = EAITradeAttributes
@@ -58,10 +66,10 @@ class EAITradeStore(db: RichDB, broadcaster:Broadcaster, eaiStrategyDB:EAIStrate
     val bookID = row.getInt(bookID_col.replaceAll(" ", ""))
     val strategyID = row.getInt("StrategyID")
     val dealID = row.getInt(dealID_str.replaceAll(" ", ""))
-    val trader = row.getString(trader_str)
-    val tradedFor = row.getString(tradedFor_str.replaceAll(" ", ""))
-    val broker = row.getString(broker_str)
-    val clearer = row.getString(clearing_str.replaceAll(" ", ""))
+    val trader = row.getStringOrNone(trader_str).getOrElse("")
+    val tradedFor = row.getStringOrNone(tradedFor_str.replaceAll(" ", "")).getOrElse("")
+    val broker = row.getStringOrNone(broker_str).getOrElse("")
+    val clearer = row.getStringOrNone(clearing_str.replaceAll(" ", "")).getOrElse("")
     EAITradeAttributes(TreeID(strategyID), TreeID(bookID), TreeID(dealID), trader, tradedFor, broker, clearer)
   }
 

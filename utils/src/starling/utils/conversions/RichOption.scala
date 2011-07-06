@@ -2,8 +2,11 @@ package starling.utils.conversions
 
 
 trait RichOption {
+  def some[A](a: A): Option[A] = Some(a)
+
   implicit def enrichOption[A](option: Option[A]) = new {
-    def optPair[B](b: B): Option[(A, B)] = option.map(a => (a,b))
+    def optPair[B](b: B): Option[(A, B)] = option.map(_ → b)
+    def flatMapL[B](f: A => List[B]): List[B] = option.map(f).getOrElse(Nil)
   }
   implicit def enrichTraversableOption[A](option : Option[Traversable[A]]) =
     new RichTraversableOption(option)
@@ -20,10 +23,7 @@ trait RichOption {
   implicit def enrichOptionalOption[A](option: Option[Option[A]]) = new RichOptionalOption(option)
 
   class RichOptionalOption[A](option: Option[Option[A]]) {
-    def flatOpt(): Option[A] = option match {
-      case Some(x) => x
-      case None => None
-    }
+    def flatOpt() = option.getOrElse(None)
   }
 
   class RichNumericOption[A : Numeric](option: Option[A]) {

@@ -65,6 +65,7 @@ trait PivotReport[R <: PivotReportRow] {
     useSkew_str -> List(true, false),
     tenor_str -> List(MonthChoiceText, WeekChoiceText, DayChoiceText)
   )
+  def zeroFields:Set[Field] = Set()
 }
 
 
@@ -74,9 +75,9 @@ trait PivotReport[R <: PivotReportRow] {
 
 /**
  * Reports which extend this get some combining implemented here.
- * TODO - move this to an objects static method, as all reports which extend it
  * also override combine and then call super.combine
  */
+// TODO [01 Dec 2010] move this to an objects static method, as all reports which extend it
 trait RiskFactorSplittingPivotReport[R <: RiskPivotReportRow[R] with PivotRowShareableByRiskFactor[R]] extends PivotReport[R]{
   def marketDay : DayAndTime
   override def combine(rows : List[R], reportSpecificChoices : ReportSpecificChoices) = {
@@ -179,7 +180,7 @@ class PivotReportData[R <: PivotReportRow](data: Map[UTPIdentifier, Either[List[
     var resultRowsWithoutError: scala.collection.mutable.ListBuffer[R] = scala.collection.mutable.ListBuffer[R]()
     utpIdMap.foreach {
       case (id, (volume, _)) => data(id) match {
-        case Left(rows:List[R]) => resultRowsWithoutError ++= rows.map(r => report.scale(r, volume))
+        case Left(rows:List[_]) => resultRowsWithoutError ++= rows.map(r => report.scale(r, volume))
         case Right(_) => 
       }
     }
@@ -219,7 +220,10 @@ object PivotReportData {
         utp.priceAndVolKeys(Day(2001, 1, 1).endOfDay)
         Left(report.rows(instrumentid, utp))
       } catch {
-        case t: Throwable => t.printStackTrace; Right(t)
+        case t: Throwable => {
+//          Log.error("Throwable caught from valuing UTP: " + utp, t)
+          Right(t)
+        }
       })
     })
 

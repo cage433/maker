@@ -7,8 +7,9 @@ import swing.Label
 import starling.pivot.{Position, Field, OtherLayoutInfo}
 import collection.mutable.ListBuffer
 import java.awt.{Point, Dimension, Color, Rectangle, Graphics2D, RenderingHints}
-import swing.event.{MouseExited, MouseEntered}
 import starling.gui.{RoundedBorder, GuiUtils}
+import swing.event.{MouseExited, MouseEntered}
+import swing.Swing._
 
 object DropPanel {
   val NormalBorder = RoundedBorder(Color.LIGHT_GRAY)
@@ -63,10 +64,50 @@ case class DropPanel(fieldAndPositions:List[(Field,Position.Position)]) extends 
   }
 }
 
+case class EmptyDropLabel(text0:String, view:PivotTableView) extends Label(text0) {
+  import DropPanel._
+
+  private val prefSize = ColumnDropPanel.prefSize(text)
+  font = GuiUtils.GuiFieldFont
+  preferredSize = prefSize
+  minimumSize = prefSize
+  enabled = false
+  var mouseIn = false
+  reactions += {
+    case MouseEntered(_,_,_) if view.fieldBeingDragged => {
+      mouseIn = true
+      border = OverBorder
+      repaint()
+    }
+    case MouseExited(_,_,_) => {
+      reset()
+    }
+  }
+  listenTo(mouse.moves)
+
+  def reset() {
+    mouseIn = false
+    border = swing.Swing.EmptyBorder
+    repaint()
+  }
+
+  override protected def paintComponent(g:Graphics2D) {
+    if (!mouseIn) {
+      super.paintComponent(g)
+    } else {
+      super.paintComponent(g)
+      g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON)
+      g.setColor(GuiUtils.DropPanelOverColour)
+      g.fillRoundRect(1,1,size.width-2, size.height-2,GuiUtils.GuiFieldArc,GuiUtils.GuiFieldArc)
+    }
+  }
+}
+
 class FilterComponent(model:PivotTableModel, otherLayoutInfo:OtherLayoutInfo,
                          viewUI:PivotTableViewUI, tableView:PivotTableView)
         extends MigPanel("insets 1, gap 0px") with DropTarget {
   opaque = false
+  border = MatteBorder(0,0,1,0,GuiUtils.BorderColour)
 
   private val fields = model.getFields(Filter)
 
@@ -87,36 +128,33 @@ class FilterComponent(model:PivotTableModel, otherLayoutInfo:OtherLayoutInfo,
   })
 
   private val dropPanels = new ListBuffer[DropPanel]()
-  if (fields.isEmpty) {
-    val text = "Drop Filter Fields Here"
-    val prefSize = ColumnDropPanel.prefSize(text)
-    val l = new Label(text) {
-      font = GuiUtils.GuiFieldFont
-      preferredSize = prefSize
-      minimumSize = prefSize
-      enabled = false
-    }
-    add(l)
+  private val blankDropLabel = if (fields.isEmpty) {
+    Some(EmptyDropLabel("Drop Filter Fields Here", tableView))
   } else {
-    fields.fields.zipWithIndex.foreach{case (f,i) => {
-      if (i == 0) {
-        val dropPanel = DropPanel((f, Position.Left) :: Nil)
-        dropPanels += dropPanel
-        add(dropPanel, "grow, hidemode 3")
-      }
-      add(guiFieldsMap(f))
-      if ((i + 1) < fields.fields.size) {
-        val dropPanel = DropPanel((f, Position.Right) :: (fields.fields(i + 1), Position.Left) :: Nil)
-        dropPanels += dropPanel
-        add(dropPanel, "grow, hidemode 3")
-      } else {
-        val dropPanel = DropPanel((f, Position.Right) :: Nil)
-        dropPanels += dropPanel
-        add(dropPanel, "grow, hidemode 3")
-      }
-    }}
+    None
   }
-
+  blankDropLabel match {
+    case Some(l) => add(l)
+    case _ => {
+      fields.fields.zipWithIndex.foreach{case (f,i) => {
+        if (i == 0) {
+          val dropPanel = DropPanel((f, Position.Left) :: Nil)
+          dropPanels += dropPanel
+          add(dropPanel, "grow, hidemode 3")
+        }
+        add(guiFieldsMap(f))
+        if ((i + 1) < fields.fields.size) {
+          val dropPanel = DropPanel((f, Position.Right) :: (fields.fields(i + 1), Position.Left) :: Nil)
+          dropPanels += dropPanel
+          add(dropPanel, "grow, hidemode 3")
+        } else {
+          val dropPanel = DropPanel((f, Position.Right) :: Nil)
+          dropPanels += dropPanel
+          add(dropPanel, "grow, hidemode 3")
+        }
+      }}
+    }
+  }
   def fieldChooserType = Filter
   def dropBounds(draggedField:Field) = {
     if (fields.isEmpty) {
@@ -133,7 +171,14 @@ class FilterComponent(model:PivotTableModel, otherLayoutInfo:OtherLayoutInfo,
   def hide() {
     dropPanels.foreach(_.visible = false)
   }
-  def reset() {guiFieldsMap.values.foreach(_.namePanel.reset())}
+  def reset() {
+    blankDropLabel.foreach(_.reset())
+    dropPanels.foreach(dp => {
+      dp.visible = false
+      dp.reset()
+    })
+    guiFieldsMap.values.foreach(_.namePanel.reset())
+  }
 
   private def filteredDropPanels(field:Field) = {
     dropPanels.toList.filterNot(dp => {dp.fieldAndPositions.map(_._1).contains(field)})

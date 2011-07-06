@@ -1,7 +1,7 @@
 package starling.daterange
 
 import starling.utils.ImplicitConversions._
-import starling.utils.{Named, StarlingEnum, OrderedComparable}
+import starling.utils.StarlingEnum
 
 case class ObservationPoint(point:Option[(Day,ObservationTimeOfDay)]) {
   def this(day:Day) = this(Some((day, ObservationTimeOfDay.Default)))
@@ -9,6 +9,10 @@ case class ObservationPoint(point:Option[(Day,ObservationTimeOfDay)]) {
   def timeOfDay = point.map(_._2).getOrElse(ObservationTimeOfDay.RealTime)
   def timeName = timeOfDay.name
   def unparse = point.map { case (day,t) => day+"/"+t}.getOrElse("")
+  def copyTime(time:Option[ObservationTimeOfDay]) = (time, point) match {
+    case (Some(newTime), Some((day, _))) => ObservationPoint(Some(day, newTime))
+    case _ => this
+  }
 }
 
 object ObservationPoint {
@@ -19,7 +23,7 @@ object ObservationPoint {
   def parseText(s : String) = ObservationPoint(Day.parse(s))
   def parseExcel(s : String) = {
     val split = s.split("/")
-    ObservationPoint(Day.quickParse(split(0)), ObservationTimeOfDay(split(1)))
+    ObservationPoint(Day.quickParse(split(0)), ObservationTimeOfDay.fromName(split(1)))
   }
   def parse(point:Object) = point match {
     case null => ObservationPoint.RealTime
@@ -30,7 +34,7 @@ object ObservationPoint {
   }
 }
 
-case class ObservationTimeOfDay(name:String) extends OrderedComparable[ObservationTimeOfDay] with Named {
+case class ObservationTimeOfDay private (name: String) extends Ordered[ObservationTimeOfDay] {
   override def toString = name
   def compare(that: ObservationTimeOfDay) = {
     val lhsIndex = ObservationTimeOfDay.sortIndex(that)
@@ -43,7 +47,7 @@ case class ObservationTimeOfDay(name:String) extends OrderedComparable[Observati
   }
 }
 
-object ObservationTimeOfDay extends StarlingEnum(classOf[ObservationTimeOfDay]) {
+object ObservationTimeOfDay extends StarlingEnum(classOf[ObservationTimeOfDay], (o:ObservationTimeOfDay) => o.name, true) {
   val Default = new ObservationTimeOfDay("Default")
   val LMEClose = new ObservationTimeOfDay("LME Close")
   val SHFEClose = new ObservationTimeOfDay("SHFE Close")

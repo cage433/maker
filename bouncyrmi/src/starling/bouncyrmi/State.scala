@@ -1,13 +1,13 @@
 package starling.bouncyrmi
 
-import starling.utils.{StackTraceToString, Log}
+import java.io.{PrintStream, ByteArrayOutputStream}
 
 trait State {
   def move(event: Any): State = {
     try {
       val from = this
       val to = change(event)
-      Log.info("State " + from + " -> " + to + " by " + event)
+      Logger.info("State " + from + " -> " + to + " by " + event)
       to
     }
     catch {
@@ -35,22 +35,28 @@ class NotConnected extends State {
 // Failed to connect. This can be a final state in the case of try to connect for the first time,
 // or possibly a transition state if we are attempting to reconnect
 case class ConnectFailed(t: Throwable) extends NotConnected {
-  override def toString = "Connection Failed: " + StackTraceToString.string(t)
+  override def toString = "Connection Failed: " + stackTraceToString(t)
+
+  private def stackTraceToString(throwable : Throwable) = {
+    val stream = new ByteArrayOutputStream()
+		throwable.printStackTrace(new PrintStream(stream))
+		stream.toString()
+  }
 }
 
 trait ConnectingState extends State {
   def change(event: Any) = event match {
   // Messages
     case VersionCheckResponse(version) if version == BouncyRMI.CodeVersion => {
-      Log.info("Version check passed, same version: " + version)
+      Logger.info("Version check passed, same version: " + version)
       ClientConnected
     }
     case VersionCheckResponse(version) if version != BouncyRMI.CodeVersion => {
-      Log.info("Version failed, server version: " + version + ", client version: " + BouncyRMI.CodeVersion)
+      Logger.info("Version failed, server version: " + version + ", client version: " + BouncyRMI.CodeVersion)
       new ServerUpgrade(version)
     }
     case AuthFailedMessage => {
-      Log.warn("Auth failed against server.")
+      Logger.warn("Auth failed against server.")
       AuthFailed
     }
 
@@ -72,7 +78,7 @@ case object ClientConnected extends State {
   // Messages
     case ShutdownMessage(msg) => ServerDisconnected(msg)
     case VersionCheckResponse(version) if version != BouncyRMI.CodeVersion => {
-      Log.info("Version failed, server version: " + version + ", client version: " + BouncyRMI.CodeVersion)
+      Logger.info("Version failed, server version: " + version + ", client version: " + BouncyRMI.CodeVersion)
       new ServerUpgrade(version)
     }
 

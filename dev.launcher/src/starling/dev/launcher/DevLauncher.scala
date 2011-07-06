@@ -11,7 +11,7 @@ object DevLauncher {
   def main(args:Array[String]) {
     System.setProperty("log4j.configuration", "utils/resources/log4j.properties")
     val props = propsWithUnusedPort()
-    Server.run(props)
+    Server.run(props, args)
     System.setProperty(BouncyRMI.CodeVersionKey, GUICode.latestTimestamp.toString())
     Launcher.start(props.ExternalHostname(), props.RmiPort(), props.ServerPrincipalName())
   }

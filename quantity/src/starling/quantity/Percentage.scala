@@ -3,7 +3,10 @@ package starling.quantity
 import starling.utils.MathUtil
 import collection.IterableLike
 import math.abs
+
 import starling.utils.ImplicitConversions._
+import starling.utils.Pattern._
+
 
 /**
  * value is the decimal value of a percentage: e.g. 10% = 0.1
@@ -16,7 +19,8 @@ case class Percentage(value : Double) {
   // e.g. 0.2435 * 100. = 24.349999999999998
   override def toString = MathUtil.roundToNdp(value * 100, 8) + "%"
 
-  def toShortString = (value*100).format("#0.00") + "%"
+  def toShortString: String = toShortString("#0.00")
+  def toShortString(format: String): String = (value*100).format(format) + "%"
 
   override def equals(other: Any) = other match {
     case p : Percentage => abs(p.value * 100 - this.value * 100) <= MathUtil.EPSILON
@@ -58,5 +62,10 @@ object Percentage {
     assert(q.uom == UOM.SCALAR, "Percentage cannot be constructed from quantity " + q)
     Percentage(q.value)
   }
+  val Regex = """(.*) %""".r
+
+  val Parse: Extractor[String, Percentage] = Extractor.from[String](text => text partialMatch {
+    case Regex(value) => Percentage(value.toDouble)
+  })
 }
 

@@ -2,29 +2,30 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    <name>daterange</name>
-    <groupId>starling</groupId>
+
+
+  <name>Starling Date Range</name>
+    <groupId>com.trafigura.services</groupId>
     <parent>
-        <groupId>starling</groupId>
-        <artifactId>starling</artifactId>
-        <version>1.0</version>
+      <groupId>com.trafigura.services</groupId>
+      <artifactId>starling-pom</artifactId>
+      <version>${buildversion}</version>
     </parent>
-    <artifactId>daterange</artifactId>              
-    <version>1.0</version>    
-    <properties>
-      <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    </properties>
-    <dependencies>
-        <dependency>
-            <groupId>joda-time</groupId>
-            <artifactId>joda-time</artifactId>
-            <version>1.6</version>
-        </dependency>
-        
-        <dependency>
-             <groupId>starling</groupId>
-             <artifactId>utils</artifactId>
-             <version>1.0</version>
-         </dependency>
-    </dependencies>
+    <artifactId>starling-daterange</artifactId>              
+    <version>${buildversion}</version>
+    <packaging>jar</packaging>
+    
+
+  <dependencies>
+
+    <dependency>
+      <groupId>com.trafigura.services</groupId>
+      <artifactId>starling-utils</artifactId>
+      <version>${buildversion}</version>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <sourceDirectory>src</sourceDirectory>
+  </build>
 </project>

@@ -13,7 +13,7 @@ object LeastSquaresFit {
 
   private def fitCoeffs(designMatrix: DoubleMatrix2D, b : DoubleMatrix1D): Array[Double] = {
     // Constuct b vector such that b = y[i] / tol[i]
-//    val b = DoubleFactory1D.dense.make(ys.toArray) // TODO scale by tols
+//    val b = DoubleFactory1D.dense.make(ys.toArray) // TODO [28 Jun 2010] scale by tols
 
     // Perform singular value decomposition
     val svd = new SingularValueDecomposition(designMatrix)
@@ -40,7 +40,7 @@ object LeastSquaresFit {
   def fitPolynomialCoefficients(polyOrder: Int, dataPoints: Map[Double, Double]): Array[Double] = {
     if (dataPoints.isEmpty)
       return Array[Double]()
-    // TODO Handle tolerances
+    // TODO [04 May 2010] Handle tolerances
     //val tolerances = Array.
 
     val (xs, ys) = dataPoints.unzip.asInstanceOf[Tuple2[List[Double], List[Double]]]
@@ -125,7 +125,7 @@ object LeastSquaresFit {
 //      var j = 0
 //      while (j < realPolyOrder){
 //        // elements are equal to (x[i] - xBasis) ^ j + 1, add one to power since we want no constant term
-//        designMatrix.set(i, j, z) // TODO scale by tols
+//        designMatrix.set(i, j, z) // TODO [28 Jun 2010] scale by tols
 //        z *= deltaDiff
 //        j += 1
 //      }

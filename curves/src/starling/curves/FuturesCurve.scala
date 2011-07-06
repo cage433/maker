@@ -77,7 +77,7 @@ case class ForwardCurveKey(market : CommodityMarket) extends NonHistoricalCurveK
       throw new MissingMarketDataException("No market data for " + market + " on " + marketDayAndTime)
     } else {
       val prices = market match {
-        case _ : Market.BalticFuturesMarket => {
+        case f:FuturesMarket if f.exchange == FuturesExchangeFactory.BALTIC => {
           // Convert Freight prices to monthly
           FreightCurve.calcMonthlyPricesFromArbitraryPeriods(priceData.prices).castKeys[DateRange]
         }
@@ -121,10 +121,15 @@ case class ForwardPriceKey(
   }
   def forwardStateValue(originalAtomicEnv: AtomicEnvironment, forwardDayAndTime: DayAndTime) = {
     market match {
-      case f: FuturesMarket => assert(
+      case f: FuturesMarket => {
+        if(period < f.frontPeriod(forwardDayAndTime.day)) {
+          println("???!?")
+        }
+        assert(
         period >= f.frontPeriod(forwardDayAndTime.day),
         "Future " + this + " has already expired on " + forwardDayAndTime
         )
+      }
       case _ =>
     }
     originalAtomicEnv(this)
@@ -139,9 +144,6 @@ case class ForwardPriceKey(
   def bucketGroup = (this.getClass, market)
 
   def nullValue = Quantity(10, market.priceUOM)
-
-  def periodKey = Some(period)
-
 }
 
 trait ForwardCurveTrait{
@@ -170,7 +172,6 @@ object ForwardCurve {
 }
 /** A simple forward curve. Interpolation between the supplied day prices is handled by the market.
  * <p>
- * TODO - prices should be quantities.
  */
 case class ForwardCurve(
   market : CommodityMarket,

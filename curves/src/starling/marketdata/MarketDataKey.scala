@@ -23,21 +23,40 @@ trait MarketDataKey {
 
   //represents the MarketData passed in as rows for use in the market data viewer pivot
   //the fields used as keys must be consistent with the fields defined by the associated MarketDataType
+  // The fields include those in field values, plus market data fields. E.g. for price data the market
+  // data fields are Month, price
   def rows(t : marketDataType) : Iterable[Map[Field,Any]]
 
   def castRows(marketData:MarketData) : Iterable[Map[Field,Any]]= rows(cast(marketData))
 
   //def create(rows:Iterable[Map[Field,Any]]):marketDataType = throw new Exception
 
-  //the field values for this key
+  //the field values for this key - everything except the market data values.
+  // E.g. for price data this would have commodity, market, Exchange
+  // Used as an optimisation. The gui first gets the markets from this function to display in
+  // the field chooser - base on the choice 'rows' is called to get the actual market data to display.
   def fieldValues:Map[Field,Any]
 
   def read(slice:MarketDataSlice):marketDataType = cast(slice.read(this))
-  def read(observationPoint: ObservationPoint, reader:MarketDataReader):marketDataType = cast(reader.read(observationPoint, this))
+  def read(observationPoint: ObservationPoint, reader: MarketDataReader): marketDataType =
+    cast(reader.read(TimedMarketDataKey(observationPoint, this)))
 
   private def cast(marketData:MarketData):marketDataType = marketData.asInstanceOf[marketDataType]
 
   def dataTypeKey = dataType.name
 
   def unmarshallDB(dbValue: Any): marketDataType = dbValue.asInstanceOf[marketDataType]
+}
+
+case class TimedMarketDataKey(observationPoint: ObservationPoint, key: MarketDataKey) {
+  def day = observationPoint.day
+  def timeOfDay = observationPoint.timeOfDay
+  def timeName = observationPoint.timeName
+
+  def dataType = key.dataType
+  def fieldValues = key.fieldValues
+  def castRows(marketData: MarketData) = key.castRows(marketData)
+  def unmarshallDB(dbValue: Any) = key.unmarshallDB(dbValue)
+
+  def asTuple = (observationPoint, key)
 }

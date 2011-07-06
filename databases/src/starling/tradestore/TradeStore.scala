@@ -5,7 +5,7 @@ import starling.utils._
 import starling.pivot.{Field => PField}
 import starling.pivot._
 import controller.PivotTableConverter
-import model.{CollapsedState, PivotTableModel}
+import model.{UndefinedValue, CollapsedState, PivotTableModel}
 import starling.pivot.Field._
 import starling.db.DBWriter
 import collection.immutable.Set
@@ -26,6 +26,7 @@ import starling.trade.{TradeID, Trade, TradeSystem, TradeAttributes}
 import math.Ordering
 import starling.quantity._
 import starling.gui.api._
+import starling.tradestore.TradeStore.StoreResults
 
 //This is the code which maps from TradeableType.fields to FieldDetails
 object TradeableFields {
@@ -138,12 +139,8 @@ case class FieldDetailsTradeSelection(filter:List[(FieldDetails,Selection)], sel
     def matches(fs: (FieldDetails, Selection)): Boolean = {
       try {
         val (fieldDetail, selection) = fs
-        val value = data(fieldDetail.field)
-        val r = selection.matches(fieldDetail, value)
-        if (!r) {
-          val b = 1
-        }
-        r
+        val value = data.getOrElse(fieldDetail.field, UndefinedValue)
+        selection.matches(fieldDetail, value)
       } catch {
         case e => {
           println("data is ")
@@ -182,7 +179,7 @@ case class TradeChanges(
 /**
  * A wrapper around the starling Trade tables.
  */
-abstract class TradeStore(db: RichDB, broadcaster:Broadcaster, tradeSystem: TradeSystem, inTest: Boolean, bookID:Option[Int]) {
+abstract class TradeStore(db: RichDB, broadcaster:Broadcaster, tradeSystem: TradeSystem, bookID:Option[Int]) {
 
   lazy val cachedLatestTimestamp:AtomicReference[Timestamp] = new AtomicReference(maxTimestamp())
 
@@ -215,15 +212,8 @@ abstract class TradeStore(db: RichDB, broadcaster:Broadcaster, tradeSystem: Trad
   def inTransaction(isolationLevel: Int)(f: Writer => Unit) {
     val oldLatestTimestamp = cachedLatestTimestamp.get
     db.inTransaction(isolationLevel) {
-      dbWriter => {
-        try {
-          if (!inTest) dbWriter.setIdentityInsert(tableName, true)
-          val writer = new Writer(dbWriter)
-          f(writer)
-          writer.flushToDB
-        } finally {
-          if (!inTest) dbWriter.setIdentityInsert(tableName, false)
-        }
+      dbWriter => dbWriter.withIdentityInsert(tableName) {
+        new Writer(dbWriter).flushToDB(f)
       }
     }
     val newMax = maxTimestamp
@@ -707,12 +697,12 @@ abstract class TradeStore(db: RichDB, broadcaster:Broadcaster, tradeSystem: Trad
     (0 :: readLatestVersionOfAllTrades.filter(v => predicate(v._2.trade)).map(_._2.id).toList).max
   }
 
-  def storeTrades(predicate: (Trade) => Boolean, trades: Iterable[Trade], timestamp: Timestamp): (Long, Boolean) = {
-    var changed = false
+  def storeTrades(predicate: (Trade) => Boolean, trades: Iterable[Trade], timestamp: Timestamp): StoreResults = {
+    var result: StoreResults = null
     inTransaction(writer => {
       val allTrades = readLatestVersionOfAllTrades
       val currentTrades = allTrades.filter(v => predicate(v._2.trade))
-      val inserted = writer.updateTrades(trades, currentTrades, timestamp)
+      val (added, updated, _) = writer.updateTrades(trades, currentTrades, timestamp)
 
       val currentTradeIDs = currentTrades.map(_._1)
       // the update step above doesn't remove trades, so this needs to be done as a separate step
@@ -720,12 +710,14 @@ abstract class TradeStore(db: RichDB, broadcaster:Broadcaster, tradeSystem: Trad
       val deletedTradeIDs = currentTradeIDs.filterNot(id => updateTradeIDs.contains(id)).toSet
       writer.delete(deletedTradeIDs, timestamp)
 
-      Log.info("Deleting " + deletedTradeIDs.size + " trades for " + bookID + ". " + (allTrades.size, currentTrades.size, trades.size, inserted))
+      Log.info("Deleting " + deletedTradeIDs.size + " trades for " + bookID + ". " + (allTrades.size, currentTrades.size, trades.size, added, updated))
 
-      changed = inserted > 0 || !deletedTradeIDs.isEmpty
+      val hash = tradesHash(predicate)
+      result = StoreResults(added, deletedTradeIDs.size, updated, hash)
     })
 
-    (tradesHash(predicate), changed)
+    assume(result != null, "Something went wrong storing the trades: " + trades) // sanity check
+    result
   }
 
   class Writer(writer: DBWriter) {
@@ -785,6 +777,12 @@ abstract class TradeStore(db: RichDB, broadcaster:Broadcaster, tradeSystem: Trad
       }
     }
 
+    def flushToDB[A](f: Writer => A): A = {
+      val result = f(this)
+      flushToDB
+      result
+    }
+
     def flushToDB = {
       writer.insert(tableName, toInsertTradeTable)
       toInsertTradeTable = List[Map[String, Any]]()
@@ -808,22 +806,17 @@ abstract class TradeStore(db: RichDB, broadcaster:Broadcaster, tradeSystem: Trad
 
     def abort = writer.abort
 
-    /**
-     * Just used for the tests
-     */
-    def updateTrades(updateTradesList: List[Trade], timestamp: Timestamp): Int = {
-      val latestVersionOfTrades = readLatestVersionOfTrades(updateTradesList.map(_.tradeID).toSet)
-      updateTrades(updateTradesList, latestVersionOfTrades, timestamp)
-    }
-
     def updateTrades(updateTrades: Iterable[Trade],
                      oldTrades: Map[TradeID, TradeRow],
-                     timestamp: Timestamp): Int = {
+                     timestamp: Timestamp) = {
 
-      var inserted = 0
+      var added = 0
+      var updated = 0
+      var same = 0
+      var total = 0
       for (updateTrade <- updateTrades) {
         oldTrades.get(updateTrade.tradeID) match {
-          case Some(oldTradeRow) => oldTradeRow.trade.attributes == updateTrade.attributes match {
+          case Some(oldTradeRow) => oldTradeRow.trade == updateTrade match {
             case false => {
               if(oldTradeRow.trade.toString == updateTrade.toString) {
                 // This is usually, although not always, a warning sign that we've implemented trade comparison incorrectly
@@ -831,18 +824,22 @@ abstract class TradeStore(db: RichDB, broadcaster:Broadcaster, tradeSystem: Trad
                 Log.warn("Trades apparently not equal but their strings are the same: " + updateTrade)
               }
               writeUpdatedTrade(updateTrade, timestamp, oldTradeRow.id)
-              inserted += 1
+              updated += 1
             }
-            case true =>
+            case true => {
+              same += 1
+            }
           }
           case None => {
             insertNewTrade(updateTrade, timestamp)
-            inserted += 1
+            added += 1
           }
         }
+        total += 1
       }
       flushToDB
-      inserted
+      assume(added + updated + same == total)
+      (added, updated, same)
     }
 
     def delete(tradeIDs: Set[TradeID], timestamp: Timestamp) {
@@ -872,6 +869,11 @@ abstract class TradeStore(db: RichDB, broadcaster:Broadcaster, tradeSystem: Trad
 }
 
 object TradeStore {
+  
+  case class StoreResults(inserted: Int, deleted: Int, updated: Int, hash: Long) {
+    def changed = inserted > 0 || deleted > 0 || updated > 0
+  }
+
   def tradeFromRow(row: RichInstrumentResultSetRow, tradeSystem: TradeSystem, tradeAttributes: TradeAttributes): Trade = {
     try {
       val instrumentName = row.getString("Instrument")

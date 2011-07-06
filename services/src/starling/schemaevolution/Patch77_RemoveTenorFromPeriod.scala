@@ -14,7 +14,7 @@ class Patch77_RemoveTenorFromPeriod extends Patch {
 
   def patchDescription = "RemoveTenorFromPeriod"
 
-  val marketDataType = SpreadStdDevSurfaceDataType
+  lazy val marketDataType = SpreadStdDevSurfaceDataType
 
   val mapBasedConverter = new MapBasedConverter(
       StarlingXStream.createXStream,

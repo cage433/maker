@@ -6,16 +6,17 @@ import starling.curves.MarketDataSlice
 import starling.market.CommodityMarket
 
 
-class MarketDataReaderMarketDataSlice(reader:MarketDataReader, observationPoint:ObservationPoint) extends MarketDataSlice {
+class MarketDataReaderMarketDataSlice(
+    reader:MarketDataReader, observationPoint:ObservationPoint, observationTimeOverrides:Map[MarketDataType,ObservationTimeOfDay]=Map()) extends MarketDataSlice {
   def read(key: MarketDataKey) = {
-    reader.read(observationPoint, key)
+    val point = observationPoint.copyTime(observationTimeOverrides.get(key.dataType))
+    reader.read(TimedMarketDataKey(point, key))
   }
 
-  def fixings(market:CommodityMarket, observationPoint: ObservationPoint) = {
-    PriceFixingsHistoryDataKey(market).read(observationPoint, reader)
+  def fixings(key : PriceFixingsHistoryDataKey, observationPoint: ObservationPoint) : PriceFixingsHistoryData = {
+    key.read(observationPoint, reader)
   }
 }
-
 
 
 

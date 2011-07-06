@@ -40,9 +40,7 @@ object InstrumentType {
     SwapCalendarSpread,
     FuturesOption,
     CalendarSpreadOption,
-    ForwardOption,
     AsianOption,
-    CommodityForward,
     FXOption,
     ErrorInstrument,
     CashInstrument,
@@ -54,10 +52,7 @@ object InstrumentType {
     FuturesCommoditySpread
   )
 
-  def fromName(name : String) = types.find(_.name.toLowerCase == name.toLowerCase) match {
-    case Some(t) => t
-    case None => throw new Exception("Couldn't find instrument with name " + name)
-  }
+  def fromName(name : String) = types.find(_.name.toLowerCase == name.toLowerCase)
 
   //the union of the keys in the Instrument#details method
   val fieldsWithType = List(
@@ -140,10 +135,10 @@ trait Instrument extends Ordered[Instrument] with Greeks with PnlExplanation {
   /** Returns the relevant VaR risk factors as of the given market day, when the deal is
    * valued in the given currency
    * <p>
-   * TODO - This kind of sucks - either
-   *        a) Lose atomicMarketDataKeys and put this method in the Instrument sub classes
-   *        b) pass the request to the key itself 
    */
+   //TODO [21 Oct 2009] This kind of sucks - either
+   //TODO [21 Oct 2009]       a) Lose atomicMarketDataKeys and put this method in the Instrument sub classes
+   //TODO [21 Oct 2009]       b) pass the request to the key itself
   def riskFactors(env: Environment, ccy : UOM) : Set[RiskFactor] = {
     val marketDayAndTime : DayAndTime = env.marketDay
     val marketDay: Day = marketDayAndTime.day
@@ -248,15 +243,9 @@ trait Instrument extends Ordered[Instrument] with Greeks with PnlExplanation {
     }
     val hedge = diff match {
       case PriceDifferentiable(market: FuturesMarket, period) => Some(Future(market, period, 0.0(market.priceUOM), 1.0(market.uom)))
-      case PriceDifferentiable(market : CommodityMarket, period) if PublishedIndex.marketToPublishedIndexMap.contains(market) => {
-        buildSwap(PublishedIndex.marketToPublishedIndexMap(market), period)
+      case PriceDifferentiable(market : CommodityMarket, period) if Index.marketToPublishedIndexMap.contains(market) => {
+        buildSwap(Index.marketToPublishedIndexMap(market), period)
       }
-      case PriceDifferentiable(market: ForwardMarket, day: Day) => Some(CommodityForward(market, day, 0.0(market.priceUOM), 1.0(market.uom)))
-      // This sucks but should be gotten rid of once ForwardMarket goes
-      case PriceDifferentiable(market: ForwardMarket, period : DateRange) => {
-        val days = period.days.filter(market.businessCalendar.isBusinessDay)
-        Some(CommodityForward(market, days.last, 0.0(market.priceUOM), 1.0(market.uom)))
-    }
       case FuturesSpreadPrice(market, m1, m2) => Some(FuturesCalendarSpread(market, m1, m2, 0.0(market.priceUOM), 0.0(market.priceUOM), 1.0(market.uom)))
       case SwapPrice(index, period) => {
         buildSwap(index, period)
@@ -273,7 +262,6 @@ trait Instrument extends Ordered[Instrument] with Greeks with PnlExplanation {
       case ForwardPriceRiskFactor(market, nDaysToStart, nDaysToEnd)
       => market match {
         case f: FuturesMarket => Future(f, f.nthPeriod(env.marketDay, nDaysToEnd), 0(market.priceUOM), 1(market.uom))
-        case f: ForwardMarket => CommodityForward(f, f.nthPeriod(env.marketDay, nDaysToEnd), 0(market.priceUOM), 1(market.uom))
       }
       case EquityRiskFactor(ric) => NetEquityPosition(ric, Quantity(1, UOM.SHARE))
       case SpotFXRiskFactor(ccy) => new FXForward(env.spotFXRate(USD, ccy), 1.0 (ccy), marketDay)
@@ -290,9 +278,9 @@ trait Instrument extends Ordered[Instrument] with Greeks with PnlExplanation {
   /**
    * Total position wrt to some risk factor type, i.e. parallel shift delta wrt WTI prices,
    * or parallel shift vega wrt WTI vols
-   * TODO - distinguish between Vol and Prices - are they the same RiskFactorMarket?
-   * TODO - ensure maximalRiskFactors returns a single risk factor per market/risk type
    */
+  // TODO [20 May 2010] distinguish between Vol and Prices - are they the same RiskFactorMarket?
+  // TODO [20 May 2010] ensure maximalRiskFactors returns a single risk factor per market/risk type
   def riskFactorTypePosition(env : Environment, rfType : RiskFactorType, valCCY : UOM) : Quantity = {
     mergedVaRRiskFactors(env, valCCY).find(_.riskFactorType == rfType) match {
       case Some(rf) => riskFactorPosition(env, rf, valCCY)
@@ -341,7 +329,7 @@ trait Instrument extends Ordered[Instrument] with Greeks with PnlExplanation {
   def commodityFuturesPosition(rf: RiskFactor, position: Quantity): Quantity = {
     rf match {
       case prf : ForwardPriceRiskFactor => {
-         prf.market.commodity.toStandardFuturesLots(position)
+         prf.market.commodity.toStandardFuturesLots(position)(prf.market.conversions)
       }
       case _ => Quantity.NULL
     }

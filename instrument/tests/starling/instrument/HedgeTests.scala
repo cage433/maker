@@ -6,9 +6,10 @@ import starling.curves.Environment
 import starling.curves.NullAtomicEnvironment
 import starling.utils.StarlingTest
 import starling.quantity.UOM._
-import starling.market.Market
+import starling.market.Market._
 import starling.daterange.Month
 import starling.quantity.Quantity
+import starling.quantity.Quantity._
 import starling.daterange.DayAndTime
 import starling.curves.AtomicEnvironment
 import starling.curves.AtomicDatumKey
@@ -24,8 +25,10 @@ import starling.curves.DiscountRateKey
 import starling.curves.PriceDifferentiable
 import starling.curves.FixingKey
 import org.testng.Assert._
+import javax.management.remote.rmi._RMIConnection_Stub
+import starling.market.{TestMarketSpec, Market}
 
-class HedgeTests extends StarlingTest{
+class HedgeTests extends TestMarketSpec {
 
   def buildMonthGroups(
     u : Uniform = RandomVariables.standardUniform(12345),
@@ -65,26 +68,37 @@ class HedgeTests extends StarlingTest{
     )
   }
 
-  @Test
-  def testFuturesSpreadHedgeDeltasAreConsistent{
-
+  @DataProvider(name = "testFuturesSpreadHedgeDeltasAreConsistentProvider")
+  def testFuturesSpreadHedgeDeltasAreConsistentProvider = {
     val monthGroups = buildMonthGroups()
     val months : List[Month] = List.concat(monthGroups : _*)
+    val futures = makeRandomFutures(months)
+    Array(
+      Array(futures),
+      Array(
+        List(
+          Future(NYMEX_WTI, Month(2011, 12), 100 (USD/BBL), 1000(BBL)),
+          Future(NYMEX_WTI, Month(2012, 12), 99 (USD/BBL), -500.0 (BBL))))
+    )
+  }
+
+  @Test(dataProvider = "testFuturesSpreadHedgeDeltasAreConsistentProvider")
+  def testFuturesSpreadHedgeDeltasAreConsistent(futures : List[Future]){
+    val months = futures.map(_.delivery.asInstanceOf[Month])
     val marketDay = Day(2010, 1, 1).endOfDay
-    val allFutures = makeRandomFutures(months)
     val env = Environment(new UnitTestingAtomicEnvironment(marketDay, {
         case ForwardPriceKey(mkt, mth : Month, _) => Quantity(100 + mth.m, mkt.priceUOM)
         case DiscountRateKey(_, day, _) => math.exp(0.05 * day.daysSinceInYears(marketDay.day))
         case FixingKey(key, _) => Quantity(20, key.priceUOM)
       }
     ))
-    val hedges = Hedge.futuresSpreadHedgeUTPs(env, allFutures, months.toSet)
-    val futuresComp = CompositeInstrument(allFutures)
+    val hedges = Hedge.futuresSpreadHedgeUTPs(env, futures, months.toSet)
+    assert(hedges.exists(_.isInstanceOf[FuturesCalendarSpread]), "At least one futures spread should be created")
+    val futuresComp = CompositeInstrument(futures)
     val hedgeComp = CompositeInstrument(hedges)
 
-
     for(
-      key <- CollectionUtils.filterOnType[PriceDifferentiable](futuresComp.atomicMarketDataKeys(env.marketDay))
+      key <- CollectionUtils.filterOnType[PriceDifferentiable](futuresComp.environmentDifferentiables(env.marketDay) ++ hedgeComp.environmentDifferentiables(env.marketDay))
     ){
       val delta = futuresComp.firstOrderDerivative(env, key, USD)
       val hedgeDelta = hedgeComp.firstOrderDerivative(env, key, USD)
@@ -117,7 +131,7 @@ class HedgeTests extends StarlingTest{
   def testSwapHedgeDeltasAreConsistent{
     val randomMonths = new RandomThing((Month(2011, 1) upto Month(2011, 12)).toList, seed = 98765)
     val randomMarkets = new RandomThing(
-      List(Market.NYMEX_WTI, Market.ICE_BRENT, Market.ICE_GAS_OIL, Market.BALTIC_HANDYMAX, Market.LME_LEAD), 
+      List(Market.NYMEX_WTI, Market.ICE_BRENT, Market.ICE_GAS_OIL, Market.LME_LEAD),
       seed = 345)
     val u = RandomVariables.standardUniform(43434)
     val marketDay = Day(2010, 3, 13).endOfDay

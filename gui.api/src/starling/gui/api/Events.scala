@@ -5,8 +5,8 @@ import starling.auth.User
 import starling.utils.ImplicitConversions._
 import java.lang.String
 import collection.immutable.Map
-import starling.daterange.{ObservationPoint, Day, Timestamp}
 import starling.pivot.{ExtraFormatInfo, PivotLayout}
+import starling.daterange._
 import starling.gui.Key
 
 class Events //The is just here as I find this class using "^n Events"
@@ -21,7 +21,7 @@ case class PricingGroupMarketDataUpdate(pricingGroup:PricingGroup, version:Int) 
 case class ExcelObservationDay(name:String, day:Day) extends Event
 case class PricingGroupObservationDay(pricingGroup:PricingGroup, day:Day) extends Event
 case class PivotLayoutUpdate(user:String, userLayouts:List[PivotLayout]) extends Event
-case class UserReportUpdate(user:String, userReports:List[UserReport]) extends Event
+case class BookmarksUpdate(user:String, bookmarks:List[BookmarkLabel]) extends Event
 case class ExcelMarketListUpdate(values:List[String]) extends Event
 case class ExcelMarketDataUpdate(name:String, version:Int) extends Event
 case class UserSettingUpdated(key:Key[_]) extends Event
@@ -58,18 +58,18 @@ abstract class RabbitEvent(val queueName : String) extends Event {
   def toMap(keys : String*) : Map[String, Object] = toMap.slice(keys : _*)
   def toMap : Map[String, Object]
 
-  protected def priceEventMap(user : User, label : String, observationDate : Option[Day], dates : Array[Day]) = Map(
+  protected def priceEventMap(user : User, label : String, observationDate : Option[Day], dates : Array[_]) = Map(
     "userName" -> user.username,
     "label" -> label,
     "observationDate" -> observationDate.map(_.toString("dd MMM yyyy")).getOrElse(""),
-    "dates" -> dates.map(_.toString("dd MMM yyyy"))
+    "dates" -> dates.map(_.toString)
   )
 }
 
 case class BlotterTradeUpdate(user : User, subGroupName : String, data : List[List[String]])
   extends RabbitEvent("Trafigura.Raw.Trade.RiskManagement") {
 
-  def toMap = Map("userName" -> user.username, "subGroupName" -> subGroupName, "data" -> data)
+  def toMap = Map("userName" → user.username, "subGroupName" → subGroupName, "data" → data)
 }
 
 case class UploadPricesUpdate(user : User, label : String, observationPoint : ObservationPoint, dates : Array[Day],
@@ -77,15 +77,15 @@ case class UploadPricesUpdate(user : User, label : String, observationPoint : Ob
   extends RabbitEvent("Trafigura.Raw.Price.RiskManagement") {
 
   def toMap = priceEventMap(user, label, observationPoint.day, dates) ++
-    Map("marketName" -> marketName, "prices" -> prices.map(_.toString))
+    Map("marketName" → marketName, "prices" → prices.map(_.toString))
 }
 
-case class UploadStandardDeviationsUpdate(user : User, label : String, observationDate : Option[Day], dates : Array[Day],
+case class UploadStandardDeviationsUpdate(user : User, label : String, observationDate : Option[Day], dates : Array[Spread[Month]],
                                           marketName : String, standardDeviations : Array[Array[Double]])
   extends RabbitEvent("Trafigura.Raw.StandardDeviations.RiskManagement") {
 
   def toMap = priceEventMap(user, label, observationDate, dates) ++
-    Map("marketName" -> marketName, "standardDeviations" -> standardDeviations.map(_.map(_.toString)))
+    Map("marketName" → marketName, "standardDeviations" → standardDeviations.map(_.map(_.toString)))
 }
 
 case class UploadVolsUpdate(user : User, label : String, observationDate : Option[Day], dates : Array[Day],
@@ -93,7 +93,7 @@ case class UploadVolsUpdate(user : User, label : String, observationDate : Optio
   extends RabbitEvent("Trafigura.Raw.Vols.RiskManagement") {
 
   def toMap = priceEventMap(user, label, observationDate, dates) ++
-    Map("marketName" -> marketName, "vols" -> vols.map(_.map(_.toString)))
+    Map("marketName" → marketName, "vols" → vols.map(_.map(_.toString)))
 }
 
 case class UploadInterestRatesUpdate(user : User, label : String, observationDate : Option[Day], dates : Array[Day],
@@ -101,7 +101,7 @@ case class UploadInterestRatesUpdate(user : User, label : String, observationDat
   extends RabbitEvent("Trafigura.Raw.InterestRates.RiskManagement") {
 
   def toMap = priceEventMap(user, label, observationDate, dates) ++
-    Map("currency" -> currency, "interestRates" -> interestRates.map(_.toString))
+    Map("currency" → currency, "interestRates" → interestRates.map(_.toString))
 }
 
-case class EmailEvent(from: String = "", to: Seq[String] = Nil, subject: String = "", body: String = "") extends Event
+case class EmailEvent(from: String = "", to: String = "", subject: String = "", body: String = "") extends Event

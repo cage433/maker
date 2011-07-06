@@ -9,7 +9,7 @@ import org.testng.Assert._
 import starling.market._
 import starling.daterange.{ObservationPoint, DateRange, Month, Day}
 
-class MetalsVolsTests extends TestExpiryRules {
+class MetalsVolsTests extends TestMarketSpec {
   @Test
   def test {
     val months = Array[DateRange](Month(2010, 2), Month(2010, 6), Month(2011, 1))
@@ -25,7 +25,7 @@ class MetalsVolsTests extends TestExpiryRules {
           }
         })
 
-        def fixings(market: CommodityMarket, observationPoint: ObservationPoint) = throw new Exception("Not implemented")
+        def fixings(key : PriceFixingsHistoryDataKey, observationPoint: ObservationPoint) = throw new Exception("Not implemented")
       }
       )
     val env = Environment(atomicEnv)

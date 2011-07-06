@@ -6,9 +6,9 @@ import starling.pivot._
 
 object SpotFXDataType extends MarketDataType {
   type dataType = SpotFXData
-  val keys = UOMSymbol.currencySymbols.filterNot(_ == UOMSymbol.USD_SYMBOL).map(s=>SpotFXDataKey(s.asUOM))
+  val keys = UOMSymbol.currencySymbols.filterNot(_ == UOMSymbol.usd).map(s=>SpotFXDataKey(s.asUOM))
   val currencyField = FieldDetails("Currency")
-  val rateField = new SumPivotQuantityFieldDetails("Rate")
+  val rateField = new PivotQuantityFieldDetails("Rate")
   override def createKey(values:Map[Field,Any]):MarketDataKey = SpotFXDataKey(UOM.parseCurrency(values(currencyField.field).asInstanceOf[String]).get)
   override def createValue(values:List[Map[Field,Any]]):dataType = {
     values match {
@@ -44,5 +44,7 @@ case class SpotFXDataKey(ccy: UOM) extends MarketDataKey {
 }
 
 //For Example 0.0125 USD / JPY
-case class SpotFXData(rate: Quantity) extends MarketData
+case class SpotFXData(rate: Quantity) extends MarketData {
+  override def size = Some(1)
+}
 

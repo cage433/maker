@@ -20,6 +20,9 @@ class FutureReader extends ExcelInstrumentReader {
           case _ => throw new ExcelInstrumentReaderException("Invalid prices specified for Future: " + row.prices)
         }
       }
+      case DateRangePeriod(period) if row.isCrackMarket => {
+        throw new ExcelInstrumentReaderException("Invalid period for a crack market: " + period)
+      }
       case DateRangePeriod(period) => {
         val strike = row.price
         val market = row.futuresMarket
@@ -33,7 +36,7 @@ class FutureReader extends ExcelInstrumentReader {
           case _ => throw new ExcelInstrumentReaderException("Invalid prices specified for Future: " + row.prices)
         }
       }
-      case _ => throw new Exception("Invalid period for a future: " + row.period + " ('" + row.rawPeriod + "')")
+      case _ => throw new Exception("Invalid period for this future: " + row.period + " ('" + row.rawPeriod + "')")
     }
   }
 }

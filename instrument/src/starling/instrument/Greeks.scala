@@ -204,7 +204,7 @@ trait Greeks {
    **/
   def parallelVega(env: Environment, shiftInterpolatedVols : Boolean): Quantity = {
     val vks = volKeys(this, env.marketDay, valuationCCY).toList
-    assert(vks.groupBy(_.volMarket).size == 1, "Can't get parallel vega when there are multiple underyling markets: " + vks)
+    assert(vks.groupBy(_.curveKey).size == 1, "Can't get parallel vega when there are multiple underyling curve keys: " + vks)
     firstOrderParallelDerivative(env, vks.head.curveKey, valuationCCY, shiftInterpolatedVols = shiftInterpolatedVols) / 100.0
   }
 
@@ -245,7 +245,7 @@ trait Greeks {
   }
 
   private def parallelShift(env: Environment, curveKey : CurveKey, shiftInterpolatedVols : Boolean, multiple : Double = 1.0) : (Environment, Environment, Environment, Quantity)= {
-    //TODO - find a way of memoizing on the curveKey and not its name - memoize doesn't like the type curveKey[_]
+    //TODO [03 Dec 2010] find a way of memoizing on the curveKey and not its name - memoize doesn't like the type curveKey[_]
     env.greeksCache.memoize((curveKey.typeName + curveKey.underlying, shiftInterpolatedVols, multiple, "Parallel Shift"), {
       Greeks.parallelShift(env, curveKey, shiftInterpolatedVols = shiftInterpolatedVols, multiple = multiple)
     })

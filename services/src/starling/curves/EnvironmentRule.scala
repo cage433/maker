@@ -7,13 +7,13 @@ import starling.utils.ImplicitConversions._
 import starling.gui.api.EnvironmentRuleLabel
 import starling.marketdata.{PriceFixingsHistoryDataKey, MarketDataKey}
 import starling.market.{CommodityMarket, FuturesMarket}
-import starling.db.{MarketDataReaderMarketDataSlice, MarketDataReader}
-
+import starling.db.{SnapshotID, MarketDataReaderMarketDataSlice, MarketDataReader}
 
 trait EnvironmentRule {
   val label: EnvironmentRuleLabel
   def name: String = label.name
   def createEnv(observationDay: Day, marketDataReader: MarketDataReader): EnvironmentWithDomain
+  def createNullAtomicEnvironment(observationDay: Day):NullAtomicEnvironment = throw new Exception("Not implemented for " + this)
 }
 
 object EnvironmentRule {
@@ -27,7 +27,7 @@ object EnvironmentRule {
   val Default = new VanillaEnvironmentRule((day)=>ObservationPoint(day, ObservationTimeOfDay.Default), TimeOfDay.EndOfDay, EnvironmentRuleLabel.COB)
   val RealTime = new VanillaEnvironmentRule((day)=>ObservationPoint.RealTime, TimeOfDay.StartOfDay, EnvironmentRuleLabel.RealTime)
   private val defaultRules = List(Default, RealTime)
-  private val lookup = (metalRules ::: defaultRules).asMap(_.label) + EnvironmentRuleLabel.Default → Default
+  private val lookup = (metalRules ::: defaultRules).toMapWithKeys(_.label) + EnvironmentRuleLabel.Default → Default
 
   val exchangeCloses = Map(SFS → SHFEClose, LME → LMEClose, COMEX → COMEXClose)
   val marketCloses = exchangeCloses.extendKey((market: FuturesMarket) => market.exchange)

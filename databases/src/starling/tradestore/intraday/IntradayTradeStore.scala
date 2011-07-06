@@ -16,6 +16,7 @@ import starling.gui.api.IntradayUpdated
 import starling.utils.sql.{Clause, LiteralString, QueryBuilder}
 import QueryBuilder._
 import starling.tradestore.eai.ExternalSortIndexPivotTreePathOrdering
+import starling.tradestore.TradeStore.StoreResults
 
 case class IntradayTradeAttributes(strategyID: Option[TreeID], bookID: TreeID, dealID: Option[TreeID],
                                    trader: String, tradedFor: String, broker: String, comment: String, clearingHouse: String,
@@ -76,7 +77,7 @@ class IntradayTradeStore(
         eaiStrategyDB: EAIStrategyDB,
         broadcaster: Broadcaster,
         ldapSearch: LdapUserLookup
-        ) extends TradeStore(db, broadcaster, IntradayTradeSystem, false, None) {
+        ) extends TradeStore(db, broadcaster, IntradayTradeSystem, None) {
 
   import IntradayTradeAttributes._
 
@@ -169,20 +170,20 @@ class IntradayTradeStore(
   }
 
 
-  def storeTrades(user : User, subgroupName: String, trades : List[Trade]): (Long, Boolean) = {
+  def storeTrades(user : User, subgroupName: String, trades : List[Trade]): StoreResults = {
     val timestamp = new Timestamp
-    val (hash, changed) = storeTrades({trade => {
+    val store = storeTrades({trade => {
       trade.attributes match {
         case a: IntradayTradeAttributes => a.subgroupName.equalsIgnoreCase(subgroupName)
         case _ => throw new Exception("Bad trade attributes: " + trade)
       }
     }}, trades, timestamp)
 
-    if (changed) {
+    if (store.changed) {
       broadcaster.broadcast(IntradayUpdated(subgroupName, user, intradayLatest(subgroupName)._2))
     }
 
-    (hash, changed)
+    store
   }
 
 }

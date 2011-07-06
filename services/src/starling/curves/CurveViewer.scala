@@ -48,7 +48,7 @@ trait CurveType {
 
 trait EnvironmentWithDomain {
   def environment: Environment
-  def markets:List[MarketDeliveryPeriods]
+  def markets:List[UnderlyingDeliveryPeriods]
   //These should not really have default Nil implementations as the Curve viewer shows nothing if this is the case
   //However, at the moment we don't have a good definitions of the EnvironmentRules
   def marketVols: List[MarketOptionData] = Nil

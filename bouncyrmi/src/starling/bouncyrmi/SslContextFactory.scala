@@ -1,10 +1,8 @@
 package starling.bouncyrmi
 
 import java.security.{KeyStore, Security}
-import starling.utils.StringIO
 import java.lang.String
 import javax.net.ssl.{X509TrustManager, SSLContext, KeyManagerFactory}
-import java.io.ByteArrayInputStream
 import java.sql.Date
 import java.security.cert.{CertificateException, X509Certificate}
 
@@ -14,7 +12,7 @@ object SslContextFactory {
   def serverContext = {
     val ks = KeyStore.getInstance("JKS");
     val pass = "limetree".toCharArray
-    val inputStream = StringIO.resource("/cert.jks")
+    val inputStream = resource("/cert.jks")
     assert(inputStream != null, "No cert")
     ks.load(inputStream, pass);
 
@@ -48,5 +46,9 @@ object SslContextFactory {
     val context = SSLContext.getInstance("TLS")
     context.init(null, Array(trustManager), null)
     context
+  }
+
+  private def resource(resource: String) = {
+    getClass.getResourceAsStream(resource)
   }
 }

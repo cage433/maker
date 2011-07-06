@@ -1,13 +1,14 @@
 package starling.services.trinity
 
 import collection.immutable.Map
+import java.text.DecimalFormat
 
 import starling.curves.readers.LIBORFixing
 import starling.daterange._
 import starling.db.{NormalMarketDataReader, MarketDataStore}
 import starling.gui.api.{PricingGroup, MarketDataSelection}
 import starling.market.Level
-import starling.marketdata.{PriceFixingsHistoryData, PriceFixingsHistoryDataKey}
+import starling.marketdata.{TimedMarketDataKey, PriceFixingsHistoryData, PriceFixingsHistoryDataKey}
 import starling.pivot.MarketValue
 import starling.quantity.UOM
 
@@ -15,7 +16,6 @@ import Tenor._
 import starling.curves.readers.LIBORFixing._
 import starling.utils.ClosureUtil._
 import starling.utils.ImplicitConversions._
-import java.text.DecimalFormat
 
 
 class XRTGenerator(marketDataStore: MarketDataStore) {
@@ -43,8 +43,8 @@ object XRTGenerator {
     currencies.toMapWithSomeValues(currency => safely(read(marketDataStore, observationDay, currency)).toOption)
 
   private def read(marketDataStore: MarketDataStore, observationDay: Day, currency: UOM) =
-    latestLimOnlyMarketDataReader(marketDataStore).readAs[PriceFixingsHistoryData](
-      observationDay.atTimeOfDay(ObservationTimeOfDay.LiborClose), PriceFixingsHistoryDataKey(currency.toString, Some("LIBOR")))
+    latestLimOnlyMarketDataReader(marketDataStore).readAs[PriceFixingsHistoryData](TimedMarketDataKey(
+      observationDay.atTimeOfDay(ObservationTimeOfDay.LiborClose), PriceFixingsHistoryDataKey(currency.toString, Some("LIBOR"))))
 
   private def latestLimOnlyMarketDataReader(marketDataStore: MarketDataStore) = new NormalMarketDataReader(
     marketDataStore, marketDataStore.latestMarketDataIdentifier(MarketDataSelection(Some(PricingGroup.LimOnly))))

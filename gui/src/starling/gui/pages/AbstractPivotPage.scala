@@ -24,7 +24,7 @@ import starling.utils.ImplicitConversions._
  */
 
 abstract class AbstractPivotPage(pivotPageState:PivotPageState) extends Page {
-  val icon = StarlingIcons.im("/icons/stock_chart-reorganize.png")
+  def icon = StarlingIcons.im("/icons/stock_chart-reorganize.png")
   def dataRequest(pageBuildingContext:PageBuildingContext):PivotData
   def save(starlingServer:StarlingServer, edits:Set[PivotEdit]):Boolean = throw new Exception("No implementation of save for this page")
   def selfPage(pivotPageState:PivotPageState):Page
@@ -34,9 +34,9 @@ abstract class AbstractPivotPage(pivotPageState:PivotPageState) extends Page {
   def toolbarButtons(pageContext: PageContext, data:PageData):List[Button] = List()
   def configPanel(pageContext:PageContext, data:PageData):Option[ConfigPanels] = None
   def build(reader: PageBuildingContext) = PivotTablePageData(dataRequest(reader), subClassesPageData(reader), layoutType)
-  def createComponent(pageContext:PageContext, data:PageData, browserSize:Dimension) : PageComponent = {
+  def createComponent(pageContext:PageContext, data:PageData, bookmark:Bookmark, browserSize:Dimension) : PageComponent = {
     PivotComponent(text, pageContext, toolbarButtons(pageContext, data), configPanel(pageContext, data), finalDrillDownPage, selfPage,
-      data, pivotPageState, save, browserSize, false)
+      data, pivotPageState, save, bookmark, browserSize, false)
   }
 }
 
@@ -60,6 +60,9 @@ case class PivotPageState(showChart:Boolean=false, pivotFieldParams:PivotFieldPa
                           otherLayoutInfo:OtherLayoutInfo = OtherLayoutInfo(totals = Totals.Null)) {
   def copyPivotFieldsState(pivotFieldsState : PivotFieldsState) =
     copy(pivotFieldParams = pivotFieldParams.copy(pivotFieldState = Some(pivotFieldsState)))
+
+  def copyPivotFieldsState(pivotFieldsState:Option[PivotFieldsState]) =
+    copy(pivotFieldParams = pivotFieldParams.copy(pivotFieldState = pivotFieldsState))
 
   def copyLayout(pivotLayout: PivotLayout) =
     copy(pivotFieldParams = pivotFieldParams.copy(pivotFieldState = Some(pivotLayout.pivotFieldState)),
@@ -87,6 +90,7 @@ object PivotComponent {
         pageData:PageData,
         pivotPageState:PivotPageState,
         save:(StarlingServer, Set[PivotEdit]) => Boolean,
+        bookmark:Bookmark,
         browserSize:Dimension,
         embedded:Boolean = true):PivotComponent = {
 
@@ -96,7 +100,7 @@ object PivotComponent {
       PivotTablePageGraphComponent(data.pivotData.pivotTable)
     } else {
       new PivotTablePageComponent(text, pageContext, toolbarButtons, configPanel, finalDrillDown, selfPage, data,
-        pivotPageState, save, browserSize, embedded)
+        pivotPageState, save, bookmark, browserSize, embedded)
     }
   }
 }
@@ -123,6 +127,7 @@ class PivotTablePageComponent(
         pivotTablePageData:PivotTablePageData,
         pivotPageState:PivotPageState,
         save:(StarlingServer, Set[PivotEdit]) => Boolean,
+        bookmark:Bookmark,
         browserSize:Dimension,
         embedded:Boolean) extends PivotComponent {
 
@@ -134,18 +139,6 @@ class PivotTablePageComponent(
   val currentFieldState = data.pivotFieldsState
   val drillDownGroups = data.drillDownGroups
   val user = pageContext.localCache.currentUser
-
-  val toggleCalculateButton = new ToggleToolBarButton {
-    selected = !pivotPageState.pivotFieldParams.calculate
-    tooltip = "Enable or disable calculation on the fly"
-    icon = StarlingIcons.Calculate
-    // If the button is deselected it means we need to calculate with the new layout.
-    reactions += {
-      case ButtonClicked(_) => {
-        pageContext.goTo(selfPage(pivotPageState.flipCalculate))
-      }
-    }
-  }
 
   val toolBar = new MigPanel("insets 1 1 1 1, gap 1") {
     val lockScreenButton = new ToggleToolBarButton {
@@ -181,7 +174,9 @@ class PivotTablePageComponent(
       icon = StarlingIcons.RowSubTotals
       tooltip = "Display or hide the row sub totals"
       reactions += { case ButtonClicked(_) => {
-        val newOtherLayoutInfo = pivotPageState.otherLayoutInfo.copy(rowSubTotalsDisabled = List())
+        val rowFields = data.pivotFieldsState.rowFields
+        val newDisabledSubTotals = pivotPageState.otherLayoutInfo.disabledSubTotals.filterNot(rowFields.contains(_))
+        val newOtherLayoutInfo = pivotPageState.otherLayoutInfo.copy(disabledSubTotals = newDisabledSubTotals)
         val newPivotPageState = pivotPageState.copy(otherLayoutInfo = newOtherLayoutInfo)
         pageContext.goTo(selfPage(newPivotPageState.copyTotals(_.toggleRowSubTotals)))
       } }
@@ -190,7 +185,9 @@ class PivotTablePageComponent(
       icon = StarlingIcons.ColumnSubTotals
       tooltip = "Display or hide the column sub totals"
       reactions += { case ButtonClicked(_) => {
-        val newOtherLayoutInfo = pivotPageState.otherLayoutInfo.copy(columnSubTotalsDisabled = List())
+        val colFields = data.pivotFieldsState.columns.allFields
+        val newDisabledSubTotals = pivotPageState.otherLayoutInfo.disabledSubTotals.filterNot(colFields.contains(_))
+        val newOtherLayoutInfo = pivotPageState.otherLayoutInfo.copy(disabledSubTotals = newDisabledSubTotals)
         val newPivotPageState = pivotPageState.copy(otherLayoutInfo = newOtherLayoutInfo)
         pageContext.goTo(selfPage(newPivotPageState.copyTotals(_.toggleColumnSubTotals)))
       } }
@@ -206,8 +203,30 @@ class PivotTablePageComponent(
       reactions += {
         case ButtonClicked(b) => {
           // Clear the local cache.
-          pageContext.clearCache
+          pageContext.clearCache()
           pageContext.submit(ClearServerSideCache)
+        }
+      }
+    }
+    val toggleCalculateButton = new ToggleToolBarButton {
+      selected = !pivotPageState.pivotFieldParams.calculate
+      tooltip = "Enable or disable calculation on the fly"
+      icon = StarlingIcons.Calculate
+      // If the button is deselected it means we need to calculate with the new layout.
+      reactions += {
+        case ButtonClicked(_) => {
+          pageContext.goTo(selfPage(pivotPageState.flipCalculate))
+        }
+      }
+    }
+    val removeZerosButton = new ToggleToolBarButton {
+      selected = pivotPageState.otherLayoutInfo.removeZeros
+      tooltip = "Remove or show rows that contain zeros"
+      icon = StarlingIcons.icon("/icons/16x16_remove_zeros.png")
+      reactions += {
+        case ButtonClicked(_) => {
+          val newOtherLayoutInfo = pivotPageState.otherLayoutInfo.copy(removeZeros = !pivotPageState.otherLayoutInfo.removeZeros)
+          pageContext.goTo(selfPage(pivotPageState.copy(otherLayoutInfo = newOtherLayoutInfo)))
         }
       }
     }
@@ -246,7 +265,7 @@ class PivotTablePageComponent(
     val layoutComponent = pivotTablePageData.layoutType match {
       case None => None
       case Some(layoutType) => Some(new SaveLayoutPanel(
-        pageContext, pivotTablePageData, pivotPageState, layoutType, pps => selfPage(pps), pivotComp.giveDefaultFocus))
+        pageContext, pivotTablePageData, pivotPageState, layoutType, pps => selfPage(pps), pivotComp.giveDefaultFocus, bookmark))
     }
     layoutComponent match {
       case None =>
@@ -260,13 +279,15 @@ class PivotTablePageComponent(
     add(rotateButton)
     addSeparator
     add(bottomTotalsButton)
-    add(rightTotalsButton)
     add(rowSubTotalsButton)
+    add(rightTotalsButton)
     add(columnSubTotalsButton)
     addSeparator
     add(chartButton)
     addSeparator
     add(toggleCalculateButton)
+    addSeparator
+    add(removeZerosButton)
     addSeparator
     if (data.pivotTable.editableInfo == None) {
       if (pageContext.localCache.version.production) {
@@ -393,26 +414,13 @@ class PivotTablePageComponent(
       pageContext.goTo(selfPage(pivotPageState.copy(otherLayoutInfo = newOtherLayoutInfo)))
     }
     case SubTotalToggled(field, location) => {
-      val newOtherLayoutInfo = location match {
-        case FieldChooserType.Rows => {
-          val subTotalsDisabled = pivotPageState.otherLayoutInfo.rowSubTotalsDisabled
-          val newSubTotalsDisabled = if (subTotalsDisabled.contains(field)) {
-            subTotalsDisabled.filterNot(_ == field)
-          } else {
-            field :: subTotalsDisabled
-          }
-          pivotPageState.otherLayoutInfo.copy(rowSubTotalsDisabled = newSubTotalsDisabled)
-        }
-        case FieldChooserType.Columns => {
-          val subTotalsDisabled = pivotPageState.otherLayoutInfo.columnSubTotalsDisabled
-          val newSubTotalsDisabled = if (subTotalsDisabled.contains(field)) {
-            subTotalsDisabled.filterNot(_ == field)
-          } else {
-            field :: subTotalsDisabled
-          }
-          pivotPageState.otherLayoutInfo.copy(columnSubTotalsDisabled = newSubTotalsDisabled)
-        }
+      val subTotalsDisabled = pivotPageState.otherLayoutInfo.disabledSubTotals
+      val newDisabledSubTotals = if (subTotalsDisabled.contains(field)) {
+        subTotalsDisabled.filterNot(_ == field)
+      } else {
+        field :: subTotalsDisabled
       }
+      val newOtherLayoutInfo = pivotPageState.otherLayoutInfo.copy(disabledSubTotals = newDisabledSubTotals)
       pageContext.goTo(selfPage(pivotPageState.copy(otherLayoutInfo = newOtherLayoutInfo)))
     }
     case UserSettingUpdated(StandardUserSettingKeys.ExtraFormattingInfo) => {

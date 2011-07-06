@@ -17,7 +17,7 @@ import starling.daterange.Day._
 import starling.reports.pivot.PivotReport._
 import starling.market._
 
-class PnlExplanationReportTests extends StarlingTest {
+class PnlExplanationReportTests extends TestMarketSpec {
   def noChoices = ReportSpecificChoices()
 
   @AfterTest
@@ -128,7 +128,7 @@ class PnlExplanationReportTests extends StarlingTest {
     val env2 = TestEnvironmentBuilder.curveObjectEnvironment(Day(2009, 9, 15).endOfDay, market, 20, 0.2)
 
     val volume = Quantity(1, market.uom)
-    val forward = new SingleCommoditySwap(FuturesFrontPeriodIndex.WTI10, Quantity(0, market.priceUOM), volume, Month(2010, 1), cleared = false)
+    val forward = new SingleCommoditySwap(Index.WTI10, Quantity(0, market.priceUOM), volume, Month(2010, 1), cleared = false)
 
     val marketChangesPnl = new MarketChangesPnl(env1, env2, Map(UTPIdentifier(1) -> forward))
     val pnlExplanation = marketChangesPnl.combine(marketChangesPnl.rows(UTPIdentifier(1), forward), noChoices)
@@ -271,7 +271,7 @@ class PnlExplanationReportTests extends StarlingTest {
 
   @Test
   def testSwapMidPeriodHasNoUnexplainedTerms{
-    val index = FuturesFrontPeriodIndex.BRT11
+    val index = Index.BRT11.copy(precision = None)
     val swap = SingleCommoditySwap(
       index,
       15.0(index.priceUOM),
@@ -288,7 +288,7 @@ class PnlExplanationReportTests extends StarlingTest {
         case _ : FixingKey => 77.0(index.priceUOM)
         case _ : DiscountRateKey => 1.0
       }
-    )).forwardState(marketDay2)
+    )).forwardState(marketDay2).ignoreSwapRounding
     val env2 = Environment(UnitTestingAtomicEnvironment(
       marketDay2,
       {
@@ -297,7 +297,7 @@ class PnlExplanationReportTests extends StarlingTest {
         case _ : FixingKey => 77.0(index.priceUOM)
         case _ : DiscountRateKey => 1.0
       }
-    ))
+    )).ignoreSwapRounding
     val marketChangesPnl = new MarketChangesPnl(env1.atomicEnv, env2.atomicEnv, Map(UTPIdentifier(1) -> swap))
       val choices = ReportSpecificChoices(Map(showEqFutures_str -> false))
     val pnlExplanation = marketChangesPnl.combine(marketChangesPnl.rows(UTPIdentifier(1), swap), choices)
@@ -308,7 +308,7 @@ class PnlExplanationReportTests extends StarlingTest {
 
   @Test
   def testSeetalBugReport_PREM_UNL_EURO_BOB_OXY_NWE_BARGES {
-    val index = PublishedIndex.PREM_UNL_EURO_BOB_OXY_NWE_BARGES
+    val index = Index.PREM_UNL_EURO_BOB_OXY_NWE_BARGES.copy(precision = None)
     val market = index.market
     val period = Month(2011, 4)
     val volume = 10000(index.uom)

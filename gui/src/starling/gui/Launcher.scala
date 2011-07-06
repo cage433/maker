@@ -23,6 +23,7 @@ import starling.daterange.Day
 import starling.auth.{Client, ClientLogin}
 import management.ManagementFactory
 import java.awt.{GraphicsEnvironment, Color}
+import xstream.GuiStarlingXStream
 
 /**
  * The entry point into the starling gui
@@ -90,7 +91,7 @@ object Launcher {
     numberOfClientsLaunched += 1
 
     def logger(message:String) {
-      // TODO - do something clever with this message.
+      // TODO [03 Feb 2011] do something clever with this message.
 //      println(message)
     }
     val client = new BouncyRMIClient(rmiHost, rmiPort, classOf[StarlingServer], auth(servicePrincipalName), logger, overriddenUser)
@@ -230,14 +231,22 @@ object Launcher {
 
       val username = starlingServer.whoAmI.username
 
+      def toBookmarks(labels:List[BookmarkLabel]) = {
+        labels.map(s => {
+          val bookmark = GuiStarlingXStream.read(s.bookmark).asInstanceOf[Bookmark]
+          val bookmarkName = s.name
+          BookmarkData(bookmarkName, bookmark)
+        })
+      }
+
       // We want to set up a local cache so that we don't always have to hit the server. This cache is populated on startup and then listens to
       // the publisher to stay fresh.
       localCacheUpdatePublisher.reactions += {
         case e: PivotLayoutUpdate if (e.user == username) => {
           cacheMap(UserPivotLayouts) = e.userLayouts
         }
-        case e: UserReportUpdate if (e.user == username) => {
-          cacheMap(UserReports) = e.userReports
+        case e: BookmarksUpdate if e.user == username => {
+          cacheMap(Bookmarks) = toBookmarks(e.bookmarks)
         }
         case ExcelMarketListUpdate(values) => {
           cacheMap(ExcelDataSets) = values
@@ -301,7 +310,6 @@ object Launcher {
       }
 
       cacheMap(UserPivotLayouts) = starlingServer.extraLayouts
-      cacheMap(UserReports) = starlingServer.userReports
       cacheMap(PricingGroups) = starlingServer.pricingGroups
       cacheMap(ExcelDataSets) = starlingServer.excelDataSets
       cacheMap(Snapshots) = starlingServer.snapshots
@@ -325,6 +333,7 @@ object Launcher {
       cacheMap(IsStarlingDeveloper) = starlingServer.isStarlingDeveloper
       cacheMap(EnvironmentRules) = starlingServer.environmentRules
       cacheMap(CurveTypes) = starlingServer.curveTypes
+      cacheMap(Bookmarks) = toBookmarks(starlingServer.bookmarks)
 
       GuiUtils.setLookAndFeel
 
@@ -458,7 +467,7 @@ class StarlingBrowserFrame(homePage: Page, pageBuilder: PageBuilder, lCache: Loc
   iconImage = mainIcon
 
   private val initialStarlingBrowser = new StarlingBrowserTabbedPane(homePage, pageBuilder, lCache, userSettings,
-    remotePublisher, this, extraInfo)
+    remotePublisher, this, extraInfo, containerMethods, this)
 
   private val notificationPanel = new NotificationPanel(size.width, lCache, containerMethods)
   private val mainPanel = new MigPanel("insets 0, hidemode 3", "[p]", "[p]0[p]") {
@@ -486,7 +495,7 @@ class StarlingBrowserFrame(homePage: Page, pageBuilder: PageBuilder, lCache: Loc
 
   def splitVertically(eventFrom: StarlingBrowserTabbedPane) = {
     val starlingBrowserTabbedPane = new StarlingBrowserTabbedPane(homePage, pageBuilder, lCache, userSettings,
-      remotePublisher, this, extraInfo)
+      remotePublisher, this, extraInfo, containerMethods, this)
     reactions += {
       case MouseClicked(`starlingBrowserTabbedPane`, _, _, 2, _) => {
         // If the user double clicks to the right of the tab, create a new tab.
@@ -512,7 +521,7 @@ class StarlingBrowserFrame(homePage: Page, pageBuilder: PageBuilder, lCache: Loc
 
   def canClose = ((for (starlingTabbedPane <- tabbedPaneBuffer) yield starlingTabbedPane.pages.length).sum > 2)
 
-  def tabClosed = {
+  def tabClosed() {
     val starlingTabbedPanesToRemove = tabbedPaneBuffer.filter(_.pages.length == 1)
     if (starlingTabbedPanesToRemove.size > 0) {
       tabbedPaneBuffer --= starlingTabbedPanesToRemove
@@ -521,7 +530,7 @@ class StarlingBrowserFrame(homePage: Page, pageBuilder: PageBuilder, lCache: Loc
   }
 
   private def regenerateFromBuffer(focusComponent: Component = tabbedPaneBuffer.last.selection.page.content) {
-    // TODO - ensure the correct size is used for the components in the split panes.
+    // TODO [16 Apr 2010] ensure the correct size is used for the components in the split panes.
     val componentToAdd = tabbedPaneBuffer.reduceRight[Component](new SplitPane(Orientation.Vertical, _, _) {
       border = EmptyBorder
     })
@@ -538,33 +547,29 @@ class StarlingBrowserFrame(homePage: Page, pageBuilder: PageBuilder, lCache: Loc
 }
 
 trait WindowMethods {
-  def setBusy(busy: Boolean): Unit
-
-  def splitVertically(eventFrom: StarlingBrowserTabbedPane): Unit
-
-  def canClose: Boolean
-
-  def tabClosed: Unit
-
-  def setDefaultButton(button: Option[Button]): Unit
-
-  def getDefaultButton: Option[Button]
+  def setBusy(busy: Boolean)
+  def splitVertically(eventFrom: StarlingBrowserTabbedPane)
+  def canClose:Boolean
+  def tabClosed()
+  def setDefaultButton(button:Option[Button])
+  def getDefaultButton:Option[Button]
 }
 
 class StarlingBrowserTabbedPane(homePage: Page, pageBuilder: PageBuilder, lCache: LocalCache, userSettings:UserSettings,
-                                remotePublisher: Publisher, windowMethods: WindowMethods, extraInfo:Option[String]) extends TabbedPane {
+                                remotePublisher: Publisher, windowMethods: WindowMethods, extraInfo:Option[String],
+                                containerMethods:ContainerMethods, parentFrame:StarlingBrowserFrame) extends TabbedPane {
   focusable = false
   peer.setUI(new StarlingTabbedPaneUI)
   peer.addMouseListener(new MouseAdapter {
-    override def mousePressed(e: MouseEvent) = {
+    override def mousePressed(e: MouseEvent) {
       if (e.isPopupTrigger) {
         tabPopupMenu.show(e.getComponent, e.getX, e.getY)
       } else {
-        selection.page.content.requestFocusInWindow
+        selection.page.content.requestFocusInWindow()
       }
     }
 
-    override def mouseReleased(e: MouseEvent) = {
+    override def mouseReleased(e: MouseEvent) {
       if (e.isPopupTrigger) {
         tabPopupMenu.show(e.getComponent, e.getX, e.getY)
       }
@@ -611,6 +616,8 @@ class StarlingBrowserTabbedPane(homePage: Page, pageBuilder: PageBuilder, lCache
       val c = pages(newSelection).self.asInstanceOf[SXLayerScala[StarlingBrowser]].getScalaComponent
       c.currentComponent.requestFocusInWindow
       c.currentComponent.pageShown
+    } else {
+      containerMethods.closeFrame(parentFrame)
     }
   }
   peer.getInputMap(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT).put(KeyStroke.getKeyStroke(KeyEvent.VK_F4, InputEvent.CTRL_DOWN_MASK), "closeTabAction")
@@ -628,6 +635,7 @@ class StarlingBrowserTabbedPane(homePage: Page, pageBuilder: PageBuilder, lCache
   private val closeTabItem = new MenuItem(closeTabAction)
   private val splitVerticallyItem = new MenuItem(splitVerticallyAction)
   private val tabPopupMenu = new JPopupMenu
+  tabPopupMenu.setBorder(LineBorder(GuiUtils.BorderColour))
   tabPopupMenu.add(newTabItem.peer)
   tabPopupMenu.addSeparator
   tabPopupMenu.add(closeTabItem.peer)

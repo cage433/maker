@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>com.trafigura</groupId>
+    <artifactId>buildtools-server</artifactId>
+    <version>2.0</version>
+    <relativePath>../../../buildtools/services/pom.xml</relativePath>
+  </parent>
+
+
+  <!--TODO [31 May 2011] It would be nice not to have to specify a packaging as we don't want one loaded into nexus-->
+  <name>StarlingClient</name>
+  <groupId>com.trafigura.clients.starlingclient</groupId>
+  <artifactId>starling-client</artifactId>
+  <version>${buildversion}</version>
+  <packaging>jar</packaging>
+
+  <!--Internal dependencies-->
+  <dependencies>
+    <dependency>
+      <groupId>com.trafigura.services</groupId>
+      <artifactId>titan-core</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.trafigura.services</groupId>
+      <artifactId>titan-security</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.trafigura.tradinghub</groupId>
+      <artifactId>scala-model-with-persistence</artifactId>
+      <version>${trafigura.model.version}</version>
+        <exclusions>
+          <exclusion>
+            <groupId>javassist</groupId>
+            <artifactId>javassist</artifactId>
+          </exclusion>
+        </exclusions>
+    </dependency>
+ 
+    <!--External dependencies-->
+    <dependency>
+      <groupId>log4j</groupId>
+      <artifactId>log4j</artifactId>
+    </dependency>      
+    <dependency>
+      <groupId>org.scala-lang</groupId>
+      <artifactId>scala-compiler</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.scala-lang</groupId>
+      <artifactId>scala-library</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-context-support</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-orm</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-web</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.rabbitmq</groupId>
+      <artifactId>amqp-client</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-simple</artifactId>
+    </dependency>
+
+    <!--Provided External dependencies-->
+    <dependency>
+      <groupId>javax.servlet</groupId>
+      <artifactId>servlet-api</artifactId>
+    </dependency>
+    <dependency>
+        <groupId>org.mockito</groupId>
+        <artifactId>mockito-all</artifactId>
+    </dependency>
+  </dependencies>
+    
+  <build>
+    <testResources>
+      <testResource>
+        <directory>./src/main/resources</directory>
+        <includes> 
+                  <include>**/*.xml</include>
+                  <include>**/trafigura.properties</include>
+        </includes>
+      </testResource>        
+    </testResources>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+      </plugin>
+    </plugins>
+  </build>
+</project>

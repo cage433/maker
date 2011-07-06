@@ -65,6 +65,11 @@ class ResultSetRow(resultSet: ResultSet) {
       throw e
   }
 
+  def getStringOption(column: String) = getString(column) match {
+    case null => None
+    case s => Some(s)
+  }
+
   def getDouble(column: String) = resultSet.getDouble(column)
 
   def getDoubleOrNone(column : String) = if (isNull(column)) None else Some(getDouble(column))

@@ -1,5 +1,6 @@
 package starling.daterange
 
+import starling.utils.ImplicitConversions._
 import starling.utils.Pattern._
 
 
@@ -11,15 +12,32 @@ case class Tenor(tenorName: String, value: Int) extends Ordered[Tenor] {
     case other => other
   }
 
-  override def toString = value + tenorName
+  override def toString = this match {
+    case Tenor.ON   => "ON"
+    case Tenor.SN   => "SN"
+    case Tenor.CASH => "CASH"
+    case _          => value + tenorName
+  }
+
   private def indexOf(tenor: String) = TenorType.ALL_IN_ORDER.indexOf(tenor)
 }
 
 object Tenor {
+  val Parse = Extractor.regex("""(ON|SN|(\d+)(\w))""") {
+    case "ON" :: _ => Tenor.ON
+    case "SN" :: _ => Tenor.SN
+    case List(_, value, tenorType) => Tenor(TenorType.typesByShortName(tenorType), value.toInt)
+  }
+
+  /**
+   * Value doesn't mean anything outside the context of a particular index. It is used just for
+   * sorting tenors in a reasonable way
+   */
   def apply(tenorType: TenorType, value: Int): Tenor = Tenor(tenorType.shortName, value)
 
   val ON          = Tenor(Day, 0)   // Overnight
-  val SN          = Tenor(Day, 0)   // Spot Next
+  val SN          = Tenor(Day, 2)   // Spot Next
+  val CASH        = Tenor(Month, 0)
   val OneDay      = Tenor(Day, 1)
   val OneWeek     = Tenor(Week, 1)
   val TwoWeeks    = Tenor(Week, 2)
@@ -31,6 +49,9 @@ object Tenor {
   val OneYear     = Tenor(Year, 1)
 }
 
+/**
+ * How an index's fixing period is represented in the database
+ */
 case class StoredFixingPeriod(period: Either[DateRange, Tenor]) extends Ordered[StoredFixingPeriod] {
   lazy val (dateRange, tenor) = (period.left.toOption, period.right.toOption)
   def compare(that: StoredFixingPeriod) = (period, that.period) match {
@@ -40,7 +61,7 @@ case class StoredFixingPeriod(period: Either[DateRange, Tenor]) extends Ordered[
     case (Right(_), Left(_)) => -1
   }
 
-  override def toString = period.fold(_.toString, tenor => if (tenor.value == 0) "CASH" else tenor.toString)
+  override def toString = period.fold(_.toString, _.toString)
 }
 
 object StoredFixingPeriod {

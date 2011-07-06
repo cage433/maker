@@ -52,7 +52,7 @@ class DiffPivotTableDataSource(a:PivotTableDataSource, b:PivotTableDataSource, l
 
   override def drillDownGroups = a.drillDownGroups
 
-  private val fieldDetailsMap = fieldDetails.asMap(_.field)
+  private val fieldDetailsMap = fieldDetails.toMapWithKeys(_.field)
 
   class RawField(val isA:Boolean, val underlyingField:FieldDetails) extends FieldDetails(
     Field( underlyingField.field.name + (if (isA) "" else " " + labelB))) {

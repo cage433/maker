@@ -49,7 +49,7 @@ case class NamingAtomicEnvironment(atomicEnv: AtomicEnvironment, prefix:String) 
   }
 }
 
-case class MarketDeliveryPeriods(observationTimeOfDay:ObservationTimeOfDay, market:CommodityMarket, periods:SortedSet[DateRange]) {
+case class UnderlyingDeliveryPeriods(observationTimeOfDay:ObservationTimeOfDay, market:CommodityMarket, periods:SortedSet[DateRange]) {
   require(market.tenor.isOneOf(Day, Month), "Only daily and monthly markets are supported")
 
   def dateRangesFrom(startDay: Day) = market.tenor match {
@@ -67,7 +67,7 @@ case class MarketFixingPeriods(market:CommodityMarket, days:SortedSet[Day])
 case class CurvePrice(price:PivotQuantity, interpolated:Boolean)
 
 
-class CurveViewerInputsPivotTableDataSource(inputs:Set[(ObservationPoint, MarketDataKey, MarketData)]) extends UnfilteredPivotTableDataSource {
+class CurveViewerInputsPivotTableDataSource(inputs:Set[(TimedMarketDataKey, MarketData)]) extends UnfilteredPivotTableDataSource {
 
   import CurveViewerFields._
 
@@ -77,12 +77,12 @@ class CurveViewerInputsPivotTableDataSource(inputs:Set[(ObservationPoint, Market
 
   val allRows = {
     inputs.toList.flatMap {
-      case (observationPoint, SpotFXDataKey(ccy), SpotFXData(rate)) => {
+      case (TimedMarketDataKey(observationPoint, SpotFXDataKey(ccy)), SpotFXData(rate)) => {
         List( Map(marketField -> ccy.toString,
               inputField -> PivotQuantity(rate),
               timeOfDayField -> observationPoint.timeOfDay) )
       }
-      case (observationPoint, PriceDataKey(market:FuturesMarket), priceData:PriceData) => {
+      case (TimedMarketDataKey(observationPoint, PriceDataKey(market:FuturesMarket)), priceData:PriceData) => {
         priceData.prices.map { case (period, quantity) => {
           Map(marketField -> market.name,
               marketTenor.field -> market.tenor.toString,
@@ -93,7 +93,7 @@ class CurveViewerInputsPivotTableDataSource(inputs:Set[(ObservationPoint, Market
               timeOfDayField -> observationPoint.timeOfDay)
         } }
       }
-      case (observationPoint, PriceDataKey(market:CommodityMarket), priceData:PriceData) => {
+      case (TimedMarketDataKey(observationPoint, PriceDataKey(market:CommodityMarket)), priceData:PriceData) => {
         List()
       }
     }

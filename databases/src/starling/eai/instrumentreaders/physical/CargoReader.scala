@@ -34,7 +34,7 @@ class CargoReader extends InstrumentReader {
     val roundingID = rs.getInt("roundingID")
     val precision = Some(Precision(roundingID, roundingID))
 
-    val index = new FormulaIndex(formula.toString, formula, USD, uom, precision, None)
+    val index = new FormulaIndex(formula.toString, formula, USD, uom, precision, None, None)
     index.verify
     val blDate = rs.getDay("plutoBLDate")
     val quantity = rs.getQuantity("Quantity")

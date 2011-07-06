@@ -1,0 +1,8 @@
+<jboss-app>
+  <loader-repository>
+    org.myapp:loaderReferenceDataClassLoader
+    <loader-repository-config>
+      java2ParentDelegation=false
+    </loader-repository-config>
+  </loader-repository>
+</jboss-app> 

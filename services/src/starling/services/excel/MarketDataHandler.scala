@@ -12,10 +12,10 @@ import starling.gui.api._
 import starling.rmi.StarlingServerImpl
 import starling.services.PricingGroupIDUtil
 import starling.auth.User
-import starling.utils.Broadcaster
 import starling.loopyxl.ExcelMethod
 import starling.services.trade.instrumentreaders.ExcelInstrumentReader
 import starling.curves.{USDFXRateCurveKey, SpreadStdDevSurfaceData, SpreadStdDevSurfaceDataKey}
+import starling.utils.{Log, Broadcaster}
 
 class MarketDataHandler(broadcaster : Broadcaster,
                    starlingServer : StarlingServerImpl,
@@ -26,7 +26,7 @@ class MarketDataHandler(broadcaster : Broadcaster,
     name = "observationPoint",
     category = "Starling")
   def observationPoint(day:Double, time:String) = {
-    ObservationPoint(Day.fromExcel(day), ObservationTimeOfDay(time)).unparse
+    ObservationPoint(Day.fromExcel(day), ObservationTimeOfDay.fromName(time)).unparse
   }
 
   @ExcelMethod
@@ -48,7 +48,7 @@ class MarketDataHandler(broadcaster : Broadcaster,
 
     val observationPoint = ObservationPoint.parse(observationDate)
 
-    // TODO: remove hard-coded months - needs to get base tenor from "market"
+    // TODO [07 Jan 2011] remove hard-coded months - needs to get base tenor from "market"
     val dates = doubleDates.map((d: Double) => Day.fromExcel(d))
     val months = dates.map(_.containingMonth)
 
@@ -114,6 +114,7 @@ class MarketDataHandler(broadcaster : Broadcaster,
       "A range containg the fx history with Currency at the top and days on the left"))
   def uploadFXHistory(label: String, priceHistory: Array[Array[Object]]) = {
     if (label == null) throw new Exception("Label is null")
+    assert(label.nonEmpty, "Can't have an empty label for the market data")
     val ccyHeader = Map() ++ priceHistory(0).toList.tail.zipWithIndex.flatMap{
       case (ccy, index) => {
         ccy match {
@@ -171,6 +172,7 @@ class MarketDataHandler(broadcaster : Broadcaster,
     )
   )
   def bulkUploadPrices(label: String, observationDate: Object, data: Array[Array[Object]]) = {
+    assert(label.nonEmpty, "Can't have an empty label for the market data")
     val observationPoint = ObservationPoint.parse(observationDate)
     //look at header to decide on behaviour
 
@@ -225,10 +227,11 @@ class MarketDataHandler(broadcaster : Broadcaster,
     name = "uploadFX",
     category = "Starling")
   def uploadFX(label:String, observationDate: Object, currencyName: String, rate:Double) = {
+    assert(label.nonEmpty, "Can't have an empty label for the market data")
     val observationPoint = ObservationPoint.parse(observationDate)
     val currency = UOM.parseCurrency(currencyName).getOrElse(throw new Exception("Unknown currency " + currencyName))
     val fxRate = new SpotFXData(Quantity(rate, UOM.USD/ currency))
-    val result = marketDataStore.save(MarketDataSet.excel(label), observationPoint, SpotFXDataKey(currency), fxRate)
+    val result = marketDataStore.save(MarketDataSet.excel(label), TimedMarketDataKey(observationPoint, SpotFXDataKey(currency)), fxRate)
     "OK:" + result
   }
 
@@ -244,6 +247,7 @@ class MarketDataHandler(broadcaster : Broadcaster,
   def uploadPrices(label: String, observationDate: Object, marketName: String, requiredPrices: Array[Array[Object]],
                    optionalPrices: Array[Object]) = {
 
+    assert(label.nonEmpty, "Can't have an empty label for the market data")
     val observationPoint = ObservationPoint.parse(observationDate)
     val market = Market.fromName(marketName)
     val joinedPriceRange: Array[Array[Object]] = if (optionalPrices == null || optionalPrices.size == 0) {
@@ -256,7 +260,7 @@ class MarketDataHandler(broadcaster : Broadcaster,
     val priceRows: Array[(DateRange, Double)] = joinedPriceRange.flatMap{
       row => extractPeriodPricePair(observationPoint, market.tenor, row, 1)
     }
-    val result = marketDataStore.save(MarketDataSet.excel(label), observationPoint, PriceDataKey(market),
+    val result = marketDataStore.save(MarketDataSet.excel(label), TimedMarketDataKey(observationPoint, PriceDataKey(market)),
       PriceData.create(priceRows, market.priceUOM))
 
     val dates: Array[Day] = priceRows.map(_._1.firstDay)
@@ -297,6 +301,8 @@ class MarketDataHandler(broadcaster : Broadcaster,
       "The settlement days for the interest rates",
       "The interest rates (matching the settlement days)"))
   def uploadInterestRates(label: String, observationDate: Object, currency: String, periods: Array[Double], rates: Array[Double]) = {
+    assert(label.nonEmpty, "Can't have an empty label for the market data")
+
     val observationPoint = ObservationPoint.parse(observationDate)
     val ccy = UOM.parseCurrency(currency).getOrElse(throw new Exception(currency + " is not a known currency"))
     val rows = (periods zip rates).flatMap{
@@ -310,7 +316,7 @@ class MarketDataHandler(broadcaster : Broadcaster,
         }
       }
     }
-    val result = marketDataStore.save(MarketDataSet.excel(label), observationPoint, ForwardRateDataKey(ccy), ForwardRateData(rows.toList))
+    val result = marketDataStore.save(MarketDataSet.excel(label), TimedMarketDataKey(observationPoint, ForwardRateDataKey(ccy)), ForwardRateData(rows.toList))
 
     val dates = periods.map((d: Double) => Day.fromExcel(d))
     broadcaster.broadcast(UploadInterestRatesUpdate(User.currentlyLoggedOn, label, observationPoint.day, dates, currency, rates))
@@ -329,8 +335,18 @@ class MarketDataHandler(broadcaster : Broadcaster,
       "The market for the standard deviations",
       "The periods (1 column)",
       "The standard deviations with the header 'ATM, CALL, PUT' and rows matching the periods"))
-  def uploadStandardDeviations(label: String, observationDate: Object, marketName: String, periods: Array[Double],
-                               standardDeviations: Array[Array[Object]]) = {
+  def uploadStandardDeviations(label: String, observationDate: Object, marketName: String, _periods: Array[Any],
+                               _standardDeviations: Array[Array[Object]]) = {
+    assert(label.nonEmpty, "Can't have an empty label for the market data")
+
+    // remove empty rows
+    var missingRows = Set[Int]()
+    val periods = _periods.zipWithIndex.flatMap{
+      case (null, i) => missingRows += i; None
+      case (a, _) => Some(a.toString)
+    }
+    val headers = _standardDeviations.head.map(_.toString.toLowerCase)
+    val standardDeviations = _standardDeviations.tail.zipWithIndex.filterNot{case (_, i) => missingRows.contains(i)}.map(_._1)
 
     val observationPoint = ObservationPoint.parse(observationDate)
     val market = (ExcelInstrumentReader.marketOption(marketName) match {
@@ -341,31 +357,35 @@ class MarketDataHandler(broadcaster : Broadcaster,
       case m => throw new Exception("Needs to be a futures market: " + m)
     }
 
-    if (standardDeviations.size > 0) {
+    val spreads: Array[Spread[Month]] = periods.map {
+      case Day(d) => {
+        val month = d.containingMonth
+        new Spread(month, month.next)
+      }
+      case SpreadParse(s) => s.asInstanceOf[Spread[Month]]
+      case "null" => throw new Exception("Range includes empty cells")
+    }
+    val atmIndex = headers.indexOf("atm")
+    val callIndex = headers.indexOf("call")
+    val putIndex = headers.indexOf("put")
 
+    val atm = standardDeviations.map{
+      row => row(atmIndex).asInstanceOf[Double]
     }
-    val dates = periods.map((d: Double) => Day.fromExcel(d))
-    val months = dates.map(starlingDay => {
-      val month = starlingDay.containingMonth
-      new Spread(month, month.next)
-    })
-    val atm = standardDeviations.tail.map{
-      row => row(0).asInstanceOf[Double]
+    val call = standardDeviations.map{
+      row => row(callIndex).asInstanceOf[Double]
     }
-    val call = standardDeviations.tail.map{
-      row => row(1).asInstanceOf[Double]
-    }
-    val put = standardDeviations.tail.map{
-      row => row(2).asInstanceOf[Double]
+    val put = standardDeviations.map{
+      row => row(putIndex).asInstanceOf[Double]
     }
 
     val key = SpreadStdDevSurfaceDataKey(market)
-    val data = SpreadStdDevSurfaceData(months, atm, call, put, market.priceUOM)
-    val result = marketDataStore.save(MarketDataSet.excel(label), observationPoint, key, data)
+    val data = SpreadStdDevSurfaceData(spreads, atm, call, put, market.priceUOM)
+    val result = marketDataStore.save(MarketDataSet.excel(label), TimedMarketDataKey(observationPoint, key), data)
 
-    val sds: Array[Array[Double]] = Array(Array(0.5, 0, 1)) ++ standardDeviations.tail.map(_.map(_.asInstanceOf[Double]))
+    val sds: Array[Array[Double]] = Array(Array(0.5, 0, 1)) ++ standardDeviations.map(_.map(_.asInstanceOf[Double]))
 
-    broadcaster.broadcast(UploadStandardDeviationsUpdate(User.currentlyLoggedOn, label, observationPoint.day, dates, marketName, sds))
+    broadcaster.broadcast(UploadStandardDeviationsUpdate(User.currentlyLoggedOn, label, observationPoint.day, spreads, marketName, sds))
 
     "OK:" + result
   }
@@ -403,7 +423,7 @@ class MarketDataHandler(broadcaster : Broadcaster,
       }
     })
     val marketDataSet = MarketDataSet.excel(label)
-    val result = marketDataStore.save(marketDataSet, observationPoint, EquityPricesMarketDataKey, equityPrices)
+    val result = marketDataStore.save(marketDataSet, TimedMarketDataKey(observationPoint, EquityPricesMarketDataKey), equityPrices)
     "OK:" + result
   }
 

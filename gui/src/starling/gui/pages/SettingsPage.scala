@@ -6,16 +6,16 @@ import api.UserSettingUpdated
 import starling.pivot.view.swing.MigPanel
 import swing.event.ButtonClicked
 import starling.gui.GuiUtils._
-import StandardUserSettingKeys.ExtraFormattingInfo
-import swing.{Label, Button}
+import StandardUserSettingKeys.{ExtraFormattingInfo, LiveDefault}
 import javax.swing.{SpinnerNumberModel, JSpinner}
 import starling.pivot.{DecimalPlaces, ExtraFormatInfo, PivotFormatter}
+import swing.{CheckBox, Label, Button}
 
 case class SettingsPage() extends Page {
   def text = "Settings"
   def icon = StarlingIcons.im("/icons/16x16_settings.png")
   def build(reader:PageBuildingContext) = null
-  def createComponent(context:PageContext, data:PageData, browserSize:Dimension) = new SettingsPageComponent(context)
+  def createComponent(context:PageContext, data:PageData, bookmark:Bookmark, browserSize:Dimension) = new SettingsPageComponent(context)
 }
 
 class SettingsPageComponent(context:PageContext) extends MigPanel("insets 0") with PageComponent {
@@ -50,6 +50,7 @@ class SettingsPageComponent(context:PageContext) extends MigPanel("insets 0") wi
     val priceSpinner = createSpinner(numFromText(dp.priceFormat))
     val currencySpinner = createSpinner(numFromText(dp.currencyFormat))
     val lotsSpinner = createSpinner(numFromText(dp.lotsFormat))
+    val percentSpinner = createSpinner(numFromText(dp.percentageFormat))
 
     add(LabelWithSeparator("Decimal Places"), "spanx, growx, wrap")
     add(new Label("Default:"), "skip 1")
@@ -59,15 +60,28 @@ class SettingsPageComponent(context:PageContext) extends MigPanel("insets 0") wi
     add(new Label("Currency:"), "skip 1")
     add(currencySpinner, "wrap")
     add(new Label("Lots:"), "skip 1")
-    add(lotsSpinner)
+    add(lotsSpinner, "wrap")
+    add(new Label("Percent:"), "skip 1")
+    add(percentSpinner)
 
-    def decimalPlaces = DecimalPlaces(defaultSpinner.format, lotsSpinner.format, priceSpinner.format, currencySpinner.format)
+    def decimalPlaces = DecimalPlaces(defaultSpinner.format, lotsSpinner.format, priceSpinner.format, currencySpinner.format, percentSpinner.format)
     def decimalPlaces_=(dp:DecimalPlaces) {
       defaultSpinner.setValue(numFromText(dp.defaultFormat))
       priceSpinner.setValue(numFromText(dp.priceFormat))
       currencySpinner.setValue(numFromText(dp.currencyFormat))
       lotsSpinner.setValue(numFromText(dp.lotsFormat))
+      percentSpinner.setValue(numFromText(dp.percentageFormat))
     }
+  }
+
+  val currentLiveSetting = context.getSetting(LiveDefault, false)
+  val generalPanel = new MigPanel("insets n n n 0", "[" + StandardLeftIndent + "][p]") {
+    val defaultLiveCheckbox = new CheckBox("Default Live") {
+      selected = currentLiveSetting
+    }
+
+    add(LabelWithSeparator("General"), "spanx, growx, wrap")
+    add(defaultLiveCheckbox, "skip 1")
   }
 
   val saveButton = new Button {
@@ -76,17 +90,23 @@ class SettingsPageComponent(context:PageContext) extends MigPanel("insets 0") wi
     reactions += {
       case ButtonClicked(b) => {
         context.putSetting(ExtraFormattingInfo, ExtraFormatInfo(decimalPlacesPanel.decimalPlaces))
+        context.putSetting(LiveDefault, generalPanel.defaultLiveCheckbox.selected)
       }
     }
   }
 
-  add(decimalPlacesPanel, "wrap")
-  add(saveButton, "ax right")
+  add(generalPanel, "gapright unrel, ay top")
+  add(decimalPlacesPanel, "wrap unrel")
+  add(saveButton, "spanx, ax right")
 
   reactions += {
     case UserSettingUpdated(ExtraFormattingInfo) => {
       val dp = context.getSetting(ExtraFormattingInfo).decimalPlaces
       decimalPlacesPanel.decimalPlaces = dp
+    }
+    case UserSettingUpdated(LiveDefault) => {
+      val b = context.getSetting(LiveDefault, false)
+      generalPanel.defaultLiveCheckbox.selected = b
     }
   }
   listenTo(context.remotePublisher)

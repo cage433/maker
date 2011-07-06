@@ -1,6 +1,6 @@
 package starling.schemaevolution
 
-import starling.market.{Market, ForwardMarket, FuturesMarket}
+import starling.market.{Market, FuturesMarket}
 import starling.instrument._
 import system.Patch
 import starling.db.DBWriter

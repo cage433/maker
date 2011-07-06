@@ -41,12 +41,10 @@ class MarketDataPivotTableDataSource(reader: MarketDataReader, marketDataStore:O
 
   val observationDayAndMarketDataKeys = reader.readAllObservationDayAndMarketDataKeys(marketDataType)
 
-  val observationDayAndMarketDataKeyRows: List[Map[Field, Any]] = observationDayAndMarketDataKeys.map {
-    case (observationPoint, marketDataKey) => {
-      marketDataKey.fieldValues + (observationTimeField.field->observationPoint.timeName) addSome (observationDayField.field->observationPoint.day)
-    }
+  val observationDayAndMarketDataKeyRows: List[Map[Field, Any]] = observationDayAndMarketDataKeys.map { timedKey =>
+    timedKey.fieldValues + (observationTimeField.field → timedKey.timeName) addSome (observationDayField.field → timedKey.day)
   }
-  val allMarketDataKeys = observationDayAndMarketDataKeys.map(_._2).toSet
+  val allMarketDataKeys = observationDayAndMarketDataKeys.map(_.key).toSet
 
   val inMemoryFields = observationDayAndMarketDataKeyRows.flatMap(_.keySet).toSet
 
@@ -82,7 +80,7 @@ class MarketDataPivotTableDataSource(reader: MarketDataReader, marketDataStore:O
           val groupedEdits: Map[(ObservationPoint, MarketDataKey), List[PivotEdit]] = ungroupedEdits.groupBy(edit => {
             val observationPoint = ObservationPoint(
               edit.value[Day](observationDayField.field),
-              ObservationTimeOfDay(edit.value[String](observationTimeField.field))
+              ObservationTimeOfDay.fromName(edit.value[String](observationTimeField.field))
             )
 
             val key: MarketDataKey = marketDataType.createKey(edit.values)
@@ -90,7 +88,7 @@ class MarketDataPivotTableDataSource(reader: MarketDataReader, marketDataStore:O
           }).mapValues(_.toList)
 
           val data = groupedEdits.map{case ((observationPoint, key), edits) => {
-            val latest: Option[MarketData] = marketDataStore.readLatest(editableSet, observationPoint, key)
+            val latest: Option[MarketData] = marketDataStore.readLatest(editableSet, TimedMarketDataKey(observationPoint, key))
             val editedData = latest match {
               case Some(readData) => {
                 val currentRows = key.castRows(readData)
@@ -178,8 +176,8 @@ class MarketDataPivotTableDataSource(reader: MarketDataReader, marketDataStore:O
 
       val allData = reader.read(marketDataType, observationDays, observationTimes, keyClause)
 
-      allData.flatMap { case (p:ObservationPoint, key, data) => {
-        key.castRows(data).map(_ + (observationTimeField.field → p.timeName) addSome (observationDayField.field → p.day))
+      allData.flatMap { case (timedKey, data) => {
+        timedKey.castRows(data).map(_ + (observationTimeField.field → timedKey.timeName) addSome (observationDayField.field → timedKey.day))
       } }
     }
     val result = UnfilteredPivotTableDataSource.applyFiltersAndCalculatePossibleValues(fieldDetails, data, pfs)//.removeAll(filtersUpToFirstMarketDataField.allFields))
