@@ -64,8 +64,12 @@ case class FileMockedTitanTacticalRefData() extends TitanTacticalRefData {
         error = null
       })
     }
-    def getByOid(oid : Int) : Trade = loadedTrades.find(t => t.oid == oid).asInstanceOf[EDMPhysicalTrade]
+    def getByOid(oid : Int) : Trade = loadedTrades.find(t => t.oid == oid) match {
+      case Some(trade) => trade.asInstanceOf[EDMPhysicalTrade]
+      case _ => throw new Exception("Trade does not exist in mock data %d".format(oid))
+    }
   }
+
   lazy val futuresMarketByGUID: Map[GUID, Metal] = loadedMarkets.map(m => m.guid -> m).toMap
   lazy val futuresExchangeByGUID: Map[GUID, Market] = loadedExchanges.map(e => e.guid -> e).toMap
 
@@ -77,7 +81,6 @@ case class FileMockedTitanTacticalRefData() extends TitanTacticalRefData {
   val loadedTrades = loadJsonValuesFromFile(tradesFile).map(s => EDMPhysicalTrade.fromJson(new JSONObject(s)).asInstanceOf[EDMPhysicalTrade])
   
   import scala.io.Source._
-  private def loadJsonValuesFromFile(fileName : String) : List[String] = 
-    fromFile(fileName).getLines.toList
+  private def loadJsonValuesFromFile(fileName : String) : List[String] = fromFile(fileName).getLines.toList
 }
 
