@@ -336,12 +336,13 @@ case class GuiFieldNamePanel(props:GuiFieldComponentProps, guiComp:GuiFieldCompo
 
   reactions += {
     case MousePressed(_,p,_,_,_) => {
+      display = false
       offSet = p
       props.tableView.draggedField = props.field
       props.tableView.mouseDown = true
       val displayPoint = SwingUtilities.convertPoint(peer, p.x - offSet.x, p.y - offSet.y - 2, props.tableView.peer)
       imageStartPoint = displayPoint
-      props.viewUI.setImageProperties(shadowImage, displayPoint, 0.6f)
+      props.viewUI.setImageProperties(shadowImage, displayPoint, 1.0f)
     }
     case MouseClicked(_,_,_,2,_) => {
       dragging = false
@@ -380,6 +381,9 @@ case class GuiFieldNamePanel(props:GuiFieldComponentProps, guiComp:GuiFieldCompo
         } else {
           props.viewUI.resetImageProperties()
         }
+      } else {
+        // We have just clicked on the field
+        props.viewUI.resetImageProperties()
       }
       repaint()
     }
