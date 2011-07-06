@@ -1,8 +1,6 @@
 package starling.edm
 
 import starling.quantity.UOMSymbol._
-import starling.daterange.{Tenor, SimpleDateRange, Day}
-
 import starling.utils.ImplicitConversions._
 import starling.quantity.{UOMSymbol, Percentage, UOM, Quantity}
 import com.trafigura.edm.shared.types.{Currency => TitanCurrency, Date => TitanDate, DateRange => TitanDateRange,
@@ -15,6 +13,7 @@ import com.trafigura.edm.valuation.{CostsAndIncomeQuotaValuation => EdmCostsAndI
   EitherListCostsAndIncomeQuotaValuationOrErrorString, ValuationTuple,
   CostsAndIncomeQuotaValuationServiceResults => EdmCostsAndIncomeQuotaValuationServiceResults}
 import valuation.{CostsAndIncomeQuotaValuation, CostsAndIncomeQuotaValuationServiceResults}
+import starling.daterange.{DateRange, Tenor, SimpleDateRange, Day}
 
 
 case class InvalidUomException(msg : String) extends Exception(msg)
@@ -50,6 +49,11 @@ object EDMConversions {
   // 'Serializable' implicits
   implicit def enrichSerializableDate(date: TitanSerializableDate) = new {
     def fromSerializable = Day.fromLocalDate(date.value)
+    def toDateRange = new TitanSerializableDateRange(date.value, date.value)
+  }
+
+  implicit def enrichSerializableDateRange(dateRange: TitanSerializableDateRange) = new {
+    def fromSerializable = DateRange(Day.fromLocalDate(dateRange.start), Day.fromLocalDate(dateRange.end))
   }
 
   implicit def enrichSerializableCurrency(currency: TitanSerializableCurrency) = new {

@@ -29,7 +29,11 @@
           <root url="jar://$MODULE_DIR$/jars/joda-time-1.6.jar!/" />
         </CLASSES>
         <JAVADOC />
-        <SOURCES />
+        <SOURCES>
+          <root url="jar://$MODULE_DIR$/jars/sources/joda-time-1.6-src.zip!/joda-time-1.6-src/src/example" />
+          <root url="jar://$MODULE_DIR$/jars/sources/joda-time-1.6-src.zip!/joda-time-1.6-src/src/test" />
+          <root url="jar://$MODULE_DIR$/jars/sources/joda-time-1.6-src.zip!/joda-time-1.6-src/src/java" />
+        </SOURCES>
       </library>
     </orderEntry>
     <orderEntry type="module-library" exported="">

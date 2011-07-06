@@ -2,8 +2,8 @@ package starling.marketdata
 
 import starling.market._
 import starling.utils.ImplicitConversions._
-import starling.quantity.UOM
-
+import starling.quantity.{UOMSymbol, UOM}
+import starling.utils.Log
 
 case class PriceFixingsHistoryDataKey(marketName: String, exchangeName: Option[String] = None) extends MarketDataKey {
   type marketDataType = PriceFixingsHistoryData
@@ -26,6 +26,8 @@ case class PriceFixingsHistoryDataKey(marketName: String, exchangeName: Option[S
 }
 
 object PriceFixingsHistoryDataKey {
+  val currencyNames = UOMSymbol.currencySymbols.map(_.name)
+
   def apply(market: CommodityMarket): PriceFixingsHistoryDataKey =
     PriceFixingsHistoryDataKey(tradeableNameOf(market), exchangeOf(market))
 

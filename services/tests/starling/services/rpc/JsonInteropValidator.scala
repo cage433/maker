@@ -1,6 +1,5 @@
 package starling.services.rpc
 
-import java.io.File
 import org.apache.commons.io.FileUtils
 import org.apache.commons.io.filefilter.TrueFileFilter
 import starling.utils.StringIO
@@ -9,6 +8,8 @@ import org.scalatest.matchers.ShouldMatchers
 import scala.collection.JavaConversions._
 import starling.utils.ClosureUtil._
 import starling.utils.ImplicitConversions._
+import java.lang.String
+import java.io.File
 
 
 object JsonInteropValidator extends ShouldMatchers {
@@ -22,8 +23,8 @@ object JsonInteropValidator extends ShouldMatchers {
     }
   }
 
-  def validate(directoryContainingJSON: String, packageName: String) {
-    val jsonFiles = filesInPackage(directoryContainingJSON, packageName)
+  def validate(jsonDirectory: String, packageName: String) {
+    val jsonFiles = filesInPackage(new File(jsonDirectory), packageName)
     val overlappingClasses = jsonFiles.toMapWithSomeKeys(_.matchingClass)
 
     overlappingClasses.foreach { case (overlappingClass, jsonFile) =>
@@ -31,11 +32,11 @@ object JsonInteropValidator extends ShouldMatchers {
     }
   }
 
-  private def filesInPackage(directoryContainingJSON: String, packageName: String): List[JSONFile] = {
-    val directoryToSearch = new File(directoryContainingJSON + "/" + packageName.replaceAll(".", "/"))
+  private def filesInPackage(jsonDirectory: File, packageName: String): List[JSONFile] = {
+    val directoryToSearch = new File(jsonDirectory, packageName.replaceAll("\\.", "/"))
 
     FileUtils.listFiles(directoryToSearch, TrueFileFilter.INSTANCE, TrueFileFilter.INSTANCE).toList.asInstanceOf[List[File]]
-      .collect { case file if file.isFile && file.getName.endsWith(".json") => JSONFile(file, directoryToSearch) }
+      .collect { case file if file.isFile && file.getName.endsWith(".json") => JSONFile(file, jsonDirectory) }
   }
 
   private def assertRoundTrips(clazz: Class[_], jsonText: String, unjoinedJson: String) {
@@ -54,8 +55,8 @@ object JsonInteropValidator extends ShouldMatchers {
     input should be === roundTripped
   }
 
-  case class JSONFile(file: File, containingDirectory: File) {
-    private val relativeFileName = file.getAbsolutePath.stripPrefix(containingDirectory.getAbsolutePath + "/")
+  case class JSONFile(file: File, jsonDirectory: File) {
+    private val relativeFileName = file.getAbsolutePath.stripPrefix(jsonDirectory.getAbsolutePath + "/")
     private val className = relativeFileName.replace("/", ".").stripSuffix(".json")
 
     def contents: List[(String, String)] = StringIO.readJoinedLinesFromFileWithOriginal(file)

@@ -3,7 +3,7 @@ package starling.marketdata
 import starling.pivot._
 import starling.market._
 import starling.daterange.StoredFixingPeriod
-import starling.quantity.{Quantity, Percentage}
+import starling.quantity.Percentage
 
 object PriceFixingsHistoryDataType extends MarketDataType {
   type dataType = PriceFixingsHistoryData
@@ -23,12 +23,12 @@ object PriceFixingsHistoryDataType extends MarketDataType {
 
   def keyFields = Set(exchangeField.field, marketField.field, levelField.field, periodField.field)
   def valueFields = Set(priceField.field)
-  def createKey(values: Map[Field, Any]) = PriceFixingsHistoryDataKey(
-    Market.fromNameOrCommodity(values(exchangeField.field).asInstanceOf[String], values(marketField.field).asInstanceOf[String]))
+  def createKey(values: Map[Field, Any]) = PriceFixingsHistoryDataKey(values(marketField.field).asInstanceOf[String],
+    values.get(exchangeField.field).asInstanceOf[Option[String]])
 
   def createValue(values: List[Map[Field, Any]]) = {
     val prices: List[((Level, StoredFixingPeriod), MarketValue)] = values.map { row =>
-      ((Level.fromName(row(levelField.field).asInstanceOf[String]), row(periodField.field).asInstanceOf[StoredFixingPeriod]),
+      ((Level.fromName(row(levelField.field).asInstanceOf[String]), StoredFixingPeriod.parse(row(periodField.field))),
         marketValue(row(priceField.field)))
     }
     PriceFixingsHistoryData.create(prices)

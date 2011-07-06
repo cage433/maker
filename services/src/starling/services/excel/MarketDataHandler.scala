@@ -16,6 +16,8 @@ import starling.loopyxl.ExcelMethod
 import starling.services.trade.instrumentreaders.ExcelInstrumentReader
 import starling.curves.{USDFXRateCurveKey, SpreadStdDevSurfaceData, SpreadStdDevSurfaceDataKey}
 import starling.utils.{Log, Broadcaster}
+import starling.pivot.MarketValue
+import org.boris.xlloop.reflect.XLFunction._
 
 class MarketDataHandler(broadcaster : Broadcaster,
                    starlingServer : StarlingServerImpl,
@@ -320,6 +322,27 @@ class MarketDataHandler(broadcaster : Broadcaster,
 
     val dates = periods.map((d: Double) => Day.fromExcel(d))
     broadcaster.broadcast(UploadInterestRatesUpdate(User.currentlyLoggedOn, label, observationPoint.day, dates, currency, rates))
+
+    "OK:" + result
+  }
+
+  @ExcelMethod
+  @XLFunction(
+    name = "updateInterestRateFixings",
+    args = Array("label", "observationPoint", "interestRateType", "currency", "maturities", "level", "rates"))
+  def updateInterestRateFixings(label: String, observationDate: Object, irType: String, currency: String,
+                                periods0: Array[Object], levels0: Array[String], rates: Array[Double]) = {
+    assert(label.nonEmpty, "Can't have an empty label for the market data")
+
+    val observationPoint = ObservationPoint.parse(observationDate)
+    val ccy = UOM.parseCurrency(currency).getOrElse(throw new Exception(currency + " is not a known currency"))
+    val periods = periods0.map(StoredFixingPeriod.parse)
+    val levels = levels0.map(Level.fromName)
+    val percents = rates.map(MarketValue.percentage)
+
+    val result = marketDataStore.save(MarketDataSet.excel(label),
+      TimedMarketDataKey(observationPoint, PriceFixingsHistoryDataKey(currency, Some(irType))),
+      PriceFixingsHistoryData.create((levels zip periods zip percents)))
 
     "OK:" + result
   }

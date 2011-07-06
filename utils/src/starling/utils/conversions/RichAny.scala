@@ -45,6 +45,7 @@ trait RichAny {
     def cast[V](alternative: T => V)(implicit m: Manifest[V]): V = m.cast(value).getOrElse(alternative(value))
 
     def pair[V](f: T => V): (T, V) = value → f(value)
+    def pairWithTraversable[V](f: T => Traversable[V]): scala.Traversable[(T, V)] = pair(f(value))
     def pair[V](t: Traversable[V]) = t.pair(value).swap
     def optPair[V](option: Option[V]): Option[(T, V)] = option.map(value → _)
     def optPair[V](f: T => Option[V]): Option[(T, V)] = value.optPair(f(value))

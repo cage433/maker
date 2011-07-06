@@ -320,7 +320,11 @@
           <root url="jar://$MODULE_DIR$/jars/commons-httpclient-3.1.jar!/" />
         </CLASSES>
         <JAVADOC />
-        <SOURCES />
+        <SOURCES>
+          <root url="jar://$MODULE_DIR$/jars/sources/commons-httpclient-3.1-src.zip!/commons-httpclient-3.1/src/test" />
+          <root url="jar://$MODULE_DIR$/jars/sources/commons-httpclient-3.1-src.zip!/commons-httpclient-3.1/src/java" />
+          <root url="jar://$MODULE_DIR$/jars/sources/commons-httpclient-3.1-src.zip!/commons-httpclient-3.1/src/contrib" />
+        </SOURCES>
       </library>
     </orderEntry>
     <orderEntry type="module" module-name="instrument" />

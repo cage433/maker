@@ -163,8 +163,8 @@ object UOM {
 
   def fromIdentifier(uomString : String) = fromString(uomString)
 
-  private val allCurrencies = currencies.toMapWithKeys(_.toString)
-  def parseCurrency(text:String) = allCurrencies.get(text.toUpperCase)
+  private val allCurrencies = currencySymbols.toMapWithManyKeys(_.names).mapValues(_.asUOM)
+  def parseCurrency(text:String) = allCurrencies.get(text)
 
   def fromSymbolMap(symbolMap : Map[UOMSymbol, Int]) : UOM = {
     if (symbolMap.isEmpty)

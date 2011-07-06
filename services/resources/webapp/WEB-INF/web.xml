@@ -8,8 +8,11 @@
 
     <context-param>
         <param-name>resteasy.resources</param-name>
-        <param-value>starling.services.rpc.valuation.ValuationServiceResourceStubEx</param-value>
-        <param-value>starling.services.rpc.marketdata.MarketDataServiceResourceStubEx</param-value>
+        <param-value>
+            starling.services.rpc.valuation.ValuationServiceResourceStubEx,
+            starling.services.rpc.marketdata.MarketDataServiceResourceStubEx,
+            starling.services.rpc.ExampleService
+        </param-value>
     </context-param>
 
     <listener>
@@ -37,10 +40,19 @@
     </context-param>
 
     <context-param>
+        <param-name>resteasy.providers</param-name>
+        <param-value>starling.services.rpc.JsonSerializerMessageBodyWriter</param-value>
+    </context-param>
+
+    <context-param>
         <param-name>resteasy.servlet.mapping.prefix</param-name>
         <param-value>/RPC</param-value>
     </context-param>
 
+    <context-param>
+        <param-name>log4jConfigLocation</param-name>
+        <param-value>/utils/resources/log4j.properties</param-value>
+    </context-param>
 <!--
   not used yet, possibly not to be used at all
   <listener>

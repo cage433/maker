@@ -213,7 +213,9 @@
           <root url="jar://$MODULE_DIR$/jars/slf4j-api-1.6.0.jar!/" />
         </CLASSES>
         <JAVADOC />
-        <SOURCES />
+        <SOURCES>
+          <root url="jar://$MODULE_DIR$/jars/sources/slf4j-api-1.6.0-sources.jar!/" />
+        </SOURCES>
       </library>
     </orderEntry>
     <orderEntry type="module-library">
@@ -357,7 +359,9 @@
           <root url="jar://$MODULE_DIR$/jars/logback-classic-0.9.24.jar!/" />
         </CLASSES>
         <JAVADOC />
-        <SOURCES />
+        <SOURCES>
+          <root url="jar://$MODULE_DIR$/jars/sources/logback-classic-0.9.24-sources.jar!/" />
+        </SOURCES>
       </library>
     </orderEntry>
     <orderEntry type="module-library">
@@ -366,7 +370,9 @@
           <root url="jar://$MODULE_DIR$/jars/logback-core-0.9.24.jar!/" />
         </CLASSES>
         <JAVADOC />
-        <SOURCES />
+        <SOURCES>
+          <root url="jar://$MODULE_DIR$/jars/sources/logback-core-0.9.24-sources.jar!/" />
+        </SOURCES>
       </library>
     </orderEntry>
     <orderEntry type="module-library">

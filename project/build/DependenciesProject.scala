@@ -30,7 +30,7 @@ trait CoreDependencies extends Repositories {
 
     "log4j" % "log4j" % "1.2.16" % "provided",
     "javax.servlet" % "servlet-api" % "2.5" % "provided",
-    "org.slf4j" % "slf4j-simple" % "1.5.10" % "provided",
+    "org.slf4j" % "slf4j-simple" % "1.6.0" % "provided",
 
     "joda-time" % "joda-time" % "1.6",
     "org.codehaus.jettison" % "jettison" % "1.1",
@@ -74,7 +74,7 @@ trait CoreDependencies extends Repositories {
     // Test dependencies
     "org.mockito" % "mockito-all" % "1.8.4" % "test",
     "org.apache.derby" % "derby" % "10.4.2.0" % "test",
-    "ch.qos.logback" % "logback-classic" % "0.9.17" % "test",
+    "ch.qos.logback" % "logback-classic" % "0.9.24" % "test",
     "junit" % "junit" % "4.4" % "test"
 
   ) ++ super.libraryDependencies

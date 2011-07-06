@@ -1,5 +1,7 @@
 package starling.utils.conversions
 
+import starling.utils.ImplicitConversions._
+
 
 trait RichTuple {
   implicit def enrichTuple2[A, B](t: (A,B)) = new RichTuple2[A, B](t)
