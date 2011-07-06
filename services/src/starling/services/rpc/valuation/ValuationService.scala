@@ -31,6 +31,7 @@ import starling.utils.cache.CacheFactory
 import starling.curves.NullAtomicEnvironment
 import java.io.FileWriter
 import java.io.BufferedWriter
+import starling.services.rabbit._
 
 
 trait TitanTradeCache {
@@ -110,7 +111,11 @@ case class DefaultTitanTradeCache(props : Props) extends TitanTradeCache {
 /**
  * Valuation service implementations
  */
-class ValuationService(marketDataStore: MarketDataStore, titanTradeCache : TitanTradeCache, titanTacticalRefData : TitanTacticalRefData) extends ValuationServiceApi {
+class ValuationService(
+  marketDataStore: MarketDataStore, 
+  titanTradeCache : TitanTradeCache, 
+  titanTacticalRefData : TitanTacticalRefData,
+  rabbitEvents : RabbitEvents) extends ValuationServiceApi {
 
   type TradeValuationResult = Either[List[CostsAndIncomeQuotaValuation], String]
 
@@ -118,7 +123,7 @@ class ValuationService(marketDataStore: MarketDataStore, titanTradeCache : Titan
   val futuresMarketByGUID = titanTacticalRefData.futuresMarketByGUID
   val eventHandler = new EventHandler
 
-  RabbitEvents.eventDemux.addClient(eventHandler)
+  rabbitEvents.eventDemux.addClient(eventHandler)
 
 
   /**
@@ -359,7 +364,7 @@ class ValuationService(marketDataStore: MarketDataStore, titanTradeCache : Titan
           }
 
         val eventArray = ||> { new JSONArray } { r => r.put(newValuationEvent.toJson) }
-        RabbitEvents.rabbitEventPublisher.publish(eventArray)
+        rabbitEvents.rabbitEventPublisher.publish(eventArray)
       }
     }
   }
@@ -397,7 +402,7 @@ class ValuationServiceRpc(marketDataStore: MarketDataStore, valuationService: Va
 
 /**
  * Rabbit glue / config module
- */
+ *
 object RabbitEvents {
 
   val rabbitmq_host = "louis-dev-ubuntu"
@@ -517,6 +522,7 @@ object RabbitEvents {
     <constructor-arg value="${rabbitmq.listener.disabled}"/>
   </bean> -->
 }
+*/
 
 object ValuationService extends Application {
 

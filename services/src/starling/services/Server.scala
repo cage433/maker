@@ -49,6 +49,7 @@ import com.trafigura.services.marketdata.MarketDataServiceApi
 import starling.curves.{StarlingMarketLookup, EAIMarketLookup, FwdCurveAutoImport, CurveViewer}
 import starling.services.rpc.valuation.DefaultTitanTradeCache
 import starling.services.rpc.refdata._
+import starling.services.rabbit._
 
 class StarlingInit( val props: Props,
                     dbMigration: Boolean = true,
@@ -234,7 +235,8 @@ class StarlingInit( val props: Props,
 
   val titanTradeCache = new DefaultTitanTradeCache(props)
   val titanTacticalRefData = new DefaultTitanTacticalRefData(props)
-  val valuationService = new ValuationService(marketDataStore, titanTradeCache, titanTacticalRefData)
+  val rabbitEvents = new DefaultRabbitEvents(props)
+  val valuationService = new ValuationService(marketDataStore, titanTradeCache, titanTacticalRefData, rabbitEvents)
   val marketDataService = new MarketDataService(marketDataStore)
   
   val userSettingsDatabase = new UserSettingsDatabase(starlingDB, broadcaster)
