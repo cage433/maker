@@ -29,6 +29,8 @@ import org.codehaus.jettison.json.JSONArray
 import com.trafigura.common.control.PipedControl._
 import starling.utils.cache.CacheFactory
 import starling.curves.NullAtomicEnvironment
+import java.io.FileWriter
+import java.io.BufferedWriter
 
 /**
  * Valuation service implementations
@@ -271,6 +273,10 @@ class ValuationService(marketDataStore: MarketDataStore, val props: Props) exten
     }}
   )
 
+  def getTrades(tradeIds : List[String]) : List[EDMPhysicalTrade] = 
+    tradeIds.map(getTrade)
+  def getFuturesExchanges = futuresExchangeByGUID.values
+  def getFuturesMarkets = futuresMarketByGUID.values
 
   /**
    * handler for events
@@ -498,10 +504,46 @@ object RabbitEvents {
 }
 
 object ValuationService extends Application {
+
+  import org.codehaus.jettison.json.JSONObject
+  //import scala.util.parsing.json.JSONObject
+
+  println("Here")
   lazy val vs = StarlingInit.devInstance.valuationService
 
   vs.marketDataSnapshotIDs().foreach(println)
   val valuations = vs.valueAllQuotas()
 
   valuations.tradeResults.foreach(println)
+   
+  val (_, worked) = valuations.tradeResults.values.partition(_ match {
+    case Right(_) => true
+    case Left(_) => false
+  })
+
+  val valuedTradeIds = valuations.tradeResults.collect{ case (id, Left(v)) => id }.toList
+  val valuedTrades = vs.getTrades(valuedTradeIds)
+  val markets = vs.getFuturesMarkets.toList
+  val exchanges = vs.getFuturesExchanges.toList
+
+  writeJson("/tmp/edmTrades.json", valuedTrades)
+  writeJson("/tmp/markets.json", markets)
+  writeJson("/tmp/exchanges.json", exchanges)
+
+  println("Finished")
+  StarlingInit.devInstance.stop
+
+  def writeJson[T <: ModelObject with Object { def toJson() : JSONObject }](fileName : String, objects : List[T]) {
+    try {
+      val fStream = new FileWriter(fileName)
+      val bWriter = new BufferedWriter(fStream)
+      objects.foreach(obj => bWriter.write(obj.toJson().toString() + "\n" ))
+      bWriter.flush()
+      fStream.close()
+    }
+    catch {
+      case ex : Exception => println("Error: " + ex.getMessage())
+    }
+  }
 }
+
