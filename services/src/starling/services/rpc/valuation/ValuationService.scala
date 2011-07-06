@@ -289,8 +289,7 @@ class ValuationService(marketDataStore: MarketDataStore, val props: Props) exten
     }}
   )
 
-  def getTrades(tradeIds : List[String]) : List[EDMPhysicalTrade] = 
-    tradeIds.map(getTrade)
+  def getTrades(tradeIds : List[String]) : List[EDMPhysicalTrade] = tradeIds.map(tradeCache.getTrade)
   def getFuturesExchanges = futuresExchangeByGUID.values
   def getFuturesMarkets = futuresMarketByGUID.values
 
