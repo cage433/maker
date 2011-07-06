@@ -106,7 +106,7 @@ class Starling(info : ProjectInfo) extends ParentProject(info) {
       import java.io._
       val file = new PrintWriter(new FileOutputStream(new File("set-classpath.sh")))
       file.println("export CLASSPATH=" + services.testClasspath.getFiles.toList.mkString(":"))
-      file.println("export JAVA_OPTS='-server -XX:MaxPermSize=512m -Xss128k -Xmx6000m'")
+      file.println("export JAVA_OPTS='-server -XX:MaxPermSize=1024m -Xss512k -Xmx6000m'")
       file.close()
       None
     }
