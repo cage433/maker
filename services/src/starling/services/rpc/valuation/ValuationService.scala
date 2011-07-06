@@ -28,6 +28,7 @@ import java.net.InetAddress
 import org.codehaus.jettison.json.JSONArray
 import com.trafigura.common.control.PipedControl._
 import starling.utils.cache.CacheFactory
+import starling.curves.NullAtomicEnvironment
 
 /**
  * Valuation service implementations
@@ -43,6 +44,22 @@ class ValuationService(marketDataStore: MarketDataStore, val props: Props) exten
 
   RabbitEvents.eventDemux.addClient(eventHandler)
 
+  private def removeTrade(id : String) {
+    tradeMap = tradeMap - id
+    quotaIDToTradeIDMap = quotaIDToTradeIDMap.filter{ case (_, value) => value != id}
+  }
+
+  private def addTrade(id : String) {
+    tradeMap += id -> getTrade(id)
+    addTradeQuotas(id)
+  }
+
+  private def addTradeQuotas(id : String) {
+    val trade = tradeMap(id)
+
+    quotaIDToTradeIDMap ++= trade.quotas.map{quota => (quota.detail.identifier, id)}
+  }
+
   /*
     Read all trades from Titan and blast our cache
   */
@@ -52,10 +69,8 @@ class ValuationService(marketDataStore: MarketDataStore, val props: Props) exten
     Log.info("Are EDM Trades available " + edmTradeResult.cached + ", took " + sw)
     if (!edmTradeResult.cached) throw new TradeManagementCacheNotReady
     Log.info("Got Edm Trade results " + edmTradeResult.cached + ", trade result count = " + edmTradeResult.results.size)
-    tradeMap = edmTradeResult.results.map(_.trade.asInstanceOf[EDMPhysicalTrade]).filter(pt => pt.tstate == CompletedTradeTstate).map(t => (t.tradeId.toString, t)).toMap
-    quotaIDToTradeIDMap = tradeMap.flatMap{
-      case (tradeID, trade) => trade.quotas.map{quota => (quota.detail.identifier, tradeID)}
-    }.toMap
+    tradeMap = edmTradeResult.results.map(_.trade.asInstanceOf[EDMPhysicalTrade])/*.filter(pt => pt.tstate == CompletedTradeTstate)*/.map(t => (t.tradeId.toString, t)).toMap
+    tradeMap.keySet.foreach(addTradeQuotas)
   }
 
   private def getAllTrades(): List[EDMPhysicalTrade] = {
@@ -143,6 +158,13 @@ class ValuationService(marketDataStore: MarketDataStore, val props: Props) exten
    * value all costables by id
    */
   def valueCostables(costableIds: List[String], maybeSnapshotIdentifier: Option[String]): CostsAndIncomeQuotaValuationServiceResults = {
+    
+    val snapshotIDString = resolveSnapshotIdString(maybeSnapshotIdentifier)
+    val env = environment(snapshotStringToID(snapshotIDString))
+    valueCostables(costableIds, env, snapshotIDString)
+  }
+  
+  def valueCostables(costableIds: List[String], env : Environment, snapshotIDString : String): CostsAndIncomeQuotaValuationServiceResults = {
 
     val sw = new Stopwatch()
 
@@ -152,8 +174,6 @@ class ValuationService(marketDataStore: MarketDataStore, val props: Props) exten
     }
 
     var tradeValueCache = Map[String, TradeValuationResult]()
-    val snapshotIDString = resolveSnapshotIdString(maybeSnapshotIdentifier)
-    val env = environment(snapshotStringToID(snapshotIDString))
     val tradeValuer = PhysicalMetalForward.value(futuresExchangeByGUID, futuresMarketByGUID, env, snapshotIDString) _
 
     def tradeValue(id: String): TradeValuationResult = {
@@ -252,46 +272,55 @@ class ValuationService(marketDataStore: MarketDataStore, val props: Props) exten
   )
 
 
-  private def diffValuations(newValuations : CostsAndIncomeQuotaValuationServiceResults) : Map[String, Either[List[CostsAndIncomeQuotaValuation], String]] =
-    Map[String, Either[List[CostsAndIncomeQuotaValuation], String]]()
-
   /**
    * handler for events
    */
   class EventHandler extends DemultiplexerClient {
     def handle(ev: Event) {
-      require(ev != null, "Got a null event ?!")
-      if (Event.TradeSubject == ev.subject) { // Must be a trade event
-        Log.info("handler: Got a trade event to process %s".format(ev.toString))
+      if (ev == null) Log.warn("Got a null event") else {
+        if (Event.TradeSubject == ev.subject) { // Must be a trade event
+          Log.info("handler: Got a trade event to process %s".format(ev.toString))
 
-        val tradePayloads = ev.content.body.payloads.filter(p => Event.RefinedMetalTradeIdPayload == p.payloadType)
-        val tradeIds = tradePayloads.map(p => p.key.identifier)
-        Log.info("Trade event received for ids { %s }".format(tradeIds.mkString(", ")))
+          val tradePayloads = ev.content.body.payloads.filter(p => Event.RefinedMetalTradeIdPayload == p.payloadType)
+          val tradeIds = tradePayloads.map(p => p.key.identifier)
+          Log.info("Trade event received for ids { %s }".format(tradeIds.mkString(", ")))
 
-        val tradeValuations = valueCostables(tradeIds, None)
-        ev.verb match {
-          case UpdatedEventVerb =>
+          ev.verb match {
+            case UpdatedEventVerb => {
+              val (snapshotIDString, env) = mostRecentSnapshotIdentifierBeforeToday() match {
+                case Some(snapshotId) => (snapshotId, environment(snapshotStringToID(snapshotId)))
+                case None => ("No Snapshot found",  Environment(NullAtomicEnvironment((Day.today() - 1).startOfDay)))
+              }
 
-            Log.info("Trades revalued for received event using snapshot %s number of valuations %d".format(tradeValuations.snapshotID, tradeValuations.tradeResults.size))
+              val originalTradeValuations = valueCostables(tradeIds, env, snapshotIDString)
+              println("originalTradeValuations = " + originalTradeValuations)
+              tradeIds.foreach{ id => removeTrade(id); addTrade(id)}
+              val newTradeValuations = valueCostables(tradeIds, env, snapshotIDString)
+              val changedIDs = tradeIds.filter{id => newTradeValuations.tradeResults(id) != originalTradeValuations.tradeResults(id)}
+
+              if (changedIDs != Nil)
+                publishChangedValueEvent(changedIDs)
+
+              Log.info("Trades revalued for received event using snapshot %s number of changed valuations %d".format(snapshotIDString, changedIDs.size))
+            }
+            case NewEventVerb => {
+              tradeIds.foreach(addTrade)
+              Log.info("New event received for %s".format(tradeIds))
+            }
+            case CancelEventVerb | RemovedEventVerb => {
+              tradeIds.foreach(removeTrade)
+              Log.info("Cancelled / deleted event received for %s".format(tradeIds))
+            }
+          }
         }
-        //(UpdatedEventVerb == ev.verb)) { // and an update event only (not interested in revaluing new trades)
-      //Log.info("handler: Got a trade event to process %s".format(ev.toString))
-      //
-      //val tradePayloads = ev.content.body.payloads.filter(p => "Refined Metal Trade" == p.payloadType)
-      //val tradeIds = tradePayloads.map(p => p.key.identifier)
-      //Log.info("Trade event received for ids { %s }".format(tradeIds.mkString(", ")))
-    //val tradeValuations = valueCostables(tradeIds, None)
-    //Log.info("Trades revalued for received event using snapshot %s number of valuations %d".format(tradeValuations.snapshotID, tradeValuations.tradeResults.size))
+      }
 
-        // get a map of updated valuations compared to last valuation...
-        val updatedTrades = diffValuations(tradeValuations)
-
-        // publish the valuation updated event contaning payloads of the trade id's whose trade valuations have changed
+      // publish the valuation updated event contaning payloads of the trade id's whose trade valuations have changed
+      def publishChangedValueEvent(tradeIds : List[String]) = {
         val newValuationEvent =
           new Event() {
             verb = UpdatedEventVerb
             subject = Event.StarlingValuationServiceSubject
-            key = EventKey(System.currentTimeMillis.toString)
             source = Event.StarlingSource
             content = new Content() {
               header = new Header() {
@@ -301,9 +330,10 @@ class ValuationService(marketDataStore: MarketDataStore, val props: Props) exten
               }
               body = Body(tradeIds.map(id => new Payload() {
                 payloadType = Event.RefinedMetalTradeIdPayload
-                key = EventKey(id)
+                key = new EventKey() { identifier = id }
                 source = Event.StarlingSource
               }))
+              key = new EventKey(){identifier = System.currentTimeMillis.toString}
             }
           }
 
@@ -472,4 +502,6 @@ object ValuationService extends Application {
 
   vs.marketDataSnapshotIDs().foreach(println)
   val valuations = vs.valueAllQuotas()
+
+  valuations.tradeResults.foreach(println)
 }
