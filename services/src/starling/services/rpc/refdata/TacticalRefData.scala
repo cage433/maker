@@ -13,7 +13,18 @@ import com.trafigura.edm.physicaltradespecs.QuotaDetail
 /**
  * Tactical ref data, service proxies / data
  */
-class TacticalRefData(props: Props) {
+trait TitanTacticalRefData {
+   
+  val titanGetEdmTradesService : EdmGetTrades
+
+  val futuresMarketByGUID: Map[GUID, Metal]
+  val futuresExchangeByGUID: Map[GUID, Market]
+
+  def allTacticalRefDataFuturesMarkets() : List[Metal]
+  def allTacticalRefDataExchanges() : List[Market]
+}
+
+case class DefaultTitanTacticalRefData(props: Props) extends TitanTacticalRefData {
   val rmetadminuser = props.ServiceInternalAdminUser()
   val tradeServiceURL = props.EdmTradeServiceUrl()
   val refdataServiceURL = props.TacticalRefDataServiceUrl()
@@ -29,12 +40,5 @@ class TacticalRefData(props: Props) {
 
   def allTacticalRefDataFuturesMarkets() = tacticalRefdataMetalsService.getMetals()
   def allTacticalRefDataExchanges() = tacticalRefdataMarketsService.getMarkets()
-
-  //var titanEdmQuotaDetailByIdentifier = Map[String, QuotaDetail]()
 }
 
-object TacticalRefData {
-  def apply(props: Props) = {
-    new TacticalRefData(props)
-  }
-}

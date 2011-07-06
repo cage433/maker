@@ -47,6 +47,8 @@ import com.trafigura.services.valuation.{ValuationServiceApi, TradeManagementCac
 import org.jboss.netty.channel.{ChannelLocal, Channel}
 import com.trafigura.services.marketdata.MarketDataServiceApi
 import starling.curves.{StarlingMarketLookup, EAIMarketLookup, FwdCurveAutoImport, CurveViewer}
+import starling.services.rpc.valuation.DefaultTitanTradeCache
+import starling.services.rpc.refdata._
 
 class StarlingInit( val props: Props,
                     dbMigration: Boolean = true,
@@ -230,7 +232,9 @@ class StarlingInit( val props: Props,
 
   val closedDesks = new ClosedDesks(broadcaster, starlingDB)
 
-  val valuationService = new ValuationService(marketDataStore, props)
+  val titanTradeCache = new DefaultTitanTradeCache(props)
+  val titanTacticalRefData = new DefaultTitanTacticalRefData(props)
+  val valuationService = new ValuationService(marketDataStore, titanTradeCache, titanTacticalRefData)
   val marketDataService = new MarketDataService(marketDataStore)
   
   val userSettingsDatabase = new UserSettingsDatabase(starlingDB, broadcaster)

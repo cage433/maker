@@ -15,7 +15,7 @@ import starling.services.{Server, StarlingInit}
 import com.trafigura.services.valuation._
 import com.trafigura.edm.valuation.{ValuationServiceResourceStub, ValuationService => EdmValuationService, CostsAndIncomeQuotaValuationServiceResults => EdmCostsAndIncomeQuotaValuationServiceResults}
 import com.trafigura.edm.physicaltradespecs.EDMQuota
-import starling.services.rpc.refdata.TacticalRefData
+import starling.services.rpc.refdata._
 import starling.edm.EDMConversions._
 import com.trafigura.tradinghub.support.{ModelObject, ServiceFilter}
 import com.trafigura.edm.trades.{CompletedTradeTstate, TradeTstateEnum, Trade => EDMTrade, PhysicalTrade => EDMPhysicalTrade}
@@ -32,7 +32,8 @@ import starling.curves.NullAtomicEnvironment
 import java.io.FileWriter
 import java.io.BufferedWriter
 
-trait TitanTradeCache{
+
+trait TitanTradeCache {
   protected var tradeMap: Map[String, EDMPhysicalTrade]
   protected var quotaIDToTradeIDMap: Map[String, String]
   def getTrade(id: String): EDMPhysicalTrade 
@@ -52,6 +53,7 @@ trait TitanTradeCache{
 
     quotaIDToTradeIDMap ++= trade.quotas.map{quota => (quota.detail.identifier, id)}
   }
+
   def tradeIDFromQuotaID(quotaID: String): String 
 }
 
@@ -59,7 +61,8 @@ case class DefaultTitanTradeCache(props : Props) extends TitanTradeCache {
   protected var tradeMap: Map[String, EDMPhysicalTrade] = Map[String, EDMPhysicalTrade]()
   protected var quotaIDToTradeIDMap: Map[String, String] = Map[String, String]()
 
-  val titanTradesService = new TacticalRefData(props).titanGetEdmTradesService
+  val titanTradesService = new DefaultTitanTacticalRefData(props).titanGetEdmTradesService
+
   /*
     Read all trades from Titan and blast our cache
   */
@@ -103,22 +106,19 @@ case class DefaultTitanTradeCache(props : Props) extends TitanTradeCache {
     }
   }
 }
+
 /**
  * Valuation service implementations
  */
-//class ValuationService(marketDataStore: MarketDataStore, val props: Props) extends TacticalRefData(props: Props) with ValuationServiceApi {
-class ValuationService(marketDataStore: MarketDataStore, val props: Props) extends ValuationServiceApi {
+class ValuationService(marketDataStore: MarketDataStore, titanTradeCache : TitanTradeCache, titanTacticalRefData : TitanTacticalRefData) extends ValuationServiceApi {
 
   type TradeValuationResult = Either[List[CostsAndIncomeQuotaValuation], String]
-  
 
-  val tradeCache = new DefaultTitanTradeCache(props)
-  val futuresExchangeByGUID = new TacticalRefData(props).futuresExchangeByGUID
-  val futuresMarketByGUID = new TacticalRefData(props).futuresMarketByGUID
+  val futuresExchangeByGUID = titanTacticalRefData.futuresExchangeByGUID
+  val futuresMarketByGUID = titanTacticalRefData.futuresMarketByGUID
   val eventHandler = new EventHandler
 
   RabbitEvents.eventDemux.addClient(eventHandler)
-
 
 
   /**
@@ -129,7 +129,7 @@ class ValuationService(marketDataStore: MarketDataStore, val props: Props) exten
     log("valueAllQuotas called with snapshot id " + maybeSnapshotIdentifier)
     val snapshotIDString = resolveSnapshotIdString(maybeSnapshotIdentifier)
     val sw = new Stopwatch()
-    val edmTrades = tradeCache.getAllTrades()
+    val edmTrades = titanTradeCache.getAllTrades()
     log("Got Edm Trade results, trade result count = " + edmTrades.size)
     val env = environment(snapshotStringToID(snapshotIDString))
     val tradeValuer = PhysicalMetalForward.value(futuresExchangeByGUID, futuresMarketByGUID, env, snapshotIDString) _
@@ -156,7 +156,7 @@ class ValuationService(marketDataStore: MarketDataStore, val props: Props) exten
 
     val sw = new Stopwatch()
 
-    val edmTradeResult = tradeCache.getTrade(tradeId.toString)
+    val edmTradeResult = titanTradeCache.getTrade(tradeId.toString)
 
     log("Got Edm Trade result " + edmTradeResult)
     val env = environment(snapshotStringToID(snapshotIDString))
@@ -187,7 +187,7 @@ class ValuationService(marketDataStore: MarketDataStore, val props: Props) exten
     val sw = new Stopwatch()
 
     val idsToUse = costableIds match {
-      case Nil | null => tradeCache.getAllTrades().map{trade => trade.tradeId.toString}
+      case Nil | null => titanTradeCache.getAllTrades().map{trade => trade.tradeId.toString}
       case list => list
     }
 
@@ -196,12 +196,12 @@ class ValuationService(marketDataStore: MarketDataStore, val props: Props) exten
 
     def tradeValue(id: String): TradeValuationResult = {
       if (!tradeValueCache.contains(id))
-        tradeValueCache += (id -> tradeValuer(tradeCache.getTrade(id)))
+        tradeValueCache += (id -> tradeValuer(titanTradeCache.getTrade(id)))
       tradeValueCache(id)
     }
 
     def quotaValue(id: String) = {
-      tradeValue(tradeCache.tradeIDFromQuotaID(id)) match {
+      tradeValue(titanTradeCache.tradeIDFromQuotaID(id)) match {
         case Left(list) => Left(list.filter(_ .quotaID == id))
         case other => other
       }
@@ -289,7 +289,7 @@ class ValuationService(marketDataStore: MarketDataStore, val props: Props) exten
     }}
   )
 
-  def getTrades(tradeIds : List[String]) : List[EDMPhysicalTrade] = tradeIds.map(tradeCache.getTrade)
+  def getTrades(tradeIds : List[String]) : List[EDMPhysicalTrade] = tradeIds.map(titanTradeCache.getTrade)
   def getFuturesExchanges = futuresExchangeByGUID.values
   def getFuturesMarkets = futuresMarketByGUID.values
 
@@ -315,7 +315,7 @@ class ValuationService(marketDataStore: MarketDataStore, val props: Props) exten
 
               val originalTradeValuations = valueCostables(tradeIds, env, snapshotIDString)
               println("originalTradeValuations = " + originalTradeValuations)
-              tradeIds.foreach{ id => tradeCache.removeTrade(id); tradeCache.addTrade(id)}
+              tradeIds.foreach{ id => titanTradeCache.removeTrade(id); titanTradeCache.addTrade(id)}
               val newTradeValuations = valueCostables(tradeIds, env, snapshotIDString)
               val changedIDs = tradeIds.filter{id => newTradeValuations.tradeResults(id) != originalTradeValuations.tradeResults(id)}
 
@@ -325,11 +325,11 @@ class ValuationService(marketDataStore: MarketDataStore, val props: Props) exten
               Log.info("Trades revalued for received event using snapshot %s number of changed valuations %d".format(snapshotIDString, changedIDs.size))
             }
             case NewEventVerb => {
-              tradeIds.foreach(tradeCache.addTrade)
+              tradeIds.foreach(titanTradeCache.addTrade)
               Log.info("New event received for %s".format(tradeIds))
             }
             case CancelEventVerb | RemovedEventVerb => {
-              tradeIds.foreach(tradeCache.removeTrade)
+              tradeIds.foreach(titanTradeCache.removeTrade)
               Log.info("Cancelled / deleted event received for %s".format(tradeIds))
             }
           }
@@ -370,12 +370,12 @@ class ValuationService(marketDataStore: MarketDataStore, val props: Props) exten
  * Titan EDM model exposed services wrappers
  */
 class ValuationServiceResourceStubEx
-  extends ValuationServiceResourceStub(new ValuationServiceRpc(Server.server.marketDataStore, Server.server.props, Server.server.valuationService), new java.util.ArrayList[ServiceFilter]()) {
+  extends ValuationServiceResourceStub(new ValuationServiceRpc(Server.server.marketDataStore, Server.server.valuationService), new java.util.ArrayList[ServiceFilter]()) {
 
   override def requireFilters(filterClasses: String*) {}
 }
 
-class ValuationServiceRpc(marketDataStore: MarketDataStore, val props: Props, valuationService: ValuationService) extends EdmValuationService {
+class ValuationServiceRpc(marketDataStore: MarketDataStore, valuationService: ValuationService) extends EdmValuationService {
 
   def valueAllQuotas(maybeSnapshotIdentifier: String): EdmCostsAndIncomeQuotaValuationServiceResults = {
 
