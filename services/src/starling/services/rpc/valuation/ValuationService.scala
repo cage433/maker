@@ -32,6 +32,8 @@ import starling.curves.NullAtomicEnvironment
 import java.io.FileWriter
 import java.io.BufferedWriter
 import starling.services.rabbit._
+import com.trafigura.tradecapture.internal.refinedmetal.Market
+import com.trafigura.tradecapture.internal.refinedmetal.Metal
 
 
 trait TitanTradeCache {
@@ -410,7 +412,7 @@ object ValuationService extends Application {
   vs.marketDataSnapshotIDs().foreach(println)
   val valuations = vs.valueAllQuotas()
 
-  valuations.tradeResults.foreach(println)
+//  valuations.tradeResults.foreach(println)
    
   val (_, worked) = valuations.tradeResults.values.partition(_ match {
     case Right(_) => true
@@ -422,11 +424,24 @@ object ValuationService extends Application {
   val markets = vs.getFuturesMarkets.toList
   val exchanges = vs.getFuturesExchanges.toList
 
-  writeJson("/tmp/edmTrades.json", valuedTrades)
-  writeJson("/tmp/markets.json", markets)
-  writeJson("/tmp/exchanges.json", exchanges)
+  val tradesFile = "/tmp/edmTrades.json"
+  val marketsFile = "/tmp/markets.json"
+  val exchangesFile = "/tmp/exchanges.json"
 
-  println("Finished")
+  writeJson(tradesFile, valuedTrades)
+  writeJson(marketsFile, markets)
+  writeJson(exchangesFile, exchanges)
+
+  val loadedMarkets = loadJsonValuesFromFile(marketsFile).map(s => Metal.fromJson(new JSONObject(s)).asInstanceOf[Metal])
+
+  val loadedExchanges = loadJsonValuesFromFile(exchangesFile).map(s => Market.fromJson(new JSONObject(s)).asInstanceOf[Market])
+
+  val loadedTrades = loadJsonValuesFromFile(tradesFile).map(s => EDMPhysicalTrade.fromJson(new JSONObject(s)).asInstanceOf[EDMPhysicalTrade])
+
+  loadedMarkets.foreach(println)
+  loadedExchanges.foreach(println)
+  println("loaded trade size = " + loadedTrades.size)
+  
   StarlingInit.devInstance.stop
 
   def writeJson[T <: ModelObject with Object { def toJson() : JSONObject }](fileName : String, objects : List[T]) {
@@ -441,5 +456,13 @@ object ValuationService extends Application {
       case ex : Exception => println("Error: " + ex.getMessage())
     }
   }
+
+  import scala.io.Source._
+  def loadJsonValuesFromFile(fileName : String) : List[String] = 
+    fromFile(fileName).getLines.toList
+
+//  def fromJson[T <: ModelObject with Object { def fromJson() : JSONObject }](json : List[String]) = {
+//    json.map(s => fromJson(s).asInstanceOf[T])
+//  }
 }
 
