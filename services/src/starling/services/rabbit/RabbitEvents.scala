@@ -17,6 +17,8 @@ trait RabbitEvents {
   val eventDemux : EventDemultiplexer
 
   val rabbitEventPublisher : RabbitPublisher
+
+  def shutdown : Unit
 }
 
 case class DefaultRabbitEvents(props : Props) extends RabbitEvents {
@@ -86,5 +88,11 @@ case class DefaultRabbitEvents(props : Props) extends RabbitEvents {
 
   // the demux for listener clients...
   lazy val eventDemux : EventDemultiplexer = { val demux = new EventDemultiplexer(serviceName, rabbitListener); demux.startup; demux }
+
+  def shutdown {
+    eventDemux.shutdown
+    rabbitListener.disconnect()
+    rabbitEventPublisher.disconnect()
+  }
 }
 

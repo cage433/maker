@@ -27,8 +27,8 @@ trait TitanTacticalRefData {
   val futuresMarketByGUID: Map[GUID, Metal]
   val futuresExchangeByGUID: Map[GUID, Market]
 
-  def allTacticalRefDataFuturesMarkets() : List[Metal]
-  def allTacticalRefDataExchanges() : List[Market]
+  //def allTacticalRefDataFuturesMarkets() : List[Metal]
+  //def allTacticalRefDataExchanges() : List[Market]
 }
 
 case class DefaultTitanTacticalRefData(props: Props) extends TitanTacticalRefData {
@@ -83,4 +83,3 @@ case class FileMockedTitanTacticalRefData() extends TitanTacticalRefData {
   import scala.io.Source._
   private def loadJsonValuesFromFile(fileName : String) : List[String] = fromFile(fileName).getLines.toList
 }
-

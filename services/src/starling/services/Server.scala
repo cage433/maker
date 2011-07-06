@@ -63,6 +63,8 @@ class StarlingInit( val props: Props,
                     ) {
 
   def stop = {
+    rabbitEvents.shutdown
+
     if (startXLLoop) {
       excelLoopReceiver.stop
       loopyXLReceiver.stop
