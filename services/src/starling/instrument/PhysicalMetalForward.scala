@@ -233,8 +233,9 @@ case class PhysicalMetalForward(tradeID : Int, quotas : List[PhysicalMetalQuota]
     quotas.map {
       quota =>
         val pricingSpec = quota.pricingSpec
+        val transferPricingSpec = quota.expectedTransferPricingSpec
         val price = pricingSpec.price(env)
-        val transferPrice = quota.expectedTransferPricingSpec.price(env)
+        val transferPrice = transferPricingSpec.price(env)
         val (purchasePrice, salePrice) =
           if (isPurchase)
             (price, transferPrice)
@@ -256,7 +257,13 @@ case class PhysicalMetalForward(tradeID : Int, quotas : List[PhysicalMetalQuota]
           pricingType = pricingSpec.pricingType,
           quotationPeriodStart = pricingSpec.quotationPeriodStart.map(_.toJodaLocalDate),
           quotationPeriodEnd = pricingSpec.quotationPeriodEnd.map(_.toJodaLocalDate),
-          index = pricingSpec.indexName
+          index = pricingSpec.indexName,
+          transferIsComplete = transferPricingSpec.isComplete(env.marketDay),
+          transferFixedQuantity = transferPricingSpec.fixedQuantity(env.marketDay),
+          transferPricingType = transferPricingSpec.pricingType,
+          transferQuotationPeriodStart = transferPricingSpec.quotationPeriodStart.map(_.toJodaLocalDate),
+          transferQuotationPeriodEnd = transferPricingSpec.quotationPeriodEnd.map(_.toJodaLocalDate),
+          transferIndex = transferPricingSpec.indexName
         )
     }
   }
