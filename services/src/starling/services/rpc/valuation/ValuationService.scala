@@ -34,6 +34,9 @@ import java.io.BufferedWriter
 import starling.services.rabbit._
 import com.trafigura.tradecapture.internal.refinedmetal.Market
 import com.trafigura.tradecapture.internal.refinedmetal.Metal
+import com.trafigura.services.rabbit.Publisher
+import com.trafigura.events.PayloadFactory
+import com.trafigura.events.EventFactory
 
 
 trait TitanTradeCache {
@@ -53,7 +56,6 @@ trait TitanTradeCache {
 
   def addTradeQuotas(id : String) {
     val trade = tradeMap(id)
-
     quotaIDToTradeIDMap ++= trade.quotas.map{quota => (quota.detail.identifier, id)}
   }
 
@@ -65,6 +67,60 @@ case class DefaultTitanTradeCache(props : Props) extends TitanTradeCache {
   protected var quotaIDToTradeIDMap: Map[String, String] = Map[String, String]()
 
   val titanTradesService = new DefaultTitanTacticalRefData(props).titanGetEdmTradesService
+
+  /*
+    Read all trades from Titan and blast our cache
+  */
+  def updateTradeMap() {
+    val sw = new Stopwatch()
+    val edmTradeResult = titanTradesService.getAll()
+    Log.info("Are EDM Trades available " + edmTradeResult.cached + ", took " + sw)
+    if (!edmTradeResult.cached) throw new TradeManagementCacheNotReady
+    Log.info("Got Edm Trade results " + edmTradeResult.cached + ", trade result count = " + edmTradeResult.results.size)
+    tradeMap = edmTradeResult.results.map(_.trade.asInstanceOf[EDMPhysicalTrade])/*.filter(pt => pt.tstate == CompletedTradeTstate)*/.map(t => (t.tradeId.toString, t)).toMap
+    tradeMap.keySet.foreach(addTradeQuotas)
+  }
+
+  def getAllTrades(): List[EDMPhysicalTrade] = {
+    if (tradeMap.size > 0) {
+      tradeMap.values.toList
+    }
+    else {
+      updateTradeMap()
+      tradeMap.values.toList
+    }
+  }
+
+  def getTrade(id: String): EDMPhysicalTrade = {
+    if (tradeMap.contains(id)) {
+      tradeMap(id)
+    }
+    else {
+      val trade = titanTradesService.getByOid(id.toInt)
+      tradeMap += trade.tradeId.toString -> trade.asInstanceOf[EDMPhysicalTrade]
+      tradeMap(id)
+    }
+  }
+
+  def tradeIDFromQuotaID(quotaID: String): String = {
+    if (!quotaIDToTradeIDMap.contains(quotaID))
+      updateTradeMap()
+    quotaIDToTradeIDMap.get(quotaID) match {
+      case Some(tradeID) => tradeID
+      case None => throw new Exception("Missing quota " + quotaID)
+    }
+  }
+}
+
+/**
+ * Trade cache using supplied ref data
+ */
+case class RefDataTitanTradeCache(refData : TitanTacticalRefData) extends TitanTradeCache {
+
+  protected var tradeMap: Map[String, EDMPhysicalTrade] = Map[String, EDMPhysicalTrade]()
+  protected var quotaIDToTradeIDMap: Map[String, String] = Map[String, String]()
+
+  val titanTradesService = refData.titanGetEdmTradesService
 
   /*
     Read all trades from Titan and blast our cache
@@ -304,9 +360,10 @@ class ValuationService(
    * handler for events
    */
   class EventHandler extends DemultiplexerClient {
+    val rabbitPublishChangedValueEvents = publishChangedValueEvents(rabbitEvents.rabbitEventPublisher) _
     def handle(ev: Event) {
       if (ev == null) Log.warn("Got a null event") else {
-        if (Event.TradeSubject == ev.subject) { // Must be a trade event
+        if (Event.TrademgmtSource == ev.source && Event.TradeSubject == ev.subject) { // Must be a trade event from trademgmt
           Log.info("handler: Got a trade event to process %s".format(ev.toString))
 
           val tradePayloads = ev.content.body.payloads.filter(p => Event.RefinedMetalTradeIdPayload == p.payloadType)
@@ -327,7 +384,7 @@ class ValuationService(
               val changedIDs = tradeIds.filter{id => newTradeValuations.tradeResults(id) != originalTradeValuations.tradeResults(id)}
 
               if (changedIDs != Nil)
-                publishChangedValueEvent(changedIDs)
+                rabbitPublishChangedValueEvents(changedIDs)
 
               Log.info("Trades revalued for received event using snapshot %s number of changed valuations %d".format(snapshotIDString, changedIDs.size))
             }
@@ -342,32 +399,32 @@ class ValuationService(
           }
         }
       }
+    }
 
-      // publish the valuation updated event contaning payloads of the trade id's whose trade valuations have changed
-      def publishChangedValueEvent(tradeIds : List[String]) = {
-        val newValuationEvent =
-          new Event() {
-            verb = UpdatedEventVerb
-            subject = Event.StarlingValuationServiceSubject
-            source = Event.StarlingSource
-            content = new Content() {
-              header = new Header() {
-                timestamp = new DateTime
-                pid = Pid.getPid
-                host = InetAddress.getLocalHost.getCanonicalHostName
-              }
-              body = Body(tradeIds.map(id => new Payload() {
-                payloadType = Event.RefinedMetalTradeIdPayload
-                key = new EventKey() { identifier = id }
-                source = Event.StarlingSource
-              }))
-              key = new EventKey(){identifier = System.currentTimeMillis.toString}
+    // publish the valuation updated event contaning payloads of the trade id's whose trade valuations have changed
+    def publishChangedValueEvents(eventPublisher : Publisher)(tradeIds : List[String]) = {
+      val newValuationEvent =
+        new Event() {
+          verb = UpdatedEventVerb
+          subject = Event.StarlingValuationServiceSubject
+          source = Event.StarlingSource
+          content = new Content() {
+            header = new Header() {
+              timestamp = new DateTime
+              pid = Pid.getPid
+              host = InetAddress.getLocalHost.getCanonicalHostName
             }
+            body = Body(tradeIds.map(id => new Payload() {
+              payloadType = Event.RefinedMetalTradeIdPayload
+              key = new EventKey() { identifier = id }
+              source = Event.StarlingSource
+            }))
+            key = new EventKey(){identifier = System.currentTimeMillis.toString}
           }
+        }
 
-        val eventArray = ||> { new JSONArray } { r => r.put(newValuationEvent.toJson) }
-        rabbitEvents.rabbitEventPublisher.publish(eventArray)
-      }
+      val eventArray = ||> { new JSONArray } { r => r.put(newValuationEvent.toJson) }
+      eventPublisher.publish(eventArray)
     }
   }
 }
@@ -414,10 +471,7 @@ object ValuationService extends Application {
 
 //  valuations.tradeResults.foreach(println)
    
-  val (_, worked) = valuations.tradeResults.values.partition(_ match {
-    case Right(_) => true
-    case Left(_) => false
-  })
+  val (_, worked) = valuations.tradeResults.values.partition({ case Right(_) => true; case Left(_) => false })
 
   val valuedTradeIds = valuations.tradeResults.collect{ case (id, Left(v)) => id }.toList
   val valuedTrades = vs.getTrades(valuedTradeIds)
@@ -433,9 +487,7 @@ object ValuationService extends Application {
   writeJson(exchangesFile, exchanges)
 
   val loadedMarkets = loadJsonValuesFromFile(marketsFile).map(s => Metal.fromJson(new JSONObject(s)).asInstanceOf[Metal])
-
   val loadedExchanges = loadJsonValuesFromFile(exchangesFile).map(s => Market.fromJson(new JSONObject(s)).asInstanceOf[Market])
-
   val loadedTrades = loadJsonValuesFromFile(tradesFile).map(s => EDMPhysicalTrade.fromJson(new JSONObject(s)).asInstanceOf[EDMPhysicalTrade])
 
   loadedMarkets.foreach(println)
@@ -464,5 +516,43 @@ object ValuationService extends Application {
 //  def fromJson[T <: ModelObject with Object { def fromJson() : JSONObject }](json : List[String]) = {
 //    json.map(s => fromJson(s).asInstanceOf[T])
 //  }
+}
+
+
+/**
+ * Valuation service tests
+ */
+object ValuationServiceTest extends Application {
+  import Event._
+  println("Starting valuation service tests")
+  lazy val server = StarlingInit.devInstance
+  val mockTitanTacticalRefData = new FileMockedTitanTacticalRefData()
+  val mockTitanTradeCache = new RefDataTitanTradeCache(mockTitanTacticalRefData)
+  val mockRabbitEvents = new MockRabbitEvents()
+
+  val vs = new ValuationService(
+    server.marketDataStore,  mockTitanTradeCache, mockTitanTacticalRefData, mockRabbitEvents)
+
+  // publish trade updated events...
+  val pf = new PayloadFactory()
+  val ef = new EventFactory()
+  val source = TrademgmtSource
+  val keyId = "1" // trade Id
+  val payloads = List(pf.createPayload(RefinedMetalTradeIdPayload, source, keyId))
+  val keyIdentifier = System.currentTimeMillis.toString
+  val ev = ef.createEvent(TradeSubject, UpdatedEventVerb, source, keyIdentifier, payloads)
+  val eventArray = ||> { new JSONArray } { r => r.put(ev.toJson) }
+  mockRabbitEvents.rabbitEventPublisher.publish(eventArray)
+
+  vs.marketDataSnapshotIDs().foreach(println)
+  val valuations = vs.valueAllQuotas()
+   
+  val (_, worked) = valuations.tradeResults.values.partition({ case Right(_) => true; case Left(_) => false })
+
+  val valuedTradeIds = valuations.tradeResults.collect{ case (id, Left(v)) => id }.toList
+
+  val valuedTrades = vs.getTrades(valuedTradeIds)
+
+  StarlingInit.devInstance.stop
 }
 

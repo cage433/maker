@@ -83,3 +83,4 @@ case class FileMockedTitanTacticalRefData() extends TitanTacticalRefData {
   import scala.io.Source._
   private def loadJsonValuesFromFile(fileName : String) : List[String] = fromFile(fileName).getLines.toList
 }
+

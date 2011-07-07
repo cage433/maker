@@ -3,21 +3,25 @@ package starling.services.rabbit
 import starling.props.Props
 import com.trafigura.services.rabbit.RabbitPublisher
 import com.trafigura.events.EventDemultiplexer
-import com.rabbitmq.client.AMQP.BasicProperties
 import com.trafigura.services.rabbit.RabbitPublisher
 import com.trafigura.services.rabbit.RabbitListener
 import com.trafigura.services.rabbit.RabbitConnector
+import com.trafigura.common.control.PipedControl._
+import com.rabbitmq.client.AMQP.BasicProperties
+import com.trafigura.services.rabbit.Publisher
+import com.trafigura.events.EventPublisher
+import com.trafigura.events.IDemultiplexEvents
+import com.trafigura.shared.events.Event
+import com.trafigura.events.DemultiplexerClient
+import org.codehaus.jettison.json.JSONArray
 
 
 /**
  * RabbitMQ event module
  */
 trait RabbitEvents {
-
-  val eventDemux : EventDemultiplexer
-
-  val rabbitEventPublisher : RabbitPublisher
-
+  val eventDemux : IDemultiplexEvents
+  val rabbitEventPublisher : Publisher
   def shutdown : Unit
 }
 
@@ -87,7 +91,7 @@ case class DefaultRabbitEvents(props : Props) extends RabbitEvents {
   rabbitEventPublisher.connect()
 
   // the demux for listener clients...
-  lazy val eventDemux : EventDemultiplexer = { val demux = new EventDemultiplexer(serviceName, rabbitListener); demux.startup; demux }
+  lazy val eventDemux : EventDemultiplexer = ||> { new EventDemultiplexer(serviceName, rabbitListener)} { r => r.startup }
 
   def shutdown {
     eventDemux.shutdown
@@ -96,3 +100,68 @@ case class DefaultRabbitEvents(props : Props) extends RabbitEvents {
   }
 }
 
+
+case class MockRabbitEvents() extends RabbitEvents {
+  private val mockDemux = new MockEventDemux()
+  val eventDemux : IDemultiplexEvents = mockDemux
+  val rabbitEventPublisher = new MockRabbitPublisher(mockDemux)
+  def shutdown {}
+}
+
+class MockRabbitPublisher(val eventDemux : MockEventDemux) extends Publisher {
+  //this(eventDemux : MockEventDemux)
+  def publish(payload: JSONArray) = {
+    for (i <- 0 to payload.length()) {
+      val obj = payload.getJSONObject(i)
+      eventDemux.publishToClients(Event.fromJson(obj))
+    }
+  }
+}
+
+class MockEventDemux() extends IDemultiplexEvents {
+  private var clients = List[DemultiplexerClient]()  
+  def startup {}
+  def shutdown {}
+
+  def addClient(client : DemultiplexerClient) : Unit = synchronized {
+    clients ++= List(client)
+  }
+
+  private def dispatchToClients(ev : Event) : Unit = {
+    val theClients = this.synchronized {
+       clients
+    }
+    for (client <- theClients) {
+      try {
+        client.handle(ev)
+      } catch {
+        case e => //Log.warn(name + " event demultiplexer client " + client + " encountered exception", e)
+      }
+    }    
+  }
+  def publishToClients(ev : Event) { dispatchToClients(ev) }
+  def getOriginatingHosts = "mock"
+  def getName = "mock"
+  def getReceived = 0
+  def getProcessed = 0
+  def resetStatistics {}
+}
+
+/*
+class MockRabbitEventPublisher() extends EventPublisher {
+  this(eventDemux : MockEventDemux)
+  val demux = eventDemux
+
+  // builds and returns a payload
+  def newPayload(payloadType: String, id : Int) : Payload = null
+  def newPayload(payloadType: String, id : String) : Payload = null
+  def publish(subject : String, verb : EventVerbEnum) {}
+  def publishNew(subject : String, payload : Payload) {}
+  def publishUpdate(subject : String, payload : Payload) {}
+  def publish(subject : String, verb : EventVerbEnum, payload : Payload) = null
+  def publish(subject : String, verb : EventVerbEnum, payloads : List[Payload]) = null
+  def getPublished : Int = 0
+  def resetStatistics {}
+  def getPublisher : String = "Mock"
+}
+*/
