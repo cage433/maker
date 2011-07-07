@@ -50,6 +50,8 @@ import starling.daterange.Month
 import starling.maths.RandomVariables
 import org.testng.annotations.Test
 import org.testng.Assert._
+import starling.curves.UnitTestingAtomicEnvironment
+import starling.curves.FixingKey
 
 
 trait TitanTradeCache {
@@ -194,45 +196,82 @@ case class RefDataTitanTradeCache(refData : TitanTacticalRefData, titanTradesSer
 }
 
 trait EnvironmentProvider{
-  def getSnapshots : List[SnapshotID]
+  def getSnapshots() : List[String]
   def environment(snapshotID : String) : Environment
+  def updateSnapshotCache() 
+  def snapshotNameToID(name : String) : SnapshotID
+  def mostRecentSnapshotIdentifierBeforeToday(): Option[String] 
+  def snapshotIDs(observationDay : Option[Day]) : List[SnapshotID]
 }
 
 class DefaultEnvironmentProvider(marketDataStore : MarketDataStore) extends EnvironmentProvider {
-  def getSnapshots : List[SnapshotID] = marketDataStore.snapshots
-  def environment(snapshotID : String) : Environment = null // todo...  = marketDataStore.environments
-}
+  def getSnapshots() : List[String] = snapshotNameToIDCache.keySet.toList
+  def snapshotNameToID(name : String) = snapshotNameToIDCache(name)
+  private var snapshotNameToIDCache = Map[String, SnapshotID]()
+  private var environmentCache = CacheFactory.getCache("ValuationService.environment", unique = true)
+  def environment(snapshotIDName: String): Environment = environmentCache.memoize(
+    snapshotIDName,
+    {snapshotIDName : String => {
+      val snapshotID = snapshotNameToIDCache(snapshotIDName)
+      val reader = new NormalMarketDataReader(marketDataStore, MarketDataIdentifier(snapshotID.marketDataSelection, snapshotID.version))
+      ClosesEnvironmentRule.createEnv(snapshotID.observationDay, reader).environment
+    }}
+  )
+  private val lock = new Object()
 
-class MockEnvironmentProvider() {
-
-  def getSnapshots : List[SnapshotID] = Nil // List("Snapshot1")
-  
-  def environment(snapshotID : String) : Environment = null // todo... buildEnvironment(
-/*
-  def buildEnvironment(index: Index, envMarketDay: DayAndTime, vol : Double): Environment = {
-    Environment(
-      new TestingAtomicEnvironment() {
-        def marketDay = envMarketDay
-        def applyOrMatchError(key: AtomicDatumKey) = key match {
-          case _: DiscountRateKey => 1.0
-          case ForwardPriceKey(_, period, _) => prices(period)
-        }
-      })
+  def updateSnapshotCache() {
+    lock.synchronized {
+      marketDataStore.snapshots().foreach {
+        s: SnapshotID =>
+          snapshotNameToIDCache += s.id.toString -> s
+      }
+    }
   }
-  
-  val index = Index.PREM_UNL_EURO_BOB_OXY_NWE_BARGES
-  val averagingDays = index.observationDays(sep09)
-  val prices = Map[DateRange, Quantity]() ++ averagingDays.map{d => index.observedPeriod(d) -> Quantity(100.0 * su.nextDouble, USD/ MT)}
-  val sep09 = Month(2009, 9)
-  val su = RandomVariables.standardUniform(12345)
-*/
+  def mostRecentSnapshotIdentifierBeforeToday(): Option[String] = {
+    updateSnapshotCache()
+    snapshotNameToIDCache.values.toList.filter(_.observationDay < Day.today()).sortWith(_ > _).headOption.map(_.id.toString)
+  }
+
+  def snapshotIDs(observationDay : Option[Day]) : List[SnapshotID] = {
+    updateSnapshotCache()
+    snapshotNameToIDCache.values.filter {
+      starlingSnapshotID =>
+        starlingSnapshotID.marketDataSelection.pricingGroup == Some(PricingGroup.Metals) && (observationDay.isEmpty || (starlingSnapshotID.observationDay.toJodaLocalDate == observationDay.get))
+    }.toList
+  }
 }
+
+class MockEnvironmentProvider() extends EnvironmentProvider {
+
+  private val snapshotsAndData = Map(
+    "Snapshot1" -> (Day(2011, 7, 7), 100.0, 99),
+    "Snapshot2" -> (Day(2011, 7, 7), 101.0, 98),
+    "Snapshot3" -> (Day(2011, 7, 8), 102.0, 97)
+  )
+  def getSnapshots() : List[String] = snapshotsAndData.keySet.toList
+  
+  def environment(snapshotID : String) : Environment = Environment(
+    new UnitTestingAtomicEnvironment(
+      snapshotsAndData(snapshotID)._1.endOfDay,
+      {
+        case FixingKey(index, _) => Quantity(snapshotsAndData(snapshotID)._3, index.priceUOM)
+        case ForwardPriceKey(market, _, _) => Quantity(snapshotsAndData(snapshotID)._2, market.priceUOM)
+        case _: DiscountRateKey => 1.0
+      }
+    )
+  )
+  def updateSnapshotCache() {}
+  def mostRecentSnapshotIdentifierBeforeToday(): Option[String]  = throw new UnsupportedOperationException
+  def snapshotIDs(observationDay : Option[Day]) : List[SnapshotID] = throw new UnsupportedOperationException
+  def snapshotNameToID(name : String) : SnapshotID = throw new UnsupportedOperationException
+}
+
 
 /**
  * Valuation service implementations
  */
 class ValuationService(
-  marketDataStore: MarketDataStore, 
+  environmentProvider : EnvironmentProvider, 
   titanTradeCache : TitanTradeCache, 
   titanServices : TitanServices,
   rabbitEvents : RabbitEventServices) extends ValuationServiceApi {
@@ -256,7 +295,7 @@ class ValuationService(
     val sw = new Stopwatch()
     val edmTrades = titanTradeCache.getAllTrades()
     log("Got Edm Trade results, trade result count = " + edmTrades.size)
-    val env = environment(snapshotStringToID(snapshotIDString))
+    val env = environmentProvider.environment(snapshotIDString)
     val tradeValuer = PhysicalMetalForward.value(futuresExchangeByGUID, futuresMarketByGUID, env, snapshotIDString) _
     log("Got %d completed physical trades".format(edmTrades.size))
     sw.reset()
@@ -284,7 +323,7 @@ class ValuationService(
     val edmTradeResult = titanTradeCache.getTrade(tradeId.toString)
 
     log("Got Edm Trade result " + edmTradeResult)
-    val env = environment(snapshotStringToID(snapshotIDString))
+    val env = environmentProvider.environment(snapshotIDString)
     val tradeValuer = PhysicalMetalForward.value(futuresExchangeByGUID, futuresMarketByGUID, env, snapshotIDString) _
 
     val edmTrade: EDMPhysicalTrade = edmTradeResult.asInstanceOf[EDMPhysicalTrade]
@@ -303,7 +342,7 @@ class ValuationService(
   def valueCostables(costableIds: List[String], maybeSnapshotIdentifier: Option[String]): CostsAndIncomeQuotaValuationServiceResults = {
     
     val snapshotIDString = resolveSnapshotIdString(maybeSnapshotIdentifier)
-    val env = environment(snapshotStringToID(snapshotIDString))
+    val env = environmentProvider.environment(snapshotIDString)
     valueCostables(costableIds, env, snapshotIDString)
   }
   
@@ -359,19 +398,15 @@ class ValuationService(
    * Return all snapshots for a given observation day, or every snapshot if no day is supplied
    */
   def marketDataSnapshotIDs(observationDay: Option[LocalDate] = None): List[TitanSnapshotIdentifier] = {
-    updateSnapshotCache()
-    snapshotNameToID.values.filter {
-      starlingSnapshotID =>
-        starlingSnapshotID.marketDataSelection.pricingGroup == Some(PricingGroup.Metals) && (observationDay.isEmpty || (starlingSnapshotID.observationDay.toJodaLocalDate == observationDay.get))
-    }.map {
+    environmentProvider.snapshotIDs(observationDay.map(Day.fromJodaDate)).map {
       starlingSnapshotID => TitanSnapshotIdentifier(starlingSnapshotID.id.toString, starlingSnapshotID.observationDay.toJodaLocalDate)
-    }.toList
+    }
   }
 
   private def log(msg: String) = Log.info("ValuationService: " + msg)
 
   private def resolveSnapshotIdString(maybeSnapshotIdentifier: Option[String] = None) = {
-    val snapshotIDString = maybeSnapshotIdentifier.orElse(mostRecentSnapshotIdentifierBeforeToday()) match {
+    val snapshotIDString = maybeSnapshotIdentifier.orElse(environmentProvider.mostRecentSnapshotIdentifierBeforeToday()) match {
       case Some(id) => id
       case _ => throw new IllegalStateException("No market data snapshots")
     }
@@ -379,40 +414,7 @@ class ValuationService(
     snapshotIDString
   }
 
-  // snapshot helpers...
-  private val snapshotNameToID = scala.collection.mutable.Map[String, SnapshotID]()
-  private val lock = new Object()
 
-  private def updateSnapshotCache() {
-    lock.synchronized {
-      marketDataStore.snapshots().foreach {
-        s: SnapshotID =>
-          snapshotNameToID += s.id.toString -> s
-      }
-    }
-  }
-
-  private def mostRecentSnapshotIdentifierBeforeToday(): Option[String] = {
-    updateSnapshotCache()
-    snapshotNameToID.values.toList.filter(_.observationDay < Day.today()).sortWith(_ > _).headOption.map(_.id.toString)
-  }
-
-  private def snapshotStringToID(id: String): SnapshotID = {
-    snapshotNameToID.getOrElse(id, {
-      updateSnapshotCache()
-      assert(snapshotNameToID.contains(id), "Snapshot ID " + id + " not found")
-      snapshotNameToID(id)
-    })
-  }
-
-  private var environmentCache = CacheFactory.getCache("ValuationService.environment", unique = true)
-  private def environment(snapshotID: SnapshotID): Environment = environmentCache.memoize(
-    snapshotID,
-    {snapshotID : SnapshotID => {
-      val reader = new NormalMarketDataReader(marketDataStore, MarketDataIdentifier(snapshotID.marketDataSelection, snapshotID.version))
-      ClosesEnvironmentRule.createEnv(snapshotID.observationDay, reader).environment
-    }}
-  )
 
   def getTrades(tradeIds : List[String]) : List[EDMPhysicalTrade] = tradeIds.map(titanTradeCache.getTrade)
   def getFuturesExchanges = futuresExchangeByGUID.values
@@ -435,8 +437,8 @@ class ValuationService(
 
           ev.verb match {
             case UpdatedEventVerb => {
-              val (snapshotIDString, env) = mostRecentSnapshotIdentifierBeforeToday() match {
-                case Some(snapshotId) => (snapshotId, environment(snapshotStringToID(snapshotId)))
+              val (snapshotIDString, env) = environmentProvider.mostRecentSnapshotIdentifierBeforeToday() match {
+                case Some(snapshotId) => (snapshotId, environmentProvider.environment(snapshotId))
                 case None => ("No Snapshot found",  Environment(NullAtomicEnvironment((Day.today() - 1).startOfDay)))
               }
 
@@ -589,14 +591,13 @@ object ValuationService extends Application {
 object ValuationServiceTest extends Application {
   import Event._
   println("Starting valuation service tests")
-  lazy val server = StarlingInit.devInstance
   val mockTitanServices = new FileMockedTitanServices()
   val mockTitanTradeService = new DefaultTitanTradeService(mockTitanServices)
   val mockTitanTradeCache = new RefDataTitanTradeCache(mockTitanServices, mockTitanTradeService)
   val mockRabbitEventServices = new MockRabbitEventServices()
 
   val vs = new ValuationService(
-    server.marketDataStore,  mockTitanTradeCache, mockTitanServices, mockRabbitEventServices)
+    new MockEnvironmentProvider,  mockTitanTradeCache, mockTitanServices, mockRabbitEventServices)
 
   vs.marketDataSnapshotIDs().foreach(println)
   val valuations = vs.valueAllQuotas()
@@ -658,7 +659,5 @@ object ValuationServiceTest extends Application {
   Log.info("updatedTradeValuationList " + updatedTradeValuationList.mkString(", ")) 
 
   assertTrue(updatedTradeValuationList.contains(updatedTrade.oid) , "Valuation service failed to raise valuation changed events for the changed trades")
-  
-  StarlingInit.devInstance.stop
 }
 
