@@ -50,6 +50,7 @@ import starling.curves.{StarlingMarketLookup, EAIMarketLookup, FwdCurveAutoImpor
 import starling.services.rpc.valuation.DefaultTitanTradeCache
 import starling.services.rpc.refdata._
 import starling.services.rabbit._
+import starling.services.rpc.valuation.DefaultEnvironmentProvider
 
 class StarlingInit( val props: Props,
                     dbMigration: Boolean = true,
@@ -233,7 +234,7 @@ class StarlingInit( val props: Props,
   val titanTradeCache = new DefaultTitanTradeCache(props)
   val titanServices = new DefaultTitanServices(props)
   val rabbitEventServices = new DefaultRabbitEventServices(props)
-  val valuationService = new ValuationService(marketDataStore, titanTradeCache, titanServices, rabbitEventServices)
+  val valuationService = new ValuationService(new DefaultEnvironmentProvider(marketDataStore), titanTradeCache, titanServices, rabbitEventServices)
   val marketDataService = new MarketDataService(marketDataStore)
   
   val userSettingsDatabase = new UserSettingsDatabase(starlingDB, broadcaster)
