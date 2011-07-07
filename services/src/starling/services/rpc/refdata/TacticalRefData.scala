@@ -19,6 +19,7 @@ import com.trafigura.edm.tradeservice.TradeResult
 
 /**
  * Tactical ref data, service proxies / data
+ *   also includes the trademgmt EDM trade serivce, this should be refactored to  separate out at some point
  */
 trait TitanTacticalRefData {
    
@@ -49,9 +50,14 @@ case class DefaultTitanTacticalRefData(props: Props) extends TitanTacticalRefDat
   def allTacticalRefDataExchanges() = tacticalRefdataMarketsService.getMarkets()
 }
 
+/**
+ * Looks like real ref-data, but really it comes from static data for testing purposes
+ */
 case class FileMockedTitanTacticalRefData() extends TitanTacticalRefData {
    
   import com.trafigura.edm.trades.{PhysicalTrade => EDMPhysicalTrade}
+
+  // todo, sort out test resource locations
   val tradesFile = "/tmp/edmTrades.json"
   val marketsFile = "/tmp/markets.json"
   val exchangesFile = "/tmp/exchanges.json"
@@ -59,12 +65,12 @@ case class FileMockedTitanTacticalRefData() extends TitanTacticalRefData {
   val titanGetEdmTradesService : EdmGetTrades = new EdmGetTrades {
     def getAll() : TradeResults = new TradeResults() {
       cached = true
-      results = loadedTrades.map(t => new TradeResult() {
+      results = tradeMap.values.map(t => new TradeResult() {
         trade = t
         error = null
-      })
+      }).toList
     }
-    def getByOid(oid : Int) : Trade = loadedTrades.find(t => t.oid == oid) match {
+    def getByOid(oid : Int) : Trade = tradeMap.get(oid) match {
       case Some(trade) => trade.asInstanceOf[EDMPhysicalTrade]
       case _ => throw new Exception("Trade does not exist in mock data %d".format(oid))
     }
@@ -79,6 +85,11 @@ case class FileMockedTitanTacticalRefData() extends TitanTacticalRefData {
   val loadedMarkets = loadJsonValuesFromFile(marketsFile).map(s => Metal.fromJson(new JSONObject(s)).asInstanceOf[Metal])
   val loadedExchanges = loadJsonValuesFromFile(exchangesFile).map(s => Market.fromJson(new JSONObject(s)).asInstanceOf[Market])
   val loadedTrades = loadJsonValuesFromFile(tradesFile).map(s => EDMPhysicalTrade.fromJson(new JSONObject(s)).asInstanceOf[EDMPhysicalTrade])
+  val tradeMap = loadedTrades.map(t => t.oid -> t).toMap
+
+  def updateTrade(trade : EDMPhysicalTrade) {
+    tradeMap(trade.oid) = trade
+  }
   
   import scala.io.Source._
   private def loadJsonValuesFromFile(fileName : String) : List[String] = fromFile(fileName).getLines.toList
