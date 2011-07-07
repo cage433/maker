@@ -21,9 +21,9 @@ class Starling(info : ProjectInfo) extends ParentProject(info) {
     // is used to prevent non-FC2 builds from compiling the model - which takes a few minutes
     val name = "starling.api"
     if (starlingProperties.getOrElse("ServerType", "Dev") == "FC2")
-      project(name, name, {info : ProjectInfo => new StarlingProject(name, info)}, bouncyrmi, scalaModelWithPersistence)
+      project(name, name, {info : ProjectInfo => new StarlingProject(name, info)}, bouncyrmi, scalaModelWithPersistence, utils)
     else
-      project(name, name, new StarlingProject(name, _){override val unmanagedClasspath = super.unmanagedClasspath +++ ("scala-model-jars" ** "*.jar")}, bouncyrmi)
+      project(name, name, new StarlingProject(name, _){override val unmanagedClasspath = super.unmanagedClasspath +++ ("scala-model-jars" ** "*.jar")}, bouncyrmi, utils)
   }
 
   lazy val loopyxl = starlingProject("loopyxl", bouncyrmi, auth)
