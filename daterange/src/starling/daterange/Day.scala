@@ -49,7 +49,7 @@ class Day private (@transient val year : Int, @transient val month : Int, @trans
     new java.sql.Date(calendar.getTimeInMillis)
   }
 
-  def toJodaLocalDate : LocalDate = {
+  implicit def toJodaLocalDate : LocalDate = {
     new LocalDate(this.year, this.month, this.dayNumber)
   }
 
