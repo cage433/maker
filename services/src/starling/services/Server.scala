@@ -58,8 +58,7 @@ class StarlingInit( val props: Props,
                     startXLLoop: Boolean = true,
                     startStarlingJMX: Boolean = true,
                     forceGUICompatability: Boolean = true,
-                    startEAIAutoImportThread: Boolean = true,
-                    runningInJBoss : Boolean = false
+                    startEAIAutoImportThread: Boolean = true
                     ) {
 
   def stop = {
@@ -77,9 +76,7 @@ class StarlingInit( val props: Props,
       httpEdmServiceServer.stop
       regressionServer.stop
     }
-    if (!runningInJBoss){
-      scheduler.stop
-    }
+    scheduler.stop
     ConnectionParams.shutdown
   }
 
@@ -106,7 +103,7 @@ class StarlingInit( val props: Props,
 
     if (startRMI) {
       rmiServerForTitan.start
-      Log.info("Titan RMI started on port " + rmiTitanServicePort)
+      Log.info("Titan RMI started on port " + props.StarlingServiceRmiPort())
       rmiServerForGUI.start
       Log.info("GUI RMI started on port " + rmiPort)
     }
@@ -116,9 +113,7 @@ class StarlingInit( val props: Props,
       fwdCurveAutoImport.schedule
     }
 
-    if (!runningInJBoss){
-      scheduler.start
-    }
+    scheduler.start
 
     this
   }
@@ -286,7 +281,6 @@ class StarlingInit( val props: Props,
     version, referenceData, businessCalendars.UK, ldapUserLookup, eaiStarlingSqlServerDB, traders)
 
   val rmiPort = props.RmiPort()
-  val rmiTitanServicePort = props.StarlingServiceRmiPort()
 
   val users = new CopyOnWriteArraySet[User]
 
@@ -314,10 +308,7 @@ class StarlingInit( val props: Props,
   val loopyXLReceiver = new LoopyXLReceiver(props.LoopyXLPort(), auth,
     new CurveHandler(curveViewer, marketDataStore))
 
-   val latestTimestamp = if (runningInJBoss) {
-    JBossAppTxtServlet.launchTime
-   }
-   else if (forceGUICompatability) 
+   val latestTimestamp = if (forceGUICompatability) 
      GUICode.latestTimestamp.toString 
    else 
      BouncyRMI.CodeVersionUndefined
@@ -333,11 +324,11 @@ class StarlingInit( val props: Props,
   /**
    * start up public services for Titan components
    */
-  println("Titan service port " + rmiTitanServicePort)
+  println("Titan service port " + props.StarlingServiceRmiPort())
   val nullHandler = new ServerAuthHandler[User](new NullAuthHandler(Some(User.Dev)), users, ldapUserLookup,
         user => broadcaster.broadcast(UserLoggedIn(user)), ChannelLoggedIn)
   val rmiServerForTitan : BouncyRMIServer[User] = new BouncyRMIServer(
-    rmiTitanServicePort,
+    props.StarlingServiceRmiPort(),
     nullHandler, BouncyRMI.CodeVersionUndefined, users,
     Set(classOf[TradeManagementCacheNotReady], classOf[IllegalArgumentException]),
     ChannelLoggedIn,
