@@ -8,8 +8,8 @@ import org.testng.annotations.{DataProvider, Test}
 import starling.quantity.{UOM, Percentage, Quantity}
 import org.testng.Assert._
 import starling.utils.QuantityTestUtils._
-import starling.market.{FuturesMarket, FXMarket}
 import starling.models.{European, Put, Call}
+import starling.market.{Market, FuturesMarket, FXMarket}
 
 class FXOptionTests extends StarlingTest {
 
@@ -110,7 +110,7 @@ class FXOptionTests extends StarlingTest {
       strike <- List(1.3, 1.5, 1.7)
     ) {
       val option = FXOption(Quantity(strike, USD/GBP), Quantity(100.0, GBP), exerciseDay, maturityDay, callOrPut)
-      val futuresOption = new FuturesOption(FuturesMarket.testMarket("LME", USD, MT), exerciseDay, maturityDay, Quantity(strike, USD/MT), Quantity(100, MT), callOrPut, European)
+      val futuresOption = new FuturesOption(Market.testMarket("LME", USD, MT), exerciseDay, maturityDay, Quantity(strike, USD/MT), Quantity(100, MT), callOrPut, European)
 
       assertQtyEquals(option.mtm(env), futuresOption.mtm(env), 1e-6)
     }

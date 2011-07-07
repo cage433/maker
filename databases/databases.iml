@@ -106,6 +106,7 @@
         <SOURCES />
       </library>
     </orderEntry>
+    <orderEntry type="module" module-name="auth" exported="" />
     <orderEntry type="module" module-name="var" exported="" />
     <orderEntry type="module" module-name="pivot" exported="" />
     <orderEntry type="module" module-name="gui.api" exported="" />

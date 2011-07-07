@@ -5,6 +5,7 @@ import collection.immutable.List
 import LoopyXL.InvocationValue
 import starling.utils.ClosureUtil._
 import starling.utils.ImplicitConversions._
+import java.lang.IllegalArgumentException
 
 
 class DynamicMethod(method: Method, owner: AnyRef) {
@@ -31,8 +32,12 @@ class DynamicMethod(method: Method, owner: AnyRef) {
   def invoke(values: List[InvocationValue]) : InvocationValue = {
     val args: List[Object] = fromValues(values, method.getParameterTypes).asInstanceOf[List[Object]]
 
-    decorate(iae => new IllegalArgumentException("Method: %s, args: %s" % (method.getName, args))) {
+    try {
       returnMarshaller.serialize(method.invoke(owner, args: _*))
+    } catch {
+      case e: IllegalArgumentException => {
+        throw new IllegalArgumentException("Method: %s, args: %s" % (method.getName, args), e)
+      }
     }
   }
 

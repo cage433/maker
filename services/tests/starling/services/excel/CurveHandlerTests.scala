@@ -27,7 +27,7 @@ class CurveHandlerTests extends StarlingTest with ShouldMatchers {
     val observationDay: Day = Day.today
     val environmentRule = ClosesEnvironmentRule.label
     val environmentSpecification = EnvironmentSpecificationLabel(observationDay, environmentRule)
-    val dataIdentifier: MarketDataIdentifier = MarketDataIdentifier(selection, SpecificMarketDataVersion(123))
+    val dataIdentifier: MarketDataIdentifier = MarketDataIdentifier(selection, 123)
     val fieldsState: PivotFieldsState = PivotFieldsState(dataFields = List(Field("Price")),
       rowFields = List(Field("Month"), Field("Market")))
 

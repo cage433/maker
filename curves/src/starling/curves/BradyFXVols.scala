@@ -24,11 +24,7 @@ case class BradyFXVolSmileAtomicDatumKey(market : FXMarket, day : Day)
   def forwardStateValue(originalAtomicEnv: AtomicEnvironment, forwardDayAndTime: DayAndTime) = originalAtomicEnv(this)
   def nullValue = Map(0.5 -> Percentage(0))
 
-  def periodKey = Some(day)
-
   def underlying = market.name
-
-  def volMarket = market
 
   def calc_dP(env : Environment) = new Quantity(0.0050)
   def shiftedEnvs(env : Environment, dV : Quantity) : (Environment, Environment) = {

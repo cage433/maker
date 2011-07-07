@@ -8,10 +8,11 @@ import starling.pivot.{PivotQuantity => PQ}
 import starling.reports.pivot._
 
 object GreekValues {
-  def fields = List("Market Price", "Current Price", "Volatility", "Position", "Gamma", "Vega", "Vomma", "DeltaBleed", "GammaBleed")
+  def fields = List("Market Price", "Current Price", "Volatility", PositionText, "Gamma", "Vega", "Vomma", "DeltaBleed", "GammaBleed")
   def fromUTP(utpIdentifier : UTPIdentifier, utp : UTP) : GreekValues = {
     GreekValues(utpID = utpIdentifier, utp = utp, diff = None, period = utp.periodKey)
   }
+  val PositionText = "Position"
 }
 
 case class GreekValues(
@@ -34,6 +35,7 @@ case class GreekValues(
 )
   extends RiskPivotReportRow[GreekValues]
 {
+  import GreekValues._
   def get(field: String) = field match {
     case "Market Price" => new RiskPrices(marketName, period, price)
     case "Current Price" => instrumentPrice
@@ -42,7 +44,7 @@ case class GreekValues(
         new RiskVols(marketName, period, VolatilityMeasure(v))
       }}.getOrElse(RiskVols.Null)
     }
-    case "Position" => position * scale
+    case PositionText => position * scale
     case "Gamma" => gamma * scale
     case "Vega" => vega * scale
     case "Vomma" => vomma * scale

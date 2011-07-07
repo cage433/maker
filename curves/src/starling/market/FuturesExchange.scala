@@ -1,10 +1,10 @@
 package starling.market
 
 import java.lang.String
-import starling.daterange.ObservationTimeOfDay
 import starling.daterange.ObservationTimeOfDay._
-import starling.utils.{Named, StarlingEnum}
+import starling.utils.StarlingEnum
 import starling.utils.ImplicitConversions._
+import starling.daterange.{Day, ObservationTimeOfDay}
 
 trait DeliveryType {
   val name: String
@@ -17,7 +17,7 @@ case object MonthlyDelivery extends DeliveryType {
   val name = "Monthly Delivery"
 }
 
-case class FuturesExchange(name: String, deliveryType: DeliveryType, closeTime:ObservationTimeOfDay) extends Named {
+case class FuturesExchange(name: String, deliveryType: DeliveryType, closeTime:ObservationTimeOfDay) {
   lazy val markets = Market.futuresMarkets.filter(_.exchange == this)
   lazy val marketsByCommodityName = markets.toMapWithKeys(_.commodity.name.toLowerCase)
 }
@@ -40,7 +40,7 @@ object NeptunePricingExchange{
   }
 }
 
-object FuturesExchangeFactory extends StarlingEnum(classOf[FuturesExchange]) {
+object FuturesExchangeFactory extends StarlingEnum(classOf[FuturesExchange], (f: FuturesExchange) => f.name, otherTypes = List(classOf[NeptunePricingExchange])) {
   val LME = new FuturesExchange("LME", DailyDelivery, LMEClose) with NeptunePricingExchange{
     def inferMarketFromCommodityName(neptuneCommodityName: String) = neptuneCommodityName match {
       case "Copper"	            => Market.LME_COPPER
@@ -64,7 +64,43 @@ object FuturesExchangeFactory extends StarlingEnum(classOf[FuturesExchange]) {
       case "STL"	            => Market.LME_STEEL_BILLETS
       case _ => throw new IllegalStateException("No known LME market for Neptune commodity code " + neptuneCommodityCode)
     }
+
+    /**
+     * The month dates follows something like this rule
+     * 1. Shift today's month by 'nMonthsAhead'
+     * 2. If the date produced has a day number greater than the last day of the month (e.g. 30th Feb), then move to the month's last day
+     * 3. If the day is a non-working day then
+     *  a) For Friday/Saturday (bank holiday) - move to the previous business day
+     *  b) For Sunday/Monday (bank holiday) - move to the next business day, unless this would move us to the next month in which case move back
+     *  c) Any other holiday - just move back
+     *
+     * These are based on a chat with the LME, the holiday behaviour I've made up - but not the weekends.
+     * TODO - put in exact rule once we've received the copy of the regs from the LME
+     */
+    def monthDate(marketDay : Day, nMonthsAhead : Int) : Day = {
+      val month = marketDay.containingMonth + nMonthsAhead
+      val d : Int = month.lastDay.dayNumber min marketDay.dayNumber
+      val cal = Market.cals.LME
+      val firstBusDayInMonth = cal.thisOrNextBusinessDay(month.firstDay)
+      val lastBusDayInMonth = cal.thisOrPreviousBusinessDay(month.lastDay)
+
+      var day = Day(month.y, month.m, d)
+      if (!cal.isBusinessDay(day)) {
+        if (day.isSaturday || day.isFriday)
+          day = cal.previousBusinessDay(day)
+        else if (day.isSunday || day.isMonday)
+          day = cal.nextBusinessDay(day)
+        else
+          day = cal.previousBusinessDay(day)
+      }
+      (day max firstBusDayInMonth) min lastBusDayInMonth
+    }
+
+    def threeMonthDate(marketDay : Day) = monthDate(marketDay, nMonthsAhead = 3)
+    def twoMonthDate(marketDay : Day) = monthDate(marketDay, nMonthsAhead = 2)
+
   }
+
   val COMEX = new FuturesExchange("COMEX", MonthlyDelivery, COMEXClose) with NeptunePricingExchange{
     def inferMarketFromCommodityName(neptuneCommodityName: String) = neptuneCommodityName match {
       case "Copper"	            => Market.COMEX_HIGH_GRADE_COPPER
@@ -76,9 +112,13 @@ object FuturesExchangeFactory extends StarlingEnum(classOf[FuturesExchange]) {
     }
   }
   val NYMEX = new FuturesExchange("NYMEX", MonthlyDelivery, Default)
-  val SFS = new FuturesExchange("SFS", MonthlyDelivery, SHFEClose)
+  val SFS = new FuturesExchange("SFS", MonthlyDelivery, SHFEClose) // Shanghai futures exchange
   val BALTIC = new FuturesExchange("Baltic Exchange", MonthlyDelivery, Default)
   val ICE = new FuturesExchange("ICE", MonthlyDelivery, Default)
-  val MDEX = new FuturesExchange("MDEX", MonthlyDelivery, Default)
-  val EXBXG = new FuturesExchange("EXBXG", MonthlyDelivery, Default)
+  val MDEX = new FuturesExchange("MDEX", MonthlyDelivery, Default) // Malaysia Derivatives Exchange
+  val TOCOM = new FuturesExchange("TOCOM", MonthlyDelivery, Default) // Tokyo Commodity Exchange
+  val DCE = new FuturesExchange("DCE", MonthlyDelivery, Default) // Dalian Commodity Exchange
+  val DME = new FuturesExchange("DME", MonthlyDelivery, Default) // Dubai Mercantile Exchange
+  val EXBXG = new FuturesExchange("EXBXG", MonthlyDelivery, Default) // China Stainless Steel Exchange
+  val NYSE = new FuturesExchange("NYSE", MonthlyDelivery, Default)
 }

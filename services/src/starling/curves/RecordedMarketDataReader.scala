@@ -28,4 +28,6 @@ class RecordedMarketDataReader(val identifier:String, recorded:List[(TimedMarket
     filter { case (timedKey,data) => observationTimes.map( times => times.contains(timedKey.timeOfDay)).getOrElse(true)}.
     filter { case (timedKey,data) => keys.map( ks => ks.contains(timedKey.key)).getOrElse(true) }
   }
+
+  override def toString = identifier + "\n  " + recorded.mkString("\n  ")
 }

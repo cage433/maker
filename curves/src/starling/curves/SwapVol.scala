@@ -1,16 +1,13 @@
 package starling.curves
 
-import starling.market.SingleIndex
 import starling.quantity.Percentage
 import starling.daterange._
 import starling.quantity.Quantity
 import starling.quantity.UOM
+import starling.market.SingleIndex
 
 case class SwapVol(index : SingleIndex, averagingPeriod : DateRange) extends VolKey with EnvironmentDifferentiable{
   private val averagingDays : List[Day] = index.observationDays(averagingPeriod)
-
-  def volMarket = index.market
-
 
   def calc_dP(env : Environment)  = Percentage(0.005)
 
@@ -19,7 +16,7 @@ case class SwapVol(index : SingleIndex, averagingPeriod : DateRange) extends Vol
     val vol = daysInFuture match {
       case Nil => Percentage(1e-6)
       case _ => {
-        val strike = env.forwardPrice(index.market, index.observedPeriod(daysInFuture.last))
+        val strike = index.forwardPrice(env.instrumentLevelEnv, averagingDays.last, ignoreShiftsIfPermitted = false)
         env.swapVol(index, SimpleDateRange.containingRange(daysInFuture), strike)
       }
     }
@@ -31,13 +28,7 @@ case class SwapVol(index : SingleIndex, averagingPeriod : DateRange) extends Vol
   val curveKey = OilAtmVolCurveKey(index.market)
 
   def shiftedEnvs(env : Environment, dP : Quantity) = {
-    val firstObservedDay = averagingDays.map(index.observedPeriod(_).firstDay).sortWith(_<_).head
-    val lastObservedDay = averagingDays.map(index.observedPeriod(_).lastDay).sortWith(_>_).head
-    val observedPeriod = DateRange(firstObservedDay, lastObservedDay)
-    val dV = Percentage(dP.checkedValue(UOM.SCALAR))
-    val upEnv = env.shiftVol(index.market, Some(averagingPeriod), observedPeriod, dV)
-    val downEnv = env.shiftVol(index.market, Some(averagingPeriod), observedPeriod, -dV)
-    (downEnv, upEnv)
+    index.shiftedUnderlyingVols(env, averagingPeriod, dP)
   }
   override def riskMarket = index.reportDisplayName
 
@@ -46,7 +37,7 @@ case class SwapVol(index : SingleIndex, averagingPeriod : DateRange) extends Vol
       case day : Day => {
         SwapVol(
           index,
-          EnvironmentDifferentiable.containingDifferentiablePeriod(index.market.businessCalendar, marketDay, tenor, day)
+          EnvironmentDifferentiable.containingDifferentiablePeriod(index.businessCalendar, marketDay, tenor, day)
         )
       }
       case _ => this

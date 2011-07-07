@@ -7,7 +7,7 @@ import starling.services.trinity.TrinityUploader
 
 
 class UploadCurveToTrinityTask(uploader: TrinityUploader, marketDataIdentifier: => MarketDataIdentifier) extends ScheduledTask {
-  override def attributes = super.attributes + "DataSink" → "Trinity"
+  override def attributes = super.attributes + DataSink → ScheduledTaskAttribute("Trinity")
 
   def execute(observationDay: Day) = uploader.uploadCurve(CurveLabel(CurveTypeLabel("Price"), marketDataIdentifier,
     EnvironmentSpecificationLabel(observationDay, ClosesEnvironmentRule.label)))

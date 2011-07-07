@@ -21,7 +21,7 @@ class AsianOptionReader extends InstrumentReader {
   override def create(rs: RichResultSetRow) = {
     val index = rs.getSingleIndexFromEAIQuoteID("eaiquoteid")
     val delivery = rs.hasColumn("ContractDate") match {
-      case true => rs.getDay("ContractDate").containingMonth // TODO is this correct?
+      case true => rs.getDay("ContractDate").containingMonth // TODO [28 Apr 2010] is this correct?
       case false => rs.getDateRange("AveragingStartDate", "AveragingEndDate")
     }
     val strike = rs.getDouble("StrikePrice")

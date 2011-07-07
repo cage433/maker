@@ -24,9 +24,6 @@ case class ReportOptions(options:List[PivotReportTypeLabel], slide1:Option[Slide
 
   def slides = List(slide1, slide2).flatten
 }
-object ReportOptions {
-  val Blank = ReportOptions(List(), None, None)
-}
 
 case class MonitorInfo(id:String, width:Int, height:Int, availableAcceleratedMemory:Int)
 
@@ -35,3 +32,5 @@ case class OSInfo(name:String, arch:String, version:String, vmName:String, vmVen
 
 case class CostsInfo(name:String, value:Quantity, info:List[(String,String)])
 case class CostsLabel(costInfo:List[CostsInfo])
+
+case class BookmarkLabel(name:String, bookmark:String)

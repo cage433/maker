@@ -11,9 +11,9 @@ import starling.daterange.Month
 import starling.models.{European, Call}
 import starling.curves._
 import starling.quantity.{Percentage, Quantity}
-import starling.market.TestExpiryRules
+import starling.market.TestMarketSpec
 
-class VolatilityRiskFactorTests extends TestExpiryRules {
+class VolatilityRiskFactorTests extends TestMarketSpec {
 
   @Test
   def test {

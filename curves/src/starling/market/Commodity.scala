@@ -3,14 +3,15 @@ package starling.market
 import starling.quantity.UOM._
 import starling.market.Market._
 import starling.quantity.{Conversions, UOM, Quantity}
-import starling.utils.StarlingObject
+import starling.utils.ImplicitConversions._
+import net.sf.cglib.core.CollectionUtils
+import starling.utils.CollectionUtils
+
 
 class Commodity {
   lazy val representativeMarket = Commodity.standardFuturesMarket(this)
   lazy val standardFuturesUOM = Commodity.standardFuturesUOM(this)
-  def toStandardFuturesLots(position : Quantity) : Quantity = {
-    implicit val conv = conversions
-    
+  def toStandardFuturesLots(position : Quantity)(implicit conv: Conversions = Conversions.default): Quantity = {
     position in representativeMarket.uom match {
       case Some(positionInMarketUOM) => {
         representativeMarket.lotSize match {
@@ -36,67 +37,64 @@ class Commodity {
 
   override def hashCode = name.hashCode
 
-  def conversions = Conversions.default
-
-  lazy val name = {
-    val className = getClass.getName.substring(getClass.getName.lastIndexOf(".") + 1)
-    if(className.last == '$')
-      className.substring(0, className.length-1)
-    else
-      className
-  }
+  lazy val name = getClass.getName.substring(getClass.getName.lastIndexOf(".") + 1).stripSuffix("$")
   override def toString = name
 }
 
-/**
- * Market class for a nasty Trinity hack in ForwardCurve
- */
 sealed abstract class MetalCommodity extends Commodity
 object Gold extends MetalCommodity
 object Lead extends MetalCommodity
 object Silver extends MetalCommodity
 object Aluminium extends MetalCommodity
+object Alumina extends MetalCommodity
 object NASAAC extends MetalCommodity
 object AluminiumAlloy extends MetalCommodity
 object Cobalt extends MetalCommodity
 object Copper extends MetalCommodity
 object Nickel extends MetalCommodity
-object Rubber extends Commodity
 object Zinc extends MetalCommodity
 object Tin extends MetalCommodity
 object Palladium extends MetalCommodity
 object Steel extends MetalCommodity
 object IronOre extends MetalCommodity
+object Indium extends MetalCommodity
 object Platinum extends MetalCommodity
+object Molybdenum extends MetalCommodity
+object Ferromolybdenum extends MetalCommodity
+
+object Coal extends Commodity
+object Rubber extends Commodity
 object Freight extends Commodity
-object NatGas extends Commodity
-object Indium extends Commodity
-object Molybdenum extends Commodity
-object Ferromolybdenum extends Commodity
 
-sealed abstract class OilCommodity (
-  private val barrelsPerTonneValue : Double
-)
-  extends Commodity
-{
-  override def conversions = new Conversions(super.conversions.conversions ++ Map(BBL / MT -> barrelsPerTonneValue))
-}
+sealed abstract class Gas extends Commodity
+object Propane extends Gas
+object Butane extends Gas
+object Ethane extends Gas
+object NatGas extends Gas
 
-object WTI extends OilCommodity(7.62)
-object Brent extends OilCommodity(7.57)
-object Urals extends OilCommodity(7.284)
-object HeatingOil extends OilCommodity(7.45)
-object PalmOil extends OilCommodity(7.05)
-object DubaiCrude extends OilCommodity(7.25)
-
-case class Crude(conversion: Double) extends OilCommodity(conversion)
-case class GasOil(conversion: Double) extends OilCommodity(conversion)
-case class Gasoline(conversion: Double) extends OilCommodity(conversion)
-case class FuelOil(conversion: Double) extends OilCommodity(conversion)
-case class JetKero(conversion: Double) extends OilCommodity(conversion)
-case class Naphtha(conversion: Double) extends OilCommodity(conversion)
+sealed abstract class OilCommodity extends Commodity
+object WTI extends OilCommodity
+object Brent extends OilCommodity
+object HeatingOil extends OilCommodity
+object Crude extends OilCommodity
+object GasOil extends OilCommodity
+object Gasoline extends OilCommodity
+object FuelOil extends OilCommodity
+object JetKero extends OilCommodity
+object Naphtha extends OilCommodity
+object VegetableOil extends OilCommodity
 
 object Commodity{
+  lazy val metalsCommodities = List(Gold, Lead, Silver, Aluminium, Alumina, NASAAC, AluminiumAlloy, Copper, Cobalt,
+    Nickel, Zinc, Tin, Palladium, Steel, IronOre, Platinum, Indium, Molybdenum, Ferromolybdenum)
+
+  lazy val oilCommodities = List(WTI, Brent, HeatingOil, Crude, GasOil, Gasoline, FuelOil, JetKero, Naphtha, VegetableOil)
+
+  lazy val gasCommodities = List(Propane, Butane, Ethane, NatGas)
+
+  lazy val otherCommodities = List(Coal, Rubber, Freight)
+
+  lazy val all = metalsCommodities ::: oilCommodities ::: gasCommodities ::: otherCommodities
 
   def standardFuturesMarket(commodity : Commodity) : FuturesMarket = {
     commodity match {
@@ -111,18 +109,14 @@ object Commodity{
       case Molybdenum => LME_MOLYBDENUM
       case Palladium => COMEX_PALLADIUM
       case Steel => STEEL_REBAR_SHANGHAI
-      case IronOre => IRON_ORE
       case Platinum => COMEX_PLATINUM
-      case Freight => BALTIC_PANAMAX
       case WTI => NYMEX_WTI
-      case _:Gasoline => NYMEX_GASOLINE
+      case Gasoline => NYMEX_GASOLINE
       case Brent => ICE_BRENT
-      case _:GasOil => ICE_GAS_OIL
+      case GasOil => ICE_GAS_OIL
       case HeatingOil => NYMEX_HEATING
-      case _:FuelOil => NYMEX_SINGAPORE_FUEL_OIL
+      case FuelOil => NYMEX_SINGAPORE_FUEL_OIL
       case NatGas => NYMEX_NAT_GAS
-      case PalmOil => MDEX_CRUDE_PALM_OIL
-      case DubaiCrude => PLATTS_DUBAI
    }
   }
 
@@ -144,18 +138,18 @@ object Commodity{
       case Platinum => COMEX_PLATINUM_LOTS
       case Freight => BALTIC_PANAMAX_LOTS
       case WTI => NYMEX_WTI_LOTS
-      case g:Gasoline => NYMEX_GASOLINE_LOTS
+      case Gasoline => NYMEX_GASOLINE_LOTS
       case Brent => ICE_BRENT_LOTS
-      case _:GasOil => ICE_GAS_OIL_LOTS
+      case GasOil => ICE_GAS_OIL_LOTS
       case HeatingOil => NYMEX_HEATING_LOTS
-      case _:FuelOil => NYMEX_SINGAPORE_FUEL_OIL_LOTS
+      case FuelOil => NYMEX_SINGAPORE_FUEL_OIL_LOTS
       case NatGas => NYMEX_NATGAS_LOTS_LOTS
-      case DubaiCrude => DUBAI_CRUDE_LOTS
    }
   }
 
-  private lazy val CommodityNameToCommodity = Map() ++ markets.map(m => (m.commodity.name -> m.commodity))
-  def fromName(name:String) = CommodityNameToCommodity(name)
+  private lazy val CommodityNameToCommodity = Map() ++ all.map(c => (c.name -> c))
+  def fromName(name:String) = fromNameOption(name).getOrElse(throw new Exception("No such commodity" + name))
+  def fromNameOption(name: String) = CommodityNameToCommodity.get(name)
 
   def hasStandardFuturesMarket(commodity:Commodity) = {
     try {

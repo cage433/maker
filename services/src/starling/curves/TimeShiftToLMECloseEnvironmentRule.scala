@@ -29,23 +29,23 @@ object TimeShiftToLMECloseEnvironmentRule extends EnvironmentRule {
       closeDay != observationDay || observationTimeOfDay != market.closeTime
     }}
 
-    def previousEnv(day:Day, timeOfDay:ObservationTimeOfDay) = {
-      val slice = new MarketDataReaderMarketDataSlice(reader, ObservationPoint(day, timeOfDay))
+    def previousEnv(day:Day, timeOfDay:ObservationTimeOfDay, overrides:Map[MarketDataType,ObservationTimeOfDay]) = {
+      val slice = new MarketDataReaderMarketDataSlice(reader, ObservationPoint(day, timeOfDay), overrides)
       Environment(new NamingAtomicEnvironment(new MarketDataCurveObjectEnvironment(day.endOfDay, slice), timeOfDay.name))
     }
 
     val env = {
       val envDayAndTime = observationDay.endOfDay
-      val slice = new MarketDataReaderMarketDataSlice(reader, ObservationPoint(observationDay, observationTimeOfDay))
+      val slice = new MarketDataReaderMarketDataSlice(reader, ObservationPoint(observationDay, observationTimeOfDay), Map(SpotFXDataType -> LondonClose))
       new MarketDataCurveObjectEnvironment(envDayAndTime, slice) {
         override def curve(curveKey: CurveKey) = {
           curveKey match {
             case ForwardCurveKey(market:FuturesMarket) if (needsShift.contains(market)) => {
-              val shiftMarket = FuturesExchangeFactory.LME.markets.find(_.commodity == market.commodity).get
+              val shiftMarket = FuturesExchangeFactory.LME.markets.find(_.commodity == market.commodity).getOrElse(throw new Exception("No LME " + market.commodity + " market found"))
               val (closeDay, closePrices) = pricesForLastClose(market)
 
-              val lastCloseEnv = previousEnv(closeDay, market.closeTime)
-              val currentEnv = previousEnv(observationDay, observationTimeOfDay)
+              val lastCloseEnv = previousEnv(closeDay, market.closeTime, Map())
+              val currentEnv = previousEnv(observationDay, observationTimeOfDay, Map(SpotFXDataType->LondonClose))
               val priceUOM = shiftMarket.currency / market.uom
               val shiftInShiftingMarketCurrency = {
                 currentEnv.forwardPrice(shiftMarket, shiftMarket.frontPeriod(observationDay), priceUOM) -
@@ -66,7 +66,7 @@ object TimeShiftToLMECloseEnvironmentRule extends EnvironmentRule {
     }
 
     val marketsX = pricesForLastClose.map { case (market, (closeDay, priceData)) => {
-      MarketDeliveryPeriods(observationTimeOfDay, market, priceData.sortedKeys)
+      UnderlyingDeliveryPeriods(observationTimeOfDay, market, priceData.sortedKeys)
     } }
 
     new EnvironmentWithDomain {

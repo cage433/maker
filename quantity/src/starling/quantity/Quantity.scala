@@ -8,6 +8,7 @@ import starling.utils.ImplicitConversions._
 import starling.pivot.{StackTrace, PivotQuantity}
 import java.lang.String
 import starling.utils.ImplicitConversions._
+import starling.utils.Pattern._
 import java.text.DecimalFormat
 
 class QuantityDouble(d : Double){
@@ -39,6 +40,7 @@ trait QuantityIsNumeric extends Numeric[Quantity] {
 }
 
 object Quantity {
+  val Regex = """([0-9.,]*) (.*)""".r
   val mc = java.math.MathContext.DECIMAL128
 
   val NULL = Quantity(0, UOM.NULL)
@@ -47,6 +49,8 @@ object Quantity {
   implicit object NumericOptionQuantity extends OptionNumeric[Quantity]
   val FormatString = "#,##0.00"
   def fromString(text : String, uom : UOM) = Quantity(new java.lang.Double(text).asInstanceOf[Double], uom)
+  val Parse: Extractor[String, Quantity] =
+    Extractor.from[String](_.partialMatch { case Regex(value, UOM.Parse(uom)) => fromString(value, uom) })
 
   private def sumAsBigDecimal(quantities: Iterable[Quantity]) = {
     if(quantities.nonEmpty) {
@@ -204,6 +208,7 @@ class Quantity(val value : Double, val uom : UOM) extends Ordered[Quantity] with
   def isPositve : Boolean = value >= 0.0
   def isNegative : Boolean = !isPositve
   def isNegativeOrZero: Boolean = value <= 0
+  def isNonNegative: Boolean = isPositve || isZero
   def percentageDifference(other:Quantity) = {
     (this.value, other.value) match {
       case (0, 0) => Percentage(0)
@@ -283,8 +288,8 @@ case class NamedQuantity(expr: String, quantity: Quantity) extends Quantity(quan
     "(%s %c %s)" % (expr, op, rhsVal)
   }
 
-  private val superscripts = Map('-' -> '⁻',
-    '0' -> '⁰', '1' -> '¹', '2' -> '²', '3' -> '³', '4' -> '⁴', '5' -> '⁵', '6' -> '⁶', '7' -> '⁷', '8' -> '⁸', '9' -> '⁹')
+  private val superscripts = Map('-' → '⁻',
+    '0' → '⁰', '1' → '¹', '2' → '²', '3' → '³', '4' → '⁴', '5' → '⁵', '6' → '⁶', '7' → '⁷', '8' → '⁸', '9' → '⁹')
 
   private def isAlmostOne(value: Double): Boolean          = (value - 1).abs < MathUtil.EPSILON
   private def isAlmostOne(percentage: Percentage): Boolean = isAlmostOne(percentage.value)

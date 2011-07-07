@@ -11,21 +11,7 @@ import starling.quantity.Quantity
 import starling.quantity.UOM._
 import starling.utils.QuantityTestUtils._
 
-class MarketTests extends TestExpiryRules {
-  @Test
-  def testTrinityCodes {
-    // Trinity codes taken from before refactor. Test is to make sure nothing changed.
-    val eaiToCode = Map(546 → "GC", 1037 → "XZS", 511 → "BPM", 1306 → "BSM",
-                        512 → "BCM", 973 → "XCS", 974 → "XAS", 683 → "XPD", 684 → "XPT", 545 → "XHG",
-                        1148 → "SAU", 2 → "NCL", 1 → "ICO", 14 → "IGO", 15 → "NHO", 1310 → "NFO", 890 → "ICL")
-    for ((eai, code) <- eaiToCode) {
-      assertEquals(Market.fromTrinityCode(code) match {
-              case f: ForwardMarket => f.eaiQuoteID
-              case m: FuturesMarket => m.eaiQuoteID
-      }, Some(eai))
-    }
-  }
-
+class MarketTests extends TestMarketSpec {
   @Test
   def testExpiry {
     val march = Month(2010, 3)
@@ -50,11 +36,6 @@ class MarketTests extends TestExpiryRules {
     assertFalse(hgc.validLastTradingDay(lastTradingDay))
     // should still give a front month
     assertEquals(hgc.frontPeriod(lastTradingDay), Month(2010, 6))
-  }
-
-  @Test
-  def testSteelAndIronOreDiffer{
-    assertFalse(Market.STEEL_REBAR_SHANGHAI == Market.IRON_ORE)
   }
 
   @Test

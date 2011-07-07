@@ -90,8 +90,15 @@ case class SpreadStdDevSurfaceDataKey(market : FuturesMarket)
       case (period, index) => {
         Map("ATM" -> data.atm(index), "Call" -> data.call(index), "Put" -> data.put(index)).map {
           case (label, sd) => {
+            val gap = (period.last - period.first) match {
+              case 1 => "Month"
+              case 6 => "Half-Year"
+              case 12 => "Year"
+              case n => n + " Month"
+            }
             Map(
               SpreadStdDevSurfaceDataType.marketField.field -> market.name,
+              SpreadStdDevSurfaceDataType.spreadTypeField.field -> gap,
               SpreadStdDevSurfaceDataType.firstPeriodField.field -> period.first,
               SpreadStdDevSurfaceDataType.lastPeriodField.field -> period.last,
               SpreadStdDevSurfaceDataType.deltaField.field -> label,
@@ -110,6 +117,7 @@ object SpreadStdDevSurfaceDataType extends MarketDataType {
   val marketField: FieldDetails = FieldDetails("Market")
   val firstPeriodField: FieldDetails = FieldDetails("First Period")
   val lastPeriodField: FieldDetails = FieldDetails("Last Period")
+  val spreadTypeField: FieldDetails = FieldDetails("Spread Type")
   val deltaField: FieldDetails = new FieldDetails("Delta") {
     override def comparator = new Ordering[Any]() {
       def compare(x: Any, y: Any) = {
@@ -120,9 +128,9 @@ object SpreadStdDevSurfaceDataType extends MarketDataType {
   }
   val stdDevField: FieldDetails = new QuantityLabelFieldDetails("Standard Deviation")
 
-  override def keyFields = Set(marketField.field, firstPeriodField.field, lastPeriodField.field, deltaField.field)
+  override def keyFields = Set(marketField.field, firstPeriodField.field, lastPeriodField.field, deltaField.field, spreadTypeField.field)
   override def valueFields = Set(stdDevField.field)
-  override def createKey(values: Map[Field, Any]) = SpreadStdDevSurfaceDataKey(FuturesMarket.fromName(values(marketField.field).asInstanceOf[String]))
+  override def createKey(values: Map[Field, Any]) = SpreadStdDevSurfaceDataKey(Market.futuresMarketFromName(values(marketField.field).asInstanceOf[String]))
   def createValue(values: List[Map[Field, Any]]) = {
     val builder = new SpreadStdDevSurfaceDataBuilder()
     values.foreach { row => {
@@ -138,12 +146,12 @@ object SpreadStdDevSurfaceDataType extends MarketDataType {
     builder.build
   }
 
-  val fields = List(marketField, firstPeriodField, lastPeriodField, deltaField, stdDevField)
+  val fields = List(marketField, firstPeriodField, lastPeriodField, deltaField, stdDevField, spreadTypeField)
 
   val initialPivotState = PivotFieldsState(
     filters=List((marketField.field,SomeSelection(Set()))),
     dataFields=List(stdDevField.field),
-    rowFields=List(firstPeriodField.field, lastPeriodField.field),
+    rowFields=List(spreadTypeField.field, firstPeriodField.field, lastPeriodField.field),
     columnFields=List(deltaField.field)
   )
 
@@ -160,8 +168,6 @@ case class SpreadAtmStdDevAtomicDatumKey (
     period
    ) with VolKey with EnvironmentDifferentiable
 {
-  def volMarket = market
-
   def forwardStateValue(originalAtomicEnv: AtomicEnvironment, forwardDayAndTime: DayAndTime) = {
     originalAtomicEnv(this)
   }
@@ -193,8 +199,6 @@ case class SpreadSkewStdDevAtomicDatumKey(market : FuturesMarket, spread : Sprea
   }
 
   def nullValue = Map(0.5 -> Percentage(0))
-
-  def periodKey = Some(spread)
 }
 
 case class SpreadAtmStdDevCurveKey(market : FuturesMarket)

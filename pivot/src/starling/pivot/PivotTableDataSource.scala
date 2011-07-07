@@ -5,6 +5,8 @@ import controller.PivotTableConverter._
 import controller.{PivotTableConverter, PivotGrid, TreePivotFilterNode}
 import model.PivotTableModel
 import starling.utils.ImplicitConversions._
+import starling.pivot.FilterWithOtherTransform.OtherValue
+
 case class FieldDetailsGroup(name:String, fields:List[FieldDetails]) {
   def toFieldGroup = {
     FieldGroup(name, fields.map(_.field))
@@ -75,7 +77,7 @@ case class DeletePivotEdit(values:Map[Field,Any]) extends PivotEdit {//Just key 
 }
 
 //Measure is editable if all key fields are in row or column or have single filter area selection
-//Row is deletable when // TODO we'll decide later
+//Row is deletable when // TODO [21 Jan 2011] we'll decide later
 trait EditPivot {
   def editableToKeyFields:Map[Field,Set[Field]]
   def save(edits:Set[PivotEdit]):Boolean
@@ -91,10 +93,16 @@ abstract class PivotTableDataSource extends PivotGridSource {
   def data(pfs : PivotFieldsState): PivotResult
   def drillDownGroups:List[DrillDownInfo] = List()
   def initialState: PivotFieldsState = PivotFieldsState()
+  def lookup(field: Field) = fieldDetails.find(_.field == field).get
+  def lookup(fieldName: String): FieldDetails = lookup(Field(fieldName))
+
+  def parseFilter(field: Field, values: List[String]) =
+    (field, SomeSelection(values.map(value => lookup(field).parser.parse(value)._1).toSet))
 
   def editable:Option[EditPivot] = None
   def availablePages:List[String] = List()
   def reportSpecificOptions : List[(String, List[Any])] = Nil
+  def zeroFields:Set[Field] = Set()
 
   def gridFor(pivotState: Option[PivotFieldsState]) = {
     PivotTableConverter(table = PivotTableModel.createPivotTableData(this, pivotState)).createGrid()
@@ -107,6 +115,7 @@ abstract class PivotTableDataSource extends PivotGridSource {
 }
 
 case class PivotTreePath(path:List[String]) {
+  def isOther = path.forall(_==FilterWithOtherTransform.Other.toString)
   def between(start:Int,end:Int) : List[PivotTreePath] = {
     (for (i <- start to end) yield { if (path.size <= i) {
       PivotTreePath(path)

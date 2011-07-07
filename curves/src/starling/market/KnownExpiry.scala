@@ -2,13 +2,13 @@ package starling.market
 
 import starling.utils.cache.CacheFactory
 import starling.daterange._
-import starling.calendar.BusinessCalendarSet
+import starling.calendar.BusinessCalendar
 
 trait KnownExpiry {
   @transient val expiryRule: FuturesExpiryRule
   @transient val tenor: TenorType
   @transient val hasOptions: Boolean
-  @transient val businessCalendar: BusinessCalendarSet
+  @transient val businessCalendar: BusinessCalendar
 
   def lastTradingDay(d: DateRange) = expiryRule.lastTradingDay(d)
 
@@ -82,9 +82,6 @@ trait KnownExpiry {
     (tuple: (Day)) => {
       tenor match {
         case Month => frontMonth(day.startOfDay)
-        // daily markets like LME have a front period of next business day
-        // TODO - Jerome check this is right. I wrote the code some time ago but I would have
-        // expected it to be the same day
         case Day => day.nextBusinessDay(businessCalendar)
       }
     })

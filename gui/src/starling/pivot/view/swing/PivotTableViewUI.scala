@@ -20,6 +20,11 @@ class PivotTableViewUI extends AbstractLayerUI[JComponent] {
   private var alpha = 1.0f
 
   def setImageProperties(image0:BufferedImage, imagePosition0:Point, alpha0:Float) {
+    if (image != null) {
+      if (image.getWidth != image0.getWidth || image.getHeight != image0.getHeight) {
+        firePropertyChange("clear", null, (imagePosition, image.getWidth, image.getHeight))
+      }
+    }
     image = image0
     alpha = alpha0
     if (imagePosition0 != imagePosition) {

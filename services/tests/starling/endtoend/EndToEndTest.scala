@@ -124,8 +124,8 @@ object EndToEndTest {
     }
   }
 
-  val clientAuth = new Client(null, null) {
-    override def ticket = None
+  val clientAuth = new starling.bouncyrmi.Client {
+    def ticket = null
   }
   val props = PropsHelper.defaultProps
   lazy val client = new BouncyRMIClient(props.ExternalHostname.value, props.RmiPort.value.toInt, classOf[StarlingServer], clientAuth, overriddenUser = None)
@@ -148,7 +148,7 @@ object EndToEndTest {
 
   val DayToUse = Day.today.previousWeekday
 
-  // TODO - put this back once it is working properly.
+  // TODO [07 May 2010] put this back once it is working properly.
 //  val GalenaMetalsPricingGroupToUse = "Galena/Live"
 //  val GalenaMetalsPricingGroupToUse = "Galena/GMA (Full Curve)"
 //  lazy val GalenaMetalsPricingGroup = GalenaPricingGroupInfo.keySet.filter(_.label == GalenaMetalsPricingGroupToUse).iterator.next
@@ -175,7 +175,7 @@ object EndToEndTest {
   }
 
   lazy val GalenaMetalsPivotData = {
-    // TODO - this isn't using all the metals
+    // TODO [07 May 2010] this isn't using all the metals
     val tradePredicate = TradePredicate(List((Field("In VAR"), new SomeSelection(Set("Included"))), (Field("Reporting Entity"), new SomeSelection(Set("Azurite")))))
     val trades = TradeSetList(List(TradeStoreTradeSet(GalenaTradeSystem, tradePredicate)))
     val curveIdentifier = CurveIdentifier(GalenaMetalsPricingGroup, GalenaMetalsSnapshot)

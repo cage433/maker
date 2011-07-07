@@ -8,6 +8,8 @@ import starling.utils.Pattern._
 
 case class CombinedCell(value: Either[AxisCell, TableCell]) {
   val (axisCell, tableCell) = (value.left.toOption, value.right.toOption)
+
+  override def toString = value.fold(_.toString, _.toString)
 }
 
 object CombinedCell {

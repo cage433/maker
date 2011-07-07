@@ -19,10 +19,12 @@ object PeriodPivotParser extends PivotParser {
 
 class ValidMarketParser(allMarkets:Set[String]) extends PivotParser {
   def parse(text:String) = {
-    if (allMarkets(text.trim.toLowerCase)) {
+    val lowerCaseMarkets = allMarkets.map(_.trim.toLowerCase)
+    if (lowerCaseMarkets(text.trim.toLowerCase)) {
       (text, text)
     } else {
       throw new Exception("Unknown market")
     }
   }
+  override def acceptableValues = allMarkets
 }

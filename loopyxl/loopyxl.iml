@@ -37,6 +37,7 @@
         </SOURCES>
       </library>
     </orderEntry>
+    <orderEntry type="module" module-name="auth" />
     <orderEntry type="module" module-name="utils" exported="" />
     <orderEntry type="module" module-name="bouncyrmi" />
   </component>

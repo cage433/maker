@@ -8,6 +8,8 @@ object Pattern {
     def unapply(a: A) = f(a)
     def unapply[C](ta: Traversable[A])(implicit g: Flattener[B, C]): Option[C] = g(ta.view.map(f))
 
+    def compose[C](g: C => A) = new Extractor[C, B](f compose g)
+
     object Pick {
       def unapply(ta: Traversable[A]) = pick(ta)(f)
     }
@@ -17,13 +19,22 @@ object Pattern {
     def from[A] = new From[A]
     def when[A] = new {
       def apply(f: A => Boolean) = from[A]((a:A) => f(a).toOption(a))
+      def apply[B](f: A => Boolean, g: A => B) = from[A]((a:A) => f(a).toOption(g(a)))
+    }
+
+    def map[A] = new {
+      def apply[B](f: A => B) = new Extractor((a:A) => Some(f(a)))
+    }
+
+    def regex(regex: String) = new {
+      def apply[A](pf: PartialFunction[List[String], A]) = from[String](s => regex.r.unapplySeq(s).flatMap(pf.lift(_)))
     }
 
     class From[A] {
-      def apply[B](f: A => Option[B]) = new Extractor[A, B](f)
+      def apply[B](f: A => Option[B]) = new Extractor(f)
 
       def partial = new {
-        def apply[B](pf: PartialFunction[A, B]) = new Extractor[A, B](pf.lift)
+        def apply[B](pf: PartialFunction[A, B]) = new Extractor(pf.lift)
       }
     }
   }
@@ -75,4 +86,6 @@ object Pattern {
 
     None
   }
+
+  val NestedException = Extractor.from[Throwable](t => t.optPair(t.getCause.safeCast[Throwable]))
 }

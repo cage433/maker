@@ -8,9 +8,9 @@ import starling.quantity.UOM._
 import starling.quantity.Percentage
 import starling.daterange.Month
 import starling.quantity.Quantity
-import starling.market.{FuturesFrontPeriodIndex, Market}
+import starling.market.{TestMarketSpec, Index, FuturesFrontPeriodIndex, Market}
 
-class MarketDayChangeEnvironmentTests extends StarlingTest{
+class MarketDayChangeEnvironmentTests extends TestMarketSpec {
   @Test
   def testMarketDayChanges{
     val marketDay = Day(2010, 1, 1).endOfDay
@@ -37,8 +37,8 @@ class MarketDayChangeEnvironmentTests extends StarlingTest{
     val shiftedVol = shiftedEnv.impliedVol(Market.NYMEX_WTI, Month(2010, 8), Day(2010, 7, 7), Quantity(50.0, mkt.priceUOM))
     assertEquals(vol, shiftedVol)
 
-    val fixing = shiftedEnv.indexFixing(FuturesFrontPeriodIndex.WTI10, newMarketDay.day)
+    val fixing = shiftedEnv.indexFixing(Index.WTI10, newMarketDay.day)
     val forwardEnv = env.forwardState(newMarketDay)
-    assertEquals(fixing, forwardEnv.indexFixing(FuturesFrontPeriodIndex.WTI10, newMarketDay.day))
+    assertEquals(fixing, forwardEnv.indexFixing(Index.WTI10, newMarketDay.day))
   }
 }

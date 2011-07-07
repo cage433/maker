@@ -162,6 +162,8 @@ case class ColumnAndMeasureComponent(model:PivotTableModel, otherLayoutInfo:Othe
   private val dropPanels = new ListBuffer[ColumnDropPanel]()
 
   private val bottomNonMeasureFields = cs.bottomNonMeasureFields
+  private val measureFieldsOnBottomRow = cs.measureFieldsOnBottomRow
+
   private val fields = cs.allFields
   private val guiFieldsMap = Map() ++ fields.map(field => {
     val shouldShowDepthPanel = model.treeDetails.maxTreeDepths.getOrElse(field, 0) > 1
@@ -171,7 +173,19 @@ case class ColumnAndMeasureComponent(model:PivotTableModel, otherLayoutInfo:Othe
     val currentlyActingAsMeasure = cs.measureFields.contains(field)
     val realMeasureField = model.isMeasureField(field)
     val subTotalToggleVisible = {
-      otherLayoutInfo.totals.columnSubTotals && !currentlyActingAsMeasure && !realMeasureField && !bottomNonMeasureFields.contains(field)
+      val subTotalsOn = otherLayoutInfo.totals.columnSubTotals
+      val isNormalFieldWithNoMeasureFieldBelow = bottomNonMeasureFields.contains(field)
+      val isMeasureFieldWithNothingBelow = measureFieldsOnBottomRow.contains(field)
+      val measure = (realMeasureField || currentlyActingAsMeasure)
+      val isNormalFieldWithOnlyMeasureChild = {
+        if (!measure) {
+          cs.hasSingleMeasureChild(field)
+        } else {
+          false
+        }
+      }
+
+      subTotalsOn && !isNormalFieldWithNoMeasureFieldBelow && !isMeasureFieldWithNothingBelow && !isNormalFieldWithOnlyMeasureChild
     }
     val props = GuiFieldComponentProps(field, fieldChooserType, shouldShowDepthPanel,
       currentlyActingAsMeasure, realMeasureField,
@@ -191,7 +205,14 @@ case class ColumnAndMeasureComponent(model:PivotTableModel, otherLayoutInfo:Othe
     case _ => add(new ColumnStructureComponent(cs, guiFieldsMap, dropPanels, true), "pushy,growy")
   }
 
-  def scrolling() {}
+  def scrolling() {
+    // If the mouse is currently over the column area, reset the display state.
+    val mousePos = peer.getMousePosition(true)
+    if (mousePos != null) {
+      guiFieldsMap.map(_._2.namePanel.showComponent())
+      viewUI.resetImageProperties()
+    }
+  }
 
   def fieldChooserType = FieldChooserType.Columns
   def dropBounds(draggedField:Field) = {
@@ -204,9 +225,9 @@ case class ColumnAndMeasureComponent(model:PivotTableModel, otherLayoutInfo:Othe
   }
 
   def show(draggedField:Field) {
-
+    val draggedFieldIsMeasure = model.isMeasureField(draggedField) || cs.measureFields.contains(draggedField)
     val dropPanelToResultMap = Map() ++ dropPanels.map(dp => {
-      (dp,cs.add(draggedField, false, dp.fieldOrColumnStructure, dp.position))
+      (dp,cs.add(draggedField, draggedFieldIsMeasure, dp.fieldOrColumnStructure, dp.position))
     })
 
     val grouped:Map[ColumnTrees, Map[ColumnDropPanel, ColumnTrees]] = dropPanelToResultMap.groupBy{case (p,t) => t}
@@ -216,14 +237,23 @@ case class ColumnAndMeasureComponent(model:PivotTableModel, otherLayoutInfo:Othe
       if (panels.exists(p => p.position == Position.Left || p.position == Position.Right)) {
         panels.foreach(_.visible = true)
       } else {
-        panels.head.visible = true
-      }
-      panels.filter(p => {
-        p.fieldOrColumnStructure.value match {
-          case Left(f) if f.field == draggedField => true
-          case _ => false
+        val closeByPanels = panels.filter(p => {
+          p.fieldOrColumnStructure.value match {
+            case Left(f) if f.field == draggedField && (p.position == Position.Top || p.position == Position.Bottom) => true
+            case _ => false
+          }
+        })
+        val special = closeByPanels.nonEmpty
+        if (special) {
+          // Ensure the panels to the top and to the bottom of the dragged field are shown, but nothing else.
+          closeByPanels.foreach(_.visible = true)
+        } else {
+          panels.find(_.position == Position.Top) match {
+            case Some(p) => p.visible = true
+            case _ => panels.head.visible = true
+          }
         }
-      }).foreach(_.visible = true)
+      }
     }}
 
     tableView.updateColumnAndMeasureScrollPane(true)
@@ -231,7 +261,7 @@ case class ColumnAndMeasureComponent(model:PivotTableModel, otherLayoutInfo:Othe
   def hide() {
     dropPanels.foreach(_.visible = false)
     tableView.updateColumnAndMeasureScrollPane(true)
-    reset()
+//    reset()
   }
   def reset() {
     blankDropLabel.foreach(_.reset())

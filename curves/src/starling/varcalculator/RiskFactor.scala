@@ -143,8 +143,7 @@ case class ForwardPriceRiskFactor(market: CommodityMarket, nPeriodsToStart: Int,
 
   def riskInstrumentType = market match {
     case _ : FuturesMarket => "Future"
-    case _ : ProxyForwardMarket => "Future"
-    case _ : ForwardMarket => "Swap"
+    case _ : SwapMarket => "Swap"
     case _ => "Unkonwn instrument for " + market
   }
 }

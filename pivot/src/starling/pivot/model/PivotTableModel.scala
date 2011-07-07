@@ -6,12 +6,12 @@ import controller._
 import starling.pivot.FieldChooserType._
 import starling.rmi.PivotData
 import java.io.Serializable
-import collection.mutable.HashMap
 import collection.immutable.{List, TreeMap}
 import java.lang.String
 import starling.utils.ImplicitConversions._
 import starling.utils.Log
 import starling.quantity.{SpreadOrQuantity, Quantity}
+import collection.mutable.{ListBuffer, HashMap}
 
 
 class FieldList(pivotTableModel:PivotTableModel, _fields:Seq[Field], fieldChooserType:FieldChooserType) {
@@ -54,7 +54,10 @@ case class AxisValue(field:Field, value:AxisValueType, position:Int) {
   def valueText = value.value.toString
   def toTotal = copy(value = TotalAxisValueType)
   def isTotal = value == TotalAxisValueType
-  def isOtherValue = value.value == FilterWithOtherTransform.OtherValue
+  def isOtherValue = (value.value == FilterWithOtherTransform.OtherValue) || (value.value match {
+    case p:PivotTreePath if p.isOther => true
+    case _ => false
+  })
   def isMeasure = value.isInstanceOf[MeasureAxisValueType]
 
   def <(other:AxisValue, comparator:Ordering[Any]):Boolean = {
@@ -64,6 +67,7 @@ case class AxisValue(field:Field, value:AxisValueType, position:Int) {
           case TotalAxisValueType => 0
           case ValueAxisValueType(UndefinedValue) => 1
           case ValueAxisValueType(FilterWithOtherTransform.OtherValue) => 3
+          case ValueAxisValueType(ptp:PivotTreePath) if ptp.isOther => 3
           case _ => 2
         }
       }
@@ -227,6 +231,26 @@ class DataFieldTotal(var foo:Option[(FieldDetails, Any)]) {
 
   var mixed = false
 
+  def isAlmostZero:Boolean = {
+    foo match {
+      case None => true
+      case Some((_,v)) => {
+        v match {
+          case q:Quantity => q.isAlmostZero
+          case pq:PivotQuantity => pq.isAlmostZero
+          case _ => false
+        }
+      }
+    }
+  }
+
+  def isOneOfTheseFields(fields:Set[Field]):Boolean = {
+    foo match {
+      case Some((fd,v)) if fields.contains(fd.field) => true
+      case _ => false
+    }
+  }
+
   def addValue(value:Any) {
     if (!mixed) {
       foo match {
@@ -355,11 +379,15 @@ object PivotTableModel {
               val (start, end) = treeDepths(field)
               pivotState.transforms.get(field) match {
                 case Some(FilterWithOtherTransform(selection)) => {
-                  if (selection.contains(path)) {
+                  val selectedPaths = selection.asInstanceOf[Set[PivotTreePath]]
+                  if (selectedPaths.exists(_.equalOrParentOf(path))) {
                     maxDepths.getOrElseUpdate(field, {scala.math.max(maxDepths.getOrElse(field, 0), path.size)})
                     path.between(start, end).reverse
                   } else {
-                    FilterWithOtherTransform.treeNode :: (for (i <- start until end) yield "").toList
+                    (start to end).map(c => {
+                      val paths = List.fill(c)(FilterWithOtherTransform.Other.toString)
+                      PivotTreePath(paths)
+                    }).toList.reverse
                   }
                 }
                 case None => {
@@ -651,7 +679,7 @@ object PivotTableModel {
       Log.debug("Pivot Table Model generated in " + (now - then) + "ms")
       PivotTable(pivotState.rowFields, fieldIndexes(pivotState.rowFields), rowAxis, columnAxis, possibleValuesConvertedToTree,
         TreeDetails(treeDepths, maxDepths.toMap), editableInfo, formatInfo,
-        Map() ++ aggregatedMainBucket.map { case ((r,c),v) => (r.list, c.list) -> v })
+        Map() ++ aggregatedMainBucket.map { case ((r,c),v) => (r.list, c.list) -> v }, dataSource.zeroFields)
     }
   }
 

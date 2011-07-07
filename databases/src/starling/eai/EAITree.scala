@@ -73,7 +73,7 @@ class Tree(entries: List[TreeNode]) {
     }
 
     lazy val paths: Map[List[String], List[TreeNode]] =
-      allPaths(Nil)(this).map(_.reverse.map(nodeMap(_))).asMap(_.map(_.name))
+      allPaths(Nil)(this).map(_.reverse.map(nodeMap(_))).toMapWithKeys(_.map(_.name))
 
     import AssertionUtil._
     def getPath(names : List[String]) = names match {

@@ -46,7 +46,11 @@ class PatchRunner(starling: RichDB, readOnlyMode: Boolean, startlingInit: Starli
 
     //Apply the patches
     sortedPatchesToApply.foreach {
-      patch => applyPatch(startlingInit, starling, patch)
+      patch => {
+        Log.infoWithTime("Applying any patches (" + sortedPatchesToApply.size + ")") {
+          applyPatch(startlingInit, starling, patch)
+        }
+      }
     }
 
     //Check that all the patches are applied now
@@ -79,7 +83,7 @@ class PatchRunner(starling: RichDB, readOnlyMode: Boolean, startlingInit: Starli
     val packageDirectoryClassesWithNoInnerClasses = packageDirectoryClasses.filter(className => !className.contains("$"))
 
     //Remove the .class part of the file name
-    val classes = packageDirectoryClassesWithNoInnerClasses.map(className => className.substring(0, className.length - ".class".length))
+    val classes = packageDirectoryClassesWithNoInnerClasses.map(_.stripSuffix(".class"))
 
     //Remove any classes we are explicitly not interested in
     val explicitlyRemoveClasses = List("Patch0_ExamplePatch")
@@ -110,19 +114,17 @@ class PatchRunner(starling: RichDB, readOnlyMode: Boolean, startlingInit: Starli
   private def applyPatch(startlingInit: StarlingInit, starling: RichDB, patch: Patch) {
 
     //Put a message out on the screen
-    Log.info("SCHEMAEVOLUTION: About to apply patch [" + patch.patchNumber + "] with name [" + patch.patchName + "]")
+    Log.infoWithTime("SCHEMAEVOLUTION: About to apply patch [" + patch.patchNumber + "] with name [" + patch.patchName + "]") {
 
-    starling.inTransaction {
-      writer => {
-        //Apply the patch
-        patch.applyPatch(startlingInit, starling, writer)
+      starling.inTransaction {
+        writer => {
+          //Apply the patch
+          patch.applyPatch(startlingInit, starling, writer)
 
-        //Update the patch table to say this one is done
-        markPatchAsApplied(writer, patch)
+          //Update the patch table to say this one is done
+          markPatchAsApplied(writer, patch)
+        }
       }
     }
-
-    //Put a message out on the screen
-    Log.info("SCHEMAEVOLUTION:   Successfull")
   }
 }

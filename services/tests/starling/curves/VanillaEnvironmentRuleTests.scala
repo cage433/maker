@@ -9,7 +9,7 @@ import starling.marketdata._
 import ObservationTimeOfDay._
 import org.testng.annotations.{BeforeMethod, Test}
 import starling.db.MarketDataReader
-import starling.gui.api.{EnvironmentRuleLabel, SpecificMarketDataVersion, MarketDataSelection, MarketDataIdentifier}
+import starling.gui.api.{EnvironmentRuleLabel, MarketDataSelection, MarketDataIdentifier}
 
 
 class VanillaEnvironmentRuleTests extends StarlingTest with ShouldMatchers {
@@ -17,7 +17,7 @@ class VanillaEnvironmentRuleTests extends StarlingTest with ShouldMatchers {
 
   var reader: MarketDataReader = _
 
-  val marketDataIdentifier = MarketDataIdentifier(MarketDataSelection(), SpecificMarketDataVersion(0))
+  val marketDataIdentifier = MarketDataIdentifier(MarketDataSelection(), 0)
   val observationPoint = ObservationPoint(Day.today, LMEClose)
 
   @BeforeMethod
@@ -40,7 +40,7 @@ class VanillaEnvironmentRuleTests extends StarlingTest with ShouldMatchers {
     when(reader.readAllPrices(observationPoint)).thenReturn(priceData :: Nil)
     when(reader.readAllVols(observationPoint)) thenReturn Nil
 
-    val expectedMarkets = MarketDeliveryPeriods(observationPoint.timeOfDay, Market.LME_LEAD, priceData._2.sortedKeys) :: Nil
+    val expectedMarkets = UnderlyingDeliveryPeriods(observationPoint.timeOfDay, Market.LME_LEAD, priceData._2.sortedKeys) :: Nil
     rule.createEnv(observationPoint.day.get, reader).markets should be === expectedMarkets
   }
 }

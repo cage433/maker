@@ -64,5 +64,6 @@ object StandardUserSettingKeys {
   val DefaultReportFields = new Key[(PivotFieldsState,OtherLayoutInfo)]("DefaultReportFields")
   val ExtraFormattingInfo = new Key[ExtraFormatInfo]("ExtraFormattingInfo")
   val UserMarketDataTypeLayout = new Key[Map[MarketDataTypeLabel,PivotFieldsState]]("UserMarketDataTypeLayout")
+  val LiveDefault = new Key[Boolean]("LiveDefault")
 
 }

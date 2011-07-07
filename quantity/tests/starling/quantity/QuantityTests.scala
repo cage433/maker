@@ -8,6 +8,7 @@ import starling.utils.ScalaTestUtils._
 import starling.quantity.{Quantity => Qty}
 import starling.utils.QuantityTestUtils._
 import org.scalatest.matchers.ShouldMatchers
+import java.lang.String
 
 class QuantityTests extends TestNGSuite with ShouldMatchers {
 
@@ -172,5 +173,15 @@ import starling.quantity.RichQuantity._
     q1.percentageDifference(q1 * 2) should be === Percentage(1)
     q1.percentageDifference(zero) should be === Percentage(1)
     zero.percentageDifference(zero) should be === Percentage(0)
+  }
+
+  @Test
+  def testRegex {
+    val original = "1,2.3 GBP/EUR"
+    val parsed = original match {
+      case Quantity.Regex(value, unit) => value + " " + unit
+    }
+
+    parsed should be === original
   }
 }

@@ -14,7 +14,7 @@ case class RefinedAssignment(
 )
   extends UTP with Tradeable
 {
-  // TODO - Confirm with Chris G that this is correct
+  // TODO [11 Aug 2010] Confirm with Chris G that this is correct
   private val valuationPeriod = market.tenor match {
     case Month => market.frontPeriod(estimatedDeliveryDate)
     case Day => estimatedDeliveryDate
