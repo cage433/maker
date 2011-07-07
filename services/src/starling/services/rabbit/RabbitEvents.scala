@@ -19,13 +19,13 @@ import org.codehaus.jettison.json.JSONArray
 /**
  * RabbitMQ event module
  */
-trait RabbitEvents {
+trait RabbitEventServices {
   val eventDemux : IDemultiplexEvents
   val rabbitEventPublisher : Publisher
   def shutdown : Unit
 }
 
-case class DefaultRabbitEvents(props : Props) extends RabbitEvents {
+case class DefaultRabbitEventServices(props : Props) extends RabbitEventServices {
   
   val rabbitmq_host = "louis-dev-ubuntu"
   val rabbitmq_port = 5672
@@ -101,7 +101,7 @@ case class DefaultRabbitEvents(props : Props) extends RabbitEvents {
 }
 
 
-case class MockRabbitEvents() extends RabbitEvents {
+case class MockRabbitEventServices() extends RabbitEventServices {
   private val mockDemux = new MockEventDemux()
   val eventDemux : IDemultiplexEvents = mockDemux
   val rabbitEventPublisher = new MockRabbitPublisher(mockDemux)
@@ -165,3 +165,4 @@ class MockRabbitEventPublisher() extends EventPublisher {
   def getPublisher : String = "Mock"
 }
 */
+

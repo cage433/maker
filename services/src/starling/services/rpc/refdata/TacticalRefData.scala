@@ -23,7 +23,7 @@ import com.trafigura.edm.tradeservice.TradeResult
  */
 trait TitanTacticalRefData {
    
-  val titanGetEdmTradesService : EdmGetTrades
+//  val titanGetEdmTradesService : EdmGetTrades
 
   val futuresMarketByGUID: Map[GUID, Metal]
   val futuresExchangeByGUID: Map[GUID, Market]
@@ -32,7 +32,13 @@ trait TitanTacticalRefData {
   //def allTacticalRefDataExchanges() : List[Market]
 }
 
-case class DefaultTitanTacticalRefData(props: Props) extends TitanTacticalRefData {
+trait TitanEdmTradeService {
+  val titanGetEdmTradesService : EdmGetTrades
+}
+
+trait TitanServices extends TitanTacticalRefData with TitanEdmTradeService
+
+case class DefaultTitanServices(props: Props) extends TitanServices {
   val rmetadminuser = props.ServiceInternalAdminUser()
   val tradeServiceURL = props.EdmTradeServiceUrl()
   val refdataServiceURL = props.TacticalRefDataServiceUrl()
@@ -53,7 +59,7 @@ case class DefaultTitanTacticalRefData(props: Props) extends TitanTacticalRefDat
 /**
  * Looks like real ref-data, but really it comes from static data for testing purposes
  */
-case class FileMockedTitanTacticalRefData() extends TitanTacticalRefData {
+case class FileMockedTitanServices() extends TitanServices {
    
   import com.trafigura.edm.trades.{PhysicalTrade => EDMPhysicalTrade}
 
@@ -85,10 +91,10 @@ case class FileMockedTitanTacticalRefData() extends TitanTacticalRefData {
   val loadedMarkets = loadJsonValuesFromFile(marketsFile).map(s => Metal.fromJson(new JSONObject(s)).asInstanceOf[Metal])
   val loadedExchanges = loadJsonValuesFromFile(exchangesFile).map(s => Market.fromJson(new JSONObject(s)).asInstanceOf[Market])
   val loadedTrades = loadJsonValuesFromFile(tradesFile).map(s => EDMPhysicalTrade.fromJson(new JSONObject(s)).asInstanceOf[EDMPhysicalTrade])
-  val tradeMap = loadedTrades.map(t => t.oid -> t).toMap
+  var tradeMap = loadedTrades.map(t => t.oid -> t).toMap
 
   def updateTrade(trade : EDMPhysicalTrade) {
-    tradeMap(trade.oid) = trade
+    tradeMap = tradeMap.updated(trade.oid, trade)
   }
   
   import scala.io.Source._

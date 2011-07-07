@@ -62,7 +62,7 @@ class StarlingInit( val props: Props,
                     ) {
 
   def stop = {
-    rabbitEvents.shutdown
+    rabbitEventServices.shutdown
 
     if (startXLLoop) {
       excelLoopReceiver.stop
@@ -231,9 +231,9 @@ class StarlingInit( val props: Props,
   val closedDesks = new ClosedDesks(broadcaster, starlingDB)
 
   val titanTradeCache = new DefaultTitanTradeCache(props)
-  val titanTacticalRefData = new DefaultTitanTacticalRefData(props)
-  val rabbitEvents = new DefaultRabbitEvents(props)
-  val valuationService = new ValuationService(marketDataStore, titanTradeCache, titanTacticalRefData, rabbitEvents)
+  val titanServices = new DefaultTitanServices(props)
+  val rabbitEventServices = new DefaultRabbitEventServices(props)
+  val valuationService = new ValuationService(marketDataStore, titanTradeCache, titanServices, rabbitEventServices)
   val marketDataService = new MarketDataService(marketDataStore)
   
   val userSettingsDatabase = new UserSettingsDatabase(starlingDB, broadcaster)
