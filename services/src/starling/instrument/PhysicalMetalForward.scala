@@ -234,36 +234,34 @@ case class PhysicalMetalForward(tradeID : Int, quotas : List[PhysicalMetalQuota]
       quota =>
         val pricingSpec = quota.pricingSpec
         val transferPricingSpec = quota.expectedTransferPricingSpec
-        val price = pricingSpec.price(env)
-        val transferPrice = transferPricingSpec.price(env)
-        val (purchasePrice, salePrice) =
+        val (purchaseSpec, saleSpec) =
           if (isPurchase)
-            (price, transferPrice)
+            (pricingSpec, transferPricingSpec)
           else
-            (transferPrice, price)
+            (transferPricingSpec, pricingSpec)
 
-        val value = (salePrice - purchasePrice) * quota.quantity
         CostsAndIncomeQuotaValuation(
           quota.quotaID,
           snapshotID,
           quota.quantity,
-          value,
-          price,
-          transferPrice,
+          purchaseSpec.price(env),
+          saleSpec.price(env),
+          purchaseSpec.price(env) * quota.quantity,
+          saleSpec.price(env) * quota.quantity,
           benchmark = Quantity.NULL,
           freightParity = Quantity.NULL,
-          isComplete = pricingSpec.isComplete(env.marketDay),
-          fixedQuantity = pricingSpec.fixedQuantity(env.marketDay),
-          pricingType = pricingSpec.pricingType,
-          quotationPeriodStart = pricingSpec.quotationPeriodStart.map(_.toJodaLocalDate),
-          quotationPeriodEnd = pricingSpec.quotationPeriodEnd.map(_.toJodaLocalDate),
-          index = pricingSpec.indexName,
-          transferIsComplete = transferPricingSpec.isComplete(env.marketDay),
-          transferFixedQuantity = transferPricingSpec.fixedQuantity(env.marketDay),
-          transferPricingType = transferPricingSpec.pricingType,
-          transferQuotationPeriodStart = transferPricingSpec.quotationPeriodStart.map(_.toJodaLocalDate),
-          transferQuotationPeriodEnd = transferPricingSpec.quotationPeriodEnd.map(_.toJodaLocalDate),
-          transferIndex = transferPricingSpec.indexName
+          purchaseIsComplete = purchaseSpec.isComplete(env.marketDay),
+          purchaseFixedQuantity = purchaseSpec.fixedQuantity(env.marketDay),
+          purchasePricingType = purchaseSpec.pricingType,
+          purchaseQuotationPeriodStart = purchaseSpec.quotationPeriodStart.map(_.toJodaLocalDate),
+          purchaseQuotationPeriodEnd = purchaseSpec.quotationPeriodEnd.map(_.toJodaLocalDate),
+          purchaseIndex = purchaseSpec.indexName,
+          saleIsComplete = saleSpec.isComplete(env.marketDay),
+          saleFixedQuantity = saleSpec.fixedQuantity(env.marketDay),
+          salePricingType = saleSpec.pricingType,
+          saleQuotationPeriodStart = saleSpec.quotationPeriodStart.map(_.toJodaLocalDate),
+          saleQuotationPeriodEnd = saleSpec.quotationPeriodEnd.map(_.toJodaLocalDate),
+          saleIndex = saleSpec.indexName
         )
     }
   }
