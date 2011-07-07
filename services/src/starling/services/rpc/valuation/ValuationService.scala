@@ -239,8 +239,8 @@ class ValuationService(
 
   type TradeValuationResult = Either[List[CostsAndIncomeQuotaValuation], String]
 
-  val futuresExchangeByGUID = titanServices.futuresExchangeByGUID
-  val futuresMarketByGUID = titanServices.futuresMarketByGUID
+  lazy val futuresExchangeByGUID = titanServices.futuresExchangeByGUID
+  lazy val futuresMarketByGUID = titanServices.futuresMarketByGUID
   val eventHandler = new EventHandler
 
   rabbitEvents.eventDemux.addClient(eventHandler)

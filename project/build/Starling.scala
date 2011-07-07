@@ -12,19 +12,22 @@ class Starling(info : ProjectInfo) extends ParentProject(info) {
   lazy val utils = starlingProject("utils")
   lazy val scalaModelWithPersistence = project("titan-scala-model-with-persistence", "ScalaModelWithPersistence", new ScalaModelWithPersistence(_))
 
-  lazy val auth = starlingProject("auth", utils, bouncyrmi)
-  lazy val concurrent = starlingProject("concurrent", utils)
-  lazy val daterange = starlingProject("daterange", utils)
-  lazy val quantity = starlingProject("quantity", utils)
+  // API used to interact with starling, should have minimum number of dependencies
   lazy val starlingApi = {
     // until building the EDM source is fast, or the model is replaced entirely, the following hack
     // is used to prevent non-FC2 builds from compiling the model - which takes a few minutes
     val name = "starling.api"
     if (starlingProperties.getOrElse("ServerType", "Dev") == "FC2")
-      project(name, name, {info : ProjectInfo => new StarlingProject(name, info)}, bouncyrmi, scalaModelWithPersistence, utils)
+      project(name, name, {info : ProjectInfo => new StarlingProject(name, info)}, bouncyrmi, scalaModelWithPersistence)
     else
-      project(name, name, new StarlingProject(name, _){override val unmanagedClasspath = super.unmanagedClasspath +++ ("scala-model-jars" ** "*.jar")}, bouncyrmi, utils)
+      project(name, name, new StarlingProject(name, _){override val unmanagedClasspath =
+        super.unmanagedClasspath +++ ("scala-model-jars" ** "*.jar")}, bouncyrmi)
   }
+
+  lazy val auth = starlingProject("auth", utils, bouncyrmi)
+  lazy val concurrent = starlingProject("concurrent", utils)
+  lazy val daterange = starlingProject("daterange", utils)
+  lazy val quantity = starlingProject("quantity", utils)
 
   lazy val loopyxl = starlingProject("loopyxl", bouncyrmi, auth)
 
@@ -41,9 +44,9 @@ class Starling(info : ProjectInfo) extends ParentProject(info) {
 
   lazy val VaR = starlingProject("var", trade)
 
-  lazy val databases = starlingProject("databases", VaR, pivot, guiapi, concurrent, auth)
+  lazy val databases = starlingProject("databases", VaR, pivot, guiapi, concurrent, auth, starlingApi)
 
-  lazy val services = project("services", "services", new Services(_), databases, concurrent, utils, loopyxl, starlingApi)
+  lazy val services = project("services", "services", new Services(_), databases, concurrent, utils, loopyxl)
 
   lazy val devlauncher = starlingProject("dev.launcher", services, gui)
 

@@ -16,7 +16,10 @@ import com.trafigura.services.marketdata.{MarketDataServiceApi, ReferenceInteres
 import starling.utils.Log
 import collection.immutable.List
 import starling.daterange.{DateRange, Tenor, Day}
+import starling.services.Server
 
+
+class MarketDataServiceStub extends MarketDataService(Server.server.marketDataStore)
 
 class MarketDataService(marketDataStore: MarketDataStore) extends MarketDataServiceApi  {
   type Matcher[T] = T => Boolean

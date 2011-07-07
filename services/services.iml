@@ -291,17 +291,6 @@
           <root url="jar://$MODULE_DIR$/jars/resteasy-jaxrs-1.2.GA.jar!/" />
         </CLASSES>
         <JAVADOC />
-        <SOURCES>
-          <root url="jar://$MODULE_DIR$/jars/resteasy-jaxrs-1.2.GA-sources.jar!/" />
-        </SOURCES>
-      </library>
-    </orderEntry>
-    <orderEntry type="module-library" exported="">
-      <library>
-        <CLASSES>
-          <root url="jar://$MODULE_DIR$/jars/jaxrs-api-1.2.GA.jar!/" />
-        </CLASSES>
-        <JAVADOC />
         <SOURCES />
       </library>
     </orderEntry>
@@ -328,7 +317,6 @@
       </library>
     </orderEntry>
     <orderEntry type="module" module-name="instrument" />
-    <orderEntry type="module" module-name="starling.api" />
     <orderEntry type="module-library">
       <library>
         <CLASSES>

@@ -10,8 +10,8 @@
         <param-name>resteasy.resources</param-name>
         <param-value>
             starling.services.rpc.valuation.ValuationServiceResourceStubEx,
-            starling.services.rpc.marketdata.MarketDataServiceResourceStubEx,
-            starling.services.rpc.ExampleService
+            starling.services.rpc.marketdata.MarketDataServiceStub,
+            com.trafigura.services.marketdata.ExampleService
         </param-value>
     </context-param>
 
@@ -41,7 +41,10 @@
 
     <context-param>
         <param-name>resteasy.providers</param-name>
-        <param-value>starling.services.rpc.JsonSerializerMessageBodyWriter</param-value>
+        <param-value>
+            starling.services.rpc.JsonSerializerMessageBodyWriter.
+            starling.services.rpc.JsonDeserializerMessageBodyReader.
+        </param-value>
     </context-param>
 
     <context-param>
