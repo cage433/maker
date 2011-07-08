@@ -4,20 +4,15 @@ import starling.props.Props
 import starling.instrument.PhysicalMetalForward
 import starling.daterange.Day
 import starling.db.{NormalMarketDataReader, SnapshotID, MarketDataStore}
-import starling.gui.api.MarketDataIdentifier._
 import starling.curves.{ClosesEnvironmentRule, Environment}
 import starling.gui.api.{MarketDataIdentifier, PricingGroup}
 import starling.utils.{Log, Stopwatch}
-import com.trafigura.services.rabbit.{RabbitPublisher, RabbitListener, RabbitConnector}
-import com.rabbitmq.client.AMQP.BasicProperties
-import com.trafigura.events.{EventDemultiplexer, DemultiplexerClient}
-import starling.services.{Server, StarlingInit}
+import com.trafigura.events.DemultiplexerClient
+import starling.services.StarlingInit
 import com.trafigura.services.valuation._
-import com.trafigura.edm.physicaltradespecs.EDMQuota
 import starling.services.rpc.refdata._
-import starling.edm.EDMConversions._
-import com.trafigura.tradinghub.support.{ModelObject, ServiceFilter}
-import com.trafigura.edm.trades.{CompletedTradeTstate, TradeTstateEnum, Trade => EDMTrade, PhysicalTrade => EDMPhysicalTrade}
+import com.trafigura.tradinghub.support.ModelObject
+import com.trafigura.edm.trades.{Trade => EDMTrade, PhysicalTrade => EDMPhysicalTrade}
 import scala.Either
 import java.lang.Exception
 import com.trafigura.shared.events._
@@ -34,23 +29,12 @@ import starling.services.rabbit._
 import com.trafigura.tradecapture.internal.refinedmetal.Market
 import com.trafigura.tradecapture.internal.refinedmetal.Metal
 import com.trafigura.services.rabbit.Publisher
-import com.trafigura.events.PayloadFactory
-import com.trafigura.events.EventFactory
 import starling.quantity.Quantity
-import starling.daterange.DateRange
-import starling.curves.TestingAtomicEnvironment
-import starling.curves.AtomicDatumKey
 import starling.curves.DiscountRateKey
-import starling.curves.AtomicDatumKey
-import starling.daterange.DayAndTime
 import starling.curves.ForwardPriceKey
-import starling.daterange.Month
-import starling.maths.RandomVariables
-import org.testng.annotations.Test
-import org.testng.Assert._
 import starling.curves.UnitTestingAtomicEnvironment
 import starling.curves.FixingKey
-import starling.market.{TestMarketLookup, MarketProvider, Index}
+
 
 trait TitanTradeCache {
   protected var tradeMap: Map[String, EDMPhysicalTrade]
