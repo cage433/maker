@@ -542,6 +542,11 @@ object ValuationService extends Application {
   val markets = vs.getFuturesMarkets.toList
   val exchanges = vs.getFuturesExchanges.toList
 
+  /**
+   * Write out EDM trades from trade service (that can be valued successfully) and the ref-data markets and exchanges
+   *   so that the file mocked services can use canned data for tests (note this data needs moving into resources to update
+   *   canned data for the tests...)
+   */
   val tradesFile = "/tmp/edmTrades.json"
   val marketsFile = "/tmp/markets.json"
   val exchangesFile = "/tmp/exchanges.json"
@@ -581,5 +586,3 @@ object ValuationService extends Application {
 //    json.map(s => fromJson(s).asInstanceOf[T])
 //  }
 }
-
-

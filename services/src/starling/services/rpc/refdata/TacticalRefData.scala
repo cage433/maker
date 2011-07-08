@@ -64,13 +64,10 @@ case class FileMockedTitanServices() extends TitanServices {
   import com.trafigura.edm.trades.{PhysicalTrade => EDMPhysicalTrade}
   import java.net.URL
 
-  val tradesFile = getClass.getResource("/tests/valuationservice/testdata/edmTrades.json")
-  val marketsFile = getClass.getResource("/tests/valuationservice/testdata/markets.json")
-  val exchangesFile = getClass.getResource("/tests/valuationservice/testdata/exchanges.json")
-
-//  val tradesFile = "/tmp/edmTrades.json"
-//  val marketsFile = "/tmp/markets.json"
-//  val exchangesFile = "/tmp/exchanges.json"
+  val resourcePath = "/tests/valuationservice/testdata"
+  val tradesFile = getClass.getResource(resourcePath + "/edmTrades.json")
+  val marketsFile = getClass.getResource(resourcePath + "/markets.json")
+  val exchangesFile = getClass.getResource(resourcePath + "/exchanges.json")
 
   val titanGetEdmTradesService : EdmGetTrades = new EdmGetTrades {
     def getAll() : TradeResults = new TradeResults() {
@@ -105,4 +102,3 @@ case class FileMockedTitanServices() extends TitanServices {
   private def loadJsonValuesFromFileUrl(fileUrl : URL) : List[String] = fromURL(fileUrl).getLines.toList
   private def loadJsonValuesFromFile(file : String) : List[String] = fromFile(file).getLines.toList
 }
-
