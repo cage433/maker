@@ -44,7 +44,6 @@ import starling.curves.AtomicDatumKey
 import starling.curves.DiscountRateKey
 import starling.curves.AtomicDatumKey
 import starling.daterange.DayAndTime
-import starling.market.Index
 import starling.curves.ForwardPriceKey
 import starling.daterange.Month
 import starling.maths.RandomVariables
@@ -52,7 +51,7 @@ import org.testng.annotations.Test
 import org.testng.Assert._
 import starling.curves.UnitTestingAtomicEnvironment
 import starling.curves.FixingKey
-
+import starling.market.{TestMarketLookup, MarketProvider, Index}
 
 trait TitanTradeCache {
   protected var tradeMap: Map[String, EDMPhysicalTrade]
@@ -261,7 +260,7 @@ class MockEnvironmentProvider() extends EnvironmentProvider {
     )
   )
   def updateSnapshotCache() {}
-  def mostRecentSnapshotIdentifierBeforeToday(): Option[String]  = throw new UnsupportedOperationException
+  def mostRecentSnapshotIdentifierBeforeToday(): Option[String] = throw new UnsupportedOperationException // Some(getSnapshots().head)
   def snapshotIDs(observationDay : Option[Day]) : List[SnapshotID] = throw new UnsupportedOperationException
   def snapshotNameToID(name : String) : SnapshotID = throw new UnsupportedOperationException
 }
@@ -273,7 +272,7 @@ class MockEnvironmentProvider() extends EnvironmentProvider {
 class ValuationService(
   environmentProvider : EnvironmentProvider, 
   titanTradeCache : TitanTradeCache, 
-  titanServices : TitanServices,
+  titanServices : TitanTacticalRefData,
   rabbitEvents : RabbitEventServices) extends ValuationServiceApi {
 
   type TradeValuationResult = Either[List[CostsAndIncomeQuotaValuation], String]
@@ -583,81 +582,4 @@ object ValuationService extends Application {
 //  }
 }
 
-
-/**
- * Valuation service tests
- */
-@Test
-object ValuationServiceTest extends Application {
-  import Event._
-  println("Starting valuation service tests")
-  val mockTitanServices = new FileMockedTitanServices()
-  val mockTitanTradeService = new DefaultTitanTradeService(mockTitanServices)
-  val mockTitanTradeCache = new RefDataTitanTradeCache(mockTitanServices, mockTitanTradeService)
-  val mockRabbitEventServices = new MockRabbitEventServices()
-
-  val vs = new ValuationService(
-    new MockEnvironmentProvider,  mockTitanTradeCache, mockTitanServices, mockRabbitEventServices)
-
-  vs.marketDataSnapshotIDs().foreach(println)
-  val valuations = vs.valueAllQuotas()
-
-  val (_, worked) = valuations.tradeResults.values.partition({ case Right(_) => true; case Left(_) => false })
-  val valuedTradeIds = valuations.tradeResults.collect{ case (id, Left(v)) => id }.toList
-  val valuedTrades = vs.getTrades(valuedTradeIds)
-
-  val firstTrade = mockTitanTradeService.getAllTrades().head 
-  val updatedTrade = EDMPhysicalTrade.fromJson(firstTrade.toJson())
-  updatedTrade.direction = if (updatedTrade.direction == "P") "S" else "P" // make a change to cause a valuation to change value and cause a valuation updated event
-  mockTitanServices.updateTrade(updatedTrade)
-  
-  // publish trade updated events...
-  val pf = new PayloadFactory()
-  val ef = new EventFactory()
-  val source = TrademgmtSource
-  val keyId = updatedTrade.oid.toString
-  val payloads = List(pf.createPayload(RefinedMetalTradeIdPayload, source, keyId))
-  val keyIdentifier = System.currentTimeMillis.toString
-  val ev = ef.createEvent(TradeSubject, UpdatedEventVerb, source, keyIdentifier, payloads)
-  val eventArray = ||> { new JSONArray } { r => r.put(ev.toJson) }
-
-  val testEventHandler = new MockEventHandler
-  var updatedTradeValuationList : List[String] = List()
-
-  class MockEventHandler extends DemultiplexerClient {
-    def handle(ev: Event) {
-      if (ev == null) Log.warn("Got a null event") else {
-        if (StarlingSource == ev.source &&  StarlingValuationServiceSubject == ev.subject) { // Must be a starling valuation update event from valuation service
-          Log.info("handler: recieved a starling valuation service event to process %s".format(ev.toString))
-
-          val tradePayloads = ev.content.body.payloads.filter(p => Event.RefinedMetalTradeIdPayload == p.payloadType)
-          val tradeIds = tradePayloads.map(p => p.key.identifier)
-          Log.info("Trade event received for ids { %s }".format(tradeIds.mkString(", ")))
-
-          ev.verb match {
-            case UpdatedEventVerb => {
-              updatedTradeValuationList = tradeIds
-            }
-            case NewEventVerb => {
-              Log.info("new event received")
-            }
-            case CancelEventVerb | RemovedEventVerb => {
-              Log.info("cancel / remove event received")
-            }
-          }
-        }
-      }
-    }
-  }
-
-  mockRabbitEventServices.eventDemux.addClient(testEventHandler)
-
-  // publish our change event
-  mockRabbitEventServices.rabbitEventPublisher.publish(eventArray)
-  
-  // check the updated valuation event is sent...
-  Log.info("updatedTradeValuationList " + updatedTradeValuationList.mkString(", ")) 
-
-  assertTrue(updatedTradeValuationList.contains(updatedTrade.oid) , "Valuation service failed to raise valuation changed events for the changed trades")
-}
 

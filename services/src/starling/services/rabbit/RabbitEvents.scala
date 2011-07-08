@@ -111,7 +111,7 @@ case class MockRabbitEventServices() extends RabbitEventServices {
 class MockRabbitPublisher(val eventDemux : MockEventDemux) extends Publisher {
   //this(eventDemux : MockEventDemux)
   def publish(payload: JSONArray) = {
-    for (i <- 0 to payload.length()) {
+    for (i <- 0 until payload.length()) {
       val obj = payload.getJSONObject(i)
       eventDemux.publishToClients(Event.fromJson(obj))
     }
