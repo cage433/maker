@@ -89,12 +89,18 @@ class Props(props:Map[String,String]) extends PropsHelper(props) {
     "1234142dfSdfS&%&^%£)"
    )
 
+  // Titan related configuration
   object ServiceInternalAdminUser extends StringProperty("refined.metalsadm") // admin user for service to service access (permission requirements here for service calls TBD)
   object EdmTradeServiceLocation extends StringProperty("localhost:8080/tradeservice")
   object RefDataServiceLocation extends StringProperty("localhost:8080/referencedata")
 
   object EdmTradeServiceUrl extends StringProperty("http://" + EdmTradeServiceLocation() + "/RPC")
   object TacticalRefDataServiceUrl extends StringProperty("http://" + RefDataServiceLocation() + "/RPC")
+
+  // Titan Rabbit related configuration
+  object TitanRabbitBrokerHost  extends StringProperty("localhost")
+  object TitanRabbitUserName  extends StringProperty("trafiguraDev")
+  object TitanRabbitPassword  extends StringProperty("trafiguraDev")
 }
 
 object Props {

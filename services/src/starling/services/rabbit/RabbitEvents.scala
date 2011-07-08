@@ -27,10 +27,10 @@ trait RabbitEventServices {
 
 case class DefaultRabbitEventServices(props : Props) extends RabbitEventServices {
   
-  val rabbitmq_host = "louis-dev-ubuntu"
+  val rabbitmq_host = props.TitanRabbitBrokerHost()
   val rabbitmq_port = 5672
-  val rabbitmq_username = "trafiguraDev"
-  val rabbitmq_password = "trafiguraDev"
+  val rabbitmq_username = props.TitanRabbitUserName()
+  val rabbitmq_password = props.TitanRabbitPassword()
   val rabbitmq_routingKey = "RoutingKey"
   val rabbitmq_connectAttempts = 1
   val rabbitmq_virtualHost = "/"
@@ -87,7 +87,6 @@ case class DefaultRabbitEventServices(props : Props) extends RabbitEventServices
     false)
 
   rabbitListener.connect()
-
   rabbitEventPublisher.connect()
 
   // the demux for listener clients...
@@ -101,6 +100,9 @@ case class DefaultRabbitEventServices(props : Props) extends RabbitEventServices
 }
 
 
+/**
+ * Mocked event handlers for testing
+ */
 case class MockRabbitEventServices() extends RabbitEventServices {
   private val mockDemux = new MockEventDemux()
   val eventDemux : IDemultiplexEvents = mockDemux

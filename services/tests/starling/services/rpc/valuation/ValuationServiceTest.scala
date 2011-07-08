@@ -59,7 +59,6 @@ class ValuationServiceTest extends StarlingTest {
 
     val testMarketLookup = new TestMarketLookup()
     MarketProvider.registerNewImplForTesting(Some(testMarketLookup))
-    println("Starting valuation service tests")
     val mockTitanServices = new FileMockedTitanServices()
     val mockTitanTradeService = new DefaultTitanTradeService(mockTitanServices)
     val mockTitanTradeCache = new RefDataTitanTradeCache(mockTitanServices, mockTitanTradeService)
@@ -67,6 +66,8 @@ class ValuationServiceTest extends StarlingTest {
 
     val vs = new ValuationService(
       new MockEnvironmentProvider, mockTitanTradeCache, mockTitanServices, mockRabbitEventServices)
+
+    println("Starting valuation service tests")
 
     //vs.marketDataSnapshotIDs().foreach(println)
     val valuations = vs.valueAllQuotas()
@@ -79,33 +80,55 @@ class ValuationServiceTest extends StarlingTest {
       case (id, Left(v)) => id
     }.toList
     val valuedTrades = vs.getTrades(valuedTradeIds)
-
-    val firstTrade = mockTitanTradeService.getAllTrades().head
-    val updatedTrade = EDMPhysicalTrade.fromJson(firstTrade.toJson())
-    updatedTrade.direction = if (updatedTrade.direction == "P") "S" else "P"  // make a change to cause a valuation to change value and cause a valuation updated event
-    mockTitanServices.updateTrade(updatedTrade)
-
-    // publish trade updated events...
-    val pf = new PayloadFactory()
-    val ef = new EventFactory()
-    val source = TrademgmtSource
-    val keyId = updatedTrade.oid.toString
-    val payloads = List(pf.createPayload(RefinedMetalTradeIdPayload, source, keyId))
-    val keyIdentifier = System.currentTimeMillis.toString
-    val ev = ef.createEvent(TradeSubject, UpdatedEventVerb, source, keyIdentifier, payloads)
-    val eventArray = ||> { new JSONArray } { r => r.put(ev.toJson) }
-
+    val firstTrade = mockTitanTradeService.getAllTrades().head //valuedTrades.head
+val x = valuedTrades.find(t => t.oid == firstTrade.oid)
+val y = valuations.tradeResults(firstTrade.oid.toString)
     val testEventHandler = new MockEventHandler
 
     mockRabbitEventServices.eventDemux.addClient(testEventHandler)
 
+    /**
+     * Test that no changes to trade value does not cause a valuation update event when a trade updated event is received
+     */
+    
+    // publish trade updated events...
+    val eventArray = createTradeUpdatedEvent(firstTrade.oid.toString)
+
     // publish our change event
+    updatedTradeValuationList = Nil
+    mockRabbitEventServices.rabbitEventPublisher.publish(eventArray)
+
+    // check the updated valuation event is sent...
+    Log.info("updatedTradeValuationList " + updatedTradeValuationList.mkString(", "))
+
+    assertTrue(!updatedTradeValuationList.contains(firstTrade.oid.toString), "Valuation service raised valuation changed events for unchanged trades")
+
+    /**
+     * Test changing a trade value causes valuation update events for those trades
+     */
+    val updatedTrade = EDMPhysicalTrade.fromJson(firstTrade.toJson())
+    updatedTrade.direction = if (updatedTrade.direction == "P") "S" else "P"  // make a change to cause a valuation to change value and cause a valuation updated event
+    mockTitanServices.updateTrade(updatedTrade)
+
+    // publish our change event
+    updatedTradeValuationList = Nil
     mockRabbitEventServices.rabbitEventPublisher.publish(eventArray)
 
     // check the updated valuation event is sent...
     Log.info("updatedTradeValuationList " + updatedTradeValuationList.mkString(", "))
 
     assertTrue(updatedTradeValuationList.contains(updatedTrade.oid.toString), "Valuation service failed to raise valuation changed events for the changed trades")
+  }
+
+  private def createTradeUpdatedEvent(id : String) = {
+    val pf = new PayloadFactory()
+    val ef = new EventFactory()
+    val source = TrademgmtSource
+    val keyId = id
+    val payloads = List(pf.createPayload(RefinedMetalTradeIdPayload, source, keyId))
+    val keyIdentifier = System.currentTimeMillis.toString
+    val ev = ef.createEvent(TradeSubject, UpdatedEventVerb, source, keyIdentifier, payloads)
+    ||> { new JSONArray } { r => r.put(ev.toJson) }
   }
 
   def main(args : Array[String]) {

@@ -260,7 +260,7 @@ class MockEnvironmentProvider() extends EnvironmentProvider {
     )
   )
   def updateSnapshotCache() {}
-  def mostRecentSnapshotIdentifierBeforeToday(): Option[String] = throw new UnsupportedOperationException // Some(getSnapshots().head)
+  def mostRecentSnapshotIdentifierBeforeToday(): Option[String] = Some(getSnapshots().head)
   def snapshotIDs(observationDay : Option[Day]) : List[SnapshotID] = throw new UnsupportedOperationException
   def snapshotNameToID(name : String) : SnapshotID = throw new UnsupportedOperationException
 }
