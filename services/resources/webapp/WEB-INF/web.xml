@@ -42,8 +42,8 @@
     <context-param>
         <param-name>resteasy.providers</param-name>
         <param-value>
-            starling.services.rpc.JsonSerializerMessageBodyWriter.
-            starling.services.rpc.JsonDeserializerMessageBodyReader.
+            starling.services.rpc.JsonSerializerMessageBodyWriter,
+            starling.services.rpc.JsonDeserializerMessageBodyReader
         </param-value>
     </context-param>
 
