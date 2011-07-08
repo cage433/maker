@@ -9,10 +9,6 @@ import com.trafigura.edm.shared.types.{Currency => TitanCurrency, Date => TitanD
 
 import com.trafigura.services._
 import com.trafigura.services.marketdata.Maturity
-import com.trafigura.edm.valuation.{CostsAndIncomeQuotaValuation => EdmCostsAndIncomeQuotaValuation,
-  EitherListCostsAndIncomeQuotaValuationOrErrorString, ValuationTuple,
-  CostsAndIncomeQuotaValuationServiceResults => EdmCostsAndIncomeQuotaValuationServiceResults}
-import valuation.{CostsAndIncomeQuotaValuation, CostsAndIncomeQuotaValuationServiceResults}
 import starling.daterange.{DateRange, Tenor, SimpleDateRange, Day}
 
 
@@ -124,48 +120,6 @@ object EDMConversions {
       )
     }.toMap
     TitanSerializableQuantity(q.value, uomMap)
-  }
-
-
-  implicit def toTitanCostsAndIncomeQuotaValuationServiceResults(tradeValuationsResult : CostsAndIncomeQuotaValuationServiceResults) : EdmCostsAndIncomeQuotaValuationServiceResults = {
-    EdmCostsAndIncomeQuotaValuationServiceResults(
-      tradeValuationsResult.snapshotID,
-      tradeValuationsResult.tradeResults.map(tr => {
-        ValuationTuple(
-          tr._1,
-          tr._2 match {
-            case Left(vs) => EitherListCostsAndIncomeQuotaValuationOrErrorString(
-              vs.map(v => EdmCostsAndIncomeQuotaValuation(
-                v.quotaID, v.snapshotID, v.quantity, v.value, v.purchasePrice, v.salePrice, v.benchmark, v.freightParity, v.isComplete)), null)
-            case Right(s) => EitherListCostsAndIncomeQuotaValuationOrErrorString(List(), s)
-          }
-        )
-      }).toList
-    )
-  }
-
-  implicit def toTitanTradeValuationTuple(tradeResult : (String, Either[List[CostsAndIncomeQuotaValuation], String])) : ValuationTuple = {
-    ValuationTuple(
-      tradeResult._1,
-      tradeResult._2 match {
-        case Left(vs) => EitherListCostsAndIncomeQuotaValuationOrErrorString(
-          vs.map(v => EdmCostsAndIncomeQuotaValuation(
-            v.quotaID, v.snapshotID, v.quantity, v.value, v.purchasePrice, v.salePrice, v.benchmark, v.freightParity, v.isComplete)), null)
-        case Right(s) => EitherListCostsAndIncomeQuotaValuationOrErrorString(List(), s)
-      }
-    )
-  }
-
-  implicit def toTitanEitherListCostsAndIncomeQuotaValuationOrErrorString(either : Either[List[CostsAndIncomeQuotaValuation], String]) : EitherListCostsAndIncomeQuotaValuationOrErrorString = {
-    either match {
-      case Left(vs) => EitherListCostsAndIncomeQuotaValuationOrErrorString(vs.map(v => toTitanCostsAndIncomeQuotaValuation(v)), null)
-      case Right(s) => EitherListCostsAndIncomeQuotaValuationOrErrorString(List(), s)
-    }
-  }
-
-  implicit def toTitanCostsAndIncomeQuotaValuation(v : CostsAndIncomeQuotaValuation) : EdmCostsAndIncomeQuotaValuation = {
-    EdmCostsAndIncomeQuotaValuation(
-      v.quotaID, v.snapshotID, v.quantity, v.value, v.purchasePrice, v.salePrice, v.benchmark, v.freightParity, v.isComplete)
   }
 
   val starlingUomSymbolToEdmUom = Map(

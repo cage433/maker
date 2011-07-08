@@ -13,7 +13,6 @@ import com.rabbitmq.client.AMQP.BasicProperties
 import com.trafigura.events.{EventDemultiplexer, DemultiplexerClient}
 import starling.services.{Server, StarlingInit}
 import com.trafigura.services.valuation._
-import com.trafigura.edm.valuation.{ValuationServiceResourceStub, ValuationService => EdmValuationService, CostsAndIncomeQuotaValuationServiceResults => EdmCostsAndIncomeQuotaValuationServiceResults}
 import com.trafigura.edm.physicaltradespecs.EDMQuota
 import starling.services.rpc.refdata._
 import starling.edm.EDMConversions._
@@ -496,7 +495,7 @@ class ValuationService(
 
 /**
  * Titan EDM model exposed services wrappers
- */
+ *
 class ValuationServiceResourceStubEx
   extends ValuationServiceResourceStub(new ValuationServiceRpc(Server.server.marketDataStore, Server.server.valuationService), new java.util.ArrayList[ServiceFilter]()) {
 
@@ -521,7 +520,7 @@ class ValuationServiceRpc(marketDataStore: MarketDataStore, valuationService: Va
     valuationService.valueCostables(costableIds, Option(maybeSnapshotIdentifier))
   }
 }
-
+*/
 
 object ValuationService extends Application {
 
