@@ -14,15 +14,39 @@ import starling.props.Props
 import org.mortbay.jetty.security._
 import starling.props.Props
 import xml._
+import starling.utils.Log
+import org.mortbay.component.LifeCycle
+import org.mortbay.component.LifeCycle.Listener
+import java.util.EventListener
 
 
-class HttpServer(props:Props, servlets: (String, Servlet)*) {
-  val server = new JettyServer(props.HttpPort())
+class HttpServer(portNo : Int,
+                 val externalURL : String,
+                 serverName : String,
+                 descriptor : Option[String],
+                 listeners : List[EventListener],
+                 servlets: (String, Servlet)*) {
+
+  def this(props : Props, servlets: (String, Servlet)*) = 
+    this(props.HttpPort(), props.ExternalUrl(), props.ServerName(), None, Nil, servlets:_*)
+
+  val server = new JettyServer(portNo)
   var servletPaths = List[String]()
 
   val rootContext = new Context(server, "/", Context.SESSIONS);
 
-  val externalURL = props.ExternalUrl()
+  descriptor match {
+    case Some(desc) => {
+      Log.info("Applying descriptor '%s' to web app context".format(desc))
+      val wac : WebAppContext = new WebAppContext()
+      wac.setResourceBase(".")
+      wac.setDescriptor(desc)
+      wac.setContextPath("/")
+      wac.setParentLoaderPriority(true)
+      server.setHandler(wac)
+    }
+    case _ =>
+  }
 
   def stop {
     server.stop
@@ -36,7 +60,13 @@ class HttpServer(props:Props, servlets: (String, Servlet)*) {
 
   for((path, servlet) <- servlets) {
     val className : String = servlet.getClass.getName
+    Log.info("Registering servlet %s @ %s ".format(className, path))
     registerServlet(servlet, path)
+  }
+
+  for (listener <- listeners) {
+    Log.info("Registering listener %s".format(listener.getClass.getName))
+    rootContext.addEventListener(listener)
   }
 
   def errorHandler = new ErrorHandler {
@@ -95,12 +125,14 @@ class HttpServer(props:Props, servlets: (String, Servlet)*) {
     server.addHandler(rootContext)
 
     server.start()
+
+    Log.info("HttpServer stared on port: " + portNo)
   }
 
   class RootServlet(servletPaths : List[String]) extends HttpServlet {
     override def doGet(request: HttpServletRequest, response: HttpServletResponse) = {
       if (request.getRequestURI == "/") {
-        val name = "starling - " + props.ServerName()
+        val name = "starling - " + serverName
         response.setStatus(200)
         response.getWriter.println("<html><title>"+name+"</title>")
         response.getWriter.println("<html><body><ul>")

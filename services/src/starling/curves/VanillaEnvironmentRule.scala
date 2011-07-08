@@ -13,6 +13,8 @@ class VanillaEnvironmentRule(
     timeOfDay:TimeOfDay,
     val label: EnvironmentRuleLabel) extends EnvironmentRule {
 
+  override def createNullAtomicEnvironment(observationDay: Day) = new NullAtomicEnvironment(observationDay.atTimeOfDay(timeOfDay))
+
   def createEnv(observationDay: Day, marketDataReader: MarketDataReader) = {
     val observationPoint = pointRule(observationDay)
 
@@ -28,7 +30,7 @@ class VanillaEnvironmentRule(
         marketDataReader.readAllPrices(observationPoint).collect {
           case (PriceDataKey(market: CommodityMarket), priceData: PriceData)
             if market.tenor.isOneOf(Day, Month) && priceData.nonEmpty => {
-              MarketDeliveryPeriods(observationPoint.timeOfDay, market, priceData.sortedKeys)
+              UnderlyingDeliveryPeriods(observationPoint.timeOfDay, market, priceData.sortedKeys)
             }
         }
       }

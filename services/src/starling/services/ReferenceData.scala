@@ -22,12 +22,12 @@ class ReferenceData(businessCalendars: BusinessCalendars, marketDataStore: Marke
 
   val referenceDatas = List(
     "Futures Markets"   → futuresMarketPivot(trinityUploadMapper),
-    "Forward Markets"   → forwardMarketPivot(),
     "Formula Indexes"   → formulaIndexes(),
     "Published Indexes" → publishedIndexes(),
+    "Futures Front Period Indexes" → futuresFronPeriodIndexes(),
     "Pricing Groups"    → pricingGroups(),
-    "Calendars"         → calendars(businessCalendars),
-    "Schedules"         → schedules(scheduler)
+    "Schedules"         → schedules(scheduler),
+    "Calendars"         → calendars(businessCalendars)
 //    "Strategies"        → strategies(strategyDB))
     )
 
@@ -49,12 +49,13 @@ class ReferenceData(businessCalendars: BusinessCalendars, marketDataStore: Marke
       val calendar   = FieldDetails("Calendar")
       val exchange   = FieldDetails("Exchange")
       val commodity  = FieldDetails("Commodity")
+      val volatilityID = FieldDetails("Volatility ID")
       val hasOptions = FieldDetails("Has Options")
       val limSymbol  = FieldDetails("LIM Symbol")
       val trinityCommodity = FieldDetails("Trinity Commodity")
       val trinityUpload = FieldDetails("Trinity Upload")
 
-      private val otherFields = List(lotSize, volumeUnit, currency, eaiQuoteID, tenor, calendar, exchange, commodity, hasOptions, limSymbol, trinityCommodity, trinityUpload)
+      private val otherFields = List(lotSize, volumeUnit, currency, eaiQuoteID, tenor, calendar, exchange, commodity, volatilityID, hasOptions, limSymbol, trinityCommodity, trinityUpload)
       def fieldDetailsGroups = List(FieldDetailsGroup("Futures Market",
         name :: otherFields
       ))
@@ -73,9 +74,10 @@ class ReferenceData(businessCalendars: BusinessCalendars, marketDataStore: Marke
             calendar   → market.businessCalendar.name,
             exchange   → market.exchange.name,
             commodity  → market.commodity.toString,
+            volatilityID → market.volatilityID,
             hasOptions → (if(market.hasOptions) "Options" else "No options"),
             limSymbol  → market.limSymbol.getOrElse("").toString,
-            trinityCommodity → Market.marketToTrinityCode.getOrElse(market, ""),
+            trinityCommodity → TrinityMarket.marketToTrinityCode.getOrElse(market, ""),
             trinityUpload → trinityUploadMapper.uploadCodeOption(market).getOrElse("")
           )
         }
@@ -84,43 +86,6 @@ class ReferenceData(businessCalendars: BusinessCalendars, marketDataStore: Marke
     }
   }
 
-  def forwardMarketPivot() = {
-    new UnfilteredPivotTableDataSource() {
-      val name       = FieldDetails("Name")
-      val lotSize    = FieldDetails("Lot Size")
-      val volumeUnit = FieldDetails("Volume Unit")
-      val currency   = FieldDetails("Currency")
-      val eaiQuoteID = FieldDetails("EAI Quote ID")
-      val tenor      = FieldDetails("Tenor")
-      val calendar   = FieldDetails("Calendar")
-      val commodity  = FieldDetails("Commodity")
-
-      private val otherFields = List(lotSize, volumeUnit, currency, eaiQuoteID, tenor, calendar, commodity)
-      def fieldDetailsGroups = List(FieldDetailsGroup("Forward Market",
-        name :: otherFields
-      ))
-
-      override val initialState = PivotFieldsState(rowFields = fields(name), dataFields = fields(otherFields))
-
-      def unfilteredData(pfs : PivotFieldsState) = {
-        val data = Market.forwardMarkets.map { market =>
-          fields(
-            name       → market.name,
-            lotSize    → market.lotSize.getOrElse("").toString,
-            volumeUnit → market.uom.toString,
-            currency   → market.currency,
-            eaiQuoteID → market.eaiQuoteID.toString,
-            tenor      → market.tenor.toString,
-            calendar   → market.businessCalendar.name,
-            commodity  → market.commodity.toString
-          )
-        }
-        data
-      }
-    }
-  }
-
-
   def formulaIndexes() = {
     new UnfilteredPivotTableDataSource() {
       val name       = FieldDetails("Name")
@@ -128,8 +93,9 @@ class ReferenceData(businessCalendars: BusinessCalendars, marketDataStore: Marke
       val currency   = FieldDetails("Currency")
       val formula    = FieldDetails("Formula")
       val conversionToMT    = FieldDetails("Conversion to MT")
+      val available    = FieldDetails("Available")
 
-      private val otherFields = List(volumeUnit, currency, formula, conversionToMT)
+      private val otherFields = List(volumeUnit, currency, formula, conversionToMT, available)
       def fieldDetailsGroups = List(FieldDetailsGroup("Forward Market",
         name :: otherFields
       ))
@@ -137,13 +103,14 @@ class ReferenceData(businessCalendars: BusinessCalendars, marketDataStore: Marke
       override val initialState = PivotFieldsState(rowFields = fields(name), dataFields = fields(otherFields))
 
       def unfilteredData(pfs : PivotFieldsState) = {
-        val data = FormulaIndexList.formulaIndexes.filter(_.isValid).flatMap { index => index partialMatch {
+        val data = Index.formulaIndexes.flatMap { index => index partialMatch {
           case fi:FormulaIndex => fields(
             name → fi.name,
             volumeUnit → fi.uom,
             currency → fi.ccy,
             formula → fi.formulaString,
-            conversionToMT → fi.conversion.map(_.toString)
+            conversionToMT → fi.conversion.map(_.toString),
+            available → fi.isValid
           )
         } }
         data
@@ -172,7 +139,7 @@ class ReferenceData(businessCalendars: BusinessCalendars, marketDataStore: Marke
       override val initialState = PivotFieldsState(rowFields = fields(name), dataFields = fields(otherFields))
 
       def unfilteredData(pfs : PivotFieldsState) = {
-        val data = Index.namedIndexes.flatMap { index => index partialMatch {
+        val data = Index.all.flatMap { index => index partialMatch {
           case pi:PublishedIndex => fields(
             name       → pi.name,
             market     → pi.market.name,
@@ -184,6 +151,46 @@ class ReferenceData(businessCalendars: BusinessCalendars, marketDataStore: Marke
             tenor      → pi.market.tenor.toString,
             commodity  → pi.market.commodity.toString,
             rounding  → pi.precision.toString
+          )
+        } }
+        data
+      }
+    }
+  }
+
+  def futuresFronPeriodIndexes() = {
+    new UnfilteredPivotTableDataSource() {
+      val name       = FieldDetails("Name")
+      val market     = FieldDetails("Market")
+      val eaiQuoteID = FieldDetails("EAI Quote ID")
+      val limSymbol  = FieldDetails("Lim Symbol")
+      val level      = FieldDetails("Level")
+      val volumeUnit = FieldDetails("Volume Unit")
+      val currency   = FieldDetails("Currency")
+      val tenor      = FieldDetails("Tenor")
+      val commodity  = FieldDetails("Commodity")
+      val rounding  = FieldDetails("Rounding")
+
+      private val otherFields = List(market, eaiQuoteID, level, volumeUnit, currency, tenor, commodity, rounding)
+      def fieldDetailsGroups = List(FieldDetailsGroup("Forward Market",
+        name :: otherFields
+      ))
+
+      override val initialState = PivotFieldsState(rowFields = fields(name), dataFields = fields(otherFields))
+
+      def unfilteredData(pfs : PivotFieldsState) = {
+        val data = Index.all.flatMap { index => index partialMatch {
+          case fi:FuturesFrontPeriodIndex => fields(
+            name       → fi.name,
+            market     → fi.market.name,
+            eaiQuoteID → fi.eaiQuoteID.toString,
+            limSymbol  → fi.market.limSymbol.getOrElse("").toString,
+            level      → fi.level.name,
+            volumeUnit → fi.market.currency,
+            currency   → fi.market.currency,
+            tenor      → fi.market.tenor.toString,
+            commodity  → fi.market.commodity.toString,
+            rounding  → fi.precision.toString
           )
         } }
         data
@@ -205,7 +212,7 @@ class ReferenceData(businessCalendars: BusinessCalendars, marketDataStore: Marke
 
       def unfilteredData(pfs : PivotFieldsState) = {
         val data = businessCalendars.calendars.flatMap { c =>
-          c.days.map { day => fields(
+          c.holidays.map { day => fields(
             calendar  → c.name,
             dayField  → day,
             year      → day.year,
@@ -240,13 +247,15 @@ class ReferenceData(businessCalendars: BusinessCalendars, marketDataStore: Marke
 
   def schedules(scheduler: Scheduler) = new UnfilteredPivotTableDataSource() with ScheduledTaskAttributes {
     val group@List(name, timing, period, calendar, producer, consumer, sender, recipients) =
-      fieldDetails("Task", "Scheduled Time", "Period", "Calendar", "Producer", "Consumer", "Sender", "Receipients")
+      fieldDetails("Task", "Starting Time", "Period", "Calendar", "Producer", "Consumer", "Sender", "Receipients")
     val fieldDetailsGroups = List(FieldDetailsGroup("Schedule", group))
     override val initialState = PivotFieldsState(rowFields = fields(name), dataFields = fields(group.tail))
     def unfilteredData(pfs: PivotFieldsState) = scheduler.tasks.map(task => fields(name → task.name, timing → task.time.prettyTime,
       period → task.time.description, calendar → task.cal.name, producer → task.attribute(DataSource),
       consumer → task.attribute(DataSink), sender → task.attribute(EmailFrom), recipients → task.attribute(EmailTo)))
   }
+
+
 
 //  def strategies(strategyDB:EAIStrategyDB) = {
 //    new UnfilteredPivotTableDataSource() {
@@ -283,5 +292,4 @@ class ReferenceData(businessCalendars: BusinessCalendars, marketDataStore: Marke
 //      }
 //    }
 //  }
-
 }

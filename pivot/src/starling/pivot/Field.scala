@@ -75,6 +75,7 @@ object Field{
   }
 
   val NullField = Field("Null")
+  val RootField = Field("ROOT_FIELD")
 
   implicit object ordering extends Ordering[Field]{
     def compare(lhs:Field, rhs:Field) : Int = lhs.name.compare(rhs.name)
@@ -84,6 +85,7 @@ object Field{
 // NOTE - The implementations of Parser must be serializable (and easily serializable at that). i.e. an Object like TextPivotParser.
 trait PivotParser extends Serializable {
   def parse(text:String):(Any,String)
+  def acceptableValues:Set[String] = Set.empty
 }
 object TextPivotParser extends PivotParser {
   def parse(text:String) = (text,text)
@@ -153,14 +155,29 @@ object PivotFormatter {
 
 object TreePivotFormatter extends PivotFormatter {
   def format(value:Any, formatInfo:ExtraFormatInfo) = {
-    val pivotTreePath = value.asInstanceOf[PivotTreePath]
-    new TableCell(pivotTreePath, pivotTreePath.lastElement, LeftTextPosition)
+    value match {
+      case pivotTreePath:PivotTreePath => new TableCell(pivotTreePath, pivotTreePath.lastElement, LeftTextPosition)
+      case s:Set[_] => {
+        val longText = {
+          val list = s.toList
+          if (list.size <= 20) {
+            list.map(_.toString).mkString(", ")
+          } else {
+            val firstTwenty = list.slice(0, 20)
+            s.size + " values: " + firstTwenty.map(_.toString).mkString(", ") + " ..."
+          }
+        }
+        new TableCell(s, s.size + " values", longText = Some(longText))
+      }
+    }
   }
 }
 
 object SetSizePivotFormatter extends PivotFormatter {
   def format(value:Any, formatInfo:ExtraFormatInfo) = value match {
     case s:Set[_] => new TableCell(s, s.size.toString)
+    case pq:PivotQuantity => TableCell.fromPivotQuantity(pq, formatInfo)
+    case s:String => new TableCell(s, s)
   }
 }
 
@@ -228,6 +245,7 @@ object DefaultPivotFormatter extends PivotFormatter {
         }
         new TableCell(s, s.size + " values", longText = Some(longText))
       }
+      case l:HasLongText => new TableCell(l, l.toString, longText = Some(l.longText))
       case v => new TableCell(v)
     }
   } catch {
@@ -235,15 +253,19 @@ object DefaultPivotFormatter extends PivotFormatter {
   }
 }
 
+trait HasLongText extends Serializable {
+  def longText: String
+}
+
 case class FieldDetails(field:Field) {
   def this(name:String) = this(Field(name))
+  def name = field.name
   def nullValue():Any = "n/a"
   def nullGroup():Any = Set()
-  def combine(group:Any,value:Any):Any =
-    value match {
-      case set:Set[_] => group.asInstanceOf[Set[Any]].union(set.asInstanceOf[Set[Any]])
-      case _ => group.asInstanceOf[Set[Any]] + value 
-    }
+  def combine(group:Any,value:Any):Any = value match {
+    case set:Set[_] => group.asInstanceOf[Set[Any]].union(set.asInstanceOf[Set[Any]])
+    case _ => group.asInstanceOf[Set[Any]] + value
+  }
 
   def fixEditedValue(value:Any) = value
   
@@ -399,7 +421,10 @@ class SumPivotQuantityFieldDetails(name:String) extends FieldDetails(Field(name)
 
 object StandardPivotQuantityFormatter extends PivotFormatter {
   def format(value:Any, formatInfo:ExtraFormatInfo) = {
-    TableCell.fromPivotQuantity(value.asInstanceOf[PivotQuantity], formatInfo)
+    value match {
+      case pq:PivotQuantity => TableCell.fromPivotQuantity(pq, formatInfo)
+      case q:Quantity => QuantityLabelPivotFormatter.format(q, formatInfo)
+    }
   }
 }
 
@@ -429,7 +454,8 @@ class TradeIDGroupingSumPivotQuantityFieldDetails(name:String) extends FieldDeta
         assert(map.size == 1, "Map should only have one value")
         map.valuesIterator.next
       }
-      case _ => throw new IllegalArgumentException("Don't know how to handle something that isn't a Quantity or Map")
+      case UndefinedValue => UndefinedValue
+      case o => throw new IllegalArgumentException("Don't know how to handle something that isn't a Quantity or Map : " + o.asInstanceOf[AnyRef].getClass.getName)
     }
   }
   override def comparator = QuantityComparator
@@ -440,13 +466,17 @@ class MarketValueFieldDetails(name: String) extends FieldDetails(Field(name)) {
   override def formatter = MarketValueSetPivotFormatter
   override def isDataField = true
   override def comparator = new MarketValueComparer(super.comparator)
+  override def parser = MarketValuePivotParser
 }
 
 object MarketValueSetPivotFormatter extends PivotFormatter {
-  def format(value: Any, formatInfo: ExtraFormatInfo) = value.asInstanceOf[Set[_]].toList match {
-    case List(pq: PivotQuantity) => TableCell.fromPivotQuantity(pq, formatInfo)
-    case List(p: Percentage) => PercentagePivotFormatter.format(p, formatInfo)
-    case list:List[_] => new TableCell(list.size + " values")
+  def format(value: Any, formatInfo: ExtraFormatInfo) = value match {
+    case s:Set[_] => s.toList match {
+      case List(pq: PivotQuantity) => TableCell.fromPivotQuantity(pq, formatInfo)
+      case List(p: Percentage) => PercentagePivotFormatter.format(p, formatInfo)
+      case list:List[_] => new TableCell(list.size + " values")
+    }
+    case pq:PivotQuantity => TableCell.fromPivotQuantity(pq, formatInfo)
   }
 }
 
@@ -455,6 +485,10 @@ class MarketValueComparer(backup: Ordering[Any]) extends Ordering[Any] {
     case (left: PivotQuantity, right:PivotQuantity) => PivotQuantityComparator.compare(left, right)
     case _ => backup.compare(x, y)
   }
+}
+
+object MarketValuePivotParser extends PivotParser {
+  def parse(text: String) = (MarketValue.fromString(text).pivotValue, text)
 }
 
 class PivotQuantityFieldDetails(name:String) extends FieldDetails(Field(name)) {
@@ -471,6 +505,7 @@ object PivotQuantitySetPivotFormatter extends PivotFormatter {
       case s:Set[PivotQuantity] if s.size == 0 => TableCell.Null
       case s:Set[PivotQuantity] if s.size == 1 => TableCell.fromPivotQuantity(s.iterator.next, formatInfo)
       case s:Set[PivotQuantity] => new TableCell(s, s.size + " values", longText = Some(s.map(TableCell.longText).flatten.mkString(", ")))
+      case pq:PivotQuantity => TableCell.fromPivotQuantity(pq, formatInfo)
     }
   }
 }

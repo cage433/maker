@@ -117,6 +117,9 @@ class LIMConnection(connection: MimConnection) {
           throw new MissingMarketDataException("No LIM data for " + query)
       }
     } catch {
+      case e: MimException => {
+        throw new MissingMarketDataException("LIM Error: No LIM data for " + query, e)
+      }
       case e => {
         Log.error("Failed to get LIM data, " + query, e)
         throw e
@@ -147,6 +150,8 @@ object LIMServer {
       val Bloomberg = new LimNode(this) {
         val Currencies = new LimNode(this) {
           val Composite = new LimNode(this)
+          val LME = new LimNode(this)
+          val Lme = new LimNode(this)
         }
         val Futures = new LimNode(this) {
           val Comex = new LimNode(this)
@@ -154,6 +159,7 @@ object LIMServer {
         }
         val InterestRates = new LimNode(this) {
           val Libor = new LimNode(this)
+          val Liborlike = new LimNode(this)
           val Swaps = new LimNode(this)
         }
         val Metals = new LimNode(this) {
@@ -165,11 +171,9 @@ object LIMServer {
 }
 
 class LimNode(parent: Object) {
-  def name: String = {
-    val name = parent.getClass.getDeclaredFields.find(field => field.update(_.setAccessible(true)).get(parent) == this).get.getName
-    parent match {
-      case limNode: LimNode => limNode.name + ":" + name
-      case _ => name
-    }
-  }
+  private val parentNode : Option[LimNode] = parent.safeCast[LimNode]
+  def name: String = parentNode.map(_.name + ":").getOrElse("") + fields(parent).find(_.get(parent) == this).get.getName
+  def children = fields(this).map(_.get(this)).toList.asInstanceOf[List[LimNode]]
+  override def toString = name
+  private def fields(owner: AnyRef) = owner.getClass.getDeclaredFields.map(_.update(_.setAccessible(true)))
 }

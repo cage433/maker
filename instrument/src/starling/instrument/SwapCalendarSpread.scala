@@ -30,7 +30,7 @@ case class SwapCalendarSpread(index: SingleIndex,
 
   def assets(env: Environment) = asUtpPortfolio(env.marketDay.day).assets(env)
 
-  def price(env: Environment) = env.forwardPrice(index.market, period.front) - env.forwardPrice(index.market, period.back)
+  def price(env: Environment) = env.averagePrice(index, period.front) - env.averagePrice(index, period.back)
 
   def periodKey = Some(period)
 
@@ -70,6 +70,6 @@ object SwapCalendarSpread extends InstrumentType[SwapCalendarSpread] with Tradea
   def sample = {
     import starling.quantity.Quantity._
     import starling.quantity.UOM._
-    SwapCalendarSpread(PublishedIndex.DATED_BRENT, 123(USD/BBL), 77000(BBL), SpreadPeriod(Month(2015, 1), Month(2015, 1)), cleared = true)
+    SwapCalendarSpread(Index.DATED_BRENT, 123(USD/BBL), 77000(BBL), SpreadPeriod(Month(2015, 1), Month(2015, 1)), cleared = true)
   }
 }

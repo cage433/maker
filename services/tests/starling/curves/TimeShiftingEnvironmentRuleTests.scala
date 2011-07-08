@@ -9,10 +9,10 @@ import scala.collection.immutable.{TreeSet, TreeMap}
 import starling.db.MarketDataReader
 import org.mockito.Mockito._
 import starling.daterange._
-import starling.market.{FuturesMarket, FuturesExchangeFactory, Market}
 import starling.marketdata._
+import starling.market.{TestMarketSpec, FuturesMarket, FuturesExchangeFactory, Market}
 
-class TimeShiftingEnvironmentRuleTests extends StarlingTest with ShouldMatchers {
+class TimeShiftingEnvironmentRuleTests extends TestMarketSpec with ShouldMatchers {
 
   val timeShiftingRule = TimeShiftToLMECloseEnvironmentRule
 
@@ -47,7 +47,7 @@ class TimeShiftingEnvironmentRuleTests extends StarlingTest with ShouldMatchers 
         priceEntry(environmentDay, SHFEClose, Market.SHANGHAI_COPPER, shanghaiPriceAtShanghaiClose),
         priceEntry(environmentDay, SHFEClose, Market.LME_COPPER, lmePriceAtShanghaiClose),
         priceEntry(environmentDay, LMEClose, Market.LME_COPPER, lmePriceAtLmeClose),
-        fxEntry(environmentDay, LMEClose, fxAtLmeClose),
+        fxEntry(environmentDay, LondonClose, fxAtLmeClose),
         fxEntry(environmentDay, SHFEClose, fxAtShanghaiClose)
       )
     )
@@ -73,7 +73,7 @@ class TimeShiftingEnvironmentRuleTests extends StarlingTest with ShouldMatchers 
         priceEntry(lastShanghaiDay, SHFEClose, Market.SHANGHAI_COPPER, shanghaiPriceAtShanghaiClose),
         priceEntry(lastShanghaiDay, SHFEClose, Market.LME_COPPER, lmePriceAtShanghaiClose),
         priceEntry(environmentDay, LMEClose, Market.LME_COPPER, lmePriceAtLmeClose),
-        fxEntry(environmentDay, LMEClose, fxAtLmeClose),
+        fxEntry(environmentDay, LondonClose, fxAtLmeClose),
         fxEntry(lastShanghaiDay, SHFEClose, fxAtShanghaiClose)
       )
     )

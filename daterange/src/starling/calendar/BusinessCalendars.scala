@@ -1,11 +1,12 @@
 package starling.calendar
 
-import starling.daterange.Day
-
 class BusinessCalendars(val holidayTables : HolidayTables) {
+  def financialHolidaysOption(code: String)= holidayTables.financialHolidaysOption(code)
+
   // Countries
   lazy val UK = holidayTables.UK
   lazy val US = holidayTables.US
+  lazy val US_UK = US + UK
 
   // Exchanges
   lazy val LME = holidayTables.LME

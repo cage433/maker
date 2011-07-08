@@ -16,12 +16,20 @@ import java.util.concurrent._
 import atomic.{AtomicBoolean, AtomicReference, AtomicInteger}
 import org.jboss.netty.handler.timeout.{IdleStateEvent, IdleStateAwareChannelHandler}
 import org.jboss.netty.util.{HashedWheelTimer, Timeout, TimerTask}
-import starling.utils.{StackTraceToString, NamedThreadFactory, Log}
-import starling.auth.{User, Client}
+
+trait Client {
+  def ticket: Option[Array[Byte]]
+}
+
+object Client {
+  val Null: Client = new Client {
+    def ticket = null
+  }
+}
 
 case class StateChangeEvent(previous: State, current: State) extends Event
 
-class BouncyRMIClient[C](host: String, port: Int, interface: Class[C], auth: Client, logger:(String)=>Unit=(x)=>{}, overriddenUser:Option[String]) {
+class BouncyRMIClient[C](host: String, port: Int, interface: Class[C], auth: Client, logger:(String)=>Unit=(x)=>{}, overriddenUser:Option[String] = None) {
   private val client = new Client(overriddenUser)
   lazy val clientTimer = new HashedWheelTimer
 
@@ -44,6 +52,12 @@ class BouncyRMIClient[C](host: String, port: Int, interface: Class[C], auth: Cli
   }
 
   def stop = client.stop
+
+  private case class NamedThreadFactory(name: String) extends ThreadFactory {
+    def newThread(r: Runnable) = {
+      new Thread(r, name)
+    }
+  }
 
   private class Client(overriddenUser:Option[String]) {
     val connectExecutor = Executors.newSingleThreadExecutor(NamedThreadFactory("Client.connect"))
@@ -91,7 +105,7 @@ class BouncyRMIClient[C](host: String, port: Int, interface: Class[C], auth: Cli
 
           var result: Option[Throwable] = None
           if (!channelFuture.isSuccess) {
-            Log.warn("Client: Failed to connect to server")
+            Logger.warn("Client: Failed to connect to server")
             result = Some(new CannotConnectException("Can not connect to server", channelFuture.getCause))
             semaphore.release
           } else {
@@ -104,10 +118,10 @@ class BouncyRMIClient[C](host: String, port: Int, interface: Class[C], auth: Cli
                 case she: SSLHandshakeException => result = Some(new CannotConnectException("SSL failed to connect", she.getCause.getCause))
                 case e => result = Some(new CannotConnectException("SSL failed to connect, unrecognised reason", e))
               }
-              Log.warn("Client: SSL handshake failed")
+              Logger.warn("Client: SSL handshake failed")
               semaphore.release
             } else {
-              Log.info("Client: SSL connected")
+              Logger.info("Client: SSL connected")
               channel = Some(ch)
 
               reactions += {
@@ -133,7 +147,7 @@ class BouncyRMIClient[C](host: String, port: Int, interface: Class[C], auth: Cli
                 }
               }
               stateTransition(ClientConnectedEvent)
-              Log.info("Client: Send Auth")
+              Logger.info("Client: Send Auth")
               ch.write(AuthMessage(auth.ticket, overriddenUser))
             }
           }
@@ -145,7 +159,7 @@ class BouncyRMIClient[C](host: String, port: Int, interface: Class[C], auth: Cli
     }
 
     def reconnect {
-      Log.info("Starting reconnect")
+      Logger.info("Starting reconnect")
 
       clientTimer.newTimeout(new TimerTask() {
         var delay = 100
@@ -175,6 +189,7 @@ class BouncyRMIClient[C](host: String, port: Int, interface: Class[C], auth: Cli
       val methodRequest = new MethodInvocationRequest(
         BouncyRMI.CodeVersion,
         id,
+        method.getDeclaringClass.getName,
         method.getName,
         method.getParameterTypes.map(_.getName),
         if (args == null) new Array(0) else args)
@@ -230,9 +245,9 @@ class BouncyRMIClient[C](host: String, port: Int, interface: Class[C], auth: Cli
     private def close = {
       val hasAlreadyBeenClosed = closeMonitor.getAndSet(true)
       if (hasAlreadyBeenClosed) {
-        Log.warn("The client has already been closed so won't do anything here")
+        Logger.warn("The client has already been closed so won't do anything here")
       } else {
-        Log.info("Completely Closing Client")
+        Logger.info("Completely Closing Client")
         channel match {
           case Some(ch) => {
             channel = None
@@ -277,7 +292,7 @@ class BouncyRMIClient[C](host: String, port: Int, interface: Class[C], auth: Cli
     class ClientHandler extends IdleStateAwareChannelHandler {
 
       override def channelConnected(ctx: ChannelHandlerContext, e: ChannelStateEvent) {
-        Log.info("Client: Channel connected.")        
+        Logger.info("Client: Channel connected.")
       }
 
       override def channelDisconnected(ctx: ChannelHandlerContext, e: ChannelStateEvent) {
@@ -290,7 +305,7 @@ class BouncyRMIClient[C](host: String, port: Int, interface: Class[C], auth: Cli
           }
           case _ =>
         }
-        Log.info("Client: Channel disconnected")
+        Logger.info("Client: Channel disconnected")
       }
 
       override def exceptionCaught(ctx: ChannelHandlerContext, e: ExceptionEvent) {
@@ -302,7 +317,7 @@ class BouncyRMIClient[C](host: String, port: Int, interface: Class[C], auth: Cli
         val message = e.getMessage
         message match {
           case AuthSuccessfulMessage => {
-            Log.info("Client: Auth successful, sending version check")
+            Logger.info("Client: Auth successful, sending version check")
             e.getChannel.write(VersionCheckRequest)
           }
           case v: VersionCheckResponse => {
@@ -347,7 +362,7 @@ class BouncyRMIClient[C](host: String, port: Int, interface: Class[C], auth: Cli
           }
           case PongMessage =>
           case m => {
-            Log.error("Unrecognised message, disconnecting: " + m)
+            Logger.error("Unrecognised message, disconnecting: " + m)
             stop
           }
         }
@@ -394,7 +409,7 @@ class BouncyRMIClient[C](host: String, port: Int, interface: Class[C], auth: Cli
           }
         })
       } catch {
-        case e => Log.warn("Asked to publish but publisher has been closed")
+        case e => Logger.warn("Asked to publish but publisher has been closed")
       }
     }
 

@@ -103,7 +103,6 @@ object UTP{
       ),
     (_ : (UTP, DayAndTime, Boolean, TenorType)) => {
       var (pKeys, vKeys) = (utp, showEquivalentFutures) match {
-        case (_ : ErrorInstrument, _) => (Set[EnvironmentDifferentiable with PriceKey](), Set[EnvironmentDifferentiable with VolKey]())
         case (_, true) => (priceKeys(utp, marketDay, UOM.USD), volKeys(utp, marketDay, UOM.USD))
         case (_, false) => cachingUTP.priceAndVolKeys(marketDay)
       }

@@ -1,18 +1,23 @@
 package starling.market
 
-import formula.FormulaIndexes
 import starling.calendar.{HolidayTablesFactory, BusinessCalendars}
 import starling.daterange.{TestHolidays, Day, Month, DateRange}
 import org.testng.annotations.{BeforeTest, AfterTest, AfterSuite, BeforeSuite}
 import org.scalatest.testng.TestNGSuite
 
-trait TestExpiryRules extends ExpiryRulesSpec with TestNGSuite
+trait TestMarketSpec extends ExpiryRulesSpec with TestNGSuite {
+  val bla = new TestMarketLookup()
+
+  MarketProvider.registerNewImplForTesting(Some(bla))
+}
 
 trait ExpiryRulesSpec extends PrecisionRulesSpec {
   var oldRule: Option[FuturesExpiryRules] = FuturesExpiryRuleFactory.expiryRuleOpton
 
   FuturesExpiryRuleFactory.registerNewRulesImplForTesting(Some(new FuturesExpiryRules(new BusinessCalendars(HolidayTablesFactory.holidayTables)) {
     val emptyRule = new FuturesExpiryRule {
+      val name = "Test"
+
       def lastTradingDay(d: DateRange) = d.firstDay - 3
 
       override def expiryDay(d: DateRange) = lastTradingDay(d) - 1
@@ -20,19 +25,11 @@ trait ExpiryRulesSpec extends PrecisionRulesSpec {
       override def csoExpiryDay(d: DateRange) = lastTradingDay(d) - 2
     }
 
-    def rule(eaiQuoteID: Int) = eaiQuoteID match {
-      case 2 => nymex_wti
-      case 14 => ice_gas_oil
-      case _ => emptyRule
+    def ruleOption(eaiQuoteID: Int) = eaiQuoteID match {
+      case 2 => Some(nymex_wti)
+      case 14 => Some(ice_gas_oil)
+      case _ => Some(emptyRule)
     }
-  }))
-
-  FormulaIndexList.set(Some(new FormulaIndexes {
-    def eaiQuoteMap = Map()
-  }))
-
-  FormulaIndexList.set(Some(new FormulaIndexes {
-    def eaiQuoteMap = Map()
   }))
 
   @AfterTest
@@ -44,6 +41,7 @@ trait ExpiryRulesSpec extends PrecisionRulesSpec {
   // Some hard coded rules:
 
   val ice_gas_oil = new MonthFuturesExpiryRule{
+    val name = "Test"
 
     def expiryDayOfMonth(m: Month) = oe(m)
 
@@ -227,6 +225,8 @@ trait ExpiryRulesSpec extends PrecisionRulesSpec {
   // Nymex WTI
 
   val nymex_wti = new MonthFuturesExpiryRule {
+    val name = "Test"
+
     override def csoExpiryDay(d: DateRange) = oe(d.asInstanceOf[Month]) - 1
 
     def expiryDayOfMonth(m: Month) = oe(m)

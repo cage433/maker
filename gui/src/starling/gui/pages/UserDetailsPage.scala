@@ -8,10 +8,10 @@ import starling.pivot.view.swing.{StripedPanel, FixedImagePanel, MigPanel}
 
 case class UserDetailsPage(user:User) extends Page {
   def text = "User Details"
-  val icon = StarlingIcons.im("/icons/16x16_user_dark.png")
+  def icon = StarlingIcons.im("/icons/16x16_user_dark.png")
 
   def build(reader:PageBuildingContext) = null
-  def createComponent(context:PageContext, data:PageData, browserSize:Dimension) = UserDetailsPageComponent(context:PageContext, user:User)
+  def createComponent(context:PageContext, data:PageData, bookmark:Bookmark, browserSize:Dimension) = UserDetailsPageComponent(context:PageContext, user:User)
 }
 
 case class UserDetailsPageComponent(context:PageContext, user:User) extends MigPanel("insets dialog") with PageComponent {

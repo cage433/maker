@@ -6,12 +6,12 @@ import starling.curves.CurveViewer
 import starling.daterange._
 import starling.db.DB
 import starling.gui.api.CurveLabel
-import starling.market.{FuturesMarket, Market}
 import starling.pivot.{Field, PivotFieldsState}
 import starling.pivot.controller.{PivotTableConverter, PivotGrid}
 import starling.pivot.model.PivotTableModel
 
 import starling.utils.ImplicitConversions._
+import starling.market.{TrinityMarket, FuturesMarket, Market}
 
 
 class FCLGenerator(uploadMapper: TrinityUploadCodeMapper, curveViewer: CurveViewer) {
@@ -35,7 +35,7 @@ object FCLGenerator {
 
     val rows = data.rowData.zip(data.mainData)
 
-    rows.map { case (Array(marketName, periodCell), Array(priceCell)) => {
+    rows.toList.flatMapO { case (Array(marketName, periodCell), Array(priceCell)) => {
       try {
         val market = Market.futuresMarketFromName(marketName.valueText)
         val trinityCode = codeLookup(market)
@@ -48,7 +48,7 @@ object FCLGenerator {
       } catch {
         case e: Exception => None
       }
-    } }.toList.somes
+    } }
   }
 }
 
@@ -58,7 +58,7 @@ class TrinityUploadCodeMapper(trinityDB:DB) {
   }}).toMap
 
   def uploadCodeOption(market:FuturesMarket) = {
-    Market.marketToTrinityCode.get(market) match {
+    TrinityMarket.marketToTrinityCode.get(market) match {
       case None => None
       case Some(trinityCommodityCode) => {
         val key = (trinityCommodityCode, market.exchange.name, market.currency.toString)

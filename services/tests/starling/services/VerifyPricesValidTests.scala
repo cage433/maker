@@ -22,7 +22,7 @@ class VerifyPricesValidTests extends StarlingSpec with ShouldMatchers {
     val futuresExchange = mock(classOf[FuturesExchange])
     val broadcaster = mock(classOf[Broadcaster])
 
-    new VerifyPricesValid(dataSource, futuresExchange, broadcaster, "from@example.org") {
+    new VerifyPricesValid(dataSource, futuresExchange, broadcaster, "from@example.org", "to@example.org") {
       val emptyGrid = PivotGrid(Array(), Array(), Array())
 
       def withNoPrices = updateThis {

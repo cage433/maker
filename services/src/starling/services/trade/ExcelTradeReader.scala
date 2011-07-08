@@ -90,7 +90,7 @@ class ExcelTradeReader(eaiStrategyDB: EAIStrategyDB, traders: Traders) {
 }
 
 object ExcelTradeReader {
-  val readers = new Reflection().listClassesOfType("starling.services.trade.instrumentreaders", classOf[ExcelInstrumentReader]).map(c => c.newInstance)
+  lazy val readers = Reflection.listClassesOfType("starling.services.trade.instrumentreaders", classOf[ExcelInstrumentReader]).map(c => c.newInstance)
 
   def instrument(excelRow: ExcelRow): Tradeable = {
     try {

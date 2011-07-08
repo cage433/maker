@@ -57,12 +57,12 @@ abstract class SingleSwap(
         )
         extends UTP 
 {
-  assert(pricingRule.isValid(index.markets), "Invalid pricing rule for " + index)
+  assert(pricingRule.isValid(index.calendars), "Invalid pricing rule for " + index)
   assert(strike.denominatorUOM == volume.uom, "Price and volume different: " + (strike, volume))
 
   def valuationCCY: UOM = strike.numeratorUOM
 
-  protected def averagingDays = averagingPeriod.days.filter(pricingRule.isObservationDay(index.markets, _))
+  protected def averagingDays = averagingPeriod.days.filter(pricingRule.isObservationDay(index.calendars, _))
 
   def liveAveragingDays(marketDay : DayAndTime) = averagingDays.filter(_.endOfDay > marketDay)
 

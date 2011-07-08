@@ -9,6 +9,7 @@ import starling.pivot._
 import controller.PivotTableConverter
 import starling.pivot.FieldChooserType._
 import java.awt.{Graphics2D, Dimension, Color, GradientPaint, Cursor, AWTEvent, Toolkit}
+import java.awt.{Component => AWTComp}
 import org.jdesktop.swingx.decorator.{HighlightPredicate}
 import org.jdesktop.swingx.JXTable
 import swing.event.{Event, MouseClicked, KeyPressed, KeyReleased}
@@ -75,14 +76,13 @@ class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSiz
   private var mouseDown0 = false
   def mouseDown = mouseDown0
   def mouseDown_=(b:Boolean) {mouseDown0 = b}
-  def drag = fieldBeingDragged0 || mouseDown0
+  def drag = mouseDown0
 
   private def hideDropTargets() {allDropTargets.foreach(_.hide())}
 
   def fieldDropped(field:Field, from:FieldChooserType, screenPoint:Point) {
     if (!model.getFields(FieldList).fields.contains(field) && fieldListComponent.dropBounds(field).exists(_.contains(screenPoint))) {
       model.publishFieldStateChange(field, 0, from, FieldList)
-      hideDropTargets()
     } else if (columnAndMeasureComponent.dropBounds(field).exists(_.contains(screenPoint))) {
       val newColumnStructure = columnAndMeasureComponent.newColumnStructure(screenPoint, field)
       model.publishFieldStateChange(field, newColumnStructure, from)
@@ -556,20 +556,17 @@ class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSiz
         val selection:Option[(String,Boolean)] = table.getSelectedCells match {
           case Nil => None
           case (row, col) :: Nil => {
-            table.getValueAt(row, col) match {
-              case tc:TableCell => Some((tc.longText.getOrElse(tc.text),false))
-              case ac:AxisCell => Some((ac.text,false))
-              case _ => None
+            table.getValueAt(row, col) partialMatch {
+              case tc:TableCell => (tc.longText.getOrElse(tc.text), false)
+              case ac:AxisCell => (ac.text, false)
             }
           }
           case many => {
-            val values = many.map { case (row,col) => {
-              table.getValueAt(row, col) match {
+            val values = many.flatMapO { case (row, col) => {
+              table.getValueAt(row, col) partialMatchO {
                 case tc:TableCell => tc.doubleValue
-                case ac:AxisCell => None
-                case _ => None
               }
-            }}.somes
+            }}
             if (values.isEmpty) {
               None
             } else {
@@ -752,8 +749,8 @@ class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSiz
     add(fullScreenButton, "growy, ay top")
   }
   // I shouldn't be doing this here but if we don't have report specific panels, the filter field chooser should have a different border.
-  if (!reportPanelsAvailable) {
-    filterComponent.border = MatteBorder(0,0,1,0,BorderColour)
+  if (reportPanelsAvailable) {
+    filterComponent.border = MatteBorder(1,0,1,0,BorderColour)
   }
 
   private def gotoFullScreen {
@@ -870,7 +867,6 @@ class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSiz
   def resetDynamicState() {
     viewUI.resetImageProperties()
     fieldBeingDragged = false
-    mouseDown = false
     allDropTargets.foreach(_.reset())
   }
 

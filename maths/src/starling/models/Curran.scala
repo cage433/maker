@@ -36,12 +36,12 @@ class Curran(val callOrPut: CallOrPut, val S: Double, val K: Double, val r: Doub
     val dailyMeans = Ti.map(log(S) + (r - y - vol * vol / 2.0) * _)
     val dailyVols = Ti.map(vol * sqrt(_))
 
-    // TODO Figure out why implicit conversion is not working
+    // TODO [12 Oct 2010] Figure out why implicit conversion is not working
     val meanOfLogGeometricAverage = averageDoubleSeq(dailyMeans)
 
     val volSquaredOverUnpricedDays = (vol * vol) / unpricedDays
 
-    // TODO Express this in a functional style
+    // TODO [12 Oct 2010] Express this in a functional style
     var sum = 0.0
     for (i <- 1 to unpricedDays) {
       for (j <- 1 to i) sum += Ti(j - 1)
@@ -50,7 +50,7 @@ class Curran(val callOrPut: CallOrPut, val S: Double, val K: Double, val r: Doub
 
     val volOfLogGeometricAverage = (vol / unpricedDays) * sqrt(sum)
 
-    // TODO and this
+    // TODO [12 Oct 2010] and this
     var covarianceXXi = new Array[Double](unpricedDays)
     for (i <- 0 until unpricedDays) {
       covarianceXXi(i) = 0.0

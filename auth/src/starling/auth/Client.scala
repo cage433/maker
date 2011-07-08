@@ -23,7 +23,7 @@ class ClientLogin {
   }
 }
 
-class Client(servicePrincipalName: String, subject: Subject) {
+class Client(servicePrincipalName: String, subject: Subject) extends starling.bouncyrmi.Client {
 
   /**
    * Returns a ticket that grants access to `servicePrincipalName`
@@ -87,7 +87,7 @@ class Client(servicePrincipalName: String, subject: Subject) {
         pfClientContextAttr,
         null)
     }
-    // TODO After this call our state will still be SEC_I_CONTINUE_NEEDED.
+    // TODO [06 May 2011] After this call our state will still be SEC_I_CONTINUE_NEEDED.
     // That's because although the server may be happy with the authentication
     // the client needs more rounds. We don't care about the client trusting the
     // server so we can just finish here. I think...

@@ -11,19 +11,18 @@ import starling.market.{FuturesMarket, Market, CommodityMarket}
 
 
 object ValidMarketParserObject {
-  val Parser = new ValidMarketParser(Market.markets.map(_.name.trim.toLowerCase).toSet)
+  val Parser = new ValidMarketParser(Market.all.map(_.name).toSet)
 }
 
 object PriceDataType extends MarketDataType {
   type dataType = PriceData
-  val keys = Market.futuresMarkets.map(PriceDataKey) ++
-          Market.forwardMarkets.map(fm => PriceDataKey(fm))
-
+  val keys = Market.all.map(PriceDataKey)
   val exchangeField = FieldDetails("Exchange")
   val marketField = FieldDetails("Market", ValidMarketParserObject.Parser)
   val marketCommodityField = FieldDetails("Market Commodity")
   val marketTenorField = FieldDetails("Market Tenor")
   val periodField = FieldDetails("Period", PeriodPivotParser)
+  val validity = new FieldDetails("Validity")
   val priceField = new FieldDetails(Field("Price")) {
     override def parser =  PivotQuantityPivotParser
     override def formatter = PivotQuantitySetPivotFormatter
@@ -34,7 +33,6 @@ object PriceDataType extends MarketDataType {
     override def isDataField = true
     override def transformValueForGroupByField(a: Any) = a.asInstanceOf[PriceValue].pq
   }
-  val validity = new FieldDetails("Validity")
 
   val initialPivotState = PivotFieldsState(
     filters=List((marketField.field,SomeSelection(Set()))),
@@ -43,7 +41,6 @@ object PriceDataType extends MarketDataType {
   )
 
   val fields = List(exchangeField, marketField, marketCommodityField, marketTenorField, periodField, priceField, validity)
-
   override def keyFields = Set(marketField, periodField).map(_.field)
   override def valueFields = Set(priceField.field)
 

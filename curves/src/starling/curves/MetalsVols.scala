@@ -28,8 +28,6 @@ case class BradyMetalVolAtomicDatumKey(market : CommodityMarket, period : DateRa
   def forwardStateValue(originalAtomicEnv: AtomicEnvironment, forwardDayAndTime: DayAndTime) = originalAtomicEnv(this)
   def nullValue = Percentage(0.10)
 
-  def volMarket = market
-
   def periodKey = Some(period)
 
   def underlying = market.name
@@ -77,7 +75,7 @@ class MetalsVols(val marketDayAndTime : DayAndTime, market : CommodityMarket, da
       try {
         val x = new DenseDoubleMatrix1D(times)
         val y = new DenseDoubleMatrix1D(months.map(m => Percentage.average(data.volsForPeriod(m).valuesIterator.toList).decimalValue))
-        // TODO find how trinity inpterpolates. linear interpolation gets closest to what trinity value has
+        // TODO [27 May 2010] find how trinity inpterpolates. linear interpolation gets closest to what trinity value has
         val v = new PolynomialInterpolator(PolynomialInterpolator.LINEAR).interpolate(x, y, 0.0)
         Percentage(v)
       } catch {

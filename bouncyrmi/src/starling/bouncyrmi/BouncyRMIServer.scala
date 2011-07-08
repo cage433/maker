@@ -4,9 +4,6 @@ import scala.swing.event.Event
 import java.nio.channels.ClosedChannelException
 import org.jboss.netty.handler.ssl.SslHandler
 import org.jboss.netty.channel.group.{ChannelGroupFuture, ChannelGroupFutureListener, DefaultChannelGroup}
-import starling.utils.Log
-import java.lang.IllegalStateException
-import starling.auth.User
 import org.jboss.netty.util.HashedWheelTimer;
 import java.net.InetSocketAddress;
 import java.util.concurrent.Executors;
@@ -21,11 +18,13 @@ import org.jboss.netty.channel.MessageEvent;
 import org.jboss.netty.channel.SimpleChannelUpstreamHandler;
 
 import java.lang.reflect.InvocationTargetException
+import collection.mutable.HashMap
 
-class BouncyRMIServer[C](port: Int, serverContext: C, authHandler: ServerAuthHandler, version: String,
-                         users:java.util.Set[User], knownExceptionClasses:Set[Class[_]]=Set()) {
+class BouncyRMIServer[User](port: Int, authHandler: ServerAuthHandler[User], version: String, users:java.util.Set[User],
+                            knownExceptionClasses:Set[Class[_]], loggedIn: LoggedIn[User], serverContexts: AnyRef*) {
 
   lazy val serverTimer = new HashedWheelTimer
+  private val serverContextsMap = new HashMap[String, AnyRef]
   
   class Binding {
     val group = new DefaultChannelGroup("server")
@@ -33,8 +32,9 @@ class BouncyRMIServer[C](port: Int, serverContext: C, authHandler: ServerAuthHan
       new NioServerSocketChannelFactory(
         Executors.newCachedThreadPool(new NamedDaemonThreadFactory("ServerA")),
         Executors.newCachedThreadPool(new NamedDaemonThreadFactory("ServerB"))));
-    bootstrap.setPipelineFactory(new ServerPipelineFactory(authHandler, new ServerHandler(group), serverTimer))
+    bootstrap.setPipelineFactory(new ServerPipelineFactory[User](authHandler, new ServerHandler(group), serverTimer))
     val channel = bootstrap.bind(new InetSocketAddress(port))
+    val bound = false
 
     def broadcast(obj: Object) = {
       import scala.collection.JavaConversions._
@@ -48,7 +48,7 @@ class BouncyRMIServer[C](port: Int, serverContext: C, authHandler: ServerAuthHan
                 // registered a disconnect yet. it seems to just be a timing issue and we'll get
                 // the disconnect message very soon
                 if (f.getCause.getMessage != "SSLEngine already closed") {
-                  Log.warn("Server: Failed to send", f.getCause)
+                  Logger.warn("Server: Failed to send", f.getCause)
                 }
               }
             }
@@ -59,7 +59,7 @@ class BouncyRMIServer[C](port: Int, serverContext: C, authHandler: ServerAuthHan
     }
 
     def stop(message: String) {
-      Log.info("Server: stopping with message: " + message)
+      Logger.info("Server: stopping with message: " + message)
       val shutdownBroadcast = broadcast(ShutdownMessage(message))
       shutdownBroadcast.await(2000)
       group.close().awaitUninterruptibly()
@@ -96,19 +96,30 @@ class BouncyRMIServer[C](port: Int, serverContext: C, authHandler: ServerAuthHan
     serverTimer.stop
   }
 
+  def getServerContext(declaringClassName: String): AnyRef = {
+    def findAssignableContext = {
+      val declaringClass = Class.forName(declaringClassName)
+
+      serverContexts.find(context => declaringClass.isAssignableFrom(context.getClass))
+        .getOrElse(throw new Exception("Unknown service: " + declaringClassName))
+    }
+
+    serverContextsMap.getOrElseUpdate(declaringClassName, findAssignableContext)
+  }
+
   class ServerHandler(group: DefaultChannelGroup) extends SimpleChannelUpstreamHandler {
     override def channelConnected(ctx: ChannelHandlerContext, e: ChannelStateEvent) = {
       val sslHandler = ctx.getPipeline().get(classOf[SslHandler])
-      Log.info("Server: Channel connected. Waiting for SSL")
+      Logger.info("Server: Channel connected. Waiting for SSL")
       // Get notified when SSL handshake is done.
       val handshakeFuture = sslHandler.handshake
       handshakeFuture.addListener(new ChannelFutureListener {
         def operationComplete(future: ChannelFuture) = {
           if (future.isSuccess) {
-            Log.info("Server: SSL Complete. Client has connected")
+            Logger.info("Server: SSL Complete. Client has connected")
             group.add(future.getChannel)
           } else {
-            Log.info("Server: SSL Failed. Client failed to connect")
+            Logger.info("Server: SSL Failed. Client failed to connect")
             future.getChannel.close
           }
         }
@@ -116,24 +127,24 @@ class BouncyRMIServer[C](port: Int, serverContext: C, authHandler: ServerAuthHan
     }
 
     override def channelDisconnected(ctx: ChannelHandlerContext, e: ChannelStateEvent) = {
-      val user = BouncyRMI.loggedIn.get(e.getChannel)
-      Log.info("Server: Client disconnected: " + e.getChannel.getRemoteAddress + " (" + user + ")")
+      val user = loggedIn.get(e.getChannel)
+      Logger.info("Server: Client disconnected: " + e.getChannel.getRemoteAddress + " (" + user + ")")
       users.remove(user)
       group.remove(e.getChannel)
-      BouncyRMI.loggedIn.remove(e.getChannel)
+      loggedIn.remove(e.getChannel)
     }
 
     override def messageReceived(ctx: ChannelHandlerContext, e: MessageEvent) {
       val message = e.getMessage
       message match {
         case VersionCheckRequest => {
-          Log.info("Sending version check response: " + version)
+          Logger.info("Sending version check response: " + version)
           e.getChannel.write(VersionCheckResponse(version))
         }
         case PingMessage => {
           e.getChannel.write(PongMessage)
         }
-        case MethodInvocationRequest(clientVersion, id, name, params, args) => {
+        case MethodInvocationRequest(clientVersion, id, declaringClassName, name, params, args) => {
           def write(result: AnyRef) {
             val future = e.getChannel.write(result)
             future.addListener(new ChannelFutureListener() {
@@ -145,12 +156,12 @@ class BouncyRMIServer[C](port: Int, serverContext: C, authHandler: ServerAuthHan
               }
             })
           }
+
           if (clientVersion != version) {
             write(MethodInvocationBadVersion(id, version))
           } else {
             val buffer = new StringBuilder
             val paramClasses = params.map(classForNameWithPrimitiveCheck(_))
-            val method = serverContext.asInstanceOf[AnyRef].getClass.getMethod(name, paramClasses: _*)
 
             def makeExceptionForClient(t : Throwable) : MethodInvocationException = {
               // No way currently of knowing whether the exception contains
@@ -166,7 +177,11 @@ class BouncyRMIServer[C](port: Int, serverContext: C, authHandler: ServerAuthHan
                 MethodInvocationException(id, exceptionWithoutStarlingData)
               }
             }
+
             val result = try {
+              val serverContext = getServerContext(declaringClassName)
+
+              val method = serverContext.asInstanceOf[AnyRef].getClass.getMethod(name, paramClasses: _*)
               StdOut.setTee(line => e.getChannel.write(StdOutMessage(id, line)))
               val r = method.invoke(serverContext, args: _ *)
               StdOut.reset
@@ -176,7 +191,6 @@ class BouncyRMIServer[C](port: Int, serverContext: C, authHandler: ServerAuthHan
                 e.getCause.printStackTrace()
                 makeExceptionForClient(e.getCause)
               }
-
               case t: Throwable => {
                 t.printStackTrace()
                 makeExceptionForClient(t)
@@ -184,6 +198,7 @@ class BouncyRMIServer[C](port: Int, serverContext: C, authHandler: ServerAuthHan
             } finally {
               StdOut.setTee(c => {})
             }
+
             write(result)
           }
         }
@@ -223,7 +238,7 @@ class BouncyRMIServer[C](port: Int, serverContext: C, authHandler: ServerAuthHan
         //There is no point sending the stacktrace to the client if the channel is closed
         e.getChannel().close();
       } else {
-        Log.error("Server exception ", e.getCause())
+        Logger.error("Server exception ", e.getCause())
         //Send the stacktrace to the client, then disconnect
         val future = ctx.getChannel.write(ServerException(e.getCause))
         future.addListener(new ChannelFutureListener() {

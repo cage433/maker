@@ -54,6 +54,7 @@
       <w>username</w>
       <w>uuid</w>
       <w>viewport</w>
+      <w>xstream</w>
     </words>
   </dictionary>
 </component>

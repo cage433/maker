@@ -19,11 +19,11 @@ class ExcelInstrumentReaderTests extends JonTestEnv {
     val market2 = Market.NYMEX_GASOLINE
     val crack = FuturesSpreadMarket.RB_CRACKS
     constructArgs(
-      (Map("id" -> 1, "size" -> -2, "unit" -> "lots", "market" -> "NYMEX WTI 1st month", "instr" -> "future", "period" -> "nov-10", "price" -> 77.84),
+      (Map("id" -> 1, "size" -> -2, "unit" -> "lots", "market" -> "NYMEX WTI", "instr" -> "future", "period" -> "nov-10", "price" -> 77.84),
               Future(market1, Month(2010, 11), Quantity(77.84, market1.priceUOM), Quantity(-2000, market1.uom))),
-      (Map("id" -> 2, "size" -> -2000, "unit" -> "bbl", "market" -> "NYMEX WTI 1st month", "instr" -> "future", "period" -> "nov-10", "price" -> 77.84),
+      (Map("id" -> 2, "size" -> -2000, "unit" -> "bbl", "market" -> "NYMEX WTI", "instr" -> "future", "period" -> "nov-10", "price" -> 77.84),
               Future(market1, Month(2010, 11), Quantity(77.84, market1.priceUOM), Quantity(-2000, market1.uom))),
-      (Map("id" -> 3, "size" -> -2, "unit" -> "bbl", "market" -> "NYMEX WTI 1st month", "instr" -> "future", "period" -> "x-10", "price" -> 77.84),
+      (Map("id" -> 3, "size" -> -2, "unit" -> "bbl", "market" -> "NYMEX WTI", "instr" -> "future", "period" -> "x-10", "price" -> 77.84),
               Future(market1, Month(2010, 11), Quantity(77.84, market1.priceUOM), Quantity(-2, market1.uom))),
       (Map("id" -> 4, "size" -> -2, "unit" -> "lots", "market" -> "nymex rbob", "instr" -> "future", "period" -> "nov-10/dec-10", "price" -> "0"),
               new FuturesCalendarSpread(market2, Month(2010, 11), Month(2010, 12), Quantity(0, market2.priceUOM), Quantity(-2 * 42000, market2.uom))
@@ -65,7 +65,7 @@ class ExcelInstrumentReaderTests extends JonTestEnv {
 
   @DataProvider(name = "testSwapsData")
   def testSwapsData(): Array[Array[Object]] = {
-    val index = FuturesFrontPeriodIndex.WTI10
+    val index = Index.WTI10
     constructArgs(
       (Map("id" -> 1, "size" -> -2000, "unit" -> "bbl", "market" -> "NYMEX WTI 1st month", "instr" -> "swap", "period" -> "nov-10", "price" -> 77.84, "clearing house" -> "bla"),
               CommoditySwap(index, Quantity(77.84, index.priceUOM), Quantity(-2000, index.uom), Month(2010, 11), cleared = true, pricingRule = CommonPricingRule)),
@@ -84,7 +84,7 @@ class ExcelInstrumentReaderTests extends JonTestEnv {
 
   @DataProvider(name = "testAsianData")
   def testAsianData(): Array[Array[Object]] = {
-    val index = FuturesFrontPeriodIndex.WTI10
+    val index = Index.WTI10
     constructArgs(
       (Map("id" -> 1, "size" -> -2000, "unit" -> "bbl", "ex" -> "", "market" -> "NYMEX WTI 1st month", "instr" -> "asian", "period" -> "nov-10", "strike" -> 77.84, "p/c" -> "put"),
               AsianOption(index, Month(2010, 11), Quantity(77.84, index.priceUOM), Quantity(-2000, index.uom), Put)),
@@ -97,7 +97,9 @@ class ExcelInstrumentReaderTests extends JonTestEnv {
 
   @Test(dataProvider = "testAsianData")
   def testAsians(row: Map[String, Any], instrument: Tradeable) {
-    assertEquals(ExcelTradeReader.instrument(ExcelRow(row, traders)), instrument)
+    println("???")
+    val excelRow = ExcelRow(row, traders)
+    assertEquals(ExcelTradeReader.instrument(excelRow), instrument)
   }
 
   @Test(expectedExceptions = Array(classOf[AssertionError]))
@@ -127,6 +129,6 @@ class ExcelInstrumentReaderTests extends JonTestEnv {
   @Test
   def testNegativePrices5 {
     val future = Map("id" -> 6, "size" -> -2, "unit" -> "bbls", "market" -> "Gas Oil Crack", "instr" -> "swap", "period" -> "x10/z10", "price" -> "-1.02")
-    assertEquals (ExcelRow(future, traders).price, Quantity(-1.02, FuturesSpreadIndex.GAS_OIL_CRACK.priceUOM))
+    assertEquals (ExcelRow(future, traders).price, Quantity(-1.02, Index.IPE_GAS_OIL_VS_IPE_BRENT.priceUOM))
   }
 }

@@ -3,7 +3,6 @@ package starling.marketdata
 
 import collection.SortedMap
 import starling.quantity.{UOM, Percentage}
-import starling.utils.{OrderedComparable}
 import starling.daterange.{DateRange, Day}
 import starling.market.{InterestRateMarket, Market, FXMarket, HasImpliedVol}
 import collection.immutable.TreeMap
@@ -13,7 +12,7 @@ import starling.pivot.{Field, PivotFieldsState, SomeSelection, FieldDetails}
  * These should no longer be needed. Originally held implied vols gathered from Trinity reval tables, however
  * we now read vols from volpages/voldata.
  * Some Conversion scripts refer to these classes.
- * TODO - remove after next release - AMc 28/6/10
+ * TODO [28 Jun 2010] remove after next release - AMc
  */
 
 object ImpliedVolDataType extends MarketDataType {

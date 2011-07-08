@@ -7,7 +7,7 @@ import starling.calendar.BusinessCalendarSet
 import starling.daterange._
 import starling.db.MarketDataEntry
 import starling.market._
-import starling.marketdata._
+import starling.marketdata.{PriceFixingsHistoryData, PriceFixingsHistoryDataKey}
 import starling.pivot.MarketValue
 import starling.quantity.{Quantity, UOM}
 
@@ -17,44 +17,32 @@ import UOM._
 import starling.utils.ImplicitConversions._
 import java.text.DecimalFormat
 import starling.utils.Pattern._
+import starling.marketdata.{PriceFixingsHistoryData, PriceFixingsHistoryDataKey}
 
+object LIBORFixings extends HierarchicalLimSource(TopRelation.Trafigura.Bloomberg.InterestRates.children, List(Level.Close)) {
+  type Relation = LIBORRelation
 
-object LIBORFixings extends HierarchicalLimSource {
-  type Relation = LIBORFixingRelation
-
-  case class LIBORFixingRelation(interestRateType: String, currency: UOM, period: StoredFixingPeriod) {
+  case class LIBORRelation(interestRateType: String, currency: UOM, period: StoredFixingPeriod) {
     val group = (interestRateType, currency)
   }
 
-  private val Regex = """TRAF\.(\w+)\.(\w+)\.(\w+)""".r
-  private val TenorRegex = """(\d+)(\w)""".r
-
-  val parentNodes = List(TopRelation.Trafigura.Bloomberg.InterestRates.Libor, TopRelation.Trafigura.Bloomberg.InterestRates.Swaps)
-  val levels = List(Level.Close)
-
-  def fixingRelationFrom(childRelation: String): Option[(LIBORFixingRelation, String)] = childRelation partialMatch {
-    case Regex(rateType, currency, tenor) if parseTenor(tenor).isDefined =>
-      (LIBORFixingRelation(rateType, UOM.fromString(currency), StoredFixingPeriod.tenor(parseTenor(tenor).get)), childRelation)
+  def relationExtractor = Extractor.regex("""TRAF\.(\w+)\.(\w+)\.(\w+)""") {
+    case List(rateType, UOM.Parse(ccy), Tenor.Parse(tenor)) => Some(LIBORRelation(rateType, ccy, StoredFixingPeriod.tenor(tenor)))
   }
 
-  def marketDataEntriesFrom(fixings: List[Prices[LIBORFixingRelation]]): List[MarketDataEntry] = {
+  def marketDataEntriesFrom(fixings: List[Prices[LIBORRelation]]) = {
     fixings.groupBy(group(_)).map { case ((rateType, currency, observationDay), grouped) =>
       MarketDataEntry(observationDay.atTimeOfDay(ObservationTimeOfDay.LiborClose),
         PriceFixingsHistoryDataKey(currency.toString, Some(rateType)),
         PriceFixingsHistoryData.create(grouped.map(fixings => (Level.Close, fixings.relation.period) → marketValue(fixings)))
       )
-    }.toList
+    }
   }
 
-  private def parseTenor(tenor: String): Option[Tenor] = tenor partialMatch {
-    case TenorRegex(value, tenorType) => Tenor(TenorType.typesByShortName(tenorType), value.toInt)
-  }
-
-  def group(fixings: Prices[LIBORFixingRelation]) = {
+  def group(fixings: Prices[LIBORRelation]) =
     (fixings.relation.interestRateType, fixings.relation.currency, fixings.observationDay)
-  }
 
-  def marketValue(fixings: Prices[LIBORFixingRelation]) = MarketValue.percentage(fixings.priceByLevel(Level.Close) / 100)
+  def marketValue(fixings: Prices[LIBORRelation]) = MarketValue.percentage(fixings.priceByLevel(Level.Close) / 100)
 }
 
 case class LIBORFixing(value: Quantity, fixingDay: Day) {

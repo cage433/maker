@@ -1,10 +1,10 @@
 package starling.services
 
 import starling.pivot.controller.PivotGrid
-import starling.market.Market
 import starling.utils.ImplicitConversions._
 import starling.daterange.DateRange
 import java.text.DecimalFormat
+import starling.market.{TrinityMarket, Market}
 
 
 object Trinity {
@@ -20,9 +20,9 @@ object Trinity {
 
     val rows = data.rowData.zip(data.mainData)
 
-    rows.map { case (Array(marketName, periodCell), Array(priceCell)) => {
+    rows.toList.flatMapO { case (Array(marketName, periodCell), Array(priceCell)) => {
       try {
-        val trinityCode = Market.marketToTrinityCode(Market.fromName(marketName.value.value.value.toString))
+        val trinityCode = TrinityMarket.marketToTrinityCode(Market.fromName(marketName.value.value.value.toString))
         val price = format.format(priceCell.doubleValue.get)
         val period = periodCell.value.value.value.asInstanceOf[DateRange].firstDay
 
@@ -30,6 +30,6 @@ object Trinity {
       } catch {
         case e: Exception => None
       }
-    } }.toList.somes
+    } }
   }
 }

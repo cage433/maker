@@ -299,7 +299,7 @@ case class KeyRecordingCurveObjectEnvironment(
   private val record = new MapMaker().concurrencyLevel(16).makeMap[AtomicDatumKey, FutureTask[AtomicDatumKey]]
 
   def keys: Set[AtomicDatumKey] = {
-    Set[AtomicDatumKey]() ++ record.keySet 
+    Set[AtomicDatumKey]() ++ record.keySet
   }
 
 

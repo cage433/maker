@@ -19,11 +19,11 @@ import RichReactor._
 case class ReportConfigurationPage(tradeAndReferenceDataInfo:TradeAndReferenceDataInfo) extends Page {
   def text = "Configure Report"
 
-  val icon = StarlingIcons.im("/icons/16x16_report_magnify.png")
+  def icon = StarlingIcons.im("/icons/16x16_report_magnify.png")
   // This page doesn't need anything from the server.
   def build(reader:PageBuildingContext) = {null}
 
-  def createComponent(context:PageContext, data:PageData, browserSize:Dimension) = {
+  def createComponent(context:PageContext, data:PageData, bookmark:Bookmark, browserSize:Dimension) = {
     new ReportConfigurationComponent(context, tradeAndReferenceDataInfo)
   }
 }

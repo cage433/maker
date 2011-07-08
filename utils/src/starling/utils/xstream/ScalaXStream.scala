@@ -1,4 +1,4 @@
-package starling.utils
+package starling.utils.xstream
 
 import scala.collection.immutable.{ HashMap, HashSet, Map, Set, TreeMap, TreeSet }
 import scala.collection.mutable.{ ArrayBuffer, ListBuffer }
@@ -9,6 +9,7 @@ import com.thoughtworks.xstream.mapper.Mapper
 import com.thoughtworks.xstream.io.{ HierarchicalStreamReader, HierarchicalStreamWriter }
 import java.lang.{Class, String}
 import com.thoughtworks.xstream.converters._
+import starling.utils.Log
 
 object ScalaXStream {
   def configure(xstream : XStream) = {

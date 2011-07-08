@@ -5,13 +5,13 @@ import starling.quantity.Quantity
 import cern.colt.matrix.impl.DenseDoubleMatrix2D
 import starling.utils.conversions.RichColtMatrices._
 import cern.colt.matrix.linalg.Algebra
-import starling.market.{PublishedIndex, ForwardMarket, CommodityMarket}
 import starling.daterange.{Day, Month, Period, DateRange}
 import starling.daterange.TenorType
 import starling.daterange.Week
 import starling.daterange.DayAndTime
 import starling.daterange.TimeOfDay._
 import starling.calendar.BusinessCalendar
+import starling.market.{Index, PublishedIndex, CommodityMarket}
 
 trait EnvironmentDifferentiable{
   def curveKey : CurveKey
@@ -95,7 +95,7 @@ case class PriceDifferentiable(market : CommodityMarket, period : DateRange) ext
   def quantityValue(env: Environment) = calculate(env).asInstanceOf[Quantity]
 
   def calculate(env : Environment) = {
-    PublishedIndex.marketToPublishedIndexMap.get(market) match {
+    Index.marketToPublishedIndexMap.get(market) match {
       case Some(index) => env.averagePrice(index, period)
       case None => {
         market.tenor match {

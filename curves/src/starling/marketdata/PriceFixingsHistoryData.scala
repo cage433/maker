@@ -13,8 +13,13 @@ import starling.utils.conversions.Tuple2Ordering
 
 case class PriceFixingsHistoryData(fixings: SortedMap[(Level, StoredFixingPeriod), MarketValue]) extends MarketData {
   def fixingFor(level: Level, period: StoredFixingPeriod): MarketValue = {
-    fixings.getOrElse( ( level,period), throw new Exception("No fixing found for " + level + " " + period +
-      ", only have levels: " + fixings.keys.map(_._1) + ", months: " + fixings.keys.map(_._2)))
+    fixings.get((level, period)) match {
+      case Some(v) => v
+      case _ =>  {
+        throw new Exception("No fixing found for " + level + " " + period +
+          ", only have levels: " + fixings.keys.map(_._1) + ", months: " + fixings.keys.map(_._2))
+      }
+    }
   }
 
   def fixingsFor(levelsAndPeriods: List[(Level, StoredFixingPeriod)]) = fixings.toMap.filterKeys(levelsAndPeriods)
@@ -31,13 +36,10 @@ object PriceFixingsHistoryData {
     data.foldLeft(PriceFixingsHistoryData(emptyFixings))(_ + _)
   }
 
-  def create(prices: Map[(Level, StoredFixingPeriod), MarketValue]): PriceFixingsHistoryData = {
-    PriceFixingsHistoryData(emptyFixings ++ prices)
-  }
+  def create(level:Level, period:StoredFixingPeriod, value:Quantity): PriceFixingsHistoryData =
+    create(Map( (level,period) → MarketValue.quantity(value)))
 
-  def create(level:Level, period:StoredFixingPeriod, value:Quantity):PriceFixingsHistoryData = create(Map( (level,period) → MarketValue.quantity(value)))
-
-  def create(prices: List[((Level, StoredFixingPeriod), MarketValue)]): PriceFixingsHistoryData = {
+  def create(prices: Traversable[((Level, StoredFixingPeriod), MarketValue)]): PriceFixingsHistoryData = {
     PriceFixingsHistoryData(emptyFixings ++ prices)
   }
 

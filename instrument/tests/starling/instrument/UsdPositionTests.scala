@@ -7,10 +7,10 @@ import starling.quantity.UOM._
 import starling.quantity.Quantity
 import starling.curves._
 import starling.utils.QuantityTestUtils._
-import starling.market.{ForwardMarket, FuturesMarket, Market}
+import starling.market.Market
 
 class UsdPositionTests extends StarlingTest {
-  val market = ForwardMarket.testMarket("COPPER", USD, MT)
+  val market = Market.LME_COPPER
   val price: Quantity = Quantity(123, USD / MT)
   val usdRates = Map(
     GBP -> Quantity(1.8, USD / GBP),

@@ -16,12 +16,10 @@ trait RichList {
   }
 
   class RichList[A](list : List[A]) {
-
-
-    // TODO: Drop when we use scala 2.9
+    // TODO [01 Apr 2011] Drop when we use scala 2.9
     def inits = list.reverse.tails.reverse.map(_.reverse)
 
-    // TODO: Drop when we use scala 2.9
+    // TODO [01 Apr 2011] Drop when we use scala 2.9
     def tails = {
       def recurse(list : List[A]) : List[List[A]] = list match {
         case Nil => Nil
@@ -33,9 +31,6 @@ trait RichList {
 
     def castValues[T](error : Any => T)(implicit m : Manifest[T]) : List[T] = m.castAll(list, error)
     def filterCast[T](implicit m : Manifest[T]): List[T] = list.flatMap(m.cast(_))
-
-    def asMap[B](keyF : A => B): Map[B, A] = list.map(i => (keyF(i), i)).toMap
-    def valuesToMap[B](valueF: A => B): Map[A, B] = list.map(key => (key, valueF(key))).toMap
 
     def allSame[B](f : A => B) : Boolean = {
       if (list.length > 1) {

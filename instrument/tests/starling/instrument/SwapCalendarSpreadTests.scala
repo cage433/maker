@@ -12,7 +12,7 @@ import starling.market.formula._
 import starling.daterange._
 import starling.daterange.Day._
 
-class SwapCalendarSpreadTests extends TestExpiryRules {
+class SwapCalendarSpreadTests extends TestMarketSpec {
 
   @Test
   def testSameAsTwoSwaps {
@@ -32,7 +32,7 @@ class SwapCalendarSpreadTests extends TestExpiryRules {
       }
     )
 
-    val index = PublishedIndex.DATED_BRENT
+    val index = Index.DATED_BRENT
     val market = index.market
 
     val period1 = DateRange(8 Jan 2011, 20 Jan 2011)

@@ -215,7 +215,7 @@ class RefinedAssignmentSystemOfRecord(externalDB : RichDB) extends SystemOfRecor
     val exchange = rs.getString("EXCHANGE")
     val hub = rs.getString("HUB")
     val commodityCategory = rs.getStringOrBlank("COMMODITY_CATEGORY")
-    // TODO - add month in extraColumns - and allocated also
+    // TODO [11 Aug 2010] add month in extraColumns - and allocated also
     val contractNo = rs.getString("CONTRACTNO")
     val allocationNo = rs.getStringOrBlank("ALLOCATION_NO")
     val riskArea = rs.getStringOrBlank("RISK_AREA")

@@ -40,7 +40,7 @@ class MultiLegTests extends JonTestEnv {
 
   @Test
   def testSwap {
-    val index = FuturesFrontPeriodIndex.WTI10
+    val index = Index.WTI10
     val strike = 10(USD / BBL)
     val volume = 1(BBL)
     val period = Quarter(2011, 1)
@@ -53,7 +53,7 @@ class MultiLegTests extends JonTestEnv {
 
   @Test
   def testAsian {
-    val index = FuturesFrontPeriodIndex.WTI10
+    val index = Index.WTI10
     val jan = Month(2011, 1)
     val feb = Month(2011, 2)
     val mar = Month(2011, 3)

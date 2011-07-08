@@ -2,6 +2,8 @@ package starling.utils
 
 import java.net.{URLDecoder, URLEncoder}
 
+import starling.utils.Pattern._
+
 
 trait RichString {
 	implicit def StringToRichString(s : String) = new RichString(s)

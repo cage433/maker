@@ -45,7 +45,7 @@ class TradeImporter(systemOfRecord: SystemOfRecord, tradeStore: TradeStore,
           temp
         }
       }
-      tradeStore.storeTrades( (trade) => true, trades, writeTimestamp)._2
+      tradeStore.storeTrades( (trade) => true, trades, writeTimestamp).changed
     }
   }
 }

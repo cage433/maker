@@ -122,7 +122,7 @@ public class DoForward {
             Enumeration  enm = request.getHeaderNames();
             while (enm.hasMoreElements())
             {
-                // TODO could be better than this!
+                // TODO [19 Nov 2009] could be better than this!
             	String  hdr=(String )enm.nextElement();
                 String  lhdr=hdr.toLowerCase();
 

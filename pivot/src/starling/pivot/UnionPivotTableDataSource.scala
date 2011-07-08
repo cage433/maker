@@ -70,4 +70,5 @@ class UnionPivotTableDataSource(a:PivotTableDataSource, b:PivotTableDataSource) 
   override def availablePages = a.availablePages
 
   override def reportSpecificOptions = (a.reportSpecificOptions ++ b.reportSpecificOptions).distinct
+  override def zeroFields = a.zeroFields ++ b.zeroFields
 }

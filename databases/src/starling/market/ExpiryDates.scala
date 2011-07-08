@@ -6,7 +6,7 @@ import starling.calendar.BusinessCalendars
 import starling.daterange.{DateRange, DayOfWeek, Day, Month}
 
 class FuturesExpiryRulesImpl(eai: DB, businessCalendars: BusinessCalendars) extends FuturesExpiryRules(businessCalendars) {
-  def rule(eaiQuoteID: Int) = dbRules(eaiQuoteID)
+  def ruleOption(eaiQuoteID: Int) = dbRules.get(eaiQuoteID)
 
   lazy private val dbRules: Map[Int, FuturesExpiryRule] = {
     var dates = Map.empty[Int, FuturesExpiryRuleMap]
@@ -49,6 +49,9 @@ class FuturesExpiryRulesImpl(eai: DB, businessCalendars: BusinessCalendars) exte
 
 case class FuturesExpiryRuleMap(id: Int, lastTradingDays: Map[DateRange, Day] = Map(), expiryDays: Map[DateRange, Day] = Map(),
                                 csoExpiryDays: Map[DateRange, Day] = Map()) extends FuturesExpiryRule {
+
+  val name = "EAIExpiryRule(" + id + ")"
+
   def addLastTradingDay(dr: DateRange, lastTradingDay: Day): FuturesExpiryRuleMap = copy(lastTradingDays = lastTradingDays ++ Map(dr -> lastTradingDay))
   def addExpiryDay(dr: DateRange, lastTradingDay: Day): FuturesExpiryRuleMap = copy(expiryDays = expiryDays ++ Map(dr -> lastTradingDay))
   def addCSOExpiryDay(dr: DateRange, lastTradingDay: Day): FuturesExpiryRuleMap = copy(csoExpiryDays = csoExpiryDays ++ Map(dr -> lastTradingDay))

@@ -3,7 +3,6 @@ package starling.reports.pivot
 import java.lang.Throwable
 import starling.curves.{ReportContext, Environment}
 import starling.quantity.{UOM, Quantity}
-import starling.pivot.{NullableDayFieldDetails, NullableDay, PivotQuantity, SumPivotQuantityFieldDetails}
 import starling.utils.Stopwatch
 import starling.curves.EnvironmentDifferentiable
 import starling.daterange.Period
@@ -12,6 +11,7 @@ import starling.utils.cache.CacheFactory
 import starling.curves.AtomicEnvironment
 import starling.gui.api.{ReportSpecificChoices, UTPIdentifier}
 import starling.instrument._
+import starling.pivot._
 
 /**
  * Shows the mtm and undiscounted mtm for an instrument
@@ -167,4 +167,5 @@ class MtmPivotReport(@transient environment:Environment, @transient utps : Map[U
     super.combine(combinedRows, reportSpecificChoices)
   }
   def marketDay = environment.marketDay
+  override def zeroFields = Set(Field(MtmPivotReport.pnlFieldName))
 }

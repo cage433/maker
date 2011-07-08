@@ -2,7 +2,6 @@ package starling.schemaevolution
 
 import com.thoughtworks.xstream.converters.collections.AbstractCollectionConverter
 import starling.marketdata.{ForwardRateDataEntry, ImpliedVolData, ImpliedVolEntryKey}
-import starling.utils.{TreeMapConverter, Log, OrderedComparable, StarlingXStream}
 import com.thoughtworks.xstream.converters.{ConversionException, MarshallingContext, Converter, UnmarshallingContext}
 import starling.daterange.{Month, Day}
 import starling.market.{FuturesMarket, Market, CommodityMarket}
@@ -20,6 +19,8 @@ import scala.collection.JavaConversions._
 import collection.immutable.{HashMap, TreeMap}
 import collection.mutable.ListBuffer
 import starling.services.StarlingInit
+import starling.utils.StarlingXStream
+import starling.utils.xstream.TreeMapConverter
 
 class Patch16_SnapshotMarketDataConversionPost28_STR290 extends Patch {
 

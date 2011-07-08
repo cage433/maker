@@ -3,12 +3,12 @@ package starling.instrument
 import starling.richdb.RichInstrumentResultSetRow
 import starling.daterange.{DayAndTime, Day}
 import starling.quantity.{UOM, Quantity, Percentage}
-import starling.market.{ProxyForwardMarket, ForwardMarket, Market}
 import starling.curves._
 import starling.models.Call
 import starling.models.European
 import starling.utils.CollectionUtils
 import starling.daterange.DateRangePeriod
+import starling.market.{CommodityMarket, Market}
 
 /** Represents a purchase of some commodity on some date in the future.
  *  <p>
@@ -16,7 +16,7 @@ import starling.daterange.DateRangePeriod
  *  the mtm is discounted
  */
 case class CommodityForward(
-  market : ForwardMarket,
+  market : CommodityMarket,
   deliveryDay : Day,
   strike : Quantity,
   volume : Quantity
@@ -36,14 +36,14 @@ case class CommodityForward(
 
   def valuationCCY : UOM = strike.numeratorUOM
 
-  def isLive(dayAndTime: DayAndTime) : Boolean = dayAndTime < deliveryDay.endOfDay // TODO what should this be - need Steven to look at forwards
+  def isLive(dayAndTime: DayAndTime) : Boolean = dayAndTime < deliveryDay.endOfDay // TODO [15 Apr 2010] what should this be - need Steven to look at forwards
 
   override def expiryDay() = Some(deliveryDay)
 
   def instrumentType = CommodityForward
   def tradeableType = CommodityForward
 
-  //TODO - check this
+  //TODO [21 Oct 2009] check this
   private lazy val settlementDate = deliveryDay
   def details :Map[String, Any] = Map("Market" -> market, "Period" -> deliveryDay, "Strike" -> strike)
   def tradeableDetails :Map[String, Any] = Map("Market" -> market, "Period" -> deliveryDay, "Initial Price" -> strike, "Quantity" -> volume)
@@ -61,7 +61,7 @@ case class CommodityForward(
 
 
   def price(env : Environment) = {
-    env.forwardPrice(market, market.underlying(deliveryDay))
+    env.forwardPrice(market, deliveryDay)
   }
 }
 
@@ -69,13 +69,12 @@ object CommodityForward extends InstrumentType[CommodityForward] with TradeableT
   val name = "Commodity Forward"
 
   def createTradeable(row: RichInstrumentResultSetRow) = {
-    CommodityForward(row.getForwardMarket("Market"), row.getDeliveryDay("Period"), row.getQuantity("InitialPrice"), row.getQuantity("Quantity"))
+    CommodityForward(row.getCommodityMarket("Market"), row.getDeliveryDay("Period"), row.getQuantity("InitialPrice"), row.getQuantity("Quantity"))
   }
-  val leadMarket = Market.LME_LEAD
   def sample = {
     import starling.quantity.Quantity._
     import starling.quantity.UOM._
-    val forwardLeadMarket = new ProxyForwardMarket(leadMarket)
-    CommodityForward(forwardLeadMarket, Day(2009, 9, 9), 77(USD/MT), 111(MT))
+    val leadMarket = Market.LME_LEAD
+    CommodityForward(leadMarket, Day(2009, 9, 9), 77(USD/MT), 111(MT))
   }
 }
