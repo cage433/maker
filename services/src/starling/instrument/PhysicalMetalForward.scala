@@ -15,6 +15,7 @@ import java.lang.Exception
 import EDMConversions._
 import com.trafigura.services.valuation.CostsAndIncomeQuotaValuation
 import starling.daterange.DayAndTime
+import com.trafigura.services.valuation.PricingValuationDetails
 
 case class InvalidPricingSpecException(msg : String) extends Exception(msg)
 
@@ -40,6 +41,20 @@ trait PricingSpec{
   def quotationPeriodStart : Option[Day]
   def quotationPeriodEnd : Option[Day]
   def indexName : String
+  def premium : Quantity
+  def valuationDetails(env : Environment) = {
+    PricingValuationDetails(
+      price(env),
+      premium,
+      price(env) * quantity,
+      isComplete = isComplete(env.marketDay),
+      fixedQuantity(env.marketDay),
+      pricingType,
+      quotationPeriodStart.map(_.toJodaLocalDate),
+      quotationPeriodEnd.map(_.toJodaLocalDate),
+      indexName
+    )
+  }
 }
 
 trait AveragePricingSpec extends PricingSpec{
@@ -98,6 +113,7 @@ case class OptionalPricingSpec(quantity : Quantity, choices : List[PricingSpec],
   def quotationPeriodStart : Option[Day] = specToUse.quotationPeriodStart
   def quotationPeriodEnd : Option[Day] = specToUse.quotationPeriodEnd
   def indexName : String = specToUse.indexName
+  def premium = specToUse.premium
 }
 
 case class WeightedPricingSpec(quantity : Quantity, specs : List[(Double, PricingSpec)]) extends PricingSpec{
@@ -114,6 +130,7 @@ case class WeightedPricingSpec(quantity : Quantity, specs : List[(Double, Pricin
   def quotationPeriodStart : Option[Day] = specs.map(_._2.quotationPeriodStart).filter(_.isDefined).map(_.get).sortWith(_<_).headOption
   def quotationPeriodEnd : Option[Day] = specs.map(_._2.quotationPeriodEnd).filter(_.isDefined).map(_.get).sortWith(_<_).lastOption
   def indexName : String = specs.head._2.indexName
+  def premium = specs.map{case (wt, spec) => spec.premium * wt}.sum
 }
 
 case class FixedPricingSpec (quantity : Quantity, pricesByQuantity : List[(Quantity, Quantity)]) extends PricingSpec{
@@ -138,6 +155,7 @@ case class FixedPricingSpec (quantity : Quantity, pricesByQuantity : List[(Quant
   def quotationPeriodStart : Option[Day] = None
   def quotationPeriodEnd : Option[Day] = None
   def indexName : String = "No Index"
+  def premium = Quantity.NULL
 }
 
 case class UnknownPricingFixation(quantity : Quantity, price : Quantity)
@@ -244,24 +262,12 @@ case class PhysicalMetalForward(tradeID : Int, quotas : List[PhysicalMetalQuota]
           quota.quotaID,
           snapshotID,
           quota.quantity,
-          purchaseSpec.price(env),
-          saleSpec.price(env),
-          purchaseSpec.price(env) * quota.quantity,
-          saleSpec.price(env) * quota.quantity,
-          benchmark = Quantity.NULL,
-          freightParity = Quantity.NULL,
-          purchaseIsComplete = purchaseSpec.isComplete(env.marketDay),
-          purchaseFixedQuantity = purchaseSpec.fixedQuantity(env.marketDay),
-          purchasePricingType = purchaseSpec.pricingType,
-          purchaseQuotationPeriodStart = purchaseSpec.quotationPeriodStart.map(_.toJodaLocalDate),
-          purchaseQuotationPeriodEnd = purchaseSpec.quotationPeriodEnd.map(_.toJodaLocalDate),
-          purchaseIndex = purchaseSpec.indexName,
-          saleIsComplete = saleSpec.isComplete(env.marketDay),
-          saleFixedQuantity = saleSpec.fixedQuantity(env.marketDay),
-          salePricingType = saleSpec.pricingType,
-          saleQuotationPeriodStart = saleSpec.quotationPeriodStart.map(_.toJodaLocalDate),
-          saleQuotationPeriodEnd = saleSpec.quotationPeriodEnd.map(_.toJodaLocalDate),
-          saleIndex = saleSpec.indexName
+          direction = if (isPurchase) EDMTrade.PURCHASE else EDMTrade.SALE,
+          benchmarkdirection = if (isPurchase) Some(EDMTrade.SALE) else Some(EDMTrade.PURCHASE),
+          purchaseSpec.valuationDetails(env),
+          saleSpec.valuationDetails(env),
+          benchmarkPremium = Quantity.NULL,
+          freightParity = Quantity.NULL
         )
     }
   }
