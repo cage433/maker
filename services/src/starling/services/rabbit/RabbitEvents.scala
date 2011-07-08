@@ -14,15 +14,15 @@ import com.trafigura.events.IDemultiplexEvents
 import com.trafigura.shared.events.Event
 import com.trafigura.events.DemultiplexerClient
 import org.codehaus.jettison.json.JSONArray
+import starling.utils.Stoppable
 
 
 /**
  * RabbitMQ event module
  */
-trait RabbitEventServices {
+trait RabbitEventServices extends Stoppable {
   val eventDemux : IDemultiplexEvents
   val rabbitEventPublisher : Publisher
-  def shutdown : Unit
 }
 
 case class DefaultRabbitEventServices(props : Props) extends RabbitEventServices {
@@ -86,13 +86,15 @@ case class DefaultRabbitEventServices(props : Props) extends RabbitEventServices
     rabbitmq_exclusive,
     false)
 
-  rabbitListener.connect()
-  rabbitEventPublisher.connect()
-
   // the demux for listener clients...
   lazy val eventDemux : EventDemultiplexer = ||> { new EventDemultiplexer(serviceName, rabbitListener)} { r => r.startup }
 
-  def shutdown {
+  def start {
+    rabbitListener.connect()
+    rabbitEventPublisher.connect()
+  }
+
+  def stop {
     eventDemux.shutdown
     rabbitListener.disconnect()
     rabbitEventPublisher.disconnect()
@@ -107,7 +109,8 @@ case class MockRabbitEventServices() extends RabbitEventServices {
   private val mockDemux = new MockEventDemux()
   val eventDemux : IDemultiplexEvents = mockDemux
   val rabbitEventPublisher = new MockRabbitPublisher(mockDemux)
-  def shutdown {}
+  def start {}
+  def stop {}
 }
 
 class MockRabbitPublisher(val eventDemux : MockEventDemux) extends Publisher {
