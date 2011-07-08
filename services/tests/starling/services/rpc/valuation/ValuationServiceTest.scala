@@ -81,8 +81,10 @@ class ValuationServiceTest extends StarlingTest {
     }.toList
     val valuedTrades = vs.getTrades(valuedTradeIds)
     val firstTrade = mockTitanTradeService.getAllTrades().head //valuedTrades.head
-val x = valuedTrades.find(t => t.oid == firstTrade.oid)
-val y = valuations.tradeResults(firstTrade.oid.toString)
+
+//val x = valuedTrades.find(t => t.oid == firstTrade.oid)
+//val y = valuations.tradeResults(firstTrade.oid.toString)
+    
     val testEventHandler = new MockEventHandler
 
     mockRabbitEventServices.eventDemux.addClient(testEventHandler)

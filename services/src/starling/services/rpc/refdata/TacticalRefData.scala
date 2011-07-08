@@ -62,11 +62,15 @@ case class DefaultTitanServices(props: Props) extends TitanServices {
 case class FileMockedTitanServices() extends TitanServices {
    
   import com.trafigura.edm.trades.{PhysicalTrade => EDMPhysicalTrade}
+  import java.net.URL
 
-  // todo, sort out test resource locations
-  val tradesFile = "/tmp/edmTrades.json"
-  val marketsFile = "/tmp/markets.json"
-  val exchangesFile = "/tmp/exchanges.json"
+  val tradesFile = getClass.getResource("/tests/valuationservice/testdata/edmTrades.json")
+  val marketsFile = getClass.getResource("/tests/valuationservice/testdata/markets.json")
+  val exchangesFile = getClass.getResource("/tests/valuationservice/testdata/exchanges.json")
+
+//  val tradesFile = "/tmp/edmTrades.json"
+//  val marketsFile = "/tmp/markets.json"
+//  val exchangesFile = "/tmp/exchanges.json"
 
   val titanGetEdmTradesService : EdmGetTrades = new EdmGetTrades {
     def getAll() : TradeResults = new TradeResults() {
@@ -88,9 +92,9 @@ case class FileMockedTitanServices() extends TitanServices {
   def allTacticalRefDataFuturesMarkets() = Nil
   def allTacticalRefDataExchanges() = Nil
 
-  val loadedMarkets = loadJsonValuesFromFile(marketsFile).map(s => Metal.fromJson(new JSONObject(s)).asInstanceOf[Metal])
-  val loadedExchanges = loadJsonValuesFromFile(exchangesFile).map(s => Market.fromJson(new JSONObject(s)).asInstanceOf[Market])
-  val loadedTrades = loadJsonValuesFromFile(tradesFile).map(s => EDMPhysicalTrade.fromJson(new JSONObject(s)).asInstanceOf[EDMPhysicalTrade])
+  val loadedMarkets = loadJsonValuesFromFileUrl(marketsFile).map(s => Metal.fromJson(new JSONObject(s)).asInstanceOf[Metal])
+  val loadedExchanges = loadJsonValuesFromFileUrl(exchangesFile).map(s => Market.fromJson(new JSONObject(s)).asInstanceOf[Market])
+  val loadedTrades = loadJsonValuesFromFileUrl(tradesFile).map(s => EDMPhysicalTrade.fromJson(new JSONObject(s)).asInstanceOf[EDMPhysicalTrade])
   var tradeMap = loadedTrades.map(t => t.oid -> t).toMap
 
   def updateTrade(trade : EDMPhysicalTrade) {
@@ -98,6 +102,7 @@ case class FileMockedTitanServices() extends TitanServices {
   }
   
   import scala.io.Source._
-  private def loadJsonValuesFromFile(fileName : String) : List[String] = fromFile(fileName).getLines.toList
+  private def loadJsonValuesFromFileUrl(fileUrl : URL) : List[String] = fromURL(fileUrl).getLines.toList
+  private def loadJsonValuesFromFile(file : String) : List[String] = fromFile(file).getLines.toList
 }
 
