@@ -63,6 +63,8 @@ class SpreadStdDevSurfaceDataBuilder {
   }
 
   def build = {
+    import Spread._
+
     val periods = (atms.keySet ++ puts.keySet ++ calls.keySet).toList.sortWith(_ < _).toArray
     SpreadStdDevSurfaceData(
       periods,

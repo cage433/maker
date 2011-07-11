@@ -63,7 +63,7 @@ case class Spread[T <: DateRange](
 
 object Spread {
   // very verbose way of saying that spreads sort like their first element, then their last element.
-  implicit def Spread[T <: DateRange]: Ordering[Spread[T]] =
+  implicit def SpreadOrdering[T <: DateRange]: Ordering[Spread[T]] =
     new Ordering[Spread[T]] {
       def compare(lhs: Spread[T], rhs: Spread[T]) = {
         val firstOrdered = lhs.first compare rhs.first
