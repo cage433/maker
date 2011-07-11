@@ -12,6 +12,10 @@ import javax.swing._
 import scala.swing.Swing._
 import swing.{ScrollPane, ListView, Panel}
 import swing.event.{MouseClicked, KeyPressed, KeyTyped}
+import starling.pivot.EditableCellState._
+import scala.collection.mutable.{HashMap => MMap}
+
+case class OverrideDetails(text:String, state:EditableCellState)
 
 abstract class PivotJTableModel extends AbstractTableModel {
   def paintTable(g:Graphics, table:JTable, rendererPane:CellRendererPane, rMin:Int, rMax:Int, cMin:Int, cMax:Int)
@@ -25,6 +29,9 @@ abstract class PivotJTableModel extends AbstractTableModel {
   def popupShowing:Boolean
   def focusPopup()
   def acceptableValues(r:Int, c:Int):Set[String]
+
+  protected var overrideMap = new MMap[(Int,Int),OverrideDetails]()
+  def revert() {overrideMap.clear()}
 }
 
 class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
@@ -79,7 +86,12 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
     def getColumnCount = rowHeaderData0(0).length
     def getValueAt(rowIndex:Int, columnIndex:Int):AxisCell = {
       if (rowIndex < rowHeaderData0.length) {
-        rowHeaderData0(rowIndex)(columnIndex)
+        if (overrideMap.contains((rowIndex, columnIndex))) {
+          val details = overrideMap((rowIndex, columnIndex))
+          rowHeaderData0(rowIndex)(columnIndex).copy(label = details.text, overrideState = Some(details.state))
+        } else {
+          rowHeaderData0(rowIndex)(columnIndex)
+        }
       } else {
         addedRows0(0)(columnIndex)
       }
@@ -112,7 +124,11 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
 
     def deleteCells(cells:List[(Int,Int)]) {
       var edits = pivotEdits
-      cells.foreach{case (r,c) => {edits = edits.withDelete(KeyFilter(key(r, c)), getValueAt(r,c).value.field)}}
+      cells.foreach{case (r,c) => {
+        val value = getValueAt(r, c)
+        edits = edits.withDelete(KeyFilter(key(r, c)), value.value.field)
+        overrideMap((r,c)) = OverrideDetails(value.label, Deleted)
+      }}
       if (edits != pivotEdits) {
         updateEdits(edits)
       }
@@ -141,6 +157,7 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
       val (newValue,newLabel) = if (s.isEmpty) (Set.empty, "") else parser.parse(s)
 
       if (currentCell.text != newLabel) {
+        overrideMap((rowIndex, columnIndex)) = OverrideDetails(newLabel, Edited)
         updateEdits(pivotEdits.withAmend(KeyFilter(key(rowIndex, columnIndex)), rowHeaderField, Some(newValue)))
       }
     }
@@ -270,7 +287,12 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
     def getColumnCount = data0(0).length
     def getValueAt(rowIndex:Int, columnIndex:Int):TableCell = {
       if (rowIndex < data0.length) {
-        data0(rowIndex)(columnIndex)
+        if (overrideMap.contains((rowIndex, columnIndex))) {
+          val details = overrideMap((rowIndex, columnIndex))
+          data0(rowIndex)(columnIndex).copy(text = details.text, state = details.state)
+        } else {
+          data0(rowIndex)(columnIndex)
+        }
       } else {
         addedRows0(0)(columnIndex)
       }
@@ -293,6 +315,7 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
           val measureInfo = arr(c)
           edits = edits.withAmend(KeyFilter(key(r, c, measureInfo)), measureInfo.value.field, None)
         })
+        overrideMap((r,c)) = OverrideDetails(getValueAt(r,c).text, Deleted)
       }}
       if (edits != pivotEdits) {
         updateEdits(edits)
@@ -355,6 +378,7 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
       }
 
       if (currentCell.text != newLabel) {
+        overrideMap((rowIndex, columnIndex)) = OverrideDetails(newLabel, Edited)
         updateEdits(pivotEdits.withAmend(KeyFilter(key(rowIndex, columnIndex, measureInfo)), measureInfo.value.field, Some(newValue)))
       }
     }
@@ -721,13 +745,14 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
     viewport.setMinimumSize(new Dimension(rowHeaderTable.getPreferredSize.width, 20))
   }
 
+  def reverse() {allModels.foreach(_.revert())}
+
   def resizeColumnHeaderAndMainTableColumns(fullTable:JTable, mainTable:JTable, colHeaderTable:JTable,
                                             colHeaderScrollPane:JScrollPane, columnHeaderScrollPanePanel:Panel,
                                             mainTableScrollPane:JScrollPane) {
     val numRows = mainTable.getRowCount
     val colOffset = rowHeaderColCount0
     val numCols = mainColCount0
-    val endCol = colOffset + numCols
     val rowOffset = colHeaderRowCount0
 
     val tmpLabel = new JLabel("")
@@ -754,7 +779,6 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
     }
 
     def cellWidth(axisCell:AxisCell, icon:ImageIcon):Int = {
-      val test = axisCell.value
       tmpLabel.setFont(MainTableCellRenderer.selectFont(axisCell.value.value.value))
       tmpLabel.setText(axisCell.text)
       tmpLabel.setIcon(icon)

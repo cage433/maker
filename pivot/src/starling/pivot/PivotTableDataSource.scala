@@ -21,47 +21,6 @@ object FieldDetailsGroup {
 
 case class FieldGroup(name:String, fields:List[Field])
 
-object PivotTableDataSource {
-  import Field._
-
-//  val ThetaLayout = new PivotFieldsState(
-//    rowFields = List(
-//      Field(tradeID_str),
-//      Field("Risk Type"),
-//      Field("Risk Commodity"),
-//      Field(riskMarket_str),
-//      Field(riskPeriod_str),
-//      Field(instrument_str)
-//    ),
-//    columns = ColumnStructure(ColumnStructure.RootField, false, List(
-//      ColumnStructure(Field("Theta"), true, List()),
-//      ColumnStructure(Field("Quantity"), true, List())
-//    )),
-//    reportSpecificChoices = DefaultReportSpecificChoices
-//  )
-//
-//  val PnLLayout = new PivotFieldsState(
-//    rowFields = List(
-//      Field(tradeID_str),
-//      Field("Known/Estimate"),
-//      Field("Past/Future"),
-//      Field("Asset Delivery Day"),
-//      Field("Settlement Market"),
-//      Field("Risk Type"),
-//      Field("Risk Commodity"),
-//      Field(riskMarket_str),
-//      Field(riskPeriod_str),
-//      Field("UTP Type")
-//    ),
-//    columns = ColumnStructure(ColumnStructure.RootField, false, List(
-//      ColumnStructure(Field("Amount"), true, List()),
-//      ColumnStructure(Field("P&L"), true, List()),
-//      ColumnStructure(Field("Quantity"), true, List())
-//    )),
-//    reportSpecificChoices = DefaultReportSpecificChoices
-//  )
-}
-
 case class KeyFilter(keys:Map[Field,Any]) {
   def matches(rowKeys:Map[Field,Any]) = keys.forall{ case (field, value) => rowKeys(field) == value }
   def isOverriddenBy(newDelete:KeyFilter) = {

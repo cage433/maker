@@ -281,18 +281,18 @@ case class ReportBookmark(showParameters:Boolean, userReportData:UserReportData,
 object PivotReportPage {
   def toolbarButtons(pageContext:PageContext, reportParameters:ReportParameters, data:PageData, showParameters:Boolean,
                             pivotPageState:PivotPageState) = {
-    val (pivotData, numErrors) = data match {
-      case PivotTablePageData(pivData,Some(pd),_) => pd match {
-        case PivotReportTablePageData(numErrors) => {
-          (pivData, numErrors)
+    val numErrors = data match {
+      case PivotTablePageData(_,Some(pd),_) => pd match {
+        case PivotReportTablePageData(nErrs) => {
+          nErrs
         }
         case scd => throw new Exception("Don't know how to handle this type of subclass page data: " + scd.getClass)
       }
-      case PivotTablePageData(pivData,None,_) => (pivData,0)
+      case PivotTablePageData(_,_,_) => 0
       case _ => throw new Exception("Don't know how to handle this type of page data")
     }
     
-    val buffer:ListBuffer[ToolBarButton] = new ListBuffer()
+    val buffer = new ListBuffer[ToolBarButton]()
     if (numErrors > 0) {
       buffer += new ToolBarButton {
         text = "Errors (" + numErrors + ")"
@@ -319,10 +319,6 @@ object PivotReportPage {
         }
       }
     }
-
-    val availablePages = pivotData.availablePages
-
-
 
     buffer.toList
   }

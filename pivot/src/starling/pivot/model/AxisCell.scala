@@ -1,11 +1,18 @@
 package starling.pivot.model
 
 import starling.pivot._
+import starling.pivot.EditableCellState._
 
 case class AxisCell(value:AxisValue, span:Option[Int], label:String, collapsible:Option[Boolean],  hidden:Boolean,
-                    totalState:TotalState, offset:Int, textPosition:TextPosition, editable:Boolean = false) {
+                    totalState:TotalState, offset:Int, textPosition:TextPosition, editable:Boolean = false,
+                    overrideState:Option[EditableCellState]=None) {
   def text = if (!hidden) label else ""
-  def state = value.state
+  def state = {
+    overrideState match {
+      case Some(s) => s
+      case _ => value.state
+    }
+  }
   def edits = value.pivotEdits
   def shown = !hidden
   def changeLabel(label:String) = copy(label=label)
