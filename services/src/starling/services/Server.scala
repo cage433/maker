@@ -59,11 +59,14 @@ class StarlingInit( val props: Props,
                     startXLLoop: Boolean = true,
                     startStarlingJMX: Boolean = true,
                     forceGUICompatability: Boolean = true,
-                    startEAIAutoImportThread: Boolean = true
+                    startEAIAutoImportThread: Boolean = true,
+                    startRabbit: Boolean = true
                     ) {
 
   def stop = {
-    rabbitEventServices.shutdown
+    if (startRabbit) {
+      rabbitEventServices.stop
+    }
 
     if (startXLLoop) {
       excelLoopReceiver.stop
@@ -86,6 +89,11 @@ class StarlingInit( val props: Props,
       // Load all user settings, pivot layouts and user reports here to ensure we don't have any de-serialization issues. Do this before anyone can connect.
       userSettingsDatabase.readAll()
     }
+
+    if (startRabbit) {
+      rabbitEventServices.start
+    }
+
 
     if (startXLLoop) {
       excelLoopReceiver.start
@@ -376,7 +384,7 @@ class StarlingInit( val props: Props,
 }
 
 object StarlingInit{
-  lazy val devInstance = new StarlingInit(PropsHelper.defaultProps, true, false, false, false, false, false, false).start
+  lazy val devInstance = new StarlingInit(PropsHelper.defaultProps, true, false, false, false, false, false, false, false).start
 }
 object ServerHelper {
   val RunningFileName = "starling.running"
@@ -405,7 +413,8 @@ object Server extends OutputPIDToFile {
   }
   var server : StarlingInit = null
   def run(props:Props, args: Array[String] = Array[String]()) {
-    server = new StarlingInit(props, true, true, true, startEAIAutoImportThread = props.ImportsBookClosesFromEAI())
+    server = new StarlingInit(props, true, true, true, startEAIAutoImportThread = props.ImportsBookClosesFromEAI(),
+      startRabbit = props.RabbitEnabled())
     server.start
     Log.info("Starling Server Launched")
   }

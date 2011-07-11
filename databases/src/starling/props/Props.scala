@@ -48,6 +48,7 @@ class Props(props:Map[String,String]) extends PropsHelper(props) {
   object EdmExternalUrl extends StringProperty("http://" + ExternalHostname() + ":" + HttpEdmServicePort())
   object XLLoopUrl extends StringProperty(ExternalHostname() + ":" + XLLoopPort())
 
+  object RabbitEnabled extends BooleanProperty(true)
   object RabbitHost extends StringProperty("")
   def rabbitHostSet = RabbitHost() != ""
 
