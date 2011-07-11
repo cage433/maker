@@ -24,6 +24,7 @@ abstract class PivotJTableModel extends AbstractTableModel {
   def finishedEditing()
   def popupShowing:Boolean
   def focusPopup()
+  def acceptableValues(r:Int, c:Int):Set[String]
 }
 
 class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
@@ -159,13 +160,17 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
       addedRows0 ++= newAddedRows
     }
 
-    def textTyped(textField:JTextField, cellEditor:CellEditor, r:Int, c:Int, focusOwner:Option[AWTComp], tableFrom:AWTComp) {
-      // Using a zero row index here as it doesn't really matter as long as it is the correct column.
+    def acceptableValues(r:Int, c:Int) = {
       val rowHeaderField = rowHeaderData0(0)(c).value.field
       val parser = editableInfo.get.editableKeyFields(rowHeaderField)
-      val t = textField.getText.toLowerCase
-      val vals = parser.acceptableValues
+      parser.acceptableValues
+    }
+
+    def textTyped(textField:JTextField, cellEditor:CellEditor, r:Int, c:Int, focusOwner:Option[AWTComp], tableFrom:AWTComp) {
+      // Using a zero row index here as it doesn't really matter as long as it is the correct column.
+      val vals = acceptableValues(0, c)
       if (vals.nonEmpty) {
+        val t = textField.getText.toLowerCase
         val filteredVals = vals.filter(_.toLowerCase.startsWith(t))
         val sortedVals = {
           if (filteredVals.nonEmpty) {
@@ -223,6 +228,7 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
     }
     def deleteCells(cells:List[(Int,Int)]) {}
     def resetCells(cells:List[(Int,Int)]) {}
+    def acceptableValues(r:Int, c:Int) = Set.empty
     def textTyped(textField:JTextField, cellEditor:CellEditor, r:Int, c:Int, focusOwner:Option[AWTComp], tableFrom:AWTComp) {}
     def finishedEditing() {popupMenu setVisible false}
     def popupShowing = popupMenu.isShowing
@@ -243,6 +249,7 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
     def collapseOrExpand(row:Int, col:Int, pivotTableView:PivotTableView) {}
     def deleteCells(cells:List[(Int,Int)]) {}
     def resetCells(cells:List[(Int,Int)]) {}
+    def acceptableValues(r:Int, c:Int) = Set.empty
     def textTyped(textField:JTextField, cellEditor:CellEditor, r:Int, c:Int, focusOwner:Option[AWTComp], tableFrom:AWTComp) {}
     def finishedEditing() {popupMenu setVisible false}
     def popupShowing = popupMenu.isShowing
@@ -379,12 +386,17 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
       rowFilters.toMap.toList ::: columnFilters.toMap.toList
     }
     def collapseOrExpand(row:Int, col:Int, pivotTableView:PivotTableView) {}
-    def textTyped(textField:JTextField, cellEditor:CellEditor, r:Int, c:Int, focusOwner:Option[AWTComp], tableFrom:AWTComp) {
+
+    def acceptableValues(r:Int, c:Int) = {
       val measureInfo = colHeaderData0.find(_(c).value.isMeasure).get(c)
       val parser = editableInfo.get.editableMeasures(measureInfo.value.field)
-      val t = textField.getText.toLowerCase
-      val vals = parser.acceptableValues
+      parser.acceptableValues
+    }
+
+    def textTyped(textField:JTextField, cellEditor:CellEditor, r:Int, c:Int, focusOwner:Option[AWTComp], tableFrom:AWTComp) {
+      val vals = acceptableValues(0, c)
       if (vals.nonEmpty) {
+        val t = textField.getText.toLowerCase
         val filteredVals = vals.filter(_.toLowerCase.startsWith(t))
         val sortedVals = {
           if (filteredVals.nonEmpty) {
@@ -597,6 +609,12 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
     override def fireTableDataChanged = {
       super.fireTableDataChanged
       allModels.foreach(_.fireTableDataChanged)
+    }
+
+
+    def acceptableValues(r:Int, c:Int) = {
+      val (m,row,col) = getTableModel(r, c)
+      m.acceptableValues(row, col)
     }
 
     def textTyped(textField:JTextField, cellEditor:CellEditor, r:Int, c:Int, focusOwner:Option[AWTComp], tableFrom:AWTComp) {

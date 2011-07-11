@@ -199,8 +199,20 @@ class PivotJTable(tableModel:PivotJTableModel, pivotTableView:PivotTableView, mo
       override def stopCellEditing() = {
         val r = getEditingRow
         val c = getEditingColumn
-        println("Do validation for row " + r + " and column " + c)
-        super.stopCellEditing()
+
+        val acceptableValues = tableModel.acceptableValues(r,c)
+        val myRes = if (acceptableValues.isEmpty) {
+          true
+        } else {
+          val t = textField.getText.trim().toLowerCase
+          acceptableValues.map(_.trim().toLowerCase).contains(t)
+        }
+
+        if (myRes) {
+          super.stopCellEditing()
+        } else {
+          false
+        }
       }
 
       override def getTableCellEditorComponent(table:JTable, value:AnyRef, isSelected:Boolean, row:Int, column:Int) = {
