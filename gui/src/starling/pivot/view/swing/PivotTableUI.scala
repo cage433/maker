@@ -181,7 +181,7 @@ object PivotTableUI {
 
       val listOfLists = (cMinToUse to cMaxToUse).foldLeft(List[List[Int]]())((list, i) => {
         table.getValueAt(row, i) match {
-          case AxisCell(_,Some(_),_,_,_,_,_,_,_,_) => List(i) :: list
+          case ac:AxisCell if ac.span.isDefined => List(i) :: list
           case _ => list.headOption.map(head => (head :+ i) :: list.tail).getOrElse(List(List(i)))
         }
       }).reverse

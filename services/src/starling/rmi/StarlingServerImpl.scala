@@ -13,7 +13,7 @@ import starling.eai.{Book, Traders}
 import starling.gui.UserSettings
 import starling.gui.api._
 import starling.pivot._
-import starling.pivot.controller.PivotTable
+import controller.{AxisNode, PivotTable}
 import starling.pivot.model._
 import starling.reports.pivot._
 import starling.marketdata._
@@ -401,16 +401,17 @@ class StarlingServerImpl(
     PivotTableModel.createPivotData(dataSource, pivotFieldParams)
   }
 
-  def saveMarketData(marketDataIdentifier:MarketDataPageIdentifier, marketDataTypeLabel:Option[MarketDataTypeLabel], pivotEdits:Set[PivotEdit]) = {
-    val dataSource = marketDataSource(marketDataIdentifier, marketDataTypeLabel)
+  def saveMarketData(marketDataIdentifier:MarketDataPageIdentifier, marketDataTypeLabel:Option[MarketDataTypeLabel], pivotEdits:PivotEdits) = {
+    /*val dataSource = marketDataSource(marketDataIdentifier, marketDataTypeLabel)
     val lookup = dataSource.fieldDetailsGroups.flatMap(_.fieldMap).toMap
     val fixedUpPivotEdits = pivotEdits.map { pivotEdit => {
       pivotEdit match {
-        case AmendPivotEdit(keys, values) => AmendPivotEdit(keys, values.map { case (field,value) => field → lookup(field).fixEditedValue(value) })
+        case AmendPivotEdit(keys, alteredField, newValue) => AmendPivotEdit(keys, alteredField, lookup(alteredField).fixEditedValue(newValue))
         case other => other
       }
     }}
-    dataSource.editable.get.save(fixedUpPivotEdits)
+    dataSource.editable.get.save(fixedUpPivotEdits)*/
+    throw new Exception("bla")
   }
 
   def snapshot(marketDataSelection:MarketDataSelection, observationDay:Day): Option[SnapshotIDLabel] = {
@@ -521,7 +522,7 @@ class StarlingServerImpl(
     val pivotTable = if (pivotFieldParams.calculate) {
       PivotTableModel.createPivotTableData(pivot, fs)
     } else {
-      PivotTable(List(), Array(), List(), List(), Map(), TreeDetails(Map(), Map()), None, FormatInfo.Blank)
+      PivotTable(List(), Array(), AxisNode.Null,AxisNode.Null, Map(), TreeDetails(Map(), Map()), None, FormatInfo.Blank)
     }
     val fieldGroups = pivot.fieldDetailsGroups.map(_.toFieldGroup)
 

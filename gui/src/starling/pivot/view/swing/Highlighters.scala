@@ -16,7 +16,7 @@ object Highlighters {
       def isHighlighted(renderer:java.awt.Component, adapter:org.jdesktop.swingx.decorator.ComponentAdapter) = {
         adapter.getValue match {
           case t:TableCell if t.totalState == SubTotal => true
-          case AxisCell(_,_,_,_,_,SubTotal,_,_,_,_) => true
+          case a:AxisCell if a.totalState == SubTotal => true
           case _ => false
         }
       }
@@ -26,7 +26,7 @@ object Highlighters {
       def isHighlighted(renderer:java.awt.Component, adapter:org.jdesktop.swingx.decorator.ComponentAdapter) = {
         adapter.getValue match {
           case t:TableCell if t.totalState == OtherValueTotal => true
-          case AxisCell(_,_,_,_,_,OtherValueTotal,_,_,_,_) => true
+          case a:AxisCell if a.totalState == OtherValueTotal => true
           case _ => false
         }
       }
@@ -36,7 +36,7 @@ object Highlighters {
       def isHighlighted(renderer:java.awt.Component, adapter:org.jdesktop.swingx.decorator.ComponentAdapter) = {
         adapter.getValue match {
           case t:TableCell if t.totalState == Total => true
-          case AxisCell(_,_,_,_,_,Total,_,_,_,_) => true
+          case a:AxisCell if a.totalState == Total => true
           case _ => false
         }
       }
@@ -46,7 +46,7 @@ object Highlighters {
       def isHighlighted(renderer:java.awt.Component, adapter:org.jdesktop.swingx.decorator.ComponentAdapter) = {
         adapter.getValue match {
           case t:TableCell if t.totalState == SubtotalTotal => true
-          case AxisCell(_,_,_,_,_,SubtotalTotal,_,_,_,_) => true
+          case a:AxisCell if a.totalState == SubtotalTotal => true
           case _ => false
         }
       }
@@ -79,7 +79,7 @@ object Highlighters {
       def isHighlighted(renderer:java.awt.Component, adapter:org.jdesktop.swingx.decorator.ComponentAdapter) = {
         adapter.getValue match {
           case t:TableCell if t.state == EditableCellState.Edited => true
-          case AxisCell(_,_,_,_,_,_,_,_,_,EditableCellState.Edited) => true
+          case a:AxisCell if a.state == EditableCellState.Edited => true
           case _ => false
         }
       }
@@ -91,7 +91,7 @@ object Highlighters {
       def isHighlighted(renderer:java.awt.Component, adapter:org.jdesktop.swingx.decorator.ComponentAdapter) = {
         adapter.getValue match {
           case t:TableCell if t.state == EditableCellState.Error => true
-          case AxisCell(_,_,_,_,_,_,_,_,_,EditableCellState.Error) => true
+          case a:AxisCell if a.state == EditableCellState.Error => true
           case _ => false
         }
       }
@@ -99,11 +99,23 @@ object Highlighters {
     editedErrorCellsHighlighter.setBackground(ErrorCellColour)
     editedErrorCellsHighlighter.setSelectedBackground(BlendedErrorCellColour)
 
+    val editedTaintedCellsHighlighter = new ColorHighlighter(new HighlightPredicate {
+      def isHighlighted(renderer:java.awt.Component, adapter:org.jdesktop.swingx.decorator.ComponentAdapter) = {
+        adapter.getValue match {
+          case t:TableCell if t.state == EditableCellState.Tainted => true
+          case a:AxisCell if a.state == EditableCellState.Tainted => true
+          case _ => false
+        }
+      }
+    })
+    editedTaintedCellsHighlighter.setBackground(Color.BLACK) // REDO THIS
+    editedTaintedCellsHighlighter.setSelectedBackground(Color.BLACK)
+
     val editableCellsHighlighter = new ColorHighlighter(new HighlightPredicate {
       def isHighlighted(renderer:java.awt.Component, adapter:org.jdesktop.swingx.decorator.ComponentAdapter) = {
         adapter.getValue match {
           case t:TableCell if t.editable => true
-          case AxisCell(_,_,_,_,_,_,_,_,true,_) => true
+          case a:AxisCell if a.editable => true
           case _ => false
         }
       }
@@ -115,7 +127,7 @@ object Highlighters {
       def isHighlighted(renderer:java.awt.Component, adapter:org.jdesktop.swingx.decorator.ComponentAdapter) = {
         adapter.getValue match {
           case t:TableCell if t.state == EditableCellState.Deleted => true
-          case AxisCell(_,_,_,_,_,_,_,_,_,EditableCellState.Deleted) => true
+          case a:AxisCell if a.state == EditableCellState.Deleted => true
           case _ => false
         }
       }
@@ -129,7 +141,7 @@ object Highlighters {
       def isHighlighted(renderer:java.awt.Component, adapter:org.jdesktop.swingx.decorator.ComponentAdapter) = {
         adapter.getValue match {
           case t:TableCell if t.state == EditableCellState.Added => true
-          case AxisCell(_,_,_,_,_,_,_,_,_,EditableCellState.Added) => true
+          case a:AxisCell if a.state == EditableCellState.Added => true
           case _ => false
         }
       }
@@ -181,5 +193,6 @@ object Highlighters {
     table.addHighlighter(deletedCellsHighlighter)
     table.addHighlighter(editedAddedCellsHighlighter)
     table.addHighlighter(editedErrorCellsHighlighter)
+    table.addHighlighter(editedTaintedCellsHighlighter)
   }
 }

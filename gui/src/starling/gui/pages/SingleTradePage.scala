@@ -301,7 +301,7 @@ class SingleTradeMainPivotReportPage(val tradeID:TradeIDLabel, val tradeRow:List
     valuationParametersButton :: buttons
   }
 
-  override def selfPage(pps:PivotPageState, edits:Set[PivotEdit]) = new SingleTradeMainPivotReportPage(tradeID, tradeRow, fieldDetailsGroups, columns,
+  override def selfPage(pps:PivotPageState, edits:PivotEdits) = new SingleTradeMainPivotReportPage(tradeID, tradeRow, fieldDetailsGroups, columns,
     reportParameters0, pps)
   override def selfReportPage(rp:ReportParameters, pps:PivotPageState) = new SingleTradeMainPivotReportPage(tradeID, tradeRow, fieldDetailsGroups,
     columns, rp, pps)

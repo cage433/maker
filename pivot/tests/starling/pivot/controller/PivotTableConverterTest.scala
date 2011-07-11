@@ -9,13 +9,15 @@ import starling.pivot.Field
 class PivotTableConverterTest extends TestNGSuite {
   private def av(value:Any) = AxisValue(Field("F"), ValueAxisValueType(value), 0)
 
+  implicit def convert(axisValue:AxisValue):ChildKey = axisValue.keyValue
+
   @Test
   def testPurge() {
     val an = AxisNode(av("bla"), Nil)
     val res1 = an.purge(Set())
     assertEquals(res1, Some(an))
 
-    val res2 = an.purge(Set(List(av("bla"))))
+    val res2 = an.purge(Set(List(av("bla").keyValue)))
     assertEquals(res2, None)
 
     val an1 = AxisNode(av("bla1"), List(an, AxisNode(av("bla2"), Nil)))

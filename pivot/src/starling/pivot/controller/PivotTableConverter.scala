@@ -2,37 +2,133 @@ package starling.pivot.controller
 
 import starling.pivot.model._
 import starling.pivot._
-import starling.utils.{STable, SColumn}
 import starling.quantity.{SpreadOrQuantity, Quantity, UOM}
 import starling.utils.ImplicitConversions._
 import collection.mutable.ListBuffer
 import collection.Set
+import collection.immutable.{Iterable, Map}
+import starling.utils.{STable, SColumn}
+
 
 object AxisNode {
+  val Null = AxisNode(AxisValue.Null)
+
   def textAndAlignment(value:AxisValue, formatInfo:FormatInfo, extraFormatInfo:ExtraFormatInfo) = {
+
+    def tableCell(value0:Any) = {
+      val formatter = formatInfo.fieldToFormatter(value.field)
+      value0 match {
+        case UndefinedValue => TableCell.Undefined
+        case other => formatter.format(other, extraFormatInfo)
+      }
+    }
+
     value.value match {
-      case t@TotalAxisValueType => (t.value, LeftTextPosition)
+      case t@TotalAxisValueType => (t.value.toString, LeftTextPosition)
       case n@NullAxisValueType => (n.value, LeftTextPosition)
       case m:MeasureAxisValueType => (m.value, LeftTextPosition)
       case v:ValueAxisValueType => {
-        val formatter = formatInfo.fieldToFormatter(value.field)
-        val tc = v.value match {
-          case UndefinedValue => TableCell.Undefined
-          case other => formatter.format(other, extraFormatInfo)
-        }
+        val tc = tableCell(v.value)
         (tc.text, (if (tc.textPosition == CenterTextPosition) LeftTextPosition else tc.textPosition))
       }
     }
   }
 }
 
-case class AxisNode(axisValue:AxisValue, children:List[AxisNode]) {
-  def purge(remove:Set[List[AxisValue]], parent:List[AxisValue] = Nil):Option[AxisNode] = {
-    val pathToMe = axisValue :: parent
+case class ChildKey(value:Any, isMeasure:Boolean, field:Field, position:Int) {
+  def toTotal = copy(value = TotalValue)
+}
+
+object ServerAxisNode {
+  val Null = ServerAxisNode(AxisValue.Null)
+}
+case class ServerAxisNode(axisValue:AxisValue, children:Map[ChildKey,Map[AxisValue,ServerAxisNode]]=Map.empty) {
+  val childValues:List[ServerAxisNode] = children.values.map(_.values).flatten.toList
+
+  def add(values:List[AxisValue]):ServerAxisNode = {
+    values match {
+      case Nil => this
+      case head :: tail => {
+        children.get(head.keyValue) match {
+          case Some(matches) => {
+            val updatedMap = matches.get(head) match {
+              case Some(matched) => matches.updated(head, matched.add(tail))
+              case None => matches.updated(head, ServerAxisNode(head).add(tail))
+            }
+            copy(children = children.updated(head.keyValue, updatedMap))
+          }
+          case None => copy(children = children.updated(head.keyValue, Map(head -> ServerAxisNode(head).add(tail))))
+        }
+      }
+    }
+  }
+
+  def totalChildren:Set[List[AxisValue]] = {
+    (childValues.flatMap { child => {
+      val head = if (child.axisValue.isMeasure) child.axisValue else child.axisValue.toTotal
+      val childChildren = child.totalChildren
+      if (childChildren.isEmpty) {
+        Set(head :: Nil)
+      } else {
+        childChildren.map(l => head :: l)
+      }
+    }}).toSet
+  }
+
+  def withTotals:ServerAxisNode = {
+    val childTotals = children.mapValues(_.mapValues(_.withTotals))
+    val x = copy(children = childTotals)
+    val childrenAsTotals:Set[List[AxisValue]] = totalChildren
+    childrenAsTotals.foldLeft(x)((x1,t) => {
+      x1.add(t)
+    })
+  }
+
+  def toGUIAxisNode(fieldDetailsLookup:Map[Field, FieldDetails]):AxisNode = {
+    val sortedChildren = children.toList.sortWith{ case((childKeyA,mapA),(childKeyB, mapB)) => {
+      if (childKeyA.position == childKeyB.position) {
+        val comparator = fieldDetailsLookup(childKeyA.field).comparator
+        def index(value:Any) = {
+          value match {
+            case TotalValue=> 0
+            case UndefinedValue => 1
+            case FilterWithOtherTransform.OtherValue => 3
+            case ptp:PivotTreePath if ptp.isOther => 3
+            case _ => 2
+          }
+        }
+        val thisIndex = index(childKeyA.value)
+        val otherIndex = index(childKeyB.value)
+        if (thisIndex == otherIndex) {
+          if (thisIndex == 2) {
+            comparator.lt(childKeyA.value, childKeyB.value)
+          } else {
+            false
+          }
+        } else {
+          thisIndex < otherIndex
+        }
+      } else {
+        childKeyA.position < childKeyB.position
+      }
+    } }
+
+    val flattenedChildren = sortedChildren.flatMap{ case (_, map) => {
+      map.values.toList.sortBy(_.axisValue.state)
+    } }
+    
+    AxisNode(axisValue, flattenedChildren.map(_.toGUIAxisNode(fieldDetailsLookup)))
+  }
+
+}
+
+case class AxisNode(axisValue:AxisValue, children:List[AxisNode]=Nil) {
+  def purge(remove:Set[List[ChildKey]], parent:List[ChildKey] = Nil):Option[AxisNode] = {
+    val pathToMe = axisValue.keyValue :: parent
     if (children.isEmpty) {
       if (remove.contains(pathToMe.reverse)) None else Some(this)
     } else {
-      val purgedChildren = children.flatMap{child => child.purge(remove, pathToMe)}
+      val purgedChildren = children.flatMap{ childNode => { childNode.purge(remove, pathToMe) }}
       if (purgedChildren.isEmpty) {
         None
       } else {
@@ -88,45 +184,24 @@ case class AxisNode(axisValue:AxisValue, children:List[AxisNode]) {
 }
 
 object AxisNodeBuilder {
-  def createNodes(grid:Array[Array[AxisValue]], fromRow:Int, toRow:Int, fromCol:Int):List[AxisNode] = {
-    if (toRow <= grid.size && grid.size > 0 && fromCol < grid(0).size) {
-      val buffer = new scala.collection.mutable.ArrayBuffer[AxisNode]()
-      var lastRow = fromRow
-
-      var lastValue = grid(fromRow)(fromCol)
-      (fromRow until toRow).foreach { row => {
-        val value = grid(row)(fromCol)
-        if (value != lastValue) {
-          val children = createNodes(grid, lastRow, row, fromCol+1)
-          buffer.append( AxisNode(lastValue, children) )
-          lastValue = value
-          lastRow = row
-        }
-      }}
-      buffer.append( AxisNode(lastValue, createNodes(grid,  lastRow, toRow, fromCol+1)) )
-      buffer.toList
-    } else {
-      List()
-    }
-  }
-
-  def flatten(nodes:List[AxisNode], grandTotals:Boolean, subTotals:Boolean, collapsedState:CollapsedState,
+  def flatten(node:AxisNode, grandTotals:Boolean, subTotals:Boolean, collapsedState:CollapsedState,
               disabledSubTotals:List[Field], formatInfo:FormatInfo, extraFormatInfo:ExtraFormatInfo,
               grandTotalsOnEachSide:Boolean):List[List[AxisCell]] = {
     val disabledSubTotalsToUse = Field.NullField :: Field.RootField :: disabledSubTotals
-    val fakeNode = AxisNode(AxisValue(Field.RootField, NullAxisValueType, 0), nodes)
+    val cells = node.flatten(List(), subTotals, false, collapsedState, disabledSubTotalsToUse, formatInfo, extraFormatInfo)
+    val width = cells(0).length
     val grandTotalRows = if (grandTotals) {
-      val rows = fakeNode.flatten(List(), false, true, collapsedState, disabledSubTotalsToUse, formatInfo, extraFormatInfo)
-      rows.map(_.map(_.copy(totalState=Total)))
+      val rows = node.flatten(List(), false, true, collapsedState, disabledSubTotalsToUse, formatInfo, extraFormatInfo)
+      rows.map(l => l.map(_.copy(totalState=Total)).padTo(width, AxisCell.NullTotal))
     } else {
       List()
     }
+
     val frontCells = if (grandTotalsOnEachSide) {
       grandTotalRows
     } else {
       List()
     }
-    val cells = fakeNode.flatten(List(), subTotals, false, collapsedState, disabledSubTotalsToUse, formatInfo, extraFormatInfo)
     val cellsWithNull = if (cells.length > 1) {
       frontCells ::: cells ::: grandTotalRows
     } else {
@@ -159,8 +234,8 @@ case class PivotTableConverter(otherLayoutInfo:OtherLayoutInfo = OtherLayoutInfo
   def createGrid(extractUOMs:Boolean = true, addExtraColumnRow:Boolean = true):PivotGrid ={
     val aggregatedMainBucket = table.aggregatedMainBucket
     val zeroFields = table.zeroFields
-    val rowsToRemove:Set[List[AxisValue]] = if (otherLayoutInfo.removeZeros && (fieldState.columns.allFields.toSet & zeroFields).nonEmpty) {
-      val rows:Set[List[AxisValue]] = aggregatedMainBucket.groupBy{case ((r,c),v) => r}.keySet
+    val rowsToRemove:Set[List[ChildKey]] = if (otherLayoutInfo.removeZeros && (fieldState.columns.allFields.toSet & zeroFields).nonEmpty) {
+      val rows:Set[List[ChildKey]] = aggregatedMainBucket.groupBy{case ((r,c),v) => r}.keySet
       rows.flatMap(row => {
         val onlyZeroFieldColumnsMap = aggregatedMainBucket.filter{case ((r,c),_) => {
           (r == row) && (c.find(_.isMeasure) match {
@@ -175,10 +250,10 @@ case class PivotTableConverter(otherLayoutInfo:OtherLayoutInfo = OtherLayoutInfo
         }}) Some(row) else None
       })
     } else {
-      Set[List[AxisValue]]()
+      Set[List[ChildKey]]()
     }
 
-    val rowData = AxisNodeBuilder.flatten(table.rowAxis.flatMap(_.purge(rowsToRemove)), totals.rowGrandTotal,
+    val rowData = AxisNodeBuilder.flatten(table.rowNode.purge(rowsToRemove).getOrElse(AxisNode.Null), totals.rowGrandTotal,
       totals.rowSubTotals, collapsedRowState, otherLayoutInfo.disabledSubTotals, table.formatInfo, extraFormatInfo, true)
 
     def insertNullWhenNoRowValues(grid:List[List[AxisCell]], nullCount:Int) = {
@@ -215,7 +290,7 @@ case class PivotTableConverter(otherLayoutInfo:OtherLayoutInfo = OtherLayoutInfo
       }
       table.columnAxis.flatMap(an => findFieldsWithNullChildren(an)).distinct
     }
-    val cdX = AxisNodeBuilder.flatten(table.columnAxis, totals.columnGrandTotal, totals.columnSubTotals, collapsedColState,
+    val cdX = AxisNodeBuilder.flatten(table.columnNode, totals.columnGrandTotal, totals.columnSubTotals, collapsedColState,
        extraDisabledSubTotals ::: otherLayoutInfo.disabledSubTotals, table.formatInfo, extraFormatInfo, false)
     
     val cd = {
@@ -307,7 +382,7 @@ case class PivotTableConverter(otherLayoutInfo:OtherLayoutInfo = OtherLayoutInfo
         val rowTotal = rowValues.exists(_.totalState == Total)
         val rowOtherValue = rowValues.exists(_.totalState == OtherValueTotal)
         (for ((columnValues, columnIndex) <- flattenedColValues.zipWithIndex) yield {
-          val key = (rowValues.map(_.value).toList, columnValues.map(_.value).toList)
+          val key = (rowValues.map(_.value.keyValue).toList, columnValues.map(_.value.keyValue).toList)
 
           def appendUOM(value:Any) {
             value match {

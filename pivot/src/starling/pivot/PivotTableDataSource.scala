@@ -1,12 +1,13 @@
 package starling.pivot
 
-import collection.immutable.TreeMap
 import controller.PivotTableConverter._
 import controller.{PivotTableConverter, PivotGrid, TreePivotFilterNode}
 import model.{UndefinedValue, PivotTableModel}
 import starling.utils.ImplicitConversions._
 import starling.pivot.FilterWithOtherTransform.OtherValue
 import starling.pivot.EditableCellState._
+import collection.immutable.{Map, TreeMap}
+import collection.Set
 
 case class FieldDetailsGroup(name:String, fields:List[FieldDetails]) {
   def toFieldGroup = {
@@ -61,31 +62,106 @@ object PivotTableDataSource {
 //  )
 }
 
-trait PivotEdit {
-  val keys:Map[Field,Any]
-  def values:Map[Field,Any]
-  def value[T](field:Field) = values(field).asInstanceOf[T]
-}
-case class AmendPivotEdit(keys:Map[Field,Any], measureValues:Map[Field,Any]) extends PivotEdit { //keyFields + editableFields
-  def values = keys ++ measureValues
-}
-case class DeletePivotEdit(keys:Map[Field,Any]) extends PivotEdit {//Just key fields
-  def matches(other : Map[Field, Any], ignoredFields : Field*) = {
-    val filteredValues = keys -- ignoredFields
-
-    filteredValues.forall{case (field, value) => {
-      other.get(field) == Some(value)
-    }}
+case class KeyFilter(keys:Map[Field,Any]) {
+  def matches(rowKeys:Map[Field,Any]) = keys.forall{ case (field, value) => rowKeys(field) == value }
+  def isOverriddenBy(newDelete:KeyFilter) = {
+    newDelete.keys.forall{ case (key,value) => {
+      keys.get(key) == Some(value)
+    } }
   }
-  def values = keys
+}
+
+trait KeyEdits {
+  def affects(matchingKey:KeyFilter, field:Field):Boolean
+  def applyEdit(key:KeyFilter, field:Field, value:Any):Any
+}
+case class DeleteKeyEdit(deletedField:Field) extends KeyEdits {
+  def affects(matchingKey:KeyFilter, field:Field) = {
+    val ks:Set[Field] = matchingKey.keys.keySet.toSet
+    !(ks - deletedField).contains(field)
+  }
+  def applyEdit(key:KeyFilter, field:Field, value:Any) = DeletedValue(value, PivotEdits.Null.withDelete(key, deletedField))
+}
+case class AmendKeyEdit(amends:Map[Field,Option[Any]]) extends KeyEdits {
+  def affects(matchingKey:KeyFilter, field:Field) = amends.contains(field)
+  def applyEdit(key:KeyFilter, field:Field, value:Any) = {
+    amends.get(field) match {
+      case None => value
+      case Some(None) => DeletedValue(value, PivotEdits.Null.withAmend(key, field, None))
+      case Some(Some(newValue)) => EditedValue(newValue, value, PivotEdits.Null.withAmend(key, field, Some(newValue)))
+    }
+  }
+}
+
+case class PivotEdits(edits:Map[KeyFilter,KeyEdits], newRows:Set[Map[Field,Any]]) {
+  def editFor(key:Map[Field,Any], field:Field) = {
+    val filterKeys:Map[KeyFilter, KeyEdits] = edits.filterKeys(_.matches(key))
+    filterKeys.toList match {
+      case Nil => None
+      case many => {
+        val editsForField = many.filter { case (matchedKey,edit) => edit.affects(matchedKey, field) }
+        if (editsForField.size > 1) throw new Exception("More than one edit matches " + editsForField)
+        editsForField.headOption
+      }
+    }
+  }
+  def nonEmpty:Boolean = edits.nonEmpty || newRows.nonEmpty
+  def isEmpty:Boolean = !nonEmpty
+  def ++(other:PivotEdits):PivotEdits = {
+    val merged = edits.map{ case (key,changes) => {
+      other.edits.get(key) match {
+        case None => key -> changes
+        case Some(d@DeleteKeyEdit(field)) => key -> d
+        case Some(AmendKeyEdit(amends)) => key -> {
+          changes match {
+            case DeleteKeyEdit(_) => throw new Exception("Can't edit after a delete")
+            case AmendKeyEdit(oldAmends) => AmendKeyEdit(oldAmends ++ amends)
+          }
+        }
+      }
+    } }
+    PivotEdits(merged, newRows ++ other.newRows)
+  }
+  def withDelete(deleteKeys:KeyFilter, field:Field) = {
+    val editsWithAffectedEditsRemoved = edits.filterKeys { keyFilter => {
+      !keyFilter.isOverriddenBy(deleteKeys)
+    } }
+    PivotEdits(editsWithAffectedEditsRemoved.updated(deleteKeys, DeleteKeyEdit(field)), newRows)
+  }
+  def remove(editsToRemove:PivotEdits) = {
+    val merged = edits.flatMap{ case (key,changes) => {
+      editsToRemove.edits.get(key) match {
+        case None => Some(key -> changes)
+        case Some(d@DeleteKeyEdit(_)) if changes == d => None
+        case Some(d@DeleteKeyEdit(_)) if changes != d => throw new Exception("Can't remove Delete as there is an edit for this key " + key + " " + changes)
+        case Some(AmendKeyEdit(amends)) => Some(key -> {
+          changes match {
+            case DeleteKeyEdit(_) => throw new Exception("Can't remove edit as there is an delete for this key " + key + " " + amends)
+            case AmendKeyEdit(oldAmends) => AmendKeyEdit(oldAmends -- amends.keySet)
+          }
+        })
+      }
+    } }
+    PivotEdits(merged, newRows -- editsToRemove.newRows)
+  }
+  def withAmend(amendKeys:KeyFilter, field:Field, value:Option[Any]) = {
+    edits.get(amendKeys) match {
+      case None => PivotEdits(edits + (amendKeys -> AmendKeyEdit(Map(field -> value))), newRows)
+      case Some(DeleteKeyEdit(_)) => throw new Exception("You can't amend a delete " + (amendKeys, field, value))
+      case Some(AmendKeyEdit(amends)) => PivotEdits(edits + (amendKeys -> AmendKeyEdit(amends ++ Map(field -> value))), newRows)
+    }
+  }
+}
+object PivotEdits {
+  val Null = PivotEdits(Map.empty, Set.empty)
 }
 
 //Measure is editable if all key fields are in row or column or have single filter area selection
 //Row is deletable when // TODO [21 Jan 2011] we'll decide later
 trait EditPivot {
   def editableToKeyFields:Map[Field,Set[Field]]
-  def save(edits:Set[PivotEdit]):Boolean
-  def withEdits(edits:Set[PivotEdit]):PivotTableDataSource
+  def save(edits:PivotEdits):Boolean
+  def withEdits(edits:PivotEdits):PivotTableDataSource
 }
 
 trait PivotGridSource {
@@ -107,7 +183,7 @@ abstract class PivotTableDataSource extends PivotGridSource {
   def editable:Option[EditPivot] = None
   def availablePages:List[String] = List()
   def reportSpecificOptions : List[(String, List[Any])] = Nil
-  def zeroFields:Set[Field] = Set()
+  def zeroFields:Set[Field] = Set.empty
 
   def gridFor(pivotState: Option[PivotFieldsState]) = {
     PivotTableConverter(table = PivotTableModel.createPivotTableData(this, pivotState)).createGrid()
@@ -163,36 +239,40 @@ trait PivotValue {
   def cellType:EditableCellState
   def value:Option[Any]
   def originalValue:Option[Any]
-  def edit:Option[PivotEdit]
+  def edits:PivotEdits
+}
+
+object PivotValue {
+  def create(value:Any) = value match {
+    case pv:PivotValue => pv
+    case other => StandardPivotValue(other)
+  }
 }
 
 case class StandardPivotValue(value0:Any) extends PivotValue {
   val cellType = Normal
   val value = Some(value0)
   val originalValue = None
-  val edit = None
+  val edits = PivotEdits.Null
 }
 
-case class DeletedValue(original:Any, e:PivotEdit) extends PivotValue {
+case class DeletedValue(original:Any, edits:PivotEdits) extends PivotValue {
   val cellType = Deleted
   val value = None
-  val edit = Some(e)
   val originalValue = Some(original)
 }
-case class EditedValue(value0:Any, original:Any, e:PivotEdit) extends PivotValue {
+case class EditedValue(value0:Any, original:Any, edits:PivotEdits) extends PivotValue {
   val cellType = Edited
   val value = Some(value0)
-  val edit = Some(e)
   val originalValue = Some(original)
 }
-case class NewValue(value0:Any, e:PivotEdit) extends PivotValue {
+case class NewValue(value0:Any, edits:PivotEdits) extends PivotValue {
   val cellType = Added
   val value = Some(value0)
-  val edit = Some(e)
   val originalValue = None
 }
 
-case class MeasureCell(value:Option[Any], cellType:EditableCellState, edits:Set[PivotEdit]=Set.empty)
+case class MeasureCell(value:Option[Any], cellType:EditableCellState, edits:PivotEdits=PivotEdits.Null)
 object MeasureCell {
   val Null = MeasureCell(None, Normal)
   val Undefined = MeasureCell(Some(UndefinedValue), Normal)

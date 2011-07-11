@@ -56,7 +56,12 @@ class PivotJTable(tableModel:PivotJTableModel, pivotTableView:PivotTableView, mo
         putClientProperty("JTable.autoStartsEdit", false)
         pivotTableView.publish(SavePivotEdits)
       } else if (e.getKeyCode == KeyEvent.VK_Z && (e.getModifiersEx & InputEvent.CTRL_DOWN_MASK) == InputEvent.CTRL_DOWN_MASK) {
-        putClientProperty("JTable.autoStartsEdit", false)
+        if (getCellEditor == null) {
+          putClientProperty("JTable.autoStartsEdit", false)
+        } else {
+          e.consume()
+          getCellEditor.cancelCellEditing()
+        }
       } else if (e.getKeyCode == KeyEvent.VK_DOWN) {
         if (tableModel.popupShowing) {
           e.consume()
@@ -156,7 +161,7 @@ class PivotJTable(tableModel:PivotJTableModel, pivotTableView:PivotTableView, mo
     val textField = new JTextField() {
       override def processKeyBinding(ks:KeyStroke, e:KeyEvent, condition:Int, pressed:Boolean) = {
         val r = super.processKeyBinding(ks, e, condition, pressed)
-        // Don't want to react if ctrl, alt or shift is down.
+        // Don't want to react if ctrl is down.
         val offMask = InputEvent.CTRL_DOWN_MASK
         if (ks.getKeyCode == KeyEvent.VK_UNDEFINED && ((e.getModifiersEx & offMask) == 0)) {
           val focusOwner = if (isFocusOwner) {
@@ -180,6 +185,11 @@ class PivotJTable(tableModel:PivotJTableModel, pivotTableView:PivotTableView, mo
           if (e.getKeyCode == KeyEvent.VK_DOWN && tableModel.popupShowing) {
             e.consume()
             tableModel.focusPopup()
+          } else if (e.getKeyCode == KeyEvent.VK_Z && ((e.getModifiersEx & InputEvent.CTRL_DOWN_MASK) == InputEvent.CTRL_DOWN_MASK)) {
+            if (getCellEditor != null) {
+              e.consume()
+              getCellEditor.cancelCellEditing()
+            }
           }
         }
       })

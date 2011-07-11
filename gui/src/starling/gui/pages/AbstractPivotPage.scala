@@ -25,11 +25,11 @@ import starling.pivot.view.swing.TableType._
  *
  */
 
-abstract class AbstractPivotPage(pivotPageState:PivotPageState, edits:Set[PivotEdit]=Set.empty) extends Page {
+abstract class AbstractPivotPage(pivotPageState:PivotPageState, edits:PivotEdits=PivotEdits.Null) extends Page {
   def icon = StarlingIcons.im("/icons/stock_chart-reorganize.png")
   def dataRequest(pageBuildingContext:PageBuildingContext):PivotData
-  def save(starlingServer:StarlingServer, edits:Set[PivotEdit]):Boolean = throw new Exception("No implementation of save for this page")
-  def selfPage(pivotPageState:PivotPageState, edits:Set[PivotEdit]=Set.empty):Page
+  def save(starlingServer:StarlingServer, edits:PivotEdits):Boolean = throw new Exception("No implementation of save for this page")
+  def selfPage(pivotPageState:PivotPageState, edits:PivotEdits=PivotEdits.Null):Page
   def layoutType:Option[String] = None
   def subClassesPageData(pageBuildingContext:PageBuildingContext):Option[PageData] = None
   def finalDrillDownPage(fields:Seq[(Field,Selection)], pageContext:PageContext, ctrlDown:Boolean):Unit = ()
@@ -88,11 +88,11 @@ object PivotComponent {
         toolbarButtons:List[Button],
         configPanel:Option[ConfigPanels],
         finalDrillDown:(Seq[(Field,Selection)],PageContext,Boolean)=>Unit,
-        selfPage:((PivotPageState,Set[PivotEdit])=>Page),
+        selfPage:((PivotPageState,PivotEdits)=>Page),
         pageData:PageData,
         pivotPageState:PivotPageState,
-        edits:Set[PivotEdit],
-        save:(StarlingServer, Set[PivotEdit]) => Boolean,
+        edits:PivotEdits,
+        save:(StarlingServer, PivotEdits) => Boolean,
         bookmark:Bookmark,
         browserSize:Dimension,
         embedded:Boolean = true):PivotComponent = {
@@ -126,18 +126,18 @@ class PivotTablePageComponent(
         toolbarButtons:List[Button],
         configPanel:Option[ConfigPanels],
         finalDrillDown:(Seq[(Field,Selection)],PageContext,Boolean)=>Unit,
-        selfPage:((PivotPageState,Set[PivotEdit])=>Page),
+        selfPage:((PivotPageState,PivotEdits)=>Page),
         pivotTablePageData:PivotTablePageData,
         pivotPageState:PivotPageState,
-        edits:Set[PivotEdit],
-        save:(StarlingServer, Set[PivotEdit]) => Boolean,
+        edits:PivotEdits,
+        save:(StarlingServer, PivotEdits) => Boolean,
         bookmark:Bookmark,
         browserSize:Dimension,
         embedded:Boolean) extends PivotComponent {
 
   val data = pivotTablePageData.pivotData
   val extraFormatInfo = pageContext.getSetting(StandardUserSettingKeys.ExtraFormattingInfo, PivotFormatter.DefaultExtraFormatInfo)
-  val pivotTableComponent = PivotTableView.createWithLayer(data, pivotPageState.otherLayoutInfo, browserSize, configPanel, extraFormatInfo, embedded)
+  val pivotTableComponent = PivotTableView.createWithLayer(data, pivotPageState.otherLayoutInfo, browserSize, configPanel, extraFormatInfo, edits, embedded)
   val pivotComp = pivotTableComponent.getScalaComponent
 
   val currentFieldState = data.pivotFieldsState
@@ -254,7 +254,7 @@ class PivotTablePageComponent(
           // Because of the order of clearing the screen, this has to be put at the back of the EDT.
           onEDT({
             if (b) {
-              pageContext.goTo(selfPage(pivotPageState, Set.empty))
+              pageContext.goTo(selfPage(pivotPageState, PivotEdits.Null))
             } else {
               pageContext.setErrorMessage("Error Saving Edits", "There was an error when saving the edits.\n\n" +
                       "Please contact a Starling developer")
@@ -269,7 +269,7 @@ class PivotTablePageComponent(
       tooltip = "Reset all unsaved edits"
       enabled = edits.nonEmpty
       reactions += {case ButtonClicked(b) => {
-        pageContext.goTo(selfPage(pivotPageState, Set.empty))
+        pageContext.goTo(selfPage(pivotPageState, PivotEdits.Null))
       }}
     }
 
@@ -402,12 +402,7 @@ class PivotTablePageComponent(
     }
     case FullScreenSelectedEvent(data) => pageContext.goTo(new FullScreenReportPage(text, data))
     case ShowErrorsEvent(errors) => {pageContext.goTo(new ReportCellErrorsPage(errors.toList))}
-    case AddPivotEditEvents(edits0) => {
-      // Remove edits that are already there.
-      val editsToUse = (edits.groupBy(_.keys) ++ edits0.groupBy(_.keys)).values.flatten.toSet
-      pageContext.goTo(selfPage(pivotPageState, editsToUse))
-    }
-    case RemovePivotEditEvents(edits0) => pageContext.goTo(selfPage(pivotPageState, edits.filterNot(edits0.contains(_))))
+    case PivotEditsUpdatedEvent(edits0) => pageContext.goTo(selfPage(pivotPageState, edits0))
     case SavePivotEdits if toolBar.saveEditsButton.enabled => toolBar.saveEditsButton.saveEdits()
     case FieldPanelEvent(collapse) => {
       val newOtherLayoutInfo = pivotPageState.otherLayoutInfo.copy(fieldPanelCollapsed = collapse)
