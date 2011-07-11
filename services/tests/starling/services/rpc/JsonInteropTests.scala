@@ -6,7 +6,7 @@ import org.testng.annotations.Test
 
 class JsonInteropTests extends TestNGSuite with ShouldMatchers {
   // Find interop json, instantiate class, round trip should produce same json
-  @Test def overlappingClassesShouldProduceInteroperableJSON {
-    JsonInteropValidator.validate("starling.api/resources", "com.trafigura.services")
-  }
+//  @Test def overlappingClassesShouldProduceInteroperableJSON {
+//    JsonInteropValidator.validate("starling.api/resources", "com.trafigura.services")
+//  }
 }

@@ -8,6 +8,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 
 
 class RichRunnableTest extends TestNGSuite with ShouldMatchers {
+  
   @Test def shouldNotInvokeActionWhenWrappingWithRunnable {
     val invoked = new AtomicBoolean(false)
 

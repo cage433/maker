@@ -3,7 +3,7 @@ package starling.services.trinity
 import com.trafigura.edm.shared.types.Date
 
 
-case class RateCurve
+case object RateCurve
 
 case class DepoRate(bid: Double, offer: Double, period: String, date: Date)
 

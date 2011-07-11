@@ -10,7 +10,7 @@ import pivot.model.{PivotTableModel, CollapsedState}
 import utils.Log
 import tradestore.TradePredicate
 
-object TestLazy extends Application{
+object TestLazy extends App {
 
   val in = starling.services.StarlingInit.devInstance
   val ts = in.eaiTradeStores(Book.LondonDerivativesOptions)

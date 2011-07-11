@@ -43,7 +43,7 @@ class ReportHandler(userReportsService : UserReportsService) {
     val reportName = dataSourceParameters("Report Name").asInstanceOf[String]
     val observationDay = Day.fromExcel(dataSourceParameters("Day").asInstanceOf[Double])
 
-    val filtersAsField = filters.grouped(2).map(_.toList).map{case List(field: String, value) => (Field(field), value)}.toMap
+      val filtersAsField = filters.grouped(2).map(_.toList).map(x => (x : @unchecked) match { case List(field: String, value) => (Field(field), value) }).toMap
 
     val pivotTable = userReportsService.pivotTableFor(User.currentlyLoggedOn, reportName, observationDay,
       PivotFieldsState(rowFields = filtersAsField.keys.toList, dataFields = List(Field(measure))))

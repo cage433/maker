@@ -20,7 +20,7 @@ object RepopulateMarketData {
     if (args.length < 1) {
       Log.error("Need a pricing group:")
       PricingGroup.values.map(p => println(p.name))
-      exit(-1)
+      sys.exit(-1)
     }
     PricingGroup.values.find(p => p.name.equalsIgnoreCase(args(0))) match {
       case Some(pg) => {

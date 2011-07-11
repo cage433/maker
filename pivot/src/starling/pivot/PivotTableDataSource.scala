@@ -147,7 +147,7 @@ case class PivotTreePath(path:List[String]) {
     }
   }
   def toTree : TreePivotFilterNode = {
-    def recurse(pathPrefixes : List[List[String]]) : TreePivotFilterNode = pathPrefixes match {
+    def recurse(pathPrefixes : List[List[String]]) : TreePivotFilterNode = (pathPrefixes : @unchecked) match {
       case List(last) => TreePivotFilterNode(PivotTreePath(last), last.last, List())
       case first :: rest => TreePivotFilterNode(PivotTreePath(first), first.last, List(recurse(rest)))
     }

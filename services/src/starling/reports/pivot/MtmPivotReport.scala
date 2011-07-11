@@ -113,8 +113,7 @@ case class Mtm(
 
 object MtmRiskFields extends RiskPivotFields[Mtm]
 
-@serializable
-class MtmPivotReport(@transient environment:Environment, @transient utps : Map[UTPIdentifier, UTP]) extends RiskFactorSplittingPivotReport[Mtm] {
+class MtmPivotReport(@transient environment:Environment, @transient utps : Map[UTPIdentifier, UTP]) extends RiskFactorSplittingPivotReport[Mtm] with Serializable {
   def fields = MtmPivotReport.fields
 
   def scale(row: Mtm, volume: Double) = row.copy(scale = row.scale * volume)

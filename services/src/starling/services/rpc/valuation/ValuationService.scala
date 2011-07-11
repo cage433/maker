@@ -506,7 +506,7 @@ class ValuationServiceRpc(marketDataStore: MarketDataStore, valuationService: Va
 }
 */
 
-object ValuationService extends Application {
+object ValuationService extends App {
 
   import org.codehaus.jettison.json.JSONObject
 
