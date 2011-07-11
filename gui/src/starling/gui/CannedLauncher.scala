@@ -315,10 +315,10 @@ class EditableSpecifiedCannedDataSource extends UnfilteredPivotTableDataSource {
                 println("ADDING NEW TRADER " + trader)
                 println("")
 
-                vs(Field("Trader")) = trader
+                vs.updated(Field("Trader"), trader)
               } else {
                 val market = NewValue(vs(Field("Market")), pe)
-                vs(Field("Market")) = market
+                vs.updated(Field("Market"), market)
               }
             }).toList
 

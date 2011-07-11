@@ -41,7 +41,7 @@ class MP[A](val t: Traversable[A]) extends Traversable[A] with GenericTraversabl
   }
 
   def fixStackTrace(e: Throwable, originalStacktrace: Array[StackTraceElement]): Throwable = {
-    val index = originalStacktrace.findIndexOf(e => e.toString.contains("UnitOfWork.doWork"))
+    val index = originalStacktrace.indexWhere(e => e.toString.contains("UnitOfWork.doWork"))
     e.setStackTrace(originalStacktrace.slice(0, index) ++ Thread.currentThread.getStackTrace.drop(1))
     e
   }

@@ -78,7 +78,7 @@ case class OilAtmVol(marketDayAndTime : DayAndTime, market : CommodityMarket, da
         Percentage(SplineInterpolator.interpolate(times, data.atmVols.map(_.decimalValue), t))
       } else {
         val day = point.asInstanceOf[Day]
-        val index = data.periods.findIndexOf {
+        val index = data.periods.indexWhere {
           case m: Month => m.contains(day)
         }
         if(index == -1) throw new MissingMarketDataException("No oil atm for " + market + " - " + point + " in " + data)
@@ -134,7 +134,7 @@ case class OilVolSkew(marketDayAndTime : DayAndTime, market : CommodityMarket, d
         )
         skewMap(skews)
       } else {
-        val index = data.periods.findIndexOf {
+        val index = data.periods.indexWhere {
           case m: Month => m.contains(d)
         }
         if (index == -1) throw new MissingMarketDataException("No oil vol skew for " + market + " - " + d)

@@ -128,7 +128,7 @@ object CollectionUtils {
    * if it exists, otherwise returns index of last element
    */
   def firstGtr(x: Seq[Double], x0: Double): Int = {
-    x.findIndexOf(_ > x0) match {
+    x.indexWhere(_ > x0) match {
       case -1 => x.toList.size - 1
       case i => i
     }

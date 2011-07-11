@@ -10,7 +10,7 @@ class Starling(info : ProjectInfo) extends ParentProject(info) {
 
   lazy val bouncyrmi = swingStarlingProject("bouncyrmi")
   lazy val utils = starlingProject("utils")
-  lazy val scalaModelWithPersistence = project("titan-scala-model-with-persistence", "ScalaModelWithPersistence", new ScalaModelWithPersistence(_))
+  lazy val scalaModelWithPersistence = project("titan-scala-model-with-persistence", "ScalaModel", new ScalaModelForStarling(_))
 
   // API used to interact with starling, should have minimum number of dependencies
   lazy val starlingApi = {
@@ -53,7 +53,8 @@ class Starling(info : ProjectInfo) extends ParentProject(info) {
   lazy val starling = this
 
   override def localScala = {
-    defineScala("2.8.1.final-local", new File("lib/scala/scala-2.8.1.final/")) :: Nil
+    //defineScala("2.8.1.final-local", new File("lib/scala/scala-2.8.1.final/")) :: Nil
+    defineScala("2.9.0-1.final-local", new File("lib/scala/scala-2.9.0-1.final/")) :: Nil
   }
 
   var parExec = false
@@ -131,15 +132,14 @@ class Starling(info : ProjectInfo) extends ParentProject(info) {
 
   }
 
-
-  class ScalaModelWithPersistence(info: ProjectInfo) extends DefaultProject(info) with ModelSourceGeneratingProject with ModelDependencies{
+  class ScalaModelForStarling(info: ProjectInfo) extends DefaultProject(info) with ModelSourceGeneratingProject with ModelDependencies{
 
     private lazy val projectRoot = path(".").asFile.toString
+    val parentPath = Path.fromFile(new java.io.File(projectRoot + "/../../../model/model/"))
 
-    override protected val generateModelMainSourceCmd = Some(new java.lang.ProcessBuilder("ruby", "../../../model/model/bindinggen.rb", "-o", modelMainScalaSourcePath.projectRelativePath, "-b", "../../../model/model/scala-model-with-persistence/src/codegen/bindings.rb", "../../../model/model/master-model.rb") directory (new File(projectRoot)))
+    override protected val generateModelMainSourceCmd = Some(new java.lang.ProcessBuilder("ruby", "../../../mdl/bindinggen.rb", "-o", modelMainScalaSourcePath.projectRelativePath, "-b", "../../../mdl/starling/bindings.rb", "../../../mdl/starling/model.rb") directory (new File(projectRoot)))
 
     lazy val rubyModelPathFinder = {
-      val parentPath = Path.fromFile(new java.io.File(projectRoot + "/../../../model/model/"))
       (parentPath ** "*.rb")
     }
 
@@ -147,8 +147,11 @@ class Starling(info : ProjectInfo) extends ParentProject(info) {
     def copyNonModelSource  = {
       if (! (new java.io.File(projectRoot + "/src").exists)) {
         import FileUtilities._
-        val originalSourcePath = Path.fromFile(new java.io.File(projectRoot + "../../../../model/model/scala-model-with-persistence/src/"))
+        val originalSourcePath = Path.fromFile(new java.io.File(parentPath + "/scala-model-with-persistence/src/"))
         copyDirectory(originalSourcePath, nonModelSourcePath, new ConsoleLogger)
+        val hibernateBean = new File (projectRoot + "/src/main/scala/com/trafigura/refinedmetals/persistence/CustomAnnotationSessionFactoryBean.scala")
+        //println("***** DEBUG ***** path " + hibernateBean.getAbsolutePath + ", " + hibernateBean.exists + ", " + hibernateBean.canWrite) 
+        if (hibernateBean.exists && hibernateBean.canWrite) hibernateBean.delete()
       }
       None
     }
