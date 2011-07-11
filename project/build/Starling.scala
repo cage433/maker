@@ -54,7 +54,7 @@ class Starling(info : ProjectInfo) extends ParentProject(info) {
 
   override def localScala = {
     //defineScala("2.8.1.final-local", new File("lib/scala/scala-2.8.1.final/")) :: Nil
-    defineScala("2.9.0-1.final-local", new File("lib/scala/scala-2.9.0-1.final/")) :: Nil
+    defineScala("2.9.0-1.final-local", new File("lib/scala/scala-2.9.0.1.final/")) :: Nil
   }
 
   var parExec = false
@@ -68,7 +68,7 @@ class Starling(info : ProjectInfo) extends ParentProject(info) {
 
   class SwingStarlingProject(name : String, info : ProjectInfo) extends StarlingProject(name, info) {
     override def unmanagedClasspath =
-      super.unmanagedClasspath +++ Path.fromFile(new File("lib/scala/scala-2.8.1.final/lib/scala-swing.jar"))
+      super.unmanagedClasspath +++ Path.fromFile(new File("lib/scala/scala-2.9.0.1.final/lib/scala-swing.jar"))
   }
 
   class StarlingProject(name : String, info : ProjectInfo) extends DefaultProject(info) with com.gu.TeamCityTestReporting {
