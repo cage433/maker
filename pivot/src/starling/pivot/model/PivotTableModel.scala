@@ -515,19 +515,26 @@ object PivotTableModel {
               (df, new AxisValueList(path ::: padding))
           }
         }
-        for ((dataFieldOption, columnValues) <- columnValuesList) {
+
+        if (columnValuesList.nonEmpty) {
+          for ((dataFieldOption, columnValues) <- columnValuesList) {
+            for (rowValues <- rowValuesOption) {
+
+              rowAxisRoot = rowAxisRoot.add(rowValues.list)
+              columnAxisRoot = columnAxisRoot.add(columnValues.list)
+
+              val rowColumnKey = (rowValues.list.map(_.keyValue), columnValues.list.map(_.keyValue))
+              dataFieldOption.foreach { df => {
+                if (!mainTableBucket.contains(rowColumnKey)) {
+                  mainTableBucket(rowColumnKey) = new EmptyDataFieldTotal(fieldDetailsLookup(df))
+                }
+                mainTableBucket(rowColumnKey) = mainTableBucket(rowColumnKey).addValue(PivotValue.create(row(df)))
+              }}
+            }
+          }
+        } else if (rowValuesOption.isDefined && rowValuesOption.get.list.nonEmpty) {
           for (rowValues <- rowValuesOption) {
-
             rowAxisRoot = rowAxisRoot.add(rowValues.list)
-            columnAxisRoot = columnAxisRoot.add(columnValues.list)
-
-            val rowColumnKey = (rowValues.list.map(_.keyValue), columnValues.list.map(_.keyValue))
-            dataFieldOption.foreach { df => {
-              if (!mainTableBucket.contains(rowColumnKey)) {
-                mainTableBucket(rowColumnKey) = new EmptyDataFieldTotal(fieldDetailsLookup(df))
-              }
-              mainTableBucket(rowColumnKey) = mainTableBucket(rowColumnKey).addValue(PivotValue.create(row(df)))
-            }}
           }
         }
       }
