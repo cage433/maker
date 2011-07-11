@@ -108,8 +108,8 @@ object Highlighters {
         }
       }
     })
-    editedTaintedCellsHighlighter.setBackground(Color.BLACK) // REDO THIS
-    editedTaintedCellsHighlighter.setSelectedBackground(Color.BLACK)
+    editedTaintedCellsHighlighter.setBackground(TaintedCellColour)
+    editedTaintedCellsHighlighter.setSelectedBackground(BlendedTaintedCellColour)
 
     val editableCellsHighlighter = new ColorHighlighter(new HighlightPredicate {
       def isHighlighted(renderer:java.awt.Component, adapter:org.jdesktop.swingx.decorator.ComponentAdapter) = {
