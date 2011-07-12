@@ -12,16 +12,12 @@ class Patch106_AddBooleanToHashMapInUserSettings extends Patch {
   val regex = new Regex("""<int>\d+</int>\s*<int>\d+</int>""")
   def removeBitmaps(starling : RichDB, table : String, column : String){
     Log.info("Adding booleans to XStream hash map for " + table + ", " + column)
-    var i = 0
     starling.inTransaction {
       writer: DBWriter => {
       {
         val query = "select " + column + " from " + table 
             writer.queryForUpdate(query) {
               rs => {
-                i = i + 1
-                if (i % 1 == 0)
-                  Log.info("Done row " + i)
                 val text: String = rs.getString(column)
                 val newText = regex.replaceAllIn(text, m => m.matched + "<boolean>false</boolean>")
                 rs.update(Map(column -> newText))

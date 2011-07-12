@@ -20,7 +20,7 @@ class Patch102_RemoveBitmapsFromXStream extends Patch {
             writer.queryForUpdate(query) {
               rs => {
                 i = i + 1
-                if (i % 100 == 0)
+                if (i % 5000 == 0)
                   Log.info("Done row " + i)
                 val text: String = rs.getString(column)
                 val newText = regex.replaceAllIn(text, "")
