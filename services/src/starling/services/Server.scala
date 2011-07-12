@@ -2,6 +2,7 @@ package starling.services
 
 import excel._
 import jmx.StarlingJMX
+import rpc.logistics.DefaultTitanLogisticsServices
 import rpc.valuation.ValuationService
 import rpc.marketdata.MarketDataService
 import rpc.valuation.ValuationService
@@ -241,8 +242,9 @@ class StarlingInit( val props: Props,
 
   val titanTradeCache = new DefaultTitanTradeCache(props)
   val titanServices = new DefaultTitanServices(props)
+  val logisticsServices = new DefaultTitanLogisticsServices(props)
   val rabbitEventServices = new DefaultRabbitEventServices(props)
-  val valuationService = new ValuationService(new DefaultEnvironmentProvider(marketDataStore), titanTradeCache, titanServices, rabbitEventServices)
+  val valuationService = new ValuationService(new DefaultEnvironmentProvider(marketDataStore), titanTradeCache, titanServices, logisticsServices, rabbitEventServices)
   val marketDataService = new MarketDataService(marketDataStore)
   
   val userSettingsDatabase = new UserSettingsDatabase(starlingDB, broadcaster)

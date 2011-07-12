@@ -34,6 +34,7 @@ import starling.curves.DiscountRateKey
 import starling.curves.ForwardPriceKey
 import starling.curves.UnitTestingAtomicEnvironment
 import starling.curves.FixingKey
+import starling.services.rpc.logistics.TitanLogisticsServices
 
 
 trait TitanTradeCache {
@@ -133,7 +134,7 @@ class DefaultTitanTradeService(titanServices : TitanServices) extends TitanTrade
 /**
  * Trade cache using supplied ref data
  */
-case class RefDataTitanTradeCache(refData : TitanTacticalRefData, titanTradesService : TitanTradeService) extends TitanTradeCache {
+case class TitanTradeServiceBasedTradeCache(titanTradesService : TitanTradeService) extends TitanTradeCache {
 
   protected var tradeMap: Map[String, EDMPhysicalTrade] = Map[String, EDMPhysicalTrade]()
   protected var quotaIDToTradeIDMap: Map[String, String] = Map[String, String]()
@@ -255,16 +256,17 @@ class MockEnvironmentProvider() extends EnvironmentProvider {
 class ValuationService(
   environmentProvider : EnvironmentProvider, 
   titanTradeCache : TitanTradeCache, 
-  titanServices : TitanTacticalRefData,
-  rabbitEvents : RabbitEventServices) extends ValuationServiceApi {
+  refData : TitanTacticalRefData,
+  logisticsServices : TitanLogisticsServices,
+  rabbitEventServices : RabbitEventServices) extends ValuationServiceApi {
 
   type TradeValuationResult = Either[List[CostsAndIncomeQuotaValuation], String]
 
-  lazy val futuresExchangeByGUID = titanServices.futuresExchangeByGUID
-  lazy val futuresMarketByGUID = titanServices.futuresMarketByGUID
+  lazy val futuresExchangeByGUID = refData.futuresExchangeByGUID
+  lazy val futuresMarketByGUID = refData.futuresMarketByGUID
   val eventHandler = new EventHandler
 
-  rabbitEvents.eventDemux.addClient(eventHandler)
+  rabbitEventServices.eventDemux.addClient(eventHandler)
 
 
   /**
@@ -407,7 +409,7 @@ class ValuationService(
    */
   class EventHandler extends DemultiplexerClient {
     import Event._
-    val rabbitPublishChangedValueEvents = publishChangedValueEvents(rabbitEvents.rabbitEventPublisher) _
+    val rabbitPublishChangedValueEvents = publishChangedValueEvents(rabbitEventServices.rabbitEventPublisher) _
     def handle(ev: Event) {
       if (ev == null) Log.warn("Got a null event") else {
         if (Event.TrademgmtSource == ev.source && Event.TradeSubject == ev.subject) { // Must be a trade event from trademgmt

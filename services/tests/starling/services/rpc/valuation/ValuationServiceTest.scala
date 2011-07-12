@@ -14,7 +14,7 @@ import org.testng.Assert._
 import starling.utils.{StarlingTest, Log}
 import com.trafigura.edm.trades.{CompletedTradeTstate, TradeTstateEnum, Trade => EDMTrade, PhysicalTrade => EDMPhysicalTrade}
 import com.trafigura.shared.events._
-
+import starling.services.rpc.logistics.{FileMockedTitanLogisticsServices}
 
 /**
  * Valuation service tests
@@ -57,17 +57,23 @@ class ValuationServiceTest extends StarlingTest {
       }
     }
 
+    println("Starting valuation service tests - initialisation of mocks")
+
     val testMarketLookup = new TestMarketLookup()
     MarketProvider.registerNewImplForTesting(Some(testMarketLookup))
     val mockTitanServices = new FileMockedTitanServices()
     val mockTitanTradeService = new DefaultTitanTradeService(mockTitanServices)
-    val mockTitanTradeCache = new RefDataTitanTradeCache(mockTitanServices, mockTitanTradeService)
+    val mockTitanTradeCache = new TitanTradeServiceBasedTradeCache(mockTitanTradeService)
+    val mockTitanLogisticsServices = FileMockedTitanLogisticsServices()
+    val assignments = mockTitanLogisticsServices.service.getAllSalesAssignments()
     val mockRabbitEventServices = new MockRabbitEventServices()
 
-    val vs = new ValuationService(
-      new MockEnvironmentProvider, mockTitanTradeCache, mockTitanServices, mockRabbitEventServices)
+assignments.foreach(println)
 
-    println("Starting valuation service tests")
+    val vs = new ValuationService(
+      new MockEnvironmentProvider, mockTitanTradeCache, mockTitanServices, mockTitanLogisticsServices, mockRabbitEventServices)
+
+    println("Running valuation service tests")
 
     //vs.marketDataSnapshotIDs().foreach(println)
     val valuations = vs.valueAllQuotas()
