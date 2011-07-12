@@ -10,7 +10,7 @@ import starling.bouncyrmi.AuthHandler
 import java.util.concurrent.atomic.AtomicInteger
 import starling.auth.User
 
-object SendMethods extends Application {
+object SendMethods extends App {
   private val methodSource = new ReflectiveMethodSource(new MethodImplementation)
 
   private val loggingHandler = new AuthHandler[User] {

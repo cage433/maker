@@ -72,13 +72,13 @@ class VarTests extends TestMarketSpec {
 
   def weightedVol(days : List[Day], vols : List[Double], rho : Double, day : Day) : Double = {
   		var dayVols = days.zip(vols)
-  		val indexFirstDayAfter = dayVols.findIndexOf(_._1 >= day)
+  		val indexFirstDayAfter = dayVols.indexWhere(_._1 >= day)
   		if (indexFirstDayAfter == 0)
   			dayVols = dayVols.take(2)
   		else
   			dayVols = dayVols.drop(indexFirstDayAfter - 1).take(2)
   		assert(dayVols.size == 2, "Invalid size")
-  		dayVols match {
+  		(dayVols : @unchecked) match {
   		  case List((day1, vol1), (day2, vol2)) => {
   		    val tMid = day.endOfDay.timeSince(day1.endOfDay)
   		    val tWidth = day2.endOfDay.timeSince(day1.endOfDay)
