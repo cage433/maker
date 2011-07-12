@@ -667,7 +667,10 @@ case class FilterLabelPanel(props:GuiFieldComponentProps)
 
 case class DisplayPopupEvent(source:Component) extends Event
 
-case class FilterButtonPanel(props:GuiFieldComponentProps) extends MigPanel {
+object FilterButtonPanel {
+  def apply(props:GuiFieldComponentProps) = new FilterButtonPanel(props)
+}
+class FilterButtonPanel(props:GuiFieldComponentProps) extends MigPanel {
   visible = ((props.locationOfField == Filter || !props.realMeasureField) && (props.locationOfField != FieldList))
 
   opaque = false

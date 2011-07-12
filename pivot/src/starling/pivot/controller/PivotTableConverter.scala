@@ -123,8 +123,8 @@ case class ServerAxisNode(axisValue:AxisValue, children:Map[ChildKey,Map[AxisVal
 }
 
 case class AxisNode(axisValue:AxisValue, children:List[AxisNode]=Nil) {
-  def purge(remove:Set[List[ChildKey]], parent:List[ChildKey] = Nil):Option[AxisNode] = {
-    val pathToMe = axisValue.keyValue :: parent
+  def purge(remove:Set[List[AxisValue]], parent:List[AxisValue] = Nil):Option[AxisNode] = {
+    val pathToMe = axisValue :: parent
     if (children.isEmpty) {
       if (remove.contains(pathToMe.reverse)) None else Some(this)
     } else {
@@ -234,8 +234,8 @@ case class PivotTableConverter(otherLayoutInfo:OtherLayoutInfo = OtherLayoutInfo
   def createGrid(extractUOMs:Boolean = true, addExtraColumnRow:Boolean = true):PivotGrid ={
     val aggregatedMainBucket = table.aggregatedMainBucket
     val zeroFields = table.zeroFields
-    val rowsToRemove:Set[List[ChildKey]] = if (otherLayoutInfo.removeZeros && (fieldState.columns.allFields.toSet & zeroFields).nonEmpty) {
-      val rows:Set[List[ChildKey]] = aggregatedMainBucket.groupBy{case ((r,c),v) => r}.keySet
+    val rowsToRemove:Set[List[AxisValue]] = if (otherLayoutInfo.removeZeros && (fieldState.columns.allFields.toSet & zeroFields).nonEmpty) {
+      val rows:Set[List[AxisValue]] = aggregatedMainBucket.groupBy{case ((r,c),v) => r}.keySet
       rows.flatMap(row => {
         val onlyZeroFieldColumnsMap = aggregatedMainBucket.filter{case ((r,c),_) => {
           (r == row) && (c.find(_.isMeasure) match {
@@ -250,7 +250,7 @@ case class PivotTableConverter(otherLayoutInfo:OtherLayoutInfo = OtherLayoutInfo
         }}) Some(row) else None
       })
     } else {
-      Set[List[ChildKey]]()
+      Set[List[AxisValue]]()
     }
 
     val rowData = AxisNodeBuilder.flatten(table.rowNode.purge(rowsToRemove).getOrElse(AxisNode.Null), totals.rowGrandTotal,
@@ -382,7 +382,7 @@ case class PivotTableConverter(otherLayoutInfo:OtherLayoutInfo = OtherLayoutInfo
         val rowTotal = rowValues.exists(_.totalState == Total)
         val rowOtherValue = rowValues.exists(_.totalState == OtherValueTotal)
         (for ((columnValues, columnIndex) <- flattenedColValues.zipWithIndex) yield {
-          val key = (rowValues.map(_.value.keyValue).toList, columnValues.map(_.value.keyValue).toList)
+          val key = (rowValues.map(_.value).toList, columnValues.map(_.value).toList)
 
           def appendUOM(value:Any) {
             value match {

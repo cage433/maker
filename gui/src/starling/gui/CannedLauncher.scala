@@ -282,13 +282,13 @@ class EditableCannedDataSource extends CannedDataSource {
 
 class EditableSpecifiedCannedDataSource extends UnfilteredPivotTableDataSource {
   private val traders = List("corin", "brian", "kieth","alex","mike", "Iamatraderwithareallylongnameitisreallyverylongohyesitis")
-  private val months = List(Month(2011, 1),Month(2011, 2),Month(2011, 3))
+//  private val months = List(Month(2011, 1),Month(2011, 2),Month(2011, 3))
   private val markets = List("BRENT", "WTI", "COAL","GAS","PAPER","ABC", "abe", "What", "Which", "when")
+
   def data:List[Map[Field, Any]] = {
     val random = new java.util.Random(1234567890L)
-    for (trader <- traders; month <- months) yield {
-      val market = markets(random.nextInt(markets.size))
-      Map(Field("Trader") -> trader, Field("Month") -> month, Field("Market") -> market)
+    for (trader <- traders; market <- markets) yield {
+      Map(Field("Trader") -> trader, Field("Market") -> market, Field("Volume") -> 20)
     }
   }
 
@@ -296,12 +296,12 @@ class EditableSpecifiedCannedDataSource extends UnfilteredPivotTableDataSource {
     override def parser = new CannedMarketPivotParser(markets.toSet)
   }
 
-  def fieldDetailsGroups = List(FieldDetailsGroup("Group 1", FieldDetails("Trader"), FieldDetails("Month"), marketFieldDetails))
+  def fieldDetailsGroups = List(FieldDetailsGroup("Group 1", FieldDetails("Trader"), FieldDetails("Market"), new SumIntFieldDetails("Volume")))
   def unfilteredData(pfs:PivotFieldsState) = data
 
   override def editable = Some(new EditPivot {
     def save(edits:PivotEdits) = {println("SAVE : " + edits); true}
-    def editableToKeyFields = Map(Field("Market") -> Set(Field("Trader"), Field("Month")))
+    def editableToKeyFields = Map(Field("Volume") -> Set(Field("Trader"), Field("Market")))
     def withEdits(edits:PivotEdits):PivotTableDataSource = {
       if (edits.isEmpty) {
         EditableSpecifiedCannedDataSource.this
@@ -314,7 +314,7 @@ class EditableSpecifiedCannedDataSource extends UnfilteredPivotTableDataSource {
             println("")
 
             val dWithDeletesAndAmends = d.map(m => {
-              val key = Map(Field("Trader") -> m(Field("Trader")), Field("Month") -> m(Field("Month")))
+              val key = Map(Field("Trader") -> m(Field("Trader")), Field("Market") -> m(Field("Market")))
               m.map { case (field, value) => {
                 edits.editFor(key, field) match {
                   case None => field -> value
@@ -330,7 +330,7 @@ class EditableSpecifiedCannedDataSource extends UnfilteredPivotTableDataSource {
     }
   })
 
-  override def initialState = new PivotFieldsState(rowFields = List(Field("Trader"), Field("Month")), columns = ColumnTrees(Field("Market"), true))
+  override def initialState = new PivotFieldsState(rowFields = List(Field("Trader"), Field("Market")), columns = ColumnTrees(Field("Volume"), true))
 }
 
 class CannedMarketPivotParser(markets:Set[String]) extends PivotParser {

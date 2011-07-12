@@ -391,7 +391,7 @@ object PivotTableModel {
 
       //Make one pass through all the rows building up row and column trees
       //and the 'sum' of the data area values for each row-column pair
-      val mainTableBucket = new scala.collection.mutable.HashMap[(List[ChildKey], List[ChildKey]), DataFieldTotal]
+      val mainTableBucket = new scala.collection.mutable.HashMap[(List[AxisValue], List[AxisValue]), DataFieldTotal]
       var rowAxisRoot = ServerAxisNode.Null
       var columnAxisRoot = ServerAxisNode.Null
 
@@ -523,7 +523,7 @@ object PivotTableModel {
               rowAxisRoot = rowAxisRoot.add(rowValues.list)
               columnAxisRoot = columnAxisRoot.add(columnValues.list)
 
-              val rowColumnKey = (rowValues.list.map(_.keyValue), columnValues.list.map(_.keyValue))
+              val rowColumnKey = (rowValues.list, columnValues.list)
               dataFieldOption.foreach { df => {
                 if (!mainTableBucket.contains(rowColumnKey)) {
                   mainTableBucket(rowColumnKey) = new EmptyDataFieldTotal(fieldDetailsLookup(df))
@@ -544,7 +544,7 @@ object PivotTableModel {
 
       val formatInfo = FormatInfo(Map() ++ fieldDetailsLookup.map{case (f,fd) => (f -> fd.formatter)})
 
-      def permutations(list:List[ChildKey]):List[List[ChildKey]] = {
+      def permutations(list:List[AxisValue]):List[List[AxisValue]] = {
         (list.size to 0 by -1).map(col => {
           val (start,end) = list.splitAt(col)
           start ::: end.map(c => if (c.isMeasure) c else c.toTotal)
@@ -567,10 +567,10 @@ object PivotTableModel {
       }
 
       val equalToReferenceTableCellMap = new HashMap[Any,MeasureCell]
-      val equalToReferenceAxisValueListMap = new HashMap[List[ChildKey],List[ChildKey]]
-      val equalToReferenceAxisValue = new HashMap[ChildKey,ChildKey]
+      val equalToReferenceAxisValueListMap = new HashMap[List[AxisValue],List[AxisValue]]
+      val equalToReferenceAxisValue = new HashMap[AxisValue,AxisValue]
 
-      def compress(k1:List[ChildKey]) = {
+      def compress(k1:List[AxisValue]) = {
         val compressed = k1.map( v => equalToReferenceAxisValue.getOrElseUpdate(v,v))
         equalToReferenceAxisValueListMap.getOrElseUpdate(compressed,compressed)
       }

@@ -21,8 +21,8 @@ object FieldDetailsGroup {
 
 case class FieldGroup(name:String, fields:List[Field])
 
-case class KeyFilter(keys:Map[Field,Any]) {
-  def matches(rowKeys:Map[Field,Any]) = keys.forall{ case (field, value) => rowKeys(field) == value }
+case class KeyFilter(keys:Map[Field,SomeSelection]) {
+  def matches(rowKeys:Map[Field,Any]) = keys.forall{ case (field, selection) => selection.values.contains(rowKeys(field)) }
   def isOverriddenBy(newDelete:KeyFilter) = {
     newDelete.keys.forall{ case (key,value) => {
       keys.get(key) == Some(value)

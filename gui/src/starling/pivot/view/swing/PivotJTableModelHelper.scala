@@ -111,15 +111,18 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
       val filterFieldToValues = Map() ++ fieldState.filterAreaFields.flatMap(f => {
         val (field, selection) = fieldState.filters.find{case (f0,sel) => f == f0}.get
         selection match {
-          case SomeSelection(v) if v.size == 1 => Some((field -> v.head))
+          case s@SomeSelection(v) if v.size == 1 => Some((field -> s))
           case _ => None
         }
       })
 
-      val rowHeaderCells = rowHeaderData0(rowIndex).take(columnIndex+1)
-      val rowHeaderFieldToValues = Map() ++ rowHeaderCells.map(cell => (cell.value.field -> cell.value.value.originalValue.getOrElse(cell.value.value.value)))
+      val rowFilters = Map() ++ fieldState.filters.collect{case (f,s:SomeSelection) if fieldState.rowFields.contains(f) => (f -> s)}
+      val columnFilters = Map() ++ fieldState.filters.collect{case (f,s:SomeSelection) if fieldState.columns.allFields.contains(f) => (f -> s)}
 
-      rowHeaderFieldToValues ++ filterFieldToValues
+      val rowHeaderCells = rowHeaderData0(rowIndex).take(columnIndex+1)
+      val rowHeaderFieldToValues = Map() ++ rowHeaderCells.map(cell => (cell.value.field -> SomeSelection(Set(cell.value.value.originalValue.getOrElse(cell.value.value.value)))))
+
+      rowHeaderFieldToValues ++ filterFieldToValues ++ rowFilters ++ columnFilters
     }
 
     def deleteCells(cells:List[(Int,Int)]) {
@@ -341,17 +344,17 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
       val filterFieldToValues = Map() ++ fieldState.filterAreaFields.flatMap(f => {
         val (field, selection) = fieldState.filters.find{case (f0,sel) => f == f0}.get
         selection match {
-          case SomeSelection(v) if v.size == 1 => Some((field -> v.head))
+          case s@SomeSelection(v) if v.size == 1 => Some((field -> s))
           case _ => None
         }
       })
 
       val rowHeaderCells = rowHeaderData0(rowIndex)
-      val rowHeaderFieldToValues = Map() ++ rowHeaderCells.map(cell => (cell.value.field -> cell.value.value.originalValue.getOrElse(cell.value.value.value)))
+      val rowHeaderFieldToValues = Map() ++ rowHeaderCells.map(cell => (cell.value.field -> SomeSelection(Set(cell.value.value.originalValue.getOrElse(cell.value.value.value)))))
 
       val colHeaderFieldToValues = Map() ++ colHeaderData0.map(r => {
         val cell = r(columnIndex)
-        (cell.value.field -> cell.value.value.value)
+        (cell.value.field -> SomeSelection(Set(cell.value.value.value)))
       }).filterNot{case (field,_) => (measureInfo.value.field == field) || (field == Field.NullField)}
 
       rowHeaderFieldToValues ++ colHeaderFieldToValues ++ filterFieldToValues

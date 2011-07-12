@@ -17,7 +17,7 @@ class PivotTableConverterTest extends TestNGSuite {
     val res1 = an.purge(Set())
     assertEquals(res1, Some(an))
 
-    val res2 = an.purge(Set(List(av("bla").keyValue)))
+    val res2 = an.purge(Set(List(av("bla"))))
     assertEquals(res2, None)
 
     val an1 = AxisNode(av("bla1"), List(an, AxisNode(av("bla2"), Nil)))
