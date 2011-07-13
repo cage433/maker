@@ -40,7 +40,7 @@ abstract class AxisValueType extends Serializable {
   def cellType:EditableCellState = Normal
   def pivotEdits:PivotEdits = PivotEdits.Null
   def originalValue:Option[Any] = None
-  def valueForChildKey = value//originalValue.getOrElse(value)
+  def valueForChildKey(newRowsAtBottom:Boolean) = value
   def originalOrValue = originalValue.getOrElse(value)
 }
 
@@ -61,6 +61,7 @@ case class ValueAxisValueType(valueX:Any) extends AxisValueType {
   override def pivotEdits = pivotValue.edits
   override def originalValue = pivotValue.originalValue
   override def value = pivotValue.axisValueValue
+  override def valueForChildKey(newRowsAtBottom:Boolean) = pivotValue.valueForGrouping(newRowsAtBottom)
 }
 
 case class NewRowValue(rowIndex:Int)
@@ -78,7 +79,7 @@ case class MeasureAxisValueType(field:Field) extends AxisValueType {
   def value = field.name
 }
 
-case class AxisValue(field:Field, value:AxisValueType, position:Int) {
+case class AxisValue(field:Field, value:AxisValueType, position:Int, newRowsAtBottom:Boolean=false) {
   def valueText = value.value.toString
   def toTotal = copy(value = TotalAxisValueType)
   def isTotal = value == TotalAxisValueType
@@ -89,7 +90,7 @@ case class AxisValue(field:Field, value:AxisValueType, position:Int) {
   def isMeasure = value.isInstanceOf[MeasureAxisValueType]
   def state = value.cellType
   def pivotEdits = value.pivotEdits
-  def childKey = ChildKey(value.valueForChildKey, isMeasure, field, position)
+  def childKey = ChildKey(value.valueForChildKey(newRowsAtBottom), isMeasure, field, position)
 }
 
 case object UndefinedValue {
@@ -373,6 +374,36 @@ object PivotTableModel {
       val allPaths = pivotState.columns.buildPathsWithPadding
       val maxColumnDepth = if (allPaths.isEmpty) 0 else allPaths.maximum(_.path.size)
 
+      val editableInfo = {
+        dataSource.editable match {
+          case None => None
+          case Some(editPivot) => {
+            // Work out if all the fields are in the appropriate places (rows or columns, or filter area with one selection)
+            val editableMeasureFields = editPivot.editableToKeyFields.flatMap{case (editableField,keyFields) => {
+              if (pivotState.columns.hasPathContaining(keyFieldsInColumnArea(keyFields.toSet, pivotState) + editableField)) {
+                Some(editableField)
+              } else {
+                None
+              }
+            }}
+            val editableKeyFields = editableMeasureFields.flatMap(field => {
+              val keyFields = editPivot.editableToKeyFields(field)
+              keyFields filter pivotState.rowFields.contains
+            })
+            val extraLine = editPivot.editableToKeyFields.map{case (editableField,keyFields) => {
+              pivotState.columns.contains(editableField) && keyFieldsInColumnArea(keyFields.toSet, pivotState).isEmpty
+            }}.exists(_ == true)
+
+            val editableMeasures = Map() ++ editableMeasureFields.map(f => (f -> fieldDetailsLookup(f).parser))
+            val editableKeys = Map() ++ editableKeyFields.map(f => (f -> fieldDetailsLookup(f).parser))
+
+            Some(EditableInfo(editableMeasures, editableKeys, extraLine))
+          }
+        }
+      }
+
+      val forceNewRowsToBottom = editableInfo.map(_.extraLine).getOrElse(false)
+
       //Make one pass through all the rows building up row and column trees
       //and the 'sum' of the data area values for each row-column pair
       val mainTableBucket = new scala.collection.mutable.HashMap[(List[ChildKey], List[ChildKey]), DataFieldTotal]
@@ -429,7 +460,7 @@ object PivotTableModel {
               case Nil => Some(soFar)
               case field :: tail => {
                 val values = valuesForField(field)
-                val axisValues = values.map{ v => AxisValue(field, new ValueAxisValueType(v), 0) }
+                val axisValues = values.map{ v => AxisValue(field, new ValueAxisValueType(v), 0, forceNewRowsToBottom) }
                 buildRow(axisValues ::: soFar, tail)
               }
             }
@@ -614,34 +645,6 @@ object PivotTableModel {
             }
           }
         }.toArray
-      }
-
-      val editableInfo = {
-        dataSource.editable match {
-          case None => None
-          case Some(editPivot) => {
-            // Work out if all the fields are in the appropriate places (rows or columns, or filter area with one selection)
-            val editableMeasureFields = editPivot.editableToKeyFields.flatMap{case (editableField,keyFields) => {
-              if (pivotState.columns.hasPathContaining(keyFieldsInColumnArea(keyFields.toSet, pivotState) + editableField)) {
-                Some(editableField)
-              } else {
-                None
-              }
-            }}
-            val editableKeyFields = editableMeasureFields.flatMap(field => {
-              val keyFields = editPivot.editableToKeyFields(field)
-              keyFields filter pivotState.rowFields.contains
-            })
-            val extraLine = editPivot.editableToKeyFields.map{case (editableField,keyFields) => {
-              pivotState.columns.contains(editableField) && keyFieldsInColumnArea(keyFields.toSet, pivotState).isEmpty
-            }}.exists(_ == true)
-
-            val editableMeasures = Map() ++ editableMeasureFields.map(f => (f -> fieldDetailsLookup(f).parser))
-            val editableKeys = Map() ++ editableKeyFields.map(f => (f -> fieldDetailsLookup(f).parser))
-
-            Some(EditableInfo(editableMeasures, editableKeys, extraLine))
-          }
-        }
       }
 
       // determine how long it runs for

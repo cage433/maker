@@ -369,8 +369,6 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
       val measureInfo = colHeaderData0.find(_(columnIndex).value.isMeasure).get(columnIndex)
       val parser = editableInfo.get.editableMeasures(measureInfo.value.field)
       
-      val currentCell = getValueAt(rowIndex, columnIndex)
-
       val (newValue,newLabel) = if (s.isEmpty) (Set.empty, "") else {
         val (v,l) = parser.parse(s)
         v match {
@@ -384,14 +382,19 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
         }
       }
 
-      if (currentCell.text != newLabel) {
-        if (currentCell.value == NoValue) {
-          val row = key(rowIndex, columnIndex, measureInfo).mapValues(_.values.head) + (measureInfo.value.field -> newValue)
-          updateEdits(pivotEdits.addRow(row))
-        } else {
-          overrideMap((rowIndex, columnIndex)) = OverrideDetails(newLabel, Edited)
-          updateEdits(pivotEdits.withAmend(KeyFilter(key(rowIndex, columnIndex, measureInfo)), measureInfo.value.field, Some(newValue)))
+      if (rowIndex < rowHeaderData0.length) {
+        val currentCell = getValueAt(rowIndex, columnIndex)
+        if (currentCell.text != newLabel) {
+          if (currentCell.value == NoValue) {
+            val row = key(rowIndex, columnIndex, measureInfo).mapValues(_.values.head) + (measureInfo.value.field -> newValue)
+            updateEdits(pivotEdits.addRow(row))
+          } else {
+            overrideMap((rowIndex, columnIndex)) = OverrideDetails(newLabel, Edited)
+            updateEdits(pivotEdits.withAmend(KeyFilter(key(rowIndex, columnIndex, measureInfo)), measureInfo.value.field, Some(newValue)))
+          }
         }
+      } else {
+        updateEdits(pivotEdits.addRow(editableInfo.get.editableKeyFields.keySet, measureInfo.value.field, newValue))
       }
     }
 

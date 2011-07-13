@@ -125,7 +125,7 @@ case class PivotEdits(edits:Map[KeyFilter,KeyEdits], newRows:List[Map[Field,Any]
   }
 
   def addRow(keyFields:Set[Field], field:Field, value:Any):PivotEdits = {
-    val row = Map() ++ (keyFields.map(f => {f -> (if(f==field) value else UndefinedValue)}))
+    val row = (Map() ++ (keyFields.map(f => {f -> UndefinedValue}))) + (field -> value)
     addRow(row)
   }
 
@@ -223,7 +223,7 @@ trait PivotValue {
   def edits:PivotEdits
   def valueOrOriginal:Option[Any] = if (value.isDefined) value else originalValue
   def axisValueValue:Any
-  def valueForSorting:Any
+  def valueForGrouping(newRowsAtBottom:Boolean):Any
 }
 
 object PivotValue {
@@ -239,7 +239,7 @@ case class StandardPivotValue(value0:Any) extends PivotValue {
   val originalValue = None
   val edits = PivotEdits.Null
   val axisValueValue = value0
-  val valueForSorting = value0
+  def valueForGrouping(newRowsAtBottom:Boolean) = value0
 }
 
 case class DeletedValue(original:Any, edits:PivotEdits) extends PivotValue {
@@ -247,20 +247,20 @@ case class DeletedValue(original:Any, edits:PivotEdits) extends PivotValue {
   val value = None
   val originalValue = Some(original)
   val axisValueValue = original
-  val valueForSorting = original
+  def valueForGrouping(newRowsAtBottom:Boolean) = original
 }
 case class EditedValue(value0:Any, original:Any, edits:PivotEdits) extends PivotValue {
   val cellType = Edited
   val value = Some(value0)
   val originalValue = Some(original)
   val axisValueValue = value0
-  val valueForSorting = original
+  def valueForGrouping(newRowsAtBottom:Boolean) = value0
 }
 case class NewValue(value:Option[Any], rowIndex:Int, edits:PivotEdits) extends PivotValue {
   val cellType = Added
   val originalValue = None
   val axisValueValue = value.getOrElse(UndefinedValue)
-  val valueForSorting = value.getOrElse(UndefinedValue)//NewRowValue(rowIndex)
+  def valueForGrouping(newRowsAtBottom:Boolean) = if (newRowsAtBottom) NewRowValue(rowIndex) else value.getOrElse(UndefinedValue)
 }
 
 case class MeasureCell(value:Option[Any], cellType:EditableCellState, edits:PivotEdits=PivotEdits.Null)

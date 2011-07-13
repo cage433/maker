@@ -129,22 +129,27 @@ case class ServerAxisNode(axisValue:AxisValue, children:Map[ChildKey,Map[AxisVal
       val axisValue2 = axisNode2.axisValue
       if (axisValue1.position == axisValue2.position) {
         val comparator = fieldDetailsLookup(axisValue1.field).comparator
-        def index(value:Any) = {
-          value match {
-            case n:NewRowValue => 4
-            case TotalValue=> 0
-            case UndefinedValue => 1
-            case FilterWithOtherTransform.OtherValue => 3
-            case ptp:PivotTreePath if ptp.isOther => 3
-            case _ => 2
+        def index(axisValue:AxisValue) = {
+          if (axisValue.childKey.value.isInstanceOf[NewRowValue]) {
+            4
+          } else {
+            val value = axisValue.value.value
+            value match {
+              //case n:NewRowValue => 4
+              case TotalValue=> 0
+              case UndefinedValue => 1
+              case FilterWithOtherTransform.OtherValue => 3
+              case ptp:PivotTreePath if ptp.isOther => 3
+              case _ => 2
+            }
           }
         }
 
-        (axisValue1.value.value, axisValue2.value.value) match {
+        (axisValue1.childKey.value, axisValue2.childKey.value) match {
           case (NewRowValue(r1), NewRowValue(r2)) => (r1 < r2)
           case _ => {
-            val thisIndex = index(axisValue1.value.value)
-            val otherIndex = index(axisValue2.value.value)
+            val thisIndex = index(axisValue1)
+            val otherIndex = index(axisValue2)
             if (thisIndex == otherIndex) {
               if (thisIndex == 2) {
                 comparator.lt(axisValue1.value.originalOrValue, axisValue2.value.originalOrValue)
