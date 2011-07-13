@@ -6,11 +6,7 @@ import org.jboss.resteasy.client.{ProxyFactory, ClientExecutor}
 import com.trafigura.edm.logistics.inventory.{EDMAssignmentItem, EdmAssignmentService, EdmAssignmentServiceResourceProxy, EdmAssignmentServiceResource}
 import java.net.URL
 import io.Source._
-import com.trafigura.tradecapture.internal.refinedmetal.Metal
-import org.codehaus.jettison.json.{JSONArray, JSONObject}
-import javax.management.remote.rmi._RMIConnection_Stub
-import scala.collection.JavaConversions._
-import collection.JavaConversions
+import org.codehaus.jettison.json.JSONArray
 
 /**
  * logistics service interface

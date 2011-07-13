@@ -44,9 +44,10 @@ case class DefaultRabbitEventServices(props : Props) extends RabbitEventServices
   val rabbitmq_mandatory = false
   val rabbitmq_immediate = false
   val rabbitmq_passive = false
-  val rabbitmq_exclusive = false
+  val rabbitmq_exclusive = true
   val rabbitmq_publisher_autoDelete = false
   val rabbitmq_basicPropertiesDefault = new BasicProperties()
+  val rabbitmq_makeQueueNameUnique = true
 
   val rabbitEventConnector = new RabbitConnector(
     rabbitmq_username,
@@ -72,19 +73,15 @@ case class DefaultRabbitEventServices(props : Props) extends RabbitEventServices
 
   val baseQueueName = ""
   val serviceName = "Starling"
-  val makeQueueNameUnique = true
-  val exclusive = true
-  val disabled = false
 
   val rabbitListener = new RabbitListener(
     rabbitEventConnector,
     rabbitmq_baseQueueName + serviceName,
-    makeQueueNameUnique,
+    rabbitmq_makeQueueNameUnique,
     rabbitmq_passive,
     rabbitmq_durable,
-    exclusive,
     rabbitmq_exclusive,
-    false)
+    rabbitmq_publisher_autoDelete)
 
   // the demux for listener clients...
   lazy val eventDemux : EventDemultiplexer = ||> { new EventDemultiplexer(serviceName, rabbitListener)} { r => r.startup }
