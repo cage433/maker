@@ -53,7 +53,6 @@ class Starling(info : ProjectInfo) extends ParentProject(info) {
   lazy val starling = this
 
   override def localScala = {
-    //defineScala("2.8.1.final-local", new File("lib/scala/scala-2.8.1.final/")) :: Nil
     defineScala("2.9.0-1.final-local", new File("lib/scala/scala-2.9.0.1.final/")) :: Nil
   }
 
@@ -109,7 +108,7 @@ class Starling(info : ProjectInfo) extends ParentProject(info) {
       // writes a shell script that sets the classpath so I can run from the command line, compile in Vim etc
       import java.io._
       val file = new PrintWriter(new FileOutputStream(new File("set-classpath.sh")))
-      file.println("export CLASSPATH=" + services.testClasspath.getFiles.toList.mkString(":"))
+      file.println("export CLASSPATH=" + devLauncher.testClasspath.getFiles.toList.mkString(":"))
       file.println("export JAVA_OPTS='-server -XX:MaxPermSize=1024m -Xss512k -Xmx6000m'")
       file.close()
       None

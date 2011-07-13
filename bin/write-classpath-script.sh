@@ -1,1 +1,1 @@
-sbt/sbt "project services" write-classpath-script
+sbt/sbt "project dev.launcher" write-classpath-script

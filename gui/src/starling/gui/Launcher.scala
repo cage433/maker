@@ -309,6 +309,7 @@ object Launcher {
         }
       }
 
+      cacheMap(AllUserNames) = starlingServer.allUserNames
       cacheMap(UserPivotLayouts) = starlingServer.extraLayouts
       cacheMap(PricingGroups) = starlingServer.pricingGroups
       cacheMap(ExcelDataSets) = starlingServer.excelDataSets
@@ -327,7 +328,6 @@ object Launcher {
       cacheMap(TradersBookLookup) = starlingServer.traders
       cacheMap(CurrentUser) = starlingServer.whoAmI
       cacheMap(UKBusinessCalendar) = starlingServer.ukBusinessCalendar
-      cacheMap(AllUserNames) = starlingServer.allUserNames
       cacheMap(Desks) = starlingServer.desks
       cacheMap(GroupToDesksMap) = starlingServer.groupToDesksMap
       cacheMap(IsStarlingDeveloper) = starlingServer.isStarlingDeveloper
