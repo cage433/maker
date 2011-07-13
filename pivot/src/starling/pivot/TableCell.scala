@@ -1,8 +1,7 @@
 package starling.pivot
 
 import java.io.Serializable
-import model.UndefinedValue
-
+import model.{NoValue, UndefinedValue}
 import starling.quantity.{Percentage, Quantity}
 import starling.utils.Pattern._
 import starling.utils.ImplicitConversions._
@@ -59,8 +58,8 @@ case class TableCell(value:Any, text:String, textPosition:TextPosition = CenterT
 object TableCell {
   def apply(value: Any) = new TableCell(value)
 
-  val Null = new TableCell(Set(), "")
-  val Undefined = new TableCell(UndefinedValue)
+  val Null = new TableCell(NoValue, "")
+  val Undefined = new TableCell(UndefinedValue, "")
 
   def longText(pq: PivotQuantity) =
     (pq.explanation, pq.warning) match {

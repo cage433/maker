@@ -91,6 +91,9 @@ trait PivotParser extends Serializable {
 object TextPivotParser extends PivotParser {
   def parse(text:String) = (text,text)
 }
+object IntPivotParser extends PivotParser {
+  def parse(text:String) = (text.toInt, text)
+}
 object PivotQuantityPivotParser extends PivotParser {
   def parse(text:String) = {
     // This is a special case for the parser. We're not supplying a label as the caller will have to detect that this is a PivotQuantity, set the UOM
@@ -619,6 +622,7 @@ class SumIntFieldDetails(name:String) extends FieldDetails(Field(name)) {
   override def value(a:Any) = a
   override def formatter = ToStringPivotFormatter
   override def isDataField = true
+  override def parser = IntPivotParser
 }
 
 object ToStringPivotFormatter extends PivotFormatter {

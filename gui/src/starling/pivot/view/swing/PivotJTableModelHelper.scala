@@ -14,6 +14,7 @@ import swing.{ScrollPane, ListView, Panel}
 import swing.event.{MouseClicked, KeyPressed, KeyTyped}
 import starling.pivot.EditableCellState._
 import scala.collection.mutable.{HashMap => MMap}
+import collection.immutable.Map
 
 case class OverrideDetails(text:String, state:EditableCellState)
 
@@ -155,13 +156,16 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
       val rowHeaderField = rowHeaderData0(0)(columnIndex).value.field
       val parser = editableInfo.get.editableKeyFields(rowHeaderField)
 
-      val currentCell = getValueAt(rowIndex, columnIndex)
-
       val (newValue,newLabel) = if (s.isEmpty) (Set.empty, "") else parser.parse(s)
 
-      if (currentCell.text != newLabel) {
-        overrideMap((rowIndex, columnIndex)) = OverrideDetails(newLabel, Edited)
-        updateEdits(pivotEdits.withAmend(KeyFilter(key(rowIndex, columnIndex)), rowHeaderField, Some(newValue)))
+      if (rowIndex < rowHeaderData0.length) {
+        val currentCell = getValueAt(rowIndex, columnIndex)
+        if (currentCell.text != newLabel) {
+          overrideMap((rowIndex, columnIndex)) = OverrideDetails(newLabel, Edited)
+          updateEdits(pivotEdits.withAmend(KeyFilter(key(rowIndex, columnIndex)), rowHeaderField, Some(newValue)))
+        }
+      } else {
+        updateEdits(pivotEdits.addRow(editableInfo.get.editableKeyFields.keySet, rowHeaderField, newValue))
       }
     }
 
@@ -340,7 +344,7 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
       addedRows0 ++= newAddedRows
     }
 
-    private def key(rowIndex:Int, columnIndex:Int, measureInfo:AxisCell) = {
+    private def key(rowIndex:Int, columnIndex:Int, measureInfo:AxisCell):Map[Field, SomeSelection] = {
       val filterFieldToValues = Map() ++ fieldState.filterAreaFields.flatMap(f => {
         val (field, selection) = fieldState.filters.find{case (f0,sel) => f == f0}.get
         selection match {
@@ -381,8 +385,13 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
       }
 
       if (currentCell.text != newLabel) {
-        overrideMap((rowIndex, columnIndex)) = OverrideDetails(newLabel, Edited)
-        updateEdits(pivotEdits.withAmend(KeyFilter(key(rowIndex, columnIndex, measureInfo)), measureInfo.value.field, Some(newValue)))
+        if (currentCell.value == NoValue) {
+          val row = key(rowIndex, columnIndex, measureInfo).mapValues(_.values.head) + (measureInfo.value.field -> newValue)
+          updateEdits(pivotEdits.addRow(row))
+        } else {
+          overrideMap((rowIndex, columnIndex)) = OverrideDetails(newLabel, Edited)
+          updateEdits(pivotEdits.withAmend(KeyFilter(key(rowIndex, columnIndex, measureInfo)), measureInfo.value.field, Some(newValue)))
+        }
       }
     }
 

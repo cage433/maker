@@ -9,7 +9,7 @@ import starling.pivot.Field
 class PivotTableConverterTest extends TestNGSuite {
   private def av(value:Any) = AxisValue(Field("F"), ValueAxisValueType(value), 0)
 
-  implicit def convert(axisValue:AxisValue):ChildKey = axisValue.keyValue
+  implicit def convert(axisValue:AxisValue):ChildKey = axisValue.childKey
 
   @Test
   def testPurge() {

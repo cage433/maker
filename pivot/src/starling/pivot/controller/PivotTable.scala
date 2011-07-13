@@ -31,7 +31,7 @@ object TreePivotFilterNode {
 case class PivotTable(rowFields:List[Field], rowFieldHeadingCount:Array[Int], rowNode:AxisNode,
                       columnNode:AxisNode, possibleValues:Map[Field,TreePivotFilter], treeDetails:TreeDetails,
                       editableInfo:Option[EditableInfo], formatInfo:FormatInfo,
-                      aggregatedMainBucket:Map[(List[AxisValue],List[AxisValue]),MeasureCell] = Map(),
+                      aggregatedMainBucket:Map[(List[ChildKey],List[ChildKey]),MeasureCell] = Map(),
                       zeroFields:Set[Field]=Set()) {
 
   def rowAxis = rowNode.children
@@ -122,7 +122,7 @@ case class PivotTable(rowFields:List[Field], rowFieldHeadingCount:Array[Int], ro
 
 object PivotTable {
   def singleCellPivotTable(text:String) = {
-    val bucket = Map( (List(AxisValue.Null), List(AxisValue.Null)) -> MeasureCell(Some(text), EditableCellState.Normal))
+    val bucket = Map( (List(AxisValue.Null.childKey), List(AxisValue.Null.childKey)) -> MeasureCell(Some(text), EditableCellState.Normal))
     PivotTable(List(), Array(), AxisNode.Null, AxisNode.Null, Map(), TreeDetails(Map(), Map()), None, FormatInfo.Blank, bucket)
   }
 }

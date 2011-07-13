@@ -31,6 +31,10 @@ object AxisNode {
         val tc = tableCell(v.value)
         (tc.text, (if (tc.textPosition == CenterTextPosition) LeftTextPosition else tc.textPosition))
       }
+      case t:TaintedAxisValueType => {
+        val tc = tableCell(t.value)
+        (tc.text, (if (tc.textPosition == CenterTextPosition) LeftTextPosition else tc.textPosition))
+      }
     }
   }
 }
@@ -49,15 +53,15 @@ case class ServerAxisNode(axisValue:AxisValue, children:Map[ChildKey,Map[AxisVal
     values match {
       case Nil => this
       case head :: tail => {
-        children.get(head.keyValue) match {
+        children.get(head.childKey) match {
           case Some(matches) => {
             val updatedMap = matches.get(head) match {
               case Some(matched) => matches.updated(head, matched.add(tail))
               case None => matches.updated(head, ServerAxisNode(head).add(tail))
             }
-            copy(children = children.updated(head.keyValue, updatedMap))
+            copy(children = children.updated(head.childKey, updatedMap))
           }
-          case None => copy(children = children.updated(head.keyValue, Map(head -> ServerAxisNode(head).add(tail))))
+          case None => copy(children = children.updated(head.childKey, Map(head -> ServerAxisNode(head).add(tail))))
         }
       }
     }
@@ -85,11 +89,49 @@ case class ServerAxisNode(axisValue:AxisValue, children:Map[ChildKey,Map[AxisVal
   }
 
   def toGUIAxisNode(fieldDetailsLookup:Map[Field, FieldDetails]):AxisNode = {
-    val sortedChildren = children.toList.sortWith{ case((childKeyA,mapA),(childKeyB, mapB)) => {
-      if (childKeyA.position == childKeyB.position) {
-        val comparator = fieldDetailsLookup(childKeyA.field).comparator
+
+    val doubleUpAmmends:List[ServerAxisNode] = children.toList.flatMap{ case (childKey, map) => {
+      map.toList.flatMap { case (av, node) => {
+        av.value match {
+          case v:ValueAxisValueType if map.size > 1 && v.cellType == EditableCellState.Edited => {
+            v.pivotEdits.edits.keySet.toList match {
+              case editFilter :: Nil => {
+                val originalValue = ValueAxisValueType(v.originalValue.get)
+                val newValue = ValueAxisValueType(v.value)
+                List(
+                  node.copy(axisValue=node.axisValue.copy(value = originalValue)),
+                  node.copy(axisValue=node.axisValue.copy(value = newValue))
+                )
+              }
+              case _ => throw new Exception("You always should have an edit " + v.pivotEdits.edits.keySet)
+            }
+          }
+          case _ => List(node)
+        }
+      }}
+    } }
+
+    val r:List[ServerAxisNode] = doubleUpAmmends.groupBy(_.axisValue.childKey).map { case (childKey, nodes) => {
+      val joinedValue = {
+        val axisValues = nodes.map(_.axisValue)
+        if (axisValues.size > 1) {
+          axisValues.head.copy(value=TaintedAxisValueType(axisValues.head.value.value))
+        } else {
+          axisValues.head
+        }
+      }
+      val childNodes:Map[ChildKey, Map[AxisValue, ServerAxisNode]] = nodes.flatMap(_.children.toList).toMap
+      ServerAxisNode(joinedValue, childNodes)
+    } }.toList
+
+    val sortedChildren:List[ServerAxisNode] = r.sortWith{ case(axisNode1,axisNode2) => {
+      val axisValue1 = axisNode1.axisValue
+      val axisValue2 = axisNode2.axisValue
+      if (axisValue1.position == axisValue2.position) {
+        val comparator = fieldDetailsLookup(axisValue1.field).comparator
         def index(value:Any) = {
           value match {
+            case n:NewRowValue => 4
             case TotalValue=> 0
             case UndefinedValue => 1
             case FilterWithOtherTransform.OtherValue => 3
@@ -97,34 +139,77 @@ case class ServerAxisNode(axisValue:AxisValue, children:Map[ChildKey,Map[AxisVal
             case _ => 2
           }
         }
-        val thisIndex = index(childKeyA.value)
-        val otherIndex = index(childKeyB.value)
-        if (thisIndex == otherIndex) {
-          if (thisIndex == 2) {
-            comparator.lt(childKeyA.value, childKeyB.value)
-          } else {
-            false
+
+        (axisValue1.value.value, axisValue2.value.value) match {
+          case (NewRowValue(r1), NewRowValue(r2)) => (r1 < r2)
+          case _ => {
+            val thisIndex = index(axisValue1.value.value)
+            val otherIndex = index(axisValue2.value.value)
+            if (thisIndex == otherIndex) {
+              if (thisIndex == 2) {
+                comparator.lt(axisValue1.value.originalOrValue, axisValue2.value.originalOrValue)
+              } else {
+                false
+              }
+            } else {
+              thisIndex < otherIndex
+            }
           }
-        } else {
-          thisIndex < otherIndex
         }
       } else {
-        childKeyA.position < childKeyB.position
+        axisValue1.position < axisValue2.position
       }
     } }
 
-    val flattenedChildren = sortedChildren.flatMap{ case (_, map) => {
-      map.values.toList.sortBy(_.axisValue.state)
-    } }
-    
-    AxisNode(axisValue, flattenedChildren.map(_.toGUIAxisNode(fieldDetailsLookup)))
+
+
+//    val sortedChildren = children.toList.sortWith{ case((childKeyA,mapA),(childKeyB, mapB)) => {
+//      if (childKeyA.position == childKeyB.position) {
+//        val comparator = fieldDetailsLookup(childKeyA.field).comparator
+//        def index(value:Any) = {
+//          value match {
+//            case n:NewRowValue => 4
+//            case TotalValue=> 0
+//            case UndefinedValue => 1
+//            case FilterWithOtherTransform.OtherValue => 3
+//            case ptp:PivotTreePath if ptp.isOther => 3
+//            case _ => 2
+//          }
+//        }
+//
+//        (childKeyA.value, childKeyB.value) match {
+//          case (NewRowValue(r1), NewRowValue(r2)) => r1 < r2
+//          case _ => {
+//            val thisIndex = index(childKeyA.value)
+//            val otherIndex = index(childKeyB.value)
+//            if (thisIndex == otherIndex) {
+//              if (thisIndex == 2) {
+//                comparator.lt(childKeyA.value, childKeyB.value)
+//              } else {
+//                false
+//              }
+//            } else {
+//              thisIndex < otherIndex
+//            }
+//          }
+//        }
+//      } else {
+//        childKeyA.position < childKeyB.position
+//      }
+//    } }
+
+//    val flattenedChildren = sortedChildren.flatMap{ case (_, map) => {
+//      map.values.toList.sortBy(_.axisValue.state)
+//    } }
+
+    AxisNode(axisValue, sortedChildren.map(_.toGUIAxisNode(fieldDetailsLookup)))
   }
 
 }
 
 case class AxisNode(axisValue:AxisValue, children:List[AxisNode]=Nil) {
-  def purge(remove:Set[List[AxisValue]], parent:List[AxisValue] = Nil):Option[AxisNode] = {
-    val pathToMe = axisValue :: parent
+  def purge(remove:Set[List[ChildKey]], parent:List[ChildKey] = Nil):Option[AxisNode] = {
+    val pathToMe = axisValue.childKey :: parent
     if (children.isEmpty) {
       if (remove.contains(pathToMe.reverse)) None else Some(this)
     } else {
@@ -234,8 +319,8 @@ case class PivotTableConverter(otherLayoutInfo:OtherLayoutInfo = OtherLayoutInfo
   def createGrid(extractUOMs:Boolean = true, addExtraColumnRow:Boolean = true):PivotGrid ={
     val aggregatedMainBucket = table.aggregatedMainBucket
     val zeroFields = table.zeroFields
-    val rowsToRemove:Set[List[AxisValue]] = if (otherLayoutInfo.removeZeros && (fieldState.columns.allFields.toSet & zeroFields).nonEmpty) {
-      val rows:Set[List[AxisValue]] = aggregatedMainBucket.groupBy{case ((r,c),v) => r}.keySet
+    val rowsToRemove:Set[List[ChildKey]] = if (otherLayoutInfo.removeZeros && (fieldState.columns.allFields.toSet & zeroFields).nonEmpty) {
+      val rows:Set[List[ChildKey]] = aggregatedMainBucket.groupBy{case ((r,c),v) => r}.keySet
       rows.flatMap(row => {
         val onlyZeroFieldColumnsMap = aggregatedMainBucket.filter{case ((r,c),_) => {
           (r == row) && (c.find(_.isMeasure) match {
@@ -250,7 +335,7 @@ case class PivotTableConverter(otherLayoutInfo:OtherLayoutInfo = OtherLayoutInfo
         }}) Some(row) else None
       })
     } else {
-      Set[List[AxisValue]]()
+      Set[List[ChildKey]]()
     }
 
     val rowData = AxisNodeBuilder.flatten(table.rowNode.purge(rowsToRemove).getOrElse(AxisNode.Null), totals.rowGrandTotal,
@@ -382,7 +467,7 @@ case class PivotTableConverter(otherLayoutInfo:OtherLayoutInfo = OtherLayoutInfo
         val rowTotal = rowValues.exists(_.totalState == Total)
         val rowOtherValue = rowValues.exists(_.totalState == OtherValueTotal)
         (for ((columnValues, columnIndex) <- flattenedColValues.zipWithIndex) yield {
-          val key = (rowValues.map(_.value).toList, columnValues.map(_.value).toList)
+          val key = (rowValues.map(_.value.childKey).toList, columnValues.map(_.value.childKey).toList)
 
           def appendUOM(value:Any) {
             value match {
@@ -411,7 +496,7 @@ case class PivotTableConverter(otherLayoutInfo:OtherLayoutInfo = OtherLayoutInfo
                 }
                 case Some(measureAxisCell) => {
                   val tc = measureCell.value match {
-                    case None => TableCell.Null
+                    case None => TableCell.Undefined
                     case Some(UndefinedValue) => TableCell.Undefined
                     case Some(other) => table.formatInfo.fieldToFormatter(measureAxisCell.value.field).format(other, extraFormatInfo)
                   }

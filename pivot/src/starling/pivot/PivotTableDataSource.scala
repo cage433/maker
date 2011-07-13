@@ -2,12 +2,13 @@ package starling.pivot
 
 import controller.PivotTableConverter._
 import controller.{PivotTableConverter, PivotGrid, TreePivotFilterNode}
-import model.{UndefinedValue, PivotTableModel}
+import model.{NewRowValue, UndefinedValue, PivotTableModel}
 import starling.utils.ImplicitConversions._
 import starling.pivot.FilterWithOtherTransform.OtherValue
 import starling.pivot.EditableCellState._
 import collection.immutable.{Map, TreeMap}
 import collection.Set
+import org.mockito.internal.matchers.AnyVararg
 
 case class FieldDetailsGroup(name:String, fields:List[FieldDetails]) {
   def toFieldGroup = {
@@ -22,7 +23,7 @@ object FieldDetailsGroup {
 case class FieldGroup(name:String, fields:List[Field])
 
 case class KeyFilter(keys:Map[Field,SomeSelection]) {
-  def matches(rowKeys:Map[Field,Any]) = keys.forall{ case (field, selection) => selection.values.contains(rowKeys(field)) }
+  def matches(rowKeys:Map[Field,Any]) = keys.forall{ case (field, selection) => rowKeys.get(field).map(v => selection.values.contains(v)).getOrElse(false) }
   def isOverriddenBy(newDelete:KeyFilter) = {
     newDelete.keys.forall{ case (key,value) => {
       keys.get(key) == Some(value)
@@ -36,8 +37,9 @@ trait KeyEdits {
 }
 case class DeleteKeyEdit(deletedField:Field) extends KeyEdits {
   def affects(matchingKey:KeyFilter, field:Field) = {
-    val ks:Set[Field] = matchingKey.keys.keySet.toSet
-    !(ks - deletedField).contains(field)
+    true
+    //val ks:Set[Field] = matchingKey.keys.keySet.toSet
+    //!(ks - deletedField).contains(field)
   }
   def applyEdit(key:KeyFilter, field:Field, value:Any) = DeletedValue(value, PivotEdits.Null.withDelete(key, deletedField))
 }
@@ -52,7 +54,7 @@ case class AmendKeyEdit(amends:Map[Field,Option[Any]]) extends KeyEdits {
   }
 }
 
-case class PivotEdits(edits:Map[KeyFilter,KeyEdits], newRows:Set[Map[Field,Any]]) {
+case class PivotEdits(edits:Map[KeyFilter,KeyEdits], newRows:List[Map[Field,Any]]) {
   def editFor(key:Map[Field,Any], field:Field) = {
     val filterKeys:Map[KeyFilter, KeyEdits] = edits.filterKeys(_.matches(key))
     filterKeys.toList match {
@@ -101,18 +103,38 @@ case class PivotEdits(edits:Map[KeyFilter,KeyEdits], newRows:Set[Map[Field,Any]]
         })
       }
     } }
-    PivotEdits(merged, newRows -- editsToRemove.newRows)
+    PivotEdits(merged, newRows.filterNot(editsToRemove.newRows.contains(_)))
   }
   def withAmend(amendKeys:KeyFilter, field:Field, value:Option[Any]) = {
-    edits.get(amendKeys) match {
-      case None => PivotEdits(edits + (amendKeys -> AmendKeyEdit(Map(field -> value))), newRows)
-      case Some(DeleteKeyEdit(_)) => throw new Exception("You can't amend a delete " + (amendKeys, field, value))
-      case Some(AmendKeyEdit(amends)) => PivotEdits(edits + (amendKeys -> AmendKeyEdit(amends ++ Map(field -> value))), newRows)
+    if (newRows.exists(r => amendKeys.matches(r))) {
+      val amendedNewRows = newRows.map { r => {
+        if (amendKeys.matches(r)) {
+          r + (field -> value.getOrElse(UndefinedValue))
+        } else {
+          r
+        }
+      }}
+      copy(newRows = amendedNewRows)
+    } else {
+      edits.get(amendKeys) match {
+        case None => PivotEdits(edits + (amendKeys -> AmendKeyEdit(Map(field -> value))), newRows)
+        case Some(DeleteKeyEdit(_)) => throw new Exception("You can't amend a delete " + (amendKeys, field, value))
+        case Some(AmendKeyEdit(amends)) => PivotEdits(edits + (amendKeys -> AmendKeyEdit(amends ++ Map(field -> value))), newRows)
+      }
     }
+  }
+
+  def addRow(keyFields:Set[Field], field:Field, value:Any):PivotEdits = {
+    val row = Map() ++ (keyFields.map(f => {f -> (if(f==field) value else UndefinedValue)}))
+    addRow(row)
+  }
+
+  def addRow(row:Map[Field,Any]) = {
+    copy(newRows = newRows ::: List(row))
   }
 }
 object PivotEdits {
-  val Null = PivotEdits(Map.empty, Set.empty)
+  val Null = PivotEdits(Map.empty, Nil)
 }
 
 //Measure is editable if all key fields are in row or column or have single filter area selection
@@ -196,9 +218,12 @@ object PivotTreePath {
 
 trait PivotValue {
   def cellType:EditableCellState
-  def value:Option[Any]
+  def value:Option[Any] //Current value, None if deleted or undefined in a new row
   def originalValue:Option[Any]
   def edits:PivotEdits
+  def valueOrOriginal:Option[Any] = if (value.isDefined) value else originalValue
+  def axisValueValue:Any
+  def valueForSorting:Any
 }
 
 object PivotValue {
@@ -213,22 +238,29 @@ case class StandardPivotValue(value0:Any) extends PivotValue {
   val value = Some(value0)
   val originalValue = None
   val edits = PivotEdits.Null
+  val axisValueValue = value0
+  val valueForSorting = value0
 }
 
 case class DeletedValue(original:Any, edits:PivotEdits) extends PivotValue {
   val cellType = Deleted
   val value = None
   val originalValue = Some(original)
+  val axisValueValue = original
+  val valueForSorting = original
 }
 case class EditedValue(value0:Any, original:Any, edits:PivotEdits) extends PivotValue {
   val cellType = Edited
   val value = Some(value0)
   val originalValue = Some(original)
+  val axisValueValue = value0
+  val valueForSorting = original
 }
-case class NewValue(value0:Any, edits:PivotEdits) extends PivotValue {
+case class NewValue(value:Option[Any], rowIndex:Int, edits:PivotEdits) extends PivotValue {
   val cellType = Added
-  val value = Some(value0)
   val originalValue = None
+  val axisValueValue = value.getOrElse(UndefinedValue)
+  val valueForSorting = value.getOrElse(UndefinedValue)//NewRowValue(rowIndex)
 }
 
 case class MeasureCell(value:Option[Any], cellType:EditableCellState, edits:PivotEdits=PivotEdits.Null)

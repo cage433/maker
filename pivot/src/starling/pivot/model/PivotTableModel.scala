@@ -36,10 +36,18 @@ object TableViewState extends ViewState
 object ChartViewState extends ViewState
 
 abstract class AxisValueType extends Serializable {
-  def value:Any
+  def value:Any //The value in the table
   def cellType:EditableCellState = Normal
   def pivotEdits:PivotEdits = PivotEdits.Null
   def originalValue:Option[Any] = None
+  def valueForChildKey = value//originalValue.getOrElse(value)
+  def originalOrValue = originalValue.getOrElse(value)
+}
+
+case class TaintedAxisValueType(value:Any) extends AxisValueType {
+  override def originalValue = None
+  override def pivotEdits = PivotEdits.Null //.toList.flatMap(_.pivotEdits).toSet
+  override def cellType = Tainted
 }
 
 case object AddedAxisValueType extends AxisValueType {
@@ -48,15 +56,14 @@ case object AddedAxisValueType extends AxisValueType {
 }
 
 case class ValueAxisValueType(valueX:Any) extends AxisValueType {
-  val (value, cellType0, pivotEdits0, orig0) = valueX match {
-    case DeletedValue(orig,e) => (orig, Deleted, e, Some(orig))
-    case pv:PivotValue => (pv.value.get, pv.cellType, pv.edits, pv.originalValue)
-    case _ => (valueX, Normal, PivotEdits.Null, None)
-  }
-  override val cellType = cellType0
-  override val pivotEdits = pivotEdits0
-  override def originalValue = orig0
+  val pivotValue = PivotValue.create(valueX)
+  override def cellType = pivotValue.cellType
+  override def pivotEdits = pivotValue.edits
+  override def originalValue = pivotValue.originalValue
+  override def value = pivotValue.axisValueValue
 }
+
+case class NewRowValue(rowIndex:Int)
 
 case object TotalValue {
   override def toString = "Total"
@@ -82,39 +89,14 @@ case class AxisValue(field:Field, value:AxisValueType, position:Int) {
   def isMeasure = value.isInstanceOf[MeasureAxisValueType]
   def state = value.cellType
   def pivotEdits = value.pivotEdits
-  def keyValue = ChildKey(value.originalValue.getOrElse(value.value), isMeasure, field, position)
-
-  def <(other:AxisValue, comparator:Ordering[Any]):Boolean = {
-    if (position == other.position) {
-      def index(value:AxisValueType) = {
-        value match {
-          case TotalAxisValueType => 0
-          case ValueAxisValueType(UndefinedValue) => 1
-          case ValueAxisValueType(FilterWithOtherTransform.OtherValue) => 3
-          case ValueAxisValueType(ptp:PivotTreePath) if ptp.isOther => 3
-          case _ => 2
-        }
-      }
-      val thisIndex = index(value)
-      val otherIndex = index(other.value)
-      if (thisIndex == otherIndex) {
-        if (thisIndex == 2) {
-          comparator.compare(this.value.value, other.value.value) < 0
-        } else {
-          false
-        }
-      } else {
-        thisIndex < otherIndex
-      }
-    } else {
-      position < other.position
-    }
-  }
+  def childKey = ChildKey(value.valueForChildKey, isMeasure, field, position)
 }
 
 case object UndefinedValue {
   override def toString = "n/a"
 }
+
+case object NoValue {}
 
 object AxisValue {
   val Null = AxisValue(Field.NullField, NullAxisValueType, 0)
@@ -293,9 +275,11 @@ case class SingleDataFieldTotal(fieldDetails:FieldDetails, value:PivotValue) ext
   override def aggregateValue = value.value.map(v=>fieldDetails.combineFirstGroup(v))
   override def aggregateOriginal = value.originalValue.map(v=>fieldDetails.combineFirstGroup(v))
   def measureCell = {
-    val valueOrDeletedValue = value.value.getOrElse(value.originalValue.get)
-    val vv = fieldDetails.value(fieldDetails.combineFirstGroup(valueOrDeletedValue))
-    MeasureCell(Some(vv), value.cellType, edits)
+    val vv = value.valueOrOriginal match {
+      case Some(valueOrDeletedValue) => Some(fieldDetails.value(fieldDetails.combineFirstGroup(valueOrDeletedValue)))
+      case None => None
+    }
+    MeasureCell(vv, value.cellType, edits)
   }
   override val edits = value.edits
 }
@@ -391,7 +375,7 @@ object PivotTableModel {
 
       //Make one pass through all the rows building up row and column trees
       //and the 'sum' of the data area values for each row-column pair
-      val mainTableBucket = new scala.collection.mutable.HashMap[(List[AxisValue], List[AxisValue]), DataFieldTotal]
+      val mainTableBucket = new scala.collection.mutable.HashMap[(List[ChildKey], List[ChildKey]), DataFieldTotal]
       var rowAxisRoot = ServerAxisNode.Null
       var columnAxisRoot = ServerAxisNode.Null
 
@@ -523,7 +507,7 @@ object PivotTableModel {
               rowAxisRoot = rowAxisRoot.add(rowValues.list)
               columnAxisRoot = columnAxisRoot.add(columnValues.list)
 
-              val rowColumnKey = (rowValues.list, columnValues.list)
+              val rowColumnKey = (rowValues.list.map(_.childKey), columnValues.list.map(_.childKey))
               dataFieldOption.foreach { df => {
                 if (!mainTableBucket.contains(rowColumnKey)) {
                   mainTableBucket(rowColumnKey) = new EmptyDataFieldTotal(fieldDetailsLookup(df))
@@ -544,7 +528,7 @@ object PivotTableModel {
 
       val formatInfo = FormatInfo(Map() ++ fieldDetailsLookup.map{case (f,fd) => (f -> fd.formatter)})
 
-      def permutations(list:List[AxisValue]):List[List[AxisValue]] = {
+      def permutations(list:List[ChildKey]):List[List[ChildKey]] = {
         (list.size to 0 by -1).map(col => {
           val (start,end) = list.splitAt(col)
           start ::: end.map(c => if (c.isMeasure) c else c.toTotal)
@@ -567,10 +551,10 @@ object PivotTableModel {
       }
 
       val equalToReferenceTableCellMap = new HashMap[Any,MeasureCell]
-      val equalToReferenceAxisValueListMap = new HashMap[List[AxisValue],List[AxisValue]]
-      val equalToReferenceAxisValue = new HashMap[AxisValue,AxisValue]
+      val equalToReferenceAxisValueListMap = new HashMap[List[ChildKey],List[ChildKey]]
+      val equalToReferenceAxisValue = new HashMap[ChildKey,ChildKey]
 
-      def compress(k1:List[AxisValue]) = {
+      def compress(k1:List[ChildKey]) = {
         val compressed = k1.map( v => equalToReferenceAxisValue.getOrElseUpdate(v,v))
         equalToReferenceAxisValueListMap.getOrElseUpdate(compressed,compressed)
       }
@@ -594,20 +578,16 @@ object PivotTableModel {
             case _ => {
               val values = {
                 // We are using java sorting here because everything is java comparable where as strings are not scala ordered.
-                val (normalValues, nullValues) = unsortedValues.partition(_ != UndefinedValue)
+                val unsortedPivotValuesOrUndefined = unsortedValues.map { value => {
+                  val v1 = PivotValue.create(value)
+                  v1.originalValue.getOrElse(v1.value.getOrElse(UndefinedValue))
+                } }
+                val (normalValues, nullValues) = unsortedPivotValuesOrUndefined.partition(_ != UndefinedValue)
                 val arrayOfObjects = normalValues.toArray.asInstanceOf[Array[Object]]
                 try {
                   val sorted = arrayOfObjects.sorted(new Ordering[Any]() {
                     def compare(x:Any, y:Any) = {
-                      val vX = {
-                        val v1 = PivotValue.create(x)
-                        v1.originalValue.getOrElse(v1.value.get)
-                      }
-                      val vY = {
-                        val v1 = PivotValue.create(y)
-                        v1.originalValue.getOrElse(v1.value.get)
-                      }
-                      fd.comparator.compare(vX, vY)
+                      fd.comparator.compare(x, y)
                     }
                   })
                   nullValues ::: sorted.toList

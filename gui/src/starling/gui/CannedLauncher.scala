@@ -287,16 +287,20 @@ class EditableSpecifiedCannedDataSource extends UnfilteredPivotTableDataSource {
 
   def data:List[Map[Field, Any]] = {
     val random = new java.util.Random(1234567890L)
-    for (trader <- traders; market <- markets) yield {
-      Map(Field("Trader") -> trader, Field("Market") -> market, Field("Volume") -> 20)
-    }
+    (for (trader <- traders; market <- markets) yield {
+      if (random.nextInt(9) > 3) {
+        Some(Map(Field("Trader") -> trader, Field("Market") -> market, Field("Volume") -> 20))
+      } else {
+        None
+      }
+    }).flatten
   }
 
   val marketFieldDetails = new FieldDetails("Market") {
     override def parser = new CannedMarketPivotParser(markets.toSet)
   }
 
-  def fieldDetailsGroups = List(FieldDetailsGroup("Group 1", FieldDetails("Trader"), FieldDetails("Market"), new SumIntFieldDetails("Volume")))
+  def fieldDetailsGroups = List(FieldDetailsGroup("Group 1", FieldDetails("Trader"), marketFieldDetails, new SumIntFieldDetails("Volume")))
   def unfilteredData(pfs:PivotFieldsState) = data
 
   override def editable = Some(new EditPivot {
@@ -323,7 +327,13 @@ class EditableSpecifiedCannedDataSource extends UnfilteredPivotTableDataSource {
               }
             }})
 
-            dWithDeletesAndAmends
+            val addedRows = edits.newRows.zipWithIndex.map{case (row,index) => {
+              Map() ++ fieldDetailsMap.keySet.map(f => {
+                f -> NewValue(row.get(f), index, PivotEdits.Null)
+              })
+            }}.toList
+
+            dWithDeletesAndAmends ::: addedRows
           }
         }
       }
