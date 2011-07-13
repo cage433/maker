@@ -15,7 +15,7 @@ import starling.daterange.Timestamp
 
 object GUICode {
 
-  val scalaLibraryJar = new File("lib/scala/scala-2.8.1.final/lib/scala-library.jar")
+  val scalaLibraryJar = new File("lib/scala/scala-2.9.0.1.final/lib/scala-library.jar")
 
   // The order of this list matters. It is the order things are attempted to be loaded so ensure it is optimised.
   val modules = List("daterange", "quantity", "utils", "auth", "bouncyrmi", "gui", "gui.api", "pivot")
@@ -27,7 +27,7 @@ object GUICode {
 
   val libJarNames = Map(
     "scala-library.jar" -> scalaLibraryJar,
-    "scala-swing.jar" -> new File("lib/scala/scala-2.8.1.final/lib/scala-swing.jar")
+    "scala-swing.jar" -> new File("lib/scala/scala-2.9.0.1.final/lib/scala-swing.jar")
   ) ++ modules.flatMap(module => {
     val dir = new File(module + "/jars/")
     if (dir.exists) {

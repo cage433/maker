@@ -14,6 +14,24 @@ class Patch103_ChangeReportsToBookmarks extends Patch {
   protected def runPatch(starlingInit:StarlingInit, starling:RichDB, writer:DBWriter) {
     writer.update(PatchUtils.getFileFromClasspath("/schemaevolution/Patch103_CreateBookmarksTableAgain.sql"))
 
+    val text = """<rowCollapsedState><elements/></rowCollapsedState><columnCollapsedState reference="../rowCollapsedState"/>"""
+    val textToUse = """<rowCollapsedState><elements/></rowCollapsedState><columnCollapsedState reference="../rowCollapsedState"/><disabledSubTotals reference="../rowCollapsedState/elements"/></starling.pivot.OtherLayoutInfo>"""
+    writer.queryForUpdate("SELECT otherLayoutInfo from PivotLayouts") {
+      rs => {
+        val oldText = rs.getString("otherLayoutInfo")
+        if (!oldText.contains(text)) {
+          val startIndex = oldText.indexOf("""<rowCollapsedState>""")
+          val endText = """</columnCollapsedState>"""
+          val endIndex = oldText.indexOf(endText) + endText.length()
+          if (startIndex != -1 && endIndex != -1) {
+            val beginText = oldText.take(startIndex)
+            val newText = beginText + textToUse
+            rs.update(Map("otherLayoutInfo" -> newText))
+          }
+        }
+      }
+    }
+
     val layouts = starling.queryWithResult("SELECT * from PivotLayouts") {
       rs => {
         val associatedReports = {
@@ -25,8 +43,9 @@ class Patch103_ChangeReportsToBookmarks extends Patch {
           }
         }
         val username = rs.getString("starlingUser")
+        val layoutName = rs.getString("layoutName")
         (username,
-        PivotLayout(rs.getString("layoutName"),
+        PivotLayout(layoutName,
           StarlingXStream.read(rs.getString("layout")).asInstanceOf[PivotFieldsState],
           true, StarlingXStream.read(rs.getString("otherLayoutInfo")).asInstanceOf[OtherLayoutInfo],
           rs.getString("layoutType"), associatedReports))

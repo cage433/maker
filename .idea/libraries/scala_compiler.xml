@@ -5,9 +5,6 @@
       <root url="jar://$PROJECT_DIR$/lib/scala/scala-2.9.0.1.final/lib/scala-library.jar!/" />
     </CLASSES>
     <JAVADOC />
-    <SOURCES>
-      <root url="jar://$PROJECT_DIR$/lib/scala/scala-2.9.0.1.final/src/scala-compiler-src.jar!/" />
-      <root url="jar://$PROJECT_DIR$/lib/scala/scala-2.9.0.1.final/src/scala-library-src.jar!/" />
-    </SOURCES>
+    <SOURCES />
   </library>
 </component>
