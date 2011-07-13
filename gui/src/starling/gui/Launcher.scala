@@ -309,33 +309,39 @@ object Launcher {
         }
       }
 
-      cacheMap(AllUserNames) = starlingServer.allUserNames
-      cacheMap(UserPivotLayouts) = starlingServer.extraLayouts
-      cacheMap(PricingGroups) = starlingServer.pricingGroups
-      cacheMap(ExcelDataSets) = starlingServer.excelDataSets
-      cacheMap(Snapshots) = starlingServer.snapshots
-      val (observationDaysForPricingGroup, observationDaysForExcel) = starlingServer.observationDays
-      cacheMap(ObservationDaysForPricingGroup) = observationDaysForPricingGroup
-      cacheMap(ObservationDaysForExcel) = observationDaysForExcel
-      cacheMap(ExcelLatestMarketDataVersion) = starlingServer.excelLatestMarketDataVersions
-      cacheMap(PricingGroupLatestMarketDataVersion) = starlingServer.pricingGroupLatestMarketDataVersions
-      cacheMap(LocalCacheKeys.ReportOptionsAvailable) = starlingServer.reportOptionsAvailable
-      cacheMap(AllNotifications) = List()
-      cacheMap(UserNotifications) = List()
-      cacheMap(LocalCacheKeys.Version) = starlingServer.version
-      cacheMap(DeskCloses) = starlingServer.deskCloses
-      cacheMap(IntradayLatest) = starlingServer.intradayLatest
-      cacheMap(TradersBookLookup) = starlingServer.traders
-      cacheMap(CurrentUser) = starlingServer.whoAmI
-      cacheMap(UKBusinessCalendar) = starlingServer.ukBusinessCalendar
-      cacheMap(Desks) = starlingServer.desks
-      cacheMap(GroupToDesksMap) = starlingServer.groupToDesksMap
-      cacheMap(IsStarlingDeveloper) = starlingServer.isStarlingDeveloper
-      cacheMap(EnvironmentRules) = starlingServer.environmentRules
-      cacheMap(CurveTypes) = starlingServer.curveTypes
-      cacheMap(Bookmarks) = toBookmarks(starlingServer.bookmarks)
+      try {
+        cacheMap(AllUserNames) = starlingServer.allUserNames
+        cacheMap(UserPivotLayouts) = starlingServer.extraLayouts
+        cacheMap(PricingGroups) = starlingServer.pricingGroups
+        cacheMap(ExcelDataSets) = starlingServer.excelDataSets
+        cacheMap(Snapshots) = starlingServer.snapshots
+        val (observationDaysForPricingGroup, observationDaysForExcel) = starlingServer.observationDays
+        cacheMap(ObservationDaysForPricingGroup) = observationDaysForPricingGroup
+        cacheMap(ObservationDaysForExcel) = observationDaysForExcel
+        cacheMap(ExcelLatestMarketDataVersion) = starlingServer.excelLatestMarketDataVersions
+        cacheMap(PricingGroupLatestMarketDataVersion) = starlingServer.pricingGroupLatestMarketDataVersions
+        cacheMap(LocalCacheKeys.ReportOptionsAvailable) = starlingServer.reportOptionsAvailable
+        cacheMap(AllNotifications) = List()
+        cacheMap(UserNotifications) = List()
+        cacheMap(LocalCacheKeys.Version) = starlingServer.version
+        cacheMap(DeskCloses) = starlingServer.deskCloses
+        cacheMap(IntradayLatest) = starlingServer.intradayLatest
+        cacheMap(TradersBookLookup) = starlingServer.traders
+        cacheMap(CurrentUser) = starlingServer.whoAmI
+        cacheMap(UKBusinessCalendar) = starlingServer.ukBusinessCalendar
+        cacheMap(Desks) = starlingServer.desks
+        cacheMap(GroupToDesksMap) = starlingServer.groupToDesksMap
+        cacheMap(IsStarlingDeveloper) = starlingServer.isStarlingDeveloper
+        cacheMap(EnvironmentRules) = starlingServer.environmentRules
+        cacheMap(CurveTypes) = starlingServer.curveTypes
+        cacheMap(Bookmarks) = toBookmarks(starlingServer.bookmarks)
 
-      GuiUtils.setLookAndFeel
+        GuiUtils.setLookAndFeel
+      } catch {
+        case e : Throwable =>
+          e.printStackTrace()
+          throw e
+      }
 
       fc
     })    

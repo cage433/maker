@@ -418,7 +418,7 @@ class StarlingServerImpl(
   }
 
   def excelLatestMarketDataVersions = snapshotDatabase.latestExcelVersions
-  def pricingGroupLatestMarketDataVersions = snapshotDatabase.latestPricingGroupVersions.filterKeys(pricingGroups()).toMap
+  def pricingGroupLatestMarketDataVersions = Map() ++ snapshotDatabase.latestPricingGroupVersions.filterKeys(pricingGroups()).toMap
 
   def latestSnapshotID(pricingGroup:PricingGroup, observationDay:Day) = {
     snapshotDatabase.latestSnapshot(pricingGroup, observationDay) match {
