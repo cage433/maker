@@ -15,9 +15,10 @@ object AxisNode {
 
   def textAndAlignment(value:AxisValue, formatInfo:FormatInfo, extraFormatInfo:ExtraFormatInfo) = {
 
-    def tableCell(value0:Any) = {
+    def tableCell(valueType:AxisValueType) = {
       val formatter = formatInfo.fieldToFormatter(value.field)
-      value0 match {
+      valueType.value match {
+        case UndefinedValue if valueType.cellType == EditableCellState.Added => TableCell.UndefinedNew
         case UndefinedValue => TableCell.Undefined
         case other => formatter.format(other, extraFormatInfo)
       }
@@ -28,11 +29,11 @@ object AxisNode {
       case n@NullAxisValueType => (n.value, LeftTextPosition)
       case m:MeasureAxisValueType => (m.value, LeftTextPosition)
       case v:ValueAxisValueType => {
-        val tc = tableCell(v.value)
+        val tc = tableCell(v)
         (tc.text, (if (tc.textPosition == CenterTextPosition) LeftTextPosition else tc.textPosition))
       }
-      case t:TaintedAxisValueType => {
-        val tc = tableCell(t.value)
+      case t:AggregateAxisValueType => {
+        val tc = tableCell(t)
         (tc.text, (if (tc.textPosition == CenterTextPosition) LeftTextPosition else tc.textPosition))
       }
     }
@@ -115,7 +116,12 @@ case class ServerAxisNode(axisValue:AxisValue, children:Map[ChildKey,Map[AxisVal
       val joinedValue = {
         val axisValues = nodes.map(_.axisValue)
         if (axisValues.size > 1) {
-          axisValues.head.copy(value=TaintedAxisValueType(axisValues.head.value.value))
+          val cellTypes = axisValues.map(_.value.cellType).toSet
+          val cellType = cellTypes.toList match {
+            case one :: Nil => one
+            case _ => EditableCellState.Tainted
+          }
+          axisValues.head.copy(value=AggregateAxisValueType(cellType, axisValues.head.value.value))
         } else {
           axisValues.head
         }
@@ -501,7 +507,9 @@ case class PivotTableConverter(otherLayoutInfo:OtherLayoutInfo = OtherLayoutInfo
                 }
                 case Some(measureAxisCell) => {
                   val tc = measureCell.value match {
+                    case None if measureCell.cellType == EditableCellState.Added => TableCell.UndefinedNew
                     case None => TableCell.Undefined
+                    case Some(UndefinedValue) if measureCell.cellType == EditableCellState.Added => TableCell.UndefinedNew
                     case Some(UndefinedValue) => TableCell.Undefined
                     case Some(other) => table.formatInfo.fieldToFormatter(measureAxisCell.value.field).format(other, extraFormatInfo)
                   }

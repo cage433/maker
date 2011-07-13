@@ -59,7 +59,8 @@ object TableCell {
   def apply(value: Any) = new TableCell(value)
 
   val Null = new TableCell(NoValue, "")
-  val Undefined = new TableCell(UndefinedValue, "")
+  val Undefined = new TableCell(UndefinedValue, "n/a")
+  val UndefinedNew = new TableCell(UndefinedValue, "")
 
   def longText(pq: PivotQuantity) =
     (pq.explanation, pq.warning) match {

@@ -156,16 +156,23 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
       val rowHeaderField = rowHeaderData0(0)(columnIndex).value.field
       val parser = editableInfo.get.editableKeyFields(rowHeaderField)
 
-      val (newValue,newLabel) = if (s.isEmpty) (Set.empty, "") else parser.parse(s)
+      val (newValue,newLabel) = if (s.isEmpty) (None, "") else {
+        val (v,t) = parser.parse(s)
+        (Some(v), t)
+      }
 
       if (rowIndex < rowHeaderData0.length) {
         val currentCell = getValueAt(rowIndex, columnIndex)
         if (currentCell.text != newLabel) {
-          overrideMap((rowIndex, columnIndex)) = OverrideDetails(newLabel, Edited)
-          updateEdits(pivotEdits.withAmend(KeyFilter(key(rowIndex, columnIndex)), rowHeaderField, Some(newValue)))
+          currentCell.value.childKey.value match {
+            case NewRowValue(ri) => updateEdits(pivotEdits.withNewAmended(ri, rowHeaderField, newValue))
+            case _ => updateEdits(pivotEdits.withAmend(KeyFilter(key(rowIndex, columnIndex)), rowHeaderField, newValue))
+          }
         }
       } else {
-        updateEdits(pivotEdits.addRow(editableInfo.get.editableKeyFields.keySet, rowHeaderField, newValue))
+        newValue.foreach { nv =>
+          updateEdits(pivotEdits.addRow(editableInfo.get.editableKeyFields.keySet, rowHeaderField, nv))
+        }
       }
     }
 
@@ -369,16 +376,16 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
       val measureInfo = colHeaderData0.find(_(columnIndex).value.isMeasure).get(columnIndex)
       val parser = editableInfo.get.editableMeasures(measureInfo.value.field)
       
-      val (newValue,newLabel) = if (s.isEmpty) (Set.empty, "") else {
+      val (newValue,newLabel) = if (s.isEmpty) (None, "") else {
         val (v,l) = parser.parse(s)
         v match {
           case pq:PivotQuantity if uoms0.length > columnIndex => {
             val uom = uoms0(columnIndex)
             val dv = pq.doubleValue.get
             val newPQ = new PivotQuantity(dv, uom)
-            (newPQ, PivotFormatter.formatPivotQuantity(newPQ, extraFormatInfo, false))
+            (Some(newPQ), PivotFormatter.formatPivotQuantity(newPQ, extraFormatInfo, false))
           }
-          case _ => (v,l)
+          case _ => (Some(v),l)
         }
       }
 
@@ -386,15 +393,22 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
         val currentCell = getValueAt(rowIndex, columnIndex)
         if (currentCell.text != newLabel) {
           if (currentCell.value == NoValue) {
-            val row = key(rowIndex, columnIndex, measureInfo).mapValues(_.values.head) + (measureInfo.value.field -> newValue)
-            updateEdits(pivotEdits.addRow(row))
+            newValue.foreach(nv => {
+              val row = key(rowIndex, columnIndex, measureInfo).mapValues(_.values.head) + (measureInfo.value.field -> nv)
+              updateEdits(pivotEdits.addRow(row))
+            })
           } else {
-            overrideMap((rowIndex, columnIndex)) = OverrideDetails(newLabel, Edited)
-            updateEdits(pivotEdits.withAmend(KeyFilter(key(rowIndex, columnIndex, measureInfo)), measureInfo.value.field, Some(newValue)))
+            val rowCellForCheck = rowHeaderData0(rowIndex)(0)
+            rowCellForCheck.value.childKey.value match {
+              case NewRowValue(ri) => updateEdits(pivotEdits.withNewAmended(ri, measureInfo.value.field, newValue))
+              case _ => updateEdits(pivotEdits.withAmend(KeyFilter(key(rowIndex, columnIndex, measureInfo)), measureInfo.value.field, newValue))
+            }
           }
         }
       } else {
-        updateEdits(pivotEdits.addRow(editableInfo.get.editableKeyFields.keySet, measureInfo.value.field, newValue))
+        newValue.foreach(nv => {
+          updateEdits(pivotEdits.addRow(editableInfo.get.editableKeyFields.keySet, measureInfo.value.field, nv))
+        })
       }
     }
 

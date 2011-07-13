@@ -84,10 +84,11 @@ case class PivotEdits(edits:Map[KeyFilter,KeyEdits], newRows:List[Map[Field,Any]
     PivotEdits(merged, newRows ++ other.newRows)
   }
   def withDelete(deleteKeys:KeyFilter, field:Field) = {
+    val newRowsWithDeleteApplied  = newRows.filterNot(r => deleteKeys.matches(r))
     val editsWithAffectedEditsRemoved = edits.filterKeys { keyFilter => {
       !keyFilter.isOverriddenBy(deleteKeys)
     } }
-    PivotEdits(editsWithAffectedEditsRemoved.updated(deleteKeys, DeleteKeyEdit(field)), newRows)
+    PivotEdits(editsWithAffectedEditsRemoved.updated(deleteKeys, DeleteKeyEdit(field)), newRowsWithDeleteApplied)
   }
   def remove(editsToRemove:PivotEdits) = {
     val merged = edits.flatMap{ case (key,changes) => {
@@ -105,11 +106,20 @@ case class PivotEdits(edits:Map[KeyFilter,KeyEdits], newRows:List[Map[Field,Any]
     } }
     PivotEdits(merged, newRows.filterNot(editsToRemove.newRows.contains(_)))
   }
+  def withNewAmended(rowIndex:Int, field:Field, value:Option[Any]) = {
+    val fixedNewRows = newRows.zipWithIndex.map{ case (row,index) => {
+      if (index == rowIndex) row.updated(field, value.getOrElse(UndefinedValue)) else row
+    }}
+    copy(newRows = fixedNewRows)
+  }
   def withAmend(amendKeys:KeyFilter, field:Field, value:Option[Any]) = {
     if (newRows.exists(r => amendKeys.matches(r))) {
       val amendedNewRows = newRows.map { r => {
         if (amendKeys.matches(r)) {
-          r + (field -> value.getOrElse(UndefinedValue))
+          value match {
+            case None => r - field
+            case Some(v) => r + (field -> v)
+          }
         } else {
           r
         }

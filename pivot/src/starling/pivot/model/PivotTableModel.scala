@@ -44,10 +44,9 @@ abstract class AxisValueType extends Serializable {
   def originalOrValue = originalValue.getOrElse(value)
 }
 
-case class TaintedAxisValueType(value:Any) extends AxisValueType {
+case class AggregateAxisValueType(override val cellType:EditableCellState, value:Any) extends AxisValueType {
   override def originalValue = None
   override def pivotEdits = PivotEdits.Null //.toList.flatMap(_.pivotEdits).toSet
-  override def cellType = Tainted
 }
 
 case object AddedAxisValueType extends AxisValueType {
@@ -289,12 +288,10 @@ case class CombinedDataFieldTotal(fieldDetails:FieldDetails, override val aggreg
                                   override val aggregateOriginal:Option[Any],
                                   override val edits:PivotEdits) extends NonEmptyDataFieldTotal {
   def measureCell = {
-    val valueOrDeletedValue = aggregateValue.getOrElse(aggregateOriginal.get)
-    val vv = fieldDetails.value(valueOrDeletedValue)
-
+    val valueOrDeletedValue = if (aggregateValue.isDefined) aggregateValue else aggregateOriginal
+    val vv = valueOrDeletedValue.map(v => fieldDetails.value(v))
     val cellType = if (edits.nonEmpty) Tainted else Normal
-
-    MeasureCell(Some(vv), cellType, edits)
+    MeasureCell(vv, cellType, edits)
   }
 }
 
