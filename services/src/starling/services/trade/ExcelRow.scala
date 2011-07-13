@@ -123,7 +123,7 @@ case class ExcelRow(row: Map[String, Any], traders: Traders) {
       case _: SpreadPeriod => true
       case _ => false
     }
-    val crack = isCrackMarket
+    val crack = isSpreadMarket
 
     val q = Quantity(double(PriceColumn), priceUOM)
     if (!multiIndex && !spread && !crack)
@@ -168,9 +168,12 @@ case class ExcelRow(row: Map[String, Any], traders: Traders) {
     case None => throw ExcelInstrumentReaderException("Couldn't find market with name: " + marketStr)
   }
 
-  def isCrackMarket = FuturesSpreadMarket.find(marketStr).isDefined
+  def isSpreadMarket = marketAliases.get(marketStr) match {
+    case Some(m: FuturesSpreadMarket) => true
+    case None => false
+  }
 
-  def futuresSpreadMarket = FuturesSpreadMarket.find(marketStr).get
+  def futuresSpreadMarket: FuturesSpreadMarket = marketAliases(marketStr).asInstanceOf[FuturesSpreadMarket]
 
   def futuresMarket = market.asInstanceOf[FuturesMarket]
 
@@ -193,13 +196,13 @@ case class ExcelRow(row: Map[String, Any], traders: Traders) {
 
   def lotSize = {
     val name = marketStr
-    if (isCrackMarket) {
+    if (isSpreadMarket) {
       futuresSpreadMarket.lotSize
     } else {
       val lots = (marketAliases.get(name), indexAliases.get(name)) match {
-        case (Some(market), None) => market.lotSize
+        case (Some(market: CommodityMarket), None) => market.lotSize
         case (None, Some(index: SingleIndex)) => index.lotSize
-        case (Some(market), Some(index: SingleIndex)) if market == index.market => market.lotSize
+        case (Some(market: CommodityMarket), Some(index: SingleIndex)) if market == index.market => market.lotSize
         case _ => throw new Exception("Can't figure out lot size for: " + name)
       }
       lots match {
@@ -270,7 +273,7 @@ case class ExcelRow(row: Map[String, Any], traders: Traders) {
 
   def checkMarket {
     val name = marketStr
-    val all = FuturesSpreadMarket.values.map(_.toString.toLowerCase).toSet ++ marketAliases.keys ++ indexAliases.keys
+    val all = (marketAliases.keys ++ indexAliases.keys).toSet
     if (!all.contains(name)) {
       val closest = closestLevenshteinString(all, name, 4)
 
@@ -305,13 +308,13 @@ case class ExcelRow(row: Map[String, Any], traders: Traders) {
 
   def marketPriceUOM = {
     val name = marketStr
-    if (isCrackMarket) {
+    if (isSpreadMarket) {
       futuresSpreadMarket.priceUOM
     } else {
       (marketAliases.get(name), indexAliases.get(name)) match {
-        case (Some(market), None) => market.priceUOM
+        case (Some(market: CommodityMarket), None) => market.priceUOM
         case (None, Some(index)) => index.priceUOM
-        case (Some(market), Some(index: SingleIndex)) if market == index.market => market.priceUOM
+        case (Some(market: CommodityMarket), Some(index: SingleIndex)) if market == index.market => market.priceUOM
         case _ => throw new Exception("Unexpected market name: " + name)
       }
     }

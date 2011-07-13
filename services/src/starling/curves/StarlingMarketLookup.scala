@@ -5,15 +5,18 @@ import starling.calendar.BusinessCalendars
 import starling.market._
 import starling.utils.sql.QueryBuilder._
 import starling.utils.Log
+import java.util.concurrent.atomic.AtomicBoolean
 
 class StarlingMarketLookup(db: DB, businessCalendars: BusinessCalendars, expiryRules: FuturesExpiryRules) extends MarketLookup {
   /**
    * map of eaiquoteid to index
    */
-  lazy val table: List[Either[CommodityMarket, Index]] = load
+  lazy val table: List[Either[Market, Index]] = load
 
-  lazy val allFuturesMarkets = table.flatMap {
-    case Left(m: FuturesMarket) => Some(m)
+  val loading = new AtomicBoolean(false)
+
+  lazy val allMarkets = table.flatMap {
+    case Left(m: Market) => Some(m)
     case _ => None
   }
   lazy val allIndexes = table.flatMap {
@@ -22,6 +25,7 @@ class StarlingMarketLookup(db: DB, businessCalendars: BusinessCalendars, expiryR
   }
 
   private def load = {
+    assert(loading.compareAndSet(false, true), "Already loading/loaded")
     Log.infoWithTime("Loading markets ") {
       val parser = new MarketParser(businessCalendars, expiryRules)
       val lines = db.queryWithResult((select("*") from ("Markets") orderBy ("forwardMarket" asc))) {

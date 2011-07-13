@@ -36,9 +36,9 @@ class CalendarSpreadOptionTests  extends JonTestEnv with TestNGSuite{
 
     val strike = Quantity(0, market.priceUOM)
     val volume = Quantity(1000, BBL)
-    val option1 = new SingleCalendarSpreadOption(market, market.csoOptionExpiry(may), may, jun, strike, volume, Call)
-    val option2 = new SingleCalendarSpreadOption(market, market.csoOptionExpiry(jun), jun, jul, strike, volume, Call)
-    val option3 = new SingleCalendarSpreadOption(market, market.csoOptionExpiry(jul), jul, aug, strike, volume, Call)
+    val option1 = new SingleCalendarSpreadOption(market, market.csoOptionExpiry(may / jun), may, jun, strike, volume, Call)
+    val option2 = new SingleCalendarSpreadOption(market, market.csoOptionExpiry(jun / jul), jun, jul, strike, volume, Call)
+    val option3 = new SingleCalendarSpreadOption(market, market.csoOptionExpiry(jul / aug), jul, aug, strike, volume, Call)
     val mtm1 = option1.mtm(env)
     val mtm2 = option2.mtm(env)
     val mtm3 = option3.mtm(env)

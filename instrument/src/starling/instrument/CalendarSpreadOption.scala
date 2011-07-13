@@ -24,10 +24,12 @@ case class CalendarSpreadOption(
         strike: Quantity,
         volume: Quantity,
         callPut: CallOrPut
-        ) extends Tradeable with MultiLeg {
+        ) extends SpreadOption(market, period, strike, volume, callPut) {
   assert(!spreads.isEmpty, "Period is not a valid CSO period: " + period)
 
-  def spreads = period match {
+  override def expiryDay = Some(market.csoOptionExpiry(spreads.last))
+
+  def spreads: List[Spread[Month]] = period match {
     case SpreadPeriod(front: Month, back: Month) => List(Spread(front, back))
     case StripPeriod(first: SpreadPeriod, last: SpreadPeriod) => {
       Strip(first, last).toList.map {
@@ -39,12 +41,6 @@ case class CalendarSpreadOption(
     }
     case _ => throw new Exception("Invalid period for CSO: " + period)
   }
-
-  override def expiryDay = Some(market.csoOptionExpiry(spreads.last))
-
-  def isLive(dayAndTime: DayAndTime) = dayAndTime < expiryDay.get.endOfDay
-
-  def tradeableDetails = Map("Market" -> market, "Period" -> period, "Strike" -> strike, "Quantity" -> volume, "CallPut" -> callPut)
 
   def asUtpPortfolio(tradeDay:Day) = UTP_Portfolio({
     spreads.map {
@@ -71,10 +67,8 @@ case class SingleCalendarSpreadOption(
         strike: Quantity,
         volume: Quantity,
         callPut: CallOrPut
-        ) extends UTP {
+        ) extends SingleSpreadOption(market, exerciseDay, Spread(firstMonth, secondMonth), strike, volume, callPut) {
   def instrumentType = CalendarSpreadOption
-
-  def details = Map("Market" -> market, "Period" -> Spread(firstMonth, secondMonth), "Strike" -> strike, "CallPut" -> callPut)
 
   val valuationCCY = strike.uom * market.uom
 
@@ -97,20 +91,6 @@ case class SingleCalendarSpreadOption(
   }
 
   def periods = List(firstMonth, secondMonth)
-
-  def isLive(dayAndTime: DayAndTime) = dayAndTime < exerciseDay.endOfDay
-
-  def assets(env: Environment) = {
-    if (isLive(env.marketDay)) {
-      val marketDay = env.marketDay.day
-      val mtm = price(env) * volume
-      Assets(Asset.estimatedCash(env.marketDay.day, mtm, mtm))
-    } else {
-      Assets()
-    }
-  }
-
-  def daysForPositionReport(marketDay : DayAndTime) : Seq[Day] = List(exerciseDay)
 
   def * (scale : Double) = copy(volume = volume * scale)
 

@@ -177,7 +177,7 @@ case class SpreadAtmStdDevAtomicDatumKey (
   def periodKey = Some(period)
 
   def calc_dP(env : Environment) = {
-    val csoExpiryDay: Day = market.expiryRule.csoExpiryDay(period.first)
+    val csoExpiryDay: Day = market.expiryRule.csoExpiryDay(period)
     val T = csoExpiryDay.endOfDay.timeSince(env.marketDay)
     val df = env.discount(market.currency, csoExpiryDay)
     Quantity(0.001, market.priceUOM) * (if (T <= 0) 1.0 else sqrt(Pi / (2.0 * T)) / df)

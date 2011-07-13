@@ -3,7 +3,7 @@ package starling.market
 import starling.db.DB
 import starling.utils.sql.QueryBuilder._
 import starling.calendar.BusinessCalendars
-import starling.daterange.{DateRange, DayOfWeek, Day, Month}
+import starling.daterange._
 
 class FuturesExpiryRulesImpl(eai: DB, businessCalendars: BusinessCalendars) extends FuturesExpiryRules(businessCalendars) {
   def ruleOption(eaiQuoteID: Int) = dbRules.get(eaiQuoteID)
@@ -66,8 +66,8 @@ case class FuturesExpiryRuleMap(id: Int, lastTradingDays: Map[DateRange, Day] = 
     case None => throw new NoExpiryDataException(d)
   }
 
-  override def csoExpiryDay(d: DateRange) = csoExpiryDays.get(d) match {
+  override def csoExpiryDay(s: Spread[_ <: DateRange]) = csoExpiryDays.get(s.first) match {
     case Some(day) => day
-    case None => throw new NoExpiryDataException(d)
+    case None => throw new NoExpiryDataException(s.first)
   }
 }

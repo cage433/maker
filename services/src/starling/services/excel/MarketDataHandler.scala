@@ -84,7 +84,7 @@ class MarketDataHandler(broadcaster : Broadcaster,
     } else {
       OilVolSurfaceData(Array(), Array(), Array(), Array())
     }
-    val market = ExcelInstrumentReader.marketOption(marketStr) match {
+    val market = ExcelInstrumentReader.commodityMarketOption(marketStr) match {
       case Some(m) => m
       case None => Market.fromName(marketStr)
     }
@@ -206,9 +206,7 @@ class MarketDataHandler(broadcaster : Broadcaster,
         (for ((marketName, index) <- markets.zipWithIndex
               if marketName != null && marketName.isInstanceOf[String] && !marketName.toString.trim().isEmpty) yield {
           val marketStr = marketName.asInstanceOf[String]
-          // Look up market aliases then market names. The aliases are the names EAI gives the markets. Once we have
-          // the same names as EAI we can remove this extra lookup.
-          val market = ExcelInstrumentReader.marketOption(marketStr) match {
+          val market = ExcelInstrumentReader.commodityMarketOption(marketStr) match {
             case Some(m) => m
             case None => Market.fromName(marketName.asInstanceOf[String])
           }

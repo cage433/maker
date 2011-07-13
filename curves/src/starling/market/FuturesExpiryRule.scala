@@ -1,9 +1,9 @@
 package starling.market
 
-import starling.daterange.{DateRange, Month, Day}
 import starling.calendar.{BusinessCalendar, BusinessCalendars}
 import starling.utils.{StarlingEnum, Log}
 import starling.utils.ImplicitConversions._
+import starling.daterange.{Spread, DateRange, Month, Day}
 
 trait FuturesExpiryRule {
   val name: String
@@ -19,10 +19,14 @@ trait FuturesExpiryRule {
   def expiryDay(d: DateRange): Day = throw new Exception("No expiry rule for " + this)
 
   /**
-   * Expiry day for Calendar Spead Option.
-   * @param d Would be, for example on a Nymex WTI 1 month CSO with expiration month July10, Month(2010, 7)
+   * Expiry day for Futures Spead Option.
    */
-  def csoExpiryDay(d: DateRange): Day = throw new Exception("No cso expiry rule for " + this)
+  def spreadOptionExpiryDay(d: DateRange): Day = throw new Exception("No spread option expiry rule for " + this)
+
+  /**
+   * Expiry day for Calendar Spead Option.
+   */
+  def csoExpiryDay(s: Spread[_ <: DateRange]): Day = throw new Exception("No cso expiry rule for " + this)
 
   /**
    * Expiry day for Asian Option.
@@ -70,7 +74,7 @@ abstract class FuturesExpiryRules(businessCalendars: BusinessCalendars) {
   def rule(eaiQuoteID: Int): Option[FuturesExpiryRule] = {
     val rule = ruleOption(eaiQuoteID)
     eaiQuoteID match {
-      case 890 => rule.map(ICE_WTI) // EAI is missing some older ICE WTI rules
+      case 890 => Some(ICE_WTI) // EAI is missing some older ICE WTI rules
       case _ => rule
     }
   }
@@ -93,8 +97,10 @@ abstract class FuturesExpiryRules(businessCalendars: BusinessCalendars) {
   /**
    * Tries to use DB for expiry rules but falls back on definition
    */
-  private def ICE_WTI(futuresExpiryRule: FuturesExpiryRule) = new MonthFuturesExpiryRule {
-    val name = futuresExpiryRule.name
+  lazy val ICE_WTI = new MonthFuturesExpiryRule {
+    lazy val futuresExpiryRule = Market.ICE_WTI.eaiQuoteID.flatMap(ruleOption).get
+
+    lazy val name = futuresExpiryRule.name
 
     def expiryDayOfMonth(m: Month) = try {
       futuresExpiryRule.expiryDay(m)
@@ -106,6 +112,18 @@ abstract class FuturesExpiryRules(businessCalendars: BusinessCalendars) {
     }
 
     def lastTradingDayOfMonth(m: Month): Day = futuresExpiryRule.lastTradingDay(m)
+  }
+
+  lazy val WTI_Brent_Spread = new MonthFuturesExpiryRule {
+    val name = "WTI-Brent Crude Oil Spread Expiry"
+
+    def expiryDayOfMonth(m: Month) = throw new Exception("No expiry rule data")
+
+    // http://www.cmegroup.com/trading/energy/crude-oil/wti-brent-crude-oil-spread-options_contract_specifications.html
+    override def spreadOptionExpiryDay(d: DateRange) = lastTradingDay(d)
+    
+    // http://www.cmegroup.com/rulebook/NYMEX/6/693.pdf
+    def lastTradingDayOfMonth(m: Month) = Market.ICE_WTI.expiryRule.lastTradingDay(m).previousBusinessDay(businessCalendars.ICE)
   }
 
   val LME = new FuturesExpiryRule {
@@ -262,8 +280,8 @@ abstract class FuturesExpiryRules(businessCalendars: BusinessCalendars) {
     def expiryDayOfMonth(m: Month) = throw new Exception("No options")
   }
 
-  val all = List(NoRule, SHANGHAI, SHANGHAI_FUEL_OIL, LME, BALTIC,
-    COMEX_G_S_HG_COPPER, COMEX_PT_PA,
+  lazy val all = List(NoRule, SHANGHAI, SHANGHAI_FUEL_OIL, LME, BALTIC,
+    COMEX_G_S_HG_COPPER, COMEX_PT_PA, WTI_Brent_Spread,
     DubaiCrudeExpiryRule, PlattsBrentExpiryRule)
 
   val EAIRuleRegex = """EAIExpiryRule\((\d+)\)""".r

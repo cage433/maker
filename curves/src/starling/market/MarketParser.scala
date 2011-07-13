@@ -12,8 +12,8 @@ class MarketParser(businessCalendars: BusinessCalendars, futuresExpiryRules: Fut
 
   import MarketParser._
 
-  def fromLines(lines: List[Line]): List[Either[CommodityMarket, Index]] = {
-    var all = List[Either[CommodityMarket, Index]]()
+  def fromLines(lines: List[Line]): List[Either[Market, Index]] = {
+    var all = List[Either[Market, Index]]()
     lines.map {
       line => {
         val name = line.get("name")
@@ -27,7 +27,7 @@ class MarketParser(businessCalendars: BusinessCalendars, futuresExpiryRules: Fut
           case _ => None
         }
 
-        val entry: Either[CommodityMarket, Index] = className match {
+        val entries: List[Either[Market, Index]] = className match {
           case "FuturesMarket" | "PublishedIndex" => {
             val uom = line.getUOM("uom")
             val ccy = line.getUOM("ccy")
@@ -64,7 +64,7 @@ class MarketParser(businessCalendars: BusinessCalendars, futuresExpiryRules: Fut
                 val volatilityID = line.getFromOption[Int]("volatilityID")
 
                 val futuresMarket = FuturesMarket(name, lotSize, uom, ccy, calendar, eaiQuoteID, tenor, expiryRule, exchange, commodity, conversion, volatilityID, lim, precision)
-                Left(futuresMarket)
+                List(Left(futuresMarket))
               }
               case "PublishedIndex" => {
                 val level = line.get("indexLevel") match {
@@ -72,11 +72,11 @@ class MarketParser(businessCalendars: BusinessCalendars, futuresExpiryRules: Fut
                   case s => Level.fromName(s)
                 }
 
-                Right(new PublishedIndex(name, eaiQuoteID, lotSize, uom, ccy, calendar, commodity, conversion, lim, precision, level))
+                List(Right(new PublishedIndex(name, eaiQuoteID, lotSize, uom, ccy, calendar, commodity, conversion, lim, precision, level)))
               }
             }
           }
-          case "FormulaIndex" => {
+          case "FormulaIndex" | "FormulaIndex/FuturesSpreadMarket" => {
             val uom = line.getUOM("uom")
             val ccy = line.getUOM("ccy")
             val formula = new Formula(line.get("formula"))
@@ -84,7 +84,22 @@ class MarketParser(businessCalendars: BusinessCalendars, futuresExpiryRules: Fut
               case Some(c) => Some(Conversions.default + (BBL / MT, c))
               case None => None
             }
-            Right(new FormulaIndex(name, formula, ccy, uom, precision, conversion, eaiQuoteID))
+            val index = new FormulaIndex(name, formula, ccy, uom, precision, conversion, eaiQuoteID)
+
+            val lotSize = line.getFromOption[Double]("lotSize")
+            if (lotSize.isDefined) {
+              val expiryRule = line.getFromOption[String]("expiryRule") match {
+                case Some(ruleName) => futuresExpiryRules.fromName(ruleName)
+                case _ => None
+              }
+              val tenor = TenorType.parseTenorName(line.get("tenor"))
+
+              val futuresSpread = FuturesSpreadMarket(name, uom, ccy, formula, lotSize.get, tenor, eaiQuoteID, expiryRule)
+
+              List(Left(futuresSpread), Right(index))
+            } else {
+              List(Right(index))
+            }
           }
           case "FuturesFrontPeriodIndex" => {
             val rollbeforedays = line.getInt("rollbefore")
@@ -97,10 +112,10 @@ class MarketParser(businessCalendars: BusinessCalendars, futuresExpiryRules: Fut
               case Some(f) => f.left.get.asInstanceOf[FuturesMarket]
               case None => throw new Exception("No underlying futures market for " + marketName)
             }
-            Right(new FuturesFrontPeriodIndex(name, eaiQuoteID, market, rollbeforedays, promptness, precision))
+            List(Right(new FuturesFrontPeriodIndex(name, eaiQuoteID, market, rollbeforedays, promptness, precision)))
           }
         }
-        all ::= entry
+        all :::= entries
       }
     }
     all

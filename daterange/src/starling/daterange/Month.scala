@@ -15,8 +15,7 @@ case class Month(y : Int, m : Int) extends DateRange {
 
   def toPrintableForm = Month.months(m - 1).capitalize + " " + y
 
-
-  override def toShortString = Month.months(m - 1).capitalize.take(3) + " " + y 
+  override def toShortString = Month.months(m - 1).capitalize.take(3) + " " + y
 
   def min(that : Month) : Month = if (this < that) this else that
 
@@ -58,6 +57,8 @@ case class Month(y : Int, m : Int) extends DateRange {
   def -(i : Int) = this + (-i)
 
   def - (that : Month) : Int = m - that.m + 12 * (y - that.y)
+
+  def / (that: Month): Spread[Month] = Spread(this, that)
 
   def tenor = Some(Month)
 
