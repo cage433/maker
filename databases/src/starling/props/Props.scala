@@ -96,7 +96,7 @@ class Props(props:Map[String,String]) extends PropsHelper(props) {
   object RefDataServiceLocation extends StringProperty("http://localhost:8080/referencedata")
   object LogisticsServiceLocation extends StringProperty("http://localhost:8080/logistics")
 
-  private val RestEasyRpcMount = "/RPC"
+  private def RestEasyRpcMount = "/RPC"
   object EdmTradeServiceUrl extends StringProperty(EdmTradeServiceLocation() + RestEasyRpcMount)
   object TacticalRefDataServiceUrl extends StringProperty(RefDataServiceLocation() + RestEasyRpcMount)
   object TitanLogisticsServiceUrl extends StringProperty(LogisticsServiceLocation() + RestEasyRpcMount)
