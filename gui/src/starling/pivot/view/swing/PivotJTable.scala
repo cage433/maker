@@ -56,7 +56,12 @@ class PivotJTable(tableModel:PivotJTableModel, pivotTableView:PivotTableView, mo
         putClientProperty("JTable.autoStartsEdit", false)
         pivotTableView.publish(SavePivotEdits)
       } else if (e.getKeyCode == KeyEvent.VK_Z && (e.getModifiersEx & InputEvent.CTRL_DOWN_MASK) == InputEvent.CTRL_DOWN_MASK) {
-        putClientProperty("JTable.autoStartsEdit", false)
+        if (getCellEditor == null) {
+          putClientProperty("JTable.autoStartsEdit", false)
+        } else {
+          e.consume()
+          getCellEditor.cancelCellEditing()
+        }
       } else if (e.getKeyCode == KeyEvent.VK_DOWN) {
         if (tableModel.popupShowing) {
           e.consume()
@@ -156,7 +161,7 @@ class PivotJTable(tableModel:PivotJTableModel, pivotTableView:PivotTableView, mo
     val textField = new JTextField() {
       override def processKeyBinding(ks:KeyStroke, e:KeyEvent, condition:Int, pressed:Boolean) = {
         val r = super.processKeyBinding(ks, e, condition, pressed)
-        // Don't want to react if ctrl, alt or shift is down.
+        // Don't want to react if ctrl is down.
         val offMask = InputEvent.CTRL_DOWN_MASK
         if (ks.getKeyCode == KeyEvent.VK_UNDEFINED && ((e.getModifiersEx & offMask) == 0)) {
           val focusOwner = if (isFocusOwner) {
@@ -180,6 +185,11 @@ class PivotJTable(tableModel:PivotJTableModel, pivotTableView:PivotTableView, mo
           if (e.getKeyCode == KeyEvent.VK_DOWN && tableModel.popupShowing) {
             e.consume()
             tableModel.focusPopup()
+          } else if (e.getKeyCode == KeyEvent.VK_Z && ((e.getModifiersEx & InputEvent.CTRL_DOWN_MASK) == InputEvent.CTRL_DOWN_MASK)) {
+            if (getCellEditor != null) {
+              e.consume()
+              getCellEditor.cancelCellEditing()
+            }
           }
         }
       })
@@ -189,8 +199,20 @@ class PivotJTable(tableModel:PivotJTableModel, pivotTableView:PivotTableView, mo
       override def stopCellEditing() = {
         val r = getEditingRow
         val c = getEditingColumn
-        println("Do validation for row " + r + " and column " + c)
-        super.stopCellEditing()
+
+        val acceptableValues = tableModel.acceptableValues(r,c)
+        val myRes = if (acceptableValues.isEmpty) {
+          true
+        } else {
+          val t = textField.getText.trim().toLowerCase
+          acceptableValues.map(_.trim().toLowerCase).contains(t)
+        }
+
+        if (myRes) {
+          super.stopCellEditing()
+        } else {
+          false
+        }
       }
 
       override def getTableCellEditorComponent(table:JTable, value:AnyRef, isSelected:Boolean, row:Int, column:Int) = {
@@ -288,15 +310,17 @@ class PivotJTable(tableModel:PivotJTableModel, pivotTableView:PivotTableView, mo
 
           val deletableCells = selectedCells.filter{case (row0,col0) => {
             getValueAt(row0,col0) match {
-              case ac:AxisCell => ac.editable && ac.state != EditableCellState.Deleted
-              case tc:TableCell => tc.editable && tc.state != EditableCellState.Deleted
+              case ac:AxisCell => ac.editable && ac.state != EditableCellState.Deleted &&
+                      (if (ac.state == EditableCellState.Added) ac.label.nonEmpty && (row0 < getRowCount-1) else true)
+              case tc:TableCell => tc.editable && tc.state != EditableCellState.Deleted &&
+                      (if (tc.state == EditableCellState.Added) tc.text.nonEmpty && (row0 < getRowCount-1) else true)
             }
           }}
 
           val resetableCells = selectedCells.filter{case (row0,col0) => {
             getValueAt(row0,col0) match {
-              case ac:AxisCell => (ac.state != EditableCellState.Normal) && (if (ac.state == EditableCellState.Added) ac.label.nonEmpty else true)
-              case tc:TableCell => (tc.state != EditableCellState.Normal) && (if (tc.state == EditableCellState.Added) tc.text.nonEmpty else true)
+              case ac:AxisCell => (ac.state != EditableCellState.Normal && ac.state != EditableCellState.Added)
+              case tc:TableCell => (tc.state != EditableCellState.Normal && tc.state != EditableCellState.Added)
             }
           }}
 

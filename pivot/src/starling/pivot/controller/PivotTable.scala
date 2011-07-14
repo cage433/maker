@@ -28,18 +28,21 @@ object TreePivotFilterNode {
   }
 }
 
-case class PivotTable(rowFields:List[Field], rowFieldHeadingCount:Array[Int], rowAxis:List[AxisNode],
-                      columnAxis:List[AxisNode], possibleValues:Map[Field,TreePivotFilter], treeDetails:TreeDetails,
+case class PivotTable(rowFields:List[Field], rowFieldHeadingCount:Array[Int], rowNode:AxisNode,
+                      columnNode:AxisNode, possibleValues:Map[Field,TreePivotFilter], treeDetails:TreeDetails,
                       editableInfo:Option[EditableInfo], formatInfo:FormatInfo,
-                      aggregatedMainBucket:Map[(List[AxisValue],List[AxisValue]),MeasureCell] = Map(),
+                      aggregatedMainBucket:Map[(List[ChildKey],List[ChildKey]),MeasureCell] = Map(),
                       zeroFields:Set[Field]=Set()) {
+
+  def rowAxis = rowNode.children
+  def columnAxis = columnNode.children
 
   def asCSV:String = convertUsing(Utils.csvConverter)
   def convertUsing(converter: GridConverter, decimalPlaces: DecimalPlaces = PivotFormatter.DefaultDecimalPlaces) =
     converter.convert(toFlatRows(Totals.Null, decimalPlaces, true))
 
   def cell(measure: AnyRef, filters: (Field, AnyRef)*): Any = {
-    def filter(name: String, value: AnyRef, index: Int)(input: Map[(List[AxisValue], List[AxisValue]), MeasureCell]) =
+    /*def filter(name: String, value: AnyRef, index: Int)(input: Map[(List[ChildKey], List[ChildKey]), MeasureCell]) =
       input.filter { case ((rows, cols_), tableCell) => {
         val axisValue = rows(index)
         val field = axisValue.field
@@ -54,7 +57,8 @@ case class PivotTable(rowFields:List[Field], rowFieldHeadingCount:Array[Int], ro
 
     val matches = aggregatedMainBucket.applyAll(filterFns : _*)
 
-    matches.iterator.next._2
+    matches.iterator.next._2*/
+    throw new Exception("rewite this method")
   }
 
   def toFlatRows(totals: Totals, decimalPlaces: DecimalPlaces = PivotFormatter.DefaultDecimalPlaces, trimBlank: Boolean = false):
@@ -118,7 +122,7 @@ case class PivotTable(rowFields:List[Field], rowFieldHeadingCount:Array[Int], ro
 
 object PivotTable {
   def singleCellPivotTable(text:String) = {
-    val bucket = Map( (List(AxisValue.Null), List(AxisValue.Null)) -> MeasureCell(Some(text), EditableCellState.Normal))
-    PivotTable(List(), Array(), List(AxisNode(AxisValue.Null, List())), List(AxisNode(AxisValue.Null, List())), Map(), TreeDetails(Map(), Map()), None, FormatInfo.Blank, bucket)
+    val bucket = Map( (List(AxisValue.Null.childKey), List(AxisValue.Null.childKey)) -> MeasureCell(Some(text), EditableCellState.Normal))
+    PivotTable(List(), Array(), AxisNode.Null, AxisNode.Null, Map(), TreeDetails(Map(), Map()), None, FormatInfo.Blank, bucket)
   }
 }

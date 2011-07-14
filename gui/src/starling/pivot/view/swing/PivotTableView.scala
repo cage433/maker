@@ -28,9 +28,9 @@ import org.jdesktop.animation.timing.{TimingTargetAdapter, Animator}
 
 object PivotTableView {
   def createWithLayer(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSize:Dimension,
-                      configPanels:Option[ConfigPanels], extraFormatInfo:ExtraFormatInfo, embedded:Boolean = true) = {
+                      configPanels:Option[ConfigPanels], extraFormatInfo:ExtraFormatInfo, edits:PivotEdits, embedded:Boolean = true) = {
     val viewUI = new PivotTableViewUI
-    val view = new PivotTableView(data, otherLayoutInfo, browserSize, configPanels, extraFormatInfo, embedded, viewUI)
+    val view = new PivotTableView(data, otherLayoutInfo, browserSize, configPanels, extraFormatInfo, embedded, viewUI, edits)
     val layer = new SXLayerScala(view, viewUI)
     layer
   }
@@ -42,8 +42,7 @@ case class FieldsChangedEvent(pivotFieldState:PivotFieldsState) extends Event
 case class TableDoubleClickEvent(filterFields:Seq[(Field,Selection)] , drillDownFields:Seq[(Field,Selection)], controlDown:Boolean) extends Event
 case class FullScreenSelectedEvent(data:String) extends Event
 case class ShowErrorsEvent(errors:Set[StackTrace]) extends Event
-case class AddPivotEditEvents(edits:Set[PivotEdit]) extends Event
-case class RemovePivotEditEvents(editsToRemove:Set[PivotEdit]) extends Event
+case class PivotEditsUpdatedEvent(edits:PivotEdits) extends Event
 case object SavePivotEdits extends Event
 case class FieldPanelEvent(collapse:Boolean) extends Event
 case class CollapsedStateUpdated(rowCollapsedState:Option[CollapsedState]=None, columnCollapsedState:Option[CollapsedState]=None) extends Event
@@ -57,7 +56,8 @@ object TableType extends Enumeration {
 import starling.pivot.view.swing.TableType._
 
 class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSize0:Dimension,
-                     configPanels:Option[ConfigPanels], extraFormatInfo:ExtraFormatInfo, embedded:Boolean, viewUI:PivotTableViewUI)
+                     configPanels:Option[ConfigPanels], extraFormatInfo:ExtraFormatInfo, embedded:Boolean,
+                     viewUI:PivotTableViewUI, edits:PivotEdits)
         extends MigPanel("insets 0, gap 0") {
   private var browserSize = browserSize0
   private val model = new starling.pivot.model.PivotTableModel(data)
@@ -499,19 +499,8 @@ class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSiz
 
   private val tableModelsHelper = new PivotJTableModelHelper(mainData, data.pivotTable.editableInfo,
     rowHeaderData, colHeaderData, colUOMs, resizeColumnHeaderAndMainTableColumns, resizeRowHeaderTableColumns,
-    data.pivotFieldsState, extraFormatInfo, (edits) => {publish(AddPivotEditEvents(edits))},
-    (edits) => {publish(RemovePivotEditEvents(edits))})
+    data.pivotFieldsState, extraFormatInfo, edits, (edits0) => {publish(PivotEditsUpdatedEvent(edits0))})
 
-  def edits = tableModelsHelper.pivotEdits
-  def resetEdits = {
-    val (fullSelCells, mainSelCells, rowHeaderSelCells) = (fullTable.getSelectedCells, mainTable.getSelectedCells, rowHeaderTable.getSelectedCells)
-    tableModelsHelper.resetEdits
-    tableModelsHelper.resizeColumnHeaderAndMainTableColumns(fullTable, mainTable, colHeaderTable, columnHeaderScrollPane, columnHeaderScrollPanePanel, mainTableScrollPane)
-    tableModelsHelper.resizeRowHeaderColumns(fullTable, rowHeaderTable, rowComponent, data.pivotTable.rowFieldHeadingCount, sizerPanel, rowHeaderTableScrollPane)
-    fullTable.setSelectedCells(fullSelCells)
-    mainTable.setSelectedCells(mainSelCells)
-    rowHeaderTable.setSelectedCells(rowHeaderSelCells)
-  }
   def extraFormatInfoUpdated(extraFormatInfo:ExtraFormatInfo) {
     val newConverter = viewConverter.copy(extraFormatInfo = extraFormatInfo)
     val (newRowData,newColumnData,newMainTableCells,_) = newConverter.allTableCellsAndUOMs
@@ -576,9 +565,9 @@ class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSiz
   private val rowHeaderTable = new PivotJTable(tableModelsHelper.rowHeaderTableModel, this, model, indents)
   private val colHeaderTable = new PivotJTable(tableModelsHelper.colHeaderTableModel, this, model, indents)
   private val allTables = List(fullTable, mainTable, rowHeaderTable, colHeaderTable)
-  mainTable.addFocusListener(new FocusAdapter {override def focusGained(e:FocusEvent) = {lastTableToHaveFocus = mainTable}})
-  colHeaderTable.addFocusListener(new FocusAdapter {override def focusGained(e:FocusEvent) = {lastTableToHaveFocus = colHeaderTable}})
-  rowHeaderTable.addFocusListener(new FocusAdapter {override def focusGained(e:FocusEvent) = {lastTableToHaveFocus = rowHeaderTable}})
+  mainTable.addFocusListener(new FocusAdapter {override def focusGained(e:FocusEvent) {lastTableToHaveFocus = mainTable}})
+  colHeaderTable.addFocusListener(new FocusAdapter {override def focusGained(e:FocusEvent) {lastTableToHaveFocus = colHeaderTable}})
+  rowHeaderTable.addFocusListener(new FocusAdapter {override def focusGained(e:FocusEvent) {lastTableToHaveFocus = rowHeaderTable}})
 
   private var ignoreSelectionEvents = false
 
@@ -911,12 +900,12 @@ class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSiz
   }
 
   def reverse() {
+    tableModelsHelper.reverse
     hideDropTargets()
     allDropTargets.foreach(_.reset())
     if (toolbarPanel.visible) reverseToolBarState()
     configPanels.foreach(_.revert())
     reportSpecificPanels.foreach(_.resetButton)
-    tableModelsHelper.resetEdits
   }
 
   def selection = if (otherLayoutInfo.frozen) {

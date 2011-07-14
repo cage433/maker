@@ -21,9 +21,12 @@ object TreePanel {
   val CheckBoxWidth = new CheckBox("") {
     border = CheckBoxBorder
   }.preferredSize.width
+
+  def apply(initialValuesAndSelection:(TreePivotFilter, Selection),
+                     showOther:Boolean=false, transforms:Option[FilterWithOtherTransform]=None) = new TreePanel(initialValuesAndSelection, showOther, transforms)
 }
 
-case class TreePanel(initialValuesAndSelection:(TreePivotFilter, Selection),
+class TreePanel(initialValuesAndSelection:(TreePivotFilter, Selection),
                      showOther:Boolean=false, transforms:Option[FilterWithOtherTransform]=None)
         extends MigPanel("insets 0", "[fill]", "[p]2lp[fill]2lp[p]") {
   val filterPanel = new TreePanelFilterPanel

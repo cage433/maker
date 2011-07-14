@@ -10,7 +10,7 @@ import starling.pivot.view.swing.{StripedPanel, FixedImagePanel, MigPanel}
 import javax.swing.{KeyStroke, JComponent}
 import java.awt.event.KeyEvent
 import swing.{Action, Label}
-import starling.pivot.{PivotEdit, PivotFieldParams}
+import starling.pivot.{PivotEdits, PivotFieldParams}
 
 /**
  * The reference data pages for viewing markets, calendars etc.
@@ -71,7 +71,7 @@ case class ReferenceDataPage(table:ReferenceDataLabel, pivotPageState : PivotPag
   } else {
     StarlingIcons.im("/icons/16x16_calendar_day.png")
   }
-  def selfPage(pivotPageStateX: PivotPageState, edits:Set[PivotEdit]) = copy(pivotPageState=pivotPageStateX)
+  def selfPage(pivotPageStateX: PivotPageState, edits:PivotEdits) = copy(pivotPageState=pivotPageStateX)
   def dataRequest(pageBuildingContext: PageBuildingContext) = {
     pageBuildingContext.starlingServer.referencePivot(table, pivotPageState.pivotFieldParams)
   }

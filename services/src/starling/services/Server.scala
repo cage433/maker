@@ -312,7 +312,6 @@ class StarlingInit( val props: Props,
   val excelLoopReceiver = new ExcelLoopReceiver(ldapUserLookup, props.XLLoopPort(),
     new MarketDataHandler(broadcaster, starlingServer, marketDataStore),
     new TradeHandler(broadcaster, new ExcelTradeReader(strategyDB, traders), intradayTradesDB, traders),
-    new SpecialSitsHandler(userReportsService, marketDataStore, mailSender),
     new ReportHandler(userReportsService),
     new DiagnosticHandler(starlingServer))
 

@@ -132,6 +132,8 @@ object GuiUtils {
 
   val EditedCellColour = new Color(79, 174, 232)
   val BlendedEditedCellColour = TableSelectedColour.blend(EditedCellColour, BlendFraction)
+  val TaintedCellColour = new Color(160, 218, 255)
+  val BlendedTaintedCellColour = TableSelectedColour.blend(TaintedCellColour, BlendFraction)
   val AddedCellColour = new Color(163, 225, 121)
   val BlendedAddedCellColour = TableSelectedColour.blend(AddedCellColour, BlendFraction)    
   val ErrorCellColour = new Color(244, 121, 124)

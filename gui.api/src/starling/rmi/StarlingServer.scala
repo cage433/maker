@@ -46,7 +46,7 @@ trait StarlingServer {
 
   def curvePivot(curveLabel: CurveLabel, pivotFieldParams:PivotFieldParams): PivotData
   def readAllMarketData(marketDataIdentifier:MarketDataPageIdentifier, marketDataType:Option[MarketDataTypeLabel], pivotFieldParams:PivotFieldParams):PivotData
-  def saveMarketData(marketDataIdentifier:MarketDataPageIdentifier, marketDataTypeLabel:Option[MarketDataTypeLabel], pivotEdits:Set[PivotEdit]):Boolean
+  def saveMarketData(marketDataIdentifier:MarketDataPageIdentifier, marketDataTypeLabel:Option[MarketDataTypeLabel], pivotEdits:PivotEdits):Boolean
 
   def version:Version
   def deskCloses: Map[Desk, Map[Day, List[TradeTimestamp]]]

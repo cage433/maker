@@ -29,13 +29,13 @@ case class MarketDataPage(
   override def layoutType = Some("MarketData")
   override def icon = StarlingIcons.im("/icons/16x16_market_data.png")
 
-  def selfPage(pivotPageState: PivotPageState, edits:Set[PivotEdit]) = new MarketDataPage(marketDataIdentifier, MarketDataPageState(pivotPageState, pageState.marketDataType, edits))
+  def selfPage(pivotPageState: PivotPageState, edits:PivotEdits) = new MarketDataPage(marketDataIdentifier, MarketDataPageState(pivotPageState, pageState.marketDataType, edits))
 
   def dataRequest(pageBuildingContext: PageBuildingContext) = {
     pageBuildingContext.cachingStarlingServer.readAllMarketData(marketDataIdentifier, pageState.marketDataType, pageState.pivotPageState.pivotFieldParams)
   }
 
-  override def save(starlingServer:StarlingServer, edits:Set[PivotEdit]) = {
+  override def save(starlingServer:StarlingServer, edits:PivotEdits) = {
     starlingServer.saveMarketData(marketDataIdentifier, pageState.marketDataType, edits)
   }
 
@@ -463,6 +463,6 @@ class MarketDataPageComponent(
 case class MarketDataPageState(
         pivotPageState : PivotPageState = PivotPageState(false, PivotFieldParams(true, None)),
         marketDataType : Option[MarketDataTypeLabel] = None,
-        edits          : Set[PivotEdit] = Set.empty)
+        edits          : PivotEdits = PivotEdits.Null)
 
 case class MarketDataPagePageData(marketDataTypeLabels:List[MarketDataTypeLabel], selection:Option[MarketDataTypeLabel]) extends PageData
