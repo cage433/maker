@@ -2,7 +2,6 @@ package starling.services.excel
 
 import java.lang.String
 import org.boris.xlloop.reflect.XLFunction
-import starling.daterange._
 import starling.db._
 import collection.immutable.TreeMap
 import starling.marketdata._
@@ -18,6 +17,7 @@ import starling.curves.{USDFXRateCurveKey, SpreadStdDevSurfaceData, SpreadStdDev
 import starling.utils.{Log, Broadcaster}
 import starling.pivot.MarketValue
 import org.boris.xlloop.reflect.XLFunction._
+import starling.daterange._
 
 class MarketDataHandler(broadcaster : Broadcaster,
                    starlingServer : StarlingServerImpl,
@@ -370,20 +370,23 @@ class MarketDataHandler(broadcaster : Broadcaster,
     val standardDeviations = _standardDeviations.tail.zipWithIndex.filterNot{case (_, i) => missingRows.contains(i)}.map(_._1)
 
     val observationPoint = ObservationPoint.parse(observationDate)
-    val market = (ExcelInstrumentReader.marketOption(marketName) match {
-      case Some(m) => m
-      case None => Market.fromName(marketName)
-    }) match {
-      case f: FuturesMarket => f
-      case m => throw new Exception("Needs to be a futures market: " + m)
+    val (market, spreadMarket) = ExcelInstrumentReader.marketOption(marketName) match {
+      case Some(m: FuturesSpreadMarket) => (m, true)
+      case Some(m: FuturesMarket) => (m, false)
+      case None => throw new Exception("Invalid market: " + marketName)
     }
 
-    val spreads: Array[Spread[Month]] = periods.map {
-      case Day(d) => {
+    val parsedPeriods: Array[Period] = periods.map {
+      case Day(d) if !spreadMarket => {
         val month = d.containingMonth
-        new Spread(month, month.next)
+        new SpreadPeriod(month, month.next)
       }
-      case SpreadParse(s) => s.asInstanceOf[Spread[Month]]
+      case Day(d) if spreadMarket => {
+        DateRangePeriod(d.containingMonth)
+      }
+      case SpreadParse(s) => {
+        s: SpreadPeriod
+      }
       case "null" => throw new Exception("Range includes empty cells")
     }
     val atmIndex = headers.indexOf("atm")
@@ -401,12 +404,12 @@ class MarketDataHandler(broadcaster : Broadcaster,
     }
 
     val key = SpreadStdDevSurfaceDataKey(market)
-    val data = SpreadStdDevSurfaceData(spreads, atm, call, put, market.priceUOM)
+    val data = SpreadStdDevSurfaceData(parsedPeriods, atm, call, put, market.priceUOM)
     val result = marketDataStore.save(MarketDataSet.excel(label), TimedMarketDataKey(observationPoint, key), data)
 
     val sds: Array[Array[Double]] = Array(Array(0.5, 0, 1)) ++ standardDeviations.map(_.map(_.asInstanceOf[Double]))
 
-    broadcaster.broadcast(UploadStandardDeviationsUpdate(User.currentlyLoggedOn, label, observationPoint.day, spreads, marketName, sds))
+    broadcaster.broadcast(UploadStandardDeviationsUpdate(User.currentlyLoggedOn, label, observationPoint.day, parsedPeriods, marketName, sds))
 
     "OK:" + result
   }

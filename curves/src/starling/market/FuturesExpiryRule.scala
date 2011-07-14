@@ -3,7 +3,7 @@ package starling.market
 import starling.calendar.{BusinessCalendar, BusinessCalendars}
 import starling.utils.{StarlingEnum, Log}
 import starling.utils.ImplicitConversions._
-import starling.daterange.{Spread, DateRange, Month, Day}
+import starling.daterange._
 
 trait FuturesExpiryRule {
   val name: String
@@ -21,12 +21,17 @@ trait FuturesExpiryRule {
   /**
    * Expiry day for Futures Spead Option.
    */
-  def spreadOptionExpiryDay(d: DateRange): Day = throw new Exception("No spread option expiry rule for " + this)
+  def commoditySpreadOptionExpiryDay(d: DateRange): Day = throw new Exception("No spread option expiry rule for " + this)
 
   /**
    * Expiry day for Calendar Spead Option.
    */
   def csoExpiryDay(s: Spread[_ <: DateRange]): Day = throw new Exception("No cso expiry rule for " + this)
+
+  def spreadOptionExpiry(period: Period) = period match {
+    case SpreadPeriod(a, b) => csoExpiryDay(Spread(a, b))
+    case DateRangePeriod(dr) => commoditySpreadOptionExpiryDay(dr)
+  }
 
   /**
    * Expiry day for Asian Option.
@@ -120,7 +125,7 @@ abstract class FuturesExpiryRules(businessCalendars: BusinessCalendars) {
     def expiryDayOfMonth(m: Month) = throw new Exception("No expiry rule data")
 
     // http://www.cmegroup.com/trading/energy/crude-oil/wti-brent-crude-oil-spread-options_contract_specifications.html
-    override def spreadOptionExpiryDay(d: DateRange) = lastTradingDay(d)
+    override def commoditySpreadOptionExpiryDay(d: DateRange) = lastTradingDay(d)
     
     // http://www.cmegroup.com/rulebook/NYMEX/6/693.pdf
     def lastTradingDayOfMonth(m: Month) = Market.ICE_WTI.expiryRule.lastTradingDay(m).previousBusinessDay(businessCalendars.ICE)

@@ -17,6 +17,8 @@ class TestMarketLookup extends MarketLookup {
           val index = header(name.toLowerCase)
           entries(index).trim
         }
+
+        override def toString = line
       }
     }
   }

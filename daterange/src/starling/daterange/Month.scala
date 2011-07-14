@@ -33,7 +33,7 @@ case class Month(y : Int, m : Int) extends DateRange {
   }
 
   @transient override lazy val firstDay : Day = Day(y, m, 1)
-  @transient override lazy val lastDay : Day = next.firstDay - 1 
+  @transient override lazy val lastDay : Day = next.firstDay - 1
 
   private def readResolve() : Object = Month(y, m)
 

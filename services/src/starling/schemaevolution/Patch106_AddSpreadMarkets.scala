@@ -25,8 +25,22 @@ class Patch106_AddSpreadMarkets extends Patch {
         writer.update("markets", Map("type" -> "FormulaIndex/FuturesSpreadMarket", "lotSize" -> Some(lotSize).toString, "tenor" -> "Month"), ("name" eql newName))
 
         if(newName == ICE_WTI_BRENT._2) {
-          writer.update("markets", Map("expiryRule" -> "Some(\"WTI-Brent Crude Oil Spread Expiry\")"), ("name" eql newName))
+          writer.update("markets", Map("expiryRule" -> "Some(WTI-Brent Crude Oil Spread Expiry)"), ("name" eql newName))
         }
+      }
+    }
+
+    writer.queryForUpdate("select * from marketdata where marketDAtaType = '<starling.curves.SpreadStdDevSurfaceDataType_-/>'") {
+      rs => {
+        val old = rs.getString("data")
+        val newS = old
+          .replaceAll("<starling.daterange.Spread>", "<starling.daterange.SpreadPeriod>")
+          .replaceAll("""<bitmap_\-0>0</bitmap_\-0>""", "")
+          .replaceAll("</starling.daterange.Spread>", "</starling.daterange.SpreadPeriod>")
+          .replaceAll("first class", "front class")
+          .replaceAll("/first", "/front")
+          .replaceAll("/last", "/back")
+        rs.update(Map("data" -> newS))
       }
     }
   }

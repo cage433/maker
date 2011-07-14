@@ -20,7 +20,7 @@ abstract class SpreadOption(
                          strike: Quantity,
                          volume: Quantity,
                          callPut: CallOrPut
-                         ) extends Tradeable with MultiLeg {
+                         ) extends Tradeable {
   def isLive(dayAndTime: DayAndTime) = dayAndTime < expiryDay.get.endOfDay
 
   def tradeableDetails = Map("Market" -> market, "Period" -> period, "Strike" -> strike, "Quantity" -> volume, "CallPut" -> callPut)
@@ -29,7 +29,7 @@ abstract class SpreadOption(
 abstract class SingleSpreadOption(
                                market: Market with KnownExpiry,
                                exerciseDay: Day,
-                               period: Period,
+                               val period: Period,
                                strike: Quantity,
                                volume: Quantity,
                                callPut: CallOrPut
@@ -51,11 +51,7 @@ abstract class SingleSpreadOption(
 
   def daysForPositionReport(marketDay: DayAndTime): Seq[Day] = List(exerciseDay)
 
-  override def priceAndVolKeys(marketDay: DayAndTime) : (Set[EnvironmentDifferentiable with PriceKey], Set[EnvironmentDifferentiable with VolKey])
-
   override def riskMarketExtra = String.format("%6.2f%n ", new java.lang.Double(strike.value)) + callPut.toShortString
-
-  override def interpolatedVol(env: Environment, volKey: EnvironmentDifferentiable with VolKey): Quantity
 
   def price(env: Environment): Quantity
 }

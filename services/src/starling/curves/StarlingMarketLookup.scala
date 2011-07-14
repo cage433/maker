@@ -28,13 +28,30 @@ class StarlingMarketLookup(db: DB, businessCalendars: BusinessCalendars, expiryR
     assert(loading.compareAndSet(false, true), "Already loading/loaded")
     Log.infoWithTime("Loading markets ") {
       val parser = new MarketParser(businessCalendars, expiryRules)
-      val lines = db.queryWithResult((select("*") from ("Markets") orderBy ("forwardMarket" asc))) {
+      val maps = db.queryWithResult((select("*") from ("Markets") orderBy ("forwardMarket" asc))) {
         rs => {
           val map = rs.asMap.map {
             case (name, entry) => name.toLowerCase -> (if (entry == null) "" else entry.toString.trim)
           }
+          map
+        }
+      }
+      val lines = maps.map {
+        map =>
           new MarketParser.Line {
             def get(name: String) = map(name.toLowerCase)
+
+            override def toString = map.toString
+          }
+      } sortWith {
+        case (a, b) => {
+          val aID = a.getFromOption[Int]("eaiQuoteID")
+          val bID = b.getFromOption[Int]("eaiQuoteID")
+          (aID, bID) match {
+            case (None, None) => false
+            case (None, _) => false
+            case (_, None) => true
+            case (Some(x), Some(y)) => x < y
           }
         }
       }

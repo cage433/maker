@@ -79,8 +79,8 @@ class CalendarSpreadOptionTests  extends JonTestEnv with TestNGSuite{
     val T = exerciseDay.endOfDay.timeSince(md)
     val volume = 10.0(mkt.uom)
     val cso = new SingleCalendarSpreadOption(mkt, exerciseDay, june, july, K(mkt.priceUOM), volume, Put)
-    val gamma = cso.gamma(env, FuturesSpreadPrice(mkt, june, july), USD, List(FuturesSpreadPrice(mkt, june, july)), multiple = 1e-3).value
-    val delta = cso.firstOrderDerivative(env, FuturesSpreadPrice(mkt, june, july), USD, multiple = 1e-3).value
+    val gamma = cso.gamma(env, FuturesSpreadPrice(mkt, june / july), USD, List(FuturesSpreadPrice(mkt, june / july)), multiple = 1e-3).value
+    val delta = cso.firstOrderDerivative(env, FuturesSpreadPrice(mkt, june / july), USD, multiple = 1e-3).value
     val scaledVol = stdDev * sqrt(T)
     val spread = FJune - FJuly
     val d1 = (spread - K) / scaledVol

@@ -170,7 +170,7 @@ case class ExcelRow(row: Map[String, Any], traders: Traders) {
 
   def isSpreadMarket = marketAliases.get(marketStr) match {
     case Some(m: FuturesSpreadMarket) => true
-    case None => false
+    case _ => false
   }
 
   def futuresSpreadMarket: FuturesSpreadMarket = marketAliases(marketStr).asInstanceOf[FuturesSpreadMarket]
@@ -194,22 +194,17 @@ case class ExcelRow(row: Map[String, Any], traders: Traders) {
 
   def singleIndex = index.asInstanceOf[SingleIndex]
 
-  def lotSize = {
+  def lotSize: Double = {
     val name = marketStr
-    if (isSpreadMarket) {
-      futuresSpreadMarket.lotSize
-    } else {
-      val lots = (marketAliases.get(name), indexAliases.get(name)) match {
-        case (Some(market: CommodityMarket), None) => market.lotSize
-        case (None, Some(index: SingleIndex)) => index.lotSize
-        case (Some(market: CommodityMarket), Some(index: SingleIndex)) if market == index.market => market.lotSize
-        case _ => throw new Exception("Can't figure out lot size for: " + name)
-      }
-      lots match {
-
-        case Some(l) => l
-        case None => throw new Exception("Lot size not defined for: " + name)
-      }
+    val lots = (marketAliases.get(name), indexAliases.get(name)) match {
+      case (Some(market: CommodityMarket), None) => market.lotSize
+      case (None, Some(index: SingleIndex)) => index.lotSize
+      case (Some(market: CommodityMarket), Some(index: SingleIndex)) if market == index.market => market.lotSize
+      case _ => throw new Exception("Can't figure out lot size for: " + name)
+    }
+    lots match {
+      case Some(l) => l
+      case None => throw new Exception("Lot size not defined for: " + name)
     }
   }
 

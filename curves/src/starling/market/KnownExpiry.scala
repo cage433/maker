@@ -30,7 +30,7 @@ trait KnownExpiry {
    */
   def spreadOptionExpiry(delivery: DateRange): Day = {
     try {
-      expiryRule.spreadOptionExpiryDay(delivery)
+      expiryRule.commoditySpreadOptionExpiryDay(delivery)
     }
     catch {
       case e => throw new Exception("Failed to find spread option expiry with delivery " + delivery + " on " + this, e)

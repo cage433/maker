@@ -24,7 +24,7 @@ case class CalendarSpreadOption(
         strike: Quantity,
         volume: Quantity,
         callPut: CallOrPut
-        ) extends SpreadOption(market, period, strike, volume, callPut) {
+        ) extends SpreadOption(market, period, strike, volume, callPut) with MultiLeg {
   assert(!spreads.isEmpty, "Period is not a valid CSO period: " + period)
 
   override def expiryDay = Some(market.csoOptionExpiry(spreads.last))
@@ -82,7 +82,7 @@ case class SingleCalendarSpreadOption(
     } else {
       val exerciseDayEnv = env.forwardState(exerciseDay.endOfDay)
       val callPutSign = callPut match {case Call => 1.0; case Put => -1.0}
-      val spread = exerciseDayEnv.spreadPrice(market, firstMonth, secondMonth)
+      val spread = exerciseDayEnv.spreadPrice(market, period)
       callPut.payoff(spread, strike) match {
         case Some(p) => new FuturesCalendarSpread(market, firstMonth, secondMonth, strike, volume * callPutSign)
         case None => this
@@ -96,7 +96,7 @@ case class SingleCalendarSpreadOption(
 
   override def priceAndVolKeys(marketDay : DayAndTime) = {
     var (pk, vk) = super.priceAndVolKeys(marketDay)
-    pk = if (pk.isEmpty) pk else Set(FuturesSpreadPrice(market, firstMonth, secondMonth))
+    pk = if (pk.isEmpty) pk else Set(FuturesSpreadPrice(market, period))
     (pk, vk)
   }
 
@@ -105,7 +105,7 @@ case class SingleCalendarSpreadOption(
   override def atomicKeyCachingUTP : UTP = copy(strike = 1.0(market.priceUOM))
   override def interpolatedVol(env : Environment, volKey : EnvironmentDifferentiable with VolKey) : Quantity = {
     volKey match {
-      case SpreadAtmStdDevAtomicDatumKey(`market`, Spread(`firstMonth`, `secondMonth`), _) => env.spreadStdDev(market, Spread(firstMonth, secondMonth), exerciseDay, strike)
+      case SpreadAtmStdDevAtomicDatumKey(`market`, SpreadPeriod(`firstMonth`, `secondMonth`), _) => env.spreadStdDev(market, Spread(firstMonth, secondMonth), exerciseDay, strike)
       case _ => throw new Exception("Unexpected vol key " + volKey)
     }
   }
@@ -113,7 +113,7 @@ case class SingleCalendarSpreadOption(
   def price(env : Environment) = {
     val marketDay = env.marketDay.day
     val T = exerciseDay.endOfDay.timeSince(env.marketDay)
-    val S = env.spreadPrice(market, firstMonth, secondMonth)
+    val S = env.spreadPrice(market, period)
     val K = strike
     val discount = env.discount(valuationCCY, exerciseDay)
     if (T == 0){

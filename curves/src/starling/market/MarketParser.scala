@@ -14,8 +14,28 @@ class MarketParser(businessCalendars: BusinessCalendars, futuresExpiryRules: Fut
 
   def fromLines(lines: List[Line]): List[Either[Market, Index]] = {
     var all = List[Either[Market, Index]]()
+
+    def futuresMarketFromName(marketName: String) = all.findEnsureOnlyOne {
+      case Left(f: FuturesMarket) => f.name.equalsIgnoreCase(marketName)
+      case _ => false
+    } match {
+      case Some(f) => f.left.get.asInstanceOf[FuturesMarket]
+      case None => throw new Exception("No underlying futures market for " + marketName)
+    }
+
+    def futuresMarketFromID(quoteID: Int) = all.findEnsureOnlyOne {
+      case Left(f: FuturesMarket) => f.eaiQuoteID == Some(quoteID)
+      case Right(f: FuturesFrontPeriodIndex) => f.eaiQuoteID == Some(quoteID)
+      case _ => false
+    } match {
+      case Some(Left(f:FuturesMarket)) => f
+      case Some(Right(f:FuturesFrontPeriodIndex)) => f.market
+      case None => throw new Exception("No underlying futures market for " + quoteID)
+    }
+
+
     lines.map {
-      line => {
+      line => try { {
         val name = line.get("name")
         val eaiQuoteID = line.getFromOption[Int]("eaiQuoteID")
         val className = line.get("type")
@@ -88,13 +108,20 @@ class MarketParser(businessCalendars: BusinessCalendars, futuresExpiryRules: Fut
 
             val lotSize = line.getFromOption[Double]("lotSize")
             if (lotSize.isDefined) {
-              val expiryRule = line.getFromOption[String]("expiryRule") match {
-                case Some(ruleName) => futuresExpiryRules.fromName(ruleName)
-                case _ => None
-              }
               val tenor = TenorType.parseTenorName(line.get("tenor"))
 
-              val futuresSpread = FuturesSpreadMarket(name, uom, ccy, formula, lotSize.get, tenor, eaiQuoteID, expiryRule)
+              val MarketParser = """1\.0[ ]*\*[ ]*MKT\((\d+)\)[ ]*\-[ ]*1\.0[ ]*\*[ ]*MKT\((\d+)\)""".r
+              val MarketParser(mkt1, mkt2) = formula.formula
+              val market1 = futuresMarketFromID(mkt1.toInt)
+              val market2 = futuresMarketFromID(mkt2.toInt)
+
+              val (expiryRule, hasOptions) = line.getFromOption[String]("expiryRule") match {
+                case Some(ruleName) => (futuresExpiryRules.fromName(ruleName).get, true)
+                case _ => (FuturesSpreadMarket.defaultExpiryRule(market1, market2), false)
+              }
+
+              val futuresSpread = new FuturesSpreadMarket(name, uom, ccy, market1, market2, lotSize, tenor, eaiQuoteID,
+                expiryRule, FuturesSpreadMarket.NoExchangeMonthly, hasOptions)
 
               List(Left(futuresSpread), Right(index))
             } else {
@@ -105,17 +132,15 @@ class MarketParser(businessCalendars: BusinessCalendars, futuresExpiryRules: Fut
             val rollbeforedays = line.getInt("rollbefore")
             val promptness = line.getInt("promptness")
             val marketName = line.get("forwardMarket")
-            val market = all.findEnsureOnlyOne {
-              case Left(f: FuturesMarket) => f.name.equalsIgnoreCase(marketName);
-              case _ => false
-            } match {
-              case Some(f) => f.left.get.asInstanceOf[FuturesMarket]
-              case None => throw new Exception("No underlying futures market for " + marketName)
-            }
+            val market = futuresMarketFromName(marketName)
             List(Right(new FuturesFrontPeriodIndex(name, eaiQuoteID, market, rollbeforedays, promptness, precision)))
           }
         }
         all :::= entries
+      }
+      }
+      catch {
+        case e => throw new Exception("Failed while parsing: " + line, e)
       }
     }
     all

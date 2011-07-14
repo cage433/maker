@@ -4,62 +4,50 @@ import formula.Formula
 import starling.quantity.UOM
 import starling.utils.StarlingEnum
 import starling.calendar.BusinessCalendar
-import starling.daterange.{Day, DateRange, TenorType}
+import starling.daterange.ObservationTimeOfDay._
+import starling.market.FuturesSpreadMarket._
+import starling.daterange.{Location, Day, DateRange, TenorType}
 
 /**
  * Whatever the name the price is calculated by market1 - market2.
- * The formula is sanity checked to make sure it states the same thing.
  */
-case class FuturesSpreadMarket(name: String, uom: UOM, ccy: UOM,
-                               formula: Formula,
-                               lotSize: Double, tenor: TenorType,
+class FuturesSpreadMarket(name: String, uom: UOM, ccy: UOM,
+                               val market1: FuturesMarket,
+                               val market2: FuturesMarket,
+                               lotSize: Option[Double],
+                               tenor: TenorType,
                                eaiQuoteID: Option[Int],
-                               optionExpiryRule: Option[FuturesExpiryRule])
-  extends Market with KnownExpiry {
-
-  lazy val markets = formula.indexes.flatMap {
-    case i: FuturesFrontPeriodIndex if i.promptness == 1 => Some(i.market)
-    case _ => None
-  }.toList
-
-  lazy val (market1 :: market2 :: Nil) = {
-    import starling.quantity.UOM._
-    import starling.quantity.RichQuantity._
-
-    val (index1 :: index2 :: Nil) = formula.indexes.toList
-    
-    assert(formula.price(USD) {
-      case `index1` => 5.0(USD)
-      case `index2` => 2.0(USD)
-    } == 3.0(USD)) // just a sanity check to make sure the formula is market1 - market2
-
-    markets
-  }
+                               expiryRule: FuturesExpiryRule,
+                               exchange: FuturesExchange,
+                               hasOptions: Boolean
+                                )
+  extends FuturesMarket(name, lotSize, uom, ccy, null, eaiQuoteID, tenor, expiryRule, exchange, SpreadCommodity) {
 
   override def toString = name
 
-  lazy val hasOptions: Boolean = optionExpiryRule.isDefined
+  override val businessCalendar = new BusinessCalendar {
+    def location = Location.Unknown
 
-  lazy val businessCalendar = throw new Exception("No calendar for " + this)
-
-  lazy val expiryRule = optionExpiryRule match {
-    case Some(er) => er
-    case None => new FuturesExpiryRule {
-      def lastTradingDay(d: DateRange) = market1.lastTradingDay(d) max market2.lastTradingDay(d)
-
-      val name = "Spread Expiry Rule"
+    def isHoliday(day: Day) = {
+      market1.businessCalendar.isHoliday(day) && market2.businessCalendar.isHoliday(day)
     }
+
+    def name = name + " calendar"
   }
-
-  val uomName = uom.toString
-
-  def priceUOM = ccy / uom
-
-  def premiumSettlementDay(tradeDay: Day) = tradeDay.addBusinessDays(businessCalendar, 5)
 }
 
 object FuturesSpreadMarket {
   lazy val provider = MarketProvider.provider
+
+  def defaultExpiryRule(market1: FuturesMarket, market2: FuturesMarket) = new FuturesExpiryRule {
+    def lastTradingDay(d: DateRange) = market1.lastTradingDay(d) max market2.lastTradingDay(d)
+
+    val name = "Spread Expiry Rule"
+  }
+
+  val NoExchangeMonthly = FuturesExchange("NoExchange", MonthlyDelivery, Default)
+
+  val SpreadCommodity = new Commodity
 
   /**
    * Futures Commodity Spread Markets
@@ -72,9 +60,8 @@ object FuturesSpreadMarket {
   lazy val NYMEX_WTI_BRENT = futuresMarketFromName("NYMEX WTI vs IPE Brent")
 
   def futuresMarketFromName(marketName: String): FuturesSpreadMarket = futuresMarketFromNameOption(marketName).getOrElse(throw new Exception("No market with name: " + marketName))
+
   def futuresMarketFromNameOption(marketName: String): Option[FuturesSpreadMarket] = provider.futuresSpreadMarket(marketName)
 
   def futuresMarketFromQuoteID(id: Int): FuturesSpreadMarket = provider.futuresSpreadMarket(id).getOrElse(throw new Exception("No market: " + id))
-
-  lazy val all = List(RB_BRENT_CRACKS)
 }

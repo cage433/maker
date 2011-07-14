@@ -39,6 +39,7 @@ object ExcelInstrumentReader {
    */
   val marketAliases: Map[String, Market] = {
     import Market._
+    import FuturesSpreadMarket._
 
     def alias(aliases: (Market, String)*): Map[String, Market] = {
       aliases.toList.filter {
@@ -64,7 +65,13 @@ object ExcelInstrumentReader {
 
     alias(
       ICE_BRENT → "brent",
-      NYMEX_WTI → "wti"
+      NYMEX_WTI → "wti",
+      RB_CRACKS -> "rb cracks",
+      RB_BRENT_CRACKS -> "rb brent cracks",
+      RBHO -> "rbho",
+      GO_CRACKS -> "go cracks",
+      ICE_WTI_BRENT -> "wti brent",
+      NYMEX_WTI_BRENT -> "ny wti brent"
     )
   }
 

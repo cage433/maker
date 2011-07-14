@@ -417,12 +417,16 @@ object Server extends OutputPIDToFile {
     run(PropsHelper.defaultProps, args)
     ServerHelper.createRunningFile
   }
-  var server : StarlingInit = null
-  def run(props:Props, args: Array[String] = Array[String]()) {
-    server = new StarlingInit(props, true, true, true, startEAIAutoImportThread = props.ImportsBookClosesFromEAI(),
-      startRabbit = props.RabbitEnabled())
-    server.start
-    Log.info("Starling Server Launched")
+
+  var server: StarlingInit = null
+
+  def run(props: Props, args: Array[String] = Array[String]()) {
+    Log.infoWithTime("Launching starling server") {
+
+      server = new StarlingInit(props, true, true, true, startEAIAutoImportThread = props.ImportsBookClosesFromEAI(),
+        startRabbit = props.RabbitEnabled())
+      server.start
+    }
   }
 }
 

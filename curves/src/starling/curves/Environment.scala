@@ -112,7 +112,7 @@ case class Environment(
     }
   }
 
-  def spreadPrice(market : FuturesMarket, firstMonth : Month, secondMonth : Month) = instrumentLevelEnv.spreadPrice(market, firstMonth, secondMonth)
+  def spreadPrice(market: FuturesMarket, period: Period) = instrumentLevelEnv.spreadPrice(market, period: Period)
 
   /** Returns the futures/forward price for the given market and forward date
    */
@@ -269,8 +269,8 @@ case class Environment(
     instrumentLevelEnv.interpolatedVol(market, period, exerciseDay, strike, isIndexVol = false, None)
   }
 
-  def spreadStdDev(market: FuturesMarket, spread : Spread[Month], exerciseDay: Day, strike: Quantity) = {
-    instrumentLevelEnv.spreadStdDev(market, spread, exerciseDay, strike)
+  def spreadStdDev(market: FuturesMarket, period: Period, exerciseDay: Day, strike: Quantity) = {
+    instrumentLevelEnv.spreadStdDev(market, period, exerciseDay, strike)
   }
 
   /**
@@ -386,7 +386,7 @@ case class Environment(
     }))
   }
 
-  def shiftSpreadStdDevs(market: FuturesMarket, period: Spread[Month], dP: Quantity): Environment = {
+  def shiftSpreadStdDevs(market: FuturesMarket, period: Period, dP: Quantity): Environment = {
     applyAtomicShift(original => GenericPerturbedAtomicEnvironment("shiftStdDev" + (market, period, dP), original, {
       case key@SpreadAtmStdDevAtomicDatumKey(`market`, `period`, _) => {
         original.quantity(key) + dP
@@ -402,7 +402,7 @@ case class Environment(
     }))
   }
 
-  def shiftSpreadStdDevs(commodity: Commodity, period: Spread[Month], dP: Quantity): Environment = {
+  def shiftSpreadStdDevs(commodity: Commodity, period: Period, dP: Quantity): Environment = {
     applyAtomicShift(original => GenericPerturbedAtomicEnvironment("shiftStdDev" + (commodity, period, dP), original, {
       case key@SpreadAtmStdDevAtomicDatumKey(market, `period`, _) if market.commodity == commodity => {
         original.quantity(key) + dP
