@@ -133,10 +133,13 @@ class Starling(info : ProjectInfo) extends ParentProject(info) {
 
   class ScalaModelForStarling(info: ProjectInfo) extends DefaultProject(info) with ModelSourceGeneratingProject with ModelDependencies{
 
+    private buildUsingBinaryTooling = true
+
+    val toolingLauncher = if (buildUsingBinaryTooling == true) "../../../mdl/bindinggen.rb" else "/model/tooling/binding-generator/thubc.rb"
     private lazy val projectRoot = path(".").asFile.toString
     val parentPath = Path.fromFile(new java.io.File(projectRoot + "/../../../model/model/"))
 
-    override protected val generateModelMainSourceCmd = Some(new java.lang.ProcessBuilder("ruby", "../../../mdl/bindinggen.rb", "-o", modelMainScalaSourcePath.projectRelativePath, "-b", "../../../mdl/starling/bindings.rb", "../../../mdl/starling/model.rb") directory (new File(projectRoot)))
+    override protected val generateModelMainSourceCmd = Some(new java.lang.ProcessBuilder("ruby", toolingLauncher, "-o", modelMainScalaSourcePath.projectRelativePath, "-b", "../../../mdl/starling/bindings.rb", "../../../mdl/starling/model.rb") directory (new File(projectRoot)))
 
     lazy val rubyModelPathFinder = {
       (parentPath ** "*.rb")
