@@ -62,7 +62,7 @@ case class DefaultTitanServices(props: Props) extends TitanServices {
 case class FileMockedTitanServices() extends TitanServices {
    
   import com.trafigura.edm.trades.{PhysicalTrade => EDMPhysicalTrade}
-  import java.net.URL
+  import starling.services.rpc.logistics.FileUtils._
 
   val resourcePath = "/tests/valuationservice/testdata"
   val tradesFile = getClass.getResource(resourcePath + "/edmTrades.json")
@@ -97,8 +97,4 @@ case class FileMockedTitanServices() extends TitanServices {
   def updateTrade(trade : EDMPhysicalTrade) {
     tradeMap = tradeMap.updated(trade.oid, trade)
   }
-  
-  import scala.io.Source._
-  private def loadJsonValuesFromFileUrl(fileUrl : URL) : List[String] = fromURL(fileUrl).getLines.toList
-  private def loadJsonValuesFromFile(file : String) : List[String] = fromFile(file).getLines.toList
 }

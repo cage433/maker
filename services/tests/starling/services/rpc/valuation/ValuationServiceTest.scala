@@ -65,10 +65,12 @@ class ValuationServiceTest extends StarlingTest {
     val mockTitanTradeService = new DefaultTitanTradeService(mockTitanServices)
     val mockTitanTradeCache = new TitanTradeServiceBasedTradeCache(mockTitanTradeService)
     val mockTitanLogisticsServices = FileMockedTitanLogisticsServices()
-    val assignments = mockTitanLogisticsServices.service.getAllSalesAssignments()
     val mockRabbitEventServices = new MockRabbitEventServices()
 
-assignments.foreach(println)
+    val assignments = mockTitanLogisticsServices.assignmentService.service.getAllSalesAssignments()
+    println("assignments " + assignments.mkString(", "))
+//    val inventory = mockTitanLogisticsServices.inventoryService.service.getInventoryTreeByPurchaseQuotaId()
+//    println("inventory " + inventory.mkString(", "))
 
     val vs = new ValuationService(
       new MockEnvironmentProvider, mockTitanTradeCache, mockTitanServices, mockTitanLogisticsServices, mockRabbitEventServices)
