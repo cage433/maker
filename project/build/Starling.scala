@@ -133,7 +133,7 @@ class Starling(info : ProjectInfo) extends ParentProject(info) {
 
   class ScalaModelForStarling(info: ProjectInfo) extends DefaultProject(info) with ModelSourceGeneratingProject with ModelDependencies{
 
-    private buildUsingBinaryTooling = true
+    private val buildUsingBinaryTooling = true
 
     val toolingLauncher = if (buildUsingBinaryTooling == true) "../../../mdl/bindinggen.rb" else "/model/tooling/binding-generator/thubc.rb"
     private lazy val projectRoot = path(".").asFile.toString
@@ -165,6 +165,22 @@ class Starling(info : ProjectInfo) extends ParentProject(info) {
     override def compileAction = super.compileAction dependsOn(
       copyNonModelSourceTask
     )
+
+    def copyJars = {
+      import FileUtilities._
+      val logger = new ConsoleLogger()
+      val srcPath = Path.fromFile(new java.io.File(projectRoot + "/target/scala_2.9.0-1/scalamodel_2.9.0-1-1.0.jar"))
+      val destPath = Path.fromFile(new java.io.File(projectRoot + "/../starling.api/scala-model-jars/scala-model-with-persistence.jar"))
+      logger.info("copying target jar %s to %s".format(srcPath, destPath))
+      val r = copyFile(srcPath, destPath, logger)
+      logger.info("copied jar")
+      r
+    }
+    lazy val copyJarsTask = task {copyJars}
+    override def packageAction = copyJarsTask dependsOn {
+      super.packageAction
+ //     copyJarsTask
+    }
   }
 
   lazy val starlingProperties = {

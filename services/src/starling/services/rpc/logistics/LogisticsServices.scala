@@ -11,8 +11,9 @@ import org.codehaus.jettison.json.{JSONObject, JSONArray}
 import java.io.{BufferedWriter, FileWriter}
 import starling.services.StarlingInit
 import com.trafigura.edm.physicaltradespecs.EDMQuota
-import javax.management.remote.rmi._RMIConnection_Stub
 import com.trafigura.edm.trades.{Trade => EDMTrade, PhysicalTrade => EDMPhysicalTrade}
+import scala.util.control.Exception.catching
+
 
 /**
  * logistics service interface
@@ -111,32 +112,30 @@ case class LogisticsJsonMockDataGenerater(titanEdmTradeService : TitanEdmTradeSe
   val fileOutputPath = "/tmp"
   val trades : List[EDMPhysicalTrade] = {
     val trades : List[EDMTrade] = titanEdmTradeService.titanGetEdmTradesService.getAll().results.map(_.trade).filter(_ != null)
-  //  trades.foreach{t => println(t.getClass + ", " + t.tradeId)}
+    //trades.foreach{t => println(t.getClass + ", " + t.tradeId)}
     trades.map(_.asInstanceOf[EDMPhysicalTrade])
   }
   val purchaseQuotas : List[EDMQuota] = trades.filter(_.direction == "P").flatMap(t => t.quotas)
   purchaseQuotas.foreach(pq => println("pq = " + pq.detail.identifier))
 
-  def inventoryByPurchaseQuotaId(id : String) : Option[List[EDMInventoryItem]] = try {
-      Some(logisticsServices.inventoryService.service.getInventoryTreeByPurchaseQuotaId(id))
-    }
-    catch {
-      case ex : Exception => None
-    }
+  def inventoryByPurchaseQuotaId(id : String) =
+    catching(classOf[Exception]) either logisticsServices.inventoryService.service.getInventoryTreeByPurchaseQuotaId(id)
 
-    /*
-      val inventoryMap = purchaseQuotas.flatMap(q => {
-        val inv = inventoryByPurchaseQuotaId(q.detail.identifier)
-        inv.map(i => i.oid -> i)
-      }).toMap
-    */
+  /*
+    val inventoryMap = purchaseQuotas.flatMap(q => {
+      val inv = inventoryByPurchaseQuotaId(q.detail.identifier)
+      inv.map(i => i.oid -> i)
+    }).toMap
+  */
 
   val quotaIds = purchaseQuotas.map(q => NeptuneId(q.detail.identifier).identifier).filter(id => id != null)
   quotaIds.foreach(qid => println("purchase neptune quota id " + qid))
-  val inventory = quotaIds.map(id => inventoryByPurchaseQuotaId(id)).collect({ case Some(i) => i }).flatten
+  val inventory = quotaIds.map(id => inventoryByPurchaseQuotaId(id)).collect({ case Right(i) => i }).flatten
+  val inventoryLeaves = findLeaves(inventory)
+  println("Inventory, loaded %d inventory items and found %d leaves".format(inventory.size, inventoryLeaves.size))
 
   val inventoryFilePath = fileOutputPath + "/logisticsInventory.json"
-  writeJson(inventoryFilePath, inventory)
+  writeJson(inventoryFilePath, inventoryLeaves)
 
   case class NeptuneId(id : String) {
     def identifier : String = identifier(id)
@@ -148,6 +147,10 @@ case class LogisticsJsonMockDataGenerater(titanEdmTradeService : TitanEdmTradeSe
       case null => null
     }
   }
+
+  // temporary work around to find leaves of the logistics inventory tree
+  def findLeaves(inventory : List[EDMInventoryItem]) : List[EDMInventoryItem] =
+    inventory.filter(item => !inventory.exists(i => i.parentId == Some(item.oid)))
 }
 
 object LogisticServices {
