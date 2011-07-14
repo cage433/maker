@@ -310,15 +310,17 @@ class PivotJTable(tableModel:PivotJTableModel, pivotTableView:PivotTableView, mo
 
           val deletableCells = selectedCells.filter{case (row0,col0) => {
             getValueAt(row0,col0) match {
-              case ac:AxisCell => ac.editable && ac.state != EditableCellState.Deleted
-              case tc:TableCell => tc.editable && tc.state != EditableCellState.Deleted
+              case ac:AxisCell => ac.editable && ac.state != EditableCellState.Deleted &&
+                      (if (ac.state == EditableCellState.Added) ac.label.nonEmpty && (row0 < getRowCount-1) else true)
+              case tc:TableCell => tc.editable && tc.state != EditableCellState.Deleted &&
+                      (if (tc.state == EditableCellState.Added) tc.text.nonEmpty && (row0 < getRowCount-1) else true)
             }
           }}
 
           val resetableCells = selectedCells.filter{case (row0,col0) => {
             getValueAt(row0,col0) match {
-              case ac:AxisCell => (ac.state != EditableCellState.Normal) && (if (ac.state == EditableCellState.Added) ac.label.nonEmpty else true)
-              case tc:TableCell => (tc.state != EditableCellState.Normal) && (if (tc.state == EditableCellState.Added) tc.text.nonEmpty else true)
+              case ac:AxisCell => (ac.state != EditableCellState.Normal && ac.state != EditableCellState.Added)
+              case tc:TableCell => (tc.state != EditableCellState.Normal && tc.state != EditableCellState.Added)
             }
           }}
 

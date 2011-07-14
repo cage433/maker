@@ -32,7 +32,7 @@ object AxisNode {
         val tc = tableCell(v)
         (tc.text, (if (tc.textPosition == CenterTextPosition) LeftTextPosition else tc.textPosition))
       }
-      case t:AggregateAxisValueType => {
+      case t:CellTypeSpecifiedAxisValueType => {
         val tc = tableCell(t)
         (tc.text, (if (tc.textPosition == CenterTextPosition) LeftTextPosition else tc.textPosition))
       }
@@ -97,8 +97,8 @@ case class ServerAxisNode(axisValue:AxisValue, children:Map[ChildKey,Map[AxisVal
           case v:ValueAxisValueType if map.size > 1 && v.cellType == EditableCellState.Edited => {
             v.pivotEdits.edits.keySet.toList match {
               case editFilter :: Nil => {
-                val originalValue = ValueAxisValueType(v.originalValue.get)
-                val newValue = ValueAxisValueType(v.value)
+                val originalValue = CellTypeSpecifiedAxisValueType(EditableCellState.Tainted, v.originalValue.get, v.pivotEdits)
+                val newValue = CellTypeSpecifiedAxisValueType(EditableCellState.Tainted, v.value, v.pivotEdits)
                 List(
                   node.copy(axisValue=node.axisValue.copy(value = originalValue)),
                   node.copy(axisValue=node.axisValue.copy(value = newValue))
@@ -121,7 +121,10 @@ case class ServerAxisNode(axisValue:AxisValue, children:Map[ChildKey,Map[AxisVal
             case one :: Nil => one
             case _ => EditableCellState.Tainted
           }
-          axisValues.head.copy(value=AggregateAxisValueType(cellType, axisValues.head.value.value))
+
+          val editsToUse = axisValues.foldLeft(PivotEdits.Null)((edits,pv) => edits.addEdits(pv.pivotEdits))
+
+          axisValues.head.copy(value=CellTypeSpecifiedAxisValueType(cellType, axisValues.head.value.value, editsToUse))
         } else {
           axisValues.head
         }

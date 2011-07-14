@@ -76,7 +76,7 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
   val rowHeaderTableModel = new PivotJTableModel {
     private val addedRows0 = new ListBuffer[Array[AxisCell]]
     private val blankCells = rowHeaderData0(0).map(av => {
-      val newAV = av.value.copy(value = AddedAxisValueType)
+      val newAV = av.value.copy(value = BlankAddedAxisValueType)
       av.copy(value = newAV, label = "", collapsible = None)
     }).toList
     if (extraLine) {
@@ -129,9 +129,16 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
     def deleteCells(cells:List[(Int,Int)]) {
       var edits = pivotEdits
       cells.foreach{case (r,c) => {
-        val value = getValueAt(r, c)
-        edits = edits.withDelete(KeyFilter(key(r, c)), value.value.field)
-        overrideMap((r,c)) = OverrideDetails(value.label, Deleted)
+        if (r < rowHeaderData0.length) {
+          val value = getValueAt(r, c)
+          if (value.state != EditableCellState.Added) {
+            edits = edits.withDelete(KeyFilter(key(r, c)), value.value.field)
+            overrideMap((r,c)) = OverrideDetails(value.label, Deleted)
+          } else {
+            val rowIndex = value.value.childKey.value.asInstanceOf[NewRowValue].rowIndex
+            edits = edits.withNewAmended(rowIndex, value.value.field, None)
+          }
+        }
       }}
       if (edits != pivotEdits) {
         updateEdits(edits)
@@ -171,7 +178,7 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
         }
       } else {
         newValue.foreach { nv =>
-          updateEdits(pivotEdits.addRow(editableInfo.get.editableKeyFields.keySet, rowHeaderField, nv))
+          updateEdits(pivotEdits.withAddedRow(editableInfo.get.editableKeyFields.keySet, rowHeaderField, nv))
         }
       }
     }
@@ -258,7 +265,16 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
       pivotTableView.collapseOrExpandCol(path)
     }
     def deleteCells(cells:List[(Int,Int)]) {}
-    def resetCells(cells:List[(Int,Int)]) {}
+    def resetCells(cells:List[(Int,Int)]) {
+      var edits = pivotEdits
+      cells.map{case (r,c) => {
+        val editsForCell = getValueAt(r,c).value.pivotEdits
+        edits = edits.remove(editsForCell)
+      }}
+      if (edits != pivotEdits) {
+        updateEdits(edits)
+      }
+    }
     def acceptableValues(r:Int, c:Int) = Set.empty
     def textTyped(textField:JTextField, cellEditor:CellEditor, r:Int, c:Int, focusOwner:Option[AWTComp], tableFrom:AWTComp) {}
     def finishedEditing() {popupMenu setVisible false}
@@ -325,11 +341,19 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
     def deleteCells(cells:List[(Int,Int)]) {
       var edits = pivotEdits
       cells.foreach{case (r,c) => {
-        colHeaderData0.find(_(c).value.isMeasure).foreach(arr => {
-          val measureInfo = arr(c)
-          edits = edits.withAmend(KeyFilter(key(r, c, measureInfo)), measureInfo.value.field, None)
-        })
-        overrideMap((r,c)) = OverrideDetails(getValueAt(r,c).text, Deleted)
+        if (r < rowHeaderData0.length) {
+          val value = getValueAt(r, c)
+          colHeaderData0.find(_(c).value.isMeasure).foreach(arr => {
+            val measureInfo = arr(c)
+            if (value.state != EditableCellState.Added) {
+              edits = edits.withAmend(KeyFilter(key(r, c, measureInfo)), measureInfo.value.field, None)
+            } else {
+              val rowCellForCheck = rowHeaderData0(r)(0)
+              val rowIndex = rowCellForCheck.value.childKey.value.asInstanceOf[NewRowValue].rowIndex
+              edits = edits.withNewAmended(rowIndex, measureInfo.value.field, None)
+            }
+          })
+        }
       }}
       if (edits != pivotEdits) {
         updateEdits(edits)
@@ -395,7 +419,7 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
           if (currentCell.value == NoValue) {
             newValue.foreach(nv => {
               val row = key(rowIndex, columnIndex, measureInfo).mapValues(_.values.head) + (measureInfo.value.field -> nv)
-              updateEdits(pivotEdits.addRow(row))
+              updateEdits(pivotEdits.withAddedRow(row))
             })
           } else {
             val rowCellForCheck = rowHeaderData0(rowIndex)(0)
@@ -407,7 +431,7 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
         }
       } else {
         newValue.foreach(nv => {
-          updateEdits(pivotEdits.addRow(editableInfo.get.editableKeyFields.keySet, measureInfo.value.field, nv))
+          updateEdits(pivotEdits.withAddedRow(editableInfo.get.editableKeyFields.keySet, measureInfo.value.field, nv))
         })
       }
     }

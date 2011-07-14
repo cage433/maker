@@ -2,13 +2,14 @@ package starling.pivot
 
 import controller.PivotTableConverter._
 import controller.{PivotTableConverter, PivotGrid, TreePivotFilterNode}
-import model.{NewRowValue, UndefinedValue, PivotTableModel}
+import model.{NoValue, NewRowValue, UndefinedValue, PivotTableModel}
 import starling.utils.ImplicitConversions._
 import starling.pivot.FilterWithOtherTransform.OtherValue
 import starling.pivot.EditableCellState._
 import collection.immutable.{Map, TreeMap}
 import collection.Set
 import org.mockito.internal.matchers.AnyVararg
+import collection.script.Start
 
 case class FieldDetailsGroup(name:String, fields:List[FieldDetails]) {
   def toFieldGroup = {
@@ -68,20 +69,23 @@ case class PivotEdits(edits:Map[KeyFilter,KeyEdits], newRows:List[Map[Field,Any]
   }
   def nonEmpty:Boolean = edits.nonEmpty || newRows.nonEmpty
   def isEmpty:Boolean = !nonEmpty
-  def ++(other:PivotEdits):PivotEdits = {
-    val merged = edits.map{ case (key,changes) => {
-      other.edits.get(key) match {
-        case None => key -> changes
-        case Some(d@DeleteKeyEdit(field)) => key -> d
-        case Some(AmendKeyEdit(amends)) => key -> {
-          changes match {
-            case DeleteKeyEdit(_) => throw new Exception("Can't edit after a delete")
-            case AmendKeyEdit(oldAmends) => AmendKeyEdit(oldAmends ++ amends)
-          }
-        }
+  def addEdits(other:PivotEdits):PivotEdits = {
+    val newEdits = edits ++ other.edits
+    val oneWay = edits.forall{case (k,v) => {
+      other.edits.get(k) match {
+        case None => true
+        case Some(v1) => v == v1
       }
-    } }
-    PivotEdits(merged, newRows ++ other.newRows)
+    }}
+    val otherWay = other.edits.forall{case (k,v) => {
+      edits.get(k) match {
+        case None => true
+        case Some(v1) => v == v1
+      }
+    }}
+    if (!(oneWay && otherWay)) throw new Exception("All edits must have the same values")
+
+    PivotEdits(newEdits, newRows ++ other.newRows)
   }
   def withDelete(deleteKeys:KeyFilter, field:Field) = {
     val newRowsWithDeleteApplied  = newRows.filterNot(r => deleteKeys.matches(r))
@@ -110,7 +114,12 @@ case class PivotEdits(edits:Map[KeyFilter,KeyEdits], newRows:List[Map[Field,Any]
     val fixedNewRows = newRows.zipWithIndex.map{ case (row,index) => {
       if (index == rowIndex) row.updated(field, value.getOrElse(UndefinedValue)) else row
     }}
-    copy(newRows = fixedNewRows)
+
+    val filteredFixedNewRows = fixedNewRows.filterNot(m => {
+      m.forall{case (_,v) => (v == UndefinedValue || v == NoValue)}
+    })
+
+    copy(newRows = filteredFixedNewRows)
   }
   def withAmend(amendKeys:KeyFilter, field:Field, value:Option[Any]) = {
     if (newRows.exists(r => amendKeys.matches(r))) {
@@ -134,12 +143,12 @@ case class PivotEdits(edits:Map[KeyFilter,KeyEdits], newRows:List[Map[Field,Any]
     }
   }
 
-  def addRow(keyFields:Set[Field], field:Field, value:Any):PivotEdits = {
+  def withAddedRow(keyFields:Set[Field], field:Field, value:Any):PivotEdits = {
     val row = (Map() ++ (keyFields.map(f => {f -> UndefinedValue}))) + (field -> value)
-    addRow(row)
+    withAddedRow(row)
   }
 
-  def addRow(row:Map[Field,Any]) = {
+  def withAddedRow(row:Map[Field,Any]) = {
     copy(newRows = newRows ::: List(row))
   }
 }

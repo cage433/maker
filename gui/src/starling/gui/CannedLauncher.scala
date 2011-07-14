@@ -293,11 +293,11 @@ class EditableSpecifiedCannedDataSource extends UnfilteredPivotTableDataSource {
       } else {
         None
       }
-    }).flatten
+    }).flatten ::: List(Map(Field("Trader") -> "alex", Field("Market") -> "Unused", Field("Volume") -> 15))
   }
 
   val marketFieldDetails = new FieldDetails("Market") {
-    override def parser = new CannedMarketPivotParser(markets.toSet)
+    override def parser = new CannedMarketPivotParser(markets.toSet + "Unused")
   }
 
   def fieldDetailsGroups = List(FieldDetailsGroup("Group 1", FieldDetails("Trader"), marketFieldDetails, new SumIntFieldDetails("Volume")))
@@ -329,7 +329,7 @@ class EditableSpecifiedCannedDataSource extends UnfilteredPivotTableDataSource {
 
             val addedRows = edits.newRows.zipWithIndex.map{case (row,index) => {
               Map() ++ fieldDetailsMap.keySet.map(f => {
-                f -> NewValue(row.get(f), index, PivotEdits.Null)
+                f -> NewValue(row.get(f), index, PivotEdits.Null.withAddedRow(row))
               })
             }}.toList
 

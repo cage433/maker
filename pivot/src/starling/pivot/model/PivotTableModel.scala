@@ -44,12 +44,11 @@ abstract class AxisValueType extends Serializable {
   def originalOrValue = originalValue.getOrElse(value)
 }
 
-case class AggregateAxisValueType(override val cellType:EditableCellState, value:Any) extends AxisValueType {
+case class CellTypeSpecifiedAxisValueType(override val cellType:EditableCellState, value:Any, override val pivotEdits:PivotEdits) extends AxisValueType {
   override def originalValue = None
-  override def pivotEdits = PivotEdits.Null //.toList.flatMap(_.pivotEdits).toSet
 }
 
-case object AddedAxisValueType extends AxisValueType {
+case object BlankAddedAxisValueType extends AxisValueType {
   def value = ""
   override def cellType:EditableCellState = Added
 }
@@ -256,12 +255,12 @@ trait NonEmptyDataFieldTotal extends DataFieldTotal {
   def addValue(v:PivotValue) = {
     val combinedValues = fieldDetails.combineValueOption(aggregateValue, v.value)
     val combinedOriginal = fieldDetails.combineValueOption(aggregateOriginal, v.originalValue)
-    CombinedDataFieldTotal(fieldDetails, combinedValues, combinedOriginal, edits ++ v.edits)
+    CombinedDataFieldTotal(fieldDetails, combinedValues, combinedOriginal, edits.addEdits(v.edits))
   }
   def addGroup(other:DataFieldTotal) = {
     val combinedValues = fieldDetails.combineOptions(aggregateValue, other.aggregateValue)
     val combinedOriginal = fieldDetails.combineOptions(aggregateOriginal, other.aggregateOriginal)
-    CombinedDataFieldTotal(fieldDetails, combinedValues, combinedOriginal, edits ++ other.edits)
+    CombinedDataFieldTotal(fieldDetails, combinedValues, combinedOriginal, edits.addEdits(other.edits))
   }
   def isAlmostZero = aggregateOriginal.isEmpty && (aggregateValue match {
     case None => true
