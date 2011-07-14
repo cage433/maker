@@ -15,6 +15,7 @@ import com.trafigura.shared.events.Event
 import com.trafigura.events.DemultiplexerClient
 import org.codehaus.jettison.json.JSONArray
 import starling.utils.Stoppable
+import java.util.concurrent.atomic.AtomicBoolean
 
 
 /**
@@ -23,6 +24,7 @@ import starling.utils.Stoppable
 trait RabbitEventServices extends Stoppable {
   val eventDemux : IDemultiplexEvents
   val rabbitEventPublisher : Publisher
+  def addClient(client:DemultiplexerClient)
 }
 
 case class DefaultRabbitEventServices(props : Props) extends RabbitEventServices {
@@ -86,12 +88,26 @@ case class DefaultRabbitEventServices(props : Props) extends RabbitEventServices
   // the demux for listener clients...
   lazy val eventDemux : EventDemultiplexer = ||> { new EventDemultiplexer(serviceName, rabbitListener)} { r => r.startup }
 
+  val clients = new scala.collection.mutable.ArrayBuffer[DemultiplexerClient]()
+
+  val started = new AtomicBoolean(false)
+
+  def addClient(client:DemultiplexerClient) {
+    clients.append(client)
+    if (started.get) {
+      eventDemux.addClient(client)
+    }
+  }
+
   def start {
+    started.set(true)
     rabbitListener.connect()
     rabbitEventPublisher.connect()
+    clients.foreach(client => eventDemux.addClient(client))
   }
 
   def stop {
+    started.set(false)
     eventDemux.shutdown
     rabbitListener.disconnect()
     rabbitEventPublisher.disconnect()
@@ -106,6 +122,7 @@ case class MockRabbitEventServices() extends RabbitEventServices {
   private val mockDemux = new MockEventDemux()
   val eventDemux : IDemultiplexEvents = mockDemux
   val rabbitEventPublisher = new MockRabbitPublisher(mockDemux)
+  def addClient(client:DemultiplexerClient)  {}
   def start {}
   def stop {}
 }

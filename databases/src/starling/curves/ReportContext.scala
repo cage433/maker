@@ -14,6 +14,5 @@ trait ReportContext {
   def marketDayAndTime:DayAndTime
   def environment:Environment
   def environmentFor(observationDay:ObservationDay):Environment
-  def observationDays(from:Day, to:Day):List[ObservationDay]
   def thetaDayAndTime:DayAndTime
 }
