@@ -8,7 +8,7 @@ import starling.utils.sql.AnObject
 import starling.daterange.Day
 import starling.db.{MarketDataSet, DBWriter}
 
-class Patch102_RenameMarketsToEAINames extends Patch {
+class Patch105_RenameMarketsToEAINames extends Patch {
   val names = Map("Baltic Capesize C7 Bolivar to Rotterdam" -> "Capesize C7 Bolivar to Rotterdam (Baltic)",
     "Baltic Capesize TC Avg" -> "Capesize T/C Average (Baltic)",
     "Baltic Panamax TC Avg" -> "Panamax T/C Average diff (Baltic)",

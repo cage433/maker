@@ -20,7 +20,7 @@ object BrentMonth {
 
   def parse(s: String): Option[BrentMonth] = {
     s match {
-      case Parse(name) => Month.months.findIndexOf(s => s == name) match {
+      case Parse(name) => Month.months.indexWhere(s => s == name) match {
         case i if i >= 0 => Some(new BrentMonth(i + 1))
         case _ => None
       }

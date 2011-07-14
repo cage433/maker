@@ -9,8 +9,7 @@ object HeterogeneousMap {
   def empty[K[_]] = new HeterogeneousMap[K]
 }
 
-@serializable
-class HeterogeneousMap[K[_]] {
+class HeterogeneousMap[K[_]] extends Serializable {
   val underlying = new HashMap[K[_], Any]
   
   /** Compute the number of key-to-value mappings.

@@ -48,6 +48,7 @@ class Props(props:Map[String,String]) extends PropsHelper(props) {
   object EdmExternalUrl extends StringProperty("http://" + ExternalHostname() + ":" + HttpEdmServicePort())
   object XLLoopUrl extends StringProperty(ExternalHostname() + ":" + XLLoopPort())
 
+  object RabbitEnabled extends BooleanProperty(true)
   object RabbitHost extends StringProperty("")
   def rabbitHostSet = RabbitHost() != ""
 
@@ -89,12 +90,21 @@ class Props(props:Map[String,String]) extends PropsHelper(props) {
     "1234142dfSdfS&%&^%£)"
    )
 
+  // Titan related configuration
   object ServiceInternalAdminUser extends StringProperty("refined.metalsadm") // admin user for service to service access (permission requirements here for service calls TBD)
-  object EdmTradeServiceLocation extends StringProperty("localhost:8080/tradeservice")
-  object RefDataServiceLocation extends StringProperty("localhost:8080/referencedata")
+  object EdmTradeServiceLocation extends StringProperty("http://localhost:8080/tradeservice")
+  object RefDataServiceLocation extends StringProperty("http://localhost:8080/referencedata")
+  object LogisticsServiceLocation extends StringProperty("http://localhost:8080/logistics")
 
-  object EdmTradeServiceUrl extends StringProperty("http://" + EdmTradeServiceLocation() + "/RPC")
-  object TacticalRefDataServiceUrl extends StringProperty("http://" + RefDataServiceLocation() + "/RPC")
+  private def RestEasyRpcMount = "/RPC"
+  object EdmTradeServiceUrl extends StringProperty(EdmTradeServiceLocation() + RestEasyRpcMount)
+  object TacticalRefDataServiceUrl extends StringProperty(RefDataServiceLocation() + RestEasyRpcMount)
+  object TitanLogisticsServiceUrl extends StringProperty(LogisticsServiceLocation() + RestEasyRpcMount)
+
+  // Titan Rabbit related configuration
+  object TitanRabbitBrokerHost  extends StringProperty("localhost")
+  object TitanRabbitUserName  extends StringProperty("trafiguraDev")
+  object TitanRabbitPassword  extends StringProperty("trafiguraDev")
 }
 
 object Props {

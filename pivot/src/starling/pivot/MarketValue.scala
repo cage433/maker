@@ -20,7 +20,7 @@ object MarketValue {
   def percentage(value: Double): MarketValue = percentage(APercentage(value))
 
   def fromString(value: String): MarketValue = value.trim match {
-    case APercentage.Regex(value)    => percentage(value.toDouble)
+    case APercentage.Regex(value)    => percentage(value.toDouble / 100.0)
     case AQuantity.Regex(value, uom) => quantity(AQuantity.fromString(value.replace(",", ""), UOM.fromString(uom)))
     case trimmed                     => quantity(AQuantity.fromString(value.replace(",", ""), UOM.SCALAR))
   }

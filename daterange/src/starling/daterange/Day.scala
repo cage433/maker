@@ -17,8 +17,7 @@ import starling.calendar.{BusinessCalendar}
  * Don't construct this yourself, use the Day(...) case constructor-like syntax which uses a
  * pre-allocated array of days to reduce GC load.
  */
-@serializable
-class Day private (@transient val year : Int, @transient val month : Int, @transient val dayNumber : Int) extends DateRange {
+class Day private (@transient val year : Int, @transient val month : Int, @transient val dayNumber : Int) extends DateRange with Serializable {
   import DayOfWeek._
   import TimeOfDay._
 
@@ -49,7 +48,7 @@ class Day private (@transient val year : Int, @transient val month : Int, @trans
     new java.sql.Date(calendar.getTimeInMillis)
   }
 
-  def toJodaLocalDate : LocalDate = {
+  implicit def toJodaLocalDate : LocalDate = {
     new LocalDate(this.year, this.month, this.dayNumber)
   }
 

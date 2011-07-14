@@ -26,26 +26,5 @@ class AppendingMapTests extends TestNGSuite {
     }
   }
 
-  @Test
-  def testPerformance{
-    var mutable = scala.collection.mutable.Map() ++ (1 to 100).toList.map{i => (i -> i * i)}
-    var immutable = scala.collection.immutable.Map() ++ (1 to 100).toList.map{i => (i -> i * i)}
 
-
-    val N = 1000000
-    Log.infoWithTime("no lock"){
-      for (i <- 0 to N){
-        val foo = mutable + (100 -> 50)
-      }
-    }
-    val lock = new Object()
-    Log.infoWithTime("locked"){
-      for (i <- 0 to N) {
-        lock.synchronized{
-          val foo = mutable + (100 -> 50)
-        }
-      }
-    }
-    Thread.sleep(1000)
-  }
 }

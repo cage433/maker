@@ -58,6 +58,14 @@ object StringIO {
     buffer.toString
   }
 
+  def readLinesFromFile(file: File) = readStringFromFile(file).split("\n").toList
+  def readJoinedLinesFromFile(file: File) = readLinesFromFile(file).map(_.trim).mkString("\n").replace("\\\n", "").split("\n").toList
+
+  def readJoinedLinesFromFileWithOriginal(file: File): List[(String, String)] = {
+    readLinesFromFile(file).map(_.replaceAll("\\s+$", "")).mkString("\n").replace("\\\n", "JOINLINES").split("\n")
+      .map(line => (line.replace("JOINLINES", ""), line.replace("JOINLINES", "\\\n"))).toList
+  }
+
   def readStringFromResource(resource : String) = {
     val buffer = new StringBuffer
     val asStream = getClass.getResourceAsStream(resource)
@@ -76,7 +84,7 @@ object StringIO {
     getClass.getResourceAsStream(resource)
   }
 
-  def url(resource: String) = {
+  def url(resource: String): URL = {
     getClass.getResource(resource)
   }
 

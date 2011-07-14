@@ -7,9 +7,9 @@ import starling.pivot._
 import starling.market.rules.{SwapPricingRule, NonCommonPricingRule, Precision}
 import starling.utils.{AppendingMap, Log, Stopwatch}
 import starling.daterange.{Day, DateRange, Month}
+import starling.market.{CommodityMarket, Index}
 import starling.utils.cache.CacheFactory
 import starling.market.formula.FormulaIndex
-import starling.market._
 
 object PricingScheduleFactory extends CurveType {
   def create(marketDataReader: MarketDataReader, envSpec: EnvironmentSpecification) = {
@@ -20,12 +20,14 @@ object PricingScheduleFactory extends CurveType {
 }
 
 class PricingSchedulePivotDataSource(context: EnvironmentWithDomain) extends UnfilteredPivotTableDataSource {
+  private val indexRuleEvaluationCache = CacheFactory.getCache("IndexRuleEvaluation")
+
   val payoffRule = FieldDetails("Payoff Rule")
   val swapRule = FieldDetails("Swap Rule")
   val rounding = FieldDetails("Rounding")
   val period = FieldDetails("Period")
   val day = FieldDetails("Day")
-  val indexField = FieldDetails("Index")
+  val market = FieldDetails("Market")
   val observedPeriod = FieldDetails("Observed Period")
   val price = FieldDetails("Price")
   val priceInRuleUOM = FieldDetails("Converted Price")
@@ -36,17 +38,21 @@ class PricingSchedulePivotDataSource(context: EnvironmentWithDomain) extends Unf
   val marketDay = context.environment.marketDay
   val startMonth = marketDay.day.startOfFinancialYear.containingMonth
 
+  val marketsWithForwardData = context.markets.map(_.market).toSet
+
   private val data = {
     val marketDay = context.environment.marketDay
 
     val indexes = Index.all.filter {
       case fi: FormulaIndex => fi.isValid
       case _ => true
+    }.filter {
+      Index.markets(_).forall(marketsWithForwardData.contains(_))
     }
 
     indexes.flatMap(index => {
-      index.indexes.flatMap {
-        index =>
+      Index.markets(index).flatMap {
+        commMarket =>
           precisions(Some(index)).flatMap {
             precision =>
               index.possiblePricingRules.flatMap {
@@ -63,8 +69,8 @@ class PricingSchedulePivotDataSource(context: EnvironmentWithDomain) extends Unf
                             new AppendingMap(Map("a" -> fields(
                               rounding -> precisionToString(precision),
                               swapRule -> pricingRule.name, payoffRule -> index.name, period -> month,
-                              day -> obDay, indexField -> index.name, forward -> isForward),
-                              "b" -> lazyMap(index, month, pricingRule, precision, context.environment, obDay, index)
+                              day -> obDay, market -> commMarket.name, forward -> isForward),
+                              "b" -> lazyMap(index, month, pricingRule, precision, context.environment, obDay, commMarket)
                             ))
                           }
                         }
@@ -84,7 +90,7 @@ class PricingSchedulePivotDataSource(context: EnvironmentWithDomain) extends Unf
   }).getOrElse(List(None))
 
   val fieldDetailsGroups = {
-    FieldDetailsGroup("Fields", payoffRule, swapRule, rounding, period, day, indexField, observedPeriod, price, priceInRuleUOM, forward, holiday, average) :: Nil
+    FieldDetailsGroup("Fields", payoffRule, swapRule, rounding, period, day, market, observedPeriod, price, priceInRuleUOM, forward, holiday, average) :: Nil
   }
 
   def monthsFor(index: Index) = {
@@ -110,7 +116,7 @@ class PricingSchedulePivotDataSource(context: EnvironmentWithDomain) extends Unf
     new PivotFieldsState(
       columns = ColumnTrees(
         List(ColumnTree(average.field, true),
-          ColumnTree(indexField.field, false, List(price, observedPeriod, holiday).map(f => ColumnTree(f.field, true)) : _*))),
+          ColumnTree(market.field, false, List(price, observedPeriod, holiday).map(f => ColumnTree(f.field, true)) : _*))),
       rowFields = List(period, day, forward).map(_.field),
       filters = List(
         payoffRule.field -> initialIndex.map(i => SomeSelection(Set(i.name))).getOrElse(AllSelection),
@@ -125,8 +131,6 @@ class PricingSchedulePivotDataSource(context: EnvironmentWithDomain) extends Unf
   def unfilteredData(pfs: PivotFieldsState): List[Map[Field, Any]] = {
     data
   }
-
-  val indexRuleEvaluationCache = CacheFactory.getCache("IndexRuleEvaluation")
 
   def lazyAverage(index: Index, period: DateRange, pricingRule: SwapPricingRule, rounding: Option[Int], environment: Environment) = {
     lazy val (rows, avg) = indexRuleEvaluationCache.memoize((index, period, pricingRule, rounding, context.environment), IndexRuleEvaluation.rows(index, period, pricingRule, rounding, context.environment))
@@ -147,16 +151,16 @@ class PricingSchedulePivotDataSource(context: EnvironmentWithDomain) extends Unf
   }
 
   def lazyMap(index: Index, period: DateRange, pricingRule: SwapPricingRule, rounding: Option[Int],
-              environment: Environment, obDay: Day, singleIndex: SingleIndex) = {
+              environment: Environment, obDay: Day, commMarket: CommodityMarket) = {
     lazy val (rows, avg) = indexRuleEvaluationCache.memoize((index, period, pricingRule, rounding, context.environment), IndexRuleEvaluation.rows(index, period, pricingRule, rounding, context.environment))
 
     new scala.collection.immutable.Map[Field, Any]() {
       lazy val map = {
-        val isHoliday = !singleIndex.isObservationDay(obDay)
-        rows.find(r => r.day == obDay && r.index == singleIndex) match {
+        val isHoliday = !commMarket.isObservationDay(obDay)
+        rows.find(r => r.day == obDay && r.market == commMarket) match {
           case Some(row) => {
             fields(
-              observedPeriod -> row.index.observedPeriod(row.day),
+              observedPeriod -> row.observed,
               price -> row.value,
               priceInRuleUOM -> row.valueInIndexUOM,
               holiday -> isHoliday

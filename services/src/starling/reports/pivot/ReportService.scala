@@ -92,18 +92,20 @@ class PivotReportRunner(reportContextBuilder:ReportContextBuilder) {
     SlideAttributes(c.name, Some(c.representativeMarket.standardShift.uom.toString), c.representativeMarket.standardShift.value.toString))
 
   val marketSlideAttributesForVol = Market.all.map(m => SlideAttributes(m.name, Some("%"), "1"))
+  val commoditySlideAttributesForVol = validCommodityMarketsToSlide.map(c => SlideAttributes(c.name, Some("%"), "1"))
   val futuresMarketSlideAttributes = Market.futuresMarkets.map(m => SlideAttributes(m.name, Some(m.standardShift.uom.toString), m.standardShift.value.toString))
   val marketText = "Market:"
   val priceSlideParameters = SlideParametersAvailable(Price.toString, Some(marketSlideAttributes), "3", "3", None, None, None, marketText)
   val priceCommoditySlideParameters = SlideParametersAvailable(PriceCommodity.toString, None, "3", "3", None, None, Some(commodityMarketSlideAttributes), "Commodity:")
   val stressCommoditySlideParameters = SlideParametersAvailable(StressCommodity.toString, None, "3", "3", None, None, Some(commodityMarketSlideAttributes), "Commodity:")
   val volsSlideParameters = SlideParametersAvailable(Vols.toString, Some(marketSlideAttributesForVol), "3", "3", Some("1"), Some("%"), None, marketText)
+  val volsCommoditySlideParameters = SlideParametersAvailable(VolsCommodity.toString, None, "3", "3", Some("1"), Some("%"), Some(commoditySlideAttributesForVol), marketText)
   val stdDevSlideParameters = SlideParametersAvailable(StdDev.toString, Some(futuresMarketSlideAttributes), "3", "3", Some("0.25"), None, None, marketText)
   // Spot fx
   val timeSlideParameters = SlideParametersAvailable(Time.toString, None, "3", "0", Some("1"), Some("Days"), None, "")
 
   // time doesn't work so I've removed it as an available slide. we'll have to fix it if someone asks for it.
-  val availableSlideParameters = List(priceSlideParameters, priceCommoditySlideParameters, stressCommoditySlideParameters, volsSlideParameters, stdDevSlideParameters/*, timeSlideParameters*/)
+  val availableSlideParameters = List(priceSlideParameters, priceCommoditySlideParameters, stressCommoditySlideParameters, volsSlideParameters, volsCommoditySlideParameters, stdDevSlideParameters/*, timeSlideParameters*/)
   val reportTypes: List[PivotReportType] = List(GreeksPivotReport, ThetaPivotReport, MtmPivotReport)
   val reportOptionsAvailable = ReportOptionsAvailable(reportTypes.map(_.label), availableSlideParameters)
 
@@ -162,6 +164,7 @@ class PivotReportRunner(reportContextBuilder:ReportContextBuilder) {
         List((reportContextBuilder.contextFromCurveIdentifier(curveIdentifier), SlideDetails.Null))
       }
       case List(environmentSliders) => {
+        environmentSliders.map(println)
         // 1D slide.
         environmentSliders.map(es =>
           (reportContextBuilder.contextFromCurveIdentifier(curveIdentifier, es), SlideDetails.createFromSliders(es)))
@@ -462,6 +465,7 @@ class ConvertedSlideParams(slideType: SlideType, market: Option[CommodityMarket]
     case PriceCommodity => PriceCommoditySlideParameters(commodity.get, Quantity(stepSize * stepNumber, uom.get), stepNumber)
     case StressCommodity => StressCommoditySlideParameters(commodity.get, Quantity(stepSize * stepNumber, uom.get), stepNumber)
     case Vols => VolsSlideParameters(market.get, Percentage(stepSize / 100.0 * stepNumber), stepNumber)
+    case VolsCommodity => VolsCommoditySlideParameters(commodity.get, Percentage(stepSize / 100.0 * stepNumber), stepNumber)
     case StdDev => {
       assert(market.get.isInstanceOf[FuturesMarket], market + " is not a futures market")
       StdDevSlideParameters(market.get.asInstanceOf[FuturesMarket], Quantity(stepSize * stepNumber, uom.get), stepNumber)
@@ -480,6 +484,7 @@ object ConvertedSlideParams {
       case PriceCommodity => Some(UOM.fromString(params.uom))
       case StressCommodity => Some(UOM.fromString(params.uom))
       case Vols => None
+      case VolsCommodity => None
       case StdDev => Some(UOM.fromString(params.uom))
       case Time => None
     }

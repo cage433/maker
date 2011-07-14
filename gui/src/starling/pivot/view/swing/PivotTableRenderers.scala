@@ -18,6 +18,7 @@ object MainTableCellRenderer {
   val PlusIcon = StarlingIcons.icon("/icons/10x10_add.png")
   val MinusIcon = StarlingIcons.icon("/icons/10x10_minus.png")
   val BlankIcon = StarlingIcons.icon("/icons/10x10_blank.png")
+  val ValidationIcon = StarlingIcons.icon("/icons/10x10_exclamation.png")
   val LeftIconWidth = PlusIcon.getIconWidth
   val RightIconWidth = ErrorIcon.getIconWidth
   val StandardFont = new Label().font
@@ -55,8 +56,12 @@ class MainTableCellRenderer(indentColumns:Array[Boolean], maxWidth:Int) extends 
           case CenterTextPosition => setHorizontalAlignment(SwingConstants.CENTER)
           case RightTextPosition => setHorizontalAlignment(SwingConstants.RIGHT)
         }
-        if (tableCell.isError) {
-          setIcon(MainTableCellRenderer.ErrorIcon)
+        if (tableCell.isError || tableCell.warning.isDefined) {
+          if (tableCell.isError) {
+            setIcon(MainTableCellRenderer.ErrorIcon)
+          } else {
+            setIcon(MainTableCellRenderer.ValidationIcon)
+          }
           setHorizontalTextPosition(SwingConstants.LEFT)
         } else {
           setIcon(null)

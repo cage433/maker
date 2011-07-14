@@ -66,7 +66,7 @@ trait PnlExplanation {
 
 
     // try to explain all the curve keys and the atomic datum keys for each curve key
-    diffsByCurveKey.flatMap {
+    diffsByCurveKey.flatMap(x => (x : @unchecked) match {
       case (primaryCurveKey::otherCurveKeys, diffsForThisCurveKey) =>
         val curveKeys = (primaryCurveKey::otherCurveKeys)
         // the curve key pnl explains pnl change at a high level. For example the change due to the
@@ -127,7 +127,7 @@ trait PnlExplanation {
           List(highLevelPnl)
         else
           envDiffsPnl
-      }.toList
+      }).toList
   }
 
   /**

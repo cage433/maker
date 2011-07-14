@@ -83,5 +83,5 @@ case class HttpParams(params: Map[String, Array[String]]) {
 
 object HttpParams {
   def apply(request: HttpServletRequest) =
-    new HttpParams(JavaConversions.asScalaMap(request.getParameterMap).toMap.asInstanceOf[Map[String, Array[String]]])
+    new HttpParams(JavaConversions.mapAsScalaMap(request.getParameterMap).toMap.asInstanceOf[Map[String, Array[String]]])
 }

@@ -6,6 +6,7 @@ import java.io.Serializable
 import starling.quantity._
 import starling.utils.ImplicitConversions._
 import starling.utils.ClosureUtil._
+import java.security.acl.Group
 
 class Field(val name: String) extends Serializable {
   override val hashCode = name.hashCode
@@ -145,9 +146,12 @@ object PivotFormatter {
         "E (" + pq.errors.size + ")"
       }
     } else {
-      (for ((uom, value) <- pq.values) yield {
+      val warning = pq.warning.isDefined
+      val l = pq.values.size - 1
+      (for (((uom, value), i) <- pq.values.zipWithIndex) yield {
         val format = formatInfo.decimalPlaces.format(uom)
-        value.format(format)  + (if (includeUOM) uom else "")
+        val space = if (warning && i == l) false else true
+        value.format(format, space)  + (if (includeUOM) uom else "")
       }).mkString(", ")
     }
   }
@@ -262,9 +266,21 @@ case class FieldDetails(field:Field) {
   def name = field.name
   def nullValue():Any = "n/a"
   def nullGroup():Any = Set()
+  def combineFirstGroup(value:Any):Any = combine(nullGroup(), value)
   def combine(group:Any,value:Any):Any = value match {
     case set:Set[_] => group.asInstanceOf[Set[Any]].union(set.asInstanceOf[Set[Any]])
     case _ => group.asInstanceOf[Set[Any]] + value
+  }
+  def combineValueOption(group:Option[Any], value:Option[Any]):Option[Any] = {
+    combineOptions(group, value.map(v=>combineFirstGroup(v)))
+  }
+  def combineOptions(myAggregate:Option[Any], otherAggregate:Option[Any]):Option[Any] = {
+    (myAggregate, otherAggregate) match {
+      case (Some(agg1), Some(agg2)) => Some(combineGroup(agg1, agg2))
+      case (Some(agg1), None) => Some(agg1)
+      case (None, Some(agg2)) => Some(agg2)
+      case (None, None) => None
+    }
   }
 
   def fixEditedValue(value:Any) = value
@@ -275,11 +291,11 @@ case class FieldDetails(field:Field) {
   def parser:PivotParser = TextPivotParser
   def formatter:PivotFormatter = DefaultPivotFormatter
   def value(a:Any):Any = try {
-    setToTableCell(a.asInstanceOf[Set[Any]])
+    setToValue(a.asInstanceOf[Set[Any]])
   } catch {
     case e => throw new Exception("Error looking up value for " + a, e)
   }
-  private def setToTableCell(set:Set[Any]) = {
+  private def setToValue(set:Set[Any]) = {
     if (set.size == 1) {
       val value = set.toList.head
       if (value == UndefinedValue) { //If we only have n/a just show blank
@@ -383,9 +399,9 @@ class AveragePivotQuantityFieldDetails(name:String) extends FieldDetails(Field(n
 }
 
 class PercentageLabelFieldDetails(name:String) extends FieldDetails(Field(name)) {
-  override def value(a:Any):Any = setToTableCell(a.asInstanceOf[Set[Any]])
+  override def value(a:Any):Any = setToValue(a.asInstanceOf[Set[Any]])
   override def formatter = PercentagePivotFormatter
-  private def setToTableCell(set:Set[Any]) = {
+  private def setToValue(set:Set[Any]) = {
     if (set.size == 1) {
       set.toList.head
     } else {
@@ -511,10 +527,10 @@ object PivotQuantitySetPivotFormatter extends PivotFormatter {
 }
 
 class PivotSpreadQuantityFieldDetails(name:String) extends FieldDetails(Field(name)) {
-  override def value(a:Any):Any = setToTableCell(a.asInstanceOf[Set[Any]])
+  override def value(a:Any):Any = setToValue(a.asInstanceOf[Set[Any]])
   override def formatter = PivotSpreadQuantityPivotFormatter
   override def nullValue = SpreadOrQuantity(Left(Quantity.NULL))
-  private def setToTableCell(set:Set[Any]) = {
+  private def setToValue(set:Set[Any]) = {
     if (set.size == 1) {
       set.toList.head match {
         case UndefinedValue => Set()
@@ -561,10 +577,10 @@ object PivotSpreadQuantityPivotFormatter extends PivotFormatter {
 }
 
 class QuantityLabelFieldDetails(name:String) extends FieldDetails(Field(name)) {
-  override def value(a:Any):Any = setToTableCell(a.asInstanceOf[Set[Any]])
+  override def value(a:Any):Any = setToValue(a.asInstanceOf[Set[Any]])
   override def formatter = QuantityLabelPivotFormatter
   override def nullValue() = Quantity.NULL
-  private def setToTableCell(set:Set[Any]) = {
+  private def setToValue(set:Set[Any]) = {
     if (set.size == 1) {
       set.toList.head
     } else {

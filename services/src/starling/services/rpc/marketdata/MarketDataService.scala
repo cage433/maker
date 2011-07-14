@@ -9,33 +9,26 @@ import starling.pivot.model.PivotTableModel
 import starling.utils.ImplicitConversions._
 import PriceFixingsHistoryDataType._
 import SpotFXDataType._
-import starling.daterange.{Tenor, Day}
 import starling.quantity.{Percentage, Quantity, UOM}
 
 import com.trafigura.services._
 import com.trafigura.services.marketdata.{MarketDataServiceApi, ReferenceInterestRate, ReferenceRateSource, Maturity}
-import starling.utils.{Double, Log}
+import starling.utils.Log
 import collection.immutable.List
+import starling.daterange.{DateRange, Tenor, Day}
+import starling.services.Server
 
-abstract class Matcher[A] {
-  def matches(value: A): Boolean
-}
 
-case class Match[A](pattern: A) extends Matcher[A] {
-  def matches(value: A) = pattern == value
-}
-
-case class Ignore[A] extends Matcher[A] {
-  def matches(value: A) = true
-}
+class MarketDataServiceStub extends MarketDataService(Server.server.marketDataStore)
 
 class MarketDataService(marketDataStore: MarketDataStore) extends MarketDataServiceApi  {
+  type Matcher[T] = T => Boolean
+
   implicit def enrichReferenceInterestRate(self: ReferenceInterestRate) = new {
     def matches(observationDate: Matcher[TitanSerializableDate], source: Matcher[ReferenceRateSource], maturity: Matcher[Maturity],
                 currency: Matcher[TitanSerializableCurrency], rate: Matcher[TitanSerializablePercentage])
 
-    = observationDate.matches(self.observationDate) && source.matches(self.source) && maturity.matches(self.maturity) &&
-      currency.matches(self.currency)
+    = observationDate(self.observationDate) && source(self.source) && maturity(self.maturity) && currency(self.currency)
   }
 
   def getSpotFXRate(observationDate: TitanSerializableDate, from: TitanSerializableCurrency, to: TitanSerializableCurrency)
@@ -61,40 +54,40 @@ class MarketDataService(marketDataStore: MarketDataStore) extends MarketDataServ
   //    .copy(columns = List(), rows = List(levelField, periodField))).toEDM
 
   def getReferenceInterestRate(observationDate: TitanSerializableDate, source: ReferenceRateSource, maturity: Maturity,
-                               currency: TitanSerializableCurrency) = {
+                               currency: TitanSerializableCurrency): ReferenceInterestRate = {
 
-    val results = getReferenceInterestRates(observationDate)
-
-    results.find(_.matches(Ignore[TitanSerializableDate], Match(source), Match(maturity), Match(currency), Ignore[TitanSerializablePercentage])).getOrElse(
-      throw new IllegalArgumentException(
-        "No Reference Interest Rate observed on %s with source: %s, maturity: %s, currency: %s" %
-          (observationDate, source, maturity, currency) +
-          (", valid sources: %s, maturities: %s, currencies: %s" %
-            (results.map(_.source.name).distinct, results.map(_.maturity).distinct, results.map(_.currency.name).distinct))))
+    getReferenceInterestRates(observationDate.toDateRange, source, maturity, currency)(0)
   }
 
-  def getReferenceInterestRates(observationDate: TitanSerializableDate): List[ReferenceInterestRate] = {
-    val response = getMarketData(fixingRequest.copyObservationDay(observationDate.fromSerializable)
-      .copy(rows = List(exchangeField, marketField, periodField)))
+  def getReferenceInterestRates(observationDates: TitanSerializableDateRange, source: ReferenceRateSource, maturity: Maturity,
+                                currency: TitanSerializableCurrency) = {
 
-    val rates = response.data.map(_.map(_.toString)).collect {
-      case List(exchange, TitanSerializableCurrency.Parse(currency), Tenor.Parse(tenor), Percentage.Parse(percentage)) =>
-        ReferenceInterestRate(observationDate, ReferenceRateSource(exchange.toString), tenor.toTitan, currency,
-          percentage.toSerializable)
+    val results = getReferenceInterestRates(observationDates).filter(_.matches(
+      ignore[TitanSerializableDate], eql(source), eql(maturity), eql(currency), ignore[TitanSerializablePercentage]))
+
+    if (results.isEmpty) throw new IllegalArgumentException(
+      "No Reference Interest Rate observed between %s with source: %s, maturity: %s, currency: %s" %
+        (observationDates, source, maturity, currency) +
+      ("\n\tvalid sources: %s\n\tmaturities: %s\n\tcurrencies: %s" %
+        (results.map(_.source.name).distinct, results.map(_.maturity).distinct, results.map(_.currency.name).distinct)))
+
+    results
+  }
+
+  def getReferenceInterestRates(observationDate: TitanSerializableDate) = getReferenceInterestRates(observationDate.toDateRange)
+
+  private def getReferenceInterestRates(observationDates: TitanSerializableDateRange): List[ReferenceInterestRate] = {
+    val response = getMarketData(fixingRequest.copyObservationDays(observationDates.fromSerializable)
+      .copy(rows = List(new FieldDetails("Observation Day"), exchangeField, marketField, periodField)))
+
+    response.data.map(_.map(_.toString)).collect {
+      case List(Day(date), exchange, TitanSerializableCurrency.Parse(currency), Tenor.Parse(tenor), Percentage.Parse(percentage)) =>
+        ReferenceInterestRate(date.toTitan, ReferenceRateSource(exchange.toString), tenor.toTitan, currency, percentage.toSerializable)
     }
-
-    if (rates.isEmpty) throw new IllegalArgumentException("No Reference Interest Rates observed on: " + observationDate.fromSerializable)
-
-    rates
   }
 
-  //  def latestLiborFixings() = getMarketData(fixingRequest.copyExchange("LIBOR", "IRS")
-  //    .copy(rows = List(levelField, periodField), columns = List(marketField)))
-  //
-  //  def latestECBFXFixings() = getMarketData(fixingRequest.copyExchange("ECB").copy(rows = List(marketField, periodField)))
-  //
-  //  def latestLMEFixings() = getMarketData(fixingRequest.copyExchange("LME").copy(rows = List(marketField, periodField),
-  //    columns = List(levelField, FieldDetails("Observation Time"))))
+  private def ignore[T] = (input: T) => true
+  private def eql[T](equalTo: T) = (input: T) => equalTo == input
 
   private def getSpotFXRate(from: UOM, to: UOM, observationDay: Day): Quantity = {
     val rates = getSpotFXRates(observationDay).toMapWithKeys(_.uom.denominatorUOM) + (UOM.USD → Quantity(1, UOM.SCALAR))
@@ -139,6 +132,7 @@ case class MarketDataRequestParameters(pricingGroup: PricingGroup, dataType: Mar
 
   def copyExchange(exchangeNames: String*) = addFilter(exchangeField.name, exchangeNames: _*)
   def copyObservationDay(day: Day) = addFilter("Observation Day", day.toString)
+  def copyObservationDays(dateRange: DateRange) = addFilter("Observation Day", dateRange.days.map(_.toString) : _*)
   def addFilter(name: String, values: String*) = copy(filters = filters + (name → values.toList))
 
   def pivotFieldsState(pivot: PivotTableDataSource) =

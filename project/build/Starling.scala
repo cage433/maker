@@ -1,20 +1,33 @@
 import sbt._
-import java.io.File
+import java.io.{File, FileInputStream}
+import java.util.{Properties => JProperties}
+
 
 class Starling(info : ProjectInfo) extends ParentProject(info) {
 
   def starlingProject(name : String, dependencies : Project*) = project(name, name, new StarlingProject(name, _), dependencies :_*)
   def swingStarlingProject(name : String, dependencies : Project*) = project(name, name, new SwingStarlingProject(name, _), dependencies :_*)
 
-  // Modules organised by layer
   lazy val bouncyrmi = swingStarlingProject("bouncyrmi")
   lazy val utils = starlingProject("utils")
+  lazy val scalaModelWithPersistence = project("titan-scala-model-with-persistence", "ScalaModel", new ScalaModelForStarling(_))
+
+  // API used to interact with starling, should have minimum number of dependencies
+  lazy val starlingApi = {
+    // until building the EDM source is fast, or the model is replaced entirely, the following hack
+    // is used to prevent non-FC2 builds from compiling the model - which takes a few minutes
+    val name = "starling.api"
+    if (starlingProperties.getOrElse("ServerType", "Dev") == "FC2")
+      project(name, name, {info : ProjectInfo => new StarlingProject(name, info)}, bouncyrmi, scalaModelWithPersistence)
+    else
+      project(name, name, new StarlingProject(name, _){override val unmanagedClasspath =
+        super.unmanagedClasspath +++ ("scala-model-jars" ** "*.jar")}, bouncyrmi)
+  }
 
   lazy val auth = starlingProject("auth", utils, bouncyrmi)
   lazy val concurrent = starlingProject("concurrent", utils)
   lazy val daterange = starlingProject("daterange", utils)
   lazy val quantity = starlingProject("quantity", utils)
-  lazy val starlingApi = starlingProject("starling.api", bouncyrmi)
 
   lazy val loopyxl = starlingProject("loopyxl", bouncyrmi, auth)
 
@@ -31,18 +44,16 @@ class Starling(info : ProjectInfo) extends ParentProject(info) {
 
   lazy val VaR = starlingProject("var", trade)
 
-  lazy val databases = starlingProject("databases", VaR, pivot, guiapi, concurrent, auth)
+  lazy val databases = starlingProject("databases", VaR, pivot, guiapi, concurrent, auth, starlingApi)
 
-  lazy val services = project("services", "services", new Services(_), databases, concurrent, utils, loopyxl, starlingApi)
+  lazy val services = project("services", "services", new Services(_), databases, concurrent, utils, loopyxl)
 
   lazy val devlauncher = starlingProject("dev.launcher", services, gui)
-
-//  lazy val webServices = project("starlingWebProject", "starlingWebProject", new DefaultWebProject(_), services)
 
   lazy val starling = this
 
   override def localScala = {
-    defineScala("2.8.1.final-local", new File("lib/scala/scala-2.8.1.final/")) :: Nil
+    defineScala("2.9.0-1.final-local", new File("lib/scala/scala-2.9.0.1.final/")) :: Nil
   }
 
   var parExec = false
@@ -56,7 +67,7 @@ class Starling(info : ProjectInfo) extends ParentProject(info) {
 
   class SwingStarlingProject(name : String, info : ProjectInfo) extends StarlingProject(name, info) {
     override def unmanagedClasspath =
-      super.unmanagedClasspath +++ Path.fromFile(new File("lib/scala/scala-2.8.1.final/lib/scala-swing.jar"))
+      super.unmanagedClasspath +++ Path.fromFile(new File("lib/scala/scala-2.9.0.1.final/lib/scala-swing.jar"))
   }
 
   class StarlingProject(name : String, info : ProjectInfo) extends DefaultProject(info) with com.gu.TeamCityTestReporting {
@@ -92,6 +103,16 @@ class Starling(info : ProjectInfo) extends ParentProject(info) {
       testClasspath +++ testCompilePath, 
       Array("-listener", "starling.utils.SBTTestListener", "-testclass", className)
     ) dependsOn(testCompile)
+
+    lazy val writeClasspathScript = task { 
+      // writes a shell script that sets the classpath so I can run from the command line, compile in Vim etc
+      import java.io._
+      val file = new PrintWriter(new FileOutputStream(new File("set-classpath.sh")))
+      file.println("export CLASSPATH=" + devlauncher.testClasspath.getFiles.toList.mkString(":"))
+      file.println("export JAVA_OPTS='-server -XX:MaxPermSize=1024m -Xss512k -Xmx6000m'")
+      file.close()
+      None
+    }
   }
 
   class Services(info : ProjectInfo) extends StarlingProject("services", info){
@@ -107,16 +128,58 @@ class Starling(info : ProjectInfo) extends ParentProject(info) {
       Array[String]()
     ) dependsOn(compile) }
 
-    lazy val writeClasspathScript = task { 
-      // writes a shell script that sets the classpath so I can run from the command line, compile in Vim etc
-      import java.io._
-      val file = new PrintWriter(new FileOutputStream(new File("set-classpath.sh")))
-      file.println("export CLASSPATH=" + services.testClasspath.getFiles.toList.mkString(":"))
-      file.println("export JAVA_OPTS='-server -XX:MaxPermSize=512m -Xss128k -Xmx6000m'")
-      file.close()
+
+  }
+
+  class ScalaModelForStarling(info: ProjectInfo) extends DefaultProject(info) with ModelSourceGeneratingProject with ModelDependencies{
+
+    private lazy val projectRoot = path(".").asFile.toString
+    val parentPath = Path.fromFile(new java.io.File(projectRoot + "/../../../model/model/"))
+
+    override protected val generateModelMainSourceCmd = Some(new java.lang.ProcessBuilder("ruby", "../../../mdl/bindinggen.rb", "-o", modelMainScalaSourcePath.projectRelativePath, "-b", "../../../mdl/starling/bindings.rb", "../../../mdl/starling/model.rb") directory (new File(projectRoot)))
+
+    lazy val rubyModelPathFinder = {
+      (parentPath ** "*.rb")
+    }
+
+    lazy val nonModelSourcePath = path("src")
+    def copyNonModelSource  = {
+      if (! (new java.io.File(projectRoot + "/src").exists)) {
+        import FileUtilities._
+        val originalSourcePath = Path.fromFile(new java.io.File(parentPath + "/scala-model-with-persistence/src/"))
+        copyDirectory(originalSourcePath, nonModelSourcePath, new ConsoleLogger)
+        val hibernateBean = new File (projectRoot + "/src/main/scala/com/trafigura/refinedmetals/persistence/CustomAnnotationSessionFactoryBean.scala")
+        //println("***** DEBUG ***** path " + hibernateBean.getAbsolutePath + ", " + hibernateBean.exists + ", " + hibernateBean.canWrite) 
+        if (hibernateBean.exists && hibernateBean.canWrite) hibernateBean.delete()
+      }
       None
     }
 
+    lazy val cleanNonModelSource = task {cleanPath(nonModelSourcePath)}
+    override def cleanAction = super.cleanAction dependsOn(cleanNonModelSource)
+
+    lazy val copyNonModelSourceTask = task {copyNonModelSource}
+    override def compileAction = super.compileAction dependsOn(
+      copyNonModelSourceTask
+    )
+  }
+
+  lazy val starlingProperties = {
+    val propsFile = new File("props.conf")
+    val p = new JProperties()
+    if(propsFile.exists) {
+      p.load(new FileInputStream(propsFile))
+    }
+    // Nastiness as SBT uses scala 2.7
+    val javaMap = p.asInstanceOf[java.util.Map[String,String]]
+    var result = Map[String, String]()
+    val iter = javaMap.keySet.iterator
+    while (iter.hasNext){
+      val k = iter.next
+      result = result + (k -> javaMap.get(k))
+    }
+    result
+    //Map() ++ JavaConversions.asScalaMap(p.asInstanceOf[java.util.Map[String,String]])
   }
 }
 

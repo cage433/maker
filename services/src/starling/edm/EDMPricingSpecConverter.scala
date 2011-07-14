@@ -18,7 +18,14 @@ import starling.quantity.Quantity
  */
 
 case class EDMPricingSpecConverter(metal : Metal, exchanges : Map[GUID, Market]) {
-  def indexFromMarket(exchangeGUID : GUID) : SingleIndex = RefinedTacticalRefDataConversions.guessAtIndex(exchanges(exchangeGUID), metal)
+  def indexFromMarket(exchangeGUID : GUID) : SingleIndex = {
+    if (!exchanges.contains(exchangeGUID)){
+      exchanges.keySet.foreach(println)
+      println(exchangeGUID)
+    }
+
+    RefinedTacticalRefDataConversions.guessAtIndex(exchanges(exchangeGUID), metal)
+  }
 
   def fromEdmPricingSpec(deliveryQuantity : Quantity, edmPricingSpec : EDMPricingSpec) : PricingSpec = {
     edmPricingSpec match {

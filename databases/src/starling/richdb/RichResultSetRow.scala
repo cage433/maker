@@ -48,7 +48,7 @@ object RichConversions {
         case (_, d : Day) => convertedMap +=  (key -> d.toSqlDate)
         case (_, d : DateRange) => convertedMap +=  (key -> d.toString)
         case (_, s : Spread[_]) => convertedMap +=  (key -> s.toString)
-        case _ => convertedMap ++= asScalaMap(fallBack(Map(key -> value)))
+        case _ => convertedMap ++= mapAsScalaMap(fallBack(Map(key -> value)))
       }
     }
     convertedMap

@@ -3,7 +3,7 @@ package starling.db
 import starling.utils.StarlingTest
 import org.springframework.jdbc.datasource.SingleConnectionDataSource
 import org.testng.Assert._
-import org.testng.annotations.{BeforeTest, Test}
+import org.testng.annotations.Test
 
 class TransactionTest extends DBTest {
 

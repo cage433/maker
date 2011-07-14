@@ -11,7 +11,7 @@ import starling.utils.StarlingObject
 
 object EditableCellState extends Enumeration {
   type EditableCellState = Value
-  val Normal, Edited, Error, Added, Deleted = Value
+  val Normal, Edited, Error, Added, Deleted, Tainted = Value
 }
 import EditableCellState._
 
@@ -20,11 +20,11 @@ import EditableCellState._
  */
 case class TableCell(value:Any, text:String, textPosition:TextPosition = CenterTextPosition, isError:Boolean = false,
                      totalState:TotalState = NotTotal, editable:Boolean = false, state:EditableCellState = Normal, longText:Option[String] = None,
-                     warning:Option[String]= None) {
+                     warning:Option[String]= None, edits:Set[PivotEdit]=Set.empty) {
   def this(value:Any) = this(value, value.toString)
 
   def asString = text
-  override def toString = text
+//  override def toString = text
   def doubleValue:Option[Double] = {
     value match {
       case pq:PivotQuantity => pq.doubleValue

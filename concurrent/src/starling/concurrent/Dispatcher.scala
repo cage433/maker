@@ -39,6 +39,7 @@ class Worker(name: String, dispatcher: MessageDispatcher) extends Actor {
 class ActorSupervisor {
 
   val ACTORS_COUNT = 200
+  val foo = Dispatchers
 
   val pool = Dispatchers.newExecutorBasedEventDrivenDispatcher("pooled-dispatcher")
     .withNewBoundedThreadPoolWithLinkedBlockingQueueWithUnboundedCapacity(10000)

@@ -30,7 +30,7 @@ object EnvironmentRule {
   private val lookup = (metalRules ::: defaultRules).toMapWithKeys(_.label) + EnvironmentRuleLabel.Default → Default
 
   val exchangeCloses = Map(SFS → SHFEClose, LME → LMEClose, COMEX → COMEXClose)
-  val marketCloses = exchangeCloses.extendKey((market: FuturesMarket) => market.exchange)
+  val marketCloses = exchangeCloses.composeKeys((market: FuturesMarket) => market.exchange)
   val metalsRulesLabels = metalRules.map(_.label)
   val defaultRulesLabels = defaultRules.map(_.label)
 

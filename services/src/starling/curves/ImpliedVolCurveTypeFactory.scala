@@ -38,7 +38,7 @@ class ImpliedVolPivotDataSource(context: EnvironmentWithDomain) extends Unfilter
   val volatility = FieldDetails("Volatility")
   val diff = FieldDetails("Difference")
 
-  val env = context.environment
+  val env = context.environment.undiscounted
   val marketDay = context.environment.marketDay
   val markets = context.marketVols.flatMap(_.market match {
     case k: CommodityMarket with KnownExpiry => Some(k)

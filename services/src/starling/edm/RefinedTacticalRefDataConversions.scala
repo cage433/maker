@@ -13,11 +13,11 @@ import java.lang.Exception
  * To change this template use File | Settings | File Templates.
  */
 
-object RefinedTacticalRefDataConversions {
+object  RefinedTacticalRefDataConversions {
 
   import Market._
 
-  val commodityNameToLMEMarket = Map(
+  lazy val commodityNameToLMEMarket = Map(
     "Nickel" -> LME_NICKEL,
     "Copper" -> LME_COPPER,
     "Steel" -> LME_STEEL_BILLETS,
@@ -29,18 +29,18 @@ object RefinedTacticalRefDataConversions {
     "Lead" -> LME_LEAD
   )
 
-  val commodityNameToSHFEMarket = Map(
+  lazy val commodityNameToSHFEMarket = Map(
     "Zinc" -> SHANGHAI_ZINC,
     "Steel" -> STEEL_REBAR_SHANGHAI,
     "Copper" -> SHANGHAI_COPPER,
     "Primary Aluminium" -> SHANGHAI_ALUMINUIUM
   )
 
-  val metalNameToCMXMarket = Map(
+  lazy val metalNameToCMXMarket = Map(
     "Copper" -> COMEX_HIGH_GRADE_COPPER
   )
 
-  val metalNameToWuxiMarket = Map(
+  lazy val metalNameToWuxiMarket = Map(
     "Nickel" -> EXBG_NICKEL
   )
 

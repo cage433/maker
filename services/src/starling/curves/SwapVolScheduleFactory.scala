@@ -35,7 +35,7 @@ class SwapVolSchedulePivotDataSource(context: EnvironmentWithDomain) extends Unf
   private val marketDay = context.environment.marketDay
   private val startMonth = marketDay.containingMonth
 
-  private val env = context.environment
+  private val env = context.environment.undiscounted
   private val markets = context.marketVols.flatMap(_.market match {
     case k: CommodityMarket => Some(k)
     case _ => None

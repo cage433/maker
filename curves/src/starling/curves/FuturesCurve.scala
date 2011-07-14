@@ -23,7 +23,7 @@ trait InterpolationMethod{
  */
 object LinearInterpolation extends InterpolationMethod{
   def interpolate(days : Array[Day], prices : Array[Double], day : Day) : Double = {
-  		val i_firstOnOrAfter = days.findIndexOf(_ >= day)
+  		val i_firstOnOrAfter = days.indexWhere(_ >= day)
 
   		val value = i_firstOnOrAfter match {
   		  case -1 => prices.last
@@ -52,7 +52,7 @@ object LinearInterpolation extends InterpolationMethod{
 object InverseConstantInterpolation extends InterpolationMethod{
   def interpolate(days : Array[Day], prices : Array[Double], day : Day) : Double = {
   		assert(prices.size > 0, "Can't interpolate without prices")
-  		val i_firstStrictlyAfter = days.findIndexOf(_ > day)
+  		val i_firstStrictlyAfter = days.indexWhere(_ > day)
 
   		i_firstStrictlyAfter match {
   		  case -1 => prices.last

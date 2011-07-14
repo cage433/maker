@@ -27,11 +27,13 @@ trait RichTraversable {
 
     def toMapWithKeys[K](keyF: A => K):                  Map[K, A]      = pair(keyF).swap.toMap
     def toMapWithSomeKeys[K](keyF: A => Option[K]):      Map[K, A]      = optPair(keyF).swap.toMap
+    def toMapWithManyKeys[K](keyF: A => List[K]):        Map[K, A]      = pairWithTraversable(keyF).swap.toMap
     def toMultiMapWithSomeKeys[K](keyF: A => Option[K]): Map[K, Set[A]] = optPair(keyF).swap.toMultiMap
     def toMapWithValues[V](valueF: A => V):              Map[A, V]      = pair(valueF).toMap
     def toMapWithSomeValues[V](valueF: A => Option[V]):  Map[A, V]      = optPair(valueF).toMap;
 
     def pair[B](f: A => B): Traversable[(A, B)] = traversable.map(_.pair(f))
+    def pairWithTraversable[B](f: A => Traversable[B]): Traversable[(A, B)] = traversable.flatMap(_.pairWithTraversable(f))
     def pair[B](b: B): Traversable[(A, B)] = traversable.map(_ → b)
     def optPair[B](f: A => Option[B]): Traversable[(A, B)] = traversable.flatMap(_.optPair(f))
 

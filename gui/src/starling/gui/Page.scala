@@ -60,6 +60,7 @@ trait PageContext {
   def submitYesNo[R](message:String, description:String, submitRequest:SubmitRequest[R], awaitRefresh:R=>Boolean, onComplete:R=>Unit, keepScreenLocked:Boolean = false)
   def clearCache()
   def setContent(content:Component, cancelAction:Option[()=> Unit])
+  def setErrorMessage(title:String, error:String)
   def clearContent()
   def setDefaultButton(button:Option[Button])
   def getDefaultButton:Option[Button]

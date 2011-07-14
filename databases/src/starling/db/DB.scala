@@ -154,7 +154,7 @@ object DBConvert {
         case s: SpreadQuantity => convertedMap += (key -> s.valueString, key + "UOM" -> s.uom.toString)
         case d: DateRange => convertedMap += (key -> d.toString)
         case c: java.lang.Character => convertedMap += (key -> c.toString)
-        case s: Iterable[_] => convertedMap += (key -> JavaConversions.asJavaList(ListBuffer() ++= convertValuesForIn(s).toList))
+        case s: Iterable[_] => convertedMap += (key -> JavaConversions.bufferAsJavaList(ListBuffer() ++= convertValuesForIn(s).toList))
         case d: java.util.Date => convertedMap += (key -> d)
         case b: java.lang.Boolean => convertedMap += (key -> b)
         case n: java.lang.Number => convertedMap += (key -> n)
