@@ -77,10 +77,17 @@ case class FileMockedTitanLogisticsAssignmentServices() extends TitanLogisticsAs
 case class FileMockedTitanLogisticsInventoryServices() extends TitanLogisticsInventoryServices {
   import FileUtils._
   // TODO: get canned mock data for inventory...
+
+  val inventoryFile = "/tests/valuationservice/testdata/logisticsEdmInventory.json"
+  val inventoryPath = getClass.getResource(inventoryFile)
+  val loadedInventory = loadJsonValuesFromFileUrl(inventoryPath).map(s => EDMInventoryItem.fromJson(new JSONObject(s)).asInstanceOf[EDMInventoryItem])
+  //val loadedInventory = (0 until jsonInventory.length()).map(idx => EDMInventoryItem.fromJson(jsonInventory.getJSONObject(idx)).asInstanceOf[EDMInventoryItem]).toList
+  println("Loaded inventory " + loadedInventory.mkString("\n"))
+  
   val assignmentsFile = "/tests/valuationservice/testdata/logisticsEdmPurchaseInventory.json"
   val jsonAssignments = new JSONArray(loadJsonValuesFromFileUrl(getFileUrl(assignmentsFile)).mkString)
   val loadedAssignments = (0 until jsonAssignments.length()).map(idx => EDMInventoryItem.fromJson(jsonAssignments.getJSONObject(idx)).asInstanceOf[EDMInventoryItem]).toList
-  println("Loaded inventory " + loadedAssignments.mkString("\n"))
+  println("Loaded assignments " + loadedAssignments.mkString("\n"))
 
   lazy val service : EdmInventoryService = new EdmInventoryService() {
     def getInventoryById(inventoryId : Int) : EDMInventoryItem = null
