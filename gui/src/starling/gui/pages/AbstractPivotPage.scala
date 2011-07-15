@@ -254,7 +254,9 @@ class PivotTablePageComponent(
           // Because of the order of clearing the screen, this has to be put at the back of the EDT.
           onEDT({
             if (b) {
-              pageContext.goTo(selfPage(pivotPageState, PivotEdits.Null))
+              val pageWithoutEdits = selfPage(pivotPageState, PivotEdits.Null)
+              println("Going to " + pageWithoutEdits)
+              pageContext.goTo(pageWithoutEdits)
             } else {
               pageContext.setErrorMessage("Error Saving Edits", "There was an error when saving the edits.\n\n" +
                       "Please contact a Starling developer")
