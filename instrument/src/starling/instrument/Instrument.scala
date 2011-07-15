@@ -40,6 +40,7 @@ object InstrumentType {
     SwapCalendarSpread,
     FuturesOption,
     CalendarSpreadOption,
+    CommoditySpreadOption,
     AsianOption,
     FXOption,
     ErrorInstrument,

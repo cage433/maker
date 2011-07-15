@@ -73,6 +73,8 @@ class RichResultSetRow(resultSet: ResultSet)
 
   def getFuturesMarketFromEAIQuoteID(column: String) = Market.futuresMarketFromQuoteID(getInt(column))
 
+  def getFuturesMarketFromEAIQuoteIDOption(column: String) = Market.futuresMarketFromQuoteIDOption(getInt(column))
+
   def getSingleIndexFromEAIQuoteID(column: String) = Index.singleIndexFromEAIQuoteID(getInt(column))
 
   def getIndexFromEAIQuoteID(column: String) = Index.indexFromEAIQuoteID(getInt(column))
