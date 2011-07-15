@@ -2,6 +2,8 @@ package starling.curves
 
 import starling.utils.Log
 import starling.market.PublishedIndex
+import starling.props.PropsHelper
+import starling.services.StarlingInit
 
 object EAIAndStarlingMarketCompare {
   /**
@@ -64,5 +66,16 @@ object EAIAndStarlingMarketCompare {
         }
       }
     }
+  }
+
+  def main(args: Array[String]) {
+    val props = PropsHelper.defaultProps
+    val init = StarlingInit.devInstance
+    init.start
+    val eai = new EAIMarketLookup(init.eaiSqlServerDB, init.expiryRules)
+    val starling = new StarlingMarketLookup(init.starlingDB, init.businessCalendars, init.expiryRules)
+    compare(eai, starling)
+    
+    init.stop
   }
 }

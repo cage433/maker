@@ -351,7 +351,8 @@ object Market {
   }
   
   def futuresMarketFromName(marketName: String): FuturesMarket = provider.futuresMarket(marketName).getOrElse(throw new Exception("No market: " + marketName))
-  def futuresMarketFromQuoteID(id: Int): FuturesMarket = provider.futuresMarket(id).getOrElse(throw new Exception("No market: " + id))
+  def futuresMarketFromQuoteID(id: Int): FuturesMarket = futuresMarketFromQuoteIDOption(id).getOrElse(throw new Exception("No market: " + id))
+  def futuresMarketFromQuoteIDOption(id: Int): Option[FuturesMarket] = provider.futuresMarket(id)
 
   private def fromNameEither(marketName : String) : Either[Failure, CommodityMarket] = {
     val nameWithoutIdentifier = new Regex(" - [0-9]*$").replaceFirstIn(marketName, "")
