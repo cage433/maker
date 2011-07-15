@@ -107,9 +107,9 @@ class BookmarkButton(currentBookmark: => Bookmark, context:PageContext) extends 
       text = "OK"
       reactions += {
         case ButtonClicked(e) => {
-          val bookmarkName = getText
+          val bookmarkName = getText.trim().toLowerCase
           if (bookmarkName.nonEmpty) {
-            val currentBookmarkNames = context.localCache.bookmarks.map(_.name.trim)
+            val currentBookmarkNames = context.localCache.bookmarks.map(_.name.trim.toLowerCase)
             if (!currentBookmarkNames.contains(bookmarkName)) {
               val bookmark = GuiStarlingXStream.write(currentBookmark)
               val bookmarkLabel = BookmarkLabel(bookmarkName, bookmark)

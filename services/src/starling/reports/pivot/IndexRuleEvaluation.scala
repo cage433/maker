@@ -16,7 +16,9 @@ import rules.SwapPricingRule
  */
 object IndexRuleEvaluation {
 
-  case class Row(day: Day, index : SingleIndex, value: PQ, valueInIndexUOM: PQ)
+  case class Row(day: Day, index : SingleIndex, value: PQ, valueInIndexUOM: PQ, observed: DateRange) {
+    def market = index.market
+  }
 
   def rows(index: Index, period: DateRange, pricingRule: SwapPricingRule, rounding: Option[Int], environment: Environment): (Iterable[Row], PQ) = {
     case class Entry(method: String, params: List[Object], result: Object, keysAndValues: Map[AtomicDatumKey, Any])
@@ -43,11 +45,14 @@ object IndexRuleEvaluation {
     val rows = entries.flatMap {
       case Entry(`indexFixing`, (singleIndex : SingleIndex) :: (day: Day) :: Nil, result: Quantity, keysAndValues) => {
         val resultInUOM = PQ.calcOrCatch(singleIndex.convert(result, index.priceUOM) get)
-        Some(Row(day, singleIndex, PQ(result), resultInUOM))
+        Some(Row(day, singleIndex, PQ(result), resultInUOM, singleIndex.observedPeriod(day)))
       }
       case Entry(`indexForwardPrice`, (singleIndex: SingleIndex) :: (day: Day) :: p, result: Quantity, keysAndValues) => {
         val resultInUOM = PQ.calcOrCatch(singleIndex.convert(result, index.priceUOM) get)
-        Some(Row(day, singleIndex, PQ(result), resultInUOM))
+        keysAndValues.headOption match {
+          case Some((ForwardPriceKey(market, observed, _), value)) => Some(Row(day, singleIndex, PQ(result), resultInUOM, observed))
+          case _ => throw new Exception("Unexpected keysAndValues for forward price: " + keysAndValues)
+        }
       }
       case a => {
         None

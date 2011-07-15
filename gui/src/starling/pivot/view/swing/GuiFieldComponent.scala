@@ -332,14 +332,17 @@ case class GuiFieldNamePanel(props:GuiFieldComponentProps, guiComp:GuiFieldCompo
 
   private var shadowImage:BufferedImage = null
   private var offSet = PivotTableViewUI.NullPoint
+  private var imageStartPoint = PivotTableViewUI.NullPoint
 
   reactions += {
     case MousePressed(_,p,_,_,_) => {
+      display = false
       offSet = p
       props.tableView.draggedField = props.field
       props.tableView.mouseDown = true
       val displayPoint = SwingUtilities.convertPoint(peer, p.x - offSet.x, p.y - offSet.y - 2, props.tableView.peer)
-      props.viewUI.setImageProperties(shadowImage, displayPoint, 0.6f)
+      imageStartPoint = displayPoint
+      props.viewUI.setImageProperties(shadowImage, displayPoint, 1.0f)
     }
     case MouseClicked(_,_,_,2,_) => {
       dragging = false
@@ -364,12 +367,23 @@ case class GuiFieldNamePanel(props:GuiFieldComponentProps, guiComp:GuiFieldCompo
       display = true
       props.tableView.mouseDown = false
       props.tableView.fieldBeingDragged = false
-      props.viewUI.resetImageProperties()
 
       if (oldDragging) {
         val screenPoint = new Point(p)
         SwingUtilities.convertPointToScreen(screenPoint, peer)
-        props.tableView.fieldDropped(props.field, props.locationOfField, screenPoint)
+        val animateBack = props.tableView.fieldDropped(props.field, props.locationOfField, screenPoint)
+        if (animateBack) {
+          val endPoint = SwingUtilities.convertPoint(peer, p, props.tableView.peer)
+          val widthToMove = endPoint.x - offSet.x - imageStartPoint.x
+          val heightToMove = endPoint.y - offSet.y - imageStartPoint.y - 2
+          val widthAndHeight = new Point(widthToMove, heightToMove)
+          props.viewUI.animate(shadowImage, imageStartPoint, widthAndHeight)
+        } else {
+          props.viewUI.resetImageProperties()
+        }
+      } else {
+        // We have just clicked on the field
+        props.viewUI.resetImageProperties()
       }
       repaint()
     }

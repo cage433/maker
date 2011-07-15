@@ -44,21 +44,19 @@ class PivotJTable(tableModel:PivotJTableModel, pivotTableView:PivotTableView, mo
     override def keyPressed(e:KeyEvent) {
       if (e.getKeyCode == KeyEvent.VK_DELETE) {
         val selectedCells = getSelectedCells
-        if (selectedCells.size < 2) {
-          putClientProperty("JTable.autoStartsEdit", true)
-        } else {
-          putClientProperty("JTable.autoStartsEdit", false)
-          val editableCells = selectedCells.filter{case (r,c) => {
-            getValueAt(r,c) match {
-              case ac:AxisCell => ac.editable
-              case tc:TableCell => tc.editable
-            }
-          }}
-          tableModel.deleteCells(editableCells)
-        }
+        putClientProperty("JTable.autoStartsEdit", false)
+        val editableCells = selectedCells.filter{case (r,c) => {
+          getValueAt(r,c) match {
+            case ac:AxisCell => ac.editable
+            case tc:TableCell => tc.editable
+          }
+        }}
+        tableModel.deleteCells(editableCells)
       } else if (e.getKeyCode == KeyEvent.VK_S && (e.getModifiersEx & InputEvent.CTRL_DOWN_MASK) == InputEvent.CTRL_DOWN_MASK) {
         putClientProperty("JTable.autoStartsEdit", false)
         pivotTableView.publish(SavePivotEdits)
+      } else if (e.getKeyCode == KeyEvent.VK_Z && (e.getModifiersEx & InputEvent.CTRL_DOWN_MASK) == InputEvent.CTRL_DOWN_MASK) {
+        putClientProperty("JTable.autoStartsEdit", false)
       } else if (e.getKeyCode == KeyEvent.VK_DOWN) {
         if (tableModel.popupShowing) {
           e.consume()
@@ -158,7 +156,9 @@ class PivotJTable(tableModel:PivotJTableModel, pivotTableView:PivotTableView, mo
     val textField = new JTextField() {
       override def processKeyBinding(ks:KeyStroke, e:KeyEvent, condition:Int, pressed:Boolean) = {
         val r = super.processKeyBinding(ks, e, condition, pressed)
-        if (ks.getKeyCode == KeyEvent.VK_UNDEFINED) {
+        // Don't want to react if ctrl, alt or shift is down.
+        val offMask = InputEvent.CTRL_DOWN_MASK
+        if (ks.getKeyCode == KeyEvent.VK_UNDEFINED && ((e.getModifiersEx & offMask) == 0)) {
           val focusOwner = if (isFocusOwner) {
             Some(this)
           } else if (PivotJTable.this.isFocusOwner) {
@@ -185,9 +185,27 @@ class PivotJTable(tableModel:PivotJTableModel, pivotTableView:PivotTableView, mo
       })
     }
 
-    temp.put(classOf[Object], new GenericEditor(textField))
-    temp.put(classOf[Number], new NumberEditorExt(true))
-    temp.put(classOf[Boolean], new BooleanEditor())
+    val genericEditor = new GenericEditor(textField) {
+      override def stopCellEditing() = {
+        val r = getEditingRow
+        val c = getEditingColumn
+        println("Do validation for row " + r + " and column " + c)
+        super.stopCellEditing()
+      }
+
+      override def getTableCellEditorComponent(table:JTable, value:AnyRef, isSelected:Boolean, row:Int, column:Int) = {
+        val c = super.getTableCellEditorComponent(table, value, isSelected, row, column).asInstanceOf[JTextComponent]
+        value match {
+          case tc:TableCell => c.setText(tc.text)
+          case ac:AxisCell => c.setText(ac.text)
+        }
+        c
+      }
+    }
+
+    temp.put(classOf[Object], genericEditor)
+//    temp.put(classOf[Number], new NumberEditorExt(true))
+//    temp.put(classOf[Boolean], new BooleanEditor())
   }
 
   override def removeEditor() {

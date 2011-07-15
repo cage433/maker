@@ -12,8 +12,7 @@ import starling.reports.pivot._
 import starling.instrument.UTP
 import starling.gui.api.{ReportSpecificChoices, ReportSpecificOptions, UTPIdentifier}
 
-@serializable
-class GreeksPivotReport(@transient environment : Environment, thetaDayAndTime : DayAndTime, val utps: Map[UTPIdentifier, UTP]) extends PivotReport[GreeksPivotReport.T] {
+class GreeksPivotReport(@transient environment : Environment, thetaDayAndTime : DayAndTime, val utps: Map[UTPIdentifier, UTP]) extends PivotReport[GreeksPivotReport.T] with Serializable {
   def this(environment : Environment, utps : Map[UTPIdentifier, UTP]) = this(environment, environment.marketDay + 1, utps)
   import GreeksPivotReport._
 

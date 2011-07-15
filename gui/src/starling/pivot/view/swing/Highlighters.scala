@@ -75,15 +75,6 @@ object Highlighters {
       }
     })
 
-    val warningHighlighter = new IconHighlighter(new HighlightPredicate() {
-      def isHighlighted(renderer: Component, adapter: ComponentAdapter) = {
-        adapter.getValue match {
-          case t:TableCell if t.warning.isDefined=> true
-          case _ => false
-        }
-      }
-    }, StarlingIcons.ValidationError)
-
     val editedCellsHighlighter = new ColorHighlighter(new HighlightPredicate {
       def isHighlighted(renderer:java.awt.Component, adapter:org.jdesktop.swingx.decorator.ComponentAdapter) = {
         adapter.getValue match {
@@ -190,6 +181,5 @@ object Highlighters {
     table.addHighlighter(deletedCellsHighlighter)
     table.addHighlighter(editedAddedCellsHighlighter)
     table.addHighlighter(editedErrorCellsHighlighter)
-    table.addHighlighter(warningHighlighter)
   }
 }

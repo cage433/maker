@@ -55,13 +55,6 @@ object MtmPivotReport extends PivotReportType {
         case _ => "E"
       }
     },
-    new PivotReportField[Mtm]("Amount") {
-      def value(row: Mtm) = row.asset match {
-        case Left(asset) => PivotQuantity(asset.amount * row.scale)
-        case Right(e) => new PivotQuantity(e)
-      }
-      override def pivotFieldDetails = new SumPivotQuantityFieldDetails(name)
-    },
     new PivotReportField[Mtm](pnlFieldName) {
       def value(row: Mtm) = row.asset match {
         case Left(asset) => PivotQuantity(asset.mtm * row.scale)
@@ -120,8 +113,7 @@ case class Mtm(
 
 object MtmRiskFields extends RiskPivotFields[Mtm]
 
-@serializable
-class MtmPivotReport(@transient environment:Environment, @transient utps : Map[UTPIdentifier, UTP]) extends RiskFactorSplittingPivotReport[Mtm] {
+class MtmPivotReport(@transient environment:Environment, @transient utps : Map[UTPIdentifier, UTP]) extends RiskFactorSplittingPivotReport[Mtm] with Serializable {
   def fields = MtmPivotReport.fields
 
   def scale(row: Mtm, volume: Double) = row.copy(scale = row.scale * volume)

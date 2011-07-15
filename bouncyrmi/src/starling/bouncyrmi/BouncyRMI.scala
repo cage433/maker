@@ -38,6 +38,8 @@ case object PongMessage
 class OfflineException(val message: String, t: Throwable) extends RuntimeException(message, t) {
   def this(message: String) = this (message, null)
 }
+// If the client can't connect but it's probably not the sever's fault
+class ClientOfflineException(val message: String) extends RuntimeException(message)
 class CannotConnectException(val message: String, t: Throwable) extends RuntimeException(message, t)
 class ServerUpgradeException(val serverVersion: String) extends RuntimeException("Cannot reconnect as Starling has been upgraded. Please restart this application. " + serverVersion + " : " + BouncyRMI.CodeVersion)
 class AuthFailedException(val msg: String) extends RuntimeException()

@@ -82,6 +82,7 @@ object PricingGroup extends StarlingEnum(classOf[PricingGroup], (pg: PricingGrou
   val LondonDerivatives = PricingGroup("London Derivatives")
   val BarryEckstein = PricingGroup("Barry Eckstein")
   val GasolineRoW = PricingGroup("Gasoline RoW")
+  val Starling = PricingGroup("Starling")
 }
 
 case class FieldDetailsGroupLabel(groupName:String, childNames:List[String])
@@ -111,7 +112,7 @@ sealed case class Desk(name: String) {
     case Desk.GasolineSpec             => List(PricingGroup.GasolineRoW, LimOnly)
     case CrudeSpecNorthSea             => List(Crude, LimOnly)
     case HoustonDerivatives            => List(BarryEckstein, LimOnly)
-    case Refined                       => List(System, Metals)
+    case Refined                       => List(System, Metals, Starling)
   }
 }
 

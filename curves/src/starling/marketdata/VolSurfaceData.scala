@@ -13,7 +13,7 @@ class VolSurfaceData
 
 object OilVolSurfaceDataType extends MarketDataType{
   type dataType = OilVolSurfaceData
-  val keys : List[OilVolSurfaceDataKey] = Market.all.filter(_.volatilityID.isDefined).map(OilVolSurfaceDataKey)
+  lazy val keys : List[OilVolSurfaceDataKey] = Market.all.filter(_.volatilityID.isDefined).map(OilVolSurfaceDataKey)
 
   override def keyFields = Set(marketField.field, periodField.field, deltaField.field)
   override def valueFields = Set(volatilityField.field)

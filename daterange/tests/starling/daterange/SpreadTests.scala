@@ -4,6 +4,7 @@ import org.scalatest.testng.TestNGSuite
 import org.testng.annotations.Test
 import org.testng.Assert._
 import collection.immutable.TreeMap
+import Spread._
 
 class SpreadTests extends TestNGSuite {
   @Test

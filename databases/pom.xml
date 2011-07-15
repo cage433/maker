@@ -37,6 +37,11 @@
       <artifactId>starling-concurrent</artifactId>
       <version>${buildversion}</version>
     </dependency>
+    <dependency>
+      <groupId>com.trafigura.services</groupId>
+      <artifactId>starling-api</artifactId>
+      <version>${buildversion}</version>
+    </dependency>
   </dependencies>
 
   <build>

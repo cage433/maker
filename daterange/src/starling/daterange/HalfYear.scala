@@ -61,7 +61,7 @@ object HalfYear extends TenorType {
 
   val ParserRegex1 = """(?i)(.*) (BACK|FRONT)""".r
   val ParserRegex2 = """(?i)([12]{1})h[ -]?(.*)""".r
-  val ParserRegex3 = """(?i)h([12]{1})[ -]?(.*)""".r
+  val ParserRegex3 = """(?i)h([12]{1})[ -]?(.{2,})""".r
 
   def parse(text : String) = {
     text match {

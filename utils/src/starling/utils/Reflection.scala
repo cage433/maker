@@ -6,6 +6,8 @@ import scala.collection.JavaConversions._
 
 
 object Reflection {
+  def listClassesInPackage(packageName: String): List[Class[_]] = listClassesOfType[Object](packageName, classOf[Object])
+
   def listClassesOfType[T](packageName : String, klass : Class[T]) : List[Class[T]] = {
     def isT(someClass: Class[_]) = klass.isAssignableFrom(someClass) && !Modifier.isAbstract(someClass.getModifiers)
 

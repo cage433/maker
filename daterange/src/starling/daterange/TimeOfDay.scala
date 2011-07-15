@@ -8,8 +8,8 @@ object TimeOfDay {
   val StartOfDay = new TimeOfDay("Start of Day", "SoD")
   val EndOfDay = new TimeOfDay("End of Day", "EoD")
 }
-@serializable
-class TimeOfDay(name:String, val shortName:String) {
+
+class TimeOfDay(name:String, val shortName:String) extends Serializable {
   override def equals(obj: Any): Boolean = obj match {
     case other: TimeOfDay => toString == other.toString
     case _ => false

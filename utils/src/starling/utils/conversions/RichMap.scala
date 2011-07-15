@@ -16,7 +16,7 @@ trait RichMap {
     def slice(keys : Any*) : Map[K,V] = if (keys.isEmpty) map else map.filterKeys(key => keys.contains(key))
     def mapValue(key: K, f: V => V): Map[K,V] = map.updated(key, f(map(key)))
     def mapKeys[C](f: K => C): Map[C, V] = map.map(kv => (f(kv._1), kv._2))
-    def extendKey[C](f: C => K) = new MapView(map, f)
+    def composeKeys[C](f: C => K) = new MapView(map, f)
     def castKeys[C >: K]() = map.asInstanceOf[Map[C, V]]
     def addSome(key: K, value: Option[V]): Map[K,V] = value.map(v => map + key → v).getOrElse(map)
     def addSome(keyValue: (K, Option[V])): Map[K,V] = addSome(keyValue._1, keyValue._2)

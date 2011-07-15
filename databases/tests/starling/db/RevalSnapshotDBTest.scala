@@ -5,7 +5,7 @@ import org.springframework.jdbc.datasource.SingleConnectionDataSource
 
 import org.testng.Assert._
 import starling.quantity.{UOM, Quantity}
-import org.testng.annotations.{BeforeTest, Test}
+import org.testng.annotations.Test
 
 /**
  * Tests a snapshot. Just tests the reval_value and delta filter and checks that a single field gets through

@@ -74,8 +74,7 @@ case class Month(y : Int, m : Int) extends DateRange {
   def toListOfMonths = List(this)
 }
 
-@serializable
-object Month extends TenorType {
+object Month extends TenorType with Serializable {
   type T = Month
 
 	implicit object ordering extends Ordering[Month] {

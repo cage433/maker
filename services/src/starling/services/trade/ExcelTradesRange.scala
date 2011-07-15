@@ -86,7 +86,7 @@ case class ExcelTradesRange(subgroupName : String,
 
     private def maybeIndexOf(name:String) = {
       val normalisedName = normalisedForm(name)
-      headers.findIndexOf(normalisedForm(_) == normalisedName)
+      headers.indexWhere(normalisedForm(_) == normalisedName)
     }
     def getObject(name:String) : Object = {
       val maybeIndex = maybeIndexOf(name)
@@ -109,7 +109,7 @@ case class ExcelTradesRange(subgroupName : String,
   def countTrades = {
     // at a first approximation it's the number of rows with something in the instrument column
     val instrumentHeader = normalisedForm("Instrument")
-    val maybeIndex = headers.findIndexOf(normalisedForm(_) == instrumentHeader)
+    val maybeIndex = headers.indexWhere(normalisedForm(_) == instrumentHeader)
     if (maybeIndex >= 0) {
       values.map((x:Array[Object]) => if (x(maybeIndex) == null) 0 else 1).reduceLeft(_+_)
     } else {

@@ -106,7 +106,13 @@ class BouncyRMIClient[C](host: String, port: Int, interface: Class[C], auth: Cli
           var result: Option[Throwable] = None
           if (!channelFuture.isSuccess) {
             Logger.warn("Client: Failed to connect to server")
-            result = Some(new CannotConnectException("Can not connect to server", channelFuture.getCause))
+            result = channelFuture.getCause match {
+              case e: Exception => Some(new CannotConnectException("Can not connect to server", channelFuture.getCause))
+              case e => {
+                Logger.error("Failed to connect", e)
+                Some(e)
+              }
+            }
             semaphore.release
           } else {
             val ch = channelFuture.getChannel
@@ -137,7 +143,7 @@ class BouncyRMIClient[C](host: String, port: Int, interface: Class[C], auth: Cli
                   result = state match {
                     case ClientConnecting => Some(new OfflineException("Not connected. Connecting"))
                     case Reconnecting(t) => Some(new OfflineException("Unexpected disconnect, in the process of reconnecting", t))
-                    case ClientDisconnected => Some(new OfflineException("Client disconnected, can't reuse"))
+                    case ClientDisconnected => Some(new ClientOfflineException("Client disconnected, can't reuse"))
                     case ServerDisconnected(msg) => Some(new OfflineException(msg))
                     case ServerUpgrade(v) => Some(new ServerUpgradeException(v))
                     case AuthFailed => Some(new AuthFailedException("Authorisation failed against server"))
@@ -168,7 +174,7 @@ class BouncyRMIClient[C](host: String, port: Int, interface: Class[C], auth: Cli
           try {
             state match {
               case ClientDisconnected =>
-              case _ => {
+              case _:NotConnected => {
                 delay = delay * 2
                 connectBlocking
               }
@@ -201,7 +207,8 @@ class BouncyRMIClient[C](host: String, port: Int, interface: Class[C], auth: Cli
           case _ =>
         }
       } catch {
-        case e:CannotConnectException => 
+        case e:CannotConnectException =>
+        case _ => stop
       }
 
       val waiting = new Waiting

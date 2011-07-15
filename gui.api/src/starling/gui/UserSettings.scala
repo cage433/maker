@@ -11,8 +11,7 @@ object ManifestedKey {
   def apply[K](manifest:Manifest[K], key:Key[K]):ManifestedKey[K] = ManifestedKey(manifest.toString, key)
 }
 
-@serializable
-class UserSettings {
+class UserSettings extends Serializable {
   val map = new HeterogeneousMap[ManifestedKey]
 
   def settingExists[T](key: Key[T])(implicit m: Manifest[T]):Boolean = {
