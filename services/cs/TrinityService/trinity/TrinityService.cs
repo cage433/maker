@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
+using System.Linq;
 using System.ServiceModel;
 using System.ServiceModel.Activation;
 using System.ServiceModel.Web;
@@ -11,10 +12,9 @@ using trRoot;
 namespace com.trafigura.services.trinity
 {
     [Export]
-    [ServiceContract]
     [ServiceBehavior(IncludeExceptionDetailInFaults = true)]
     [AspNetCompatibilityRequirements(RequirementsMode = AspNetCompatibilityRequirementsMode.Allowed)]
-    public class TrinityService
+    public class TrinityService : TrinityServiceApi
     {
         private readonly ILog logger = LogManager.GetLogger(typeof (TrinityService));
 
@@ -39,8 +39,6 @@ namespace com.trafigura.services.trinity
             marketData = new trMarketDataServer();
         }
 
-        [OperationContract]
-        [WebGet(UriTemplate = "Profile/{name}/{visibility}")]
         public Profile GetProfile(string name, string visibility)
         {
             int profileId = marketData.ProfileByName[visibility, name];
@@ -53,92 +51,93 @@ namespace com.trafigura.services.trinity
             };
         }
 
-        [OperationContract]
-        [WebGet(UriTemplate = "DepoRateCurve/{profileId}/{commodity}")]
         public List<DepoRate> GetDepoRateCurve(int profileId, string commodity)
         {
-            logger.Info(string.Format("GET DepoRateCurve/{0}/{1}", profileId, commodity));
-
-            var rates = new List<DepoRate>();
-
             var rateCurve = marketData.RateCurve[profileId, commodity, null, trRateCurveTypeEnum.trRateCurveDepo, null];
 
-            if (rateCurve != null)
+            return rateCurve.DepoRates().Select(rate => new DepoRate
             {
-                var rate = rateCurve.FirstRate as trDepoRate;
-
-                while (rate != null)
-                {
-                    rates.Add(new DepoRate
-                    {
-                        Period = rate.Period,
-                        PeriodFromToday = rate.PeriodFromToday,
-                        Bid = rate.Bid,
-                        Offer = rate.Off,
-                        Date = rate.TheDate
-                    });
-
-                    rate = rate.NextRate;
-                }
-            }
-
-            return rates;
+                Period = rate.Period,
+                PeriodFromToday = rate.PeriodFromToday,
+                Bid = rate.Bid,
+                Offer = rate.Off,
+                Date = rate.TheDate
+            }).ToList();
         }
 
-        [OperationContract]
-        [WebInvoke(UriTemplate = "DepoRateCurve/{profileId}/{commodity}", Method = "DELETE")]
         public bool DeleteDepoRateCurve(int profileId, string commodity)
         {
-            marketData.Lock(profileId, commodity, () =>
+            return DeleteDepoRateWhere(profileId, commodity, rate => true);
+        }
+
+        public bool DeleteDepoRate(int profileId, string commodity, string period)
+        {
+            return DeleteDepoRateWhere(profileId, commodity, rate => rate.Period == period);
+        }
+
+        public bool SetDepoRateCurve(int profileId, string commodity, List<DepoRate> rates)
+        {
+            return marketData.Transact(profileId, commodity, () =>
+            {
+                var rateCurve = GetOrCreate(profileId, commodity);
+
+                foreach (var newRate in rates)
+                {
+                    rateCurve.NewRate(newRate);
+                }
+
+                logger.Info("Saving", rateCurve.Save);
+            });
+        }
+
+        public bool AddDepoRates(int profileId, string commodity, List<DepoRate> rates)
+        {
+            return marketData.Transact(profileId, commodity, () =>
+            {
+                var ratesByPeriod = rates.ToDictionary(rate => rate.Period);
+
+                var rateCurve = GetOrCreate(profileId, commodity);
+
+                foreach (var existingRate in rateCurve.DepoRates().Where(depoRate => ratesByPeriod.ContainsKey(depoRate.Period)))
+                {
+                    var newRate = ratesByPeriod[existingRate.Period];
+
+                    existingRate.Copy(newRate);
+
+                    ratesByPeriod.Remove(newRate.Period);
+                }
+
+                foreach (var missingRate in ratesByPeriod.Values)
+                {
+                    rateCurve.NewRate(missingRate);
+                }
+
+                logger.Info("Saving", rateCurve.Save);
+            });
+        }
+
+        private bool DeleteDepoRateWhere(int profileId, string commodity, Func<_IRate, bool> predicate)
+        {
+            return marketData.Transact(profileId, commodity, () =>
             {
                 var rateCurve = marketData.RateCurve[profileId, commodity, null, trRateCurveTypeEnum.trRateCurveDepo, null];
 
                 if (rateCurve != null)
                 {
-                    var rate = rateCurve.FirstRate;
-
-                    while (rate != null)
+                    foreach (var rate in rateCurve.Rates().Where(predicate))
                     {
                         rateCurve.RemoveRate(rate);
-                        rate = rate.NextRate;
                     }
 
                     rateCurve.Save();
-
                 }
             });
-
-            var ratesLeft = marketData.RateCurve[profileId, commodity, null, trRateCurveTypeEnum.trRateCurveDepo, null];
-
-            return ratesLeft == null || ratesLeft.RateCount == 0;
         }
 
-        [OperationContract]
-        [WebInvoke(UriTemplate = "DepoRateCurve/{profileId}/{commodity}", Method = "POST")]
-        public List<DepoRate> SetDepoRateCurve(int profileId, string commodity, List<DepoRate> rates)
+        private trRateCurve GetOrCreate(int profileId, string commodity)
         {
-            marketData.Lock(profileId, commodity, () =>
-            {
-                trRateCurve rateCurve = marketData.RateCurve[profileId, commodity, null, trRateCurveTypeEnum.trRateCurveDepo, null];
-                if (rateCurve == null)
-                {
-                    rateCurve = marketData.NewRateCurve[profileId, commodity, null, trRateCurveTypeEnum.trRateCurveDepo, null];
-                }
-
-                foreach (var newRate in rates)
-                {
-                    var newDepoRate = (trDepoRate) rateCurve.NewRate();
-
-                    newDepoRate.RateType = treDepoRateType.treDepoRateSimple;
-                    newDepoRate.Period = newRate.Period;
-                    newDepoRate.Bid = newRate.Bid;
-                    newDepoRate.Off = newRate.Offer;
-                }
-
-                logger.Info("Saving", () => rateCurve.Save());
-            });
-
-            return GetDepoRateCurve(profileId, commodity);
+            return marketData.RateCurve[profileId, commodity, null, trRateCurveTypeEnum.trRateCurveDepo, null] 
+             ?? marketData.NewRateCurve[profileId, commodity, null, trRateCurveTypeEnum.trRateCurveDepo, null];
         }
     }
 }

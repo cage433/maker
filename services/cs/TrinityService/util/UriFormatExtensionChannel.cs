@@ -16,7 +16,7 @@ namespace ContactManager_Advanced
         {
         }
 
-        public DelegatingChannel AddMapping(string extension, string mediaType)
+        public UriFormatExtensionMessageChannel AddMapping(string extension, string mediaType)
         {
             extensionMappings[extension] = new MediaTypeWithQualityHeaderValue(mediaType);
 

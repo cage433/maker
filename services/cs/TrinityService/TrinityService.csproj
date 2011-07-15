@@ -116,9 +116,12 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="example\ExampleService.cs" />
+    <Compile Include="example\ExampleServiceApi.cs" />
     <Compile Include="extensions\IDictionaryExtensions.cs" />
     <Compile Include="extensions\IEnumerableExtensions.cs" />
     <Compile Include="extensions\ILogExtensions.cs" />
+    <Compile Include="trinity\TrinityServiceApi.cs" />
+    <Compile Include="extensions\trRateCurveExtensions.cs" />
     <Compile Include="util\JsonDeserializer.cs" />
     <Compile Include="util\JsonSerializer.cs" />
     <Compile Include="extensions\JTokenExtensions.cs" />

@@ -4,12 +4,12 @@ namespace MarketData2
 {
     public static class trMarketDataServerExtensions
     {
-        public static void Lock(this trMarketDataServer marketData, int profileId, string commodity, Action action)
+        public static bool Transact(this trMarketDataServer marketData, int profileId, string commodity, Action action)
         {
-            Lock(marketData, profileId, commodity, () => { action(); return false; });
+            return Transact(marketData, profileId, commodity, () => { action(); return true; });
         }
 
-        public static T Lock<T>(this trMarketDataServer marketData, int profileId, string commodity, Func<T> func)
+        public static T Transact<T>(this trMarketDataServer marketData, int profileId, string commodity, Func<T> func)
         {
             try
             {
