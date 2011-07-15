@@ -328,14 +328,26 @@ class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSiz
       case Left(sc) => {
         fullTable.setSelectedCells(sc)
         focusedTable0 = if (sc.nonEmpty) Some(Full) else None
+        /*if (sc.size == 1) {
+          val (r,c) = sc.head
+          onEDT(fullTable.scrollCellToVisible(r, c))
+        }*/
       }
       case Right((m,r,c)) => {
         mainTable.setSelectedCells(m)
         rowHeaderTable.setSelectedCells(r)
         colHeaderTable.setSelectedCells(c)
         focusedTable0 = if (m.nonEmpty) {
+          /*if (m.size == 1) {
+            val (r,c) = m.head
+            onEDT(mainTable.scrollCellToVisible(r, c))
+          }*/
           Some(Main)
         } else if (r.nonEmpty) {
+          /*if (r.size == 1) {
+            val (row,c) = r.head
+            onEDT(rowHeaderTable.scrollCellToVisible(row, c))
+          }*/
           Some(Row)
         } else if (c.nonEmpty) {
           Some(Column)

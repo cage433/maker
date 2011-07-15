@@ -32,7 +32,10 @@ abstract class PivotJTableModel extends AbstractTableModel {
   def acceptableValues(r:Int, c:Int):Set[String]
 
   protected var overrideMap = new MMap[(Int,Int),OverrideDetails]()
-  def revert() {overrideMap.clear()}
+  def revert:Boolean = {
+    overrideMap.clear()
+    false
+  }
 }
 
 class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
@@ -92,9 +95,24 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
     private val blankCells = rowHeaderData0(0).map(av => {
       val newAV = av.value.copy(value = BlankAddedAxisValueType)
       av.copy(value = newAV, label = "", collapsible = None)
-    }).toList
+    })
     if (extraLine) {
-      addedRows0 += blankCells.toArray
+      addedRows0 += blankCells
+    }
+
+    def addRow() {addedRows0 += blankCells}
+
+    override def revert = {
+      super.revert
+      if (addedRows0.size > 1) {
+        val r = getRowCount - 1
+        addedRows0.clear()
+        addedRows0 += blankCells
+        fireTableRowsDeleted(r, r)
+        true
+      } else {
+        false
+      }
     }
 
     def getRowCount = {rowHeaderData0.length + addedRows0.length}
@@ -116,13 +134,13 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
         }
       }
     }
-    def paintTable(g:Graphics, table:JTable, rendererPane:CellRendererPane, rMin:Int, rMax:Int, cMin:Int, cMax:Int) = {
+    def paintTable(g:Graphics, table:JTable, rendererPane:CellRendererPane, rMin:Int, rMax:Int, cMin:Int, cMax:Int) {
       PivotTableUI.rowHeaderPaintGrid(g, table, rMin, rMax, cMin, cMax, getColumnCount - 1)
       PivotTableUI.rowHeaderPaintCells(g, table, rendererPane, rMin, rMax, cMin, cMax)
     }
     def rowHeader(row:Int,col:Int) = true
     def mapCellToFields(row:Int, col:Int) = List()
-    def collapseOrExpand(row:Int, col:Int, pivotTableView:PivotTableView) = {
+    def collapseOrExpand(row:Int, col:Int, pivotTableView:PivotTableView) {
       val path = (0 to col).map(colIndex => {getValueAt(row, colIndex).value}).toList
       pivotTableView.collapseOrExpandRow(path)
     }
@@ -223,7 +241,8 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
         }
       } else {
         overrideMap((rowIndex, columnIndex)) = OverrideDetails(newLabel, EditableCellState.Added)
-        newValue.foreach { nv => {            
+        newValue.foreach { nv => {     
+          addRowToTables()
           val row = initializedBlankRow + (rowHeaderField -> nv)
           updateEdits(pivotEdits.withAddedRow(row))
         } }
@@ -352,12 +371,41 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
     }
   }
 
+  private def addRowToTables() {
+    val rowHeader = rowHeaderTableModel.getRowCount
+    val main = mainTableModel.getRowCount
+    val full = fullTableModel.getRowCount
+
+    rowHeaderTableModel.addRow()
+    mainTableModel.addRow()
+
+    rowHeaderTableModel.fireTableRowsInserted(rowHeader, rowHeader)
+    mainTableModel.fireTableRowsInserted(main, main)
+    fullTableModel.fireTableRowsInserted(full, full)
+  }
+
   val mainTableModel = new PivotJTableModel {
     private val addedRows0 = new ListBuffer[Array[TableCell]]
-    private val blankCells = data0(0).map(_.copy(state = EditableCellState.Added, text = "")).toList
+    private val blankCells = data0(0).map(_.copy(state = EditableCellState.Added, text = ""))
     if (extraLine) {
-      addedRows0 += blankCells.toArray
+      addedRows0 += blankCells
     }
+
+    def addRow() {addedRows0 += blankCells}
+
+    override def revert = {
+      super.revert
+      if (addedRows0.size > 1) {
+        val r = getRowCount - 1
+        addedRows0.clear()
+        addedRows0 += blankCells
+        fireTableRowsDeleted(r, r)
+        true
+      } else {
+        false
+      }
+    }
+
     def getRowCount = data0.length + addedRows0.length
     def getColumnCount = data0(0).length
     def getValueAt(rowIndex:Int, columnIndex:Int):TableCell = {
@@ -502,6 +550,7 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
       } else {
         overrideMap((rowIndex, columnIndex)) = OverrideDetails(newLabel, EditableCellState.Added)
         newValue.foreach(nv => {
+          addRowToTables()
           val row = initializedBlankRow + (measureInfo.value.field -> nv)
           updateEdits(pivotEdits.withAddedRow(row))
         })
@@ -648,7 +697,7 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
   private val allModels = List(rowHeaderTableModel, colHeaderTableModel, mainTableModel, blankAxisCellTableModel)
 
   val fullTableModel = new PivotJTableModel {
-    def getRowCount = colHeaderTableModel.getRowCount + mainTableModel.getRowCount
+    def getRowCount = colHeaderTableModel.getRowCount + rowHeaderTableModel.getRowCount
     def getColumnCount = rowHeaderTableModel.getColumnCount + mainTableModel.getColumnCount
 
     def getValueAt(rowIndex:Int, columnIndex:Int) = {
@@ -659,27 +708,20 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
       val (m,r,c) = getTableModel(rowIndex, columnIndex)
       m.isCellEditable(r,c)
     }
-    override def setValueAt(aValue:AnyRef, rowIndex:Int, columnIndex:Int) = {
+    override def setValueAt(aValue:AnyRef, rowIndex:Int, columnIndex:Int) {
       val (m,r,c) = getTableModel(rowIndex, columnIndex)
       m.setValueAt(aValue,r,c)
-      fireTableCellUpdated(rowIndex,columnIndex)
     }
-    def deleteCells(cells:List[(Int,Int)]) = {
+    def deleteCells(cells:List[(Int,Int)]) {
       val modelMap = getTableModels(cells)
       modelMap.foreach{case (mod, list) => {
         mod.deleteCells(list.map{case (m,r,c) => (r,c)})
       }}
-      cells.foreach{case (r,c) => {
-        if (r < getRowCount) fireTableCellUpdated(r,c)
-      }}
     }
-    def resetCells(cells:List[(Int,Int)]) = {
+    def resetCells(cells:List[(Int,Int)]) {
       val modelMap = getTableModels(cells)
       modelMap.foreach{case (mod, list) => {
         mod.resetCells(list.map{case (m,r,c) => (r,c)})
-      }}
-      cells.foreach{case (r,c) => {
-        if (r < getRowCount) fireTableCellUpdated(r,c)
       }}
     }
     private def getTableModels(cells:List[(Int,Int)]) = {
@@ -700,7 +742,7 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
       }
     }
 
-    def paintTable(g:Graphics, table:JTable, rendererPane:CellRendererPane, rMin:Int, rMax:Int, cMin:Int, cMax:Int) = {
+    def paintTable(g:Graphics, table:JTable, rendererPane:CellRendererPane, rMin:Int, rMax:Int, cMin:Int, cMax:Int) {
       {
         // Paint the row header table.
         val rMinL = math.max(rMin, colHeaderRowCount0)
@@ -742,7 +784,7 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
         List()
       }
     }
-    def collapseOrExpand(row:Int, col:Int, pivotTableView:PivotTableView) = {
+    def collapseOrExpand(row:Int, col:Int, pivotTableView:PivotTableView) {
       if (col < rowHeaderColCount0) {
         rowHeaderTableModel.collapseOrExpand(row - colHeaderRowCount0, col, pivotTableView)
       } else {
@@ -750,14 +792,14 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
       }
     }
 
-    override def fireTableStructureChanged = {
-      super.fireTableStructureChanged
-      allModels.foreach(_.fireTableStructureChanged)
+    override def fireTableStructureChanged() {
+      super.fireTableStructureChanged()
+      allModels.foreach(_.fireTableStructureChanged())
     }
 
-    override def fireTableDataChanged = {
-      super.fireTableDataChanged
-      allModels.foreach(_.fireTableDataChanged)
+    override def fireTableDataChanged() {
+      super.fireTableDataChanged()
+      allModels.foreach(_.fireTableDataChanged())
     }
 
 
@@ -870,7 +912,17 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
     viewport.setMinimumSize(new Dimension(rowHeaderTable.getPreferredSize.width, 20))
   }
 
-  def reverse() {allModels.foreach(_.revert())}
+  def reverse() {
+    // The order is important because we need to know whether to delete rows from the full table model.
+    colHeaderTableModel.revert
+    blankAxisCellTableModel.revert
+    val rowRowsRemoved = rowHeaderTableModel.revert
+    val mainRowsRemoved = mainTableModel.revert
+    if (rowRowsRemoved || mainRowsRemoved) {
+      val r = fullTableModel.getRowCount - 1
+      fullTableModel.fireTableRowsDeleted(r,r)
+    }
+  }
 
   def resizeColumnHeaderAndMainTableColumns(fullTable:JTable, mainTable:JTable, colHeaderTable:JTable,
                                             colHeaderScrollPane:JScrollPane, columnHeaderScrollPanePanel:Panel,
@@ -981,6 +1033,6 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
         })
       }
     }
-    sb.toString
+    sb.toString()
   }
 }

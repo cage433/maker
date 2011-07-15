@@ -469,7 +469,6 @@ class PivotTablePageComponent(
         pivotComp.setRSScrollPos(rsScrollPos)
         pivotComp.configPanelState = configPanelState
         pivotComp.setSelectedCells(selectedCells)
-        println("Setting main SCroll pos " + mainScrollPos)
         pivotComp.setMainScrollPos(mainScrollPos)
       }
       case _ =>
