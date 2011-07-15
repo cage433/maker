@@ -402,16 +402,10 @@ class StarlingServerImpl(
   }
 
   def saveMarketData(marketDataIdentifier:MarketDataPageIdentifier, marketDataTypeLabel:Option[MarketDataTypeLabel], pivotEdits:PivotEdits) = {
-    /*val dataSource = marketDataSource(marketDataIdentifier, marketDataTypeLabel)
+    val dataSource = marketDataSource(marketDataIdentifier, marketDataTypeLabel, PivotEdits.Null)
     val lookup = dataSource.fieldDetailsGroups.flatMap(_.fieldMap).toMap
-    val fixedUpPivotEdits = pivotEdits.map { pivotEdit => {
-      pivotEdit match {
-        case AmendPivotEdit(keys, alteredField, newValue) => AmendPivotEdit(keys, alteredField, lookup(alteredField).fixEditedValue(newValue))
-        case other => other
-      }
-    }}
-    dataSource.editable.get.save(fixedUpPivotEdits)*/
-    throw new Exception("bla")
+    val fixedUpPivotEdits = pivotEdits.fixValues( (field,value) => lookup(field).fixEditedValue(value))
+    dataSource.editable.get.save(fixedUpPivotEdits)
   }
 
   def snapshot(marketDataSelection:MarketDataSelection, observationDay:Day): Option[SnapshotIDLabel] = {

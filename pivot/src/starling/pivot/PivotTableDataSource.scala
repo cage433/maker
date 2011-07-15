@@ -31,6 +31,7 @@ case class KeyFilter(keys:Map[Field,SomeSelection]) {
       keys.get(key) == Some(value)
     } }
   }
+  def remove(fields:Set[Field]) = KeyFilter(keys.filterKeys(f => !fields.contains(f)))
 }
 
 trait KeyEdits {
@@ -67,6 +68,20 @@ case class PivotEdits(edits:Map[KeyFilter,KeyEdits], newRows:List[Map[Field,Any]
         editsForField.headOption
       }
     }
+  }
+  def fixValues( f:(Field,Any)=>Any ) = {
+    PivotEdits(
+      edits.mapValues( edit => edit match {
+        case AmendKeyEdit(amends) => AmendKeyEdit(amends.map {
+          case (field, None) => field -> None
+          case (field, Some(v)) => field -> Some(f(field, v))
+        })
+        case _ => edit
+      }),
+      newRows.map { row => {
+        row.map{ case(field,value) => field -> f(field,value) }
+      } }
+    )
   }
   def nonEmpty:Boolean = edits.nonEmpty || newRows.nonEmpty
   def isEmpty:Boolean = !nonEmpty
@@ -260,9 +275,16 @@ object PivotValue {
     case pv:PivotValue => pv
     case other => StandardPivotValue(other)
   }
-  def extractValue(value:Any) = value match {
-    case pv:PivotValue => pv.value.getOrElse("DELETED " + pv.originalValue) //FIXME
-    case other => other
+  def extractValue(row:Map[Field,Any], field:Field) = {
+    row.get(field) match {
+      case Some(value) => {
+        value match {
+          case pv:PivotValue => pv.value.getOrElse(pv.originalValue.getOrElse(UndefinedValue))
+          case other => other
+        }
+      }
+      case None => UndefinedValue
+    }
   }
 }
 
