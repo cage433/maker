@@ -278,7 +278,7 @@ case class SingleDataFieldTotal(fieldDetails:FieldDetails, value:PivotValue) ext
       case Some(valueOrDeletedValue) => Some(fieldDetails.value(fieldDetails.combineFirstGroup(valueOrDeletedValue)))
       case None => None
     }
-    MeasureCell(vv, value.cellType, edits)
+    MeasureCell(vv, value.cellType, edits, value.originalValue)
   }
   override val edits = value.edits
 }

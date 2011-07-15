@@ -499,7 +499,7 @@ class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSiz
 
   private val tableModelsHelper = new PivotJTableModelHelper(mainData, data.pivotTable.editableInfo,
     rowHeaderData, colHeaderData, colUOMs, resizeColumnHeaderAndMainTableColumns, resizeRowHeaderTableColumns,
-    data.pivotFieldsState, extraFormatInfo, edits, (edits0) => {publish(PivotEditsUpdatedEvent(edits0))})
+    data.pivotFieldsState, extraFormatInfo, edits, (edits0) => {publish(PivotEditsUpdatedEvent(edits0))}, data.pivotTable.formatInfo)
 
   def extraFormatInfoUpdated(extraFormatInfo:ExtraFormatInfo) {
     val newConverter = viewConverter.copy(extraFormatInfo = extraFormatInfo)
