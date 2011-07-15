@@ -224,7 +224,16 @@ case class PivotTreePath(path:List[String]) {
       case first :: rest => TreePivotFilterNode(PivotTreePath(first), first.last, List(recurse(rest)))
     }
 
-    recurse(path.inits.toList.dropRight(1))
+    def tails[A](list: List[A]) = {
+      def recurse(list : List[A]) : List[List[A]] = list match {
+        case Nil => Nil
+        case _ => list :: recurse(list.tail)
+      }
+
+      recurse(list)
+    }
+
+    recurse(tails(path.reverse).reverse.map(_.reverse))
   }
 }
 object PivotTreePath {

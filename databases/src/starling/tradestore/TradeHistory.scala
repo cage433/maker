@@ -14,18 +14,15 @@ import starling.utils.cache.CacheFactory
 class TradeHistory
 
 case class SingleTradeIDTradeVersions(
-  earliest : Timestamp,
-  latest : Timestamp,
-  versions : TreeMap[Timestamp, TradeAndFields]
+                                       earliest : Timestamp,
+                                       latest : Timestamp,
+                                       versions : TreeMap[Timestamp, TradeAndFields]
 )
-  extends MapProxy[Timestamp, TradeAndFields]
 {
 
   def this(ts : Timestamp, value : TradeAndFields) = {
     this(ts, ts, TreeMap[Timestamp, TradeAndFields]() + (ts -> value))
   }
-
-  def self = versions
 
   def +(ts : Timestamp, value : TradeAndFields) : SingleTradeIDTradeVersions = {
     if (versions.contains(ts)){
