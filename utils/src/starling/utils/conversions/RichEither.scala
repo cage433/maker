@@ -4,8 +4,8 @@ import starling.utils.ImplicitConversions._
 
 
 trait RichEither {
-  implicit def enrichExceptionalEither[L <: Exception, R](either: Either[L, R]) = new RichEither(either) {
-    def printStackTrace = update(exception => exception.printStackTrace, identity)
+  implicit def enrichExceptionalEither[L <: Throwable, R](either: Either[L, R]) = new RichEither(either) {
+    def printStackTrace = update(throwable => throwable.printStackTrace, identity)
     def getOrThrow = either.fold(left => throw left, right => right)
   }
 

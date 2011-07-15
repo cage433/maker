@@ -283,7 +283,8 @@ class StarlingInit( val props: Props,
 
   val trinityUploadCodeMapper = new TrinityUploadCodeMapper(trinityDB)
   val curveViewer = new CurveViewer(marketDataStore)
-  val trinityUploader = new TrinityUploader(new FCLGenerator(trinityUploadCodeMapper, curveViewer), new XRTGenerator(marketDataStore), props)
+  val trinityUploader = new TrinityUploader(new FCLGenerator(trinityUploadCodeMapper, curveViewer),
+    new XRTGenerator(marketDataStore), null, props)
   val scheduler = Scheduler.create(businessCalendars, marketDataStore, broadcaster, trinityUploader, props)
 
   val referenceData = new ReferenceData(businessCalendars, marketDataStore, strategyDB, scheduler, trinityUploadCodeMapper)
@@ -374,17 +375,16 @@ class StarlingInit( val props: Props,
 
   Log.info("StarlingInit: EDM service port %d, external url = '%s', server name = '%s'".format(props.HttpEdmServicePort(), props.EdmExternalUrl(), props.ServerName()))
   
-//  lazy val httpEdmServiceServer = {
-//
-//    val webXmlUrl = this.getClass.getResource("../../webapp/WEB-INF/web.xml")
-//
-//    new HttpServer(
-//      props.HttpEdmServicePort(),
-//      props.EdmExternalUrl(),
-//      props.ServerName(),
-//      Some(webXmlUrl.toExternalForm()),
-//      Nil)
-//  }
+  lazy val httpEdmServiceServer = {
+    val webXmlUrl = this.getClass.getResource("../../webapp/WEB-INF/web.xml")
+
+    new HttpServer(
+      props.HttpEdmServicePort(),
+      props.EdmExternalUrl(),
+      props.ServerName(),
+      Some(webXmlUrl.toExternalForm()),
+      Nil)
+  }
 
   lazy val regressionServer = new RegressionServer(props.RegressionPort(), reportServlet)
 }

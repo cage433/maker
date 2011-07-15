@@ -48,7 +48,7 @@ case class SecureMap[A, +B](map: Map[A, SecureValue[B]]) extends Map[A, B] {
 
 trait Trade
 
-trait ExampleService {
+trait SecureServiceExample {
   // On behalf of a user
   def getAllTrades(user: User): List[Trade]
 

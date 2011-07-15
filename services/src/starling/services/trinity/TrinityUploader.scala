@@ -10,9 +10,10 @@ import starling.utils._
 
 import starling.utils.ClosureUtil._
 import starling.utils.ImplicitConversions._
+import com.trafigura.services.trinity.TrinityService
 
 
-class TrinityUploader(fclGenerator: FCLGenerator, xrtGenerator: XRTGenerator, props: Props) {
+class TrinityUploader(fclGenerator: FCLGenerator, xrtGenerator: XRTGenerator, trinityService: TrinityService, props: Props) {
   def uploadCurve(label: CurveLabel)   = upload(fclGenerator.generate(label),          "curve%s.fcl" % label.observationDay)
   def uploadLibor(observationDay: Day) = upload(xrtGenerator.generate(observationDay), "libor%s.xrt" % observationDay)
 

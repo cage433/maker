@@ -17,54 +17,52 @@ import starling.market.{TrinityMarket, FuturesMarket, Market}
 class FCLGenerator(uploadMapper: TrinityUploadCodeMapper, curveViewer: CurveViewer) {
   notNull(uploadMapper, curveViewer)
 
-  def generate(curveLabel: CurveLabel) = {
-    val pivotFieldsState = PivotFieldsState(
-      dataFields = List(Field("Price")),
-      rowFields = List(Field("Market"), Field("Period"))
-    )
+  private val pivotFieldsState = PivotFieldsState(dataFields = List(Field("Price")),
+    rowFields = List(Field("Market"), Field("Period")))
 
+  def generate(curveLabel: CurveLabel) = getData(curveLabel).map(_.toLine)
+
+  def getData(curveLabel: CurveLabel): List[FCLRow] = {
     val pivotTable = PivotTableModel.createPivotTableData(curveViewer.curve(curveLabel), Some(pivotFieldsState))
 
-    FCLGenerator.generateLines(uploadMapper.uploadCode _, PivotTableConverter(table = pivotTable).createGrid())
+    FCLGenerator.extractData(PivotTableConverter(table = pivotTable).createGrid(), uploadMapper.uploadCode _)
   }
 }
 
+case class FCLRow(trinityCode: String, price: Double, period: Day) {
+  def toLine = "3300C%s     %sFF%s0000000000000000000000000000000CN" %
+    (trinityCode, period.toString("YYMMdd"), FCLGenerator.priceFormat.format(price))
+}
+
 object FCLGenerator {
-  def generateLines(codeLookup:FuturesMarket=>String, data: PivotGrid): List[String] = {
-    val format = new DecimalFormat("0000000.0000")
+  val priceFormat = new DecimalFormat("0000000.0000")
+  def generateLines(codeLookup: String => String, data: PivotGrid) = extractData(data, codeLookup).map(_.toLine)
 
-    val rows = data.rowData.zip(data.mainData)
+  def extractData(data: PivotGrid, codeLookup: (String) => String) = data.rowData.zip(data.mainData).toList.flatMapO {
+    case (Array(marketName, periodCell), Array(priceCell)) => try {
+      val trinityCode = codeLookup(marketName.valueText)
+      val price = priceCell.doubleValue.get
+      val period = periodCell.value.value.value.asInstanceOf[DateRange].firstDay
 
-    rows.toList.flatMapO { case (Array(marketName, periodCell), Array(priceCell)) => {
-      try {
-        val market = Market.futuresMarketFromName(marketName.valueText)
-        val trinityCode = codeLookup(market)
-        val price = format.format(priceCell.doubleValue.get)
-        val period = periodCell.value.value.value.asInstanceOf[DateRange].firstDay
+      println(">> " + marketName.valueText + " " + trinityCode + " " + period)
 
-        println(">> " + market + " " + trinityCode + " " + period)
-
-        Some("3300C%s     %sFF%s0000000000000000000000000000000CN" % (trinityCode, period.toString("YYMMdd"), price))
-      } catch {
-        case e: Exception => None
-      }
-    } }
+      Some(FCLRow(trinityCode, price, period))
+    } catch {
+      case e: Exception => None
+    }
   }
 }
 
 class TrinityUploadCodeMapper(trinityDB:DB) {
   lazy private val lookup = (trinityDB.queryWithResult("select * from T_Commcode") { rs => {
-    (rs.getString("COMMODITY"), rs.getString("EXCHANGE"), rs.getString("CURRENCY")) -> rs.getString("CODE")
+    (rs.getString("COMMODITY"), rs.getString("EXCHANGE"), rs.getString("CURRENCY")) → rs.getString("CODE")
   }}).toMap
 
-  def uploadCodeOption(market:FuturesMarket) = {
-    TrinityMarket.marketToTrinityCode.get(market) match {
-      case None => None
-      case Some(trinityCommodityCode) => {
-        val key = (trinityCommodityCode, market.exchange.name, market.currency.toString)
-        lookup.get(key)
-      }
-    }
+  def uploadCode(marketName: String): String = uploadCodeOption(Market.futuresMarketFromName(marketName))
+    .getOrElse(throw new Exception("No upload code for " + marketName))
+
+  def uploadCodeOption(market:FuturesMarket) = TrinityMarket.marketToTrinityCode.get(market).flatMap { trinityCommodityCode =>
+    val key = (trinityCommodityCode, market.exchange.name, market.currency.toString)
+    lookup.get(key)
   }
-  def uploadCode(market:FuturesMarket) = uploadCodeOption(market).getOrElse(throw new Exception("No upload code for " + market))
 }
