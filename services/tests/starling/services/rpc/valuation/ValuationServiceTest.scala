@@ -68,7 +68,8 @@ class ValuationServiceTest extends StarlingTest {
     val mockRabbitEventServices = new MockRabbitEventServices()
 
     val assignments = mockTitanLogisticsServices.assignmentService.service.getAllSalesAssignments()
-    println("assignments " + assignments.mkString(", "))
+    val inventory = mockTitanLogisticsServices.inventoryService.service.getAllInventoryLeaves()
+    //println("assignments " + assignments.mkString(", "))
 //    val inventory = mockTitanLogisticsServices.inventoryService.service.getInventoryTreeByPurchaseQuotaId()
 //    println("inventory " + inventory.mkString(", "))
 
