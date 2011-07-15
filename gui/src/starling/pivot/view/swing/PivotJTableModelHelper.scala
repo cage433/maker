@@ -73,6 +73,21 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
   def uoms = uoms0
   def uoms_=(u:Array[UOM]) {uoms0 = u}
 
+  private def singleValueFilters() = {
+    Map() ++ fieldState.filterAreaFields.flatMap(f => {
+      val (field, selection) = fieldState.filters.find{case (f0,sel) => f == f0}.get
+      selection match {
+        case s@SomeSelection(v) if v.size == 1 => Some((field -> v.iterator.next))
+        case _ => None
+      }
+    })
+  }
+
+  private def initializedBlankRow() = {
+    val keyFields = editableInfo.get.editableKeyFields.keySet
+    (Map() ++ (keyFields.map(f => {f -> UndefinedValue}))) ++ singleValueFilters
+  }
+
   val rowHeaderTableModel = new PivotJTableModel {
     private val addedRows0 = new ListBuffer[Array[AxisCell]]
     private val blankCells = rowHeaderData0(0).map(av => {
@@ -177,9 +192,10 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
           }
         }
       } else {
-        newValue.foreach { nv =>
-          updateEdits(pivotEdits.withAddedRow(editableInfo.get.editableKeyFields.keySet, rowHeaderField, nv))
-        }
+        newValue.foreach { nv => {
+          val row = initializedBlankRow + (rowHeaderField -> nv)
+          updateEdits(pivotEdits.withAddedRow(row))
+        } }
       }
     }
 
@@ -431,7 +447,8 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
         }
       } else {
         newValue.foreach(nv => {
-          updateEdits(pivotEdits.withAddedRow(editableInfo.get.editableKeyFields.keySet, measureInfo.value.field, nv))
+          val row = initializedBlankRow + (measureInfo.value.field -> nv)
+          updateEdits(pivotEdits.withAddedRow(row))
         })
       }
     }

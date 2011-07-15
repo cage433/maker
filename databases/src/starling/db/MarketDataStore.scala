@@ -8,8 +8,6 @@ import starling.utils.ImplicitConversions._
 import starling.richdb.RichResultSetRow
 import starling.utils.sql._
 import starling.gui.api._
-import starling.pivot.PivotTableDataSource
-import starling.pivot.{Field => PField}
 import starling.utils.cache.CacheFactory
 import starling.daterange._
 import collection.mutable.{ListBuffer, HashSet => MSet}
@@ -21,6 +19,8 @@ import org.springframework.dao.DuplicateKeyException
 import java.lang.{RuntimeException, String}
 import java.util.concurrent.atomic.AtomicInteger
 import starling.curves.Environment
+import starling.pivot.{PivotEdits, PivotTableDataSource, Field => PField}
+
 //import starling.props.Props.VarReportEmailFrom
 
 // TODO [07 Sep 2010] move me somewhere proper
@@ -219,7 +219,68 @@ case class MarketDataUpdate(timedKey: TimedMarketDataKey, data: Option[MarketDat
   def indexedData(marketDataSet: MarketDataSet) = dataIdFor(marketDataSet) → data
 }
 
-class MdDB(db: DBTrait[RichResultSetRow]) {
+trait MdDB {
+  def checkIntegrity():Unit
+  def readAll():Unit
+  def marketDataSetNames():List[String]
+  def observationDaysFor(marketDataSets:List[MarketDataSet]):List[Option[Day]]
+  def excelObservationDays():List[(String,Option[Day])]
+  def latestVersionForMarketDataSets():Map[MarketDataSet,Int]
+  def latestExcelVersions():Map[String, Int]
+  def store(data: Iterable[MarketDataUpdate], marketDataSet: MarketDataSet):(Boolean,Int)
+  def maxVersionForMarketDataSetNames(names:List[String]):Option[Int]
+  def marketDataTypes(version:Int, mds:List[MarketDataSet]) : List[MarketDataType]
+  def latestMarketData(from: Day, to: Day, marketDataType: MarketDataType, marketDataSet: MarketDataSet): List[(TimedMarketDataKey, VersionedMarketData)]
+  def queryForObservationDayAndMarketDataKeys(version:Int, mds:List[MarketDataSet], marketDataType: MarketDataType): List[TimedMarketDataKey]
+  def query(version:Int, mds:List[MarketDataSet], marketDataType: MarketDataType,
+            observationDays: Option[Set[Option[Day]]], observationTimes: Option[Set[ObservationTimeOfDay]],
+            marketDataKeys: Option[Set[MarketDataKey]]): List[(TimedMarketDataKey, MarketData)]
+  def readLatest(id:MarketDataID):Option[VersionedMarketData]
+}
+
+//class FastMdDB(db: DBTrait[RichResultSetRow]) extends MdDB {
+//
+//  //read early:
+//  //all observation days
+//  //all Key1 (mds, time, key)
+//  //all Key2
+//
+//
+//  //will have (Day) -> (MDS,ObsTime,MarketDataKey) -> (SecondKey) -> Version -> (Option[Value],Timestamp,User)
+//
+//
+//  def checkIntegrity():Unit = {}
+//  def readAll():Unit  = {}
+//
+//  def marketDataSetNames():List[String]  = {}// "select distinct marketDataSet from Key2"
+//
+//  // "select observationDay from Values join Key1 on .. where mds =
+//  def observationDaysFor(marketDataSets:List[MarketDataSet]):List[Option[Day]]  = {}
+//  def excelObservationDays():List[(String,Option[Day])] = {}
+//
+//   //"select max(commitid), mds from Values join on Key1 ,,,"
+//  def latestVersionForMarketDataSets():Map[MarketDataSet,Int]
+//  def latestExcelVersions():Map[String, Int]
+//  def maxVersionForMarketDataSetNames(names:List[String]):Option[Int] //remove?
+//
+//  class Cursor(version:Int, mds:List[MarketDataSet]) {
+//    //
+//  }
+//
+//  def marketDataTypes(version:Int, mds:List[MarketDataSet]) : List[MarketDataType]
+//  def queryForObservationDayAndMarketDataKeys(version:Int, mds:List[MarketDataSet], marketDataType: MarketDataType): List[TimedMarketDataKey]
+//  def query(version:Int, mds:List[MarketDataSet], marketDataType: MarketDataType,
+//            observationDays: Option[Set[Option[Day]]], observationTimes: Option[Set[ObservationTimeOfDay]],
+//            marketDataKeys: Option[Set[MarketDataKey]]): List[(TimedMarketDataKey, MarketData)]
+//
+//  def latestMarketData(from: Day, to: Day, marketDataType: MarketDataType, marketDataSet: MarketDataSet): List[(TimedMarketDataKey, VersionedMarketData)]
+//  def readLatest(id:MarketDataID):Option[VersionedMarketData]
+//
+//  def store(data: Iterable[MarketDataUpdate], marketDataSet: MarketDataSet):(Boolean,Int)
+//
+//}
+
+class SlowMdDB(db: DBTrait[RichResultSetRow]) extends MdDB {
 
   private val currentVersion = new AtomicInteger(
     db.queryWithOneResult[Int]("SELECT MAX(version) as version from MarketData")(_.getInt("version")).getOrElse(1))
@@ -284,23 +345,25 @@ class MdDB(db: DBTrait[RichResultSetRow]) {
     }
   }
 
-  def marketDataSetNames() = db.queryWithResult("select distinct marketDataSet from MarketData order by marketDataSet", Map()) {
-    rs => rs.getString("marketDataSet")
+  def marketDataSetNames():List[String] = {
+    db.queryWithResult("select distinct marketDataSet from MarketData order by marketDataSet", Map()) {
+      rs => rs.getString("marketDataSet")
+    }
   }
 
-  def observationDaysFor(marketDataSets:List[MarketDataSet]) = {
+  def observationDaysFor(marketDataSets:List[MarketDataSet]):List[Option[Day]] = {
     db.queryWithResult( (select ("distinct observationDay") from "MarketData" where ("marketDataSet" in marketDataSets.map(_.name))) ) {
       rs => rs.getDayOption("observationDay")
     }
   }
 
-  def excelObservationDays() = {
+  def excelObservationDays():List[(String,Option[Day])] = {
     db.queryWithResult( (select ("distinct marketDataSet, observationDay") from "MarketData" where ("marketDataSet" like "Excel:%")) ) {
       rs => (rs.getString("marketDataSet").stripPrefix(MarketDataSet.excelPrefix), rs.getDayOption("observationDay"))
     }
   }
 
-  def latestVersionForMarketDataSets() = {
+  def latestVersionForMarketDataSets():Map[MarketDataSet,Int] = {
     Map() ++ db.queryWithResult("select marketDataSet, max(version) m from MarketData where marketDataSet not like 'Excel:%' group by marketDataSet ", Map()) {
       rs=> MarketDataSet(rs.getString("marketDataSet")) -> rs.getInt("m")
     }
@@ -312,7 +375,7 @@ class MdDB(db: DBTrait[RichResultSetRow]) {
     }
   }
 
-  def store(data: Iterable[MarketDataUpdate], marketDataSet: MarketDataSet) = {
+  def store(data: Iterable[MarketDataUpdate], marketDataSet: MarketDataSet):(Boolean,Int) = {
     var update = false
     var innerMaxVersion = 0
 
@@ -364,7 +427,8 @@ class MdDB(db: DBTrait[RichResultSetRow]) {
     }
   }
 
-  def maxVersionForMarketDataSetNames(names:List[String]) = {
+
+  def maxVersionForMarketDataSetNames(names:List[String]):Option[Int] = {
     db.queryWithOneResult("select max(version) m from MarketData where marketDataSet in (:mds)", Map("mds" → names)) {
       _.getInt("m")
     }
@@ -537,7 +601,7 @@ class MdDB(db: DBTrait[RichResultSetRow]) {
   }
 
 
-  def readLatest(id:MarketDataID) = {
+  def readLatest(id:MarketDataID):Option[VersionedMarketData] = {
     def queryForVersion(key : MarketDataID) : Query = {
       import QueryBuilder._
 
@@ -567,7 +631,7 @@ class MdDB(db: DBTrait[RichResultSetRow]) {
     db.queryWithOneResult(queryForVersion(id)) { rs => whatIsThis(id.subTypeKey, rs) }
   }
 
-  def whatIsThis(key: MarketDataKey, rs: ResultSetRow) = {
+  private def whatIsThis(key: MarketDataKey, rs: ResultSetRow) = {
     new VersionedMarketData(rs.getTimestamp("timestamp"), rs.getInt("version"),
       rs.getObjectOption[Any]("data").map(key.unmarshallDB(_)))
   }
@@ -641,7 +705,7 @@ class DBMarketDataStore(db:MdDB, tags:MarketDataTags, val marketDataSources: Map
                         broadcaster: Broadcaster) extends MarketDataStore {
 
   def this(db: DBTrait[RichResultSetRow], marketDataSources: Map[MarketDataSet, MarketDataSource],
-                        broadcaster: Broadcaster = Broadcaster.Null) = this(new MdDB(db), new MarketDataTags(db), marketDataSources, broadcaster)
+                        broadcaster: Broadcaster = Broadcaster.Null) = this(new SlowMdDB(db), new MarketDataTags(db), marketDataSources, broadcaster)
 
 
   db.checkIntegrity()
@@ -700,7 +764,7 @@ class DBMarketDataStore(db:MdDB, tags:MarketDataTags, val marketDataSources: Map
       val reader = new NormalMarketDataReader(this, marketDataIdentifier)
       val validatingReader = validate(reader)
 
-      new MarketDataPivotTableDataSource(validatingReader, Some(this), marketDataIdentifier, marketDataType)
+      new MarketDataPivotTableDataSource(validatingReader, PivotEdits.Null, Some(this), marketDataIdentifier, marketDataType)
     })
   }
 

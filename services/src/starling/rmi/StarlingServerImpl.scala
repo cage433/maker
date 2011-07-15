@@ -378,7 +378,7 @@ class StarlingServerImpl(
     PivotTableModel.createPivotData(curveViewer.curve(curveLabel), pivotFieldParams)
   }
 
-  private def marketDataSource(marketDataIdentifier:MarketDataPageIdentifier, marketDataTypeLabel:Option[MarketDataTypeLabel]) = {
+  private def marketDataSource(marketDataIdentifier:MarketDataPageIdentifier, marketDataTypeLabel:Option[MarketDataTypeLabel], edits:PivotEdits) = {
     val reader = marketDataReaderFor(marketDataIdentifier)
     val marketDataType = marketDataTypeLabel match {
       case None => {
@@ -390,14 +390,14 @@ class StarlingServerImpl(
       case Some(mdt) => Some(realTypeFor(mdt))
     }
     marketDataType match {
-      case Some(mdt) => new MarketDataPivotTableDataSource(reader, Some(snapshotDatabase), marketDataIdentifier.marketDataIdentifier, mdt)
+      case Some(mdt) => new MarketDataPivotTableDataSource(reader, edits, Some(snapshotDatabase), marketDataIdentifier.marketDataIdentifier, mdt)
       case None => NullPivotTableDataSource
     }
   }
 
-  def readAllMarketData(marketDataIdentifier:MarketDataPageIdentifier, marketDataTypeLabel:Option[MarketDataTypeLabel], pivotFieldParams:PivotFieldParams):PivotData = {
-    val dataSource = marketDataSource(marketDataIdentifier, marketDataTypeLabel)
-//    dataSource.editable.get.withEdits()
+  def readAllMarketData(marketDataIdentifier:MarketDataPageIdentifier, marketDataTypeLabel:Option[MarketDataTypeLabel], edits:PivotEdits, pivotFieldParams:PivotFieldParams):PivotData = {
+    val dataSource = marketDataSource(marketDataIdentifier, marketDataTypeLabel, edits)
+    //dataSource.editable.get.withEdits()
     PivotTableModel.createPivotData(dataSource, pivotFieldParams)
   }
 

@@ -45,7 +45,7 @@ trait StarlingServer {
   def tradeImportText(tradeSelection:TradeSelection):(String,String)
 
   def curvePivot(curveLabel: CurveLabel, pivotFieldParams:PivotFieldParams): PivotData
-  def readAllMarketData(marketDataIdentifier:MarketDataPageIdentifier, marketDataType:Option[MarketDataTypeLabel], pivotFieldParams:PivotFieldParams):PivotData
+  def readAllMarketData(marketDataIdentifier:MarketDataPageIdentifier, marketDataType:Option[MarketDataTypeLabel], edits:PivotEdits, pivotFieldParams:PivotFieldParams):PivotData
   def saveMarketData(marketDataIdentifier:MarketDataPageIdentifier, marketDataTypeLabel:Option[MarketDataTypeLabel], pivotEdits:PivotEdits):Boolean
 
   def version:Version

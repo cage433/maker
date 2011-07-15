@@ -10,6 +10,7 @@ import collection.immutable.{Map, TreeMap}
 import collection.Set
 import org.mockito.internal.matchers.AnyVararg
 import collection.script.Start
+import reflect.AnyValManifest
 
 case class FieldDetailsGroup(name:String, fields:List[FieldDetails]) {
   def toFieldGroup = {
@@ -143,11 +144,6 @@ case class PivotEdits(edits:Map[KeyFilter,KeyEdits], newRows:List[Map[Field,Any]
     }
   }
 
-  def withAddedRow(keyFields:Set[Field], field:Field, value:Any):PivotEdits = {
-    val row = (Map() ++ (keyFields.map(f => {f -> UndefinedValue}))) + (field -> value)
-    withAddedRow(row)
-  }
-
   def withAddedRow(row:Map[Field,Any]) = {
     copy(newRows = newRows ::: List(row))
   }
@@ -249,6 +245,10 @@ object PivotValue {
   def create(value:Any) = value match {
     case pv:PivotValue => pv
     case other => StandardPivotValue(other)
+  }
+  def extractValue(value:Any) = value match {
+    case pv:PivotValue => pv.value.getOrElse("DELETED " + pv.originalValue) //FIXME
+    case other => other
   }
 }
 
