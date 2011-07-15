@@ -116,12 +116,17 @@ case class PivotEdits(edits:Map[KeyFilter,KeyEdits], newRows:List[Map[Field,Any]
         case None => Some(key -> changes)
         case Some(d@DeleteKeyEdit(_)) if changes == d => None
         case Some(d@DeleteKeyEdit(_)) if changes != d => throw new Exception("Can't remove Delete as there is an edit for this key " + key + " " + changes)
-        case Some(AmendKeyEdit(amends)) => Some(key -> {
-          changes match {
+        case Some(AmendKeyEdit(amends)) => {
+          val newEdit = changes match {
             case DeleteKeyEdit(_) => throw new Exception("Can't remove edit as there is an delete for this key " + key + " " + amends)
             case AmendKeyEdit(oldAmends) => AmendKeyEdit(oldAmends -- amends.keySet)
           }
-        })
+          if (newEdit.amends.isEmpty) {
+            None
+          } else {
+            Some(key -> newEdit)
+          }
+        }
       }
     } }
     PivotEdits(merged, newRows.filterNot(editsToRemove.newRows.contains(_)))
@@ -239,7 +244,16 @@ case class PivotTreePath(path:List[String]) {
       case first :: rest => TreePivotFilterNode(PivotTreePath(first), first.last, List(recurse(rest)))
     }
 
-    recurse(path.inits.toList.dropRight(1))
+    def tails[A](list: List[A]) = {
+      def recurse(list : List[A]) : List[List[A]] = list match {
+        case Nil => Nil
+        case _ => list :: recurse(list.tail)
+      }
+
+      recurse(list)
+    }
+
+    recurse(tails(path.reverse).reverse.map(_.reverse))
   }
 }
 object PivotTreePath {
@@ -304,7 +318,7 @@ case class NewValue(value:Option[Any], rowIndex:Int, edits:PivotEdits) extends P
   def valueForGrouping(newRowsAtBottom:Boolean) = if (newRowsAtBottom) NewRowValue(rowIndex) else value.getOrElse(UndefinedValue)
 }
 
-case class MeasureCell(value:Option[Any], cellType:EditableCellState, edits:PivotEdits=PivotEdits.Null)
+case class MeasureCell(value:Option[Any], cellType:EditableCellState, edits:PivotEdits=PivotEdits.Null, originalValue:Option[Any]=None)
 object MeasureCell {
   val Null = MeasureCell(None, Normal)
   val Undefined = MeasureCell(Some(UndefinedValue), Normal)

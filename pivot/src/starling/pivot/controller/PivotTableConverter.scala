@@ -175,50 +175,8 @@ case class ServerAxisNode(axisValue:AxisValue, children:Map[ChildKey,Map[AxisVal
       }
     } }
 
-
-
-//    val sortedChildren = children.toList.sortWith{ case((childKeyA,mapA),(childKeyB, mapB)) => {
-//      if (childKeyA.position == childKeyB.position) {
-//        val comparator = fieldDetailsLookup(childKeyA.field).comparator
-//        def index(value:Any) = {
-//          value match {
-//            case n:NewRowValue => 4
-//            case TotalValue=> 0
-//            case UndefinedValue => 1
-//            case FilterWithOtherTransform.OtherValue => 3
-//            case ptp:PivotTreePath if ptp.isOther => 3
-//            case _ => 2
-//          }
-//        }
-//
-//        (childKeyA.value, childKeyB.value) match {
-//          case (NewRowValue(r1), NewRowValue(r2)) => r1 < r2
-//          case _ => {
-//            val thisIndex = index(childKeyA.value)
-//            val otherIndex = index(childKeyB.value)
-//            if (thisIndex == otherIndex) {
-//              if (thisIndex == 2) {
-//                comparator.lt(childKeyA.value, childKeyB.value)
-//              } else {
-//                false
-//              }
-//            } else {
-//              thisIndex < otherIndex
-//            }
-//          }
-//        }
-//      } else {
-//        childKeyA.position < childKeyB.position
-//      }
-//    } }
-
-//    val flattenedChildren = sortedChildren.flatMap{ case (_, map) => {
-//      map.values.toList.sortBy(_.axisValue.state)
-//    } }
-
     AxisNode(axisValue, sortedChildren.map(_.toGUIAxisNode(fieldDetailsLookup)))
   }
-
 }
 
 case class AxisNode(axisValue:AxisValue, children:List[AxisNode]=Nil) {
@@ -516,7 +474,7 @@ case class PivotTableConverter(otherLayoutInfo:OtherLayoutInfo = OtherLayoutInfo
                     case Some(UndefinedValue) => TableCell.Undefined
                     case Some(other) => table.formatInfo.fieldToFormatter(measureAxisCell.value.field).format(other, extraFormatInfo)
                   }
-                  tc.copy(state = measureCell.cellType, edits = measureCell.edits)
+                  tc.copy(state = measureCell.cellType, edits = measureCell.edits, originalValue = measureCell.originalValue)
                 }
               }
             }

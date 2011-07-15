@@ -57,6 +57,7 @@ object TradeableType {
     SwapCalendarSpread,
     FuturesOption,
     CalendarSpreadOption,
+    CommoditySpreadOption,
     AsianOption,
     FXForward,
     FXOption,

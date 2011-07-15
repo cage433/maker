@@ -7,11 +7,6 @@ import org.testng.annotations.{AfterTest, Test}
 
 class MPTests extends TestNGSuite {
 
-  @AfterTest
-  def tearDown {
-    MP.stop
-  }
-
   @Test
   def testSimple1 {
     val work = 1 to 10
@@ -71,37 +66,5 @@ class MPTests extends TestNGSuite {
       case i if i == 5 => throw new Exception("test")
       case i => "test" + i
     }.toList
-  }
-
-  @Test
-  def testExceptionStackIsSensible1 {
-    val work = 1 to 10
-    try {
-      val res = work.mpMap{
-        case i if i == 5 => throw new Exception("test")
-        case i => "test" + i
-      }.toList
-    }
-    catch {
-      case e => {
-        assert(e.getStackTrace.find(e => e.toString.contains("MPTests.testExceptionStackIsSensible1")).isDefined)
-      }
-    }
-  }
-
-  @Test
-  def testExceptionStackIsSensible2 {
-    val work = 1 to 10
-    try {
-      val res = work.mpFlatMap{
-        case i if i == 5 => throw new Exception("test")
-        case i => "test" + i
-      }.toList
-    }
-    catch {
-      case e => {
-        assert(e.getStackTrace.find(e => e.toString.contains("MPTests.testExceptionStackIsSensible2")).isDefined)
-      }
-    }
   }
 }

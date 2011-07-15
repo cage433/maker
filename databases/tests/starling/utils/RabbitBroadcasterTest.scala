@@ -84,7 +84,7 @@ class UploadStandardDeviationsUpdateTest extends TestNGSuite with ShouldMatchers
     val standardDeviations: Array[Array[Double]] = Array(Array(0.5, 0, 1), Array(2, 2, 2))
 
     val update = UploadStandardDeviationsUpdate(
-      User("<userName>", "<name>"), "<label>", Some(21 Jan 2011), Array(Spread(Month(2011, 1), Month(2011, 2)), Spread(Month(2011, 2), Month(2011, 3))),
+      User("<userName>", "<name>"), "<label>", Some(21 Jan 2011), Array(SpreadPeriod(Month(2011, 1), Month(2011, 2)), SpreadPeriod(Month(2011, 2), Month(2011, 3))),
       "<market>", standardDeviations)
 
     update.toJSON should matchJSON(
@@ -92,7 +92,7 @@ class UploadStandardDeviationsUpdateTest extends TestNGSuite with ShouldMatchers
       "label" -> "<label>",
       "observationDate" -> "21 Jan 2011",
       "marketName" -> "<market>",
-      "dates" -> Array("JANUARY 2011\\/FEBRUARY 2011","FEBRUARY 2011\\/MARCH 2011"),
+      "dates" -> Array("JAN 2011\\/FEB 2011","FEB 2011\\/MAR 2011"),
       "standardDeviations" -> standardDeviations
     )
   }

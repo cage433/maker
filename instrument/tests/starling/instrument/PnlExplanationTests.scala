@@ -68,8 +68,8 @@ class PnlExplanationTests extends JonTestEnv  with StarlingTest{
     val env1 = makeEnv(md1)
     val d1 = env1.atomicEnv
     val env2 = makeEnvShift(md2, dPrice = Map(Month1 -> Quantity(1, market.priceUOM), Month1 + 1-> Quantity(-.1, market.priceUOM)),
-      dStdDev = Map(Spread(Month1, Month1 + 1) ->  Quantity(1, market.priceUOM)),
-      dStdDevSkew = Map(Spread(Month1, Month1 + 1) ->  1.0))
+      dStdDev = Map(SpreadPeriod(Month1, Month1 + 1) ->  Quantity(1, market.priceUOM)),
+      dStdDevSkew = Map(SpreadPeriod(Month1, Month1 + 1) ->  1.0))
     val d2 = env2.atomicEnv
 
     val p = env1.forwardPrice(market, Month1)
@@ -112,8 +112,8 @@ class PnlExplanationTests extends JonTestEnv  with StarlingTest{
     val env1 = makeEnv(md1)
     val d1 = env1.atomicEnv
     val env2 = makeEnvShift(md2, dPrice = Map(Month1 -> Quantity(1.07, market.priceUOM), Month1 + 1-> Quantity(1.07, market.priceUOM)),
-      dStdDev = Map(Spread(Month1, Month1 + 1) ->  Quantity(.1, market.priceUOM)),
-      dStdDevSkew = Map(Spread(Month1, Month1 + 1) ->  1.0))
+      dStdDev = Map(SpreadPeriod(Month1, Month1 + 1) ->  Quantity(.1, market.priceUOM)),
+      dStdDevSkew = Map(SpreadPeriod(Month1, Month1 + 1) ->  1.0))
     val d2 = env2.atomicEnv
 
     val p = env1.forwardPrice(market, Month1)

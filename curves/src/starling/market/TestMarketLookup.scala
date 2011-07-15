@@ -17,6 +17,8 @@ class TestMarketLookup extends MarketLookup {
           val index = header(name.toLowerCase)
           entries(index).trim
         }
+
+        override def toString = line
       }
     }
   }
@@ -31,7 +33,7 @@ class TestMarketLookup extends MarketLookup {
     case Right(i: Index) => Some(i)
     case _ => None
   }
-  val allFuturesMarkets = all.flatMap {
+  val allMarkets = all.flatMap {
     case Left(m: FuturesMarket) => Some(m)
     case _ => None
   }

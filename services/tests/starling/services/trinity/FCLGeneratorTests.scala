@@ -25,7 +25,7 @@ class FCLGeneratorTests extends StarlingTest with ShouldMatchers {
 
     val expectedTrinityCode = "XXX"
 
-    FCLGenerator.generateLines( (m:FuturesMarket)=> if (m==market) expectedTrinityCode else "e", grid) should be ===
+    FCLGenerator.generateLines( (m:String)=> if (m==market.name) expectedTrinityCode else "e", grid) should be ===
       List("3300C%s     %sFF%s0000000000000000000000000000000CN" %
         (expectedTrinityCode, period.toString("YYMMdd"), "0000123.4560"))
   }
@@ -42,7 +42,7 @@ class FCLGeneratorTests extends StarlingTest with ShouldMatchers {
 
     val expectedTrinityCode = "XXX"
 
-    FCLGenerator.generateLines((m:FuturesMarket)=> if (m==market) expectedTrinityCode else "e", grid) should be ===
+    FCLGenerator.generateLines((m:String)=> if (m==market.name) expectedTrinityCode else "e", grid) should be ===
       List("3300C%s     %sFF%s0000000000000000000000000000000CN" %
         (expectedTrinityCode, period.toString("YYMMdd"), "0000088.5000"))
   }

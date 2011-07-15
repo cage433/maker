@@ -448,7 +448,7 @@ abstract class TradeStore(db: RichDB, broadcaster:Broadcaster, tradeSystem: Trad
           CostsInfo(cost.costType, value, cost.info)
         }))
       }}
-      val mapList:List[Map[PField,Any]] = (for (((timestamp, tradeAndFields), version) <- history.zipWithIndex) yield {
+      val mapList:List[Map[PField,Any]] = (for (((timestamp, tradeAndFields), version) <- history.versions.toMap.zipWithIndex) yield {
         Map( PField("Version") -> (version+1), PField("Import Time")->timestamp) ++ tradeAndFields.fields ++ joiningTradeAttributeFieldValues(tradeAndFields.trade.attributes)
       }).toList
       val fieldDetailsGroups0 = createFieldDetailGroups(allTradeableTypes)

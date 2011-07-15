@@ -460,17 +460,18 @@ class PivotTablePageComponent(
   }
 
   override def getTypeState = {
-    Some(AbstractPivotComponentTypeState(pivotComp.filterText, pivotComp.getRSScrollPos, pivotComp.configPanelState,
-      pivotComp.getSelectedCells))
+    Some(AbstractPivotComponentTypeState(pivotComp.filterText, pivotComp.getRSScrollPos, pivotComp.getMainScrollPos,
+      pivotComp.configPanelState, pivotComp.getSelectedCells))
   }
 
   override def setTypeState(typeState:Option[ComponentTypeState]) {
     typeState match {
-      case Some(AbstractPivotComponentTypeState(filterText, rsScrollPos, configPanelState, selectedCells)) => {
+      case Some(AbstractPivotComponentTypeState(filterText, rsScrollPos, mainScrollPos, configPanelState, selectedCells)) => {
         pivotComp.filterText = filterText
         pivotComp.setRSScrollPos(rsScrollPos)
         pivotComp.configPanelState = configPanelState
         pivotComp.setSelectedCells(selectedCells)
+        pivotComp.setMainScrollPos(mainScrollPos)
       }
       case _ =>
     }
@@ -569,7 +570,7 @@ case class AbstractPivotComponentState(filterText:String,
                                        reportSpecificScrollPosition:Int,
                                        selectedCells:Either[List[(Int,Int)], (List[(Int,Int)],List[(Int,Int)],List[(Int,Int)])],
                                        configPanelState:Option[NTabbedPaneState]) extends ComponentState
-case class AbstractPivotComponentTypeState(filterText:String, reportSpecificScrollPosition:Int,
+case class AbstractPivotComponentTypeState(filterText:String, reportSpecificScrollPosition:Int, mainScrollPosition:Point,
                                            configPanelState:Option[NTabbedPaneState],
                                            selectedCells:Either[List[(Int,Int)],
                                            (List[(Int,Int)],List[(Int,Int)],List[(Int,Int)])]) extends ComponentTypeState

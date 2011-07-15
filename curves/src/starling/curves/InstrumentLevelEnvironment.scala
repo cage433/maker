@@ -1,43 +1,39 @@
 package starling.curves
 
-import starling.daterange.Day
-import starling.daterange.DateRange
 import starling.quantity.Quantity
 import starling.quantity.Percentage
 import cern.colt.matrix.DoubleMatrix2D
 import starling.models.BlackScholes
 import starling.models.Call
-import starling.daterange.Month
-import starling.daterange.DayAndTime
 import starling.maths.LeastSquaresFit
-import starling.daterange.Spread
 import starling.curves.models.SpreadVolatilitySkew
 import starling.quantity.UOM
 import java.lang.reflect.Method
 import net.sf.cglib.proxy.{MethodProxy, MethodInterceptor, Enhancer}
 import java.lang.reflect.InvocationTargetException
 import starling.market._
+import starling.daterange._
 
 /**
  * This class lies between Environment and AtomicEnvironment. It exists in order to perform perturbations
  * at a higher level than AtomicEnvironment. For example, shifting interpolated vols, rather than the 
  * original market data, shifting an expected fixation without changing the underlying. The latter is 
  * necessary to be able to sensibly report daily positions on frontline swaps.
- */ 
+ */
 
 trait InstrumentLevelEnvironment extends AtomicEnvironmentHelper {
   def atomicEnv() : AtomicEnvironment
 
-  def apply(key : AtomicDatumKey) : Any 
-  def marketDay() : DayAndTime 
+  def apply(key : AtomicDatumKey) : Any
+  def marketDay() : DayAndTime
   def discount(ccy : UOM, day : Day, ignoreShiftsIfPermitted : Boolean = false) : Double
   def fixing(index : SingleIndex, fixingDay : Day) : Quantity
 
-  def indexForwardPrice(index : SingleIndex, observationDay : Day, ignoreShiftsIfPermitted : Boolean = false) : Quantity 
+  def indexForwardPrice(index : SingleIndex, observationDay : Day, ignoreShiftsIfPermitted : Boolean = false) : Quantity
   def interpolatedVol(market : HasImpliedVol, period : DateRange, exerciseDay : Option[Day], strike : Option[Quantity], isIndexVol : Boolean, forwardPrice: Option[Quantity]) : Percentage
-  def spreadStdDev(market: FuturesMarket, spread : Spread[Month], exerciseDay: Day, strike: Quantity) : Quantity
+  def spreadStdDev(market: FuturesMarket, period: Period, exerciseDay: Day, strike: Quantity) : Quantity
   def indexVol(index : SingleIndex, observationDay : Day, strike : Quantity, averagePrice : Quantity) : Percentage
-  def spreadPrice(market : FuturesMarket, firstMonth : Month, secondMonth : Month) : Quantity
+  def spreadPrice(market : FuturesMarket, period: Period) : Quantity
 
   def shiftAtomicEnv(fn : AtomicEnvironment => AtomicEnvironment) : InstrumentLevelEnvironment
   def copy(newAtomicEnv : AtomicEnvironment) : InstrumentLevelEnvironment
@@ -65,7 +61,16 @@ class DefaultInstrumentLevelEnvironment(underlyingAtomicEnv : AtomicEnvironment)
     index.forwardPrice(this, observationDay, ignoreShiftsIfPermitted)
   }
 
-  def spreadPrice(market : FuturesMarket, firstMonth : Month, secondMonth : Month) = quantity(ForwardPriceKey(market, firstMonth)) - quantity(ForwardPriceKey(market, secondMonth))
+  def spreadPrice(market : FuturesMarket, period: Period) = {
+    (market, period) match {
+      case (fsm: FuturesSpreadMarket, DateRangePeriod(month: Month)) => {
+        quantity(ForwardPriceKey(fsm.market1, month)) - quantity(ForwardPriceKey(fsm.market2, month))
+      }
+      case (f: FuturesMarket, SpreadPeriod(firstMonth: Month, secondMonth: Month)) => {
+        quantity(ForwardPriceKey(market, firstMonth)) - quantity(ForwardPriceKey(market, secondMonth))
+      }
+    }
+  }
   /**
    * Having to pass in the boolean flag 'inIndexVol' is a bit of a hack. The reason it is used is so that a key recording environment can catch
    * whether the vol we are getting is then used to create a swap vol, or a simple futures/forward vol. This is needed for reporting
@@ -95,7 +100,7 @@ class DefaultInstrumentLevelEnvironment(underlyingAtomicEnv : AtomicEnvironment)
             exerciseDay.get
           }
           val time = expiryDay.endOfDay.timeSince(marketDay)
-          
+
           val disc = discount(mkt.currency, expiryDay, ignoreShiftsIfPermitted = true)
           val atmDelta = new BlackScholes(100.0, 100.0, Call, time, atmVolNoShifts).analyticDelta * disc
           // For Asian options we actually pass in the average price as the forward price
@@ -151,31 +156,38 @@ class DefaultInstrumentLevelEnvironment(underlyingAtomicEnv : AtomicEnvironment)
     }
   }
 
-  def spreadStdDev(market: FuturesMarket, spread : Spread[Month], exerciseDay: Day, strike: Quantity) = {
-    val frontMonth = spread.first
-    val backMonth = spread.last
+  def spreadStdDev(market: FuturesMarket, period: Period, exerciseDay: Day, strike: Quantity) = {
 
     val time = exerciseDay.endOfDay.timeSince(marketDay)
 
     // need unshifted std dev from the market to get the delta of the corresponding option
-    val atmSDNoShifts = atomicEnv.quantity(SpreadAtmStdDevAtomicDatumKey(market, spread, ignoreShiftsIfPermitted = true))
+    val atmSDNoShifts = atomicEnv.quantity(SpreadAtmStdDevAtomicDatumKey(market, period, ignoreShiftsIfPermitted = true))
     // at-the-money standard deviation is the "base", then the interpolated skews are added to that.
-    val atmSD = atomicEnv.quantity(SpreadAtmStdDevAtomicDatumKey(market, spread))
+    val atmSD = atomicEnv.quantity(SpreadAtmStdDevAtomicDatumKey(market, period))
 
     val disc = discount(market.currency, exerciseDay, ignoreShiftsIfPermitted = true)
     //val disc = atomicEnv.double(DiscountRateKey(market.currency, exerciseDay, ignoreShiftsIfPermitted = true))
     val zeroRateNoShifts = -scala.math.log(disc) / time
     val discountFactorNoShifts = scala.math.exp(-zeroRateNoShifts * time)
 
-    val F1 = atomicEnv.quantity(ForwardPriceKey(market, frontMonth, ignoreShiftsIfPermitted = true))
-    val F2 = atomicEnv.quantity(ForwardPriceKey(market, backMonth, ignoreShiftsIfPermitted = true))
-    val F = F1 - F2
+    val f = (market, period) match {
+      case (fsm: FuturesSpreadMarket, DateRangePeriod(month: Month)) => {
+        val F1 = atomicEnv.quantity(ForwardPriceKey(fsm.market1, month, ignoreShiftsIfPermitted = true))
+        val F2 = atomicEnv.quantity(ForwardPriceKey(fsm.market2, month, ignoreShiftsIfPermitted = true))
+        F1 - F2
+      }
+      case (f: FuturesMarket, SpreadPeriod(firstMonth: Month, secondMonth: Month)) => {
+        val F1 = atomicEnv.quantity(ForwardPriceKey(market, firstMonth, ignoreShiftsIfPermitted = true))
+        val F2 = atomicEnv.quantity(ForwardPriceKey(market, secondMonth, ignoreShiftsIfPermitted = true))
+        F1 - F2
+      }
+    }
 
-    val skew: DoubleMatrix2D = atomicEnv.volMap(SpreadSkewStdDevAtomicDatumKey(market, spread))
+    val skew: DoubleMatrix2D = atomicEnv.volMap(SpreadSkewStdDevAtomicDatumKey(market, period))
     val callSkew = skew.get(0, 0)
     val putSkew = skew.get(0, 1)
     val volSurface = new SpreadVolatilitySkew(atmSD.value, atmSDNoShifts.value, zeroRateNoShifts, time, putSkew, callSkew, 2)
-    val stdDev = volSurface.volatilityByStrike(strike.value, F.value)
+    val stdDev = volSurface.volatilityByStrike(strike.value, f.value)
     Quantity(stdDev, market.priceUOM)
   }
 
@@ -195,7 +207,7 @@ object ShiftInstrumentLevelVol{
 
   val classMethodNames = classOf[DefaultInstrumentLevelEnvironment].getMethods.map(_.getName)
   require(overridenMethodNames.forall(classMethodNames.contains), "Invalid method name")
-  
+
   def apply(originalEnv : InstrumentLevelEnvironment, diff : EnvironmentDifferentiable  with VolKey, dV : Quantity) : InstrumentLevelEnvironment = {
 
     val e = new Enhancer()
@@ -260,7 +272,7 @@ object ShiftSwapPrice{
 
   val classMethodNames = classOf[DefaultInstrumentLevelEnvironment].getMethods.map(_.getName)
   require(overridenMethodNames.forall(classMethodNames.contains), "Invalid method name")
-  
+
   def apply(originalEnv : InstrumentLevelEnvironment, indexToShift : SingleIndex, periodToShift : DateRange, dP : Quantity) : InstrumentLevelEnvironment = {
 
     val e = new Enhancer()
@@ -303,7 +315,7 @@ object ParallelShiftInstrumentLevelVol{
 
   val classMethodNames = classOf[InstrumentLevelEnvironment].getMethods.map(_.getName)
   require(overridenMethodNames.forall(classMethodNames.contains), "Invalid method name")
-  
+
   def apply(originalEnv : InstrumentLevelEnvironment, curveKey : CurveKey, dV : Quantity) : InstrumentLevelEnvironment = {
 
     val e = new Enhancer()
@@ -346,7 +358,7 @@ object ParallelShiftInstrumentLevelVol{
 
 object ShiftMarketDayAtInstrumentLevel{
   def apply(originalEnv : InstrumentLevelEnvironment, newMarketDay : DayAndTime) : InstrumentLevelEnvironment = {
-    
+
     val overridenMethodNames = List("atomicEnv", "marketDay", "discount", "fixing", "copy")
     val List(atomicEnv, marketDay, discount, fixing, copy) = overridenMethodNames
     assert(newMarketDay >= originalEnv.marketDay, "Can't shift time back")
@@ -404,9 +416,9 @@ class CacheEnvironmentDifferentiables(originalEnv : InstrumentLevelEnvironment) 
     }
     originalEnv.interpolatedVol(market, period, exerciseDay, strike, isIndexVol, forwardPrice)
   }
-  def spreadStdDev(market: FuturesMarket, spread : Spread[Month], exerciseDay: Day, strike: Quantity) = {
-    cache.add(SpreadAtmStdDevAtomicDatumKey(market, spread))
-    originalEnv.spreadStdDev(market, spread, exerciseDay, strike)
+  def spreadStdDev(market: FuturesMarket, period: Period, exerciseDay: Day, strike: Quantity) = {
+    cache.add(SpreadAtmStdDevAtomicDatumKey(market, period))
+    originalEnv.spreadStdDev(market, period, exerciseDay, strike)
   }
   def indexVol(index : SingleIndex, observationDay : Day, strike : Quantity, averagePrice : Quantity) = {
     cache.add(SwapVol(index, observationDay))
@@ -416,9 +428,9 @@ class CacheEnvironmentDifferentiables(originalEnv : InstrumentLevelEnvironment) 
     cache.add(SwapPrice(index, observationDay))
     originalEnv.indexForwardPrice(index, observationDay, ignoreShiftsIfPermitted)
   }
-  def spreadPrice(market : FuturesMarket, firstMonth : Month, secondMonth : Month) = {
-    cache.add(FuturesSpreadPrice(market, firstMonth, secondMonth))
-    originalEnv.spreadPrice(market, firstMonth, secondMonth)
+  def spreadPrice(market : FuturesMarket, period: Period) = {
+    cache.add(FuturesSpreadPrice(market, period))
+    originalEnv.spreadPrice(market, period)
   }
   def atomicEnv = originalEnv.atomicEnv
   def apply(key : AtomicDatumKey) : Any = {
@@ -434,7 +446,7 @@ class CacheEnvironmentDifferentiables(originalEnv : InstrumentLevelEnvironment) 
   def setShiftsCanBeIgnored(canBeIgnored : Boolean) = new CacheEnvironmentDifferentiables(originalEnv.setShiftsCanBeIgnored(canBeIgnored))
   def shiftAtomicEnv(fn : AtomicEnvironment => AtomicEnvironment) = new CacheEnvironmentDifferentiables(originalEnv.shiftAtomicEnv(fn))
   def marketDay() : DayAndTime = originalEnv.marketDay
-  
+
   def copy(newAtomicEnv : AtomicEnvironment) = new CacheEnvironmentDifferentiables(originalEnv.copy(newAtomicEnv))
   def discount(ccy : UOM, day : Day, ignoreShiftsIfPermitted : Boolean = false) = originalEnv.discount(ccy, day, ignoreShiftsIfPermitted)
   def fixing(index : SingleIndex, fixingDay : Day) = originalEnv.fixing(index, fixingDay)

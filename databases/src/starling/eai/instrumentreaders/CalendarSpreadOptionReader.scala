@@ -7,6 +7,7 @@ import starling.instrument.CalendarSpreadOption
 import starling.daterange.{Spread, Month}
 import starling.quantity.{UOM, Quantity}
 import starling.utils.Log
+import starling.market.FuturesSpreadMarket
 
 class CalendarSpreadOptionReader extends InstrumentReader {
   import EAISystemOfRecord._

@@ -80,7 +80,7 @@ case class UploadPricesUpdate(user : User, label : String, observationPoint : Ob
     Map("marketName" → marketName, "prices" → prices.map(_.toString))
 }
 
-case class UploadStandardDeviationsUpdate(user : User, label : String, observationDate : Option[Day], dates : Array[Spread[Month]],
+case class UploadStandardDeviationsUpdate(user : User, label : String, observationDate : Option[Day], dates : Array[Period],
                                           marketName : String, standardDeviations : Array[Array[Double]])
   extends RabbitEvent("Trafigura.Raw.StandardDeviations.RiskManagement") {
 

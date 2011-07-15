@@ -66,7 +66,7 @@ trait JonTestEnv extends TestMarketSpec {
   }
 
   def makeEnvShift(marketDay: DayAndTime, dVol: Map[DateRange, Double] = Map.empty, dPrice: Map[DateRange, Quantity] = Map.empty,
-                   dStdDev: Map[Spread[_ <: DateRange], Quantity] = Map.empty, dStdDevSkew: Map[Spread[_ <: DateRange], Double] = Map.empty) = {
+                   dStdDev: Map[Period, Quantity] = Map.empty, dStdDevSkew: Map[Period, Double] = Map.empty) = {
     import JonTestData._
 
     val market = Market.NYMEX_WTI

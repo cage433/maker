@@ -1,5 +1,8 @@
 package starling.utils
 
+import scala.util.control.Exception._
+
+
 object ClosureUtil {
   import ImplicitConversions._
 
@@ -29,7 +32,7 @@ object ClosureUtil {
   def logException[T](action: => T): T = decorate(e => {e.printStackTrace; e})(action)
   def decorate[T](message: => String)(action: => T): T = decorate(e => throw new Exception(message, e))(action)
   def decorate[T](f: Exception => Exception)(action: => T): T = try { action } catch { case e: Exception => throw f(e) }
-  def safely[T](action: => T): Either[Exception, T] = try { Right(action) } catch { case e : Exception => Left(e) }
+  def safely[T](action: => T): Either[Throwable, T] = catching(classOf[Exception]) either(action)
   def forever(action: => Unit): Unit = while (true) action
   def daemon(action: () => Unit): Thread = daemon(runnable(action))
   def daemon(runnable: Runnable): Thread = new Thread(runnable).update(_.setDaemon(true))

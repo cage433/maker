@@ -45,7 +45,7 @@ object FwdCurveAppExternalMarketDataReader {
               (atmCurve.prices.keySet == callCurve.prices.keySet) &&
               (atmCurve.prices.keySet == putCurve.prices.keySet)) {
             val months : Array[Month] = atmCurve.prices.keySet.filter(_.tenor == Some(Month)).map(_.asInstanceOf[Month]).toArray
-            val spreads : Array[Spread[Month]] = months.map(m => Spread(m, m + spreadSize))
+            val spreads : Array[Period] = months.map(m => SpreadPeriod(m, m + spreadSize))
             Some(SpreadStdDevSurfaceData(spreads,
               months.map(m => atmCurve.prices(m).value.value),
               months.map(m => callCurve.prices(m).value.value),
