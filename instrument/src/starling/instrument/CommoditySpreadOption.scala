@@ -77,7 +77,6 @@ case class SingleCommoditySpreadOption(
   override def atomicKeyCachingUTP : UTP = copy(strike = 1.0(market.priceUOM))
 
   def price(env : Environment) = {
-    val marketDay = env.marketDay.day
     val T = exerciseDay.endOfDay.timeSince(env.marketDay)
     val S = env.spreadPrice(market, month)
     val K = strike
@@ -89,7 +88,6 @@ case class SingleCommoditySpreadOption(
       val undiscountedPriceValue = new SpreadOptionCalculations(callPut, S.value, K.value, annualisedStdDev.checkedValue(market.priceUOM), 0.0, T).undiscountedPrice
       val undiscountedPrice = Quantity(undiscountedPriceValue, market.priceUOM)
       undiscountedPrice * discount
-      Quantity.NULL
     }
   }
 }
