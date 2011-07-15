@@ -123,7 +123,7 @@ class MarketChangesPnl(d1: AtomicEnvironment, d2: AtomicEnvironment, utps : Map[
     (envDiffs, curveKeys)
   }
 
-  override def combine(rows : List[MarketChangesPnlRow], reportSpecificChoices : ReportSpecificChoices) = {
+  override def combine(rows : List[MarketChangesPnlRow], reportSpecificChoices : ReportSpecificChoices): List[MarketChangesPnlRow] = {
 //    require(!reportSpecificChoices.getOrElse(futuresAsSwaps_str, false), "Can't do day change report with futures as swaps")
 //    require(!reportSpecificChoices.getOrElse(futuresAsSpreads_str, false), "Can't do day change report with futures as spreads")
 
@@ -134,7 +134,7 @@ class MarketChangesPnl(d1: AtomicEnvironment, d2: AtomicEnvironment, utps : Map[
     val env = if (useSkew) d1EnvFwd else d1EnvFwd.setShiftsCanBeIgnored(true)
     val riskInstruments = new PivotUTPRestructurer(env, reportSpecificChoices, spreadMonthsByStrategyAndMarket, swapIndices).apply(rows.map{r => UTPWithIdentifier(r.utpID, r.utp * r.scale)})
 
-    val combinedRows: List[MarketChangesPnlRow] = riskInstruments.mpFlatMap{
+    val combinedRows: List[MarketChangesPnlRow] = riskInstruments.mpFlatMap {
       case UTPWithIdentifier(utpID, utp) => 
         val (unitUTP, volume) = utp.asUnitUTP
 
@@ -210,6 +210,7 @@ class MarketChangesPnl(d1: AtomicEnvironment, d2: AtomicEnvironment, utps : Map[
     }
     combinedRows
   }
+
   override def reportSpecificOptions = {
     super.reportSpecificOptions :+ 
       (atmVega_str -> List(false, true))

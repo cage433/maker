@@ -18,6 +18,5 @@ object RunReport {
     }
     println("Done")
     init.stop
-    MP.stop
   }
 }

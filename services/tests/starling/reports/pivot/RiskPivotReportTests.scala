@@ -20,12 +20,6 @@ import org.testng.annotations.{AfterTest, AfterClass, Test}
 import starling.gui.api.{ReportSpecificChoices, UTPIdentifier}
 
 class RiskPivotReportTests extends TestMarketSpec with StarlingTest{
-
-  @AfterTest
-  def tearDown {
-    MP.stop
-  }
-
   @Test
   def testFuturesOption {
     val market = Market.NYMEX_WTI
