@@ -323,31 +323,48 @@ class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSiz
     })
     focusedTable0 = None
   }
-  def setSelectedCells(cells:Either[List[(Int,Int)], (List[(Int,Int)],List[(Int,Int)],List[(Int,Int)])]) = {
+  def setSelectedCells(cells:Either[List[(Int,Int)], (List[(Int,Int)],List[(Int,Int)],List[(Int,Int)])]) {
+
+    def isCellVisible(t:JTable, sp:JScrollPane, r:Int, c:Int) = {
+      val viewport = sp.getViewport
+      val rect = t.getCellRect(r, c, true)
+      val pt = viewport.getViewPosition
+      rect.setLocation(rect.x - pt.x, rect.y - pt.y)
+      new Rectangle(viewport.getExtentSize).contains(rect)
+    }
+
+    def doScrolling(t:JXTable, sp:JScrollPane, r:Int, c:Int) {
+      onEDT(onEDT(onEDT({
+        if (!isCellVisible(t, sp, r, c)) {
+          t.scrollCellToVisible(r, c)
+        }
+      })))
+    }
+
     cells match {
       case Left(sc) => {
         fullTable.setSelectedCells(sc)
         focusedTable0 = if (sc.nonEmpty) Some(Full) else None
-        /*if (sc.size == 1) {
+        if (sc.size == 1) {
           val (r,c) = sc.head
-          onEDT(fullTable.scrollCellToVisible(r, c))
-        }*/
+          doScrolling(fullTable, fullTableScrollPane, r, c)
+        }
       }
       case Right((m,r,c)) => {
         mainTable.setSelectedCells(m)
         rowHeaderTable.setSelectedCells(r)
         colHeaderTable.setSelectedCells(c)
         focusedTable0 = if (m.nonEmpty) {
-          /*if (m.size == 1) {
+          if (m.size == 1) {
             val (r,c) = m.head
-            onEDT(mainTable.scrollCellToVisible(r, c))
-          }*/
+            doScrolling(mainTable, mainTableScrollPane, r, c)
+          }
           Some(Main)
         } else if (r.nonEmpty) {
-          /*if (r.size == 1) {
+          if (r.size == 1) {
             val (row,c) = r.head
-            onEDT(rowHeaderTable.scrollCellToVisible(row, c))
-          }*/
+            doScrolling(rowHeaderTable, rowHeaderTableScrollPane, row, c)
+          }
           Some(Row)
         } else if (c.nonEmpty) {
           Some(Column)
