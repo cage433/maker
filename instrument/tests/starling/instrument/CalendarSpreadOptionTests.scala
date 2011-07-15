@@ -36,9 +36,9 @@ class CalendarSpreadOptionTests  extends JonTestEnv with TestNGSuite{
 
     val strike = Quantity(0, market.priceUOM)
     val volume = Quantity(1000, BBL)
-    val option1 = new SingleCalendarSpreadOption(market, market.csoOptionExpiry(may), may, jun, strike, volume, Call)
-    val option2 = new SingleCalendarSpreadOption(market, market.csoOptionExpiry(jun), jun, jul, strike, volume, Call)
-    val option3 = new SingleCalendarSpreadOption(market, market.csoOptionExpiry(jul), jul, aug, strike, volume, Call)
+    val option1 = new SingleCalendarSpreadOption(market, market.csoOptionExpiry(may / jun), may, jun, strike, volume, Call)
+    val option2 = new SingleCalendarSpreadOption(market, market.csoOptionExpiry(jun / jul), jun, jul, strike, volume, Call)
+    val option3 = new SingleCalendarSpreadOption(market, market.csoOptionExpiry(jul / aug), jul, aug, strike, volume, Call)
     val mtm1 = option1.mtm(env)
     val mtm2 = option2.mtm(env)
     val mtm3 = option3.mtm(env)
@@ -79,8 +79,8 @@ class CalendarSpreadOptionTests  extends JonTestEnv with TestNGSuite{
     val T = exerciseDay.endOfDay.timeSince(md)
     val volume = 10.0(mkt.uom)
     val cso = new SingleCalendarSpreadOption(mkt, exerciseDay, june, july, K(mkt.priceUOM), volume, Put)
-    val gamma = cso.gamma(env, FuturesSpreadPrice(mkt, june, july), USD, List(FuturesSpreadPrice(mkt, june, july)), multiple = 1e-3).value
-    val delta = cso.firstOrderDerivative(env, FuturesSpreadPrice(mkt, june, july), USD, multiple = 1e-3).value
+    val gamma = cso.gamma(env, FuturesSpreadPrice(mkt, june / july), USD, List(FuturesSpreadPrice(mkt, june / july)), multiple = 1e-3).value
+    val delta = cso.firstOrderDerivative(env, FuturesSpreadPrice(mkt, june / july), USD, multiple = 1e-3).value
     val scaledVol = stdDev * sqrt(T)
     val spread = FJune - FJuly
     val d1 = (spread - K) / scaledVol

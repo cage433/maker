@@ -1,23 +1,67 @@
 package starling.market
 
+import formula.Formula
 import starling.quantity.UOM
-import starling.quantity.UOM._
 import starling.utils.StarlingEnum
+import starling.calendar.BusinessCalendar
+import starling.daterange.ObservationTimeOfDay._
+import starling.market.FuturesSpreadMarket._
+import starling.daterange.{Location, Day, DateRange, TenorType}
 
-case class FuturesSpreadMarket(name: String, market1: FuturesMarket, market2: FuturesMarket, priceUOM: UOM, lotSize: Double) {
+/**
+ * Whatever the name the price is calculated by market1 - market2.
+ */
+class FuturesSpreadMarket(name: String, uom: UOM, ccy: UOM,
+                               val market1: FuturesMarket,
+                               val market2: FuturesMarket,
+                               lotSize: Option[Double],
+                               tenor: TenorType,
+                               eaiQuoteID: Option[Int],
+                               expiryRule: FuturesExpiryRule,
+                               exchange: FuturesExchange,
+                               hasOptions: Boolean
+                                )
+  extends FuturesMarket(name, lotSize, uom, ccy, null, eaiQuoteID, tenor, expiryRule, exchange, SpreadCommodity) {
+
   override def toString = name
+
+  override val businessCalendar = new BusinessCalendar {
+    def location = Location.Unknown
+
+    def isHoliday(day: Day) = {
+      market1.businessCalendar.isHoliday(day) && market2.businessCalendar.isHoliday(day)
+    }
+
+    def name = name + " calendar"
+  }
 }
 
-object FuturesSpreadMarket extends StarlingEnum(classOf[FuturesSpreadMarket], (f: FuturesSpreadMarket) => f.name, true) {
-  import Market._
+object FuturesSpreadMarket {
+  lazy val provider = MarketProvider.provider
+
+  def defaultExpiryRule(market1: FuturesMarket, market2: FuturesMarket) = new FuturesExpiryRule {
+    def lastTradingDay(d: DateRange) = market1.lastTradingDay(d) max market2.lastTradingDay(d)
+
+    val name = "Spread Expiry Rule"
+  }
+
+  val NoExchangeMonthly = FuturesExchange("NoExchange", MonthlyDelivery, Default)
+
+  val SpreadCommodity = new Commodity
 
   /**
    * Futures Commodity Spread Markets
    */
-  lazy val RB_CRACKS = new FuturesSpreadMarket("RB Cracks", NYMEX_GASOLINE, NYMEX_WTI, USD/BBL, 1000)
-  lazy val RB_BRENT_CRACKS = new FuturesSpreadMarket("RB Brent Cracks", NYMEX_GASOLINE, ICE_BRENT, USD/BBL, 1000)
-  lazy val ICE_WTI_BRENT= new FuturesSpreadMarket("WTI Brent", ICE_WTI, ICE_BRENT, USD/BBL, 1000)
-  lazy val NYMEX_WTI_BRENT = new FuturesSpreadMarket("NY WTI Brent", NYMEX_WTI, ICE_BRENT, USD/BBL, 1000)
-  lazy val GO_CRACKS = new FuturesSpreadMarket("GO Cracks", ICE_GAS_OIL, ICE_BRENT, USD/MT, 100)
-  lazy val RBHO = new FuturesSpreadMarket("RBHO", NYMEX_GASOLINE, NYMEX_HEATING, USD/GAL, 42000)
+  lazy val RB_CRACKS = futuresMarketFromName("Nymex RBOB vs Nymex WTI")
+  lazy val RB_BRENT_CRACKS = futuresMarketFromName("NYMEX RBOB 1st Month vs IPE Brent 1st Month")
+  lazy val RBHO = futuresMarketFromName("Nymex RBOB vs Nymex Heat")
+  lazy val GO_CRACKS = futuresMarketFromName("IPE Gas Oil (Settlement) vs IPE Brent")
+  lazy val ICE_WTI_BRENT = futuresMarketFromName("ICE WTI 1st month vs ICE Brent 1st month")
+  lazy val NYMEX_WTI_BRENT = futuresMarketFromName("NYMEX WTI vs IPE Brent")
+
+  def futuresMarketFromName(marketName: String): FuturesSpreadMarket = futuresMarketFromNameOption(marketName).getOrElse(throw new Exception("No market with name: " + marketName))
+
+  def futuresMarketFromNameOption(marketName: String): Option[FuturesSpreadMarket] = provider.futuresSpreadMarket(marketName)
+
+  def futuresMarketFromQuoteID(id: Int): FuturesSpreadMarket = provider.futuresSpreadMarket(id).getOrElse(throw new Exception("No market: " + id))
 }

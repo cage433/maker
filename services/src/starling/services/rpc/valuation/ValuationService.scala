@@ -266,7 +266,7 @@ class ValuationService(
   lazy val futuresMarketByGUID = refData.futuresMarketByGUID
   val eventHandler = new EventHandler
 
-  rabbitEventServices.eventDemux.addClient(eventHandler)
+  rabbitEventServices.addClient(eventHandler)
 
 
   /**

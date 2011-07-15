@@ -24,7 +24,7 @@ class FutureCalendarSpreadsTests extends JonTestEnv {
   @Test
   def testFuturesMtm1 {
     val spread = price1 - price2
-    assertEquals(spread, env.spreadPrice(market, period1, period2))
+    assertEquals(spread, env.spreadPrice(market, period1 / period2))
 
     val f1 = Future(market, period1, spread.copy(value = 0.0), 1(BBL))
     val f2 = Future(market, period2, -spread, (-1)(BBL))

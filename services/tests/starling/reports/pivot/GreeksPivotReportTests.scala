@@ -56,12 +56,6 @@ class GreeksPivotReportTests extends StarlingTest {
   val marketDay = Day(2010, 1, 1)
   val env = Environment(new NullAtomicEnvironment(marketDay.endOfDay))
 
-
-  @AfterTest
-  def tearDown {
-    MP.stop
-  }
-
   private def allSameClass(klass : Class[_])(seq : Seq[AnyRef]) = {
     seq.forall{
       elt =>

@@ -46,12 +46,12 @@ object Hedge{
     val months = spreadMonths.toList.sortWith(_<_)
     val diffs = months.map(PriceDifferentiable(market, _))
 
-    val newDiffs = PriceDifferentiable(market, months.last) :: months.zip(months.tail).map{case (m1, m2) => FuturesSpreadPrice(market, m1, m2)}
+    val newDiffs = PriceDifferentiable(market, months.last) :: months.zip(months.tail).map{case (m1, m2) => FuturesSpreadPrice(market, m1 / m2)}
 
     val strike = Quantity(0, market.priceUOM)
     val spreads = calcHedge(env, diffs, CompositeInstrument(liveFutures), newDiffs).map{
       case (PriceDifferentiable(_, month), volume) => (Future(market, month, strike, Quantity(1, market.uom)).asInstanceOf[UTP], volume.value)
-      case (FuturesSpreadPrice(_, m1, m2), volume) => (FuturesCalendarSpread(market, m1, m2, strike, strike, Quantity(1, market.uom)).asInstanceOf[UTP], volume.value)
+      case (FuturesSpreadPrice(_, SpreadPeriod(m1: Month, m2: Month)), volume) => (FuturesCalendarSpread(market, m1, m2, strike, strike, Quantity(1, market.uom)).asInstanceOf[UTP], volume.value)
     }
     spreads + compensatingBankAccount(env, liveFutures, asListOfUTPS(spreads))
   }

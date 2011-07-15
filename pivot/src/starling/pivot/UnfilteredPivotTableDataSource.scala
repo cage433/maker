@@ -3,6 +3,7 @@ package starling.pivot
 import collection.Seq
 import model.UndefinedValue
 import scala.collection.mutable.{Map => MutableMap, Set => MutableSet}
+import starling.pivot.PivotValue
 
 
 /**
@@ -68,7 +69,7 @@ object UnfilteredPivotTableDataSource {
       row => {
         pfs.filters.forall{ case(field,selection) => {
           val fieldDetails = fieldDetailsMap(field)
-          val rowValue = fieldDetails.transformValueForGroupByField(row.getOrElse(field, UndefinedValue))
+          val rowValue = fieldDetails.transformValueForGroupByField(row.get(field).map(PivotValue.extractValue).getOrElse(UndefinedValue))
           selection match {
             case SomeSelection(values) => fieldDetails.matches(values, rowValue)
             case _ => true

@@ -10,6 +10,7 @@ import collection.immutable.{Map, TreeMap}
 import collection.Set
 import org.mockito.internal.matchers.AnyVararg
 import collection.script.Start
+import reflect.AnyValManifest
 
 case class FieldDetailsGroup(name:String, fields:List[FieldDetails]) {
   def toFieldGroup = {
@@ -143,11 +144,6 @@ case class PivotEdits(edits:Map[KeyFilter,KeyEdits], newRows:List[Map[Field,Any]
     }
   }
 
-  def withAddedRow(keyFields:Set[Field], field:Field, value:Any):PivotEdits = {
-    val row = (Map() ++ (keyFields.map(f => {f -> UndefinedValue}))) + (field -> value)
-    withAddedRow(row)
-  }
-
   def withAddedRow(row:Map[Field,Any]) = {
     copy(newRows = newRows ::: List(row))
   }
@@ -228,7 +224,16 @@ case class PivotTreePath(path:List[String]) {
       case first :: rest => TreePivotFilterNode(PivotTreePath(first), first.last, List(recurse(rest)))
     }
 
-    recurse(path.inits.toList.dropRight(1))
+    def tails[A](list: List[A]) = {
+      def recurse(list : List[A]) : List[List[A]] = list match {
+        case Nil => Nil
+        case _ => list :: recurse(list.tail)
+      }
+
+      recurse(list)
+    }
+
+    recurse(tails(path.reverse).reverse.map(_.reverse))
   }
 }
 object PivotTreePath {
@@ -249,6 +254,10 @@ object PivotValue {
   def create(value:Any) = value match {
     case pv:PivotValue => pv
     case other => StandardPivotValue(other)
+  }
+  def extractValue(value:Any) = value match {
+    case pv:PivotValue => pv.value.getOrElse("DELETED " + pv.originalValue) //FIXME
+    case other => other
   }
 }
 

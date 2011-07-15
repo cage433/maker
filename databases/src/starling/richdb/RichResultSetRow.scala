@@ -67,11 +67,8 @@ class RichResultSetRow(resultSet: ResultSet)
 
   def getFuturesMarket(column: String) = Market.futuresMarketFromName(getString(column))
 
-  def getFuturesSpreadMarket(column: String) = getString(column) match {
-    case FuturesSpreadMarket.Parse(market) => market
-    case unknown => throw new Exception("Not a recognised futures spread market: " + unknown)
-  }
-
+  def getFuturesSpreadMarket(column: String) = FuturesSpreadMarket.futuresMarketFromName(getString(column))
+  
   def getCommodityMarket(column: String) = Market.fromName(getString(column))
 
   def getFuturesMarketFromEAIQuoteID(column: String) = Market.futuresMarketFromQuoteID(getInt(column))

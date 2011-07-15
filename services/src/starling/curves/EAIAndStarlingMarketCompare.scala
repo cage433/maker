@@ -46,8 +46,8 @@ object EAIAndStarlingMarketCompare {
         }
       }
       {
-        val eaiMarkets = eai.allFuturesMarkets.toSet
-        val starlingMarkets = starling.allFuturesMarkets.toSet
+        val eaiMarkets = eai.allMarkets.toSet
+        val starlingMarkets = starling.allMarkets.toSet
         val eaiExtras = eaiMarkets.filter(i => !starlingMarkets.find(_.name == i.name).isDefined)
         if (eaiExtras.size > 0) {
           Log.warn("EAI has some extra markets: " + eaiExtras)

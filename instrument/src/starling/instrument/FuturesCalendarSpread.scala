@@ -53,7 +53,7 @@ case class FuturesCalendarSpread(market: FuturesMarket, firstMonth: Month, secon
 
   override def priceAndVolKeys(marketDay : DayAndTime) = {
     var (pk, _) = super.priceAndVolKeys(marketDay)
-    pk = if (pk.isEmpty) pk else Set(FuturesSpreadPrice(market, firstMonth, secondMonth))
+    pk = if (pk.isEmpty) pk else Set(FuturesSpreadPrice(market, firstMonth / secondMonth))
     (pk, Set())
   }
 

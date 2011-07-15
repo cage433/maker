@@ -19,7 +19,8 @@ class Field(val name: String) extends Serializable {
   }
 }
 
-object Field{
+object Field {
+
   val commodity_str = "Commodity"
   val desk_str = "Desk"
   val groupCompany_str = "Group Company"
