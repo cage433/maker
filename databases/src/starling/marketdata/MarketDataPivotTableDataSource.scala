@@ -203,14 +203,11 @@ class MarketDataPivotTableDataSource(reader: MarketDataReader, edits:PivotEdits,
       } }
     }
 
-    println("edits " + edits)
     val addedRows = edits.newRows.zipWithIndex.map{case (row,index) => {
       Map() ++ allFields.map(f => {
         f -> NewValue(row.get(f), index, PivotEdits.Null.withAddedRow(row))
       })
     }}.toList
-
-    println("added " + addedRows)
 
     val allRows = data ::: addedRows
 

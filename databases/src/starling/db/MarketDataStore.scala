@@ -780,7 +780,10 @@ class DBMarketDataStore(db:MdDB, tags:MarketDataTags, val marketDataSources: Map
 
   def readLatest[T <: MarketData](marketDataSet:MarketDataSet, timedKey: TimedMarketDataKey) : Option[T] = {
     val id = MarketDataID(timedKey.observationPoint, marketDataSet, timedKey.key)
-    readLatest(id).map(_.data.asInstanceOf[T])
+    readLatest(id) match {
+      case None => None
+      case Some(data) => data.data.map(_.asInstanceOf[T])
+    }
   }
 
   def readLatest[T <: MarketData](id:MarketDataID) = {
