@@ -419,12 +419,15 @@ class MarketDataPageComponent(
     }
   }
 
-  override def resetDynamicState {pivotComponent.resetDynamicState}
+  override def resetDynamicState() {pivotComponent.resetDynamicState()}
 
   override def getState = pivotComponent.getState
   override def setState(state:Option[ComponentState]) {pivotComponent.setState(state)}
   override def getTypeState = pivotComponent.getTypeState
   override def setTypeState(typeState:Option[ComponentTypeState]) {pivotComponent.setTypeState(typeState)}
+  override def getTypeFocusInfo = pivotComponent.getTypeFocusInfo
+  override def setTypeFocusInfo(focusInfo:Option[TypeFocusInfo]) {pivotComponent.setTypeFocusInfo(focusInfo)}
+
   override def pageShown() {pivotComponent.pageShown()}
 
   reactions += {

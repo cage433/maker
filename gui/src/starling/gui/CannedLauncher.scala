@@ -116,7 +116,7 @@ class CannedHomePagePageComponent(pageContext:PageContext) extends MigPanel("") 
     }
   })
 
-  override def pageShown = runButton.requestFocusInWindow
+  override def defaultComponentForFocus = Some(runButton.peer)
 }
 
 case class CannedDrilldownPage(fields:Seq[(Field,Any)]) extends Page {

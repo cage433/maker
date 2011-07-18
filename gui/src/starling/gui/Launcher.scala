@@ -6,7 +6,6 @@ import pages.{HelpPage, StarlingHomePage, PageBuilder, StarlingBrowser}
 import scala.swing.event.WindowClosing
 import scala.swing.event.MouseClicked
 import scala.swing.event.ButtonClicked
-import scala.swing.event.SelectionChanged
 import starling.gui.StandardUserSettingKeys._
 import swing._
 import scala.swing.Action
@@ -22,7 +21,7 @@ import starling.gui.LocalCacheKeys._
 import starling.daterange.Day
 import starling.auth.{Client, ClientLogin}
 import management.ManagementFactory
-import java.awt.{GraphicsEnvironment, Color}
+import java.awt.{GraphicsEnvironment, Color, KeyboardFocusManager}
 import xstream.GuiStarlingXStream
 
 /**
@@ -564,6 +563,25 @@ trait WindowMethods {
 class StarlingBrowserTabbedPane(homePage: Page, pageBuilder: PageBuilder, lCache: LocalCache, userSettings:UserSettings,
                                 remotePublisher: Publisher, windowMethods: WindowMethods, extraInfo:Option[String],
                                 containerMethods:ContainerMethods, parentFrame:StarlingBrowserFrame) extends TabbedPane {
+  override lazy val peer = new JTabbedPane with SuperMixin {
+    override def setSelectedIndex(index:Int) {
+      if (selection.index != -1) {
+        selection.page.content match {
+          case c:SXLayerScala[_] => c.asInstanceOf[SXLayerScala[StarlingBrowser]].getScalaComponent.unselected()
+          case _ =>
+        }
+      }
+
+      super.setSelectedIndex(index)
+
+      // Tell the current page it has been selected.
+      selection.page.content match {
+        case c:SXLayerScala[_] => c.asInstanceOf[SXLayerScala[StarlingBrowser]].getScalaComponent.selected()
+        case _ =>
+      }
+    }
+  }
+
   focusable = false
   peer.setUI(new StarlingTabbedPaneUI)
   peer.addMouseListener(new MouseAdapter {
@@ -618,10 +636,9 @@ class StarlingBrowserTabbedPane(homePage: Page, pageBuilder: PageBuilder, lCache
       pages.remove(selectionToRemove)
       val newSelection = if (selectionToRemove == pages.length - 1) selectionToRemove - 1 else selectionToRemove
       selection.index = newSelection
-      windowMethods.tabClosed
-      val c = pages(newSelection).self.asInstanceOf[SXLayerScala[StarlingBrowser]].getScalaComponent
-      c.currentComponent.requestFocusInWindow
-      c.currentComponent.pageShown
+      windowMethods.tabClosed()
+      val browser = pages(newSelection).self.asInstanceOf[SXLayerScala[StarlingBrowser]].getScalaComponent
+      browser.selected()
     } else {
       containerMethods.closeFrame(parentFrame)
     }
@@ -632,7 +649,7 @@ class StarlingBrowserTabbedPane(homePage: Page, pageBuilder: PageBuilder, lCache
 
   private val splitVerticallyAction = new Action("Split Vertically") {
     icon = StarlingIcons.icon("/icons/splitVertically.png")
-    def apply() = {
+    def apply() {
       windowMethods.splitVertically(StarlingBrowserTabbedPane.this)
     }
   }
@@ -643,9 +660,9 @@ class StarlingBrowserTabbedPane(homePage: Page, pageBuilder: PageBuilder, lCache
   private val tabPopupMenu = new JPopupMenu
   tabPopupMenu.setBorder(LineBorder(GuiUtils.BorderColour))
   tabPopupMenu.add(newTabItem.peer)
-  tabPopupMenu.addSeparator
+  tabPopupMenu.addSeparator()
   tabPopupMenu.add(closeTabItem.peer)
-  tabPopupMenu.addSeparator
+  tabPopupMenu.addSeparator()
   tabPopupMenu.add(splitVerticallyItem.peer)
 
   def createStarlingBrowser(gotoTab: Boolean = true, pageOrBuildPage: Either[Page, (StarlingServer => Page, PartialFunction[Throwable, Unit])] = Left(homePage)): StarlingBrowser = {
@@ -673,24 +690,4 @@ class StarlingBrowserTabbedPane(homePage: Page, pageBuilder: PageBuilder, lCache
 
   // This is run for the side effects. That's a bit naughty!
   createStarlingBrowser()
-
-  reactions += {
-    case SelectionChanged(tp) => {
-      // A tab has been selected so first tell all the tabs that they have been deselected.
-      val pagesThatAreNotSelected = pages.filterNot(_ == selection.page)
-      pagesThatAreNotSelected.foreach(p => {
-        p.content match {
-          case c:SXLayerScala[_] => c.asInstanceOf[SXLayerScala[StarlingBrowser]].getScalaComponent.pageUnselected
-          case _ =>
-        }
-      })
-
-      // Now tell the selected tab that it has been selected.
-      selection.page.content match {
-        case c:SXLayerScala[_] => c.asInstanceOf[SXLayerScala[StarlingBrowser]].getScalaComponent.pageSelected
-        case _ =>
-      }
-    }
-  }
-  listenTo(selection)
 }
