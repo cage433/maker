@@ -8,7 +8,7 @@ import starling.pivot.model._
 import starling.pivot._
 import controller.PivotTableConverter
 import starling.pivot.FieldChooserType._
-import java.awt.{Graphics2D, Dimension, Color, GradientPaint, Cursor, AWTEvent, Toolkit}
+import java.awt.{Graphics2D, Dimension, Color, GradientPaint, Cursor, AWTEvent, Toolkit, KeyboardFocusManager}
 import java.awt.{Component => AWTComp}
 import org.jdesktop.swingx.decorator.{HighlightPredicate}
 import org.jdesktop.swingx.JXTable

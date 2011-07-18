@@ -22,7 +22,7 @@ import starling.utils.ImplicitConversions._
 case class MarketDataPage(
         marketDataIdentifier:MarketDataPageIdentifier,
         pageState : MarketDataPageState
-        ) extends AbstractPivotPage(pageState.pivotPageState) {
+        ) extends AbstractPivotPage(pageState.pivotPageState, pageState.edits) {
   def this(mdi:MarketDataIdentifier, pageState : MarketDataPageState) = this(StandardMarketDataPageIdentifier(mdi), pageState)
 
   def text = "Market Data Viewer"
@@ -41,8 +41,14 @@ case class MarketDataPage(
 
   override def refreshFunctions = marketDataIdentifier match {
     case StandardMarketDataPageIdentifier(c@MarketDataIdentifier(MarketDataSelection(pricingGroup, name), SpecificMarketDataVersion(_))) => {
-      PricingGroupMarketDataUpdate.matching(pricingGroup).andThen(update => copy(marketDataIdentifier=StandardMarketDataPageIdentifier(c.copyVersion(update.version)))) ::
-      ExcelMarketDataUpdate.matching(name).andThen(update => copy(marketDataIdentifier=StandardMarketDataPageIdentifier(c.copyVersion(update.version)))) ::
+      PricingGroupMarketDataUpdate.matching(pricingGroup).andThen(update => {
+        // TODO - All edits are being removed - not just the ones that are cancelled out by the update.
+        copy(marketDataIdentifier=StandardMarketDataPageIdentifier(c.copyVersion(update.version)), pageState = pageState.copy(edits = PivotEdits.Null))
+      }) ::
+      ExcelMarketDataUpdate.matching(name).andThen(update => {
+        // TODO - All edits are being removed - not just the ones that are cancelled out by the update.
+        copy(marketDataIdentifier=StandardMarketDataPageIdentifier(c.copyVersion(update.version)), pageState = pageState.copy(edits = PivotEdits.Null))
+      }) ::
       Nil
     }
     case _ => Nil
@@ -173,7 +179,7 @@ class MarketDataSelectionComponent(pageContext:PageContext, maybeDesk:Option[Des
         extends MigPanel("insets 0") with Revertable {
 
 
-  def revert() = this.suppressingSelf(selection = marketDataSelection)
+  def revert() {this.suppressingSelf(selection = marketDataSelection)}
 
   private val minWidthForComboBox = 200
 
@@ -264,7 +270,7 @@ class MarketDataSelectionComponent(pageContext:PageContext, maybeDesk:Option[Des
     if (excelCheckBox.selected) Some(excelCombo.selection.item) else None
   )
 
-  def fireNewSelection {
+  def fireNewSelection() {
     val se = selection
     MarketDataSelectionComponent.storeMarketDataSelection(pageContext, se)
     publish(MarketDataSelectionChanged(se))
@@ -285,10 +291,10 @@ class MarketDataSelectionComponent(pageContext:PageContext, maybeDesk:Option[Des
   }
 
   reactions += {
-    case ButtonClicked(`pricingGroupCheckBox`) => { pricingGroupCombo.enabled = pricingGroupCheckBox.selected; fireNewSelection }
-    case SelectionChanged(`pricingGroupCombo`) => fireNewSelection
-    case ButtonClicked(`excelCheckBox`) => { excelCombo.enabled = excelCheckBox.selected; fireNewSelection }
-    case SelectionChanged(`excelCombo`) => fireNewSelection
+    case ButtonClicked(`pricingGroupCheckBox`) => { pricingGroupCombo.enabled = pricingGroupCheckBox.selected; fireNewSelection() }
+    case SelectionChanged(`pricingGroupCombo`) => fireNewSelection()
+    case ButtonClicked(`excelCheckBox`) => { excelCombo.enabled = excelCheckBox.selected; fireNewSelection() }
+    case SelectionChanged(`excelCombo`) => fireNewSelection()
   }
 
   listenTo(pricingGroupCheckBox, pricingGroupCombo.selection, excelCheckBox, excelCombo.selection)
@@ -333,7 +339,7 @@ class MarketDataPageComponent(
   private val snapshotsComboBoxModel = new DefaultComboBoxModel
   private val snapshotsComboBox = new ComboBox[SnapshotComboValue](List(SnapshotComboValue(None))) { // Got to pass a list in - not very good but we remove it straight away.
     peer.setModel(snapshotsComboBoxModel)
-    snapshotsComboBoxModel.removeAllElements
+    snapshotsComboBoxModel.removeAllElements()
     
     {val snapshots = pageContext.localCache.snapshots(None).getOrElse(thisPage.marketDataIdentifier.selection, List())
       SnapshotComboValue(None) :: snapshots.map(ss=>SnapshotComboValue(Some(ss))).toList}.foreach(snapshotsComboBoxModel.addElement(_))
@@ -360,7 +366,7 @@ class MarketDataPageComponent(
     case MarketDataSnapshot(snapshots) => {
       this.suppressing(snapshotsComboBox.selection) {
         val itemSelected = snapshotsComboBox.selection.item
-        snapshotsComboBoxModel.removeAllElements
+        snapshotsComboBoxModel.removeAllElements()
 
         {val newSnapshots = snapshots.getOrElse(thisPage.marketDataIdentifier.selection, List())
           SnapshotComboValue(None) :: newSnapshots.map(ss=>SnapshotComboValue(Some(ss))).toList}.foreach(snapshotsComboBoxModel.addElement(_))
@@ -413,12 +419,13 @@ class MarketDataPageComponent(
     }
   }
 
-  override def resetDynamicState = pivotComponent.resetDynamicState
+  override def resetDynamicState {pivotComponent.resetDynamicState}
 
   override def getState = pivotComponent.getState
-  override def setState(state:Option[ComponentState]) = pivotComponent.setState(state)
+  override def setState(state:Option[ComponentState]) {pivotComponent.setState(state)}
   override def getTypeState = pivotComponent.getTypeState
-  override def setTypeState(typeState:Option[ComponentTypeState]) = pivotComponent.setTypeState(typeState)  
+  override def setTypeState(typeState:Option[ComponentTypeState]) {pivotComponent.setTypeState(typeState)}
+  override def pageShown() {pivotComponent.pageShown()}
 
   reactions += {
     case SelectionChanged(`dataTypeCombo`) => {
