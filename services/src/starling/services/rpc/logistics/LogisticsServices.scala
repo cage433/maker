@@ -153,7 +153,7 @@ case class LogisticsJsonMockDataFileGenerater(titanEdmTradeService : TitanServic
   import FileUtils._
   val fileOutputPath = "/tmp"
   val inventoryFilePath = fileOutputPath + "/logisticsEdmInventory.json"
-  val assignmentsFilePath = fileOutputPath + "/logisticsEdmAllAssigngments.json"
+  val assignmentsFilePath = fileOutputPath + "/logisticsEdmAllAssignments.json"
 
   val assignmentService = logisticsServices.assignmentService.service
   val inventoryService = logisticsServices.inventoryService.service
@@ -162,6 +162,8 @@ case class LogisticsJsonMockDataFileGenerater(titanEdmTradeService : TitanServic
   //purchaseQuotas.foreach(pq => println("pq = " + pq.detail.identifier))
   val allQuotasMap = trades.flatMap(t => t.quotas.map(q => NeptuneId(q.detail.identifier).identifier -> q))
 
+  val salesAssignments = assignmentService.getAllSalesAssignments()
+  println("Got %d sales assignments")
   def inventoryByPurchaseQuotaId(id : String) =
     catching(classOf[Exception]) either inventoryService.getInventoryTreeByPurchaseQuotaId(id)
 
@@ -173,7 +175,7 @@ case class LogisticsJsonMockDataFileGenerater(titanEdmTradeService : TitanServic
   */
 
   val quotaIds = purchaseQuotas.map(q => NeptuneId(q.detail.identifier).identifier).filter(id => id != null)
-  println("quotaIds %d".format(quotaIds.size))
+  println("quotaIds count %d".format(quotaIds.size))
   //quotaIds.foreach(qid => println("purchase neptune quota id " + qid))
   val allInventory = quotaIds.map(id => inventoryByPurchaseQuotaId(id))
   val inventory = allInventory.collect({ case Right(i) => i }).flatten

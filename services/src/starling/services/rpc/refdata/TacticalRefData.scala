@@ -69,7 +69,7 @@ case class FileMockedTitanServices() extends TitanServices {
   import starling.services.rpc.logistics.FileUtils._
 
   val resourcePath = "/tests/valuationservice/testdata"
-  val tradesFile = getClass.getResource(resourcePath + "/edmTrades.json")
+  val tradesFile = getClass.getResource(resourcePath + "/allEdmTrades.json") // "/edmTrades.json")
   val marketsFile = getClass.getResource(resourcePath + "/markets.json")
   val exchangesFile = getClass.getResource(resourcePath + "/exchanges.json")
 
@@ -128,9 +128,9 @@ case class FileMockedTitanServicesDataFileGenerator(titanEdmTradeService : Titan
 
   val (_, worked) = valuations.tradeResults.values.partition({ case Right(_) => true; case Left(_) => false })
 
-  val tradeIds = valuations.tradeResults.collect{ case (id, Right(v)) => id }.toList
-  val trades = valuationService.getTrades(tradeIds)
-  //val trades = titanEdmTradeService.titanGetEdmTradesService.getAll().results.map(_.trade).filter(_ != null)
+  val tradeIds = valuations.tradeResults.collect{ case (id, Right(_)) => id }.toList
+  //val trades = valuationService.getTrades(tradeIds)
+  val trades = titanEdmTradeService.titanGetEdmTradesService.getAll().results.map(_.trade).filter(_ != null)
   val markets = valuationService.getFuturesMarkets.toList
   val exchanges = valuationService.getFuturesExchanges.toList
 
