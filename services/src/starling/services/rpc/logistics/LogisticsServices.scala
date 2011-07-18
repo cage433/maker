@@ -12,8 +12,8 @@ import starling.services.StarlingInit
 import com.trafigura.edm.physicaltradespecs.EDMQuota
 import com.trafigura.edm.trades.{Trade => EDMTrade, PhysicalTrade => EDMPhysicalTrade}
 import scala.util.control.Exception.catching
-import starling.services.rpc.refdata.{NeptuneId, TitanEdmTradeService}
-
+import starling.services.rpc.valuation.{TitanTradeService, DefaultTitanTradeService}
+import starling.services.rpc.refdata.{TitanServices, FileMockedTitanServices, NeptuneId, TitanEdmTradeService}
 
 /**
  * logistics service interface
@@ -149,14 +149,18 @@ object FileUtils {
   }
 }
 
-case class LogisticsJsonMockDataFileGenerater(titanEdmTradeService : TitanEdmTradeService, logisticsServices : TitanLogisticsServices) {
+case class LogisticsJsonMockDataFileGenerater(titanEdmTradeService : TitanServices, logisticsServices : TitanLogisticsServices) {
   import FileUtils._
   val fileOutputPath = "/tmp"
+  val inventoryFilePath = fileOutputPath + "/logisticsEdmInventory.json"
+  val assignmentsFilePath = fileOutputPath + "/logisticsEdmAllAssigngments.json"
+
   val assignmentService = logisticsServices.assignmentService.service
   val inventoryService = logisticsServices.inventoryService.service
   val trades : List[EDMPhysicalTrade] = titanEdmTradeService.titanGetEdmTradesService.getAll().results.map(_.trade).filter(_ != null).map(_.asInstanceOf[EDMPhysicalTrade])
   val purchaseQuotas : List[EDMQuota] = trades.filter(_.direction == "P").flatMap(t => t.quotas)
   //purchaseQuotas.foreach(pq => println("pq = " + pq.detail.identifier))
+  val allQuotasMap = trades.flatMap(t => t.quotas.map(q => NeptuneId(q.detail.identifier).identifier -> q))
 
   def inventoryByPurchaseQuotaId(id : String) =
     catching(classOf[Exception]) either inventoryService.getInventoryTreeByPurchaseQuotaId(id)
@@ -171,12 +175,12 @@ case class LogisticsJsonMockDataFileGenerater(titanEdmTradeService : TitanEdmTra
   val quotaIds = purchaseQuotas.map(q => NeptuneId(q.detail.identifier).identifier).filter(id => id != null)
   println("quotaIds %d".format(quotaIds.size))
   //quotaIds.foreach(qid => println("purchase neptune quota id " + qid))
-  val inventory = quotaIds.map(id => inventoryByPurchaseQuotaId(id)).collect({ case Right(i) => i }).flatten
+  val allInventory = quotaIds.map(id => inventoryByPurchaseQuotaId(id))
+  val inventory = allInventory.collect({ case Right(i) => i }).flatten
+  val invalidInventory = allInventory.collect({ case Left(i) => i })
   val inventoryLeaves = findLeaves(inventory)
   //println("Inventory, loaded %d inventory items and found %d leaves".format(inventory.size, inventoryLeaves.size))
 
-  val inventoryFilePath = fileOutputPath + "/logisticsEdmInventory.json"
-  writeJson(inventoryFilePath, inventory)
 
   println("getting assignments...")
   val assignments : List[EDMAssignmentItem] = inventory.flatMap(i => {
@@ -187,8 +191,20 @@ case class LogisticsJsonMockDataFileGenerater(titanEdmTradeService : TitanEdmTra
     }
   })
 
+  val assignmentMap = assignments.map(a => a.oid.contents -> a).toMap
+
+  val validInventory = inventory.filter(i => {
+    allQuotasMap.contains(NeptuneId(assignmentMap(i.purchaseAssignmentId).quotaName).identifier) && {
+      i.salesAssignmentId match {
+        case Some(salesId) => allQuotasMap.contains(NeptuneId(assignmentMap(salesId).quotaName).identifier)
+        case None => true
+      }
+    }
+  })
+
+  writeJson(inventoryFilePath, inventory)
+
   println("All assignments, loaded %d assignments".format(assignments.size))
-  val assignmentsFilePath = fileOutputPath + "/logisticsEdmAllAssigngments.json"
   writeJson(assignmentsFilePath, assignments)
 
   // temporary work around to find leaves of the logistics inventory tree
@@ -202,9 +218,10 @@ object LogisticServices {
     println("running main for Logistics services")
     val server = StarlingInit.devInstance
     val edmTradeService = server.titanServices
+    val mockTitanServices = new FileMockedTitanServices()
+    val mockTitanTradeService = new DefaultTitanTradeService(mockTitanServices)
     val logisticsServices = server.logisticsServices
-    LogisticsJsonMockDataFileGenerater(edmTradeService, logisticsServices)
+    LogisticsJsonMockDataFileGenerater(mockTitanServices, logisticsServices)
     server.stop
   }
 }
-

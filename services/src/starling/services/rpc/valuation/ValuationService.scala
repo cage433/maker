@@ -293,7 +293,7 @@ class ValuationService(
       trade => (trade.tradeId.toString, tradeValuer(trade))
     }.toMap
     log("Valuation took " + sw)
-    val (worked, errors) = valuations.values.partition(_ match { case Right(_) => true; case Left(_) => false })
+    val (worked, errors) = valuations.values.partition(_ isRight)
     log("Worked " + worked.size + ", failed " + errors.size + ", took " + sw)
     CostsAndIncomeQuotaValuationServiceResults(snapshotIDString, valuations)
   }
@@ -371,7 +371,7 @@ class ValuationService(
     val valuations = tradeValues ::: quotaValues
 
     log("Valuation took " + sw)
-    val (worked, errors) = valuations.partition(_._2 match { case Right(_) => true; case Left(_) => false })
+    val (worked, errors) = valuations.partition(_._2 isRight)
     log("Worked " + worked.size + ", failed " + errors.size + ", took " + sw)
     
     CostsAndIncomeQuotaValuationServiceResults(snapshotIDString, valuations.toMap)
@@ -439,7 +439,7 @@ class ValuationService(
     }
 
     log("Valuation took " + sw)
-    val (worked, errors) = valuations.partition(_._2 match { case Right(_) => true; case Left(_) => false })
+    val (worked, errors) = valuations.partition(_._2 isRight)
     log("Worked " + worked.size + ", failed " + errors.size + ", took " + sw)
     println("Failed valuation of assignments \n %s".format(errors.mkString("\n")))
 

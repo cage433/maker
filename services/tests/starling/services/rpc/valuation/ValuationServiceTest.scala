@@ -52,7 +52,7 @@ class ValuationServiceTest extends StarlingTest {
     }
   }
 
-  @Test
+  //@Test
   def testValuationServiceValuationUpdatedEvents() {
 
     Log.info("testValuationServiceValuationUpdatedEvents starting")
@@ -78,7 +78,7 @@ class ValuationServiceTest extends StarlingTest {
     //vs.marketDataSnapshotIDs().foreach(println)
     val valuations = vs.valueAllQuotas()
 
-    val (worked, _) = valuations.tradeResults.values.partition({ case Right(_) => true; case _ => false })
+    val (worked, _) = valuations.tradeResults.values.partition(_ isRight)
     val valuedTradeIds = valuations.tradeResults.collect {
       case (id, Right(v)) => id
     }.toList
@@ -159,9 +159,9 @@ class ValuationServiceTest extends StarlingTest {
 
     println("Valued assignments")
 
-    val (worked, failed) = valuations.assignmentValuationResults.values.partition({ case Right(_) => true; case _ => false })
+    val (worked, failed) = valuations.assignmentValuationResults.values.partition(_ isRight)
     val valuedIds = valuations.assignmentValuationResults.collect {
-      case (id, Left(v)) => id
+      case (id, Right(v)) => id
     }.toList
 
     println("Valued assignments, %d worked, %d failed \n%s".format(worked.size, failed.size, worked.mkString("\n")))   
