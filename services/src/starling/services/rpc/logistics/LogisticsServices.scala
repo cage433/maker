@@ -203,7 +203,7 @@ object LogisticServices {
     val server = StarlingInit.devInstance
     val edmTradeService = server.titanServices
     val logisticsServices = server.logisticsServices
-    LogisticsJsonMockDataGenerater(edmTradeService, logisticsServices)
+    LogisticsJsonMockDataFileGenerater(edmTradeService, logisticsServices)
     server.stop
   }
 }

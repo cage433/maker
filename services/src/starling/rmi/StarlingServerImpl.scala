@@ -378,7 +378,7 @@ class StarlingServerImpl(
     PivotTableModel.createPivotData(curveViewer.curve(curveLabel), pivotFieldParams)
   }
 
-  private def marketDataSource(marketDataIdentifier:MarketDataPageIdentifier, marketDataTypeLabel:Option[MarketDataTypeLabel]) = {
+  private def marketDataSource(marketDataIdentifier:MarketDataPageIdentifier, marketDataTypeLabel:Option[MarketDataTypeLabel], edits:PivotEdits) = {
     val reader = marketDataReaderFor(marketDataIdentifier)
     val marketDataType = marketDataTypeLabel match {
       case None => {
@@ -390,28 +390,22 @@ class StarlingServerImpl(
       case Some(mdt) => Some(realTypeFor(mdt))
     }
     marketDataType match {
-      case Some(mdt) => new MarketDataPivotTableDataSource(reader, Some(snapshotDatabase), marketDataIdentifier.marketDataIdentifier, mdt)
+      case Some(mdt) => new MarketDataPivotTableDataSource(reader, edits, Some(snapshotDatabase), marketDataIdentifier.marketDataIdentifier, mdt)
       case None => NullPivotTableDataSource
     }
   }
 
-  def readAllMarketData(marketDataIdentifier:MarketDataPageIdentifier, marketDataTypeLabel:Option[MarketDataTypeLabel], pivotFieldParams:PivotFieldParams):PivotData = {
-    val dataSource = marketDataSource(marketDataIdentifier, marketDataTypeLabel)
-//    dataSource.editable.get.withEdits()
+  def readAllMarketData(marketDataIdentifier:MarketDataPageIdentifier, marketDataTypeLabel:Option[MarketDataTypeLabel], edits:PivotEdits, pivotFieldParams:PivotFieldParams):PivotData = {
+    val dataSource = marketDataSource(marketDataIdentifier, marketDataTypeLabel, edits)
+    //dataSource.editable.get.withEdits()
     PivotTableModel.createPivotData(dataSource, pivotFieldParams)
   }
 
   def saveMarketData(marketDataIdentifier:MarketDataPageIdentifier, marketDataTypeLabel:Option[MarketDataTypeLabel], pivotEdits:PivotEdits) = {
-    /*val dataSource = marketDataSource(marketDataIdentifier, marketDataTypeLabel)
+    val dataSource = marketDataSource(marketDataIdentifier, marketDataTypeLabel, PivotEdits.Null)
     val lookup = dataSource.fieldDetailsGroups.flatMap(_.fieldMap).toMap
-    val fixedUpPivotEdits = pivotEdits.map { pivotEdit => {
-      pivotEdit match {
-        case AmendPivotEdit(keys, alteredField, newValue) => AmendPivotEdit(keys, alteredField, lookup(alteredField).fixEditedValue(newValue))
-        case other => other
-      }
-    }}
-    dataSource.editable.get.save(fixedUpPivotEdits)*/
-    throw new Exception("bla")
+    val fixedUpPivotEdits = pivotEdits.fixValues( (field,value) => lookup(field).fixEditedValue(value))
+    dataSource.editable.get.save(fixedUpPivotEdits)
   }
 
   def snapshot(marketDataSelection:MarketDataSelection, observationDay:Day): Option[SnapshotIDLabel] = {

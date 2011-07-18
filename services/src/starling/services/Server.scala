@@ -27,7 +27,7 @@ import javax.xml.transform.TransformerFactory
 import starling.auth.{LdapUserLookup, User, ServerLogin}
 import java.util.concurrent.CopyOnWriteArraySet
 import starling.utils._
-import sql.ConnectionParams
+import sql.{AnObject, ConnectionParams}
 import starling.utils.ImplicitConversions._
 import starling.tradeimport.{ClosedDesks, TradeImporterFactory, TradeImporter}
 import starling.tradestore.TradeStores
@@ -36,7 +36,6 @@ import starling.trade.TradeSystem
 import starling.reports.pivot.{ReportContextBuilder, ReportService}
 import starling.LIMServer
 import starling.gui.api._
-import starling.daterange.Day
 import starling.bouncyrmi._
 import starling.eai.{Book, Traders, EAIAutoImport, EAIStrategyDB}
 import com.jolbox.bonecp.BoneCP
@@ -52,6 +51,12 @@ import starling.services.rpc.valuation.DefaultTitanTradeCache
 import starling.services.rpc.refdata._
 import starling.services.rabbit._
 import starling.services.rpc.valuation.DefaultEnvironmentProvider
+import starling.daterange.{ObservationTimeOfDay, Day}
+import starling.pivot.{Field, PivotQuantity}
+import starling.marketdata.{PriceValue, MarketDataKey, MarketDataType}
+import collection.SortedMap
+import starling.quantity.{UOM, Quantity, Percentage}
+import collection.immutable.{IndexedSeq, TreeMap, Map}
 
 class StarlingInit( val props: Props,
                     dbMigration: Boolean = true,
@@ -278,7 +283,8 @@ class StarlingInit( val props: Props,
 
   val trinityUploadCodeMapper = new TrinityUploadCodeMapper(trinityDB)
   val curveViewer = new CurveViewer(marketDataStore)
-  val trinityUploader = new TrinityUploader(new FCLGenerator(trinityUploadCodeMapper, curveViewer), new XRTGenerator(marketDataStore), props)
+  val trinityUploader = new TrinityUploader(new FCLGenerator(trinityUploadCodeMapper, curveViewer),
+    new XRTGenerator(marketDataStore), null, props)
   val scheduler = Scheduler.create(businessCalendars, marketDataStore, broadcaster, trinityUploader, props)
 
   val referenceData = new ReferenceData(businessCalendars, marketDataStore, strategyDB, scheduler, trinityUploadCodeMapper)
@@ -369,17 +375,16 @@ class StarlingInit( val props: Props,
 
   Log.info("StarlingInit: EDM service port %d, external url = '%s', server name = '%s'".format(props.HttpEdmServicePort(), props.EdmExternalUrl(), props.ServerName()))
   
-//  lazy val httpEdmServiceServer = {
-//
-//    val webXmlUrl = this.getClass.getResource("../../webapp/WEB-INF/web.xml")
-//
-//    new HttpServer(
-//      props.HttpEdmServicePort(),
-//      props.EdmExternalUrl(),
-//      props.ServerName(),
-//      Some(webXmlUrl.toExternalForm()),
-//      Nil)
-//  }
+  lazy val httpEdmServiceServer = {
+    val webXmlUrl = this.getClass.getResource("../../webapp/WEB-INF/web.xml")
+
+    new HttpServer(
+      props.HttpEdmServicePort(),
+      props.EdmExternalUrl(),
+      props.ServerName(),
+      Some(webXmlUrl.toExternalForm()),
+      Nil)
+  }
 
   lazy val regressionServer = new RegressionServer(props.RegressionPort(), reportServlet)
 }
@@ -412,22 +417,194 @@ object Server extends OutputPIDToFile {
     run(PropsHelper.defaultProps, args)
     ServerHelper.createRunningFile
   }
-  var server : StarlingInit = null
-  def run(props:Props, args: Array[String] = Array[String]()) {
-    server = new StarlingInit(props, true, true, true, startEAIAutoImportThread = props.ImportsBookClosesFromEAI(),
-      startRabbit = props.RabbitEnabled())
-    server.start
-    Log.info("Starling Server Launched")
+
+  var server: StarlingInit = null
+
+  def run(props: Props, args: Array[String] = Array[String]()) {
+    Log.infoWithTime("Launching starling server") {
+
+      server = new StarlingInit(props, true, true, true, startEAIAutoImportThread = props.ImportsBookClosesFromEAI(),
+        startRabbit = props.RabbitEnabled())
+      server.start
+    }
   }
 }
 
-object Foo {
+case class FirstKey(time:ObservationTimeOfDay, marketDataSet:MarketDataSet, key:MarketDataKey)
+case class SecondKey(key:SortedMap[Field,Any])
+
+object OldReadAll {
   def main(args: Array[String]) {
     val props = PropsHelper.defaultProps
-    val db = DB(props.StarlingDatabase())
 
-    val trinity = DB(props.TrinityDatabase())
-    println(trinity.queryWithResult("select * from T_Commcode", Map()) { rs => rs.toString }.mkString("\n"))
+    val init = new StarlingInit(props)
+
+    Log.infoWithTime("Readall") {
+      init.starlingDB.query("select * from MarketData where version % 2 = 0") { rs => {
+        val observationDay = rs.getDayOption("observationDay")
+        val time = rs.getString("observationTime")
+        val marketDataSet = rs.getString("marketDataSet")
+        //val marketDataType = rs.getObject[MarketDataType]("marketDataType")
+        val key = rs.getObject[MarketDataKey]("marketDataKey")
+        val version = rs.getInt("version")
+        val timestamp = rs.getTimestamp("timestamp")
+        val marketData = rs.getObjectOption[Any]("data")
+      } }
+    }
+  }
+}
+object NewReadAll {
+  def main(args: Array[String]) {
+    val props = PropsHelper.defaultProps
+
+    val init = new StarlingInit(props)
+
+
+    Log.infoWithTime("values") {
+        init.starlingDB.query("select observationDay, extendedKey, valueKey, value, commitid from MarketDataValues") { rs => {
+          val day = rs.getDayOption("observationDay")
+          val firstKey = rs.getInt("extendedKey")
+          val secondKey = rs.getInt("valueKey")
+          val value = rs.getDouble("value")
+  //        val uom = {
+  //          val text = rs.getString("uom")
+  //          if (text == "") UOM.NULL else UOM.fromString(text)
+  //        }
+          val timestamp = rs.getInt("commitid")
+        }}
+    }
+
+    System.exit(0)
+
+
+    Log.infoWithTime("Readall") {
+      val firstKeys = Log.infoWithTime("firstkeys") { Map() ++ init.starlingDB.queryWithResult("select * from ExtendedMarketDataKey") { rs => {
+        val id = rs.getInt("id")
+        val time = ObservationTimeOfDay.fromName(rs.getString("observationTime"))
+        val marketDataSet = MarketDataSet(rs.getString("marketDataSet"))
+        val key = rs.getObject[MarketDataKey]("marketDataKey")
+        id -> FirstKey(time, marketDataSet, key)
+      }} }
+      val secondKeys = Log.infoWithTime("valueKeys") { Map() ++ init.starlingDB.queryWithResult("select * from ValueKey") { rs => {
+        rs.getInt("id") -> SecondKey(rs.getObject[SortedMap[Field,Any]]("value"))
+      }} }
+      val commits = Log.infoWithTime("commits") { Map() ++ init.starlingDB.queryWithResult("select * from MarketDataCommit") { rs => {
+        rs.getInt("id") -> rs.getTimestamp("timestamp")
+      }} }
+      Log.infoWithTime("values") {
+        init.starlingDB.query("select * from MarketDataValues") { rs => {
+          val day = rs.getDayOption("observationDay")
+          val firstKey = firstKeys(rs.getInt("extendedKey"))
+          val secondKey = secondKeys(rs.getInt("valueKey"))
+          val value = rs.getDouble("value")
+          val uom = {
+            val text = rs.getString("uom")
+            if (text == "") UOM.NULL else UOM.fromString(text)
+          }
+          val timestamp = commits(rs.getInt("commitid"))
+        }}
+      }
+    }
+  }
+}
+object Bob {
+  def main(args: Array[String]) {
+
+    val props = PropsHelper.defaultProps
+
+    val init = new StarlingInit(props)
+    Log.infoWithTime("T") {
+      init.starlingDB.inTransaction( writer => {
+        writer.update("drop table ExtendedMarketDataKey")
+        writer.update("drop table ValueKey")
+        writer.update("drop table MarketDataValues")
+        writer.update("drop table MarketDataCommit")
+        writer.update("create table [dbo].ExtendedMarketDataKey (id int IDENTITY(1,1) NOT NULL, marketDataSet varchar(255), observationTime varchar(255), marketDataKey text)")
+        writer.update("create table [dbo].ValueKey (id int IDENTITY(1,1) NOT NULL, value text)")
+        writer.update("create table [dbo].MarketDataValues (observationDay datetime, extendedKey int, valueKey int, value decimal(9), uom varchar(12), commitid int)")
+        writer.update("create table [dbo].MarketDataCommit (id int IDENTITY(1,1) NOT NULL, timestamp datetime, username varchar(128))")
+
+        val mainKeyMapper = new scala.collection.mutable.HashMap[FirstKey,Long]()
+        def idForMainKey(key:FirstKey) = mainKeyMapper.getOrElseUpdate(key, {
+          val params = Map("marketDataSet" -> key.marketDataSet.name, "observationTime" -> key.time.name, "marketDataKey" -> new AnObject(key.key))
+          writer.insertAndReturnKey("ExtendedMarketDataKey", "id", params)
+        })
+        val valueKeyMapper = new scala.collection.mutable.HashMap[SecondKey,Long]()
+        def idForValueKey(key:SecondKey) = valueKeyMapper.getOrElseUpdate(key, {
+          val params = Map("value" -> new AnObject(key.key))
+          writer.insertAndReturnKey("ValueKey", "id", params)
+        })
+        var counter = 0
+        var buffer = new scala.collection.mutable.ArrayBuffer[Map[String,Any]]()
+        init.starlingDB.query("select * from MarketData where version % 2 = 0") { rs => {
+
+          counter += 1
+          if ((counter % 100) == 0) println(counter)
+
+          val observationDay = rs.getDayOption("observationDay")
+          val time = rs.getString("observationTime")
+          val marketDataSet = rs.getString("marketDataSet")
+          //val marketDataType = rs.getObject[MarketDataType]("marketDataType")
+          val key = rs.getObject[MarketDataKey]("marketDataKey")
+          val version = rs.getInt("version")
+          val timestamp = rs.getTimestamp("timestamp")
+          val commit = writer.insertAndReturnKey("MarketDataCommit", "id", Map("timestamp" -> timestamp))
+          val firstKey = FirstKey(ObservationTimeOfDay.fromName(time), MarketDataSet(marketDataSet), key)
+          rs.getObjectOption[Any]("data").map(md => key.castRows(key.unmarshallDB(md))) match {
+            case None => { //delete
+
+            }
+            case Some(rows) => {
+              rows.foreach { row => {
+                val secondKey = {
+                  val fieldsForSecondKey = key.dataType.keyFields -- key.fieldValues.keySet
+                  SecondKey(TreeMap.empty[Field,Any](Field.ordering) ++ (row.filterKeys(fieldsForSecondKey.contains)))
+                }
+                val aaa: List[Any] = key.dataType.valueFields.toList.flatMap(f=>row.get(f))
+                val uomValueOption: Option[(String,Double)] = aaa match {
+                  case Nil => println("Nil " + key); None
+                  case one :: Nil => {
+                    one match {
+                      case pv:PriceValue => Some( (pv.value.uom.toString, pv.value.value) )
+                      case q:Quantity => Some( (q.uom.toString, q.value) )
+                      case pq:PivotQuantity if pq.quantityValue.isDefined => Some( (pq.quantityValue.get.uom.toString, pq.quantityValue.get.value) )
+                      case pc:Percentage => Some( ("%", pc.value) )
+                      case other => println("unexpected value " + other.asInstanceOf[AnyRef].getClass + " " + other); None
+                    }
+                  }
+                  case many => println("Many " + key + " " + many); None
+                }
+                uomValueOption match {
+                  case Some((uom, value)) => {
+                    val mainKey = idForMainKey(firstKey)
+                    val valueKey = idForValueKey(secondKey)
+                    val params = Map(
+                      "observationDay" -> observationDay.getOrElse(null), "extendedKey" -> mainKey, "valueKey" -> valueKey,
+                      "value" -> value, "uom" -> uom, "commitid" -> commit
+                    )
+                    buffer.append(params)
+                    if (buffer.size > 2000) {
+                      writer.insert("MarketDataValues", buffer.toList)
+                      buffer.clear
+                    }
+                  }
+                  case None => //skip
+                }
+              } }
+            }
+          }
+        }}
+        if (buffer.nonEmpty) {
+          writer.insert("MarketDataValues", buffer.toList)
+        }
+      })
+    }
+
+
+
+
+
+
 
 //    db.inTransaction( writer => {
 //      writer.update("""

@@ -10,6 +10,7 @@ import collection.immutable.{Map, TreeMap}
 import collection.Set
 import org.mockito.internal.matchers.AnyVararg
 import collection.script.Start
+import reflect.AnyValManifest
 
 case class FieldDetailsGroup(name:String, fields:List[FieldDetails]) {
   def toFieldGroup = {
@@ -30,6 +31,7 @@ case class KeyFilter(keys:Map[Field,SomeSelection]) {
       keys.get(key) == Some(value)
     } }
   }
+  def remove(fields:Set[Field]) = KeyFilter(keys.filterKeys(f => !fields.contains(f)))
 }
 
 trait KeyEdits {
@@ -67,6 +69,20 @@ case class PivotEdits(edits:Map[KeyFilter,KeyEdits], newRows:List[Map[Field,Any]
       }
     }
   }
+  def fixValues( f:(Field,Any)=>Any ) = {
+    PivotEdits(
+      edits.mapValues( edit => edit match {
+        case AmendKeyEdit(amends) => AmendKeyEdit(amends.map {
+          case (field, None) => field -> None
+          case (field, Some(v)) => field -> Some(f(field, v))
+        })
+        case _ => edit
+      }),
+      newRows.map { row => {
+        row.map{ case(field,value) => field -> f(field,value) }
+      } }
+    )
+  }
   def nonEmpty:Boolean = edits.nonEmpty || newRows.nonEmpty
   def isEmpty:Boolean = !nonEmpty
   def addEdits(other:PivotEdits):PivotEdits = {
@@ -100,12 +116,17 @@ case class PivotEdits(edits:Map[KeyFilter,KeyEdits], newRows:List[Map[Field,Any]
         case None => Some(key -> changes)
         case Some(d@DeleteKeyEdit(_)) if changes == d => None
         case Some(d@DeleteKeyEdit(_)) if changes != d => throw new Exception("Can't remove Delete as there is an edit for this key " + key + " " + changes)
-        case Some(AmendKeyEdit(amends)) => Some(key -> {
-          changes match {
+        case Some(AmendKeyEdit(amends)) => {
+          val newEdit = changes match {
             case DeleteKeyEdit(_) => throw new Exception("Can't remove edit as there is an delete for this key " + key + " " + amends)
             case AmendKeyEdit(oldAmends) => AmendKeyEdit(oldAmends -- amends.keySet)
           }
-        })
+          if (newEdit.amends.isEmpty) {
+            None
+          } else {
+            Some(key -> newEdit)
+          }
+        }
       }
     } }
     PivotEdits(merged, newRows.filterNot(editsToRemove.newRows.contains(_)))
@@ -141,11 +162,6 @@ case class PivotEdits(edits:Map[KeyFilter,KeyEdits], newRows:List[Map[Field,Any]
         case Some(AmendKeyEdit(amends)) => PivotEdits(edits + (amendKeys -> AmendKeyEdit(amends ++ Map(field -> value))), newRows)
       }
     }
-  }
-
-  def withAddedRow(keyFields:Set[Field], field:Field, value:Any):PivotEdits = {
-    val row = (Map() ++ (keyFields.map(f => {f -> UndefinedValue}))) + (field -> value)
-    withAddedRow(row)
   }
 
   def withAddedRow(row:Map[Field,Any]) = {
@@ -228,7 +244,16 @@ case class PivotTreePath(path:List[String]) {
       case first :: rest => TreePivotFilterNode(PivotTreePath(first), first.last, List(recurse(rest)))
     }
 
-    recurse(path.inits.toList.dropRight(1))
+    def tails[A](list: List[A]) = {
+      def recurse(list : List[A]) : List[List[A]] = list match {
+        case Nil => Nil
+        case _ => list :: recurse(list.tail)
+      }
+
+      recurse(list)
+    }
+
+    recurse(tails(path.reverse).reverse.map(_.reverse))
   }
 }
 object PivotTreePath {
@@ -249,6 +274,17 @@ object PivotValue {
   def create(value:Any) = value match {
     case pv:PivotValue => pv
     case other => StandardPivotValue(other)
+  }
+  def extractValue(row:Map[Field,Any], field:Field) = {
+    row.get(field) match {
+      case Some(value) => {
+        value match {
+          case pv:PivotValue => pv.value.getOrElse(pv.originalValue.getOrElse(UndefinedValue))
+          case other => other
+        }
+      }
+      case None => UndefinedValue
+    }
   }
 }
 
@@ -282,7 +318,7 @@ case class NewValue(value:Option[Any], rowIndex:Int, edits:PivotEdits) extends P
   def valueForGrouping(newRowsAtBottom:Boolean) = if (newRowsAtBottom) NewRowValue(rowIndex) else value.getOrElse(UndefinedValue)
 }
 
-case class MeasureCell(value:Option[Any], cellType:EditableCellState, edits:PivotEdits=PivotEdits.Null)
+case class MeasureCell(value:Option[Any], cellType:EditableCellState, edits:PivotEdits=PivotEdits.Null, originalValue:Option[Any]=None)
 object MeasureCell {
   val Null = MeasureCell(None, Normal)
   val Undefined = MeasureCell(Some(UndefinedValue), Normal)

@@ -24,6 +24,8 @@ trait CollectionsSyntacticSugar {
     }
 
     def initOption() = if (tl.isEmpty) None else Some(tl.init)
+    def dropUntil(p: A => Boolean): Repr = tl.dropWhile(!p(_))
+    def takeUntil(p: A => Boolean): Repr = tl.takeWhile(!p(_))
   }
 
   implicit def collectionExtras[A](xs: Iterable[A]) = new {

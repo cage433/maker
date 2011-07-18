@@ -14,7 +14,7 @@ case class FuturesCommoditySpread(market: FuturesSpreadMarket, month: Month, fir
     this(market, month, spread.copy(value = 0), -spread, volume)
   }
 
-  override def expiryDay() = Some(market.market1.lastTradingDay(month).min(market.market2.lastTradingDay(month)))
+  override def expiryDay() = Some(market.lastTradingDay(month))
 
   val future1: Future = Future(market.market1, month, firstStrike, volume)
   val future2: Future = Future(market.market2, month, secondStrike, volume.negate)

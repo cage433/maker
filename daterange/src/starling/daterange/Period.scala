@@ -40,6 +40,7 @@ case class DateRangePeriod(period: DateRange) extends Period {
     case (DateRangePeriod(lPeriod), DateRangePeriod(rPeriod)) => lPeriod.compare(rPeriod)
   }
 }
+
 case class SpreadPeriod(front: DateRange, back: DateRange) extends Period {
   override def toString = front.toShortString + "/" + back.toShortString
 
@@ -58,11 +59,8 @@ case class SpreadPeriod(front: DateRange, back: DateRange) extends Period {
       }
   }
 }
-case class
 
-
-
-StripPeriod(first: Period, last: Period) extends Period {
+case class StripPeriod(first: Period, last: Period) extends Period {
   override def toString = first.toString + "-" + last.toString
 
   def toList = Strip(first, last).toList.flatMap(_.toList)

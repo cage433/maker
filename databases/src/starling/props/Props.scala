@@ -65,6 +65,7 @@ class Props(props:Map[String,String]) extends PropsHelper(props) {
   
   object TrinityDatabase extends DatabaseProperty("jdbc:oracle:thin:@LondonTrinityLiveDB.global.trafigura.com:1521:Trinity", "EXEC_IMP", "EXEC_IMP")
   object TrinityUploadDirectory extends StringProperty("/tmp/starling/trinity-upload")
+  object TrinityService extends StringProperty("http://ttraflon2k196/trinity")
   object EAIReplica extends DatabaseProperty("jdbc:jtds:sqlserver://TTRAFLONSQL12.global.trafigura.com/EAI;instance=DB12", "starling", "ng1lr4ts123!Y^%&$")
   object SoftmarDatabase extends DatabaseProperty("jdbc:jtds:sqlserver://TTRAFLONSQL01.global.trafigura.com/Softmar;instance=DB01", "starling", "ng1lr4ts123!Y^%&$")
 

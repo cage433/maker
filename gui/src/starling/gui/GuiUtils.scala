@@ -147,7 +147,12 @@ object GuiUtils {
   lazy val BorderColour = UIManager.getColor("controlDkShadow")
   lazy val DisabledComboBackground = UIManager.getColor("ComboBox.disabledBackground")
 
-  def setLookAndFeel {
+  def setLookAndFeel() {
+    val platform = PlatformDefaults.getPlatform
+    if (platform == PlatformDefaults.MAC_OSX) {
+      PlatformDefaults.setPlatform(PlatformDefaults.WINDOWS_XP)
+    }
+
 //    UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName)
     PlasticLookAndFeel.setTabStyle(PlasticLookAndFeel.TAB_STYLE_METAL_VALUE)
     UIManager.setLookAndFeel(LookAndFeel)

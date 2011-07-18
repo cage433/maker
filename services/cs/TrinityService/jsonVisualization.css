@@ -1,0 +1,97 @@
+﻿body {
+	text-align: left;
+	margin: 0 1em;
+}
+
+caption {
+	text-align: left;
+	font-family: small-caption;
+	margin-bottom: 2px;
+	white-space: nowrap;
+}
+table { margin-bottom: 0; }
+th, td  { border: 1px solid #D1DBBD; vertical-align: top; }
+pre { margin-bottom: 0px; }
+a { color: #40E0D0; text-decoration: underline; cursor: pointer; }
+button { width: 145px; }
+
+#jsonInput {
+	width: 90%;
+	background-color: #3E606F;
+	color: #FCFFF5;
+	font-family: Consolas, monospace;
+}
+
+#jsonSize { font: caption; }
+
+#jsonOutput * { cursor: pointer; }
+
+#jsonOutput.PRETTY {
+	font-family: Consolas, "Courier New", monospace;
+}
+
+html             { color: #FCFFF5; background-color: #193441; }
+.ERR             { color: #FF0000; font-weight: bold; }
+.FUNC            { color: #FF0000; font-weight: bold; }
+.IDK             { color: #FF0000; font-weight: bold; }
+.KEY             { color: #FFFFFF; font-weight: bold; }
+.BOOL            { color: #00FFFF; }
+.NUMBER          { color: #7FFF00; }
+.DATE            { color: #6495ED; }
+.REGEXP          { color: #DEB887; }
+.STRING          { color: #D8FFB0; }
+.UNDEF           { color: #91AA9D; font-style: italic; }
+.NULL            { color: #91AA9D; font-style: italic; }
+.EMPTY           { color: #91AA9D; font-style: italic; }
+.HTML span.ARRAY { color: #91AA9D; font-style: italic; }
+.HTML span.OBJ   { color: #91AA9D; font-style: italic; }
+table.OBJ        { background-color: #22353C; }
+table.ARRAY      { background-color: #252C47; }
+input            { background-color: #22353C; color: #FFFFFF; border: none; }
+input.bad        { background-color: #FF0000; }
+input:focus      { outline: 1; border: 1; }
+code             { display: block; }
+
+.HIGHLIGHT {
+	background-color: #FF0000;
+	position: absolute;
+	border-radius: 5px;
+	-moz-border-radius: 5px;
+	-webkit-border-radius: 5px;
+}
+
+.hover { background-color: #7B243E; cursor: pointer; }
+
+/* Option Visibility */
+.PRETTY #jsonSpace_label,
+.PRETTY #jsonData_label { visibility: hidden; }
+
+
+@media print {
+
+	h1, h2, h3, menu, footer, address, p, textarea {
+		display: none;
+	}
+
+	output {
+		display: block;
+		margin: 0 0;
+	}
+
+	html        { color: #000000; background-color: #FFFFFF; }
+	.ERR        { color: #FF0000; font-weight: bold; }
+	.FUNC       { color: #FF0000; font-weight: bold; }
+	.IDK        { color: #FF0000; font-weight: bold; }
+	.KEY        { color: #000000; font-weight: bold; }
+	.BOOL       { color: #000000; font-style: italic; }
+	.NUMBER     { color: #000000; }
+	.DATE       { color: #000000; }
+	.REGEXP     { color: #000000; }
+	.STRING     { color: #000000; }
+	.UNDEF      { color: #000000; font-style: italic; }
+	.NULL       { color: #000000; font-style: italic; }
+	.EMPTY      { color: #000000; font-style: italic; }
+	.HTML span.ARRAY  { color: #000000; font-style: italic; }
+	.HTML span.OBJ    { color: #000000; font-style: italic; }
+
+}

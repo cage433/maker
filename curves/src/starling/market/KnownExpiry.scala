@@ -26,14 +26,14 @@ trait KnownExpiry {
   }
 
   /**
-   * Calendar spread option expiry
+   * Spread option expiry
    */
-  def csoOptionExpiry(delivery: DateRange): Day = {
+  def spreadOptionExpiry(delivery: DateRange): Day = {
     try {
-      expiryRule.csoExpiryDay(delivery)
+      expiryRule.commoditySpreadOptionExpiryDay(delivery)
     }
     catch {
-      case e => throw new Exception("Failed to find CSO expiry with delivery " + delivery + " on " + this, e)
+      case e => throw new Exception("Failed to find spread option expiry with delivery " + delivery + " on " + this, e)
     }
   }
 
@@ -42,7 +42,7 @@ trait KnownExpiry {
    */
   def csoOptionExpiry(spread: Spread[_ <: DateRange]): Day = {
     try {
-      expiryRule.csoExpiryDay(spread.first)
+      expiryRule.csoExpiryDay(spread)
     }
     catch {
       case e => throw new Exception("Failed to find CSO expiry with delivery " + spread + " on " + this, e)
@@ -74,7 +74,7 @@ trait KnownExpiry {
   /**
    * Returns the front delivery month/day for a given last trading day.
    */
-  private var frontPeriodCache = CacheFactory.getCache("FuturesMarket.frontPeriod", unique = true)
+  private val frontPeriodCache = CacheFactory.getCache("FuturesMarket.frontPeriod", unique = true)
 
   def frontPeriod(dayAndTime: DayAndTime): DateRange = frontPeriod(dayAndTime.day)
   def frontPeriod(day: Day): DateRange = frontPeriodCache.memoize(

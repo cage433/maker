@@ -1,0 +1,202 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <FxCopEnabled>False</FxCopEnabled>
+    <StyleCopOverrideSettingsFile>..\..\..\Common\CodeAnalysis\Settings.Samples.StyleCop</StyleCopOverrideSettingsFile>
+    <FileVersioningEnabled>false</FileVersioningEnabled>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <OutputPath>bin\</OutputPath>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProductVersion>
+    </ProductVersion>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{984B9A85-52D5-4C38-B7BB-2291544A9045}</ProjectGuid>
+    <ProjectTypeGuids>{349c5851-65df-11da-9384-00065b846f21};{fae04ec0-301f-11d3-bf4b-00c04f79efbc}</ProjectTypeGuids>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>com.trafigura.services</RootNamespace>
+    <AssemblyName>TrinityService</AssemblyName>
+    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+    <UseIISExpress>false</UseIISExpress>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <CodeAnalysisRuleSet>..\..\..\Common\CodeAnalysis\FxCopRules.Src.ruleset</CodeAnalysisRuleSet>
+    <DeployIisAppPath>Starling/TrinityService</DeployIisAppPath>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Label="jQuery Assembly Path">
+    <RelativeInstallPath>Microsoft SDKs\WCF for jQuery\v1.0\Libraries\Microsoft.ServiceModel.Web.jQuery.dll</RelativeInstallPath>
+    <WCFjQueryAssemblyPath>..\..\..\build\$(Configuration)\WcfJQuery\bin\Microsoft.ServiceModel.Web.jQuery.dll</WCFjQueryAssemblyPath>
+  </PropertyGroup>
+  <PropertyGroup Label="x86 installation" Condition="!Exists('$(WCFjQueryAssemblyPath)') AND Exists('$(ProgramFiles)\$(RelativeInstallPath)')">
+    <WCFjQueryAssemblyPath>$(ProgramFiles)\$(RelativeInstallPath)</WCFjQueryAssemblyPath>
+  </PropertyGroup>
+  <PropertyGroup Label="x64 installation" Condition="!Exists('$(WCFjQueryAssemblyPath)') AND Exists('$(ProgramFiles(x86))\$(RelativeInstallPath)')">
+    <WCFjQueryAssemblyPath>$(ProgramFiles(x86))\$(RelativeInstallPath)</WCFjQueryAssemblyPath>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="Interop.Constants">
+      <HintPath>lib\Interop.Constants.dll</HintPath>
+      <EmbedInteropTypes>True</EmbedInteropTypes>
+    </Reference>
+    <Reference Include="Interop.MarketData2">
+      <HintPath>lib\Interop.MarketData2.dll</HintPath>
+      <EmbedInteropTypes>True</EmbedInteropTypes>
+    </Reference>
+    <Reference Include="Interop.TrinityAPI">
+      <HintPath>lib\Interop.TrinityAPI.dll</HintPath>
+      <EmbedInteropTypes>True</EmbedInteropTypes>
+    </Reference>
+    <Reference Include="Interop.trRoot">
+      <HintPath>lib\Interop.trRoot.dll</HintPath>
+      <EmbedInteropTypes>True</EmbedInteropTypes>
+    </Reference>
+    <Reference Include="log4net">
+      <HintPath>lib\log4net.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.ApplicationServer.Common">
+      <HintPath>lib\Microsoft.ApplicationServer.Common.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.ApplicationServer.Http, Version=0.3.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>lib\Microsoft.ApplicationServer.Http.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.ApplicationServer.HttpEnhancements, Version=0.3.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>lib\Microsoft.ApplicationServer.HttpEnhancements.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.ApplicationServer.Serialization">
+      <HintPath>lib\Microsoft.ApplicationServer.Serialization.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.ApplicationServer.ServiceModel, Version=0.3.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>lib\Microsoft.ApplicationServer.ServiceModel.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="Microsoft.Net.Http, Version=0.3.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>lib\Microsoft.Net.Http.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.Runtime.Serialization.Json">
+      <HintPath>lib\Microsoft.Runtime.Serialization.Json.dll</HintPath>
+    </Reference>
+    <Reference Include="Newtonsoft.Json.Compact, Version=3.5.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>lib\Newtonsoft.Json.Compact.dll</HintPath>
+    </Reference>
+    <Reference Include="System.ComponentModel.Composition" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Data.Entity" />
+    <Reference Include="System.Data.Linq" />
+    <Reference Include="System.Data.OData, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>lib\System.Data.OData.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Runtime.Serialization" />
+    <Reference Include="System.Security" />
+    <Reference Include="System.ServiceModel" />
+    <Reference Include="System.ServiceModel.Activation" />
+    <Reference Include="System.ServiceModel.Web" />
+    <Reference Include="System" />
+    <Reference Include="System.Configuration" />
+    <Reference Include="System.Web" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="example\ExampleService.cs" />
+    <Compile Include="example\ExampleServiceApi.cs" />
+    <Compile Include="extensions\IDictionaryExtensions.cs" />
+    <Compile Include="extensions\IEnumerableExtensions.cs" />
+    <Compile Include="extensions\ILogExtensions.cs" />
+    <Compile Include="trinity\TrinityServiceApi.cs" />
+    <Compile Include="extensions\trRateCurveExtensions.cs" />
+    <Compile Include="util\JsonDeserializer.cs" />
+    <Compile Include="util\JsonSerializer.cs" />
+    <Compile Include="extensions\JTokenExtensions.cs" />
+    <Compile Include="util\TypeFinder.cs" />
+    <Compile Include="trinity\DepoRate.cs" />
+    <Compile Include="trinity\Profile.cs" />
+    <Compile Include="trinity\TrinityCredentials.cs" />
+    <Compile Include="trinity\TrinityService.cs" />
+    <Compile Include="util\JsonFormatter.cs" />
+    <Compile Include="ReferenceInterestRate.cs" />
+    <Compile Include="GlobalSuppressions.cs" />
+    <Compile Include="util\UriFormatExtensionChannel.cs" />
+    <Compile Include="util\SimpleResourceFactory.cs" />
+    <Compile Include="extensions\trMarketDataServerExtensions.cs" />
+    <Content Include="ajax-loader.gif" />
+    <Content Include="Default.htm" />
+    <Content Include="displayJson.js" />
+    <Content Include="Example.htm" />
+    <Content Include="jquery-1.6.2.min.js" />
+    <Content Include="json-min.js" />
+    <Content Include="jsonVisualization.css" />
+    <Content Include="jsonVisualization.js" />
+    <Content Include="main.css" />
+    <Content Include="Global.asax" />
+    <Compile Include="Global.asax.cs">
+      <DependentUpon>Global.asax</DependentUpon>
+    </Compile>
+    <Content Include="Trinity.htm" />
+    <Content Include="Web.config">
+      <SubType>Designer</SubType>
+    </Content>
+    <Content Include="Web.Debug.config">
+      <DependentUpon>Web.config</DependentUpon>
+    </Content>
+    <Content Include="Web.Release.config">
+      <DependentUpon>Web.config</DependentUpon>
+    </Content>
+    <Content Include="yuiloader-dom-event.js" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="util\LoggingChannel.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Service Include="{3259AA49-8AA1-44D3-9025-A0B520596A8C}" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="App_Data\" />
+  </ItemGroup>
+  <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
+  <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v10.0\WebApplications\Microsoft.WebApplication.targets" />
+  <Import Project="$(ProjectExtensionsDir)\ProjectExtensions.targets" Condition="Exists('$(ProjectExtensionsDir)\ProjectExtensions.targets')" />
+  <ProjectExtensions>
+    <VisualStudio>
+      <FlavorProperties GUID="{349c5851-65df-11da-9384-00065b846f21}">
+        <WebProjectProperties>
+          <UseIIS>False</UseIIS>
+          <AutoAssignPort>False</AutoAssignPort>
+          <DevelopmentServerPort>9100</DevelopmentServerPort>
+          <DevelopmentServerVPath>/</DevelopmentServerVPath>
+          <IISUrl>http://localhost/ContactManager</IISUrl>
+          <NTLMAuthentication>False</NTLMAuthentication>
+          <UseCustomServer>False</UseCustomServer>
+          <CustomServerUrl>
+          </CustomServerUrl>
+          <SaveServerSettingsInUserFile>False</SaveServerSettingsInUserFile>
+        </WebProjectProperties>
+      </FlavorProperties>
+    </VisualStudio>
+  </ProjectExtensions>
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>

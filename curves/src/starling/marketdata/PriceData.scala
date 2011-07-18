@@ -28,7 +28,11 @@ object PriceDataType extends MarketDataType {
     override def formatter = PivotQuantitySetPivotFormatter
     override def fixEditedValue(value: Any) = PriceValue(value.asInstanceOf[PivotQuantity].quantityValue.get)
     override def value(a: Any) = {
-      a.asInstanceOf[Set[PriceValue]].map(_.pq)
+      //HACK
+      a.asInstanceOf[Set[AnyRef]].map {
+        case pq:PivotQuantity => pq
+        case pv:PriceValue => pv.pq
+      }
     }
     override def isDataField = true
     override def transformValueForGroupByField(a: Any) = a.asInstanceOf[PriceValue].pq

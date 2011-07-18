@@ -6,7 +6,7 @@ import starling.models.{American, European}
 import starling.instrument.FuturesOption
 import starling.quantity.{UOM, Quantity}
 import starling.utils.Log
-import starling.market.FuturesFrontPeriodIndex
+import starling.market.{FuturesSpreadMarket, FuturesFrontPeriodIndex}
 
 class FuturesOptionReader extends InstrumentReader {
   import EAISystemOfRecord._
@@ -15,8 +15,12 @@ class FuturesOptionReader extends InstrumentReader {
     val tradeType = rs.getInt("TradeType")
     if(rs.getInt("TradeType") == ET_OPTION || rs.getInt("TradeType") == OTC_OPTION) {
       rs.getExerciseTypeOption("optiontype") match {
-        case Some(European) => true
-        case Some(American) => true
+        case Some(European) | Some(American) => {
+          rs.getFuturesMarketFromEAIQuoteIDOption("eaiquoteid") match {
+            case Some(fsm: FuturesSpreadMarket) => false // Unfortunately commodity spread options don't have their own type
+            case _ => true
+          }
+        }
         case _ => false
       }
     } else {

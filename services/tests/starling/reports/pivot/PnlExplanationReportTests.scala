@@ -20,11 +20,6 @@ import starling.market._
 class PnlExplanationReportTests extends TestMarketSpec {
   def noChoices = ReportSpecificChoices()
 
-  @AfterTest
-  def tearDown {
-    MP.stop
-  }
-
   @Test
   def testZeroPnlComponentsAreRemoved() {
     //don't change the interest rate so there is 0 pnl due to interest rates
