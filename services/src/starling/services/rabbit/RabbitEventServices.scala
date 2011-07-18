@@ -122,7 +122,7 @@ case class MockRabbitEventServices() extends RabbitEventServices {
   private val mockDemux = new MockEventDemux()
   val eventDemux : IDemultiplexEvents = mockDemux
   val rabbitEventPublisher = new MockRabbitPublisher(mockDemux)
-  def addClient(client:DemultiplexerClient)  {}
+  def addClient(client:DemultiplexerClient)  { eventDemux.addClient(client) }
   def start {}
   def stop {}
 }
@@ -143,7 +143,7 @@ class MockEventDemux() extends IDemultiplexEvents {
   def shutdown {}
 
   def addClient(client : DemultiplexerClient) : Unit = synchronized {
-    clients ++= List(client)
+    clients = client :: clients
   }
 
   private def dispatchToClients(ev : Event) : Unit = {
