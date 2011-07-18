@@ -237,13 +237,13 @@ object PhysicalMetalForward{
     }
   }
 
-  def value(exchangesByGUID : Map[GUID, EDMMarket], futuresMetalMarketByGUID : Map[GUID, EDMMetal], env : Environment, snapshotID : String)(trade : EDMPhysicalTrade) : Either[List[CostsAndIncomeQuotaValuation], String] =  {
+  def value(exchangesByGUID : Map[GUID, EDMMarket], futuresMetalMarketByGUID : Map[GUID, EDMMetal], env : Environment, snapshotID : String)(trade : EDMPhysicalTrade) : Either[String, List[CostsAndIncomeQuotaValuation]] =  {
 
     try {
       val forward = PhysicalMetalForward(exchangesByGUID, futuresMetalMarketByGUID)(trade)
-      Left(forward.costsAndIncomeValueBreakdown(env, snapshotID))
+      Right(forward.costsAndIncomeValueBreakdown(env, snapshotID))
     } catch {
-      case ex => Right("Error valuing trade " + trade.tradeId + ", message was " + ex.getMessage)
+      case ex => Left("Error valuing trade " + trade.tradeId + ", message was " + ex.getMessage)
     }
   }
 }
@@ -311,13 +311,13 @@ object PhysicalMetalAssignmentForward {
   def value(exchangesByGUID : Map[GUID, EDMMarket],
             futuresMetalMarketByGUID : Map[GUID, EDMMetal],
             assignmentIdToQuotaMap : Map[Int, EDMQuota],
-            env : Environment, snapshotID : String)(inventory : EDMInventoryItem) : Either[List[CostsAndIncomeAssignmentValuation], String] =  {
+            env : Environment, snapshotID : String)(inventory : EDMInventoryItem) : Either[String, List[CostsAndIncomeAssignmentValuation]] =  {
 
     try {
       val forward = PhysicalMetalAssignmentForward(exchangesByGUID, futuresMetalMarketByGUID, assignmentIdToQuotaMap)(inventory)
-      Left(forward.costsAndIncomeAssignmentValueBreakdown(env, snapshotID))
+      Right(forward.costsAndIncomeAssignmentValueBreakdown(env, snapshotID))
     } catch {
-      case ex => Right("Error valuing inventory  " + inventory.oid + ", message was " + ex.getMessage)
+      case ex => Left("Error valuing inventory  " + inventory.oid + ", message was " + ex.getMessage)
     }
   }
 }

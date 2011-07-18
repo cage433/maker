@@ -266,7 +266,7 @@ class ValuationService(
   logisticsServices : TitanLogisticsServices,
   rabbitEventServices : RabbitEventServices) extends ValuationServiceApi {
 
-  type TradeValuationResult = Either[List[CostsAndIncomeQuotaValuation], String]
+  type TradeValuationResult = Either[String, List[CostsAndIncomeQuotaValuation]]
 
   lazy val futuresExchangeByGUID = refData.futuresExchangeByGUID
   lazy val futuresMarketByGUID = refData.futuresMarketByGUID
@@ -293,10 +293,7 @@ class ValuationService(
       trade => (trade.tradeId.toString, tradeValuer(trade))
     }.toMap
     log("Valuation took " + sw)
-    val (errors, worked) = valuations.values.partition(_ match {
-      case Right(_) => true
-      case Left(_) => false
-    })
+    val (worked, errors) = valuations.values.partition(_ match { case Right(_) => true; case Left(_) => false })
     log("Worked " + worked.size + ", failed " + errors.size + ", took " + sw)
     CostsAndIncomeQuotaValuationServiceResults(snapshotIDString, valuations)
   }
@@ -355,7 +352,7 @@ class ValuationService(
 
     def quotaValue(id: String) = {
       tradeValue(titanTradeCache.tradeIDFromQuotaID(id)) match {
-        case Left(list) => Left(list.filter(_ .quotaID == id))
+        case Right(list) => Right(list.filter(_ .quotaID == id))
         case other => other
       }
     }
@@ -374,10 +371,7 @@ class ValuationService(
     val valuations = tradeValues ::: quotaValues
 
     log("Valuation took " + sw)
-    val (errors, worked) = valuations.partition(_._2 match {
-      case Right(_) => true
-      case Left(_) => false
-    })
+    val (worked, errors) = valuations.partition(_._2 match { case Right(_) => true; case Left(_) => false })
     log("Worked " + worked.size + ", failed " + errors.size + ", took " + sw)
     
     CostsAndIncomeQuotaValuationServiceResults(snapshotIDString, valuations.toMap)
@@ -439,18 +433,16 @@ class ValuationService(
 
     def quotaValue(id: String) = {
       tradeValue(titanTradeCache.tradeIDFromQuotaID(id)) match {
-        case Left(list) => Left(list.filter(_ .quotaID == id))
+        case Right(list) => Right(list.filter(_ .quotaID == id))
         case other => other
       }
     }
 
     log("Valuation took " + sw)
-    val (errors, worked) = valuations.partition(_._2 match {
-      case Right(_) => true
-      case Left(_) => false
-    })
+    val (worked, errors) = valuations.partition(_._2 match { case Right(_) => true; case Left(_) => false })
     log("Worked " + worked.size + ", failed " + errors.size + ", took " + sw)
-    
+    println("Failed valuation of assignments \n %s".format(errors.mkString("\n")))
+
     CostAndIncomeAssignmentValuationServiceResults(snapshotIDString, valuations.toMap)
   }
 
@@ -596,9 +588,9 @@ object ValuationService extends App {
 
 //  valuations.tradeResults.foreach(println)
    
-  val (_, worked) = valuations.tradeResults.values.partition({ case Right(_) => true; case Left(_) => false })
+  val (worked, _) = valuations.tradeResults.values.partition({ case Right(_) => true; case Left(_) => false })
 
-  val valuedTradeIds = valuations.tradeResults.collect{ case (id, Left(v)) => id }.toList
+  val valuedTradeIds = valuations.tradeResults.collect{ case (id, Right(v)) => id }.toList
   val valuedTrades = vs.getTrades(valuedTradeIds)
   val markets = vs.getFuturesMarkets.toList
   val exchanges = vs.getFuturesExchanges.toList

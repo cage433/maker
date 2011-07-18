@@ -78,12 +78,9 @@ class ValuationServiceTest extends StarlingTest {
     //vs.marketDataSnapshotIDs().foreach(println)
     val valuations = vs.valueAllQuotas()
 
-    val (_, worked) = valuations.tradeResults.values.partition({
-      case Right(_) => true;
-      case _ => false
-    })
+    val (worked, _) = valuations.tradeResults.values.partition({ case Right(_) => true; case _ => false })
     val valuedTradeIds = valuations.tradeResults.collect {
-      case (id, Left(v)) => id
+      case (id, Right(v)) => id
     }.toList
     val valuedTrades = vs.getTrades(valuedTradeIds)
     val firstTrade = mockTitanTradeService.getAllTrades().head // valuedTrades.head
@@ -130,7 +127,7 @@ class ValuationServiceTest extends StarlingTest {
   }
 
 
-  //@Test
+  @Test
   def testValuationServiceValueAssignments {
     
     Log.info("testValuationServiceValueAssignments starting")
@@ -162,7 +159,7 @@ class ValuationServiceTest extends StarlingTest {
 
     println("Valued assignments")
 
-    val (failed, worked) = valuations.assignmentValuationResults.values.partition({ case Right(_) => true; case _ => false })
+    val (worked, failed) = valuations.assignmentValuationResults.values.partition({ case Right(_) => true; case _ => false })
     val valuedIds = valuations.assignmentValuationResults.collect {
       case (id, Left(v)) => id
     }.toList
