@@ -5,7 +5,6 @@ import com.trafigura.services.security.ComponentTestClientExecutor
 import org.jboss.resteasy.client.{ProxyFactory, ClientExecutor}
 import java.net.URL
 import com.trafigura.edm.logistics.inventory._
-import starling.services.rpc.refdata.TitanEdmTradeService
 import com.trafigura.tradinghub.support.ModelObject
 import org.codehaus.jettison.json.{JSONObject, JSONArray}
 import java.io.{BufferedWriter, FileWriter}
@@ -13,6 +12,7 @@ import starling.services.StarlingInit
 import com.trafigura.edm.physicaltradespecs.EDMQuota
 import com.trafigura.edm.trades.{Trade => EDMTrade, PhysicalTrade => EDMPhysicalTrade}
 import scala.util.control.Exception.catching
+import starling.services.rpc.refdata.{NeptuneId, TitanEdmTradeService}
 
 
 /**
@@ -23,7 +23,7 @@ object LogisticsServices {
   type EdmInventoryServiceWithGetAllInventory = EdmInventoryService with Object { def getAllInventoryLeaves() : List[EDMInventoryItem] }
 }
 import LogisticsServices._
-trait TitanLogisticsAssignmentServices extends ServiceProxy[EdmAssignmentService]
+trait TitanLogisticsAssignmentServices extends ServiceProxy[EdmAssignmentServiceWithGetAllAssignments]
 trait TitanLogisticsInventoryServices extends ServiceProxy[EdmInventoryServiceWithGetAllInventory]
 
 trait ServiceProxy[T] {
@@ -45,7 +45,9 @@ case class DefaultTitanLogisticsAssignmentServices(props: Props) extends TitanLo
   private val logisticsServiceURL = props.TitanLogisticsServiceUrl()
   private lazy val clientExecutor: ClientExecutor = new ComponentTestClientExecutor(rmetadminuser)
 
-  lazy val service: EdmAssignmentService = new EdmAssignmentServiceResourceProxy(ProxyFactory.create(classOf[EdmAssignmentServiceResource], logisticsServiceURL, clientExecutor))
+  lazy val service: EdmAssignmentServiceWithGetAllAssignments = new EdmAssignmentServiceResourceProxy(ProxyFactory.create(classOf[EdmAssignmentServiceResource], logisticsServiceURL, clientExecutor)) {
+    def getAllAssignments() : List[EDMAssignmentItem] = throw new Exception("Not implemented")
+  }
 }
 
 case class DefaultTitanLogisticsInventoryServices(props: Props) extends TitanLogisticsInventoryServices {
@@ -69,17 +71,36 @@ case class FileMockedTitanLogisticsServices() extends TitanLogisticsServices {
 }
 
 case class FileMockedTitanLogisticsAssignmentServices() extends TitanLogisticsAssignmentServices {
-  import FileUtils._
-  val assignmentsFile = "/tests/valuationservice/testdata/logisticsEdmAllSalesAssignments.json"
-  val jsonAssignments = new JSONArray(loadJsonValuesFromFileUrl(getFileUrl(assignmentsFile)).mkString)
-  val loadedAssignments = (0 until jsonAssignments.length()).map(idx => EDMAssignmentItem.fromJson(jsonAssignments.getJSONObject(idx)).asInstanceOf[EDMAssignmentItem]).toList
-  println("Loaded %d assignments ".format(loadedAssignments.size, loadedAssignments.mkString("\n")))
   
   lazy val service : EdmAssignmentServiceWithGetAllAssignments = new EdmAssignmentService() {
-    def getAllSalesAssignments() : List[EDMAssignmentItem] = loadedAssignments
+    def getAllSalesAssignments() : List[EDMAssignmentItem] = salesAssignments
     def getAssignmentById(assignmentId : Int) : EDMAssignmentItem = null
-    def getAllAssignments() : List[EDMAssignmentItem] = Nil
+    def getAllAssignments() : List[EDMAssignmentItem] = allAssignments
   }
+
+  import FileUtils._
+  private val resourcePath = "/tests/valuationservice/testdata/"
+  private def readAllAssignments() : List[EDMAssignmentItem] = {
+    val allAssignmentsFile = resourcePath + "logisticsEdmAllAssignments.json"
+    val jsonAssignments = loadJsonValuesFromFileUrl(getFileUrl(allAssignmentsFile))
+    //val jsonAssignments = new JSONArray(loadJsonValuesFromFileUrl(getFileUrl(allAssignmentsFile)).mkString)
+    //val allAssignments = (0 until jsonAssignments.length()).map(idx => EDMAssignmentItem.fromJson(jsonAssignments.getJSONObject(idx)).asInstanceOf[EDMAssignmentItem]).toList
+  val allAssignments = jsonAssignments.map(e => EDMAssignmentItem.fromJson(new JSONObject(e)).asInstanceOf[EDMAssignmentItem])
+    println("Loaded %d assignments ".format(allAssignments.size))
+    allAssignments
+  }
+
+  private def readSalesAssignments() : List[EDMAssignmentItem] = {
+    val salesAssignmentsFile = resourcePath + "logisticsEdmAllSalesAssignments.json"
+    val jsonAssignments = new JSONArray(loadJsonValuesFromFileUrl(getFileUrl(salesAssignmentsFile)).mkString)
+    val salesAssignments = (0 until jsonAssignments.length()).map(idx => EDMAssignmentItem.fromJson(jsonAssignments.getJSONObject(idx)).asInstanceOf[EDMAssignmentItem]).toList
+    
+    println("Loaded %d sales assignments ".format(salesAssignments.size, salesAssignments.mkString("\n")))
+    salesAssignments
+  }
+
+  private val allAssignments = readAllAssignments()
+  private val salesAssignments = readSalesAssignments()
 }
 
 case class FileMockedTitanLogisticsInventoryServices() extends TitanLogisticsInventoryServices {
@@ -87,10 +108,10 @@ case class FileMockedTitanLogisticsInventoryServices() extends TitanLogisticsInv
   // TODO: get canned mock data for inventory...
   println("starting file mocked titan logistics services")
   val inventoryFile = "/tests/valuationservice/testdata/logisticsEdmInventory.json"
-  val inventoryPath = getClass.getResource(inventoryFile)
+  val inventoryPath = getFileUrl(inventoryFile)
   val loadedInventory = loadJsonValuesFromFileUrl(inventoryPath).map(s => EDMInventoryItem.fromJson(new JSONObject(s)).asInstanceOf[EDMInventoryItem])
   //val loadedInventory = (0 until jsonInventory.length()).map(idx => EDMInventoryItem.fromJson(jsonInventory.getJSONObject(idx)).asInstanceOf[EDMInventoryItem]).toList
-  println("Loaded %d inventory items \n %s".format(loadedInventory.size, loadedInventory.mkString("\n")))
+  //println("Loaded %d inventory items \n %s".format(loadedInventory.size, loadedInventory.mkString("\n")))
   
 //  val assignmentsFile = "/tests/valuationservice/testdata/logisticsEdmAllSalesAssignments.json"
 //  val jsonAssignments = new JSONArray(loadJsonValuesFromFileUrl(getFileUrl(assignmentsFile)).mkString)
@@ -112,6 +133,7 @@ object FileUtils {
   import scala.io.Source._
   def getFileUrl(file : String) = getClass.getResource(file)
   def loadJsonValuesFromFileUrl(fileUrl : URL) : List[String] = fromURL(fileUrl).getLines.toList
+  def loadJsonValuesFromFile(filePath : String) : List[String] = fromFile(filePath).getLines.toList
 
   def writeJson[T <: ModelObject with Object { def toJson() : JSONObject }](fileName : String, objects : List[T]) {
     try {
@@ -127,7 +149,7 @@ object FileUtils {
   }
 }
 
-case class LogisticsJsonMockDataGenerater(titanEdmTradeService : TitanEdmTradeService, logisticsServices : TitanLogisticsServices) {
+case class LogisticsJsonMockDataFileGenerater(titanEdmTradeService : TitanEdmTradeService, logisticsServices : TitanLogisticsServices) {
   import FileUtils._
   val fileOutputPath = "/tmp"
   val assignmentService = logisticsServices.assignmentService.service
@@ -166,20 +188,8 @@ case class LogisticsJsonMockDataGenerater(titanEdmTradeService : TitanEdmTradeSe
   })
 
   println("All assignments, loaded %d assignments".format(assignments.size))
-  val assignmentsFilePath = fileOutputPath + "/logisticsEdmAssingments.json"
+  val assignmentsFilePath = fileOutputPath + "/logisticsEdmAllAssigngments.json"
   writeJson(assignmentsFilePath, assignments)
-
-  // for some strange reason EDM trade service converts Neptune quota ID with prefix NEPTUNE:
-  case class NeptuneId(id : String) {
-    def identifier : String = identifier(id)
-    def identifier(ident : String) : String = ident match {
-      case i : String if i != null => {
-        val neptunePrefix = "NEPTUNE:"
-        ident.substring(neptunePrefix.length)
-      }
-      case null => null
-    }
-  }
 
   // temporary work around to find leaves of the logistics inventory tree
   def findLeaves(inventory : List[EDMInventoryItem]) : List[EDMInventoryItem] =

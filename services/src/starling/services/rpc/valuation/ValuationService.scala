@@ -1,6 +1,7 @@
 package starling.services.rpc.valuation
 
 import starling.props.Props
+import starling.instrument.PhysicalMetalAssignmentForward
 import starling.instrument.PhysicalMetalForward
 import starling.daterange.Day
 import starling.db.{NormalMarketDataReader, SnapshotID, MarketDataStore}
@@ -13,6 +14,7 @@ import com.trafigura.services.valuation._
 import starling.services.rpc.refdata._
 import com.trafigura.tradinghub.support.ModelObject
 import com.trafigura.edm.trades.{Trade => EDMTrade, PhysicalTrade => EDMPhysicalTrade}
+import com.trafigura.edm.logistics.inventory.EDMAssignmentItem
 import scala.Either
 import java.lang.Exception
 import com.trafigura.shared.events._
@@ -35,8 +37,12 @@ import starling.curves.ForwardPriceKey
 import starling.curves.UnitTestingAtomicEnvironment
 import starling.curves.FixingKey
 import starling.services.rpc.logistics.TitanLogisticsServices
+import com.trafigura.edm.physicaltradespecs.EDMQuota
 
 
+/**
+ * Trade cache provide trade map lookup by trade id and also a quota id to trade map lookup
+ */
 trait TitanTradeCache {
   protected var tradeMap: Map[String, EDMPhysicalTrade]
   protected var quotaIDToTradeIDMap: Map[String, String]
@@ -331,7 +337,6 @@ class ValuationService(
   }
   
   def valueCostables(costableIds: List[String], env : Environment, snapshotIDString : String): CostsAndIncomeQuotaValuationServiceResults = {
-
     val sw = new Stopwatch()
 
     val idsToUse = costableIds match {
@@ -374,8 +379,79 @@ class ValuationService(
       case Left(_) => false
     })
     log("Worked " + worked.size + ", failed " + errors.size + ", took " + sw)
-
+    
     CostsAndIncomeQuotaValuationServiceResults(snapshotIDString, valuations.toMap)
+  }
+
+  /**
+   * value all assignments
+   */
+  def valueAllAssignments(maybeSnapshotIdentifier : Option[String] = None) : CostAndIncomeAssignmentValuationServiceResults = {
+ 
+    val snapshotIDString = resolveSnapshotIdString(maybeSnapshotIdentifier)
+    val env = environmentProvider.environment(snapshotIDString)
+    valueAllAssignments(env, snapshotIDString)
+  }
+
+  def valueAllAssignments(env : Environment, snapshotIDString : String) : CostAndIncomeAssignmentValuationServiceResults = {
+
+    val sw = new Stopwatch()
+
+    val inventoryService = logisticsServices.inventoryService.service
+    val assignmentService = logisticsServices.assignmentService.service
+
+    val allAssignments = assignmentService.getAllAssignments()
+    
+    val assignmentsMap : Map[Int, EDMAssignmentItem] = allAssignments.map(a => a.oid.contents -> a).toMap
+    val inventory = inventoryService.getAllInventoryLeaves()
+
+    val quotaMap = titanTradeCache.getAllTrades().flatMap(_.quotas).map(q => NeptuneId(q.detail.identifier).identifier -> q).toMap
+    val assignmentIdToQuotaMap : Map[Int, EDMQuota] = allAssignments.map(a => {
+      val n = quotaMap(a.quotaName)
+      a.oid.contents -> quotaMap(a.quotaName)
+    }).toMap
+
+    var tradeValueCache = Map[String, TradeValuationResult]()
+    val tradeValuer = PhysicalMetalForward.value(futuresExchangeByGUID, futuresMarketByGUID, env, snapshotIDString) _
+    val assignmentValuer = PhysicalMetalAssignmentForward.value(futuresExchangeByGUID, futuresMarketByGUID, assignmentIdToQuotaMap, env, snapshotIDString) _
+/*
+    val valuations2 =  inventory.flatMap(i => {
+     val pAssignment = assignmentsMap(i.purchaseAssignmentId)
+     val sAssignment = i.salesAssignmentId match {
+        case Some(sAssign) => assignmentsMap(sAssign)
+        case None => pAssignment //todo, get proper quota / expected purchase spec
+      }
+      (pAssignment.oid.contents.toString -> valueAssignment(pAssignment)) :: 
+      (sAssignment.oid.contents.toString -> valueAssignment(sAssignment)) :: Nil
+    })
+*/
+    val valuations = inventory.map(i => i.oid.contents.toString -> assignmentValuer(i))
+
+    def valueAssignment(assignment : EDMAssignmentItem) = {
+      quotaValue(assignment.quotaName)
+    }
+
+    def tradeValue(id: String) : TradeValuationResult = {
+      if (!tradeValueCache.contains(id))
+        tradeValueCache += (id -> tradeValuer(titanTradeCache.getTrade(id)))
+      tradeValueCache(id)
+    }
+
+    def quotaValue(id: String) = {
+      tradeValue(titanTradeCache.tradeIDFromQuotaID(id)) match {
+        case Left(list) => Left(list.filter(_ .quotaID == id))
+        case other => other
+      }
+    }
+
+    log("Valuation took " + sw)
+    val (errors, worked) = valuations.partition(_._2 match {
+      case Right(_) => true
+      case Left(_) => false
+    })
+    log("Worked " + worked.size + ", failed " + errors.size + ", took " + sw)
+    
+    CostAndIncomeAssignmentValuationServiceResults(snapshotIDString, valuations.toMap)
   }
 
   /**

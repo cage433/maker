@@ -6,7 +6,6 @@ import org.jboss.resteasy.client.{ProxyFactory, ClientExecutor}
 import com.trafigura.tradecapture.internal.refinedmetalreferencedataservice._
 import com.trafigura.edm.tradeservice.{EdmGetTradesResource, EdmGetTradesResourceProxy, EdmGetTrades}
 import com.trafigura.edm.trades.{PhysicalTrade => EDMPhysicalTrade}
-import com.trafigura.tradinghub.support.GUID
 import com.trafigura.tradecapture.internal.refinedmetal.{Market, Metal}
 import com.trafigura.edm.physicaltradespecs.QuotaDetail
 import com.trafigura.tradecapture.internal.refinedmetal.Metal
@@ -15,6 +14,11 @@ import com.trafigura.tradecapture.internal.refinedmetal.Market
 import com.trafigura.edm.tradeservice.TradeResults
 import com.trafigura.edm.trades.Trade
 import com.trafigura.edm.tradeservice.TradeResult
+import starling.services.StarlingInit
+import com.trafigura.tradinghub.support.{ModelObject, GUID}
+import java.io.{BufferedWriter, FileWriter}
+import starling.services.rpc.valuation.ValuationService
+import starling.services.rpc.logistics.FileUtils
 
 
 /**
@@ -96,5 +100,83 @@ case class FileMockedTitanServices() extends TitanServices {
 
   def updateTrade(trade : EDMPhysicalTrade) {
     tradeMap = tradeMap.updated(trade.oid, trade)
+  }
+}
+
+// for some strange reason EDM trade service converts Neptune quota ID with prefix NEPTUNE:
+case class NeptuneId(id : String) {
+  def identifier : String = identifier(id)
+  def identifier(ident : String) : String = ident match {
+    case i : String if i != null => {
+      val neptunePrefix = "NEPTUNE:"
+      ident.substring(neptunePrefix.length)
+    }
+    case null => null
+  }
+}
+
+case class FileMockedTitanServicesDataFileGenerator(titanEdmTradeService : TitanEdmTradeService, valuationService : ValuationService) {
+
+  import org.codehaus.jettison.json.JSONObject
+  import FileUtils._
+
+  println("Starting FileMockedTitanServicesDataFileGenerator")
+  valuationService.marketDataSnapshotIDs().foreach(println)
+  val valuations = valuationService.valueAllQuotas()
+
+//  valuations.tradeResults.foreach(println)
+
+  val (_, worked) = valuations.tradeResults.values.partition({ case Right(_) => true; case Left(_) => false })
+
+  //val tradeIds = valuations.tradeResults.collect{ case (id, Left(v)) => id }.toList
+  //val trades = valuationService.getTrades(tradeIds)
+  val trades = titanEdmTradeService.titanGetEdmTradesService.getAll().results.map(_.trade).filter(_ != null)
+  val markets = valuationService.getFuturesMarkets.toList
+  val exchanges = valuationService.getFuturesExchanges.toList
+
+  /**
+   * Write out EDM trades from trade service (that can be valued successfully) and the ref-data markets and exchanges
+   *   so that the file mocked services can use canned data for tests (note this data needs moving into resources to update
+   *   canned data for the tests...)
+   */
+  val tradesFile = "/tmp/edmTrades.json"
+  val marketsFile = "/tmp/markets.json"
+  val exchangesFile = "/tmp/exchanges.json"
+
+  writeJson(tradesFile, trades)
+  writeJson(marketsFile, markets)
+  writeJson(exchangesFile, exchanges)
+
+  val loadedMarkets = loadJsonValuesFromFile(marketsFile).map(s => Metal.fromJson(new JSONObject(s)).asInstanceOf[Metal])
+  val loadedExchanges = loadJsonValuesFromFile(exchangesFile).map(s => Market.fromJson(new JSONObject(s)).asInstanceOf[Market])
+  val loadedTrades = loadJsonValuesFromFile(tradesFile).map(s => EDMPhysicalTrade.fromJson(new JSONObject(s)).asInstanceOf[EDMPhysicalTrade])
+
+  loadedMarkets.foreach(println)
+  loadedExchanges.foreach(println)
+  println("loaded trade size = " + loadedTrades.size)
+
+  def writeJson[T <: ModelObject with Object { def toJson() : JSONObject }](fileName : String, objects : List[T]) {
+    try {
+      val fStream = new FileWriter(fileName)
+      val bWriter = new BufferedWriter(fStream)
+      objects.foreach(obj => bWriter.write(obj.toJson().toString() + "\n" ))
+      bWriter.flush()
+      fStream.close()
+    }
+    catch {
+      case ex : Exception => println("Error: " + ex.getMessage())
+    }
+  }
+}
+
+object RefDataServices {
+
+  def main(args : Array[String]) {
+    println("running main for tactical ref data services")
+    val server = StarlingInit.devInstance
+    val edmTradeService = server.titanServices
+    val valuationService = server.valuationService
+    FileMockedTitanServicesDataFileGenerator(edmTradeService, valuationService)
+    server.stop
   }
 }

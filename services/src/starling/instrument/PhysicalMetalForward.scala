@@ -11,11 +11,14 @@ import com.trafigura.tradecapture.internal.refinedmetal.{Market => EDMMarket, Me
 import starling.edm.{EDMPricingSpecConverter, EDMConversions}
 import com.trafigura.edm.materialspecification.CommoditySpec
 import com.trafigura.edm.trades.{Trade => EDMTrade, PhysicalTrade => EDMPhysicalTrade}
+import com.trafigura.edm.physicaltradespecs.EDMQuota
 import java.lang.Exception
 import EDMConversions._
+import com.trafigura.services.valuation.CostsAndIncomeAssignmentValuation
 import com.trafigura.services.valuation.CostsAndIncomeQuotaValuation
 import starling.daterange.DayAndTime
 import com.trafigura.services.valuation.PricingValuationDetails
+import com.trafigura.edm.logistics.inventory.EDMInventoryItem
 
 case class InvalidPricingSpecException(msg : String) extends Exception(msg)
 
@@ -272,3 +275,71 @@ case class PhysicalMetalForward(tradeID : Int, quotas : List[PhysicalMetalQuota]
     }
   }
 }
+
+
+object PhysicalMetalAssignmentForward {
+  def apply(exchangesByGUID : Map[GUID, EDMMarket],
+            futuresMetalMarketByGUID : Map[GUID, EDMMetal],
+            assignmentIdToQuotaMap : Map[Int, EDMQuota])
+           (inventory : EDMInventoryItem) : PhysicalMetalAssignmentForward = {
+    try {
+      val purchaseQuota = assignmentIdToQuotaMap(inventory.purchaseAssignmentId)
+      val edmPurchasePricingSpec = purchaseQuota.detail.pricingSpec
+      val edmSalePricingSpec = inventory.salesAssignmentId match {
+        case Some(sId) => assignmentIdToQuotaMap(sId).detail.pricingSpec
+        case None => edmPurchasePricingSpec
+      }
+
+      val deliveryQuantity = purchaseQuota.detail.deliverySpecs.map{ds => fromTitanQuantity(ds.quantity)}.sum
+      val commodityGUIDs : Set[GUID] = purchaseQuota.detail.deliverySpecs.map(_.materialSpec.asInstanceOf[CommoditySpec].commodity).toSet
+      assert(commodityGUIDs.size == 1, "quota " + purchaseQuota.detail.identifier + " has multiple commodities")
+
+      val purchasePricingSpec = EDMPricingSpecConverter(futuresMetalMarketByGUID(commodityGUIDs.head), exchangesByGUID).fromEdmPricingSpec(deliveryQuantity, edmPurchasePricingSpec)
+      val salePricingSpec = EDMPricingSpecConverter(futuresMetalMarketByGUID(commodityGUIDs.head), exchangesByGUID).fromEdmPricingSpec(deliveryQuantity, edmSalePricingSpec)
+            
+     val quota = PhysicalMetalQuota(
+       purchaseQuota.detail.identifier,
+       purchasePricingSpec,
+       salePricingSpec)
+
+      PhysicalMetalAssignmentForward(inventory.oid.contents.toString, inventory, quota)
+    } catch {
+      case ex => throw new Exception("Inventory " + inventory.oid + " failed to construct from EDM. " + ex.getMessage, ex)
+    }
+  }
+
+  def value(exchangesByGUID : Map[GUID, EDMMarket],
+            futuresMetalMarketByGUID : Map[GUID, EDMMetal],
+            assignmentIdToQuotaMap : Map[Int, EDMQuota],
+            env : Environment, snapshotID : String)(inventory : EDMInventoryItem) : Either[List[CostsAndIncomeAssignmentValuation], String] =  {
+
+    try {
+      val forward = PhysicalMetalAssignmentForward(exchangesByGUID, futuresMetalMarketByGUID, assignmentIdToQuotaMap)(inventory)
+      Left(forward.costsAndIncomeAssignmentValueBreakdown(env, snapshotID))
+    } catch {
+      case ex => Right("Error valuing inventory  " + inventory.oid + ", message was " + ex.getMessage)
+    }
+  }
+}
+
+case class PhysicalMetalAssignmentForward(id : String, inventoryItem : EDMInventoryItem, quota : PhysicalMetalQuota) {
+
+  def costsAndIncomeAssignmentValueBreakdown(env : Environment, snapshotID : String) : List[CostsAndIncomeAssignmentValuation] = {
+  
+    List(CostsAndIncomeAssignmentValuation(
+      purchaseAssignmentID = inventoryItem.purchaseAssignmentId.toString,
+      saleAssignmentID = inventoryItem.salesAssignmentId match { case Some(id) => Some(id.toString); case _ => None },
+      snapshotID,
+      quota.quantity,
+
+      // These come from the pricing spec of the quota associated with the purchaseAssignmentID
+      purchaseValuationDetails = quota.pricingSpec.valuationDetails(env),
+      // If saleAssignmentID is defined, then these details come from the pricing spec of its associated quota,
+      // otherwise use the expected pricing spec of the purchase quota
+      saleValuationDetails = quota.expectedTransferPricingSpec.valuationDetails(env),
+
+      benchmarkPremium = Quantity.NULL,
+      freightParity = Quantity.NULL))
+  }
+}
+

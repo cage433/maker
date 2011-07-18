@@ -21,41 +21,43 @@ import starling.services.rpc.logistics.{FileMockedTitanLogisticsServices}
  */
 class ValuationServiceTest extends StarlingTest {
 
-  @Test
-  def testValuationServiceValuationUpdatedEvents() {
+  class MockEventHandler(handler : (List[String]) => Unit) extends DemultiplexerClient {
+    def handle(ev: Event) {
+      if (ev == null) Log.warn("Got a null event")
+      else {
+        // Must be a starling valuation update event from valuation service
+        if (StarlingSource == ev.source && StarlingValuationServiceSubject == ev.subject) {
 
-    Log.info("testValuationServiceValuationUpdatedEvents starting")
+          Log.info("handler: recieved a starling valuation service event to process %s".format(ev.toString))
 
-    var updatedTradeValuationList : List[String] = List()
+          val tradePayloads = ev.content.body.payloads.filter(p => Event.RefinedMetalTradeIdPayload == p.payloadType)
+          val tradeIds = tradePayloads.map(p => p.key.identifier)
+          Log.info("Trade event received for ids { %s }".format(tradeIds.mkString(", ")))
 
-    class MockEventHandler extends DemultiplexerClient {
-      def handle(ev: Event) {
-        if (ev == null) Log.warn("Got a null event")
-        else {
-          // Must be a starling valuation update event from valuation service
-          if (StarlingSource == ev.source && StarlingValuationServiceSubject == ev.subject) {
-
-            Log.info("handler: recieved a starling valuation service event to process %s".format(ev.toString))
-
-            val tradePayloads = ev.content.body.payloads.filter(p => Event.RefinedMetalTradeIdPayload == p.payloadType)
-            val tradeIds = tradePayloads.map(p => p.key.identifier)
-            Log.info("Trade event received for ids { %s }".format(tradeIds.mkString(", ")))
-
-            ev.verb match {
-              case UpdatedEventVerb => {
-                updatedTradeValuationList = tradeIds
-              }
-              case NewEventVerb => {
-                Log.info("new event received")
-              }
-              case CancelEventVerb | RemovedEventVerb => {
-                Log.info("cancel / remove event received")
-              }
+          ev.verb match {
+            case UpdatedEventVerb => {
+              //updatedTradeValuationList = tradeIds
+              handler(tradeIds)
+            }
+            case NewEventVerb => {
+              Log.info("new event received")
+            }
+            case CancelEventVerb | RemovedEventVerb => {
+              Log.info("cancel / remove event received")
             }
           }
         }
       }
     }
+  }
+
+  @Test
+  def testValuationServiceValuationUpdatedEvents() {
+
+    Log.info("testValuationServiceValuationUpdatedEvents starting")
+
+    var updatedTradeValuationList : List[String] = Nil
+    val handler = (ids : List[String]) => updatedTradeValuationList = ids 
 
     println("Starting valuation service tests - initialisation of mocks")
 
@@ -66,12 +68,6 @@ class ValuationServiceTest extends StarlingTest {
     val mockTitanTradeCache = new TitanTradeServiceBasedTradeCache(mockTitanTradeService)
     val mockTitanLogisticsServices = FileMockedTitanLogisticsServices()
     val mockRabbitEventServices = new MockRabbitEventServices()
-
-    val assignments = mockTitanLogisticsServices.assignmentService.service.getAllSalesAssignments()
-    val inventory = mockTitanLogisticsServices.inventoryService.service.getAllInventoryLeaves()
-    //println("assignments " + assignments.mkString(", "))
-//    val inventory = mockTitanLogisticsServices.inventoryService.service.getInventoryTreeByPurchaseQuotaId()
-//    println("inventory " + inventory.mkString(", "))
 
     val vs = new ValuationService(
       new MockEnvironmentProvider, mockTitanTradeCache, mockTitanServices, mockTitanLogisticsServices, mockRabbitEventServices)
@@ -94,7 +90,7 @@ class ValuationServiceTest extends StarlingTest {
 //val x = valuedTrades.find(t => t.oid == firstTrade.oid)
 //val y = valuations.tradeResults(firstTrade.oid.toString)
     
-    val testEventHandler = new MockEventHandler
+    val testEventHandler = new MockEventHandler(handler)
 
     mockRabbitEventServices.eventDemux.addClient(testEventHandler)
 
@@ -131,6 +127,47 @@ class ValuationServiceTest extends StarlingTest {
     assertTrue(updatedTradeValuationList.contains(updatedTrade.oid.toString), "Valuation service failed to raise valuation changed events for the changed trades")
   }
 
+
+  @Test
+  def testValuationServiceValueAssignments {
+    
+    Log.info("testValuationServiceValueAssignments starting")
+
+    println("Starting valuation service assignment tests - initialisation of mocks")
+
+    val testMarketLookup = new TestMarketLookup()
+    MarketProvider.registerNewImplForTesting(Some(testMarketLookup))
+    val mockTitanServices = new FileMockedTitanServices()
+    val mockTitanTradeService = new DefaultTitanTradeService(mockTitanServices)
+    val mockTitanTradeCache = new TitanTradeServiceBasedTradeCache(mockTitanTradeService)
+    val mockTitanLogisticsServices = FileMockedTitanLogisticsServices()
+    val mockRabbitEventServices = new MockRabbitEventServices()
+
+    //val salesAssignments = mockTitanLogisticsServices.assignmentService.service.getAllSalesAssignments()
+    val assignments = mockTitanLogisticsServices.assignmentService.service.getAllSalesAssignments()
+    val inventory = mockTitanLogisticsServices.inventoryService.service.getAllInventoryLeaves()
+    println("assignments " + assignments.mkString(", "))
+//    val inventory = mockTitanLogisticsServices.inventoryService.service.getInventoryTreeByPurchaseQuotaId()
+//    println("inventory " + inventory.mkString(", "))
+
+    val vs = new ValuationService(
+      new MockEnvironmentProvider, mockTitanTradeCache, mockTitanServices, mockTitanLogisticsServices, mockRabbitEventServices)
+
+    println("Running valuation service assignment tests")
+
+    //vs.marketDataSnapshotIDs().foreach(println)
+    val valuations = vs.valueAllAssignments()
+
+    println("Valued assignments")
+
+    val (failed, worked) = valuations.assignmentValuationResults.values.partition({ case Right(_) => true; case _ => false })
+    val valuedIds = valuations.assignmentValuationResults.collect {
+      case (id, Left(v)) => id
+    }.toList
+
+    println("Valued assignments, %d worked, %d failed \n%s".format(worked.size, failed.size, worked.mkString("\n")))   
+  }
+
   private def createTradeUpdatedEvent(id : String) = {
     val pf = new PayloadFactory()
     val ef = new EventFactory()
@@ -146,3 +183,4 @@ class ValuationServiceTest extends StarlingTest {
     testValuationServiceValuationUpdatedEvents
   }
 }
+
