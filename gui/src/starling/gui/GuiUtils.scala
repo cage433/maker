@@ -191,12 +191,16 @@ object GuiUtils {
 
     UIManager.put("JXMonthView.font", new FontUIResource("Dialog", Font.PLAIN, 10))
 
-    // I want to disable ctrl page down and page up in ListViews and ScrollPanes so that you can change tabs when these have focus.
+    // I want to disable ctrl page down and page up in ListViews, Tables and ScrollPanes so that you can change tabs when these have focus.
     val lv = new ListView(List("Bla")) {
       peer.getInputMap(JComponent.WHEN_FOCUSED).getParent.remove(KeyStroke.getKeyStroke(KeyEvent.VK_PAGE_DOWN, InputEvent.CTRL_DOWN_MASK))
       peer.getInputMap(JComponent.WHEN_FOCUSED).getParent.remove(KeyStroke.getKeyStroke(KeyEvent.VK_PAGE_UP, InputEvent.CTRL_DOWN_MASK))
     }
     new ScrollPane(lv) {
+      peer.getInputMap(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT).getParent.remove(KeyStroke.getKeyStroke(KeyEvent.VK_PAGE_DOWN, InputEvent.CTRL_DOWN_MASK))
+      peer.getInputMap(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT).getParent.remove(KeyStroke.getKeyStroke(KeyEvent.VK_PAGE_UP, InputEvent.CTRL_DOWN_MASK))
+    }
+    new Table() {
       peer.getInputMap(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT).getParent.remove(KeyStroke.getKeyStroke(KeyEvent.VK_PAGE_DOWN, InputEvent.CTRL_DOWN_MASK))
       peer.getInputMap(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT).getParent.remove(KeyStroke.getKeyStroke(KeyEvent.VK_PAGE_UP, InputEvent.CTRL_DOWN_MASK))
     }
