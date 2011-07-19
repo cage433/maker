@@ -67,6 +67,10 @@ class PivotJTable(tableModel:PivotJTableModel, pivotTableView:PivotTableView, mo
           e.consume()
           tableModel.focusPopup()
         }
+      } else if (e.getKeyCode == KeyEvent.VK_LEFT && (e.getModifiersEx & InputEvent.ALT_DOWN_MASK) == InputEvent.ALT_DOWN_MASK) {
+        putClientProperty("JTable.autoStartsEdit", false)
+      } else if (e.getKeyCode == KeyEvent.VK_RIGHT && (e.getModifiersEx & InputEvent.ALT_DOWN_MASK) == InputEvent.ALT_DOWN_MASK) {
+        putClientProperty("JTable.autoStartsEdit", false)
       } else {
         putClientProperty("JTable.autoStartsEdit", true)
       }
@@ -189,6 +193,14 @@ class PivotJTable(tableModel:PivotJTableModel, pivotTableView:PivotTableView, mo
             if (getCellEditor != null) {
               e.consume()
               getCellEditor.cancelCellEditing()
+            }
+          } else if (e.getKeyCode == KeyEvent.VK_LEFT && (e.getModifiersEx & InputEvent.ALT_DOWN_MASK) == InputEvent.ALT_DOWN_MASK) {
+            if (getCellEditor != null) {
+              e.consume()
+            }
+          } else if (e.getKeyCode == KeyEvent.VK_RIGHT && (e.getModifiersEx & InputEvent.ALT_DOWN_MASK) == InputEvent.ALT_DOWN_MASK) {
+            if (getCellEditor != null) {
+              e.consume()
             }
           }
         }

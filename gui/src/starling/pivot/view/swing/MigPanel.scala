@@ -12,7 +12,6 @@ import starling.gui.GuiUtils
 import org.jdesktop.swingx.painter.{PinstripePainter, ImagePainter, Painter}
 import swing.event.{MouseExited, MouseEntered, MouseClicked}
 import starling.gui.GuiUtils._
-import java.awt.geom.AffineTransform
 
 class MigPanel(layoutConstraints:String = "", columnConstraints:String = "", rowConstraints:String = "")
         extends Panel with SequentialContainer.Wrapper {
@@ -233,6 +232,7 @@ class ListXView[A] extends ListView[A] {
 
 class NListView[T](values:Seq[T]) extends ListView[T](values) {
   selection.intervalMode = ListView.IntervalMode.Single
+
   def selectedOption:Option[T] = if (selection.indices.isEmpty) None else Some(selected)
   def selectedOption_=(v:Option[T]) = v match {
     case None => if (listData.nonEmpty) selectIndices(0)

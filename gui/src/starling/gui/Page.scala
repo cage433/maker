@@ -168,24 +168,29 @@ trait OldPageData
 trait ComponentState
 trait ComponentTypeState
 trait ComponentRefreshState
+trait TypeFocusInfo
 trait PageComponent extends Component {
   def getBorder:Option[Border] = Some(BorderFactory.createMatteBorder(1, 0, 0, 0, GuiUtils.BorderColour))
-  def restoreToCorrectViewForBack {}
+  def restoreToCorrectViewForBack() {}
   def getState:Option[ComponentState] = None
   def setState(state:Option[ComponentState]) {}
-  def resetDynamicState {}
-  def pageHidden {}
-  def pageShown {}
+  def resetDynamicState() {}
+  def pageHidden() {}
+  def pageShown() {}
   def getTypeState:Option[ComponentTypeState] = None
   def setTypeState(typeState:Option[ComponentTypeState]) {}
+  def getTypeFocusInfo:Option[TypeFocusInfo] = None
+  def setTypeFocusInfo(focusInfo:Option[TypeFocusInfo]) {}
   def getOldPageData:Option[OldPageData] = None
   def getRefreshState:Option[ComponentRefreshState] = None
   def setOldPageDataOnRefresh(pageData:Option[OldPageData], refreshState:Option[ComponentRefreshState], componentState:Option[ComponentState]) {}
-  def pageResized(newSize:Dimension):Unit = {}
+  def pageResized(newSize:Dimension) {}
+  def defaultComponentForFocus:Option[java.awt.Component] = None
 }
 class PageInfo(val page: Page, val pageResponse:PageResponse, val bookmark:Bookmark, var pageComponent:Option[PageComponent],
                var pageComponentSoft:SoftReference[PageComponent], var componentState:Option[ComponentState],
-               var refreshPage:Option[Page], var autoRefresh:Option[CountDownLatch]=None) {
+               var refreshPage:Option[Page], var autoRefresh:Option[CountDownLatch]=None,
+               var componentForFocus:Option[java.awt.Component]=None) {
   def image:BufferedImage = {
     if (future == null) {
       null

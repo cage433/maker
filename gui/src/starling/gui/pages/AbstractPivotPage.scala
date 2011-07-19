@@ -13,7 +13,7 @@ import starling.rmi.{StarlingServer, PivotData}
 import collection.mutable.HashSet
 import starling.utils.ImplicitConversions._
 import scala.swing.Swing._
-import starling.pivot.view.swing.TableType._
+import sun.reflect.generics.tree.FormalTypeParameter
 
 /**
  * An abstract page which holds a pivot table
@@ -476,7 +476,16 @@ class PivotTablePageComponent(
       case _ =>
     }
   }
-  override def pageResized(newSize:Dimension) = pivotComp.pageResized(newSize)
+
+  override def getTypeFocusInfo = Some(AbstractPivotComponentTypeFocusInfo)
+  override def setTypeFocusInfo(focusInfo:Option[TypeFocusInfo]) {
+    focusInfo match {
+      case Some(AbstractPivotComponentTypeFocusInfo) => pivotComp.updateFocusBasedOnCellSelection()
+      case _ => 
+    }
+  }
+
+  override def pageResized(newSize:Dimension) {pivotComp.pageResized(newSize)}
   override def getOldPageData = Some(pivotComp.getOldPageData)
   override def getRefreshState = Some(pivotComp.getRefreshState)
   override def setOldPageDataOnRefresh(pageData:Option[OldPageData], refreshState:Option[ComponentRefreshState], componentState:Option[ComponentState]) = {
@@ -537,10 +546,6 @@ class PivotTablePageComponent(
     }
   }
 
-  override def pageShown {
-    pivotComp.updateFocusedTable()
-  }
-
   def getSelection = selection
 }
 
@@ -574,3 +579,5 @@ case class AbstractPivotComponentTypeState(filterText:String, reportSpecificScro
                                            configPanelState:Option[NTabbedPaneState],
                                            selectedCells:Either[List[(Int,Int)],
                                            (List[(Int,Int)],List[(Int,Int)],List[(Int,Int)])]) extends ComponentTypeState
+
+case object AbstractPivotComponentTypeFocusInfo extends TypeFocusInfo
