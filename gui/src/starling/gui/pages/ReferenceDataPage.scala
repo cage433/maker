@@ -20,10 +20,10 @@ case object ReferenceDataIndexPage extends Page {
   def text = "Reference Data"
   def icon = StarlingIcons.im("/icons/16x16_ref_data.png")
   def build(reader: PageBuildingContext) = ReferenceDataIndexPageData(reader.starlingServer.referenceDataTables(), reader.starlingServer.permissionToDoAdminLikeThings)
-  def createComponent(context: PageContext, data: PageData, bookmark:Bookmark, browserSize: Dimension) = {ReferenceDataIndexPageComponent(context, data)}
+  def createComponent(context: PageContext, data: PageData, bookmark:Bookmark, browserSize: Dimension) = {new ReferenceDataIndexPageComponent(context, data)}
 }
 
-case class ReferenceDataIndexPageComponent(context:PageContext, pageData:PageData) extends MigPanel("insets dialog") with PageComponent {
+class ReferenceDataIndexPageComponent(context:PageContext, pageData:PageData) extends MigPanel("insets dialog") with PageComponent {
   val data = pageData match {case d:ReferenceDataIndexPageData => d}
 
   val c = new StripedPanel("insets 0", "[grow][p][p][p][grow]", "[grow][p][p][p][p][grow 150]") {

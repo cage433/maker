@@ -63,8 +63,8 @@ class TreePanelComboBox(initialValuesAndSelection:(TreePivotFilter, Selection)) 
   }
 
   val (textToUse, numberTextToUse) = getTextForSelection
-  val label = TreePanelComboBoxLabel(textToUse)
-  val button = DropDownButton(numberTextToUse)
+  val label = new TreePanelComboBoxLabel(textToUse)
+  val button = new DropDownButton(numberTextToUse)
 
   add(label, "push, grow")
   add(button, "grow")
@@ -99,7 +99,7 @@ class TreePanelComboBox(initialValuesAndSelection:(TreePivotFilter, Selection)) 
   }
 }
 
-case class TreePanelComboBoxLabel(text0:String) extends MigPanel("insets 4lp") {
+class TreePanelComboBoxLabel(text0:String) extends MigPanel("insets 4lp") {
   opaque = false
   background = ClearColour
 
@@ -155,7 +155,7 @@ case class TreePanelComboBoxLabel(text0:String) extends MigPanel("insets 4lp") {
   }
 }
 
-case class DropDownButton(numberText0:String) extends MigPanel("insets 4lp") {
+class DropDownButton(numberText0:String) extends MigPanel("insets 4lp") {
   opaque = false
   background = ClearColour
   private var currentNumberText = numberText0

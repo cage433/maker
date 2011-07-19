@@ -145,8 +145,8 @@ object PivotTableViewHelper {
   }
 
   def generateScrollableFieldChooser(comp:Component, scrollingNotifier:{def scrolling()}, tableView:PivotTableView) = {
-    val leftButton = ArrowButton(true)
-    val rightButton = ArrowButton(false)
+    val leftButton = new ArrowButton(true)
+    val rightButton = new ArrowButton(false)
     new CrazyScrollPane(comp, leftButton, rightButton) {
       opaque = false
       background = ClearColour

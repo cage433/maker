@@ -100,7 +100,7 @@ object PivotComponent {
     val data = pageData.asInstanceOf[PivotTablePageData]
 
     if (pivotPageState.showChart) {
-      PivotTablePageGraphComponent(data.pivotData.pivotTable)
+      new PivotTablePageGraphComponent(data.pivotData.pivotTable)
     } else {
       new PivotTablePageComponent(text, pageContext, toolbarButtons, configPanel, finalDrillDown, selfPage, data,
         pivotPageState, edits, save, bookmark, browserSize, embedded)
@@ -112,7 +112,7 @@ abstract class PivotComponent extends MigPanel("insets 0", "[fill,grow]", "[fill
   def getSelection : (List[(Field, Selection)], List[scala.List[(Field, Selection)]])
 }
 
-case class PivotTablePageGraphComponent(table:PivotTable) extends PivotComponent {
+class PivotTablePageGraphComponent(table:PivotTable) extends PivotComponent {
   val pivotGrid = new PivotTableConverter(OtherLayoutInfo(), table).createGrid(addExtraColumnRow = false)
   val pivotChart = new PivotChartView(pivotGrid)
   add(pivotChart, "push, grow")

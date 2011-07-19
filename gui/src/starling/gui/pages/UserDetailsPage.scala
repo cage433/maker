@@ -11,10 +11,10 @@ case class UserDetailsPage(user:User) extends Page {
   def icon = StarlingIcons.im("/icons/16x16_user_dark.png")
 
   def build(reader:PageBuildingContext) = null
-  def createComponent(context:PageContext, data:PageData, bookmark:Bookmark, browserSize:Dimension) = UserDetailsPageComponent(context:PageContext, user:User)
+  def createComponent(context:PageContext, data:PageData, bookmark:Bookmark, browserSize:Dimension) = new UserDetailsPageComponent(context:PageContext, user:User)
 }
 
-case class UserDetailsPageComponent(context:PageContext, user:User) extends MigPanel("insets dialog") with PageComponent {
+class UserDetailsPageComponent(context:PageContext, user:User) extends MigPanel("insets dialog") with PageComponent {
   val c = new StripedPanel("insets 0", "push[" + GuiUtils.StandardLeftIndent + "][p]unrel[p]push", "push[p]unrel[p][p][p][p]push[p]") {
     def titleLabel(text0:String) = new Label {
       text = text0

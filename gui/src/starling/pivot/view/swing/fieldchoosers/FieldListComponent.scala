@@ -62,7 +62,7 @@ class FieldListComponent(model:PivotTableModel, otherLayoutInfo:OtherLayoutInfo,
           add(field, "gapbefore 5lp")
         }
       }
-      add(SpacerPanel("insets 0"))
+      add(new SpacerPanel("insets 0"))
     }
     revalidate()
     repaint()
@@ -102,6 +102,6 @@ class FieldListComponent(model:PivotTableModel, otherLayoutInfo:OtherLayoutInfo,
   def reset() {guiFieldsMap.values.foreach(_.namePanel.reset())}
 }
 
-case class SpacerPanel(constraints:String) extends MigPanel(constraints) {
+class SpacerPanel(constraints:String) extends MigPanel(constraints) {
   preferredSize = new Dimension(1, 5)
 }

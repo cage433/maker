@@ -62,18 +62,20 @@ object GuiFieldComponent {
       }
     }
   }
+
+  def apply(props:GuiFieldComponentProps) = new GuiFieldComponent(props)
 }
 
 import GuiFieldComponent._
 
-case class GuiFieldComponent(props:GuiFieldComponentProps) extends MigPanel("insets 0, hidemode 3", "[p]0[p]0[p]0[p]0[p]0[p]") {
+class GuiFieldComponent(val props:GuiFieldComponentProps) extends MigPanel("insets 0, hidemode 3", "[p]0[p]0[p]0[p]0[p]0[p]") {
   opaque = false
 
-  val namePanel = GuiFieldNamePanel(props, this)
-  val treeLevelPanel = TreeLevelPanel(props)
-  val measureTogglePanel = MeasureTogglePanel(props)
-  val subTotalTogglePanel = SubTotalTogglePanel(props)
-  val filterLabelPanel = FilterLabelPanel(props)
+  val namePanel = new GuiFieldNamePanel(props, this)
+  val treeLevelPanel = new TreeLevelPanel(props)
+  val measureTogglePanel = new MeasureTogglePanel(props)
+  val subTotalTogglePanel = new SubTotalTogglePanel(props)
+  val filterLabelPanel = new FilterLabelPanel(props)
   val possibleValuesAndSelectionToUse = getPossibleValuesAndSelection
 
   private def getPossibleValuesAndSelection = props.filterData.possibleValuesAndSelection match {
@@ -83,7 +85,7 @@ case class GuiFieldComponent(props:GuiFieldComponentProps) extends MigPanel("ins
 
   private val transformData = props.transformData
 
-  val filterPopupPanel = TreePanel(possibleValuesAndSelectionToUse, transformData.showOther, transformData.transforms)
+  val filterPopupPanel = new TreePanel(possibleValuesAndSelectionToUse, transformData.showOther, transformData.transforms)
 
   val popupMenu = new JPopupMenu {
     add(filterPopupPanel.peer)
@@ -168,7 +170,7 @@ case class GuiFieldComponent(props:GuiFieldComponentProps) extends MigPanel("ins
   val initialPreferredSize = preferredSize
 }
 
-case class TempGuiFieldNamePanel(fieldName:String) extends MigPanel {
+class TempGuiFieldNamePanel(fieldName:String) extends MigPanel {
   val label = new Label(fieldName) {
     font = GuiFieldFont
   }
@@ -212,7 +214,7 @@ case class TempGuiFieldNamePanel(fieldName:String) extends MigPanel {
   }
 }
 
-case class GuiFieldNamePanel(props:GuiFieldComponentProps, guiComp:GuiFieldComponent) extends MigPanel {
+class GuiFieldNamePanel(props:GuiFieldComponentProps, guiComp:GuiFieldComponent) extends MigPanel {
   opaque = false
   background = ClearColour
 
@@ -533,7 +535,7 @@ object TreeLevelPanel {
   val DisabledRightIcon = createDisabledBufferedImage(RightIcon)
 }
 
-case class TreeLevelPanel(props:GuiFieldComponentProps) extends GuiFieldPanel("insets n 2lp n 3lp, gap 2lp", (props.measureField || props.realMeasureField)) {
+class TreeLevelPanel(props:GuiFieldComponentProps) extends GuiFieldPanel("insets n 2lp n 3lp, gap 2lp", (props.measureField || props.realMeasureField)) {
   import TreeLevelPanel._
   visible = props.showDepthPanel
 
@@ -575,7 +577,7 @@ case class TreeLevelPanel(props:GuiFieldComponentProps) extends GuiFieldPanel("i
   add(rightButton)
 }
 
-case class MeasureTogglePanel(props:GuiFieldComponentProps) extends GuiFieldPanel("insets 2 0 2 1", true) {
+class MeasureTogglePanel(props:GuiFieldComponentProps) extends GuiFieldPanel("insets 2 0 2 1", true) {
   visible = (!props.realMeasureField && (props.locationOfField == Columns))
   tooltip = "Toggles whether this should act as a measure field"
   minimumSize = new Dimension(13, 1)
@@ -607,7 +609,7 @@ case class MeasureTogglePanel(props:GuiFieldComponentProps) extends GuiFieldPane
   }
 }
 
-case class SubTotalTogglePanel(props:GuiFieldComponentProps)
+class SubTotalTogglePanel(props:GuiFieldComponentProps)
         extends GuiFieldPanel("insets 2 0 2 1", false,
           !props.otherLayoutInfo.disabledSubTotals.contains(props.field),
           endPiece = props.realMeasureField) {
@@ -644,7 +646,7 @@ case class SubTotalTogglePanel(props:GuiFieldComponentProps)
   }
 }
 
-case class FilterLabelPanel(props:GuiFieldComponentProps)
+class FilterLabelPanel(props:GuiFieldComponentProps)
         extends GuiFieldPanel("insets n n n 2lp, gap 2lp, hidemode 2",
           (props.measureField || props.realMeasureField), false,
           BorderBuilder(left = false, right = (props.locationOfField != Filter))) {

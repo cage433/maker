@@ -242,7 +242,7 @@ class NListView[T](values:Seq[T]) extends ListView[T](values) {
   def selected_=(value:T) {selectIndices(listData.indexOf(value))}  
 }
 
-case class ArrowButton(left:Boolean) extends Button {
+class ArrowButton(left:Boolean) extends Button {
   private val width = 15
   private val thirdWidth = width / 3
   private val twoThirdsWidth = thirdWidth * 2
