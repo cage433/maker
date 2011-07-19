@@ -4,11 +4,11 @@ import api.BookmarksUpdate
 import custom.{SXMonthView, TitledDayPicker}
 import swing.Swing._
 import starling.pivot.view.swing.{NListView, MigPanel}
-import javax.swing.{JLabel, JList, DefaultListCellRenderer}
 import java.awt.{Dimension, Color}
 import swing.{Action, ScrollPane, ListView, Label}
 import swing.event.{Event, SelectionChanged, KeyPressed, MouseClicked}
 import starling.daterange.Day
+import javax.swing._
 
 class BookmarksPanel(context:PageContext) extends MigPanel("") {
   val iconLabel = new Label {

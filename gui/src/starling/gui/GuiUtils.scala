@@ -7,9 +7,10 @@ import swing.Swing._
 import javax.swing.plaf.FontUIResource
 import java.awt.{GraphicsEnvironment, Rectangle, Font, Color, Dimension}
 import starling.gui.utils.RichColour._
-import swing.{TextArea, Separator, Label}
 import starling.pivot.view.swing.MigPanel
-import javax.swing.{GrayFilter, UIManager}
+import javax.swing.{KeyStroke, JComponent, GrayFilter, UIManager}
+import java.awt.event.{InputEvent, KeyEvent}
+import swing._
 
 object GuiUtils {
   def LabelWithSeparator(text:String) = new MigPanel("insets 0"){
@@ -189,6 +190,16 @@ object GuiUtils {
     UIManager.put("SplitPaneDivider.draggingColor", MouseOverColour)
 
     UIManager.put("JXMonthView.font", new FontUIResource("Dialog", Font.PLAIN, 10))
+
+    // I want to disable ctrl page down and page up in ListViews and ScrollPanes so that you can change tabs when these have focus.
+    val lv = new ListView(List("Bla")) {
+      peer.getInputMap(JComponent.WHEN_FOCUSED).getParent.remove(KeyStroke.getKeyStroke(KeyEvent.VK_PAGE_DOWN, InputEvent.CTRL_DOWN_MASK))
+      peer.getInputMap(JComponent.WHEN_FOCUSED).getParent.remove(KeyStroke.getKeyStroke(KeyEvent.VK_PAGE_UP, InputEvent.CTRL_DOWN_MASK))
+    }
+    new ScrollPane(lv) {
+      peer.getInputMap(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT).getParent.remove(KeyStroke.getKeyStroke(KeyEvent.VK_PAGE_DOWN, InputEvent.CTRL_DOWN_MASK))
+      peer.getInputMap(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT).getParent.remove(KeyStroke.getKeyStroke(KeyEvent.VK_PAGE_UP, InputEvent.CTRL_DOWN_MASK))
+    }
   }
 
   def onScreen(rect:Rectangle) = {
