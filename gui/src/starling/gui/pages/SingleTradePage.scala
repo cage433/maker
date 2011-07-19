@@ -19,6 +19,8 @@ import swing.{Component, Button, Label}
 import starling.quantity.Quantity
 import starling.daterange.{Day, TimeOfDay, Timestamp}
 import starling.rmi.StarlingServer
+import javax.swing.table.DefaultTableModel
+import org.jdesktop.swingx.renderer.{DefaultTableRenderer, LabelProvider, StringValue}
 
 case class SingleTradePage(tradeID:TradeIDLabel, desk:Option[Desk], tradeExpiryDay:TradeExpiryDay, intradayGroups:Option[IntradayGroups]) extends Page {
   def text = "Trade " + tradeID
@@ -156,12 +158,13 @@ class SingleTradePageComponent(context:PageContext, pageData:PageData) extends M
 
   val mainPanel = new MigPanel("insets n n n 0", "[" + StandardLeftIndent + "][p]") {
     val historyTable = new TableTable(stable)
-    historyTable.jTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION)
-    val heightToUse = if (historyTable.jTable.getPreferredSize.height < 150) 150 else historyTable.jTable.getPreferredScrollableViewportSize.height
-    historyTable.jTable.setPreferredScrollableViewportSize(new Dimension(historyTable.jTable.getPreferredSize.width, heightToUse))
+    val jTable = historyTable.jTable
+    jTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION)
+    val heightToUse = if (jTable.getPreferredSize.height < 150) 150 else jTable.getPreferredScrollableViewportSize.height
+    jTable.setPreferredScrollableViewportSize(new Dimension(jTable.getPreferredSize.width, heightToUse))
     val rowToSelect = stable.data.size - 1
-    historyTable.jTable.setRowSelectionInterval(rowToSelect, rowToSelect)
-    historyTable.jTable.getSelectionModel.addListSelectionListener(new ListSelectionListener {
+    jTable.setRowSelectionInterval(rowToSelect, rowToSelect)
+    jTable.getSelectionModel.addListSelectionListener(new ListSelectionListener {
       def valueChanged(e:ListSelectionEvent) = {
         if (!e.getValueIsAdjusting) {
           updateTradePanel
@@ -169,7 +172,7 @@ class SingleTradePageComponent(context:PageContext, pageData:PageData) extends M
       }
     })
 
-    historyTable.jTable.addMouseListener(new MouseAdapter {override def mouseClicked(e:MouseEvent) = {
+    jTable.addMouseListener(new MouseAdapter {override def mouseClicked(e:MouseEvent) = {
       if (e.getClickCount == 2) doValuation}}
     )
 
@@ -185,7 +188,18 @@ class SingleTradePageComponent(context:PageContext, pageData:PageData) extends M
       }
     })
     negativeHighlighter.setForeground(Color.RED)
-    historyTable.jTable.addHighlighter(negativeHighlighter)
+    jTable.addHighlighter(negativeHighlighter)
+
+    val stringValue = new StringValue {
+      def getString(value:AnyRef) = {
+        value match {
+          case t:TableCell => t.text
+          case other => other.toString
+        }
+      }
+    }
+    val provider = new LabelProvider(stringValue)
+    jTable.setDefaultRenderer(classOf[Object], new DefaultTableRenderer(provider))
 
     val tradePanel = new MigPanel {
       def clear = removeAll
@@ -206,7 +220,7 @@ class SingleTradePageComponent(context:PageContext, pageData:PageData) extends M
     add(button, "ay top, gapright " + RightPanelSpace)
 
     def updateTradePanel {
-      val selection = historyTable.jTable.getSelectedRow
+      val selection = jTable.getSelectedRow
       if (selection != -1) {
         tradePanel.clear
         val row = stable.data(selection)
@@ -219,7 +233,7 @@ class SingleTradePageComponent(context:PageContext, pageData:PageData) extends M
     }
 
     def doValuation {
-      val selection = historyTable.jTable.getSelectedRow
+      val selection = jTable.getSelectedRow
       if (selection != -1) {
         val row = stable.data(selection)
         val desk = data.desk
@@ -232,7 +246,7 @@ class SingleTradePageComponent(context:PageContext, pageData:PageData) extends M
             }
           }
           case Some(d) => {
-            if(historyTable.jTable.getRowCount() - 1 == selection) {
+            if(jTable.getRowCount() - 1 == selection) {
               // we've selected the most up to date
                val tradeTimestamp = context.localCache.deskCloses(desk).sortWith(_.timestamp >= _.timestamp).head
               (Some((d, tradeTimestamp)), None)
