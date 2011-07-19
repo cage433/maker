@@ -67,6 +67,7 @@ class BookmarksPanel(context:PageContext) extends MigPanel("") {
   val goToBookmarkAction = Action("Go"){goToBookmark()}
   goToBookmarkAction.toolTip = "Go to the selected bookmark (F9)"
   goToBookmarkAction.icon = NewPageButton.arrowImage
+  goToBookmarkAction.mnemonic = swing.event.Key.G.id
 
   val goToBookmarkButton = new NewPageButton {
     action = goToBookmarkAction
@@ -111,9 +112,10 @@ class BookmarksPanel(context:PageContext) extends MigPanel("") {
       }
       bookmarksListView.selectedOption = currentSelectedItem
     }
-    case MouseClicked(`bookmarksListView`,_,_,2,_) => {goToBookmark()}
-    case KeyPressed(`bookmarksListView`, scala.swing.event.Key.Delete, _, _) => {deleteBookmark()}
+    case MouseClicked(`bookmarksListView`,_,_,2,_) => goToBookmark()
+    case KeyPressed(`bookmarksListView`, scala.swing.event.Key.Delete, _, _) => deleteBookmark()
     case SelectionChanged(`bookmarksListView`) => dayPicker.enabled = valuationDayShouldBeEnabled
+    case KeyPressed(`bookmarksListView`, scala.swing.event.Key.Enter, _,_) => goToBookmark()
   }
   listenTo(context.remotePublisher, bookmarksListView.keys, bookmarksListView.mouse.clicks, bookmarksListView.selection)
 

@@ -532,12 +532,14 @@ class TradeSelectionComponent(
     }
   }
 
-  override def resetDynamicState = pivotComponent.resetDynamicState
+  override def resetDynamicState {pivotComponent.resetDynamicState}
 
   override def getState = pivotComponent.getState
-  override def setState(state:Option[ComponentState]) = pivotComponent.setState(state)
+  override def setState(state:Option[ComponentState]) {pivotComponent.setState(state)}
   override def getTypeState = pivotComponent.getTypeState
-  override def setTypeState(typeState:Option[ComponentTypeState]) = pivotComponent.setTypeState(typeState)
+  override def setTypeState(typeState:Option[ComponentTypeState]) {pivotComponent.setTypeState(typeState)}
+  override def getTypeFocusInfo = pivotComponent.getTypeFocusInfo
+  override def setTypeFocusInfo(focusInfo:Option[TypeFocusInfo]) {pivotComponent.setTypeFocusInfo(focusInfo)}
 
   private def bookCloseValid = deskTimestamp match {
     case Some(t) if t.error != None => false
@@ -561,7 +563,7 @@ class TradeSelectionComponent(
     tradeChangesReportButton.enabled = tradeChangesReportButton.isEnabled && bookCloseValid
   }
 
-  updateComponentState
+  updateComponentState()
 
   reactions += {
     case SelectionChanged(`deskCombo`) => generateNewPageFromState(true)

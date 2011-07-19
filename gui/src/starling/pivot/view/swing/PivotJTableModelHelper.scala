@@ -15,6 +15,7 @@ import swing.event.{MouseClicked, KeyPressed, KeyTyped}
 import starling.pivot.EditableCellState._
 import scala.collection.mutable.{HashMap => MMap}
 import collection.immutable.Map
+import org.jdesktop.swingx.JXTable
 
 case class OverrideDetails(text:String, state:EditableCellState)
 
@@ -32,7 +33,7 @@ abstract class PivotJTableModel extends AbstractTableModel {
   def acceptableValues(r:Int, c:Int):Set[String]
 
   protected var overrideMap = new MMap[(Int,Int),OverrideDetails]()
-  def revert:Boolean = {
+  def revert(table:PivotJTable):Boolean = {
     overrideMap.clear()
     false
   }
@@ -102,13 +103,15 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
 
     def addRow() {addedRows0 += blankCells}
 
-    override def revert = {
-      super.revert
+    override def revert(table:PivotJTable) = {
+      super.revert(table)
       if (addedRows0.size > 1) {
+        val selectedColumn = table.getSelectedColumn
         val r = getRowCount - 1
         addedRows0.clear()
         addedRows0 += blankCells
         fireTableRowsDeleted(r, r)
+        table.setSelectedCells(List((r-1, selectedColumn)))
         true
       } else {
         false
@@ -393,13 +396,15 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
 
     def addRow() {addedRows0 += blankCells}
 
-    override def revert = {
-      super.revert
+    override def revert(table:PivotJTable) = {
+      super.revert(table)
       if (addedRows0.size > 1) {
+        val selectedColumn = table.getSelectedColumn
         val r = getRowCount - 1
         addedRows0.clear()
         addedRows0 += blankCells
         fireTableRowsDeleted(r, r)
+        table.setSelectedCells(List((r-1, selectedColumn)))
         true
       } else {
         false
@@ -912,12 +917,11 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
     viewport.setMinimumSize(new Dimension(rowHeaderTable.getPreferredSize.width, 20))
   }
 
-  def reverse() {
+  def reverse(mainTable:PivotJTable, rowHeaderTable:PivotJTable, colHeaderTable:PivotJTable) {
     // The order is important because we need to know whether to delete rows from the full table model.
-    colHeaderTableModel.revert
-    blankAxisCellTableModel.revert
-    val rowRowsRemoved = rowHeaderTableModel.revert
-    val mainRowsRemoved = mainTableModel.revert
+    colHeaderTableModel.revert(colHeaderTable)
+    val rowRowsRemoved = rowHeaderTableModel.revert(rowHeaderTable)
+    val mainRowsRemoved = mainTableModel.revert(mainTable)
     if (rowRowsRemoved || mainRowsRemoved) {
       val r = fullTableModel.getRowCount - 1
       fullTableModel.fireTableRowsDeleted(r,r)

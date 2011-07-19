@@ -158,8 +158,8 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
   }
     
   private val undoAction = Action("undoAction") {
-    
-    currentComponent.resetDynamicState
+    history(current).componentForFocus = currentFocus
+    currentComponent.resetDynamicState()
     val oldIndex = current
     current-=1
     val pageInfo = history(current)
@@ -167,8 +167,9 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
   }
 
   private val backPageAction = new AbstractAction {
-    def actionPerformed(e:ActionEvent) = {
-      currentComponent.resetDynamicState
+    def actionPerformed(e:ActionEvent) {
+      history(current).componentForFocus = currentFocus
+      currentComponent.resetDynamicState()
 
       // Look for a page that is different to the current one.
       val oldIndex = current

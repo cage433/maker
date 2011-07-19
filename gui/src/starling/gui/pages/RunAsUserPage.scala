@@ -6,7 +6,7 @@ import starling.pivot.view.swing.{NListView, MigPanel}
 import java.awt.{Color, Dimension}
 import starling.gui.api.UserLoggedIn
 import swing.{TextField, Label, Button, ScrollPane}
-import swing.event.{ListSelectionChanged, ButtonClicked}
+import swing.event.{KeyPressed, ListSelectionChanged, ButtonClicked}
 
 case class RunAsUserPage() extends Page {
   def text = "Run as another user"
@@ -28,6 +28,21 @@ class RunAsUserPageComponent(context:PageContext) extends MigPanel("insets n n n
     preferredSize = new Dimension(preferredSize.width + 30, preferredSize.height)
   }
 
+  private def runAsUser() {
+    if (context.localCache.isStarlingDeveloper) {
+      errorLabel.text = ""
+      val userName = userField.text.trim
+      new Thread {
+        override def run() {
+          Thread.currentThread().setContextClassLoader(RunAsUserPage.getClass.getClassLoader)
+          Launcher.start(Launcher.rmiHost,Launcher.rmiPort,Launcher.servicePrincipalName,Some(userName))
+        }
+      }.start()
+    } else {
+      errorLabel.text = "<html><b>You do not have permission to change to a different user</b></html>"
+    }
+  }
+
   reactions += {
     case UserLoggedIn(user) => {
       val uName = user.username
@@ -46,28 +61,17 @@ class RunAsUserPageComponent(context:PageContext) extends MigPanel("insets n n n
       }
       userField.text = selectedUser
     }
+    case KeyPressed(`userListView`, scala.swing.event.Key.Enter, _,_) => runAsUser()
   }
-  listenTo(context.remotePublisher, userListView.selection)
+  listenTo(context.remotePublisher, userListView.selection, userListView.keys)
 
   private val usersScroll = new ScrollPane(userListView)
   private val runButton = new Button {
     text = "Run As User"
     enabled = currentUserNames.nonEmpty
+    mnemonic = swing.event.Key.R
     reactions += {
-      case ButtonClicked(b) => {
-        if (context.localCache.isStarlingDeveloper) {
-          errorLabel.text = ""
-          val userName = userField.text.trim
-          new Thread {
-            override def run = {
-              Thread.currentThread().setContextClassLoader(RunAsUserPage.getClass.getClassLoader)
-              Launcher.start(Launcher.rmiHost,Launcher.rmiPort,Launcher.servicePrincipalName,Some(userName))
-            }
-          }.start
-        } else {
-          errorLabel.text = "<html><b>You do not have permission to change to a different user</b></html>"
-        }
-      }
+      case ButtonClicked(b) => runAsUser()
     }
   }
   private val errorLabel = new Label("") {
@@ -80,5 +84,5 @@ class RunAsUserPageComponent(context:PageContext) extends MigPanel("insets n n n
   add(errorLabel, "ay top, wrap")
   add(usersScroll, "skip 1, pushy, growy, sgx")
 
-  override def pageShown = runButton.requestFocusInWindow
+  override def defaultComponentForFocus = Some(userListView.peer)
 }

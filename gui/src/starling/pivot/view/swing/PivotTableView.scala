@@ -919,7 +919,7 @@ class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSiz
   }
 
   def reverse() {
-    tableModelsHelper.reverse
+    tableModelsHelper.reverse(mainTable, rowHeaderTable, colHeaderTable)
     hideDropTargets()
     allDropTargets.foreach(_.reset())
     if (toolbarPanel.visible) reverseToolBarState()
