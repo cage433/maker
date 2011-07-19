@@ -396,7 +396,6 @@ class ValuationService(
 
     val allAssignments = assignmentService.getAllAssignments()
     
-    val assignmentsMap : Map[Int, EDMAssignmentItem] = allAssignments.map(a => a.oid.contents -> a).toMap
     val inventory = inventoryService.getAllInventoryLeaves()
 
     val quotaMap = titanTradeCache.getAllTrades().flatMap(_.quotas).map(q => NeptuneId(q.detail.identifier).identifier -> q).toMap
@@ -405,39 +404,10 @@ class ValuationService(
       a.oid.contents -> quotaMap(a.quotaName)
     }).toMap
 
-    var tradeValueCache = Map[String, TradeValuationResult]()
-    val tradeValuer = PhysicalMetalForward.value(futuresExchangeByGUID, futuresMarketByGUID, env, snapshotIDString) _
     val assignmentValuer = PhysicalMetalAssignmentForward.value(futuresExchangeByGUID, futuresMarketByGUID, assignmentIdToQuotaMap, env, snapshotIDString) _
-/*
-    val valuations2 =  inventory.flatMap(i => {
-     val pAssignment = assignmentsMap(i.purchaseAssignmentId)
-     val sAssignment = i.salesAssignmentId match {
-        case Some(sAssign) => assignmentsMap(sAssign)
-        case None => pAssignment //todo, get proper quota / expected purchase spec
-      }
-      (pAssignment.oid.contents.toString -> valueAssignment(pAssignment)) :: 
-      (sAssignment.oid.contents.toString -> valueAssignment(sAssignment)) :: Nil
-    })
-*/
+
     val valuations = inventory.map(i => i.oid.contents.toString -> assignmentValuer(i))
-
-    def valueAssignment(assignment : EDMAssignmentItem) = {
-      quotaValue(assignment.quotaName)
-    }
-
-    def tradeValue(id: String) : TradeValuationResult = {
-      if (!tradeValueCache.contains(id))
-        tradeValueCache += (id -> tradeValuer(titanTradeCache.getTrade(id)))
-      tradeValueCache(id)
-    }
-
-    def quotaValue(id: String) = {
-      tradeValue(titanTradeCache.tradeIDFromQuotaID(id)) match {
-        case Right(list) => Right(list.filter(_ .quotaID == id))
-        case other => other
-      }
-    }
-
+    
     log("Valuation took " + sw)
     val (worked, errors) = valuations.partition(_._2 isRight)
     log("Worked " + worked.size + ", failed " + errors.size + ", took " + sw)

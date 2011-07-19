@@ -167,13 +167,6 @@ case class LogisticsJsonMockDataFileGenerater(titanEdmTradeService : TitanServic
   def inventoryByPurchaseQuotaId(id : String) =
     catching(classOf[Exception]) either inventoryService.getInventoryTreeByPurchaseQuotaId(id)
 
-  /*
-    val inventoryMap = purchaseQuotas.flatMap(q => {
-      val inv = inventoryByPurchaseQuotaId(q.detail.identifier)
-      inv.map(i => i.oid -> i)
-    }).toMap
-  */
-
   val quotaIds = purchaseQuotas.map(q => NeptuneId(q.detail.identifier).identifier).filter(id => id != null)
   println("quotaIds count %d".format(quotaIds.size))
   //quotaIds.foreach(qid => println("purchase neptune quota id " + qid))
@@ -182,7 +175,6 @@ case class LogisticsJsonMockDataFileGenerater(titanEdmTradeService : TitanServic
   val invalidInventory = allInventory.collect({ case Left(i) => i })
   val inventoryLeaves = findLeaves(inventory)
   //println("Inventory, loaded %d inventory items and found %d leaves".format(inventory.size, inventoryLeaves.size))
-
 
   println("getting assignments...")
   val assignments : List[EDMAssignmentItem] = inventory.flatMap(i => {
