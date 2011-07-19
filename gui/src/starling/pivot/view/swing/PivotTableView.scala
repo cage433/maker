@@ -866,6 +866,12 @@ class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSiz
 
   private val extraRow = if (reportPanelsAvailable) "[p]0" else ""
 
+  def defaultComponentForFocus = if (otherLayoutInfo.frozen) {
+    Some(rowHeaderTable)
+  } else {
+    Some(fullTable)
+  }
+
   private val contentPanel = if (otherLayoutInfo.frozen) {
     new MigPanel("insets 0", "[p]0[fill, grow]0[p]", extraRow + "[p]1[p]1[p]0[fill, grow]0[p]") {
       background = PivotTableBackgroundColour

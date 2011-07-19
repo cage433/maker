@@ -485,6 +485,8 @@ class PivotTablePageComponent(
     }
   }
 
+  override def defaultComponentForFocus = pivotComp.defaultComponentForFocus
+
   override def pageResized(newSize:Dimension) {pivotComp.pageResized(newSize)}
   override def getOldPageData = Some(pivotComp.getOldPageData)
   override def getRefreshState = Some(pivotComp.getRefreshState)
