@@ -3,13 +3,10 @@ package starling.pivot.view.swing
 import fieldchoosers.{RowComponent, FilterComponent, FieldListComponent}
 import scala.swing._
 import javax.swing.event.{ListSelectionEvent, ListSelectionListener}
-import javax.swing._
 import starling.pivot.model._
 import starling.pivot._
 import controller.PivotTableConverter
 import starling.pivot.FieldChooserType._
-import java.awt.{Graphics2D, Dimension, Color, GradientPaint, Cursor, AWTEvent, Toolkit, KeyboardFocusManager}
-import java.awt.{Component => AWTComp}
 import org.jdesktop.swingx.decorator.{HighlightPredicate}
 import org.jdesktop.swingx.JXTable
 import swing.event.{Event, MouseClicked, KeyPressed, KeyReleased}
@@ -25,6 +22,8 @@ import collection.immutable.List
 import starling.utils.ImplicitConversions._
 import collection.mutable.{ListBuffer, HashMap}
 import org.jdesktop.animation.timing.{TimingTargetAdapter, Animator}
+import java.awt.{Container, Graphics2D, Dimension, Color, GradientPaint, Cursor, AWTEvent, Toolkit, KeyboardFocusManager, Component => AWTComp}
+import javax.swing._
 
 object PivotTableView {
   def createWithLayer(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSize:Dimension,
@@ -579,7 +578,22 @@ class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSiz
     publish(CollapsedStateUpdated(columnCollapsedState = Some(newCollapsedColState)))
   }
 
-  private val fullTable = new PivotJTable(tableModelsHelper.fullTableModel, this, model, indents)
+  private val fullTable = new PivotJTable(tableModelsHelper.fullTableModel, this, model, indents) {
+
+    // OK, you can probably tell that this is a bit of a hack. Because of some really bad code in BasicTableUI, the getParent of this table needs to
+    // return a JViewPort on that particular call but this table is wrapped in a JXLayer so it doesn't. Therefore I look at the calling stack and if it
+    // is that method, I return the JViewPort.
+    val className = "javax.swing.plaf.basic.BasicTableUI$Actions"
+    val methodName = "actionPerformed"
+    override def getParent:Container = {
+      val stackElement = Thread.currentThread().getStackTrace()(2)
+      if (stackElement.getClassName == className && stackElement.getMethodName == methodName) {
+        super.getParent.getParent
+      } else {
+        super.getParent
+      }
+    }
+  }
   private val mainTable = new PivotJTable(tableModelsHelper.mainTableModel, this, model, indents)
   private val rowHeaderTable = new PivotJTable(tableModelsHelper.rowHeaderTableModel, this, model, indents)
   private val colHeaderTable = new PivotJTable(tableModelsHelper.colHeaderTableModel, this, model, indents)
