@@ -1,54 +1,57 @@
 ﻿using System.Net;
+using System.Net.Http;
+using System.Web.Hosting;
+using com.trafigura.services;
 using com.trafigura.services.example;
 using com.trafigura.services.trinity;
 using com.trafigura.services.util;
 using log4net;
-using Microsoft.ApplicationServer.Http.Activation;
+using System;
+using Microsoft.ApplicationServer.Http.Description;
 
-namespace ContactManager_Advanced
+namespace com.trafigura
 {
-    using System;
-    using System.Web.Routing;
-    using Microsoft.ApplicationServer.Http.Description;
-
     public class Global : System.Web.HttpApplication
     {
         private static readonly ILog logger;
+        private static readonly bool IsDevelopment = Dns.GetHostName() == "LON-SCURLDT";
 
         static Global()
         {
             log4net.Config.XmlConfigurator.Configure();
-            logger = LogManager.GetLogger(typeof (Global));
+            logger = LogManager.GetLogger(typeof(Global));
+        }
+
+        private readonly SimpleResourceFactory resourceFactory;
+        private readonly IHttpHostConfigurationBuilder config;
+        private readonly RouteRegistry routeRegistry;
+
+        public Global()
+        {
+            resourceFactory = new SimpleResourceFactory();
+            config = HttpHostConfiguration.Create()
+                .SetResourceFactory(resourceFactory)
+                .SetMessageHandlerFactory(CreateChannel)
+                .AddFormatters(new JsonFormatter());
+            routeRegistry = new RouteRegistry(resourceFactory, config);
         }
 
         protected void Application_Start(object sender, EventArgs e)
         {
             logger.Info("Application_Start");
 
-            var trinityCredentials = new TrinityCredentials
+            routeRegistry.MapServiceRoute("Example", new ExampleService());
+
+            if (!IsDevelopment)
             {
-                Database = "TRUAT",
-                Username = "SCURL",
-                Password = "trinity"
-            };
-
-            var resourceFactory = logger.Info("Constructing services", () =>
-                IsDevelopment ? new SimpleResourceFactory(new ExampleService())
-                              : new SimpleResourceFactory(new ExampleService(), new TrinityService(trinityCredentials)));
-
-            var config = HttpHostConfiguration.Create()
-                .SetResourceFactory(resourceFactory)
-                .SetMessageHandlerFactory(channel => new LoggingChannel(
-                    new UriFormatExtensionMessageChannel(channel).AddMapping("json", "application/json")))
-                .AddFormatters(new JsonFormatter());
-
-            RouteTable.Routes.MapServiceRoute<ExampleService>("Example", config);
-            RouteTable.Routes.MapServiceRoute<TrinityService>("Trinity", config);
+                new TrinityServices(new TrinityCredentials("TRUAT", "STARLING", "trinity")).MapServiceRoues(routeRegistry);
+            }
         }
 
-        private static bool IsDevelopment
+        private LoggingChannel CreateChannel(HttpMessageChannel channel)
         {
-            get { return Dns.GetHostName() == "LON-SCURLDT"; }
+            return new LoggingChannel(new DocumentationChannel(HostingEnvironment.ApplicationVirtualPath, routeRegistry, 
+                new UriFormatExtensionMessageChannel(channel).AddMapping("json", "application/json")));
         }
     }
 }

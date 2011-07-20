@@ -1,1 +1,1 @@
-﻿<%@ Application Codebehind="Global.asax.cs" Inherits="ContactManager_Advanced.Global" Language="C#" %>
+﻿<%@ Application Codebehind="Global.asax.cs" Inherits="com.trafigura.Global" Language="C#" %>

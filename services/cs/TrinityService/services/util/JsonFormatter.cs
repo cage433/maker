@@ -5,7 +5,7 @@ using System.Net;
 using System.Net.Http.Headers;
 using Microsoft.ApplicationServer.Http;
 
-namespace ContactManager_Advanced
+namespace com.trafigura.services.util
 {
     public class JsonFormatter : MediaTypeFormatter
     {

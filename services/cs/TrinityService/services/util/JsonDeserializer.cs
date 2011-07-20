@@ -4,7 +4,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Linq;
 
-namespace ContactManager_Advanced
+namespace com.trafigura.services.util
 {
     public class JsonDeserializer
     {

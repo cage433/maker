@@ -25,27 +25,5 @@ namespace MarketData2
         {
             return Rates(rateCurve).Select(rate => rate as trDepoRate).Where(depoRate => depoRate != null);
         }
-
-        public static trDepoRate NewRate(this trRateCurve rateCurve, DepoRate from)
-        {
-            var to = (trDepoRate) rateCurve.NewRate();
-
-            to.RateType = treDepoRateType.treDepoRateSimple;
-
-            return to.Copy(from);
-        }
-    }
-
-    public static class trDepoRateExtensions
-    {
-        public static trDepoRate Copy(this trDepoRate to, DepoRate from)
-        {
-            to.Period = from.Period;
-            to.Bid = from.Bid;
-            to.Off = from.Offer;
-            to.PeriodFromToday = from.PeriodFromToday;
-
-            return to;
-        }
     }
 }

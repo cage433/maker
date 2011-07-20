@@ -14,7 +14,7 @@
     <ProjectTypeGuids>{349c5851-65df-11da-9384-00065b846f21};{fae04ec0-301f-11d3-bf4b-00c04f79efbc}</ProjectTypeGuids>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>com.trafigura.services</RootNamespace>
+    <RootNamespace>com.trafigura</RootNamespace>
     <AssemblyName>TrinityService</AssemblyName>
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <UseIISExpress>false</UseIISExpress>
@@ -115,41 +115,54 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="example\ExampleService.cs" />
-    <Compile Include="example\ExampleServiceApi.cs" />
+    <Compile Include="services\util\Option.cs" />
+    <Compile Include="services\util\RouteRegistry.cs" />
+    <Compile Include="services\trinity\CommodityCurve.cs" />
+    <Compile Include="services\trinity\CommodityRate.cs" />
+    <Compile Include="services\trinity\CommodityRatesService.cs" />
+    <Compile Include="services\trinity\Curve.cs" />
+    <Compile Include="services\trinity\DepoCurve.cs" />
+    <Compile Include="services\trinity\ProfileService.cs" />
+    <Compile Include="services\trinity\Rate.cs" />
+    <Compile Include="services\trinity\DepoRatesService.cs" />
+    <Compile Include="services\util\ExampleAttribute.cs" />
+    <Compile Include="extensions\StringExtensions.cs" />
+    <Compile Include="services\example\ExampleService.cs" />
+    <Compile Include="services\example\ExampleServiceApi.cs" />
     <Compile Include="extensions\IDictionaryExtensions.cs" />
     <Compile Include="extensions\IEnumerableExtensions.cs" />
     <Compile Include="extensions\ILogExtensions.cs" />
-    <Compile Include="trinity\TrinityServiceApi.cs" />
+    <Compile Include="services\trinity\TrinityServiceApi.cs" />
     <Compile Include="extensions\trRateCurveExtensions.cs" />
-    <Compile Include="util\JsonDeserializer.cs" />
-    <Compile Include="util\JsonSerializer.cs" />
+    <Compile Include="services\util\DocumentationChannel.cs" />
+    <Compile Include="services\util\JsonDeserializer.cs" />
+    <Compile Include="services\util\JsonSerializer.cs" />
     <Compile Include="extensions\JTokenExtensions.cs" />
-    <Compile Include="util\TypeFinder.cs" />
-    <Compile Include="trinity\DepoRate.cs" />
-    <Compile Include="trinity\Profile.cs" />
-    <Compile Include="trinity\TrinityCredentials.cs" />
-    <Compile Include="trinity\TrinityService.cs" />
-    <Compile Include="util\JsonFormatter.cs" />
-    <Compile Include="ReferenceInterestRate.cs" />
+    <Compile Include="services\util\ServiceMethod.cs" />
+    <Compile Include="services\util\SimpleResourceFactory.cs" />
+    <Compile Include="services\util\TypeFinder.cs" />
+    <Compile Include="services\trinity\DepoRate.cs" />
+    <Compile Include="services\trinity\Profile.cs" />
+    <Compile Include="services\trinity\TrinityCredentials.cs" />
+    <Compile Include="services\trinity\TrinityServices.cs" />
+    <Compile Include="services\util\JsonFormatter.cs" />
+    <Compile Include="services\example\ReferenceInterestRate.cs" />
     <Compile Include="GlobalSuppressions.cs" />
-    <Compile Include="util\UriFormatExtensionChannel.cs" />
-    <Compile Include="util\SimpleResourceFactory.cs" />
+    <Compile Include="services\util\UriFormatExtensionChannel.cs" />
     <Compile Include="extensions\trMarketDataServerExtensions.cs" />
+    <Compile Include="services\util\WebGetMethod.cs" />
+    <Compile Include="services\util\WebInvokeMethod.cs" />
     <Content Include="ajax-loader.gif" />
     <Content Include="Default.htm" />
     <Content Include="displayJson.js" />
-    <Content Include="Example.htm" />
     <Content Include="jquery-1.6.2.min.js" />
     <Content Include="json-min.js" />
     <Content Include="jsonVisualization.css" />
     <Content Include="jsonVisualization.js" />
-    <Content Include="main.css" />
     <Content Include="Global.asax" />
     <Compile Include="Global.asax.cs">
       <DependentUpon>Global.asax</DependentUpon>
     </Compile>
-    <Content Include="Trinity.htm" />
     <Content Include="Web.config">
       <SubType>Designer</SubType>
     </Content>
@@ -162,7 +175,7 @@
     <Content Include="yuiloader-dom-event.js" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="util\LoggingChannel.cs" />
+    <Compile Include="services\util\LoggingChannel.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

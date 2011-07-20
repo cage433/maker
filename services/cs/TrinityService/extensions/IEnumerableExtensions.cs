@@ -26,5 +26,17 @@ namespace System.Collections.Generic
         {
             return enumerable.Count() > 0 ? enumerable.First(item => true) : alternative();
         }
+
+        public static IDictionary<K, V> ToDictionary<K, V>(this IEnumerable<KeyValuePair<K, V>> keyValuePairs)
+        {
+            var dictionary = new Dictionary<K, V>();
+
+            foreach (var keyValuePair in keyValuePairs)
+            {
+                dictionary[keyValuePair.Key] = keyValuePair.Value;
+            }
+
+            return dictionary;
+        }
     }
 }

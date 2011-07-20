@@ -2,6 +2,7 @@
 using System.ServiceModel;
 using System.ServiceModel.Web;
 using com.trafigura.services.marketdata;
+using com.trafigura.services.util;
 
 namespace com.trafigura.services.example
 {
@@ -10,6 +11,7 @@ namespace com.trafigura.services.example
     {
         [OperationContract]
         [WebGet(UriTemplate = "ReferenceInterestRate/{source}")]
+        [Example("LIBOR")]
         ReferenceInterestRate GetReferenceInterestRate(string source);
 
         [OperationContract]
