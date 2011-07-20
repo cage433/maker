@@ -122,6 +122,7 @@ object Highlighters {
     })
     editableCellsHighlighter.setBackground(EditableCellColour)
     editableCellsHighlighter.setSelectedBackground(BlendedEditableCellColour)
+    editableCellsHighlighter.setForeground(new Color(0,0,1)) // This is a hack as there seems to be a problem with the selected highlighter for deleted cells.
 
     val deletedCellsHighlighter = new ColorHighlighter(new HighlightPredicate {
       def isHighlighted(renderer:java.awt.Component, adapter:org.jdesktop.swingx.decorator.ComponentAdapter) = {

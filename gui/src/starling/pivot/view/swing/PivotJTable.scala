@@ -51,7 +51,7 @@ class PivotJTable(tableModel:PivotJTableModel, pivotTableView:PivotTableView, mo
             case tc:TableCell => tc.editable
           }
         }}
-        tableModel.deleteCells(editableCells)
+        tableModel.deleteCells(editableCells, true)
       } else if (e.getKeyCode == KeyEvent.VK_S && (e.getModifiersEx & InputEvent.CTRL_DOWN_MASK) == InputEvent.CTRL_DOWN_MASK) {
         putClientProperty("JTable.autoStartsEdit", false)
         pivotTableView.publish(SavePivotEdits)
@@ -88,31 +88,102 @@ class PivotJTable(tableModel:PivotJTableModel, pivotTableView:PivotTableView, mo
       TransferHandler.COPY
     }
 
+    // Because of this bug: http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=6759788 I have to have two canImport methods (canImport
+    // and canReallyImport). It doesn't work perfectly but I can't do anything else until oracle fix the bug, which they never will.
     override def canImport(support:TransferSupport) = {
-      def checkValue(r:Int,c:Int) = {
-        if (r >= 0 && c >= 0) {
-          getValueAt(r,c) match {
-            case ac:AxisCell => ac.editable
-            case tc:TableCell => tc.editable
-          }
-        } else {
-          false
-        }
-      }
-      if (support.isDrop) {
+      val (startRow, startColumn) = if (support.isDrop) {
         // From a drag and drop.
         val dropLocation = support.getDropLocation.asInstanceOf[JTable.DropLocation]
-        checkValue(dropLocation.getRow, dropLocation.getColumn)
+        (dropLocation.getRow, dropLocation.getColumn)
       } else {
         // From a paste.
         val minRow = getSelectionModel.getMinSelectionIndex
         val minCol = getColumnModel.getSelectionModel.getMinSelectionIndex
-        checkValue(minRow, minCol)
+        (minRow, minCol)
+      }
+      getValueAt(startRow, startColumn) match {
+        case tc:TableCell => tc.editable
+        case ac:AxisCell => ac.editable
+        case _ => false
       }
     }
-    override def exportToClipboard(comp:JComponent, clip:Clipboard, action:Int) = clip.setContents(new StringSelection(convertSelectedCellsToString), null)
+
+    def canReallyImport(support:TransferSupport) = {
+      val (startRow, startColumn) = if (support.isDrop) {
+        // From a drag and drop.
+        val dropLocation = support.getDropLocation.asInstanceOf[JTable.DropLocation]
+        (dropLocation.getRow, dropLocation.getColumn)
+      } else {
+        // From a paste.
+        val minRow = getSelectionModel.getMinSelectionIndex
+        val minCol = getColumnModel.getSelectionModel.getMinSelectionIndex
+        (minRow, minCol)
+      }
+      if (startRow >= 0 && startColumn >= 0) {
+        val textToInsert = support.getTransferable.getTransferData(DataFlavor.stringFlavor).asInstanceOf[String]
+        val rows = textToInsert.split("\n").toList
+        val cells = rows.map(rowText => {
+          val tokenizer = if (rowText.contains("\t")) {
+            new StringTokenizer(rowText, "\t")
+          } else {
+            new StringTokenizer(rowText)
+          }
+          val colBuffer = new ListBuffer[String]()
+          while (tokenizer.hasMoreTokens) {
+            val text = tokenizer.nextToken.trim().toLowerCase
+            colBuffer += text
+          }
+          colBuffer.toList
+        })
+
+        val cellsInTable = cells.take(getRowCount - startRow).map(col => col.take(getColumnCount() - startColumn))
+
+        val valuesCurrentlyInTable = cellsInTable.zipWithIndex.map{case (row, rowIndex) => {
+          val realRow = startRow + rowIndex
+          row.zipWithIndex.map{case (cell, colIndex) => {
+            val realColumn = startColumn + colIndex
+            getValueAt(realRow, realColumn)
+          }}
+        }}
+
+        val allCellsEditable = valuesCurrentlyInTable.forall(row => {
+          row.forall(cell => {
+            cell match {
+              case ac:AxisCell => ac.editable
+              case tc:TableCell => tc.editable
+            }
+          })
+        })
+
+        if (allCellsEditable) {
+          // Check that all text can be parsed.
+          cellsInTable.zipWithIndex.map{case (row, rowIndex) => {
+            val realRow = startRow + rowIndex
+            row.zipWithIndex.map{case (cell, colIndex) => {
+              val realColumn = startColumn + colIndex
+              val parser = tableModel.parser(realRow, realColumn)
+              try {
+                parser.parse(cell)
+                true
+              } catch {
+                case e => false
+              }
+            }}
+          }}.forall(row => {
+            row.forall(cell => cell)
+          })
+        } else {
+          false
+        }
+      } else {
+        false
+      }
+      true
+    }
+    override def exportToClipboard(comp:JComponent, clip:Clipboard, action:Int) {clip.setContents(new StringSelection(convertSelectedCellsToString), null)}
     override def importData(support:TransferSupport) = {
-      if (canImport(support)) {
+      val tableValuesToUpdate = new ListBuffer[TableValue]()
+      if (canReallyImport(support)) {
         try {
           val (startRow,startCol) = if (support.isDrop) {
             val dropLocation = support.getDropLocation.asInstanceOf[JTable.DropLocation]
@@ -137,21 +208,21 @@ class PivotJTable(tableModel:PivotJTableModel, pivotTableView:PivotTableView, mo
                 val text = tokenizer.nextToken
                 val realCol = startCol + colCount
                 if (realCol < getColumnCount()) {
-                  setValueAt(text, realRow, realCol)
+                  tableValuesToUpdate += TableValue(text, realRow, realCol)
                 }
                 colCount += 1
               }
             }}
-            true
-          } else {
-            false
           }
         } catch {
           case t:Throwable => {
             Log.error("Unable to paste or drag data into table", t)
-            false
           }
         }
+      }
+      if (tableValuesToUpdate.nonEmpty) {
+        tableModel.setValuesAt(tableValuesToUpdate.toList, None, true)
+        true
       } else {
         false
       }
@@ -212,12 +283,14 @@ class PivotJTable(tableModel:PivotJTableModel, pivotTableView:PivotTableView, mo
         val r = getEditingRow
         val c = getEditingColumn
 
-        val acceptableValues = tableModel.acceptableValues(r,c)
-        val myRes = if (acceptableValues.isEmpty) {
+        val t = textField.getText.trim().toLowerCase
+
+        val parser = tableModel.parser(r, c)
+        val myRes = try {
+          parser.parse(t)
           true
-        } else {
-          val t = textField.getText.trim().toLowerCase
-          acceptableValues.map(_.trim().toLowerCase).contains(t)
+        } catch {
+          case e => false
         }
 
         if (myRes) {
@@ -343,7 +416,7 @@ class PivotJTable(tableModel:PivotJTableModel, pivotTableView:PivotTableView, mo
             if (deletableCells.nonEmpty) {
               val deleteActionName = if (deletableCells.size == 1) "Delete Cell" else "Delete Cells"
               val deleteAction = Action(deleteActionName) {
-                tableModel.deleteCells(deletableCells)
+                tableModel.deleteCells(deletableCells, true)
               }
               val deleteItem = new MenuItem(deleteAction)
               popup.add(deleteItem.peer)
@@ -352,7 +425,7 @@ class PivotJTable(tableModel:PivotJTableModel, pivotTableView:PivotTableView, mo
             if (resetableCells.nonEmpty) {
               val resetActionName = if (resetableCells.size == 1) "Reset Cell" else "Reset Cells"
               val resetAction = Action(resetActionName) {
-                tableModel.resetCells(resetableCells)
+                tableModel.resetCells(resetableCells, true)
               }
               val resetItem = new MenuItem(resetAction)
               popup.add(resetItem.peer)
@@ -365,7 +438,7 @@ class PivotJTable(tableModel:PivotJTableModel, pivotTableView:PivotTableView, mo
     }
   })
   addMouseMotionListener(new MouseMotionAdapter {
-    override def mouseMoved(e:MouseEvent) = {
+    override def mouseMoved(e:MouseEvent) {
       val point = e.getPoint
       val table = e.getSource.asInstanceOf[JXTable]
       val (row, col) = (table.rowAtPoint(point), table.columnAtPoint(point))
