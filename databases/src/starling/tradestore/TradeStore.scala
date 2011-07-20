@@ -752,7 +752,7 @@ abstract class TradeStore(db: RichDB, broadcaster:Broadcaster, tradeSystem: Trad
         tradeDay_str -> trade.tradeDay,
         counterparty_str -> trade.counterParty,
         instrument_str -> trade.tradeable.tradeableType.name,
-        costs_str -> AnObject(trade.costs)
+        costs_str -> PersistAsBlob(trade.costs)
       )
 
       val details = Map(

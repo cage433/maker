@@ -14,6 +14,7 @@ import starling.varcalculator._
 import starling.utils.ImplicitConversions._
 import starling.models.DefaultRiskParameters
 import starling.utils.CollectionUtils
+import starling.instrument.physical.PhysicalMetalAssignment
 
 trait AsUtpPortfolio {
   def asUtpPortfolio(tradeDay:Day): UTP_Portfolio
@@ -50,7 +51,8 @@ object InstrumentType {
     RefinedFixation,
     NetEquityPosition,
     FuturesCalendarSpread,
-    FuturesCommoditySpread
+    FuturesCommoditySpread,
+    PhysicalMetalAssignment
   )
 
   def fromName(name : String) = types.find(_.name.toLowerCase == name.toLowerCase)

@@ -40,7 +40,7 @@ class TestNonSkewDelta extends TestMarketSpec{
         val F = env.forwardPrice(Market.ICE_BRENT, Month(2011, 1))
         val sigma = env.impliedVol(Market.ICE_BRENT, Month(2011, 1), Day(2010, 12, 31), Quantity(110, USD/BBL))
         val mtm = Quantity(F.value + 100 * sigma.decimalValue, USD)
-        Assets(Asset(true, false, "fred", Day(2010, 12, 31), Quantity(1, BBL), mtm))
+        Assets(Asset(true, "fred", Day(2010, 12, 31), Quantity(1, BBL), mtm))
       }
 
     }

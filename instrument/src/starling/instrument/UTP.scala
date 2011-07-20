@@ -60,6 +60,10 @@ trait UTP extends Instrument {
     UTP.priceAndVolKeys(this, marketDay)
   }
 
+  /**
+   * Used (I believe) to give a crude idea of risk period in Greeks Pivot Report. For most instruments this will be overriden
+   * by their price/vol sensitivity periods. Not convinced this is needed.
+   */
   def periodKey : Option[Period]
 
   // This string is added to risk market when the 'Collapse Option' pivot toggle is off

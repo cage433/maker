@@ -4,7 +4,7 @@ import system.Patch
 import starling.richdb.RichDB
 import starling.daterange.Day
 import starling.marketdata._
-import starling.utils.sql.AnObject
+import starling.utils.sql.PersistAsBlob
 import starling.db.DBWriter
 import starling.services.StarlingInit
 import collection.immutable.List
@@ -17,7 +17,7 @@ class Patch86_MoveFixingsToSeparateRows extends Patch {
   override protected def runPatch(starlingInit: StarlingInit, starling: RichDB, writer: DBWriter) {
     starling.inTransaction {
       writer => {
-        writer.update("delete from MarketData where marketDataType = :t", Map("t"->AnObject(PriceFixingsHistoryDataType)) )
+        writer.update("delete from MarketData where marketDataType = :t", Map("t"->PersistAsBlob(PriceFixingsHistoryDataType)) )
       }
     }
 

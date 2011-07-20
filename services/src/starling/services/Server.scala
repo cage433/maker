@@ -27,7 +27,7 @@ import javax.xml.transform.TransformerFactory
 import starling.auth.{LdapUserLookup, User, ServerLogin}
 import java.util.concurrent.CopyOnWriteArraySet
 import starling.utils._
-import sql.{AnObject, ConnectionParams}
+import sql.{PersistAsBlob, ConnectionParams}
 import starling.utils.ImplicitConversions._
 import starling.tradeimport.{ClosedDesks, TradeImporterFactory, TradeImporter}
 import starling.tradestore.TradeStores
@@ -526,12 +526,12 @@ object Bob {
 
         val mainKeyMapper = new scala.collection.mutable.HashMap[FirstKey,Long]()
         def idForMainKey(key:FirstKey) = mainKeyMapper.getOrElseUpdate(key, {
-          val params = Map("marketDataSet" -> key.marketDataSet.name, "observationTime" -> key.time.name, "marketDataKey" -> new AnObject(key.key))
+          val params = Map("marketDataSet" -> key.marketDataSet.name, "observationTime" -> key.time.name, "marketDataKey" -> new PersistAsBlob(key.key))
           writer.insertAndReturnKey("ExtendedMarketDataKey", "id", params)
         })
         val valueKeyMapper = new scala.collection.mutable.HashMap[SecondKey,Long]()
         def idForValueKey(key:SecondKey) = valueKeyMapper.getOrElseUpdate(key, {
-          val params = Map("value" -> new AnObject(key.key))
+          val params = Map("value" -> new PersistAsBlob(key.key))
           writer.insertAndReturnKey("ValueKey", "id", params)
         })
         var counter = 0

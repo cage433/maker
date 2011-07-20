@@ -6,7 +6,7 @@ import starling.curves.Environment
 import starling.market.{CommodityMarket}
 
 object Asset {
-  def estimatedCash(settlementDay:Day, amount:Quantity, mtm:Quantity) = Asset(false, false, amount.uom, settlementDay, amount, mtm)
+  def estimatedCash(settlementDay:Day, amount:Quantity, mtm:Quantity) = Asset(false, amount.uom, settlementDay, amount, mtm)
   def estimatedCash(settlementDay:Day, amount:Quantity, env:Environment) = cash(false, settlementDay, amount, env)
   def knownCash(settlementDay:Day, amount:Quantity, env:Environment) = cash(true, settlementDay, amount, env)
 
@@ -16,11 +16,11 @@ object Asset {
     } else {
       1
     }
-    Asset(known, settlementDay < env.marketDay.day, amount.uom.toString, settlementDay, amount, amount * discount)
+    Asset(known, amount.uom.toString, settlementDay, amount, amount * discount)
   }
 
   def estimatedPhysical(market:String, settlementDay:Day, amount:Quantity, mtm:Quantity) =
-    Asset(false, false, market.toString, settlementDay, amount, mtm)
+    Asset(false, market.toString, settlementDay, amount, mtm)
 
   def knownPhysical(market: CommodityMarket, deliveryDay:Day, amount:Quantity, env:Environment) = {
     val stuffMtm = {
@@ -32,12 +32,12 @@ object Asset {
         amount * env.forwardPrice(market, env.marketDay.day)
       }
     }
-    Asset(true, deliveryDay < env.marketDay.day, market, deliveryDay, amount, stuffMtm)
+    Asset(true, market, deliveryDay, amount, stuffMtm)
   }
 }
 
-case class Asset(known:Boolean, isPast:Boolean, market:AnyRef, settlementDay:Day, amount:Quantity, mtm:Quantity) {
-  def *(volume:Double) = Asset(known, isPast, market, settlementDay, amount*volume, mtm*volume)
+case class Asset(known:Boolean, assetType:AnyRef, settlementDay:Day, amount:Quantity, mtm:Quantity) {
+  def *(volume:Double) = Asset(known, assetType, settlementDay, amount*volume, mtm*volume)
   def copyMtm(m:Quantity) = copy(mtm=m)
 }
 
@@ -52,7 +52,5 @@ case class Assets(assets:List[Asset]) {
 
 object Assets {
   private val empty = new Assets(List())
-  def apply() = empty
-  def apply(a:Asset) = new Assets(List(a))
-  def apply(a:Asset, b:Asset) = new Assets(List(a, b)) //varargs?
+  def apply(assets : Asset*) = new Assets(assets.toList)
 }

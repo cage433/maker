@@ -450,7 +450,7 @@ class SlowMdDB(db: DBTrait[RichResultSetRow]) extends MdDB {
       where (("marketDataSet") eql marketDataSet.name)
         and ("observationDay" gte from)
         and ("observationDay" lte to)
-        and ("marketDataType" eql AnObject(marketDataType))
+        and ("marketDataType" eql PersistAsBlob(marketDataType))
         and ("childVersion" isNull)
     )
     val results = db.queryWithResult(query) { rs => {

@@ -4,7 +4,7 @@ import system.Patch
 import starling.richdb.RichDB
 import starling.services.StarlingInit
 import starling.marketdata.PriceFixingsHistoryDataType
-import starling.utils.sql.AnObject
+import starling.utils.sql.PersistAsBlob
 import starling.daterange.Day
 import starling.db.{MarketDataSet, DBWriter}
 import starling.utils.sql.QueryBuilder._

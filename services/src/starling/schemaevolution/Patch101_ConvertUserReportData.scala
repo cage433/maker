@@ -10,7 +10,7 @@ import collection.SortedMap
 import scala.Some
 import starling.pivot._
 import model.CollapsedState
-import starling.utils.sql.AnObject
+import starling.utils.sql.PersistAsBlob
 import collection.immutable.SortedSet
 import starling.gui.api._
 import starling.daterange.TimeOfDay
@@ -75,7 +75,7 @@ class Patch101_ConvertUserReportData extends Patch {
       rs => {
         val report = rs.getString("report")
         val newReport = convertingXStream.fromXML(report)
-        rs.update(Map("report" -> new AnObject(newReport)))
+        rs.update(Map("report" -> new PersistAsBlob(newReport)))
       }
     }
   }

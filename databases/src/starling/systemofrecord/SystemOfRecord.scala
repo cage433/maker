@@ -10,13 +10,16 @@ import sql.{SqlRenderer, Query}
 import oracle.net.aso.q
 import starling.trade.Trade
 
-abstract class SystemOfRecord(externalDB: RichDB) {
+trait SystemOfRecord {
   protected def readers: List[InstrumentReader]
 
   def trade(tradeID: String)(f: Trade => Unit)
 
   def allTrades(f: Trade => Unit) : (Int, Set[String])
 
+}
+
+abstract class SystemOfRecordBackedByADatabase(externalDB : RichDB) extends SystemOfRecord{
   /**
    * f is called with each Trade read in.
    * Returns a unique error count and a set of unique errors
@@ -76,4 +79,5 @@ abstract class SystemOfRecord(externalDB: RichDB) {
   protected def createNullTrade(rs: RichResultSetRow) : Trade
 
   protected def addCostsToTrade(trade: Trade, rs: RichResultSetRow) : Trade = trade
+
 }

@@ -1,6 +1,5 @@
 package starling.reports.pivot
 
-import java.lang.Throwable
 import starling.curves.{ReportContext, Environment}
 import starling.quantity.{UOM, Quantity}
 import starling.utils.Stopwatch
@@ -12,6 +11,7 @@ import starling.curves.AtomicEnvironment
 import starling.gui.api.{ReportSpecificChoices, UTPIdentifier}
 import starling.instrument._
 import starling.pivot._
+import java.lang.Throwable
 
 /**
  * Shows the mtm and undiscounted mtm for an instrument
@@ -37,9 +37,10 @@ object MtmPivotReport extends PivotReportType {
       }
     },
     new PivotReportField[Mtm]("Past/Future") {
-      def value(row: Mtm) = row.asset match {
-        case Left(asset) => if (asset.isPast) "Past" else "Future"
-        case _ => "E"
+      def value(row: Mtm) = row.isPast match {
+        case Some(true) => "Past"
+        case Some(false) => "Future"
+        case None => "E"
       }
     },
     new PivotReportField[Mtm]("Asset Delivery Day") {
@@ -51,7 +52,7 @@ object MtmPivotReport extends PivotReportType {
     },
     new PivotReportField[Mtm]("Settlement Market") {
       def value(row: Mtm) = row.asset match {
-        case Left(asset) => asset.market.toString
+        case Left(asset) => asset.assetType.toString
         case _ => "E"
       }
     },
@@ -87,6 +88,7 @@ case class Mtm(
   asset : Either[Asset, Throwable],
   assetNoCosts : Option[Either[Asset, Throwable]] = None,
   costs : Option[Either[Asset, Throwable]] = None,
+  isPast : Option[Boolean] = None,
   diff : Option[EnvironmentDifferentiable] = None,
   period : Option[Period] = None,
   collapseOptions : Boolean = true,
@@ -119,7 +121,7 @@ class MtmPivotReport(@transient environment:Environment, @transient utps : Map[U
   def scale(row: Mtm, volume: Double) = row.copy(scale = row.scale * volume)
 
   def rows(utpID : UTPIdentifier, instrument: UTP) = {
-    List(Mtm(utpID, instrument, null))
+    List(Mtm(utpID, instrument, asset = null))
   }
 
   val spreadMonthsByStrategyAndMarket = PivotReport.spreadMonthsByStrategyAndMarket(utps)
@@ -144,13 +146,19 @@ class MtmPivotReport(@transient environment:Environment, @transient utps : Map[U
       case UTPWithIdentifier(utpID, utp) => {
         val (unitUTP, volume) = utp.asUnitUTP
 
+        def isPast(asset : Either[Asset, Throwable]) : Option[Boolean] = {
+          asset match {
+            case Left(a) => Some(a.settlementDay.endOfDay() < environment.marketDay)
+            case Right(_) => None
+          }
+        }
         calcAssets(unitUTP).map{
           asset=> {
             utp match {
               case ci: CashInstrument if CashInstrumentType.isCost(ci.cashInstrumentType) => {
-                Mtm(utpID, utp, asset, None, Some(asset)) * volume
+                Mtm(utpID, utp, asset, assetNoCosts = None, costs = Some(asset), isPast = isPast(asset)) * volume
               }
-              case _ => Mtm(utpID, utp, asset, Some(asset)) * volume
+              case _ => Mtm(utpID, utp, asset, assetNoCosts = Some(asset), costs = None, isPast = isPast(asset)) * volume
             }
           }
         }

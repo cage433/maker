@@ -11,7 +11,7 @@ import collection.SortedMap
 import scala.Some
 import starling.pivot._
 import model.CollapsedState
-import starling.utils.sql.AnObject
+import starling.utils.sql.PersistAsBlob
 
 class Patch97_ConvertColumnStructure extends Patch {
 
@@ -73,7 +73,7 @@ class Patch97_ConvertColumnStructure extends Patch {
       rs => {
         val layout = rs.getString("layout")
         val newLayout = convertingXStream.fromXML(layout)
-        rs.update(Map("layout" -> new AnObject(newLayout)))
+        rs.update(Map("layout" -> new PersistAsBlob(newLayout)))
       }
     }
 
@@ -82,7 +82,7 @@ class Patch97_ConvertColumnStructure extends Patch {
       rs => {
         val settings = rs.getString("settings")
         val newSettings = convertingXStream.fromXML(settings)
-        rs.update(Map("settings" -> new AnObject(newSettings)))
+        rs.update(Map("settings" -> new PersistAsBlob(newSettings)))
       }
     }
 
@@ -91,7 +91,7 @@ class Patch97_ConvertColumnStructure extends Patch {
       rs => {
         val otherInfo = rs.getString("otherLayoutInfo")
         val newOtherInfo = convertingXStream.fromXML(otherInfo)
-        rs.update(Map("otherLayoutInfo" -> new AnObject(newOtherInfo)))
+        rs.update(Map("otherLayoutInfo" -> new PersistAsBlob(newOtherInfo)))
       }
     }
   }
