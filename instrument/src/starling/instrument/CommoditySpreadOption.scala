@@ -100,7 +100,7 @@ object CommoditySpreadOption extends InstrumentType[SingleCommoditySpreadOption]
   }
 
   def create(row: RichInstrumentResultSetRow, volume: Quantity) = {
-    val period = row.getDateRange("Period", Some(Month))
+    val period = row.getPeriod("Period").asInstanceOf[DateRangePeriod].period
     new CommoditySpreadOption(row.getFuturesSpreadMarket("Market"), period, row.getQuantity("Strike"), volume, row.getCallPut("CallPut"))
   }
 
