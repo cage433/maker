@@ -136,6 +136,7 @@ object SpreadStdDevSurfaceDataType extends MarketDataType {
   }
   val stdDevField: FieldDetails = new QuantityLabelFieldDetails("Standard Deviation")
 
+  def marketDataKeyFelds = Set(marketField.field)
   override def keyFields = Set(marketField.field, firstPeriodField.field, lastPeriodField.field, periodField.field, deltaField.field, spreadTypeField.field)
   override def valueFields = Set(stdDevField.field)
   override def createKey(values: Map[Field, Any]) = SpreadStdDevSurfaceDataKey(Market.futuresMarketFromName(values(marketField.field).asInstanceOf[String]))

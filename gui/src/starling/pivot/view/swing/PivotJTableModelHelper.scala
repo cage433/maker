@@ -55,6 +55,8 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
   private var rowHeaderColCount0 = rowHeaderData0(0).length
   private var colHeaderRowCount0 = colHeaderData0.length
 
+  val keyFields = editableInfo.map(_.keyFields).getOrElse(Set())
+
   private val extraLine = editableInfo match {
     case None => false
     case Some(info) => info.extraLine
@@ -87,7 +89,6 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
   }
 
   private def initializedBlankRow() = {
-    val keyFields = editableInfo.get.editableKeyFields.keySet
     (Map() ++ (keyFields.map(f => {f -> UndefinedValue}))) ++ singleValueFilters
   }
 
@@ -152,7 +153,7 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
       val filterFieldToValues = Map() ++ fieldState.filterAreaFields.flatMap(f => {
         val (field, selection) = fieldState.filters.find{case (f0,sel) => f == f0}.get
         selection match {
-          case s@SomeSelection(v) if v.size == 1 => Some((field -> s))
+          case s@SomeSelection(v) if v.size == 1 && keyFields.contains(field) => Some((field -> s))
           case _ => None
         }
       })
@@ -167,8 +168,9 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
     }
 
     def deleteCells(cells:List[(Int,Int)]) {
+      val rightHandCellForEachRow = cells.groupBy(_._1).mapValues(cellsForRow => cellsForRow.map(_._2).max)
       var edits = pivotEdits
-      cells.foreach{case (r,c) => {
+      rightHandCellForEachRow.foreach{case (r,c) => {
         if (r < rowHeaderData0.length) {
           val value = getValueAt(r, c)
           if (value.state != EditableCellState.Added) {
@@ -179,7 +181,7 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
               case None => value.label
             }
             overrideMap((r,c)) = OverrideDetails(labelToUse, Deleted)
-            edits = edits.withDelete(KeyFilter(key(r, c)), value.value.field)
+            edits = edits.withDelete(KeyFilter(key(r, c)))
           } else {
             overrideMap((r,c)) = OverrideDetails("", Added)
             val rowIndex = value.value.childKey.value.asInstanceOf[NewRowValue].rowIndex
@@ -244,9 +246,9 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
         }
       } else {
         overrideMap((rowIndex, columnIndex)) = OverrideDetails(newLabel, EditableCellState.Added)
-        newValue.foreach { nv => {     
-          addRowToTables()
+        newValue.foreach { nv => {
           val row = initializedBlankRow + (rowHeaderField -> nv)
+          addRowToTables()
           updateEdits(pivotEdits.withAddedRow(row))
         } }
       }
@@ -492,7 +494,7 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
       val filterFieldToValues = Map() ++ fieldState.filterAreaFields.flatMap(f => {
         val (field, selection) = fieldState.filters.find{case (f0,sel) => f == f0}.get
         selection match {
-          case s@SomeSelection(v) if v.size == 1 => Some((field -> s))
+          case s@SomeSelection(v) if v.size == 1 && keyFields.contains(field) => Some((field -> s))
           case _ => None
         }
       })

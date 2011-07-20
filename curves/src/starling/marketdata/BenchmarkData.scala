@@ -45,6 +45,7 @@ object GradeHubBenchmarkDataType extends MarketDataType {
   val gradeField = FieldDetails("Grade")
   val benchmarkPriceField = FieldDetails("Benchmark Price")
 
+  def marketDataKeyFelds = Set(commodityField.field)
   override def keyFields = Set(commodityField, hubField, gradeField).map(_.field)
   override def valueFields = Set(benchmarkPriceField.field)
   val fields = List(commodityField, hubField, gradeField, benchmarkPriceField)
@@ -77,6 +78,7 @@ object BenchmarkLocationMarketDataType extends MarketDataType {
   val gradeField = FieldDetails("Grade")
   val benchmarkPriceField = FieldDetails("Benchmark Price")
 
+  def marketDataKeyFelds = Set(commodityField.field)
   override def keyFields = Set(commodityField, locationField, gradeField).map(_.field)
   override def valueFields = Set(benchmarkPriceField.field)
   val fields = List(commodityField, locationField, gradeField, benchmarkPriceField)

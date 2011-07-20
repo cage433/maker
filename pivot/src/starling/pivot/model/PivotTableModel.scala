@@ -386,14 +386,20 @@ object PivotTableModel {
               val keyFields = editPivot.editableToKeyFields(field)
               keyFields filter pivotState.rowFields.contains
             })
-            val extraLine = editPivot.editableToKeyFields.map{case (editableField,keyFields) => {
-              pivotState.columns.contains(editableField) && keyFieldsInColumnArea(keyFields.toSet, pivotState).isEmpty
-            }}.exists(_ == true)
 
+            val filterFields = pivotState.filters.filter(_._2 != AllSelection).map(_._1).toSet
+            val rowAreaFiltersPresent = pivotState.rowFields.exists(f => filterFields.contains(f))
+            val extraLine = editPivot.editableToKeyFields.exists{case (editableField,keyFields) => {
+              pivotState.columns.contains(editableField) &&
+                keyFieldsInColumnArea(keyFields.toSet, pivotState).isEmpty &&
+                !rowAreaFiltersPresent
+            }}
+
+            val keyFields = editPivot.editableToKeyFields.flatMap(_._2).toSet
             val editableMeasures = Map() ++ editableMeasureFields.map(f => (f -> fieldDetailsLookup(f).parser))
             val editableKeys = Map() ++ editableKeyFields.map(f => (f -> fieldDetailsLookup(f).parser))
 
-            Some(EditableInfo(editableMeasures, editableKeys, extraLine))
+            Some(EditableInfo(keyFields, editableMeasures, editableKeys, extraLine))
           }
         }
       }
@@ -652,7 +658,7 @@ object PivotTableModel {
     }
   }
 
-  private def keyFieldsInColumnArea(keyFields:Set[Field], pfs:PivotFieldsState) = {
+  private def keyFieldsInColumnArea(keyFields:Set[Field], pfs:PivotFieldsState): Set[Field] = {
     val filterAreaFieldsMap = Map() ++ pfs.filtersInTheFilterArea
     val keyFieldsNotInRowArea = keyFields.filterNot(pfs.rowFields.contains)
     keyFieldsNotInRowArea.filterNot(f => {
@@ -680,7 +686,7 @@ object PivotTableModel {
 
 case class TreeDetails(treeDepths:Map[Field, (Int, Int)], maxTreeDepths:Map[Field, Int])
 
-case class EditableInfo(editableMeasures:Map[Field,PivotParser], editableKeyFields:Map[Field,PivotParser], extraLine:Boolean)
+case class EditableInfo(keyFields:Set[Field], editableMeasures:Map[Field,PivotParser], editableKeyFields:Map[Field,PivotParser], extraLine:Boolean)
 case class FormatInfo(fieldToFormatter:Map[Field,PivotFormatter])
 object FormatInfo {
   val Blank = FormatInfo(Map())

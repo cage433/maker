@@ -45,6 +45,7 @@ object PriceDataType extends MarketDataType {
   )
 
   lazy val fields = List(exchangeField, marketField, marketCommodityField, marketTenorField, periodField, priceField, validity)
+  def marketDataKeyFelds = Set(marketField.field)
   override def keyFields = Set(marketField, periodField).map(_.field)
   override def valueFields = Set(priceField.field)
 
@@ -82,7 +83,8 @@ case class PriceDataKey(market: CommodityMarket) extends MarketDataKey {
   def fieldValues = Map(
     PriceDataType.marketField.field → market.name,
     PriceDataType.marketCommodityField.field → market.commodity.toString,
-    PriceDataType.marketTenorField.field → market.tenor.toString)
+    PriceDataType.marketTenorField.field → market.tenor.toString).addSome(
+      exchangeField.field → market.safeCast[FuturesMarket].map(_.exchange.name))
 }
 
 case class PriceDataDTO(prices: SortedMap[DateRange, Double])

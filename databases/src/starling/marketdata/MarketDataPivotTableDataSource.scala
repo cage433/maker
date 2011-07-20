@@ -16,7 +16,7 @@ import starling.gui.api._
 import starling.db._
 import starling.gui.api.{MarketDataIdentifier, MarketDataSelection, MarketDataVersion}
 import starling.utils.cache.CacheFactory
-import collection.immutable.Iterable
+import collection.immutable.{Map, Iterable}
 
 /**
  * Represents raw market data as pivot data
@@ -47,18 +47,20 @@ class MarketDataPivotTableDataSource(reader: MarketDataReader, edits:PivotEdits,
 
   val observationDayAndMarketDataKeys = reader.readAllObservationDayAndMarketDataKeys(marketDataType)
 
-  val observationDayAndMarketDataKeyRows: List[Map[Field, Any]] = observationDayAndMarketDataKeys.map { timedKey =>
-    timedKey.fieldValues + (observationTimeField.field → timedKey.timeName) addSome (observationDayField.field → timedKey.day)
-  }
+  val observationDayAndMarketDataKeyRows: Map[Map[Field, Any],TimedMarketDataKey] = observationDayAndMarketDataKeys.map { timedKey =>
+    (timedKey.fieldValues + (observationTimeField.field → timedKey.timeName) addSome (observationDayField.field → timedKey.day)) -> timedKey
+  }.toMap
   val allMarketDataKeys = observationDayAndMarketDataKeys.map(_.key).toSet
 
-  val inMemoryFields = observationDayAndMarketDataKeyRows.flatMap(_.keySet).toSet
+  println("Created MarketDataPivotTableDataSource for " + marketDataIdentifier + " " + observationDayAndMarketDataKeyRows.size)
+
+  val inMemoryFields = observationDayAndMarketDataKeyRows.keys.flatMap(_.keySet).toSet
 
   override val initialState = {
     val observationDaySelection = if (observationDayAndMarketDataKeyRows.isEmpty) {
       new SomeSelection(Set())
     } else {
-      val days = observationDayAndMarketDataKeyRows.map( r => r.get(observationDayField.field).asInstanceOf[Option[Day]])
+      val days = observationDayAndMarketDataKeyRows.map( rt => rt._1.get(observationDayField.field).asInstanceOf[Option[Day]]).toList
       val selection = if (days.contains(None)) UndefinedValue else days.somes.max
       new SomeSelection(Set(selection))
     }
@@ -79,15 +81,70 @@ class MarketDataPivotTableDataSource(reader: MarketDataReader, edits:PivotEdits,
     marketDataStore.flatMap { marketDataStore =>
      editableMarketDataSet.map { editableSet =>
       new EditPivot {
-        private def keyFields = Set(observationDayField.field, observationTimeField.field) ++ marketDataType.keyFields
+        private val keyFields = Set(observationDayField.field, observationTimeField.field) ++ marketDataType.keyFields
+        private val keyAndValueFields = (keyFields ++ marketDataType.valueFields)
         def editableToKeyFields = Map() ++ marketDataType.valueFields.map((_ -> keyFields))
         def withEdits(edits:PivotEdits):PivotTableDataSource = {
-          //val readerWithEdits = new WithEditsMarketDataReader(reader, marketDataType, edits)
           new MarketDataPivotTableDataSource(reader, edits, Some(marketDataStore), marketDataIdentifier, marketDataType)
         }
         def save(edits:PivotEdits) = {
 
-          val groupedNewRows = edits.newRows.groupBy{ row => {
+          val editsByTimedKeys = edits.edits.toList.flatMap { case(keyFilter, keyEdit) => {
+            val keyFilterForTimedKey = keyFilter.retain(inMemoryFields)
+            val matchingTimedKeys = observationDayAndMarketDataKeyRows.toList.filter { case (row,timedKey) => {
+              keyFilterForTimedKey.matches(row)
+            } }
+            matchingTimedKeys.map {
+              case (row,timedKey) => {
+                val fixedKeyFilter = keyFilter.remove(inMemoryFields)
+                (timedKey, (fixedKeyFilter, keyEdit))
+              }
+            } }
+          }.groupBy(_._1).mapValues(_.map(_._2))
+
+          val amends = editsByTimedKeys.toList.flatMap { case (timedKey, edits) => {
+            val latest: Option[MarketData] = marketDataStore.readLatest(editableSet, timedKey)
+            latest match {
+              case Some(readData) => {
+                val currentRows = timedKey.key.castRows(readData)
+                var modifiedRows = currentRows
+                var modifiedRows = currentRows
+
+                edits.foreach { case (keyFilter, keyEdit) => {
+                  modifiedRows = modifiedRows.flatMap { row => {
+                    if (keyFilter.matches(row)) {
+                      keyEdit match {
+                        case DeleteKeyEdit => None
+                        case AmendKeyEdit(amends) => {
+                          if (amends.values.toSet.contains(None)) {
+                            None //Delete the row if the measure has been deleted
+                          } else {
+                            Some( row ++ amends.filter(_._2.isDefined).mapValues(_.get) )
+                          }
+                        }
+                      }
+                    } else {
+                      Some(row)
+                    }
+                  } }
+                } }
+                MarketDataEntry(timedKey.observationPoint, timedKey.key, marketDataType.createValue(modifiedRows.toList)) :: Nil
+              }
+              case None => Nil //There is no data for this key, nothing to do
+            }
+          } }
+
+          val newRowsWithAllFieldsPresent = edits.newRows.filter { row => {
+            keyAndValueFields.forall{ field => {
+              row.get(field) match {
+                case None => false
+                case Some(UndefinedValue) => false
+                case Some(_) => true
+              }
+            } }
+          }}
+
+          val groupedNewRows = newRowsWithAllFieldsPresent.groupBy{ row => {
             val observationPoint = ObservationPoint(
               row(observationDayField.field).asInstanceOf[Day],
               ObservationTimeOfDay.fromName(row(observationTimeField.field).asInstanceOf[String])
@@ -96,38 +153,7 @@ class MarketDataPivotTableDataSource(reader: MarketDataReader, edits:PivotEdits,
             (observationPoint, key)
           }}
 
-          val amends = edits.edits.map { case(keyFilter, keyEdit) => {
-            val selectionToSingleValue = keyFilter.keys.mapValues(_.values.iterator.next)
-            val observationPoint = ObservationPoint(
-              selectionToSingleValue(observationDayField.field).asInstanceOf[Day],
-              ObservationTimeOfDay.fromName(selectionToSingleValue(observationTimeField.field).asInstanceOf[String])
-            )
-            val key: MarketDataKey = marketDataType.createKey(selectionToSingleValue)
-            val latest: Option[MarketData] = marketDataStore.readLatest(editableSet, TimedMarketDataKey(observationPoint, key))
-            val fixedKeyFilter = keyFilter.remove(inMemoryFields)
-            latest match {
-              case Some(readData) => {
-                val currentRows = key.castRows(readData)
-                val modifiedRows = currentRows.flatMap { row => {
-                  println("  " + fixedKeyFilter.matches(row) + " => " + row)
-                  if (fixedKeyFilter.matches(row)) {
-                    keyEdit match {
-                      case DeleteKeyEdit(_) => None
-                      case AmendKeyEdit(amends) => {
-                        Some( row ++ amends.filter(_._2.isDefined).mapValues(_.get) )
-                      }
-                    }
-                  } else {
-                    Some(row)
-                  }
-                } }
-                MarketDataEntry(observationPoint, key, marketDataType.createValue(modifiedRows.toList))
-              }
-              case None => throw new Exception("Amended something which does not exist " + observationPoint + " " + key)
-            }
-          } }
-
-          val creates = groupedNewRows.map{case ((observationPoint, key), newRows) => {
+          val creates = groupedNewRows.map {case ((observationPoint, key), newRows) => {
             val latest: Option[MarketData] = marketDataStore.readLatest(editableSet, TimedMarketDataKey(observationPoint, key))
             val editedData = latest match {
               case Some(readData) => {
@@ -165,7 +191,7 @@ class MarketDataPivotTableDataSource(reader: MarketDataReader, edits:PivotEdits,
     val filters: Set[(Field, Selection)] = filtersUpToFirstMarketDataField.toFilterSet
 
     val possibleValuesBuilder = new PossibleValuesBuilder(fieldDetails, filtersUpToFirstMarketDataField)
-    for (row <- observationDayAndMarketDataKeyRows) {
+    for ((row,_) <- observationDayAndMarketDataKeyRows) {
       possibleValuesBuilder += row
     }
 
@@ -179,7 +205,7 @@ class MarketDataPivotTableDataSource(reader: MarketDataReader, edits:PivotEdits,
     val marketDataFields = allFields.toList filterNot( f => (observationDayField.field :: observationTimeField.field :: marketDataKeyFields).contains(f) )
 
     val data = if (marketDataFields.isEmpty) {
-      observationDayAndMarketDataKeyRows
+      observationDayAndMarketDataKeyRows.keys
     } else {
       def selectedValues[T : Manifest](f: Field): Option[Set[Option[T]]] = {
         filters.find { case (field, selection) => field == f && selection.isInstanceOf[SomeSelection] }
@@ -230,8 +256,12 @@ class MarketDataPivotTableDataSource(reader: MarketDataReader, edits:PivotEdits,
         val key = row.filterKeys(f => keyFields.contains(f))
         row.map { case (field, value) => {
           edits.editFor(key, field) match {
-            case None => field -> value
-            case Some((matchedKey, edit)) => field -> edit.applyEdit(matchedKey, field, value)
+            case None => {
+              field -> value
+            }
+            case Some((matchedKey, edit)) => {
+              field -> edit.applyEdit(matchedKey, field, value)
+            }
           }
         } }
       } }
@@ -240,8 +270,13 @@ class MarketDataPivotTableDataSource(reader: MarketDataReader, edits:PivotEdits,
     val allFields = pfs.allFieldsUsed
 
     val addedRows = edits.newRows.zipWithIndex.map{case (row,index) => {
+      val fixedRow = if (marketDataType.marketDataKeyFelds.forall(f => row.contains(f) && row(f) != UndefinedValue)) {
+        row ++ marketDataType.createKey(row).fieldValues
+      } else {
+        row
+      }
       Map() ++ allFields.map(f => {
-        f -> NewValue(row.get(f), index, PivotEdits.Null.withAddedRow(row))
+        f -> NewValue(fixedRow.get(f), index, PivotEdits.Null.withAddedRow(fixedRow))
       })
     }}.toList
 
@@ -249,7 +284,7 @@ class MarketDataPivotTableDataSource(reader: MarketDataReader, edits:PivotEdits,
       possibleValuesBuilder += row
     }
 
-    val allRows = editedData ::: addedRows
+    val allRows = editedData.toList ::: addedRows
 
     val result = UnfilteredPivotTableDataSource.applyFiltersAndCalculatePossibleValues(fieldDetails, allRows, pfs)//.removeAll(filtersUpToFirstMarketDataField.allFields))
 

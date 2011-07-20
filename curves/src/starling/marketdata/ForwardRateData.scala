@@ -11,6 +11,7 @@ object ForwardRateDataType extends MarketDataType {
   type dataType = ForwardRateData
   val keys = UOMSymbol.currencySymbols.map(s => ForwardRateDataKey(s.asUOM))
 
+  def marketDataKeyFelds = Set(currencyField.field)
   override def keyFields:Set[Field] = Set(currencyField.field, formatField.field, dayField.field, instrumentTypeField.field)
   override def valueFields:Set[Field] = Set(rateField.field, discountField.field)
 

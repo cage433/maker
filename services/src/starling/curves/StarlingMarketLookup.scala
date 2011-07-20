@@ -18,7 +18,8 @@ class StarlingMarketLookup(db: DB, businessCalendars: BusinessCalendars, expiryR
   lazy val allMarkets = table.flatMap {
     case Left(m: Market) => Some(m)
     case _ => None
-  }
+  } ::: Market.EXBXG_MARKETS
+
   lazy val allIndexes = table.flatMap {
     case Right(m) => Some(m)
     case _ => None

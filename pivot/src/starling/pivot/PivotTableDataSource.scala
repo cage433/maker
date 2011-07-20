@@ -31,6 +31,7 @@ case class KeyFilter(keys:Map[Field,SomeSelection]) {
       keys.get(key) == Some(value)
     } }
   }
+  def retain(fields:Set[Field]) = KeyFilter(keys.filterKeys(f => fields.contains(f)))
   def remove(fields:Set[Field]) = KeyFilter(keys.filterKeys(f => !fields.contains(f)))
 }
 
@@ -38,13 +39,9 @@ trait KeyEdits {
   def affects(matchingKey:KeyFilter, field:Field):Boolean
   def applyEdit(key:KeyFilter, field:Field, value:Any):Any
 }
-case class DeleteKeyEdit(deletedField:Field) extends KeyEdits {
-  def affects(matchingKey:KeyFilter, field:Field) = {
-    true
-    //val ks:Set[Field] = matchingKey.keys.keySet.toSet
-    //!(ks - deletedField).contains(field)
-  }
-  def applyEdit(key:KeyFilter, field:Field, value:Any) = DeletedValue(value, PivotEdits.Null.withDelete(key, deletedField))
+case object DeleteKeyEdit extends KeyEdits {
+  def affects(matchingKey:KeyFilter, field:Field) = true
+  def applyEdit(key:KeyFilter, field:Field, value:Any) = DeletedValue(value, PivotEdits.Null.withDelete(key))
 }
 case class AmendKeyEdit(amends:Map[Field,Option[Any]]) extends KeyEdits {
   def affects(matchingKey:KeyFilter, field:Field) = amends.contains(field)
@@ -103,22 +100,22 @@ case class PivotEdits(edits:Map[KeyFilter,KeyEdits], newRows:List[Map[Field,Any]
 
     PivotEdits(newEdits, newRows ++ other.newRows)
   }
-  def withDelete(deleteKeys:KeyFilter, field:Field) = {
+  def withDelete(deleteKeys:KeyFilter) = {
     val newRowsWithDeleteApplied  = newRows.filterNot(r => deleteKeys.matches(r))
     val editsWithAffectedEditsRemoved = edits.filterKeys { keyFilter => {
       !keyFilter.isOverriddenBy(deleteKeys)
     } }
-    PivotEdits(editsWithAffectedEditsRemoved.updated(deleteKeys, DeleteKeyEdit(field)), newRowsWithDeleteApplied)
+    PivotEdits(editsWithAffectedEditsRemoved.updated(deleteKeys, DeleteKeyEdit), newRowsWithDeleteApplied)
   }
   def remove(editsToRemove:PivotEdits) = {
     val merged = edits.flatMap{ case (key,changes) => {
       editsToRemove.edits.get(key) match {
         case None => Some(key -> changes)
-        case Some(d@DeleteKeyEdit(_)) if changes == d => None
-        case Some(d@DeleteKeyEdit(_)) if changes != d => throw new Exception("Can't remove Delete as there is an edit for this key " + key + " " + changes)
+        case Some(DeleteKeyEdit) if changes == DeleteKeyEdit => None
+        case Some(DeleteKeyEdit) if changes != DeleteKeyEdit => throw new Exception("Can't remove Delete as there is an edit for this key " + key + " " + changes)
         case Some(AmendKeyEdit(amends)) => {
           val newEdit = changes match {
-            case DeleteKeyEdit(_) => throw new Exception("Can't remove edit as there is an delete for this key " + key + " " + amends)
+            case DeleteKeyEdit => throw new Exception("Can't remove edit as there is an delete for this key " + key + " " + amends)
             case AmendKeyEdit(oldAmends) => AmendKeyEdit(oldAmends -- amends.keySet)
           }
           if (newEdit.amends.isEmpty) {
@@ -158,7 +155,7 @@ case class PivotEdits(edits:Map[KeyFilter,KeyEdits], newRows:List[Map[Field,Any]
     } else {
       edits.get(amendKeys) match {
         case None => PivotEdits(edits + (amendKeys -> AmendKeyEdit(Map(field -> value))), newRows)
-        case Some(DeleteKeyEdit(_)) => throw new Exception("You can't amend a delete " + (amendKeys, field, value))
+        case Some(DeleteKeyEdit) => throw new Exception("You can't amend a delete " + (amendKeys, field, value))
         case Some(AmendKeyEdit(amends)) => PivotEdits(edits + (amendKeys -> AmendKeyEdit(amends ++ Map(field -> value))), newRows)
       }
     }
