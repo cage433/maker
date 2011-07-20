@@ -108,7 +108,6 @@ class MarketDataPivotTableDataSource(reader: MarketDataReader, edits:PivotEdits,
               case Some(readData) => {
                 val currentRows = timedKey.key.castRows(readData)
                 var modifiedRows = currentRows
-                var modifiedRows = currentRows
 
                 edits.foreach { case (keyFilter, keyEdit) => {
                   modifiedRows = modifiedRows.flatMap { row => {

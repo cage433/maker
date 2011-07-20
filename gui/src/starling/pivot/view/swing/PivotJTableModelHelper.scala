@@ -270,7 +270,7 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
             newPivotEdits = newPivotEdits.withAddedRow(row)
           } }
         }
-      } 
+      })
       if (fireChange && newPivotEdits != pivotEdits) {
         updateEdits(newPivotEdits)
       }
