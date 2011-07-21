@@ -23,6 +23,8 @@ trait ExpiryRulesSpec extends PrecisionRulesSpec {
       override def expiryDay(d: DateRange) = lastTradingDay(d) - 1
 
       override def csoExpiryDay(s: Spread[_ <: DateRange]) = lastTradingDay(s.first) - 2
+
+      override def commoditySpreadOptionExpiryDay(d: DateRange) = lastTradingDay(d) - 2
     }
 
     def ruleOption(eaiQuoteID: Int) = eaiQuoteID match {

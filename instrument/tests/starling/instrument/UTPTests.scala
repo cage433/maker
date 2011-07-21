@@ -107,7 +107,7 @@ class UTPTests extends IndexTest {
       CashInstrument(CashInstrumentType.Ordinary, Quantity(100, USD), Day(2011, 1, 1)),
 
       // Commodity Spread Options
-      CommoditySpreadOption(FuturesSpreadMarket.ICE_WTI_BRENT, Month(2011, 1), Quantity(55, USD/BBL), Quantity(56, BBL), Call)
+      CommoditySpreadOption(FuturesSpreadMarket.ICE_WTI_BRENT, Month(2011, 1), Quantity(-1, USD/BBL), Quantity(1000, BBL), Call)
 
     ).map(Array[Tradeable](_))
   }

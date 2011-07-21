@@ -1387,7 +1387,7 @@ Butane CIF NWE 1-3kt (Platts)	Some(1509)	PublishedIndex	MT	USD	PLE	None	Day	Buta
 Propane CIF NWE 1-3kt (Platts)	Some(1510)	PublishedIndex	MT	USD	PLE	None	Day	Propane	Some(PMAAZ00)	Some(1.0)	Some(3)	Some(4)			None	Mid						Some(12.4047619)
 Propane CIF ARA Small Cargoes (Argus)	Some(1511)	PublishedIndex	MT	USD	ARE	None	Day	Propane	Some(GPPRAADG)	Some(1.0)	Some(3)	Some(4)			None	Mid						Some(12.4047619)
 Butane CIF ARA Small Cargoes (Argus)	Some(1512)	PublishedIndex	MT	USD	ARE	None	Day	Butane	Some(GPBNAADG)	Some(1.0)	Some(3)	Some(4)			None	Mid						Some(10.78571429)
-ICE WTI 1st month vs ICE Brent 1st month	Some(1513)	FormulaIndex/FuturesSpreadMarket	bbl	USD		Some(1000.0)	Month				Some(3)	Some(4)							1.0* MKT(1091)- 1.0* MKT(28) 			Some(7.57)
+ICE WTI 1st month vs ICE Brent 1st month	Some(1513)	FormulaIndex/FuturesSpreadMarket	bbl	USD		Some(1000.0)	Month				Some(3)	Some(4)	Some(WTI-Brent Crude Oil Spread Expiry)						1.0* MKT(1091)- 1.0* MKT(28) 			Some(7.57)
 Biodiesel Rapeseed OME FOB Rotterdam Barges [Low] (Argus)	Some(1514)	PublishedIndex	MT	USD	ARE	None	Day	VegetableOil	Some(GPDLP006)	Some(1.0)	Some(3)	Some(0)			None	Low						Some(7.45)
 CPC CIF Augusta Differential (Platts)	Some(1515)	PublishedIndex	bbl	USD	Platts European Crude	None	Day	Crude	Some(AAHPL00)	Some(1.0)	Some(3)	Some(0)			None	Mid						Some(7.45)
 CPC CIF Augusta Diff (Platts)	Some(1516)	PublishedIndex	bbl	USD	Platts European Crude	None	Day	Crude	Some(AAHPL00)	Some(1.0)	Some(3)	Some(0)			None	Mid						Some(7.45)
