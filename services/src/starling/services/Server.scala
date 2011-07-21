@@ -19,7 +19,8 @@ import starling.neptune.{RefinedFixationSystemOfRecord, RefinedFixationTradeStor
 import starling.utils.ImplicitConversions._
 import starling.curves.readers._
 import trade.ExcelTradeReader
-import trinity.{TrinityUploader, XRTGenerator, TrinityUploadCodeMapper, FCLGenerator}
+// fixed class imports
+import starling.services.trinity.{TrinityUploader, XRTGenerator, TrinityUploadCodeMapper, FCLGenerator}
 import xml.{Node, Utility}
 import javax.xml.transform.stream.{StreamResult, StreamSource}
 import java.io.{ByteArrayInputStream, File}
