@@ -58,19 +58,28 @@ object ExcelInstrumentReader {
         conflictingAliases => require(conflictingAliases.isEmpty, "These market aliases conflict: " + conflictingAliases)
       }
 
-      aliases.map {
+      val combined = aliases.map {
         case (market, alias) => (alias.toLowerCase, market)
       }.toMap ++ Market.all.toMapWithKeys(_.name.toLowerCase)
+
+      val renamedIPE = combined.filter(_._1.contains("ipe")).map{
+        case (name, market) => (name.replaceAll("ipe", "ice") -> market)
+      }
+
+      combined ++ renamedIPE
     }
 
     alias(
       ICE_BRENT → "brent",
       NYMEX_WTI → "wti",
       RB_CRACKS -> "rb cracks",
+      RB_CRACKS -> "nymex rbob vs ipe brent",
       RB_BRENT_CRACKS -> "rb brent cracks",
       RBHO -> "rbho",
       GO_CRACKS -> "go cracks",
+      GO_CRACKS -> "ipe gas oil vs ipe brent",
       ICE_WTI_BRENT -> "wti brent",
+      ICE_WTI_BRENT -> "ice wti vs ice brent",
       NYMEX_WTI_BRENT -> "ny wti brent"
     )
   }

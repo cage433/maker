@@ -17,6 +17,8 @@ class ExcelInstrumentReaderTests extends JonTestEnv {
   def testFuturesData = {
     val market1 = Market.NYMEX_WTI
     val market2 = Market.NYMEX_GASOLINE
+    val market3 = Market.ICE_BRENT
+    val market4 = FuturesSpreadMarket.ICE_WTI_BRENT
     val crack = FuturesSpreadMarket.RB_CRACKS
     constructArgs(
       (Map("id" -> 1, "size" -> -2, "unit" -> "lots", "market" -> "NYMEX WTI", "instr" -> "future", "period" -> "nov-10", "price" -> 77.84),
@@ -25,6 +27,10 @@ class ExcelInstrumentReaderTests extends JonTestEnv {
               Future(market1, Month(2010, 11), Quantity(77.84, market1.priceUOM), Quantity(-2000, market1.uom))),
       (Map("id" -> 3, "size" -> -2, "unit" -> "bbl", "market" -> "NYMEX WTI", "instr" -> "future", "period" -> "x-10", "price" -> 77.84),
               Future(market1, Month(2010, 11), Quantity(77.84, market1.priceUOM), Quantity(-2, market1.uom))),
+      (Map("id" -> 33, "size" -> -2, "unit" -> "bbl", "market" -> "ICE BrenT", "instr" -> "future", "period" -> "x-10", "price" -> 77.84),
+              Future(market3, Month(2010, 11), Quantity(77.84, market3.priceUOM), Quantity(-2, market3.uom))),
+      (Map("id" -> 333, "size" -> -2, "unit" -> "bbl", "market" -> "ICE wti vs IcE Brent", "instr" -> "future", "period" -> "x-10", "price" -> 1),
+              new FuturesCommoditySpread(market4, Month(2010, 11), Quantity(1, market4.priceUOM), Quantity(-2, market4.uom))),
       (Map("id" -> 4, "size" -> -2, "unit" -> "lots", "market" -> "nymex rbob", "instr" -> "future", "period" -> "nov-10/dec-10", "price" -> "0"),
               new FuturesCalendarSpread(market2, Month(2010, 11), Month(2010, 12), Quantity(0, market2.priceUOM), Quantity(-2 * 42000, market2.uom))
               ),

@@ -115,7 +115,7 @@ case class ExcelRow(row: Map[String, Any], traders: Traders) {
 
   def price = {
     val name = marketStr
-    val multiIndex = indexAliases.get(name) match {
+    val multiIndex = indexOption(name) match {
       case Some(index: MultiIndex) => true
       case _ => false
     }
@@ -163,24 +163,24 @@ case class ExcelRow(row: Map[String, Any], traders: Traders) {
 
   def marketStr = string(MarketColumn, 100).toLowerCase
 
-  def market = marketAliases.get(marketStr) match {
+  def market = marketOption(marketStr) match {
     case Some(m) => m
     case None => throw ExcelInstrumentReaderException("Couldn't find market with name: " + marketStr)
   }
 
-  def isSpreadMarket = marketAliases.get(marketStr) match {
+  def isSpreadMarket = marketOption(marketStr) match {
     case Some(m: FuturesSpreadMarket) => true
     case _ => false
   }
 
-  def futuresSpreadMarket: FuturesSpreadMarket = marketAliases(marketStr).asInstanceOf[FuturesSpreadMarket]
+  def futuresSpreadMarket: FuturesSpreadMarket = marketOption(marketStr).get.asInstanceOf[FuturesSpreadMarket]
 
   def futuresMarket = market.asInstanceOf[FuturesMarket]
 
-  def index = indexAliases.get(marketStr) match {
+  def index = indexOption(marketStr) match {
     case Some(i) => i
     case None => {
-      marketAliases.get(marketStr) match {
+      marketOption(marketStr) match {
         case Some(market) => {
           val matches = Index.singleIndexes.filter(_.market == market).mkString(" or ")
           throw ExcelInstrumentReaderException("Couldn't find index with name: " + marketStr + ", did you mean '" + matches + "'?")
@@ -196,7 +196,7 @@ case class ExcelRow(row: Map[String, Any], traders: Traders) {
 
   def lotSize: Double = {
     val name = marketStr
-    val lots = (marketAliases.get(name), indexAliases.get(name)) match {
+    val lots = (marketOption(name), indexOption(name)) match {
       case (Some(market: CommodityMarket), None) => market.lotSize
       case (None, Some(index: SingleIndex)) => index.lotSize
       case (Some(market: CommodityMarket), Some(index: SingleIndex)) if market == index.market => market.lotSize
@@ -306,7 +306,7 @@ case class ExcelRow(row: Map[String, Any], traders: Traders) {
     if (isSpreadMarket) {
       futuresSpreadMarket.priceUOM
     } else {
-      (marketAliases.get(name), indexAliases.get(name)) match {
+      (marketOption(name), indexOption(name)) match {
         case (Some(market: CommodityMarket), None) => market.priceUOM
         case (None, Some(index)) => index.priceUOM
         case (Some(market: CommodityMarket), Some(index: SingleIndex)) if market == index.market => market.priceUOM
