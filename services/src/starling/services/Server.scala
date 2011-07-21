@@ -278,7 +278,7 @@ class StarlingInit( val props: Props,
 
   val trinityUploadCodeMapper = new TrinityUploadCodeMapper(trinityDB)
   val curveViewer = new CurveViewer(marketDataStore)
-  val trinityUploader = new TrinityUploader(new starling.services.trinity.FCLGenerator(trinityUploadCodeMapper, curveViewer), new XRTGenerator(marketDataStore), props)
+  val trinityUploader = new TrinityUploader(new FCLGenerator(trinityUploadCodeMapper, curveViewer), new XRTGenerator(marketDataStore), props)
   val scheduler = Scheduler.create(businessCalendars, marketDataStore, broadcaster, trinityUploader, props)
 
   val referenceData = new ReferenceData(businessCalendars, marketDataStore, strategyDB, scheduler, trinityUploadCodeMapper)
