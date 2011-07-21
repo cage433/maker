@@ -52,8 +52,6 @@ class MarketDataPivotTableDataSource(reader: MarketDataReader, edits:PivotEdits,
   }.toMap
   val allMarketDataKeys = observationDayAndMarketDataKeys.map(_.key).toSet
 
-  println("Created MarketDataPivotTableDataSource for " + marketDataIdentifier + " " + observationDayAndMarketDataKeyRows.size)
-
   val inMemoryFields = observationDayAndMarketDataKeyRows.keys.flatMap(_.keySet).toSet
 
   override val initialState = {
@@ -89,7 +87,7 @@ class MarketDataPivotTableDataSource(reader: MarketDataReader, edits:PivotEdits,
         }
         def save(edits:PivotEdits) = {
 
-          val editsByTimedKeys = edits.edits.toList.flatMap { case(keyFilter, keyEdit) => {
+          val editsByTimedKeys: Map[TimedMarketDataKey, List[(KeyFilter, KeyEdits)]] = edits.edits.toList.flatMap { case(keyFilter, keyEdit) => {
             val keyFilterForTimedKey = keyFilter.retain(inMemoryFields)
             val matchingTimedKeys = observationDayAndMarketDataKeyRows.toList.filter { case (row,timedKey) => {
               keyFilterForTimedKey.matches(row)
@@ -102,37 +100,6 @@ class MarketDataPivotTableDataSource(reader: MarketDataReader, edits:PivotEdits,
             } }
           }.groupBy(_._1).mapValues(_.map(_._2))
 
-          val amends = editsByTimedKeys.toList.flatMap { case (timedKey, edits) => {
-            val latest: Option[MarketData] = marketDataStore.readLatest(editableSet, timedKey)
-            latest match {
-              case Some(readData) => {
-                val currentRows = timedKey.key.castRows(readData)
-                var modifiedRows = currentRows
-
-                edits.foreach { case (keyFilter, keyEdit) => {
-                  modifiedRows = modifiedRows.flatMap { row => {
-                    if (keyFilter.matches(row)) {
-                      keyEdit match {
-                        case DeleteKeyEdit => None
-                        case AmendKeyEdit(amends) => {
-                          if (amends.values.toSet.contains(None)) {
-                            None //Delete the row if the measure has been deleted
-                          } else {
-                            Some( row ++ amends.filter(_._2.isDefined).mapValues(_.get) )
-                          }
-                        }
-                      }
-                    } else {
-                      Some(row)
-                    }
-                  } }
-                } }
-                MarketDataEntry(timedKey.observationPoint, timedKey.key, marketDataType.createValue(modifiedRows.toList)) :: Nil
-              }
-              case None => Nil //There is no data for this key, nothing to do
-            }
-          } }
-
           val newRowsWithAllFieldsPresent = edits.newRows.filter { row => {
             keyAndValueFields.forall{ field => {
               row.get(field) match {
@@ -143,35 +110,69 @@ class MarketDataPivotTableDataSource(reader: MarketDataReader, edits:PivotEdits,
             } }
           }}
 
-          val groupedNewRows = newRowsWithAllFieldsPresent.groupBy{ row => {
+          val groupedNewRows: Map[TimedMarketDataKey, List[Map[Field, Any]]] = newRowsWithAllFieldsPresent.groupBy { row => {
             val observationPoint = ObservationPoint(
               row(observationDayField.field).asInstanceOf[Day],
               ObservationTimeOfDay.fromName(row(observationTimeField.field).asInstanceOf[String])
             )
             val key: MarketDataKey = marketDataType.createKey(row)
-            (observationPoint, key)
+            TimedMarketDataKey(observationPoint, key)
           }}
 
-          val creates = groupedNewRows.map {case ((observationPoint, key), newRows) => {
-            val latest: Option[MarketData] = marketDataStore.readLatest(editableSet, TimedMarketDataKey(observationPoint, key))
-            val editedData = latest match {
-              case Some(readData) => {
-                val currentRows = key.castRows(readData)
-                val mixedRows = MarketDataStore.applyOverrideRule(marketDataType, currentRows.toList ::: newRows).toList
+          val newEntries = (groupedNewRows.keySet ++ editsByTimedKeys.keySet).map { timedKey => {
+            val newRows = groupedNewRows.getOrElse(timedKey, Nil)
+            val maybeEdits = editsByTimedKeys.get(timedKey)
 
-                marketDataType.createValue(mixedRows)
-              }
+            val latest: Option[MarketData] = marketDataStore.readLatest(editableSet, timedKey)
+            val amendRows = latest match {
               case None => {
-                // There should be no deletes here if the readData isn't defined.
-                marketDataType.createValue(newRows)
+                maybeEdits.map( _.flatMap { case (keyFilter, keyEdit) => {
+                  keyEdit match {
+                    case DeleteKeyEdit => Nil //Ignore, we can't override existing values with a 'delete'
+                    case AmendKeyEdit(amends) => {
+                      if (amends.values.toSet.contains(None)) {
+                        Nil //Ignore, we can't override existing values with a 'delete'
+                      } else {
+                        keyFilter.keys.mapValues(_.values.iterator.next) ++ amends.mapValues(_.get) ::Nil
+                      }
+                    }
+                  }
+                }}).getOrElse(Nil)
+              }
+              case Some(readData) => {
+                val currentRows = timedKey.key.castRows(readData)
+                var modifiedRows = currentRows
+
+                maybeEdits match {
+                  case Some(edits) => {
+                    edits.foreach { case (keyFilter, keyEdit) => {
+                      modifiedRows = modifiedRows.flatMap { row => {
+                        if (keyFilter.matches(row)) {
+                            keyEdit match {
+                              case DeleteKeyEdit => None
+                              case AmendKeyEdit(amends) => {
+                                if (amends.values.toSet.contains(None)) {
+                                  None //Delete the row if the measure has been deleted
+                                } else {
+                                  Some( row ++ amends.filter(_._2.isDefined).mapValues(_.get) )
+                                }
+                              }
+                            }
+                          } else {
+                            Some(row)
+                          }
+                        } }
+                      } }
+                  }
+                  case None => {}
+                }
+                modifiedRows.toList
               }
             }
-
-            MarketDataEntry(observationPoint, key, editedData)
+            MarketDataEntry(timedKey.observationPoint, timedKey.key, marketDataType.createValue(amendRows ::: newRows))
           } }
 
-          marketDataStore.save(Map(editableSet -> (amends.toList ::: creates.toList)))._2
-
+          marketDataStore.save(Map(editableSet -> newEntries))._2
           true
         }
       }
