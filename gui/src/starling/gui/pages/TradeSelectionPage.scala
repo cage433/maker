@@ -24,35 +24,33 @@ import starling.daterange.{Timestamp, Day}
  * Page that allows you to select trades.
  */
 case class TradeSelectionPage(
-        deskAndTimestamp:Option[(Desk, TradeTimestamp)],
-        intradaySubgroupAndTimestamp:Option[(IntradayGroups, Timestamp)],
-        componentState:TradeSelectionComponentState,
-        expiry:TradeExpiryDay
-        ) extends AbstractPivotPage(componentState.pivotPageState) {
-  val text = "Select Trades"
-  override val icon = StarlingIcons.im("/icons/16x16_trades.png")
+        tpp:TradePageParameters,
+        pivotPageState:PivotPageState
+        ) extends AbstractPivotPage(pivotPageState) {
+  def text = "Select Trades"
+  override def icon = StarlingIcons.im("/icons/16x16_trades.png")
   override def layoutType = Some("TradeSelection")
-  def selfPage(pivotPageState:PivotPageState) = copy(componentState = componentState.copy(pivotPageState = pivotPageState))
+  def selfPage(pps:PivotPageState, edits:Set[PivotEdit]) = copy(pivotPageState = pps)
 
-  private val tradeSelection = {
-    val deskToUse = deskAndTimestamp.map(_._1)
-    val intradaySubgroupToUse = intradaySubgroupAndTimestamp.map(_._1)
+  private def tradeSelection = {
+    val deskToUse = tpp.deskAndTimestamp.map(_._1)
+    val intradaySubgroupToUse = tpp.intradaySubgroupAndTimestamp.map(_._1)
     TradeSelection(deskToUse, TradePredicate(List(), List()), intradaySubgroupToUse)
   }
 
-  private val tradeSelectionWithTimestamp = {
-    TradeSelectionWithTimestamp(deskAndTimestamp, TradePredicate(List(), List()), intradaySubgroupAndTimestamp)
+  private def tradeSelectionWithTimestamp = {
+    TradeSelectionWithTimestamp(tpp.deskAndTimestamp, TradePredicate(List(), List()), tpp.intradaySubgroupAndTimestamp)
   }
 
   def dataRequest(pageBuildingContext:PageBuildingContext) = {
-    val expiryDay = expiry.exp
-    pageBuildingContext.cachingStarlingServer.tradePivot(tradeSelectionWithTimestamp, expiryDay, componentState.pivotPageState.pivotFieldParams)
+    val expiryDay = tpp.expiry.exp
+    pageBuildingContext.cachingStarlingServer.tradePivot(tradeSelectionWithTimestamp, expiryDay, pivotPageState.pivotFieldParams)
   }
   
   override def subClassesPageData(pageBuildingContext:PageBuildingContext) = {
     val desks = pageBuildingContext.starlingServer.desks
     val admin = pageBuildingContext.starlingServer.permissionToDoAdminLikeThings
-    Some(TradeSelectionPageData(deskAndTimestamp.map(_._1), desks, intradaySubgroupAndTimestamp.map(_._1), admin))
+    Some(TradeSelectionPageData(tpp.deskAndTimestamp.map(_._1), desks, tpp.intradaySubgroupAndTimestamp.map(_._1), admin, pivotPageState))
   }
 
   override def finalDrillDownPage(fields:Seq[(Field, Selection)], pageContext:PageContext, ctrlDown:Boolean) = {
@@ -70,24 +68,24 @@ case class TradeSelectionPage(
       case Some(trID) => {
         pageContext.createAndGoTo(
           (starlingServer:StarlingServer) => {
-            SingleTradePage(trID, tradeSelection.desk, expiry, tradeSelection.intradaySubgroup)
+            SingleTradePage(trID, tradeSelection.desk, tpp.expiry, tradeSelection.intradaySubgroup)
           }, newTab = ctrlDown)
       }
       case None => None
     }
   }
 
-  override def createComponent(context:PageContext, data:PageData, browserSize:Dimension) = {
+  override def createComponent(context:PageContext, data:PageData, bookmark:Bookmark, browserSize:Dimension) = {
     val tradeSelectionPageData = data match {
       case v:PivotTablePageData => v.subClassesPageData match {
         case x:Option[_] => x.get.asInstanceOf[TradeSelectionPageData]
       }
     }
     new TradeSelectionComponent(
-      text, context, tradeSelectionPageData, componentState, deskAndTimestamp.map(_._2), intradaySubgroupAndTimestamp.map(_._2),
-      expiry,
+      text, context, tradeSelectionPageData, tpp.deskAndTimestamp.map(_._2), tpp.intradaySubgroupAndTimestamp.map(_._2),
+      tpp.expiry,
       PivotComponent(text, context, toolbarButtons(context, data), None, finalDrillDownPage, selfPage, data,
-        componentState.pivotPageState, save, browserSize))
+        pivotPageState, Set.empty, save, bookmark, browserSize))
   }
 
   override def refreshFunctions = {
@@ -95,7 +93,8 @@ case class TradeSelectionPage(
     tradeSelectionWithTimestamp.intradaySubgroupAndTimestamp match {
       case Some((groups, _)) => functions += {
         case IntradayUpdated(group, _, timestamp) if groups.subgroups.contains(group) => {
-          this.copy(intradaySubgroupAndTimestamp = tradeSelectionWithTimestamp.copyWithNewIntradaySubgroupTimestamp(timestamp).intradaySubgroupAndTimestamp)
+          val newTPP = tpp.copy(intradaySubgroupAndTimestamp = tradeSelectionWithTimestamp.copyWithNewIntradaySubgroupTimestamp(timestamp).intradaySubgroupAndTimestamp)
+          this.copy(tpp = newTPP)
         }
       }
       case _ =>
@@ -103,17 +102,57 @@ case class TradeSelectionPage(
 
     functions.toList
   }
+
+  override def bookmark(server:StarlingServer):Bookmark = {
+    val today = Day.today()
+    val isLatestLiveOn = tpp.expiry.exp == today
+    val latestTimestamp = tpp.deskAndTimestamp.map{case (desk, t) => (t, server.latestTradeTimestamp(desk))}
+    val isLatestBookClose = latestTimestamp match {
+      case Some((t1,t2)) => t1 == t2
+      case _ => true
+    }
+    val desk = tpp.deskAndTimestamp.map(_._1)
+    val intraday = tpp.intradaySubgroupAndTimestamp.map(_._1)
+    if (isLatestLiveOn && isLatestBookClose) {
+      TradeSelectionBookmark(desk, intraday, pivotPageState, false)
+    } else {
+      val isLiveOnStartOfYear = latestTimestamp match {
+        case Some((ts, _)) => ts.closeDay.startOfFinancialYear == tpp.expiry.exp
+        case None => today.startOfFinancialYear == tpp.expiry.exp
+      }
+      if (isLiveOnStartOfYear && isLatestBookClose) {
+        TradeSelectionBookmark(desk, intraday, pivotPageState, true)
+      } else {
+        PageBookmark(this)
+      }
+    }
+  }
+}
+
+case class TradeSelectionBookmark(desk:Option[Desk], intradaySubgroups:Option[IntradayGroups],
+                                  pivotPageState:PivotPageState, useStartOfYear:Boolean) extends Bookmark {
+  def daySensitive = false
+  def createPage(day:Option[Day], server:StarlingServer, context:PageContext) = {
+    val latestBookClose = desk.map{desk => (desk, context.localCache.latestTimestamp(desk).get)}
+    val latestIntraday = intradaySubgroups.map(intra => (intra, context.localCache.latestTimestamp(intra)))
+    val today = Day.today()
+    val tradesLiveOn = if (useStartOfYear) {
+      latestBookClose match {
+        case Some((_,timestamp)) => timestamp.closeDay.startOfFinancialYear
+        case _ => today.startOfFinancialYear
+      }
+    } else {
+      today
+    }
+
+    val tpp = TradePageParameters(latestBookClose, latestIntraday, TradeExpiryDay(tradesLiveOn))
+    TradeSelectionPage(tpp, pivotPageState)
+  }
 }
 
 case class TradeSelectionPageData(desk:Option[Desk], desks:List[Desk],
                                intradaySubgroup:Option[IntradayGroups],
-                               admin: Boolean) extends PageData
-
-case class TradeSelectionComponentState(
-  deskSelected:Boolean,
-  intradaySubgroupSelected:Boolean,
-  pivotPageState:PivotPageState
- )
+                               admin: Boolean, pivotPageState:PivotPageState) extends PageData
 
 object TimestampChooser {
   val defaultUnitialisedValue: TradeTimestamp = TradeTimestamp(new Timestamp, Day(1980, 1, 1), -1, None)
@@ -191,7 +230,6 @@ class TradeSelectionComponent(
         text:String,
         pageContext:PageContext,
         pageData:PageData,
-        componentState:TradeSelectionComponentState,
         deskTimestamp: Option[TradeTimestamp],
         intradayTimestamp: Option[Timestamp],
         expiry:TradeExpiryDay,
@@ -200,8 +238,9 @@ class TradeSelectionComponent(
 
   private val deskCheckBox = new CheckBox {
     text = "Main Desk:"
-    selected = componentState.deskSelected
-    enabled = !data.desks.isEmpty
+    def enable_? = !data.desks.isEmpty
+    enabled = enable_?
+    selected = data.desk.isDefined && enabled
   }
 
   private val deskCombo = if (data.desks.isEmpty) new ComboBox(List(Desk(""))) else new ComboBox(data.desks) {
@@ -226,7 +265,7 @@ class TradeSelectionComponent(
     text = "Intraday Trades:"
     def enable_? = !pageContext.localCache.intradaySubgroups.isEmpty
     enabled = enable_?
-    selected = componentState.intradaySubgroupSelected && enabled
+    selected = data.intradaySubgroup.isDefined && enabled
 
     listenTo(pageContext.remotePublisher)
     reactions += {
@@ -282,7 +321,10 @@ class TradeSelectionComponent(
 
   private val refreshTradesButton = new Button {
     enabled = {
-      deskCheckBox.selected && deskCombo.selection.item == Desk.GasolineSpec
+      deskCheckBox.selected && {
+        deskCombo.selection.item == Desk.GasolineSpec ||
+        deskCombo.selection.item == Desk.LondonDerivatives
+      }
     }
     icon = StarlingIcons.icon("/icons/14x14_download_data.png")
     tooltip = "Force book close"
@@ -342,9 +384,8 @@ class TradeSelectionComponent(
         timestampsCombo.selection.item
       }
     }))
-    pageContext.goTo(TradeSelectionPage(deskWithTimestamp, intradayItem.map(g => (g, pageContext.localCache.latestTimestamp(g))),
-        TradeSelectionComponentState(dSelected, intraSelected, componentState.pivotPageState),
-        expiry))
+    pageContext.goTo(TradeSelectionPage(TradePageParameters(deskWithTimestamp,
+      intradayItem.map(g => (g, pageContext.localCache.latestTimestamp(g))), expiry), data.pivotPageState))
   }
 
   private val reportButton = new NewPageButton {
@@ -394,15 +435,13 @@ class TradeSelectionComponent(
               StandardUserSettingKeys.InitialMarketDataSelection,
               defaultSelection
             )
-            pageContext.localCache.latestMarketDataVersionIfValid(selection) match {
-              case None => {
-                MarketDataIdentifier(defaultSelection,
-                  SpecificMarketDataVersion(pageContext.localCache.latestMarketDataVersion(defaultSelection)))
-              }
-              case Some(v) => MarketDataIdentifier(selection, SpecificMarketDataVersion(v))
-            }
+            val version = pageContext.localCache.latestMarketDataVersionIfValid(selection)
+               .getOrElse(pageContext.localCache.latestMarketDataVersion(defaultSelection))
+
+            MarketDataIdentifier(defaultSelection, version)
           }
-          CurveIdentifierLabel.defaultLabelFromSingleDay(marketDataIdentifier, expiry.exp, pageContext.localCache.ukBusinessCalendar)
+
+          CurveIdentifierLabel.defaultLabelFromSingleDay(marketDataIdentifier, pageContext.localCache.ukBusinessCalendar)
         }
 
         val rp = ReportParameters(
@@ -439,7 +478,7 @@ class TradeSelectionComponent(
         val latestIntradayTimestamp = pageContext.localCache.latestTimestamp(intradaySubgroup)
 
         pageContext.createAndGoTo(server => new TradeReconciliationReportPage(tradeSelection, from, to,
-          latestIntradayTimestamp, componentState.pivotPageState))
+          latestIntradayTimestamp, data.pivotPageState))
       }
       case DeskClosed(desk, timestamp) => {
         enabled = isEnabled
@@ -487,8 +526,8 @@ class TradeSelectionComponent(
         case None =>
       }
       data.intradaySubgroup.map(v => intradayTradesCombo.valuesAndSelection = generateIntradayTradesSelection)
-      deskCheckBox.selected = componentState.deskSelected
-      intradayTradesCheckBox.selected = componentState.intradaySubgroupSelected
+      deskCheckBox.selected = data.desk.isDefined && deskCheckBox.enable_?
+      intradayTradesCheckBox.selected = data.intradaySubgroup.isDefined && intradayTradesCheckBox.enable_?
       updateComponentState
     }
   }
@@ -577,7 +616,7 @@ class TradeSelectionComponent(
 }
 
 case class SnapshotSubmitRequest(marketDataSelection:MarketDataSelection, observationDay:Day)
-  extends SubmitRequest[SnapshotIDLabel] {
+  extends SubmitRequest[Option[SnapshotIDLabel]] {
 
   def submit(server: StarlingServer) = server.snapshot(marketDataSelection, observationDay)
 }

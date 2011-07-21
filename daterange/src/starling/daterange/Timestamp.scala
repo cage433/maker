@@ -4,7 +4,6 @@ import java.util.Date
 import org.joda.time.DateTime
 import org.joda.time.format.DateTimeFormat
 
-@serializable
 case class Timestamp(instant : Long) extends Ordered[Timestamp] {
 
   def this() = this(new Date().getTime)

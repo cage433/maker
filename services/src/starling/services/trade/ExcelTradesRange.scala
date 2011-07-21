@@ -8,9 +8,9 @@ import starling.daterange._
 import starling.richdb.RichInstrumentResultSetRow
 import starling.eai.{TreeID, EAIStrategyDB}
 import starling.models.{Put, Call, CallOrPut}
-import starling.market.{Market, Index}
 import starling.quantity.{SpreadQuantity, UOM, Quantity, Percentage}
 import starling.trade.{TradeID, Trade}
+import starling.market.{FuturesMarket, Market, Index}
 
 case class ExcelTradesRange(subgroupName : String,
                             headers: Array[String],
@@ -86,7 +86,7 @@ case class ExcelTradesRange(subgroupName : String,
 
     private def maybeIndexOf(name:String) = {
       val normalisedName = normalisedForm(name)
-      headers.findIndexOf(normalisedForm(_) == normalisedName)
+      headers.indexWhere(normalisedForm(_) == normalisedName)
     }
     def getObject(name:String) : Object = {
       val maybeIndex = maybeIndexOf(name)
@@ -109,7 +109,7 @@ case class ExcelTradesRange(subgroupName : String,
   def countTrades = {
     // at a first approximation it's the number of rows with something in the instrument column
     val instrumentHeader = normalisedForm("Instrument")
-    val maybeIndex = headers.findIndexOf(normalisedForm(_) == instrumentHeader)
+    val maybeIndex = headers.indexWhere(normalisedForm(_) == instrumentHeader)
     if (maybeIndex >= 0) {
       values.map((x:Array[Object]) => if (x(maybeIndex) == null) 0 else 1).reduceLeft(_+_)
     } else {
@@ -139,7 +139,7 @@ case class ExcelTradesRange(subgroupName : String,
         def getUOM(name: String) = row.getUOM(name)
         def getQuantity(name: String) = row.getQuantity(name)
         def getStrikes = row.getStrikes
-        def getForwardMarket(name: String) = Market.forwardMarketFromName(row.getString(name))
+        def getCommodityMarket(name: String) = Market.fromName(row.getString(name))
         def getFuturesMarket(name: String) = Market.futuresMarketFromName(row.getString(name))
         def getDateRange(name: String, tenor : Option[TenorType] = None) = row.getDateRange(name, tenor)
         override def getSpread(name:String) = {
@@ -189,5 +189,3 @@ case class ExcelTradesRange(subgroupName : String,
     }).toList
   }
 }
-
-// TODO: move to appropriate location

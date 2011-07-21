@@ -22,16 +22,15 @@ class IndexRuleEvaluationTest extends JonTestEnv {
 
   @Test
   def testOutput {
-    val wti = FuturesFrontPeriodIndex.WTI10
-    val brent = FuturesFrontPeriodIndex.BRT11
-    val index = FuturesSpreadIndex("wti - brt", wti, brent, USD, BBL, Some(Precision(3, 2)))
+    val wti = Index.WTI10
+    val brent = Index.BRT11
+    val formula = new Formula("MKT(" + wti.eaiQuoteID.get + ") - MKT(" + brent.eaiQuoteID.get + ")")
+    val index = FormulaIndex("wti - brt", formula, USD, BBL, Some(Precision(3, 2)), None, None)
     val period = Month(2011, 4)
     val env = makeEnv(Day(2011, 4, 15).endOfDay)
 
-//    val rows = IndexRuleEvaluation.rows(index, period, NonCommonPricingRule, 2, env)
-//    assertTrue(wti.observationDays(period).forall(day => rows.find(r => r.market == wti.market && r.day == day) isDefined))
-//    assertTrue(brent.observationDays(period).forall(day => rows.find(r => r.market == brent.market && r.day == day) isDefined))
-//
-//    rows.map(println)
+    val rows = IndexRuleEvaluation.rows(index, period, NonCommonPricingRule, Some(2), env)
+    assertTrue(wti.observationDays(period).forall(day => rows._1.find(r => r.market == wti.market && r.day == day && r.observed == wti.observedPeriod(day)) isDefined))
+    assertTrue(brent.observationDays(period).forall(day => rows._1.find(r => r.market == brent.market && r.day == day && r.observed == brent.observedPeriod(day)) isDefined))
   }
 }

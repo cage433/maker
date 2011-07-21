@@ -4,7 +4,7 @@ import math.abs
 import java.io.Serializable
 import starling.quantity._
 import collection.immutable.Map
-import starling.utils.{Named, StarlingEnum, StackTraceToString}
+import starling.utils.{StarlingEnum, StackTraceToString}
 
 case class PivotPercentage(percent:Option[Percentage]) {
   override def toString = percent match {
@@ -18,21 +18,18 @@ case class PivotPercentage(percent:Option[Percentage]) {
 case class StackTrace(message:String, stackTrace:String)
 object StackTrace {
   def apply(t:Throwable) = {
-    if (false && t.getClass.getName == "starling.curves.MissingMarketDataException") {
-      new StackTrace(t.toString, "")
-    } else {
-      new StackTrace(t.toString, StackTraceToString.string(t))
-    }
+    val message = if (t.getMessage == null) t.toString else t.getMessage
+    new StackTrace(message, StackTraceToString.string(t))
   }
 }
 
-case class ErrorState(name: String) extends Named {
+case class ErrorState(name: String) {
   import ErrorState._
 
   def fold[A](g: => A, w: => A, e: => A) = if (this == Warning) w else if (this == Error) e else g
 }
 
-object ErrorState extends StarlingEnum(classOf[ErrorState]) {
+object ErrorState extends StarlingEnum(classOf[ErrorState], (es: ErrorState) => es.name) {
   val Good    = ErrorState("Good")
   val Warning = ErrorState("Warning")
   val Error   = ErrorState("Error")

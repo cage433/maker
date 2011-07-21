@@ -16,12 +16,12 @@ import starling.instrument.{FuturesOption, Future, Instrument}
 import cern.colt.matrix.DoubleFactory2D
 import starling.quantity.{Percentage, Quantity}
 import starling.models.{European, Call}
-import starling.market.{ForwardPriceRiskFactorType, TestExpiryRules, FuturesMarket, Market}
+import starling.market.{ForwardPriceRiskFactorType, TestMarketSpec, FuturesMarket, Market}
 import starling.daterange.{Month, TestHolidays, Day}
 
-class VarTests extends TestExpiryRules {
-  val market1 = FuturesMarket.testMarketWithInterpolation("MKT 1", USD, MT)
-  val market2 = FuturesMarket.testMarketWithInterpolation("MKT 2", USD, MT)
+class VarTests extends TestMarketSpec {
+  val market1 = Market.testMarketWithInterpolation("MKT 1", USD, MT)
+  val market2 = Market.testMarketWithInterpolation("MKT 2", USD, MT)
   val marketDay = Day(2009, 1, 1)
   val seed = 1234
 
@@ -72,13 +72,13 @@ class VarTests extends TestExpiryRules {
 
   def weightedVol(days : List[Day], vols : List[Double], rho : Double, day : Day) : Double = {
   		var dayVols = days.zip(vols)
-  		val indexFirstDayAfter = dayVols.findIndexOf(_._1 >= day)
+  		val indexFirstDayAfter = dayVols.indexWhere(_._1 >= day)
   		if (indexFirstDayAfter == 0)
   			dayVols = dayVols.take(2)
   		else
   			dayVols = dayVols.drop(indexFirstDayAfter - 1).take(2)
   		assert(dayVols.size == 2, "Invalid size")
-  		dayVols match {
+  		(dayVols : @unchecked) match {
   		  case List((day1, vol1), (day2, vol2)) => {
   		    val tMid = day.endOfDay.timeSince(day1.endOfDay)
   		    val tWidth = day2.endOfDay.timeSince(day1.endOfDay)

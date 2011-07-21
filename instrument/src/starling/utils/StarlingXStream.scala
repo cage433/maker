@@ -1,13 +1,10 @@
 package starling.utils
 
-
 import collection.immutable.TreeMap
 import collection.SortedMap
 import com.thoughtworks.xstream.converters.{Converter, MarshallingContext, UnmarshallingContext}
-import starling.daterange.Day
 import com.thoughtworks.xstream.io.{HierarchicalStreamWriter, HierarchicalStreamReader}
 import com.thoughtworks.xstream.XStream
-import starling.quantity.UOM
 import scala.collection.JavaConversions
 import starling.market.{Index, CommodityMarket, Market, FuturesMarket}
 import java.io.StringWriter
@@ -16,6 +13,8 @@ import com.thoughtworks.xstream.mapper.{MapperWrapper, Mapper}
 import java.lang.Class
 import annotation.tailrec
 import starling.pivot.MarketValue
+import starling.xstream.{XstreamUOMConverter, XstreamDayConverter}
+import xstream.ScalaXStream
 
 //import starling.db.FwdCurveAppPricingGroup
 
@@ -93,30 +92,8 @@ object StarlingXStream {
     val xs = new XStream(null, anonymousIgnoringMapper, new XppDriver())
     ScalaXStream.configure(xs)
 
-    xs.registerConverter( new Converter {
-        def canConvert(theType:Class[_]) = {
-            theType == classOf[Day]
-        }
-        def marshal(obj:Object, writer:HierarchicalStreamWriter, context:MarshallingContext) {
-            writer.setValue(obj.toString)
-        }
-        def unmarshal(reader:HierarchicalStreamReader , context:UnmarshallingContext ) = {
-          val text = reader.getValue()
-          Day.quickParse(text)
-        }
-    })
-
-    xs.registerConverter( new Converter {
-        def canConvert(theType:Class[_]) = {
-            classOf[UOM] == theType
-        }
-        def marshal(obj:Object, writer:HierarchicalStreamWriter, context:MarshallingContext) {
-          writer.setValue(obj.asInstanceOf[UOM].identifier)
-        }
-        def unmarshal(reader:HierarchicalStreamReader , context:UnmarshallingContext ) = {
-          if (reader.getValue == "") UOM.SCALAR else UOM.fromIdentifier(reader.getValue)
-        }
-    })
+    xs.registerConverter(new XstreamDayConverter)
+    xs.registerConverter(new XstreamUOMConverter)
 
     xs.registerConverter(CommodityMarketConverter)
     xs.registerConverter(NamedConverter)

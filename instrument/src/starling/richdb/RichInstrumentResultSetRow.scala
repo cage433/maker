@@ -52,9 +52,9 @@ trait RichInstrumentResultSetRow {
     case SwapPricingRule(r) => r
   }
   def getMarket(name : String) : Market
+  def getCommodityMarket(name : String) : CommodityMarket
   def getFuturesMarket(name : String) : FuturesMarket
   def getFuturesSpreadMarket(name : String) : FuturesSpreadMarket
-  def getForwardMarket(name : String) : ForwardMarket
   def getIndexFromName(name : String) : Index
   def getSingleIndexFromName(column: String) =  Index.singleIndexFromName(getString(column))
   def getString(name : String) : String

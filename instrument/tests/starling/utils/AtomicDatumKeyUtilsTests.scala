@@ -10,12 +10,12 @@ import starling.models.{American, European, Call}
 import starling.daterange.{Day, Month}
 import starling.instrument.{SingleAsianOption, AsianOption, ForwardOption, FuturesOption}
 import starling.instrument.UTP
-import starling.market.{PublishedIndex, FuturesFrontPeriodIndex, TestExpiryRules, Market}
+import starling.market._
 
-class AtomicDatumKeyUtilsTests extends TestExpiryRules {
+class AtomicDatumKeyUtilsTests extends TestMarketSpec {
   @Test
   def testBucketing {
-    val index = PublishedIndex.PREM_UNL_EURO_BOB_OXY_NWE_BARGES
+    val index = Index.PREM_UNL_EURO_BOB_OXY_NWE_BARGES
     val market = index.market
 
     val dec10 = Month(2010, 12)

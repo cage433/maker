@@ -12,7 +12,7 @@
   </parent>
 
 
-  <!--TODO It would be nice not to have to specify a packaging as we don't want one loaded into nexus-->
+  <!--TODO [31 May 2011] It would be nice not to have to specify a packaging as we don't want one loaded into nexus-->
   <name>StarlingClient</name>
   <groupId>com.trafigura.clients.starlingclient</groupId>
   <artifactId>starling-client</artifactId>

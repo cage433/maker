@@ -18,8 +18,8 @@ trait ScheduledTaskAttributes {
 }
 
 trait ScheduledTask extends ScheduledTaskAttributes { self =>
-  def attribute(name: String, alternative: String = "") = attributes.getOrElse(name, alternative)
-  def attributes: Map[String, String] = Map()
+  def attribute(name: String, alternative: String = ""): ScheduledTaskAttribute = attributes.getOrElse(name, ScheduledTaskAttribute(alternative))
+  def attributes: Map[String, ScheduledTaskAttribute] = Map()
   def execute(observationDay: Day)
 
   protected def fields(names: String*) = names.map(Field(_)).toList
@@ -29,13 +29,13 @@ trait ScheduledTask extends ScheduledTaskAttributes { self =>
     filter.toMap.mapKeys(_.name).mapValues(_.description).map("%s = %s" % _).mkString(", ")
   }
 
-  def withAttributes(additionalAttributes: (String, String)*) = new ScheduledTask {
+  def withAttributes(additionalAttributes: (String, ScheduledTaskAttribute)*) = new ScheduledTask {
     def execute(observationDay: Day) = self.execute(observationDay)
     override def attributes = self.attributes ++ additionalAttributes
   }
 
-  def withSource(name: String) = withAttributes(DataSource → name)
-  def withSink(name: String) = withAttributes(DataSink → name)
+  def withSource(name: String, details: String*) = withAttributes(DataSource → ScheduledTaskAttribute(name, details : _*))
+  def withSink(name: String) = withAttributes(DataSink → ScheduledTaskAttribute(name))
 }
 
 case class SimpleScheduledTask(task: Day => Unit) extends ScheduledTask {
@@ -48,11 +48,12 @@ abstract class BroadcastingScheduledTask(broadcaster: Broadcaster) extends Sched
   protected def eventFor(observationDay: Day): Option[Event]
 }
 
-abstract class EmailingScheduledTask(broadcaster: Broadcaster, from: String, to: Seq[String])
+abstract class EmailingScheduledTask(broadcaster: Broadcaster, from: String, to: String)
   extends BroadcastingScheduledTask(broadcaster) {
 
   final protected def eventFor(observationDay: Day) = eventFor(observationDay, EmailEvent(from, to))
-  override def attributes = super.attributes + (EmailFrom → from) + (EmailTo → to.mkString(", "))
+  override def attributes =
+    super.attributes + (EmailFrom → ScheduledTaskAttribute(from)) + (EmailTo → ScheduledTaskAttribute(to))
 
-  protected def eventFor(observationDay: Day, email: EmailEvent): Option[EmailEvent]
+  protected def eventFor(observationDay: Day, email: EmailEvent): Option[Event]
 }

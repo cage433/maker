@@ -7,7 +7,7 @@ import starling.pivot._
 import starling.market.rules.{SwapPricingRule, NonCommonPricingRule, Precision}
 import starling.utils.{AppendingMap, Log, Stopwatch}
 import starling.daterange.{Day, DateRange, Month}
-import starling.market.{CommodityMarket, Index, FuturesSpreadIndex, FuturesFrontPeriodIndex}
+import starling.market.{CommodityMarket, Index}
 import starling.utils.cache.CacheFactory
 import starling.market.formula.FormulaIndex
 
@@ -20,6 +20,8 @@ object PricingScheduleFactory extends CurveType {
 }
 
 class PricingSchedulePivotDataSource(context: EnvironmentWithDomain) extends UnfilteredPivotTableDataSource {
+  private val indexRuleEvaluationCache = CacheFactory.getCache("IndexRuleEvaluation")
+
   val payoffRule = FieldDetails("Payoff Rule")
   val swapRule = FieldDetails("Swap Rule")
   val rounding = FieldDetails("Rounding")
@@ -36,16 +38,20 @@ class PricingSchedulePivotDataSource(context: EnvironmentWithDomain) extends Unf
   val marketDay = context.environment.marketDay
   val startMonth = marketDay.day.startOfFinancialYear.containingMonth
 
+  val marketsWithForwardData = context.markets.map(_.market).toSet
+
   private val data = {
     val marketDay = context.environment.marketDay
 
-    val indexes = Index.namedIndexes.filter {
+    val indexes = Index.all.filter {
       case fi: FormulaIndex => fi.isValid
       case _ => true
+    }.filter {
+      Index.markets(_).forall(marketsWithForwardData.contains(_))
     }
 
     indexes.flatMap(index => {
-      index.markets.flatMap {
+      Index.markets(index).flatMap {
         commMarket =>
           precisions(Some(index)).flatMap {
             precision =>
@@ -88,7 +94,7 @@ class PricingSchedulePivotDataSource(context: EnvironmentWithDomain) extends Unf
   }
 
   def monthsFor(index: Index) = {
-    val lastForwardPeriod = index.markets.map {
+    val lastForwardPeriod = Index.markets(index).map {
       market => context.markets.find(_.market == market).map(
         marketWithDeliveryPeriod => (marketWithDeliveryPeriod.periods.last)
       )
@@ -126,8 +132,6 @@ class PricingSchedulePivotDataSource(context: EnvironmentWithDomain) extends Unf
     data
   }
 
-  val indexRuleEvaluationCache = CacheFactory.getCache("IndexRuleEvaluation")
-
   def lazyAverage(index: Index, period: DateRange, pricingRule: SwapPricingRule, rounding: Option[Int], environment: Environment) = {
     lazy val (rows, avg) = indexRuleEvaluationCache.memoize((index, period, pricingRule, rounding, context.environment), IndexRuleEvaluation.rows(index, period, pricingRule, rounding, context.environment))
 
@@ -156,7 +160,7 @@ class PricingSchedulePivotDataSource(context: EnvironmentWithDomain) extends Unf
         rows.find(r => r.day == obDay && r.market == commMarket) match {
           case Some(row) => {
             fields(
-              observedPeriod -> row.observed.period(row.day),
+              observedPeriod -> row.observed,
               price -> row.value,
               priceInRuleUOM -> row.valueInIndexUOM,
               holiday -> isHoliday

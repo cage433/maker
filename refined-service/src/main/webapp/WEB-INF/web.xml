@@ -54,25 +54,6 @@
       com.trafigura.services.build.BuildInfoServlet
     </servlet-class>
   </servlet>
-  <servlet>
-    <servlet-name>AppTxt</servlet-name>
-    <servlet-class>
-      starling.http.JBossAppTxtServlet
-    </servlet-class>
-  </servlet>
-  <servlet>
-    <servlet-name>JnlpLauncher</servlet-name>
-    <servlet-class>
-      starling.http.JBossJnlpServlet
-    </servlet-class>
-  </servlet>
-  <servlet>
-    <servlet-name>StarlingServer</servlet-name>
-    <servlet-class>
-      starling.http.JBossStarlingServlet
-    </servlet-class>
-    <load-on-startup>1</load-on-startup>
-  </servlet>
 
   <servlet-mapping>
     <servlet-name>Info</servlet-name>

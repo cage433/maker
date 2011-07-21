@@ -48,7 +48,7 @@ object RichConversions {
         case (_, d : Day) => convertedMap +=  (key -> d.toSqlDate)
         case (_, d : DateRange) => convertedMap +=  (key -> d.toString)
         case (_, s : Spread[_]) => convertedMap +=  (key -> s.toString)
-        case _ => convertedMap ++= asScalaMap(fallBack(Map(key -> value)))
+        case _ => convertedMap ++= mapAsScalaMap(fallBack(Map(key -> value)))
       }
     }
     convertedMap
@@ -67,31 +67,14 @@ class RichResultSetRow(resultSet: ResultSet)
 
   def getFuturesMarket(column: String) = Market.futuresMarketFromName(getString(column))
 
-  def getFuturesSpreadMarket(column: String) = FuturesSpreadMarket.find(getString(column)) match {
-    case Some(m) => m
-    case None => throw new Exception("Not a recognised futures spread market: " + getString(column))
+  def getFuturesSpreadMarket(column: String) = getString(column) match {
+    case FuturesSpreadMarket.Parse(market) => market
+    case unknown => throw new Exception("Not a recognised futures spread market: " + unknown)
   }
 
-  def getForwardMarket(column: String) = Market.forwardMarketFromName(getString(column))
+  def getCommodityMarket(column: String) = Market.fromName(getString(column))
 
-  def getCommodityMarketFromTrinityCode(column: String): CommodityMarket = Market.fromTrinityCode(getString(column))
-
-  def getFuturesMarketFromTrinityCode(column: String) = getCommodityMarketFromTrinityCode(column) match {
-    case m: FuturesMarket => m
-    case o => throw new Exception("Market " + o + " is not a FuturesMarket")
-  }
-
-  def getForwardMarketFromTrinityCode(column: String) = getCommodityMarketFromTrinityCode(column) match {
-    case m: ForwardMarket => m
-    case f: FuturesMarket => new ProxyForwardMarket(f) // TODO until we know what they mean in trinity this is a guess
-  }
-
-  def isForwardMarketFromTrinityCode(column: String) = getCommodityMarketFromTrinityCode(column) match {
-    case m: ForwardMarket => true
-    case o => false
-  }
-
-  def getFuturesMarketFromEAIQuoteID(column: String) = Market.futuresMarketFromEAIQuoteID(getInt(column))
+  def getFuturesMarketFromEAIQuoteID(column: String) = Market.futuresMarketFromQuoteID(getInt(column))
 
   def getSingleIndexFromEAIQuoteID(column: String) = Index.singleIndexFromEAIQuoteID(getInt(column))
 
@@ -128,7 +111,7 @@ class RichResultSetRow(resultSet: ResultSet)
     getString(column).head.toUpper match {
       case 'C' => Call
       case 'P' => Put
-      //@TODO - find out if these are right
+      //@TODO [17 Mar 2010] find out if these are right
       case 'R' => Call
       case 'Y' => Put
       case _ => throw new Exception("Bad Call/Put value: " + getString(column))

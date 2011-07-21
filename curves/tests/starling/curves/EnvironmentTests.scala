@@ -4,12 +4,12 @@ import starling.quantity.UOM._
 import org.testng.Assert._
 import starling.utils.QuantityTestUtils._
 import org.testng.annotations.Test
-import starling.market.{TestExpiryRules, Market}
+import starling.market.{TestMarketSpec, Market}
 import starling.quantity.{Percentage, Quantity}
 import starling.daterange.{Spread, Day, Month}
 import cern.colt.matrix.impl.DenseDoubleMatrix2D
 
-class EnvironmentTests extends TestExpiryRules {
+class EnvironmentTests extends TestMarketSpec {
 
 
   @Test

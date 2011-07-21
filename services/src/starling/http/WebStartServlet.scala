@@ -50,7 +50,7 @@ object GUICode {
   }
 
   def lastModifiedForModule(module:String) = {
-    val outputPath = new File(module + "/target/scala_2.8.1.final-local/classes/")
+    val outputPath = new File(module + "/target/scala_2.9.0-1/classes/")
     val resourcesPath = new File(module + "/resources")
     val resourcesLastModified = if (resourcesPath.exists) findLastModified(resourcesPath) else 0
     findLastModified(
@@ -187,7 +187,7 @@ class WebStartServlet(prefix:String, serverName:String, externalURL:String, main
         if (moduleJarFile.exists) {
           moduleJarFile
         } else {
-          val outputPath = new File(module + "/target/scala_2.8.1.final-local/classes/")
+          val outputPath = new File(module + "/target/scala_2.9.0-1/classes/")
           val resourcesPath = new File(module + "/resources")
           generateJar(moduleJarFile, outputPath, resourcesPath)
           moduleJarFile.setLastModified(lastModified)

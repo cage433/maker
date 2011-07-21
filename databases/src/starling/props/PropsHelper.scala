@@ -10,6 +10,7 @@ import org.apache.commons.io.IOUtils
 import scala.collection.JavaConversions
 import java.awt.Color
 import starling.utils.ImplicitConversions._
+import starling.utils.PropertiesMapBuilder
 
 /**
  * Holds the code to manage properties. The properties are listed in Props
@@ -75,6 +76,7 @@ class PropsHelper(props : Map[String,String]) {
           case "keith" => "Keith.Davies"
           case "nick" => "Nick.DArcy"
           case "stacy" => "Stacy.Curl"
+          case "louis" => "Louis.Botterill"
           case _ => "Thomas.Rynne"
         }
       fullname + "@trafigura.com"
@@ -138,24 +140,8 @@ class PropsHelper(props : Map[String,String]) {
 }
 
 object PropsHelper {
-  val defaultPropsFile = {
-    // If there is a system property set, use that.
-    val propsLocation = System.getProperties.getProperty("props.location")
-    new File(if (propsLocation != null) propsLocation else "props.conf")
-  }
 
-  val defaultProps = {
-    new Props(propsFromFile(defaultPropsFile))
-  }
-
-  def propsFromFile(propsFile:File) = {
-    println("Attempting to use props from: " + propsFile)
-    val p = new JProperties()
-    if(propsFile.exists) {
-      p.load(new FileInputStream(propsFile))
-    }
-    Map() ++ JavaConversions.asScalaMap(p.asInstanceOf[java.util.Map[String,String]])
-  }
+  val defaultProps = new Props(PropertiesMapBuilder.defaultProps)
 
   def createColourString(name:String):String = {
     //Generate a background colour from the name.

@@ -40,11 +40,15 @@ class Props(props:Map[String,String]) extends PropsHelper(props) {
   object JmxPort extends LocalPort(1024 + ((ServerName().hashCode.abs % 6400) * 10) + 3) //used by start.sh
   object RegressionPort extends LocalPort(1024 + ((ServerName().hashCode.abs % 6400) * 10) + 4)
   object LoopyXLPort extends LocalPort(1024 + ((ServerName().hashCode.abs % 6400) * 10) + 5)
+  object HttpEdmServicePort extends LocalPort(1024 + ((ServerName().hashCode.abs % 6400) * 10) + 6)
+  object StarlingServiceRmiPort extends LocalPort(1024 + ((ServerName().hashCode.abs % 6400) * 10) +7)
 
   object ExternalHostname extends StringProperty(InetAddress.getLocalHost().getHostName)
   object ExternalUrl extends StringProperty("http://" + ExternalHostname() + ":" + HttpPort())
+  object EdmExternalUrl extends StringProperty("http://" + ExternalHostname() + ":" + HttpEdmServicePort())
   object XLLoopUrl extends StringProperty(ExternalHostname() + ":" + XLLoopPort())
 
+  object RabbitEnabled extends BooleanProperty(true)
   object RabbitHost extends StringProperty("")
   def rabbitHostSet = RabbitHost() != ""
 
@@ -75,16 +79,32 @@ class Props(props:Map[String,String]) extends PropsHelper(props) {
   object ServerPrincipalName extends StringProperty("STARLING-TEST/dave-linux")
   object UseAuth extends BooleanProperty(false)
   object NoMP extends BooleanProperty(false)
+  object ImportsBookClosesFromEAI extends BooleanProperty(true)
 
   object LIMHost extends StringProperty("lim-london-live")
   object LIMPort extends IntProperty(6400)
 
   object NeptuneDatabase extends DatabaseProperty(
-    "jdbc:jtds:sqlserver://TTRAFLON2K97.global.trafigura.com/Neptune",
+    "jdbc:jtds:sqlserver://TTRAFLONSQL12.global.trafigura.com/;instance=db12",
     "starling_neptune",
     "1234142dfSdfS&%&^%£)"
    )
 
+  // Titan related configuration
+  object ServiceInternalAdminUser extends StringProperty("refined.metalsadm") // admin user for service to service access (permission requirements here for service calls TBD)
+  object EdmTradeServiceLocation extends StringProperty("http://localhost:8080/tradeservice")
+  object RefDataServiceLocation extends StringProperty("http://localhost:8080/referencedata")
+  object LogisticsServiceLocation extends StringProperty("http://localhost:8080/logistics")
+
+  private def RestEasyRpcMount = "/RPC"
+  object EdmTradeServiceUrl extends StringProperty(EdmTradeServiceLocation() + RestEasyRpcMount)
+  object TacticalRefDataServiceUrl extends StringProperty(RefDataServiceLocation() + RestEasyRpcMount)
+  object TitanLogisticsServiceUrl extends StringProperty(LogisticsServiceLocation() + RestEasyRpcMount)
+
+  // Titan Rabbit related configuration
+  object TitanRabbitBrokerHost  extends StringProperty("localhost")
+  object TitanRabbitUserName  extends StringProperty("trafiguraDev")
+  object TitanRabbitPassword  extends StringProperty("trafiguraDev")
 }
 
 object Props {

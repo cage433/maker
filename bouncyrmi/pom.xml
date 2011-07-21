@@ -16,19 +16,6 @@
     <packaging>jar</packaging>
     
 
-  <dependencies>
-
-    <dependency>
-      <groupId>com.trafigura.services</groupId>
-      <artifactId>starling-utils</artifactId>
-      <version>${buildversion}</version>
-    </dependency>
-    <dependency>
-      <groupId>com.trafigura.services</groupId>
-      <artifactId>starling-auth</artifactId>
-      <version>${buildversion}</version>
-    </dependency>
-  </dependencies>
 
   <build>
     <sourceDirectory>src</sourceDirectory>

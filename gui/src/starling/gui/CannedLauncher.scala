@@ -47,6 +47,8 @@ object CannedLauncher {
               (Map(),Map())
             } else if (name=="whoAmI") {
               User.Dev
+            } else if (name=="bookmarks") {
+              List()
             } else {
               null
             }
@@ -68,10 +70,10 @@ class NullPageData extends PageData
 case class CannedHomePage() extends Page {
   def text = "Home"
   def build(reader: PageBuildingContext) = { new PageData{} }
-  def createComponent(context: PageContext, data:PageData, browserSize:Dimension) = {
+  def createComponent(context: PageContext, data:PageData, bookmark:Bookmark, browserSize:Dimension) = {
     new CannedHomePagePageComponent(context)
   }
-  val icon = StarlingIcons.im("/icons/tablenew_16x16.png")
+  def icon = StarlingIcons.im("/icons/tablenew_16x16.png")
 }
 
 class CannedHomePagePageComponent(pageContext:PageContext) extends MigPanel("") with PageComponent {
@@ -86,6 +88,12 @@ class CannedHomePagePageComponent(pageContext:PageContext) extends MigPanel("") 
     text = "Run Editable"
     reactions += {
       case ButtonClicked(b) => pageContext.goTo(EditableCannedPivotReportPage(PivotPageState(false, PivotFieldParams(true, None))))
+    }
+  })
+  add(new Button {
+    text = "Run Editable Specified"
+    reactions += {
+      case ButtonClicked(b) => pageContext.goTo(EditableSpecifiedCannedPivotReportPage(PivotPageState(false, PivotFieldParams(true, None))))
     }
   })
   add(new Button {
@@ -113,7 +121,7 @@ class CannedHomePagePageComponent(pageContext:PageContext) extends MigPanel("") 
 case class CannedDrilldownPage(fields:Seq[(Field,Any)]) extends Page {
   def text = "Canned drilldown"
   def build(reader: PageBuildingContext) = new PageData() {}
-  def createComponent(context: PageContext, data:PageData, browserSize:Dimension) = {
+  def createComponent(context: PageContext, data:PageData, bookmark:Bookmark, browserSize:Dimension) = {
     new MigPanel("") with PageComponent {
       add(new Label("Drilldown"), "span")
       for ((field,value) <- fields) {
@@ -121,7 +129,7 @@ case class CannedDrilldownPage(fields:Seq[(Field,Any)]) extends Page {
       }
     }
   }
-  val icon = StarlingIcons.im("/icons/tablenew_16x16.png")
+  def icon = StarlingIcons.im("/icons/tablenew_16x16.png")
 }
 
 case class SlowCannedPivotReportPage(pivotPageState:PivotPageState) extends AbstractPivotPage(pivotPageState) {
@@ -131,7 +139,7 @@ case class SlowCannedPivotReportPage(pivotPageState:PivotPageState) extends Abst
     Thread.sleep(5*1000);
     PivotTableModel.createPivotData(new CannedDataSource, pivotPageState.pivotFieldParams)
   }
-  def selfPage(pivotPageState:PivotPageState) = SlowCannedPivotReportPage(pivotPageState)
+  def selfPage(pivotPageState:PivotPageState, edits:Set[PivotEdit]) = SlowCannedPivotReportPage(pivotPageState)
   override def finalDrillDownPage(fields:Seq[(Field, Selection)], pageContext:PageContext, ctrlDown:Boolean) = pageContext.goTo(CannedDrilldownPage(fields), ctrlDown)
 }
 
@@ -142,7 +150,7 @@ case class DiffCannedPivotReportPage(pivotPageState:PivotPageState) extends Abst
     val cannedDataSource = new CannedDataSource
     PivotTableModel.createPivotData(new DiffPivotTableDataSource(cannedDataSource, cannedDataSource, "D-1"), pivotPageState.pivotFieldParams)
   }
-  def selfPage(pivotPageState:PivotPageState) = DiffCannedPivotReportPage(pivotPageState)
+  def selfPage(pivotPageState:PivotPageState, edits:Set[PivotEdit]) = DiffCannedPivotReportPage(pivotPageState)
 }
 
 case class CannedPivotReportPage(pivotPageState:PivotPageState) extends AbstractPivotPage(pivotPageState) {
@@ -151,7 +159,7 @@ case class CannedPivotReportPage(pivotPageState:PivotPageState) extends Abstract
   def dataRequest(pageBuildingContext:PageBuildingContext) = {
     PivotTableModel.createPivotData(new CannedDataSource, pivotPageState.pivotFieldParams)
   }
-  def selfPage(pivotPageState:PivotPageState) = CannedPivotReportPage(pivotPageState)
+  def selfPage(pivotPageState:PivotPageState, edits:Set[PivotEdit]) = CannedPivotReportPage(pivotPageState)
   override def finalDrillDownPage(fields:Seq[(Field, Selection)], pageContext:PageContext, ctrlDown:Boolean) = pageContext.goTo(CannedDrilldownPage(fields), ctrlDown)
 }
 
@@ -161,8 +169,24 @@ case class EditableCannedPivotReportPage(pivotPageState:PivotPageState) extends 
   def dataRequest(pageBuildingContext:PageBuildingContext) = {
     PivotTableModel.createPivotData(new EditableCannedDataSource, pivotPageState.pivotFieldParams)
   }
-  def selfPage(pPS:PivotPageState) = copy(pivotPageState = pPS)
+  def selfPage(pPS:PivotPageState, edits:Set[PivotEdit]) = copy(pivotPageState = pPS)
   override def finalDrillDownPage(fields:Seq[(Field, Selection)], pageContext:PageContext, ctrlDown:Boolean) = pageContext.goTo(CannedDrilldownPage(fields), ctrlDown)
+}
+
+case class EditableSpecifiedCannedPivotReportPage(pivotPageState:PivotPageState, edits:Set[PivotEdit]=Set.empty) extends AbstractPivotPage(pivotPageState, edits) {
+  override def text = "Editable Canned Pivot Report With Specified Values"
+  override def layoutType = Some("Canned")
+  def dataRequest(pageBuildingContext:PageBuildingContext) = {
+    val ds = (new EditableSpecifiedCannedDataSource).editable.get.withEdits(edits)
+    PivotTableModel.createPivotData(ds, pivotPageState.pivotFieldParams)
+  }
+  def selfPage(pPS:PivotPageState, edits0:Set[PivotEdit]) = copy(pivotPageState = pPS, edits = edits0)
+  override def finalDrillDownPage(fields:Seq[(Field, Selection)], pageContext:PageContext, ctrlDown:Boolean) = pageContext.goTo(CannedDrilldownPage(fields), ctrlDown)
+
+  override def save(starlingServer:StarlingServer, edits:Set[PivotEdit]) = {
+    println("EditableSpecifiedCannedPivotReportPage saved these " + edits.size + " edits " + edits)
+    true
+  }
 }
 
 object CannedDeltaPivotFormatter extends PivotFormatter {
@@ -213,10 +237,6 @@ class CannedDataSource extends UnfilteredPivotTableDataSource {
     (for(i <- 0 until num) yield {
       val trade = "T"+i
       val trader = traders(random.nextInt(traders.size))
-      val product = products(random.nextInt(products.size))
-      val strike = strikes(random.nextInt(strikes.size))
-      val expiry = expiryMonths(random.nextInt(expiryMonths.size))
-      val lot = lots(random.nextInt(lots.size))
       val pv = Quantity(random.nextGaussian * 100.0, UOM.USD)
       val gamma = random.nextGaussian * 10.0
       val delta = random.nextGaussian * 100.0
@@ -230,52 +250,10 @@ class CannedDataSource extends UnfilteredPivotTableDataSource {
     DrillDownInfo(PivotAxis(List(), List(Field("Strike")),List(), false)),
     DrillDownInfo(PivotAxis(List(), List(Field("Expiry")),List(), false)),
     DrillDownInfo(PivotAxis(List(), List(Field("Trade")),List(), false)))
-  
-  /*override def initialState = new PivotFieldsState(columns = {
-    ColumnStructure(List(ColumnTree(Field("PV"), true), ColumnTree(Field("Gamma"), true)))
-  }, rowFields = List(Field("Trader"), Field("Strike")))*/
-
-  /*override def initialState = new PivotFieldsState(columns = {
-    val c31 = ColumnStructure(List(
-      ColumnTree(Field("PV"), true), ColumnTree(Field("Gamma"), true)
-    ))
-    ColumnStructure(List(
-      ColumnTree(FieldOrColumnStructure(Right(c31)), ColumnStructure(Field("Product"), false, List()))
-      ))
-    }, rowFields = List(Field("Trader"), Field("Strike")))*/
-
-  /*override def initialState = new PivotFieldsState(columns = {
-    val c31 = ColumnStructure(List(
-      ColumnTree(Field("PV"), true), ColumnTree(Field("Gamma"), true)
-    ))
-    ColumnStructure(List(
-      ColumnTree(FieldOrColumnStructure(Right(c31)), ColumnStructure(Field("Product"), false, List())), ColumnTree(Field("Delta"), true)
-      ))
-    }, rowFields = List(Field("Trader"), Field("Strike")))*/
-
-  /*override def initialState = new PivotFieldsState(columns = {
-    ColumnStructure(
-      ColumnTree(
-        FieldOrColumnStructure(
-          ColumnStructure(
-            List(ColumnTree(Field("PV"), true), ColumnTree(Field("Gamma"), true))
-          )
-        ), ColumnStructure.Null
-      )
-    )
-    }, rowFields = List(Field("Trader"), Field("Strike")))*/
-
-/*  override def initialState = new PivotFieldsState(columns = {
-    val c31 = ColumnTrees(List(
-      ColumnTree(Field("PV"), true), ColumnTree(Field("Gamma"), true)
-    ))
-    ColumnTrees(List(
-      ColumnTree(FieldOrColumnStructure(Right(c31)), ColumnTrees(Field("Product"), false, List(ColumnTree(Field("Lots"), false)))), ColumnTree(Field("Delta"), true)
-      ))
-    }, rowFields = List(Field("Trader"), Field("Strike")))*/
 
   override def initialState = new PivotFieldsState(columns = {
-    ColumnTrees(ColumnTree(Field("PV"), true, ColumnTrees(ColumnTree(Field("Product"), false))))
+    ColumnTrees(List(
+      ColumnTree(Field("PV"), true), ColumnTree(Field("Gamma"), true)))
   }, rowFields = List(Field("Trader"), Field("Strike")))
 
   def unfilteredData(pfs : PivotFieldsState) = theData
@@ -284,7 +262,7 @@ class CannedDataSource extends UnfilteredPivotTableDataSource {
     val (group1Fields, group2Fields) = localFields.splitAt(localFields.size / 2)
     List(FieldDetailsGroup("Group 1", group1Fields), FieldDetailsGroup("Group 2", group2Fields))
   }
-
+  override def zeroFields = Set(Field("Delta"))
   override def toString = "BigCannedDataSource"
 }
 
@@ -292,6 +270,91 @@ class EditableCannedDataSource extends CannedDataSource {
   override def editable = Some(new EditPivot {
     def save(edits:Set[PivotEdit]) = {println("SAVE : " + edits); true}
     def editableToKeyFields = Map(Field("PV") -> Set(Field("Lots")), Field("Gamma") -> Set(Field("Lots"), Field("Product"), Field("Strike")))
+    def withEdits(edits:Set[PivotEdit]) = null
   })
 
+}
+
+class EditableSpecifiedCannedDataSource extends UnfilteredPivotTableDataSource {
+  private val traders = List("corin", "brian", "kieth","alex","mike", "Iamatraderwithareallylongnameitisreallyverylongohyesitis")
+  private val markets = List("BRENT", "WTI", "COAL","GAS","PAPER","ABC", "abe", "What", "Which", "when")
+  val fields = List(Field("Trader"), Field("Market"))
+  def data:List[Map[Field, Any]] = {
+    val random = new java.util.Random(1234567890L)
+    traders.map(t => {
+      val market = markets(random.nextInt(markets.size)).asInstanceOf[Any]
+      Map(Field("Trader") -> t, Field("Market") -> market)
+    })
+  }
+
+  val marketFieldDetails = new FieldDetails("Market") {
+    override def parser = new CannedMarketPivotParser(markets.toSet)
+  }
+
+  def fieldDetailsGroups = List(FieldDetailsGroup("Group 1", FieldDetails("Trader"), marketFieldDetails))
+  def unfilteredData(pfs:PivotFieldsState) = data
+
+  override def editable = Some(new EditPivot {
+    def save(edits:Set[PivotEdit]) = {println("SAVE : " + edits); true}
+    def editableToKeyFields = Map(Field("Market") -> Set(Field("Trader")))
+    def withEdits(edits:Set[PivotEdit]):PivotTableDataSource = {
+      if (edits.isEmpty) {
+        EditableSpecifiedCannedDataSource.this
+      } else {
+        val d:List[Map[Field, Any]] = EditableSpecifiedCannedDataSource.this.data
+        new EditableSpecifiedCannedDataSource {
+          override def data = {
+            val tradersSet = d.map(m => m(Field("Trader"))).toSet
+            val newEdits = edits.filter(e => !tradersSet.contains(e.values(Field("Trader"))))
+            val newRows = newEdits.map(pe => {
+              val vs = pe.values
+              if (vs.contains(Field("Trader"))) {
+                val trader = NewValue(vs(Field("Trader")), pe)
+
+                println("")
+                println("ADDING NEW TRADER " + trader)
+                println("")
+
+                vs.updated(Field("Trader"), trader)
+              } else {
+                val market = NewValue(vs(Field("Market")), pe)
+                vs.updated(Field("Market"), market)
+              }
+            }).toList
+
+            val newData = d.map(m => {
+              val v = m(Field("Trader"))
+              edits.find(pe => {
+                pe.values(Field("Trader")) == v
+              }) match {
+                case None => m
+                case Some(edit) => {
+                  edit match {
+                    case a:AmendPivotEdit => m.updated(Field("Market") ,EditedValue(edit.values(Field("Market")), m(Field("Market")), edit))
+                    case d:DeletePivotEdit => m.updated(Field("Market") ,DeletedValue(m(Field("Market")), edit))
+                  }
+                }
+              }
+            })
+
+            newData ::: newRows
+          }
+        }
+      }
+    }
+  })
+
+  override def initialState = new PivotFieldsState(rowFields = List(Field("Trader")), columns = ColumnTrees(Field("Market"), true))
+}
+
+class CannedMarketPivotParser(markets:Set[String]) extends PivotParser {
+  def parse(text:String) = {
+    val lowerCaseMarkets = markets.map(_.trim().toLowerCase)
+    if (lowerCaseMarkets(text.trim.toLowerCase)) {
+      (text, text)
+    } else {
+      throw new Exception("Unknown Market")
+    }
+  }
+  override def acceptableValues = markets
 }

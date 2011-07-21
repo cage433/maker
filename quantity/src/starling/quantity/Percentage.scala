@@ -3,7 +3,10 @@ package starling.quantity
 import starling.utils.MathUtil
 import collection.IterableLike
 import math.abs
+
 import starling.utils.ImplicitConversions._
+import starling.utils.Pattern._
+
 
 /**
  * value is the decimal value of a percentage: e.g. 10% = 0.1
@@ -59,5 +62,10 @@ object Percentage {
     assert(q.uom == UOM.SCALAR, "Percentage cannot be constructed from quantity " + q)
     Percentage(q.value)
   }
+  val Regex = """(.*) %""".r
+
+  val Parse: Extractor[String, Percentage] = Extractor.from[String](text => text partialMatch {
+    case Regex(value) => Percentage(value.toDouble)
+  })
 }
 

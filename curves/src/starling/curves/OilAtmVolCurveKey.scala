@@ -4,7 +4,7 @@ import starling.marketdata.{OilVolSurfaceDataKey, OilVolSurfaceData}
 import starling.daterange._
 import starling.maths.SplineInterpolator
 import starling.quantity.{UOM, Percentage}
-import starling.market.{ForwardMarket, Market, FuturesMarket, CommodityMarket}
+import starling.market.{Market, FuturesMarket, CommodityMarket}
 import cern.colt.matrix.DoubleMatrix2D
 import cern.colt.matrix.impl.DenseDoubleMatrix2D
 import starling.quantity.Quantity
@@ -37,8 +37,6 @@ case class OilAtmVolAtomicDatumKey(
   def nullValue = Percentage(0.10)
 
   def periodKey = Some(period)
-
-  def volMarket = market
 
   def calc_dP(env : Environment) = new Quantity(0.0050)
   def shiftedEnvs(env : Environment, dV_asQty : Quantity) : (Environment, Environment) = {
@@ -80,7 +78,7 @@ case class OilAtmVol(marketDayAndTime : DayAndTime, market : CommodityMarket, da
         Percentage(SplineInterpolator.interpolate(times, data.atmVols.map(_.decimalValue), t))
       } else {
         val day = point.asInstanceOf[Day]
-        val index = data.periods.findIndexOf {
+        val index = data.periods.indexWhere {
           case m: Month => m.contains(day)
         }
         if(index == -1) throw new MissingMarketDataException("No oil atm for " + market + " - " + point + " in " + data)
@@ -93,7 +91,7 @@ case class OilAtmVol(marketDayAndTime : DayAndTime, market : CommodityMarket, da
 }
 
 case class OilVolSkewCurveKey(market : CommodityMarket) extends NonHistoricalCurveKey[OilVolSurfaceData]{
-  def marketDataKey = OilVolSurfaceDataKey(market)
+  def marketDataKey = OilVolSurfaceDataKey(market.marketDataMarket)
 
   def buildFromMarketData(marketDayAndTime: DayAndTime, marketData: OilVolSurfaceData) = new OilVolSkew(marketDayAndTime, market, marketData)
 
@@ -107,8 +105,6 @@ case class OilVolSkewAtomicDatumKey(market : CommodityMarket, period : DateRange
   }
 
   def nullValue = Map(0.5 -> Percentage(0))
-
-  def periodKey = Some(period)
 }
 
 case class OilVolSkew(marketDayAndTime : DayAndTime, market : CommodityMarket, data : OilVolSurfaceData) extends CurveObject{
@@ -138,7 +134,7 @@ case class OilVolSkew(marketDayAndTime : DayAndTime, market : CommodityMarket, d
         )
         skewMap(skews)
       } else {
-        val index = data.periods.findIndexOf {
+        val index = data.periods.indexWhere {
           case m: Month => m.contains(d)
         }
         if (index == -1) throw new MissingMarketDataException("No oil vol skew for " + market + " - " + d)

@@ -6,8 +6,8 @@ import cern.colt.matrix.{DoubleFactory2D, DoubleMatrix1D => Vector, DoubleMatrix
 import starling.quantity.Quantity
 import starling.utils.conversions.RichColtMatrices._
 import starling.curves.ObservationDay
-import starling.market.Market
 import starling.daterange.{Month, DayAndTime, Day}
+import starling.market.{SwapMarket, FuturesExchangeFactory, FuturesMarket, Market}
 
 /** Calculates historic vols and correlations from the price history, also holds
  *  the most recent prices.
@@ -74,9 +74,9 @@ case class RiskFactorStatistics(priceHistory : RiskFactorPriceHistory){
        * NB - I've gone for an approximate solution - no taking account of trading days, time of day etc.
        * It's only VaR.
        */
-        case ForwardPriceRiskFactor(mkt : Market.BalticFuturesMarket, 0, 0) => {
-          vol = vol * RiskFactorStatistics.freightFrontPeriodScaling(mkt, priceHistory.marketDay)
-        }
+//        case ForwardPriceRiskFactor(mkt: FuturesMarket, 0, 0) if mkt.exchange == FuturesExchangeFactory.BALTIC => {
+//          vol = vol * RiskFactorStatistics.freightFrontPeriodScaling(mkt, priceHistory.marketDay)
+//        }
         case _ =>
       }
       vols += rf -> vol
@@ -103,9 +103,10 @@ object RiskFactorStatistics{
   /**
    * Very rough scaling to take account of how many days have fixed
    */
-  def freightFrontPeriodScaling(mkt : Market.BalticFuturesMarket, marketDay : DayAndTime) : Double = {
-    val frontMonth = mkt.nthPeriod(marketDay, 0).asInstanceOf[Month]
-    val numDaysLeft = mkt.lastTradingDay(frontMonth) - marketDay.day
-    2.0 * numDaysLeft / 30
+  def freightFrontPeriodScaling(mkt : SwapMarket, marketDay : DayAndTime) = {
+//    val frontMonth = mkt.nthPeriod(marketDay, 0).asInstanceOf[Month]
+//    val numDaysLeft = mkt.lastTradingDay(frontMonth) - marketDay.day
+//    2.0 * numDaysLeft / 30
+    null
   }
 }

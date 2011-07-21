@@ -6,6 +6,7 @@ import starling.models.{American, European}
 import starling.instrument.FuturesOption
 import starling.quantity.{UOM, Quantity}
 import starling.utils.Log
+import starling.market.FuturesFrontPeriodIndex
 
 class FuturesOptionReader extends InstrumentReader {
   import EAISystemOfRecord._
@@ -24,21 +25,25 @@ class FuturesOptionReader extends InstrumentReader {
   }
 
   override def create(rs: RichResultSetRow) = {
-    val market = rs.getFuturesMarketFromEAIQuoteID("eaiquoteid")
     val amount = rs.getDouble("Quantity")
-    val (delivery, expiryDay, volume) = rs.getInt("TradeType") match {
+    val (market, delivery, expiryDay, volume) = rs.getInt("TradeType") match {
       case ET_OPTION => {
+        val market = rs.getFuturesMarketFromEAIQuoteID("eaiquoteid")
         val delivery = rs.getDay("ContractDate").containingMonth
         val expiryDay = market.optionExpiry(delivery)
         val lotSize = market.lotSize.get
         val volume = Quantity(amount * lotSize, market.uom)
-        (delivery, expiryDay, volume)
+        (market, delivery, expiryDay, volume)
       }
       case OTC_OPTION => {
+        val market = rs.getIndexFromEAIQuoteID("eaiquoteid") match {
+          case i: FuturesFrontPeriodIndex => i.market
+          case m => throw new Exception("Invalid market for futures option: " + m)
+        }
         val expiryDay = rs.getDay("ExpiryDate")
-        val delivery = market.frontPeriod(expiryDay)
+        val delivery = market.frontOptionPeriod(expiryDay)
         val volume = Quantity(amount, market.uom)
-        (delivery, expiryDay, volume)
+        (market, delivery, expiryDay, volume)
       }
     }
 

@@ -6,14 +6,13 @@ import starling.market.CommodityMarket
 import starling.reports.pivot.PivotReport._
 import starling.quantity.UOM._
 import starling.quantity.UOM
-import starling.pivot.{PivotQuantityFieldDetails, SumPivotQuantityFieldDetails, PivotQuantity}
+import starling.pivot.{PivotQuantityFieldDetails, SumPivotQuantityFieldDetails, PivotQuantity, Field}
 import starling.pivot.{PivotQuantity => PQ}
 import starling.reports.pivot._
 import starling.instrument.UTP
 import starling.gui.api.{ReportSpecificChoices, ReportSpecificOptions, UTPIdentifier}
 
-@serializable
-class GreeksPivotReport(@transient environment : Environment, thetaDayAndTime : DayAndTime, val utps: Map[UTPIdentifier, UTP]) extends PivotReport[GreeksPivotReport.T] {
+class GreeksPivotReport(@transient environment : Environment, thetaDayAndTime : DayAndTime, val utps: Map[UTPIdentifier, UTP]) extends PivotReport[GreeksPivotReport.T] with Serializable {
   def this(environment : Environment, utps : Map[UTPIdentifier, UTP]) = this(environment, environment.marketDay + 1, utps)
   import GreeksPivotReport._
 
@@ -156,6 +155,8 @@ class GreeksPivotReport(@transient environment : Environment, thetaDayAndTime : 
       (lots_str -> List(false, true)) :+
       (atmVega_str -> List(false, true))
   }
+
+  override def zeroFields = Set(Field(GreekValues.PositionText) /*, Field("Day Change")*/)
 
   override def combine(rows: List[GreekValues], reportSpecificChoices: ReportSpecificChoices): List[GreekValues] = {
     import starling.concurrent.MP._

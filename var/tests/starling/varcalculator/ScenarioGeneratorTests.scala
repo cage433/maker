@@ -10,9 +10,9 @@ import starling.utils.conversions.RichColtMatrices._
 import org.testng.Assert._
 import cern.colt.matrix.{DoubleMatrix1D => Vector, DoubleMatrix2D => Matrix}
 import cern.colt.matrix.impl.{DenseDoubleMatrix1D =>DVector, DenseDoubleMatrix2D => DMatrix}
-import starling.market.{TestExpiryRules, FuturesMarket, Market}
+import starling.market.{TestMarketSpec, FuturesMarket, Market}
 
-class ScenarioGeneratorTests extends TestExpiryRules {
+class ScenarioGeneratorTests extends TestMarketSpec {
 	val marketDay = Day(2009, 1, 1)
 	val nPrompts = 5
 	val prompts = (0 until nPrompts).toList
@@ -20,7 +20,7 @@ class ScenarioGeneratorTests extends TestExpiryRules {
   val nMarkets = 3
   val nPricePoints = nMarkets * prompts.size
 		
-	def makeMarket(n : Int) : FuturesMarket = FuturesMarket.testMarket("Market " + n, USD, MT)
+	def makeMarket(n : Int) : FuturesMarket = Market.testMarket("Market " + n, USD, MT)
  
   @Test
   /**

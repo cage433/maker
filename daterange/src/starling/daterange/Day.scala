@@ -17,8 +17,7 @@ import starling.calendar.{BusinessCalendar}
  * Don't construct this yourself, use the Day(...) case constructor-like syntax which uses a
  * pre-allocated array of days to reduce GC load.
  */
-@serializable
-class Day private (@transient val year : Int, @transient val month : Int, @transient val dayNumber : Int) extends DateRange {
+class Day private (@transient val year : Int, @transient val month : Int, @transient val dayNumber : Int) extends DateRange with Serializable {
   import DayOfWeek._
   import TimeOfDay._
 
@@ -49,7 +48,7 @@ class Day private (@transient val year : Int, @transient val month : Int, @trans
     new java.sql.Date(calendar.getTimeInMillis)
   }
 
-  def toJodaLocalDate : LocalDate = {
+  implicit def toJodaLocalDate : LocalDate = {
     new LocalDate(this.year, this.month, this.dayNumber)
   }
 
@@ -63,6 +62,7 @@ class Day private (@transient val year : Int, @transient val month : Int, @trans
   def millis = toJodaDateTime.getMillis
   def toTimestamp = new Timestamp(millis)
   def toJavaDate = new java.util.Date(calendar.getTimeInMillis)
+  def toLocalDate = new LocalDate(calendar.getTimeInMillis)
 
   def week = Week.containing(this)
 
@@ -182,6 +182,14 @@ class Day private (@transient val year : Int, @transient val month : Int, @trans
       }
       count
     }
+  }
+
+  def weekdaysBetween(day:Day) = {
+    businessDaysBetween(day, BusinessCalendar.WeekdayBusinessCalendar)
+  }
+
+  def addWeekdays(n:Int):Day = {
+    addBusinessDays(BusinessCalendar.WeekdayBusinessCalendar, n)
   }
 
   def previousWeekday : Day = {
@@ -329,6 +337,8 @@ object Day extends TenorType {
 
   def fromSqlDate(date : java.sql.Date) = fromMillis(date.getTime)
   def fromJavaDate(date : java.util.Date) = fromMillis(date.getTime)
+  def fromJodaDate(date : LocalDate) = Day(date.getYear, date.getMonthOfYear, date.getDayOfMonth)
+  def fromLocalDate(date: LocalDate) = fromJavaDate(date.toDateMidnight.toDate)
   private val milliCache = CacheFactory.getCache("Day.millis")
   def fromMillis(millis: Long) : Day = {
 //    milliCache.memoize( (millis), {
@@ -442,7 +452,7 @@ object Day extends TenorType {
   import TimeOfDay._
 //  def timeBetween(dayAndTime: DayAndTime, day2: Day) = dayAndTime match {
 //    case DayAndTime(other, EndOfDay) => (julianDayNumber(day2) - julianDayNumber(dayAndTime.day)) / daysInYear
-//    // TODO The difference between the same day on Start of day and End of day should be > 0
+//    // TODO [09 Mar 2011] The difference between the same day on Start of day and End of day should be > 0
 //    case DayAndTime(other, StartOfDay) => (julianDayNumber(day2) - julianDayNumber(dayAndTime.day)) / daysInYear
 //  }
 
@@ -450,7 +460,7 @@ object Day extends TenorType {
   def laterOf(a:Day, b:Day) = if (a > b) a else b
 
   @transient
-  val patterns = List("ddMMMyy", "dd'-'MMM'-'yy", "yyyy'-'MM'-'dd")
+  val patterns = List("ddMMMyy", "dd'-'MMM'-'yy", "yyyy'-'MM'-'dd", "dd MMM yy", "dd/mm/yyyy", "dd/MMM/yyyy")
 
   private def readResolve() : Object = Day
 

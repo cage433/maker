@@ -6,13 +6,12 @@ import org.testng.Assert._
 import starling.quantity.Percentage._
 import starling.quantity.Quantity._
 import starling.market.Market._
-import starling.market.FuturesFrontPeriodIndex._
+import starling.market.Index._
 import starling.daterange.{Spread, Month, Day}
 import starling.quantity.{UOM, Quantity, Percentage}
-import starling.market.{FuturesFrontPeriodIndex, Index}
+import starling.market.{TestMarketSpec, FuturesFrontPeriodIndex, Index}
 
-
-class InterpolatedVolShiftedEnvironmentTests extends StarlingTest{
+class InterpolatedVolShiftedEnvironmentTests extends TestMarketSpec {
 
   val marketDay = Day(2010, 1, 1).endOfDay
   val env = Environment(new NullAtomicEnvironment(marketDay))
@@ -34,7 +33,7 @@ class InterpolatedVolShiftedEnvironmentTests extends StarlingTest{
     assertEquals(shiftedEnv.impliedVol(NYMEX_WTI, july, june.firstDay - 1, strike), vol, 1e-6)
 
     // Swap vol should be unchanged, even though we've perturbed the underlying futures vol
-    //TODO check with alex. This assertion now fails following the fix
+    //TODO [02 Feb 2011] check with alex. This assertion now fails following the fix
     // so that 'Show Eq. Futures' + Not 'ATM Vega' does not give a zero vega
     //assertEquals(shiftedEnv.averageImpliedVol(WTI10, may, strike), vol, 1e-6)
   }

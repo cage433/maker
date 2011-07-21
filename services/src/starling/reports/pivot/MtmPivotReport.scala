@@ -3,7 +3,6 @@ package starling.reports.pivot
 import java.lang.Throwable
 import starling.curves.{ReportContext, Environment}
 import starling.quantity.{UOM, Quantity}
-import starling.pivot.{NullableDayFieldDetails, NullableDay, PivotQuantity, SumPivotQuantityFieldDetails}
 import starling.utils.Stopwatch
 import starling.curves.EnvironmentDifferentiable
 import starling.daterange.Period
@@ -12,6 +11,7 @@ import starling.utils.cache.CacheFactory
 import starling.curves.AtomicEnvironment
 import starling.gui.api.{ReportSpecificChoices, UTPIdentifier}
 import starling.instrument._
+import starling.pivot._
 
 /**
  * Shows the mtm and undiscounted mtm for an instrument
@@ -54,13 +54,6 @@ object MtmPivotReport extends PivotReportType {
         case Left(asset) => asset.market.toString
         case _ => "E"
       }
-    },
-    new PivotReportField[Mtm]("Amount") {
-      def value(row: Mtm) = row.asset match {
-        case Left(asset) => PivotQuantity(asset.amount * row.scale)
-        case Right(e) => new PivotQuantity(e)
-      }
-      override def pivotFieldDetails = new SumPivotQuantityFieldDetails(name)
     },
     new PivotReportField[Mtm](pnlFieldName) {
       def value(row: Mtm) = row.asset match {
@@ -120,8 +113,7 @@ case class Mtm(
 
 object MtmRiskFields extends RiskPivotFields[Mtm]
 
-@serializable
-class MtmPivotReport(@transient environment:Environment, @transient utps : Map[UTPIdentifier, UTP]) extends RiskFactorSplittingPivotReport[Mtm] {
+class MtmPivotReport(@transient environment:Environment, @transient utps : Map[UTPIdentifier, UTP]) extends RiskFactorSplittingPivotReport[Mtm] with Serializable {
   def fields = MtmPivotReport.fields
 
   def scale(row: Mtm, volume: Double) = row.copy(scale = row.scale * volume)
@@ -167,4 +159,5 @@ class MtmPivotReport(@transient environment:Environment, @transient utps : Map[U
     super.combine(combinedRows, reportSpecificChoices)
   }
   def marketDay = environment.marketDay
+  override def zeroFields = Set(Field(MtmPivotReport.pnlFieldName))
 }

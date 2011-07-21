@@ -41,9 +41,10 @@ trait DBTrait[RSR <: ResultSetRow] {
   /**
    * Same as above with specific isolationLevel
    */
+
   def inTransaction(isolationLevel: Int)(f: DBWriter => Unit) {
     withTransaction(isolationLevel, false) {
-      f(new DBWriter(DBTrait.this, dataSource))
+      f(createWriter)
       null
     }
   }
@@ -132,6 +133,8 @@ trait DBTrait[RSR <: ResultSetRow] {
   def metadata = dataSource.getConnection.getMetaData
 
   def convertTypes(params: Map[String, Any]): java.util.Map[String, AnyRef] = DBConvert.convertTypes(params)
+
+  protected def createWriter: DBWriter = new DBWriter(DBTrait.this, dataSource)
 }
 
 object DBConvert {
@@ -151,7 +154,7 @@ object DBConvert {
         case s: SpreadQuantity => convertedMap += (key -> s.valueString, key + "UOM" -> s.uom.toString)
         case d: DateRange => convertedMap += (key -> d.toString)
         case c: java.lang.Character => convertedMap += (key -> c.toString)
-        case s: Iterable[_] => convertedMap += (key -> JavaConversions.asJavaList(ListBuffer() ++= convertValuesForIn(s).toList))
+        case s: Iterable[_] => convertedMap += (key -> JavaConversions.bufferAsJavaList(ListBuffer() ++= convertValuesForIn(s).toList))
         case d: java.util.Date => convertedMap += (key -> d)
         case b: java.lang.Boolean => convertedMap += (key -> b)
         case n: java.lang.Number => convertedMap += (key -> n)
@@ -183,7 +186,16 @@ object DBConvert {
 class DBWriter protected[db](dbTrait: DBTrait[_ <: ResultSetRow], dataSource: DataSource) {
   private def renderer = new SqlRenderer
 
-  def setIdentityInsert(tableName: String, on: Boolean) {
+  def withIdentityInsert[A](tableName: String)(f: => A): A = {
+    try {
+      setIdentityInsert(tableName, true)
+      f
+    } finally {
+      setIdentityInsert(tableName, false)
+    }
+  }
+
+  private def setIdentityInsert(tableName: String, on: Boolean) {
     val connection = DataSourceUtils.getConnection(dataSource)
     val flag = if (on) " ON" else " OFF"
     val configSQL = "SET IDENTITY_INSERT " + tableName + flag
@@ -324,10 +336,7 @@ class DBWriter protected[db](dbTrait: DBTrait[_ <: ResultSetRow], dataSource: Da
    */
   def insertAndReturnKey(tableName: String, keyColumn: String, params: Map[String, Any], usingColumns:Option[List[String]]=None): Long = {
     var query = new SimpleJdbcInsert(dataSource).withTableName(tableName).usingGeneratedKeyColumns(keyColumn)
-    usingColumns match {
-      case None =>
-      case Some(c) => query = query.usingColumns(c.toArray : _*)
-    }
+    usingColumns.map { c => query = query.usingColumns(c.toArray : _*) }
     val convertedMap = dbTrait.convertTypes(params)
     query.executeAndReturnKey(convertedMap).longValue
   }

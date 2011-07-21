@@ -13,7 +13,7 @@ import starling.richdb.RichInstrumentResultSetRow
 case class Cargo(quantity: Quantity, incoterm: Incoterm, blDate: Day, index: FormulaIndex, pricingSchedule: PricingSchedule, pricingRule: SwapPricingRule)
   extends UTP with Tradeable {
 
-  val calendar = pricingRule.calendar(index.markets)
+  val calendar = pricingRule.calendar(index.calendars)
   val algorithm = pricingSchedule.algorithm
   val pricingPeriod = algorithm.calculateSchedule(calendar)
   val pricingDaysAndRatios = algorithm.applyPricingRule(calendar, pricingPeriod)
@@ -28,10 +28,10 @@ case class Cargo(quantity: Quantity, incoterm: Incoterm, blDate: Day, index: For
   def valuationCCY = USD
 
   def assets(env: Environment) = {
-    // TODO fix this
+    // TODO [16 Mar 2011] fix this
     val settlementDate = pricingDays.last
     Assets(
-      // TODO We should have a physical part but I'm not sure how to do it. The physical is usually something like 'Forties'
+      // TODO [16 Mar 2011] We should have a physical part but I'm not sure how to do it. The physical is usually something like 'Forties'
       // which isn't a market.
       //Asset.knownPhysical(market, deliveryDay, marketVolume, env),
       Asset.knownCash(settlementDate, -price(env) * quantity, env)

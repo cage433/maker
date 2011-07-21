@@ -42,11 +42,11 @@ trait TenorType {
 }
 
 object TenorType {
-  val ALL: List[TenorType] = List(Month, Day, Year, Week, HalfMonth, Quarter, HalfYear)
-  val typesByShortName = ALL.asMap(_.shortName)
+  val ALL: List[TenorType] = List(Month, Day, Year, Week, HalfMonth, BOM, Quarter, HalfYear)
+  val typesByShortName = ALL.toMapWithKeys(_.shortName)
 
   // same as above, but in (roughly) ascending order of length
-  val ALL_IN_ORDER: List[String] = List(Day, Week, HalfMonth, Month, Quarter, HalfYear, Year).map(_.shortName)
+  val ALL_IN_ORDER: List[String] = List(Day, Week, HalfMonth, BOM, Month, Quarter, HalfYear, Year).map(_.shortName)
 
   private var periodsCache = CacheFactory.getCache("Tenor.periodsCache", unique = true)
 
@@ -68,6 +68,12 @@ object TenorType {
   def parseTenor(text: String) = text match {
     case TenorType(t) => t
     case _ => throw new IllegalStateException("Can't parse text " + text)
+  }
+
+  def parseTenorName(tenorName: String) = ALL.filter(_.toString.toLowerCase == tenorName.toLowerCase) match {
+    case m :: Nil => m
+    case Nil => throw new Exception("Tenor name " + tenorName + " doesn't match any tenors.")
+    case o => throw new Exception("Tenor name " + tenorName + " doesn't matches too many tenors: " + o)
   }
 
   def parseInterval(text: String): (Int, TenorType) = {

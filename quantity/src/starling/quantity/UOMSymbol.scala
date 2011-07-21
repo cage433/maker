@@ -4,8 +4,8 @@ import starling.utils.CaseInsensitive
 import starling.utils.CaseInsensitive._
 
 object UOMSymbol{
-  def apply(name : String, altName: String) : UOMSymbol = {
-    UOMSymbol(name, List(altName))
+  def apply(name : String, altNames: String*) : UOMSymbol = {
+    UOMSymbol(name, altNames.toList)
   }
   def apply(name : String, altNames: List[String]) : UOMSymbol = {
     new UOMSymbol(name, altNames.map(CaseInsensitive(_)))
@@ -29,13 +29,14 @@ object UOMSymbol{
   // the EAI tables, though.
   val WSC_SYMBOL = UOMSymbol("WSC", "Worldscale")
 
+  val SHORT_TONNE_SYMBOL = UOMSymbol("S/T")
   val TONNE_SYMBOL = UOMSymbol("MT", "TONNE")
   val C_TONNE_SYMBOL = UOMSymbol("c MT", "c TONNE")
   val KILO_TONNE_SYMBOL = UOMSymbol("KT", "KILOTONNE")
   val BARREL_SYMBOL = UOMSymbol("bbl", List("BARREL", "BBLS"))
   val KILO_BARREL_SYMBOL = UOMSymbol("K bbl", List("KILO BARREL", "kb"))
   val OUNCE_SYMBOL = UOMSymbol("oz", "TROY OUNCE")
-  val POUND_SYMBOL = UOMSymbol("lb", "POUND")
+  val POUND_SYMBOL = UOMSymbol(List("lb", "POUND", "lbs"))
   val GRAM_SYMBOL = UOMSymbol("g", "GRAM")
   val GALLON_SYMBOL = UOMSymbol("gal", "US GALLON")
   val KILOLITRE_SYMBOL = UOMSymbol("kl", "KILOLITRE")
@@ -45,9 +46,9 @@ object UOMSymbol{
   val MMBTU_SYMBOL = UOMSymbol("mmbtu", "MMBTU")
   val MILLILITRE_SYMBOL = UOMSymbol("ml", "MILLILITRE")
   val THERMS_SYMBOL = UOMSymbol("thm", "THERM")
-  val BUSHEL_SOY_SYMBOL = UOMSymbol("bu(soy)", "BUSHEL (SOY)")
+  val BUSHEL_SOY_SYMBOL = UOMSymbol("bu(soy)", "BUSHEL (SOY)", "bu")
   val BUSHEL_CORN_SYMBOL = UOMSymbol("bu(corn)", "BUSHEL (CORN)")
-  val BUSHEL_WHEAT_SYMBOL = UOMSymbol("bus", "BUSHEL (WHEAT)")
+  val BUSHEL_WHEAT_SYMBOL = UOMSymbol(List("bus", "BUSHEL (WHEAT)", "Bushel (BUS)"))
   val SHORT_TON_SYMBOL = UOMSymbol("st", "SHORT TON")
 
   val PERCENT_SYMBOL = UOMSymbol("%")
@@ -84,9 +85,10 @@ object UOMSymbol{
 
   val MILLISECONDS_SYMBOL = UOMSymbol("ms")
 
-  val currencySymbols = zCurrencies ++ zCurrencies2 ++ zCurrencies3 ++ List(US_CENT_SYMBOL)
+  val currencySymbols : List[UOMSymbol] = zCurrencies ++ zCurrencies2 ++ zCurrencies3 ++ List(US_CENT_SYMBOL)
 
   val nonCurrencySymbols = List(
+    SHORT_TONNE_SYMBOL,
     TONNE_SYMBOL,
     C_TONNE_SYMBOL,
     KILO_TONNE_SYMBOL,

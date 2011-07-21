@@ -11,9 +11,9 @@ import starling.daterange.{Month, Day, DayAndTime}
 import starling.models.{Call, European}
 import starling.market._
 
-class AtomicMarketDataKeysTests extends TestExpiryRules {
+class AtomicMarketDataKeysTests extends TestMarketSpec {
   val market = Market.NYMEX_WTI
-  val index = FuturesFrontPeriodIndex.WTI10
+  val index = Index.WTI10
 
   val env = Environment(
     new TestingAtomicEnvironment() {

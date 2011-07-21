@@ -17,7 +17,7 @@ class CurveHandler(curveViewer: CurveViewer, marketDataStore: MarketDataStore) {
       EnvironmentRuleLabel(dataSourceParameters("Rule").asInstanceOf[String]))
 
     val measureField: Field = Field(measure)
-    val filtersAsField = filters.grouped(2).map(_.toList).map{case List(field:String, value) => (Field(field), value)}.toMap
+      val filtersAsField = filters.grouped(2).map(_.toList).map(x => (x : @unchecked) match { case List(field:String, value) => (Field(field), value)}).toMap
 
     val pivotFieldsState = PivotFieldsState(dataFields = List(measureField), rowFields = filtersAsField.keys.toList)
     val pivotTable = curveViewer.pricePivotTableFor(marketDataIdentifier, envSpec, pivotFieldsState)

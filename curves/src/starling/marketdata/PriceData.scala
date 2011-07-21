@@ -11,20 +11,19 @@ import starling.market.{FuturesMarket, Market, CommodityMarket}
 
 
 object ValidMarketParserObject {
-  val Parser = new ValidMarketParser(Market.markets.map(_.name.trim.toLowerCase).toSet)
+  lazy val Parser = new ValidMarketParser(Market.all.map(_.name).toSet)
 }
 
 object PriceDataType extends MarketDataType {
   type dataType = PriceData
-  val keys = Market.futuresMarkets.map(PriceDataKey) ++
-          Market.forwardMarkets.map(fm => PriceDataKey(fm))
-
-  val exchangeField = FieldDetails("Exchange")
-  val marketField = FieldDetails("Market", ValidMarketParserObject.Parser)
-  val marketCommodityField = FieldDetails("Market Commodity")
-  val marketTenorField = FieldDetails("Market Tenor")
-  val periodField = FieldDetails("Period", PeriodPivotParser)
-  val priceField = new FieldDetails(Field("Price")) {
+  lazy val keys = Market.all.map(PriceDataKey)
+  lazy val exchangeField = FieldDetails("Exchange")
+  lazy val marketField = FieldDetails("Market", ValidMarketParserObject.Parser)
+  lazy val marketCommodityField = FieldDetails("Market Commodity")
+  lazy val marketTenorField = FieldDetails("Market Tenor")
+  lazy val periodField = FieldDetails("Period", PeriodPivotParser)
+  lazy val validity = new FieldDetails("Validity")
+  lazy val priceField = new FieldDetails(Field("Price")) {
     override def parser =  PivotQuantityPivotParser
     override def formatter = PivotQuantitySetPivotFormatter
     override def fixEditedValue(value: Any) = PriceValue(value.asInstanceOf[PivotQuantity].quantityValue.get)
@@ -34,16 +33,14 @@ object PriceDataType extends MarketDataType {
     override def isDataField = true
     override def transformValueForGroupByField(a: Any) = a.asInstanceOf[PriceValue].pq
   }
-  val validity = new FieldDetails("Validity")
 
-  val initialPivotState = PivotFieldsState(
+  lazy val initialPivotState = PivotFieldsState(
     filters=List((marketField.field,SomeSelection(Set()))),
     dataFields=List(priceField.field),
     rowFields=List(periodField.field)
   )
 
-  val fields = List(exchangeField, marketField, marketCommodityField, marketTenorField, periodField, priceField, validity)
-
+  lazy val fields = List(exchangeField, marketField, marketCommodityField, marketTenorField, periodField, priceField, validity)
   override def keyFields = Set(marketField, periodField).map(_.field)
   override def valueFields = Set(priceField.field)
 

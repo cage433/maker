@@ -4,15 +4,16 @@ import starling.pivot.view.swing.MigPanel
 import starling.gui._
 import api._
 import swing._
+import starling.daterange.Day
+import starling.rmi.StarlingServer
+import starling.pivot.PivotEdit
 
 
 case class CurvePage(curveLabel: CurveLabel, pivotPageState: PivotPageState) extends AbstractPivotPage(pivotPageState) {
-  val curveType = curveLabel.curveType
-  val environmentSpecification = curveLabel.environmentSpecification
-  val marketDataIdentifier = curveLabel.marketDataIdentifier
+  def marketDataIdentifier = curveLabel.marketDataIdentifier
 
   def text = "Curve Viewer"
-  override val icon = StarlingIcons.im("/icons/16x16_curve_viewer.png")
+  override def icon = StarlingIcons.im("/icons/16x16_curve_viewer.png")
   override def layoutType = Some("Curve")
 
   override def refreshFunctions = marketDataIdentifier match {
@@ -28,7 +29,7 @@ case class CurvePage(curveLabel: CurveLabel, pivotPageState: PivotPageState) ext
   private def copySelection(selection: MarketDataSelection) = copy(curveLabel = curveLabel.copySelection(selection))
   private def copyEnv(envSpec: EnvironmentSpecificationLabel) = copy(curveLabel = curveLabel.copy(environmentSpecification = envSpec))
 
-  def selfPage(pivotPageState: PivotPageState) = copy(pivotPageState = pivotPageState)
+  def selfPage(pivotPageState: PivotPageState, edits:Set[PivotEdit]) = copy(pivotPageState = pivotPageState)
 
   def dataRequest(pageBuildingContext: PageBuildingContext) = {
     pageBuildingContext.starlingServer.curvePivot(curveLabel, pivotPageState.pivotFieldParams)
@@ -37,8 +38,8 @@ case class CurvePage(curveLabel: CurveLabel, pivotPageState: PivotPageState) ext
   override def configPanel(pageContext: PageContext, data:PageData) = {
     val environmentRules = pageContext.localCache.environmentRulesForPricingGroup(marketDataIdentifier.selection.pricingGroup)
     val marketDataSelectionPanel = new MarketDataSelectionComponent(pageContext, None, marketDataIdentifier.selection)
-    val envSpecChooser = new EnvironmentSpecificationLabelChooser(environmentSpecification, environmentRules)
-    val curveTypeChooser = new CurveTypeChooser(pageContext, curveType)
+    val envSpecChooser = new EnvironmentSpecificationLabelChooser(curveLabel.environmentSpecification, environmentRules)
+    val curveTypeChooser = new CurveTypeChooser(pageContext, curveLabel.curveType)
 
     def latest(curvePage:CurvePage) = {
       val version = pageContext.localCache.latestMarketDataVersion(curvePage.marketDataIdentifier.selection)
@@ -68,7 +69,7 @@ case class CurvePage(curveLabel: CurveLabel, pivotPageState: PivotPageState) ext
       case EnvironmentSpecificationLabelChangedEvent(ruleChooser, envSpec) => pageContext.goTo(latest(copyEnv(envSpec)))
     }
 
-    val configPanel = new MigPanel with ConfigPanel {
+    val configPanel = new MigPanel("gapx unrel") with ConfigPanel {
       add(marketDataSelectionPanel)
       add(curveTypeChooser)
       add(envSpecChooser)
@@ -77,5 +78,21 @@ case class CurvePage(curveLabel: CurveLabel, pivotPageState: PivotPageState) ext
     }
 
     Some(ConfigPanels(List(configPanel), new Label(""), Action("BLA"){}))
+  }
+
+  override def bookmark(server:StarlingServer):Bookmark = {
+    CurveBookmark(curveLabel.curveType, curveLabel.environmentSpecification.environmentRule,
+      curveLabel.marketDataIdentifier.selection, pivotPageState)
+  }
+}
+
+case class CurveBookmark(curveType:CurveTypeLabel, envRuleLabel:EnvironmentRuleLabel, selection:MarketDataSelection, pivotPageState:PivotPageState) extends Bookmark {
+  def daySensitive = true
+  def createPage(day0:Option[Day], server:StarlingServer, context:PageContext) = {
+    val day = day0.get
+    val newEnvironmentSpecification = EnvironmentSpecificationLabel(day, envRuleLabel)
+    val newMarketDataIdentifier = server.latestMarketDataIdentifier(selection)
+    val newCurveLabel = CurveLabel(curveType, newMarketDataIdentifier, newEnvironmentSpecification)
+    CurvePage(newCurveLabel, pivotPageState)
   }
 }

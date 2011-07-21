@@ -6,9 +6,9 @@ import org.testng.Assert._
 import starling.quantity.Quantity
 import starling.quantity.UOM._
 import starling.utils.QuantityTestUtils._
-import starling.market.{Index, FuturesFrontPeriodIndex, PublishedIndex}
+import starling.market.{TestMarketSpec, Index, FuturesFrontPeriodIndex, PublishedIndex}
 
-class PricingFormulaParserTests extends StarlingTest {
+class PricingFormulaParserTests extends TestMarketSpec {
 
   @Test
   def testSimple1 {
@@ -26,7 +26,7 @@ class PricingFormulaParserTests extends StarlingTest {
 
     val price = formula.price(USD / BBL) {
       i => {
-        assertEquals(i, FuturesFrontPeriodIndex.PLATTS_BRENT_1ST_MONTH)
+        assertEquals(i, Index.PLATTS_BRENT_1ST_MONTH)
         Quantity(93.69, USD / BBL)
       }
     }
@@ -53,10 +53,10 @@ class PricingFormulaParserTests extends StarlingTest {
     println("formula: " + formula)
 
     val price = formula.price(USD / BBL) {
-      case FuturesFrontPeriodIndex.PLATTS_BRENT_1ST_MONTH => {
+      case Index.PLATTS_BRENT_1ST_MONTH => {
         Quantity(102.6, USD / BBL)
       }
-      case PublishedIndex.DATED_BRENT => {
+      case Index.DATED_BRENT => {
         Quantity(101.85, USD / BBL)
       }
     }

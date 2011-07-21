@@ -7,7 +7,6 @@ import java.awt.{GradientPaint, Graphics2D, Dimension, Color, RenderingHints, Po
 import java.awt.event.{ComponentEvent, ComponentAdapter}
 import org.jdesktop.swingx.image.ColorTintFilter
 import starling.gui.GuiUtils._
-import starling.gui.StarlingIcons
 import starling.pivot.model.TreeDetails
 import org.jdesktop.swingx.graphics.ShadowRenderer
 import swing._
@@ -17,6 +16,7 @@ import javax.swing.event.{PopupMenuListener, PopupMenuEvent}
 import javax.swing.{JPopupMenu, SwingUtilities}
 import starling.gui.custom._
 import starling.pivot._
+import starling.gui.{GuiUtils, StarlingIcons}
 
 case class GuiFieldComponentProps(field:Field, locationOfField:FieldChooserType,
                                   showDepthPanel:Boolean, measureField:Boolean, realMeasureField:Boolean,
@@ -97,6 +97,7 @@ case class GuiFieldComponent(props:GuiFieldComponentProps) extends MigPanel("ins
       def popupMenuWillBecomeVisible(e:PopupMenuEvent) {}
     })
   }
+  popupMenu.setBorder(CompoundBorder(LineBorder(GuiUtils.BorderColour), LineBorder(GuiUtils.PanelBackgroundColour, 2)))
   val filterButtonPanel = FilterButtonPanel(props)
 
   val (values, selection) = possibleValuesAndSelectionToUse
@@ -123,7 +124,7 @@ case class GuiFieldComponent(props:GuiFieldComponentProps) extends MigPanel("ins
       val yPos = filterButtonPanel.size.height - 1
       val xPos = filterButtonPanel.size.width - filterPopupPanel.preferredSize.width - 7
       filterPopupPanel.scrollToFirstSelectedNode
-      popupMenu.show(filterButtonPanel.peer, xPos, yPos)
+      popupMenu.show(filterButtonPanel.peer, xPos, yPos-1)
       onEDT({
         KeyboardFocusManager.getCurrentKeyboardFocusManager.focusNextComponent(popupMenu)
         filterPopupPanel.filterPanel.textField.requestFocusInWindow()
@@ -320,17 +321,6 @@ case class GuiFieldNamePanel(props:GuiFieldComponentProps, guiComp:GuiFieldCompo
     image
   }
 
-  // TODO - change this to a UI element reaction
-  peer.addComponentListener(new ComponentAdapter {
-    override def componentResized(e:ComponentEvent) {
-      if ((image == null) || (image.getWidth != size.width) || (image.getHeight != size.height)) {
-        image = null
-        tintedImage = null
-        repaint()
-      }
-    }
-  })
-
   private def generateShadowImage = {
     val shadowRenderer = new ShadowRenderer(2, 0.5f, Color.BLACK)
     val shadowImage = shadowRenderer.createShadow(getImage)
@@ -342,15 +332,24 @@ case class GuiFieldNamePanel(props:GuiFieldComponentProps, guiComp:GuiFieldCompo
 
   private var shadowImage:BufferedImage = null
   private var offSet = PivotTableViewUI.NullPoint
+  private var imageStartPoint = PivotTableViewUI.NullPoint
 
   reactions += {
     case MousePressed(_,p,_,_,_) => {
+      display = false
       offSet = p
-      props.tableView.mouseDown = true
       props.tableView.draggedField = props.field
+      props.tableView.mouseDown = true
+      val displayPoint = SwingUtilities.convertPoint(peer, p.x - offSet.x, p.y - offSet.y - 2, props.tableView.peer)
+      imageStartPoint = displayPoint
+      props.viewUI.setImageProperties(shadowImage, displayPoint, 1.0f)
     }
     case MouseClicked(_,_,_,2,_) => {
-      reset()
+      dragging = false
+      display = true
+      props.tableView.fieldBeingDragged = false
+      props.viewUI.resetImageProperties()
+      
       props.tableView.fieldDoubleClicked(props.field, props.locationOfField)
     }
     case MouseEntered(_, _, _) if !props.tableView.drag => {
@@ -363,17 +362,36 @@ case class GuiFieldNamePanel(props:GuiFieldComponentProps, guiComp:GuiFieldCompo
       props.viewUI.resetImageProperties()
     }
     case MouseReleased(_,p,_,_,_) => {
+      val oldDragging = dragging
+      dragging = false
+      display = true
       props.tableView.mouseDown = false
-      if (dragging) {
+      props.tableView.fieldBeingDragged = false
+
+      if (oldDragging) {
         val screenPoint = new Point(p)
         SwingUtilities.convertPointToScreen(screenPoint, peer)
-        props.tableView.fieldDropped(props.field, props.locationOfField, screenPoint)
-        reset()
+        val animateBack = props.tableView.fieldDropped(props.field, props.locationOfField, screenPoint)
+        if (animateBack) {
+          val endPoint = SwingUtilities.convertPoint(peer, p, props.tableView.peer)
+          val widthToMove = endPoint.x - offSet.x - imageStartPoint.x
+          val heightToMove = endPoint.y - offSet.y - imageStartPoint.y - 2
+          val widthAndHeight = new Point(widthToMove, heightToMove)
+          props.viewUI.animate(shadowImage, imageStartPoint, widthAndHeight)
+        } else {
+          props.viewUI.resetImageProperties()
+        }
+      } else {
+        // We have just clicked on the field
+        props.viewUI.resetImageProperties()
       }
+      repaint()
     }
     case MouseDragged(_,p,_) => {
-      props.tableView.fieldBeingDragged = true
-      dragging = true
+      if (!dragging) {
+        dragging = true
+        props.tableView.fieldBeingDragged = true
+      }
       val displayPoint = SwingUtilities.convertPoint(peer, p.x - offSet.x, p.y - offSet.y - 2, props.tableView.peer)
       props.viewUI.setImageProperties(shadowImage, displayPoint, 0.6f)
     }
@@ -382,19 +400,26 @@ case class GuiFieldNamePanel(props:GuiFieldComponentProps, guiComp:GuiFieldCompo
 
   override protected def paintComponent(g:Graphics2D) {
     if (display && !dragging) {
-      if (image == null) {
+      if ((image == null) || (image.getWidth != size.width) || (image.getHeight != size.height)) {
         image = createMainImage
       }
       g.drawImage(image, 0, 0, null)
     } else if (dragging) {
-      if (tintedImage == null) {
-        if (image == null) {
+      if ((tintedImage == null) || (tintedImage.getWidth != size.width) || (tintedImage.getHeight != size.height)) {
+        if ((image == null) || (image.getWidth != size.width) || (image.getHeight != size.height)) {
           image = createMainImage
         }
         val colorTintFilter = new ColorTintFilter(Color.GREEN, 0.1f)
         tintedImage = colorTintFilter.filter(image, null)
       }
       g.drawImage(tintedImage, 0, 0, null)
+    }
+  }
+
+  def showComponent() {
+    if (!dragging) {
+      display = true
+      repaint()
     }
   }
 

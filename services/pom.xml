@@ -37,6 +37,16 @@
       <artifactId>starling-loopyxl</artifactId>
       <version>${buildversion}</version>
     </dependency>
+    <dependency>
+      <groupId>com.trafigura.services</groupId>
+      <artifactId>starling-api</artifactId>
+      <version>${buildversion}</version>
+    </dependency>
+    <dependency>
+      <groupId>starling-external-jars</groupId>
+      <artifactId>lift-json_2.9.0-1</artifactId>
+      <version>2.4-M2</version>
+    </dependency>
   </dependencies>
 
   <build>

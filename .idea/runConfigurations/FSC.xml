@@ -1,7 +1,7 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="FSC" type="ScalaCompilationServerRunConfiguration" factoryName="Scala Compilation Server">
     <module name="starling" />
-    <setting name="vmparams" value="-verbose " />
+    <setting name="vmparams" value="-verbose -Xmx2048m" />
     <RunnerSettings RunnerId="Debug">
       <option name="DEBUG_PORT" value="56120" />
       <option name="TRANSPORT" value="0" />

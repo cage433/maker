@@ -14,16 +14,17 @@ import org.jdesktop.swingx.decorator.{ColorHighlighter, HighlightPredicate}
 import java.awt.event.{MouseEvent, MouseAdapter}
 import collection.mutable.ListBuffer
 import starling.utils.{SColumn, STable}
-import starling.daterange.{TimeOfDay, Timestamp}
 import collection.immutable.TreeMap
 import swing.{Component, Button, Label}
 import starling.quantity.Quantity
+import starling.daterange.{Day, TimeOfDay, Timestamp}
+import starling.rmi.StarlingServer
 
 case class SingleTradePage(tradeID:TradeIDLabel, desk:Option[Desk], tradeExpiryDay:TradeExpiryDay, intradayGroups:Option[IntradayGroups]) extends Page {
   def text = "Trade " + tradeID
   def icon = StarlingIcons.im("/icons/tablenew_16x16.png")
   def build(reader:PageBuildingContext) = TradeData(tradeID, reader.cachingStarlingServer.readTradeVersions(tradeID), desk, tradeExpiryDay, intradayGroups)
-  def createComponent(context:PageContext, data:PageData, browserSize:Dimension) = new SingleTradePageComponent(context, data)
+  def createComponent(context:PageContext, data:PageData, bookmark:Bookmark, browserSize:Dimension) = new SingleTradePageComponent(context, data)
 }
 
 object SingleTradePageComponent {
@@ -231,27 +232,33 @@ class SingleTradePageComponent(context:PageContext, pageData:PageData) extends M
             }
           }
           case Some(d) => {
-            val (timestamps, _) = context.localCache.deskCloses(desk).span(_.timestamp >= rowTimeStamp)
-            val tradeTimestamp = timestamps.reverse.head
-            (Some((d, tradeTimestamp)), None)
+            if(historyTable.jTable.getRowCount() - 1 == selection) {
+              // we've selected the most up to date
+               val tradeTimestamp = context.localCache.deskCloses(desk).sortWith(_.timestamp >= _.timestamp).head
+              (Some((d, tradeTimestamp)), None)
+            } else {
+              val (timestamps, _) = context.localCache.deskCloses(desk).span(_.timestamp >= rowTimeStamp)
+              val tradeTimestamp = timestamps.reverse.head
+              (Some((d, tradeTimestamp)), None)
+            }
           }
         }
         val tradePredicate = TradePredicate(List(), List(List((Field("Trade ID"), SomeSelection(Set(data.tradeID))))))
         val tradeSelection = TradeSelectionWithTimestamp(deskAndTimestamp, tradePredicate, intradaySubgroupAndTimestamp)
         val prl = context.localCache.reportOptionsAvailable.options.filter(_.slidable)
         val initialFieldsState = SingleTradePageComponent.GreeksLayout
-        val expiry = data.tradeExpiryDay
+        val expiry = data.tradeExpiryDay.exp.startOfFinancialYear
 
         val curveIdentifier = {
           val marketDataSelection = context.getSetting(
             StandardUserSettingKeys.InitialMarketDataSelection,
             MarketDataSelection(context.localCache.pricingGroups(desk).headOption)
           )
-          val version = SpecificMarketDataVersion(context.localCache.latestMarketDataVersion(marketDataSelection))
+          val version = context.localCache.latestMarketDataVersion(marketDataSelection)
 
           val ci = CurveIdentifierLabel.defaultLabelFromSingleDay(
             MarketDataIdentifier(marketDataSelection, version),
-            expiry.exp, context.localCache.ukBusinessCalendar)
+            context.localCache.ukBusinessCalendar)
           ci.copy(thetaDayAndTime = ci.thetaDayAndTime.copyTimeOfDay(TimeOfDay.EndOfDay))
         }
 
@@ -259,7 +266,7 @@ class SingleTradePageComponent(context:PageContext, pageData:PageData) extends M
           tradeSelection,
           curveIdentifier,
           ReportOptions(prl,None,None),
-          expiry.exp,
+          expiry,
           None,
           runReports = true)
 
@@ -294,7 +301,7 @@ class SingleTradeMainPivotReportPage(val tradeID:TradeIDLabel, val tradeRow:List
     valuationParametersButton :: buttons
   }
 
-  override def selfPage(pps:PivotPageState) = new SingleTradeMainPivotReportPage(tradeID, tradeRow, fieldDetailsGroups, columns,
+  override def selfPage(pps:PivotPageState, edits:Set[PivotEdit]) = new SingleTradeMainPivotReportPage(tradeID, tradeRow, fieldDetailsGroups, columns,
     reportParameters0, pps)
   override def selfReportPage(rp:ReportParameters, pps:PivotPageState) = new SingleTradeMainPivotReportPage(tradeID, tradeRow, fieldDetailsGroups,
     columns, rp, pps)
@@ -307,6 +314,23 @@ class SingleTradeMainPivotReportPage(val tradeID:TradeIDLabel, val tradeRow:List
       columns == other.columns && reportParameters0 == other.reportParameters0 && pivotPageState0 == other.pivotPageState0
     }
     case _ => false
+  }
+  override def bookmark(server:StarlingServer):Bookmark = {
+    SingleTradeReportBookmark(tradeID, tradeRow, fieldDetailsGroups, columns, server.createUserReport(reportParameters0), pivotPageState)
+  }
+}
+
+case class SingleTradeReportBookmark(tradeID:TradeIDLabel, tradeRow:List[Any], fieldDetailsGroups:List[FieldDetailsGroupLabel],
+                                     columns:List[SColumn], data:UserReportData, pps:PivotPageState) extends Bookmark {
+  def daySensitive = true
+  def createPage(day:Option[Day], server:StarlingServer, context:PageContext) = {
+    day match {
+      case None => throw new Exception("We need a day")
+      case Some(d) => {
+        val reportParameters = server.createReportParameters(data, d)
+        new SingleTradeMainPivotReportPage(tradeID, tradeRow, fieldDetailsGroups, columns, reportParameters, pps)
+      }
+    }
   }
 }
 
@@ -328,7 +352,7 @@ case class ValuationParametersPage(tradeID:TradeIDLabel, tradeRow:List[Any], fie
       reader.cachingStarlingServer.tradeValuation(tradeID, reportParameters.curveIdentifier, timestampToUse),
       tradeRow, fieldDetailsGroups, columns, reportParameters)
   }
-  def createComponent(context:PageContext, data:PageData, browserSize:Dimension) = {
+  def createComponent(context:PageContext, data:PageData, bookmark:Bookmark, browserSize:Dimension) = {
     new ValuationParametersPageComponent(context, data)
   }
 }

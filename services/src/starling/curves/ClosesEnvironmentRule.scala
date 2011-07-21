@@ -14,6 +14,8 @@ object ClosesEnvironmentRule extends EnvironmentRule {
   val label = EnvironmentRuleLabel("All Closes")
   lazy val marketsWithCloseTimeOfDay = Market.futuresMarkets.optPair(marketCloses.get(_)).toList
 
+  override def createNullAtomicEnvironment(observationDay: Day) = new NullAtomicEnvironment(observationDay.endOfDay)
+
   def createEnv(observationDay: Day, marketDataReader: MarketDataReader): EnvironmentWithDomain = {
     val priceDataMap = marketsWithCloseTimeOfDay.flatMap {
       case (market, timeOfDay) => try {
@@ -41,12 +43,12 @@ object ClosesEnvironmentRule extends EnvironmentRule {
         }
       }
 
-      def fixings(market: CommodityMarket, observationPoint: ObservationPoint) = throw new Exception("Not implemented")
+      def fixings(key : PriceFixingsHistoryDataKey, observationPoint: ObservationPoint): PriceFixingsHistoryData = key.read(observationPoint, marketDataReader)
     }
 
     val marketsX = {
       priceDataMap.toList.map { case (PriceDataKey(futuresMarket: FuturesMarket), priceData) => {
-        MarketDeliveryPeriods(marketCloses(futuresMarket), futuresMarket, priceData.sortedKeys)
+        UnderlyingDeliveryPeriods(marketCloses(futuresMarket), futuresMarket, priceData.sortedKeys)
       }}
     }
 

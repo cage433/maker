@@ -2,7 +2,6 @@ package starling.gui.pages
 
 import starling.gui._
 import api.ReferenceDataLabel
-import starling.pivot.PivotFieldParams
 import swing.Swing._
 import java.awt.image.BufferedImage
 import java.awt.{Cursor, Color, Dimension}
@@ -11,6 +10,7 @@ import starling.pivot.view.swing.{StripedPanel, FixedImagePanel, MigPanel}
 import javax.swing.{KeyStroke, JComponent}
 import java.awt.event.KeyEvent
 import swing.{Action, Label}
+import starling.pivot.{PivotEdit, PivotFieldParams}
 
 /**
  * The reference data pages for viewing markets, calendars etc.
@@ -18,9 +18,9 @@ import swing.{Action, Label}
 
 case object ReferenceDataIndexPage extends Page {
   def text = "Reference Data"
-  val icon = StarlingIcons.im("/icons/16x16_ref_data.png")
+  def icon = StarlingIcons.im("/icons/16x16_ref_data.png")
   def build(reader: PageBuildingContext) = ReferenceDataIndexPageData(reader.starlingServer.referenceDataTables(), reader.starlingServer.permissionToDoAdminLikeThings)
-  def createComponent(context: PageContext, data: PageData, browserSize: Dimension) = {ReferenceDataIndexPageComponent(context, data)}
+  def createComponent(context: PageContext, data: PageData, bookmark:Bookmark, browserSize: Dimension) = {ReferenceDataIndexPageComponent(context, data)}
 }
 
 case class ReferenceDataIndexPageComponent(context:PageContext, pageData:PageData) extends MigPanel("insets dialog") with PageComponent {
@@ -66,12 +66,12 @@ case class ReferenceDataIndexPageData(referenceTables:List[ReferenceDataLabel], 
 case class ReferenceDataPage(table:ReferenceDataLabel, pivotPageState : PivotPageState) extends AbstractPivotPage(pivotPageState) {
   def text = table.name
   override def layoutType = Some("ReferenceData")
-  override val icon = if (table.name.toLowerCase.trim != "calendars") {
+  override def icon = if (table.name.toLowerCase.trim != "calendars") {
     StarlingIcons.im("/icons/16x16_chart_line.png")
   } else {
     StarlingIcons.im("/icons/16x16_calendar_day.png")
   }
-  def selfPage(pivotPageStateX: PivotPageState) = copy(pivotPageState=pivotPageStateX)
+  def selfPage(pivotPageStateX: PivotPageState, edits:Set[PivotEdit]) = copy(pivotPageState=pivotPageStateX)
   def dataRequest(pageBuildingContext: PageBuildingContext) = {
     pageBuildingContext.starlingServer.referencePivot(table, pivotPageState.pivotFieldParams)
   }

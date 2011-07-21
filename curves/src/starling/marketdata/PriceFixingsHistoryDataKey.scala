@@ -2,7 +2,8 @@ package starling.marketdata
 
 import starling.market._
 import starling.utils.ImplicitConversions._
-
+import starling.quantity.{UOMSymbol, UOM}
+import starling.utils.Log
 
 case class PriceFixingsHistoryDataKey(marketName: String, exchangeName: Option[String] = None) extends MarketDataKey {
   type marketDataType = PriceFixingsHistoryData
@@ -25,6 +26,8 @@ case class PriceFixingsHistoryDataKey(marketName: String, exchangeName: Option[S
 }
 
 object PriceFixingsHistoryDataKey {
+  val currencyNames = UOMSymbol.currencySymbols.map(_.name)
+
   def apply(market: CommodityMarket): PriceFixingsHistoryDataKey =
     PriceFixingsHistoryDataKey(tradeableNameOf(market), exchangeOf(market))
 
@@ -33,7 +36,8 @@ object PriceFixingsHistoryDataKey {
   }
 
   private def tradeableNameOf(market: CommodityMarket): String = market match {
-    case futuresMarket: FuturesMarket => futuresMarket.commodity.name
+      // TODO I don't understand the logic here but I know it doesn't work for Oil markets so I'll restrict it to metal
+    case futuresMarket: FuturesMarket if futuresMarket.commodity.isInstanceOf[MetalCommodity] => futuresMarket.commodity.name
     case _ => market.name
   }
 }

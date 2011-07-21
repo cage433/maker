@@ -120,4 +120,14 @@ class UOMTests extends TestNGSuite with ShouldMatchers {
     UOM.fromIdentifier("EUR/GBP") should be === UOM.EUR / UOM.GBP
     UOM.fromIdentifier("EUR per GBP") should be === UOM.EUR / UOM.GBP
   }
+
+
+  @DataProvider(name = "symbolMapConversionSupplier")
+  def symbolMapConversionSupplier() = constructDataProviderArgs(
+    List(USD * GBP, USD, UOM.NULL, GBP/MT, (GBP ^2) * USD / MT^3)
+  )
+  @Test(dataProvider = "symbolMapConversionSupplier")
+  def testSymbolMapConversion(uom : UOM){
+    assertEquals(uom, UOM.fromSymbolMap(uom.asSymbolMap))
+  }
 }

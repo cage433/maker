@@ -2,6 +2,10 @@ package starling.services
 
 import excel._
 import jmx.StarlingJMX
+import rpc.logistics.DefaultTitanLogisticsServices
+import rpc.valuation.ValuationService
+import rpc.marketdata.MarketDataService
+import rpc.valuation.ValuationService
 import starling.schemaevolution.system.PatchRunner
 import starling.db._
 import starling.richdb.{RichDB, RichResultSetRowFactory}
@@ -33,16 +37,23 @@ import starling.reports.pivot.{ReportContextBuilder, ReportService}
 import starling.LIMServer
 import starling.gui.api._
 import starling.daterange.Day
-import starling.calendar.{BusinessCalendar, DBHolidayTables, BusinessCalendars, HolidayTablesFactory}
 import starling.bouncyrmi._
-import starling.curves.{FwdCurveAutoImport, EAIQuotesFormulaIndexReader, CurveViewer}
 import starling.eai.{Book, Traders, EAIAutoImport, EAIStrategyDB}
 import com.jolbox.bonecp.BoneCP
 import org.springframework.mail.javamail.{MimeMessageHelper, JavaMailSender, JavaMailSenderImpl}
 import starling.rmi._
+import starling.calendar._
+import java.lang.String
+import com.trafigura.services.valuation.{ValuationServiceApi, TradeManagementCacheNotReady}
+import org.jboss.netty.channel.{ChannelLocal, Channel}
+import com.trafigura.services.marketdata.MarketDataServiceApi
+import starling.curves.{StarlingMarketLookup, EAIMarketLookup, FwdCurveAutoImport, CurveViewer}
+import starling.services.rpc.valuation.DefaultTitanTradeCache
+import starling.services.rpc.refdata._
+import starling.services.rabbit._
+import starling.services.rpc.valuation.DefaultEnvironmentProvider
 
-
-class StarlingInit( props: Props,
+class StarlingInit( val props: Props,
                     dbMigration: Boolean = true,
                     startRMI: Boolean = true,
                     startHttp: Boolean = true,
@@ -50,37 +61,40 @@ class StarlingInit( props: Props,
                     startStarlingJMX: Boolean = true,
                     forceGUICompatability: Boolean = true,
                     startEAIAutoImportThread: Boolean = true,
-                    runningInJBoss : Boolean = false
+                    startRabbit: Boolean = true
                     ) {
 
   def stop = {
+    if (startRabbit) {
+      rabbitEventServices.stop
+    }
+
     if (startXLLoop) {
       excelLoopReceiver.stop
       loopyXLReceiver.stop
     }
     if (startRMI) {
-      rmiServer.stop()
+      rmiServerForTitan.stop()
     }
     if (startHttp) {
       httpServer.stop
-//      regressionServer.stop
+      //httpEdmServiceServer.stop
+      regressionServer.stop
     }
-    if (!runningInJBoss){
-      scheduler.stop
-    }
+    scheduler.stop
     ConnectionParams.shutdown
   }
 
   def start = {
-    if (dbMigration) {
-      //Ensure the schema is up to date
-      new PatchRunner(starlingRichDB, props.ReadonlyMode(), this).updateSchemaIfRequired
-    }
-
     locally {
       // Load all user settings, pivot layouts and user reports here to ensure we don't have any de-serialization issues. Do this before anyone can connect.
       userSettingsDatabase.readAll()
     }
+
+    if (startRabbit) {
+      rabbitEventServices.start
+    }
+
 
     if (startXLLoop) {
       excelLoopReceiver.start
@@ -89,7 +103,8 @@ class StarlingInit( props: Props,
 
     if (startHttp) {
       httpServer.run
-//      regressionServer.start
+      //httpEdmServiceServer.run
+      regressionServer.start
     }
 
     if (startStarlingJMX) {
@@ -97,8 +112,10 @@ class StarlingInit( props: Props,
     }
 
     if (startRMI) {
-      rmiServer.start
-      Log.info("RMI started on port " + rmiPort)
+      rmiServerForTitan.start
+      Log.info("Titan RMI started on port " + props.StarlingServiceRmiPort())
+      rmiServerForGUI.start
+      Log.info("GUI RMI started on port " + rmiPort)
     }
 
     if (startEAIAutoImportThread) {
@@ -106,9 +123,7 @@ class StarlingInit( props: Props,
       fwdCurveAutoImport.schedule
     }
 
-    if (!runningInJBoss){
-      scheduler.start
-    }
+    scheduler.start
 
     this
   }
@@ -117,7 +132,7 @@ class StarlingInit( props: Props,
   Log.info("StarlingInit: maxMemory %sMB" % (runtime.maxMemory / 1024 / 1024))
 
   val name = props.ServerName()
-  val ldapUserLookup = new LdapUserLookup
+  val ldapUserLookup = new LdapUserLookup with BouncyLdapUserLookup[User]
 
   // basic DB connections
   val starlingDB = DB(props.StarlingDatabase())
@@ -129,16 +144,14 @@ class StarlingInit( props: Props,
   val eaiStarlingSqlServerDB = DB(props.EAIStarlingSqlServer())
 
   // Things that need access to a DB like portfolios, holidays, markets, indexes...
-  val holidayTables = new DBHolidayTables(eaiSqlServerDB)
+  val holidayTables = new Holidays(eaiSqlServerDB)
   HolidayTablesFactory.registerHolidayTablesImpl(holidayTables)
   val businessCalendars = new BusinessCalendars(holidayTables)
   val expiryRules = new FuturesExpiryRulesImpl(eaiSqlServerDB, businessCalendars)
   FuturesExpiryRuleFactory.registerRulesImpl(expiryRules)
-  val precisionRulesLoader = new PrecisionRulesLoader(eaiSqlServerDB)
-  MarketPrecisionFactory.registerRulesImpl(precisionRulesLoader)
+  val marketLookup = new StarlingMarketLookup(starlingDB, businessCalendars, expiryRules)
+  MarketProvider.registerImpl(marketLookup)
   val richResultSetRowFactory = new RichResultSetRowFactory
-  val formulaIndexesReader = new EAIQuotesFormulaIndexReader(eaiSqlServerDB, businessCalendars)
-  FormulaIndexList.set(Some(formulaIndexesReader))
 
   // Rich DB Connections. Which use things like market factories for smarter deserialization
   val starlingRichDB = new RichDB(props.StarlingDatabase(), richResultSetRowFactory)
@@ -151,43 +164,16 @@ class StarlingInit( props: Props,
   val eaiRichSqlServerDB = new RichDB(props.EAIReplica(), richResultSetRowFactory)
   val eaiStarlingRichSqlServerDB = new RichDB(props.EAIStarlingSqlServer(), richResultSetRowFactory)
 
-
   // The Market data store needs some of it's own xstream converters
   MarketDataXStreamConverters.converters.foreach(StarlingXStream.registerConverter)
 
   val mailSender = new JavaMailSenderImpl().update(_.setHost(props.SmtpServerHost()), _.setPort(props.SmtpServerPort()))
 
   val broadcaster = new CompositeBroadcaster(
-    true                             → new RMIBroadcaster(rmiServer),
+    true                             → new RMIBroadcaster(rmiServerForGUI),
     props.rabbitHostSet              → new RabbitBroadcaster(new RabbitMessageSender(props.RabbitHost())),
     props.EnableVerificationEmails() → new EmailBroadcaster(mailSender)
   )
-
-  val strategyDB = new EAIStrategyDB(eaiSqlServerDB)
-
-  val intradayTradesDB = new IntradayTradeStore(starlingRichDB, strategyDB, broadcaster, ldapUserLookup)
-
-  // Brady trade stores, system of records, trade importers
-
-  val eaiTradeStores = Book.all.map(book=> book-> new EAITradeStore(starlingRichDB, broadcaster, strategyDB, book)).toMap
-
-  val refinedAssignmentTradeStore = new RefinedAssignmentTradeStore(starlingRichDB, broadcaster)
-  val refinedAssignmentSystemOfRecord = new RefinedAssignmentSystemOfRecord(neptuneRichDB)
-  val refinedAssignmentImporter = new TradeImporter(refinedAssignmentSystemOfRecord, refinedAssignmentTradeStore)
-
-  val refinedFixationTradeStore = new RefinedFixationTradeStore(starlingRichDB, broadcaster)
-  val refinedFixationSystemOfRecord = new RefinedFixationSystemOfRecord(neptuneRichDB)
-  val refinedFixationImporter = new TradeImporter(refinedFixationSystemOfRecord, refinedFixationTradeStore)
-
-  val tradeImporterFactory = new TradeImporterFactory(refinedAssignmentImporter, refinedFixationImporter)
-
-  val enabledDesks: Set[Desk] = props.EnabledDesks() match {
-    case "" => Desk.values.toSet
-    case "none" => Set.empty
-    case names => names.split(",").toList.map(Desk.fromName).toSet
-  }
-
-  val closedDesks = new ClosedDesks(broadcaster, starlingDB)
 
   val revalSnapshotDb = new RevalSnapshotDB(starlingDB)
   val limServer = new LIMServer(props.LIMHost(), props.LIMPort())
@@ -207,20 +193,60 @@ class StarlingInit( props: Props,
       //TrinityLive → new TrinityMarketDataSource(trintityRichDB, BradyProfilePricingGroup.liveBradyProfilePricingGroup),
       //GalenaLive → new GalenaMarketDataSource(galenaRichDB, BradyProfilePricingGroup.liveBradyProfilePricingGroup),
       //GalenaFullCurve → new GalenaMarketDataSource(galenaRichDB, BradyProfilePricingGroup.fullCurveBradyProfilePricingGroup),
-      TrinityDiscountFactorCSV → new TrinityDiscountFactorCSVDataSource()
+      TrinityDiscountFactorCSV → new TrinityDiscountFactorCSVDataSource()//,
+      //Neptune -> new NeptuneBenchmarksMarketDataSource(neptuneRichDB) I don't want this persisted yet as it is likely to change
     )
 
     val mds = new DBMarketDataStore(starlingRichDB,
       marketDataSources,
       broadcaster)
 
-    val fwdCurveAutoImport = new FwdCurveAutoImport(60, mds, marketDataSources.flatMap {
-      case (k, f: FwdCurveDbMarketDataSource) => Some(k, f)
+    val fwdCurveAutoImport = new FwdCurveAutoImport(60*15, mds, marketDataSources.flatMap {
+      case (k, f: FwdCurveDbMarketDataSource) => Some(k)
       case _ => None
-    }, varSqlServerDB)
+    }.toSet, businessCalendars.US_UK)
     (fwdCurveAutoImport, mds)
   }
 
+  if (dbMigration) {
+    //Ensure the schema is up to date
+    new PatchRunner(starlingRichDB, props.ReadonlyMode(), this).updateSchemaIfRequired
+  }
+
+  val strategyDB = new EAIStrategyDB(eaiSqlServerDB)
+
+  val intradayTradesDB = new IntradayTradeStore(starlingRichDB, strategyDB, broadcaster, ldapUserLookup)
+
+  // Brady trade stores, system of records, trade importers
+
+  val eaiTradeStores = Book.all.map(book=> book-> new EAITradeStore(starlingRichDB, broadcaster, strategyDB, book)).toMap
+
+  val refinedAssignmentTradeStore = new RefinedAssignmentTradeStore(starlingRichDB, broadcaster)
+  val refinedAssignmentSystemOfRecord = new RefinedAssignmentSystemOfRecord(neptuneRichDB)
+  val refinedAssignmentImporter = new TradeImporter(refinedAssignmentSystemOfRecord, refinedAssignmentTradeStore)
+
+  val refinedFixationTradeStore = new RefinedFixationTradeStore(starlingRichDB, broadcaster)
+  val refinedFixationSystemOfRecord = new RefinedFixationSystemOfRecord(neptuneRichDB)
+  val refinedFixationImporter = new TradeImporter(refinedFixationSystemOfRecord, refinedFixationTradeStore)
+
+  val tradeImporterFactory = new TradeImporterFactory(refinedAssignmentImporter, refinedFixationImporter)
+
+  val enabledDesks: Set[Desk] = props.EnabledDesks().trim.toLowerCase match {
+    case "" => throw new Exception("EnabledDesks property not set, valid values: all, none, " + Desk.names.mkString(", "))
+    case "all" => Desk.values.toSet
+    case "none" => Set.empty
+    case names => names.split(",").toList.map(Desk.fromName).toSet
+  }
+
+  val closedDesks = new ClosedDesks(broadcaster, starlingDB)
+
+  val titanTradeCache = new DefaultTitanTradeCache(props)
+  val titanServices = new DefaultTitanServices(props)
+  val logisticsServices = new DefaultTitanLogisticsServices(props)
+  val rabbitEventServices = new DefaultRabbitEventServices(props)
+  val valuationService = new ValuationService(new DefaultEnvironmentProvider(marketDataStore), titanTradeCache, titanServices, logisticsServices, rabbitEventServices)
+  val marketDataService = new MarketDataService(marketDataStore)
+  
   val userSettingsDatabase = new UserSettingsDatabase(starlingDB, broadcaster)
 
   val tradeImporters = Map[TradeSystem,TradeImporter](
@@ -271,11 +297,11 @@ class StarlingInit( props: Props,
 
   val jmx = new StarlingJMX(users, scheduler)
 
-  val auth:ServerAuthHandler = props.UseAuth() match {
+  val auth:ServerAuthHandler[User] = props.UseAuth() match {
     case false => {
       Log.warn("Auth disabled")
-      new ServerAuthHandler(new NullAuthHandler(Some(User.Dev)), users, ldapUserLookup,
-        user => broadcaster.broadcast(UserLoggedIn(user)))
+      new ServerAuthHandler[User](new NullAuthHandler(Some(User.Dev)), users, ldapUserLookup,
+        user => broadcaster.broadcast(UserLoggedIn(user)), ChannelLoggedIn)
     }
     case true => {
       val kerberos = new ServerLogin(props.KerberosPassword())
@@ -293,19 +319,32 @@ class StarlingInit( props: Props,
   val loopyXLReceiver = new LoopyXLReceiver(props.LoopyXLPort(), auth,
     new CurveHandler(curveViewer, marketDataStore))
 
-   val latestTimestamp = if (runningInJBoss) {
-    JBossAppTxtServlet.launchTime
-   }
-   else if (forceGUICompatability) 
+   val latestTimestamp = if (forceGUICompatability) 
      GUICode.latestTimestamp.toString 
    else 
      BouncyRMI.CodeVersionUndefined
 
-  val rmiServer:BouncyRMIServer[StarlingServer] = new BouncyRMIServer(
+  val rmiServerForGUI:BouncyRMIServer[User] = new BouncyRMIServer(
     rmiPort,
-    ThreadNamingProxy.proxy(starlingServer, classOf[StarlingServer]),
     auth, latestTimestamp, users,
-    Set(classOf[UnrecognisedTradeIDException])
+    Set(classOf[UnrecognisedTradeIDException]),
+    ChannelLoggedIn,
+    ThreadNamingProxy.proxy(starlingServer, classOf[StarlingServer])
+  )
+
+  /**
+   * start up public services for Titan components
+   */
+  println("Titan service port " + props.StarlingServiceRmiPort())
+  val nullHandler = new ServerAuthHandler[User](new NullAuthHandler(Some(User.Dev)), users, ldapUserLookup,
+        user => broadcaster.broadcast(UserLoggedIn(user)), ChannelLoggedIn)
+  val rmiServerForTitan : BouncyRMIServer[User] = new BouncyRMIServer(
+    props.StarlingServiceRmiPort(),
+    nullHandler, BouncyRMI.CodeVersionUndefined, users,
+    Set(classOf[TradeManagementCacheNotReady], classOf[IllegalArgumentException]),
+    ChannelLoggedIn,
+    ThreadNamingProxy.proxy(valuationService, classOf[ValuationServiceApi]),
+    ThreadNamingProxy.proxy(marketDataService, classOf[MarketDataServiceApi])
   )
 
   val eaiAutoImport = new EAIAutoImport(15, starlingRichDB, eaiStarlingRichSqlServerDB, strategyDB, eaiTradeStores, closedDesks, enabledDesks)
@@ -319,26 +358,35 @@ class StarlingInit( props: Props,
     val externalHostname = props.ExternalHostname()
     val xlloopUrl = props.XLLoopUrl()
     val rmiPort = props.RmiPort()
-    val webStartServlet = new WebStartServlet("webstart", props.ServerName(), externalURL, "starling.gui.Launcher", List(externalHostname, rmiPort.toString), xlloopUrl)
-    val cannedWebStartServlet = new WebStartServlet("cannedwebstart", props.ServerName(), externalURL, "starling.gui.CannedLauncher", List(), xlloopUrl)
+    val webStartServlet = new WebStartServlet("webstart", props.ServerName(), externalURL, "starling.gui.Launcher",
+      List(externalHostname, rmiPort.toString), xlloopUrl)
+    val cannedWebStartServlet = new WebStartServlet("cannedwebstart", props.ServerName(), externalURL,
+      "starling.gui.CannedLauncher", List(), xlloopUrl)
 
-    new HttpServer(props, "webstart" → webStartServlet, "cannedwebstart" → cannedWebStartServlet)
+    new HttpServer(props,
+      "webstart"       → webStartServlet,
+      "cannedwebstart" → cannedWebStartServlet)
   }
 
-//  lazy val regressionServer = locally {
-//    val server = new JettyServer()
-//    val connector = new SocketConnector()
-//    connector.setHost("127.0.0.1")
-//    connector.setPort(props.RegressionPort())
-//    server.addConnector(connector)
-//    val rootContext = new Context(server, "/", Context.SESSIONS);
-//    rootContext.addServlet(new ServletHolder(reportServlet), "/reports/*")
-//    server
+  Log.info("StarlingInit: EDM service port %d, external url = '%s', server name = '%s'".format(props.HttpEdmServicePort(), props.EdmExternalUrl(), props.ServerName()))
+  
+//  lazy val httpEdmServiceServer = {
+//
+//    val webXmlUrl = this.getClass.getResource("../../webapp/WEB-INF/web.xml")
+//
+//    new HttpServer(
+//      props.HttpEdmServicePort(),
+//      props.EdmExternalUrl(),
+//      props.ServerName(),
+//      Some(webXmlUrl.toExternalForm()),
+//      Nil)
 //  }
+
+  lazy val regressionServer = new RegressionServer(props.RegressionPort(), reportServlet)
 }
 
 object StarlingInit{
-  lazy val devInstance = new StarlingInit(PropsHelper.defaultProps, true, false, false, false, false, false, false).start
+  lazy val devInstance = new StarlingInit(PropsHelper.defaultProps, true, false, false, false, false, false, false, false).start
 }
 object ServerHelper {
   val RunningFileName = "starling.running"
@@ -362,11 +410,15 @@ object Server extends OutputPIDToFile {
     System.setProperty("log4j.configuration", "utils/resources/log4j.properties")
     ServerHelper.deleteRunningFile
     PropsHelper.writeDefaults
-    run(PropsHelper.defaultProps)
+    run(PropsHelper.defaultProps, args)
     ServerHelper.createRunningFile
   }
-  def run(props:Props) {
-    new StarlingInit(props, true, true, true, startEAIAutoImportThread = true).start
+  var server : StarlingInit = null
+  def run(props:Props, args: Array[String] = Array[String]()) {
+    server = new StarlingInit(props, true, true, true, startEAIAutoImportThread = props.ImportsBookClosesFromEAI(),
+      startRabbit = props.RabbitEnabled())
+    server.start
+    Log.info("Starling Server Launched")
   }
 }
 
@@ -421,3 +473,15 @@ object Foo {
 //  })
   }
 }
+
+object ChannelLoggedIn extends LoggedIn[User] {
+  private val loggedIn = new ChannelLocal[User]()
+
+  def get(channel: Channel): User = loggedIn.get(channel)
+  def set(channel: Channel, user: User): User = loggedIn.set(channel, user)
+  def remove(channel: Channel): User = loggedIn.remove(channel)
+  def setLoggedOn(user: Option[User]) {
+    User.setLoggedOn(user)
+  }
+}
+

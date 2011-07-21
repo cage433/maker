@@ -2,14 +2,14 @@ package starling.daterange
 
 import org.joda.time.{DateTime, DateTimeZone}
 import java.io.Serializable
-import starling.utils.{Named, StarlingEnum}
+import starling.utils.StarlingEnum
 
-abstract class Location(val name: String) extends Serializable with Named {
+abstract class Location(val name: String) extends Serializable {
   def timeZoneOn(day: Day): DateTimeZone
   def now = new DateTime(timeZoneOn(Day.today))
 }
 
-object Location extends StarlingEnum(classOf[Location]) {
+object Location extends StarlingEnum(classOf[Location], (location:Location) => location.name) {
   object London extends Location("London") {
     val gmt = DateTimeZone.forID("Etc/GMT")
     val bst = DateTimeZone.forID("Etc/GMT-1")

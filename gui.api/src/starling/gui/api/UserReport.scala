@@ -14,7 +14,7 @@ case class UserReportData(
         valuationDayTimeOfDay:TimeOfDay,
         thetaDayOffset:Int,
         thetaDayTimeOfDay:TimeOfDay,
-        tradeVersionOffSetOrLive:Int,
-        liveOnOffSet:Int,
-        pnl:Option[(Int,Int,Boolean,TimeOfDay)]
+        tradeVersionOffSetOrLive:Either[Int,Boolean],
+        liveOnOffSet:Either[Int,Boolean],
+        pnl:Option[(Int,Either[Int,Boolean],Boolean,TimeOfDay)]
     )

@@ -11,8 +11,7 @@ object ManifestedKey {
   def apply[K](manifest:Manifest[K], key:Key[K]):ManifestedKey[K] = ManifestedKey(manifest.toString, key)
 }
 
-@serializable
-class UserSettings {
+class UserSettings extends Serializable {
   val map = new HeterogeneousMap[ManifestedKey]
 
   def settingExists[T](key: Key[T])(implicit m: Manifest[T]):Boolean = {
@@ -64,5 +63,6 @@ object StandardUserSettingKeys {
   val DefaultReportFields = new Key[(PivotFieldsState,OtherLayoutInfo)]("DefaultReportFields")
   val ExtraFormattingInfo = new Key[ExtraFormatInfo]("ExtraFormattingInfo")
   val UserMarketDataTypeLayout = new Key[Map[MarketDataTypeLabel,PivotFieldsState]]("UserMarketDataTypeLayout")
+  val LiveDefault = new Key[Boolean]("LiveDefault")
 
 }

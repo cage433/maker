@@ -46,8 +46,8 @@ object CheckedInReports extends ReportSource {
   def name = "checked in"
   def reports = Set() ++ Set("Thomas.Rynne/Regression-Jon", "Thomas.Rynne/Regression-Seetal")
   def report(name: String, day:Day) = {
-    if (day != Day(2011, 2, 10)) throw new Exception("I commited the report for the 10th Feb")
-    val resource = name.substring("Thomas.Rynne/".size)
+    if (day != Day(2011, 6, 24)) throw new Exception("I commited the report for the 24th Jun")
+    val resource = name.stripPrefix("Thomas.Rynne/")
     val resourceURL = new File("services/src/starling/utils/" + resource).toURI.toURL
     if (resourceURL == null) throw new Exception("Can't find resource: " + resource)
     Source.fromURL(resourceURL).getLines.map(_.trim).mkString("\n")
@@ -108,7 +108,7 @@ class RegressionRunner(expected:ReportSource, actual:ReportSource) {
 }
 
 object RegressionRunner {
-  val defaultDay = Day(2011, 2, 10)
+  val defaultDay = Day(2011, 6, 24)
 
   def main(args:Array[String]) {
     try {

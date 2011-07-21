@@ -2,6 +2,8 @@ package starling.utils
 
 import java.net.{URLDecoder, URLEncoder}
 
+import starling.utils.Pattern._
+
 
 trait RichString {
 	implicit def StringToRichString(s : String) = new RichString(s)
@@ -27,8 +29,7 @@ trait RichString {
     }
   }
 
-	class RichString(s : String){
-//		def capitalize : String = s.substring(0, 1).toUpperCase + s.substring(1).toLowerCase
+	class RichString(s: String){
 		def % (args: Any*) = String.format(s, box(args):_*)
 
 		def join(elems: Iterable[Any]): String = join(elems.iterator)
@@ -54,6 +55,7 @@ trait RichString {
     }
 
     def containsOneOf(searchFor: String*) = searchFor.exists(s.contains(_))
-    def emptyTo(alternative: String) = if (s.trim.isEmpty) alternative else s
+    def emptyTo(alternative: String) = if (s == null || s.trim.isEmpty) alternative else s
+    def uncapitalize: String = if (s == null || s.isEmpty) s else s.charAt(0).toLower + s.substring(1)
 	}
 }

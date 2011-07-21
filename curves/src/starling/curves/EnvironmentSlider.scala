@@ -9,7 +9,8 @@ object SlideType extends Enumeration {
   val Price = Value("Price (market)")
   val PriceCommodity = Value("Price (commodity)")
   val StressCommodity = Value("Stress (commodity)")
-  val Vols = Value("Vols")
+  val Vols = Value("Vols (market)")
+  val VolsCommodity = Value("Vols (commodity)")
   val StdDev = Value("StdDev")
   val Time = Value("Time")
 }
@@ -36,6 +37,9 @@ case class StdDevSlideParameters(market:FuturesMarket, dP:Quantity, stepNumber:I
 case class VolsSlideParameters(market:CommodityMarket, dP:Percentage, stepNumber:Int) extends EnvironmentSlider {
   def slide(env:Environment) = env.parallelShiftVols(market, dP)
 }
+case class VolsCommoditySlideParameters(commodity:Commodity, dP:Percentage, stepNumber:Int) extends EnvironmentSlider {
+  def slide(env:Environment) = env.parallelShiftVols(commodity, dP)
+}
 case class TimeSlideParameters(daysToSlide:Int, stepNumber:Int) extends EnvironmentSlider {
   def slide(env:Environment) = {
     val marketDay = env.marketDay
@@ -44,7 +48,7 @@ case class TimeSlideParameters(daysToSlide:Int, stepNumber:Int) extends Environm
   }
 }
 case class SpotFXSlideParameters(dP:Quantity, stepNumber:Int) extends EnvironmentSlider {
-  // TODO
+  // TODO [24 May 2010]
   def slide(env:Environment) = env
 }
 case object DoNotSlideSlideParameters extends EnvironmentSlider {

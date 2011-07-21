@@ -45,10 +45,12 @@ class StarlingBrowserUI extends AbstractLayerUI[JComponent] {
       add(okButton, "spanx, split, al r, tag ok")
     }
 
+    contentPanel.removeAll()
     contentPanel.add(errorPanel.peer, "push, al c c")
 
     contentPanel.setVisible(true)
     contentPanel.revalidate
+    errorPanel.okButton.requestFocusInWindow()
   }
 
   def setYesNoMessage(message:String, reason:String, onEvent:(Boolean) => Unit, windowMethods:WindowMethods) {

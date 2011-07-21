@@ -28,10 +28,11 @@ class UTPTests extends IndexTest {
   val zeroRates = Map(USD -> 0.05, GBP -> 0.02, EUR -> 0.08)
   val xRates = Map(GBP -> 0.7,EUR -> 0.9)
   lazy val leadMarket = Market.LME_LEAD
-  lazy val forwardLeadMarket = new ProxyForwardMarket(leadMarket)
-  val unlIndex = PublishedIndex.PREM_UNL_EURO_BOB_OXY_NWE_BARGES
-  lazy val brentIndex = PublishedIndex.DATED_BRENT
-  lazy val cfdIndex = BrentCFDSpreadIndex(PublishedIndex.PLATTS_BRENT(new BrentMonth(1)))
+  val unlIndex = Index.PREM_UNL_EURO_BOB_OXY_NWE_BARGES
+  lazy val brentIndex = Index.DATED_BRENT
+  lazy val jan = new BrentMonth(1)
+  lazy val cfdIndex = BrentCFDSpreadIndex.indexFor(jan)
+  lazy val plattsJan = Index.publishedIndexFromName("Platts Brent (" + jan.monthName + ")")
   val env = Environment(
     new TestingAtomicEnvironment(){
       def marketDay = Day(2009, 2, 10).endOfDay
@@ -40,12 +41,11 @@ class UTPTests extends IndexTest {
         key match {
           case DiscountRateKey(ccy, day, _) =>  math.exp(- zeroRates(ccy) * day.daysSinceInYears(marketDay.day))
           case ForwardPriceKey(Market.NYMEX_WTI, Month(2010, 10), _) => 100 (Market.NYMEX_WTI.priceUOM) //for CSO
-          case ForwardPriceKey(Market.DATED_BRENT, _, _) => 98 (USD/BBL)
-          case ForwardPriceKey(Market.PLATTS_BRENT, _, _) => 95 (USD/BBL)
+          case ForwardPriceKey(Index.DATED_BRENT, _, _) => 98 (USD/BBL)
+          case ForwardPriceKey(`plattsJan`, _, _) => 95 (USD/BBL)
           case ForwardPriceKey(market, day, _) => 96 (market.priceUOM)
-          case FixingKey(key, _) if key.market == PublishedIndex.DATED_BRENT.market => 97(USD/BBL)
-          //case FixingKey(key, _) if key.market == PublishedIndex.PLATTS_BRENT.market => 94(USD/BBL)
-          case FixingKey(key, _) => 96(key.priceUOM)
+          case FixingKey(`brentIndex`, _) => 97(USD/BBL)
+          case FixingKey(index, _) => 96(index.priceUOM)
           case _ : BradyMetalVolAtomicDatumKey => Percentage(0.3)
           case _ : BradyFXVolSmileAtomicDatumKey => Map(0.5 -> Percentage(0.3))
           case _ : OilAtmVolAtomicDatumKey => Percentage(0.10)
@@ -73,6 +73,7 @@ class UTPTests extends IndexTest {
       // mid period
       CommoditySwap(unlIndex, 123(USD/MT), 777(MT), Quarter(2009, 1), cleared = false),
 
+    // TODO CFDs don't work at the moment. we need to spend some time on them.
       CFD(cfdIndex, -(1(USD/BBL)), 777(BBL), Month(2009, 2)), // mid period
       CFD(cfdIndex, -(1(USD/BBL)), 777(BBL), Month(2008, 12)), // all before
       CFD(cfdIndex, -(1(USD/BBL)), 1000(BBL), Month(2009, 10)), // all after
@@ -80,13 +81,13 @@ class UTPTests extends IndexTest {
       new FuturesOption(leadMarket, Day(2009, 8, 1), Day(2009, 8, 20), 90(USD/MT), 333(MT), Call, European),
       AsianOption(unlIndex, Month(2009, 2), 98(USD/MT), 222(MT), Put),
       AsianOption(unlIndex, Strip(Month(2009, 1), Month(2009, 10)), 98(USD/MT), 222(MT), Put),
-      CommodityForward(forwardLeadMarket, Day(2009, 9, 9), 77(USD/MT), 111(MT)),
+      Future(leadMarket, Day(2009, 9, 9), 77(USD/MT), 111(MT)),
       FXForward(1.5(EUR/USD), 999(USD), Day(2009, 9, 8)),
       FXOption(1.3(EUR/USD), 999(USD), Day(2009, 9, 8), Day(2009, 10, 10), Put),
       new CalendarSpreadOption(Market.NYMEX_WTI, Spread(Month(2010, 11), Month(2010, 12)), Quantity(-1, USD/BBL), Quantity(10000, BBL), Call),
       new CalendarSpreadOption(Market.NYMEX_WTI, Spread(Month(2011, 1), Month(2011, 2)), Quantity(-1, USD/BBL), Quantity(10000, BBL), Call),
       new CalendarSpreadOption(Market.NYMEX_WTI, Spread(Month(2010, 10), Month(2010, 11)), Quantity(0.2, USD/BBL), Quantity(10000, BBL), Call),
-      new ForwardOption(new ProxyForwardMarket(Market.LME_ALUMINIUM), Day(2009, 8, 1), Day(2009, 8, 20),
+      new FuturesOption(Market.LME_ALUMINIUM, Day(2009, 8, 1), Day(2009, 8, 20),
         Quantity(90, USD/MT), Quantity(100, MT), Call, European),
       new NetEquityPosition(RIC("Foo"), Quantity(100, UOM.SHARE)),
 

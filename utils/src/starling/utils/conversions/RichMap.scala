@@ -6,20 +6,24 @@ import collection.immutable.TreeMap
 trait RichMap {
   implicit def enrichMap[K, V](value : Map[K,V]) = new RichMap(value)
   implicit def enrichMultiMap[K, V](value : Map[K, Set[V]]) = new RichMultiMap[K, V](value)
+  implicit def enrichNestedMap[K1, K2, V](value: Map[K1, Map[K2, V]]) = new RichMap[K1, Map[K2, V]](value) {
+    def flipNesting = value.toList.flatMap { case (k1, k2vs) => k2vs.map { case (k2, v) => (k2, (k1, v)) } }
+      .groupInto(_.head, _.tail).mapValues(_.toMap)
+  }
 
   class RichMap[K,V](map : Map[K,V]) {
+    def get(key: Option[K]) = key.map(map.get(_)).flatOpt
     def slice(keys : Any*) : Map[K,V] = if (keys.isEmpty) map else map.filterKeys(key => keys.contains(key))
     def mapValue(key: K, f: V => V): Map[K,V] = map.updated(key, f(map(key)))
     def mapKeys[C](f: K => C): Map[C, V] = map.map(kv => (f(kv._1), kv._2))
-    def extendKey[C](f: C => K) = new MapView(map, f)
+    def composeKeys[C](f: C => K) = new MapView(map, f)
     def castKeys[C >: K]() = map.asInstanceOf[Map[C, V]]
     def addSome(key: K, value: Option[V]): Map[K,V] = value.map(v => map + key → v).getOrElse(map)
     def addSome(keyValue: (K, Option[V])): Map[K,V] = addSome(keyValue._1, keyValue._2)
     def reverse: Map[V, K] = map.map(_.swap)
-    def collectValues[W](collector: PartialFunction[V, W]): Map[K, W] = {
-      map.toList.map { case (key, value) => key.optPair(collector.lift(value)) }.somes.toMap
-    }
-    def filterKeys(keys: Seq[K]) = map.filterKeys(keys.contains)
+    def collectKeys[C](pf: PartialFunction[K, C]): Map[C, V] = map.collect(pf *** identity[V] _)
+    def collectValues[W](pf: PartialFunction[V, W]): Map[K, W] = map.collect(identity[K] _ *** pf)
+    def collectValuesO[W](f: V => Option[W]): Map[K, W] = map.mapValues(f).collectValues { case value if value.isDefined => value.get }
     def zipMap[W](other: Map[K, W]): Map[K, (V, W)] = {
       val (m, o) = (map.filterKeys(other.keySet), other.filterKeys(map.keySet))
       m.map { case (key, value) => (key, (value, o(key)))}.toMap

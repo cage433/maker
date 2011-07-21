@@ -4,15 +4,15 @@ import org.mockito.Mockito._
 import org.scalatest.matchers.ShouldMatchers
 import starling.daterange._
 import collection.immutable.{Nil, Map}
-import starling.market.Market
 import starling.utils.StarlingSpec
 import starling.utils.ImplicitConversions._
 import starling.calendar.Clock
 import org.scalatest.BeforeAndAfterAll
 import starling.marketdata._
+import starling.market.{TestMarketSpec, Market}
 
 
-class MarketDataImporterTests extends StarlingSpec with ShouldMatchers with BeforeAndAfterAll {
+class MarketDataImporterTests extends StarlingSpec with ShouldMatchers with BeforeAndAfterAll with TestMarketSpec {
   import MarketDataSet._
 
   override def beforeAll() = Clock.freeze

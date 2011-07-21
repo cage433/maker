@@ -8,10 +8,10 @@ import java.awt.event.KeyEvent
 import swing.Action
 
 case class UtilsPage() extends Page {
-  val text = "Utils"
-  val icon = StarlingIcons.im("/icons/16x16_utilities.png")
+  def text = "Utils"
+  def icon = StarlingIcons.im("/icons/16x16_utilities.png")
   def build(reader:PageBuildingContext) = null
-  def createComponent(context:PageContext, data:PageData, browserSize:Dimension) = UtilsPageComponent(context)
+  def createComponent(context:PageContext, data:PageData, bookmark:Bookmark, browserSize:Dimension) = UtilsPageComponent(context)
 }
 
 case class UtilsPageComponent(context:PageContext) extends MigPanel("insets dialog") with PageComponent {

@@ -64,7 +64,7 @@ case class FiltersList(filters:List[List[(Field,Selection)]]) extends Iterable[L
   def chopUpToFirstNon(fields:Set[Field]) = {
     val chopped = filters.map {
       path => {
-        val (before,after) = path.span{ case(f,_)=>fields.contains(f) }
+        val (before,_) = path.span{ case(f,_)=>fields.contains(f) }
         before
       }
     }
@@ -183,12 +183,17 @@ case class ColumnTree(fieldOrColumnStructure:FieldOrColumnStructure, childStruct
       case Left(f) => childStructure.keep(fields).trees
       case Right(cs) => {
         val newCS = cs.keep(fields)
-        val newFieldOrColumnStructure = if (newCS.trees.size == 1 && newCS.trees.head.childStructure.trees.isEmpty) {
-          newCS.trees.head.fieldOrColumnStructure
+        if (newCS.trees.size == 1 && newCS.trees.head.childStructure.trees.isEmpty) {
+          val newFieldOrColumnStructure = newCS.trees.head.fieldOrColumnStructure
+          List(ColumnTree(newFieldOrColumnStructure, childStructure.keep(fields)))
         } else {
-          FieldOrColumnStructure(newCS)
+          val filteredChild = childStructure.keep(fields)
+          if (filteredChild.trees.isEmpty) {
+            newCS.trees
+          } else {
+            List(ColumnTree(FieldOrColumnStructure(newCS), filteredChild))
+          }
         }
-        List(ColumnTree(newFieldOrColumnStructure, childStructure.keep(fields)))
       }
     })
   }
@@ -206,17 +211,35 @@ case class ColumnTree(fieldOrColumnStructure:FieldOrColumnStructure, childStruct
     ColumnTree(fieldOrColumnStructure.rename(field, name), childStructure.rename(field, name))
   }
   def isInvalid:Boolean = {
-    val hasMeasure = {
-      fieldOrColumnStructure.value match {
-        case Right(cs) => cs.measureFields.nonEmpty
-        case Left(FieldAndIsMeasure(_, true)) => true
-        case Left(FieldAndIsMeasure(_, false)) => false
-      }
+    fieldOrColumnStructure.value match {
+      case Right(cs) => cs.isInvalid || childStructure.isInvalid || (childStructure.measureFields.nonEmpty && cs.measureFields.nonEmpty)
+      case Left(FieldAndIsMeasure(_, true)) => childStructure.measureFields.nonEmpty
+      case Left(FieldAndIsMeasure(_, false)) => childStructure.isInvalid
     }
-    if (hasMeasure) {
-      childStructure.hasMeasureFields
+  }
+  def hasSingleMeasureChild(f0:Field):Boolean = {
+    fieldOrColumnStructure.value match {
+      case Left(f) => {
+        if (f.field == f0) {
+          (childStructure.trees.size == 1) && (childStructure.trees.head.fieldOrColumnStructure.value match {
+            case Left(f1) if f1.isMeasure => true
+            case _ => false
+          })
+        } else {
+          false
+        }
+      }
+      case Right(cs) =>  cs.hasSingleMeasureChild(f0)
+    }
+  }
+  def fieldsOnBottomRow:List[(Field,Boolean)] = {
+    if (childStructure.trees.isEmpty) {
+      fieldOrColumnStructure.value match {
+        case Left(f) => List((f.field, f.isMeasure))
+        case Right(cs) => cs.fieldsOnBottomRow
+      }
     } else {
-      childStructure.isInvalid
+      childStructure.fieldsOnBottomRow
     }
   }
   def bottomNonMeasureFields:List[Field] = {
@@ -264,7 +287,9 @@ object ColumnTree {
 }
 
 case class ColumnTrees(trees:List[ColumnTree]) {
-
+  def hasSingleMeasureChild(f:Field):Boolean = trees.exists(_.hasSingleMeasureChild(f))
+  def fieldsOnBottomRow:List[(Field,Boolean)] = trees.flatMap(_.fieldsOnBottomRow)
+  def measureFieldsOnBottomRow:List[Field] = fieldsOnBottomRow.filter{case (_,m) => m}.map(_._1)
   def bottomNonMeasureFields:List[Field] = trees.flatMap(_.bottomNonMeasureFields)
   def measureFieldsDirectlyBeneath(field:Field):List[Field] = trees.flatMap(_.measureFieldsDirectlyBeneath(field))
   def topMeasureFields:List[Field] = trees.flatMap(_.topMeasureFields)
@@ -313,7 +338,7 @@ case class ColumnTrees(trees:List[ColumnTree]) {
   def columnFields:List[Field] = allFieldAndIsMeasures.filterNot(_.isMeasure).map(_.field)
   def measureFields:List[Field] = allFieldAndIsMeasures.filter(_.isMeasure).map(_.field)
   def hasMeasureFields = measureFields.nonEmpty
-  def hasColumnField = false // TODO - tells us whether we can rotate the pivot report.
+  def hasColumnField = false // TODO [16 May 2011] tells us whether we can rotate the pivot report.
   def keep(fields:Set[Field]):ColumnTrees = {
     val newTrees = trees.flatMap(_.keep(fields))
     if (newTrees.forall(_.childStructure.trees.isEmpty)) {
@@ -442,7 +467,7 @@ class PivotFieldsState(
         val transforms:SortedMap[Field,FilterWithOtherTransform]=TreeMap.empty
   ) extends Serializable {
 
-  assert(filters.size == filters.map(_._1).toSet.size, {Thread.dumpStack; "There are duplicated filter fields"})
+  assert(filters.size == filters.map(_._1).toSet.size, {Thread.dumpStack(); "There are duplicated filter fields"})
 
   override def toString = "r: " + rowFields + " c: " + columns + " f: " + filters  + " treeDep: " +
           treeDepths + " rpc: " + reportSpecificChoices
@@ -551,6 +576,15 @@ class PivotFieldsState(
     copy(filters = modifiedFilters)
   }
 
+  def removeFilter(field:Field) = {
+    new PivotFieldsState(
+      rowFields,
+      columns,
+      filters.filterNot(f=>field == f._1),
+      treeDepths,
+      reportSpecificChoices,
+      transforms)
+  }
 
   def removeAll(fields:Set[Field]) = {
     new PivotFieldsState(
@@ -584,7 +618,7 @@ class PivotFieldsState(
         }
       } }
     } else {
-      filter._1 -> SomeSelection(Set(filter._2)) :: filters
+      filter._1 -> SomeSelection(filter._2) :: filters
     }
     copy(filters=newFilters)
   }
@@ -637,7 +671,8 @@ object PivotFieldsState {
         filters:List[(Field,Selection)]=List(),
         treeDepths:SortedMap[Field,(Int,Int)]=TreeMap.empty,
         reportSpecificChoices : SortedMap[String, Any] = TreeMap.empty,
-        transforms : SortedMap[Field, FilterWithOtherTransform] = TreeMap.empty
+        transforms : SortedMap[Field, FilterWithOtherTransform] = TreeMap.empty,
+        removeZeros:Boolean = false
   ) = {
     new PivotFieldsState(
       columns=ColumnTrees.createFlat(columnFields, dataFields),

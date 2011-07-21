@@ -41,7 +41,7 @@ case class TradeStores(
       override def initialState = Some(PivotFieldsState(
         dataFields=List( Field("Trade Count") ),
         rowFields=List( Field("Instrument"), Field("Market")),
-        filters=List( (Field("Strategy"), new SomeSelection(Set(PivotTreePath("Strategies/Spec/London/London Derivatives Options/Options AM/JF Deals")))))
+        filters=List( (Field("Strategy"), AllSelection))
       ))
 
       override def tradeTimestampForOffset(closeDay: Day) = {

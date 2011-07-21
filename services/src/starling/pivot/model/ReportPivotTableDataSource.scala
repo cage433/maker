@@ -44,10 +44,6 @@ class ReportPivotTableDataSource(tradePivotTable:PivotTableDataSource, reports:L
 
   override def drillDownGroups() = tradePivotTable.drillDownGroups
 
-  private def filterTradeFields(fields:Seq[Field]) = {
-    fields.filter(tradeFields.contains(_)).toList
-  }
-
   val tradeResult = tradePivotTable.data(PivotFieldsState())
 
   /**
@@ -147,14 +143,14 @@ class ReportPivotTableDataSource(tradePivotTable:PivotTableDataSource, reports:L
   def data(pfs : PivotFieldsState) = {
 
     val filters = pfs.allFilterPaths
-    val allFilterPathsUpToFirstReportFilter = filters.chopUpToFirstNon(tradeFields & pfs.filterAreaFields.toSet)
+    val allFilterPathsUpToFirstReportFilter = filters.chopUpToFirstNon(tradeFields)
     val tradeFilterFields = allFilterPathsUpToFirstReportFilter.allFields.toSet
-    val tradeFilterFieldsInTheFilterArea = tradeFilterFields & pfs.filterAreaFields.toSet
-    val otherTradeFields = (pfs.filterAreaFields ++ pfs.rowFields ++ pfs.columns.columnFields).filter(tradeFields.contains).filterNot(tradeFilterFieldsInTheFilterArea.contains)
+    val tradeFilterFieldsInTheFilterArea = pfs.filterAreaFields.toSet & tradeFilterFields
+    val groupByFields = (pfs.filterAreaFields ++ pfs.rowFields ++ pfs.columns.columnFields).filter(tradeFields.contains).filterNot(tradeFilterFieldsInTheFilterArea.contains)
 
     val groupedCombinedFieldBindingsBuilder = new GroupedAndCombinedFieldBindingsBuilder(
       tradeFilters = allFilterPathsUpToFirstReportFilter.toFilterSet.toList,
-      tradeFieldsToGroupBy = otherTradeFields,
+      tradeFieldsToGroupBy = groupByFields,
       tradeFieldsToCombine = pfs.columns.measureFields.filter(f => tradeFields.contains(f)),
       pfs.reportSpecificChoices.toMap
     )
@@ -170,7 +166,7 @@ class ReportPivotTableDataSource(tradePivotTable:PivotTableDataSource, reports:L
     val data = groupedCombinedFieldBindingsBuilder.collectMergedReportValues
 
     val result = UnfilteredPivotTableDataSource.applyFiltersAndCalculatePossibleValues(
-      fieldDetails, data, pfs.removeAll(tradeFilterFieldsInTheFilterArea)
+      fieldDetails, data, pfs.removeAll(tradeFilterFields)
     )
     //tradePossibleValues  has the possible values for the trade based fields
     //result.possibleValues has the possible values for the trade based fields and the report based fields
@@ -182,6 +178,8 @@ class ReportPivotTableDataSource(tradePivotTable:PivotTableDataSource, reports:L
   override def availablePages = reports.flatMap(_.availablePages).toSet.toList
 
   override def reportSpecificOptions = reports.map(_.report.reportSpecificOptions).reduceLeft(_++_).distinct.stringValues
+
+  override def zeroFields = reports.flatMap(_.report.zeroFields).toSet
 
   override def initialState = {
     val initialReportSpecificChoices = reports.map(_.report.reportSpecificOptions.default).reduceLeft(_++_)

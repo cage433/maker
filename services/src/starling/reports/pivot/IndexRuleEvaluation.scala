@@ -16,7 +16,9 @@ import rules.SwapPricingRule
  */
 object IndexRuleEvaluation {
 
-  case class Row(day: Day, market: CommodityMarket, observed: FixingPeriod, value: PQ, valueInIndexUOM: PQ)
+  case class Row(day: Day, index : SingleIndex, value: PQ, valueInIndexUOM: PQ, observed: DateRange) {
+    def market = index.market
+  }
 
   def rows(index: Index, period: DateRange, pricingRule: SwapPricingRule, rounding: Option[Int], environment: Environment): (Iterable[Row], PQ) = {
     case class Entry(method: String, params: List[Object], result: Object, keysAndValues: Map[AtomicDatumKey, Any])
@@ -25,8 +27,8 @@ object IndexRuleEvaluation {
     val recordingEnvironment = new EnvironmentMethodRecorder(Environment(atomicRecorder), classOf[NoConstructorArgsEnvironment])
 
     var entries: List[Entry] = Nil
-    val watching = List("averagePrice", "fixing", "indexForwardPrice")
-    val (averagePrice :: fixing :: indexForwardPrice :: Nil) = watching
+    val watching = List("averagePrice", "indexFixing", "indexForwardPrice")
+    val (averagePrice :: indexFixing :: indexForwardPrice :: Nil) = watching
 
     val avg = PQ.calcOrCatch{
       atomicRecorder.clear
@@ -41,17 +43,16 @@ object IndexRuleEvaluation {
     }
 
     val rows = entries.flatMap {
-      case Entry(`fixing`, FixingsHistoryKey(market, observing, _, _) :: (day: Day) :: Nil, result: Quantity, keysAndValues) => {
-        val resultInUOM = PQ.calcOrCatch(market.convert(result, index.priceUOM) get)
-        Some(Row(day, market, observing, PQ(result), resultInUOM))
+      case Entry(`indexFixing`, (singleIndex : SingleIndex) :: (day: Day) :: Nil, result: Quantity, keysAndValues) => {
+        val resultInUOM = PQ.calcOrCatch(singleIndex.convert(result, index.priceUOM) get)
+        Some(Row(day, singleIndex, PQ(result), resultInUOM, singleIndex.observedPeriod(day)))
       }
       case Entry(`indexForwardPrice`, (singleIndex: SingleIndex) :: (day: Day) :: p, result: Quantity, keysAndValues) => {
-        val observing: DateRange = keysAndValues.keys.flatMap {
-          case ForwardPriceKey(_, o, _) => Some(o)
-          case _ => None
-        } head
         val resultInUOM = PQ.calcOrCatch(singleIndex.convert(result, index.priceUOM) get)
-        Some(Row(day, singleIndex.market, DateRangeFixingPeriod(observing), PQ(result), resultInUOM))
+        keysAndValues.headOption match {
+          case Some((ForwardPriceKey(market, observed, _), value)) => Some(Row(day, singleIndex, PQ(result), resultInUOM, observed))
+          case _ => throw new Exception("Unexpected keysAndValues for forward price: " + keysAndValues)
+        }
       }
       case a => {
         None

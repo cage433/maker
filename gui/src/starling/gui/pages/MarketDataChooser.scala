@@ -105,7 +105,7 @@ class MarketDataChooser(maybeDesk:Option[Desk], pageContext:PageContext, snapsho
       val envModifiers = TreeSet[EnvironmentModifierLabel]() ++
         (if (zeroInterestRatesCheckbox.selected) Some(EnvironmentModifierLabel.zeroInterestRates) else None).toList ++
         (if (zeroVolsCheckbox.selected) Some(EnvironmentModifierLabel.zeroVols) else None).toList
-      val tradeDay = marketDataDayPicker.day //TODO should be selected by the user
+      val tradeDay = marketDataDayPicker.day //TODO [19 Oct 2010] should be selected by the user
       action(CurveIdentifierLabel(marketDataIdentifier, EnvironmentRuleLabel.COB, tradeDay, valuationDayPicker.dayAndTime,
         thetaDayPicker.dayAndTime, envModifiers))
     }
@@ -113,11 +113,9 @@ class MarketDataChooser(maybeDesk:Option[Desk], pageContext:PageContext, snapsho
       case None => invokeAction(SpecificMarketDataVersion(0))
       case Some(CurrentEntry) => invokeAction(SpecificMarketDataVersion(pageContext.localCache.latestMarketDataVersion(snapshotSelection.marketDataSelection)))
       case Some(SnapshotVersionEntry(ss)) => invokeAction(SnapshotMarketDataVersion(ss))
-      case Some(ImportAndSnapshotEntry) => {
-        pageContext.submit(
-          SnapshotSubmitRequest(snapshotSelection.marketDataSelection, snapshotSelection.observationDay),
-          (snapshot:SnapshotIDLabel)=>{invokeAction(SnapshotMarketDataVersion(snapshot))}, true, (r:SnapshotIDLabel) => false)
-      }
+      case Some(ImportAndSnapshotEntry) => pageContext.submit(
+        SnapshotSubmitRequest(snapshotSelection.marketDataSelection, snapshotSelection.observationDay),
+        (snapshot: Option[SnapshotIDLabel])=>{SnapshotMarketDataVersion(snapshot).map(invokeAction)}, true, (r:Option[SnapshotIDLabel]) => false)
     }
   }
 

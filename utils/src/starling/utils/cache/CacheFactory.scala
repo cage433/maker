@@ -110,7 +110,7 @@ object CacheFactory {
     /**
      * Written (I believe) to tell the compiler we really don't mean to call
      *  memoize[K, V](key: K, f: (K => V))
-     * TODO - get rid of
+     * TODO [29 Nov 2010] get rid of
      *  memoize[K, V](key: K, f: => V)
      */
     def memoizeX[K, V](key: K, f: => V): V = memoize(key, f)

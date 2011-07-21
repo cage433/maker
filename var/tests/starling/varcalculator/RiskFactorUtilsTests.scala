@@ -4,14 +4,14 @@ import starling.utils.StarlingTest
 import org.testng.annotations.Test
 import starling.quantity.UOM._
 import org.testng.Assert.assertEquals
-import starling.market.{TestExpiryRules, FuturesMarket, Market}
+import starling.market.{TestMarketSpec, FuturesMarket, Market}
 import starling.daterange.{DateRange, Month, Day}
 
-class RiskFactorUtilsTests extends TestExpiryRules {
+class RiskFactorUtilsTests extends TestMarketSpec {
   
   @Test
   def testMonthlyBucketingOfPriceRiskFactors{
-    val market = FuturesMarket.testMarket("Lead", USD, MT)
+    val market = Market.testMarket("Lead", USD, MT)
     val marketDay: Day = Day(2009, 10, 10)
     val marketDayAndTime = marketDay.endOfDay
 

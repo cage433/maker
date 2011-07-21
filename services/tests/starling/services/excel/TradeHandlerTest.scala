@@ -12,6 +12,7 @@ import starling.utils.{Broadcaster, StarlingTest}
 import starling.utils.StarlingMatchers._
 import starling.eai.Traders
 import org.testng.annotations.{AfterClass, BeforeClass, BeforeTest, Test}
+import starling.tradestore.TradeStore.StoreResults
 
 class TradeHandlerTest extends StarlingTest {
   lazy val tradeHandler = new TradeHandler(broadcaster, tradeReader, intradayTradeStore, traders)
@@ -47,7 +48,7 @@ class TradeHandlerTest extends StarlingTest {
   @Test
   def shouldSendTradesFromTradeReaderToIntradayTradeStoreAndBroadCast {
     when(tradeReader.allTrades(anyHeader, anyTrades, anySubgroupName)) thenReturn allTrades
-    when(intradayTradeStore.storeTrades(anyUser, anySubgroupName, same(allTrades))) thenReturn ((tradesHash, true))
+    when(intradayTradeStore.storeTrades(anyUser, anySubgroupName, same(allTrades))) thenReturn (StoreResults(1, 2, 3, tradesHash))
     //when(ldapUserLookup.user(anyString)) thenReturn Some(anyUser)
 
     assert(tradeHandler.blotterTrades("<subgroupName>", header, optionalAdditionalTrades) == "OK:" + tradesHash)
