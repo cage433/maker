@@ -12,8 +12,12 @@ trait MarketDataType {
 
   val name: String = getClass.getName.substring(getClass.getName.lastIndexOf(".") + 1).stripSuffix("DataType$")
 
+  // Fields needed to uniquely define a MarketDataKey. For prices it would be market
+  def marketDataKeyFelds:Set[Field]
+
   // Fields needed to uniquely define some market datum. For prices it would be market and period.
   def keyFields:Set[Field]
+
   // The field (always one?) for the market data - e.g. price
   def valueFields:Set[Field] // TODO [08 Jun 2011] Shouldn't valueFields be everything other than the keyFields ?
   def createKey(values:Map[Field,Any]):MarketDataKey

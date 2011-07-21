@@ -104,7 +104,11 @@ class UTPTests extends IndexTest {
       RefinedAssignment(leadMarket, Day(2010, 1, 1), Quantity(100, MT)),
       RefinedFixationsForSplit(List(RefinedFixation(leadMarket, Day(2010, 1, 1), "Y", Quantity(100, MT)))),
 
-      CashInstrument(CashInstrumentType.Ordinary, Quantity(100, USD), Day(2011, 1, 1))
+      CashInstrument(CashInstrumentType.Ordinary, Quantity(100, USD), Day(2011, 1, 1)),
+
+      // Commodity Spread Options
+      CommoditySpreadOption(FuturesSpreadMarket.ICE_WTI_BRENT, Month(2011, 1), Quantity(55, USD/BBL), Quantity(56, BBL), Call)
+
     ).map(Array[Tradeable](_))
   }
 

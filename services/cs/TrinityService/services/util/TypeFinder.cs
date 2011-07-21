@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 
-namespace ContactManager_Advanced
+namespace com.trafigura.services.util
 {
     public class TypeFinder
     {

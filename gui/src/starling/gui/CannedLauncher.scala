@@ -289,7 +289,7 @@ class EditableSpecifiedCannedDataSource extends UnfilteredPivotTableDataSource {
     val random = new java.util.Random(1234567890L)
     (for (trader <- traders; market <- markets) yield {
       if (random.nextInt(9) > 3) {
-        Some(Map(Field("Trader") -> trader, Field("Market") -> market, Field("Volume") -> 20))
+        Some(Map(Field("Trader") -> trader, Field("Market") -> market, Field("Volume") -> random.nextInt(2000)))
       } else {
         None
       }

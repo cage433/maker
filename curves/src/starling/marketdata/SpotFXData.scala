@@ -22,6 +22,7 @@ object SpotFXDataType extends MarketDataType {
     dataFields=List(rateField.field),
     rowFields=List(currencyField.field)
   )
+  def marketDataKeyFelds = Set(currencyField.field)
   def keyFields = Set(currencyField.field)
   def valueFields = Set(rateField.field)
   val fields = List(currencyField, rateField)

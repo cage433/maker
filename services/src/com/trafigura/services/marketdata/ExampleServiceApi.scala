@@ -7,10 +7,10 @@ import com.trafigura.services._
 
 
 @Path("/Example")
-trait ExampleServiceApi {
+trait ExampleServiceApi extends DocumentedService {
   @Path("ReferenceInterestRate/{source}")
   @GET @Produces(Array("application/json"))
-  def getReferenceInterestRate(@PathParam("source") source: ReferenceRateSource): ReferenceInterestRate
+  def getReferenceInterestRate(@PathParam("source") @DefaultValue("LIBOR") source: ReferenceRateSource): ReferenceInterestRate
 
   @Path("ReferenceInterestRate/{source}")
   @POST @Consumes(Array("application/json")) @Produces(Array("application/json"))

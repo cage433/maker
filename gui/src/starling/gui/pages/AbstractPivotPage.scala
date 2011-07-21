@@ -8,12 +8,11 @@ import api.UserSettingUpdated
 import starling.pivot.view.swing._
 import starling.pivot._
 import controller.{PivotTable, PivotTableConverter}
-import java.awt.Dimension
 import starling.rmi.{StarlingServer, PivotData}
 import collection.mutable.HashSet
 import starling.utils.ImplicitConversions._
 import scala.swing.Swing._
-import sun.reflect.generics.tree.FormalTypeParameter
+import java.awt.{AlphaComposite, Color, Dimension}
 
 /**
  * An abstract page which holds a pivot table
@@ -243,6 +242,8 @@ class PivotTablePageComponent(
       icon = StarlingIcons.icon("/icons/16x16_save.png")
       tooltip = "Save the edits made to the data"
       enabled = edits.nonEmpty
+      val numEdits = edits.size
+      val numEditsString = numEdits.toString
 
       def saveEdits() {
         println("Saving edits: " + edits)
@@ -265,6 +266,25 @@ class PivotTablePageComponent(
         })
       }
       reactions += {case ButtonClicked(b) => saveEdits()}
+
+      override protected def paintComponent(g:Graphics2D) {
+        super.paintComponent(g)
+        if (numEdits > 0) {
+          g.setColor(Color.WHITE)
+          g.setFont(GuiUtils.GuiFieldFilterNumberFont)
+
+          val fm = g.getFontMetrics(GuiUtils.GuiFieldFilterNumberFont)
+          val sWidth = fm.stringWidth(numEditsString)
+          val startPosX = size.width - sWidth - 4
+          val sHeight = fm.getHeight
+          val startPosY = sHeight - 3
+
+          g.fillRect(startPosX, 2, sWidth + 1, sHeight - 4)
+
+          g.setColor(Color.RED)
+          g.drawString(numEditsString, startPosX, startPosY)
+        }
+      }
     }
     val resetEditsButton = new ToolBarButton {
       icon = StarlingIcons.icon("/icons/16x16_undo.png")

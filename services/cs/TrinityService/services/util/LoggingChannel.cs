@@ -1,18 +1,19 @@
-﻿namespace ContactManager_Advanced
-{
-    using System.Net.Http;
+﻿using System.Net.Http;
 
+namespace com.trafigura.services.util
+{
     public class LoggingChannel : DelegatingChannel
     {
         public LoggingChannel(HttpMessageChannel handler)
-            :base(handler)
+            : base(handler)
         {
-            
         }
 
-        protected override System.Threading.Tasks.Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, System.Threading.CancellationToken cancellationToken)
+        protected override System.Threading.Tasks.Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, 
+            System.Threading.CancellationToken cancellationToken)
         {
             System.Diagnostics.Trace.TraceInformation("Begin Request: {0} {1}", request.Method, request.RequestUri);
+
             return base.SendAsync(request, cancellationToken);
         }
     }
