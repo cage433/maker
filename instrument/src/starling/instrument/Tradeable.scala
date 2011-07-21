@@ -1,6 +1,5 @@
 package starling.instrument
 
-import starling.curves.Environment
 import starling.daterange.{DateRange, DayAndTime, Day}
 import starling.richdb.RichInstrumentResultSetRow
 import starling.utils.ImplicitConversions._

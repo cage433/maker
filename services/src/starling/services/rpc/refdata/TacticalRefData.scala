@@ -6,11 +6,7 @@ import org.jboss.resteasy.client.{ProxyFactory, ClientExecutor}
 import com.trafigura.tradecapture.internal.refinedmetalreferencedataservice._
 import com.trafigura.edm.tradeservice.{EdmGetTradesResource, EdmGetTradesResourceProxy, EdmGetTrades}
 import com.trafigura.edm.trades.{PhysicalTrade => EDMPhysicalTrade}
-import com.trafigura.tradecapture.internal.refinedmetal.{Market, Metal}
-import com.trafigura.edm.physicaltradespecs.QuotaDetail
-import com.trafigura.tradecapture.internal.refinedmetal.Metal
 import org.codehaus.jettison.json.JSONObject
-import com.trafigura.tradecapture.internal.refinedmetal.Market
 import com.trafigura.edm.tradeservice.TradeResults
 import com.trafigura.edm.trades.Trade
 import com.trafigura.edm.tradeservice.TradeResult
@@ -19,12 +15,14 @@ import com.trafigura.tradinghub.support.{ModelObject, GUID}
 import java.io.{BufferedWriter, FileWriter}
 import starling.services.rpc.valuation.ValuationService
 import starling.services.rpc.logistics.FileUtils
+import starling.titan.{TitanEdmTradeService, TitanServices}
+import com.trafigura.tradecapture.internal.refinedmetal.{Counterparty, Metal, Market}
 
 
 /**
  * Tactical ref data, service proxies / data
  *   also includes the trademgmt EDM trade serivce, this should be refactored to  separate out at some point
- */
+ *
 trait TitanTacticalRefData {
    
 //  val titanGetEdmTradesService : EdmGetTrades
@@ -41,6 +39,7 @@ trait TitanEdmTradeService {
 }
 
 trait TitanServices extends TitanTacticalRefData with TitanEdmTradeService
+*/
 
 case class DefaultTitanServices(props: Props) extends TitanServices {
   val rmetadminuser = props.ServiceInternalAdminUser()
@@ -51,13 +50,16 @@ case class DefaultTitanServices(props: Props) extends TitanServices {
 
   private lazy val tacticalRefdataMetalsService: MetalService = new MetalServiceResourceProxy(ProxyFactory.create(classOf[MetalServiceResource], refdataServiceURL, clientExecutor))
   private lazy val tacticalRefdataMarketsService: MarketService = new MarketServiceResourceProxy(ProxyFactory.create(classOf[MarketServiceResource], refdataServiceURL, clientExecutor))
+  private lazy val tacticalRefdataCounterpartiesService : CounterpartyService = new CounterpartyServiceResourceProxy(ProxyFactory.create(classOf[CounterpartyServiceResource], refdataServiceURL, clientExecutor))
   lazy val titanGetEdmTradesService: EdmGetTrades = new EdmGetTradesResourceProxy(ProxyFactory.create(classOf[EdmGetTradesResource], tradeServiceURL, clientExecutor))
 
   lazy val futuresMarketByGUID: Map[GUID, Metal] = Map[GUID, Metal]() ++ allTacticalRefDataFuturesMarkets.map(e => (e.guid, e))
   lazy val futuresExchangeByGUID: Map[GUID, Market] = Map[GUID, Market]() ++ allTacticalRefDataExchanges.map(e => (e.guid, e))
+  lazy val counterpartiesByGUID: Map[GUID, Counterparty] = Map[GUID, Counterparty]() ++ allTacticalRefDataCounterparties().map(e => e.guid -> e)
 
   def allTacticalRefDataFuturesMarkets() = tacticalRefdataMetalsService.getMetals()
   def allTacticalRefDataExchanges() = tacticalRefdataMarketsService.getMarkets()
+  def allTacticalRefDataCounterparties() = tacticalRefdataCounterpartiesService.getCounterparties(true)
 }
 
 /**
@@ -89,6 +91,7 @@ case class FileMockedTitanServices() extends TitanServices {
 
   lazy val futuresMarketByGUID: Map[GUID, Metal] = loadedMarkets.map(m => m.guid -> m).toMap
   lazy val futuresExchangeByGUID: Map[GUID, Market] = loadedExchanges.map(e => e.guid -> e).toMap
+  lazy val counterpartiesByGUID: Map[GUID, Counterparty] = Map[GUID, Counterparty]()
 
   def allTacticalRefDataFuturesMarkets() = Nil
   def allTacticalRefDataExchanges() = Nil

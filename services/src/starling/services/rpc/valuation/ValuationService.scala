@@ -13,8 +13,7 @@ import starling.services.StarlingInit
 import com.trafigura.services.valuation._
 import starling.services.rpc.refdata._
 import com.trafigura.tradinghub.support.ModelObject
-import com.trafigura.edm.trades.{Trade => EDMTrade, PhysicalTrade => EDMPhysicalTrade}
-import com.trafigura.edm.logistics.inventory.EDMAssignmentItem
+import com.trafigura.edm.trades.{PhysicalTrade => EDMPhysicalTrade}
 import scala.Either
 import java.lang.Exception
 import com.trafigura.shared.events._
@@ -36,13 +35,13 @@ import starling.curves.DiscountRateKey
 import starling.curves.ForwardPriceKey
 import starling.curves.UnitTestingAtomicEnvironment
 import starling.curves.FixingKey
-import starling.services.rpc.logistics.TitanLogisticsServices
 import com.trafigura.edm.physicaltradespecs.EDMQuota
-
+import starling.titan.{TitanServices, TitanTacticalRefData, TitanLogisticsServices, TitanTradeCache}
 
 /**
  * Trade cache provide trade map lookup by trade id and also a quota id to trade map lookup
  */
+/*
 trait TitanTradeCache {
   protected var tradeMap: Map[String, EDMPhysicalTrade]
   protected var quotaIDToTradeIDMap: Map[String, String]
@@ -65,7 +64,11 @@ trait TitanTradeCache {
 
   def tradeIDFromQuotaID(quotaID: String): String 
 }
+*/
 
+/**
+ * Trade cache provide trade map lookup by trade id and also a quota id to trade map lookup
+ */
 case class DefaultTitanTradeCache(props : Props) extends TitanTradeCache {
   protected var tradeMap: Map[String, EDMPhysicalTrade] = Map[String, EDMPhysicalTrade]()
   protected var quotaIDToTradeIDMap: Map[String, String] = Map[String, String]()

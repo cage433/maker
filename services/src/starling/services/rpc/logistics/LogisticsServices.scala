@@ -10,14 +10,18 @@ import org.codehaus.jettison.json.{JSONObject, JSONArray}
 import java.io.{BufferedWriter, FileWriter}
 import starling.services.StarlingInit
 import com.trafigura.edm.physicaltradespecs.EDMQuota
-import com.trafigura.edm.trades.{Trade => EDMTrade, PhysicalTrade => EDMPhysicalTrade}
+import com.trafigura.edm.trades.{PhysicalTrade => EDMPhysicalTrade}
 import scala.util.control.Exception.catching
-import starling.services.rpc.valuation.{TitanTradeService, DefaultTitanTradeService}
-import starling.services.rpc.refdata.{TitanServices, FileMockedTitanServices, NeptuneId, TitanEdmTradeService}
+import starling.services.rpc.valuation.DefaultTitanTradeService
+import starling.services.rpc.refdata.{FileMockedTitanServices, NeptuneId}
+import starling.titan.LogisticsServices._
+import starling.titan.{TitanServices, TitanLogisticsInventoryServices, TitanLogisticsAssignmentServices, TitanLogisticsServices}
+
 
 /**
  * logistics service interface
  */
+/*
 object LogisticsServices {
   type EdmAssignmentServiceWithGetAllAssignments = EdmAssignmentService with Object { def getAllAssignments() : List[EDMAssignmentItem] }
   type EdmInventoryServiceWithGetAllInventory = EdmInventoryService with Object { def getAllInventoryLeaves() : List[EDMInventoryItem] }
@@ -34,6 +38,7 @@ trait TitanLogisticsServices {
   val assignmentService : TitanLogisticsAssignmentServices
   val inventoryService : TitanLogisticsInventoryServices
 }
+*/
 
 case class DefaultTitanLogisticsServices(props: Props) extends TitanLogisticsServices {
   val assignmentService = DefaultTitanLogisticsAssignmentServices(props)
