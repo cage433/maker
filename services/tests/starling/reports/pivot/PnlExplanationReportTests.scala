@@ -56,7 +56,7 @@ class PnlExplanationReportTests extends TestMarketSpec {
   class InstrumentWithIncorrectAtomicKeys(day:Day) extends UTP {
     def pivotUTPType = throw new Exception
 
-    def details = throw new Exception
+    def detailsForUTPNOTUSED = throw new Exception
     def instrumentType = throw new Exception
     def asUtpPortfolio = throw new Exception
     def isLive(dayAndTime: DayAndTime) = true

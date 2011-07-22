@@ -25,9 +25,9 @@ case class FXOption(
 
   override def expiryDay() = Some(exerciseDate)
 
-  def details :Map[String, Any] =
+  def detailsForUTPNOTUSED :Map[String, Any] =
     Map("ExerciseDay" -> exerciseDate, "MaturityDay" -> maturityDate, "Strike" -> strike, "Quantity" -> volume, "CallPut" -> callPut)
-  def tradeableDetails :Map[String, Any] =
+  def persistedTradeableDetails :Map[String, Any] =
     Map("ExerciseDay" -> exerciseDate, "MaturityDay" -> maturityDate, "Strike" -> strike, "Quantity" -> volume, "CallPut" -> callPut)
 
 

@@ -23,7 +23,7 @@ abstract class SpreadOption(
                          ) extends Tradeable {
   def isLive(dayAndTime: DayAndTime) = dayAndTime < expiryDay.get.endOfDay
 
-  def tradeableDetails = Map("Market" -> market, "Period" -> period, "Strike" -> strike, "Quantity" -> volume, "CallPut" -> callPut)
+  def persistedTradeableDetails = Map("Market" -> market, "Period" -> period, "Strike" -> strike, "Quantity" -> volume, "CallPut" -> callPut)
 }
 
 abstract class SingleSpreadOption(
@@ -35,7 +35,7 @@ abstract class SingleSpreadOption(
                                callPut: CallOrPut
                                ) extends UTP {
 
-  def details = Map("Market" -> market, "Period" -> period, "Strike" -> strike, "CallPut" -> callPut)
+  def detailsForUTPNOTUSED = Map("Market" -> market, "Period" -> period, "Strike" -> strike, "CallPut" -> callPut)
 
   def isLive(dayAndTime: DayAndTime) = dayAndTime < exerciseDay.endOfDay
 

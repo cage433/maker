@@ -46,7 +46,7 @@ case class SwapCalendarSpread(index: SingleIndex,
       liveAveragingDays
   }
 
-  def details = super.tradeableDetails
+  def detailsForUTPNOTUSED = super.persistedTradeableDetails
 
   def instrumentType = SwapCalendarSpread
 

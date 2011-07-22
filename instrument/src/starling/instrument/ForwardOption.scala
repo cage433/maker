@@ -111,8 +111,8 @@ case class ForwardOption(
 
   override def expiryDay() = Some(exerciseDay)
 
-  def details :Map[String, Any] = Map("Market" -> market, "ExerciseDay" -> exerciseDay, "Period" -> deliveryDay, "Strike" -> strike, "CallPut" -> callPut, "ExerciseType" -> exerciseType)
-  def tradeableDetails :Map[String, Any] = Map("Market" -> market, "ExerciseDay" -> exerciseDay, "Period" -> deliveryDay, "Strike" -> strike, "Quantity" -> volume, "CallPut" -> callPut, "ExerciseType" -> exerciseType)
+  def detailsForUTPNOTUSED :Map[String, Any] = Map("Market" -> market, "ExerciseDay" -> exerciseDay, "Period" -> deliveryDay, "Strike" -> strike, "CallPut" -> callPut, "ExerciseType" -> exerciseType)
+  def persistedTradeableDetails :Map[String, Any] = Map("Market" -> market, "ExerciseDay" -> exerciseDay, "Period" -> deliveryDay, "Strike" -> strike, "Quantity" -> volume, "CallPut" -> callPut, "ExerciseType" -> exerciseType)
 
   def asUtpPortfolio(tradeDay:Day) = UTP_Portfolio(Map(new ForwardOption(market, exerciseDay, deliveryDay, strike, Quantity(1.0, volume.uom), callPut, exerciseType) -> volume.value))
 

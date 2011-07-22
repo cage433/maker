@@ -27,10 +27,8 @@ case class CashInstrument(
 	def valuationCCY : UOM = volume.uom
 	def isLive(dayAndTime : DayAndTime) : Boolean = dayAndTime <= settlementDate.startOfDay
   
-  def details :Map[String, Any] = 
-    Map("CashInstrumentType" -> cashInstrumentType.name, "Quantity" -> volume, "Delivery Day" -> settlementDate) ++
-      index.map("Market" -> _).toMap ++
-      averagingPeriod.map("Period" -> _).toMap
+  def detailsForUTPNOTUSED :Map[String, Any] = persistedTradeableDetails
+
 
   def instrumentType = CashInstrument
 
@@ -45,7 +43,9 @@ case class CashInstrument(
     UTP_Portfolio(Map(unit -> volume.value))
   }
 
-  def tradeableDetails = details
+  def persistedTradeableDetails = Map("CashInstrumentType" -> cashInstrumentType.name, "Quantity" -> volume, "Delivery Day" -> settlementDate) ++
+      index.map("Market" -> _).toMap ++
+      averagingPeriod.map("Period" -> _).toMap
 
   def tradeableType = CashInstrument
 

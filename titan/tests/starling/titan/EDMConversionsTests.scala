@@ -1,4 +1,4 @@
-package starling.edm
+package starling.titan
 
 import starling.utils.StarlingTest
 import starling.quantity.Quantity
@@ -16,7 +16,7 @@ class EDMConversionsTests extends StarlingTest{
   )
   @Test(dataProvider = "testConversionRoundTripProvider")
   def testConversionRoundTrip(q : Quantity){
-    import starling.edm.EDMConversions._
+    import starling.titan.EDMConversions._
      assertEquals(q, fromTitanQuantity(toTitanQuantity(q)))
   }
 }

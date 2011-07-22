@@ -27,10 +27,11 @@ case class TradeStores(
   eaiTradeStores: Map[Book,EAITradeStore],
   intradayTradeStore: IntradayTradeStore,
   refinedAssignmentTradeStore: RefinedAssignmentTradeStore,
-  refinedFixationTradeStore : RefinedFixationTradeStore
+  refinedFixationTradeStore : RefinedFixationTradeStore,
+  titanTradeStore : TradeStore
 ) {
 
-  def all = eaiTradeStores.values.toList ::: List(intradayTradeStore, refinedAssignmentTradeStore, refinedFixationTradeStore)
+  def all = eaiTradeStores.values.toList ::: List(intradayTradeStore, refinedAssignmentTradeStore, refinedFixationTradeStore, titanTradeStore)
 
   val deskDefinitions = Map[Desk,DeskDefinition](
     Desk.LondonDerivativesOptions -> new DeskDefinition() {
@@ -113,8 +114,12 @@ case class TradeStores(
         new TradeSet(RefinedAssignmentTradeSystem, standardStoreFor(RefinedAssignmentTradeSystem), tradeImporters.get(RefinedAssignmentTradeSystem), predicate),
         new TradeSet(RefinedFixationTradeSystem, standardStoreFor(RefinedFixationTradeSystem), tradeImporters.get(RefinedFixationTradeSystem), predicate)
       )
+    },
+    Desk.Titan -> new DeskDefinition() {
+      def tradeSets(predicate: TradePredicate) = List(
+        new TradeSet(TitanTradeSystem, standardStoreFor(TitanTradeSystem), tradeImporters.get(TitanTradeSystem), predicate)
+      )
     }
-
   )
 
   def eaiStoreFor(book:Book) = eaiTradeStores(book)
@@ -123,6 +128,7 @@ case class TradeStores(
     case IntradayTradeSystem => intradayTradeStore
     case RefinedAssignmentTradeSystem  => refinedAssignmentTradeStore
     case RefinedFixationTradeSystem => refinedFixationTradeStore
+    case TitanTradeSystem => titanTradeStore
   }
 
   def storesFor(tradeSystem:TradeSystem) = {
@@ -171,11 +177,7 @@ class TradeSet(
         tradeImporter:Option[TradeImporter],
         val tradePredicate:TradePredicate) {
   val key = (tradeSystem, tradePredicate)
-  def importAll = tradeImporter match {
-    case Some(importer) => Some(importer.importAll())
-    case None => None
-  }
-
+  
   def partitioningTradeColumns : List[Field] = {
     if (tradeSystem == EAITradeSystem) List(Field("Strategy")) else Nil
   }

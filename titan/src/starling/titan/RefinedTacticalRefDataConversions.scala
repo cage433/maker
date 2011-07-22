@@ -1,4 +1,4 @@
-package starling.edm
+package starling.titan
 
 import com.trafigura.tradecapture.internal.refinedmetal.{Metal, Market => RefMarket}
 import com.trafigura.tradecapture.internal.refinedmetal.Market._

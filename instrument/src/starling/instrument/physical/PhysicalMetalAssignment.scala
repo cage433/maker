@@ -7,6 +7,7 @@ import starling.instrument._
 import starling.quantity.{UOM, Quantity}
 import starling.utils.sql.PersistAsBlob
 import starling.market.{LmeSingleIndices, SingleIndex}
+import collection.SortedMap
 
 trait TitanPricingSpec {
   def price(env : Environment) : Quantity
@@ -67,7 +68,7 @@ case class MonthAveragePricingSpec(index : SingleIndex, month : Month, premium :
   def pricingType : String = "Month Average"
 }
 
-case class PartialAveragePricingSpec(index : SingleIndex, dayFractions : Map[Day, Double], premium : Quantity) extends AveragePricingSpec {
+case class PartialAveragePricingSpec(index : SingleIndex, dayFractions : SortedMap[Day, Double], premium : Quantity) extends AveragePricingSpec {
 
   val observationDays = dayFractions.keySet.toList.sortWith(_<_)
   def settlementDay = dayFractions.keys.toList.sortWith(_>_).head.addBusinessDays(index.businessCalendar, 2)
@@ -203,23 +204,26 @@ case class UnknownPricingSpecification(
   def valuationCCY = premiumCCY.getOrElse(index.currency)
 }
 
-case class PhysicalMetalAssignment(commodityName : String, quantity : Quantity, deliveryDay : Day, pricingSpec : TitanPricingSpec, quotaID : String, titanTradeID : String) extends UTP with Tradeable {
+case class PhysicalMetalAssignment(commodityName : String, quantity : Quantity, deliveryDay : Day, pricingSpec : TitanPricingSpec) extends UTP with Tradeable {
   import PhysicalMetalAssignment._
 
   def isLive(dayAndTime: DayAndTime) = !pricingSpec.isComplete(dayAndTime)
 
   def valuationCCY = pricingSpec.valuationCCY
 
-  def details :Map[String, Any] = Map(commodityLabel -> commodityName, deliveryDayLabel -> deliveryDay, pricingSpecNameLabel -> pricingSpec.pricingType, quotaIDLabel -> quotaID, titanTradeIDLabel -> titanTradeID)
+  def detailsForUTPNOTUSED :Map[String, Any] = Map()
 
   def instrumentType = PhysicalMetalAssignment
   def tradeableType = PhysicalMetalAssignment
 
-  def tradeableDetails : Map[String, Any] = (details - pricingSpecNameLabel) ++ Map(quantityLabel -> quantity, pricingSpecLabel -> PersistAsBlob(pricingSpec))
+  def persistedTradeableDetails : Map[String, Any] = Map(commodityLabel -> commodityName, deliveryDayLabel -> deliveryDay, quantityLabel -> quantity, pricingSpecLabel -> PersistAsBlob(pricingSpec))
+  override def shownTradableDetails = Map(commodityLabel -> commodityName, deliveryDayLabel -> deliveryDay, pricingSpecNameLabel -> pricingSpec.pricingType, quantityLabel -> quantity)
 
   def asUtpPortfolio(tradeDay:Day) = UTP_Portfolio(Map(copy(quantity = Quantity(1.0, quantity.uom)) -> quantity.value))
 
   def assets(env: Environment) = {
+    val price = pricingSpec.price(env)
+    val cashMtm = quantity.in(price.denominatorUOM).get * price * -1
     Assets(
       // Physical
       Asset(
@@ -227,7 +231,7 @@ case class PhysicalMetalAssignment(commodityName : String, quantity : Quantity, 
         assetType = commodityName,
         settlementDay = deliveryDay,
         amount = quantity,
-        mtm = Quantity.NULL
+        mtm = Quantity(0, cashMtm.uom.numeratorUOM)
       ),
       // Cash
       Asset(
@@ -235,7 +239,7 @@ case class PhysicalMetalAssignment(commodityName : String, quantity : Quantity, 
         assetType = commodityName,
         settlementDay = pricingSpec.settlementDay,
         amount = quantity,
-        mtm = quantity * pricingSpec.price(env) * -1
+        mtm = cashMtm
       )
     )
   }
@@ -252,16 +256,18 @@ case class PhysicalMetalAssignment(commodityName : String, quantity : Quantity, 
   def daysForPositionReport(marketDay: DayAndTime) = pricingSpec.daysForPositionReport(marketDay)
 
   def volume = quantity
+
+  override def expiryDay() = Some(pricingSpec.settlementDay)
 }
 
 object PhysicalMetalAssignment extends InstrumentType[PhysicalMetalAssignment] with TradeableType[PhysicalMetalAssignment]{
-  val deliveryDayLabel = "Delivery"
-  val commodityLabel = "Commodity"
-  val quotaIDLabel = "Quota ID"
-  val titanTradeIDLabel = "Titan Trade ID"
+  val deliveryDayLabel = "deliveryDay"
+  val commodityLabel = "commodity"
+  val quotaIDLabel = "quotaID"
+  val titanTradeIDLabel = "titanTradeID"
   val quantityLabel = "Quantity"
-  val pricingSpecNameLabel = "Pricing Spec Name"
-  val pricingSpecLabel = "Pricing Spec"
+  val pricingSpecNameLabel = "pricingSpecName"
+  val pricingSpecLabel = "pricingSpec"
 
 
   val name = "Physical Metal Assignment"
@@ -271,9 +277,7 @@ object PhysicalMetalAssignment extends InstrumentType[PhysicalMetalAssignment] w
     val quantity = row.getQuantity(quantityLabel)
     val deliveryDay = row.getDay(deliveryDayLabel)
     val pricingSpec = row.getObject[TitanPricingSpec](pricingSpecLabel)
-    val quotaID = row.getString(quotaIDLabel)
-    val titanTradeID = row.getString(titanTradeIDLabel)
-    PhysicalMetalAssignment(commodityName, quantity, deliveryDay, pricingSpec, quotaID, titanTradeID)
+    PhysicalMetalAssignment(commodityName, quantity, deliveryDay, pricingSpec)
   }
-  def sample = PhysicalMetalAssignment("Aluminium", Quantity(100, UOM.MT), Day(2011, 10, 10), MonthAveragePricingSpec(LmeSingleIndices.alCashBid, Month(2011, 10), Quantity.NULL), "12345", "54321")
+  def sample = PhysicalMetalAssignment("Aluminium", Quantity(100, UOM.MT), Day(2011, 10, 10), MonthAveragePricingSpec(LmeSingleIndices.alCashBid, Month(2011, 10), Quantity.NULL))
 }

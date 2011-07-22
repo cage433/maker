@@ -248,7 +248,6 @@
     <orderEntry type="module" module-name="auth" />
     <orderEntry type="module" module-name="gui.api" />
     <orderEntry type="module" module-name="pivot" />
-    <orderEntry type="module" module-name="databases" />
     <orderEntry type="module-library" exported="">
       <library>
         <CLASSES>
@@ -363,6 +362,7 @@
         <SOURCES />
       </library>
     </orderEntry>
+    <orderEntry type="module" module-name="titan" />
   </component>
 </module>
 

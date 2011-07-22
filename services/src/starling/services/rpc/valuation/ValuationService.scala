@@ -36,7 +36,7 @@ import starling.curves.ForwardPriceKey
 import starling.curves.UnitTestingAtomicEnvironment
 import starling.curves.FixingKey
 import com.trafigura.edm.physicaltradespecs.EDMQuota
-import starling.titan.{TitanServices, TitanTacticalRefData, TitanLogisticsServices, TitanTradeCache}
+import starling.titan._
 
 
 /**
@@ -46,14 +46,23 @@ case class DefaultTitanTradeCache(props : Props) extends TitanTradeCache {
   protected var tradeMap: Map[String, EDMPhysicalTrade] = Map[String, EDMPhysicalTrade]()
   protected var quotaIDToTradeIDMap: Map[String, String] = Map[String, String]()
 
-  val titanTradesService = new DefaultTitanServices(props).titanGetEdmTradesService
-
+  private val titanTradesService = new DefaultTitanServices(props).titanGetEdmTradesService
+  private def getAll() = try {
+      titanTradesService.getAll()
+  } catch {
+    case e : Throwable => throw new ExternalTitanServiceFailed(e)
+  }
+  private def getByOid(id : Int) = try {
+      titanTradesService.getByOid(id)
+  } catch {
+    case e : Throwable => throw new ExternalTitanServiceFailed(e)
+  }
   /*
     Read all trades from Titan and blast our cache
   */
   def updateTradeMap() {
     val sw = new Stopwatch()
-    val edmTradeResult = titanTradesService.getAll()
+    val edmTradeResult = getAll()
     Log.info("Are EDM Trades available " + edmTradeResult.cached + ", took " + sw)
     if (!edmTradeResult.cached) throw new TradeManagementCacheNotReady
     Log.info("Got Edm Trade results " + edmTradeResult.cached + ", trade result count = " + edmTradeResult.results.size)
@@ -76,7 +85,7 @@ case class DefaultTitanTradeCache(props : Props) extends TitanTradeCache {
       tradeMap(id)
     }
     else {
-      val trade = titanTradesService.getByOid(id.toInt)
+      val trade = getByOid(id.toInt)
       tradeMap += trade.tradeId.toString -> trade.asInstanceOf[EDMPhysicalTrade]
       tradeMap(id)
     }
@@ -245,7 +254,7 @@ class ValuationService(
   type TradeValuationResult = Either[String, List[CostsAndIncomeQuotaValuation]]
 
   lazy val futuresExchangeByGUID = refData.futuresExchangeByGUID
-  lazy val futuresMarketByGUID = refData.futuresMarketByGUID
+  lazy val edmMetalByGUID = refData.edmMetalByGUID
   val eventHandler = new EventHandler
 
   rabbitEventServices.addClient(eventHandler)
@@ -262,7 +271,7 @@ class ValuationService(
     val edmTrades = titanTradeCache.getAllTrades()
     log("Got Edm Trade results, trade result count = " + edmTrades.size)
     val env = environmentProvider.environment(snapshotIDString)
-    val tradeValuer = PhysicalMetalForward.value(futuresExchangeByGUID, futuresMarketByGUID, env, snapshotIDString) _
+    val tradeValuer = PhysicalMetalForward.value(futuresExchangeByGUID, edmMetalByGUID, env, snapshotIDString) _
     log("Got %d completed physical trades".format(edmTrades.size))
     sw.reset()
     val valuations = edmTrades.map {
@@ -287,7 +296,7 @@ class ValuationService(
 
     log("Got Edm Trade result " + edmTradeResult)
     val env = environmentProvider.environment(snapshotIDString)
-    val tradeValuer = PhysicalMetalForward.value(futuresExchangeByGUID, futuresMarketByGUID, env, snapshotIDString) _
+    val tradeValuer = PhysicalMetalForward.value(futuresExchangeByGUID, edmMetalByGUID, env, snapshotIDString) _
 
     val edmTrade: EDMPhysicalTrade = edmTradeResult.asInstanceOf[EDMPhysicalTrade]
     log("Got %s physical trade".format(edmTrade.toString))
@@ -318,7 +327,7 @@ class ValuationService(
     }
 
     var tradeValueCache = Map[String, TradeValuationResult]()
-    val tradeValuer = PhysicalMetalForward.value(futuresExchangeByGUID, futuresMarketByGUID, env, snapshotIDString) _
+    val tradeValuer = PhysicalMetalForward.value(futuresExchangeByGUID, edmMetalByGUID, env, snapshotIDString) _
 
     def tradeValue(id: String): TradeValuationResult = {
       if (!tradeValueCache.contains(id))
@@ -380,7 +389,7 @@ class ValuationService(
       a.oid.contents -> quotaMap(a.quotaName)
     }).toMap
 
-    val assignmentValuer = PhysicalMetalAssignmentForward.value(futuresExchangeByGUID, futuresMarketByGUID, assignmentIdToQuotaMap, env, snapshotIDString) _
+    val assignmentValuer = PhysicalMetalAssignmentForward.value(futuresExchangeByGUID, edmMetalByGUID, assignmentIdToQuotaMap, env, snapshotIDString) _
 
     val valuations = inventory.map(i => i.oid.contents.toString -> assignmentValuer(i))
     
@@ -416,7 +425,7 @@ class ValuationService(
 
   def getTrades(tradeIds : List[String]) : List[EDMPhysicalTrade] = tradeIds.map(titanTradeCache.getTrade)
   def getFuturesExchanges = futuresExchangeByGUID.values
-  def getFuturesMarkets = futuresMarketByGUID.values
+  def getFuturesMarkets = edmMetalByGUID.values
 
   /**
    * handler for events

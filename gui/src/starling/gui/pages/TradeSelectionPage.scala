@@ -323,7 +323,8 @@ class TradeSelectionComponent(
     enabled = {
       deskCheckBox.selected && {
         deskCombo.selection.item == Desk.GasolineSpec ||
-        deskCombo.selection.item == Desk.LondonDerivatives
+        deskCombo.selection.item == Desk.LondonDerivatives ||
+        deskCombo.selection.item == Desk.Titan
       }
     }
     icon = StarlingIcons.icon("/icons/14x14_download_data.png")
@@ -625,6 +626,10 @@ case class SnapshotSubmitRequest(marketDataSelection:MarketDataSelection, observ
 
 case class BookCloseRequest(desk:Desk) extends SubmitRequest[Unit] {
   def submit(server:StarlingServer) = {
-    server.bookClose(desk)
+    if (desk == Desk.Titan) {
+      server.importTitanTrades()
+    } else {
+      server.bookClose(desk)
+    }
   }
 }

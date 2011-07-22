@@ -113,6 +113,7 @@ sealed case class Desk(name: String) {
     case CrudeSpecNorthSea             => List(Crude, LimOnly)
     case HoustonDerivatives            => List(BarryEckstein, LimOnly)
     case Refined                       => List(System, Metals, Starling)
+    case Titan                         => List(Metals)
   }
 }
 
@@ -123,6 +124,7 @@ object Desk extends StarlingEnum(classOf[Desk], (d: Desk) => d.name, true) {
   val CrudeSpecNorthSea = Desk("Crude Spec North Sea")
   val HoustonDerivatives = Desk("Houston Derivatives")
   val Refined = Desk("Refined")
+  val Titan = Desk("Titan")
 
   val pricingGroups = values.flatMap(_.pricingGroups).distinct
 

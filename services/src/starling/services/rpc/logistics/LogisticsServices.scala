@@ -13,10 +13,9 @@ import com.trafigura.edm.physicaltradespecs.EDMQuota
 import com.trafigura.edm.trades.{PhysicalTrade => EDMPhysicalTrade}
 import scala.util.control.Exception.catching
 import starling.services.rpc.valuation.DefaultTitanTradeService
-import starling.services.rpc.refdata.{FileMockedTitanServices, NeptuneId}
+import starling.services.rpc.refdata.{FileMockedTitanServices}
 import starling.titan.LogisticsServices._
-import starling.titan.{TitanServices, TitanLogisticsInventoryServices, TitanLogisticsAssignmentServices, TitanLogisticsServices}
-
+import starling.titan._
 
 /**
  * logistics service interface
@@ -125,8 +124,8 @@ case class FileMockedTitanLogisticsAssignmentServices() extends TitanLogisticsAs
     salesAssignments
   }
 
-  private val allAssignments = readAllAssignments()
-  private val salesAssignments = readSalesAssignments()
+  private lazy val allAssignments = readAllAssignments()
+  private lazy val salesAssignments = readSalesAssignments()
 }
 
 case class FileMockedTitanLogisticsInventoryServices() extends TitanLogisticsInventoryServices {

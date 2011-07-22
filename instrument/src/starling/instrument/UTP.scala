@@ -14,11 +14,10 @@ import starling.utils.cache.CacheFactory
 trait UTP extends Instrument {
   def instrumentType : InstrumentType[_]
 
-  // All trade params. Must match column names in Trade table
-  def details : Map[String, Any]
+  def detailsForUTPNOTUSED : Map[String, Any]
 
   def fields:List[String] = {
-    val tradeableFields = details.keySet.map(_.removeWhiteSpace.toLowerCase).toList
+    val tradeableFields = detailsForUTPNOTUSED.keySet.map(_.removeWhiteSpace.toLowerCase).toList
     val allConvertedFields = InstrumentType.fields.map(_.removeWhiteSpace.toLowerCase)
     val matchingFields = allConvertedFields.intersect(tradeableFields)
     matchingFields.map(field => InstrumentType.fields(allConvertedFields.indexOf(field)))

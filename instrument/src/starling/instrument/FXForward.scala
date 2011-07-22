@@ -50,7 +50,7 @@ FXForward(
 
   override def expiryDay() = Some(maturityDate)
 
-  def tradeableDetails :Map[String, Any] = Map("MaturityDay" -> maturityDate, "Initial Price" -> strike, "Quantity" -> volume)
+  def persistedTradeableDetails :Map[String, Any] = Map("MaturityDay" -> maturityDate, "Initial Price" -> strike, "Quantity" -> volume)
 
   def asUtpPortfolio(tradeDay:Day):UTP_Portfolio = asUtpPortfolio
   def asUtpPortfolio():UTP_Portfolio = UTP_Portfolio(Map(
@@ -90,7 +90,7 @@ FXForward(
     Asset.knownCash(maturityDate, buyAmount, env),
     Asset.knownCash(maturityDate, sellAmount, env))
 
-  def details = throw new IllegalStateException("This should only be used as a UTP in the context of an FXOption forwardState so it should not be persisted")
+  def detailsForUTPNOTUSED = throw new IllegalStateException("This should only be used as a UTP in the context of an FXOption forwardState so it should not be persisted")
 
   def pivotUTPType = null
 

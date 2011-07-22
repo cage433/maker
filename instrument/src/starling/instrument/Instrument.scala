@@ -245,7 +245,10 @@ trait Instrument extends Ordered[Instrument] with Greeks with PnlExplanation {
         }
     }
     val hedge = diff match {
-      case PriceDifferentiable(market: FuturesMarket, period) => Some(Future(market, period, 0.0(market.priceUOM), 1.0(market.uom)))
+      case PriceDifferentiable(market: FuturesMarket, period) => {
+        val futuresPeriod = if (market.tenor == Day) market.observationDays(period).last else period
+        Some(Future(market, futuresPeriod, 0.0(market.priceUOM), 1.0(market.uom)))
+      }
       case PriceDifferentiable(market : CommodityMarket, period) if Index.marketToPublishedIndexMap.contains(market) => {
         buildSwap(Index.marketToPublishedIndexMap(market), period)
       }

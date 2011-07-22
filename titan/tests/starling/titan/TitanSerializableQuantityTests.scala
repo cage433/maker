@@ -1,4 +1,4 @@
-package starling.edm
+package starling.titan
 
 import org.testng.annotations.{DataProvider, Test}
 import starling.utils.ScalaTestUtils._
