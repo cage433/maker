@@ -21,30 +21,70 @@ import starling.titan.{TitanServices, TitanLogisticsInventoryServices, TitanLogi
 /**
  * logistics service interface
  */
-case class DefaultTitanLogisticsServices(props: Props) extends TitanLogisticsServices {
-  val assignmentService = DefaultTitanLogisticsAssignmentServices(props)
-  val inventoryService = DefaultTitanLogisticsInventoryServices(props)
+case class DefaultTitanLogisticsServices(props: Props, titanEdmTradeService : Option[TitanServices] = None) extends TitanLogisticsServices {
+  val inventoryService = DefaultTitanLogisticsInventoryServices(props, titanEdmTradeService)
+  val assignmentService = DefaultTitanLogisticsAssignmentServices(props, Some(inventoryService))
 }
 
-case class DefaultTitanLogisticsAssignmentServices(props: Props) extends TitanLogisticsAssignmentServices {
+case class DefaultTitanLogisticsAssignmentServices(props: Props, titanInventoryService : Option[TitanLogisticsInventoryServices] /* = None */) extends TitanLogisticsAssignmentServices {
   private val rmetadminuser = props.ServiceInternalAdminUser()
   private val logisticsServiceURL = props.TitanLogisticsServiceUrl()
   private lazy val clientExecutor: ClientExecutor = new ComponentTestClientExecutor(rmetadminuser)
 
   lazy val service: EdmAssignmentServiceWithGetAllAssignments = new EdmAssignmentServiceResourceProxy(ProxyFactory.create(classOf[EdmAssignmentServiceResource], logisticsServiceURL, clientExecutor)) {
-    def getAllAssignments() : List[EDMAssignmentItem] = throw new Exception("Not implemented")
+    def getAllAssignments() : List[EDMAssignmentItem] = {
+      titanInventoryService match {
+        case Some(inventoryService) => {
+          val inventory = inventoryService.service.getAllInventoryLeaves()
+          val assignments : List[EDMAssignmentItem] = inventory.flatMap(i => {
+          val pa = this.getAssignmentById(i.purchaseAssignmentId) :: Nil
+            i.salesAssignmentId match {
+              case Some(salesId) => this.getAssignmentById(salesId) :: pa
+              case None => pa
+            }
+          })
+          assignments
+        }
+        case _ => throw new Exception("Not implemented")
+      }
+    }
   }
 }
 
-case class DefaultTitanLogisticsInventoryServices(props: Props) extends TitanLogisticsInventoryServices {
+case class DefaultTitanLogisticsInventoryServices(props: Props, titanEdmTradeService : Option[TitanServices] = None) extends TitanLogisticsInventoryServices {
 
   private val rmetadminuser = props.ServiceInternalAdminUser()
   private val logisticsServiceURL = props.TitanLogisticsServiceUrl()
   private lazy val clientExecutor: ClientExecutor = new ComponentTestClientExecutor(rmetadminuser)
 
-  lazy val service: EdmInventoryService with Object { def getAllInventoryLeaves() : List[EDMInventoryItem] } = new EdmInventoryServiceResourceProxy(ProxyFactory.create(classOf[EdmInventoryServiceResource], logisticsServiceURL, clientExecutor)) {
-    def getAllInventoryLeaves() : List[EDMInventoryItem] = throw new Exception("Not implemented")
-  }
+  lazy val service: EdmInventoryService with Object { def getAllInventoryLeaves() : List[EDMInventoryItem] } =
+    new EdmInventoryServiceResourceProxy(ProxyFactory.create(classOf[EdmInventoryServiceResource], logisticsServiceURL, clientExecutor)) {
+      def getAllInventoryLeaves() : List[EDMInventoryItem] = {
+
+        titanEdmTradeService match {
+          case Some(edmTradeService) => {
+            /**
+             * temporary faked logisitcs service to get all inventory (by fetching all inventory by purchase quota ids)
+             */
+            val trades : List[EDMPhysicalTrade] = edmTradeService.titanGetEdmTradesService.getAll().results.map(_.trade).filter(_ != null).map(_.asInstanceOf[EDMPhysicalTrade])
+            val purchaseQuotas : List[EDMQuota] = trades.filter(_.direction == "P").flatMap(t => t.quotas)
+            def inventoryByPurchaseQuotaId(id : String) =
+              catching(classOf[Exception]) either this.getInventoryTreeByPurchaseQuotaId(id)
+
+            val quotaIds = purchaseQuotas.map(q => NeptuneId(q.detail.identifier).identifier).filter(_ != null)
+            val allInventory = quotaIds.map(id => inventoryByPurchaseQuotaId(id))
+            val inventory = allInventory.collect({ case Right(i) => i }).flatten
+            println("Fetched all inventory (%d)".format(inventory.size))
+
+            def findLeaves(inventory : List[EDMInventoryItem]) : List[EDMInventoryItem] =
+              inventory.filter(item => !inventory.exists(i => i.parentId == Some(item.oid)))
+
+            findLeaves(inventory)
+          }
+          case _ => throw new Exception("Not supported")
+        }
+      }
+    }
 }
 
 
