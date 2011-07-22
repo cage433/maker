@@ -34,7 +34,7 @@ else
     # I'm actually going to compile the whole project here because the server needs to serve up gui class files but
     # because it doesn't depend on it, they don't get compiled automatically when you start the server.
     echo "Compiling... [targets: $TARGETS]"
-    nohup java -jar sbt/sbt-launch.jar "project dev.launcher" $TARGETS >> logs/fullCompile.log 2>&1 &&
+    nohup java -jar sbt/sbt-launch.jar $TARGETS >> logs/fullCompile.log 2>&1 &&
 
     # Want to compile the booter module (and jar it). It is written in java and used in the exe generation. This should
     # probably be done in SBT.
