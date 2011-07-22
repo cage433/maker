@@ -54,11 +54,9 @@ import starling.marketdata.{PriceValue, MarketDataKey, MarketDataType}
 import collection.SortedMap
 import starling.quantity.{UOM, Quantity, Percentage}
 import collection.immutable.{IndexedSeq, TreeMap, Map}
-<<<<<<< HEAD
 import starling.titan.{TitanLogisticsInventoryServices, TitanServices}
-=======
 import starling.titan.{TitanSystemOfRecord, TitanTradeStore}
->>>>>>> 34f10345e3c2bc2b0a6260e6d8741d272d73430f
+
 
 class StarlingInit( val props: Props,
                     dbMigration: Boolean = true,
