@@ -414,7 +414,7 @@ class ValuationService(
     log("Valuation took " + sw)
     val (worked, errors) = valuations.partition(_._2 isRight)
     log("Worked " + worked.size + ", failed " + errors.size + ", took " + sw)
-    println("Failed valuation of assignments \n %s".format(errors.mkString("\n")))
+    println("Failed valuation of assignments (%d)...\n%s".format(errors.size, errors.mkString("\n")))
 
     CostAndIncomeAssignmentValuationServiceResults(snapshotIDString, valuations.toMap)
   }
