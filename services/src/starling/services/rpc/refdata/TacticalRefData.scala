@@ -22,25 +22,7 @@ import com.trafigura.tradecapture.internal.refinedmetal.{Counterparty, Metal, Ma
 /**
  * Tactical ref data, service proxies / data
  *   also includes the trademgmt EDM trade serivce, this should be refactored to  separate out at some point
- *
-trait TitanTacticalRefData {
-   
-//  val titanGetEdmTradesService : EdmGetTrades
-
-  val futuresMarketByGUID: Map[GUID, Metal]
-  val futuresExchangeByGUID: Map[GUID, Market]
-
-  //def allTacticalRefDataFuturesMarkets() : List[Metal]
-  //def allTacticalRefDataExchanges() : List[Market]
-}
-
-trait TitanEdmTradeService {
-  val titanGetEdmTradesService : EdmGetTrades
-}
-
-trait TitanServices extends TitanTacticalRefData with TitanEdmTradeService
-*/
-
+ */
 case class DefaultTitanServices(props: Props) extends TitanServices {
   val rmetadminuser = props.ServiceInternalAdminUser()
   val tradeServiceURL = props.EdmTradeServiceUrl()

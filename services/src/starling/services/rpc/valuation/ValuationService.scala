@@ -38,33 +38,6 @@ import starling.curves.FixingKey
 import com.trafigura.edm.physicaltradespecs.EDMQuota
 import starling.titan.{TitanServices, TitanTacticalRefData, TitanLogisticsServices, TitanTradeCache}
 
-/**
- * Trade cache provide trade map lookup by trade id and also a quota id to trade map lookup
- */
-/*
-trait TitanTradeCache {
-  protected var tradeMap: Map[String, EDMPhysicalTrade]
-  protected var quotaIDToTradeIDMap: Map[String, String]
-  def getTrade(id: String): EDMPhysicalTrade 
-  def getAllTrades(): List[EDMPhysicalTrade] 
-  def removeTrade(id : String) {
-    tradeMap = tradeMap - id
-    quotaIDToTradeIDMap = quotaIDToTradeIDMap.filter{ case (_, value) => value != id}
-  }
-
-  def addTrade(id : String) {
-    tradeMap += id -> getTrade(id)
-    addTradeQuotas(id)
-  }
-
-  def addTradeQuotas(id : String) {
-    val trade = tradeMap(id)
-    quotaIDToTradeIDMap ++= trade.quotas.map{quota => (quota.detail.identifier, id)}
-  }
-
-  def tradeIDFromQuotaID(quotaID: String): String 
-}
-*/
 
 /**
  * Trade cache provide trade map lookup by trade id and also a quota id to trade map lookup

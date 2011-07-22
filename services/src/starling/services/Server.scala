@@ -57,6 +57,7 @@ import starling.marketdata.{PriceValue, MarketDataKey, MarketDataType}
 import collection.SortedMap
 import starling.quantity.{UOM, Quantity, Percentage}
 import collection.immutable.{IndexedSeq, TreeMap, Map}
+import starling.titan.{TitanLogisticsInventoryServices, TitanServices}
 
 class StarlingInit( val props: Props,
                     dbMigration: Boolean = true,
@@ -247,7 +248,7 @@ class StarlingInit( val props: Props,
 
   val titanTradeCache = new DefaultTitanTradeCache(props)
   val titanServices = new DefaultTitanServices(props)
-  val logisticsServices = new DefaultTitanLogisticsServices(props)
+  val logisticsServices = new DefaultTitanLogisticsServices(props, Some(titanServices))
   val rabbitEventServices = new DefaultRabbitEventServices(props)
   val valuationService = new ValuationService(new DefaultEnvironmentProvider(marketDataStore), titanTradeCache, titanServices, logisticsServices, rabbitEventServices)
   val marketDataService = new MarketDataService(marketDataStore)
