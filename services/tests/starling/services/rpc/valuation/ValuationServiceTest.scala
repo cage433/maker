@@ -50,7 +50,7 @@ class ValuationServiceTest extends StarlingTest {
     }
   }
 
-  //@Test
+  @Test
   def testValuationServiceValuationUpdatedEvents() {
 
     Log.info("testValuationServiceValuationUpdatedEvents starting")
