@@ -89,9 +89,13 @@ class ClosedDesks(broadcaster: Broadcaster, db: DB) {
   }
 
   def latestTradeTimestamp(desk:Desk):TradeTimestamp = {
-    val booksByDay = closedDesksByDay(desk)
-    val sortedDays = booksByDay.keys.toList.sorted
-    val dayToUse = sortedDays.last
-    booksByDay(dayToUse).last
+    closedDesksByDay.get(desk) match {
+      case Some(booksByDay) => {
+        val sortedDays = booksByDay.keys.toList.sorted
+        val dayToUse = sortedDays.last
+        booksByDay(dayToUse).last
+      }
+      case None => TradeTimestamp(Timestamp.now, Day(1980, 1, 1), 0, Some("Don't have any book closes"))
+    }
   }
 }

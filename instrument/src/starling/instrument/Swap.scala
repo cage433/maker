@@ -28,7 +28,7 @@ abstract class Swap(
 {
   def isLive(dayAndTime: DayAndTime): Boolean = dayAndTime < expiryDay.get.endOfDay
 
-  def tradeableDetails :Map[String, Any] = Map(
+  def persistedTradeableDetails :Map[String, Any] = Map(
     "Market" -> index,
     "Period" -> averagingPeriod,
     "Initial Price" -> strike,
@@ -68,7 +68,7 @@ abstract class SingleSwap(
 
   private def liveAveragingDays(marketDay : DayAndTime, si: SingleIndex) = averagingDays.filter(_.endOfDay > marketDay).filter(si.isObservationDay(_))
 
-  def details: Map[String, Any] = Map(
+  def detailsForUTPNOTUSED: Map[String, Any] = Map(
     "Market" -> index,
     "Period" -> averagingPeriod,
     "Strike" -> strike,

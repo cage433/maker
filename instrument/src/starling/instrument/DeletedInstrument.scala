@@ -9,7 +9,7 @@ import starling.daterange.{Day, DayAndTime}
 
 case class DeletedInstrument() extends Tradeable {
   def isLive(dayAndTime: DayAndTime) = throw new IllegalStateException("Deleted instrument")
-  def tradeableDetails = Map.empty
+  def persistedTradeableDetails = Map.empty
   def tradeableType = DeletedInstrument
   def asUtpPortfolio(tradeDay:Day) = throw new IllegalStateException("Can't have UTP for a deleted instrument")
 

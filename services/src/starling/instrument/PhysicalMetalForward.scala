@@ -4,11 +4,10 @@ import physical.TitanPricingSpec
 import starling.quantity.Quantity
 import starling.curves.Environment
 import starling.market.SingleIndex
-import com.trafigura.edm.shared.types.{Quantity => EDMQuantity}
 import starling.daterange.{DayOfWeek, Month, Day}
 import com.trafigura.tradinghub.support.GUID
 import com.trafigura.tradecapture.internal.refinedmetal.{Market => EDMMarket, Metal => EDMMetal}
-import starling.edm.{EDMPricingSpecConverter, EDMConversions}
+import starling.titan.{EDMPricingSpecConverter, EDMConversions}
 import com.trafigura.edm.materialspecification.CommoditySpec
 import com.trafigura.edm.trades.{Trade => EDMTrade, PhysicalTrade => EDMPhysicalTrade}
 import com.trafigura.edm.physicaltradespecs.EDMQuota
@@ -18,6 +17,7 @@ import com.trafigura.services.valuation.CostsAndIncomeAssignmentValuation
 import com.trafigura.services.valuation.CostsAndIncomeQuotaValuation
 import com.trafigura.services.valuation.PricingValuationDetails
 import com.trafigura.edm.logistics.inventory.EDMInventoryItem
+import com.trafigura.edm.shared.types.{Date, Quantity => EDMQuantity}
 
 
 case class PhysicalMetalQuota(
@@ -30,7 +30,7 @@ case class PhysicalMetalQuota(
 
 
 object PhysicalMetalForward{
-  def apply(exchangesByGUID : Map[GUID, EDMMarket], futuresMetalMarketByGUID : Map[GUID, EDMMetal])(trade : EDMPhysicalTrade) : PhysicalMetalForward = {
+  def apply(exchangesByGUID : Map[GUID, EDMMarket], edmMetalByGUID : Map[GUID, EDMMetal])(trade : EDMPhysicalTrade) : PhysicalMetalForward = {
     try {
       val quotas : List[PhysicalMetalQuota] = {
         trade.quotas.map(_.detail).map{
@@ -38,7 +38,9 @@ object PhysicalMetalForward{
             val deliveryQuantity = detail.deliverySpecs.map{ds => fromTitanQuantity(ds.quantity)}.sum
             val commodityGUIDs : Set[GUID] = detail.deliverySpecs.map(_.materialSpec.asInstanceOf[CommoditySpec].commodity).toSet
             assert(commodityGUIDs.size == 1, "Trade " + trade.tradeId + " has multiple commodities")
-            val pricingSpec = EDMPricingSpecConverter(futuresMetalMarketByGUID(commodityGUIDs.head), exchangesByGUID).fromEdmPricingSpec(deliveryQuantity, detail.pricingSpec)
+            val deliveryDay = Day.fromLocalDate(detail.deliverySpecs.head.schedule.asInstanceOf[Date].datex)
+
+            val pricingSpec = EDMPricingSpecConverter(edmMetalByGUID(commodityGUIDs.head), exchangesByGUID).fromEdmPricingSpec(deliveryDay, deliveryQuantity, detail.pricingSpec)
             PhysicalMetalQuota(
               detail.identifier,
               deliveryQuantity,
@@ -59,10 +61,10 @@ object PhysicalMetalForward{
     }
   }
 
-  def value(exchangesByGUID : Map[GUID, EDMMarket], futuresMetalMarketByGUID : Map[GUID, EDMMetal], env : Environment, snapshotID : String)(trade : EDMPhysicalTrade) : Either[String, List[CostsAndIncomeQuotaValuation]] =  {
+  def value(exchangesByGUID : Map[GUID, EDMMarket], edmMetalByGUID : Map[GUID, EDMMetal], env : Environment, snapshotID : String)(trade : EDMPhysicalTrade) : Either[String, List[CostsAndIncomeQuotaValuation]] =  {
 
     try {
-      val forward = PhysicalMetalForward(exchangesByGUID, futuresMetalMarketByGUID)(trade)
+      val forward = PhysicalMetalForward(exchangesByGUID, edmMetalByGUID)(trade)
       Right(forward.costsAndIncomeValueBreakdown(env, snapshotID))
     } catch {
       case ex => Left("Error valuing trade " + trade.tradeId + ", message was " + ex.getMessage)
@@ -131,9 +133,10 @@ object PhysicalMetalAssignmentForward {
       val deliveryQuantity = purchaseQuota.detail.deliverySpecs.map{ds => fromTitanQuantity(ds.quantity)}.sum
       val commodityGUIDs : Set[GUID] = purchaseQuota.detail.deliverySpecs.map(_.materialSpec.asInstanceOf[CommoditySpec].commodity).toSet
       assert(commodityGUIDs.size == 1, "quota " + purchaseQuota.detail.identifier + " has multiple commodities")
+      val deliveryDay = Day.fromLocalDate(purchaseQuota.detail.deliverySpecs.head.schedule.asInstanceOf[Date].datex)
 
-      val purchasePricingSpec = EDMPricingSpecConverter(futuresMetalMarketByGUID(commodityGUIDs.head), exchangesByGUID).fromEdmPricingSpec(deliveryQuantity, edmPurchasePricingSpec)
-      val salePricingSpec = EDMPricingSpecConverter(futuresMetalMarketByGUID(commodityGUIDs.head), exchangesByGUID).fromEdmPricingSpec(deliveryQuantity, edmSalePricingSpec)
+      val purchasePricingSpec = EDMPricingSpecConverter(futuresMetalMarketByGUID(commodityGUIDs.head), exchangesByGUID).fromEdmPricingSpec(deliveryDay, deliveryQuantity, edmPurchasePricingSpec)
+      val salePricingSpec = EDMPricingSpecConverter(futuresMetalMarketByGUID(commodityGUIDs.head), exchangesByGUID).fromEdmPricingSpec(deliveryDay, deliveryQuantity, edmSalePricingSpec)
             
      val quota = PhysicalMetalQuota(
        purchaseQuota.detail.identifier,

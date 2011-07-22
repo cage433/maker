@@ -64,8 +64,8 @@ case class Future(market: FuturesMarket, delivery: DateRange, strike: Quantity, 
   def instrumentType = Future
   def tradeableType = Future
 
-  def tradeableDetails :Map[String, Any] = Map("Market" -> market, "Period" -> delivery, "Initial Price" -> strike, "Quantity" -> volume)
-  def details :Map[String, Any] = Map("Market" -> market, "Period" -> delivery)
+  def persistedTradeableDetails :Map[String, Any] = Map("Market" -> market, "Period" -> delivery, "Initial Price" -> strike, "Quantity" -> volume)
+  def detailsForUTPNOTUSED :Map[String, Any] = Map("Market" -> market, "Period" -> delivery)
 
   def asUtpPortfolio(tradeDay:Day) = asUtpPortfolio
   def asUtpPortfolio = UTP_Portfolio(

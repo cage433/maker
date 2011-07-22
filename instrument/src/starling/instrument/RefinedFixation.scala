@@ -37,7 +37,7 @@ case class RefinedFixationsForSplit(
 ) extends Tradeable{
   def isLive(dayAndTime: DayAndTime) = fixations.forall(_.isLive(dayAndTime))
 
-  lazy val tradeableDetails = {
+  lazy val persistedTradeableDetails = {
     val serialised: String = StarlingXStream.write(fixations)
     Map[String, Any]("Fixations" -> serialised)
   }
@@ -135,7 +135,7 @@ case class RefinedFixation(
     }
   }
 
-  def details : Map[String, Any] = Map("Fixation Date" -> fixationDate, "Market" -> market, "Is Average Fixation" -> isAverage)
+  def detailsForUTPNOTUSED : Map[String, Any] = Map("Fixation Date" -> fixationDate, "Market" -> market, "Is Average Fixation" -> isAverage)
 
 
   def instrumentType = RefinedFixation

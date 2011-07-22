@@ -45,8 +45,8 @@ case class CommodityForward(
 
   //TODO [21 Oct 2009] check this
   private lazy val settlementDate = deliveryDay
-  def details :Map[String, Any] = Map("Market" -> market, "Period" -> deliveryDay, "Strike" -> strike)
-  def tradeableDetails :Map[String, Any] = Map("Market" -> market, "Period" -> deliveryDay, "Initial Price" -> strike, "Quantity" -> volume)
+  def detailsForUTPNOTUSED :Map[String, Any] = Map("Market" -> market, "Period" -> deliveryDay, "Strike" -> strike)
+  def persistedTradeableDetails :Map[String, Any] = Map("Market" -> market, "Period" -> deliveryDay, "Initial Price" -> strike, "Quantity" -> volume)
 
   def asUtpPortfolio(tradeDay:Day) = asUtpPortfolio
   def asUtpPortfolio = UTP_Portfolio(

@@ -21,7 +21,7 @@ abstract class AverageOption(
         volume: Quantity,
         callPut: CallOrPut
         ) extends Tradeable {
-  def tradeableDetails: Map[String, Any] = Map("Market" -> index,
+  def persistedTradeableDetails: Map[String, Any] = Map("Market" -> index,
     "Period" -> averagingPeriod,
     "Strike" -> strike, "Quantity" -> volume, "CallPut" -> callPut)
 
@@ -45,7 +45,7 @@ abstract class SingleAverageOption(
         volume: Quantity,
         callPut: CallOrPut
         ) extends UTP {
-  def details: Map[String, Any] = Map("Market" -> index,
+  def detailsForUTPNOTUSED: Map[String, Any] = Map("Market" -> index,
     "Period" -> averagingPeriod,
     "Strike" -> strike, "CallPut" -> callPut)
 

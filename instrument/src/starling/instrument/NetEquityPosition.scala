@@ -36,11 +36,11 @@ case class NetEquityPosition(ric:RIC, volume:Quantity) extends UTP with Tradeabl
   }
   override def expiryDay() = Some(Day(2050, 1, 1)) //HACK
   def isLive(dayAndTime: DayAndTime) = true
-  def tradeableDetails = Map("ric"->ric.code, "Quantity"->volume)
+  def persistedTradeableDetails = Map("ric"->ric.code, "Quantity"->volume)
   def asUtpPortfolio(tradeDay:Day):UTP_Portfolio = asUtpPortfolio
   def asUtpPortfolio():UTP_Portfolio = UTP_Portfolio(Map(this.copy(volume=Quantity(1, UOM.SHARE)) -> volume.value))
   def tradeableType = NetEquityPosition
-  def details = tradeableDetails
+  def detailsForUTPNOTUSED = persistedTradeableDetails
   def instrumentType = NetEquityPosition
 
   def daysForPositionReport(marketDay : DayAndTime) : Seq[Day] = List(marketDay.day)

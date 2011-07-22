@@ -21,7 +21,7 @@ class Starling(info : ProjectInfo) extends ParentProject(info) {
       project(name, name, {info : ProjectInfo => new StarlingProject(name, info)}, bouncyrmi, scalaModelWithPersistence)
     else
       project(name, name, new StarlingProject(name, _){override val unmanagedClasspath =
-        super.unmanagedClasspath +++ ("scala-model-jars" ** "*.jar")}, bouncyrmi)
+        super.unmanagedClasspath +++ (Path.fromFile(new File("lib/titan-model-jars")) ** "*.jar")}, bouncyrmi)
   }
 
   lazy val auth = starlingProject("auth", utils, bouncyrmi)
@@ -46,7 +46,11 @@ class Starling(info : ProjectInfo) extends ParentProject(info) {
 
   lazy val databases = starlingProject("databases", VaR, pivot, guiapi, concurrent, auth, starlingApi)
 
-  lazy val services = project("services", "services", new Services(_), databases, concurrent, utils, loopyxl)
+  val titanName = "titan"
+  lazy val titan = project(titanName, titanName, new StarlingProject(titanName, _){override val unmanagedClasspath =
+        super.unmanagedClasspath +++ (Path.fromFile(new File("lib/titan-model-jars")) ** "*.jar")}, databases)
+
+  lazy val services = project("services", "services", new Services(_), concurrent, utils, loopyxl, titan)
 
   lazy val devlauncher = starlingProject("dev.launcher", services, gui)
 

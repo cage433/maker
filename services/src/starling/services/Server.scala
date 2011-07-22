@@ -2,10 +2,9 @@ package starling.services
 
 import excel._
 import jmx.StarlingJMX
-import rpc.logistics.DefaultTitanLogisticsServices
-import rpc.valuation.ValuationService
+import rpc.logistics.{FileMockedTitanLogisticsServices, DefaultTitanLogisticsServices}
 import rpc.marketdata.MarketDataService
-import rpc.valuation.ValuationService
+import rpc.valuation._
 import starling.schemaevolution.system.PatchRunner
 import starling.db._
 import starling.richdb.{RichDB, RichResultSetRowFactory}
@@ -47,16 +46,15 @@ import com.trafigura.services.valuation.{ValuationServiceApi, TradeManagementCac
 import org.jboss.netty.channel.{ChannelLocal, Channel}
 import com.trafigura.services.marketdata.MarketDataServiceApi
 import starling.curves.{StarlingMarketLookup, EAIMarketLookup, FwdCurveAutoImport, CurveViewer}
-import starling.services.rpc.valuation.DefaultTitanTradeCache
 import starling.services.rpc.refdata._
 import starling.services.rabbit._
-import starling.services.rpc.valuation.DefaultEnvironmentProvider
 import starling.daterange.{ObservationTimeOfDay, Day}
 import starling.pivot.{Field, PivotQuantity}
 import starling.marketdata.{PriceValue, MarketDataKey, MarketDataType}
 import collection.SortedMap
 import starling.quantity.{UOM, Quantity, Percentage}
 import collection.immutable.{IndexedSeq, TreeMap, Map}
+import starling.titan.{TitanSystemOfRecord, TitanTradeStore}
 
 class StarlingInit( val props: Props,
                     dbMigration: Boolean = true,
@@ -226,6 +224,8 @@ class StarlingInit( val props: Props,
 
   val eaiTradeStores = Book.all.map(book=> book-> new EAITradeStore(starlingRichDB, broadcaster, strategyDB, book)).toMap
 
+  val titanTradeStore = new TitanTradeStore(starlingRichDB, broadcaster, TitanTradeSystem)
+
   val refinedAssignmentTradeStore = new RefinedAssignmentTradeStore(starlingRichDB, broadcaster)
   val refinedAssignmentSystemOfRecord = new RefinedAssignmentSystemOfRecord(neptuneRichDB)
   val refinedAssignmentImporter = new TradeImporter(refinedAssignmentSystemOfRecord, refinedAssignmentTradeStore)
@@ -247,22 +247,26 @@ class StarlingInit( val props: Props,
 
   val titanTradeCache = new DefaultTitanTradeCache(props)
   val titanServices = new DefaultTitanServices(props)
-  val logisticsServices = new DefaultTitanLogisticsServices(props)
+  val logisticsServices = new FileMockedTitanLogisticsServices
   val rabbitEventServices = new DefaultRabbitEventServices(props)
   val valuationService = new ValuationService(new DefaultEnvironmentProvider(marketDataStore), titanTradeCache, titanServices, logisticsServices, rabbitEventServices)
   val marketDataService = new MarketDataService(marketDataStore)
+
+  val titanSystemOfRecord = new TitanSystemOfRecord(titanTradeCache, titanServices, logisticsServices)
+  val titanTradeImporter = new TradeImporter(titanSystemOfRecord, titanTradeStore)
   
   val userSettingsDatabase = new UserSettingsDatabase(starlingDB, broadcaster)
 
   val tradeImporters = Map[TradeSystem,TradeImporter](
     RefinedAssignmentTradeSystem → refinedAssignmentImporter,
-    RefinedFixationTradeSystem → refinedFixationImporter)
+    RefinedFixationTradeSystem → refinedFixationImporter,
+    TitanTradeSystem → titanTradeImporter)
 
   val tradeStores = new TradeStores(
     tradeImporters,
     closedDesks,
     eaiTradeStores, intradayTradesDB,
-    refinedAssignmentTradeStore, refinedFixationTradeStore)
+    refinedAssignmentTradeStore, refinedFixationTradeStore, titanTradeStore)
 
   val reportContextBuilder = new ReportContextBuilder(marketDataStore)
   val reportService = new ReportService(

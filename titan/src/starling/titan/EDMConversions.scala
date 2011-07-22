@@ -1,4 +1,4 @@
-package starling.edm
+package starling.titan
 
 import starling.quantity.UOMSymbol._
 import starling.utils.ImplicitConversions._

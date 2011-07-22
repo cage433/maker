@@ -13,6 +13,7 @@ import starling.daterange.{Day}
 import view.swing._
 import java.awt.{Toolkit, Dimension}
 import javax.swing.ImageIcon
+import starling.utils.StackTraceToString
 
 class PivotReportPage {}
 

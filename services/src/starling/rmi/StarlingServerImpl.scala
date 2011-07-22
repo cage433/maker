@@ -26,6 +26,7 @@ import starling.utils.sql.{FalseClause, From, RealTable}
 
 import starling.utils.ImplicitConversions._
 import starling.utils.sql.QueryBuilder._
+import starling.tradeimport.TradeImporter
 
 
 class UserReportsService(
@@ -554,14 +555,12 @@ class StarlingServerImpl(
 
   private val importTradesMap = new ConcurrentHashMap[Desk,Boolean]
 
-  def importAllTrades(desk:Desk): Boolean = {
-    val result = deskTradeSets(desk).flatMap(_.importAll).exists(_ == true)
-    importTradesMap.put(desk, result)
-    if(result) {
-      val closeDay = Day.today.previousBusinessDay(ukHolidayCalendar)
-      tradeStores.closedDesks.closeDesk(desk, closeDay)
+  def importTitanTrades() {
+    val ts = Timestamp.now
+    val changed = tradeStores.tradeImporters(TitanTradeSystem).importAll(None, ts)
+    if (changed) {
+      tradeStores.closedDesks.closeDesk(Desk.Titan, Day.today(), ts)
     }
-    result
   }
 
   def bookClose(desk: Desk) {

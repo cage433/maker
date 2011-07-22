@@ -53,7 +53,7 @@ case class DefaultTitanServices(props: Props) extends TitanServices {
   private lazy val tacticalRefdataCounterpartiesService : CounterpartyService = new CounterpartyServiceResourceProxy(ProxyFactory.create(classOf[CounterpartyServiceResource], refdataServiceURL, clientExecutor))
   lazy val titanGetEdmTradesService: EdmGetTrades = new EdmGetTradesResourceProxy(ProxyFactory.create(classOf[EdmGetTradesResource], tradeServiceURL, clientExecutor))
 
-  lazy val futuresMarketByGUID: Map[GUID, Metal] = Map[GUID, Metal]() ++ allTacticalRefDataFuturesMarkets.map(e => (e.guid, e))
+  lazy val edmMetalByGUID: Map[GUID, Metal] = Map[GUID, Metal]() ++ allTacticalRefDataFuturesMarkets.map(e => (e.guid, e))
   lazy val futuresExchangeByGUID: Map[GUID, Market] = Map[GUID, Market]() ++ allTacticalRefDataExchanges.map(e => (e.guid, e))
   lazy val counterpartiesByGUID: Map[GUID, Counterparty] = Map[GUID, Counterparty]() ++ allTacticalRefDataCounterparties().map(e => e.guid -> e)
 
@@ -89,7 +89,7 @@ case class FileMockedTitanServices() extends TitanServices {
     }
   }
 
-  lazy val futuresMarketByGUID: Map[GUID, Metal] = loadedMarkets.map(m => m.guid -> m).toMap
+  lazy val edmMetalByGUID: Map[GUID, Metal] = loadedMarkets.map(m => m.guid -> m).toMap
   lazy val futuresExchangeByGUID: Map[GUID, Market] = loadedExchanges.map(e => e.guid -> e).toMap
   lazy val counterpartiesByGUID: Map[GUID, Counterparty] = Map[GUID, Counterparty]()
 
@@ -103,18 +103,6 @@ case class FileMockedTitanServices() extends TitanServices {
 
   def updateTrade(trade : EDMPhysicalTrade) {
     tradeMap = tradeMap.updated(trade.oid, trade)
-  }
-}
-
-// for some strange reason EDM trade service converts Neptune quota ID with prefix NEPTUNE:
-case class NeptuneId(id : String) {
-  def identifier : String = identifier(id)
-  def identifier(ident : String) : String = ident match {
-    case i : String if i != null => {
-      val neptunePrefix = "NEPTUNE:"
-      ident.substring(neptunePrefix.length)
-    }
-    case null => null
   }
 }
 

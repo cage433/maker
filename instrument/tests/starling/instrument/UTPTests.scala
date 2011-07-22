@@ -190,7 +190,7 @@ class UTPTests extends IndexTest {
 
   @Test(dataProvider = "tradeableProvider")
   def testWeCanReadAndWriteAllTradeables(tradeable : Tradeable) {
-    val details = tradeable.tradeableDetails.map { kv => kv._1.toLowerCase.replaceAll(" ", "") -> kv._2}
+    val details = tradeable.persistedTradeableDetails.map { kv => kv._1.toLowerCase.replaceAll(" ", "") -> kv._2}
     val fakeRow = resultSetRowFromMap(details)
     val created = tradeable.tradeableType.createTradeable(fakeRow)
 
@@ -201,7 +201,7 @@ class UTPTests extends IndexTest {
   def testUTPDetailsFieldsAreInInstrumentTypeKeysList(tradeable : Tradeable) {
     val utps = tradeable.asUtpPortfolio(Day(2009, 1, 1)).instruments
     for (utp <- utps) {
-      val detailsKeys = normaliseDetails(utp.details).keySet
+      val detailsKeys = normaliseDetails(utp.detailsForUTPNOTUSED).keySet
       val undeclaredFields = detailsKeys.toList.filterNot(InstrumentType.lowercaseNoSpaceFields contains _)
       assertTrue(undeclaredFields.isEmpty, "There are undeclared fields in " + utp.instrumentType + " " + undeclaredFields + " -- " +  InstrumentType.lowercaseNoSpaceFields)
     }
@@ -209,7 +209,7 @@ class UTPTests extends IndexTest {
 
   @Test(dataProvider = "tradeableProvider")
   def testTradeableDetailsFieldsAreInTradeableTypeKeysList(tradeable : Tradeable) {
-    val detailsKeys = normaliseDetails(tradeable.tradeableDetails).keySet
+    val detailsKeys = normaliseDetails(tradeable.persistedTradeableDetails).keySet
     val undeclaredFields = detailsKeys.toList.filterNot(TradeableType.lowercaseNoSpaceFields contains _)
     assertTrue(undeclaredFields.isEmpty, "There are undeclared fields in " + tradeable + " " + undeclaredFields)
   }
@@ -217,7 +217,7 @@ class UTPTests extends IndexTest {
   @Test
   def testThereAreNoSurplusKeysInInstrumentTypeFieldsList() {
     val instruments = tradeableProvider.flatMap(tradeables=>tradeables).flatMap{tradeable=>tradeable.asUtpPortfolio(Day(2009, 1, 1)).instruments}
-    val allFields = (TreeSet[String]() ++ instruments.flatMap(_.details.keySet.map(_.replaceAll(" ", "").toLowerCase))) + "error"
+    val allFields = (TreeSet[String]() ++ instruments.flatMap(_.detailsForUTPNOTUSED.keySet.map(_.replaceAll(" ", "").toLowerCase))) + "error"
     val actual = TreeSet[String]() ++ InstrumentType.fields.map(_.replaceAll(" ", "").toLowerCase)
     assertEquals(actual, allFields)
   }
@@ -225,7 +225,7 @@ class UTPTests extends IndexTest {
   @Test
   def testThereAreNoSurplusKeysInTradeableTypeFieldsList() {
     val tradeables = tradeableProvider.flatMap(tradeables=>tradeables)
-    val allFields = (TreeSet[String]() ++ tradeables.flatMap(_.tradeableDetails.keySet.map(_.replaceAll(" ", "").toLowerCase))) + "error"
+    val allFields = (TreeSet[String]() ++ tradeables.flatMap(_.persistedTradeableDetails.keySet.map(_.replaceAll(" ", "").toLowerCase))) + "error"
     val actual = TreeSet[String]() ++ TradeableType.fields.map(_.replaceAll(" ", "").toLowerCase)
     assertEquals(actual, allFields)
   }

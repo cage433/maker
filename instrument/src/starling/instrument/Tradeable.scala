@@ -1,5 +1,6 @@
 package starling.instrument
 
+import physical.PhysicalMetalAssignment
 import starling.daterange.{DateRange, DayAndTime, Day}
 import starling.richdb.RichInstrumentResultSetRow
 import starling.utils.ImplicitConversions._
@@ -8,7 +9,8 @@ import starling.market.rules.SwapPricingRule
 
 trait Tradeable extends AsUtpPortfolio {
   def tradeableType : TradeableType[_]
-  def tradeableDetails : Map[String, Any]
+  def persistedTradeableDetails : Map[String, Any]
+  def shownTradableDetails: Map[String, Any] = persistedTradeableDetails
   def expiryDay():Option[Day] = None
   def isLive(dayAndTime : DayAndTime) : Boolean
 
@@ -33,7 +35,7 @@ trait TradeableType[T <: Tradeable] {
   def createTradeable(row: RichInstrumentResultSetRow): T
   def sample:T
   def fields:List[String] = {
-    val tradeableFields = sample.tradeableDetails.keySet.map(_.removeWhiteSpace.toLowerCase).toList
+    val tradeableFields = sample.shownTradableDetails.keySet.map(_.removeWhiteSpace.toLowerCase).toList
     val allConvertedFields = TradeableType.fields.map(_.removeWhiteSpace.toLowerCase)
     val matchingFields = allConvertedFields.intersect(tradeableFields)
     matchingFields.map(field => TradeableType.fields(allConvertedFields.indexOf(field)))
@@ -63,7 +65,8 @@ object TradeableType {
     RefinedAssignment,
     RefinedFixationsForSplit,
     NetEquityPosition,
-    CashInstrument
+    CashInstrument,
+    PhysicalMetalAssignment
   )
   def fromName(name : String) = types.find(_.name == name) match {
     case Some(t) => types.find(_.name == name).get // some scala bug means have to do it this way
@@ -89,7 +92,9 @@ object TradeableType {
     ("Error", classOf[String]),
     ("Estimated Delivery", classOf[Day]),
     ("Fixations", classOf[List[RefinedFixation]]),
-    ("Cash Instrument Type", classOf[CashInstrumentType])
+    ("Cash Instrument Type", classOf[CashInstrumentType]),
+    ("Commodity", classOf[String]),
+    ("Pricing Spec Name", classOf[String])
   )
   val fields = fieldsWithType.map(_._1)
   val drillDownFields = fields.filterNot(List("Float Payment Freq", "Fixed Basis", "Fixed Payment Freq", "Fixed Rate",

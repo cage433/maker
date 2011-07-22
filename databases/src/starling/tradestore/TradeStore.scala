@@ -65,7 +65,7 @@ object TradeableFields {
   val fields = fieldDetails.map (_.field)
 
   def createFieldValues(trade:Trade, tradeable:Tradeable):Map[PField,Any] = {
-    val tradeableDetails : Map[String, Any] = tradeable.tradeableDetails
+    val tradeableDetails : Map[String, Any] = tradeable.shownTradableDetails
     tradeableDetails.map { case (k, v) => {
       val (fieldDetails, mapper) = normalizedNameToFieldAndMapper(k.toLowerCase.removeWhiteSpace)
       (fieldDetails.field, mapper(trade,v))
@@ -759,7 +759,7 @@ abstract class TradeStore(db: RichDB, broadcaster:Broadcaster, tradeSystem: Trad
         "Id" -> nextID,
         "timestamp" -> timestamp,
         "expiryDay_cache" -> expiryDay
-      ) ++ justTradeDetails ++ trade.tradeable.tradeableDetails ++ trade.attributes.details
+      ) ++ justTradeDetails ++ trade.tradeable.persistedTradeableDetails ++ trade.attributes.details
 
       val normalisedNames = details.map {
         case (field, value) => field.removeWhiteSpace -> value

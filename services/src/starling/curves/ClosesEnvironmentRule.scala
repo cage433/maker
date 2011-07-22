@@ -6,6 +6,7 @@ import starling.utils.ImplicitConversions._
 import starling.gui.api.EnvironmentRuleLabel
 import starling.db.MarketDataReader
 import starling.market.{CommodityMarket, Market, FuturesMarket}
+import starling.quantity.UOM
 
 
 object ClosesEnvironmentRule extends EnvironmentRule {
@@ -38,6 +39,7 @@ object ClosesEnvironmentRule extends EnvironmentRule {
               throw new Exception("No price for " + futuresMarket + "@" + marketCloses.contains(futuresMarket)))
           }
           case key:ForwardRateDataKey => marketDataReader.read(TimedMarketDataKey(observationDay.atTimeOfDay(ObservationTimeOfDay.Default), key))
+          case key@SpotFXDataKey(UOM.CNY) => marketDataReader.read(TimedMarketDataKey(observationDay.atTimeOfDay(ObservationTimeOfDay.SHFEClose), key))
           case key:SpotFXDataKey => marketDataReader.read(TimedMarketDataKey(observationDay.atTimeOfDay(ObservationTimeOfDay.LondonClose), key))
           case _ => throw new Exception(name + " only has rules for futures Prices")
         }
@@ -52,7 +54,7 @@ object ClosesEnvironmentRule extends EnvironmentRule {
       }}
     }
 
-    val environmentX = Environment(new MarketDataCurveObjectEnvironment(new DayAndNoTime(observationDay), reader))
+    val environmentX = Environment(new MarketDataCurveObjectEnvironment(observationDay.endOfDay(), reader))
 
     new EnvironmentWithDomain {
       val environment = environmentX

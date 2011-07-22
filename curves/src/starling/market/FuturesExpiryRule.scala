@@ -138,6 +138,10 @@ abstract class FuturesExpiryRules(businessCalendars: BusinessCalendars) {
 
     def lastTradingDay(d: DateRange) = d match {
       case day: Day => day.addBusinessDays(bc, -1)
+      case _ => {
+        println("")
+        throw new Exception("Bad period")
+      }
     }
 
     /**

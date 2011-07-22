@@ -22,7 +22,7 @@ trait InvalidInstrument extends Tradeable {
 case class ErrorInstrument(exception : String) extends InvalidInstrument with UTP {
   def isLive(dayAndTime: DayAndTime) = true
   def tradeableType = ErrorInstrument
-  def tradeableDetails = Map[String, Any]("error" -> exception)
+  def persistedTradeableDetails = Map[String, Any]("error" -> exception)
   override def hashCode = exception.lines.next.hashCode
 
   override def asUtpPortfolio(tradeDay:Day) = UTP_Portfolio(Map(this->1))
@@ -32,7 +32,7 @@ case class ErrorInstrument(exception : String) extends InvalidInstrument with UT
     case _ => false
   }
 
-  def details = tradeableDetails
+  def detailsForUTPNOTUSED = persistedTradeableDetails
   def instrumentType = ErrorInstrument
 
 
@@ -61,7 +61,7 @@ object ErrorInstrument extends TradeableType[ErrorInstrument] with InstrumentTyp
 case class NullInstrument() extends InvalidInstrument {
   def isLive(dayAndTime: DayAndTime) = throw new Exception("Null instrument")
   def tradeableType = NullInstrument
-  def tradeableDetails = throw new Exception("Null instrument")
+  def persistedTradeableDetails = throw new Exception("Null instrument")
 }
 
 object NullInstrument extends TradeableType[NullInstrument] {
