@@ -21,25 +21,6 @@ import starling.titan.{TitanServices, TitanLogisticsInventoryServices, TitanLogi
 /**
  * logistics service interface
  */
-/*
-object LogisticsServices {
-  type EdmAssignmentServiceWithGetAllAssignments = EdmAssignmentService with Object { def getAllAssignments() : List[EDMAssignmentItem] }
-  type EdmInventoryServiceWithGetAllInventory = EdmInventoryService with Object { def getAllInventoryLeaves() : List[EDMInventoryItem] }
-}
-import LogisticsServices._
-trait TitanLogisticsAssignmentServices extends ServiceProxy[EdmAssignmentServiceWithGetAllAssignments]
-trait TitanLogisticsInventoryServices extends ServiceProxy[EdmInventoryServiceWithGetAllInventory]
-
-trait ServiceProxy[T] {
-  val service : T
-}
-
-trait TitanLogisticsServices {
-  val assignmentService : TitanLogisticsAssignmentServices
-  val inventoryService : TitanLogisticsInventoryServices
-}
-*/
-
 case class DefaultTitanLogisticsServices(props: Props) extends TitanLogisticsServices {
   val assignmentService = DefaultTitanLogisticsAssignmentServices(props)
   val inventoryService = DefaultTitanLogisticsInventoryServices(props)
@@ -168,7 +149,7 @@ case class LogisticsJsonMockDataFileGenerater(titanEdmTradeService : TitanServic
   val allQuotasMap = trades.flatMap(t => t.quotas.map(q => NeptuneId(q.detail.identifier).identifier -> q))
 
   val salesAssignments = assignmentService.getAllSalesAssignments()
-  println("Got %d sales assignments")
+  println("Got %d sales assignments".format(salesAssignments.size))
   def inventoryByPurchaseQuotaId(id : String) =
     catching(classOf[Exception]) either inventoryService.getInventoryTreeByPurchaseQuotaId(id)
 
