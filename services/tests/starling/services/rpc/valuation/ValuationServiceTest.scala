@@ -4,18 +4,16 @@ import org.testng.annotations.Test
 import starling.market.{MarketProvider, TestMarketLookup}
 import starling.services.rpc.refdata.FileMockedTitanServices
 import starling.services.rabbit.MockRabbitEventServices
-import com.trafigura.edm.trades.PhysicalTrade
 import com.trafigura.common.control.PipedControl._
 import org.codehaus.jettison.json.JSONArray
 import com.trafigura.events.{DemultiplexerClient, EventFactory, PayloadFactory}
-import com.trafigura.shared.events._
 import com.trafigura.shared.events.Event._
 import org.testng.Assert._
 import starling.utils.{StarlingTest, Log}
-import com.trafigura.edm.trades.{CompletedTradeTstate, TradeTstateEnum, Trade => EDMTrade, PhysicalTrade => EDMPhysicalTrade}
+import com.trafigura.edm.trades.{PhysicalTrade => EDMPhysicalTrade}
 import com.trafigura.shared.events._
-import starling.services.rpc.logistics.{FileMockedTitanLogisticsServices}
-import org.scalatest.Ignore
+import starling.services.rpc.logistics.FileMockedTitanLogisticsServices
+
 
 /**
  * Valuation service tests
@@ -52,7 +50,7 @@ class ValuationServiceTest extends StarlingTest {
     }
   }
 
-  @Test
+  //@Test
   def testValuationServiceValuationUpdatedEvents() {
 
     Log.info("testValuationServiceValuationUpdatedEvents starting")
@@ -127,7 +125,11 @@ class ValuationServiceTest extends StarlingTest {
   }
 
 
-  //@Test
+  /**
+   * very basic tests to check we can value some assignments
+   *   will need improvements and to also test events
+   */
+  @Test
   def testValuationServiceValueAssignments {
     
     Log.info("testValuationServiceValueAssignments starting")
@@ -155,24 +157,26 @@ class ValuationServiceTest extends StarlingTest {
     println("Running valuation service assignment tests")
 
     //vs.marketDataSnapshotIDs().foreach(println)
-    val valuations = vs.valueAllAssignments()
+    val assignmentValuations = vs.valueAllAssignments()
 
     println("Valued assignments")
 
-    val (worked, failed) = valuations.assignmentValuationResults.values.partition(_ isRight)
-    val valuedIds = valuations.assignmentValuationResults.collect {
+    val (worked, failed) = assignmentValuations.assignmentValuationResults.values.partition(_ isRight)
+    val valuedIds = assignmentValuations.assignmentValuationResults.collect {
       case (id, Right(v)) => id
     }.toList
 
-    println("Valued assignments, %d worked, %d failed \n%s".format(worked.size, failed.size, worked.mkString("\n")))   
+    println("Valued assignments, %d worked, %d failed \n%s".format(worked.size, failed.size, worked.mkString("\n")))
+
+    assertTrue(worked.size > 0, "Assignment valuation service failed to value any assignments")
   }
 
-  private def createTradeUpdatedEvent(id : String) = {
+  private def createTradeUpdatedEvent(id : String) : JSONArray = createTradeUpdatedEvent(List(id))
+  private def createTradeUpdatedEvent(ids : List[String]) : JSONArray = {
     val pf = new PayloadFactory()
     val ef = new EventFactory()
     val source = TrademgmtSource
-    val keyId = id
-    val payloads = List(pf.createPayload(RefinedMetalTradeIdPayload, source, keyId))
+    val payloads = ids.map(id => pf.createPayload(RefinedMetalTradeIdPayload, source, id))
     val keyIdentifier = System.currentTimeMillis.toString
     val ev = ef.createEvent(TradeSubject, UpdatedEventVerb, source, keyIdentifier, payloads)
     ||> { new JSONArray } { r => r.put(ev.toJson) }
