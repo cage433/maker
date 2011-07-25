@@ -67,9 +67,10 @@ class ValuationServiceTest extends StarlingTest {
     val mockTitanTradeCache = new TitanTradeServiceBasedTradeCache(mockTitanTradeService)
     val mockTitanLogisticsServices = FileMockedTitanLogisticsServices()
     val mockRabbitEventServices = new MockRabbitEventServices()
+    val mockInventoryCache = new TitanLogisticsServiceBasedInventoryCache(mockTitanLogisticsServices)
 
     val vs = new ValuationService(
-      new MockEnvironmentProvider, mockTitanTradeCache, mockTitanServices, mockTitanLogisticsServices, mockRabbitEventServices)
+      new MockEnvironmentProvider, mockTitanTradeCache, mockTitanServices, mockTitanLogisticsServices, mockRabbitEventServices, mockInventoryCache)
 
     println("Running valuation service tests")
 
@@ -143,6 +144,7 @@ class ValuationServiceTest extends StarlingTest {
     val mockTitanTradeCache = new TitanTradeServiceBasedTradeCache(mockTitanTradeService)
     val mockTitanLogisticsServices = FileMockedTitanLogisticsServices()
     val mockRabbitEventServices = new MockRabbitEventServices()
+    val mockInventoryCache = new TitanLogisticsServiceBasedInventoryCache(mockTitanLogisticsServices)
 
     //val salesAssignments = mockTitanLogisticsServices.assignmentService.service.getAllSalesAssignments()
     val assignments = mockTitanLogisticsServices.assignmentService.service.getAllSalesAssignments()
@@ -152,7 +154,7 @@ class ValuationServiceTest extends StarlingTest {
 //    println("inventory " + inventory.mkString(", "))
 
     val vs = new ValuationService(
-      new MockEnvironmentProvider, mockTitanTradeCache, mockTitanServices, mockTitanLogisticsServices, mockRabbitEventServices)
+      new MockEnvironmentProvider, mockTitanTradeCache, mockTitanServices, mockTitanLogisticsServices, mockRabbitEventServices, mockInventoryCache)
 
     println("Running valuation service assignment tests")
 
@@ -172,13 +174,19 @@ class ValuationServiceTest extends StarlingTest {
   }
 
   private def createTradeUpdatedEvent(id : String) : JSONArray = createTradeUpdatedEvent(List(id))
-  private def createTradeUpdatedEvent(ids : List[String]) : JSONArray = {
+  private def createTradeUpdatedEvent(ids : List[String]) : JSONArray =
+    createTradeMgmtIDEvents(ids)
+
+  private def createTradeMgmtIDEvents(ids : List[String], source : String = TrademgmtSource : String, subject : String = TradeSubject, verb : EventVerbEnum = UpdatedEventVerb) : JSONArray = {
     val pf = new PayloadFactory()
-    val ef = new EventFactory()
-    val source = TrademgmtSource
     val payloads = ids.map(id => pf.createPayload(RefinedMetalTradeIdPayload, source, id))
+    createEvents(source, subject, verb, payloads)
+  }
+  
+  private def createEvents(source : String, subject : String, verb : EventVerbEnum, payloads : List[Payload]) : JSONArray = {
+    val ef = new EventFactory()
     val keyIdentifier = System.currentTimeMillis.toString
-    val ev = ef.createEvent(TradeSubject, UpdatedEventVerb, source, keyIdentifier, payloads)
+    val ev = ef.createEvent(subject, verb, source, keyIdentifier, payloads)
     ||> { new JSONArray } { r => r.put(ev.toJson) }
   }
 

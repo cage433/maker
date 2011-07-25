@@ -109,7 +109,6 @@ class TradeConverter( refData : TitanTacticalRefData,
 
     val costs : List[Costs] = Nil // todo
 
-
     if (edmTrade.submitted == null) {
       println("NULL DATE  " + edmTrade.tradeId)
     }
@@ -221,14 +220,9 @@ trait TitanTradeCache {
  */
 trait TitanTacticalRefData {
 
-//  val titanGetEdmTradesService : EdmGetTrades
-
   val edmMetalByGUID: Map[GUID, Metal]
   val futuresExchangeByGUID: Map[GUID, Market]
   val counterpartiesByGUID: Map[GUID, Counterparty]
-
-  //def allTacticalRefDataFuturesMarkets() : List[Metal]
-  //def allTacticalRefDataExchanges() : List[Market]
 }
 
 trait TitanEdmTradeService {
