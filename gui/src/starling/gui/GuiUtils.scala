@@ -126,10 +126,10 @@ object GuiUtils {
   val PivotTableBackgroundColour = new Color(190, 214, 248)
   val ClearColour = new Color(0,0,0,0)
 
-  //  val EditableCellColour = new Color(245,245,245)
   val EditableCellColour = new Color(190,203,244, 64)
   val EditedCellColour = new Color(79, 174, 232)
-  val AddedCellColour = new Color(163, 225, 121)
+  val AddedBlankCellColour = new Color(163, 225, 121)
+  val AddedCellColour = new Color(0xd5f7be)
   val TaintedCellColour = new Color(160, 218, 255)
   val DeletedColour = Color.LIGHT_GRAY
 
@@ -141,11 +141,14 @@ object GuiUtils {
   val DeletedColour = new Color(0xebebeb)*/
 
   val ErrorCellColour = new Color(244, 121, 124)
-  
+
+  val RowHeaderEditableCellColour = new Color(231,235,243)
+
   val BlendedDeletedColour = TableSelectedColour.blend(DeletedColour, BlendFraction)
   val BlendedEditedCellColour = TableSelectedColour.blend(EditedCellColour, BlendFraction)
   val BlendedTaintedCellColour = TableSelectedColour.blend(TaintedCellColour, BlendFraction)
   val BlendedAddedCellColour = TableSelectedColour.blend(AddedCellColour, BlendFraction)
+  val BlendedAddedBlankCellColour = TableSelectedColour.blend(AddedBlankCellColour, BlendFraction)
   val BlendedErrorCellColour = TableSelectedColour.blend(ErrorCellColour, BlendFraction)
   val BlendedEditableCellColour = TableSelectedColour.blend(EditableCellColour, BlendFraction)
   val BlendedHeaderColour = TableSelectedColour.blend(PanelBackgroundColour, BlendFraction)

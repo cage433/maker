@@ -7,6 +7,7 @@ import starling.gui.GuiUtils._
 import javax.swing.{CellRendererPane, JTable, UIManager, JComponent}
 import starling.pivot.model.AxisCell
 import java.awt.{Color, Rectangle, Point, Graphics}
+import starling.pivot.EditableCellState._
 
 object PivotTableUI {
   val GridColour = UIManager.getColor("Table.gridColor")
@@ -37,7 +38,24 @@ object PivotTableUI {
           val horizontalColour = if (row < numRowsMinus1) {
             val cellBelow = table.getValueAt(row + 1,col).asInstanceOf[AxisCell]
             cellBelow.totalState match {
-              case NotTotal => if (!cellBelow.hidden) GridColour else PanelBackgroundColour
+              case NotTotal => if (cellBelow.shown) {
+                GridColour
+              } else {
+                cellBelow.state match {
+                  case Deleted => DeletedColour
+                  case Edited => EditedCellColour
+                  case Tainted => TaintedCellColour
+                  case Added => AddedCellColour
+                  case Normal => {
+                    if (cellBelow.editable) {
+                      RowHeaderEditableCellColour
+                    } else {
+                      PanelBackgroundColour
+                    }
+                  }
+                  case Error => ErrorCellColour
+                }
+              }
               case other => GridColour
             }
           } else {
@@ -96,7 +114,7 @@ object PivotTableUI {
         cellRect.x += columnWidth
       }
     }
-    rendererPane.removeAll
+    rendererPane.removeAll()
   }
 
   def colHeaderPaintGrid(g:Graphics, table:JTable, rMin:Int, rMax:Int, cMin:Int, cMax:Int) {
@@ -165,7 +183,6 @@ object PivotTableUI {
 
   def colHeaderPaintCells(g:Graphics, table:JTable, rendererPane:CellRendererPane, rMin:Int, rMax:Int, cMin:Int, cMax:Int) {
     val cm = table.getColumnModel
-    val columnMargin = cm.getColumnMargin
 
     var cellRect:Rectangle = null
 
@@ -192,7 +209,7 @@ object PivotTableUI {
         cellRect.x += cellRect.width
       }
     }
-    rendererPane.removeAll
+    rendererPane.removeAll()
   }
 
   def mainPaintGrid(g:Graphics, table:JTable, rMin:Int, rMax:Int, cMin:Int, cMax:Int) {
@@ -224,7 +241,7 @@ object PivotTableUI {
     if (table.isEditing && table.getEditingRow == row && table.getEditingColumn == column) {
       val component = table.getEditorComponent
       component.setBounds(cellRect)
-      component.validate
+      component.validate()
     } else {
       val renderer = table.getCellRenderer(row, column)
       val component = table.prepareRenderer(renderer, row, column)
@@ -234,9 +251,7 @@ object PivotTableUI {
 }
 
 class PivotTableUI extends BasicTableUI {
-  private val gridColour = UIManager.getColor("Table.gridColor")
-
-  override def paint(g:Graphics, c:JComponent) = {
+  override def paint(g:Graphics, c:JComponent) {
     val clip = g.getClipBounds
     val numRows = table.getRowCount
     val numCols = table.getColumnCount

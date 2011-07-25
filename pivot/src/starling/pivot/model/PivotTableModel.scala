@@ -50,7 +50,7 @@ case class CellTypeSpecifiedAxisValueType(override val cellType:EditableCellStat
 
 case object BlankAddedAxisValueType extends AxisValueType {
   def value = ""
-  override def cellType:EditableCellState = Added
+  override def cellType:EditableCellState = AddedBlank
 }
 
 case class ValueAxisValueType(valueX:Any) extends AxisValueType {

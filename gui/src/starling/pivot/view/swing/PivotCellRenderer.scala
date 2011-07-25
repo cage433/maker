@@ -9,11 +9,9 @@ import model._
 import starling.reports.pivot.OptionalPeriodLabel
 import starling.gui.{StarlingIcons}
 import starling.quantity.{Quantity, Percentage}
-import java.awt.Font
+import java.awt.{Color, Font}
 
-class PivotTableRenderers
-
-object MainTableCellRenderer {
+object PivotCellRenderer {
   val ErrorIcon = StarlingIcons.icon("/icons/12x12_error.png")
   val PlusIcon = StarlingIcons.icon("/icons/10x10_add.png")
   val MinusIcon = StarlingIcons.icon("/icons/10x10_minus.png")
@@ -35,9 +33,9 @@ object MainTableCellRenderer {
   }
 }
 
-import MainTableCellRenderer._
+import PivotCellRenderer._
 
-class MainTableCellRenderer(indentColumns:Array[Boolean], maxWidth:Int) extends DefaultTableCellRenderer {
+class PivotCellRenderer(indentColumns:Array[Boolean], maxWidth:Int) extends DefaultTableCellRenderer {
   override def getTableCellRendererComponent(table: JTable, value: Any, isSelected: Boolean, hasFocus: Boolean, row: Int, column: Int) = {
 
     super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column)
@@ -58,9 +56,9 @@ class MainTableCellRenderer(indentColumns:Array[Boolean], maxWidth:Int) extends 
         }
         if (tableCell.isError || tableCell.warning.isDefined) {
           if (tableCell.isError) {
-            setIcon(MainTableCellRenderer.ErrorIcon)
+            setIcon(PivotCellRenderer.ErrorIcon)
           } else {
-            setIcon(MainTableCellRenderer.ValidationIcon)
+            setIcon(PivotCellRenderer.ValidationIcon)
           }
           setHorizontalTextPosition(SwingConstants.LEFT)
         } else {
@@ -84,8 +82,8 @@ class MainTableCellRenderer(indentColumns:Array[Boolean], maxWidth:Int) extends 
             } else {
               setIcon(null)
             }
-            case Some(true) => setIcon(MainTableCellRenderer.PlusIcon)
-            case Some(false) => setIcon(MainTableCellRenderer.MinusIcon)
+            case Some(true) => setIcon(PivotCellRenderer.PlusIcon)
+            case Some(false) => setIcon(PivotCellRenderer.MinusIcon)
 
           }
         } else {
@@ -97,11 +95,11 @@ class MainTableCellRenderer(indentColumns:Array[Boolean], maxWidth:Int) extends 
           }
           case Some(true) => {
             setHorizontalAlignment(SwingConstants.LEFT)
-            setIcon(MainTableCellRenderer.PlusIcon)
+            setIcon(PivotCellRenderer.PlusIcon)
           }
           case Some(false) => {
             setHorizontalAlignment(SwingConstants.LEFT)
-            setIcon(MainTableCellRenderer.MinusIcon)
+            setIcon(PivotCellRenderer.MinusIcon)
           }
           }
         }

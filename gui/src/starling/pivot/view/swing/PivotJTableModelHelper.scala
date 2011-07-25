@@ -216,7 +216,7 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
 
     override def isCellEditable(rowIndex:Int, columnIndex:Int) = {
       val v = getValueAt(rowIndex, columnIndex)
-      v.editable && (v.state != EditableCellState.Deleted)
+      v.editable && v.shown && (v.state != EditableCellState.Deleted)
     }
 
     override def parser(row:Int, col:Int) = {
@@ -414,7 +414,7 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
 
   val mainTableModel = new PivotJTableModel {
     private val addedRows0 = new ListBuffer[Array[TableCell]]
-    private val blankCells = data0(0).map(_.copy(state = EditableCellState.Added, text = ""))
+    private val blankCells = data0(0).map(_.copy(state = AddedBlank, text = ""))
     if (extraLine) {
       addedRows0 += blankCells
     }
@@ -922,7 +922,7 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
       for (row <- 0 until numRows) {
         val axisCell = rowHeaderTable.getValueAt(row, col).asInstanceOf[AxisCell]
         val width = {
-          tmpLabel.setFont(MainTableCellRenderer.selectFont(axisCell.value.value.value))
+          tmpLabel.setFont(PivotCellRenderer.selectFont(axisCell.value.value.value))
           tmpLabel.setText(axisCell.text)
           if (axisCell.collapsible.isDefined) {
             anyCollapsible = true
@@ -934,7 +934,7 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
           max = width
         }
       }
-      max + (if (anyCollapsible) MainTableCellRenderer.LeftIconWidth + 6 else 0)
+      max + (if (anyCollapsible) PivotCellRenderer.LeftIconWidth + 6 else 0)
     }
 
     val fullColumnModel = fullTable.getColumnModel
@@ -1029,7 +1029,7 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
       var max = PivotJTable.MinColumnWidth
       for (row <- 0 until numRows) {
         val tableCell = mainTable.getValueAt(row, col).asInstanceOf[TableCell]
-        tmpLabel.setFont(MainTableCellRenderer.selectFont(tableCell.value))
+        tmpLabel.setFont(PivotCellRenderer.selectFont(tableCell.value))
         val width = {
           tmpLabel.setText(tableCell.asString)
           if (tableCell.isError) {
@@ -1046,7 +1046,7 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
     }
 
     def cellWidth(axisCell:AxisCell, icon:ImageIcon):Int = {
-      tmpLabel.setFont(MainTableCellRenderer.selectFont(axisCell.value.value.value))
+      tmpLabel.setFont(PivotCellRenderer.selectFont(axisCell.value.value.value))
       tmpLabel.setText(axisCell.text)
       tmpLabel.setIcon(icon)
 
@@ -1065,7 +1065,7 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
             previousRow(col) = math.max(mainColumnWidths(col), cellWidth(axisCell, null)) + 5
           } else {
             val icon = if (axisCell.collapsible.isDefined) {
-              MainTableCellRenderer.PlusIcon
+              PivotCellRenderer.PlusIcon
             } else {
               null
             }

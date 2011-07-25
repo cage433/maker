@@ -36,7 +36,7 @@ class PivotJTable(tableModel:PivotJTableModel, pivotTableView:PivotTableView, mo
   setFillsViewportHeight(true)
   setTableHeader(null)
   setCellSelectionEnabled(true)  
-  setDefaultRenderer(classOf[Object], new MainTableCellRenderer(indentColumns, MaxColumnWidth))
+  setDefaultRenderer(classOf[Object], new PivotCellRenderer(indentColumns, MaxColumnWidth))
   setRowHeight(PivotJTable.RowHeight)
 
   // If the delete key is pressed when more than one cell is selected, delete all deletable cells.
@@ -45,13 +45,13 @@ class PivotJTable(tableModel:PivotJTableModel, pivotTableView:PivotTableView, mo
       if (e.getKeyCode == KeyEvent.VK_DELETE) {
         val selectedCells = getSelectedCells
         putClientProperty("JTable.autoStartsEdit", false)
-        val editableCells = selectedCells.filter{case (r,c) => {
+        val deletableCells = selectedCells.filter{case (r,c) => {
           getValueAt(r,c) match {
-            case ac:AxisCell => ac.editable
-            case tc:TableCell => tc.editable
+            case ac:AxisCell => ac.editable && ac.state != EditableCellState.Deleted
+            case tc:TableCell => tc.editable && tc.state != EditableCellState.Deleted
           }
         }}
-        tableModel.deleteCells(editableCells, true)
+        tableModel.deleteCells(deletableCells, true)
       } else if (e.getKeyCode == KeyEvent.VK_S && (e.getModifiersEx & InputEvent.CTRL_DOWN_MASK) == InputEvent.CTRL_DOWN_MASK) {
         putClientProperty("JTable.autoStartsEdit", false)
         pivotTableView.publish(SavePivotEdits)
@@ -367,7 +367,7 @@ class PivotJTable(tableModel:PivotJTableModel, pivotTableView:PivotTableView, mo
                 val error = tableCell.isError
                 // If the click happened on the error icon, show the error page, else do a normal selection.
                 if (error) {
-                  val iconWidth = MainTableCellRenderer.RightIconWidth
+                  val iconWidth = PivotCellRenderer.RightIconWidth
                   if (point.x > (cellRect.x + cellRect.width - (iconWidth + 2))) {
                     // Clicked on the error icon.
                     pivotTableView.publish(ShowErrorsEvent(tableCell.errors))
@@ -376,7 +376,7 @@ class PivotJTable(tableModel:PivotJTableModel, pivotTableView:PivotTableView, mo
               }
               case axisCell:AxisCell => {
                 if (axisCell.collapsible.isDefined) {
-                  val iconWidth = MainTableCellRenderer.LeftIconWidth
+                  val iconWidth = PivotCellRenderer.LeftIconWidth
                   if (point.x < (cellRect.x + iconWidth + 4)) {
                     tableModel.collapseOrExpand(row, col, pivotTableView)
                   }
@@ -396,16 +396,16 @@ class PivotJTable(tableModel:PivotJTableModel, pivotTableView:PivotTableView, mo
           val deletableCells = selectedCells.filter{case (row0,col0) => {
             getValueAt(row0,col0) match {
               case ac:AxisCell => ac.editable && ac.state != EditableCellState.Deleted &&
-                      (if (ac.state == EditableCellState.Added) ac.label.nonEmpty && (row0 < getRowCount-1) else true)
+                      (if (ac.state == EditableCellState.AddedBlank || ac.state == EditableCellState.Added) ac.label.nonEmpty && (row0 < getRowCount-1) else true)
               case tc:TableCell => tc.editable && tc.state != EditableCellState.Deleted &&
-                      (if (tc.state == EditableCellState.Added) tc.text.nonEmpty && (row0 < getRowCount-1) else true)
+                      (if (tc.state == EditableCellState.AddedBlank || tc.state == EditableCellState.Added) tc.text.nonEmpty && (row0 < getRowCount-1) else true)
             }
           }}
 
           val resetableCells = selectedCells.filter{case (row0,col0) => {
             getValueAt(row0,col0) match {
-              case ac:AxisCell => (ac.state != EditableCellState.Normal && ac.state != EditableCellState.Added)
-              case tc:TableCell => (tc.state != EditableCellState.Normal && tc.state != EditableCellState.Added)
+              case ac:AxisCell => (ac.state != EditableCellState.Normal && ac.state != EditableCellState.Added && ac.state != EditableCellState.AddedBlank)
+              case tc:TableCell => (tc.state != EditableCellState.Normal && tc.state != EditableCellState.Added && tc.state != EditableCellState.AddedBlank)
             }
           }}
 
@@ -447,7 +447,7 @@ class PivotJTable(tableModel:PivotJTableModel, pivotTableView:PivotTableView, mo
         table.getValueAt(row, col) match {
           case tableCell:TableCell => {
             if (tableCell.isError) {
-              val iconWidth = MainTableCellRenderer.RightIconWidth
+              val iconWidth = PivotCellRenderer.RightIconWidth
               if (point.x > (cellRect.x + cellRect.width - (iconWidth + 2))) {
                 setCursor0(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR))
               } else {
@@ -459,7 +459,7 @@ class PivotJTable(tableModel:PivotJTableModel, pivotTableView:PivotTableView, mo
           }
           case axisCell:AxisCell => {
             if (axisCell.shown && axisCell.collapsible.isDefined) {
-              val iconWidth = MainTableCellRenderer.LeftIconWidth
+              val iconWidth = PivotCellRenderer.LeftIconWidth
               if (point.x < (cellRect.x + iconWidth + 4)) {
                 setCursor0(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR))
               } else {

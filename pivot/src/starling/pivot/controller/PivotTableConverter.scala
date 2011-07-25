@@ -326,7 +326,7 @@ case class PivotTableConverter(otherLayoutInfo:OtherLayoutInfo = OtherLayoutInfo
           val keyFields = info.editableKeyFields.keySet
           val editableColIndices = table.rowFields.zipWithIndex.filter{case (f,index) => keyFields.contains(f)}.map(_._2).toSet
           r.map(cols => {
-            cols.zipWithIndex.map{case (cell,index) => if (cell.shown && cell.notTotalValue && editableColIndices.contains(index)) {
+            cols.zipWithIndex.map{case (cell,index) => if (cell.notTotalValue && editableColIndices.contains(index)) {
               cell.copy(editable = true)
             } else {
               cell
