@@ -10,15 +10,11 @@ import com.trafigura.edm.trades.{PhysicalTrade => EDMPhysicalTrade}
 import starling.systemofrecord.SystemOfRecord
 import starling.daterange.Day
 import starling.pivot.Field
-import starling.trade.{Trade, TradeSystem, TradeID, TradeAttributes}
+import starling.trade.{Trade, TradeID, TradeAttributes}
 import starling.instrument.physical.PhysicalMetalAssignment
 import com.trafigura.edm.shared.types.Date
 import starling.db.TitanTradeSystem
-import java.util.UUID
-import com.trafigura.commondomains.referencedata.masterdata.locations.UNSubDivision
 import java.lang.UnsupportedOperationException
-import java.net.ConnectException
-import starling.instrument.ErrorInstrument._
 import starling.utils.StackTraceToString
 import starling.instrument.{ErrorInstrument, Costs, Tradeable}
 
@@ -46,16 +42,15 @@ class TitanSystemOfRecord(
   lazy val quotaNameToQuotaMap : Map[String, EDMQuota] = Map() ++ titanTradeCache.getAllTrades().flatMap{trade =>  trade.asInstanceOf[EDMPhysicalTrade].quotas.map{q => NeptuneId(q.detail.identifier).identifier -> q}}
 
   lazy val tc = new TradeConverter(refData, quotaNameToTradeMap, quotaNameToQuotaMap)
+  import tc._
 
   def allTrades(f: (Trade) => Unit) : (Int, Set[String]) = {
-
-    //val edmTrades = titanTradeCache.getAllTrades()
+    
     val assignments = logisticsServices.assignmentService.service.getAllAssignments()
 
     val tradeErrors = assignments.map(edmAssignment => {
       try {
-        val tradeAssignment : Trade = tc.toTrade(edmAssignment)
-        f(tradeAssignment)
+        f(edmAssignment)
         Right(edmAssignment.oid.toString)
       }
       catch {
@@ -87,12 +82,11 @@ class TitanSystemOfRecord(
 class TradeConverter( refData : TitanTacticalRefData,
                        quotaNameToTradeMap : Map[String, EDMPhysicalTrade],
                        quotaNameToQuotaMap : Map[String, EDMQuota]) {
-  //import starling.services.EDMConversions._
 
   /**
-   * EDMAssignmentItem to a Starling Trade
+   * convert EDMAssignmentItem to a Starling Trade
    */
-  def toTrade(edmAssignment : EDMAssignmentItem) : Trade = {
+  implicit def toTrade(edmAssignment : EDMAssignmentItem) : Trade = {
 
     val quotaDetail = quotaNameToQuotaMap(edmAssignment.quotaName).detail
     val edmTrade = quotaNameToTradeMap(edmAssignment.quotaName)
