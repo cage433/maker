@@ -45,7 +45,7 @@ trait PnlExplanation {
     curveKeys : Set[CurveKey],
     atmVega : Boolean = true
   ): List[CurveKeyExplanation] = {
-
+    assert(d1EnvFwd.marketDay == d2Env.marketDay, "The market days should be the same: " + (d1EnvFwd.marketDay, d2Env.marketDay))
     assert(diffs.forall{d => curveKeys.contains(d.curveKey)}, "Missing a curve key for some environment differentiabls")
     val d1Mtm = PivotQuantity.calcOrCatch(cachedMtm(d1EnvFwd, ccy))
 

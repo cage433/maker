@@ -1,13 +1,11 @@
 package starling.reports.pivot
 
-import starling.utils.StarlingTest
 import org.testng.Assert._
 import starling.daterange.{Month, DayAndTime, Day}
 import starling.instrument._
 import starling.curves._
 import starling.quantity.{Percentage, Quantity, UOM}
 import starling.quantity.UOM._
-import starling.models.{European, Call}
 import starling.utils.QuantityTestUtils._
 import starling.concurrent.MP
 import org.testng.annotations.{AfterTest, AfterClass, Test}
@@ -16,8 +14,10 @@ import starling.quantity.Quantity._
 import starling.daterange.Day._
 import starling.reports.pivot.PivotReport._
 import starling.market._
+import starling.models.{American, European, Call}
+import starling.utils.{AtomicDatumKeyUtils, StarlingTest}
 
-class PnlExplanationReportTests extends TestMarketSpec {
+class PnlExplanationReportTests extends JonTestEnv {
   def noChoices = ReportSpecificChoices()
 
   @Test
@@ -171,7 +171,7 @@ class PnlExplanationReportTests extends TestMarketSpec {
 
     val expectedInterest = forward.mtm(env) * (1-env.discount(market.currency, forwardDay))
 
-    val timeChangesPnl = new TimeChangesPnl(env, forwardDay, Map(UTPIdentifier(1) -> forward))
+    val timeChangesPnl = new TimeChangesPnl(env, env.marketDay.nextDay, Map(UTPIdentifier(1) -> forward))
     val pnlExplanation = timeChangesPnl.combine(timeChangesPnl.rows(UTPIdentifier(1), forward), noChoices)
     pnlExplanation.foreach { row =>
       row.label match {
@@ -191,7 +191,7 @@ class PnlExplanationReportTests extends TestMarketSpec {
     println(forward.mtm(env.forwardState((Day(2009, 9, 15) + 10).endOfDay)))
     val expectedInterest = forward.mtm(env) * (1-env.discount(market.currency, forwardDay))
 
-      val timeChangesPnl = new TimeChangesPnl(env, forwardDay, Map(UTPIdentifier(1) -> forward))
+      val timeChangesPnl = new TimeChangesPnl(env, env.marketDay.nextDay, Map(UTPIdentifier(1) -> forward))
     val pnlExplanation = timeChangesPnl.rows(UTPIdentifier(1), forward)
     pnlExplanation.foreach { row =>
       row match {
@@ -209,7 +209,7 @@ class PnlExplanationReportTests extends TestMarketSpec {
 
     val future = new Future(market, Month(2010, 12), Quantity(10, market.priceUOM), Quantity(1000, UOM.BBL))
 
-      val timeChangesPnl = new TimeChangesPnl(Environment(env), forwardDay, Map(UTPIdentifier(1) -> future))
+      val timeChangesPnl = new TimeChangesPnl(Environment(env), env.marketDay.nextDay, Map(UTPIdentifier(1) -> future))
     val pnlExplanation = future.asUtpPortfolio.portfolio.keys.flatMap{utp => timeChangesPnl.combine(timeChangesPnl.rows(UTPIdentifier(1), utp), noChoices)}.toList
     assertEquals(pnlExplanation, List())
   }
@@ -230,7 +230,7 @@ class PnlExplanationReportTests extends TestMarketSpec {
     val option = new FuturesOption(market, Day(2009, 10, 1), Day(2009, 10, 5), Quantity(10, market.priceUOM), Quantity(1000, market.uom), Call, European)
 
 
-      val timeChangesPnl = new TimeChangesPnl(env, forwardDay, Map(UTPIdentifier(1) -> option))
+    val timeChangesPnl = new TimeChangesPnl(env, env.marketDay.nextDay, Map(UTPIdentifier(1) -> option))
     val pnlExplanation = timeChangesPnl.combine(timeChangesPnl.rows(UTPIdentifier(1), option), noChoices)
     pnlExplanation.foreach { row =>
       row.label match {
@@ -256,8 +256,7 @@ class PnlExplanationReportTests extends TestMarketSpec {
     //In practise a new forward should be created but for this trade there is an expiry pnl of -5000
     val option = new FuturesOption(market, Day(2009, 9, 10), Day(2009, 10, 5), Quantity(5, market.priceUOM), Quantity(1000, market.uom), Call, European)
 
-    val forwardDay = env.marketDay.day + 20
-  val timeChangesPnl = new TimeChangesPnl(env, forwardDay, Map(UTPIdentifier(1) -> option))
+  val timeChangesPnl = new TimeChangesPnl(env, env.marketDay + 20, Map(UTPIdentifier(1) -> option))
     val pnlExplanation = timeChangesPnl.combine(timeChangesPnl.rows(UTPIdentifier(1), option), noChoices)
     val sumExpiryPnl = pnlExplanation.filter(_.label == "Expiry DC").map(_.scaledPnl.quantityValue.get).sum
     assertQtyEquals(sumExpiryPnl, Quantity(-5000, UOM.USD), 1e-6)
@@ -340,5 +339,51 @@ class PnlExplanationReportTests extends TestMarketSpec {
     assertQtyEquals(explain.d1Price.get.quantityValue.get, price1, 1e-9)
     assertQtyEquals(explain.priceChange.get.quantityValue.get, price2 - price1, 1e-9)
     assertQtyEquals(explain.pnl.quantityValue.get * explain.scale, -(14927.03)(USD), .01)
+  }
+
+  @Test
+  def testFuturesOptionNoUnexplained {
+    val md1 = Day(2010, 10, 14).endOfDay
+    val md2 = Day(2010, 10, 15).endOfDay
+
+    val market = Market.NYMEX_WTI
+    val month = Month(2011, 1)
+
+    val env1Fwd = makeEnv(md1).forwardState(md2)
+    val d1Fwd = env1Fwd.atomicEnv
+    val dP = Quantity(3, USD / BBL)
+    val env2 = makeEnv(md2, .05, dP)
+    val d2 = env2.atomicEnv
+
+    val K = env1Fwd.forwardPrice(market, month)  + dP
+    val option = new FuturesOption(market, market.optionExpiry(month), month, K, Quantity(100000, BBL), Call, American)
+
+    val utps = Map(UTPIdentifier(1) -> option)
+    val marketChangesPnl = new MarketChangesPnl(d1Fwd, d2, utps)
+
+    val choices = ReportSpecificChoices(Map[String, Any](atmVega_str -> false))
+
+    val rows = marketChangesPnl.rows(UTPIdentifier(1), option)
+    val pnlExplanation = marketChangesPnl.combine(rows, choices)
+    val explanationSum = Quantity.sum(pnlExplanation.map(r => r.pnl.quantityValue.get * r.scale))
+
+    val env1 = makeEnv(md1)
+    val d1 = env1.atomicEnv
+    val timeChanges = new TimeChangesPnl(Environment(d1), d2.marketDay, utps)
+    val timeChangesExplanation = timeChanges.combine(timeChanges.rows(UTPIdentifier(1), option), choices)
+    val timeChangesExplanationSum = Quantity.sum(timeChangesExplanation.map(r => r.pnl.quantityValue.get * r.scale))
+
+    val totalExplained = explanationSum + timeChangesExplanationSum
+
+    val d1Mtm = option.mtm(env1, USD)
+    val d1FwdMtm = option.mtm(env1Fwd, USD)
+    val d2Mtm = option.mtm(env2, USD)
+
+    val plainPnl = d2Mtm - d1Mtm
+    val plainFwdPnl = d2Mtm - d1FwdMtm
+
+    assertQtyEquals(plainFwdPnl, explanationSum, 1e-3)
+    assertQtyEquals(plainPnl - plainFwdPnl, timeChangesExplanationSum, 1e-3)
+    assertQtyEquals(plainPnl, totalExplained, 1e-3)
   }
 }
