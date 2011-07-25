@@ -572,7 +572,7 @@ class CommoditySwapTests extends JonTestEnv {
 
     val marketDay1 = (13 Apr 2011).endOfDay
     val marketDay2 = (14 Apr 2011).startOfDay
-    val env1 = make(marketDay1, Quantity(1101.446448, USD / MT)).ignoreSwapRounding
+    val env1 = make(marketDay1, Quantity(1101.446448, USD / MT)).ignoreSwapRounding.forwardState(marketDay2)
     val env2 = make(marketDay2, Quantity(1098.461042, USD / MT)).ignoreSwapRounding
 
     val d1 = env1.atomicEnv
@@ -599,6 +599,7 @@ class CommoditySwapTests extends JonTestEnv {
 
     val (crossTerms, rounding, unexplained) = swap.components(env1, env2, environmentFor, USD, explainedTotal, curveKeys)
 
+    assertTrue(crossTerms.isAlmostZero)
     assertQtyEquals(rounding.quantityValue.get, 0(USD), 1e-5)
     assertQtyEquals(unexplained.quantityValue.get, 0(USD), 1e-5)
     assertQtyEquals(explainedTotal.quantityValue.get, -(14927)(USD), .1)
@@ -625,11 +626,11 @@ class CommoditySwapTests extends JonTestEnv {
     val marketDay1 = (13 Apr 2011).endOfDay
     val marketDay2 = (14 Apr 2011).endOfDay
     val f1 = Quantity(103.3333, USD / BBL)
-    val env1 = make(marketDay1, f1, Quantity(102.231, USD/BBL))
+    val env1Fwd = make(marketDay2, f1, Quantity(102.231, USD/BBL)).forwardState(marketDay2)
     val f2 = Quantity(110.5555, USD / BBL)
     val env2 = make(marketDay2, f2, Quantity(103.321, USD/BBL))
 
-    val d1 = env1.atomicEnv
+    val d1 = env1Fwd.atomicEnv
     val d2 = env2.atomicEnv
 
     val d2MTM = PivotQuantity.calcOrCatch({
@@ -639,7 +640,7 @@ class CommoditySwapTests extends JonTestEnv {
     val curveKeys = AtomicDatumKeyUtils.curveKeys(swap, d1.marketDay, USD)
 
     def environmentFor(curveKeys: Set[CurveKey]) = Environment(OverrideForCurveKeysEnvironment(d1, curveKeys, d2))
-    val explanation = swap.explain(env1, env2, environmentFor, USD)
+    val explanation = swap.explain(env1Fwd, env2, environmentFor, USD)
 
     val explainedTotal = explanation.map {
       _.value
@@ -647,13 +648,13 @@ class CommoditySwapTests extends JonTestEnv {
     println("et: " + explainedTotal)
 
 
-    val env1NoRounding = env1.copy(environmentParameters = DefaultRiskParameters)
+    val env1NoRounding = env1Fwd.copy(environmentParameters = DefaultRiskParameters)
     val env2NoRounding = env2.copy(environmentParameters = DefaultRiskParameters)
 
     val noRoundingPnl = PivotQuantity.calcOrCatch(swap.mtm(env2NoRounding) - swap.mtm(env1NoRounding))
-    val plainPnl = PivotQuantity.calcOrCatch(swap.mtm(env2) - swap.mtm(env1))
+    val plainPnl = PivotQuantity.calcOrCatch(swap.mtm(env2) - swap.mtm(env1Fwd))
 
-    val (crossTerms, rounding, unexplained) = swap.components(env1, env2, environmentFor, USD, explainedTotal, curveKeys)
+    val (crossTerms, rounding, unexplained) = swap.components(env1Fwd, env2, environmentFor, USD, explainedTotal, curveKeys)
 
     assertQtyEquals((noRoundingPnl  + rounding).quantityValue.get, plainPnl.quantityValue.get, 1e-5)
     assertQtyEquals(crossTerms.quantityValue.get, 0(USD), 1e-5)

@@ -8,7 +8,6 @@ import starling.pivot.FilterWithOtherTransform.OtherValue
 import starling.pivot.EditableCellState._
 import collection.immutable.{Map, TreeMap}
 import collection.Set
-import org.mockito.internal.matchers.AnyVararg
 import collection.script.Start
 import reflect.AnyValManifest
 

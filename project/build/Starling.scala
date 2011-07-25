@@ -10,7 +10,7 @@ class Starling(info : ProjectInfo) extends ParentProject(info) {
 
   lazy val bouncyrmi = swingStarlingProject("bouncyrmi")
   lazy val utils = starlingProject("utils")
-  lazy val scalaModelWithPersistence = project("titan-scala-model-with-persistence", "ScalaModel", new ScalaModelForStarling(_))
+  lazy val titanScalaModel = project("titan-scala-model", "ScalaModel", new TitanScalaModel(_))
 
   // API used to interact with starling, should have minimum number of dependencies
   lazy val starlingApi = {
@@ -18,7 +18,7 @@ class Starling(info : ProjectInfo) extends ParentProject(info) {
     // is used to prevent non-FC2 builds from compiling the model - which takes a few minutes
     val name = "starling.api"
     if (starlingProperties.getOrElse("ServerType", "Dev") == "FC2")
-      project(name, name, {info : ProjectInfo => new StarlingProject(name, info)}, bouncyrmi, scalaModelWithPersistence)
+      project(name, name, {info : ProjectInfo => new StarlingProject(name, info)}, bouncyrmi, titanScalaModel)
     else
       project(name, name, new StarlingProject(name, _){override val unmanagedClasspath =
         super.unmanagedClasspath +++ (Path.fromFile(new File("lib/titan-model-jars")) ** "*.jar")}, bouncyrmi)
@@ -135,7 +135,7 @@ class Starling(info : ProjectInfo) extends ParentProject(info) {
 
   }
 
-  class ScalaModelForStarling(info: ProjectInfo) extends DefaultProject(info) with ModelSourceGeneratingProject with ModelDependencies{
+  class TitanScalaModel(info: ProjectInfo) extends DefaultProject(info) with ModelSourceGeneratingProject with ModelDependencies{
 
     private val buildUsingBinaryTooling = true
 

@@ -318,12 +318,6 @@ object Greeks {
     (s, u, d, dP)
   }
 
-  /**
-   * Move the environment forward to the `day` given and the `timeOfDay` given. Defaults ot Start of Day
-   * The return environment are the current environment (moved forward to EOD if needed)
-   * and the new environment on `day`
-   */
-
   def envFor(env:Environment, dayAndTime: DayAndTime, changeOnlyTimeAndDiscounts : Boolean = false) : (Environment, Environment) =
     env.greeksCache.memoize((dayAndTime, changeOnlyTimeAndDiscounts, "Forward State"),{
       val envToday = env.marketDay.timeOfDay match {
