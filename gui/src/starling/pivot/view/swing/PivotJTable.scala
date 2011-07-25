@@ -45,13 +45,13 @@ class PivotJTable(tableModel:PivotJTableModel, pivotTableView:PivotTableView, mo
       if (e.getKeyCode == KeyEvent.VK_DELETE) {
         val selectedCells = getSelectedCells
         putClientProperty("JTable.autoStartsEdit", false)
-        val editableCells = selectedCells.filter{case (r,c) => {
+        val deletableCells = selectedCells.filter{case (r,c) => {
           getValueAt(r,c) match {
-            case ac:AxisCell => ac.editable
-            case tc:TableCell => tc.editable
+            case ac:AxisCell => ac.editable && ac.state != EditableCellState.Deleted
+            case tc:TableCell => tc.editable && tc.state != EditableCellState.Deleted
           }
         }}
-        tableModel.deleteCells(editableCells, true)
+        tableModel.deleteCells(deletableCells, true)
       } else if (e.getKeyCode == KeyEvent.VK_S && (e.getModifiersEx & InputEvent.CTRL_DOWN_MASK) == InputEvent.CTRL_DOWN_MASK) {
         putClientProperty("JTable.autoStartsEdit", false)
         pivotTableView.publish(SavePivotEdits)
