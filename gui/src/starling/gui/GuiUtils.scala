@@ -123,24 +123,30 @@ object GuiUtils {
   val BlendedSubtotalTotalColour = TableSelectedColour.blend(SubtotalTotalColour, BlendFraction)
   val OtherValueTotalColour = new Color(0,246,220,30)
   val BlendedOtherValueTotalColour = TableSelectedColour.blend(OtherValueTotalColour, BlendFraction)
-
-  val DeletedColour = Color.LIGHT_GRAY
-  val BlendedDeletedColour = TableSelectedColour.blend(DeletedColour, BlendFraction)
-
   val PivotTableBackgroundColour = new Color(190, 214, 248)
-
   val ClearColour = new Color(0,0,0,0)
 
-  val EditedCellColour = new Color(79, 174, 232)
-  val BlendedEditedCellColour = TableSelectedColour.blend(EditedCellColour, BlendFraction)
-  val TaintedCellColour = new Color(160, 218, 255)
-  val BlendedTaintedCellColour = TableSelectedColour.blend(TaintedCellColour, BlendFraction)
-  val AddedCellColour = new Color(163, 225, 121)
-  val BlendedAddedCellColour = TableSelectedColour.blend(AddedCellColour, BlendFraction)    
-  val ErrorCellColour = new Color(244, 121, 124)
-  val BlendedErrorCellColour = TableSelectedColour.blend(ErrorCellColour, BlendFraction)
-//  val EditableCellColour = new Color(245,245,245)
+  //  val EditableCellColour = new Color(245,245,245)
   val EditableCellColour = new Color(190,203,244, 64)
+  val EditedCellColour = new Color(79, 174, 232)
+  val AddedCellColour = new Color(163, 225, 121)
+  val TaintedCellColour = new Color(160, 218, 255)
+  val DeletedColour = Color.LIGHT_GRAY
+
+  /*val EditableCellColour = new Color(0xecf1f8)
+  val EditedCellColour = new Color(0xFFFFD7)
+  val AddedCellColour = new Color(0xd5f7be)
+  val TaintedCellColour = new Color(160, 218, 255)
+//  val DeletedColour = new Color(0xd3d9e2)
+  val DeletedColour = new Color(0xebebeb)*/
+
+  val ErrorCellColour = new Color(244, 121, 124)
+  
+  val BlendedDeletedColour = TableSelectedColour.blend(DeletedColour, BlendFraction)
+  val BlendedEditedCellColour = TableSelectedColour.blend(EditedCellColour, BlendFraction)
+  val BlendedTaintedCellColour = TableSelectedColour.blend(TaintedCellColour, BlendFraction)
+  val BlendedAddedCellColour = TableSelectedColour.blend(AddedCellColour, BlendFraction)
+  val BlendedErrorCellColour = TableSelectedColour.blend(ErrorCellColour, BlendFraction)
   val BlendedEditableCellColour = TableSelectedColour.blend(EditableCellColour, BlendFraction)
   val BlendedHeaderColour = TableSelectedColour.blend(PanelBackgroundColour, BlendFraction)
 
