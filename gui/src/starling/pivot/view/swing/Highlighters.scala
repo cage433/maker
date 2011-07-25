@@ -151,6 +151,18 @@ object Highlighters {
     editedAddedCellsHighlighter.setBackground(AddedCellColour)
     editedAddedCellsHighlighter.setSelectedBackground(BlendedAddedCellColour)
 
+    val editedAddedBlankCellsHighlighter = new ColorHighlighter(new HighlightPredicate {
+      def isHighlighted(renderer:java.awt.Component, adapter:org.jdesktop.swingx.decorator.ComponentAdapter) = {
+        adapter.getValue match {
+          case t:TableCell if t.state == EditableCellState.AddedBlank => true
+          case a:AxisCell if a.state == EditableCellState.AddedBlank => true
+          case _ => false
+        }
+      }
+    })
+    editedAddedBlankCellsHighlighter.setBackground(AddedBlankCellColour)
+    editedAddedBlankCellsHighlighter.setSelectedBackground(BlendedAddedBlankCellColour)
+
     val mainAxisCellBackgroundHighlighter = new ColorHighlighter(new HighlightPredicate {
       def isHighlighted(renderer:java.awt.Component, adapter:org.jdesktop.swingx.decorator.ComponentAdapter) = {
         adapter.getValue match {
@@ -194,6 +206,7 @@ object Highlighters {
     table.addHighlighter(editedCellsHighlighter)
     table.addHighlighter(deletedCellsHighlighter)
     table.addHighlighter(editedAddedCellsHighlighter)
+    table.addHighlighter(editedAddedBlankCellsHighlighter)
     table.addHighlighter(editedErrorCellsHighlighter)
     table.addHighlighter(editedTaintedCellsHighlighter)
   }

@@ -10,7 +10,7 @@ import starling.utils.StarlingObject
 
 object EditableCellState extends Enumeration {
   type EditableCellState = Value
-  val Normal, Tainted, Edited, Deleted, Added, Error= Value
+  val Normal, Tainted, Edited, Deleted, Added, AddedBlank, Error= Value
 }
 import EditableCellState._
 
