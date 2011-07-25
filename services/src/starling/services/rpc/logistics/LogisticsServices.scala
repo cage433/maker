@@ -25,7 +25,7 @@ case class DefaultTitanLogisticsServices(props: Props, titanEdmTradeService : Op
   val assignmentService = DefaultTitanLogisticsAssignmentServices(props, Some(inventoryService))
 }
 
-case class DefaultTitanLogisticsAssignmentServices(props: Props, titanInventoryService : Option[TitanLogisticsInventoryServices] /* = None */) extends TitanLogisticsAssignmentServices {
+case class DefaultTitanLogisticsAssignmentServices(props: Props, titanInventoryService : Option[TitanLogisticsInventoryServices]) extends TitanLogisticsAssignmentServices {
   private val rmetadminuser = props.ServiceInternalAdminUser()
   private val logisticsServiceURL = props.TitanLogisticsServiceUrl()
   private lazy val clientExecutor: ClientExecutor = new ComponentTestClientExecutor(rmetadminuser)
@@ -44,7 +44,7 @@ case class DefaultTitanLogisticsAssignmentServices(props: Props, titanInventoryS
           })
           assignments
         }
-        case _ => throw new Exception("Not implemented")
+        case _ => throw new UnsupportedOperationException
       }
     }
   }
@@ -80,7 +80,7 @@ case class DefaultTitanLogisticsInventoryServices(props: Props, titanEdmTradeSer
 
             findLeaves(inventory)
           }
-          case _ => throw new Exception("Not supported")
+          case _ => throw new UnsupportedOperationException
         }
       }
     }

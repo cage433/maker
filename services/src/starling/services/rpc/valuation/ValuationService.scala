@@ -105,14 +105,23 @@ case class DefaultTitanTradeCache(props : Props) extends TitanTradeCache {
 
 trait TitanLogisticsInventoryCache {
   protected var inventoryMap: Map[String, EDMInventoryItem]
+  protected var assignmentIDtoInventoryIDMap : Map[String, String]
   def getInventory(id: String): EDMInventoryItem
   def getAllInventory(): List[EDMInventoryItem]
   def removeInventory(id : String) {
     inventoryMap = inventoryMap - id
+    assignmentIDtoInventoryIDMap.filter{ case (_, value) => value != id}
   }
 
   def addInventory(id : String) {
     inventoryMap += id -> getInventory(id)
+    addInventoryAssignments(id)
+  }
+
+  def addInventoryAssignments(id : String) {
+    val item = inventoryMap(id)
+    val assignmentToInventoryMapItems = (item.purchaseAssignmentId.toString, id) :: { if (item.salesAssignmentId.isDefined) (item.salesAssignmentId.get.toString -> id) :: Nil else Nil }
+    assignmentIDtoInventoryIDMap ++= assignmentToInventoryMapItems
   }
 
   def inventoryIDFromAssignmentID(id: String): String
@@ -121,7 +130,7 @@ trait TitanLogisticsInventoryCache {
 
 case class DefaultTitanLogisticsInventoryCache(props : Props) extends TitanLogisticsInventoryCache {
   protected var inventoryMap : Map[String, EDMInventoryItem] = Map[String, EDMInventoryItem]()
-  protected var inventoryIDFromAssignmentIDMap : Map[String, String] = Map[String, String]()
+  protected var assignmentIDtoInventoryIDMap : Map[String, String] = Map[String, String]()
 
   private val titanTradeService = new DefaultTitanServices(props)
   private val titanLogisticsServices = DefaultTitanLogisticsServices(props, Some(titanTradeService))
@@ -143,6 +152,7 @@ case class DefaultTitanLogisticsInventoryCache(props : Props) extends TitanLogis
     val sw = new Stopwatch()
     val edmInventoryResult = getAll()
     inventoryMap = edmInventoryResult.map(i => (i.oid.contents.toString, i)).toMap
+    inventoryMap.keySet.foreach(addInventoryAssignments)
   }
 
   def getAllInventory() : List[EDMInventoryItem] = {
@@ -167,9 +177,9 @@ case class DefaultTitanLogisticsInventoryCache(props : Props) extends TitanLogis
   }
 
   def inventoryIDFromAssignmentID(id: String): String = {
-    if (!inventoryIDFromAssignmentIDMap.contains(id))
+    if (!assignmentIDtoInventoryIDMap.contains(id))
       updateMap()
-    inventoryIDFromAssignmentIDMap.get(id) match {
+    assignmentIDtoInventoryIDMap.get(id) match {
       case Some(id) => id
       case None => throw new Exception("Missing inventory " + id)
     }
@@ -178,7 +188,7 @@ case class DefaultTitanLogisticsInventoryCache(props : Props) extends TitanLogis
 
 case class TitanLogisticsServiceBasedInventoryCache(titanLogisticsServices : TitanLogisticsServices) extends TitanLogisticsInventoryCache {
   protected var inventoryMap: Map[String, EDMInventoryItem] = Map[String, EDMInventoryItem]()
-  protected var inventoryIDFromAssignmentIDMap : Map[String, String] = Map[String, String]()
+  protected var assignmentIDtoInventoryIDMap : Map[String, String] = Map[String, String]()
 
   /**
    * Read from Titan and blast our cache
@@ -211,9 +221,9 @@ case class TitanLogisticsServiceBasedInventoryCache(titanLogisticsServices : Tit
   }
 
   def inventoryIDFromAssignmentID(id: String): String = {
-    if (!inventoryIDFromAssignmentIDMap.contains(id))
+    if (!assignmentIDtoInventoryIDMap.contains(id))
       updateMap()
-    inventoryIDFromAssignmentIDMap.get(id) match {
+    assignmentIDtoInventoryIDMap.get(id) match {
       case Some(id) => id
       case None => throw new Exception("Missing inventory " + id)
     }
@@ -504,7 +514,6 @@ class ValuationService(
 
     val quotaMap = titanTradeCache.getAllTrades().flatMap(_.quotas).map(q => NeptuneId(q.detail.identifier).identifier -> q).toMap
     val assignmentIdToQuotaMap : Map[Int, EDMQuota] = allAssignments.map(a => {
-      val n = quotaMap(a.quotaName)
       a.oid.contents -> quotaMap(a.quotaName)
     }).toMap
 
@@ -515,15 +524,32 @@ class ValuationService(
     log("Valuation took " + sw)
     val (worked, errors) = valuations.partition(_._2 isRight)
     log("Worked " + worked.size + ", failed " + errors.size + ", took " + sw)
-    println("Failed valuation of assignments (%d)...\n%s".format(errors.size, errors.mkString("\n")))
+    println("Failed valuation of inventory assignments (%d)...\n%s".format(errors.size, errors.mkString("\n")))
 
     CostAndIncomeAssignmentValuationServiceResults(snapshotIDString, valuations.toMap)
   }
 
-
   def valueInventoryAssignments(inventoryIds: List[String], env : Environment, snapshotIDString : String) : CostAndIncomeAssignmentValuationServiceResults = {
+    val sw = new Stopwatch()
 
-    CostAndIncomeAssignmentValuationServiceResults(snapshotIDString, null)
+    val assignmentService = logisticsServices.assignmentService.service
+
+    val allAssignments = assignmentService.getAllAssignments()
+    val quotaMap = titanTradeCache.getAllTrades().flatMap(_.quotas).map(q => NeptuneId(q.detail.identifier).identifier -> q).toMap
+    val assignmentIdToQuotaMap : Map[Int, EDMQuota] = allAssignments.map(a => {
+      a.oid.contents -> quotaMap(a.quotaName)
+    }).toMap
+
+    val assignmentValuer = PhysicalMetalAssignmentForward.value(futuresExchangeByGUID, edmMetalByGUID, assignmentIdToQuotaMap, env, snapshotIDString) _
+
+    val valuations = inventoryIds.map(i => i -> assignmentValuer(titanInventoryCache.getInventory(i)))
+
+    log("Valuation took " + sw)
+    val (worked, errors) = valuations.partition(_._2 isRight)
+    log("Worked " + worked.size + ", failed " + errors.size + ", took " + sw)
+    println("Failed valuation of inventory assignments (%d)...\n%s".format(errors.size, errors.mkString("\n")))
+
+    CostAndIncomeAssignmentValuationServiceResults(snapshotIDString, valuations.toMap)
   }
 
   /**
@@ -555,7 +581,6 @@ class ValuationService(
     log("Actual snapshot ID " + snapshotIDString)
     snapshotIDString
   }
-
 
 
   def getTrades(tradeIds : List[String]) : List[EDMPhysicalTrade] = tradeIds.map(titanTradeCache.getTrade)
