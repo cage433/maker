@@ -217,7 +217,7 @@ case class PhysicalMetalAssignment(commodityName : String, quantity : Quantity, 
   def tradeableType = PhysicalMetalAssignment
 
   def persistedTradeableDetails : Map[String, Any] = Map(commodityLabel -> commodityName, deliveryDayLabel -> deliveryDay, quantityLabel -> quantity, pricingSpecLabel -> PersistAsBlob(pricingSpec))
-  override def shownTradableDetails = Map(commodityLabel -> commodityName, deliveryDayLabel -> deliveryDay, pricingSpecNameLabel -> pricingSpec.pricingType, quantityLabel -> quantity)
+  override def shownTradeableDetails = Map(commodityLabel -> commodityName, deliveryDayLabel -> deliveryDay, pricingSpecNameLabel -> pricingSpec.pricingType, quantityLabel -> quantity)
 
   def asUtpPortfolio(tradeDay:Day) = UTP_Portfolio(Map(copy(quantity = Quantity(1.0, quantity.uom)) -> quantity.value))
 

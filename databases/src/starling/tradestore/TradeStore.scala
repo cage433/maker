@@ -65,7 +65,7 @@ object TradeableFields {
   val fields = fieldDetails.map (_.field)
 
   def createFieldValues(trade:Trade, tradeable:Tradeable):Map[PField,Any] = {
-    val tradeableDetails : Map[String, Any] = tradeable.shownTradableDetails
+    val tradeableDetails : Map[String, Any] = tradeable.shownTradeableDetails
     tradeableDetails.map { case (k, v) => {
       val (fieldDetails, mapper) = normalizedNameToFieldAndMapper(k.toLowerCase.removeWhiteSpace)
       (fieldDetails.field, mapper(trade,v))

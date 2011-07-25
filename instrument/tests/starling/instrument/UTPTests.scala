@@ -1,5 +1,6 @@
 package starling.instrument
 
+import physical.PhysicalMetalAssignment
 import starling.utils.StarlingTest
 import starling.quantity.UOM._
 import starling.quantity.Quantity._
@@ -107,7 +108,9 @@ class UTPTests extends IndexTest {
       CashInstrument(CashInstrumentType.Ordinary, Quantity(100, USD), Day(2011, 1, 1)),
 
       // Commodity Spread Options
-      CommoditySpreadOption(FuturesSpreadMarket.ICE_WTI_BRENT, Month(2011, 1), Quantity(-1, USD/BBL), Quantity(1000, BBL), Call)
+      CommoditySpreadOption(FuturesSpreadMarket.ICE_WTI_BRENT, Month(2011, 1), Quantity(-1, USD/BBL), Quantity(1000, BBL), Call),
+
+      PhysicalMetalAssignment.sample
 
     ).map(Array[Tradeable](_))
   }
@@ -225,7 +228,7 @@ class UTPTests extends IndexTest {
   @Test
   def testThereAreNoSurplusKeysInTradeableTypeFieldsList() {
     val tradeables = tradeableProvider.flatMap(tradeables=>tradeables)
-    val allFields = (TreeSet[String]() ++ tradeables.flatMap(_.persistedTradeableDetails.keySet.map(_.replaceAll(" ", "").toLowerCase))) + "error"
+    val allFields = (TreeSet[String]() ++ tradeables.flatMap(_.shownTradeableDetails.keySet.map(_.replaceAll(" ", "").toLowerCase))) + "error"
     val actual = TreeSet[String]() ++ TradeableType.fields.map(_.replaceAll(" ", "").toLowerCase)
     assertEquals(actual, allFields)
   }
