@@ -106,7 +106,7 @@ class Quantity(val value : Double, val uom : UOM) extends Ordered[Quantity] with
     else 0
   }
   def format(fmt : String, useUOM:Boolean = true, addSpace: Boolean = false) = {
-    val uomPart = if (useUOM && !uom.isScalar) " " + uom else ""
+    val uomPart = if (useUOM && !uom.isScalar && !uom.isNull) " " + uom else ""
     value.format(fmt, addSpace) + uomPart
   }
   def format(decimalFormat: DecimalFormat) = decimalFormat.format(value)
@@ -120,6 +120,13 @@ class Quantity(val value : Double, val uom : UOM) extends Ordered[Quantity] with
 
   def in(otherUOM : UOM)(implicit conv: Conversions = Conversions.default): Option[Quantity] = {
     conv.convert(uom, otherUOM).map((ratio) => this * Quantity(ratio, otherUOM / uom))
+  }
+
+  def inUOM(uom: UOM)(implicit conv: Conversions = Conversions.default): Quantity = {
+    in(uom)(conv) match {
+      case Some(beqv) => beqv
+      case None => throw new Exception(this + ": Couldn't convert from " + this + " to " + uom)
+    }
   }
 
   /**

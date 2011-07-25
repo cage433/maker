@@ -223,7 +223,8 @@ case class PhysicalMetalAssignment(commodityName : String, quantity : Quantity, 
 
   def assets(env: Environment) = {
     val price = pricingSpec.price(env)
-    val cashMtm = quantity.in(price.denominatorUOM).get * price * -1
+    val quantityInMarketUOM = quantity.inUOM(price.denominatorUOM)
+    val cashMtm = - (quantityInMarketUOM * price)
     Assets(
       // Physical
       Asset(

@@ -1,7 +1,6 @@
 package starling.instrument
 
 import physical.PhysicalMetalAssignment
-import starling.utils.StarlingTest
 import starling.quantity.UOM._
 import starling.quantity.Quantity._
 import org.testng.annotations.{DataProvider, Test}
@@ -9,7 +8,6 @@ import starling.utils.QuantityTestUtils._
 import org.testng.Assert._
 import starling.curves._
 import interestrate.{DayCountActual365}
-import starling.utils.Reflection
 import starling.market.{InterestRateMarket, Index, Market}
 import starling.market._
 import starling.utils.CaseInsensitive._
@@ -23,6 +21,8 @@ import cern.colt.matrix.impl.DenseDoubleMatrix2D
 import starling.quantity.{UOM, Percentage, Quantity}
 import starling.curves.ForwardPriceKey
 import starling.calendar.BrentMonth
+import starling.utils.{StarlingXStream, StarlingTest, Reflection}
+import starling.utils.sql.PersistAsBlob
 
 class UTPTests extends IndexTest {
 
@@ -171,6 +171,11 @@ class UTPTests extends IndexTest {
               normalisedDetails(normailiseKey("initialprice")).asInstanceOf[Object]
             } else if (method.getName == "isNull") {
               (!normalisedDetails.contains(key) || normalisedDetails(key) == null).asInstanceOf[Object]
+            } else if (method.getName == "getObject") {
+              val entry = normalisedDetails(key).asInstanceOf[PersistAsBlob]
+              val text = StarlingXStream.write(entry.obj)
+              val read = StarlingXStream.read(text).asInstanceOf[Object]
+              read
             } else {
               normalisedDetails(key).asInstanceOf[Object]
             }
@@ -212,7 +217,7 @@ class UTPTests extends IndexTest {
 
   @Test(dataProvider = "tradeableProvider")
   def testTradeableDetailsFieldsAreInTradeableTypeKeysList(tradeable : Tradeable) {
-    val detailsKeys = normaliseDetails(tradeable.persistedTradeableDetails).keySet
+    val detailsKeys = normaliseDetails(tradeable.shownTradeableDetails).keySet
     val undeclaredFields = detailsKeys.toList.filterNot(TradeableType.lowercaseNoSpaceFields contains _)
     assertTrue(undeclaredFields.isEmpty, "There are undeclared fields in " + tradeable + " " + undeclaredFields)
   }
@@ -243,7 +248,7 @@ class UTPTests extends IndexTest {
         val zeroVolsEnv = env.zeroVols.undiscounted
         val forwardDayAndTime = DayAndTime(env.marketDay.day + 500, TimeOfDay.EndOfDay)
         val mtm = utp.mtm(zeroVolsEnv, USD)
-        assertTrue(mtm.value > 0.1, utp + ": mtm must be positive to test the utp correctly " + mtm)
+        assertTrue(mtm.abs.value > 0.1, utp + ": mtm must be non-zero to test the utp correctly " + mtm)
         val forwardEnv = zeroVolsEnv.forwardState(forwardDayAndTime)
         val forwardUtp = utp.forwardState(zeroVolsEnv, forwardDayAndTime)
         val forwardMtm = forwardUtp.mtm(forwardEnv, USD)
