@@ -517,7 +517,7 @@ class StarlingServerImpl(
     val pivotTable = if (pivotFieldParams.calculate) {
       PivotTableModel.createPivotTableData(pivot, fs)
     } else {
-      PivotTable(List(), Array(), AxisNode.Null,AxisNode.Null, Map(), TreeDetails(Map(), Map()), None, FormatInfo.Blank)
+      PivotTable.singleCellPivotTable("Calculation is off")
     }
     val fieldGroups = pivot.fieldDetailsGroups.map(_.toFieldGroup)
 

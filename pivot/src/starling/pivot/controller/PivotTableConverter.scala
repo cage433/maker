@@ -11,7 +11,7 @@ import starling.utils.{STable, SColumn}
 
 
 object AxisNode {
-  val Null = AxisNode(AxisValue.Null)
+  val Null = AxisNode(AxisValue.Null, List(AxisNode(AxisValue.Null)))
 
   def textAndAlignment(value:AxisValue, formatInfo:FormatInfo, extraFormatInfo:ExtraFormatInfo) = {
 

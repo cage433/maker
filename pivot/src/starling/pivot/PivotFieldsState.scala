@@ -694,4 +694,4 @@ object PivotFieldsState {
   }
 }
 
-case class PivotFieldParams (calculate:Boolean, pivotFieldState:Option[PivotFieldsState])
+case class PivotFieldParams(calculate:Boolean, pivotFieldState:Option[PivotFieldsState])
