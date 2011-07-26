@@ -1,7 +1,6 @@
 package starling.pricingschedule
 
 import starling.calendar.BusinessCalendar
-import org.apache.commons.lang.NotImplementedException
 import starling.daterange.{DateRange, Month, DayOfWeek, Day}
 
 // Used to specify what to count and price

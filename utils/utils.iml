@@ -23,180 +23,6 @@
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="library" name="scala-lib" level="project" />
-    <orderEntry type="module-library" exported="">
-      <library>
-        <CLASSES>
-          <root url="jar://$MODULE_DIR$/jars/joda-time-1.6.jar!/" />
-        </CLASSES>
-        <JAVADOC />
-        <SOURCES>
-          <root url="jar://$MODULE_DIR$/jars/sources/joda-time-1.6-src.zip!/joda-time-1.6-src/src/example" />
-          <root url="jar://$MODULE_DIR$/jars/sources/joda-time-1.6-src.zip!/joda-time-1.6-src/src/test" />
-          <root url="jar://$MODULE_DIR$/jars/sources/joda-time-1.6-src.zip!/joda-time-1.6-src/src/java" />
-        </SOURCES>
-      </library>
-    </orderEntry>
-    <orderEntry type="module-library" exported="">
-      <library>
-        <CLASSES>
-          <root url="jar://$MODULE_DIR$/jars/log4j-1.2.14.jar!/" />
-        </CLASSES>
-        <JAVADOC />
-        <SOURCES />
-      </library>
-    </orderEntry>
-    <orderEntry type="module-library" exported="">
-      <library>
-        <CLASSES>
-          <root url="jar://$MODULE_DIR$/jars/cron4j-2.2.1.jar!/" />
-        </CLASSES>
-        <JAVADOC />
-        <SOURCES />
-      </library>
-    </orderEntry>
-    <orderEntry type="module-library" exported="">
-      <library>
-        <CLASSES>
-          <root url="jar://$MODULE_DIR$/jars/colt-1.2.0.jar!/" />
-        </CLASSES>
-        <JAVADOC />
-        <SOURCES>
-          <root url="jar://$MODULE_DIR$/jars/sources/colt-1.2.0-src.zip!/colt/src" />
-        </SOURCES>
-      </library>
-    </orderEntry>
-    <orderEntry type="module-library" exported="">
-      <library>
-        <CLASSES>
-          <root url="jar://$MODULE_DIR$/jars/commons-io-1.3.2.jar!/" />
-        </CLASSES>
-        <JAVADOC />
-        <SOURCES />
-      </library>
-    </orderEntry>
-    <orderEntry type="module-library" exported="">
-      <library>
-        <CLASSES>
-          <root url="jar://$MODULE_DIR$/jars/commons-collections-3.2.1.jar!/" />
-        </CLASSES>
-        <JAVADOC />
-        <SOURCES />
-      </library>
-    </orderEntry>
-    <orderEntry type="module-library" exported="">
-      <library>
-        <CLASSES>
-          <root url="jar://$MODULE_DIR$/jars/jsr107cache-1.0.jar!/" />
-        </CLASSES>
-        <JAVADOC />
-        <SOURCES />
-      </library>
-    </orderEntry>
-    <orderEntry type="module-library" exported="">
-      <library>
-        <CLASSES>
-          <root url="jar://$MODULE_DIR$/jars/backport-util-concurrent-3.1.jar!/" />
-        </CLASSES>
-        <JAVADOC />
-        <SOURCES />
-      </library>
-    </orderEntry>
-    <orderEntry type="module-library" exported="">
-      <library>
-        <CLASSES>
-          <root url="jar://$MODULE_DIR$/jars/commons-logging-1.1.1.jar!/" />
-        </CLASSES>
-        <JAVADOC />
-        <SOURCES />
-      </library>
-    </orderEntry>
-    <orderEntry type="module-library" exported="">
-      <library>
-        <CLASSES>
-          <root url="jar://$MODULE_DIR$/jars/google-collect-1.0.jar!/" />
-        </CLASSES>
-        <JAVADOC />
-        <SOURCES>
-          <root url="jar://$MODULE_DIR$/jars/google-collect-1.0-src.zip!/" />
-        </SOURCES>
-      </library>
-    </orderEntry>
-    <orderEntry type="module-library" exported="">
-      <library>
-        <CLASSES>
-          <root url="jar://$MODULE_DIR$/jars/memcached-2.5.jar!/" />
-        </CLASSES>
-        <JAVADOC />
-        <SOURCES>
-          <root url="jar://$MODULE_DIR$/jars/memcached-2.5-sources.zip!/" />
-        </SOURCES>
-      </library>
-    </orderEntry>
-    <orderEntry type="module-library" exported="">
-      <library>
-        <CLASSES>
-          <root url="jar://$MODULE_DIR$/jars/commons-codec-1.4.jar!/" />
-        </CLASSES>
-        <JAVADOC />
-        <SOURCES>
-          <root url="jar://$MODULE_DIR$/jars/sources/commons-codec-1.4-sources.jar!/" />
-        </SOURCES>
-      </library>
-    </orderEntry>
-    <orderEntry type="module-library" exported="">
-      <library>
-        <CLASSES>
-          <root url="jar://$MODULE_DIR$/jars/cglib-nodep-2.2.jar!/" />
-        </CLASSES>
-        <JAVADOC />
-        <SOURCES />
-      </library>
-    </orderEntry>
-    <orderEntry type="module-library" exported="">
-      <library>
-        <CLASSES>
-          <root url="jar://$MODULE_DIR$/jars/commons-pool-1.3.jar!/" />
-        </CLASSES>
-        <JAVADOC />
-        <SOURCES />
-      </library>
-    </orderEntry>
-    <orderEntry type="module-library" exported="">
-      <library>
-        <CLASSES>
-          <root url="jar://$MODULE_DIR$/jars/commons-lang-2.3.jar!/" />
-        </CLASSES>
-        <JAVADOC />
-        <SOURCES />
-      </library>
-    </orderEntry>
-    <orderEntry type="module-library" exported="">
-      <library>
-        <CLASSES>
-          <root url="jar://$MODULE_DIR$/jars/testng-5.14.1.jar!/" />
-        </CLASSES>
-        <JAVADOC />
-        <SOURCES />
-      </library>
-    </orderEntry>
-    <orderEntry type="module-library" exported="">
-      <library>
-        <CLASSES>
-          <root url="jar://$MODULE_DIR$/jars/sjson-0.8-2.8.0.jar!/" />
-        </CLASSES>
-        <JAVADOC />
-        <SOURCES />
-      </library>
-    </orderEntry>
-    <orderEntry type="module-library" exported="">
-      <library>
-        <CLASSES>
-          <root url="jar://$MODULE_DIR$/jars/dispatch-json_2.8.0-0.7.4.jar!/" />
-        </CLASSES>
-        <JAVADOC />
-        <SOURCES />
-      </library>
-    </orderEntry>
     <orderEntry type="module-library">
       <library>
         <CLASSES>
@@ -206,10 +32,19 @@
         <SOURCES />
       </library>
     </orderEntry>
+    <orderEntry type="module-library" exported="">
+      <library>
+        <CLASSES>
+          <root url="jar://$MODULE_DIR$/lib/memcached-2.5.jar!/" />
+        </CLASSES>
+        <JAVADOC />
+        <SOURCES />
+      </library>
+    </orderEntry>
     <orderEntry type="module-library" exported="" scope="TEST">
       <library>
         <CLASSES>
-          <root url="jar://$MODULE_DIR$/jars/mockito-all-1.8.2.jar!/" />
+          <root url="jar://$MODULE_DIR$/lib/scalatest-1.6.1.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />
@@ -218,7 +53,7 @@
     <orderEntry type="module-library" exported="">
       <library>
         <CLASSES>
-          <root url="jar://$MODULE_DIR$/jars/spring-tx-3.0.5.RELEASE.jar!/" />
+          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/compile/xstream-1.3.1.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />
@@ -227,7 +62,7 @@
     <orderEntry type="module-library" exported="">
       <library>
         <CLASSES>
-          <root url="jar://$MODULE_DIR$/jars/spring-jdbc-3.0.5.RELEASE.jar!/" />
+          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/compile/xpp3_min-1.1.4c.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />
@@ -236,7 +71,7 @@
     <orderEntry type="module-library" exported="">
       <library>
         <CLASSES>
-          <root url="jar://$MODULE_DIR$/jars/spring-core-3.0.5.RELEASE.jar!/" />
+          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/compile/commons-cli-1.1.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />
@@ -245,7 +80,7 @@
     <orderEntry type="module-library" exported="">
       <library>
         <CLASSES>
-          <root url="jar://$MODULE_DIR$/jars/spring-context-3.0.5.RELEASE.jar!/" />
+          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/compile/colt-1.0.3.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />
@@ -254,7 +89,7 @@
     <orderEntry type="module-library" exported="">
       <library>
         <CLASSES>
-          <root url="jar://$MODULE_DIR$/jars/spring-beans-3.0.0.RELEASE.jar!/" />
+          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/compile/joda-time-1.6.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />
@@ -263,7 +98,7 @@
     <orderEntry type="module-library" exported="">
       <library>
         <CLASSES>
-          <root url="jar://$MODULE_DIR$/jars/amqp-client-1.7.2.jar!/" />
+          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/compile/google-collections-1.0.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />
@@ -272,7 +107,7 @@
     <orderEntry type="module-library" exported="">
       <library>
         <CLASSES>
-          <root url="jar://$MODULE_DIR$/jars/xpp3_min-1.1.4c.jar!/" />
+          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/compile/commons-io-1.2.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />
@@ -281,23 +116,7 @@
     <orderEntry type="module-library" exported="">
       <library>
         <CLASSES>
-          <root url="jar://$MODULE_DIR$/jars/xstream-1.3.1.jar!/" />
-        </CLASSES>
-        <JAVADOC />
-        <SOURCES>
-          <root url="jar://$MODULE_DIR$/jars/sources/xstream-distribution-1.3.1-src.zip!/xstream-1.3.1/xstream-builder/src/java" />
-          <root url="jar://$MODULE_DIR$/jars/sources/xstream-distribution-1.3.1-src.zip!/xstream-1.3.1/xstream-benchmark/src/java" />
-          <root url="jar://$MODULE_DIR$/jars/sources/xstream-distribution-1.3.1-src.zip!/xstream-1.3.1/xstream/src/test" />
-          <root url="jar://$MODULE_DIR$/jars/sources/xstream-distribution-1.3.1-src.zip!/xstream-1.3.1/xstream-builder/src/test" />
-          <root url="jar://$MODULE_DIR$/jars/sources/xstream-distribution-1.3.1-src.zip!/xstream-1.3.1/xstream-benchmark/src/test" />
-          <root url="jar://$MODULE_DIR$/jars/sources/xstream-distribution-1.3.1-src.zip!/xstream-1.3.1/xstream/src/java" />
-        </SOURCES>
-      </library>
-    </orderEntry>
-    <orderEntry type="module-library" exported="">
-      <library>
-        <CLASSES>
-          <root url="jar://$MODULE_DIR$/jars/scalacheck_2.9.0-1-1.9.jar!/" />
+          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/compile/cglib-nodep-2.2.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />
@@ -306,7 +125,52 @@
     <orderEntry type="module-library" exported="">
       <library>
         <CLASSES>
-          <root url="jar://$MODULE_DIR$/jars/scalatest-1.6.1.jar!/" />
+          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/compile/commons-codec-1.4.jar!/" />
+        </CLASSES>
+        <JAVADOC />
+        <SOURCES />
+      </library>
+    </orderEntry>
+    <orderEntry type="module-library" exported="">
+      <library>
+        <CLASSES>
+          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/compile/testng-5.8-jdk15.jar!/" />
+        </CLASSES>
+        <JAVADOC />
+        <SOURCES />
+      </library>
+    </orderEntry>
+    <orderEntry type="module-library" exported="">
+      <library>
+        <CLASSES>
+          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/compile/log4j-1.2.14.jar!/" />
+        </CLASSES>
+        <JAVADOC />
+        <SOURCES />
+      </library>
+    </orderEntry>
+    <orderEntry type="module-library" exported="">
+      <library>
+        <CLASSES>
+          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/compile/junit-3.8.1.jar!/" />
+        </CLASSES>
+        <JAVADOC />
+        <SOURCES />
+      </library>
+    </orderEntry>
+    <orderEntry type="module-library" exported="">
+      <library>
+        <CLASSES>
+          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/compile/amqp-client-1.7.2.jar!/" />
+        </CLASSES>
+        <JAVADOC />
+        <SOURCES />
+      </library>
+    </orderEntry>
+    <orderEntry type="module-library" exported="" scope="TEST">
+      <library>
+        <CLASSES>
+          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/test/mockito-all-1.8.2.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />

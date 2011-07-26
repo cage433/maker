@@ -26,6 +26,15 @@
     <orderEntry type="module" module-name="pivot" exported="" />
     <orderEntry type="module" module-name="quantity" exported="" />
     <orderEntry type="module" module-name="bouncyrmi" exported="" />
+    <orderEntry type="module-library" exported="">
+      <library>
+        <CLASSES>
+          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/compile/sjson_2.8.0-0.8.jar!/" />
+        </CLASSES>
+        <JAVADOC />
+        <SOURCES />
+      </library>
+    </orderEntry>
   </component>
 </module>
 
