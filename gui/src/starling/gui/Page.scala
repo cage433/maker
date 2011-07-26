@@ -19,6 +19,7 @@ import collection.SortedSet
 import javax.swing.BorderFactory
 import starling.eai.Book
 import starling.auth.User
+import java.awt.{Component=>AWTComp}
 
 /**
  * The StarlingBrowser models everything as a Page (defined here)
@@ -49,8 +50,8 @@ case class PageBookmark(page:Page) extends Bookmark {
 }
 
 trait PageContext {
-	def goTo(page:Page, newTab:Boolean=false)
-  def createAndGoTo(buildPage:StarlingServer=>Page, onException:PartialFunction[Throwable, Unit] = { case e:UnsupportedOperationException => {}}, newTab:Boolean = false)
+	def goTo(page:Page, newTab:Boolean=false, compToFocus:Option[AWTComp]=None)
+  def createAndGoTo(buildPage:StarlingServer=>Page, onException:PartialFunction[Throwable, Unit] = { case e:UnsupportedOperationException => {}}, newTab:Boolean = false, compToFocus:Option[AWTComp]=None)
   def submit[R](submitRequest:SubmitRequest[R], onComplete:R=>Unit=(r:R)=>(), keepScreenLocked:Boolean = false, awaitRefresh:R=>Boolean=(r:R)=>false): Unit
   def submitF[R](f: StarlingServer => R, onComplete:R=>Unit=(r:R)=>(), keepScreenLocked:Boolean = false, awaitRefresh:R=>Boolean=(r:R)=>false) {
     submit(new SubmitRequest[R] {

@@ -424,7 +424,7 @@ class PivotTablePageComponent(
     }
     case FullScreenSelectedEvent(data) => pageContext.goTo(new FullScreenReportPage(text, data))
     case ShowErrorsEvent(errors) => {pageContext.goTo(new ReportCellErrorsPage(errors.toList))}
-    case PivotEditsUpdatedEvent(edits0) => pageContext.goTo(selfPage(pivotPageState, edits0))
+    case PivotEditsUpdatedEvent(edits0, t) => pageContext.goTo(selfPage(pivotPageState, edits0), compToFocus = Some(t))
     case SavePivotEdits if toolBar.saveEditsButton.enabled => toolBar.saveEditsButton.saveEdits()
     case FieldPanelEvent(collapse) => {
       val newOtherLayoutInfo = pivotPageState.otherLayoutInfo.copy(fieldPanelCollapsed = collapse)

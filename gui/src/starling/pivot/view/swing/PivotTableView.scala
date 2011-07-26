@@ -24,6 +24,8 @@ import collection.mutable.{ListBuffer, HashMap}
 import org.jdesktop.animation.timing.{TimingTargetAdapter, Animator}
 import java.awt.{Container, Graphics2D, Dimension, Color, GradientPaint, Cursor, AWTEvent, Toolkit, KeyboardFocusManager, Component => AWTComp}
 import javax.swing._
+import org.jfree.chart.labels.PieToolTipGenerator
+import starling.pivot.view.swing.PivotTableType._
 
 object PivotTableView {
   def createWithLayer(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSize:Dimension,
@@ -41,7 +43,7 @@ case class FieldsChangedEvent(pivotFieldState:PivotFieldsState) extends Event
 case class TableDoubleClickEvent(filterFields:Seq[(Field,Selection)] , drillDownFields:Seq[(Field,Selection)], controlDown:Boolean) extends Event
 case class FullScreenSelectedEvent(data:String) extends Event
 case class ShowErrorsEvent(errors:Set[StackTrace]) extends Event
-case class PivotEditsUpdatedEvent(edits:PivotEdits) extends Event
+case class PivotEditsUpdatedEvent(edits:PivotEdits, source:PivotJTable) extends Event
 case object SavePivotEdits extends Event
 case class FieldPanelEvent(collapse:Boolean) extends Event
 case class CollapsedStateUpdated(rowCollapsedState:Option[CollapsedState]=None, columnCollapsedState:Option[CollapsedState]=None) extends Event
@@ -515,9 +517,19 @@ class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSiz
     contentPanel.repaint()
   }
 
+  private def updatePivotEdits(edits0:PivotEdits, tableType:PivotTableType) {
+    val t = tableType match {
+      case Full => fullTable
+      case RowHeader => rowHeaderTable
+      case ColumnHeader => colHeaderTable
+      case Main => mainTable
+    }
+    publish(PivotEditsUpdatedEvent(edits0, t))
+  }
+
   private val tableModelsHelper = new PivotJTableModelHelper(mainData, data.pivotTable.editableInfo,
     rowHeaderData, colHeaderData, colUOMs, resizeColumnHeaderAndMainTableColumns, resizeRowHeaderTableColumns,
-    data.pivotFieldsState, extraFormatInfo, edits, (edits0) => {publish(PivotEditsUpdatedEvent(edits0))}, data.pivotTable.formatInfo)
+    data.pivotFieldsState, extraFormatInfo, edits, (edits0, tableType) => updatePivotEdits(edits0, tableType), data.pivotTable.formatInfo)
 
   def extraFormatInfoUpdated(extraFormatInfo:ExtraFormatInfo) {
     val newConverter = viewConverter.copy(extraFormatInfo = extraFormatInfo)

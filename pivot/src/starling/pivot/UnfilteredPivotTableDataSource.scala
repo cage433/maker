@@ -77,11 +77,7 @@ object UnfilteredPivotTableDataSource {
           val fieldDetails = fieldDetailsMap(field)
           val rowValue = fieldDetails.transformValueForGroupByField(PivotValue.extractValue(row, field))
           selection match {
-            case SomeSelection(values) => {
-              val r= fieldDetails.matches(values, rowValue)
-              if (!r) println("NO " + field + " " + rowValue + " " + selection)
-              r
-            }
+            case SomeSelection(values) => fieldDetails.matches(values, rowValue)
             case _ => true
           }
         } }

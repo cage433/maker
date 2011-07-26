@@ -14,7 +14,7 @@ class BookmarksPanel(context:PageContext) extends MigPanel("") {
   val iconLabel = new Label {
     icon = StarlingIcons.icon("/icons/32x32_report_star.png")
   }
-  val textLabel = new Label("Select a bookmark (and observation day if required) to go to")
+  val textLabel = new Label("Select a bookmark (and observation day if required) to go to ")
   val bookmarks = context.localCache.bookmarks
 
   val bookmarksListView = new NListView(bookmarks) {
@@ -42,6 +42,17 @@ class BookmarksPanel(context:PageContext) extends MigPanel("") {
     enabled = valuationDayShouldBeEnabled
     day = Day.today().previousWeekday
     traversable = true
+  }
+
+  def updateSelectedBookmark(b:Bookmark) {
+    val data = bookmarksListView.listData
+    val indexToSelect = data.zipWithIndex.find{case (bd, _) => bd.bookmark == b} match {
+      case None => -1
+      case Some((_, index)) => index
+    }
+    if (indexToSelect != -1) {
+      bookmarksListView.selectIndices(indexToSelect)
+    }
   }
     
   def deleteBookmark() {

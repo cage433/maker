@@ -6,7 +6,7 @@ import starling.pivot.view.swing.{NListView, MigPanel}
 import java.awt.{Color, Dimension}
 import starling.gui.api.UserLoggedIn
 import swing.{TextField, Label, Button, ScrollPane}
-import swing.event.{KeyPressed, ListSelectionChanged, ButtonClicked}
+import swing.event.{MouseClicked, KeyPressed, ListSelectionChanged, ButtonClicked}
 
 case class RunAsUserPage() extends Page {
   def text = "Run as another user"
@@ -62,8 +62,9 @@ class RunAsUserPageComponent(context:PageContext) extends MigPanel("insets n n n
       userField.text = selectedUser
     }
     case KeyPressed(`userListView`, scala.swing.event.Key.Enter, _,_) => runAsUser()
+    case MouseClicked(`userListView`, _,_,2,_) => runAsUser()
   }
-  listenTo(context.remotePublisher, userListView.selection, userListView.keys)
+  listenTo(context.remotePublisher, userListView.selection, userListView.keys, userListView.mouse.clicks)
 
   private val usersScroll = new ScrollPane(userListView)
   private val runButton = new Button {

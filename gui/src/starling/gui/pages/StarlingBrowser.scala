@@ -25,6 +25,7 @@ import starling.utils.{Log, StackTraceToString}
 import swing.event.{UIElementResized, MouseClicked, ButtonClicked}
 import java.lang.reflect.UndeclaredThrowableException
 import starling.bouncyrmi.{ClientOfflineException, ServerUpgradeException, OfflineException}
+import java.awt.{Component=>AWTComp}
 
 /**
  * All on the swing thread
@@ -124,12 +125,12 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
   listenTo(remotePublisher)
 
   private val pageContext = new PageContext {
-    def goTo(page:Page, newTab:Boolean=false) {
-      val cf = currentFocus
+    def goTo(page:Page, newTab:Boolean=false, compToFocus:Option[AWTComp]) {
+      val cf = if (compToFocus.isDefined) compToFocus else currentFocus
       history(current).componentForFocus = cf
       if (newTab) openTab(true, Left(page)) else StarlingBrowser.this.goTo(page, false)
     }
-    def createAndGoTo(buildPage:StarlingServer=>Page, onException:PartialFunction[Throwable, Unit], newTab:Boolean = false) { if (newTab) openTab(true, Right((buildPage, onException))) else StarlingBrowser.this.goTo(Right((buildPage, onException)), false) }
+    def createAndGoTo(buildPage:StarlingServer=>Page, onException:PartialFunction[Throwable, Unit], newTab:Boolean, compToFocus:Option[AWTComp]) { if (newTab) openTab(true, Right((buildPage, onException))) else StarlingBrowser.this.goTo(Right((buildPage, onException)), false) }
     def submit[R](submitRequest:SubmitRequest[R], onComplete:R => Unit, keepScreenLocked:Boolean, awaitRefresh:R=>Boolean=(r:R)=>false) {StarlingBrowser.this.submit(submitRequest, awaitRefresh, onComplete, keepScreenLocked)}
     def submitYesNo[R](message:String, description:String, submitRequest:SubmitRequest[R], awaitRefresh:R=>Boolean, onComplete:R => Unit, keepScreenLocked:Boolean) = {StarlingBrowser.this.submitYesNo(message, description, submitRequest, awaitRefresh, onComplete, keepScreenLocked)}
     def clearCache() {StarlingBrowser.this.clearCache}
@@ -313,6 +314,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
   }
 
   private val redoAction = Action("redoAction") {
+    history(current).componentForFocus = currentFocus
     starlingBrowserUI.clearContentPanel
     currentComponent.resetDynamicState
     val oldIndex = current
@@ -620,9 +622,9 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
     foreground = Color.RED
   }
 
-  private val bookmarkButton = new BookmarkButton(currentBookmark, pageContext)
   def currentBookmark = history(current).bookmark
-  private val bookmarkDropDownButton = new BookmarkDropDownButton(pageContext)
+  private val bookmarkButton = new BookmarkButton(currentBookmark, pageContext)
+  private val bookmarkDropDownButton = new BookmarkDropDownButton(currentBookmark, pageContext)
 
   refreshButtonStatus
 

@@ -319,7 +319,7 @@ object PivotTableModel {
       _createPivotTableData(dataSource, pivotFieldParams.pivotFieldState)
     } else {
       val pfs = pivotFieldParams.pivotFieldState.getOrElse(new PivotFieldsState())
-      val pt = PivotTable(List(), Array(), AxisNode.Null, AxisNode.Null, Map(), TreeDetails(Map(), Map()), None, FormatInfo.Blank)
+      val pt = PivotTable.singleCellPivotTable("Calculation is off")
       (pfs, pt)
     }
 
