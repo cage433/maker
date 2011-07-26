@@ -19,6 +19,13 @@ import collection.immutable.Map
 case class OverrideDetails(text:String, state:EditableCellState)
 case class TableValue(value:AnyRef, row:Int, column:Int)
 
+object PivotTableType extends Enumeration {
+  type PivotTableType = Value
+  val RowHeader, ColumnHeader, Main, Full = Value
+}
+
+import PivotTableType._
+
 abstract class PivotJTableModel extends AbstractTableModel {
   def paintTable(g:Graphics, table:JTable, rendererPane:CellRendererPane, rMin:Int, rMax:Int, cMin:Int, cMax:Int)
   def rowHeader(row:Int, col:Int):Boolean
@@ -50,7 +57,7 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
                      fieldState:PivotFieldsState,
                      var extraFormatInfo:ExtraFormatInfo,
                      pivotEdits:PivotEdits,
-                     updateEdits:(PivotEdits) => Unit,
+                     updateEdits:(PivotEdits, PivotTableType) => Unit,
                      formatInfo:FormatInfo) {
   private var mainColCount0 = data0(0).length
   private var rowHeaderColCount0 = rowHeaderData0(0).length
@@ -191,7 +198,7 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
         }
       }}
       if (fireChange && edits != pivotEdits) {
-        updateEdits(edits)
+        updateEdits(edits, RowHeader)
       }
       edits
     }
@@ -209,7 +216,7 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
         edits = edits.remove(editsForCell)
       }}
       if (fireChange && edits != pivotEdits) {
-        updateEdits(edits)
+        updateEdits(edits, RowHeader)
       }
       edits
     }
@@ -272,7 +279,7 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
         }
       })
       if (fireChange && newPivotEdits != pivotEdits) {
-        updateEdits(newPivotEdits)
+        updateEdits(newPivotEdits, RowHeader)
       }
       newPivotEdits
     }
@@ -367,7 +374,7 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
         edits = edits.remove(editsForCell)
       }}
       if (fireChange && edits != pivotEdits) {
-        updateEdits(edits)
+        updateEdits(edits, ColumnHeader)
       }
       edits
     }
@@ -480,7 +487,7 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
         edits = edits.remove(editsForCell)
       }}
       if (fireChange && edits != pivotEdits) {
-        updateEdits(edits)
+        updateEdits(edits, Main)
       }
       edits
     }
@@ -510,7 +517,7 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
         }
       }}
       if (fireChange && edits != pivotEdits) {
-        updateEdits(edits)
+        updateEdits(edits, Main)
       }
       edits
     }
@@ -604,7 +611,7 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
 
       })
       if (fireChange && newPivotEdits != pivotEdits) {
-        updateEdits(newPivotEdits)
+        updateEdits(newPivotEdits, Main)
       }
       newPivotEdits
     }
@@ -709,12 +716,8 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
     selection.intervalMode = ListView.IntervalMode.Single
     peer.setFocusTraversalKeysEnabled(false)
     def selectText(t:String) {
-      popupMenu.setVisible(false)
-      popupMenu.tableToFocus.requestFocusInWindow()
-      onEDT({
-        popupMenu.editor.setText(t)
-        popupMenu.cellEditor.stopCellEditing()
-      })
+      popupMenu.editor.setText(t)
+      popupMenu.cellEditor.stopCellEditing()
     }
     reactions += {
       case KeyPressed(_,scala.swing.event.Key.Enter,_,_) => selectText(selection.items.head)
@@ -798,7 +801,7 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
 
       if (fireChange) {
         if (editsToUse != pivotEdits) {
-          updateEdits(editsToUse)
+          updateEdits(editsToUse, Full)
         }
       }
       editsToUse
@@ -811,7 +814,7 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
         editsToUse = mod.deleteCells(cellsForMod, false)
       }}
       if (fireChange && editsToUse != pivotEdits) {
-        updateEdits(editsToUse)
+        updateEdits(editsToUse, Full)
       }
       editsToUse
     }
@@ -823,7 +826,7 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
         editsToUse = mod.resetCells(cellsForMod, false)
       }}
       if (fireChange && editsToUse != pivotEdits) {
-        updateEdits(editsToUse)
+        updateEdits(editsToUse, Full)
       }
       editsToUse
     }
