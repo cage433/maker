@@ -36,10 +36,24 @@ case class CurvePage(curveLabel: CurveLabel, pivotPageState: PivotPageState) ext
   }
 
   override def configPanel(pageContext: PageContext, data:PageData) = {
-    val environmentRules = pageContext.localCache.environmentRulesForPricingGroup(marketDataIdentifier.selection.pricingGroup)
     val marketDataSelectionPanel = new MarketDataSelectionComponent(pageContext, None, marketDataIdentifier.selection)
-    val envSpecChooser = new EnvironmentSpecificationLabelChooser(curveLabel.environmentSpecification, environmentRules)
+    val marketDataSelectionPanelPanel = new MigPanel {
+      border = RoundedBorder(colour = GuiUtils.PivotTableBackgroundColour)
+      add(marketDataSelectionPanel, "push, grow")
+    }
     val curveTypeChooser = new CurveTypeChooser(pageContext, curveLabel.curveType)
+    val curveTypeChooserPanel = new MigPanel {
+      border = RoundedBorder(colour = GuiUtils.PivotTableBackgroundColour)
+      add(new Label("Curve Type:"))
+      add(curveTypeChooser, "push, grow")
+    }
+    val environmentRules = pageContext.localCache.environmentRulesForPricingGroup(marketDataIdentifier.selection.pricingGroup)
+    val envSpecChooser = new EnvironmentSpecificationLabelChooser(curveLabel.environmentSpecification, environmentRules)
+    val envSpecChooserPanel = new MigPanel {
+      border = RoundedBorder(colour = GuiUtils.PivotTableBackgroundColour)
+      add(new Label("Environment Spec:"))
+      add(envSpecChooser, "push, grow")
+    }
 
     def latest(curvePage:CurvePage) = {
       val version = pageContext.localCache.latestMarketDataVersion(curvePage.marketDataIdentifier.selection)
@@ -69,12 +83,12 @@ case class CurvePage(curveLabel: CurveLabel, pivotPageState: PivotPageState) ext
       case EnvironmentSpecificationLabelChangedEvent(ruleChooser, envSpec) => pageContext.goTo(latest(copyEnv(envSpec)))
     }
 
-    val configPanel = new MigPanel("gapx unrel") with ConfigPanel {
-      add(marketDataSelectionPanel)
-      add(curveTypeChooser)
-      add(envSpecChooser)
+    val configPanel = new MigPanel with ConfigPanel {
+      add(marketDataSelectionPanelPanel, "wrap")
+      add(curveTypeChooserPanel, "split, spanx")
+      add(envSpecChooserPanel)
 
-      def displayName = "Curve"
+      def displayName = "Curve Selection"
     }
 
     Some(ConfigPanels(List(configPanel), new Label(""), Action("BLA"){}))
