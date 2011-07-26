@@ -174,7 +174,7 @@ class Starling(info : ProjectInfo) extends ParentProject(info) {
       import FileUtilities._
       val logger = new ConsoleLogger()
       val srcPath = Path.fromFile(new java.io.File(projectRoot + "/target/scala_2.9.0-1/scalamodel_2.9.0-1-1.0.jar"))
-      val destPath = Path.fromFile(new java.io.File(projectRoot + "/../starling.api/scala-model-jars/scala-model-with-persistence.jar"))
+      val destPath = Path.fromFile(new java.io.File(projectRoot + "/../lib/titan-model-jars/scala-model-with-persistence.jar"))
       logger.info("copying target jar %s to %s".format(srcPath, destPath))
       val r = copyFile(srcPath, destPath, logger)
       logger.info("copied jar")

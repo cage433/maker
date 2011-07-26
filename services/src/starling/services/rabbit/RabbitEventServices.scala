@@ -11,11 +11,11 @@ import org.codehaus.jettison.json.JSONArray
 import java.util.concurrent.atomic.AtomicBoolean
 import com.trafigura.services.log.Logger
 import starling.services.rpc.valuation.ValuationService
-import com.trafigura.shared.events.{Payload, UpdatedEventVerb, EventVerbEnum, Event}
 import com.trafigura.shared.events.Event._
 import com.trafigura.events._
 import starling.gui.api.MarketDataSnapshot
 import starling.utils.{Broadcaster, Log, Stoppable}
+import com.trafigura.shared.events._
 
 
 /**
@@ -29,22 +29,23 @@ trait RabbitEventServices extends Stoppable with Logger {
 
 case class TitanRabbitIdBroadcaster(
     publisher : Publisher,
-    source : String = ValuationService.LogisticsSourceTmp,
-    subject : String = EDMLogisticsInventorySubject,
-    verb : EventVerbEnum = UpdatedEventVerb) extends Broadcaster {
+    source : String = Event.StarlingSource,
+    subject : String = Event.StarlingMarketDataSnapshotIDSubject,
+    verb : EventVerbEnum = NewEventVerb,
+    payloadType : String = Event.StarlingSnapshotIdPayload) extends Broadcaster {
 
   def broadcast(event : scala.swing.event.Event) = {
     event match {
       case mds : MarketDataSnapshot => {
-        val events = createUpdatedIDEvents(mds.snapshotIDs, source, subject, verb)
+        val events = createUpdatedIDEvents(mds.snapshotIDs, source, subject, verb, payloadType)
         publisher.publish(events)
       }
     }
   }
 
-  private def createUpdatedIDEvents(ids : List[String], source : String, subject : String, verb : EventVerbEnum) : JSONArray = {
+  private def createUpdatedIDEvents(ids : List[String], source : String, subject : String, verb : EventVerbEnum, payloadType : String) : JSONArray = {
     val pf = new PayloadFactory()
-    val payloads = ids.map(id => pf.createPayload(InventoryIdPayload, source, id))
+    val payloads = ids.map(id => pf.createPayload(payloadType, source, id))
     createEvents(source, subject, verb, payloads)
   }
 
