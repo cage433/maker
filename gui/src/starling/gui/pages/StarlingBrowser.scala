@@ -622,9 +622,9 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
     foreground = Color.RED
   }
 
-  private val bookmarkButton = new BookmarkButton(currentBookmark, pageContext)
   def currentBookmark = history(current).bookmark
-  private val bookmarkDropDownButton = new BookmarkDropDownButton(pageContext)
+  private val bookmarkButton = new BookmarkButton(currentBookmark, pageContext)
+  private val bookmarkDropDownButton = new BookmarkDropDownButton(currentBookmark, pageContext)
 
   refreshButtonStatus
 
