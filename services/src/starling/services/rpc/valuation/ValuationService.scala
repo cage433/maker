@@ -89,6 +89,7 @@ case class DefaultTitanTradeCache(props : Props) extends TitanTradeCache {
     else {
       val trade = getByOid(id.toInt)
       tradeMap += trade.tradeId.toString -> trade.asInstanceOf[EDMPhysicalTrade]
+      addTradeQuotas(id)
       tradeMap(id)
     }
   }
@@ -172,6 +173,7 @@ case class DefaultTitanLogisticsInventoryCache(props : Props) extends TitanLogis
     else {
       val item = getById(id.toInt)
       inventoryMap += item.oid.contents.toString -> item
+      addInventoryAssignments(id)
       inventoryMap(id)
     }
   }
@@ -228,6 +230,8 @@ case class TitanLogisticsServiceBasedInventoryCache(titanLogisticsServices : Tit
       case None => throw new Exception("Missing inventory " + id)
     }
   }
+
+  def getInventoryByIds(ids : List[String]) = getAllInventory().filter(i => ids.exists(_ == i.oid.contents.toString))
 }
 
 trait TitanTradeService {
@@ -599,7 +603,7 @@ class ValuationService(
           tradeMgmtTradeEventHander(rabbitPublishChangedValueEvents)(ev)
         }
         // todo, determing the correct logistics event source as it is not entirely obvious
-        else if (/* Event.LogisticsSource  == ev.source && */ Event.EDMLogisticsSalesAssignmentSubject == ev.subject || Event.EDMLogisticsInventorySubject == ev.subject) {
+        else if (ValuationService.LogisticsSourceTmp == ev.source && (EDMLogisticsSalesAssignmentSubject == ev.subject || Event.EDMLogisticsInventorySubject == ev.subject)) {
           logisticsAssignmentEventHander(rabbitPublishChangedValueEvents)(ev)
         }
       }
@@ -674,8 +678,10 @@ class ValuationService(
           val newInventoryAssignmentValuations = valueInventoryAssignments(ids, env, snapshotIDString)
           val changedIDs = ids.filter {id => newInventoryAssignmentValuations.assignmentValuationResults(id) != originalInventoryAssignmentValuations.assignmentValuationResults(id) }
 
-          if (changedIDs != Nil)
-            rabbitPublishChangedValueEvents(changedIDs, InventoryIdPayload)
+          if (changedIDs != Nil) {
+            println("Assignment valuation events, publishing ids " + changedIDs.mkString(", "))
+            rabbitPublishChangedValueEvents(changedIDs, EDMLogisticsInventoryIdPayload)
+          }
 
           Log.info("Assignments revalued for received event using snapshot %s number of changed valuations %d".format(snapshotIDString, changedIDs.size))
         }
@@ -755,6 +761,8 @@ class ValuationServiceRpc(marketDataStore: MarketDataStore, valuationService: Va
 
 object ValuationService extends App {
 
+  val LogisticsSourceTmp = "LOGISTICS SOURCE TMP" // temporary logistics source component id until the real one can be located
+  
   import org.codehaus.jettison.json.JSONObject
 
   lazy val vs = StarlingInit.devInstance.valuationService

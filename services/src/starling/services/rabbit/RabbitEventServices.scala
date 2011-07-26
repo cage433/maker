@@ -1,7 +1,6 @@
 package starling.services.rabbit
 
 import starling.props.Props
-import com.trafigura.services.rabbit.RabbitPublisher
 import com.trafigura.events.EventDemultiplexer
 import com.trafigura.services.rabbit.RabbitPublisher
 import com.trafigura.services.rabbit.RabbitListener
@@ -9,19 +8,19 @@ import com.trafigura.services.rabbit.RabbitConnector
 import com.trafigura.common.control.PipedControl._
 import com.rabbitmq.client.AMQP.BasicProperties
 import com.trafigura.services.rabbit.Publisher
-import com.trafigura.events.EventPublisher
 import com.trafigura.events.IDemultiplexEvents
 import com.trafigura.shared.events.Event
 import com.trafigura.events.DemultiplexerClient
 import org.codehaus.jettison.json.JSONArray
-import starling.utils.Stoppable
 import java.util.concurrent.atomic.AtomicBoolean
+import com.trafigura.services.log.Logger
+import starling.utils.{Log, Stoppable}
 
 
 /**
  * RabbitMQ event module
  */
-trait RabbitEventServices extends Stoppable {
+trait RabbitEventServices extends Stoppable with Logger {
   val eventDemux : IDemultiplexEvents
   val rabbitEventPublisher : Publisher
   def addClient(client:DemultiplexerClient)
@@ -154,7 +153,11 @@ class MockEventDemux() extends IDemultiplexEvents {
       try {
         client.handle(ev)
       } catch {
-        case e => //Log.warn(name + " event demultiplexer client " + client + " encountered exception", e)
+        case e => {
+          val msg = " event demultiplexer client " + client + " encountered exception"
+          println(msg + ", " + e.getMessage + "\n" + e.getStackTrace.mkString(","))
+          Log.warn(msg, e)
+        }
       }
     }    
   }

@@ -13,6 +13,7 @@ import starling.utils.{StarlingTest, Log}
 import com.trafigura.edm.trades.{PhysicalTrade => EDMPhysicalTrade}
 import com.trafigura.shared.events._
 import starling.services.rpc.logistics.FileMockedTitanLogisticsServices
+import com.trafigura.edm.logistics.inventory.EDMInventoryItem
 
 
 /**
@@ -20,6 +21,9 @@ import starling.services.rpc.logistics.FileMockedTitanLogisticsServices
  */
 class ValuationServiceTest extends StarlingTest {
 
+  /**
+   * valuation mock event handler for valuation service published events
+   */
   class MockEventHandler(handler : (List[String]) => Unit) extends DemultiplexerClient {
     def handle(ev: Event) {
       if (ev == null) Log.warn("Got a null event")
@@ -29,14 +33,14 @@ class ValuationServiceTest extends StarlingTest {
 
           Log.info("handler: recieved a starling valuation service event to process %s".format(ev.toString))
 
-          val tradePayloads = ev.content.body.payloads.filter(p => Event.RefinedMetalTradeIdPayload == p.payloadType)
-          val tradeIds = tradePayloads.map(p => p.key.identifier)
-          Log.info("Trade event received for ids { %s }".format(tradeIds.mkString(", ")))
+          val payloads = ev.content.body.payloads.filter(p => Event.RefinedMetalTradeIdPayload == p.payloadType || Event.EDMLogisticsInventoryIdPayload == p.payloadType)
+          val ids = payloads.map(p => p.key.identifier)
+          Log.info("Trade event received for ids { %s }".format(ids.mkString(", ")))
 
           ev.verb match {
             case UpdatedEventVerb => {
-              //updatedTradeValuationList = tradeIds
-              handler(tradeIds)
+              println("calling handler with %s".format(ids.mkString(", ")))
+              handler(ids)
             }
             case NewEventVerb => {
               Log.info("new event received")
@@ -55,8 +59,8 @@ class ValuationServiceTest extends StarlingTest {
 
     Log.info("testValuationServiceValuationUpdatedEvents starting")
 
-    var updatedTradeValuationList : List[String] = Nil
-    val handler = (ids : List[String]) => updatedTradeValuationList = ids 
+    var updatedValuationIdList : List[String] = Nil
+    val handler = (ids : List[String]) => updatedValuationIdList = ids
 
     println("Starting valuation service tests - initialisation of mocks")
 
@@ -82,10 +86,10 @@ class ValuationServiceTest extends StarlingTest {
       case (id, Right(v)) => id
     }.toList
     val valuedTrades = vs.getTrades(valuedTradeIds)
-    val firstTrade = mockTitanTradeService.getAllTrades().head // valuedTrades.head
 
-//val x = valuedTrades.find(t => t.oid == firstTrade.oid)
-//val y = valuations.tradeResults(firstTrade.oid.toString)
+    // select a trade for testing, take the first trade that was successfully valued as this
+    // should ensure that it can be used reliably in this test (some trades may not have completed pricing spec information)
+    val firstTrade = valuedTrades.head // mockTitanTradeService.getAllTrades().head // valuedTrades.head
     
     val testEventHandler = new MockEventHandler(handler)
 
@@ -99,30 +103,33 @@ class ValuationServiceTest extends StarlingTest {
     val eventArray = createTradeUpdatedEvent(firstTrade.oid.toString)
 
     // publish our change event
-    updatedTradeValuationList = Nil
+    updatedValuationIdList = Nil
     mockRabbitEventServices.rabbitEventPublisher.publish(eventArray)
 
     // check the updated valuation event is sent...
-    Log.info("updatedTradeValuationList " + updatedTradeValuationList.mkString(", "))
+    Log.info("updatedTradeValuationList " + updatedValuationIdList.mkString(", "))
 
-    assertTrue(!updatedTradeValuationList.contains(firstTrade.oid.toString), "Valuation service raised valuation changed events for unchanged trades")
+    assertTrue(!updatedValuationIdList.contains(firstTrade.oid.toString), "Valuation service raised valuation changed events for unchanged trades")
 
     /**
      * Test changing a trade value causes valuation update events for those trades
      */
     val updatedTrade = EDMPhysicalTrade.fromJson(firstTrade.toJson())
     updatedTrade.direction = if (updatedTrade.direction == "P") "S" else "P"  // make a change to cause a valuation to change value and cause a valuation updated event
+
     //updatedTrade.quotas.map(q => q.detail.pricingSpec.quantity.amount = Some(q.detail.pricingSpec.quantity.amount.getOrElse(0.0) + 1.0) )
+
+    // update the underlying dataset
     mockTitanServices.updateTrade(updatedTrade)
 
     // publish our change event
-    updatedTradeValuationList = Nil
+    updatedValuationIdList = Nil
     mockRabbitEventServices.rabbitEventPublisher.publish(eventArray)
 
     // check the updated valuation event is sent...
-    Log.info("updatedTradeValuationList " + updatedTradeValuationList.mkString(", "))
+    Log.info("updatedTradeValuationList " + updatedValuationIdList.mkString(", "))
 
-    assertTrue(updatedTradeValuationList.contains(updatedTrade.oid.toString), "Valuation service failed to raise valuation changed events for the changed trades")
+    assertTrue(updatedValuationIdList.contains(updatedTrade.oid.toString), "Valuation service failed to raise valuation changed events for the changed trades")
   }
 
 
@@ -134,6 +141,12 @@ class ValuationServiceTest extends StarlingTest {
   def testValuationServiceValueAssignments {
     
     Log.info("testValuationServiceValueAssignments starting")
+
+    var updatedValuationIdList : List[String] = Nil
+    val handler = (ids : List[String]) => {
+      println("handler received " + ids.mkString(", "))
+      updatedValuationIdList = ids
+    }
 
     println("Starting valuation service assignment tests - initialisation of mocks")
 
@@ -171,7 +184,52 @@ class ValuationServiceTest extends StarlingTest {
     println("Valued assignments, %d worked, %d failed \n%s".format(worked.size, failed.size, worked.mkString("\n")))
 
     assertTrue(worked.size > 0, "Assignment valuation service failed to value any assignments")
+
+    val valuedInventoryAssignments = mockInventoryCache.getInventoryByIds(valuedIds)
+
+    val inventoryWithSalesAssignments = mockInventoryCache.getAllInventory().filter(i => i.salesAssignmentId != None)
+    println("inventory with sales assignment " + inventoryWithSalesAssignments.mkString(",\n"))
+
+    val inventoryWithSalesAssignmentValuationResults = assignmentValuations.assignmentValuationResults.filter(v => inventoryWithSalesAssignments.exists(e => e.oid.contents.toString == v._1))
+    println("\n%s\n".format(inventoryWithSalesAssignmentValuationResults.mkString("\n")))
+    val firstInventoryItem = valuedInventoryAssignments.find(i => i.salesAssignmentId != None).get // if we've no valid canned data for tests this has to fail
+
+    val testEventHandler = new MockEventHandler(handler)
+
+    mockRabbitEventServices.eventDemux.addClient(testEventHandler)
+
+    /**
+     * Test that no changes to trade value does not cause a valuation update event when a trade updated event is received
+     */
+
+    // publish trade updated events...
+    val eventArray = createInventoryUpdatedIDEvents(firstInventoryItem.oid.contents.toString :: Nil)
+
+    // publish our change event
+    updatedValuationIdList = Nil
+    mockRabbitEventServices.rabbitEventPublisher.publish(eventArray)
+
+    assertTrue(updatedValuationIdList.size == 0, "Valuation service raised valuation changed events for unchanged inventory")
+
+    val updatedInventory = EDMInventoryItem.fromJson(firstInventoryItem.toJson())
+
+    println("updatedInventory before update : " + updatedInventory)
+    updatedInventory.salesAssignmentId = None
+    println("updatedInventory after update  : " + updatedInventory)
+
+    // update the underlying dataset
+    mockTitanLogisticsServices.inventoryService.updateInventory(updatedInventory)
+
+    // publish our change event
+    updatedValuationIdList = Nil
+    mockRabbitEventServices.rabbitEventPublisher.publish(eventArray)
+
+    // check the updated valuation event is sent...
+    println("updatedValuationList " + updatedValuationIdList.mkString(", "))
+
+    assertTrue(updatedValuationIdList.contains(updatedInventory.oid.contents.toString), "Valuation service failed to raise valuation changed events for the changed assignments")
   }
+
 
   private def createTradeUpdatedEvent(id : String) : JSONArray = createTradeUpdatedEvent(List(id))
   private def createTradeUpdatedEvent(ids : List[String]) : JSONArray =
@@ -182,7 +240,13 @@ class ValuationServiceTest extends StarlingTest {
     val payloads = ids.map(id => pf.createPayload(RefinedMetalTradeIdPayload, source, id))
     createEvents(source, subject, verb, payloads)
   }
-  
+
+  private def createInventoryUpdatedIDEvents(ids : List[String], source : String = ValuationService.LogisticsSourceTmp : String, subject : String = EDMLogisticsInventorySubject, verb : EventVerbEnum = UpdatedEventVerb) : JSONArray = {
+    val pf = new PayloadFactory()
+    val payloads = ids.map(id => pf.createPayload(InventoryIdPayload, source, id))
+    createEvents(source, subject, verb, payloads)
+  }
+
   private def createEvents(source : String, subject : String, verb : EventVerbEnum, payloads : List[Payload]) : JSONArray = {
     val ef = new EventFactory()
     val keyIdentifier = System.currentTimeMillis.toString
@@ -194,4 +258,3 @@ class ValuationServiceTest extends StarlingTest {
     testValuationServiceValuationUpdatedEvents
   }
 }
-

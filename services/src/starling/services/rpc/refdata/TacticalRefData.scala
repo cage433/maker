@@ -112,7 +112,7 @@ case class FileMockedTitanServicesDataFileGenerator(titanEdmTradeService : Titan
    *   so that the file mocked services can use canned data for tests (note this data needs moving into resources to update
    *   canned data for the tests...)
    */
-  val tradesFile = "/tmp/edmTrades.json"
+  val tradesFile = "/tmp/allEdmTrades.json"
   val marketsFile = "/tmp/markets.json"
   val exchangesFile = "/tmp/exchanges.json"
 

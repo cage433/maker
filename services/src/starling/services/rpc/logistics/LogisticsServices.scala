@@ -110,16 +110,17 @@ case class FileMockedTitanLogisticsAssignmentServices() extends TitanLogisticsAs
     val jsonAssignments = loadJsonValuesFromFileUrl(getFileUrl(allAssignmentsFile))
     //val jsonAssignments = new JSONArray(loadJsonValuesFromFileUrl(getFileUrl(allAssignmentsFile)).mkString)
     //val allAssignments = (0 until jsonAssignments.length()).map(idx => EDMAssignmentItem.fromJson(jsonAssignments.getJSONObject(idx)).asInstanceOf[EDMAssignmentItem]).toList
-  val allAssignments = jsonAssignments.map(e => EDMAssignmentItem.fromJson(new JSONObject(e)).asInstanceOf[EDMAssignmentItem])
+    val allAssignments = jsonAssignments.map(e => EDMAssignmentItem.fromJson(new JSONObject(e)).asInstanceOf[EDMAssignmentItem])
     println("Loaded %d assignments ".format(allAssignments.size))
     allAssignments
   }
 
   private def readSalesAssignments() : List[EDMAssignmentItem] = {
     val salesAssignmentsFile = resourcePath + "logisticsEdmAllSalesAssignments.json"
-    val jsonAssignments = new JSONArray(loadJsonValuesFromFileUrl(getFileUrl(salesAssignmentsFile)).mkString)
-    val salesAssignments = (0 until jsonAssignments.length()).map(idx => EDMAssignmentItem.fromJson(jsonAssignments.getJSONObject(idx)).asInstanceOf[EDMAssignmentItem]).toList
-    
+    val jsonAssignments = loadJsonValuesFromFileUrl(getFileUrl(salesAssignmentsFile))
+    //val jsonAssignments = new JSONArray(loadJsonValuesFromFileUrl(getFileUrl(salesAssignmentsFile)).mkString)
+    //val salesAssignments = (0 until jsonAssignments.length()).map(idx => EDMAssignmentItem.fromJson(jsonAssignments.getJSONObject(idx)).asInstanceOf[EDMAssignmentItem]).toList
+    val salesAssignments = jsonAssignments.map(e => EDMAssignmentItem.fromJson(new JSONObject(e)).asInstanceOf[EDMAssignmentItem])
     println("Loaded %d sales assignments ".format(salesAssignments.size, salesAssignments.mkString("\n")))
     salesAssignments
   }
@@ -135,6 +136,8 @@ case class FileMockedTitanLogisticsInventoryServices() extends TitanLogisticsInv
   val inventoryFile = "/tests/valuationservice/testdata/logisticsEdmInventory.json"
   val inventoryPath = getFileUrl(inventoryFile)
   val loadedInventory = loadJsonValuesFromFileUrl(inventoryPath).map(s => EDMInventoryItem.fromJson(new JSONObject(s)).asInstanceOf[EDMInventoryItem])
+  var inventoryMap : Map[String, EDMInventoryItem] = loadedInventory.map(i => i.oid.contents.toString -> i).toMap
+
   //val loadedInventory = (0 until jsonInventory.length()).map(idx => EDMInventoryItem.fromJson(jsonInventory.getJSONObject(idx)).asInstanceOf[EDMInventoryItem]).toList
   //println("Loaded %d inventory items \n %s".format(loadedInventory.size, loadedInventory.mkString("\n")))
   
@@ -144,13 +147,17 @@ case class FileMockedTitanLogisticsInventoryServices() extends TitanLogisticsInv
 //  println("Loaded %d assignments \n %s".format(loadedAssignments.size, loadedAssignments.mkString("\n")))
 
   lazy val service : EdmInventoryServiceWithGetAllInventory = new EdmInventoryService() {
-    def getInventoryById(inventoryId : Int) : EDMInventoryItem = loadedInventory.find(i => i.oid == inventoryId).get // mimick service by throwning an exception on not found
-    def getInventoryTreeByPurchaseQuotaId(quotaId : String) : List[EDMInventoryItem] = loadedInventory.filter(_.quotaName == quotaId)
-    def getAllInventoryLeaves() : List[EDMInventoryItem] = findLeaves(loadedInventory)
+    def getInventoryById(inventoryId : Int) : EDMInventoryItem = inventoryMap(inventoryId.toString) // mimick service by throwning an exception on not found
+    def getInventoryTreeByPurchaseQuotaId(quotaId : String) : List[EDMInventoryItem] = inventoryMap.values.toList.filter(_.quotaName == quotaId)
+    def getAllInventoryLeaves() : List[EDMInventoryItem] = findLeaves(inventoryMap.values.toList)
     
     // temporary work around to find leaves of the logistics inventory tree
     private def findLeaves(inventory : List[EDMInventoryItem]) : List[EDMInventoryItem] =
       inventory.filter(item => !inventory.exists(i => i.parentId == Some(item.oid)))
+  }
+
+  def updateInventory(item : EDMInventoryItem) {
+    inventoryMap = inventoryMap.updated(item.oid.contents.toString, item)
   }
 }
 
@@ -179,6 +186,7 @@ case class LogisticsJsonMockDataFileGenerater(titanEdmTradeService : TitanServic
   val fileOutputPath = "/tmp"
   val inventoryFilePath = fileOutputPath + "/logisticsEdmInventory.json"
   val assignmentsFilePath = fileOutputPath + "/logisticsEdmAllAssignments.json"
+  val salesAssignmentsFilePath = fileOutputPath + "/logisticsEdmAllSalesAssignments.json"
 
   val assignmentService = logisticsServices.assignmentService.service
   val inventoryService = logisticsServices.inventoryService.service
@@ -225,6 +233,8 @@ case class LogisticsJsonMockDataFileGenerater(titanEdmTradeService : TitanServic
 
   println("All assignments, loaded %d assignments".format(assignments.size))
   writeJson(assignmentsFilePath, assignments)
+
+  writeJson(salesAssignmentsFilePath, salesAssignments)
 
   // temporary work around to find leaves of the logistics inventory tree
   def findLeaves(inventory : List[EDMInventoryItem]) : List[EDMInventoryItem] =
