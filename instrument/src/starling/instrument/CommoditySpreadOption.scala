@@ -76,18 +76,22 @@ case class SingleCommoditySpreadOption(
   override def riskMarketExtra = String.format("%6.2f%n ", new java.lang.Double(strike.value)) + callPut.toShortString
   override def atomicKeyCachingUTP : UTP = copy(strike = 1.0(market.priceUOM))
 
-  def price(env : Environment) = {
-    val T = exerciseDay.endOfDay.timeSince(env.marketDay)
-    val S = env.spreadPrice(market, month)
-    val K = strike
-    val discount = env.discount(valuationCCY, exerciseDay)
-    if (T == 0){
-      callPut.intrinsicPrice(S, K) * discount
+  def price(env: Environment) = {
+    if (isLive(env.marketDay)) {
+      val T = exerciseDay.endOfDay.timeSince(env.marketDay)
+      val S = env.spreadPrice(market, month)
+      val K = strike
+      val discount = env.discount(valuationCCY, exerciseDay)
+      if (T == 0) {
+        callPut.intrinsicPrice(S, K) * discount
+      } else {
+        val annualisedStdDev = env.spreadStdDev(market, month, exerciseDay, strike)
+        val undiscountedPriceValue = new SpreadOptionCalculations(callPut, S.value, K.value, annualisedStdDev.checkedValue(market.priceUOM), 0.0, T).undiscountedPrice
+        val undiscountedPrice = Quantity(undiscountedPriceValue, market.priceUOM)
+        undiscountedPrice * discount
+      }
     } else {
-      val annualisedStdDev = env.spreadStdDev(market, month, exerciseDay, strike)
-      val undiscountedPriceValue = new SpreadOptionCalculations(callPut, S.value, K.value, annualisedStdDev.checkedValue(market.priceUOM), 0.0, T).undiscountedPrice
-      val undiscountedPrice = Quantity(undiscountedPriceValue, market.priceUOM)
-      undiscountedPrice * discount
+      0.0(market.priceUOM)
     }
   }
 }

@@ -30,7 +30,7 @@ extends AverageOption(index, averagingPeriod, strike, volume, callPut) with Mult
     }.toMap
   })
 
-  def isLive(dayAndTime: DayAndTime) = dayAndTime < periods.last.lastDay.endOfDay // was settlementDate.endOfDay
+  def isLive(dayAndTime: DayAndTime) = dayAndTime < periods.last.lastDay.endOfDay
 
   override def expiryDay() = Some(index.observationDays(periods.last).last)
 

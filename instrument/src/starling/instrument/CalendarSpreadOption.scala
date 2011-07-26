@@ -111,18 +111,22 @@ case class SingleCalendarSpreadOption(
   }
 
   def price(env : Environment) = {
-    val marketDay = env.marketDay.day
-    val T = exerciseDay.endOfDay.timeSince(env.marketDay)
-    val S = env.spreadPrice(market, period)
-    val K = strike
-    val discount = env.discount(valuationCCY, exerciseDay)
-    if (T == 0){
-      callPut.intrinsicPrice(S, K) * discount
+    if (isLive(env.marketDay)) {
+      val marketDay = env.marketDay.day
+      val T = exerciseDay.endOfDay.timeSince(env.marketDay)
+      val S = env.spreadPrice(market, period)
+      val K = strike
+      val discount = env.discount(valuationCCY, exerciseDay)
+      if (T == 0) {
+        callPut.intrinsicPrice(S, K) * discount
+      } else {
+        val annualisedStdDev = env.spreadStdDev(market, Spread(firstMonth, secondMonth), exerciseDay, strike)
+        val undiscountedPriceValue = new SpreadOptionCalculations(callPut, S.value, K.value, annualisedStdDev.checkedValue(market.priceUOM), 0.0, T).undiscountedPrice
+        val undiscountedPrice = Quantity(undiscountedPriceValue, market.priceUOM)
+        undiscountedPrice * discount
+      }
     } else {
-      val annualisedStdDev = env.spreadStdDev(market, Spread(firstMonth, secondMonth), exerciseDay, strike)
-      val undiscountedPriceValue = new SpreadOptionCalculations(callPut, S.value, K.value, annualisedStdDev.checkedValue(market.priceUOM), 0.0, T).undiscountedPrice
-      val undiscountedPrice = Quantity(undiscountedPriceValue, market.priceUOM)
-      undiscountedPrice * discount 
+      0.0 (market.priceUOM)
     }
   }
 }
