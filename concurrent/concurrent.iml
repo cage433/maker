@@ -25,15 +25,13 @@
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="library" name="scala-lib" level="project" />
     <orderEntry type="module" module-name="utils" exported="" />
-    <orderEntry type="module-library" exported="">
+    <orderEntry type="module-library">
       <library>
         <CLASSES>
-          <root url="jar://$MODULE_DIR$/jars/slf4j-api-1.6.0.jar!/" />
+          <root url="jar://$MODULE_DIR$/../bouncyrmi/lib_managed/scala_2.9.0-1/compile/netty-3.2.3.Final.jar!/" />
         </CLASSES>
         <JAVADOC />
-        <SOURCES>
-          <root url="jar://$MODULE_DIR$/jars/sources/slf4j-api-1.6.0-sources.jar!/" />
-        </SOURCES>
+        <SOURCES />
       </library>
     </orderEntry>
   </component>

@@ -240,7 +240,8 @@ class Starling(info : ProjectInfo) extends ParentProject(info) {
   class DatabasesProject(info : ProjectInfo) extends StarlingProject("databases", info) {
     override def libraryDependencies = Set(
       "org.springframework" % "spring-jdbc" % "3.0.5.RELEASE",
-      "com.jolbox" % "bonecp" % "0.7.1.RELEASE",
+      "com.jolbox" % "bonecp" % "0.7.1.RELEASE" intransitive(),
+      "org.slf4j" % "slf4j-api" % "1.6.1",
       "org.scala-tools.testing" % "scalacheck_2.9.0-1" % "1.9",
       "org.apache.derby" % "derby" % "10.5.3.0_1",
       "hsqldb" % "hsqldb" % "1.8.0.10" % "test",
