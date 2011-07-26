@@ -242,7 +242,9 @@ class Starling(info : ProjectInfo) extends ParentProject(info) {
       "org.springframework" % "spring-jdbc" % "3.0.5.RELEASE",
       "com.jolbox" % "bonecp" % "0.7.1.RELEASE",
       "org.scala-tools.testing" % "scalacheck_2.9.0-1" % "1.9",
-      "org.apache.derby" % "derby" % "10.5.3.0_1"
+      "org.apache.derby" % "derby" % "10.5.3.0_1",
+      "hsqldb" % "hsqldb" % "1.8.0.10" % "test",
+      "com.h2database" % "h2" % "1.2.131" % "test"
     ) ++ super.libraryDependencies
   }
   class AuthProject(info : ProjectInfo) extends StarlingProject("auth", info) {
