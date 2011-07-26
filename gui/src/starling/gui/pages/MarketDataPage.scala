@@ -363,7 +363,7 @@ class MarketDataPageComponent(
   }
 
   pageContext.remotePublisher.reactions += {
-    case MarketDataSnapshot(snapshots) => {
+    case MarketDataSnapshotSet(snapshots) => {
       this.suppressing(snapshotsComboBox.selection) {
         val itemSelected = snapshotsComboBox.selection.item
         snapshotsComboBoxModel.removeAllElements()

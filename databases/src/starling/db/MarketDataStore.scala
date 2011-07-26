@@ -14,12 +14,12 @@ import collection.mutable.{ListBuffer, HashSet => MSet}
 import starling.calendar.Clock
 
 import starling.utils.Pattern._
-import starling.utils._
 import org.springframework.dao.DuplicateKeyException
 import java.lang.{RuntimeException, String}
 import java.util.concurrent.atomic.AtomicInteger
 import starling.curves.Environment
 import starling.pivot.{PivotEdits, PivotTableDataSource, Field => PField}
+import starling.utils._
 
 //import starling.props.Props.VarReportEmailFrom
 
@@ -701,8 +701,11 @@ class MarketDataTags(db: DBTrait[RichResultSetRow]) {
 }
 
 // TODO [12 May 2011] move me somewhere proper
-class DBMarketDataStore(db:MdDB, tags:MarketDataTags, val marketDataSources: Map[MarketDataSet, MarketDataSource],
-                        broadcaster: Broadcaster) extends MarketDataStore {
+class DBMarketDataStore(
+    db : MdDB,
+    tags : MarketDataTags,
+    val marketDataSources: Map[MarketDataSet, MarketDataSource],
+    broadcaster : Broadcaster) extends MarketDataStore {
 
   def this(db: DBTrait[RichResultSetRow], marketDataSources: Map[MarketDataSet, MarketDataSource],
                         broadcaster: Broadcaster = Broadcaster.Null) = this(new SlowMdDB(db), new MarketDataTags(db), marketDataSources, broadcaster)
@@ -911,7 +914,8 @@ class DBMarketDataStore(db:MdDB, tags:MarketDataTags, val marketDataSources: Map
       println("snapshotid: " + snapshotID)
 
       if (justCreated) {
-        broadcaster.broadcast(MarketDataSnapshot(snapshotsByMarketDataSelection))
+        broadcaster.broadcast(MarketDataSnapshotSet(snapshotsByMarketDataSelection))
+        broadcaster.broadcast(MarketDataSnapshot(List(snapshotID.id.toString)))
       }
       snapshotID
     }

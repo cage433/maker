@@ -177,7 +177,8 @@ class StarlingInit( val props: Props,
   val broadcaster = new CompositeBroadcaster(
     true                             → new RMIBroadcaster(rmiServerForGUI),
     props.rabbitHostSet              → new RabbitBroadcaster(new RabbitMessageSender(props.RabbitHost())),
-    props.EnableVerificationEmails() → new EmailBroadcaster(mailSender)
+    props.EnableVerificationEmails() → new EmailBroadcaster(mailSender),
+    props.titanRabbitHostSet         → TitanRabbitIdBroadcaster(rabbitEventServices.rabbitEventPublisher)
   )
 
   val revalSnapshotDb = new RevalSnapshotDB(starlingDB)

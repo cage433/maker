@@ -250,7 +250,7 @@ object Launcher {
         case ExcelMarketListUpdate(values) => {
           cacheMap(ExcelDataSets) = values
         }
-        case MarketDataSnapshot(snapshots) => {
+        case MarketDataSnapshotSet(snapshots) => {
           cacheMap(Snapshots) = snapshots
         }
         case PricingGroupMarketDataUpdate(pg, version) => {

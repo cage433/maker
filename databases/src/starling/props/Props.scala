@@ -106,6 +106,8 @@ class Props(props:Map[String,String]) extends PropsHelper(props) {
   object TitanRabbitBrokerHost  extends StringProperty("localhost")
   object TitanRabbitUserName  extends StringProperty("trafiguraDev")
   object TitanRabbitPassword  extends StringProperty("trafiguraDev")
+
+  def titanRabbitHostSet = TitanRabbitBrokerHost() != ""
 }
 
 object Props {

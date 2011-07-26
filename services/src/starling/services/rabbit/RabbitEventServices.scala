@@ -1,20 +1,21 @@
 package starling.services.rabbit
 
 import starling.props.Props
-import com.trafigura.events.EventDemultiplexer
 import com.trafigura.services.rabbit.RabbitPublisher
 import com.trafigura.services.rabbit.RabbitListener
 import com.trafigura.services.rabbit.RabbitConnector
 import com.trafigura.common.control.PipedControl._
 import com.rabbitmq.client.AMQP.BasicProperties
 import com.trafigura.services.rabbit.Publisher
-import com.trafigura.events.IDemultiplexEvents
-import com.trafigura.shared.events.Event
-import com.trafigura.events.DemultiplexerClient
 import org.codehaus.jettison.json.JSONArray
 import java.util.concurrent.atomic.AtomicBoolean
 import com.trafigura.services.log.Logger
-import starling.utils.{Log, Stoppable}
+import starling.services.rpc.valuation.ValuationService
+import com.trafigura.shared.events.{Payload, UpdatedEventVerb, EventVerbEnum, Event}
+import com.trafigura.shared.events.Event._
+import com.trafigura.events._
+import starling.gui.api.MarketDataSnapshot
+import starling.utils.{Broadcaster, Log, Stoppable}
 
 
 /**
@@ -24,6 +25,35 @@ trait RabbitEventServices extends Stoppable with Logger {
   val eventDemux : IDemultiplexEvents
   val rabbitEventPublisher : Publisher
   def addClient(client:DemultiplexerClient)
+}
+
+case class TitanRabbitIdBroadcaster(
+    publisher : Publisher,
+    source : String = ValuationService.LogisticsSourceTmp,
+    subject : String = EDMLogisticsInventorySubject,
+    verb : EventVerbEnum = UpdatedEventVerb) extends Broadcaster {
+
+  def broadcast(event : scala.swing.event.Event) = {
+    event match {
+      case mds : MarketDataSnapshot => {
+        val events = createUpdatedIDEvents(mds.snapshotIDs, source, subject, verb)
+        publisher.publish(events)
+      }
+    }
+  }
+
+  private def createUpdatedIDEvents(ids : List[String], source : String, subject : String, verb : EventVerbEnum) : JSONArray = {
+    val pf = new PayloadFactory()
+    val payloads = ids.map(id => pf.createPayload(InventoryIdPayload, source, id))
+    createEvents(source, subject, verb, payloads)
+  }
+
+  private def createEvents(source : String, subject : String, verb : EventVerbEnum, payloads : List[Payload]) : JSONArray = {
+    val ef = new EventFactory()
+    val keyIdentifier = System.currentTimeMillis.toString
+    val ev = ef.createEvent(subject, verb, source, keyIdentifier, payloads)
+    ||> { new JSONArray } { r => r.put(ev.toJson) }
+  }
 }
 
 case class DefaultRabbitEventServices(props : Props) extends RabbitEventServices {

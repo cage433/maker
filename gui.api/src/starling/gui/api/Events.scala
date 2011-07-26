@@ -16,7 +16,8 @@ case class EventBatch(events:Seq[Event]) extends Event //Needed so that many eve
 case class IntradayUpdated(group: String, user: User, timestamp:Timestamp) extends Event
 case class DeskClosed(desk: Desk, timestamp:TradeTimestamp) extends Event
 case class DeskCloseFailed(desk: Desk, timestamp:TradeTimestamp, error: Throwable) extends Event
-case class MarketDataSnapshot(snapshots:Map[MarketDataSelection,List[SnapshotIDLabel]]) extends Event
+case class MarketDataSnapshotSet(snapshots:Map[MarketDataSelection,List[SnapshotIDLabel]]) extends Event
+case class MarketDataSnapshot(snapshotIDs : List[String]) extends Event
 case class PricingGroupMarketDataUpdate(pricingGroup:PricingGroup, version:Int) extends Event
 case class ExcelObservationDay(name:String, day:Day) extends Event
 case class PricingGroupObservationDay(pricingGroup:PricingGroup, day:Day) extends Event
