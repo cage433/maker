@@ -949,11 +949,11 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
             case FailurePageResponse(t:Exception) => t match {
               case e: UndeclaredThrowableException => {
                 e.printStackTrace()
-                showError("Error", e.getUndeclaredThrowable.getMessage)
+                showError("Error", StackTraceToString.messageAndThenString(e.getUndeclaredThrowable))
               }
               case e => {
                 e.printStackTrace()
-                showError("Error", e.getMessage)
+                showError("Error", StackTraceToString.messageAndThenString(e))
               }
             }
             case SuccessPageResponse(_,bookmark) => {

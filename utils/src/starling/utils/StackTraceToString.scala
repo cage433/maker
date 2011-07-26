@@ -1,6 +1,5 @@
 package starling.utils
 
-
 import java.io.{ByteArrayOutputStream, PrintStream}
 
 object StackTraceToString {
@@ -9,6 +8,10 @@ object StackTraceToString {
   def string(throwable : Throwable) = {
     val stream = new ByteArrayOutputStream()
 		throwable.printStackTrace(new PrintStream(stream))
-		stream.toString()
+		stream.toString
+  }
+
+  def messageAndThenString(throwable:Throwable) = {
+    throwable.getMessage + "\n\n" + string(throwable)
   }
 }
