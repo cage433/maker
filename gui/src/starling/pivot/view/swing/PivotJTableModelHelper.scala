@@ -709,6 +709,7 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
     selection.intervalMode = ListView.IntervalMode.Single
     peer.setFocusTraversalKeysEnabled(false)
     def selectText(t:String) {
+      popupMenu.setVisible(false)
       popupMenu.tableToFocus.requestFocusInWindow()
       onEDT({
         popupMenu.editor.setText(t)
