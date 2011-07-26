@@ -162,7 +162,7 @@ class ValuationServiceTest extends StarlingTest {
     //val salesAssignments = mockTitanLogisticsServices.assignmentService.service.getAllSalesAssignments()
     val assignments = mockTitanLogisticsServices.assignmentService.service.getAllSalesAssignments()
     val inventory = mockTitanLogisticsServices.inventoryService.service.getAllInventoryLeaves()
-    println("assignments " + assignments.mkString(", "))
+    //println("assignments " + assignments.mkString(", "))
 //    val inventory = mockTitanLogisticsServices.inventoryService.service.getInventoryTreeByPurchaseQuotaId()
 //    println("inventory " + inventory.mkString(", "))
 
@@ -181,17 +181,17 @@ class ValuationServiceTest extends StarlingTest {
       case (id, Right(v)) => id
     }.toList
 
-    println("Valued assignments, %d worked, %d failed \n%s".format(worked.size, failed.size, worked.mkString("\n")))
+    //println("Valued assignments, %d worked, %d failed \n%s".format(worked.size, failed.size, worked.mkString("\n")))
 
     assertTrue(worked.size > 0, "Assignment valuation service failed to value any assignments")
 
     val valuedInventoryAssignments = mockInventoryCache.getInventoryByIds(valuedIds)
 
     val inventoryWithSalesAssignments = mockInventoryCache.getAllInventory().filter(i => i.salesAssignmentId != None)
-    println("inventory with sales assignment " + inventoryWithSalesAssignments.mkString(",\n"))
+    //println("inventory with sales assignment " + inventoryWithSalesAssignments.mkString(",\n"))
 
     val inventoryWithSalesAssignmentValuationResults = assignmentValuations.assignmentValuationResults.filter(v => inventoryWithSalesAssignments.exists(e => e.oid.contents.toString == v._1))
-    println("\n%s\n".format(inventoryWithSalesAssignmentValuationResults.mkString("\n")))
+    //println("\n%s\n".format(inventoryWithSalesAssignmentValuationResults.mkString("\n")))
     val firstInventoryItem = valuedInventoryAssignments.find(i => i.salesAssignmentId != None).get // if we've no valid canned data for tests this has to fail
 
     val testEventHandler = new MockEventHandler(handler)

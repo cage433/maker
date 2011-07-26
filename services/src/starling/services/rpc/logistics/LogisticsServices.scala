@@ -111,7 +111,7 @@ case class FileMockedTitanLogisticsAssignmentServices() extends TitanLogisticsAs
     //val jsonAssignments = new JSONArray(loadJsonValuesFromFileUrl(getFileUrl(allAssignmentsFile)).mkString)
     //val allAssignments = (0 until jsonAssignments.length()).map(idx => EDMAssignmentItem.fromJson(jsonAssignments.getJSONObject(idx)).asInstanceOf[EDMAssignmentItem]).toList
     val allAssignments = jsonAssignments.map(e => EDMAssignmentItem.fromJson(new JSONObject(e)).asInstanceOf[EDMAssignmentItem])
-    println("Loaded %d assignments ".format(allAssignments.size))
+    //println("Loaded %d assignments ".format(allAssignments.size))
     allAssignments
   }
 
@@ -121,7 +121,7 @@ case class FileMockedTitanLogisticsAssignmentServices() extends TitanLogisticsAs
     //val jsonAssignments = new JSONArray(loadJsonValuesFromFileUrl(getFileUrl(salesAssignmentsFile)).mkString)
     //val salesAssignments = (0 until jsonAssignments.length()).map(idx => EDMAssignmentItem.fromJson(jsonAssignments.getJSONObject(idx)).asInstanceOf[EDMAssignmentItem]).toList
     val salesAssignments = jsonAssignments.map(e => EDMAssignmentItem.fromJson(new JSONObject(e)).asInstanceOf[EDMAssignmentItem])
-    println("Loaded %d sales assignments ".format(salesAssignments.size, salesAssignments.mkString("\n")))
+    //println("Loaded %d sales assignments ".format(salesAssignments.size, salesAssignments.mkString("\n")))
     salesAssignments
   }
 
