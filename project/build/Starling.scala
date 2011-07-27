@@ -6,49 +6,40 @@ import java.util.{Properties => JProperties}
 class Starling(info : ProjectInfo) extends ParentProject(info) {
 
 
-  lazy val bouncyrmi = project("bouncyrmi", "bouncyrmi", new BouncyRmiProject(_))
-  lazy val utils = project("utils", "utils", new UtilsProject(_))
-  lazy val titanScalaModel = project("titan-scala-model", "titan-scala-model", new TitanScalaModel(_))
+  def project[T <: BasicScalaProject](name : String, construct : ProjectInfo => T, deps : Project*)  : T = project(name, name, construct, deps : _*)
+  def project(name : String, deps : Project*) :StarlingProject = project(name, name, new StarlingProject(_), deps : _*)
+
+  lazy val bouncyrmi = project("bouncyrmi", new StarlingProject(_) with BouncyRmiDependencies)
+  lazy val utils = project("utils", new StarlingProject(_) with UtilsDependencies)
+  lazy val titanScalaModel = project("titan-scala-model", new TitanScalaModel(_))
 
   // API used to interact with starling, should have minimum number of dependencies
   lazy val starlingApi = {
     // until building the EDM source is fast, or the model is replaced entirely, the following hack
     // is used to prevent non-FC2 builds from compiling the model - which takes a few minutes
-    val name = "starling.api"
     if (starlingProperties.getOrElse("ServerType", "Dev") == "FC2")
-      project(name, name, new StarlingApiWithModelSrcDependency(_), bouncyrmi, titanScalaModel)
+      project("starling.api", bouncyrmi, titanScalaModel)
     else
-      project(name, name, new StarlingApiWithModelJarDependency(_), bouncyrmi)
+       project("starling.api", new StarlingProject(_) with TitanBinaries, bouncyrmi)
   }
 
-  lazy val auth = project("auth", "auth", new AuthProject(_), utils, bouncyrmi)
-  lazy val concurrent = project("concurrent", "concurrent", new ConcurrentProject(_), utils)
-  lazy val daterange = project("daterange", "daterange", new DateRangeProject(_), utils)
-  lazy val quantity = project("quantity", "quantity", new QuantityProject(_), utils)
-
-  lazy val loopyxl = project("loopyxl", "loopyxl", new LoopyXLProject(_), bouncyrmi, auth)
-
-  lazy val maths = project("maths", "maths", new MathsProject(_), quantity, daterange)
-  lazy val pivot = project("pivot", "pivot", new PivotProject(_), quantity)
-
-  lazy val guiapi = project("gui.api","gui.api", new GuiApiProject(_), daterange, pivot, quantity, auth, bouncyrmi)
-  lazy val curves = project("curves", "curves", new CurvesProject(_), maths, pivot, guiapi)
-
-  lazy val instrument = project("instrument", "instrument", new InstrumentProject(_), curves)
-  lazy val gui = project("gui", "gui", new GuiProject(_), guiapi)
-
-  lazy val trade = project("trade", "trade", new TradeProject(_), instrument)
-
-  lazy val VaR = project("var", "var", new VaRProject(_), trade)
-
-  lazy val databases = project("databases", "databases", new DatabasesProject(_), VaR, pivot, guiapi, concurrent, auth, starlingApi)
-
-  val titanName = "titan"
-  lazy val titan = project(titanName, titanName, new TitanProject(_), databases)
-
-  lazy val services = project("services", "services", new Services(_), concurrent, utils, loopyxl, titan)
-
-  lazy val devlauncher = project("dev.launcher", "dev.launcher", new DevLauncherProject(_), services, gui)
+  lazy val auth = project("auth", new StarlingProject(_) with AuthDependencies, utils, bouncyrmi)
+  lazy val concurrent = project("concurrent", utils)
+  lazy val daterange = project("daterange", utils)
+  lazy val quantity = project("quantity", utils)
+  lazy val loopyxl = project("loopyxl", new StarlingProject(_) with LoopyXLDependencies, bouncyrmi, auth)
+  lazy val maths = project("maths", quantity, daterange)
+  lazy val pivot = project("pivot", quantity)
+  lazy val guiapi = project("gui.api", new StarlingProject(_) with GuiApiDependencies, daterange, pivot, quantity, auth, bouncyrmi)
+  lazy val curves = project("curves", maths, pivot, guiapi)
+  lazy val instrument = project("instrument", curves)
+  lazy val gui = project("gui", new StarlingProject(_) with GuiDependencies, guiapi)
+  lazy val trade = project("trade", instrument)
+  lazy val VaR = project("var", trade)
+  lazy val databases = project("databases", new StarlingProject(_) with DatabasesDependencies, VaR, pivot, guiapi, concurrent, auth, starlingApi)
+  lazy val titan = project("titan", new StarlingProject(_) with TitanBinaries, databases)
+  lazy val services = project("services", new ServicesProject(_), concurrent, utils, loopyxl, titan)
+  lazy val devlauncher = project("dev.launcher", services, gui)
 
   lazy val starling = this
 
@@ -66,7 +57,7 @@ class Starling(info : ProjectInfo) extends ParentProject(info) {
   lazy val runReadAll= services.runReadAll
 
   
-  class StarlingProject(name : String, info : ProjectInfo) extends DefaultProject(info) with com.gu.TeamCityTestReporting {
+  class StarlingProject(info : ProjectInfo) extends DefaultProject(info) with com.gu.TeamCityTestReporting {
     override val mainScalaSourcePath = path("src")
     override val testScalaSourcePath = path("tests")
     override def unmanagedClasspath = super.unmanagedClasspath +++ "resources" +++ "test-resources"
@@ -110,7 +101,7 @@ class Starling(info : ProjectInfo) extends ParentProject(info) {
     }
   }
 
-  class Services(info : ProjectInfo) extends StarlingProject("services", info){
+  class ServicesProject(info : ProjectInfo) extends StarlingProject(info){
     lazy val runServer = runTask(Some("starling.services.Server"), services.runClasspath, Array[String]()) dependsOn(compile)
     lazy val runRegression = task { args => runTask(
       Some("starling.utils.RegressionRunner"),
@@ -186,7 +177,6 @@ class Starling(info : ProjectInfo) extends ParentProject(info) {
     lazy val copyJarsTask = task {copyJars}
     override def packageAction = copyJarsTask dependsOn {
       super.packageAction
- //     copyJarsTask
     }
     override def libraryDependencies = Set(
       "org.slf4j" % "slf4j-api" % "1.6.1",
@@ -213,9 +203,8 @@ class Starling(info : ProjectInfo) extends ParentProject(info) {
       result = result + (k -> javaMap.get(k))
     }
     result
-    //Map() ++ JavaConversions.asScalaMap(p.asInstanceOf[java.util.Map[String,String]])
   }
-  class UtilsProject(info : ProjectInfo) extends StarlingProject("utils", info) {
+  trait UtilsDependencies extends BasicScalaProject{
     override def libraryDependencies = Set(
       "cglib" % "cglib-nodep" % "2.2",
       "joda-time" % "joda-time" % "1.6",
@@ -230,14 +219,14 @@ class Starling(info : ProjectInfo) extends ParentProject(info) {
       "org.mockito" % "mockito-all" % "1.8.2" % "test",
       "org.testng" % "testng" % "5.8" classifier "jdk15"
     ) ++ super.libraryDependencies
-  }
+}
 
-  class GuiApiProject(info : ProjectInfo) extends StarlingProject("gui.api", info) {
+  trait GuiApiDependencies extends BasicScalaProject {
     override def libraryDependencies = Set(
       "net.debasishg" % "sjson_2.8.0" % "0.8" intransitive()
     ) ++ super.libraryDependencies
   }
-  class DatabasesProject(info : ProjectInfo) extends StarlingProject("databases", info) {
+  trait DatabasesDependencies extends BasicScalaProject {
     override def libraryDependencies = Set(
       "org.springframework" % "spring-jdbc" % "3.0.5.RELEASE",
       "com.jolbox" % "bonecp" % "0.7.1.RELEASE" intransitive(),
@@ -248,31 +237,19 @@ class Starling(info : ProjectInfo) extends ParentProject(info) {
       "com.h2database" % "h2" % "1.2.131" % "test"
     ) ++ super.libraryDependencies
   }
-  class AuthProject(info : ProjectInfo) extends StarlingProject("auth", info) {
+  trait AuthDependencies extends BasicScalaProject{
     override def libraryDependencies = Set(
       "com.sun.jna" % "jna" % "3.0.9"
     ) ++ super.libraryDependencies
   }
-  class ConcurrentProject(info : ProjectInfo) extends StarlingProject("concurrent", info) {
-    override def libraryDependencies = Set(
-    ) ++ super.libraryDependencies
-  }
-  class DateRangeProject(info : ProjectInfo) extends StarlingProject("daterange", info) {
-    override def libraryDependencies = Set(
-    ) ++ super.libraryDependencies
-  }
 
-  class QuantityProject(info : ProjectInfo) extends StarlingProject("quantity", info) {
-    override def libraryDependencies = Set(
-    ) ++ super.libraryDependencies
-  }
-  class LoopyXLProject(info : ProjectInfo) extends StarlingProject("loopyxl", info) {
+  trait LoopyXLDependencies extends BasicScalaProject {
     override def libraryDependencies = Set(
       "com.google.protobuf" % "protobuf-java" % "2.3.0"
     ) ++ super.libraryDependencies
   }
 
-  class BouncyRmiProject(info : ProjectInfo) extends StarlingProject("bouncyrmi", info) {
+  trait BouncyRmiDependencies extends BasicScalaProject {
     override def unmanagedClasspath =
       super.unmanagedClasspath +++ Path.fromFile(new File("lib/scala/scala-2.9.0.1.final/lib/scala-swing.jar"))
     override def libraryDependencies = Set(
@@ -281,55 +258,15 @@ class Starling(info : ProjectInfo) extends ParentProject(info) {
       "commons-io" % "commons-io" % "1.3.2"
     ) ++ super.libraryDependencies
   }
-  class MathsProject(info : ProjectInfo) extends StarlingProject("maths", info) {
-    override def libraryDependencies = Set(
-    ) ++ super.libraryDependencies
-  }
 
-  class PivotProject(info : ProjectInfo) extends StarlingProject("pivot", info) {
-    override def libraryDependencies = Set(
-    ) ++ super.libraryDependencies
-  }
-  class CurvesProject(info : ProjectInfo) extends StarlingProject("curves", info) {
-    override def libraryDependencies = Set(
-    ) ++ super.libraryDependencies
-  }
-  class InstrumentProject(info : ProjectInfo) extends StarlingProject("instrument", info) {
-    override def libraryDependencies = Set(
-    ) ++ super.libraryDependencies
-  }
-  class GuiProject(info : ProjectInfo) extends StarlingProject("gui", info) {
+  trait GuiDependencies extends BasicScalaProject{
     override def libraryDependencies = Set(
       "jfree" % "jfreechart" % "1.0.0"
     ) ++ super.libraryDependencies
   }
-  class TradeProject(info : ProjectInfo) extends StarlingProject("trade", info) {
-    override def libraryDependencies = Set(
-    ) ++ super.libraryDependencies
-  }
-  class VaRProject(info : ProjectInfo) extends StarlingProject("var", info) {
-    override def libraryDependencies = Set(
-    ) ++ super.libraryDependencies
-  }
-  class TitanProject(info : ProjectInfo) extends StarlingProject("titan", info) {
+  trait TitanBinaries extends BasicScalaProject{
     override val unmanagedClasspath =
             super.unmanagedClasspath +++ (Path.fromFile(new File("lib/titan-model-jars")) ** "*.jar")
-    override def libraryDependencies = Set(
-    ) ++ super.libraryDependencies
-  }
-  class DevLauncherProject(info : ProjectInfo) extends StarlingProject("dev.launcher", info) {
-    override def libraryDependencies = Set(
-    ) ++ super.libraryDependencies
-  }
-  class StarlingApiWithModelSrcDependency(info : ProjectInfo) extends StarlingProject("starling.api", info){
-    override def libraryDependencies = Set(
-    ) ++ super.libraryDependencies
-  }
-  class StarlingApiWithModelJarDependency(info : ProjectInfo) extends StarlingProject("starling.api", info){
-    override val unmanagedClasspath =
-          super.unmanagedClasspath +++ (Path.fromFile(new File("lib/titan-model-jars")) ** "*.jar")
-    override def libraryDependencies = Set(
-    ) ++ super.libraryDependencies
   }
 }
 
