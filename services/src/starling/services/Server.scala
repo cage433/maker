@@ -169,16 +169,11 @@ class StarlingInit( val props: Props,
 
   val titanRabbitEventServices = new DefaultTitanRabbitEventServices(props)
 
-  val broadcasters =
-      (true                             → new RMIBroadcaster(rmiServerForGUI)) ::
-      (props.rabbitHostSet              → new RabbitBroadcaster(new RabbitMessageSender(props.RabbitHost()))) ::
-      (props.EnableVerificationEmails() → new EmailBroadcaster(mailSender)) :: {
-        if (startRabbit == true)
-          (props.titanRabbitHostSet     → TitanRabbitIdBroadcaster(titanRabbitEventServices.rabbitEventPublisher)) :: Nil
-        else Nil
-      }
-
-  val broadcaster = new CompositeBroadcaster(broadcasters:_*)
+  val broadcaster = new CompositeBroadcaster(
+      true                                      → new RMIBroadcaster(rmiServerForGUI),
+      props.rabbitHostSet                       → new RabbitBroadcaster(new RabbitMessageSender(props.RabbitHost())),
+      props.EnableVerificationEmails()          → new EmailBroadcaster(mailSender),
+      (startRabbit && props.titanRabbitHostSet) → TitanRabbitIdBroadcaster(titanRabbitEventServices.rabbitEventPublisher))
 
   val revalSnapshotDb = new RevalSnapshotDB(starlingDB)
   val limServer = new LIMServer(props.LIMHost(), props.LIMPort())
