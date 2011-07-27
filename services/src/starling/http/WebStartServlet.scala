@@ -29,15 +29,19 @@ object GUICode {
     "scala-library.jar" -> scalaLibraryJar,
     "scala-swing.jar" -> new File("lib/scala/scala-2.9.0.1.final/lib/scala-swing.jar")
   ) ++ modules.flatMap(module => {
-    val dir = new File(module + "/jars/")
-    if (dir.exists) {
-      val jarFiles = dir.listFiles.toList.filter(_.getPath.endsWith(".jar")).filterNot{path => {
-        bigJarsThatAreNotRequired.contains(path.getName)
-      }}
-      jarFiles.map{ file => file.getPath.replaceAll("/", "-") -> file}
-    } else {
-      List()
+    val lib = new File(module + "/lib/")
+    val libManaged = new File(module + "/lib_managed/scala_2.9.0-1/compile/")
+    def jarsFromDir(dir : File) = {
+      if (dir.exists) {
+        val jarFiles = dir.listFiles.toList.filter(_.getPath.endsWith(".jar")).filterNot{path => {
+          bigJarsThatAreNotRequired.contains(path.getName)
+        }}
+        jarFiles.map{ file => file.getPath.replaceAll("/", "-") -> file}
+      } else {
+        List()
+      }
     }
+    jarsFromDir(lib) ::: jarsFromDir(libManaged)
   })
 
   def dependencies = {
