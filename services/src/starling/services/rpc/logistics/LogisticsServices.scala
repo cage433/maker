@@ -3,9 +3,7 @@ package starling.services.rpc.logistics
 import starling.props.Props
 import com.trafigura.services.security.ComponentTestClientExecutor
 import org.jboss.resteasy.client.{ProxyFactory, ClientExecutor}
-import java.net.URL
 import com.trafigura.edm.logistics.inventory._
-import com.trafigura.tradinghub.support.ModelObject
 import org.codehaus.jettison.json.JSONObject
 import starling.services.StarlingInit
 import com.trafigura.edm.physicaltradespecs.EDMQuota
@@ -15,8 +13,7 @@ import starling.services.rpc.valuation.DefaultTitanTradeService
 import starling.services.rpc.refdata.FileMockedTitanServices
 import starling.titan.LogisticsServices._
 import starling.titan._
-import java.io._
-import java.util.zip.{GZIPInputStream, GZIPOutputStream}
+import starling.services.rpc.FileUtils
 
 
 /**
@@ -163,69 +160,10 @@ case class FileMockedTitanLogisticsInventoryServices() extends TitanLogisticsInv
   }
 }
 
-object FileUtils {
-  import scala.io.Source._
-  def getFileUrl(file : String) = getClass.getResource(file)
 
-  def loadJsonValuesFromFileUrl(fileUrl : URL, compress : Boolean = false) : List[String] = {
-    //println("load json from file url " + fileUrl)
-    val bufferSize = 512 * 1024
-    if (!compress) {
-      fromURL(fileUrl).getLines.toList
-    }
-    else {
-      try {
-        val fStream = new FileInputStream(new File(fileUrl.toURI))
-        var inStream = if (compress) {
-          new BufferedInputStream(new GZIPInputStream(fStream), bufferSize)
-        }
-        else {
-          new BufferedInputStream(fStream)
-        }
-
-        var data = ""
-        var bytesRead = 0
-        val dataBuffer = Array.ofDim[Byte](bufferSize)
-        while ({ bytesRead = inStream.read(dataBuffer); bytesRead != -1 }) {
-          //println("read %d bytes".format(bytesRead))
-          if (bytesRead > 0) {
-            val dataChunk = new String(dataBuffer, 0, bytesRead)
-            data += dataChunk
-          }
-        }
-        val lines : List[String] = data.split("\n").toList
-        lines
-      }
-      catch {
-        case ex : Exception => println("Error: " + ex.getMessage()); throw ex
-      }
-    }
-  }
-
-  def loadJsonValuesFromFile(filePath : String, compress : Boolean = false) : List[String] =
-    loadJsonValuesFromFileUrl(new File(filePath).toURI.toURL, compress)
-
-  def writeJson[T <: ModelObject with Object { def toJson() : JSONObject }](fileName : String, objects : List[T], compress : Boolean = false) {
-
-    try {
-      val fStream = new FileOutputStream(fileName)
-      var outStream = if (compress) {
-        new BufferedOutputStream(new GZIPOutputStream(fStream))
-      }
-      else {
-        new BufferedOutputStream(fStream)
-      }
-
-      objects.foreach(obj => outStream.write((obj.toJson() + "\n").getBytes()))
-      outStream.flush()
-      outStream.close()
-    }
-    catch {
-      case ex : Exception => println("Error: " + ex.getMessage())
-    }
-  }
-}
-
+/**
+ * generates mock service data for logistics mock services
+ */
 case class LogisticsJsonMockDataFileGenerater(titanEdmTradeService : TitanServices, logisticsServices : TitanLogisticsServices) {
   import FileUtils._
   val fileOutputPath = "/tmp"
