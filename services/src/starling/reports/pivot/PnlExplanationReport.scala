@@ -27,8 +27,10 @@ object PnlExplanationReport {
       val d1Fwd = new ForwardStateEnvironment(d1, d2.marketDay)
       val marketChanges = new MarketChangesPnl(d1Fwd, d2, utps)
       val timeChanges = new TimeChangesPnl(Environment(d1), d2.marketDay, utps)
+      val priceChange = new CurrentPriceChangeReport(Environment(d1), Environment(d2), utps)
       val list = List(
         PivotReportData.run(marketChanges, utps, SlideDetails.Null, List()),
+        PivotReportData.run(priceChange, utps, SlideDetails.Null, List()),
         PivotReportData.run(timeChanges, utps, SlideDetails.Null, List())
       )
       val tradePivot = tradeSet.reportPivot(curveIdentifierDm1.tradesUpToDay, expiryDay, t, addRows)

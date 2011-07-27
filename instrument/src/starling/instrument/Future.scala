@@ -4,7 +4,6 @@ import starling.quantity.Quantity
 import starling.quantity.Quantity._
 import starling.quantity.UOM._
 import starling.utils.ImplicitConversions._
-import Math._
 import starling.richdb.RichInstrumentResultSetRow
 import starling.daterange._
 import starling.curves._
@@ -80,7 +79,10 @@ case class Future(market: FuturesMarket, delivery: DateRange, strike: Quantity, 
   def periodKey = Some(DateRangePeriod(delivery))
 
   def price(env : Environment) = {
-    env.forwardPrice(market, delivery)
+    if(isLive(env.marketDay))
+      env.forwardPrice(market, delivery)
+    else
+      0 (market.priceUOM)
   }
 
   override def fixUpMyCashInstruments(ci: CashInstrument) = {

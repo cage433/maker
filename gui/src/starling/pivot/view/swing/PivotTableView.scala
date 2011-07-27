@@ -83,25 +83,24 @@ class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSiz
   private def hideDropTargets() {allDropTargets.foreach(_.hide())}
 
   def fieldDropped(field:Field, from:FieldChooserType, screenPoint:Point):Boolean = {
-    if (!model.getFields(FieldList).fields.contains(field) && fieldListComponent.dropBounds(field).exists(_.contains(screenPoint))) {
+    val noEffect = if (!model.getFields(FieldList).fields.contains(field) && fieldListComponent.dropBounds(field).exists(_.contains(screenPoint))) {
       model.publishFieldStateChange(field, 0, from, FieldList)
-      false
     } else if (columnAndMeasureComponent.dropBounds(field).exists(_.contains(screenPoint))) {
       val newColumnStructure = columnAndMeasureComponent.newColumnStructure(screenPoint, field)
       model.publishFieldStateChange(field, newColumnStructure, from)
-      false
     } else if (filterComponent.dropBounds(field).exists(_.contains(screenPoint))) {
       val pos = filterComponent.indexOfDrop(screenPoint, field)
       model.publishFieldStateChange(field, pos, from, Filter)
-      false
     } else if (rowComponent.dropBounds(field).exists(_.contains(screenPoint))) {
       val pos = rowComponent.indexOfDrop(screenPoint, field)
       model.publishFieldStateChange(field, pos, from, Rows)
-      false
     } else {
-      hideDropTargets()
       true
     }
+    if (noEffect) {
+      hideDropTargets()
+    }
+    noEffect
   }
 
   def fieldDoubleClicked(field:Field, from:FieldChooserType) {

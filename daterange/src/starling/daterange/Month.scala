@@ -160,9 +160,9 @@ object ReutersDeliveryMonthCodes {
 
   /**
    * Parses months formatted as:
-   * "J0" = Jan 10
+   * "F0" = Jan 10
    * or
-   * "J10" = Jan 10
+   * "F10" = Jan 10
    */
   def parse(text : String): Option[Month] = {
 		text.toUpperCase match {

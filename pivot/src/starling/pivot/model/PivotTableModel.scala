@@ -142,13 +142,27 @@ class PivotTableModel(data:PivotData) {
   private val _filters = fieldState.filters
 
   def publishFieldStateChange(field:Field, position:Int, from:FieldChooserType, to:FieldChooserType) = {
-    val updatedState = getCurrentPivotFieldsState.moveField(field, from, to, position)
-    publishFieldStateUpdated(updatedState)
+    val currentState = getCurrentPivotFieldsState
+    val updatedState = currentState.moveField(field, from, to, position)
+    // Return true if there has been no effect.
+    if (updatedState != currentState) {
+      publishFieldStateUpdated(updatedState)
+      false
+    } else {
+      true
+    }
   }
 
-  def publishFieldStateChange(field:Field, newColumnStructure:ColumnTrees, from:FieldChooserType) {
-    val updatedState = getCurrentPivotFieldsState.moveField(field, from, newColumnStructure)
-    publishFieldStateUpdated(updatedState)
+  def publishFieldStateChange(field:Field, newColumnStructure:ColumnTrees, from:FieldChooserType) = {
+    val currentState = getCurrentPivotFieldsState
+    val updatedState = currentState.moveField(field, from, newColumnStructure)
+    // Return true if there has been no effect.
+    if (updatedState != currentState) {
+      publishFieldStateUpdated(updatedState)
+      false
+    } else {
+      true
+    }
   }
 
   def publishFieldStateUpdated(fieldState:PivotFieldsState) {

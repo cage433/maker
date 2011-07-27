@@ -156,7 +156,7 @@ class MarketChangesPnl(d1: AtomicEnvironment, d2: AtomicEnvironment, utps : Map[
             riskCommodity = riskCommodity,
             marketName = marketName, 
             period = period, 
-            pnl = pnl, 
+            pnl = pnl,
             priceChange = priceChange,
             d1Price = d1Price,
             volChange = volChange,
@@ -318,7 +318,7 @@ class TimeChangesPnl(d1:Environment, forwardDayAndTime:DayAndTime, utps : Map[UT
           TimeChangesPnlRow(utpID, utp, "Theta DC", theta),
           TimeChangesPnlRow(utpID, utp, "Expiry DC", expiry),
           TimeChangesPnlRow(utpID, utp, "Theta DC (Vol hack)", changeBecauseOfHack)
-        ).map (_ * volume).filterNot(_.pnl.isAlmostZero)
+        ).filterNot(_.pnl.isAlmostZero).map (_ * volume)
       }
     }
     super.combine(combinedRows, reportSpecificChoices)

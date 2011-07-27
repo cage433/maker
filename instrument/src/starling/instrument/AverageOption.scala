@@ -2,6 +2,7 @@ package starling.instrument
 
 import starling.richdb.RichInstrumentResultSetRow
 import starling.quantity.{Percentage, UOM, Quantity}
+import starling.quantity.Quantity._
 import java.sql.ResultSet
 import starling.utils.CollectionUtils._
 import starling.utils.ImplicitConversions._
@@ -128,9 +129,15 @@ abstract class SingleAverageOption(
     Quantity(Curran(callPut, prices, strike, r, vol).undiscountedValue, strike.uom)
   }
 
+  def isLive(dayAndTime: DayAndTime) = dayAndTime < averagingPeriod.lastDay.endOfDay
+
   def price(env : Environment) = {
-    val discount = env.discount(valuationCCY, settlementDate)
-    undiscountedPrice(env) * discount
+    if(isLive(env.marketDay)) {
+      val discount = env.discount(valuationCCY, settlementDate)
+      undiscountedPrice(env) * discount
+    } else {
+      0 (index.priceUOM)
+    }
   }
 
   override def forwardState(env: Environment, dayAndTime: DayAndTime) = {
