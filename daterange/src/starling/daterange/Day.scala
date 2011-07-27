@@ -529,6 +529,6 @@ object Day extends TenorType {
 
   override def toString = "Day"
 
-  def shortName = "D"
+  override def shortName = "D"
 }
 

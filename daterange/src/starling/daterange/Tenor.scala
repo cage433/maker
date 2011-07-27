@@ -22,10 +22,12 @@ case class Tenor(tenorName: String, value: Int) extends Ordered[Tenor] {
 }
 
 object Tenor {
-  val Parse = Extractor.regex("""(ON|SN|CASH|(\d+)(\w))""") {
+  val Parse = Extractor.regex("""(ON|SN|CASH|CURMON|CURQ|(\d+)(\w+))""") {
     case "ON"   :: _ => Tenor.ON
     case "SN"   :: _ => Tenor.SN
     case "CASH" :: _ => Tenor.CASH
+    case "CURMON" :: _ => Tenor(Month, 0)
+    case "CURQ" :: _ => Tenor(Quarter, 0)
     case List(_, value, tenorType) => Tenor(TenorType.typesByShortName(tenorType), value.toInt)
   }
 

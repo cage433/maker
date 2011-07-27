@@ -149,7 +149,7 @@ object Month extends TenorType with Serializable {
     }
   }
 
-  def shortName = "M"
+  override def shortNames = List("M", "MON")
 }
 
 object ReutersDeliveryMonthCodes {

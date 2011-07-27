@@ -19,6 +19,32 @@ import java.text.DecimalFormat
 import starling.utils.Pattern._
 import starling.marketdata.{PriceFixingsHistoryData, PriceFixingsHistoryDataKey}
 
+object BalticFixings extends HierarchicalLimSource(List(TopRelation.Energy.Tankers.BalticFreight.Index_Forward), List(Level.Val)) {
+  type Relation = BalticRelation
+
+  case class BalticRelation(marketPrefix: String, marketSuffix: String, tenor: Tenor) {
+    val market = marketPrefix + "." + marketSuffix
+    val period = StoredFixingPeriod.tenor(tenor)
+  }
+
+  def relationExtractor = Extractor.regex("""BALTIC\.(\w+)\.(\w+)\.(\w+)""") {
+    case List(marketPrefix, marketSuffix, Tenor.Parse(tenor)) => Some(BalticRelation(marketPrefix, marketSuffix, tenor))
+  }
+
+  def marketDataEntriesFrom(fixings: List[Prices[BalticRelation]]) = {
+    fixings.groupBy(group).map { case ((market, observationDay), grouped) =>
+      MarketDataEntry(observationDay.atTimeOfDay(ObservationTimeOfDay.LondonClose),
+        PriceFixingsHistoryDataKey(market, Some("BALTIC")),
+        PriceFixingsHistoryData.create(grouped.map(fixings => (Level.Val, fixings.relation.period) → marketValue(fixings)))
+      )
+    }
+  }
+
+  def marketValue(fixings: Prices[BalticRelation]) = MarketValue.quantity(fixings.priceByLevel(Level.Val))
+
+  def group(fixings: Prices[BalticRelation]) = (fixings.relation.market, fixings.observationDay)
+}
+
 object LIBORFixings extends HierarchicalLimSource(TopRelation.Trafigura.Bloomberg.InterestRates.children, List(Level.Close)) {
   type Relation = LIBORRelation
 
@@ -31,7 +57,7 @@ object LIBORFixings extends HierarchicalLimSource(TopRelation.Trafigura.Bloomber
   }
 
   def marketDataEntriesFrom(fixings: List[Prices[LIBORRelation]]) = {
-    fixings.groupBy(group(_)).map { case ((rateType, currency, observationDay), grouped) =>
+    fixings.groupBy(group).map { case ((rateType, currency, observationDay), grouped) =>
       MarketDataEntry(observationDay.atTimeOfDay(ObservationTimeOfDay.LiborClose),
         PriceFixingsHistoryDataKey(currency.toString, Some(rateType)),
         PriceFixingsHistoryData.create(grouped.map(fixings => (Level.Close, fixings.relation.period) → marketValue(fixings)))

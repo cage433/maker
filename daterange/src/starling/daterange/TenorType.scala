@@ -38,12 +38,13 @@ trait TenorType {
     (0 to difference(last, first)).map(i => add(i, first)).toList
   }
 
-  def shortName: String
+  def shortNames: List[String] = List(shortName)
+  def shortName: String = shortNames.head
 }
 
 object TenorType {
   val ALL: List[TenorType] = List(Month, Day, Year, Week, HalfMonth, BOM, Quarter, HalfYear)
-  val typesByShortName = ALL.toMapWithKeys(_.shortName)
+  val typesByShortName = ALL.toMapWithManyKeys(_.shortNames)
 
   // same as above, but in (roughly) ascending order of length
   val ALL_IN_ORDER: List[String] = List(Day, Week, HalfMonth, BOM, Month, Quarter, HalfYear, Year).map(_.shortName)

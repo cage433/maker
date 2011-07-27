@@ -75,7 +75,7 @@ object HalfMonth extends TenorType {
 
   override def toString = "HalfMonth"
 
-  def shortName = "HM"
+  override def shortName = "HM"
 }
 
 object FrontOrBack extends Enumeration {

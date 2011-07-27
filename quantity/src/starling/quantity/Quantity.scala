@@ -93,7 +93,7 @@ object Quantity {
 class Quantity(val value : Double, val uom : UOM) extends Ordered[Quantity] with Summable[Quantity] with Serializable {
   require(! value.isNaN, "Value is NaN")
   require(! value.isInfinite, "Value is Infinite")
-  require(value == 0.0 || uom != UOM.NULL, "Can't have non-zero null quantities - you probably want uom SCALAR")
+  //require(value == 0.0 || uom != UOM.NULL, "Can't have non-zero null quantities - you probably want uom SCALAR")
   override def compare(rhs : Quantity) : Int = {
     if(uom != rhs.uom) {
       // allow people to do Quantity(20, BBL) >= 0 etc.
