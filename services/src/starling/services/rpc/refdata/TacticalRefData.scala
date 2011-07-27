@@ -11,13 +11,11 @@ import com.trafigura.edm.tradeservice.TradeResults
 import com.trafigura.edm.trades.Trade
 import com.trafigura.edm.tradeservice.TradeResult
 import starling.services.StarlingInit
-import com.trafigura.tradinghub.support.{ModelObject, GUID}
+import com.trafigura.tradinghub.support.GUID
 import starling.services.rpc.valuation.ValuationService
-import starling.services.rpc.logistics.FileUtils
+import starling.services.rpc.FileUtils
 import starling.titan.{TitanEdmTradeService, TitanServices}
 import com.trafigura.tradecapture.internal.refinedmetal.{Counterparty, Metal, Market}
-import java.util.zip.GZIPOutputStream
-import java.io.{BufferedOutputStream, FileOutputStream, BufferedWriter, FileWriter}
 
 
 /**
@@ -51,7 +49,7 @@ case class DefaultTitanServices(props: Props) extends TitanServices {
 case class FileMockedTitanServices() extends TitanServices {
    
   import com.trafigura.edm.trades.{PhysicalTrade => EDMPhysicalTrade}
-  import starling.services.rpc.logistics.FileUtils._
+  import starling.services.rpc.FileUtils._
 
   val resourcePath = "/tests/valuationservice/testdata"
   val tradesFile = getClass.getResource(resourcePath + "/allEdmTrades.json.zip") // "/edmTrades.json")
