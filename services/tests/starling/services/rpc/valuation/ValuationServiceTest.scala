@@ -241,7 +241,7 @@ class ValuationServiceTest extends StarlingTest {
     createEvents(source, subject, verb, payloads)
   }
 
-  private def createInventoryUpdatedIDEvents(ids : List[String], source : String = ValuationService.LogisticsSourceTmp : String, subject : String = EDMLogisticsInventorySubject, verb : EventVerbEnum = UpdatedEventVerb) : JSONArray = {
+  private def createInventoryUpdatedIDEvents(ids : List[String], source : String = LogisticsSource : String, subject : String = EDMLogisticsInventorySubject, verb : EventVerbEnum = UpdatedEventVerb) : JSONArray = {
     val pf = new PayloadFactory()
     val payloads = ids.map(id => pf.createPayload(InventoryIdPayload, source, id))
     createEvents(source, subject, verb, payloads)
