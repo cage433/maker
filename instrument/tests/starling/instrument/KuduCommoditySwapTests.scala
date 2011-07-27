@@ -1,6 +1,5 @@
 package starling.instrument
 
-import starling.utils.StarlingTest
 import starling.quantity.Quantity
 import org.testng.annotations.Test
 import starling.curves._
