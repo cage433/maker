@@ -533,6 +533,16 @@ class ValuationService(
     CostAndIncomeAssignmentValuationServiceResults(snapshotIDString, valuations.toMap)
   }
 
+  /**
+   * value all inventory assignments by inventory id
+   */
+  def valueInventoryAssignments(inventoryIds: List[String], maybeSnapshotIdentifier: Option[String]): CostAndIncomeAssignmentValuationServiceResults = {
+
+    val snapshotIDString = resolveSnapshotIdString(maybeSnapshotIdentifier)
+    val env = environmentProvider.environment(snapshotIDString)
+    valueInventoryAssignments(inventoryIds, env, snapshotIDString)
+  }
+
   def valueInventoryAssignments(inventoryIds: List[String], env : Environment, snapshotIDString : String) : CostAndIncomeAssignmentValuationServiceResults = {
     val sw = new Stopwatch()
 
@@ -556,15 +566,6 @@ class ValuationService(
     CostAndIncomeAssignmentValuationServiceResults(snapshotIDString, valuations.toMap)
   }
 
-  /**
-   * value all inventory assignments by inventory id
-   */
-  def valueInventoryAssignments(inventoryIds: List[String], maybeSnapshotIdentifier: Option[String]): CostAndIncomeAssignmentValuationServiceResults = {
-
-    val snapshotIDString = resolveSnapshotIdString(maybeSnapshotIdentifier)
-    val env = environmentProvider.environment(snapshotIDString)
-    valueInventoryAssignments(inventoryIds, env, snapshotIDString)
-  }
 
   /**
    * Return all snapshots for a given observation day, or every snapshot if no day is supplied
@@ -603,7 +604,7 @@ class ValuationService(
           tradeMgmtTradeEventHander(rabbitPublishChangedValueEvents)(ev)
         }
         // todo, determing the correct logistics event source as it is not entirely obvious
-        else if (ValuationService.LogisticsSourceTmp == ev.source && (EDMLogisticsSalesAssignmentSubject == ev.subject || Event.EDMLogisticsInventorySubject == ev.subject)) {
+        else if (Event.LogisticsSource == ev.source && (EDMLogisticsSalesAssignmentSubject == ev.subject || Event.EDMLogisticsInventorySubject == ev.subject)) {
           logisticsAssignmentEventHander(rabbitPublishChangedValueEvents)(ev)
         }
       }
@@ -761,8 +762,6 @@ class ValuationServiceRpc(marketDataStore: MarketDataStore, valuationService: Va
 
 object ValuationService extends App {
 
-  val LogisticsSourceTmp = "LOGISTICS SOURCE TMP" // temporary logistics source component id until the real one can be located
-  
   import org.codehaus.jettison.json.JSONObject
 
   lazy val vs = StarlingInit.devInstance.valuationService
@@ -818,5 +817,4 @@ object ValuationService extends App {
   import scala.io.Source._
   def loadJsonValuesFromFile(fileName : String) : List[String] = 
     fromFile(fileName).getLines.toList
-
 }
