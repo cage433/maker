@@ -174,6 +174,8 @@ class StarlingInit( val props: Props,
 
   val mailSender = new JavaMailSenderImpl().update(_.setHost(props.SmtpServerHost()), _.setPort(props.SmtpServerPort()))
 
+  val rabbitEventServices = new DefaultRabbitEventServices(props)
+  
   val broadcaster = new CompositeBroadcaster(
     true                             → new RMIBroadcaster(rmiServerForGUI),
     props.rabbitHostSet              → new RabbitBroadcaster(new RabbitMessageSender(props.RabbitHost())),
@@ -251,7 +253,6 @@ class StarlingInit( val props: Props,
   val titanTradeCache = new DefaultTitanTradeCache(props)
   val titanServices = new DefaultTitanServices(props)
   val logisticsServices = new DefaultTitanLogisticsServices(props, Some(titanServices))
-  val rabbitEventServices = new DefaultRabbitEventServices(props)
   val titanInventoryCache = new DefaultTitanLogisticsInventoryCache(props)
   val valuationService = new ValuationService(new DefaultEnvironmentProvider(marketDataStore), titanTradeCache, titanServices, logisticsServices, rabbitEventServices, titanInventoryCache)
   val marketDataService = new MarketDataService(marketDataStore)
