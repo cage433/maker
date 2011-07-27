@@ -1,9 +1,7 @@
 package starling.pivot
 
 import collection.Seq
-import model.UndefinedValue
 import scala.collection.mutable.{Map => MutableMap, Set => MutableSet}
-import starling.pivot.PivotValue
 import collection.immutable.Map
 
 
