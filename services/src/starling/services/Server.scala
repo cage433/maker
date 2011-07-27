@@ -175,12 +175,12 @@ class StarlingInit( val props: Props,
   val mailSender = new JavaMailSenderImpl().update(_.setHost(props.SmtpServerHost()), _.setPort(props.SmtpServerPort()))
 
   val rabbitEventServices = new DefaultRabbitEventServices(props)
-  
+
   val broadcaster = new CompositeBroadcaster(
     true                             → new RMIBroadcaster(rmiServerForGUI),
     props.rabbitHostSet              → new RabbitBroadcaster(new RabbitMessageSender(props.RabbitHost())),
-    props.EnableVerificationEmails() → new EmailBroadcaster(mailSender),
-    props.titanRabbitHostSet         → TitanRabbitIdBroadcaster(rabbitEventServices.rabbitEventPublisher)
+    props.EnableVerificationEmails() → new EmailBroadcaster(mailSender) /*,
+    props.titanRabbitHostSet         → TitanRabbitIdBroadcaster(rabbitEventServices.rabbitEventPublisher) */
   )
 
   val revalSnapshotDb = new RevalSnapshotDB(starlingDB)
