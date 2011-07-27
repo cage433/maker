@@ -6,16 +6,18 @@ import org.jboss.resteasy.client.{ProxyFactory, ClientExecutor}
 import java.net.URL
 import com.trafigura.edm.logistics.inventory._
 import com.trafigura.tradinghub.support.ModelObject
-import org.codehaus.jettison.json.{JSONObject, JSONArray}
-import java.io.{BufferedWriter, FileWriter}
+import org.codehaus.jettison.json.JSONObject
 import starling.services.StarlingInit
 import com.trafigura.edm.physicaltradespecs.EDMQuota
 import com.trafigura.edm.trades.{PhysicalTrade => EDMPhysicalTrade}
 import scala.util.control.Exception.catching
 import starling.services.rpc.valuation.DefaultTitanTradeService
-import starling.services.rpc.refdata.{FileMockedTitanServices}
+import starling.services.rpc.refdata.FileMockedTitanServices
 import starling.titan.LogisticsServices._
 import starling.titan._
+import java.io._
+import java.util.zip.{GZIPInputStream, GZIPOutputStream}
+
 
 /**
  * logistics service interface
@@ -164,16 +166,59 @@ case class FileMockedTitanLogisticsInventoryServices() extends TitanLogisticsInv
 object FileUtils {
   import scala.io.Source._
   def getFileUrl(file : String) = getClass.getResource(file)
-  def loadJsonValuesFromFileUrl(fileUrl : URL) : List[String] = fromURL(fileUrl).getLines.toList
-  def loadJsonValuesFromFile(filePath : String) : List[String] = fromFile(filePath).getLines.toList
 
-  def writeJson[T <: ModelObject with Object { def toJson() : JSONObject }](fileName : String, objects : List[T]) {
+  def loadJsonValuesFromFileUrl(fileUrl : URL, compress : Boolean = false) : List[String] = {
+    //println("load json from file url " + fileUrl)
+    val bufferSize = 512 * 1024
+    if (!compress) {
+      fromURL(fileUrl).getLines.toList
+    }
+    else {
+      try {
+        val fStream = new FileInputStream(new File(fileUrl.toURI))
+        var inStream = if (compress) {
+          new BufferedInputStream(new GZIPInputStream(fStream), bufferSize)
+        }
+        else {
+          new BufferedInputStream(fStream)
+        }
+
+        var data = ""
+        var bytesRead = 0
+        val dataBuffer = Array.ofDim[Byte](bufferSize)
+        while ({ bytesRead = inStream.read(dataBuffer); bytesRead != -1 }) {
+          //println("read %d bytes".format(bytesRead))
+          if (bytesRead > 0) {
+            val dataChunk = new String(dataBuffer, 0, bytesRead)
+            data += dataChunk
+          }
+        }
+        val lines : List[String] = data.split("\n").toList
+        lines
+      }
+      catch {
+        case ex : Exception => println("Error: " + ex.getMessage()); throw ex
+      }
+    }
+  }
+
+  def loadJsonValuesFromFile(filePath : String, compress : Boolean = false) : List[String] =
+    loadJsonValuesFromFileUrl(new File(filePath).toURI.toURL, compress)
+
+  def writeJson[T <: ModelObject with Object { def toJson() : JSONObject }](fileName : String, objects : List[T], compress : Boolean = false) {
+
     try {
-      val fStream = new FileWriter(fileName)
-      val bWriter = new BufferedWriter(fStream)
-      objects.foreach(obj => bWriter.write(obj.toJson().toString() + "\n" ))
-      bWriter.flush()
-      fStream.close()
+      val fStream = new FileOutputStream(fileName)
+      var outStream = if (compress) {
+        new BufferedOutputStream(new GZIPOutputStream(fStream))
+      }
+      else {
+        new BufferedOutputStream(fStream)
+      }
+
+      objects.foreach(obj => outStream.write((obj.toJson() + "\n").getBytes()))
+      outStream.flush()
+      outStream.close()
     }
     catch {
       case ex : Exception => println("Error: " + ex.getMessage())

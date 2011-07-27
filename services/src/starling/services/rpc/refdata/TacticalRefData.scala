@@ -12,11 +12,12 @@ import com.trafigura.edm.trades.Trade
 import com.trafigura.edm.tradeservice.TradeResult
 import starling.services.StarlingInit
 import com.trafigura.tradinghub.support.{ModelObject, GUID}
-import java.io.{BufferedWriter, FileWriter}
 import starling.services.rpc.valuation.ValuationService
 import starling.services.rpc.logistics.FileUtils
 import starling.titan.{TitanEdmTradeService, TitanServices}
 import com.trafigura.tradecapture.internal.refinedmetal.{Counterparty, Metal, Market}
+import java.util.zip.GZIPOutputStream
+import java.io.{BufferedOutputStream, FileOutputStream, BufferedWriter, FileWriter}
 
 
 /**
@@ -53,7 +54,7 @@ case class FileMockedTitanServices() extends TitanServices {
   import starling.services.rpc.logistics.FileUtils._
 
   val resourcePath = "/tests/valuationservice/testdata"
-  val tradesFile = getClass.getResource(resourcePath + "/allEdmTrades.json") // "/edmTrades.json")
+  val tradesFile = getClass.getResource(resourcePath + "/allEdmTrades.json.zip") // "/edmTrades.json")
   val marketsFile = getClass.getResource(resourcePath + "/markets.json")
   val exchangesFile = getClass.getResource(resourcePath + "/exchanges.json")
 
@@ -80,7 +81,7 @@ case class FileMockedTitanServices() extends TitanServices {
 
   val loadedMarkets = loadJsonValuesFromFileUrl(marketsFile).map(s => Metal.fromJson(new JSONObject(s)).asInstanceOf[Metal])
   val loadedExchanges = loadJsonValuesFromFileUrl(exchangesFile).map(s => Market.fromJson(new JSONObject(s)).asInstanceOf[Market])
-  val loadedTrades = loadJsonValuesFromFileUrl(tradesFile).map(s => EDMPhysicalTrade.fromJson(new JSONObject(s)).asInstanceOf[EDMPhysicalTrade])
+  val loadedTrades = loadJsonValuesFromFileUrl(tradesFile, true).map(s => EDMPhysicalTrade.fromJson(new JSONObject(s)).asInstanceOf[EDMPhysicalTrade])
   var tradeMap = loadedTrades.map(t => t.oid -> t).toMap
 
   def updateTrade(trade : EDMPhysicalTrade) {
@@ -112,34 +113,20 @@ case class FileMockedTitanServicesDataFileGenerator(titanEdmTradeService : Titan
    *   so that the file mocked services can use canned data for tests (note this data needs moving into resources to update
    *   canned data for the tests...)
    */
-  val tradesFile = "/tmp/allEdmTrades.json"
+  val tradesFile = "/tmp/allEdmTrades.json.zip"
   val marketsFile = "/tmp/markets.json"
   val exchangesFile = "/tmp/exchanges.json"
 
-  writeJson(tradesFile, trades)
+  writeJson(tradesFile, trades, true)
   writeJson(marketsFile, markets)
   writeJson(exchangesFile, exchanges)
 
   val loadedMarkets = loadJsonValuesFromFile(marketsFile).map(s => Metal.fromJson(new JSONObject(s)).asInstanceOf[Metal])
-  val loadedExchanges = loadJsonValuesFromFile(exchangesFile).map(s => Market.fromJson(new JSONObject(s)).asInstanceOf[Market])
-  val loadedTrades = loadJsonValuesFromFile(tradesFile).map(s => EDMPhysicalTrade.fromJson(new JSONObject(s)).asInstanceOf[EDMPhysicalTrade])
-
   loadedMarkets.foreach(println)
+  val loadedExchanges = loadJsonValuesFromFile(exchangesFile).map(s => Market.fromJson(new JSONObject(s)).asInstanceOf[Market])
   loadedExchanges.foreach(println)
+  val loadedTrades = loadJsonValuesFromFile(tradesFile, true).map(s => EDMPhysicalTrade.fromJson(new JSONObject(s)).asInstanceOf[EDMPhysicalTrade])
   println("loaded trade size = " + loadedTrades.size)
-
-  def writeJson[T <: ModelObject with Object { def toJson() : JSONObject }](fileName : String, objects : List[T]) {
-    try {
-      val fStream = new FileWriter(fileName)
-      val bWriter = new BufferedWriter(fStream)
-      objects.foreach(obj => bWriter.write(obj.toJson().toString() + "\n" ))
-      bWriter.flush()
-      fStream.close()
-    }
-    catch {
-      case ex : Exception => println("Error: " + ex.getMessage())
-    }
-  }
 }
 
 object RefDataServices {
