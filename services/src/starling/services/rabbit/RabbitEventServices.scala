@@ -32,14 +32,20 @@ case class TitanRabbitIdBroadcaster(
     source : String = Event.StarlingSource,
     subject : String = Event.StarlingMarketDataSnapshotIDSubject,
     verb : EventVerbEnum = NewEventVerb,
-    payloadType : String = Event.StarlingSnapshotIdPayload) extends Broadcaster {
+    payloadType : String = Event.StarlingSnapshotIdPayload) extends Broadcaster with Logger {
 
   def broadcast(event : scala.swing.event.Event) = {
-    event match {
-      case mds : MarketDataSnapshot => {
-        val events = createUpdatedIDEvents(mds.snapshotIDs, source, subject, verb, payloadType)
-        publisher.publish(events)
+    try {
+      event match {
+        case mds : MarketDataSnapshot => {
+          val events = createUpdatedIDEvents(mds.snapshotIDs, source, subject, verb, payloadType)
+          publisher.publish(events)
+        }
+        case _ => // nothing to do
       }
+    }
+    catch { // catch and log all exceptions since we don't want to cause the event broadcaster to fail more generally
+      case th : Throwable => Log.error("Caught exception in Titan Rabbit event broadcaster %s".format(th.getMessage))
     }
   }
 
