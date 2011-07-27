@@ -382,7 +382,7 @@ class ValuationService(
   titanTradeCache : TitanTradeCache, 
   refData : TitanTacticalRefData,
   logisticsServices : TitanLogisticsServices,
-  rabbitEventServices : RabbitEventServices,
+  rabbitEventServices : TitanRabbitEventServices,
   titanInventoryCache : TitanLogisticsInventoryCache) extends ValuationServiceApi {
 
   type TradeValuationResult = Either[String, List[CostsAndIncomeQuotaValuation]]

@@ -3,7 +3,7 @@ package starling.services.rpc.valuation
 import org.testng.annotations.Test
 import starling.market.{MarketProvider, TestMarketLookup}
 import starling.services.rpc.refdata.FileMockedTitanServices
-import starling.services.rabbit.MockRabbitEventServices
+import starling.services.rabbit.MockTitanRabbitEventServices
 import com.trafigura.common.control.PipedControl._
 import org.codehaus.jettison.json.JSONArray
 import com.trafigura.events.{DemultiplexerClient, EventFactory, PayloadFactory}
@@ -70,7 +70,7 @@ class ValuationServiceTest extends StarlingTest {
     val mockTitanTradeService = new DefaultTitanTradeService(mockTitanServices)
     val mockTitanTradeCache = new TitanTradeServiceBasedTradeCache(mockTitanTradeService)
     val mockTitanLogisticsServices = FileMockedTitanLogisticsServices()
-    val mockRabbitEventServices = new MockRabbitEventServices()
+    val mockRabbitEventServices = new MockTitanRabbitEventServices()
     val mockInventoryCache = new TitanLogisticsServiceBasedInventoryCache(mockTitanLogisticsServices)
 
     val vs = new ValuationService(
@@ -156,7 +156,7 @@ class ValuationServiceTest extends StarlingTest {
     val mockTitanTradeService = new DefaultTitanTradeService(mockTitanServices)
     val mockTitanTradeCache = new TitanTradeServiceBasedTradeCache(mockTitanTradeService)
     val mockTitanLogisticsServices = FileMockedTitanLogisticsServices()
-    val mockRabbitEventServices = new MockRabbitEventServices()
+    val mockRabbitEventServices = new MockTitanRabbitEventServices()
     val mockInventoryCache = new TitanLogisticsServiceBasedInventoryCache(mockTitanLogisticsServices)
 
     //val salesAssignments = mockTitanLogisticsServices.assignmentService.service.getAllSalesAssignments()

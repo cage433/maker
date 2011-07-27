@@ -167,7 +167,7 @@ class StarlingInit( val props: Props,
 
   val mailSender = new JavaMailSenderImpl().update(_.setHost(props.SmtpServerHost()), _.setPort(props.SmtpServerPort()))
 
-  val titanRabbitEventServices = new DefaultRabbitEventServices(props)
+  val titanRabbitEventServices = new DefaultTitanRabbitEventServices(props)
 
   val broadcasters =
       (true                             → new RMIBroadcaster(rmiServerForGUI)) ::

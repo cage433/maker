@@ -10,8 +10,6 @@ import com.trafigura.services.rabbit.Publisher
 import org.codehaus.jettison.json.JSONArray
 import java.util.concurrent.atomic.AtomicBoolean
 import com.trafigura.services.log.Logger
-import starling.services.rpc.valuation.ValuationService
-import com.trafigura.shared.events.Event._
 import com.trafigura.events._
 import starling.gui.api.MarketDataSnapshot
 import starling.utils.{Broadcaster, Log, Stoppable}
@@ -19,9 +17,9 @@ import com.trafigura.shared.events._
 
 
 /**
- * RabbitMQ event module
+ * Titan RabbitMQ event module
  */
-trait RabbitEventServices extends Stoppable with Logger {
+trait TitanRabbitEventServices extends Stoppable with Logger {
   val eventDemux : IDemultiplexEvents
   val rabbitEventPublisher : Publisher
   def addClient(client:DemultiplexerClient)
@@ -63,7 +61,7 @@ case class TitanRabbitIdBroadcaster(
   }
 }
 
-case class DefaultRabbitEventServices(props : Props) extends RabbitEventServices {
+case class DefaultTitanRabbitEventServices(props : Props) extends TitanRabbitEventServices {
   
   val rabbitmq_host = props.TitanRabbitBrokerHost()
   val rabbitmq_port = 5672
@@ -154,7 +152,7 @@ case class DefaultRabbitEventServices(props : Props) extends RabbitEventServices
 /**
  * Mocked event handlers for testing
  */
-case class MockRabbitEventServices() extends RabbitEventServices {
+case class MockTitanRabbitEventServices() extends TitanRabbitEventServices {
   private val mockDemux = new MockEventDemux()
   val eventDemux : IDemultiplexEvents = mockDemux
   val rabbitEventPublisher = new MockRabbitPublisher(mockDemux)
