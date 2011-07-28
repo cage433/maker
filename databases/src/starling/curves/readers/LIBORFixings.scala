@@ -22,25 +22,37 @@ import starling.marketdata.{PriceFixingsHistoryData, PriceFixingsHistoryDataKey}
 object BalticFixings extends HierarchicalLimSource(List(TopRelation.Energy.Tankers.BalticFreight.Index_Forward), List(Level.Val)) {
   type Relation = BalticRelation
 
-  case class BalticRelation(marketPrefix: String, marketSuffix: String, tenor: Tenor) {
-    val market = marketPrefix + "." + marketSuffix
+  val mapping = Map(
+    "SUPRAMAX.TC5" -> "Baltic Supramax T/C Avg",
+    "PANAMAX.TC4" -> "Panamax T/C Average (Baltic)",
+    "CAPESIZE.TC4" -> "Capesize T/C Average (Baltic)"
+  ).mapValues(Market.fromName)
+
+
+  case class BalticRelation(market:CommodityMarket, tenor:Tenor) {
     val period = StoredFixingPeriod.tenor(tenor)
   }
 
   def relationExtractor = Extractor.regex("""BALTIC\.(\w+)\.(\w+)\.(\w+)""") {
-    case List(marketPrefix, marketSuffix, Tenor.Parse(tenor)) => Some(BalticRelation(marketPrefix, marketSuffix, tenor))
+    case List(marketPrefix, marketSuffix, Tenor.Parse(tenor)) => {
+      mapping.get(marketPrefix + "." + marketSuffix).map(m=>BalticRelation(m, tenor))
+    }
   }
 
   def marketDataEntriesFrom(fixings: List[Prices[BalticRelation]]) = {
     fixings.groupBy(group).map { case ((market, observationDay), grouped) =>
       MarketDataEntry(observationDay.atTimeOfDay(ObservationTimeOfDay.LondonClose),
-        PriceFixingsHistoryDataKey(market, Some("BALTIC")),
-        PriceFixingsHistoryData.create(grouped.map(fixings => (Level.Val, fixings.relation.period) → marketValue(fixings)))
+        PriceFixingsHistoryDataKey(market.name, Some("BALTIC")), //Not consistent with the market
+        PriceFixingsHistoryData.create(grouped.flatMap(fixings => {
+          val price = fixings.priceByLevel(Level.Val)
+          price match {
+            case 0 => None
+            case _ => Some( (Level.Val, fixings.relation.period) → MarketValue.quantity(price, UOM.USD/UOM.DAY) )
+          }
+        }))
       )
     }
   }
-
-  def marketValue(fixings: Prices[BalticRelation]) = MarketValue.quantity(fixings.priceByLevel(Level.Val))
 
   def group(fixings: Prices[BalticRelation]) = (fixings.relation.market, fixings.observationDay)
 }

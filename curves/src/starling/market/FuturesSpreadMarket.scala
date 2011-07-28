@@ -32,7 +32,7 @@ class FuturesSpreadMarket(name: String, uom: UOM, ccy: UOM,
       market1.businessCalendar.isHoliday(day) && market2.businessCalendar.isHoliday(day)
     }
 
-    def name = name + " calendar"
+    def name = FuturesSpreadMarket.this.name + " calendar"
   }
 }
 
