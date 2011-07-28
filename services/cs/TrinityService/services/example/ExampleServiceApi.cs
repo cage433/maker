@@ -15,6 +15,11 @@ namespace com.trafigura.services.example
         ReferenceInterestRate GetReferenceInterestRate(string source);
 
         [OperationContract]
+        [WebGet(UriTemplate = "ReferenceInterestRates/{source}")]
+        [Example("JIBAR")]
+        List<ReferenceInterestRate> GetReferenceInterestRates(string source);
+
+        [OperationContract]
         [WebInvoke(UriTemplate = "ReferenceInterestRate/{source}", Method = "POST")]
         ReferenceInterestRate SetReferenceInterestRate(string source, ReferenceInterestRate rate);
 

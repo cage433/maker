@@ -9,34 +9,39 @@ namespace com.trafigura.services.trinity
     public interface ProfileServiceApi
     {
         [OperationContract]
-        [WebGet(UriTemplate = "/{name}/{visibility}")]
+        [WebGet(UriTemplate = "{name}/{visibility}")]
         [Example("Full Curve/public")]
         Profile Get(string name, string visibility);
+
+        [OperationContract]
+        [WebGet(UriTemplate = "{name}/{visibility}/{date}")]
+        [Example("Full Curve/public/26-07-2011")]
+        Profile GetByDate(string name, string visibility, string date);
     }
 
     [ServiceContract]
     public interface DepoRatesServiceApi
     {
         [OperationContract]
-        [Example("11/USD")]
-        [WebGet(UriTemplate = "/{profileId}/{commodity}")]
-        List<DepoRate> GetRates(int profileId, string commodity);
+        [Example("USD/Full Curve")]
+        [WebGet(UriTemplate = "{commodity}/{profileName}")]
+        List<DepoRate> GetRates(string commodity, string profileName);
 
         [OperationContract]
-        [WebInvoke(UriTemplate = "/{profileId}/{commodity}", Method = "DELETE")]
-        bool DeleteRates(int profileId, string commodity);
+        [WebInvoke(UriTemplate = "{commodity}/{profileName}", Method = "DELETE")]
+        bool DeleteRates(string commodity, string profileName);
 
         [OperationContract]
-        [WebInvoke(UriTemplate = "/{profileId}/{commodity}/{period}", Method = "DELETE")]
-        bool DeleteRate(int profileId, string commodity, string period);
+        [WebInvoke(UriTemplate = "{commodity}/{period}/{profileName}", Method = "DELETE")]
+        bool DeleteRate(string commodity, string period, string profileName);
 
         [OperationContract]
-        [WebInvoke(UriTemplate = "/{profileId}/{commodity}", Method = "POST")]
-        bool SetRates(int profileId, string commodity, List<DepoRate> rates);
+        [WebInvoke(UriTemplate = "{commodity}/{profileName}", Method = "POST")]
+        bool SetRates(string commodity, string profileName, List<DepoRate> rates);
 
         [OperationContract]
-        [WebInvoke(UriTemplate = "/{profileId}/{commodity}", Method = "PUT")]
-        bool AddRates(int profileId, string commodity, List<DepoRate> rates);
+        [WebInvoke(UriTemplate = "{commodity}/{profileName}", Method = "PUT")]
+        bool AddRates(string commodity, string profileName, List<DepoRate> rates);
     }
 
     [ServiceContract]
@@ -44,23 +49,23 @@ namespace com.trafigura.services.trinity
     {
         [OperationContract]
         [Example("11/SFE/XPS/USD")]
-        [WebGet(UriTemplate = "/{profileId}/{exchange}/{commodity}/{currency}")]
-        List<CommodityRate> GetRates(int profileId, string exchange, string commodity, string currency);
+        [WebGet(UriTemplate = "{exchange}/{commodity}/{currency}/{profileName}")]
+        List<CommodityRate> GetRates(string exchange, string commodity, string currency, string profileName);
 
         [OperationContract]
-        [WebInvoke(UriTemplate = "/{profileId}/{exchange}/{commodity}/{currency}", Method = "DELETE")]
-        bool DeleteRates(int profileId, string exchange, string commodity, string currency);
+        [WebInvoke(UriTemplate = "{exchange}/{commodity}/{currency}/{profileName}", Method = "DELETE")]
+        bool DeleteRates(string exchange, string commodity, string currency, string profileName);
 
         [OperationContract]
-        [WebInvoke(UriTemplate = "/{profileId}/{exchange}/{commodity}/{currency}/{period}", Method = "DELETE")]
-        bool DeleteRate(int profileId, string exchange, string commodity, string currency, string period);
+        [WebInvoke(UriTemplate = "{exchange}/{commodity}/{currency}/{period}/{profileName}", Method = "DELETE")]
+        bool DeleteRate(string exchange, string commodity, string currency, string period, string profileName);
 
         [OperationContract]
-        [WebInvoke(UriTemplate = "/{profileId}/{exchange}/{commodity}/{currency}", Method = "POST")]
-        bool SetRates(int profileId, string exchange, string commodity, string currency, List<CommodityRate> rates);
+        [WebInvoke(UriTemplate = "{exchange}/{commodity}/{currency}/{profileName}", Method = "POST")]
+        bool SetRates(string exchange, string commodity, string currency, string profileName, List<CommodityRate> rates);
 
         [OperationContract]
-        [WebInvoke(UriTemplate = "/{profileId}/{exchange}/{commodity}/{currency}", Method = "PUT")]
-        bool AddRates(int profileId, string exchange, string commodity, string currency, List<CommodityRate> rates);
+        [WebInvoke(UriTemplate = "{exchange}/{commodity}/{currency}/{profileName}", Method = "PUT")]
+        bool AddRates(string exchange, string commodity, string currency, string profileName, List<CommodityRate> rates);
     }
 }

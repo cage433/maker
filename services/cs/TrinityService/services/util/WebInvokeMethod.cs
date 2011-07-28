@@ -6,7 +6,7 @@ using System.ServiceModel.Web;
 
 namespace com.trafigura.services.util
 {
-    public class WebInvokeMethod : ServiceMethod
+    public class WebInvokeMethod
     {
         private MethodInfo method;
         private WebInvokeAttribute attribute;

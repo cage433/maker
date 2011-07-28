@@ -1,11 +1,8 @@
 ﻿using System.Collections.Generic;
 using System.ComponentModel.Composition;
-using System.Net.Http;
 using System.ServiceModel;
 using System.ServiceModel.Activation;
-using System.Text;
 using com.trafigura.services.marketdata;
-using com.trafigura.services.util;
 using log4net;
 
 namespace com.trafigura.services.example
@@ -21,6 +18,11 @@ namespace com.trafigura.services.example
         public ReferenceInterestRate GetReferenceInterestRate(string source)
         {
             return rates.GetOrInitialise(source, CreateNew);
+        }
+
+        public List<ReferenceInterestRate> GetReferenceInterestRates(string source)
+        {
+            return new List<ReferenceInterestRate> { GetReferenceInterestRate(source), GetReferenceInterestRate(source) };
         }
         
         public ReferenceInterestRate SetReferenceInterestRate(string source, ReferenceInterestRate rate)

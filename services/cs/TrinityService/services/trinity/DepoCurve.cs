@@ -7,19 +7,19 @@ namespace com.trafigura.services.trinity
 {
     public class DepoCurve : Curve<DepoRate>
     {
-        public DepoCurve(trMarketDataServer marketData, int profileId, string commodity)
-            : base (marketData, profileId, commodity)
+        public DepoCurve(trMarketDataServer marketData, Profile profile, string commodity)
+            : base (marketData, profile, commodity)
         {
         }
 
         protected override trRateCurve TrinityRateCurve
         {
-            get { return marketData.RateCurve[ProfileId, Commodity, null, trRateCurveTypeEnum.trRateCurveDepo]; }
+            get { return marketData.RateCurve[Profile.Id, Commodity, null, trRateCurveTypeEnum.trRateCurveDepo]; }
         }
 
         protected override trRateCurve GetOrCreateTrinityRateCurve()
         {
-            return TrinityRateCurve ?? marketData.NewRateCurve[ProfileId, Commodity, null, trRateCurveTypeEnum.trRateCurveDepo];
+            return TrinityRateCurve ?? marketData.NewRateCurve[Profile.Id, Commodity, null, trRateCurveTypeEnum.trRateCurveDepo];
         }
 
         public override List<DepoRate> Rates
