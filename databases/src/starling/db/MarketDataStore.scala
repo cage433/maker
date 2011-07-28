@@ -94,17 +94,20 @@ object MarketDataSet extends StarlingEnum(classOf[MarketDataSet], (m: MarketData
   val GasolineRoW = MarketDataSet("Gasoline RoW")
   val BarryEckstein = MarketDataSet("Barry Eckstein")
   val LondonDerivativesOptions = MarketDataSet("London Derivatives Options")
+  val LimMetals = MarketDataSet("LimMetals") //Refined Metals
+  val ManualMetals = MarketDataSet("ManualMetals")
+  val Starling = MarketDataSet("Starling")
+  val TrinityDiscountFactorCSV = MarketDataSet("TrinityDiscountFactorCSV")
+  val Neptune = MarketDataSet("TrinityDiscountFactorCSV")
+
+/*
   val TrinityLive = MarketDataSet("Trinity/Live")
   val GalenaLive = MarketDataSet("Galena/Live")
   val GalenaFullCurve = MarketDataSet("Galena/FullCurve")
   val VarMetalsFreight = MarketDataSet("Var:Metals+Freight")
   val VarGalenaLondon = MarketDataSet("Var:GalenaLondon")
   val VarGalenaOil= MarketDataSet("Var:GalenaOil")
-  val LimMetals = MarketDataSet("LimMetals") //Refined Metals
-  val ManualMetals = MarketDataSet("ManualMetals")
-  val Starling = MarketDataSet("Starling")
-  val TrinityDiscountFactorCSV = MarketDataSet("TrinityDiscountFactorCSV")
-  val Neptune = MarketDataSet("TrinityDiscountFactorCSV")
+ */
 }
 
 object MarketDataStore {

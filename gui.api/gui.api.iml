@@ -41,7 +41,9 @@
           <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/compile/sjson_2.8.0-0.8.jar!/" />
         </CLASSES>
         <JAVADOC />
-        <SOURCES />
+        <SOURCES>
+          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/compile/sjson_2.8.0-0.8-sources.jar!/" />
+        </SOURCES>
       </library>
     </orderEntry>
   </component>

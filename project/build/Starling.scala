@@ -118,13 +118,13 @@ class Starling(info : ProjectInfo) extends ParentProject(info) {
             super.unmanagedClasspath +++ (Path.fromFile(new File("lib/titan-other-jars")) ** "*.jar")
 
     override def libraryDependencies = Set(
-      "net.liftweb" % "lift-json_2.9.0" % "2.4-M2",
-      "javax.mail" % "mail" % "1.4",
-      "javax.servlet" % "servlet-api" % "2.5",
-      "org.mortbay.jetty" % "jetty" % "6.1.26",
-      "org.subethamail" % "subethasmtp-wiser" % "1.2" % "test",
-      "org.subethamail" % "subethasmtp-smtp" % "1.2" % "test",
-      "org.springframework" % "spring-context-support" % "3.0.5.RELEASE"
+      "net.liftweb" % "lift-json_2.9.0" % "2.4-M2" withSources(),
+      "javax.mail" % "mail" % "1.4" withSources(),
+      "javax.servlet" % "servlet-api" % "2.5" withSources(),
+      "org.mortbay.jetty" % "jetty" % "6.1.26" withSources(),
+      "org.subethamail" % "subethasmtp-wiser" % "1.2" % "test" withSources(),
+      "org.subethamail" % "subethasmtp-smtp" % "1.2" % "test" withSources(),
+      "org.springframework" % "spring-context-support" % "3.0.5.RELEASE" withSources()
     ) ++ super.libraryDependencies
 
   }
@@ -179,11 +179,11 @@ class Starling(info : ProjectInfo) extends ParentProject(info) {
       super.packageAction
     }
     override def libraryDependencies = Set(
-      "org.slf4j" % "slf4j-api" % "1.6.1",
-      "dom4j" % "dom4j" % "1.6.1",
-      "com.rabbitmq" % "amqp-client" % "1.7.2",
-      "joda-time" % "joda-time" % "1.6",
-      "org.codehaus.jettison" % "jettison" % "1.1",
+      "org.slf4j" % "slf4j-api" % "1.6.1" withSources(),
+      "dom4j" % "dom4j" % "1.6.1" withSources(),
+      "com.rabbitmq" % "amqp-client" % "1.7.2" withSources(),
+      "joda-time" % "joda-time" % "1.6" withSources(),
+      "org.codehaus.jettison" % "jettison" % "1.1" withSources(),
       "commons-httpclient" % "commons-httpclient" % "3.1"
     ) ++ super.libraryDependencies
   }
@@ -206,46 +206,47 @@ class Starling(info : ProjectInfo) extends ParentProject(info) {
   }
   trait UtilsDependencies extends BasicScalaProject{
     override def libraryDependencies = Set(
-      "cglib" % "cglib-nodep" % "2.2",
-      "joda-time" % "joda-time" % "1.6",
-      "com.rabbitmq" % "amqp-client" % "1.7.2",
-      "log4j" % "log4j" % "1.2.14",
-      "com.google.collections" % "google-collections" % "1.0",
-      "commons-codec" % "commons-codec" % "1.4",
+      "cglib" % "cglib-nodep" % "2.2" withSources(),
+      "joda-time" % "joda-time" % "1.6" withSources(),
+      "com.rabbitmq" % "amqp-client" % "1.7.2" withSources(),
+      "log4j" % "log4j" % "1.2.14" withSources(),
+      "com.google.collections" % "google-collections" % "1.0" withSources(),
+      "commons-codec" % "commons-codec" % "1.4" withSources(),
       "colt" % "colt" % "1.0.3",
-      "com.thoughtworks.xstream" % "xstream" % "1.3.1",
-      "org.testng" % "testng" % "5.8" classifier "jdk15",
+      "com.thoughtworks.xstream" % "xstream" % "1.3.1" withSources(),
+      "org.testng" % "testng" % "5.8" classifier "jdk15" withSources(),
       // Test dependencies
-      "org.mockito" % "mockito-all" % "1.8.2" % "test",
-      "org.testng" % "testng" % "5.8" classifier "jdk15"
+      "org.mockito" % "mockito-all" % "1.8.2" % "test" withSources(),
+      "org.testng" % "testng" % "5.8" classifier "jdk15" withSources()
     ) ++ super.libraryDependencies
 }
 
   trait GuiApiDependencies extends BasicScalaProject {
     override def libraryDependencies = Set(
-      "net.debasishg" % "sjson_2.8.0" % "0.8" intransitive()
+      "net.debasishg" % "sjson_2.8.0" % "0.8" intransitive() withSources()
     ) ++ super.libraryDependencies
   }
   trait DatabasesDependencies extends BasicScalaProject {
     override def libraryDependencies = Set(
-      "org.springframework" % "spring-jdbc" % "3.0.5.RELEASE",
-      "com.jolbox" % "bonecp" % "0.7.1.RELEASE" intransitive(),
-      "org.slf4j" % "slf4j-api" % "1.6.1",
-      "org.scala-tools.testing" % "scalacheck_2.9.0-1" % "1.9",
+      "org.springframework" % "spring-jdbc" % "3.0.5.RELEASE" withSources(),
+      "com.jolbox" % "bonecp" % "0.7.1.RELEASE" intransitive() withSources(),
+      "org.slf4j" % "slf4j-api" % "1.6.1" withSources(),
+      "org.slf4j" % "slf4j-log4j13" % "1.0.1" withSources(),
+      "org.scala-tools.testing" % "scalacheck_2.9.0-1" % "1.9" withSources(),
       "org.apache.derby" % "derby" % "10.5.3.0_1",
       "hsqldb" % "hsqldb" % "1.8.0.10" % "test",
-      "com.h2database" % "h2" % "1.2.131" % "test"
+      "com.h2database" % "h2" % "1.2.131" % "test" withSources()
     ) ++ super.libraryDependencies
   }
   trait AuthDependencies extends BasicScalaProject{
     override def libraryDependencies = Set(
-      "com.sun.jna" % "jna" % "3.0.9"
+      "com.sun.jna" % "jna" % "3.0.9" withSources()
     ) ++ super.libraryDependencies
   }
 
   trait LoopyXLDependencies extends BasicScalaProject {
     override def libraryDependencies = Set(
-      "com.google.protobuf" % "protobuf-java" % "2.3.0"
+      "com.google.protobuf" % "protobuf-java" % "2.3.0" withSources()
     ) ++ super.libraryDependencies
   }
 
@@ -253,9 +254,9 @@ class Starling(info : ProjectInfo) extends ParentProject(info) {
     override def unmanagedClasspath =
       super.unmanagedClasspath +++ Path.fromFile(new File("lib/scala/scala-2.9.0.1.final/lib/scala-swing.jar"))
     override def libraryDependencies = Set(
-      "cglib" % "cglib-nodep" % "2.2",
-      "org.jboss.netty" % "netty" % "3.2.3.Final",
-      "commons-io" % "commons-io" % "1.3.2"
+      "cglib" % "cglib-nodep" % "2.2" withSources(),
+      "org.jboss.netty" % "netty" % "3.2.3.Final" withSources(),
+      "commons-io" % "commons-io" % "1.3.2" withSources()
     ) ++ super.libraryDependencies
   }
 
