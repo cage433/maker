@@ -100,12 +100,15 @@ case class FileMockedTitanServicesDataFileGenerator(titanEdmTradeService : Titan
 
 //  valuations.tradeResults.foreach(println)
 
-  val (worked, _) = valuations.tradeResults.values.partition(_ isRight)
+  val (worked, failed) = valuations.tradeResults.values.partition(_ isRight)
+  failed.foreach(println)
   val tradeIds = valuations.tradeResults.collect{ case (id, Right(_)) => id }.toList
-  //val trades = valuationService.getTrades(tradeIds)
-  val trades = titanEdmTradeService.titanGetEdmTradesService.getAll().results.map(_.trade).filter(_ != null)
+  val trades = valuationService.getTrades(tradeIds)
+  //val trades = titanEdmTradeService.titanGetEdmTradesService.getAll().results.map(_.trade).filter(_ != null)
   val markets = valuationService.getFuturesMarkets.toList
   val exchanges = valuationService.getFuturesExchanges.toList
+
+  println("read %d trades ".format(trades.size))
 
   /**
    * Write out EDM trades from trade service (that can be valued successfully) and the ref-data markets and exchanges
@@ -125,7 +128,7 @@ case class FileMockedTitanServicesDataFileGenerator(titanEdmTradeService : Titan
   val loadedExchanges = loadJsonValuesFromFile(exchangesFile).map(s => Market.fromJson(new JSONObject(s)).asInstanceOf[Market])
   loadedExchanges.foreach(println)
   val loadedTrades = loadJsonValuesFromFile(tradesFile, true).map(s => EDMPhysicalTrade.fromJson(new JSONObject(s)).asInstanceOf[EDMPhysicalTrade])
-  println("loaded trade size = " + loadedTrades.size)
+  println("loaded %d trades = ".format(loadedTrades.size))
 }
 
 object RefDataServices {
