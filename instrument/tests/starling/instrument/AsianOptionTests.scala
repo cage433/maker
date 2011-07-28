@@ -176,6 +176,55 @@ class AsianOptionTests extends JonTestEnv {
   }
 
   @Test
+  def testExplanation() {
+    val marketDay = Day(2009, 1, 1)
+    val period = Month(2010, 1)
+    val fwdPrice = Quantity(101, USD/MT)
+    val fixingPrice = Quantity(99, USD/MT)
+    val env = Environment(
+      new TestingAtomicEnvironment() {
+        def marketDay = Day(2009, 1, 1).endOfDay
+
+        def applyOrMatchError(key: AtomicDatumKey) = key match {
+          case DiscountRateKey(_, day, _) => new Quantity(Math.exp(-0.05 * day.daysSinceInYears(marketDay.day)))
+          case _ : OilAtmVolAtomicDatumKey => Percentage(0.2)
+          case _: OilVolSkewAtomicDatumKey => Map[Double, Percentage]()
+
+          case _: BradyMetalVolAtomicDatumKey => Percentage(0.2)
+          case _: ForwardPriceKey => fwdPrice
+          case _: FixingKey => fixingPrice
+        }
+      }
+      )
+
+    val index = Index.GO11
+    val market = index.market
+
+    val strikeQty = Quantity(100, USD / MT)
+    val volume = Quantity(123, MT)
+    val asianOption = SingleAsianOption(index, period, strikeQty, volume, Call)
+    val explanation = asianOption.explanation(env)
+    assertEquals(explanation.name, "((Curran-Call(Average(IPE Gas Oil 1st month (Settlement).JANUARY 2010), Vol, K) * Volume) * Discount)")
+
+    val ex = "((Curran-Call(Average(IPE Gas Oil.JANUARY 2010, IPE Gas Oil.JANUARY 2010, IPE Gas Oil.JANUARY 2010, " +
+            "IPE Gas Oil.JANUARY 2010, IPE Gas Oil.JANUARY 2010, IPE Gas Oil.JANUARY 2010, IPE Gas Oil.JANUARY 2010," +
+            " IPE Gas Oil.FEBRUARY 2010, IPE Gas Oil.FEBRUARY 2010, IPE Gas Oil.FEBRUARY 2010, IPE Gas Oil.FEBRUARY 2010, " +
+            "IPE Gas Oil.FEBRUARY 2010, IPE Gas Oil.FEBRUARY 2010, IPE Gas Oil.FEBRUARY 2010, IPE Gas Oil.FEBRUARY 2010, " +
+            "IPE Gas Oil.FEBRUARY 2010, IPE Gas Oil.FEBRUARY 2010, IPE Gas Oil.FEBRUARY 2010, IPE Gas Oil.FEBRUARY 2010, " +
+            "IPE Gas Oil.FEBRUARY 2010, IPE Gas Oil.FEBRUARY 2010), 20.00%, 100.00 USD/MT) * 123.00 MT) * USD.29Jan2010)"
+
+    assertEquals(explanation.format(1), ex)
+
+    val ex1 = "((Curran-Call(Average(101.00 USD/MT, 101.00 USD/MT, 101.00 USD/MT, 101.00 USD/MT, 101.00 USD/MT," +
+            " 101.00 USD/MT, 101.00 USD/MT, 101.00 USD/MT, 101.00 USD/MT, 101.00 USD/MT, 101.00 USD/MT, 101.00 USD/MT, " +
+            "101.00 USD/MT, 101.00 USD/MT, 101.00 USD/MT, 101.00 USD/MT, 101.00 USD/MT, 101.00 USD/MT, 101.00 USD/MT, " +
+            "101.00 USD/MT, 101.00 USD/MT), 0.20, 100.00 USD/MT) * 123.00 MT) * 0.95)"
+
+    assertEquals(explanation.format(2), ex1)
+    assertEquals(explanation.format(3), ex1)
+  }
+
+  @Test
   def fieldsOnTradeableTypeTest {
     val actualFields = AsianOption.fields
     assertEquals(actualFields, List("Market", "Period", "Quantity", "Strike", "Call Put"))

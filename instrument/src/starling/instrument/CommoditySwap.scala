@@ -39,9 +39,8 @@ case class CommoditySwap(
   }
 
   def explanation(env : Environment) : NamedQuantity = {
-    val namedEnv = env.withNaming()
     val subExplanations : List[NamedQuantity] = subPeriodSwaps.map{swap =>
-      val swapExp = swap.explanation(namedEnv)
+      val swapExp = swap.explanation(env)
       SimpleNamedQuantity(swap.period.toShortString + " value", swapExp)
     }
     FunctionNamedQuantity("Sum", subExplanations, subExplanations.map(_.quantity).sum)
@@ -95,7 +94,7 @@ case class SingleCommoditySwap(
     val namedEnv = env.withNaming()
     val price = SimpleNamedQuantity("F_Ave", namedEnv.averagePrice(index, averagingPeriod, pricingRule, priceUOM, priceRounding))
     val discount = SimpleNamedQuantity("disc", namedEnv.discount(valuationCCY, settlementDay))
-    (price - strike.named("K")) * volume.named("V") * discount
+    (price - strike.named("K")) * volume.named("Volume") * discount
   }
 
   def instrumentType = CommoditySwap

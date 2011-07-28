@@ -20,7 +20,7 @@ class NamedQuantityTests extends TestNGSuite with ShouldMatchers {
 
   @Test def onceANamedQuantityAlwaysANamedQuantity {
     (namedAbc * 2.0)       .format(0) should be === "(%s * %s)" % (namedAbc.format(0), 2.0)
-    (namedAbc * percentage).format(0) should be === "(%s * %s)" % (namedAbc.format(0), percentage)
+    (namedAbc * percentage).format(0) should be === "(%s * %s)" % (namedAbc.format(0), percentage.toShortString)
     (namedAbc * abc)       .format(0) should be === "(%s * %s)" % (namedAbc.format(0), abc)
     (namedAbc * namedAbc)  .format(0) should be === "(%s * %s)" % (namedAbc.format(0), namedAbc.format(0))
     (namedAbc / 2.0)       .format(0) should be === "(%s / %s)" % (namedAbc.format(0), 2.0)

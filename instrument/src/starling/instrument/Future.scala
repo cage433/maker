@@ -20,7 +20,7 @@ case class Future(market: FuturesMarket, delivery: DateRange, strike: Quantity, 
   def explanation(env : Environment) : NamedQuantity = {
     val namedEnv = env.withNaming()
     val F = SimpleNamedQuantity("F", convertPrice(namedEnv, namedEnv.forwardPrice(market, delivery)))
-    (F - strike.named("K")) * volume.named("V")
+    (F - strike.named("K")) * volume.named("Volume")
   }
   
   def *(x : Double) = copy(volume = volume * x)

@@ -10,6 +10,7 @@ import java.lang.String
 import starling.utils.ImplicitConversions._
 import starling.utils.Pattern._
 import java.text.DecimalFormat
+import starling.quantity.NamedQuantity
 
 class QuantityDouble(d : Double){
   def apply(uom : UOM) = Quantity(d, uom)
@@ -75,7 +76,7 @@ object Quantity {
       val result = Quantity((sum(mc) / quantities.size).toDouble, uom)
 
       if (quantities.forall(_.isInstanceOf[NamedQuantity])) {
-        FunctionNamedQuantity("Average", quantities.asInstanceOf[List[NamedQuantity]], result)
+        FunctionNamedQuantity("Average", quantities.toList.asInstanceOf[List[NamedQuantity]], result)
       } else {
         result
       }
@@ -261,29 +262,8 @@ class Quantity(val value : Double, val uom : UOM) extends Ordered[Quantity] with
   def round(dp: Int) = copy(value = MathUtil.roundToNdp(value, dp))
 }
 
-//case class NamedQuantityTree(operatorOrName:String, children:List[NamedQuantity], infix:Boolean, spacesAroundOperator:Boolean = true, shortNameOption:Option[String] = None){
-//  def format : String = {
-//    if (children.isEmpty) {
-//      shortName
-//    } else if (infix) {
-//      val opString = if (spacesAroundOperator) " " + shortName + " " else shortName
-//      children.map(_.expr.format).mkString("(", opString, ")")
-//    } else if (useParentheses){
-//      shortName + "(" + children.map(_.expr.format).mkString(",") + ")"
-//    } else {
-//      assert(children.size == 1, "Can only have a single term if no brackets")
-//      shortName + children.head.expr.format
-//    }
-//  }
-//  def shortName = shortNameOption.getOrElse(operatorOrName)
-//  def withShortName(shortName : String):NamedQuantityTree = copy(useParentheses = useParentheses, spacesAroundOperator = spacesAroundOperator, shortNameOption = Some(shortName))
-//}
-//
-//object NamedQuantityTree {
-//  def apply(name:Any):NamedQuantityTree = NamedQuantityTree(name.toString, Nil, false)
-//}
-
 abstract class NamedQuantity(val quantity : Quantity) extends Quantity(quantity.value, quantity.uom){
+  import NamedQuantity._
   def format(level : Int) : String
   def name : String = format(0)
   override def * (rhs: Double)     = guard(isAlmostOne(rhs), BinOpNamedQuantity("*", this, asNamedQuantity(rhs), quantity * rhs))
@@ -300,6 +280,11 @@ abstract class NamedQuantity(val quantity : Quantity) extends Quantity(quantity.
   private def isAlmostOne(value: Double): Boolean          = (value - 1).abs < MathUtil.EPSILON
   private def isAlmostOne(percentage: Percentage): Boolean = isAlmostOne(percentage.value)
   private def guard(condition: Boolean, fn: => NamedQuantity) = if (condition) this else fn
+
+  override def round(dp:Int) = RoundedNamedQuantity(this, dp)
+}
+
+object NamedQuantity{
   def asNamedQuantity(x : Any) : NamedQuantity = x match {
     case s:NamedQuantity => s
     case quantity:Quantity => {
@@ -316,18 +301,15 @@ abstract class NamedQuantity(val quantity : Quantity) extends Quantity(quantity.
       val uom = if (quantity.isScalar) "" else " " + quantity.uom
       SimpleNamedQuantity(number + uom, quantity)
     }
-//    case d : Double => SimpleNamedQuantity("Number", new Quantity(d))
     case d : Double => SimpleNamedQuantity(d.toString, new Quantity(d))
     case p : Percentage => {
-      val v = p.decimalValue * 100.0
-      SimpleNamedQuantity(v + "%" , new Quantity(v))
+      val v = p.decimalValue
+      SimpleNamedQuantity(p.toShortString, new Quantity(v))
     }
     case other => throw new Exception("Unexpected value " + x)
   }
   private val superscripts = Map('-' → '⁻',
     '0' → '⁰', '1' → '¹', '2' → '²', '3' → '³', '4' → '⁴', '5' → '⁵', '6' → '⁶', '7' → '⁷', '8' → '⁸', '9' → '⁹')
-
-  override def round(dp:Int) = RoundedNamedQuantity(this, dp)
 }
 case class BinOpNamedQuantity(op : String, lhs : NamedQuantity, rhs : NamedQuantity, result : Quantity) extends NamedQuantity(result){
   def format(level : Int) = "(" + lhs.format(level) + " " + op + " " + rhs.format(level) + ")"
@@ -363,61 +345,15 @@ case class RoundedNamedQuantity(orig:NamedQuantity, dp:Int) extends NamedQuantit
   }
 }
 
-
-//case class NamedQuantity(expr: NamedQuantityTree, quantity: Quantity) extends Quantity(quantity.value, quantity.uom) {
-//  override def * (rhs: Double)     = guard(isAlmostOne(rhs), new NamedQuantity(binOp('*', rhs), quantity * rhs))
-//  override def * (rhs: Percentage) = guard(isAlmostOne(rhs), new NamedQuantity(binOp('*', rhs), quantity * rhs))
-//  override def * (rhs: Quantity)   = guard(rhs == Quantity.ONE, new NamedQuantity(binOp('*', rhs), quantity * rhs))
-//  override def / (rhs: Double)     = guard(isAlmostOne(rhs), new NamedQuantity(binOp('/', rhs), quantity / rhs))
-//  override def / (rhs: Quantity)   = guard(rhs == Quantity.ONE, new NamedQuantity(binOp('/', rhs), quantity / rhs))
-//  override def + (rhs: Quantity)   = new NamedQuantity(binOp('+', rhs), quantity + rhs)
-//  override def - (rhs: Quantity)   = new NamedQuantity(binOp('-', rhs), quantity - rhs)
-//  override def unary_-             = new NamedQuantity(NamedQuantityTree("-", List(this), false, useParentheses = false), -quantity)
-//  override def abs                 = new NamedQuantity(NamedQuantityTree("abs", List(this), false), quantity.abs)
-//  override def invert              = new NamedQuantity(NamedQuantityTree("/", List(NamedQuantity(NamedQuantityTree("1"), new Quantity(1.0)), this), infix = true, spacesAroundOperator = false), quantity.invert)
-//  override def negate              = unary_-
-//
-//  override def pq = new PivotQuantity(Map(uom -> value), Map[String, List[StackTrace]]()) {
-//    override def explanation = Some(expr.format)
-//  }
-//
-//  def rename(name : String) : NamedQuantity = NamedQuantity(NamedQuantityTree(name, List(this), false), quantity)
-//  def withShortName(shortName : String) = NamedQuantity(expr.withShortName(shortName), quantity)
-//
-//  private def binOp(op: Char, rhs: Any) : NamedQuantityTree = {
-//    val rhsVal : NamedQuantity = rhs match {
-//      case s:NamedQuantity => s
-//      case quantity:Quantity => {
-//        val number = {
-//          val string = quantity.value.toString
-//          val ePos = string.indexOf('E')
-//          if (ePos > 0) {
-//            string.substring(0, ePos) + '×' + "10" + string.substring(ePos + 1).map(superscripts)
-//          } else {
-//            string
-//          }
-//        }
-//
-//        val uom = if (quantity.isScalar) "" else " " + quantity.uom
-//        NamedQuantity(NamedQuantityTree(number + uom), quantity)
-//      }
-//      case other => throw new Exception("Unexpected value " + rhs) //NamedQuantityTree(rhs.toString.replace("0.00", "whoops"))
-//    }
-//
-//    NamedQuantityTree(op.toString, List(this, rhsVal), true)
-//  }
-//
-//  private val superscripts = Map('-' → '⁻',
-//    '0' → '⁰', '1' → '¹', '2' → '²', '3' → '³', '4' → '⁴', '5' → '⁵', '6' → '⁶', '7' → '⁷', '8' → '⁸', '9' → '⁹')
-//
-//  private def isAlmostOne(value: Double): Boolean          = (value - 1).abs < MathUtil.EPSILON
-//  private def isAlmostOne(percentage: Percentage): Boolean = isAlmostOne(percentage.value)
-//  private def guard(condition: Boolean, fn: => NamedQuantity) = if (condition) this else fn
-//}
-//
-//object NamedQuantity{
-//  def apply(quantity : Quantity, shortName : String) : NamedQuantity = quantity match {
-//    case nq : NamedQuantity => nq.withShortName(shortName)
-//    case _ => NamedQuantity(NamedQuantityTree(shortName), quantity)
-//  }
-//}
+case class PercentageNamedQuantity(override val name : String, p : Percentage) extends NamedQuantity(NamedQuantity.asNamedQuantity(p)){
+  def format(level:Int) = {
+    if (level == 0){
+      name
+    } else {
+      quantity match {
+        case nq : NamedQuantity => nq.format(level - 1)
+        case _ => quantity.toString
+      }
+    }
+  }
+}
