@@ -25,7 +25,7 @@ object FileUtils {
       try {
         val fStream = new FileInputStream(new File(fileUrl.toURI))
         var inStream = if (compress) {
-          new BufferedInputStream(new GZIPInputStream(fStream), bufferSize)
+          new BufferedInputStream(new GZIPInputStream(fStream, bufferSize), bufferSize)
         }
         else {
           new BufferedInputStream(fStream)

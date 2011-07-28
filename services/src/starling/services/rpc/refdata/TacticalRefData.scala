@@ -16,6 +16,7 @@ import starling.services.rpc.valuation.ValuationService
 import starling.services.rpc.FileUtils
 import starling.titan.{TitanEdmTradeService, TitanServices}
 import com.trafigura.tradecapture.internal.refinedmetal.{Counterparty, Metal, Market}
+import com.trafigura.timer.Timer
 
 
 /**
@@ -77,9 +78,10 @@ case class FileMockedTitanServices() extends TitanServices {
   def allTacticalRefDataFuturesMarkets() = Nil
   def allTacticalRefDataExchanges() = Nil
 
-  val loadedMarkets = loadJsonValuesFromFileUrl(marketsFile).map(s => Metal.fromJson(new JSONObject(s)).asInstanceOf[Metal])
-  val loadedExchanges = loadJsonValuesFromFileUrl(exchangesFile).map(s => Market.fromJson(new JSONObject(s)).asInstanceOf[Market])
-  val loadedTrades = loadJsonValuesFromFileUrl(tradesFile, true).map(s => EDMPhysicalTrade.fromJson(new JSONObject(s)).asInstanceOf[EDMPhysicalTrade])
+  import Timer._
+  val loadedMarkets = time(loadJsonValuesFromFileUrl(marketsFile).map(s => Metal.fromJson(new JSONObject(s)).asInstanceOf[Metal]), t => println("took %dms to get markets".format(t)))
+  val loadedExchanges = time(loadJsonValuesFromFileUrl(exchangesFile).map(s => Market.fromJson(new JSONObject(s)).asInstanceOf[Market]), t => println("took %dms to get exchanges".format(t)))
+  val loadedTrades = time(loadJsonValuesFromFileUrl(tradesFile, true).map(s => EDMPhysicalTrade.fromJson(new JSONObject(s)).asInstanceOf[EDMPhysicalTrade]), t => println("took %dms to get trades".format(t)))
   var tradeMap = loadedTrades.map(t => t.oid -> t).toMap
 
   def updateTrade(trade : EDMPhysicalTrade) {
@@ -98,8 +100,7 @@ case class FileMockedTitanServicesDataFileGenerator(titanEdmTradeService : Titan
 
 //  valuations.tradeResults.foreach(println)
 
-  val (_, worked) = valuations.tradeResults.values.partition({ case Right(_) => true; case Left(_) => false })
-
+  val (worked, _) = valuations.tradeResults.values.partition(_ isRight)
   val tradeIds = valuations.tradeResults.collect{ case (id, Right(_)) => id }.toList
   //val trades = valuationService.getTrades(tradeIds)
   val trades = titanEdmTradeService.titanGetEdmTradesService.getAll().results.map(_.trade).filter(_ != null)

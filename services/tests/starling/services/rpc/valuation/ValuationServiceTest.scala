@@ -1,6 +1,5 @@
 package starling.services.rpc.valuation
 
-import org.testng.annotations.Test
 import starling.market.{MarketProvider, TestMarketLookup}
 import starling.services.rpc.refdata.FileMockedTitanServices
 import starling.services.rabbit.MockTitanRabbitEventServices
@@ -9,11 +8,12 @@ import org.codehaus.jettison.json.JSONArray
 import com.trafigura.events.{DemultiplexerClient, EventFactory, PayloadFactory}
 import com.trafigura.shared.events.Event._
 import org.testng.Assert._
-import starling.utils.{StarlingTest, Log}
 import com.trafigura.edm.trades.{PhysicalTrade => EDMPhysicalTrade}
 import com.trafigura.shared.events._
 import starling.services.rpc.logistics.FileMockedTitanLogisticsServices
 import com.trafigura.edm.logistics.inventory.EDMInventoryItem
+import starling.utils.{Stopwatch, StarlingTest, Log}
+import org.testng.annotations.{BeforeClass, Test}
 
 
 /**
@@ -21,6 +21,30 @@ import com.trafigura.edm.logistics.inventory.EDMInventoryItem
  */
 class ValuationServiceTest extends StarlingTest {
 
+  var testMarketLookup : TestMarketLookup = null
+  var mockTitanServices : FileMockedTitanServices = null
+  var mockTitanTradeService : DefaultTitanTradeService = null
+  var mockTitanTradeCache : TitanTradeServiceBasedTradeCache = null
+  var mockTitanLogisticsServices : FileMockedTitanLogisticsServices = null
+  var mockRabbitEventServices : MockTitanRabbitEventServices = null
+  var mockInventoryCache : TitanLogisticsServiceBasedInventoryCache = null
+  
+  @BeforeClass
+  def initMocks() {
+    val stopwatch = new Stopwatch()
+    println("Starting valuation service tests - initialisation of mock data...")
+
+    testMarketLookup = new TestMarketLookup()
+    MarketProvider.registerNewImplForTesting(Some(testMarketLookup))
+    mockTitanServices = new FileMockedTitanServices()
+    mockTitanTradeService = new DefaultTitanTradeService(mockTitanServices)
+    mockTitanTradeCache = new TitanTradeServiceBasedTradeCache(mockTitanTradeService)
+    mockTitanLogisticsServices = FileMockedTitanLogisticsServices()
+    mockRabbitEventServices = new MockTitanRabbitEventServices()
+    mockInventoryCache = new TitanLogisticsServiceBasedInventoryCache(mockTitanLogisticsServices)
+    println("Took " + stopwatch)
+  }
+  
   /**
    * valuation mock event handler for valuation service published events
    */
@@ -54,25 +78,16 @@ class ValuationServiceTest extends StarlingTest {
     }
   }
 
-  @Test
+  @Test(enabled=true, groups = Array("ValuationService"))
   def testValuationServiceValuationUpdatedEvents() {
 
-    Log.info("testValuationServiceValuationUpdatedEvents starting")
+    Log.info("testValuationServiceValuationUpdatedEvents starting...")
+
+    val sw = new Stopwatch()
 
     var updatedValuationIdList : List[String] = Nil
     val handler = (ids : List[String]) => updatedValuationIdList = ids
-
-    println("Starting valuation service tests - initialisation of mocks")
-
-    val testMarketLookup = new TestMarketLookup()
-    MarketProvider.registerNewImplForTesting(Some(testMarketLookup))
-    val mockTitanServices = new FileMockedTitanServices()
-    val mockTitanTradeService = new DefaultTitanTradeService(mockTitanServices)
-    val mockTitanTradeCache = new TitanTradeServiceBasedTradeCache(mockTitanTradeService)
-    val mockTitanLogisticsServices = FileMockedTitanLogisticsServices()
-    val mockRabbitEventServices = new MockTitanRabbitEventServices()
-    val mockInventoryCache = new TitanLogisticsServiceBasedInventoryCache(mockTitanLogisticsServices)
-
+    
     val vs = new ValuationService(
       new MockEnvironmentProvider, mockTitanTradeCache, mockTitanServices, mockTitanLogisticsServices, mockRabbitEventServices, mockInventoryCache)
 
@@ -130,6 +145,8 @@ class ValuationServiceTest extends StarlingTest {
     Log.info("updatedTradeValuationList " + updatedValuationIdList.mkString(", "))
 
     assertTrue(updatedValuationIdList.contains(updatedTrade.oid.toString), "Valuation service failed to raise valuation changed events for the changed trades")
+
+    Log.info("completed test in " + sw)
   }
 
 
@@ -137,27 +154,18 @@ class ValuationServiceTest extends StarlingTest {
    * very basic tests to check we can value some assignments
    *   will need improvements and to also test events
    */
-  @Test
+  @Test(enabled=true, groups = Array("ValuationService"))
   def testValuationServiceValueAssignments {
     
-    Log.info("testValuationServiceValueAssignments starting")
+    Log.info("testValuationServiceValueAssignments starting...")
+
+    val sw = new Stopwatch()
 
     var updatedValuationIdList : List[String] = Nil
     val handler = (ids : List[String]) => {
       println("handler received " + ids.mkString(", "))
       updatedValuationIdList = ids
     }
-
-    println("Starting valuation service assignment tests - initialisation of mocks")
-
-    val testMarketLookup = new TestMarketLookup()
-    MarketProvider.registerNewImplForTesting(Some(testMarketLookup))
-    val mockTitanServices = new FileMockedTitanServices()
-    val mockTitanTradeService = new DefaultTitanTradeService(mockTitanServices)
-    val mockTitanTradeCache = new TitanTradeServiceBasedTradeCache(mockTitanTradeService)
-    val mockTitanLogisticsServices = FileMockedTitanLogisticsServices()
-    val mockRabbitEventServices = new MockTitanRabbitEventServices()
-    val mockInventoryCache = new TitanLogisticsServiceBasedInventoryCache(mockTitanLogisticsServices)
 
     //val salesAssignments = mockTitanLogisticsServices.assignmentService.service.getAllSalesAssignments()
     val assignments = mockTitanLogisticsServices.assignmentService.service.getAllSalesAssignments()
@@ -228,6 +236,8 @@ class ValuationServiceTest extends StarlingTest {
     println("updatedValuationList " + updatedValuationIdList.mkString(", "))
 
     assertTrue(updatedValuationIdList.contains(updatedInventory.oid.contents.toString), "Valuation service failed to raise valuation changed events for the changed assignments")
+
+    Log.info("completed test in " + sw)
   }
 
 
