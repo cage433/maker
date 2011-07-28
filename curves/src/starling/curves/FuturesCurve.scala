@@ -7,6 +7,8 @@ import starling.quantity.Quantity
 import starling.utils.Log
 import starling.utils.cache.CacheFactory
 import starling.utils.ImplicitConversions._
+import collection.immutable.Map
+import starling.pivot.PivotQuantity
 
 
 trait HasInterpolation {
@@ -76,23 +78,23 @@ case class ForwardCurveKey(market : CommodityMarket) extends NonHistoricalCurveK
     if (priceData.isEmpty) {
       throw new MissingMarketDataException("No market data for " + market + " on " + marketDayAndTime)
     } else {
-      val prices = market match {
+      val prices = (market match {
         case f:FuturesMarket if f.exchange == FuturesExchangeFactory.BALTIC => {
           // Convert Freight prices to monthly
-          FreightCurve.calcMonthlyPricesFromArbitraryPeriods(priceData.prices).castKeys[DateRange]
+          FreightCurve.calcMonthlyPricesFromArbitraryPeriods(priceData.prices)
         }
         case brent : IsBrentMonth => {
           val monthNumber = brent.month.month
           priceData.prices.find { case (dr, p) => dr.firstDay.month == monthNumber }.map{case (dr, p) => dr.firstDay → p}.toMap
         }
         case _ => priceData.prices
-      }
+      }).castKeys[DateRange]
 		  ForwardCurve(market, marketDayAndTime, Map() ++ (for((dateRange, price) <- prices if (dateRange.lastDay >= marketDayAndTime.day)) yield {
-        if (price.value < 0) {
+        if (price.doubleValue.get < 0) {
           Log.warn("Negative price found for " + market + " with " + dateRange +  " on " + marketDayAndTime + ". Replacing with its absolute value")
-          dateRange → (-price.value)
+          dateRange → (-price.quantityValue.get)
         } else {
-          dateRange → price.value
+          dateRange → price.quantityValue.get
         }
       }))
     }

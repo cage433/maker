@@ -83,13 +83,13 @@ class CurveViewerInputsPivotTableDataSource(inputs:Set[(TimedMarketDataKey, Mark
               timeOfDayField -> observationPoint.timeOfDay) )
       }
       case (TimedMarketDataKey(observationPoint, PriceDataKey(market:FuturesMarket)), priceData:PriceData) => {
-        priceData.prices.map { case (period, quantity) => {
+        priceData.prices.map { case (period, pivotQuantity) => {
           Map(marketField -> market.name,
               marketTenor.field -> market.tenor.toString,
               exchange.field -> market.exchange.name,
               commodity.field -> market.commodity.name,
               periodField -> period,
-              inputField -> quantity.pq,
+              inputField -> pivotQuantity,
               timeOfDayField -> observationPoint.timeOfDay)
         } }
       }

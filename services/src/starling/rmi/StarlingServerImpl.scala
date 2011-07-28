@@ -398,15 +398,12 @@ class StarlingServerImpl(
 
   def readAllMarketData(marketDataIdentifier:MarketDataPageIdentifier, marketDataTypeLabel:Option[MarketDataTypeLabel], edits:PivotEdits, pivotFieldParams:PivotFieldParams):PivotData = {
     val dataSource = marketDataSource(marketDataIdentifier, marketDataTypeLabel, edits)
-    //dataSource.editable.get.withEdits()
     PivotTableModel.createPivotData(dataSource, pivotFieldParams)
   }
 
   def saveMarketData(marketDataIdentifier:MarketDataPageIdentifier, marketDataTypeLabel:Option[MarketDataTypeLabel], pivotEdits:PivotEdits) = {
     val dataSource = marketDataSource(marketDataIdentifier, marketDataTypeLabel, PivotEdits.Null)
-    val lookup = dataSource.fieldDetailsGroups.flatMap(_.fieldMap).toMap
-    val fixedUpPivotEdits = pivotEdits.fixValues( (field,value) => lookup(field).fixEditedValue(value))
-    dataSource.editable.get.save(fixedUpPivotEdits)
+    dataSource.editable.get.save(pivotEdits)
   }
 
   def snapshot(marketDataSelection:MarketDataSelection, observationDay:Day): Option[SnapshotIDLabel] = {

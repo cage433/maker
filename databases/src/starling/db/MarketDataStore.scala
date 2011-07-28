@@ -30,7 +30,7 @@ case class RelativeImpliedVolData(vols: Map[DateRange,Map[Double,Percentage]]) {
       case (period, row) => {
         // lame hack - why, trinity? WHY???
         val exerciseDay = period.firstDay - 2
-        val strike: Double = prices.prices(exerciseDay).value.value
+        val strike: Double = prices.prices(exerciseDay).quantityValue.get.value
         row.map((tuple: (Double, Percentage)) => {
           (ImpliedVolEntryKey(period, strike + tuple._1, exerciseDay), tuple._2)
         })

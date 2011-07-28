@@ -8,7 +8,7 @@ import cern.colt.matrix.{DoubleFactory1D, DoubleFactory2D, DoubleMatrix1D => Vec
 import collection.immutable.List
 import cern.colt.matrix.linalg.{LUDecomposition, Algebra}
 import starling.utils.ImplicitConversions._
-import starling.marketdata.PriceValue
+import starling.pivot.PivotQuantity
 
 
 case class Months(months : List[Month]){
@@ -70,13 +70,13 @@ class ProblemBuilder(dim : Int){
 
 object FreightCurve{
   // Create a reasonable monthly price map from a mixture of months, quarters and years. Note that discounting is ignored.
-  def calcMonthlyPricesFromArbitraryPeriods(rawPrices: Map[DateRange, PriceValue]): Map[Month, PriceValue] = if (rawPrices.isEmpty) {
+  def calcMonthlyPricesFromArbitraryPeriods(rawPrices: Map[DateRange, PivotQuantity]): Map[Month, PivotQuantity] = if (rawPrices.isEmpty) {
     Map()
   } else {
-    val priceUOM = rawPrices.head._2.value.uom
+    val priceUOM = rawPrices.head._2.quantityValue.get.uom
 
-    calcMonthlyPricesFromArbitraryPeriodsWithUnusedPeriodList(rawPrices.mapValues(_.value.value))
-      ._1.mapValues(value => PriceValue(Quantity(value, priceUOM)))
+    calcMonthlyPricesFromArbitraryPeriodsWithUnusedPeriodList(rawPrices.mapValues(_.quantityValue.get.value))
+      ._1.mapValues(value => Quantity(value, priceUOM).pq)
   }
 
   // For unit tests only. Gives the periods that were ignored through arbitrage
