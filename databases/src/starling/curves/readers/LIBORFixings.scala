@@ -71,7 +71,6 @@ case class LIBORFixing(value: Quantity, fixingDay: Day) {
     }
   }
 
-  def currency_=(currency: UOM) = copy(value.copy(uom = currency))
   def supportsOvernight = overnightCalendars.contains(currency)
   def isBusinessDay = fixingDay.isBusinessDay(combinedCalendar)
   def format(format: DecimalFormat) = value.format(format)

@@ -4,6 +4,7 @@ import org.scalatest.matchers.ShouldMatchers
 import org.scalatest.testng.TestNGSuite
 import org.testng.annotations.Test
 import starling.utils.ImplicitConversions._
+import org.testng.Assert._
 
 class NamedQuantityTests extends TestNGSuite with ShouldMatchers {
   val abc = new Quantity(123.45)
@@ -54,4 +55,39 @@ class NamedQuantityTests extends TestNGSuite with ShouldMatchers {
     (namedAbc + new Quantity(0.000002)).format(0) should be === "(%s + %s)" % (namedAbc.format(0), "2.0\u00D710\u207B\u2076")
     (namedAbc * new Quantity(0.000002, UOM.USD)).format(0) should be === "(%s * %s)" % (namedAbc.format(0), "2.0\u00D710\u207B\u2076 USD")
   }
+
+  @Test
+  def testSimpleNamedQuantityLevels() {
+    val q1 = SimpleNamedQuantity("1", Quantity(1, UOM.USD))
+    val q2 = SimpleNamedQuantity("2", q1)
+    assertEquals(q2.name, "2")
+    assertEquals(q2.format(0), "2")
+    assertEquals(q2.format(1), "1")
+    assertEquals(q2.format(2), "1.00 USD")
+  }
+
+  @Test
+  def testBinOpNamedQuantityLevels() {
+    val q1 = SimpleNamedQuantity("one", Quantity(1, UOM.USD))
+    val q2 = SimpleNamedQuantity("two", Quantity(2, UOM.USD))
+    val mult = q1 * q2
+    val expectMult = BinOpNamedQuantity("*", q1, q2, q1 * q2)
+    assertEquals(mult, expectMult)
+
+    assertEquals(mult.name, "(one * two)")
+    assertEquals(mult.format(1), "(1.00 USD * 2.00 USD)")
+    assertEquals(mult.format(2), "(1.00 USD * 2.00 USD)")
+  }
+
+  @Test
+  def testFunctionNamedQuantity() {
+    val q1 = SimpleNamedQuantity("one", Quantity(1, UOM.USD))
+    val q2 = SimpleNamedQuantity("two", Quantity(2, UOM.USD))
+    val result = FunctionNamedQuantity("SUM", List(q1, q2), q1 + q2)
+    assertEquals(result.name, "SUM(one, two)")
+    assertEquals(result.format(1), "SUM(1.00 USD, 2.00 USD)")
+    assertEquals(result.format(2), "SUM(1.00 USD, 2.00 USD)")
+  }
+
+
 }

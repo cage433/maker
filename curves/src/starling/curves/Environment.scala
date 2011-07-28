@@ -16,7 +16,7 @@ import starling.utils.{MathUtil, Log}
 import scala.math._
 import starling.utils.cache.{SimpleCache, CacheFactory}
 import stress.CommodityPriceStress
-import starling.quantity.{Conversions, Percentage, Quantity, UOM}
+import starling.quantity._
 
 /**
  * Throw this if a curve object is incapable of providing a value
@@ -53,15 +53,20 @@ class MissingForwardFXException(val ccy: UOM, val forwardDay: Day, msg : => Stri
  * 	@see AtomicEnvironment
  */
 case class Environment(
-  instrumentLevelEnv : InstrumentLevelEnvironment,
-  environmentParameters : EnvironmentParameters = DefaultValuationParameters
+  instrumentLevelEnv_ : InstrumentLevelEnvironment,
+  environmentParameters : EnvironmentParameters = DefaultValuationParameters,
+  namingPrefix : Option[String] = None
 )
 {
+  val instrumentLevelEnv = namingPrefix match {
+    case None => instrumentLevelEnv_
+    case Some(prefix) => instrumentLevelEnv_.withNaming(prefix)
+  }
+  def withNaming(prefix : String = "") = copy(namingPrefix = Some(prefix))
   // Parameterless constructor for ThreadSafeCachingProxy
   def this() = this(null)
 
   def atomicEnv = instrumentLevelEnv.atomicEnv
-  def named(prefix : String = "") = Environment(NamingAtomicEnvironment(atomicEnv, prefix))
 
   // cache for optimization of greek calculations. Will cache shifted environments, forward state envs and mtms
   // Level of indirection so that InstrumentLevelPerturbedEnvironment can avoid using the same cache as the
@@ -74,7 +79,7 @@ case class Environment(
   def marketDay : DayAndTime = instrumentLevelEnv.marketDay
 
   def shiftsCanBeIgnored = atomicEnv.shiftsCanBeIgnored
-  def setShiftsCanBeIgnored(canBeIgnored : Boolean) : Environment = copy(instrumentLevelEnv = instrumentLevelEnv.setShiftsCanBeIgnored(canBeIgnored))
+  def setShiftsCanBeIgnored(canBeIgnored : Boolean) : Environment = copy(instrumentLevelEnv_ = instrumentLevelEnv.setShiftsCanBeIgnored(canBeIgnored))
 
   /**
    * Used by some of the tests, it means that averagePrice doesn't use the rounding rules of the market
@@ -137,7 +142,10 @@ case class Environment(
     (index, averagingPeriod),
     (tuple: (Index, DateRange)) => {
       val observationDays = index.observationDays(averagingPeriod)
-      val price = Quantity.average(observationDays.map(fixingOrForwardPrice(index, _)))
+      val price = Quantity.average(observationDays.map(fixingOrForwardPrice(index, _))) match {
+        case nq : NamedQuantity => SimpleNamedQuantity("Average(" + index + "." + averagingPeriod + ")", nq)
+        case q : Quantity => q
+      }
       rounding match {
         case Some(dp) if environmentParameters.swapRoundingOK => {
           price.round(dp)
@@ -281,7 +289,7 @@ case class Environment(
    * Perturbations
    */
   private def applyAtomicShift(fn : AtomicEnvironment => AtomicEnvironment) = {
-    val env = copy(instrumentLevelEnv = instrumentLevelEnv.shiftAtomicEnv(fn))
+    val env = copy(instrumentLevelEnv_ = instrumentLevelEnv.shiftAtomicEnv(fn))
     env
   }
 
@@ -425,22 +433,22 @@ case class Environment(
 
   def shiftInterpolatedVol(diff : EnvironmentDifferentiable  with VolKey, dV : Quantity) : Environment = {
     val newInstrumentLevelEnvironment = ShiftInstrumentLevelVol(instrumentLevelEnv, diff, dV)
-    val newEnv = copy(instrumentLevelEnv = newInstrumentLevelEnvironment)
+    val newEnv = copy(instrumentLevelEnv_ = newInstrumentLevelEnvironment)
     newEnv
   }
 
   def shiftIndexForwardPrice(index : SingleIndex, period : DateRange, dP : Quantity) = {
-    copy(instrumentLevelEnv = ShiftSwapPrice(instrumentLevelEnv, index, period, dP))
+    copy(instrumentLevelEnv_ = ShiftSwapPrice(instrumentLevelEnv, index, period, dP))
   }
 
   def parallelShiftInterpolatedVols(curveKey : CurveKey, dV : Quantity) : Environment = {
     val newInstrumentLevelEnvironment = ParallelShiftInstrumentLevelVol(instrumentLevelEnv, curveKey, dV)
 
-    copy(instrumentLevelEnv = newInstrumentLevelEnvironment)
+    copy(instrumentLevelEnv_ = newInstrumentLevelEnvironment)
   }
 
   def shiftMarketDayAtInstrumentLevel(newMarketDay : DayAndTime) : Environment = {
-    copy(instrumentLevelEnv = ShiftMarketDayAtInstrumentLevel(instrumentLevelEnv, newMarketDay))
+    copy(instrumentLevelEnv_ = ShiftMarketDayAtInstrumentLevel(instrumentLevelEnv, newMarketDay))
   }
 
   def calc_dP(market : CommodityMarket, period : DateRange): Quantity = {

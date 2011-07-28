@@ -39,6 +39,7 @@ trait InstrumentLevelEnvironment extends AtomicEnvironmentHelper {
   def copy(newAtomicEnv : AtomicEnvironment) : InstrumentLevelEnvironment
   def shiftsCanBeIgnored  : Boolean
   def setShiftsCanBeIgnored(canBeIgnored : Boolean) : InstrumentLevelEnvironment
+  def withNaming(prefix : String) = copy(new NamingAtomicEnvironment(atomicEnv(), prefix))
 }
 
 class DefaultInstrumentLevelEnvironment(underlyingAtomicEnv : AtomicEnvironment)  extends InstrumentLevelEnvironment {

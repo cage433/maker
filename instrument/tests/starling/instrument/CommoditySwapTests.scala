@@ -225,7 +225,7 @@ class CommoditySwapTests extends JonTestEnv {
   }
 
   @Test
-  def testExplanation{
+  def testExplanationOfSwap{
     val marketDayAndTime = Day(2009, 9, 15).startOfDay
     val forwardPrice = Quantity(200, USD / MT)
     val historicPrice = Quantity(100, USD / MT)
@@ -253,9 +253,41 @@ class CommoditySwapTests extends JonTestEnv {
       StripPeriod(sep09, oct09),
       false
     )
-    val explanation = swapSeptoOct09.explanation(env)
-    assertEquals("bla", explanation.format(0))
+    val swapExplanation = swapSeptoOct09.explanation(env)
+    assertEquals(swapExplanation.name, "Sum(SEP 2009 value, OCT 2009 value)")
+    assertEquals(swapExplanation.format(1), "Sum((((F_Ave - K) * V) * disc), (((F_Ave - K) * V) * disc))")
+
+    val sep09Explanation = swapSeptoOct09.subPeriodSwaps(0).explanation(env)
+    assertEquals(sep09Explanation.name, "(((F_Ave - K) * V) * disc)")
+    assertEquals(sep09Explanation.format(1), "(((Round(Average(Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus).SEPTEMBER 2009), 3) - 200.00 USD/MT) * 100.00 MT) * USD.07Oct2009)")
+
+    val ex = "(((Round(Average(FixingsHistoryKey(Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus)).01Sep2009, " +
+            "FixingsHistoryKey(Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus)).02Sep2009, " +
+            "FixingsHistoryKey(Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus)).03Sep2009, " +
+            "FixingsHistoryKey(Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus)).04Sep2009, " +
+            "FixingsHistoryKey(Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus)).07Sep2009, " +
+            "FixingsHistoryKey(Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus)).08Sep2009, " +
+            "FixingsHistoryKey(Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus)).09Sep2009, " +
+            "FixingsHistoryKey(Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus)).10Sep2009, " +
+            "FixingsHistoryKey(Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus)).11Sep2009, " +
+            "FixingsHistoryKey(Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus)).14Sep2009, " +
+            "Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus).15Sep2009, Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus).16Sep2009, " +
+            "Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus).17Sep2009, Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus).18Sep2009, " +
+            "Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus).21Sep2009, Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus).22Sep2009, " +
+            "Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus).23Sep2009, Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus).24Sep2009, " +
+            "Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus).25Sep2009, Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus).28Sep2009, " +
+            "Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus).29Sep2009, Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus).30Sep2009), 3) - 200.00 USD/MT) * 100.00 MT) * 1.00)"
+
+    val ex1 = "(((Round(Average(100.00 USD/MT, 100.00 USD/MT, 100.00 USD/MT, 100.00 USD/MT, 100.00 USD/MT, " +
+            "100.00 USD/MT, 100.00 USD/MT, 100.00 USD/MT, 100.00 USD/MT, 100.00 USD/MT, 200.00 USD/MT, 200.00 USD/MT, " +
+            "200.00 USD/MT, 200.00 USD/MT, 200.00 USD/MT, 200.00 USD/MT, 200.00 USD/MT, 200.00 USD/MT, 200.00 USD/MT, " +
+            "200.00 USD/MT, 200.00 USD/MT, 200.00 USD/MT), 3) - 200.00 USD/MT) * 100.00 MT) * 1.00)"
+
+    assertEquals(sep09Explanation.format(2), ex)
+    assertEquals(sep09Explanation.format(3), ex1)
+    assertEquals(sep09Explanation.format(4), ex1)
   }
+
   @Test
   def testC3651761 {
     val marketDayAndTime = Day(2011, 3, 16).startOfDay

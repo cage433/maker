@@ -18,8 +18,8 @@ case class Future(market: FuturesMarket, delivery: DateRange, strike: Quantity, 
   require(market.convert(volume, market.uom).isDefined, "Invalid volume UOM, can't convert to market uom: " + volume)
 
   def explanation(env : Environment) : NamedQuantity = {
-    val namedEnv = Environment(new NamingAtomicEnvironment(env.atomicEnv, ""))
-    val F = SimpleNamedQuantity("F", namedEnv.forwardPrice(market, delivery))
+    val namedEnv = env.withNaming()
+    val F = SimpleNamedQuantity("F", convertPrice(namedEnv, namedEnv.forwardPrice(market, delivery)))
     (F - strike.named("K")) * volume.named("V")
   }
   

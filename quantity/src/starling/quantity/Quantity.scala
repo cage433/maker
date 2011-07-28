@@ -72,7 +72,13 @@ object Quantity {
     case Nil => throw new Exception("Can't get average of empty sequence")
     case _ => {
       val (sum, uom) = sumAsBigDecimal(quantities)
-      Quantity((sum(mc) / quantities.size).toDouble, uom)
+      val result = Quantity((sum(mc) / quantities.size).toDouble, uom)
+
+      if (quantities.forall(_.isInstanceOf[NamedQuantity])) {
+        FunctionNamedQuantity("Average", quantities.asInstanceOf[List[NamedQuantity]], result)
+      } else {
+        result
+      }
     }
   }
 
@@ -277,8 +283,9 @@ class Quantity(val value : Double, val uom : UOM) extends Ordered[Quantity] with
 //  def apply(name:Any):NamedQuantityTree = NamedQuantityTree(name.toString, Nil, false)
 //}
 
-abstract class NamedQuantity(val name : String, val quantity : Quantity) extends Quantity(quantity.value, quantity.uom){
+abstract class NamedQuantity(val quantity : Quantity) extends Quantity(quantity.value, quantity.uom){
   def format(level : Int) : String
+  def name : String = format(0)
   override def * (rhs: Double)     = guard(isAlmostOne(rhs), BinOpNamedQuantity("*", this, asNamedQuantity(rhs), quantity * rhs))
   override def * (rhs: Percentage) = guard(isAlmostOne(rhs), BinOpNamedQuantity("*", this, asNamedQuantity(rhs), quantity * rhs))
   override def * (rhs: Quantity)   = guard(rhs == Quantity.ONE, BinOpNamedQuantity("*", this, asNamedQuantity(rhs), quantity * rhs))
@@ -319,47 +326,25 @@ abstract class NamedQuantity(val name : String, val quantity : Quantity) extends
   }
   private val superscripts = Map('-' → '⁻',
     '0' → '⁰', '1' → '¹', '2' → '²', '3' → '³', '4' → '⁴', '5' → '⁵', '6' → '⁶', '7' → '⁷', '8' → '⁸', '9' → '⁹')
+
+  override def round(dp:Int) = RoundedNamedQuantity(this, dp)
 }
-case class BinOpNamedQuantity(op : String, lhs : NamedQuantity, rhs : NamedQuantity, result : Quantity) extends NamedQuantity("(" + lhs.name + " " + op + " " + rhs.name + ")", result){
-  def format(level : Int) = {
-    if (level == 0){
-      name
-    } else {
-      "(" + lhs.format(level - 1) + " " + op + " " + rhs.format(level - 1) + ")"
-    }
-  }
+case class BinOpNamedQuantity(op : String, lhs : NamedQuantity, rhs : NamedQuantity, result : Quantity) extends NamedQuantity(result){
+  def format(level : Int) = "(" + lhs.format(level) + " " + op + " " + rhs.format(level) + ")"
 }
-case class FunctionNamedQuantity(functionName : String, parameters : List[NamedQuantity], result : Quantity) extends NamedQuantity(functionName + parameters.map(_.name).mkString("(", ", ", ")")
-, result){
-  def format(level:Int) = {
-    if (level == 0){
-      name
-    } else {
-      functionName + parameters.map(_.format(level - 1)).mkString("(", ", ", ")")
-    }
-  }
+case class FunctionNamedQuantity(functionName : String, parameters : List[NamedQuantity], result : Quantity)
+        extends NamedQuantity(result) {
+  def format(level:Int) = functionName + parameters.map(_.format(level)).mkString("(", ", ", ")")
 }
 
-case class InvertNamedQuantity(qty : NamedQuantity) extends NamedQuantity("(1/" + qty.name + ")", qty.quantity.invert){
-  def format(level:Int) = {
-    if (level == 0){
-      name
-    } else {
-      "(1/" + qty.format(level - 1) + ")"
-    }
-  }
+case class InvertNamedQuantity(qty : NamedQuantity) extends NamedQuantity(qty.quantity.invert){
+  def format(level:Int) = "(1/" + qty.format(level) + ")"
 }
-case class NegateNamedQuantity(qty : NamedQuantity) extends NamedQuantity("-" + qty.name, qty.quantity.negate){
-  def format(level:Int) = {
-    if (level == 0){
-      name
-    } else {
-      "-" + qty.format(level - 1)
-    }
-  }
+case class NegateNamedQuantity(qty : NamedQuantity) extends NamedQuantity(qty.quantity.negate){
+  def format(level:Int) = "-" + qty.format(level)
 }
 
-case class SimpleNamedQuantity(override val name : String, qty : Quantity) extends NamedQuantity(name, qty){
+case class SimpleNamedQuantity(override val name : String, qty : Quantity) extends NamedQuantity(qty){
   def format(level:Int) = {
     if (level == 0){
       name
@@ -369,6 +354,12 @@ case class SimpleNamedQuantity(override val name : String, qty : Quantity) exten
         case _ => qty.toString
       }
     }
+  }
+}
+
+case class RoundedNamedQuantity(orig:NamedQuantity, dp:Int) extends NamedQuantity(orig.quantity.round(dp)) {
+  def format(level:Int) = {
+    "Round(" + orig.format(level) + ", " + dp + ")"
   }
 }
 

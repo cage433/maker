@@ -34,15 +34,15 @@ case class CommoditySwap(
   require(index.convert(_volume, strike.denominatorUOM).isDefined, "Couldn't convert volume into strike uom: " + (_volume, strike) + ", " + index)
   require(pricingRule.isValid(index.calendars), "Invalid pricing rule for " + index)
 
-  private def subPeriodSwaps : List[SingleCommoditySwap] = {
+  def subPeriodSwaps : List[SingleCommoditySwap] = {
     dateRanges.map(SingleCommoditySwap(index, strike, volume, _, cleared, pricingRule))
   }
 
   def explanation(env : Environment) : NamedQuantity = {
-    val namedEnv = env.named()
+    val namedEnv = env.withNaming()
     val subExplanations : List[NamedQuantity] = subPeriodSwaps.map{swap =>
       val swapExp = swap.explanation(namedEnv)
-      SimpleNamedQuantity(swap.period + " value", swapExp)
+      SimpleNamedQuantity(swap.period.toShortString + " value", swapExp)
     }
     FunctionNamedQuantity("Sum", subExplanations, subExplanations.map(_.quantity).sum)
   }
@@ -92,7 +92,7 @@ case class SingleCommoditySwap(
   extends SingleSwap(index, strike, volume, period, cleared, pricingRule) {
 
   def explanation(env : Environment) : NamedQuantity = {
-    val namedEnv = env.named()
+    val namedEnv = env.withNaming()
     val price = SimpleNamedQuantity("F_Ave", namedEnv.averagePrice(index, averagingPeriod, pricingRule, priceUOM, priceRounding))
     val discount = SimpleNamedQuantity("disc", namedEnv.discount(valuationCCY, settlementDay))
     (price - strike.named("K")) * volume.named("V") * discount
