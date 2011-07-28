@@ -40,7 +40,7 @@ class FXForwardTests extends StarlingTest {
 
       def applyOrMatchError(key: AtomicDatumKey) = key match {
         case USDFXRateKey(ccy) => Quantity(spotFxRates(ccy), USD/ccy)
-        case _ : DiscountRateKey => 1.0
+        case _ : DiscountRateKey => new Quantity(1.0)
       }
     }
     val env = Environment(atomicEnv)

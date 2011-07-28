@@ -2,7 +2,6 @@ package starling.instrument
 
 import starling.calendar.BusinessCalendar
 import java.sql.ResultSet
-import starling.quantity.{Quantity, UOM, Percentage}
 import starling.quantity.Quantity._
 import starling.utils.ImplicitConversions._
 import starling.richdb.RichInstrumentResultSetRow
@@ -13,6 +12,7 @@ import starling.market.formula._
 import starling.daterange._
 import starling.daterange.DateRangePeriod
 import starling.models.{DefaultValuationParameters, DefaultRiskParameters}
+import starling.quantity._
 
 /**A class which represents a swap against some index - typically a front futures price
  *
@@ -34,6 +34,19 @@ case class CommoditySwap(
   require(index.convert(_volume, strike.denominatorUOM).isDefined, "Couldn't convert volume into strike uom: " + (_volume, strike) + ", " + index)
   require(pricingRule.isValid(index.calendars), "Invalid pricing rule for " + index)
 
+  private def subPeriodSwaps : List[SingleCommoditySwap] = {
+    dateRanges.map(SingleCommoditySwap(index, strike, volume, _, cleared, pricingRule))
+  }
+
+  def explanation(env : Environment) : NamedQuantity = {
+    val namedEnv = env.named()
+    val subExplanations : List[NamedQuantity] = subPeriodSwaps.map{swap =>
+      val swapExp = swap.explanation(namedEnv)
+      SimpleNamedQuantity(swap.period + " value", swapExp)
+    }
+    FunctionNamedQuantity("Sum", subExplanations, subExplanations.map(_.quantity).sum)
+  }
+
   // volume converted so everything is in the context of the strike uom
   val volume = index.convert(_volume, strike.denominatorUOM).get
 
@@ -42,12 +55,11 @@ case class CommoditySwap(
   override def expiryDay() = Some(dateRanges.sorted.last.lastDay)
 
   def asUtpPortfolio(tradeDay: Day) = {
-    var map = Map.empty[UTP, Double]
+    val swapMap : Map[UTP, Double] = subPeriodSwaps.map{swap => swap.copy(strike = Quantity(0, swap.strike.uom), volume = Quantity(1.0, swap.volume.uom)) -> swap.volume.value}.toMap
     val ccy = strike.numeratorUOM
 
-    dateRanges.map {
+    val cashMap = dateRanges.map {
       case subPeriod => {
-        map += SingleCommoditySwap(index, Quantity(0, ccy / volume.uom), new Quantity(1.0, volume.uom), subPeriod, cleared, pricingRule) -> volume.value
         val cash = if (!cleared) {
           CashInstrument(
             CashInstrumentType.General, Quantity(1.0, valuationCCY), cashSettlementDay(subPeriod.lastDay),
@@ -55,11 +67,11 @@ case class CommoditySwap(
         } else {
           BankAccount(1.0(valuationCCY), None, Some(index), subPeriod)
         }
-        map += cash -> (-strike * volume).checkedValue(ccy)
+        cash -> (-strike * volume).checkedValue(ccy)
       }
-    }
+    }.toMap
 
-    UTP_Portfolio(map)
+    UTP_Portfolio(swapMap ++ cashMap)
   }
 
   def tradeableType = CommoditySwap
@@ -78,6 +90,13 @@ case class SingleCommoditySwap(
                                 pricingRule: SwapPricingRule = NoPricingRule
                                 )
   extends SingleSwap(index, strike, volume, period, cleared, pricingRule) {
+
+  def explanation(env : Environment) : NamedQuantity = {
+    val namedEnv = env.named()
+    val price = SimpleNamedQuantity("F_Ave", namedEnv.averagePrice(index, averagingPeriod, pricingRule, priceUOM, priceRounding))
+    val discount = SimpleNamedQuantity("disc", namedEnv.discount(valuationCCY, settlementDay))
+    (price - strike.named("K")) * volume.named("V") * discount
+  }
 
   def instrumentType = CommoditySwap
 

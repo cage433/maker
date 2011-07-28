@@ -1,7 +1,6 @@
 package starling.instrument
 
 import starling.richdb.RichInstrumentResultSetRow
-import starling.quantity.Quantity
 import starling.models._
 import starling.daterange.TimeOfDay._
 import starling.quantity.Percentage._
@@ -9,6 +8,7 @@ import starling.curves._
 import starling.daterange.{DateRangePeriod, DayAndTime, Day}
 import starling.daterange.DateRangePeriod
 import starling.market.{CommodityMarket, Market}
+import starling.quantity.{UOM, Quantity}
 
 case class ForwardOption(
   market : CommodityMarket,
@@ -41,7 +41,7 @@ case class ForwardOption(
 
   def assets(env : Environment) = {
     if(isLive(env.marketDay)) {
-      val disc = env.discount(valuationCCY, exerciseDay)
+      val disc = env.discount(valuationCCY, exerciseDay).checkedValue(UOM.SCALAR)
       var F = env.forwardPrice(market, deliveryDay)
       val Array(probOfExercise, exercisePriceRatio, undiscProbOfExercise) = pricer(env) match {
         case Left(cn) => cn.americanAssetsWithCorrection

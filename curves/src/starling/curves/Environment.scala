@@ -61,6 +61,7 @@ case class Environment(
   def this() = this(null)
 
   def atomicEnv = instrumentLevelEnv.atomicEnv
+  def named(prefix : String = "") = Environment(NamingAtomicEnvironment(atomicEnv, prefix))
 
   // cache for optimization of greek calculations. Will cache shifted environments, forward state envs and mtms
   // Level of indirection so that InstrumentLevelPerturbedEnvironment can avoid using the same cache as the
@@ -187,7 +188,7 @@ case class Environment(
 
     /**	Returns the discount rate for the given currency and date
    */
-  def discount(ccy : UOM, forwardDate : Day) : Double = {
+  def discount(ccy : UOM, forwardDate : Day) : Quantity = {
     instrumentLevelEnv.discount(ccy, forwardDate)
   }
 
@@ -212,7 +213,7 @@ case class Environment(
     else {
       val disc = discount(currency, day)
       val t = DayCountActual365.factor(marketDay.day, day)
-      val zero = -log(disc) / t
+      val zero = -log(disc.checkedValue(UOM.SCALAR)) / t
       Percentage(zero)
     }
   }
@@ -228,7 +229,7 @@ case class Environment(
     if (T == 0.0)
       Percentage(0.0)
     else
-      Percentage(log(d1 / d2) / T)
+      Percentage(log((d1 / d2).checkedValue(UOM.SCALAR)) / T)
   }
 
   def indexFixing(index : SingleIndex, fixingDay : Day) : Quantity = {

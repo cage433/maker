@@ -47,7 +47,7 @@ class VarTests extends TestMarketSpec {
 
         def applyOrMatchError(key: AtomicDatumKey) = key match {
           case ForwardPriceKey(_, day, _) => curve.price(day)
-          case _ : DiscountRateKey => 1.0
+          case _ : DiscountRateKey => new Quantity(1.0)
         }
       }
     )
@@ -108,7 +108,7 @@ class VarTests extends TestMarketSpec {
 
         def applyOrMatchError(key: AtomicDatumKey) = key match {
           case _ : ForwardPriceKey => price
-          case _ : DiscountRateKey => 1.0
+          case _ : DiscountRateKey => new Quantity(1.0)
         }
       }
     )
@@ -147,7 +147,7 @@ class VarTests extends TestMarketSpec {
 
         def applyOrMatchError(key: AtomicDatumKey) = key match {
           case _ : ForwardPriceKey => price
-          case _ : DiscountRateKey => 1.0
+          case _ : DiscountRateKey => new Quantity(1.0)
         }
       }
     )
@@ -189,7 +189,7 @@ class VarTests extends TestMarketSpec {
 
         def applyOrMatchError(key: AtomicDatumKey) = key match {
           case _ : ForwardPriceKey => price
-          case _ : DiscountRateKey => 1.0
+          case _ : DiscountRateKey => new Quantity(1.0)
         }
       }
     )
@@ -237,7 +237,7 @@ class VarTests extends TestMarketSpec {
           case _ : BradyMetalVolAtomicDatumKey => new Percentage(vol)
           case _ : OilAtmVolAtomicDatumKey => Percentage(vol)
           case _ : OilVolSkewAtomicDatumKey => Map[Double, Percentage]()
-          case _ : DiscountRateKey => 1.0
+          case _ : DiscountRateKey => new Quantity(1.0)
         }
       }
     )
@@ -271,7 +271,7 @@ class VarTests extends TestMarketSpec {
           case _ : ForwardPriceKey => Quantity(price, USD/BBL)
           case _ : OilAtmVolAtomicDatumKey => Percentage(vol)
           case _ : OilVolSkewAtomicDatumKey => Map[Double, Percentage]()
-          case _ : DiscountRateKey => 1.0
+          case _ : DiscountRateKey => new Quantity(1.0)
         }
       }
     )
@@ -281,7 +281,7 @@ class VarTests extends TestMarketSpec {
 
         def applyOrMatchError(key: AtomicDatumKey) = key match {
           case _ : ForwardPriceKey => Quantity(price, USD/BBL)
-          case _ : DiscountRateKey => 1.0
+          case _ : DiscountRateKey => new Quantity(1.0)
         }
       }
     )

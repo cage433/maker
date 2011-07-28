@@ -14,44 +14,44 @@ class NamedQuantityTests extends TestNGSuite with ShouldMatchers {
   val percentage = Percentage(23.45)
 
   @Test def toStringShouldIncludeName {
-    namedAbc.expr should be === "abc" % abc.toString
+    namedAbc.format(0) should be === "abc"
   }
 
   @Test def onceANamedQuantityAlwaysANamedQuantity {
-    (namedAbc * 2.0)       .expr should be === "(%s * %s)" % (namedAbc.expr, 2.0)
-    (namedAbc * percentage).expr should be === "(%s * %s)" % (namedAbc.expr, percentage)
-    (namedAbc * abc)       .expr should be === "(%s * %s)" % (namedAbc.expr, abc)
-    (namedAbc * namedAbc)  .expr should be === "(%s * %s)" % (namedAbc.expr, namedAbc.expr)
-    (namedAbc / 2.0)       .expr should be === "(%s / %s)" % (namedAbc.expr, 2.0)
-    (namedAbc / abc)       .expr should be === "(%s / %s)" % (namedAbc.expr, abc)
-    (namedAbc / namedAbc)  .expr should be === "(%s / %s)" % (namedAbc.expr, namedAbc.expr)
-    (namedAbc + abc)       .expr should be === "(%s + %s)" % (namedAbc.expr, abc)
-    (namedAbc + namedAbc)  .expr should be === "(%s + %s)" % (namedAbc.expr, namedAbc.expr)
-    (namedAbc - abc)       .expr should be === "(%s - %s)" % (namedAbc.expr, abc)
-    (namedAbc - namedAbc)  .expr should be === "(%s - %s)" % (namedAbc.expr, namedAbc.expr)
-    (-namedAbc)            .expr should be === "-%s"     % (namedAbc.expr)
-    (namedAbc.negate)      .expr should be === "-%s"     % (namedAbc.expr)
-    (namedAbc.abs)         .expr should be === "abs(%s)" % (namedAbc.expr)
-    (namedAbc.invert)      .expr should be === "(1/%s)"  % (namedAbc.expr)
+    (namedAbc * 2.0)       .format(0) should be === "(%s * %s)" % (namedAbc.format(0), 2.0)
+    (namedAbc * percentage).format(0) should be === "(%s * %s)" % (namedAbc.format(0), percentage)
+    (namedAbc * abc)       .format(0) should be === "(%s * %s)" % (namedAbc.format(0), abc)
+    (namedAbc * namedAbc)  .format(0) should be === "(%s * %s)" % (namedAbc.format(0), namedAbc.format(0))
+    (namedAbc / 2.0)       .format(0) should be === "(%s / %s)" % (namedAbc.format(0), 2.0)
+    (namedAbc / abc)       .format(0) should be === "(%s / %s)" % (namedAbc.format(0), abc)
+    (namedAbc / namedAbc)  .format(0) should be === "(%s / %s)" % (namedAbc.format(0), namedAbc.format(0))
+    (namedAbc + abc)       .format(0) should be === "(%s + %s)" % (namedAbc.format(0), abc)
+    (namedAbc + namedAbc)  .format(0) should be === "(%s + %s)" % (namedAbc.format(0), namedAbc.format(0))
+    (namedAbc - abc)       .format(0) should be === "(%s - %s)" % (namedAbc.format(0), abc)
+    (namedAbc - namedAbc)  .format(0) should be === "(%s - %s)" % (namedAbc.format(0), namedAbc.format(0))
+    (-namedAbc)            .format(0) should be === "-%s"     % (namedAbc.format(0))
+    (namedAbc.negate)      .format(0) should be === "-%s"     % (namedAbc.format(0))
+    (namedAbc.abs)         .format(0) should be === "abs(%s)" % (namedAbc.format(0))
+    (namedAbc.invert)      .format(0) should be === "(1/%s)"  % (namedAbc.format(0))
   }
 
   @Test def shouldIgnoreOneWhenScaling {
-    (namedAbc * 1.0).expr should be === "%s" % namedAbc.expr
-    (namedAbc / 1.0).expr should be === "%s" % namedAbc.expr
+    (namedAbc * 1.0).format(0) should be === namedAbc.format(0)
+    (namedAbc / 1.0).format(0) should be === namedAbc.format(0)
 
-    (namedAbc * Quantity.ONE).expr should be === "%s" % namedAbc.expr
-    (namedAbc / Quantity.ONE).expr should be === "%s" % namedAbc.expr
+    (namedAbc * Quantity.ONE).format(0) should be === namedAbc.format(0)
+    (namedAbc / Quantity.ONE).format(0) should be === namedAbc.format(0)
 
-    (namedAbc * Percentage(1.0)).expr should be === "%s" % namedAbc.expr
-    (namedAbc / Percentage(1.0)).expr should be === "%s" % namedAbc.expr
+    (namedAbc * Percentage(1.0)).format(0) should be === namedAbc.format(0)
+    (namedAbc / Percentage(1.0)).format(0) should be === namedAbc.format(0)
   }
 
   @Test def shouldDisplaySmallNumbersUsingScientificNotation {
-    (namedAbc + new Quantity(0.00499)).expr should be === "(%s + %s)" % (namedAbc.expr, "0.00499")
-    (namedAbc + new Quantity(0.000499)).expr should be === "(%s + %s)" % (namedAbc.expr, "4.99\u00D710\u207B\u2074")
-    (namedAbc + new Quantity(0.000047)).expr should be === "(%s + %s)" % (namedAbc.expr, "4.7\u00D710\u207B\u2075")
-    (namedAbc + new Quantity(0.00004)).expr should be === "(%s + %s)" % (namedAbc.expr, "4.0\u00D710\u207B\u2075")
-    (namedAbc + new Quantity(0.000002)).expr should be === "(%s + %s)" % (namedAbc.expr, "2.0\u00D710\u207B\u2076")
-    (namedAbc * new Quantity(0.000002, UOM.USD)).expr should be === "(%s * %s)" % (namedAbc.expr, "2.0\u00D710\u207B\u2076 USD")
+    (namedAbc + new Quantity(0.00499)).format(0) should be === "(%s + %s)" % (namedAbc.format(0), "0.00499")
+    (namedAbc + new Quantity(0.000499)).format(0) should be === "(%s + %s)" % (namedAbc.format(0), "4.99\u00D710\u207B\u2074")
+    (namedAbc + new Quantity(0.000047)).format(0) should be === "(%s + %s)" % (namedAbc.format(0), "4.7\u00D710\u207B\u2075")
+    (namedAbc + new Quantity(0.00004)).format(0) should be === "(%s + %s)" % (namedAbc.format(0), "4.0\u00D710\u207B\u2075")
+    (namedAbc + new Quantity(0.000002)).format(0) should be === "(%s + %s)" % (namedAbc.format(0), "2.0\u00D710\u207B\u2076")
+    (namedAbc * new Quantity(0.000002, UOM.USD)).format(0) should be === "(%s * %s)" % (namedAbc.format(0), "2.0\u00D710\u207B\u2076 USD")
   }
 }

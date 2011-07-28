@@ -39,7 +39,7 @@ class CommoditySpreadOptionTest extends JonTestEnv with TestNGSuite{
           key match {
             case ForwardPriceKey(`mkt1`, `june`, _) => FWTI(mkt.priceUOM)
             case ForwardPriceKey(`mkt2`, `june`, _) => FBrent(mkt.priceUOM)
-            case _ : DiscountRateKey => 1.0
+            case _ : DiscountRateKey => new Quantity(1.0)
             case _ : SpreadAtmStdDevAtomicDatumKey => stdDev(mkt.priceUOM)
             case _ : SpreadSkewStdDevAtomicDatumKey => new DenseDoubleMatrix1D(Array(0.0, 0.0)).asRowMatrix
           }

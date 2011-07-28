@@ -363,7 +363,7 @@ class MockEnvironmentProvider() extends EnvironmentProvider {
       {
         case FixingKey(index, _) => Quantity(snapshotsAndData(snapshotID)._3, index.priceUOM)
         case ForwardPriceKey(market, _, _) => Quantity(snapshotsAndData(snapshotID)._2, market.priceUOM)
-        case _: DiscountRateKey => 1.0
+        case _: DiscountRateKey => new Quantity(1.0)
       }
     )
   )

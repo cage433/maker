@@ -12,14 +12,14 @@ import starling.utils.ImplicitConversions._
 /** The parent of all DiscountCurve implementations. 
  */
 trait DiscountCurve extends CurveObject{
-  type CurveValuesType = Double
+  type CurveValuesType = Quantity
   def discount(day : Day) : Double
 	
   /** Converts the generic apply method into a call to the implementation's
    * 	discount function.
    */
-  def apply(point : AnyRef) : Double = {
-	  discount(point.asInstanceOf[Day])
+  def apply(point : AnyRef) : Quantity = {
+	  new Quantity(discount(point.asInstanceOf[Day]))
 	}
 }
 
@@ -206,10 +206,10 @@ case class DiscountRateKey(
   extends AtomicDatumKey(DiscountCurveKey(ccy), forwardDate, ignoreShiftsIfPermitted)
 {
   def forwardStateValue(originalAtomicEnv: AtomicEnvironment, forwardDayAndTime: DayAndTime) = {
-    originalAtomicEnv.double(this) / originalAtomicEnv.double(copy(forwardDate = forwardDayAndTime.day))
+    originalAtomicEnv.quantity(this) / originalAtomicEnv.quantity(copy(forwardDate = forwardDayAndTime.day))
   }
   override def clearProperties : AtomicDatumKey = copy(ignoreShiftsIfPermitted = false)
-  def nullValue = 0.9
+  def nullValue = new Quantity(0.9)
 }
 
 //object DiscountRateKey{

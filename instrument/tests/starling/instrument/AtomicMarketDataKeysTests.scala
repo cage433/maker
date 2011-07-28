@@ -18,7 +18,7 @@ class AtomicMarketDataKeysTests extends TestMarketSpec {
   val env = Environment(
     new TestingAtomicEnvironment() {
       def applyOrMatchError(key: AtomicDatumKey): Any = key match {
-        case DiscountRateKey(ccy, day, _) => math.exp(-.05 * day.daysSinceInYears(marketDay.day))
+        case DiscountRateKey(ccy, day, _) => new Quantity(math.exp(-.05 * day.daysSinceInYears(marketDay.day)))
         case ForwardPriceKey(market, _, _) => Quantity(80, market.priceUOM)
         case USDFXRateKey(ccy) => Quantity(1.0, USD / ccy)
         case _: OilAtmVolAtomicDatumKey => Percentage(10)

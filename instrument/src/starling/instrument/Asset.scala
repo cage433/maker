@@ -14,7 +14,7 @@ object Asset {
     val discount = if (settlementDay > env.marketDay.day) {
       env.discount(amount.uom, settlementDay)
     } else {
-      1
+      new Quantity(1)
     }
     Asset(known, amount.uom.toString, settlementDay, amount, amount * discount)
   }

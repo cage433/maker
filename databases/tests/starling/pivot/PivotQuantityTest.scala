@@ -122,6 +122,6 @@ class PivotQuantityTest extends StarlingTest with ShouldMatchers {
   @Test
   def explanationShouldReturnNamedQuantityExpression {
     val named = Quantity(10, UOM.USD).named("abc")
-    PivotQuantity(named).explanation should be === Some(named.expr)
+    PivotQuantity(named).explanation should be === Some(named.format(1))
   }
 }

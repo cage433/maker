@@ -25,7 +25,7 @@ class FXOptionTests extends StarlingTest {
           case `GBP` => 0.03
         }
         val t = day.daysSinceInYears(marketDay.day)
-        math.exp(- z * t)
+        new Quantity(math.exp(- z * t))
       }
       def applyOrMatchError(key : AtomicDatumKey) = key match {
         case USDFXRateKey(`GBP`) => Quantity(1.05, USD/GBP)

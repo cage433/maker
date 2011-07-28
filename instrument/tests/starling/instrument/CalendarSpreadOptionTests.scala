@@ -68,7 +68,7 @@ class CalendarSpreadOptionTests  extends JonTestEnv with TestNGSuite{
           key match {
             case ForwardPriceKey(_, `june`, _) => FJune(mkt.priceUOM)
             case ForwardPriceKey(_, `july`, _) => FJuly(mkt.priceUOM)
-            case _ : DiscountRateKey => 1.0
+            case _ : DiscountRateKey => new Quantity(1.0)
             case _ : SpreadAtmStdDevAtomicDatumKey => stdDev(mkt.priceUOM)
             case _ : SpreadSkewStdDevAtomicDatumKey => new DenseDoubleMatrix1D(Array(0.0, 0.0)).asRowMatrix
           }

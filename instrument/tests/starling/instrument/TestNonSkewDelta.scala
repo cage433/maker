@@ -21,7 +21,7 @@ class TestNonSkewDelta extends TestMarketSpec{
           case _ : ForwardPriceKey => Quantity(100, USD/BBL)
           case _ : OilAtmVolAtomicDatumKey => Percentage(0.5)
           case _ : OilVolSkewAtomicDatumKey => Map(0.25 -> Percentage(-0.02), 0.5 -> Percentage(0.01), 0.75 -> Percentage(0.04))
-          case _ : DiscountRateKey => 1.0
+          case _ : DiscountRateKey => new Quantity(1.0)
         }
       }
     }.undiscounted

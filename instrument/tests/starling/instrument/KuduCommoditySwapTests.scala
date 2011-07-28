@@ -20,7 +20,7 @@ class KuduCommoditySwapTests extends TestMarketSpec {
       case ForwardPriceKey(`market`, Month(2010, 3), _) => Quantity(82.34, USD / BBL)
       case ForwardPriceKey(`market`, Month(2011, 1), _) => Quantity(86.4, USD / BBL)
       case ForwardPriceKey(`market`, Month(2011, 2), _) => Quantity(86.65, USD / BBL)
-      case DiscountRateKey(_, day, _) => 1.0
+      case DiscountRateKey(_, day, _) => new Quantity(1.0)
     }
   })
 

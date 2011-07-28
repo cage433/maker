@@ -371,7 +371,7 @@ class GreeksPivotReportTests extends StarlingTest {
       {
         case _ : ForwardPriceKey => fwdPrice
         case _ : OilAtmVolAtomicDatumKey => Percentage(0.5)
-        case _ : DiscountRateKey => 1.0
+        case _ : DiscountRateKey => new Quantity(1.0)
         case skewKey : OilVolSkewAtomicDatumKey => skewKey.nullValue
       }
     ))

@@ -27,7 +27,7 @@ class UsdPositionTests extends StarlingTest {
         }
         case USDFXRateKey(ccy) => usdRates(ccy)
 
-        case DiscountRateKey(ccy, _, _) => 1.0
+        case DiscountRateKey(ccy, _, _) => new Quantity(1.0)
       }
     })
 

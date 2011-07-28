@@ -64,7 +64,7 @@ class SpreadStdDevsTests extends TestMarketSpec {
         }
         case ForwardPriceKey(_, spread.first, _) => forwardPrice
         case ForwardPriceKey(_, spread.last, _) => forwardPrice.copy(value = 0.0)
-        case DiscountRateKey(_, d, _) => scala.math.exp(-riskFreeRate * d.daysSinceInYears(marketDate))
+        case DiscountRateKey(_, d, _) => new Quantity(scala.math.exp(-riskFreeRate * d.daysSinceInYears(marketDate)))
         case _: OilAtmVolAtomicDatumKey => oilVol
       }
     })

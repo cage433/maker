@@ -26,7 +26,7 @@ trait InstrumentLevelEnvironment extends AtomicEnvironmentHelper {
 
   def apply(key : AtomicDatumKey) : Any
   def marketDay() : DayAndTime
-  def discount(ccy : UOM, day : Day, ignoreShiftsIfPermitted : Boolean = false) : Double
+  def discount(ccy : UOM, day : Day, ignoreShiftsIfPermitted : Boolean = false) : Quantity
   def fixing(index : SingleIndex, fixingDay : Day) : Quantity
 
   def indexForwardPrice(index : SingleIndex, observationDay : Day, ignoreShiftsIfPermitted : Boolean = false) : Quantity
@@ -52,7 +52,7 @@ class DefaultInstrumentLevelEnvironment(underlyingAtomicEnv : AtomicEnvironment)
   def setShiftsCanBeIgnored(canBeIgnored : Boolean) = copy(atomicEnv.setShiftsCanBeIgnored(canBeIgnored))
   def shiftAtomicEnv(fn : AtomicEnvironment => AtomicEnvironment) = copy(fn(atomicEnv))
   def marketDay() : DayAndTime = atomicEnv().marketDay
-  def discount(ccy : UOM, day : Day, ignoreShiftsIfPermitted : Boolean = false) : Double = atomicEnv.double(DiscountRateKey(ccy, day, ignoreShiftsIfPermitted))
+  def discount(ccy : UOM, day : Day, ignoreShiftsIfPermitted : Boolean = false) : Quantity = atomicEnv.quantity(DiscountRateKey(ccy, day, ignoreShiftsIfPermitted))
   def fixing(index : SingleIndex, fixingDay : Day) : Quantity = {
     index.fixing(this, fixingDay)
   }
@@ -101,7 +101,7 @@ class DefaultInstrumentLevelEnvironment(underlyingAtomicEnv : AtomicEnvironment)
           }
           val time = expiryDay.endOfDay.timeSince(marketDay)
 
-          val disc = discount(mkt.currency, expiryDay, ignoreShiftsIfPermitted = true)
+          val disc = discount(mkt.currency, expiryDay, ignoreShiftsIfPermitted = true).checkedValue(UOM.SCALAR)
           val atmDelta = new BlackScholes(100.0, 100.0, Call, time, atmVolNoShifts).analyticDelta * disc
           // For Asian options we actually pass in the average price as the forward price
           val F = forwardPrice match {
@@ -165,7 +165,7 @@ class DefaultInstrumentLevelEnvironment(underlyingAtomicEnv : AtomicEnvironment)
     // at-the-money standard deviation is the "base", then the interpolated skews are added to that.
     val atmSD = atomicEnv.quantity(SpreadAtmStdDevAtomicDatumKey(market, period))
 
-    val disc = discount(market.currency, exerciseDay, ignoreShiftsIfPermitted = true)
+    val disc = discount(market.currency, exerciseDay, ignoreShiftsIfPermitted = true).checkedValue(UOM.SCALAR)
     //val disc = atomicEnv.double(DiscountRateKey(market.currency, exerciseDay, ignoreShiftsIfPermitted = true))
     val zeroRateNoShifts = -scala.math.log(disc) / time
     val discountFactorNoShifts = scala.math.exp(-zeroRateNoShifts * time)
@@ -379,7 +379,7 @@ object ShiftMarketDayAtInstrumentLevel{
             case `marketDay` => newMarketDay
             case `discount` =>{
               args match {
-                case Array(ccy : UOM, day : Day, ignoreShiftsIfPermitted) => forwardAtomicEnv.double(DiscountRateKey(ccy, day, ignoreShiftsIfPermitted.asInstanceOf[Boolean])).asInstanceOf[AnyRef]
+                case Array(ccy : UOM, day : Day, ignoreShiftsIfPermitted) => forwardAtomicEnv.quantity(DiscountRateKey(ccy, day, ignoreShiftsIfPermitted.asInstanceOf[Boolean])).asInstanceOf[AnyRef]
               }
             }
             case `fixing` => {

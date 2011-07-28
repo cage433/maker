@@ -40,7 +40,7 @@ class UTPTests extends IndexTest {
 
       def applyOrMatchError(key: AtomicDatumKey) = {
         key match {
-          case DiscountRateKey(ccy, day, _) =>  math.exp(- zeroRates(ccy) * day.daysSinceInYears(marketDay.day))
+          case DiscountRateKey(ccy, day, _) =>  new Quantity(math.exp(- zeroRates(ccy) * day.daysSinceInYears(marketDay.day)))
           case ForwardPriceKey(Market.NYMEX_WTI, Month(2010, 10), _) => 100 (Market.NYMEX_WTI.priceUOM) //for CSO
           case ForwardPriceKey(Index.DATED_BRENT, _, _) => 98 (USD/BBL)
           case ForwardPriceKey(`plattsJan`, _, _) => 95 (USD/BBL)

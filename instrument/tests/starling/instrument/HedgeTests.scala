@@ -88,7 +88,7 @@ class HedgeTests extends TestMarketSpec {
     val marketDay = Day(2010, 1, 1).endOfDay
     val env = Environment(new UnitTestingAtomicEnvironment(marketDay, {
         case ForwardPriceKey(mkt, mth : Month, _) => Quantity(100 + mth.m, mkt.priceUOM)
-        case DiscountRateKey(_, day, _) => math.exp(0.05 * day.daysSinceInYears(marketDay.day))
+        case DiscountRateKey(_, day, _) => new Quantity(math.exp(0.05 * day.daysSinceInYears(marketDay.day)))
         case FixingKey(key, _) => Quantity(20, key.priceUOM)
       }
     ))
@@ -138,7 +138,7 @@ class HedgeTests extends TestMarketSpec {
     val env = Environment(new UnitTestingAtomicEnvironment(marketDay, {
         case ForwardPriceKey(mkt, mth : Month, _) => Quantity(100 + mth.m, mkt.priceUOM)
         case ForwardPriceKey(mkt, d : Day, _) => Quantity(100 + d.dayNumber, mkt.priceUOM)
-        case DiscountRateKey(_, day, _) => math.exp(0.05 * day.daysSinceInYears(marketDay.day))
+        case DiscountRateKey(_, day, _) => new Quantity(math.exp(0.05 * day.daysSinceInYears(marketDay.day)))
         case FixingKey(key, _) => Quantity(20, key.priceUOM)
       }
     ))

@@ -32,7 +32,7 @@ class CommoditySwapTests extends JonTestEnv {
         def applyOrMatchError(key: AtomicDatumKey) = key match {
           case _: ForwardPriceKey => forwardPrice
           case _: FixingKey => historicPrice
-          case DiscountRateKey(_, day, _) => scala.math.exp(-0.05 * day.daysSinceInYears(marketDay.day))
+          case DiscountRateKey(_, day, _) => new Quantity(scala.math.exp(-0.05 * day.daysSinceInYears(marketDay.day)))
         }
 
         def marketDay = marketDayAndTime
@@ -75,7 +75,7 @@ class CommoditySwapTests extends JonTestEnv {
             forwardPrice
           }
           case _: FixingKey => historicPrice
-          case DiscountRateKey(_, day, _) => scala.math.exp(-0.05 * day.daysSinceInYears(marketDay.day))
+          case DiscountRateKey(_, day, _) => new Quantity(scala.math.exp(-0.05 * day.daysSinceInYears(marketDay.day)))
         }
 
         def marketDay = marketDayAndTime
@@ -130,7 +130,7 @@ class CommoditySwapTests extends JonTestEnv {
         case ForwardPriceKey(`market2`, _, _) => Quantity(250, USD / BBL)
         case FixingKey(`index1`, _) => Quantity(100, USD / MT)
         case FixingKey(`index2`, _) => Quantity(150, USD / BBL)
-        case DiscountRateKey(_, day, _) => scala.math.exp(-0.05 * day.daysSinceInYears(marketDay.day))
+        case DiscountRateKey(_, day, _) => new Quantity(scala.math.exp(-0.05 * day.daysSinceInYears(marketDay.day)))
       }
     })
 
@@ -182,7 +182,7 @@ class CommoditySwapTests extends JonTestEnv {
         def applyOrMatchError(key: AtomicDatumKey) = key match {
           case _: ForwardPriceKey => forwardPrice
           case _: FixingKey => historicPrice
-          case DiscountRateKey(_, day, _) => scala.math.exp(-0.05 * day.daysSinceInYears(marketDay.day))
+          case DiscountRateKey(_, day, _) => new Quantity(scala.math.exp(-0.05 * day.daysSinceInYears(marketDay.day)))
         }
 
         def marketDay = marketDayAndTime
@@ -224,6 +224,38 @@ class CommoditySwapTests extends JonTestEnv {
     )
   }
 
+  @Test
+  def testExplanation{
+    val marketDayAndTime = Day(2009, 9, 15).startOfDay
+    val forwardPrice = Quantity(200, USD / MT)
+    val historicPrice = Quantity(100, USD / MT)
+    val env = Environment(
+      new TestingAtomicEnvironment() {
+        def applyOrMatchError(key: AtomicDatumKey) = key match {
+          case _: ForwardPriceKey => forwardPrice
+          case _: FixingKey => historicPrice
+          case DiscountRateKey(_, day, _) => new Quantity(scala.math.exp(-0.05 * day.daysSinceInYears(marketDay.day)))
+        }
+
+        def marketDay = marketDayAndTime
+      }
+    )
+    val index = Index.PREM_UNL_EURO_BOB_OXY_NWE_BARGES
+    val market = index.market
+    val sep09 = Month(2009, 9)
+    val oct09 = sep09 + 1
+    val volume = Quantity(100, MT)
+    val strike = Quantity(200, USD / MT)
+    val swapSeptoOct09 = new CommoditySwap(
+      index,
+      strike,
+      volume,
+      StripPeriod(sep09, oct09),
+      false
+    )
+    val explanation = swapSeptoOct09.explanation(env)
+    assertEquals("bla", explanation.format(0))
+  }
   @Test
   def testC3651761 {
     val marketDayAndTime = Day(2011, 3, 16).startOfDay
@@ -545,7 +577,7 @@ class CommoditySwapTests extends JonTestEnv {
     val env = Environment(UnitTestingAtomicEnvironment(
     marketDay, {
       case _: ForwardPriceKey => 70(index.priceUOM)
-      case DiscountRateKey(_, day, _) => math.exp(-z * (day.daysSinceInYears(marketDay.day)))
+      case DiscountRateKey(_, day, _) => new Quantity(math.exp(-z * (day.daysSinceInYears(marketDay.day))))
     }
     ))
     assertQtyEquals(volume, swap.position(env, PriceDifferentiable(index.market, period)), 1e-6)

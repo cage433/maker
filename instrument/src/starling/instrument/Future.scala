@@ -1,6 +1,5 @@
 package starling.instrument
 
-import starling.quantity.Quantity
 import starling.quantity.Quantity._
 import starling.quantity.UOM._
 import starling.utils.ImplicitConversions._
@@ -9,6 +8,7 @@ import starling.daterange._
 import starling.curves._
 import starling.daterange.DateRangePeriod
 import starling.market.{Index, FuturesFrontPeriodIndex, FuturesMarket, Market}
+import starling.quantity.{SimpleNamedQuantity, NamedQuantity, Quantity}
 
 /** A class which represents a futures trade
  */
@@ -17,6 +17,12 @@ case class Future(market: FuturesMarket, delivery: DateRange, strike: Quantity, 
   require(strike.denominatorUOM == volume.uom, "Can't handle strike in non-volume uom, strike: " + strike + ", volume: " + volume.uom)
   require(market.convert(volume, market.uom).isDefined, "Invalid volume UOM, can't convert to market uom: " + volume)
 
+  def explanation(env : Environment) : NamedQuantity = {
+    val namedEnv = Environment(new NamingAtomicEnvironment(env.atomicEnv, ""))
+    val F = SimpleNamedQuantity("F", namedEnv.forwardPrice(market, delivery))
+    (F - strike.named("K")) * volume.named("V")
+  }
+  
   def *(x : Double) = copy(volume = volume * x)
 
   def assets(env : Environment) = if (env.marketDay < lastTradingDay.endOfDay) {

@@ -18,7 +18,7 @@ class MarketDayChangeEnvironmentTests extends TestMarketSpec {
     val env = Environment(UnitTestingAtomicEnvironment(
       marketDay, 
       {
-        case DiscountRateKey(_, d, _) => math.exp(-0.05 * d.daysSinceInYears(marketDay.day))
+        case DiscountRateKey(_, d, _) => new Quantity(math.exp(-0.05 * d.daysSinceInYears(marketDay.day)))
         case _ : OilVolSkewAtomicDatumKey => Map(0.5 -> Percentage(0.05), 0.8 -> Percentage(0.08))
         case _ : OilAtmVolAtomicDatumKey => Percentage(0.2)
         case _ : ForwardPriceKey => Quantity(100.0, mkt.priceUOM)

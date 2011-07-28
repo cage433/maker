@@ -188,7 +188,7 @@ case class SpreadAtmStdDevAtomicDatumKey (
     val csoExpiryDay: Day = market.expiryRule.spreadOptionExpiry(period)
     val T = csoExpiryDay.endOfDay.timeSince(env.marketDay)
     val df = env.discount(market.currency, csoExpiryDay)
-    Quantity(0.001, market.priceUOM) * (if (T <= 0) 1.0 else sqrt(Pi / (2.0 * T)) / df)
+    Quantity(0.001, market.priceUOM) * (if (T <= 0) 1.0 else sqrt(Pi / (2.0 * T)) / df.checkedValue(UOM.SCALAR))
   }
   def shiftedEnvs(env : Environment, dP: Quantity) : (Environment, Environment) = {
     val upEnv = env.shiftSpreadStdDevs(market, period, dP)

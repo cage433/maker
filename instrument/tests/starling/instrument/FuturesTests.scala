@@ -72,4 +72,10 @@ class FuturesTests extends TestMarketSpec {
 		val delta = ( inst.mtm(shiftedEnv) - inst.mtm(env) ) / dP
 		assertQtyEquals(delta, volume, 1e-6)
 	}
+
+  @Test
+  def testExplanation() {
+    val explain = inst.explanation(env)
+    assertEquals(explain.format(0), "bla")
+  }
 }

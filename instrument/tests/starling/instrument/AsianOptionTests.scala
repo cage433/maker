@@ -104,7 +104,7 @@ class AsianOptionTests extends JonTestEnv {
           def applyOrMatchError(key: AtomicDatumKey) = key match {
             case _ : OilAtmVolAtomicDatumKey => Percentage(vol)
             case _: OilVolSkewAtomicDatumKey => Map[Double, Percentage]()
-            case _: DiscountRateKey => 1.0
+            case _: DiscountRateKey => new Quantity(1.0)
             case _: BradyMetalVolAtomicDatumKey => new Percentage(vol)
             case ForwardPriceKey(_, period, _) => prices(period)
             case FixingKey(_, day) => fixings(day)
@@ -150,7 +150,7 @@ class AsianOptionTests extends JonTestEnv {
         def marketDay = Day(2009, 1, 1).endOfDay
 
         def applyOrMatchError(key: AtomicDatumKey) = key match {
-          case DiscountRateKey(_, day, _) => Math.exp(-0.05 * day.daysSinceInYears(marketDay.day))
+          case DiscountRateKey(_, day, _) => new Quantity(Math.exp(-0.05 * day.daysSinceInYears(marketDay.day)))
           case _ : OilAtmVolAtomicDatumKey => Percentage(volatility)
           case _: OilVolSkewAtomicDatumKey => Map[Double, Percentage]()
 
@@ -201,7 +201,7 @@ class AsianOptionTests extends JonTestEnv {
         def marketDay = md.endOfDay
 
         def applyOrMatchError(key: AtomicDatumKey) = key match {
-          case DiscountRateKey(_, day, _) => 1.0
+          case DiscountRateKey(_, day, _) => new Quantity(1.0)
           case _ : OilAtmVolAtomicDatumKey => Percentage(0.8)
           case _: OilVolSkewAtomicDatumKey => Map[Double, Percentage]()
           case _: BradyMetalVolAtomicDatumKey => Percentage(.8)
@@ -257,7 +257,7 @@ class AsianOptionTests extends JonTestEnv {
     val env = Environment(
       new UnitTestingAtomicEnvironment(DayAndTime(Day(2010, 1, 1), TimeOfDay.EndOfDay), {
         key => key match {
-          case _ : DiscountRateKey => 1.0
+          case _ : DiscountRateKey => new Quantity(1.0)
           case ForwardPriceKey(market, _, _) => Quantity(100.0, market.priceUOM)
           case _ : OilAtmVolAtomicDatumKey => Percentage(0.10)
           case _ : OilVolSkewAtomicDatumKey => Map(0.5 -> Percentage(0.01), 0.1 -> Percentage(0.02), 0.9 -> Percentage(0.03))

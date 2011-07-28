@@ -18,7 +18,6 @@ trait AtomicEnvironmentHelper{
   def quantity(key : AtomicDatumKey) = apply(key).asInstanceOf[Quantity]
   def percentage(key : AtomicDatumKey) = apply(key).asInstanceOf[Percentage]
 
-  def double(key : AtomicDatumKey) = apply(key).asInstanceOf[Double]
   def volMap(key : AtomicDatumKey) : DoubleMatrix2D = apply(key) match {
     case matrix : DoubleMatrix2D => matrix
     case untypedMap : Map[_,_] =>{
@@ -32,6 +31,23 @@ trait AtomicEnvironmentHelper{
     }
   }
 }
+/**
+ * For unit tests only as its properties are mutable
+ *
+ * @deprecated("Use UnitTestingAtomicEnvironment instead, it doesn't have mutable properties")
+ */
+abstract class TestingAtomicEnvironment(var shiftsCanBeIgnored : Boolean = false) extends AtomicEnvironment{
+  def apply(key : AtomicDatumKey) : Any = {
+    try {
+      applyOrMatchError(key)
+    } catch {
+      case _ : MatchError => throw new MissingMarketDataException("No market data for " + key)
+    }
+  }
+  def applyOrMatchError(key : AtomicDatumKey) : Any
+  def setShiftsCanBeIgnored(canBeIgnored : Boolean) = {shiftsCanBeIgnored = canBeIgnored; this}
+}
+
 /**
  * <p>
  * 		An AtomicEnvironment contains those market data that can be viewed as atomic,
@@ -50,7 +66,7 @@ trait AtomicEnvironment extends AtomicEnvironmentHelper{
    * 	@param key Specifies an item of market data
    * 	@return The value of the market data
    */
-	def apply(key : AtomicDatumKey) : Any
+  def apply(key : AtomicDatumKey) : Any
   def quantityInUSD(key: AtomicDatumKey, ccy: UOM) = quantity(key) * spotFXFor(ccy)
   def spotFXFor(ccy: UOM) = quantity(USDFXRateKey(ccy))
 
@@ -59,49 +75,32 @@ trait AtomicEnvironment extends AtomicEnvironmentHelper{
    * shifting prices, moving the market day, making undiscounted.
    * Sometimes we want to change the behaviour of such a chain - for example making price perturbations
    * 'shallow' so that implied vol (which depends on price) can be left unaffected by price shifts
-   * in order to calculate non-skew greeks. 
+   * in order to calculate non-skew greeks.
    * This method will make shifts ignorable through the chain
    */
   def shiftsCanBeIgnored : Boolean
   def setShiftsCanBeIgnored(canBeIgnored : Boolean) : AtomicEnvironment
 
-//  def quantity(key : AtomicDatumKey) = apply(key).asInstanceOf[Quantity]
-//  def percentage(key : AtomicDatumKey) = apply(key).asInstanceOf[Percentage]
-//  
-//  def double(key : AtomicDatumKey) = apply(key).asInstanceOf[Double]
-//  def volMap(key : AtomicDatumKey) : DoubleMatrix2D = apply(key) match {
-//    case matrix : DoubleMatrix2D => matrix
-//    case untypedMap : Map[_,_] =>{
-//      val map = untypedMap.asInstanceOf[Map[Double, Percentage]]
-//      val xs = map.keySet.toArray
-//      val ys = xs.map{x => map(x).decimalValue}
-//      val m = new DenseDoubleMatrix2D(xs.size, 2)
-//      m.viewColumn(0).assign(xs)
-//      m.viewColumn(1).assign(ys)
-//      m
-//    }
-//  }
-	/**	The market day and time of day (start/end) of this atomic environment
-  */
-	def marketDay : DayAndTime
+  //  def quantity(key : AtomicDatumKey) = apply(key).asInstanceOf[Quantity]
+  //  def percentage(key : AtomicDatumKey) = apply(key).asInstanceOf[Percentage]
+  //
+  //  def double(key : AtomicDatumKey) = apply(key).asInstanceOf[Double]
+  //  def volMap(key : AtomicDatumKey) : DoubleMatrix2D = apply(key) match {
+  //    case matrix : DoubleMatrix2D => matrix
+  //    case untypedMap : Map[_,_] =>{
+  //      val map = untypedMap.asInstanceOf[Map[Double, Percentage]]
+  //      val xs = map.keySet.toArray
+  //      val ys = xs.map{x => map(x).decimalValue}
+  //      val m = new DenseDoubleMatrix2D(xs.size, 2)
+  //      m.viewColumn(0).assign(xs)
+  //      m.viewColumn(1).assign(ys)
+  //      m
+  //    }
+  //  }
+  /**	The market day and time of day (start/end) of this atomic environment
+   */
+  def marketDay : DayAndTime
 
-}
-
-/**
- * For unit tests only as its properties are mutable
- *
- * @deprecated("Use UnitTestingAtomicEnvironment instead, it doesn't have mutable properties")
- */
-abstract class TestingAtomicEnvironment(var shiftsCanBeIgnored : Boolean = false) extends AtomicEnvironment{
-  def apply(key : AtomicDatumKey) : Any = {
-    try {
-      applyOrMatchError(key)
-    } catch {
-      case _ : MatchError => throw new MissingMarketDataException("No market data for " + key)
-    }
-  }
-  def applyOrMatchError(key : AtomicDatumKey) : Any
-  def setShiftsCanBeIgnored(canBeIgnored : Boolean) = {shiftsCanBeIgnored = canBeIgnored; this}
 }
 
 case class UnitTestingAtomicEnvironment(marketDay : DayAndTime, data: PartialFunction[AtomicDatumKey, Any], shiftsCanBeIgnored : Boolean = false) extends AtomicEnvironment {
