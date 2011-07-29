@@ -2,12 +2,13 @@ package starling.instrument
 
 import java.sql.ResultSet
 import starling.market.{Market, FXMarket}
-import starling.quantity.{Quantity, UOM, Percentage}
 import starling.quantity.UOM._
 import starling.richdb.RichInstrumentResultSetRow
 import starling.curves._
 import starling.market.Index
 import starling.daterange._
+import starling.quantity.{NamedQuantity, Quantity, UOM, Percentage}
+import starling.quantity.SimpleNamedQuantity
 
 case class CashInstrument(
   cashInstrumentType: CashInstrumentType,
@@ -19,6 +20,12 @@ case class CashInstrument(
 	extends UTP with Tradeable
 {
   def this(amount : Quantity, settlementDate : Day) = this(CashInstrumentType.General, amount, settlementDate)
+
+  def explanation(env : Environment) : NamedQuantity = {
+    val disc = SimpleNamedQuantity("Discount", env.withNaming().discount(volume.uom, settlementDate))
+    val amountPaidOrReceived = volume * (if (cashInstrumentType.isNegative) -1 else 1)
+    amountPaidOrReceived.named("Volume") * disc
+  }
 
   def *(x : Double) = copy(volume = volume * x)
 

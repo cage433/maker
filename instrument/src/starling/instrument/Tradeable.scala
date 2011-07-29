@@ -4,8 +4,9 @@ import physical.PhysicalMetalAssignment
 import starling.daterange.{DateRange, DayAndTime, Day}
 import starling.richdb.RichInstrumentResultSetRow
 import starling.utils.ImplicitConversions._
-import starling.quantity.{SpreadOrQuantity, Quantity}
 import starling.market.rules.SwapPricingRule
+import starling.curves.Environment
+import starling.quantity.{NamedQuantity, SpreadOrQuantity, Quantity}
 
 trait Tradeable extends AsUtpPortfolio {
   def tradeableType : TradeableType[_]

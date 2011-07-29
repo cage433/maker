@@ -91,4 +91,47 @@ class CalendarSpreadOptionTests  extends JonTestEnv with TestNGSuite{
     val expectedGamma = volume.value * n1 / scaledVol
     assertEquals(gamma, expectedGamma, 1e-4)
   }
+
+  @Test
+  def testExplanation() {
+    val md = Day(2010, 1, 14).endOfDay
+
+    val market = Market.NYMEX_WTI
+
+    val env = makeEnv(md)
+
+    val may = Month(2010, 5)
+    val jun = Month(2010, 6)
+    val jul = Month(2010, 7)
+    val aug = Month(2010, 8)
+
+    val strike = Quantity(0, market.priceUOM)
+    val volume = Quantity(1000, BBL)
+
+    val start = SpreadPeriod(may, jun)
+    val end = SpreadPeriod(jul, aug)
+    val cso = new CalendarSpreadOption(market, StripPeriod(start, end), strike, volume, Call)
+
+    val explan = cso.explanation(env)
+
+    assertEquals(explan.name, "Sum(MAY 2010/JUN 2010 value, JUN 2010/JUL 2010 value, JUL 2010/AUG 2010 value)")
+    assertEquals(
+      explan.format(1),
+      "Sum(" +
+              "((CSO-Call(Spread Price, Std Dev, T, K) * Volume) * Discount), " +
+              "((CSO-Call(Spread Price, Std Dev, T, K) * Volume) * Discount), " +
+              "((CSO-Call(Spread Price, Std Dev, T, K) * Volume) * Discount))")
+    assertEquals(
+      explan.format(2),
+    "Sum(" +
+            "((CSO-Call((NYMEX WTI.MAY 2010 - NYMEX WTI.JUNE 2010), 1.45 USD/bbl, 0.25, 0.00 USD/bbl) * 1,000.00 bbl) * USD.14Apr2010), " +
+            "((CSO-Call((NYMEX WTI.JUNE 2010 - NYMEX WTI.JULY 2010), 1.45 USD/bbl, 0.33, 0.00 USD/bbl) * 1,000.00 bbl) * USD.16May2010), " +
+            "((CSO-Call((NYMEX WTI.JULY 2010 - NYMEX WTI.AUGUST 2010), 1.45 USD/bbl, 0.42, 0.00 USD/bbl) * 1,000.00 bbl) * USD.16Jun2010))")
+    val lastExplanation = "Sum(" +
+            "((CSO-Call((83.29 USD/bbl - 83.70 USD/bbl), 1.45 USD/bbl, 0.25, 0.00 USD/bbl) * 1,000.00 bbl) * 1.00), " +
+            "((CSO-Call((83.70 USD/bbl - 84.13 USD/bbl), 1.45 USD/bbl, 0.33, 0.00 USD/bbl) * 1,000.00 bbl) * 1.00), " +
+            "((CSO-Call((84.13 USD/bbl - 84.51 USD/bbl), 1.45 USD/bbl, 0.42, 0.00 USD/bbl) * 1,000.00 bbl) * 1.00))"
+    assertEquals(explan.format(3), lastExplanation)
+    assertEquals(explan.format(4), lastExplanation)
+  }
 }

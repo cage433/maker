@@ -10,7 +10,6 @@ import java.lang.String
 import starling.utils.ImplicitConversions._
 import starling.utils.Pattern._
 import java.text.DecimalFormat
-import starling.quantity.NamedQuantity
 
 class QuantityDouble(d : Double){
   def apply(uom : UOM) = Quantity(d, uom)
@@ -285,6 +284,7 @@ abstract class NamedQuantity(val quantity : Quantity) extends Quantity(quantity.
 }
 
 object NamedQuantity{
+  val NULL = SimpleNamedQuantity("No name", Quantity.NULL)
   def asNamedQuantity(x : Any) : NamedQuantity = x match {
     case s:NamedQuantity => s
     case quantity:Quantity => {
