@@ -49,6 +49,9 @@ import collection.SortedMap
 import starling.quantity.{UOM, Quantity, Percentage}
 import collection.immutable.{TreeMap, Map}
 import starling.titan.{TitanSystemOfRecord, TitanTradeStore}
+import com.trafigura.services.ResteasyServiceApi._
+import com.trafigura.services.trinity.TrinityService
+import com.trafigura.services.ResteasyServiceApi
 
 
 class StarlingInit( val props: Props,
@@ -167,6 +170,8 @@ class StarlingInit( val props: Props,
 
   val mailSender = new JavaMailSenderImpl().update(_.setHost(props.SmtpServerHost()), _.setPort(props.SmtpServerPort()))
 
+  val trinityService = TrinityService(ResteasyServiceApi("http://ttraflon2k196:9100"))
+
   val titanRabbitEventServices = new DefaultTitanRabbitEventServices(props)
 
   val broadcaster = new CompositeBroadcaster(
@@ -282,13 +287,12 @@ class StarlingInit( val props: Props,
   private val guiColour = if (production || props.UseProductionColour()) None else Some(PropsHelper.createColour(serverName))
   val version = Version(serverName, hostname, props.StarlingDatabase().url, production, guiColour)
 
-  val trinityUploadCodeMapper = new TrinityUploadCodeMapper(trinityDB)
   val curveViewer = new CurveViewer(marketDataStore)
-  val trinityUploader = new TrinityUploader(new FCLGenerator(trinityUploadCodeMapper, curveViewer),
-    new XRTGenerator(marketDataStore), null, props)
+  val trinityUploader = new TrinityUploader(new FCLGenerator(businessCalendars, curveViewer),
+    new XRTGenerator(marketDataStore), trinityService, props)
   val scheduler = Scheduler.create(businessCalendars, marketDataStore, broadcaster, trinityUploader, props)
 
-  val referenceData = new ReferenceData(businessCalendars, marketDataStore, strategyDB, scheduler, trinityUploadCodeMapper)
+  val referenceData = new ReferenceData(businessCalendars, marketDataStore, strategyDB, scheduler)
 
   val userReportsService = new UserReportsService(businessCalendars.UK, tradeStores, marketDataStore, userSettingsDatabase, reportService)
 

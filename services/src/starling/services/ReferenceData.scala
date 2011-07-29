@@ -18,10 +18,10 @@ import starling.utils.ImplicitConversions._
  * Represents reference data (calendars, markets, ...) as pivots where possible
  */
 class ReferenceData(businessCalendars: BusinessCalendars, marketDataStore: MarketDataStore, strategyDB: EAIStrategyDB,
-                    scheduler: Scheduler, trinityUploadMapper: TrinityUploadCodeMapper) {
+                    scheduler: Scheduler) {
 
   val referenceDatas = List(
-    "Futures Markets"   → futuresMarketPivot(trinityUploadMapper),
+    "Futures Markets"   → futuresMarketPivot(),
     "Formula Indexes"   → formulaIndexes(),
     "Published Indexes" → publishedIndexes(),
     "Futures Front Period Indexes" → futuresFronPeriodIndexes(),
@@ -38,7 +38,7 @@ class ReferenceData(businessCalendars: BusinessCalendars, marketDataStore: Marke
     PivotTableModel.createPivotData(dataSource, pivotFieldParams)
   }
 
-  def futuresMarketPivot(trinityUploadMapper: TrinityUploadCodeMapper) = {
+  def futuresMarketPivot() = {
     new UnfilteredPivotTableDataSource() {
       val name       = FieldDetails("Name")
       val lotSize    = FieldDetails("Lot Size")
@@ -77,8 +77,7 @@ class ReferenceData(businessCalendars: BusinessCalendars, marketDataStore: Marke
             volatilityID → market.volatilityID,
             hasOptions → (if(market.hasOptions) "Options" else "No options"),
             limSymbol  → market.limSymbol.getOrElse("").toString,
-            trinityCommodity → TrinityMarket.marketToTrinityCode.getOrElse(market, ""),
-            trinityUpload → trinityUploadMapper.uploadCodeOption(market).getOrElse("")
+            trinityCommodity → TrinityMarket.marketToTrinityCode.getOrElse(market, "")
           )
         }
         data

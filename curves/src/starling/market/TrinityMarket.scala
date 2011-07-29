@@ -19,5 +19,6 @@ object TrinityMarket {
 
     "ICO" → ICE_BRENT, "IGO" → ICE_GAS_OIL, "ICL" → ICE_WTI )
 
+
   lazy val marketToTrinityCode = trinityCodeMap.map(_.swap)
 }

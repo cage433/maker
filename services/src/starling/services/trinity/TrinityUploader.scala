@@ -14,7 +14,13 @@ import com.trafigura.services.trinity.TrinityService
 
 
 class TrinityUploader(fclGenerator: FCLGenerator, xrtGenerator: XRTGenerator, trinityService: TrinityService, props: Props) {
-  def uploadCurve(label: CurveLabel)   = upload(fclGenerator.generate(label),          "curve%s.fcl" % label.observationDay)
+  def uploadCurve(label: CurveLabel)   = {
+    fclGenerator.generate(label).map { case (trinityKey, commodityRates) => {
+      println("Uploading " + trinityKey)
+      commodityRates.foreach(println)
+      trinityService.commodityRates.addRates(trinityKey.exchange, trinityKey.commodity, trinityKey.currency, "Full Curve", commodityRates.toList)
+    } }
+  }
   def uploadLibor(observationDay: Day) = upload(xrtGenerator.generate(observationDay), "libor%s.xrt" % observationDay)
 
   private def upload(lines: List[String], fileName: String) {
