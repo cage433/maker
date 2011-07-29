@@ -75,7 +75,7 @@ case class Cargo(quantity: Quantity, incoterm: Incoterm, blDate: Day, index: For
   def instrumentType = Cargo
 }
 
-object Cargo extends InstrumentType[CommodityForward] with TradeableType[CommodityForward] {
+object Cargo extends InstrumentType[Cargo] with TradeableType[Cargo] {
   def sample = null
 
   def createTradeable(row: RichInstrumentResultSetRow) = null

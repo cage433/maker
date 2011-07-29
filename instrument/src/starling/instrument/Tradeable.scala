@@ -15,6 +15,9 @@ trait Tradeable extends AsUtpPortfolio {
   def expiryDay():Option[Day] = None
   def isLive(dayAndTime : DayAndTime) : Boolean
 
+  // Return a tree structure describing how mtm was calculated
+  //def explanation(env : Environment) : NamedQuantity 
+
   /**
    * Hack so that for Jons option the premium has an associated market/index + period
    * so P&L and Theta have a Risk Market and Risk Period
