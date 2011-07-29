@@ -34,16 +34,16 @@ class UsdPositionTests extends StarlingTest {
   @Test
   def testUsdPricedForwardHasUsdPositionEqualToTheValueOfTheUnderlying{
 
-    val forward = CommodityForward(market, Day(2010, 2, 1), Quantity(20, USD/MT), Quantity(100, MT))
-    assertQtyEquals(forward.usdDeltaPosition(env), forward.volume * price, 1e-6)
+    val future = Future(market, Day(2010, 2, 1), Quantity(20, USD/MT), Quantity(100, MT))
+    assertQtyEquals(future.usdDeltaPosition(env), future.volume * price, 1e-6)
   }
 
   @Test
   def testCrossCurrencyForwardHasUsdPositionThatTakesAccoountOfStrike{
-    val forward = CommodityForward(market, Day(2010, 2, 1), Quantity(20, GBP/MT), Quantity(100, MT))
+    val future = Future(market, Day(2010, 2, 1), Quantity(20, GBP/MT), Quantity(100, MT))
     assertQtyEquals(
-      forward.usdDeltaPosition(env),
-      forward.volume * (price - forward.strike * usdRates(GBP)),
+      future.usdDeltaPosition(env),
+      future.volume * (price - future.strike * usdRates(GBP)),
       1e-6)
   }
 

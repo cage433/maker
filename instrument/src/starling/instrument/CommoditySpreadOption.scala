@@ -20,29 +20,78 @@ import starling.market.{FuturesSpreadMarket, ForwardPriceRiskFactorType, Market,
 
 case class CommoditySpreadOption(
         market: FuturesSpreadMarket,
-        period: DateRange,
+        month: Month,
         strike: Quantity,
         volume: Quantity,
         callPut: CallOrPut
-        ) extends SpreadOption(market, DateRangePeriod(period), strike, volume, callPut) {
-  override def expiryDay = Some(market.spreadOptionExpiry(period))
-
-  private def month = period.asInstanceOf[Month]
+        ) extends SingleSpreadOption(market, market.spreadOptionExpiry(month), DateRangePeriod(month), strike, volume, callPut) with Tradeable{
+  override def expiryDay = Some(market.spreadOptionExpiry(month))
 
   def asUtpPortfolio(tradeDay:Day) = UTP_Portfolio(Map(
-    SingleCommoditySpreadOption(market, market.spreadOptionExpiry(period), month, strike, volume.copy(value = 1.0), callPut) -> volume.value
+    SingleCommoditySpreadOption(market, market.spreadOptionExpiry(month), month, strike, volume.copy(value = 1.0), callPut) -> volume.value
   ))
 
   def tradeableType = CommoditySpreadOption
 
   override def fixUpMyCashInstruments(ci: CashInstrument) = {
-    ci.copy(index = Some(Right(market)), averagingPeriod = Some(period))
+    ci.copy(index = Some(Right(market)), averagingPeriod = Some(month))
+  }
+
+
+  def persistedTradeableDetails = Map("Market" -> market, "Period" -> period, "Strike" -> strike, "Quantity" -> volume, "CallPut" -> callPut)
+
+
+  def instrumentType = CommoditySpreadOption
+
+  val valuationCCY = strike.uom * market.uom
+
+  override def forwardState(env: Environment, dayAndTime: DayAndTime) = {
+    if (exerciseDay.endOfDay > dayAndTime) {
+      // exercise day after the forward day, still not expired
+      this
+    } else if (env.marketDay >= exerciseDay.endOfDay) {
+      // already expired option, do nothing
+      this
+    } else {
+      val exerciseDayEnv = env.forwardState(exerciseDay.endOfDay)
+      val callPutSign = callPut match {case Call => 1.0; case Put => -1.0}
+      val spread = exerciseDayEnv.spreadPrice(market, month)
+      callPut.payoff(spread, strike) match {
+        case Some(p) => new FuturesCommoditySpread(market, month, strike, volume * callPutSign)
+        case None => this
+      }
+    }
+  }
+
+  def * (scale : Double) = copy(volume = volume * scale)
+
+  def periodKey = Some(month)
+  override def riskMarketExtra = String.format("%6.2f%n ", new java.lang.Double(strike.value)) + callPut.toShortString
+  override def atomicKeyCachingUTP : UTP = copy(strike = 1.0(market.priceUOM))
+
+  def price(env: Environment) = {
+    if (isLive(env.marketDay)) {
+      val T = exerciseDay.endOfDay.timeSince(env.marketDay)
+      val S = env.spreadPrice(market, month)
+      val K = strike
+      val discount = env.discount(valuationCCY, exerciseDay)
+      if (T == 0) {
+        callPut.intrinsicPrice(S, K) * discount
+      } else {
+        val annualisedStdDev = env.spreadStdDev(market, month, exerciseDay, strike)
+        val undiscountedPriceValue = new SpreadOptionCalculations(callPut, S.value, K.value, annualisedStdDev.checkedValue(market.priceUOM), 0.0, T).undiscountedPrice
+        val undiscountedPrice = Quantity(undiscountedPriceValue, market.priceUOM)
+        undiscountedPrice * discount
+      }
+    } else {
+      0.0(market.priceUOM)
+    }
   }
 }
 
 case class SingleCommoditySpreadOption(
         market: FuturesSpreadMarket,
-        exerciseDay: Day,
+        override val exerciseDay: Day,
         month: Month,
         strike: Quantity,
         volume: Quantity,
@@ -104,8 +153,8 @@ object CommoditySpreadOption extends InstrumentType[SingleCommoditySpreadOption]
   }
 
   def create(row: RichInstrumentResultSetRow, volume: Quantity) = {
-    val period = row.getPeriod("Period").asInstanceOf[DateRangePeriod].period
-    new CommoditySpreadOption(row.getFuturesSpreadMarket("Market"), period, row.getQuantity("Strike"), volume, row.getCallPut("CallPut"))
+    val month = row.getPeriod("Period").asInstanceOf[DateRangePeriod].period.asInstanceOf[Month]
+    new CommoditySpreadOption(row.getFuturesSpreadMarket("Market"), month, row.getQuantity("Strike"), volume, row.getCallPut("CallPut"))
   }
 
   def sample = {

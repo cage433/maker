@@ -69,7 +69,7 @@ case class CalendarSpreadOption(
 
 case class SingleCalendarSpreadOption(
         market: FuturesMarket,
-        exerciseDay: Day,
+        override val exerciseDay: Day,
         firstMonth: Month,
         secondMonth: Month,
         strike: Quantity,

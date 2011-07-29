@@ -28,7 +28,7 @@ abstract class SpreadOption(
 
 abstract class SingleSpreadOption(
                                market: Market with KnownExpiry,
-                               exerciseDay: Day,
+                               val exerciseDay: Day,
                                val period: Period,
                                strike: Quantity,
                                volume: Quantity,
