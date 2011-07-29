@@ -23,11 +23,7 @@ object PriceDataType extends MarketDataType {
   lazy val marketTenorField = FieldDetails("Market Tenor")
   lazy val periodField = FieldDetails("Period", PeriodPivotParser)
   lazy val validity = new FieldDetails("Validity")
-  lazy val priceField = new FieldDetails(Field("Price")) {
-    override def parser =  PivotQuantityPivotParser
-    override def formatter = PivotQuantitySetPivotFormatter
-    override def isDataField = true
-  }
+  lazy val priceField = new PivotQuantityFieldDetails("Price")
 
   lazy val initialPivotState = PivotFieldsState(
     filters=List((marketField.field,SomeSelection(Set()))),

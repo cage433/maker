@@ -493,7 +493,7 @@ object PivotTableModel {
           allPaths.flatMap {
             path => {
               def getAxisValues(head:Field, index:Int) = {
-                val someValue = row.getOrElse(head, UndefinedValue)
+                val someValue = PivotValue.extractValue(row, head)
                 val matches = filters.get(head).map{ selection=>selection.matches(fieldDetailsLookup(head), someValue) }.getOrElse(true)
                 if (!matches) {
                   None

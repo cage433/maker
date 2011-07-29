@@ -512,6 +512,7 @@ object MarketValuePivotParser extends PivotParser {
 class PivotQuantityFieldDetails(name:String) extends FieldDetails(Field(name)) {
   override def value(a:Any):Any = a.asInstanceOf[Set[Any]]
   override def formatter = PivotQuantitySetPivotFormatter
+  override def parser =  PivotQuantityPivotParser
   override def nullValue = PivotQuantity.NULL
   override def isDataField = true
   override def comparator = PivotQuantityComparator
