@@ -23,20 +23,7 @@ object PriceDataType extends MarketDataType {
   lazy val marketTenorField = FieldDetails("Market Tenor")
   lazy val periodField = FieldDetails("Period", PeriodPivotParser)
   lazy val validity = new FieldDetails("Validity")
-  lazy val priceField = new FieldDetails(Field("Price")) {
-    override def parser =  PivotQuantityPivotParser
-    override def formatter = PivotQuantitySetPivotFormatter
-    override def fixEditedValue(value: Any) = PriceValue(value.asInstanceOf[PivotQuantity].quantityValue.get)
-    override def value(a: Any) = {
-      //HACK
-      a.asInstanceOf[Set[AnyRef]].map {
-        case pq:PivotQuantity => pq
-        case pv:PriceValue => pv.pq
-      }
-    }
-    override def isDataField = true
-    override def transformValueForGroupByField(a: Any) = a.asInstanceOf[PriceValue].pq
-  }
+  lazy val priceField = new PivotQuantityFieldDetails("Price")
 
   lazy val initialPivotState = PivotFieldsState(
     filters=List((marketField.field,SomeSelection(Set()))),
@@ -51,7 +38,7 @@ object PriceDataType extends MarketDataType {
 
   override def createValue(values: List[Map[Field, Any]]) = {
     val pairs = (values.map { v => {
-      v(periodField.field).asInstanceOf[DateRange] → v(priceField.field).asInstanceOf[PriceValue]
+      v(periodField.field).asInstanceOf[DateRange] → v(priceField.field).asInstanceOf[PivotQuantity]
     } }).toMap
     PriceData(pairs)
   }
@@ -73,7 +60,7 @@ case class PriceDataKey(market: CommodityMarket) extends MarketDataKey {
         marketCommodityField.field → market.commodity.toString,
         marketTenorField.field → market.tenor.toString,
         periodField.field → period,
-        validity.field → price.validity,
+        validity.field → price.warning.isEmpty,
         priceField.field → price).addSome(exchangeField.field → market.safeCast[FuturesMarket].map(_.exchange.name))
   } }
 
@@ -89,26 +76,19 @@ case class PriceDataKey(market: CommodityMarket) extends MarketDataKey {
 
 case class PriceDataDTO(prices: SortedMap[DateRange, Double])
 
-case class PriceValue(value:Quantity, warning:Option[String]=None) {
-  def <(other: Quantity): Boolean = value < other
-  def >(other: Quantity): Boolean = value > other
-  def pq = value.pq.copy(warning=warning)
-  def validity = if (warning.isEmpty) "Valid" else "Invalid"
-}
-
-case class PriceData(prices: Map[DateRange, PriceValue]) extends MarketData {
+case class PriceData(prices: Map[DateRange, PivotQuantity]) extends MarketData {
   def isEmpty = prices.isEmpty
   def nonEmpty = prices.nonEmpty
 
-  override def marshall = PriceDataDTO(TreeMap.empty[DateRange, Double] ++ prices.mapValues(_.value.value))
+  override def marshall = PriceDataDTO(TreeMap.empty[DateRange, Double] ++ prices.mapValues(_.doubleValue.get))
 
   lazy val sortedKeys = marshall.prices.keySet
   override def size = Some(prices.size)
 }
 
 object PriceData {
-  def fromSorted(prices: SortedMap[DateRange, Double], uom: UOM) = PriceData(prices.mapValues(price => PriceValue(Quantity(price, uom))).toMap)
+  def fromSorted(prices: SortedMap[DateRange, Double], uom: UOM) = PriceData(prices.mapValues(price => Quantity(price, uom).pq).toMap)
   def create(prices: TraversableOnce[(DateRange, Double)], uom: UOM) = fromMap(prices.toMap, uom)
-  def fromMap(prices: Map[DateRange, Quantity]) = PriceData(prices.mapValues(PriceValue(_)))
-  def fromMap(prices: Map[DateRange, Double], uom: UOM) = PriceData(prices.mapValues(price => PriceValue(Quantity(price, uom))))
+  def fromMap(prices: Map[DateRange, Quantity]) = PriceData(prices.mapValues(_.pq))
+  def fromMap(prices: Map[DateRange, Double], uom: UOM) = PriceData(prices.mapValues(price => Quantity(price, uom).pq))
 }

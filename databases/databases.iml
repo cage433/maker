@@ -64,7 +64,9 @@
           <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/compile/spring-jdbc-3.0.5.RELEASE.jar!/" />
         </CLASSES>
         <JAVADOC />
-        <SOURCES />
+        <SOURCES>
+          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/compile/spring-jdbc-3.0.5.RELEASE-sources.jar!/" />
+        </SOURCES>
       </library>
     </orderEntry>
     <orderEntry type="module-library" exported="">
@@ -109,7 +111,9 @@
           <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/compile/bonecp-0.7.1.RELEASE.jar!/" />
         </CLASSES>
         <JAVADOC />
-        <SOURCES />
+        <SOURCES>
+          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/compile/bonecp-0.7.1.RELEASE-sources.jar!/" />
+        </SOURCES>
       </library>
     </orderEntry>
     <orderEntry type="module-library" exported="">
@@ -181,7 +185,9 @@
           <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/compile/scalacheck_2.9.0-1-1.9.jar!/" />
         </CLASSES>
         <JAVADOC />
-        <SOURCES />
+        <SOURCES>
+          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/compile/scalacheck_2.9.0-1-1.9-sources.jar!/" />
+        </SOURCES>
       </library>
     </orderEntry>
     <orderEntry type="module-library" scope="TEST">
@@ -199,7 +205,9 @@
           <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/test/h2-1.2.131.jar!/" />
         </CLASSES>
         <JAVADOC />
-        <SOURCES />
+        <SOURCES>
+          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/test/h2-1.2.131-sources.jar!/" />
+        </SOURCES>
       </library>
     </orderEntry>
     <orderEntry type="module-library" exported="">
@@ -217,7 +225,9 @@
           <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/compile/slf4j-api-1.6.1.jar!/" />
         </CLASSES>
         <JAVADOC />
-        <SOURCES />
+        <SOURCES>
+          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/compile/slf4j-api-1.6.1-sources.jar!/" />
+        </SOURCES>
       </library>
     </orderEntry>
     <orderEntry type="module-library" scope="RUNTIME">

@@ -287,8 +287,6 @@ case class FieldDetails(field:Field) {
     }
   }
 
-  def fixEditedValue(value:Any) = value
-  
   def combineGroup(groupA:Any,groupB:Any):Any = groupA.asInstanceOf[Set[Any]].union(groupB.asInstanceOf[Set[Any]])
 
   // NOTE - The parser returned here (and in overriding methods) must be serializable (and easily serializable at that). i.e. an Object like TextPivotParser.
@@ -514,6 +512,7 @@ object MarketValuePivotParser extends PivotParser {
 class PivotQuantityFieldDetails(name:String) extends FieldDetails(Field(name)) {
   override def value(a:Any):Any = a.asInstanceOf[Set[Any]]
   override def formatter = PivotQuantitySetPivotFormatter
+  override def parser =  PivotQuantityPivotParser
   override def nullValue = PivotQuantity.NULL
   override def isDataField = true
   override def comparator = PivotQuantityComparator

@@ -35,7 +35,9 @@
           <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/compile/protobuf-java-2.3.0.jar!/" />
         </CLASSES>
         <JAVADOC />
-        <SOURCES />
+        <SOURCES>
+          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/compile/protobuf-java-2.3.0-sources.jar!/" />
+        </SOURCES>
       </library>
     </orderEntry>
   </component>

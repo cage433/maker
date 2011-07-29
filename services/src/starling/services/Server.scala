@@ -44,7 +44,7 @@ import starling.services.rpc.refdata._
 import starling.services.rabbit._
 import starling.daterange.ObservationTimeOfDay
 import starling.pivot.{Field, PivotQuantity}
-import starling.marketdata.{PriceValue, MarketDataKey}
+import starling.marketdata.{MarketDataKey}
 import collection.SortedMap
 import starling.quantity.{UOM, Quantity, Percentage}
 import collection.immutable.{TreeMap, Map}
@@ -566,7 +566,6 @@ object Bob {
                   case Nil => println("Nil " + key); None
                   case one :: Nil => {
                     one match {
-                      case pv:PriceValue => Some( (pv.value.uom.toString, pv.value.value) )
                       case q:Quantity => Some( (q.uom.toString, q.value) )
                       case pq:PivotQuantity if pq.quantityValue.isDefined => Some( (pq.quantityValue.get.uom.toString, pq.quantityValue.get.value) )
                       case pc:Percentage => Some( ("%", pc.value) )
