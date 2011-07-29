@@ -157,7 +157,7 @@ object Hedge{
           _ match {
             case (PriceDifferentiable(_, month), volume) => (Future(market, month, strike, Quantity(1, market.uom)), volume.value)
             case k @ (SwapPrice(_, m), volume) => {
-              val swap = SingleCommoditySwap(index, strike, Quantity(1, market.uom), m, cleared = true)
+              val swap = SinglePeriodSwap(index, strike, Quantity(1, market.uom), m, cleared = true)
               val swapDelta = swap.firstOrderDerivative(env, k._1, swap.valuationCCY)
               val swapUndiscountedDelta = swap.firstOrderDerivative(env.undiscounted, k._1, swap.valuationCCY)
               val swapPosition = swap.position(env, k._1)

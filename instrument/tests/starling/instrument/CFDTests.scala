@@ -38,25 +38,26 @@ class CFDTests extends TestMarketSpec {
   val volume = Quantity(1000, BBL)
   val strike = Quantity(-2, USD / BBL)
 
-  val swapSingle1 = new SingleCommoditySwap(
+  val swapSingle1 = new SinglePeriodSwap(
     index1,
     Quantity(0, USD / BBL),
     volume,
     period,
     true
   )
-  val swapSingle2 = new SingleCommoditySwap(
+  val swapSingle2 = new SinglePeriodSwap(
     index2,
     -strike,
     volume,
     period,
     true
   )
-  val swapSpread = new SingleCFD(
+  val swapSpread = new SinglePeriodSwap(
     spreadIndex,
     strike,
     volume,
-    period
+    period,
+    true, CommonPricingRule
   )
 
   def env(md: Day) = {

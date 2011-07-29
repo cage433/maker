@@ -30,7 +30,7 @@ class KuduCommoditySwapTests extends TestMarketSpec {
     val volume = Quantity(1, BBL)
     val strike = Quantity(0, USD / BBL)
 
-    val swap = new SingleCommoditySwap(index,strike,volume,month, cleared = false)
+    val swap = new SinglePeriodSwap(index,strike,volume,month, cleared = false)
     assertQtyEquals(swap.mtm(env), Quantity(86.483, USD), 1e-6)
   }
 
@@ -40,7 +40,7 @@ class KuduCommoditySwapTests extends TestMarketSpec {
     val volume = Quantity(1, BBL)
     val strike = Quantity(0, USD / BBL)
 
-    val swap = new SingleCommoditySwap(index,strike,volume,month, cleared = false)
+    val swap = new SinglePeriodSwap(index,strike,volume,month, cleared = false)
 //    assertQtyEquals(swap.mtm(env), Quantity(82.0047058, USD), 1e-6) // Wrong atm
   }
 }

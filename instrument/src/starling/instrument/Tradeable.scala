@@ -54,7 +54,6 @@ object TradeableType {
     FuturesCalendarSpread,
     FuturesCommoditySpread,
     CommoditySwap,
-    CFD,
     SwapCalendarSpread,
     FuturesOption,
     CalendarSpreadOption,

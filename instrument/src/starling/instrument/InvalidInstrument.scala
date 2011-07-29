@@ -4,8 +4,8 @@ package starling.instrument
 import starling.richdb.RichInstrumentResultSetRow
 import starling.daterange.DayAndTime
 import starling.curves.{Environment}
-import starling.quantity.{UOM, Quantity}
 import starling.daterange.Day
+import starling.quantity.{SimpleNamedQuantity, NamedQuantity, UOM, Quantity}
 
 class InvalidInstrumentException extends RuntimeException
 
@@ -15,7 +15,7 @@ class InvalidInstrumentException extends RuntimeException
  */
 trait InvalidInstrument extends Tradeable {
   def asUtpPortfolio(tradeDay:Day) = UTP_Portfolio(Map())
-
+  def explanation(env : Environment) : NamedQuantity = SimpleNamedQuantity("Invalid Instrument", Quantity.NULL)
   def deltaStepType() = throw new UnsupportedOperationException
 }
 

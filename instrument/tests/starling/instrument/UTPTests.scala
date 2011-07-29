@@ -74,11 +74,6 @@ class UTPTests extends IndexTest {
       // mid period
       CommoditySwap(unlIndex, 123(USD/MT), 777(MT), Quarter(2009, 1), cleared = false),
 
-    // TODO CFDs don't work at the moment. we need to spend some time on them.
-      CFD(cfdIndex, -(1(USD/BBL)), 777(BBL), Month(2009, 2)), // mid period
-      CFD(cfdIndex, -(1(USD/BBL)), 777(BBL), Month(2008, 12)), // all before
-      CFD(cfdIndex, -(1(USD/BBL)), 1000(BBL), Month(2009, 10)), // all after
-
       new FuturesOption(leadMarket, Day(2009, 8, 1), Day(2009, 8, 20), 90(USD/MT), 333(MT), Call, European),
       AsianOption(unlIndex, Month(2009, 2), 98(USD/MT), 222(MT), Put),
       AsianOption(unlIndex, Strip(Month(2009, 1), Month(2009, 10)), 98(USD/MT), 222(MT), Put),

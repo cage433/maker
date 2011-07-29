@@ -81,18 +81,18 @@ trait PivotRowShareableByRiskFactor[T]{
       case BankAccount(_, Some(mkt : FuturesMarket), None, period : DateRangePeriod) => Future(mkt, period.period, 0.0(mkt.priceUOM), 1.0(mkt.uom))
       case BankAccount(_, Some(mkt : FuturesMarket), None, SpreadPeriod(front : Month, back : Month)) => 
           FuturesCalendarSpread(mkt, front, back, 0.0(mkt.priceUOM), 0.0(mkt.priceUOM), 1.0(mkt.uom))
-      case BankAccount(_, None, Some(index : FuturesFrontPeriodIndex), period : DateRangePeriod) => SingleCommoditySwap(index, 0.0(index.priceUOM), 1.0(index.uom), period.period, cleared = true)
+      case BankAccount(_, None, Some(index : FuturesFrontPeriodIndex), period : DateRangePeriod) => SinglePeriodSwap(index, 0.0(index.priceUOM), 1.0(index.uom), period.period, cleared = true)
       case BankAccount(_, None, Some(multiIndex : MultiIndex), period : DateRangePeriod) => {
         val index = multiIndex.arbitraryIndexToAssignCashTo
-        SingleCommoditySwap(index, 0.0(index.priceUOM), 1.0(index.uom), period.period, cleared = true)
+        SinglePeriodSwap(index, 0.0(index.priceUOM), 1.0(index.uom), period.period, cleared = true)
       }
       case BankAccount(_, None, Some(index : SingleIndex), period : DateRangePeriod) => {
-        SingleCommoditySwap(index, 0.0(index.priceUOM), 1.0(index.uom), period.period, cleared = true)
+        SinglePeriodSwap(index, 0.0(index.priceUOM), 1.0(index.uom), period.period, cleared = true)
       }
 
       case CashInstrument(_, _, _, Some(Left(index : Index)), Some(DateRangePeriod(period))) => {
         // we default to a cleared swap with a common pricing rule. this may not be correct.
-        SingleCommoditySwap(index, 0.0(index.priceUOM), 1.0(index.uom), period, cleared = true, pricingRule = CommonPricingRule)
+        SinglePeriodSwap(index, 0.0(index.priceUOM), 1.0(index.uom), period, cleared = true, pricingRule = CommonPricingRule)
       }
       case CashInstrument(_, _, _, Some(Right(mkt: FuturesMarket)), Some(period : Period)) => {
         period match {

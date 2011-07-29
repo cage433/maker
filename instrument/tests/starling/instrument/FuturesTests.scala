@@ -76,7 +76,7 @@ class FuturesTests extends TestMarketSpec {
   @Test
   def testExplanation() {
     val explain = inst.explanation(env)
-    assertEquals(explain.name, "((F - K) * V)")
+    assertEquals(explain.name, "((F - K) * Volume)")
     assertEquals(explain.format(1), "((Test.10Dec2009 - 105.00 EUR/MT) * 1,000.00 MT)")
     assertEquals(explain.format(2), "((99.00 EUR/MT - 105.00 EUR/MT) * 1,000.00 MT)")
   }

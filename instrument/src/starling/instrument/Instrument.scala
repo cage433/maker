@@ -37,7 +37,6 @@ object InstrumentType {
   val types = List[InstrumentType[_ <: UTP]](
     Future,
     CommoditySwap,
-    CFD,
     SwapCalendarSpread,
     FuturesOption,
     CalendarSpreadOption,
@@ -234,12 +233,12 @@ trait Instrument extends Ordered[Instrument] with Greeks with PnlExplanation {
   }
 
   def hedgingInstrument(env: Environment, diff: EnvironmentDifferentiable): Option[UTP] = {
-    def buildSwap(index : SingleIndex, period : DateRange) : Option[SingleCommoditySwap] = {
+    def buildSwap(index : SingleIndex, period : DateRange) : Option[SinglePeriodSwap] = {
         // we have to be careful to take into account when we are mid-pricing period.
 
         val livePeriodDays = index.observationDays(period).filter(_.endOfDay > env.marketDay)
         if (!livePeriodDays.isEmpty) {
-          Some(SingleCommoditySwap(index, 0.0(index.priceUOM), 1.0(index.uom), DateRange(livePeriodDays.head, livePeriodDays.last), cleared = true))
+          Some(SinglePeriodSwap(index, 0.0(index.priceUOM), 1.0(index.uom), DateRange(livePeriodDays.head, livePeriodDays.last), cleared = true))
         } else {
           None
         }

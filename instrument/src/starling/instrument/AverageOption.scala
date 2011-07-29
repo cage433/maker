@@ -94,11 +94,6 @@ abstract class SingleAverageOption(
     val priceKeys : Set[EnvironmentDifferentiable with PriceKey] = days.map(SwapPrice(index, _))
     val volKeys : Set[EnvironmentDifferentiable with VolKey] = days.map(SwapVol(index, _))
     (priceKeys, volKeys)
-//    var (pk, vk) = super.priceAndVolKeys(marketDay)
-//    var (spk,_) = SingleCommoditySwap(index, strike, volume, averagingPeriod, false).priceAndVolKeys(marketDay)
-//    pk = if (pk.isEmpty) pk else spk
-//    vk = if (vk.isEmpty) vk else spk.map{case SwapPrice(_, period) => SwapVol(index, period)}
-//    (pk, vk)
   }
 
   def periodKey = Some(DateRangePeriod(averagingPeriod))

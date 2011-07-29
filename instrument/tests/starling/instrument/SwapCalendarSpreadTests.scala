@@ -40,7 +40,7 @@ class SwapCalendarSpreadTests extends TestMarketSpec {
     val volume = Quantity(100, BBL)
     val strike = Quantity(.9, USD / BBL)
 
-    val swapFront = new SingleCommoditySwap(
+    val swapFront = new SinglePeriodSwap(
       index,
       strike,
       volume,
@@ -48,7 +48,7 @@ class SwapCalendarSpreadTests extends TestMarketSpec {
       true
     )
 
-    val swapBack = new SingleCommoditySwap(
+    val swapBack = new SinglePeriodSwap(
       index,
       strike.copy(value = 0.0),
       -volume,

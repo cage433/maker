@@ -123,7 +123,7 @@ class PnlExplanationReportTests extends JonTestEnv {
     val env2 = TestEnvironmentBuilder.curveObjectEnvironment(Day(2009, 9, 15).endOfDay, market, 20, 0.2)
 
     val volume = Quantity(1, market.uom)
-    val forward = new SingleCommoditySwap(Index.WTI10, Quantity(0, market.priceUOM), volume, Month(2010, 1), cleared = false)
+    val forward = new SinglePeriodSwap(Index.WTI10, Quantity(0, market.priceUOM), volume, Month(2010, 1), cleared = false)
 
     val marketChangesPnl = new MarketChangesPnl(env1, env2, Map(UTPIdentifier(1) -> forward))
     val pnlExplanation = marketChangesPnl.combine(marketChangesPnl.rows(UTPIdentifier(1), forward), noChoices)
@@ -266,7 +266,7 @@ class PnlExplanationReportTests extends JonTestEnv {
   @Test
   def testSwapMidPeriodHasNoUnexplainedTerms{
     val index = Index.BRT11.copy(precision = None)
-    val swap = SingleCommoditySwap(
+    val swap = SinglePeriodSwap(
       index,
       15.0(index.priceUOM),
       100(index.uom),
@@ -306,7 +306,7 @@ class PnlExplanationReportTests extends JonTestEnv {
     val market = index.market
     val period = Month(2011, 4)
     val volume = 10000(index.uom)
-    val swap = SingleCommoditySwap(index, 0(index.priceUOM), volume, period, cleared = true)
+    val swap = SinglePeriodSwap(index, 0(index.priceUOM), volume, period, cleared = true)
 
     val marketDay1 = (13 Apr 2011).endOfDay
     val marketDay2 = (14 Apr 2011).startOfDay
