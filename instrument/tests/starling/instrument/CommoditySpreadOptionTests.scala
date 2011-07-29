@@ -19,7 +19,7 @@ import starling.utils.conversions.RichColtMatrices._
 import cern.colt.matrix.impl.DenseDoubleMatrix1D
 import starling.market.{FuturesSpreadMarket, JonTestEnv, Market}
 
-class CommoditySpreadOptionTest extends JonTestEnv with TestNGSuite{
+class CommoditySpreadOptionTests extends JonTestEnv with TestNGSuite{
 
   @Test
   def testDeltaAndGamma{
@@ -46,10 +46,10 @@ class CommoditySpreadOptionTest extends JonTestEnv with TestNGSuite{
         }
       )
     )
-    val exerciseDay = june.firstDay - 1
+    val exerciseDay = mkt.spreadOptionExpiry(june)
     val T = exerciseDay.endOfDay.timeSince(md)
     val volume = 10.0(mkt.uom)
-    val cso = new SingleCommoditySpreadOption(mkt, exerciseDay, june, K(mkt.priceUOM), volume, Put)
+    val cso = new CommoditySpreadOption(mkt, june, K(mkt.priceUOM), volume, Put)
     val gamma = cso.gamma(env, FuturesSpreadPrice(mkt, june), USD, List(FuturesSpreadPrice(mkt, june)), multiple = 1e-3).value
     val delta = cso.firstOrderDerivative(env, FuturesSpreadPrice(mkt, june), USD, multiple = 1e-3).value
     val scaledVol = stdDev * sqrt(T)
