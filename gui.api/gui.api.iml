@@ -22,8 +22,7 @@
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="library" name="scala-lib" level="project" />
     <orderEntry type="module" module-name="auth" exported="" />
-    <orderEntry type="module" module-name="daterange" exported="" />
-    <orderEntry type="module" module-name="pivot" exported="" />
+    <orderEntry type="module" module-name="pivot.utils" exported="" />
     <orderEntry type="module" module-name="quantity" exported="" />
     <orderEntry type="module" module-name="bouncyrmi" exported="" />
     <orderEntry type="module-library" exported="">

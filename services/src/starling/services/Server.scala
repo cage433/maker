@@ -208,6 +208,8 @@ class StarlingInit( val props: Props,
     (fwdCurveAutoImport, mds)
   }
 
+  val userSettingsDatabase = new UserSettingsDatabase(starlingDB, broadcaster)
+
   if (dbMigration) {
     //Ensure the schema is up to date
     new PatchRunner(starlingRichDB, props.ReadonlyMode(), this).updateSchemaIfRequired
@@ -251,8 +253,6 @@ class StarlingInit( val props: Props,
 
   val titanSystemOfRecord = new TitanSystemOfRecord(titanTradeCache, titanServices, logisticsServices)
   val titanTradeImporter = new TradeImporter(titanSystemOfRecord, titanTradeStore)
-  
-  val userSettingsDatabase = new UserSettingsDatabase(starlingDB, broadcaster)
 
   val tradeImporters = Map[TradeSystem,TradeImporter](
     RefinedAssignmentTradeSystem → refinedAssignmentImporter,

@@ -3,15 +3,47 @@ package starling.marketdata
 import collection.SortedMap
 import starling.pivot._
 import starling.pivot.pivotparsers.{ValidMarketParser, PeriodPivotParser}
-import starling.daterange.DateRange
 import starling.utils.ImplicitConversions._
 import starling.quantity.{UOM, Quantity}
 import collection.immutable.TreeMap
 import starling.market.{FuturesMarket, Market, CommodityMarket}
-
+import utils.PeriodPivotFormatter
+import starling.daterange._
 
 object ValidMarketParserObject {
   lazy val Parser = new ValidMarketParser(Market.all.map(_.name).toSet)
+}
+
+object PeriodComparator extends Ordering[Any] {
+  def compare(x: Any, y: Any) = {
+    (x,y) match {
+      case (p1:Period, p2:Period) => {
+        (p1, p2) match {
+          case (_: StripPeriod, _: DateRangePeriod) => -1
+          case (_: DateRangePeriod, _: StripPeriod) => +1
+
+          case (_: DateRangePeriod, _: SpreadPeriod) => +1
+          case (_: SpreadPeriod, _: DateRangePeriod) => -1
+
+          case (_: StripPeriod, _: SpreadPeriod) => -1
+          case (_: SpreadPeriod, _: StripPeriod) => +1
+
+          case (a:SpreadPeriod, b:SpreadPeriod) => a.compare(b)
+          case (a:DateRangePeriod, b:DateRangePeriod) => a.compare(b)
+          case (a:StripPeriod, b:StripPeriod) => a.compare(b)
+        }
+      }
+    }
+  }
+}
+
+class PeriodFieldDetails(name:String) extends FieldDetails(name) {
+  override def parser = PeriodPivotParser
+  override def formatter = PeriodPivotFormatter
+  override def comparator:Ordering[Any] = PeriodComparator
+}
+object PeriodFieldDetails {
+  def apply(name:String) = new PeriodFieldDetails(name)
 }
 
 object PriceDataType extends MarketDataType {
@@ -21,7 +53,7 @@ object PriceDataType extends MarketDataType {
   lazy val marketField = FieldDetails("Market", ValidMarketParserObject.Parser)
   lazy val marketCommodityField = FieldDetails("Market Commodity")
   lazy val marketTenorField = FieldDetails("Market Tenor")
-  lazy val periodField = FieldDetails("Period", PeriodPivotParser)
+  lazy val periodField = PeriodFieldDetails("Period")
   lazy val validity = new FieldDetails("Validity")
   lazy val priceField = new PivotQuantityFieldDetails("Price")
 

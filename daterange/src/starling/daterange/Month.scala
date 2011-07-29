@@ -17,6 +17,9 @@ case class Month(y : Int, m : Int) extends DateRange {
 
   override def toShortString = Month.months(m - 1).capitalize.take(3) + " " + y
 
+  def toReutersString = ReutersDeliveryMonthCodes.InverseCodes(m) + (y - 2000)
+  def toTinyString = Month.months(m - 1).capitalize.take(3) + (y - 2000)
+
   def min(that : Month) : Month = if (this < that) this else that
 
   def max(that : Month) : Month = if (this > that) this else that
@@ -191,5 +194,7 @@ object ReutersDeliveryMonthCodes {
     "X" -> 11,
     "Z" -> 12
     )
+
+  lazy val InverseCodes = codes.map{_.swap}
 }
 
