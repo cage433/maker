@@ -155,11 +155,11 @@
     <orderEntry type="module-library" exported="">
       <library>
         <CLASSES>
-          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/compile/log4j-1.2.14.jar!/" />
+          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/compile/log4j-1.2.16.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES>
-          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/compile/log4j-1.2.14-sources.jar!/" />
+          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/compile/log4j-1.2.16-sources.jar!/" />
         </SOURCES>
       </library>
     </orderEntry>
@@ -201,6 +201,17 @@
         </CLASSES>
         <JAVADOC />
         <SOURCES />
+      </library>
+    </orderEntry>
+    <orderEntry type="module-library" scope="RUNTIME">
+      <library>
+        <CLASSES>
+          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/compile/slf4j-log4j12-1.6.1.jar!/" />
+        </CLASSES>
+        <JAVADOC />
+        <SOURCES>
+          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/compile/slf4j-log4j12-1.6.1-sources.jar!/" />
+        </SOURCES>
       </library>
     </orderEntry>
   </component>

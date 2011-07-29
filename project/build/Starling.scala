@@ -209,7 +209,8 @@ class Starling(info : ProjectInfo) extends ParentProject(info) {
       "cglib" % "cglib-nodep" % "2.2" withSources(),
       "joda-time" % "joda-time" % "1.6" withSources(),
       "com.rabbitmq" % "amqp-client" % "1.7.2" withSources(),
-      "log4j" % "log4j" % "1.2.14" withSources(),
+      "log4j" % "log4j" % "1.2.16" withSources(),
+      "org.slf4j" % "slf4j-log4j12" % "1.6.1" withSources(),
       "com.google.collections" % "google-collections" % "1.0" withSources(),
       "commons-codec" % "commons-codec" % "1.4" withSources(),
       "colt" % "colt" % "1.0.3",
@@ -231,7 +232,6 @@ class Starling(info : ProjectInfo) extends ParentProject(info) {
       "org.springframework" % "spring-jdbc" % "3.0.5.RELEASE" withSources(),
       "com.jolbox" % "bonecp" % "0.7.1.RELEASE" intransitive() withSources(),
       "org.slf4j" % "slf4j-api" % "1.6.1" withSources(),
-      "org.slf4j" % "slf4j-log4j13" % "1.0.1" withSources(),
       "org.scala-tools.testing" % "scalacheck_2.9.0-1" % "1.9" withSources(),
       "org.apache.derby" % "derby" % "10.5.3.0_1",
       "hsqldb" % "hsqldb" % "1.8.0.10" % "test",
@@ -270,4 +270,3 @@ class Starling(info : ProjectInfo) extends ParentProject(info) {
             super.unmanagedClasspath +++ (Path.fromFile(new File("lib/titan-model-jars")) ** "*.jar")
   }
 }
-
