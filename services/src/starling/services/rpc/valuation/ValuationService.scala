@@ -121,7 +121,7 @@ trait TitanLogisticsInventoryCache {
 
   def addInventoryAssignments(id : String) {
     val item = inventoryMap(id)
-    val assignmentToInventoryMapItems = (item.purchaseAssignmentId.toString, id) :: { if (item.salesAssignmentId.isDefined) (item.salesAssignmentId.get.toString -> id) :: Nil else Nil }
+    val assignmentToInventoryMapItems = (item.purchaseAssignment.oid.contents.toString, id) :: { if (item.salesAssignment != null) (item.salesAssignment.oid.contents.toString -> id) :: Nil else Nil }
     assignmentIDtoInventoryIDMap ++= assignmentToInventoryMapItems
   }
 
@@ -650,7 +650,7 @@ class ValuationService(
     }
 
     /**
-     * handler for logistics assignment events (todo: needs completing)
+     * handler for logistics assignment events
      */
     def logisticsAssignmentEventHander(rabbitPublishChangedValueEvents : (List[String], String) => Unit)(ev: Event) = {
       Log.info("handler: Got an assignment event to process %s".format(ev.toString))

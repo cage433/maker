@@ -3,8 +3,7 @@ package starling.instrument
 import physical.TitanPricingSpec
 import starling.quantity.Quantity
 import starling.curves.Environment
-import starling.market.SingleIndex
-import starling.daterange.{DayOfWeek, Month, Day}
+import starling.daterange.Day
 import com.trafigura.tradinghub.support.GUID
 import com.trafigura.tradecapture.internal.refinedmetal.{Market => EDMMarket, Metal => EDMMetal}
 import starling.titan.{EDMPricingSpecConverter, EDMConversions}
@@ -16,8 +15,8 @@ import EDMConversions._
 import com.trafigura.services.valuation.CostsAndIncomeAssignmentValuation
 import com.trafigura.services.valuation.CostsAndIncomeQuotaValuation
 import com.trafigura.services.valuation.PricingValuationDetails
-import com.trafigura.edm.logistics.inventory.EDMInventoryItem
 import com.trafigura.edm.shared.types.{Date, Quantity => EDMQuantity}
+import com.trafigura.edm.logistics.inventory.{EDMAssignment, EDMAssignmentItem, EDMInventoryItem}
 
 
 case class PhysicalMetalQuota(
@@ -33,7 +32,7 @@ object PhysicalMetalForward{
   def apply(exchangesByGUID : Map[GUID, EDMMarket], edmMetalByGUID : Map[GUID, EDMMetal])(trade : EDMPhysicalTrade) : PhysicalMetalForward = {
     try {
       val quotas : List[PhysicalMetalQuota] = {
-        trade.quotas.map(_.detail).map{
+        trade.quotas.map(_.detail).map {
           detail =>
             val deliveryQuantity = detail.deliverySpecs.map{ds => fromTitanQuantity(ds.quantity)}.sum
             val commodityGUIDs : Set[GUID] = detail.deliverySpecs.map(_.materialSpec.asInstanceOf[CommoditySpec].commodity).toSet
@@ -56,7 +55,8 @@ object PhysicalMetalForward{
         case _ => throw new Exception("Trade " + trade.tradeId + " has no direction " + trade.direction)
       }
       PhysicalMetalForward(trade.tradeId, quotas, isPurchase)
-    } catch {
+    }
+    catch {
       case ex => throw new Exception("Trade " + trade.tradeId + " failed to construct from EDM. " + ex.getMessage, ex)
     }
   }
@@ -66,7 +66,8 @@ object PhysicalMetalForward{
     try {
       val forward = PhysicalMetalForward(exchangesByGUID, edmMetalByGUID)(trade)
       Right(forward.costsAndIncomeValueBreakdown(env, snapshotID))
-    } catch {
+    }
+    catch {
       case ex => Left("Error valuing trade " + trade.tradeId + ", message was " + ex.getMessage)
     }
   }
@@ -123,11 +124,11 @@ object PhysicalMetalAssignmentForward {
             assignmentIdToQuotaMap : Map[Int, EDMQuota])
            (inventory : EDMInventoryItem) : PhysicalMetalAssignmentForward = {
     try {
-      val purchaseQuota = assignmentIdToQuotaMap(inventory.purchaseAssignmentId)
+      val purchaseQuota = assignmentIdToQuotaMap(inventory.purchaseAssignment.oid.contents)
       val edmPurchasePricingSpec = purchaseQuota.detail.pricingSpec
-      val edmSalePricingSpec = inventory.salesAssignmentId match {
-        case Some(sId) => assignmentIdToQuotaMap(sId).detail.pricingSpec
-        case None => edmPurchasePricingSpec
+      val edmSalePricingSpec = inventory.salesAssignment match {
+        case null => edmPurchasePricingSpec
+        case salesAssignment : EDMAssignment => assignmentIdToQuotaMap(salesAssignment.oid.contents).detail.pricingSpec
       }
 
       val deliveryQuantity = purchaseQuota.detail.deliverySpecs.map{ds => fromTitanQuantity(ds.quantity)}.sum
@@ -145,7 +146,8 @@ object PhysicalMetalAssignmentForward {
        salePricingSpec)
 
       PhysicalMetalAssignmentForward(inventory.oid.contents.toString, inventory, quota)
-    } catch {
+    }
+    catch {
       case ex => throw new Exception("Inventory " + inventory.oid + " failed to construct from EDM. " + ex.getMessage, ex)
     }
   }
@@ -158,7 +160,8 @@ object PhysicalMetalAssignmentForward {
     try {
       val forward = PhysicalMetalAssignmentForward(exchangesByGUID, futuresMetalMarketByGUID, assignmentIdToQuotaMap)(inventory)
       Right(forward.costsAndIncomeAssignmentValueBreakdown(env, snapshotID))
-    } catch {
+    }
+    catch {
       case ex => Left("Error valuing inventory  " + inventory.oid + ", message was " + ex.getMessage)
     }
   }
@@ -166,13 +169,13 @@ object PhysicalMetalAssignmentForward {
 
 case class PhysicalMetalAssignmentForward(id : String, inventoryItem : EDMInventoryItem, quota : PhysicalMetalQuota) {
 
-  def costsAndIncomeAssignmentValueBreakdown(env : Environment, snapshotID : String) : List[CostsAndIncomeAssignmentValuation] = {
+  def costsAndIncomeAssignmentValueBreakdown(env : Environment, snapshotId : String) : List[CostsAndIncomeAssignmentValuation] = {
   
     List(CostsAndIncomeAssignmentValuation(
-      purchaseAssignmentID = inventoryItem.purchaseAssignmentId.toString,
-      saleAssignmentID = inventoryItem.salesAssignmentId match { case Some(id) => Some(id.toString); case _ => None },
-      snapshotID,
-      quota.quantity,
+      purchaseAssignmentID = inventoryItem.purchaseAssignment.oid.contents.toString,
+      saleAssignmentID = inventoryItem.salesAssignment match { case null => None; case salesAssignment : EDMAssignment => Some(salesAssignment.oid.contents.toString) },
+      snapshotID = snapshotId,
+      quantity = quota.quantity,
 
       // These come from the pricing spec of the quota associated with the purchaseAssignmentID
       purchaseValuationDetails = CostsAndIncomeValuation.build(env, quota.quantity, quota.pricingSpec),

@@ -195,12 +195,12 @@ class ValuationServiceTest extends StarlingTest {
 
     val valuedInventoryAssignments = mockInventoryCache.getInventoryByIds(valuedIds)
 
-    val inventoryWithSalesAssignments = mockInventoryCache.getAllInventory().filter(i => i.salesAssignmentId != None)
+    val inventoryWithSalesAssignments = mockInventoryCache.getAllInventory().filter(i => i.salesAssignment != null)
     //println("inventory with sales assignment " + inventoryWithSalesAssignments.mkString(",\n"))
 
     val inventoryWithSalesAssignmentValuationResults = assignmentValuations.assignmentValuationResults.filter(v => inventoryWithSalesAssignments.exists(e => e.oid.contents.toString == v._1))
     //println("\n%s\n".format(inventoryWithSalesAssignmentValuationResults.mkString("\n")))
-    val firstInventoryItem = valuedInventoryAssignments.find(i => i.salesAssignmentId != None).get // if we've no valid canned data for tests this has to fail
+    val firstInventoryItem = valuedInventoryAssignments.find(i => i.salesAssignment != null).get // if we've no valid canned data for tests this has to fail
 
     val testEventHandler = new MockEventHandler(handler)
 
@@ -222,7 +222,7 @@ class ValuationServiceTest extends StarlingTest {
     val updatedInventory = EDMInventoryItem.fromJson(firstInventoryItem.toJson())
 
     println("updatedInventory before update : " + updatedInventory)
-    updatedInventory.salesAssignmentId = None
+    updatedInventory.salesAssignment = null
     println("updatedInventory after update  : " + updatedInventory)
 
     // update the underlying dataset

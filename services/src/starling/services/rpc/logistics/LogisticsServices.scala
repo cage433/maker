@@ -30,15 +30,15 @@ case class DefaultTitanLogisticsAssignmentServices(props: Props, titanInventoryS
   private lazy val clientExecutor: ClientExecutor = new ComponentTestClientExecutor(rmetadminuser)
 
   lazy val service: EdmAssignmentServiceWithGetAllAssignments = new EdmAssignmentServiceResourceProxy(ProxyFactory.create(classOf[EdmAssignmentServiceResource], logisticsServiceURL, clientExecutor)) {
-    def getAllAssignments() : List[EDMAssignmentItem] = {
+    def getAllAssignments() : List[EDMAssignment] = {
       titanInventoryService match {
         case Some(inventoryService) => {
           val inventory = inventoryService.service.getAllInventoryLeaves()
-          val assignments : List[EDMAssignmentItem] = inventory.flatMap(i => {
-          val pa = this.getAssignmentById(i.purchaseAssignmentId) :: Nil
-            i.salesAssignmentId match {
-              case Some(salesId) => this.getAssignmentById(salesId) :: pa
-              case None => pa
+          val assignments : List[EDMAssignment] = inventory.flatMap(i => {
+          val pa = i.purchaseAssignment :: Nil
+            i.salesAssignment match {
+              case null => pa
+              case salesAssignment : EDMAssignmentItem => salesAssignment :: pa
             }
           })
           assignments
@@ -147,7 +147,7 @@ case class FileMockedTitanLogisticsInventoryServices() extends TitanLogisticsInv
 
   lazy val service : EdmInventoryServiceWithGetAllInventory = new EdmInventoryService() {
     def getInventoryById(inventoryId : Int) : EDMInventoryItem = inventoryMap(inventoryId.toString) // mimick service by throwning an exception on not found
-    def getInventoryTreeByPurchaseQuotaId(quotaId : String) : List[EDMInventoryItem] = inventoryMap.values.toList.filter(_.quotaName == quotaId)
+    def getInventoryTreeByPurchaseQuotaId(quotaId : String) : List[EDMInventoryItem] = inventoryMap.values.toList.filter(_.purchaseAssignment.quotaName == quotaId)
     def getAllInventoryLeaves() : List[EDMInventoryItem] = findLeaves(inventoryMap.values.toList)
     
     // temporary work around to find leaves of the logistics inventory tree
@@ -194,20 +194,20 @@ case class LogisticsJsonMockDataFileGenerater(titanEdmTradeService : TitanServic
 
   println("getting assignments...")
   val assignments : List[EDMAssignmentItem] = inventory.flatMap(i => {
-    val pa = assignmentService.getAssignmentById(i.purchaseAssignmentId) :: Nil
-    i.salesAssignmentId match {
-      case Some(salesId) => assignmentService.getAssignmentById(salesId) :: pa
-      case None => pa
+    val pa = assignmentService.getAssignmentById(i.purchaseAssignment.oid.contents) :: Nil
+    i.salesAssignment match {
+      case null => pa
+      case salesAssignment : EDMAssignment => assignmentService.getAssignmentById(salesAssignment.oid.contents) :: pa
     }
   })
 
   val assignmentMap = assignments.map(a => a.oid.contents -> a).toMap
 
   val validInventory = inventory.filter(i => {
-    allQuotasMap.contains(NeptuneId(assignmentMap(i.purchaseAssignmentId).quotaName).identifier) && {
-      i.salesAssignmentId match {
-        case Some(salesId) => allQuotasMap.contains(NeptuneId(assignmentMap(salesId).quotaName).identifier)
-        case None => true
+    allQuotasMap.contains(NeptuneId(i.purchaseAssignment.quotaName).identifier) && {
+      i.salesAssignment match {
+        case null => true
+        case salesAssignment : EDMAssignment => allQuotasMap.contains(NeptuneId(salesAssignment.quotaName).identifier)
       }
     }
   })
