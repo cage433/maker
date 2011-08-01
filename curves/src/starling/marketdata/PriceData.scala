@@ -53,7 +53,7 @@ object PriceDataType extends MarketDataType {
   lazy val marketField = FieldDetails("Market", ValidMarketParserObject.Parser)
   lazy val marketCommodityField = FieldDetails("Market Commodity")
   lazy val marketTenorField = FieldDetails("Market Tenor")
-  lazy val periodField = PeriodFieldDetails("Period")
+  lazy val periodField = FieldDetails("Period", PeriodPivotParser, PeriodPivotFormatter)
   lazy val validity = new FieldDetails("Validity")
   lazy val priceField = new PivotQuantityFieldDetails("Price")
 
