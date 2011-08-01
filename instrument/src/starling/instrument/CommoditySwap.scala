@@ -22,14 +22,15 @@ import starling.quantity._
  * If the swap is 'cleared' it means it is margined and there is no discounting.
  */
 case class CommoditySwap(
-                          index: Index,
-                          strike: Quantity,
-                          _volume: Quantity,
-                          averagingPeriod: Period,
-                          cleared: Boolean,
-                          pricingRule: SwapPricingRule = NoPricingRule
-                          )
-  extends Swap(index, strike, _volume, averagingPeriod, cleared, pricingRule) with MultiLeg {
+  index: Index,
+  strike: Quantity,
+  _volume: Quantity,
+  averagingPeriod: Period,
+  cleared: Boolean,
+  pricingRule: SwapPricingRule = NoPricingRule
+)
+  extends Swap(index, strike, _volume, averagingPeriod, cleared, pricingRule) with MultiLeg 
+{
 
   require(index.convert(_volume, strike.denominatorUOM).isDefined, "Couldn't convert volume into strike uom: " + (_volume, strike) + ", " + index)
   require(pricingRule.isValid(index.calendars), "Invalid pricing rule for " + index)
@@ -81,16 +82,16 @@ case class CommoditySwap(
 }
 
 case class SinglePeriodSwap(
-                                index: Index,
-                                strike: Quantity,
-                                volume: Quantity,
-                                period: DateRange,
-                                cleared: Boolean,
-                                pricingRule: SwapPricingRule = NoPricingRule
-                                )
-  extends UTP {
-
-
+  index: Index,
+  strike: Quantity,
+  volume: Quantity,
+  period: DateRange,
+  cleared: Boolean,
+  pricingRule: SwapPricingRule = NoPricingRule,
+  settlementDayOption : Option[Day] = None
+)
+  extends UTP 
+{
   assert(pricingRule.isValid(index.calendars), "Invalid pricing rule for " + index)
   assert(strike.denominatorUOM == volume.uom, "Price and volume different: " + (strike, volume))
 
@@ -153,6 +154,7 @@ case class SinglePeriodSwap(
 
 
   def explanation(env : Environment) : NamedQuantity = {
+    println("Making explanation for " + this)
     val namedEnv = env.withNaming()
     val price = SimpleNamedQuantity("F_Ave", namedEnv.averagePrice(index, period, pricingRule, priceUOM, priceRounding))
     val discount = SimpleNamedQuantity("disc", namedEnv.discount(valuationCCY, settlementDay))
@@ -163,7 +165,7 @@ case class SinglePeriodSwap(
 
   def *(x: Double) = copy(volume = volume * x)
 
-  val settlementDay = CommoditySwap.swapSettlementDate(period.lastDay)
+  val settlementDay = settlementDayOption.getOrElse(CommoditySwap.swapSettlementDate(period.lastDay))
 
   override def priceRounding = index.precision.map {
     case Precision(defaultRounding, clearportRounding) => {
