@@ -13,6 +13,7 @@ object PeriodPivotFormatter extends PivotFormatter {
           val text = formatInfo.dateRangeFormat.monthFormat match {
             case Standard => m.toShortString
             case Short => m.toTinyString
+            case Numeric => m.toNumericString
             case Reuters => m.toReutersString
           }
           TableCell(m, text)
