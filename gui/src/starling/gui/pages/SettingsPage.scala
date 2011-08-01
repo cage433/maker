@@ -91,6 +91,7 @@ class SettingsPageComponent(context:PageContext) extends MigPanel("insets 0") wi
 
     val standardExtraInfo = ExtraFormatInfo(dateRangeFormat = DateRangeFormat(Standard))
     val shortExtraInfo = ExtraFormatInfo(dateRangeFormat = DateRangeFormat(Short))
+    val numericExtraInfo = ExtraFormatInfo(dateRangeFormat = DateRangeFormat(Numeric))
     val reutersExtraInfo = ExtraFormatInfo(dateRangeFormat = DateRangeFormat(Reuters))
 
     val today = Day.today()
@@ -98,20 +99,24 @@ class SettingsPageComponent(context:PageContext) extends MigPanel("insets 0") wi
 
     val standardSampleText = sampleMonths.map(m => PeriodPivotFormatter.format(m, standardExtraInfo).text).mkString("(", ", ", " ...)")
     val shortSampleText = sampleMonths.map(m => PeriodPivotFormatter.format(m, shortExtraInfo).text).mkString("(", ", ", " ...)")
+    val numericSampleText = sampleMonths.map(m => PeriodPivotFormatter.format(m, numericExtraInfo).text).mkString("(", ", ", " ...)")
     val reutersSampleText = sampleMonths.map(m => PeriodPivotFormatter.format(m, reutersExtraInfo).text).mkString("(", ", ", " ...)")
 
     val standardLabel = new Label(standardSampleText)
     val shortLabel = new Label(shortSampleText)
+    val numericLabel = new Label(numericSampleText)
     val reutersLabel = new Label(reutersSampleText)
 
     val standardButton = new RadioButton("Standard")
     val shortButton = new RadioButton("Short")
+    val numericButton = new RadioButton("Numeric")
     val reutersButton = new RadioButton("Reuters")
-    val group = new ButtonGroup(standardButton, shortButton, reutersButton)
+    val group = new ButtonGroup(standardButton, shortButton, numericButton, reutersButton)
 
     val buttonToType = Map[AbstractButton,DateRangeFormat](
       standardButton -> DateRangeFormat(Standard),
       shortButton -> DateRangeFormat(Short),
+      numericButton -> DateRangeFormat(Numeric),
       reutersButton -> DateRangeFormat(Reuters))
     val typeToButton = buttonToType.map{_.swap}
 
@@ -120,6 +125,8 @@ class SettingsPageComponent(context:PageContext) extends MigPanel("insets 0") wi
     add(standardLabel, "wrap")
     add(shortButton, "skip 1")
     add(shortLabel, "wrap")
+    add(numericButton, "skip 1")
+    add(numericLabel, "wrap")
     add(reutersButton, "skip 1")
     add(reutersLabel)
 

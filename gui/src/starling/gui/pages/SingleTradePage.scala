@@ -88,6 +88,7 @@ object SingleTradePageComponent {
         }
       })
       negativeHighlighter.setForeground(Color.RED)
+      negativeHighlighter.setSelectedForeground(Color.RED)
       costsChooser.jTable.addHighlighter(negativeHighlighter)
       costsChooser.jTable.getSelectionModel.addListSelectionListener(new ListSelectionListener {
         def valueChanged(e:ListSelectionEvent) = {
@@ -188,6 +189,7 @@ class SingleTradePageComponent(context:PageContext, pageData:PageData) extends M
       }
     })
     negativeHighlighter.setForeground(Color.RED)
+    negativeHighlighter.setSelectedForeground(Color.RED)
     jTable.addHighlighter(negativeHighlighter)
 
     val stringValue = new StringValue {

@@ -1,7 +1,7 @@
 package starling.daterange
 
 import scala.util.matching.Regex
-import starling.daterange.DayOfWeek._
+import starling.utils.ImplicitConversions._
 
 /**
  * calendar month type.
@@ -11,7 +11,7 @@ import starling.daterange.DayOfWeek._
 case class Month(y : Int, m : Int) extends DateRange {
   require(m >= 1 && m <= 12, "Invalid month number:" + m)
 
-  override def toString = toPrintableForm
+  override def toString() = toPrintableForm
 
   def toPrintableForm = Month.months(m - 1).capitalize + " " + y
 
@@ -19,6 +19,7 @@ case class Month(y : Int, m : Int) extends DateRange {
 
   def toReutersString = ReutersDeliveryMonthCodes.InverseCodes(m) + (y - 2000)
   def toTinyString = Month.months(m - 1).capitalize.take(3) + (y - 2000)
+  def toNumericString = "%02d" % m + "/" + "%02d" % (y-2000)
 
   def min(that : Month) : Month = if (this < that) this else that
 
@@ -156,8 +157,6 @@ object Month extends TenorType with Serializable {
 }
 
 object ReutersDeliveryMonthCodes {
-  import Month._
-
   lazy val reutersMonthYearRegex = ("(?i)(" + codes.keys.mkString("|") + """)[ -]?(.+)""").r
   lazy val reutersYearMonthRegex = ("(\\d+)(" + codes.keys.mkString("|") + ")").r
 
