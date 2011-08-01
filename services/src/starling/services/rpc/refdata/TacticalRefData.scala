@@ -36,12 +36,12 @@ case class DefaultTitanServices(props: Props) extends TitanServices {
   private lazy val tacticalRefdataUomService : UOMService = new UOMServiceResourceProxy(ProxyFactory.create(classOf[UOMServiceResource], refdataServiceURL, clientExecutor))
   lazy val titanGetEdmTradesService: EdmGetTrades = new EdmGetTradesResourceProxy(ProxyFactory.create(classOf[EdmGetTradesResource], tradeServiceURL, clientExecutor))
 
-  lazy val edmMetalByGUID: Map[GUID, Metal] = Map[GUID, Metal]() ++ allTacticalRefDataFuturesMarkets.map(e => (e.guid, e))
+  lazy val edmMetalByGUID: Map[GUID, Metal] = Map[GUID, Metal]() ++ allTacticalRefDataMetals.map(e => (e.guid, e))
   lazy val futuresExchangeByGUID: Map[GUID, Market] = Map[GUID, Market]() ++ allTacticalRefDataExchanges.map(e => (e.guid, e))
   lazy val counterpartiesByGUID: Map[GUID, Counterparty] = Map[GUID, Counterparty]() ++ allTacticalRefDataCounterparties().map(e => e.guid -> e)
   lazy val uomById : Map[Int, UOM] = Map[Int, UOM]() ++ allTacticalRefDataUoms().map(e => e.oid -> e)
 
-  def allTacticalRefDataFuturesMarkets() = tacticalRefdataMetalsService.getMetals()
+  def allTacticalRefDataMetals() = tacticalRefdataMetalsService.getMetals()
   def allTacticalRefDataExchanges() = tacticalRefdataMarketsService.getMarkets()
   def allTacticalRefDataCounterparties() = tacticalRefdataCounterpartiesService.getCounterparties(true)
   def allTacticalRefDataUoms() = tacticalRefdataUomService.getUOMs()
@@ -57,7 +57,7 @@ case class FileMockedTitanServices() extends TitanServices {
 
   val resourcePath = "/tests/valuationservice/testdata"
   val tradesFile = getClass.getResource(resourcePath + "/allEdmTrades.json.zip") // "/edmTrades.json")
-  val marketsFile = getClass.getResource(resourcePath + "/markets.json")
+  val metalsFile = getClass.getResource(resourcePath + "/metals.json")
   val exchangesFile = getClass.getResource(resourcePath + "/exchanges.json")
   val uomsFile = getClass.getResource(resourcePath + "/uoms.json")
 
@@ -75,7 +75,7 @@ case class FileMockedTitanServices() extends TitanServices {
     }
   }
 
-  lazy val edmMetalByGUID: Map[GUID, Metal] = loadedMarkets.map(m => m.guid -> m).toMap
+  lazy val edmMetalByGUID: Map[GUID, Metal] = loadedMetals.map(m => m.guid -> m).toMap
   lazy val futuresExchangeByGUID: Map[GUID, Market] = loadedExchanges.map(e => e.guid -> e).toMap
   lazy val uomById: Map[Int, UOM] = loadedUoms.map(e => e.oid -> e).toMap
   lazy val counterpartiesByGUID: Map[GUID, Counterparty] = Map[GUID, Counterparty]()
@@ -84,7 +84,7 @@ case class FileMockedTitanServices() extends TitanServices {
   def allTacticalRefDataExchanges() = Nil
 
   import Timer._
-  val loadedMarkets = time(loadJsonValuesFromFileUrl(marketsFile).map(s => Metal.fromJson(new JSONObject(s)).asInstanceOf[Metal]), t => println("took %dms to get markets".format(t)))
+  val loadedMetals = time(loadJsonValuesFromFileUrl(metalsFile).map(s => Metal.fromJson(new JSONObject(s)).asInstanceOf[Metal]), t => println("took %dms to get metals".format(t)))
   val loadedExchanges = time(loadJsonValuesFromFileUrl(exchangesFile).map(s => Market.fromJson(new JSONObject(s)).asInstanceOf[Market]), t => println("took %dms to get exchanges".format(t)))
   val loadedUoms = time(loadJsonValuesFromFileUrl(uomsFile).map(s => UOM.fromJson(new JSONObject(s)).asInstanceOf[UOM]), t => println("took %dms to get uom".format(t)))
   val loadedTrades = time(loadJsonValuesFromFileUrl(tradesFile, true).map(s => EDMPhysicalTrade.fromJson(new JSONObject(s)).asInstanceOf[EDMPhysicalTrade]), t => println("took %dms to get trades".format(t)))
@@ -100,7 +100,31 @@ case class FileMockedTitanServicesDataFileGenerator(titanEdmTradeService : Titan
   import org.codehaus.jettison.json.JSONObject
   import FileUtils._
 
+  val tradesFile = "/tmp/allEdmTrades.json.zip"
+  val metalsFile = "/tmp/metals.json"
+  val exchangesFile = "/tmp/exchanges.json"
+  val uomsFile = "/tmp/uoms.json"
+
   println("Starting FileMockedTitanServicesDataFileGenerator")
+
+  val metals = valuationService.getMetals.toList
+  val exchanges = valuationService.getFuturesExchanges.toList
+  val uoms = valuationService.getUoms.toList
+
+  writeJson(metalsFile, metals)
+  writeJson(exchangesFile, exchanges)
+  writeJson(uomsFile, uoms)
+
+  val loadedMetals = loadJsonValuesFromFile(metalsFile).map(s => Metal.fromJson(new JSONObject(s)).asInstanceOf[Metal])
+  loadedMetals.foreach(println)
+  val loadedExchanges = loadJsonValuesFromFile(exchangesFile).map(s => Market.fromJson(new JSONObject(s)).asInstanceOf[Market])
+  loadedExchanges.foreach(println)
+  val loadedUoms = loadJsonValuesFromFile(uomsFile).map(s => UOM.fromJson(new JSONObject(s)).asInstanceOf[UOM])
+  loadedUoms.foreach(println)
+
+  /**
+   * get edm trades and store in mock fdata file
+   */
   valuationService.marketDataSnapshotIDs().foreach(println)
   val valuations = valuationService.valueAllQuotas()
 
@@ -111,33 +135,11 @@ case class FileMockedTitanServicesDataFileGenerator(titanEdmTradeService : Titan
   val tradeIds = valuations.tradeResults.collect{ case (id, Right(_)) => id }.toList
   val trades = valuationService.getTrades(tradeIds)
   //val trades = titanEdmTradeService.titanGetEdmTradesService.getAll().results.map(_.trade).filter(_ != null)
-  val markets = valuationService.getFuturesMarkets.toList
-  val exchanges = valuationService.getFuturesExchanges.toList
-  val uoms = valuationService.getUoms.toList
 
   println("read %d trades ".format(trades.size))
 
-  /**
-   * Write out EDM trades from trade service (that can be valued successfully) and the ref-data markets and exchanges
-   *   so that the file mocked services can use canned data for tests (note this data needs moving into resources to update
-   *   canned data for the tests...)
-   */
-  val tradesFile = "/tmp/allEdmTrades.json.zip"
-  val marketsFile = "/tmp/markets.json"
-  val exchangesFile = "/tmp/exchanges.json"
-  val uomsFile = "/tmp/uoms.json"
-
   writeJson(tradesFile, trades, true)
-  writeJson(marketsFile, markets)
-  writeJson(exchangesFile, exchanges)
-  writeJson(uomsFile, uoms)
 
-  val loadedMarkets = loadJsonValuesFromFile(marketsFile).map(s => Metal.fromJson(new JSONObject(s)).asInstanceOf[Metal])
-  loadedMarkets.foreach(println)
-  val loadedExchanges = loadJsonValuesFromFile(exchangesFile).map(s => Market.fromJson(new JSONObject(s)).asInstanceOf[Market])
-  loadedExchanges.foreach(println)
-  val loadedUoms = loadJsonValuesFromFile(uomsFile).map(s => UOM.fromJson(new JSONObject(s)).asInstanceOf[UOM])
-  loadedUoms.foreach(println)
   val loadedTrades = loadJsonValuesFromFile(tradesFile, true).map(s => EDMPhysicalTrade.fromJson(new JSONObject(s)).asInstanceOf[EDMPhysicalTrade])
   println("loaded %d trades = ".format(loadedTrades.size))
 }

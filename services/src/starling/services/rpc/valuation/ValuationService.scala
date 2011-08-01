@@ -593,7 +593,7 @@ class ValuationService(
   // accessors for ref-data mappings
   def getTrades(tradeIds : List[String]) : List[EDMPhysicalTrade] = tradeIds.map(titanTradeCache.getTrade)
   def getFuturesExchanges = futuresExchangeByGUID.values
-  def getFuturesMarkets = edmMetalByGUID.values
+  def getMetals = edmMetalByGUID.values
   def getUoms = uomById.values
     
 
@@ -780,7 +780,7 @@ object ValuationService extends App {
 
   val valuedTradeIds = valuations.tradeResults.collect{ case (id, Right(v)) => id }.toList
   val valuedTrades = vs.getTrades(valuedTradeIds)
-  val markets = vs.getFuturesMarkets.toList
+  val markets = vs.getMetals.toList
   val exchanges = vs.getFuturesExchanges.toList
 
   /**
