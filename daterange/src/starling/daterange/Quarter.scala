@@ -68,5 +68,5 @@ object Quarter extends TenorType {
 
   override def toString = "Quarter"
 
-  def shortName = "Q"
+  override def shortName = "Q"
 }

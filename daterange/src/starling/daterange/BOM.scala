@@ -58,5 +58,5 @@ object BOM extends TenorType {
 
   override def toString = "BOM"
 
-  def shortName = "BOM"
+  override def shortName = "BOM"
 }

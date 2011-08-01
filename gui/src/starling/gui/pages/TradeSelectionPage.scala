@@ -15,7 +15,7 @@ import collection.mutable.ListBuffer
 import controller.TreePivotFilter
 import javax.swing.DefaultComboBoxModel
 import starling.gui.custom._
-import utils.{RichReactor, RichCheckBox}
+import starling.gui.utils.{RichReactor, RichCheckBox}
 import RichCheckBox._
 import RichReactor._
 import starling.daterange.{Timestamp, Day}

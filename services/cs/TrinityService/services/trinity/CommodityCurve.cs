@@ -10,8 +10,8 @@ namespace com.trafigura.services.trinity
         private readonly string exchange;
         private readonly string currency;
 
-        public CommodityCurve(trMarketDataServer marketData, int profileId, string exchange, string commodity, string currency)
-            : base(marketData, profileId, commodity)
+        public CommodityCurve(trMarketDataServer marketData, Profile profile, string exchange, string commodity, string currency)
+            : base(marketData, profile, commodity)
         {
             this.exchange = exchange;
             this.currency = currency;
@@ -19,12 +19,12 @@ namespace com.trafigura.services.trinity
 
         protected override trRateCurve TrinityRateCurve
         {
-            get { return marketData.RateCurve[ProfileId, Commodity, exchange, trRateCurveTypeEnum.trRateCurveCommodity, currency]; }
+            get { return marketData.RateCurve[Profile.Id, Commodity, exchange, trRateCurveTypeEnum.trRateCurveCommodity, currency]; }
         }
 
         protected override trRateCurve GetOrCreateTrinityRateCurve()
         {
-            return TrinityRateCurve ?? marketData.NewRateCurve[ProfileId, Commodity, exchange, trRateCurveTypeEnum.trRateCurveCommodity, currency];
+            return TrinityRateCurve ?? marketData.NewRateCurve[Profile.Id, Commodity, exchange, trRateCurveTypeEnum.trRateCurveCommodity, currency];
         }
 
         public override List<CommodityRate> Rates
@@ -35,7 +35,7 @@ namespace com.trafigura.services.trinity
         public CommodityRate Create(_IRate rate)
         {
             var commodityRate = (trCommodityRate) rate;
-            var spotDate = marketData.ExchangeSpotDate[ProfileId, Commodity, exchange];
+            var spotDate = marketData.ExchangeSpotDate[Profile.Id, Commodity, exchange];
 
             return new CommodityRate()
             {

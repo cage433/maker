@@ -1,6 +1,5 @@
 package starling.titan
 
-import com.trafigura.edm.logistics.inventory.{EDMInventoryItem, EdmInventoryService, EDMAssignmentItem, EdmAssignmentService}
 import com.trafigura.tradinghub.support.GUID
 import com.trafigura.edm.tradeservice.EdmGetTrades
 import com.trafigura.tradecapture.internal.refinedmetal.{Counterparty, Market, Metal}
@@ -17,6 +16,7 @@ import starling.db.TitanTradeSystem
 import java.lang.UnsupportedOperationException
 import starling.utils.StackTraceToString
 import starling.instrument.{ErrorInstrument, Costs, Tradeable}
+import com.trafigura.edm.logistics.inventory._
 
 
 class ExternalTitanServiceFailed(cause : Throwable) extends Exception(cause)
@@ -86,7 +86,7 @@ class TradeConverter( refData : TitanTacticalRefData,
   /**
    * convert EDMAssignmentItem to a Starling Trade
    */
-  implicit def toTrade(edmAssignment : EDMAssignmentItem) : Trade = {
+  implicit def toTrade(edmAssignment : EDMAssignment) : Trade = {
 
     val quotaDetail = quotaNameToQuotaMap(edmAssignment.quotaName).detail
     val edmTrade = quotaNameToTradeMap(edmAssignment.quotaName)
@@ -170,7 +170,7 @@ case class TitanTradeAttributes(quotaID : String, titanTradeID : String) extends
  * logistics service interface
  */
 object LogisticsServices {
-  type EdmAssignmentServiceWithGetAllAssignments = EdmAssignmentService with Object { def getAllAssignments() : List[EDMAssignmentItem] }
+  type EdmAssignmentServiceWithGetAllAssignments = EdmAssignmentService with Object { def getAllAssignments() : List[EDMAssignment] }
   type EdmInventoryServiceWithGetAllInventory = EdmInventoryService with Object { def getAllInventoryLeaves() : List[EDMInventoryItem] }
 }
 

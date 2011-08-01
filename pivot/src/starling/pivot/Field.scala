@@ -5,8 +5,6 @@ import model.UndefinedValue
 import java.io.Serializable
 import starling.quantity._
 import starling.utils.ImplicitConversions._
-import starling.utils.ClosureUtil._
-import java.security.acl.Group
 
 class Field(val name: String) extends Serializable {
   override val hashCode = name.hashCode
@@ -121,7 +119,16 @@ case class DecimalPlaces(defaultFormat:String, lotsFormat:String, priceFormat:St
   }
 }
 
-case class ExtraFormatInfo(decimalPlaces:DecimalPlaces)
+object MonthFormat extends Enumeration {
+  type MonthFormat = Value
+  val Standard, Short, Numeric, Reuters = Value
+}
+import MonthFormat._
+
+case class DateRangeFormat(monthFormat:MonthFormat)
+
+case class ExtraFormatInfo(decimalPlaces:DecimalPlaces = PivotFormatter.DefaultDecimalPlaces,
+                           dateRangeFormat:DateRangeFormat = PivotFormatter.DefaultDateRangeFormat)
 
 // Must be serializable and available on the gui (same as the PivotParsers).
 trait PivotFormatter extends Serializable {
@@ -136,8 +143,9 @@ object PivotFormatter {
   val LotsFormat = "#,##0.0"
   val PercentFormat = "#0.00"
 
+  val DefaultDateRangeFormat = DateRangeFormat(Standard)
   val DefaultDecimalPlaces = DecimalPlaces(DefaultFormat, LotsFormat, PriceFormat, CurrencyFormat, PercentFormat)
-  val DefaultExtraFormatInfo = ExtraFormatInfo(DefaultDecimalPlaces)
+  val DefaultExtraFormatInfo = ExtraFormatInfo(DefaultDecimalPlaces, DefaultDateRangeFormat)
 
   def formatPivotQuantity(pq:PivotQuantity, formatInfo:ExtraFormatInfo, includeUOM:Boolean=true) = {
     import starling.utils.ImplicitConversions._
@@ -287,8 +295,6 @@ case class FieldDetails(field:Field) {
     }
   }
 
-  def fixEditedValue(value:Any) = value
-  
   def combineGroup(groupA:Any,groupB:Any):Any = groupA.asInstanceOf[Set[Any]].union(groupB.asInstanceOf[Set[Any]])
 
   // NOTE - The parser returned here (and in overriding methods) must be serializable (and easily serializable at that). i.e. an Object like TextPivotParser.
@@ -514,6 +520,7 @@ object MarketValuePivotParser extends PivotParser {
 class PivotQuantityFieldDetails(name:String) extends FieldDetails(Field(name)) {
   override def value(a:Any):Any = a.asInstanceOf[Set[Any]]
   override def formatter = PivotQuantitySetPivotFormatter
+  override def parser =  PivotQuantityPivotParser
   override def nullValue = PivotQuantity.NULL
   override def isDataField = true
   override def comparator = PivotQuantityComparator

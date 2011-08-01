@@ -7,6 +7,8 @@ import starling.quantity.Quantity
 import starling.utils.Log
 import starling.utils.cache.CacheFactory
 import starling.utils.ImplicitConversions._
+import collection.immutable.Map
+import starling.pivot.PivotQuantity
 
 
 trait HasInterpolation {
@@ -76,25 +78,28 @@ case class ForwardCurveKey(market : CommodityMarket) extends NonHistoricalCurveK
     if (priceData.isEmpty) {
       throw new MissingMarketDataException("No market data for " + market + " on " + marketDayAndTime)
     } else {
-      val prices = market match {
-        case f:FuturesMarket if f.exchange == FuturesExchangeFactory.BALTIC => {
-          // Convert Freight prices to monthly
-          FreightCurve.calcMonthlyPricesFromArbitraryPeriods(priceData.prices).castKeys[DateRange]
+      def createForwardCurve(prices:Map[DateRange,PivotQuantity]) = {
+        ForwardCurve(market, marketDayAndTime, Map() ++ (for((dateRange, price) <- prices if (dateRange.lastDay >= marketDayAndTime.day)) yield {
+          if (price.doubleValue.get < 0) {
+            Log.warn("Negative price found for " + market + " with " + dateRange +  " on " + marketDayAndTime + ". Replacing with its absolute value")
+            dateRange → (-price.quantityValue.get)
+          } else {
+            dateRange → price.quantityValue.get
+          }
+        }))
+      }
+      market match {
+        case p:PublishedIndex if p.commodity == Freight => {
+          new FreightForwardCurve(marketDayAndTime, FreightCurve.calcMonthlyPricesFromArbitraryPeriods(priceData.prices))
         }
         case brent : IsBrentMonth => {
           val monthNumber = brent.month.month
-          priceData.prices.find { case (dr, p) => dr.firstDay.month == monthNumber }.map{case (dr, p) => dr.firstDay → p}.toMap
+          createForwardCurve(
+            priceData.prices.find { case (dr, p) => dr.firstDay.month == monthNumber }.map{case (dr, p) => dr.firstDay → p}.toMap
+          )
         }
-        case _ => priceData.prices
+        case _ => createForwardCurve(priceData.prices)
       }
-		  ForwardCurve(market, marketDayAndTime, Map() ++ (for((dateRange, price) <- prices if (dateRange.lastDay >= marketDayAndTime.day)) yield {
-        if (price.value < 0) {
-          Log.warn("Negative price found for " + market + " with " + dateRange +  " on " + marketDayAndTime + ". Replacing with its absolute value")
-          dateRange → (-price.value)
-        } else {
-          dateRange → price.value
-        }
-      }))
     }
   }
 
@@ -115,7 +120,7 @@ case class ForwardPriceKey(
 	extends AtomicDatumKey(ForwardCurveKey(market), period, ignoreShiftsIfPermitted) 
 {
   market.tenor match {
-    case Day => assert(period.isInstanceOf[Day], "Market " + market + " doesn't support prices for non daily periods, received " + period)
+    case Day if market.commodity != Freight => assert(period.isInstanceOf[Day], "Market " + market + " doesn't support prices for non daily periods, received " + period)
     case Month => assert(period.isInstanceOf[Month], "Market " + market + " doesn't support prices for non monthly periods, received " + period)
     case _ =>
   }
@@ -153,6 +158,16 @@ trait ForwardCurveTrait{
     }
   }
   def price(dateRange : DateRange) : Quantity
+}
+
+class FreightForwardCurve(val marketDayAndTime:DayAndTime, prices:Map[Month,Quantity]) extends CurveObject with ForwardCurveTrait {
+  type CurveValuesType = Quantity
+  def price(dateRange: DateRange) = {
+    dateRange match {
+      case month:Month => prices.getOrElse(month, throw new Exception("No freight price found for " + dateRange))
+      case _ => throw new Exception("Can only supply monthly prices for freight")
+    }
+  }
 }
 
 case class ConstantForwardCurve(

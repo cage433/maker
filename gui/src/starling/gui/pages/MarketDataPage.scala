@@ -9,7 +9,7 @@ import java.awt.Dimension
 import swing.event.{Event, ButtonClicked, SelectionChanged}
 import swing._
 import javax.swing.DefaultComboBoxModel
-import utils.RichReactor
+import starling.gui.utils.RichReactor
 import RichReactor._
 import starling.rmi.StarlingServer
 import starling.daterange.Day

@@ -77,5 +77,5 @@ object HalfYear extends TenorType {
 
   override def toString = "HalfYear"
 
-  def shortName = "HY"
+  override def shortName = "HY"
 }

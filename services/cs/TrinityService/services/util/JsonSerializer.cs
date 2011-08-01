@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
@@ -8,24 +9,31 @@ namespace com.trafigura.services.util
 {
     public class JsonSerializer
     {
-        private readonly JsonSerializerSettings settings = new JsonSerializerSettings
+        private readonly JsonSerializerSettings settings;
+
+        public JsonSerializer(TypeNameHandling typeNameHandling = TypeNameHandling.All)
         {
-            Converters = new List<JsonConverter> { new StringEnumConverter() },
-            TypeNameHandling = TypeNameHandling.All
-        };
+            settings = new JsonSerializerSettings
+            {
+                Converters = new List<JsonConverter> { new StringEnumConverter() },
+                TypeNameHandling = TypeNameHandling.Objects
+            };
+        }
 
         public string Serialize(object value)
         {
-            var jObject = JObject.Parse(JsonConvert.SerializeObject(value, Formatting.Indented, settings));
+            var serializeObject = JsonConvert.SerializeObject(value, Formatting.Indented, settings);
+
+            var jObject = serializeObject.ParseJson();
 
 //            Console.WriteLine("Before conversion to EDM\n" + jObject);
 
             var jToken = jObject.Select(ConvertTypeToEDM);
 //            Console.WriteLine("Before erasure\n" + jToken);
 
-            var eraseCollections = EraseCollections(jToken);
+            var eraseCollections = jToken.Select(EraseCollections);
 
-//            Console.WriteLine("After erasure\n" + eraseCollections);
+//            Console.WriteLine("After erasure\n" + eraseCollections);)
 
             return eraseCollections.ToString();
         }
@@ -52,9 +60,15 @@ namespace com.trafigura.services.util
             {
                 var jobject = token as JObject;
 
-                if (jobject.PropertyValues().Any(IsList))
+                var propertyValues = jobject.PropertyValues();
+                if (propertyValues.Any(IsList))
                 {
-                    return EraseCollections(jobject.Property("$values").Value);
+                    var jProperty = jobject.Property("$values");
+
+                    if (jProperty != null)
+                    {
+                        return EraseCollections(jProperty.Value);
+                    }
                 }
             }
 

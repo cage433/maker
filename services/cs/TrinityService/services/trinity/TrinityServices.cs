@@ -1,4 +1,5 @@
 ﻿using System;
+using com.trafigura.services.util;
 using log4net;
 using MarketData2;
 using trRoot;
@@ -13,9 +14,10 @@ namespace com.trafigura.services.trinity
         {
             try
             {
-                logger.Info("Logging in", () =>
+                logger.Info(string.Format("Logging in to: {0} as: {1} ", credentials.Database, credentials.Username), () =>
                 {
-                    var trcRoot = new trcRoot();
+                    var trcRoot = logger.Info("Instantiating trcRoot", () => new trcRoot());
+
                     trcRoot.Login(credentials.Database, credentials.Username, credentials.Password);
                 });
             }

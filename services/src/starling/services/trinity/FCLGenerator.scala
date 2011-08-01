@@ -6,63 +6,58 @@ import starling.curves.CurveViewer
 import starling.daterange._
 import starling.db.DB
 import starling.gui.api.CurveLabel
-import starling.pivot.{Field, PivotFieldsState}
 import starling.pivot.controller.{PivotTableConverter, PivotGrid}
 import starling.pivot.model.PivotTableModel
 
 import starling.utils.ImplicitConversions._
-import starling.market.{TrinityMarket, FuturesMarket, Market}
+import com.trafigura.services.trinity.CommodityRate
+import starling.market._
+import starling.calendar.{BusinessCalendar, BusinessCalendars}
+import starling.pivot.{SomeSelection, Field, PivotFieldsState}
 
+case class TrinityCommodityCurveKey(commodity:String, exchange:String, currency:String, contract:String)
 
-class FCLGenerator(uploadMapper: TrinityUploadCodeMapper, curveViewer: CurveViewer) {
-  notNull(uploadMapper, curveViewer)
+class FCLGenerator(businessCalendars:BusinessCalendars, curveViewer: CurveViewer) {
+  notNull(curveViewer)
 
   private val pivotFieldsState = PivotFieldsState(dataFields = List(Field("Price")),
-    rowFields = List(Field("Market"), Field("Period")))
+    rowFields = List(Field("Market"), Field("Period")),
+    filters = Field("Market") -> SomeSelection(Set("Panamax T/C Average (Baltic)")) :: Nil
+  )
 
-  def generate(curveLabel: CurveLabel) = getData(curveLabel).map(_.toLine)
-
-  def getData(curveLabel: CurveLabel): List[FCLRow] = {
+  def generate(curveLabel: CurveLabel): Map[TrinityCommodityCurveKey,Traversable[CommodityRate]] = {
     val pivotTable = PivotTableModel.createPivotTableData(curveViewer.curve(curveLabel), Some(pivotFieldsState))
-
-    FCLGenerator.extractData(PivotTableConverter(table = pivotTable).createGrid(), uploadMapper.uploadCode _)
+    FCLGenerator.extractData(businessCalendars.US_UK, PivotTableConverter(table = pivotTable).createGrid())
   }
-}
-
-case class FCLRow(trinityCode: String, price: Double, period: Day) {
-  def toLine = "3300C%s     %sFF%s0000000000000000000000000000000CN" %
-    (trinityCode, period.toString("YYMMdd"), FCLGenerator.priceFormat.format(price))
 }
 
 object FCLGenerator {
-  val priceFormat = new DecimalFormat("0000000.0000")
-  def generateLines(codeLookup: String => String, data: PivotGrid) = extractData(data, codeLookup).map(_.toLine)
-
-  def extractData(data: PivotGrid, codeLookup: (String) => String) = data.rowData.zip(data.mainData).toList.flatMapO {
-    case (Array(marketName, periodCell), Array(priceCell)) => try {
-      val trinityCode = codeLookup(marketName.valueText)
+  def extractData(ukUS:BusinessCalendar, data: PivotGrid) = data.rowData.zip(data.mainData).toList.map {
+    case (Array(marketName, periodCell), Array(priceCell)) => {
+      val trinityKey = TrinityUploadCodeMapper.trinityCurveKeys(Index.publishedIndexFromName(marketName.valueText))
       val price = priceCell.doubleValue.get
-      val period = periodCell.value.value.value.asInstanceOf[DateRange].firstDay
-
-      println(">> " + marketName.valueText + " " + trinityCode + " " + period)
-
-      Some(FCLRow(trinityCode, price, period))
-    } catch {
-      case e: Exception => None
+      val month = periodCell.value.value.value.asInstanceOf[DateRange]
+      val trinityDay = month.lastDay.addBusinessDays(ukUS, 2)
+      trinityKey -> CommodityRate(trinityDay.toString("dd-MMM-yyyy"), price, price, trinityDay.toString("dd/MM/yyyy"), trinityKey.exchange, trinityKey.contract, "1", "TONNE")
     }
-  }
+  }.groupInto(_._1, _._2)
 }
 
-class TrinityUploadCodeMapper(trinityDB:DB) {
-  lazy private val lookup = (trinityDB.queryWithResult("select * from T_Commcode") { rs => {
-    (rs.getString("COMMODITY"), rs.getString("EXCHANGE"), rs.getString("CURRENCY")) → rs.getString("CODE")
-  }}).toMap
+object TrinityUploadCodeMapper {
+//  select distinct currency.description, currency.name, MRATE_CURVE.TAG, MRATE_CURVE.CURRENCYAGAINST
+//  from currency
+//  join MRATE_CURVE on MRATE_CURVE.CURRENCY = CURRENCY.NAME
+//  where basetag = 'BALTIC'
 
-  def uploadCode(marketName: String): String = uploadCodeOption(Market.futuresMarketFromName(marketName))
-    .getOrElse(throw new Exception("No upload code for " + marketName))
-
-  def uploadCodeOption(market:FuturesMarket) = TrinityMarket.marketToTrinityCode.get(market).flatMap { trinityCommodityCode =>
-    val key = (trinityCommodityCode, market.exchange.name, market.currency.toString)
-    lookup.get(key)
-  }
+//  Handymax T/C Average	BHM	BALTIC	USD
+//  Supramax T/C Average	BSM	BALTIC	USD
+//  Capsize	BCM	BALTIC	USD
+//  BC7 T/C Average	BC7	BALTIC	USD
+//  Panamax T/C Average	BPM	BALTIC	USD
+//
+  val trinityCurveKeys = Map(
+    "Baltic Supramax T/C Avg" -> TrinityCommodityCurveKey("BSM", "BALTIC", "USD", "BALTIC SUPRAMAX Future"),
+    "Panamax T/C Average (Baltic)" -> TrinityCommodityCurveKey("BPM", "BALTIC", "USD", ""),
+    "Capesize T/C Average (Baltic)" -> TrinityCommodityCurveKey("BCM", "BALTIC", "USD", "")
+  ).mapKeys(Index.publishedIndexFromName)
 }

@@ -19,6 +19,44 @@ import java.text.DecimalFormat
 import starling.utils.Pattern._
 import starling.marketdata.{PriceFixingsHistoryData, PriceFixingsHistoryDataKey}
 
+object BalticFixings extends HierarchicalLimSource(List(TopRelation.Energy.Tankers.BalticFreight.Index_Forward), List(Level.Val)) {
+  type Relation = BalticRelation
+
+  val mapping = Map(
+    "SUPRAMAX.TC5" -> "Baltic Supramax T/C Avg",
+    "PANAMAX.TC4" -> "Panamax T/C Average (Baltic)",
+    "CAPESIZE.TC4" -> "Capesize T/C Average (Baltic)"
+  ).mapValues(Market.fromName)
+
+
+  case class BalticRelation(market:CommodityMarket, tenor:Tenor) {
+    val period = StoredFixingPeriod.tenor(tenor)
+  }
+
+  def relationExtractor = Extractor.regex("""BALTIC\.(\w+)\.(\w+)\.(\w+)""") {
+    case List(marketPrefix, marketSuffix, Tenor.Parse(tenor)) => {
+      mapping.get(marketPrefix + "." + marketSuffix).map(m=>BalticRelation(m, tenor))
+    }
+  }
+
+  def marketDataEntriesFrom(fixings: List[Prices[BalticRelation]]) = {
+    fixings.groupBy(group).map { case ((market, observationDay), grouped) =>
+      MarketDataEntry(observationDay.atTimeOfDay(ObservationTimeOfDay.LondonClose),
+        PriceFixingsHistoryDataKey(market),
+        PriceFixingsHistoryData.create(grouped.flatMap(fixings => {
+          val price = fixings.priceByLevel(Level.Val)
+          price match {
+            case 0 => None
+            case _ => Some( (Level.Val, fixings.relation.period) → MarketValue.quantity(price, UOM.USD/UOM.DAY) )
+          }
+        }))
+      )
+    }
+  }
+
+  def group(fixings: Prices[BalticRelation]) = (fixings.relation.market, fixings.observationDay)
+}
+
 object LIBORFixings extends HierarchicalLimSource(TopRelation.Trafigura.Bloomberg.InterestRates.children, List(Level.Close)) {
   type Relation = LIBORRelation
 
@@ -31,7 +69,7 @@ object LIBORFixings extends HierarchicalLimSource(TopRelation.Trafigura.Bloomber
   }
 
   def marketDataEntriesFrom(fixings: List[Prices[LIBORRelation]]) = {
-    fixings.groupBy(group(_)).map { case ((rateType, currency, observationDay), grouped) =>
+    fixings.groupBy(group).map { case ((rateType, currency, observationDay), grouped) =>
       MarketDataEntry(observationDay.atTimeOfDay(ObservationTimeOfDay.LiborClose),
         PriceFixingsHistoryDataKey(currency.toString, Some(rateType)),
         PriceFixingsHistoryData.create(grouped.map(fixings => (Level.Close, fixings.relation.period) → marketValue(fixings)))

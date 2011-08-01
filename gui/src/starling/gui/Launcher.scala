@@ -231,10 +231,18 @@ object Launcher {
       val username = starlingServer.whoAmI.username
 
       def toBookmarks(labels:List[BookmarkLabel]) = {
-        labels.map(s => {
-          val bookmark = GuiStarlingXStream.read(s.bookmark).asInstanceOf[Bookmark]
-          val bookmarkName = s.name
-          BookmarkData(bookmarkName, bookmark)
+        labels.flatMap(s => {
+          try {
+            val bookmark = GuiStarlingXStream.read(s.bookmark).asInstanceOf[Bookmark]
+            val bookmarkName = s.name
+            BookmarkData(bookmarkName, bookmark) :: Nil
+          } catch {
+            case e => {
+              println("Error reading bookmark " + s.name)
+              e.printStackTrace()
+              Nil
+            }
+          }
         })
       }
 

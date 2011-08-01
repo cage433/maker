@@ -19,5 +19,12 @@
 
             return dictionary.TryGetValue(key, out value) ? value : alternative;
         }
+
+        public static V GetOrElse<K, V>(this IDictionary<K, V> dictionary, K key, Func<V> alternative)
+        {
+            V value;
+
+            return dictionary.TryGetValue(key, out value) ? value : alternative();
+        }
     }
 }

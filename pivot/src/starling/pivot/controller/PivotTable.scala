@@ -38,8 +38,8 @@ case class PivotTable(rowFields:List[Field], rowFieldHeadingCount:Array[Int], ro
   def columnAxis = columnNode.children
 
   def asCSV:String = convertUsing(Utils.csvConverter)
-  def convertUsing(converter: GridConverter, decimalPlaces: DecimalPlaces = PivotFormatter.DefaultDecimalPlaces) =
-    converter.convert(toFlatRows(Totals.Null, decimalPlaces, true))
+  def convertUsing(converter: GridConverter, extraFormatInfo: ExtraFormatInfo = PivotFormatter.DefaultExtraFormatInfo) =
+    converter.convert(toFlatRows(Totals.Null, extraFormatInfo, true))
 
   def cell(measure: AnyRef, filters: (Field, AnyRef)*): Any = {
     /*def filter(name: String, value: AnyRef, index: Int)(input: Map[(List[ChildKey], List[ChildKey]), MeasureCell]) =
@@ -61,10 +61,10 @@ case class PivotTable(rowFields:List[Field], rowFieldHeadingCount:Array[Int], ro
     throw new Exception("rewite this method")
   }
 
-  def toFlatRows(totals: Totals, decimalPlaces: DecimalPlaces = PivotFormatter.DefaultDecimalPlaces, trimBlank: Boolean = false):
+  def toFlatRows(totals: Totals, extraFormatInfo:ExtraFormatInfo = PivotFormatter.DefaultExtraFormatInfo, trimBlank: Boolean = false):
     List[List[Any]] = {
 
-    val pivotTableConverter = PivotTableConverter(OtherLayoutInfo(totals = totals), this, ExtraFormatInfo(decimalPlaces))
+    val pivotTableConverter = PivotTableConverter(OtherLayoutInfo(totals = totals), this, extraFormatInfo)
 
     val (rowHeaderCells, columnHeaderCells, mainTableCells) = pivotTableConverter.allTableCells()
 

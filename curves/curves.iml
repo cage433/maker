@@ -26,7 +26,6 @@
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="library" name="scala-lib" level="project" />
     <orderEntry type="module" module-name="maths" exported="" />
-    <orderEntry type="module" module-name="pivot" exported="" />
     <orderEntry type="module" module-name="gui.api" exported="" />
     <orderEntry type="module-library" exported="">
       <library>
@@ -55,6 +54,7 @@
         <SOURCES />
       </library>
     </orderEntry>
+    <orderEntry type="module" module-name="pivot.utils" exported="" />
   </component>
 </module>
 

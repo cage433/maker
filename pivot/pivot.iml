@@ -21,7 +21,7 @@
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="library" name="scala-lib" level="project" />
-    <orderEntry type="module" module-name="quantity" />
+    <orderEntry type="module" module-name="quantity" exported="" />
     <orderEntry type="module-library">
       <library>
         <CLASSES>

@@ -3,9 +3,7 @@ package starling.services.rpc.logistics
 import starling.props.Props
 import com.trafigura.services.security.ComponentTestClientExecutor
 import org.jboss.resteasy.client.{ProxyFactory, ClientExecutor}
-import java.net.URL
 import com.trafigura.edm.logistics.inventory._
-import com.trafigura.tradinghub.support.ModelObject
 import org.codehaus.jettison.json.JSONObject
 import starling.services.StarlingInit
 import com.trafigura.edm.physicaltradespecs.EDMQuota
@@ -15,8 +13,7 @@ import starling.services.rpc.valuation.DefaultTitanTradeService
 import starling.services.rpc.refdata.FileMockedTitanServices
 import starling.titan.LogisticsServices._
 import starling.titan._
-import java.io._
-import java.util.zip.{GZIPInputStream, GZIPOutputStream}
+import starling.services.rpc.FileUtils
 
 
 /**
@@ -33,15 +30,15 @@ case class DefaultTitanLogisticsAssignmentServices(props: Props, titanInventoryS
   private lazy val clientExecutor: ClientExecutor = new ComponentTestClientExecutor(rmetadminuser)
 
   lazy val service: EdmAssignmentServiceWithGetAllAssignments = new EdmAssignmentServiceResourceProxy(ProxyFactory.create(classOf[EdmAssignmentServiceResource], logisticsServiceURL, clientExecutor)) {
-    def getAllAssignments() : List[EDMAssignmentItem] = {
+    def getAllAssignments() : List[EDMAssignment] = {
       titanInventoryService match {
         case Some(inventoryService) => {
           val inventory = inventoryService.service.getAllInventoryLeaves()
-          val assignments : List[EDMAssignmentItem] = inventory.flatMap(i => {
-          val pa = this.getAssignmentById(i.purchaseAssignmentId) :: Nil
-            i.salesAssignmentId match {
-              case Some(salesId) => this.getAssignmentById(salesId) :: pa
-              case None => pa
+          val assignments : List[EDMAssignment] = inventory.flatMap(i => {
+          val pa = i.purchaseAssignment :: Nil
+            i.salesAssignment match {
+              case null => pa
+              case salesAssignment : EDMAssignmentItem => salesAssignment :: pa
             }
           })
           assignments
@@ -150,7 +147,7 @@ case class FileMockedTitanLogisticsInventoryServices() extends TitanLogisticsInv
 
   lazy val service : EdmInventoryServiceWithGetAllInventory = new EdmInventoryService() {
     def getInventoryById(inventoryId : Int) : EDMInventoryItem = inventoryMap(inventoryId.toString) // mimick service by throwning an exception on not found
-    def getInventoryTreeByPurchaseQuotaId(quotaId : String) : List[EDMInventoryItem] = inventoryMap.values.toList.filter(_.quotaName == quotaId)
+    def getInventoryTreeByPurchaseQuotaId(quotaId : String) : List[EDMInventoryItem] = inventoryMap.values.toList.filter(_.purchaseAssignment.quotaName == quotaId)
     def getAllInventoryLeaves() : List[EDMInventoryItem] = findLeaves(inventoryMap.values.toList)
     
     // temporary work around to find leaves of the logistics inventory tree
@@ -163,69 +160,10 @@ case class FileMockedTitanLogisticsInventoryServices() extends TitanLogisticsInv
   }
 }
 
-object FileUtils {
-  import scala.io.Source._
-  def getFileUrl(file : String) = getClass.getResource(file)
 
-  def loadJsonValuesFromFileUrl(fileUrl : URL, compress : Boolean = false) : List[String] = {
-    //println("load json from file url " + fileUrl)
-    val bufferSize = 512 * 1024
-    if (!compress) {
-      fromURL(fileUrl).getLines.toList
-    }
-    else {
-      try {
-        val fStream = new FileInputStream(new File(fileUrl.toURI))
-        var inStream = if (compress) {
-          new BufferedInputStream(new GZIPInputStream(fStream), bufferSize)
-        }
-        else {
-          new BufferedInputStream(fStream)
-        }
-
-        var data = ""
-        var bytesRead = 0
-        val dataBuffer = Array.ofDim[Byte](bufferSize)
-        while ({ bytesRead = inStream.read(dataBuffer); bytesRead != -1 }) {
-          //println("read %d bytes".format(bytesRead))
-          if (bytesRead > 0) {
-            val dataChunk = new String(dataBuffer, 0, bytesRead)
-            data += dataChunk
-          }
-        }
-        val lines : List[String] = data.split("\n").toList
-        lines
-      }
-      catch {
-        case ex : Exception => println("Error: " + ex.getMessage()); throw ex
-      }
-    }
-  }
-
-  def loadJsonValuesFromFile(filePath : String, compress : Boolean = false) : List[String] =
-    loadJsonValuesFromFileUrl(new File(filePath).toURI.toURL, compress)
-
-  def writeJson[T <: ModelObject with Object { def toJson() : JSONObject }](fileName : String, objects : List[T], compress : Boolean = false) {
-
-    try {
-      val fStream = new FileOutputStream(fileName)
-      var outStream = if (compress) {
-        new BufferedOutputStream(new GZIPOutputStream(fStream))
-      }
-      else {
-        new BufferedOutputStream(fStream)
-      }
-
-      objects.foreach(obj => outStream.write((obj.toJson() + "\n").getBytes()))
-      outStream.flush()
-      outStream.close()
-    }
-    catch {
-      case ex : Exception => println("Error: " + ex.getMessage())
-    }
-  }
-}
-
+/**
+ * generates mock service data for logistics mock services
+ */
 case class LogisticsJsonMockDataFileGenerater(titanEdmTradeService : TitanServices, logisticsServices : TitanLogisticsServices) {
   import FileUtils._
   val fileOutputPath = "/tmp"
@@ -256,20 +194,20 @@ case class LogisticsJsonMockDataFileGenerater(titanEdmTradeService : TitanServic
 
   println("getting assignments...")
   val assignments : List[EDMAssignmentItem] = inventory.flatMap(i => {
-    val pa = assignmentService.getAssignmentById(i.purchaseAssignmentId) :: Nil
-    i.salesAssignmentId match {
-      case Some(salesId) => assignmentService.getAssignmentById(salesId) :: pa
-      case None => pa
+    val pa = assignmentService.getAssignmentById(i.purchaseAssignment.oid.contents) :: Nil
+    i.salesAssignment match {
+      case null => pa
+      case salesAssignment : EDMAssignment => assignmentService.getAssignmentById(salesAssignment.oid.contents) :: pa
     }
   })
 
   val assignmentMap = assignments.map(a => a.oid.contents -> a).toMap
 
   val validInventory = inventory.filter(i => {
-    allQuotasMap.contains(NeptuneId(assignmentMap(i.purchaseAssignmentId).quotaName).identifier) && {
-      i.salesAssignmentId match {
-        case Some(salesId) => allQuotasMap.contains(NeptuneId(assignmentMap(salesId).quotaName).identifier)
-        case None => true
+    allQuotasMap.contains(NeptuneId(i.purchaseAssignment.quotaName).identifier) && {
+      i.salesAssignment match {
+        case null => true
+        case salesAssignment : EDMAssignment => allQuotasMap.contains(NeptuneId(salesAssignment.quotaName).identifier)
       }
     }
   })
@@ -291,9 +229,7 @@ object LogisticServices {
   def main(args : Array[String]) {
     println("running main for Logistics services")
     val server = StarlingInit.devInstance
-    val edmTradeService = server.titanServices
     val mockTitanServices = new FileMockedTitanServices()
-    val mockTitanTradeService = new DefaultTitanTradeService(mockTitanServices)
     val logisticsServices = server.logisticsServices
     LogisticsJsonMockDataFileGenerater(mockTitanServices, logisticsServices)
     server.stop

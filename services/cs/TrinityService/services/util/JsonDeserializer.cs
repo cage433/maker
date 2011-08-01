@@ -18,16 +18,11 @@ namespace com.trafigura.services.util
 
         public object Deserialize(string edmJson, Type type)
         {
-            var dotNetJson = Parse(edmJson).Select(ConvertTypeToNet).ToString();
+            var dotNetJson = edmJson.ParseJson().Select(ConvertTypeToNet).ToString();
 
 //            Console.WriteLine("After conversion to .net\n" + dotNetJson);
 
             return JsonConvert.DeserializeObject(dotNetJson, type, settings);
-        }
-
-        private static JToken Parse(string edmJson)
-        {
-            return edmJson.Trim().StartsWith("[") ? (JToken) JArray.Parse(edmJson) : JObject.Parse(edmJson);
         }
 
         public string Pretty(string json)

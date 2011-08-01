@@ -174,7 +174,9 @@
           <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/compile/servlet-api-2.5.jar!/" />
         </CLASSES>
         <JAVADOC />
-        <SOURCES />
+        <SOURCES>
+          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/compile/servlet-api-2.5-sources.jar!/" />
+        </SOURCES>
       </library>
     </orderEntry>
     <orderEntry type="module-library" exported="">
@@ -237,7 +239,9 @@
           <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/compile/spring-context-support-3.0.5.RELEASE.jar!/" />
         </CLASSES>
         <JAVADOC />
-        <SOURCES />
+        <SOURCES>
+          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/compile/spring-context-support-3.0.5.RELEASE-sources.jar!/" />
+        </SOURCES>
       </library>
     </orderEntry>
     <orderEntry type="module-library" exported="">
@@ -264,7 +268,9 @@
           <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/compile/jetty-6.1.26.jar!/" />
         </CLASSES>
         <JAVADOC />
-        <SOURCES />
+        <SOURCES>
+          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/compile/jetty-6.1.26-sources.jar!/" />
+        </SOURCES>
       </library>
     </orderEntry>
     <orderEntry type="module-library" exported="">
@@ -300,7 +306,9 @@
           <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/compile/lift-json_2.9.0-2.4-M2.jar!/" />
         </CLASSES>
         <JAVADOC />
-        <SOURCES />
+        <SOURCES>
+          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/compile/lift-json_2.9.0-2.4-M2-sources.jar!/" />
+        </SOURCES>
       </library>
     </orderEntry>
     <orderEntry type="module-library" exported="">
@@ -309,7 +317,9 @@
           <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/compile/mail-1.4.jar!/" />
         </CLASSES>
         <JAVADOC />
-        <SOURCES />
+        <SOURCES>
+          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/compile/mail-1.4-sources.jar!/" />
+        </SOURCES>
       </library>
     </orderEntry>
     <orderEntry type="module-library" exported="">
@@ -336,7 +346,9 @@
           <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/test/subethasmtp-smtp-1.2.jar!/" />
         </CLASSES>
         <JAVADOC />
-        <SOURCES />
+        <SOURCES>
+          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/test/subethasmtp-smtp-1.2-sources.jar!/" />
+        </SOURCES>
       </library>
     </orderEntry>
     <orderEntry type="module-library" scope="TEST">
@@ -345,7 +357,9 @@
           <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/test/subethasmtp-wiser-1.2.jar!/" />
         </CLASSES>
         <JAVADOC />
-        <SOURCES />
+        <SOURCES>
+          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/test/subethasmtp-wiser-1.2-sources.jar!/" />
+        </SOURCES>
       </library>
     </orderEntry>
     <orderEntry type="module-library" scope="TEST">

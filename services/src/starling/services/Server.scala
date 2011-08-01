@@ -2,27 +2,22 @@ package starling.services
 
 import excel._
 import jmx.StarlingJMX
-import rpc.logistics.{FileMockedTitanLogisticsServices, DefaultTitanLogisticsServices}
+import rpc.logistics.DefaultTitanLogisticsServices
 import rpc.marketdata.MarketDataService
 import rpc.valuation._
 import starling.schemaevolution.system.PatchRunner
 import starling.db._
 import starling.richdb.{RichDB, RichResultSetRowFactory}
 import starling.market._
-import rules.MarketPrecisionFactory
 import starling.props.{PropsHelper, Props}
 import starling.tradestore.eai.EAITradeStore
 import java.net.InetAddress
 import starling.tradestore.intraday.IntradayTradeStore
 import starling.neptune.{RefinedFixationSystemOfRecord, RefinedFixationTradeStore, RefinedAssignmentSystemOfRecord, RefinedAssignmentTradeStore}
-import starling.utils.ImplicitConversions._
 import starling.curves.readers._
 import trade.ExcelTradeReader
 import trinity.{TrinityUploader, XRTGenerator, TrinityUploadCodeMapper, FCLGenerator}
-import xml.{Node, Utility}
-import javax.xml.transform.stream.{StreamResult, StreamSource}
-import java.io.{ByteArrayInputStream, File}
-import javax.xml.transform.TransformerFactory
+import java.io.File
 import starling.auth.{LdapUserLookup, User, ServerLogin}
 import java.util.concurrent.CopyOnWriteArraySet
 import starling.utils._
@@ -37,25 +32,26 @@ import starling.LIMServer
 import starling.gui.api._
 import starling.bouncyrmi._
 import starling.eai.{Book, Traders, EAIAutoImport, EAIStrategyDB}
-import com.jolbox.bonecp.BoneCP
-import org.springframework.mail.javamail.{MimeMessageHelper, JavaMailSender, JavaMailSenderImpl}
+import org.springframework.mail.javamail.JavaMailSenderImpl
 import starling.rmi._
 import starling.calendar._
 import java.lang.String
 import com.trafigura.services.valuation.{ValuationServiceApi, TradeManagementCacheNotReady}
 import org.jboss.netty.channel.{ChannelLocal, Channel}
 import com.trafigura.services.marketdata.MarketDataServiceApi
-import starling.curves.{StarlingMarketLookup, EAIMarketLookup, FwdCurveAutoImport, CurveViewer}
+import starling.curves.{StarlingMarketLookup, FwdCurveAutoImport, CurveViewer}
 import starling.services.rpc.refdata._
 import starling.services.rabbit._
-import starling.daterange.{ObservationTimeOfDay, Day}
+import starling.daterange.ObservationTimeOfDay
 import starling.pivot.{Field, PivotQuantity}
-import starling.marketdata.{PriceValue, MarketDataKey, MarketDataType}
+import starling.marketdata.{MarketDataKey}
 import collection.SortedMap
 import starling.quantity.{UOM, Quantity, Percentage}
-import collection.immutable.{IndexedSeq, TreeMap, Map}
-import starling.titan.{TitanLogisticsInventoryServices, TitanServices}
+import collection.immutable.{TreeMap, Map}
 import starling.titan.{TitanSystemOfRecord, TitanTradeStore}
+import com.trafigura.services.ResteasyServiceApi._
+import com.trafigura.services.trinity.TrinityService
+import com.trafigura.services.ResteasyServiceApi
 
 
 class StarlingInit( val props: Props,
@@ -71,7 +67,7 @@ class StarlingInit( val props: Props,
 
   def stop = {
     if (startRabbit) {
-      rabbitEventServices.stop
+      titanRabbitEventServices.stop
     }
 
     if (startXLLoop) {
@@ -97,7 +93,7 @@ class StarlingInit( val props: Props,
     }
 
     if (startRabbit) {
-      rabbitEventServices.start
+      titanRabbitEventServices.start
     }
 
 
@@ -174,14 +170,15 @@ class StarlingInit( val props: Props,
 
   val mailSender = new JavaMailSenderImpl().update(_.setHost(props.SmtpServerHost()), _.setPort(props.SmtpServerPort()))
 
-  val rabbitEventServices = new DefaultRabbitEventServices(props)
+  val trinityService = TrinityService(ResteasyServiceApi("http://ttraflon2k196:9100"))
+
+  val titanRabbitEventServices = new DefaultTitanRabbitEventServices(props)
 
   val broadcaster = new CompositeBroadcaster(
-    true                             → new RMIBroadcaster(rmiServerForGUI),
-    props.rabbitHostSet              → new RabbitBroadcaster(new RabbitMessageSender(props.RabbitHost())),
-    props.EnableVerificationEmails() → new EmailBroadcaster(mailSender) /*,
-    props.titanRabbitHostSet         → TitanRabbitIdBroadcaster(rabbitEventServices.rabbitEventPublisher) */
-  )
+      true                                      → new RMIBroadcaster(rmiServerForGUI),
+      props.rabbitHostSet                       → new RabbitBroadcaster(new RabbitMessageSender(props.RabbitHost())),
+      props.EnableVerificationEmails()          → new EmailBroadcaster(mailSender),
+      (startRabbit && props.titanRabbitHostSet) → TitanRabbitIdBroadcaster(titanRabbitEventServices.rabbitEventPublisher))
 
   val revalSnapshotDb = new RevalSnapshotDB(starlingDB)
   val limServer = new LIMServer(props.LIMHost(), props.LIMPort())
@@ -215,6 +212,8 @@ class StarlingInit( val props: Props,
     }.toSet, businessCalendars.US_UK)
     (fwdCurveAutoImport, mds)
   }
+
+  val userSettingsDatabase = new UserSettingsDatabase(starlingDB, broadcaster)
 
   if (dbMigration) {
     //Ensure the schema is up to date
@@ -254,13 +253,11 @@ class StarlingInit( val props: Props,
   val titanServices = new DefaultTitanServices(props)
   val logisticsServices = new DefaultTitanLogisticsServices(props, Some(titanServices))
   val titanInventoryCache = new DefaultTitanLogisticsInventoryCache(props)
-  val valuationService = new ValuationService(new DefaultEnvironmentProvider(marketDataStore), titanTradeCache, titanServices, logisticsServices, rabbitEventServices, titanInventoryCache)
+  val valuationService = new ValuationService(new DefaultEnvironmentProvider(marketDataStore), titanTradeCache, titanServices, logisticsServices, titanRabbitEventServices, titanInventoryCache)
   val marketDataService = new MarketDataService(marketDataStore)
 
   val titanSystemOfRecord = new TitanSystemOfRecord(titanTradeCache, titanServices, logisticsServices)
   val titanTradeImporter = new TradeImporter(titanSystemOfRecord, titanTradeStore)
-  
-  val userSettingsDatabase = new UserSettingsDatabase(starlingDB, broadcaster)
 
   val tradeImporters = Map[TradeSystem,TradeImporter](
     RefinedAssignmentTradeSystem → refinedAssignmentImporter,
@@ -290,13 +287,12 @@ class StarlingInit( val props: Props,
   private val guiColour = if (production || props.UseProductionColour()) None else Some(PropsHelper.createColour(serverName))
   val version = Version(serverName, hostname, props.StarlingDatabase().url, production, guiColour)
 
-  val trinityUploadCodeMapper = new TrinityUploadCodeMapper(trinityDB)
   val curveViewer = new CurveViewer(marketDataStore)
-  val trinityUploader = new TrinityUploader(new FCLGenerator(trinityUploadCodeMapper, curveViewer),
-    new XRTGenerator(marketDataStore), null, props)
+  val trinityUploader = new TrinityUploader(new FCLGenerator(businessCalendars, curveViewer),
+    new XRTGenerator(marketDataStore), trinityService, props)
   val scheduler = Scheduler.create(businessCalendars, marketDataStore, broadcaster, trinityUploader, props)
 
-  val referenceData = new ReferenceData(businessCalendars, marketDataStore, strategyDB, scheduler, trinityUploadCodeMapper)
+  val referenceData = new ReferenceData(businessCalendars, marketDataStore, strategyDB, scheduler)
 
   val userReportsService = new UserReportsService(businessCalendars.UK, tradeStores, marketDataStore, userSettingsDatabase, reportService)
 
@@ -574,7 +570,6 @@ object Bob {
                   case Nil => println("Nil " + key); None
                   case one :: Nil => {
                     one match {
-                      case pv:PriceValue => Some( (pv.value.uom.toString, pv.value.value) )
                       case q:Quantity => Some( (q.uom.toString, q.value) )
                       case pq:PivotQuantity if pq.quantityValue.isDefined => Some( (pq.quantityValue.get.uom.toString, pq.quantityValue.get.value) )
                       case pc:Percentage => Some( ("%", pc.value) )

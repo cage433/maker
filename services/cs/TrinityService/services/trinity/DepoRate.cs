@@ -27,7 +27,7 @@ namespace com.trafigura.services.trinity
             to.Period = Period;
             to.Bid = Bid;
             to.Off = Offer;
-            to.TheDate = (int) DateTime.Parse(Date).ToOADate();
+            to.TheDate = Date.ParseDate();
             to.PeriodFromToday = PeriodFromToday;
         }
     }
