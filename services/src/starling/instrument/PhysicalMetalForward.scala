@@ -16,7 +16,7 @@ import com.trafigura.services.valuation.CostsAndIncomeAssignmentValuation
 import com.trafigura.services.valuation.CostsAndIncomeQuotaValuation
 import com.trafigura.services.valuation.PricingValuationDetails
 import com.trafigura.edm.shared.types.{Date, Quantity => EDMQuantity}
-import com.trafigura.edm.logistics.inventory.{EDMAssignment, EDMAssignmentItem, EDMInventoryItem}
+import com.trafigura.edm.logistics.inventory.{EDMAssignment, EDMInventoryItem}
 
 
 case class PhysicalMetalQuota(
@@ -121,7 +121,8 @@ object CostsAndIncomeValuation{
 object PhysicalMetalAssignmentForward {
   def apply(exchangesByGUID : Map[GUID, EDMMarket],
             futuresMetalMarketByGUID : Map[GUID, EDMMetal],
-            assignmentIdToQuotaMap : Map[Int, EDMQuota])
+            assignmentIdToQuotaMap : Map[Int, EDMQuota],
+            uomIdToNameMap : Map[Int, String])
            (inventory : EDMInventoryItem) : PhysicalMetalAssignmentForward = {
     try {
       val purchaseQuota = assignmentIdToQuotaMap(inventory.purchaseAssignment.oid.contents)
@@ -145,7 +146,7 @@ object PhysicalMetalAssignmentForward {
        purchasePricingSpec,
        salePricingSpec)
 
-      PhysicalMetalAssignmentForward(inventory.oid.contents.toString, inventory, quota)
+      PhysicalMetalAssignmentForward(inventory.oid.contents.toString, inventory, quota, uomIdToNameMap)
     }
     catch {
       case ex => throw new Exception("Inventory " + inventory.oid + " failed to construct from EDM. " + ex.getMessage, ex)
@@ -155,10 +156,12 @@ object PhysicalMetalAssignmentForward {
   def value(exchangesByGUID : Map[GUID, EDMMarket],
             futuresMetalMarketByGUID : Map[GUID, EDMMetal],
             assignmentIdToQuotaMap : Map[Int, EDMQuota],
-            env : Environment, snapshotID : String)(inventory : EDMInventoryItem) : Either[String, List[CostsAndIncomeAssignmentValuation]] =  {
+            uomIdToNameMap : Map[Int, String],
+            env : Environment, snapshotID : String)
+            (inventory : EDMInventoryItem) : Either[String, List[CostsAndIncomeAssignmentValuation]] =  {
 
     try {
-      val forward = PhysicalMetalAssignmentForward(exchangesByGUID, futuresMetalMarketByGUID, assignmentIdToQuotaMap)(inventory)
+      val forward = PhysicalMetalAssignmentForward(exchangesByGUID, futuresMetalMarketByGUID, assignmentIdToQuotaMap, uomIdToNameMap)(inventory)
       Right(forward.costsAndIncomeAssignmentValueBreakdown(env, snapshotID))
     }
     catch {
@@ -167,21 +170,23 @@ object PhysicalMetalAssignmentForward {
   }
 }
 
-case class PhysicalMetalAssignmentForward(id : String, inventoryItem : EDMInventoryItem, quota : PhysicalMetalQuota) {
+case class PhysicalMetalAssignmentForward(id : String, inventoryItem : EDMInventoryItem, quota : PhysicalMetalQuota, uomIdToName : Map[Int, String]) {
 
   def costsAndIncomeAssignmentValueBreakdown(env : Environment, snapshotId : String) : List[CostsAndIncomeAssignmentValuation] = {
-  
+    val purchaseQty = fromTitanQuantity(inventoryItem.quantity, uomIdToName)
+    val saleQty = purchaseQty // until logistics send us both quantities
     List(CostsAndIncomeAssignmentValuation(
       purchaseAssignmentID = inventoryItem.purchaseAssignment.oid.contents.toString,
       saleAssignmentID = inventoryItem.salesAssignment match { case null => None; case salesAssignment : EDMAssignment => Some(salesAssignment.oid.contents.toString) },
       snapshotID = snapshotId,
-      quantity = quota.quantity,
+      purchaseQuantity = toTitanSerializableQuantity(purchaseQty),
+      saleQuantity = toTitanSerializableQuantity(saleQty),
 
       // These come from the pricing spec of the quota associated with the purchaseAssignmentID
-      purchaseValuationDetails = CostsAndIncomeValuation.build(env, quota.quantity, quota.pricingSpec),
+      purchaseValuationDetails = CostsAndIncomeValuation.build(env, purchaseQty, quota.pricingSpec),
       // If saleAssignmentID is defined, then these details come from the pricing spec of its associated quota,
       // otherwise use the expected pricing spec of the purchase quota
-      saleValuationDetails = CostsAndIncomeValuation.build(env, quota.quantity, quota.expectedTransferPricingSpec),
+      saleValuationDetails = CostsAndIncomeValuation.build(env, saleQty, quota.expectedTransferPricingSpec),
 
       benchmarkPremium = Quantity.NULL,
       freightParity = Quantity.NULL))

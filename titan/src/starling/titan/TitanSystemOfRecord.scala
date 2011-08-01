@@ -2,7 +2,7 @@ package starling.titan
 
 import com.trafigura.tradinghub.support.GUID
 import com.trafigura.edm.tradeservice.EdmGetTrades
-import com.trafigura.tradecapture.internal.refinedmetal.{Counterparty, Market, Metal}
+import com.trafigura.tradecapture.internal.refinedmetal.{Counterparty, Market, Metal, UOM}
 import com.trafigura.edm.physicaltradespecs.EDMQuota
 import com.trafigura.edm.materialspecification.CommoditySpec
 import com.trafigura.edm.trades.{PhysicalTrade => EDMPhysicalTrade}
@@ -223,6 +223,8 @@ trait TitanTacticalRefData {
   val edmMetalByGUID: Map[GUID, Metal]
   val futuresExchangeByGUID: Map[GUID, Market]
   val counterpartiesByGUID: Map[GUID, Counterparty]
+
+  val uomById : Map[Int, UOM]
 }
 
 trait TitanEdmTradeService {
