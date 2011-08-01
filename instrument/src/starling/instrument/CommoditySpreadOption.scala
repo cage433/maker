@@ -17,14 +17,18 @@ import starling.curves.EnvironmentDifferentiable
 import starling.curves.VolKey
 import starling.curves.SpreadAtmStdDevAtomicDatumKey
 import starling.market.{FuturesSpreadMarket, ForwardPriceRiskFactorType, Market, FuturesMarket}
+import starling.quantity.NamedQuantity
+import starling.quantity.FunctionNamedQuantity
 
 case class CommoditySpreadOption(
-        market: FuturesSpreadMarket,
-        month: Month,
-        strike: Quantity,
-        volume: Quantity,
-        callPut: CallOrPut
-        ) extends SingleSpreadOption(market, market.spreadOptionExpiry(month), DateRangePeriod(month), strike, volume, callPut) with Tradeable{
+  market: FuturesSpreadMarket,
+  month: Month,
+  strike: Quantity,
+  volume: Quantity,
+  callPut: CallOrPut
+) 
+  extends SingleSpreadOption(market, market.spreadOptionExpiry(month), DateRangePeriod(month), strike, volume, callPut) with Tradeable
+{
   override def expiryDay = Some(market.spreadOptionExpiry(month))
 
   def asUtpPortfolio(tradeDay:Day) = UTP_Portfolio(Map(
@@ -37,9 +41,7 @@ case class CommoditySpreadOption(
     ci.copy(index = Some(Right(market)), averagingPeriod = Some(month))
   }
 
-
   def persistedTradeableDetails = Map("Market" -> market, "Period" -> period, "Strike" -> strike, "Quantity" -> volume, "CallPut" -> callPut)
-
 
   def instrumentType = CommoditySpreadOption
 
@@ -69,23 +71,32 @@ case class CommoditySpreadOption(
   override def riskMarketExtra = String.format("%6.2f%n ", new java.lang.Double(strike.value)) + callPut.toShortString
   override def atomicKeyCachingUTP : UTP = copy(strike = 1.0(market.priceUOM))
 
-  def price(env: Environment) = {
-    if (isLive(env.marketDay)) {
+  def explanation(env : Environment) : NamedQuantity  = {
+    val (_, (undiscountedPrice, spreadPrice, stdDev, discount)) = priceWithDetails(env.withNaming())
+    FunctionNamedQuantity("SpreadOption-" + callPut, List(spreadPrice, stdDev, strike.named("K")), undiscountedPrice) * volume.named("Volume") * discount
+  }
+
+  def price(env: Environment) = priceWithDetails(env)._1
+
+  private def priceWithDetails(env: Environment) : (Quantity, (Quantity, NamedQuantity, NamedQuantity, NamedQuantity)) = {
+    val zeroPrice = 0.0(market.priceUOM) 
+    val (undiscountedPrice, spreadPrice, stdDev, discount) = if (isLive(env.marketDay)) {
       val T = exerciseDay.endOfDay.timeSince(env.marketDay)
       val S = env.spreadPrice(market, month)
       val K = strike
       val discount = env.discount(valuationCCY, exerciseDay)
       if (T == 0) {
-        callPut.intrinsicPrice(S, K) * discount
+        (callPut.intrinsicPrice(S, K), S, zeroPrice, discount)
       } else {
         val annualisedStdDev = env.spreadStdDev(market, month, exerciseDay, strike)
         val undiscountedPriceValue = new SpreadOptionCalculations(callPut, S.value, K.value, annualisedStdDev.checkedValue(market.priceUOM), 0.0, T).undiscountedPrice
         val undiscountedPrice = Quantity(undiscountedPriceValue, market.priceUOM)
-        undiscountedPrice * discount
+        (undiscountedPrice, S, annualisedStdDev, discount)
       }
     } else {
-      0.0(market.priceUOM)
+      (zeroPrice, zeroPrice, zeroPrice, new Quantity(1.0))
     }
+    (undiscountedPrice * discount, (undiscountedPrice, spreadPrice.named("Spread Price"), stdDev.named("Std Dev"), discount.named("Discount")))
   }
 }
 

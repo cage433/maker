@@ -8,6 +8,11 @@ import starling.quantity.Quantity._
 import starling.models._
 import starling.daterange.DateRangePeriod
 import starling.market.{Market, FuturesMarket}
+import starling.quantity.NamedQuantity
+import starling.quantity.Percentage
+import starling.quantity.PercentageNamedQuantity
+import starling.quantity.SimpleNamedQuantity
+import starling.quantity.FunctionNamedQuantity
 
 
 case class FuturesOption(
@@ -25,6 +30,7 @@ case class FuturesOption(
   require(volume.uom == market.uom, "Can't handle volume in non-market uom, volume: " + volume + ", market: " + market.uom)
 
 	val valuationCCY = strike.uom * market.uom
+
 
   override def forwardState(env: Environment, dayAndTime: DayAndTime) = {
     // if in the normal environment we are still live, and in the forward state we are after exercise:
@@ -89,24 +95,35 @@ case class FuturesOption(
   }
 
 
-  def price(env: Environment) = {
-    if (isLive(env.marketDay)) {
+  def explanation(env : Environment) : NamedQuantity = {
+    val (_, (undiscountedOptionPrice, underlyingPrice, vol, time, discount)) = priceWithDetails(env.withNaming())
+    FunctionNamedQuantity("FuturesOption-" + exerciseType + "-" + callPut, List(underlyingPrice, strike.named("K"), vol, time), undiscountedOptionPrice) * volume.named("Volume") * discount
+  }
+
+  def price(env: Environment) = priceWithDetails(env)._1
+  
+  private def priceWithDetails(env : Environment) : (Quantity, (Quantity, NamedQuantity, NamedQuantity, NamedQuantity, NamedQuantity)) = {
+    val (undiscountedOptionPrice, underlyingPrice, vol, time, discount) = if (isLive(env.marketDay)) {
       val F = env.forwardPrice(market, delivery)
       val vol = env.impliedVol(market, delivery, exerciseDay, strike)
       val T = exerciseDay.endOfDay.timeSince(env.marketDay)
-      if (exerciseDay.endOfDay == env.marketDay)
+      val discount = env.discount(valuationCCY, exerciseDay)
+      val undiscountedOptionPrice = if (exerciseDay.endOfDay == env.marketDay)
         callPut.intrinsicPrice(F, strike)
       else exerciseType match {
         case American => americanOptionPrice(env)
         case European => {
-          val price = BlackScholes.undiscountedOptionPrice(F, strike, callPut, T, vol)
-          val discount = env.discount(valuationCCY, exerciseDay)
-          price * discount
+          BlackScholes.undiscountedOptionPrice(F, strike, callPut, T, vol)
         }
       }
+      (undiscountedOptionPrice, F, vol, T, discount)
     } else {
-      Quantity(0, market.priceUOM)
+      (Quantity(0, market.priceUOM), Quantity.NULL, Percentage(0), 0.0, new Quantity(1.0))
     }
+    (
+      undiscountedOptionPrice * discount, 
+      (undiscountedOptionPrice, underlyingPrice.named("F"), PercentageNamedQuantity("Vol", vol), SimpleNamedQuantity("T", new Quantity(time)), discount.named("Discount"))
+    )
   }
 
   override def fixUpMyCashInstruments(ci: CashInstrument) = {
