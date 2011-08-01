@@ -366,6 +366,10 @@ class StrategyFieldDetails(comparator0: Ordering[PivotTreePath]) extends TreeFie
 object FieldDetails {
   def apply(name:String) = new FieldDetails(name)
   def apply(name:String, parser0:PivotParser) = new FieldDetails(name) {override def parser = parser0}
+  def apply(name:String, parser0:PivotParser, formatter0:PivotFormatter) = new FieldDetails(name) {
+    override def parser = parser0
+    override def formatter = formatter0
+  }
   def createMeasure(name:String) = new FieldDetails(name) {
     override def isDataField = true
   }
