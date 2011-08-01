@@ -50,11 +50,11 @@ class ExampleService extends ExampleServiceApi {
 object ExampleClient {
   def main(args: Array[String]) {
     val services = {
-      val trinityTest   = ResteasyServiceApi("http://ttraflon2k196/trinity")
+      val trinityTest   = ResteasyServiceApi("http://ttraflon2k196:9100")
       val windows       = ResteasyServiceApi("http://localhost:9100/")
       val starlingLocal = ResteasyServiceApi("http://localhost:37220/RPC")
 
-      trinityTest
+      windows
     }
 
     val exampleService = services.create[ExampleServiceApi]

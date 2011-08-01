@@ -99,5 +99,5 @@ object Week extends TenorType {
 
   override def toString = "Week"
 
-  def shortName = "W"
+  override def shortName = "W"
 }

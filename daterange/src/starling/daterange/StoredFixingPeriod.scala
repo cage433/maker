@@ -26,8 +26,8 @@ object StoredFixingPeriod {
   val Tenor     = Extractor.from[StoredFixingPeriod](_.tenor)
 
   val Parse = Extractor.from[String](input => input partialMatch {
-    case starling.daterange.Tenor.Parse(value) => tenor(value)
     case starling.daterange.DateRange(value) => dateRange(value)
+    case starling.daterange.Tenor.Parse(value) => tenor(value)
   })
 
   def parse(any: Any): StoredFixingPeriod = Parse.unapply(any.toString).getOrElse(throw new Exception("Could not parse: " + any))

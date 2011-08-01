@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using com.trafigura.services.util;
+using Newtonsoft.Json.Linq;
 
 namespace System
 {
@@ -27,37 +28,15 @@ namespace System
             charArray[0] = charArray[0].ToString().ToLower().ToCharArray()[0];
             return new String(charArray);
         }
-    }
 
-    public static class TypeExtensions
-    {
-        public static string CodeString(this Type type)
+        public static JToken ParseJson(this string edmJson)
         {
-            return CodeString(type, false);
+            return edmJson.Trim().StartsWith("[") ? (JToken)JArray.Parse(edmJson) : JObject.Parse(edmJson);
         }
 
-        public static string CodeString(this Type type, bool shortName)
+        public static int ParseDate(this string date)
         {
-            var name = shortName ? type.Name : type.FullName;
-
-            if (!type.IsGenericType)
-            {
-                return name;
-            }
-
-            string value = name.Substring(0, name.IndexOf('`')) + "<";
-            Type[] genericArgs = type.GetGenericArguments();
-            List<string> list = new List<string>();
-            for (int i = 0; i < genericArgs.Length; i++)
-            {
-                value += "{" + i + "},";
-                string s = CodeString(genericArgs[i], shortName);
-                list.Add(s);
-            }
-            value = value.TrimEnd(',');
-            value += ">";
-            value = string.Format(value, list.ToArray());
-            return value;
+            return (int) DateTime.Parse(date).ToOADate();
         }
     }
 

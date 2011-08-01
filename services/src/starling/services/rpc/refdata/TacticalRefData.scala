@@ -11,13 +11,12 @@ import com.trafigura.edm.tradeservice.TradeResults
 import com.trafigura.edm.trades.Trade
 import com.trafigura.edm.tradeservice.TradeResult
 import starling.services.StarlingInit
-import com.trafigura.tradinghub.support.{ModelObject, GUID}
+import com.trafigura.tradinghub.support.GUID
 import starling.services.rpc.valuation.ValuationService
-import starling.services.rpc.logistics.FileUtils
+import starling.services.rpc.FileUtils
 import starling.titan.{TitanEdmTradeService, TitanServices}
 import com.trafigura.tradecapture.internal.refinedmetal.{Counterparty, Metal, Market}
-import java.util.zip.GZIPOutputStream
-import java.io.{BufferedOutputStream, FileOutputStream, BufferedWriter, FileWriter}
+import com.trafigura.timer.Timer
 
 
 /**
@@ -51,7 +50,7 @@ case class DefaultTitanServices(props: Props) extends TitanServices {
 case class FileMockedTitanServices() extends TitanServices {
    
   import com.trafigura.edm.trades.{PhysicalTrade => EDMPhysicalTrade}
-  import starling.services.rpc.logistics.FileUtils._
+  import starling.services.rpc.FileUtils._
 
   val resourcePath = "/tests/valuationservice/testdata"
   val tradesFile = getClass.getResource(resourcePath + "/allEdmTrades.json.zip") // "/edmTrades.json")
@@ -79,9 +78,10 @@ case class FileMockedTitanServices() extends TitanServices {
   def allTacticalRefDataFuturesMarkets() = Nil
   def allTacticalRefDataExchanges() = Nil
 
-  val loadedMarkets = loadJsonValuesFromFileUrl(marketsFile).map(s => Metal.fromJson(new JSONObject(s)).asInstanceOf[Metal])
-  val loadedExchanges = loadJsonValuesFromFileUrl(exchangesFile).map(s => Market.fromJson(new JSONObject(s)).asInstanceOf[Market])
-  val loadedTrades = loadJsonValuesFromFileUrl(tradesFile, true).map(s => EDMPhysicalTrade.fromJson(new JSONObject(s)).asInstanceOf[EDMPhysicalTrade])
+  import Timer._
+  val loadedMarkets = time(loadJsonValuesFromFileUrl(marketsFile).map(s => Metal.fromJson(new JSONObject(s)).asInstanceOf[Metal]), t => println("took %dms to get markets".format(t)))
+  val loadedExchanges = time(loadJsonValuesFromFileUrl(exchangesFile).map(s => Market.fromJson(new JSONObject(s)).asInstanceOf[Market]), t => println("took %dms to get exchanges".format(t)))
+  val loadedTrades = time(loadJsonValuesFromFileUrl(tradesFile, true).map(s => EDMPhysicalTrade.fromJson(new JSONObject(s)).asInstanceOf[EDMPhysicalTrade]), t => println("took %dms to get trades".format(t)))
   var tradeMap = loadedTrades.map(t => t.oid -> t).toMap
 
   def updateTrade(trade : EDMPhysicalTrade) {
@@ -100,13 +100,15 @@ case class FileMockedTitanServicesDataFileGenerator(titanEdmTradeService : Titan
 
 //  valuations.tradeResults.foreach(println)
 
-  val (_, worked) = valuations.tradeResults.values.partition({ case Right(_) => true; case Left(_) => false })
-
+  val (worked, failed) = valuations.tradeResults.values.partition(_ isRight)
+  failed.foreach(println)
   val tradeIds = valuations.tradeResults.collect{ case (id, Right(_)) => id }.toList
-  //val trades = valuationService.getTrades(tradeIds)
-  val trades = titanEdmTradeService.titanGetEdmTradesService.getAll().results.map(_.trade).filter(_ != null)
+  val trades = valuationService.getTrades(tradeIds)
+  //val trades = titanEdmTradeService.titanGetEdmTradesService.getAll().results.map(_.trade).filter(_ != null)
   val markets = valuationService.getFuturesMarkets.toList
   val exchanges = valuationService.getFuturesExchanges.toList
+
+  println("read %d trades ".format(trades.size))
 
   /**
    * Write out EDM trades from trade service (that can be valued successfully) and the ref-data markets and exchanges
@@ -126,7 +128,7 @@ case class FileMockedTitanServicesDataFileGenerator(titanEdmTradeService : Titan
   val loadedExchanges = loadJsonValuesFromFile(exchangesFile).map(s => Market.fromJson(new JSONObject(s)).asInstanceOf[Market])
   loadedExchanges.foreach(println)
   val loadedTrades = loadJsonValuesFromFile(tradesFile, true).map(s => EDMPhysicalTrade.fromJson(new JSONObject(s)).asInstanceOf[EDMPhysicalTrade])
-  println("loaded trade size = " + loadedTrades.size)
+  println("loaded %d trades = ".format(loadedTrades.size))
 }
 
 object RefDataServices {

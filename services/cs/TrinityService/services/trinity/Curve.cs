@@ -12,13 +12,13 @@ namespace com.trafigura.services.trinity
 
         protected readonly trMarketDataServer marketData;
 
-        public int ProfileId { get; private set; }
+        public Profile Profile { get; private set; }
         public string Commodity { get; private set; }
 
-        protected Curve(trMarketDataServer marketData, int profileId, string commodity)
+        protected Curve(trMarketDataServer marketData, Profile profile, string commodity)
         {
             this.marketData = marketData;
-            ProfileId = profileId;
+            Profile = profile;
             Commodity = commodity;
         }
 
@@ -29,43 +29,12 @@ namespace com.trafigura.services.trinity
 
         public bool SetRates(List<R> rates)
         {
-            return DeleteRatesWhere(rate => true) && marketData.Transact(this, () =>
-            {
-                var rateCurve = GetOrCreateTrinityRateCurve();
-
-                foreach (var newRate in rates)
-                {
-                    newRate.AddTo(rateCurve);
-                }
-
-                logger.Info("Saving", rateCurve.Save);
-            });
+            return AddOrSetRates(rates, true);
         }
-
+       
         public bool AddRates(List<R> rates)
         {
-            return marketData.Transact(this, () =>
-            {
-                var ratesByPeriod = rates.ToDictionary(rate => rate.Period);
-
-                var rateCurve = GetOrCreateTrinityRateCurve();
-
-                foreach (var existingRate in rateCurve.Rates().Where(rate => ratesByPeriod.ContainsKey(rate.Period)))
-                {
-                    var newRate = ratesByPeriod[existingRate.Period];
-
-                    newRate.CopyTo(existingRate);
-
-                    ratesByPeriod.Remove(newRate.Period);
-                }
-
-                foreach (var missingRate in ratesByPeriod.Values)
-                {
-                    missingRate.AddTo(rateCurve);
-                }
-
-                logger.Info("Saving", rateCurve.Save);
-            });
+            return AddOrSetRates(rates, false);
         }
 
         public bool DeleteRatesWhere(Func<_IRate, bool> predicate)
@@ -83,6 +52,39 @@ namespace com.trafigura.services.trinity
 
                     rateCurve.Save();
                 }
+            });
+        }
+
+        private bool AddOrSetRates(IEnumerable<R> rates, bool remoteNonMatchingExistingRates = true)
+        {
+            return marketData.Transact(this, () =>
+            {
+                var ratesByPeriod = rates.ToDictionary(rate => rate.Period);
+
+                var rateCurve = GetOrCreateTrinityRateCurve();
+
+                foreach (var existingRate in rateCurve.Rates())
+                {
+                    if (ratesByPeriod.ContainsKey(existingRate.Period))
+                    {
+                        var newRate = ratesByPeriod[existingRate.Period];
+
+                        newRate.CopyTo(existingRate);
+
+                        ratesByPeriod.Remove(newRate.Period);
+                    }
+                    else if (remoteNonMatchingExistingRates)
+                    {
+                        rateCurve.RemoveRate(existingRate);
+                    }
+                }
+
+                foreach (var missingRate in ratesByPeriod.Values)
+                {
+                    missingRate.AddTo(rateCurve);
+                }
+
+                logger.Info("Saving", rateCurve.Save);
             });
         }
     }

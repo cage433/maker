@@ -17,7 +17,7 @@ class RabbitMessageReceiver(host: String, queue: RabbitQueue, receiver: RabbitMe
       val delivery: Delivery = consumer.nextDelivery(250)
 
       if (delivery != null && isRunning()) {
-        val headers = JavaConversions.asScalaMap(delivery.getProperties.getHeaders).toMap.mapValues(_.toString)
+        val headers = JavaConversions.mapAsScalaMap(delivery.getProperties.getHeaders).toMap.mapValues(_.toString)
         receiver(RabbitMessage(new String(delivery.getBody), headers))
       }
     }

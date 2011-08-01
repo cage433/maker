@@ -7,24 +7,24 @@ namespace MarketData2
     {
         public static bool Transact<R>(this trMarketDataServer marketData, Curve<R> curve, Action action) where R : Rate
         {
-            return Transact(marketData, curve.ProfileId, curve.Commodity, action);
+            return Transact(marketData, curve.Profile, curve.Commodity, action);
         }
 
-        public static bool Transact(this trMarketDataServer marketData, int profileId, string commodity, Action action)
+        public static bool Transact(this trMarketDataServer marketData, Profile profile, string commodity, Action action)
         {
-            return Transact(marketData, profileId, commodity, () => { action(); return true; });
+            return Transact(marketData, profile, commodity, () => { action(); return true; });
         }
 
         public static T Transact<R, T>(this trMarketDataServer marketData, Curve<R> curve, Func<T> func) where R : Rate
         {
-            return Transact(marketData, curve.ProfileId, curve.Commodity, func);
+            return Transact(marketData, curve.Profile, curve.Commodity, func);
         }
 
-        public static T Transact<T>(this trMarketDataServer marketData, int profileId, string commodity, Func<T> func)
+        public static T Transact<T>(this trMarketDataServer marketData, Profile profile, string commodity, Func<T> func)
         {
             try
             {
-                marketData.LockCommodityRates(profileId, commodity);
+                marketData.LockCommodityRates(profile.Id, commodity);
 
                 var result = func();
 

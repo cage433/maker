@@ -5,13 +5,14 @@ import scala.collection.SortedSet
 import starling.daterange._
 import starling.marketdata._
 import starling.pivot._
+import model.UndefinedValue
 import starling.quantity.Quantity
 import collection.immutable.List
 import starling.db.MarketDataReader
-import starling.market.{CommodityMarket, FuturesMarket}
 import starling.utils.Pattern.Extractor
 
 import starling.utils.ImplicitConversions._
+import starling.market.{PublishedIndex, CommodityMarket, FuturesMarket}
 
 
 object PriceCurveFactory extends CurveType {
@@ -27,9 +28,10 @@ object PriceCurveFactory extends CurveType {
 case class UnderlyingDeliveryPeriods(observationTimeOfDay:ObservationTimeOfDay, market:CommodityMarket, periods:SortedSet[DateRange]) {
   require(market.tenor.isOneOf(Day, Month), "Only daily and monthly markets are supported")
 
-  def dateRangesFrom(startDay: Day) = market.tenor match {
-    case Day => (startDay upto periods.last.lastDay).toList
-    case Month => startDay.containingMonth upto periods.last.lastMonth
+  def dateRangesFrom(startDay: Day) = (market, market.tenor) match {
+    case (p:PublishedIndex, Day) => startDay.containingMonth upto periods.last.lastMonth
+    case (_, Month) => startDay.containingMonth upto periods.last.lastMonth
+    case (_, Day) => (startDay upto periods.last.lastDay).toList
   }
 }
 
@@ -58,15 +60,18 @@ class CurveViewerInputsPivotTableDataSource(inputs:Set[(TimedMarketDataKey, Mark
               timeOfDayField -> observationPoint.timeOfDay) )
       }
       case (TimedMarketDataKey(observationPoint, PriceDataKey(market:FuturesMarket)), priceData:PriceData) => {
-        priceData.prices.map { case (period, quantity) => {
+        priceData.prices.map { case (period, pivotQuantity) => {
           Map(marketField -> market.name,
               marketTenor.field -> market.tenor.toString,
               exchange.field -> market.exchange.name,
               commodity.field -> market.commodity.name,
               periodField -> period,
-              inputField -> quantity.pq,
+              inputField -> pivotQuantity,
               timeOfDayField -> observationPoint.timeOfDay)
         } }
+      }
+      case (TimedMarketDataKey(observationPoint, PriceFixingsHistoryDataKey(name, exchange)), fixings:PriceFixingsHistoryData) => {
+        Nil //TODO need to turn Fixings into inputs
       }
       case (TimedMarketDataKey(observationPoint, PriceDataKey(market:CommodityMarket)), priceData:PriceData) => {
         List()

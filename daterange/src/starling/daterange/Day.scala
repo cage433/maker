@@ -222,6 +222,7 @@ class Day private (@transient val year : Int, @transient val month : Int, @trans
   def atTimeOfDay(timeOfDay : TimeOfDay) = DayAndTime(this, timeOfDay)
   def atTimeOfDay(timeOfDay: ObservationTimeOfDay) = ObservationPoint(this, timeOfDay)
   def atTimeOfDay(time: LocalTime, location: Location): DateTime = time.toDateTimeToday(location.timeZoneOn(this))
+  def asMonthObject = Month(year, month)
 
   /** Returns a simple date range from this day to the day supplied (inclusive). Will fail if day
    * 	supplied is in the past
@@ -529,6 +530,6 @@ object Day extends TenorType {
 
   override def toString = "Day"
 
-  def shortName = "D"
+  override def shortName = "D"
 }
 

@@ -14,8 +14,8 @@ import starling.reports.pivot.PivotReport._
 import starling.quantity.Quantity._
 import starling.market.rules.CommonPricingRule
 import starling.market._
-import starling.tradestore.{PeriodComparator, PeriodFieldDetails}
 import starling.gui.api.{ReportSpecificChoices, UTPIdentifier}
+import starling.marketdata.{PeriodComparator, PeriodFieldDetails}
 
 trait PivotReportRow{
   def utpID : UTPIdentifier
@@ -167,10 +167,9 @@ trait RiskPivotFields[T <: RiskPivotReportRow[T]]{
       }
     },
     new PivotReportField[T]("Risk Period") {
-      def value(reportRow : T) = OptionalPeriodLabel(reportRow.period)
-      override def pivotFieldDetails = new FieldDetails(name) {
-        override def nullValue() = OptionalPeriodLabel.Null
-        override def comparator = OptionalPeriodLabelComparator
+      def value(reportRow : T) = reportRow.period.getOrElse("NOPERIOD")
+      override def pivotFieldDetails = new PeriodFieldDetails(name) {
+        override def nullValue() = "NOPERIOD"
       }
     },
 

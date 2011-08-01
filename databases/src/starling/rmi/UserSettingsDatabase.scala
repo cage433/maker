@@ -38,16 +38,23 @@ class UserSettingsDatabase(val db:DB, broadcaster:Broadcaster) {
     allBookmarks
   }
 
-  def allSettings:List[UserSettings] = {
+  def allSettings:List[(String, UserSettings)] = {
     db.queryWithResult("SELECT * from usersettings") {
       rs => {
-        StarlingXStream.read(rs.getString("settings")).asInstanceOf[UserSettings]
+        (rs.getString("starlinguser"), StarlingXStream.read(rs.getString("settings")).asInstanceOf[UserSettings])
       }
     }
   }
 
-  def saveSettings(settings: UserSettings) {
-    val user = User.currentlyLoggedOn.username.take(colSize)
+  def saveAllSettings(settings:List[(String, UserSettings)]) {
+    db.inTransaction {
+      writer => {
+        settings.foreach{case (username, userSettings) => saveSettings(username.take(colSize), userSettings)}
+      }
+    }
+  }
+
+  private def saveSettings(user:String, settings:UserSettings) {
     db.inTransaction {
       writer => {
         writer.delete("usersettings", ("starlinguser" eql LiteralString(user)))
@@ -55,7 +62,11 @@ class UserSettingsDatabase(val db:DB, broadcaster:Broadcaster) {
       }
     }
   }
-  
+
+  def saveSettings(settings: UserSettings) {
+    saveSettings(User.currentlyLoggedOn.username.take(colSize), settings)
+  }
+
   def savePivotLayout(user:User, pivotLayout:PivotLayout) {
     val username = user.username.take(colSize)
     val layoutName = pivotLayout.layoutName.take(colSize)

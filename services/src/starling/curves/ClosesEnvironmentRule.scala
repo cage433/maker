@@ -5,8 +5,10 @@ import starling.marketdata._
 import starling.utils.ImplicitConversions._
 import starling.gui.api.EnvironmentRuleLabel
 import starling.db.MarketDataReader
-import starling.market.{CommodityMarket, Market, FuturesMarket}
 import starling.quantity.UOM
+import starling.calendar.BusinessCalendar
+import starling.pivot.MarketValue
+import starling.market._
 
 
 object ClosesEnvironmentRule extends EnvironmentRule {
@@ -21,27 +23,22 @@ object ClosesEnvironmentRule extends EnvironmentRule {
     val priceDataMap = marketsWithCloseTimeOfDay.flatMap {
       case (market, timeOfDay) => try {
         val marketData = marketDataReader.read(TimedMarketDataKey(observationDay.atTimeOfDay(timeOfDay), PriceDataKey(market)))
-        Some(PriceDataKey(market) → marketData.asInstanceOf[PriceData])
+        if (true) None else Some(PriceDataKey(market) → marketData.asInstanceOf[PriceData])
       } catch {
         case e: MissingMarketDataException => None
       }
-    }.toMap
+    }.toMap ++ FreightCurve.freightPriceData(observationDay, marketDataReader)
 
     val reader = new MarketDataSlice {
       def read(key: MarketDataKey) = {
         key match {
-          case priceDataKey @ PriceDataKey(futuresMarket: FuturesMarket) => {
-            if (!marketCloses.contains(futuresMarket)) {
-              throw new Exception("No close rule for " + futuresMarket.exchange)
-            }
-
-            priceDataMap.getOrElse(priceDataKey,
-              throw new Exception("No price for " + futuresMarket + "@" + marketCloses.contains(futuresMarket)))
+          case priceDataKey @ PriceDataKey(market) => {
+            priceDataMap.getOrElse(priceDataKey, throw new Exception("No prices for " + market))
           }
           case key:ForwardRateDataKey => marketDataReader.read(TimedMarketDataKey(observationDay.atTimeOfDay(ObservationTimeOfDay.Default), key))
           case key@SpotFXDataKey(UOM.CNY) => marketDataReader.read(TimedMarketDataKey(observationDay.atTimeOfDay(ObservationTimeOfDay.SHFEClose), key))
           case key:SpotFXDataKey => marketDataReader.read(TimedMarketDataKey(observationDay.atTimeOfDay(ObservationTimeOfDay.LondonClose), key))
-          case _ => throw new Exception(name + " only has rules for futures Prices")
+          case _ => throw new Exception(name + " Closes Rule has no rule for " + key)
         }
       }
 
@@ -51,7 +48,10 @@ object ClosesEnvironmentRule extends EnvironmentRule {
     val marketsX = {
       priceDataMap.toList.map { case (PriceDataKey(futuresMarket: FuturesMarket), priceData) => {
         UnderlyingDeliveryPeriods(marketCloses(futuresMarket), futuresMarket, priceData.sortedKeys)
-      }}
+      }
+      case (PriceDataKey(market: PublishedIndex), priceData) => {
+        UnderlyingDeliveryPeriods(ObservationTimeOfDay.LondonClose, market, priceData.sortedKeys)
+      } }
     }
 
     val environmentX = Environment(new MarketDataCurveObjectEnvironment(observationDay.endOfDay(), reader))

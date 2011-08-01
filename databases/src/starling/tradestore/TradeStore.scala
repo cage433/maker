@@ -27,6 +27,7 @@ import math.Ordering
 import starling.quantity._
 import starling.gui.api._
 import starling.tradestore.TradeStore.StoreResults
+import starling.marketdata.PeriodFieldDetails
 
 //This is the code which maps from TradeableType.fields to FieldDetails
 object TradeableFields {
@@ -70,33 +71,6 @@ object TradeableFields {
       val (fieldDetails, mapper) = normalizedNameToFieldAndMapper(k.toLowerCase.removeWhiteSpace)
       (fieldDetails.field, mapper(trade,v))
     }}
-  }
-}
-
-class PeriodFieldDetails(name:String) extends FieldDetails(PField(name)) {
-  override def comparator = PeriodComparator
-}
-
-object PeriodComparator extends Ordering[Any] {
-  def compare(x: Any, y: Any) = {
-    (x,y) match {
-      case (p1:Period, p2:Period) => {
-        (p1, p2) match {
-          case (_: StripPeriod, _: DateRangePeriod) => -1
-          case (_: DateRangePeriod, _: StripPeriod) => +1
-
-          case (_: DateRangePeriod, _: SpreadPeriod) => +1
-          case (_: SpreadPeriod, _: DateRangePeriod) => -1
-
-          case (_: StripPeriod, _: SpreadPeriod) => -1
-          case (_: SpreadPeriod, _: StripPeriod) => +1
-
-          case (a:SpreadPeriod, b:SpreadPeriod) => a.compare(b)
-          case (a:DateRangePeriod, b:DateRangePeriod) => a.compare(b)
-          case (a:StripPeriod, b:StripPeriod) => a.compare(b)
-        }
-      }
-    }
   }
 }
 

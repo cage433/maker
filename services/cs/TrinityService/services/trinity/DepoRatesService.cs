@@ -12,35 +12,42 @@ namespace com.trafigura.services.trinity
     public class DepoRatesService : DepoRatesServiceApi
     {
         private readonly trMarketDataServer marketData;
+        private readonly ProfileServiceApi profileService;
 
         public DepoRatesService(trMarketDataServer marketData)
         {
             this.marketData = marketData;
+            this.profileService = new ProfileService(marketData);
         }
 
-        public List<DepoRate> GetRates(int profileId, string commodity)
+        public List<DepoRate> GetRates(string commodity, string profileName)
         {
-            return new DepoCurve(marketData, profileId, commodity).Rates;
+            return DepoCurve(commodity, profileName).Rates;
         }
 
-        public bool DeleteRates(int profileId, string commodity)
+        public bool DeleteRates(string commodity, string profileName)
         {
-            return new DepoCurve(marketData, profileId, commodity).DeleteRatesWhere(rate => true);
+            return DepoCurve(commodity, profileName).DeleteRatesWhere(rate => true);
         }
 
-        public bool DeleteRate(int profileId, string commodity, string period)
+        public bool DeleteRate(string commodity, string period, string profileName)
         {
-            return new DepoCurve(marketData, profileId, commodity).DeleteRatesWhere(rate => rate.Period == period);
+            return DepoCurve(commodity, profileName).DeleteRatesWhere(rate => rate.Period == period);
         }
 
-        public bool SetRates(int profileId, string commodity, List<DepoRate> rates)
+        public bool SetRates(string commodity, string profileName, List<DepoRate> rates)
         {
-            return new DepoCurve(marketData, profileId, commodity).SetRates(rates);
+            return DepoCurve(commodity, profileName).SetRates(rates);
         }
 
-        public bool AddRates(int profileId, string commodity, List<DepoRate> rates)
+        public bool AddRates(string commodity, string profileName, List<DepoRate> rates)
         {
-            return new DepoCurve(marketData, profileId, commodity).AddRates(rates);
+            return DepoCurve(commodity, profileName).AddRates(rates);
+        }
+
+        private DepoCurve DepoCurve(string commodity, string profileName)
+        {
+            return new DepoCurve(marketData, profileService.Get(profileName, "public"), commodity);
         }
     }
 }

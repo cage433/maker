@@ -88,5 +88,5 @@ object Year extends TenorType {
 
   override def toString = "Year"
 
-  def shortName = "Y"
+  override def shortNames = List("Y", "CAL")
 }

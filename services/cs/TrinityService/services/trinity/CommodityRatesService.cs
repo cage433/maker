@@ -12,35 +12,42 @@ namespace com.trafigura.services.trinity
     public class CommodityRatesService : CommodityRatesServicesApi
     {
         private readonly trMarketDataServer marketData;
+        private readonly ProfileService profileService;
 
         public CommodityRatesService(trMarketDataServer marketData)
         {
             this.marketData = marketData;
+            profileService = new ProfileService(marketData);
         }
 
-        public List<CommodityRate> GetRates(int profileId, string exchange, string commodity, string currency)
+        public List<CommodityRate> GetRates(string exchange, string commodity, string currency, string profileName)
         {
-            return new CommodityCurve(marketData, profileId, exchange, commodity, currency).Rates;
+            return CommodityCurve(exchange, commodity, currency, profileName).Rates;
         }
 
-        public bool DeleteRates(int profileId, string exchange, string commodity, string currency)
+        public bool DeleteRates(string exchange, string commodity, string currency, string profileName)
         {
-            return new CommodityCurve(marketData, profileId, exchange, commodity, currency).DeleteRatesWhere(rate => true);
+            return CommodityCurve(exchange, commodity, currency, profileName).DeleteRatesWhere(rate => true);
         }
 
-        public bool DeleteRate(int profileId, string exchange, string commodity, string currency, string period)
+        public bool DeleteRate(string exchange, string commodity, string currency, string period, string profileName)
         {
-            return new CommodityCurve(marketData, profileId, exchange, commodity, currency).DeleteRatesWhere(rate => rate.Period == period);
+            return CommodityCurve(exchange, commodity, currency, profileName).DeleteRatesWhere(rate => rate.Period == period);
         }
 
-        public bool SetRates(int profileId, string exchange, string commodity, string currency, List<CommodityRate> rates)
+        public bool SetRates(string exchange, string commodity, string currency, string profileName, List<CommodityRate> rates)
         {
-            return new CommodityCurve(marketData, profileId, exchange, commodity, currency).SetRates(rates);
+            return CommodityCurve(exchange, commodity, currency, profileName).SetRates(rates);
         }
 
-        public bool AddRates(int profileId, string exchange, string commodity, string currency, List<CommodityRate> rates)
+        public bool AddRates(string exchange, string commodity, string currency, string profileName, List<CommodityRate> rates)
         {
-            return new CommodityCurve(marketData, profileId, exchange, commodity, currency).AddRates(rates);
+            return CommodityCurve(exchange, commodity, currency, profileName).AddRates(rates);
+        }
+
+        private CommodityCurve CommodityCurve(string exchange, string commodity, string currency, string profileName)
+        {
+            return new CommodityCurve(marketData, profileService.Get(profileName, "public"), exchange, commodity, currency);
         }
     }
 }

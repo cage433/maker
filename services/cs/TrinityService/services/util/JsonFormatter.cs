@@ -4,13 +4,14 @@ using System.IO;
 using System.Net;
 using System.Net.Http.Headers;
 using Microsoft.ApplicationServer.Http;
+using Newtonsoft.Json;
 
 namespace com.trafigura.services.util
 {
     public class JsonFormatter : MediaTypeFormatter
     {
         private readonly JsonDeserializer deserializer = new JsonDeserializer();
-        private readonly JsonSerializer serializer = new JsonSerializer();
+        private readonly JsonSerializer serializer = new JsonSerializer(TypeNameHandling.All);
         private readonly IDictionary<Type, Func<string, object>> deserializers = new Dictionary<Type, Func<string, object>>
         {
             {typeof(bool), text => bool.Parse(text)},
