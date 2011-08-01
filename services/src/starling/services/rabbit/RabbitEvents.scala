@@ -158,8 +158,11 @@ class MockRabbitEventPublisher() extends EventPublisher {
   def newPayload(payloadType: String, id : Int) : Payload = null
   def newPayload(payloadType: String, id : String) : Payload = null
   def publish(subject : String, verb : EventVerbEnum) {}
-  def publishNew(subject : String, payload : Payload) {}
-  def publishUpdate(subject : String, payload : Payload) {}
+  def publishCreated(subject : String, payload : Payload) {}
+  def publishUpdated(subject : String, payload : Payload) {}
+  def publishCancelled(subject : String, payload : Payload) {}
+  def publishRemoved(subject : String, payload : Payload) {}
+  def publishReplaced(subject : String, from : Payload, to : Payload) {}
   def publish(subject : String, verb : EventVerbEnum, payload : Payload) = null
   def publish(subject : String, verb : EventVerbEnum, payloads : List[Payload]) = null
   def getPublished : Int = 0
