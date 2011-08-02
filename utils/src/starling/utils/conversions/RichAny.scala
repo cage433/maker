@@ -34,6 +34,7 @@ trait RichAny {
     def desire(wish: T => Boolean, message: => Any): T = perform(if (!wish(value)) Log.warn(message + " " + trimmed))
 
     def isOneOf(values : T*) = values.contains(value)
+    def isOneOf(values : Set[T]) = values.contains(value)
     val repeat : Seq[T] = Stream.continually(value).toSeq
     def replicate(count: Int): Seq[T] = repeat.take(count)
     def partialMatch[V](pfn: PartialFunction[T, V]): Option[V] = apply(pfn)

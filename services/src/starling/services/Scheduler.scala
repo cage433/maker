@@ -17,11 +17,11 @@ class Scheduler(props: Props, forwardCurveTasks: List[TaskDescription] = Nil) ex
   private lazy val timer = new Timer(true)
   val tasks = if (props.ServerType() == "FC2") forwardCurveTasks else Nil
 
-  def start = Log.infoF("Scheduling %s tasks for ServerType: %s" % (tasks.size, props.ServerType())) {
-    tasks.map { case task => task.schedule(timer) }
+  override def start = Log.infoF("Scheduling %s tasks for ServerType: %s" % (tasks.size, props.ServerType())) {
+    super.start; tasks.map { case task => task.schedule(timer) }
   }
 
-  def stop = timer.cancel
+  override def stop = { super.stop; timer.cancel }
 }
 
 object Scheduler {
@@ -67,7 +67,7 @@ object Scheduler {
         "Verify SHFE LIM Metals valid"      → verifyPricesValid(Metals, SFS,   props.LimEmailAddress()).withSource("LIM"),
         "Verify COMEX LIM Metals valid"     → verifyPricesValid(Metals, COMEX, props.LimEmailAddress()).withSource("LIM")
       ) ::-
-      TaskDescription("Verify Libor maturities available", daily(businessCalendars.LME, 23 H 30), verifyLiborMaturities) //::-
+      TaskDescription("Verify Libor maturities available", daily(businessCalendars.LME, 13 H 00), verifyLiborMaturities) //::-
       //TaskDescription("Upload Libor to Trinity", daily(businessCalendars.LME, 23 H 45), uploadLibor)
     )
   }

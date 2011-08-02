@@ -15,6 +15,7 @@ case class StoredFixingPeriod(period: Either[DateRange, Tenor]) extends Ordered[
     case (Right(_), Left(_)) => -1
   }
 
+  def toDateRange(day: Day) = period.fold(identity _, _.toDateRange(day))
   override def toString = period.fold(_.toString, _.toString)
 }
 
@@ -26,9 +27,19 @@ object StoredFixingPeriod {
   val Tenor     = Extractor.from[StoredFixingPeriod](_.tenor)
 
   val Parse = Extractor.from[String](input => input partialMatch {
-    case starling.daterange.DateRange(value) => dateRange(value)
     case starling.daterange.Tenor.Parse(value) => tenor(value)
+    case starling.daterange.DateRange(value) => dateRange(value)
   })
 
+  val Comparator = new Ordering[Any] {
+    def compare(x: Any, y: Any) = toStoredFixingPeriod(x).compare(toStoredFixingPeriod(y))
+
+    private def toStoredFixingPeriod(any: Any) = any match {
+      case sfp: StoredFixingPeriod => sfp
+      case other => parse(other)
+    }
+  }
+
   def parse(any: Any): StoredFixingPeriod = Parse.unapply(any.toString).getOrElse(throw new Exception("Could not parse: " + any))
+
 }

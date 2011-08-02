@@ -17,45 +17,7 @@ import UOM._
 import starling.utils.ImplicitConversions._
 import java.text.DecimalFormat
 import starling.utils.Pattern._
-import starling.marketdata.{PriceFixingsHistoryData, PriceFixingsHistoryDataKey}
 
-object BalticFixings extends HierarchicalLimSource(List(TopRelation.Energy.Tankers.BalticFreight.Index_Forward), List(Level.Val)) {
-  type Relation = BalticRelation
-
-  val mapping = Map(
-    "SUPRAMAX.TC5" -> "Baltic Supramax T/C Avg",
-    "PANAMAX.TC4" -> "Panamax T/C Average (Baltic)",
-    "CAPESIZE.TC4" -> "Capesize T/C Average (Baltic)"
-  ).mapValues(Market.fromName)
-
-
-  case class BalticRelation(market:CommodityMarket, tenor:Tenor) {
-    val period = StoredFixingPeriod.tenor(tenor)
-  }
-
-  def relationExtractor = Extractor.regex("""BALTIC\.(\w+)\.(\w+)\.(\w+)""") {
-    case List(marketPrefix, marketSuffix, Tenor.Parse(tenor)) => {
-      mapping.get(marketPrefix + "." + marketSuffix).map(m=>BalticRelation(m, tenor))
-    }
-  }
-
-  def marketDataEntriesFrom(fixings: List[Prices[BalticRelation]]) = {
-    fixings.groupBy(group).map { case ((market, observationDay), grouped) =>
-      MarketDataEntry(observationDay.atTimeOfDay(ObservationTimeOfDay.LondonClose),
-        PriceFixingsHistoryDataKey(market),
-        PriceFixingsHistoryData.create(grouped.flatMap(fixings => {
-          val price = fixings.priceByLevel(Level.Val)
-          price match {
-            case 0 => None
-            case _ => Some( (Level.Val, fixings.relation.period) → MarketValue.quantity(price, UOM.USD/UOM.DAY) )
-          }
-        }))
-      )
-    }
-  }
-
-  def group(fixings: Prices[BalticRelation]) = (fixings.relation.market, fixings.observationDay)
-}
 
 object LIBORFixings extends HierarchicalLimSource(TopRelation.Trafigura.Bloomberg.InterestRates.children, List(Level.Close)) {
   type Relation = LIBORRelation
@@ -139,12 +101,14 @@ object LIBORFixing {
   val spotNextCalendars = Map(
     AUD → BusinessCalendarSet("AUD LIBOR", Location.Unknown, Set(26 Jan 2011, 13 Jun 2011, 1 Aug 2011, 3 Oct 2011)),
     CHF → BusinessCalendarSet("CHF LIBOR", Location.Unknown, Set(2 Jun 2011, 13 Jun 2011, 1 Aug 2011)),
-    DKK → BusinessCalendarSet("DKK LIBOR", Location.Unknown, Set(20 May 2011, 2 Jun 2011, 13 Jun 2011)),
+    //DKK → BusinessCalendarSet("DKK LIBOR", Location.Unknown, Set(20 May 2011, 2 Jun 2011, 13 Jun 2011)),
     JPY → BusinessCalendarSet("JPY LIBOR", Location.Unknown, Set(10 Jan 2011, 11 Feb 2011, 21 Mar 2011, 3 May 2011, 4 May 2011, 5 May 2011, 18 Jul 2011, 19 Sep 2011, 23 Sep 2011, 10 Oct 2011, 3 Nov 2011, 23 Nov 2011)),
-    NZD → BusinessCalendarSet("NZD LIBOR", Location.Unknown, Set(24 Jan 2011, 31 Jan 2011, 6 Jun 2011, 24 Oct 2011)),
-    SEK → BusinessCalendarSet("SEK LIBOR", Location.Unknown, Set(6 Jan 2011, 2 Jun 2011, 24 Jun 2011))
+    NZD → BusinessCalendarSet("NZD LIBOR", Location.Unknown, Set(24 Jan 2011, 31 Jan 2011, 6 Jun 2011, 24 Oct 2011))
+    //SEK → BusinessCalendarSet("SEK LIBOR", Location.Unknown, Set(6 Jan 2011, 2 Jun 2011, 24 Jun 2011))
   )
 
   val calendars = overnightCalendars ++ spotNextCalendars
   val currencies = calendars.keySet
+
+  def firstTenorFor(currency: UOM) = if (overnightCalendars.keySet.contains(currency)) Tenor.ON else Tenor.SN
 }

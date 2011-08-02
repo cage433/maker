@@ -35,6 +35,7 @@ case class HalfMonth(month : Month, backHalf : Boolean) extends DateRange {
     val increment = if (backHalf) i + 1 else i
     new HalfMonth(month + increment / 2, (increment % 2) == 1)
   }
+  def -(i: Int) = this + (-i)
   def -(that : HalfMonth) : Int = {
     val correction = (if (backHalf) 1 else 0) - (if (that.backHalf) 1 else 0)
     2 * (month - that.month) + correction

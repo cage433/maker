@@ -9,7 +9,9 @@ object PriceFixingsHistoryDataType extends MarketDataType {
   type dataType = PriceFixingsHistoryData
   val marketField = FieldDetails("Market")
   val levelField = FieldDetails("Level")
-  val periodField = FieldDetails("Period")
+  val periodField = new FieldDetails("Period") {
+    override def comparator = StoredFixingPeriod.Comparator
+  }
   val priceField = new MarketValueFieldDetails("Price")
   val exchangeField = FieldDetails("Exchange")
 

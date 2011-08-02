@@ -133,14 +133,16 @@ case class DefaultTitanRabbitEventServices(props : Props) extends TitanRabbitEve
     }
   }
 
-  def start {
+  override def start {
+    super.start
     started.set(true)
     rabbitListener.connect()
     rabbitEventPublisher.connect()
     clients.foreach(client => eventDemux.addClient(client))
   }
 
-  def stop {
+  override def stop {
+    super.start
     started.set(false)
     eventDemux.shutdown
     rabbitListener.disconnect()
@@ -157,8 +159,6 @@ case class MockTitanRabbitEventServices() extends TitanRabbitEventServices {
   val eventDemux : IDemultiplexEvents = mockDemux
   val rabbitEventPublisher = new MockRabbitPublisher(mockDemux)
   def addClient(client:DemultiplexerClient)  { eventDemux.addClient(client) }
-  def start {}
-  def stop {}
 }
 
 class MockRabbitPublisher(val eventDemux : MockEventDemux) extends Publisher {

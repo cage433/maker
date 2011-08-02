@@ -50,10 +50,10 @@ class RabbitTest extends StarlingTest with ShouldMatchers {
 }
 
 class QueuedRabbitMessageReceiver(host : String, queue : RabbitQueue) extends Stoppable {
-  private val receiver = new RabbitMessageReceiver(host, queue, message => { messages.add(message)})
-  val messages = new LinkedBlockingQueue[RabbitMessage]
+  private val receiver = new RabbitMessageReceiver(host, queue, message => { messages.add(message) })
 
-  def start = receiver.start
-  def stop = receiver.stop
+  val messages = new LinkedBlockingQueue[RabbitMessage]
+  override def start = { super.start; receiver.start }
+  override def stop  = { super.stop;  receiver.stop  }
 }
 

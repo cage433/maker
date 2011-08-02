@@ -28,10 +28,8 @@ case class BOM(day: Day) extends DateRange {
 
   def toListOfMonths = throw new Exception("BOM " + this + "Can't be broken into months")
 
-  def +(i : Int) : BOM = {
-    copy(day = day + i)
-  }
-
+  def +(i : Int) : BOM = copy(day = day + i)
+  def -(i: Int) = this + (-i)
 }
 
 object BOM extends TenorType {
