@@ -54,7 +54,7 @@ trait TitanTradeCache {
 
   def addTradeQuotas(id : String) {
     val trade = tradeMap(id)
-    quotaIDToTradeIDMap ++= trade.quotas.map{quota => (quota.detail.identifier, id)}
+    quotaIDToTradeIDMap ++= trade.quotas.map{quota => (quota.detail.identifier.value, id)}
   }
 
   def tradeIDFromQuotaID(quotaID: String): String 
@@ -262,7 +262,7 @@ class ValuationService(
 
   type TradeValuationResult = Either[List[CostsAndIncomeQuotaValuation], String]
 
-  lazy val futuresExchangeByGUID = refData.futuresExchangeByGUID
+  lazy val futuresExchangeByGUID = refData.futuresExchangeByID
   lazy val futuresMarketByGUID = refData.futuresMarketByGUID
   val eventHandler = new EventHandler
 

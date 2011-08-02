@@ -69,8 +69,8 @@ object EDMConversions {
   implicit def enrichTitanDateRange(dateRange: TitanDateRange) = new {
     def fromTitan = new SimpleDateRange(startDay, endDay)
     def contains(date: TitanDate) = fromTitan.contains(date.fromTitan)
-    def startDay = Day.fromLocalDate(dateRange.start)
-    def endDay = Day.fromLocalDate(dateRange.end)
+    def startDay = Day.fromLocalDate(dateRange.start.toLocalDate)
+    def endDay = Day.fromLocalDate(dateRange.end.toLocalDate)
   }
 
   implicit def enrichFundamentalUOM(uom: FundamentalUOM) = new {

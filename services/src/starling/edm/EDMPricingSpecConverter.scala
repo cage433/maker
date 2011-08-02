@@ -17,14 +17,14 @@ import starling.quantity.Quantity
  * To change this template use File | Settings | File Templates.
  */
 
-case class EDMPricingSpecConverter(metal : Metal, exchanges : Map[GUID, Market]) {
-  def indexFromMarket(exchangeGUID : GUID) : SingleIndex = {
-    if (!exchanges.contains(exchangeGUID)){
+case class EDMPricingSpecConverter(metal : Metal, exchanges : Map[String, Market]) {
+  def indexFromMarket(exchangeID : String) : SingleIndex = {
+    if (!exchanges.contains(exchangeID)){
       exchanges.keySet.foreach(println)
-      println(exchangeGUID)
+      println(exchangeID)
     }
 
-    RefinedTacticalRefDataConversions.guessAtIndex(exchanges(exchangeGUID), metal)
+    RefinedTacticalRefDataConversions.guessAtIndex(exchanges(exchangeID), metal)
   }
 
   def fromEdmPricingSpec(deliveryQuantity : Quantity, edmPricingSpec : PricingSpecification) : PricingSpec = {
