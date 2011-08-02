@@ -75,7 +75,7 @@ case class DefaultTitanTradeCache(props : Props) extends TitanTradeCache {
     Log.info("Are EDM Trades available " + edmTradeResult.cached + ", took " + sw)
     if (!edmTradeResult.cached) throw new TradeManagementCacheNotReady
     Log.info("Got Edm Trade results " + edmTradeResult.cached + ", trade result count = " + edmTradeResult.results.size)
-    tradeMap = edmTradeResult.results.map(_.trade.asInstanceOf[EDMPhysicalTrade])/*.filter(pt => pt.tstate == CompletedTradeTstate)*/.map(t => (t.tradeId.toString, t)).toMap
+    tradeMap = edmTradeResult.results.map(_.trade.asInstanceOf[EDMPhysicalTrade])/*.filter(pt => pt.tstate == CompletedTradeTstate)*/.map(t => (t.titanId.value, t)).toMap
     tradeMap.keySet.foreach(addTradeQuotas)
   }
 
@@ -95,7 +95,7 @@ case class DefaultTitanTradeCache(props : Props) extends TitanTradeCache {
     }
     else {
       val trade = titanTradesService.getByOid(id.toInt)
-      tradeMap += trade.tradeId.toString -> trade.asInstanceOf[EDMPhysicalTrade]
+      tradeMap += trade.titanId.value -> trade.asInstanceOf[EDMPhysicalTrade]
       tradeMap(id)
     }
   }
@@ -143,7 +143,7 @@ case class TitanTradeServiceBasedTradeCache(titanTradesService : TitanTradeServi
     Read all trades from Titan and blast our cache
   */
   def updateTradeMap() {
-    tradeMap = titanTradesService.getAllTrades()/*.filter(pt => pt.tstate == CompletedTradeTstate)*/.map(t => (t.tradeId.toString, t)).toMap
+    tradeMap = titanTradesService.getAllTrades()/*.filter(pt => pt.tstate == CompletedTradeTstate)*/.map(t => (t.titanId.value, t)).toMap
     tradeMap.keySet.foreach(addTradeQuotas)
   }
 
@@ -163,7 +163,7 @@ case class TitanTradeServiceBasedTradeCache(titanTradesService : TitanTradeServi
     }
     else {
       val trade = titanTradesService.getTrade(id)
-      tradeMap += trade.tradeId.toString -> trade //.asInstanceOf[EDMPhysicalTrade]
+      tradeMap += trade.titanId.value -> trade //.asInstanceOf[EDMPhysicalTrade]
       tradeMap(id)
     }
   }
@@ -284,7 +284,7 @@ class ValuationService(
     log("Got %d completed physical trades".format(edmTrades.size))
     sw.reset()
     val valuations = edmTrades.map {
-      trade => (trade.tradeId.toString, tradeValuer(trade))
+      trade => (trade.titanId.value, tradeValuer(trade))
     }.toMap
     log("Valuation took " + sw)
     val (errors, worked) = valuations.values.partition(_ match {
@@ -335,7 +335,7 @@ class ValuationService(
     val sw = new Stopwatch()
 
     val idsToUse = costableIds match {
-      case Nil | null => titanTradeCache.getAllTrades().map{trade => trade.tradeId.toString}
+      case Nil | null => titanTradeCache.getAllTrades().map{trade => trade.titanId.value}
       case list => list
     }
 
