@@ -111,6 +111,9 @@ trait DateRange extends Iterable[Day] with Ordered[DateRange] with IterableView[
     else
       Some(DateRange(dayFromInclusive, lastDay))
   }
+
+  def +(i: Int): DateRange
+  def -(i: Int): DateRange
 }
 
 object DateRange {

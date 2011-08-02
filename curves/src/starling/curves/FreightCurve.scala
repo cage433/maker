@@ -97,15 +97,10 @@ object FreightCurve {
   }
 
   def tenorsToPriceData(market:PublishedIndex, observationDay:Day, priceFixingTenors:PriceFixingsHistoryData) = {
-    val nextFloatingDay = observationDay.nextBusinessDay(market.businessCalendar)
-    val p = priceFixingTenors.fixings.map { case ( (_, StoredFixingPeriod(Right(tenor))), MarketValue(Left(price)) ) => {
-      val dateRange:DateRange = tenor.tenorType match {
-        case Month => nextFloatingDay.containingMonth + tenor.value
-        case Quarter => nextFloatingDay.containingQuarter + tenor.value
-        case Year => nextFloatingDay.containingYear + tenor.value
-      }
-      dateRange -> price.pq
-    }}
+    val nextFloatingDay: Day = observationDay.nextBusinessDay(market.businessCalendar)
+    val p = priceFixingTenors.fixings.map {
+      case ( (_, storedFixingPeriod), MarketValue.Quantity(price) ) => storedFixingPeriod.toDateRange(nextFloatingDay) → price.pq
+    }
     PriceData(p.toMap)
   }
 

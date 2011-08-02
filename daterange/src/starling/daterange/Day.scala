@@ -121,7 +121,7 @@ class Day private (@transient val year : Int, @transient val month : Int, @trans
   }
 
   /// returns a day +n+ days before this
-  def - (n : Int) = this.+(-n)
+  def - (n : Int) = this + (-n)
 
   /** returns the number of days between this and another day. Is negative if
    * 	other day1 is in the future
@@ -206,9 +206,8 @@ class Day private (@transient val year : Int, @transient val month : Int, @trans
   }
 
   def containingMonth : Month = Month(year, month)
+  def containingQuarter : Quarter = Quarter.containing(this)
 
-  def containingQuarter : Quarter = Quarter(year, (month - 1) / 3 + 1)
-  
   /** Adds a number of months using the same day number if valid, otherwise
    *  the last day of the month
    */

@@ -7,6 +7,7 @@ import java.util.{Set => JSet}
 import collection.JavaConversions._
 import starling.services.{ScheduledTask, Scheduler}
 import starling.daterange.Day
+import starling.utils.Stoppable
 
 trait UsersMBean {
   def getUserDetails:JSet[String]
@@ -28,12 +29,18 @@ class StarlingJMX(users:JSet[User], scheduler: Scheduler) {
   }
 
   trait TaskMBean {
-    def runNow: Unit
-    def runNow(observationDay: String): Unit
+    def activate
+    def deactivate
+    def isActive: Boolean
+    def runNow
+    def runNow(observationDay: String)
   }
 
   class Task(task: ScheduledTask) extends TaskMBean {
-    def runNow = task.execute(Day.today)
-    def runNow(observationDay: String) = task.execute(Day.parse(observationDay))
+    def activate   { task.start }
+    def deactivate { task.stop  }
+    def isActive   = task.isRunning
+    def runNow = task.perform(Day.today)
+    def runNow(observationDay: String) = task.perform(Day.parse(observationDay))
   }
 }

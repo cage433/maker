@@ -9,6 +9,8 @@ object Pattern {
     def unapply[C](ta: Traversable[A])(implicit g: Flattener[B, C]): Option[C] = g(ta.view.map(f))
 
     def compose[C](g: C => A) = new Extractor[C, B](f compose g)
+    def orElse(alternative: Extractor[A, B]): Extractor[A, B] = orElse(alternative.f)
+    def orElse(alternative: A => Option[B]): Extractor[A, B] = new Extractor[A, B](a => f(a).orElse(alternative(a)))
 
     object Pick {
       def unapply(ta: Traversable[A]) = pick(ta)(f)
@@ -29,6 +31,8 @@ object Pattern {
     def regex(regex: String) = new {
       def apply[A](pf: PartialFunction[List[String], A]) = from[String](s => regex.r.unapplySeq(s).flatMap(pf.lift(_)))
     }
+
+    def fromMap[K, V](map: Map[K, V]) = Extractor.from[K](map.get)
 
     class From[A] {
       def apply[B](f: A => Option[B]) = new Extractor(f)

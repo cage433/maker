@@ -25,7 +25,7 @@ case class Year(yearNumber : Int) extends DateRange {
   def next : Year = Year(yearNumber + 1)
 
   def +(n : Int) : Year = new Year(yearNumber + n)
-  def -(n : Int) : Year = this.+(-n)
+  def -(n : Int) : Year = this + (-n)
   def -(that : Year) : Int = yearNumber - that.yearNumber
 
   def tenor = Some(Year)

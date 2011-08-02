@@ -36,11 +36,11 @@ trait DepoRatesService extends DocumentedService {
   def deleteRate(@PathParam("commodity") commodity: String, @PathParam("period") period: String, @PathParam("profileName") profileName: String): Boolean
 
   @Path("{commodity}/{profileName}")
-  @POST @Consumes(Array("application/json")) @Produces(Array("application/json"))
-  def setRates(@PathParam("commodity") commodity: String, @PathParam("profileName") profileName: String, rates: List[DepoRate]): Boolean
+  @PUT @Consumes(Array("application/json")) @Produces(Array("application/json"))
+  def putRates(@PathParam("commodity") commodity: String, @PathParam("profileName") profileName: String, rates: List[DepoRate]): Boolean
 
   @Path("{commodity}/{profileName}")
-  @PUT @Consumes(Array("application/json"))@Produces(Array("application/json"))
+  @POST @Consumes(Array("application/json"))@Produces(Array("application/json"))
   def addRates(@PathParam("commodity") commodity: String, @PathParam("profileName") profileName: String, rates: List[DepoRate]): Boolean
 }
 
@@ -62,12 +62,12 @@ trait CommodityRatesService extends DocumentedService {
                  @PathParam("currency") currency: String, @PathParam("period") period: String, @PathParam("profileName") profileName: String): Boolean
 
   @Path("{exchange}/{commodity}/{currency}/{profileName}")
-  @POST @Consumes(Array("application/json")) @Produces(Array("application/json"))
-  def setRates(@PathParam("exchange") exchange: String, @PathParam("commodity") commodity: String,
+  @PUT @Consumes(Array("application/json")) @Produces(Array("application/json"))
+  def putRates(@PathParam("exchange") exchange: String, @PathParam("commodity") commodity: String,
                @PathParam("currency") currency: String, @PathParam("profileName") profileName: String, rates: List[CommodityRate]): Boolean
 
   @Path("{exchange}/{commodity}/{currency}/{profileName}")
-  @PUT @Consumes(Array("application/json")) @Produces(Array("application/json"))
+  @POST @Consumes(Array("application/json")) @Produces(Array("application/json"))
   def addRates(@PathParam("exchange") exchange: String, @PathParam("commodity") commodity: String,
                @PathParam("currency") currency: String, @PathParam("profileName") profileName: String, rates: List[CommodityRate]): Boolean
 }
@@ -104,5 +104,9 @@ object TrinityClient {
     val commodityRates = trinityService.commodityRates.getRates("SFE", "XPS", "RMB", "Full Curve")
 
     commodityRates.foreach(println)
+
+    println("head commodity rate: " + commodityRates.head)
+
+//    trinityService.commodityRates.putRates("SFE", "XPS", "RMB", "Full Curve", commodityRates.tail)
   }
 }

@@ -34,6 +34,9 @@ case class HalfYear(year : Year, backHalf : Boolean) extends DateRange {
     val increment = if (backHalf) i + 1 else i
     new HalfYear(year + increment / 2, (increment % 2) == 1)
   }
+
+  def -(n: Int) = this + (-n)
+
   def -(that : HalfYear) : Int = {
     val correction = (if (backHalf) 1 else 0) - (if (that.backHalf) 1 else 0)
     2 * (year - that.year) + correction

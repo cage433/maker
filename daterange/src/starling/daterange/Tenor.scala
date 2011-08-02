@@ -1,6 +1,7 @@
 package starling.daterange
 
 import starling.utils.Pattern._
+import starling.utils.ImplicitConversions._
 
 
 case class Tenor(tenorName: String, value: Int) extends Ordered[Tenor] {
@@ -18,18 +19,23 @@ case class Tenor(tenorName: String, value: Int) extends Ordered[Tenor] {
     case _          => value + tenorName
   }
 
+  def toDateRange(day: Day) = tenorType.containing(day) + value
+
   private def indexOf(tenor: String) = TenorType.ALL_IN_ORDER.indexOf(tenor)
 }
 
 object Tenor {
-  val Parse = Extractor.regex("""(ON|SN|CASH|CURMON|CURQ|(\d+)(\w+))""") {
-    case "ON"   :: _ => Tenor.ON
-    case "SN"   :: _ => Tenor.SN
-    case "CASH" :: _ => Tenor.CASH
-    case "CURMON" :: _ => Tenor(Month, 0)
-    case "CURQ" :: _ => Tenor(Quarter, 0)
-    case List(_, value, tenorType) => Tenor(TenorType.typesByShortName(tenorType), value.toInt)
-  }
+  val Parse = Extractor.regex("""(\d+)(\w+)""") {
+    case List(value, tenorType) => Tenor(TenorType.typesByShortName(tenorType), value.toInt)
+  }.orElse(_.partialMatch {
+    case "ON"     => Tenor.ON
+    case "SN"     => Tenor.SN
+    case "CASH"   => Tenor.CASH
+    case "CURMON" => Tenor(Month, 0)
+    case "CURQ"   => Tenor(Quarter, 0)
+  })
+
+  def parse(any: Any): Tenor = Parse.unapply(any.toString).getOrElse(throw new Exception("Could not parse: " + any))
 
   /**
    * Value doesn't mean anything outside the context of a particular index. It is used just for
@@ -48,5 +54,6 @@ object Tenor {
   val ThreeMonths = Tenor(Month, 3)
   val SixMonths   = Tenor(Month, 6)
   val NineMonths  = Tenor(Month, 9)
+  val TwelveMonths = Tenor(Month, 12)
   val OneYear     = Tenor(Year, 1)
 }
