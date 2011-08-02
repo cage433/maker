@@ -14,6 +14,7 @@ import com.trafigura.tradecapture.internal.refinedmetal.Market
 import com.trafigura.edm.tradeservice.TradeResults
 import com.trafigura.edm.trades.Trade
 import com.trafigura.edm.tradeservice.TradeResult
+import com.trafigura.edm.shared.types.TitanId
 
 
 /**
@@ -25,7 +26,7 @@ trait TitanTacticalRefData {
 //  val titanGetEdmTradesService : EdmGetTrades
 
   val futuresMarketByGUID: Map[GUID, Metal]
-  val futuresExchangeByGUID: Map[GUID, Market]
+  val futuresExchangeByID: Map[String, Market]
 
   //def allTacticalRefDataFuturesMarkets() : List[Metal]
   //def allTacticalRefDataExchanges() : List[Market]
@@ -49,7 +50,7 @@ case class DefaultTitanServices(props: Props) extends TitanServices {
   lazy val titanGetEdmTradesService: EdmGetTrades = new EdmGetTradesResourceProxy(ProxyFactory.create(classOf[EdmGetTradesResource], tradeServiceURL, clientExecutor))
 
   lazy val futuresMarketByGUID: Map[GUID, Metal] = Map[GUID, Metal]() ++ allTacticalRefDataFuturesMarkets.map(e => (e.guid, e))
-  lazy val futuresExchangeByGUID: Map[GUID, Market] = Map[GUID, Market]() ++ allTacticalRefDataExchanges.map(e => (e.guid, e))
+  lazy val futuresExchangeByID: Map[String, Market] = Map[String, Market]() ++ allTacticalRefDataExchanges.map(e => (e.code, e))
 
   def allTacticalRefDataFuturesMarkets() = tacticalRefdataMetalsService.getMetals()
   def allTacticalRefDataExchanges() = tacticalRefdataMarketsService.getMarkets()
@@ -80,10 +81,11 @@ case class FileMockedTitanServices() extends TitanServices {
       case Some(trade) => trade.asInstanceOf[EDMPhysicalTrade]
       case _ => throw new Exception("Trade does not exist in mock data %d".format(oid))
     }
+    def getQuota(id : TitanId) = throw new Exception("Not implemented yet") // todo... implement
   }
 
   lazy val futuresMarketByGUID: Map[GUID, Metal] = loadedMarkets.map(m => m.guid -> m).toMap
-  lazy val futuresExchangeByGUID: Map[GUID, Market] = loadedExchanges.map(e => e.guid -> e).toMap
+  lazy val futuresExchangeByID: Map[String, Market] = loadedExchanges.map(e => e.code  -> e).toMap
 
   def allTacticalRefDataFuturesMarkets() = Nil
   def allTacticalRefDataExchanges() = Nil

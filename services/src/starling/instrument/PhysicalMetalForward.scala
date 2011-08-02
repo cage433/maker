@@ -215,7 +215,7 @@ object PhysicalMetalForward{
     }
   }
 
-  def apply(exchangesByGUID : Map[GUID, EDMMarket], futuresMetalMarketByGUID : Map[GUID, EDMMetal])(trade : EDMPhysicalTrade) : PhysicalMetalForward = {
+  def apply(exchangesByID : Map[String, EDMMarket], futuresMetalMarketByGUID : Map[GUID, EDMMetal])(trade : EDMPhysicalTrade) : PhysicalMetalForward = {
     try {
       val quotas : List[PhysicalMetalQuota] = {
         trade.quotas.map(_.detail).map{
@@ -223,7 +223,7 @@ object PhysicalMetalForward{
             val deliveryQuantity = detail.deliverySpecs.map{ds => fromTitanQuantity(ds.quantity)}.sum
             val commodityGUIDs : Set[GUID] = detail.deliverySpecs.map(_.materialSpec.asInstanceOf[CommoditySpec].commodity).toSet
             assert(commodityGUIDs.size == 1, "Trade " + getTradeId(trade) + " has multiple commodities")
-            val pricingSpec = EDMPricingSpecConverter(futuresMetalMarketByGUID(commodityGUIDs.head), exchangesByGUID).fromEdmPricingSpec(deliveryQuantity, detail.pricingSpec)
+            val pricingSpec = EDMPricingSpecConverter(futuresMetalMarketByGUID(commodityGUIDs.head), exchangesByID).fromEdmPricingSpec(deliveryQuantity, detail.pricingSpec)
             PhysicalMetalQuota(
               detail.identifier.value,
               pricingSpec,
@@ -243,10 +243,10 @@ object PhysicalMetalForward{
     }
   }
 
-  def value(exchangesByGUID : Map[GUID, EDMMarket], futuresMetalMarketByGUID : Map[GUID, EDMMetal], env : Environment, snapshotID : String)(trade : EDMPhysicalTrade) : Either[List[CostsAndIncomeQuotaValuation], String] =  {
+  def value(exchangesByID : Map[String, EDMMarket], futuresMetalMarketByGUID : Map[GUID, EDMMetal], env : Environment, snapshotID : String)(trade : EDMPhysicalTrade) : Either[List[CostsAndIncomeQuotaValuation], String] =  {
 
     try {
-      val forward = PhysicalMetalForward(exchangesByGUID, futuresMetalMarketByGUID)(trade)
+      val forward = PhysicalMetalForward(exchangesByID, futuresMetalMarketByGUID)(trade)
       Left(forward.costsAndIncomeValueBreakdown(env, snapshotID))
     } catch {
       case ex => Right("Error valuing trade " + getTradeId(trade) + ", message was " + ex.getMessage)
