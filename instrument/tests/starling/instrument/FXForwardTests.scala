@@ -128,4 +128,27 @@ class FXForwardTests extends StarlingTest {
       1e-6
     )
   }
+
+  @Test
+  def testExplanation{
+    val marketDay = Day(2011, 8, 2).endOfDay
+    val spotRates = Map(GBP -> Quantity(1.5, USD/GBP), EUR -> Quantity(1.2, USD/EUR))
+    val zeroRates = Map(GBP -> 0.05, EUR -> 0.02, USD -> 0.1)
+    val env = Environment(
+      new UnitTestingAtomicEnvironment(
+        marketDay,
+        {
+          case USDFXRateKey(ccy) => spotRates(ccy)
+          case DiscountRateKey(ccy, day, _) => new Quantity(math.exp(zeroRates(ccy)) * day.endOfDay.timeSince(marketDay))
+        }
+      )
+    )
+    val forwardFX = FXForward(Quantity(1.25, EUR/GBP), Quantity(1000, GBP), Day(2012, 12, 1))
+    val explanation = forwardFX.explanation(env)
+    assertEquals(explanation.name, "((((Rec * ((((1/USD per EUR spot) * USD per GBP spot) * GBP.01Dec2012) / EUR.01Dec2012)) - Pay) * Volume) * Discount)")
+    assertEquals(explanation.format(1), "((((1,000.00 GBP * ((((1/1.20 USD per EUR) * 1.50 USD per GBP) * 1.40) / 1.36)) - (1,250.00) EUR) * 1,000.00 GBP) * EUR.01Dec2012)")
+    val lastExplanation = "((((1,000.00 GBP * ((((1/1.20 USD per EUR) * 1.50 USD per GBP) * 1.40) / 1.36)) - (1,250.00) EUR) * 1,000.00 GBP) * 1.36)"
+    assertEquals(explanation.format(2), lastExplanation)
+    assertEquals(explanation.format(3), lastExplanation)
+  }
 }

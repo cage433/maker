@@ -6,6 +6,7 @@ import starling.daterange.{Day, DayAndTime}
 import starling.instrument.CashInstrumentType._
 import starling.curves._
 import starling.daterange.DateRangePeriod
+import starling.quantity.NamedQuantity
 
 /**
  * This trait is extended by both FXForward and FXOption. It deals with
@@ -37,8 +38,7 @@ trait FXTradeable extends Tradeable {
 
 /** Represents an FX forward to buy 'volume' of CCY1 at a strike in units of CCY2 / CCY1, on the given maturity date.
  */
-case class
-FXForward(
+case class FXForward(
   strike : Quantity,
   volume : Quantity, 
   maturityDate : Day
@@ -54,17 +54,28 @@ FXForward(
 
   def asUtpPortfolio(tradeDay:Day):UTP_Portfolio = asUtpPortfolio
   def asUtpPortfolio():UTP_Portfolio = UTP_Portfolio(Map(
-    new CashInstrument(Quantity(1.0, buyAmount.uom), maturityDate) -> buyAmount.value,
-    new CashInstrument(Quantity(1.0, sellAmount.uom), maturityDate) -> sellAmount.value
+    new CashInstrument(Quantity(1.0, receiveAmount.uom), maturityDate) -> receiveAmount.value,
+    new CashInstrument(Quantity(1.0, payAmount.uom), maturityDate) -> payAmount.value
   ))
 
   def instrumentType = FXForward
   def tradeableType = FXForward
 
+  def explanation(env : Environment) : NamedQuantity = {
+    val namedEnv = env.withNaming()
+    val (r, p) = (receiveAmount.named("Rec"), payAmount.named("Pay"))
+
+    def timesFx(q : NamedQuantity) = if (q.uom == valuationCCY) q else q * namedEnv.forwardFXRate(valuationCCY, q.uom, maturityDate)
+    val discount = namedEnv.discount(valuationCCY, maturityDate).named("Discount")
+    (timesFx(r) - timesFx(p)) * volume.named("Volume") * discount
+  }
+
+    
+
   /**
-   * The amount we are going to buy, always positive.
+   * The amount we are going to receive, always positive.
    */
-  private[this] def buyAmount : Quantity = {
+  private[this] def receiveAmount : Quantity = {
     if(volume.isPositve) {
       volume
     } else {
@@ -73,9 +84,9 @@ FXForward(
   }
 
   /**
-   * The amount we are going to sell, always negative.
+   * The amount we are going to pay, always negative.
    */
-  private[this] def sellAmount : Quantity = {
+  private[this] def payAmount : Quantity = {
     if(volume.isNegative) {
       volume
     } else {
@@ -87,8 +98,8 @@ FXForward(
   //This is because FXForward is used as the forwardState for an FXOption
 
   def assets(env: Environment) = Assets(
-    Asset.knownCash(maturityDate, buyAmount, env),
-    Asset.knownCash(maturityDate, sellAmount, env))
+    Asset.knownCash(maturityDate, receiveAmount, env),
+    Asset.knownCash(maturityDate, payAmount, env))
 
   def detailsForUTPNOTUSED = throw new IllegalStateException("This should only be used as a UTP in the context of an FXOption forwardState so it should not be persisted")
 
