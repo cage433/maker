@@ -87,12 +87,16 @@ object FreightCurve {
    * as CURMOM, CAL1 etc. This method turns then into date range
    */
   def freightPriceData(observationDay: Day, marketDataReader: MarketDataReader) = {
-    freightMarketsWhichHavePrices.map { market =>
-      val freightKey = PriceFixingsHistoryDataKey(market)
-      val freightPrices = marketDataReader.read(
-        TimedMarketDataKey(observationDay.atTimeOfDay(ObservationTimeOfDay.LondonClose), freightKey)
-      ).asInstanceOf[PriceFixingsHistoryData]
-      PriceDataKey(market) -> FreightCurve.tenorsToPriceData(market, observationDay, freightPrices)
+    freightMarketsWhichHavePrices.flatMap { market =>
+      try {
+        val freightKey = PriceFixingsHistoryDataKey(market)
+        val freightPrices = marketDataReader.read(
+          TimedMarketDataKey(observationDay.atTimeOfDay(ObservationTimeOfDay.LondonClose), freightKey)
+        ).asInstanceOf[PriceFixingsHistoryData]
+        Some( PriceDataKey(market) -> FreightCurve.tenorsToPriceData(market, observationDay, freightPrices) )
+      } catch {
+        case e:MissingMarketDataException => None
+      }
     }
   }
 
