@@ -8,6 +8,7 @@ import starling.quantity.{UOM, Quantity}
 import starling.utils.sql.PersistAsBlob
 import starling.market.{LmeSingleIndices, SingleIndex}
 import collection.SortedMap
+import starling.quantity.NamedQuantity
 
 trait TitanPricingSpec {
   def price(env : Environment) : Quantity
@@ -27,7 +28,7 @@ trait TitanPricingSpec {
     else {
       val premiumCurrency = premium.uom.numeratorUOM
       val priceCurrency = price.uom.numeratorUOM
-      premium + env.forwardFXRate(premiumCurrency, priceCurrency, settlementDay) * price
+      price * env.forwardFXRate(premiumCurrency, priceCurrency, settlementDay) + premium
     }
   }
 
@@ -74,11 +75,12 @@ case class PartialAveragePricingSpec(index : SingleIndex, dayFractions : SortedM
   def settlementDay = dayFractions.keys.toList.sortWith(_>_).head.addBusinessDays(index.businessCalendar, 2)
 
   def price(env: Environment) = {
+    val priceFractions = dayFractions.map {
+        case (day, frac) => env.fixingOrForwardPrice(index, day) * frac
+      }
     addPremiumConvertingIfNecessary(
       env,
-      dayFractions.map {
-        case (day, frac) => env.fixingOrForwardPrice(index, day) * frac
-      }.sum,
+      Quantity.sum(priceFractions),
       premium
     )
   }
@@ -113,7 +115,7 @@ case class OptionalPricingSpec(choices : List[TitanPricingSpec], declarationDay 
 
 case class WeightedPricingSpec(specs : List[(Double, TitanPricingSpec)]) extends TitanPricingSpec{
   def settlementDay = specs.flatMap(_._2.settlementDay).sortWith(_>_).head
-  def price(env: Environment) = specs.map{case (weight, spec) => spec.price(env) * weight}.sum
+  def price(env: Environment) = Quantity.sum(specs.map{case (weight, spec) => spec.price(env) * weight})
 
   def dummyTransferPricingSpec = WeightedPricingSpec(specs.map{case (wt, spec) => (wt, spec.dummyTransferPricingSpec)})
   def fixedQuantity(marketDay : DayAndTime, totalQuantity : Quantity) = specs.map{case (wt, spec) => spec.fixedQuantity(marketDay, totalQuantity) * wt}.sum
@@ -141,9 +143,9 @@ case class FixedPricingSpec (settlementDay : Day, pricesByFraction : List[(Doubl
     if (totalFraction == 0){
         throw new InvalidTitanPricingSpecException("Fixed Pricing Spec with no fixed prices")
     } else {
-      pricesByFraction.map{
-        case (qty, prc) => prc * qty
-      }.sum / totalFraction
+      Quantity.sum(pricesByFraction.zipWithIndex.map{
+        case ((qty, prc), i) => prc.named("F_" + i) * qty
+      }) / totalFraction
     }
   }
 
@@ -186,9 +188,9 @@ case class UnknownPricingSpecification(
     else
       thirdWednesday
     val unfixedFraction = 1.0 - totalFixed
-    val fixedPayment = fixations.map{f => f.price * f.fraction}.sum
-    val unfixedPayment = env.fixingOrForwardPrice(index, unfixedPriceDay) * unfixedFraction
-    unfixedPayment + fixedPayment
+    val fixedPayment = Quantity.sum(fixations.zipWithIndex.map{ case (f, i) => f.price.named("Fix_" + i) * f.fraction}).named("Fixed")
+    val unfixedPayment = (env.fixingOrForwardPrice(index, unfixedPriceDay) * unfixedFraction).named("Unfixed")
+    fixedPayment + unfixedPayment
   }
 
   def dummyTransferPricingSpec = copy(premium = Quantity.NULL)
@@ -221,18 +223,31 @@ case class PhysicalMetalAssignment(commodityName : String, quantity : Quantity, 
 
   def asUtpPortfolio(tradeDay:Day) = UTP_Portfolio(Map(copy(quantity = Quantity(1.0, quantity.uom)) -> quantity.value))
 
+  private def settlementDay = deliveryDay // TODO - find the right day
+  private def cashMtm(env : Environment) : Quantity = cashMtmWithBreakdown(env)._1
+  private def cashMtmWithBreakdown(env : Environment) : (Quantity, (NamedQuantity, NamedQuantity)) = {
+    val price = pricingSpec.price(env).named("F")
+    val quantityInMarketUOM = quantity.inUOM(price.denominatorUOM).named("Volume")
+    (- (price * quantityInMarketUOM), (price, quantityInMarketUOM))
+  }
+
+  def explanation(env : Environment) : NamedQuantity = {
+    val namedEnv = env.withNaming()
+    val (_, (price, volume)) = cashMtmWithBreakdown(namedEnv)
+    val discount = namedEnv.discount(valuationCCY, settlementDay).named("Discount")
+    (- price * volume) * discount
+  }
+
   def assets(env: Environment) = {
-    val price = pricingSpec.price(env)
-    val quantityInMarketUOM = quantity.inUOM(price.denominatorUOM)
-    val cashMtm = - (quantityInMarketUOM * price)
+    val cashMtm_ = cashMtm(env)
     Assets(
       // Physical
       Asset(
         known = true,
         assetType = commodityName,
-        settlementDay = deliveryDay,
+        settlementDay = settlementDay,
         amount = quantity,
-        mtm = Quantity(0, cashMtm.uom.numeratorUOM)
+        mtm = Quantity(0, cashMtm_.uom.numeratorUOM)
       ),
       // Cash
       Asset(
@@ -240,7 +255,7 @@ case class PhysicalMetalAssignment(commodityName : String, quantity : Quantity, 
         assetType = commodityName,
         settlementDay = pricingSpec.settlementDay,
         amount = quantity,
-        mtm = cashMtm
+        mtm = cashMtm_
       )
     )
   }
