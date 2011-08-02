@@ -15,6 +15,7 @@ case class DeletedInstrument() extends Tradeable {
   def explanation(env : Environment) : NamedQuantity = throw new IllegalStateException("Can't have explanation for a deleted instrument")
 
   def deltaStepType() = throw new UnsupportedOperationException()
+  def valuationCCY = throw new UnsupportedOperationException()
 }
 
 object DeletedInstrument extends TradeableType[DeletedInstrument] {

@@ -34,7 +34,7 @@ class PhysicalMetalAssignmentTests extends StarlingTest {
     val assignment = PhysicalMetalAssignment("Lead", Quantity(100, MT), Day(2011, 9, 1), monthSpec)
     val explanation = assignment.explanation(env)
     assertEquals(explanation.name, "((-F * Volume) * Discount)")
-    assertEquals(explanation.format(1), "((-(Average(CU Cash Bid.AUGUST 2011) + 1.5 USD/MT) * 100.00 MT) * USD.01Sep2011)")
+    assertEquals(explanation.format(1), "((-(Average(CU Cash Bid.AUGUST 2011) + 1.5 USD/MT) * 100.00 MT) * USD.02Sep2011)")
     assertEquals(explanation.format(2), "((-(Average(FixingsHistoryKey(CU Cash Bid).01Aug2011, FixingsHistoryKey(CU Cash Bid).02Aug2011, FixingsHistoryKey(CU Cash Bid).03Aug2011, FixingsHistoryKey(CU Cash Bid).04Aug2011, FixingsHistoryKey(CU Cash Bid).05Aug2011, FixingsHistoryKey(CU Cash Bid).08Aug2011, FixingsHistoryKey(CU Cash Bid).09Aug2011, FixingsHistoryKey(CU Cash Bid).10Aug2011, LME Copper.15Aug2011, LME Copper.16Aug2011, LME Copper.17Aug2011, LME Copper.18Aug2011, LME Copper.19Aug2011, LME Copper.22Aug2011, LME Copper.23Aug2011, LME Copper.24Aug2011, LME Copper.25Aug2011, LME Copper.26Aug2011, LME Copper.29Aug2011, LME Copper.30Aug2011, LME Copper.31Aug2011, LME Copper.01Sep2011, LME Copper.02Sep2011) + 1.50 USD/MT) * 100.00 MT) * 0.99)")
     val lastExplanation = "((-(Average(98.00 USD/MT, 98.00 USD/MT, 98.00 USD/MT, 98.00 USD/MT, 98.00 USD/MT, 98.00 USD/MT, 98.00 USD/MT, 98.00 USD/MT, 97.00 USD/MT, 97.00 USD/MT, 97.00 USD/MT, 97.00 USD/MT, 97.00 USD/MT, 97.00 USD/MT, 97.00 USD/MT, 97.00 USD/MT, 97.00 USD/MT, 97.00 USD/MT, 97.00 USD/MT, 97.00 USD/MT, 97.00 USD/MT, 97.00 USD/MT, 97.00 USD/MT) + 1.50 USD/MT) * 100.00 MT) * 0.99)"
     assertEquals(explanation.format(3), lastExplanation)
@@ -57,8 +57,8 @@ class PhysicalMetalAssignmentTests extends StarlingTest {
     val assignment = PhysicalMetalAssignment("Lead", Quantity(100, MT), Day(2011, 9, 1), partialSpec)
     val explanation = assignment.explanation(env)
     assertEquals(explanation.name, "((-F * Volume) * Discount)")
-    assertEquals(explanation.format(1), "((-(Sum((FixingsHistoryKey(CU Cash Bid).02Aug2011 * 0.1), (FixingsHistoryKey(CU Cash Bid).03Aug2011 * 0.1), (FixingsHistoryKey(CU Cash Bid).04Aug2011 * 0.2), (FixingsHistoryKey(CU Cash Bid).10Aug2011 * 0.1), (LME Copper.15Aug2011 * 0.1), (LME Copper.18Aug2011 * 0.2), (LME Copper.19Aug2011 * 0.1), (LME Copper.22Aug2011 * 0.1)) + 1.5 USD/MT) * 100.00 MT) * USD.01Sep2011)")
-    val lastExplanation = "((-(Sum((98.00 USD/MT * 0.10), (98.00 USD/MT * 0.10), (98.00 USD/MT * 0.20), (98.00 USD/MT * 0.10), (97.00 USD/MT * 0.10), (97.00 USD/MT * 0.20), (97.00 USD/MT * 0.10), (97.00 USD/MT * 0.10)) + 1.50 USD/MT) * 100.00 MT) * 0.99)"
+    assertEquals(explanation.format(1), "((-(Sum((FixingsHistoryKey(CU Cash Bid).02Aug2011 * 0.1), (FixingsHistoryKey(CU Cash Bid).03Aug2011 * 0.1), (FixingsHistoryKey(CU Cash Bid).04Aug2011 * 0.2), (FixingsHistoryKey(CU Cash Bid).10Aug2011 * 0.1), (LME Copper.15Aug2011 * 0.1), (LME Copper.18Aug2011 * 0.2), (LME Copper.19Aug2011 * 0.1), (LME Copper.22Aug2011 * 0.1)) + 1.5 USD/MT) * 100.00 MT) * USD.22Aug2011)")
+    val lastExplanation = "((-(Sum((98.00 USD/MT * 0.10), (98.00 USD/MT * 0.10), (98.00 USD/MT * 0.20), (98.00 USD/MT * 0.10), (97.00 USD/MT * 0.10), (97.00 USD/MT * 0.20), (97.00 USD/MT * 0.10), (97.00 USD/MT * 0.10)) + 1.50 USD/MT) * 100.00 MT) * 1.00)"
     assertEquals(explanation.format(2), lastExplanation)
     assertEquals(explanation.format(3), lastExplanation)
   }
@@ -82,7 +82,7 @@ class PhysicalMetalAssignmentTests extends StarlingTest {
     val assignment = PhysicalMetalAssignment("Lead", Quantity(100, MT), Day(2011, 9, 1), weightedAverageSpec)
     val explanation = assignment.explanation(env)
     assertEquals(explanation.name, "((-F * Volume) * Discount)")
-    assertEquals(explanation.format(1), "((-Sum(((Average(CU Cash Bid.AUGUST 2011) + 1.5 USD/MT) * 0.4), ((Sum((FixingsHistoryKey(CU Cash Bid).02Aug2011 * 0.1), (FixingsHistoryKey(CU Cash Bid).03Aug2011 * 0.1), (FixingsHistoryKey(CU Cash Bid).04Aug2011 * 0.2), (FixingsHistoryKey(CU Cash Bid).10Aug2011 * 0.1), (LME Copper.15Aug2011 * 0.1), (LME Copper.18Aug2011 * 0.2), (LME Copper.19Aug2011 * 0.1), (LME Copper.22Aug2011 * 0.1)) + 1.5 USD/MT) * 0.6)) * 100.00 MT) * USD.01Sep2011)")
+    assertEquals(explanation.format(1), "((-Sum(((Average(CU Cash Bid.AUGUST 2011) + 1.5 USD/MT) * 0.4), ((Sum((FixingsHistoryKey(CU Cash Bid).02Aug2011 * 0.1), (FixingsHistoryKey(CU Cash Bid).03Aug2011 * 0.1), (FixingsHistoryKey(CU Cash Bid).04Aug2011 * 0.2), (FixingsHistoryKey(CU Cash Bid).10Aug2011 * 0.1), (LME Copper.15Aug2011 * 0.1), (LME Copper.18Aug2011 * 0.2), (LME Copper.19Aug2011 * 0.1), (LME Copper.22Aug2011 * 0.1)) + 1.5 USD/MT) * 0.6)) * 100.00 MT) * USD.02Sep2011)")
   }
 
   @Test
@@ -114,7 +114,7 @@ class PhysicalMetalAssignmentTests extends StarlingTest {
     val assignment = PhysicalMetalAssignment("Lead", Quantity(100, MT), Day(2011, 9, 1), fixedSpec) 
     val explanation = assignment.explanation(env)
     assertEquals(explanation.name, "((-F * Volume) * Discount)")
-    assertEquals(explanation.format(1), "((-(Sum((F_0 * 0.5), (F_1 * 0.8)) / 1.3) * 100.00 MT) * USD.01Sep2011)")
+    assertEquals(explanation.format(1), "((-(Sum((F_0 * 0.5), (F_1 * 0.8)) / 1.3) * 100.00 MT) * USD.31Aug2011)")
     val lastExplanation = "((-(Sum((98.00 USD/MT * 0.50), (103.00 USD/MT * 0.80)) / 1.30) * 100.00 MT) * 0.99)"
     assertEquals(explanation.format(2), lastExplanation)
     assertEquals(explanation.format(3), lastExplanation)
@@ -135,7 +135,7 @@ class PhysicalMetalAssignmentTests extends StarlingTest {
     val assignment = PhysicalMetalAssignment("Lead", Quantity(100, MT), Day(2011, 9, 1), unknownPricingSpec) 
     val explanation = assignment.explanation(env)
     assertEquals(explanation.name, "((-F * Volume) * Discount)")
-    assertEquals(explanation.format(1), "((-(Fixed + Unfixed) * 100.00 MT) * USD.01Sep2011)")
+    assertEquals(explanation.format(1), "((-(Fixed + Unfixed) * 100.00 MT) * USD.02Sep2011)")
     assertEquals(explanation.format(2), "((-(Sum((Fix_0 * 0.2), (Fix_1 * -0.1)) + (LME Copper.19Aug2011 * 0.9)) * 100.00 MT) * 0.99)")
     val lastExplanation = "((-(Sum((98.00 USD/MT * 0.20), (98.00 USD/MT * (0.10))) + (97.00 USD/MT * 0.90)) * 100.00 MT) * 0.99)"
     assertEquals(explanation.format(3), lastExplanation)

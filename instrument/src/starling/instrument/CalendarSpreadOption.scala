@@ -31,6 +31,8 @@ case class CalendarSpreadOption(
 
   override def expiryDay = Some(market.csoOptionExpiry(spreads.last))
 
+  def valuationCCY = strike.numeratorUOM
+
   def explanation(env : Environment) : NamedQuantity = {
     val subExplanations : List[NamedQuantity] = childCSOs.map{cso =>
       val csoExp = cso.explanation(env)

@@ -6,6 +6,7 @@ import starling.market.{Market, FuturesMarket}
 import starling.quantity.{UOM, Quantity}
 import starling.curves.Environment
 import starling.daterange.DateRangePeriod
+import starling.quantity.NamedQuantity
 
 case class RefinedAssignment(
   market : FuturesMarket,
@@ -24,6 +25,8 @@ case class RefinedAssignment(
   def isLive(dayAndTime: DayAndTime) = estimatedDeliveryDate.endOfDay > dayAndTime
 
   def valuationCCY = market.currency
+
+  def explanation(env : Environment) : NamedQuantity = throw new UnsupportedOperationException()
 
   def assets(env: Environment) = {
     market.convert(volume, market.uom) match {

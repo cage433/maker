@@ -50,7 +50,7 @@ class UTPTests extends IndexTest {
           case _ : BradyMetalVolAtomicDatumKey => Percentage(0.3)
           case _ : BradyFXVolSmileAtomicDatumKey => Map(0.5 -> Percentage(0.3))
           case _ : OilAtmVolAtomicDatumKey => Percentage(0.10)
-          case _ : OilVolSkewAtomicDatumKey => Map(0.5 -> Percentage(0.1))
+          case _ : OilVolSkewAtomicDatumKey => Map(0.1 -> Percentage(0.05))
           case _ : EquityPriceKey => 100 (USD/SHARE)
           case USDFXRateKey(ccy) => xRates(ccy)(USD/ccy)
           case SpreadAtmStdDevAtomicDatumKey(market, period, ignoreShifts) => 10 (market.priceUOM)
@@ -266,4 +266,17 @@ class UTPTests extends IndexTest {
     assertEquals(atomicPriceKeys2, atomicPriceKeys)
   }
 
+  @Test(dataProvider = "tradeableProvider")
+  def testExplanationValuation(tr : Tradeable){
+    try {
+      assertQtyEquals(
+        tr.explanation(env), 
+        tr.asUtpPortfolio(Day(2009, 1, 1)).mtm(env, tr.valuationCCY),
+        1e-7
+      )
+    } catch {
+      case _ : UnsupportedOperationException => 
+      case e => throw e
+    }
+  }
 }

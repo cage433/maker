@@ -223,7 +223,6 @@ case class PhysicalMetalAssignment(commodityName : String, quantity : Quantity, 
 
   def asUtpPortfolio(tradeDay:Day) = UTP_Portfolio(Map(copy(quantity = Quantity(1.0, quantity.uom)) -> quantity.value))
 
-  private def settlementDay = deliveryDay // TODO - find the right day
   private def cashMtm(env : Environment) : Quantity = cashMtmWithBreakdown(env)._1
   private def cashMtmWithBreakdown(env : Environment) : (Quantity, (NamedQuantity, NamedQuantity)) = {
     val price = pricingSpec.price(env).named("F")
@@ -231,11 +230,11 @@ case class PhysicalMetalAssignment(commodityName : String, quantity : Quantity, 
     (- (price * quantityInMarketUOM), (price, quantityInMarketUOM))
   }
 
+  private def discount(env : Environment) = env.discount(valuationCCY, pricingSpec.settlementDay).named("Discount")
   def explanation(env : Environment) : NamedQuantity = {
     val namedEnv = env.withNaming()
     val (_, (price, volume)) = cashMtmWithBreakdown(namedEnv)
-    val discount = namedEnv.discount(valuationCCY, settlementDay).named("Discount")
-    (- price * volume) * discount
+    (- price * volume) * discount(namedEnv)
   }
 
   def assets(env: Environment) = {
@@ -245,7 +244,7 @@ case class PhysicalMetalAssignment(commodityName : String, quantity : Quantity, 
       Asset(
         known = true,
         assetType = commodityName,
-        settlementDay = settlementDay,
+        settlementDay = deliveryDay,
         amount = quantity,
         mtm = Quantity(0, cashMtm_.uom.numeratorUOM)
       ),
@@ -255,7 +254,7 @@ case class PhysicalMetalAssignment(commodityName : String, quantity : Quantity, 
         assetType = commodityName,
         settlementDay = pricingSpec.settlementDay,
         amount = quantity,
-        mtm = cashMtm_
+        mtm = cashMtm_ * discount(env)
       )
     )
   }

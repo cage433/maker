@@ -36,6 +36,7 @@ abstract class AverageOption(
     }
   }
 
+  val valuationCCY = strike.numeratorUOM
 }
 
 abstract class SingleAverageOption(
@@ -50,10 +51,14 @@ abstract class SingleAverageOption(
     "Strike" -> strike, "CallPut" -> callPut)
 
   def explanation(env : Environment) : NamedQuantity = {
-    val namedEnv = env.withNaming()
-    val (undiscPrc, (avePrice, vol)) = undiscountedPrice(namedEnv)
-    val discount = namedEnv.discount(valuationCCY, settlementDate)
-    FunctionNamedQuantity("Curran-" + callPut, List(avePrice, vol, strike.named("K")), undiscPrc) * volume.named("Volume") * discount.named("Discount")
+    if (!isLive(env.marketDay))
+      mtm(env).named("Mtm")
+    else {
+      val namedEnv = env.withNaming()
+      val (undiscPrc, (avePrice, vol)) = undiscountedPrice(namedEnv)
+      val discount = namedEnv.discount(valuationCCY, settlementDate)
+      FunctionNamedQuantity("Curran-" + callPut, List(avePrice, vol, strike.named("K")), undiscPrc) * volume.named("Volume") * discount.named("Discount")
+    }
   }
 
   val averagingDays: List[Day]

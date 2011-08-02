@@ -14,7 +14,7 @@ import starling.daterange.Day._
 
 class SwapCalendarSpreadTests extends TestMarketSpec {
 
-  //@Test
+  @Test
   def testSameAsTwoSwaps {
     val forwardPrice = Quantity(200, USD / BBL)
     val historicPrice = Quantity(100, USD / BBL)
@@ -123,7 +123,7 @@ class SwapCalendarSpreadTests extends TestMarketSpec {
       true
     )
 
-    val swap = new SwapCalendarSpread(index, strike, volume, SpreadPeriod(period1, period2), cleared = true)
+    val swap = new SwapCalendarSpread(index, strike, volume, SpreadPeriod(period1, period2), cleared = false)
 
     val explanation = swap.explanation(env)
 

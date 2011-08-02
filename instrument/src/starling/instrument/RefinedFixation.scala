@@ -13,6 +13,7 @@ import starling.utils.StarlingXStream
 import java.lang.String
 import starling.curves.Environment
 import starling.daterange.DateRangePeriod
+import starling.quantity.NamedQuantity
 
 /**
  * TODO [11 Aug 2010] find out what it is that is fixed for daily markets. e.g. third wednesday. It is it the Thursday futures
@@ -42,6 +43,9 @@ case class RefinedFixationsForSplit(
     Map[String, Any]("Fixations" -> serialised)
   }
 
+  def valuationCCY = fixations.head.market.currency
+  def explanation(env : Environment) : NamedQuantity = throw new UnsupportedOperationException()
+  
   def asUtpPortfolio(tradeDay:Day) = {
     val map = scala.collection.mutable.Map[UTP, Double]()
     fixations.foreach{

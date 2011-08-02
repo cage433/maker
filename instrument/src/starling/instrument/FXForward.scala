@@ -7,6 +7,7 @@ import starling.instrument.CashInstrumentType._
 import starling.curves._
 import starling.daterange.DateRangePeriod
 import starling.quantity.NamedQuantity
+import starling.quantity.UOM.USD
 
 /**
  * This trait is extended by both FXForward and FXOption. It deals with
@@ -67,7 +68,7 @@ case class FXForward(
 
     def timesFx(q : NamedQuantity) = if (q.uom == valuationCCY) q else q * namedEnv.forwardFXRate(valuationCCY, q.uom, maturityDate)
     val discount = namedEnv.discount(valuationCCY, maturityDate).named("Discount")
-    (timesFx(r) - timesFx(p)) * volume.named("Volume") * discount
+    (timesFx(r) + timesFx(p)) * discount
   }
 
     
