@@ -8,7 +8,6 @@ import com.trafigura.edm.tradeservice.{EdmGetTradesResource, EdmGetTradesResourc
 import com.trafigura.edm.trades.{PhysicalTrade => EDMPhysicalTrade}
 import com.trafigura.tradinghub.support.GUID
 import com.trafigura.tradecapture.internal.refinedmetal.{Market, Metal}
-import com.trafigura.edm.physicaltradespecs.QuotaDetail
 import com.trafigura.tradecapture.internal.refinedmetal.Metal
 import org.codehaus.jettison.json.JSONObject
 import com.trafigura.tradecapture.internal.refinedmetal.Market
