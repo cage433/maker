@@ -9,6 +9,7 @@ import starling.quantity.{SpreadQuantity, UOM, Quantity}
 import starling.curves.SpreadAtmStdDevAtomicDatumKey
 import starling.curves.FuturesSpreadPrice
 import starling.daterange._
+import starling.quantity.NamedQuantity
 
 case class FuturesCalendarSpread(market: FuturesMarket, firstMonth: Month, secondMonth: Month, firstStrike: Quantity, secondStrike: Quantity, volume: Quantity)
         extends UTP with Tradeable with AsUtpPortfolio with MultiLeg {
@@ -33,6 +34,10 @@ case class FuturesCalendarSpread(market: FuturesMarket, firstMonth: Month, secon
 
   def assets(env: Environment) = frontFuture.assets(env) ++ backFuture.assets(env)
 
+  def explanation(env : Environment) : NamedQuantity = {
+    frontFuture.explanation(env).named("Front") + backFuture.explanation(env).named("Back")
+  }
+  
   def asUtpPortfolio(tradeDay:Day) = {
     frontFuture.asUtpPortfolio ++
             backFuture.asUtpPortfolio
