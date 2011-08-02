@@ -513,18 +513,11 @@ class ValuationService(
     val sw = new Stopwatch()
 
     val inventoryService = logisticsServices.inventoryService.service
-    val assignmentService = logisticsServices.assignmentService.service
-
-    val allAssignments = assignmentService.getAllAssignments()
-    
     val inventory = inventoryService.getAllInventoryLeaves()
 
-    val quotaMap = titanTradeCache.getAllTrades().flatMap(_.quotas).map(q => NeptuneId(q.detail.identifier).identifier -> q).toMap
-    val assignmentIdToQuotaMap : Map[Int, EDMQuota] = allAssignments.map(a => {
-      a.oid.contents -> quotaMap(a.quotaName)
-    }).toMap
+    val quotaNameToQuotaMap = titanTradeCache.getAllTrades().flatMap(_.quotas).map(q => NeptuneId(q.detail.identifier).identifier -> q).toMap
 
-    val assignmentValuer = PhysicalMetalAssignmentForward.value(futuresExchangeByGUID, edmMetalByGUID, assignmentIdToQuotaMap, uomIdToName, env, snapshotIDString) _
+    val assignmentValuer = PhysicalMetalAssignmentForward.value(futuresExchangeByGUID, edmMetalByGUID, quotaNameToQuotaMap, uomIdToName, env, snapshotIDString) _
 
     val valuations = inventory.map(i => i.oid.contents.toString -> assignmentValuer(i))
     
@@ -551,13 +544,9 @@ class ValuationService(
 
     val assignmentService = logisticsServices.assignmentService.service
 
-    val allAssignments = assignmentService.getAllAssignments()
-    val quotaMap = titanTradeCache.getAllTrades().flatMap(_.quotas).map(q => NeptuneId(q.detail.identifier).identifier -> q).toMap
-    val assignmentIdToQuotaMap : Map[Int, EDMQuota] = allAssignments.map(a => {
-      a.oid.contents -> quotaMap(a.quotaName)
-    }).toMap
+    val quotaNameToQuotaMap = titanTradeCache.getAllTrades().flatMap(_.quotas).map(q => NeptuneId(q.detail.identifier).identifier -> q).toMap
 
-    val assignmentValuer = PhysicalMetalAssignmentForward.value(futuresExchangeByGUID, edmMetalByGUID, assignmentIdToQuotaMap, uomIdToName, env, snapshotIDString) _
+    val assignmentValuer = PhysicalMetalAssignmentForward.value(futuresExchangeByGUID, edmMetalByGUID, quotaNameToQuotaMap, uomIdToName, env, snapshotIDString) _
 
     val valuations = inventoryIds.map(i => i -> assignmentValuer(titanInventoryCache.getInventory(i)))
 

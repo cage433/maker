@@ -121,15 +121,15 @@ object CostsAndIncomeValuation{
 object PhysicalMetalAssignmentForward {
   def apply(exchangesByGUID : Map[GUID, EDMMarket],
             futuresMetalMarketByGUID : Map[GUID, EDMMetal],
-            assignmentIdToQuotaMap : Map[Int, EDMQuota],
+            quotaNameToQuotaMap : Map[String, EDMQuota],
             uomIdToNameMap : Map[Int, String])
            (inventory : EDMInventoryItem) : PhysicalMetalAssignmentForward = {
     try {
-      val purchaseQuota = assignmentIdToQuotaMap(inventory.purchaseAssignment.oid.contents)
+      val purchaseQuota = quotaNameToQuotaMap(inventory.purchaseAssignment.quotaName)
       val edmPurchasePricingSpec = purchaseQuota.detail.pricingSpec
       val edmSalePricingSpec = inventory.salesAssignment match {
         case null => edmPurchasePricingSpec
-        case salesAssignment : EDMAssignment => assignmentIdToQuotaMap(salesAssignment.oid.contents).detail.pricingSpec
+        case salesAssignment : EDMAssignment => quotaNameToQuotaMap(salesAssignment.quotaName).detail.pricingSpec
       }
 
       val deliveryQuantity = purchaseQuota.detail.deliverySpecs.map{ds => fromTitanQuantity(ds.quantity)}.sum
@@ -155,13 +155,13 @@ object PhysicalMetalAssignmentForward {
 
   def value(exchangesByGUID : Map[GUID, EDMMarket],
             futuresMetalMarketByGUID : Map[GUID, EDMMetal],
-            assignmentIdToQuotaMap : Map[Int, EDMQuota],
+            quotaNameToQuotaMap : Map[String, EDMQuota],
             uomIdToNameMap : Map[Int, String],
             env : Environment, snapshotID : String)
             (inventory : EDMInventoryItem) : Either[String, List[CostsAndIncomeAssignmentValuation]] =  {
 
     try {
-      val forward = PhysicalMetalAssignmentForward(exchangesByGUID, futuresMetalMarketByGUID, assignmentIdToQuotaMap, uomIdToNameMap)(inventory)
+      val forward = PhysicalMetalAssignmentForward(exchangesByGUID, futuresMetalMarketByGUID, quotaNameToQuotaMap, uomIdToNameMap)(inventory)
       Right(forward.costsAndIncomeAssignmentValueBreakdown(env, snapshotID))
     }
     catch {
@@ -175,6 +175,7 @@ case class PhysicalMetalAssignmentForward(id : String, inventoryItem : EDMInvent
   def costsAndIncomeAssignmentValueBreakdown(env : Environment, snapshotId : String) : List[CostsAndIncomeAssignmentValuation] = {
     val purchaseQty = fromTitanQuantity(inventoryItem.quantity, uomIdToName)
     val saleQty = purchaseQty // until logistics send us both quantities
+
     List(CostsAndIncomeAssignmentValuation(
       purchaseAssignmentID = inventoryItem.purchaseAssignment.oid.contents.toString,
       saleAssignmentID = inventoryItem.salesAssignment match { case null => None; case salesAssignment : EDMAssignment => Some(salesAssignment.oid.contents.toString) },
