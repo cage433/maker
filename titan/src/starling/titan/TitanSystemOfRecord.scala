@@ -3,7 +3,7 @@ package starling.titan
 import com.trafigura.tradinghub.support.GUID
 import com.trafigura.edm.tradeservice.EdmGetTrades
 import com.trafigura.tradecapture.internal.refinedmetal.{Counterparty, Market, Metal, UOM}
-import com.trafigura.edm.physicaltradespecs.EDMQuota
+import com.trafigura.edm.physicaltradespecs.PhysicalTradeQuota
 import com.trafigura.edm.materialspecification.CommoditySpec
 import com.trafigura.edm.trades.{PhysicalTrade => EDMPhysicalTrade}
 import starling.systemofrecord.SystemOfRecord
@@ -38,8 +38,8 @@ class TitanSystemOfRecord(
   refData : TitanTacticalRefData,
   logisticsServices : TitanLogisticsServices) extends SystemOfRecord {
 
-  lazy val quotaNameToTradeMap : Map[String, EDMPhysicalTrade] = Map() ++ titanTradeCache.getAllTrades().flatMap{trade =>  trade.asInstanceOf[EDMPhysicalTrade].quotas.map{q => NeptuneId(q.detail.identifier).identifier -> trade}}
-  lazy val quotaNameToQuotaMap : Map[String, EDMQuota] = Map() ++ titanTradeCache.getAllTrades().flatMap{trade =>  trade.asInstanceOf[EDMPhysicalTrade].quotas.map{q => NeptuneId(q.detail.identifier).identifier -> q}}
+  lazy val quotaNameToTradeMap : Map[String, EDMPhysicalTrade] = Map() ++ titanTradeCache.getAllTrades().flatMap{trade =>  trade.asInstanceOf[EDMPhysicalTrade].quotas.map{q => NeptuneId(q.detail.identifier.value).identifier -> trade}}
+  lazy val quotaNameToQuotaMap : Map[String, PhysicalTradeQuota] = Map() ++ titanTradeCache.getAllTrades().flatMap{trade =>  trade.asInstanceOf[EDMPhysicalTrade].quotas.map{q => NeptuneId(q.detail.identifier.value).identifier -> q}}
 
   lazy val tc = new TradeConverter(refData, quotaNameToTradeMap, quotaNameToQuotaMap)
   import tc._
@@ -81,7 +81,7 @@ class TitanSystemOfRecord(
  */
 class TradeConverter( refData : TitanTacticalRefData,
                        quotaNameToTradeMap : Map[String, EDMPhysicalTrade],
-                       quotaNameToQuotaMap : Map[String, EDMQuota]) {
+                       quotaNameToQuotaMap : Map[String, PhysicalTradeQuota]) {
 
   /**
    * convert EDMAssignmentItem to a Starling Trade
@@ -96,11 +96,11 @@ class TradeConverter( refData : TitanTacticalRefData,
 
     val metal : Metal = refData.edmMetalByGUID(quotaDetail.deliverySpecs.head.materialSpec.asInstanceOf[CommoditySpec].commodity)
 
-    val priceSpecConverter = EDMPricingSpecConverter(metal, refData.futuresExchangeByGUID)
+    val priceSpecConverter = EDMPricingSpecConverter(metal, refData.futuresExchangeByID)
 
     val deliveryQuantity = quotaDetail.deliverySpecs.map{ds => fromTitanQuantity(ds.quantity)}.sum
 
-    val deliveryDay = Day.fromLocalDate(quotaDetail.deliverySpecs.head.schedule.asInstanceOf[Date].datex)
+    val deliveryDay = Day.fromLocalDate(quotaDetail.deliverySpecs.head.schedule.asInstanceOf[Date].value)
     val tradeable : Tradeable = PhysicalMetalAssignment(
       metal.name, //: String,
       deliveryQuantity, // : Quantity,
@@ -110,7 +110,7 @@ class TradeConverter( refData : TitanTacticalRefData,
     val costs : List[Costs] = Nil // todo
 
     if (edmTrade.submitted == null) {
-      println("NULL DATE  " + edmTrade.tradeId)
+      println("NULL DATE  " + edmTrade.titanId)
     }
 
     Trade(
@@ -208,7 +208,7 @@ trait TitanTradeCache {
 
   def addTradeQuotas(id : String) {
     val trade = tradeMap(id)
-    quotaIDToTradeIDMap ++= trade.quotas.map{quota => (quota.detail.identifier, id)}
+    quotaIDToTradeIDMap ++= trade.quotas.map{quota => (quota.detail.identifier.value, id)}
   }
 
   def tradeIDFromQuotaID(quotaID: String): String
@@ -221,9 +221,8 @@ trait TitanTradeCache {
 trait TitanTacticalRefData {
 
   val edmMetalByGUID: Map[GUID, Metal]
-  val futuresExchangeByGUID: Map[GUID, Market]
+  val futuresExchangeByID: Map[String, Market]
   val counterpartiesByGUID: Map[GUID, Counterparty]
-
   val uomById : Map[Int, UOM]
 }
 

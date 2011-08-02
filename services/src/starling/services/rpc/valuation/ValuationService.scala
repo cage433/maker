@@ -35,7 +35,6 @@ import starling.curves.DiscountRateKey
 import starling.curves.ForwardPriceKey
 import starling.curves.UnitTestingAtomicEnvironment
 import starling.curves.FixingKey
-import com.trafigura.edm.physicaltradespecs.EDMQuota
 import starling.titan._
 import com.trafigura.edm.logistics.inventory.EDMInventoryItem
 import starling.services.rpc.logistics._
@@ -68,7 +67,7 @@ case class DefaultTitanTradeCache(props : Props) extends TitanTradeCache {
     Log.info("Are EDM Trades available " + edmTradeResult.cached + ", took " + sw)
     if (!edmTradeResult.cached) throw new TradeManagementCacheNotReady
     Log.info("Got Edm Trade results " + edmTradeResult.cached + ", trade result count = " + edmTradeResult.results.size)
-    tradeMap = edmTradeResult.results.map(_.trade.asInstanceOf[EDMPhysicalTrade])/*.filter(pt => pt.tstate == CompletedTradeTstate)*/.map(t => (t.tradeId.toString, t)).toMap
+    tradeMap = edmTradeResult.results.map(_.trade.asInstanceOf[EDMPhysicalTrade])/*.filter(pt => pt.tstate == CompletedTradeTstate)*/.map(t => (t.titanId.value, t)).toMap
     tradeMap.keySet.foreach(addTradeQuotas)
   }
 
@@ -88,7 +87,7 @@ case class DefaultTitanTradeCache(props : Props) extends TitanTradeCache {
     }
     else {
       val trade = getByOid(id.toInt)
-      tradeMap += trade.tradeId.toString -> trade.asInstanceOf[EDMPhysicalTrade]
+      tradeMap += trade.titanId.value -> trade.asInstanceOf[EDMPhysicalTrade]
       addTradeQuotas(id)
       tradeMap(id)
     }
@@ -267,7 +266,7 @@ case class TitanTradeServiceBasedTradeCache(titanTradesService : TitanTradeServi
    * Read all trades from Titan and blast our cache
    */
   def updateTradeMap() {
-    tradeMap = titanTradesService.getAllTrades()/*.filter(pt => pt.tstate == CompletedTradeTstate)*/.map(t => (t.tradeId.toString, t)).toMap
+    tradeMap = titanTradesService.getAllTrades()/*.filter(pt => pt.tstate == CompletedTradeTstate)*/.map(t => (t.titanId.value, t)).toMap
     tradeMap.keySet.foreach(addTradeQuotas)
   }
 
@@ -287,7 +286,7 @@ case class TitanTradeServiceBasedTradeCache(titanTradesService : TitanTradeServi
     }
     else {
       val trade = titanTradesService.getTrade(id)
-      tradeMap += trade.tradeId.toString -> trade
+      tradeMap += trade.titanId.value -> trade
       tradeMap(id)
     }
   }
@@ -387,11 +386,11 @@ class ValuationService(
 
   type TradeValuationResult = Either[String, List[CostsAndIncomeQuotaValuation]]
 
-  lazy val futuresExchangeByGUID = refData.futuresExchangeByGUID
+  lazy val futuresExchangeByID = refData.futuresExchangeByID
   lazy val edmMetalByGUID = refData.edmMetalByGUID
   lazy val uomById = refData.uomById
   lazy val uomIdToName : Map[Int, String] = uomById.values.map(e => e.oid -> e.name).toMap
-  
+
   val eventHandler = new EventHandler
 
   rabbitEventServices.addClient(eventHandler)
@@ -408,11 +407,11 @@ class ValuationService(
     val edmTrades = titanTradeCache.getAllTrades()
     log("Got Edm Trade results, trade result count = " + edmTrades.size)
     val env = environmentProvider.environment(snapshotIDString)
-    val tradeValuer = PhysicalMetalForward.value(futuresExchangeByGUID, edmMetalByGUID, env, snapshotIDString) _
+    val tradeValuer = PhysicalMetalForward.value(futuresExchangeByID, edmMetalByGUID, env, snapshotIDString) _
     log("Got %d completed physical trades".format(edmTrades.size))
     sw.reset()
     val valuations = edmTrades.map {
-      trade => (trade.tradeId.toString, tradeValuer(trade))
+      trade => (trade.titanId.value, tradeValuer(trade))
     }.toMap
     log("Valuation took " + sw)
     val (worked, errors) = valuations.values.partition(_ isRight)
@@ -433,7 +432,7 @@ class ValuationService(
 
     log("Got Edm Trade result " + edmTradeResult)
     val env = environmentProvider.environment(snapshotIDString)
-    val tradeValuer = PhysicalMetalForward.value(futuresExchangeByGUID, edmMetalByGUID, env, snapshotIDString) _
+    val tradeValuer = PhysicalMetalForward.value(futuresExchangeByID, edmMetalByGUID, env, snapshotIDString) _
 
     val edmTrade: EDMPhysicalTrade = edmTradeResult.asInstanceOf[EDMPhysicalTrade]
     log("Got %s physical trade".format(edmTrade.toString))
@@ -459,12 +458,12 @@ class ValuationService(
     val sw = new Stopwatch()
 
     val idsToUse = costableIds match {
-      case Nil | null => titanTradeCache.getAllTrades().map{trade => trade.tradeId.toString}
+      case Nil | null => titanTradeCache.getAllTrades().map{trade => trade.titanId.value}
       case list => list
     }
 
     var tradeValueCache = Map[String, TradeValuationResult]()
-    val tradeValuer = PhysicalMetalForward.value(futuresExchangeByGUID, edmMetalByGUID, env, snapshotIDString) _
+    val tradeValuer = PhysicalMetalForward.value(futuresExchangeByID, edmMetalByGUID, env, snapshotIDString) _
 
     def tradeValue(id: String): TradeValuationResult = {
       if (!tradeValueCache.contains(id))
@@ -515,9 +514,9 @@ class ValuationService(
     val inventoryService = logisticsServices.inventoryService.service
     val inventory = inventoryService.getAllInventoryLeaves()
 
-    val quotaNameToQuotaMap = titanTradeCache.getAllTrades().flatMap(_.quotas).map(q => NeptuneId(q.detail.identifier).identifier -> q).toMap
+    val quotaNameToQuotaMap = titanTradeCache.getAllTrades().flatMap(_.quotas).map(q => NeptuneId(q.detail.identifier.value).identifier -> q).toMap
 
-    val assignmentValuer = PhysicalMetalAssignmentForward.value(futuresExchangeByGUID, edmMetalByGUID, quotaNameToQuotaMap, uomIdToName, env, snapshotIDString) _
+    val assignmentValuer = PhysicalMetalAssignmentForward.value(futuresExchangeByID, edmMetalByGUID, quotaNameToQuotaMap, uomIdToName, env, snapshotIDString) _
 
     val valuations = inventory.map(i => i.oid.contents.toString -> assignmentValuer(i))
     
@@ -544,9 +543,9 @@ class ValuationService(
 
     val assignmentService = logisticsServices.assignmentService.service
 
-    val quotaNameToQuotaMap = titanTradeCache.getAllTrades().flatMap(_.quotas).map(q => NeptuneId(q.detail.identifier).identifier -> q).toMap
+    val quotaNameToQuotaMap = titanTradeCache.getAllTrades().flatMap(_.quotas).map(q => NeptuneId(q.detail.identifier.value).identifier -> q).toMap
 
-    val assignmentValuer = PhysicalMetalAssignmentForward.value(futuresExchangeByGUID, edmMetalByGUID, quotaNameToQuotaMap, uomIdToName, env, snapshotIDString) _
+    val assignmentValuer = PhysicalMetalAssignmentForward.value(futuresExchangeByID, edmMetalByGUID, quotaNameToQuotaMap, uomIdToName, env, snapshotIDString) _
 
     val valuations = inventoryIds.map(i => i -> assignmentValuer(titanInventoryCache.getInventory(i)))
 
@@ -581,7 +580,7 @@ class ValuationService(
 
   // accessors for ref-data mappings
   def getTrades(tradeIds : List[String]) : List[EDMPhysicalTrade] = tradeIds.map(titanTradeCache.getTrade)
-  def getFuturesExchanges = futuresExchangeByGUID.values
+  def getFuturesExchanges = futuresExchangeByID.values
   def getMetals = edmMetalByGUID.values
   def getUoms = uomById.values
     

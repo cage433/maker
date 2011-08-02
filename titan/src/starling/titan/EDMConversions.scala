@@ -3,13 +3,13 @@ package starling.titan
 import starling.quantity.UOMSymbol._
 import starling.utils.ImplicitConversions._
 import starling.quantity.{UOMSymbol, Percentage, UOM, Quantity}
-import com.trafigura.edm.shared.types.{Currency => TitanCurrency, Date => TitanDate, DateRange => TitanDateRange,
+import com.trafigura.edm.shared.types.{Currency => TitanCurrency, Date => TitanDate,
                                        Percentage => TitanPercentage, Quantity => TitanQuantity, EQuantity,
                                        CompoundUOM, UnitComponent, FundamentalUOM}
-
 import com.trafigura.services._
 import com.trafigura.services.marketdata.Maturity
 import starling.daterange.{DateRange, Tenor, SimpleDateRange, Day}
+import com.trafigura.commontypes.dataspecifications.{DateRange => TitanDateRange}
 
 
 case class InvalidUomException(msg : String) extends Exception(msg)
@@ -29,7 +29,7 @@ object EDMConversions {
     def titanCurrency: Option[TitanCurrency] = toTitan.map(edm => TitanCurrency().update(_.name = edm.name))
     def serializableCurrency: Option[TitanSerializableCurrency] =
       starlingUomToEdmUomName.get(uom).map(fuom => TitanSerializableCurrency(fuom))
-    def toTitan: Option[FundamentalUOM] = starlingUomToEdmUomName.get(uom).map(FundamentalUOM(_))
+    def toTitan: Option[FundamentalUOM] = starlingUomToEdmUomName.get(uom).map(n => new FundamentalUOM{ name = n})
   }
 
   implicit def enrichPercentage(percentage: Percentage) = new {
@@ -62,14 +62,14 @@ object EDMConversions {
   }
 
   implicit def enrichTitanDate(date: TitanDate) = new {
-    def fromTitan = Day.fromLocalDate(date.datex)
+    def fromTitan = Day.fromLocalDate(date.value)
   }
 
   implicit def enrichTitanDateRange(dateRange: TitanDateRange) = new {
     def fromTitan = new SimpleDateRange(startDay, endDay)
     def contains(date: TitanDate) = fromTitan.contains(date.fromTitan)
-    def startDay = Day.fromLocalDate(dateRange.startDate)
-    def endDay = Day.fromLocalDate(dateRange.endDate)
+    def startDay = Day.fromLocalDate(dateRange.start.toLocalDate)
+    def endDay = Day.fromLocalDate(dateRange.end.toLocalDate)
   }
 
   implicit def enrichFundamentalUOM(uom: FundamentalUOM) = new {
@@ -120,9 +120,8 @@ object EDMConversions {
 
     val unitComponents = symbolPowers.map{
       case (starlingUOMSymbol, power) => UnitComponent(
-        oid = 0,
         exponent = power,
-        fundamental = FundamentalUOM(starlingUomSymbolToEdmUom.getOrElse(starlingUOMSymbol, starlingUOMSymbol.toString))
+        fundamental = new FundamentalUOM{name = starlingUomSymbolToEdmUom.getOrElse(starlingUOMSymbol, starlingUOMSymbol.toString)}
        )
     }.toList
 
