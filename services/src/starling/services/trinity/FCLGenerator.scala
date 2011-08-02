@@ -2,7 +2,6 @@ package starling.services.trinity
 
 import java.text.DecimalFormat
 
-import starling.curves.CurveViewer
 import starling.daterange._
 import starling.db.DB
 import starling.gui.api.CurveLabel
@@ -14,6 +13,8 @@ import com.trafigura.services.trinity.CommodityRate
 import starling.market._
 import starling.calendar.{BusinessCalendar, BusinessCalendars}
 import starling.pivot.{SomeSelection, Field, PivotFieldsState}
+import java.util.TreeMap
+import starling.curves.{CurveViewerFields, CurveViewer}
 
 case class TrinityCommodityCurveKey(commodity:String, exchange:String, currency:String, contract:String)
 
@@ -22,7 +23,9 @@ class FCLGenerator(businessCalendars:BusinessCalendars, curveViewer: CurveViewer
 
   private val pivotFieldsState = PivotFieldsState(dataFields = List(Field("Price")),
     rowFields = List(Field("Market"), Field("Period")),
-    filters = Field("Market") -> SomeSelection(Set("Panamax T/C Average (Baltic)")) :: Nil
+    filters = Field("Market") -> SomeSelection(Set("Panamax T/C Average (Baltic)")) :: Nil,
+    reportSpecificChoices = scala.collection.immutable.TreeMap.empty[String,Any] + (CurveViewerFields.showInterpolatedReportOption -> true)
+
   )
 
   def generate(curveLabel: CurveLabel): Map[TrinityCommodityCurveKey,Traversable[CommodityRate]] = {
