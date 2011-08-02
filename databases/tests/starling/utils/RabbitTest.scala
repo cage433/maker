@@ -13,7 +13,7 @@ class RabbitTest extends StarlingTest with ShouldMatchers {
   @Test(enabled=false, description="Unable to test until it's possible to run a rabbitmq server from within the test")
   def canSendAndReceiveMessagesOverRabbitMQ {
     val host = "localhost" //tradinghub-test"
-    val rabbitQueue = RabbitQueue("Trafigura.Raw.Trade.RiskManagement", Durable)
+    val rabbitQueue = RabbitQueue("Trafigura.Raw.Trade.RiskManagement")
     // val rabbitQueue = RabbitQueue("Trafigura.TradeCSV.RiskManagement", Durable)
 
     using (new QueuedRabbitMessageReceiver(host, rabbitQueue)) { receiver =>
@@ -34,7 +34,7 @@ class RabbitTest extends StarlingTest with ShouldMatchers {
   def drainQueue {
     val host = "localhost"
     //val host = "tradinghub-test"
-    val rabbitQueue = RabbitQueue("Trafigura.Raw.Trade.RiskManagement", Durable)
+    val rabbitQueue = RabbitQueue("Trafigura.Raw.Trade.RiskManagement")
     //val rabbitQueue = RabbitQueue("Trafigura.TradeCSV.RiskManagement", Durable)
 
     using (new QueuedRabbitMessageReceiver(host, rabbitQueue)) { receiver =>

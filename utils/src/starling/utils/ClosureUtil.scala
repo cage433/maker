@@ -10,23 +10,10 @@ object ClosureUtil {
   val Null = closable({})
   def closable(action: => Unit) = new { def close() {action} }
 
-  case class Bound[R <: Closeable](resource : R, bindings : Closeable *) {
-    def close() {
-      resource.close
-      bindings.foreach(_.close)
-    }
-  }
-
-  def using[R <: Closeable, T](resource : R)(body : R => T) : T = try {
+  def using[R <: Closeable, T](resource: R)(body: R => T): T = try {
     body(resource)
   } finally {
     resource.close
-  }
-
-  def using[R <: Closeable, T](boundResource : Bound[R])(body : R => T) : T = try {
-    body(boundResource.resource)
-  } finally {
-    boundResource.close
   }
 
   def logException[T](action: => T): T = decorate(e => {e.printStackTrace; e})(action)
