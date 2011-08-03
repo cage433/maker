@@ -73,7 +73,7 @@ case class CommoditySpreadOption(
 
   def explanation(env : Environment) : NamedQuantity  = {
     val (_, (undiscountedPrice, spreadPrice, stdDev, discount)) = priceWithDetails(env.withNaming())
-    FunctionNamedQuantity("SpreadOption-" + callPut, List(spreadPrice, stdDev, strike.named("K")), undiscountedPrice) * volume.named("Volume") * discount
+    FunctionNamedQuantity("SpreadOption-" + callPut, List(spreadPrice, stdDev, strike.named("K")), undiscountedPrice, true) * volume.named("Volume") * discount
   }
 
   def price(env: Environment) = priceWithDetails(env)._1

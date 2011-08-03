@@ -82,7 +82,7 @@ case class SingleCalendarSpreadOption(
 
   def explanation(env : Environment) : NamedQuantity = {
     val (_, (undiscountedCSOPrice, spreadPrice, stdDev, discount, time)) = priceWithExplanationDetails(env.withNaming())
-    FunctionNamedQuantity("CSO-" + callPut, List(spreadPrice, stdDev, time, strike.named("K")), undiscountedCSOPrice) * volume.named("Volume") * discount
+    FunctionNamedQuantity("CSO-" + callPut, List(spreadPrice, stdDev, time, strike.named("K")), undiscountedCSOPrice, true) * volume.named("Volume") * discount
   }
   val valuationCCY = strike.uom * market.uom
 

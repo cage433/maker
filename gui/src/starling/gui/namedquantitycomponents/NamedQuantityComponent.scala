@@ -6,20 +6,57 @@ import swing.event.MouseClicked
 import starling.quantity._
 import starling.pivot.view.swing.{PivotCellRenderer, MigPanel}
 import javax.swing.border.AbstractBorder
-import swing.{Panel, Label}
+import swing.Label
 import java.awt.{Color, Cursor, BasicStroke, Graphics, Insets, Graphics2D, Dimension}
+import javax.swing.JTable
+import javax.swing.table.{DefaultTableCellRenderer, AbstractTableModel}
+
+object NamedQuantityComponentHelper {
+  def panel(namedQuantity:NamedQuantity) = {
+    namedQuantity match {
+      case binOp:BinOpNamedQuantity => new BinOpNamedQuantityPanel(binOp)
+      case func:FunctionNamedQuantity if func.custom => new FunctionNamedQuantityPanel(func)
+      case func:FunctionNamedQuantity if !func.custom => new VerticalFunctionNamedQuantityPanel(func)
+      case _ => new ExpandCollapsePanel(namedQuantity)
+    }
+  }
+
+  def label(text0:String, tooltip0:String=null) = {
+    new Label {
+      font = PivotCellRenderer.MonoSpacedFont
+      text = text0
+      tooltip = tooltip0
+    }
+  }
+
+  def row(namedQuantity:NamedQuantity):Option[List[String]] = {
+    namedQuantity match {
+      case binOp:BinOpNamedQuantity => (row(binOp.lhs), row(binOp.rhs)) match {
+        case (Some(l), Some(r)) => Some(l ::: r)
+        case _ => None
+      }
+      case SimpleNamedQuantity(name, q:NamedQuantity) => row(q).map(r => name :: r)
+      case SimpleNamedQuantity(name, q:Quantity) => Some(name :: q.toString :: Nil)
+      case _ => None
+    }
+  }
+}
+import NamedQuantityComponentHelper._
 
 class ExpandCollapsePanel(namedQuantity:NamedQuantity) extends MigPanel("insets 0") {
+  background = ExplanationPanelBackgroundColour
   private var expanded = false
 
   lazy val expandedPanel = {
     namedQuantity match {
-      case binOp:BinOpNamedQuantity => {
-        new BinOpNamedQuantityPanel(binOp)
-      }
+      case binOp:BinOpNamedQuantity => new BinOpNamedQuantityPanel(binOp)
+      case func:FunctionNamedQuantity if func.custom => new FunctionNamedQuantityPanel(func)
+      case func:FunctionNamedQuantity if !func.custom => new VerticalFunctionNamedQuantityPanel(func)
       case nq:NamedQuantity => {
         nq.quantity match {
           case binOp:BinOpNamedQuantity => new BinOpNamedQuantityPanel(binOp)
+          case func:FunctionNamedQuantity if func.custom => new FunctionNamedQuantityPanel(func)
+          case func:FunctionNamedQuantity if !func.custom => new VerticalFunctionNamedQuantityPanel(func)
           case nq0:NamedQuantity => new ExpandCollapsePanel(nq0)
           case q:Quantity => new QuantityPanel(q)
         }
@@ -60,30 +97,89 @@ class QuantityPanel(quantity:Quantity) extends Label {
   font = PivotCellRenderer.MonoSpacedFont
 }
 
-class BinOpNamedQuantityPanel(binOp:BinOpNamedQuantity) extends MigPanel("insets 0", "[p]2lp[p][p][p]0[p]") {
-  def panel(namedQuantity:NamedQuantity) = {
-    namedQuantity match {
-      case binOp:BinOpNamedQuantity => new BinOpNamedQuantityPanel(binOp)
-      case _ => new ExpandCollapsePanel(namedQuantity)
+class FunctionNamedQuantityPanel(func:FunctionNamedQuantity) extends MigPanel("insets 0, gap 0") {
+  background = ExplanationPanelBackgroundColour
+  add(label(func.functionName + "(", func.result.toString), "ay top")
+  func.parameters.zipWithIndex.foreach{case (f,i) => {
+    if (i != 0) {
+      add(label(","), "ay top")
     }
+    add(panel(f), "ay top")
+  }}
+  add(label(")"), "ay top")
+}
+
+class VerticalFunctionNamedQuantityPanel(func:FunctionNamedQuantity) extends MigPanel("insets 0, gap 0") {
+  background = ExplanationPanelBackgroundColour
+  add(label(func.functionName, func.result.toString), "ay top")
+  val table = func.parameters.map(row)
+  if (!table.contains(None)) {
+    val tableData = table.map(_.get)
+    val tableModel = new AbstractTableModel {
+      def getColumnCount = if (tableData.nonEmpty) tableData(0).size else 0
+      def getRowCount = tableData.size
+      def getValueAt(rowIndex:Int, columnIndex:Int) = tableData(rowIndex)(columnIndex)
+    }
+    val jTable = new JTable(tableModel) {
+      setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS)
+      setBorder(MatteBorder(1, 1, 0, 0, TableGridColour))
+      setCellSelectionEnabled(true)
+    }
+    val renderer = new DefaultTableCellRenderer {
+      override def getTableCellRendererComponent(table:JTable, value:AnyRef, isSelected:Boolean, hasFocus:Boolean, row:Int, column:Int) = {
+        super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column)
+        setFont(PivotCellRenderer.MonoSpacedFont)
+        this
+      }
+    }
+    jTable.setDefaultRenderer(classOf[Object], renderer)
+    resizeTableColumnsToFit(jTable, PivotCellRenderer.MonoSpacedFont)
+    add(new LShape, "split, spanx, ay top, gapright 0, newline")
+    add(jTable)
+  } else {
+    func.parameters.foreach(f => {
+      add(new LShape, "split, spanx, ay top, gapright 0, newline")
+      add(panel(f), "gapleft 0, ay top")
+    })
   }
-  add(new Label("(") {font = PivotCellRenderer.MonoSpacedFont}, "ay top")
+}
+
+class Brace(left:Boolean) extends Label {
+  minimumSize = new Dimension(5, 2)
+  override protected def paintComponent(g:Graphics2D) {
+    g.setColor(Color.BLACK)
+    val w = size.width - 1
+    val sh = 1
+    val h = size.height - 2
+
+    if (!left) {
+      g.rotate(math.Pi, w / 2.0, (size.height-1) / 2.0)
+    }
+
+    g.drawLine(0, sh, w, sh)
+    g.drawLine(0, sh, 0, h)
+    g.drawLine(0, h, w, h)
+  }
+}
+
+class BinOpNamedQuantityPanel(binOp:BinOpNamedQuantity) extends MigPanel("insets 0", "[p]2lp[p][p][p]0[p]") {
+  background = ExplanationPanelBackgroundColour
+  add(new Brace(true), "growy")
   add(panel(binOp.lhs), "ay top")
-  add(new Label(binOp.op) {font = PivotCellRenderer.MonoSpacedFont; tooltip = binOp.result.toString}, "ay top")
+  add(label(binOp.op, binOp.result.toString), "ay top")
   add(panel(binOp.rhs), "ay top")
-  add(new Label(")") {font = PivotCellRenderer.MonoSpacedFont}, "ay top")
+  add(new Brace(false), "growy")
 }
 
 class TopNamedQuantityComponent(quantity:SimpleNamedQuantity) extends MigPanel {
+  background = ExplanationPanelBackgroundColour
   quantity.quantity match {
     case nq:NamedQuantity => {
       add(new ExpandCollapsePanel(quantity))
-      add(new Label("=") {font = PivotCellRenderer.MonoSpacedFont}, "ay top")
-      add(new Label(nq.quantity.toString) {font = PivotCellRenderer.MonoSpacedFont}, "ay top")
+      add(label("="), "ay top")
+      add(label(nq.quantity.toString), "ay top")
     }
-    case _ => {
-      println("don't know")
-    }
+    case _ => throw new Exception("Haven't thought about what to do here")
   }
 }
 
@@ -92,7 +188,7 @@ object LShape {
   val stroke = new BasicStroke(1, BasicStroke.CAP_BUTT, BasicStroke.JOIN_BEVEL, 1, Array(1.0f, 1.0f), 0)
 
   val MaxHeight = {
-    val l = new Label("adjkfhcvuiDHFKJHEDFIDC")
+    val l = label("W")
     l.preferredSize.height
   }
 }
@@ -143,8 +239,14 @@ object NamedQuantityComponent {
     val price = Quantity(10.0, UOM.USD / UOM.BBL).named("F")
     val strike = Quantity(8.0, UOM.USD / UOM.BBL).named("K")
     val volume = Quantity(100.0, UOM.BBL).named("Volume")
-    val priceTimesVolume = ((price - strike) * volume) * new Quantity(0.9).named("Discount")
-    val topQuantity = SimpleNamedQuantity("P&L", priceTimesVolume)
+    val discount = new Quantity(0.9).named("Discount")
+    val priceTimesVolume = ((price - strike) * volume) * discount
+
+    val func = FunctionNamedQuantity("Sum", List(price, strike), price + strike, true) * discount
+
+//    val topQuantity = SimpleNamedQuantity("P&L", priceTimesVolume)
+    val topQuantity = SimpleNamedQuantity("P&L", func)
+
     onEDT(showInFrame(new TopNamedQuantityComponent(topQuantity), pack0 = false))
   }
 }

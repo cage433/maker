@@ -9,7 +9,7 @@ import starling.marketdata.PriceFixingsHistoryDataKey
 import starling.utils.cache.CacheFactory
 import starling.calendar.{HolidayTablesFactory, BusinessCalendars, BusinessCalendar, BrentMonth}
 import starling.utils.ImplicitConversions._
-import starling.quantity.{Conversions, Percentage, Quantity, UOM}
+import starling.quantity._
 
 case class UnknownIndexException(msg: String, eaiQuoteID: Option[Int] = None) extends Exception(msg)
 
@@ -93,7 +93,10 @@ trait SingleIndex extends Index with KnownObservation {
   }
 
   def forwardPrice(env: InstrumentLevelEnvironment, observationDay: Day, ignoreShiftsIfPermitted: Boolean) = {
-    env.quantity(ForwardPriceKey(market, observedPeriod(observationDay), ignoreShiftsIfPermitted))
+    env.quantity(ForwardPriceKey(market, observedPeriod(observationDay), ignoreShiftsIfPermitted)) match {
+      case nq : NamedQuantity =>  SimpleNamedQuantity(observationDay.toString, nq)
+      case q => q
+    }
   }
 
   def fixing(slice: MarketDataSlice, observationDay : Day) = {

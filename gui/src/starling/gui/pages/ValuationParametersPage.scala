@@ -5,10 +5,10 @@ import starling.gui._
 import api.{TradeValuation, ReportParameters, FieldDetailsGroupLabel, TradeIDLabel}
 import namedquantitycomponents.TopNamedQuantityComponent
 import starling.pivot.view.swing.MigPanel
-import swing.Label
 import java.awt.{Color, Dimension}
 import starling.gui.GuiUtils._
 import starling.quantity.SimpleNamedQuantity
+import swing.{ScrollPane, Label}
 
 case class ValuationParametersPage(tradeID:TradeIDLabel, tradeRow:List[Any], fieldDetailsGroups:List[FieldDetailsGroupLabel],
                                    columns:List[SColumn], reportParameters:ReportParameters) extends Page {
@@ -126,11 +126,18 @@ class ValuationParametersPageComponent(context:PageContext, pageData:PageData) e
 
     val valuationParametersTablePanel = new MigPanel("insets 0", "[" + StandardLeftIndent + "][p]") {
       add(LabelWithSeparator("Valuation Parameters"), "spanx, growx, wrap")
-      add(new TopNamedQuantityComponent(pnl), "skip 1, pushx")
+
+      val explanationComponent = new TopNamedQuantityComponent(pnl)
+      val explanationScrollPane = new ScrollPane(explanationComponent) {
+        verticalScrollBar.unitIncrement = 10
+        horizontalScrollBar.unitIncrement = 10
+      }
+
+      add(explanationScrollPane, "skip 1, push, grow")
     }
 
     add(infoPanel, "pushx, wrap")
-    add(valuationParametersTablePanel, "pushx, growx")
+    add(valuationParametersTablePanel, "push, grow")
   }
   add(mainPanel, "push, grow")
 }

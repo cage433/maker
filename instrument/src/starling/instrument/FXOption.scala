@@ -53,7 +53,7 @@ case class FXOption(
   def explanation(env : Environment) : NamedQuantity = {
     val namedEnv = env.withNaming()
     val (undiscountedPrice, (vol, time, forwardPrice)) = priceWithDetails(namedEnv)
-    FunctionNamedQuantity("BlackScholes-" + callPut, List(forwardPrice, strike.named("K"), vol, time), undiscountedPrice) * volume.named("Volume") * discount(namedEnv).named("Discount")
+    FunctionNamedQuantity("BlackScholes-" + callPut, List(forwardPrice, strike.named("K"), vol, time), undiscountedPrice, true) * volume.named("Volume") * discount(namedEnv).named("Discount")
   }
 
   def assets(env : Environment):Assets = {

@@ -97,7 +97,7 @@ case class FuturesOption(
 
   def explanation(env : Environment) : NamedQuantity = {
     val (_, (undiscountedOptionPrice, underlyingPrice, vol, time, discount)) = priceWithDetails(env.withNaming())
-    FunctionNamedQuantity("FuturesOption-" + exerciseType + "-" + callPut, List(underlyingPrice, strike.named("K"), vol, time), undiscountedOptionPrice) * volume.named("Volume") * discount
+    FunctionNamedQuantity("FuturesOption-" + exerciseType + "-" + callPut, List(underlyingPrice, strike.named("K"), vol, time), undiscountedOptionPrice, true) * volume.named("Volume") * discount
   }
 
   def price(env: Environment) = priceWithDetails(env)._1

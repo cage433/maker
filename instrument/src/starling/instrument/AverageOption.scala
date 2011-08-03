@@ -57,7 +57,7 @@ abstract class SingleAverageOption(
       val namedEnv = env.withNaming()
       val (undiscPrc, (avePrice, vol)) = undiscountedPrice(namedEnv)
       val discount = namedEnv.discount(valuationCCY, settlementDate)
-      FunctionNamedQuantity("Curran-" + callPut, List(avePrice, vol, strike.named("K")), undiscPrc) * volume.named("Volume") * discount.named("Discount")
+      FunctionNamedQuantity("Curran-" + callPut, List(avePrice, vol, strike.named("K")), undiscPrc, true) * volume.named("Volume") * discount.named("Discount")
     }
   }
 

@@ -323,7 +323,7 @@ object NamedQuantity{
 case class BinOpNamedQuantity(op : String, lhs : NamedQuantity, rhs : NamedQuantity, result : Quantity) extends NamedQuantity(result){
   def format(level : Int) = "(" + lhs.format(level) + " " + op + " " + rhs.format(level) + ")"
 }
-case class FunctionNamedQuantity(functionName : String, parameters : List[NamedQuantity], result : Quantity)
+case class FunctionNamedQuantity(functionName : String, parameters : List[NamedQuantity], result : Quantity, custom : Boolean=false)
         extends NamedQuantity(result) {
   def format(level:Int) = functionName + parameters.map(_.format(level)).mkString("(", ", ", ")")
 }

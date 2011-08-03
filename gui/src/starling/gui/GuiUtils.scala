@@ -8,10 +8,10 @@ import javax.swing.plaf.FontUIResource
 import java.awt.{GraphicsEnvironment, Rectangle, Font, Color, Dimension}
 import starling.gui.utils.RichColour._
 import starling.pivot.view.swing.MigPanel
-import javax.swing.{KeyStroke, JComponent, GrayFilter, UIManager}
 import java.awt.event.{InputEvent, KeyEvent}
 import swing._
-import event.WindowClosing
+import swing.event.WindowClosing
+import javax.swing._
 
 object GuiUtils {
   def LabelWithSeparator(text:String) = new MigPanel("insets 0"){
@@ -110,6 +110,8 @@ object GuiUtils {
   val GuiFieldFilterNumberColour = Color.GREEN.darker
   val DropPanelOverColour = new Color(0,0,255,50)
   val DropPanelOverColourInvalid = new Color(255,0,0,50)
+  val ExplanationPanelBackgroundColour = Color.WHITE
+  val TableGridColour = new Color(208, 215, 229)
 
   val TableSelectedColour = new Color(195, 212, 232)
 
@@ -179,7 +181,7 @@ object GuiUtils {
     UIManager.put("MenuItem.background", backColour) // JGoodies looks uses this for the combo box popup.
     UIManager.put("control", backColour) // This is used for the scroll bar buttons.
     UIManager.put("Viewport.background", backColour)
-    UIManager.put("Table.gridColor", new Color(208, 215, 229))
+    UIManager.put("Table.gridColor", TableGridColour)
     val blueFocusBorderColor = new Color(166, 202, 240)
     UIManager.put("Table.focusSelectedCellHighlightBorder", LineBorder(blueFocusBorderColor))
     UIManager.put("List.focusSelectedCellHighlightBorder", LineBorder(blueFocusBorderColor))
@@ -253,6 +255,20 @@ object GuiUtils {
       }
       centerOnScreen()
       visible = true
+    }
+  }
+
+  def resizeTableColumnsToFit(table:JTable, font0:Font) {
+    val l = new Label("sdkfjh") {font = font0}
+    for (col <- (0 until table.getColumnCount)) {
+      var width = 0
+      for (row <- (0 until table.getRowCount)) {
+        l.text = table.getValueAt(row, col).toString
+        width = math.max(width, l.preferredSize.width)
+      }
+      width += 5
+      table.getColumnModel.getColumn(col).setPreferredWidth(width)
+      table.getColumnModel.getColumn(col).setMinWidth(width)
     }
   }
 }
