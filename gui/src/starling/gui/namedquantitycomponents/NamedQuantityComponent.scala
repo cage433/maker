@@ -90,12 +90,18 @@ class TopNamedQuantityComponent(quantity:SimpleNamedQuantity) extends MigPanel {
 object LShape {
   val colour = Color.GREEN.darker()
   val stroke = new BasicStroke(1, BasicStroke.CAP_BUTT, BasicStroke.JOIN_BEVEL, 1, Array(1.0f, 1.0f), 0)
+
+  val MaxHeight = {
+    val l = new Label("adjkfhcvuiDHFKJHEDFIDC")
+    l.preferredSize.height
+  }
 }
 
 import LShape._
 
 class LShape extends Label {
-  text = "   "
+  minimumSize = new Dimension(12,MaxHeight)
+  maximumSize = new Dimension(12,MaxHeight)
   override protected def paintComponent(g:Graphics2D) {
     g.setColor(colour)
     g.setStroke(stroke)

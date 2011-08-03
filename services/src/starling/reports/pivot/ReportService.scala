@@ -192,39 +192,8 @@ class ReportService(
 
   def singleTradeReport(trade: Trade, curveIdentifier: CurveIdentifier): TradeValuation = {
     val defaultContext = reportContextBuilder.contextFromCurveIdentifier(curveIdentifier)
-    val atomicRecorder = KeyAndValueRecordingCurveObjectEnvironment(defaultContext.environment.atomicEnv)
-
-    val recordingEnvironment = new MethodRecorder(Environment(atomicRecorder), classOf[NoConstructorArgsEnvironment])
-
-    val record = new scala.collection.mutable.HashMap[(String, List[Object], Object), Map[AtomicDatumKey, Any]]()
-    try {
-      atomicRecorder.clear
-      trade.mtm(recordingEnvironment.proxyWithIntercept {
-        (s, p, r) => {
-          record.put((s, p, r), atomicRecorder.keysAndValues)
-          atomicRecorder.clear
-        }
-      }, UOM.USD)
-    } catch {
-      case e =>
-    }
-    // TODO [13 Jan 2011] Nick -- str-401
-    // record has all the data needed to display the inputs
-
-    val atomicData = (for ((key, value) <- atomicRecorder.keysAndValues) yield List(key.curveKey.toString, key.point.toString, value.toString)).toList
-    val envData = (for ((method, args, result) <- recordingEnvironment.record) yield List(method, args.mkString("(", ", ", ")"), result.toString)).toList
-    val valuationParameters = STable(
-      "Valuation Parameters",
-      List(SColumn("Curve"), SColumn("Point"), new SColumn("Value", QuantityColumnType)),
-      envData ::: List(List("", "", "")) ::: atomicData
-      )
-
-    val explanation = trade.tradeable match {
-      case f:Future => f.explanation(defaultContext.environment)
-      case _ => SimpleNamedQuantity("Unknown", Quantity.NULL)
-    }
-
-    new TradeValuation(valuationParameters, explanation)
+    val explanation = trade.tradeable.explanation(defaultContext.environment)
+    TradeValuation(explanation)
   }
 
   val anotherCrazyCache = CacheFactory.getCache("PivotReport.tradeChanges", unique = true)

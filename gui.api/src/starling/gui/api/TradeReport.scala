@@ -67,7 +67,7 @@ object MarketDataIdentifier {
     new MarketDataIdentifier(selection, new SpecificMarketDataVersion(version))
 }
 
-class TradeValuation(val valuationParameters:STable, val explanation:NamedQuantity) extends Serializable
+case class TradeValuation(explanation:NamedQuantity)
 
 case class PricingGroup(name:String) {
   override def toString = name

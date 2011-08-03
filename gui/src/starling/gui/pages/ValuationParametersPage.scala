@@ -3,10 +3,12 @@ package starling.gui.pages
 import starling.utils.SColumn
 import starling.gui._
 import api.{TradeValuation, ReportParameters, FieldDetailsGroupLabel, TradeIDLabel}
+import namedquantitycomponents.TopNamedQuantityComponent
 import starling.pivot.view.swing.MigPanel
 import swing.Label
 import java.awt.{Color, Dimension}
 import starling.gui.GuiUtils._
+import starling.quantity.SimpleNamedQuantity
 
 case class ValuationParametersPage(tradeID:TradeIDLabel, tradeRow:List[Any], fieldDetailsGroups:List[FieldDetailsGroupLabel],
                                    columns:List[SColumn], reportParameters:ReportParameters) extends Page {
@@ -118,23 +120,13 @@ class ValuationParametersPageComponent(context:PageContext, pageData:PageData) e
       tradePanels.foreach(add(_, "ay top, gapright unrel"))
       add(ValuationParametersPageComponent.reportParametersPanel(data.reportParameters), "ay top")
     }
-    val valuationParametersTable = new TableTable(data.tradeValuation.valuationParameters)
-
 
     val explan = data.tradeValuation.explanation
-
-    println("")
-    println(explan.name)
-    println(explan.quantity)
-    println(explan.format(1))
-    println(explan.format(2))
-    println(explan.format(3))
-    println("")
-
+    val pnl = SimpleNamedQuantity("P&L", explan)
 
     val valuationParametersTablePanel = new MigPanel("insets 0", "[" + StandardLeftIndent + "][p]") {
       add(LabelWithSeparator("Valuation Parameters"), "spanx, growx, wrap")
-      add(valuationParametersTable, "skip 1, pushx")
+      add(new TopNamedQuantityComponent(pnl), "skip 1, pushx")
     }
 
     add(infoPanel, "pushx, wrap")
