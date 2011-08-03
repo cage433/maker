@@ -3,7 +3,7 @@ package starling.edm
 import com.trafigura.tradinghub.support.GUID
 import starling.market.SingleIndex
 import starling.daterange.Day
-import com.trafigura.edm.physicaltradespecs._
+import com.trafigura.edm.physicaltradespecs.{PricingSpecification, FixedPricingSpecification, MonthAveragePricingSpecification, PartialAveragePricingSpecification,OptionalPricingSpecification,WeightedPricingSpecification,UnknownPricingSpecification => UNKPricingSpecification}
 import com.trafigura.tradecapture.internal.refinedmetal.{Metal, Market}
 import starling.instrument._
 import starling.edm.EDMConversions._
@@ -17,19 +17,19 @@ import starling.quantity.Quantity
  * To change this template use File | Settings | File Templates.
  */
 
-case class EDMPricingSpecConverter(metal : Metal, exchanges : Map[GUID, Market]) {
-  def indexFromMarket(exchangeGUID : GUID) : SingleIndex = {
-    if (!exchanges.contains(exchangeGUID)){
+case class EDMPricingSpecConverter(metal : Metal, exchanges : Map[String, Market]) {
+  def indexFromMarket(exchangeID : String) : SingleIndex = {
+    if (!exchanges.contains(exchangeID)){
       exchanges.keySet.foreach(println)
-      println(exchangeGUID)
+      println(exchangeID)
     }
 
-    RefinedTacticalRefDataConversions.guessAtIndex(exchanges(exchangeGUID), metal)
+    RefinedTacticalRefDataConversions.guessAtIndex(exchanges(exchangeID), metal)
   }
 
-  def fromEdmPricingSpec(deliveryQuantity : Quantity, edmPricingSpec : EDMPricingSpec) : PricingSpec = {
+  def fromEdmPricingSpec(deliveryQuantity : Quantity, edmPricingSpec : PricingSpecification) : PricingSpec = {
     edmPricingSpec match {
-      case spec : EDMMonthAveragePricingSpec => {
+      case spec : MonthAveragePricingSpecification => {
         MonthAveragePricingSpec(
           deliveryQuantity,
           indexFromMarket(spec.market),
@@ -37,7 +37,7 @@ case class EDMPricingSpecConverter(metal : Metal, exchanges : Map[GUID, Market])
           spec.premium
         )
       }
-      case spec : EDMPartAvePrcSpec => {
+      case spec : PartialAveragePricingSpecification => {
         val dayQuantities = spec.dayQtyMap.map{
           case dayQty => Day.fromJodaDate(dayQty.date) -> fromTitanQuantity(dayQty.quantity)
         }.toMap
@@ -52,7 +52,7 @@ case class EDMPricingSpecConverter(metal : Metal, exchanges : Map[GUID, Market])
         )
 
       }
-      case spec : EDMOptPricingSpec => {
+      case spec : OptionalPricingSpecification => {
         OptionalPricingSpec(
           deliveryQuantity,
           spec.choices.map(fromEdmPricingSpec(deliveryQuantity, _)),
@@ -63,7 +63,7 @@ case class EDMPricingSpecConverter(metal : Metal, exchanges : Map[GUID, Market])
             Some(fromEdmPricingSpec(deliveryQuantity, spec.chosenSpec))
         )
       }
-      case spec : EDMWtdPricingSpec => {
+      case spec : WeightedPricingSpecification => {
         WeightedPricingSpec(
           deliveryQuantity,
           spec.wtdSpecs.map{
@@ -72,7 +72,7 @@ case class EDMPricingSpecConverter(metal : Metal, exchanges : Map[GUID, Market])
           }
         )
       }
-      case spec : EDMUnkPricingSpec => {
+      case spec : UNKPricingSpecification => {
         val qpMonth = Day.fromJodaDate(spec.qpMonth).containingMonth
         val index: SingleIndex = indexFromMarket(spec.market)
         val declarationBy: Day = if (spec.declarationBy == null) qpMonth.lastDay.thisOrPreviousBusinessDay(index.businessCalendar) else Day.fromJodaDate(spec.declarationBy)
@@ -88,7 +88,7 @@ case class EDMPricingSpecConverter(metal : Metal, exchanges : Map[GUID, Market])
            spec.premium
         )
       }
-      case spec : EDMFixedPricingSpec => {
+      case spec : FixedPricingSpecification => {
         FixedPricingSpec(
           deliveryQuantity,
           spec.comps.map{
