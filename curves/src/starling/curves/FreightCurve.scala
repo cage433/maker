@@ -87,25 +87,24 @@ object FreightCurve {
    * as CURMOM, CAL1 etc. This method turns then into date range
    */
   def freightPriceData(observationDay: Day, marketDataReader: MarketDataReader) = {
-    freightMarketsWhichHavePrices.map { market =>
-      val freightKey = PriceFixingsHistoryDataKey(market)
-      val freightPrices = marketDataReader.read(
-        TimedMarketDataKey(observationDay.atTimeOfDay(ObservationTimeOfDay.LondonClose), freightKey)
-      ).asInstanceOf[PriceFixingsHistoryData]
-      PriceDataKey(market) -> FreightCurve.tenorsToPriceData(market, observationDay, freightPrices)
+    freightMarketsWhichHavePrices.flatMap { market =>
+      try {
+        val freightKey = PriceFixingsHistoryDataKey(market)
+        val freightPrices = marketDataReader.read(
+          TimedMarketDataKey(observationDay.atTimeOfDay(ObservationTimeOfDay.LondonClose), freightKey)
+        ).asInstanceOf[PriceFixingsHistoryData]
+        Some( PriceDataKey(market) -> FreightCurve.tenorsToPriceData(market, observationDay, freightPrices) )
+      } catch {
+        case e:MissingMarketDataException => None
+      }
     }
   }
 
   def tenorsToPriceData(market:PublishedIndex, observationDay:Day, priceFixingTenors:PriceFixingsHistoryData) = {
-    val nextFloatingDay = observationDay.nextBusinessDay(market.businessCalendar)
-    val p = priceFixingTenors.fixings.map { case ( (_, StoredFixingPeriod(Right(tenor))), MarketValue(Left(price)) ) => {
-      val dateRange:DateRange = tenor.tenorType match {
-        case Month => nextFloatingDay.containingMonth + tenor.value
-        case Quarter => nextFloatingDay.containingQuarter + tenor.value
-        case Year => nextFloatingDay.containingYear + tenor.value
-      }
-      dateRange -> price.pq
-    }}
+    val nextFloatingDay: Day = observationDay.nextBusinessDay(market.businessCalendar)
+    val p = priceFixingTenors.fixings.map {
+      case ( (_, storedFixingPeriod), MarketValue.Quantity(price) ) => storedFixingPeriod.toDateRange(nextFloatingDay) → price.pq
+    }
     PriceData(p.toMap)
   }
 

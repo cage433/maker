@@ -458,7 +458,13 @@
           <root url="jar://$MODULE_DIR$/lib/resteasy-jaxrs-1.2.GA.jar!/" />
         </CLASSES>
         <JAVADOC />
-        <SOURCES />
+        <SOURCES>
+          <root url="jar://$MODULE_DIR$/lib/sources/resteasy-jaxrs-1.2.GA-src.zip!/resteasy-jaxrs-1.2.GA-src/jaxrs-api/src/main/java" />
+          <root url="jar://$MODULE_DIR$/lib/sources/resteasy-jaxrs-1.2.GA-src.zip!/resteasy-jaxrs-1.2.GA-src/async-http-tomcat/asynch-http-tomcat-jar/src/main/java" />
+          <root url="jar://$MODULE_DIR$/lib/sources/resteasy-jaxrs-1.2.GA-src.zip!/resteasy-jaxrs-1.2.GA-src/async-http-servlet-3.0/async-http-servlet-3.0/src/main/java" />
+          <root url="jar://$MODULE_DIR$/lib/sources/resteasy-jaxrs-1.2.GA-src.zip!/resteasy-jaxrs-1.2.GA-src/resteasy-jaxrs-war/src/main/java" />
+          <root url="jar://$MODULE_DIR$/lib/sources/resteasy-jaxrs-1.2.GA-src.zip!/resteasy-jaxrs-1.2.GA-src/resteasy-jaxrs/src/main/java" />
+        </SOURCES>
       </library>
     </orderEntry>
     <orderEntry type="module-library" exported="">

@@ -389,6 +389,9 @@ class ValuationService(
 
   lazy val futuresExchangeByGUID = refData.futuresExchangeByGUID
   lazy val edmMetalByGUID = refData.edmMetalByGUID
+  lazy val uomById = refData.uomById
+  lazy val uomIdToName : Map[Int, String] = uomById.values.map(e => e.oid -> e.name).toMap
+  
   val eventHandler = new EventHandler
 
   rabbitEventServices.addClient(eventHandler)
@@ -510,18 +513,11 @@ class ValuationService(
     val sw = new Stopwatch()
 
     val inventoryService = logisticsServices.inventoryService.service
-    val assignmentService = logisticsServices.assignmentService.service
-
-    val allAssignments = assignmentService.getAllAssignments()
-    
     val inventory = inventoryService.getAllInventoryLeaves()
 
-    val quotaMap = titanTradeCache.getAllTrades().flatMap(_.quotas).map(q => NeptuneId(q.detail.identifier).identifier -> q).toMap
-    val assignmentIdToQuotaMap : Map[Int, EDMQuota] = allAssignments.map(a => {
-      a.oid.contents -> quotaMap(a.quotaName)
-    }).toMap
+    val quotaNameToQuotaMap = titanTradeCache.getAllTrades().flatMap(_.quotas).map(q => NeptuneId(q.detail.identifier).identifier -> q).toMap
 
-    val assignmentValuer = PhysicalMetalAssignmentForward.value(futuresExchangeByGUID, edmMetalByGUID, assignmentIdToQuotaMap, env, snapshotIDString) _
+    val assignmentValuer = PhysicalMetalAssignmentForward.value(futuresExchangeByGUID, edmMetalByGUID, quotaNameToQuotaMap, uomIdToName, env, snapshotIDString) _
 
     val valuations = inventory.map(i => i.oid.contents.toString -> assignmentValuer(i))
     
@@ -548,13 +544,9 @@ class ValuationService(
 
     val assignmentService = logisticsServices.assignmentService.service
 
-    val allAssignments = assignmentService.getAllAssignments()
-    val quotaMap = titanTradeCache.getAllTrades().flatMap(_.quotas).map(q => NeptuneId(q.detail.identifier).identifier -> q).toMap
-    val assignmentIdToQuotaMap : Map[Int, EDMQuota] = allAssignments.map(a => {
-      a.oid.contents -> quotaMap(a.quotaName)
-    }).toMap
+    val quotaNameToQuotaMap = titanTradeCache.getAllTrades().flatMap(_.quotas).map(q => NeptuneId(q.detail.identifier).identifier -> q).toMap
 
-    val assignmentValuer = PhysicalMetalAssignmentForward.value(futuresExchangeByGUID, edmMetalByGUID, assignmentIdToQuotaMap, env, snapshotIDString) _
+    val assignmentValuer = PhysicalMetalAssignmentForward.value(futuresExchangeByGUID, edmMetalByGUID, quotaNameToQuotaMap, uomIdToName, env, snapshotIDString) _
 
     val valuations = inventoryIds.map(i => i -> assignmentValuer(titanInventoryCache.getInventory(i)))
 
@@ -587,10 +579,12 @@ class ValuationService(
     snapshotIDString
   }
 
-
+  // accessors for ref-data mappings
   def getTrades(tradeIds : List[String]) : List[EDMPhysicalTrade] = tradeIds.map(titanTradeCache.getTrade)
   def getFuturesExchanges = futuresExchangeByGUID.values
-  def getFuturesMarkets = edmMetalByGUID.values
+  def getMetals = edmMetalByGUID.values
+  def getUoms = uomById.values
+    
 
   /**
    * handler for Titan rabbit events
@@ -775,7 +769,7 @@ object ValuationService extends App {
 
   val valuedTradeIds = valuations.tradeResults.collect{ case (id, Right(v)) => id }.toList
   val valuedTrades = vs.getTrades(valuedTradeIds)
-  val markets = vs.getFuturesMarkets.toList
+  val markets = vs.getMetals.toList
   val exchanges = vs.getFuturesExchanges.toList
 
   /**

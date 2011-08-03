@@ -27,6 +27,7 @@ case class Quarter(year : Int, number : Int) extends DateRange {
     val ordinal : Int = 4 * year + n + number - 1
     Quarter(ordinal / 4, ordinal % 4 + 1)
   }
+  def -(n: Int) = this + (-n)
   def -(that : Quarter) = 4 * (year - that.year) + number - that.number
 
   def toListOfMonths = (1 to 3).toList.map{ i => Month(year, (3 * (number - 1) + i))}

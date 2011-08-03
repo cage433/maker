@@ -18,7 +18,7 @@ class TrinityUploader(fclGenerator: FCLGenerator, xrtGenerator: XRTGenerator, tr
     fclGenerator.generate(label).map { case (trinityKey, commodityRates) => {
       println("Uploading " + trinityKey)
       commodityRates.foreach(println)
-      trinityService.commodityRates.addRates(trinityKey.exchange, trinityKey.commodity, trinityKey.currency, "Full Curve", commodityRates.toList)
+      trinityService.commodityRates.putRates(trinityKey.exchange, trinityKey.commodity, trinityKey.currency, "Full Curve", commodityRates.toList)
     } }
   }
   def uploadLibor(observationDay: Day) = upload(xrtGenerator.generate(observationDay), "libor%s.xrt" % observationDay)

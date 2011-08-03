@@ -9,7 +9,6 @@ import starling.services.StarlingInit
 import com.trafigura.edm.physicaltradespecs.EDMQuota
 import com.trafigura.edm.trades.{PhysicalTrade => EDMPhysicalTrade}
 import scala.util.control.Exception.catching
-import starling.services.rpc.valuation.DefaultTitanTradeService
 import starling.services.rpc.refdata.FileMockedTitanServices
 import starling.titan.LogisticsServices._
 import starling.titan._

@@ -4,7 +4,7 @@ import starling.quantity.UOMSymbol._
 import starling.utils.ImplicitConversions._
 import starling.quantity.{UOMSymbol, Percentage, UOM, Quantity}
 import com.trafigura.edm.shared.types.{Currency => TitanCurrency, Date => TitanDate, DateRange => TitanDateRange,
-                                       Percentage => TitanPercentage, Quantity => TitanQuantity,
+                                       Percentage => TitanPercentage, Quantity => TitanQuantity, EQuantity,
                                        CompoundUOM, UnitComponent, FundamentalUOM}
 
 import com.trafigura.services._
@@ -90,6 +90,25 @@ object EDMConversions {
         }
       }
     }.toMap)
+
+    Quantity(amount, uom)
+  }
+
+  implicit def fromTitanQuantity(q : EQuantity, uomIdToSymbolName : Map[Int, String]) : Quantity = {
+    val amount = q.amount match {
+      case Some(amt) => amt
+      case None => throw new Exception("Invalid quantity - no amount")
+    }  // No idea why this is optional in EDM
+    
+    val uom = UOM.fromSymbolMap(q.uomId match {
+      case Some(id) => {
+        edmToStarlingUomSymbol.get(uomIdToSymbolName(id)) match {
+          case Some(uomSymbol) => List(uomSymbol -> 1).toMap
+          case None => throw new InvalidUomException("Id = " + id)
+        }
+      }
+      case _ => throw new InvalidUomException("Missing UOM id")
+    })
 
     Quantity(amount, uom)
   }

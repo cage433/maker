@@ -8,11 +8,10 @@ import com.trafigura.common.control.PipedControl._
 import com.rabbitmq.client.AMQP.BasicProperties
 import com.trafigura.services.rabbit.Publisher
 import org.codehaus.jettison.json.JSONArray
-import java.util.concurrent.atomic.AtomicBoolean
 import com.trafigura.services.log.Logger
 import com.trafigura.events._
 import starling.gui.api.MarketDataSnapshot
-import starling.utils.{Broadcaster, Log, Stoppable}
+import starling.utils.{TypedBroadcaster, Log, Stoppable}
 import com.trafigura.shared.events._
 
 
@@ -30,21 +29,14 @@ case class TitanRabbitIdBroadcaster(
     source : String = Event.StarlingSource,
     subject : String = Event.StarlingMarketDataSnapshotIDSubject,
     verb : EventVerbEnum = NewEventVerb,
-    payloadType : String = Event.StarlingSnapshotIdPayload) extends Broadcaster with Logger {
+    payloadType : String = Event.StarlingSnapshotIdPayload) extends TypedBroadcaster[MarketDataSnapshot] with Logger {
 
-  def broadcast(event : scala.swing.event.Event) = {
-    try {
-      event match {
-        case mds : MarketDataSnapshot => {
-          val events = createUpdatedIDEvents(mds.snapshotIDs, source, subject, verb, payloadType)
-          publisher.publish(events)
-        }
-        case _ => // nothing to do
-      }
-    }
-    catch { // catch and log all exceptions since we don't want to cause the event broadcaster to fail more generally
-      case th : Throwable => Log.error("Caught exception in Titan Rabbit event broadcaster %s".format(th.getMessage))
-    }
+  def typedBroadcast(mds: MarketDataSnapshot) = try {
+    val events = createUpdatedIDEvents(mds.snapshotIDs, source, subject, verb, payloadType)
+    publisher.publish(events)
+  }
+  catch { // catch and log all exceptions since we don't want to cause the event broadcaster to fail more generally
+    case th : Throwable => Log.error("Caught exception in Titan Rabbit event broadcaster %s".format(th.getMessage))
   }
 
   private def createUpdatedIDEvents(ids : List[String], source : String, subject : String, verb : EventVerbEnum, payloadType : String) : JSONArray = {
@@ -124,24 +116,22 @@ case class DefaultTitanRabbitEventServices(props : Props) extends TitanRabbitEve
 
   val clients = new scala.collection.mutable.ArrayBuffer[DemultiplexerClient]()
 
-  val started = new AtomicBoolean(false)
-
   def addClient(client:DemultiplexerClient) {
     clients.append(client)
-    if (started.get) {
+    if (isRunning) {
       eventDemux.addClient(client)
     }
   }
 
-  def start {
-    started.set(true)
+  override def start {
+    super.start
     rabbitListener.connect()
     rabbitEventPublisher.connect()
     clients.foreach(client => eventDemux.addClient(client))
   }
 
-  def stop {
-    started.set(false)
+  override def stop {
+    super.start
     eventDemux.shutdown
     rabbitListener.disconnect()
     rabbitEventPublisher.disconnect()
@@ -157,8 +147,6 @@ case class MockTitanRabbitEventServices() extends TitanRabbitEventServices {
   val eventDemux : IDemultiplexEvents = mockDemux
   val rabbitEventPublisher = new MockRabbitPublisher(mockDemux)
   def addClient(client:DemultiplexerClient)  { eventDemux.addClient(client) }
-  def start {}
-  def stop {}
 }
 
 class MockRabbitPublisher(val eventDemux : MockEventDemux) extends Publisher {

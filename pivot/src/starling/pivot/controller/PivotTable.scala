@@ -42,11 +42,11 @@ case class PivotTable(rowFields:List[Field], rowFieldHeadingCount:Array[Int], ro
     converter.convert(toFlatRows(Totals.Null, extraFormatInfo, true))
 
   def cell(measure: AnyRef, filters: (Field, AnyRef)*): Any = {
-    /*def filter(name: String, value: AnyRef, index: Int)(input: Map[(List[ChildKey], List[ChildKey]), MeasureCell]) =
+    def filter(name: String, value: AnyRef, index: Int)(input: Map[(List[ChildKey], List[ChildKey]), MeasureCell]) =
       input.filter { case ((rows, cols_), tableCell) => {
-        val axisValue = rows(index)
-        val field = axisValue.field
-        val tc = axisValue.value.value match {
+        val childKey = rows(index)
+        val field = childKey.field
+        val tc = childKey.value match {
           case UndefinedValue => TableCell.Undefined
           case v => formatInfo.fieldToFormatter(field).format(v, PivotFormatter.DefaultExtraFormatInfo)
         }
@@ -57,8 +57,7 @@ case class PivotTable(rowFields:List[Field], rowFieldHeadingCount:Array[Int], ro
 
     val matches = aggregatedMainBucket.applyAll(filterFns : _*)
 
-    matches.iterator.next._2*/
-    throw new Exception("rewite this method")
+    matches.iterator.next._2.value.getOrElse(throw new Exception("No matches for " + filters))
   }
 
   def toFlatRows(totals: Totals, extraFormatInfo:ExtraFormatInfo = PivotFormatter.DefaultExtraFormatInfo, trimBlank: Boolean = false):
