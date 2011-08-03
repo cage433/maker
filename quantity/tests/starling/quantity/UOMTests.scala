@@ -42,13 +42,6 @@ class UOMTests extends TestNGSuite with ShouldMatchers {
 
   @Test
   def testFromString {
-    assertEquals(UOM.getSymbol("RMB"), UOMSymbol.cny)
-    assertEquals(UOM.getSymbol("CNY"), UOMSymbol.cny)
-    assertEquals(UOM.getSymbol("GRAM"), UOMSymbol.GRAM_SYMBOL)
-    assertEquals(UOM.getSymbol("g"), UOMSymbol.GRAM_SYMBOL)
-    assertEquals(UOM.getSymbol("G"), UOMSymbol.GRAM_SYMBOL)
-    assertEquals(UOM.getSymbol("gRaM"), UOMSymbol.GRAM_SYMBOL)
-
     assertEquals(UOM.fromString("RmB/Gram"), UOM.CNY/UOM.G)
     assertEquals(UOM.fromString("G/USD"), UOM.G/UOM.USD)
     assertEquals(UOM.fromString("LB/G"), UOM.LB/UOM.G)

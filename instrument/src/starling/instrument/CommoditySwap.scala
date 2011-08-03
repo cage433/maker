@@ -93,7 +93,7 @@ case class SinglePeriodSwap(
   extends UTP 
 {
   assert(pricingRule.isValid(index.calendars), "Invalid pricing rule for " + index)
-  assert(strike.denominatorUOM == volume.uom, "Price and volume different: " + (strike, volume))
+  require(index.convert(volume, strike.denominatorUOM).isDefined, "Couldn't convert volume into strike uom: " + (volume, strike) + ", " + index)
 
   def valuationCCY: UOM = strike.numeratorUOM
 

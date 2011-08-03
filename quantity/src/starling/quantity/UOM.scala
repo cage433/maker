@@ -62,7 +62,7 @@ object UOM {
   val C_MT = C_TONNE_SYMBOL.asUOM
   val K_MT = KILO_TONNE_SYMBOL.asUOM
   val BBL = BARREL_SYMBOL.asUOM
-  val K_BBL = KILO_BARREL_SYMBOL.asUOM
+  val K_BBL = BBL * 1000
   val OZ = OUNCE_SYMBOL.asUOM
   val LB = POUND_SYMBOL.asUOM
   val G = GRAM_SYMBOL.asUOM
@@ -119,16 +119,14 @@ object UOM {
   		UOM(numerator, denominator).reduce
   }
 
-  def getSymbolOption(uomString: CaseInsensitive): Option[UOMSymbol] = {
-    require(!uomString.isEmpty, "Empty UOM")
-    symbolMap.get(uomString)
-  }
-
-  def getSymbol(uomString: CaseInsensitive): UOMSymbol = {
-    getSymbolOption(uomString) match {
-      case None => throw new IllegalStateException("Don't recognise symbol named '" + uomString + "'")
-      case Some(sym) => sym
+  private def getSymbolOption(text: CaseInsensitive): Option[UOM] = {
+    require(!text.isEmpty, "Empty UOM")
+    val (scale, uomString) = if (text.startsWith("K ")) {
+      (1000, text.substring(2).toString)
+    } else {
+      (1, text.toString)
     }
+    symbolMap.get(CaseInsensitive(uomString)).map(_.asUOM * scale)
   }
 
   private var uomCache = CacheFactory.getCache("UOM.fromString", unique = true)
@@ -136,21 +134,13 @@ object UOM {
 
   def fromStringOption(text: String): Option[UOM] = {
     uomCache.memoize((text), (tuple: (String)) => {
-      val (scale, uomString) = if (text.startsWith("K ")) {
-        (1000, text.substring(2))
-      } else {
-        (1, text)
-      }
-
-      val unScaledUOM = uomString match {
+      text match {
           // check the length so that S/T doesn't fall in here. I don't know any FX that is 3 chars or less
-        case FXRegex(num, _, dem) if uomString.length > 3 => (getSymbolOption(num.trim), getSymbolOption(dem.trim)) partialMatch {
-          case (Some(n), Some(d)) => n.asUOM / d.asUOM
+        case FXRegex(num, _, dem) if text.length > 3 => (getSymbolOption(num.trim), getSymbolOption(dem.trim)) partialMatch {
+          case (Some(n), Some(d)) => n / d
         }
-        case _ => getSymbolOption(uomString.trim).map(_.asUOM)
+        case _ => getSymbolOption(text.trim)
       }
-
-      unScaledUOM.map(_ * scale)
     })
   }
 
