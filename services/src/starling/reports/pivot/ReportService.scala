@@ -20,10 +20,10 @@ import starling.utils.cache.CacheFactory
 import starling.tradestore._
 import starling.trade.{Trade}
 import starling.rmi.PivotData
-import starling.quantity.{Percentage, UOM, Quantity}
 import collection.mutable.ListBuffer
 import starling.market._
 import starling.marketdata._
+import starling.quantity.{SimpleNamedQuantity, Percentage, UOM, Quantity}
 
 case class CurveIdentifier(
         marketDataIdentifier:MarketDataIdentifier,
@@ -120,7 +120,6 @@ class PivotReportRunner(reportContextBuilder:ReportContextBuilder) {
 
         if (reportType == MtmPivotReport) {
           val mtmReportData = singleReportData.asInstanceOf[PivotReportData[Mtm]]
-          val mtmField = mtmReportData.fields.find(_.name == MtmPivotReport.pnlFieldName).get
           mtmReportData.defaultCombinedRows//.foreach { row => mtmField.field.value(row) }
         }
 
@@ -189,11 +188,10 @@ class ReportService(
 
   private val cache = CacheFactory.getCache("StarlingServerImpl", unique = true)
 
-  def clearCache = {cache.clear}
+  def clearCache() {cache.clear}
 
   def singleTradeReport(trade: Trade, curveIdentifier: CurveIdentifier): TradeValuation = {
     val defaultContext = reportContextBuilder.contextFromCurveIdentifier(curveIdentifier)
-    val utpPortfolio = trade.asUtpPortfolio
     val atomicRecorder = KeyAndValueRecordingCurveObjectEnvironment(defaultContext.environment.atomicEnv)
 
     val recordingEnvironment = new MethodRecorder(Environment(atomicRecorder), classOf[NoConstructorArgsEnvironment])
@@ -220,7 +218,13 @@ class ReportService(
       List(SColumn("Curve"), SColumn("Point"), new SColumn("Value", QuantityColumnType)),
       envData ::: List(List("", "", "")) ::: atomicData
       )
-    new TradeValuation(valuationParameters)
+
+    val explanation = trade.tradeable match {
+      case f:Future => f.explanation(defaultContext.environment)
+      case _ => SimpleNamedQuantity("Unknown", Quantity.NULL)
+    }
+
+    new TradeValuation(valuationParameters, explanation)
   }
 
   val anotherCrazyCache = CacheFactory.getCache("PivotReport.tradeChanges", unique = true)
@@ -303,11 +307,6 @@ class ReportService(
     })
   }
 
-  private def partitioningTradeColumns(tradeSet : TradeSet) : List[String] = {
-    val runningEAIReport: Boolean = tradeSet.tradeSystem == EAITradeSystem
-    if (runningEAIReport) List("strategyID") else Nil
-  }
-
   def recordedMarketDataReader(reportParameters: ReportParameters) = {
     cache.memoize( ("recordMarketData", reportParameters), {
       val recorded = reportPivotTableDataSource(reportParameters)._1.map {
@@ -331,8 +330,6 @@ class ReportService(
           timestamp,
           reportParameters.runReports)
         val reports = reportData.reports
-        val hasBeenSlid = reports.exists(_.slideDetails.stepNumbers.size > 0)
-        val numberOfSlides = reports.maximum(_.slideDetails.stepNumbers.size)
         val groupedReports = reports.groupBy(_.slideDetails.stepNumbers)
         val reportTableDataSources = groupedReports.keysIterator.map(stepNums => {
           (stepNums, new ReportPivotTableDataSource(tradesPivot, groupedReports(stepNums)))

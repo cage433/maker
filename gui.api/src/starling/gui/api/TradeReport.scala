@@ -5,13 +5,13 @@ import java.io.Serializable
 
 import starling.calendar.BusinessCalendar
 import starling.daterange._
-import starling.quantity.Quantity
 import starling.rmi.StarlingServer
 import starling.tradestore.TradePredicate
 import starling.utils.{StarlingEnum, ImplicitConversions, STable}
 import starling.varcalculator.NAhead
 
 import ImplicitConversions._
+import starling.quantity.{NamedQuantity, Quantity}
 
 
 class TradeReport
@@ -67,7 +67,7 @@ object MarketDataIdentifier {
     new MarketDataIdentifier(selection, new SpecificMarketDataVersion(version))
 }
 
-class TradeValuation(val valuationParameters:STable) extends Serializable
+class TradeValuation(val valuationParameters:STable, val explanation:NamedQuantity) extends Serializable
 
 case class PricingGroup(name:String) {
   override def toString = name

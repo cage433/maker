@@ -24,6 +24,7 @@ class MigPanel(layoutConstraints:String = "", columnConstraints:String = "", row
   protected def add(component: JComponent) { add(component, "") }
 
   protected def removeAll {peer.removeAll}
+  protected def remove(comp:Component) {peer.remove(comp.peer)}
 
   def this(layoutConstraints: String) = this(layoutConstraints, "", "")
   def this(layoutConstraints: String, columnConstraints: String) = this(layoutConstraints, columnConstraints, "")

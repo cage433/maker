@@ -11,6 +11,7 @@ import starling.pivot.view.swing.MigPanel
 import javax.swing.{KeyStroke, JComponent, GrayFilter, UIManager}
 import java.awt.event.{InputEvent, KeyEvent}
 import swing._
+import event.WindowClosing
 
 object GuiUtils {
   def LabelWithSeparator(text:String) = new MigPanel("insets 0"){
@@ -238,5 +239,20 @@ object GuiUtils {
     val screenArea = new Rectangle(minX,minY,maxX-minX,maxY-minY)
     // Work out if the top 200 by 200 pixels of the supplied rect is in the screen. When maximized, the position is -4 so add 4 to make it fit inside the screen.
     screenArea.contains(new Rectangle(rect.x + 4, rect.y + 4, 200, 200))
+  }
+
+  def showInFrame(comp:Component, pack0:Boolean=true) {
+    new Frame {
+      title = "Test frame"
+      reactions += {case WindowClosing(_) => System.exit(0)}
+      contents = comp
+      if (pack0) {
+        pack()
+      } else {
+        bounds = new Rectangle(100, 100, 500, 400)
+      }
+      centerOnScreen()
+      visible = true
+    }
   }
 }
