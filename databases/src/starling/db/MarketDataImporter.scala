@@ -4,6 +4,7 @@ import starling.daterange._
 import starling.utils.Log
 
 import starling.utils.ImplicitConversions._
+import starling.marketdata.MarketData
 
 
 class MarketDataImporter(marketDataStore: MarketDataStore) {
@@ -19,7 +20,7 @@ class MarketDataImporter(marketDataStore: MarketDataStore) {
       val existingData = externalData.keys.flatMap(getMarketData).toMap
 
       val saves = externalData.values.flatten.collect {
-        case entry if existingData.get(entry.timedKey) != Some(entry.data) => entry.toSave(existingData.get(entry.timedKey))
+        case entry if existingData.get(entry.timedKey).flatMap(_.data) != Some(entry.data) => entry.toSave(existingData.get(entry.timedKey))
       }.toList.somes.update(logCount("saves"))
 
       val deletes = {

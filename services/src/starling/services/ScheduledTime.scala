@@ -18,11 +18,11 @@ case class ScheduledTime(description: String, time: DateTime, period: Period, ca
 
 object ScheduledTime {
   def apply(description: String, startingTime: LocalTime, period: Period, cal: BusinessCalendar) =
-    new ScheduledTime(description, startingTimeAfterNow(startingTime, period, cal), period, cal)
+    new ScheduledTime("Every " + description, startingTimeAfterNow(startingTime, period, cal), period, cal)
 
-  def daily(cal: BusinessCalendar, time: LocalTime = 0 H 0) = ScheduledTime("Every day",       time,  Period.days(1),    cal)
-  def hourly(cal: BusinessCalendar)                         = ScheduledTime("Every hour",      0 H 0, Period.hours(1),   cal)
-  def everyFiveMinutes(cal: BusinessCalendar)               = ScheduledTime("Every 5 minutes", 0 H 0, Period.minutes(5), cal)
+  def daily(cal: BusinessCalendar, time: LocalTime = 0 H 0)    = ScheduledTime("day",       time,       Period.days(1),    cal)
+  def hourly(cal: BusinessCalendar)                            = ScheduledTime("hour",      0 H 0,      Period.hours(1),   cal)
+  def everyFiveMinutes(cal: BusinessCalendar, offset: Int = 0) = ScheduledTime("5 minutes", 0 H offset, Period.minutes(5), cal)
 
   private def startingTimeAfterNow(startingTime: LocalTime, period: Period, cal: BusinessCalendar): DateTime = {
     val scheduledTime = Day.today.atTimeOfDay(startingTime, cal.location)

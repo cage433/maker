@@ -170,7 +170,7 @@ class StarlingInit( val props: Props,
 
   val mailSender = new JavaMailSenderImpl().update(_.setHost(props.SmtpServerHost()), _.setPort(props.SmtpServerPort()))
 
-  val trinityService = TrinityService(ResteasyServiceApi("http://ttraflon2k196:9100"))
+  val trinityService = TrinityService(ResteasyServiceApi(props.TrinityServiceUrl()))
 
   val titanRabbitEventServices = new DefaultTitanRabbitEventServices(props)
 
