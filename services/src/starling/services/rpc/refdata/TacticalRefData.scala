@@ -135,8 +135,8 @@ case class FileMockedTitanServicesDataFileGenerator(titanEdmTradeService : Titan
   val (worked, failed) = valuations.tradeResults.values.partition(_ isRight)
   failed.foreach(println)
   val tradeIds = valuations.tradeResults.collect{ case (id, Right(_)) => id }.toList
-  val trades = valuationService.getTrades(tradeIds)
-  //val trades = titanEdmTradeService.titanGetEdmTradesService.getAll().results.map(_.trade).filter(_ != null)
+  //val trades = valuationService.getTrades(tradeIds)
+  val trades = titanEdmTradeService.titanGetEdmTradesService.getAll().results.map(_.trade).filter(_ != null)
 
   println("read %d trades ".format(trades.size))
 
