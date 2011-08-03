@@ -206,22 +206,27 @@ class AsianOptionTests extends JonTestEnv {
     val explanation = asianOption.explanation(env)
     assertEquals(explanation.name, "((Curran-Call(Average(IPE Gas Oil 1st month (Settlement).JANUARY 2010), Vol, K) * Volume) * Discount)")
 
-    val ex = "((Curran-Call(Average(IPE Gas Oil.JANUARY 2010, IPE Gas Oil.JANUARY 2010, IPE Gas Oil.JANUARY 2010, " +
-            "IPE Gas Oil.JANUARY 2010, IPE Gas Oil.JANUARY 2010, IPE Gas Oil.JANUARY 2010, IPE Gas Oil.JANUARY 2010," +
-            " IPE Gas Oil.FEBRUARY 2010, IPE Gas Oil.FEBRUARY 2010, IPE Gas Oil.FEBRUARY 2010, IPE Gas Oil.FEBRUARY 2010, " +
-            "IPE Gas Oil.FEBRUARY 2010, IPE Gas Oil.FEBRUARY 2010, IPE Gas Oil.FEBRUARY 2010, IPE Gas Oil.FEBRUARY 2010, " +
-            "IPE Gas Oil.FEBRUARY 2010, IPE Gas Oil.FEBRUARY 2010, IPE Gas Oil.FEBRUARY 2010, IPE Gas Oil.FEBRUARY 2010, " +
-            "IPE Gas Oil.FEBRUARY 2010, IPE Gas Oil.FEBRUARY 2010), 20.00%, 100.00 USD/MT) * 123.00 MT) * USD.29Jan2010)"
+    val ex0 = "((Curran-Call(Average(01Jan2010, 04Jan2010, 05Jan2010, 06Jan2010, 07Jan2010, 08Jan2010, 11Jan2010, " +
+            "12Jan2010, 13Jan2010, 14Jan2010, 15Jan2010, 18Jan2010, 19Jan2010, 20Jan2010, 21Jan2010, 22Jan2010, " +
+            "25Jan2010, 26Jan2010, 27Jan2010, 28Jan2010, 29Jan2010), 20.00%, 100.00 USD/MT) * 123.00 MT) * USD.29Jan2010)"
 
-    assertEquals(explanation.format(1), ex)
+    assertEquals(explanation.format(1), ex0)
+
+    val ex = "((Curran-Call(Average(IPE Gas Oil.JANUARY 2010, IPE Gas Oil.JANUARY 2010, IPE Gas Oil.JANUARY 2010, " +
+            "IPE Gas Oil.JANUARY 2010, IPE Gas Oil.JANUARY 2010, IPE Gas Oil.JANUARY 2010, IPE Gas Oil.JANUARY 2010, " +
+            "IPE Gas Oil.FEBRUARY 2010, IPE Gas Oil.FEBRUARY 2010, IPE Gas Oil.FEBRUARY 2010, IPE Gas Oil.FEBRUARY 2010, " +
+            "IPE Gas Oil.FEBRUARY 2010, IPE Gas Oil.FEBRUARY 2010, IPE Gas Oil.FEBRUARY 2010, IPE Gas Oil.FEBRUARY 2010, " +
+            "IPE Gas Oil.FEBRUARY 2010, IPE Gas Oil.FEBRUARY 2010, IPE Gas Oil.FEBRUARY 2010, IPE Gas Oil.FEBRUARY 2010, " +
+            "IPE Gas Oil.FEBRUARY 2010, IPE Gas Oil.FEBRUARY 2010), 0.20, 100.00 USD/MT) * 123.00 MT) * 0.95)"
 
     val ex1 = "((Curran-Call(Average(101.00 USD/MT, 101.00 USD/MT, 101.00 USD/MT, 101.00 USD/MT, 101.00 USD/MT," +
             " 101.00 USD/MT, 101.00 USD/MT, 101.00 USD/MT, 101.00 USD/MT, 101.00 USD/MT, 101.00 USD/MT, 101.00 USD/MT, " +
             "101.00 USD/MT, 101.00 USD/MT, 101.00 USD/MT, 101.00 USD/MT, 101.00 USD/MT, 101.00 USD/MT, 101.00 USD/MT, " +
             "101.00 USD/MT, 101.00 USD/MT), 0.20, 100.00 USD/MT) * 123.00 MT) * 0.95)"
 
-    assertEquals(explanation.format(2), ex1)
+    assertEquals(explanation.format(2), ex)
     assertEquals(explanation.format(3), ex1)
+    assertEquals(explanation.format(4), ex1)
   }
 
   @Test

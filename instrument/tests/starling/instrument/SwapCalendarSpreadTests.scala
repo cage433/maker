@@ -128,9 +128,12 @@ class SwapCalendarSpreadTests extends TestMarketSpec {
     val explanation = swap.explanation(env)
 
     assertEquals(explanation.name, "((((Average(Dated Brent.17Jan2011 - 20Jan2011) - Average(Dated Brent.FEBRUARY 2011)) - K) * Volume) * USD.07Mar2011)")
-    assertEquals(explanation.format(1), "((((Average(Dated Brent.17Jan2011, Dated Brent.18Jan2011, Dated Brent.19Jan2011, Dated Brent.20Jan2011) - Average(Dated Brent.01Feb2011, Dated Brent.02Feb2011, Dated Brent.03Feb2011, Dated Brent.04Feb2011, Dated Brent.07Feb2011, Dated Brent.08Feb2011, Dated Brent.09Feb2011, Dated Brent.10Feb2011, Dated Brent.11Feb2011, Dated Brent.14Feb2011, Dated Brent.15Feb2011, Dated Brent.16Feb2011, Dated Brent.17Feb2011, Dated Brent.18Feb2011, Dated Brent.21Feb2011, Dated Brent.22Feb2011, Dated Brent.23Feb2011, Dated Brent.24Feb2011, Dated Brent.25Feb2011, Dated Brent.28Feb2011)) - 0.90 USD/bbl) * 100.00 bbl) * 0.96)")
+    val ex = "((((Average(17Jan2011, 18Jan2011, 19Jan2011, 20Jan2011) - Average(01Feb2011, 02Feb2011, 03Feb2011, 04Feb2011, 07Feb2011, 08Feb2011, 09Feb2011, 10Feb2011, 11Feb2011, 14Feb2011, 15Feb2011, 16Feb2011, 17Feb2011, 18Feb2011, 21Feb2011, 22Feb2011, 23Feb2011, 24Feb2011, 25Feb2011, 28Feb2011)) - 0.90 USD/bbl) * 100.00 bbl) * 0.96)"
+    assertEquals(explanation.format(1), ex)
+    val ex1 = "((((Average(Dated Brent.17Jan2011, Dated Brent.18Jan2011, Dated Brent.19Jan2011, Dated Brent.20Jan2011) - Average(Dated Brent.01Feb2011, Dated Brent.02Feb2011, Dated Brent.03Feb2011, Dated Brent.04Feb2011, Dated Brent.07Feb2011, Dated Brent.08Feb2011, Dated Brent.09Feb2011, Dated Brent.10Feb2011, Dated Brent.11Feb2011, Dated Brent.14Feb2011, Dated Brent.15Feb2011, Dated Brent.16Feb2011, Dated Brent.17Feb2011, Dated Brent.18Feb2011, Dated Brent.21Feb2011, Dated Brent.22Feb2011, Dated Brent.23Feb2011, Dated Brent.24Feb2011, Dated Brent.25Feb2011, Dated Brent.28Feb2011)) - 0.90 USD/bbl) * 100.00 bbl) * 0.96)"
+    assertEquals(explanation.format(2), ex1)
     val lastExplanation = "((((Average(200.00 USD/bbl, 200.00 USD/bbl, 200.00 USD/bbl, 200.00 USD/bbl) - Average(200.00 USD/bbl, 200.00 USD/bbl, 200.00 USD/bbl, 200.00 USD/bbl, 200.00 USD/bbl, 200.00 USD/bbl, 200.00 USD/bbl, 200.00 USD/bbl, 200.00 USD/bbl, 200.00 USD/bbl, 200.00 USD/bbl, 200.00 USD/bbl, 200.00 USD/bbl, 200.00 USD/bbl, 200.00 USD/bbl, 200.00 USD/bbl, 200.00 USD/bbl, 200.00 USD/bbl, 200.00 USD/bbl, 200.00 USD/bbl)) - 0.90 USD/bbl) * 100.00 bbl) * 0.96)"
-    assertEquals(explanation.format(2), lastExplanation)
     assertEquals(explanation.format(3), lastExplanation)
+    assertEquals(explanation.format(4), lastExplanation)
   }
 }
