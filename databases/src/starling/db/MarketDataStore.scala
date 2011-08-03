@@ -1,7 +1,6 @@
 package starling.db
 
 import starling.utils.sql.QueryBuilder._
-import collection.immutable.TreeMap
 import starling.quantity.Percentage
 import starling.marketdata._
 import starling.utils.ImplicitConversions._
@@ -20,6 +19,7 @@ import java.util.concurrent.atomic.AtomicInteger
 import starling.curves.Environment
 import starling.pivot.{PivotEdits, PivotTableDataSource, Field => PField}
 import starling.utils._
+import collection.immutable.{Map, TreeMap}
 
 //import starling.props.Props.VarReportEmailFrom
 
@@ -206,16 +206,17 @@ object VersionedMarketData {
   val Save   = Extractor.when[VersionedMarketData](_.data.isDefined)
 }
 
-case class MarketDataEntry(observationPoint: ObservationPoint, key: MarketDataKey, data: MarketData) {
+case class MarketDataEntry(observationPoint: ObservationPoint, key: MarketDataKey, data: MarketData, tag: Option[String] = None) {
   val dataType = key.dataType
   def isEmpty = key.castRows(data).isEmpty
-  def toSave(existingData: Option[VersionedMarketData]) = if (isEmpty) None else Some(MarketDataUpdate(timedKey, Some(data), existingData))
-  def toUpdate(existingData: Option[VersionedMarketData]) = toSave(existingData).getOrElse(MarketDataUpdate(timedKey, None, existingData))
+  def toSave(existingData: Option[VersionedMarketData]) = if (isEmpty) None else Some(MarketDataUpdate(timedKey, Some(data), existingData, tag))
+  def toUpdate(existingData: Option[VersionedMarketData]) = toSave(existingData).getOrElse(MarketDataUpdate(timedKey, None, existingData, tag))
   def timedKey = TimedMarketDataKey(observationPoint, key)
   def dataIdFor(marketDataSet: MarketDataSet) = MarketDataID(timedKey, marketDataSet)
 }
 
-case class MarketDataUpdate(timedKey: TimedMarketDataKey, data: Option[MarketData], existingData: Option[VersionedMarketData]) {
+case class MarketDataUpdate(timedKey: TimedMarketDataKey, data: Option[MarketData], existingData: Option[VersionedMarketData],
+                            tag: Option[String] = None) {
   def observationPoint = timedKey.observationPoint
   def marketDataKey = timedKey.key
   def dataIdFor(marketDataSet: MarketDataSet) = MarketDataID(timedKey, marketDataSet)
@@ -902,6 +903,7 @@ class DBMarketDataStore(
   def importFor(observationDay: Day, marketDataSets: MarketDataSet*) = importLock.synchronized {
     Log.infoWithTime("saving market data: " + observationDay) {
       val updates: Map[MarketDataSet, scala.List[MarketDataUpdate]] = importer.getUpdates(observationDay, marketDataSets: _*)
+
       Log.debug("Number of updates: " + updates.mapValues(_.toList.size))
 
       saveActions(updates)
