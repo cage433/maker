@@ -24,15 +24,6 @@
     <orderEntry type="module-library" exported="">
       <library>
         <CLASSES>
-          <root url="jar://$MODULE_DIR$/../lib/titan-model-jars/persistence-support-2.3.jar!/" />
-        </CLASSES>
-        <JAVADOC />
-        <SOURCES />
-      </library>
-    </orderEntry>
-    <orderEntry type="module-library" exported="">
-      <library>
-        <CLASSES>
           <root url="jar://$MODULE_DIR$/../lib/titan-model-jars/scala-model-with-persistence.jar!/" />
         </CLASSES>
         <JAVADOC />
@@ -66,22 +57,20 @@
         <SOURCES />
       </library>
     </orderEntry>
-    <orderEntry type="module-library" exported="">
-      <library>
-        <CLASSES>
-          <root url="jar://$MODULE_DIR$/../lib/titan-model-jars/scala-hub-support-2.12.jar!/" />
-        </CLASSES>
-        <JAVADOC />
-        <SOURCES>
-          <root url="file://$MODULE_DIR$/../titan-scala-model-with-persistence/model-src/main/scala" />
-        </SOURCES>
-      </library>
-    </orderEntry>
     <orderEntry type="module" module-name="databases" exported="" />
     <orderEntry type="module-library">
       <library>
         <CLASSES>
           <root url="file://$MODULE_DIR$" />
+        </CLASSES>
+        <JAVADOC />
+        <SOURCES />
+      </library>
+    </orderEntry>
+    <orderEntry type="module-library" exported="">
+      <library>
+        <CLASSES>
+          <root url="jar://$MODULE_DIR$/../lib/titan-model-jars/scala-hub-support-2.14.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />

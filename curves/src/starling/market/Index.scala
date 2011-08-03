@@ -9,7 +9,8 @@ import starling.marketdata.PriceFixingsHistoryDataKey
 import starling.utils.cache.CacheFactory
 import starling.calendar.{HolidayTablesFactory, BusinessCalendars, BusinessCalendar, BrentMonth}
 import starling.utils.ImplicitConversions._
-import starling.quantity._
+import starling.quantity.{Conversions, Percentage, Quantity, UOM}
+import starling.utils.Pattern.Extractor
 
 case class UnknownIndexException(msg: String, eaiQuoteID: Option[Int] = None) extends Exception(msg)
 
@@ -293,15 +294,12 @@ object Index {
   lazy val provider = MarketProvider.provider
 
   def indexFromName(name: String): Index = provider.index(name).getOrElse(throw new Exception("No index: " + name))
-
-  def publishedIndexFromName(name: String): PublishedIndex = try {
-    indexFromName(name).asInstanceOf[PublishedIndex]
-  } catch {
-    case cce: ClassCastException => throw new Exception(name + " is not of type published index", cce)
-  }
-
+  def publishedIndexFromName(name: String): PublishedIndex = indexFromName(name).cast[PublishedIndex]
   def futuresFrontPeriodIndexFromName(name: String): FuturesFrontPeriodIndex = indexFromName(name).asInstanceOf[FuturesFrontPeriodIndex]
   def formulaIndexFromName(name: String): FormulaIndex = indexFromName(name).asInstanceOf[FormulaIndex]
+
+  val FromName = Extractor.from[String](provider.index)
+  val PublishedIndex = FromName andThen(_.safeCast[PublishedIndex])
 
   lazy val WTI10 = futuresFrontPeriodIndexFromName("NYMEX WTI 1st month")
   lazy val WTI20 = futuresFrontPeriodIndexFromName("NYMEX WTI 2nd month")
@@ -483,4 +481,3 @@ case class LmeThreeMonthBuyerIndex(futuresMarket : FuturesMarket) extends Future
 
   val eaiQuoteID = None
 }
-

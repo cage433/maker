@@ -54,8 +54,9 @@ case class RefinedMetalsLimMarketDataSource(limServer: LIMServer) extends Market
     } }
 
     source.marketDataEntriesFrom(prices).toList
+      .map(_.copy(tag = Some("%s (%s)" % (source.getClass.getSimpleName, source.description.mkString(", ")))))
       .require(containsDistinctTimedKeys, "source: %s produced duplicate MarketDataKeys: " % source)
-      .info(entries => "%s (%s): %s values" % (source.getClass.getSimpleName, source.description.mkString(", "), countData(entries)))
+      .debug(entries => "%s (%s): %s values" % (source.getClass.getSimpleName, source.description.mkString(", "), countData(entries)))
   }
 
   private def countData(entries: List[MarketDataEntry]) = entries.map(_.data.size.getOrElse(0)).sum

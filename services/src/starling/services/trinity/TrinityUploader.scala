@@ -12,11 +12,14 @@ import starling.utils.ClosureUtil._
 import starling.utils.ImplicitConversions._
 import com.trafigura.services.trinity.TrinityService
 
-
 class TrinityUploader(fclGenerator: FCLGenerator, xrtGenerator: XRTGenerator, trinityService: TrinityService, props: Props) {
-  def uploadCurve(label: CurveLabel)   = {
-    fclGenerator.generate(label).map { case (trinityKey, commodityRates) => {
-      println("Uploading " + trinityKey)
+  def uploadCurve(label: CurveLabel) = {
+    val toUpload = fclGenerator.generate(label)
+
+    if (toUpload.isEmpty) Log.info("No Trinity data to upload")
+
+    toUpload.map { case (trinityKey, commodityRates) => {
+      Log.info("Uploading " + trinityKey)
       commodityRates.foreach(println)
       trinityService.commodityRates.putRates(trinityKey.exchange, trinityKey.commodity, trinityKey.currency, "Full Curve", commodityRates.toList)
     } }

@@ -17,6 +17,7 @@ import starling.services.rpc.FileUtils
 import starling.titan.{TitanEdmTradeService, TitanServices}
 import com.trafigura.tradecapture.internal.refinedmetal.{Counterparty, Metal, Market, UOM}
 import com.trafigura.timer.Timer
+import com.trafigura.edm.shared.types.TitanId
 
 
 /**
@@ -37,7 +38,7 @@ case class DefaultTitanServices(props: Props) extends TitanServices {
   lazy val titanGetEdmTradesService: EdmGetTrades = new EdmGetTradesResourceProxy(ProxyFactory.create(classOf[EdmGetTradesResource], tradeServiceURL, clientExecutor))
 
   lazy val edmMetalByGUID: Map[GUID, Metal] = Map[GUID, Metal]() ++ allTacticalRefDataMetals.map(e => (e.guid, e))
-  lazy val futuresExchangeByGUID: Map[GUID, Market] = Map[GUID, Market]() ++ allTacticalRefDataExchanges.map(e => (e.guid, e))
+  lazy val futuresExchangeByID: Map[String, Market] = Map[String, Market]() ++ allTacticalRefDataExchanges.map(e => (e.code, e))
   lazy val counterpartiesByGUID: Map[GUID, Counterparty] = Map[GUID, Counterparty]() ++ allTacticalRefDataCounterparties().map(e => e.guid -> e)
   lazy val uomById : Map[Int, UOM] = Map[Int, UOM]() ++ allTacticalRefDataUoms().map(e => e.oid -> e)
 
@@ -73,10 +74,11 @@ case class FileMockedTitanServices() extends TitanServices {
       case Some(trade) => trade.asInstanceOf[EDMPhysicalTrade]
       case _ => throw new Exception("Trade does not exist in mock data %d".format(oid))
     }
+    def getQuota(id : TitanId) = throw new Exception("Not implemented yet") // todo... implement
   }
 
   lazy val edmMetalByGUID: Map[GUID, Metal] = loadedMetals.map(m => m.guid -> m).toMap
-  lazy val futuresExchangeByGUID: Map[GUID, Market] = loadedExchanges.map(e => e.guid -> e).toMap
+  lazy val futuresExchangeByID: Map[String, Market] = loadedExchanges.map(e => e.code -> e).toMap
   lazy val uomById: Map[Int, UOM] = loadedUoms.map(e => e.oid -> e).toMap
   lazy val counterpartiesByGUID: Map[GUID, Counterparty] = Map[GUID, Counterparty]()
 
@@ -133,8 +135,8 @@ case class FileMockedTitanServicesDataFileGenerator(titanEdmTradeService : Titan
   val (worked, failed) = valuations.tradeResults.values.partition(_ isRight)
   failed.foreach(println)
   val tradeIds = valuations.tradeResults.collect{ case (id, Right(_)) => id }.toList
-  val trades = valuationService.getTrades(tradeIds)
-  //val trades = titanEdmTradeService.titanGetEdmTradesService.getAll().results.map(_.trade).filter(_ != null)
+  //val trades = valuationService.getTrades(tradeIds)
+  val trades = titanEdmTradeService.titanGetEdmTradesService.getAll().results.map(_.trade).filter(_ != null)
 
   println("read %d trades ".format(trades.size))
 

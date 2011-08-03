@@ -189,7 +189,7 @@ class ValuationServiceTest extends StarlingTest {
       case (id, Right(v)) => id
     }.toList
 
-    //println("Valued assignments, %d worked, %d failed \n%s".format(worked.size, failed.size, worked.mkString("\n")))
+    println("Valued inventory assignments, %d worked, %d failed".format(worked.size, failed.size))
 
     assertTrue(worked.size > 0, "Assignment valuation service failed to value any assignments")
 

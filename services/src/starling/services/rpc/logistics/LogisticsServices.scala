@@ -6,7 +6,7 @@ import org.jboss.resteasy.client.{ProxyFactory, ClientExecutor}
 import com.trafigura.edm.logistics.inventory._
 import org.codehaus.jettison.json.JSONObject
 import starling.services.StarlingInit
-import com.trafigura.edm.physicaltradespecs.EDMQuota
+import com.trafigura.edm.physicaltradespecs.PhysicalTradeQuota
 import com.trafigura.edm.trades.{PhysicalTrade => EDMPhysicalTrade}
 import scala.util.control.Exception.catching
 import starling.services.rpc.refdata.FileMockedTitanServices
@@ -64,11 +64,11 @@ case class DefaultTitanLogisticsInventoryServices(props: Props, titanEdmTradeSer
              * temporary faked logisitcs service to get all inventory (by fetching all inventory by purchase quota ids)
              */
             val trades : List[EDMPhysicalTrade] = edmTradeService.titanGetEdmTradesService.getAll().results.map(_.trade).filter(_ != null).map(_.asInstanceOf[EDMPhysicalTrade])
-            val purchaseQuotas : List[EDMQuota] = trades.filter(_.direction == "P").flatMap(t => t.quotas)
+            val purchaseQuotas : List[PhysicalTradeQuota] = trades.filter(_.direction == "P").flatMap(t => t.quotas)
             def inventoryByPurchaseQuotaId(id : String) =
               catching(classOf[Exception]) either this.getInventoryTreeByPurchaseQuotaId(id)
 
-            val quotaIds = purchaseQuotas.map(q => NeptuneId(q.detail.identifier).identifier).filter(_ != null)
+            val quotaIds = purchaseQuotas.map(q => NeptuneId(q.detail.identifier.value).identifier).filter(_ != null)
             val allInventory = quotaIds.map(id => inventoryByPurchaseQuotaId(id))
             val inventory = allInventory.collect({ case Right(i) => i }).flatten
             println("Fetched all inventory (%d)".format(inventory.size))
@@ -173,16 +173,16 @@ case class LogisticsJsonMockDataFileGenerater(titanEdmTradeService : TitanServic
   val assignmentService = logisticsServices.assignmentService.service
   val inventoryService = logisticsServices.inventoryService.service
   val trades : List[EDMPhysicalTrade] = titanEdmTradeService.titanGetEdmTradesService.getAll().results.map(_.trade).filter(_ != null).map(_.asInstanceOf[EDMPhysicalTrade])
-  val purchaseQuotas : List[EDMQuota] = trades.filter(_.direction == "P").flatMap(t => t.quotas)
+  val purchaseQuotas : List[PhysicalTradeQuota] = trades.filter(_.direction == "P").flatMap(t => t.quotas)
   //purchaseQuotas.foreach(pq => println("pq = " + pq.detail.identifier))
-  val allQuotasMap = trades.flatMap(t => t.quotas.map(q => NeptuneId(q.detail.identifier).identifier -> q))
+  val allQuotasMap = trades.flatMap(t => t.quotas.map(q => NeptuneId(q.detail.identifier.value).identifier -> q))
 
   val salesAssignments = assignmentService.getAllSalesAssignments()
   println("Got %d sales assignments".format(salesAssignments.size))
   def inventoryByPurchaseQuotaId(id : String) =
     catching(classOf[Exception]) either inventoryService.getInventoryTreeByPurchaseQuotaId(id)
 
-  val quotaIds = purchaseQuotas.map(q => NeptuneId(q.detail.identifier).identifier).filter(id => id != null)
+  val quotaIds = purchaseQuotas.map(q => NeptuneId(q.detail.identifier.value).identifier).filter(id => id != null)
   println("quotaIds count %d".format(quotaIds.size))
   //quotaIds.foreach(qid => println("purchase neptune quota id " + qid))
   val allInventory = quotaIds.map(id => inventoryByPurchaseQuotaId(id))
