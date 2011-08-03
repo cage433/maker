@@ -102,7 +102,7 @@ class LShape extends Label {
 
     val startWidth = 6
     val w = size.width - 1
-    val h = (size.height / 2) + 1
+    val h = (size.height / 2)
 
     g.drawLine(startWidth, 1, startWidth, h)
     g.drawLine(startWidth, h, w, h)
