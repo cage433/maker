@@ -9,8 +9,8 @@ import starling.marketdata.PriceFixingsHistoryDataKey
 import starling.utils.cache.CacheFactory
 import starling.calendar.{HolidayTablesFactory, BusinessCalendars, BusinessCalendar, BrentMonth}
 import starling.utils.ImplicitConversions._
-import starling.quantity.{Conversions, Percentage, Quantity, UOM}
 import starling.utils.Pattern.Extractor
+import starling.quantity._
 
 case class UnknownIndexException(msg: String, eaiQuoteID: Option[Int] = None) extends Exception(msg)
 
