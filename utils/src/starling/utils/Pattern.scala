@@ -9,6 +9,7 @@ object Pattern {
     def unapply[C](ta: Traversable[A])(implicit g: Flattener[B, C]): Option[C] = g(ta.view.map(f))
 
     def compose[C](g: C => A) = new Extractor[C, B](f compose g)
+    def andThen[C](g: B => Option[C]) = new Extractor[A, C]((a:A) => f(a).flatMap(g))
     def orElse(alternative: Extractor[A, B]): Extractor[A, B] = orElse(alternative.f)
     def orElse(alternative: A => Option[B]): Extractor[A, B] = new Extractor[A, B](a => f(a).orElse(alternative(a)))
 
@@ -39,6 +40,10 @@ object Pattern {
 
       def partial = new {
         def apply[B](pf: PartialFunction[A, B]) = new Extractor(pf.lift)
+      }
+
+      def either = new {
+        def apply[L, R](f: A => Either[L, R]) = new Extractor((a:A) => f(a).right.toOption)
       }
     }
   }
