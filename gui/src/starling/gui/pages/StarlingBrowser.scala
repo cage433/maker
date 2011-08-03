@@ -26,6 +26,7 @@ import swing.event.{UIElementResized, MouseClicked, ButtonClicked}
 import java.lang.reflect.UndeclaredThrowableException
 import starling.bouncyrmi.{ClientOfflineException, ServerUpgradeException, OfflineException}
 import java.awt.{Component=>AWTComp}
+import javax.swing.JTabbedPane._
 
 /**
  * All on the swing thread
@@ -1151,7 +1152,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
   }
 
   def createPopulatedComponent(page:Page, pageResponse:PageResponse) = {
-    pageResponse match {
+    val realPageComponent = pageResponse match {
       case SuccessPageResponse(pageData, bookmark) => {
         try {
           page.createComponent(pageContext, pageData, bookmark, size)
@@ -1165,6 +1166,40 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
       case FailurePageResponse(t) => {
         t.printStackTrace
         new ExceptionPageComponent("Task execution", t)
+      }
+    }
+    new MigPanel("insets 0") with PageComponent {
+      add(realPageComponent, "push, grow")
+      override def getBorder = realPageComponent.getBorder
+      override def restoreToCorrectViewForBack() = realPageComponent.getBorder
+      override def getState = realPageComponent.getState
+      override def setState(state: Option[ComponentState]) = realPageComponent.setState(state)
+      override def resetDynamicState() = realPageComponent.resetDynamicState()
+      override def pageHidden() = realPageComponent.pageHidden()
+      override def pageShown() = realPageComponent.pageShown()
+      override def getTypeState = realPageComponent.getTypeState
+      override def setTypeState(typeState: Option[ComponentTypeState]) = realPageComponent.setTypeState(typeState)
+      override def getTypeFocusInfo = realPageComponent.getTypeFocusInfo
+      override def setTypeFocusInfo(focusInfo: Option[TypeFocusInfo]) = realPageComponent.setTypeFocusInfo(focusInfo)
+      override def getOldPageData = realPageComponent.getOldPageData
+      override def getRefreshState = realPageComponent.getRefreshState
+      override def setOldPageDataOnRefresh(pageData: Option[OldPageData], refreshState: Option[ComponentRefreshState], componentState: Option[ComponentState]) =
+        realPageComponent.setOldPageDataOnRefresh(pageData, refreshState, componentState)
+      override def pageResized(newSize: Dimension) = realPageComponent.pageResized(newSize)
+      override def defaultComponentForFocus = realPageComponent.defaultComponentForFocus
+
+      override def paintChildren(g: Graphics2D) {
+        try {
+          super.paintChildren(g)
+        } catch {
+          case e:Exception => {
+            e.printStackTrace()
+            removeAll
+            add(new ExceptionPageComponent("Exception during paint", e), "push, grow")
+            revalidate()
+            repaint()
+          }
+        }
       }
     }
   }
