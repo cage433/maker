@@ -16,7 +16,7 @@ object ClosureUtil {
     resource.close
   }
 
-  def logException[T](action: => T): T = decorate(e => {e.printStackTrace; e})(action)
+  def logException[T](msg: String = "")(action: => T) = safely { action }.update(t => Log.error(msg, t), identity)
   def decorate[T](message: => String)(action: => T): T = decorate(e => throw new Exception(message, e))(action)
   def decorate[T](f: Exception => Exception)(action: => T): T = try { action } catch { case e: Exception => throw f(e) }
   def safely[T](action: => T): Either[Throwable, T] = catching(classOf[Exception]) either(action)
