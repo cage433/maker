@@ -30,7 +30,7 @@ case class PhysicalMetalQuota(
 
 object PhysicalMetalForward{
 
-  private def getTradeId(t : EDMTrade) = {
+  private def getTradeId(t : EDMPhysicalTrade) = {
     if (t.titanId == null) {
       null
     }

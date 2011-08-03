@@ -68,14 +68,16 @@ case class DefaultTitanTradeCache(props : Props) extends TitanTradeCache {
     if (!edmTradeResult.cached) throw new TradeManagementCacheNotReady
     Log.info("Got Edm Trade results " + edmTradeResult.cached + ", trade result count = " + edmTradeResult.results.size)
 
+    val validTrades = edmTradeResult.results.filter(tr => tr.trade != null).map(_.trade.asInstanceOf[EDMPhysicalTrade])
+
     // temporary code, trademgmt are sending us null titan ids
-    val (nullIds, validIds) = edmTradeResult.results.map(_.trade.asInstanceOf[EDMPhysicalTrade]).span(_.titanId == null)
+    val (nullIds, validIds) = validTrades.span(_.titanId == null)
     if (nullIds.size > 0) {
-      nullIds.foreach(println)
-      validIds.foreach(println)
-      assert(false, "Null titan ids found - fatal error")
+      println("Null Titan trade IDs found!")
+      println("null ids \n%s\n%s".format(nullIds, validIds))
+      //assert(false, "Null titan ids found - fatal error")
     }
-    tradeMap = edmTradeResult.results.map(_.trade.asInstanceOf[EDMPhysicalTrade])/*.filter(pt => pt.tstate == CompletedTradeTstate)*/.map(t => (t.titanId.value, t)).toMap
+    tradeMap = validTrades/*.filter(pt => pt.tstate == CompletedTradeTstate)*/.map(t => (t.titanId.value, t)).toMap
     tradeMap.keySet.foreach(addTradeQuotas)
   }
 
