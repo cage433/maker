@@ -7,6 +7,7 @@ import starling.utils.ImplicitConversions._
 import starling.market.rules.SwapPricingRule
 import starling.curves.Environment
 import starling.quantity.{NamedQuantity, SpreadOrQuantity, Quantity}
+import starling.quantity.UOM
 
 trait Tradeable extends AsUtpPortfolio {
   def tradeableType : TradeableType[_]
@@ -14,9 +15,16 @@ trait Tradeable extends AsUtpPortfolio {
   def shownTradeableDetails: Map[String, Any] = persistedTradeableDetails
   def expiryDay():Option[Day] = None
   def isLive(dayAndTime : DayAndTime) : Boolean
+  def valuationCCY : UOM
 
   // Return a tree structure describing how mtm was calculated
-  //def explanation(env : Environment) : NamedQuantity 
+  def explanation(env : Environment, ccy : UOM) : NamedQuantity = {
+    if (ccy == valuationCCY)
+      explanation(env)
+    else
+      explanation(env) * (if (ccy == valuationCCY) new Quantity(1.0) else env.withNaming().spotFXRate(ccy, valuationCCY).named("Spot FX"))
+  }
+  def explanation(env : Environment) : NamedQuantity 
 
   /**
    * Hack so that for Jons option the premium has an associated market/index + period

@@ -35,7 +35,7 @@ extends AverageOption(index, averagingPeriod, strike, volume, callPut) with Mult
       val optionExp = option.explanation(env)
       SimpleNamedQuantity(option.averagingPeriod.toShortString + " value", optionExp)
     }
-    FunctionNamedQuantity("Sum", subExplanations, subExplanations.map(_.quantity).sum)
+    FunctionNamedQuantity("Sum", subExplanations, subExplanations.map(_.quantity).sum) 
   }
 
   def isLive(dayAndTime: DayAndTime) = dayAndTime < periods.last.lastDay.endOfDay

@@ -63,11 +63,6 @@ object Quantity {
     }
   }
 
-  def sum(quantities: Iterable[Quantity]) = {
-    val (sum, uom) = sumAsBigDecimal(quantities)
-    Quantity(sum.toDouble, uom)
-  }
-
   def average(quantities : Seq[Quantity]) = quantities match {
     case Nil => throw new Exception("Can't get average of empty sequence")
     case _ => {
@@ -76,6 +71,20 @@ object Quantity {
 
       if (quantities.forall(_.isInstanceOf[NamedQuantity])) {
         FunctionNamedQuantity("Average", quantities.toList.asInstanceOf[List[NamedQuantity]], result)
+      } else {
+        result
+      }
+    }
+  }
+
+  def sum(quantities : Iterable[Quantity]) = quantities match {
+    case Nil => NULL
+    case _ => {
+      val (sum, uom) = sumAsBigDecimal(quantities)
+      val result = Quantity(sum(mc).toDouble, uom)
+
+      if (quantities.forall(_.isInstanceOf[NamedQuantity])) {
+        FunctionNamedQuantity("Sum", quantities.toList.asInstanceOf[List[NamedQuantity]], result)
       } else {
         result
       }

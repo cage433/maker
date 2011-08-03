@@ -6,6 +6,7 @@ import starling.quantity.{SpreadQuantity, UOM, Quantity}
 import starling.daterange._
 import starling.curves.{PriceDifferentiable, Environment, SpreadAtmStdDevAtomicDatumKey, FuturesSpreadPrice}
 import starling.market.{Market, FuturesSpreadMarket}
+import starling.quantity.NamedQuantity
 
 case class FuturesCommoditySpread(market: FuturesSpreadMarket, month: Month, firstStrike: Quantity, secondStrike: Quantity, volume: Quantity)
         extends UTP with Tradeable with AsUtpPortfolio with MultiLeg {
@@ -30,6 +31,9 @@ case class FuturesCommoditySpread(market: FuturesSpreadMarket, month: Month, fir
   def asUtpPortfolio(tradeDay:Day) = {
     future1.asUtpPortfolio ++
             future2.asUtpPortfolio
+  }
+  def explanation(env : Environment) : NamedQuantity = {
+    future1.explanation(env).named("Future 1") + future2.explanation(env).named("Future 2")
   }
 
   def legs = List(future1, future2)

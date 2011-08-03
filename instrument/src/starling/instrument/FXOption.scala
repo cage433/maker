@@ -11,6 +11,7 @@ import starling.quantity.Percentage._
 import starling.models.{Put, Call, BlackScholes, CallOrPut}
 import starling.curves._
 import starling.daterange.DateRangePeriod
+import starling.quantity.{NamedQuantity, PercentageNamedQuantity, FunctionNamedQuantity}
 
 case class FXOption(
   strike: Quantity,
@@ -34,6 +35,7 @@ case class FXOption(
   def instrumentType = FXOption
   def tradeableType = FXOption
 
+  private def settlementDay = exerciseDate
   override def forwardState(env: Environment, dayAndTime: DayAndTime) = {
     if (dayAndTime < exerciseDate.endOfDay) {
       this
@@ -47,11 +49,18 @@ case class FXOption(
     }
   }
 
+  private def discount(env : Environment) = env.discount(valuationCCY, settlementDay)
+  def explanation(env : Environment) : NamedQuantity = {
+    val namedEnv = env.withNaming()
+    val (undiscountedPrice, (vol, time, forwardPrice)) = priceWithDetails(namedEnv)
+    FunctionNamedQuantity("BlackScholes-" + callPut, List(forwardPrice, strike.named("K"), vol, time), undiscountedPrice) * volume.named("Volume") * discount(namedEnv).named("Discount")
+  }
+
   def assets(env : Environment):Assets = {
     if (! isLive(env.marketDay)){
       return Assets() //should we add cash if in the money ?
     }
-    Assets(Asset.estimatedCash(exerciseDate, price(env) * volume, env))
+    Assets(Asset.estimatedCash(settlementDay, price(env) * volume, env))
 	}
 
 
@@ -67,11 +76,12 @@ case class FXOption(
 
   def * (scale : Double) = copy(volume = volume * scale)
 
-  def price(env : Environment) = {
+  def price(env : Environment) = priceWithDetails(env)._1
+  private def priceWithDetails(env : Environment) = {
     val vol = env.impliedVol(FXMarket(strike.uom), maturityDate, exerciseDate, strike)
     val T = exerciseDate.endOfDay.timeSince(env.marketDay)
     var F = env.forwardFXRate(correctStrike.uom, maturityDate)
-    BlackScholes.undiscountedOptionPrice(F, correctStrike, callPut, T, vol)
+    (BlackScholes.undiscountedOptionPrice(F, correctStrike, callPut, T, vol), (PercentageNamedQuantity("Vol", vol), new Quantity(T).named("T"), F.named("F")))
   }
 }
 

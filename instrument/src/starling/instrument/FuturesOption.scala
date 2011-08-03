@@ -103,26 +103,26 @@ case class FuturesOption(
   def price(env: Environment) = priceWithDetails(env)._1
   
   private def priceWithDetails(env : Environment) : (Quantity, (Quantity, NamedQuantity, NamedQuantity, NamedQuantity, NamedQuantity)) = {
-    val (undiscountedOptionPrice, underlyingPrice, vol, time, discount) = if (isLive(env.marketDay)) {
+    val (discountedOptionPrice, underlyingPrice, vol, time, discount) = if (isLive(env.marketDay)) {
       val F = env.forwardPrice(market, delivery)
       val vol = env.impliedVol(market, delivery, exerciseDay, strike)
       val T = exerciseDay.endOfDay.timeSince(env.marketDay)
       val discount = env.discount(valuationCCY, exerciseDay)
-      val undiscountedOptionPrice = if (exerciseDay.endOfDay == env.marketDay)
+      val discountedOptionPrice = if (exerciseDay.endOfDay == env.marketDay)
         callPut.intrinsicPrice(F, strike)
       else exerciseType match {
         case American => americanOptionPrice(env)
         case European => {
-          BlackScholes.undiscountedOptionPrice(F, strike, callPut, T, vol)
+          BlackScholes.undiscountedOptionPrice(F, strike, callPut, T, vol) * discount
         }
       }
-      (undiscountedOptionPrice, F, vol, T, discount)
+      (discountedOptionPrice, F, vol, T, discount)
     } else {
       (Quantity(0, market.priceUOM), Quantity.NULL, Percentage(0), 0.0, new Quantity(1.0))
     }
     (
-      undiscountedOptionPrice * discount, 
-      (undiscountedOptionPrice, underlyingPrice.named("F"), PercentageNamedQuantity("Vol", vol), SimpleNamedQuantity("T", new Quantity(time)), discount.named("Discount"))
+      discountedOptionPrice,
+      (discountedOptionPrice / discount, underlyingPrice.named("F"), PercentageNamedQuantity("Vol", vol), SimpleNamedQuantity("T", new Quantity(time)), discount.named("Discount"))
     )
   }
 

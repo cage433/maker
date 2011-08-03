@@ -62,6 +62,7 @@ case class NullInstrument() extends InvalidInstrument {
   def isLive(dayAndTime: DayAndTime) = throw new Exception("Null instrument")
   def tradeableType = NullInstrument
   def persistedTradeableDetails = throw new Exception("Null instrument")
+  def valuationCCY : UOM = throw new UnsupportedOperationException
 }
 
 object NullInstrument extends TradeableType[NullInstrument] {

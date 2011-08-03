@@ -19,7 +19,11 @@ case class NamingAtomicEnvironment(atomicEnv: AtomicEnvironment, prefix:String) 
           case None => ""
           case other => "." + other
         }
-        val name = key.curveKey.underlying + pointSuffix
+        val curveName = key match {
+          case USDFXRateKey(ccy) => "USD per " + ccy.toString + " spot"
+          case _ => key.curveKey.underlying
+        }
+        val name = curveName + pointSuffix
         q.named(name + (if (prefix.isEmpty) "" else "@" + prefix))
       }
       case other => other

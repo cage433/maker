@@ -6,6 +6,7 @@ import starling.richdb.RichInstrumentResultSetRow
 import starling.daterange.{Day, DayAndTime}
 import starling.curves.Environment
 import starling.market.EquityPriceCurveKey
+import starling.quantity.NamedQuantity
 
 /**
  * Represents a net position in shares
@@ -27,6 +28,7 @@ case class NetEquityPosition(ric:RIC, volume:Quantity) extends UTP with Tradeabl
   def price(env: Environment): Quantity = {
     env.equityPrice(ric)
   }
+  def explanation(env : Environment) : NamedQuantity = throw new UnsupportedOperationException()
 
   def *(x : Double) = copy(volume = volume * x)
 

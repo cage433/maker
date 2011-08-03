@@ -154,7 +154,6 @@ case class SinglePeriodSwap(
 
 
   def explanation(env : Environment) : NamedQuantity = {
-    println("Making explanation for " + this)
     val namedEnv = env.withNaming()
     val price = SimpleNamedQuantity("F_Ave", namedEnv.averagePrice(index, period, pricingRule, priceUOM, priceRounding))
     val discount = SimpleNamedQuantity("disc", namedEnv.discount(valuationCCY, settlementDay))
