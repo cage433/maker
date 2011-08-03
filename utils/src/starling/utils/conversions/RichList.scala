@@ -73,5 +73,7 @@ trait RichList {
 
       results.toList
     }
+
+    def partialMap[B](pf: PartialFunction[A, B]): List[B] = flatMapO(pf.lift)
   }
 }

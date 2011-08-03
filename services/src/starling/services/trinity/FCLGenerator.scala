@@ -6,8 +6,6 @@ import starling.daterange._
 import starling.db.DB
 import starling.gui.api.CurveLabel
 import starling.pivot.controller.{PivotTableConverter, PivotGrid}
-import starling.pivot.model.PivotTableModel
-
 import starling.utils.ImplicitConversions._
 import com.trafigura.services.trinity.CommodityRate
 import starling.market._
@@ -15,6 +13,7 @@ import starling.calendar.{BusinessCalendar, BusinessCalendars}
 import starling.pivot.{SomeSelection, Field, PivotFieldsState}
 import java.util.TreeMap
 import starling.curves.{CurveViewerFields, CurveViewer}
+import starling.pivot.model.{AxisCell, PivotTableModel}
 
 case class TrinityCommodityCurveKey(commodity:String, exchange:String, currency:String, contract:String)
 
@@ -35,13 +34,14 @@ class FCLGenerator(businessCalendars:BusinessCalendars, curveViewer: CurveViewer
 }
 
 object FCLGenerator {
-  def extractData(ukUS:BusinessCalendar, data: PivotGrid) = data.rowData.zip(data.mainData).toList.map {
-    case (Array(marketName, periodCell), Array(priceCell)) => {
-      val trinityKey = TrinityUploadCodeMapper.trinityCurveKeys(Index.publishedIndexFromName(marketName.valueText))
+  def extractData(ukUS:BusinessCalendar, data: PivotGrid) = data.rowData.zip(data.mainData).toList.partialMap {
+    case (Array(AxisCell.ValueText(Index.PublishedIndex(index)), periodCell), Array(priceCell)) => {
+      val trinityKey = TrinityUploadCodeMapper.trinityCurveKeys(index)
       val price = priceCell.doubleValue.get
       val month = periodCell.value.value.value.asInstanceOf[DateRange]
       val trinityDay = month.lastDay.addBusinessDays(ukUS, 2)
-      trinityKey -> CommodityRate(trinityDay.toString("dd-MMM-yyyy"), price, price, trinityDay.toString("dd/MM/yyyy"), trinityKey.exchange, trinityKey.contract, "1", "TONNE")
+      trinityKey → CommodityRate(trinityDay.toString("dd-MMM-yyyy"), price, price, trinityDay.toString("dd/MM/yyyy"),
+                                 trinityKey.exchange, trinityKey.contract, "1", "TONNE")
     }
   }.groupInto(_._1, _._2)
 }
