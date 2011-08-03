@@ -16,11 +16,13 @@ case class TaskDescription(name: String, time: ScheduledTime, task: ScheduledTas
     task.start; time.schedule(this, timer)
   }
 
-  def run = if (!Day.today.isBusinessDay(cal)) {
-    Log.info("Not a business day in calendar: %s, thus skipping: " % (cal.name, name))
-  } else if (!task.isRunning) {
-    Log.info("Task is stopped, thus skipping: " % (cal.name, name))
-  } else Log.infoWithTime("Executing scheduled task: " + name) {
-    safely(task.perform(Day.today))
+  def run = logException("Task %s failed" % name) {
+    if (!Day.today.isBusinessDay(cal)) {
+      Log.info("Not a business day in calendar: %s, thus skipping: " % (cal.name, name))
+    } else if (!task.isRunning) {
+      Log.info("Task is stopped, thus skipping: " % (cal.name, name))
+    } else Log.infoWithTime("Executing scheduled task: " + name) {
+      task.perform(Day.today)
+    }
   }
 }
