@@ -37,7 +37,7 @@ case class DefaultTitanLogisticsAssignmentServices(props: Props, titanInventoryS
           val pa = i.purchaseAssignment :: Nil
             i.salesAssignment match {
               case null => pa
-              case salesAssignment : EDMAssignmentItem => salesAssignment :: pa
+              case salesAssignment : EDMAssignment => salesAssignment :: pa
             }
           })
           assignments
