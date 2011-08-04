@@ -23,7 +23,7 @@ object ClosesEnvironmentRule extends EnvironmentRule {
     val priceDataMap = marketsWithCloseTimeOfDay.flatMap {
       case (market, timeOfDay) => try {
         val marketData = marketDataReader.read(TimedMarketDataKey(observationDay.atTimeOfDay(timeOfDay), PriceDataKey(market)))
-        if (true) None else Some(PriceDataKey(market) → marketData.asInstanceOf[PriceData])
+        Some(PriceDataKey(market) → marketData.asInstanceOf[PriceData])
       } catch {
         case e: MissingMarketDataException => None
       }
