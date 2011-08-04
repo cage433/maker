@@ -32,6 +32,7 @@ object Server extends OutputPIDToFile {
 object ServerHelper {
   val RunningFileName = "starling.running"
 
+
   def createRunningFile {
     val file = new File(RunningFileName)
     if (!file.createNewFile) throw new Exception("Couldn't create the " + RunningFileName + " file")

@@ -44,7 +44,6 @@ import starling.services.rpc.refdata._
 import starling.services.rabbit._
 import starling.daterange.ObservationTimeOfDay
 import starling.pivot.{Field, PivotQuantity}
-import starling.marketdata.{MarketDataKey}
 import collection.SortedMap
 import starling.quantity.{UOM, Quantity, Percentage}
 import collection.immutable.{TreeMap, Map}
@@ -52,6 +51,7 @@ import starling.titan.{TitanSystemOfRecord, TitanTradeStore}
 import com.trafigura.services.ResteasyServiceApi._
 import com.trafigura.services.trinity.TrinityService
 import com.trafigura.services.ResteasyServiceApi
+import starling.marketdata.{MarketDataTypes, MarketDataKey}
 
 
 object NewReadAll {
@@ -83,8 +83,9 @@ object NewReadAll {
         val id = rs.getInt("id")
         val time = ObservationTimeOfDay.fromName(rs.getString("observationTime"))
         val marketDataSet = MarketDataSet(rs.getString("marketDataSet"))
+        val marketDataType = MarketDataTypes.fromName(rs.getString("marketDataSet"))
         val key = rs.getObject[MarketDataKey]("marketDataKey")
-        id -> FirstKey(time, marketDataSet, key)
+        id -> FirstKey(time, marketDataSet, marketDataType, key)
       }} }
       val secondKeys = Log.infoWithTime("valueKeys") { Map() ++ init.starlingDB.queryWithResult("select * from ValueKey") { rs => {
         rs.getInt("id") -> SecondKey(rs.getObject[SortedMap[Field,Any]]("value"))
