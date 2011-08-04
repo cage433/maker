@@ -2,7 +2,7 @@ package starling.gui
 
 import api._
 import java.awt.image.BufferedImage
-import pages.{PivotPageState, TimestampChooser, PageResponse}
+import pages.{ExceptionPageComponent, TimestampChooser, PageResponse}
 import starling.rmi.StarlingServer
 import swing.event.Event
 import starling.utils.HeterogeneousMap
@@ -12,7 +12,7 @@ import java.util.concurrent.{Callable, Future, Executors, CountDownLatch}
 import swing.{Publisher, Button, Component}
 import ref.SoftReference
 import javax.swing.border.Border
-import java.awt.Dimension
+import java.awt.{Dimension, Graphics2D}
 import starling.daterange.{Day, Timestamp}
 import collection.immutable.TreeSet
 import collection.SortedSet
@@ -187,6 +187,20 @@ trait PageComponent extends Component {
   def setOldPageDataOnRefresh(pageData:Option[OldPageData], refreshState:Option[ComponentRefreshState], componentState:Option[ComponentState]) {}
   def pageResized(newSize:Dimension) {}
   def defaultComponentForFocus:Option[java.awt.Component] = None
+
+  override def paintChildren(g:Graphics2D) {
+    try {
+      super.paintChildren(g)
+    } catch {
+      case e:Exception => {
+        e.printStackTrace()
+        peer.removeAll()
+        peer.add(new ExceptionPageComponent("Exception during paint", e).peer, "push, grow")
+        revalidate()
+        repaint()
+      }
+    }
+  }
 }
 class PageInfo(val page: Page, val pageResponse:PageResponse, val bookmark:Bookmark, var pageComponent:Option[PageComponent],
                var pageComponentSoft:SoftReference[PageComponent], var componentState:Option[ComponentState],

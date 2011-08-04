@@ -12,6 +12,8 @@ import java.awt.event.{InputEvent, KeyEvent}
 import swing._
 import swing.event.WindowClosing
 import javax.swing._
+import starling.quantity.Quantity
+import starling.pivot.{QuantityLabelPivotFormatter, PivotFormatter, ExtraFormatInfo}
 
 object GuiUtils {
   def LabelWithSeparator(text:String) = new MigPanel("insets 0"){

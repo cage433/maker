@@ -14,7 +14,7 @@ import starling.market._
 object ClosesEnvironmentRule extends EnvironmentRule {
   import EnvironmentRule._
 
-  val label = EnvironmentRuleLabel("All Closes")
+  val label = EnvironmentRuleLabel.AllCloses
   lazy val marketsWithCloseTimeOfDay = Market.futuresMarkets.optPair(marketCloses.get(_)).toList
 
   override def createNullAtomicEnvironment(observationDay: Day) = new NullAtomicEnvironment(observationDay.endOfDay)
