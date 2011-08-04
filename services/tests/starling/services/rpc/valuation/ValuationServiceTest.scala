@@ -240,7 +240,6 @@ class ValuationServiceTest extends StarlingTest {
     Log.info("completed test in " + sw)
   }
 
-
   private def createTradeUpdatedEvent(id : String) : JSONArray = createTradeUpdatedEvent(List(id))
   private def createTradeUpdatedEvent(ids : List[String]) : JSONArray =
     createTradeMgmtIDEvents(ids)
