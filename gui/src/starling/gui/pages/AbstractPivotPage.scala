@@ -386,7 +386,7 @@ class PivotTablePageComponent(
               // We are pivoting on something we know more information about. Look at the selection and get the fields for it.
               val selection = dDFMap(ddInfo.filterField)
               selection match {
-                case AllSelection => {throw new IllegalStateException("This case hasn't been coded for yet: " + selection)}
+                case AllSelection => {throw new IllegalStateException("This case hasn't been coded for yet: " + selection + " : filter field: " + ddInfo.filterField)}
                 case SomeSelection(values) if values.isEmpty => {throw new IllegalStateException("This case hasn't been coded for yet: " + selection)}
                 case SomeSelection(values) => {
                   val fieldsToUse = values.flatMap{
