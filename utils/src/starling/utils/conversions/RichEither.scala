@@ -1,7 +1,6 @@
 package starling.utils.conversions
 
 import starling.utils.ImplicitConversions._
-import starling.utils.Log
 
 
 trait RichEither {
@@ -11,6 +10,15 @@ trait RichEither {
   }
 
   implicit def enrichFailureEither[R](either: Either[Failure, R]) = new RichFailureEither(either)
+
+  implicit def enrichOrderedEither[L <: Ordered[L], R <: Ordered[R]](self: Either[L, R]) = new RichEither(self) {
+    def compareEither(that: Either[L, R]) = (self, that) match {
+      case (Left(selfL), Left(thatL)) => selfL.compare(thatL)
+      case (Right(selfR), Right(thatR)) => selfR.compare(thatR)
+      case (Left(_), Right(_)) => 1
+      case (Right(_), Left(_)) => -1
+    }
+  }
 
   class RichFailureEither[R](either: Either[Failure, R]) extends RichEither[Failure, R](either) {
     def orElse(alternative: Either[Failure, R]): Either[Failure, R] = either match {

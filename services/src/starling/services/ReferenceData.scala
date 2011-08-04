@@ -11,7 +11,6 @@ import starling.market._
 import starling.market.formula.FormulaIndex
 import starling.pivot._
 import starling.pivot.model.PivotTableModel
-import starling.services.trinity.TrinityUploadCodeMapper
 import starling.utils.ImplicitConversions._
 
 /**

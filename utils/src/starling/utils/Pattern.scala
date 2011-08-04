@@ -5,7 +5,7 @@ import ImplicitConversions._
 
 object Pattern {
   case class Extractor[A, B](f: A => Option[B]) {
-    def unapply(a: A) = f(a)
+    def unapply(a: A): Option[B] = try { f(a) } catch { case e => Log.warnF("Exception in Extractor", e)(None) }
     def unapply[C](ta: Traversable[A])(implicit g: Flattener[B, C]): Option[C] = g(ta.view.map(f))
 
     def compose[C](g: C => A) = new Extractor[C, B](f compose g)

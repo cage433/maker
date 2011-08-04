@@ -45,6 +45,7 @@ trait TenorType {
 object TenorType {
   val ALL: List[TenorType] = List(Month, Day, Year, Week, HalfMonth, BOM, Quarter, HalfYear)
   val typesByShortName = ALL.toMapWithManyKeys(_.shortNames)
+  val FromShortName = typesByShortName.toExtractor
 
   // same as above, but in (roughly) ascending order of length
   val ALL_IN_ORDER: List[String] = List(Day, Week, HalfMonth, BOM, Month, Quarter, HalfYear, Year).map(_.shortName)

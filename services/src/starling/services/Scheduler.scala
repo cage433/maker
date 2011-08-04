@@ -4,12 +4,12 @@ import java.util.Timer
 
 import starling.calendar.BusinessCalendars
 import starling.db.MarketDataStore
-import starling.gui.api._
-import starling.market.{FuturesExchange, FuturesExchangeFactory}
+import starling.gui.api.{PricingGroup, MarketDataSelection}
 import starling.props.Props
 import starling.services.trinity.TrinityUploader
 import starling.utils.{Broadcaster, Log, Stoppable}
 
+import starling.market.FuturesExchangeFactory._
 import starling.utils.ImplicitConversions._
 
 
@@ -26,17 +26,20 @@ class Scheduler(props: Props, forwardCurveTasks: List[TaskDescription] = Nil) ex
 
 object Scheduler {
   import PricingGroup._
-  import FuturesExchangeFactory._
   import ScheduledTime._
 
   def create(businessCalendars: BusinessCalendars, marketDataStore: MarketDataStore, broadcaster: Broadcaster,
              trinityUploader: TrinityUploader, props: Props): Scheduler = {
 
-    def verifyPricesAvailable(pricingGroup: PricingGroup, exchange: FuturesExchange, to: String) =
-      new VerifyPriceAvailable(marketDataStore, pricingGroup, exchange, broadcaster, props.MetalsEmailAddress(), to)
+    implicit def enrichDataFlow(dataFlow: DataFlow) = new {
+      val verifyPricesAvailable = ("Verify %s available" % dataFlow.sink) → VerifyPriceAvailable(marketDataStore, broadcaster, dataFlow)
+      val verifyPricesValid = ("Verify %s valid" % dataFlow.sink) → VerifyPricesValid(marketDataStore, broadcaster, dataFlow)
+    }
 
-    def verifyPricesValid(pricingGroup: PricingGroup, exchange: FuturesExchange, to: String) =
-      VerifyPricesValid(marketDataStore, pricingGroup, exchange, broadcaster, props.MetalsEmailAddress(), props.WuXiEmailAddress())
+    val List(lmeMetals, sfsMetals, comexMetals, balticMetals) = List(LME, SFS, COMEX, BALTIC)
+      .map(DataFlow(_, Metals, Nil, "LIM", props.MetalsEmailAddress(), props.LimEmailAddress()))
+
+    val exbxgMetals = DataFlow(EXBXG, Metals, Nil, "Excel", props.MetalsEmailAddress(), props.WuXiEmailAddress())
 
     def importMarketData(pricingGroup: PricingGroup) = new ImportMarketDataTask(marketDataStore, pricingGroup).
       withSource("LIM", marketDataStore.sourcesFor(pricingGroup).flatMap(_.description) : _*)
@@ -54,19 +57,13 @@ object Scheduler {
 
     new Scheduler(props, forwardCurveTasks =
       TaskDescription("Import LIM", everyFiveMinutes(businessCalendars.LME), importMarketData(Metals)) ::-
-      //TaskDescription("Upload Curves to Trinity", daily(businessCalendars.LME, 23 H 45), uploadCurvesToTrinity(Metals)) ::-
-      TaskDescription("Upload Curves to Trinity", everyFiveMinutes(businessCalendars.LME, 4), uploadCurvesToTrinity(Metals)) ::-
-      tasks(daily(businessCalendars.SFE, 16 H 30),
-        "Verify WuXi prices available" → verifyPricesAvailable(Metals, EXBXG, props.WuXiEmailAddress()).withSource("Excel"),
-        "Verify WuXi prices valid"     → verifyPricesValid(Metals, EXBXG, props.MetalsEmailAddress()).withSource("Excel")
-      ) ::-
+      tasks(daily(businessCalendars.LME, 18 H 30),
+        balticMetals.copy(markets = List("Panamax T/C Average (Baltic)")).verifyPricesAvailable) ::-
+      TaskDescription("Upload Curves to Trinity", daily(businessCalendars.LME, 19 H 00), uploadCurvesToTrinity(Metals)) ::-
+      tasks(daily(businessCalendars.SFE, 16 H 30), exbxgMetals.verifyPricesAvailable, exbxgMetals.verifyPricesValid) ::-
       tasks(daily(businessCalendars.LME, 23 H 30),
-        "Verify LME LIM Metals available"   → verifyPricesAvailable(Metals, LME,   props.LimEmailAddress()).withSource("LIM"),
-        "Verify SHFE LIM Metals available"  → verifyPricesAvailable(Metals, SFS,   props.LimEmailAddress()).withSource("LIM"),
-        "Verify COMEX LIM Metals available" → verifyPricesAvailable(Metals, COMEX, props.LimEmailAddress()).withSource("LIM"),
-        "Verify LME LIM Metals valid"       → verifyPricesValid(Metals, LME,   props.LimEmailAddress()).withSource("LIM"),
-        "Verify SHFE LIM Metals valid"      → verifyPricesValid(Metals, SFS,   props.LimEmailAddress()).withSource("LIM"),
-        "Verify COMEX LIM Metals valid"     → verifyPricesValid(Metals, COMEX, props.LimEmailAddress()).withSource("LIM")
+        lmeMetals.verifyPricesAvailable, sfsMetals.verifyPricesAvailable, comexMetals.verifyPricesAvailable,
+        lmeMetals.verifyPricesValid,     sfsMetals.verifyPricesValid,     comexMetals.verifyPricesValid
       ) ::-
       TaskDescription("Verify Libor maturities available", daily(businessCalendars.LME, 13 H 00), verifyLiborMaturities) //::-
       //TaskDescription("Upload Libor to Trinity", daily(businessCalendars.LME, 23 H 45), uploadLibor)

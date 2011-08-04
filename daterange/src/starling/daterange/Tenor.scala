@@ -2,6 +2,7 @@ package starling.daterange
 
 import starling.utils.Pattern._
 import starling.utils.ImplicitConversions._
+import starling.utils.Int
 
 
 case class Tenor(tenorName: String, value: Int) extends Ordered[Tenor] {
@@ -26,7 +27,7 @@ case class Tenor(tenorName: String, value: Int) extends Ordered[Tenor] {
 
 object Tenor {
   val Parse = Extractor.regex("""(\d+)(\w+)""") {
-    case List(value, tenorType) => Tenor(TenorType.typesByShortName(tenorType), value.toInt)
+    case List(Int(value), TenorType.FromShortName(tenorType)) => Tenor(tenorType, value)
   }.orElse(_.partialMatch {
     case "ON"     => Tenor.ON
     case "SN"     => Tenor.SN
