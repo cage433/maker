@@ -99,14 +99,15 @@ class QuantityPanel(quantity:Quantity) extends Label {
 
 class FunctionNamedQuantityPanel(func:FunctionNamedQuantity) extends MigPanel("insets 0, gap 0") {
   background = ExplanationPanelBackgroundColour
-  add(label(func.functionName + "(", func.result.toString), "ay top")
+  add(label(func.functionName, func.result.toString), "gapright 2lp, ay top")
+  add(new Brace(true), "growy")
   func.parameters.zipWithIndex.foreach{case (f,i) => {
     if (i != 0) {
       add(label(","), "ay top")
     }
     add(panel(f), "ay top")
   }}
-  add(label(")"), "ay top")
+  add(new Brace(false), "growy")
 }
 
 class VerticalFunctionNamedQuantityPanel(func:FunctionNamedQuantity) extends MigPanel("insets 0, gap 0") {
@@ -162,13 +163,13 @@ class Brace(left:Boolean) extends Label {
   }
 }
 
-class BinOpNamedQuantityPanel(binOp:BinOpNamedQuantity) extends MigPanel("insets 0", "[p]2lp[p][p][p]0[p]") {
+class BinOpNamedQuantityPanel(binOp:BinOpNamedQuantity) extends MigPanel("insets 0", "[p]0[p][p][p]0[p]", "[2lp]0[p]0[2lp]") {
   background = ExplanationPanelBackgroundColour
-  add(new Brace(true), "growy")
-  add(panel(binOp.lhs), "ay top")
+  add(new Brace(true), "growy, spany")
+  add(new Brace(false), "skip 3, growy, spany, wrap")
+  add(panel(binOp.lhs), "ay top, skip 1")
   add(label(binOp.op, binOp.result.toString), "ay top")
   add(panel(binOp.rhs), "ay top")
-  add(new Brace(false), "growy")
 }
 
 class TopNamedQuantityComponent(quantity:SimpleNamedQuantity) extends MigPanel {
