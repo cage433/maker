@@ -17,6 +17,9 @@ object NamedQuantityComponentHelper {
       case binOp:BinOpNamedQuantity => new BinOpNamedQuantityPanel(binOp)
       case func:FunctionNamedQuantity if func.custom => new FunctionNamedQuantityPanel(func)
       case func:FunctionNamedQuantity if !func.custom => new VerticalFunctionNamedQuantityPanel(func)
+      case negate:NegateNamedQuantity => new NegateNamedQuantityPanel(negate)
+      case invert:InvertNamedQuantity => new InvertNamedQuantityPanel(invert)
+      case round:RoundedNamedQuantity => new RoundedNamedQuantityPanel(round)
       case _ => new ExpandCollapsePanel(namedQuantity)
     }
   }
@@ -52,11 +55,17 @@ class ExpandCollapsePanel(namedQuantity:NamedQuantity) extends MigPanel("insets 
       case binOp:BinOpNamedQuantity => new BinOpNamedQuantityPanel(binOp)
       case func:FunctionNamedQuantity if func.custom => new FunctionNamedQuantityPanel(func)
       case func:FunctionNamedQuantity if !func.custom => new VerticalFunctionNamedQuantityPanel(func)
+      case negate:NegateNamedQuantity => new NegateNamedQuantityPanel(negate)
+      case invert:InvertNamedQuantity => new InvertNamedQuantityPanel(invert)
+      case round:RoundedNamedQuantity => new RoundedNamedQuantityPanel(round)
       case nq:NamedQuantity => {
         nq.quantity match {
           case binOp:BinOpNamedQuantity => new BinOpNamedQuantityPanel(binOp)
           case func:FunctionNamedQuantity if func.custom => new FunctionNamedQuantityPanel(func)
           case func:FunctionNamedQuantity if !func.custom => new VerticalFunctionNamedQuantityPanel(func)
+          case negate:NegateNamedQuantity => new NegateNamedQuantityPanel(negate)
+          case invert:InvertNamedQuantity => new InvertNamedQuantityPanel(invert)
+          case round:RoundedNamedQuantity => new RoundedNamedQuantityPanel(round)
           case nq0:NamedQuantity => new ExpandCollapsePanel(nq0)
           case q:Quantity => new QuantityPanel(q)
         }
@@ -97,17 +106,21 @@ class QuantityPanel(quantity:Quantity) extends Label {
   font = PivotCellRenderer.MonoSpacedFont
 }
 
-class FunctionNamedQuantityPanel(func:FunctionNamedQuantity) extends MigPanel("insets 0, gap 0") {
+class FunctionNamedQuantityPanel(func:FunctionNamedQuantity) extends MigPanel("insets 0", "[p]0[p]0[p]0[p]", "[2lp]0[p]0[2lp]") {
   background = ExplanationPanelBackgroundColour
+  add(new Brace(true), "skip 1, spany, growy")
+  add(new Brace(false), "skip 3, spany, growy, wrap")
   add(label(func.functionName, func.result.toString), "gapright 2lp, ay top")
-  add(new Brace(true), "growy")
-  func.parameters.zipWithIndex.foreach{case (f,i) => {
-    if (i != 0) {
-      add(label(","), "ay top")
-    }
-    add(panel(f), "ay top")
-  }}
-  add(new Brace(false), "growy")
+  val holderPanel = new MigPanel("insets 0") {
+    background = ExplanationPanelBackgroundColour
+    func.parameters.zipWithIndex.foreach{case (f,i) => {
+      if (i != 0) {
+        add(label(","), "ay top")
+      }
+      add(panel(f), "ay top")
+    }}
+  }
+  add(holderPanel, "ay top, skip 2")
 }
 
 class VerticalFunctionNamedQuantityPanel(func:FunctionNamedQuantity) extends MigPanel("insets 0, gap 0") {
@@ -170,6 +183,29 @@ class BinOpNamedQuantityPanel(binOp:BinOpNamedQuantity) extends MigPanel("insets
   add(panel(binOp.lhs), "ay top, skip 1")
   add(label(binOp.op, binOp.result.toString), "ay top")
   add(panel(binOp.rhs), "ay top")
+}
+
+class NegateNamedQuantityPanel(negate:NegateNamedQuantity) extends MigPanel("insets 0", "[p]0[p]") {
+  background = ExplanationPanelBackgroundColour
+  add(label("-", negate.quantity.toString), "ay top")
+  add(panel(negate.qty))
+}
+
+class InvertNamedQuantityPanel(invert:InvertNamedQuantity) extends MigPanel("insets 0", "[p]0[p]0[p]0[p]", "[2lp]0[p]0[2lp]") {
+  background = ExplanationPanelBackgroundColour
+  add(new Brace(true), "growy, spany")
+  add(new Brace(false), "skip 3, growy, spany, wrap")
+  add(label("1/", invert.quantity.toString), "ay top, skip 1")
+  add(panel(invert.qty), "ay top")
+}
+
+class RoundedNamedQuantityPanel(round:RoundedNamedQuantity) extends MigPanel("insets 0", "[p]0", "[2lp]0[p]0[2lp]") {
+  background = ExplanationPanelBackgroundColour
+  add(new Brace(true), "skip 1, spany, growy")
+  add(new Brace(false), "skip 4, spany, growy, wrap")
+  add(label("Round", round.quantity.toString), "gapright 2lp, ay top")
+  add(panel(round.orig), "skip 1, ay top")
+  add(label(", " + round.dp.toString), "ay top")
 }
 
 class TopNamedQuantityComponent(quantity:SimpleNamedQuantity) extends MigPanel {
@@ -243,7 +279,7 @@ object NamedQuantityComponent {
     val discount = new Quantity(0.9).named("Discount")
     val priceTimesVolume = ((price - strike) * volume) * discount
 
-    val func = FunctionNamedQuantity("Sum", List(price, strike), price + strike, true) * discount
+    val func = FunctionNamedQuantity("Sum", List(price.negate, strike.invert), price + strike, true) * discount.round(3)
 
 //    val topQuantity = SimpleNamedQuantity("P&L", priceTimesVolume)
     val topQuantity = SimpleNamedQuantity("P&L", func)
