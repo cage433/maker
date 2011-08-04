@@ -156,7 +156,11 @@ class VerticalFunctionNamedQuantityPanel(func:FunctionNamedQuantity, fi:ExtraFor
   val table = func.parameters.map(row(_, fi))
   if (!table.contains(None)) {
     def generateTableModel(table0:List[Option[scala.List[String]]]) = {
-      val tableData = table0.map(_.get)
+      val tableData0 = table0.map(_.get)
+      val maxWidth = tableData0.map(_.length).max
+      val tableData = tableData0.map(c => {
+        List.fill(maxWidth - c.length)("") ::: c
+      })
       new AbstractTableModel {
         def getColumnCount = if (tableData.nonEmpty) tableData(0).size else 0
         def getRowCount = tableData.size
