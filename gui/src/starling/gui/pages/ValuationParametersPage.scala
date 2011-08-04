@@ -2,13 +2,14 @@ package starling.gui.pages
 
 import starling.utils.SColumn
 import starling.gui._
-import api.{TradeValuation, ReportParameters, FieldDetailsGroupLabel, TradeIDLabel}
+import api._
 import namedquantitycomponents.TopNamedQuantityComponent
 import starling.pivot.view.swing.MigPanel
 import java.awt.{Color, Dimension}
 import starling.gui.GuiUtils._
 import starling.quantity.SimpleNamedQuantity
 import swing.{ScrollPane, Label}
+import starling.pivot.PivotFormatter
 
 case class ValuationParametersPage(tradeID:TradeIDLabel, tradeRow:List[Any], fieldDetailsGroups:List[FieldDetailsGroupLabel],
                                    columns:List[SColumn], reportParameters:ReportParameters) extends Page {
@@ -111,7 +112,7 @@ object ValuationParametersPageComponent {
   }
 }
 
-class ValuationParametersPageComponent(context:PageContext, pageData:PageData) extends MigPanel with PageComponent {
+class ValuationParametersPageComponent(context:PageContext, pageData:PageData) extends MigPanel("insets n n n 0") with PageComponent {
   val data = pageData.asInstanceOf[ValuationParametersPageData]
 
   val mainPanel = new MigPanel("insets 0") {
@@ -124,20 +125,28 @@ class ValuationParametersPageComponent(context:PageContext, pageData:PageData) e
     val explan = data.tradeValuation.explanation
     val pnl = SimpleNamedQuantity("P&L", explan)
 
-    val valuationParametersTablePanel = new MigPanel("insets 0", "[" + StandardLeftIndent + "][p]") {
-      add(LabelWithSeparator("Valuation Parameters"), "spanx, growx, wrap")
-
-      val explanationComponent = new TopNamedQuantityComponent(pnl)
+    val valuationParametersExplainPanel = new MigPanel("insets 0", "[" + StandardLeftIndent + "][p]") {
+      val extraFormatInfo = context.getSetting(StandardUserSettingKeys.ExtraFormattingInfo, PivotFormatter.DefaultExtraFormatInfo)
+      val explanationComponent = new TopNamedQuantityComponent(pnl, extraFormatInfo) {
+        reactions += {
+          case UserSettingUpdated(StandardUserSettingKeys.ExtraFormattingInfo) => {
+            val extraFormatInfo = context.getSetting(StandardUserSettingKeys.ExtraFormattingInfo)
+            updateExtraInfo(extraFormatInfo)
+          }
+        }
+        listenTo(context.remotePublisher)
+      }
       val explanationScrollPane = new ScrollPane(explanationComponent) {
         verticalScrollBar.unitIncrement = 10
         horizontalScrollBar.unitIncrement = 10
       }
 
-      add(explanationScrollPane, "skip 1, push, grow")
+      add(LabelWithSeparator("Valuation Parameters"), "spanx, growx, wrap")
+      add(explanationScrollPane, "skip 1, push, grow, gapright " + RightPanelSpace)
     }
 
     add(infoPanel, "pushx, wrap")
-    add(valuationParametersTablePanel, "push, grow")
+    add(valuationParametersExplainPanel, "push, grow")
   }
   add(mainPanel, "push, grow")
 }
