@@ -712,34 +712,7 @@ class ValuationService(
         }
       }
     }
-
-/*
-    def publishChangedValueEvents(eventPublisher : Publisher)(ids : List[String], payloadTypeParam : String = RefinedMetalTradeIdPayload) = {
-      val newValuationEvent =
-        new Event() {
-          verb = UpdatedEventVerb
-          subject = StarlingValuationServiceSubject
-          source = StarlingSource
-          content = new Content() {
-            header = new Header() {
-              timestamp = new DateTime
-              pid = Pid.getPid
-              host = InetAddress.getLocalHost.getCanonicalHostName
-            }
-            body = Body(ids.map(id => new Payload() {
-              payloadType = payloadTypeParam
-              key = new EventKey() { identifier = id }
-              source = StarlingSource
-            }))
-            key = new EventKey(){ identifier = System.currentTimeMillis.toString }
-          }
-        }
-
-      val eventArray = ||> { new JSONArray } { r => r.put(newValuationEvent.toJson) }
-      eventPublisher.publish(eventArray)
-    }
-*/
-
+    
     // publish the valuation updated event contaning payloads of the trade id's whose trade valuations have changed
     private val publishStarlingChangedValueEvents = publishChangedValueEvents(StarlingSource, StarlingValuationServiceSubject) _
     private def publishChangedValueEvents(source : String, subject : String)
