@@ -474,7 +474,7 @@ case class PivotTableConverter(otherLayoutInfo:OtherLayoutInfo = OtherLayoutInfo
                     case Some(UndefinedValue) => TableCell.Undefined
                     case Some(other) => table.formatInfo.fieldToFormatter(measureAxisCell.value.field).format(other, extraFormatInfo)
                   }
-                  tc.copy(state = measureCell.cellType, edits = measureCell.edits, originalValue = measureCell.originalValue)
+                  tc.copy(state = measureCell.cellType, edits = measureCell.edits, originalValue = measureCell.originalValue, editable = measureCell.editable)
                 }
               }
             }
@@ -485,22 +485,16 @@ case class PivotTableConverter(otherLayoutInfo:OtherLayoutInfo = OtherLayoutInfo
           val columnTotal = columnValues.exists(_.totalState == Total)
           val columnOtherValue = columnValues.exists(_.totalState == OtherValueTotal)
 
-          val editable = table.editableInfo match {
-            case None => false
-            case Some(editableInfo) => columnValues.map(_.value.field).toSet.intersect(editableInfo.editableMeasures.keySet).nonEmpty &&
-                    !(rowSubTotal || rowTotal || rowOtherValue || columnSubTotal || columnTotal || columnOtherValue)
-          }
-
           if ((rowTotal && columnSubTotal) || (columnTotal && rowSubTotal) || (rowTotal && columnTotal) || (rowSubTotal && columnSubTotal)) {
-            tableCell.copy(totalState=SubtotalTotal, editable = editable)
+            tableCell.copy(totalState=SubtotalTotal)
           } else if (rowTotal || columnTotal) {
-            tableCell.copy(totalState=Total, editable = editable)
+            tableCell.copy(totalState=Total)
           } else if (rowSubTotal || columnSubTotal) {
-            tableCell.copy(totalState=SubTotal, editable = editable)
+            tableCell.copy(totalState=SubTotal)
           } else if (rowOtherValue || columnOtherValue) {
-            tableCell.copy(totalState=OtherValueTotal, editable = editable)
+            tableCell.copy(totalState=OtherValueTotal)
           } else {
-            tableCell.copy(editable = editable)
+            tableCell
           }
         }).toArray
       }).toArray

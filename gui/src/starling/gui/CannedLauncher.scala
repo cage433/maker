@@ -289,23 +289,23 @@ class EditableSpecifiedCannedDataSource extends UnfilteredPivotTableDataSource {
     val random = new java.util.Random(1234567890L)
     (for (trader <- traders; market <- markets) yield {
       if (random.nextInt(9) > 3) {
-        Some(Map(Field("Trader") -> trader, Field("Market") -> market, Field("Volume") -> random.nextInt(2000)))
+        Some(Map(Field("Trader") -> trader, Field("Market") -> market, Field("Volume") -> random.nextInt(2000), Field("Single Value") -> "Single Value Nick"))
       } else {
         None
       }
-    }).flatten ::: List(Map(Field("Trader") -> "alex", Field("Market") -> "Unused", Field("Volume") -> 15))
+    }).flatten ::: List(Map(Field("Trader") -> "alex", Field("Market") -> "Unused", Field("Volume") -> 15, Field("Single Value") -> "Single Value Nick"))
   }
 
   val marketFieldDetails = new FieldDetails("Market") {
     override def parser = new CannedMarketPivotParser(markets.toSet + "Unused")
   }
 
-  def fieldDetailsGroups = List(FieldDetailsGroup("Group 1", FieldDetails("Trader"), marketFieldDetails, new SumIntFieldDetails("Volume")))
+  def fieldDetailsGroups = List(FieldDetailsGroup("Group 1", FieldDetails("Trader"), marketFieldDetails, new SumIntFieldDetails("Volume"), FieldDetails("Single Value")))
   def unfilteredData(pfs:PivotFieldsState) = data
 
   override def editable = Some(new EditPivot {
     def save(edits:PivotEdits) = {println("SAVE : " + edits); true}
-    def editableToKeyFields = Map(Field("Volume") -> Set(Field("Trader"), Field("Market")))
+    def editableToKeyFields = Map(Field("Volume") -> Set(Field("Trader"), Field("Market"), Field("Single Value")))
     def withEdits(edits:PivotEdits):PivotTableDataSource = {
       if (edits.isEmpty) {
         EditableSpecifiedCannedDataSource.this
@@ -318,7 +318,7 @@ class EditableSpecifiedCannedDataSource extends UnfilteredPivotTableDataSource {
             println("")
 
             val dWithDeletesAndAmends = d.map(m => {
-              val key = Map(Field("Trader") -> m(Field("Trader")), Field("Market") -> m(Field("Market")))
+              val key = Map(Field("Trader") -> m(Field("Trader")), Field("Market") -> m(Field("Market")), Field("Single Value") -> m(Field("Single Value")))
               m.map { case (field, value) => {
                 edits.editFor(key, field) match {
                   case None => field -> value

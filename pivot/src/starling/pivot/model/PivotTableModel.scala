@@ -254,14 +254,14 @@ object NullDataFieldTotal extends DataFieldTotal {
   def addValue(value:PivotValue) = throw new Exception()
   def addGroup(other:DataFieldTotal) = other
   def isAlmostZero = true
-  def measureCell = MeasureCell(None, Normal)
+  def measureCell = MeasureCell.Null
 }
 
-case class EmptyDataFieldTotal(fieldDetails:FieldDetails) extends DataFieldTotal {
-  def addValue(value:PivotValue) = SingleDataFieldTotal(fieldDetails, value)
+case class EmptyDataFieldTotal(fieldDetails:FieldDetails, editable:Boolean) extends DataFieldTotal {
+  def addValue(value:PivotValue) = SingleDataFieldTotal(fieldDetails, value, editable)
   def addGroup(other:DataFieldTotal) = other
   def isAlmostZero = false // TODO - look at this
-  def measureCell = MeasureCell(None, Normal)
+  def measureCell = MeasureCell.Null
 }
 
 trait NonEmptyDataFieldTotal extends DataFieldTotal {
@@ -284,7 +284,7 @@ trait NonEmptyDataFieldTotal extends DataFieldTotal {
   })
 }
 
-case class SingleDataFieldTotal(fieldDetails:FieldDetails, value:PivotValue) extends NonEmptyDataFieldTotal {
+case class SingleDataFieldTotal(fieldDetails:FieldDetails, value:PivotValue, editable:Boolean) extends NonEmptyDataFieldTotal {
   override def aggregateValue = value.value.map(v=>fieldDetails.combineFirstGroup(v))
   override def aggregateOriginal = value.originalValue.map(v=>fieldDetails.combineFirstGroup(v))
   def measureCell = {
@@ -292,7 +292,7 @@ case class SingleDataFieldTotal(fieldDetails:FieldDetails, value:PivotValue) ext
       case Some(valueOrDeletedValue) => Some(fieldDetails.value(fieldDetails.combineFirstGroup(valueOrDeletedValue)))
       case None => None
     }
-    MeasureCell(vv, value.cellType, edits, value.originalValue)
+    MeasureCell(vv, value.cellType, edits, value.originalValue, editable)
   }
   override val edits = value.edits
 }
@@ -384,9 +384,12 @@ object PivotTableModel {
       val allPaths = pivotState.columns.buildPathsWithPadding
       val maxColumnDepth = if (allPaths.isEmpty) 0 else allPaths.maximum(_.path.size)
 
-      val editableInfo = {
+      val (editableInfo, editableMeasures) = {
         dataSource.editable match {
-          case None => None
+          case None => {
+            val em:Set[Field] = Set.empty
+            (None, em)
+          }
           case Some(editPivot) => {
             // Work out if all the fields are in the appropriate places (rows or columns, or filter area with one selection)
             val editableMeasureFields = editPivot.editableToKeyFields.flatMap{case (editableField,keyFields) => {
@@ -413,7 +416,9 @@ object PivotTableModel {
             val editableMeasures = Map() ++ editableMeasureFields.map(f => (f -> fieldDetailsLookup(f).parser))
             val editableKeys = Map() ++ editableKeyFields.map(f => (f -> fieldDetailsLookup(f).parser))
 
-            Some(EditableInfo(keyFields, editableMeasures, editableKeys, extraLine))
+            val allEditableMeasures = editPivot.editableToKeyFields.keySet
+
+            (Some(EditableInfo(keyFields, editableMeasures, editableKeys, extraLine)), allEditableMeasures)
           }
         }
       }
@@ -557,7 +562,7 @@ object PivotTableModel {
               val rowColumnKey = (rowValues.list.map(_.childKey), columnValues.list.map(_.childKey))
               dataFieldOption.foreach { df => {
                 if (!mainTableBucket.contains(rowColumnKey)) {
-                  mainTableBucket(rowColumnKey) = new EmptyDataFieldTotal(fieldDetailsLookup(df))
+                  mainTableBucket(rowColumnKey) = new EmptyDataFieldTotal(fieldDetailsLookup(df), editableMeasures.contains(df))
                 }
                 mainTableBucket(rowColumnKey) = mainTableBucket(rowColumnKey).addValue(PivotValue.create(row(df)))
               }}
