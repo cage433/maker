@@ -100,7 +100,7 @@ class BouncyRMITests extends StarlingTest {
   @BeforeMethod
   def before() {
     someService = new SomeService()
-    server = new BouncyRMIServer(port1, auth, BouncyRMI.CodeVersion, new CopyOnWriteArraySet[User], Set(), ChannelLoggedIn, someService)
+    server = new BouncyRMIServer(port1, auth, BouncyRMI.CodeVersion, new CopyOnWriteArraySet[User], Set(), ChannelLoggedIn, "", someService)
     client = new BouncyRMIClient("localhost", port1, classOf[Service], auth = Client.Null, overriddenUser = None)
   }
 
@@ -150,7 +150,7 @@ class BouncyRMITests extends StarlingTest {
 
   @Test
   def testClientConnectFailsIfVersionsDoNotMatch() {
-    val server = new BouncyRMIServer(port1, auth, "Two", new CopyOnWriteArraySet[User], Set(), ChannelLoggedIn, new SomeService())
+    val server = new BouncyRMIServer(port1, auth, "Two", new CopyOnWriteArraySet[User], Set(), ChannelLoggedIn, "", new SomeService())
     server.start
 
     val needsReboot = new WaitForFlag
@@ -201,7 +201,7 @@ class BouncyRMITests extends StarlingTest {
     server.stop()
     disconnected.waitForFlip
     Thread.sleep(1000) // client has to try a few times
-    server = new BouncyRMIServer(port1, auth, BouncyRMI.CodeVersion, new CopyOnWriteArraySet[User], Set(), ChannelLoggedIn, new SomeService())
+    server = new BouncyRMIServer(port1, auth, BouncyRMI.CodeVersion, new CopyOnWriteArraySet[User], Set(), ChannelLoggedIn, "", new SomeService())
     server.start
     secondConnect.waitForFlip
     client.stop
@@ -276,7 +276,7 @@ class BouncyRMITests extends StarlingTest {
     println("flipping wait")
     disconnected.waitForFlip
 
-    server = new BouncyRMIServer(port1, auth, BouncyRMI.CodeVersion, new CopyOnWriteArraySet[User], Set(), ChannelLoggedIn, new SomeService())
+    server = new BouncyRMIServer(port1, auth, BouncyRMI.CodeVersion, new CopyOnWriteArraySet[User], Set(), ChannelLoggedIn, "", new SomeService())
     server.start
 
     Thread.sleep(2000)
@@ -373,7 +373,7 @@ class BouncyRMITests extends StarlingTest {
       client.proxy.foo("f")
       fail("Expected exception as server is not running")
     } catch {
-      case e: CannotConnectException => {assertEquals("Can not connect to server", e.getMessage)}
+      case e: CannotConnectException => {assertEquals("Can not connect to server localhost:" + port1, e.getMessage)}
       case e: Exception => fail("Expected OfflineException, got " + e)
     }
     //also check exception works after a connect and disconnect
@@ -408,7 +408,7 @@ class BouncyRMITests extends StarlingTest {
     connected.waitForFlip
     server.stop()
     disconnected.waitForFlip
-    val serverOne = new BouncyRMIServer(port1, auth, "One", new CopyOnWriteArraySet[User], Set(), ChannelLoggedIn, new SomeService())
+    val serverOne = new BouncyRMIServer(port1, auth, "One", new CopyOnWriteArraySet[User], Set(), ChannelLoggedIn, "", new SomeService())
     serverOne.start
     try {
       Thread.sleep(2000) // wait for reconnect

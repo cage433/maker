@@ -84,3 +84,9 @@ object ExampleClient {
     }
   }
 }
+
+object MarketDataHttpClient {
+  def main(args: Array[String]) {
+    MarketDataClient.test(ResteasyServiceApi("http://localhost:37220/RPC"))
+  }
+}

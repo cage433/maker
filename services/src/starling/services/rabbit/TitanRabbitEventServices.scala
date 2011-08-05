@@ -11,14 +11,14 @@ import org.codehaus.jettison.json.JSONArray
 import com.trafigura.services.log.Logger
 import com.trafigura.events._
 import starling.gui.api.MarketDataSnapshot
-import starling.utils.{TypedBroadcaster, Log, Stoppable}
+import starling.utils.{TypedBroadcaster, Log, Stopable}
 import com.trafigura.shared.events._
 
 
 /**
  * Titan RabbitMQ event module
  */
-trait TitanRabbitEventServices extends Stoppable with Logger {
+trait TitanRabbitEventServices extends Stopable with Logger {
   val eventDemux : IDemultiplexEvents
   val rabbitEventPublisher : Publisher
   def addClient(client:DemultiplexerClient)

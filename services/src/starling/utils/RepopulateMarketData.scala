@@ -11,12 +11,14 @@ import starling.daterange.{ObservationTimeOfDay, TimeOfDay, ObservationPoint, Da
  */
 object RepopulateMarketData {
   def main(args: Array[String]) {
-    val init = new StarlingInit(PropsHelper.defaultProps, false, false, false, false).start
+    val init = new StarlingInit(PropsHelper.defaultProps, false, false, false, false)
+    init.start
     init.marketDataStore.importData(MarketDataSelection(Some(PricingGroup.Metals)), Day(2011, 3, 31))
   }
 
   def foo(args: Array[String]) {
-    val init = new StarlingInit(PropsHelper.defaultProps, false, false, false, false).start
+    val init = new StarlingInit(PropsHelper.defaultProps, false, false, false, false)
+    init.start
     if (args.length < 1) {
       Log.error("Need a pricing group:")
       PricingGroup.values.map(p => println(p.name))

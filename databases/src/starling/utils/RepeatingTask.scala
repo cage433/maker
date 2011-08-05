@@ -5,7 +5,7 @@ import java.util.{Timer, TimerTask}
 /**
  * @param runEvery number of seconds to run after, repeats
  */
-abstract class RepeatingTask(runEvery: Int, name: String) {
+abstract class RepeatingTask(runEvery: Int, name: String) extends Stopable {
 
   def task: Unit
 
@@ -20,4 +20,6 @@ abstract class RepeatingTask(runEvery: Int, name: String) {
 
     timer.schedule(timerTask, runEvery * 1000, runEvery * 1000)
   }
+
+  override def start = { super.start; schedule }
 }

@@ -7,12 +7,12 @@ import org.boris.xlloop.{IFunctionContext, IFunctionHandler, FunctionServer}
 import starling.auth.{LdapUserLookup, User}
 import org.boris.xlloop.xloper.{XLError, XLString, XLoper}
 import java.net.SocketException
-import starling.utils.{Stoppable, Log}
+import starling.utils.{Stopable, Log}
 
 /**
  * Locally store curves uploaded from xlloop and hand them out as price data.
  */
-class ExcelLoopReceiver(ldapUser: LdapUserLookup, port: Int, handlers: Object*) extends Stoppable with Runnable {
+class ExcelLoopReceiver(ldapUser: LdapUserLookup, port: Int, handlers: Object*) extends Stopable with Runnable {
   val functionServer = new FunctionServer(port)
 
   override def start { super.start; new Thread(this).start }

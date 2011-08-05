@@ -17,6 +17,7 @@ import atomic.{AtomicBoolean, AtomicReference, AtomicInteger}
 import org.jboss.netty.handler.timeout.{IdleStateEvent, IdleStateAwareChannelHandler}
 import org.jboss.netty.util.{HashedWheelTimer, Timeout, TimerTask}
 
+
 trait Client {
   def ticket: Option[Array[Byte]]
 }
@@ -107,7 +108,7 @@ class BouncyRMIClient[C](host: String, port: Int, interface: Class[C], auth: Cli
           if (!channelFuture.isSuccess) {
             Logger.warn("Client: Failed to connect to server")
             result = channelFuture.getCause match {
-              case e: Exception => Some(new CannotConnectException("Can not connect to server", channelFuture.getCause))
+              case e: Exception => Some(new CannotConnectException("Can not connect to server %s:%d".format(host, port), channelFuture.getCause))
               case e => {
                 Logger.error("Failed to connect", e)
                 Some(e)

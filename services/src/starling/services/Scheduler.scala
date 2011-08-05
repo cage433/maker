@@ -7,13 +7,13 @@ import starling.db.MarketDataStore
 import starling.gui.api.{PricingGroup, MarketDataSelection}
 import starling.props.Props
 import starling.services.trinity.TrinityUploader
-import starling.utils.{Broadcaster, Log, Stoppable}
+import starling.utils.{Broadcaster, Log, Stopable}
 
 import starling.market.FuturesExchangeFactory._
 import starling.utils.ImplicitConversions._
 
 
-class Scheduler(props: Props, forwardCurveTasks: List[TaskDescription] = Nil) extends Stoppable {
+class Scheduler(props: Props, forwardCurveTasks: List[TaskDescription] = Nil) extends Stopable {
   private lazy val timer = new Timer(true)
   val tasks = if (props.ServerType() == "FC2") forwardCurveTasks else Nil
 
