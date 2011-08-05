@@ -257,11 +257,17 @@ object NullDataFieldTotal extends DataFieldTotal {
   def measureCell = MeasureCell.Null
 }
 
-case class EmptyDataFieldTotal(fieldDetails:FieldDetails, editable:Boolean) extends DataFieldTotal {
+case class EmptyDataFieldTotal(fieldDetails:FieldDetails, editable:Boolean, blankCellsEditable:Boolean) extends DataFieldTotal {
   def addValue(value:PivotValue) = SingleDataFieldTotal(fieldDetails, value, editable)
   def addGroup(other:DataFieldTotal) = other
   def isAlmostZero = false // TODO - look at this
-  def measureCell = MeasureCell.Null
+  def measureCell = {
+    if (blankCellsEditable) {
+      MeasureCell.EditableNull
+    } else {
+      MeasureCell.Null
+    }
+  }
 }
 
 trait NonEmptyDataFieldTotal extends DataFieldTotal {
@@ -384,11 +390,11 @@ object PivotTableModel {
       val allPaths = pivotState.columns.buildPathsWithPadding
       val maxColumnDepth = if (allPaths.isEmpty) 0 else allPaths.maximum(_.path.size)
 
-      val (editableInfo, editableMeasures) = {
+      val (editableInfo, editableMeasures, blankCellsEditable) = {
         dataSource.editable match {
           case None => {
             val em:Set[Field] = Set.empty
-            (None, em)
+            (None, em, false)
           }
           case Some(editPivot) => {
             val keyFields = editPivot.editableToKeyFields.flatMap(_._2).toSet
@@ -405,7 +411,21 @@ object PivotTableModel {
 
             val allEditableMeasures = editPivot.editableToKeyFields.keySet
 
-            (Some(EditableInfo(keyFields, measureFieldsToParser ++ keyFieldsToParser, extraLine)), allEditableMeasures)
+            val blankEditable = keyFields.forall(f => {
+              pivotState.rowFields.contains(f) ||
+                      pivotState.columns.contains(f) ||
+              pivotState.filtersInTheFilterArea.exists{case (f0, sel) => {
+                (f == f0) && (sel match {
+                  case SomeSelection(s) if s.size == 1 => true
+                  case _ => false
+                })
+              }}
+            })
+
+            // I have to pull out the set here as there is a strange serializable problem if I don't.
+            val measureFieldsSet = Set() ++ measureFieldsToParser.keySet
+
+            (Some(EditableInfo(keyFields, measureFieldsSet, measureFieldsToParser ++ keyFieldsToParser, extraLine, blankEditable)), allEditableMeasures, blankEditable)
           }
         }
       }
@@ -549,7 +569,7 @@ object PivotTableModel {
               val rowColumnKey = (rowValues.list.map(_.childKey), columnValues.list.map(_.childKey))
               dataFieldOption.foreach { df => {
                 if (!mainTableBucket.contains(rowColumnKey)) {
-                  mainTableBucket(rowColumnKey) = new EmptyDataFieldTotal(fieldDetailsLookup(df), editableMeasures.contains(df))
+                  mainTableBucket(rowColumnKey) = new EmptyDataFieldTotal(fieldDetailsLookup(df), editableMeasures.contains(df), blankCellsEditable)
                 }
                 mainTableBucket(rowColumnKey) = mainTableBucket(rowColumnKey).addValue(PivotValue.create(row(df)))
               }}
@@ -692,7 +712,7 @@ object PivotTableModel {
 
 case class TreeDetails(treeDepths:Map[Field, (Int, Int)], maxTreeDepths:Map[Field, Int])
 
-case class EditableInfo(keyFields:Set[Field], fieldToParser:Map[Field,PivotParser], extraLine:Boolean)
+case class EditableInfo(keyFields:Set[Field], measureFields:Set[Field], fieldToParser:Map[Field,PivotParser], extraLine:Boolean, blankCellsEditable:Boolean)
 case class FormatInfo(fieldToFormatter:Map[Field,PivotFormatter])
 object FormatInfo {
   val Blank = FormatInfo(Map())

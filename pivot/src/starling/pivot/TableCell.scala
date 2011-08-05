@@ -60,6 +60,7 @@ object TableCell {
   def apply(value: Any) = new TableCell(value)
 
   val Null = new TableCell(NoValue, "")
+  val EditableNull = new TableCell(NoValue, "", editable = true)
   val Undefined = new TableCell(UndefinedValue, "n/a")
   val UndefinedNew = new TableCell(UndefinedValue, "")
 

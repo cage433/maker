@@ -319,7 +319,7 @@ case class NewValue(value:Option[Any], rowIndex:Int, edits:PivotEdits) extends P
 case class MeasureCell(value:Option[Any], cellType:EditableCellState, edits:PivotEdits=PivotEdits.Null, originalValue:Option[Any]=None, editable:Boolean=false)
 object MeasureCell {
   val Null = MeasureCell(None, Normal)
-  val Undefined = MeasureCell(Some(UndefinedValue), Normal)
+  val EditableNull = MeasureCell(None, Normal, editable = true)
 }
 
 case class PivotResult(data:Seq[Map[Field,Any]], possibleValues:Map[Field,List[Any]]){

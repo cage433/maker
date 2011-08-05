@@ -431,6 +431,11 @@ case class PivotTableConverter(otherLayoutInfo:OtherLayoutInfo = OtherLayoutInfo
   private def nMainTableCells(flattenedRowValues:List[List[AxisCell]], flattenedColValues:List[List[AxisCell]], extractUOMs:Boolean = true) = {
     val aggregatedMainBucket = table.aggregatedMainBucket
 
+    val measureFieldsEditable = table.editableInfo match {
+      case Some(ei) => ei.blankCellsEditable
+      case None => false
+    }
+
     //create the main table looping through the flattened rows and columns and looking up the sums in mainTableBucket
     val allUnits = Array.fill(scala.math.max(1, flattenedColValues.size))(Set[UOM]())
     val data: Array[Array[TableCell]] =
@@ -450,7 +455,7 @@ case class PivotTableConverter(otherLayoutInfo:OtherLayoutInfo = OtherLayoutInfo
               case _ =>
             }
           }
-
+          val measureField = columnValues.find(ac => ac.value.isMeasure)
           val tableCell = aggregatedMainBucket.get(key) match {
             case Some(measureCell) => {
               measureCell.value match {
@@ -458,12 +463,18 @@ case class PivotTableConverter(otherLayoutInfo:OtherLayoutInfo = OtherLayoutInfo
                 case Some(v) => appendUOM(v)
                 case None =>
               }
-              columnValues.find(ac => ac.value.isMeasure) match {
+              measureField match {
                 case None => {
                   // This is probably a "fake" message cell.
                   measureCell.value match {
                     case Some(v) => TableCell(v)
-                    case _ => TableCell.Null
+                    case _ => {
+                      if (measureCell.editable) {
+                        TableCell.EditableNull
+                      } else {
+                        TableCell.Null
+                      }
+                    }
                   }
                 }
                 case Some(measureAxisCell) => {
@@ -478,7 +489,18 @@ case class PivotTableConverter(otherLayoutInfo:OtherLayoutInfo = OtherLayoutInfo
                 }
               }
             }
-            case None => TableCell.Null
+            case None => {
+              measureField match {
+                case Some(ac) => {
+                  if (measureFieldsEditable && table.editableInfo.get.measureFields.contains(ac.value.field)) {
+                    TableCell.EditableNull
+                  } else {
+                    TableCell.Null
+                  }
+                }
+                case None => TableCell.Null
+              }
+            }
           }
 
           val columnSubTotal = columnValues.exists(_.totalState == SubTotal)

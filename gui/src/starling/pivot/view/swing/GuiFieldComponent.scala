@@ -231,7 +231,7 @@ class GuiFieldNamePanel(props:GuiFieldComponentProps, guiComp:GuiFieldComponent)
   private var dragging = false
   private val editableField = props.editableInfo match {
     case None => false
-    case Some(ei) => ei.keyFields.contains(props.field)
+    case Some(ei) => ei.fieldToParser.keySet.contains(props.field)
   }
 
   // As I'm drawing a measure symbol on real measure fields, I need to give a little bit more space.
