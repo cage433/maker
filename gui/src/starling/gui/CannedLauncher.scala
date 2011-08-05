@@ -289,7 +289,7 @@ class EditableSpecifiedCannedDataSource extends UnfilteredPivotTableDataSource {
     val random = new java.util.Random(1234567890L)
     (for (trader <- traders; market <- markets) yield {
       if (random.nextInt(9) > 3) {
-        Some(Map(Field("Trader") -> trader, Field("Market") -> market, Field("Volume") -> random.nextInt(2000), Field("Single Value") -> "Single Value Nick"))
+        Some(Map(Field("Trader") -> trader, Field("Market") -> market, Field("Volume") -> random.nextInt(2000), Field("Single Value") -> "Single Value Nick", Field("Non Editable") -> "bla"))
       } else {
         None
       }
@@ -300,7 +300,7 @@ class EditableSpecifiedCannedDataSource extends UnfilteredPivotTableDataSource {
     override def parser = new CannedMarketPivotParser(markets.toSet + "Unused")
   }
 
-  def fieldDetailsGroups = List(FieldDetailsGroup("Group 1", FieldDetails("Trader"), marketFieldDetails, new SumIntFieldDetails("Volume"), FieldDetails("Single Value")))
+  def fieldDetailsGroups = List(FieldDetailsGroup("Group 1", FieldDetails("Trader"), marketFieldDetails, new SumIntFieldDetails("Volume"), FieldDetails("Single Value"), FieldDetails("Non Editable")))
   def unfilteredData(pfs:PivotFieldsState) = data
 
   override def editable = Some(new EditPivot {

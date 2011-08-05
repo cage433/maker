@@ -323,7 +323,7 @@ case class PivotTableConverter(otherLayoutInfo:OtherLayoutInfo = OtherLayoutInfo
       table.editableInfo match {
         case None => r
         case Some(info) => {
-          val keyFields = info.editableKeyFields.keySet
+          val keyFields = info.keyFields
           val editableColIndices = table.rowFields.zipWithIndex.filter{case (f,index) => keyFields.contains(f)}.map(_._2).toSet
           r.map(cols => {
             cols.zipWithIndex.map{case (cell,index) => if (cell.notTotalValue && editableColIndices.contains(index)) {

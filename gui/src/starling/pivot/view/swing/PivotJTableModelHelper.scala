@@ -228,7 +228,7 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
 
     override def parser(row:Int, col:Int) = {
       val rowHeaderField = rowHeaderData0(0)(col).value.field
-      editableInfo.get.editableKeyFields(rowHeaderField)
+      editableInfo.get.fieldToParser(rowHeaderField)
     }
 
     override def setValuesAt(values:List[TableValue], currentEdits:Option[PivotEdits], fireChange:Boolean) = {
@@ -290,7 +290,7 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
 
     def acceptableValues(r:Int, c:Int) = {
       val rowHeaderField = rowHeaderData0(0)(c).value.field
-      val parser = editableInfo.get.editableKeyFields(rowHeaderField)
+      val parser = editableInfo.get.fieldToParser(rowHeaderField)
       parser.acceptableValues
     }
 
@@ -544,7 +544,7 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
 
     override def parser(row:Int, col:Int) = {
       val measureInfo = colHeaderData0.find(_(col).value.isMeasure).get(col)
-      editableInfo.get.editableMeasures(measureInfo.value.field)
+      editableInfo.get.fieldToParser(measureInfo.value.field)
     }
 
     override def setValuesAt(values:List[TableValue], currentEdits:Option[PivotEdits], fireChange:Boolean) = {
@@ -650,7 +650,7 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
 
     def acceptableValues(r:Int, c:Int) = {
       val measureInfo = colHeaderData0.find(_(c).value.isMeasure).get(c)
-      val parser = editableInfo.get.editableMeasures(measureInfo.value.field)
+      val parser = editableInfo.get.fieldToParser(measureInfo.value.field)
       parser.acceptableValues
     }
 
