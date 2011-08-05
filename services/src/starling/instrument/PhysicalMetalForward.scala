@@ -131,9 +131,9 @@ object CostsAndIncomeValuation{
 object PhysicalMetalAssignmentForward {
   def apply(exchangesByID : Map[String, EDMMarket],
             edmMetalByGUID : Map[GUID, EDMMetal],
-            quotaNameToQuotaMap : Map[String, PhysicalTradeQuota],
-            uomIdToNameMap : Map[Int, String])
-           (inventory : EDMInventoryItem) : PhysicalMetalAssignmentForward = {
+            quotaNameToQuotaMap : Map[String, PhysicalTradeQuota])
+            (inventory : EDMInventoryItem)
+            (implicit uomIdToNameMap : Map[Int, String]) : PhysicalMetalAssignmentForward = {
     try {
       val purchaseQuota = quotaNameToQuotaMap(inventory.purchaseAssignment.quotaName)
       val edmPurchasePricingSpec = purchaseQuota.detail.pricingSpec
@@ -156,7 +156,7 @@ object PhysicalMetalAssignmentForward {
        purchasePricingSpec,
        salePricingSpec)
 
-      PhysicalMetalAssignmentForward(inventory.oid.contents.toString, inventory, quota, uomIdToNameMap)
+      PhysicalMetalAssignmentForward(inventory.oid.contents.toString, inventory, quota)
     }
     catch {
       case ex => throw new Exception("Inventory " + inventory.oid + " failed to construct from EDM. " + ex.getMessage, ex)
@@ -166,12 +166,12 @@ object PhysicalMetalAssignmentForward {
   def value(exchangesByID : Map[String, EDMMarket],
             edmMetalByGUID : Map[GUID, EDMMetal],
             quotaNameToQuotaMap : Map[String, PhysicalTradeQuota],
-            uomIdToNameMap : Map[Int, String],
             env : Environment, snapshotID : String)
-            (inventory : EDMInventoryItem) : Either[String, List[CostsAndIncomeAssignmentValuation]] =  {
+            (inventory : EDMInventoryItem)
+            (implicit uomIdToNameMap : Map[Int, String]): Either[String, List[CostsAndIncomeAssignmentValuation]] =  {
 
     try {
-      val forward = PhysicalMetalAssignmentForward(exchangesByID, edmMetalByGUID, quotaNameToQuotaMap, uomIdToNameMap)(inventory)
+      val forward = PhysicalMetalAssignmentForward(exchangesByID, edmMetalByGUID, quotaNameToQuotaMap)(inventory)
       Right(forward.costsAndIncomeAssignmentValueBreakdown(env, snapshotID))
     }
     catch {
@@ -180,10 +180,10 @@ object PhysicalMetalAssignmentForward {
   }
 }
 
-case class PhysicalMetalAssignmentForward(id : String, inventoryItem : EDMInventoryItem, quota : PhysicalMetalQuota, uomIdToName : Map[Int, String]) {
+case class PhysicalMetalAssignmentForward(id : String, inventoryItem : EDMInventoryItem, quota : PhysicalMetalQuota)(implicit uomIdToName : Map[Int, String]) {
 
   def costsAndIncomeAssignmentValueBreakdown(env : Environment, snapshotId : String) : List[CostsAndIncomeAssignmentValuation] = {
-    val purchaseQty = fromTitanQuantity(inventoryItem.quantity, uomIdToName)
+    val purchaseQty = fromTitanQuantity(inventoryItem.quantity)
     val saleQty = purchaseQty // until logistics send us both quantities
 
     List(CostsAndIncomeAssignmentValuation(

@@ -13,12 +13,9 @@ import com.trafigura.services.valuation._
 import starling.services.rpc.refdata._
 import com.trafigura.tradinghub.support.ModelObject
 import com.trafigura.edm.trades.{PhysicalTrade => EDMPhysicalTrade}
-import scala.Either
 import java.lang.Exception
 import com.trafigura.shared.events._
-import org.joda.time.{DateTime, LocalDate}
-import com.trafigura.process.Pid
-import java.net.InetAddress
+import org.joda.time.LocalDate
 import org.codehaus.jettison.json.JSONArray
 import com.trafigura.common.control.PipedControl._
 import starling.utils.cache.CacheFactory
@@ -37,7 +34,7 @@ import starling.curves.FixingKey
 import starling.titan._
 import com.trafigura.edm.logistics.inventory.EDMInventoryItem
 import starling.services.rpc.logistics._
-import com.trafigura.events.{PayloadFactory, EventFactory, DemultiplexerClient}
+import com.trafigura.events.DemultiplexerClient
 
 /**
  * Trade cache provide trade map lookup by trade id and also a quota id to trade map lookup
@@ -72,8 +69,8 @@ case class DefaultTitanTradeCache(props : Props) extends TitanTradeCache {
     // temporary code, trademgmt are sending us null titan ids
     val (nullIds, validIds) = validTrades.span(_.titanId == null)
     if (nullIds.size > 0) {
-      println("Null Titan trade IDs found!")
-      println("null ids \n%s\n%s".format(nullIds, validIds))
+      Log.error("Null Titan trade IDs found!")
+      Log.error("null ids \n%s\n%s".format(nullIds, validIds))
       //assert(false, "Null titan ids found - fatal error")
     }
     tradeMap = validTrades/*.filter(pt => pt.tstate == CompletedTradeTstate)*/.map(t => (t.titanId.value, t)).toMap
@@ -154,9 +151,7 @@ case class DefaultTitanLogisticsInventoryCache(props : Props) extends TitanLogis
     case e : Throwable => throw new ExternalTitanServiceFailed(e)
   }
 
-  /**
-   * Read all inventory from Titan and blast our cache
-   */
+  // Read all inventory from Titan and blast our cache
   def updateMap() {
     val sw = new Stopwatch()
     val edmInventoryResult = getAll()
@@ -200,9 +195,7 @@ case class TitanLogisticsServiceBasedInventoryCache(titanLogisticsServices : Tit
   protected var inventoryMap: Map[String, EDMInventoryItem] = Map[String, EDMInventoryItem]()
   protected var assignmentIDtoInventoryIDMap : Map[String, String] = Map[String, String]()
 
-  /**
-   * Read from Titan and blast our cache
-   */
+  // Read from Titan and blast our cache
   def updateMap() {
     val sw = new Stopwatch()
     val edmInventoryResult = titanLogisticsServices.inventoryService.service.getAllInventoryLeaves()
@@ -271,9 +264,7 @@ case class TitanTradeServiceBasedTradeCache(titanTradesService : TitanTradeServi
   protected var tradeMap: Map[String, EDMPhysicalTrade] = Map[String, EDMPhysicalTrade]()
   protected var quotaIDToTradeIDMap: Map[String, String] = Map[String, String]()
 
-  /**
-   * Read all trades from Titan and blast our cache
-   */
+  // Read all trades from Titan and blast our cache
   def updateTradeMap() {
     tradeMap = titanTradesService.getAllTrades()/*.filter(pt => pt.tstate == CompletedTradeTstate)*/.map(t => (t.titanId.value, t)).toMap
     tradeMap.keySet.foreach(addTradeQuotas)
@@ -398,7 +389,7 @@ class ValuationService(
   lazy val futuresExchangeByID = refData.futuresExchangeByID
   lazy val edmMetalByGUID = refData.edmMetalByGUID
   lazy val uomById = refData.uomById
-  lazy val uomIdToName : Map[Int, String] = uomById.values.map(e => e.oid -> e.name).toMap
+  implicit lazy val uomIdToName : Map[Int, String] = uomById.values.map(e => e.oid -> e.name).toMap
 
   val eventHandler = new EventHandler
 
@@ -525,7 +516,7 @@ class ValuationService(
 
     val quotaNameToQuotaMap = titanTradeCache.getAllTrades().flatMap(_.quotas).map(q => NeptuneId(q.detail.identifier.value).identifier -> q).toMap
 
-    val assignmentValuer = PhysicalMetalAssignmentForward.value(futuresExchangeByID, edmMetalByGUID, quotaNameToQuotaMap, uomIdToName, env, snapshotIDString) _
+    val assignmentValuer = PhysicalMetalAssignmentForward.value(futuresExchangeByID, edmMetalByGUID, quotaNameToQuotaMap, env, snapshotIDString) _
 
     val valuations = inventory.map(i => i.oid.contents.toString -> assignmentValuer(i))
     
@@ -550,11 +541,9 @@ class ValuationService(
   def valueInventoryAssignments(inventoryIds: List[String], env : Environment, snapshotIDString : String) : CostAndIncomeAssignmentValuationServiceResults = {
     val sw = new Stopwatch()
 
-    val assignmentService = logisticsServices.assignmentService.service
-
     val quotaNameToQuotaMap = titanTradeCache.getAllTrades().flatMap(_.quotas).map(q => NeptuneId(q.detail.identifier.value).identifier -> q).toMap
 
-    val assignmentValuer = PhysicalMetalAssignmentForward.value(futuresExchangeByID, edmMetalByGUID, quotaNameToQuotaMap, uomIdToName, env, snapshotIDString) _
+    val assignmentValuer = PhysicalMetalAssignmentForward.value(futuresExchangeByID, edmMetalByGUID, quotaNameToQuotaMap, env, snapshotIDString) _
 
     val valuations = inventoryIds.map(i => i -> assignmentValuer(titanInventoryCache.getInventory(i)))
 
@@ -599,15 +588,14 @@ class ValuationService(
    */
   class EventHandler extends DemultiplexerClient {
     import Event._
-    val rabbitPublishChangedValueEvents = publishChangedValueEvents(rabbitEventServices.rabbitEventPublisher) _
-    val rabbitPublishNewValuationEvents = publishNewValuationEvents(rabbitEventServices.rabbitEventPublisher) _
+    lazy val rabbitPublishChangedValueEvents = publishStarlingChangedValueEvents(rabbitEventServices.rabbitEventPublisher)
+    lazy val rabbitPublishNewValuationEvents = publishNewValuationEvents(rabbitEventServices.rabbitEventPublisher) _
     def handle(ev: Event) {
       if (ev == null) Log.warn("Got a null event") else {
-        if (Event.TrademgmtSource == ev.source && (Event.TradeSubject == ev.subject || Event.NeptuneTradeSubject == ev.subject)) { // Must be a trade event from trademgmt
+        if (TrademgmtSource == ev.source && (TradeSubject == ev.subject || NeptuneTradeSubject == ev.subject)) { // Must be some form of trade event from trademgmt source
           tradeMgmtTradeEventHander(ev)
         }
-        // todo, determing the correct logistics event source as it is not entirely obvious
-        else if (Event.LogisticsSource == ev.source && (EDMLogisticsSalesAssignmentSubject == ev.subject || Event.EDMLogisticsInventorySubject == ev.subject)) {
+        else if (LogisticsSource == ev.source && (EDMLogisticsSalesAssignmentSubject == ev.subject || EDMLogisticsInventorySubject == ev.subject)) {
           logisticsAssignmentEventHander(ev)
         }
       }
@@ -641,18 +629,18 @@ class ValuationService(
               Log.info("Trades revalued for received event using snapshot %s number of changed valuations %d".format(snapshotIDString, changedIDs.size))
             }
             case NewEventVerb => {
-              tradeIds.foreach(titanTradeCache.addTrade)
               Log.info("New event received for %s".format(tradeIds))
+              tradeIds.foreach(titanTradeCache.addTrade)
             }
             case CancelEventVerb | RemovedEventVerb => {
-              tradeIds.foreach(titanTradeCache.removeTrade)
               Log.info("Cancelled / deleted event received for %s".format(tradeIds))
+              tradeIds.foreach(titanTradeCache.removeTrade)
             }
           }
         }
         // handle publishing of valuation status events (events saying if a new (completed) trade can be valued successfully or not)
         case NeptuneTradeSubject => {
-          val completed = ev.content.body.payloads.filter(p => Event.TradeStatusPayload == p.payloadType).filter(p => p.key.identifier == "completed").size > 0
+          val completed = ev.content.body.payloads.filter(p => TradeStatusPayload == p.payloadType).filter(p => p.key.identifier == "completed").size > 0
           if (completed) {
             val (snapshotIDString, env) = getSnapshotAndEnv
             val tradeValuations = valueCostables(tradeIds, env, snapshotIDString)
@@ -725,7 +713,7 @@ class ValuationService(
       }
     }
 
-    // publish the valuation updated event contaning payloads of the trade id's whose trade valuations have changed
+/*
     def publishChangedValueEvents(eventPublisher : Publisher)(ids : List[String], payloadTypeParam : String = RefinedMetalTradeIdPayload) = {
       val newValuationEvent =
         new Event() {
@@ -741,7 +729,7 @@ class ValuationService(
             body = Body(ids.map(id => new Payload() {
               payloadType = payloadTypeParam
               key = new EventKey() { identifier = id }
-              source = Event.StarlingSource
+              source = StarlingSource
             }))
             key = new EventKey(){ identifier = System.currentTimeMillis.toString }
           }
@@ -750,10 +738,20 @@ class ValuationService(
       val eventArray = ||> { new JSONArray } { r => r.put(newValuationEvent.toJson) }
       eventPublisher.publish(eventArray)
     }
+*/
 
-    val StarlingNewValuationServiceStatusPayload = "ValuationStatus"
+    // publish the valuation updated event contaning payloads of the trade id's whose trade valuations have changed
+    private val publishStarlingChangedValueEvents = publishChangedValueEvents(StarlingSource, StarlingValuationServiceSubject) _
+    private def publishChangedValueEvents(source : String, subject : String)
+                                         (eventPublisher : Publisher)(ids : List[String], payloadTypeParam : String = RefinedMetalTradeIdPayload) : Unit  = {
 
-    def publishNewValuationEvents(eventPublisher : Publisher)(newValuations : List[(String, Boolean)]) = {
+      val payloadDetails = ids.map(id => (payloadTypeParam, id))
+      val payloads = createPayloads(source)(payloadDetails)
+      val events = createEvents(source, subject)(UpdatedEventVerb, payloads)
+      eventPublisher.publish(events)
+    }
+
+    private def publishNewValuationEvents(eventPublisher : Publisher)(newValuations : List[(String, Boolean)]) = {
       val newValuationPayloads : List[(String, String)] = newValuations.flatMap(e => (RefinedMetalTradeIdPayload, e._1) :: (StarlingNewValuationServiceStatusPayload, e._2.toString) :: Nil)
       val payloads = createStarlingPayloads(newValuationPayloads)
       val newValuationEvents = createValuationServiceEvents(NewEventVerb, payloads)
@@ -772,15 +770,6 @@ class ValuationService(
       payloads.map(p => EventPayloadFactory().createPayload(p._1, source, p._2))
     }
   }
-}
-
-object EventFactory {
-  lazy val ef = new EventFactory()
-  def apply() : EventFactory = ef
-}
-object EventPayloadFactory {
-  lazy val pf = new PayloadFactory()
-  def apply() : PayloadFactory = pf
 }
 
 /**

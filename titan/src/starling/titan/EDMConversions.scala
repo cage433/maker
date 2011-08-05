@@ -94,11 +94,12 @@ object EDMConversions {
     Quantity(amount, uom)
   }
 
-  implicit def fromTitanQuantity(q : EQuantity, uomIdToSymbolName : Map[Int, String]) : Quantity = {
+  implicit def fromTitanQuantity(q : EQuantity)(implicit uomIdToSymbolName : Map[Int, String]) : Quantity = {
+     // No idea why this is optional in EDM
     val amount = q.amount match {
       case Some(amt) => amt
       case None => throw new Exception("Invalid quantity - no amount")
-    }  // No idea why this is optional in EDM
+    }
     
     val uom = UOM.fromSymbolMap(q.uomId match {
       case Some(id) => {

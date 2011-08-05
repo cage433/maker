@@ -46,11 +46,19 @@ case class TitanRabbitIdBroadcaster(
   }
 
   private def createEvents(source : String, subject : String, verb : EventVerbEnum, payloads : List[Payload]) : JSONArray = {
-    val ef = new EventFactory()
     val keyIdentifier = System.currentTimeMillis.toString
-    val ev = ef.createEvent(subject, verb, source, keyIdentifier, payloads)
+    val ev = EventFactory().createEvent(subject, verb, source, keyIdentifier, payloads)
     ||> { new JSONArray } { r => r.put(ev.toJson) }
   }
+}
+
+object EventFactory {
+  lazy val ef = new EventFactory()
+  def apply() : EventFactory = ef
+}
+object EventPayloadFactory {
+  lazy val pf = new PayloadFactory()
+  def apply() : PayloadFactory = pf
 }
 
 case class DefaultTitanRabbitEventServices(props : Props) extends TitanRabbitEventServices {
@@ -150,7 +158,6 @@ case class MockTitanRabbitEventServices() extends TitanRabbitEventServices {
 }
 
 class MockRabbitPublisher(val eventDemux : MockEventDemux) extends Publisher {
-  //this(eventDemux : MockEventDemux)
   def publish(payload: JSONArray) = {
     for (i <- 0 until payload.length()) {
       val obj = payload.getJSONObject(i)
