@@ -89,25 +89,29 @@ class ExpandCollapsePanel(namedQuantity:NamedQuantity, fi:ExtraFormatInfo) exten
   add(label)
 
   reactions += {
-    case MouseClicked(`label`,_,_,_,_) => {
-      if (expanded) {
-        remove(expandedPanel)
-        remove(lShapePanel)
-      } else {
-        add(lShapePanel, "newline 0, split, spanx, gapright 0, ay top")
-        add(expandedPanel, "gapleft 0")
-      }
-      expanded = !expanded
-      revalidate()
-      repaint()
-    }
+    case MouseClicked(`label`,_,_,_,_) => {expandCollapse()}
   }
   listenTo(label.mouse.clicks)
 
+  def expandCollapse() {
+    if (expanded) {
+      remove(expandedPanel)
+      remove(lShapePanel)
+    } else {
+      add(lShapePanel, "newline 0, split, spanx, gapright 0, ay top")
+      add(expandedPanel, "gapleft 0")
+    }
+    expanded = !expanded
+    revalidate()
+    repaint()
+  }
+    
   def updateExtraInfo(newFI:ExtraFormatInfo) {
     label.tooltip = quantityText(namedQuantity, newFI)
     expandedPanel.updateExtraInfo(newFI)
   }
+
+  expandCollapse()
 }
 
 class QuantityPanel(quantity:Quantity, fi:ExtraFormatInfo) extends Label with UpdateableNamedQuantityComponent {
