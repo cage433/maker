@@ -1,6 +1,5 @@
 package starling.pivot.view.swing.fieldchoosers
 
-import starling.pivot.model.PivotTableModel
 import starling.pivot.FieldChooserType.Filter
 import starling.pivot.view.swing._
 import swing.Label
@@ -10,6 +9,7 @@ import java.awt.{Point, Dimension, Color, Rectangle, Graphics2D, RenderingHints}
 import starling.gui.{RoundedBorder, GuiUtils}
 import swing.event.{MouseExited, MouseEntered}
 import swing.Swing._
+import starling.pivot.model.{EditableInfo, PivotTableModel}
 
 object DropPanel {
   val NormalBorder = RoundedBorder(Color.LIGHT_GRAY)
@@ -105,7 +105,7 @@ class EmptyDropLabel(text0:String, view:PivotTableView) extends Label(text0) {
 }
 
 class FilterComponent(model:PivotTableModel, otherLayoutInfo:OtherLayoutInfo,
-                         viewUI:PivotTableViewUI, tableView:PivotTableView)
+                         viewUI:PivotTableViewUI, tableView:PivotTableView, editableInfo:Option[EditableInfo])
         extends MigPanel("insets 1, gap 0px") with DropTarget {
   opaque = false
   border = MatteBorder(0,0,1,0,GuiUtils.BorderColour)
@@ -124,7 +124,7 @@ class FilterComponent(model:PivotTableModel, otherLayoutInfo:OtherLayoutInfo,
       currentlyActingAsMeasure, realMeasureField,
       model.treeDetails, (_field,depth) => {model.setDepth(_field,depth)},
       (_field, from) => (), filterData, transformData, otherLayoutInfo,
-      (_field, from) => (), subTotalToggleVisible, viewUI, tableView)
+      (_field, from) => (), subTotalToggleVisible, viewUI, tableView, editableInfo)
     (field -> new GuiFieldComponent(props))
   })
 

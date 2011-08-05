@@ -17,6 +17,8 @@ import javax.swing.{JPopupMenu, SwingUtilities}
 import starling.gui.custom._
 import starling.pivot._
 import starling.gui.{GuiUtils, StarlingIcons}
+import starling.gui.namedquantitycomponents.UnderLineDashedBorder
+import starling.pivot.model.EditableInfo
 
 case class GuiFieldComponentProps(field:Field, locationOfField:FieldChooserType,
                                   showDepthPanel:Boolean, measureField:Boolean, realMeasureField:Boolean,
@@ -24,7 +26,7 @@ case class GuiFieldComponentProps(field:Field, locationOfField:FieldChooserType,
                                   onMeasureChange:(Field, FieldChooserType) => Unit,
                                   filterData:FilterData, transformData:TransformData,
                                   otherLayoutInfo:OtherLayoutInfo, onSubTotalToggle:(Field, FieldChooserType) => Unit,
-                                  showSubTotalToggle:Boolean, viewUI:PivotTableViewUI, tableView:PivotTableView)
+                                  showSubTotalToggle:Boolean, viewUI:PivotTableViewUI, tableView:PivotTableView, editableInfo:Option[EditableInfo])
 
 case class FilterData(possibleValuesAndSelection:Option[(TreePivotFilter, Selection)], onFilterChange:((Field, Selection) => Unit))
 case class TransformData(showOther:Boolean, transforms:Option[FilterWithOtherTransform], onTransformChange:((Field,FilterWithOtherTransform) => Unit))
@@ -68,7 +70,7 @@ object GuiFieldComponent {
 
 import GuiFieldComponent._
 
-class GuiFieldComponent(val props:GuiFieldComponentProps) extends MigPanel("insets 0, hidemode 3", "[p]0[p]0[p]0[p]0[p]0[p]") {
+class GuiFieldComponent(val props:GuiFieldComponentProps) extends MigPanel("insets 0, hidemode 3", "[p]0[p]") {
   opaque = false
 
   val namePanel = new GuiFieldNamePanel(props, this)
@@ -227,19 +229,21 @@ class GuiFieldNamePanel(props:GuiFieldComponentProps, guiComp:GuiFieldComponent)
   private var display = true
 
   private var dragging = false
+  private val editableField = props.editableInfo match {
+    case None => false
+    case Some(ei) => ei.keyFields.contains(props.field)
+  }
 
   // As I'm drawing a measure symbol on real measure fields, I need to give a little bit more space.
-  private val nameToUse = if (drawMeasureMark) {
-    props.field.name + "  "
-  } else {
-    props.field.name
-  }
-
-  private val label = new Label(nameToUse) {
+  val extraSpace = if (drawMeasureMark) ",gapright 6lp" else ""
+  private val label = new Label(props.field.name) {
     font = GuiFieldFont
     visible = false
+    if (editableField) {
+      border = UnderLineDashedBorder(Color.GRAY)
+    }
   }
-  add(label, "pushx,growx")
+  add(label, "pushx,growx" + extraSpace)
 
   minimumSize = new Dimension(math.max(preferredSize.width, PivotJTable.MinColumnWidth), preferredSize.height)
 

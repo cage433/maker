@@ -341,7 +341,7 @@ class LShape extends Label {
   }
 }
 
-case class UnderLineDashedBorder() extends AbstractBorder {
+case class UnderLineDashedBorder(colour0:Color=LShape.colour) extends AbstractBorder {
   override def paintBorder(c:java.awt.Component, g:Graphics, x:Int, y:Int, width:Int, height:Int) {
     val g2 = g.asInstanceOf[Graphics2D]
 
@@ -349,19 +349,19 @@ case class UnderLineDashedBorder() extends AbstractBorder {
     val w = s.width - 1
     val h = s.height - 1
 
-    g2.setColor(colour)
+    g2.setColor(colour0)
     g2.setStroke(stroke)
     g2.drawLine(2,h,w,h)
   }
 
   override def getBorderInsets(c:java.awt.Component, insets:Insets) = {
-    insets.left = 1
-    insets.right = 1
-    insets.top = 1
-    insets.bottom = 1
+    insets.left = 0
+    insets.right = 0
+    insets.top = 0
+    insets.bottom = 0
     insets
   }
-  override def getBorderInsets(c:java.awt.Component) = new Insets(1,1,1,1)
+  override def getBorderInsets(c:java.awt.Component) = new Insets(0,0,0,0)
 }
 
 object NamedQuantityComponent {
