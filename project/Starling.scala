@@ -194,7 +194,33 @@ object StarlingBuild extends Build{
   lazy val titanModel = Project(
     "titan-model", 
     file("./titan-scala-model"),
-    settings = standardSettings
-  )
+    settings = standardSettings) 
+
+  object TitanModel {
+    lazy val buildUsingBinaryTooling = true
+
+    val toolingLauncher = if (buildUsingBinaryTooling == true) "../../../mdl/bindinggen.rb" else "/model/tooling/binding-generator/thubc.rb"
+    lazy val projectRoot = path(".").asFile.toString
+    val parentPath = Path.fromFile(new java.io.File(projectRoot + "/../../../model/model/"))
+
+    val generateModelMainSourceCmd = Some(new java.lang.ProcessBuilder("ruby", toolingLauncher, "-o", modelMainScalaSourcePath.projectRelativePath, "-b", "../../../mdl/starling/bindings.rb", "../../../mdl/starling/model.rb") directory (new File(projectRoot)))
+
+    lazy val rubyModelPathFinder = {
+      (parentPath ** "*.rb")
+    }
+
+    lazy val nonModelSourcePath = path("src")
+    def copyNonModelSource  = {
+      if (! (new java.io.File(projectRoot + "/src").exists)) {
+        import FileUtilities._
+        val originalSourcePath = Path.fromFile(new java.io.File(parentPath + "/scala-model-with-persistence/src/"))
+        copyDirectory(originalSourcePath, nonModelSourcePath, new ConsoleLogger)
+        val hibernateBean = new File (projectRoot + "/src/main/scala/com/trafigura/refinedmetals/persistence/CustomAnnotationSessionFactoryBean.scala")
+        //println("***** DEBUG ***** path " + hibernateBean.getAbsolutePath + ", " + hibernateBean.exists + ", " + hibernateBean.canWrite) 
+        if (hibernateBean.exists && hibernateBean.canWrite) hibernateBean.delete()
+      }
+      None
+    }
+  }
 }
 
