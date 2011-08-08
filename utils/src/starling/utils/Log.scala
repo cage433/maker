@@ -56,6 +56,17 @@ class ExtendedLog(adapted: VarLogger) extends AdaptingLogger(adapted) {
       Thread.currentThread.setName(oldThreadName)
     }
   }
+  def infoWithTimeGapTop[T](message:String)(f: =>T) = {
+    println("")
+    println("")
+    infoWithTime(message){f}
+  }
+  def infoWithTimeGapBottom[T](message:String)(f: =>T) = {
+    val r = infoWithTime(message){f}
+    println("")
+    println("")
+    r
+  }
 
   def infoF[T](msg: => AnyRef)(f: => T)                   = {info(msg); f}
   def infoF[T](msg: => AnyRef, t: => Throwable)(f: => T)  = {info(msg, t); f}
