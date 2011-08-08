@@ -20,7 +20,7 @@ class HttpServer(portNo : Int,
                  serverName : String,
                  descriptor : Option[String],
                  listeners : List[EventListener],
-                 servlets: (String, Servlet)*) extends Stopable {
+                 servlets: (String, Servlet)*) extends Stopable with Log {
 
   def this(props : Props, servlets: (String, Servlet)*) = 
     this(props.HttpPort(), props.ExternalUrl(), props.ServerName(), None, Nil, servlets:_*)
@@ -32,7 +32,7 @@ class HttpServer(portNo : Int,
 
   descriptor match {
     case Some(desc) => {
-      Log.info("Applying descriptor '%s' to web app context".format(desc))
+      log.info("Applying descriptor '%s' to web app context".format(desc))
       val wac : WebAppContext = new WebAppContext()
       wac.setResourceBase(".")
       wac.setDescriptor(desc)
@@ -53,7 +53,7 @@ class HttpServer(portNo : Int,
 
     server.start()
 
-    Log.info("HttpServer stared on port: " + portNo)
+    log.info("started on port: " + portNo)
   }
 
   override def stop {
@@ -69,12 +69,12 @@ class HttpServer(portNo : Int,
 
   for((path, servlet) <- servlets) {
     val className : String = servlet.getClass.getName
-    Log.info("Registering servlet %s @ %s ".format(className, path))
+    log.info("Registering servlet %s @ %s ".format(className, path))
     registerServlet(servlet, path)
   }
 
   for (listener <- listeners) {
-    Log.info("Registering listener %s".format(listener.getClass.getName))
+    log.info("Registering listener %s".format(listener.getClass.getName))
     rootContext.addEventListener(listener)
   }
 

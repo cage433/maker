@@ -55,11 +55,11 @@ class StarlingInit( val props: Props,
                     forceGUICompatability: Boolean = true,
                     startEAIAutoImportThread: Boolean = true,
                     startRabbit: Boolean = true
-                    ) extends Stopable {
+                    ) extends Stopable with Log {
 
   implicit def enrichBouncyServer(bouncy: BouncyRMIServer[_]) = new {
     def toStoppable = Stopable(
-      () => {Log.info(bouncy.name + " RMI started on port " + bouncy.port); bouncy.start}, () => bouncy.stop())
+      () => {log.info(bouncy.name + " RMI started on port " + bouncy.port); bouncy.start}, () => bouncy.stop())
   }
 
   private lazy val services = CompositeStopable(
@@ -68,7 +68,7 @@ class StarlingInit( val props: Props,
     startRabbit              → List(titanRabbitEventServices),
     startXLLoop              → List(excelLoopReceiver, loopyXLReceiver),
     startRMI                 → List(rmiServerForTitan.toStoppable, rmiServerForGUI.toStoppable),
-    startHttp                → List(httpServer, regressionServer), //httpEdmServiceServer),
+    startHttp                → List(httpServer, regressionServer),//, webServiceServer),
     startStarlingJMX         → List(jmx),
     startEAIAutoImportThread → List(eaiAutoImport, fwdCurveAutoImport),
     true                     → List(scheduler, Stopable(stopF = ConnectionParams.shutdown _))
@@ -78,7 +78,7 @@ class StarlingInit( val props: Props,
   override def stop =  { super.stop;  services.stop  }
 
   val runtime = Runtime.getRuntime
-  Log.info("StarlingInit: maxMemory %sMB" % (runtime.maxMemory / 1024 / 1024))
+  log.info("maxMemory %sMB" % (runtime.maxMemory / 1024 / 1024))
 
   val name = props.ServerName()
   val ldapUserLookup = new LdapUserLookup with BouncyLdapUserLookup[User]
@@ -256,7 +256,7 @@ class StarlingInit( val props: Props,
 
   val auth:ServerAuthHandler[User] = props.UseAuth() match {
     case false => {
-      Log.warn("Auth disabled")
+      log.warn("Auth disabled")
       new ServerAuthHandler[User](new NullAuthHandler(Some(User.Dev)), users, ldapUserLookup,
         user => broadcaster.broadcast(UserLoggedIn(user)), ChannelLoggedIn)
     }
@@ -314,22 +314,23 @@ class StarlingInit( val props: Props,
     val externalHostname = props.ExternalHostname()
     val xlloopUrl = props.XLLoopUrl()
     val rmiPort = props.RmiPort()
-    val webStartServlet = new WebStartServlet("webstart", props.ServerName(), externalURL, "starling.gui.Launcher",
+    val webStartServlet = new WebStartServlet("webstart", serverName, externalURL, "starling.gui.Launcher",
       List(externalHostname, rmiPort.toString), xlloopUrl)
-    val cannedWebStartServlet = new WebStartServlet("cannedwebstart", props.ServerName(), externalURL,
+    val cannedWebStartServlet = new WebStartServlet("cannedwebstart", serverName, externalURL,
       "starling.gui.CannedLauncher", List(), xlloopUrl)
 
-    new HttpServer(props,
+    new HttpServer(props.HttpPort(), props.ExternalUrl(), props.ServerName(), None, Nil,
       "webstart"       → webStartServlet,
       "cannedwebstart" → cannedWebStartServlet)
   }
 
-  Log.info("StarlingInit: EDM service port %d, external url = '%s', server name = '%s'".format(props.HttpEdmServicePort(), props.EdmExternalUrl(), props.ServerName()))
-  
-  lazy val httpEdmServiceServer = {
-    val webXmlUrl = this.getClass.getResource("../../webapp/WEB-INF/web.xml")
+  lazy val webServiceServer = locally {
+    val webXmlUrl = this.getClass.getResource("../../webapp/WEB-INF/web.xml").toExternalForm
 
-    new HttpServer(props.HttpEdmServicePort(), props.EdmExternalUrl(), props.ServerName(), Some(webXmlUrl.toExternalForm), Nil)
+    new HttpServer(props.HttpServicePort(), props.HttpServiceExternalUrl(), serverName, Some(webXmlUrl), Nil) {
+      override def start = log.infoF("HTTP web service external url = '%s', server name = '%s'" %
+        (props.HttpServiceExternalUrl(), serverName)) { super.start; }
+    }
   }
 
   lazy val regressionServer = new RegressionServer(props.RegressionPort(), reportServlet)

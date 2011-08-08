@@ -27,7 +27,7 @@ import xstream.GuiStarlingXStream
 /**
  * The entry point into the starling gui
  */
-object Launcher {
+object Launcher extends Log {
   def main(args: Array[String]) {
     if (args.length != 3) {
       throw new IllegalArgumentException("You need to specify 3 arguments: hostname, rmi port and servicePrincipalName")
@@ -129,7 +129,7 @@ object Launcher {
   }
 
   def showErrorThenExit(t: Throwable) {
-    Log.fatal("Failed to start starling: ", t)
+    log.fatal("Failed to start starling: ", t)
     onEDT {
       GuiUtils.setLookAndFeel
       val f = new Frame {
@@ -179,7 +179,7 @@ object Launcher {
         import starling.utils.Utils._
         os match {
           case Linux => {
-            Log.error("Failed to initialise kerberos, either it isn't used on this system or the ticket cache is stale (try krenew). Skipping kerberos.")
+            log.error("Failed to initialise kerberos, either it isn't used on this system or the ticket cache is stale (try krenew). Skipping kerberos.")
             new Client(null, null) {
               override def ticket = null
             }

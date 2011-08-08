@@ -56,7 +56,7 @@ case class RefinedMetalsLimMarketDataSource(limServer: LIMServer) extends Market
     source.marketDataEntriesFrom(prices).toList
       .map(_.copy(tag = Some("%s (%s)" % (source.getClass.getSimpleName, source.description.mkString(", ")))))
       .require(containsDistinctTimedKeys, "source: %s produced duplicate MarketDataKeys: " % source)
-      .debug(entries => "%s (%s): %s values" % (source.getClass.getSimpleName, source.description.mkString(", "), countData(entries)))
+      .debugV(entries => "%s (%s): %s values" % (source.getClass.getSimpleName, source.description.mkString(", "), countData(entries)))
   }
 
   private def countData(entries: List[MarketDataEntry]) = entries.map(_.data.size.getOrElse(0)).sum
@@ -76,14 +76,14 @@ abstract class LimSource(val levels: List[Level]) {
   protected def exchangeLookup(exchange: String) = if (exchange == "SHFE") "SFS" else exchange
 }
 
-abstract class HierarchicalLimSource(val parentNodes: List[LimNode], levels: List[Level]) extends LimSource(levels) {
+abstract class HierarchicalLimSource(val parentNodes: List[LimNode], levels: List[Level]) extends LimSource(levels) with Log {
   def description = parentNodes.map(node => node.name + " " + levelDescription)
   def relationsFrom(connection: LIMConnection) = connection.getAllRelChildren(parentNodes : _*).flatMap(safeRelationFrom)
   def relationExtractor: Extractor[String, Option[Relation]]
 
   private def safeRelationFrom(childRelation: String): Option[(Relation, String)] = try {
     relationExtractor.unapply(childRelation).flatOpt.optPair(childRelation)
-  } catch { case exception => { Log.debug("Malformed LIM relation: " + childRelation, exception); None } }
+  } catch { case exception => { log.debug("Malformed LIM relation: " + childRelation, exception); None } }
 }
 
 class PriceLimSource(relations: LIMRelation*) extends LimSource(List(Close)) {

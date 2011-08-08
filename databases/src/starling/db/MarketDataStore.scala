@@ -284,7 +284,7 @@ trait MdDB {
 //
 //}
 
-class SlowMdDB(db: DBTrait[RichResultSetRow]) extends MdDB {
+class SlowMdDB(db: DBTrait[RichResultSetRow]) extends MdDB with Log {
 
   private val currentVersion = new AtomicInteger(
     db.queryWithOneResult[Int]("SELECT MAX(version) as version from MarketData")(_.getInt("version")).getOrElse(1))
@@ -307,7 +307,7 @@ class SlowMdDB(db: DBTrait[RichResultSetRow]) extends MdDB {
   }
 
   def readAll() {
-    Log.infoWithTime("Reading all market data") {
+    log.infoWithTime("Reading all market data") {
 
       val errors = scala.collection.mutable.HashSet[String]()
       var month:Option[Month] = None
@@ -464,7 +464,7 @@ class SlowMdDB(db: DBTrait[RichResultSetRow]) extends MdDB {
     val check = results.groupBy(e => (e._1, e._2))
     check.foreach {
       case (k, v) if v.size > 1 => {
-        Log.error("MDS has gotten corrupt: " + (marketDataSet, marketDataType, k, v))
+        log.error("MDS has gotten corrupt: " + (marketDataSet, marketDataType, k, v))
         throw new Exception("Duplicate data in MDS for " + (marketDataSet, marketDataType, k, v))
       }
       case _ =>
@@ -709,7 +709,7 @@ class DBMarketDataStore(
     db : MdDB,
     tags : MarketDataTags,
     val marketDataSources: Map[MarketDataSet, MarketDataSource],
-    broadcaster : Broadcaster) extends MarketDataStore {
+    broadcaster : Broadcaster) extends MarketDataStore with Log {
 
   def this(db: DBTrait[RichResultSetRow], marketDataSources: Map[MarketDataSet, MarketDataSource],
                         broadcaster: Broadcaster = Broadcaster.Null) = this(new SlowMdDB(db), new MarketDataTags(db), marketDataSources, broadcaster)
@@ -901,10 +901,10 @@ class DBMarketDataStore(
 
 
   def importFor(observationDay: Day, marketDataSets: MarketDataSet*) = importLock.synchronized {
-    Log.infoWithTime("saving market data: " + observationDay) {
+    log.infoWithTime("saving market data: " + observationDay) {
       val updates: Map[MarketDataSet, scala.List[MarketDataUpdate]] = importer.getUpdates(observationDay, marketDataSets: _*)
 
-      Log.debug("Number of updates: " + updates.mapValues(_.toList.size))
+      log.debug("Number of updates: " + updates.mapValues(_.toList.size))
 
       saveActions(updates)
     }

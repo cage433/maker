@@ -39,7 +39,7 @@ import com.trafigura.events.DemultiplexerClient
 /**
  * Trade cache provide trade map lookup by trade id and also a quota id to trade map lookup
  */
-case class DefaultTitanTradeCache(props : Props) extends TitanTradeCache {
+case class DefaultTitanTradeCache(props : Props) extends TitanTradeCache with Log {
   protected var tradeMap: Map[String, EDMPhysicalTrade] = Map[String, EDMPhysicalTrade]()
   protected var quotaIDToTradeIDMap: Map[String, String] = Map[String, String]()
 
@@ -60,17 +60,17 @@ case class DefaultTitanTradeCache(props : Props) extends TitanTradeCache {
   def updateTradeMap() {
     val sw = new Stopwatch()
     val edmTradeResult = getAll()
-    Log.info("Are EDM Trades available " + edmTradeResult.cached + ", took " + sw)
+    log.info("Are EDM Trades available " + edmTradeResult.cached + ", took " + sw)
     if (!edmTradeResult.cached) throw new TradeManagementCacheNotReady
-    Log.info("Got Edm Trade results " + edmTradeResult.cached + ", trade result count = " + edmTradeResult.results.size)
+    log.info("Got Edm Trade results " + edmTradeResult.cached + ", trade result count = " + edmTradeResult.results.size)
 
     val validTrades = edmTradeResult.results.filter(tr => tr.trade != null).map(_.trade.asInstanceOf[EDMPhysicalTrade])
 
     // temporary code, trademgmt are sending us null titan ids
     val (nullIds, validIds) = validTrades.span(_.titanId == null)
     if (nullIds.size > 0) {
-      Log.error("Null Titan trade IDs found!")
-      Log.error("null ids \n%s\n%s".format(nullIds, validIds))
+      log.error("Null Titan trade IDs found!")
+      log.error("null ids \n%s\n%s".format(nullIds, validIds))
       //assert(false, "Null titan ids found - fatal error")
     }
     tradeMap = validTrades/*.filter(pt => pt.tstate == CompletedTradeTstate)*/.map(t => (t.titanId.value, t)).toMap
@@ -240,7 +240,7 @@ trait TitanTradeService {
   def getAllTrades() : List[EDMPhysicalTrade]
 }
 
-class DefaultTitanTradeService(titanServices : TitanServices) extends TitanTradeService {
+class DefaultTitanTradeService(titanServices : TitanServices) extends TitanTradeService with Log {
 
   def getTrade(id : String) : EDMPhysicalTrade = {
     titanServices.titanGetEdmTradesService.getByOid(id.toInt).asInstanceOf[EDMPhysicalTrade]
@@ -249,9 +249,9 @@ class DefaultTitanTradeService(titanServices : TitanServices) extends TitanTrade
   def getAllTrades() : List[EDMPhysicalTrade] = {
     val sw = new Stopwatch()
     val edmTradeResult = titanServices.titanGetEdmTradesService.getAll()
-    Log.info("Are EDM Trades available " + edmTradeResult.cached + ", took " + sw)
+    log.info("Are EDM Trades available " + edmTradeResult.cached + ", took " + sw)
     if (!edmTradeResult.cached) throw new TradeManagementCacheNotReady
-    Log.info("Got Edm Trade results " + edmTradeResult.cached + ", trade result count = " + edmTradeResult.results.size)
+    log.info("Got Edm Trade results " + edmTradeResult.cached + ", trade result count = " + edmTradeResult.results.size)
     edmTradeResult.results.map(_.trade.asInstanceOf[EDMPhysicalTrade])
   }
 }
@@ -382,7 +382,7 @@ class ValuationService(
   refData : TitanTacticalRefData,
   logisticsServices : TitanLogisticsServices,
   rabbitEventServices : TitanRabbitEventServices,
-  titanInventoryCache : TitanLogisticsInventoryCache) extends ValuationServiceApi {
+  titanInventoryCache : TitanLogisticsInventoryCache) extends ValuationServiceApi with Log {
 
   type TradeValuationResult = Either[String, List[CostsAndIncomeQuotaValuation]]
 
@@ -401,21 +401,21 @@ class ValuationService(
    *   map from tradeId to either a list of CostsAndIncomeQuotaValuation or strings
    */
   def valueAllQuotas(maybeSnapshotIdentifier: Option[String] = None): CostsAndIncomeQuotaValuationServiceResults = {
-    log("valueAllQuotas called with snapshot id " + maybeSnapshotIdentifier)
+    log.info("valueAllQuotas called with snapshot id " + maybeSnapshotIdentifier)
     val snapshotIDString = resolveSnapshotIdString(maybeSnapshotIdentifier)
     val sw = new Stopwatch()
     val edmTrades = titanTradeCache.getAllTrades()
-    log("Got Edm Trade results, trade result count = " + edmTrades.size)
+    log.info("Got Edm Trade results, trade result count = " + edmTrades.size)
     val env = environmentProvider.environment(snapshotIDString)
     val tradeValuer = PhysicalMetalForward.value(futuresExchangeByID, edmMetalByGUID, env, snapshotIDString) _
-    log("Got %d completed physical trades".format(edmTrades.size))
+    log.info("Got %d completed physical trades".format(edmTrades.size))
     sw.reset()
     val valuations = edmTrades.map {
       trade => (trade.titanId.value, tradeValuer(trade))
     }.toMap
-    log("Valuation took " + sw)
+    log.info("Valuation took " + sw)
     val (worked, errors) = valuations.values.partition(_ isRight)
-    log("Worked " + worked.size + ", failed " + errors.size + ", took " + sw)
+    log.info("Worked " + worked.size + ", failed " + errors.size + ", took " + sw)
     CostsAndIncomeQuotaValuationServiceResults(snapshotIDString, valuations)
   }
 
@@ -423,22 +423,22 @@ class ValuationService(
    * value the quotas of a specified trade
    */
   def valueTradeQuotas(tradeId: Int, maybeSnapshotIdentifier: Option[String] = None): (String, TradeValuationResult) = {
-    log("valueTradeQuotas called for trade %d with snapshot id %s".format(tradeId, maybeSnapshotIdentifier))
+    log.info("valueTradeQuotas called for trade %d with snapshot id %s".format(tradeId, maybeSnapshotIdentifier))
     val snapshotIDString = resolveSnapshotIdString(maybeSnapshotIdentifier)
 
     val sw = new Stopwatch()
 
     val edmTradeResult = titanTradeCache.getTrade(tradeId.toString)
 
-    log("Got Edm Trade result " + edmTradeResult)
+    log.info("Got Edm Trade result " + edmTradeResult)
     val env = environmentProvider.environment(snapshotIDString)
     val tradeValuer = PhysicalMetalForward.value(futuresExchangeByID, edmMetalByGUID, env, snapshotIDString) _
 
     val edmTrade: EDMPhysicalTrade = edmTradeResult.asInstanceOf[EDMPhysicalTrade]
-    log("Got %s physical trade".format(edmTrade.toString))
+    log.info("Got %s physical trade".format(edmTrade.toString))
     sw.reset()
     val valuation = tradeValuer(edmTrade)
-    log("Valuation took " + sw)
+    log.info("Valuation took " + sw)
 
     (snapshotIDString, valuation)
   }
@@ -491,9 +491,9 @@ class ValuationService(
 
     val valuations = tradeValues ::: quotaValues
 
-    log("Valuation took " + sw)
+    log.info("Valuation took " + sw)
     val (worked, errors) = valuations.partition(_._2 isRight)
-    log("Worked " + worked.size + ", failed " + errors.size + ", took " + sw)
+    log.info("Worked " + worked.size + ", failed " + errors.size + ", took " + sw)
     
     CostsAndIncomeQuotaValuationServiceResults(snapshotIDString, valuations.toMap)
   }
@@ -520,9 +520,9 @@ class ValuationService(
 
     val valuations = inventory.map(i => i.oid.contents.toString -> assignmentValuer(i))
     
-    log("Valuation took " + sw)
+    log.info("Valuation took " + sw)
     val (worked, errors) = valuations.partition(_._2 isRight)
-    log("Worked " + worked.size + ", failed " + errors.size + ", took " + sw)
+    log.info("Worked " + worked.size + ", failed " + errors.size + ", took " + sw)
     println("Failed valuation of inventory assignments (%d)...\n%s".format(errors.size, errors.mkString("\n")))
 
     CostAndIncomeAssignmentValuationServiceResults(snapshotIDString, valuations.toMap)
@@ -547,9 +547,9 @@ class ValuationService(
 
     val valuations = inventoryIds.map(i => i -> assignmentValuer(titanInventoryCache.getInventory(i)))
 
-    log("Valuation took " + sw)
+    log.info("Valuation took " + sw)
     val (worked, errors) = valuations.partition(_._2 isRight)
-    log("Worked " + worked.size + ", failed " + errors.size + ", took " + sw)
+    log.info("Worked " + worked.size + ", failed " + errors.size + ", took " + sw)
     println("Failed valuation of inventory assignments (%d)...\n%s".format(errors.size, errors.mkString("\n")))
 
     CostAndIncomeAssignmentValuationServiceResults(snapshotIDString, valuations.toMap)
@@ -565,14 +565,12 @@ class ValuationService(
     }
   }
 
-  private def log(msg: String) = Log.info("ValuationService: " + msg)
-
   private def resolveSnapshotIdString(maybeSnapshotIdentifier: Option[String] = None) = {
     val snapshotIDString = maybeSnapshotIdentifier.orElse(environmentProvider.mostRecentSnapshotIdentifierBeforeToday()) match {
       case Some(id) => id
       case _ => throw new IllegalStateException("No market data snapshots")
     }
-    log("Actual snapshot ID " + snapshotIDString)
+    log.info("Actual snapshot ID " + snapshotIDString)
     snapshotIDString
   }
 
@@ -591,7 +589,7 @@ class ValuationService(
     lazy val rabbitPublishChangedValueEvents = publishStarlingChangedValueEvents(rabbitEventServices.rabbitEventPublisher)
     lazy val rabbitPublishNewValuationEvents = publishNewValuationEvents(rabbitEventServices.rabbitEventPublisher) _
     def handle(ev: Event) {
-      if (ev == null) Log.warn("Got a null event") else {
+      if (ev == null) log.warn("Got a null event") else {
         if (TrademgmtSource == ev.source && (TradeSubject == ev.subject || NeptuneTradeSubject == ev.subject)) { // Must be some form of trade event from trademgmt source
           tradeMgmtTradeEventHander(ev)
         }
@@ -606,11 +604,11 @@ class ValuationService(
      */
     def tradeMgmtTradeEventHander(ev: Event) = {
       import Event._
-      Log.info("handler: Got a trade event to process %s".format(ev.toString))
+      log.info("handler: Got a trade event to process %s".format(ev.toString))
 
       val tradePayloads = ev.content.body.payloads.filter(p => Event.RefinedMetalTradeIdPayload == p.payloadType)
       val tradeIds = tradePayloads.map(p => p.key.identifier)
-      Log.info("Trade event received for ids { %s }".format(tradeIds.mkString(", ")))
+      log.info("Trade event received for ids { %s }".format(tradeIds.mkString(", ")))
 
       ev.subject match {
         case TradeSubject => {
@@ -626,14 +624,14 @@ class ValuationService(
               if (changedIDs != Nil)
                 rabbitPublishChangedValueEvents(changedIDs, RefinedMetalTradeIdPayload)
 
-              Log.info("Trades revalued for received event using snapshot %s number of changed valuations %d".format(snapshotIDString, changedIDs.size))
+              log.info("Trades revalued for received event using snapshot %s number of changed valuations %d".format(snapshotIDString, changedIDs.size))
             }
             case NewEventVerb => {
-              Log.info("New event received for %s".format(tradeIds))
+              log.info("New event received for %s".format(tradeIds))
               tradeIds.foreach(titanTradeCache.addTrade)
             }
             case CancelEventVerb | RemovedEventVerb => {
-              Log.info("Cancelled / deleted event received for %s".format(tradeIds))
+              log.info("Cancelled / deleted event received for %s".format(tradeIds))
               tradeIds.foreach(titanTradeCache.removeTrade)
             }
           }
@@ -665,7 +663,7 @@ class ValuationService(
      * handler for logistics assignment events
      */
     def logisticsAssignmentEventHander(ev: Event) = {
-      Log.info("handler: Got an assignment event to process %s".format(ev.toString))
+      log.info("handler: Got an assignment event to process %s".format(ev.toString))
 
       val payloads = ev.content.body.payloads
       val ids : List[String] = if (Event.EDMLogisticsSalesAssignmentSubject == ev.subject) {
@@ -676,7 +674,7 @@ class ValuationService(
       }
       else Nil
 
-      Log.info("Assignment event received for ids { %s }".format(ids.mkString(", ")))
+      log.info("Assignment event received for ids { %s }".format(ids.mkString(", ")))
 
       ev.verb match {
         case UpdatedEventVerb => {
@@ -696,16 +694,16 @@ class ValuationService(
             rabbitPublishChangedValueEvents(changedIDs, EDMLogisticsInventoryIdPayload)
           }
 
-          Log.info("Assignments revalued for received event using snapshot %s number of changed valuations %d".format(snapshotIDString, changedIDs.size))
+          log.info("Assignments revalued for received event using snapshot %s number of changed valuations %d".format(snapshotIDString, changedIDs.size))
         }
         case NewEventVerb => {
-          Log.info("New event received for %s".format(ids))
+          log.info("New event received for %s".format(ids))
           if (Event.EDMLogisticsInventorySubject == ev.subject) {
             ids.foreach(titanInventoryCache.addInventory)
           }
         }
         case CancelEventVerb | RemovedEventVerb => {
-          Log.info("Cancelled / deleted event received for %s".format(ids))
+          log.info("Cancelled / deleted event received for %s".format(ids))
           if (Event.EDMLogisticsInventorySubject == ev.subject) {
             ids.foreach(titanInventoryCache.removeInventory)
           }

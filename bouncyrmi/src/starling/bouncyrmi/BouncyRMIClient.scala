@@ -35,6 +35,7 @@ class BouncyRMIClient[C](host: String, port: Int, interface: Class[C], auth: Cli
   lazy val clientTimer = new HashedWheelTimer
 
   def start: Future[Option[scala.Throwable]] = {
+    println("BouncyRMIClient connecting to %s:%d".format(host, port))
     client.init
     client.connect
   }

@@ -1240,7 +1240,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
   }
 }
 //Caches all page data and launches threads calling back with swing thread when completed
-class PageBuilder(val pageBuildingContext:PageBuildingContext) {
+class PageBuilder(val pageBuildingContext:PageBuildingContext) extends Log {
   val pageDataCache = new scala.collection.mutable.HashMap[Page,PageResponse]
   val threads = Executors.newFixedThreadPool(10, new ThreadFactory {
     def newThread(r:Runnable) = {
@@ -1258,7 +1258,7 @@ class PageBuilder(val pageBuildingContext:PageBuildingContext) {
   def submit[R](submitRequest:SubmitRequest[R], waitFor:CountDownLatch, awaitRefresh:R=>Boolean, then:((Boolean, SubmitResponse) => Unit)) {
     threads.execute(new Runnable() {
       def run() {
-        val (submitResponse, didWait) = Log.infoWithTime("Submit request " + submitRequest) {
+        val (submitResponse, didWait) = log.infoWithTime("Submit request " + submitRequest) {
           try {
             val r = pageBuildingContext.submit(submitRequest)
             val dw = awaitRefresh(r)
@@ -1276,7 +1276,7 @@ class PageBuilder(val pageBuildingContext:PageBuildingContext) {
   def buildNoCache(page:Page, then:(PageResponse=>Unit)) {
     threads.execute(new Runnable{
       def run = {
-        val pageResponse:PageResponse = Log.infoWithTime("BuildNoCache page " + page.text) {
+        val pageResponse:PageResponse = log.infoWithTime("BuildNoCache page " + page.text) {
           try {
             logPageView(page, pageBuildingContext.starlingServer)
             val builtPage = page.build(pageBuildingContext)
@@ -1348,7 +1348,7 @@ class PageBuilder(val pageBuildingContext:PageBuildingContext) {
         case None => {
           pageToThens += (page -> List(then))          
           threads.execute(new Runnable() { def run() {
-            val pageResponse:PageResponse = Log.infoWithTime("Build page " + page.text) {
+            val pageResponse:PageResponse = log.infoWithTime("Build page " + page.text) {
               try {
                 logPageView(page, pageBuildingContext.starlingServer)
                 val builtPage = page.build(pageBuildingContext)

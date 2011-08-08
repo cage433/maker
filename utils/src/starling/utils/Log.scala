@@ -1,7 +1,9 @@
 package starling.utils
 
-
 import org.apache.log4j._
+
+import starling.utils.ImplicitConversions._
+
 
 class AdaptingLogger(val rootLogger: VarLogger) extends VarLogger {
   override def trace(msg: => AnyRef) = rootLogger.trace(msg)
@@ -31,7 +33,16 @@ class AdaptingLogger(val rootLogger: VarLogger) extends VarLogger {
 /**
  * A thin wrapper around log4j.
  */
-object Log extends AdaptingLogger(Log4JLogger.logger) {
+object Log extends ExtendedLog(Log4JLogger.logger) {
+  def forName(name: String)     = new ExtendedLog(Log4JLogger.forName(name))
+  def forClass[T: Manifest]     = new ExtendedLog(Log4JLogger.forClass(implicitly[Manifest[T]].erasure))
+}
+
+trait Log {
+  lazy val log = new ExtendedLog(Log4JLogger.forClass(getClass))
+}
+
+class ExtendedLog(adapted: VarLogger) extends AdaptingLogger(adapted) {
   def infoWithTime[T](message:String)(f: =>T) = {
     val stopwatch = new Stopwatch()
     val oldThreadName = Thread.currentThread.getName
@@ -55,6 +66,7 @@ object Log extends AdaptingLogger(Log4JLogger.logger) {
   def never(msg: => AnyRef) {}
   def neverF(msg: => AnyRef) {}
   def never(msg: => AnyRef, t: => Throwable) {}
+  def logException[T](msg: String = "")(action: => T) = ClosureUtil.safely { action }.update(t => error(msg, t), identity)
 }
 
 trait VarLogger {
@@ -119,6 +131,8 @@ object Log4JLogger {
   System.setProperty("log4j.configuration", "utils/resources/log4j.properties")
 
   lazy val logger = new Log4JLogger(Logger.getRootLogger)
+  def forName(name: String) = new Log4JLogger(Logger.getLogger(name))
+  def forClass(clazz: Class[_]) = new Log4JLogger(Logger.getLogger(clazz))
 }
 
 class Log4JLogger(val logger: Logger) extends VarLogger {
