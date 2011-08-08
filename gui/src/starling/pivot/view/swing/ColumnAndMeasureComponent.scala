@@ -9,7 +9,6 @@ import java.awt.{Point, Rectangle, Dimension, Graphics2D, RenderingHints}
 import swing.event._
 import starling.gui.GuiUtils
 import scala.{Right, Left}
-import collection.Set
 
 object ColumnDropPanel {
   def prefSize(text:String) = new TempGuiFieldNamePanel(text).preferredSize
@@ -24,6 +23,8 @@ class ColumnDropPanel(val fieldOrColumnStructure:FieldOrColumnStructure, val pos
   visible = false
 
   private var mouseIn = false
+  private var delayReset0 = false
+  def delayReset() {delayReset0 = true}
 
   reactions += {
     case MouseEntered(_,_,_) => {
@@ -31,7 +32,11 @@ class ColumnDropPanel(val fieldOrColumnStructure:FieldOrColumnStructure, val pos
       repaint()
     }
     case MouseExited(_,_,_) => {
-      reset()
+      if (delayReset0) {
+        delayReset0 = false
+      } else {
+        reset()
+      }
     }
   }
   listenTo(mouse.moves)
@@ -287,9 +292,11 @@ class ColumnAndMeasureComponent(model:PivotTableModel, otherLayoutInfo:OtherLayo
   def newColumnStructure(screenPoint:Point, field:Field) = {
     val measureField = model.isMeasureField(field) || cs.measureFields.contains(field)
     if (fields.isEmpty) {
+      blankDropLabel.foreach(_.delayReset())
       ColumnTrees(field, measureField)
     } else {
       val (_, panel) = dropBoundsAndPanels(field).find{case (bound, _) => bound.contains(screenPoint)}.get
+      panel.delayReset()
       val fieldOrColumnStructure = panel.fieldOrColumnStructure
       val pos = panel.position
       val tmpField = Field("fhsdvbhsvuilh")
