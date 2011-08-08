@@ -34,8 +34,18 @@ object Dependencies{
 
   val guiApiDependencies = Seq( 
     "net.debasishg" % "sjson_2.8.0" % "0.8" intransitive() withSources()
-  ) 
+  )
+  
+  val titanModelDependencies = Seq(
+    "org.slf4j" % "slf4j-api" % "1.6.1" withSources(),
+    "dom4j" % "dom4j" % "1.6.1" withSources(),
+    "com.rabbitmq" % "amqp-client" % "1.7.2" withSources(),
+    "joda-time" % "joda-time" % "1.6" withSources(),
+    "org.codehaus.jettison" % "jettison" % "1.1" withSources(),
+    "commons-httpclient" % "commons-httpclient" % "3.1" withSources()
+  )
 }
+
 object StarlingBuild extends Build{
 
   import Dependencies._
@@ -107,5 +117,11 @@ object StarlingBuild extends Build{
     file("./pivot.utils"),
     settings = standardSettings
   ) dependsOn(daterange, pivot)
+
+  lazy val titanModel = Project(
+    "titan-model", 
+    file("./titan-scala-model"),
+    settings = standardSettings
+  )
 }
 
