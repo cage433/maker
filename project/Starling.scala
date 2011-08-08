@@ -35,6 +35,19 @@ object Dependencies{
   val guiApiDependencies = Seq( 
     "net.debasishg" % "sjson_2.8.0" % "0.8" intransitive() withSources()
   ) 
+  val guiDependencies = Seq(
+    "jfree" % "jfreechart" % "1.0.0"
+  ) 
+
+  val databasesDependencies = Seq(
+      "org.springframework" % "spring-jdbc" % "3.0.5.RELEASE" withSources(),
+      "com.jolbox" % "bonecp" % "0.7.1.RELEASE" intransitive() withSources(),
+      "org.slf4j" % "slf4j-api" % "1.6.1" withSources(),
+      "org.scala-tools.testing" % "scalacheck_2.9.0-1" % "1.9" withSources(),
+      "org.apache.derby" % "derby" % "10.5.3.0_1",
+      "hsqldb" % "hsqldb" % "1.8.0.10" % "test",
+      "com.h2database" % "h2" % "1.2.131" % "test" withSources()
+    ) 
 }
 object StarlingBuild extends Build{
 
@@ -46,7 +59,6 @@ object StarlingBuild extends Build{
     scalaVersion := "2.9.0-1"
   )
 
-  lazy val root = Project("starling", file("."), settings = standardSettings) aggregate (utils, bouncyrmi, auth, concurrent, quantity, daterange, loopyxl, maths, pivot, pivotUtils)
 
 
   lazy val utils = Project(
@@ -107,5 +119,66 @@ object StarlingBuild extends Build{
     file("./pivot.utils"),
     settings = standardSettings
   ) dependsOn(daterange, pivot)
+
+  lazy val guiapi = Project(
+    "gui.api", 
+    file("./gui.api"),
+    settings = standardSettings ++ Seq(libraryDependencies ++= guiApiDependencies)
+  ) dependsOn(pivotUtils, quantity, auth, bouncyrmi)
+
+  lazy val curves = Project(
+    "curves", 
+    file("./curves"),
+    settings = standardSettings
+  ) dependsOn(maths, pivotUtils,guiapi)
+
+  lazy val instrument = Project(
+    "instrument", 
+    file("./instrument"),
+    settings = standardSettings
+  ) dependsOn(curves)
+
+  lazy val gui = Project(
+    "gui", 
+    file("./gui"),
+    settings = standardSettings ++ Seq(libraryDependencies ++= guiDependencies)
+  ) dependsOn(guiapi)
+
+  lazy val trade = Project(
+    "trade", 
+    file("./trade"),
+    settings = standardSettings 
+  ) dependsOn(instrument)
+
+  lazy val VaR = Project(
+    "var", 
+    file("./var"),
+    settings = standardSettings 
+  ) dependsOn(trade)
+
+//lazy val databases = Project(
+  //"databases", 
+  //file("./databases"),
+  //settings = standardSettings ++ Seq(libraryDependencies ++= guiDependencies)
+  //) dependsOn(guiapi)
+
+  lazy val root = Project("starling", file("."), settings = standardSettings) aggregate (
+    utils, 
+    bouncyrmi, 
+    auth, 
+    concurrent, 
+    quantity, 
+    daterange, 
+    loopyxl, 
+    maths, 
+    pivot, 
+    pivotUtils,
+    guiapi,
+    curves,
+    instrument,
+    gui,
+    trade,
+    VaR
+  )
 }
 
