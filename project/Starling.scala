@@ -40,15 +40,25 @@ object Dependencies{
   ) 
 
   val databasesDependencies = Seq(
-      "org.springframework" % "spring-jdbc" % "3.0.5.RELEASE" withSources(),
-      "com.jolbox" % "bonecp" % "0.7.1.RELEASE" intransitive() withSources(),
-      "org.slf4j" % "slf4j-api" % "1.6.1" withSources(),
-      "org.scala-tools.testing" % "scalacheck_2.9.0-1" % "1.9" withSources(),
-      "org.apache.derby" % "derby" % "10.5.3.0_1",
-      "hsqldb" % "hsqldb" % "1.8.0.10" % "test",
-      "com.h2database" % "h2" % "1.2.131" % "test" withSources()
-    ) 
+    "org.springframework" % "spring-jdbc" % "3.0.5.RELEASE" withSources(),
+    "com.jolbox" % "bonecp" % "0.7.1.RELEASE" intransitive() withSources(),
+    "org.slf4j" % "slf4j-api" % "1.6.1" withSources(),
+    "org.scala-tools.testing" % "scalacheck_2.9.0-1" % "1.9" withSources(),
+    "org.apache.derby" % "derby" % "10.5.3.0_1",
+    "hsqldb" % "hsqldb" % "1.8.0.10" % "test",
+    "com.h2database" % "h2" % "1.2.131" % "test" withSources()
+  ) 
+  
+  val titanModelDependencies = Seq(
+    "org.slf4j" % "slf4j-api" % "1.6.1" withSources(),
+    "dom4j" % "dom4j" % "1.6.1" withSources(),
+    "com.rabbitmq" % "amqp-client" % "1.7.2" withSources(),
+    "joda-time" % "joda-time" % "1.6" withSources(),
+    "org.codehaus.jettison" % "jettison" % "1.1" withSources(),
+    "commons-httpclient" % "commons-httpclient" % "3.1" withSources()
+  )
 }
+
 object StarlingBuild extends Build{
 
   import Dependencies._
@@ -179,6 +189,12 @@ object StarlingBuild extends Build{
     gui,
     trade,
     VaR
+  )
+
+  lazy val titanModel = Project(
+    "titan-model", 
+    file("./titan-scala-model"),
+    settings = standardSettings
   )
 }
 
