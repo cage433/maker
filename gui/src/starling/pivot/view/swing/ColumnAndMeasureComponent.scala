@@ -25,9 +25,16 @@ class ColumnDropPanel(val fieldOrColumnStructure:FieldOrColumnStructure, val pos
   private var mouseIn = false
   private var delayReset0 = false
   def delayReset() {delayReset0 = true}
+  private var forceTintedPaint0 = false
+  def forceTintedPaint() {
+    visible = true
+    border = DropPanel.OverBorder
+    forceTintedPaint0 = true
+  }
 
   reactions += {
     case MouseEntered(_,_,_) => {
+      border = DropPanel.OverBorder
       mouseIn = true
       repaint()
     }
@@ -42,7 +49,9 @@ class ColumnDropPanel(val fieldOrColumnStructure:FieldOrColumnStructure, val pos
   listenTo(mouse.moves)
 
   def reset() {
+    forceTintedPaint0 = false
     mouseIn = false
+    border = DropPanel.NormalBorder
     repaint()
   }
 
@@ -54,7 +63,7 @@ class ColumnDropPanel(val fieldOrColumnStructure:FieldOrColumnStructure, val pos
   }
 
   override protected def paintComponent(g:Graphics2D) {
-    if (!mouseIn) {
+    if (!mouseIn && !forceTintedPaint0) {
       super.paintComponent(g)
     } else {
       super.paintComponent(g)
@@ -124,7 +133,7 @@ class ColumnStructureComponent(columnStructure:ColumnTrees, guiFieldsMap:Map[Fie
       val rightDropPanel = new ColumnDropPanel(fieldOrCS, Position.Right)
       dropPanels += topDropPanel
       dropPanels += leftDropPanel
-      dropPanels += rightDropPanel
+      dropPanels += rightDropPanel // This has got to be the 3rd drop panel added for the fieldGoingToBeAddedToTheEnd method at the bottom of this file.
       val holderPanel = new MigPanel("insets 0, gap 0px", "[p][fill,grow][p]") {
         opaque = false
         add(topDropPanel, "skip 1, growx, hidemode 2, wrap")
@@ -267,7 +276,6 @@ class ColumnAndMeasureComponent(model:PivotTableModel, otherLayoutInfo:OtherLayo
   def hide() {
     dropPanels.foreach(_.visible = false)
     tableView.updateColumnAndMeasureScrollPane(true)
-//    reset()
   }
   def reset() {
     blankDropLabel.foreach(_.reset())
@@ -301,6 +309,14 @@ class ColumnAndMeasureComponent(model:PivotTableModel, otherLayoutInfo:OtherLayo
       val pos = panel.position
       val tmpField = Field("fhsdvbhsvuilh")
       cs.add(tmpField, measureField, fieldOrColumnStructure, pos).remove(field).rename(tmpField, field.name)
+    }
+  }
+
+  def fieldGoingToBeAddedToTheEnd() {
+    if (fields.isEmpty) {
+      blankDropLabel.foreach(_.forceTintedPaint())
+    } else {
+      dropPanels(2).forceTintedPaint()
     }
   }
 }

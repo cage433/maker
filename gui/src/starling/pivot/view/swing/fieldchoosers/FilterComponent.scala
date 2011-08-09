@@ -29,6 +29,12 @@ class DropPanel(val fieldAndPositions:List[(Field,Position.Position)]) extends M
   private var mouseIn = false
   private var delayReset0 = false
   def delayReset() {delayReset0 = true}
+  private var forceTintedPaint0 = false
+  def forceTintedPaint() {
+    visible = true
+    border = OverBorder
+    forceTintedPaint0 = true
+  }
 
   reactions += {
     case MouseEntered(_,_,_) => {
@@ -48,6 +54,7 @@ class DropPanel(val fieldAndPositions:List[(Field,Position.Position)]) extends M
 
   def reset() {
     border = DropPanel.NormalBorder
+    forceTintedPaint0 = false
     mouseIn = false
     repaint()
   }
@@ -60,7 +67,7 @@ class DropPanel(val fieldAndPositions:List[(Field,Position.Position)]) extends M
   }
 
   override protected def paintComponent(g:Graphics2D) {
-    if (!mouseIn) {
+    if (!mouseIn && !forceTintedPaint0) {
       super.paintComponent(g)
     } else {
       super.paintComponent(g)
@@ -82,6 +89,11 @@ class EmptyDropLabel(text0:String, view:PivotTableView) extends Label(text0) {
   var mouseIn = false
   private var delayReset0 = false
   def delayReset() {delayReset0 = true}
+  private var forceTintedPaint0 = false
+  def forceTintedPaint() {
+    border = OverBorder
+    forceTintedPaint0 = true
+  }
   
   reactions += {
     case MouseEntered(_,_,_) if view.fieldBeingDragged => {
@@ -101,12 +113,13 @@ class EmptyDropLabel(text0:String, view:PivotTableView) extends Label(text0) {
 
   def reset() {
     mouseIn = false
+    forceTintedPaint0 = false
     border = swing.Swing.EmptyBorder
     repaint()
   }
 
   override protected def paintComponent(g:Graphics2D) {
-    if (!mouseIn) {
+    if (!mouseIn && !forceTintedPaint0) {
       super.paintComponent(g)
     } else {
       super.paintComponent(g)

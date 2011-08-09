@@ -132,6 +132,14 @@ class RowComponent(model:PivotTableModel,  otherLayoutInfo:OtherLayoutInfo, view
     }
   }
 
+  def fieldGoingToBeAddedToTheEnd() {
+    if (fields.isEmpty) {
+      blankDropLabel.foreach(_.forceTintedPaint())
+    } else {
+      dropPanels.last.forceTintedPaint()
+    }
+  }
+
   def numberOfFields = fields.size
   def guiField(index:Int) = guiFieldsMap(fields.get(index))
 }

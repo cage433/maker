@@ -229,7 +229,7 @@ class GuiFieldNamePanel(props:GuiFieldComponentProps, guiComp:GuiFieldComponent)
   private var display = true
 
   private var dragging = false
-  private var delayBackToNormal = false
+  private var drawFieldTinted = false
   private val editableField = props.editableInfo match {
     case None => false
     case Some(ei) => ei.fieldToParser.keySet.contains(props.field)
@@ -354,9 +354,8 @@ class GuiFieldNamePanel(props:GuiFieldComponentProps, guiComp:GuiFieldComponent)
     case MouseClicked(_,_,_,2,_) => {
       dragging = false
       display = true
+      drawFieldTinted = true
       props.tableView.fieldBeingDragged = false
-      props.viewUI.resetImageProperties()
-      
       props.tableView.fieldDoubleClicked(props.field, props.locationOfField)
     }
     case MouseEntered(_, _, _) if !props.tableView.drag => {
@@ -386,7 +385,7 @@ class GuiFieldNamePanel(props:GuiFieldComponentProps, guiComp:GuiFieldComponent)
           val widthAndHeight = new Point(widthToMove, heightToMove)
           props.viewUI.animate(shadowImage, imageStartPoint, widthAndHeight)
         } else {
-          delayBackToNormal = true
+          drawFieldTinted = true
           props.viewUI.resetImageProperties()
         }
       } else {
@@ -407,12 +406,12 @@ class GuiFieldNamePanel(props:GuiFieldComponentProps, guiComp:GuiFieldComponent)
   listenTo(mouse.clicks, mouse.moves)
 
   override protected def paintComponent(g:Graphics2D) {
-    if (display && !dragging && !delayBackToNormal) {
+    if (display && !dragging && !drawFieldTinted) {
       if ((image == null) || (image.getWidth != size.width) || (image.getHeight != size.height)) {
         image = createMainImage
       }
       g.drawImage(image, 0, 0, null)
-    } else if (dragging || delayBackToNormal) {
+    } else if (dragging || drawFieldTinted) {
       if ((tintedImage == null) || (tintedImage.getWidth != size.width) || (tintedImage.getHeight != size.height)) {
         if ((image == null) || (image.getWidth != size.width) || (image.getHeight != size.height)) {
           image = createMainImage
@@ -433,7 +432,7 @@ class GuiFieldNamePanel(props:GuiFieldComponentProps, guiComp:GuiFieldComponent)
 
   def reset() {
     dragging = false
-    delayBackToNormal = false
+    drawFieldTinted = false
     display = true
     image = null
     tintedImage = null
