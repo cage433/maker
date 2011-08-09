@@ -221,7 +221,7 @@ object StarlingBuild extends Build{
       }
       
       def earliestScalaFileTime = {
-        (titanModuleRoot ** "*.scala").getFiles.toList.map(_.lastModified).sort(_<_) match {
+        (outputDir ** "*.scala").getFiles.toList.map(_.lastModified).sort(_<_) match {
           case Nil => None
           case t :: _ => Some(t)
         }
@@ -250,11 +250,12 @@ object StarlingBuild extends Build{
         None
       }
 
+      printf("Earliest scala " + earliestScalaFileTime + ", latest ruby " + latestRubyFileTime)
       (latestRubyFileTime, earliestScalaFileTime) match {
-        case (t_ruby, Some(t_scala)) if t_ruby < t_scala => 
-        case _ => generateModelMainSourceCmd !;
+        case (t_ruby, Some(t_scala)) if t_ruby < t_scala => Seq[File]()
+        case _ => copyNonModelSource; generateModelMainSourceCmd !; (outputDir ** "*.scala").get
       }
-      (outputDir ** "*.scala").get
+      
     }
   }
 }
