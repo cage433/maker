@@ -24,8 +24,8 @@ import collection.mutable.{ListBuffer, HashMap}
 import org.jdesktop.animation.timing.{TimingTargetAdapter, Animator}
 import java.awt.{Container, Graphics2D, Dimension, Color, GradientPaint, Cursor, AWTEvent, Toolkit, KeyboardFocusManager, Component => AWTComp}
 import javax.swing._
-import org.jfree.chart.labels.PieToolTipGenerator
 import starling.pivot.view.swing.PivotTableType._
+import starling.pivot.HiddenType._
 
 object PivotTableView {
   def createWithLayer(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSize:Dimension,
@@ -41,7 +41,7 @@ object PivotTableView {
 
 case class FieldsChangedEvent(pivotFieldState:PivotFieldsState) extends Event
 case class TableDoubleClickEvent(filterFields:Seq[(Field,Selection)] , drillDownFields:Seq[(Field,Selection)], controlDown:Boolean) extends Event
-case class FullScreenSelectedEvent(data:String) extends Event
+case class FullScreenSelectedEvent(currentState:HiddenType, newState:HiddenType, currentFrozen:Boolean) extends Event
 case class ShowErrorsEvent(errors:Set[StackTrace]) extends Event
 case class PivotEditsUpdatedEvent(edits:PivotEdits, source:PivotJTable) extends Event
 case object SavePivotEdits extends Event
@@ -52,7 +52,7 @@ case class GridSelectionEvent(selection:Option[(String,Boolean)]) extends Event
 class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSize0:Dimension,
                      configPanels:Option[ConfigPanels], extraFormatInfo:ExtraFormatInfo, embedded:Boolean,
                      viewUI:PivotTableViewUI, edits:PivotEdits)
-        extends MigPanel("insets 0, gap 0") {
+        extends MigPanel("hidemode 2, insets 0, gap 0") {
   private var browserSize = browserSize0
   private val model = new starling.pivot.model.PivotTableModel(data)
   private var reverseToolBarState:()=>Unit = null
@@ -480,21 +480,14 @@ class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSiz
 
   def setCustomToolBar(component:Component, reverseToolBarState:()=>Unit) {
     toolbarPanel.peer.add(component.peer, "pushx, growx")
-    toolbarPanel.visible = true
+    if (otherLayoutInfo.hiddenType != AllHidden) {
+      toolbarPanel.visible = true
+    }
     this.reverseToolBarState = reverseToolBarState
   }
 
   private val columnAndMeasureScrollPane = PivotTableViewHelper.generateScrollableFieldChooser(columnAndMeasureComponent, columnAndMeasureComponent, this)
 
-  /*private val rowFieldChooserInsets = if (otherLayoutInfo.frozen) {
-    "insets 1 1 1 1"
-  } else {
-    "insets 1 1 1 0"
-  }
-  private val rowFieldChooser = FieldChooser(new MigLayout(rowFieldChooserInsets + ", gap 0px"), layerUI, " Drop Row Fields Here",
-    true, Rows, model, layerUI, this, otherLayoutInfo)
-  private val rowFieldPanel = rowFieldChooser.getView
-  allFieldChoosers(Rows) = rowFieldPanel*/
   if (!otherLayoutInfo.frozen) {
     rowComponent.opaque = true
     rowComponent.background = PivotTableBackgroundColour
@@ -668,6 +661,10 @@ class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSiz
     }.peer
     PivotTableViewHelper.generateScrollPaneHolders(layer)
   }
+  if (embedded && otherLayoutInfo.hiddenType == AllHidden) {
+    fullTableScrollPane.setBorder(MatteBorder(1,1,0,0,BorderColour))
+    fullHScrollBarHolder.border = MatteBorder(0,1,1,0,BorderColour)
+  }
 
   def giveDefaultFocus {
     if (otherLayoutInfo.frozen) {
@@ -795,26 +792,31 @@ class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSiz
     new ReportSpecificOptions(data.reportSpecificOptions), model)
   val reportPanelsAvailable = reportSpecificPanels.nonEmpty
 
-  val fullScreenButtonPanel = new MigPanel("insets 0") {
-    if (reportPanelsAvailable) {
-      border = EmptyBorder
-    } else {
-      border = MatteBorder(0, 0, 1, 0, BorderColour)
-    }
-    opaque = false
-    background = new Color(0, 0, 0, 0)
-    val fullScreenButton = new ImageButton(StarlingIcons.im("/icons/16x16_view-fullscreen2.png"), gotoFullScreen) {
-      border = MatteBorder(0, 1, 1, 0, BorderColour)
-    }
-    add(fullScreenButton, "growy, ay top")
+  val iconToUse = if (otherLayoutInfo.hiddenType == AllHidden) StarlingIcons.im("/icons/16x15_out_fullscreen.png") else StarlingIcons.im("/icons/16x15_fullscreen.png")
+  val fullScreenButton = new ImageButton(iconToUse, gotoFullScreen) {
+    border = MatteBorder(1,1,0,1,BorderColour)
   }
+  
   // I shouldn't be doing this here but if we don't have report specific panels, the filter field chooser should have a different border.
   if (reportPanelsAvailable) {
     filterComponent.border = MatteBorder(1,0,1,0,BorderColour)
   }
 
   private def gotoFullScreen {
-    publish(FullScreenSelectedEvent(tableModelsHelper.tableAsString))
+    val (newHiddenType, newFrozen) = if (otherLayoutInfo.hiddenType == AllHidden) {
+      val oht = otherLayoutInfo.oldHiddenType match {
+        case Some(ht) => ht
+        case None => NothingHidden
+      }
+      val of = otherLayoutInfo.oldFrozen match {
+        case Some(f) => f
+        case None => true
+      }
+      (oht, of)
+    } else {
+      (AllHidden, otherLayoutInfo.frozen)
+    }
+    publish(FullScreenSelectedEvent(otherLayoutInfo.hiddenType, newHiddenType, newFrozen))
   }
 
   val reportsPanel = new MigPanel("insets 0, gapx 0") {
@@ -836,7 +838,7 @@ class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSiz
   def pageResized(newSize:Dimension) {
     browserSize = newSize
     if (!otherLayoutInfo.frozen) {
-      val extraWidth = if (otherLayoutInfo.fieldPanelCollapsed) hiddenFieldPanel.size.width else fieldPanel.size.width
+      val extraWidth = if (otherLayoutInfo.hiddenType == FieldListHidden || otherLayoutInfo.hiddenType == AllHidden) hiddenFieldPanel.size.width else fieldPanel.size.width
       if (extraWidth + rowComponent.size.width + columnAndMeasureComponent.preferredSize.width > (browserSize.width - browserSize.width / 4)) {
         sizerPanel.preferredSize = new Dimension(10, sizerPanel.size.height)
       } else {
@@ -852,7 +854,7 @@ class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSiz
       columnAndMeasureScrollPane.minimumSize = new Dimension(10, columnAndMeasureComponent.preferredSize.height)
 
       if (!otherLayoutInfo.frozen && updateSizerPanel) {
-        val extraWidth = if (otherLayoutInfo.fieldPanelCollapsed) hiddenFieldPanel.preferredSize.width else fieldPanel.preferredSize.width
+        val extraWidth = if (otherLayoutInfo.hiddenType == FieldListHidden || otherLayoutInfo.hiddenType == AllHidden) hiddenFieldPanel.preferredSize.width else fieldPanel.preferredSize.width
         if (extraWidth + rowComponent.preferredSize.width + columnAndMeasureComponent.preferredSize.width > (browserSize.width - browserSize.width / 4)) {
           sizerPanel.preferredSize = new Dimension(10, sizerPanel.preferredSize.height)
         }
@@ -871,47 +873,49 @@ class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSiz
   }
 
   private val contentPanel = if (otherLayoutInfo.frozen) {
-    new MigPanel("insets 0", "[p]0[fill, grow]0[p]", extraRow + "[p]1[p]1[p]0[fill, grow]0[p]") {
+    new MigPanel("hidemode 2, insets 0", "[p]0[fill, grow]0[p]", extraRow + "[p]1[p]1[p]0[fill, grow]0[p]") {
       background = PivotTableBackgroundColour
 
       if (reportPanelsAvailable) {
-        add(rsScrollPaneHolder, "spanx, split, growx")
-        add(fullScreenButtonPanel, "gapleft 0, growy, wrap")
+        add(rsScrollPaneHolder, "spanx, growx, wrap")
         add(filterComponent, "spanx, split, growx, wrap")
       } else {
-        add(filterComponent, "spanx, split, growx")
-        add(fullScreenButtonPanel, "gapleft 0, growy, wrap")
+        add(filterComponent, "spanx, growx, wrap")
       }
       add(rowComponent, "spany 2, growx, ay bottom, ax left")
       add(columnAndMeasureScrollPane, "spanx, growx, wrap")
       add(columnHeaderScrollPanePanel, "skip 1, pushx, growx")
+
+      add(fullScreenButton, "flowy, split, spany 2, gapbottom 0")
+      add(mainVScrollBarHolder, "growy, wrap")
       
-      add(mainVScrollBarHolder, "spany 2, growy, wrap")
       add(rowHeaderTableScrollPanePanel, "push, grow")
       add(mainTableScrollPane, "wrap")
       add(mainHScrollBarHolder, "growx, span2")
     }
   } else {
-    new MigPanel("insets 0", "[p]0[fill, grow]0[p]", extraRow + "[p]1[p]1[fill, grow]0[p]") {
+    val gap = if (otherLayoutInfo.hiddenType == AllHidden) "0" else "1"
+    new MigPanel("hidemode 2, insets 0", "[p]0[fill, grow]0[p]", extraRow + "[p]" + gap + "[p]" + gap + "[fill, grow]0[p]") {
       background = PivotTableBackgroundColour
 
       if (reportPanelsAvailable) {
-        add(rsScrollPaneHolder, "spanx, split, growx")
-        add(fullScreenButtonPanel, "gapleft 0, growy, wrap")
+        add(rsScrollPaneHolder, "spanx, growx, wrap")
         add(filterComponent, "spanx, split, growx, wrap")
       } else {
-        add(filterComponent, "spanx, split, growx")
-        add(fullScreenButtonPanel, "gapleft 0, growy, wrap")
+        add(filterComponent, "spanx, growx, wrap")
       }
       add(sizerPanel, "split, spanx, gapright 0")
       add(columnAndMeasureScrollPane, "growx, wrap")
       add(fullTableScrollPane, "push, grow, spanx 2")
+
+      add(fullScreenButton, "flowy, split, gapbottom 0")
       add(fullVScrollBarHolder, "growy, wrap")
+
       add(fullHScrollBarHolder, "growx, spanx 2")
     }
   }
 
-  if (otherLayoutInfo.fieldPanelCollapsed) {
+  if (otherLayoutInfo.hiddenType == FieldListHidden) {
     fieldChooserPanelHolder.setComponent(hiddenFieldPanel)
   } else {
     fieldChooserPanelHolder.setComponent(fieldPanel)
@@ -929,6 +933,22 @@ class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSiz
   add(toolbarPanel, "growx, wrap")
   add(formulaBar, "growx, wrap")
   add(contentPanel, "push, grow")
+
+  if (otherLayoutInfo.hiddenType == AllHidden) {
+    fieldChooserPanelHolder.visible = false
+
+    sizerPanel.visible = false
+
+    configTabbedPane.foreach(_.visible = false)
+
+    rsScrollPaneHolder.visible = false
+    filterComponent.visible = false
+    columnAndMeasureScrollPane.visible = false
+    columnHeaderScrollPanePanel.visible = false
+
+    toolbarPanel.visible = false
+    formulaBar.visible = false
+  }
 
   def resetDynamicState() {
     viewUI.resetImageProperties()

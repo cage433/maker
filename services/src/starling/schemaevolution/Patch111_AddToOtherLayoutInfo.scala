@@ -7,11 +7,11 @@ import starling.db.DBWriter
 import starling.utils.StarlingXStream
 import xstream.{Fields, Reader, MapBasedConverter}
 import starling.pivot.model.CollapsedState
-import starling.pivot.{Field, Totals, OtherLayoutInfo, PivotFormatter}
+import starling.pivot.{Field, Totals, OtherLayoutInfo}
 import starling.pivot.HiddenType._
-import starling.gui.{UserSettings, StandardUserSettingKeys}
+import starling.utils.sql.PersistAsBlob
 
-class Patch110_AddDateRangeFormat extends Patch {
+class Patch111_AddToOtherLayoutInfo extends Patch {
   val convertingXStream = StarlingXStream.createXStream
   convertingXStream.registerConverter(new MapBasedConverter(
     StarlingXStream.createXStream,
@@ -36,17 +36,37 @@ class Patch110_AddDateRangeFormat extends Patch {
     Map("fieldPanelCollapsed" -> classOf[Boolean])
   ))
 
-
   protected def runPatch(starlingInit:StarlingInit, starling:RichDB, writer:DBWriter) {
-    val sql = "select settings from usersettings"
-    writer.queryForUpdate(sql) {
+    val sql2 = "select otherLayoutInfo from PivotLayouts"
+    writer.queryForUpdate(sql2) {
+      rs => {
+        val otherInfo = rs.getString("otherLayoutInfo")
+        if (!otherInfo.contains("oldFrozen") && !otherInfo.contains("oldHiddenType")) {
+          val newOtherInfo = convertingXStream.fromXML(otherInfo)
+          rs.update(Map("otherLayoutInfo" -> new PersistAsBlob(newOtherInfo)))
+        }
+      }
+    }
+
+    val userSettingsSQL = "select settings from usersettings"
+    writer.queryForUpdate(userSettingsSQL) {
       rs => {
         val settings = rs.getString("settings")
-        val userSettings = convertingXStream.fromXML(settings).asInstanceOf[UserSettings]
-        val extraFormatInfo = userSettings.getSetting(StandardUserSettingKeys.ExtraFormattingInfo, PivotFormatter.DefaultExtraFormatInfo)
-        userSettings.putSetting(StandardUserSettingKeys.ExtraFormattingInfo, extraFormatInfo.copy(dateRangeFormat = PivotFormatter.DefaultDateRangeFormat))
-        val newSettingsText = StarlingXStream.write(userSettings)
-        rs.update(Map("settings" -> newSettingsText))
+        if (!settings.contains("oldFrozen") && !settings.contains("oldHiddenType")) {
+          val newSettings = convertingXStream.fromXML(settings)
+          rs.update(Map("settings" -> new PersistAsBlob(newSettings)))
+        }
+      }
+    }
+
+    val bookmarkSQL = "select * from Bookmarks"
+    writer.queryForUpdate(bookmarkSQL) {
+      rs => {
+        val bookmark = rs.getString("bookmark")
+        if (!bookmark.contains("oldFrozen") && !bookmark.contains("oldHiddenType")) {
+          val newBookmark = convertingXStream.fromXML(bookmark)
+          rs.update(Map("bookmark" -> new PersistAsBlob(newBookmark)))
+        }
       }
     }
   }
