@@ -13,11 +13,11 @@ import starling.market.FuturesExchangeFactory._
 import starling.utils.ImplicitConversions._
 
 
-class Scheduler(props: Props, forwardCurveTasks: List[TaskDescription] = Nil) extends Stopable {
+class Scheduler(props: Props, forwardCurveTasks: List[TaskDescription] = Nil) extends Stopable with Log {
   private lazy val timer = new Timer(true)
   val tasks = if (props.ServerType() == "FC2") forwardCurveTasks else Nil
 
-  override def start = Log.infoF("Scheduling %s tasks for ServerType: %s" % (tasks.size, props.ServerType())) {
+  override def start = log.infoF("%s tasks for ServerType: %s" % (tasks.size, props.ServerType())) {
     super.start; tasks.map { case task => task.schedule(timer) }
   }
 

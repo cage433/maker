@@ -27,6 +27,14 @@ class DropPanel(val fieldAndPositions:List[(Field,Position.Position)]) extends M
   preferredSize = new Dimension(15,15)
   minimumSize = preferredSize
   private var mouseIn = false
+  private var delayReset0 = false
+  def delayReset() {delayReset0 = true}
+  private var forceTintedPaint0 = false
+  def forceTintedPaint() {
+    visible = true
+    border = OverBorder
+    forceTintedPaint0 = true
+  }
 
   reactions += {
     case MouseEntered(_,_,_) => {
@@ -35,13 +43,18 @@ class DropPanel(val fieldAndPositions:List[(Field,Position.Position)]) extends M
       repaint()
     }
     case MouseExited(_,_,_) => {
-      reset()
+      if (delayReset0) {
+        delayReset0 = false
+      } else {
+        reset()
+      }
     }
   }
   listenTo(mouse.moves)
 
   def reset() {
     border = DropPanel.NormalBorder
+    forceTintedPaint0 = false
     mouseIn = false
     repaint()
   }
@@ -54,7 +67,7 @@ class DropPanel(val fieldAndPositions:List[(Field,Position.Position)]) extends M
   }
 
   override protected def paintComponent(g:Graphics2D) {
-    if (!mouseIn) {
+    if (!mouseIn && !forceTintedPaint0) {
       super.paintComponent(g)
     } else {
       super.paintComponent(g)
@@ -74,6 +87,14 @@ class EmptyDropLabel(text0:String, view:PivotTableView) extends Label(text0) {
   minimumSize = prefSize
   enabled = false
   var mouseIn = false
+  private var delayReset0 = false
+  def delayReset() {delayReset0 = true}
+  private var forceTintedPaint0 = false
+  def forceTintedPaint() {
+    border = OverBorder
+    forceTintedPaint0 = true
+  }
+  
   reactions += {
     case MouseEntered(_,_,_) if view.fieldBeingDragged => {
       mouseIn = true
@@ -81,19 +102,24 @@ class EmptyDropLabel(text0:String, view:PivotTableView) extends Label(text0) {
       repaint()
     }
     case MouseExited(_,_,_) => {
-      reset()
+      if (delayReset0) {
+        delayReset0 = false
+      } else {
+        reset()
+      }
     }
   }
   listenTo(mouse.moves)
 
   def reset() {
     mouseIn = false
+    forceTintedPaint0 = false
     border = swing.Swing.EmptyBorder
     repaint()
   }
 
   override protected def paintComponent(g:Graphics2D) {
-    if (!mouseIn) {
+    if (!mouseIn && !forceTintedPaint0) {
       super.paintComponent(g)
     } else {
       super.paintComponent(g)
@@ -194,9 +220,11 @@ class FilterComponent(model:PivotTableModel, otherLayoutInfo:OtherLayoutInfo,
 
   def indexOfDrop(screenPoint:Point, field:Field) = {
     if (fields.isEmpty) {
+      blankDropLabel.foreach(_.delayReset())
       0
     } else {
       val (_, panel) = dropBoundsAndPanels(field).find{case (bound, _) => bound.contains(screenPoint)}.get
+      panel.delayReset()
       val (nextToField, pos) = panel.fieldAndPositions.head
       val fieldPos = fields.position(nextToField)
       pos match {

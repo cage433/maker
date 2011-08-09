@@ -12,14 +12,14 @@ import starling.utils.ClosureUtil._
 import starling.utils.ImplicitConversions._
 import com.trafigura.services.trinity.TrinityService
 
-class TrinityUploader(fclGenerator: FCLGenerator, xrtGenerator: XRTGenerator, trinityService: TrinityService, props: Props) {
+class TrinityUploader(fclGenerator: FCLGenerator, xrtGenerator: XRTGenerator, trinityService: TrinityService, props: Props) extends Log {
   def uploadCurve(label: CurveLabel) = {
     val toUpload = fclGenerator.generate(label)
 
-    if (toUpload.isEmpty) Log.info("No Trinity data to upload")
+    if (toUpload.isEmpty) log.info("No Trinity data to upload")
 
     toUpload.map { case (trinityKey, commodityRates) => {
-      Log.info("Uploading " + trinityKey)
+      log.info("Uploading " + trinityKey)
       commodityRates.foreach(println)
       trinityService.commodityRates.putRates(trinityKey.exchange, trinityKey.commodity, trinityKey.currency, "Full Curve", commodityRates.toList)
     } }
@@ -27,7 +27,7 @@ class TrinityUploader(fclGenerator: FCLGenerator, xrtGenerator: XRTGenerator, tr
   def uploadLibor(observationDay: Day) = upload(xrtGenerator.generate(observationDay), "libor%s.xrt" % observationDay)
 
   private def upload(lines: List[String], fileName: String) {
-    Log.debug("Uploading trinity file: %s/%s (lines: %d)" % (props.TrinityUploadDirectory(), "starling-" + fileName, lines.size))
+    log.debug("Uploading trinity file: %s/%s (lines: %d)" % (props.TrinityUploadDirectory(), "starling-" + fileName, lines.size))
 
     using(new FileWriter(props.TrinityUploadDirectory() + "starling-" + fileName, true)) { fileWriter =>
       using(new PrintWriter(fileWriter)) { printWriter => printWriter.println(lines.mkString("\n")) }

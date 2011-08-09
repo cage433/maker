@@ -3,9 +3,9 @@ package starling.utils
 import ImplicitConversions._
 
 
-object Pattern {
+object Pattern extends Log {
   case class Extractor[A, B](f: A => Option[B]) {
-    def unapply(a: A): Option[B] = try { f(a) } catch { case e => Log.warnF("Exception in Extractor", e)(None) }
+    def unapply(a: A): Option[B] = try { f(a) } catch { case e => log.warnF("Exception in Extractor", e)(None) }
     def unapply[C](ta: Traversable[A])(implicit g: Flattener[B, C]): Option[C] = g(ta.view.map(f))
 
     def compose[C](g: C => A) = new Extractor[C, B](f compose g)

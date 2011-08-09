@@ -118,15 +118,25 @@ class RowComponent(model:PivotTableModel,  otherLayoutInfo:OtherLayoutInfo, view
 
   def indexOfDrop(screenPoint:Point, field:Field) = {
     if (fields.isEmpty) {
+      blankDropLabel.foreach(_.delayReset())
       0
     } else {
       val (_, panel) = dropBoundsAndPanels(field).find{case (bound, _) => bound.contains(screenPoint)}.get
+      panel.delayReset()
       val (nextToField, pos) = panel.fieldAndPositions.head
       val fieldPos = fields.position(nextToField)
       pos match {
         case Position.Left => math.max(fieldPos - 1, 0)
         case Position.Right => fieldPos + 1
       }
+    }
+  }
+
+  def fieldGoingToBeAddedToTheEnd() {
+    if (fields.isEmpty) {
+      blankDropLabel.foreach(_.forceTintedPaint())
+    } else {
+      dropPanels.last.forceTintedPaint()
     }
   }
 

@@ -267,14 +267,14 @@ class StarlingServerImpl(
         ldapSearch: LdapUserLookup,
         eaiStarlingDB: DB,
         val allTraders: Traders
-      ) extends StarlingServer {
+      ) extends StarlingServer with Log {
 
   def desks = {
     val user = User.currentlyLoggedOn
     val enabled = tradeStores.deskDefinitions.keysIterator.toList.filter(enabledDesks.contains)
     val desksAllowed = Permission.desks(user)
     val userDesks = enabled.filter(desksAllowed.contains)
-    Log.info("Getting desks for user: " + user.name + ", desks: " + userDesks)
+    log.info("Getting desks for user: " + user.name + ", desks: " + userDesks)
     userDesks
   }
 
@@ -575,7 +575,7 @@ class StarlingServerImpl(
       }
     } catch {
       case e => {
-        Log.error("Error doing book close", e)
+        log.error("Error doing book close", e)
       }
     }
   }

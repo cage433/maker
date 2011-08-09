@@ -40,12 +40,12 @@ class Props(props:Map[String,String]) extends PropsHelper(props) {
   object JmxPort extends LocalPort(1024 + ((ServerName().hashCode.abs % 6400) * 10) + 3) //used by start.sh
   object RegressionPort extends LocalPort(1024 + ((ServerName().hashCode.abs % 6400) * 10) + 4)
   object LoopyXLPort extends LocalPort(1024 + ((ServerName().hashCode.abs % 6400) * 10) + 5)
-  object HttpEdmServicePort extends LocalPort(1024 + ((ServerName().hashCode.abs % 6400) * 10) + 6)
+  object HttpServicePort extends LocalPort(1024 + ((ServerName().hashCode.abs % 6400) * 10) + 6)
   object StarlingServiceRmiPort extends LocalPort(1024 + ((ServerName().hashCode.abs % 6400) * 10) +7)
 
   object ExternalHostname extends StringProperty(InetAddress.getLocalHost().getHostName)
   object ExternalUrl extends StringProperty("http://" + ExternalHostname() + ":" + HttpPort())
-  object EdmExternalUrl extends StringProperty("http://" + ExternalHostname() + ":" + HttpEdmServicePort())
+  object HttpServiceExternalUrl extends StringProperty("http://" + ExternalHostname() + ":" + HttpServicePort())
   object XLLoopUrl extends StringProperty(ExternalHostname() + ":" + XLLoopPort())
 
   object RabbitEnabled extends BooleanProperty(true)

@@ -13,7 +13,7 @@ import com.google.common.collect.MapMaker
  *
  * 1 + 1 will only be calculated if there is no entry in the cache for "my key"
  */
-object CacheFactory {
+object CacheFactory extends Log {
   private val caches:Map[CacheParams, CacheImpl] = Map(CacheParams(true, true) -> new SimpleCacheImpl(true), 
     CacheParams(true, false) -> new SimpleCacheImpl(false),
     CacheParams(false, true) -> new Memcached(new SimpleCacheImpl(true)))
@@ -38,7 +38,7 @@ object CacheFactory {
           out += "-----------------\n"
           if(lastMsg != out) {
             lastMsg = out
-            Log.debug("Cache Stats\n" + out)
+            log.debug("Cache Stats\n" + out)
           }
         }
       }

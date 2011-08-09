@@ -21,7 +21,7 @@ import starling.services.Server
 
 class MarketDataServiceStub extends MarketDataService(Server.server.marketDataStore)
 
-class MarketDataService(marketDataStore: MarketDataStore) extends MarketDataServiceApi  {
+class MarketDataService(marketDataStore: MarketDataStore) extends MarketDataServiceApi with Log {
   type Matcher[T] = T => Boolean
 
   implicit def enrichReferenceInterestRate(self: ReferenceInterestRate) = new {
@@ -104,8 +104,7 @@ class MarketDataService(marketDataStore: MarketDataStore) extends MarketDataServ
       case List(_, Quantity.Parse(rate)) => if (rate.denominatorUOM == UOM.USD) rate.invert else rate
     }
 
-  private def getMarketData(parameters: MarketDataRequestParameters) = {
-    Log.info("MarketDataServiceRPC called with parameters " + parameters)
+  private def getMarketData(parameters: MarketDataRequestParameters) = log.infoF("getMarketData: " + parameters) {
     parameters.notNull("Missing parameters")
 
     val selection = MarketDataSelection(Some(parameters.pricingGroup))

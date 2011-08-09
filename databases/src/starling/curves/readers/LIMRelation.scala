@@ -8,7 +8,7 @@ import starling.utils.Log
 import starling.{LIMServer, LimNode}
 import starling.utils.Pattern.Extractor
 
-trait LIMRelation {
+trait LIMRelation extends Log {
   val node: LimNode
 
   def parse(childRelation: String) = try {
@@ -18,7 +18,7 @@ trait LIMRelation {
   }
 
   protected val extractor: Extractor[String, Option[LimPrice]]
-  protected def debug[T](message: String): Option[T] = { Log.debug(message); None }
+  protected def debug[T](message: String): Option[T] = { log.debug(message); None }
 }
 
 case class LimPrice(market: CommodityMarket, period: DateRange, observationTimeOfDay: ObservationTimeOfDay)

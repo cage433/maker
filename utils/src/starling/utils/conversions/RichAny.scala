@@ -26,7 +26,7 @@ trait RichAny {
     def updateIt[V](actions: (T => V)*): T = update(actions : _*)
     def compareTo(other : T)(implicit ev : Ordering[T]) = ev.compare(value, other)
 
-    def debug[V <: AnyRef](action : T => V) : T = perform(Log.debug(action(value)))
+    def debugV[V <: AnyRef](action : T => V) : T = perform(Log.debug(action(value)))
     def info[V <: AnyRef](action : T => V) : T = perform(Log.info(action(value)))
 
     def assert(assertion: T => Boolean, message: => Any) : T = perform(Predef.assert(assertion(value), message))

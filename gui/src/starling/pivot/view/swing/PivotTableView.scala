@@ -109,8 +109,10 @@ class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSiz
       model.publishFieldStateChange(field, 0, from, FieldList)
     } else {
       if (model.isMeasureField(field)) {
+        columnAndMeasureComponent.fieldGoingToBeAddedToTheEnd()
         model.publishFieldStateChange(field, model.columns.addDataField(field), from)
       } else {
+        rowComponent.fieldGoingToBeAddedToTheEnd()
         model.publishFieldStateChange(field, rowComponent.numberOfFields, from, Rows)
       }
     }
