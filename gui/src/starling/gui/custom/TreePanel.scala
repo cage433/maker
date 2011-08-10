@@ -9,9 +9,9 @@ import starling.gui.GuiUtils._
 import starling.pivot.controller.{TreePivotFilterNode, TreePivotFilter}
 import javax.swing.tree.{DefaultTreeModel, TreeModel, TreeCellRenderer, DefaultMutableTreeNode}
 import collection.mutable.{ListBuffer, HashMap}
-import starling.gui.{GuiUtils, StarlingIcons}
 import javax.swing.{ToolTipManager, UIManager, JTree}
 import starling.pivot._
+import starling.gui.{RoundedBorder, GuiUtils, StarlingIcons}
 
 // The selected is a var rather than using the copy method as we need the objects to stay the same for filtering.
 case class CheckBoxListElement(var selected:Boolean, value:Any, label:String, var enabled:Boolean)
@@ -46,7 +46,7 @@ class TreePanel(initialValuesAndSelection:(TreePivotFilter, Selection),
         treeComponent.peer.setSelectionRow(0)
       }
     }
-    case FilterPopupEvent(filterText) => filterPopup(filterText)
+    case FilterPopupEvent(filterText, regex) => filterPopup(filterText, regex)
     case CancelEvent(`buttonPanel`) => hidePopup
     case GenerateFromSelectionEvent => generateFromSelection
     case SelectFiltered(filterText) => selectFiltered(filterText)
@@ -369,8 +369,8 @@ class TreePanel(initialValuesAndSelection:(TreePivotFilter, Selection),
     publish(eventToPublish)
   }
 
-  private def filterPopup(text:String) {
-    val testText = text.trim.toLowerCase
+  private def filterPopup(text:String, regex:Boolean) {
+    val testText = if (regex) text.trim.toLowerCase else text
 
     val rootNode = treeComponent.rootNode
     if (testText == "") {
@@ -389,8 +389,14 @@ class TreePanel(initialValuesAndSelection:(TreePivotFilter, Selection),
               recurse(child, newParent)
             }
             // Don't add the node if it doesn't have any children.
-            if ((newParent.getChildCount != 0) ||
-                    newParent.getUserObject.asInstanceOf[CheckBoxListElement].label.trim.toLowerCase.contains(testText)) {
+            val t = newParent.getUserObject.asInstanceOf[CheckBoxListElement].label
+            val match1 = if (regex) {
+              t.replaceAll(testText, "azqw") != t
+              t.matches(testText)
+            } else {
+              t.trim.toLowerCase.contains(testText)
+            }
+            if ((newParent.getChildCount != 0) || match1) {
               newNode.add(newParent)
             }
           } else {
@@ -402,7 +408,13 @@ class TreePanel(initialValuesAndSelection:(TreePivotFilter, Selection),
           }
         } else {
           val userObject = node.getUserObject.asInstanceOf[CheckBoxListElement]
-          if (userObject.label.trim.toLowerCase.contains(testText)) {
+          val t = userObject.label
+          val match2 = if (regex) {
+            t.replaceAll(testText, "azqw") != t
+          } else {
+            t.trim.toLowerCase.contains(testText)
+          }
+          if (match2) {
             newNode.add(new DefaultMutableTreeNode(userObject))
           }
         }
@@ -552,6 +564,16 @@ class TreePanelFilterPanel extends MigPanel("insets 0", "[p]0[p]0[p]2lp[p]") {
     background = Color.WHITE
     add(clearImage, "align center center, push")
   }
+
+  val regexPanel = new MigPanel("insets 0 3lp 0 2lp") {
+    border = RoundedBorder(BorderColour)
+    val regexButton = new CheckBox("Regex") {
+      mnemonic = Key.R
+      focusable = false
+    }
+    add(regexButton, "push, grow, ay center")
+  }
+
   val selectFilteredNodesButton = new Button {
     text = "Select Filtered"
     mnemonic = Key.S
@@ -565,11 +587,11 @@ class TreePanelFilterPanel extends MigPanel("insets 0", "[p]0[p]0[p]2lp[p]") {
     case KeyPressed(`textField`, Key.Escape, _, _) => textField.text = ""
     case KeyReleased(`textField`, _, _, _) => {
       // Ensure the fields aren't being displayed here.
-      publish(FilterPopupEvent(textField.text))
+      publish(FilterPopupEvent(textField.text, regexPanel.regexButton.selected))
     }
     case MouseClicked(`clearImage`, _, _, _, _) => {
       textField.text = ""
-      publish(FilterPopupEvent(""))
+      publish(FilterPopupEvent("", regexPanel.regexButton.selected))
     }
     case KeyPressed(`textField`, Key.Down, _, _) => publish(DownPressedFromFilterAreaEvent)
   }
@@ -577,11 +599,12 @@ class TreePanelFilterPanel extends MigPanel("insets 0", "[p]0[p]0[p]2lp[p]") {
   add(searchHolder, "grow")
   add(textField, "push, grow")
   add(clearImageHolder, "grow")
+  add(regexPanel, "grow")
   add(selectFilteredNodesButton, "grow")
 }
 
 case object DownPressedFromFilterAreaEvent extends Event
-case class FilterPopupEvent(text:String) extends Event
+case class FilterPopupEvent(text:String, regex:Boolean) extends Event
 case object GenerateFromSelectionEvent extends Event
 case class CancelEvent(source:Component) extends Event
 case class SelectFiltered(text:String) extends Event
