@@ -121,6 +121,7 @@ class StarlingInit( val props: Props,
   val trinityService = TrinityService(ResteasyServiceApi(props.TrinityServiceUrl()))
 
   val titanRabbitEventServices = new DefaultTitanRabbitEventServices(props)
+  println("After rabbit start")
 
   val broadcaster = new CompositeBroadcaster(
       true                                      → new RMIBroadcaster(rmiServerForGUI),
@@ -161,10 +162,12 @@ class StarlingInit( val props: Props,
 
   val userSettingsDatabase = new UserSettingsDatabase(starlingDB, broadcaster)
 
+  println("Just about to start DB")
   if (dbMigration) {
     //Ensure the schema is up to date
     new PatchRunner(starlingRichDB, props.ReadonlyMode(), this).updateSchemaIfRequired
   }
+  println("Finished DB stuff")
 
   val strategyDB = new EAIStrategyDB(eaiSqlServerDB)
 
