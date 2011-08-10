@@ -10,6 +10,7 @@ import com.trafigura.services._
 import com.trafigura.services.marketdata.Maturity
 import starling.daterange.{DateRange, Tenor, SimpleDateRange, Day}
 import com.trafigura.commontypes.dataspecifications.{DateRange => TitanDateRange}
+import valuation.TitanSnapshotIdentifier
 
 
 case class InvalidUomException(msg : String) extends Exception(msg)
@@ -54,6 +55,11 @@ object EDMConversions {
 
   implicit def enrichSerializableCurrency(currency: TitanSerializableCurrency) = new {
     def fromSerializable = edmToStarlingUomSymbol(currency.name).asUOM
+  }
+
+  implicit def enrichTitanSnapshotIdentifier(snapshotId: TitanSnapshotIdentifier) = new {
+    def toTitanDate = TitanSerializableDate(snapshotId.observationDay)
+    def toDay = Day.fromLocalDate(snapshotId.observationDay)
   }
 
   // Titan implicits

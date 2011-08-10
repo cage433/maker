@@ -29,8 +29,8 @@ object Pattern extends Log {
       def apply[B](f: A => B) = new Extractor((a:A) => Some(f(a)))
     }
 
-    def regex(regex: String) = new {
-      def apply[A](pf: PartialFunction[List[String], A]) = from[String](s => regex.r.unapplySeq(s).flatMap(pf.lift(_)))
+    def regex[A](regex: String) = new {
+      def apply(pf: PartialFunction[List[String], A]): Extractor[String, A] = from[String](s => regex.r.unapplySeq(s).flatMap(pf.lift(_)))
     }
 
     def fromMap[K, V](map: Map[K, V]) = Extractor.from[K](map.get)

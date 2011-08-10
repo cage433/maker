@@ -26,7 +26,7 @@ case class Tenor(tenorName: String, value: Int) extends Ordered[Tenor] {
 }
 
 object Tenor {
-  val Parse = Extractor.regex("""(\d+)(\w+)""") {
+  val Parse = Extractor.regex[Tenor]("""(\d+)(\w+)""") {
     case List(Int(value), TenorType.FromShortName(tenorType)) => Tenor(tenorType, value)
   }.orElse(_.partialMatch {
     case "ON"     => Tenor.ON
