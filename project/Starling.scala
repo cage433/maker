@@ -202,24 +202,28 @@ object StarlingBuild extends Build{
   val modelGenSrcDir = file("titan-scala-model/model-src/main/scala/")
   val copiedSrcDir = file("titan-scala-model/src")
   val modelRoot = file("titan-scala-model")
-  def cleanGenSrc = IO.delete(modelGenSrcDir) 
-  def cleanCopiedSrc = IO.delete(copiedSrcDir) 
+  def cleanGenSrc = {println("Cleaning " + modelGenSrcDir); IO.delete(modelGenSrcDir) }
+  def cleanCopiedSrc = {println("Cleaning " + copiedSrcDir); IO.delete(copiedSrcDir) }
+  def buildSource = TitanModel.buildSource(modelRoot, modelGenSrcDir)
 
   lazy val titanModel = Project(
     "titan-model", 
     modelRoot,
     settings = standardSettings ++ Seq(
-      sourceGenerators in Compile <+= sourceManaged in Compile map { dir =>
-        TitanModel.buildSource(modelRoot, modelGenSrcDir)
-      },
+      //sourceGenerators in Compile <+= sourceManaged in Compile map { dir =>
+      //TitanModel.buildSource(modelRoot, modelGenSrcDir)
+      //},
       libraryDependencies ++= titanModelDependencies,
       resolvers ++= Seq(
         "Trafigura Nexus Repository" at "http://nexus.global.trafigura.com:8081/nexus/content/repositories/tooling-releases/",
         "Alfresco (needed for resteasy 1.2)" at "http://maven.alfresco.com/nexus/content/groups/public/"
       ),
+      unmanagedSourceDirectories in Compile <+= baseDirectory(_/"model-src"),
       cleanGenSrcTask := cleanGenSrc, 
       cleanCopiedSrcTask := cleanCopiedSrc, 
-      clean <<= clean.dependsOn(cleanGenSrcTask, cleanCopiedSrcTask)
+      clean <<= clean.dependsOn(cleanGenSrcTask, cleanCopiedSrcTask),
+      buildSrcTask := buildSource,
+      compile in Compile <<= (compile in Compile).dependsOn(buildSrcTask)
     )
   )
  
@@ -228,6 +232,7 @@ object StarlingBuild extends Build{
     
     val cleanGenSrcTask = TaskKey[Unit]("clean-src", "Clean model generated sources")
     val cleanCopiedSrcTask = TaskKey[Unit]("clean-copied-src", "Clean sources copied from model")
+    val buildSrcTask = TaskKey[Unit]("build-src", "Build sources from model")
      
     def buildSource(titanModuleRoot : File, outputDir :File) : Seq[File] = {
       println("Outputting model gen src to " + outputDir)
@@ -268,8 +273,8 @@ object StarlingBuild extends Build{
       }
 
       (latestRubyFileTime, earliestScalaFileTime) match {
-        case (t_ruby, Some(t_scala)) if t_ruby < t_scala => Seq[File]()
-        case _ => copyNonModelSource; generateModelMainSourceCmd !; (outputDir ** "*.scala").get ++ (nonModelSourcePath ** "*.scala").get
+        case (t_ruby, Some(t_scala)) if t_ruby < t_scala => { val genFiles = /* (outputDir ** "*.scala").get ++ */ (nonModelSourcePath ** "*.scala").get; println("Generated " + genFiles.size); genFiles}
+        case _ => copyNonModelSource; generateModelMainSourceCmd !; { val genFiles = (outputDir ** "*.scala").get ++ (nonModelSourcePath ** "*.scala").get; println("Generated " + genFiles.size); genFiles}
       }      
     }
   }
