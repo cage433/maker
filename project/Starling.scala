@@ -200,8 +200,10 @@ object StarlingBuild extends Build{
   import TitanModel._
 
   val modelGenSrcDir = file("titan-scala-model/model-src/main/scala/")
-  val modelRoot = file("./titan-scala-model")
-  def cleanGenSrc = doCleanGenSrc(modelGenSrcDir) 
+  val copiedSrcDir = file("titan-scala-model/src")
+  val modelRoot = file("titan-scala-model")
+  def cleanGenSrc = IO.delete(modelGenSrcDir) 
+  def cleanCopiedSrc = IO.delete(copiedSrcDir) 
 
   lazy val titanModel = Project(
     "titan-model", 
@@ -216,7 +218,8 @@ object StarlingBuild extends Build{
         "Alfresco (needed for resteasy 1.2)" at "http://maven.alfresco.com/nexus/content/groups/public/"
       ),
       cleanGenSrcTask := cleanGenSrc, 
-      clean <<= clean.dependsOn(cleanGenSrcTask)
+      cleanCopiedSrcTask := cleanCopiedSrc, 
+      clean <<= clean.dependsOn(cleanGenSrcTask, cleanCopiedSrcTask)
     )
   )
  
@@ -224,18 +227,10 @@ object StarlingBuild extends Build{
   object TitanModel {
     
     val cleanGenSrcTask = TaskKey[Unit]("clean-src", "Clean model generated sources")
+    val cleanCopiedSrcTask = TaskKey[Unit]("clean-copied-src", "Clean sources copied from model")
      
-    def doCleanGenSrc(path : File)  = { 
-      println("doCleanGenSrc : %s".format(path.getAbsolutePath))
-      cleanPath(path)
-    }
-
-    // cleaning must also remove any model source and any copied to the combined directory
-    protected def cleanPath(path : File) {
-//      clean(path) : todo, find equiv for 0.7x FileUtilities.clean
-    }
-
     def buildSource(titanModuleRoot : File, outputDir :File) : Seq[File] = {
+      println("Outputting model gen src to " + outputDir)
       def latestRubyFileTime = {
         val files = rubyModelPathFinder.getFiles
         if (files.isEmpty)
@@ -252,19 +247,18 @@ object StarlingBuild extends Build{
       lazy val buildUsingBinaryTooling = true
 
       val toolingLauncher = if (buildUsingBinaryTooling == true) new File(titanModuleRoot, "../../../mdl/bindinggen.rb") else new File(titanModuleRoot, "/model/tooling/binding-generator/thubc.rb")
-      val parentPath = new File(titanModuleRoot, "/../../../model/model/")
 
       val generateModelMainSourceCmd = new java.lang.ProcessBuilder("ruby", toolingLauncher.getAbsolutePath, "-o", outputDir.getAbsolutePath, "-b", "../../../mdl/starling/bindings.rb", "../../../mdl/starling/model.rb") directory titanModuleRoot
 
       lazy val rubyModelPathFinder = {
-        (parentPath ** "*.rb")
+        (new File(titanModuleRoot, "/../../../model/model/")** "*.rb")
       }
 
       lazy val nonModelSourcePath = new File(titanModuleRoot, "src")
       def copyNonModelSource  = {
         if (! (nonModelSourcePath.exists)) {
           import IO._
-          val originalSourcePath = new File(titanModuleRoot, "/scala-model-with-persistence/src/")
+          val originalSourcePath = new File(titanModuleRoot, "../../../model/model/scala-model-with-persistence/src/")
           copyDirectory(originalSourcePath, nonModelSourcePath)
           val hibernateBean = new File (titanModuleRoot, "/src/main/scala/com/trafigura/refinedmetals/persistence/CustomAnnotationSessionFactoryBean.scala")
           println("***** DEBUG ***** path " + hibernateBean.getAbsolutePath + ", " + hibernateBean.exists + ", " + hibernateBean.canWrite) 
@@ -273,10 +267,9 @@ object StarlingBuild extends Build{
         None
       }
 
-      printf("Earliest scala " + earliestScalaFileTime + ", latest ruby " + latestRubyFileTime)
       (latestRubyFileTime, earliestScalaFileTime) match {
         case (t_ruby, Some(t_scala)) if t_ruby < t_scala => Seq[File]()
-        case _ => copyNonModelSource; generateModelMainSourceCmd !; (outputDir ** "*.scala").get
+        case _ => copyNonModelSource; generateModelMainSourceCmd !; (outputDir ** "*.scala").get ++ (nonModelSourcePath ** "*.scala").get
       }      
     }
   }
