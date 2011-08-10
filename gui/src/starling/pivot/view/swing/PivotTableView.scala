@@ -353,7 +353,12 @@ class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSiz
 
   def updateFocusBasedOnCellSelection() {
     getSelectedCells match {
-      case Left(_) => fullTable.requestFocusInWindow()
+      case Left(_) => {
+        val r = fullTable.requestFocusInWindow()
+        if (!r) {
+          KeyboardFocusManager.getCurrentKeyboardFocusManager.focusNextComponent(fullTable)
+        }
+      }
       case Right((m,r,c)) => {
         if (m.nonEmpty) {
           mainTable.requestFocusInWindow()
