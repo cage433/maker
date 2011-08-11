@@ -3,6 +3,12 @@ import Keys._
 import java.io.File
 
 object Dependencies{
+
+  val testDependencies = Seq(
+    "org.mockito" % "mockito-all" % "1.8.2" withSources(),
+    "org.testng" % "testng" % "5.8" classifier "jdk15" withSources()
+  ) 
+
   val utilsDependencies = Seq(
     "cglib" % "cglib-nodep" % "2.2" withSources(),
     "joda-time" % "joda-time" % "1.6" withSources(),
@@ -13,11 +19,8 @@ object Dependencies{
     "commons-codec" % "commons-codec" % "1.4" withSources(),
     "colt" % "colt" % "1.0.3",
     "com.thoughtworks.xstream" % "xstream" % "1.3.1" withSources(),
-    "org.testng" % "testng" % "5.8" classifier "jdk15" withSources(),
-    // Test dependencies
-    "org.mockito" % "mockito-all" % "1.8.2" % "test" withSources(),
     "org.testng" % "testng" % "5.8" classifier "jdk15" withSources()
-  ) 
+  ) ++ testDependencies
 
   val bouncyRmiDependencies = Seq(
     "cglib" % "cglib-nodep" % "2.2" withSources(),
@@ -60,6 +63,22 @@ object Dependencies{
       "com.trafigura.tradinghub" % "scala-hub-support" % "2.14",
       "com.trafigura.tradinghub" % "persistence-support" % "2.14"
   )
+
+  val servicesDependencies = Seq(
+    "net.liftweb" % "lift-json_2.9.0" % "2.4-M2" withSources(),
+    "javax.mail" % "mail" % "1.4" withSources(),
+    "javax.servlet" % "servlet-api" % "2.5" withSources(),
+    "org.mortbay.jetty" % "jetty" % "6.1.26" withSources(),
+    "org.subethamail" % "subethasmtp-wiser" % "1.2" % "test" withSources(),
+    "org.subethamail" % "subethasmtp-smtp" % "1.2" % "test" withSources(),
+    "org.springframework" % "spring-context-support" % "3.0.5.RELEASE" withSources()
+  ) 
+
+  val titanSharedDependencies = Seq(
+    "com.trafigura.services" % "titan-core" % "LATEST",
+    "com.trafigura.services" % "titan-security" % "LATEST",
+    "com.trafigura.services" % "titan-utils" % "LATEST"
+  )
 }
 
 object StarlingBuild extends Build{
@@ -68,6 +87,9 @@ object StarlingBuild extends Build{
 
   lazy val standardSettings = Defaults.defaultSettings ++ Seq(
     unmanagedSourceDirectories in Compile <+= baseDirectory(_/"src"),
+    unmanagedSourceDirectories in Test <+= baseDirectory(_/"tests"),
+//    unmanagedResourceDirectories in Test <+= baseDirectory(_/"test-resources"),
+//    unmanagedResourceDirectories in Test <+= baseDirectory(_/"resources"),
     unmanagedBase <<= baseDirectory( (base: File) => base /"lib"),
     scalaVersion := "2.9.0-1"
   )
@@ -142,13 +164,13 @@ object StarlingBuild extends Build{
   lazy val curves = Project(
     "curves", 
     file("./curves"),
-    settings = standardSettings
+    settings = standardSettings ++ Seq(libraryDependencies ++= testDependencies)
   ) dependsOn(maths, pivotUtils,guiapi)
 
   lazy val instrument = Project(
     "instrument", 
     file("./instrument"),
-    settings = standardSettings
+    settings = standardSettings ++ Seq(libraryDependencies ++= testDependencies)
   ) dependsOn(curves)
 
   lazy val gui = Project(
@@ -170,12 +192,57 @@ object StarlingBuild extends Build{
   ) dependsOn(trade)
 
 
+  import TitanModel._
 
-//lazy val databases = Project(
-  //"databases", 
-  //file("./databases"),
-  //settings = standardSettings ++ Seq(libraryDependencies ++= guiDependencies)
-  //) dependsOn(guiapi)
+  lazy val titanModel = Project(
+    "titan-model", 
+    modelRoot,
+    settings = standardSettings ++ Seq(
+      libraryDependencies ++= titanModelDependencies,
+      resolvers ++= Seq(
+        "Trafigura Nexus Repository" at "http://nexus.global.trafigura.com:8081/nexus/content/repositories/tooling-releases/",
+        "Alfresco (needed for resteasy 1.2)" at "http://maven.alfresco.com/nexus/content/groups/public/"
+      ),
+      unmanagedSourceDirectories in Compile <+= baseDirectory(_/"model-src"),
+      cleanGenSrcTask := cleanGenSrc, 
+      cleanCopiedSrcTask := cleanCopiedSrc, 
+      clean <<= clean.dependsOn(cleanGenSrcTask, cleanCopiedSrcTask),
+      buildSrcTask := buildSource,
+      compile in Compile <<= (compile in Compile).dependsOn(buildSrcTask)
+    )
+  )
+
+  lazy val starlingApi = Project(
+    "starlingApi", 
+    file("./starling.api"),
+    settings = standardSettings 
+  ) dependsOn(bouncyrmi, titanModel)
+ 
+  lazy val databases = Project(
+    "databases", 
+    file("./databases"),
+    settings = standardSettings ++ Seq(libraryDependencies ++= databasesDependencies ++ testDependencies)
+  ) dependsOn(VaR, pivot, guiapi, concurrent, auth, starlingApi)
+
+  lazy val titan = Project(
+    "titan", 
+    file("./titan"),
+    settings = standardSettings 
+  ) dependsOn(titanModel, databases)
+
+  lazy val services = Project(
+    "services", 
+    file("./services"),
+    settings = standardSettings ++ Seq(
+      libraryDependencies ++= servicesDependencies ++ testDependencies
+    )
+  ) dependsOn(concurrent, loopyxl, titan)
+
+  lazy val devLauncher = Project(
+    "devLauncher", 
+    file("./dev.launcher"),
+    settings = standardSettings
+  ) dependsOn(services, gui)
 
   lazy val root = Project("starling", file("."), settings = standardSettings) aggregate (
     utils, 
@@ -193,49 +260,26 @@ object StarlingBuild extends Build{
     instrument,
     gui,
     trade,
-    VaR
+    VaR,
+    titanModel,
+    databases,
+    titan,
+    services,
+    devLauncher
   )
-
-  // titan model project definition
-  import TitanModel._
-
-  val modelGenSrcDir = file("titan-scala-model/model-src/main/scala/")
-  val copiedSrcDir = file("titan-scala-model/src")
-  val modelRoot = file("titan-scala-model")
-  def cleanGenSrc = {println("Cleaning " + modelGenSrcDir); IO.delete(modelGenSrcDir) }
-  def cleanCopiedSrc = {println("Cleaning " + copiedSrcDir); IO.delete(copiedSrcDir) }
-  def buildSource = TitanModel.buildSource(modelRoot, modelGenSrcDir)
-
-  lazy val titanModel = Project(
-    "titan-model", 
-    modelRoot,
-    settings = standardSettings ++ Seq(
-      //sourceGenerators in Compile <+= sourceManaged in Compile map { dir =>
-      //TitanModel.buildSource(modelRoot, modelGenSrcDir)
-      //},
-      libraryDependencies ++= titanModelDependencies,
-      resolvers ++= Seq(
-        "Trafigura Nexus Repository" at "http://nexus.global.trafigura.com:8081/nexus/content/repositories/tooling-releases/",
-        "Alfresco (needed for resteasy 1.2)" at "http://maven.alfresco.com/nexus/content/groups/public/"
-      ),
-      unmanagedSourceDirectories in Compile <+= baseDirectory(_/"model-src"),
-      cleanGenSrcTask := cleanGenSrc, 
-      cleanCopiedSrcTask := cleanCopiedSrc, 
-      clean <<= clean.dependsOn(cleanGenSrcTask, cleanCopiedSrcTask),
-      buildSrcTask := buildSource,
-      compile in Compile <<= (compile in Compile).dependsOn(buildSrcTask)
-    )
-  )
- 
 
   object TitanModel {
     
+    val modelGenSrcDir = file("titan-scala-model/model-src/main/scala/")
+    val copiedSrcDir = file("titan-scala-model/src")
+    val modelRoot = file("titan-scala-model")
+    def cleanGenSrc = {println("Cleaning " + modelGenSrcDir); IO.delete(modelGenSrcDir) }
+    def cleanCopiedSrc = {println("Cleaning " + copiedSrcDir); IO.delete(copiedSrcDir) }
     val cleanGenSrcTask = TaskKey[Unit]("clean-src", "Clean model generated sources")
     val cleanCopiedSrcTask = TaskKey[Unit]("clean-copied-src", "Clean sources copied from model")
     val buildSrcTask = TaskKey[Unit]("build-src", "Build sources from model")
      
-    def buildSource(titanModuleRoot : File, outputDir :File) : Seq[File] = {
-      println("Outputting model gen src to " + outputDir)
+    def buildSource {
       def latestRubyFileTime = {
         val files = rubyModelPathFinder.getFiles
         if (files.isEmpty)
@@ -244,28 +288,28 @@ object StarlingBuild extends Build{
       }
       
       def earliestScalaFileTime = {
-        (outputDir ** "*.scala").getFiles.toList.map(_.lastModified).sort(_<_) match {
+        (modelGenSrcDir ** "*.scala").getFiles.toList.map(_.lastModified).sort(_<_) match {
           case Nil => None
           case t :: _ => Some(t)
         }
       }
       lazy val buildUsingBinaryTooling = true
 
-      val toolingLauncher = if (buildUsingBinaryTooling == true) new File(titanModuleRoot, "../../../mdl/bindinggen.rb") else new File(titanModuleRoot, "/model/tooling/binding-generator/thubc.rb")
+      val toolingLauncher = if (buildUsingBinaryTooling == true) new File(modelRoot, "../../../mdl/bindinggen.rb") else new File(modelRoot, "/model/tooling/binding-generator/thubc.rb")
 
-      val generateModelMainSourceCmd = new java.lang.ProcessBuilder("ruby", toolingLauncher.getAbsolutePath, "-o", outputDir.getAbsolutePath, "-b", "../../../mdl/starling/bindings.rb", "../../../mdl/starling/model.rb") directory titanModuleRoot
+      val generateModelMainSourceCmd = new java.lang.ProcessBuilder("ruby", toolingLauncher.getAbsolutePath, "-o", modelGenSrcDir.getAbsolutePath, "-b", "../../../mdl/starling/bindings.rb", "../../../mdl/starling/model.rb") directory modelRoot
 
       lazy val rubyModelPathFinder = {
-        (new File(titanModuleRoot, "/../../../model/model/")** "*.rb")
+        (new File(modelRoot, "/../../../model/model/")** "*.rb")
       }
 
-      lazy val nonModelSourcePath = new File(titanModuleRoot, "src")
+      lazy val nonModelSourcePath = new File(modelRoot, "src")
       def copyNonModelSource  = {
         if (! (nonModelSourcePath.exists)) {
           import IO._
-          val originalSourcePath = new File(titanModuleRoot, "../../../model/model/scala-model-with-persistence/src/")
+          val originalSourcePath = new File(modelRoot, "../../../model/model/scala-model-with-persistence/src/")
           copyDirectory(originalSourcePath, nonModelSourcePath)
-          val hibernateBean = new File (titanModuleRoot, "/src/main/scala/com/trafigura/refinedmetals/persistence/CustomAnnotationSessionFactoryBean.scala")
+          val hibernateBean = new File (modelRoot, "/src/main/scala/com/trafigura/refinedmetals/persistence/CustomAnnotationSessionFactoryBean.scala")
           println("***** DEBUG ***** path " + hibernateBean.getAbsolutePath + ", " + hibernateBean.exists + ", " + hibernateBean.canWrite) 
           if (hibernateBean.exists && hibernateBean.canWrite) hibernateBean.delete()
         }
@@ -273,8 +317,8 @@ object StarlingBuild extends Build{
       }
 
       (latestRubyFileTime, earliestScalaFileTime) match {
-        case (t_ruby, Some(t_scala)) if t_ruby < t_scala => { val genFiles = /* (outputDir ** "*.scala").get ++ */ (nonModelSourcePath ** "*.scala").get; println("Generated " + genFiles.size); genFiles}
-        case _ => copyNonModelSource; generateModelMainSourceCmd !; { val genFiles = (outputDir ** "*.scala").get ++ (nonModelSourcePath ** "*.scala").get; println("Generated " + genFiles.size); genFiles}
+        case (t_ruby, Some(t_scala)) if t_ruby < t_scala => 
+        case _ => copyNonModelSource; generateModelMainSourceCmd !; 
       }      
     }
   }
