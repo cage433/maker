@@ -89,7 +89,7 @@ object StarlingBuild extends Build{
     unmanagedSourceDirectories in Compile <+= baseDirectory(_/"src"),
     unmanagedSourceDirectories in Test <+= baseDirectory(_/"tests"),
 //    unmanagedResourceDirectories in Test <+= baseDirectory(_/"test-resources"),
-//    unmanagedResourceDirectories in Test <+= baseDirectory(_/"resources"),
+    unmanagedResourceDirectories in Test <+= baseDirectory(_/"resources"),
     unmanagedBase <<= baseDirectory( (base: File) => base /"lib"),
     scalaVersion := "2.9.0-1"
   )
