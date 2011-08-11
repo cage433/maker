@@ -180,7 +180,7 @@ object StarlingBuild extends Build{
   lazy val instrument = Project(
     "instrument", 
     file("./instrument"),
-    settings = standardSettings ++ Seq(libraryDependencies ++= testDependencies) ++ projectTestClasspathSetting("utils")
+    settings = standardSettings ++ Seq(libraryDependencies ++= testDependencies) ++ projectTestClasspathSetting("curves") ++ projectTestClasspathSetting("daterange")
   ) dependsOn(curves)
 
   lazy val gui = Project(
