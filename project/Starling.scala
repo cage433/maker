@@ -91,8 +91,18 @@ object StarlingBuild extends Build{
 //    unmanagedResourceDirectories in Test <+= baseDirectory(_/"test-resources"),
     unmanagedResourceDirectories in Test <+= baseDirectory(_/"resources"),
     unmanagedBase <<= baseDirectory( (base: File) => base /"lib"),
+    unmanagedClasspath in Test <+= (baseDirectory) map { bd => Attributed.blank(bd / "resources") },
     scalaVersion := "2.9.0-1"
   )
+
+  def projectTestClasspathSetting(name : String) = Seq(
+    unmanagedClasspath in Test <+= (baseDirectory) map { bd => Attributed.blank(bd/("../" + name + "/target/scala-2.9.0.1/test-classes"))}
+  )
+  
+  val daterangeClasspathSetting = Seq(
+    unmanagedClasspath in Test <+= (baseDirectory) map { bd => Attributed.blank(bd/"../daterange/target/scala-2.9.0.1/test-classes")}
+  )
+
 
 
 
@@ -140,7 +150,7 @@ object StarlingBuild extends Build{
   lazy val maths = Project(
     "maths", 
     file("./maths"),
-    settings = standardSettings
+    settings = standardSettings ++ projectTestClasspathSetting("daterange")
   ) dependsOn(quantity, daterange)
 
   lazy val pivot = Project(
@@ -164,13 +174,13 @@ object StarlingBuild extends Build{
   lazy val curves = Project(
     "curves", 
     file("./curves"),
-    settings = standardSettings ++ Seq(libraryDependencies ++= testDependencies)
+    settings = standardSettings ++ Seq(libraryDependencies ++= testDependencies) ++ projectTestClasspathSetting("daterange")
   ) dependsOn(maths, pivotUtils,guiapi)
 
   lazy val instrument = Project(
     "instrument", 
     file("./instrument"),
-    settings = standardSettings ++ Seq(libraryDependencies ++= testDependencies)
+    settings = standardSettings ++ Seq(libraryDependencies ++= testDependencies) ++ projectTestClasspathSetting("utils")
   ) dependsOn(curves)
 
   lazy val gui = Project(
