@@ -7,7 +7,5 @@ import starling.market.{MarketProvider, TestMarketLookup, ExpiryRulesSpec, TestM
 trait StarlingTest extends TestMarketSpec with ExpiryRulesSpec with TestNGSuite
 
 trait StarlingSpec extends ExpiryRulesSpec with WordSpec {
-  val testmarketlookup = new TestMarketLookup()
-
-  MarketProvider.registerNewImplForTesting(Some(testmarketlookup))
+  MarketProvider.registerImpl(TestMarketLookup)
 }

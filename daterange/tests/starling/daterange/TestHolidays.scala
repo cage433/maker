@@ -79,9 +79,9 @@ trait HolidaysSpec {
     def regionHolidays(name: String) = BusinessCalendarSet(name, Location.Unknown, Set())
   }))
 
-  @AfterTest
-  def after {
-      HolidayTablesFactory.registerNewHolidayTablesImplForTesting(old)
-  }
+  //@AfterTest
+  //def after {
+    //HolidayTablesFactory.registerNewHolidayTablesImplForTesting(old)
+    //}
 
 }

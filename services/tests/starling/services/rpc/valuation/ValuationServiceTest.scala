@@ -21,7 +21,6 @@ import org.testng.annotations.{BeforeClass, Test}
  */
 class ValuationServiceTest extends StarlingTest {
 
-  var testMarketLookup : TestMarketLookup = null
   var mockTitanServices : FileMockedTitanServices = null
   var mockTitanTradeService : DefaultTitanTradeService = null
   var mockTitanTradeCache : TitanTradeServiceBasedTradeCache = null
@@ -34,8 +33,7 @@ class ValuationServiceTest extends StarlingTest {
     val stopwatch = new Stopwatch()
     println("Starting valuation service tests - initialisation of mock data...")
 
-    testMarketLookup = new TestMarketLookup()
-    MarketProvider.registerNewImplForTesting(Some(testMarketLookup))
+    MarketProvider.registerImpl(TestMarketLookup)
     mockTitanServices = new FileMockedTitanServices()
     mockTitanTradeService = new DefaultTitanTradeService(mockTitanServices)
     mockTitanTradeCache = new TitanTradeServiceBasedTradeCache(mockTitanTradeService)

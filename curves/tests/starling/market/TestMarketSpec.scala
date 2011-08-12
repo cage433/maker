@@ -6,40 +6,10 @@ import org.scalatest.testng.TestNGSuite
 import starling.daterange._
 
 trait TestMarketSpec extends ExpiryRulesSpec with TestNGSuite {
-  val bla = new TestMarketLookup()
-
-  MarketProvider.registerNewImplForTesting(Some(bla))
+  MarketProvider.registerImpl(TestMarketLookup)
 }
 
-trait ExpiryRulesSpec extends PrecisionRulesSpec {
-  var oldRule: Option[FuturesExpiryRules] = FuturesExpiryRuleFactory.expiryRuleOpton
-
-  FuturesExpiryRuleFactory.registerNewRulesImplForTesting(Some(new FuturesExpiryRules(new BusinessCalendars(HolidayTablesFactory.holidayTables)) {
-    val emptyRule = new FuturesExpiryRule {
-      val name = "Test"
-
-      def lastTradingDay(d: DateRange) = d.firstDay - 3
-
-      override def expiryDay(d: DateRange) = lastTradingDay(d) - 1
-
-      override def csoExpiryDay(s: Spread[_ <: DateRange]) = lastTradingDay(s.first) - 2
-
-      override def commoditySpreadOptionExpiryDay(d: DateRange) = lastTradingDay(d) - 2
-    }
-
-    def ruleOption(eaiQuoteID: Int) = eaiQuoteID match {
-      case 2 => Some(nymex_wti)
-      case 14 => Some(ice_gas_oil)
-      case _ => Some(emptyRule)
-    }
-  }))
-
-  @AfterTest
-  def after2 {
-    FuturesExpiryRuleFactory.registerNewRulesImplForTesting(oldRule)
-  }
-
-
+object SomeMarketRules{
   // Some hard coded rules:
 
   val ice_gas_oil = new MonthFuturesExpiryRule{
@@ -372,5 +342,27 @@ trait ExpiryRulesSpec extends PrecisionRulesSpec {
       Month(2014, 11) -> Day(2014, 10, 16),
       Month(2014, 12) -> Day(2014, 11, 17))
   }
+}
+case object DummyFuturesExpiryRules extends FuturesExpiryRules(new BusinessCalendars(HolidayTablesFactory.holidayTables)) {
+  import SomeMarketRules._
+  val emptyRule = new FuturesExpiryRule {
+    val name = "Test"
 
+    def lastTradingDay(d: DateRange) = d.firstDay - 3
+
+    override def expiryDay(d: DateRange) = lastTradingDay(d) - 1
+
+    override def csoExpiryDay(s: Spread[_ <: DateRange]) = lastTradingDay(s.first) - 2
+
+    override def commoditySpreadOptionExpiryDay(d: DateRange) = lastTradingDay(d) - 2
+  }
+
+  def ruleOption(eaiQuoteID: Int) = eaiQuoteID match {
+    case 2 => Some(nymex_wti)
+    case 14 => Some(ice_gas_oil)
+    case _ => Some(emptyRule)
+  }
+}
+trait ExpiryRulesSpec extends PrecisionRulesSpec {
+  FuturesExpiryRuleFactory.registerRulesImpl(DummyFuturesExpiryRules)
 }

@@ -44,15 +44,15 @@ trait MarketLookup {
 object MarketProvider {
   private var impl: Option[MarketLookup] = None
 
+  private val lock = new Object
   def registerImpl(i: MarketLookup) {
-    impl match {
-      case None => impl = Some(i)
-      case Some(_) => throw new Exception("Market provider implementation already registered")
+    lock.synchronized {
+      impl match {
+        case None => impl = Some(i)
+        case Some(currentMarketLookup) if i == currentMarketLookup => 
+        case _ => throw new Exception("Market provider implementation already registered")
+      }
     }
-  }
-
-  def registerNewImplForTesting(i: Option[MarketLookup]) {
-    impl = i
   }
 
   def provider = {

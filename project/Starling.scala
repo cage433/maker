@@ -92,9 +92,7 @@ object StarlingBuild extends Build{
     unmanagedResourceDirectories in Compile <+= baseDirectory(_/"resources"),
     unmanagedBase <<= baseDirectory( (base: File) => base /"lib"),
     unmanagedClasspath in Test <+= (baseDirectory) map { bd => Attributed.blank(bd / "resources") },
-    //ivyXML := <exclude module="jcl-over-slf4j"/>, 
     ivyXML := <dependencies><exclude artifact="jcl-over-slf4j"/></dependencies>, 
-//    parallelExecution in Test := false,
     scalaVersion := "2.9.0-1"
   )
 
