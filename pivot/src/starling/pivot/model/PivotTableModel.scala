@@ -585,13 +585,15 @@ object PivotTableModel {
 
   private def withSubtotals(mainTableBucket:HashMap[(scala.List[ChildKey],scala.List[ChildKey]), DataFieldTotal]) = {
     def permutations(list:List[ChildKey]):List[List[ChildKey]] = {
-      (list.size to 0 by -1).map(col => {
+      val values = (list.size to 0 by -1).map(col => {
         val (start,end) = list.splitAt(col)
         start ::: end.map(c => if (c.isMeasure) c else c.toTotal)
-      }).toList.distinct
+      }).toList
+      val distinctValues = values.distinct
+      distinctValues
     }
 
-    mainTableBucket.foreach {
+    mainTableBucket.toList.foreach {
       case ((row, column), sum) => {
         val columnPermutations = permutations(column)
         val rowPermutations = permutations(row)
