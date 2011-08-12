@@ -2,12 +2,13 @@ package starling.db
 
 import org.springframework.jdbc.datasource.SingleConnectionDataSource
 import starling.richdb.{RichResultSetRowFactory, RichDB}
-import org.testng.annotations.{Test, AfterTest, BeforeTest, }
+import org.testng.annotations.{Test, AfterTest, BeforeTest}
 import org.testng.Assert._
 import java.sql.{DriverManager, Connection}
 import starling.market.TestMarketSpec
 import starling.daterange.Day
 import starling.marketdata.{MarketDataTypes, MarketDataType}
+
 /**
  * Created by IntelliJ IDEA.
  * User: davem
