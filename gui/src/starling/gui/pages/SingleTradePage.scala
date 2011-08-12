@@ -285,16 +285,28 @@ class SingleTradePageComponent(context:PageContext, pageData:PageData) extends M
         val expiry = data.tradeExpiryDay.exp.startOfFinancialYear
 
         val curveIdentifier = {
-          val marketDataSelection = context.getSetting(
-            StandardUserSettingKeys.InitialMarketDataSelection,
-            MarketDataSelection(context.localCache.pricingGroups(desk).headOption)
-          )
+          val deskPricingGroups = context.localCache.pricingGroups(desk)
+          val pricingGroup = deskPricingGroups.headOption
+          val marketDataSelection = {
+            val tmp = context.getSetting(StandardUserSettingKeys.InitialMarketDataSelection, MarketDataSelection(pricingGroup))
+            if (deskPricingGroups.contains(tmp.pricingGroup)) {
+              tmp
+            } else {
+              MarketDataSelection(pricingGroup)
+            }
+          }
+
           val version = context.localCache.latestMarketDataVersion(marketDataSelection)
+
+          val enRule = pricingGroup match {
+            case Some(pg) if pg == PricingGroup.Metals => EnvironmentRuleLabel.AllCloses
+            case _ => EnvironmentRuleLabel.COB
+          }
 
           val ci = CurveIdentifierLabel.defaultLabelFromSingleDay(
             MarketDataIdentifier(marketDataSelection, version),
             context.localCache.ukBusinessCalendar)
-          ci.copy(thetaDayAndTime = ci.thetaDayAndTime.copyTimeOfDay(TimeOfDay.EndOfDay))
+          ci.copy(thetaDayAndTime = ci.thetaDayAndTime.copyTimeOfDay(TimeOfDay.EndOfDay), environmentRule = enRule)
         }
 
         val rp = ReportParameters(

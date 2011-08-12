@@ -457,6 +457,7 @@ class ValuationService(
   def valueCostables(costableIds: List[String], env : Environment, snapshotIDString : String): CostsAndIncomeQuotaValuationServiceResults = {
     val sw = new Stopwatch()
 
+    // value all trades (and therefor all quotas) keyed by trade ids
     val idsToUse = costableIds match {
       case Nil | null => titanTradeCache.getAllTrades().map{trade => trade.titanId.value}
       case list => list
@@ -603,7 +604,6 @@ class ValuationService(
      * handler for trademgnt trade events
      */
     def tradeMgmtTradeEventHander(ev: Event) = {
-      import Event._
       log.info("handler: Got a trade event to process %s".format(ev.toString))
 
       val tradePayloads = ev.content.body.payloads.filter(p => Event.RefinedMetalTradeIdPayload == p.payloadType)
@@ -651,11 +651,6 @@ class ValuationService(
             rabbitPublishNewValuationEvents(valuationResults)
           }
         }
-      }
-
-      def getSnapshotAndEnv : (String, Environment) = environmentProvider.mostRecentSnapshotIdentifierBeforeToday() match {
-        case Some(snapshotId) => (snapshotId, environmentProvider.environment(snapshotId))
-        case None => ("No Snapshot found",  Environment(NullAtomicEnvironment((Day.today() - 1).startOfDay)))
       }
     }
 
@@ -710,7 +705,71 @@ class ValuationService(
         }
       }
     }
-    
+
+    /**
+     * handler for snapshot events
+     */
+    def marketDataSnapshotEventHander(ev: Event) = {
+      log.info("handler: Got a snapshot event to process %s".format(ev.toString))
+
+      /**
+       * logic:
+       *   take the most recent previous snapshot of the day and compare values using that snapshot and the new one, if different send events containing ids
+       *   else if there is no previous snapshot for today then do nothing
+       */
+      val payloads = ev.content.body.payloads.filter(p => StarlingSnapshotIdPayload == p.payloadType)
+      val ids = payloads.map(p => p.key.identifier)
+      val newSnapshotId = payloads.map(p => p.key.identifier).max
+      val todaysSnapshots : List[SnapshotID] = environmentProvider.snapshotIDs(Some(Day.today())).sortWith(_.id > _.id)
+      log.info("Snapshot event received for ids { %s }, using '%s'".format(ids.mkString(", "), newSnapshotId))
+
+      if (todaysSnapshots.size > 1) {
+        ev.subject match {
+          case StarlingMarketDataSnapshotIDSubject => {
+            ev.verb match {
+              case NewEventVerb => {
+                val previousSnapshotId = todaysSnapshots(1).id
+                log.info("New marketData snapshot event, revaluing received event using old snapshot %s new snapshot %s".format(previousSnapshotId, newSnapshotId))
+                val previousEnv = environmentProvider.environment(previousSnapshotId)
+                val newEnv = environmentProvider.environment(newSnapshotId)
+
+                val originalTradeValuations = valueCostables(Nil, previousEnv, previousSnapshotId)
+                val newTradeValuations = valueCostables(Nil, newEnv, newSnapshotId)
+                val tradeIds = newTradeValuations.tradeResults.keys.toList
+                val changedTradeIDs = tradeIds.filter(id => newTradeValuations.tradeResults(id) != originalTradeValuations.tradeResults(id))
+
+                log.info("Trades revalued for new snapshot %s, number of changed valuations %d".format(newSnapshotId, changedTradeIDs.size))
+
+                if (changedTradeIDs != Nil)
+                  rabbitPublishChangedValueEvents(changedTradeIDs, RefinedMetalTradeIdPayload)
+
+                val originalInventoryValuations = valueInventoryAssignments(Nil, previousEnv, previousSnapshotId)
+                val newInventoryValuations = valueInventoryAssignments(Nil, newEnv, newSnapshotId)
+                val inventoryIds = newInventoryValuations.assignmentValuationResults.keys.toList
+                val changedInventoryValueIDs = inventoryIds.filter(id => newInventoryValuations.assignmentValuationResults(id) != newInventoryValuations.assignmentValuationResults(id))
+
+                log.info("Inventory assignments revalued for new snapshot %s, number of changed valuations %d".format(newSnapshotId, changedInventoryValueIDs.size))
+
+                if (changedInventoryValueIDs != Nil)
+                  rabbitPublishChangedValueEvents(changedInventoryValueIDs, RefinedMetalTradeIdPayload)
+              }
+              case UpdatedEventVerb => {
+                log.info("Unhandled event for updated snapshot %s".format(ids))
+              }
+              case CancelEventVerb | RemovedEventVerb => {
+                log.info("Unhandled cancelled / deleted event received for %s".format(ids))
+              }
+            }
+          }
+        }
+      }
+    }
+
+    def getSnapshotAndEnv : (String, Environment) = environmentProvider.mostRecentSnapshotIdentifierBeforeToday() match {
+      case Some(snapshotId) => (snapshotId, environmentProvider.environment(snapshotId))
+      case None => ("No Snapshot found",  Environment(NullAtomicEnvironment((Day.today() - 1).startOfDay)))
+    }
+
     // publish the valuation updated event contaning payloads of the trade id's whose trade valuations have changed
     private val publishStarlingChangedValueEvents = publishChangedValueEvents(StarlingSource, StarlingValuationServiceSubject) _
     private def publishChangedValueEvents(source : String, subject : String)

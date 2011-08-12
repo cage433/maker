@@ -19,6 +19,7 @@ import starling.pivot._
 import starling.gui.{GuiUtils, StarlingIcons}
 import starling.gui.namedquantitycomponents.UnderLineDashedBorder
 import starling.pivot.model.EditableInfo
+import starling.pivot.HiddenType._
 
 case class GuiFieldComponentProps(field:Field, locationOfField:FieldChooserType,
                                   showDepthPanel:Boolean, measureField:Boolean, realMeasureField:Boolean,
@@ -26,7 +27,9 @@ case class GuiFieldComponentProps(field:Field, locationOfField:FieldChooserType,
                                   onMeasureChange:(Field, FieldChooserType) => Unit,
                                   filterData:FilterData, transformData:TransformData,
                                   otherLayoutInfo:OtherLayoutInfo, onSubTotalToggle:(Field, FieldChooserType) => Unit,
-                                  showSubTotalToggle:Boolean, viewUI:PivotTableViewUI, tableView:PivotTableView, editableInfo:Option[EditableInfo])
+                                  showSubTotalToggle:Boolean, viewUI:PivotTableViewUI, tableView:PivotTableView, editableInfo:Option[EditableInfo]) {
+  val react = (otherLayoutInfo.hiddenType != AllHidden)
+}
 
 case class FilterData(possibleValuesAndSelection:Option[(TreePivotFilter, Selection)], onFilterChange:((Field, Selection) => Unit))
 case class TransformData(showOther:Boolean, transforms:Option[FilterWithOtherTransform], onTransformChange:((Field,FilterWithOtherTransform) => Unit))
@@ -342,7 +345,7 @@ class GuiFieldNamePanel(props:GuiFieldComponentProps, guiComp:GuiFieldComponent)
   private var imageStartPoint = PivotTableViewUI.NullPoint
 
   reactions += {
-    case MousePressed(_,p,_,_,_) => {
+    case MousePressed(_,p,_,_,_) if props.react => {
       display = false
       offSet = p
       props.tableView.draggedField = props.field
@@ -351,23 +354,23 @@ class GuiFieldNamePanel(props:GuiFieldComponentProps, guiComp:GuiFieldComponent)
       imageStartPoint = displayPoint
       props.viewUI.setImageProperties(shadowImage, displayPoint, 1.0f)
     }
-    case MouseClicked(_,_,_,2,_) => {
+    case MouseClicked(_,_,_,2,_) if props.react => {
       dragging = false
       display = true
       drawFieldTinted = true
       props.tableView.fieldBeingDragged = false
       props.tableView.fieldDoubleClicked(props.field, props.locationOfField)
     }
-    case MouseEntered(_, _, _) if !props.tableView.drag => {
+    case MouseEntered(_, _, _) if props.react && !props.tableView.drag => {
       display = false
       val displayPoint = SwingUtilities.convertPoint(peer, 0, -2, props.tableView.peer)
       props.viewUI.setImageProperties(shadowImage, displayPoint, 1.0f)
     }
-    case MouseExited(_, _, _) if !props.tableView.drag => {
+    case MouseExited(_, _, _) if props.react && !props.tableView.drag => {
       display = true
       props.viewUI.resetImageProperties()
     }
-    case MouseReleased(_,p,_,_,_) => {
+    case MouseReleased(_,p,_,_,_) if props.react => {
       val wasDragging = dragging
       dragging = false
       display = true
@@ -394,7 +397,7 @@ class GuiFieldNamePanel(props:GuiFieldComponentProps, guiComp:GuiFieldComponent)
       }
       repaint()
     }
-    case MouseDragged(_,p,_) => {
+    case MouseDragged(_,p,_) if props.react => {
       if (!dragging) {
         dragging = true
         props.tableView.fieldBeingDragged = true

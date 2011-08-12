@@ -7,11 +7,11 @@ import starling.db.DBWriter
 import starling.utils.StarlingXStream
 import xstream.{Fields, Reader, MapBasedConverter}
 import starling.pivot.model.CollapsedState
-import starling.pivot.{Field, Totals, OtherLayoutInfo, PivotFormatter}
+import starling.pivot.{Field, Totals, OtherLayoutInfo}
 import starling.pivot.HiddenType._
-import starling.gui.{UserSettings, StandardUserSettingKeys}
+import starling.utils.sql.PersistAsBlob
 
-class Patch110_AddDateRangeFormat extends Patch {
+class Patch112_UpdateBookmarkOtherLayoutInfo extends Patch {
   val convertingXStream = StarlingXStream.createXStream
   convertingXStream.registerConverter(new MapBasedConverter(
     StarlingXStream.createXStream,
@@ -36,17 +36,15 @@ class Patch110_AddDateRangeFormat extends Patch {
     Map("fieldPanelCollapsed" -> classOf[Boolean])
   ))
 
-
   protected def runPatch(starlingInit:StarlingInit, starling:RichDB, writer:DBWriter) {
-    val sql = "select settings from usersettings"
-    writer.queryForUpdate(sql) {
+    val bookmarkSQL = "select * from Bookmarks"
+    writer.queryForUpdate(bookmarkSQL) {
       rs => {
-        val settings = rs.getString("settings")
-        val userSettings = convertingXStream.fromXML(settings).asInstanceOf[UserSettings]
-        val extraFormatInfo = userSettings.getSetting(StandardUserSettingKeys.ExtraFormattingInfo, PivotFormatter.DefaultExtraFormatInfo)
-        userSettings.putSetting(StandardUserSettingKeys.ExtraFormattingInfo, extraFormatInfo.copy(dateRangeFormat = PivotFormatter.DefaultDateRangeFormat))
-        val newSettingsText = StarlingXStream.write(userSettings)
-        rs.update(Map("settings" -> newSettingsText))
+        val bookmark = rs.getString("bookmark")
+        if (!bookmark.contains("oldFrozen") && !bookmark.contains("oldHiddenType")) {
+          val newBookmark = convertingXStream.fromXML(bookmark)
+          rs.update(Map("bookmark" -> new PersistAsBlob(newBookmark)))
+        }
       }
     }
   }

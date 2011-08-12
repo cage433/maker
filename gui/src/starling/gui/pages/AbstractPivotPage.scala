@@ -13,6 +13,7 @@ import collection.mutable.HashSet
 import starling.utils.ImplicitConversions._
 import scala.swing.Swing._
 import java.awt.{AlphaComposite, Color, Dimension}
+import starling.pivot.HiddenType._
 
 /**
  * An abstract page which holds a pivot table
@@ -422,12 +423,17 @@ class PivotTablePageComponent(
         finalDrillDown(filterFields ++ drillDownFields, pageContext, ctrlDown)
       }
     }
-    case FullScreenSelectedEvent(data) => pageContext.goTo(new FullScreenReportPage(text, data))
+    case FullScreenSelectedEvent(currentState, newState, currentFrozen) => {
+      val newFrozen = if (newState == AllHidden) false else currentFrozen
+      val newOtherLayoutInfo = pivotPageState.otherLayoutInfo.copy(frozen = newFrozen, hiddenType = newState, oldHiddenType = Some(currentState), oldFrozen = Some(currentFrozen))
+      pageContext.goTo(selfPage(pivotPageState.copy(otherLayoutInfo = newOtherLayoutInfo), edits))
+    }
     case ShowErrorsEvent(errors) => {pageContext.goTo(new ReportCellErrorsPage(errors.toList))}
     case PivotEditsUpdatedEvent(edits0, t) => pageContext.goTo(selfPage(pivotPageState, edits0), compToFocus = Some(t))
     case SavePivotEdits if toolBar.saveEditsButton.enabled => toolBar.saveEditsButton.saveEdits()
     case FieldPanelEvent(collapse) => {
-      val newOtherLayoutInfo = pivotPageState.otherLayoutInfo.copy(fieldPanelCollapsed = collapse)
+      val hiddenType = if (collapse) FieldListHidden else NothingHidden
+      val newOtherLayoutInfo = pivotPageState.otherLayoutInfo.copy(hiddenType = hiddenType)
       pageContext.goTo(selfPage(pivotPageState.copy(otherLayoutInfo = newOtherLayoutInfo), edits))
     }
     case CollapsedStateUpdated(rowOption, columnOption) => {
@@ -459,6 +465,13 @@ class PivotTablePageComponent(
   override def restoreToCorrectViewForBack  {pivotComp.reverse()}
   override def resetDynamicState  {pivotComp.resetDynamicState()}
   def selection = {pivotComp.selection}
+  override def getBorder = {
+    if (pivotPageState.otherLayoutInfo.hiddenType == AllHidden) {
+      Some(MatteBorder(0,1,0,0,GuiUtils.BorderColour))
+    } else {
+      super.getBorder
+    }
+  }
 
   override def setState(state:Option[ComponentState]) {
     state match {
