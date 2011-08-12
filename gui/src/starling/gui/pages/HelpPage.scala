@@ -53,7 +53,7 @@ case object HelpPage extends Page {
     new MigPanel("insets 0") with PageComponent {
       add(sp, "push,grow")
       override def getBorder = None
-      override def pageShown = {requestFocusInWindow}
+      override def defaultComponentForFocus = Some(this.peer)
     }
   }
   def build(reader: PageBuildingContext) = new PageData {}

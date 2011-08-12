@@ -160,7 +160,7 @@ object DBConvert {
         case n: java.lang.Number => convertedMap += (key -> n)
         case t: TreeID => convertedMap += (key -> t.id.asInstanceOf[java.lang.Integer])
         case p: Percentage => convertedMap += (key -> double2Double(100.0 * p.value))
-        case o: AnObject => convertedMap += (key -> StarlingXStream.write(o.obj))
+        case o: PersistAsBlob => convertedMap += (key -> StarlingXStream.write(o.obj))
         case null => convertedMap += (key -> null)
         case _ => convertedMap += (key -> value.toString)
       }

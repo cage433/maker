@@ -15,7 +15,7 @@ import collection.mutable.ListBuffer
 import controller.TreePivotFilter
 import javax.swing.DefaultComboBoxModel
 import starling.gui.custom._
-import utils.{RichReactor, RichCheckBox}
+import starling.gui.utils.{RichReactor, RichCheckBox}
 import RichCheckBox._
 import RichReactor._
 import starling.daterange.{Timestamp, Day}
@@ -30,7 +30,7 @@ case class TradeSelectionPage(
   def text = "Select Trades"
   override def icon = StarlingIcons.im("/icons/16x16_trades.png")
   override def layoutType = Some("TradeSelection")
-  def selfPage(pps:PivotPageState, edits:Set[PivotEdit]) = copy(pivotPageState = pps)
+  def selfPage(pps:PivotPageState, edits:PivotEdits) = copy(pivotPageState = pps)
 
   private def tradeSelection = {
     val deskToUse = tpp.deskAndTimestamp.map(_._1)
@@ -85,7 +85,7 @@ case class TradeSelectionPage(
       text, context, tradeSelectionPageData, tpp.deskAndTimestamp.map(_._2), tpp.intradaySubgroupAndTimestamp.map(_._2),
       tpp.expiry,
       PivotComponent(text, context, toolbarButtons(context, data), None, finalDrillDownPage, selfPage, data,
-        pivotPageState, Set.empty, save, bookmark, browserSize))
+        pivotPageState, PivotEdits.Null, save, bookmark, browserSize))
   }
 
   override def refreshFunctions = {
@@ -323,7 +323,8 @@ class TradeSelectionComponent(
     enabled = {
       deskCheckBox.selected && {
         deskCombo.selection.item == Desk.GasolineSpec ||
-        deskCombo.selection.item == Desk.LondonDerivatives
+        deskCombo.selection.item == Desk.LondonDerivatives ||
+        deskCombo.selection.item == Desk.Titan
       }
     }
     icon = StarlingIcons.icon("/icons/14x14_download_data.png")
@@ -532,12 +533,14 @@ class TradeSelectionComponent(
     }
   }
 
-  override def resetDynamicState = pivotComponent.resetDynamicState
+  override def resetDynamicState {pivotComponent.resetDynamicState}
 
   override def getState = pivotComponent.getState
-  override def setState(state:Option[ComponentState]) = pivotComponent.setState(state)
+  override def setState(state:Option[ComponentState]) {pivotComponent.setState(state)}
   override def getTypeState = pivotComponent.getTypeState
-  override def setTypeState(typeState:Option[ComponentTypeState]) = pivotComponent.setTypeState(typeState)
+  override def setTypeState(typeState:Option[ComponentTypeState]) {pivotComponent.setTypeState(typeState)}
+  override def getTypeFocusInfo = pivotComponent.getTypeFocusInfo
+  override def setTypeFocusInfo(focusInfo:Option[TypeFocusInfo]) {pivotComponent.setTypeFocusInfo(focusInfo)}
 
   private def bookCloseValid = deskTimestamp match {
     case Some(t) if t.error != None => false
@@ -561,7 +564,7 @@ class TradeSelectionComponent(
     tradeChangesReportButton.enabled = tradeChangesReportButton.isEnabled && bookCloseValid
   }
 
-  updateComponentState
+  updateComponentState()
 
   reactions += {
     case SelectionChanged(`deskCombo`) => generateNewPageFromState(true)
@@ -623,6 +626,10 @@ case class SnapshotSubmitRequest(marketDataSelection:MarketDataSelection, observ
 
 case class BookCloseRequest(desk:Desk) extends SubmitRequest[Unit] {
   def submit(server:StarlingServer) = {
-    server.bookClose(desk)
+    if (desk == Desk.Titan) {
+      server.importTitanTrades()
+    } else {
+      server.bookClose(desk)
+    }
   }
 }

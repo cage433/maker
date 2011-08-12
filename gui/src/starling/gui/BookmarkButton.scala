@@ -269,7 +269,7 @@ case class DeleteReportRequest(reportName:String) extends SubmitRequest[Unit] {
   }
 }
 
-class BookmarkDropDownButton(context:PageContext) extends Button {
+class BookmarkDropDownButton(currentBookmark: => Bookmark, context:PageContext) extends Button {
   tooltip = "Choose a bookmark to go to"
   focusable = false
   background = GuiUtils.ClearColour
@@ -285,6 +285,7 @@ class BookmarkDropDownButton(context:PageContext) extends Button {
 
   reactions += {
     case MousePressed(_,_,_,_,_) if enabled => {
+      bookmarkPanel.updateSelectedBookmark(currentBookmark)
       val x = size.width - popupMenu.getPreferredSize.width
       popupMenu.show(peer, x, size.height-1)
       onEDT({

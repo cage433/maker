@@ -27,6 +27,7 @@ import math.Ordering
 import starling.quantity._
 import starling.gui.api._
 import starling.tradestore.TradeStore.StoreResults
+import starling.marketdata.PeriodFieldDetails
 
 //This is the code which maps from TradeableType.fields to FieldDetails
 object TradeableFields {
@@ -65,38 +66,11 @@ object TradeableFields {
   val fields = fieldDetails.map (_.field)
 
   def createFieldValues(trade:Trade, tradeable:Tradeable):Map[PField,Any] = {
-    val tradeableDetails : Map[String, Any] = tradeable.tradeableDetails
+    val tradeableDetails : Map[String, Any] = tradeable.shownTradeableDetails
     tradeableDetails.map { case (k, v) => {
       val (fieldDetails, mapper) = normalizedNameToFieldAndMapper(k.toLowerCase.removeWhiteSpace)
       (fieldDetails.field, mapper(trade,v))
     }}
-  }
-}
-
-class PeriodFieldDetails(name:String) extends FieldDetails(PField(name)) {
-  override def comparator = PeriodComparator
-}
-
-object PeriodComparator extends Ordering[Any] {
-  def compare(x: Any, y: Any) = {
-    (x,y) match {
-      case (p1:Period, p2:Period) => {
-        (p1, p2) match {
-          case (_: StripPeriod, _: DateRangePeriod) => -1
-          case (_: DateRangePeriod, _: StripPeriod) => +1
-
-          case (_: DateRangePeriod, _: SpreadPeriod) => +1
-          case (_: SpreadPeriod, _: DateRangePeriod) => -1
-
-          case (_: StripPeriod, _: SpreadPeriod) => -1
-          case (_: SpreadPeriod, _: StripPeriod) => +1
-
-          case (a:SpreadPeriod, b:SpreadPeriod) => a.compare(b)
-          case (a:DateRangePeriod, b:DateRangePeriod) => a.compare(b)
-          case (a:StripPeriod, b:StripPeriod) => a.compare(b)
-        }
-      }
-    }
   }
 }
 
@@ -448,7 +422,7 @@ abstract class TradeStore(db: RichDB, broadcaster:Broadcaster, tradeSystem: Trad
           CostsInfo(cost.costType, value, cost.info)
         }))
       }}
-      val mapList:List[Map[PField,Any]] = (for (((timestamp, tradeAndFields), version) <- history.zipWithIndex) yield {
+      val mapList:List[Map[PField,Any]] = (for (((timestamp, tradeAndFields), version) <- history.versions.toMap.zipWithIndex) yield {
         Map( PField("Version") -> (version+1), PField("Import Time")->timestamp) ++ tradeAndFields.fields ++ joiningTradeAttributeFieldValues(tradeAndFields.trade.attributes)
       }).toList
       val fieldDetailsGroups0 = createFieldDetailGroups(allTradeableTypes)
@@ -752,14 +726,14 @@ abstract class TradeStore(db: RichDB, broadcaster:Broadcaster, tradeSystem: Trad
         tradeDay_str -> trade.tradeDay,
         counterparty_str -> trade.counterParty,
         instrument_str -> trade.tradeable.tradeableType.name,
-        costs_str -> AnObject(trade.costs)
+        costs_str -> PersistAsBlob(trade.costs)
       )
 
       val details = Map(
         "Id" -> nextID,
         "timestamp" -> timestamp,
         "expiryDay_cache" -> expiryDay
-      ) ++ justTradeDetails ++ trade.tradeable.tradeableDetails ++ trade.attributes.details
+      ) ++ justTradeDetails ++ trade.tradeable.persistedTradeableDetails ++ trade.attributes.details
 
       val normalisedNames = details.map {
         case (field, value) => field.removeWhiteSpace -> value

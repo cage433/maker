@@ -6,8 +6,8 @@ import starling.utils.QuantityTestUtils._
 import org.testng.annotations.Test
 import starling.market.{TestMarketSpec, Market}
 import starling.quantity.{Percentage, Quantity}
-import starling.daterange.{Spread, Day, Month}
 import cern.colt.matrix.impl.DenseDoubleMatrix2D
+import starling.daterange.{SpreadPeriod, Spread, Day, Month}
 
 class EnvironmentTests extends TestMarketSpec {
 
@@ -133,8 +133,8 @@ class EnvironmentTests extends TestMarketSpec {
     val Feb = Month(2011, 2)
     val Mar = Month(2011, 3)
     val Apr = Month(2011, 4)
-    val Spread1 = Spread(Feb, Mar)
-    val Spread2 = Spread(Mar, Apr)
+    val Spread1 = SpreadPeriod(Feb, Mar)
+    val Spread2 = SpreadPeriod(Mar, Apr)
 
     val priceUOM = USD / BBL
     val env = Environment(new UnitTestingAtomicEnvironment(Day(2011, 1, 1).endOfDay, {

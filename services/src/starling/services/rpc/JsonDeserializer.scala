@@ -11,13 +11,16 @@ import java.lang.annotation.Annotation
 import java.lang.{String, Class}
 import java.io.InputStream
 import org.jboss.resteasy.plugins.providers.ProviderHelper
+import collection.immutable.Map
 
 object JsonDeserializer {
   def deserialize(text: String)(implicit formats: Formats): Any = extract(JsonParser.parse(text).uncapitalize)
   def pretty(text: String)(implicit formats: Formats): String = Printer.compact(render(JsonParser.parse(text)))
 
-  private def extract(json: JValue)(implicit formats: Formats): Any =
-    Extraction.extract(json, TypeInfo(classFrom(json, formats.typeHintFieldName), None))
+  private def extract(json: JValue)(implicit formats: Formats): Any = json match {
+    case JArray(elements) => elements.map(extract)
+    case other => Extraction.extract(json, TypeInfo(classFrom(json, formats.typeHintFieldName), None))
+  }
 
   private def classFrom(value: JValue, TypeHintFieldName: String): Class[_] = value match {
     case JObject(JField(TypeHintFieldName, JString(className)) :: _) => Class.forName(className)
@@ -28,12 +31,18 @@ object JsonDeserializer {
 @Provider
 @Consumes(Array("application/json"))
 class JsonDeserializerMessageBodyReader extends MessageBodyReader[Any] {
-  implicit val formats = EDMFormats
+  private implicit val formats = EDMFormats
+  private val deserializers: Map[Class[_], (String) => Any] = Map(
+    classOf[Boolean] → java.lang.Boolean.parseBoolean _,
+    classOf[Int]     → ((string:String) => java.lang.Integer.parseInt(string))
+  )
 
   def readFrom(clazz : Class[Any], genericType: Type, annotations: Array[Annotation], mediaType: MediaType,
                httpHeaders: MultivaluedMap[String, String], entityStream: InputStream) = {
 
-    JsonDeserializer.deserialize(ProviderHelper.readString(entityStream, MediaType.APPLICATION_JSON_TYPE))
+    val deserialize = deserializers.getOrElse(clazz, JsonDeserializer.deserialize _)
+
+    deserialize(ProviderHelper.readString(entityStream, MediaType.APPLICATION_JSON_TYPE))
   }
 
   def isReadable(clazz : Class[_], genericType: Type, annotations: Array[Annotation], mediaType: MediaType) = true

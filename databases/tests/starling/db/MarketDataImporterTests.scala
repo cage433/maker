@@ -10,6 +10,7 @@ import starling.calendar.Clock
 import org.scalatest.BeforeAndAfterAll
 import starling.marketdata._
 import starling.market.{TestMarketSpec, Market}
+import starling.pivot.PivotQuantity
 
 
 class MarketDataImporterTests extends StarlingSpec with ShouldMatchers with BeforeAndAfterAll with TestMarketSpec {
@@ -24,9 +25,9 @@ class MarketDataImporterTests extends StarlingSpec with ShouldMatchers with Befo
   val marketDataType: MarketDataType = PriceDataType
   val noUpdates = Map(LIM → Nil)
   val zincWithNoPrices = MarketDataEntry(observationPoint, PriceDataKey(Market.LME_ZINC), PriceData(Map()))
-  val zincWithPrices = MarketDataEntry(observationPoint, PriceDataKey(Market.LME_ZINC), PriceData(Map(observationDay → PriceValue(1))))
-  val zincWithChangedPrices = MarketDataEntry(observationPoint, PriceDataKey(Market.LME_ZINC), PriceData(Map(observationDay → PriceValue(2))))
-  val leadWithPrices = MarketDataEntry(observationPoint, PriceDataKey(Market.LME_LEAD), PriceData(Map(observationDay → PriceValue(1))))
+  val zincWithPrices = MarketDataEntry(observationPoint, PriceDataKey(Market.LME_ZINC), PriceData(Map(observationDay → PivotQuantity(1))))
+  val zincWithChangedPrices = MarketDataEntry(observationPoint, PriceDataKey(Market.LME_ZINC), PriceData(Map(observationDay → PivotQuantity(2))))
+  val leadWithPrices = MarketDataEntry(observationPoint, PriceDataKey(Market.LME_LEAD), PriceData(Map(observationDay → PivotQuantity(1))))
 
   "An importer with no existing data" should {
     "produce no updates" when {

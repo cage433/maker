@@ -23,4 +23,3 @@ trait TradeAttributes {
 //
 //  def details = Map() ++ keyList.map(key => { key -> getOrBlank(key) })
 }
-

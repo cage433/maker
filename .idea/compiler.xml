@@ -20,6 +20,7 @@
       <entry name="?*.xls" />
       <entry name="?*.conf" />
       <entry name="?*.jks" />
+      <entry name="?*.json" />
     </wildcardResourcePatterns>
     <annotationProcessing enabled="false" useClasspath="true" />
   </component>

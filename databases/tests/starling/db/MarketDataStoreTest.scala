@@ -58,11 +58,11 @@ class MarketDataStoreTest extends TestMarketSpec with ShouldMatchers {
 
     val data1 = SpotFXData(Quantity(1, UOM.EUR / UOM.USD))
 
-    val existingVersion = marketDataStore(MarketDataID(timedKey, MarketDataSet.Starling))
+    val existingVersion = marketDataStore.readLatest(MarketDataID(timedKey, MarketDataSet.Starling))
     existingVersion should be === None
 
     marketDataStore.saveActions(Map(MarketDataSet.Starling -> List(MarketDataUpdate(timedKey, Some(data1), None))))
-    val versionAfterDelete = marketDataStore(MarketDataID(timedKey, MarketDataSet.Starling))
+    val versionAfterDelete = marketDataStore.readLatest(MarketDataID(timedKey, MarketDataSet.Starling))
     versionAfterDelete should not be === (None)
 
     val versionInt = versionAfterDelete.get.version

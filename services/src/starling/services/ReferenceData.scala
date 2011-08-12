@@ -11,17 +11,16 @@ import starling.market._
 import starling.market.formula.FormulaIndex
 import starling.pivot._
 import starling.pivot.model.PivotTableModel
-import starling.services.trinity.TrinityUploadCodeMapper
 import starling.utils.ImplicitConversions._
 
 /**
  * Represents reference data (calendars, markets, ...) as pivots where possible
  */
 class ReferenceData(businessCalendars: BusinessCalendars, marketDataStore: MarketDataStore, strategyDB: EAIStrategyDB,
-                    scheduler: Scheduler, trinityUploadMapper: TrinityUploadCodeMapper) {
+                    scheduler: Scheduler) {
 
   val referenceDatas = List(
-    "Futures Markets"   → futuresMarketPivot(trinityUploadMapper),
+    "Futures Markets"   → futuresMarketPivot(),
     "Formula Indexes"   → formulaIndexes(),
     "Published Indexes" → publishedIndexes(),
     "Futures Front Period Indexes" → futuresFronPeriodIndexes(),
@@ -38,7 +37,7 @@ class ReferenceData(businessCalendars: BusinessCalendars, marketDataStore: Marke
     PivotTableModel.createPivotData(dataSource, pivotFieldParams)
   }
 
-  def futuresMarketPivot(trinityUploadMapper: TrinityUploadCodeMapper) = {
+  def futuresMarketPivot() = {
     new UnfilteredPivotTableDataSource() {
       val name       = FieldDetails("Name")
       val lotSize    = FieldDetails("Lot Size")
@@ -77,8 +76,7 @@ class ReferenceData(businessCalendars: BusinessCalendars, marketDataStore: Marke
             volatilityID → market.volatilityID,
             hasOptions → (if(market.hasOptions) "Options" else "No options"),
             limSymbol  → market.limSymbol.getOrElse("").toString,
-            trinityCommodity → TrinityMarket.marketToTrinityCode.getOrElse(market, ""),
-            trinityUpload → trinityUploadMapper.uploadCodeOption(market).getOrElse("")
+            trinityCommodity → TrinityMarket.marketToTrinityCode.getOrElse(market, "")
           )
         }
         data
@@ -246,12 +244,12 @@ class ReferenceData(businessCalendars: BusinessCalendars, marketDataStore: Marke
   }
 
   def schedules(scheduler: Scheduler) = new UnfilteredPivotTableDataSource() with ScheduledTaskAttributes {
-    val group@List(name, timing, period, calendar, producer, consumer, sender, recipients) =
-      fieldDetails("Task", "Starting Time", "Period", "Calendar", "Producer", "Consumer", "Sender", "Receipients")
+    val group@List(name, timing, period, calendar, producer, consumer, sender, recipients, active) =
+      fieldDetails("Task", "Starting Time", "Period", "Calendar", "Producer", "Consumer", "Sender", "Receipients", "Active")
     val fieldDetailsGroups = List(FieldDetailsGroup("Schedule", group))
     override val initialState = PivotFieldsState(rowFields = fields(name), dataFields = fields(group.tail))
     def unfilteredData(pfs: PivotFieldsState) = scheduler.tasks.map(task => fields(name → task.name, timing → task.time.prettyTime,
-      period → task.time.description, calendar → task.cal.name, producer → task.attribute(DataSource),
+      period → task.time.description, calendar → task.cal.name, producer → task.attribute(DataSource), active → task.task.isRunning,
       consumer → task.attribute(DataSink), sender → task.attribute(EmailFrom), recipients → task.attribute(EmailTo)))
   }
 

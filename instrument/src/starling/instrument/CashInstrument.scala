@@ -2,12 +2,13 @@ package starling.instrument
 
 import java.sql.ResultSet
 import starling.market.{Market, FXMarket}
-import starling.quantity.{Quantity, UOM, Percentage}
 import starling.quantity.UOM._
 import starling.richdb.RichInstrumentResultSetRow
 import starling.curves._
 import starling.market.Index
 import starling.daterange._
+import starling.quantity.{NamedQuantity, Quantity, UOM, Percentage}
+import starling.quantity.SimpleNamedQuantity
 
 case class CashInstrument(
   cashInstrumentType: CashInstrumentType,
@@ -20,6 +21,12 @@ case class CashInstrument(
 {
   def this(amount : Quantity, settlementDate : Day) = this(CashInstrumentType.General, amount, settlementDate)
 
+  def explanation(env : Environment) : NamedQuantity = {
+    val disc = SimpleNamedQuantity("Discount", env.withNaming().discount(volume.uom, settlementDate))
+    val amountPaidOrReceived = volume * (if (cashInstrumentType.isNegative) -1 else 1)
+    amountPaidOrReceived.named("Volume") * disc
+  }
+
   def *(x : Double) = copy(volume = volume * x)
 
   def assets(env : Environment) = Assets(Asset.knownCash(settlementDate, volume, env))
@@ -27,10 +34,8 @@ case class CashInstrument(
 	def valuationCCY : UOM = volume.uom
 	def isLive(dayAndTime : DayAndTime) : Boolean = dayAndTime <= settlementDate.startOfDay
   
-  def details :Map[String, Any] = 
-    Map("CashInstrumentType" -> cashInstrumentType.name, "Quantity" -> volume, "Delivery Day" -> settlementDate) ++
-      index.map("Market" -> _).toMap ++
-      averagingPeriod.map("Period" -> _).toMap
+  def detailsForUTPNOTUSED :Map[String, Any] = persistedTradeableDetails
+
 
   def instrumentType = CashInstrument
 
@@ -45,7 +50,9 @@ case class CashInstrument(
     UTP_Portfolio(Map(unit -> volume.value))
   }
 
-  def tradeableDetails = details
+  def persistedTradeableDetails = Map("CashInstrumentType" -> cashInstrumentType.name, "Quantity" -> volume, "Delivery Day" -> settlementDate) ++
+      index.map("Market" -> _).toMap ++
+      averagingPeriod.map("Period" -> _).toMap
 
   def tradeableType = CashInstrument
 

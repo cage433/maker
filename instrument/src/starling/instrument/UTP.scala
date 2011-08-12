@@ -14,11 +14,10 @@ import starling.utils.cache.CacheFactory
 trait UTP extends Instrument {
   def instrumentType : InstrumentType[_]
 
-  // All trade params. Must match column names in Trade table
-  def details : Map[String, Any]
+  def detailsForUTPNOTUSED : Map[String, Any]
 
   def fields:List[String] = {
-    val tradeableFields = details.keySet.map(_.removeWhiteSpace.toLowerCase).toList
+    val tradeableFields = detailsForUTPNOTUSED.keySet.map(_.removeWhiteSpace.toLowerCase).toList
     val allConvertedFields = InstrumentType.fields.map(_.removeWhiteSpace.toLowerCase)
     val matchingFields = allConvertedFields.intersect(tradeableFields)
     matchingFields.map(field => InstrumentType.fields(allConvertedFields.indexOf(field)))
@@ -60,6 +59,10 @@ trait UTP extends Instrument {
     UTP.priceAndVolKeys(this, marketDay)
   }
 
+  /**
+   * Used (I believe) to give a crude idea of risk period in Greeks Pivot Report. For most instruments this will be overriden
+   * by their price/vol sensitivity periods. Not convinced this is needed.
+   */
   def periodKey : Option[Period]
 
   // This string is added to risk market when the 'Collapse Option' pivot toggle is off

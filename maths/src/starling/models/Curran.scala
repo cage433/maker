@@ -5,7 +5,7 @@ import scala.math._
 import starling.maths.{BrentSolver, RandomVariables}
 import starling.quantity.{Percentage, Quantity}
 
-class Curran(val callOrPut: CallOrPut, val S: Double, val K: Double, val r: Double, val y: Double, val vol: Double, val Ti: Array[Double],
+class Curran(val callOrPut: CallOrPut, val S: Double, val K: Double, val vol: Double, val Ti: Array[Double],
              val T: Double, val runningAverage: Double, val fixedDays: Int) {
   assert(vol >= 0.0, "Vol is invalid")
 
@@ -13,27 +13,25 @@ class Curran(val callOrPut: CallOrPut, val S: Double, val K: Double, val r: Doub
     "Call/Put " + callOrPut + 
     "\nS        " + S + 
     "\nK        " + K + 
-    "\nr        " + r + 
-    "\ny        " + y +
-    "\nvol      " + vol + 
+    "\nvol      " + vol +
     "\nT        " + T + 
     "\nave      " + runningAverage + 
     "\nfixed    " + fixedDays + "\n\n"
   }
 
   private val standardNormal = RandomVariables.standardNormal(1234)
-  private val DFr = exp(-r * T)
-  private val DFry = exp((r - y) * T)
   private val unpricedDays = Ti.length
   private val totalDays = unpricedDays + fixedDays
 
+  def discountedValue(zeroRate : Double) = undiscountedValue * exp(- zeroRate * T)
+  
   lazy val undiscountedValue: Double = if (unpricedDays == 0 || vol * T == 0) {
     val averageS = (S * Ti.size + runningAverage * fixedDays) / (Ti.size + fixedDays)
     callOrPut.intrinsic(K)(averageS)
   } else {
     val adjustedStrike = (totalDays * K - fixedDays * runningAverage) / unpricedDays
 
-    val dailyMeans = Ti.map(log(S) + (r - y - vol * vol / 2.0) * _)
+    val dailyMeans = Ti.map(log(S) + (- vol * vol / 2.0) * _)
     val dailyVols = Ti.map(vol * sqrt(_))
 
     // TODO [12 Oct 2010] Figure out why implicit conversion is not working
@@ -83,12 +81,12 @@ class Curran(val callOrPut: CallOrPut, val S: Double, val K: Double, val r: Doub
 
     callOrPut match {
       case Call => callValue
-      case Put => callValue + (1.0 * unpricedDays / totalDays) * (adjustedStrike - DFry * S)
-      case Straddle => 2 * callValue + (1.0 * unpricedDays / totalDays) * (adjustedStrike - DFry * S)
+      case Put => callValue + (1.0 * unpricedDays / totalDays) * (adjustedStrike - S)
+      case Straddle => 2 * callValue + (1.0 * unpricedDays / totalDays) * (adjustedStrike - S)
     }
   }
 
-  lazy val value = DFr * undiscountedValue
+  lazy val value = undiscountedValue
 }
 
 object Curran {
@@ -99,11 +97,10 @@ object Curran {
    * @param r interest rate
    * @param vol
    */
-  def apply(callOrPut: CallOrPut, prices: Map[Double, Quantity], K: Quantity, r: Percentage, vol: Percentage):Curran = {
+  def apply(callOrPut: CallOrPut, prices: Map[Double, Quantity], K: Quantity, vol: Percentage):Curran = {
     val allTi = prices.keys.toArray.sorted
     val Ti = allTi.filter(_ > 0.0)
     val T = allTi.last
-    val y = r
 
     val S = Quantity.average(Ti.map(prices))
 
@@ -115,7 +112,7 @@ object Curran {
 
     assert(S.uom == runningAverage.uom)
     assert(K.uom == runningAverage.uom)
-    val curran = new Curran(callOrPut, S.value, K.value, r.value, y.value, vol.value, Ti, T, runningAverage.value, fixedDays)
+    val curran = new Curran(callOrPut, S.value, K.value, vol.value, Ti, T, runningAverage.value, fixedDays)
     curran
   }
 }

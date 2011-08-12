@@ -4,7 +4,7 @@ import system.Patch
 import starling.db.DBWriter
 import starling.richdb.RichDB
 import starling.marketdata.OilVolSurfaceDataKey
-import starling.utils.sql.AnObject
+import starling.utils.sql.PersistAsBlob
 import starling.curves.SpreadStdDevSurfaceDataKey
 import starling.market.{FuturesMarket, Market}
 import starling.services.StarlingInit

@@ -93,7 +93,7 @@ object TradeDiff {
    */
   def expand(taf: TradeAndFields): Array[Any] = {
     val t = taf.trade
-    val instrumentDetails = t.tradeable.tradeableType.name :: t.tradeable.tradeableDetails.values.toList
+    val instrumentDetails = t.tradeable.tradeableType.name :: t.tradeable.persistedTradeableDetails.values.toList
     val attrs = t.attributes match {
       case ta: EAITradeAttributes => {
         List(ta.dealID.id, ta.strategyID.id, ta.clearingHouse.toLowerCase)

@@ -21,7 +21,7 @@ class BarrelPositionTests extends TestMarketSpec {
 	def env(zeroRate : Double) = Environment(
 			new TestingAtomicEnvironment(){
 				def applyOrMatchError(key : AtomicDatumKey) = key match {
-					case DiscountRateKey(ccy, day, _) => math.exp(- zeroRate * day.daysSinceInYears(marketDay.day))
+					case DiscountRateKey(ccy, day, _) => new Quantity(math.exp(- zeroRate * day.daysSinceInYears(marketDay.day)))
 					case ForwardPriceKey(market, _, _) => Quantity(prices(market), market.priceUOM)
           case USDFXRateKey(ccy) => Quantity(1.0, USD/ccy)
           case _ : OilAtmVolAtomicDatumKey => new Percentage(0)

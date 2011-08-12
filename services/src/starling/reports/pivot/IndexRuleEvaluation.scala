@@ -20,15 +20,21 @@ object IndexRuleEvaluation {
     def market = index.market
   }
 
-  def rows(index: Index, period: DateRange, pricingRule: SwapPricingRule, rounding: Option[Int], environment: Environment): (Iterable[Row], PQ) = {
+  /**
+   * Returns the average price and rows that describe the components of that price.
+   *
+   * e.g. for Apr WTI front month it would return all the observed days in april, what the observe (May/Jun) and the price
+   * for that observed period. Also returns the average price as calculated by the index
+   */
+  def averagePrice(index: Index, period: DateRange, pricingRule: SwapPricingRule, rounding: Option[Int], environment: Environment): (Iterable[Row], PQ) = {
     case class Entry(method: String, params: List[Object], result: Object, keysAndValues: Map[AtomicDatumKey, Any])
 
     val atomicRecorder = KeyAndValueRecordingCurveObjectEnvironment(environment.atomicEnv)
     val recordingEnvironment = new EnvironmentMethodRecorder(Environment(atomicRecorder), classOf[NoConstructorArgsEnvironment])
 
     var entries: List[Entry] = Nil
-    val watching = List("averagePrice", "indexFixing", "indexForwardPrice")
-    val (averagePrice :: indexFixing :: indexForwardPrice :: Nil) = watching
+    val watching = List("indexFixing", "indexForwardPrice")
+    val (indexFixing :: indexForwardPrice :: Nil) = watching
 
     val avg = PQ.calcOrCatch{
       atomicRecorder.clear

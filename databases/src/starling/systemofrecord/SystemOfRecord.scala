@@ -1,22 +1,26 @@
 package starling.systemofrecord
 
-
 import starling.instrument._
-import org.joda.time.DateTime
 import java.lang.String
 import starling.richdb.{RichDB, RichResultSetRow}
 import starling.utils._
 import sql.{SqlRenderer, Query}
-import oracle.net.aso.q
 import starling.trade.Trade
 
-abstract class SystemOfRecord(externalDB: RichDB) {
-  protected def readers: List[InstrumentReader]
 
-  def trade(tradeID: String)(f: Trade => Unit)
+trait SystemOfRecord {
 
+  def trade(tradeID: String)(f: Trade => Unit) : Unit
+
+  /**
+   * Return is a count of the number of errors, together with the set of
+   * unique errors
+   */
   def allTrades(f: Trade => Unit) : (Int, Set[String])
+}
 
+abstract class SystemOfRecordBackedByADatabase(externalDB : RichDB) extends SystemOfRecord{
+  protected def readers: List[InstrumentReader]
   /**
    * f is called with each Trade read in.
    * Returns a unique error count and a set of unique errors

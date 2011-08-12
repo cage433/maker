@@ -15,6 +15,7 @@ object OilVolSurfaceDataType extends MarketDataType{
   type dataType = OilVolSurfaceData
   lazy val keys : List[OilVolSurfaceDataKey] = Market.all.filter(_.volatilityID.isDefined).map(OilVolSurfaceDataKey)
 
+  def marketDataKeyFelds = Set(marketField.field)
   override def keyFields = Set(marketField.field, periodField.field, deltaField.field)
   override def valueFields = Set(volatilityField.field)
   def createKey(values: Map[Field, Any]) = OilVolSurfaceDataKey(Market.fromName(values(marketField.field).asInstanceOf[String]))
@@ -161,6 +162,7 @@ object BradyFXVolSurfaceDataType extends MarketDataType {
 
   def createKey(values: Map[Field, Any]) = throw new Exception("Implement if we need to do Metals VAR")
   def createValue(values: List[Map[Field, Any]]) = throw new Exception("Implement if we need to do Metals VAR")
+  def marketDataKeyFelds = throw new Exception("Implement if we need to do Metals VAR")
   def keyFields = throw new Exception("Implement if we need to do Metals VAR")
   def valueFields = throw new Exception("Implement if we need to do Metals VAR")
   val fields = List(marketField, periodField, deltaField, volatilityField)
@@ -230,6 +232,7 @@ object BradyMetalVolsDataType extends MarketDataType {
     volatilityField,
     deltaField)
 
+  def marketDataKeyFelds = throw new Exception("Implement if we need to do Metals VAR")
   def keyFields = throw new Exception("Implement if we need to do Metals VAR")
   def valueFields = throw new Exception("Implement if we need to do Metals VAR")
   def createKey(values: Map[Field, Any]) = throw new Exception("Implement if we need to do Metals VAR")

@@ -293,9 +293,13 @@ class PresetReportConfigPanel(context:PageContext, reportParameters:ReportParame
 
     val observationDayUsed = rp.curveIdentifier.tradesUpToDay
     val nextBusinessDay = observationDayUsed.nextBusinessDay(context.localCache.ukBusinessCalendar)
+    val enRule = rp.curveIdentifier.marketDataIdentifier.selection.pricingGroup match {
+      case Some(pg) if pg == PricingGroup.Metals => EnvironmentRuleLabel.AllCloses
+      case _ => EnvironmentRuleLabel.COB
+    }
 
     cob += ((rp.expiryDay == observationDayUsed) || (rp.expiryDay == observationDayUsed.startOfFinancialYear))
-    cob += (rp.curveIdentifier.environmentRule == EnvironmentRuleLabel.COB)
+    cob += (rp.curveIdentifier.environmentRule == enRule)
     cob += (rp.curveIdentifier.valuationDayAndTime == observationDayUsed.endOfDay())
     cob += (rp.curveIdentifier.thetaDayAndTime == nextBusinessDay.endOfDay())
 

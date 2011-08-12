@@ -2,7 +2,7 @@ package starling.gui
 
 import api._
 import java.awt.image.BufferedImage
-import pages.{PivotPageState, TimestampChooser, PageResponse}
+import pages.{ExceptionPageComponent, TimestampChooser, PageResponse}
 import starling.rmi.StarlingServer
 import swing.event.Event
 import starling.utils.HeterogeneousMap
@@ -12,13 +12,14 @@ import java.util.concurrent.{Callable, Future, Executors, CountDownLatch}
 import swing.{Publisher, Button, Component}
 import ref.SoftReference
 import javax.swing.border.Border
-import java.awt.Dimension
+import java.awt.{Dimension, Graphics2D}
 import starling.daterange.{Day, Timestamp}
 import collection.immutable.TreeSet
 import collection.SortedSet
 import javax.swing.BorderFactory
 import starling.eai.Book
 import starling.auth.User
+import java.awt.{Component=>AWTComp}
 
 /**
  * The StarlingBrowser models everything as a Page (defined here)
@@ -49,8 +50,8 @@ case class PageBookmark(page:Page) extends Bookmark {
 }
 
 trait PageContext {
-	def goTo(page:Page, newTab:Boolean=false)
-  def createAndGoTo(buildPage:StarlingServer=>Page, onException:PartialFunction[Throwable, Unit] = { case e:UnsupportedOperationException => {}}, newTab:Boolean = false)
+	def goTo(page:Page, newTab:Boolean=false, compToFocus:Option[AWTComp]=None)
+  def createAndGoTo(buildPage:StarlingServer=>Page, onException:PartialFunction[Throwable, Unit] = { case e:UnsupportedOperationException => {}}, newTab:Boolean = false, compToFocus:Option[AWTComp]=None)
   def submit[R](submitRequest:SubmitRequest[R], onComplete:R=>Unit=(r:R)=>(), keepScreenLocked:Boolean = false, awaitRefresh:R=>Boolean=(r:R)=>false): Unit
   def submitF[R](f: StarlingServer => R, onComplete:R=>Unit=(r:R)=>(), keepScreenLocked:Boolean = false, awaitRefresh:R=>Boolean=(r:R)=>false) {
     submit(new SubmitRequest[R] {
@@ -168,24 +169,43 @@ trait OldPageData
 trait ComponentState
 trait ComponentTypeState
 trait ComponentRefreshState
+trait TypeFocusInfo
 trait PageComponent extends Component {
   def getBorder:Option[Border] = Some(BorderFactory.createMatteBorder(1, 0, 0, 0, GuiUtils.BorderColour))
-  def restoreToCorrectViewForBack {}
+  def restoreToCorrectViewForBack() {}
   def getState:Option[ComponentState] = None
   def setState(state:Option[ComponentState]) {}
-  def resetDynamicState {}
-  def pageHidden {}
-  def pageShown {}
+  def resetDynamicState() {}
+  def pageHidden() {}
+  def pageShown() {}
   def getTypeState:Option[ComponentTypeState] = None
   def setTypeState(typeState:Option[ComponentTypeState]) {}
+  def getTypeFocusInfo:Option[TypeFocusInfo] = None
+  def setTypeFocusInfo(focusInfo:Option[TypeFocusInfo]) {}
   def getOldPageData:Option[OldPageData] = None
   def getRefreshState:Option[ComponentRefreshState] = None
   def setOldPageDataOnRefresh(pageData:Option[OldPageData], refreshState:Option[ComponentRefreshState], componentState:Option[ComponentState]) {}
-  def pageResized(newSize:Dimension):Unit = {}
+  def pageResized(newSize:Dimension) {}
+  def defaultComponentForFocus:Option[java.awt.Component] = None
+
+  override def paintChildren(g:Graphics2D) {
+    try {
+      super.paintChildren(g)
+    } catch {
+      case e:Exception => {
+        e.printStackTrace()
+        peer.removeAll()
+        peer.add(new ExceptionPageComponent("Exception during paint", e).peer, "push, grow")
+        revalidate()
+        repaint()
+      }
+    }
+  }
 }
 class PageInfo(val page: Page, val pageResponse:PageResponse, val bookmark:Bookmark, var pageComponent:Option[PageComponent],
                var pageComponentSoft:SoftReference[PageComponent], var componentState:Option[ComponentState],
-               var refreshPage:Option[Page], var autoRefresh:Option[CountDownLatch]=None) {
+               var refreshPage:Option[Page], var autoRefresh:Option[CountDownLatch]=None,
+               var componentForFocus:Option[java.awt.Component]=None) {
   def image:BufferedImage = {
     if (future == null) {
       null

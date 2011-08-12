@@ -6,7 +6,7 @@ import api._
 import swing._
 import starling.daterange.Day
 import starling.rmi.StarlingServer
-import starling.pivot.PivotEdit
+import starling.pivot.PivotEdits
 
 
 case class CurvePage(curveLabel: CurveLabel, pivotPageState: PivotPageState) extends AbstractPivotPage(pivotPageState) {
@@ -29,17 +29,31 @@ case class CurvePage(curveLabel: CurveLabel, pivotPageState: PivotPageState) ext
   private def copySelection(selection: MarketDataSelection) = copy(curveLabel = curveLabel.copySelection(selection))
   private def copyEnv(envSpec: EnvironmentSpecificationLabel) = copy(curveLabel = curveLabel.copy(environmentSpecification = envSpec))
 
-  def selfPage(pivotPageState: PivotPageState, edits:Set[PivotEdit]) = copy(pivotPageState = pivotPageState)
+  def selfPage(pivotPageState: PivotPageState, edits:PivotEdits) = copy(pivotPageState = pivotPageState)
 
   def dataRequest(pageBuildingContext: PageBuildingContext) = {
     pageBuildingContext.starlingServer.curvePivot(curveLabel, pivotPageState.pivotFieldParams)
   }
 
   override def configPanel(pageContext: PageContext, data:PageData) = {
-    val environmentRules = pageContext.localCache.environmentRulesForPricingGroup(marketDataIdentifier.selection.pricingGroup)
     val marketDataSelectionPanel = new MarketDataSelectionComponent(pageContext, None, marketDataIdentifier.selection)
-    val envSpecChooser = new EnvironmentSpecificationLabelChooser(curveLabel.environmentSpecification, environmentRules)
+    val marketDataSelectionPanelPanel = new MigPanel {
+      border = RoundedBorder(colour = GuiUtils.PivotTableBackgroundColour)
+      add(marketDataSelectionPanel, "push, grow")
+    }
     val curveTypeChooser = new CurveTypeChooser(pageContext, curveLabel.curveType)
+    val curveTypeChooserPanel = new MigPanel {
+      border = RoundedBorder(colour = GuiUtils.PivotTableBackgroundColour)
+      add(new Label("Curve Type:"))
+      add(curveTypeChooser, "push, grow")
+    }
+    val environmentRules = pageContext.localCache.environmentRulesForPricingGroup(marketDataIdentifier.selection.pricingGroup)
+    val envSpecChooser = new EnvironmentSpecificationLabelChooser(curveLabel.environmentSpecification, environmentRules)
+    val envSpecChooserPanel = new MigPanel {
+      border = RoundedBorder(colour = GuiUtils.PivotTableBackgroundColour)
+      add(new Label("Environment Spec:"))
+      add(envSpecChooser, "push, grow")
+    }
 
     def latest(curvePage:CurvePage) = {
       val version = pageContext.localCache.latestMarketDataVersion(curvePage.marketDataIdentifier.selection)
@@ -69,12 +83,12 @@ case class CurvePage(curveLabel: CurveLabel, pivotPageState: PivotPageState) ext
       case EnvironmentSpecificationLabelChangedEvent(ruleChooser, envSpec) => pageContext.goTo(latest(copyEnv(envSpec)))
     }
 
-    val configPanel = new MigPanel("gapx unrel") with ConfigPanel {
-      add(marketDataSelectionPanel)
-      add(curveTypeChooser)
-      add(envSpecChooser)
+    val configPanel = new MigPanel with ConfigPanel {
+      add(marketDataSelectionPanelPanel, "wrap")
+      add(curveTypeChooserPanel, "split, spanx")
+      add(envSpecChooserPanel)
 
-      def displayName = "Curve"
+      def displayName = "Curve Selection"
     }
 
     Some(ConfigPanels(List(configPanel), new Label(""), Action("BLA"){}))

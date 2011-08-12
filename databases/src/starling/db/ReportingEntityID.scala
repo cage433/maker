@@ -8,12 +8,13 @@ case object EAITradeSystem extends TradeSystem("EAI", "eai")
 case object IntradayTradeSystem extends TradeSystem("Intraday", "int")
 case object RefinedAssignmentTradeSystem extends TradeSystem("Refined Assignment", "ra")
 case object RefinedFixationTradeSystem extends TradeSystem("Refined Fixation", "rf")
+case object TitanTradeSystem extends TradeSystem("Titan", "ti")
 
 object TradeSystems {
   // note: intraday is missing here because it isn't a "primary" trade store - it's desgined to
   // be combined with other trade stores to provide the difference between real-time position
   // and close of book the previous day.
-  val systems = List(EAITradeSystem, RefinedAssignmentTradeSystem, RefinedFixationTradeSystem)
+  val systems = List(EAITradeSystem, RefinedAssignmentTradeSystem, RefinedFixationTradeSystem, TitanTradeSystem)
   private val allSystems = IntradayTradeSystem :: systems
 
   def fromName(name:String) = allSystems.find(_.name == name) match {

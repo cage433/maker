@@ -15,10 +15,12 @@ import java.awt.event.{MouseEvent, MouseAdapter}
 import collection.mutable.ListBuffer
 import starling.utils.{SColumn, STable}
 import collection.immutable.TreeMap
-import swing.{Component, Button, Label}
 import starling.quantity.Quantity
 import starling.daterange.{Day, TimeOfDay, Timestamp}
 import starling.rmi.StarlingServer
+import javax.swing.table.DefaultTableModel
+import org.jdesktop.swingx.renderer.{DefaultTableRenderer, LabelProvider, StringValue}
+import swing.{Alignment, Component, Button, Label}
 
 case class SingleTradePage(tradeID:TradeIDLabel, desk:Option[Desk], tradeExpiryDay:TradeExpiryDay, intradayGroups:Option[IntradayGroups]) extends Page {
   def text = "Trade " + tradeID
@@ -30,18 +32,19 @@ case class SingleTradePage(tradeID:TradeIDLabel, desk:Option[Desk], tradeExpiryD
 object SingleTradePageComponent {
   def generateTradePanels(tradeRow:List[Any], fieldDetailsGroups:List[FieldDetailsGroupLabel], columns:List[SColumn]) = {
     val columnIndexMap = Map() ++ columns.map(_.name).zipWithIndex
-    val panelBuffer = new ListBuffer[MigPanel]
+    val panelBuffer = new ListBuffer[(String, MigPanel)]
     for (group <- fieldDetailsGroups) {
-      val groupPanel = new MigPanel("insets 0", "[" + StandardLeftIndent + "][p][p]") {
+      val groupPanel = new MigPanel("insets 0", "[" + StandardLeftIndent + "][p][fill,grow]") {
         add(LabelWithSeparator(group.groupName), "spanx, growx, wrap")
         for (fieldName <- group.childNames) {
           if (columnIndexMap.contains(fieldName)) {
             add(new Label(fieldName) {foreground = Color.BLUE}, "ay top, skip 1")
             val value = tradeRow(columnIndexMap(fieldName)).asInstanceOf[TableCell]
             val valueLabel = new Label {
+              xAlignment = Alignment.Left
               if (fieldName == "Strategy") {
                 // Make a special case for strategy so that it doesn't take up too much horizontal space.
-                val paths = value.text.split("/")
+                val paths = value.value.toString.split("/")
                 val textToUse = (paths.zipWithIndex.map{case (path,index) => {
                   ("&nbsp" * (2 * index - 1)) + ("|-" * math.min(1,index)) + path
                 }}).mkString("<BR>")
@@ -59,9 +62,27 @@ object SingleTradePageComponent {
           }
         }
       }
-      panelBuffer += groupPanel
+      panelBuffer += ((group.groupName, groupPanel))
     }
-    panelBuffer.toList
+
+    val tradeFields = panelBuffer.find(_._1 == "Trade Fields")
+    val instrumentFields = panelBuffer.find(_._1 == "Instrument Fields")
+
+    (tradeFields, instrumentFields) match {
+      case (Some(tf), Some(iFields)) => {
+        val combinedPanel = new MigPanel("insets 0") {
+          add(tf._2, "wrap unrel, growx")
+          add(iFields._2, "growx")
+        }
+        val newPB = panelBuffer.filterNot{case (n, _) => (n == "Trade Fields" || n == "Instrument Fields")}
+        panelBuffer.clear()
+        panelBuffer += (("Combined", combinedPanel))
+        panelBuffer ++= newPB
+      }
+      case _ => 
+    }
+    
+    panelBuffer.map(_._2).toList
   }
 
   def generateCostsPanel(costs:CostsLabel) = {
@@ -86,6 +107,7 @@ object SingleTradePageComponent {
         }
       })
       negativeHighlighter.setForeground(Color.RED)
+      negativeHighlighter.setSelectedForeground(Color.RED)
       costsChooser.jTable.addHighlighter(negativeHighlighter)
       costsChooser.jTable.getSelectionModel.addListSelectionListener(new ListSelectionListener {
         def valueChanged(e:ListSelectionEvent) = {
@@ -156,12 +178,13 @@ class SingleTradePageComponent(context:PageContext, pageData:PageData) extends M
 
   val mainPanel = new MigPanel("insets n n n 0", "[" + StandardLeftIndent + "][p]") {
     val historyTable = new TableTable(stable)
-    historyTable.jTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION)
-    val heightToUse = if (historyTable.jTable.getPreferredSize.height < 150) 150 else historyTable.jTable.getPreferredScrollableViewportSize.height
-    historyTable.jTable.setPreferredScrollableViewportSize(new Dimension(historyTable.jTable.getPreferredSize.width, heightToUse))
+    val jTable = historyTable.jTable
+    jTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION)
+    val heightToUse = if (jTable.getPreferredSize.height < 150) 150 else jTable.getPreferredScrollableViewportSize.height
+    jTable.setPreferredScrollableViewportSize(new Dimension(jTable.getPreferredSize.width, heightToUse))
     val rowToSelect = stable.data.size - 1
-    historyTable.jTable.setRowSelectionInterval(rowToSelect, rowToSelect)
-    historyTable.jTable.getSelectionModel.addListSelectionListener(new ListSelectionListener {
+    jTable.setRowSelectionInterval(rowToSelect, rowToSelect)
+    jTable.getSelectionModel.addListSelectionListener(new ListSelectionListener {
       def valueChanged(e:ListSelectionEvent) = {
         if (!e.getValueIsAdjusting) {
           updateTradePanel
@@ -169,7 +192,7 @@ class SingleTradePageComponent(context:PageContext, pageData:PageData) extends M
       }
     })
 
-    historyTable.jTable.addMouseListener(new MouseAdapter {override def mouseClicked(e:MouseEvent) = {
+    jTable.addMouseListener(new MouseAdapter {override def mouseClicked(e:MouseEvent) = {
       if (e.getClickCount == 2) doValuation}}
     )
 
@@ -185,7 +208,19 @@ class SingleTradePageComponent(context:PageContext, pageData:PageData) extends M
       }
     })
     negativeHighlighter.setForeground(Color.RED)
-    historyTable.jTable.addHighlighter(negativeHighlighter)
+    negativeHighlighter.setSelectedForeground(Color.RED)
+    jTable.addHighlighter(negativeHighlighter)
+
+    val stringValue = new StringValue {
+      def getString(value:AnyRef) = {
+        value match {
+          case t:TableCell => t.text
+          case other => other.toString
+        }
+      }
+    }
+    val provider = new LabelProvider(stringValue)
+    jTable.setDefaultRenderer(classOf[Object], new DefaultTableRenderer(provider))
 
     val tradePanel = new MigPanel {
       def clear = removeAll
@@ -206,7 +241,7 @@ class SingleTradePageComponent(context:PageContext, pageData:PageData) extends M
     add(button, "ay top, gapright " + RightPanelSpace)
 
     def updateTradePanel {
-      val selection = historyTable.jTable.getSelectedRow
+      val selection = jTable.getSelectedRow
       if (selection != -1) {
         tradePanel.clear
         val row = stable.data(selection)
@@ -219,7 +254,7 @@ class SingleTradePageComponent(context:PageContext, pageData:PageData) extends M
     }
 
     def doValuation {
-      val selection = historyTable.jTable.getSelectedRow
+      val selection = jTable.getSelectedRow
       if (selection != -1) {
         val row = stable.data(selection)
         val desk = data.desk
@@ -232,7 +267,7 @@ class SingleTradePageComponent(context:PageContext, pageData:PageData) extends M
             }
           }
           case Some(d) => {
-            if(historyTable.jTable.getRowCount() - 1 == selection) {
+            if(jTable.getRowCount() - 1 == selection) {
               // we've selected the most up to date
                val tradeTimestamp = context.localCache.deskCloses(desk).sortWith(_.timestamp >= _.timestamp).head
               (Some((d, tradeTimestamp)), None)
@@ -301,7 +336,7 @@ class SingleTradeMainPivotReportPage(val tradeID:TradeIDLabel, val tradeRow:List
     valuationParametersButton :: buttons
   }
 
-  override def selfPage(pps:PivotPageState, edits:Set[PivotEdit]) = new SingleTradeMainPivotReportPage(tradeID, tradeRow, fieldDetailsGroups, columns,
+  override def selfPage(pps:PivotPageState, edits:PivotEdits) = new SingleTradeMainPivotReportPage(tradeID, tradeRow, fieldDetailsGroups, columns,
     reportParameters0, pps)
   override def selfReportPage(rp:ReportParameters, pps:PivotPageState) = new SingleTradeMainPivotReportPage(tradeID, tradeRow, fieldDetailsGroups,
     columns, rp, pps)
@@ -332,130 +367,4 @@ case class SingleTradeReportBookmark(tradeID:TradeIDLabel, tradeRow:List[Any], f
       }
     }
   }
-}
-
-case class ValuationParametersPage(tradeID:TradeIDLabel, tradeRow:List[Any], fieldDetailsGroups:List[FieldDetailsGroupLabel],
-                                   columns:List[SColumn], reportParameters:ReportParameters) extends Page {
-  def text = "Valuation Parameters"
-  def icon = StarlingIcons.im("/icons/16x16_valuation_parameters.png")
-  def build(reader:PageBuildingContext) = {
-    val timestampToUse = reportParameters.tradeSelectionWithTimestamp.deskAndTimestamp match {
-      case Some((d,ts)) => ts.timestamp
-      case None => {
-        reportParameters.tradeSelectionWithTimestamp.intradaySubgroupAndTimestamp match {
-          case None => throw new Exception("This should never happen")
-          case Some((g,ts)) => ts
-        }
-      }
-    }
-    ValuationParametersPageData(
-      reader.cachingStarlingServer.tradeValuation(tradeID, reportParameters.curveIdentifier, timestampToUse),
-      tradeRow, fieldDetailsGroups, columns, reportParameters)
-  }
-  def createComponent(context:PageContext, data:PageData, bookmark:Bookmark, browserSize:Dimension) = {
-    new ValuationParametersPageComponent(context, data)
-  }
-}
-
-case class ValuationParametersPageData(tradeValuation:TradeValuation, tradeRow:List[Any],
-                                       fieldDetailsGroups:List[FieldDetailsGroupLabel], columns:List[SColumn],
-                                       reportParameters:ReportParameters) extends PageData
-
-object ValuationParametersPageComponent {
-  def reportParametersPanel(rp:ReportParameters) = {
-    new MigPanel("insets 0", "[" + StandardLeftIndent + "][p][p]") {
-      add(LabelWithSeparator("Market Data Parameters"), "spanx, growx, wrap")
-
-      def l(s:String) = new Label(s) {foreground = Color.BLUE}
-      def l2(s:AnyRef) = new Label(s.toString)
-
-      val ci = rp.curveIdentifier
-
-      ci.marketDataIdentifier.selection.pricingGroup match {
-        case None =>
-        case Some(pg) => {
-          add(l("Pricing Group"), "skip 1")
-          val extra = if (ci.marketDataIdentifier.selection.excel == None) "unrel" else ""
-          add(l2(pg.name), "wrap " + extra)
-        }
-      }
-      ci.marketDataIdentifier.selection.excel match {
-        case None =>
-        case Some(e) => {
-          add(l("Excel Market Data"), "skip 1")
-          add(l2(e), "wrap unrel")
-        }
-      }
-
-      add(l("Observation Day"), "skip 1")
-      add(l2(ci.tradesUpToDay), "wrap")
-
-      add(l("Environment Rule"), "skip 1")
-      add(l2(ci.environmentRule.name), "wrap")
-
-      add(l("Forward Observation"), "skip 1")
-      add(l2(ci.valuationDayAndTime.day), "wrap")
-
-      add(l("Theta to"), "skip 1")
-      add(l2(ci.thetaDayAndTime), "wrap")
-
-      add(l("Live on"), "skip 1")
-      add(l2(rp.expiryDay), "wrap")
-
-      val bookClose = rp.tradeSelectionWithTimestamp.deskAndTimestamp match {
-        case Some((d,ts)) => ts
-        case None => rp.tradeSelectionWithTimestamp.intradaySubgroupAndTimestamp match {
-          case None => throw new Exception("This should never happen")
-          case Some((g,ts)) => ts
-        }
-      }
-
-      add(l("Book close"), "skip 1")
-      add(l2(bookClose), "wrap unrel")
-
-      rp.pnlParameters match {
-        case None =>
-        case Some(pnlP) => {
-          add(l("Day Change"), "skip 1")
-          add(l2(pnlP.curveIdentifierFrom.environmentRule.name), "wrap")
-          add(l("Book Close 2"), "skip 1")
-          add(l2(pnlP.tradeTimestampFrom.get), "wrap unrel")
-        }
-      }
-
-      val em = rp.curveIdentifier.envModifiers
-      if (em.nonEmpty) {
-        add(l("Environment Modifiers"), "skip 1")
-        add(l2(em.head.name), "wrap")
-        for (e <- em.tail) {
-          add(l2(e.name), "skip 2, wrap")
-        }
-      }
-    }
-  }
-}
-
-class ValuationParametersPageComponent(context:PageContext, pageData:PageData) extends MigPanel with PageComponent {
-  val data = pageData.asInstanceOf[ValuationParametersPageData]
-
-  val mainPanel = new MigPanel("insets 0") {
-    val tradePanels = SingleTradePageComponent.generateTradePanels(data.tradeRow, data.fieldDetailsGroups, data.columns)
-    val tradePanel = new MigPanel("insets 0") {
-      tradePanels.foreach(add(_, "ay top, gapright unrel"))
-    }
-    val valuationParametersTable = new TableTable(data.tradeValuation.valuationParameters)
-    val valuationParametersTablePanel = new MigPanel("insets 0", "[" + StandardLeftIndent + "][p]") {
-      add(LabelWithSeparator("Valuation Parameters"), "spanx, growx, wrap")
-      add(valuationParametersTable, "skip 1, pushx")
-    }
-
-    val bottomPanel = new MigPanel("insets 0") {
-      add(ValuationParametersPageComponent.reportParametersPanel(data.reportParameters), "gapright unrel, ay top")
-      add(valuationParametersTablePanel, "ay top")
-    }
-
-    add(tradePanel, "pushx, wrap unrel")
-    add(bottomPanel)
-  }
-  add(mainPanel, "push, grow")
 }

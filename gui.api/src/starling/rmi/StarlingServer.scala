@@ -40,13 +40,13 @@ trait StarlingServer {
   def tradeIDFor(desk:Desk, text:String):TradeIDLabel
   def tradeValuation(tradeID:TradeIDLabel, curveIdentifier:CurveIdentifierLabel, timestamp:Timestamp):TradeValuation
   def tradePivot(tradeSelection:TradeSelectionWithTimestamp,expiryDay:Day,pivotFieldParams:PivotFieldParams):PivotData
-  def importAllTrades(desk:Desk):Boolean
   def bookClose(desk: Desk): Unit
+  def importTitanTrades()
   def tradeImportText(tradeSelection:TradeSelection):(String,String)
 
   def curvePivot(curveLabel: CurveLabel, pivotFieldParams:PivotFieldParams): PivotData
-  def readAllMarketData(marketDataIdentifier:MarketDataPageIdentifier, marketDataType:Option[MarketDataTypeLabel], pivotFieldParams:PivotFieldParams):PivotData
-  def saveMarketData(marketDataIdentifier:MarketDataPageIdentifier, marketDataTypeLabel:Option[MarketDataTypeLabel], pivotEdits:Set[PivotEdit]):Boolean
+  def readAllMarketData(marketDataIdentifier:MarketDataPageIdentifier, marketDataType:Option[MarketDataTypeLabel], edits:PivotEdits, pivotFieldParams:PivotFieldParams):PivotData
+  def saveMarketData(marketDataIdentifier:MarketDataPageIdentifier, marketDataTypeLabel:Option[MarketDataTypeLabel], pivotEdits:PivotEdits):Boolean
 
   def version:Version
   def deskCloses: Map[Desk, Map[Day, List[TradeTimestamp]]]

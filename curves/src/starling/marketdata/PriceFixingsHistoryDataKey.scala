@@ -32,6 +32,7 @@ object PriceFixingsHistoryDataKey {
     PriceFixingsHistoryDataKey(tradeableNameOf(market), exchangeOf(market))
 
   private def exchangeOf(market: CommodityMarket): Option[String] = market partialMatch {
+    case publishedIndex:PublishedIndex if publishedIndex.businessCalendar.name == "IcS" => "BALTIC"
     case futuresMarket: FuturesMarket => futuresMarket.exchange.name
   }
 

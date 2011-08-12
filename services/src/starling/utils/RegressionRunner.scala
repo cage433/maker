@@ -134,7 +134,6 @@ object RegressionRunner {
             }
           } finally {
             starlingInit.stop
-            MP.stop
             Thread.sleep(3000)
             printNonDaemonThreads
           }

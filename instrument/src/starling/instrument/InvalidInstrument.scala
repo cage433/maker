@@ -4,8 +4,8 @@ package starling.instrument
 import starling.richdb.RichInstrumentResultSetRow
 import starling.daterange.DayAndTime
 import starling.curves.{Environment}
-import starling.quantity.{UOM, Quantity}
 import starling.daterange.Day
+import starling.quantity.{SimpleNamedQuantity, NamedQuantity, UOM, Quantity}
 
 class InvalidInstrumentException extends RuntimeException
 
@@ -15,14 +15,14 @@ class InvalidInstrumentException extends RuntimeException
  */
 trait InvalidInstrument extends Tradeable {
   def asUtpPortfolio(tradeDay:Day) = UTP_Portfolio(Map())
-
+  def explanation(env : Environment) : NamedQuantity = SimpleNamedQuantity("Invalid Instrument", Quantity.NULL)
   def deltaStepType() = throw new UnsupportedOperationException
 }
 
 case class ErrorInstrument(exception : String) extends InvalidInstrument with UTP {
   def isLive(dayAndTime: DayAndTime) = true
   def tradeableType = ErrorInstrument
-  def tradeableDetails = Map[String, Any]("error" -> exception)
+  def persistedTradeableDetails = Map[String, Any]("error" -> exception)
   override def hashCode = exception.lines.next.hashCode
 
   override def asUtpPortfolio(tradeDay:Day) = UTP_Portfolio(Map(this->1))
@@ -32,7 +32,7 @@ case class ErrorInstrument(exception : String) extends InvalidInstrument with UT
     case _ => false
   }
 
-  def details = tradeableDetails
+  def detailsForUTPNOTUSED = persistedTradeableDetails
   def instrumentType = ErrorInstrument
 
 
@@ -61,7 +61,8 @@ object ErrorInstrument extends TradeableType[ErrorInstrument] with InstrumentTyp
 case class NullInstrument() extends InvalidInstrument {
   def isLive(dayAndTime: DayAndTime) = throw new Exception("Null instrument")
   def tradeableType = NullInstrument
-  def tradeableDetails = throw new Exception("Null instrument")
+  def persistedTradeableDetails = throw new Exception("Null instrument")
+  def valuationCCY : UOM = throw new UnsupportedOperationException
 }
 
 object NullInstrument extends TradeableType[NullInstrument] {

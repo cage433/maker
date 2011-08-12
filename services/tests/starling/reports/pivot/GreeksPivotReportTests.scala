@@ -31,14 +31,13 @@ import starling.maths.RandomThing
 import starling.market.PublishedIndex
 import starling.instrument.SingleAsianOption
 import starling.instrument.SingleCalendarSpreadOption
-import starling.instrument.SingleCommoditySwap
+import starling.instrument.SinglePeriodSwap
 import starling.utils.CollectionUtils
 import starling.reports.pivot.PivotReport._
 import starling.reports.pivot.greeks.GreeksPivotReport._
 import starling.concurrent.MP
 import starling.daterange.{Week, Day, Month, DateRange}
 import starling.daterange.Day._
-import starling.instrument.SingleCFD
 import starling.market.BrentCFDSpreadIndex
 import starling.calendar.BrentMonth
 import starling.utils.SummingMap
@@ -51,16 +50,11 @@ import starling.curves.OilAtmVolAtomicDatumKey
 import starling.quantity.Percentage
 import starling.curves.DiscountRateKey
 import starling.curves.OilVolSkewAtomicDatumKey
+import starling.market.rules.CommonPricingRule
 
 class GreeksPivotReportTests extends StarlingTest {
   val marketDay = Day(2010, 1, 1)
   val env = Environment(new NullAtomicEnvironment(marketDay.endOfDay))
-
-
-  @AfterTest
-  def tearDown {
-    MP.stop
-  }
 
   private def allSameClass(klass : Class[_])(seq : Seq[AnyRef]) = {
     seq.forall{
@@ -95,17 +89,18 @@ class GreeksPivotReportTests extends StarlingTest {
     mkt, Day(2010, 9, 10), Month(2010, 10), atmPrice,
     Quantity(19, mkt.uom), Call, European
   )
-  lazy val swap = SingleCommoditySwap(idx, Quantity(0, idx.priceUOM), Quantity(17, idx.uom), Month(2010, 10), cleared = false)
+  lazy val swap = SinglePeriodSwap(idx, Quantity(0, idx.priceUOM), Quantity(17, idx.uom), Month(2010, 10), cleared = false)
   lazy val futuresSpread = FuturesCalendarSpread(
     mkt, Month(2010, 10), Month(2010, 11), 
     Quantity(0, mkt.priceUOM), Quantity(30, mkt.priceUOM), Quantity(19, mkt.uom)
   )
 
-  lazy val cfd = SingleCFD(
+  lazy val cfd = SinglePeriodSwap(
     BrentCFDSpreadIndex.indexFor(BrentMonth(4)),
     0.54 (USD/BBL),
     1030000 (BBL),
-    DateRange(24 Feb 2011, 2 Mar 2011)
+    DateRange(24 Feb 2011, 2 Mar 2011),
+    true, CommonPricingRule
   )
 
   lazy val swapWithFunnyPeriod = swap.copy(period = DateRange(10 Oct 2010, 20 Oct 2010), cleared = true)
@@ -261,7 +256,7 @@ class GreeksPivotReportTests extends StarlingTest {
           case Some(idx) => idx
           case _ => PublishedIndex(mkt.name, mkt.eaiQuoteID, mkt.lotSize, mkt.uom, mkt.currency, mkt.businessCalendar, mkt.commodity)
         }
-        SingleCommoditySwap(index, Quantity(0, mkt.priceUOM), Quantity((u.nextDouble - 0.5) * 100, mkt.uom), randomMonths.next, cleared = false)
+        SinglePeriodSwap(index, Quantity(0, mkt.priceUOM), Quantity((u.nextDouble - 0.5) * 100, mkt.uom), randomMonths.next, cleared = false)
     }
           
     val randomStrategies = new RandomThing(strategyIds, 43434)
@@ -377,7 +372,7 @@ class GreeksPivotReportTests extends StarlingTest {
       {
         case _ : ForwardPriceKey => fwdPrice
         case _ : OilAtmVolAtomicDatumKey => Percentage(0.5)
-        case _ : DiscountRateKey => 1.0
+        case _ : DiscountRateKey => new Quantity(1.0)
         case skewKey : OilVolSkewAtomicDatumKey => skewKey.nullValue
       }
     ))

@@ -29,111 +29,111 @@ class CurranTests extends TestHolidays {
   def AtTheMoneyBeforePricingCurranCallTest = {
     implicit val daysInYear: Double = 365
 
-    val c = new Curran(Call, 100, 100, 0.05, 0.05, 0.2, Dec10Ti.toArray, Dec10T, 0.0, 0)
-    assertEquals(c.value, 7.310622, 1e-6)
+    val c = new Curran(Call, 100, 100, 0.2, Dec10Ti.toArray, Dec10T, 0.0, 0)
+    assertEquals(c.discountedValue(0.05), 7.310622, 1e-6)
   }
   
   @Test
 	def AtTheMoneyBeforePricingCurranPutTest = {
-		val c = new Curran(Put, 100, 100, 0.05, 0.05, 0.2, Dec10Ti.toArray, Dec10T, 0.0, 0)
-		assertEquals(c.value, 7.310622, 1e-6)
+		val c = new Curran(Put, 100, 100, 0.2, Dec10Ti.toArray, Dec10T, 0.0, 0)
+		assertEquals(c.discountedValue(0.05), 7.310622, 1e-6)
 	}
 
 	@Test
 	def AtTheMoneyBeforePricingCurranStraddleTest = {
-		val c = new Curran(Straddle, 100, 100, 0.05, 0.05, 0.2, Dec10Ti.toArray, Dec10T, 0.0, 0)
-		assertEquals(c.value, 14.621245, 1e-6)
+		val c = new Curran(Straddle, 100, 100, 0.2, Dec10Ti.toArray, Dec10T, 0.0, 0)
+		assertEquals(c.discountedValue(0.05), 14.621245, 1e-6)
 	}
 
 	@Test
 	def InTheMoneyBeforePricingCurranCallTest = {
-		val c = new Curran(Call, 150, 100, 0.05, 0.05, 0.2, Dec10Ti.toArray, Dec10T, 0.0, 0)
-		assertEquals(c.value, 47.744130, 1e-6)
+		val c = new Curran(Call, 150, 100, 0.2, Dec10Ti.toArray, Dec10T, 0.0, 0)
+		assertEquals(c.discountedValue(0.05), 47.744130, 1e-6)
 	}
 
 	@Test
 	def OutOfTheMoneyBeforePricingCurranPutTest = {
-		val c = new Curran(Put, 150, 100, 0.05, 0.05, 0.2, Dec10Ti.toArray, Dec10T, 0.0, 0)
-		assertEquals(c.value, 0.143551, 1e-6)
+		val c = new Curran(Put, 150, 100, 0.2, Dec10Ti.toArray, Dec10T, 0.0, 0)
+		assertEquals(c.discountedValue(0.05), 0.143551, 1e-6)
 	}
 
 	@Test
 	def InTheMoneyHighBeforePricingCurranStraddleTest = {
-		val c = new Curran(Straddle, 150, 100, 0.05, 0.05, 0.2, Dec10Ti.toArray, Dec10T, 0.0, 0)
-		assertEquals(c.value, 47.887681, 1e-6)
+		val c = new Curran(Straddle, 150, 100, 0.2, Dec10Ti.toArray, Dec10T, 0.0, 0)
+		assertEquals(c.discountedValue(0.05), 47.887681, 1e-6)
 	}
 
 	@Test
 	def OutOfTheMoneyBeforePricingCurranCallTest = {
-		val c = new Curran(Call, 50, 100, 0.05, 0.05, 0.2, Dec10Ti.toArray, Dec10T, 0.0, 0)
-		assertEquals(c.value, 0.000515, 1e-6)
+		val c = new Curran(Call, 50, 100, 0.2, Dec10Ti.toArray, Dec10T, 0.0, 0)
+		assertEquals(c.discountedValue(0.05), 0.000515, 1e-6)
 	}
 
 	@Test
 	def OutOfMoneyBeforePricingCurranPutTest = {
-		val c = new Curran(Put, 50, 100, 0.05, 0.05, 0.2, Dec10Ti.toArray, Dec10T, 0.0, 0)
-		assertEquals(c.value, 47.601094, 1e-6)
+		val c = new Curran(Put, 50, 100, 0.2, Dec10Ti.toArray, Dec10T, 0.0, 0)
+		assertEquals(c.discountedValue(0.05), 47.601094, 1e-6)
 	}
 
 	@Test
 	def InTheMoneyLowBeforePricingCurranStraddleTest = {
-		val c = new Curran(Straddle, 50, 100, 0.05, 0.05, 0.2, Dec10Ti.toArray, Dec10T, 0.0, 0)
-		assertEquals(c.value, 47.601609, 1e-6)
+		val c = new Curran(Straddle, 50, 100, 0.2, Dec10Ti.toArray, Dec10T, 0.0, 0)
+		assertEquals(c.discountedValue(0.05), 47.601609, 1e-6)
 	}
 
 	// During pricing tests
 
 	@Test
 	def AtTheMoneyDuringPricingCurranCallTest = {
-		val c = new Curran(Call, 100, 100, 0.05, 0.05, 0.2, Jan10Ti.toArray, Jan10T, 105.0, 10)
-		assertEquals(c.value, 2.628647, 1e-6)
+		val c = new Curran(Call, 100, 100, 0.2, Jan10Ti.toArray, Jan10T, 105.0, 10)
+		assertEquals(c.discountedValue(0.05), 2.628647, 1e-6)
 	}
 
 	@Test
 	def AtTheMoneyDuringPricingCurranPutTest = {
-		val c = new Curran(Put, 100, 100, 0.05, 0.05, 0.2, Jan10Ti.toArray, Jan10T, 105.0, 10)
-		assertEquals(c.value, 0.001030, 1e-6)
+		val c = new Curran(Put, 100, 100, 0.2, Jan10Ti.toArray, Jan10T, 105.0, 10)
+		assertEquals(c.discountedValue(0.05), 0.001030, 1e-6)
 	}
 
 	@Test
 	def AtTheMoneyDuringPricingCurranStraddleTest = {
-		val c = new Curran(Straddle, 100, 100, 0.05, 0.05, 0.2, Jan10Ti.toArray, Jan10T, 105.0, 10)
-		assertEquals(c.value, 2.629678, 1e-6)
+		val c = new Curran(Straddle, 100, 100, 0.2, Jan10Ti.toArray, Jan10T, 105.0, 10)
+		assertEquals(c.discountedValue(0.05), 2.629678, 1e-6)
 	}
 
 	@Test
 	def InTheMoneyDuringPricingCurranCallTest = {
-		val c = new Curran(Call, 150, 100, 0.05, 0.05, 0.2, Jan10Ti.toArray, Jan10T, 105.0, 10)
-		assertEquals(c.value, 26.276165, 1e-6)
+		val c = new Curran(Call, 150, 100, 0.2, Jan10Ti.toArray, Jan10T, 105.0, 10)
+		assertEquals(c.discountedValue(0.05), 26.276165, 1e-6)
 	}
 
 	@Test
 	def OutOfTheMoneyDuringPricingCurranPutTest = {
-		val c = new Curran(Put, 150, 100, 0.05, 0.05, 0.2, Jan10Ti.toArray, Jan10T, 105.0, 10)
-		assertEquals(c.value, 0.0, 1e-6)
+		val c = new Curran(Put, 150, 100, 0.2, Jan10Ti.toArray, Jan10T, 105.0, 10)
+		assertEquals(c.discountedValue(0.05), 0.0, 1e-6)
 	}
 
 	@Test
 	def InTheMoneyHighDuringPricingCurranStraddleTest = {
-		val c = new Curran(Straddle, 150, 100, 0.05, 0.05, 0.2, Jan10Ti.toArray, Jan10T, 105.0, 10)
-		assertEquals(c.value, 26.276165, 1e-6)
+		val c = new Curran(Straddle, 150, 100, 0.2, Jan10Ti.toArray, Jan10T, 105.0, 10)
+		assertEquals(c.discountedValue(0.05), 26.276165, 1e-6)
 	}
 
 	@Test
 	def OutOfTheMoneyDuringPricingCurranCallTest = {
-		val c = new Curran(Call, 50, 100, 0.05, 0.05, 0.2, Jan10Ti.toArray, Jan10T, 105.0, 10)
-		assertEquals(c.value, 0.0, 1e-6)
+		val c = new Curran(Call, 50, 100, 0.2, Jan10Ti.toArray, Jan10T, 105.0, 10)
+		assertEquals(c.discountedValue(0.05), 0.0, 1e-6)
 	}
 
 	@Test
 	def OutOfMoneyDuringPricingCurranPutTest = {
-		val c = new Curran(Put, 50, 100, 0.05, 0.05, 0.2, Jan10Ti.toArray, Jan10T, 105.0, 10)
-		assertEquals(c.value, 21.020932, 1e-6)
+		val c = new Curran(Put, 50, 100, 0.2, Jan10Ti.toArray, Jan10T, 105.0, 10)
+		assertEquals(c.discountedValue(0.05), 21.020932, 1e-6)
 	}
 
 	@Test
 	def InTheMoneyLowDuringPricingCurranStraddleTest = {
-		val c = new Curran(Straddle, 50, 100, 0.05, 0.05, 0.2, Jan10Ti.toArray, Jan10T, 105.0, 10)
-		assertEquals(c.value, 21.020932, 1e-6)
+		val c = new Curran(Straddle, 50, 100, 0.2, Jan10Ti.toArray, Jan10T, 105.0, 10)
+		assertEquals(c.discountedValue(0.05), 21.020932, 1e-6)
 	}
 }

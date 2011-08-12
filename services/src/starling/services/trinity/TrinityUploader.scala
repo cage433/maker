@@ -10,10 +10,20 @@ import starling.utils._
 
 import starling.utils.ClosureUtil._
 import starling.utils.ImplicitConversions._
+import com.trafigura.services.trinity.TrinityService
 
+class TrinityUploader(fclGenerator: FCLGenerator, xrtGenerator: XRTGenerator, trinityService: TrinityService, props: Props) {
+  def uploadCurve(label: CurveLabel) = {
+    val toUpload = fclGenerator.generate(label)
 
-class TrinityUploader(fclGenerator: FCLGenerator, xrtGenerator: XRTGenerator, props: Props) {
-  def uploadCurve(label: CurveLabel)   = upload(fclGenerator.generate(label),          "curve%s.fcl" % label.observationDay)
+    if (toUpload.isEmpty) Log.info("No Trinity data to upload")
+
+    toUpload.map { case (trinityKey, commodityRates) => {
+      Log.info("Uploading " + trinityKey)
+      commodityRates.foreach(println)
+      trinityService.commodityRates.putRates(trinityKey.exchange, trinityKey.commodity, trinityKey.currency, "Full Curve", commodityRates.toList)
+    } }
+  }
   def uploadLibor(observationDay: Day) = upload(xrtGenerator.generate(observationDay), "libor%s.xrt" % observationDay)
 
   private def upload(lines: List[String], fileName: String) {

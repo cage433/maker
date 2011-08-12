@@ -39,6 +39,7 @@ class PricingSchedulePivotDataSource(context: EnvironmentWithDomain) extends Unf
   val startMonth = marketDay.day.startOfFinancialYear.containingMonth
 
   val marketsWithForwardData = context.markets.map(_.market).toSet
+  val marketsForwardDates = context.markets.map{ case u: UnderlyingDeliveryPeriods => u.market -> u.periods}.toMap
 
   private val data = {
     val marketDay = context.environment.marketDay
@@ -51,7 +52,7 @@ class PricingSchedulePivotDataSource(context: EnvironmentWithDomain) extends Unf
     }
 
     indexes.flatMap(index => {
-      Index.markets(index).flatMap {
+      Index.markets(index).toList.flatMap {
         commMarket =>
           precisions(Some(index)).flatMap {
             precision =>
@@ -59,7 +60,8 @@ class PricingSchedulePivotDataSource(context: EnvironmentWithDomain) extends Unf
                 pricingRule =>
                   (monthsFor(index)).flatMap {
                     month => {
-                      //
+                      // this is quite ugly because we want it to be lazy
+                      // otherwise it should just be a normal list of rows but we use the Appending map for laziness
                       new AppendingMap(Map("a" -> fields(rounding -> precisionToString(precision), swapRule -> pricingRule.name, payoffRule -> index.name, period -> month),
                         "b" -> lazyAverage(index, month, pricingRule, precision, context.environment)
                       )) ::
@@ -70,7 +72,7 @@ class PricingSchedulePivotDataSource(context: EnvironmentWithDomain) extends Unf
                               rounding -> precisionToString(precision),
                               swapRule -> pricingRule.name, payoffRule -> index.name, period -> month,
                               day -> obDay, market -> commMarket.name, forward -> isForward),
-                              "b" -> lazyMap(index, month, pricingRule, precision, context.environment, obDay, commMarket)
+                              "b" -> lazyRows(index, month, pricingRule, precision, context.environment, obDay, commMarket)
                             ))
                           }
                         }
@@ -94,20 +96,11 @@ class PricingSchedulePivotDataSource(context: EnvironmentWithDomain) extends Unf
   }
 
   def monthsFor(index: Index) = {
-    val lastForwardPeriod = Index.markets(index).map {
-      market => context.markets.find(_.market == market).map(
-        marketWithDeliveryPeriod => (marketWithDeliveryPeriod.periods.last)
-      )
-    } min
+    val lastForwardPeriod = Index.markets(index).map(marketsForwardDates(_).last).min
+    val lastAveragingPeriod = lastForwardPeriod.lastDay.containingMonth
 
-    lastForwardPeriod.map(lastPeriod => {
-      val lastAveragingPeriod = index.indexes.map(i => {
-        val days = i.observationDays(context.environment.marketDay.day upto lastPeriod.lastDay)
-        days.filter(day => i.observedPeriod(day) <= lastPeriod) max
-      }
-      ).max.containingMonth
-      startMonth upto lastAveragingPeriod
-    }).getOrElse(List())
+    // this will go beyond the end for some indexes but that's ok
+    startMonth upto lastAveragingPeriod
   }
 
   val periodSelection = initialIndex.map(i => (monthsFor(i) intersect (marketDay.containingMonth upto (marketDay.containingMonth + 12)))).getOrElse(Nil)
@@ -133,7 +126,8 @@ class PricingSchedulePivotDataSource(context: EnvironmentWithDomain) extends Unf
   }
 
   def lazyAverage(index: Index, period: DateRange, pricingRule: SwapPricingRule, rounding: Option[Int], environment: Environment) = {
-    lazy val (rows, avg) = indexRuleEvaluationCache.memoize((index, period, pricingRule, rounding, context.environment), IndexRuleEvaluation.rows(index, period, pricingRule, rounding, context.environment))
+    lazy val (_, avg) = indexRuleEvaluationCache.memoize((index, period, pricingRule, rounding, context.environment),
+      IndexRuleEvaluation.averagePrice(index, period, pricingRule, rounding, context.environment))
 
     new scala.collection.immutable.Map[Field, Any]() {
       lazy val map = {
@@ -150,9 +144,10 @@ class PricingSchedulePivotDataSource(context: EnvironmentWithDomain) extends Unf
     }
   }
 
-  def lazyMap(index: Index, period: DateRange, pricingRule: SwapPricingRule, rounding: Option[Int],
+  def lazyRows(index: Index, period: DateRange, pricingRule: SwapPricingRule, rounding: Option[Int],
               environment: Environment, obDay: Day, commMarket: CommodityMarket) = {
-    lazy val (rows, avg) = indexRuleEvaluationCache.memoize((index, period, pricingRule, rounding, context.environment), IndexRuleEvaluation.rows(index, period, pricingRule, rounding, context.environment))
+    lazy val (rows, _) = indexRuleEvaluationCache.memoize((index, period, pricingRule, rounding, context.environment),
+      IndexRuleEvaluation.averagePrice(index, period, pricingRule, rounding, context.environment))
 
     new scala.collection.immutable.Map[Field, Any]() {
       lazy val map = {

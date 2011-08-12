@@ -36,9 +36,9 @@ class CalendarSpreadOptionTests  extends JonTestEnv with TestNGSuite{
 
     val strike = Quantity(0, market.priceUOM)
     val volume = Quantity(1000, BBL)
-    val option1 = new SingleCalendarSpreadOption(market, market.csoOptionExpiry(may), may, jun, strike, volume, Call)
-    val option2 = new SingleCalendarSpreadOption(market, market.csoOptionExpiry(jun), jun, jul, strike, volume, Call)
-    val option3 = new SingleCalendarSpreadOption(market, market.csoOptionExpiry(jul), jul, aug, strike, volume, Call)
+    val option1 = new SingleCalendarSpreadOption(market, market.csoOptionExpiry(may / jun), may, jun, strike, volume, Call)
+    val option2 = new SingleCalendarSpreadOption(market, market.csoOptionExpiry(jun / jul), jun, jul, strike, volume, Call)
+    val option3 = new SingleCalendarSpreadOption(market, market.csoOptionExpiry(jul / aug), jul, aug, strike, volume, Call)
     val mtm1 = option1.mtm(env)
     val mtm2 = option2.mtm(env)
     val mtm3 = option3.mtm(env)
@@ -68,7 +68,7 @@ class CalendarSpreadOptionTests  extends JonTestEnv with TestNGSuite{
           key match {
             case ForwardPriceKey(_, `june`, _) => FJune(mkt.priceUOM)
             case ForwardPriceKey(_, `july`, _) => FJuly(mkt.priceUOM)
-            case _ : DiscountRateKey => 1.0
+            case _ : DiscountRateKey => new Quantity(1.0)
             case _ : SpreadAtmStdDevAtomicDatumKey => stdDev(mkt.priceUOM)
             case _ : SpreadSkewStdDevAtomicDatumKey => new DenseDoubleMatrix1D(Array(0.0, 0.0)).asRowMatrix
           }
@@ -79,8 +79,8 @@ class CalendarSpreadOptionTests  extends JonTestEnv with TestNGSuite{
     val T = exerciseDay.endOfDay.timeSince(md)
     val volume = 10.0(mkt.uom)
     val cso = new SingleCalendarSpreadOption(mkt, exerciseDay, june, july, K(mkt.priceUOM), volume, Put)
-    val gamma = cso.gamma(env, FuturesSpreadPrice(mkt, june, july), USD, List(FuturesSpreadPrice(mkt, june, july)), multiple = 1e-3).value
-    val delta = cso.firstOrderDerivative(env, FuturesSpreadPrice(mkt, june, july), USD, multiple = 1e-3).value
+    val gamma = cso.gamma(env, FuturesSpreadPrice(mkt, june / july), USD, List(FuturesSpreadPrice(mkt, june / july)), multiple = 1e-3).value
+    val delta = cso.firstOrderDerivative(env, FuturesSpreadPrice(mkt, june / july), USD, multiple = 1e-3).value
     val scaledVol = stdDev * sqrt(T)
     val spread = FJune - FJuly
     val d1 = (spread - K) / scaledVol
@@ -90,5 +90,48 @@ class CalendarSpreadOptionTests  extends JonTestEnv with TestNGSuite{
     assertEquals(delta, expectedDelta, 1e-4)
     val expectedGamma = volume.value * n1 / scaledVol
     assertEquals(gamma, expectedGamma, 1e-4)
+  }
+
+  @Test
+  def testExplanation() {
+    val md = Day(2010, 1, 14).endOfDay
+
+    val market = Market.NYMEX_WTI
+
+    val env = makeEnv(md)
+
+    val may = Month(2010, 5)
+    val jun = Month(2010, 6)
+    val jul = Month(2010, 7)
+    val aug = Month(2010, 8)
+
+    val strike = Quantity(0, market.priceUOM)
+    val volume = Quantity(1000, BBL)
+
+    val start = SpreadPeriod(may, jun)
+    val end = SpreadPeriod(jul, aug)
+    val cso = new CalendarSpreadOption(market, StripPeriod(start, end), strike, volume, Call)
+
+    val explan = cso.explanation(env)
+
+    assertEquals(explan.name, "Sum(MAY 2010/JUN 2010 value, JUN 2010/JUL 2010 value, JUL 2010/AUG 2010 value)")
+    assertEquals(
+      explan.format(1),
+      "Sum(" +
+              "((CSO-Call(Spread Price, Std Dev, T, K) * Volume) * Discount), " +
+              "((CSO-Call(Spread Price, Std Dev, T, K) * Volume) * Discount), " +
+              "((CSO-Call(Spread Price, Std Dev, T, K) * Volume) * Discount))")
+    assertEquals(
+      explan.format(2),
+    "Sum(" +
+            "((CSO-Call((NYMEX WTI.MAY 2010 - NYMEX WTI.JUNE 2010), 1.45 USD/bbl, 0.25, 0.00 USD/bbl) * 1,000.00 bbl) * USD.14Apr2010), " +
+            "((CSO-Call((NYMEX WTI.JUNE 2010 - NYMEX WTI.JULY 2010), 1.45 USD/bbl, 0.33, 0.00 USD/bbl) * 1,000.00 bbl) * USD.16May2010), " +
+            "((CSO-Call((NYMEX WTI.JULY 2010 - NYMEX WTI.AUGUST 2010), 1.45 USD/bbl, 0.42, 0.00 USD/bbl) * 1,000.00 bbl) * USD.16Jun2010))")
+    val lastExplanation = "Sum(" +
+            "((CSO-Call((83.29 USD/bbl - 83.70 USD/bbl), 1.45 USD/bbl, 0.25, 0.00 USD/bbl) * 1,000.00 bbl) * 1.00), " +
+            "((CSO-Call((83.70 USD/bbl - 84.13 USD/bbl), 1.45 USD/bbl, 0.33, 0.00 USD/bbl) * 1,000.00 bbl) * 1.00), " +
+            "((CSO-Call((84.13 USD/bbl - 84.51 USD/bbl), 1.45 USD/bbl, 0.42, 0.00 USD/bbl) * 1,000.00 bbl) * 1.00))"
+    assertEquals(explan.format(3), lastExplanation)
+    assertEquals(explan.format(4), lastExplanation)
   }
 }

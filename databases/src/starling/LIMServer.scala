@@ -143,6 +143,13 @@ object LIMServer {
   }
 
   val TopRelation = new LimNode(this) {
+    val Energy = new LimNode(this) {
+      val Tankers = new LimNode(this) {
+        val BalticFreight = new LimNode(this) {
+          val Index_Forward = new LimNode(this)
+        }
+      }
+    }
     val ForeignExchange = new LimNode(this) {
       val Ecb = new LimNode(this)
     }

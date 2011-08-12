@@ -3,14 +3,25 @@ package starling.daterange
 import org.scalatest.testng.TestNGSuite
 import org.testng.annotations.Test
 import org.testng.Assert._
+import starling.daterange.Tenor
+import starling.utils.ImplicitConversions._
 
 class TenorTest extends TestNGSuite {
   @Test
   def testParse {
+    import Tenor._
+
     assertEquals(TenorType.parseTenor("02Aug2011"), Day(2011, 8, 2))
     assertEquals(TenorType.parseTenor("August 2011"), Month(2011, 8))
     assertEquals(TenorType.parseTenor("2011"), Year(2011))
     assertEquals(TenorType.parseTenor("40544.0"), Day(2011, 1, 1))
+
+    assertEquals(
+      List("ON", "SN", "CASH", "CURMON", "CURQ", "1D", "1Y", "1M", "5Q", "8MON").map(Tenor.parse),
+      List(ON, SN, CASH, Tenor(Month, 0), Tenor(Quarter, 0), OneDay, OneYear, OneMonth, Tenor(Quarter, 5), Tenor(Month, 8))
+    )
+
+    assertEquals("4Aug2011" partialMatch { case Tenor.Parse(tenor) => tenor }, None)
   }
 
   @Test

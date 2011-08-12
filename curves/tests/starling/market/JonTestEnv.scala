@@ -21,7 +21,7 @@ trait JonTestEnv extends TestMarketSpec {
     val datedBrentMarket = datedBrent.market
     Environment(
       new UnitTestingAtomicEnvironment(marketDay, {
-        case DiscountRateKey(`USD`, day, _) => math.exp(-interp(day) * day.daysSinceInYears(marketDay.day))
+        case DiscountRateKey(`USD`, day, _) => new Quantity(math.exp(-interp(day) * day.daysSinceInYears(marketDay.day)))
         case ForwardPriceKey(`wti`, forwardDate, _) => {
           Quantity(wtiForward(forwardDate.asInstanceOf[Month]), wti.priceUOM) + dPrice
         }
@@ -66,14 +66,14 @@ trait JonTestEnv extends TestMarketSpec {
   }
 
   def makeEnvShift(marketDay: DayAndTime, dVol: Map[DateRange, Double] = Map.empty, dPrice: Map[DateRange, Quantity] = Map.empty,
-                   dStdDev: Map[Spread[_ <: DateRange], Quantity] = Map.empty, dStdDevSkew: Map[Spread[_ <: DateRange], Double] = Map.empty) = {
+                   dStdDev: Map[Period, Quantity] = Map.empty, dStdDevSkew: Map[Period, Double] = Map.empty) = {
     import JonTestData._
 
     val market = Market.NYMEX_WTI
     val index = Index.WTI10
     Environment(
       new UnitTestingAtomicEnvironment(marketDay, {
-        case DiscountRateKey(`USD`, day, _) => math.exp(-interp(day) * day.daysSinceInYears(marketDay.day))
+        case DiscountRateKey(`USD`, day, _) => new Quantity(math.exp(-interp(day) * day.daysSinceInYears(marketDay.day)))
         case ForwardPriceKey(`market`, forwardDate, _) => {
           Quantity(wtiForward(forwardDate.asInstanceOf[Month]), market.priceUOM) + dPrice.getOrElse(forwardDate, Quantity.NULL)
         }

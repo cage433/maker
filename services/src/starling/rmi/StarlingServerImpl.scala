@@ -13,7 +13,7 @@ import starling.eai.{Book, Traders}
 import starling.gui.UserSettings
 import starling.gui.api._
 import starling.pivot._
-import starling.pivot.controller.PivotTable
+import controller.{AxisNode, PivotTable}
 import starling.pivot.model._
 import starling.reports.pivot._
 import starling.marketdata._
@@ -26,6 +26,7 @@ import starling.utils.sql.{FalseClause, From, RealTable}
 
 import starling.utils.ImplicitConversions._
 import starling.utils.sql.QueryBuilder._
+import starling.tradeimport.TradeImporter
 
 
 class UserReportsService(
@@ -378,7 +379,7 @@ class StarlingServerImpl(
     PivotTableModel.createPivotData(curveViewer.curve(curveLabel), pivotFieldParams)
   }
 
-  private def marketDataSource(marketDataIdentifier:MarketDataPageIdentifier, marketDataTypeLabel:Option[MarketDataTypeLabel]) = {
+  private def marketDataSource(marketDataIdentifier:MarketDataPageIdentifier, marketDataTypeLabel:Option[MarketDataTypeLabel], edits:PivotEdits) = {
     val reader = marketDataReaderFor(marketDataIdentifier)
     val marketDataType = marketDataTypeLabel match {
       case None => {
@@ -390,27 +391,19 @@ class StarlingServerImpl(
       case Some(mdt) => Some(realTypeFor(mdt))
     }
     marketDataType match {
-      case Some(mdt) => new MarketDataPivotTableDataSource(reader, Some(snapshotDatabase), marketDataIdentifier.marketDataIdentifier, mdt)
+      case Some(mdt) => new MarketDataPivotTableDataSource(reader, edits, Some(snapshotDatabase), marketDataIdentifier.marketDataIdentifier, mdt)
       case None => NullPivotTableDataSource
     }
   }
 
-  def readAllMarketData(marketDataIdentifier:MarketDataPageIdentifier, marketDataTypeLabel:Option[MarketDataTypeLabel], pivotFieldParams:PivotFieldParams):PivotData = {
-    val dataSource = marketDataSource(marketDataIdentifier, marketDataTypeLabel)
-//    dataSource.editable.get.withEdits()
+  def readAllMarketData(marketDataIdentifier:MarketDataPageIdentifier, marketDataTypeLabel:Option[MarketDataTypeLabel], edits:PivotEdits, pivotFieldParams:PivotFieldParams):PivotData = {
+    val dataSource = marketDataSource(marketDataIdentifier, marketDataTypeLabel, edits)
     PivotTableModel.createPivotData(dataSource, pivotFieldParams)
   }
 
-  def saveMarketData(marketDataIdentifier:MarketDataPageIdentifier, marketDataTypeLabel:Option[MarketDataTypeLabel], pivotEdits:Set[PivotEdit]) = {
-    val dataSource = marketDataSource(marketDataIdentifier, marketDataTypeLabel)
-    val lookup = dataSource.fieldDetailsGroups.flatMap(_.fieldMap).toMap
-    val fixedUpPivotEdits = pivotEdits.map { pivotEdit => {
-      pivotEdit match {
-        case AmendPivotEdit(keys, values) => AmendPivotEdit(keys, values.map { case (field,value) => field → lookup(field).fixEditedValue(value) })
-        case other => other
-      }
-    }}
-    dataSource.editable.get.save(fixedUpPivotEdits)
+  def saveMarketData(marketDataIdentifier:MarketDataPageIdentifier, marketDataTypeLabel:Option[MarketDataTypeLabel], pivotEdits:PivotEdits) = {
+    val dataSource = marketDataSource(marketDataIdentifier, marketDataTypeLabel, PivotEdits.Null)
+    dataSource.editable.get.save(pivotEdits)
   }
 
   def snapshot(marketDataSelection:MarketDataSelection, observationDay:Day): Option[SnapshotIDLabel] = {
@@ -521,7 +514,7 @@ class StarlingServerImpl(
     val pivotTable = if (pivotFieldParams.calculate) {
       PivotTableModel.createPivotTableData(pivot, fs)
     } else {
-      PivotTable(List(), Array(), List(), List(), Map(), TreeDetails(Map(), Map()), None, FormatInfo.Blank)
+      PivotTable.singleCellPivotTable("Calculation is off")
     }
     val fieldGroups = pivot.fieldDetailsGroups.map(_.toFieldGroup)
 
@@ -559,14 +552,12 @@ class StarlingServerImpl(
 
   private val importTradesMap = new ConcurrentHashMap[Desk,Boolean]
 
-  def importAllTrades(desk:Desk): Boolean = {
-    val result = deskTradeSets(desk).flatMap(_.importAll).exists(_ == true)
-    importTradesMap.put(desk, result)
-    if(result) {
-      val closeDay = Day.today.previousBusinessDay(ukHolidayCalendar)
-      tradeStores.closedDesks.closeDesk(desk, closeDay)
+  def importTitanTrades() {
+    val ts = Timestamp.now
+    val changed = tradeStores.tradeImporters(TitanTradeSystem).importAll(None, ts)
+    if (changed) {
+      tradeStores.closedDesks.closeDesk(Desk.Titan, Day.today(), ts)
     }
-    result
   }
 
   def bookClose(desk: Desk) {

@@ -214,7 +214,7 @@ case class ShiftForwardForwardRate(env : AtomicEnvironment, ccy : UOM, period : 
 
   def applyWithShiftIfAppropriate(key: AtomicDatumKey) : Any = {
     key match {
-      case DiscountRateKey(ccy, day, _) => env.double(key) * ForwardRateRiskFactor.adjustment(env.marketDay.day, period, day, dR)
+      case DiscountRateKey(ccy, day, _) => env.quantity(key) * ForwardRateRiskFactor.adjustment(env.marketDay.day, period, day, dR)
       case _ => env(key)
     }
   }
@@ -230,7 +230,7 @@ case class Undiscounted(env : AtomicEnvironment)
 {
   def applyWithShiftIfAppropriate(key : AtomicDatumKey) : Any = {
     key match {
-      case _ : DiscountRateKey => 1.0
+      case _ : DiscountRateKey => new Quantity(1.0)
       case _ => env(key)
     }
   }
@@ -377,7 +377,7 @@ case class ForwardDiscountingEnvironment(
     key match {
       case DiscountRateKey(_, day, _) => {
         if (day <= forwardDay)
-          1.0
+          new Quantity(1.0)
         else
           key.forwardStateValue(originalEnv, forwardDay.startOfDay)
       }

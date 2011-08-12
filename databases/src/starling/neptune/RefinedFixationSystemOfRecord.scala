@@ -6,10 +6,10 @@ import java.lang.String
 import starling.db.{RefinedFixationTradeSystem}
 import starling.instrument._
 import starling.utils.{StackTraceToString, Log}
-import starling.systemofrecord.{InstrumentReader, SystemOfRecord}
 import starling.trade.{Trade, TradeID}
+import starling.systemofrecord.{SystemOfRecordBackedByADatabase, InstrumentReader}
 
-class RefinedFixationSystemOfRecord(externalDB : RichDB) extends SystemOfRecord(externalDB){
+class RefinedFixationSystemOfRecord(externalDB : RichDB) extends SystemOfRecordBackedByADatabase(externalDB){
 
   /**
    * For the pivot table, we need to group by

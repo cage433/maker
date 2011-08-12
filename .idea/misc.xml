@@ -76,6 +76,42 @@
           <module name="starling" />
         </modules>
       </facet-type>
+      <facet-type id="Spring">
+        <modules>
+          <module name="starling">
+            <files>
+              <file url="file://$PROJECT_DIR$/component-tests/src/test/resources/config-properties.xml" />
+              <file url="file://$PROJECT_DIR$/component-tests/src/test/resources/permission-unit-tests.xml" />
+              <file url="file://$PROJECT_DIR$/refined-service/config-properties.xml" />
+              <file url="file://$PROJECT_DIR$/refined-service/src/main/resources/starling.xml" />
+              <file url="file://$PROJECT_DIR$/refined-service/starling-client.xml" />
+              <file url="file://$PROJECT_DIR$/refinedtestclient/src/main/resources/config-properties.xml" />
+              <file url="file://$PROJECT_DIR$/refinedtestclient/src/main/resources/starling-client.xml" />
+              <file url="file://$PROJECT_DIR$/refinedtestclient/target/classes/config-properties.xml" />
+              <file url="file://$PROJECT_DIR$/refinedtestclient/target/classes/starling-client.xml" />
+              <file url="file://$PROJECT_DIR$/refinedtestclient/test-output/config-properties.xml" />
+              <file url="file://$PROJECT_DIR$/refinedtestclient/test-output/starling-client.xml" />
+              <file url="file://$PROJECT_DIR$/service/target/classes/starling.xml" />
+              <file url="file://$PROJECT_DIR$/service/target/starling-developer/WEB-INF/classes/starling.xml" />
+            </files>
+          </module>
+        </modules>
+      </facet-type>
+      <facet-type id="web">
+        <modules>
+          <module name="services">
+            <files>
+              <file url="file://$PROJECT_DIR$/services/resources/webapp/WEB-INF/web.xml" />
+            </files>
+          </module>
+          <module name="starling">
+            <files>
+              <file url="file://$PROJECT_DIR$/refined-service/src/main/webapp/WEB-INF/web.xml" />
+              <file url="file://$PROJECT_DIR$/service/target/starling-developer/WEB-INF/web.xml" />
+            </files>
+          </module>
+        </modules>
+      </facet-type>
     </autodetection-disabled>
   </component>
   <component name="IdProvider" IDEtalkID="4FDF0B6C17A3DF37CFEEFA9C0DE561DE" />

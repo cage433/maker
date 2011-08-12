@@ -2,7 +2,6 @@ package starling.instrument
 
 
 import starling.richdb.RichInstrumentResultSetRow
-import starling.quantity.{Percentage, UOM, Quantity}
 import starling.quantity.Quantity._
 import java.sql.ResultSet
 import starling.utils.CollectionUtils._
@@ -12,6 +11,9 @@ import starling.quantity.Percentage._
 import starling.curves._
 import starling.models.{Put, BlackScholes, CallOrPut}
 import starling.market._
+import starling.quantity.{NamedQuantity, Percentage, UOM, Quantity}
+import starling.quantity.SimpleNamedQuantity
+import starling.quantity.FunctionNamedQuantity
 
 
 case class AsianOption(
@@ -23,14 +25,20 @@ case class AsianOption(
 )
 extends AverageOption(index, averagingPeriod, strike, volume, callPut) with MultiLeg {
   def asUtpPortfolio(tradeDay:Day) = UTP_Portfolio({
-    periods.map {
-      s => {
-        (SingleAsianOption(index, s, strike, volume.copy(value = 1.0), callPut) -> volume.value)
-      }
-    }.toMap
-  })
+    supPeriodOptions.map{s => s.copy(volume = s.volume.copy(value = 1.0)) -> s.volume.value}
+  }.toMap)
 
-  def isLive(dayAndTime: DayAndTime) = dayAndTime < periods.last.lastDay.endOfDay // was settlementDate.endOfDay
+  def supPeriodOptions = periods.map(SingleAsianOption(index, _, strike, volume, callPut))
+
+  def explanation(env : Environment) : NamedQuantity = {
+    val subExplanations : List[NamedQuantity] = supPeriodOptions.map{option =>
+      val optionExp = option.explanation(env)
+      SimpleNamedQuantity(option.averagingPeriod.toShortString + " value", optionExp)
+    }
+    FunctionNamedQuantity("Sum", subExplanations, subExplanations.map(_.quantity).sum)
+  }
+
+  def isLive(dayAndTime: DayAndTime) = dayAndTime < periods.last.lastDay.endOfDay
 
   override def expiryDay() = Some(index.observationDays(periods.last).last)
 

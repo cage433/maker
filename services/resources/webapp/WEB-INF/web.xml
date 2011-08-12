@@ -8,7 +8,9 @@
 <!--
     <context-param>
         <param-name>resteasy.resources</param-name>
-        <param-value></param-value>
+        <param-value>
+            com.trafigura.services.marketdata.ExampleService
+        </param-value>
     </context-param>
 
     <listener>

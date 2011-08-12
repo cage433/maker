@@ -12,6 +12,6 @@ class XstreamUOMConverter extends Converter {
     writer.setValue(obj.asInstanceOf[UOM].identifier)
   }
   def unmarshal(reader:HierarchicalStreamReader , context:UnmarshallingContext ) = {
-    if (reader.getValue == "") UOM.SCALAR else UOM.fromIdentifier(reader.getValue)
+    if (reader.getValue == "") UOM.NULL else UOM.fromIdentifier(reader.getValue)
   }
 }

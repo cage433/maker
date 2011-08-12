@@ -4,7 +4,7 @@ import system.Patch
 import starling.db.DBWriter
 import starling.richdb.RichDB
 import starling.utils.StarlingXStream
-import starling.utils.sql.AnObject
+import starling.utils.sql.PersistAsBlob
 import starling.curves.{SpreadStdDevSurfaceDataType}
 import xstream.{Fields, Reader, MapBasedConverter}
 import starling.daterange.{TenorType, Spread}
@@ -43,7 +43,7 @@ class Patch77_RemoveTenorFromPeriod extends Patch {
             val data = rs.getString("data")
             println(data)
             val fixed = convertingXStream.fromXML(data)
-            rs.update(Map("data" -> AnObject(fixed)))
+            rs.update(Map("data" -> PersistAsBlob(fixed)))
           }
         }
       }

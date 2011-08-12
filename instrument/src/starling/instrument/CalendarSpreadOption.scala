@@ -5,7 +5,6 @@ import starling.richdb.RichInstrumentResultSetRow
 import cern.jet.random.Normal
 import starling.utils.ImplicitConversions._
 import starling.models._
-import starling.quantity.{UOM, Quantity}
 import starling.quantity.Quantity._
 import starling.curves.Environment
 import starling.daterange._
@@ -17,6 +16,9 @@ import starling.daterange.SpreadPeriod
 import starling.curves.EnvironmentDifferentiable
 import starling.curves.VolKey
 import starling.curves.SpreadAtmStdDevAtomicDatumKey
+import starling.quantity.{NamedQuantity, UOM, Quantity}
+import starling.quantity.SimpleNamedQuantity
+import starling.quantity.FunctionNamedQuantity
 
 case class CalendarSpreadOption(
         market: FuturesMarket,
@@ -24,10 +26,24 @@ case class CalendarSpreadOption(
         strike: Quantity,
         volume: Quantity,
         callPut: CallOrPut
-        ) extends Tradeable with MultiLeg {
+        ) extends SpreadOption(market, period, strike, volume, callPut) with MultiLeg {
   assert(!spreads.isEmpty, "Period is not a valid CSO period: " + period)
 
-  def spreads = period match {
+  override def expiryDay = Some(market.csoOptionExpiry(spreads.last))
+
+  def valuationCCY = strike.numeratorUOM
+
+  def explanation(env : Environment) : NamedQuantity = {
+    val subExplanations : List[NamedQuantity] = childCSOs.map{cso =>
+      val csoExp = cso.explanation(env)
+      SimpleNamedQuantity(cso.period.toString + " value", csoExp)
+    }
+    FunctionNamedQuantity("Sum", subExplanations, subExplanations.map(_.quantity).sum)
+  }
+
+  private def childCSOs = spreads.map{s => SingleCalendarSpreadOption(market, market.csoOptionExpiry(s), s.first, s.last, strike, volume, callPut)}
+
+  def spreads: List[Spread[Month]] = period match {
     case SpreadPeriod(front: Month, back: Month) => List(Spread(front, back))
     case StripPeriod(first: SpreadPeriod, last: SpreadPeriod) => {
       Strip(first, last).toList.map {
@@ -40,18 +56,8 @@ case class CalendarSpreadOption(
     case _ => throw new Exception("Invalid period for CSO: " + period)
   }
 
-  override def expiryDay = Some(market.csoOptionExpiry(spreads.last))
-
-  def isLive(dayAndTime: DayAndTime) = dayAndTime < expiryDay.get.endOfDay
-
-  def tradeableDetails = Map("Market" -> market, "Period" -> period, "Strike" -> strike, "Quantity" -> volume, "CallPut" -> callPut)
-
   def asUtpPortfolio(tradeDay:Day) = UTP_Portfolio({
-    spreads.map {
-      s => {
-        (SingleCalendarSpreadOption(market, market.csoOptionExpiry(s), s.first, s.last, strike, volume.copy(value = 1.0), callPut) -> volume.value)
-      }
-    }.toMap
+    childCSOs.map{cso => cso.copy(volume = cso.volume.copy(value = 1.0)) -> cso.volume.value}.toMap
   })
 
   def legs = spreads.map(p => CalendarSpreadOption(market, p, strike, volume, callPut))
@@ -65,17 +71,19 @@ case class CalendarSpreadOption(
 
 case class SingleCalendarSpreadOption(
         market: FuturesMarket,
-        exerciseDay: Day,
+        override val exerciseDay: Day,
         firstMonth: Month,
         secondMonth: Month,
         strike: Quantity,
         volume: Quantity,
         callPut: CallOrPut
-        ) extends UTP {
+        ) extends SingleSpreadOption(market, exerciseDay, Spread(firstMonth, secondMonth), strike, volume, callPut) {
   def instrumentType = CalendarSpreadOption
 
-  def details = Map("Market" -> market, "Period" -> Spread(firstMonth, secondMonth), "Strike" -> strike, "CallPut" -> callPut)
-
+  def explanation(env : Environment) : NamedQuantity = {
+    val (_, (undiscountedCSOPrice, spreadPrice, stdDev, discount, time)) = priceWithExplanationDetails(env.withNaming())
+    FunctionNamedQuantity("CSO-" + callPut, List(spreadPrice, stdDev, time, strike.named("K")), undiscountedCSOPrice, true) * volume.named("Volume") * discount
+  }
   val valuationCCY = strike.uom * market.uom
 
   override def forwardState(env: Environment, dayAndTime: DayAndTime) = {
@@ -88,7 +96,7 @@ case class SingleCalendarSpreadOption(
     } else {
       val exerciseDayEnv = env.forwardState(exerciseDay.endOfDay)
       val callPutSign = callPut match {case Call => 1.0; case Put => -1.0}
-      val spread = exerciseDayEnv.spreadPrice(market, firstMonth, secondMonth)
+      val spread = exerciseDayEnv.spreadPrice(market, period)
       callPut.payoff(spread, strike) match {
         case Some(p) => new FuturesCalendarSpread(market, firstMonth, secondMonth, strike, volume * callPutSign)
         case None => this
@@ -98,25 +106,11 @@ case class SingleCalendarSpreadOption(
 
   def periods = List(firstMonth, secondMonth)
 
-  def isLive(dayAndTime: DayAndTime) = dayAndTime < exerciseDay.endOfDay
-
-  def assets(env: Environment) = {
-    if (isLive(env.marketDay)) {
-      val marketDay = env.marketDay.day
-      val mtm = price(env) * volume
-      Assets(Asset.estimatedCash(env.marketDay.day, mtm, mtm))
-    } else {
-      Assets()
-    }
-  }
-
-  def daysForPositionReport(marketDay : DayAndTime) : Seq[Day] = List(exerciseDay)
-
   def * (scale : Double) = copy(volume = volume * scale)
 
   override def priceAndVolKeys(marketDay : DayAndTime) = {
     var (pk, vk) = super.priceAndVolKeys(marketDay)
-    pk = if (pk.isEmpty) pk else Set(FuturesSpreadPrice(market, firstMonth, secondMonth))
+    pk = if (pk.isEmpty) pk else Set(FuturesSpreadPrice(market, period))
     (pk, vk)
   }
 
@@ -125,24 +119,31 @@ case class SingleCalendarSpreadOption(
   override def atomicKeyCachingUTP : UTP = copy(strike = 1.0(market.priceUOM))
   override def interpolatedVol(env : Environment, volKey : EnvironmentDifferentiable with VolKey) : Quantity = {
     volKey match {
-      case SpreadAtmStdDevAtomicDatumKey(`market`, Spread(`firstMonth`, `secondMonth`), _) => env.spreadStdDev(market, Spread(firstMonth, secondMonth), exerciseDay, strike)
+      case SpreadAtmStdDevAtomicDatumKey(`market`, SpreadPeriod(`firstMonth`, `secondMonth`), _) => env.spreadStdDev(market, Spread(firstMonth, secondMonth), exerciseDay, strike)
       case _ => throw new Exception("Unexpected vol key " + volKey)
     }
   }
 
-  def price(env : Environment) = {
-    val marketDay = env.marketDay.day
-    val T = exerciseDay.endOfDay.timeSince(env.marketDay)
-    val S = env.spreadPrice(market, firstMonth, secondMonth)
-    val K = strike
-    val discount = env.discount(valuationCCY, exerciseDay)
-    if (T == 0){
-      callPut.intrinsicPrice(S, K) * discount
+  def price(env : Environment) = priceWithExplanationDetails(env)._1
+
+  private def priceWithExplanationDetails(env : Environment) : (Quantity, (NamedQuantity, NamedQuantity, NamedQuantity, NamedQuantity, NamedQuantity)) = {
+    if (isLive(env.marketDay)) {
+      val marketDay = env.marketDay.day
+      val T = exerciseDay.endOfDay.timeSince(env.marketDay)
+      val S = env.spreadPrice(market, period)
+      val K = strike
+      val discount = env.discount(valuationCCY, exerciseDay)
+      val (undiscountedPrice,  stdDev) = if (T == 0) {
+        (callPut.intrinsicPrice(S, K), Quantity(0.0, market.priceUOM))
+      } else {
+        val annualisedStdDev = env.spreadStdDev(market, Spread(firstMonth, secondMonth), exerciseDay, strike)
+        val undiscountedPriceValue = new SpreadOptionCalculations(callPut, S.value, K.value, annualisedStdDev.checkedValue(market.priceUOM), 0.0, T).undiscountedPrice
+        val undiscountedPrice = Quantity(undiscountedPriceValue, market.priceUOM)
+        (undiscountedPrice, annualisedStdDev)
+      }
+      (undiscountedPrice * discount, (undiscountedPrice.named("Undiscounted CSO price"), S.named("Spread Price"), stdDev.named("Std Dev"), discount.named("Discount"), new Quantity(T).named("T")))
     } else {
-      val annualisedStdDev = env.spreadStdDev(market, Spread(firstMonth, secondMonth), exerciseDay, strike)
-      val undiscountedPriceValue = new SpreadOptionCalculations(callPut, S.value, K.value, annualisedStdDev.checkedValue(market.priceUOM), 0.0, T).undiscountedPrice
-      val undiscountedPrice = Quantity(undiscountedPriceValue, market.priceUOM)
-      undiscountedPrice * discount 
+      (0.0 (market.priceUOM), (NamedQuantity.NULL, NamedQuantity.NULL, NamedQuantity.NULL, NamedQuantity.NULL, NamedQuantity.NULL))
     }
   }
 }

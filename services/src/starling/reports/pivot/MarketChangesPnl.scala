@@ -123,7 +123,7 @@ class MarketChangesPnl(d1: AtomicEnvironment, d2: AtomicEnvironment, utps : Map[
     (envDiffs, curveKeys)
   }
 
-  override def combine(rows : List[MarketChangesPnlRow], reportSpecificChoices : ReportSpecificChoices) = {
+  override def combine(rows : List[MarketChangesPnlRow], reportSpecificChoices : ReportSpecificChoices): List[MarketChangesPnlRow] = {
 //    require(!reportSpecificChoices.getOrElse(futuresAsSwaps_str, false), "Can't do day change report with futures as swaps")
 //    require(!reportSpecificChoices.getOrElse(futuresAsSpreads_str, false), "Can't do day change report with futures as spreads")
 
@@ -134,7 +134,7 @@ class MarketChangesPnl(d1: AtomicEnvironment, d2: AtomicEnvironment, utps : Map[
     val env = if (useSkew) d1EnvFwd else d1EnvFwd.setShiftsCanBeIgnored(true)
     val riskInstruments = new PivotUTPRestructurer(env, reportSpecificChoices, spreadMonthsByStrategyAndMarket, swapIndices).apply(rows.map{r => UTPWithIdentifier(r.utpID, r.utp * r.scale)})
 
-    val combinedRows: List[MarketChangesPnlRow] = riskInstruments.mpFlatMap{
+    val combinedRows: List[MarketChangesPnlRow] = riskInstruments.mpFlatMap {
       case UTPWithIdentifier(utpID, utp) => 
         val (unitUTP, volume) = utp.asUnitUTP
 
@@ -156,7 +156,7 @@ class MarketChangesPnl(d1: AtomicEnvironment, d2: AtomicEnvironment, utps : Map[
             riskCommodity = riskCommodity,
             marketName = marketName, 
             period = period, 
-            pnl = pnl, 
+            pnl = pnl,
             priceChange = priceChange,
             d1Price = d1Price,
             volChange = volChange,
@@ -210,6 +210,7 @@ class MarketChangesPnl(d1: AtomicEnvironment, d2: AtomicEnvironment, utps : Map[
     }
     combinedRows
   }
+
   override def reportSpecificOptions = {
     super.reportSpecificOptions :+ 
       (atmVega_str -> List(false, true))
@@ -266,7 +267,7 @@ case class TimeChangesPnlRow(
   def scaledPnl = pnl * scale
 }
 
-class TimeChangesPnl(d1:Environment, forwardDay:Day, utps : Map[UTPIdentifier, UTP]) extends RiskFactorSplittingPivotReport[TimeChangesPnlRow] {
+class TimeChangesPnl(d1:Environment, forwardDayAndTime:DayAndTime, utps : Map[UTPIdentifier, UTP]) extends RiskFactorSplittingPivotReport[TimeChangesPnlRow] {
 
   val spreadMonthsByStrategyAndMarket = PivotReport.spreadMonthsByStrategyAndMarket(utps)
   val swapIndices = PivotReport.swapIndicesByStrategy(utps)
@@ -296,7 +297,8 @@ class TimeChangesPnl(d1:Environment, forwardDay:Day, utps : Map[UTPIdentifier, U
     val changeOnlyTimeAndDiscounts = !atmVega
 
     import starling.concurrent.MP._
-    val (_, d1Fwd) = starling.instrument.Greeks.envFor(d1, forwardDay.atTimeOfDay(TimeOfDay.EndOfDay), changeOnlyTimeAndDiscounts)
+    val (_, d1Fwd) = starling.instrument.Greeks.envFor(d1, forwardDayAndTime, changeOnlyTimeAndDiscounts)
+    val (_, d1FwdNoKuduHack) = starling.instrument.Greeks.envFor(d1, forwardDayAndTime, changeOnlyTimeAndDiscounts = false)
 
     val combinedRows = new PivotUTPRestructurer(d1Fwd, reportSpecificChoices, spreadMonthsByStrategyAndMarket, swapIndices).transformUTPs(rows).mpFlatMap{
       case UTPWithIdentifier(utpID, utp) => {
@@ -307,9 +309,15 @@ class TimeChangesPnl(d1:Environment, forwardDay:Day, utps : Map[UTPIdentifier, U
         val totalChange = d1FwdValue - d1Value //eg. 0 - value of the futures option
         val theta = d1FwdValueFwdInstrument - d1Value  //eg. value of the future exercised into - value of the futures option
         val expiry = totalChange - theta
+
+        val d1FwdValueNoHack = PivotQuantity.calcOrCatch(unitUTP.cachedMtm(d1FwdNoKuduHack, UOM.USD))
+
+        val changeBecauseOfHack = d1FwdValueNoHack - d1FwdValue
+
         List(
           TimeChangesPnlRow(utpID, utp, "Theta DC", theta),
-          TimeChangesPnlRow(utpID, utp, "Expiry DC", expiry)
+          TimeChangesPnlRow(utpID, utp, "Expiry DC", expiry),
+          TimeChangesPnlRow(utpID, utp, "Theta DC (Vol hack)", changeBecauseOfHack)
         ).filterNot(_.pnl.isAlmostZero).map (_ * volume)
       }
     }

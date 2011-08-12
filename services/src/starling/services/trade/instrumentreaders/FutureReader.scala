@@ -12,7 +12,7 @@ class FutureReader extends ExcelInstrumentReader {
     val volume = row.volume
 
     row.period match {
-      case DateRangePeriod(period: Month) if row.isCrackMarket => {
+      case DateRangePeriod(period: Month) if row.isSpreadMarket => {
         val market = row.futuresSpreadMarket
         row.prices match {
           case firstPrice :: lastPrice :: Nil => new FuturesCommoditySpread(market, period, firstPrice, lastPrice, volume)
@@ -20,7 +20,7 @@ class FutureReader extends ExcelInstrumentReader {
           case _ => throw new ExcelInstrumentReaderException("Invalid prices specified for Future: " + row.prices)
         }
       }
-      case DateRangePeriod(period) if row.isCrackMarket => {
+      case DateRangePeriod(period) if row.isSpreadMarket => {
         throw new ExcelInstrumentReaderException("Invalid period for a crack market: " + period)
       }
       case DateRangePeriod(period) => {
