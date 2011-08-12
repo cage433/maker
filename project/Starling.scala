@@ -88,10 +88,13 @@ object StarlingBuild extends Build{
   lazy val standardSettings = Defaults.defaultSettings ++ Seq(
     unmanagedSourceDirectories in Compile <+= baseDirectory(_/"src"),
     unmanagedSourceDirectories in Test <+= baseDirectory(_/"tests"),
-//    unmanagedResourceDirectories in Test <+= baseDirectory(_/"test-resources"),
-    unmanagedResourceDirectories in Test <+= baseDirectory(_/"resources"),
+    unmanagedResourceDirectories in Test <+= baseDirectory(_/"test-resources"),
+    unmanagedResourceDirectories in Compile <+= baseDirectory(_/"resources"),
     unmanagedBase <<= baseDirectory( (base: File) => base /"lib"),
     unmanagedClasspath in Test <+= (baseDirectory) map { bd => Attributed.blank(bd / "resources") },
+    //ivyXML := <exclude module="jcl-over-slf4j"/>, 
+    ivyXML := <dependencies><exclude artifact="jcl-over-slf4j"/></dependencies>, 
+//    parallelExecution in Test := false,
     scalaVersion := "2.9.0-1"
   )
 
@@ -147,11 +150,12 @@ object StarlingBuild extends Build{
     settings = standardSettings ++ Seq(libraryDependencies ++= loopyxlDependencies)
   ) dependsOn(bouncyrmi, auth)
 
+val testDependency = "compile;test->test"
   lazy val maths = Project(
     "maths", 
     file("./maths"),
-    settings = standardSettings ++ projectTestClasspathSetting("daterange")
-  ) dependsOn(quantity, daterange)
+    settings = standardSettings
+  ) dependsOn(quantity % testDependency, daterange % testDependency)
 
   lazy val pivot = Project(
     "pivot", 
@@ -174,14 +178,14 @@ object StarlingBuild extends Build{
   lazy val curves = Project(
     "curves", 
     file("./curves"),
-    settings = standardSettings ++ Seq(libraryDependencies ++= testDependencies) ++ projectTestClasspathSetting("daterange")
-  ) dependsOn(maths, pivotUtils,guiapi)
+    settings = standardSettings ++ Seq(libraryDependencies ++= testDependencies) 
+  ) dependsOn(utils % "test->test", daterange % "test->test", maths, pivotUtils, guiapi) 
 
   lazy val instrument = Project(
     "instrument", 
     file("./instrument"),
-    settings = standardSettings ++ Seq(libraryDependencies ++= testDependencies) ++ projectTestClasspathSetting("curves") ++ projectTestClasspathSetting("daterange")
-  ) dependsOn(curves)
+    settings = standardSettings ++ Seq(libraryDependencies ++= testDependencies) 
+  ) dependsOn(curves % "compile;test->test", daterange % "test->test")
 
   lazy val gui = Project(
     "gui", 
@@ -232,13 +236,13 @@ object StarlingBuild extends Build{
     "databases", 
     file("./databases"),
     settings = standardSettings ++ Seq(libraryDependencies ++= databasesDependencies ++ testDependencies)
-  ) dependsOn(VaR, pivot, guiapi, concurrent, auth, starlingApi)
+  ) dependsOn(curves % "test->test", VaR , pivot , guiapi , concurrent , auth , starlingApi )
 
   lazy val titan = Project(
     "titan", 
     file("./titan"),
     settings = standardSettings 
-  ) dependsOn(titanModel, databases)
+  ) dependsOn(curves % "test->test", titanModel, databases)
 
   lazy val services = Project(
     "services", 
@@ -246,7 +250,7 @@ object StarlingBuild extends Build{
     settings = standardSettings ++ Seq(
       libraryDependencies ++= servicesDependencies ++ testDependencies
     )
-  ) dependsOn(concurrent, loopyxl, titan)
+  ) dependsOn(curves % "test->test", loopyxl % "test->test", bouncyrmi, concurrent, loopyxl, titan)
 
   lazy val devLauncher = Project(
     "devLauncher", 
