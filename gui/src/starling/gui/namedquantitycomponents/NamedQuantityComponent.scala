@@ -31,6 +31,9 @@ object NamedQuantityComponentHelper {
       font = PivotCellRenderer.MonoSpacedFont
       text = text0
       tooltip = tooltip0
+      if (text0.startsWith("(")) {
+        foreground = Color.RED
+      }
     }
   }
 
@@ -117,6 +120,9 @@ class ExpandCollapsePanel(namedQuantity:NamedQuantity, fi:ExtraFormatInfo) exten
 class QuantityPanel(quantity:Quantity, fi:ExtraFormatInfo) extends Label with UpdateableNamedQuantityComponent {
   text = quantityText(quantity, fi)
   font = PivotCellRenderer.MonoSpacedFont
+  if (text.startsWith("(")) {
+    foreground = Color.RED
+  }
 
   def updateExtraInfo(newFI:ExtraFormatInfo) {
     text = quantityText(quantity, newFI)
