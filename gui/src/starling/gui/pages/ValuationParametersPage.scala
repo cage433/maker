@@ -13,7 +13,7 @@ import starling.pivot.PivotFormatter
 
 case class ValuationParametersPage(tradeID:TradeIDLabel, tradeRow:List[Any], fieldDetailsGroups:List[FieldDetailsGroupLabel],
                                    columns:List[SColumn], reportParameters:ReportParameters) extends Page {
-  def text = "Valuation Parameters"
+  def text = "Valuation Parameters for " + tradeID.id
   def icon = StarlingIcons.im("/icons/16x16_valuation_parameters.png")
   def build(reader:PageBuildingContext) = {
     val timestampToUse = reportParameters.tradeSelectionWithTimestamp.deskAndTimestamp match {

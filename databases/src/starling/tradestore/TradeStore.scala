@@ -432,7 +432,7 @@ abstract class TradeStore(db: RichDB, broadcaster:Broadcaster, tradeSystem: Trad
         }
         def unfilteredData(pfs: PivotFieldsState) = mapList
       }
-      val measures = ds.fieldDetails.filter(fd => (fd.field.name != "Trade ID") && (fd.field.name != "Trade Count" && fd.field.name != "Version"))
+      val measures = ds.fieldDetails.filter(fd => (fd.field.name != "Trade Count" && fd.field.name != "Version"))
       val pivotTable = PivotTableModel.createPivotTableData(ds, PivotFieldsState(rowFields=List(PField("Version")), dataFields=measures.map(_.field)))
       (new PivotTableConverter(OtherLayoutInfo(), pivotTable).toSTable("Trade History"),
               fieldDetailsGroups0, costsVersions.toList)
@@ -607,7 +607,7 @@ abstract class TradeStore(db: RichDB, broadcaster:Broadcaster, tradeSystem: Trad
       FieldDetailsGroup("Trade Fields", JustTradeFields.fieldDetails),
       FieldDetailsGroup("Trade System Fields", tradeAttributeFieldDetails),
       FieldDetailsGroup("Instrument Fields", TradeableFields.fieldDetails.filter(fd=>allFieldNames.contains(fd.field.name)))
-    )
+    ).filter(_.fields.nonEmpty)
   }
 
   def latestTimestamp() = {
