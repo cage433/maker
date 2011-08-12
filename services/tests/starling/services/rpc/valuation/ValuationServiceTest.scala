@@ -45,10 +45,10 @@ class ValuationServiceTest extends StarlingTest {
               case UpdatedEventVerb => {
                 updatedTradeValuationList = tradeIds
               }
-              case CreatedEventVerb => {
+              case NewEventVerb => {
                 Log.info("new event received")
               }
-              case CancelledEventVerb | RemovedEventVerb => {
+              case CancelEventVerb | RemovedEventVerb => {
                 Log.info("cancel / remove event received")
               }
             }

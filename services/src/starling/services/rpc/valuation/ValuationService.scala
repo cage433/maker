@@ -437,11 +437,11 @@ class ValuationService(
 
               Log.info("Trades revalued for received event using snapshot %s number of changed valuations %d".format(snapshotIDString, changedIDs.size))
             }
-            case CreatedEventVerb => {
+            case NewEventVerb => {
               tradeIds.foreach(titanTradeCache.addTrade)
               Log.info("New event received for %s".format(tradeIds))
             }
-            case CancelledEventVerb | RemovedEventVerb => {
+            case CancelEventVerb | RemovedEventVerb => {
               tradeIds.foreach(titanTradeCache.removeTrade)
               Log.info("Cancelled / deleted event received for %s".format(tradeIds))
             }
