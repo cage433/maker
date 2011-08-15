@@ -3,7 +3,6 @@ package starling.gui.namedquantitycomponents
 import starling.gui.GuiUtils._
 import swing.Swing._
 import starling.quantity._
-import starling.pivot.view.swing.{PivotCellRenderer, MigPanel}
 import javax.swing.border.AbstractBorder
 import swing.Label
 import java.awt.{Color, Cursor, BasicStroke, Graphics, Insets, Graphics2D, Dimension}
@@ -12,6 +11,9 @@ import starling.pivot.{QuantityLabelPivotFormatter, PivotFormatter, ExtraFormatI
 import collection.mutable.ListBuffer
 import javax.swing.JTable
 import swing.event.MousePressed
+import org.jdesktop.swingx.JXTable
+import starling.pivot.view.swing.{PivotJTable, PivotCellRenderer, MigPanel}
+import org.jdesktop.swingx.decorator.{HighlightPredicate, ColorHighlighter}
 
 object NamedQuantityComponentHelper {
   def panel(namedQuantity:NamedQuantity, fi:ExtraFormatInfo) = {
@@ -175,10 +177,21 @@ class VerticalFunctionNamedQuantityPanel(func:FunctionNamedQuantity, fi:ExtraFor
         def getValueAt(rowIndex:Int, columnIndex:Int) = tableData(rowIndex)(columnIndex)
       }
     }
-    val jTable = new JTable(generateTableModel(table)) with UpdateableNamedQuantityComponent {
+
+    val negativeHighlighter = new ColorHighlighter(new HighlightPredicate {
+      def isHighlighted(renderer:java.awt.Component, adapter:org.jdesktop.swingx.decorator.ComponentAdapter) = {
+        adapter.getValue.toString.startsWith("(")
+      }
+    })
+    negativeHighlighter.setForeground(Color.RED)
+    negativeHighlighter.setSelectedForeground(Color.RED)
+
+    val jTable = new JXTable(generateTableModel(table)) with UpdateableNamedQuantityComponent {
       setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS)
       setBorder(MatteBorder(1, 1, 0, 0, TableGridColour))
       setCellSelectionEnabled(true)
+      setRowHeight(PivotJTable.RowHeight)
+      addHighlighter(negativeHighlighter)
 
       def updateExtraInfo(newFI:ExtraFormatInfo) {
         val table0 = func.parameters.map(row(_, newFI))
