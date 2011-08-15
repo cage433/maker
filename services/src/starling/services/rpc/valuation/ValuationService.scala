@@ -43,7 +43,7 @@ case class DefaultTitanTradeCache(props : Props) extends TitanTradeCache with Lo
   protected var tradeMap: Map[String, EDMPhysicalTrade] = Map[String, EDMPhysicalTrade]()
   protected var quotaIDToTradeIDMap: Map[String, String] = Map[String, String]()
 
-  private val titanTradesService = new DefaultTitanServices(props).titanGetEdmTradesService
+  private lazy val titanTradesService = new DefaultTitanServices(props).titanGetEdmTradesService
   private def getAll() = try {
       titanTradesService.getAll()
   } catch {
@@ -342,7 +342,7 @@ class DefaultEnvironmentProvider(marketDataStore : MarketDataStore) extends Envi
     updateSnapshotCache()
     snapshotNameToIDCache.values.filter {
       starlingSnapshotID =>
-        starlingSnapshotID.marketDataSelection.pricingGroup == Some(PricingGroup.Metals) && (observationDay.isEmpty || (starlingSnapshotID.observationDay.toJodaLocalDate == observationDay.get))
+        starlingSnapshotID.marketDataSelection.pricingGroup == Some(PricingGroup.Metals) && (observationDay.isEmpty || (starlingSnapshotID.observationDay == observationDay.get))
     }.toList
   }
 }
@@ -372,6 +372,7 @@ class MockEnvironmentProvider() extends EnvironmentProvider {
   def snapshotNameToID(name : String) : SnapshotID = throw new UnsupportedOperationException
 }
 
+//class ValuationServiceStub extends ValuationServicer()
 
 /**
  * Valuation service implementations

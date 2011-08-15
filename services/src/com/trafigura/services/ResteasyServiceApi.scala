@@ -1,6 +1,5 @@
 package com.trafigura.services
 
-import org.jboss.resteasy.spi.ResteasyProviderFactory
 import starling.services.rpc.{JsonSerializerMessageBodyWriter, JsonDeserializerMessageBodyReader}
 import org.jboss.resteasy.client.core.ClientErrorInterceptor
 import org.jboss.resteasy.client.{ClientResponse, ProxyFactory}
@@ -10,6 +9,15 @@ import starling.utils.ClosureUtil._
 import xml._
 import javax.xml.parsers.SAXParserFactory
 import java.lang.StackTraceElement
+import org.joda.time.LocalDate
+import org.joda.time.format.DateTimeFormat
+import javax.ws.rs.ext.ExceptionMapper
+import scala.collection.JavaConversions._
+import org.jboss.resteasy.spi.{BadRequestException, StringConverter, ResteasyProviderFactory}
+import javax.ws.rs.core.Response.Status
+import javax.ws.rs.core.{MediaType, Response}
+import java.lang.reflect.InvocationTargetException
+
 
 case class ResteasyServiceApi(baseUri: String) extends ServiceApi {
   ResteasyServiceApi.registerProviderInstance
@@ -23,6 +31,31 @@ object ResteasyServiceApi {
     providerFactory.registerProviderInstance(new JsonDeserializerMessageBodyReader)
     providerFactory.registerProviderInstance(new JsonSerializerMessageBodyWriter)
     providerFactory.addClientErrorInterceptor(RethrowDotNetServerErrorsClientErrorInterceptor)
+    providerFactory.registerProviderInstance(LocalDateConverter)
+    providerFactory.addExceptionMapper(BadRequestExceptionMapper)
+  }
+
+  class BaseExceptionMapper[T <: Throwable](status: Status = Status.BAD_REQUEST) extends ExceptionMapper[T] {
+    def toResponse(throwable: T) = response(getCause(throwable.getCause))
+
+    private def response(throwable: Throwable): Response = {
+      Response.status(status).entity(
+        <html>
+          <head><title>{throwable.getMessage}</title></head>
+          <body><div>{throwable.stackTraceAsString}</div></body>
+        </html>.toString()).`type`(MediaType.TEXT_HTML_TYPE).build
+    }
+
+    def getCause(throwable: Throwable): Throwable = {
+      if (throwable.isInstanceOf[InvocationTargetException]) getCause(throwable.getCause) else throwable
+    }
+   }
+
+  object BadRequestExceptionMapper extends BaseExceptionMapper[BadRequestException] with ExceptionMapper[BadRequestException]
+
+  object LocalDateConverter extends StringConverter[LocalDate] {
+    def fromString(text: String) = DateTimeFormat.forPattern("yyyy'-'MM'-'dd").parseDateTime(text).toLocalDate
+    def toString(value: LocalDate) = value.toString
   }
 
   object RethrowDotNetServerErrorsClientErrorInterceptor extends ClientErrorInterceptor {

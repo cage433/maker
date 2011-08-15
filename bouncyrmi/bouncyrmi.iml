@@ -58,11 +58,11 @@
     <orderEntry type="module-library" exported="">
       <library>
         <CLASSES>
-          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/compile/netty-3.2.3.Final.jar!/" />
+          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/compile/netty-3.2.5.Final.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES>
-          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/compile/netty-3.2.3.Final-sources.jar!/" />
+          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/compile/netty-3.2.5.Final-sources.jar!/" />
         </SOURCES>
       </library>
     </orderEntry>

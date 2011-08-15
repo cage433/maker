@@ -9,6 +9,8 @@ import java.util.concurrent.atomic.AtomicInteger
 import starling.utils.{ClosureUtil, ImplicitConversions, Log}
 import ImplicitConversions._
 import ClosureUtil._
+import scalaz._
+import Scalaz._
 
 
 class InvocationHandler(id: AtomicInteger, methodSource: MethodSource, authenticatedUser: => Closeable)

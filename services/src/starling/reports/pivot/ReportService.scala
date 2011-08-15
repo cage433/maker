@@ -180,9 +180,7 @@ class PivotReportRunner(reportContextBuilder:ReportContextBuilder) {
 /**
  * Joins up trades and market data to create reports
  */
-class ReportService(
-    reportContextBuilder:ReportContextBuilder,
-    tradeStores: TradeStores) {
+class ReportService(reportContextBuilder:ReportContextBuilder, tradeStores: TradeStores) {
 
   val pivotReportRunner = new PivotReportRunner(reportContextBuilder )
 

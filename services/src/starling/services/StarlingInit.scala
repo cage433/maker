@@ -36,15 +36,14 @@ import starling.rmi._
 import starling.calendar._
 import com.trafigura.services.valuation.{ValuationServiceApi, TradeManagementCacheNotReady}
 import org.jboss.netty.channel.{ChannelLocal, Channel}
-import com.trafigura.services.marketdata.MarketDataServiceApi
 import starling.curves.{StarlingMarketLookup, FwdCurveAutoImport, CurveViewer}
 import starling.services.rpc.refdata._
 import starling.services.rabbit._
 import collection.immutable.Map
 import starling.titan.{TitanSystemOfRecord, TitanTradeStore}
 import com.trafigura.services.trinity.TrinityService
-import com.trafigura.services.ResteasyServiceApi
-
+import com.trafigura.services.marketdata.{ExampleService, MarketDataServiceApi}
+import com.trafigura.services.{WebServiceFactory, DocumentationService, ResteasyServiceApi}
 
 class StarlingInit( val props: Props,
                     dbMigration: Boolean = true,
@@ -68,7 +67,7 @@ class StarlingInit( val props: Props,
     startRabbit              → List(titanRabbitEventServices),
     startXLLoop              → List(excelLoopReceiver, loopyXLReceiver),
     startRMI                 → List(rmiServerForTitan.toStoppable, rmiServerForGUI.toStoppable),
-    startHttp                → List(httpServer, regressionServer),//, webServiceServer),
+    startHttp                → List(httpServer, regressionServer, webServiceServer, trinityService),
     startStarlingJMX         → List(jmx),
     startEAIAutoImportThread → List(eaiAutoImport, fwdCurveAutoImport),
     true                     → List(scheduler, Stopable(stopF = ConnectionParams.shutdown _))
@@ -83,7 +82,7 @@ class StarlingInit( val props: Props,
   val name = props.ServerName()
   val ldapUserLookup = new LdapUserLookup with BouncyLdapUserLookup[User]
 
-  // basic DB connections
+  log.debug("Initializing basic DB connections...")
   val starlingDB = DB(props.StarlingDatabase())
 //  starlingDB.setReadCommittedSnapshot
   val trinityDB = DB(props.TrinityDatabase())
@@ -92,7 +91,7 @@ class StarlingInit( val props: Props,
   val eaiSqlServerDB = DB(props.EAIReplica())
   val eaiStarlingSqlServerDB = DB(props.EAIStarlingSqlServer())
 
-  // Things that need access to a DB like portfolios, holidays, markets, indexes...
+  log.debug("Initializing: Things that need access to a DB like portfolios, holidays, markets, indexes...")
   val holidayTables = new Holidays(eaiSqlServerDB)
   HolidayTablesFactory.registerHolidayTablesImpl(holidayTables)
   val businessCalendars = new BusinessCalendars(holidayTables)
@@ -102,7 +101,7 @@ class StarlingInit( val props: Props,
   MarketProvider.registerImpl(marketLookup)
   val richResultSetRowFactory = new RichResultSetRowFactory
 
-  // Rich DB Connections. Which use things like market factories for smarter deserialization
+  log.debug("Initializing: Rich DB Connections. Which use things like market factories for smarter deserialization...")
   val starlingRichDB = new RichDB(props.StarlingDatabase(), richResultSetRowFactory)
   val trintityRichDB = new RichDB(props.TrinityDatabase(), richResultSetRowFactory)
   val softmarRichDB = new RichDB(props.SoftmarDatabase(), richResultSetRowFactory)
@@ -118,9 +117,10 @@ class StarlingInit( val props: Props,
 
   val mailSender = new JavaMailSenderImpl().update(_.setHost(props.SmtpServerHost()), _.setPort(props.SmtpServerPort()))
 
-  val trinityService = TrinityService(ResteasyServiceApi(props.TrinityServiceUrl()))
+  val trinityService = new TrinityService(ResteasyServiceApi(props.TrinityServiceUrl()))
 
   val titanRabbitEventServices = new DefaultTitanRabbitEventServices(props)
+  log.debug("After rabbit start")
 
   val broadcaster = new CompositeBroadcaster(
       true                                      → new RMIBroadcaster(rmiServerForGUI),
@@ -161,7 +161,7 @@ class StarlingInit( val props: Props,
 
   val userSettingsDatabase = new UserSettingsDatabase(starlingDB, broadcaster)
 
-  if (dbMigration) {
+  if (dbMigration) log.infoWithTime("DB Migration") {
     //Ensure the schema is up to date
     new PatchRunner(starlingRichDB, props.ReadonlyMode(), this).updateSchemaIfRequired
   }
@@ -200,7 +200,7 @@ class StarlingInit( val props: Props,
   val logisticsServices = new DefaultTitanLogisticsServices(props, Some(titanServices))
   val titanInventoryCache = new DefaultTitanLogisticsInventoryCache(props)
   val valuationService = new ValuationService(new DefaultEnvironmentProvider(marketDataStore), titanTradeCache, titanServices, logisticsServices, titanRabbitEventServices, titanInventoryCache)
-  val marketDataService = new MarketDataService(marketDataStore)
+  val marketDataService = new MarketDataService(marketDataStore, new DefaultEnvironmentProvider(marketDataStore))
 
   val titanSystemOfRecord = new TitanSystemOfRecord(titanTradeCache, titanServices, logisticsServices)
   val titanTradeImporter = new TradeImporter(titanSystemOfRecord, titanTradeStore)
@@ -217,10 +217,7 @@ class StarlingInit( val props: Props,
     refinedAssignmentTradeStore, refinedFixationTradeStore, titanTradeStore)
 
   val reportContextBuilder = new ReportContextBuilder(marketDataStore)
-  val reportService = new ReportService(
-    reportContextBuilder,
-    tradeStores
-  )
+  val reportService = new ReportService(reportContextBuilder,tradeStores)
 
   val hostname = try {
     InetAddress.getLocalHost.getHostName
@@ -288,10 +285,7 @@ class StarlingInit( val props: Props,
     ThreadNamingProxy.proxy(starlingServer, classOf[StarlingServer])
   )
 
-  /**
-   * start up public services for Titan components
-   */
-  println("Titan service port " + props.StarlingServiceRmiPort())
+  log.info("Initialize public services for Titan components, service port: " + props.StarlingServiceRmiPort)
   val nullHandler = new ServerAuthHandler[User](new NullAuthHandler(Some(User.Dev)), users, ldapUserLookup,
         user => broadcaster.broadcast(UserLoggedIn(user)), ChannelLoggedIn)
   val rmiServerForTitan : BouncyRMIServer[User] = new BouncyRMIServer(
@@ -328,12 +322,19 @@ class StarlingInit( val props: Props,
     val webXmlUrl = this.getClass.getResource("../../webapp/WEB-INF/web.xml").toExternalForm
 
     new HttpServer(props.HttpServicePort(), props.HttpServiceExternalUrl(), serverName, Some(webXmlUrl), Nil) {
-      override def start = log.infoF("HTTP web service external url = '%s', server name = '%s'" %
-        (props.HttpServiceExternalUrl(), serverName)) { super.start; }
+      override def start =
+        log.infoF("HTTP web service external url = '%s', server name = '%s'" % (props.HttpServiceExternalUrl(), serverName)) {
+          super.start; DocumentationService.registerInstances(webServices : _*)
+        }
     }
   }
 
+  lazy val webServices = List(marketDataService, valuationService, DocumentationService, ExampleService)
   lazy val regressionServer = new RegressionServer(props.RegressionPort(), reportServlet)
+}
+
+class StarlingWebServices extends WebServiceFactory {
+  override val services = Server.server.webServices
 }
 
 object StarlingInit{

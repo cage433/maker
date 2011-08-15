@@ -64,7 +64,7 @@ object Percentage {
     assert(q.uom == UOM.SCALAR, "Percentage cannot be constructed from quantity " + q)
     Percentage(q.value)
   }
-  val Regex = """(.*) %""".r
+  val Regex = """(.*) ?%""".r
 
   val Parse: Extractor[String, Percentage] = Extractor.from[String](text => text partialMatch {
     case Regex(value) => Percentage(value.toDouble)

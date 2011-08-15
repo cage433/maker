@@ -8,9 +8,13 @@ import com.trafigura.services._
 
 @Path("/Example")
 trait ExampleServiceApi extends DocumentedService {
-  @Path("ReferenceInterestRate/{source}")
+  @Path("ReferenceInterestRate/{source}") @Example("LIBOR")
   @GET @Produces(Array("application/json"))
-  def getReferenceInterestRate(@PathParam("source") @DefaultValue("LIBOR") source: ReferenceRateSource): ReferenceInterestRate
+  def getReferenceInterestRate(@PathParam("source") source: ReferenceRateSource): ReferenceInterestRate
+
+  @Path("ReferenceInterestRates/{source}")
+  @GET @Produces(Array("application/json")) @Example("JIBAR")
+  def getReferenceInterestRates(@PathParam("source") source: ReferenceRateSource): List[ReferenceInterestRate]
 
   @Path("ReferenceInterestRate/{source}")
   @POST @Consumes(Array("application/json")) @Produces(Array("application/json"))
@@ -25,12 +29,15 @@ trait ExampleServiceApi extends DocumentedService {
   def deleteReferenceInterestRate(@PathParam("source") source: ReferenceRateSource): Boolean
 }
 
-class ExampleService extends ExampleServiceApi {
+object ExampleService extends ExampleServiceApi {
   private val rates: HashMap[ReferenceRateSource, ReferenceInterestRate] = new HashMap
 
   def getReferenceInterestRate(source: ReferenceRateSource) = rates.getOrElseUpdate(source,
-    ReferenceInterestRate(TitanSerializableDate(Day.today.toLocalDate), source, NamedMaturity.ON,
+    ReferenceInterestRate(TitanSerializableDate(Day.today.toLocalDate), source, RelativeMaturity.get("1D"),
       TitanSerializableCurrency("GBP"), TitanSerializablePercentage(0.123)))
+
+  def getReferenceInterestRates(source: ReferenceRateSource) =
+    List(getReferenceInterestRate(source), getReferenceInterestRate(source))
 
   def setReferenceInterestRate(source: ReferenceRateSource, rate: ReferenceInterestRate) = {
     rates(source) = rate

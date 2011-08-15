@@ -194,6 +194,7 @@ trait MarketDataStore {
   def snapshots() : List[SnapshotID]
   def snapshotsByMarketDataSelection(): Map[MarketDataSelection, List[SnapshotIDLabel]]
   def snapshotFromID(snapshotID: Int): Option[SnapshotID]
+  def snapshotFromID(snapshotID: Option[Int]): Option[SnapshotID] = snapshotID.map(snapshotFromID(_)).flatOpt
 
   def sourceFor(marketDataSet: MarketDataSet): Option[MarketDataSource]
   def sourcesFor(pricingGroup: PricingGroup): List[MarketDataSource]

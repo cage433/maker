@@ -4,7 +4,7 @@ $(document).ready(function () {
     $('input[name=renderingStyle]').click(function () { renderer.show($(this).attr("id")) })
     $('#html').attr('checked', 'checked'); renderer.show("json")
     $('#service').each(function (index, service) {
-        $.getJSON("/Doc/Meta" + $(service).attr('href'))
+        $.getJSON("/RPC/Doc/Meta" + $(service).attr('href').prefixWith("/"))
             .success(function (serviceMetaData) {
                 $('#scalaTemplate').tmpl(serviceMetaData).appendTo('.scala')
                 $('#csTemplate').tmpl(serviceMetaData).appendTo('.cs')
@@ -31,8 +31,10 @@ var renderer = {
 }
 
 $.extend(String.prototype, {
+    prefixWith:    function(prefix)    { return this.startsWith(prefix) ? this.toString() : prefix + this.toString()                     },
     stripSuffix:   function(suffix)    { return this.endsWith(suffix) ? this.substring(0, this.length - suffix.length) : this.toString() },
-    stripPrefix:   function(prefix)    { return this.indexOf(prefix) == 0 ? this.substring(prefix.length) : this.toString()              },
+    stripPrefix:   function(prefix)    { return this.startsWith(prefix) ? this.substring(prefix.length) : this.toString()                },
+    startsWith:    function(searchFor) { return this.indexOf(searchFor) == 0                                                             },
     endsWith:      function(searchFor) { return this.lastIndexOf(searchFor) == (this.length - searchFor.length)                          },
     package:       function()          { return this.lastIndexOf(".") == -1 ? "" : this.substring(0, this.lastIndexOf("."))              },
     packageClause: function()          { return this.lastIndexOf(".") == -1 ? "" : "package " + this.package()                           },
@@ -79,9 +81,11 @@ function importsImpl(serviceType, methods, prefix, suffix) {
 }
 
 function Form(form) {
-    var action = document.location.href + "/" + form.attr("action")
+    var service = $("body").attr("href")
+    var root = document.location.pathname.substring(0, document.location.pathname.indexOf(service))
+    var action = document.location.href.replace($("body").attr("href"), "") + "/" + form.attr("action")
 
-    form.attr("action", action).prepend(action).append("<img style='display: none;' src='/Doc/Files/ajax-loader.gif'/><code/><p/>")
+    form.attr("action", action).prepend(action).append("<img style='display: none;' src='" + root + "/Doc/Files/ajax-loader.gif'/><code/><p/>")
 
     var formId  = "#" + form.attr("id")
     var inputs  = $(formId + " > input:text").autoGrowInput().trigger('keyup')
@@ -92,13 +96,14 @@ function Form(form) {
     function getJson() {
         spinner.show()
         var url = form.attr("action") + inputs.map(function (index, element) { return element.value }).get().join("/")
+//        console.log(url)
         $.getJSON(url).complete(function () { spinner.hide() }).success(showJson).error(showError)
 
         return false
     }
 
     function showJson(json) {
-        errors.hide(); inputs.removeClass("bad");
+        errors.hide().empty(); inputs.removeClass("bad");
         $(formId + " > code > code > input[type=checkbox][name=keep]").not(':checked').parent().remove()
         var newCode = $('<code style="display: none;"><input type="checkbox" name="keep" value="" />Keep<br/></code>')
         var rendering = $('#html').is(':checked') ? HTML.display(json) : PRETTY.display(json)
@@ -106,9 +111,23 @@ function Form(form) {
     }
 
     function showError(detail) {
-        var responseText = $($.parseXML(detail.responseText)).find("div")
-        responseText.find("p").css("display", "block").css("white-space", "pre")
-        code.hide(); inputs.addClass("bad"); errors.hide().empty().append(responseText).fadeIn("fast")
+//        console.log("showError.detail: ", detail)
+        var responseText = errorText(detail)
+//        console.log("showError.responseText: ", responseText)
+        $(formId + " > code > code > input[type=checkbox][name=keep]").not(':checked').parent().remove()
+        inputs.addClass("bad"); errors.hide().empty().append(responseText).fadeIn("fast")
+        errors.append(detail.responseText)
+//        console.log("showError.done")
+    }
+
+    function errorText(detail) {
+        try {
+            var responseText = $($.parseXML(detail.responseText)).find("div")
+            responseText.find("p").css("display", "block").css("white-space", "pre")
+            return responseText
+        } catch (err) {
+            return detail.responseText
+        }
     }
 
     return {

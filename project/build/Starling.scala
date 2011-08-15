@@ -256,7 +256,7 @@ class Starling(info : ProjectInfo) extends ParentProject(info) {
       super.unmanagedClasspath +++ Path.fromFile(new File("lib/scala/scala-2.9.0.1.final/lib/scala-swing.jar"))
     override def libraryDependencies = Set(
       "cglib" % "cglib-nodep" % "2.2" withSources(),
-      "org.jboss.netty" % "netty" % "3.2.3.Final" withSources(),
+      "org.jboss.netty" % "netty" % "3.2.5.Final" withSources(),
       "commons-io" % "commons-io" % "1.3.2" withSources()
     ) ++ super.libraryDependencies
   }

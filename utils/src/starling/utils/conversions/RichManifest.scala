@@ -7,15 +7,21 @@ trait RichManifest {
   implicit def enrichManifest[T](manifest : Manifest[T]) = new RichManifest(manifest)
 
   class RichManifest[T](manifest : Manifest[T]) {
-    def isInstance(any : Any) = manifest.erasure.isInstance(any)
-    def cast(anyRef : Any) : Option[T] = if (isInstance(anyRef)) Some(anyRef.asInstanceOf[T]) else None
-    def castAll(list : List[Any], error : Any => T) : List[T] = list.map(value => cast(value).getOrElse(error(value)))
+    def isInstance(any: Any) = manifest.erasure.isInstance(any)
+
+    def cast(any: Any): T = safeCast(any).getOrElse(
+      throw new Exception("%s [%s] is not of type %s" % (any, getClassOf(any), manifest.erasure)))
+
+    def safeCast(any: Any): Option[T] = if (isInstance(any)) Some(any.asInstanceOf[T]) else None
+    def castAll(list: List[Any], error: Any => T): List[T] = list.map(value => safeCast(value).getOrElse(error(value)))
     def requireNotNull(value: T) = {
       val n = nullTypes(value)
       if (!n.isEmpty) {
         throw new Exception("Unexpected null, type(s): " + n.mkString(","))
       }
     }
+
+    private def getClassOf(any: Any): String = if (any.isInstanceOf[AnyRef]) any.asInstanceOf[AnyRef].getClass.toString else "?"
 
     private def nullTypes(value: T): List[String] = value match {
       case product: Product => {
