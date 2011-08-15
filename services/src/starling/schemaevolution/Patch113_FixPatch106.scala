@@ -11,10 +11,12 @@ class Patch113_FixPatch106 extends Patch {
     writer.queryForUpdate("select * from marketdata where marketDAtaType = '<starling.curves.SpreadStdDevSurfaceDataType_-/>'") {
       rs => {
         val old = rs.getString("data")
-        val newS = old
-          .replaceAll("<first", "<front")
-          .replaceAll("<last", "<back")
-        rs.update(Map("data" -> newS))
+        if (old != null) {
+          val newS = old
+                  .replaceAll("<first", "<front")
+                  .replaceAll("<last", "<back")
+          rs.update(Map("data" -> newS))
+        }
       }
     }
   }
