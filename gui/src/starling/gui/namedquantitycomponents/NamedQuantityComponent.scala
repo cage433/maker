@@ -2,16 +2,16 @@ package starling.gui.namedquantitycomponents
 
 import starling.gui.GuiUtils._
 import swing.Swing._
-import swing.event.MouseClicked
 import starling.quantity._
 import starling.pivot.view.swing.{PivotCellRenderer, MigPanel}
 import javax.swing.border.AbstractBorder
 import swing.Label
 import java.awt.{Color, Cursor, BasicStroke, Graphics, Insets, Graphics2D, Dimension}
-import javax.swing.JTable
 import javax.swing.table.{DefaultTableCellRenderer, AbstractTableModel}
 import starling.pivot.{QuantityLabelPivotFormatter, PivotFormatter, ExtraFormatInfo}
 import collection.mutable.ListBuffer
+import javax.swing.JTable
+import swing.event.MousePressed
 
 object NamedQuantityComponentHelper {
   def panel(namedQuantity:NamedQuantity, fi:ExtraFormatInfo) = {
@@ -31,6 +31,9 @@ object NamedQuantityComponentHelper {
       font = PivotCellRenderer.MonoSpacedFont
       text = text0
       tooltip = tooltip0
+      if (text0.startsWith("(")) {
+        foreground = Color.RED
+      }
     }
   }
 
@@ -88,9 +91,7 @@ class ExpandCollapsePanel(namedQuantity:NamedQuantity, fi:ExtraFormatInfo) exten
 
   add(label)
 
-  reactions += {
-    case MouseClicked(`label`,_,_,_,_) => {expandCollapse()}
-  }
+  reactions += {case MousePressed(`label`,_,_,_,false) => {expandCollapse()}}
   listenTo(label.mouse.clicks)
 
   def expandCollapse() {
@@ -117,6 +118,9 @@ class ExpandCollapsePanel(namedQuantity:NamedQuantity, fi:ExtraFormatInfo) exten
 class QuantityPanel(quantity:Quantity, fi:ExtraFormatInfo) extends Label with UpdateableNamedQuantityComponent {
   text = quantityText(quantity, fi)
   font = PivotCellRenderer.MonoSpacedFont
+  if (text.startsWith("(")) {
+    foreground = Color.RED
+  }
 
   def updateExtraInfo(newFI:ExtraFormatInfo) {
     text = quantityText(quantity, newFI)
@@ -368,9 +372,9 @@ object NamedQuantityComponent {
   def main(args:Array[String]) {
     val price = Quantity(10.0, UOM.USD / UOM.BBL).named("F")
     val strike = Quantity(8.0, UOM.USD / UOM.BBL).named("K")
-    val volume = Quantity(100.0, UOM.BBL).named("Volume")
+//    val volume = Quantity(100.0, UOM.BBL).named("Volume")
     val discount = new Quantity(0.9).named("Discount")
-    val priceTimesVolume = ((price - strike) * volume) * discount
+//    val priceTimesVolume = ((price - strike) * volume) * discount
 
     val func = FunctionNamedQuantity("Sum", List(price.negate, strike.invert), price + strike, true) * discount.round(3)
 

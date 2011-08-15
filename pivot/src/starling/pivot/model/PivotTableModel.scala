@@ -591,7 +591,7 @@ object PivotTableModel {
       }).toList.distinct
     }
 
-    mainTableBucket.foreach {
+    mainTableBucket.toList.foreach {
       case ((row, column), sum) => {
         val columnPermutations = permutations(column)
         val rowPermutations = permutations(row)
