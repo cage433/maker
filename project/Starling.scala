@@ -93,19 +93,31 @@ object StarlingBuild extends Build{
     unmanagedBase <<= baseDirectory( (base: File) => base /"lib"),
     unmanagedClasspath in Test <+= (baseDirectory) map { bd => Attributed.blank(bd / "resources") },
     ivyXML := <dependencies><exclude artifact="jcl-over-slf4j"/></dependencies>, 
-    scalaVersion := "2.9.0-1"
+    scalaVersion := "2.9.0-1",
+    showLibsTask,
+    writeClasspathScriptTask
   )
 
-  def projectTestClasspathSetting(name : String) = Seq(
-    unmanagedClasspath in Test <+= (baseDirectory) map { bd => Attributed.blank(bd/("../" + name + "/target/scala-2.9.0.1/test-classes"))}
-  )
-  
-  val daterangeClasspathSetting = Seq(
-    unmanagedClasspath in Test <+= (baseDirectory) map { bd => Attributed.blank(bd/"../daterange/target/scala-2.9.0.1/test-classes")}
-  )
+  val testDependency = "compile;test->test"
 
+  // utils to show project classpath libs
+  val showLibs = TaskKey[Unit]("show-libs")
+  val showLibsTask = showLibs <<= (target, fullClasspath in Runtime) map { (target, cp) =>
+    println("Target path is: " + target + "\n")
+    println("Full classpath is: " + cp.map(_.data).mkString("\n"))
+  }
 
-
+  val writeClasspathScript = TaskKey[Unit]("write-classpath")
+  val writeClasspathScriptTask = writeClasspathScript <<= (target, fullClasspath in Runtime) map { (target, cp) =>
+    println("Target path is: " + target + "\n")
+    println("Full classpath is: " + cp.map(_.data).mkString(":"))
+    import java.io._
+    val file = new PrintWriter(new FileOutputStream(new File("set-classpath.sh")))
+    file.println("export CLASSPATH=" + cp.map(_.data).getFiles.toList.mkString(":"))
+    file.println("export JAVA_OPTS='-server -XX:MaxPermSize=1024m -Xss512k -Xmx6000m'")
+    file.close()
+    None
+  }
 
   lazy val utils = Project(
     "utils", 
@@ -128,7 +140,7 @@ object StarlingBuild extends Build{
     "concurrent", 
     file("./concurrent"),
     settings = standardSettings
-  ) dependsOn (utils) //;w
+  ) dependsOn (utils) 
 
   lazy val quantity = Project(
     "quantity", 
@@ -148,7 +160,6 @@ object StarlingBuild extends Build{
     settings = standardSettings ++ Seq(libraryDependencies ++= loopyxlDependencies)
   ) dependsOn(bouncyrmi, auth)
 
-val testDependency = "compile;test->test"
   lazy val maths = Project(
     "maths", 
     file("./maths"),
@@ -256,7 +267,7 @@ val testDependency = "compile;test->test"
     settings = standardSettings
   ) dependsOn(services, gui)
 
-  lazy val root = Project("starling", file("."), settings = standardSettings) aggregate (
+  val root = Project("starling", file("."), settings = standardSettings) aggregate (
     utils, 
     bouncyrmi, 
     auth, 
@@ -292,6 +303,8 @@ val testDependency = "compile;test->test"
     val buildSrcTask = TaskKey[Unit]("build-src", "Build sources from model")
      
     def buildSource {
+      lazy val buildUsingBinaryTooling = true
+      
       def latestRubyFileTime = {
         val files = rubyModelPathFinder.getFiles
         if (files.isEmpty)
@@ -305,7 +318,6 @@ val testDependency = "compile;test->test"
           case t :: _ => Some(t)
         }
       }
-      lazy val buildUsingBinaryTooling = true
 
       val toolingLauncher = if (buildUsingBinaryTooling == true) new File(modelRoot, "../../../mdl/bindinggen.rb") else new File(modelRoot, "/model/tooling/binding-generator/thubc.rb")
 
