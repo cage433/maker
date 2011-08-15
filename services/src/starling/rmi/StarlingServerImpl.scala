@@ -423,13 +423,24 @@ class StarlingServerImpl(
   def readSettings = userSettingsDatabase.loadSettings
   def saveSettings(settings:UserSettings) {userSettingsDatabase.saveSettings(settings)}
 
-  def tradeValuation(tradeIDLabel:TradeIDLabel, curveIdentifier:CurveIdentifierLabel, timestamp:Timestamp):TradeValuation = {
+  def tradeValuation(tradeIDLabel:TradeIDLabel, curveIdentifier:CurveIdentifierLabel, timestamp:Timestamp):TradeValuationAndDetails = {
     val tradeID = unLabel(tradeIDLabel)
     val stores = tradeStores.storesFor(tradeID.tradeSystem)
     stores.foreach { tradeStore => {
       tradeStore.readTrade(tradeID, Some(timestamp)) match {
         case None =>
-        case Some(trade) => return reportService.singleTradeReport(trade, CurveIdentifier.unLabel(curveIdentifier))
+        case Some(trade) => {
+          val tradeValuation = reportService.singleTradeReport(trade, CurveIdentifier.unLabel(curveIdentifier))
+
+          val (stable, fieldDetailsGroups, _) = readTradeVersions(tradeIDLabel)
+          val cols = stable.columns
+
+          val tableRow = stable.data.find(row => {
+            (row(1).asInstanceOf[TableCell].value == timestamp)
+          }).getOrElse(stable.data.last)
+
+          return TradeValuationAndDetails(tradeValuation, tableRow, fieldDetailsGroups, cols)
+        }
       }
     }}
     throw new Exception(tradeID + " not found")

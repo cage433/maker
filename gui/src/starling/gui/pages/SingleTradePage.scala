@@ -317,8 +317,7 @@ class SingleTradePageComponent(context:PageContext, pageData:PageData) extends M
           None,
           runReports = true)
 
-        context.goTo(new SingleTradeMainPivotReportPage(data.tradeID, row, fieldDetailsGroups, stable.columns, rp,
-          PivotPageState.default(initialFieldsState)))
+        context.goTo(new SingleTradeMainPivotReportPage(data.tradeID, rp, PivotPageState.default(initialFieldsState)))
       }
     }
     reactions += {case ButtonClicked(`button`) => doValuation}
@@ -330,8 +329,7 @@ class SingleTradePageComponent(context:PageContext, pageData:PageData) extends M
 case class TradeData(tradeID:TradeIDLabel, tradeHistory:(STable,List[FieldDetailsGroupLabel],List[CostsLabel]), desk:Option[Desk],
                         tradeExpiryDay:TradeExpiryDay, intradayGroups:Option[IntradayGroups]) extends PageData
 
-class SingleTradeMainPivotReportPage(val tradeID:TradeIDLabel, val tradeRow:List[Any], val fieldDetailsGroups:List[FieldDetailsGroupLabel],
-                                          val columns:List[SColumn], val reportParameters0:ReportParameters, val pivotPageState0:PivotPageState)
+class SingleTradeMainPivotReportPage(val tradeID:TradeIDLabel, val reportParameters0:ReportParameters, val pivotPageState0:PivotPageState)
         extends MainPivotReportPage(true, reportParameters0, pivotPageState0) {
   override def toolbarButtons(context:PageContext, data:PageData) = {
     val buttons = super.toolbarButtons(context, data)
@@ -342,40 +340,31 @@ class SingleTradeMainPivotReportPage(val tradeID:TradeIDLabel, val tradeRow:List
       tooltip = "Show the parameters that were used to value this trade"
 
       reactions += {
-        case ButtonClicked(b) => context.goTo(ValuationParametersPage(tradeID, tradeRow, fieldDetailsGroups, columns, reportParameters0))
+        case ButtonClicked(b) => context.goTo(ValuationParametersPage(tradeID, reportParameters0))
       }
     }
     valuationParametersButton :: buttons
   }
-
-  override def selfPage(pps:PivotPageState, edits:PivotEdits) = new SingleTradeMainPivotReportPage(tradeID, tradeRow, fieldDetailsGroups, columns,
-    reportParameters0, pps)
-  override def selfReportPage(rp:ReportParameters, pps:PivotPageState) = new SingleTradeMainPivotReportPage(tradeID, tradeRow, fieldDetailsGroups,
-    columns, rp, pps)
-
-  override def hashCode = tradeID.hashCode ^ tradeRow.hashCode ^ fieldDetailsGroups.hashCode ^ columns.hashCode ^
-          reportParameters0.hashCode ^ pivotPageState0.hashCode
+  override def selfPage(pps:PivotPageState, edits:PivotEdits) = new SingleTradeMainPivotReportPage(tradeID, reportParameters0, pps)
+  override def selfReportPage(rp:ReportParameters, pps:PivotPageState) = new SingleTradeMainPivotReportPage(tradeID, rp, pps)
+  override def hashCode = tradeID.hashCode ^ reportParameters0.hashCode ^ pivotPageState0.hashCode
   override def equals(obj:Any) = obj match {
     case other:SingleTradeMainPivotReportPage => {
-      tradeID == other.tradeID && tradeRow == other.tradeRow && fieldDetailsGroups == other.fieldDetailsGroups &&
-      columns == other.columns && reportParameters0 == other.reportParameters0 && pivotPageState0 == other.pivotPageState0
+      tradeID == other.tradeID && reportParameters0 == other.reportParameters0 && pivotPageState0 == other.pivotPageState0
     }
     case _ => false
   }
-  override def bookmark(server:StarlingServer):Bookmark = {
-    SingleTradeReportBookmark(tradeID, tradeRow, fieldDetailsGroups, columns, server.createUserReport(reportParameters0), pivotPageState)
-  }
+  override def bookmark(server:StarlingServer):Bookmark = SingleTradeReportBookmark(tradeID, server.createUserReport(reportParameters0), pivotPageState)
 }
 
-case class SingleTradeReportBookmark(tradeID:TradeIDLabel, tradeRow:List[Any], fieldDetailsGroups:List[FieldDetailsGroupLabel],
-                                     columns:List[SColumn], data:UserReportData, pps:PivotPageState) extends Bookmark {
+case class SingleTradeReportBookmark(tradeID:TradeIDLabel, data:UserReportData, pps:PivotPageState) extends Bookmark {
   def daySensitive = true
   def createPage(day:Option[Day], server:StarlingServer, context:PageContext) = {
     day match {
       case None => throw new Exception("We need a day")
       case Some(d) => {
         val reportParameters = server.createReportParameters(data, d)
-        new SingleTradeMainPivotReportPage(tradeID, tradeRow, fieldDetailsGroups, columns, reportParameters, pps)
+        new SingleTradeMainPivotReportPage(tradeID, reportParameters, pps)
       }
     }
   }

@@ -38,7 +38,7 @@ trait StarlingServer {
   def saveSettings(settings:UserSettings)
   def readTradeVersions(tradeID:TradeIDLabel):(STable,List[FieldDetailsGroupLabel],List[CostsLabel])
   def tradeIDFor(desk:Desk, text:String):TradeIDLabel
-  def tradeValuation(tradeID:TradeIDLabel, curveIdentifier:CurveIdentifierLabel, timestamp:Timestamp):TradeValuation
+  def tradeValuation(tradeID:TradeIDLabel, curveIdentifier:CurveIdentifierLabel, timestamp:Timestamp):TradeValuationAndDetails
   def tradePivot(tradeSelection:TradeSelectionWithTimestamp,expiryDay:Day,pivotFieldParams:PivotFieldParams):PivotData
   def bookClose(desk: Desk): Unit
   def importTitanTrades()

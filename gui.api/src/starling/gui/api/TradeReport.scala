@@ -7,7 +7,7 @@ import starling.calendar.BusinessCalendar
 import starling.daterange._
 import starling.rmi.StarlingServer
 import starling.tradestore.TradePredicate
-import starling.utils.{StarlingEnum, ImplicitConversions, STable}
+import starling.utils.{StarlingEnum, ImplicitConversions, SColumn}
 import starling.varcalculator.NAhead
 
 import ImplicitConversions._
@@ -68,6 +68,7 @@ object MarketDataIdentifier {
 }
 
 case class TradeValuation(explanation:NamedQuantity)
+case class TradeValuationAndDetails(tradeValuation:TradeValuation, tradeRow:List[Any], fieldDetailsGroups:List[FieldDetailsGroupLabel], columns:List[SColumn])
 
 case class PricingGroup(name:String) {
   override def toString = name

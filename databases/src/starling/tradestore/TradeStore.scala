@@ -643,10 +643,6 @@ abstract class TradeStore(db: RichDB, broadcaster:Broadcaster, tradeSystem: Trad
     }.toMap
   }
 
-  private def tradeFromRow(row: RichInstrumentResultSetRow) = {
-    TradeStore.tradeFromRow(row, tradeSystem, createTradeAttributes(row))
-  }
-
   def pivotInitialState(tradeableTypes:Set[TradeableType[_]]): PivotFieldsState
 
   protected val instrumentFilteredDrillDown = {
