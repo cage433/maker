@@ -8,7 +8,7 @@ import starling.daterange.{TenorType, Day, DateRange}
 import formula.Formula.MktInterp
 import com.eteks.parser.{CompilationException, CalculatorParser, DoubleInterpreter, DefaultSyntax}
 import rules.{Precision, NonCommonPricingRule, SwapPricingRule}
-import starling.quantity.{Conversions, UOM, Quantity}
+import starling.quantity._
 
 class InvalidFormulaIndexException(msg: String, t: Throwable) extends Exception(msg, t)
 class InvalidFormulaException(msg: String, t: Throwable) extends Exception(msg, t)
@@ -28,7 +28,11 @@ case class FormulaIndex(formulaName: String, formula: Formula, ccy: UOM, uom: UO
       case index: SingleIndex => {
         val observationDays = index.observationDays(averagingPeriod).intersect(rule.observationDays(calendars, averagingPeriod))
         val prices = observationDays.map(env.fixingOrForwardPrice(index, _))
-        checkedConvert(index, Quantity.average(prices), priceUOM)
+        val price = Quantity.average(prices) match {
+          case nq : NamedQuantity => SimpleNamedQuantity("Average(" + index + "." + averagingPeriod + ")", nq)
+          case q : Quantity => q
+        }
+        checkedConvert(index, price, priceUOM)
       }
       case _ => throw new Exception("Couldn't work out price for formula index on complex indices: " + this)
     }
