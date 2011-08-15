@@ -10,7 +10,7 @@ import org.testng.Assert._
 class ExtractorTest extends TestNGSuite {
   def throwException: Option[Int] = throw new Exception("boom")
 
-  @Test def shouldCatchExceptionsAndReturnNone {
+  @Test def shouldCatchExceptionsAndReturnNone = Log.off {
     val ExceptionThrowing: Extractor[String, Int] = Extractor.from[String](str => throwException)
 
     assertEquals("" partialMatch { case ExceptionThrowing(i) => i}, None)
