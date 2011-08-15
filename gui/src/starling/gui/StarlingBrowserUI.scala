@@ -27,6 +27,7 @@ class StarlingBrowserUI extends AbstractLayerUI[JComponent] {
   def setError(title:String, error:String, errorOK: => Unit) {
     val errorPanel = new MigPanel("") {
       border = BorderFactory.createLineBorder(BorderColour)
+      minimumSize = new Dimension(10, 300)
       val okButton = new Button {
         text = "OK"
         reactions += {
@@ -41,7 +42,7 @@ class StarlingBrowserUI extends AbstractLayerUI[JComponent] {
       add(new ScrollPane(new TextArea() {
         text = error
         editable = false
-      }), "skip 1, wrap unrel")
+      }), "skip 1, pushy, growy, wrap unrel")
       add(okButton, "spanx, split, al r, tag ok")
     }
 

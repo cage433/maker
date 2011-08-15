@@ -6,6 +6,7 @@ import starling.richdb.RichInstrumentResultSetRow
 import starling.daterange.{Day, DayAndTime}
 import starling.curves.Environment
 import starling.market.EquityPriceCurveKey
+import starling.quantity.NamedQuantity
 
 /**
  * Represents a net position in shares
@@ -27,6 +28,7 @@ case class NetEquityPosition(ric:RIC, volume:Quantity) extends UTP with Tradeabl
   def price(env: Environment): Quantity = {
     env.equityPrice(ric)
   }
+  def explanation(env : Environment) : NamedQuantity = throw new UnsupportedOperationException()
 
   def *(x : Double) = copy(volume = volume * x)
 
@@ -36,11 +38,11 @@ case class NetEquityPosition(ric:RIC, volume:Quantity) extends UTP with Tradeabl
   }
   override def expiryDay() = Some(Day(2050, 1, 1)) //HACK
   def isLive(dayAndTime: DayAndTime) = true
-  def tradeableDetails = Map("ric"->ric.code, "Quantity"->volume)
+  def persistedTradeableDetails = Map("ric"->ric.code, "Quantity"->volume)
   def asUtpPortfolio(tradeDay:Day):UTP_Portfolio = asUtpPortfolio
   def asUtpPortfolio():UTP_Portfolio = UTP_Portfolio(Map(this.copy(volume=Quantity(1, UOM.SHARE)) -> volume.value))
   def tradeableType = NetEquityPosition
-  def details = tradeableDetails
+  def detailsForUTPNOTUSED = persistedTradeableDetails
   def instrumentType = NetEquityPosition
 
   def daysForPositionReport(marketDay : DayAndTime) : Seq[Day] = List(marketDay.day)

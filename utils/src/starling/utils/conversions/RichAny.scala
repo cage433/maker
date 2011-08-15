@@ -6,8 +6,9 @@ trait RichAny {
   import ImplicitConversions._
 
   implicit def enrichAny[T](value: T) = new RichAny(value)
+  implicit def enrichAnyRef[T <: AnyRef](value: T) = new RichAnyRef(value)
 
-  class RichAny[T](value: T) {
+  class RichAny[T](protected val value: T) {
     lazy val trimmed = if (value == null) "" else value.toString.applyIf(_.length > 500, _.substring(0, 496) + " ...")
 
     def add[A, B](tuple: (A, B)): (T, A, B) = (value, tuple._1, tuple._2)
@@ -34,6 +35,7 @@ trait RichAny {
     def desire(wish: T => Boolean, message: => Any): T = perform(if (!wish(value)) Log.warn(message + " " + trimmed))
 
     def isOneOf(values : T*) = values.contains(value)
+    def isOneOf(values : Set[T]) = values.contains(value)
     val repeat : Seq[T] = Stream.continually(value).toSeq
     def replicate(count: Int): Seq[T] = repeat.take(count)
     def partialMatch[V](pfn: PartialFunction[T, V]): Option[V] = apply(pfn)
@@ -42,7 +44,7 @@ trait RichAny {
       try { apply(pfn) } catch { case _ => Log.warn(message + ": " + value); None }
 
     def safeCast[V](implicit m: Manifest[V]): Option[V] = m.cast(value)
-    def cast[V](alternative: T => V)(implicit m: Manifest[V]): V = m.cast(value).getOrElse(alternative(value))
+    def castOrElse[V](alternative: T => V)(implicit m: Manifest[V]): V = m.cast(value).getOrElse(alternative(value))
 
     def pair[V](f: T => V): (T, V) = value → f(value)
     def pairWithTraversable[V](f: T => Traversable[V]): scala.Traversable[(T, V)] = pair(f(value))
@@ -58,5 +60,10 @@ trait RichAny {
     def notNull(msg: => Any = "unexpected null") = require(_ != null, msg)
 
     private def perform(action: => Unit): T = { action; value }
+  }
+
+  class RichAnyRef[T <: AnyRef](value: T) extends RichAny(value) {
+    def cast[V](implicit m: Manifest[V]): V = m.cast(value).getOrElse(
+      throw new Exception("%s [%s] is not of type %s" % (value, value.getClass, m.erasure)))
   }
 }

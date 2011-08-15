@@ -46,9 +46,12 @@ object Log extends AdaptingLogger(Log4JLogger.logger) {
     }
   }
 
-  def errorF[T](msg: => AnyRef)(f: => T) = {error(msg); f}
+  def infoF[T](msg: => AnyRef)(f: => T)                   = {info(msg); f}
+  def infoF[T](msg: => AnyRef, t: => Throwable)(f: => T)  = {info(msg, t); f}
+  def warnF[T](msg: => AnyRef)(f: => T)                   = {warn(msg); f}
+  def warnF[T](msg: => AnyRef, t: => Throwable)(f: => T)  = {warn(msg, t); f}
+  def errorF[T](msg: => AnyRef)(f: => T)                  = {error(msg); f}
   def errorF[T](msg: => AnyRef, t: => Throwable)(f: => T) = {error(msg, t); f}
-  def infoF[T](msg: => AnyRef)(f: => T) = {info(msg); f}
   def never(msg: => AnyRef) {}
   def neverF(msg: => AnyRef) {}
   def never(msg: => AnyRef, t: => Throwable) {}

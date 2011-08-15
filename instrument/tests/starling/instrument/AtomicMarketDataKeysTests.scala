@@ -18,7 +18,7 @@ class AtomicMarketDataKeysTests extends TestMarketSpec {
   val env = Environment(
     new TestingAtomicEnvironment() {
       def applyOrMatchError(key: AtomicDatumKey): Any = key match {
-        case DiscountRateKey(ccy, day, _) => math.exp(-.05 * day.daysSinceInYears(marketDay.day))
+        case DiscountRateKey(ccy, day, _) => new Quantity(math.exp(-.05 * day.daysSinceInYears(marketDay.day)))
         case ForwardPriceKey(market, _, _) => Quantity(80, market.priceUOM)
         case USDFXRateKey(ccy) => Quantity(1.0, USD / ccy)
         case _: OilAtmVolAtomicDatumKey => Percentage(10)
@@ -54,7 +54,7 @@ class AtomicMarketDataKeysTests extends TestMarketSpec {
     val oilVolAtmKeys = index.observationDays(delivery).map{d => OilAtmVolAtomicDatumKey(oilMarket, Some(d), index.observedOptionPeriod(d))}
     val keys : Set[AtomicDatumKey] = Set(ForwardPriceKey(market, delivery + 1), ForwardPriceKey(market, delivery + 2),
       OilVolSkewAtomicDatumKey(oilMarket, delivery + 1), OilVolSkewAtomicDatumKey(oilMarket, delivery + 2),
-      DiscountRateKey(USD, option.settlementDate), DiscountRateKey(USD, env.marketDay.day),
+      DiscountRateKey(USD, option.settlementDate), 
       DiscountRateKey(USD, market.optionExpiry(delivery + 1)), DiscountRateKey(USD, market.optionExpiry(delivery + 2))
       ) ++ oilVolAtmKeys 
 
@@ -65,7 +65,7 @@ class AtomicMarketDataKeysTests extends TestMarketSpec {
   @Test
   def testSwap {
     val delivery = Month(2010, 1)
-    val swap = new SingleCommoditySwap(index, Quantity(20, USD / BBL), Quantity(1, BBL), delivery, false)
+    val swap = new SinglePeriodSwap(index, Quantity(20, USD / BBL), Quantity(1, BBL), delivery, false)
     val settlement = CommoditySwap.swapSettlementDate(delivery.lastDay)
     assertEquals(swap.atomicMarketDataKeys(env.marketDay), Set(ForwardPriceKey(market, delivery + 1), ForwardPriceKey(market, delivery + 2), DiscountRateKey(USD, settlement)))
   }

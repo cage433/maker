@@ -5,7 +5,7 @@ import starling.richdb.RichDB
 import starling.db.DBWriter
 import starling.pivot.PivotFieldsState
 import starling.utils.StarlingXStream
-import starling.utils.sql.AnObject
+import starling.utils.sql.PersistAsBlob
 import xstream.{ModifyClassWhichCanBeReadConverter, Fields, Reader, MapBasedConverter}
 import starling.services.StarlingInit
 
@@ -28,7 +28,7 @@ class Patch78_AddPriceUnitReportChoice  extends Patch {
           rs => {
             val data = rs.getString("layout")
             val fixed = convertingXStream.fromXML(data)
-            rs.update(Map("layout" -> AnObject(fixed)))
+            rs.update(Map("layout" -> PersistAsBlob(fixed)))
           }
         }
       }

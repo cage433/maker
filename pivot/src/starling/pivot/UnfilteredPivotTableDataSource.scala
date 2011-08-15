@@ -1,8 +1,8 @@
 package starling.pivot
 
 import collection.Seq
-import model.UndefinedValue
 import scala.collection.mutable.{Map => MutableMap, Set => MutableSet}
+import collection.immutable.Map
 
 
 /**
@@ -28,9 +28,15 @@ class PossibleValuesBuilder(val allFields:Seq[FieldDetails], val filtersList:Fil
     filters.foreach{ case (field,_) => possibleValues(field) = MutableSet[Any]() }
   }
 
+  def init(values:Map[Field, List[Any]]) {
+    values.foreach { case (field,values) => {
+      possibleValues(field) ++= values
+    }}
+  }
+
   def +=(row : Map[Field,Any]) {
     def getFieldValue(field : Field) : Any = {
-      val value = row.getOrElse(field, UndefinedValue)
+      val value = PivotValue.extractValue(row, field)
       fieldDetailsMap(field).transformValueForGroupByField(value)
     }
     // Need to add values for all matching selections and the first non-matching
@@ -46,14 +52,13 @@ class PossibleValuesBuilder(val allFields:Seq[FieldDetails], val filtersList:Fil
       }
     }
   }
-  def build = possibleValues.mapValues(_.toList).toMap
+  def build:Map[Field, List[Any]] = possibleValues.mapValues(_.toList).toMap
 }
 
 object UnfilteredPivotTableDataSource {
 
   def applyFiltersAndCalculatePossibleValues(fields:List[FieldDetails], data:List[Map[Field,Any]], pfs:PivotFieldsState):PivotResult = {
     val fieldDetailsMap = Map() ++ fields.map(f=>f.field -> f)
-    val filterPaths = pfs.allFilterPaths
 
     val possibleValueFieldList = pfs.allFilterPaths
 
@@ -68,7 +73,7 @@ object UnfilteredPivotTableDataSource {
       row => {
         pfs.filters.forall{ case(field,selection) => {
           val fieldDetails = fieldDetailsMap(field)
-          val rowValue = fieldDetails.transformValueForGroupByField(row.getOrElse(field, UndefinedValue))
+          val rowValue = fieldDetails.transformValueForGroupByField(PivotValue.extractValue(row, field))
           selection match {
             case SomeSelection(values) => fieldDetails.matches(values, rowValue)
             case _ => true

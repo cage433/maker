@@ -34,7 +34,6 @@ object UOMSymbol{
   val C_TONNE_SYMBOL = UOMSymbol("c MT", "c TONNE")
   val KILO_TONNE_SYMBOL = UOMSymbol("KT", "KILOTONNE")
   val BARREL_SYMBOL = UOMSymbol("bbl", List("BARREL", "BBLS"))
-  val KILO_BARREL_SYMBOL = UOMSymbol("K bbl", List("KILO BARREL", "kb"))
   val OUNCE_SYMBOL = UOMSymbol("oz", "TROY OUNCE")
   val POUND_SYMBOL = UOMSymbol(List("lb", "POUND", "lbs"))
   val GRAM_SYMBOL = UOMSymbol("g", "GRAM")
@@ -93,7 +92,6 @@ object UOMSymbol{
     C_TONNE_SYMBOL,
     KILO_TONNE_SYMBOL,
     BARREL_SYMBOL,
-    KILO_BARREL_SYMBOL,
     OUNCE_SYMBOL,
     POUND_SYMBOL, 
     GRAM_SYMBOL,

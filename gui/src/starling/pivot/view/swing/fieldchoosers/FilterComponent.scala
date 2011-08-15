@@ -15,9 +15,10 @@ object DropPanel {
   val NormalBorder = RoundedBorder(Color.LIGHT_GRAY)
   val OverBorder = RoundedBorder(GuiUtils.GuiFieldFilterNumberColour)
   val InvalidBorder = RoundedBorder(Color.RED)
+  def apply(fieldAndPositions:List[(Field,Position.Position)]) = new DropPanel(fieldAndPositions)
 }
 
-case class DropPanel(fieldAndPositions:List[(Field,Position.Position)]) extends MigPanel("insets 0, gap 0px") {
+class DropPanel(val fieldAndPositions:List[(Field,Position.Position)]) extends MigPanel("insets 0, gap 0px") {
   import DropPanel._
   
   opaque = false
@@ -64,7 +65,7 @@ case class DropPanel(fieldAndPositions:List[(Field,Position.Position)]) extends 
   }
 }
 
-case class EmptyDropLabel(text0:String, view:PivotTableView) extends Label(text0) {
+class EmptyDropLabel(text0:String, view:PivotTableView) extends Label(text0) {
   import DropPanel._
 
   private val prefSize = ColumnDropPanel.prefSize(text)
@@ -129,7 +130,7 @@ class FilterComponent(model:PivotTableModel, otherLayoutInfo:OtherLayoutInfo,
 
   private val dropPanels = new ListBuffer[DropPanel]()
   private val blankDropLabel = if (fields.isEmpty) {
-    Some(EmptyDropLabel("Drop Filter Fields Here", tableView))
+    Some(new EmptyDropLabel("Drop Filter Fields Here", tableView))
   } else {
     None
   }

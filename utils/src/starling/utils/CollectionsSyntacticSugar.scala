@@ -24,6 +24,8 @@ trait CollectionsSyntacticSugar {
     }
 
     def initOption() = if (tl.isEmpty) None else Some(tl.init)
+    def dropUntil(p: A => Boolean): Repr = tl.dropWhile(!p(_))
+    def takeUntil(p: A => Boolean): Repr = tl.takeWhile(!p(_))
   }
 
   implicit def collectionExtras[A](xs: Iterable[A]) = new {
@@ -39,7 +41,7 @@ trait CollectionsSyntacticSugar {
 
   implicit def traversableLike2RichTraversableLike[A, Repr](tl: TraversableLike[A, Repr]) = new RichTraversableLike(tl)
   implicit def enrichTraversableLikeOfEithers[L, R, Repr](tl: TraversableLike[Either[L, R], Repr]) = new RichTraversableLike(tl) {
-    def split[LThat, RThat](implicit cbl: CanBuildFrom[Repr, L, LThat], cbr: CanBuildFrom[Repr, R, RThat]): (LThat, RThat) = {
+    def partitionEithers[LThat, RThat](implicit cbl: CanBuildFrom[Repr, L, LThat], cbr: CanBuildFrom[Repr, R, RThat]): (LThat, RThat) = {
       val lbuilder = cbl(tl.repr)
       val rbuilder = cbr(tl.repr)
 

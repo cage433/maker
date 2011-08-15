@@ -136,8 +136,6 @@ class StarlingHomePageComponent(context:PageContext, browserSize:Dimension, page
     add(actionsPanelHolder)
   }
 
-  override def pageShown {bookmarksPanel.goToBookmarkButton.requestFocusInWindow()}
-
   peer.getInputMap(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT).put(KeyStroke.getKeyStroke(KeyEvent.VK_1, 0), "tradesAction")
   peer.getInputMap(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT).put(KeyStroke.getKeyStroke(KeyEvent.VK_2, 0), "refDataAction")
   peer.getInputMap(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT).put(KeyStroke.getKeyStroke(KeyEvent.VK_3, 0), "marketDataAction")
@@ -146,6 +144,8 @@ class StarlingHomePageComponent(context:PageContext, browserSize:Dimension, page
   peer.getActionMap.put("refDataAction", Action("refDataAction"){context.goTo(ReferenceDataIndexPage)}.peer)
   peer.getActionMap.put("marketDataAction", Action("marketDataAction"){gotoMarketDataPage(false)}.peer)
   peer.getActionMap.put("curveAction", Action("curveAction"){gotoCurvePage(false)}.peer)
+
+  override def defaultComponentForFocus = Some(bookmarksPanel.bookmarksListView.peer)
 
   private val runAct = bookmarksPanel.goToBookmarkAction
   peer.getInputMap(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT).put(KeyStroke.getKeyStroke(KeyEvent.VK_F9, 0), runAct.title)

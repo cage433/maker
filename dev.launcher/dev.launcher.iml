@@ -23,6 +23,15 @@
     <orderEntry type="module" module-name="services" exported="" />
     <orderEntry type="module" module-name="gui" exported="" />
     <orderEntry type="module" module-name="databases" />
+    <orderEntry type="module-library">
+      <library>
+        <CLASSES>
+          <root url="file://$MODULE_DIR$/lib_managed" />
+        </CLASSES>
+        <JAVADOC />
+        <SOURCES />
+      </library>
+    </orderEntry>
   </component>
 </module>
 

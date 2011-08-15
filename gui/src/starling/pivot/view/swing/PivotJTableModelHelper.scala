@@ -5,25 +5,46 @@ import starling.quantity.UOM
 import starling.pivot._
 import javax.swing.table.AbstractTableModel
 import java.awt.{Dimension, Graphics, Component => AWTComp, Color, KeyboardFocusManager}
-import model.{NullAxisValueType, EditableInfo, ValueAxisValueType, AxisCell}
 import collection.mutable.{ListBuffer, HashMap}
+import model._
 import scala.Array
 import javax.swing._
 import scala.swing.Swing._
 import swing.{ScrollPane, ListView, Panel}
-import swing.event.{KeyPressed, KeyTyped}
+import swing.event.{MouseClicked, KeyPressed, KeyTyped}
+import starling.pivot.EditableCellState._
+import scala.collection.mutable.{HashMap => MMap}
+import collection.immutable.Map
+
+case class OverrideDetails(text:String, state:EditableCellState)
+case class TableValue(value:AnyRef, row:Int, column:Int)
+
+object PivotTableType extends Enumeration {
+  type PivotTableType = Value
+  val RowHeader, ColumnHeader, Main, Full = Value
+}
+
+import PivotTableType._
 
 abstract class PivotJTableModel extends AbstractTableModel {
   def paintTable(g:Graphics, table:JTable, rendererPane:CellRendererPane, rMin:Int, rMax:Int, cMin:Int, cMax:Int)
   def rowHeader(row:Int, col:Int):Boolean
   def mapCellToFields(row:Int, col:Int):List[(Field, Selection)]
   def collapseOrExpand(row:Int, col:Int, pivotTableView:PivotTableView)
-  def deleteCells(cells:List[(Int,Int)])
-  def resetCells(cells:List[(Int,Int)])
+  def deleteCells(cells:List[(Int,Int)], fireChange:Boolean):PivotEdits = PivotEdits.Null
+  def resetCells(cells:List[(Int,Int)], fireChange:Boolean):PivotEdits = PivotEdits.Null
   def textTyped(textField:JTextField, cellEditor:CellEditor , r:Int, c:Int, focusOwner:Option[AWTComp], tableFrom:AWTComp)
   def finishedEditing()
   def popupShowing:Boolean
   def focusPopup()
+  def parser(row:Int, col:Int):PivotParser = TextPivotParser
+  def setValuesAt(values:List[TableValue], currentEdits:Option[PivotEdits], fireChange:Boolean):PivotEdits = PivotEdits.Null
+
+  protected var overrideMap = new MMap[(Int,Int),OverrideDetails]()
+  def revert(table:PivotJTable):Boolean = {
+    overrideMap.clear()
+    false
+  }
 }
 
 class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
@@ -35,11 +56,14 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
                      resizeRowHeaderTableColumns: =>Unit,
                      fieldState:PivotFieldsState,
                      var extraFormatInfo:ExtraFormatInfo,
-                     addEdits:(Set[PivotEdit]) => Unit,
-                     removeEdits:(Set[PivotEdit]) => Unit) {
+                     pivotEdits:PivotEdits,
+                     updateEdits:(PivotEdits, PivotTableType) => Unit,
+                     formatInfo:FormatInfo) {
   private var mainColCount0 = data0(0).length
   private var rowHeaderColCount0 = rowHeaderData0(0).length
   private var colHeaderRowCount0 = colHeaderData0.length
+
+  val keyFields = editableInfo.map(_.keyFields).getOrElse(Set())
 
   private val extraLine = editableInfo match {
     case None => false
@@ -51,8 +75,6 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
     data0 = d
     rowHeaderData0 = rd
     colHeaderData0 = cd
-    mainTableModel.updateNewCellsWithNewFormat()
-    rowHeaderTableModel.updateNewCellsWithNewFormat()
     mainTableModel.fireTableRowsUpdated(0, mainTableModel.getRowCount-1)
     rowHeaderTableModel.fireTableRowsUpdated(0, rowHeaderTableModel.getRowCount-1)
     colHeaderTableModel.fireTableRowsUpdated(0, colHeaderTableModel.getRowCount-1)
@@ -64,191 +86,248 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
   def uoms = uoms0
   def uoms_=(u:Array[UOM]) {uoms0 = u}
 
+  private def singleValueFilters() = {
+    Map() ++ fieldState.filterAreaFields.flatMap(f => {
+      val (field, selection) = fieldState.filters.find{case (f0,sel) => f == f0}.get
+      selection match {
+        case s@SomeSelection(v) if v.size == 1 => Some((field -> v.iterator.next))
+        case _ => None
+      }
+    })
+  }
+
+  private def initializedBlankRow() = {
+    (Map() ++ (keyFields.map(f => {f -> UndefinedValue}))) ++ singleValueFilters
+  }
+
   val rowHeaderTableModel = new PivotJTableModel {
-    private val overrideMap = new HashMap[(Int,Int),AxisCell]
     private val addedRows0 = new ListBuffer[Array[AxisCell]]
-    private val blankCells = rowHeaderData0(0).map(_.copy(state = EditableCellState.Added, label = "", collapsible = None)).toList
-    private def setupExtraRow {
-      if (extraLine) {
-        addedRows0 += blankCells.toArray
+    private val blankCells = rowHeaderData0(0).map(av => {
+      val newAV = av.value.copy(value = BlankAddedAxisValueType)
+      av.copy(value = newAV, label = "", collapsible = None)
+    })
+    if (extraLine) {
+      addedRows0 += blankCells
+    }
+
+    def addRow() {addedRows0 += blankCells}
+
+    override def revert(table:PivotJTable) = {
+      super.revert(table)
+      if (addedRows0.size > 1) {
+        val selectedColumn = table.getSelectedColumn
+        val r = getRowCount - 1
+        addedRows0.clear()
+        addedRows0 += blankCells
+        fireTableRowsDeleted(r, r)
+        table.setSelectedCells(List((r-1, selectedColumn)))
+        true
+      } else {
+        false
       }
     }
-    setupExtraRow
-
-    def reset {
-      overrideMap.clear
-      addedRows0.clear
-      setupExtraRow
-    }
-    def overriddenValues = overriddenCells.values
-    def overriddenCells = overrideMap.toMap
-    def addedRows = addedRows0.toList
-    def addAnotherRow = setupExtraRow
-    def removeLastRow {addedRows0 -= addedRows0.last}
 
     def getRowCount = {rowHeaderData0.length + addedRows0.length}
     def getColumnCount = rowHeaderData0(0).length
     def getValueAt(rowIndex:Int, columnIndex:Int):AxisCell = {
       if (rowIndex < rowHeaderData0.length) {
-        overrideMap.getOrElse((rowIndex,columnIndex), rowHeaderData0(rowIndex)(columnIndex))
+        if (overrideMap.contains((rowIndex, columnIndex))) {
+          val details = overrideMap((rowIndex, columnIndex))
+          rowHeaderData0(rowIndex)(columnIndex).copy(label = details.text, overrideState = Some(details.state))
+        } else {
+          rowHeaderData0(rowIndex)(columnIndex)
+        }
       } else {
-        addedRows0(rowIndex - rowHeaderData0.length)(columnIndex)
+        if (overrideMap.contains((rowIndex, columnIndex))) {
+          val details = overrideMap((rowIndex, columnIndex))
+          addedRows0(0)(columnIndex).copy(label = details.text, overrideState = Some(details.state))
+        } else {
+          addedRows0(0)(columnIndex)
+        }
       }
     }
-    def paintTable(g:Graphics, table:JTable, rendererPane:CellRendererPane, rMin:Int, rMax:Int, cMin:Int, cMax:Int) = {
+    def paintTable(g:Graphics, table:JTable, rendererPane:CellRendererPane, rMin:Int, rMax:Int, cMin:Int, cMax:Int) {
       PivotTableUI.rowHeaderPaintGrid(g, table, rMin, rMax, cMin, cMax, getColumnCount - 1)
       PivotTableUI.rowHeaderPaintCells(g, table, rendererPane, rMin, rMax, cMin, cMax)
     }
     def rowHeader(row:Int,col:Int) = true
     def mapCellToFields(row:Int, col:Int) = List()
-    def collapseOrExpand(row:Int, col:Int, pivotTableView:PivotTableView) = {
+    def collapseOrExpand(row:Int, col:Int, pivotTableView:PivotTableView) {
       val path = (0 to col).map(colIndex => {getValueAt(row, colIndex).value}).toList
       pivotTableView.collapseOrExpandRow(path)
     }
-    def deleteCells(cells:List[(Int,Int)]) = {
-      cells.foreach{case (r,c) => if (r < rowHeaderData0.length) {
-        overrideMap((r,c)) = getValueAt(r,c).copy(state = EditableCellState.Deleted)
-      } else {
-        addedRows0(r - rowHeaderData0.length)(c) = blankCells(c)
-      }}
-      updateTable(cells)
-    }
 
-    def resetCells(cells:List[(Int,Int)]) = {
-      cells.foreach{case (r,c) => if (r < rowHeaderData0.length) {
-        overrideMap -= ((r,c))
-      } else {
-        addedRows0(r - rowHeaderData0.length)(c) = blankCells(c)
-      }}
-      updateTable(cells)
-    }
-    
-    def updateTable(cells:List[(Int,Int)]) {
-      cells.foreach{case (r,c) => fireTableCellUpdated(r,c)}
-      resizeRowHeaderTableColumns
-    }
-
-    override def isCellEditable(rowIndex:Int, columnIndex:Int) = getValueAt(rowIndex, columnIndex).editable
-    override def setValueAt(value:AnyRef, rowIndex:Int, columnIndex:Int) = {
-      val s = value.asInstanceOf[String].trim
-      // Using a zero row index here as it doesn't really matter as long as it is the correct column.
-      val rowHeaderField = rowHeaderData0(0)(columnIndex).value.field
-      val parser = editableInfo.get.editableKeyFields(rowHeaderField)
-
-      val rac = (rowIndex,columnIndex)
-      val addedRow = rowIndex >= rowHeaderData0.length
-      val (originalCell, currentCell) = if (addedRow) {
-        (blankCells(columnIndex), getValueAt(rowIndex, columnIndex))
-      } else {
-        (rowHeaderData0(rowIndex)(columnIndex), getValueAt(rowIndex, columnIndex))
-      }
-
-      try {
-        val (newValue,newLabel) = if (s.isEmpty) (Set.empty, "") else parser.parse(s)
-
-        def updateEdited {
-          /*val newValueAxisValue = currentCell.value.value.asInstanceOf[ValueAxisValueType].copy(value = newValue)
-          val newCellValue = currentCell.value.copy(value = newValueAxisValue)
-          val state = if (addedRow) EditableCellState.Added else (if (newLabel.trim.isEmpty) EditableCellState.Deleted else EditableCellState.Edited)
-          if (addedRow) {
-            addedRows0(rowIndex - rowHeaderData0.length)(columnIndex) = currentCell.copy(value = newCellValue, label = newLabel, state = state)
-          } else {
-            overrideMap(rac) = currentCell.copy(value = newCellValue, label = newLabel, state = state)
-          }
-          updateTable(List((rowIndex, columnIndex)))*/
+    private def key(rowIndex:Int, columnIndex:Int) = {
+      val filterFieldToValues = Map() ++ fieldState.filterAreaFields.flatMap(f => {
+        val (field, selection) = fieldState.filters.find{case (f0,sel) => f == f0}.get
+        selection match {
+          case s@SomeSelection(v) if v.size == 1 && keyFields.contains(field) => Some((field -> s))
+          case _ => None
         }
-
-        if (currentCell.text == newLabel) {
-          // Nothing has happened to it.
-          // If this used to be an error we need to decide what to do with it.
-          if (currentCell.state == EditableCellState.Error) {
-            if (newLabel == originalCell.text) {
-              // It is just the original value so reset it.
-              resetCells(List((rowIndex, columnIndex)))
-            } else {
-              // It's gone from an error to an edited state.
-              updateEdited
-            }
-          }
-        } else if (originalCell.text != newLabel) {
-          // It's been edited.
-          updateEdited
-        } else {
-          // It's been reset.
-          resetCells(List((rowIndex, columnIndex)))
-        }
-      } catch {
-        case e:Exception => {
-          // We are almost certainly here because of a parse exception.
-          if (addedRow) {
-            addedRows0(rowIndex - rowHeaderData0.length)(columnIndex) = currentCell.copy(label = s, state = EditableCellState.Error)
-          } else {
-            overrideMap(rac) = currentCell.copy(label = s, state = EditableCellState.Error)
-          }
-          updateTable(List((rowIndex, columnIndex)))
-        }
-      }
-    }
-
-    def updateNewCellsWithNewFormat() {
-      val newValues = overrideMap.map{case (key, ac) => {
-        val newAC = ac.value match {
-          case pq:PivotQuantity => {
-            ac.copy(label = PivotFormatter.formatPivotQuantity(pq, extraFormatInfo, false))
-          }
-          case other => ac
-        }
-        (key -> newAC)
-      }}
-      overrideMap.clear()
-      overrideMap ++= newValues
-
-      val newAddedRows = addedRows0.map(aca => {
-        aca.map(ac => {
-          ac.value match {
-            case pq:PivotQuantity => {
-              ac.copy(label = PivotFormatter.formatPivotQuantity(pq, extraFormatInfo, false))
-            }
-            case other => ac
-          }
-        })
       })
-      addedRows0.clear()
-      addedRows0 ++= newAddedRows
+
+      val rowFilters = Map() ++ fieldState.filters.collect{case (f,s:SomeSelection) if fieldState.rowFields.contains(f) => (f -> s)}
+      val columnFilters = Map() ++ fieldState.filters.collect{case (f,s:SomeSelection) if fieldState.columns.allFields.contains(f) => (f -> s)}
+
+      val rowHeaderCells = rowHeaderData0(rowIndex).take(columnIndex+1)
+      val rowHeaderFieldToValues = Map() ++ rowHeaderCells.map(cell => (cell.value.field -> SomeSelection(Set(cell.value.value.originalValue.getOrElse(cell.value.value.value)))))
+
+      rowHeaderFieldToValues ++ filterFieldToValues ++ rowFilters ++ columnFilters
+    }
+
+    override def deleteCells(cells:List[(Int,Int)], fireChange:Boolean) = {
+      var edits = pivotEdits
+      val rightHandCellForEachRow = cells.groupBy(_._1).mapValues(cellsForRow => cellsForRow.map(_._2).max)
+      rightHandCellForEachRow.foreach{case (r,c) => {
+        if (r < rowHeaderData0.length) {
+          val value = getValueAt(r, c)
+          if (value.state != EditableCellState.Added) {
+            val labelToUse = value.value.value.originalValue match {
+              case Some(origValue) => {
+                formatInfo.fieldToFormatter(value.value.field).format(origValue, extraFormatInfo).text
+              }
+              case None => value.label
+            }
+            overrideMap((r,c)) = OverrideDetails(labelToUse, Deleted)
+            edits = edits.withDelete(KeyFilter(key(r, c)))
+          } else {
+            overrideMap((r,c)) = OverrideDetails("", Added)
+            val rowIndex = value.value.childKey.value.asInstanceOf[NewRowValue].rowIndex
+            edits = edits.withNewAmended(rowIndex, value.value.field, None)
+          }
+        }
+      }}
+      if (fireChange && edits != pivotEdits) {
+        updateEdits(edits, RowHeader)
+      }
+      edits
+    }
+
+    override def resetCells(cells:List[(Int,Int)], fireChange:Boolean) = {
+      var edits = pivotEdits
+      cells.map{case (r,c) => {
+        val v = getValueAt(r, c)
+        val labelToUse = v.value.value.originalValue match {
+          case None => v.label
+          case Some(origVal) => formatInfo.fieldToFormatter(v.value.field).format(origVal, extraFormatInfo).text
+        }
+        overrideMap((r,c)) = OverrideDetails(labelToUse, Normal)
+        val editsForCell = v.value.pivotEdits
+        edits = edits.remove(editsForCell)
+      }}
+      if (fireChange && edits != pivotEdits) {
+        updateEdits(edits, RowHeader)
+      }
+      edits
+    }
+
+    override def isCellEditable(rowIndex:Int, columnIndex:Int) = {
+      val v = getValueAt(rowIndex, columnIndex)
+      v.editable && v.shown && (v.state != EditableCellState.Deleted)
+    }
+
+    override def parser(row:Int, col:Int) = {
+      val rowHeaderField = rowHeaderData0(0)(col).value.field
+      editableInfo.get.editableKeyFields(rowHeaderField)
+    }
+
+    override def setValuesAt(values:List[TableValue], currentEdits:Option[PivotEdits], fireChange:Boolean) = {
+      var newPivotEdits = currentEdits match {
+        case Some(e) => e
+        case None => pivotEdits
+      }
+      values.foreach(tv => {
+        val rowIndex = tv.row
+        val columnIndex = tv.column
+        val value = tv.value
+
+        val s = value.asInstanceOf[String].trim
+        // Using a zero row index here as it doesn't really matter as long as it is the correct column.
+        val rowHeaderField = rowHeaderData0(0)(columnIndex).value.field
+        val pars = parser(rowIndex, columnIndex)
+
+        val (newValue,newLabel) = if (s.isEmpty) (None, "") else {
+          val (v,t) = pars.parse(s)
+          (Some(v), t)
+        }
+
+        if (rowIndex < rowHeaderData0.length) {
+          val currentCell = getValueAt(rowIndex, columnIndex)
+
+          val originalLabel = currentCell.value.value.originalValue match {
+            case None => "sfkjfhxcjkvuivyruvhrzzasaf$%£$££"
+            case Some(origVal) => formatInfo.fieldToFormatter(currentCell.value.field).format(origVal, extraFormatInfo).text
+          }
+
+          if (originalLabel == newLabel) {
+            newPivotEdits = resetCells(List((rowIndex, columnIndex)), false)
+          } else if (currentCell.text != newLabel) {
+            val stateToOverride = if (currentCell.state == EditableCellState.Added) EditableCellState.Added else EditableCellState.Edited
+            overrideMap((rowIndex, columnIndex)) = OverrideDetails(newLabel, stateToOverride)
+            currentCell.value.childKey.value match {
+              case NewRowValue(ri) => newPivotEdits = newPivotEdits.withNewAmended(ri, rowHeaderField, newValue)
+              case _ => newPivotEdits = newPivotEdits.withAmend(KeyFilter(key(rowIndex, columnIndex)), rowHeaderField, newValue)
+            }
+          }
+        } else {
+          overrideMap((rowIndex, columnIndex)) = OverrideDetails(newLabel, EditableCellState.Added)
+          newValue.foreach { nv => {            
+            val row = initializedBlankRow + (rowHeaderField -> nv)
+            addRowToTables()
+            newPivotEdits = newPivotEdits.withAddedRow(row)
+          } }
+        }
+      })
+      if (fireChange && newPivotEdits != pivotEdits) {
+        updateEdits(newPivotEdits, RowHeader)
+      }
+      newPivotEdits
+    }
+
+    override def setValueAt(value:AnyRef, rowIndex:Int, columnIndex:Int) {
+      setValuesAt(List(TableValue(value, rowIndex, columnIndex)), Some(pivotEdits), true)
+    }
+
+    def acceptableValues(r:Int, c:Int) = {
+      val rowHeaderField = rowHeaderData0(0)(c).value.field
+      val parser = editableInfo.get.editableKeyFields(rowHeaderField)
+      parser.acceptableValues
     }
 
     def textTyped(textField:JTextField, cellEditor:CellEditor, r:Int, c:Int, focusOwner:Option[AWTComp], tableFrom:AWTComp) {
       // Using a zero row index here as it doesn't really matter as long as it is the correct column.
-      val rowHeaderField = rowHeaderData0(0)(c).value.field
-      val parser = editableInfo.get.editableKeyFields(rowHeaderField)
-      val t = textField.getText.toLowerCase
-      val vals = parser.acceptableValues
+      val vals = acceptableValues(0, c)
       if (vals.nonEmpty) {
+        val t = textField.getText.toLowerCase
         val filteredVals = vals.filter(_.toLowerCase.startsWith(t))
-        if (filteredVals.nonEmpty) {
-          val sortedVals = filteredVals.toList.sortWith(_.toLowerCase < _.toLowerCase)
-          val currentListData = popupListView.listData.toList
-          if (currentListData != sortedVals) {
-            popupListView.listData = sortedVals
+        val sortedVals = {
+          if (filteredVals.nonEmpty) {
+            filteredVals.toList.sortWith(_.toLowerCase < _.toLowerCase)
+          } else {
+            vals.toList.sortWith(_.toLowerCase < _.toLowerCase)
           }
-          if (!popupMenu.isShowing) {
-            val selectionAtTimeOfPopup = textField.getSelectedText
-            val caretPositionAtTimeOfPopup = textField.getCaretPosition
+        }
+        val currentListData = popupListView.listData.toList
+        if (currentListData != sortedVals) {
+          popupListView.listData = sortedVals
+        }
+        if (!popupMenu.isShowing) {
+          val selectionAtTimeOfPopup = textField.getSelectedText
+          val caretPositionAtTimeOfPopup = textField.getCaretPosition
 
-            popupMenu.setMinimumSize(viewScrollPane.preferredSize)
-            popupMenu.show(textField, cellEditor, tableFrom, textField, 0, textField.getSize().height-1)
-            focusOwner.map(_.requestFocusInWindow())
+          popupMenu.setMinimumSize(viewScrollPane.preferredSize)
+          popupMenu.show(textField, cellEditor, tableFrom, textField, 0, textField.getSize().height-1)
+          focusOwner.map(_.requestFocusInWindow())
 
-            onEDT(onEDT({
-              val currentSelection = textField.getSelectedText
-              if (selectionAtTimeOfPopup == null && currentSelection != null) {
-                // It is likely we are on windows and we need to do something funky so that we don't select the whole text field.
-                val l = textField.getText.length()
-                val posToUse = if (caretPositionAtTimeOfPopup <= l) caretPositionAtTimeOfPopup else l
-                textField.setCaretPosition(posToUse)
-              }
-            }))
-          }
+          onEDT(onEDT({
+            val currentSelection = textField.getSelectedText
+            if (selectionAtTimeOfPopup == null && currentSelection != null) {
+              // It is likely we are on windows and we need to do something funky so that we don't select the whole text field.
+              val l = textField.getText.length()
+              val posToUse = if (caretPositionAtTimeOfPopup <= l) caretPositionAtTimeOfPopup else l
+              textField.setCaretPosition(posToUse)
+            }
+          }))
         }
       }
     }
@@ -264,7 +343,14 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
   val colHeaderTableModel = new PivotJTableModel {
     def getRowCount = colHeaderData0.length
     def getColumnCount = colHeaderData0(0).length
-    def getValueAt(rowIndex:Int, columnIndex:Int) = colHeaderData0(rowIndex)(columnIndex)
+    def getValueAt(rowIndex:Int, columnIndex:Int):AxisCell = {
+      if (overrideMap.contains((rowIndex, columnIndex))) {
+        val details = overrideMap((rowIndex, columnIndex))
+        colHeaderData0(rowIndex)(columnIndex).copy(label = details.text, overrideState = Some(details.state))
+      } else {
+        colHeaderData0(rowIndex)(columnIndex)
+      }
+    }
     def paintTable(g:Graphics, table:JTable, rendererPane:CellRendererPane, rMin:Int, rMax:Int, cMin:Int, cMax:Int) {
       PivotTableUI.colHeaderPaintGrid(g, table, rMin, rMax, cMin, cMax)
       PivotTableUI.colHeaderPaintCells(g, table, rendererPane, rMin, rMax, cMin, cMax)
@@ -275,8 +361,23 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
       val path = (0 to row).map(rowIndex => {getValueAt(rowIndex, col).asInstanceOf[AxisCell].value}).toList
       pivotTableView.collapseOrExpandCol(path)
     }
-    def deleteCells(cells:List[(Int,Int)]) {}
-    def resetCells(cells:List[(Int,Int)]) {}
+    override def resetCells(cells:List[(Int,Int)], fireChange:Boolean) = {
+      var edits = pivotEdits
+      cells.map{case (r,c) => {
+        val v = getValueAt(r, c)
+        val labelToUse = v.value.value.originalValue match {
+          case None => v.label
+          case Some(origVal) => formatInfo.fieldToFormatter(v.value.field).format(origVal, extraFormatInfo).text
+        }
+        overrideMap((r,c)) = OverrideDetails(labelToUse, Normal)
+        val editsForCell = v.value.pivotEdits
+        edits = edits.remove(editsForCell)
+      }}
+      if (fireChange && edits != pivotEdits) {
+        updateEdits(edits, ColumnHeader)
+      }
+      edits
+    }
     def textTyped(textField:JTextField, cellEditor:CellEditor, r:Int, c:Int, focusOwner:Option[AWTComp], tableFrom:AWTComp) {}
     def finishedEditing() {popupMenu setVisible false}
     def popupShowing = popupMenu.isShowing
@@ -295,8 +396,6 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
     def rowHeader(row:Int,col:Int) = false
     def mapCellToFields(row:Int, col:Int) = List()
     def collapseOrExpand(row:Int, col:Int, pivotTableView:PivotTableView) {}
-    def deleteCells(cells:List[(Int,Int)]) {}
-    def resetCells(cells:List[(Int,Int)]) {}
     def textTyped(textField:JTextField, cellEditor:CellEditor, r:Int, c:Int, focusOwner:Option[AWTComp], tableFrom:AWTComp) {}
     def finishedEditing() {popupMenu setVisible false}
     def popupShowing = popupMenu.isShowing
@@ -307,96 +406,218 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
     }
   }
 
+  private def addRowToTables() {
+    val rowHeader = rowHeaderTableModel.getRowCount
+    val main = mainTableModel.getRowCount
+    val full = fullTableModel.getRowCount
+
+    rowHeaderTableModel.addRow()
+    mainTableModel.addRow()
+
+    rowHeaderTableModel.fireTableRowsInserted(rowHeader, rowHeader)
+    mainTableModel.fireTableRowsInserted(main, main)
+    fullTableModel.fireTableRowsInserted(full, full)
+  }
+
   val mainTableModel = new PivotJTableModel {
     private val addedRows0 = new ListBuffer[Array[TableCell]]
-    private val blankCells = data0(0).map(_.copy(state = EditableCellState.Added, text = "")).toList
+    private val blankCells = data0(0).map(_.copy(state = AddedBlank, text = ""))
     if (extraLine) {
-      addedRows0 += blankCells.toArray
+      addedRows0 += blankCells
     }
+
+    def addRow() {addedRows0 += blankCells}
+
+    override def revert(table:PivotJTable) = {
+      super.revert(table)
+      if (addedRows0.size > 1) {
+        val selectedColumn = table.getSelectedColumn
+        val r = getRowCount - 1
+        addedRows0.clear()
+        addedRows0 += blankCells
+        fireTableRowsDeleted(r, r)
+        table.setSelectedCells(List((r-1, selectedColumn)))
+        true
+      } else {
+        false
+      }
+    }
+
     def getRowCount = data0.length + addedRows0.length
     def getColumnCount = data0(0).length
     def getValueAt(rowIndex:Int, columnIndex:Int):TableCell = {
       if (rowIndex < data0.length) {
-        data0(rowIndex)(columnIndex)
+        if (overrideMap.contains((rowIndex, columnIndex))) {
+          val details = overrideMap((rowIndex, columnIndex))
+          data0(rowIndex)(columnIndex).copy(text = details.text, state = details.state)
+        } else {
+          data0(rowIndex)(columnIndex)
+        }
       } else {
-        addedRows0(0)(columnIndex)
+        if (overrideMap.contains((rowIndex, columnIndex))) {
+          val details = overrideMap((rowIndex, columnIndex))
+          addedRows0(0)(columnIndex).copy(text = details.text, state = details.state)
+        } else {
+          addedRows0(0)(columnIndex)
+        }
       }
     }
-    override def isCellEditable(rowIndex:Int, columnIndex:Int) = getValueAt(rowIndex, columnIndex).editable
-    def resetCells(cells:List[(Int,Int)]) {
-      val edits = cells.flatMap{case (r,c) => {
-        getValueAt(r,c).edits
-      }}
-      removeEdits(edits.toSet)
+    override def isCellEditable(rowIndex:Int, columnIndex:Int) = {
+      val v = getValueAt(rowIndex, columnIndex)
+      v.editable && (v.state != EditableCellState.Deleted)
     }
-    def deleteCells(cells:List[(Int,Int)]) {
-      val edits = cells.map{case (r,c) => {
-        val measureInfo = colHeaderData0.find(_(c).value.isMeasure).get(c)
-        DeletePivotEdit(key(r,c,measureInfo))
-      }}
-      addEdits(edits.toSet)
-    }
-
-    def updateNewCellsWithNewFormat() {
-      val newAddedRows = addedRows0.map(tca => {
-        tca.map(tc => {
-          tc.value match {
-            case pq:PivotQuantity => {
-              tc.copy(text = PivotFormatter.formatPivotQuantity(pq, extraFormatInfo, false))
+    override def resetCells(cells:List[(Int,Int)], fireChange:Boolean) = {
+      var edits = pivotEdits
+      cells.map{case (r,c) => {
+        val cell = getValueAt(r, c)
+        val labelToUse = cell.originalValue match {
+          case None => cell.text
+          case Some(origValue) => {
+            colHeaderData0.find(_(c).value.isMeasure) match {
+              case None => cell.text
+              case Some(arr) => {
+                val measureInfo = arr(c)
+                formatInfo.fieldToFormatter(measureInfo.value.field).format(origValue, extraFormatInfo).text
+              }
             }
-            case other => tc
           }
-        })
-      })
-      addedRows0.clear()
-      addedRows0 ++= newAddedRows
+        }
+        overrideMap((r,c)) = OverrideDetails(labelToUse, Normal)
+        val editsForCell = cell.edits
+        edits = edits.remove(editsForCell)
+      }}
+      if (fireChange && edits != pivotEdits) {
+        updateEdits(edits, Main)
+      }
+      edits
+    }
+    override def deleteCells(cells:List[(Int,Int)], fireChange:Boolean) = {
+      var edits = pivotEdits
+      cells.foreach{case (r,c) => {
+        if (r < rowHeaderData0.length) {
+          val value = getValueAt(r, c)
+          colHeaderData0.find(_(c).value.isMeasure).foreach(arr => {
+            val measureInfo = arr(c)
+            if (value.state != EditableCellState.Added) {
+              val labelToUse = value.originalValue match {
+                case Some(origValue) => {
+                  formatInfo.fieldToFormatter(measureInfo.value.field).format(origValue, extraFormatInfo).text
+                }
+                case None => value.text
+              }
+              overrideMap((r,c)) = OverrideDetails(labelToUse, Deleted)
+              edits = edits.withAmend(KeyFilter(key(r, c, measureInfo)), measureInfo.value.field, None)
+            } else {
+              overrideMap((r,c)) = OverrideDetails("", Added)
+              val rowCellForCheck = rowHeaderData0(r)(0)
+              val rowIndex = rowCellForCheck.value.childKey.value.asInstanceOf[NewRowValue].rowIndex
+              edits = edits.withNewAmended(rowIndex, measureInfo.value.field, None)
+            }
+          })
+        }
+      }}
+      if (fireChange && edits != pivotEdits) {
+        updateEdits(edits, Main)
+      }
+      edits
     }
 
-    private def key(rowIndex:Int, columnIndex:Int, measureInfo:AxisCell) = {
+    private def key(rowIndex:Int, columnIndex:Int, measureInfo:AxisCell):Map[Field, SomeSelection] = {
       val filterFieldToValues = Map() ++ fieldState.filterAreaFields.flatMap(f => {
         val (field, selection) = fieldState.filters.find{case (f0,sel) => f == f0}.get
         selection match {
-          case SomeSelection(v) if v.size == 1 => Some((field -> v.head))
+          case s@SomeSelection(v) if v.size == 1 && keyFields.contains(field) => Some((field -> s))
           case _ => None
         }
       })
 
       val rowHeaderCells = rowHeaderData0(rowIndex)
-      val rowHeaderFieldToValues = Map() ++ rowHeaderCells.map(cell => (cell.value.field -> cell.value.value.value))
+      val rowHeaderFieldToValues = Map() ++ rowHeaderCells.map(cell => (cell.value.field -> SomeSelection(Set(cell.value.value.originalValue.getOrElse(cell.value.value.value)))))
 
       val colHeaderFieldToValues = Map() ++ colHeaderData0.map(r => {
         val cell = r(columnIndex)
-        (cell.value.field -> cell.value.value.value)
+        (cell.value.field -> SomeSelection(Set(cell.value.value.value)))
       }).filterNot{case (field,_) => (measureInfo.value.field == field) || (field == Field.NullField)}
 
       rowHeaderFieldToValues ++ colHeaderFieldToValues ++ filterFieldToValues
     }
 
-    override def setValueAt(value:AnyRef, rowIndex:Int, columnIndex:Int) {
-      val s = value.asInstanceOf[String].trim
-      val measureInfo = colHeaderData0.find(_(columnIndex).value.isMeasure).get(columnIndex)
-      val parser = editableInfo.get.editableMeasures(measureInfo.value.field)
-      
-      val currentCell = getValueAt(rowIndex, columnIndex)
+    override def parser(row:Int, col:Int) = {
+      val measureInfo = colHeaderData0.find(_(col).value.isMeasure).get(col)
+      editableInfo.get.editableMeasures(measureInfo.value.field)
+    }
 
-      val (newValue,newLabel) = if (s.isEmpty) (Set.empty, "") else {
-        val (v,l) = parser.parse(s)
-        v match {
-          case pq:PivotQuantity if uoms0.length > columnIndex => {
-            val uom = uoms0(columnIndex)
-            val dv = pq.doubleValue.get
-            val newPQ = new PivotQuantity(dv, uom)
-            (newPQ, PivotFormatter.formatPivotQuantity(newPQ, extraFormatInfo, false))
+    override def setValuesAt(values:List[TableValue], currentEdits:Option[PivotEdits], fireChange:Boolean) = {
+      var newPivotEdits = currentEdits match {
+        case Some(e) => e
+        case None => pivotEdits
+      }
+      values.foreach(tv => {
+        val rowIndex = tv.row
+        val columnIndex = tv.column
+        val value = tv.value
+
+        val s = value.asInstanceOf[String].trim
+        val measureInfo = colHeaderData0.find(_(columnIndex).value.isMeasure).get(columnIndex)
+        val pars = parser(rowIndex, columnIndex)
+
+        val (newValue,newLabel) = if (s.isEmpty) (None, "") else {
+          val (v,l) = pars.parse(s)
+          v match {
+            case pq:PivotQuantity if uoms0.length > columnIndex => {
+              val uom = uoms0(columnIndex)
+              val dv = pq.doubleValue.get
+              val newPQ = new PivotQuantity(dv, uom)
+              (Some(newPQ), PivotFormatter.formatPivotQuantity(newPQ, extraFormatInfo, false))
+            }
+            case _ => (Some(v),l)
           }
-          case _ => (v,l)
         }
-      }
 
-      if (currentCell.text != newLabel) {
-        // It has been edited.
-        val edit = AmendPivotEdit(key(rowIndex, columnIndex, measureInfo), Map(measureInfo.value.field -> newValue))
-        addEdits(Set(edit))
+        if (rowIndex < rowHeaderData0.length) {
+          val currentCell = getValueAt(rowIndex, columnIndex)
+
+          val originalLabel = currentCell.originalValue match {
+            case None => "sfkjfhxcjkvuivyruvhrzzasaf$%£$££"
+            case Some(origVal) => formatInfo.fieldToFormatter(measureInfo.value.field).format(origVal, extraFormatInfo).text
+          }
+          if (originalLabel == newLabel) {
+            newPivotEdits = resetCells(List((rowIndex, columnIndex)), false)
+          } else if (currentCell.text != newLabel) {
+            if (currentCell.value == NoValue) {
+              overrideMap((rowIndex, columnIndex)) = OverrideDetails(newLabel, EditableCellState.Added)
+              newValue.foreach(nv => {
+                val row = key(rowIndex, columnIndex, measureInfo).mapValues(_.values.head) + (measureInfo.value.field -> nv)
+                newPivotEdits = newPivotEdits.withAddedRow(row)
+              })
+            } else {
+              val stateToOverride = if (currentCell.state == EditableCellState.Added) EditableCellState.Added else EditableCellState.Edited
+              overrideMap((rowIndex, columnIndex)) = OverrideDetails(newLabel, stateToOverride)
+              val rowCellForCheck = rowHeaderData0(rowIndex)(0)
+              rowCellForCheck.value.childKey.value match {
+                case NewRowValue(ri) => newPivotEdits = newPivotEdits.withNewAmended(ri, measureInfo.value.field, newValue)
+                case _ => newPivotEdits = newPivotEdits.withAmend(KeyFilter(key(rowIndex, columnIndex, measureInfo)), measureInfo.value.field, newValue)
+              }
+            }
+          }
+        } else {
+          overrideMap((rowIndex, columnIndex)) = OverrideDetails(newLabel, EditableCellState.Added)
+          newValue.foreach(nv => {
+            addRowToTables()
+            val row = initializedBlankRow + (measureInfo.value.field -> nv)
+            newPivotEdits = newPivotEdits.withAddedRow(row)
+          })
+        }
+
+      })
+      if (fireChange && newPivotEdits != pivotEdits) {
+        updateEdits(newPivotEdits, Main)
       }
+      newPivotEdits
+    }
+
+    override def setValueAt(value:AnyRef, rowIndex:Int, columnIndex:Int) {
+      setValuesAt(List(TableValue(value, rowIndex, columnIndex)), Some(pivotEdits), true)
     }
 
     def paintTable(g:Graphics, table:JTable, rendererPane:CellRendererPane, rMin:Int, rMax:Int, cMin:Int, cMax:Int) {
@@ -426,37 +647,46 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
       rowFilters.toMap.toList ::: columnFilters.toMap.toList
     }
     def collapseOrExpand(row:Int, col:Int, pivotTableView:PivotTableView) {}
-    def textTyped(textField:JTextField, cellEditor:CellEditor, r:Int, c:Int, focusOwner:Option[AWTComp], tableFrom:AWTComp) {
+
+    def acceptableValues(r:Int, c:Int) = {
       val measureInfo = colHeaderData0.find(_(c).value.isMeasure).get(c)
       val parser = editableInfo.get.editableMeasures(measureInfo.value.field)
-      val t = textField.getText.toLowerCase
-      val vals = parser.acceptableValues
+      parser.acceptableValues
+    }
+
+    def textTyped(textField:JTextField, cellEditor:CellEditor, r:Int, c:Int, focusOwner:Option[AWTComp], tableFrom:AWTComp) {
+      val vals = acceptableValues(0, c)
       if (vals.nonEmpty) {
+        val t = textField.getText.toLowerCase
         val filteredVals = vals.filter(_.toLowerCase.startsWith(t))
-        if (filteredVals.nonEmpty) {
-          val sortedVals = filteredVals.toList.sortWith(_.toLowerCase < _.toLowerCase)
-          val currentListData = popupListView.listData.toList
-          if (currentListData != sortedVals) {
-            popupListView.listData = sortedVals
+        val sortedVals = {
+          if (filteredVals.nonEmpty) {
+            filteredVals.toList.sortWith(_.toLowerCase < _.toLowerCase)
+          } else {
+            vals.toList.sortWith(_.toLowerCase < _.toLowerCase)
           }
-          if (!popupMenu.isShowing) {
-            val selectionAtTimeOfPopup = textField.getSelectedText
-            val caretPositionAtTimeOfPopup = textField.getCaretPosition
+        }
+        val currentListData = popupListView.listData.toList
+        if (currentListData != sortedVals) {
+          popupListView.listData = sortedVals
+        }
+        if (!popupMenu.isShowing) {
+          val selectionAtTimeOfPopup = textField.getSelectedText
+          val caretPositionAtTimeOfPopup = textField.getCaretPosition
 
-            popupMenu.setMinimumSize(viewScrollPane.preferredSize)
-            popupMenu.show(textField, cellEditor, tableFrom, textField, 0, textField.getSize().height-1)
-            focusOwner.map(_.requestFocusInWindow())
+          popupMenu.setMinimumSize(viewScrollPane.preferredSize)
+          popupMenu.show(textField, cellEditor, tableFrom, textField, 0, textField.getSize().height-1)
+          focusOwner.map(_.requestFocusInWindow())
 
-            onEDT(onEDT({
-              val currentSelection = textField.getSelectedText
-              if (selectionAtTimeOfPopup == null && currentSelection != null) {
-                // It is likely we are on windows and we need to do something funky so that we don't select the whole text field.
-                val l = textField.getText.length()
-                val posToUse = if (caretPositionAtTimeOfPopup <= l) caretPositionAtTimeOfPopup else l
-                textField.setCaretPosition(posToUse)
-              }
-            }))
-          }
+          onEDT(onEDT({
+            val currentSelection = textField.getSelectedText
+            if (selectionAtTimeOfPopup == null && currentSelection != null) {
+              // It is likely we are on windows and we need to do something funky so that we don't select the whole text field.
+              val l = textField.getText.length()
+              val posToUse = if (caretPositionAtTimeOfPopup <= l) caretPositionAtTimeOfPopup else l
+              textField.setCaretPosition(posToUse)
+            }
+          }))
         }
       }
     }
@@ -488,7 +718,6 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
     def selectText(t:String) {
       popupMenu.editor.setText(t)
       popupMenu.cellEditor.stopCellEditing()
-      popupMenu.tableToFocus.requestFocusInWindow()
     }
     reactions += {
       case KeyPressed(_,scala.swing.event.Key.Enter,_,_) => selectText(selection.items.head)
@@ -509,8 +738,17 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
           popupMenu.editor.setCaretPosition(popupMenu.editor.getText.length())
         })
       }
+      case e@KeyPressed(_,scala.swing.event.Key.Z,scala.swing.event.Key.Modifier.Control,_) => {
+        e.consume()
+        selectIndices(-1)
+        popupMenu.editor.requestFocusInWindow()
+        onEDT({
+          popupMenu.editor.setCaretPosition(popupMenu.editor.getText.length())
+        })
+      }
+      case MouseClicked(_,_,_,1,_) => selectText(selection.items.head)
     }
-    listenTo(keys)
+    listenTo(keys, mouse.clicks)
   }
   private val viewScrollPane = new ScrollPane(popupListView) {
     horizontalScrollBarPolicy = ScrollPane.BarPolicy.Never
@@ -521,7 +759,7 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
   private val allModels = List(rowHeaderTableModel, colHeaderTableModel, mainTableModel, blankAxisCellTableModel)
 
   val fullTableModel = new PivotJTableModel {
-    def getRowCount = colHeaderTableModel.getRowCount + mainTableModel.getRowCount
+    def getRowCount = colHeaderTableModel.getRowCount + rowHeaderTableModel.getRowCount
     def getColumnCount = rowHeaderTableModel.getColumnCount + mainTableModel.getColumnCount
 
     def getValueAt(rowIndex:Int, columnIndex:Int) = {
@@ -532,33 +770,65 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
       val (m,r,c) = getTableModel(rowIndex, columnIndex)
       m.isCellEditable(r,c)
     }
-    override def setValueAt(aValue:AnyRef, rowIndex:Int, columnIndex:Int) = {
+    override def setValueAt(aValue:AnyRef, rowIndex:Int, columnIndex:Int) {
       val (m,r,c) = getTableModel(rowIndex, columnIndex)
       m.setValueAt(aValue,r,c)
-      fireTableCellUpdated(rowIndex,columnIndex)
     }
-    def deleteCells(cells:List[(Int,Int)]) = {
-      val modelMap = getTableModels(cells)
-      modelMap.foreach{case (mod, list) => {
-        mod.deleteCells(list.map{case (m,r,c) => (r,c)})
-      }}
-      cells.foreach{case (r,c) => {
-        if (r < getRowCount) fireTableCellUpdated(r,c)
-      }}
+    override def parser(row:Int, col:Int) = {
+      val (m,r,c) = getTableModel(row, col)
+      m.parser(r,c)
     }
-    def resetCells(cells:List[(Int,Int)]) = {
-      val modelMap = getTableModels(cells)
-      modelMap.foreach{case (mod, list) => {
-        mod.resetCells(list.map{case (m,r,c) => (r,c)})
-      }}
-      cells.foreach{case (r,c) => {
-        if (r < getRowCount) fireTableCellUpdated(r,c)
-      }}
-    }
+
     private def getTableModels(cells:List[(Int,Int)]) = {
       cells.map{case (r,c) => {
         getTableModel(r,c)
       }}.groupBy(_._1)
+    }
+
+    override def setValuesAt(values:List[TableValue], currentEdits:Option[PivotEdits], fireChange:Boolean) = {
+      var editsToUse = pivotEdits
+      val modelToData = values.map(tv => {
+        val r = tv.row
+        val c = tv.column
+        val (mod, row, col) = getTableModel(r, c)
+        (mod, row, col, tv.value)
+      }).groupBy(_._1)
+
+      modelToData.foreach{case (mod, list) =>  {
+        val valsForMod = list.map{case (_,r,c,v) => TableValue(v, r, c)}
+        editsToUse = mod.setValuesAt(valsForMod, Some(editsToUse), false)
+      }}
+
+      if (fireChange) {
+        if (editsToUse != pivotEdits) {
+          updateEdits(editsToUse, Full)
+        }
+      }
+      editsToUse
+    }
+    override def deleteCells(cells:List[(Int,Int)], fireChange:Boolean) = {
+      val modelMap = getTableModels(cells)
+      var editsToUse = pivotEdits
+      modelMap.foreach{case (mod, list) => {
+        val cellsForMod = list.map{case (_,r,c) => (r,c)}
+        editsToUse = mod.deleteCells(cellsForMod, false)
+      }}
+      if (fireChange && editsToUse != pivotEdits) {
+        updateEdits(editsToUse, Full)
+      }
+      editsToUse
+    }
+    override def resetCells(cells:List[(Int,Int)], fireChange:Boolean) = {
+      val modelMap = getTableModels(cells)
+      var editsToUse = pivotEdits
+      modelMap.foreach{case (mod, list) => {
+        val cellsForMod = list.map{case (_,r,c) => (r,c)}
+        editsToUse = mod.resetCells(cellsForMod, false)
+      }}
+      if (fireChange && editsToUse != pivotEdits) {
+        updateEdits(editsToUse, Full)
+      }
+      editsToUse
     }
 
     private def getTableModel(rowIndex:Int, columnIndex:Int) = {
@@ -573,7 +843,7 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
       }
     }
 
-    def paintTable(g:Graphics, table:JTable, rendererPane:CellRendererPane, rMin:Int, rMax:Int, cMin:Int, cMax:Int) = {
+    def paintTable(g:Graphics, table:JTable, rendererPane:CellRendererPane, rMin:Int, rMax:Int, cMin:Int, cMax:Int) {
       {
         // Paint the row header table.
         val rMinL = math.max(rMin, colHeaderRowCount0)
@@ -615,7 +885,7 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
         List()
       }
     }
-    def collapseOrExpand(row:Int, col:Int, pivotTableView:PivotTableView) = {
+    def collapseOrExpand(row:Int, col:Int, pivotTableView:PivotTableView) {
       if (col < rowHeaderColCount0) {
         rowHeaderTableModel.collapseOrExpand(row - colHeaderRowCount0, col, pivotTableView)
       } else {
@@ -623,14 +893,14 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
       }
     }
 
-    override def fireTableStructureChanged = {
-      super.fireTableStructureChanged
-      allModels.foreach(_.fireTableStructureChanged)
+    override def fireTableStructureChanged() {
+      super.fireTableStructureChanged()
+      allModels.foreach(_.fireTableStructureChanged())
     }
 
-    override def fireTableDataChanged = {
-      super.fireTableDataChanged
-      allModels.foreach(_.fireTableDataChanged)
+    override def fireTableDataChanged() {
+      super.fireTableDataChanged()
+      allModels.foreach(_.fireTableDataChanged())
     }
 
     def textTyped(textField:JTextField, cellEditor:CellEditor, r:Int, c:Int, focusOwner:Option[AWTComp], tableFrom:AWTComp) {
@@ -646,126 +916,6 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
     }
   }
 
-  def pivotEdits = {
-    Set[PivotEdit]()
-/*
-    val filterFieldToValues = Map() ++ fieldState.filterAreaFields.flatMap(f => {
-      val (field, selection) = fieldState.filters.find{case (f0,sel) => f == f0}.get
-      selection match {
-        case SomeSelection(v) if v.size == 1 => Some((field -> v.head))
-        case _ => None
-      }
-    })
-
-    val rowHeaderEdits = rowHeaderTableModel.overriddenCells
-
-    val rowHeaderPivotEdits = rowHeaderEdits.flatMap{case ((row,col), ac) => {
-      val originalRowHeaderCells = rowHeaderData0(row)
-      val originalRowHeaderFieldToValues = Map() ++ originalRowHeaderCells.map(cell => (cell.value.field -> cell.value.value.value))
-
-      val editedRowHeaderCells = (0 until rowHeaderTableModel.getColumnCount).map(c => rowHeaderTableModel.getValueAt(row, c))
-      val editedRowHeaderFieldToValues = Map() ++ editedRowHeaderCells.map(cell => (cell.value.field -> cell.value.value.value))
-
-      val colHeaderDeleteFieldToValues = (0 until colHeaderTableModel.getColumnCount).flatMap(c => {
-        val mainTableCell = mainTableModel.getValueAt(row, c)
-        if ((mainTableCell == TableCell.Null) || mainTableCell.text == "") {
-          None
-        } else {
-          val verticalSlice = (0 until colHeaderTableModel.getRowCount).map(r => colHeaderTableModel.getValueAt(r,c))
-          if (verticalSlice.exists(ac => ac.value.isOtherValue | ac.value.isTotal)) {
-            None
-          } else {
-            Some(Map() ++ verticalSlice.flatMap(cell => {
-              if (cell.value.isMeasure | cell.value.field == Field.NullField) {
-                None
-              } else {
-                Some((cell.value.field -> cell.value.value.value))
-              }
-            }))
-          }
-        }
-      })
-      val deletes = colHeaderDeleteFieldToValues.map(colMap => {
-        DeletePivotEdit(colMap ++ originalRowHeaderFieldToValues ++ filterFieldToValues)
-      })
-
-      val colHeaderAmendFieldToValues = (0 until colHeaderTableModel.getColumnCount).flatMap(c => {
-        val mainTableCell = mainTableModel.getValueAt(row, c)
-        if ((mainTableCell == TableCell.Null) || (mainTableCell.text == "") ||
-                (mainTableCell.state == EditableCellState.Deleted) || ac.state == EditableCellState.Deleted) {
-          None
-        } else {
-          val verticalSlice = (0 until colHeaderTableModel.getRowCount).map(r => colHeaderTableModel.getValueAt(r,c))
-          if (verticalSlice.exists(ac => ac.value.isOtherValue | ac.value.isTotal)) None else {
-            Some(Map() ++ verticalSlice.flatMap(cell => {
-              if (cell.value.field == Field.NullField) {
-                None
-              } else  if (cell.value.isMeasure) {
-                Some((cell.value.field -> mainTableCell.value))
-              } else {
-                Some((cell.value.field -> cell.value.value.value))
-              }
-            }))
-          }
-        }
-      })
-      val amends = colHeaderAmendFieldToValues.map(colMap => {
-        AmendPivotEdit(colMap ++ editedRowHeaderFieldToValues ++ filterFieldToValues)
-      })
-
-      deletes.toList ::: amends.toList
-    }}
-
-    val mainEdits = mainTableModel.overriddenCells
-    val rowsThatHaveAlreadyBeenEdited = rowHeaderEdits.map{case ((row,_),_) => row}.toSet
-    val mainPivotEdits = mainEdits.flatMap{case ((row,col), tc) => {
-      if (rowsThatHaveAlreadyBeenEdited contains row) {
-        None
-      } else {
-        val rowHeaderCells = rowHeaderData0(row)
-        val rowHeaderFieldToValues = Map() ++ rowHeaderCells.map(cell => (cell.value.field -> cell.value.value.value))
-        val measureInfo = colHeaderData0.find(_(col).value.isMeasure).get(col)
-        val colHeaderFieldToValues = Map() ++ colHeaderData0.map(r => {
-          val cell = r(col)
-          (cell.value.field -> cell.value.value.value)
-        }).filterNot{case (field,_) => (measureInfo.value.field == field) || (field == Field.NullField)}
-
-        if (tc.state != EditableCellState.Deleted) {
-          Some(AmendPivotEdit(rowHeaderFieldToValues ++ colHeaderFieldToValues ++ filterFieldToValues + (measureInfo.value.field -> tc.value)))
-        } else {
-          Some(DeletePivotEdit(rowHeaderFieldToValues ++ colHeaderFieldToValues ++ filterFieldToValues))
-        }
-      }
-    }}
-
-    // Get the added rows.
-    val rowHeaderAddedRows = rowHeaderTableModel.addedRows
-    val mainAddedRows = mainTableModel.addedRows
-    val addedRows = rowHeaderAddedRows.zipWithIndex.flatMap{case (rowHeaderRow, rowIndex) => {
-      if (rowHeaderRow.exists(_.label.isEmpty) || mainAddedRows(rowIndex).exists(_.text.isEmpty)) {
-        None
-      } else {
-        val rowHeaderMap = Map() ++ rowHeaderRow.map(c => {c.value.field -> c.value.value.value})
-        val mainMap = Map() ++ mainAddedRows(rowIndex).zipWithIndex.flatMap{case (tc, colIndex) => {
-          val measureInfo = colHeaderData0.find(_(colIndex).value.isMeasure).get(colIndex)
-          val colHeaderFieldToValues = Map() ++ colHeaderData0.map(r => {
-            val cell = r(colIndex)
-            (cell.value.field -> cell.value.value.value)
-          }).filterNot{case (field,_) => (measureInfo.value.field == field) || (field == Field.NullField)}
-          colHeaderFieldToValues + (measureInfo.value.field -> tc.value)
-        }}
-        Some(AmendPivotEdit(rowHeaderMap ++ mainMap ++ filterFieldToValues))
-      }
-    }}
-
-    Set[PivotEdit]() ++ rowHeaderPivotEdits.toSet ++ mainPivotEdits.toSet ++ addedRows.toSet
-*/
-  }
-  def resetEdits() {
-    rowHeaderTableModel.reset
-    fullTableModel.fireTableDataChanged
-  }
-
   def resizeRowHeaderColumns(fullTable:JTable, rowHeaderTable:JTable, rowComponent:RowComponent,
                              rowFieldHeadingCount:Array[Int], sizerPanel:Panel, rowHeaderScrollPane:JScrollPane) {
     def getRowHeaderMaxColumnWidth(col:Int) = {
@@ -776,7 +926,7 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
       for (row <- 0 until numRows) {
         val axisCell = rowHeaderTable.getValueAt(row, col).asInstanceOf[AxisCell]
         val width = {
-          tmpLabel.setFont(MainTableCellRenderer.selectFont(axisCell.value.value.value))
+          tmpLabel.setFont(PivotCellRenderer.selectFont(axisCell.value.value.value))
           tmpLabel.setText(axisCell.text)
           if (axisCell.collapsible.isDefined) {
             anyCollapsible = true
@@ -788,7 +938,7 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
           max = width
         }
       }
-      max + (if (anyCollapsible) MainTableCellRenderer.LeftIconWidth + 6 else 0)
+      max + (if (anyCollapsible) PivotCellRenderer.LeftIconWidth + 6 else 0)
     }
 
     val fullColumnModel = fullTable.getColumnModel
@@ -857,13 +1007,23 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
     viewport.setMinimumSize(new Dimension(rowHeaderTable.getPreferredSize.width, 20))
   }
 
+  def reverse(mainTable:PivotJTable, rowHeaderTable:PivotJTable, colHeaderTable:PivotJTable) {
+    // The order is important because we need to know whether to delete rows from the full table model.
+    colHeaderTableModel.revert(colHeaderTable)
+    val rowRowsRemoved = rowHeaderTableModel.revert(rowHeaderTable)
+    val mainRowsRemoved = mainTableModel.revert(mainTable)
+    if (rowRowsRemoved || mainRowsRemoved) {
+      val r = fullTableModel.getRowCount - 1
+      fullTableModel.fireTableRowsDeleted(r,r)
+    }
+  }
+
   def resizeColumnHeaderAndMainTableColumns(fullTable:JTable, mainTable:JTable, colHeaderTable:JTable,
                                             colHeaderScrollPane:JScrollPane, columnHeaderScrollPanePanel:Panel,
                                             mainTableScrollPane:JScrollPane) {
     val numRows = mainTable.getRowCount
     val colOffset = rowHeaderColCount0
     val numCols = mainColCount0
-    val endCol = colOffset + numCols
     val rowOffset = colHeaderRowCount0
 
     val tmpLabel = new JLabel("")
@@ -873,7 +1033,7 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
       var max = PivotJTable.MinColumnWidth
       for (row <- 0 until numRows) {
         val tableCell = mainTable.getValueAt(row, col).asInstanceOf[TableCell]
-        tmpLabel.setFont(MainTableCellRenderer.selectFont(tableCell.value))
+        tmpLabel.setFont(PivotCellRenderer.selectFont(tableCell.value))
         val width = {
           tmpLabel.setText(tableCell.asString)
           if (tableCell.isError) {
@@ -890,7 +1050,7 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
     }
 
     def cellWidth(axisCell:AxisCell, icon:ImageIcon):Int = {
-      tmpLabel.setFont(MainTableCellRenderer.selectFont(axisCell.value.value.value))
+      tmpLabel.setFont(PivotCellRenderer.selectFont(axisCell.value.value.value))
       tmpLabel.setText(axisCell.text)
       tmpLabel.setIcon(icon)
 
@@ -903,12 +1063,13 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
         var col = 0
         while (col < numCols) {
           val axisCell = colHeaderTable.getValueAt(row, col).asInstanceOf[AxisCell]
+          if (axisCell == null) throw new Exception("No AxisCell found at " + (row, col) + " " + (colHeaderTable.getRowCount, colHeaderTable.getColumnCount) )
           if (row == rowOffset-1) {
             // I'm adding 5 here as the main table needs this for spacing. I need to figure out how I can calculate this better.
             previousRow(col) = math.max(mainColumnWidths(col), cellWidth(axisCell, null)) + 5
           } else {
             val icon = if (axisCell.collapsible.isDefined) {
-              MainTableCellRenderer.PlusIcon
+              PivotCellRenderer.PlusIcon
             } else {
               null
             }
@@ -966,6 +1127,6 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
         })
       }
     }
-    sb.toString
+    sb.toString()
   }
 }

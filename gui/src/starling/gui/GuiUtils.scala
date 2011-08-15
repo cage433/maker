@@ -7,9 +7,13 @@ import swing.Swing._
 import javax.swing.plaf.FontUIResource
 import java.awt.{GraphicsEnvironment, Rectangle, Font, Color, Dimension}
 import starling.gui.utils.RichColour._
-import swing.{TextArea, Separator, Label}
 import starling.pivot.view.swing.MigPanel
-import javax.swing.{GrayFilter, UIManager}
+import java.awt.event.{InputEvent, KeyEvent}
+import swing._
+import swing.event.WindowClosing
+import javax.swing._
+import starling.quantity.Quantity
+import starling.pivot.{QuantityLabelPivotFormatter, PivotFormatter, ExtraFormatInfo}
 
 object GuiUtils {
   def LabelWithSeparator(text:String) = new MigPanel("insets 0"){
@@ -108,6 +112,8 @@ object GuiUtils {
   val GuiFieldFilterNumberColour = Color.GREEN.darker
   val DropPanelOverColour = new Color(0,0,255,50)
   val DropPanelOverColourInvalid = new Color(255,0,0,50)
+  val ExplanationPanelBackgroundColour = Color.WHITE
+  val TableGridColour = new Color(208, 215, 229)
 
   val TableSelectedColour = new Color(195, 212, 232)
 
@@ -122,22 +128,33 @@ object GuiUtils {
   val BlendedSubtotalTotalColour = TableSelectedColour.blend(SubtotalTotalColour, BlendFraction)
   val OtherValueTotalColour = new Color(0,246,220,30)
   val BlendedOtherValueTotalColour = TableSelectedColour.blend(OtherValueTotalColour, BlendFraction)
-
-  val DeletedColour = Color.LIGHT_GRAY
-  val BlendedDeletedColour = TableSelectedColour.blend(DeletedColour, BlendFraction)
-
   val PivotTableBackgroundColour = new Color(190, 214, 248)
-
   val ClearColour = new Color(0,0,0,0)
 
-  val EditedCellColour = new Color(79, 174, 232)
-  val BlendedEditedCellColour = TableSelectedColour.blend(EditedCellColour, BlendFraction)
-  val AddedCellColour = new Color(163, 225, 121)
-  val BlendedAddedCellColour = TableSelectedColour.blend(AddedCellColour, BlendFraction)    
-  val ErrorCellColour = new Color(244, 121, 124)
-  val BlendedErrorCellColour = TableSelectedColour.blend(ErrorCellColour, BlendFraction)
-//  val EditableCellColour = new Color(245,245,245)
   val EditableCellColour = new Color(190,203,244, 64)
+  val EditedCellColour = new Color(79, 174, 232)
+  val AddedBlankCellColour = new Color(163, 225, 121)
+  val AddedCellColour = new Color(0xd5f7be)
+  val TaintedCellColour = new Color(160, 218, 255)
+  val DeletedColour = Color.LIGHT_GRAY
+
+  /*val EditableCellColour = new Color(0xecf1f8)
+  val EditedCellColour = new Color(0xFFFFD7)
+  val AddedCellColour = new Color(0xd5f7be)
+  val TaintedCellColour = new Color(160, 218, 255)
+//  val DeletedColour = new Color(0xd3d9e2)
+  val DeletedColour = new Color(0xebebeb)*/
+
+  val ErrorCellColour = new Color(244, 121, 124)
+
+  val RowHeaderEditableCellColour = new Color(231,235,243)
+
+  val BlendedDeletedColour = TableSelectedColour.blend(DeletedColour, BlendFraction)
+  val BlendedEditedCellColour = TableSelectedColour.blend(EditedCellColour, BlendFraction)
+  val BlendedTaintedCellColour = TableSelectedColour.blend(TaintedCellColour, BlendFraction)
+  val BlendedAddedCellColour = TableSelectedColour.blend(AddedCellColour, BlendFraction)
+  val BlendedAddedBlankCellColour = TableSelectedColour.blend(AddedBlankCellColour, BlendFraction)
+  val BlendedErrorCellColour = TableSelectedColour.blend(ErrorCellColour, BlendFraction)
   val BlendedEditableCellColour = TableSelectedColour.blend(EditableCellColour, BlendFraction)
   val BlendedHeaderColour = TableSelectedColour.blend(PanelBackgroundColour, BlendFraction)
 
@@ -145,7 +162,12 @@ object GuiUtils {
   lazy val BorderColour = UIManager.getColor("controlDkShadow")
   lazy val DisabledComboBackground = UIManager.getColor("ComboBox.disabledBackground")
 
-  def setLookAndFeel {
+  def setLookAndFeel() {
+    val platform = PlatformDefaults.getPlatform
+    if (platform == PlatformDefaults.MAC_OSX) {
+      PlatformDefaults.setPlatform(PlatformDefaults.WINDOWS_XP)
+    }
+
 //    UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName)
     PlasticLookAndFeel.setTabStyle(PlasticLookAndFeel.TAB_STYLE_METAL_VALUE)
     UIManager.setLookAndFeel(LookAndFeel)
@@ -161,7 +183,7 @@ object GuiUtils {
     UIManager.put("MenuItem.background", backColour) // JGoodies looks uses this for the combo box popup.
     UIManager.put("control", backColour) // This is used for the scroll bar buttons.
     UIManager.put("Viewport.background", backColour)
-    UIManager.put("Table.gridColor", new Color(208, 215, 229))
+    UIManager.put("Table.gridColor", TableGridColour)
     val blueFocusBorderColor = new Color(166, 202, 240)
     UIManager.put("Table.focusSelectedCellHighlightBorder", LineBorder(blueFocusBorderColor))
     UIManager.put("List.focusSelectedCellHighlightBorder", LineBorder(blueFocusBorderColor))
@@ -182,6 +204,20 @@ object GuiUtils {
     UIManager.put("SplitPaneDivider.draggingColor", MouseOverColour)
 
     UIManager.put("JXMonthView.font", new FontUIResource("Dialog", Font.PLAIN, 10))
+
+    // I want to disable ctrl page down and page up in ListViews, Tables and ScrollPanes so that you can change tabs when these have focus.
+    val lv = new ListView(List("Bla")) {
+      peer.getInputMap(JComponent.WHEN_FOCUSED).getParent.remove(KeyStroke.getKeyStroke(KeyEvent.VK_PAGE_DOWN, InputEvent.CTRL_DOWN_MASK))
+      peer.getInputMap(JComponent.WHEN_FOCUSED).getParent.remove(KeyStroke.getKeyStroke(KeyEvent.VK_PAGE_UP, InputEvent.CTRL_DOWN_MASK))
+    }
+    new ScrollPane(lv) {
+      peer.getInputMap(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT).getParent.remove(KeyStroke.getKeyStroke(KeyEvent.VK_PAGE_DOWN, InputEvent.CTRL_DOWN_MASK))
+      peer.getInputMap(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT).getParent.remove(KeyStroke.getKeyStroke(KeyEvent.VK_PAGE_UP, InputEvent.CTRL_DOWN_MASK))
+    }
+    new Table() {
+      peer.getInputMap(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT).getParent.remove(KeyStroke.getKeyStroke(KeyEvent.VK_PAGE_DOWN, InputEvent.CTRL_DOWN_MASK))
+      peer.getInputMap(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT).getParent.remove(KeyStroke.getKeyStroke(KeyEvent.VK_PAGE_UP, InputEvent.CTRL_DOWN_MASK))
+    }
   }
 
   def onScreen(rect:Rectangle) = {
@@ -207,5 +243,34 @@ object GuiUtils {
     val screenArea = new Rectangle(minX,minY,maxX-minX,maxY-minY)
     // Work out if the top 200 by 200 pixels of the supplied rect is in the screen. When maximized, the position is -4 so add 4 to make it fit inside the screen.
     screenArea.contains(new Rectangle(rect.x + 4, rect.y + 4, 200, 200))
+  }
+
+  def showInFrame(comp:Component, pack0:Boolean=true) {
+    new Frame {
+      title = "Test frame"
+      reactions += {case WindowClosing(_) => System.exit(0)}
+      contents = comp
+      if (pack0) {
+        pack()
+      } else {
+        bounds = new Rectangle(100, 100, 500, 400)
+      }
+      centerOnScreen()
+      visible = true
+    }
+  }
+
+  def resizeTableColumnsToFit(table:JTable, font0:Font) {
+    val l = new Label("sdkfjh") {font = font0}
+    for (col <- (0 until table.getColumnCount)) {
+      var width = 0
+      for (row <- (0 until table.getRowCount)) {
+        l.text = table.getValueAt(row, col).toString
+        width = math.max(width, l.preferredSize.width)
+      }
+      width += 5
+      table.getColumnModel.getColumn(col).setPreferredWidth(width)
+      table.getColumnModel.getColumn(col).setMinWidth(width)
+    }
   }
 }

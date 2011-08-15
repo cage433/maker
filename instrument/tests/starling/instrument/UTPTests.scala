@@ -1,6 +1,6 @@
 package starling.instrument
 
-import starling.utils.StarlingTest
+import physical.PhysicalMetalAssignment
 import starling.quantity.UOM._
 import starling.quantity.Quantity._
 import org.testng.annotations.{DataProvider, Test}
@@ -8,7 +8,6 @@ import starling.utils.QuantityTestUtils._
 import org.testng.Assert._
 import starling.curves._
 import interestrate.{DayCountActual365}
-import starling.utils.Reflection
 import starling.market.{InterestRateMarket, Index, Market}
 import starling.market._
 import starling.utils.CaseInsensitive._
@@ -22,6 +21,8 @@ import cern.colt.matrix.impl.DenseDoubleMatrix2D
 import starling.quantity.{UOM, Percentage, Quantity}
 import starling.curves.ForwardPriceKey
 import starling.calendar.BrentMonth
+import starling.utils.{StarlingXStream, StarlingTest, Reflection}
+import starling.utils.sql.PersistAsBlob
 
 class UTPTests extends IndexTest {
 
@@ -39,7 +40,7 @@ class UTPTests extends IndexTest {
 
       def applyOrMatchError(key: AtomicDatumKey) = {
         key match {
-          case DiscountRateKey(ccy, day, _) =>  math.exp(- zeroRates(ccy) * day.daysSinceInYears(marketDay.day))
+          case DiscountRateKey(ccy, day, _) =>  new Quantity(math.exp(- zeroRates(ccy) * day.daysSinceInYears(marketDay.day)))
           case ForwardPriceKey(Market.NYMEX_WTI, Month(2010, 10), _) => 100 (Market.NYMEX_WTI.priceUOM) //for CSO
           case ForwardPriceKey(Index.DATED_BRENT, _, _) => 98 (USD/BBL)
           case ForwardPriceKey(`plattsJan`, _, _) => 95 (USD/BBL)
@@ -49,7 +50,7 @@ class UTPTests extends IndexTest {
           case _ : BradyMetalVolAtomicDatumKey => Percentage(0.3)
           case _ : BradyFXVolSmileAtomicDatumKey => Map(0.5 -> Percentage(0.3))
           case _ : OilAtmVolAtomicDatumKey => Percentage(0.10)
-          case _ : OilVolSkewAtomicDatumKey => Map(0.5 -> Percentage(0.1))
+          case _ : OilVolSkewAtomicDatumKey => Map(0.1 -> Percentage(0.05))
           case _ : EquityPriceKey => 100 (USD/SHARE)
           case USDFXRateKey(ccy) => xRates(ccy)(USD/ccy)
           case SpreadAtmStdDevAtomicDatumKey(market, period, ignoreShifts) => 10 (market.priceUOM)
@@ -72,11 +73,6 @@ class UTPTests extends IndexTest {
       CommoditySwap(unlIndex, 123(USD/MT), 777(MT), Quarter(2010, 1), cleared = false),
       // mid period
       CommoditySwap(unlIndex, 123(USD/MT), 777(MT), Quarter(2009, 1), cleared = false),
-
-    // TODO CFDs don't work at the moment. we need to spend some time on them.
-      CFD(cfdIndex, -(1(USD/BBL)), 777(BBL), Month(2009, 2)), // mid period
-      CFD(cfdIndex, -(1(USD/BBL)), 777(BBL), Month(2008, 12)), // all before
-      CFD(cfdIndex, -(1(USD/BBL)), 1000(BBL), Month(2009, 10)), // all after
 
       new FuturesOption(leadMarket, Day(2009, 8, 1), Day(2009, 8, 20), 90(USD/MT), 333(MT), Call, European),
       AsianOption(unlIndex, Month(2009, 2), 98(USD/MT), 222(MT), Put),
@@ -104,7 +100,13 @@ class UTPTests extends IndexTest {
       RefinedAssignment(leadMarket, Day(2010, 1, 1), Quantity(100, MT)),
       RefinedFixationsForSplit(List(RefinedFixation(leadMarket, Day(2010, 1, 1), "Y", Quantity(100, MT)))),
 
-      CashInstrument(CashInstrumentType.Ordinary, Quantity(100, USD), Day(2011, 1, 1))
+      CashInstrument(CashInstrumentType.Ordinary, Quantity(100, USD), Day(2011, 1, 1)),
+
+      // Commodity Spread Options
+      CommoditySpreadOption(FuturesSpreadMarket.ICE_WTI_BRENT, Month(2011, 1), Quantity(-1, USD/BBL), Quantity(1000, BBL), Call),
+
+      PhysicalMetalAssignment.sample
+
     ).map(Array[Tradeable](_))
   }
 
@@ -164,6 +166,11 @@ class UTPTests extends IndexTest {
               normalisedDetails(normailiseKey("initialprice")).asInstanceOf[Object]
             } else if (method.getName == "isNull") {
               (!normalisedDetails.contains(key) || normalisedDetails(key) == null).asInstanceOf[Object]
+            } else if (method.getName == "getObject") {
+              val entry = normalisedDetails(key).asInstanceOf[PersistAsBlob]
+              val text = StarlingXStream.write(entry.obj)
+              val read = StarlingXStream.read(text).asInstanceOf[Object]
+              read
             } else {
               normalisedDetails(key).asInstanceOf[Object]
             }
@@ -186,7 +193,7 @@ class UTPTests extends IndexTest {
 
   @Test(dataProvider = "tradeableProvider")
   def testWeCanReadAndWriteAllTradeables(tradeable : Tradeable) {
-    val details = tradeable.tradeableDetails.map { kv => kv._1.toLowerCase.replaceAll(" ", "") -> kv._2}
+    val details = tradeable.persistedTradeableDetails.map { kv => kv._1.toLowerCase.replaceAll(" ", "") -> kv._2}
     val fakeRow = resultSetRowFromMap(details)
     val created = tradeable.tradeableType.createTradeable(fakeRow)
 
@@ -197,7 +204,7 @@ class UTPTests extends IndexTest {
   def testUTPDetailsFieldsAreInInstrumentTypeKeysList(tradeable : Tradeable) {
     val utps = tradeable.asUtpPortfolio(Day(2009, 1, 1)).instruments
     for (utp <- utps) {
-      val detailsKeys = normaliseDetails(utp.details).keySet
+      val detailsKeys = normaliseDetails(utp.detailsForUTPNOTUSED).keySet
       val undeclaredFields = detailsKeys.toList.filterNot(InstrumentType.lowercaseNoSpaceFields contains _)
       assertTrue(undeclaredFields.isEmpty, "There are undeclared fields in " + utp.instrumentType + " " + undeclaredFields + " -- " +  InstrumentType.lowercaseNoSpaceFields)
     }
@@ -205,7 +212,7 @@ class UTPTests extends IndexTest {
 
   @Test(dataProvider = "tradeableProvider")
   def testTradeableDetailsFieldsAreInTradeableTypeKeysList(tradeable : Tradeable) {
-    val detailsKeys = normaliseDetails(tradeable.tradeableDetails).keySet
+    val detailsKeys = normaliseDetails(tradeable.shownTradeableDetails).keySet
     val undeclaredFields = detailsKeys.toList.filterNot(TradeableType.lowercaseNoSpaceFields contains _)
     assertTrue(undeclaredFields.isEmpty, "There are undeclared fields in " + tradeable + " " + undeclaredFields)
   }
@@ -213,7 +220,7 @@ class UTPTests extends IndexTest {
   @Test
   def testThereAreNoSurplusKeysInInstrumentTypeFieldsList() {
     val instruments = tradeableProvider.flatMap(tradeables=>tradeables).flatMap{tradeable=>tradeable.asUtpPortfolio(Day(2009, 1, 1)).instruments}
-    val allFields = (TreeSet[String]() ++ instruments.flatMap(_.details.keySet.map(_.replaceAll(" ", "").toLowerCase))) + "error"
+    val allFields = (TreeSet[String]() ++ instruments.flatMap(_.detailsForUTPNOTUSED.keySet.map(_.replaceAll(" ", "").toLowerCase))) + "error"
     val actual = TreeSet[String]() ++ InstrumentType.fields.map(_.replaceAll(" ", "").toLowerCase)
     assertEquals(actual, allFields)
   }
@@ -221,7 +228,7 @@ class UTPTests extends IndexTest {
   @Test
   def testThereAreNoSurplusKeysInTradeableTypeFieldsList() {
     val tradeables = tradeableProvider.flatMap(tradeables=>tradeables)
-    val allFields = (TreeSet[String]() ++ tradeables.flatMap(_.tradeableDetails.keySet.map(_.replaceAll(" ", "").toLowerCase))) + "error"
+    val allFields = (TreeSet[String]() ++ tradeables.flatMap(_.shownTradeableDetails.keySet.map(_.replaceAll(" ", "").toLowerCase))) + "error"
     val actual = TreeSet[String]() ++ TradeableType.fields.map(_.replaceAll(" ", "").toLowerCase)
     assertEquals(actual, allFields)
   }
@@ -236,7 +243,7 @@ class UTPTests extends IndexTest {
         val zeroVolsEnv = env.zeroVols.undiscounted
         val forwardDayAndTime = DayAndTime(env.marketDay.day + 500, TimeOfDay.EndOfDay)
         val mtm = utp.mtm(zeroVolsEnv, USD)
-        assertTrue(mtm.value > 0.1, utp + ": mtm must be positive to test the utp correctly " + mtm)
+        assertTrue(mtm.abs.value > 0.1, utp + ": mtm must be non-zero to test the utp correctly " + mtm)
         val forwardEnv = zeroVolsEnv.forwardState(forwardDayAndTime)
         val forwardUtp = utp.forwardState(zeroVolsEnv, forwardDayAndTime)
         val forwardMtm = forwardUtp.mtm(forwardEnv, USD)
@@ -259,4 +266,17 @@ class UTPTests extends IndexTest {
     assertEquals(atomicPriceKeys2, atomicPriceKeys)
   }
 
+  @Test(dataProvider = "tradeableProvider")
+  def testExplanationValuation(tr : Tradeable){
+    try {
+      assertQtyEquals(
+        tr.explanation(env), 
+        tr.asUtpPortfolio(Day(2009, 1, 1)).mtm(env, tr.valuationCCY),
+        1e-7
+      )
+    } catch {
+      case _ : UnsupportedOperationException => 
+      case e => throw e
+    }
+  }
 }

@@ -21,7 +21,7 @@ class TestNonSkewDelta extends TestMarketSpec{
           case _ : ForwardPriceKey => Quantity(100, USD/BBL)
           case _ : OilAtmVolAtomicDatumKey => Percentage(0.5)
           case _ : OilVolSkewAtomicDatumKey => Map(0.25 -> Percentage(-0.02), 0.5 -> Percentage(0.01), 0.75 -> Percentage(0.04))
-          case _ : DiscountRateKey => 1.0
+          case _ : DiscountRateKey => new Quantity(1.0)
         }
       }
     }.undiscounted
@@ -40,7 +40,7 @@ class TestNonSkewDelta extends TestMarketSpec{
         val F = env.forwardPrice(Market.ICE_BRENT, Month(2011, 1))
         val sigma = env.impliedVol(Market.ICE_BRENT, Month(2011, 1), Day(2010, 12, 31), Quantity(110, USD/BBL))
         val mtm = Quantity(F.value + 100 * sigma.decimalValue, USD)
-        Assets(Asset(true, false, "fred", Day(2010, 12, 31), Quantity(1, BBL), mtm))
+        Assets(Asset(true, "fred", Day(2010, 12, 31), Quantity(1, BBL), mtm))
       }
 
     }

@@ -21,16 +21,17 @@ object ConnectionPool {
 
 object ChannelPool {
   val DeclareQueuesPassively = true
+  val IsDurable = true
   val NonExclusive = false
   val DoNotAutoDelete = false
 
-  def openChannel(host : String, queue : RabbitQueue) : Bound[Channel] = {
-    val connection = ConnectionPool.openConnection(host)
+  def openChannel(host: String, queue: RabbitQueue): RabbitChannel = {
+    val connection: Connection = ConnectionPool.openConnection(host)
     var channel: Channel = null
 
     try {
       channel = connection.createChannel
-      channel.queueDeclare(queue.name, DeclareQueuesPassively, queue.isDurable, NonExclusive, DoNotAutoDelete, null)
+      channel.queueDeclare(queue.name, DeclareQueuesPassively, IsDurable, NonExclusive, DoNotAutoDelete, null)
     } catch {
       case e : Exception => {
         if (channel != null && channel.isOpen) channel.close
@@ -40,17 +41,19 @@ object ChannelPool {
       }
     }
 
-    Bound(channel, connection)
+    new RabbitChannel(channel, connection, queue)
   }
 }
 
-case class RabbitQueue(name: String, durability : QueueDurability) {
-  def isDurable = durability match {
-    case Durable => true
-    case _ => false
+class RabbitChannel(channel: Channel, connection: Connection, queue: RabbitQueue) {
+  def close() { channel.close; connection.close }
+
+  def basicPublish(exchange: String, routingKey: String, props: AMQP.BasicProperties, body: Array[Byte]) {
+    channel.basicPublish(exchange, routingKey, props, body)
   }
+
+  def basicConsume(queue: String, noAck: Boolean, callback: Consumer) = channel.basicConsume(queue, noAck, callback)
+  def queueingConsumer = new QueueingConsumer(channel)
 }
 
-sealed abstract class QueueDurability
-case object Durable extends QueueDurability
-case object Transient extends QueueDurability
+case class RabbitQueue(name: String)

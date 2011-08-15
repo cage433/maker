@@ -37,6 +37,7 @@ object ImpliedVolDataType extends MarketDataType {
     exerciseDayField,
     volatilityField)
 
+  def marketDataKeyFelds = throw new Exception("Implement if we need to do Metals VAR")
   def keyFields = throw new Exception("Implement if we need to do Metals VAR")
   def valueFields = throw new Exception("Implement if we need to do Metals VAR")
   def createKey(values: Map[Field, Any]) = throw new Exception("Implement if we need to do Metals VAR")

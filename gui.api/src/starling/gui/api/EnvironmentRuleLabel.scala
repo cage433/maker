@@ -8,6 +8,7 @@ object EnvironmentRuleLabel {
   val RealTime = EnvironmentRuleLabel("Real Time")
   val COB = EnvironmentRuleLabel("COB")
   val Default = EnvironmentRuleLabel("Default")
+  val AllCloses = EnvironmentRuleLabel("All Closes")
 }
 
 case class EnvironmentSpecificationLabel(observationDay:Day, environmentRule:EnvironmentRuleLabel)

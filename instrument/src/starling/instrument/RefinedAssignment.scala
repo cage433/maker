@@ -6,6 +6,7 @@ import starling.market.{Market, FuturesMarket}
 import starling.quantity.{UOM, Quantity}
 import starling.curves.Environment
 import starling.daterange.DateRangePeriod
+import starling.quantity.NamedQuantity
 
 case class RefinedAssignment(
   market : FuturesMarket,
@@ -25,6 +26,8 @@ case class RefinedAssignment(
 
   def valuationCCY = market.currency
 
+  def explanation(env : Environment) : NamedQuantity = throw new UnsupportedOperationException()
+
   def assets(env: Environment) = {
     market.convert(volume, market.uom) match {
       case Some(volumeInMarketUnits) => {
@@ -41,11 +44,11 @@ case class RefinedAssignment(
 
   }
 
-  def details : Map[String, Any] = Map("EstimatedDelivery" -> estimatedDeliveryDate, "Market" -> market)
+  def detailsForUTPNOTUSED : Map[String, Any] = persistedTradeableDetails - "Quantity"
 
   def instrumentType = RefinedAssignment
 
-  def tradeableDetails : Map[String, Any] = details + ("Quantity" -> volume)
+  def persistedTradeableDetails : Map[String, Any] = Map("EstimatedDelivery" -> estimatedDeliveryDate, "Market" -> market, "Quantity" -> volume)
 
   def asUtpPortfolio(tradeDay:Day) = UTP_Portfolio(Map(copy(volume = Quantity(1.0, volume.uom)) -> volume.value))
 

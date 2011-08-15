@@ -1,7 +1,7 @@
 package starling.instrument
 
 import starling.richdb.RichInstrumentResultSetRow
-import starling.quantity.{Percentage, UOM, Quantity}
+import starling.quantity.Quantity._
 import java.sql.ResultSet
 import starling.utils.CollectionUtils._
 import starling.utils.ImplicitConversions._
@@ -12,7 +12,7 @@ import starling.market._
 import starling.models._
 import starling.utils.MathUtil
 import starling.daterange.DateRangePeriod
-
+import starling.quantity._
 
 abstract class AverageOption(
         index: SingleIndex,
@@ -21,7 +21,7 @@ abstract class AverageOption(
         volume: Quantity,
         callPut: CallOrPut
         ) extends Tradeable {
-  def tradeableDetails: Map[String, Any] = Map("Market" -> index,
+  def persistedTradeableDetails: Map[String, Any] = Map("Market" -> index,
     "Period" -> averagingPeriod,
     "Strike" -> strike, "Quantity" -> volume, "CallPut" -> callPut)
 
@@ -36,6 +36,7 @@ abstract class AverageOption(
     }
   }
 
+  val valuationCCY = strike.numeratorUOM
 }
 
 abstract class SingleAverageOption(
@@ -45,9 +46,20 @@ abstract class SingleAverageOption(
         volume: Quantity,
         callPut: CallOrPut
         ) extends UTP {
-  def details: Map[String, Any] = Map("Market" -> index,
+  def detailsForUTPNOTUSED: Map[String, Any] = Map("Market" -> index,
     "Period" -> averagingPeriod,
     "Strike" -> strike, "CallPut" -> callPut)
+
+  def explanation(env : Environment) : NamedQuantity = {
+    if (!isLive(env.marketDay))
+      mtm(env).named("Mtm")
+    else {
+      val namedEnv = env.withNaming()
+      val (undiscPrc, (avePrice, vol)) = undiscountedPrice(namedEnv)
+      val discount = namedEnv.discount(valuationCCY, settlementDate)
+      FunctionNamedQuantity("Curran-" + callPut, List(avePrice, vol, strike.named("K")), undiscPrc, true) * volume.named("Volume") * discount.named("Discount")
+    }
+  }
 
   val averagingDays: List[Day]
 
@@ -69,7 +81,7 @@ abstract class SingleAverageOption(
   }
 
   private def undiscountedMtm(env: Environment): Quantity = {
-    undiscountedPrice(env) * volume
+    undiscountedPrice(env)._1 * volume
   }
 
   def valuationCCY = strike.numeratorUOM
@@ -87,11 +99,6 @@ abstract class SingleAverageOption(
     val priceKeys : Set[EnvironmentDifferentiable with PriceKey] = days.map(SwapPrice(index, _))
     val volKeys : Set[EnvironmentDifferentiable with VolKey] = days.map(SwapVol(index, _))
     (priceKeys, volKeys)
-//    var (pk, vk) = super.priceAndVolKeys(marketDay)
-//    var (spk,_) = SingleCommoditySwap(index, strike, volume, averagingPeriod, false).priceAndVolKeys(marketDay)
-//    pk = if (pk.isEmpty) pk else spk
-//    vk = if (vk.isEmpty) vk else spk.map{case SwapPrice(_, period) => SwapVol(index, period)}
-//    (pk, vk)
   }
 
   def periodKey = Some(DateRangePeriod(averagingPeriod))
@@ -117,20 +124,26 @@ abstract class SingleAverageOption(
     }
   }
 
-  def undiscountedPrice(env : Environment) : Quantity = {
+  def undiscountedPrice(env : Environment) : (Quantity, (NamedQuantity, NamedQuantity)) = {
     val pricingDays = averagingDays
     val marketDay = env.marketDay
     val daysInFuture = pricingDays.filter(_.endOfDay > marketDay)
-    val r = env.forwardRate(valuationCCY, env.marketDay.day, settlementDate)
-    val prices = pricingDays.map(d => d.endOfDay.timeSince(marketDay) -> env.fixingOrForwardPrice(index, d)).toMap
-    val unfixed = prices.filterKeys(_ > 0.0)
+    val dayPriceMap = pricingDays.map(d => d.endOfDay.timeSince(marketDay) -> env.fixingOrForwardPrice(index, d)).toMap
+    val unfixed = dayPriceMap.filterKeys(_ > 0.0)
     val vol = (if (daysInFuture.isEmpty) Percentage(1e-6) else env.swapVol(index, SimpleDateRange.containingRange(daysInFuture), strike))
-    Quantity(Curran(callPut, prices, strike, r, vol).undiscountedValue, strike.uom)
+    val prices = dayPriceMap.keySet.toList.sortWith(_<_).map(dayPriceMap)
+    val avePrice = SimpleNamedQuantity("Average(" + index + "." + averagingPeriod + ")", Quantity.average(prices))
+    (Quantity(Curran(callPut, dayPriceMap, strike, vol).value, strike.uom), (avePrice, PercentageNamedQuantity("Vol", vol)))
   }
 
+  def isLive(dayAndTime: DayAndTime) = dayAndTime < averagingPeriod.lastDay.endOfDay
+
   def price(env : Environment) = {
-    val discount = env.discount(valuationCCY, settlementDate)
-    undiscountedPrice(env) * discount
+    if(isLive(env.marketDay)) {
+      undiscountedPrice(env)._1
+    } else {
+      0 (index.priceUOM)
+    }
   }
 
   override def forwardState(env: Environment, dayAndTime: DayAndTime) = {

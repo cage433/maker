@@ -8,12 +8,11 @@ import api.UserSettingUpdated
 import starling.pivot.view.swing._
 import starling.pivot._
 import controller.{PivotTable, PivotTableConverter}
-import java.awt.Dimension
 import starling.rmi.{StarlingServer, PivotData}
 import collection.mutable.HashSet
 import starling.utils.ImplicitConversions._
 import scala.swing.Swing._
-import starling.pivot.view.swing.TableType._
+import java.awt.{AlphaComposite, Color, Dimension}
 
 /**
  * An abstract page which holds a pivot table
@@ -25,11 +24,11 @@ import starling.pivot.view.swing.TableType._
  *
  */
 
-abstract class AbstractPivotPage(pivotPageState:PivotPageState, edits:Set[PivotEdit]=Set.empty) extends Page {
+abstract class AbstractPivotPage(pivotPageState:PivotPageState, edits:PivotEdits=PivotEdits.Null) extends Page {
   def icon = StarlingIcons.im("/icons/stock_chart-reorganize.png")
   def dataRequest(pageBuildingContext:PageBuildingContext):PivotData
-  def save(starlingServer:StarlingServer, edits:Set[PivotEdit]):Boolean = throw new Exception("No implementation of save for this page")
-  def selfPage(pivotPageState:PivotPageState, edits:Set[PivotEdit]=Set.empty):Page
+  def save(starlingServer:StarlingServer, edits:PivotEdits):Boolean = throw new Exception("No implementation of save for this page")
+  def selfPage(pivotPageState:PivotPageState, edits:PivotEdits=PivotEdits.Null):Page
   def layoutType:Option[String] = None
   def subClassesPageData(pageBuildingContext:PageBuildingContext):Option[PageData] = None
   def finalDrillDownPage(fields:Seq[(Field,Selection)], pageContext:PageContext, ctrlDown:Boolean):Unit = ()
@@ -88,11 +87,11 @@ object PivotComponent {
         toolbarButtons:List[Button],
         configPanel:Option[ConfigPanels],
         finalDrillDown:(Seq[(Field,Selection)],PageContext,Boolean)=>Unit,
-        selfPage:((PivotPageState,Set[PivotEdit])=>Page),
+        selfPage:((PivotPageState,PivotEdits)=>Page),
         pageData:PageData,
         pivotPageState:PivotPageState,
-        edits:Set[PivotEdit],
-        save:(StarlingServer, Set[PivotEdit]) => Boolean,
+        edits:PivotEdits,
+        save:(StarlingServer, PivotEdits) => Boolean,
         bookmark:Bookmark,
         browserSize:Dimension,
         embedded:Boolean = true):PivotComponent = {
@@ -100,7 +99,7 @@ object PivotComponent {
     val data = pageData.asInstanceOf[PivotTablePageData]
 
     if (pivotPageState.showChart) {
-      PivotTablePageGraphComponent(data.pivotData.pivotTable)
+      new PivotTablePageGraphComponent(data.pivotData.pivotTable)
     } else {
       new PivotTablePageComponent(text, pageContext, toolbarButtons, configPanel, finalDrillDown, selfPage, data,
         pivotPageState, edits, save, bookmark, browserSize, embedded)
@@ -112,7 +111,7 @@ abstract class PivotComponent extends MigPanel("insets 0", "[fill,grow]", "[fill
   def getSelection : (List[(Field, Selection)], List[scala.List[(Field, Selection)]])
 }
 
-case class PivotTablePageGraphComponent(table:PivotTable) extends PivotComponent {
+class PivotTablePageGraphComponent(table:PivotTable) extends PivotComponent {
   val pivotGrid = new PivotTableConverter(OtherLayoutInfo(), table).createGrid(addExtraColumnRow = false)
   val pivotChart = new PivotChartView(pivotGrid)
   add(pivotChart, "push, grow")
@@ -126,18 +125,18 @@ class PivotTablePageComponent(
         toolbarButtons:List[Button],
         configPanel:Option[ConfigPanels],
         finalDrillDown:(Seq[(Field,Selection)],PageContext,Boolean)=>Unit,
-        selfPage:((PivotPageState,Set[PivotEdit])=>Page),
+        selfPage:((PivotPageState,PivotEdits)=>Page),
         pivotTablePageData:PivotTablePageData,
         pivotPageState:PivotPageState,
-        edits:Set[PivotEdit],
-        save:(StarlingServer, Set[PivotEdit]) => Boolean,
+        edits:PivotEdits,
+        save:(StarlingServer, PivotEdits) => Boolean,
         bookmark:Bookmark,
         browserSize:Dimension,
         embedded:Boolean) extends PivotComponent {
 
   val data = pivotTablePageData.pivotData
   val extraFormatInfo = pageContext.getSetting(StandardUserSettingKeys.ExtraFormattingInfo, PivotFormatter.DefaultExtraFormatInfo)
-  val pivotTableComponent = PivotTableView.createWithLayer(data, pivotPageState.otherLayoutInfo, browserSize, configPanel, extraFormatInfo, embedded)
+  val pivotTableComponent = PivotTableView.createWithLayer(data, pivotPageState.otherLayoutInfo, browserSize, configPanel, extraFormatInfo, edits, embedded)
   val pivotComp = pivotTableComponent.getScalaComponent
 
   val currentFieldState = data.pivotFieldsState
@@ -243,6 +242,8 @@ class PivotTablePageComponent(
       icon = StarlingIcons.icon("/icons/16x16_save.png")
       tooltip = "Save the edits made to the data"
       enabled = edits.nonEmpty
+      val numEdits = edits.size
+      val numEditsString = numEdits.toString
 
       def saveEdits() {
         println("Saving edits: " + edits)
@@ -254,7 +255,9 @@ class PivotTablePageComponent(
           // Because of the order of clearing the screen, this has to be put at the back of the EDT.
           onEDT({
             if (b) {
-              pageContext.goTo(selfPage(pivotPageState, Set.empty))
+              val pageWithoutEdits = selfPage(pivotPageState, PivotEdits.Null)
+              println("Going to " + pageWithoutEdits)
+              pageContext.goTo(pageWithoutEdits)
             } else {
               pageContext.setErrorMessage("Error Saving Edits", "There was an error when saving the edits.\n\n" +
                       "Please contact a Starling developer")
@@ -263,13 +266,32 @@ class PivotTablePageComponent(
         })
       }
       reactions += {case ButtonClicked(b) => saveEdits()}
+
+      override protected def paintComponent(g:Graphics2D) {
+        super.paintComponent(g)
+        if (numEdits > 0) {
+          g.setColor(Color.WHITE)
+          g.setFont(GuiUtils.GuiFieldFilterNumberFont)
+
+          val fm = g.getFontMetrics(GuiUtils.GuiFieldFilterNumberFont)
+          val sWidth = fm.stringWidth(numEditsString)
+          val startPosX = size.width - sWidth - 4
+          val sHeight = fm.getHeight
+          val startPosY = sHeight - 3
+
+          g.fillRect(startPosX, 2, sWidth + 1, sHeight - 4)
+
+          g.setColor(Color.RED)
+          g.drawString(numEditsString, startPosX, startPosY)
+        }
+      }
     }
     val resetEditsButton = new ToolBarButton {
       icon = StarlingIcons.icon("/icons/16x16_undo.png")
       tooltip = "Reset all unsaved edits"
       enabled = edits.nonEmpty
       reactions += {case ButtonClicked(b) => {
-        pageContext.goTo(selfPage(pivotPageState, Set.empty))
+        pageContext.goTo(selfPage(pivotPageState, PivotEdits.Null))
       }}
     }
 
@@ -364,7 +386,7 @@ class PivotTablePageComponent(
               // We are pivoting on something we know more information about. Look at the selection and get the fields for it.
               val selection = dDFMap(ddInfo.filterField)
               selection match {
-                case AllSelection => {throw new IllegalStateException("This case hasn't been coded for yet: " + selection)}
+                case AllSelection => {throw new IllegalStateException("This case hasn't been coded for yet: " + selection + " : filter field: " + ddInfo.filterField)}
                 case SomeSelection(values) if values.isEmpty => {throw new IllegalStateException("This case hasn't been coded for yet: " + selection)}
                 case SomeSelection(values) => {
                   val fieldsToUse = values.flatMap{
@@ -402,12 +424,7 @@ class PivotTablePageComponent(
     }
     case FullScreenSelectedEvent(data) => pageContext.goTo(new FullScreenReportPage(text, data))
     case ShowErrorsEvent(errors) => {pageContext.goTo(new ReportCellErrorsPage(errors.toList))}
-    case AddPivotEditEvents(edits0) => {
-      // Remove edits that are already there.
-      val editsToUse = (edits.groupBy(_.keys) ++ edits0.groupBy(_.keys)).values.flatten.toSet
-      pageContext.goTo(selfPage(pivotPageState, editsToUse))
-    }
-    case RemovePivotEditEvents(edits0) => pageContext.goTo(selfPage(pivotPageState, edits.filterNot(edits0.contains(_))))
+    case PivotEditsUpdatedEvent(edits0, t) => pageContext.goTo(selfPage(pivotPageState, edits0), compToFocus = Some(t))
     case SavePivotEdits if toolBar.saveEditsButton.enabled => toolBar.saveEditsButton.saveEdits()
     case FieldPanelEvent(collapse) => {
       val newOtherLayoutInfo = pivotPageState.otherLayoutInfo.copy(fieldPanelCollapsed = collapse)
@@ -463,22 +480,34 @@ class PivotTablePageComponent(
   }
 
   override def getTypeState = {
-    Some(AbstractPivotComponentTypeState(pivotComp.filterText, pivotComp.getRSScrollPos, pivotComp.configPanelState,
-      pivotComp.getSelectedCells))
+    Some(AbstractPivotComponentTypeState(pivotComp.filterText, pivotComp.getRSScrollPos, pivotComp.getMainScrollPos,
+      pivotComp.configPanelState, pivotComp.getSelectedCells))
   }
 
   override def setTypeState(typeState:Option[ComponentTypeState]) {
     typeState match {
-      case Some(AbstractPivotComponentTypeState(filterText, rsScrollPos, configPanelState, selectedCells)) => {
+      case Some(AbstractPivotComponentTypeState(filterText, rsScrollPos, mainScrollPos, configPanelState, selectedCells)) => {
         pivotComp.filterText = filterText
         pivotComp.setRSScrollPos(rsScrollPos)
         pivotComp.configPanelState = configPanelState
         pivotComp.setSelectedCells(selectedCells)
+        pivotComp.setMainScrollPos(mainScrollPos)
       }
       case _ =>
     }
   }
-  override def pageResized(newSize:Dimension) = pivotComp.pageResized(newSize)
+
+  override def getTypeFocusInfo = Some(AbstractPivotComponentTypeFocusInfo)
+  override def setTypeFocusInfo(focusInfo:Option[TypeFocusInfo]) {
+    focusInfo match {
+      case Some(AbstractPivotComponentTypeFocusInfo) => pivotComp.updateFocusBasedOnCellSelection()
+      case _ => 
+    }
+  }
+
+  override def defaultComponentForFocus = pivotComp.defaultComponentForFocus
+
+  override def pageResized(newSize:Dimension) {pivotComp.pageResized(newSize)}
   override def getOldPageData = Some(pivotComp.getOldPageData)
   override def getRefreshState = Some(pivotComp.getRefreshState)
   override def setOldPageDataOnRefresh(pageData:Option[OldPageData], refreshState:Option[ComponentRefreshState], componentState:Option[ComponentState]) = {
@@ -539,10 +568,6 @@ class PivotTablePageComponent(
     }
   }
 
-  override def pageShown {
-    pivotComp.updateFocusedTable()
-  }
-
   def getSelection = selection
 }
 
@@ -572,7 +597,9 @@ case class AbstractPivotComponentState(filterText:String,
                                        reportSpecificScrollPosition:Int,
                                        selectedCells:Either[List[(Int,Int)], (List[(Int,Int)],List[(Int,Int)],List[(Int,Int)])],
                                        configPanelState:Option[NTabbedPaneState]) extends ComponentState
-case class AbstractPivotComponentTypeState(filterText:String, reportSpecificScrollPosition:Int,
+case class AbstractPivotComponentTypeState(filterText:String, reportSpecificScrollPosition:Int, mainScrollPosition:Point,
                                            configPanelState:Option[NTabbedPaneState],
                                            selectedCells:Either[List[(Int,Int)],
                                            (List[(Int,Int)],List[(Int,Int)],List[(Int,Int)])]) extends ComponentTypeState
+
+case object AbstractPivotComponentTypeFocusInfo extends TypeFocusInfo

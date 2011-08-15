@@ -23,7 +23,7 @@ object Location extends StarlingEnum(classOf[Location], (location:Location) => l
     def timeZoneOn(day: Day) = DateTimeZone.forID("Asia/Shanghai")
   }
 
-  object Unknown extends Location("Uknown") {
+  object Unknown extends Location("Unknown") {
     def timeZoneOn(day: Day) = throw new Exception("Unknown time zone")
   }
 }

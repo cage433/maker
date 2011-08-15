@@ -1,6 +1,5 @@
 package starling.instrument.physical
 
-import starling.quantity.Quantity
 import starling.quantity.UOM._
 import starling.market.formula.FormulaIndex
 import starling.curves.Environment
@@ -9,6 +8,7 @@ import starling.market.rules.SwapPricingRule
 import starling.daterange.{DateRange, DayAndTime, Day}
 import starling.instrument._
 import starling.richdb.RichInstrumentResultSetRow
+import starling.quantity.{SimpleNamedQuantity, NamedQuantity, Quantity}
 
 case class Cargo(quantity: Quantity, incoterm: Incoterm, blDate: Day, index: FormulaIndex, pricingSchedule: PricingSchedule, pricingRule: SwapPricingRule)
   extends UTP with Tradeable {
@@ -19,6 +19,18 @@ case class Cargo(quantity: Quantity, incoterm: Incoterm, blDate: Day, index: For
   val pricingDaysAndRatios = algorithm.applyPricingRule(calendar, pricingPeriod)
   val pricingDays = pricingDaysAndRatios.map(_._1)
 
+  val settlementDate = pricingDays.last
+
+  /**
+   * TODO - add tests when Cargos are complete
+   */
+  def explanation(env : Environment) : NamedQuantity = {
+    val namedEnv = env.withNaming()
+    val price_ = SimpleNamedQuantity("Price", price(namedEnv))
+    val disc = SimpleNamedQuantity("Discount", namedEnv.discount((price_ * quantity).uom, settlementDate))
+    price_ * quantity.named("Volume") * disc
+  }
+
   def isLive(dayAndTime: DayAndTime) = {
     dayAndTime < pricingDays.last.endOfDay
   }
@@ -26,10 +38,8 @@ case class Cargo(quantity: Quantity, incoterm: Incoterm, blDate: Day, index: For
   def asUtpPortfolio(tradeDay: Day) = UTP_Portfolio(Map(this.copy(quantity = quantity.copy(value = 1.0)) -> quantity.value))
 
   def valuationCCY = USD
-
   def assets(env: Environment) = {
     // TODO [16 Mar 2011] fix this
-    val settlementDate = pricingDays.last
     Assets(
       // TODO [16 Mar 2011] We should have a physical part but I'm not sure how to do it. The physical is usually something like 'Forties'
       // which isn't a market.
@@ -56,16 +66,16 @@ case class Cargo(quantity: Quantity, incoterm: Incoterm, blDate: Day, index: For
 
   def volume = quantity
 
-  def details = Map()
+  def detailsForUTPNOTUSED = Map()
 
-  def tradeableDetails = Map()
+  def persistedTradeableDetails = Map()
 
   def tradeableType = Cargo
 
   def instrumentType = Cargo
 }
 
-object Cargo extends InstrumentType[CommodityForward] with TradeableType[CommodityForward] {
+object Cargo extends InstrumentType[Cargo] with TradeableType[Cargo] {
   def sample = null
 
   def createTradeable(row: RichInstrumentResultSetRow) = null

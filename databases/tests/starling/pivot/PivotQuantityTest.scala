@@ -116,12 +116,12 @@ class PivotQuantityTest extends StarlingTest with ShouldMatchers {
 
   @Test
   def explanationShouldReturnQuantityText {
-    PivotQuantity(Quantity(10, UOM.USD)).explanation should be === Some(Quantity(10, UOM.USD).toStringWithSpace)
+    PivotQuantity(Quantity(10, UOM.USD)).explanation should be === Some(Quantity(10, UOM.USD).toString)
   }
 
   @Test
   def explanationShouldReturnNamedQuantityExpression {
     val named = Quantity(10, UOM.USD).named("abc")
-    PivotQuantity(named).explanation should be === Some(named.expr)
+    PivotQuantity(named).explanation should be === Some(named.format(1))
   }
 }

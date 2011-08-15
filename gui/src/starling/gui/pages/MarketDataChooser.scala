@@ -159,7 +159,7 @@ class MarketDataChooser(maybeDesk:Option[Desk], pageContext:PageContext, snapsho
     case PricingGroupObservationDay(pricingGroup, day) => {
       updatePopulatedObservationDays(marketDataSelection.selection)
     }
-    case MarketDataSnapshot(snapshots) => {
+    case MarketDataSnapshotSet(snapshots) => {
       this.snapshots = snapshots
       val selected = snapshotView.selected
       updateSnapshotList(marketDataSelection.selection)

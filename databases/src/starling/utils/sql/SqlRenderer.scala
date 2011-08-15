@@ -92,7 +92,7 @@ class SqlRenderer {
       case s : String if(s.contains('.')) => {
           (expandField(field) + " " + operator + " " + value, Map())
       }
-      case AnObject(obj) => val p = param(field); (expandField(field) + " " + operator + " " + ":"+p, Map(p -> StarlingXStream.write(obj)))
+      case PersistAsBlob(obj) => val p = param(field); (expandField(field) + " " + operator + " " + ":"+p, Map(p -> StarlingXStream.write(obj)))
       case LiteralString(text) => val p = param(field); (expandField(field) + " " + operator + " " + ":"+p, Map(p -> text))
       case _ => val p = param(field); (expandField(field) + " " + operator + " " + ":"+p, Map(p -> value))
     }

@@ -5,13 +5,13 @@ import java.io.Serializable
 
 import starling.calendar.BusinessCalendar
 import starling.daterange._
-import starling.quantity.Quantity
 import starling.rmi.StarlingServer
 import starling.tradestore.TradePredicate
 import starling.utils.{StarlingEnum, ImplicitConversions, STable}
 import starling.varcalculator.NAhead
 
 import ImplicitConversions._
+import starling.quantity.{NamedQuantity, Quantity}
 
 
 class TradeReport
@@ -67,7 +67,7 @@ object MarketDataIdentifier {
     new MarketDataIdentifier(selection, new SpecificMarketDataVersion(version))
 }
 
-class TradeValuation(val valuationParameters:STable) extends Serializable
+case class TradeValuation(explanation:NamedQuantity)
 
 case class PricingGroup(name:String) {
   override def toString = name
@@ -113,6 +113,7 @@ sealed case class Desk(name: String) {
     case CrudeSpecNorthSea             => List(Crude, LimOnly)
     case HoustonDerivatives            => List(BarryEckstein, LimOnly)
     case Refined                       => List(System, Metals, Starling)
+    case Titan                         => List(Metals)
   }
 }
 
@@ -123,6 +124,7 @@ object Desk extends StarlingEnum(classOf[Desk], (d: Desk) => d.name, true) {
   val CrudeSpecNorthSea = Desk("Crude Spec North Sea")
   val HoustonDerivatives = Desk("Houston Derivatives")
   val Refined = Desk("Refined")
+  val Titan = Desk("Titan")
 
   val pricingGroups = values.flatMap(_.pricingGroups).distinct
 

@@ -29,6 +29,7 @@ case class Week(year : Int, isoWeekNumber : Int) extends DateRange {
 
   // TODO [26 Jan 2010] not so efficient. must be better ways of implementing this.
   def +(n : Int) = Week.containing(firstDay + n * 7)
+  def -(n: Int) = this + (-n)
   def -(that : Week) = (firstDay - that.firstDay) / 7
 
   def toListOfMonths = throw new Exception("Week " + this + " can't be broken into months")
@@ -99,5 +100,5 @@ object Week extends TenorType {
 
   override def toString = "Week"
 
-  def shortName = "W"
+  override def shortName = "W"
 }

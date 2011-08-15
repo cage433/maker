@@ -1,6 +1,6 @@
 package starling.services.rpc
 
-import org.apache.commons.io.FileUtils
+import org.apache.commons.io.{FileUtils => ApacheFileUtils}
 import org.apache.commons.io.filefilter.TrueFileFilter
 import starling.utils.StringIO
 import org.scalatest.matchers.ShouldMatchers
@@ -35,7 +35,7 @@ object JsonInteropValidator extends ShouldMatchers {
   private def filesInPackage(jsonDirectory: File, packageName: String): List[JSONFile] = {
     val directoryToSearch = new File(jsonDirectory, packageName.replaceAll("\\.", "/"))
 
-    FileUtils.listFiles(directoryToSearch, TrueFileFilter.INSTANCE, TrueFileFilter.INSTANCE).toList.asInstanceOf[List[File]]
+    ApacheFileUtils.listFiles(directoryToSearch, TrueFileFilter.INSTANCE, TrueFileFilter.INSTANCE).toList.asInstanceOf[List[File]]
       .collect { case file if file.isFile && file.getName.endsWith(".json") => JSONFile(file, jsonDirectory) }
   }
 

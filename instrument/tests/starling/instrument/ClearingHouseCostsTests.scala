@@ -1,6 +1,5 @@
 package starling.instrument
 
-import starling.utils.StarlingTest
 import org.testng.Assert._
 import org.testng.annotations.Test
 import starling.quantity.RichQuantity._

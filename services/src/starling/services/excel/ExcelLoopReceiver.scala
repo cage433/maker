@@ -15,16 +15,10 @@ import starling.utils.{Stoppable, Log}
 class ExcelLoopReceiver(ldapUser: LdapUserLookup, port: Int, handlers: Object*) extends Stoppable with Runnable {
   val functionServer = new FunctionServer(port)
 
-  def start {
-    new Thread(this).start
-  }
-
-  def stop() = {
-     functionServer.stop()
-  }
+  override def start { super.start; new Thread(this).start }
+  override def stop  { super.stop;  functionServer.stop()  }
 
   def run = {
-
     val reflect = new ReflectFunctionHandler
     handlers.map {
       handler => reflect.addMethods("Starling.", handler)

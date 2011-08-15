@@ -30,12 +30,12 @@ class LiborFixingTests extends WordSpec with ShouldMatchers with Checkers with H
     }
   }
 
-  private val dodgyFixings = Set(JPY → (21 Dec 2011), JPY → (29 Dec 2011), SEK → (29 Dec 2011), DKK → (29 Dec 2011))
+  private val dodgyFixings = Set(JPY → (21 Dec 2011), JPY → (29 Dec 2011))//, SEK → (29 Dec 2011), DKK → (29 Dec 2011))
 
-  println("Dodgy fixings: " + dodgyFixings)
+  //println("Dodgy fixings: " + dodgyFixings)
 
   "Spot/Next value date matches against file from BBA" in {
-    expectedValueDays("Spot_Next_Fixing_Calendar_2011.txt").map { fixingEntry =>
+    expectedValueDays("Spot_Next_Fixing_Calendar_2011.txt").filter(_.currency.isOneOf(LIBORFixing.currencies)).map { fixingEntry =>
       fixingEntry.valueDays.map { case ((tenor, fixingDay), expected) =>
         if (!dodgyFixings.contains(fixingEntry.currency, fixingDay)) {
           val fixing = fixingEntry.fixingFor(fixingDay)
@@ -52,9 +52,7 @@ class LiborFixingTests extends WordSpec with ShouldMatchers with Checkers with H
     } yield LIBORFixing(Quantity(1, currency), Day.fromJulianDayNumber(fixingDay))
   }.filter(fixing => fixing.isBusinessDay)
 
-  private implicit def arbitraryTenor: Arbitrary[Tenor] = Arbitrary {
-    Gen.oneOf(Tenor.ON, Tenor(Week, 1))
-  }
+  private implicit def arbitraryTenor: Arbitrary[Tenor] = Arbitrary { Gen.oneOf(Tenor.ON, Tenor(Week, 1)) }
 
   "maturity day of O/N == value day" in {
     check((fixing: LIBORFixing) => fixing.supportsOvernight ==> (fixing.maturityDay(Tenor.ON) == fixing.valueDay(Tenor.ON)))

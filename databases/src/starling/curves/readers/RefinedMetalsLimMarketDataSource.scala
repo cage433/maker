@@ -21,6 +21,7 @@ import starling.utils.ImplicitConversions._
 
 case class RefinedMetalsLimMarketDataSource(limServer: LIMServer) extends MarketDataSource {
   private val fixingsSources = PriceFixingsHistoryDataType → (List(LMEFixings, LIBORFixings, BloombergTokyoCompositeFXRates,
+    BalticFixings,
     new MonthlyFuturesFixings(Trafigura.Bloomberg.Futures.Shfe, Settle),
     new MonthlyFuturesFixings(Trafigura.Bloomberg.Futures.Comex, Close)) ::: SpotFXFixings.all)
   private val spotFXSources = SpotFXDataType → List(BloombergGenericFXRates, CFETSSpotFXFixings)
@@ -53,8 +54,9 @@ case class RefinedMetalsLimMarketDataSource(limServer: LIMServer) extends Market
     } }
 
     source.marketDataEntriesFrom(prices).toList
+      .map(_.copy(tag = Some("%s (%s)" % (source.getClass.getSimpleName, source.description.mkString(", ")))))
       .require(containsDistinctTimedKeys, "source: %s produced duplicate MarketDataKeys: " % source)
-      .info(entries => "%s (%s): %s values" % (source.getClass.getSimpleName, source.description.mkString(", "), countData(entries)))
+      .debug(entries => "%s (%s): %s values" % (source.getClass.getSimpleName, source.description.mkString(", "), countData(entries)))
   }
 
   private def countData(entries: List[MarketDataEntry]) = entries.map(_.data.size.getOrElse(0)).sum
@@ -177,7 +179,7 @@ object BloombergGenericFXRates extends HierarchicalLimSource(List(Trafigura.Bloo
   }
 }
 
-class SpotFXFixings(exchange: String, timeOfDay: ObservationTimeOfDay, level: Level, currency: UOM, regex: String, nodes: LimNode*)
+class SpotFXFixings(exchange: String, timeOfDay: ObservationTimeOfDay, level: Level, against: UOM, regex: String, nodes: LimNode*)
   extends HierarchicalLimSource(nodes.toList, List(level)) {
 
   type Relation = UOM
@@ -190,7 +192,7 @@ class SpotFXFixings(exchange: String, timeOfDay: ObservationTimeOfDay, level: Le
   protected def key(currency: UOM): MarketDataKey = PriceFixingsHistoryDataKey(currency.toString, Some(exchange))
 
   protected def value(price: Double, currency: UOM): MarketData = PriceFixingsHistoryData.create(
-    level, StoredFixingPeriod.tenor(Tenor.OneDay), (Quantity(price, currency / UOM.USD)))
+    level, StoredFixingPeriod.tenor(Tenor.OneDay), (Quantity(price, currency / against)))
 }
 
 object SpotFXFixings {

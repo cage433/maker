@@ -6,7 +6,7 @@ import starling.gui.GuiUtils
 import javax.swing.{JPanel, JComponent}
 import net.miginfocom.swing.MigLayout
 import org.jdesktop.jxlayer.JXLayer
-import java.awt.{BorderLayout, FlowLayout}
+import java.awt.{AWTEvent, BorderLayout, FlowLayout}
 
 class UnfrozenTableLayerUI(rowComponent:RowComponent) extends AbstractLayerUI[JComponent] {
   private val contentPanel = new JPanel(new MigLayout("insets 0")) {

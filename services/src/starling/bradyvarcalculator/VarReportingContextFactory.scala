@@ -52,7 +52,6 @@ abstract class AbstractReportContext(
     myEnv
   }
 
-  def observationDays(from: Day, to: Day):List[ObservationDay]
   def atomicEnvironment(day:Day):AtomicEnvironment
   def thetaDayAndTime = curveIdentifier.thetaDayAndTime
 }
@@ -67,8 +66,4 @@ class MarketDataStoreReportContext(
   def recorded = recordingReader.recorded.toList.mapFirst(_.asTuple).map(_.flatten).toSet
 
   def atomicEnvironment(day:Day) = curveIdentifier.environmentRule.createEnv(day, recordingReader).environment.atomicEnv
-
-  def observationDays(from: Day, to: Day) = {
-    db.observationDays(curveIdentifier.marketDataIdentifier, from, to).map(ObservationDay(_))
-  }
 }

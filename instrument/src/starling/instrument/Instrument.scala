@@ -14,6 +14,7 @@ import starling.varcalculator._
 import starling.utils.ImplicitConversions._
 import starling.models.DefaultRiskParameters
 import starling.utils.CollectionUtils
+import starling.instrument.physical.PhysicalMetalAssignment
 
 trait AsUtpPortfolio {
   def asUtpPortfolio(tradeDay:Day): UTP_Portfolio
@@ -36,10 +37,10 @@ object InstrumentType {
   val types = List[InstrumentType[_ <: UTP]](
     Future,
     CommoditySwap,
-    CFD,
     SwapCalendarSpread,
     FuturesOption,
     CalendarSpreadOption,
+    CommoditySpreadOption,
     AsianOption,
     FXOption,
     ErrorInstrument,
@@ -49,7 +50,8 @@ object InstrumentType {
     RefinedFixation,
     NetEquityPosition,
     FuturesCalendarSpread,
-    FuturesCommoditySpread
+    FuturesCommoditySpread,
+    PhysicalMetalAssignment
   )
 
   def fromName(name : String) = types.find(_.name.toLowerCase == name.toLowerCase)
@@ -231,22 +233,25 @@ trait Instrument extends Ordered[Instrument] with Greeks with PnlExplanation {
   }
 
   def hedgingInstrument(env: Environment, diff: EnvironmentDifferentiable): Option[UTP] = {
-    def buildSwap(index : SingleIndex, period : DateRange) : Option[SingleCommoditySwap] = {
+    def buildSwap(index : SingleIndex, period : DateRange) : Option[SinglePeriodSwap] = {
         // we have to be careful to take into account when we are mid-pricing period.
 
         val livePeriodDays = index.observationDays(period).filter(_.endOfDay > env.marketDay)
         if (!livePeriodDays.isEmpty) {
-          Some(SingleCommoditySwap(index, 0.0(index.priceUOM), 1.0(index.uom), DateRange(livePeriodDays.head, livePeriodDays.last), cleared = true))
+          Some(SinglePeriodSwap(index, 0.0(index.priceUOM), 1.0(index.uom), DateRange(livePeriodDays.head, livePeriodDays.last), cleared = true))
         } else {
           None
         }
     }
     val hedge = diff match {
-      case PriceDifferentiable(market: FuturesMarket, period) => Some(Future(market, period, 0.0(market.priceUOM), 1.0(market.uom)))
+      case PriceDifferentiable(market: FuturesMarket, period) => {
+        val futuresPeriod = if (market.tenor == Day) market.observationDays(period).last else period
+        Some(Future(market, futuresPeriod, 0.0(market.priceUOM), 1.0(market.uom)))
+      }
       case PriceDifferentiable(market : CommodityMarket, period) if Index.marketToPublishedIndexMap.contains(market) => {
         buildSwap(Index.marketToPublishedIndexMap(market), period)
       }
-      case FuturesSpreadPrice(market, m1, m2) => Some(FuturesCalendarSpread(market, m1, m2, 0.0(market.priceUOM), 0.0(market.priceUOM), 1.0(market.uom)))
+      case FuturesSpreadPrice(market, SpreadPeriod(m1: Month, m2: Month)) => Some(FuturesCalendarSpread(market, m1, m2, 0.0(market.priceUOM), 0.0(market.priceUOM), 1.0(market.uom)))
       case SwapPrice(index, period) => {
         buildSwap(index, period)
       }

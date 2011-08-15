@@ -132,7 +132,7 @@ object PivotReport{
     }
     utps.foreach{
       case (id, SingleAsianOption(idx : FuturesFrontPeriodIndex, _, _, _, _)) => addIndex(id, idx)
-      case (id, SingleCommoditySwap(idx : FuturesFrontPeriodIndex, _, _, _, _, _)) => addIndex(id, idx)
+      case (id, SinglePeriodSwap(idx : FuturesFrontPeriodIndex, _, _, _, _, _, _)) => addIndex(id, idx)
       case _ => 
     }
     map

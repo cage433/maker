@@ -25,7 +25,7 @@ class FXOptionTests extends StarlingTest {
           case `GBP` => 0.03
         }
         val t = day.daysSinceInYears(marketDay.day)
-        math.exp(- z * t)
+        new Quantity(math.exp(- z * t))
       }
       def applyOrMatchError(key : AtomicDatumKey) = key match {
         case USDFXRateKey(`GBP`) => Quantity(1.05, USD/GBP)
@@ -115,5 +115,20 @@ class FXOptionTests extends StarlingTest {
       assertQtyEquals(option.mtm(env), futuresOption.mtm(env), 1e-6)
     }
   }
+
+  @Test
+  def testExplanation{
+    val exerciseDay: Day = marketDay + 100
+    val maturityDay: Day = exerciseDay + 10
+    val env = environment(TimeOfDay.StartOfDay)
+    val option = FXOption(Quantity(1.1, USD/GBP), Quantity(100.0, GBP), exerciseDay, maturityDay, Call)
+    val explanation = option.explanation(env)
+    assertEquals(explanation.name, "((BlackScholes-Call(F, K, Vol, T) * Volume) * Discount)")
+    assertEquals(explanation.format(1), "((BlackScholes-Call(((USD per GBP spot * GBP.21Apr2010) / USD.21Apr2010), 1.10 USD per GBP, 30.00%, 0.28) * 100.00 GBP) * USD.11Apr2010)")
+    val lastExplanation = "((BlackScholes-Call(((1.05 USD per GBP * 0.99) / 0.99), 1.10 USD per GBP, 0.30, 0.28) * 100.00 GBP) * 0.99)"
+    assertEquals(explanation.format(2), lastExplanation)
+    assertEquals(explanation.format(3), lastExplanation)
+  }
+
 
 }

@@ -10,10 +10,10 @@ import starling.daterange.{Day, DateRange, Month}
 import starling.utils.cache.CacheFactory
 import starling.market.formula.FormulaIndex
 import starling.market._
-import starling.quantity.{Percentage, Quantity}
 import starling.maths.BrentSolver
 import starling.models.BlackScholes
 import starling.models.Call
+import starling.quantity.{UOM, Percentage, Quantity}
 
 /**
  * Curve viewer for Implied Vols
@@ -76,7 +76,7 @@ class ImpliedVolPivotDataSource(context: EnvironmentWithDomain) extends Unfilter
               val expiry = market.optionExpiry(dr)
               val time = expiry.endOfDay.timeSince(marketDay)
               val F = env.forwardPrice(market, dr)
-              val disc = env.discount(market.currency, expiry)
+              val disc = env.discount(market.currency, expiry).checkedValue(UOM.SCALAR)
 
               fields(marketField -> market.name, period -> dr, delta -> "ATM", volatility -> (atmVol), price -> F) ::
                 data.skewDeltas.toList.zipWithIndex.map {
@@ -100,6 +100,6 @@ class ImpliedVolPivotDataSource(context: EnvironmentWithDomain) extends Unfilter
           }
         }
       }
-    } toList
+    }.toList
   }
 }

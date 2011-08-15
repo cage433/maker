@@ -33,7 +33,7 @@ class NotificationPanel(frameWidth: => Int, cache:LocalCache, containerMethods:C
   
   val notificationLabelPanel = new MigPanel("insets 0") {
     private def getWidthOfNotifications(notes:List[NotificationLabel]):Int = notes.map(_.preferredSize.width).sum
-    private def generateLabels:List[NotificationLabel] = cache.userNotifications.map(NotificationLabel(_))
+    private def generateLabels:List[NotificationLabel] = cache.userNotifications.map(new NotificationLabel(_))
 
     reactions += {
       case NotificationLabelClosed(nl) => {
@@ -108,7 +108,7 @@ case class RoundedBorder(colour:Color = GuiUtils.BorderColour, borderInsetSize:I
 case class NotificationLabelClosed(source:NotificationLabel) extends Event
 case class NotificationLabelAction(source:NotificationLabel) extends Event
 
-case class NotificationLabel(notification:Notification) extends MigPanel("") {
+class NotificationLabel(val notification:Notification) extends MigPanel("") {
   border = RoundedBorder()
 
   val label = new Label {

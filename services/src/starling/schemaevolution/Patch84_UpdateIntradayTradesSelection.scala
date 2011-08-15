@@ -5,7 +5,7 @@ import starling.richdb.RichDB
 import starling.db.DBWriter
 import starling.utils.StarlingXStream
 import starling.collection.TreeSelection
-import starling.utils.sql.AnObject
+import starling.utils.sql.PersistAsBlob
 import xstream.{Fields, Reader, MapBasedConverter}
 import starling.services.StarlingInit
 import starling.gui.api._

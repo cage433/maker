@@ -45,7 +45,7 @@ class MultiLegTests extends JonTestEnv {
     val volume = 1(BBL)
     val period = Quarter(2011, 1)
     val cs = new CommoditySwap(index, strike, volume, StripPeriod(period.firstMonth, period.lastMonth), cleared = false)
-    val scs = Quarter(2011, 1).toListOfMonths.map(m => SingleCommoditySwap(index, strike, volume, m, cleared = false))
+    val scs = Quarter(2011, 1).toListOfMonths.map(m => SinglePeriodSwap(index, strike, volume, m, cleared = false))
     assertTrue(cs.asUtpPortfolio(Day(2009, 1, 1)).mtm(env) > Quantity(1, USD))
     assertQtyEquals(cs.legs.map(_.asUtpPortfolio(Day(2009, 1, 1)).mtm(env)).sum, cs.asUtpPortfolio(Day(2009, 1, 1)).mtm(env), 1e-10)
     assertQtyEquals(scs.map(_.mtm(env)).sum, cs.asUtpPortfolio(Day(2009, 1, 1)).mtm(env), 1e-10)
