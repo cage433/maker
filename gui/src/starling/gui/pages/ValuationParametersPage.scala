@@ -140,9 +140,8 @@ class ValuationParametersPageComponent(context:PageContext, pageData:PageData) e
       add(ValuationParametersPageComponent.reportParametersPanel(data.reportParameters), "ay top")
     }
 
-    val explan = data.tradeValuation.tradeValuation.explanation
-    val pnl = SimpleNamedQuantity("P&L", explan)
-
+    val pnl = data.tradeValuation.tradeValuation.explanation
+     
     val valuationParametersExplainPanel = new MigPanel("insets 0", "[" + StandardLeftIndent + "][p]") {
       val extraFormatInfo = context.getSetting(StandardUserSettingKeys.ExtraFormattingInfo, PivotFormatter.DefaultExtraFormatInfo)
       val explanationComponent = new TopNamedQuantityComponent(pnl, extraFormatInfo) {

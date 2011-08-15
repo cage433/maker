@@ -11,8 +11,7 @@ import starling.utils.{StarlingEnum, ImplicitConversions, SColumn}
 import starling.varcalculator.NAhead
 
 import ImplicitConversions._
-import starling.quantity.{NamedQuantity, Quantity}
-
+import starling.quantity.{SimpleNamedQuantity, NamedQuantity, Quantity}
 
 class TradeReport
 
@@ -67,7 +66,7 @@ object MarketDataIdentifier {
     new MarketDataIdentifier(selection, new SpecificMarketDataVersion(version))
 }
 
-case class TradeValuation(explanation:NamedQuantity)
+case class TradeValuation(explanation:SimpleNamedQuantity)
 case class TradeValuationAndDetails(tradeValuation:TradeValuation, tradeRow:List[Any], fieldDetailsGroups:List[FieldDetailsGroupLabel], columns:List[SColumn])
 
 case class PricingGroup(name:String) {
