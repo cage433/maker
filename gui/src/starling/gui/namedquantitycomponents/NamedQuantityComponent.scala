@@ -51,7 +51,7 @@ object NamedQuantityComponentHelper {
     }
   }
 
-  def quantityText(q:Quantity, fi:ExtraFormatInfo) = QuantityLabelPivotFormatter.format(q, fi).text
+  def quantityText(q:Quantity, fi:ExtraFormatInfo) = q.toStringAllDecimalPlaces
 }
 import NamedQuantityComponentHelper._
 

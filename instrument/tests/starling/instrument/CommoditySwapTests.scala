@@ -255,10 +255,10 @@ class CommoditySwapTests extends JonTestEnv {
     )
     val swapExplanation = swapSeptoOct09.explanation(env)
     assertEquals(swapExplanation.name, "Sum(SEP 2009 value, OCT 2009 value)")
-    assertEquals(swapExplanation.format(1), "Sum((((F_Ave - K) * Volume) * disc), (((F_Ave - K) * Volume) * disc))")
+    assertEquals(swapExplanation.format(1), "Sum((((F_Avg - K) * Volume) * disc), (((F_Avg - K) * Volume) * disc))")
 
     val sep09Explanation = swapSeptoOct09.subPeriodSwaps(0).explanation(env)
-    assertEquals(sep09Explanation.name, "(((F_Ave - K) * Volume) * disc)")
+    assertEquals(sep09Explanation.name, "(((F_Avg - K) * Volume) * disc)")
     assertEquals(sep09Explanation.format(1), "(((Round(Average(Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus).SEPTEMBER 2009), 3) - 200.00 USD/MT) * 100.00 MT) * USD.07Oct2009)")
 
     val ex0 = "(((Round(Average(FixingsHistoryKey(Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus)).01Sep2009, " +

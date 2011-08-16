@@ -43,7 +43,7 @@ class FormulaIndexTests extends TestMarketSpec with ShouldMatchers {
 
   @Test
   def testSimpleNonCommon {
-    val index = FormulaIndex("WTI vs BRT11", Formula("1.2 * MKT(7) - .8*MKT(28)"), USD, BBL, None, None, None)
+    val index = FormulaIndex("WTI vs BRT11", Formula("1.2 * MKT(7) - 0.8*MKT(28)"), USD, BBL, None, None, None)
     index.verify
 
     val index1 = WTI10
@@ -66,7 +66,7 @@ class FormulaIndexTests extends TestMarketSpec with ShouldMatchers {
 
   @Test
   def testSimple {
-    val index = FormulaIndex("WTI vs BRT11", Formula("1.2 * MKT(7) - .8*MKT(28)"), USD, BBL, None, None, None)
+    val index = FormulaIndex("WTI vs BRT11", Formula("1.2 * MKT(7) - 0.8*MKT(28)"), USD, BBL, None, None, None)
     index.verify
 
     val index1 = WTI10
@@ -109,7 +109,7 @@ class FormulaIndexTests extends TestMarketSpec with ShouldMatchers {
 
   @Test(expectedExceptions = Array(classOf[InvalidFormulaIndexException]))
   def testVerify {
-    val index = FormulaIndex("0.5 WTI vs 0.4 HO + 1.2 ?", Formula("0.5 MKT(7) - 0.4 MKT(29) - 1.2 MKT(1432)"), USD, BBL, None, None, None)
+    val index = FormulaIndex("0.5 WTI vs 0.4 HO + 1.2 ?", Formula("0.5*MKT(7) - 0.4 *MKT(29) - 1.2 *MKT(1432)"), USD, BBL, None, None, None)
     index.verify
   }
 

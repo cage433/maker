@@ -127,6 +127,7 @@ class Quantity(val value : Double, val uom : UOM) extends Ordered[Quantity] with
   def format(decimalFormat: DecimalFormat) = decimalFormat.format(value)
   def formatNoUOM(fmt:String) = format(fmt, false)
   override def toString = format(Quantity.FormatString)
+  def toStringAllDecimalPlaces = format("#,##0.00#######################################")
   def toStringWithSpace = format(Quantity.FormatString, addSpace = true)
   def this(value : Double, uom : String) = this(value, UOM.fromString(uom))
   def this(value : Double) = this(value, UOM.SCALAR)

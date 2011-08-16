@@ -63,6 +63,7 @@ case class Environment(
     case Some(prefix) => instrumentLevelEnv_.withNaming(prefix)
   }
   def withNaming(prefix : String = "") = copy(namingPrefix = Some(prefix))
+
   // Parameterless constructor for ThreadSafeCachingProxy
   def this() = this(null)
 
