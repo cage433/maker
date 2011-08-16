@@ -332,13 +332,11 @@ abstract class TradeStore(db: RichDB, broadcaster:Broadcaster, tradeSystem: Trad
   }
 
   private def updateFullHistoryForTrade(tradeID: TradeID): Unit = {
-    new Object().synchronized {
-      val q = (select("*")
-        from (tableName + " t")
-        where ("tradeid" eql LiteralString(tradeID.id))
-        )
-      db.query(q)(addTradeRowToHistory)
-    }
+    val q = (select("*")
+            from (tableName + " t")
+            where ("tradeid" eql LiteralString(tradeID.id))
+            )
+    db.query(q)(addTradeRowToHistory)
   }
 
   private def getHistoryOrNone(tradeID : TradeID) = {
