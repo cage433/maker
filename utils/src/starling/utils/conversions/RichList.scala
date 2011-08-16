@@ -17,7 +17,7 @@ trait RichList {
 
   class RichList[A](list : List[A]) {
     def castValues[T](error : Any => T)(implicit m : Manifest[T]) : List[T] = m.castAll(list, error)
-    def filterCast[T](implicit m : Manifest[T]): List[T] = list.flatMap(m.cast(_))
+    def filterCast[T](implicit m : Manifest[T]): List[T] = list.flatMap(m.safeCast(_))
 
     def allSame[B](f : A => B) : Boolean = {
       if (list.length > 1) {
@@ -75,5 +75,6 @@ trait RichList {
     }
 
     def partialMap[B](pf: PartialFunction[A, B]): List[B] = flatMapO(pf.lift)
+    def safeMap[B](f: A => B): List[B] = flatMapO(f.option)
   }
 }

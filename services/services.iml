@@ -455,21 +455,6 @@
     <orderEntry type="module-library" exported="">
       <library>
         <CLASSES>
-          <root url="jar://$MODULE_DIR$/lib/resteasy-jaxrs-1.2.GA.jar!/" />
-        </CLASSES>
-        <JAVADOC />
-        <SOURCES>
-          <root url="jar://$MODULE_DIR$/lib/sources/resteasy-jaxrs-1.2.GA-src.zip!/resteasy-jaxrs-1.2.GA-src/jaxrs-api/src/main/java" />
-          <root url="jar://$MODULE_DIR$/lib/sources/resteasy-jaxrs-1.2.GA-src.zip!/resteasy-jaxrs-1.2.GA-src/async-http-tomcat/asynch-http-tomcat-jar/src/main/java" />
-          <root url="jar://$MODULE_DIR$/lib/sources/resteasy-jaxrs-1.2.GA-src.zip!/resteasy-jaxrs-1.2.GA-src/async-http-servlet-3.0/async-http-servlet-3.0/src/main/java" />
-          <root url="jar://$MODULE_DIR$/lib/sources/resteasy-jaxrs-1.2.GA-src.zip!/resteasy-jaxrs-1.2.GA-src/resteasy-jaxrs-war/src/main/java" />
-          <root url="jar://$MODULE_DIR$/lib/sources/resteasy-jaxrs-1.2.GA-src.zip!/resteasy-jaxrs-1.2.GA-src/resteasy-jaxrs/src/main/java" />
-        </SOURCES>
-      </library>
-    </orderEntry>
-    <orderEntry type="module-library" exported="">
-      <library>
-        <CLASSES>
           <root url="jar://$MODULE_DIR$/lib/commons-httpclient-3.1.jar!/" />
         </CLASSES>
         <JAVADOC />
@@ -492,6 +477,27 @@
         </CLASSES>
         <JAVADOC />
         <SOURCES />
+      </library>
+    </orderEntry>
+    <orderEntry type="module-library" exported="">
+      <library>
+        <CLASSES>
+          <root url="jar://$MODULE_DIR$/lib/resteasy-jaxrs-2.2.2.GA.jar!/" />
+        </CLASSES>
+        <JAVADOC />
+        <SOURCES>
+          <root url="jar://$MODULE_DIR$/lib/sources/resteasy-jaxrs-2.2.2.GA-src.zip!/resteasy-jaxrs-2.2.2.GA/providers/jettison/src/main/java" />
+          <root url="jar://$MODULE_DIR$/lib/sources/resteasy-jaxrs-2.2.2.GA-src.zip!/resteasy-jaxrs-2.2.2.GA/resteasy-jaxrs/src/main/java" />
+          <root url="jar://$MODULE_DIR$/lib/sources/resteasy-jaxrs-2.2.2.GA-src.zip!/resteasy-jaxrs-2.2.2.GA/resteasy-jsapi/src/main/java" />
+          <root url="jar://$MODULE_DIR$/lib/sources/resteasy-jaxrs-2.2.2.GA-src.zip!/resteasy-jaxrs-2.2.2.GA/providers/multipart/src/main/java" />
+          <root url="jar://$MODULE_DIR$/lib/sources/resteasy-jaxrs-2.2.2.GA-src.zip!/resteasy-jaxrs-2.2.2.GA/resteasy-cdi/src/main/java" />
+          <root url="jar://$MODULE_DIR$/lib/sources/resteasy-jaxrs-2.2.2.GA-src.zip!/resteasy-jaxrs-2.2.2.GA/resteasy-jaxrs-war/src/main/java" />
+          <root url="jar://$MODULE_DIR$/lib/sources/resteasy-jaxrs-2.2.2.GA-src.zip!/resteasy-jaxrs-2.2.2.GA/providers/resteasy-html/src/main/java" />
+          <root url="jar://$MODULE_DIR$/lib/sources/resteasy-jaxrs-2.2.2.GA-src.zip!/resteasy-jaxrs-2.2.2.GA/async-http-servlet-3.0/async-http-servlet-3.0/src/main/java" />
+          <root url="jar://$MODULE_DIR$/lib/sources/resteasy-jaxrs-2.2.2.GA-src.zip!/resteasy-jaxrs-2.2.2.GA/providers/jackson/src/main/java" />
+          <root url="jar://$MODULE_DIR$/lib/sources/resteasy-jaxrs-2.2.2.GA-src.zip!/resteasy-jaxrs-2.2.2.GA/jaxrs-api/src/main/java" />
+          <root url="jar://$MODULE_DIR$/lib/sources/resteasy-jaxrs-2.2.2.GA-src.zip!/resteasy-jaxrs-2.2.2.GA/providers/resteasy-atom/src/main/java" />
+        </SOURCES>
       </library>
     </orderEntry>
   </component>

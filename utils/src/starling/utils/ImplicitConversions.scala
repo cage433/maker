@@ -21,6 +21,7 @@ object ImplicitConversions extends RichAnys
   with RichOrdering
   with RichRunnable
   with RichThreadLocal
+  with RichThrowables
   with RichTraversables
   with RichTuple
   with RichSeq

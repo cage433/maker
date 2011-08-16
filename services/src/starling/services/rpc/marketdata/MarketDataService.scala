@@ -1,10 +1,8 @@
 package starling.services.rpc.marketdata
 
 import starling.titan.EDMConversions._
-import starling.gui.api.{MarketDataSelection, PricingGroup, MarketDataIdentifier}
 import starling.marketdata.{SpotFXDataType, MarketDataType, PriceFixingsHistoryDataType}
 import starling.pivot._
-import starling.db.MarketDataStore
 import starling.pivot.model.PivotTableModel
 import starling.utils.ImplicitConversions._
 import PriceFixingsHistoryDataType._
@@ -18,11 +16,14 @@ import collection.immutable.List
 import starling.services.Server
 import valuation.TitanSnapshotIdentifier
 import starling.daterange.{DateRange, Tenor, Day}
+import org.joda.time.LocalDate
+import starling.services.rpc.valuation.{DefaultEnvironmentProvider, EnvironmentProvider}
+import starling.gui.api._
+import starling.db.{SnapshotID, MarketDataStore}
 
+class MarketDataService(marketDataStore: MarketDataStore, environmentProvider: EnvironmentProvider)
+  extends MarketDataServiceApi with DocumentedService with Log {
 
-class MarketDataServiceStub extends MarketDataService(Server.server.marketDataStore)
-
-class MarketDataService(marketDataStore: MarketDataStore) extends MarketDataServiceApi with Log {
   type Matcher[T] = T => Boolean
 
   implicit def enrichReferenceInterestRate(self: ReferenceInterestRate) = new {
@@ -32,6 +33,16 @@ class MarketDataService(marketDataStore: MarketDataStore) extends MarketDataServ
     = observationDate(self.observationDate) && source(self.source) && maturity(self.maturity) && currency(self.currency)
   }
 
+  /**
+   * Return all snapshots for a given observation day, or every snapshot if no day is supplied
+   */
+  def marketDataSnapshotIDs(observationDay: Option[LocalDate] = None): List[TitanSnapshotIdentifier] = {
+    environmentProvider.snapshotIDs(observationDay.map(Day.fromJodaDate)).map {
+      starlingSnapshotID => TitanSnapshotIdentifier(starlingSnapshotID.id.toString, starlingSnapshotID.observationDay.toJodaLocalDate)
+    }
+  }
+
+
   def getSpotFXRate(snapshotId: TitanSnapshotIdentifier, from: TitanSerializableCurrency, to: TitanSerializableCurrency)
     : TitanSerializableQuantity = getSpotFXRate(from.fromSerializable, to.fromSerializable, snapshotId).toSerializable
 
@@ -40,14 +51,16 @@ class MarketDataService(marketDataStore: MarketDataStore) extends MarketDataServ
 
   def getReferenceInterestRate(snapshotId: TitanSnapshotIdentifier, source: ReferenceRateSource, maturity: Maturity,
                                currency: TitanSerializableCurrency): ReferenceInterestRate = {
+    snapshotId.notNull("snapshotId"); source.notNull("source"); maturity.notNull("maturity"); currency.notNull("currency")
 
     getReferenceInterestRates(snapshotId.toTitanDate, snapshotId.toTitanDate, source, maturity, currency)(0)
   }
 
   def getReferenceInterestRates(from: TitanSerializableDate, to: TitanSerializableDate, source: ReferenceRateSource,
                                 maturity: Maturity, currency: TitanSerializableCurrency) = {
+    from.notNull("from"); to.notNull("to"); source.notNull("source"); maturity.notNull("maturity"); currency.notNull("currency")
 
-    val results = getReferenceInterestRates(None, from.fromSerializable until to.fromSerializable).filter(_.matches(
+    val results = getReferenceInterestRates(None, from.fromSerializable upto to.fromSerializable).filter(_.matches(
       ignore[TitanSerializableDate], eql(source), eql(maturity), eql(currency), ignore[TitanSerializablePercentage]))
 
     if (results.isEmpty) throw new IllegalArgumentException(
@@ -62,7 +75,7 @@ class MarketDataService(marketDataStore: MarketDataStore) extends MarketDataServ
   def getReferenceInterestRates(snapshotId: TitanSnapshotIdentifier) = getReferenceInterestRates(snapshotId.intId, snapshotId.toDay)
 
   private def getReferenceInterestRates(version: Option[Int], observationDates: DateRange): List[ReferenceInterestRate] = {
-    val response = getMarketData(fixingRequest.copyObservationDays(observationDates).copy(version = version)
+    val response = getMarketData(fixingRequest.copyObservationDays(observationDates).copyVersion(version).copyExchange("LIBOR")
       .copy(rows = List(new FieldDetails("Observation Day"), exchangeField, marketField, periodField)))
 
     response.data.map(_.map(_.toString)).collect {
@@ -84,8 +97,12 @@ class MarketDataService(marketDataStore: MarketDataStore) extends MarketDataServ
     }
   }
 
+  def fromTitan(titanSnapshotIdentifier: TitanSnapshotIdentifier): SnapshotIDLabel = {
+    marketDataStore.snapshotFromID(titanSnapshotIdentifier.intId).getOrElse(throw new Exception("Invalid snapshot id")).label
+  }
+
   private def getSpotFXRatesImpl(snapshotId: TitanSnapshotIdentifier): List[Quantity] =
-    getMarketData(spotFXRequest.copySnapshotId(snapshotId)).data.map(_.map(_.toString)).collect {
+    getMarketData(spotFXRequest.copySnapshotId(fromTitan(snapshotId))).data.map(_.map(_.toString)).collect {
       case List(_, Quantity.Parse(rate)) => if (rate.denominatorUOM == UOM.USD) rate.invert else rate
     }
 
@@ -93,7 +110,7 @@ class MarketDataService(marketDataStore: MarketDataStore) extends MarketDataServ
     parameters.notNull("Missing parameters")
 
     val selection = MarketDataSelection(Some(parameters.pricingGroup))
-    val version = parameters.version.getOrElse(marketDataStore.latest(selection))
+    val version: MarketDataVersion = parameters.version.getOrElse(SpecificMarketDataVersion(marketDataStore.latest(selection)))
     val pivot = marketDataStore.pivot(MarketDataIdentifier(selection, version), parameters.dataType)
     val pfs = parameters.pivotFieldsState(pivot)
     val data = PivotTableModel.createPivotTableData(pivot, Some(pfs)).toFlatRows(Totals.Null, trimBlank = true)
@@ -110,15 +127,16 @@ class MarketDataService(marketDataStore: MarketDataStore) extends MarketDataServ
 
 case class MarketDataResponse(parameters: MarketDataRequestParameters, data: List[List[Any]])
 
-case class MarketDataRequestParameters(pricingGroup: PricingGroup, dataType: MarketDataType, version: Option[Int] = None,
-                                       measures: List[FieldDetails] = Nil, filters: Map[String, List[String]] = Map(),
-                                       rows: List[FieldDetails] = Nil, columns: List[FieldDetails] = Nil) {
+case class MarketDataRequestParameters(pricingGroup: PricingGroup, dataType: MarketDataType,
+  version: Option[MarketDataVersion] = None, measures: List[FieldDetails] = Nil, filters: Map[String, List[String]] = Map(),
+  rows: List[FieldDetails] = Nil, columns: List[FieldDetails] = Nil) {
 
+  def copyVersion(version: Option[Int]) = copy(version = version.map(SpecificMarketDataVersion(_)))
   def copyExchange(exchangeNames: String*) = addFilter(exchangeField.name, exchangeNames: _*)
   def copyObservationDay(day: Day) = addFilter("Observation Day", day.toString)
   def copyObservationDays(dateRange: DateRange) = addFilter("Observation Day", dateRange.days.map(_.toString) : _*)
-  def copySnapshotId(snapshotId: TitanSnapshotIdentifier) =
-    copy(version = snapshotId.intId).copyObservationDay(Day.fromLocalDate(snapshotId.observationDay))
+  def copySnapshotId(snapshotId: SnapshotIDLabel) =
+    copy(version = Some(SnapshotMarketDataVersion(snapshotId))).copyObservationDay(snapshotId.observationDay)
   def addFilter(name: String, values: String*) = copy(filters = filters + (name → values.toList))
 
   def pivotFieldsState(pivot: PivotTableDataSource) =

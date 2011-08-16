@@ -23,7 +23,7 @@ import starling.rmi.PivotData
 import collection.mutable.ListBuffer
 import starling.market._
 import starling.marketdata._
-import starling.quantity.{SimpleNamedQuantity, Percentage, UOM, Quantity}
+import starling.quantity._
 
 case class CurveIdentifier(
         marketDataIdentifier:MarketDataIdentifier,
@@ -180,9 +180,7 @@ class PivotReportRunner(reportContextBuilder:ReportContextBuilder) {
 /**
  * Joins up trades and market data to create reports
  */
-class ReportService(
-    reportContextBuilder:ReportContextBuilder,
-    tradeStores: TradeStores) {
+class ReportService(reportContextBuilder:ReportContextBuilder, tradeStores: TradeStores) {
 
   val pivotReportRunner = new PivotReportRunner(reportContextBuilder )
 
@@ -193,7 +191,12 @@ class ReportService(
   def singleTradeReport(trade: Trade, curveIdentifier: CurveIdentifier): TradeValuation = {
     val defaultContext = reportContextBuilder.contextFromCurveIdentifier(curveIdentifier)
     val explanation = trade.tradeable.explanation(defaultContext.environment)
-    TradeValuation(explanation)
+    val explan = new SimpleNamedQuantity("Value", explanation)
+    val namedCosts = trade.costs.flatMap(c => c.costs.map(_.explanation(defaultContext.environment)))
+    val costs = FunctionNamedQuantity("Sum", namedCosts, namedCosts.map(_.quantity).sum).named("Costs")
+    val res = explan + costs
+    val finalRes = new SimpleNamedQuantity("P&L", res)
+    TradeValuation(finalRes)
   }
 
   val anotherCrazyCache = CacheFactory.getCache("PivotReport.tradeChanges", unique = true)

@@ -370,7 +370,7 @@ class TreePanel(initialValuesAndSelection:(TreePivotFilter, Selection),
   }
 
   private def filterPopup(text:String, regex:Boolean) {
-    val testText = if (regex) text.trim.toLowerCase else text
+    val testText = if (regex) text else text.trim.toLowerCase
 
     val rootNode = treeComponent.rootNode
     if (testText == "") {
@@ -585,17 +585,15 @@ class TreePanelFilterPanel extends MigPanel("insets 0", "[p]0[p]0[p]2lp[p]") {
   textField.minimumSize = selectFilteredNodesButton.preferredSize
   reactions += {
     case KeyPressed(`textField`, Key.Escape, _, _) => textField.text = ""
-    case KeyReleased(`textField`, _, _, _) => {
-      // Ensure the fields aren't being displayed here.
-      publish(FilterPopupEvent(textField.text, regexPanel.regexButton.selected))
-    }
+    case KeyReleased(`textField`, _, _, _) => publish(FilterPopupEvent(textField.text, regexPanel.regexButton.selected))
     case MouseClicked(`clearImage`, _, _, _, _) => {
       textField.text = ""
       publish(FilterPopupEvent("", regexPanel.regexButton.selected))
     }
     case KeyPressed(`textField`, Key.Down, _, _) => publish(DownPressedFromFilterAreaEvent)
+    case ButtonClicked(regexPanel.regexButton) => publish(FilterPopupEvent(textField.text, regexPanel.regexButton.selected))
   }
-  listenTo(textField.keys, clearImage.mouse.clicks)
+  listenTo(textField.keys, clearImage.mouse.clicks, regexPanel.regexButton)
   add(searchHolder, "grow")
   add(textField, "push, grow")
   add(clearImageHolder, "grow")

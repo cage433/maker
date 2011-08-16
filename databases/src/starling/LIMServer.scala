@@ -7,7 +7,8 @@ import market._
 import starling.utils.ImplicitConversions._
 import starling.utils.ClosureUtil._
 import utils.{MathUtil, Log}
-
+import scalaz._
+import Scalaz._
 
 class LIMServer(hostname: String, port: Int) {
   private def openConnection =

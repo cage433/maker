@@ -3,11 +3,17 @@ package com.trafigura.services.trinity
 import starling.services.rpc.{EDMFormats, JsonSerializer}
 import javax.ws.rs._
 import com.trafigura.services.{DocumentedService, ServiceApi, ResteasyServiceApi}
+import org.jboss.resteasy.spi.interception.{MessageBodyWriterContext, MessageBodyWriterInterceptor}
+import starling.utils.{Log, Stopable}
 
-case class TrinityService(service: ServiceApi) {
-  val profile = service.create[ProfileService]
-  val depoRates = service.create[DepoRatesService]
-  val commodityRates = service.create[CommodityRatesService]
+class TrinityService(service: => ServiceApi) extends Stopable with Log {
+  lazy val profile = service.create[ProfileService]
+  lazy val depoRates = service.create[DepoRatesService]
+  lazy val commodityRates = service.create[CommodityRatesService]
+
+  override def start = { // defer binding until after resteasy has been initialised
+    Log.debug("Trinity services: " + (profile, depoRates, commodityRates))
+  }
 }
 
 @Path("/Profile")
@@ -87,7 +93,7 @@ object TrinityClient {
       trinityTest
     }
 
-    val trinityService = TrinityService(services)
+    val trinityService = new TrinityService(services)
 
     val depoRates = trinityService.depoRates.getRates("USD", "Full Curve")
 

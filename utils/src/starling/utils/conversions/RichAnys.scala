@@ -3,15 +3,7 @@ package starling.utils.conversions
 import starling.utils.{ImplicitConversions, Log}
 
 trait RichAnys {
-  import ImplicitConversions._
-
   implicit def enrichAny[T](value: T) = new RichAny(value)
-  implicit def enrichAnyRef[T <: AnyRef](value: T) = new RichAnyRef(value)
-
-  class RichAnyRef[T <: AnyRef](value: T) extends RichAny(value) {
-    def cast[V](implicit m: Manifest[V]): V = m.cast(value).getOrElse(
-      throw new Exception("%s [%s] is not of type %s" % (value, value.getClass, m.erasure)))
-  }
 }
 
 class RichAny[T](protected val value: T) {
@@ -21,7 +13,6 @@ class RichAny[T](protected val value: T) {
 
   def add[A, B](tuple: (A, B)): (T, A, B) = (value, tuple._1, tuple._2)
   def add[A, B, C](tuple: (A, B, C)): (T, A, B, C) = (value, tuple._1, tuple._2, tuple._3)
-  def ??(alternative: => T) = if (value == null) alternative else value
   def apply[V](fn: T => V): V = fn(value)
   def apply[V](pfn: PartialFunction[T, V]): Option[V] = pfn.lift(value)
   def applyTo[V](fn: T => V): V = apply(fn)
@@ -45,15 +36,14 @@ class RichAny[T](protected val value: T) {
   def isOneOf(values : T*) = values.contains(value)
   def isOneOf(values : Set[T]) = values.contains(value)
   val repeat : Seq[T] = Stream.continually(value).toSeq
-  def replicate(count: Int): Seq[T] = repeat.take(count)
   def partialMatch[V](pfn: PartialFunction[T, V]): Option[V] = apply(pfn)
   def partialMatchO[V](pfn: PartialFunction[T, Option[V]]): Option[V] = partialMatch(pfn).flatOpt
   def safePartialMatch[V](message: => String)(pfn: PartialFunction[T, V]): Option[V] =
     try { apply(pfn) } catch { case _ => Log.warn(message + ": " + value); None }
 
-  def safeCast[V](implicit m: Manifest[V]): Option[V] = m.cast(value)
-  def castOrElse[V](alternative: T => V)(implicit m: Manifest[V]): V = m.cast(value).getOrElse(alternative(value))
-
+  def safeCast[V: Manifest]: Option[V] = implicitly[Manifest[V]].safeCast(value)
+  def cast[V: Manifest]: V = implicitly[Manifest[V]].cast(value)
+  def castOrElse[V: Manifest](alternative: T => V): V = implicitly[Manifest[V]].safeCast(value).getOrElse(alternative(value))
   def pair[V](f: T => V): (T, V) = value → f(value)
   def pairWithTraversable[V](f: T => Traversable[V]): scala.Traversable[(T, V)] = pair(f(value))
   def pair[V](t: Traversable[V]) = t.pair(value).swap

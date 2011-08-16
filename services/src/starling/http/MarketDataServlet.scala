@@ -12,6 +12,8 @@ import starling.utils.Utils
 import starling.pivot._
 import starling.utils.ImplicitConversions._
 import starling.utils.Pattern._
+import scalaz._
+import Scalaz._
 
 
 class MarketDataServlet(marketDataStore:MarketDataStore) extends HttpServlet {

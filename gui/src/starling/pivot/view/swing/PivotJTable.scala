@@ -3,21 +3,20 @@ package starling.pivot.view.swing
 import collection.mutable.ListBuffer
 import org.jdesktop.swingx.JXTable
 import javax.swing._
-import table.{TableModel, TableCellEditor}
+import table.TableCellEditor
 import text.JTextComponent
 import swing.Swing._
 import org.jdesktop.jxlayer.JXLayer
 import java.awt.Cursor
 import starling.pivot.{EditableCellState, TableCell}
-import org.jdesktop.swingx.table.NumberEditorExt
-import org.jdesktop.swingx.JXTable.{BooleanEditor, GenericEditor}
+import org.jdesktop.swingx.JXTable.GenericEditor
 import javax.swing.TransferHandler.TransferSupport
 import java.awt.datatransfer.{Clipboard, DataFlavor, StringSelection}
 import starling.utils.Log
 import starling.gui.GuiUtils
 import java.util.{StringTokenizer, Hashtable}
-import swing.{ScrollPane, ListView, MenuItem, Action}
-import starling.pivot.model.{EditableInfo, AxisCell, PivotTableModel}
+import swing.{MenuItem, Action}
+import starling.pivot.model.{AxisCell, PivotTableModel}
 import java.awt.event._
 
 object PivotJTable {
@@ -384,7 +383,7 @@ class PivotJTable(tableModel:PivotJTableModel, pivotTableView:PivotTableView, mo
               }
             }
           }
-        } else if (SwingUtilities.isRightMouseButton(e)) {
+        } else if (e.isPopupTrigger) {
           // If the cell that was clicked on is outside the current selection, select just it, otherwise leave the selection as is.
           if (!getSelectedCells.contains((row,col))) {
             setRowSelectionInterval(row,row)

@@ -3,6 +3,7 @@ package starling.utils
 import org.apache.log4j._
 
 import starling.utils.ImplicitConversions._
+import util.DynamicVariable
 
 
 class AdaptingLogger(val rootLogger: VarLogger) extends VarLogger {
@@ -20,6 +21,7 @@ class AdaptingLogger(val rootLogger: VarLogger) extends VarLogger {
   override def fatal(msg: AnyRef, t: Throwable) = rootLogger.fatal(msg, t)
   override def level = rootLogger.level
   override def level_=(level: Levels.Value) = rootLogger.level = level
+  override def level[T](newLevel: Levels.Value)(thunk: => T) = rootLogger.level(newLevel)(thunk)
   override def name = rootLogger.name
   override def isInfoEnabled = rootLogger.isInfoEnabled
   override def info(msg: => AnyRef) = rootLogger.info(msg)
@@ -109,6 +111,9 @@ trait VarLogger {
 
   def level_=(level: Levels.Value): Unit = ()
 
+  def level[T](newLevel: Levels.Value)(thunk: => T): T = thunk
+  def off[T](thunk: => T): T = level(Levels.Off) { thunk }
+
   def name: String = "Null"
   // def parent = logger.getParent
 
@@ -128,26 +133,29 @@ trait VarLogger {
 }
 
 object Levels extends Enumeration {
-  val All = Value(1, "All")
-  val Trace = Value(3, "Trace")
-  val Debug = Value(5, "Debug")
+  val All = Value(15, "All")
+  val Trace = Value(13, "Trace")
+  val Debug = Value(11, "Debug")
+  val Info = Value(9, "Info")
   val Warn = Value(7, "Warn")
-  val Error = Value(9, "Error")
-  val Fatal = Value(11, "Fatal")
-  val Info = Value(13, "Info")
-  val Off = Value(15, "Off")
+  val Error = Value(5, "Error")
+  val Fatal = Value(3, "Fatal")
+  val Off = Value(1, "Off")
 }
 
 object Log4JLogger {
   System.setProperty("log4j.configuration", "utils/resources/log4j.properties")
 
-  lazy val logger = new Log4JLogger(Logger.getRootLogger)
-  def forName(name: String) = new Log4JLogger(Logger.getLogger(name))
-  def forClass(clazz: Class[_]) = new Log4JLogger(Logger.getLogger(clazz))
+  lazy val logger = new Log4JLogger(Logger.getRootLogger, levelTransformer)
+  def forName(name: String) = new Log4JLogger(Logger.getLogger(name), levelTransformer)
+  def forClass(clazz: Class[_]) = new Log4JLogger(Logger.getLogger(clazz), levelTransformer)
+
+  private val levelTransformer = new DynamicVariable[(Levels.Value) => Levels.Value](identity _)
 }
 
-class Log4JLogger(val logger: Logger) extends VarLogger {
-  override def isTraceEnabled = logger.isTraceEnabled
+
+class Log4JLogger(val logger: Logger, levelTransformer: DynamicVariable[(Levels.Value) => Levels.Value]) extends VarLogger {
+  override def isTraceEnabled = isEnabledFor(Levels.Trace)
 
   override def trace(msg: => AnyRef) = if (isTraceEnabled) logger.trace(msg)
 
@@ -155,13 +163,13 @@ class Log4JLogger(val logger: Logger) extends VarLogger {
 
   override def assertLog(assertion: Boolean, msg: => String) = if (assertion) logger.assertLog(assertion, msg)
 
-  override def isDebugEnabled = logger.isDebugEnabled
+  override def isDebugEnabled = isEnabledFor(Levels.Debug)
 
   override def debug(msg: => AnyRef) = if (isDebugEnabled) logger.debug(msg)
 
   override def debug(msg: => AnyRef, t: => Throwable) = if (isDebugEnabled) logger.debug(msg, t)
 
-  override def isErrorEnabled = logger.isEnabledFor(Level.ERROR)
+  override def isErrorEnabled = isEnabledFor(Levels.Error)
 
   override def error(msg: => AnyRef) = if (isErrorEnabled) logger.error(msg)
 
@@ -171,18 +179,17 @@ class Log4JLogger(val logger: Logger) extends VarLogger {
 
   override def fatal(msg: AnyRef, t: Throwable) = logger.fatal(msg, t)
 
-  override def level = logger.getLevel match {
+  override def level = levelTransformer.value(logger.getLevel match {
     case Level.ALL => Levels.All
-    case Level.DEBUG => Levels.Debug                 //  val height = 500
-//  chooser.preferredSize = new Dimension(70,height)
-
+    case Level.DEBUG => Levels.Debug
     case Level.ERROR => Levels.Error
     case Level.WARN => Levels.Warn
     case Level.FATAL => Levels.Fatal
     case Level.INFO => Levels.Info
     case Level.TRACE => Levels.Trace
     case Level.OFF => Levels.Off
-  }
+    case _ => Levels.Off
+  })
 
   val liftToLog4J: PartialFunction[Levels.Value, Level] = {
     case Levels.All => Level.ALL
@@ -193,15 +200,19 @@ class Log4JLogger(val logger: Logger) extends VarLogger {
     case Levels.Info => Level.INFO
     case Levels.Trace => Level.TRACE
     case Levels.Off => Level.OFF
+    case _ => Level.OFF
   }
 
-  override def isEnabledFor(level: Levels.Value): Boolean = logger.isEnabledFor(liftToLog4J(level))
+  override def isEnabledFor(level: Levels.Value): Boolean = this.level >= level
 
   override def level_=(level: Levels.Value) = logger.setLevel(liftToLog4J(level))
 
+  override def level[T](newLevel: Levels.Value)(thunk: => T) = if (newLevel >= level) thunk else
+    levelTransformer.withValue(_ => newLevel) { thunk }
+
   override def name = logger.getName
 
-  override def isInfoEnabled = logger.isInfoEnabled
+  override def isInfoEnabled = isEnabledFor(Levels.Info)
 
   override def info(msg: => AnyRef) = if (isInfoEnabled) logger.info(msg)
 
@@ -209,7 +220,7 @@ class Log4JLogger(val logger: Logger) extends VarLogger {
 
   def isEnabledFor(level: Priority) = logger.isEnabledFor(level)
 
-  override def isWarnEnabled = isEnabledFor(Level.WARN)
+  override def isWarnEnabled = isEnabledFor(Levels.Warn)
 
   override def warn(msg: => AnyRef) = if (isWarnEnabled) logger.warn(msg)
 

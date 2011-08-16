@@ -1,5 +1,7 @@
 package starling.utils.conversions
 
+import scala.util.control.Exception._
+
 
 trait RichFunction {
   implicit def enrichFunction2[A, B](f: A => B) = new RichFunction2(f)
@@ -7,6 +9,8 @@ trait RichFunction {
     def isDefinedAt(x: A) = true
     def apply(a: A) = f(a)
     def ***[C, D](pf: PartialFunction[C, D]) = enrichPartialFunction(this) *** pf
+    def either: A => Either[Throwable, B] = (a: A) => catching(classOf[Exception]) either(f(a))
+    def option: A => Option[B] = (a: A) => catching(classOf[Exception]) opt (f(a))
   }
   implicit def enrichFunction3[A, B, C, R](f: (A, B, C) => R) = new RichFunction3(f)
   implicit def enrichFunction4[A, B, C, D, R](f: (A, B, C, D) => R) = new RichFunction4(f)
