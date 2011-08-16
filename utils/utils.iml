@@ -53,18 +53,18 @@
     <orderEntry type="module-library" exported="">
       <library>
         <CLASSES>
-          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/compile/xstream-1.3.1.jar!/" />
+          <root url="jar://$MODULE_DIR$/../.ivy/cache/com.thoughtworks.xstream/xstream/jars/xstream-1.3.1.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES>
-          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/compile/xstream-1.3.1-sources.jar!/" />
+          <root url="jar://$MODULE_DIR$/../.ivy/cache/com.thoughtworks.xstream/xstream/srcs/xstream-1.3.1-sources.jar!/" />
         </SOURCES>
       </library>
     </orderEntry>
     <orderEntry type="module-library" exported="">
       <library>
         <CLASSES>
-          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/compile/xpp3_min-1.1.4c.jar!/" />
+          <root url="jar://$MODULE_DIR$/../.ivy/cache/xpp3/xpp3_min/jars/xpp3_min-1.1.4c.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />
@@ -73,7 +73,7 @@
     <orderEntry type="module-library" exported="">
       <library>
         <CLASSES>
-          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/compile/commons-cli-1.1.jar!/" />
+          <root url="jar://$MODULE_DIR$/../.ivy/cache/commons-cli/commons-cli/jars/commons-cli-1.1.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />
@@ -82,7 +82,7 @@
     <orderEntry type="module-library" exported="">
       <library>
         <CLASSES>
-          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/compile/colt-1.0.3.jar!/" />
+          <root url="jar://$MODULE_DIR$/../.ivy/cache/colt/colt/jars/colt-1.0.3.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />
@@ -91,29 +91,29 @@
     <orderEntry type="module-library" exported="">
       <library>
         <CLASSES>
-          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/compile/joda-time-1.6.jar!/" />
+          <root url="jar://$MODULE_DIR$/../.ivy/cache/joda-time/joda-time/jars/joda-time-1.6.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES>
-          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/compile/joda-time-1.6-sources.jar!/" />
+          <root url="jar://$MODULE_DIR$/../.ivy/cache/joda-time/joda-time/srcs/joda-time-1.6-sources.jar!/" />
         </SOURCES>
       </library>
     </orderEntry>
     <orderEntry type="module-library" exported="">
       <library>
         <CLASSES>
-          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/compile/google-collections-1.0.jar!/" />
+          <root url="jar://$MODULE_DIR$/../.ivy/cache/com.google.collections/google-collections/jars/google-collections-1.0.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES>
-          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/compile/google-collections-1.0-sources.jar!/" />
+          <root url="jar://$MODULE_DIR$/../.ivy/cache/com.google.collections/google-collections/srcs/google-collections-1.0-sources.jar!/" />
         </SOURCES>
       </library>
     </orderEntry>
     <orderEntry type="module-library" exported="">
       <library>
         <CLASSES>
-          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/compile/commons-io-1.2.jar!/" />
+          <root url="jar://$MODULE_DIR$/../.ivy/cache/commons-io/commons-io/jars/commons-io-1.2.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />
@@ -122,66 +122,66 @@
     <orderEntry type="module-library" exported="">
       <library>
         <CLASSES>
-          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/compile/cglib-nodep-2.2.jar!/" />
+          <root url="jar://$MODULE_DIR$/../.ivy/cache/cglib/cglib-nodep/jars/cglib-nodep-2.2.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES>
-          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/compile/cglib-nodep-2.2-sources.jar!/" />
+          <root url="jar://$MODULE_DIR$/../.ivy/cache/cglib/cglib-nodep/srcs/cglib-nodep-2.2-sources.jar!/" />
         </SOURCES>
       </library>
     </orderEntry>
     <orderEntry type="module-library" exported="">
       <library>
         <CLASSES>
-          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/compile/commons-codec-1.4.jar!/" />
+          <root url="jar://$MODULE_DIR$/../.ivy/cache/commons-codec/commons-codec/jars/commons-codec-1.4.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES>
-          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/compile/commons-codec-1.4-sources.jar!/" />
+          <root url="jar://$MODULE_DIR$/../.ivy/cache/commons-codec/commons-codec/srcs/commons-codec-1.4-sources.jar!/" />
         </SOURCES>
       </library>
     </orderEntry>
     <orderEntry type="module-library" exported="">
       <library>
         <CLASSES>
-          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/compile/testng-5.8-jdk15.jar!/" />
+          <root url="jar://$MODULE_DIR$/../.ivy/cache/org.testng/testng/jars/testng-5.8-jdk15.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES>
-          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/compile/testng-5.8-sources.jar!/" />
+          <root url="jar://$MODULE_DIR$/../.ivy/cache/org.testng/testng/srcs/testng-5.8-sources.jar!/" />
         </SOURCES>
       </library>
     </orderEntry>
     <orderEntry type="module-library" exported="">
       <library>
         <CLASSES>
-          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/compile/log4j-1.2.16.jar!/" />
+          <root url="jar://$MODULE_DIR$/../.ivy/cache/log4j/log4j/jars/log4j-1.2.16.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES>
-          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/compile/log4j-1.2.16-sources.jar!/" />
+          <root url="jar://$MODULE_DIR$/../.ivy/cache/log4j/log4j/srcs/log4j-1.2.16-sources.jar!/" />
         </SOURCES>
       </library>
     </orderEntry>
     <orderEntry type="module-library" exported="">
       <library>
         <CLASSES>
-          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/compile/amqp-client-1.7.2.jar!/" />
+          <root url="jar://$MODULE_DIR$/../.ivy/cache/com.rabbitmq/amqp-client/jars/amqp-client-1.7.2.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES>
-          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/compile/amqp-client-1.7.2-sources.jar!/" />
+          <root url="jar://$MODULE_DIR$/../.ivy/cache/com.rabbitmq/amqp-client/srcs/amqp-client-1.7.2-sources.jar!/" />
         </SOURCES>
       </library>
     </orderEntry>
     <orderEntry type="module-library" exported="" scope="TEST">
       <library>
         <CLASSES>
-          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/test/mockito-all-1.8.2.jar!/" />
+          <root url="jar://$MODULE_DIR$/../.ivy/cache/org.mockito/mockito-all/jars/mockito-all-1.8.2.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES>
-          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/test/mockito-all-1.8.2-sources.jar!/" />
+          <root url="jar://$MODULE_DIR$/../.ivy/cache/org.mockito/mockito-all/srcs/mockito-all-1.8.2-sources.jar!/" />
         </SOURCES>
       </library>
     </orderEntry>
@@ -197,11 +197,11 @@
     <orderEntry type="module-library" scope="RUNTIME">
       <library>
         <CLASSES>
-          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/compile/slf4j-log4j12-1.6.1.jar!/" />
+          <root url="jar://$MODULE_DIR$/../.ivy/cache/org.slf4j/slf4j-log4j12/jars/slf4j-log4j12-1.6.1.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES>
-          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/compile/slf4j-log4j12-1.6.1-sources.jar!/" />
+          <root url="jar://$MODULE_DIR$/../.ivy/cache/org.slf4j/slf4j-log4j12/srcs/slf4j-log4j12-1.6.1-sources.jar!/" />
         </SOURCES>
       </library>
     </orderEntry>

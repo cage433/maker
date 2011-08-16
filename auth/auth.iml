@@ -47,11 +47,11 @@
     <orderEntry type="module-library" exported="">
       <library>
         <CLASSES>
-          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/compile/jna-3.0.9.jar!/" />
+          <root url="jar://$MODULE_DIR$/../.ivy/cache/com.sun.jna/jna/jars/jna-3.0.9.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES>
-          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/compile/jna-3.0.9-sources.jar!/" />
+          <root url="jar://$MODULE_DIR$/../.ivy/cache/com.sun.jna/jna/srcs/jna-3.0.9-sources.jar!/" />
         </SOURCES>
       </library>
     </orderEntry>

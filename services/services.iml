@@ -171,18 +171,18 @@
     <orderEntry type="module-library" exported="">
       <library>
         <CLASSES>
-          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/compile/servlet-api-2.5.jar!/" />
+          <root url="jar://$MODULE_DIR$/../.ivy/cache/javax.servlet/servlet-api/jars/servlet-api-2.5.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES>
-          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/compile/servlet-api-2.5-sources.jar!/" />
+          <root url="jar://$MODULE_DIR$/../.ivy/cache/javax.servlet/servlet-api/srcs/servlet-api-2.5-sources.jar!/" />
         </SOURCES>
       </library>
     </orderEntry>
     <orderEntry type="module-library" exported="">
       <library>
         <CLASSES>
-          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/compile/servlet-api-2.5-20081211.jar!/" />
+          <root url="jar://$MODULE_DIR$/../.ivy/cache/org.mortbay.jetty/servlet-api/jars/servlet-api-2.5-20081211.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />
@@ -191,7 +191,7 @@
     <orderEntry type="module-library" exported="">
       <library>
         <CLASSES>
-          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/compile/spring-asm-3.0.5.RELEASE.jar!/" />
+          <root url="jar://$MODULE_DIR$/../.ivy/cache/org.springframework/spring-asm/jars/spring-asm-3.0.5.RELEASE.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />
@@ -200,7 +200,7 @@
     <orderEntry type="module-library" exported="">
       <library>
         <CLASSES>
-          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/compile/spring-aop-3.0.5.RELEASE.jar!/" />
+          <root url="jar://$MODULE_DIR$/../.ivy/cache/org.springframework/spring-aop/jars/spring-aop-3.0.5.RELEASE.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />
@@ -209,7 +209,7 @@
     <orderEntry type="module-library" exported="">
       <library>
         <CLASSES>
-          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/compile/spring-context-3.0.5.RELEASE.jar!/" />
+          <root url="jar://$MODULE_DIR$/../.ivy/cache/org.springframework/spring-context/jars/spring-context-3.0.5.RELEASE.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />
@@ -218,7 +218,7 @@
     <orderEntry type="module-library" exported="">
       <library>
         <CLASSES>
-          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/compile/spring-beans-3.0.5.RELEASE.jar!/" />
+          <root url="jar://$MODULE_DIR$/../.ivy/cache/org.springframework/spring-beans/jars/spring-beans-3.0.5.RELEASE.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />
@@ -227,7 +227,7 @@
     <orderEntry type="module-library" exported="">
       <library>
         <CLASSES>
-          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/compile/spring-core-3.0.5.RELEASE.jar!/" />
+          <root url="jar://$MODULE_DIR$/../.ivy/cache/org.springframework/spring-core/jars/spring-core-3.0.5.RELEASE.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />
@@ -236,18 +236,18 @@
     <orderEntry type="module-library" exported="">
       <library>
         <CLASSES>
-          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/compile/spring-context-support-3.0.5.RELEASE.jar!/" />
+          <root url="jar://$MODULE_DIR$/../.ivy/cache/org.springframework/spring-context-support/jars/spring-context-support-3.0.5.RELEASE.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES>
-          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/compile/spring-context-support-3.0.5.RELEASE-sources.jar!/" />
+          <root url="jar://$MODULE_DIR$/../.ivy/cache/org.springframework/spring-context-support/srcs/spring-context-support-3.0.5.RELEASE-sources.jar!/" />
         </SOURCES>
       </library>
     </orderEntry>
     <orderEntry type="module-library" exported="">
       <library>
         <CLASSES>
-          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/compile/spring-expression-3.0.5.RELEASE.jar!/" />
+          <root url="jar://$MODULE_DIR$/../.ivy/cache/org.springframework/spring-expression/jars/spring-expression-3.0.5.RELEASE.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />
@@ -256,7 +256,7 @@
     <orderEntry type="module-library" exported="">
       <library>
         <CLASSES>
-          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/compile/activation-1.1.jar!/" />
+          <root url="jar://$MODULE_DIR$/../.ivy/cache/javax.activation/activation/jars/activation-1.1.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />
@@ -265,18 +265,18 @@
     <orderEntry type="module-library" exported="">
       <library>
         <CLASSES>
-          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/compile/jetty-6.1.26.jar!/" />
+          <root url="jar://$MODULE_DIR$/../.ivy/cache/org.mortbay.jetty/jetty/jars/jetty-6.1.26.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES>
-          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/compile/jetty-6.1.26-sources.jar!/" />
+          <root url="jar://$MODULE_DIR$/../.ivy/cache/org.mortbay.jetty/jetty/srcs/jetty-6.1.26-sources.jar!/" />
         </SOURCES>
       </library>
     </orderEntry>
     <orderEntry type="module-library" exported="">
       <library>
         <CLASSES>
-          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/compile/aopalliance-1.0.jar!/" />
+          <root url="jar://$MODULE_DIR$/../.ivy/cache/aopalliance/aopalliance/jars/aopalliance-1.0.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />
@@ -285,7 +285,7 @@
     <orderEntry type="module-library" exported="">
       <library>
         <CLASSES>
-          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/compile/commons-logging-1.1.1.jar!/" />
+          <root url="jar://$MODULE_DIR$/../.ivy/cache/commons-logging/commons-logging/jars/commons-logging-1.1.1.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />
@@ -294,7 +294,7 @@
     <orderEntry type="module-library" exported="">
       <library>
         <CLASSES>
-          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/compile/jetty-util-6.1.26.jar!/" />
+          <root url="jar://$MODULE_DIR$/../.ivy/cache/org.mortbay.jetty/jetty-util/jars/jetty-util-6.1.26.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />
@@ -303,29 +303,29 @@
     <orderEntry type="module-library" exported="">
       <library>
         <CLASSES>
-          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/compile/lift-json_2.9.0-2.4-M2.jar!/" />
+          <root url="jar://$MODULE_DIR$/../.ivy/cache/net.liftweb/lift-json_2.9.0/jars/lift-json_2.9.0-2.4-M2.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES>
-          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/compile/lift-json_2.9.0-2.4-M2-sources.jar!/" />
+          <root url="jar://$MODULE_DIR$/../.ivy/cache/net.liftweb/lift-json_2.9.0/srcs/lift-json_2.9.0-2.4-M2-sources.jar!/" />
         </SOURCES>
       </library>
     </orderEntry>
     <orderEntry type="module-library" exported="">
       <library>
         <CLASSES>
-          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/compile/mail-1.4.jar!/" />
+          <root url="jar://$MODULE_DIR$/../.ivy/cache/javax.mail/mail/jars/mail-1.4.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES>
-          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/compile/mail-1.4-sources.jar!/" />
+          <root url="jar://$MODULE_DIR$/../.ivy/cache/javax.mail/mail/srcs/mail-1.4-sources.jar!/" />
         </SOURCES>
       </library>
     </orderEntry>
     <orderEntry type="module-library" exported="">
       <library>
         <CLASSES>
-          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/compile/paranamer-2.3.jar!/" />
+          <root url="jar://$MODULE_DIR$/../.ivy/cache/com.thoughtworks.paranamer/paranamer/jars/paranamer-2.3.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />
@@ -334,7 +334,7 @@
     <orderEntry type="module-library" exported="">
       <library>
         <CLASSES>
-          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/compile/scalap-2.9.0.jar!/" />
+          <root url="jar://$MODULE_DIR$/../.ivy/cache/org.scala-lang/scalap/jars/scalap-2.9.0.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />
@@ -343,29 +343,29 @@
     <orderEntry type="module-library" scope="TEST">
       <library>
         <CLASSES>
-          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/test/subethasmtp-smtp-1.2.jar!/" />
+          <root url="jar://$MODULE_DIR$/../.ivy/cache/org.subethamail/subethasmtp-smtp/jars/subethasmtp-smtp-1.2.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES>
-          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/test/subethasmtp-smtp-1.2-sources.jar!/" />
+          <root url="jar://$MODULE_DIR$/../.ivy/cache/org.subethamail/subethasmtp-smtp/srcs/subethasmtp-smtp-1.2-sources.jar!/" />
         </SOURCES>
       </library>
     </orderEntry>
     <orderEntry type="module-library" scope="TEST">
       <library>
         <CLASSES>
-          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/test/subethasmtp-wiser-1.2.jar!/" />
+          <root url="jar://$MODULE_DIR$/../.ivy/cache/org.subethamail/subethasmtp-wiser/jars/subethasmtp-wiser-1.2.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES>
-          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/test/subethasmtp-wiser-1.2-sources.jar!/" />
+          <root url="jar://$MODULE_DIR$/../.ivy/cache/org.subethamail/subethasmtp-wiser/srcs/subethasmtp-wiser-1.2-sources.jar!/" />
         </SOURCES>
       </library>
     </orderEntry>
     <orderEntry type="module-library" scope="TEST">
       <library>
         <CLASSES>
-          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/test/activation-1.1.jar!/" />
+          <root url="jar://$MODULE_DIR$/../.ivy/cache/javax.activation/activation/jars/activation-1.1.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />
@@ -374,7 +374,7 @@
     <orderEntry type="module-library" scope="TEST">
       <library>
         <CLASSES>
-          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/test/mail-1.4.jar!/" />
+          <root url="jar://$MODULE_DIR$/../.ivy/cache/javax.mail/mail/jars/mail-1.4.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />
@@ -458,7 +458,7 @@
     <orderEntry type="module-library" scope="TEST">
       <library>
         <CLASSES>
-          <root url="jar://$MODULE_DIR$/../ivy/cache/log4j/log4j/jars/log4j-1.2.16.jar!/" />
+          <root url="jar://$MODULE_DIR$/../.ivy/cache/log4j/log4j/jars/log4j-1.2.16.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />

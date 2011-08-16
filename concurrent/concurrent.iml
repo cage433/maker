@@ -28,7 +28,7 @@
     <orderEntry type="module-library">
       <library>
         <CLASSES>
-          <root url="jar://$MODULE_DIR$/../bouncyrmi/lib_managed/scala_2.9.0-1/compile/netty-3.2.3.Final.jar!/" />
+          <root url="jar://$MODULE_DIR$/../.ivy/cache/org.jboss.netty/netty/jars/netty-3.2.3.Final.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />

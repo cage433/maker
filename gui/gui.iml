@@ -98,7 +98,7 @@
     <orderEntry type="module-library" exported="">
       <library>
         <CLASSES>
-          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/compile/jcommon-1.0.0.jar!/" />
+          <root url="jar://$MODULE_DIR$/../.ivy/cache/jfree/jcommon/jars/jcommon-1.0.0.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />
@@ -107,7 +107,7 @@
     <orderEntry type="module-library" exported="">
       <library>
         <CLASSES>
-          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/compile/jfreechart-1.0.0.jar!/" />
+          <root url="jar://$MODULE_DIR$/../.ivy/cache/jfree/jfreechart/jars/jfreechart-1.0.0.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />

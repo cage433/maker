@@ -61,18 +61,18 @@
     <orderEntry type="module-library" exported="">
       <library>
         <CLASSES>
-          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/compile/spring-jdbc-3.0.5.RELEASE.jar!/" />
+          <root url="jar://$MODULE_DIR$/../.ivy/cache/org.springframework/spring-jdbc/jars/spring-jdbc-3.0.5.RELEASE.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES>
-          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/compile/spring-jdbc-3.0.5.RELEASE-sources.jar!/" />
+          <root url="jar://$MODULE_DIR$/../.ivy/cache/org.springframework/spring-jdbc/srcs/spring-jdbc-3.0.5.RELEASE-sources.jar!/" />
         </SOURCES>
       </library>
     </orderEntry>
     <orderEntry type="module-library" exported="">
       <library>
         <CLASSES>
-          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/compile/spring-expression-3.0.5.RELEASE.jar!/" />
+          <root url="jar://$MODULE_DIR$/../.ivy/cache/org.springframework/spring-expression/jars/spring-expression-3.0.5.RELEASE.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />
@@ -81,7 +81,7 @@
     <orderEntry type="module-library" exported="">
       <library>
         <CLASSES>
-          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/compile/test-interface-0.5.jar!/" />
+          <root url="jar://$MODULE_DIR$/../.ivy/cache/org.scala-tools.testing/test-interface/jars/test-interface-0.5.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />
@@ -90,7 +90,7 @@
     <orderEntry type="module-library" exported="">
       <library>
         <CLASSES>
-          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/compile/spring-tx-3.0.5.RELEASE.jar!/" />
+          <root url="jar://$MODULE_DIR$/../.ivy/cache/org.springframework/spring-tx/jars/spring-tx-3.0.5.RELEASE.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />
@@ -99,7 +99,7 @@
     <orderEntry type="module-library" exported="">
       <library>
         <CLASSES>
-          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/compile/derby-10.5.3.0_1.jar!/" />
+          <root url="jar://$MODULE_DIR$/../.ivy/cache/org.apache.derby/derby/jars/derby-10.5.3.0_1.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />
@@ -108,18 +108,18 @@
     <orderEntry type="module-library" exported="">
       <library>
         <CLASSES>
-          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/compile/bonecp-0.7.1.RELEASE.jar!/" />
+          <root url="jar://$MODULE_DIR$/../.ivy/cache/com.jolbox/bonecp/jars/bonecp-0.7.1.RELEASE.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES>
-          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/compile/bonecp-0.7.1.RELEASE-sources.jar!/" />
+          <root url="jar://$MODULE_DIR$/../.ivy/cache/com.jolbox/bonecp/srcs/bonecp-0.7.1.RELEASE-sources.jar!/" />
         </SOURCES>
       </library>
     </orderEntry>
     <orderEntry type="module-library" exported="">
       <library>
         <CLASSES>
-          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/compile/commons-logging-1.1.1.jar!/" />
+          <root url="jar://$MODULE_DIR$/../.ivy/cache/commons-logging/commons-logging/jars/commons-logging-1.1.1.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />
@@ -128,7 +128,7 @@
     <orderEntry type="module-library" exported="">
       <library>
         <CLASSES>
-          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/compile/aopalliance-1.0.jar!/" />
+          <root url="jar://$MODULE_DIR$/../.ivy/cache/aopalliance/aopalliance/jars/aopalliance-1.0.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />
@@ -137,7 +137,7 @@
     <orderEntry type="module-library" exported="">
       <library>
         <CLASSES>
-          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/compile/spring-context-3.0.5.RELEASE.jar!/" />
+          <root url="jar://$MODULE_DIR$/../.ivy/cache/org.springframework/spring-context/jars/spring-context-3.0.5.RELEASE.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />
@@ -146,7 +146,7 @@
     <orderEntry type="module-library" exported="">
       <library>
         <CLASSES>
-          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/compile/spring-core-3.0.5.RELEASE.jar!/" />
+          <root url="jar://$MODULE_DIR$/../.ivy/cache/org.springframework/spring-core/jars/spring-core-3.0.5.RELEASE.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />
@@ -155,7 +155,7 @@
     <orderEntry type="module-library" exported="">
       <library>
         <CLASSES>
-          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/compile/spring-asm-3.0.5.RELEASE.jar!/" />
+          <root url="jar://$MODULE_DIR$/../.ivy/cache/org.springframework/spring-asm/jars/spring-asm-3.0.5.RELEASE.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />
@@ -164,7 +164,7 @@
     <orderEntry type="module-library" exported="">
       <library>
         <CLASSES>
-          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/compile/spring-beans-3.0.5.RELEASE.jar!/" />
+          <root url="jar://$MODULE_DIR$/../.ivy/cache/org.springframework/spring-beans/jars/spring-beans-3.0.5.RELEASE.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />
@@ -173,7 +173,7 @@
     <orderEntry type="module-library" exported="">
       <library>
         <CLASSES>
-          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/compile/spring-aop-3.0.5.RELEASE.jar!/" />
+          <root url="jar://$MODULE_DIR$/../.ivy/cache/org.springframework/spring-aop/jars/spring-aop-3.0.5.RELEASE.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />
@@ -182,18 +182,18 @@
     <orderEntry type="module-library" exported="">
       <library>
         <CLASSES>
-          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/compile/scalacheck_2.9.0-1-1.9.jar!/" />
+          <root url="jar://$MODULE_DIR$/../.ivy/cache/org.scala-tools.testing/scalacheck_2.9.0-1/jars/scalacheck_2.9.0-1-1.9.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES>
-          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/compile/scalacheck_2.9.0-1-1.9-sources.jar!/" />
+          <root url="jar://$MODULE_DIR$/../.ivy/cache/org.scala-tools.testing/scalacheck_2.9.0-1/srcs/scalacheck_2.9.0-1-1.9-sources.jar!/" />
         </SOURCES>
       </library>
     </orderEntry>
     <orderEntry type="module-library" scope="TEST">
       <library>
         <CLASSES>
-          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/test/hsqldb-1.8.0.10.jar!/" />
+          <root url="jar://$MODULE_DIR$/../.ivy/cache/hsqldb/hsqldb/jars/hsqldb-1.8.0.10.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />
@@ -202,11 +202,11 @@
     <orderEntry type="module-library" scope="TEST">
       <library>
         <CLASSES>
-          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/test/h2-1.2.131.jar!/" />
+          <root url="jar://$MODULE_DIR$/../.ivy/cache/com.h2database/h2/jars/h2-1.2.131.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES>
-          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/test/h2-1.2.131-sources.jar!/" />
+          <root url="jar://$MODULE_DIR$/../.ivy/cache/com.h2database/h2/srcs/h2-1.2.131-sources.jar!/" />
         </SOURCES>
       </library>
     </orderEntry>
@@ -222,11 +222,11 @@
     <orderEntry type="module-library" exported="">
       <library>
         <CLASSES>
-          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/compile/slf4j-api-1.6.1.jar!/" />
+          <root url="jar://$MODULE_DIR$/../.ivy/cache/org.slf4j/slf4j-api/jars/slf4j-api-1.6.1.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES>
-          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/compile/slf4j-api-1.6.1-sources.jar!/" />
+          <root url="jar://$MODULE_DIR$/../.ivy/cache/org.slf4j/slf4j-api/srcs/slf4j-api-1.6.1-sources.jar!/" />
         </SOURCES>
       </library>
     </orderEntry>
