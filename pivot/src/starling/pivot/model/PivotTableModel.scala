@@ -11,8 +11,8 @@ import starling.quantity.Quantity
 import starling.pivot.EditableCellState._
 import starling.pivot._
 import controller.ChildKey
-import collection.mutable.HashMap
 import collection.immutable.{Map, TreeMap}
+import collection.mutable.{HashSet, HashMap}
 
 class FieldList(pivotTableModel:PivotTableModel, _fields:Seq[Field], fieldChooserType:FieldChooserType) {
   def get(index:Int) = _fields(index)
@@ -434,6 +434,9 @@ object PivotTableModel {
 
     val forceNewRowsToBottom = allEditableInfo.editableInfo.map(_.extraLine).getOrElse(false)
 
+    val rowValuesAlreadyAdded = new HashSet[AxisValueList[AxisValue]]()
+    val columnValuesAlreadyAdded = new HashSet[AxisValueList[AxisValue]]()
+
     for (row <- pivotResult.data) {
       def valuesForField(field:Field) : List[Any] = {
         val rawValue = row.getOrElse(field, UndefinedValue)
@@ -559,8 +562,14 @@ object PivotTableModel {
         for ((dataFieldOption, columnValues) <- columnValuesList) {
           for (rowValues <- rowValuesOption) {
 
-            rowAxisRoot = rowAxisRoot.add(rowValues.list)
-            columnAxisRoot = columnAxisRoot.add(columnValues.list)
+            if (!rowValuesAlreadyAdded.contains(rowValues)) {
+              rowAxisRoot = rowAxisRoot.add(rowValues.list)
+              rowValuesAlreadyAdded += rowValues
+            }
+            if (!columnValuesAlreadyAdded.contains(columnValues)) {
+              columnAxisRoot = columnAxisRoot.add(columnValues.list)
+              columnValuesAlreadyAdded += columnValues
+            }
 
             val rowColumnKey = (rowValues.list.map(_.childKey), columnValues.list.map(_.childKey))
             dataFieldOption.foreach { df => {
@@ -572,8 +581,9 @@ object PivotTableModel {
           }
         }
       } else if (rowValuesOption.isDefined && rowValuesOption.get.list.nonEmpty) {
-        for (rowValues <- rowValuesOption) {
+        for (rowValues <- rowValuesOption if !rowValuesAlreadyAdded.contains(rowValues)) {
           rowAxisRoot = rowAxisRoot.add(rowValues.list)
+          rowValuesAlreadyAdded += rowValues
         }
       }
     }
