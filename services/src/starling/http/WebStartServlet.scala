@@ -27,22 +27,42 @@ object GUICode {
 
   val libJarNames = Map(
     "scala-library.jar" -> scalaLibraryJar,
-    "scala-swing.jar" -> new File("lib/scala/scala-2.9.0.1.final/lib/scala-swing.jar")
-  ) ++ modules.flatMap(module => {
-    val lib = new File(module + "/lib/")
-    val libManaged = new File(module + "/lib_managed/scala_2.9.0-1/compile/")
-    def jarsFromDir(dir : File) = {
-      if (dir.exists) {
-        val jarFiles = dir.listFiles.toList.filter(_.getPath.endsWith(".jar")).filterNot{path => {
-          bigJarsThatAreNotRequired.contains(path.getName)
-        }}
-        jarFiles.map{ file => file.getPath.replaceAll("/", "-") -> file}
-      } else {
-        List()
-      }
-    }
-    jarsFromDir(lib) ::: jarsFromDir(libManaged)
-  })
+    "scala-swing.jar" -> new File("lib/scala/scala-2.9.0.1.final/lib/scala-swing.jar"),
+    "auth-lib-jna.jar" -> new File("auth/lib/jna.jar"),
+    "auth-lib_managed-scala_2.9.0-1-compile-jna-3.0.9.jar" -> new File(".ivy/cache/com.sun.jna/jna/jars/jna-3.0.9.jar"),
+    "auth-lib-platform.jar" -> new File("auth/lib/platform.jar"),
+    "bouncyrmi-lib_managed-scala_2.9.0-1-compile-cglib-nodep-2.2.jar" -> new File(".ivy/cache/cglib/cglib-nodep/jars/cglib-nodep-2.2.jar"),
+    "bouncyrmi-lib_managed-scala_2.9.0-1-compile-commons-io-1.3.2.jar" -> new File(".ivy/cache/commons-io/commons-io/jars/commons-io-1.3.2.jar"),
+    "bouncyrmi-lib_managed-scala_2.9.0-1-compile-netty-3.2.5.Final.jar" -> new File(".ivy/cache/org.jboss.netty/netty/jars/netty-3.2.5.Final.jar"),
+    "gui.api-lib-dispatch-json_2.8.0-0.7.4.jar" -> new File("gui.api/lib/dispatch-json_2.8.0-0.7.4.jar"),
+    "gui.api-lib_managed-scala_2.9.0-1-compile-sjson_2.8.0-0.8.jar" -> new File(".ivy/cache/net.debasishg/sjson_2.8.0/jars/sjson_2.8.0-0.8.jar"),
+    "gui-lib-jxlayer-4.0.jar" -> new File("gui/lib/jxlayer-4.0.jar"),
+    "gui-lib-looks-2.3.1.jar" -> new File("gui/lib/looks-2.3.1.jar"),
+    "gui-lib_managed-scala_2.9.0-1-compile-jcommon-1.0.0.jar" -> new File(".ivy/cache/jfree/jcommon/jars/jcommon-1.0.0.jar"),
+    "gui-lib_managed-scala_2.9.0-1-compile-jfreechart-1.0.0.jar" -> new File(".ivy/cache/jfree/jfreechart/jars/jfreechart-1.0.0.jar"),
+    "gui-lib-Miglayout-3-7-3-1-nick.jar" -> new File("gui/lib/Miglayout-3-7-3-1-nick.jar"),
+    "gui-lib-org.eclipse.mylyn.wikitext.core_1.4.0.I20100805-0500-e3x.jar" -> new File("gui/lib/org.eclipse.mylyn.wikitext.core_1.4.0.I20100805-0500-e3x.jar"),
+    "gui-lib-org.eclipse.mylyn.wikitext.textile.core_1.4.0.I20100805-0500-e3x.jar" -> new File("gui/lib/org.eclipse.mylyn.wikitext.textile.core_1.4.0.I20100805-0500-e3x.jar"),
+    "gui-lib-swingx-core-1.6.2.jar" -> new File("gui/lib/swingx-core-1.6.2.jar"),
+    "gui-lib-timingframework-1.0.jar" -> new File("gui/lib/timingframework-1.0.jar"),
+    "scala-library.jar" -> new File("lib/scala/scala-2.9.0.1.final/lib/scala-library.jar"),
+    "scala-swing.jar" -> new File("lib/scala/scala-2.9.0.1.final/lib/scala-swing.jar"),
+    "utils-lib_managed-scala_2.9.0-1-compile-amqp-client-1.7.2.jar" -> new File(".ivy/cache/com.rabbitmq/amqp-client/jars/amqp-client-1.7.2.jar"),
+    "utils-lib_managed-scala_2.9.0-1-compile-cglib-nodep-2.2.jar" -> new File(".ivy/cache/cglib/cglib-nodep/jars/cglib-nodep-2.2.jar"),
+    "utils-lib_managed-scala_2.9.0-1-compile-commons-cli-1.1.jar" -> new File(".ivy/cache/commons-cli/commons-cli/jars/commons-cli-1.1.jar"),
+    "utils-lib_managed-scala_2.9.0-1-compile-commons-codec-1.4.jar" -> new File(".ivy/cache/commons-codec/commons-codec/jars/commons-codec-1.4.jar"),
+    "utils-lib_managed-scala_2.9.0-1-compile-commons-io-1.2.jar" -> new File(".ivy/cache/commons-io/commons-io/jars/commons-io-1.2.jar"),
+    "utils-lib_managed-scala_2.9.0-1-compile-google-collections-1.0.jar" -> new File(".ivy/cache/com.google.collections/google-collections/jars/google-collections-1.0.jar"),
+    "utils-lib_managed-scala_2.9.0-1-compile-joda-time-1.6.jar" -> new File(".ivy/cache/joda-time/joda-time/jars/joda-time-1.6.jar"),
+    "utils-lib_managed-scala_2.9.0-1-compile-log4j-1.2.16.jar" -> new File(".ivy/cache/log4j/log4j/jars/log4j-1.2.16.jar"),
+    "utils-lib_managed-scala_2.9.0-1-compile-slf4j-api-1.6.1.jar" -> new File(".ivy/cache/org.slf4j/slf4j-api/jars/slf4j-api-1.6.1.jar"),
+    "utils-lib_managed-scala_2.9.0-1-compile-slf4j-log4j12-1.6.1.jar" -> new File(".ivy/cache/org.slf4j/slf4j-log4j12/jars/slf4j-log4j12-1.6.1.jar"),
+    "utils-lib_managed-scala_2.9.0-1-compile-xpp3_min-1.1.4c.jar" -> new File(".ivy/cache/xpp3/xpp3_min/jars/xpp3_min-1.1.4c.jar"),
+    "utils-lib_managed-scala_2.9.0-1-compile-xstream-1.3.1.jar" -> new File(".ivy/cache/com.thoughtworks.xstream/xstream/jars/xstream-1.3.1.jar"),
+    "utils-lib-memcached-2.5.jar" -> new File("utils/lib/memcached-2.5.jar"),
+    "utils-lib-scalatest-1.6.1.jar" -> new File("utils/lib/scalatest-1.6.1.jar"),
+    "utils-lib-scalaz-core_2.9.0-1-6.0.1.jar" -> new File("utils/lib/scalaz-core_2.9.0-1-6.0.1.jar")
+  )
 
   def dependencies = {
     (modules.map { module => module -> lastModifiedForModule(module) }, libJarNames.mapValues(file=>file.lastModified))
