@@ -24,7 +24,7 @@ object Dependencies{
 
   val bouncyRmiDependencies = Seq(
     "cglib" % "cglib-nodep" % "2.2" withSources(),
-    "org.jboss.netty" % "netty" % "3.2.3.Final" withSources(),
+    "org.jboss.netty" % "netty" % "3.2.5.Final" withSources(),
     "commons-io" % "commons-io" % "1.3.2" withSources(),
     "org.scala-lang" % "scala-swing" % "2.9.0-1" withSources()
   ) 
@@ -92,7 +92,7 @@ object StarlingBuild extends Build{
     unmanagedResourceDirectories in Compile <+= baseDirectory(_/"resources"),
     unmanagedBase <<= baseDirectory( (base: File) => base /"lib"),
     unmanagedClasspath in Test <+= (baseDirectory) map { bd => Attributed.blank(bd / "resources") },
-    ivyXML := <dependencies><exclude artifact="jcl-over-slf4j"/></dependencies>, 
+    ivyXML := <dependencies><exclude artifact="jcl-over-slf4j"/><exclude artifact="junit"/></dependencies>, 
     scalaVersion := "2.9.0-1",
     showLibsTask,
     writeClasspathScriptTask
