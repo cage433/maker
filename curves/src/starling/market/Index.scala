@@ -90,7 +90,13 @@ trait SingleIndex extends Index with KnownObservation {
   def level: Level
 
   def fixing(env : InstrumentLevelEnvironment, observationDay : Day) = {
-    env.quantity(FixingKey(this, observationDay))
+    env.quantity(FixingKey(this, observationDay)) match {
+      case nq : NamedQuantity => {
+        val fixed = new SimpleNamedQuantity(market.name + "." + observedPeriod(observationDay).toShortString + " Fixed", new Quantity(nq.value, nq.uom))
+        SimpleNamedQuantity(observationDay.toString, fixed)
+      }
+      case q => q
+    }
   }
 
   def forwardPrice(env: InstrumentLevelEnvironment, observationDay: Day, ignoreShiftsIfPermitted: Boolean) = {
