@@ -37,7 +37,7 @@ trait ServerContext {
   def browserService:BrowserService
   def browserBundles:List[BrowserBundle]
   def version:Version
-  def bundleForName(name:String) = browserBundles.find(_.bundleName == name).getOrElse(
+  def bundleForName(name:String) = (RootBrowserContext :: browserBundles).find(_.bundleName == name).getOrElse(
     throw new Exception("No browser bundle found with name " + name))
 }
 

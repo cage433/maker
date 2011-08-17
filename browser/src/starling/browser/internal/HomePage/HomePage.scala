@@ -15,7 +15,7 @@ import internal.{RootBrowserContext, BookmarksPanel, BrowserIcons}
 
 class HomePage
 
-object StarlingHomePage extends Page {
+case object StarlingHomePage extends Page {
 
   def bundle = RootBrowserContext.bundleName
   def build(version: Version) = HomePagePageData(version)

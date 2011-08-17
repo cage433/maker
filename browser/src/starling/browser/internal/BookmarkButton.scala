@@ -48,7 +48,7 @@ class BookmarkButton(currentPage: CurrentPage, context:PageContext, pageBuilder:
           def saveBookmark(a:Unit) {
             val bundleName = currentPage.page.bundle
             val bundle = pageBuilder.bundleFor(bundleName)
-            val bookmarkLabel = BookmarkLabel(name, bundleName, bundle.marshal(currentPage.bookmark))
+            val bookmarkLabel = BookmarkLabel(bookmarkName, bundleName, bundle.marshal(currentPage.bookmark))
             context.submit(SaveBookmarkRequest(bookmarkLabel), (_:Unit) => clearUp, keepScreenLocked = true)
           }
           context.submit(DeleteBookmarkRequest(bookmarkName), saveBookmark)
@@ -86,11 +86,12 @@ class BookmarkButton(currentPage: CurrentPage, context:PageContext, pageBuilder:
       text = "OK"
       reactions += {
         case ButtonClicked(e) => {
-          val bookmarkName = getText.trim().toLowerCase
+          val realBookmarkName = getText.trim()
+          val bookmarkName = realBookmarkName.toLowerCase
           if (bookmarkName.nonEmpty) {
             val currentBookmarkNames = context.localCache.bookmarks.map(_.name.trim.toLowerCase)
             if (!currentBookmarkNames.contains(bookmarkName)) {
-              val bm = currentPage.bookmarkLabel(bookmarkName)
+              val bm = currentPage.bookmarkLabel(realBookmarkName)
               context.submit(SaveBookmarkRequest(bm), (_:Unit) => clearUp, keepScreenLocked = true)
             } else {
               // Show a replace dialog.
