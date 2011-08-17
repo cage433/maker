@@ -70,11 +70,12 @@ case class FileMockedTitanServices() extends TitanServices {
         error = null
       }).toList
     }
-    def getByOid(oid : Int) : Trade = tradeMap.get(oid) match {
+    def get(id : TitanId) : Trade = tradeMap.get(id) match {
       case Some(trade) => trade.asInstanceOf[EDMPhysicalTrade]
-      case _ => throw new Exception("Trade does not exist in mock data %d".format(oid))
+      case _ => throw new Exception("Trade does not exist in mock data %s".format(id))
     }
-    def getQuota(id : TitanId) = throw new Exception("Not implemented yet") // todo... implement
+    def getQuota(id : TitanId) = throw new Exception("Not implemented yet") // todo... implement if/when needed
+    def getByGuid(guid : GUID) = throw new Exception("Not implemented yet") // todo... implement if/when needed
   }
 
   lazy val edmMetalByGUID: Map[GUID, Metal] = loadedMetals.map(m => m.guid -> m).toMap
@@ -90,10 +91,10 @@ case class FileMockedTitanServices() extends TitanServices {
   val loadedExchanges = time(loadJsonValuesFromFileUrl(exchangesFile).map(s => Market.fromJson(new JSONObject(s)).asInstanceOf[Market]), t => println("took %dms to get exchanges".format(t)))
   val loadedUoms = time(loadJsonValuesFromFileUrl(uomsFile).map(s => UOM.fromJson(new JSONObject(s)).asInstanceOf[UOM]), t => println("took %dms to get uom".format(t)))
   val loadedTrades = time(loadJsonValuesFromFileUrl(tradesFile, true).map(s => EDMPhysicalTrade.fromJson(new JSONObject(s)).asInstanceOf[EDMPhysicalTrade]), t => println("took %dms to get trades".format(t)))
-  var tradeMap = loadedTrades.map(t => t.oid -> t).toMap
+  var tradeMap = loadedTrades.map(t => t.titanId  -> t).toMap
 
   def updateTrade(trade : EDMPhysicalTrade) {
-    tradeMap = tradeMap.updated(trade.oid, trade)
+    tradeMap = tradeMap.updated(trade.titanId, trade)
   }
 }
 

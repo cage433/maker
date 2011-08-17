@@ -11,12 +11,12 @@ import starling.daterange.Day
 import starling.pivot.Field
 import starling.trade.{Trade, TradeID, TradeAttributes}
 import starling.instrument.physical.PhysicalMetalAssignment
-import com.trafigura.edm.shared.types.Date
 import starling.db.TitanTradeSystem
 import java.lang.UnsupportedOperationException
 import starling.utils.StackTraceToString
 import starling.instrument.{ErrorInstrument, Costs, Tradeable}
 import com.trafigura.edm.logistics.inventory._
+import com.trafigura.edm.shared.types.{TitanId, Date}
 
 
 class ExternalTitanServiceFailed(cause : Throwable) extends Exception(cause)
@@ -192,26 +192,26 @@ trait TitanLogisticsServices {
  * Trade cache provide trade map lookup by trade id and also a quota id to trade map lookup
  */
 trait TitanTradeCache {
-  protected var tradeMap: Map[String, EDMPhysicalTrade]
-  protected var quotaIDToTradeIDMap: Map[String, String]
-  def getTrade(id: String): EDMPhysicalTrade
+  protected var tradeMap: Map[TitanId, EDMPhysicalTrade]
+  protected var quotaIDToTradeIDMap: Map[String, TitanId]
+  def getTrade(id: TitanId): EDMPhysicalTrade
   def getAllTrades(): List[EDMPhysicalTrade]
-  def removeTrade(id : String) {
+  def removeTrade(id : TitanId) {
     tradeMap = tradeMap - id
     quotaIDToTradeIDMap = quotaIDToTradeIDMap.filter{ case (_, value) => value != id}
   }
 
-  def addTrade(id : String) {
+  def addTrade(id : TitanId) {
     tradeMap += id -> getTrade(id)
     addTradeQuotas(id)
   }
 
-  def addTradeQuotas(id : String) {
+  def addTradeQuotas(id : TitanId) {
     val trade = tradeMap(id)
     quotaIDToTradeIDMap ++= trade.quotas.map{quota => (quota.detail.identifier.value, id)}
   }
 
-  def tradeIDFromQuotaID(quotaID: String): String
+  def tradeIDFromQuotaID(quotaID: String): TitanId
 }
 
 /**

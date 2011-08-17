@@ -84,6 +84,7 @@ object Dependencies{
 object StarlingBuild extends Build{
 
   import Dependencies._
+  import Utils._
 
   lazy val standardSettings = Defaults.defaultSettings ++ Seq(
     unmanagedSourceDirectories in Compile <+= baseDirectory(_/"src"),
@@ -99,25 +100,6 @@ object StarlingBuild extends Build{
   )
 
   val testDependency = "compile;test->test"
-
-  // utils to show project classpath libs
-  val showLibs = TaskKey[Unit]("show-libs")
-  val showLibsTask = showLibs <<= (target, fullClasspath in Runtime) map { (target, cp) =>
-    println("Target path is: " + target + "\n")
-    println("Full classpath is: " + cp.map(_.data).mkString("\n"))
-  }
-
-  val writeClasspathScript = TaskKey[Unit]("write-classpath")
-  val writeClasspathScriptTask = writeClasspathScript <<= (target, fullClasspath in Runtime) map { (target, cp) =>
-    println("Target path is: " + target + "\n")
-    println("Full classpath is: " + cp.map(_.data).mkString(":"))
-    import java.io._
-    val file = new PrintWriter(new FileOutputStream(new File("set-classpath.sh")))
-    file.println("export CLASSPATH=" + cp.map(_.data).getFiles.toList.mkString(":"))
-    file.println("export JAVA_OPTS='-server -XX:MaxPermSize=1024m -Xss512k -Xmx6000m'")
-    file.close()
-    None
-  }
 
   lazy val utils = Project(
     "utils", 
@@ -334,7 +316,7 @@ object StarlingBuild extends Build{
           val originalSourcePath = new File(modelRoot, "../../../model/model/scala-model-with-persistence/src/")
           copyDirectory(originalSourcePath, nonModelSourcePath)
           val hibernateBean = new File (modelRoot, "/src/main/scala/com/trafigura/refinedmetals/persistence/CustomAnnotationSessionFactoryBean.scala")
-          println("***** DEBUG ***** path " + hibernateBean.getAbsolutePath + ", " + hibernateBean.exists + ", " + hibernateBean.canWrite) 
+          //println("***** DEBUG ***** path " + hibernateBean.getAbsolutePath + ", " + hibernateBean.exists + ", " + hibernateBean.canWrite) 
           if (hibernateBean.exists && hibernateBean.canWrite) hibernateBean.delete()
         }
         None
@@ -373,6 +355,26 @@ object StarlingBuild extends Build{
       }
     }
     implicit def toInputTask[T : Manifest](t : (List[String] => T, String, String)) : sbt.Project.Setting[sbt.InputTask[Unit]] = mkInputTask(t._1, t._2, t._3)
+
+    // utils to show project classpath libs
+    val showLibs = TaskKey[Unit]("show-libs")
+    val showLibsTask = showLibs <<= (target, fullClasspath in Runtime) map { (target, cp) =>
+      println("Target path is: " + target + "\n")
+      println("Full classpath is: " + cp.map(_.data).mkString("\n"))
+    }
+
+    // write a classpatch script for dev
+    val writeClasspathScript = TaskKey[Unit]("write-classpath")
+    val writeClasspathScriptTask = writeClasspathScript <<= (target, fullClasspath in Runtime) map { (target, cp) =>
+      println("Target path is: " + target + "\n")
+      println("Full classpath is: " + cp.map(_.data).mkString(":"))
+      import java.io._
+      val file = new PrintWriter(new FileOutputStream(new File("set-classpath.sh")))
+      file.println("export CLASSPATH=" + cp.map(_.data).getFiles.toList.mkString(":"))
+      file.println("export JAVA_OPTS='-server -XX:MaxPermSize=1024m -Xss512k -Xmx6000m'")
+      file.close()
+      None
+    }
   }
 }
 

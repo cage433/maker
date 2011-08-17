@@ -35,13 +35,14 @@ import starling.titan._
 import com.trafigura.edm.logistics.inventory.EDMInventoryItem
 import starling.services.rpc.logistics._
 import com.trafigura.events.DemultiplexerClient
+import com.trafigura.edm.shared.types.TitanId
 
 /**
  * Trade cache provide trade map lookup by trade id and also a quota id to trade map lookup
  */
 case class DefaultTitanTradeCache(props : Props) extends TitanTradeCache with Log {
-  protected var tradeMap: Map[String, EDMPhysicalTrade] = Map[String, EDMPhysicalTrade]()
-  protected var quotaIDToTradeIDMap: Map[String, String] = Map[String, String]()
+  protected var tradeMap = Map[TitanId, EDMPhysicalTrade]()
+  protected var quotaIDToTradeIDMap = Map[String, TitanId]()
 
   private lazy val titanTradesService = new DefaultTitanServices(props).titanGetEdmTradesService
   private def getAll() = try {
@@ -49,8 +50,8 @@ case class DefaultTitanTradeCache(props : Props) extends TitanTradeCache with Lo
   } catch {
     case e : Throwable => throw new ExternalTitanServiceFailed(e)
   }
-  private def getByOid(id : Int) = try {
-      titanTradesService.getByOid(id)
+  private def getById(id : TitanId) = try {
+      titanTradesService.get(id)
   } catch {
     case e : Throwable => throw new ExternalTitanServiceFailed(e)
   }
@@ -73,7 +74,7 @@ case class DefaultTitanTradeCache(props : Props) extends TitanTradeCache with Lo
       log.error("null ids \n%s\n%s".format(nullIds, validIds))
       //assert(false, "Null titan ids found - fatal error")
     }
-    tradeMap = validTrades/*.filter(pt => pt.tstate == CompletedTradeTstate)*/.map(t => (t.titanId.value, t)).toMap
+    tradeMap = validTrades/*.filter(pt => pt.tstate == CompletedTradeTstate)*/.map(t => (t.titanId, t)).toMap
     tradeMap.keySet.foreach(addTradeQuotas)
   }
 
@@ -87,19 +88,19 @@ case class DefaultTitanTradeCache(props : Props) extends TitanTradeCache with Lo
     }
   }
 
-  def getTrade(id: String): EDMPhysicalTrade = {
+  def getTrade(id: TitanId): EDMPhysicalTrade = {
     if (tradeMap.contains(id)) {
       tradeMap(id)
     }
     else {
-      val trade = getByOid(id.toInt)
-      tradeMap += trade.titanId.value -> trade.asInstanceOf[EDMPhysicalTrade]
+      val trade = getById(id)
+      tradeMap += trade.titanId -> trade.asInstanceOf[EDMPhysicalTrade]
       addTradeQuotas(id)
       tradeMap(id)
     }
   }
 
-  def tradeIDFromQuotaID(quotaID: String): String = {
+  def tradeIDFromQuotaID(quotaID: String): TitanId = {
     if (!quotaIDToTradeIDMap.contains(quotaID))
       updateTradeMap()
     quotaIDToTradeIDMap.get(quotaID) match {
@@ -236,14 +237,14 @@ case class TitanLogisticsServiceBasedInventoryCache(titanLogisticsServices : Tit
 }
 
 trait TitanTradeService {
-  def getTrade(id : String) : EDMPhysicalTrade
+  def getTrade(id : TitanId) : EDMPhysicalTrade
   def getAllTrades() : List[EDMPhysicalTrade]
 }
 
 class DefaultTitanTradeService(titanServices : TitanServices) extends TitanTradeService with Log {
 
-  def getTrade(id : String) : EDMPhysicalTrade = {
-    titanServices.titanGetEdmTradesService.getByOid(id.toInt).asInstanceOf[EDMPhysicalTrade]
+  def getTrade(id : TitanId) : EDMPhysicalTrade = {
+    titanServices.titanGetEdmTradesService.get(id).asInstanceOf[EDMPhysicalTrade]
   }
 
   def getAllTrades() : List[EDMPhysicalTrade] = {
@@ -261,12 +262,12 @@ class DefaultTitanTradeService(titanServices : TitanServices) extends TitanTrade
  */
 case class TitanTradeServiceBasedTradeCache(titanTradesService : TitanTradeService) extends TitanTradeCache {
 
-  protected var tradeMap: Map[String, EDMPhysicalTrade] = Map[String, EDMPhysicalTrade]()
-  protected var quotaIDToTradeIDMap: Map[String, String] = Map[String, String]()
+  protected var tradeMap = Map[TitanId, EDMPhysicalTrade]()
+  protected var quotaIDToTradeIDMap = Map[String, TitanId]()
 
   // Read all trades from Titan and blast our cache
   def updateTradeMap() {
-    tradeMap = titanTradesService.getAllTrades()/*.filter(pt => pt.tstate == CompletedTradeTstate)*/.map(t => (t.titanId.value, t)).toMap
+    tradeMap = titanTradesService.getAllTrades()/*.filter(pt => pt.tstate == CompletedTradeTstate)*/.map(t => (t.titanId, t)).toMap
     tradeMap.keySet.foreach(addTradeQuotas)
   }
 
@@ -280,18 +281,18 @@ case class TitanTradeServiceBasedTradeCache(titanTradesService : TitanTradeServi
     }
   }
 
-  def getTrade(id: String): EDMPhysicalTrade = {
+  def getTrade(id: TitanId): EDMPhysicalTrade = {
     if (tradeMap.contains(id)) {
       tradeMap(id)
     }
     else {
       val trade = titanTradesService.getTrade(id)
-      tradeMap += trade.titanId.value -> trade
+      tradeMap += trade.titanId -> trade
       tradeMap(id)
     }
   }
 
-  def tradeIDFromQuotaID(quotaID: String): String = {
+  def tradeIDFromQuotaID(quotaID: String): TitanId = {
     if (!quotaIDToTradeIDMap.contains(quotaID))
       updateTradeMap()
     quotaIDToTradeIDMap.get(quotaID) match {
@@ -423,13 +424,13 @@ class ValuationService(
   /**
    * value the quotas of a specified trade
    */
-  def valueTradeQuotas(tradeId: Int, maybeSnapshotIdentifier: Option[String] = None): (String, TradeValuationResult) = {
+  def valueTradeQuotas(tradeId: String, maybeSnapshotIdentifier: Option[String] = None): (String, TradeValuationResult) = {
     log.info("valueTradeQuotas called for trade %d with snapshot id %s".format(tradeId, maybeSnapshotIdentifier))
     val snapshotIDString = resolveSnapshotIdString(maybeSnapshotIdentifier)
 
     val sw = new Stopwatch()
 
-    val edmTradeResult = titanTradeCache.getTrade(tradeId.toString)
+    val edmTradeResult = titanTradeCache.getTrade(TitanId(tradeId))
 
     log.info("Got Edm Trade result " + edmTradeResult)
     val env = environmentProvider.environment(snapshotIDString)
@@ -467,14 +468,14 @@ class ValuationService(
     var tradeValueCache = Map[String, TradeValuationResult]()
     val tradeValuer = PhysicalMetalForward.value(futuresExchangeByID, edmMetalByGUID, env, snapshotIDString) _
 
-    def tradeValue(id: String): TradeValuationResult = {
+    def tradeValue(id : String): TradeValuationResult = {
       if (!tradeValueCache.contains(id))
-        tradeValueCache += (id -> tradeValuer(titanTradeCache.getTrade(id)))
+        tradeValueCache += (id -> tradeValuer(titanTradeCache.getTrade(TitanId(id))))
       tradeValueCache(id)
     }
 
     def quotaValue(id: String) = {
-      tradeValue(titanTradeCache.tradeIDFromQuotaID(id)) match {
+      tradeValue(titanTradeCache.tradeIDFromQuotaID(id).value) match {
         case Right(list) => Right(list.filter(_ .quotaID == id))
         case other => other
       }
@@ -577,7 +578,7 @@ class ValuationService(
   }
 
   // accessors for ref-data mappings
-  def getTrades(tradeIds : List[String]) : List[EDMPhysicalTrade] = tradeIds.map(titanTradeCache.getTrade)
+  def getTrades(tradeIds : List[String]) : List[EDMPhysicalTrade] = tradeIds.map(id => TitanId(id)).map(titanTradeCache.getTrade)
   def getFuturesExchanges = futuresExchangeByID.values
   def getMetals = edmMetalByGUID.values
   def getUoms = uomById.values
@@ -609,6 +610,7 @@ class ValuationService(
 
       val tradePayloads = ev.content.body.payloads.filter(p => Event.RefinedMetalTradeIdPayload == p.payloadType)
       val tradeIds = tradePayloads.map(p => p.key.identifier)
+      val titanIds = tradeIds.map(id =>TitanId(id))
       log.info("Trade event received for ids { %s }".format(tradeIds.mkString(", ")))
 
       ev.subject match {
@@ -618,7 +620,7 @@ class ValuationService(
               val (snapshotIDString, env) = getSnapshotAndEnv
               val originalTradeValuations = valueCostables(tradeIds, env, snapshotIDString)
               println("originalTradeValuations = " + originalTradeValuations)
-              tradeIds.foreach{ id => titanTradeCache.removeTrade(id); titanTradeCache.addTrade(id)}
+              titanIds.foreach{ id => titanTradeCache.removeTrade(id); titanTradeCache.addTrade(id)}
               val newTradeValuations = valueCostables(tradeIds, env, snapshotIDString)
               val changedIDs = tradeIds.filter{id => newTradeValuations.tradeResults(id) != originalTradeValuations.tradeResults(id)}
 
@@ -629,11 +631,11 @@ class ValuationService(
             }
             case NewEventVerb => {
               log.info("New event received for %s".format(tradeIds))
-              tradeIds.foreach(titanTradeCache.addTrade)
+              titanIds.foreach(titanTradeCache.addTrade)
             }
             case CancelEventVerb | RemovedEventVerb => {
               log.info("Cancelled / deleted event received for %s".format(tradeIds))
-              tradeIds.foreach(titanTradeCache.removeTrade)
+              titanIds.foreach(titanTradeCache.removeTrade)
             }
           }
         }
