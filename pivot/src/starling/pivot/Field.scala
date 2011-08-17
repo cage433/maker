@@ -294,8 +294,15 @@ case class FieldDetails(field:Field) {
       case (None, None) => None
     }
   }
-
-  def combineGroup(groupA:Any,groupB:Any):Any = groupA.asInstanceOf[Set[Any]].union(groupB.asInstanceOf[Set[Any]])
+  def combineGroup(groupA:Any,groupB:Any):Any = {
+    val setA = groupA.asInstanceOf[Set[Any]]
+    val setB = groupB.asInstanceOf[Set[Any]]
+    if (setB.forall(setA.contains)) {
+      setA
+    } else {
+      setA.union(setB)
+    }
+  }
 
   // NOTE - The parser returned here (and in overriding methods) must be serializable (and easily serializable at that). i.e. an Object like TextPivotParser.
   def parser:PivotParser = TextPivotParser
