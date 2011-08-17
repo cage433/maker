@@ -383,7 +383,7 @@ class PivotTablePageComponent(
         drillDownInfo.filteredDrillDown match {
           case None => axisToUse
           case Some(ddInfo) => {
-            val dDF = fields.map(_._1)
+            val dDF = fields.filter(_._2 != AllSelection).map(_._1)
             val dDFMap = Map() ++ fields
             if (dDF.contains(ddInfo.filterField)) {
               // We are pivoting on something we know more information about. Look at the selection and get the fields for it.
@@ -417,7 +417,7 @@ class PivotTablePageComponent(
         getAxis(drillDownFields, DrillDownInfo(axisToUse, group.filteredDrillDown))
       }).filterNot(_.isEmpty)
 
-      if (!possibleGroups.isEmpty) {
+      if (!possibleGroups.isEmpty && !currentFieldState.rowFields.contains(Field("Trade ID"))) {
         val newFieldState = currentFieldState.withFiltersAndRowFields(drillDownFields, possibleGroups.head)
         val newPPS = pivotPageState.copy(pivotFieldParams = pivotPageState.pivotFieldParams.copy(pivotFieldState = Some(newFieldState)))
         pageContext.goTo(selfPage(newPPS, edits), ctrlDown)
