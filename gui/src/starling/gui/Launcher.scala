@@ -601,9 +601,9 @@ object StarlingSettings {
       dateRangeFormat = currentSettings.dateRangeFormat
     }
 
-    new MigPanel("") {
-      add(dateRangeFormatPanel, "wrap")
-      add(decimalPlacesPanel, "wrap")
+    new MigPanel("insets 0") {
+      add(decimalPlacesPanel, "gapright unrel, ay top")
+      add(dateRangeFormatPanel, "ay top")
       reactions += {
         case UserSettingUpdated(ExtraFormattingInfo) => {
           val extraFormatInfo = context.getSetting(ExtraFormattingInfo)

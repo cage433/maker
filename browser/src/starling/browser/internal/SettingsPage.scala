@@ -21,8 +21,7 @@ class SettingsPageComponent(context:PageContext) extends MigPanel("insets 0") wi
 
   val settingsComponents = context.bundles.flatMap(_.settings(context))
   settingsComponents.zipWithIndex.foreach { case (component,index) => {
-    val isLast = index==settingsComponents.size-1
-    add(component, (if(isLast) "wrap unrel" else "gapright unrel") + ", ay top")
+    add(component, "gapright unrel, ay top")
   }}
 //  add(generalPanel, "gapright unrel, ay top")
 //  add(decimalPlacesPanel, "gapright unrel, ay top")
