@@ -261,26 +261,31 @@ class CommoditySwapTests extends JonTestEnv {
     assertEquals(sep09Explanation.name, "(((F_Avg - K) * Volume) * disc)")
     assertEquals(sep09Explanation.format(1), "(((Round(Average(Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus).SEPTEMBER 2009), 3) - 200.00 USD/MT) * 100.00 MT) * USD.07Oct2009)")
 
-    val ex0 = "(((Round(Average(FixingsHistoryKey(Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus)).01Sep2009, " +
-            "FixingsHistoryKey(Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus)).02Sep2009, " +
-            "FixingsHistoryKey(Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus)).03Sep2009, " +
-            "FixingsHistoryKey(Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus)).04Sep2009, " +
-            "FixingsHistoryKey(Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus)).07Sep2009, " +
-            "FixingsHistoryKey(Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus)).08Sep2009, " +
-            "FixingsHistoryKey(Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus)).09Sep2009, " +
-            "FixingsHistoryKey(Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus)).10Sep2009, " +
-            "FixingsHistoryKey(Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus)).11Sep2009, " +
-            "FixingsHistoryKey(Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus)).14Sep2009, 15Sep2009, 16Sep2009, " +
-            "17Sep2009, 18Sep2009, 21Sep2009, 22Sep2009, 23Sep2009, 24Sep2009, 25Sep2009, 28Sep2009, 29Sep2009, " +
-            "30Sep2009), 3) - 200.00 USD/MT) * 100.00 MT) * 1.00)"
+    val ex0 = "(((Round(Average(01Sep2009, 02Sep2009, 03Sep2009, 04Sep2009, 07Sep2009, 08Sep2009, 09Sep2009, " +
+            "10Sep2009, 11Sep2009, 14Sep2009, 15Sep2009, 16Sep2009, 17Sep2009, 18Sep2009, 21Sep2009, 22Sep2009, " +
+            "23Sep2009, 24Sep2009, 25Sep2009, 28Sep2009, 29Sep2009, 30Sep2009), 3) - 200.00 USD/MT) * 100.00 MT) * 1.00)"
 
-    val ex = "(((Round(Average(100.00 USD/MT, 100.00 USD/MT, 100.00 USD/MT, 100.00 USD/MT, 100.00 USD/MT, " +
-            "100.00 USD/MT, 100.00 USD/MT, 100.00 USD/MT, 100.00 USD/MT, 100.00 USD/MT, Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus).15Sep2009, " +
-            "Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus).16Sep2009, Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus).17Sep2009, " +
-            "Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus).18Sep2009, Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus).21Sep2009, " +
-            "Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus).22Sep2009, Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus).23Sep2009, " +
-            "Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus).24Sep2009, Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus).25Sep2009, " +
-            "Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus).28Sep2009, Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus).29Sep2009, " +
+    val ex = "(((Round(Average(Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus).01Sep2009 Fixed, " +
+            "Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus).02Sep2009 Fixed, " +
+            "Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus).03Sep2009 Fixed, " +
+            "Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus).04Sep2009 Fixed, " +
+            "Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus).07Sep2009 Fixed, " +
+            "Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus).08Sep2009 Fixed, " +
+            "Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus).09Sep2009 Fixed, " +
+            "Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus).10Sep2009 Fixed, " +
+            "Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus).11Sep2009 Fixed, " +
+            "Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus).14Sep2009 Fixed, " +
+            "Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus).15Sep2009, " +
+            "Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus).16Sep2009, " +
+            "Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus).17Sep2009, " +
+            "Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus).18Sep2009, " +
+            "Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus).21Sep2009, " +
+            "Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus).22Sep2009, " +
+            "Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus).23Sep2009, " +
+            "Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus).24Sep2009, " +
+            "Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus).25Sep2009, " +
+            "Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus).28Sep2009, " +
+            "Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus).29Sep2009, " +
             "Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus).30Sep2009), 3) - 200.00 USD/MT) * 100.00 MT) * 1.00)"
 
     val ex1 = "(((Round(Average(100.00 USD/MT, 100.00 USD/MT, 100.00 USD/MT, 100.00 USD/MT, 100.00 USD/MT, " +

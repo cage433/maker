@@ -124,9 +124,9 @@ class CalendarSpreadOptionTests  extends JonTestEnv with TestNGSuite{
     assertEquals(
       explan.format(2),
     "Sum(" +
-            "((CSO-Call((NYMEX WTI.MAY 2010 - NYMEX WTI.JUNE 2010), 1.45 USD/bbl, 0.25, 0.00 USD/bbl) * 1,000.00 bbl) * USD.14Apr2010), " +
-            "((CSO-Call((NYMEX WTI.JUNE 2010 - NYMEX WTI.JULY 2010), 1.45 USD/bbl, 0.33, 0.00 USD/bbl) * 1,000.00 bbl) * USD.16May2010), " +
-            "((CSO-Call((NYMEX WTI.JULY 2010 - NYMEX WTI.AUGUST 2010), 1.45 USD/bbl, 0.42, 0.00 USD/bbl) * 1,000.00 bbl) * USD.16Jun2010))")
+            "((CSO-Call((NYMEX WTI.MAY 2010 - NYMEX WTI.JUN 2010), 1.45 USD/bbl, 0.25, 0.00 USD/bbl) * 1,000.00 bbl) * USD.14Apr2010), " +
+            "((CSO-Call((NYMEX WTI.JUN 2010 - NYMEX WTI.JUL 2010), 1.45 USD/bbl, 0.33, 0.00 USD/bbl) * 1,000.00 bbl) * USD.16May2010), " +
+            "((CSO-Call((NYMEX WTI.JUL 2010 - NYMEX WTI.AUG 2010), 1.45 USD/bbl, 0.42, 0.00 USD/bbl) * 1,000.00 bbl) * USD.16Jun2010))")
     val lastExplanation = "Sum(" +
             "((CSO-Call((83.29 USD/bbl - 83.70 USD/bbl), 1.45 USD/bbl, 0.25, 0.00 USD/bbl) * 1,000.00 bbl) * 1.00), " +
             "((CSO-Call((83.70 USD/bbl - 84.13 USD/bbl), 1.45 USD/bbl, 0.33, 0.00 USD/bbl) * 1,000.00 bbl) * 1.00), " +

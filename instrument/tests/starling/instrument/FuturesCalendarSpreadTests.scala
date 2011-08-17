@@ -27,7 +27,7 @@ class FuturesCalendarSpreadTests extends StarlingTest{
     val explanation = spread.explanation(env)
     assertEquals(explanation.name, "(Front + Back)")
     assertEquals(explanation.format(1), "(((F - K) * Volume) + ((F - K) * Volume))")
-    assertEquals(explanation.format(2), "(((COMEX Silver.JANUARY 2012 - 101.00 USD/oz) * 1,000.00 oz) + ((COMEX Silver.FEBRUARY 2012 - 99.00 USD/oz) * (1,000.00) oz))")
+    assertEquals(explanation.format(2), "(((COMEX Silver.JAN 2012 - 101.00 USD/oz) * 1,000.00 oz) + ((COMEX Silver.FEB 2012 - 99.00 USD/oz) * (1,000.00) oz))")
     val lastExplanation = "(((101.50 USD/oz - 101.00 USD/oz) * 1,000.00 oz) + ((102.50 USD/oz - 99.00 USD/oz) * (1,000.00) oz))"
     assertEquals(explanation.format(3), lastExplanation)
     assertEquals(explanation.format(4), lastExplanation)
