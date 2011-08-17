@@ -1,0 +1,15 @@
+<suite name="All Tests Suite" verbose="1">
+    <test name="All Tests">
+        <groups>
+            <run>
+                <!-- c.f. external-tests.xml -->
+                <exclude name="externaldependency"/>
+                <exclude name="database"/>
+            </run>
+        </groups>
+
+        <packages>
+            <package name="com.trafigura.*"/>
+        </packages>
+    </test>
+</suite>

@@ -206,17 +206,26 @@ case class PhysicalMetalQuota(
 
 
 object PhysicalMetalForward{
-  def apply(exchangesByGUID : Map[GUID, EDMMarket], futuresMetalMarketByGUID : Map[GUID, EDMMetal])(trade : EDMPhysicalTrade) : PhysicalMetalForward = {
+  private def getTradeId(t : EDMTrade) = {
+    if (t.titanId == null) {
+      null
+    }
+    else {
+      t.titanId.value
+    }
+  }
+
+  def apply(exchangesByID : Map[String, EDMMarket], futuresMetalMarketByGUID : Map[GUID, EDMMetal])(trade : EDMPhysicalTrade) : PhysicalMetalForward = {
     try {
       val quotas : List[PhysicalMetalQuota] = {
         trade.quotas.map(_.detail).map{
           detail =>
             val deliveryQuantity = detail.deliverySpecs.map{ds => fromTitanQuantity(ds.quantity)}.sum
             val commodityGUIDs : Set[GUID] = detail.deliverySpecs.map(_.materialSpec.asInstanceOf[CommoditySpec].commodity).toSet
-            assert(commodityGUIDs.size == 1, "Trade " + trade.tradeId + " has multiple commodities")
-            val pricingSpec = EDMPricingSpecConverter(futuresMetalMarketByGUID(commodityGUIDs.head), exchangesByGUID).fromEdmPricingSpec(deliveryQuantity, detail.pricingSpec)
+            assert(commodityGUIDs.size == 1, "Trade " + getTradeId(trade) + " has multiple commodities")
+            val pricingSpec = EDMPricingSpecConverter(futuresMetalMarketByGUID(commodityGUIDs.head), exchangesByID).fromEdmPricingSpec(deliveryQuantity, detail.pricingSpec)
             PhysicalMetalQuota(
-              detail.identifier,
+              detail.identifier.value,
               pricingSpec,
               pricingSpec.dummyTransferPricingSpec
             )
@@ -226,26 +235,26 @@ object PhysicalMetalForward{
       val isPurchase = trade.direction match {
         case EDMTrade.PURCHASE => true
         case EDMTrade.SALE => false
-        case _ => throw new Exception("Trade " + trade.tradeId + " has no direction " + trade.direction)
+        case _ => throw new Exception("Trade " + getTradeId(trade) + " has no direction " + trade.direction)
       }
-      PhysicalMetalForward(trade.tradeId, quotas, isPurchase)
+      PhysicalMetalForward(getTradeId(trade), quotas, isPurchase)
     } catch {
-      case ex => throw new Exception("Trade " + trade.tradeId + " failed to construct from EDM. " + ex.getMessage, ex)
+      case ex => throw new Exception("Trade " + getTradeId(trade) + " failed to construct from EDM. " + ex.getMessage, ex)
     }
   }
 
-  def value(exchangesByGUID : Map[GUID, EDMMarket], futuresMetalMarketByGUID : Map[GUID, EDMMetal], env : Environment, snapshotID : String)(trade : EDMPhysicalTrade) : Either[List[CostsAndIncomeQuotaValuation], String] =  {
+  def value(exchangesByID : Map[String, EDMMarket], futuresMetalMarketByGUID : Map[GUID, EDMMetal], env : Environment, snapshotID : String)(trade : EDMPhysicalTrade) : Either[List[CostsAndIncomeQuotaValuation], String] =  {
 
     try {
-      val forward = PhysicalMetalForward(exchangesByGUID, futuresMetalMarketByGUID)(trade)
+      val forward = PhysicalMetalForward(exchangesByID, futuresMetalMarketByGUID)(trade)
       Left(forward.costsAndIncomeValueBreakdown(env, snapshotID))
     } catch {
-      case ex => Right("Error valuing trade " + trade.tradeId + ", message was " + ex.getMessage)
+      case ex => Right("Error valuing trade " + getTradeId(trade) + ", message was " + ex.getMessage)
     }
   }
 }
 
-case class PhysicalMetalForward(tradeID : Int, quotas : List[PhysicalMetalQuota], isPurchase : Boolean) {
+case class PhysicalMetalForward(tradeID : String, quotas : List[PhysicalMetalQuota], isPurchase : Boolean) {
 
   def costsAndIncomeValueBreakdown(env: Environment, snapshotID: String): List[CostsAndIncomeQuotaValuation] = {
     quotas.map {
