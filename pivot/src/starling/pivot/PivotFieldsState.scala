@@ -540,7 +540,7 @@ class PivotFieldsState(
       val filtersToFilter = filters.filterNot{case (_field,_) => _field==field}
       filtersToFilter.splitAt(pos) match {case (l1, l2) => l1 ::: entry :: l2}
     } else {
-      filters
+      filters.filterNot(_._2 == AllSelection)
     }
 
     val cleanRows = if (Rows == from) rowFields.filterNot(_ == field) else rowFields
