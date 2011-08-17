@@ -18,6 +18,7 @@ import java.util.{StringTokenizer, Hashtable}
 import swing.{MenuItem, Action}
 import starling.pivot.model.{AxisCell, PivotTableModel}
 import java.awt.event._
+import org.jdesktop.swingx.renderer.DefaultTableRenderer
 
 object PivotJTable {
   val RowHeight = 16
@@ -35,7 +36,7 @@ class PivotJTable(tableModel:PivotJTableModel, pivotTableView:PivotTableView, mo
   setFillsViewportHeight(true)
   setTableHeader(null)
   setCellSelectionEnabled(true)  
-  setDefaultRenderer(classOf[Object], new PivotCellRenderer(indentColumns, MaxColumnWidth))
+  setDefaultRenderer(classOf[Object], new DefaultTableRenderer(new PivotCellProvider(indentColumns, MaxColumnWidth, tableModel)))
   setRowHeight(PivotJTable.RowHeight)
 
   // If the delete key is pressed when more than one cell is selected, delete all deletable cells.
