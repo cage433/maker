@@ -131,8 +131,9 @@ class BookmarksPanel(context:PageContext) extends MigPanel("") {
     case SelectionChanged(`bookmarksListView`) => dayPicker.enabled = valuationDayShouldBeEnabled
     case KeyPressed(`bookmarksListView`, scala.swing.event.Key.Enter, _,_) => goToBookmark()
     case KeyPressed(`dayPicker`, scala.swing.event.Key.Enter, _,_) => goToBookmark()
+    case MouseClicked(`dayPicker`,_,_,2,_) => goToBookmark()
   }
-  listenTo(context.remotePublisher, bookmarksListView.keys, bookmarksListView.mouse.clicks, bookmarksListView.selection, dayPicker.keys)
+  listenTo(context.remotePublisher, bookmarksListView.keys, bookmarksListView.mouse.clicks, bookmarksListView.selection, dayPicker.keys, dayPicker.mouse.clicks)
 
   if (!bookmarks.isEmpty) {
     bookmarksListView.selectIndices(0)
