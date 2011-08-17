@@ -2,9 +2,10 @@ package starling.gui.pages
 
 import starling.daterange.Day
 import starling.gui.api._
-import starling.gui.{PageContext, PageBuildingContext}
 import starling.rmi.StarlingServer
 import starling.pivot.{PivotEdits, SomeSelection, Selection, Field}
+import starling.gui.StarlingServerContext
+import starling.browser.{ServerContext, PageContext}
 
 case class PnLReconciliationReportPage(tradeSelectionWithTimestamp: TradeSelectionWithTimestamp, curveIdentifier: CurveIdentifierLabel,
                                        expiryDay: Day, pivotPageState: PivotPageState) extends AbstractPivotPage(pivotPageState) {
@@ -13,7 +14,7 @@ case class PnLReconciliationReportPage(tradeSelectionWithTimestamp: TradeSelecti
 
   def selfPage(pivotPageState: PivotPageState, edits:PivotEdits) = copy(pivotPageState = pivotPageState)
 
-  def dataRequest(pageBuildingContext: PageBuildingContext) = {
+  def dataRequest(pageBuildingContext:StarlingServerContext) = {
     pageBuildingContext.cachingStarlingServer.pnlReconciliation(tradeSelectionWithTimestamp, curveIdentifier, expiryDay, pivotPageState.pivotFieldParams)
   }
 
@@ -31,7 +32,7 @@ case class PnLReconciliationReportPage(tradeSelectionWithTimestamp: TradeSelecti
     tradeID match {
       case Some(trID) => {
         pageContext.createAndGoTo(
-          (starlingServer: StarlingServer) => {
+          (serverContext:ServerContext) => {
             SingleTradePage(trID, tradeSelectionWithTimestamp.desk, TradeExpiryDay(expiryDay), tradeSelectionWithTimestamp.intradaySubgroupAndTimestamp.map(_._1))
           }, newTab = ctrlDown)
       }

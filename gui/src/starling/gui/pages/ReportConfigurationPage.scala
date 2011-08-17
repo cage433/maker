@@ -1,13 +1,12 @@
 package starling.gui.pages
 
 import java.awt.Dimension
-import starling.pivot.view.swing.MigPanel
 import starling.gui._
 import api._
 import starling.pivot.PivotFieldParams
 import starling.daterange.Day
 import swing.Swing._
-import starling.gui.GuiUtils._
+import starling.browser.common.GuiUtils._
 import swing._
 import collection.mutable.ListBuffer
 import event.{SelectionChanged, ButtonClicked, MouseClicked}
@@ -15,13 +14,16 @@ import javax.swing.DefaultComboBoxModel
 import starling.tradestore.TradePredicate
 import utils.RichReactor
 import RichReactor._
+import starling.gui.StarlingLocalCache._
+import starling.browser._
+import common.{NewPageButton, MigPanel}
 
-case class ReportConfigurationPage(tradeAndReferenceDataInfo:TradeAndReferenceDataInfo) extends Page {
+case class ReportConfigurationPage(tradeAndReferenceDataInfo:TradeAndReferenceDataInfo) extends StarlingServerPage {
   def text = "Configure Report"
 
   def icon = StarlingIcons.im("/icons/16x16_report_magnify.png")
   // This page doesn't need anything from the server.
-  def build(reader:PageBuildingContext) = {null}
+  def build(reader:StarlingServerContext) = {null}
 
   def createComponent(context:PageContext, data:PageData, bookmark:Bookmark, browserSize:Dimension) = {
     new ReportConfigurationComponent(context, tradeAndReferenceDataInfo)

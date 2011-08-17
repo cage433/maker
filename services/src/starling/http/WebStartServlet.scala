@@ -18,7 +18,7 @@ object GUICode {
   val scalaLibraryJar = new File("lib/scala/scala-2.9.0.1.final/lib/scala-library.jar")
 
   // The order of this list matters. It is the order things are attempted to be loaded so ensure it is optimised.
-  val modules = List("daterange", "quantity", "utils", "auth", "bouncyrmi", "gui", "gui.api", "pivot", "pivot.utils")
+  val modules = List("daterange", "quantity", "utils", "auth", "bouncyrmi", "gui", "gui.api", "pivot", "pivot.utils", "browser", "browser.service")
 
   // We know that in practise these jars are not used by the GUI
   val bigJarsThatAreNotRequired = Set(
@@ -36,15 +36,15 @@ object GUICode {
     "bouncyrmi-lib_managed-scala_2.9.0-1-compile-netty-3.2.5.Final.jar" -> new File(".ivy/cache/org.jboss.netty/netty/jars/netty-3.2.5.Final.jar"),
     "gui.api-lib-dispatch-json_2.8.0-0.7.4.jar" -> new File("gui.api/lib/dispatch-json_2.8.0-0.7.4.jar"),
     "gui.api-lib_managed-scala_2.9.0-1-compile-sjson_2.8.0-0.8.jar" -> new File(".ivy/cache/net.debasishg/sjson_2.8.0/jars/sjson_2.8.0-0.8.jar"),
-    "gui-lib-jxlayer-4.0.jar" -> new File("gui/lib/jxlayer-4.0.jar"),
-    "gui-lib-looks-2.3.1.jar" -> new File("gui/lib/looks-2.3.1.jar"),
+    "browser-lib-jxlayer-4.0.jar" -> new File("browser/lib/jxlayer-4.0.jar"),
+    "browser-lib-looks-2.3.1.jar" -> new File("browser/lib/looks-2.3.1.jar"),
     "gui-lib_managed-scala_2.9.0-1-compile-jcommon-1.0.0.jar" -> new File(".ivy/cache/jfree/jcommon/jars/jcommon-1.0.0.jar"),
     "gui-lib_managed-scala_2.9.0-1-compile-jfreechart-1.0.0.jar" -> new File(".ivy/cache/jfree/jfreechart/jars/jfreechart-1.0.0.jar"),
-    "gui-lib-Miglayout-3-7-3-1-nick.jar" -> new File("gui/lib/Miglayout-3-7-3-1-nick.jar"),
+    "browser-lib-Miglayout-3-7-3-1-nick.jar" -> new File("browser/lib/Miglayout-3-7-3-1-nick.jar"),
     "gui-lib-org.eclipse.mylyn.wikitext.core_1.4.0.I20100805-0500-e3x.jar" -> new File("gui/lib/org.eclipse.mylyn.wikitext.core_1.4.0.I20100805-0500-e3x.jar"),
     "gui-lib-org.eclipse.mylyn.wikitext.textile.core_1.4.0.I20100805-0500-e3x.jar" -> new File("gui/lib/org.eclipse.mylyn.wikitext.textile.core_1.4.0.I20100805-0500-e3x.jar"),
-    "gui-lib-swingx-core-1.6.2.jar" -> new File("gui/lib/swingx-core-1.6.2.jar"),
-    "gui-lib-timingframework-1.0.jar" -> new File("gui/lib/timingframework-1.0.jar"),
+    "browser-lib-swingx-core-1.6.2.jar" -> new File("browser/lib/swingx-core-1.6.2.jar"),
+    "browser-lib-timingframework-1.0.jar" -> new File("browser/lib/timingframework-1.0.jar"),
     "scala-library.jar" -> new File("lib/scala/scala-2.9.0.1.final/lib/scala-library.jar"),
     "scala-swing.jar" -> new File("lib/scala/scala-2.9.0.1.final/lib/scala-swing.jar"),
     "utils-lib_managed-scala_2.9.0-1-compile-amqp-client-1.7.2.jar" -> new File(".ivy/cache/com.rabbitmq/amqp-client/jars/amqp-client-1.7.2.jar"),

@@ -1,10 +1,10 @@
 package starling.gui.pages
 
+import starling.gui.StarlingLocalCache._
 import scala.swing._
 import event.ButtonClicked
 import starling.pivot.model.{CollapsedState, AxisCell}
 import starling.gui._
-import api.UserSettingUpdated
 import starling.pivot.view.swing._
 import starling.pivot._
 import controller.{PivotTable, PivotTableConverter}
@@ -14,6 +14,8 @@ import starling.utils.ImplicitConversions._
 import scala.swing.Swing._
 import java.awt.{AlphaComposite, Color, Dimension}
 import starling.pivot.HiddenType._
+import starling.browser._
+import common.{GuiUtils, MigPanel}
 
 /**
  * An abstract page which holds a pivot table
@@ -25,17 +27,17 @@ import starling.pivot.HiddenType._
  *
  */
 
-abstract class AbstractPivotPage(pivotPageState:PivotPageState, edits:PivotEdits=PivotEdits.Null) extends Page {
+abstract class AbstractPivotPage(pivotPageState:PivotPageState, edits:PivotEdits=PivotEdits.Null) extends StarlingServerPage {
   def icon = StarlingIcons.im("/icons/stock_chart-reorganize.png")
-  def dataRequest(pageBuildingContext:PageBuildingContext):PivotData
+  def dataRequest(pageBuildingContext:StarlingServerContext):PivotData
   def save(starlingServer:StarlingServer, edits:PivotEdits):Boolean = throw new Exception("No implementation of save for this page")
   def selfPage(pivotPageState:PivotPageState, edits:PivotEdits=PivotEdits.Null):Page
   def layoutType:Option[String] = None
-  def subClassesPageData(pageBuildingContext:PageBuildingContext):Option[PageData] = None
-  def finalDrillDownPage(fields:Seq[(Field,Selection)], pageContext:PageContext, ctrlDown:Boolean):Unit = ()
+  def subClassesPageData(pageBuildingContext:StarlingServerContext):Option[PageData] = None
+  def finalDrillDownPage(fields:Seq[(Field,Selection)], pageContext:PageContext, ctrlDown:Boolean) = ()
   def toolbarButtons(pageContext: PageContext, data:PageData):List[Button] = List()
   def configPanel(pageContext:PageContext, data:PageData):Option[ConfigPanels] = None
-  def build(reader: PageBuildingContext) = PivotTablePageData(dataRequest(reader), subClassesPageData(reader), layoutType)
+  def build(reader: StarlingServerContext) = PivotTablePageData(dataRequest(reader), subClassesPageData(reader), layoutType)
   def createComponent(pageContext:PageContext, data:PageData, bookmark:Bookmark, browserSize:Dimension) : PageComponent = {
     PivotComponent(text, pageContext, toolbarButtons(pageContext, data), configPanel(pageContext, data), finalDrillDownPage, selfPage,
       data, pivotPageState, edits, save, bookmark, browserSize, false)
@@ -248,9 +250,9 @@ class PivotTablePageComponent(
 
       def saveEdits() {
         println("Saving edits: " + edits)
-        pageContext.submit(new SubmitRequest[Boolean] {
-          def submit(server:StarlingServer) = {
-            save(server, edits)
+        pageContext.submit(new StarlingSubmitRequest[Boolean] {
+          def submit(serverContext:StarlingServerContext) = {
+            save(serverContext.server, edits)
           }
         }, onComplete = (b:Boolean) => {
           // Because of the order of clearing the screen, this has to be put at the back of the EDT.
@@ -381,7 +383,7 @@ class PivotTablePageComponent(
         drillDownInfo.filteredDrillDown match {
           case None => axisToUse
           case Some(ddInfo) => {
-            val dDF = fields.map(_._1)
+            val dDF = fields.filter(_._2 != AllSelection).map(_._1)
             val dDFMap = Map() ++ fields
             if (dDF.contains(ddInfo.filterField)) {
               // We are pivoting on something we know more information about. Look at the selection and get the fields for it.
@@ -415,7 +417,7 @@ class PivotTablePageComponent(
         getAxis(drillDownFields, DrillDownInfo(axisToUse, group.filteredDrillDown))
       }).filterNot(_.isEmpty)
 
-      if (!possibleGroups.isEmpty) {
+      if (!possibleGroups.isEmpty && !currentFieldState.rowFields.contains(Field("Trade ID"))) {
         val newFieldState = currentFieldState.withFiltersAndRowFields(drillDownFields, possibleGroups.head)
         val newPPS = pivotPageState.copy(pivotFieldParams = pivotPageState.pivotFieldParams.copy(pivotFieldState = Some(newFieldState)))
         pageContext.goTo(selfPage(newPPS, edits), ctrlDown)
@@ -584,23 +586,23 @@ class PivotTablePageComponent(
   def getSelection = selection
 }
 
-case object ClearServerSideCache extends SubmitRequest[Unit] {
-  def submit(server:StarlingServer) = {server.clearCache}
+case object ClearServerSideCache extends StarlingSubmitRequest[Unit] {
+  def submit(serverContext:StarlingServerContext) = {serverContext.server.clearCache}
 }
 
-case class SavePivotLayoutRequest(pivotLayout:PivotLayout) extends SubmitRequest[Unit] {
-  def submit(server:StarlingServer) {server.saveLayout(pivotLayout)}
+case class SavePivotLayoutRequest(pivotLayout:PivotLayout) extends StarlingSubmitRequest[Unit] {
+  def submit(serverContext:StarlingServerContext) {serverContext.server.saveLayout(pivotLayout)}
 }
-case class DeletePivotLayoutRequest(layoutName:String) extends SubmitRequest[Unit] {
-  def submit(server:StarlingServer) = {
-    server.deleteLayout(layoutName)
+case class DeletePivotLayoutRequest(layoutName:String) extends StarlingSubmitRequest[Unit] {
+  def submit(serverContext:StarlingServerContext) = {
+    serverContext.server.deleteLayout(layoutName)
   }
 }
 
-case class ReplacePivotLayoutRequest(layout:PivotLayout) extends SubmitRequest[Unit] {
-  def submit(server:StarlingServer) = {
-    server.deleteLayout(layout.layoutName)
-    server.saveLayout(layout)
+case class ReplacePivotLayoutRequest(layout:PivotLayout) extends StarlingSubmitRequest[Unit] {
+  def submit(serverContext:StarlingServerContext) = {
+    serverContext.server.deleteLayout(layout.layoutName)
+    serverContext.server.saveLayout(layout)
   }
 }
 

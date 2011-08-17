@@ -1,18 +1,20 @@
 package starling.gui.namedquantitycomponents
 
-import starling.gui.GuiUtils._
+import starling.browser.common.GuiUtils._
 import swing.Swing._
 import starling.quantity._
+import starling.pivot.view.swing.PivotCellRenderer
 import javax.swing.border.AbstractBorder
 import swing.Label
 import java.awt.{Color, Cursor, BasicStroke, Graphics, Insets, Graphics2D, Dimension}
 import javax.swing.table.{DefaultTableCellRenderer, AbstractTableModel}
 import starling.pivot.{QuantityLabelPivotFormatter, PivotFormatter, ExtraFormatInfo}
 import collection.mutable.ListBuffer
+import starling.browser.common.MigPanel
 import javax.swing.JTable
 import swing.event.MousePressed
 import org.jdesktop.swingx.JXTable
-import starling.pivot.view.swing.{PivotJTable, PivotCellRenderer, MigPanel}
+import starling.pivot.view.swing.{PivotJTable, PivotCellRenderer}
 import org.jdesktop.swingx.decorator.{HighlightPredicate, ColorHighlighter}
 
 object NamedQuantityComponentHelper {

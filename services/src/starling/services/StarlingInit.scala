@@ -42,6 +42,8 @@ import starling.services.rabbit._
 import collection.immutable.Map
 import starling.titan.{TitanSystemOfRecord, TitanTradeStore}
 import com.trafigura.services.trinity.TrinityService
+import com.trafigura.services.ResteasyServiceApi
+import starling.browser.service.{UserLoggedIn, Version}
 import com.trafigura.services.marketdata.{ExampleService, MarketDataServiceApi}
 import com.trafigura.services.{WebServiceFactory, DocumentationService, ResteasyServiceApi}
 
@@ -255,11 +257,11 @@ class StarlingInit( val props: Props,
     case false => {
       log.warn("Auth disabled")
       new ServerAuthHandler[User](new NullAuthHandler(Some(User.Dev)), users, ldapUserLookup,
-        user => broadcaster.broadcast(UserLoggedIn(user)), ChannelLoggedIn)
+        user => broadcaster.broadcast(UserLoggedIn(user.name)), ChannelLoggedIn)
     }
     case true => {
       val kerberos = new ServerLogin(props.KerberosPassword())
-      new ServerAuth(kerberos, ldapUserLookup, users, user => broadcaster.broadcast(UserLoggedIn(user))).handler
+      new ServerAuth(kerberos, ldapUserLookup, users, user => broadcaster.broadcast(UserLoggedIn(user.name))).handler
     }
   }
 
@@ -287,7 +289,7 @@ class StarlingInit( val props: Props,
 
   log.info("Initialize public services for Titan components, service port: " + props.StarlingServiceRmiPort)
   val nullHandler = new ServerAuthHandler[User](new NullAuthHandler(Some(User.Dev)), users, ldapUserLookup,
-        user => broadcaster.broadcast(UserLoggedIn(user)), ChannelLoggedIn)
+        user => broadcaster.broadcast(UserLoggedIn(user.name)), ChannelLoggedIn)
   val rmiServerForTitan : BouncyRMIServer[User] = new BouncyRMIServer(
     props.StarlingServiceRmiPort(),
     nullHandler, BouncyRMI.CodeVersionUndefined, users,

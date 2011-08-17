@@ -1,6 +1,5 @@
 package starling.gui.pages
 
-import starling.pivot.view.swing.MigPanel
 import swing.event.{SelectionChanged, ButtonClicked}
 import java.awt.Dimension
 import swing._
@@ -9,6 +8,9 @@ import swing.Swing._
 import starling.pivot.{PivotFieldsState, PivotLayout}
 import starling.gui._
 import api.PivotLayoutUpdate
+import starling.gui.StarlingLocalCache._
+import starling.browser.{Bookmark, Page, PageContext}
+import starling.browser.common.MigPanel
 
 class SaveLayoutPanel(pageContext:PageContext, pageData:PivotTablePageData, pivotPageState:PivotPageState, layoutType:String,
                       selfPage:(PivotPageState)=>Page, selectFocus: =>Unit, bookmark:Bookmark) extends MigPanel("insets 0, gap 1") {
@@ -101,7 +103,7 @@ class SaveLayoutPanel(pageContext:PageContext, pageData:PivotTablePageData, pivo
     case SelectionChanged(`layoutSelector`) => {
       pageContext.goTo(selfPage(pivotPageState.copyLayout(layoutSelector.selection.item)))
     }
-    case PivotLayoutUpdate(user, userLayouts) if (user == pageContext.localCache.currentUser.username) => {
+    case PivotLayoutUpdate(user, userLayouts) if (user == pageContext.localCache.currentUserName) => {
       customLayout = checkCustomLayout
       deafTo(layoutSelector.selection)
       layoutChooserModel.removeAllElements()
@@ -151,7 +153,7 @@ class SaveLayoutPanel(pageContext:PageContext, pageData:PivotTablePageData, pivo
       font = font.deriveFont(java.awt.Font.BOLD)
     }
     val standardText = "Would you like to replace it?"
-    val textArea = starling.gui.GuiUtils.LabelTextArea(standardText)
+    val textArea = starling.browser.common.GuiUtils.LabelTextArea(standardText)
     val yesButton = new Button {
       text = "Yes"
       reactions += {

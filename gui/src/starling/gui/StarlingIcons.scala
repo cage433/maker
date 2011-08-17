@@ -7,7 +7,6 @@ import starling.utils.ImplicitConversions._
 
 object StarlingIcons {
 
-  val Refresh = "/icons/22x22/actions/view-refresh.png"
   val MarketData = "/icons/16x16_market_data.png"
 
   lazy val RowGrandTotals = StarlingIcons.icon("/icons/16x16_stock_top_bottom_totals.png")
@@ -21,7 +20,6 @@ object StarlingIcons {
   lazy val Calculate = StarlingIcons.icon("/icons/16x16_calculator.png")
   lazy val SaveLayout = StarlingIcons.icon("/icons/16x16_layout_add.png")
   lazy val ValidationError = StarlingIcons.icon("/icons/validation.png")
-  lazy val Blank10 = StarlingIcons.icon("/icons/10x10_blank.png")
 
   val SaveReportConfiguration = "/icons/16x16_star_add.png"
 

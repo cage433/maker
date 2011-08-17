@@ -1,12 +1,13 @@
 package starling.gui.pages
 
-import starling.gui.{Page, PageContext, PageBuildingContext}
 import starling.daterange.{Day, Timestamp}
 import starling.gui.api._
 import starling.rmi.StarlingServer
 import collection.mutable.ListBuffer
 import swing.event.Event
 import starling.pivot.{PivotEdits, SomeSelection, Field, Selection}
+import starling.gui.StarlingServerContext
+import starling.browser.{Page, ServerContext, PageContext}
 
 class PnlPivotReportPage
 
@@ -14,7 +15,7 @@ case class TradeChangesReportPage(tradeSelection:TradeSelection, from:TradeTimes
                                   pivotPageState:PivotPageState, tradeExpiryDay:Day) extends AbstractPivotPage(pivotPageState) {
   assert(tradeSelection.intradaySubgroup.isEmpty, "Trade changes report doesn't support excel trades")
 
-  def dataRequest(pageBuildingContext:PageBuildingContext) = {
+  def dataRequest(pageBuildingContext:StarlingServerContext) = {
     pageBuildingContext.cachingStarlingServer.tradeChanges(tradeSelection, from.timestamp, to.timestamp, from.timestamp.day.startOfFinancialYear, pivotPageState.pivotFieldParams)
   }
 
@@ -32,7 +33,7 @@ case class TradeChangesReportPage(tradeSelection:TradeSelection, from:TradeTimes
     tradeID match {
       case Some(trID) => {
         pageContext.createAndGoTo(
-          (starlingServer:StarlingServer) => {
+          (serverContext:ServerContext) => {
             SingleTradePage(trID, tradeSelection.desk, TradeExpiryDay(tradeExpiryDay), tradeSelection.intradaySubgroup)
           }, newTab = ctrlDown)
       }

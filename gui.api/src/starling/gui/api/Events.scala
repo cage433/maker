@@ -5,13 +5,10 @@ import starling.auth.User
 import starling.utils.ImplicitConversions._
 import java.lang.String
 import collection.immutable.Map
-import starling.pivot.{ExtraFormatInfo, PivotLayout}
+import starling.pivot.PivotLayout
 import starling.daterange._
-import starling.gui.Key
 
 class Events //The is just here as I find this class using "^n Events"
-
-case class EventBatch(events:Seq[Event]) extends Event //Needed so that many events are processed with one auto refresh
 
 case class IntradayUpdated(group: String, user: User, timestamp:Timestamp) extends Event
 case class DeskClosed(desk: Desk, timestamp:TradeTimestamp) extends Event
@@ -22,10 +19,8 @@ case class PricingGroupMarketDataUpdate(pricingGroup:PricingGroup, version:Int) 
 case class ExcelObservationDay(name:String, day:Day) extends Event
 case class PricingGroupObservationDay(pricingGroup:PricingGroup, day:Day) extends Event
 case class PivotLayoutUpdate(user:String, userLayouts:List[PivotLayout]) extends Event
-case class BookmarksUpdate(user:String, bookmarks:List[BookmarkLabel]) extends Event
 case class ExcelMarketListUpdate(values:List[String]) extends Event
 case class ExcelMarketDataUpdate(name:String, version:Int) extends Event
-case class UserSettingUpdated(key:Key[_]) extends Event
 
 object PricingGroupMarketDataUpdate {
   def matching(pricingGroupOption : Option[PricingGroup]) : PartialFunction[Event, PricingGroupMarketDataUpdate] = {
@@ -46,8 +41,6 @@ object ExcelMarketDataUpdate {
     case update@ExcelMarketDataUpdate(`name`, _) => update
   }
 }
-
-case class UserLoggedIn(user:User) extends Event
 
 case class RabbitMessage(body:String, headers:Map[String,Object])
 

@@ -12,8 +12,8 @@ import org.jdesktop.swingx.JXTable
 import swing.event.{Event, MouseClicked, KeyPressed, KeyReleased}
 import starling.rmi.PivotData
 import scala.swing.Swing._
-import starling.gui.GuiUtils._
-import starling.gui.{GuiUtils, OldPageData, ComponentRefreshState, StarlingIcons}
+import starling.browser.common.GuiUtils._
+import starling.gui.StarlingIcons
 import java.awt.datatransfer.StringSelection
 import java.awt.event._
 import starling.gui.api.ReportSpecificOptions
@@ -26,6 +26,8 @@ import java.awt.{Container, Graphics2D, Dimension, Color, GradientPaint, Cursor,
 import javax.swing._
 import starling.pivot.view.swing.PivotTableType._
 import starling.pivot.HiddenType._
+import starling.browser.common._
+import starling.browser.{OldPageData, ComponentRefreshState}
 
 object PivotTableView {
   def createWithLayer(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSize:Dimension,

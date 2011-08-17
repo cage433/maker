@@ -6,7 +6,7 @@ import java.awt.image.BufferedImage
 import java.awt.{GradientPaint, Graphics2D, Dimension, Color, RenderingHints, Point, KeyboardFocusManager}
 import java.awt.event.{ComponentEvent, ComponentAdapter}
 import org.jdesktop.swingx.image.ColorTintFilter
-import starling.gui.GuiUtils._
+import starling.browser.common.GuiUtils._
 import starling.pivot.model.TreeDetails
 import org.jdesktop.swingx.graphics.ShadowRenderer
 import swing._
@@ -16,10 +16,11 @@ import javax.swing.event.{PopupMenuListener, PopupMenuEvent}
 import javax.swing.{JPopupMenu, SwingUtilities}
 import starling.gui.custom._
 import starling.pivot._
-import starling.gui.{GuiUtils, StarlingIcons}
+import starling.gui.StarlingIcons
 import starling.gui.namedquantitycomponents.UnderLineDashedBorder
 import starling.pivot.model.EditableInfo
 import starling.pivot.HiddenType._
+import starling.browser.common.{FixedImagePanel, ImageButtonWithDisabledImageSupplied, MigPanel, GuiUtils}
 
 case class GuiFieldComponentProps(field:Field, locationOfField:FieldChooserType,
                                   showDepthPanel:Boolean, measureField:Boolean, realMeasureField:Boolean,

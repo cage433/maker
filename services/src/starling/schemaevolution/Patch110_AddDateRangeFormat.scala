@@ -9,7 +9,8 @@ import xstream.{Fields, Reader, MapBasedConverter}
 import starling.pivot.model.CollapsedState
 import starling.pivot.{Field, Totals, OtherLayoutInfo, PivotFormatter}
 import starling.pivot.HiddenType._
-import starling.gui.{UserSettings, StandardUserSettingKeys}
+import starling.gui.StandardUserSettingKeys
+import starling.browser.internal.UserSettings
 
 class Patch110_AddDateRangeFormat extends Patch {
   val convertingXStream = StarlingXStream.createXStream
