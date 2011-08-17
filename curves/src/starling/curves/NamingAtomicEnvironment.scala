@@ -1,6 +1,7 @@
 package starling.curves
 
 import starling.quantity.Quantity
+import starling.daterange.DateRange
 
 abstract class DelegatingAtomicEnvironment(val atomicEnv: AtomicEnvironment) extends AtomicEnvironment {
   def apply(key: AtomicDatumKey) = atomicEnv.apply(key)
@@ -17,6 +18,7 @@ case class NamingAtomicEnvironment(override val atomicEnv: AtomicEnvironment, pr
       case q:Quantity => {
         val pointSuffix = key.point match {
           case None => ""
+          case dr:DateRange => "." + dr.toShortString
           case other => "." + other
         }
         val curveName = key match {

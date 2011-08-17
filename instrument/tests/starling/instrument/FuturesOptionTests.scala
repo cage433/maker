@@ -166,7 +166,7 @@ class FuturesOptionTests extends StarlingTest {
     )
     val explanation = option.explanation(env)
     assertEquals(explanation.name, "((FuturesOption-European-Call(F, K, Vol, T) * Volume) * Discount)")
-    assertEquals(explanation.format(1), "((FuturesOption-European-Call(A Test Market.OCTOBER 2012, 100.00 USD/MT, 39.98%, 1.72) * 100.00 MT) * USD.20Sep2012)")
+    assertEquals(explanation.format(1), "((FuturesOption-European-Call(A Test Market.OCT 2012, 100.00 USD/MT, 39.98%, 1.72) * 100.00 MT) * USD.20Sep2012)")
     val lastExplanation = "((FuturesOption-European-Call(99.00 USD/MT, 100.00 USD/MT, 0.40, 1.72) * 100.00 MT) * 0.95)"
     assertEquals(explanation.format(2), lastExplanation)
     assertEquals(explanation.format(3), lastExplanation)

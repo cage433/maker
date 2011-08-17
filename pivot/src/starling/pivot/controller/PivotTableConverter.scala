@@ -48,7 +48,7 @@ object ServerAxisNode {
   val Null = ServerAxisNode(AxisValue.Null)
 }
 case class ServerAxisNode(axisValue:AxisValue, children:Map[ChildKey,Map[AxisValue,ServerAxisNode]]=Map.empty) {
-  val childValues:List[ServerAxisNode] = children.values.map(_.values).flatten.toList
+  lazy val childValues:List[ServerAxisNode] = children.values.map(_.values).flatten.toList
 
   def add(values:List[AxisValue]):ServerAxisNode = {
     values match {
