@@ -346,5 +346,33 @@ object StarlingBuild extends Build{
       }      
     }
   }
+
+  /**
+   * Some utils to help abstract from the unintuitive SBT DSL, for more "common" cases/patterns
+   */
+  object Utils {
+
+    // make regular tasks based on a function () => Unit and a cmd name and optional description
+    def mkTasks[T : Manifest](ls : List[(() => T, String, String)]) = ls.map(t => mkTask(t._1, t._2, t._3))
+    def mkTask[T : Manifest](f : () => T, cmd : String, desc : String = "") = {
+      lazy val taskKey = TaskKey[T](cmd, desc)
+      taskKey := { f() }
+    }
+    
+    // make regular imput tasks based on a function (List[String]) => Unit and a cmd name and optional description
+    // takes all the arguments from console and passes them to the function provided as-is
+    def mkInputTasks[T : Manifest](ls : List[(List[String] => T, String, String)]) = ls.map(t => mkInputTask(t._1, t._2, t._3))
+    def mkInputTask[T : Manifest](f : List[String] => T, cmd : String, desc : String = "default input task") = {
+      val inputTaskKey = InputKey[Unit](cmd, desc)
+      
+      inputTaskKey <<= inputTask { (argTask : TaskKey[Seq[String]]) => 
+        (argTask) map { (args : Seq[String]) =>
+          println("args = " + args.mkString(","))
+          f(args.toList)
+        }
+      }
+    }
+    implicit def toInputTask[T : Manifest](t : (List[String] => T, String, String)) : sbt.Project.Setting[sbt.InputTask[Unit]] = mkInputTask(t._1, t._2, t._3)
+  }
 }
 
