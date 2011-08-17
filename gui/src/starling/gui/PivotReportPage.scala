@@ -14,6 +14,8 @@ import view.swing._
 import java.awt.{Toolkit, Dimension}
 import javax.swing.ImageIcon
 import starling.utils.StackTraceToString
+import starling.browser._
+import common.{NListView, MigPanel}
 
 class PivotReportPage {}
 
@@ -35,7 +37,7 @@ case class DifferenceMainPivotReportPage(
 
   assert(tradeSelection.intradaySubgroup.isEmpty, "Difference reports don't work with Excel trades")
 
-  def dataRequest(pageBuildingContext:PageBuildingContext) = {
+  def dataRequest(pageBuildingContext:StarlingServerContext) = {
     pageBuildingContext.cachingStarlingServer.diffReportPivot(tradeSelection, curveIdentifierDm1, curveIdentifierD,
       reportOptions, expiryDay, fromTimestamp, toTimestamp, pivotPageState.pivotFieldParams)
   }
@@ -128,11 +130,11 @@ case class MainPivotReportPage(showParameters:Boolean, reportParameters:ReportPa
     }
   }
 
-  override def subClassesPageData(reader:PageBuildingContext):Option[PageData] = {
+  override def subClassesPageData(reader:StarlingServerContext):Option[PageData] = {
     Some(PivotReportTablePageData(reader.cachingStarlingServer.reportErrors(reportParameters).errors.size))
   }
 
-  def dataRequest(pageBuildingContext: PageBuildingContext) = {
+  def dataRequest(pageBuildingContext:StarlingServerContext) = {
     pageBuildingContext.cachingStarlingServer.reportPivot(reportParameters, pivotPageState.pivotFieldParams)
   }
   def selfPage(pps:PivotPageState, edits:PivotEdits) = copy(pivotPageState = pps)
@@ -261,22 +263,22 @@ case class MainPivotReportPage(showParameters:Boolean, reportParameters:ReportPa
     }
   }
 
-  override def bookmark(server:StarlingServer):Bookmark = ReportBookmark(showParameters, server.createUserReport(reportParameters), pivotPageState)
+  override def bookmark(serverContext:StarlingServerContext):Bookmark = ReportBookmark(showParameters, serverContext.server.createUserReport(reportParameters), pivotPageState)
 }
 
-case class ReportBookmark(showParameters:Boolean, userReportData:UserReportData, pivotPageState:PivotPageState) extends Bookmark {
+case class ReportBookmark(showParameters:Boolean, userReportData:UserReportData, pivotPageState:PivotPageState) extends StarlingBookmark {
   def daySensitive = {
     userReportData.environmentRule match {
       case EnvironmentRuleLabel.RealTime => false
       case _ => true
     }
   }
-  def createPage(day:Option[Day], server:StarlingServer, context:PageContext) = {
+  def createStarlingPage(day:Option[Day], serverContext:StarlingServerContext, context:PageContext) = {
     val dayToUse = day match {
       case None => Day.today() // Real time
       case Some(d) => d
     }
-    val reportParameters = server.createReportParameters(userReportData, dayToUse)
+    val reportParameters = serverContext.server.createReportParameters(userReportData, dayToUse)
     MainPivotReportPage(showParameters, reportParameters, pivotPageState)
   }
 }
@@ -327,10 +329,10 @@ object PivotReportPage {
   }
 }
 
-case class ReportErrorsPage(reportParameters:ReportParameters) extends Page {
+case class ReportErrorsPage(reportParameters:ReportParameters) extends StarlingServerPage {
   def text = "Errors in " + reportParameters.text
   def createComponent(context: PageContext, data: PageData, bookmark:Bookmark, browserSize:Dimension) = new PivotReportErrorPageComponent(context, data, browserSize)
-  def build(pageBuildingContext: PageBuildingContext) = {
+  def build(pageBuildingContext: StarlingServerContext) = {
     val errors = pageBuildingContext.cachingStarlingServer.reportErrors(reportParameters)
     val errorsToUse = errors.errors.map(e => ErrorViewElement(e.instrumentText, e.message))
     PivotReportErrorPageData(errorsToUse)
@@ -348,7 +350,7 @@ class PivotReportErrorPageComponent(pageContext:PageContext, data:PageData, brow
   add(errorView, "push, grow")
 }
 
-case class ReportCellErrorsPage(errors:List[StackTrace]) extends Page {
+case class ReportCellErrorsPage(errors:List[StackTrace]) extends StarlingServerPage {
   def text = "Errors"
   def icon = StarlingIcons.im("/icons/error.png")
   def createComponent(context:PageContext, data:PageData, bookmark:Bookmark, browserSize:Dimension) = {
@@ -357,7 +359,7 @@ case class ReportCellErrorsPage(errors:List[StackTrace]) extends Page {
     }
     new ReportCellErrorsPageComponent(errorsToUse, browserSize)
   }
-  def build(pageBuildingContext:PageBuildingContext) = {ReportCellErrorData(errors.map(d => ErrorViewElement(d.message, d.stackTrace)))}
+  def build(pageBuildingContext:StarlingServerContext) = {ReportCellErrorData(errors.map(d => ErrorViewElement(d.message, d.stackTrace)))}
 }
 case class ReportCellErrorData(errors:List[ErrorViewElement]) extends PageData
 

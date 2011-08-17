@@ -27,7 +27,11 @@ object Dependencies{
     "org.jboss.netty" % "netty" % "3.2.5.Final" withSources(),
     "commons-io" % "commons-io" % "1.3.2" withSources(),
     "org.scala-lang" % "scala-swing" % "2.9.0-1" withSources()
-  ) 
+  )
+
+  val browserServiceDependencies = Seq(
+    "org.scala-lang" % "scala-swing" % "2.9.0-1" withSources()
+  )
 
   val authDependencies = Seq("com.sun.jna" % "jna" % "3.0.9" withSources())
 
@@ -182,7 +186,7 @@ object StarlingBuild extends Build{
     "gui.api", 
     file("./gui.api"),
     settings = standardSettings ++ Seq(libraryDependencies ++= guiApiDependencies)
-  ) dependsOn(pivotUtils, quantity, auth, bouncyrmi)
+  ) dependsOn(pivotUtils, quantity, auth, bouncyrmi, browserService)
 
   lazy val curves = Project(
     "curves", 
@@ -200,7 +204,19 @@ object StarlingBuild extends Build{
     "gui", 
     file("./gui"),
     settings = standardSettings ++ Seq(libraryDependencies ++= guiDependencies)
-  ) dependsOn(guiapi)
+  ) dependsOn(guiapi, browser)
+
+  lazy val browser = Project(
+    "browser",
+    file("./browser"),
+    settings = standardSettings ++ Seq(libraryDependencies ++= browserServiceDependencies)
+  ) dependsOn(browserService, utils, daterange)
+
+  lazy val browserService = Project(
+    "browser.service",
+    file("./browser.service"),
+    settings = standardSettings ++ Seq(libraryDependencies ++= browserServiceDependencies)
+  ) dependsOn()
 
   lazy val trade = Project(
     "trade", 
@@ -259,7 +275,7 @@ object StarlingBuild extends Build{
     settings = standardSettings ++ Seq(
       libraryDependencies ++= servicesDependencies ++ testDependencies
     )
-  ) dependsOn(curves % "test->test", loopyxl % "test->test", bouncyrmi, concurrent, loopyxl, titan)
+  ) dependsOn(curves % "test->test", loopyxl % "test->test", bouncyrmi, concurrent, loopyxl, titan, gui, browser)
 
   lazy val devLauncher = Project(
     "devLauncher", 
@@ -282,6 +298,8 @@ object StarlingBuild extends Build{
     curves,
     instrument,
     gui,
+    browser,
+    browserService,
     trade,
     VaR,
     titanModel,

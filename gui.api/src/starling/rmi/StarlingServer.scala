@@ -1,6 +1,5 @@
 package starling.rmi
 
-import starling.gui.UserSettings
 import starling.gui.api._
 import starling.services.{ForwardCurveCommitResponse, ForwardCurveInfo}
 import starling.pivot._
@@ -9,6 +8,7 @@ import starling.calendar.BusinessCalendar
 import starling.eai.{Book, Traders}
 import starling.utils.{CaseInsensitive, STable}
 import starling.daterange.{ObservationPoint, Day, Timestamp}
+import starling.browser.service.{PageLogInfo, BookmarkLabel, UserSettingsLabel, Version}
 
 /**
  * This is the remote interface to the starling server.
@@ -34,8 +34,8 @@ trait StarlingServer {
   def snapshot(marketDataSelection:MarketDataSelection, observationDay:Day): Option[SnapshotIDLabel]
   def excelLatestMarketDataVersions:Map[String,Int]
   def pricingGroupLatestMarketDataVersions:Map[PricingGroup,Int]
-  def readSettings:UserSettings
-  def saveSettings(settings:UserSettings)
+  def readSettings:UserSettingsLabel
+  def saveSettings(settings:UserSettingsLabel)
   def readTradeVersions(tradeID:TradeIDLabel):(STable,List[FieldDetailsGroupLabel],List[CostsLabel])
   def tradeIDFor(desk:Desk, text:String):TradeIDLabel
   def tradeValuation(tradeID:TradeIDLabel, curveIdentifier:CurveIdentifierLabel, timestamp:Timestamp):TradeValuationAndDetails

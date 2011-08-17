@@ -15,6 +15,7 @@ import starling.daterange.{Day => SDay, Month => SMonth}
 import starling.pivot.controller.{PivotGrid, PivotTableConverter, PivotTable}
 import starling.pivot.{PivotQuantity, Field, TableCell, Totals}
 import starling.quantity.Quantity
+import starling.browser.common.MigPanel
 
 class Chart
 //can't use case classes because of the lazy chart field

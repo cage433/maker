@@ -4,10 +4,12 @@ import api._
 import pages._
 import swing._
 import event._
-import starling.pivot.view.swing.MigPanel
 import collection.immutable.TreeSet
-import GuiUtils._
 import starling.daterange._
+import starling.gui.StarlingLocalCache._
+import starling.browser.PageContext
+import starling.browser.common.{RoundedBorder, MigPanel}
+import starling.browser.common.GuiUtils._
 
 class ManualReportConfigPanel(context:PageContext, reportParameters:ReportParameters, pivotPageState:PivotPageState)
         extends MigPanel with ConfigPanel {

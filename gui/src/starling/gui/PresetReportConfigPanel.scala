@@ -4,8 +4,7 @@ import api._
 import api.MarketDataIdentifier._
 import pages._
 import pages.MarketDataSelectionChanged._
-import starling.pivot.view.swing.MigPanel
-import starling.gui.GuiUtils._
+import starling.browser.common.GuiUtils._
 import swing._
 import event.SelectionChanged._
 import event.{SelectionChanged, ButtonClicked}
@@ -13,7 +12,9 @@ import swing.Orientation._
 import collection.immutable.TreeSet
 import starling.daterange.Day
 import collection.mutable.ListBuffer
-import collection.mutable.ListBuffer._
+import starling.gui.StarlingLocalCache._
+import starling.browser.PageContext
+import starling.browser.common.{RoundedBorder, MigPanel}
 
 object ReportPreset extends Enumeration {
   type ReportPreset = Value

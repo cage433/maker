@@ -37,7 +37,7 @@
     </orderEntry>
     <orderEntry type="module" module-name="daterange" />
     <orderEntry type="module" module-name="auth" />
-    <orderEntry type="module" module-name="gui.api" />
+    <orderEntry type="module" module-name="gui.api" exported="" />
     <orderEntry type="module" module-name="pivot" />
     <orderEntry type="module" module-name="instrument" />
     <orderEntry type="module" module-name="starling.api" />
@@ -464,6 +464,8 @@
         <SOURCES />
       </library>
     </orderEntry>
+    <orderEntry type="module" module-name="browser" />
+    <orderEntry type="module" module-name="gui" />
   </component>
 </module>
 

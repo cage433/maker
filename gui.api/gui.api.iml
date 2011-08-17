@@ -45,6 +45,7 @@
         </SOURCES>
       </library>
     </orderEntry>
+    <orderEntry type="module" module-name="browser.service" exported="" />
   </component>
 </module>
 

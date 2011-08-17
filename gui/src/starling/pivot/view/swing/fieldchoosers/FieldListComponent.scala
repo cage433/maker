@@ -2,12 +2,13 @@ package starling.pivot.view.swing.fieldchoosers
 
 import starling.pivot.view.swing._
 import starling.gui.StarlingIcons
-import starling.gui.GuiUtils._
+import starling.browser.common.GuiUtils._
 import starling.pivot.{Field, OtherLayoutInfo}
 import starling.pivot.FieldChooserType._
 import swing.event.{Event, MouseClicked}
 import java.awt.{Dimension, Rectangle}
 import starling.pivot.model.{EditableInfo, PivotTableModel}
+import starling.browser.common.{ImageButton, MigPanel}
 
 class FieldGroupSeparator(group:String, collapsed:Boolean, onCollapseOrExpand:(String,Boolean)=>Unit) extends MigPanel("insets 2lp 2lp 3lp 0", "[p]0[p]") {
   private val expandButton = new ImageButton(StarlingIcons.im("/icons/scroll_down.png"), {onCollapseOrExpand(group, true)})

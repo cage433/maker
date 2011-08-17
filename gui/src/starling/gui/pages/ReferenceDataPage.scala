@@ -6,20 +6,21 @@ import swing.Swing._
 import java.awt.image.BufferedImage
 import java.awt.{Cursor, Color, Dimension}
 import swing.event.{MouseExited, MouseEntered, MouseClicked}
-import starling.pivot.view.swing.{StripedPanel, FixedImagePanel, MigPanel}
 import javax.swing.{KeyStroke, JComponent}
 import java.awt.event.KeyEvent
 import swing.{Action, Label}
 import starling.pivot.{PivotEdits, PivotFieldParams}
+import starling.browser.{PageComponent, Bookmark, PageData, PageContext}
+import starling.browser.common._
 
 /**
  * The reference data pages for viewing markets, calendars etc.
  */
 
-case object ReferenceDataIndexPage extends Page {
+case object ReferenceDataIndexPage extends StarlingServerPage {
   def text = "Reference Data"
   def icon = StarlingIcons.im("/icons/16x16_ref_data.png")
-  def build(reader: PageBuildingContext) = ReferenceDataIndexPageData(reader.starlingServer.referenceDataTables(), reader.starlingServer.permissionToDoAdminLikeThings)
+  def build(starlingServerContext: StarlingServerContext) = ReferenceDataIndexPageData(starlingServerContext.server.referenceDataTables(), starlingServerContext.server.permissionToDoAdminLikeThings)
   def createComponent(context: PageContext, data: PageData, bookmark:Bookmark, browserSize: Dimension) = {new ReferenceDataIndexPageComponent(context, data)}
 }
 
@@ -42,7 +43,7 @@ class ReferenceDataIndexPageComponent(context:PageContext, pageData:PageData) ex
       val shouldSkip2 = (table.name.toLowerCase.trim == "calendars")
       val numberString = (index + 1).toString + "."
       def gotoPage(ctrlDown:Boolean) = context.goTo(ReferenceDataPage(table, PivotPageState(false, PivotFieldParams(true, None))), ctrlDown)
-      val tableButton = new ReferenceDataButton(table.name, imageToUse,
+      val tableButton = new NumberedButton(table.name, imageToUse,
         gotoPage,
         number = Some(numberString))
       ReferenceDataIndexPageComponent.this.peer.getInputMap(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT).
@@ -72,52 +73,7 @@ case class ReferenceDataPage(table:ReferenceDataLabel, pivotPageState : PivotPag
     StarlingIcons.im("/icons/16x16_calendar_day.png")
   }
   def selfPage(pivotPageStateX: PivotPageState, edits:PivotEdits) = copy(pivotPageState=pivotPageStateX)
-  def dataRequest(pageBuildingContext: PageBuildingContext) = {
-    pageBuildingContext.starlingServer.referencePivot(table, pivotPageState.pivotFieldParams)
+  def dataRequest(pageBuildingContext:StarlingServerContext) = {
+    pageBuildingContext.server.referencePivot(table, pivotPageState.pivotFieldParams)
   }
-}
-
-class ReferenceDataButton(text:String, image:BufferedImage, buttonClicked:(Boolean) => Unit, useBlueText:Boolean=true,
-                          number:Option[String]=None) extends MigPanel {
-  background = GuiUtils.TaskPageButtonBackgroundColour
-  border = LineBorder(GuiUtils.TaskPageButtonBorderColour)
-  cursor = Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)
-  val imagePanel = new FixedImagePanel(image)
-  val label = if (useBlueText) {
-    new Label("<html><u>" + text + "</u></html>") {
-      foreground = Color.BLUE
-      name = text
-    }
-  } else {
-    new Label(text)
-  }
-
-  add(imagePanel)
-  number match {
-    case None =>
-    case Some(num) => if (useBlueText) {
-      add(new Label("<html><u>" + num + "</u></html>") {
-        foreground = Color.BLUE
-      }, "split, gapright 2lp")
-    } else {
-      add(new Label(num), "split, gapright 2lp")
-    }
-  }
-  add(label)
-
-  override def enabled_=(b:Boolean) = {
-    super.enabled = b
-    imagePanel.enabled = b
-    label.enabled = b
-  }
-
-  reactions += {
-    case MouseClicked(_,_,k,_,_) if enabled => {
-      buttonClicked(k == scala.swing.event.Key.Modifier.Control)
-      background = GuiUtils.TaskPageButtonBackgroundColour
-    }
-    case MouseEntered(_,_,_) if enabled => {background = GuiUtils.TaskPageButtonOverBackgroundColour}
-    case MouseExited(_,_,_) if enabled => {background = GuiUtils.TaskPageButtonBackgroundColour}
-  }
-  listenTo(mouse.clicks, mouse.moves)
 }

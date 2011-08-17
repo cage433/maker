@@ -3,7 +3,7 @@ package starling.gui.pages
 import starling.gui.api.TradeSelection
 import starling.pivot.{SomeSelection, AllSelection, Selection, Field}
 import swing.{Alignment, Label}
-import starling.pivot.view.swing.MigPanel
+import starling.browser.common.MigPanel
 
 class TradeDetailsPanel(tradeSelection:TradeSelection)
         extends MigPanel("insets 0", "[p]50lp[p]50lp[p]") {

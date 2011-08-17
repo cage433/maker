@@ -1,7 +1,7 @@
 package starling.pivot.view.swing
 
 import starling.pivot._
-import starling.gui.GuiUtils._
+import starling.browser.common.GuiUtils._
 import starling.pivot.model.AxisCell
 import starling.quantity.{SpreadOrQuantity, Quantity}
 import java.awt.{Component, Color}

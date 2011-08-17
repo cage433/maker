@@ -2,11 +2,12 @@ package starling.gui
 
 import api.{TradePageParameters, TradeExpiryDay, ReportParameters, TradeSelection}
 import pages.{PivotPageState, TradeSelectionPage, ConfigPanel}
-import starling.pivot.view.swing.MigPanel
-import starling.gui.GuiUtils._
+import starling.browser.common.GuiUtils._
 import swing.{Button, Label}
 import swing.event.ButtonClicked
 import starling.pivot._
+import starling.browser.PageContext
+import starling.browser.common.{RoundedBorder, MigPanel}
 
 class TradeInfoConfigPanel(context:PageContext, rp:ReportParameters) extends MigPanel() with ConfigPanel{
   val tradeSelection = rp.tradeSelectionWithTimestamp.asTradeSelection
