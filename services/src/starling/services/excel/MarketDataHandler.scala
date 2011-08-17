@@ -219,7 +219,7 @@ class MarketDataHandler(broadcaster : Broadcaster,
     }
 
     val result = marketDataStore.saveAll(MarketDataSet.excel(label), observationPoint, allPrices)
-    "OK:" + result._1
+    "OK:" + result.maxVersion
   }
 
   @ExcelMethod

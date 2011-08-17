@@ -172,7 +172,7 @@ class MarketDataPivotTableDataSource(reader: MarketDataReader, edits:PivotEdits,
             MarketDataEntry(timedKey.observationPoint, timedKey.key, marketDataType.createValue(amendRows ::: newRows))
           } }
 
-          marketDataStore.save(Map(editableSet -> newEntries))._2
+          marketDataStore.save(Map(editableSet → newEntries))
           true
         }
       }

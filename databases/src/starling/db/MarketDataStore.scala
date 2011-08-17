@@ -159,8 +159,8 @@ trait MarketDataStore {
 
   def excelDataSets: List[String]
 
-  def importData(marketDataSelection:MarketDataSelection, observationDay : Day): (Int, Boolean)
-  def importFor(observationDay: Day, marketDataSets: MarketDataSet*): (Int, Boolean)
+  def importData(marketDataSelection:MarketDataSelection, observationDay : Day): SaveResult
+  def importFor(observationDay: Day, marketDataSets: MarketDataSet*): SaveResult
 
   def latest(selection:MarketDataSelection): Int
   def latestExcelVersions: Map[String, Int]
@@ -186,9 +186,9 @@ trait MarketDataStore {
 
   def readLatest[T <: MarketData](marketDataSet: MarketDataSet, timedKey: TimedMarketDataKey): Option[T]
 
-  def save(marketDataSetToData: Map[MarketDataSet, Iterable[MarketDataEntry]]): (Int, Boolean)
+  def save(marketDataSetToData: Map[MarketDataSet, Iterable[MarketDataEntry]]): SaveResult
   def save(marketDataSet: MarketDataSet, timedKey: TimedMarketDataKey, marketData: MarketData): Int
-  def saveAll(marketDataSet: MarketDataSet, observationPoint: ObservationPoint, data: Map[MarketDataKey,MarketData]): (Int, Boolean)
+  def saveAll(marketDataSet: MarketDataSet, observationPoint: ObservationPoint, data: Map[MarketDataKey,MarketData]): SaveResult
 
   def snapshot(marketDataSelection: MarketDataSelection, doImport: Boolean, observationDay: Day): Option[SnapshotID]
   def snapshots() : List[SnapshotID]
@@ -199,6 +199,8 @@ trait MarketDataStore {
   def sourceFor(marketDataSet: MarketDataSet): Option[MarketDataSource]
   def sourcesFor(pricingGroup: PricingGroup): List[MarketDataSource]
 }
+
+case class SaveResult(maxVersion: Int, anythingChanged: Boolean)
 
 case class VersionedMarketData(timestamp: Timestamp, version: Int, data: Option[MarketData])
 
@@ -232,7 +234,7 @@ trait MdDB {
   def excelObservationDays():List[(String,Option[Day])]
   def latestVersionForMarketDataSets():Map[MarketDataSet,Int]
   def latestExcelVersions():Map[String, Int]
-  def store(data: Iterable[MarketDataUpdate], marketDataSet: MarketDataSet):(Boolean,Int)
+  def store(data: Iterable[MarketDataUpdate], marketDataSet: MarketDataSet): SaveResult
   def maxVersionForMarketDataSetNames(names:List[String]):Option[Int]
   def marketDataTypes(version:Int, mds:List[MarketDataSet]) : List[MarketDataType]
   def latestMarketData(from: Day, to: Day, marketDataType: MarketDataType, marketDataSet: MarketDataSet): List[(TimedMarketDataKey, VersionedMarketData)]
@@ -380,7 +382,7 @@ class SlowMdDB(db: DBTrait[RichResultSetRow]) extends MdDB with Log {
     }
   }
 
-  def store(data: Iterable[MarketDataUpdate], marketDataSet: MarketDataSet):(Boolean,Int) = {
+  def store(data: Iterable[MarketDataUpdate], marketDataSet: MarketDataSet): SaveResult = {
     var update = false
     var innerMaxVersion = 0
 
@@ -392,7 +394,7 @@ class SlowMdDB(db: DBTrait[RichResultSetRow]) extends MdDB with Log {
         }
       }
     )
-    (update, innerMaxVersion)
+    SaveResult(innerMaxVersion, update)
   }
 
   private def updateIt(dbWriter: DBWriter, id: MarketDataID, existingData: Option[VersionedMarketData], maybeData: Option[MarketData]) = {
@@ -820,14 +822,14 @@ class DBMarketDataStore(
     tags.latestSnapshot(pricingGroup, observationDay)
   }
 
-  def saveAll(marketDataSet : MarketDataSet, observationPoint : ObservationPoint, data : Map[MarketDataKey,MarketData]): (Int, Boolean) = {
+  def saveAll(marketDataSet : MarketDataSet, observationPoint : ObservationPoint, data : Map[MarketDataKey,MarketData]): SaveResult = {
     val dataX = for ((marketDataKey, marketData) <- data) yield {
       MarketDataEntry(observationPoint, marketDataKey, marketData)
     }
     save(Map(marketDataSet -> dataX))
   }
 
-  def save(marketDataSetToData : Map[MarketDataSet, Iterable[MarketDataEntry]]) : (Int, Boolean) = {
+  def save(marketDataSetToData : Map[MarketDataSet, Iterable[MarketDataEntry]]) : SaveResult = {
     val setToUpdates = marketDataSetToData.map { case (marketDataSet, values) => {
       (marketDataSet, values.map(entry => entry.toUpdate(db.readLatest(entry.dataIdFor(marketDataSet)))))
     }}
@@ -835,7 +837,7 @@ class DBMarketDataStore(
     saveActions(setToUpdates)
   }
 
-  def saveActions(marketDataSetToData : Map[MarketDataSet, Iterable[MarketDataUpdate]]) : (Int, Boolean) = this.synchronized {
+  def saveActions(marketDataSetToData : Map[MarketDataSet, Iterable[MarketDataUpdate]]) : SaveResult = this.synchronized {
     val changedMarketDataSets = new scala.collection.mutable.HashMap[MarketDataSet, (Set[Day], Int)]()
     var maxVersion = 0
     for ((marketDataSet, data) <- marketDataSetToData.toList.sortBy(_._1.name)) {
@@ -856,14 +858,14 @@ class DBMarketDataStore(
         }
       }
     }
-    (maxVersion, changedMarketDataSets.nonEmpty)
+    SaveResult(maxVersion, changedMarketDataSets.nonEmpty)
   }
 
 
   private def saveActions(data: Iterable[MarketDataUpdate], marketDataSet: MarketDataSet,
                           changedMarketDataSets: scala.collection.mutable.HashMap[MarketDataSet, (Set[Day], Int)]): Int = {
 
-    var (update:Boolean, innerMaxVersion:Int) = db.store(data, marketDataSet)
+    val SaveResult(innerMaxVersion, update) = db.store(data, marketDataSet)
 
     if (update) {
       changedMarketDataSets(marketDataSet) = (data.flatMap(_.observationPoint.day.toList).toSet, innerMaxVersion)
@@ -887,11 +889,12 @@ class DBMarketDataStore(
         broadcaster.broadcast(ExcelMarketDataUpdate(name, innerMaxVersion))
       }
     }
+
     innerMaxVersion
   }
 
   def save(marketDataSet:MarketDataSet, timedKey: TimedMarketDataKey, marketData:MarketData):Int = {
-    save(Map(marketDataSet -> List( MarketDataEntry(timedKey.observationPoint, timedKey.key, marketData) ) ))._1
+    save(Map(marketDataSet -> List( MarketDataEntry(timedKey.observationPoint, timedKey.key, marketData) ) )).maxVersion
   }
 
   def importData(marketDataSelection:MarketDataSelection, observationDay : Day) = {
