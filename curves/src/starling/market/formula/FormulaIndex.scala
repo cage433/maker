@@ -7,7 +7,6 @@ import starling.utils.cache.CacheFactory
 import starling.daterange.{TenorType, Day, DateRange}
 import rules.{Precision, NonCommonPricingRule, SwapPricingRule}
 import starling.quantity._
-import com.sun.javaws.exceptions.InvalidArgumentException
 
 class InvalidFormulaIndexException(msg: String, t: Throwable) extends Exception(msg, t)
 class InvalidFormulaException(msg: String, t: Throwable) extends Exception(msg, t)
@@ -76,7 +75,7 @@ case class FormulaIndex(formulaName: String, formula: Formula, ccy: UOM, uom: UO
   } catch {
     case e@UnknownIndexException(_, Some(eaiQuoteID)) => throw new InvalidFormulaIndexException("Invalid formula index: unknown base indexes: " + eaiQuoteID, e)
     case e: UnknownIndexException => throw new InvalidFormulaIndexException("Invalid formula index: unknown base indexes", e)
-    case e: InvalidArgumentException => throw new InvalidFormulaIndexException("Invalid formula index: ", e)
+    case e: IllegalArgumentException => throw new InvalidFormulaIndexException("Invalid formula index: ", e)
   }
 }
 
@@ -99,7 +98,7 @@ case class Formula(formula: String) {
       val evaled = parser.eval(formula)
       evaled
     } catch {
-      case e: InvalidArgumentException => {
+      case e: IllegalArgumentException => {
         throw new InvalidFormulaException("Error in formula: " + formula, e)
       }
     }
