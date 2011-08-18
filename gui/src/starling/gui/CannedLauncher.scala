@@ -144,7 +144,6 @@ case class CannedDrilldownPage(fields:Seq[(Field,Any)]) extends CannedPage {
 
 case class SlowCannedPivotReportPage(pivotPageState:PivotPageState) extends AbstractPivotPage(pivotPageState) {
   override def text = "Slow Canned Pivot Report"
-  override def layoutType = Some("Canned")
   def dataRequest(pageBuildingContext:StarlingServerContext) = {
     Thread.sleep(5*1000);
     PivotTableModel.createPivotData(new CannedDataSource, pivotPageState.pivotFieldParams)
@@ -155,7 +154,6 @@ case class SlowCannedPivotReportPage(pivotPageState:PivotPageState) extends Abst
 
 case class DiffCannedPivotReportPage(pivotPageState:PivotPageState) extends AbstractPivotPage(pivotPageState) {
   override def text = "Diff Canned Pivot Report"
-  override def layoutType = Some("Canned")
   def dataRequest(pageBuildingContext:StarlingServerContext) = {
     val cannedDataSource = new CannedDataSource
     PivotTableModel.createPivotData(new DiffPivotTableDataSource(cannedDataSource, cannedDataSource, "D-1"), pivotPageState.pivotFieldParams)
@@ -165,7 +163,6 @@ case class DiffCannedPivotReportPage(pivotPageState:PivotPageState) extends Abst
 
 case class CannedPivotReportPage(pivotPageState:PivotPageState) extends AbstractPivotPage(pivotPageState) {
   override def text = "Canned Pivot Report"
-  override def layoutType = Some("Canned")
   def dataRequest(pageBuildingContext:StarlingServerContext) = {
     PivotTableModel.createPivotData(new CannedDataSource, pivotPageState.pivotFieldParams)
   }
@@ -175,7 +172,6 @@ case class CannedPivotReportPage(pivotPageState:PivotPageState) extends Abstract
 
 case class EditableCannedPivotReportPage(pivotPageState:PivotPageState) extends AbstractPivotPage(pivotPageState) {
   override def text = "Editable Canned Pivot Report"
-  override def layoutType = Some("Canned")
   def dataRequest(pageBuildingContext:StarlingServerContext) = {
     PivotTableModel.createPivotData(new EditableCannedDataSource, pivotPageState.pivotFieldParams)
   }
@@ -185,7 +181,6 @@ case class EditableCannedPivotReportPage(pivotPageState:PivotPageState) extends 
 
 case class EditableSpecifiedCannedPivotReportPage(pivotPageState:PivotPageState, edits:PivotEdits=PivotEdits.Null) extends AbstractPivotPage(pivotPageState, edits) {
   override def text = "Editable Canned Pivot Report With Specified Values"
-  override def layoutType = Some("Canned")
   def dataRequest(pageBuildingContext:StarlingServerContext) = {
     val ds = (new EditableSpecifiedCannedDataSource).editable.get.withEdits(edits)
     PivotTableModel.createPivotData(ds, pivotPageState.pivotFieldParams)

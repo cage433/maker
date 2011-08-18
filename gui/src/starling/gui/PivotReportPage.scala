@@ -65,7 +65,6 @@ case class MainPivotReportPage(showParameters:Boolean, reportParameters:ReportPa
   def text = if (showParameters) shortTitle else reportParameters.text
   override def icon = StarlingIcons.im("/icons/16x16_report.png")
   override def shortText = if (showParameters) shortTitle else reportParameters.shortText
-  override def layoutType = Some(PivotLayout.ReportLayoutType)
 
   override def refreshFunctions = {
     val functions = new ListBuffer[PartialFunction[Event,Page]]
@@ -145,13 +144,13 @@ case class MainPivotReportPage(showParameters:Boolean, reportParameters:ReportPa
   override def configPanel(context:PageContext, data:PageData) = {
     if (showParameters) {
       val pivotData = data match {
-        case PivotTablePageData(pivData,Some(pd),layoutTypeOption) => pd match {
+        case PivotTablePageData(pivData,Some(pd)) => pd match {
           case PivotReportTablePageData(_) => {
             pivData
           }
           case scd => throw new Exception("Don't know how to handle this type of subclass page data: " + scd.getClass)
         }
-        case PivotTablePageData(pivData,None,layoutTypeOption) => pivData
+        case PivotTablePageData(pivData,None) => pivData
         case _ => throw new Exception("Don't know how to handle this type of page data")
       }
       
@@ -287,13 +286,13 @@ object PivotReportPage {
   def toolbarButtons(pageContext:PageContext, reportParameters:ReportParameters, data:PageData, showParameters:Boolean,
                             pivotPageState:PivotPageState) = {
     val numErrors = data match {
-      case PivotTablePageData(_,Some(pd),_) => pd match {
+      case PivotTablePageData(_,Some(pd)) => pd match {
         case PivotReportTablePageData(nErrs) => {
           nErrs
         }
         case scd => throw new Exception("Don't know how to handle this type of subclass page data: " + scd.getClass)
       }
-      case PivotTablePageData(_,_,_) => 0
+      case PivotTablePageData(_,_) => 0
       case _ => throw new Exception("Don't know how to handle this type of page data")
     }
     

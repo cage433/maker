@@ -30,7 +30,6 @@ case class TradeSelectionPage(
         ) extends AbstractPivotPage(pivotPageState) {
   def text = "Select Trades"
   override def icon = StarlingIcons.im("/icons/16x16_trades.png")
-  override def layoutType = Some("TradeSelection")
   def selfPage(pps:PivotPageState, edits:PivotEdits) = copy(pivotPageState = pps)
 
   private def tradeSelection = {

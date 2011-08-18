@@ -15,7 +15,6 @@ case class CurvePage(curveLabel: CurveLabel, pivotPageState: PivotPageState) ext
 
   def text = "Curve Viewer"
   override def icon = StarlingIcons.im("/icons/16x16_curve_viewer.png")
-  override def layoutType = Some("Curve")
 
   override def refreshFunctions = marketDataIdentifier match {
     case MarketDataIdentifier(MarketDataSelection(pricingGroup, name), SpecificMarketDataVersion(_)) => {

@@ -28,7 +28,6 @@ case class MarketDataPage(
   def this(mdi:MarketDataIdentifier, pageState : MarketDataPageState) = this(StandardMarketDataPageIdentifier(mdi), pageState)
 
   def text = "Market Data Viewer"
-  override def layoutType = Some("MarketData")
   override def icon = StarlingIcons.im("/icons/16x16_market_data.png")
 
   def selfPage(pivotPageState: PivotPageState, edits:PivotEdits) = new MarketDataPage(marketDataIdentifier, MarketDataPageState(pivotPageState, pageState.marketDataType, edits))

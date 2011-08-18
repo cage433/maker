@@ -338,7 +338,7 @@ object PivotTableModel {
     val (fs, pivotTable) = if (pivotFieldParams.calculate) {
       _createPivotTableData(dataSource, pivotFieldParams.pivotFieldState)
     } else {
-      val pfs = pivotFieldParams.pivotFieldState.getOrElse(new PivotFieldsState())
+      val pfs = pivotFieldParams.pivotFieldState.getOrElse(PivotFieldsState.Blank)
       val pt = PivotTable.singleCellPivotTable("Calculation is off")
       (pfs, pt)
     }

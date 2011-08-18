@@ -32,12 +32,11 @@ abstract class AbstractPivotPage(pivotPageState:PivotPageState, edits:PivotEdits
   def dataRequest(pageBuildingContext:StarlingServerContext):PivotData
   def save(starlingServer:StarlingServer, edits:PivotEdits):Boolean = throw new Exception("No implementation of save for this page")
   def selfPage(pivotPageState:PivotPageState, edits:PivotEdits=PivotEdits.Null):Page
-  def layoutType:Option[String] = None
   def subClassesPageData(pageBuildingContext:StarlingServerContext):Option[PageData] = None
   def finalDrillDownPage(fields:Seq[(Field,Selection)], pageContext:PageContext, ctrlDown:Boolean) = ()
   def toolbarButtons(pageContext: PageContext, data:PageData):List[Button] = List()
   def configPanel(pageContext:PageContext, data:PageData):Option[ConfigPanels] = None
-  def build(reader: StarlingServerContext) = PivotTablePageData(dataRequest(reader), subClassesPageData(reader), layoutType)
+  def build(reader: StarlingServerContext) = PivotTablePageData(dataRequest(reader), subClassesPageData(reader))
   def createComponent(pageContext:PageContext, data:PageData, bookmark:Bookmark, browserSize:Dimension) : PageComponent = {
     PivotComponent(text, pageContext, toolbarButtons(pageContext, data), configPanel(pageContext, data), finalDrillDownPage, selfPage,
       data, pivotPageState, edits, save, bookmark, browserSize, false)
@@ -82,7 +81,7 @@ object PivotPageState {
     PivotPageState(pivotFieldParams = PivotFieldParams(true, Some(pivotFieldsState)))
   }
 }
-case class PivotTablePageData(pivotData:PivotData,subClassesPageData:Option[PageData], layoutType:Option[String]) extends PageData
+case class PivotTablePageData(pivotData:PivotData,subClassesPageData:Option[PageData]) extends PageData
 
 object PivotComponent {
   def apply(text:String,
@@ -161,9 +160,9 @@ class PivotTablePageComponent(
       icon = StarlingIcons.Rotate
       tooltip = "Switch the row and column fields"
       reactions += {
-        case ButtonClicked(_) => { pageContext.goTo(selfPage(pivotPageState.copyPivotFieldsState(data.pivotFieldsState.rotate), edits)) }
+        case ButtonClicked(_) => { pageContext.goTo(selfPage(pivotPageState.copyPivotFieldsState(currentFieldState.rotate), edits)) }
       }
-      enabled = data.pivotFieldsState.hasRowOrColumnFields
+      enabled = currentFieldState.hasRowOrColumnFields
     }
 
     val bottomTotalsButton = new ToggleToolBarButton {
@@ -180,7 +179,7 @@ class PivotTablePageComponent(
       icon = StarlingIcons.RowSubTotals
       tooltip = "Display or hide the row sub totals"
       reactions += { case ButtonClicked(_) => {
-        val rowFields = data.pivotFieldsState.rowFields
+        val rowFields = currentFieldState.rowFields
         val newDisabledSubTotals = pivotPageState.otherLayoutInfo.disabledSubTotals.filterNot(rowFields.contains(_))
         val newOtherLayoutInfo = pivotPageState.otherLayoutInfo.copy(disabledSubTotals = newDisabledSubTotals)
         val newPivotPageState = pivotPageState.copy(otherLayoutInfo = newOtherLayoutInfo)
@@ -191,7 +190,7 @@ class PivotTablePageComponent(
       icon = StarlingIcons.ColumnSubTotals
       tooltip = "Display or hide the column sub totals"
       reactions += { case ButtonClicked(_) => {
-        val colFields = data.pivotFieldsState.columns.allFields
+        val colFields = currentFieldState.columns.allFields
         val newDisabledSubTotals = pivotPageState.otherLayoutInfo.disabledSubTotals.filterNot(colFields.contains(_))
         val newOtherLayoutInfo = pivotPageState.otherLayoutInfo.copy(disabledSubTotals = newDisabledSubTotals)
         val newPivotPageState = pivotPageState.copy(otherLayoutInfo = newOtherLayoutInfo)
@@ -298,20 +297,23 @@ class PivotTablePageComponent(
       }}
     }
 
-    val layoutComponent = pivotTablePageData.layoutType match {
-      case None => None
-      case Some(layoutType) => Some(new SaveLayoutPanel(
-        pageContext, pivotTablePageData, pivotPageState, layoutType, pps => selfPage(pps, edits), pivotComp.giveDefaultFocus, bookmark))
-    }
-    layoutComponent match {
-      case None =>
-      case Some(lc) => {
-        add(lc)
-        addSeparator
+    val clearPivotButton = new ToolBarButton {
+      icon = StarlingIcons.icon("/icons/16x16_clear_pivot.png")
+      tooltip = "Remove all fields from the pivot table"
+      enabled = {
+        currentFieldState.rowFields.nonEmpty || currentFieldState.columns.allFields.nonEmpty || currentFieldState.filters.nonEmpty
+      }
+      reactions += {
+        case ButtonClicked(b) => {
+          val pfs = PivotFieldsState.Blank.copy(reportSpecificChoices = currentFieldState.reportSpecificChoices)
+          pageContext.goTo(selfPage(pivotPageState.copyPivotFieldsState(pfs), edits))
+        }
       }
     }
 
     add(lockScreenButton)
+    addSeparator
+    add(clearPivotButton)
     add(rotateButton)
     addSeparator
     add(bottomTotalsButton)
@@ -364,7 +366,6 @@ class PivotTablePageComponent(
     }
 
     def resetToolbarState {
-      layoutComponent.foreach(_.reverse)
       lockScreenButton.selected = pivotPageState.otherLayoutInfo.frozen
       toggleCalculateButton.selected = !pivotPageState.pivotFieldParams.calculate
       resetTotals

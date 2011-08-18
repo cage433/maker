@@ -42,7 +42,6 @@ case class TradeChangesReportPage(tradeSelection:TradeSelection, from:TradeTimes
   }
 
   def text = "Trade Changes " + tradeSelection + " " + from + " to " + to
-  override def layoutType = Some("TradeChanges")
   def selfPage(pivotPageState:PivotPageState, edits:PivotEdits) = copy(pivotPageState=pivotPageState)
 
   override def refreshFunctions = {

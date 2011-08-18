@@ -1,2 +1,0 @@
-package starling.gui
-
