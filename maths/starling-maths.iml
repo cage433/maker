@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <module org.jetbrains.idea.maven.project.MavenProjectsManager.isMavenModule="true" type="JAVA_MODULE" version="4">
-  <component name="NewModuleRootManager" inherit-compiler-output="false">
+  <component name="NewModuleRootManager" LANGUAGE_LEVEL="JDK_1_6" inherit-compiler-output="false">
     <output url="file://$MODULE_DIR$/target/classes" />
-    <output-test url="file://$MODULE_DIR$/target/test-classes" />
+    <output-test url="file://$MODULE_DIR$/test-output" />
     <exclude-output />
     <content url="file://$MODULE_DIR$">
       <sourceFolder url="file://$MODULE_DIR$/src" isTestSource="false" />
@@ -12,8 +12,12 @@
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="library" name="Maven: com.trafigura.services:starling-quantity:developer" level="project" />
-    <orderEntry type="library" name="Maven: com.trafigura.services:starling-utils:developer" level="project" />
+    <orderEntry type="library" name="Maven: com.trafigura.services:starling-daterange:developer" level="project" />
+    <orderEntry type="library" name="Maven: com.trafigura.services:starling-quantity:developer" level="project" />
+    <orderEntry type="library" name="Maven: com.trafigura.services:starling-daterange:developer" level="project" />
     <orderEntry type="library" name="Maven: commons-lang:commons-lang:2.5" level="project" />
+    <orderEntry type="module" module-name="titan-core" />
+    <orderEntry type="module" module-name="scala-model-with-persistence" />
     <orderEntry type="library" name="Maven: com.trafigura.tradinghub:scala-hub-support:2.12" level="project" />
     <orderEntry type="library" name="Maven: org.scala-lang:scala-library:2.9.0-1" level="project" />
     <orderEntry type="library" name="Maven: joda-time:joda-time:1.6" level="project" />
@@ -76,12 +80,14 @@
     <orderEntry type="library" name="Maven: com.oracle:ons:10.2.0.3" level="project" />
     <orderEntry type="library" name="Maven: org.apache.commons:commons-math:2.1" level="project" />
     <orderEntry type="library" name="Maven: org.dbunit:dbunit:2.4.8" level="project" />
+    <orderEntry type="module" module-name="titan-security" />
     <orderEntry type="library" name="Maven: org.springframework.ldap:spring-ldap:all:1.3.0.RELEASE" level="project" />
     <orderEntry type="library" name="Maven: org.springframework.security:spring-security-core:3.0.5.RELEASE" level="project" />
     <orderEntry type="library" name="Maven: org.aspectj:aspectjrt:1.6.8" level="project" />
     <orderEntry type="library" name="Maven: org.aspectj:aspectjweaver:1.6.8" level="project" />
     <orderEntry type="library" name="Maven: org.springframework.security:spring-security-config:3.0.5.RELEASE" level="project" />
     <orderEntry type="library" name="Maven: org.springframework.security:spring-security-web:3.0.5.RELEASE" level="project" />
+    <orderEntry type="library" scope="PROVIDED" name="Maven: log4j:log4j:1.2.16" level="project" />
     <orderEntry type="library" name="Maven: org.jboss.resteasy:resteasy-spring:1.2.GA" level="project" />
     <orderEntry type="library" name="Maven: org.jboss.resteasy:resteasy-jettison-provider:1.2.GA" level="project" />
     <orderEntry type="library" name="Maven: org.jboss.resteasy:resteasy-jaxb-provider:1.2.GA" level="project" />
@@ -89,6 +95,12 @@
     <orderEntry type="library" name="Maven: javax.xml.bind:jaxb-api:2.1" level="project" />
     <orderEntry type="library" name="Maven: javax.xml.stream:stax-api:1.0" level="project" />
     <orderEntry type="library" name="Maven: com.sun.xml.stream:sjsxp:1.0.1" level="project" />
+    <orderEntry type="library" scope="PROVIDED" name="Maven: org.slf4j:slf4j-simple:1.5.10" level="project" />
+    <orderEntry type="library" scope="PROVIDED" name="Maven: javax.servlet:servlet-api:2.5" level="project" />
+    <orderEntry type="library" scope="TEST" name="Maven: org.apache.derby:derby:10.7.1.1" level="project" />
+    <orderEntry type="library" scope="TEST" name="Maven: commons-dbcp:commons-dbcp:1.2.2" level="project" />
+    <orderEntry type="library" scope="TEST" name="Maven: commons-pool:commons-pool:1.3" level="project" />
+    <orderEntry type="library" scope="TEST" name="Maven: org.mockito:mockito-all:1.8.4" level="project" />
     <orderEntry type="library" name="Maven: colt:colt:1.2.0" level="project" />
     <orderEntry type="library" name="Maven: concurrent:concurrent:1.3.4" level="project" />
     <orderEntry type="library" name="Maven: com.thoughtworks.xstream:xstream:1.3.1" level="project" />
@@ -119,6 +131,9 @@
     <orderEntry type="library" name="Maven: starling-external-jars:jeksparser:1.0" level="project" />
     <orderEntry type="library" name="Maven: starling-external-jars:mimapi:2.2.0" level="project" />
     <orderEntry type="library" name="Maven: starling-external-jars:bonecp:0.7.1.RELEASE" level="project" />
+    <orderEntry type="library" scope="PROVIDED" name="Maven: org.mortbay.jetty:jetty:6.1.21" level="project" />
+    <orderEntry type="library" scope="PROVIDED" name="Maven: org.mortbay.jetty:jetty-util:6.1.21" level="project" />
+    <orderEntry type="library" scope="PROVIDED" name="Maven: org.mortbay.jetty:servlet-api:2.5-20081211" level="project" />
     <orderEntry type="library" name="Maven: starling-external-jars:xlloop:0.3.1" level="project" />
     <orderEntry type="library" name="Maven: javax.mail:mail:1.4" level="project" />
     <orderEntry type="library" name="Maven: starling-external-jars:jminix:0.9" level="project" />
@@ -139,19 +154,8 @@
     <orderEntry type="library" name="Maven: starling-external-jars:org.eclipse.mylyn.wikitext.core:1.4" level="project" />
     <orderEntry type="library" name="Maven: starling-external-jars:org.eclipse.mylyn.wikitext.textile.core:1.4" level="project" />
     <orderEntry type="library" name="Maven: starling-external-jars:miglayout:3.7.3.1" level="project" />
-    <orderEntry type="library" name="Maven: net.sourceforge.jtds:jtds:1.2.4" level="project" />
-    <orderEntry type="library" name="Maven: com.trafigura.services:starling-daterange:developer" level="project" />
-    <orderEntry type="library" scope="PROVIDED" name="Maven: log4j:log4j:1.2.16" level="project" />
-    <orderEntry type="library" scope="PROVIDED" name="Maven: org.slf4j:slf4j-simple:1.5.10" level="project" />
-    <orderEntry type="library" scope="PROVIDED" name="Maven: javax.servlet:servlet-api:2.5" level="project" />
-    <orderEntry type="library" scope="TEST" name="Maven: org.apache.derby:derby:10.7.1.1" level="project" />
-    <orderEntry type="library" scope="TEST" name="Maven: commons-dbcp:commons-dbcp:1.2.2" level="project" />
-    <orderEntry type="library" scope="TEST" name="Maven: commons-pool:commons-pool:1.3" level="project" />
-    <orderEntry type="library" scope="TEST" name="Maven: org.mockito:mockito-all:1.8.4" level="project" />
-    <orderEntry type="library" scope="PROVIDED" name="Maven: org.mortbay.jetty:jetty:6.1.21" level="project" />
-    <orderEntry type="library" scope="PROVIDED" name="Maven: org.mortbay.jetty:jetty-util:6.1.21" level="project" />
-    <orderEntry type="library" scope="PROVIDED" name="Maven: org.mortbay.jetty:servlet-api:2.5-20081211" level="project" />
     <orderEntry type="library" scope="PROVIDED" name="Maven: com.oracle:ojdbc6:11.2.0.1.0" level="project" />
+    <orderEntry type="library" name="Maven: net.sourceforge.jtds:jtds:1.2.4" level="project" />
   </component>
 </module>
 
