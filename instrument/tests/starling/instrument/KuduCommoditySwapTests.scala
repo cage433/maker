@@ -6,9 +6,9 @@ import starling.curves._
 import starling.daterange.{Day, Month}
 import starling.quantity.UOM._
 import starling.utils.QuantityTestUtils._
-import starling.market.{Index, TestMarketSpec}
+import starling.market.{Index, TestMarketTest}
 
-class KuduCommoditySwapTests extends TestMarketSpec {
+class KuduCommoditySwapTests extends TestMarketTest {
   val index = Index.WTI10
   val market = index.market
   val env = Environment(new TestingAtomicEnvironment() {

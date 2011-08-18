@@ -16,7 +16,7 @@ import starling.daterange._
 import starling.daterange.Day._
 import starling.utils.{AtomicDatumKeyUtils, StarlingTest}
 
-class CFDTests extends TestMarketSpec {
+class CFDTests extends TestMarketTest {
   val platts_brent = Index.publishedIndexFromName("Platts Brent (April)")
   val spreadIndex = BrentCFDSpreadIndex.indexFor(new BrentMonth(4))
 

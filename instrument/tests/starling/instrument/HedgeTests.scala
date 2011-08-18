@@ -26,9 +26,9 @@ import starling.curves.PriceDifferentiable
 import starling.curves.FixingKey
 import org.testng.Assert._
 import javax.management.remote.rmi._RMIConnection_Stub
-import starling.market.{TestMarketSpec, Market}
+import starling.market.{TestMarketTest, Market}
 
-class HedgeTests extends TestMarketSpec {
+class HedgeTests extends TestMarketTest {
 
   def buildMonthGroups(
     u : Uniform = RandomVariables.standardUniform(12345),

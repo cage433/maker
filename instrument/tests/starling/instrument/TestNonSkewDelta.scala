@@ -11,7 +11,7 @@ import starling.market._
 import starling.utils.QuantityTestUtils._
 import org.testng.Assert
 
-class TestNonSkewDelta extends TestMarketSpec{
+class TestNonSkewDelta extends TestMarketTest{
   @Test
   def testVolatilityDoesntChange{
     val env = Environment{

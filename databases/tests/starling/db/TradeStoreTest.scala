@@ -26,7 +26,7 @@ import org.mockito.Matchers._
 import org.testng.annotations.{AfterMethod, BeforeMethod, Test}
 import java.sql.Connection
 
-class EAITradeStoreTest extends TestMarketSpec {
+class EAITradeStoreTest extends TestMarketTest {
 
   lazy val marketDataStore = new DBMarketDataStore(db, Map(), Broadcaster.Null)
 

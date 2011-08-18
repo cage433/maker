@@ -19,7 +19,7 @@ import collection.immutable.List
 import rules.{NoPricingRule, NonCommonPricingRule, CommonPricingRule}
 import starling.quantity.{Conversions, Quantity}
 
-class FormulaIndexTests extends TestMarketSpec with ShouldMatchers {
+class FormulaIndexTests extends TestMarketTest with ShouldMatchers {
 
   val env = Environment(
     new TestingAtomicEnvironment() {

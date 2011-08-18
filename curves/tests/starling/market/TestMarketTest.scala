@@ -5,7 +5,9 @@ import org.testng.annotations.{AfterTest, AfterSuite, BeforeSuite}
 import org.scalatest.testng.TestNGSuite
 import starling.daterange._
 
-trait TestMarketSpec extends ExpiryRulesSpec with TestNGSuite {
+trait TestMarketTest extends TestMarketSpec with TestNGSuite
+
+trait TestMarketSpec extends ExpiryRulesSpec {
   MarketProvider.registerImpl(TestMarketLookup)
 }
 
