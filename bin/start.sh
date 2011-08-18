@@ -31,11 +31,6 @@ else
 
     mkdir -p booter/out/
 
-    # I'm actually going to compile the whole project here because the server needs to serve up gui class files but
-    # because it doesn't depend on it, they don't get compiled automatically when you start the server.
-    echo "Compiling... "
-    nohup java -Dsbt.ivy.home=.ivy -Dhttp.nonProxyHosts=nexus.global.trafigura.com -jar sbt/sbt-launch.jar compile >> logs/fullCompile.log 2>&1 &&
-
     # Want to compile the booter module (and jar it). It is written in java and used in the exe generation. This should
     # probably be done in SBT.
     echo "Compile booter"
