@@ -11,8 +11,8 @@
     </facet>
   </component>
   <component name="NewModuleRootManager" inherit-compiler-output="false">
-    <output url="file://$MODULE_DIR$/target/scala_2.9.0-1/classes" />
-    <output-test url="file://$MODULE_DIR$/target/scala_2.9.0-1/test-classes" />
+    <output url="file://$MODULE_DIR$/target/scala-2.9.0.1/classes" />
+    <output-test url="file://$MODULE_DIR$/target/scala-2.9.0.1/test-classes" />
     <exclude-output />
     <content url="file://$MODULE_DIR$">
       <sourceFolder url="file://$MODULE_DIR$/src" isTestSource="false" />
@@ -26,15 +26,6 @@
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="library" name="scala-lib" level="project" />
     <orderEntry type="module" module-name="instrument" exported="" />
-    <orderEntry type="module-library">
-      <library>
-        <CLASSES>
-          <root url="file://$MODULE_DIR$" />
-        </CLASSES>
-        <JAVADOC />
-        <SOURCES />
-      </library>
-    </orderEntry>
   </component>
 </module>
 
