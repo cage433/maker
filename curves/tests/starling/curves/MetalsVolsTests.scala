@@ -9,7 +9,7 @@ import org.testng.Assert._
 import starling.market._
 import starling.daterange.{ObservationPoint, DateRange, Month, Day}
 
-class MetalsVolsTests extends TestMarketSpec {
+class MetalsVolsTests extends TestMarketTest {
   @Test
   def test {
     val months = Array[DateRange](Month(2010, 2), Month(2010, 6), Month(2011, 1))

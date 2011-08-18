@@ -11,7 +11,7 @@ import starling.quantity.Quantity
 import starling.quantity.UOM._
 import starling.utils.QuantityTestUtils._
 
-class MarketTests extends TestMarketSpec {
+class MarketTests extends TestMarketTest {
   @Test
   def testExpiry {
     val march = Month(2010, 3)

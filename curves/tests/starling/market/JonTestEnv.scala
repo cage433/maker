@@ -8,7 +8,7 @@ import org.testng.annotations.AfterClass
 import cern.colt.matrix.impl.DenseDoubleMatrix2D
 import starling.utils.StarlingTest
 
-trait JonTestEnv extends TestMarketSpec {
+trait JonTestEnv extends TestMarketTest {
   def makeEnv(marketDay: DayAndTime, dVol: Double = 0.0, dPrice: Quantity = Quantity.NULL, dStdDev: Quantity = Quantity.NULL) = {
     import JonTestData._
 

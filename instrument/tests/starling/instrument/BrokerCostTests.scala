@@ -10,9 +10,9 @@ import starling.daterange.{Day, Year}
 import starling.daterange.Day._
 import starling.curves.{USDFXRateKey, AtomicDatumKey, Environment, TestingAtomicEnvironment}
 import starling.instrument.CashInstrumentType._
-import starling.market.{Index, TestMarketSpec, Market}
+import starling.market.{Index, TestMarketTest, Market}
 
-class BrokerCostTests extends TestMarketSpec {
+class BrokerCostTests extends TestMarketTest {
   val env = Environment(
     new TestingAtomicEnvironment() {
       def marketDay = (1 Jan 2010).endOfDay

@@ -10,7 +10,7 @@ import starling.quantity.{UOM, Quantity}
 import starling.market._
 import starling.varcalculator.ForwardPriceRiskFactor
 
-class FuturesTests extends TestMarketSpec {
+class FuturesTests extends TestMarketTest {
 	import org.testng.annotations._
 	import org.testng.Assert._
 

@@ -10,9 +10,9 @@ import starling.db.MarketDataReader
 import org.mockito.Mockito._
 import starling.daterange._
 import starling.marketdata._
-import starling.market.{TestMarketSpec, FuturesMarket, FuturesExchangeFactory, Market}
+import starling.market.{TestMarketTest, FuturesMarket, FuturesExchangeFactory, Market}
 
-class TimeShiftingEnvironmentRuleTests extends TestMarketSpec with ShouldMatchers {
+class TimeShiftingEnvironmentRuleTests extends TestMarketTest with ShouldMatchers {
 
   val timeShiftingRule = TimeShiftToLMECloseEnvironmentRule
 

@@ -9,7 +9,7 @@ import starling.utils.ScalaTestUtils._
 import starling.utils.QuantityTestUtils._
 import starling.curves._
 import starling.daterange.{Month, Day}
-import starling.market.{TestMarketSpec, FuturesMarket, Market}
+import starling.market.{TestMarketTest, FuturesMarket, Market}
 import starling.quantity.{UOM, Percentage, Quantity}
 import starling.varcalculator.ForwardPriceRiskFactor
 import starling.models._

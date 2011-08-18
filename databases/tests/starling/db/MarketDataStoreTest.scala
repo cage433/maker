@@ -13,10 +13,10 @@ import java.lang.String
 import starling.richdb.{RichResultSetRowFactory, RichDB}
 import collection.immutable.{Nil, Map}
 import starling.utils.{StarlingTest, Broadcaster}
-import starling.market.{TestMarketSpec, Market}
+import starling.market.{TestMarketTest, Market}
 import org.testng.annotations._
 
-class MarketDataStoreTest extends TestMarketSpec with ShouldMatchers {
+class MarketDataStoreTest extends TestMarketTest with ShouldMatchers {
 
   lazy val marketDataStore = new DBMarketDataStore(db, Map(), Broadcaster.Null)
 

@@ -12,7 +12,7 @@ import starling.market.formula._
 import starling.daterange._
 import starling.daterange.Day._
 
-class SwapCalendarSpreadTests extends TestMarketSpec {
+class SwapCalendarSpreadTests extends TestMarketTest {
 
   @Test
   def testSameAsTwoSwaps {
