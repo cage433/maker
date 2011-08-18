@@ -214,7 +214,6 @@ object StarlingBuild extends Build{
 
 
   import TitanModel._
-
   lazy val titanModel = Project(
     "titan-model", 
     modelRoot,
@@ -229,7 +228,8 @@ object StarlingBuild extends Build{
       cleanCopiedSrcTask := cleanCopiedSrc, 
       clean <<= clean.dependsOn(cleanGenSrcTask, cleanCopiedSrcTask),
       buildSrcTask := buildSource,
-      compile in Compile <<= (compile in Compile).dependsOn(buildSrcTask)
+      compile in Compile <<= (compile in Compile).dependsOn(buildSrcTask),
+      copyModelJarForIdea := copyModelJar
     )
   )
 
@@ -292,7 +292,8 @@ object StarlingBuild extends Build{
   )
 
   object TitanModel {
-    
+    import IO._
+ //   import java.io.{File => JFile}
     val modelGenSrcDir = file("titan-scala-model/model-src/main/scala/")
     val copiedSrcDir = file("titan-scala-model/src")
     val modelRoot = file("titan-scala-model")
@@ -302,6 +303,17 @@ object StarlingBuild extends Build{
     val cleanCopiedSrcTask = TaskKey[Unit]("clean-copied-src", "Clean sources copied from model")
     val buildSrcTask = TaskKey[Unit]("build-src", "Build sources from model")
      
+    val copyModelJarForIdea = TaskKey[Unit]("copy-model", "copy the edm model to the stored location in Git that is referenced by IntelliJ IDEA")
+
+    def copyModelJar {
+      val srcFile = new File(modelRoot + "/target/scala-2.9.0.1/titan-model_2.9.0-1-0.1.jar")
+      val destFile = new File("../lib/titan-model-jars/scala-model-with-persistence.jar")
+      println("copying target jar %s to %s".format(srcFile, destFile))
+      val r = copyFile(srcFile, destFile)
+      println("copied model jar")
+      r
+    }
+
     def buildSource {
       lazy val buildUsingBinaryTooling = true
       
@@ -330,7 +342,6 @@ object StarlingBuild extends Build{
       lazy val nonModelSourcePath = new File(modelRoot, "src")
       def copyNonModelSource  = {
         if (! (nonModelSourcePath.exists)) {
-          import IO._
           val originalSourcePath = new File(modelRoot, "../../../model/model/scala-model-with-persistence/src/")
           copyDirectory(originalSourcePath, nonModelSourcePath)
           val hibernateBean = new File (modelRoot, "/src/main/scala/com/trafigura/refinedmetals/persistence/CustomAnnotationSessionFactoryBean.scala")
