@@ -48,13 +48,15 @@ case class DefaultTitanTradeCache(props : Props) extends TitanTradeCache with Lo
   private def getAll() = try {
       titanTradesService.getAll()
   } catch {
-    case e : Throwable => throw new ExternalTitanServiceFailed(e)
+    case e : Throwable => { log.error("Error getting Titan EDM trades ", e); throw new ExternalTitanServiceFailed(e) }
   }
+
   private def getById(id : TitanId) = try {
       titanTradesService.get(id)
   } catch {
     case e : Throwable => throw new ExternalTitanServiceFailed(e)
   }
+
   /*
     Read all trades from Titan and blast our cache
   */

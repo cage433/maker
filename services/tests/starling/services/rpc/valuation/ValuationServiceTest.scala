@@ -76,7 +76,7 @@ class ValuationServiceTest extends StarlingTest {
     }
   }
 
-  @Test(enabled=false, groups = Array("ValuationService"))
+  @Test(enabled=true, groups = Array("ValuationService"))
   def testValuationServiceValuationUpdatedEvents() {
 
     Log.info("testValuationServiceValuationUpdatedEvents starting...")
@@ -152,7 +152,7 @@ class ValuationServiceTest extends StarlingTest {
    * very basic tests to check we can value some assignments
    *   will need improvements and to also test events
    */
-  @Test(enabled=false, groups = Array("ValuationService"))
+  @Test(enabled=true, groups = Array("ValuationService"))
   def testValuationServiceValueAssignments {
     
     Log.info("testValuationServiceValueAssignments starting...")
