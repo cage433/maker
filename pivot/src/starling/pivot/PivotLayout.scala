@@ -20,8 +20,5 @@ case class PivotLayout(layoutName:String, pivotFieldState:PivotFieldsState, user
                        otherLayoutInfo:OtherLayoutInfo, layoutType:String, associatedReports:List[String])
 
 object PivotLayout {
-  val AllLayoutType = "All"
-  val ReportLayoutType = "Report"
-  val BlankLayout = PivotLayout("Blank", PivotFieldsState(), false, OtherLayoutInfo(Totals.Null), AllLayoutType, List())
   val AssociatedReportsDelimiter = ":::"
 }

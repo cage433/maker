@@ -1,10 +1,9 @@
 package starling.gui.pages
 
-import starling.pivot.view.swing.MigPanel
 import starling.gui._
 import api._
 import starling.pivot._
-import starling.gui.GuiUtils._
+import starling.browser.common.GuiUtils._
 import java.awt.Dimension
 import swing.event.{Event, ButtonClicked, SelectionChanged}
 import swing._
@@ -15,6 +14,9 @@ import starling.rmi.StarlingServer
 import starling.daterange.Day
 
 import starling.utils.ImplicitConversions._
+import starling.gui.StarlingLocalCache._
+import starling.browser.common.MigPanel
+import starling.browser._
 
 /**
  * For viewing (and uploading?) market data.
@@ -26,12 +28,11 @@ case class MarketDataPage(
   def this(mdi:MarketDataIdentifier, pageState : MarketDataPageState) = this(StandardMarketDataPageIdentifier(mdi), pageState)
 
   def text = "Market Data Viewer"
-  override def layoutType = Some("MarketData")
   override def icon = StarlingIcons.im("/icons/16x16_market_data.png")
 
   def selfPage(pivotPageState: PivotPageState, edits:PivotEdits) = new MarketDataPage(marketDataIdentifier, MarketDataPageState(pivotPageState, pageState.marketDataType, edits))
 
-  def dataRequest(pageBuildingContext: PageBuildingContext) = {
+  def dataRequest(pageBuildingContext:StarlingServerContext) = {
     pageBuildingContext.cachingStarlingServer.readAllMarketData(marketDataIdentifier, pageState.marketDataType, pageState.edits, pageState.pivotPageState.pivotFieldParams)
   }
 
@@ -56,7 +57,7 @@ case class MarketDataPage(
 
   //private def copyVersion(version : Int) = copy(marketDataIdentifier = marketDataIdentifier.copyVersion(version))
 
-  override def subClassesPageData(pageBuildingContext:PageBuildingContext) = {
+  override def subClassesPageData(pageBuildingContext:StarlingServerContext) = {
     val avaliableMarketDataTypes = pageBuildingContext.cachingStarlingServer.marketDataTypeLabels(marketDataIdentifier)
     val selected = pageState.marketDataType match {
       case Some(mdt) => Some(mdt)
@@ -79,7 +80,7 @@ case class MarketDataPage(
       pageState, marketDataPagePageData)
   }
 
-  override def bookmark(server:StarlingServer):Bookmark = {
+  override def bookmark(serverContext:StarlingServerContext):Bookmark = {
     val singleObservationDay = pageState.pivotPageState.pivotFieldParams.pivotFieldState match {
       case None => None
       case Some(pfs) => {
@@ -96,7 +97,7 @@ case class MarketDataPage(
       marketDataIdentifier match {
         case x:StandardMarketDataPageIdentifier => MarketDataBookmark(marketDataIdentifier.selection, newPageState)
         case x:ReportMarketDataPageIdentifier if x.reportParameters.curveIdentifier.tradesUpToDay == singleObservationDay.get => {
-          ReportMarketDataBookmark(marketDataIdentifier.selection, newPageState, server.createUserReport(x.reportParameters))
+          ReportMarketDataBookmark(marketDataIdentifier.selection, newPageState, serverContext.server.createUserReport(x.reportParameters))
         }
         case _ => PageBookmark(this)
       }
@@ -107,26 +108,26 @@ case class MarketDataPage(
 }
 
 case class ReportMarketDataBookmark(selection:MarketDataSelection, pageState:MarketDataPageState,
-                                    userReportData:UserReportData) extends Bookmark {
+                                    userReportData:UserReportData) extends StarlingBookmark {
   def daySensitive = true
-  def createPage(day:Option[Day], server:StarlingServer, context:PageContext) = {
+  def createStarlingPage(day:Option[Day], serverContext:StarlingServerContext, context:PageContext) = {
     val newPFS = pageState.pivotPageState.pivotFieldParams.pivotFieldState.map(pfs => {
       pfs.addFilter((Field("Observation Day"), Set(day.get)))
     })
     val newPivotPageState = pageState.pivotPageState.copyPivotFieldsState(newPFS)
-    val newSelection = ReportMarketDataPageIdentifier(server.createReportParameters(userReportData, day.get))
+    val newSelection = ReportMarketDataPageIdentifier(serverContext.server.createReportParameters(userReportData, day.get))
     MarketDataPage(newSelection, pageState.copy(pivotPageState = newPivotPageState))
   }
 }
 
-case class MarketDataBookmark(selection:MarketDataSelection, pageState:MarketDataPageState) extends Bookmark {
+case class MarketDataBookmark(selection:MarketDataSelection, pageState:MarketDataPageState) extends StarlingBookmark {
   def daySensitive = true
-  def createPage(day:Option[Day], server:StarlingServer, context:PageContext) = {
+  def createStarlingPage(day:Option[Day], serverContext:StarlingServerContext, context:PageContext) = {
     val newPFS = pageState.pivotPageState.pivotFieldParams.pivotFieldState.map(pfs => {
       pfs.addFilter((Field("Observation Day"), Set(day.get)))
     })
     val newPivotPageState = pageState.pivotPageState.copyPivotFieldsState(newPFS)
-    val newSelection = StandardMarketDataPageIdentifier(server.latestMarketDataIdentifier(selection))
+    val newSelection = StandardMarketDataPageIdentifier(serverContext.server.latestMarketDataIdentifier(selection))
     MarketDataPage(newSelection, pageState.copy(pivotPageState = newPivotPageState))
   }
 }
@@ -139,8 +140,8 @@ object MarketDataPage {
             marketDataType:Option[MarketDataTypeLabel],
             observationDays:Option[Set[Day]],
             ctrlDown:Boolean=false) {
-    pageContext.createAndGoTo( (server) => {
-      val mdt = marketDataType.orElse(server.marketDataTypeLabels(marketDataIdentifier).headOption)
+    pageContext.createAndGoTo( (serverContext) => {
+      val mdt = marketDataType.orElse(serverContext.lookup(classOf[StarlingServer]).marketDataTypeLabels(marketDataIdentifier).headOption)
       val fs = pageContext.getSetting(
         StandardUserSettingKeys.UserMarketDataTypeLayout, Map[MarketDataTypeLabel, PivotFieldsState]()
       ).get(mdt)

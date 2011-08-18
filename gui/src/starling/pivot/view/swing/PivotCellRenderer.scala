@@ -10,6 +10,7 @@ import starling.reports.pivot.OptionalPeriodLabel
 import starling.gui.{StarlingIcons}
 import starling.quantity.{Quantity, Percentage}
 import java.awt.{Color, Font}
+import org.jdesktop.swingx.renderer.{CellContext, LabelProvider}
 
 object PivotCellRenderer {
   val ErrorIcon = StarlingIcons.icon("/icons/12x12_error.png")
@@ -35,82 +36,81 @@ object PivotCellRenderer {
 
 import PivotCellRenderer._
 
-class PivotCellRenderer(indentColumns:Array[Boolean], maxWidth:Int) extends DefaultTableCellRenderer {
-  override def getTableCellRendererComponent(table: JTable, value: Any, isSelected: Boolean, hasFocus: Boolean, row: Int, column: Int) = {
-
-    super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column)
-    value match {
+class PivotCellProvider(indentColumns:Array[Boolean], maxWidth:Int, tableModel:PivotJTableModel) extends LabelProvider {
+  override def format(context:CellContext) {
+    val row = context.getRow
+    val column = context.getColumn
+    context.getValue match {
       case tableCell:TableCell => {
-        setFont(selectFont(tableCell.value))
-        setText(tableCell.text)
-        if (getPreferredSize.width > maxWidth) {
-          setToolTipText(tableCell.text)
+        rendererComponent.setFont(selectFont(tableCell.value))
+        rendererComponent.setText(tableCell.text)
+        if (rendererComponent.getPreferredSize.width > maxWidth) {
+          rendererComponent.setToolTipText(tableCell.text)
         } else {
-          setToolTipText(null)
+          rendererComponent.setToolTipText(null)
         }
 
         tableCell.textPosition match {
-          case LeftTextPosition => setHorizontalAlignment(SwingConstants.LEFT)
-          case CenterTextPosition => setHorizontalAlignment(SwingConstants.CENTER)
-          case RightTextPosition => setHorizontalAlignment(SwingConstants.RIGHT)
+          case LeftTextPosition => rendererComponent.setHorizontalAlignment(SwingConstants.LEFT)
+          case CenterTextPosition => rendererComponent.setHorizontalAlignment(SwingConstants.CENTER)
+          case RightTextPosition => rendererComponent.setHorizontalAlignment(SwingConstants.RIGHT)
         }
         if (tableCell.isError || tableCell.warning.isDefined) {
           if (tableCell.isError) {
-            setIcon(PivotCellRenderer.ErrorIcon)
+            rendererComponent.setIcon(PivotCellRenderer.ErrorIcon)
           } else {
-            setIcon(PivotCellRenderer.ValidationIcon)
+            rendererComponent.setIcon(PivotCellRenderer.ValidationIcon)
           }
-          setHorizontalTextPosition(SwingConstants.LEFT)
+          rendererComponent.setHorizontalTextPosition(SwingConstants.LEFT)
         } else {
-          setIcon(null)
-          setHorizontalTextPosition(SwingConstants.TRAILING)
+          rendererComponent.setIcon(null)
+          rendererComponent.setHorizontalTextPosition(SwingConstants.TRAILING)
         }
       }
       case axisCell:AxisCell => {
-        setFont(selectFont(axisCell.value.value.value))
-        setText(axisCell.text)
-        setHorizontalTextPosition(SwingConstants.TRAILING)
-        if (table.getModel.asInstanceOf[PivotJTableModel].rowHeader(row,column)) {
+        rendererComponent.setFont(selectFont(axisCell.value.value.value))
+        rendererComponent.setText(axisCell.text)
+        rendererComponent.setHorizontalTextPosition(SwingConstants.TRAILING)
+        if (tableModel.rowHeader(row,column)) {
           // Row header
           axisCell.textPosition match {
-            case LeftTextPosition => setHorizontalAlignment(SwingConstants.LEFT)
-            case RightTextPosition => setHorizontalAlignment(SwingConstants.RIGHT)
+            case LeftTextPosition => rendererComponent.setHorizontalAlignment(SwingConstants.LEFT)
+            case RightTextPosition => rendererComponent.setHorizontalAlignment(SwingConstants.RIGHT)
           }
           axisCell.collapsible match {
             case None => if (indentColumns(column)) {
-              setIcon(BlankIcon)
+              rendererComponent.setIcon(BlankIcon)
             } else {
-              setIcon(null)
+              rendererComponent.setIcon(null)
             }
-            case Some(true) => setIcon(PivotCellRenderer.PlusIcon)
-            case Some(false) => setIcon(PivotCellRenderer.MinusIcon)
+            case Some(true) => rendererComponent.setIcon(PivotCellRenderer.PlusIcon)
+            case Some(false) => rendererComponent.setIcon(PivotCellRenderer.MinusIcon)
 
           }
         } else {
           // Column header
           axisCell.collapsible match {
           case None => {
-            setHorizontalAlignment(SwingConstants.CENTER)
-            setIcon(null)
+            rendererComponent.setHorizontalAlignment(SwingConstants.CENTER)
+            rendererComponent.setIcon(null)
           }
           case Some(true) => {
-            setHorizontalAlignment(SwingConstants.LEFT)
-            setIcon(PivotCellRenderer.PlusIcon)
+            rendererComponent.setHorizontalAlignment(SwingConstants.LEFT)
+            rendererComponent.setIcon(PivotCellRenderer.PlusIcon)
           }
           case Some(false) => {
-            setHorizontalAlignment(SwingConstants.LEFT)
-            setIcon(PivotCellRenderer.MinusIcon)
+            rendererComponent.setHorizontalAlignment(SwingConstants.LEFT)
+            rendererComponent.setIcon(PivotCellRenderer.MinusIcon)
           }
           }
         }
 
-        if (getPreferredSize.width > maxWidth) {
-          setToolTipText(axisCell.text)
+        if (rendererComponent.getPreferredSize.width > maxWidth) {
+          rendererComponent.setToolTipText(axisCell.text)
         } else {
-          setToolTipText(null)
+          rendererComponent.setToolTipText(null)
         }
       }
     }
-    this
   }
 }

@@ -27,7 +27,11 @@ object Dependencies{
     "org.jboss.netty" % "netty" % "3.2.5.Final" withSources(),
     "commons-io" % "commons-io" % "1.3.2" withSources(),
     "org.scala-lang" % "scala-swing" % "2.9.0-1" withSources()
-  ) 
+  )
+
+  val browserServiceDependencies = Seq(
+    "org.scala-lang" % "scala-swing" % "2.9.0-1" withSources()
+  )
 
   val authDependencies = Seq("com.sun.jna" % "jna" % "3.0.9" withSources())
 
@@ -84,6 +88,7 @@ object Dependencies{
 object StarlingBuild extends Build{
 
   import Dependencies._
+  import Utils._
 
   lazy val standardSettings = Defaults.defaultSettings ++ Seq(
     unmanagedSourceDirectories in Compile <+= baseDirectory(_/"src"),
@@ -99,25 +104,6 @@ object StarlingBuild extends Build{
   )
 
   val testDependency = "compile;test->test"
-
-  // utils to show project classpath libs
-  val showLibs = TaskKey[Unit]("show-libs")
-  val showLibsTask = showLibs <<= (target, fullClasspath in Runtime) map { (target, cp) =>
-    println("Target path is: " + target + "\n")
-    println("Full classpath is: " + cp.map(_.data).mkString("\n"))
-  }
-
-  val writeClasspathScript = TaskKey[Unit]("write-classpath")
-  val writeClasspathScriptTask = writeClasspathScript <<= (target, fullClasspath in Runtime) map { (target, cp) =>
-    println("Target path is: " + target + "\n")
-    println("Full classpath is: " + cp.map(_.data).mkString(":"))
-    import java.io._
-    val file = new PrintWriter(new FileOutputStream(new File("set-classpath.sh")))
-    file.println("export CLASSPATH=" + cp.map(_.data).getFiles.toList.mkString(":"))
-    file.println("export JAVA_OPTS='-server -XX:MaxPermSize=1024m -Xss512k -Xmx6000m'")
-    file.close()
-    None
-  }
 
   lazy val utils = Project(
     "utils", 
@@ -182,7 +168,7 @@ object StarlingBuild extends Build{
     "gui.api", 
     file("./gui.api"),
     settings = standardSettings ++ Seq(libraryDependencies ++= guiApiDependencies)
-  ) dependsOn(pivotUtils, quantity, auth, bouncyrmi)
+  ) dependsOn(pivotUtils, quantity, auth, bouncyrmi, browserService)
 
   lazy val curves = Project(
     "curves", 
@@ -200,7 +186,19 @@ object StarlingBuild extends Build{
     "gui", 
     file("./gui"),
     settings = standardSettings ++ Seq(libraryDependencies ++= guiDependencies)
-  ) dependsOn(guiapi)
+  ) dependsOn(guiapi, browser)
+
+  lazy val browser = Project(
+    "browser",
+    file("./browser"),
+    settings = standardSettings ++ Seq(libraryDependencies ++= browserServiceDependencies)
+  ) dependsOn(browserService, utils, daterange)
+
+  lazy val browserService = Project(
+    "browser.service",
+    file("./browser.service"),
+    settings = standardSettings ++ Seq(libraryDependencies ++= browserServiceDependencies)
+  ) dependsOn()
 
   lazy val trade = Project(
     "trade", 
@@ -216,7 +214,6 @@ object StarlingBuild extends Build{
 
 
   import TitanModel._
-
   lazy val titanModel = Project(
     "titan-model", 
     modelRoot,
@@ -231,7 +228,8 @@ object StarlingBuild extends Build{
       cleanCopiedSrcTask := cleanCopiedSrc, 
       clean <<= clean.dependsOn(cleanGenSrcTask, cleanCopiedSrcTask),
       buildSrcTask := buildSource,
-      compile in Compile <<= (compile in Compile).dependsOn(buildSrcTask)
+      compile in Compile <<= (compile in Compile).dependsOn(buildSrcTask),
+      copyModelJarForIdea := copyModelJar
     )
   )
 
@@ -259,7 +257,7 @@ object StarlingBuild extends Build{
     settings = standardSettings ++ Seq(
       libraryDependencies ++= servicesDependencies ++ testDependencies
     )
-  ) dependsOn(curves % "test->test", loopyxl % "test->test", bouncyrmi, concurrent, loopyxl, titan)
+  ) dependsOn(curves % "test->test", loopyxl % "test->test", bouncyrmi, concurrent, loopyxl, titan, gui, browser)
 
   lazy val devLauncher = Project(
     "devLauncher", 
@@ -282,6 +280,8 @@ object StarlingBuild extends Build{
     curves,
     instrument,
     gui,
+    browser,
+    browserService,
     trade,
     VaR,
     titanModel,
@@ -292,7 +292,8 @@ object StarlingBuild extends Build{
   )
 
   object TitanModel {
-    
+    import IO._
+ //   import java.io.{File => JFile}
     val modelGenSrcDir = file("titan-scala-model/model-src/main/scala/")
     val copiedSrcDir = file("titan-scala-model/src")
     val modelRoot = file("titan-scala-model")
@@ -302,6 +303,17 @@ object StarlingBuild extends Build{
     val cleanCopiedSrcTask = TaskKey[Unit]("clean-copied-src", "Clean sources copied from model")
     val buildSrcTask = TaskKey[Unit]("build-src", "Build sources from model")
      
+    val copyModelJarForIdea = TaskKey[Unit]("copy-model", "copy the edm model to the stored location in Git that is referenced by IntelliJ IDEA")
+
+    def copyModelJar {
+      val srcFile = new File(modelRoot + "/target/scala-2.9.0.1/titan-model_2.9.0-1-0.1.jar")
+      val destFile = new File("../lib/titan-model-jars/scala-model-with-persistence.jar")
+      println("copying target jar %s to %s".format(srcFile, destFile))
+      val r = copyFile(srcFile, destFile)
+      println("copied model jar")
+      r
+    }
+
     def buildSource {
       lazy val buildUsingBinaryTooling = true
       
@@ -330,11 +342,10 @@ object StarlingBuild extends Build{
       lazy val nonModelSourcePath = new File(modelRoot, "src")
       def copyNonModelSource  = {
         if (! (nonModelSourcePath.exists)) {
-          import IO._
           val originalSourcePath = new File(modelRoot, "../../../model/model/scala-model-with-persistence/src/")
           copyDirectory(originalSourcePath, nonModelSourcePath)
           val hibernateBean = new File (modelRoot, "/src/main/scala/com/trafigura/refinedmetals/persistence/CustomAnnotationSessionFactoryBean.scala")
-          println("***** DEBUG ***** path " + hibernateBean.getAbsolutePath + ", " + hibernateBean.exists + ", " + hibernateBean.canWrite) 
+          //println("***** DEBUG ***** path " + hibernateBean.getAbsolutePath + ", " + hibernateBean.exists + ", " + hibernateBean.canWrite) 
           if (hibernateBean.exists && hibernateBean.canWrite) hibernateBean.delete()
         }
         None
@@ -344,6 +355,54 @@ object StarlingBuild extends Build{
         case (t_ruby, Some(t_scala)) if t_ruby < t_scala => 
         case _ => copyNonModelSource; generateModelMainSourceCmd !; 
       }      
+    }
+  }
+
+  /**
+   * Some utils to help abstract from the unintuitive SBT DSL, for more "common" cases/patterns
+   */
+  object Utils {
+
+    // make regular tasks based on a function () => Unit and a cmd name and optional description
+    def mkTasks[T : Manifest](ls : List[(() => T, String, String)]) = ls.map(t => mkTask(t._1, t._2, t._3))
+    def mkTask[T : Manifest](f : () => T, cmd : String, desc : String = "") = {
+      lazy val taskKey = TaskKey[T](cmd, desc)
+      taskKey := { f() }
+    }
+    
+    // make regular imput tasks based on a function (List[String]) => Unit and a cmd name and optional description
+    // takes all the arguments from console and passes them to the function provided as-is
+    def mkInputTasks[T : Manifest](ls : List[(List[String] => T, String, String)]) = ls.map(t => mkInputTask(t._1, t._2, t._3))
+    def mkInputTask[T : Manifest](f : List[String] => T, cmd : String, desc : String = "default input task") = {
+      val inputTaskKey = InputKey[Unit](cmd, desc)
+      
+      inputTaskKey <<= inputTask { (argTask : TaskKey[Seq[String]]) => 
+        (argTask) map { (args : Seq[String]) =>
+          println("args = " + args.mkString(","))
+          f(args.toList)
+        }
+      }
+    }
+    implicit def toInputTask[T : Manifest](t : (List[String] => T, String, String)) : sbt.Project.Setting[sbt.InputTask[Unit]] = mkInputTask(t._1, t._2, t._3)
+
+    // utils to show project classpath libs
+    val showLibs = TaskKey[Unit]("show-libs")
+    val showLibsTask = showLibs <<= (target, fullClasspath in Runtime) map { (target, cp) =>
+      println("Target path is: " + target + "\n")
+      println("Full classpath is: " + cp.map(_.data).mkString("\n"))
+    }
+
+    // write a classpatch script for dev
+    val writeClasspathScript = TaskKey[Unit]("write-classpath")
+    val writeClasspathScriptTask = writeClasspathScript <<= (target, fullClasspath in Runtime) map { (target, cp) =>
+      println("Target path is: " + target + "\n")
+      println("Full classpath is: " + cp.map(_.data).mkString(":"))
+      import java.io._
+      val file = new PrintWriter(new FileOutputStream(new File("set-classpath.sh")))
+      file.println("export CLASSPATH=" + cp.map(_.data).getFiles.toList.mkString(":"))
+      file.println("export JAVA_OPTS='-server -XX:MaxPermSize=1024m -Xss512k -Xmx6000m'")
+      file.close()
+      None
     }
   }
 }

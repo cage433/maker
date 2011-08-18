@@ -21,6 +21,13 @@
       <entry name="?*.conf" />
       <entry name="?*.jks" />
       <entry name="?*.json" />
+      <entry name="?*.png" />
+      <entry name="?*.txt" />
+      <entry name="?*.auth" />
+      <entry name="?*.jks" />
+      <entry name="?*.sql" />
+      <entry name="?*.properties" />
+      <entry name="?*.csv" />
     </wildcardResourcePatterns>
     <annotationProcessing enabled="false" useClasspath="true" />
   </component>

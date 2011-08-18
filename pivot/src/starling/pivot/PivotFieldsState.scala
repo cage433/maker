@@ -692,6 +692,8 @@ object PivotFieldsState {
       transforms=transforms
     )
   }
+
+  val Blank = new PivotFieldsState()
 }
 
 case class PivotFieldParams(calculate:Boolean, pivotFieldState:Option[PivotFieldsState])

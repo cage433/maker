@@ -2,8 +2,7 @@ package starling.gui.pages
 
 import starling.gui.api._
 import starling.gui._
-import starling.pivot.view.swing.MigPanel
-import starling.gui.GuiUtils._
+import starling.browser.common.GuiUtils._
 import javax.swing.ListSelectionModel
 import starling.pivot._
 import swing.event.ButtonClicked
@@ -21,11 +20,14 @@ import starling.rmi.StarlingServer
 import javax.swing.table.DefaultTableModel
 import org.jdesktop.swingx.renderer.{DefaultTableRenderer, LabelProvider, StringValue}
 import swing.{Alignment, Component, Button, Label}
+import starling.gui.StarlingLocalCache._
+import starling.browser.common.MigPanel
+import starling.browser.{PageComponent, Bookmark, PageData, PageContext}
 
-case class SingleTradePage(tradeID:TradeIDLabel, desk:Option[Desk], tradeExpiryDay:TradeExpiryDay, intradayGroups:Option[IntradayGroups]) extends Page {
+case class SingleTradePage(tradeID:TradeIDLabel, desk:Option[Desk], tradeExpiryDay:TradeExpiryDay, intradayGroups:Option[IntradayGroups]) extends StarlingServerPage {
   def text = "Trade " + tradeID
   def icon = StarlingIcons.im("/icons/tablenew_16x16.png")
-  def build(reader:PageBuildingContext) = TradeData(tradeID, reader.cachingStarlingServer.readTradeVersions(tradeID), desk, tradeExpiryDay, intradayGroups)
+  def build(reader:StarlingServerContext) = TradeData(tradeID, reader.cachingStarlingServer.readTradeVersions(tradeID), desk, tradeExpiryDay, intradayGroups)
   def createComponent(context:PageContext, data:PageData, bookmark:Bookmark, browserSize:Dimension) = new SingleTradePageComponent(context, data)
 }
 
@@ -354,16 +356,18 @@ class SingleTradeMainPivotReportPage(val tradeID:TradeIDLabel, val reportParamet
     }
     case _ => false
   }
-  override def bookmark(server:StarlingServer):Bookmark = SingleTradeReportBookmark(tradeID, server.createUserReport(reportParameters0), pivotPageState)
+  override def bookmark(serverContext:StarlingServerContext):Bookmark = {
+    SingleTradeReportBookmark(tradeID, serverContext.server.createUserReport(reportParameters0), pivotPageState)
+  }
 }
 
-case class SingleTradeReportBookmark(tradeID:TradeIDLabel, data:UserReportData, pps:PivotPageState) extends Bookmark {
+case class SingleTradeReportBookmark(tradeID:TradeIDLabel, data:UserReportData, pps:PivotPageState) extends StarlingBookmark {
   def daySensitive = true
-  def createPage(day:Option[Day], server:StarlingServer, context:PageContext) = {
+  def createStarlingPage(day:Option[Day], serverContext:StarlingServerContext, context:PageContext) = {
     day match {
       case None => throw new Exception("We need a day")
       case Some(d) => {
-        val reportParameters = server.createReportParameters(data, d)
+        val reportParameters = serverContext.server.createReportParameters(data, d)
         new SingleTradeMainPivotReportPage(tradeID, reportParameters, pps)
       }
     }

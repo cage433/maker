@@ -3,7 +3,6 @@ package starling.gui
 import api._
 import java.lang.String
 import pages.{AbstractPivotPage, SingleTradePage, PivotPageState}
-import starling.pivot.view.swing.MigPanel
 import swing.event.ButtonClicked
 import starling.pivot.model._
 import swing.{Label, Button}
@@ -17,6 +16,10 @@ import starling.quantity.{UOM, Quantity}
 import starling.auth.User
 import starling.daterange.{Month, Year, Day}
 import collection.immutable.{Map, Iterable}
+import starling.browser._
+import common.MigPanel
+import internal.UserSettings
+import service.{Version}
 
 /**
  * An alternative StarlingBrowser for testing gui features quickly
@@ -58,7 +61,7 @@ object CannedLauncher {
         e.create().asInstanceOf[StarlingServer]
       }
     val publisher = new scala.swing.Publisher() {}
-    Launcher.start(nullServer, publisher, new CannedHomePage, None)
+    Launcher.start(nullServer, publisher, None)
 //    Launcher.start(nullServer, publisher, CannedPivotReportPage(PivotPageState(false, PivotFieldParams(true, None))))
     /*Launcher.start(nullServer, publisher, CannedPivotReportPage(PivotPageState(false,
       PivotFieldParams(true, Some(PivotFieldsState(List(Field("PV")), List(Field("Trader"), Field("Product"),
@@ -68,9 +71,15 @@ object CannedLauncher {
 
 class NullPageData extends PageData
 
-case class CannedHomePage() extends Page {
+trait CannedPage extends Page {
+  def bundle = "Canned"
+  type SC = String
+  def createServerContext(sc:ServerContext) = ""
+}
+
+case class CannedHomePage() extends CannedPage {
   def text = "Home"
-  def build(reader: PageBuildingContext) = { new PageData{} }
+  def build(reader: String) = { new PageData{} }
   def createComponent(context: PageContext, data:PageData, bookmark:Bookmark, browserSize:Dimension) = {
     new CannedHomePagePageComponent(context)
   }
@@ -119,9 +128,9 @@ class CannedHomePagePageComponent(pageContext:PageContext) extends MigPanel("") 
   override def defaultComponentForFocus = Some(runButton.peer)
 }
 
-case class CannedDrilldownPage(fields:Seq[(Field,Any)]) extends Page {
+case class CannedDrilldownPage(fields:Seq[(Field,Any)]) extends CannedPage {
   def text = "Canned drilldown"
-  def build(reader: PageBuildingContext) = new PageData() {}
+  def build(reader: String) = new PageData() {}
   def createComponent(context: PageContext, data:PageData, bookmark:Bookmark, browserSize:Dimension) = {
     new MigPanel("") with PageComponent {
       add(new Label("Drilldown"), "span")
@@ -135,8 +144,7 @@ case class CannedDrilldownPage(fields:Seq[(Field,Any)]) extends Page {
 
 case class SlowCannedPivotReportPage(pivotPageState:PivotPageState) extends AbstractPivotPage(pivotPageState) {
   override def text = "Slow Canned Pivot Report"
-  override def layoutType = Some("Canned")
-  def dataRequest(pageBuildingContext:PageBuildingContext) = {
+  def dataRequest(pageBuildingContext:StarlingServerContext) = {
     Thread.sleep(5*1000);
     PivotTableModel.createPivotData(new CannedDataSource, pivotPageState.pivotFieldParams)
   }
@@ -146,8 +154,7 @@ case class SlowCannedPivotReportPage(pivotPageState:PivotPageState) extends Abst
 
 case class DiffCannedPivotReportPage(pivotPageState:PivotPageState) extends AbstractPivotPage(pivotPageState) {
   override def text = "Diff Canned Pivot Report"
-  override def layoutType = Some("Canned")
-  def dataRequest(pageBuildingContext:PageBuildingContext) = {
+  def dataRequest(pageBuildingContext:StarlingServerContext) = {
     val cannedDataSource = new CannedDataSource
     PivotTableModel.createPivotData(new DiffPivotTableDataSource(cannedDataSource, cannedDataSource, "D-1"), pivotPageState.pivotFieldParams)
   }
@@ -156,8 +163,7 @@ case class DiffCannedPivotReportPage(pivotPageState:PivotPageState) extends Abst
 
 case class CannedPivotReportPage(pivotPageState:PivotPageState) extends AbstractPivotPage(pivotPageState) {
   override def text = "Canned Pivot Report"
-  override def layoutType = Some("Canned")
-  def dataRequest(pageBuildingContext:PageBuildingContext) = {
+  def dataRequest(pageBuildingContext:StarlingServerContext) = {
     PivotTableModel.createPivotData(new CannedDataSource, pivotPageState.pivotFieldParams)
   }
   def selfPage(pivotPageState:PivotPageState, edits:PivotEdits) = CannedPivotReportPage(pivotPageState)
@@ -166,8 +172,7 @@ case class CannedPivotReportPage(pivotPageState:PivotPageState) extends Abstract
 
 case class EditableCannedPivotReportPage(pivotPageState:PivotPageState) extends AbstractPivotPage(pivotPageState) {
   override def text = "Editable Canned Pivot Report"
-  override def layoutType = Some("Canned")
-  def dataRequest(pageBuildingContext:PageBuildingContext) = {
+  def dataRequest(pageBuildingContext:StarlingServerContext) = {
     PivotTableModel.createPivotData(new EditableCannedDataSource, pivotPageState.pivotFieldParams)
   }
   def selfPage(pPS:PivotPageState, edits:PivotEdits) = copy(pivotPageState = pPS)
@@ -176,8 +181,7 @@ case class EditableCannedPivotReportPage(pivotPageState:PivotPageState) extends 
 
 case class EditableSpecifiedCannedPivotReportPage(pivotPageState:PivotPageState, edits:PivotEdits=PivotEdits.Null) extends AbstractPivotPage(pivotPageState, edits) {
   override def text = "Editable Canned Pivot Report With Specified Values"
-  override def layoutType = Some("Canned")
-  def dataRequest(pageBuildingContext:PageBuildingContext) = {
+  def dataRequest(pageBuildingContext:StarlingServerContext) = {
     val ds = (new EditableSpecifiedCannedDataSource).editable.get.withEdits(edits)
     PivotTableModel.createPivotData(ds, pivotPageState.pivotFieldParams)
   }

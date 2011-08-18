@@ -1,9 +1,9 @@
 package starling.gui
 
-import starling.pivot.view.swing.MigPanel
 import starling.daterange._
 import swing.event.Event
 import swing.Component
+import starling.browser.common.MigPanel
 
 class DayAndTimeChooser(day0:Day = Day.today, timeOfDay0:TimeOfDay = TimeOfDay.StartOfDay, enableFlags:Boolean = true)
   extends MigPanel("insets 0", "[p]") {

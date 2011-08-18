@@ -98,15 +98,15 @@ case class PhysicalMetalForward(tradeID : String, quotas : List[PhysicalMetalQuo
             (transferPricingSpec, pricingSpec)
 
         CostsAndIncomeQuotaValuation(
-          quota.quotaID,
           snapshotID,
-          quota.quantity,
-          direction = if (isPurchase) EDMTrade.PURCHASE else EDMTrade.SALE,
-          benchmarkdirection = if (isPurchase) Some(EDMTrade.SALE) else Some(EDMTrade.PURCHASE),
           purchaseValuationDetails = CostsAndIncomeValuation.build(env, quota.quantity, purchaseSpec),
           saleValuationDetails = CostsAndIncomeValuation.build(env, quota.quantity, saleSpec),
           benchmarkPremium = Quantity.NULL,
-          freightParity = Quantity.NULL
+          freightParity = Quantity.NULL,
+          quotaID = quota.quotaID,
+          quantity = quota.quantity,
+          direction = if (isPurchase) EDMTrade.PURCHASE else EDMTrade.SALE,
+          benchmarkdirection = if (isPurchase) Some(EDMTrade.SALE) else Some(EDMTrade.PURCHASE)
         )
     }
   }
@@ -187,20 +187,19 @@ case class PhysicalMetalAssignmentForward(id : String, inventoryItem : EDMInvent
     val saleQty = purchaseQty // until logistics send us both quantities
 
     List(CostsAndIncomeAssignmentValuation(
-      purchaseAssignmentID = inventoryItem.purchaseAssignment.oid.contents.toString,
-      saleAssignmentID = inventoryItem.salesAssignment match { case null => None; case salesAssignment : EDMAssignment => Some(salesAssignment.oid.contents.toString) },
       snapshotID = snapshotId,
-      purchaseQuantity = toTitanSerializableQuantity(purchaseQty),
-      saleQuantity = toTitanSerializableQuantity(saleQty),
-
       // These come from the pricing spec of the quota associated with the purchaseAssignmentID
       purchaseValuationDetails = CostsAndIncomeValuation.build(env, purchaseQty, quota.pricingSpec),
       // If saleAssignmentID is defined, then these details come from the pricing spec of its associated quota,
       // otherwise use the expected pricing spec of the purchase quota
       saleValuationDetails = CostsAndIncomeValuation.build(env, saleQty, quota.expectedTransferPricingSpec),
-
       benchmarkPremium = Quantity.NULL,
-      freightParity = Quantity.NULL))
+      freightParity = Quantity.NULL,
+      purchaseAssignmentID = inventoryItem.purchaseAssignment.oid.contents.toString,
+      saleAssignmentID = inventoryItem.salesAssignment match { case null => None; case salesAssignment : EDMAssignment => Some(salesAssignment.oid.contents.toString) },
+      purchaseQuantity = toTitanSerializableQuantity(purchaseQty),
+      saleQuantity = toTitanSerializableQuantity(saleQty))
+    )
   }
 }
 

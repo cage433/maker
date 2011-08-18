@@ -13,11 +13,12 @@ import org.jdesktop.swingx.JXTable.GenericEditor
 import javax.swing.TransferHandler.TransferSupport
 import java.awt.datatransfer.{Clipboard, DataFlavor, StringSelection}
 import starling.utils.Log
-import starling.gui.GuiUtils
+import starling.browser.common.GuiUtils._
 import java.util.{StringTokenizer, Hashtable}
 import swing.{MenuItem, Action}
 import starling.pivot.model.{AxisCell, PivotTableModel}
 import java.awt.event._
+import org.jdesktop.swingx.renderer.DefaultTableRenderer
 
 object PivotJTable {
   val RowHeight = 16
@@ -35,7 +36,7 @@ class PivotJTable(tableModel:PivotJTableModel, pivotTableView:PivotTableView, mo
   setFillsViewportHeight(true)
   setTableHeader(null)
   setCellSelectionEnabled(true)  
-  setDefaultRenderer(classOf[Object], new PivotCellRenderer(indentColumns, MaxColumnWidth))
+  setDefaultRenderer(classOf[Object], new DefaultTableRenderer(new PivotCellProvider(indentColumns, MaxColumnWidth, tableModel)))
   setRowHeight(PivotJTable.RowHeight)
 
   // If the delete key is pressed when more than one cell is selected, delete all deletable cells.
@@ -410,7 +411,7 @@ class PivotJTable(tableModel:PivotJTableModel, pivotTableView:PivotTableView, mo
 
           if (deletableCells.nonEmpty || resetableCells.nonEmpty) {
             val popup = new JPopupMenu
-            popup.setBorder(LineBorder(GuiUtils.BorderColour))
+            popup.setBorder(LineBorder(BorderColour))
 
             if (deletableCells.nonEmpty) {
               val deleteActionName = if (deletableCells.size == 1) "Delete Cell" else "Delete Cells"

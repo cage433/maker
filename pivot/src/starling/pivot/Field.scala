@@ -297,7 +297,9 @@ case class FieldDetails(field:Field) {
   def combineGroup(groupA:Any,groupB:Any):Any = {
     val setA = groupA.asInstanceOf[Set[Any]]
     val setB = groupB.asInstanceOf[Set[Any]]
-    if (setB.forall(setA.contains)) {
+    if (setB.size == 1) {
+      setA + setB.head
+    } else if (setB.forall(setA.contains)) {
       setA
     } else {
       setA.union(setB)

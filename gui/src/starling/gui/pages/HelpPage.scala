@@ -16,9 +16,11 @@ import org.eclipse.mylyn.wikitext.core.parser.builder.HtmlDocumentBuilder
 import org.eclipse.mylyn.wikitext.textile.core.TextileLanguage
 
 import swing.EditorPane
-import starling.pivot.view.swing.MigPanel
+import starling.browser.common.MigPanel
+import starling.browser._
+import internal.BrowserIcons
 
-case object HelpPage extends Page {
+case object HelpPage extends StarlingServerPage {
   def text = "Help"
   def icon = StarlingIcons.im("/icons/16x16_Help.png")
 
@@ -43,9 +45,9 @@ case object HelpPage extends Page {
 
     storeImage("SaveReportConfiguration", StarlingIcons.icon(SaveReportConfiguration))
     storeImage("MarketData", StarlingIcons.icon(MarketData))
-    storeImage("Refresh", StarlingIcons.icon(Refresh))
+    storeImage("Refresh", StarlingIcons.icon(BrowserIcons.Refresh))
 
-    component.registerPage("Home", new StarlingHomePage) //Just an example
+    //component.registerPage("Home", StarlingHomePage) //Just an example FIXME_BROWSER
 
     component.setWikiText(markup)
     component.border = BorderFactory.createEmptyBorder(20, 20, 20, 20)
@@ -56,7 +58,7 @@ case object HelpPage extends Page {
       override def defaultComponentForFocus = Some(this.peer)
     }
   }
-  def build(reader: PageBuildingContext) = new PageData {}
+  def build(reader:StarlingServerContext) = new PageData {}
 }
 
 class WikiPageComponent(pageContext: PageContext) extends EditorPane {

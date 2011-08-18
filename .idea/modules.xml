@@ -5,6 +5,8 @@
       <module fileurl="file://$PROJECT_DIR$/auth/auth.iml" filepath="$PROJECT_DIR$/auth/auth.iml" />
       <module fileurl="file://$PROJECT_DIR$/booter/booter.iml" filepath="$PROJECT_DIR$/booter/booter.iml" />
       <module fileurl="file://$PROJECT_DIR$/bouncyrmi/bouncyrmi.iml" filepath="$PROJECT_DIR$/bouncyrmi/bouncyrmi.iml" />
+      <module fileurl="file://$PROJECT_DIR$/browser/browser.iml" filepath="$PROJECT_DIR$/browser/browser.iml" />
+      <module fileurl="file://$PROJECT_DIR$/browser.service/browser.service.iml" filepath="$PROJECT_DIR$/browser.service/browser.service.iml" />
       <module fileurl="file://$PROJECT_DIR$/concurrent/concurrent.iml" filepath="$PROJECT_DIR$/concurrent/concurrent.iml" />
       <module fileurl="file://$PROJECT_DIR$/curves/curves.iml" filepath="$PROJECT_DIR$/curves/curves.iml" />
       <module fileurl="file://$PROJECT_DIR$/databases/databases.iml" filepath="$PROJECT_DIR$/databases/databases.iml" />
@@ -19,7 +21,6 @@
       <module fileurl="file://$PROJECT_DIR$/pivot.utils/pivot.utils.iml" filepath="$PROJECT_DIR$/pivot.utils/pivot.utils.iml" />
       <module fileurl="file://$PROJECT_DIR$/quantity/quantity.iml" filepath="$PROJECT_DIR$/quantity/quantity.iml" />
       <module fileurl="file://$PROJECT_DIR$/services/services.iml" filepath="$PROJECT_DIR$/services/services.iml" />
-      <module fileurl="file://$PROJECT_DIR$/spikes/spikes.iml" filepath="$PROJECT_DIR$/spikes/spikes.iml" />
       <module fileurl="file://$PROJECT_DIR$/starling.iml" filepath="$PROJECT_DIR$/starling.iml" />
       <module fileurl="file://$PROJECT_DIR$/starling.api/starling.api.iml" filepath="$PROJECT_DIR$/starling.api/starling.api.iml" />
       <module fileurl="file://$PROJECT_DIR$/titan/titan.iml" filepath="$PROJECT_DIR$/titan/titan.iml" />

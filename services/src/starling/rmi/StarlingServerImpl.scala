@@ -10,7 +10,6 @@ import starling.curves.{EnvironmentRule, CurveViewer}
 import starling.daterange._
 import starling.db._
 import starling.eai.{Book, Traders}
-import starling.gui.UserSettings
 import starling.gui.api._
 import starling.pivot._
 import controller.{AxisNode, PivotTable}
@@ -27,7 +26,7 @@ import starling.utils.sql.{FalseClause, From, RealTable}
 import starling.utils.ImplicitConversions._
 import starling.utils.sql.QueryBuilder._
 import starling.tradeimport.TradeImporter
-
+import starling.browser.service.{BookmarkLabel, PageLogInfo, UserSettingsLabel, Version}
 
 class UserReportsService(
   val ukHolidayCalendar: BusinessCalendarSet,
@@ -421,7 +420,7 @@ class StarlingServerImpl(
   }
 
   def readSettings = userSettingsDatabase.loadSettings
-  def saveSettings(settings:UserSettings) {userSettingsDatabase.saveSettings(settings)}
+  def saveSettings(settings:UserSettingsLabel) {userSettingsDatabase.saveSettings(settings)}
 
   def tradeValuation(tradeIDLabel:TradeIDLabel, curveIdentifier:CurveIdentifierLabel, timestamp:Timestamp):TradeValuationAndDetails = {
     val tradeID = unLabel(tradeIDLabel)

@@ -4,19 +4,20 @@ import starling.utils.SColumn
 import starling.gui._
 import api._
 import namedquantitycomponents.TopNamedQuantityComponent
-import starling.pivot.view.swing.MigPanel
 import java.awt.{Color, Dimension}
-import starling.gui.GuiUtils._
 import starling.quantity.SimpleNamedQuantity
 import swing.{ScrollPane, Label}
 import starling.pivot.PivotFormatter
+import starling.browser.common.MigPanel
+import starling.browser.common.GuiUtils._
+import starling.browser._
 import starling.rmi.StarlingServer
 import starling.daterange.Day
 
-case class ValuationParametersPage(tradeID:TradeIDLabel, reportParameters:ReportParameters) extends Page {
+case class ValuationParametersPage(tradeID:TradeIDLabel, reportParameters:ReportParameters) extends StarlingServerPage {
   def text = "Valuation Parameters for " + tradeID.id
   def icon = StarlingIcons.im("/icons/16x16_valuation_parameters.png")
-  def build(reader:PageBuildingContext) = {
+  def build(reader:StarlingServerContext) = {
     val timestampToUse = reportParameters.tradeSelectionWithTimestamp.deskAndTimestamp match {
       case Some((d,ts)) => ts.timestamp
       case None => {
@@ -33,22 +34,24 @@ case class ValuationParametersPage(tradeID:TradeIDLabel, reportParameters:Report
   def createComponent(context:PageContext, data:PageData, bookmark:Bookmark, browserSize:Dimension) = {
     new ValuationParametersPageComponent(context, data)
   }
-  override def bookmark(server:StarlingServer) = ValuationParametersBookmark(tradeID, server.createUserReport(reportParameters))
+
+  override def bookmark(serverContext: StarlingServerContext) = ValuationParametersBookmark(tradeID, serverContext.server.createUserReport(reportParameters))
 }
 
-case class ValuationParametersBookmark(tradeID:TradeIDLabel, userReportData:UserReportData) extends Bookmark {
+case class ValuationParametersBookmark(tradeID:TradeIDLabel, userReportData:UserReportData) extends StarlingBookmark {
   def daySensitive = {
     userReportData.environmentRule match {
       case EnvironmentRuleLabel.RealTime => false
       case _ => true
     }
   }
-  def createPage(day:Option[Day], server:StarlingServer, context:PageContext) = {
+
+  def createStarlingPage(day: Option[Day], serverContext: StarlingServerContext, context: PageContext) = {
     val dayToUse = day match {
       case None => Day.today() // Real time
       case Some(d) => d
     }
-    val reportParameters = server.createReportParameters(userReportData, dayToUse)
+    val reportParameters = serverContext.server.createReportParameters(userReportData, dayToUse)
     ValuationParametersPage(tradeID, reportParameters)
   }
 }

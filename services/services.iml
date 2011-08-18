@@ -11,33 +11,22 @@
     </facet>
   </component>
   <component name="NewModuleRootManager" inherit-compiler-output="false">
-    <output url="file://$MODULE_DIR$/target/scala_2.9.0-1/classes" />
-    <output-test url="file://$MODULE_DIR$/target/scala_2.9.0-1/test-classes" />
+    <output url="file://$MODULE_DIR$/target/scala-2.9.0.1/classes" />
+    <output-test url="file://$MODULE_DIR$/target/scala-2.9.0.1/test-classes" />
     <exclude-output />
     <content url="file://$MODULE_DIR$">
       <sourceFolder url="file://$MODULE_DIR$/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/resources" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/tests" isTestSource="true" />
-      <excludeFolder url="file://$MODULE_DIR$/target" />
-      <excludeFolder url="file://$MODULE_DIR$/test-output" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="library" name="scala-lib" level="project" />
     <orderEntry type="module" module-name="utils" />
     <orderEntry type="module" module-name="loopyxl" exported="" />
-    <orderEntry type="module-library">
-      <library>
-        <CLASSES>
-          <root url="file://$MODULE_DIR$/resources" />
-        </CLASSES>
-        <JAVADOC />
-        <SOURCES />
-      </library>
-    </orderEntry>
     <orderEntry type="module" module-name="daterange" />
     <orderEntry type="module" module-name="auth" />
-    <orderEntry type="module" module-name="gui.api" />
+    <orderEntry type="module" module-name="gui.api" exported="" />
     <orderEntry type="module" module-name="pivot" />
     <orderEntry type="module" module-name="instrument" />
     <orderEntry type="module" module-name="starling.api" />
@@ -464,6 +453,8 @@
         <SOURCES />
       </library>
     </orderEntry>
+    <orderEntry type="module" module-name="browser" />
+    <orderEntry type="module" module-name="gui" />
   </component>
 </module>
 

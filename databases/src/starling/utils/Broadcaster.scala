@@ -9,8 +9,9 @@ import starling.rmi.StarlingServer
 import collection.immutable.List
 import ClosureUtil._
 import ImplicitConversions._
-import starling.gui.api.{RabbitEvent, EventBatch}
+import starling.gui.api.{RabbitEvent}
 import starling.auth.User
+import starling.browser.service.EventBatch
 
 
 trait Broadcaster {

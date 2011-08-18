@@ -6,10 +6,10 @@ import swing.Label
 import starling.pivot.{Position, Field, OtherLayoutInfo}
 import collection.mutable.ListBuffer
 import java.awt.{Point, Dimension, Color, Rectangle, Graphics2D, RenderingHints}
-import starling.gui.{RoundedBorder, GuiUtils}
 import swing.event.{MouseExited, MouseEntered}
 import swing.Swing._
 import starling.pivot.model.{EditableInfo, PivotTableModel}
+import starling.browser.common.{RoundedBorder, MigPanel, GuiUtils}
 
 object DropPanel {
   val NormalBorder = RoundedBorder(Color.LIGHT_GRAY)

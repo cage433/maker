@@ -10,9 +10,13 @@ import starling.pivot.model.CollapsedState
 import starling.pivot.{Field, Totals, OtherLayoutInfo}
 import starling.pivot.HiddenType._
 import starling.utils.sql.PersistAsBlob
+import starling.browser.service.internal.HeterogeneousMap
+import starling.browser.internal.{UserSettings, ManifestedKey}
 
 class Patch111_AddToOtherLayoutInfo extends Patch {
   val convertingXStream = StarlingXStream.createXStream
+  convertingXStream.aliasType("starling.gui.UserSettings", classOf[UserSettings])
+  convertingXStream.aliasType("starling.gui.ManifestedKey", classOf[ManifestedKey[_]])
   convertingXStream.registerConverter(new MapBasedConverter(
     StarlingXStream.createXStream,
     classOf[OtherLayoutInfo],

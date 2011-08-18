@@ -3,15 +3,15 @@ package starling.gui.custom
 import java.awt.{Graphics2D, Color, Cursor}
 import swing.event._
 import swing.Swing._
-import starling.pivot.view.swing.{FixedImagePanel, MigPanel}
 import swing._
-import starling.gui.GuiUtils._
 import starling.pivot.controller.{TreePivotFilterNode, TreePivotFilter}
 import javax.swing.tree.{DefaultTreeModel, TreeModel, TreeCellRenderer, DefaultMutableTreeNode}
 import collection.mutable.{ListBuffer, HashMap}
 import javax.swing.{ToolTipManager, UIManager, JTree}
 import starling.pivot._
-import starling.gui.{RoundedBorder, GuiUtils, StarlingIcons}
+import starling.gui.StarlingIcons
+import starling.browser.common.GuiUtils._
+import starling.browser.common.{GuiUtils, RoundedBorder, FixedImagePanel, MigPanel}
 
 // The selected is a var rather than using the copy method as we need the objects to stay the same for filtering.
 case class CheckBoxListElement(var selected:Boolean, value:Any, label:String, var enabled:Boolean)

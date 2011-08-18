@@ -8,6 +8,7 @@ import starling.pivot.{Position, Field, OtherLayoutInfo}
 import java.awt.{Point, Rectangle}
 import scala.Some
 import starling.pivot.model.{EditableInfo, PivotTableModel}
+import starling.browser.common.MigPanel
 
 class RowComponent(model:PivotTableModel,  otherLayoutInfo:OtherLayoutInfo, viewUI:PivotTableViewUI,
                    tableView:PivotTableView, editableInfo:Option[EditableInfo])

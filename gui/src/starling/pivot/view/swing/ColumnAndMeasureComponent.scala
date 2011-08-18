@@ -7,8 +7,8 @@ import starling.pivot.FieldChooserType._
 import collection.mutable.ListBuffer
 import java.awt.{Point, Rectangle, Dimension, Graphics2D, RenderingHints}
 import swing.event._
-import starling.gui.GuiUtils
 import scala.{Right, Left}
+import starling.browser.common.{GuiUtils, MigPanel}
 
 object ColumnDropPanel {
   def prefSize(text:String) = new TempGuiFieldNamePanel(text).preferredSize
