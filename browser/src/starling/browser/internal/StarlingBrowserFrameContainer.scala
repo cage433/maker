@@ -88,7 +88,7 @@ class StarlingBrowserFrameContainer(serverContext: ServerContext, lCache: LocalC
       for (f <- frames) f.visible = false
       serverContext.browserService.saveSettings(userSettings.toLabel(serverContext))
     } catch {
-      case e => println("Exception whilst saving user userSettings\n" + e)
+      case e => e.printStackTrace()
     }
   }
 
