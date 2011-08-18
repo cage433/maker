@@ -20,11 +20,6 @@ object GUICode {
   // The order of this list matters. It is the order things are attempted to be loaded so ensure it is optimised.
   val modules = List("daterange", "quantity", "utils", "auth", "bouncyrmi", "gui", "gui.api", "pivot", "pivot.utils", "browser", "browser.service")
 
-  // We know that in practise these jars are not used by the GUI
-  val bigJarsThatAreNotRequired = Set(
-    "colt-1.2.0.jar", "testng-5.8-jdk15.jar", "commons-collections-3.2.1.jar",
-    "scalatest-1.0.jar", "cron4j-2.2.1.jar", "amqp-client-1.7.0.2.jar")
-
   val libJarNames = Map(
     "scala-library.jar" -> scalaLibraryJar,
     "scala-swing.jar" -> new File("lib/scala/scala-2.9.0.1.final/lib/scala-swing.jar"),
@@ -74,13 +69,8 @@ object GUICode {
   }
 
   def lastModifiedForModule(module:String) = {
-    val outputPath = new File(module + "/target/scala_2.9.0-1/classes/")
-    val resourcesPath = new File(module + "/resources")
-    val resourcesLastModified = if (resourcesPath.exists) findLastModified(resourcesPath) else 0
-    findLastModified(
-      outputPath,
-      initialValue =  resourcesLastModified
-    )
+    val outputPath = new File(module + "/target/scala-2.9.0.1/classes/")
+    findLastModified(outputPath)
   }
 
   def findMatchingFiles(dir:File, matching:Regex = new Regex("^.*\\.(class|png|conf|auth|txt|properties)$")):List[File] = {
@@ -211,9 +201,8 @@ class WebStartServlet(prefix:String, serverName:String, externalURL:String, main
         if (moduleJarFile.exists) {
           moduleJarFile
         } else {
-          val outputPath = new File(module + "/target/scala_2.9.0-1/classes/")
-          val resourcesPath = new File(module + "/resources")
-          generateJar(moduleJarFile, outputPath, resourcesPath)
+          val outputPath = new File(module + "/target/scala-2.9.0.1/classes/")
+          generateJar(moduleJarFile, outputPath)
           moduleJarFile.setLastModified(lastModified)
           moduleJarFile
         }
@@ -304,7 +293,7 @@ class WebStartServlet(prefix:String, serverName:String, externalURL:String, main
         if (booterJarFile.exists) {
           booterJarFile
         } else {
-          generateJar(booterJarFile, classes, new File("no"), Some("starling.booter.Booter"))
+          generateJar(booterJarFile, classes, Some("starling.booter.Booter"))
           signJar(booterJarFile)
           booterJarFile.setLastModified(timestamp)
           booterJarFile
@@ -358,17 +347,15 @@ class WebStartServlet(prefix:String, serverName:String, externalURL:String, main
   }
 
 
-  private def generateJar(jarFile:File, outputPath:File, resourcesPath:File, main:Option[String] = None) {
+  private def generateJar(jarFile:File, outputPath:File, main:Option[String] = None) {
     val jarOutputStream = new JarOutputStream(new BufferedOutputStream(new FileOutputStream(jarFile)))
-    for (dir <- List(outputPath, resourcesPath)) {
-      if (dir.exists) {
-        val files = GUICode.findMatchingFiles(dir).map(_.getPath)
-        for (outputFile <- files) {
-          jarOutputStream.putNextEntry(new JarEntry(outputFile.substring(dir.getPath.length+1)))
-          val inputStream = new BufferedInputStream(new FileInputStream(outputFile))
-          IO.copy(inputStream, jarOutputStream)
-          inputStream.close
-        }
+    if (outputPath.exists) {
+      val files = GUICode.findMatchingFiles(outputPath).map(_.getPath)
+      for (outputFile <- files) {
+        jarOutputStream.putNextEntry(new JarEntry(outputFile.substring(outputPath.getPath.length+1)))
+        val inputStream = new BufferedInputStream(new FileInputStream(outputFile))
+        IO.copy(inputStream, jarOutputStream)
+        inputStream.close
       }
     }
     main match {
