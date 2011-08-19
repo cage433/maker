@@ -23,7 +23,7 @@ trait Page {
   def icon:BufferedImage
   def text:String
   def shortText:String = text
-  def createComponent(context:PageContext, data:PageData, bookmark:Bookmark, browserSize:Dimension):PageComponent
+  def createComponent(context:PageContext, data:PageData, bookmark:Bookmark, browserSize:Dimension, previousPageData:Option[PageData]):PageComponent
   def build(serverContext:SC):PageData
   def refreshFunctions:Iterable[PartialFunction[Event,Page]] = Nil
   def bookmark(serverContext:SC):Bookmark = new PageBookmark(this)
@@ -67,7 +67,7 @@ trait PageContext {
   def setDefaultButton(button:Option[Button])
   def getDefaultButton:Option[Button]
   def localCache:LocalCache
-  val remotePublisher:Publisher
+  def remotePublisher:Publisher
   def requestFocusInCurrentPage()
   def getSetting[T](key:Key[T])(implicit m:Manifest[T]):T
   def getSetting[T](key:Key[T], default: => T)(implicit m:Manifest[T]):T
@@ -81,7 +81,6 @@ trait SubmitRequest[R] {
 }
 
 trait PageData
-trait OldPageData
 
 object LocalCache {
   val Version = new LocalCacheKey[Version]("Version")
@@ -114,7 +113,6 @@ case class LocalCache(localCache:HeterogeneousMap[LocalCacheKey]) {
 
 trait ComponentState
 trait ComponentTypeState
-trait ComponentRefreshState
 trait TypeFocusInfo
 trait PageComponent extends Component {
   def getBorder:Option[Border] = Some(MatteBorder(1, 0, 0, 0, GuiUtils.BorderColour))
@@ -128,9 +126,6 @@ trait PageComponent extends Component {
   def setTypeState(typeState:Option[ComponentTypeState]) {}
   def getTypeFocusInfo:Option[TypeFocusInfo] = None
   def setTypeFocusInfo(focusInfo:Option[TypeFocusInfo]) {}
-  def getOldPageData:Option[OldPageData] = None
-  def getRefreshState:Option[ComponentRefreshState] = None
-  def setOldPageDataOnRefresh(pageData:Option[OldPageData], refreshState:Option[ComponentRefreshState], componentState:Option[ComponentState]) {}
   def pageResized(newSize:Dimension) {}
   def defaultComponentForFocus:Option[java.awt.Component] = None
 

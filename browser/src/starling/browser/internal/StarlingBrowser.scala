@@ -1063,22 +1063,24 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
   private var refreshButtonAnimator:Animator = null
 
   def refresh(lockAndUnlockScreen:Boolean=true, latch:Option[CountDownLatch] = None) {
-    if (refreshButtonAnimator != null) refreshButtonAnimator.stop
+    if (refreshButtonAnimator != null) refreshButtonAnimator.stop()
     refreshButtonAnimator = new Animator(10000, new TimingTargetAdapter {
-      override def timingEvent(fraction:Float) = {
+      override def timingEvent(fraction:Float) {
         refreshButton.fadeColour = new Color(87,206,255,math.round((1.0f-fraction) * 128))
-        refreshButton.repaint
+        refreshButton.repaint()
       }
     })
-    refreshButtonAnimator.start
+    refreshButtonAnimator.start()
 
     val pageInfo = history(current)
-    val currentPageComponent = pageInfo.pageComponent.get
-    val currentBookmark = pageInfo.bookmark
-    val currentState = currentPageComponent.getState
-    val currentTypeState = currentPageComponent.getTypeState
-    val currentOldPageData = currentPageComponent.getOldPageData
-    val currentRefreshState = currentPageComponent.getRefreshState
+    val previousComponent = pageInfo.pageComponent.get
+    val previousBookmark = pageInfo.bookmark
+    val previousState = previousComponent.getState
+    val previousTypeState = previousComponent.getTypeState
+    val previousPageData = pageInfo.pageResponse match {
+      case SuccessPageResponse(pd,_) => Some(pd)
+      case _ => None
+    }
     val newPage = pageInfo.refreshPage.get
     if (lockAndUnlockScreen) {
       genericLockedUI.setLocked(true)
@@ -1093,22 +1095,20 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
     waitingFor += Some(threadID)
     val timer = createTimer(threadID)
     if (lockAndUnlockScreen) {
-      timer.start
+      timer.start()
     }
     pageBuilder.refresh(newPage, (pageResponse:PageResponse) => {
-      timer.stop
+      timer.stop()
       if (waitingFor.contains(Some(threadID))) {
         waitingFor -= Some(threadID)
-        // TODO - is this really the thing I want to do if I can't get a bookmark?
         val newBookmark = pageResponse match {
           case SuccessPageResponse(_,b) => b
-          case _ => currentBookmark
+          case _ => previousBookmark // Not sure what I should do if I can't get a bookmark here.
         }
-        val pageComponent = createPopulatedComponent(newPage, pageResponse)
-        pageComponent.setState(currentState)
-        pageComponent.setTypeState(currentTypeState)
-        pageComponent.setOldPageDataOnRefresh(currentOldPageData, currentRefreshState, currentState)
-        val pageInfo = new PageInfo(newPage, pageResponse, newBookmark, Some(pageComponent), new SoftReference(pageComponent), currentState, None)
+        val pageComponent = createPopulatedComponent(newPage, pageResponse, previousPageData)
+        pageComponent.setState(previousState)
+        pageComponent.setTypeState(previousTypeState)
+        val pageInfo = new PageInfo(newPage, pageResponse, newBookmark, Some(pageComponent), new SoftReference(pageComponent), previousState, None)
         history(current) = pageInfo
         showPage(pageInfo, current)
         if (lockAndUnlockScreen) {
@@ -1116,7 +1116,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
           refreshButtonStatus
         }
         latch match {
-          case Some(l) => l.countDown
+          case Some(l) => l.countDown()
           case None =>
         }
       }
@@ -1144,11 +1144,11 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
     })
   }
 
-  def createPopulatedComponent(page:Page, pageResponse:PageResponse) = {
+  def createPopulatedComponent(page:Page, pageResponse:PageResponse, previousPageData:Option[PageData]=None) = {
     pageResponse match {
       case SuccessPageResponse(pageData, bookmark) => {
         try {
-          page.createComponent(pageContext, pageData, bookmark, size)
+          page.createComponent(pageContext, pageData, bookmark, size, previousPageData)
         } catch {
           case t => {
             t.printStackTrace()

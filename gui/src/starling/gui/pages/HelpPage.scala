@@ -24,7 +24,7 @@ case object HelpPage extends StarlingServerPage {
   def text = "Help"
   def icon = StarlingIcons.im("/icons/16x16_Help.png")
 
-  def createComponent(pageContext: PageContext, data: PageData, bookmark:Bookmark, browserSize: Dimension) = {
+  def createComponent(pageContext: PageContext, data: PageData, bookmark:Bookmark, browserSize:Dimension, previousPageData:scala.Option[PageData]) = {
     val component = new WikiPageComponent(pageContext)
     val markup = Source.fromURL(getClass.getResource("/Help.txt")).getLines.mkString("\n")
 

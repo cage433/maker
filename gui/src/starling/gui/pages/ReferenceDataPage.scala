@@ -21,7 +21,7 @@ case object ReferenceDataIndexPage extends StarlingServerPage {
   def text = "Reference Data"
   def icon = StarlingIcons.im("/icons/16x16_ref_data.png")
   def build(starlingServerContext: StarlingServerContext) = ReferenceDataIndexPageData(starlingServerContext.server.referenceDataTables(), starlingServerContext.server.permissionToDoAdminLikeThings)
-  def createComponent(context: PageContext, data: PageData, bookmark:Bookmark, browserSize: Dimension) = {new ReferenceDataIndexPageComponent(context, data)}
+  def createComponent(context: PageContext, data: PageData, bookmark:Bookmark, browserSize:Dimension, previousPageData:Option[PageData]) = {new ReferenceDataIndexPageComponent(context, data)}
 }
 
 class ReferenceDataIndexPageComponent(context:PageContext, pageData:PageData) extends MigPanel("insets dialog") with PageComponent {

@@ -66,7 +66,7 @@ case class MarketDataPage(
     Some(MarketDataPagePageData(avaliableMarketDataTypes, selected))
   }
 
-  override def createComponent(pageContext: PageContext, data: PageData, bookmark:Bookmark, browserSize:Dimension) = {
+  override def createComponent(pageContext: PageContext, data: PageData, bookmark:Bookmark, browserSize:Dimension, previousPageData:Option[PageData]) = {
     val marketDataPagePageData = data match {
       case v:PivotTablePageData => v.subClassesPageData match {
         case x:Option[_] => x.get.asInstanceOf[MarketDataPagePageData]

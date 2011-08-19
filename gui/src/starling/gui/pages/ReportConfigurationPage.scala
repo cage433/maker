@@ -25,7 +25,7 @@ case class ReportConfigurationPage(tradeAndReferenceDataInfo:TradeAndReferenceDa
   // This page doesn't need anything from the server.
   def build(reader:StarlingServerContext) = {null}
 
-  def createComponent(context:PageContext, data:PageData, bookmark:Bookmark, browserSize:Dimension) = {
+  def createComponent(context:PageContext, data:PageData, bookmark:Bookmark, browserSize:Dimension, previousPageData:Option[PageData]) = {
     new ReportConfigurationComponent(context, tradeAndReferenceDataInfo)
   }
 }

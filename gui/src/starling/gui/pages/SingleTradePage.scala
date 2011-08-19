@@ -28,7 +28,7 @@ case class SingleTradePage(tradeID:TradeIDLabel, desk:Option[Desk], tradeExpiryD
   def text = "Trade " + tradeID
   def icon = StarlingIcons.im("/icons/tablenew_16x16.png")
   def build(reader:StarlingServerContext) = TradeData(tradeID, reader.cachingStarlingServer.readTradeVersions(tradeID), desk, tradeExpiryDay, intradayGroups)
-  def createComponent(context:PageContext, data:PageData, bookmark:Bookmark, browserSize:Dimension) = new SingleTradePageComponent(context, data)
+  def createComponent(context:PageContext, data:PageData, bookmark:Bookmark, browserSize:Dimension, previousPageData:Option[PageData]) = new SingleTradePageComponent(context, data)
 }
 
 object SingleTradePageComponent {

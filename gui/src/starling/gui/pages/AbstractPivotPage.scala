@@ -37,7 +37,7 @@ abstract class AbstractPivotPage(pivotPageState:PivotPageState, edits:PivotEdits
   def toolbarButtons(pageContext: PageContext, data:PageData):List[Button] = List()
   def configPanel(pageContext:PageContext, data:PageData):Option[ConfigPanels] = None
   def build(reader: StarlingServerContext) = PivotTablePageData(dataRequest(reader), subClassesPageData(reader))
-  def createComponent(pageContext:PageContext, data:PageData, bookmark:Bookmark, browserSize:Dimension) : PageComponent = {
+  def createComponent(pageContext:PageContext, data:PageData, bookmark:Bookmark, browserSize:Dimension, previousPageData:Option[PageData]) : PageComponent = {
     PivotComponent(text, pageContext, toolbarButtons(pageContext, data), configPanel(pageContext, data), finalDrillDownPage, selfPage,
       data, pivotPageState, edits, save, bookmark, browserSize, false)
   }
@@ -520,70 +520,8 @@ class PivotTablePageComponent(
       case _ => 
     }
   }
-
   override def defaultComponentForFocus = pivotComp.defaultComponentForFocus
-
   override def pageResized(newSize:Dimension) {pivotComp.pageResized(newSize)}
-  override def getOldPageData = Some(pivotComp.getOldPageData)
-  override def getRefreshState = Some(pivotComp.getRefreshState)
-  override def setOldPageDataOnRefresh(pageData:Option[OldPageData], refreshState:Option[ComponentRefreshState], componentState:Option[ComponentState]) = {
-    pageData match {
-      case None =>
-      case Some(AbstractPivotComponentOldPageData(oldRow,oldCol,oldMain)) => {
-        val newOldPageData = pivotComp.getOldPageData
-
-        val canUpdate = {
-          def ok[T](oldData:Array[Array[T]], newData:Array[Array[T]]) = {
-            (oldData.nonEmpty && (oldData.length == newData.length)) &&
-                    (oldData(0).nonEmpty && (oldData(0).length == newData(0).length))
-          }
-          ok(oldRow,newOldPageData.rowData) && ok(oldCol,newOldPageData.colData) && ok(oldMain,newOldPageData.mainData)
-        }
-
-        if (canUpdate) {
-          refreshState match {
-            case None =>
-            case Some(p:PivotTableViewRefreshState) => pivotComp.setRefreshState(p)
-            case _ =>
-          }
-
-          def getDifferences(oldData:Array[Array[TableCell]], newData:Array[Array[TableCell]]) = {
-            val indices = new HashSet[(Int,Int)]
-            for (j <- 0 until oldData.length) {
-              val oldRow = oldData(j)
-              val currentRow = newData(j)
-              for (i <- 0 until oldRow.length) {
-                if ((oldRow(i).value != currentRow(i).value) && (currentRow(i).totalState == NotTotal)) {
-                  indices += ((i,j))
-                }
-              }
-            }
-            indices.toSet
-          }
-          def headerDifferences(oldData:Array[Array[AxisCell]], newData:Array[Array[AxisCell]]) = {
-            val indices = new HashSet[(Int,Int)]
-            for (j <- 0 until oldData.length) {
-              val oldRow = oldData(j)
-              val currentRow = newData(j)
-              for (i <- 0 until oldRow.length) {
-                if ((oldRow(i).value.value.value != currentRow(i).value.value.value) && (currentRow(i).totalState == NotTotal)) {
-                  indices += ((i,j))
-                }
-              }
-            }
-            indices.toSet
-          }
-
-          val mainDiff = getDifferences(oldMain,newOldPageData.mainData)
-          val rowDiff = headerDifferences(oldRow, newOldPageData.rowData)
-          val colDiff = headerDifferences(oldCol, newOldPageData.colData)
-          pivotComp.updateRefreshHighlighter(rowDiff, colDiff, mainDiff)
-        }
-      }
-      case _ =>
-    }
-  }
-
   def getSelection = selection
 }
 

@@ -330,7 +330,7 @@ object PivotReportPage {
 
 case class ReportErrorsPage(reportParameters:ReportParameters) extends StarlingServerPage {
   def text = "Errors in " + reportParameters.text
-  def createComponent(context: PageContext, data: PageData, bookmark:Bookmark, browserSize:Dimension) = new PivotReportErrorPageComponent(context, data, browserSize)
+  def createComponent(context: PageContext, data: PageData, bookmark:Bookmark, browserSize:Dimension, previousPageData:Option[PageData]) = new PivotReportErrorPageComponent(context, data, browserSize, previousPageData)
   def build(pageBuildingContext: StarlingServerContext) = {
     val errors = pageBuildingContext.cachingStarlingServer.reportErrors(reportParameters)
     val errorsToUse = errors.errors.map(e => ErrorViewElement(e.instrumentText, e.message))
@@ -341,7 +341,7 @@ case class ReportErrorsPage(reportParameters:ReportParameters) extends StarlingS
 case class PivotReportErrorPageData(reportErrors:List[ErrorViewElement]) extends PageData
 
 
-class PivotReportErrorPageComponent(pageContext:PageContext, data:PageData, browserSize:Dimension) extends MigPanel("") with PageComponent {
+class PivotReportErrorPageComponent(pageContext:PageContext, data:PageData, browserSize:Dimension, previousPageData:Option[PageData]) extends MigPanel("") with PageComponent {
   val errors = data match {
     case d:PivotReportErrorPageData => d.reportErrors
   }
@@ -352,17 +352,17 @@ class PivotReportErrorPageComponent(pageContext:PageContext, data:PageData, brow
 case class ReportCellErrorsPage(errors:List[StackTrace]) extends StarlingServerPage {
   def text = "Errors"
   def icon = StarlingIcons.im("/icons/error.png")
-  def createComponent(context:PageContext, data:PageData, bookmark:Bookmark, browserSize:Dimension) = {
+  def createComponent(context:PageContext, data:PageData, bookmark:Bookmark, browserSize:Dimension, previousPageData:Option[PageData]) = {
     val errorsToUse = data match {
       case d:ReportCellErrorData => d.errors
     }
-    new ReportCellErrorsPageComponent(errorsToUse, browserSize)
+    new ReportCellErrorsPageComponent(errorsToUse, browserSize, previousPageData)
   }
   def build(pageBuildingContext:StarlingServerContext) = {ReportCellErrorData(errors.map(d => ErrorViewElement(d.message, d.stackTrace)))}
 }
 case class ReportCellErrorData(errors:List[ErrorViewElement]) extends PageData
 
-class ReportCellErrorsPageComponent(errors:List[ErrorViewElement], browserSize:Dimension) extends MigPanel("") with PageComponent {
+class ReportCellErrorsPageComponent(errors:List[ErrorViewElement], browserSize:Dimension, previousPageData:Option[PageData]) extends MigPanel("") with PageComponent {
   val errorView = new ErrorView(errors, Some(scala.math.round(browserSize.height / 4.0f)))
   add(errorView, "push, grow")
 }

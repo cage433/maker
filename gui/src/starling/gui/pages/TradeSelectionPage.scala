@@ -75,7 +75,7 @@ case class TradeSelectionPage(
     }
   }
 
-  override def createComponent(context:PageContext, data:PageData, bookmark:Bookmark, browserSize:Dimension) = {
+  override def createComponent(context:PageContext, data:PageData, bookmark:Bookmark, browserSize:Dimension, previousPageData:Option[PageData]) = {
     val tradeSelectionPageData = data match {
       case v:PivotTablePageData => v.subClassesPageData match {
         case x:Option[_] => x.get.asInstanceOf[TradeSelectionPageData]
@@ -609,13 +609,6 @@ class TradeSelectionComponent(
   } else {
     add(newReportButton, "al right, gapright " + RightPanelSpace)
   }
-
-  override def getOldPageData = pivotComponent.getOldPageData
-  override def getRefreshState = pivotComponent.getRefreshState
-  override def setOldPageDataOnRefresh(pageData:Option[OldPageData],
-                                       refreshState:Option[ComponentRefreshState],
-                                       componentState:Option[ComponentState]) =
-    pivotComponent.setOldPageDataOnRefresh(pageData, refreshState, componentState)
 }
 
 case class SnapshotSubmitRequest(marketDataSelection:MarketDataSelection, observationDay:Day)

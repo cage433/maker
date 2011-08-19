@@ -27,7 +27,6 @@ import javax.swing._
 import starling.pivot.view.swing.PivotTableType._
 import starling.pivot.HiddenType._
 import starling.browser.common._
-import starling.browser.{OldPageData, ComponentRefreshState}
 
 object PivotTableView {
   def createWithLayer(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSize:Dimension,
@@ -718,78 +717,8 @@ class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSiz
   tableModelsHelper.resizeRowHeaderColumns(fullTable, rowHeaderTable, rowComponent, data.pivotTable.rowFieldHeadingCount, sizerPanel, rowHeaderTableScrollPane)
   tableModelsHelper.resizeColumnHeaderAndMainTableColumns(fullTable, mainTable, colHeaderTable, columnHeaderScrollPane,
     columnHeaderScrollPanePanel, mainTableScrollPane)
-  
-  def setRefreshState(rState:PivotTableViewRefreshState) {
-    // This is being set from previous component on refresh.
-    refreshMainMap ++= rState.refreshCellMainMap
-    refreshRowMap ++= rState.refreshCellRowMap
-    refreshColMap ++= rState.refreshCellColMap
-  }
-
-  def getRefreshState = {
-    def setFractions(map:HashMap[(Int, Int), RefreshedCell]) {
-      for (index <- map.keySet) {
-        val currentFraction = map(index).currentFraction + currentAnimatorFraction
-        map(index).currentFraction = currentFraction
-      }
-    }
-    setFractions(refreshRowMap)
-    setFractions(refreshColMap)
-    setFractions(refreshMainMap)
-
-    PivotTableViewRefreshState(refreshRowMap,refreshColMap,refreshMainMap)
-  }
-
-  def getOldPageData = AbstractPivotComponentOldPageData(tableModelsHelper.rowHeaderData0, tableModelsHelper.colHeaderData0, tableModelsHelper.data0)
-
-  private val refreshMainMap = new HashMap[(Int,Int),RefreshedCell]()
-  private val refreshRowMap = new HashMap[(Int,Int),RefreshedCell]()
-  private val refreshColMap = new HashMap[(Int,Int),RefreshedCell]()
-
-  private var currentAnimatorFraction = 0.0f
-  private val refreshMainHighlighter = new MapHighlighter(refreshMainMap)
-
-  private def startAnimation {
-    new Animator(PivotTableView.RefreshFadeTime, new TimingTargetAdapter {
-      override def timingEvent(fraction:Float) = {
-        currentAnimatorFraction = fraction
-        def doHighlighting(t:JXTable, map:HashMap[(Int,Int),RefreshedCell]) {
-          for (index <- map.keySet) {
-            val cell = map(index)
-            val currentFraction = fraction + cell.currentFraction
-            if (currentFraction < 1.0f) {
-              val c = new Color(87,206,255,math.round((1.0f-currentFraction) * 255))
-              cell.currentColour = c
-              t.repaint(t.getCellRect(index._2, index._1, false))
-            }
-          }
-        }
-        doHighlighting(fullTable, refreshMainMap)
-      }
-      override def end = {
-        refreshMainMap.clear
-        refreshRowMap.clear
-        refreshColMap.clear
-      }
-    }).start
-  }
-
-  def updateRefreshHighlighter(row:Set[(Int,Int)], col:Set[(Int,Int)], main:Set[(Int,Int)]) {
-    // This is being called once we have figured out what is different about this page compared to the last page.
-    for (index <- row) {
-      refreshRowMap(index) = RefreshedCell(index,0.0f)
-    }
-    for (index <- col) {
-      refreshColMap(index) = RefreshedCell(index,0.0f)
-    }
-    for (index <- main) {
-      refreshMainMap(index) = RefreshedCell(index,0.0f)
-    }
-    startAnimation
-  }
 
   allTables foreach Highlighters.applyHighlighters
-//  fullTable.addHighlighter(refreshMainHighlighter)
 
   model.setPivotChangedListener((pivotFieldsState)=> {
     publish(FieldsChangedEvent(pivotFieldsState))
@@ -997,8 +926,6 @@ class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSiz
 case class RefreshedCell(index:(Int,Int), var currentFraction:Float) {
   var currentColour = new Color(0,0,255,128)
 }
-case class PivotTableViewRefreshState(refreshCellRowMap:HashMap[(Int,Int),RefreshedCell], refreshCellColMap:HashMap[(Int,Int),RefreshedCell], refreshCellMainMap:HashMap[(Int,Int),RefreshedCell]) extends ComponentRefreshState
-case class AbstractPivotComponentOldPageData(rowData:Array[Array[AxisCell]], colData:Array[Array[AxisCell]], mainData:Array[Array[TableCell]]) extends OldPageData
 
 class MapHighlighter(map:HashMap[(Int,Int),RefreshedCell]) extends UpdatingBackgroundColourHighlighter(new HighlightPredicate {
   def isHighlighted(renderer:java.awt.Component, adapter:org.jdesktop.swingx.decorator.ComponentAdapter) = {

@@ -12,7 +12,7 @@ case class UserDetailsPage(user:User) extends StarlingServerPage {
   def icon = StarlingIcons.im("/icons/16x16_user_dark.png")
 
   def build(reader:StarlingServerContext) = null
-  def createComponent(context:PageContext, data:PageData, bookmark:Bookmark, browserSize:Dimension) = new UserDetailsPageComponent(context:PageContext, user:User)
+  def createComponent(context:PageContext, data:PageData, bookmark:Bookmark, browserSize:Dimension, previousPageData:Option[PageData]) = new UserDetailsPageComponent(context:PageContext, user:User)
 }
 
 class UserDetailsPageComponent(context:PageContext, user:User) extends MigPanel("insets dialog") with PageComponent {
