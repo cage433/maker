@@ -10,7 +10,8 @@ object Pattern extends Log {
 
     def compose[C](g: C => A) = new Extractor[C, B](f compose g)
     def filter(p: B => Boolean): Extractor[A, B] = andThen[B]((b: B) => if (p(b)) Some(b) else None)
-    def andThen[C](g: B => Option[C]) = new Extractor[A, C]((a:A) => f(a).flatMap(g))
+    def andThen[C](g: B => Option[C]): Extractor[A, C] = new Extractor[A, C]((a:A) => f(a).flatMap(g))
+    def andThen[C](g: Extractor[B, C]): Extractor[A, C] = andThen(g.f)
     def orElse(alternative: Extractor[A, B]): Extractor[A, B] = orElse(alternative.f)
     def orElse(alternative: A => Option[B]): Extractor[A, B] = new Extractor[A, B](a => f(a).orElse(alternative(a)))
 

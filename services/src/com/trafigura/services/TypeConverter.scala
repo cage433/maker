@@ -3,6 +3,7 @@ package com.trafigura.services
 import sun.reflect.generics.reflectiveObjects.ParameterizedTypeImpl
 import java.lang.reflect.{ParameterizedType, Type}
 import java.util.ArrayList
+import starling.utils.ImplicitConversions._
 
 
 trait TypeConverter {
@@ -24,9 +25,9 @@ object TypeConverter {
 
 case class OptionTypeConverter(baseType: Class[_], genericType: Type) extends TypeConverter {
   def convert(value: AnyRef) = {
-    val list = value.asInstanceOf[ArrayList[_]]
+    val list = value.castOrElse[ArrayList[_]](_ => new ArrayList())
 
-    if (list.isEmpty) None else Some(list.get(0))
+    if (list == null || list.isEmpty) None else Some(list.get(0))
   }
 }
 

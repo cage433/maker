@@ -20,6 +20,9 @@ import starling.pivot.{PivotEdits, PivotTableDataSource, Field => PField}
 import starling.utils._
 import collection.immutable.{Map, TreeMap}
 import collection.mutable.{SetBuilder, ListBuffer, HashSet => MSet}
+import scalaz._
+import Scalaz._
+
 
 //import starling.props.Props.VarReportEmailFrom
 
@@ -165,6 +168,9 @@ trait MarketDataStore {
   def latest(selection:MarketDataSelection): Int
   def latestExcelVersions: Map[String, Int]
   def latestMarketDataIdentifier(selection: MarketDataSelection): MarketDataIdentifier
+  def identifierFor(selection: MarketDataSelection, version: Option[MarketDataVersion]) = version.fold(
+    v => MarketDataIdentifier(selection, v), latestMarketDataIdentifier(selection))
+
   def latestObservationDayForMarketDataSet(marketDataSet: MarketDataSet): Option[Day]
   def latestPricingGroupVersions: Map[PricingGroup, Int]
   def latestSnapshot(pricingGroup: PricingGroup, observationDay: Day): Option[SnapshotID]

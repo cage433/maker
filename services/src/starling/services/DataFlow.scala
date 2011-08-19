@@ -3,24 +3,20 @@ package starling.services
 import starling.gui.api._
 import starling.db.MarketDataStore
 import starling.utils.ImplicitConversions._
-import starling.pivot._
-import controller.CombinedCell
-import model.AxisCell
-import com.trafigura.services.TitanSerializableCurrency
 import starling.titan.EDMConversions
 import starling.marketdata._
-import starling.quantity.{Quantity, UOMSymbol, UOM}
-import org.apache.derby.impl.sql.compile.GroupByColumn
-import collection.immutable.{Iterable, Map}
-import collection.SortedMap
-import starling.market.{Level, FuturesExchange}
-import starling.daterange.{StoredFixingPeriod, ObservationTimeOfDay, Day}
-import starling.gui.api.MarketDataIdentifier._
-import starling.gui.api.SnapshotMarketDataVersion._
+import starling.quantity.{Quantity, UOM}
+import collection.immutable.Map
+import starling.market.FuturesExchange
+import starling.daterange.Day
+import scalaz._
+import Scalaz._
 
 case class DataFlow(exchange: FuturesExchange, // is this valid for all data flows ?
                     pricingGroup: PricingGroup, markets: List[String],
-                    from: String, to: String, source: String, sink: String, description: String = "unspecified description")
+                    from: String, to: String, source: String, description: String = "unspecified description") {
+  val sink = pricingGroup.name + '.' + exchange.name
+}
 
 
 trait MarketDataEventSource {

@@ -18,7 +18,7 @@ import starling.pivot.model.{AxisCell, PivotTableModel}
 case class TrinityCommodityCurveKey(commodity:String, exchange:String, currency:String, contract:String)
 
 class FCLGenerator(businessCalendars:BusinessCalendars, curveViewer: CurveViewer) {
-  notNull(curveViewer)
+  notNull("curveViewer" → curveViewer)
 
   private val pivotFieldsState = PivotFieldsState(dataFields = List(Field("Price")),
     rowFields = List(Field("Market"), Field("Period")),

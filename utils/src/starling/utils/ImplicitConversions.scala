@@ -29,6 +29,4 @@ object ImplicitConversions extends RichAnys
   with CollectionsSyntacticSugar
   with CompInt
   with CompLong {
-
-  def notNull[A](a: A)(implicit ma: Manifest[A]) = ma.requireNotNull(a)
 }

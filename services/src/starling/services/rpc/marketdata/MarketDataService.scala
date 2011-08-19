@@ -1,67 +1,71 @@
 package starling.services.rpc.marketdata
 
 import starling.titan.EDMConversions._
-import starling.marketdata.{SpotFXDataType, MarketDataType, PriceFixingsHistoryDataType}
 import starling.pivot._
-import starling.pivot.model.PivotTableModel
 import starling.utils.ImplicitConversions._
-import PriceFixingsHistoryDataType._
-import SpotFXDataType._
-import starling.quantity.{Percentage, Quantity, UOM}
+import starling.quantity.{Quantity, UOM}
 
 import com.trafigura.services._
 import com.trafigura.services.marketdata.{MarketDataServiceApi, ReferenceInterestRate, ReferenceRateSource, Maturity}
 import starling.utils.Log
 import collection.immutable.List
-import starling.services.Server
 import valuation.TitanSnapshotIdentifier
-import starling.daterange.{DateRange, Tenor, Day}
 import org.joda.time.LocalDate
-import starling.services.rpc.valuation.{DefaultEnvironmentProvider, EnvironmentProvider}
+import starling.services.rpc.valuation.EnvironmentProvider
 import starling.gui.api._
-import starling.db.{SnapshotID, MarketDataStore}
+import starling.db.MarketDataStore
+import starling.marketdata._
+import starling.daterange.{StoredFixingPeriod, DateRange, Day}
+import scalaz.Scalaz._
+
 
 class MarketDataService(marketDataStore: MarketDataStore, environmentProvider: EnvironmentProvider)
   extends MarketDataServiceApi with DocumentedService with Log {
 
-  type Matcher[T] = T => Boolean
+  /** Return all snapshots for a given observation day, or every snapshot if no day is supplied */
+  def marketDataSnapshotIDs(observationDay: Option[LocalDate] = None) =
+    environmentProvider.snapshotIDs(observationDay.map(Day.fromJodaDate)).map(_.toSerializable)
 
-  implicit def enrichReferenceInterestRate(self: ReferenceInterestRate) = new {
-    def matches(observationDate: Matcher[TitanSerializableDate], source: Matcher[ReferenceRateSource], maturity: Matcher[Maturity],
-                currency: Matcher[TitanSerializableCurrency], rate: Matcher[TitanSerializablePercentage])
+  def getSpotFXRate(snapshotId: Option[TitanSnapshotIdentifier], observationDay: Option[TitanSerializableDate],
+    fromTSC: TitanSerializableCurrency, toTSC: TitanSerializableCurrency) = {
 
-    = observationDate(self.observationDate) && source(self.source) && maturity(self.maturity) && currency(self.currency)
-  }
+    notNull("observationDay" → observationDay, "from" → fromTSC, "to" → toTSC)
 
-  /**
-   * Return all snapshots for a given observation day, or every snapshot if no day is supplied
-   */
-  def marketDataSnapshotIDs(observationDay: Option[LocalDate] = None): List[TitanSnapshotIdentifier] = {
-    environmentProvider.snapshotIDs(observationDay.map(Day.fromJodaDate)).map {
-      starlingSnapshotID => TitanSnapshotIdentifier(starlingSnapshotID.id.toString, starlingSnapshotID.observationDay.toJodaLocalDate)
+    val (uomFrom,uomTo) = (fromTSC.fromSerializable, toTSC.fromSerializable)
+    val keys: Option[Set[MarketDataKey]] = some(Set(SpotFXDataKey(uomFrom), SpotFXDataKey(uomTo)))
+
+    val rates = spotFXRatesFor(snapshotId, observationDay, keys).toMapWithKeys(_.uom.denominatorUOM) + (UOM.USD → Quantity(1, UOM.SCALAR))
+
+    (rates.get(uomFrom), rates.get(uomTo)) match {
+      case (Some(from), Some(to)) => (from / to).toSerializable
+      case _ => throw new IllegalArgumentException("No Spot FX Rate for %s/%s observed on %s, valid currencies: [%s]" %
+        (fromTSC, toTSC, snapshotId, rates.keySet.mkString(", ")))
     }
   }
 
+  def getSpotFXRates(snapshotId: Option[TitanSnapshotIdentifier], observationDay: Option[TitanSerializableDate]) =
+    spotFXRatesFor(snapshotId, observationDay).map(_.toSerializable)
 
-  def getSpotFXRate(snapshotId: TitanSnapshotIdentifier, from: TitanSerializableCurrency, to: TitanSerializableCurrency)
-    : TitanSerializableQuantity = getSpotFXRate(from.fromSerializable, to.fromSerializable, snapshotId).toSerializable
+  def getReferenceInterestRate(snapshotId: Option[TitanSnapshotIdentifier], observationDay: Option[TitanSerializableDate],
+                               source: ReferenceRateSource, maturity: Maturity,
+                               currency: TitanSerializableCurrency) = {
 
-  def getSpotFXRates(snapshotId: TitanSnapshotIdentifier): List[TitanSerializableQuantity] =
-    getSpotFXRatesImpl(snapshotId).map(_.toSerializable)
+    notNull("source" → source, "maturity" → maturity, "currency" → currency)
 
-  def getReferenceInterestRate(snapshotId: TitanSnapshotIdentifier, source: ReferenceRateSource, maturity: Maturity,
-                               currency: TitanSerializableCurrency): ReferenceInterestRate = {
-    snapshotId.notNull("snapshotId"); source.notNull("source"); maturity.notNull("maturity"); currency.notNull("currency")
-
-    getReferenceInterestRates(snapshotId.toTitanDate, snapshotId.toTitanDate, source, maturity, currency)(0)
+    getReferenceInterestRates(snapshotId, observationDay.getOrElse(today), observationDay.getOrElse(today), source, maturity, currency)(0)
   }
 
-  def getReferenceInterestRates(from: TitanSerializableDate, to: TitanSerializableDate, source: ReferenceRateSource,
+  def getReferenceInterestRates(snapshotId: Option[TitanSnapshotIdentifier],
+                                from: TitanSerializableDate, to: TitanSerializableDate, source: ReferenceRateSource,
                                 maturity: Maturity, currency: TitanSerializableCurrency) = {
-    from.notNull("from"); to.notNull("to"); source.notNull("source"); maturity.notNull("maturity"); currency.notNull("currency")
 
-    val results = getReferenceInterestRates(None, from.fromSerializable upto to.fromSerializable).filter(_.matches(
-      ignore[TitanSerializableDate], eql(source), eql(maturity), eql(currency), ignore[TitanSerializablePercentage]))
+    notNull("snapshotId" → snapshotId, "from" → from, "to" → to, "source" → source, "maturity" → maturity, "currency" → currency)
+
+    val keys: Option[Set[MarketDataKey]] =
+      some(Set(PriceFixingsHistoryDataKey(currency.fromSerializable.toString, Some(source.name))))
+
+    val results = getReferenceInterestRates(marketDataVersion(snapshotId),
+      from.fromSerializable upto to.fromSerializable, keys).filter(_.maturity == maturity)
 
     if (results.isEmpty) throw new IllegalArgumentException(
       "No Reference Interest Rate observed between %s-%s with source: %s, maturity: %s, currency: %s" %
@@ -72,77 +76,46 @@ class MarketDataService(marketDataStore: MarketDataStore, environmentProvider: E
     results
   }
 
-  def getReferenceInterestRates(snapshotId: TitanSnapshotIdentifier) = getReferenceInterestRates(snapshotId.intId, snapshotId.toDay)
+  def getReferenceInterestRates(snapshotId: Option[TitanSnapshotIdentifier], observationDay: Option[TitanSerializableDate]) = {
+    notNull("snapshotId" → snapshotId, "observationDay" → observationDay)
 
-  private def getReferenceInterestRates(version: Option[Int], observationDates: DateRange): List[ReferenceInterestRate] = {
-    val response = getMarketData(fixingRequest.copyObservationDays(observationDates).copyVersion(version).copyExchange("LIBOR")
-      .copy(rows = List(new FieldDetails("Observation Day"), exchangeField, marketField, periodField)))
+    getReferenceInterestRates(marketDataVersion(snapshotId), observationDay.getOrElse(today).fromSerializable)
+  }
 
-    response.data.map(_.map(_.toString)).collect {
-      case List(Day(date), exchange, TitanSerializableCurrency.Parse(currency), Tenor.Parse(tenor), Percentage.Parse(percentage)) =>
-        ReferenceInterestRate(date.toTitan, ReferenceRateSource(exchange.toString), tenor.toTitan, currency, percentage.toSerializable)
+  private def getReferenceInterestRates(version: Option[MarketDataVersion], observationDates: DateRange,
+    keys: Option[Set[MarketDataKey]] = none[Set[MarketDataKey]]) = {
+
+    val observationDays = some(observationDates.days.map(some(_)).toSet)
+
+    val fixings: List[(Option[Day], PriceFixingsHistoryDataKey, PriceFixingsHistoryData)] =
+      marketDataStore.query(identifierFor(version), PriceFixingsHistoryDataType, observationDays, None, keys)
+        .map { case (timedKey, data) => (timedKey.day, timedKey.key, data) }
+        .filterCast[(Option[Day], PriceFixingsHistoryDataKey, PriceFixingsHistoryData)]
+
+    fixings.collect { case (Some(observationDay), PriceFixingsHistoryDataKey(StringToTitanCurrency(currency), Some(source)), fixingsForKey) =>
+      fixingsForKey.fixings.map { case ((level, StoredFixingPeriod.Tenor(tenor)), MarketValue.Percentage(rate)) => {
+        ReferenceInterestRate(observationDay.toTitan, ReferenceRateSource(source), tenor.toTitan, currency, rate.toSerializable)
+      }}
+    }.flatten
+  }
+
+  private def spotFXRatesFor(snapshotId: Option[TitanSnapshotIdentifier], observationDay: Option[TitanSerializableDate],
+    keys: Option[Set[MarketDataKey]] = none[Set[MarketDataKey]]) = {
+
+    val observationDays = some(Set(some(observationDay.getOrElse(today).fromSerializable)))
+
+    val rates: List[(Option[Day], SpotFXDataKey, SpotFXData)] =
+      marketDataStore.query(identifierFor(marketDataVersion(snapshotId)), SpotFXDataType, observationDays, None, keys)
+        .map { case (timedKey, data) => (timedKey.day, timedKey.key, data) }
+        .filterCast[(Option[Day], SpotFXDataKey, SpotFXData)]
+
+    rates.collect { case (Some(_), SpotFXDataKey(UOMToTitanCurrency(_)), SpotFXData(rate)) =>
+      if (rate.denominatorUOM == UOM.USD) rate.invert else rate
     }
   }
 
-  private def ignore[T] = (input: T) => true
-  private def eql[T](equalTo: T) = (input: T) => equalTo == input
-
-  private def getSpotFXRate(from: UOM, to: UOM, snapshotId: TitanSnapshotIdentifier): Quantity = {
-    val rates = getSpotFXRatesImpl(snapshotId).toMapWithKeys(_.uom.denominatorUOM) + (UOM.USD → Quantity(1, UOM.SCALAR))
-
-    (rates.get(from), rates.get(to)) match {
-      case (Some(from), Some(to)) => from / to
-      case _ => throw new IllegalArgumentException("No Spot FX Rate for %s/%s observed on %s, valid currencies: [%s]" %
-        (from, to, snapshotId, rates.keySet.mkString(", ")))
-    }
-  }
-
-  def fromTitan(titanSnapshotIdentifier: TitanSnapshotIdentifier): SnapshotIDLabel = {
-    marketDataStore.snapshotFromID(titanSnapshotIdentifier.intId).getOrElse(throw new Exception("Invalid snapshot id")).label
-  }
-
-  private def getSpotFXRatesImpl(snapshotId: TitanSnapshotIdentifier): List[Quantity] =
-    getMarketData(spotFXRequest.copySnapshotId(fromTitan(snapshotId))).data.map(_.map(_.toString)).collect {
-      case List(_, Quantity.Parse(rate)) => if (rate.denominatorUOM == UOM.USD) rate.invert else rate
-    }
-
-  private def getMarketData(parameters: MarketDataRequestParameters): MarketDataResponse = log.infoF("getMarketData: " + parameters) {
-    parameters.notNull("Missing parameters")
-
-    val selection = MarketDataSelection(Some(parameters.pricingGroup))
-    val version: MarketDataVersion = parameters.version.getOrElse(SpecificMarketDataVersion(marketDataStore.latest(selection)))
-    val pivot = marketDataStore.pivot(MarketDataIdentifier(selection, version), parameters.dataType)
-    val pfs = parameters.pivotFieldsState(pivot)
-    val data = PivotTableModel.createPivotTableData(pivot, Some(pfs)).toFlatRows(Totals.Null, trimBlank = true)
-
-    MarketDataResponse(parameters.copy(version = Some(version)), data)
-  }
-
-  private val fixingRequest = MarketDataRequestParameters(PricingGroup.Metals, PriceFixingsHistoryDataType, None,
-    measures = List(priceField), filters = Map("Observation Day" → List(Day.today.toString)))
-
-  private val spotFXRequest = MarketDataRequestParameters(PricingGroup.Metals, SpotFXDataType, None,
-    measures = List(rateField), rows = List(currencyField))
-}
-
-case class MarketDataResponse(parameters: MarketDataRequestParameters, data: List[List[Any]])
-
-case class MarketDataRequestParameters(pricingGroup: PricingGroup, dataType: MarketDataType,
-  version: Option[MarketDataVersion] = None, measures: List[FieldDetails] = Nil, filters: Map[String, List[String]] = Map(),
-  rows: List[FieldDetails] = Nil, columns: List[FieldDetails] = Nil) {
-
-  def copyVersion(version: Option[Int]) = copy(version = version.map(SpecificMarketDataVersion(_)))
-  def copyExchange(exchangeNames: String*) = addFilter(exchangeField.name, exchangeNames: _*)
-  def copyObservationDay(day: Day) = addFilter("Observation Day", day.toString)
-  def copyObservationDays(dateRange: DateRange) = addFilter("Observation Day", dateRange.days.map(_.toString) : _*)
-  def copySnapshotId(snapshotId: SnapshotIDLabel) =
-    copy(version = Some(SnapshotMarketDataVersion(snapshotId))).copyObservationDay(snapshotId.observationDay)
-  def addFilter(name: String, values: String*) = copy(filters = filters + (name → values.toList))
-
-  def pivotFieldsState(pivot: PivotTableDataSource) =
-    PivotFieldsState(fields(measures), fields(rows), fields(columns), filters.map {
-      case (name, values) => pivot.parseFilter(Field(name), values)
-    }.toList)
-
-  private def fields(names: List[FieldDetails]) = names.map(_.field)
+  private def today = Day.today.toSerializable
+  private def identifierFor(version: Option[MarketDataVersion]) =
+    marketDataStore.identifierFor(MarketDataSelection(Some(PricingGroup.Metals)), version)
+  private def marketDataVersion(snapshotId: Option[TitanSnapshotIdentifier]) = snapshotId.map(_.toMarketDataVersion).flatOpt
 }

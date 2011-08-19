@@ -1,14 +1,21 @@
 package starling.utils.conversions
 
 import starling.utils.{ImplicitConversions, Log}
+import ImplicitConversions._
 
 trait RichAnys {
   implicit def enrichAny[T](value: T) = new RichAny(value)
+
+  def notNull(namedValues: (String, Any)*) {
+    val namesOfMissingValues = namedValues.toList.filter(_._2 == null)._1
+
+    if (namesOfMissingValues.size > 0) {
+      throw new IllegalArgumentException("Missing values: " + namesOfMissingValues.mkString(", "))
+    }
+  }
 }
 
 class RichAny[T](protected val value: T) {
-  import ImplicitConversions._
-
   lazy val trimmed = if (value == null) "" else value.toString.applyIf(_.length > 500, _.substring(0, 496) + " ...")
 
   def add[A, B](tuple: (A, B)): (T, A, B) = (value, tuple._1, tuple._2)
@@ -54,8 +61,6 @@ class RichAny[T](protected val value: T) {
 
   def ::-(list: List[T]): List[T] = value :: list
   def ::-(anotherElem: T): List[T] = value :: anotherElem :: Nil
-
-  def notNull(msg: => Any = "unexpected null") = require(_ != null, msg)
 
   private def perform(action: => Unit): T = { action; value }
 }

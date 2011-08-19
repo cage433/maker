@@ -7,6 +7,8 @@ import starling.daterange._
 import starling.utils.Log
 import starling.{LIMServer, LimNode}
 import starling.utils.Pattern.Extractor
+import scalaz._
+import Scalaz._
 
 trait LIMRelation extends Log {
   val node: LimNode

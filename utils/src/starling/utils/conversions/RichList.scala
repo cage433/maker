@@ -13,6 +13,8 @@ trait RichList {
   implicit def enrichListOfTuple2[A, B](list: List[(A, B)]) = new RichList(list) {
     def mapFirst[C](f: A => C): List[(C, B)] = list.map(_.mapFirst(f))
     def mapSecond[C](f: B => C): List[(A, C)] = list.map(_.mapSecond(f))
+    def _1 = list.map(_._1)
+    def _2 = list.map(_._2)
   }
 
   class RichList[A](list : List[A]) {

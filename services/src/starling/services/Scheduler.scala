@@ -34,10 +34,10 @@ object Scheduler extends Log {
     val broadcaster = observingBroadcaster.broadcaster
 
     val limFlows@List(lmeMetals, sfsMetals, comexMetals): List[DataFlow with MarketDataEventSource] = List(LME, SFS, COMEX)
-      .map(new DataFlow(_, Metals, Nil, props.MetalsEmailAddress(), props.LimEmailAddress(), "LIM", "Starling") with NullMarketDataEventSource)
+      .map(new DataFlow(_, Metals, Nil, props.MetalsEmailAddress(), props.LimEmailAddress(), "LIM") with NullMarketDataEventSource)
 
-    val balticMetals = new DataFlow(BALTIC, Metals, List("Panamax T/C Average (Baltic)"), props.MetalsEmailAddress(), props.WuXiEmailAddress(), "Excel", "Starling") with NullMarketDataEventSource
-    val exbxgMetals = new DataFlow(EXBXG, Metals, Nil, props.MetalsEmailAddress(), props.WuXiEmailAddress(), "Excel", "Starling") with NullMarketDataEventSource
+    val balticMetals = new DataFlow(BALTIC, Metals, List("Panamax T/C Average (Baltic)"), props.MetalsEmailAddress(), props.WuXiEmailAddress(), "Excel") with NullMarketDataEventSource
+    val exbxgMetals = new DataFlow(EXBXG, Metals, Nil, props.MetalsEmailAddress(), props.WuXiEmailAddress(), "Excel") with NullMarketDataEventSource
     val spotfx = SpotFXDataEventSource(Metals, SpotFXDataProvider(marketDataStore))
     val libor = new PriceFixingDataEventSource(Metals, ReferenceInterestDataProvider(marketDataStore))
 
