@@ -8,11 +8,12 @@ import java.awt.{Color, Dimension}
 import starling.quantity.SimpleNamedQuantity
 import swing.{ScrollPane, Label}
 import starling.pivot.PivotFormatter
-import starling.browser.common.MigPanel
 import starling.browser.common.GuiUtils._
 import starling.browser._
+import common.{NewPageButton, MigPanel}
 import starling.rmi.StarlingServer
 import starling.daterange.Day
+import swing.event.ButtonClicked
 
 case class ValuationParametersPage(tradeID:TradeIDLabel, reportParameters:ReportParameters) extends StarlingServerPage {
   def text = "Valuation Parameters for " + tradeID.id
@@ -29,7 +30,7 @@ case class ValuationParametersPage(tradeID:TradeIDLabel, reportParameters:Report
     }
     ValuationParametersPageData(
       reader.cachingStarlingServer.tradeValuation(tradeID, reportParameters.curveIdentifier, timestampToUse),
-      reportParameters)
+      reportParameters, tradeID)
   }
   def createComponent(context:PageContext, data:PageData, bookmark:Bookmark, browserSize:Dimension, previousPageData:Option[PageData]) = {
     new ValuationParametersPageComponent(context, data)
@@ -56,7 +57,7 @@ case class ValuationParametersBookmark(tradeID:TradeIDLabel, userReportData:User
   }
 }
 
-case class ValuationParametersPageData(tradeValuation:TradeValuationAndDetails, reportParameters:ReportParameters) extends PageData
+case class ValuationParametersPageData(tradeValuation:TradeValuationAndDetails, reportParameters:ReportParameters, tradeID:TradeIDLabel) extends PageData
 
 object ValuationParametersPageComponent {
   def reportParametersPanel(rp:ReportParameters) = {
@@ -136,11 +137,23 @@ class ValuationParametersPageComponent(context:PageContext, pageData:PageData) e
   val data = pageData.asInstanceOf[ValuationParametersPageData]
 
   val mainPanel = new MigPanel("insets 0") {
+    val versionsButton = new NewPageButton {
+      text = "Trade Versions"
+      reactions += {
+        case ButtonClicked(b) => {
+          val rp = data.reportParameters
+          val page = SingleTradePage(data.tradeID, rp.tradeSelectionWithTimestamp.desk, TradeExpiryDay(rp.expiryDay),
+            rp.tradeSelectionWithTimestamp.intradaySubgroupAndTimestamp.map(_._1))
+          context.goTo(page)
+        }
+      }
+    }
     val tradePanels = SingleTradePageComponent.generateTradePanels(data.tradeValuation.tradeRow,
       data.tradeValuation.fieldDetailsGroups, data.tradeValuation.columns)
     val infoPanel = new MigPanel("insets 0") {
       tradePanels.foreach(add(_, "ay top, gapright unrel"))
-      add(ValuationParametersPageComponent.reportParametersPanel(data.reportParameters), "ay top")
+      add(ValuationParametersPageComponent.reportParametersPanel(data.reportParameters), "ay top, gapright unrel")
+      add(versionsButton, "ay top")
     }
 
     val pnl = data.tradeValuation.tradeValuation.explanation

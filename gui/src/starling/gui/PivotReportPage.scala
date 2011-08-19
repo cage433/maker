@@ -112,13 +112,6 @@ case class MainPivotReportPage(showParameters:Boolean, reportParameters:ReportPa
     }
     tradeID match {
       case Some(trID) => {
-        val timestamp = trID.tradeSystem match {
-          case TradeSystemLabel.Intraday => reportParameters.tradeSelectionWithTimestamp.intradaySubgroupAndTimestamp.get._2
-          case _ => reportParameters.tradeSelectionWithTimestamp.deskAndTimestamp.get._2.timestamp
-        }
-        /*pageContext.goTo(SingleTradePage(trID, reportParameters.tradeSelectionWithTimestamp.deskAndTimestamp.map(_._1),
-            TradeExpiryDay(timestamp.toDay), reportParameters.tradeSelectionWithTimestamp.intradaySubgroupAndTimestamp.map(_._1)), newTab = ctrlDown)*/
-
         pageContext.goTo(ValuationParametersPage(trID, reportParameters), newTab = ctrlDown)
       }
       case None => None
