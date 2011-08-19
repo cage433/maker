@@ -7,13 +7,9 @@ import event.{Event, ListSelectionChanged, ButtonClicked}
 import starling.pivot._
 import collection.mutable.ListBuffer
 import java.awt.datatransfer.StringSelection
-import starling.rmi.StarlingServer
-import collection.Seq
 import starling.daterange.{Day}
-import view.swing._
 import java.awt.{Toolkit, Dimension}
 import javax.swing.ImageIcon
-import starling.utils.StackTraceToString
 import starling.browser._
 import common.{NListView, MigPanel}
 
@@ -296,12 +292,12 @@ object PivotReportPage {
       case _ => throw new Exception("Don't know how to handle this type of page data")
     }
     
-    val buffer = new ListBuffer[ToolBarButton]()
+    val buffer = new ListBuffer[NewPageToolBarButton]()
     if (numErrors > 0) {
-      buffer += new ToolBarButton {
+      buffer += new NewPageToolBarButton {
         text = "Errors (" + numErrors + ")"
         tooltip = "Show errors that occured whilst running this report"
-        icon = StarlingIcons.icon("/icons/error.png")
+        val leftIcon = StarlingIcons.im("/icons/error.png")
         reactions += {
           case ButtonClicked(b) => {
             pageContext.goTo(ReportErrorsPage(reportParameters))
@@ -312,10 +308,11 @@ object PivotReportPage {
 
     // Always add the market data button here.
     if (reportParameters.runReports) {
-      buffer += new ToolBarButton {
+      buffer += new NewPageToolBarButton {
         text = "Market Data"
         tooltip = "Show all market data used to calculate the values shown"
-        icon = StarlingIcons.icon("/icons/16x16_market_data.png")
+        val leftIcon = StarlingIcons.im("/icons/16x16_market_data.png")
+        focusable = false
         reactions += {
           case ButtonClicked(b) => {
             MarketDataPage.goTo(pageContext, ReportMarketDataPageIdentifier(reportParameters), None, None)

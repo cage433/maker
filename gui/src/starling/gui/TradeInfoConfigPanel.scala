@@ -1,13 +1,13 @@
 package starling.gui
 
-import api.{TradePageParameters, TradeExpiryDay, ReportParameters, TradeSelection}
+import api.{TradePageParameters, TradeExpiryDay, ReportParameters}
 import pages.{PivotPageState, TradeSelectionPage, ConfigPanel}
 import starling.browser.common.GuiUtils._
-import swing.{Button, Label}
+import swing.Label
 import swing.event.ButtonClicked
 import starling.pivot._
 import starling.browser.PageContext
-import starling.browser.common.{RoundedBorder, MigPanel}
+import starling.browser.common.{NewPageButton, RoundedBorder, MigPanel}
 
 class TradeInfoConfigPanel(context:PageContext, rp:ReportParameters) extends MigPanel() with ConfigPanel{
   val tradeSelection = rp.tradeSelectionWithTimestamp.asTradeSelection
@@ -53,7 +53,8 @@ class TradeInfoConfigPanel(context:PageContext, rp:ReportParameters) extends Mig
       }
     }
 
-    val fullDescriptionButton = new Button("View Trade Selection") {
+    val fullDescriptionButton = new NewPageButton {
+      text = "View Trade Selection"
       reactions += {
         case ButtonClicked(b) => {
           val allFilters = (tradeSelection.tradePredicate.filter ::: tradeSelection.tradePredicate.selection.flatten).groupBy(_._1).map{case (k,v) => {

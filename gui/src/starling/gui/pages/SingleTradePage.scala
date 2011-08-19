@@ -16,13 +16,11 @@ import starling.utils.{SColumn, STable}
 import collection.immutable.TreeMap
 import starling.quantity.Quantity
 import starling.daterange.{Day, TimeOfDay, Timestamp}
-import starling.rmi.StarlingServer
-import javax.swing.table.DefaultTableModel
 import org.jdesktop.swingx.renderer.{DefaultTableRenderer, LabelProvider, StringValue}
-import swing.{Alignment, Component, Button, Label}
+import swing.{Alignment, Component, Label}
 import starling.gui.StarlingLocalCache._
-import starling.browser.common.MigPanel
 import starling.browser.{PageComponent, Bookmark, PageData, PageContext}
+import starling.browser.common.{NewPageButton, MigPanel}
 
 case class SingleTradePage(tradeID:TradeIDLabel, desk:Option[Desk], tradeExpiryDay:TradeExpiryDay, intradayGroups:Option[IntradayGroups]) extends StarlingServerPage {
   def text = "Trade " + tradeID
@@ -235,7 +233,9 @@ class SingleTradePageComponent(context:PageContext, pageData:PageData) extends M
     }
     updateTradePanel
 
-    val button = new Button("Value")
+    val button = new NewPageButton {
+      text = "Value"
+    }
 
     add(LabelWithSeparator("Trade " + data.tradeID), "spanx, growx, wrap")
     add(historyTable, "skip 1, pushx, wrap")
@@ -336,9 +336,9 @@ class SingleTradeMainPivotReportPage(val tradeID:TradeIDLabel, val reportParamet
   override def toolbarButtons(context:PageContext, data:PageData) = {
     val buttons = super.toolbarButtons(context, data)
 
-    val valuationParametersButton = new ToolBarButton {
+    val valuationParametersButton = new NewPageToolBarButton {
       text = "Valuation Parameters"
-      icon = StarlingIcons.icon("/icons/16x16_valuation_parameters.png")
+      val leftIcon = StarlingIcons.im("/icons/16x16_valuation_parameters.png")
       tooltip = "Show the parameters that were used to value this trade"
 
       reactions += {
