@@ -250,8 +250,17 @@ object Launcher extends Log {
       case ExcelMarketListUpdate(values) => {
         cacheMap(ExcelDataSets) = values
       }
-      case MarketDataSnapshotSet(snapshots) => {
-        cacheMap(Snapshots) = snapshots
+      case mdss: MarketDataSnapshotSet => {
+        val snapshotsBySelection = cacheMap(Snapshots)
+
+        val snapshots = snapshotsBySelection.get(mdss.selection)
+
+        val newLabels = snapshots match {
+          case None => List(mdss.newSnapshot)
+          case Some(labels) => mdss.newSnapshot :: labels
+        }
+
+        cacheMap(Snapshots) = snapshotsBySelection.updated(mdss.selection, newLabels)
       }
       case PricingGroupMarketDataUpdate(pg, version) => {
         cacheMap(PricingGroupLatestMarketDataVersion) =

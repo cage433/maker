@@ -77,7 +77,7 @@ object TableCell {
     new TableCell(pq, PivotFormatter.formatPivotQuantity(pq, formatInfo), RightTextPosition, pq.hasErrors, longText = t, warning = pq.warning)
   }
 
-  val PivotQuantity = Extractor.from[TableCell](_.pivotQuantityValue)
+  val PivotQuantity: Extractor[TableCell, PivotQuantity] = Extractor.from[TableCell](_.pivotQuantityValue)
 }
 
 class TotalState extends Serializable

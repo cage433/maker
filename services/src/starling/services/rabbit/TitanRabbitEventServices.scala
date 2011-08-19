@@ -8,44 +8,66 @@ import com.trafigura.common.control.PipedControl._
 import com.rabbitmq.client.AMQP.BasicProperties
 import com.trafigura.services.rabbit.Publisher
 import org.codehaus.jettison.json.JSONArray
-import com.trafigura.services.log.Logger
 import com.trafigura.events._
-import starling.gui.api.MarketDataSnapshot
-import starling.utils.{TypedBroadcaster, Log, Stopable}
 import com.trafigura.shared.events._
-
+import starling.utils.{Broadcaster, Log, Stopable}
+import starling.utils.ImplicitConversions._
+import starling.quantity.UOM
+import starling.daterange.Day
+import com.trafigura.services.TitanSerializableCurrency
+import starling.titan.EDMConversions._
+import starling.gui.api.{ReferenceInterestRateDataEvent, MarketDataSnapshot, SpotFXDataEvent}
 
 /**
  * Titan RabbitMQ event module
  */
-trait TitanRabbitEventServices extends Stopable with Logger {
+trait TitanRabbitEventServices extends Stopable with Log {
   val eventDemux : IDemultiplexEvents
   val rabbitEventPublisher : Publisher
   def addClient(client:DemultiplexerClient)
+}
+
+object Payloads extends PayloadFactory {
+  def forSnapshotId(snapshotId: String) = createPayload(Event.StarlingSnapshotIdPayload, snapshotId)
+  def forSpotFXCurrency(currency: TitanSerializableCurrency) = createPayload(Event.StarlingSpotFXCurrency, currency.toString)
+  def forObservationDay(observationDay: Day) = createPayload(Event.StarlingObservationDay, observationDay.toString) // ddMMMyyyy ok ?
+  def forReferenceRateSource(source: String) = createPayload(Event.StarlingReferenceRateSource, source)
+
+  private def createPayload(payloadType: String, keyId: String): Payload = createPayload(payloadType, Event.StarlingSource, keyId)
 }
 
 case class TitanRabbitIdBroadcaster(
     publisher : Publisher,
     source : String = Event.StarlingSource,
     subject : String = Event.StarlingMarketDataSnapshotIDSubject,
-    verb : EventVerbEnum = NewEventVerb,
-    payloadType : String = Event.StarlingSnapshotIdPayload) extends TypedBroadcaster[MarketDataSnapshot] with Logger {
+    payloadType : String = Event.StarlingSnapshotIdPayload) extends Broadcaster with Log {
 
-  def typedBroadcast(mds: MarketDataSnapshot) = try {
-    val events = createUpdatedIDEvents(mds.snapshotIDs, source, subject, verb, payloadType)
-    publisher.publish(events)
+  def toTitan(list: List[UOM]): List[TitanSerializableCurrency] = list.flatMapO(_.serializableCurrency)
+
+  def verbFor(isCorrection: Boolean): EventVerbEnum = if (isCorrection) UpdatedEventVerb else NewEventVerb
+
+  def broadcast(event: swing.event.Event) = try {
+    val events: Option[JSONArray] = event partialMatch {
+      case MarketDataSnapshot(snapshotIDs) => createEvents(subject, NewEventVerb, snapshotIDs.map(Payloads.forSnapshotId))
+      case SpotFXDataEvent(observationDay, currencies, snapshotIDLabel, isCorrection) => {
+        createEvents("SpotFXData", verbFor(isCorrection),
+          Payloads.forObservationDay(observationDay) ::
+          Payloads.forSnapshotId(snapshotIDLabel.id.toString) :: toTitan(currencies).map(Payloads.forSpotFXCurrency))
+      }
+      case ReferenceInterestRateDataEvent(observationDay, exchangeName, currencies, snapshotIDLabel, isCorrection) => {
+        createEvents("ReferenceSomething", verbFor(isCorrection),
+          Payloads.forObservationDay(observationDay) :: Payloads.forReferenceRateSource(exchangeName) ::
+          Payloads.forSnapshotId(snapshotIDLabel.id.toString) :: toTitan(currencies).map(Payloads.forSpotFXCurrency))
+      }
+    }
+
+    events.map(publisher.publish)
   }
   catch { // catch and log all exceptions since we don't want to cause the event broadcaster to fail more generally
-    case th : Throwable => Log.error("Caught exception in Titan Rabbit event broadcaster %s".format(th.getMessage))
+    case th : Throwable => log.error("Caught exception in Titan Rabbit event broadcaster %s".format(th.getMessage))
   }
 
-  private def createUpdatedIDEvents(ids : List[String], source : String, subject : String, verb : EventVerbEnum, payloadType : String) : JSONArray = {
-    val pf = new PayloadFactory()
-    val payloads = ids.map(id => pf.createPayload(payloadType, source, id))
-    createEvents(source, subject, verb, payloads)
-  }
-
-  private def createEvents(source : String, subject : String, verb : EventVerbEnum, payloads : List[Payload]) : JSONArray = {
+  private def createEvents(subject : String, verb : EventVerbEnum, payloads : List[Payload]) : JSONArray = {
     val keyIdentifier = System.currentTimeMillis.toString
     val ev = EventFactory().createEvent(subject, verb, source, keyIdentifier, payloads)
     ||> { new JSONArray } { r => r.put(ev.toJson) }
@@ -166,7 +188,7 @@ class MockRabbitPublisher(val eventDemux : MockEventDemux) extends Publisher {
   }
 }
 
-class MockEventDemux() extends IDemultiplexEvents {
+class MockEventDemux() extends IDemultiplexEvents with Log {
   private var clients = List[DemultiplexerClient]()  
   def startup {}
   def shutdown {}
@@ -186,7 +208,7 @@ class MockEventDemux() extends IDemultiplexEvents {
         case e => {
           val msg = " event demultiplexer client " + client + " encountered exception"
           println(msg + ", " + e.getMessage + "\n" + e.getStackTrace.mkString(","))
-          Log.warn(msg, e)
+          log.warn(msg, e)
         }
       }
     }    

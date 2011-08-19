@@ -4,6 +4,7 @@ import org.apache.log4j._
 
 import starling.utils.ImplicitConversions._
 import util.DynamicVariable
+import scalaz.Scalaz._
 
 
 class AdaptingLogger(val rootLogger: VarLogger) extends VarLogger {
@@ -179,7 +180,15 @@ class Log4JLogger(val logger: Logger, levelTransformer: DynamicVariable[(Levels.
 
   override def fatal(msg: AnyRef, t: Throwable) = logger.fatal(msg, t)
 
-  override def level = levelTransformer.value(logger.getLevel match {
+  private def getInheritedLevel = {
+    def recurse(category: Category): Level = {
+      category.getLevel ?? recurse(category.getParent)
+    }
+
+    recurse(logger)
+  }
+
+  override def level = levelTransformer.value(getInheritedLevel match {
     case Level.ALL => Levels.All
     case Level.DEBUG => Levels.Debug
     case Level.ERROR => Levels.Error
@@ -207,8 +216,7 @@ class Log4JLogger(val logger: Logger, levelTransformer: DynamicVariable[(Levels.
 
   override def level_=(level: Levels.Value) = logger.setLevel(liftToLog4J(level))
 
-  override def level[T](newLevel: Levels.Value)(thunk: => T) = if (newLevel >= level) thunk else
-    levelTransformer.withValue(_ => newLevel) { thunk }
+  override def level[T](newLevel: Levels.Value)(thunk: => T) = levelTransformer.withValue(_ => newLevel) { thunk }
 
   override def name = logger.getName
 

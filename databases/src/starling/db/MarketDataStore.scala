@@ -9,7 +9,6 @@ import starling.utils.sql._
 import starling.gui.api._
 import starling.utils.cache.CacheFactory
 import starling.daterange._
-import collection.mutable.{ListBuffer, HashSet => MSet}
 import starling.calendar.Clock
 
 import starling.utils.Pattern._
@@ -20,6 +19,7 @@ import starling.curves.Environment
 import starling.pivot.{PivotEdits, PivotTableDataSource, Field => PField}
 import starling.utils._
 import collection.immutable.{Map, TreeMap}
+import collection.mutable.{SetBuilder, ListBuffer, HashSet => MSet}
 
 //import starling.props.Props.VarReportEmailFrom
 
@@ -200,7 +200,7 @@ trait MarketDataStore {
   def sourcesFor(pricingGroup: PricingGroup): List[MarketDataSource]
 }
 
-case class SaveResult(maxVersion: Int, anythingChanged: Boolean)
+case class SaveResult(maxVersion: Int, anythingChanged: Boolean, affectedObservationDays: Option[List[Day]] = None)
 
 case class VersionedMarketData(timestamp: Timestamp, version: Int, data: Option[MarketData])
 
@@ -696,6 +696,10 @@ class MarketDataTags(db: DBTrait[RichResultSetRow]) {
     snapshots().groupBy(_.marketDataSelection).map{ case(selection, snapshots) => selection -> snapshots.map(_.label).sortWith(_ > _) }
   }
 
+  def latestSnapshotFor(selection: MarketDataSelection): Option[SnapshotIDLabel] = {
+    snapshots().filter(_.marketDataSelection == selection).optMaxBy(_.id).map(_.label)
+  }
+
   def snapshotFromID(snapshotID : Int): Option[SnapshotID] = {
     db.queryWithOneResult("""
     select *
@@ -839,6 +843,8 @@ class DBMarketDataStore(
 
   def saveActions(marketDataSetToData : Map[MarketDataSet, Iterable[MarketDataUpdate]]) : SaveResult = this.synchronized {
     val changedMarketDataSets = new scala.collection.mutable.HashMap[MarketDataSet, (Set[Day], Int)]()
+    val allChangedDays = new ListBuffer[Day]
+
     var maxVersion = 0
     for ((marketDataSet, data) <- marketDataSetToData.toList.sortBy(_._1.name)) {
       maxVersion = scala.math.max(maxVersion, saveActions(data, marketDataSet, changedMarketDataSets))
@@ -856,16 +862,19 @@ class DBMarketDataStore(
           days += day
           broadcaster.broadcast(PricingGroupObservationDay(pricingGroup, day))
         }
+
+        allChangedDays ++= changedDays
       }
     }
-    SaveResult(maxVersion, changedMarketDataSets.nonEmpty)
+
+    SaveResult(maxVersion, changedMarketDataSets.nonEmpty, Some(allChangedDays.distinct.toList))
   }
 
 
   private def saveActions(data: Iterable[MarketDataUpdate], marketDataSet: MarketDataSet,
                           changedMarketDataSets: scala.collection.mutable.HashMap[MarketDataSet, (Set[Day], Int)]): Int = {
 
-    val SaveResult(innerMaxVersion, update) = db.store(data, marketDataSet)
+    val SaveResult(innerMaxVersion, update, _) = db.store(data, marketDataSet)
 
     if (update) {
       changedMarketDataSets(marketDataSet) = (data.flatMap(_.observationPoint.day.toList).toSet, innerMaxVersion)
@@ -908,14 +917,20 @@ class DBMarketDataStore(
     log.infoWithTime("saving market data: " + observationDay) {
       val updates: Map[MarketDataSet, scala.List[MarketDataUpdate]] = importer.getUpdates(observationDay, marketDataSets: _*)
 
-      log.debug("Number of updates: " + updates.mapValues(_.toList.size))
-
-      saveActions(updates)
+      log.infoWithTime("Number of updates: " + updates.mapValues(_.toList.size)) {
+        saveActions(updates)
+      }
     }
   }
 
+  def latestSnapshotFor(marketDataSelection: MarketDataSelection): Option[SnapshotID] = {
+    snapshots().filter(_.marketDataSelection == marketDataSelection).optMaxBy(_.id)
+  }
+
   def snapshot(marketDataSelection: MarketDataSelection, doImport: Boolean, observationDay: Day): Option[SnapshotID] = {
-    importData(marketDataSelection, observationDay)
+    val previousSnapshot: Option[SnapshotIDLabel] = tags.latestSnapshotFor(marketDataSelection)
+
+    val saveResult = importData(marketDataSelection, observationDay)
 
     getMaxVersion(marketDataSelection).map { version =>
       val (snapshotID, justCreated) = tags.snapshot(version, marketDataSelection, observationDay)
@@ -923,7 +938,8 @@ class DBMarketDataStore(
       println("snapshotid: " + snapshotID)
 
       if (justCreated) {
-        broadcaster.broadcast(MarketDataSnapshotSet(snapshotsByMarketDataSelection))
+        broadcaster.broadcast(MarketDataSnapshotSet(marketDataSelection, previousSnapshot, snapshotID.label,
+          saveResult.affectedObservationDays))
         broadcaster.broadcast(MarketDataSnapshot(List(snapshotID.id.toString)))
       }
       snapshotID

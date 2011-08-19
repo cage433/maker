@@ -19,7 +19,7 @@ import Pattern._
 import starling.utils.ImplicitConversions._
 
 
-case class RefinedMetalsLimMarketDataSource(limServer: LIMServer) extends MarketDataSource {
+case class RefinedMetalsLimMarketDataSource(limServer: LIMServer) extends MarketDataSource with Log {
   private val fixingsSources = PriceFixingsHistoryDataType → (List(LMEFixings, LIBORFixings, BloombergTokyoCompositeFXRates,
     BalticFixings,
     new MonthlyFuturesFixings(Trafigura.Bloomberg.Futures.Shfe, Settle),
@@ -34,9 +34,11 @@ case class RefinedMetalsLimMarketDataSource(limServer: LIMServer) extends Market
   override def description = List(fixingsSources, spotFXSources, priceSources).flatMap
     { case (marketDataType, sources) => marketDataType.name.pair(sources.flatMap(_.description)).map("%s → %s" % _) }
 
-  def read(day: Day) = Map(getValuesForType(PriceDataType, day, day, priceSources),
+  def read(day: Day) = log.infoWithTime("Getting data from LIM") {
+    Map(getValuesForType(PriceDataType, day, day, priceSources),
                            getValuesForType(SpotFXDataType, day, day, spotFXSources),
                            getValuesForType(PriceFixingsHistoryDataType, day.startOfFinancialYear, day, fixingsSources))
+  }
 
   private def getValuesForType(m: Any, start: Day, end: Day, sources: (MarketDataType, List[LimSource])) =
     (start, end, sources.head) → sources.tail.flatMap(source => getValues(source, start, end).toList)

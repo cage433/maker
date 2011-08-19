@@ -76,5 +76,6 @@ trait RichList {
 
     def partialMap[B](pf: PartialFunction[A, B]): List[B] = flatMapO(pf.lift)
     def safeMap[B](f: A => B): List[B] = flatMapO(f.option)
+    def optMaxBy[B](f: A => B)(implicit cmp: Ordering[B]): Option[A] = if (list.isEmpty) None else Some(list.maxBy(f))
   }
 }

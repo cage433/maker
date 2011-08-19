@@ -203,6 +203,10 @@ abstract class PivotTableDataSource extends PivotGridSource {
     PivotTableConverter(table = PivotTableModel.createPivotTableData(this, pivotState)).createGrid()
   }
 
+  def flattenedGridFor(pivotState: Option[PivotFieldsState]): List[List[Any]] = {
+    PivotTableModel.createPivotTableData(this, pivotState).toFlatRows(Totals.Null, convertToText = false)
+  }
+
   protected def fieldDetails(names: String*) = names.toList.map(FieldDetails(_))
   protected def fields(fieldDetails: FieldDetails*): List[Field] = fieldDetails.map(_.field).toList
   protected def fields(fieldDetails: List[FieldDetails]) = fieldDetails.map(_.field).toList

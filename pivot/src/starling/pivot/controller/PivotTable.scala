@@ -5,6 +5,7 @@ import starling.pivot._
 import starling.utils.ImplicitConversions._
 import starling.utils.{GridConverter, Utils}
 import collection.immutable.List._
+import java.lang.Boolean
 
 case class TreePivotFilter(root:TreePivotFilterNode)
 case class TreePivotFilterNode(value:Any, label:String, children:List[TreePivotFilterNode]) {
@@ -60,7 +61,8 @@ case class PivotTable(rowFields:List[Field], rowFieldHeadingCount:Array[Int], ro
     matches.iterator.next._2.value.getOrElse(throw new Exception("No matches for " + filters))
   }
 
-  def toFlatRows(totals: Totals, extraFormatInfo:ExtraFormatInfo = PivotFormatter.DefaultExtraFormatInfo, trimBlank: Boolean = false):
+  def toFlatRows(totals: Totals, extraFormatInfo:ExtraFormatInfo = PivotFormatter.DefaultExtraFormatInfo,
+                 trimBlank: Boolean = false, convertToText: Boolean = true):
     List[List[Any]] = {
 
     val pivotTableConverter = PivotTableConverter(OtherLayoutInfo(totals = totals), this, extraFormatInfo)
@@ -100,14 +102,14 @@ case class PivotTable(rowFields:List[Field], rowFieldHeadingCount:Array[Int], ro
       } else {
         rowBuffer ++= rowHeaders //use the last row for the row field names
       }
-      rowBuffer ++= row.map(_.text)
+      rowBuffer ++= (if (convertToText) row.map(_.text) else row)
       rowsBuffer += rowBuffer.toList
     }
 
     for ((row, data) <- rowHeaderCells zip mainTableCells) {
       val rowBuffer = new scala.collection.mutable.ArrayBuffer[Any]()
-      rowBuffer ++= row.map(_.text)
-      rowBuffer ++= data.map(_.text)
+      rowBuffer ++= (if (convertToText) row.map(_.text) else row)
+      rowBuffer ++= (if (convertToText) data.map(_.text) else data)
       rowsBuffer += rowBuffer.toList
     }
 

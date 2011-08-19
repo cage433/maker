@@ -364,14 +364,9 @@ class MarketDataPageComponent(
   }
 
   pageContext.remotePublisher.reactions += {
-    case MarketDataSnapshotSet(snapshots) => {
+    case mdss: MarketDataSnapshotSet => if (thisPage.marketDataIdentifier.selection == mdss.selection) {
       this.suppressing(snapshotsComboBox.selection) {
-        val itemSelected = snapshotsComboBox.selection.item
-        snapshotsComboBoxModel.removeAllElements()
-
-        {val newSnapshots = snapshots.getOrElse(thisPage.marketDataIdentifier.selection, List())
-          SnapshotComboValue(None) :: newSnapshots.map(ss=>SnapshotComboValue(Some(ss))).toList}.foreach(snapshotsComboBoxModel.addElement(_))
-        snapshotsComboBox.selection.item = itemSelected
+        snapshotsComboBoxModel.addElement(SnapshotComboValue(Some(mdss.newSnapshot)))
       }
     }
   }

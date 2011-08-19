@@ -1,7 +1,6 @@
 package starling.gui.pages
 
 import java.awt.{Color, Dimension}
-import collection.immutable.TreeSet
 import starling.gui.api._
 import swing.Swing._
 import swing.event.{Event, SelectionChanged, ButtonClicked, MouseClicked}
@@ -14,11 +13,12 @@ import starling.daterange.{ObservationTimeOfDay, ObservationPoint, Day}
 import starling.gui.StarlingLocalCache._
 import starling.browser.{ComponentState, PageContext}
 import starling.browser.common.{NewPageButton, TitledDayPicker, NListView, MigPanel}
+import collection.immutable.{Map, TreeSet}
 
 class MarketDataChooser(maybeDesk:Option[Desk], pageContext:PageContext, snapshotSelection:Option[SnapshotSelection],
                         showValuationDayPicker:Boolean=false) extends MigPanel("insets 0") {
   private val allPricingGroupsForDesk = pageContext.localCache.pricingGroups(maybeDesk)
-  private var snapshots = pageContext.localCache.snapshots(maybeDesk)
+  private var snapshots: Map[MarketDataSelection, List[SnapshotIDLabel]] = pageContext.localCache.snapshots(maybeDesk)
 
   override def enabled = super.enabled
   override def enabled_=(b:Boolean) = {
@@ -160,7 +160,7 @@ class MarketDataChooser(maybeDesk:Option[Desk], pageContext:PageContext, snapsho
     case PricingGroupObservationDay(pricingGroup, day) => {
       updatePopulatedObservationDays(marketDataSelection.selection)
     }
-    case MarketDataSnapshotSet(snapshots) => {
+    case _: MarketDataSnapshotSet => {
       this.snapshots = snapshots
       val selected = snapshotView.selected
       updateSnapshotList(marketDataSelection.selection)

@@ -40,7 +40,7 @@ object ConverterUtils {
   }
 }
 
-object ScalaObjectConverter {
+object ScalaObjectConverter extends Log {
   def configure(xstream : XStream) {
     xstream.registerConverter(new Converter() {
       def canConvert(theType:Class[_]) = theType.getName.endsWith("$")
@@ -51,7 +51,7 @@ object ScalaObjectConverter {
         val klass = context.getRequiredType
         val field = klass.getField("MODULE$")
         val r = field.get(null)
-        Log.debug("scalaobject:: " + r)
+        log.debug("scalaobject:: " + r)
         r
       }
     }, ObjectPosition) // I'm putting this in at a lower priority than others so that it doesn't pick up the EmptySet$ and EmptyMap$ that can come up occasionally.
@@ -66,7 +66,7 @@ object ListConverter {
   }
 }
 
-class ListConverter(mapper : Mapper) extends AbstractCollectionConverter(mapper) {
+class ListConverter(mapper : Mapper) extends AbstractCollectionConverter(mapper) with Log {
   import ConverterUtils._
 
   override def canConvert(clazz : Class[_]) = classOf[List[_]].isAssignableFrom(clazz)
@@ -81,7 +81,7 @@ class ListConverter(mapper : Mapper) extends AbstractCollectionConverter(mapper)
     while (reader.hasMoreChildren)
       withChild(reader)(buffer += readItem(reader, context, buffer))
     val r = buffer.toList
-    Log.debug("list:: " + r)
+    log.debug("list:: " + r)
     r
   }
 }
@@ -128,7 +128,7 @@ object TupleConverter {
   )
 }
 
-class TupleConverter(mapper : Mapper) extends ProductConverter(mapper) {
+class TupleConverter(mapper : Mapper) extends ProductConverter(mapper) with Log {
   import TupleConverter._
   import ConverterUtils._
 
@@ -144,12 +144,12 @@ class TupleConverter(mapper : Mapper) extends ProductConverter(mapper) {
     val tupleClazz = Class.forName("scala.Tuple"+arity)
     val tupleCtor = tupleClazz.getDeclaredConstructors()(0)
     val r = tupleCtor.newInstance(buffer: _*).asInstanceOf[Product]
-    Log.debug("tuple:: " + r)
+    log.debug("tuple:: " + r)
     r
   }
 }
 
-trait TreeCollectionConverter {
+trait TreeCollectionConverter extends Log {
   import ConverterUtils._
 
   val mapper: Mapper
@@ -166,12 +166,12 @@ trait TreeCollectionConverter {
       val orderingClazz = reader.getAttribute("class")
       context.convertAnother(null, mapper.realClass(orderingClazz)).asInstanceOf[Ordering[Any]]
     }
-    Log.debug("tree:: " + r)
+    log.debug("tree:: " + r)
     r
   }
 }
 
-abstract class SetConverter(mapper : Mapper) extends AbstractCollectionConverter(mapper) {
+abstract class SetConverter(mapper : Mapper) extends AbstractCollectionConverter(mapper) with Log {
   import ConverterUtils._
 
   override def marshal(value : AnyRef, writer : HierarchicalStreamWriter, context : MarshallingContext) = {
@@ -184,12 +184,12 @@ abstract class SetConverter(mapper : Mapper) extends AbstractCollectionConverter
     while (reader.hasMoreChildren)
       withChild(reader)(buffer += readItem(reader, context, buffer))
     val r = ctor(buffer)
-    Log.debug("set:: " + r)
+    log.debug("set:: " + r)
     r
   }
 }
 
-abstract class MapConverter(override val mapper : Mapper) extends AbstractCollectionConverter(mapper) {
+abstract class MapConverter(override val mapper : Mapper) extends AbstractCollectionConverter(mapper) with Log {
   import ConverterUtils._
 
   override def marshal(value : AnyRef, writer : HierarchicalStreamWriter, context : MarshallingContext) = {
@@ -211,7 +211,7 @@ abstract class MapConverter(override val mapper : Mapper) extends AbstractCollec
         buffer += ((key, value))
       }
     val r = ctor(buffer)
-    Log.debug("map:: " + r)
+    log.debug("map:: " + r)
     r
   }
 }
@@ -238,7 +238,7 @@ class TreeSetConverter(override val mapper : Mapper) extends SetConverter(mapper
   override def unmarshal(reader : HierarchicalStreamReader, context : UnmarshallingContext) = {
     val ordering = unmarshallOrdering(reader, context)
     val r = unmarshal(reader, context, x => TreeSet(x : _*)(ordering))
-    Log.debug("treeset:: " + r)
+    log.debug("treeset:: " + r)
     r
   }
 }
@@ -265,7 +265,7 @@ class TreeMapConverter(mapper : Mapper) extends MapConverter(mapper) with TreeCo
   override def unmarshal(reader : HierarchicalStreamReader, context : UnmarshallingContext) = {
     val ordering = unmarshallOrdering(reader, context)
     val r = unmarshal(reader, context, x => TreeMap(x : _*)(ordering))
-    Log.debug("treemap:: " + r)
+    log.debug("treemap:: " + r)
     r
   }
 }
@@ -304,7 +304,7 @@ class DefaultSetConverter(override val mapper : Mapper) extends SetConverter(map
 
   override def unmarshal(reader : HierarchicalStreamReader, context : UnmarshallingContext) = {
     val r = unmarshal(reader, context, x => Set(x : _*))
-    Log.debug("defaultset:: " + r)
+    log.debug("defaultset:: " + r)
     r
   }
 }
@@ -332,7 +332,7 @@ class DefaultMapConverter(override val mapper : Mapper) extends MapConverter(map
 
   override def unmarshal(reader : HierarchicalStreamReader, context : UnmarshallingContext) = {
     val r = unmarshal(reader, context, x => Map(x : _*))
-    Log.debug("defaultmap:: " + r)
+    log.debug("defaultmap:: " + r)
     r
   }
 }
@@ -354,7 +354,7 @@ class HashSetConverter(override val mapper : Mapper) extends SetConverter(mapper
 
   override def unmarshal(reader : HierarchicalStreamReader, context : UnmarshallingContext) = {
     val r = unmarshal(reader, context, x => HashSet(x : _*))
-    Log.debug("hashset:: " + r)
+    log.debug("hashset:: " + r)
     r
   }
 }
@@ -379,7 +379,7 @@ class HashMapConverter(override val mapper : Mapper) extends MapConverter(mapper
 
   override def unmarshal(reader : HierarchicalStreamReader, context : UnmarshallingContext) = {
     val r = unmarshal(reader, context, x => HashMap(x : _*))
-    Log.debug("hashmap:: " + r)
+    log.debug("hashmap:: " + r)
     r
   }
 }

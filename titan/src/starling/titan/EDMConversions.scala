@@ -58,8 +58,8 @@ object EDMConversions {
   }
 
   implicit def enrichTitanSnapshotIdentifier(snapshotId: TitanSnapshotIdentifier) = new {
-    def toTitanDate = TitanSerializableDate(snapshotId.observationDay)
-    def toDay = Day.fromLocalDate(snapshotId.observationDay)
+    def toTitanDate = TitanSerializableDate(snapshotId.snapshotDay)
+    def toDay = Day.fromLocalDate(snapshotId.snapshotDay)
   }
 
   // Titan implicits

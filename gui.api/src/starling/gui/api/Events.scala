@@ -7,13 +7,15 @@ import java.lang.String
 import collection.immutable.Map
 import starling.pivot.PivotLayout
 import starling.daterange._
+import starling.quantity.UOM
 
 class Events //The is just here as I find this class using "^n Events"
 
 case class IntradayUpdated(group: String, user: User, timestamp:Timestamp) extends Event
 case class DeskClosed(desk: Desk, timestamp:TradeTimestamp) extends Event
 case class DeskCloseFailed(desk: Desk, timestamp:TradeTimestamp, error: Throwable) extends Event
-case class MarketDataSnapshotSet(snapshots:Map[MarketDataSelection,List[SnapshotIDLabel]]) extends Event
+case class MarketDataSnapshotSet(selection: MarketDataSelection, previousSnapshot: Option[SnapshotIDLabel],
+                                 newSnapshot: SnapshotIDLabel, affectedObservationDays: Option[List[Day]]) extends Event
 case class MarketDataSnapshot(snapshotIDs : List[String]) extends Event
 case class PricingGroupMarketDataUpdate(pricingGroup:PricingGroup, version:Int) extends Event
 case class ExcelObservationDay(name:String, day:Day) extends Event
@@ -99,3 +101,13 @@ case class UploadInterestRatesUpdate(user : User, label : String, observationDat
 }
 
 case class EmailEvent(from: String = "", to: String = "", subject: String = "", body: String = "") extends Event
+
+abstract class MarketDataEvent(val observationDay: Day, val label: SnapshotIDLabel, isCorrection: Boolean) extends Event
+case class SpotFXDataEvent(override val observationDay: Day, currencies: List[UOM],
+                           override val label: SnapshotIDLabel, isCorrection: Boolean)
+  extends MarketDataEvent(observationDay, label, isCorrection)
+
+case class ReferenceInterestRateDataEvent(override val observationDay: Day, exchange: String, currencies: List[UOM],
+                                          override val label: SnapshotIDLabel, isCorrection: Boolean)
+  extends MarketDataEvent(observationDay, label, isCorrection)
+

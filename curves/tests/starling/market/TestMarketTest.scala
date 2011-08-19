@@ -11,6 +11,7 @@ trait TestMarketSpec extends ExpiryRulesSpec {
   MarketProvider.registerImpl(TestMarketLookup)
 }
 
+
 object SomeMarketRules{
   // Some hard coded rules:
 

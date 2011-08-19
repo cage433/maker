@@ -28,7 +28,8 @@ object AxisCell {
   val Null = AxisCell(AxisValue(Field.NullField, NullAxisValueType, 0), Some(1), "", None, true, NotTotal, 0, LeftTextPosition)
   val NullTotal = AxisCell(AxisValue(Field.NullField, TotalAxisValueType, 0), Some(1), "", None, true, Total, 0, LeftTextPosition)
   val Filler = AxisCell(AxisValue(Field.NullField, NullAxisValueType, 0), Some(1), "", None, true, NotTotal, 0, LeftTextPosition)
-  val ValueText = Extractor.from[AxisCell](cell => Some(cell.valueText))
+  val ValueText: Extractor[AxisCell, String] = Extractor.from[AxisCell](cell => Some(cell.valueText))
+  val Value: Extractor[AxisCell, Any] = Extractor.from[AxisCell](cell => Some(cell.value.value.value))
 }
 
 

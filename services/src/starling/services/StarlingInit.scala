@@ -46,6 +46,8 @@ import com.trafigura.services.ResteasyServiceApi
 import starling.browser.service.{UserLoggedIn, Version}
 import com.trafigura.services.marketdata.{ExampleService, MarketDataServiceApi}
 import com.trafigura.services.{WebServiceFactory, DocumentationService, ResteasyServiceApi}
+import swing.event.Event
+import collection.mutable.ListBuffer
 
 class StarlingInit( val props: Props,
                     dbMigration: Boolean = true,
@@ -124,16 +126,16 @@ class StarlingInit( val props: Props,
   val titanRabbitEventServices = new DefaultTitanRabbitEventServices(props)
   log.debug("After rabbit start")
 
-  val broadcaster = new CompositeBroadcaster(
+  val broadcaster = ObservingBroadcaster(new CompositeBroadcaster(
       true                                      → new RMIBroadcaster(rmiServerForGUI),
       props.rabbitHostSet                       → new RabbitBroadcaster(new RabbitMessageSender(props.RabbitHost())),
       props.EnableVerificationEmails()          → new EmailBroadcaster(mailSender),
-      (startRabbit && props.titanRabbitHostSet) → TitanRabbitIdBroadcaster(titanRabbitEventServices.rabbitEventPublisher))
+      (startRabbit && props.titanRabbitHostSet) → TitanRabbitIdBroadcaster(titanRabbitEventServices.rabbitEventPublisher)))
 
   val revalSnapshotDb = new RevalSnapshotDB(starlingDB)
   val limServer = new LIMServer(props.LIMHost(), props.LIMPort())
 
-  val (fwdCurveAutoImport, marketDataStore) = {
+  val (fwdCurveAutoImport, marketDataStore) = log.infoWithTime("Creating Market Data Store") {
     import MarketDataSet._
 
     val marketDataSources = Map(
@@ -235,6 +237,7 @@ class StarlingInit( val props: Props,
   val curveViewer = new CurveViewer(marketDataStore)
   val trinityUploader = new TrinityUploader(new FCLGenerator(businessCalendars, curveViewer),
     new XRTGenerator(marketDataStore), trinityService, props)
+
   val scheduler = Scheduler.create(businessCalendars, marketDataStore, broadcaster, trinityUploader, props)
 
   val referenceData = new ReferenceData(businessCalendars, marketDataStore, strategyDB, scheduler)
@@ -274,10 +277,7 @@ class StarlingInit( val props: Props,
   val loopyXLReceiver = new LoopyXLReceiver(props.LoopyXLPort(), auth,
     new CurveHandler(curveViewer, marketDataStore))
 
-   val latestTimestamp = if (forceGUICompatability) 
-     GUICode.latestTimestamp.toString 
-   else 
-     BouncyRMI.CodeVersionUndefined
+   val latestTimestamp = if (forceGUICompatability) GUICode.latestTimestamp.toString else BouncyRMI.CodeVersionUndefined
 
   val rmiServerForGUI:BouncyRMIServer[User] = new BouncyRMIServer(
     rmiPort,

@@ -5,6 +5,7 @@ import org.testng.annotations.Test
 import org.scalatest.matchers.ShouldMatchers
 import collection.mutable.{HashMap, ListBuffer}
 import java.util.concurrent.CountDownLatch
+import org.scalatest.Ignore
 
 class LogTest extends TestNGSuite with ShouldMatchers {
   import Levels._
@@ -33,7 +34,8 @@ class LogTest extends TestNGSuite with ShouldMatchers {
     }
   }
 
-  @Test def cannotIncreaseLoggingLevel {
+  // If it's the case that we'll only change the logging level in tests then increasing is fine.
+  @Test(enabled = false) def cannotIncreaseLoggingLevel {
     val currentLevel = Log.level
 
     if (currentLevel >= Info) {
