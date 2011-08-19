@@ -24,6 +24,7 @@ object Permission {
       StarlingGasolineSpec -> Set(Desk.GasolineSpec),
       StarlingHoustonDerivatives -> Set(Desk.HoustonDerivatives),
       StarlingDevelopers -> Desk.values.toSet,
+      StarlingTesters -> Desk.values.toSet,
       StarlingAdmin -> Desk.values.toSet
     )
 
