@@ -23,6 +23,7 @@
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="library" name="scala-lib" level="project" />
+    <orderEntry type="library" name="scala-swing-lib" level="project" />
     <orderEntry type="module" module-name="gui.api" exported="" />
     <orderEntry type="module" module-name="browser" exported="" />
     <orderEntry type="module-library" exported="">
