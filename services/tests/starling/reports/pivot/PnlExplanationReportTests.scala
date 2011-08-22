@@ -187,8 +187,6 @@ class PnlExplanationReportTests extends JonTestEnv {
 
     val forward = new Future(market, env.marketDay.day, Quantity(0, market.priceUOM), Quantity(1000, market.uom))
 
-    println(forward.mtm(env))
-    println(forward.mtm(env.forwardState((Day(2009, 9, 15) + 10).endOfDay)))
     val expectedInterest = forward.mtm(env) * (1-env.discount(market.currency, forwardDay))
 
       val timeChangesPnl = new TimeChangesPnl(env, env.marketDay.nextDay, Map(UTPIdentifier(1) -> forward))

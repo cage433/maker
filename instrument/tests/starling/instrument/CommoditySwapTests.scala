@@ -661,7 +661,6 @@ class CommoditySwapTests extends JonTestEnv {
     val explainedTotal = explanation.map {
       _.value
     }.toList.sum
-    println("et: " + explainedTotal)
 
     val allCurveKeysMtm = PivotQuantity.calcOrCatch({
       swap.mtm(environmentFor(curveKeys), USD)
@@ -720,7 +719,6 @@ class CommoditySwapTests extends JonTestEnv {
     val explainedTotal = explanation.map {
       _.value
     }.toList.sum
-    println("et: " + explainedTotal)
 
 
     val env1NoRounding = env1Fwd.copy(environmentParameters = DefaultRiskParameters)

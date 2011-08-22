@@ -1,1 +1,1 @@
-sbt/sbt "project devLauncher" write-classpath
+sbt/sbt "project dummy" write-classpath

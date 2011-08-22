@@ -105,9 +105,44 @@ object StarlingBuild extends Build{
 
   val testDependency = "compile;test->test"
 
+  val crazyTestListener = new sbt.TestsListener{
+    //def contentLogger (test: TestDefinition) : Option[ContentLogger] = None                                                                                                                                        
+
+    //Used by the test framework for logging test results
+    def doComplete (finalResult: TestResult.Value){
+      println("Called doComplete")
+    }
+
+    //called once, at end.
+    def doInit{
+      println("Called doInit")
+    }
+
+    //called once, at beginning.
+    def endGroup (name: String, result: TestResult.Value) {
+      println("Called endGroup")
+    }
+
+    //called if test completed
+    def endGroup (name: String, t: Throwable){
+      println("Called endGroup")
+    }
+
+    //called if there was an error during test
+    def startGroup (name: String){
+      println("Called startGroup")
+    }
+
+    //called for each class or equivalent grouping
+    def testEvent (event: TestEvent){
+      println("Called testEvent " + event)
+    }
+  }
+
   lazy val utils = Project(
     "utils", 
     file("./utils"), 
+    //settings = standardSettings ++ Seq(libraryDependencies ++= utilsDependencies, testListeners += crazyTestListener)
     settings = standardSettings ++ Seq(libraryDependencies ++= utilsDependencies)
   )
 
@@ -265,6 +300,39 @@ object StarlingBuild extends Build{
     settings = standardSettings
   ) dependsOn(services, gui)
 
+  // Evil hack so that I can get a classpath exported including the test-classes of all projects.
+  // See bin/write-classpath-script.sh
+  lazy val dummy = Project(
+    "dummy",
+    file("./dummy-sbt-vim-hack"),
+    settings = standardSettings
+  ) dependsOn(
+    utils % "test->test", 
+    bouncyrmi % "test->test", 
+    auth % "test->test", 
+    concurrent % "test->test", 
+    quantity % "test->test", 
+    daterange % "test->test", 
+    loopyxl % "test->test", 
+    maths % "test->test", 
+    pivot % "test->test", 
+    pivotUtils % "test->test",
+    guiapi % "test->test",
+    curves % "test->test",
+    instrument % "test->test",
+    gui % "test->test",
+    browser % "test->test",
+    browserService % "test->test",
+    trade % "test->test",
+    VaR % "test->test",
+    titanModel % "test->test",
+    databases % "test->test",
+    titan % "test->test",
+    services % "test->test",
+    devLauncher % "test->test"
+  )
+
+
   val root = Project("starling", file("."), settings = standardSettings) aggregate (
     utils, 
     bouncyrmi, 
@@ -394,7 +462,7 @@ object StarlingBuild extends Build{
 
     // write a classpatch script for dev
     val writeClasspathScript = TaskKey[Unit]("write-classpath")
-    val writeClasspathScriptTask = writeClasspathScript <<= (target, fullClasspath in Runtime) map { (target, cp) =>
+    val writeClasspathScriptTask = writeClasspathScript <<= (target, fullClasspath in Test) map { (target, cp) =>
       println("Target path is: " + target + "\n")
       println("Full classpath is: " + cp.map(_.data).mkString(":"))
       import java.io._

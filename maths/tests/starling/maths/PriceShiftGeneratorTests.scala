@@ -110,7 +110,6 @@ class PriceShiftGeneratorTests extends TestNGSuite {
   	val shifts = produceRandomShifts(psg, nScenarios)
   	val logReturns = annualisedLogReturns(shifts, prices, dT)
     for (iPrice <- 0 until nPrices){
-      Log.info("St DEV = " + logReturns(iPrice).standardDeviation + ", expected " + vols(iPrice) * math.sqrt(dT))
       val tol = 3.0 * vols(iPrice) * math.sqrt(dT) / math.sqrt(nScenarios)
 //      assertEquals(logReturns.viewColumn(iPrice).mean, 0.0, tol)
     }
