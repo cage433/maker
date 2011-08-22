@@ -46,11 +46,11 @@ object CannedLauncher {
 object CannedBrowserService extends BrowserService {
   def name = "Canned"
   def readSettings = UserSettingsLabel(Nil)
-  def saveSettings(settings: UserSettingsLabel) = throw new Exception("No saving")
-  def saveBookmark(bookmark: BookmarkLabel) = throw new Exception("no saving")
-  def deleteBookmark(name: String) = throw new Exception("no saving")
+  def saveSettings(settings: UserSettingsLabel) {println("We don't save canned settings")}
+  def saveBookmark(bookmark: BookmarkLabel) {println("We don't save canned bookmarks")}
+  def deleteBookmark(name: String) {println("We don't delete canned bookmarks")}
   def bookmarks = Nil
-  def logPageView(info: PageLogInfo) = { /*skip*/ }
+  def logPageView(info: PageLogInfo) { /*skip*/ }
 }
 
 object CannedBrowserBundle extends BrowserBundle {
