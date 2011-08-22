@@ -589,7 +589,7 @@ class ValuationService(
   class EventHandler extends DemultiplexerClient {
     import Event._
     lazy val rabbitPublishChangedValueEvents = publishStarlingChangedValueEvents(rabbitEventServices.rabbitEventPublisher)
-    lazy val rabbitPublishNewValuationEvents = publishNewValuationEvents(rabbitEventServices.rabbitEventPublisher) _
+    lazy val rabbitPublishNewValuationEvents = publishCreatedValuationEvents(rabbitEventServices.rabbitEventPublisher) _
     def handle(ev: Event) {
       if (ev == null) Log.warn("Got a null event") else {
         if (TrademgmtSource == ev.source && (TradeSubject == ev.subject || NeptuneTradeSubject == ev.subject)) { // Must be some form of trade event from trademgmt source
@@ -628,11 +628,11 @@ class ValuationService(
 
               Log.info("Trades revalued for received event using snapshot %s number of changed valuations %d".format(snapshotIDString, changedIDs.size))
             }
-            case NewEventVerb => {
+            case CreatedEventVerb => {
               Log.info("New event received for %s".format(tradeIds))
               tradeIds.foreach(titanTradeCache.addTrade)
             }
-            case CancelEventVerb | RemovedEventVerb => {
+            case CancelledEventVerb | RemovedEventVerb => {
               Log.info("Cancelled / deleted event received for %s".format(tradeIds))
               tradeIds.foreach(titanTradeCache.removeTrade)
             }
@@ -698,13 +698,13 @@ class ValuationService(
 
           Log.info("Assignments revalued for received event using snapshot %s number of changed valuations %d".format(snapshotIDString, changedIDs.size))
         }
-        case NewEventVerb => {
+        case CreatedEventVerb => {
           Log.info("New event received for %s".format(ids))
           if (Event.EDMLogisticsInventorySubject == ev.subject) {
             ids.foreach(titanInventoryCache.addInventory)
           }
         }
-        case CancelEventVerb | RemovedEventVerb => {
+        case CancelledEventVerb | RemovedEventVerb => {
           Log.info("Cancelled / deleted event received for %s".format(ids))
           if (Event.EDMLogisticsInventorySubject == ev.subject) {
             ids.foreach(titanInventoryCache.removeInventory)
@@ -724,10 +724,10 @@ class ValuationService(
       eventPublisher.publish(events)
     }
 
-    private def publishNewValuationEvents(eventPublisher : Publisher)(newValuations : List[(String, Boolean)]) = {
+    private def publishCreatedValuationEvents(eventPublisher : Publisher)(newValuations : List[(String, Boolean)]) = {
       val newValuationPayloads : List[(String, String)] = newValuations.flatMap(e => (RefinedMetalTradeIdPayload, e._1) :: (StarlingNewValuationServiceStatusPayload, e._2.toString) :: Nil)
       val payloads = createStarlingPayloads(newValuationPayloads)
-      val newValuationEvents = createValuationServiceEvents(NewEventVerb, payloads)
+      val newValuationEvents = createValuationServiceEvents(CreatedEventVerb, payloads)
       eventPublisher.publish(newValuationEvents)
     }
 
