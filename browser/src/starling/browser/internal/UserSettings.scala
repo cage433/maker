@@ -11,31 +11,31 @@ object UserSettings {
 }
 
 class UserSettings extends Serializable {
-  val map = new HeterogeneousMap[ManifestedKey]
+  val map = new HeterogeneousMap[Key]
 
-  def settingExists[T](key: Key[T])(implicit m: Manifest[T]):Boolean = {
-    map.contains(ManifestedKey(m,key))
+  def settingExists[T](key: Key[T]):Boolean = {
+    map.contains(key)
   }
 
-  def getSetting[T](key: Key[T], default: => T)(implicit m: Manifest[T]): T = {
-    map.getOrElse(ManifestedKey(m,key), default)
+  def getSetting[T](key: Key[T], default: => T): T = {
+    map.getOrElse(key, default)
   }
 
-  def getSetting[T](key: Key[T])(implicit m: Manifest[T]): T = {
-    map(ManifestedKey(m,key))
+  def getSetting[T](key: Key[T]): T = {
+    map(key)
   }
 
-  def getSettingOption[T](key: Key[T])(implicit m: Manifest[T]): Option[T] = {
-    map.get(ManifestedKey(m,key))
+  def getSettingOption[T](key: Key[T]): Option[T] = {
+    map.get(key)
   }
 
-  def putSetting[T](key: Key[T], value: T)(implicit m: Manifest[T]) {
-    map(ManifestedKey(m,key)) = value
+  def putSetting[T](key: Key[T], value: T) {
+    map(key) = value
   }
 
   def toLabel(serverContext:ServerContext) = {
-    UserSettingsLabel(map.underlying.map { case (ManifestedKey(_,Key(description,bundleName)), value) => {
-      val bundle = serverContext.browserBundles.find(_.bundleName == bundleName).get
+    UserSettingsLabel(map.underlying.map { case (Key(description,bundleName), value) => {
+      val bundle = serverContext.bundleForName(bundleName)
       UserSettingsEntry(bundleName, description, bundle.marshal(value.asInstanceOf[AnyRef]))
     }}.toList)
   }

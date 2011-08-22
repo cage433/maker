@@ -176,11 +176,10 @@ class ManualReportConfigPanel(context:PageContext, reportParameters:ReportParame
     }
 
     add(pnlFromCheckbox)
-    add(pnlFromDayAndTimeChooser.dayChooser, "sgx")
-    add(pnlFromDayAndTimeChooser.timeOfDayChooser, "wrap")
-    add(tradesAsOfLabel)
-    add(tradesBookCloseChooser, "sgx")
-    add(useExcelButton)
+    add(pnlFromDayAndTimeChooser.dayChooser)
+    add(useExcelButton, "wrap")
+    add(tradesAsOfLabel, "al right")
+    add(tradesBookCloseChooser, "spanx")
 
     reactions += {
       case DayChangedEvent(`observationDayChooser`, d) => {
@@ -271,10 +270,9 @@ class ManualReportConfigPanel(context:PageContext, reportParameters:ReportParame
       } else {
         marketDataSelection.noExcel
       }
-      val rule = if(day1Panel.useExcelButton.selected) {
-        EnvironmentRuleLabel.RealTime
-      } else {
-        EnvironmentRuleLabel.COB
+      val rule = marketDataSelection.pricingGroup match {
+        case Some(pg) if pg == PricingGroup.Metals => EnvironmentRuleLabel.AllCloses
+        case _ => EnvironmentRuleLabel.COB
       }
 
       val marketIDFrom = MarketDataIdentifier(fromMarketDataSelection, marketDataVersion)
@@ -282,7 +280,7 @@ class ManualReportConfigPanel(context:PageContext, reportParameters:ReportParame
         marketIDFrom,
         rule,
         pnlFromDayAndTime.day,
-        pnlFromDayAndTime,
+        pnlFromDayAndTime.day.endOfDay(),
         pnlFromDayAndTime.nextBusinessDay(context.localCache.ukBusinessCalendar),
         envMods)
       if (tradeSel.desk.isEmpty) {

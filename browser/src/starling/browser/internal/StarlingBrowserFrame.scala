@@ -197,7 +197,7 @@ class StarlingBrowserTabbedPane(homePage: Page, pageBuilder: PageBuilder, lCache
   peer.getActionMap.put("newTabAction", newTabAction.peer)
 
   peer.getInputMap(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT).put(KeyStroke.getKeyStroke(KeyEvent.VK_F1, 0), "helpAction")
-  //peer.getActionMap.put("helpAction", Action("helpAction"){createStarlingBrowser(true, Left(HelpPage))}.peer)
+  peer.getActionMap.put("helpAction", Action("helpAction"){createStarlingBrowser(true, Left(HelpPage))}.peer)
 
   private val nextTabAction = Action("Next Tab") {
     val nextIndex = selection.index + 1

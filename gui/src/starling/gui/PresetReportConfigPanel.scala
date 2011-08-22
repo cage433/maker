@@ -102,10 +102,10 @@ class PresetReportConfigPanel(context:PageContext, reportParameters:ReportParame
         realTimePanel.dayChangeCheckBox.preferredSize = new Dimension(realTimePanel.dayChangeCheckBox.preferredSize.width, useExcelButton.preferredSize.height)
 
         add(dayChangeCheckBox)
-        add(dayChangeDayChooser, "sgx")
+        add(dayChangeDayChooser)
         add(useExcelButton, "wrap")
         add(bookCloseLabel, "al right")
-        add(bookCloseChooser, "sgx")
+        add(bookCloseChooser, "spanx")
 
         def setDays(canUseExcel:Boolean, pnlParams:Option[PnlFromParameters]) {
           pnlParams match {
@@ -463,9 +463,15 @@ class PresetReportConfigPanel(context:PageContext, reportParameters:ReportParame
       }
       val marketIDFrom = MarketDataIdentifier(fromMarketDataSelection, marketDataVersion)
       val pnlFromDayAndTime = buttonPanel.cobPanel.dayChangePanel.dayChangeDayChooser.day.endOfDay()
+
+      val rule = marketDataSelection.pricingGroup match {
+        case Some(pg) if pg == PricingGroup.Metals => EnvironmentRuleLabel.AllCloses
+        case _ => EnvironmentRuleLabel.COB
+      }
+
       val cIDFrom = CurveIdentifierLabel(
         marketIDFrom,
-        EnvironmentRuleLabel.COB,
+        rule,
         pnlFromDayAndTime.day,
         pnlFromDayAndTime,
         pnlFromDayAndTime.nextBusinessDay(context.localCache.ukBusinessCalendar),
