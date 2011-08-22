@@ -135,13 +135,12 @@ case class MarketDataBookmark(selection:MarketDataSelection, pageState:MarketDat
 
 object MarketDataPage {
   //Goes to the MarketDataPage and picks the default market data type (if not specified) and pivot field state
-  def goTo(
+  def pageFactory(
             pageContext:PageContext,
             marketDataIdentifier:MarketDataPageIdentifier,
             marketDataType:Option[MarketDataTypeLabel],
-            observationDays:Option[Set[Day]],
-            ctrlDown:Boolean=false) {
-    pageContext.createAndGoTo( (serverContext) => {
+            observationDays:Option[Set[Day]]): ServerContext=>Page = {
+    (serverContext) => {
       val mdt = marketDataType.orElse(serverContext.lookup(classOf[StarlingServer]).marketDataTypeLabels(marketDataIdentifier).headOption)
       val fs = pageContext.getSetting(
         StandardUserSettingKeys.UserMarketDataTypeLayout, Map[MarketDataTypeLabel, PivotFieldsState]()
@@ -156,7 +155,15 @@ object MarketDataPage {
         marketDataType = mdt,
         pivotPageState = PivotPageState(false, PivotFieldParams(true, fieldsState))
       ))
-    }, newTab = ctrlDown)
+    }
+  }
+  def goTo(
+            pageContext:PageContext,
+            marketDataIdentifier:MarketDataPageIdentifier,
+            marketDataType:Option[MarketDataTypeLabel],
+            observationDays:Option[Set[Day]],
+            ctrlDown:Boolean=false) {
+    pageContext.createAndGoTo( (sc) => pageFactory(pageContext, marketDataIdentifier, marketDataType, observationDays)(sc), newTab = ctrlDown)
   }
 }
 

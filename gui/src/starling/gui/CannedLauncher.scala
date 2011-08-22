@@ -6,7 +6,6 @@ import pages.PivotTablePageData._
 import pages.{PivotTablePageData, AbstractPivotPage, SingleTradePage, PivotPageState}
 import swing.event.ButtonClicked
 import starling.pivot.model._
-import swing.{Label, Button}
 import java.awt.Dimension
 import starling.pivot._
 import java.lang.reflect.Method
@@ -18,11 +17,12 @@ import starling.auth.User
 import starling.daterange.{Month, Year, Day}
 import collection.immutable.{Map, Iterable}
 import starling.browser._
-import common.MigPanel
+import common.{NumberedButton, MigPanel}
 import service._
 import starling.browser.internal.UserSettings
 import service.internal.HeterogeneousMap
 import xstream.GuiStarlingXStream
+import swing.{Component, Label, Button}
 
 /**
  * An alternative StarlingBrowser for testing gui features quickly
@@ -40,10 +40,6 @@ object CannedLauncher {
         def username = "Canned User"
       }
     }
-//    Launcher.start(nullServer, publisher, CannedPivotReportPage(PivotPageState(false, PivotFieldParams(true, None))))
-    /*Launcher.start(nullServer, publisher, CannedPivotReportPage(PivotPageState(false,
-      PivotFieldParams(true, Some(PivotFieldsState(List(Field("PV")), List(Field("Trader"), Field("Product"),
-        Field("Lots"), Field("Strike")), List(Field("Trade")), List(), Totals(true,true,true)))), "")))*/
   }
 }
 
@@ -61,7 +57,7 @@ object CannedBrowserBundle extends BrowserBundle {
   def bundleName = "Canned"
   def marshal(obj: AnyRef) = GuiStarlingXStream.write(obj)
   def unmarshal(text: String) = GuiStarlingXStream.read(text).asInstanceOf[AnyRef]
-  override def homeButtons(pageContext: PageContext) = new CannedHomePagePageComponent(pageContext) :: Nil
+  override def homeButtons(pageContext: PageContext) = CannedHomePagePageComponent.buttons
 }
 
 class NullPageData extends PageData
@@ -82,46 +78,27 @@ case class CannedHomePage() extends CannedPage {
   def icon = StarlingIcons.im("/icons/tablenew_16x16.png")
 }
 
-class CannedHomePagePageComponent(pageContext:PageContext) extends MigPanel("") with PageComponent {
-  val runButton = new Button {
-    text = "Run"
-    reactions += {
-      case ButtonClicked(b) => pageContext.goTo(CannedPivotReportPage(PivotPageState(false, PivotFieldParams(true, None))))
-    }
+object CannedHomePagePageComponent {
+  val icon = StarlingIcons.im("/icons/stock_chart-reorganize.png")
+  def buttons = {
+    PageButton("Run", CannedPivotReportPage(PivotPageState(false, PivotFieldParams(true, None))), icon) ::
+    PageButton("Run Editable", EditableCannedPivotReportPage(PivotPageState(false, PivotFieldParams(true, None))), icon) ::
+    PageButton("Run Editable Specified", EditableSpecifiedCannedPivotReportPage(PivotPageState(false, PivotFieldParams(true, None))), icon) ::
+    PageButton("Run Slow", SlowCannedPivotReportPage(PivotPageState(false, PivotFieldParams(true, None))), icon) ::
+    Nil
   }
-  add(runButton)
-  add(new Button {
-    text = "Run Editable"
-    reactions += {
-      case ButtonClicked(b) => pageContext.goTo(EditableCannedPivotReportPage(PivotPageState(false, PivotFieldParams(true, None))))
-    }
-  })
-  add(new Button {
-    text = "Run Editable Specified"
-    reactions += {
-      case ButtonClicked(b) => pageContext.goTo(EditableSpecifiedCannedPivotReportPage(PivotPageState(false, PivotFieldParams(true, None))))
-    }
-  })
-  add(new Button {
-    text = "Run Diff"
-    reactions += {
-      case ButtonClicked(b) => pageContext.goTo(DiffCannedPivotReportPage(PivotPageState(false, PivotFieldParams(true, None))))
-    }
-  })
-  add(new Button {
-    text = "Run Slow"
-    reactions += {
-      case ButtonClicked(b) => pageContext.goTo(SlowCannedPivotReportPage(PivotPageState(false, PivotFieldParams(true, None))))
-    }
-  })
-  add(new Button {
-    text = "View Trade"
-    reactions += {
-      case ButtonClicked(b) => pageContext.goTo(SingleTradePage(TradeIDLabel(1234.toString, TradeSystemLabels.TrinityTradeSystem), Some(Desk("Trinity")), TradeExpiryDay(Day.today), None))
-    }
-  })
+}
+class CannedHomePagePageComponent(pageContext:PageContext) extends MigPanel("") with PageComponent {
 
-  override def defaultComponentForFocus = Some(runButton.peer)
+  var firstButton:Component = null
+  CannedHomePagePageComponent.buttons.foreach { button =>
+    val buttonComponent = new NumberedButton(button.name, button.icon, (ctrl) => {
+            pageContext.createAndGoTo( (serverContext) => button.pageFactory.create(serverContext), newTab=ctrl) })
+    if (firstButton == null) firstButton = buttonComponent
+    add(buttonComponent)
+  }
+
+  override def defaultComponentForFocus = Some(firstButton.peer)
 }
 
 case class CannedDrilldownPage(fields:Seq[(Field,Any)]) extends CannedPage {

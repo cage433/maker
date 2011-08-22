@@ -66,6 +66,8 @@ class StarlingHomePageComponent(context:PageContext, browserSize:Dimension, page
     }
   }
 
+  val homeButtons = context.bundles.flatMap { bundle => { bundle.homeButtons(context) }}
+
   val c = new MigPanel("insets 0", "[grow,fill]", "[p]0[grow,fill]") {
     val banner = new MigXPanel("insets 0", "[p][p][p]push[p]") {
       background = GuiUtils.BannerColour
@@ -124,15 +126,13 @@ class StarlingHomePageComponent(context:PageContext, browserSize:Dimension, page
 
         add(helpLabelHolder, "split, spanx, ax right, ay top, wrap")
 
-        val buttons = context.bundles.flatMap { bundle => {
-          bundle.homeButtons(context)
-        }}
-
-        buttons.zipWithIndex.foreach { case (button, index) => {
+        homeButtons.zipWithIndex.foreach { case (button, index) => {
           val isFirst = (index == 0)
-          val isLast = (index == buttons.size-1)
+          val isLast = (index == homeButtons.size-1)
           val modifiers = (if (isFirst) ", skip 1" else "") + (if(isLast) ", wrap unrel" else "")
-          add(button, "sg" + modifiers)
+          val nb = new NumberedButton(button.name, button.icon, (ctrl) => {
+            context.createAndGoTo( (serverContext) => button.pageFactory.create(serverContext), newTab=ctrl) })
+          add(nb, "sg" + modifiers)
         }}
         //add(tradeDataButton, "sg, skip 1")
 
@@ -145,6 +145,14 @@ class StarlingHomePageComponent(context:PageContext, browserSize:Dimension, page
     add(banner, "wrap")
     add(actionsPanelHolder)
   }
+
+  homeButtons.foreach { button => {
+    button.key.foreach { key =>
+      val actionName = button.name + "Action"
+      peer.getInputMap(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT).put(key, actionName)
+      peer.getActionMap.put(actionName, Action(actionName) {context.createAndGoTo( (sc) => button.pageFactory.create(sc))}.peer)
+    }
+  }}
 
   override def defaultComponentForFocus = Some(bookmarksPanel.bookmarksListView.peer)
 

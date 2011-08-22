@@ -33,6 +33,7 @@ import starling.pivot._
 import javax.swing.event.{ChangeEvent, ChangeListener}
 import GuiUtils._
 import starling.pivot.utils.PeriodPivotFormatter
+import scala.Some._
 
 object StarlingServerNotificationHandlers {
   def notificationHandler = {
@@ -422,46 +423,55 @@ object StarlingHomeButtons {
   def create(context:PageContext) = {
     import StarlingLocalCache._
 
-    def gotoTradePage(ctrlDown:Boolean) {
-      context.goTo( {
-        val initial = {
-          val defaultSelection = (context.localCache.desks.headOption, None)
-          val lastSelection = context.getSetting(StandardUserSettingKeys.InitialTradeSelection, defaultSelection)
-          lastSelection match {
-            case (_, Some(groups)) => {
-              val validGroups = context.localCache.intradaySubgroups.keySet
-              if (groups.subgroups.forall(g => validGroups.exists(vg => vg.startsWith(g)))) lastSelection else defaultSelection
+    def tradePage = {
+      new PageFactory() {
+        def create(serverContext: ServerContext) = {
+          val initial = {
+            val defaultSelection = (context.localCache.desks.headOption, None)
+            val lastSelection = context.getSetting(StandardUserSettingKeys.InitialTradeSelection, defaultSelection)
+            lastSelection match {
+              case (_, Some(groups)) => {
+                val validGroups = context.localCache.intradaySubgroups.keySet
+                if (groups.subgroups.forall(g => validGroups.exists(vg => vg.startsWith(g)))) lastSelection else defaultSelection
+              }
+              case _ => lastSelection
             }
-            case _ => lastSelection
           }
+
+          val deskWithTime = initial._1.flatMap(d => context.localCache.latestTimestamp(d).map(ts => (d, ts)))
+          val intradayWithTime = initial._2.map(groups => (groups, context.localCache.latestTimestamp(groups)))
+
+          TradeSelectionPage(TradePageParameters(
+            deskWithTime, intradayWithTime,
+            TradeExpiryDay(Day.today())), PivotPageState(false, PivotFieldParams(true, None)))
         }
-
-        val deskWithTime = initial._1.flatMap(d => context.localCache.latestTimestamp(d).map(ts => (d, ts)))
-        val intradayWithTime = initial._2.map(groups => (groups, context.localCache.latestTimestamp(groups)))
-
-        TradeSelectionPage(TradePageParameters(
-          deskWithTime, intradayWithTime,
-          TradeExpiryDay(Day.today())), PivotPageState(false, PivotFieldParams(true, None)))
-      }, ctrlDown)
+      }
     }
 
-    def gotoMarketDataPage(ctrlDown:Boolean) {
-      MarketDataPage.goTo(context, StandardMarketDataPageIdentifier(defaultMarketDataIdentifier), None, None, ctrlDown)
+    def marketDataPage = new PageFactory() {
+      def create(serverContext: ServerContext) = {
+        MarketDataPage.pageFactory(context, StandardMarketDataPageIdentifier(defaultMarketDataIdentifier), None, None)(serverContext)
+      }
     }
 
-    def gotoCurvePage(ctrlDown: Boolean) {
-      val curveLabel = CurveLabel(CurveTypeLabel("Price"), defaultMarketDataIdentifier, EnvironmentSpecificationLabel(
-        context.localCache.populatedDays(defaultMarketDataIdentifier.selection).lastOption.getOrElse(Day.today()),
-        context.localCache.environmentRulesForPricingGroup(defaultMarketDataIdentifier.selection.pricingGroup).head
-      ))
 
-      val initialState = PivotFieldsState(
-        dataFields = List(Field("Price"), Field("Input")),
-        columnFields = List(Field("Observation Time"), Field("Market")),
-        rowFields = List(Field("Period"))
-      )
+    def curvePage = {
+      new PageFactory {
+        def create(serverContext: ServerContext) = {
+          val curveLabel = CurveLabel(CurveTypeLabel("Price"), defaultMarketDataIdentifier, EnvironmentSpecificationLabel(
+            context.localCache.populatedDays(defaultMarketDataIdentifier.selection).lastOption.getOrElse(Day.today()),
+            context.localCache.environmentRulesForPricingGroup(defaultMarketDataIdentifier.selection.pricingGroup).head
+          ))
 
-      context.goTo(new CurvePage(curveLabel, PivotPageState.default(initialState)), ctrlDown)
+          val initialState = PivotFieldsState(
+            dataFields = List(Field("Price"), Field("Input")),
+            columnFields = List(Field("Observation Time"), Field("Market")),
+            rowFields = List(Field("Period"))
+          )
+
+          new CurvePage(curveLabel, PivotPageState.default(initialState))
+        }
+      }
     }
 
     def defaultMarketDataIdentifier: MarketDataIdentifier = {
@@ -472,19 +482,35 @@ object StarlingHomeButtons {
       MarketDataIdentifier(initialSelection, latestMarketDataVersion)
     }
 
-    val tradeDataImage = StarlingIcons.im("/icons/32x32_trades.png")
-    val tradeDataButton = new NumberedButton("Trades", tradeDataImage, gotoTradePage, number = Some("1."))
+    val tradesButton = new PageButton(
+      "Trades",
+      tradePage,
+      StarlingIcons.im("/icons/32x32_trades.png"),
+      Some( KeyStroke.getKeyStroke(KeyEvent.VK_1, 0) )
+    )
 
-    val refDataImage = StarlingIcons.im("/icons/32x32_ref_data.png")
-    val refDataButton = new NumberedButton("Reference Data", refDataImage, ctrlDown => {context.goTo(ReferenceDataIndexPage, ctrlDown)}, number = Some("2."))
+    val refDataButton = new PageButton(
+      "Reference Data",
+      new PagePageFactory(ReferenceDataIndexPage),
+      StarlingIcons.im("/icons/32x32_ref_data.png"),
+      Some( KeyStroke.getKeyStroke(KeyEvent.VK_2, 0) )
+    )
 
-    val marketDataImage = StarlingIcons.im("/icons/32x32_market_data.png")
-    val marketDataButton = new NumberedButton("Market Data", marketDataImage, gotoMarketDataPage, number = Some("3."))
+    val marketDataButton = new PageButton(
+      "Market Data",
+      marketDataPage,
+      StarlingIcons.im("/icons/32x32_market_data.png"),
+      Some( KeyStroke.getKeyStroke(KeyEvent.VK_3, 0) )
+    )
 
-    val curveViewerImage = StarlingIcons.im("/icons/32x32_curve_viewer.png")
-    val curveViewerButton = new NumberedButton("Curve Viewer", curveViewerImage, gotoCurvePage, number = Some("4."))
+    val curveViewerButton = new PageButton(
+      "Curve Viewer",
+      curvePage,
+      StarlingIcons.im("/icons/32x32_curve_viewer.png"),
+      Some( KeyStroke.getKeyStroke(KeyEvent.VK_4, 0) )
+    )
 
-    tradeDataButton :: refDataButton :: marketDataButton :: curveViewerButton :: Nil
+    tradesButton :: refDataButton :: marketDataButton :: curveViewerButton :: Nil
   }
 }
 
