@@ -1,6 +1,5 @@
 package starling.browser.internal
 
-import starling.daterange.Timestamp
 import starling.browser.Page
 import starling.browser.service.{PageLogInfo, BrowserService}
 

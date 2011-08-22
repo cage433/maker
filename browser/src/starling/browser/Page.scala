@@ -6,13 +6,13 @@ import java.awt.image.BufferedImage
 import service.internal.HeterogeneousMap
 import service.{BrowserService, Version}
 import swing.event.Event
-import starling.daterange.Day
 import javax.swing.border.Border
 import java.awt.{Color, Graphics2D, Dimension}
 import java.awt.{Component=>AWTComp}
 import scala.swing.Swing._
 import swing._
-import starling.utils.{StackTraceToString}
+import util.BrowserStackTraceToString
+import java.util.{Calendar, GregorianCalendar}
 
 /**
  * IMPORTANT - A page should usually be a case class with the whole page described by parameters passed into it. No other vals should exist
@@ -41,9 +41,11 @@ trait ServerContext {
     throw new Exception("No browser bundle found with name " + name))
 }
 
+case class BrowserDay(year:Int, month:Int, dayOfMonth:Int)
+
 trait Bookmark {
   def daySensitive:Boolean
-  def createPage(day:Option[Day], serverContext:ServerContext, context:PageContext):Page
+  def createPage(day:Option[BrowserDay], serverContext:ServerContext, context:PageContext):Page
 }
 
 case class UserSettingUpdated(key:Key[_]) extends Event
@@ -52,7 +54,7 @@ case class BookmarkData(name:String, bookmark:Bookmark)
 
 case class PageBookmark(page:Page) extends Bookmark {
   def daySensitive = false
-  def createPage(day:Option[Day], serverContext:ServerContext, context:PageContext) = page
+  def createPage(day:Option[BrowserDay], serverContext:ServerContext, context:PageContext) = page
 }
 
 trait PageContext {
@@ -146,7 +148,7 @@ trait PageComponent extends Component {
 
 class ExceptionPageComponent(errorType:String, t:Throwable)  extends MigPanel("") with PageComponent {
   private val stackTraceComponent = new ScrollPane(new TextArea() {
-    text = errorType + "\n\n" + StackTraceToString.string(t)
+    text = errorType + "\n\n" + BrowserStackTraceToString.string(t)
     editable = false
     wordWrap = true
   })

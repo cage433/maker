@@ -46,6 +46,12 @@ object Dependencies{
     "jfree" % "jfreechart" % "1.0.0"
   ) 
 
+  val browserDependencies = Seq(
+    "org.scala-lang" % "scala-swing" % "2.9.0-1" withSources(),
+    "com.thoughtworks.xstream" % "xstream" % "1.3.1" withSources(),
+    "com.google.collections" % "google-collections" % "1.0" withSources()
+  )
+
   val databasesDependencies = Seq(
     "org.springframework" % "spring-jdbc" % "3.0.5.RELEASE" withSources(),
     "com.jolbox" % "bonecp" % "0.7.1.RELEASE" intransitive() withSources(),
@@ -226,8 +232,8 @@ object StarlingBuild extends Build{
   lazy val browser = Project(
     "browser",
     file("./browser"),
-    settings = standardSettings ++ Seq(libraryDependencies ++= browserServiceDependencies)
-  ) dependsOn(browserService, utils, daterange)
+    settings = standardSettings ++ Seq(libraryDependencies ++= browserDependencies)
+  ) dependsOn(browserService)
 
   lazy val browserService = Project(
     "browser.service",

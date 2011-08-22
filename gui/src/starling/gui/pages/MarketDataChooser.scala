@@ -5,15 +5,15 @@ import starling.gui.api._
 import swing.Swing._
 import swing.event.{Event, SelectionChanged, ButtonClicked, MouseClicked}
 import swing._
-import starling.gui.{StandardUserSettingKeys}
 import starling.utils.{STable, SColumn}
 import starling.gui.utils.RichReactor
 import RichReactor._
 import starling.daterange.{ObservationTimeOfDay, ObservationPoint, Day}
 import starling.gui.StarlingLocalCache._
 import starling.browser.{ComponentState, PageContext}
-import starling.browser.common.{NewPageButton, TitledDayPicker, NListView, MigPanel}
+import starling.browser.common.{NewPageButton, NListView, MigPanel}
 import collection.immutable.{Map, TreeSet}
+import starling.gui.{TitledDayPicker, StandardUserSettingKeys}
 
 class MarketDataChooser(maybeDesk:Option[Desk], pageContext:PageContext, snapshotSelection:Option[SnapshotSelection],
                         showValuationDayPicker:Boolean=false) extends MigPanel("insets 0") {
