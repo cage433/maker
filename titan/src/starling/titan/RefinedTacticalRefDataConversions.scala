@@ -60,9 +60,13 @@ object  RefinedTacticalRefDataConversions {
     val futuresMarket = metalToMarketMap(metal.name)
 
     (exchange.mappingCode, indexName) match {
-      case (`LME`, CashIndex) => LmeCashSettlementIndex(futuresMarket)
-      case (`LME`, ThreeMonthIndex) => LmeThreeMonthBuyerIndex(futuresMarket)
+      case (`LME`, CashIndex) => LmeCashSettlementIndex(futuresMarket, Level.Ask)
+      case (`LME`, ThreeMonthIndex) => LmeThreeMonthIndex(futuresMarket, Level.Bid)
+      case (`LME`, LowestOfFourIndex) => LmeLowestOfFourIndex(futuresMarket)
+      case (`LME`, AverageOfFourIndex) => LmeAverageOfFourIndex(futuresMarket)
+      case (`LME`, Ave4MaxSettIndex) => LmeAve4MaxSettIndex(futuresMarket)
       case (_, CashIndex) => FuturesFrontPeriodIndex(futuresMarket, Level.Settle)
+      case (exchange, indexname) => throw new Exception("Unrecognised index + " + indexname + " for exchange " + exchange)
     }
 
   }

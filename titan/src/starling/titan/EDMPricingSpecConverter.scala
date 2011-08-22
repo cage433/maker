@@ -21,7 +21,7 @@ case object CashIndex extends TitanIndexName { val name = "Cash"}
 case object ThreeMonthIndex extends TitanIndexName { val name = "Three Month"} 
 case object LowestOfFourIndex extends TitanIndexName { val name = "Lowest of Four"} 
 case object AverageOfFourIndex extends TitanIndexName { val name = "Average of Four"} 
-case object MaxSettlementIndex extends TitanIndexName { val name = "Max Settlement"} 
+case object Ave4MaxSettIndex extends TitanIndexName { val name = "Max Settlement"} 
 
 object TitanIndexName {
   val cashAverageIndex = CashAveragePricingSpecificationIndex 
@@ -36,7 +36,7 @@ object TitanIndexName {
       case `threeMonthAverageIndex` => ThreeMonthIndex
       case `lowestOfFourAverageIndex` => LowestOfFourIndex
       case `averageOfFourAverageIndex` => AverageOfFourIndex
-      case `maxSettlementAverageIndex` => MaxSettlementIndex
+      case `maxSettlementAverageIndex` => Ave4MaxSettIndex
     }
   }
 
@@ -52,7 +52,7 @@ object TitanIndexName {
       case `threeMonthUnknownIndex` => ThreeMonthIndex
       case `lowestOfFourUnknownIndex` => LowestOfFourIndex
       case `averageOfFourUnknownIndex` => AverageOfFourIndex
-      case `maxSettlementUnknownIndex` => MaxSettlementIndex
+      case `maxSettlementUnknownIndex` => Ave4MaxSettIndex
     }
   }
 }

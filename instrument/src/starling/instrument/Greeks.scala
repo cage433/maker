@@ -265,7 +265,6 @@ object Greeks {
     shiftInterpolatedVols : Boolean = false, 
     multiple : Double = 1.0
   ) = {
-    println("Price being shifted = " + atomicDatumKey)
     val riskEnv = env.copy(environmentParameters = DefaultRiskParameters)
     val dP = atomicDatumKey.calc_dP(env) * multiple
     val (dnEnv, upEnv) = if (atomicDatumKey.isInstanceOf[VolKey] && shiftInterpolatedVols) {

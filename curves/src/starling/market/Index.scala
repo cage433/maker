@@ -191,8 +191,7 @@ trait SingleIndex extends IndexWithKnownPrice {
   def indexes = Set(this)
 }
 
-abstract class FuturesIndex(override val name: String, val market: FuturesMarket,
-                           val level: Level = Level.Unknown) extends SingleIndex{
+abstract class FuturesIndex(override val name: String, val market: FuturesMarket) extends SingleIndex{
 
 }
 
@@ -241,11 +240,8 @@ case class FuturesFrontPeriodIndex(
   promptness : Int,
   override val precision: Option[Precision],
   override val level: Level = Level.Close
- ) extends FuturesIndex(
-  marketName,
-  market,
-  level
- ) {
+ ) extends SingleIndex {
+  val name = marketName
 
   def observedPeriod(observationDay : Day) : DateRange = {
     val frontMonth = market.frontPeriod(observationDay.addBusinessDays(market.businessCalendar, rollBeforeDays))
@@ -349,7 +345,12 @@ object Index {
     Market.ICE_WTI -> ICEWTI10
   )
 
-  lazy val lmeIndices = Market.futuresMarkets.filter(_.exchange == FuturesExchangeFactory.LME).map(LmeCashSettlementIndex)
+  lazy val lmeIndices = for (
+      market <- Market.futuresMarkets;
+      if (market.exchange == FuturesExchangeFactory.LME);
+      level <- List(Level.Bid, Level.Ask)
+    )
+      yield(LmeCashSettlementIndex(market, level))
 
   lazy val indicesToImportFixingsForFromEAI: List[SingleIndex] = allFuturesFrontPeriodIndexes ::: allPublishedIndexes
 
@@ -409,12 +410,12 @@ object Index {
 }
 
 object LmeSingleIndices{
-  abstract class LMEIndex(name : String, market : FuturesMarket, level : Level) extends FuturesIndex(name, market, level = level){
+  abstract class LMEIndex(name : String, market : FuturesMarket, level : Level) extends FuturesIndex(name, market){
     def observedOptionPeriod(observationDay: Day) = throw new Exception("Options not supported for LME indices")
     override def observationTimeOfDay = ObservationTimeOfDay.Official
   }
 
-  class LMECashIndex(name : String, market : FuturesMarket, level : Level) extends LMEIndex(name, market, level){
+  class LMECashIndex(name : String, market : FuturesMarket, val level : Level) extends LMEIndex(name, market, level){
     def observedPeriod(day : Day) = {
       assert(isObservationDay(day), day + " is not an observation day for " + this)
       day.addBusinessDays(businessCalendar, 2)
@@ -425,7 +426,7 @@ object LmeSingleIndices{
     val eaiQuoteID = None
   }
 
-  class LMEThreeMonthIndex(name : String, market : FuturesMarket, level : Level) extends LMEIndex(name, market, level){
+  class LMEThreeMonthIndex(name : String, market : FuturesMarket, val level : Level) extends LMEIndex(name, market, level){
     def observedPeriod(day : Day) = {
       assert(isObservationDay(day), day + " is not an observation day for " + this)
       FuturesExchangeFactory.LME.threeMonthDate(day)
@@ -465,8 +466,28 @@ object FuturesFrontPeriodIndex {
   }
 }
 
-case class LmeCashSettlementIndex(futuresMarket : FuturesMarket) extends FuturesIndex("LME " + futuresMarket.commodity + " cash", futuresMarket, level = Level.Ask) {
+trait LmeIndex extends IndexWithKnownPrice{
+  def proxyIndex : SingleIndex
+  def currency : UOM = proxyIndex.currency
+  def businessCalendar : BusinessCalendar = proxyIndex.businessCalendar
+  def isObservationDay(day: Day): Boolean = proxyIndex.isObservationDay(day)
+  def possiblePricingRules = List(NoPricingRule)
+  def commodity = proxyIndex.commodity
+  def calendars = Set(businessCalendar)
+  def precision = proxyIndex.precision
+  def uom = proxyIndex.uom
+  def priceUOM = proxyIndex.priceUOM
+  def convert(value: Quantity, uom: UOM): Option[Quantity] = proxyIndex.convert(value, uom)
+  val eaiQuoteID = None
+}
+
+trait LMESingleIndex extends SingleIndex {
   def observedOptionPeriod(observationDay: Day) = throw new Exception("Options not supported for LME indices")
+  override def observationTimeOfDay = ObservationTimeOfDay.Official
+  val eaiQuoteID = None
+}
+case class LmeCashSettlementIndex(market : FuturesMarket, level : Level) extends LMESingleIndex {
+  val name = "LME " + market.commodity + " cash " + level
 
   def observedPeriod(day : Day) = {
     assert(isObservationDay(day), day + " is not an observation day for " + this)
@@ -474,14 +495,11 @@ case class LmeCashSettlementIndex(futuresMarket : FuturesMarket) extends Futures
   }
 
   def storedFixingPeriod(day: Day) = StoredFixingPeriod.tenor(Tenor.CASH)
-
-  override def observationTimeOfDay = ObservationTimeOfDay.Official
-
-  val eaiQuoteID = None
 }
 
-case class LmeThreeMonthBuyerIndex(futuresMarket : FuturesMarket) extends FuturesIndex("LME " + futuresMarket.commodity + " 3m Buyer", futuresMarket, level = Level.Bid) {
-  def observedOptionPeriod(observationDay: Day) = throw new Exception("Options not supported for LME indices")
+
+case class LmeThreeMonthIndex(market : FuturesMarket, level : Level) extends LMESingleIndex{
+  val name = "LME " + market.commodity + " 3m " + level
 
   def observedPeriod(day : Day) = {
     assert(isObservationDay(day), day + " is not an observation day for " + this)
@@ -490,9 +508,46 @@ case class LmeThreeMonthBuyerIndex(futuresMarket : FuturesMarket) extends Future
 
   def storedFixingPeriod(day: Day) = StoredFixingPeriod.tenor(Tenor.ThreeMonths)
 
-  override def observationTimeOfDay = ObservationTimeOfDay.Official
-
-  val eaiQuoteID = None
 }
 
-//case class LmeLowestOfFourIndex(futuresMarket : FuturesMarket) extends Index
+case class LmeLowestOfFourIndex(market : FuturesMarket) extends LmeIndex{
+  private val cashIndex = LmeCashSettlementIndex(market, Level.Bid)
+  private val threeMonthIndex = LmeThreeMonthIndex(market, Level.Bid)
+  def proxyIndex = cashIndex
+
+  def fixingOrForwardPrice(env : Environment, observationDay : Day) : Quantity = {
+    cashIndex.fixingOrForwardPrice(env, observationDay) min threeMonthIndex.fixingOrForwardPrice(env, observationDay)
+  }
+  def indexes = Set(cashIndex, threeMonthIndex)
+  val name = "LME " + market.commodity + " low 4"
+}
+
+case class LmeAverageOfFourIndex(market : FuturesMarket) extends LmeIndex{
+  private val cashBidIndex = LmeCashSettlementIndex(market, Level.Bid)
+  private val cashAskIndex = LmeCashSettlementIndex(market, Level.Ask)
+  private val threeMonthBidIndex = LmeThreeMonthIndex(market, Level.Bid)
+  private val threeMonthAskIndex = LmeThreeMonthIndex(market, Level.Ask)
+  def proxyIndex = cashBidIndex
+
+  def fixingOrForwardPrice(env : Environment, observationDay : Day) : Quantity = {
+    Quantity.average(
+      indexes.toList.map(_.fixingOrForwardPrice(env, observationDay))
+    )
+  }
+  def indexes = Set(cashBidIndex, cashAskIndex, threeMonthBidIndex, threeMonthAskIndex)
+  val name = "LME " + market.commodity + " average 4"
+}
+
+case class LmeAve4MaxSettIndex(market : FuturesMarket) extends LmeIndex {
+  private val ave4Index = LmeAverageOfFourIndex(market)
+  private val cashAskIndex = LmeCashSettlementIndex(market, Level.Ask)
+  def indexes = ave4Index.indexes ++ cashAskIndex.indexes
+  def fixingOrForwardPrice(env : Environment, observationDay : Day) : Quantity = {
+    // Despite the misleading name for this index, it is actually a minimum
+    ave4Index.fixingOrForwardPrice(env, observationDay) min cashAskIndex.fixingOrForwardPrice(env, observationDay)
+  }
+
+  val proxyIndex = cashAskIndex
+  val name = "LME " + market.commodity + " ave 4 max sett"
+}
+
