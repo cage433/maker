@@ -22,6 +22,7 @@ class ClassWhichDoesNotImplementSerializable(val name: String) {
 }
 case class HelloEvent(name: String) extends Event
 class ExplosionException extends RuntimeException
+
 trait Service {
   def reply(value: Object): Object
 
@@ -51,7 +52,7 @@ class SomeService extends Service {
 }
 
 class WaitForFlag {
-  private val timeout = 5 * 1000
+  private val timeout = 100
   private var flag = false
   private val lock = new Object
   private var result = false
@@ -192,7 +193,6 @@ class BouncyRMITests extends StarlingTest {
     client.reactions += {case StateChangeEvent(_, ServerDisconnected(_)) => disconnected.flip}
     client.reactions += {
       case StateChangeEvent(_, ClientConnected) => {
-        println("connected")
         if (connectedCount.incrementAndGet == 1) firstConnect.flip else secondConnect.flip
       }
     }
@@ -200,7 +200,7 @@ class BouncyRMITests extends StarlingTest {
     firstConnect.waitForFlip
     server.stop()
     disconnected.waitForFlip
-    Thread.sleep(1000) // client has to try a few times
+    Thread.sleep(500) // client has to try a few times
     server = new BouncyRMIServer(port1, auth, BouncyRMI.CodeVersion, new CopyOnWriteArraySet[User], Set(), ChannelLoggedIn, "", new SomeService())
     server.start
     secondConnect.waitForFlip
@@ -264,16 +264,13 @@ class BouncyRMITests extends StarlingTest {
     server.start
     client.reactions += {
       case StateChangeEvent(_, ServerDisconnected(_)) => {
-        println("disconnected")
         disconnected.flip
       }
     }
     client.startBlocking
-    println("stopping server")
 
     server.stop()
     Thread.sleep(200)
-    println("flipping wait")
     disconnected.waitForFlip
 
     server = new BouncyRMIServer(port1, auth, BouncyRMI.CodeVersion, new CopyOnWriteArraySet[User], Set(), ChannelLoggedIn, "", new SomeService())
@@ -382,7 +379,6 @@ class BouncyRMITests extends StarlingTest {
     connected.waitForFlip
     server.stop("patch release")
     disconnected.waitForFlip
-    println(client)
     try {
       client.proxy.foo("f")
       fail("Expected exception as server is not running")
@@ -433,16 +429,13 @@ class BouncyRMITests extends StarlingTest {
       classOf[Service], auth = Client.Null, overriddenUser = None)
     val ping1 = new WaitForFlag
     val ping2 = new WaitForFlag
-    client1.reactions += {case HelloEvent(name) => println("got flip1"); ping1.flip}
+    client1.reactions += {case HelloEvent(name) => ping1.flip}
     client1.startBlocking
-    client2.reactions += {case HelloEvent(name) => println("got flip2"); ping2.flip}
+    client2.reactions += {case HelloEvent(name) => ping2.flip}
     client2.startBlocking
     server.publish(HelloEvent("j"))
-    println("Waiting for 1")
     ping1.waitForFlip
-    println("Waiting for 2")
     ping2.waitForFlip
-    println("Got both")
     client1.stop
     client2.stop
     server.stop()
@@ -461,10 +454,9 @@ class BouncyRMITests extends StarlingTest {
     }
     someService.broadcaster = broadcaster
     client.startBlocking
-    for (i <- 1 to 100) {
+    (1 to 25).toArray.foreach{ i =>
       val result = client.proxy.fakeMethodWithBroadcast(i + " Dave")
     }
-    println("Finsihed Test")
     client.stop
     server.stop()
     broadcaster.executor.shutdown

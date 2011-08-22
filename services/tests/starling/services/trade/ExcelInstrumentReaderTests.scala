@@ -50,7 +50,6 @@ class ExcelInstrumentReaderTests extends JonTestEnv {
 
   @Test(dataProvider = "testFutures")
   def testFutures(row: Map[String, Any], instrument: Tradeable) {
-    println("ir" + instrument)
     assertEquals(ExcelTradeReader.instrument(ExcelRow(row, traders)), instrument)
   }
 
@@ -103,7 +102,6 @@ class ExcelInstrumentReaderTests extends JonTestEnv {
 
   @Test(dataProvider = "testAsianData")
   def testAsians(row: Map[String, Any], instrument: Tradeable) {
-    println("???")
     val excelRow = ExcelRow(row, traders)
     assertEquals(ExcelTradeReader.instrument(excelRow), instrument)
   }

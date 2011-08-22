@@ -528,7 +528,7 @@ class ValuationService(
     log.info("Valuation took " + sw)
     val (worked, errors) = valuations.partition(_._2 isRight)
     log.info("Worked " + worked.size + ", failed " + errors.size + ", took " + sw)
-    println("Failed valuation of inventory assignments (%d)...\n%s".format(errors.size, errors.mkString("\n")))
+    log.info("Failed valuation of inventory assignments (%d)...\n%s".format(errors.size, errors.mkString("\n")))
 
     CostAndIncomeAssignmentValuationServiceResults(snapshotIDString, valuations.toMap)
   }
@@ -555,7 +555,7 @@ class ValuationService(
     log.info("Valuation took " + sw)
     val (worked, errors) = valuations.partition(_._2 isRight)
     log.info("Worked " + worked.size + ", failed " + errors.size + ", took " + sw)
-    println("Failed valuation of inventory assignments (%d)...\n%s".format(errors.size, errors.mkString("\n")))
+    log.info("Failed valuation of inventory assignments (%d)...\n%s".format(errors.size, errors.mkString("\n")))
 
     CostAndIncomeAssignmentValuationServiceResults(snapshotIDString, valuations.toMap)
   }
@@ -621,7 +621,6 @@ class ValuationService(
             case UpdatedEventVerb => {
               val (snapshotIDString, env) = getSnapshotAndEnv
               val originalTradeValuations = valueCostables(tradeIds, env, snapshotIDString)
-              println("originalTradeValuations = " + originalTradeValuations)
               titanIds.foreach{ id => titanTradeCache.removeTrade(id); titanTradeCache.addTrade(id)}
               val newTradeValuations = valueCostables(tradeIds, env, snapshotIDString)
               val changedIDs = tradeIds.filter{id => newTradeValuations.tradeResults(id) != originalTradeValuations.tradeResults(id)}
@@ -684,13 +683,11 @@ class ValuationService(
           }
 
           val originalInventoryAssignmentValuations = valueInventoryAssignments(ids, env, snapshotIDString)
-          println("originalAssignmentValuations = " + originalInventoryAssignmentValuations)
           ids.foreach{ id => titanInventoryCache.removeInventory(id); titanInventoryCache.addInventory(id)}
           val newInventoryAssignmentValuations = valueInventoryAssignments(ids, env, snapshotIDString)
           val changedIDs = ids.filter {id => newInventoryAssignmentValuations.assignmentValuationResults(id) != originalInventoryAssignmentValuations.assignmentValuationResults(id) }
 
           if (changedIDs != Nil) {
-            println("Assignment valuation events, publishing ids " + changedIDs.mkString(", "))
             rabbitPublishChangedValueEvents(changedIDs, EDMLogisticsInventoryIdPayload)
           }
 
@@ -842,11 +839,8 @@ object ValuationService extends App {
 
   lazy val vs = StarlingInit.devInstance.valuationService
 
-  vs.marketDataSnapshotIDs().foreach(println)
   val valuations = vs.valueAllQuotas()
 
-//  valuations.tradeResults.foreach(println)
-   
   val (worked, _) = valuations.tradeResults.values.partition({ case Right(_) => true; case Left(_) => false })
 
   val valuedTradeIds = valuations.tradeResults.collect{ case (id, Right(v)) => id }.toList
@@ -871,9 +865,6 @@ object ValuationService extends App {
   val loadedExchanges = loadJsonValuesFromFile(exchangesFile).map(s => Market.fromJson(new JSONObject(s)).asInstanceOf[Market])
   val loadedTrades = loadJsonValuesFromFile(tradesFile).map(s => EDMPhysicalTrade.fromJson(new JSONObject(s)).asInstanceOf[EDMPhysicalTrade])
 
-  loadedMarkets.foreach(println)
-  loadedExchanges.foreach(println)
-  println("loaded trade size = " + loadedTrades.size)
   
   StarlingInit.devInstance.stop
 

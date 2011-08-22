@@ -105,9 +105,44 @@ object StarlingBuild extends Build{
 
   val testDependency = "compile;test->test"
 
+  val crazyTestListener = new sbt.TestsListener{
+    //def contentLogger (test: TestDefinition) : Option[ContentLogger] = None                                                                                                                                        
+
+    //Used by the test framework for logging test results
+    def doComplete (finalResult: TestResult.Value){
+      println("Called doComplete")
+    }
+
+    //called once, at end.
+    def doInit{
+      println("Called doInit")
+    }
+
+    //called once, at beginning.
+    def endGroup (name: String, result: TestResult.Value) {
+      println("Called endGroup")
+    }
+
+    //called if test completed
+    def endGroup (name: String, t: Throwable){
+      println("Called endGroup")
+    }
+
+    //called if there was an error during test
+    def startGroup (name: String){
+      println("Called startGroup")
+    }
+
+    //called for each class or equivalent grouping
+    def testEvent (event: TestEvent){
+      println("Called testEvent " + event)
+    }
+  }
+
   lazy val utils = Project(
     "utils", 
     file("./utils"), 
+    //settings = standardSettings ++ Seq(libraryDependencies ++= utilsDependencies, testListeners += crazyTestListener)
     settings = standardSettings ++ Seq(libraryDependencies ++= utilsDependencies)
   )
 
