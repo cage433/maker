@@ -21,6 +21,7 @@ object RootBrowserContext extends BrowserBundle {
   def bundleName = "Root"
   def marshal(obj: AnyRef) = xstream.toXML(obj)
   def unmarshal(text: String) = xstream.fromXML(text)
+  def hotKeys = Nil
   def settings(pageContext:PageContext) = {
     def createGeneralPane(context:PageContext) = {
       val currentLiveSetting = context.getSetting(UserSettings.LiveDefault, false)

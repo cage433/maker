@@ -27,16 +27,20 @@ import common.{GuiUtils, MigPanel}
  *
  */
 
-abstract class AbstractPivotPage(pivotPageState:PivotPageState, edits:PivotEdits=PivotEdits.Null) extends StarlingServerPage {
+abstract class AbstractStarlingPivotPage(pivotPageState:PivotPageState, edits:PivotEdits=PivotEdits.Null) extends
+  AbstractPivotPage(pivotPageState, edits) with StarlingServerPage {
+}
+
+abstract class AbstractPivotPage(pivotPageState:PivotPageState, edits:PivotEdits=PivotEdits.Null) extends Page {
   def icon = StarlingIcons.im("/icons/stock_chart-reorganize.png")
-  def dataRequest(pageBuildingContext:StarlingServerContext):PivotData
-  def save(starlingServer:StarlingServer, edits:PivotEdits):Boolean = throw new Exception("No implementation of save for this page")
+  def build(sc: SC) = PivotTablePageData(dataRequest(sc), subClassesPageData(sc))
+  def dataRequest(pageBuildingContext:SC):PivotData
+  def save(sc:ServerContext, edits:PivotEdits):Boolean = throw new Exception("No implementation of save for this page")
   def selfPage(pivotPageState:PivotPageState, edits:PivotEdits=PivotEdits.Null):Page
-  def subClassesPageData(pageBuildingContext:StarlingServerContext):Option[PageData] = None
+  def subClassesPageData(pageBuildingContext:SC):Option[PageData] = None
   def finalDrillDownPage(fields:Seq[(Field,Selection)], pageContext:PageContext, ctrlDown:Boolean) = ()
   def toolbarButtons(pageContext: PageContext, data:PageData):List[Button] = List()
   def configPanel(pageContext:PageContext, data:PageData):Option[ConfigPanels] = None
-  def build(reader: StarlingServerContext) = PivotTablePageData(dataRequest(reader), subClassesPageData(reader))
   def createComponent(pageContext:PageContext, data:PageData, bookmark:Bookmark, browserSize:Dimension, previousPageData:Option[PageData]) : PageComponent = {
     PivotComponent(text, pageContext, toolbarButtons(pageContext, data), configPanel(pageContext, data), finalDrillDownPage, selfPage,
       data, pivotPageState, edits, save, bookmark, browserSize, false)
@@ -93,7 +97,7 @@ object PivotComponent {
         pageData:PageData,
         pivotPageState:PivotPageState,
         edits:PivotEdits,
-        save:(StarlingServer, PivotEdits) => Boolean,
+        save:(ServerContext, PivotEdits) => Boolean,
         bookmark:Bookmark,
         browserSize:Dimension,
         embedded:Boolean = true):PivotComponent = {
@@ -131,7 +135,7 @@ class PivotTablePageComponent(
         pivotTablePageData:PivotTablePageData,
         pivotPageState:PivotPageState,
         edits:PivotEdits,
-        save:(StarlingServer, PivotEdits) => Boolean,
+        save:(ServerContext, PivotEdits) => Boolean,
         bookmark:Bookmark,
         browserSize:Dimension,
         embedded:Boolean) extends PivotComponent {
@@ -143,7 +147,6 @@ class PivotTablePageComponent(
 
   val currentFieldState = data.pivotFieldsState
   val drillDownGroups = data.drillDownGroups
-  val user = pageContext.localCache.currentUser
 
   val toolBar = new MigPanel("insets 1 1 1 1, gap 1") {
     val lockScreenButton = new ToggleToolBarButton {
@@ -249,9 +252,9 @@ class PivotTablePageComponent(
 
       def saveEdits() {
         println("Saving edits: " + edits)
-        pageContext.submit(new StarlingSubmitRequest[Boolean] {
-          def submit(serverContext:StarlingServerContext) = {
-            save(serverContext.server, edits)
+        pageContext.submit(new SubmitRequest[Boolean] {
+          def baseSubmit(serverContext:ServerContext) = {
+            save(serverContext, edits)
           }
         }, onComplete = (b:Boolean) => {
           // Because of the order of clearing the screen, this has to be put at the back of the EDT.

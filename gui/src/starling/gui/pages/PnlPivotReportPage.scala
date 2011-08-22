@@ -12,7 +12,7 @@ import starling.browser.{Page, ServerContext, PageContext}
 class PnlPivotReportPage
 
 case class TradeChangesReportPage(tradeSelection:TradeSelection, from:TradeTimestamp, to:TradeTimestamp,
-                                  pivotPageState:PivotPageState, tradeExpiryDay:Day) extends AbstractPivotPage(pivotPageState) {
+                                  pivotPageState:PivotPageState, tradeExpiryDay:Day) extends AbstractStarlingPivotPage(pivotPageState) {
   assert(tradeSelection.intradaySubgroup.isEmpty, "Trade changes report doesn't support excel trades")
 
   def dataRequest(pageBuildingContext:StarlingServerContext) = {

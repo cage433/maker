@@ -64,7 +64,7 @@ class ReferenceDataIndexPageComponent(context:PageContext, pageData:PageData) ex
 
 case class ReferenceDataIndexPageData(referenceTables:List[ReferenceDataLabel], admin: Boolean) extends PageData
 
-case class ReferenceDataPage(table:ReferenceDataLabel, pivotPageState : PivotPageState) extends AbstractPivotPage(pivotPageState) {
+case class ReferenceDataPage(table:ReferenceDataLabel, pivotPageState : PivotPageState) extends AbstractStarlingPivotPage(pivotPageState) {
   def text = table.name
   override def icon = if (table.name.toLowerCase.trim != "calendars") {
     StarlingIcons.im("/icons/16x16_chart_line.png")

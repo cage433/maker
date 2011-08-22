@@ -8,7 +8,7 @@ import starling.gui.StarlingServerContext
 import starling.browser.{ServerContext, PageContext}
 
 case class PnLReconciliationReportPage(tradeSelectionWithTimestamp: TradeSelectionWithTimestamp, curveIdentifier: CurveIdentifierLabel,
-                                       expiryDay: Day, pivotPageState: PivotPageState) extends AbstractPivotPage(pivotPageState) {
+                                       expiryDay: Day, pivotPageState: PivotPageState) extends AbstractStarlingPivotPage(pivotPageState) {
   def text = "PnL Trade Reconciliation"
 
   def selfPage(pivotPageState: PivotPageState, edits:PivotEdits) = copy(pivotPageState = pivotPageState)

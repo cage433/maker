@@ -26,6 +26,7 @@ object BrowserLauncher {
     val username = serverContext.username
     val bookmarks = toBookmarks(serverContext.browserService.bookmarks)
     onEDT({
+      GuiUtils.setLookAndFeel
       val browserService = serverContext.browserService
       val title = browserService.name + " - Starling"
       val settings = {
@@ -38,9 +39,14 @@ object BrowserLauncher {
         s
       }
 
+      cacheMap(LocalCache.Version) = serverContext.version
+      cacheMap(LocalCache.CurrentUserName) = username
+      cacheMap(LocalCache.Bookmarks) = bookmarks
+      cacheMap(NotificationKeys.AllNotifications) = List()
+      cacheMap(NotificationKeys.UserNotifications) = List()
 
       val cache = LocalCache(cacheMap)
-      cache.localCache(LocalCache.Bookmarks) = bookmarks
+
       val laterPublisher = new Publisher {}
       lazy val fc = new StarlingBrowserFrameContainer(serverContext, cache, laterPublisher, StarlingHomePage,
         settings, title, extraInfo)

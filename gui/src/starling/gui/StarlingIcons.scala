@@ -30,7 +30,11 @@ object StarlingIcons {
   def im(location:String) = imageCache.memoize(location, ImageIO.read(getResource(location, "Image")))
 
   private def getResource(location: String, kind: String) = try {
-    getClass.getResource(location)
+    val url = getClass.getResource(location)
+    if (url == null) {
+      throw new Exception("No resource found for " + location)
+    }
+    url
   }
   catch {
     case e => throw new Exception("Could not load %s: %s" % (kind, location), e)

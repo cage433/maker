@@ -10,7 +10,7 @@ import starling.gui.StarlingLocalCache._
 import starling.browser.common.{GuiUtils, RoundedBorder, MigPanel}
 import starling.browser.{Bookmark, PageData, PageContext}
 
-case class CurvePage(curveLabel: CurveLabel, pivotPageState: PivotPageState) extends AbstractPivotPage(pivotPageState) {
+case class CurvePage(curveLabel: CurveLabel, pivotPageState: PivotPageState) extends AbstractStarlingPivotPage(pivotPageState) {
   def marketDataIdentifier = curveLabel.marketDataIdentifier
 
   def text = "Curve Viewer"

@@ -9,7 +9,7 @@ import starling.pivot.PivotEdits
 import starling.browser.Page
 
 case class TradeReconciliationReportPage(tradeSelection:TradeSelection, from:TradeTimestamp, to:TradeTimestamp,
-                                         intradayTimestamp: Timestamp, pivotPageState:PivotPageState) extends AbstractPivotPage(pivotPageState) {
+                                         intradayTimestamp: Timestamp, pivotPageState:PivotPageState) extends AbstractStarlingPivotPage(pivotPageState) {
   def text = "Trade Reconciliation"
 
   def selfPage(pivotPageState: PivotPageState, edits:PivotEdits) = copy(pivotPageState = pivotPageState)

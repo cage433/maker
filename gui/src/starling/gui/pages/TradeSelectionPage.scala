@@ -27,7 +27,7 @@ import starling.browser.common.RichCheckBox._
 case class TradeSelectionPage(
         tpp:TradePageParameters,
         pivotPageState:PivotPageState
-        ) extends AbstractPivotPage(pivotPageState) {
+        ) extends AbstractStarlingPivotPage(pivotPageState) {
   def text = "Select Trades"
   override def icon = StarlingIcons.im("/icons/16x16_trades.png")
   def selfPage(pps:PivotPageState, edits:PivotEdits) = copy(pivotPageState = pps)

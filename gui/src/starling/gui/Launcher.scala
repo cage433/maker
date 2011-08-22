@@ -180,6 +180,12 @@ object Launcher extends Log {
         val browserContext = new BrowserBundle() {
           def bundleName = "StarlingServer"
           def marshal(obj: AnyRef) = GuiStarlingXStream.write(obj)
+
+          def hotKeys = HotKey(
+            KeyStroke.getKeyStroke(KeyEvent.VK_U, InputEvent.CTRL_DOWN_MASK | InputEvent.SHIFT_DOWN_MASK),
+            "utilsPage",
+            UtilsPage()) :: Nil
+
           def unmarshal(text: String) = GuiStarlingXStream.read(text).asInstanceOf[AnyRef]
 
 //            bookmark match {
@@ -307,13 +313,9 @@ object Launcher extends Log {
       cacheMap(ExcelLatestMarketDataVersion) = starlingServer.excelLatestMarketDataVersions
       cacheMap(PricingGroupLatestMarketDataVersion) = starlingServer.pricingGroupLatestMarketDataVersions
       cacheMap(LocalCacheKeys.ReportOptionsAvailable) = starlingServer.reportOptionsAvailable
-      cacheMap(AllNotifications) = List()
-      cacheMap(UserNotifications) = List()
-      cacheMap(LocalCache.Version) = starlingServer.version
       cacheMap(DeskCloses) = starlingServer.deskCloses
       cacheMap(IntradayLatest) = starlingServer.intradayLatest
       cacheMap(TradersBookLookup) = starlingServer.traders
-      cacheMap(CurrentUserName) = starlingServer.whoAmI.name
       cacheMap(CurrentUser) = starlingServer.whoAmI
       cacheMap(UKBusinessCalendar) = starlingServer.ukBusinessCalendar
       cacheMap(Desks) = starlingServer.desks
@@ -323,7 +325,6 @@ object Launcher extends Log {
       cacheMap(CurveTypes) = starlingServer.curveTypes
 //      cacheMap(Bookmarks) = toBookmarks(starlingServer.bookmarks)
 
-      GuiUtils.setLookAndFeel
     } catch {
       case e : Throwable =>
         e.printStackTrace()

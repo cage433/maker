@@ -29,7 +29,7 @@ case class DifferenceMainPivotReportPage(
         fromTimestamp: TradeTimestamp,
         toTimestamp: TradeTimestamp,
         expiryDay: Day
-        ) extends AbstractPivotPage(pivotPageState) {
+        ) extends AbstractStarlingPivotPage(pivotPageState) {
 
   assert(tradeSelection.intradaySubgroup.isEmpty, "Difference reports don't work with Excel trades")
 
@@ -56,7 +56,7 @@ case class DifferenceMainPivotReportPage(
 
 case class PivotReportTablePageData(numErrors:Int) extends PageData
 
-case class MainPivotReportPage(showParameters:Boolean, reportParameters:ReportParameters, pivotPageState:PivotPageState) extends AbstractPivotPage(pivotPageState) {
+case class MainPivotReportPage(showParameters:Boolean, reportParameters:ReportParameters, pivotPageState:PivotPageState) extends AbstractStarlingPivotPage(pivotPageState) {
   private def shortTitle = "Risk Report"
   def text = if (showParameters) shortTitle else reportParameters.text
   override def icon = StarlingIcons.im("/icons/16x16_report.png")

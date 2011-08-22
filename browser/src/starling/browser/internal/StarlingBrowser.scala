@@ -255,11 +255,12 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
     }
   }
 
-//  peer.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(
-//    KeyStroke.getKeyStroke(KeyEvent.VK_U, InputEvent.CTRL_DOWN_MASK | InputEvent.SHIFT_DOWN_MASK), "utilsPage")
-//  peer.getActionMap.put("utilsPage", new AbstractAction(){def actionPerformed(e:ActionEvent) = {
-//    openTab(true, Left(UtilsPage()))
-//  }})
+  pageBuilder.browserBundles.foreach { bundle => bundle.hotKeys.foreach { hotKey =>
+    peer.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(hotKey.keyStroke, hotKey.name)
+    peer.getActionMap.put("utilsPage", new AbstractAction(){def actionPerformed(e:ActionEvent) = {
+      openTab(true, Left(hotKey.page))
+    }})
+  } }
 
   peer.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke(KeyEvent.VK_D, InputEvent.CTRL_DOWN_MASK), "reload")
   peer.getActionMap.put("reload", new AbstractAction () {

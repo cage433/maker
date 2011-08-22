@@ -24,7 +24,7 @@ import starling.browser._
 case class MarketDataPage(
         marketDataIdentifier:MarketDataPageIdentifier,
         pageState : MarketDataPageState
-        ) extends AbstractPivotPage(pageState.pivotPageState, pageState.edits) {
+        ) extends AbstractStarlingPivotPage(pageState.pivotPageState, pageState.edits) {
   def this(mdi:MarketDataIdentifier, pageState : MarketDataPageState) = this(StandardMarketDataPageIdentifier(mdi), pageState)
 
   def text = "Market Data Viewer"
@@ -36,8 +36,9 @@ case class MarketDataPage(
     pageBuildingContext.cachingStarlingServer.readAllMarketData(marketDataIdentifier, pageState.marketDataType, pageState.edits, pageState.pivotPageState.pivotFieldParams)
   }
 
-  override def save(starlingServer:StarlingServer, edits:PivotEdits) = {
-    starlingServer.saveMarketData(marketDataIdentifier, pageState.marketDataType, edits)
+  override def save(serverContext:ServerContext, edits:PivotEdits) = {
+    val starlingServer = createServerContext(serverContext)
+    starlingServer.server.saveMarketData(marketDataIdentifier, pageState.marketDataType, edits)
   }
 
   override def refreshFunctions = marketDataIdentifier match {
