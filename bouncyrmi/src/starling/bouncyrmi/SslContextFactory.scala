@@ -34,9 +34,9 @@ object SslContextFactory {
         assert(p1.length == 1, "We expect 1 certificate: " + p1.length)
         val cert = p1(0)
         cert.checkValidity(new Date(System.currentTimeMillis))
-        if (cert.getIssuerDN.getName != BouncyRMI.CertIssuerName) {
+        /*if (cert.getIssuerDN.getName != BouncyRMI.CertIssuerName) {
           throw new CertificateException("Invalid cert issuer:" + cert.getIssuerDN)
-        }
+        }*/
       }
 
       // we'll never be here
