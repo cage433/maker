@@ -177,11 +177,12 @@ object Launcher extends Log {
 
         def browserBundles = List(browserContext)
 
+        import StarlingLocalCache._
         val browserContext = new BrowserBundle() {
           def bundleName = "StarlingServer"
           def marshal(obj: AnyRef) = GuiStarlingXStream.write(obj)
-
-          def hotKeys = HotKey(
+          override def userPage(context:PageContext) = Some( UserDetailsPage(context.localCache.currentUser) )
+          override def hotKeys = HotKey(
             KeyStroke.getKeyStroke(KeyEvent.VK_U, InputEvent.CTRL_DOWN_MASK | InputEvent.SHIFT_DOWN_MASK),
             "utilsPage",
             UtilsPage()) :: Nil
@@ -207,9 +208,8 @@ object Launcher extends Log {
 //              }
 //            }
 
-          def settings(pageContext:PageContext) = StarlingSettings.create(pageContext)
-
-          def homeButtons(pageContext:PageContext) = StarlingHomeButtons.create(pageContext)
+          override def settings(pageContext:PageContext) = StarlingSettings.create(pageContext)
+          override def homeButtons(pageContext:PageContext) = StarlingHomeButtons.create(pageContext)
         }
 
         def browserService = new BrowserService {

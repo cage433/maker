@@ -21,8 +21,7 @@ object RootBrowserContext extends BrowserBundle {
   def bundleName = "Root"
   def marshal(obj: AnyRef) = xstream.toXML(obj)
   def unmarshal(text: String) = xstream.fromXML(text)
-  def hotKeys = Nil
-  def settings(pageContext:PageContext) = {
+  override def settings(pageContext:PageContext) = {
     def createGeneralPane(context:PageContext) = {
       val currentLiveSetting = context.getSetting(UserSettings.LiveDefault, false)
       new MigPanel("insets n n n 0", "[" + StandardLeftIndent + "][p]") {
@@ -44,7 +43,6 @@ object RootBrowserContext extends BrowserBundle {
     }
     createGeneralPane(pageContext) :: Nil
   }
-  def homeButtons(pageContext:PageContext) = Nil
 }
 
 class StarlingBrowserFrameContainer(serverContext: ServerContext, lCache: LocalCache, remotePublisher: Publisher,

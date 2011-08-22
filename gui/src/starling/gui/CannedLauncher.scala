@@ -59,11 +59,9 @@ object CannedBrowserService extends BrowserService {
 
 object CannedBrowserBundle extends BrowserBundle {
   def bundleName = "Canned"
-  def hotKeys = Nil
   def marshal(obj: AnyRef) = GuiStarlingXStream.write(obj)
   def unmarshal(text: String) = GuiStarlingXStream.read(text).asInstanceOf[AnyRef]
-  def settings(pageContext: PageContext) = Nil
-  def homeButtons(pageContext: PageContext) = new CannedHomePagePageComponent(pageContext) :: Nil
+  override def homeButtons(pageContext: PageContext) = new CannedHomePagePageComponent(pageContext) :: Nil
 }
 
 class NullPageData extends PageData

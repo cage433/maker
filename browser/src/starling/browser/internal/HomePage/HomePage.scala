@@ -87,7 +87,14 @@ class StarlingHomePageComponent(context:PageContext, browserSize:Dimension, page
       }
       val userImage = BrowserIcons.im("/icons/32x32_user_dark.png")
       val userButton = new NumberedButton(context.localCache.currentUserName, userImage,
-        ctrlDown => {}/*context.goTo(UserDetailsPage(context.localCache.currentUser), ctrlDown)*/, false)
+        ctrlDown => {
+          val userPages = context.bundles.flatMap(_.userPage(context))
+          userPages match {
+            case Nil =>
+            case page :: Nil => context.goTo(page, ctrlDown)
+            case many => throw new Exception("There is more than one user page: " + many)
+          }
+        }, false)
       userButton.label.font = new Font("Serif", Font.PLAIN, 20)
 
       add(logo)
