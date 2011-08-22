@@ -78,11 +78,16 @@ trait Index {
 
 case class IndexSensitivity(coefficient : Double, index : Index)
 
+trait IndexWithKnownPrice extends Index with KnownObservation{
+  def fixingOrForwardPrice(env : Environment, observationDay : Day) : Quantity
+  def currency : UOM
+  def businessCalendar : BusinessCalendar
+}
 
 /**
  * An index on a single underlying
  */
-trait SingleIndex extends Index with KnownObservation {
+trait SingleIndex extends IndexWithKnownPrice {
   override val name: String
 
   def market: CommodityMarket
@@ -105,6 +110,8 @@ trait SingleIndex extends Index with KnownObservation {
       case q => q
     }
   }
+
+  def fixingOrForwardPrice(env : Environment, observationDay : Day) = env.fixingOrForwardPrice(this, observationDay)
 
   def fixing(slice: MarketDataSlice, observationDay : Day) = {
     val key = PriceFixingsHistoryDataKey(market)
@@ -185,7 +192,7 @@ trait SingleIndex extends Index with KnownObservation {
 }
 
 abstract class FuturesIndex(override val name: String, val market: FuturesMarket,
-                           val level: Level = Level.Unknown) extends SingleIndex {
+                           val level: Level = Level.Unknown) extends SingleIndex{
 
 }
 
@@ -238,7 +245,7 @@ case class FuturesFrontPeriodIndex(
   marketName,
   market,
   level
- ){
+ ) {
 
   def observedPeriod(observationDay : Day) : DateRange = {
     val frontMonth = market.frontPeriod(observationDay.addBusinessDays(market.businessCalendar, rollBeforeDays))
@@ -458,7 +465,7 @@ object FuturesFrontPeriodIndex {
   }
 }
 
-case class LmeCashSettlementIndex(futuresMarket : FuturesMarket) extends FuturesIndex("LME " + futuresMarket.commodity + " cash", futuresMarket, level = Level.Ask){
+case class LmeCashSettlementIndex(futuresMarket : FuturesMarket) extends FuturesIndex("LME " + futuresMarket.commodity + " cash", futuresMarket, level = Level.Ask) {
   def observedOptionPeriod(observationDay: Day) = throw new Exception("Options not supported for LME indices")
 
   def observedPeriod(day : Day) = {
@@ -473,7 +480,7 @@ case class LmeCashSettlementIndex(futuresMarket : FuturesMarket) extends Futures
   val eaiQuoteID = None
 }
 
-case class LmeThreeMonthBuyerIndex(futuresMarket : FuturesMarket) extends FuturesIndex("LME " + futuresMarket.commodity + " 3m Buyer", futuresMarket, level = Level.Bid){
+case class LmeThreeMonthBuyerIndex(futuresMarket : FuturesMarket) extends FuturesIndex("LME " + futuresMarket.commodity + " 3m Buyer", futuresMarket, level = Level.Bid) {
   def observedOptionPeriod(observationDay: Day) = throw new Exception("Options not supported for LME indices")
 
   def observedPeriod(day : Day) = {
@@ -487,3 +494,5 @@ case class LmeThreeMonthBuyerIndex(futuresMarket : FuturesMarket) extends Future
 
   val eaiQuoteID = None
 }
+
+//case class LmeLowestOfFourIndex(futuresMarket : FuturesMarket) extends Index

@@ -6,7 +6,7 @@ import starling.daterange._
 import starling.instrument._
 import starling.quantity.{UOM, Quantity}
 import starling.utils.sql.PersistAsBlob
-import starling.market.{LmeSingleIndices, SingleIndex}
+import starling.market.{LmeSingleIndices, IndexWithKnownPrice}
 import collection.SortedMap
 import starling.quantity.NamedQuantity
 
@@ -47,7 +47,7 @@ trait TitanPricingSpec {
 
 trait AveragePricingSpec extends TitanPricingSpec {
   def observationDays : List[Day]
-  def index : SingleIndex
+  def index : IndexWithKnownPrice
   protected def observedDays(marketDay : DayAndTime) = observationDays.filter(_.endOfDay <= marketDay)
   def isComplete(marketDay : DayAndTime) = observedDays(marketDay).size == observationDays.size
   def quotationPeriodStart : Option[Day] = Some(observationDays.head)
@@ -59,7 +59,7 @@ trait AveragePricingSpec extends TitanPricingSpec {
   def valuationCCY = premiumCCY.getOrElse(index.currency)
 }
 
-case class MonthAveragePricingSpec(index : SingleIndex, month : Month, premium : Quantity) extends AveragePricingSpec{
+case class MonthAveragePricingSpec(index : IndexWithKnownPrice, month : Month, premium : Quantity) extends AveragePricingSpec{
   val observationDays = index.observationDays(month)
   // Just a guess
   def settlementDay = month.lastDay.addBusinessDays(index.businessCalendar, 2)
@@ -69,14 +69,14 @@ case class MonthAveragePricingSpec(index : SingleIndex, month : Month, premium :
   def pricingType : String = "Month Average"
 }
 
-case class PartialAveragePricingSpec(index : SingleIndex, dayFractions : SortedMap[Day, Double], premium : Quantity) extends AveragePricingSpec {
+case class PartialAveragePricingSpec(index : IndexWithKnownPrice, dayFractions : SortedMap[Day, Double], premium : Quantity) extends AveragePricingSpec {
 
   val observationDays = dayFractions.keySet.toList.sortWith(_<_)
   def settlementDay = dayFractions.keys.toList.sortWith(_>_).head.addBusinessDays(index.businessCalendar, 2)
 
   def price(env: Environment) = {
     val priceFractions = dayFractions.map {
-        case (day, frac) => env.fixingOrForwardPrice(index, day) * frac
+        case (day, frac) => index.fixingOrForwardPrice(env, day) * frac
       }
     addPremiumConvertingIfNecessary(
       env,
@@ -169,7 +169,7 @@ case class FixedPricingSpec (settlementDay : Day, pricesByFraction : List[(Doubl
 
 case class UnknownPricingFixation(fraction : Double, price : Quantity)
 case class UnknownPricingSpecification(
-  index : SingleIndex,
+  index : IndexWithKnownPrice,
   month : Month,
   fixations : List[UnknownPricingFixation],
   declarationDay : Day,
@@ -189,7 +189,7 @@ case class UnknownPricingSpecification(
       thirdWednesday
     val unfixedFraction = 1.0 - totalFixed
     val fixedPayment = Quantity.sum(fixations.zipWithIndex.map{ case (f, i) => f.price.named("Fix_" + i) * f.fraction}).named("Fixed")
-    val unfixedPayment = (env.fixingOrForwardPrice(index, unfixedPriceDay) * unfixedFraction).named("Unfixed")
+    val unfixedPayment = (index.fixingOrForwardPrice(env, unfixedPriceDay) * unfixedFraction).named("Unfixed")
     fixedPayment + unfixedPayment
   }
 

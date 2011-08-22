@@ -1,31 +1,78 @@
 package starling.titan
 
 import com.trafigura.tradinghub.support.GUID
-import starling.market.SingleIndex
 import starling.daterange.Day
 import com.trafigura.edm.physicaltradespecs.{PricingSpecification, FixedPricingSpecification, MonthAveragePricingSpecification, PartialAveragePricingSpecification,OptionalPricingSpecification,WeightedPricingSpecification,UnknownPricingSpecification => UNKPricingSpecification}
+import com.trafigura.edm.physicaltradespecs.{CashAveragePricingSpecificationIndex, ThreeMonthAveragePricingSpecificationIndex, LowestOfFourAveragePricingSpecificationIndex, AverageOfFourAveragePricingSpecificationIndex, MaxSettlementAveragePricingSpecificationIndex, CashUnknownPricingSpecificationIndex, ThreeMonthUnknownPricingSpecificationIndex, LowestOfFourUnknownPricingSpecificationIndex, AverageOfFourUnknownPricingSpecificationIndex, MaxSettlementUnknownPricingSpecificationIndex, AveragePricingSpecificationIndexEnum, UnknownPricingSpecificationIndexEnum}
 import com.trafigura.tradecapture.internal.refinedmetal.{Metal, Market}
 import starling.instrument._
 import physical._
 import starling.quantity.{UOM, Quantity}
 import starling.titan.EDMConversions._
 import collection.immutable.{TreeMap, Map}
+import starling.market.IndexWithKnownPrice
+
+
+trait TitanIndexName {
+  def name : String
+}
+
+case object CashIndex extends TitanIndexName { val name = "Cash"} 
+case object ThreeMonthIndex extends TitanIndexName { val name = "Three Month"} 
+case object LowestOfFourIndex extends TitanIndexName { val name = "Lowest of Four"} 
+case object AverageOfFourIndex extends TitanIndexName { val name = "Average of Four"} 
+case object MaxSettlementIndex extends TitanIndexName { val name = "Max Settlement"} 
+
+object TitanIndexName {
+  val cashAverageIndex = CashAveragePricingSpecificationIndex 
+  val threeMonthAverageIndex = ThreeMonthAveragePricingSpecificationIndex 
+  val lowestOfFourAverageIndex = LowestOfFourAveragePricingSpecificationIndex 
+  val averageOfFourAverageIndex = AverageOfFourAveragePricingSpecificationIndex 
+  val maxSettlementAverageIndex = MaxSettlementAveragePricingSpecificationIndex 
+
+  implicit def fromAveragePricingSpecificationIndexEnum (index : AveragePricingSpecificationIndexEnum) : TitanIndexName = {
+    index match {
+      case `cashAverageIndex` => CashIndex
+      case `threeMonthAverageIndex` => ThreeMonthIndex
+      case `lowestOfFourAverageIndex` => LowestOfFourIndex
+      case `averageOfFourAverageIndex` => AverageOfFourIndex
+      case `maxSettlementAverageIndex` => MaxSettlementIndex
+    }
+  }
+
+  val cashUnknownIndex = CashUnknownPricingSpecificationIndex 
+  val threeMonthUnknownIndex = ThreeMonthUnknownPricingSpecificationIndex 
+  val lowestOfFourUnknownIndex = LowestOfFourUnknownPricingSpecificationIndex 
+  val averageOfFourUnknownIndex = AverageOfFourUnknownPricingSpecificationIndex 
+  val maxSettlementUnknownIndex = MaxSettlementUnknownPricingSpecificationIndex 
+
+  implicit def fromAveragePricingSpecificationIndexEnum (index : UnknownPricingSpecificationIndexEnum) : TitanIndexName = {
+    index match {
+      case `cashUnknownIndex` => CashIndex
+      case `threeMonthUnknownIndex` => ThreeMonthIndex
+      case `lowestOfFourUnknownIndex` => LowestOfFourIndex
+      case `averageOfFourUnknownIndex` => AverageOfFourIndex
+      case `maxSettlementUnknownIndex` => MaxSettlementIndex
+    }
+  }
+}
 
 case class EDMPricingSpecConverter(metal : Metal, exchanges : Map[String, Market]) {
-  def indexFromMarket(exchangeID : String) : SingleIndex = {
+  import TitanIndexName._
+  def getIndex(exchangeID : String, indexName : TitanIndexName) : IndexWithKnownPrice = {
     if (!exchanges.contains(exchangeID)){
       exchanges.keySet.foreach(println)
       println(exchangeID)
     }
 
-    RefinedTacticalRefDataConversions.guessAtIndex(exchanges(exchangeID), metal)
+    RefinedTacticalRefDataConversions.index(exchanges(exchangeID), metal, indexName)
   }
 
   def fromEdmPricingSpec(deliveryDay : Day, deliveryQuantity : Quantity, edmPricingSpec : PricingSpecification) : TitanPricingSpec = {
     edmPricingSpec match {
       case spec : MonthAveragePricingSpecification => {
         MonthAveragePricingSpec(
-          indexFromMarket(spec.market),
+          getIndex(spec.market, spec.index),
           Day.fromJodaDate(spec.qpMonth).containingMonth,
           spec.premium
         )
@@ -40,7 +87,7 @@ case class EDMPricingSpecConverter(metal : Metal, exchanges : Map[String, Market
           case (day, qty) => day -> (qty / totalQuantity).value
         }
 
-        val index = indexFromMarket(spec.market)
+        val index = getIndex(spec.market, spec.index)
         // Some of the day fractions are incorrect in titan - using non business days
         val (validDayFractions, invalidDayFractions) = sortedDayFractions.partition{case (day, _) => index.isObservationDay(day)}
         val invalidAmount = invalidDayFractions.values.sum
@@ -72,7 +119,7 @@ case class EDMPricingSpecConverter(metal : Metal, exchanges : Map[String, Market
       }
       case spec : UNKPricingSpecification => {
         val qpMonth = Day.fromJodaDate(spec.qpMonth).containingMonth
-        val index: SingleIndex = indexFromMarket(spec.market)
+        val index: IndexWithKnownPrice = getIndex(spec.market, spec.index)
         val declarationBy: Day = if (spec.declarationBy == null) qpMonth.lastDay.thisOrPreviousBusinessDay(index.businessCalendar) else Day.fromJodaDate(spec.declarationBy)
         UnknownPricingSpecification(
            index,
