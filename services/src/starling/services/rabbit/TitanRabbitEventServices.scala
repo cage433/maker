@@ -28,7 +28,7 @@ case class TitanRabbitIdBroadcaster(
     publisher : Publisher,
     source : String = Event.StarlingSource,
     subject : String = Event.StarlingMarketDataSnapshotIDSubject,
-    verb : EventVerbEnum = NewEventVerb,
+    verb : EventVerbEnum = CreatedEventVerb,
     payloadType : String = Event.StarlingSnapshotIdPayload) extends TypedBroadcaster[MarketDataSnapshot] with Logger {
 
   def typedBroadcast(mds: MarketDataSnapshot) = try {
@@ -208,8 +208,8 @@ class MockRabbitEventPublisher() extends EventPublisher {
   def newPayload(payloadType: String, id : Int) : Payload = null
   def newPayload(payloadType: String, id : String) : Payload = null
   def publish(subject : String, verb : EventVerbEnum) {}
-  def publishNew(subject : String, payload : Payload) {}
-  def publishUpdate(subject : String, payload : Payload) {}
+  def publishCreated(subject : String, payload : Payload) {}
+  def publishUpdated(subject : String, payload : Payload) {}
   def publish(subject : String, verb : EventVerbEnum, payload : Payload) = null
   def publish(subject : String, verb : EventVerbEnum, payloads : List[Payload]) = null
   def getPublished : Int = 0

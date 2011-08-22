@@ -66,10 +66,10 @@ class ValuationServiceTest extends StarlingTest {
               println("calling handler with %s".format(ids.mkString(", ")))
               handler(ids)
             }
-            case NewEventVerb => {
+            case CreatedEventVerb => {
               Log.info("new event received")
             }
-            case CancelEventVerb | RemovedEventVerb => {
+            case CancelledEventVerb | RemovedEventVerb => {
               Log.info("cancel / remove event received")
             }
           }

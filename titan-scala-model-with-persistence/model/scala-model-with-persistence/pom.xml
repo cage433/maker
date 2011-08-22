@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+  <modelVersion>4.0.0</modelVersion>
+
+  <name>Trading Hub Scala Hub Model (with persistence)</name>
+  <groupId>com.trafigura.tradinghub</groupId>
+  <artifactId>scala-model-with-persistence</artifactId>
+  <version>${buildversion}</version>
+
+  <parent>
+    <groupId>com.trafigura</groupId>
+    <artifactId>buildtools-server</artifactId>
+    <version>2.0</version>
+    <relativePath>../../../buildtools/services/pom.xml</relativePath>
+  </parent>
+
+  <dependencies>
+
+    <!--Internal dependencies-->
+    <dependency>
+      <groupId>com.trafigura.tradinghub</groupId>
+      <artifactId>scala-hub-support</artifactId>
+      <version>${tooling.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.trafigura.tradinghub</groupId>
+      <artifactId>persistence-support</artifactId>
+      <!--TODO: This isn't great, in order to give Brian the ability to use UOM's.  I have had to put the circular reference back between persistence support and the generated code
+      this version has the circular depencency-->
+      <version>${tooling.version}</version>
+      <exclusions>
+        <exclusion>
+          <groupId>com.trafigura.tradinghub</groupId>
+          <artifactId>scala-model</artifactId>
+        </exclusion>
+      </exclusions>
+  </dependency>
+
+    <!--External dependencies-->
+    <dependency>
+      <groupId>org.scala-lang</groupId>
+      <artifactId>scala-compiler</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.scala-lang</groupId>
+      <artifactId>scala-library</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>log4j</groupId>
+      <artifactId>log4j</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.hibernate</groupId>
+      <artifactId>hibernate-core</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.hibernate</groupId>
+      <artifactId>hibernate-annotations</artifactId>
+    </dependency>
+      <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-orm</artifactId>
+    </dependency>
+
+    <!-- RabbitMQ library dependencies (LB these need bringing up to date asap) -->
+    <dependency>
+      <groupId>com.rabbitmq</groupId>
+      <artifactId>amqp-client</artifactId>
+      <version>1.7.0.3</version>
+    </dependency>
+    <dependency>
+      <groupId>com.rabbitmq</groupId>
+      <artifactId>rabbitmq-messagepatterns</artifactId>
+      <version>0.1.3</version>
+    </dependency>
+
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <artifactId>maven-antrun-plugin</artifactId>
+        <executions>
+          <execution>
+          <phase>generate-sources</phase>
+          <configuration>
+          <tasks>
+            <exec executable="ruby" failonerror="true">
+	      <arg value="../../../mdl/bindinggen.rb"/>
+              <arg value="-o"/>
+              <arg value="target/generated-src"/>
+              <arg value="-b"/>
+              <arg value="src/codegen/bindings.rb"/>
+              <arg value="../master-model.rb"/>
+            </exec>
+          </tasks>
+        </configuration>
+        <goals>
+          <goal>run</goal>
+        </goals>
+      </execution>
+      </executions>
+      </plugin>
+      <plugin><!--Internal dependencies-->
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>build-helper-maven-plugin</artifactId>
+        <version>1.4</version>
+        <executions>
+          <execution>
+            <id>add-tradinghub-source</id>
+            <phase>generate-sources</phase>
+            <goals>
+              <goal>add-source</goal>
+            </goals>
+            <configuration>
+              <sources>
+                <source>${basedir}/target/generated-src</source>
+              </sources>
+            </configuration>
+          </execution>
+          <execution>
+            <id>add-tradinghub-resource</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>add-resource</goal>
+            </goals>
+            <configuration>
+              <resources>
+                <resource>
+                  <directory>${basedir}/target/generated-src</directory>
+                  <excludes>
+                    <exclude>com/**</exclude>
+                  </excludes>
+                </resource>
+              </resources>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+</project>
