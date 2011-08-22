@@ -31,4 +31,5 @@ trait BrowserBundle {
   def homeButtons(pageContext:PageContext):List[PageButton] = Nil
   def userPage(pageContext:PageContext):Option[Page] = None
   def helpEntries:List[HelpEntry] = Nil
+  def notificationHandlers:List[NotificationHook] = Nil
 }
