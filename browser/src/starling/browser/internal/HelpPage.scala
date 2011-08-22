@@ -1,53 +1,45 @@
-package starling.gui.pages
+package starling.browser.internal
 
-import scala.io._
-
-import starling.gui._
-import java.awt._
-import java.net._
-import java.util._
-import java.io._
-import javax.swing._
-import javax.swing.event._
-import javax.swing.text.html._
-
-import org.eclipse.mylyn.wikitext.core.parser.MarkupParser
+import io.Source
+import starling.browser.common.MigPanel
+import swing.EditorPane
+import java.net.URL
+import starling.browser._
+import javax.swing.{KeyStroke, BorderFactory, ImageIcon}
+import javax.swing.event.{HyperlinkEvent, HyperlinkListener}
+import java.awt.{Image, Dimension}
+import java.util.{Hashtable, Dictionary}
+import javax.swing.text.html.HTMLDocument
+import java.io.StringWriter
 import org.eclipse.mylyn.wikitext.core.parser.builder.HtmlDocumentBuilder
+import org.eclipse.mylyn.wikitext.core.parser.MarkupParser
 import org.eclipse.mylyn.wikitext.textile.core.TextileLanguage
 
-import swing.EditorPane
-import starling.browser.common.MigPanel
-import starling.browser._
-import internal.BrowserIcons
+case object HelpPage extends Page {
 
-case object HelpPage extends StarlingServerPage {
+  def bundle = RootBrowserContext.bundleName
+
+  def build(serverContext: String) = null
+
+  type SC = String
+
+  def createServerContext(sc: ServerContext) = ""
+
   def text = "Help"
-  def icon = StarlingIcons.im("/icons/16x16_Help.png")
+  def icon = BrowserIcons.im("/icons/16x16_Help.png")
 
   def createComponent(pageContext: PageContext, data: PageData, bookmark:Bookmark, browserSize:Dimension, previousPageData:scala.Option[PageData]) = {
     val component = new WikiPageComponent(pageContext)
-    val markup = Source.fromURL(getClass.getResource("/Help.txt")).getLines.mkString("\n")
 
-    def storeImage(name:String, icon:ImageIcon) {
-      component.storeImage(name, icon.getImage)
-    }
+    val markup = pageContext.bundles.flatMap(_.helpEntries.map(_.markup)).mkString("\n")
 
-    import StarlingIcons._
-    storeImage("RowGrandTotals", StarlingIcons.RowGrandTotals)
-    storeImage("ColumnTotals", StarlingIcons.ColumnTotals)
-    storeImage("SubTotals", StarlingIcons.RowSubTotals)
-    storeImage("Chart", StarlingIcons.Chart)
-    storeImage("Copy", StarlingIcons.Copy)
-    storeImage("Rotate", StarlingIcons.Rotate)
-    storeImage("Lock", StarlingIcons.Lock)
-    storeImage("SaveLayout", StarlingIcons.SaveLayout)
-    storeImage("Calculate", StarlingIcons.Calculate)
+    pageContext.bundles.foreach(_.helpEntries.foreach { entry => {
+      entry.icons.foreach{ case(name,icon) => component.storeImage(name, icon.getImage)}
+    } })
 
-    storeImage("SaveReportConfiguration", StarlingIcons.icon(SaveReportConfiguration))
-    storeImage("MarketData", StarlingIcons.icon(MarketData))
-    storeImage("Refresh", StarlingIcons.icon(BrowserIcons.Refresh))
-
-    //component.registerPage("Home", StarlingHomePage) //Just an example FIXME_BROWSER
+    pageContext.bundles.foreach(_.helpEntries.foreach { entry => {
+      entry.links.foreach{ case(name,page) => component.registerPage(name, page)}
+    } })
 
     component.setWikiText(markup)
     component.border = BorderFactory.createEmptyBorder(20, 20, 20, 20)
@@ -58,7 +50,6 @@ case object HelpPage extends StarlingServerPage {
       override def defaultComponentForFocus = Some(this.peer)
     }
   }
-  def build(reader:StarlingServerContext) = new PageData {}
 }
 
 class WikiPageComponent(pageContext: PageContext) extends EditorPane {

@@ -11,7 +11,7 @@ import javax.swing.{JComponent, KeyStroke}
 import starling.browser.service.Version
 import starling.browser._
 import common._
-import internal.{RootBrowserContext, BookmarksPanel, BrowserIcons}
+import internal.{HelpPage, RootBrowserContext, BookmarksPanel, BrowserIcons}
 
 class HomePage
 
@@ -116,9 +116,7 @@ class StarlingHomePageComponent(context:PageContext, browserSize:Dimension, page
           add(new FixedImagePanel(helpImage) {
             cursor = Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)
             reactions += {
-              case MouseClicked(_,_,_,_,_) => {
-                //context.goTo(HelpPage)
-              }
+              case MouseClicked(_,_,_,_,_) => {context.goTo(HelpPage) }
             }
             listenTo(mouse.clicks)
           }, "push,grow")

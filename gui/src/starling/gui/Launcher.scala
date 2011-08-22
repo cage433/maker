@@ -211,6 +211,7 @@ object Launcher extends Log {
 
           override def settings(pageContext:PageContext) = StarlingSettings.create(pageContext)
           override def homeButtons(pageContext:PageContext) = StarlingHomeButtons.create(pageContext)
+          override def helpEntries = StarlingHelpPage.starlingHelpEntry :: Nil
         }
 
         def browserService = new BrowserService {

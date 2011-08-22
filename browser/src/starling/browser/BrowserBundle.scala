@@ -1,10 +1,12 @@
 package starling.browser
 
 import swing.Component
-import javax.swing.KeyStroke
 import java.awt.image.BufferedImage
+import javax.swing.{ImageIcon, KeyStroke}
 
 case class HotKey(keyStroke:KeyStroke, name:String, page:Page)
+case class HelpEntry(markup:String, icons:Map[String,ImageIcon], links:Map[String,Page])
+
 trait PageFactory {
   def create(serverContext:ServerContext):Page
 }
@@ -28,4 +30,5 @@ trait BrowserBundle {
   def settings(pageContext:PageContext):List[Component] = Nil
   def homeButtons(pageContext:PageContext):List[PageButton] = Nil
   def userPage(pageContext:PageContext):Option[Page] = None
+  def helpEntries:List[HelpEntry] = Nil
 }
