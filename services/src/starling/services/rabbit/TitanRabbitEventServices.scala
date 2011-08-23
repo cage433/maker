@@ -44,11 +44,11 @@ case class TitanRabbitIdBroadcaster(
 
   def toTitan(list: List[UOM]): List[TitanSerializableCurrency] = list.flatMapO(_.serializableCurrency)
 
-  def verbFor(isCorrection: Boolean): EventVerbEnum = if (isCorrection) UpdatedEventVerb else NewEventVerb
+  def verbFor(isCorrection: Boolean): EventVerbEnum = if (isCorrection) UpdatedEventVerb else CreatedEventVerb
 
   def broadcast(event: swing.event.Event) = try {
     val events: Option[JSONArray] = event partialMatch {
-      case MarketDataSnapshot(snapshotIDs) => createEvents(subject, NewEventVerb, snapshotIDs.map(Payloads.forSnapshotId))
+      case MarketDataSnapshot(snapshotIDs) => createEvents(subject, CreatedEventVerb, snapshotIDs.map(Payloads.forSnapshotId))
       case SpotFXDataEvent(observationDay, currencies, snapshotIDLabel, isCorrection) => {
         createEvents("SpotFXData", verbFor(isCorrection),
           Payloads.forObservationDay(observationDay) ::
@@ -230,8 +230,8 @@ class MockRabbitEventPublisher() extends EventPublisher {
   def newPayload(payloadType: String, id : Int) : Payload = null
   def newPayload(payloadType: String, id : String) : Payload = null
   def publish(subject : String, verb : EventVerbEnum) {}
-  def publishNew(subject : String, payload : Payload) {}
-  def publishUpdate(subject : String, payload : Payload) {}
+  def publishCreated(subject : String, payload : Payload) {}
+  def publishUpdated(subject : String, payload : Payload) {}
   def publish(subject : String, verb : EventVerbEnum, payload : Payload) = null
   def publish(subject : String, verb : EventVerbEnum, payloads : List[Payload]) = null
   def getPublished : Int = 0

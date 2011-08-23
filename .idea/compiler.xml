@@ -28,6 +28,7 @@
       <entry name="?*.sql" />
       <entry name="?*.properties" />
       <entry name="?*.csv" />
+      <entry name="?*.zip" />
     </wildcardResourcePatterns>
     <annotationProcessing enabled="false" useClasspath="true" />
   </component>

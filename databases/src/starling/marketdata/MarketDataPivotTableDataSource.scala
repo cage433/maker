@@ -144,8 +144,8 @@ class MarketDataPivotTableDataSource(reader: MarketDataReader, edits:PivotEdits,
                 var modifiedRows = currentRows
 
                 maybeEdits match {
-                  case Some(edits) => {
-                    edits.foreach { case (keyFilter, keyEdit) => {
+                  case Some(edits0) => {
+                    edits0.foreach { case (keyFilter, keyEdit) => {
                       modifiedRows = modifiedRows.flatMap { row => {
                         if (keyFilter.matches(row)) {
                             keyEdit match {

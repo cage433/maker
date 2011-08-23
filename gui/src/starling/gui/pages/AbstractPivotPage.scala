@@ -251,24 +251,11 @@ class PivotTablePageComponent(
       val numEditsString = numEdits.toString
 
       def saveEdits() {
-        println("Saving edits: " + edits)
         pageContext.submit(new SubmitRequest[Boolean] {
           def baseSubmit(serverContext:ServerContext) = {
             save(serverContext, edits)
           }
-        }, onComplete = (b:Boolean) => {
-          // Because of the order of clearing the screen, this has to be put at the back of the EDT.
-          onEDT({
-            if (b) {
-              val pageWithoutEdits = selfPage(pivotPageState, PivotEdits.Null)
-              println("Going to " + pageWithoutEdits)
-              pageContext.goTo(pageWithoutEdits)
-            } else {
-              pageContext.setErrorMessage("Error Saving Edits", "There was an error when saving the edits.\n\n" +
-                      "Please contact a Starling developer")
-            }
-          })
-        })
+        }, awaitRefresh = (b:Boolean) => b)
       }
       reactions += {case ButtonClicked(b) => saveEdits()}
 

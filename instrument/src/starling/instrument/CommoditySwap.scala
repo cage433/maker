@@ -97,7 +97,7 @@ case class SinglePeriodSwap(
 
   def valuationCCY: UOM = strike.numeratorUOM
 
-  private def averagingDays = period.days.filter(pricingRule.isObservationDay(index.calendars, _))
+  private val averagingDays = period.days.filter(pricingRule.isObservationDay(index.calendars, _))
 
   def liveAveragingDays(marketDay : DayAndTime) = averagingDays.filter(_.endOfDay > marketDay)
 

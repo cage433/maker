@@ -61,10 +61,10 @@ class ValuationServiceTest extends StarlingTest {
             case UpdatedEventVerb => {
               handler(ids)
             }
-            case NewEventVerb => {
+            case CreatedEventVerb => {
               Log.info("new event received")
             }
-            case CancelEventVerb | RemovedEventVerb => {
+            case CancelledEventVerb | RemovedEventVerb => {
               Log.info("cancel / remove event received")
             }
           }
