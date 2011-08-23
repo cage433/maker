@@ -6,16 +6,16 @@ import starling.quantity.UOM._
 import starling.quantity.Quantity
 import starling.utils.QuantityTestUtils._
 import starling.market._
-import rules.CommonPricingRule
 import starling.curves._
-import starling.market.formula._
 import starling.daterange._
 import starling.daterange.Day._
+import starling.utils.TestTimer
 
 class SwapCalendarSpreadTests extends TestMarketTest {
 
   @Test
   def testSameAsTwoSwaps {
+
     val forwardPrice = Quantity(200, USD / BBL)
     val historicPrice = Quantity(100, USD / BBL)
 
@@ -58,7 +58,12 @@ class SwapCalendarSpreadTests extends TestMarketTest {
 
     val swap = new SwapCalendarSpread(index, strike, volume, SpreadPeriod(period1, period2), cleared = true)
 
-    for (marketDay <- ((30 Dec 2010) until (11 Mar 2011)).filter(_.isWeekday); timeOfDay <- List(TimeOfDay.StartOfDay, TimeOfDay.EndOfDay)) {
+    val edgeDays = (7 Jan 2011) :: (10 Jan 2011) :: (19 Jan 2011) :: (20 Jan 2011) :: (21 Jan 2011) :: //
+      (31 Jan 2011) :: (1 Feb 2011) :: (2 Feb 2011) :: (25 Feb 2011) :: (28 Feb 2011) :: (1 Mar 2011) :: Nil
+    // ensure each edge day is a market day
+    assert(edgeDays.forall(_.isWeekday));
+
+    for (marketDay <- edgeDays; timeOfDay <- List(TimeOfDay.StartOfDay, TimeOfDay.EndOfDay)) {
       val marketDayAndTime = marketDay.atTimeOfDay(timeOfDay)
       val env = environment(marketDayAndTime)
       val mtm = swap.mtm(env)
@@ -69,7 +74,6 @@ class SwapCalendarSpreadTests extends TestMarketTest {
       val keys = swap.priceAndVolKeys(marketDayAndTime)
       val expectedKeys = swapFront.priceAndVolKeys(marketDayAndTime)._1 ++ swapBack.priceAndVolKeys(marketDayAndTime)._1
       assertEquals(keys, (expectedKeys, Set()))
-
       for (k <- keys._1) {
         val position = swap.position(env, k)
         val expectedPosition = swapFront.position(env, k) + swapBack.position(env, k)
@@ -86,13 +90,13 @@ class SwapCalendarSpreadTests extends TestMarketTest {
     val zeroRate = 0.3
 
     val env = Environment(
-        new TestingAtomicEnvironment() {
+      new TestingAtomicEnvironment() {
         def applyOrMatchError(key: AtomicDatumKey) = key match {
           case ForwardPriceKey(_, d, _) => {
             forwardPrice
           }
           case _: FixingKey => historicPrice
-          case DiscountRateKey(_, day, _) => new Quantity(math.exp(- zeroRate * day.endOfDay.timeSince(md)))
+          case DiscountRateKey(_, day, _) => new Quantity(math.exp(-zeroRate * day.endOfDay.timeSince(md)))
         }
 
         def marketDay = md
@@ -103,11 +107,11 @@ class SwapCalendarSpreadTests extends TestMarketTest {
     val market = index.market
 
     val period1 = DateRange(8 Jan 2011, 20 Jan 2011)
-      val period2 = Month(2011, 2)
-      val volume = Quantity(100, BBL)
-      val strike = Quantity(.9, USD / BBL)
+    val period2 = Month(2011, 2)
+    val volume = Quantity(100, BBL)
+    val strike = Quantity(.9, USD / BBL)
 
-      val swapFront = new SinglePeriodSwap(
+    val swapFront = new SinglePeriodSwap(
       index,
       strike,
       volume,

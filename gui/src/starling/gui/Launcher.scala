@@ -163,7 +163,6 @@ object Launcher extends Log {
     val postLocalCacheUpdatePublisher = new scala.swing.Publisher() {}
 
     BrowserLauncher.start(
-        StarlingServerNotificationHandlers.notificationHandler :: Nil,
         postLocalCacheUpdatePublisher,
         createCacheMap(starlingServer.whoAmI.name, starlingServer, postLocalCacheUpdatePublisher, remotePublisher),
         extraInfo) {
@@ -188,6 +187,7 @@ object Launcher extends Log {
             "utilsPage",
             UtilsPage()) :: Nil
 
+          override def notificationHandlers = StarlingServerNotificationHandlers.notificationHandler :: Nil
           def unmarshal(text: String) = GuiStarlingXStream.read(text).asInstanceOf[AnyRef]
 
 //            bookmark match {

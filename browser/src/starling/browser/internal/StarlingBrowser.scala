@@ -13,12 +13,11 @@ import net.miginfocom.swing.MigLayout
 import scala.swing.event.{MouseClicked, ButtonClicked, UIElementResized}
 import swing._
 import java.awt.event.{ActionListener, ActionEvent, InputEvent, KeyEvent}
-import starling.utils.{StackTraceToString, Log}
 import javax.swing.{JComponent, AbstractAction, KeyStroke, JPanel, JPopupMenu, Timer, ImageIcon}
 import java.awt.{RenderingHints, Graphics, Color, KeyboardFocusManager, Graphics2D, Component => AWTComp}
-import starling.utils.cache.ThreadSafeCachingProxy
 import java.lang.reflect.UndeclaredThrowableException
 import net.miginfocom.layout.LinkHandler
+import util.{BrowserLog, BrowserStackTraceToString, BrowserThreadSafeCachingProxy}
 
 trait CurrentPage {
   def page:Page
@@ -665,7 +664,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
 
   def clearCache {
     pageBuilder.clearCaches
-    ThreadSafeCachingProxy.clearCache
+    BrowserThreadSafeCachingProxy.clearCache
   }
 
   private def refreshButtonStatus {
@@ -777,7 +776,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
           case FailureSubmitResponse(t) => {
             timer.stop
             t.printStackTrace
-            starlingBrowserUI.setError("There was an error when processing your request", StackTraceToString.string(t), {
+            starlingBrowserUI.setError("There was an error when processing your request",BrowserStackTraceToString.string(t), {
               setScreenLocked(false)
               refreshButtonStatus
               refreshButton.enabled = history(current).refreshPage.isDefined
@@ -944,11 +943,11 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
             case FailurePageResponse(t:Exception) => t match {
               case e: UndeclaredThrowableException => {
                 e.printStackTrace()
-                showError("Error", StackTraceToString.messageAndThenString(e.getUndeclaredThrowable))
+                showError("Error", BrowserStackTraceToString.messageAndThenString(e.getUndeclaredThrowable))
               }
               case e => {
                 e.printStackTrace()
-                showError("Error", StackTraceToString.messageAndThenString(e))
+                showError("Error", BrowserStackTraceToString.messageAndThenString(e))
               }
             }
             case SuccessPageResponse(_,bookmark) => {
@@ -1041,7 +1040,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
             waitingFor -= Some(threadID)
           }
           t.printStackTrace
-          starlingBrowserUI.setError("There was an error when processing your request", StackTraceToString.string(t), {
+          starlingBrowserUI.setError("There was an error when processing your request", BrowserStackTraceToString.string(t), {
             setScreenLocked(false)
             refreshButtonStatus
             refreshButton.enabled = history(current).refreshPage.isDefined
@@ -1248,7 +1247,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
   }
 }
 //Caches all page data and launches threads calling back with swing thread when completed
-class PageBuilder(val serverContext:ServerContext) extends Log {
+class PageBuilder(val serverContext:ServerContext) {
 
   val browserBundle = RootBrowserContext
 
@@ -1278,7 +1277,7 @@ class PageBuilder(val serverContext:ServerContext) extends Log {
   def submit[R,T](submitRequest:SubmitRequest[R], waitFor:CountDownLatch, awaitRefresh:R=>Boolean, then:((Boolean, SubmitResponse) => Unit)) {
     threads.execute(new Runnable() {
       def run() {
-        val (submitResponse, didWait) = log.infoWithTime("Submit request " + submitRequest) {
+        val (submitResponse, didWait) = BrowserLog.infoWithTime("Submit request " + submitRequest) {
           try {
             val r = submitRequest.baseSubmit(serverContext)
             val dw = awaitRefresh(r)
@@ -1296,7 +1295,7 @@ class PageBuilder(val serverContext:ServerContext) extends Log {
   def buildNoCache(page:Page, then:(PageResponse=>Unit)) {
     threads.execute(new Runnable{
       def run = {
-        val pageResponse:PageResponse = log.infoWithTime("BuildNoCache page " + page.text) {
+        val pageResponse:PageResponse = BrowserLog.infoWithTime("BuildNoCache page " + page.text) {
           try {
             PageLogger.logPageView(page, serverContext.browserService)
             val builtPage = page.build(page.createServerContext(serverContext))
@@ -1368,7 +1367,7 @@ class PageBuilder(val serverContext:ServerContext) extends Log {
         case None => {
           pageToThens += (page -> List(then))
           threads.execute(new Runnable() { def run() {
-            val pageResponse:PageResponse = log.infoWithTime("Build page " + page.text) {
+            val pageResponse:PageResponse = BrowserLog.infoWithTime("Build page " + page.text) {
               try {
                 PageLogger.logPageView(page, serverContext.browserService)
                 val builtPage = page.build(page.createServerContext(serverContext))

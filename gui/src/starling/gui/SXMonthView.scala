@@ -1,4 +1,4 @@
-package starling.browser.common
+package starling.gui
 
 import org.jdesktop.swingx.event.DateSelectionEvent.EventType
 import org.jdesktop.swingx.event.{DateSelectionEvent, DateSelectionListener}

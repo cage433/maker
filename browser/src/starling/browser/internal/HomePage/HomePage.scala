@@ -6,7 +6,6 @@ import java.awt.event.KeyEvent
 import org.jdesktop.swingx.painter.{CompoundPainter, GlossPainter}
 import scala.swing._
 import swing.event._
-import starling.daterange.Day
 import javax.swing.{JComponent, KeyStroke}
 import starling.browser.service.Version
 import starling.browser._

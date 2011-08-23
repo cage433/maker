@@ -31,7 +31,7 @@ import swing.{Component, Label, Button}
 object CannedLauncher {
   def main(args:Array[String]) {
     System.setProperty("log4j.configuration", "utils/resources/log4j.properties")
-    BrowserLauncher.start(Nil, new scala.swing.Publisher() {}, new HeterogeneousMap[LocalCacheKey], None) {
+    BrowserLauncher.start(new scala.swing.Publisher() {}, new HeterogeneousMap[LocalCacheKey], None) {
       new ServerContext {
         def lookup[T](klass: Class[T]) = throw new Exception("Canned launcher has no services")
         def version = Version("canned", "hostname", "db", false, None)

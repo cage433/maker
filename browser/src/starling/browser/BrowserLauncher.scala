@@ -15,7 +15,7 @@ trait NotificationHook {
 
 object BrowserLauncher {
 
-  def start(notificationHandlers:List[NotificationHook], remotePublisher: Publisher, cacheMap:HeterogeneousMap[LocalCacheKey], extraInfo:Option[String])(serverContext:ServerContext) {
+  def start(remotePublisher: Publisher, cacheMap:HeterogeneousMap[LocalCacheKey], extraInfo:Option[String])(serverContext:ServerContext) {
 
     def toBookmarks(bookmarks:List[BookmarkLabel]) = {
       bookmarks.map { label => {
@@ -63,11 +63,13 @@ object BrowserLauncher {
       // the publisher to stay fresh.
       remotePublisher.reactions += {
         case batch:EventBatch => {
-          notificationHandlers.foreach { handler => {
-            batch.events.foreach { e =>
-              handler.handle(e, cache, sendNotification)
-            }
-          } }
+          serverContext.browserBundles.foreach { bundle =>
+            bundle.notificationHandlers.foreach { handler => {
+              batch.events.foreach { e =>
+                handler.handle(e, cache, sendNotification)
+              }
+            } }
+          }
           batch.events.foreach {
             case e: BookmarksUpdate if e.user == username => {
               cacheMap(LocalCache.Bookmarks) = toBookmarks(e.bookmarks)

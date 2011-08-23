@@ -1,17 +1,47 @@
 package starling.browser.internal
 
-//import starling.gui.api
-//import api.BookmarksUpdate
-//import custom.{SXMonthView, TitledDayPicker}
 import swing.Swing._
 import java.awt.{Dimension, Color}
-import swing.{Action, ScrollPane, ListView, Label}
+import swing.{Action, ScrollPane, ListView, Label, Component}
 import swing.event.{Event, SelectionChanged, KeyPressed, MouseClicked}
-import starling.daterange.Day
 import javax.swing._
-import starling.browser.{Bookmark, BookmarkData, PageContext}
 import starling.browser.common._
 import starling.browser.service.BookmarksUpdate
+import org.jdesktop.swingx.JXMonthView
+import starling.browser.{BrowserDay, Bookmark, BookmarkData, PageContext}
+import java.util.{Calendar, GregorianCalendar, Date => JDate}
+
+class MinimalSXMonthView extends Component {
+  override lazy val peer = new JXMonthView
+  def traversable:Boolean = peer.isTraversable
+  def traversable_=(traversable:Boolean) {peer.setTraversable(traversable)}
+  def date:JDate= peer.getFirstSelectionDate
+  def date_=(day:JDate) {peer.setSelectionDate(day)}
+  def preferredColumnCount = peer.getPreferredColumnCount
+  def preferredColumnCount_=(count:Int) = peer.setPreferredColumnCount(count)
+  def firstDisplayedDay = peer.getFirstDisplayedDay
+  def firstDisplayedDay_=(day:JDate) = peer.setFirstDisplayedDay(day)
+//  peer.getSelectionModel.addDateSelectionListener(new DateSelectionListener {
+//    def valueChanged(ev:DateSelectionEvent) = {
+//      if (ev.getEventType == EventType.DATES_SET) {
+//        publish(SelectionChanged(SXMonthView.this))
+//      }
+//    }
+//  })
+//  peer.addActionListener(new ActionListener {
+//    def actionPerformed(e:ActionEvent) = {
+//      e.getActionCommand match {
+//        case JXMonthView.CANCEL_KEY => publish(MonthViewCancelEvent(SXMonthView.this))
+//        case JXMonthView.COMMIT_KEY => publish(MonthViewCommitEvent(SXMonthView.this, day))
+//        case _ =>
+//      }
+//    }
+//  })
+}
+
+//case class MonthViewCancelEvent(source:Component) extends Event
+//case class MonthViewCommitEvent(source:Component, day:Day) extends Event
+
 
 class BookmarksPanel(context:PageContext) extends MigPanel("") {
   val iconLabel = new Label {
@@ -40,10 +70,10 @@ class BookmarksPanel(context:PageContext) extends MigPanel("") {
     renderer = ListView.Renderer.wrap(bookmarkDataListCellRenderer)
   }
 
-  val dayPicker = new SXMonthView {
+  val dayPicker = new MinimalSXMonthView {
     border = LineBorder(GuiUtils.BorderColour)
     enabled = valuationDayShouldBeEnabled
-    day = Day.today().previousWeekday
+    date = new java.util.Date() //FIXME Previous weekday
     traversable = true
   }
 
@@ -68,14 +98,25 @@ class BookmarksPanel(context:PageContext) extends MigPanel("") {
   def goToBookmark() {
     val bookmark = bookmarksListView.selected
     val baseDay = if (bookmark.bookmark.daySensitive) {
-      Some(dayPicker.day)
+      Some(dayPicker.date)
     } else {
       None
     }
     publish(GoingToBookmark)
     context.createAndGoTo(serverContext => {
-      bookmark.bookmark.createPage(baseDay, serverContext, context)
+      val browserDay = baseDay.map( fromJavaDate )
+      bookmark.bookmark.createPage(browserDay, serverContext, context)
     })
+  }
+
+  def fromJavaDate(date:java.util.Date):BrowserDay = {
+    val calendar = new GregorianCalendar
+    calendar.setTimeInMillis(date.getTime)
+    BrowserDay(
+      calendar.get(Calendar.YEAR),
+      calendar.get(Calendar.MONTH)+ 1,
+      calendar.get(Calendar.DAY_OF_MONTH)
+    )
   }
 
   val goToBookmarkAction = Action("Go"){goToBookmark()}

@@ -30,8 +30,9 @@ trait StarlingServerPage extends Page {
 }
 trait StarlingBookmark extends Bookmark {
   def createStarlingPage(day:Option[Day], serverContext:StarlingServerContext, context:PageContext):Page
-  def createPage(day:Option[Day], serverContext:ServerContext, context:PageContext):Page = {
-    createStarlingPage(day, new StarlingServerContext(serverContext.lookup(classOf[StarlingServer])), context)
+  def createPage(day:Option[BrowserDay], serverContext:ServerContext, context:PageContext):Page = {
+    val realDay = day.map( d => Day(d.year, d.month, d.dayOfMonth))
+    createStarlingPage(realDay, new StarlingServerContext(serverContext.lookup(classOf[StarlingServer])), context)
   }
 }
 
