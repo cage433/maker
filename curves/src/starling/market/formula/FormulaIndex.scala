@@ -104,7 +104,7 @@ case class Formula(formula: String) {
     }
   }
 
-  def indexes: Set[SingleIndex] = {
+  lazy val indexes: Set[SingleIndex] = {
     var indexes = Set[SingleIndex]()
     price(false){
       index:Index => {
