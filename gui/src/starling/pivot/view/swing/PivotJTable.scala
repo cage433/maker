@@ -19,6 +19,7 @@ import swing.{MenuItem, Action}
 import starling.pivot.model.{AxisCell, PivotTableModel}
 import java.awt.event._
 import org.jdesktop.swingx.renderer.DefaultTableRenderer
+import starling.browser.Modifiers
 
 object PivotJTable {
   val RowHeight = 16
@@ -357,8 +358,8 @@ class PivotJTable(tableModel:PivotJTableModel, pivotTableView:PivotTableView, mo
           if (e.getClickCount() == 2) {
             val tableSelection = tableModel.mapCellToFields(row, col)
             if (tableSelection.nonEmpty) {
-              val controlDown = (e.getModifiers & InputEvent.CTRL_MASK) == InputEvent.CTRL_MASK
-              pivotTableView.publish(TableDoubleClickEvent(model.getCurrentPivotFieldsState.filters, tableSelection, controlDown))
+              val modifiers = Modifiers.modifiers(e.getModifiersEx)
+              pivotTableView.publish(TableDoubleClickEvent(model.getCurrentPivotFieldsState.filters, tableSelection, modifiers))
             }
           } else if (e.getClickCount() == 1) {
             val cellRect = table.getCellRect(row, col, true)

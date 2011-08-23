@@ -367,7 +367,7 @@ class PivotTablePageComponent(
 
   reactions += {
     case FieldsChangedEvent(pivotFieldState) => pageContext.goTo(selfPage(pivotPageState.copyPivotFieldsState(pivotFieldState), edits))
-    case TableDoubleClickEvent(filterFields, drillDownFields, ctrlDown) => {
+    case TableDoubleClickEvent(filterFields, drillDownFields, modifiers) => {
 
       def getAxis(fields:Seq[(Field,Selection)], drillDownInfo:DrillDownInfo) = {
         val axisToUse = drillDownInfo.fallBack
@@ -411,9 +411,9 @@ class PivotTablePageComponent(
       if (!possibleGroups.isEmpty && !currentFieldState.rowFields.contains(Field("Trade ID"))) {
         val newFieldState = currentFieldState.withFiltersAndRowFields(drillDownFields, possibleGroups.head)
         val newPPS = pivotPageState.copy(pivotFieldParams = pivotPageState.pivotFieldParams.copy(pivotFieldState = Some(newFieldState)))
-        pageContext.goTo(selfPage(newPPS, edits), Modifiers(ctrlDown, false))
+        pageContext.goTo(selfPage(newPPS, edits), modifiers)
       } else {
-        finalDrillDown(filterFields ++ drillDownFields, pageContext, Modifiers(ctrlDown, false))
+        finalDrillDown(filterFields ++ drillDownFields, pageContext, modifiers)
       }
     }
     case FullScreenSelectedEvent(currentState, newState, currentFrozen) => {
