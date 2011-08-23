@@ -46,7 +46,7 @@ object PivotTableUI {
                   case Edited => EditedCellColour
                   case Tainted => TaintedCellColour
                   case Added => AddedCellColour
-                  case AddedBlank => AddedCellColour
+                  case AddedBlank => AddedBlankCellColour
                   case Normal => {
                     if (cellBelow.editable) {
                       RowHeaderEditableCellColour

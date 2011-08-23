@@ -15,12 +15,12 @@ import starling.browser.common.RichColour._
 object GuiUtils {
   def LabelWithSeparator(text:String) = new MigPanel("insets 0"){
     override def enabled = super.enabled
-    override def enabled_=(b:Boolean) = {
+    override def enabled_=(b:Boolean) {
       super.enabled = b
       textLabel.enabled = b
       separator.enabled = b
       if (b) separator.foreground = colour else separator.foreground = GuiUtils.BorderColour
-      separator.repaint
+      separator.repaint()
     }
     val colour = Color.BLUE.darker
     private val textLabel = new Label(text) {
@@ -88,12 +88,8 @@ object GuiUtils {
 
   val PanelBackgroundColour = new Color(246, 246, 243)
 
-//  val StarlingBrowserBottomFadeColour = new Color(219, 232, 249)
-//  val StarlingBrowserBottomFadeColour = TaskPageBackgroundColour
   val StarlingBrowserBottomFadeColour = new Color(228,228,228)
-//  val StarlingBrowserTopFadeColour = new Color(244, 248, 253)
   val StarlingBrowserTopFadeColour = Color.WHITE
-//  val StarlingBrowserTopFadeColour = new Color(249,249,248)
   val MouseOverColour = new Color(164, 164, 164)
 
   val BannerColour = new Color(198,180,145)
@@ -120,7 +116,6 @@ object GuiUtils {
   val BlendedSubtotalColour = TableSelectedColour.blend(SubtotalColour, BlendFraction)
   val TotalColour = new Color(185, 236, 192)
   val BlendedTotalColour = TableSelectedColour.blend(TotalColour, BlendFraction)
-//  val SubtotalTotalColour = new Color(195,249,6)
   val SubtotalTotalColour = new Color(158,202,164)
   val BlendedSubtotalTotalColour = TableSelectedColour.blend(SubtotalTotalColour, BlendFraction)
   val OtherValueTotalColour = new Color(0,246,220,30)
@@ -134,13 +129,6 @@ object GuiUtils {
   val AddedCellColour = new Color(0xd5f7be)
   val TaintedCellColour = new Color(160, 218, 255)
   val DeletedColour = Color.LIGHT_GRAY
-
-  /*val EditableCellColour = new Color(0xecf1f8)
-  val EditedCellColour = new Color(0xFFFFD7)
-  val AddedCellColour = new Color(0xd5f7be)
-  val TaintedCellColour = new Color(160, 218, 255)
-//  val DeletedColour = new Color(0xd3d9e2)
-  val DeletedColour = new Color(0xebebeb)*/
 
   val ErrorCellColour = new Color(244, 121, 124)
 
@@ -165,13 +153,11 @@ object GuiUtils {
       PlatformDefaults.setPlatform(PlatformDefaults.WINDOWS_XP)
     }
 
-//    UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName)
     PlasticLookAndFeel.setTabStyle(PlasticLookAndFeel.TAB_STYLE_METAL_VALUE)
     UIManager.setLookAndFeel(LookAndFeel)
     val backColour = PanelBackgroundColour
 
     UIManager.put("Panel.background", backColour)
-    //        UIManager.put("Panel.background", new Color(80, 151, 237))
     UIManager.put("Button.background", backColour)
     UIManager.put("ComboBox.background", backColour)
     UIManager.put("RadioButton.background", backColour)
@@ -193,7 +179,6 @@ object GuiUtils {
     UIManager.put("TableHeader.background", backColour)
     UIManager.put("ScrollPane.background", backColour)
     UIManager.put("TabbedPane.selected", GuiUtils.StarlingBrowserTopFadeColour) // This is the colour of the tabs when selected.
-    //        UIManager.put("TabbedPane.selected", Color.RED)
     val buttonSelectColour = new Color(208, 208, 208)
     UIManager.put("ToggleButton.select", buttonSelectColour);
     UIManager.put("Button.select", buttonSelectColour)
