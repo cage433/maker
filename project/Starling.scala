@@ -334,7 +334,7 @@ object StarlingBuild extends Build{
     titanModel % "test->test",
     databases % "test->test",
     titan % "test->test",
-    services % "test->test",
+    services % "compile->test;test->test",
     devLauncher % "test->test"
   )
 
@@ -473,7 +473,8 @@ object StarlingBuild extends Build{
       println("Full classpath is: " + cp.map(_.data).mkString(":"))
       import java.io._
       val file = new PrintWriter(new FileOutputStream(new File("set-classpath.sh")))
-      file.println("export CLASSPATH=" + cp.map(_.data).getFiles.toList.mkString(":"))
+      val resourceDirs = cp.map(_.data).getFiles.toList.map(_.getPath).filter(_.endsWith("/classes")).map{s => s.replace("/classes", "/resources")}
+      file.println("export CLASSPATH=" + (cp.map(_.data).getFiles.toList ::: resourceDirs).mkString(":"))
       file.println("export JAVA_OPTS='-server -XX:MaxPermSize=1024m -Xss512k -Xmx6000m'")
       file.close()
       None
