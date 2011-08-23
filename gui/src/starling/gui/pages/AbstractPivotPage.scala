@@ -38,7 +38,7 @@ abstract class AbstractPivotPage(pivotPageState:PivotPageState, edits:PivotEdits
   def save(sc:ServerContext, edits:PivotEdits):Boolean = throw new Exception("No implementation of save for this page")
   def selfPage(pivotPageState:PivotPageState, edits:PivotEdits=PivotEdits.Null):Page
   def subClassesPageData(pageBuildingContext:SC):Option[PageData] = None
-  def finalDrillDownPage(fields:Seq[(Field,Selection)], pageContext:PageContext, ctrlDown:Boolean) = ()
+  def finalDrillDownPage(fields:Seq[(Field,Selection)], pageContext:PageContext, modifiers:Modifiers) = ()
   def toolbarButtons(pageContext: PageContext, data:PageData):List[Button] = List()
   def configPanel(pageContext:PageContext, data:PageData):Option[ConfigPanels] = None
   def createComponent(pageContext:PageContext, data:PageData, bookmark:Bookmark, browserSize:Dimension, previousPageData:Option[PageData]) : PageComponent = {
@@ -92,7 +92,7 @@ object PivotComponent {
         pageContext:PageContext,
         toolbarButtons:List[Button],
         configPanel:Option[ConfigPanels],
-        finalDrillDown:(Seq[(Field,Selection)],PageContext,Boolean)=>Unit,
+        finalDrillDown:(Seq[(Field,Selection)],PageContext,Modifiers)=>Unit,
         selfPage:((PivotPageState,PivotEdits)=>Page),
         pageData:PageData,
         pivotPageState:PivotPageState,
@@ -130,7 +130,7 @@ class PivotTablePageComponent(
         pageContext:PageContext,
         toolbarButtons:List[Button],
         configPanel:Option[ConfigPanels],
-        finalDrillDown:(Seq[(Field,Selection)],PageContext,Boolean)=>Unit,
+        finalDrillDown:(Seq[(Field,Selection)],PageContext,Modifiers)=>Unit,
         selfPage:((PivotPageState,PivotEdits)=>Page),
         pivotTablePageData:PivotTablePageData,
         pivotPageState:PivotPageState,
@@ -411,9 +411,9 @@ class PivotTablePageComponent(
       if (!possibleGroups.isEmpty && !currentFieldState.rowFields.contains(Field("Trade ID"))) {
         val newFieldState = currentFieldState.withFiltersAndRowFields(drillDownFields, possibleGroups.head)
         val newPPS = pivotPageState.copy(pivotFieldParams = pivotPageState.pivotFieldParams.copy(pivotFieldState = Some(newFieldState)))
-        pageContext.goTo(selfPage(newPPS, edits), ctrlDown)
+        pageContext.goTo(selfPage(newPPS, edits), Modifiers(ctrlDown, false))
       } else {
-        finalDrillDown(filterFields ++ drillDownFields, pageContext, ctrlDown)
+        finalDrillDown(filterFields ++ drillDownFields, pageContext, Modifiers(ctrlDown, false))
       }
     }
     case FullScreenSelectedEvent(currentState, newState, currentFrozen) => {

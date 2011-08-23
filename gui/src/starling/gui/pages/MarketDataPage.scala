@@ -162,8 +162,8 @@ object MarketDataPage {
             marketDataIdentifier:MarketDataPageIdentifier,
             marketDataType:Option[MarketDataTypeLabel],
             observationDays:Option[Set[Day]],
-            ctrlDown:Boolean=false) {
-    pageContext.createAndGoTo( (sc) => pageFactory(pageContext, marketDataIdentifier, marketDataType, observationDays)(sc), newTab = ctrlDown)
+            modifiers:Modifiers=Modifiers.None) {
+    pageContext.createAndGoTo( (sc) => pageFactory(pageContext, marketDataIdentifier, marketDataType, observationDays)(sc), modifiers= modifiers)
   }
 }
 

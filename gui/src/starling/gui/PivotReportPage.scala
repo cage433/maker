@@ -99,7 +99,7 @@ case class MainPivotReportPage(showParameters:Boolean, reportParameters:ReportPa
     functions.toList
   }
 
-  override def finalDrillDownPage(fields:scala.Seq[(Field, Selection)], pageContext:PageContext, ctrlDown:Boolean) {
+  override def finalDrillDownPage(fields:scala.Seq[(Field, Selection)], pageContext:PageContext, modifiers:Modifiers) {
     val selection = fields.find(f=>f._1.name == "Trade ID")
     val tradeID = selection match {
       case Some( (field,selection)) => {
@@ -112,7 +112,7 @@ case class MainPivotReportPage(showParameters:Boolean, reportParameters:ReportPa
     }
     tradeID match {
       case Some(trID) => {
-        pageContext.goTo(ValuationParametersPage(trID, reportParameters), newTab = ctrlDown)
+        pageContext.goTo(ValuationParametersPage(trID, reportParameters), modifiers = modifiers)
       }
       case None => None
     }

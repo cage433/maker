@@ -7,7 +7,7 @@ import collection.mutable.ListBuffer
 import swing.event.Event
 import starling.pivot.{PivotEdits, SomeSelection, Field, Selection}
 import starling.gui.StarlingServerContext
-import starling.browser.{Page, ServerContext, PageContext}
+import starling.browser.{Modifiers, Page, ServerContext, PageContext}
 
 class PnlPivotReportPage
 
@@ -19,7 +19,7 @@ case class TradeChangesReportPage(tradeSelection:TradeSelection, from:TradeTimes
     pageBuildingContext.cachingStarlingServer.tradeChanges(tradeSelection, from.timestamp, to.timestamp, from.timestamp.day.startOfFinancialYear, pivotPageState.pivotFieldParams)
   }
 
-  override def finalDrillDownPage(fields:Seq[(Field,Selection)], pageContext:PageContext, ctrlDown:Boolean):Unit = {
+  override def finalDrillDownPage(fields:Seq[(Field,Selection)], pageContext:PageContext, modifiers:Modifiers):Unit = {
     val selection = fields.find(f=>f._1.name == "Trade ID")
     val tradeID = selection match {
       case Some( (field,selection)) => {
@@ -35,7 +35,7 @@ case class TradeChangesReportPage(tradeSelection:TradeSelection, from:TradeTimes
         pageContext.createAndGoTo(
           (serverContext:ServerContext) => {
             SingleTradePage(trID, tradeSelection.desk, TradeExpiryDay(tradeExpiryDay), tradeSelection.intradaySubgroup)
-          }, newTab = ctrlDown)
+          }, modifiers = modifiers)
       }
       case None => None
     }

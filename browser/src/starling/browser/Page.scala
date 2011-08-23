@@ -7,12 +7,11 @@ import service.internal.HeterogeneousMap
 import service.{BrowserService, Version}
 import swing.event.Event
 import javax.swing.border.Border
-import java.awt.{Color, Graphics2D, Dimension}
+import java.awt.{Graphics2D, Dimension}
 import java.awt.{Component=>AWTComp}
 import scala.swing.Swing._
 import swing._
 import util.BrowserStackTraceToString
-import java.util.{Calendar, GregorianCalendar}
 
 /**
  * IMPORTANT - A page should usually be a case class with the whole page described by parameters passed into it. No other vals should exist
@@ -57,10 +56,27 @@ case class PageBookmark(page:Page) extends Bookmark {
   def createPage(day:Option[BrowserDay], serverContext:ServerContext, context:PageContext) = page
 }
 
+case class Modifiers(ctrl:Boolean, shift:Boolean)
+object Modifiers {
+  val None = Modifiers(false, false)
+  def modifiers(keyModifiers:scala.swing.event.Key.Modifiers) = {
+    val bothMask = scala.swing.event.Key.Modifier.Control | scala.swing.event.Key.Modifier.Shift
+    if ((keyModifiers & bothMask) == bothMask) {
+      Modifiers(true, true)
+    } else if ((keyModifiers & scala.swing.event.Key.Modifier.Control) == scala.swing.event.Key.Modifier.Control) {
+      Modifiers(true, false)
+    } else if ((keyModifiers & scala.swing.event.Key.Modifier.Shift) == scala.swing.event.Key.Modifier.Shift) {
+      Modifiers(false, true)
+    } else {
+      None
+    }
+  }
+}
+
 trait PageContext {
-	def goTo(page:Page, newTab:Boolean=false, compToFocus:Option[AWTComp]=None)
-  def createAndGoTo(buildPage:ServerContext=>Page, onException:PartialFunction[Throwable, Unit] = { case e:UnsupportedOperationException => {}}, newTab:Boolean = false, compToFocus:Option[AWTComp]=None)
-  def submit[R](submitRequest:SubmitRequest[R], onComplete:R=>Unit=(r:R)=>(), keepScreenLocked:Boolean = false, awaitRefresh:R=>Boolean=(r:R)=>false): Unit
+	def goTo(page:Page, modifiers:Modifiers=Modifiers.None, compToFocus:Option[AWTComp]=None)
+  def createAndGoTo(buildPage:ServerContext=>Page, onException:PartialFunction[Throwable, Unit] = { case e:UnsupportedOperationException => {}}, modifiers:Modifiers=Modifiers.None, compToFocus:Option[AWTComp]=None)
+  def submit[R](submitRequest:SubmitRequest[R], onComplete:R=>Unit=(r:R)=>(), keepScreenLocked:Boolean = false, awaitRefresh:R=>Boolean=(r:R)=>false)
   def submitYesNo[R](message:String, description:String, submitRequest:SubmitRequest[R], awaitRefresh:R=>Boolean, onComplete:R=>Unit, keepScreenLocked:Boolean = false)
   def clearCache()
   def setContent(content:Component, cancelAction:Option[()=> Unit])
@@ -109,8 +125,8 @@ case class LocalCache(localCache:HeterogeneousMap[LocalCacheKey]) {
   def bookmarks = localCache(LocalCache.Bookmarks)
 
   def userNotifications = localCache(UserNotifications)
-  def removeUserNotification(notification:Notification) = localCache(UserNotifications) = localCache(UserNotifications).filterNot(_ == notification)
-  def removeAllUserNotifications = localCache(UserNotifications) = List()
+  def removeUserNotification(notification:Notification) {localCache(UserNotifications) = localCache(UserNotifications).filterNot(_ == notification)}
+  def removeAllUserNotifications() {localCache(UserNotifications) = List()}
 }
 
 trait ComponentState

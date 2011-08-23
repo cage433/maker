@@ -27,7 +27,7 @@ trait CurrentPage {
 
 class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:UserSettings,
                       val remotePublisher:Publisher, homePage:Page, initialAddressText:String,
-                      windowMethods:WindowMethods, tabComponent:TabComponent,
+                      windowMethods:WindowMethods, containerMethods:ContainerMethods, frame:StarlingBrowserFrame, tabComponent:TabComponent,
                       openTab:(Boolean,Either[Page,(ServerContext=>Page, PartialFunction[Throwable, Unit])])=>Unit,
                       extraInfo:Option[String])
         extends MigPanel("insets 0") { starBrows:StarlingBrowser =>
@@ -121,12 +121,30 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
 
   val pageContext = {
     new PageContext {
-      def goTo(page:Page, newTab:Boolean=false, compToFocus:Option[AWTComp]) {
+      def goTo(page:Page, modifiers:Modifiers, compToFocus:Option[AWTComp]) {
         val cf = if (compToFocus.isDefined) compToFocus else currentFocus
         history(current).componentForFocus = cf
-        if (newTab) openTab(true, Left(page)) else StarlingBrowser.this.goTo(page, false)
+        if (modifiers.ctrl) {
+          openTab(modifiers.shift, Left(page))
+        } else {
+          if (modifiers.shift) {
+            containerMethods.createNewFrame(Some(frame), Some(Left(page)))
+          } else {
+            StarlingBrowser.this.goTo(page, false)
+          }
+        }
       }
-      def createAndGoTo(serverContext:ServerContext=>Page, onException:PartialFunction[Throwable, Unit], newTab:Boolean, compToFocus:Option[AWTComp]) { if (newTab) openTab(true, Right((serverContext, onException))) else StarlingBrowser.this.goTo(Right((serverContext, onException)), false) }
+      def createAndGoTo(serverContext:ServerContext=>Page, onException:PartialFunction[Throwable, Unit], modifiers:Modifiers, compToFocus:Option[AWTComp]) {
+        if (modifiers.ctrl) {
+          openTab(modifiers.shift, Right((serverContext, onException)))
+        } else {
+          if (modifiers.shift) {
+            containerMethods.createNewFrame(Some(frame), Some(Right((serverContext, onException))))
+          } else {
+            StarlingBrowser.this.goTo(Right((serverContext, onException)), false)
+          }
+        }
+      }
       def submit[R](submitRequest:SubmitRequest[R], onComplete:R => Unit, keepScreenLocked:Boolean, awaitRefresh:R=>Boolean=(r:R)=>false) {StarlingBrowser.this.submit(submitRequest, awaitRefresh, onComplete, keepScreenLocked)}
       def submitYesNo[R](message:String, description:String, submitRequest:SubmitRequest[R], awaitRefresh:R=>Boolean, onComplete:R => Unit, keepScreenLocked:Boolean) = {StarlingBrowser.this.submitYesNo(message, description, submitRequest, awaitRefresh, onComplete, keepScreenLocked)}
       def clearCache() {StarlingBrowser.this.clearCache}
@@ -588,7 +606,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
     tooltip = "Go to the settings page"
     reactions += {
       case ButtonClicked(e) => {
-        pageContext.goTo(SettingsPage(), true)
+        pageContext.goTo(SettingsPage(), Modifiers(true, false))
       }
     }
   }

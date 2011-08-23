@@ -5,7 +5,7 @@ import starling.gui.api._
 import starling.rmi.StarlingServer
 import starling.pivot.{PivotEdits, SomeSelection, Selection, Field}
 import starling.gui.StarlingServerContext
-import starling.browser.{ServerContext, PageContext}
+import starling.browser.{Modifiers, ServerContext, PageContext}
 
 case class PnLReconciliationReportPage(tradeSelectionWithTimestamp: TradeSelectionWithTimestamp, curveIdentifier: CurveIdentifierLabel,
                                        expiryDay: Day, pivotPageState: PivotPageState) extends AbstractStarlingPivotPage(pivotPageState) {
@@ -17,7 +17,7 @@ case class PnLReconciliationReportPage(tradeSelectionWithTimestamp: TradeSelecti
     pageBuildingContext.cachingStarlingServer.pnlReconciliation(tradeSelectionWithTimestamp, curveIdentifier, expiryDay, pivotPageState.pivotFieldParams)
   }
 
-  override def finalDrillDownPage(fields: Seq[(Field, Selection)], pageContext: PageContext, ctrlDown: Boolean) = {
+  override def finalDrillDownPage(fields: Seq[(Field, Selection)], pageContext: PageContext, modifiers:Modifiers) = {
     val selection = fields.find(f => f._1.name == "Trade ID")
     val tradeID = selection match {
       case Some((field, selection)) => {
@@ -33,7 +33,7 @@ case class PnLReconciliationReportPage(tradeSelectionWithTimestamp: TradeSelecti
         pageContext.createAndGoTo(
           (serverContext:ServerContext) => {
             SingleTradePage(trID, tradeSelectionWithTimestamp.desk, TradeExpiryDay(expiryDay), tradeSelectionWithTimestamp.intradaySubgroupAndTimestamp.map(_._1))
-          }, newTab = ctrlDown)
+          }, modifiers = modifiers)
       }
       case None => None
     }

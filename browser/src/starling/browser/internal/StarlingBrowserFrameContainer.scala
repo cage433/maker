@@ -10,7 +10,7 @@ import swing.{CheckBox, Frame, Publisher}
 import swing.event.ButtonClicked
 
 trait ContainerMethods {
-  def createNewFrame(fromFrame: Option[StarlingBrowserFrame])
+  def createNewFrame(fromFrame: Option[StarlingBrowserFrame], startPage:Option[Either[Page,(ServerContext => Page, PartialFunction[Throwable,Unit])]]=None)
   def closeFrame(frame: StarlingBrowserFrame)
   def closeAllFrames(fromFrame: StarlingBrowserFrame)
   def updateNotifications
@@ -50,8 +50,9 @@ class StarlingBrowserFrameContainer(serverContext: ServerContext, lCache: LocalC
   private val pageBuilder = new PageBuilder(serverContext)
   private val frames = new ListBuffer[StarlingBrowserFrame]
 
-  def createNewFrame(fromFrame: Option[StarlingBrowserFrame]) = {
-    val newFrame = new StarlingBrowserFrame(homePage, pageBuilder, lCache, userSettings, remotePublisher, this, extraInfo)
+  def createNewFrame(fromFrame: Option[StarlingBrowserFrame], startPage:Option[Either[Page,(ServerContext => Page, PartialFunction[Throwable,Unit])]]) {
+    val startPage0 = startPage.getOrElse(Left(homePage))
+    val newFrame = new StarlingBrowserFrame(homePage, startPage0, pageBuilder, lCache, userSettings, remotePublisher, this, extraInfo)
     frames += newFrame
     newFrame.title = frameTitle
     fromFrame match {

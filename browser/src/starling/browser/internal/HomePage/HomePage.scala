@@ -88,11 +88,11 @@ class StarlingHomePageComponent(context:PageContext, browserSize:Dimension, page
       }
       val userImage = BrowserIcons.im("/icons/32x32_user_dark.png")
       val userButton = new NumberedButton(context.localCache.currentUserName, userImage,
-        ctrlDown => {
+        modifiers => {
           val userPages = context.bundles.flatMap(_.userPage(context))
           userPages match {
             case Nil =>
-            case page :: Nil => context.goTo(page, ctrlDown)
+            case page :: Nil => context.goTo(page, modifiers)
             case many => throw new Exception("There is more than one user page: " + many)
           }
         }, false)
@@ -127,8 +127,8 @@ class StarlingHomePageComponent(context:PageContext, browserSize:Dimension, page
           val isFirst = (index == 0)
           val isLast = (index == homeButtons.size-1)
           val modifiers = (if (isFirst) ", skip 1" else "") + (if(isLast) ", wrap unrel" else "")
-          val nb = new NumberedButton(button.name, button.icon, (ctrl) => {
-            context.createAndGoTo( (serverContext) => button.pageFactory.create(serverContext), newTab=ctrl) })
+          val nb = new NumberedButton(button.name, button.icon, (modifiers) => {
+            context.createAndGoTo( (serverContext) => button.pageFactory.create(serverContext), modifiers=modifiers) })
           add(nb, "sg" + modifiers)
         }}
         //add(tradeDataButton, "sg, skip 1")

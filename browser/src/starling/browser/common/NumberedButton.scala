@@ -5,8 +5,9 @@ import swing.Swing._
 import swing.Label
 import java.awt.{Color, Cursor}
 import swing.event.{MouseExited, MouseEntered, MouseClicked}
+import starling.browser.Modifiers
 
-class NumberedButton(text:String, image:BufferedImage, buttonClicked:(Boolean) => Unit, useBlueText:Boolean=true,
+class NumberedButton(text:String, image:BufferedImage, buttonClicked:(Modifiers) => Unit, useBlueText:Boolean=true,
                           number:Option[String]=None) extends MigPanel {
   background = GuiUtils.TaskPageButtonBackgroundColour
   border = LineBorder(GuiUtils.TaskPageButtonBorderColour)
@@ -34,7 +35,7 @@ class NumberedButton(text:String, image:BufferedImage, buttonClicked:(Boolean) =
   }
   add(label)
 
-  override def enabled_=(b:Boolean) = {
+  override def enabled_=(b:Boolean) {
     super.enabled = b
     imagePanel.enabled = b
     label.enabled = b
@@ -42,7 +43,7 @@ class NumberedButton(text:String, image:BufferedImage, buttonClicked:(Boolean) =
 
   reactions += {
     case MouseClicked(_,_,k,_,_) if enabled => {
-      buttonClicked(k == scala.swing.event.Key.Modifier.Control)
+      buttonClicked(Modifiers.modifiers(k))
       background = GuiUtils.TaskPageButtonBackgroundColour
     }
     case MouseEntered(_,_,_) if enabled => {background = GuiUtils.TaskPageButtonOverBackgroundColour}

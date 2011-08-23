@@ -8,7 +8,7 @@ import starling.rmi.StarlingServer
 import starling.pivot.PivotEdits
 import starling.gui.StarlingLocalCache._
 import starling.browser.common.{GuiUtils, RoundedBorder, MigPanel}
-import starling.browser.{Bookmark, PageData, PageContext}
+import starling.browser.{Modifiers, Bookmark, PageData, PageContext}
 
 case class CurvePage(curveLabel: CurveLabel, pivotPageState: PivotPageState) extends AbstractStarlingPivotPage(pivotPageState) {
   def marketDataIdentifier = curveLabel.marketDataIdentifier
@@ -65,7 +65,7 @@ case class CurvePage(curveLabel: CurveLabel, pivotPageState: PivotPageState) ext
     }
 
     marketDataSelectionPanel.reactions += {
-      case MarketDataSelectionChanged(selection) => { pageContext.goTo(latest(copySelection(selection)), false) }
+      case MarketDataSelectionChanged(selection) => { pageContext.goTo(latest(copySelection(selection)), Modifiers.None) }
     }
 
     def updatePopulatedDays {

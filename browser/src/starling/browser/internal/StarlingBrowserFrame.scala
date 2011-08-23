@@ -1,19 +1,16 @@
 package starling.browser.internal
 
-import swing.Action._
-import swing.UIElement._
 import swing.event.{MouseClicked, WindowClosing}
 import collection.mutable.ListBuffer
 import swing.Swing._
-import swing.Component._
 import java.awt.event.{MouseEvent, MouseAdapter, InputEvent, KeyEvent}
 import java.awt.{Color, Dimension}
 import javax.swing.{JPopupMenu, JTabbedPane, KeyStroke, JComponent}
 import swing._
 import starling.browser.common.{SXLayerScala, GuiUtils, MigPanel}
-import starling.browser.{BrowserBundle, ServerContext, LocalCache, Page}
+import starling.browser.{ServerContext, LocalCache, Page}
 
-class StarlingBrowserFrame(homePage: Page, pageBuilder: PageBuilder, lCache: LocalCache, userSettings:UserSettings,
+class StarlingBrowserFrame(homePage: Page, startPage:Either[Page, (ServerContext => Page, PartialFunction[Throwable, Unit])], pageBuilder: PageBuilder, lCache: LocalCache, userSettings:UserSettings,
                            remotePublisher: Publisher, containerMethods: ContainerMethods, extraInfo:Option[String])
         extends Frame with WindowMethods {
   private val exitAction = Action("Exit") {containerMethods.closeAllFrames(this)}
@@ -61,7 +58,7 @@ class StarlingBrowserFrame(homePage: Page, pageBuilder: PageBuilder, lCache: Loc
   private val busyIcon = BrowserIcons.icon("/icons/32x32/status/weather-few-clouds.png").getImage
   iconImage = mainIcon
 
-  private val initialStarlingBrowser = new StarlingBrowserTabbedPane(homePage, pageBuilder, lCache, userSettings,
+  private val initialStarlingBrowser = new StarlingBrowserTabbedPane(homePage, startPage, pageBuilder, lCache, userSettings,
     remotePublisher, this, extraInfo, containerMethods, this)
 
   private val notificationPanel = new NotificationPanel(size.width, lCache, containerMethods)
@@ -89,7 +86,7 @@ class StarlingBrowserFrame(homePage: Page, pageBuilder: PageBuilder, lCache: Loc
   regenerateFromBuffer(initialStarlingBrowser.pages(0).content)
 
   def splitVertically(eventFrom: StarlingBrowserTabbedPane) = {
-    val starlingBrowserTabbedPane = new StarlingBrowserTabbedPane(homePage, pageBuilder, lCache, userSettings,
+    val starlingBrowserTabbedPane = new StarlingBrowserTabbedPane(homePage, startPage, pageBuilder, lCache, userSettings,
       remotePublisher, this, extraInfo, containerMethods, this)
     reactions += {
       case MouseClicked(`starlingBrowserTabbedPane`, _, _, 2, _) => {
@@ -150,7 +147,7 @@ trait WindowMethods {
   def getDefaultButton:Option[Button]
 }
 
-class StarlingBrowserTabbedPane(homePage: Page, pageBuilder: PageBuilder, lCache: LocalCache, userSettings:UserSettings,
+class StarlingBrowserTabbedPane(homePage: Page, startPage:Either[Page,(ServerContext => Page, PartialFunction[Throwable,Unit])], pageBuilder: PageBuilder, lCache: LocalCache, userSettings:UserSettings,
                                 remotePublisher: Publisher, windowMethods: WindowMethods, extraInfo:Option[String],
                                 containerMethods:ContainerMethods, parentFrame:StarlingBrowserFrame) extends TabbedPane {
   override lazy val peer = new JTabbedPane with SuperMixin {
@@ -255,14 +252,14 @@ class StarlingBrowserTabbedPane(homePage: Page, pageBuilder: PageBuilder, lCache
   tabPopupMenu.addSeparator()
   tabPopupMenu.add(splitVerticallyItem.peer)
 
-  def createStarlingBrowser(gotoTab: Boolean = true, pageOrBuildPage: Either[Page, (ServerContext => Page, PartialFunction[Throwable, Unit])] = Left(homePage)): StarlingBrowser = {
+  def createStarlingBrowser(gotoTab: Boolean = true, pageOrBuildPage: Either[Page, (ServerContext => Page, PartialFunction[Throwable, Unit])] = startPage): StarlingBrowser = {
     val (tabText, icon, addressText) = pageOrBuildPage match {
       case Left(page) => (page.shortText, page.icon, page.text)
       case _ => (" ", BrowserIcons.im("/icons/10x10_blank.png"), " ")
     }
     val tabComponent = new TabComponent(windowMethods, this, tabText, icon)
     val starlingBrowser = new StarlingBrowser(pageBuilder, lCache, userSettings, remotePublisher, homePage, addressText,
-      windowMethods, tabComponent, createStarlingBrowser, extraInfo)
+      windowMethods, containerMethods, parentFrame, tabComponent, createStarlingBrowser, extraInfo)
     pages.insert(pages.length - 1, new scala.swing.TabbedPane.Page(tabText, starlingBrowser.starlingBrowserLayer, null))
     val tabIndex = if (pages.length == 0) 0 else pages.length - 2
     if (gotoTab) {

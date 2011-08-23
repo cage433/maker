@@ -10,8 +10,8 @@ import javax.swing.{KeyStroke, JComponent}
 import java.awt.event.KeyEvent
 import swing.{Action, Label}
 import starling.pivot.{PivotEdits, PivotFieldParams}
-import starling.browser.{PageComponent, Bookmark, PageData, PageContext}
 import starling.browser.common._
+import starling.browser._
 
 /**
  * The reference data pages for viewing markets, calendars etc.
@@ -42,13 +42,13 @@ class ReferenceDataIndexPageComponent(context:PageContext, pageData:PageData) ex
       }
       val shouldSkip2 = (table.name.toLowerCase.trim == "calendars")
       val numberString = (index + 1).toString + "."
-      def gotoPage(ctrlDown:Boolean) = context.goTo(ReferenceDataPage(table, PivotPageState(false, PivotFieldParams(true, None))), ctrlDown)
+      def gotoPage(modifiers:Modifiers) = context.goTo(ReferenceDataPage(table, PivotPageState(false, PivotFieldParams(true, None))), modifiers)
       val tableButton = new NumberedButton(table.name, imageToUse,
         gotoPage,
         number = Some(numberString))
       ReferenceDataIndexPageComponent.this.peer.getInputMap(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT).
               put(KeyStroke.getKeyStroke(KeyEvent.VK_1 + index, 0), numberString)
-      ReferenceDataIndexPageComponent.this.peer.getActionMap.put(numberString, Action(numberString){gotoPage(false)}.peer)
+      ReferenceDataIndexPageComponent.this.peer.getActionMap.put(numberString, Action(numberString){gotoPage(Modifiers.None)}.peer)
       val constraints = if (index % 3 == 0) {
         if (shouldSkip2) "newline, skip 2" else "newline, skip 1"
       } else {

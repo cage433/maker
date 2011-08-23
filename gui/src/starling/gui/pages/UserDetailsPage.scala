@@ -42,8 +42,8 @@ class UserDetailsPageComponent(context:PageContext, user:User) extends MigPanel(
     }
 
     val orgImage = StarlingIcons.im("/icons/32x32_organisation.png")
-    val orgButton = new NumberedButton("Organisation", orgImage, ctrlDown => {
-      context.goTo(OrgPage(PivotPageState()), ctrlDown)
+    val orgButton = new NumberedButton("Organisation", orgImage, modifiers => {
+      context.goTo(OrgPage(PivotPageState()), modifiers)
     })
 
     add(namePanel, "spanx 3, wrap")
