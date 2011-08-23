@@ -73,7 +73,17 @@ class BookmarksPanel(context:PageContext) extends MigPanel("") {
   val dayPicker = new MinimalSXMonthView {
     border = LineBorder(GuiUtils.BorderColour)
     enabled = valuationDayShouldBeEnabled
-    date = new java.util.Date() //FIXME Previous weekday
+
+    val c = Calendar.getInstance()
+    val now = new java.util.Date()
+    c.setTime(now)
+    val dayOfWeek = c.get(Calendar.DAY_OF_WEEK)
+    c.add(Calendar.DAY_OF_WEEK, -1)
+    while (c.get(Calendar.DAY_OF_WEEK) == Calendar.SATURDAY || c.get(Calendar.DAY_OF_WEEK) == Calendar.SATURDAY) {
+      c.add(Calendar.DAY_OF_WEEK, -1)
+    }
+    date = c.getTime
+
     traversable = true
   }
 
