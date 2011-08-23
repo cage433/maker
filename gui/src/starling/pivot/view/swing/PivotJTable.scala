@@ -409,10 +409,10 @@ class PivotJTable(tableModel:PivotJTableModel, pivotTableView:PivotTableView, mo
             }
           }}
 
-          if (deletableCells.nonEmpty || resetableCells.nonEmpty) {
-            val popup = new JPopupMenu
-            popup.setBorder(LineBorder(BorderColour))
+          val popup = new JPopupMenu
+          popup.setBorder(LineBorder(BorderColour))
 
+          if (deletableCells.nonEmpty || resetableCells.nonEmpty) {
             if (deletableCells.nonEmpty) {
               val deleteActionName = if (deletableCells.size == 1) "Delete Cell" else "Delete Cells"
               val deleteAction = Action(deleteActionName) {
@@ -421,7 +421,6 @@ class PivotJTable(tableModel:PivotJTableModel, pivotTableView:PivotTableView, mo
               val deleteItem = new MenuItem(deleteAction)
               popup.add(deleteItem.peer)
             }
-
             if (resetableCells.nonEmpty) {
               val resetActionName = if (resetableCells.size == 1) "Reset Cell" else "Reset Cells"
               val resetAction = Action(resetActionName) {
@@ -430,9 +429,17 @@ class PivotJTable(tableModel:PivotJTableModel, pivotTableView:PivotTableView, mo
               val resetItem = new MenuItem(resetAction)
               popup.add(resetItem.peer)
             }
-
-            popup.show(e.getComponent, point.x, point.y)
+            popup.addSeparator()
           }
+
+          val fitColumnWidthAction = Action("Fit Column Width") {
+            println("Put this action in")
+          }
+          fitColumnWidthAction.enabled = false
+          val fitColumnWidthItem = new MenuItem(fitColumnWidthAction)
+          popup.add(fitColumnWidthItem.peer)
+
+          popup.show(e.getComponent, point.x, point.y)
         }
       }
     }

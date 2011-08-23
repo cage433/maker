@@ -918,9 +918,9 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
 
   def resizeRowHeaderColumns(fullTable:JTable, rowHeaderTable:JTable, rowComponent:RowComponent,
                              rowFieldHeadingCount:Array[Int], sizerPanel:Panel, rowHeaderScrollPane:JScrollPane) {
+    val tmpLabel = new JLabel("")
     def getRowHeaderMaxColumnWidth(col:Int) = {
       val numRows = rowHeaderTable.getRowCount
-      val tmpLabel = new JLabel("")
       var max = -1
       var anyCollapsible = false
       for (row <- 0 until numRows) {
