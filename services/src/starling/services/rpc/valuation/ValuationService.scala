@@ -592,7 +592,7 @@ class ValuationService(
   class EventHandler extends DemultiplexerClient {
     import Event._
     lazy val rabbitPublishChangedValueEvents = publishStarlingChangedValueEvents(rabbitEventServices.rabbitEventPublisher)
-    lazy val rabbitPublishNewValuationEvents = publishNewValuationEvents(rabbitEventServices.rabbitEventPublisher) _
+    lazy val rabbitPublishNewValuationEvents = publishCreatedValuationEvents(rabbitEventServices.rabbitEventPublisher) _
     def handle(ev: Event) {
       if (ev == null) log.warn("Got a null event") else {
         if (TrademgmtSource == ev.source && (TradeSubject == ev.subject || NeptuneTradeSubject == ev.subject)) { // Must be some form of trade event from trademgmt source
@@ -630,12 +630,12 @@ class ValuationService(
 
               log.info("Trades revalued for received event using snapshot %s number of changed valuations %d".format(snapshotIDString, changedIDs.size))
             }
-            case NewEventVerb => {
-              log.info("New event received for %s".format(tradeIds))
+            case CreatedEventVerb => {
+              Log.info("New event received for %s".format(tradeIds))
               titanIds.foreach(titanTradeCache.addTrade)
             }
-            case CancelEventVerb | RemovedEventVerb => {
-              log.info("Cancelled / deleted event received for %s".format(tradeIds))
+            case CancelledEventVerb | RemovedEventVerb => {
+              Log.info("Cancelled / deleted event received for %s".format(titanIds))
               titanIds.foreach(titanTradeCache.removeTrade)
             }
           }
@@ -693,14 +693,14 @@ class ValuationService(
 
           log.info("Assignments revalued for received event using snapshot %s number of changed valuations %d".format(snapshotIDString, changedIDs.size))
         }
-        case NewEventVerb => {
-          log.info("New event received for %s".format(ids))
+        case CreatedEventVerb => {
+          Log.info("New event received for %s".format(ids))
           if (Event.EDMLogisticsInventorySubject == ev.subject) {
             ids.foreach(titanInventoryCache.addInventory)
           }
         }
-        case CancelEventVerb | RemovedEventVerb => {
-          log.info("Cancelled / deleted event received for %s".format(ids))
+        case CancelledEventVerb | RemovedEventVerb => {
+          Log.info("Cancelled / deleted event received for %s".format(ids))
           if (Event.EDMLogisticsInventorySubject == ev.subject) {
             ids.foreach(titanInventoryCache.removeInventory)
           }
@@ -729,7 +729,7 @@ class ValuationService(
         ev.subject match {
           case StarlingMarketDataSnapshotIDSubject => {
             ev.verb match {
-              case NewEventVerb => {
+              case CreatedEventVerb => {
                 val previousSnapshotId = todaysSnapshots(1).id
                 log.info("New marketData snapshot event, revaluing received event using old snapshot %s new snapshot %s".format(previousSnapshotId, newSnapshotId))
                 val previousEnv = environmentProvider.environment(previousSnapshotId)
@@ -758,7 +758,7 @@ class ValuationService(
               case UpdatedEventVerb => {
                 log.info("Unhandled event for updated snapshot %s".format(ids))
               }
-              case CancelEventVerb | RemovedEventVerb => {
+              case CancelledEventVerb | RemovedEventVerb => {
                 log.info("Unhandled cancelled / deleted event received for %s".format(ids))
               }
             }
@@ -783,10 +783,10 @@ class ValuationService(
       eventPublisher.publish(events)
     }
 
-    private def publishNewValuationEvents(eventPublisher : Publisher)(newValuations : List[(String, Boolean)]) = {
+    private def publishCreatedValuationEvents(eventPublisher : Publisher)(newValuations : List[(String, Boolean)]) = {
       val newValuationPayloads : List[(String, String)] = newValuations.flatMap(e => (RefinedMetalTradeIdPayload, e._1) :: (StarlingNewValuationServiceStatusPayload, e._2.toString) :: Nil)
       val payloads = createStarlingPayloads(newValuationPayloads)
-      val newValuationEvents = createValuationServiceEvents(NewEventVerb, payloads)
+      val newValuationEvents = createValuationServiceEvents(CreatedEventVerb, payloads)
       eventPublisher.publish(newValuationEvents)
     }
 
