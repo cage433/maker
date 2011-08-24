@@ -48,6 +48,7 @@ import com.trafigura.services.marketdata.{ExampleService, MarketDataServiceApi}
 import com.trafigura.services.{WebServiceFactory, DocumentationService, ResteasyServiceApi}
 import swing.event.Event
 import collection.mutable.ListBuffer
+import starling.fc2.api.FC2Service
 
 class StarlingInit( val props: Props,
                     dbMigration: Boolean = true,
@@ -247,9 +248,11 @@ class StarlingInit( val props: Props,
 
   val traders = new Traders(ldapUserLookup.user _)
 
-  val starlingServer = new StarlingServerImpl(name, reportContextBuilder, reportService, marketDataStore,
-    userSettingsDatabase, userReportsService, curveViewer, tradeStores, enabledDesks,
+  val starlingServer = new StarlingServerImpl(name, reportContextBuilder, reportService,
+    userSettingsDatabase, userReportsService, tradeStores, enabledDesks,
     version, referenceData, businessCalendars.UK, ldapUserLookup, eaiStarlingSqlServerDB, traders)
+
+  val fc2Service = new FC2ServiceImpl(marketDataStore, curveViewer, reportService)
 
   val rmiPort = props.RmiPort()
 
@@ -285,7 +288,8 @@ class StarlingInit( val props: Props,
     auth, latestTimestamp, users,
     Set(classOf[UnrecognisedTradeIDException]),
     ChannelLoggedIn, "GUI",
-    ThreadNamingProxy.proxy(starlingServer, classOf[StarlingServer])
+    ThreadNamingProxy.proxy(starlingServer, classOf[StarlingServer]),
+    ThreadNamingProxy.proxy(fc2Service, classOf[FC2Service])
   )
 
   log.info("Initialize public services for Titan components, service port: " + props.StarlingServiceRmiPort)

@@ -213,6 +213,12 @@ object StarlingBuild extends Build{
     settings = standardSettings ++ Seq(libraryDependencies ++= guiApiDependencies)
   ) dependsOn(pivotUtils, quantity, auth, bouncyrmi, browserService)
 
+  lazy val fc2api = Project(
+    "fc2.api",
+    file("./fc2.api"),
+    settings = standardSettings ++ Seq(libraryDependencies ++= guiApiDependencies)
+  ) dependsOn(daterange, guiapi)
+
   lazy val curves = Project(
     "curves", 
     file("./curves"),
@@ -229,7 +235,7 @@ object StarlingBuild extends Build{
     "gui", 
     file("./gui"),
     settings = standardSettings ++ Seq(libraryDependencies ++= guiDependencies)
-  ) dependsOn(guiapi, browser)
+  ) dependsOn(guiapi, fc2api, browser)
 
   lazy val browser = Project(
     "browser",
@@ -300,7 +306,7 @@ object StarlingBuild extends Build{
     settings = standardSettings ++ Seq(
       libraryDependencies ++= servicesDependencies ++ testDependencies
     )
-  ) dependsOn(curves % "test->test", loopyxl % "test->test", bouncyrmi, concurrent, loopyxl, titan, gui, browser)
+  ) dependsOn(curves % "test->test", loopyxl % "test->test", bouncyrmi, concurrent, loopyxl, titan, gui, fc2api, browser)
 
   lazy val devLauncher = Project(
     "devLauncher", 
@@ -353,6 +359,7 @@ object StarlingBuild extends Build{
     pivot, 
     pivotUtils,
     guiapi,
+    fc2api,
     curves,
     instrument,
     gui,
