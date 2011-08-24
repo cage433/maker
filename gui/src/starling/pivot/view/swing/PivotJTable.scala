@@ -23,7 +23,7 @@ import starling.pivot.{PivotFormatter, EditableCellState, TableCell}
 
 object PivotJTable {
   val RowHeight = 16
-  val MinColumnWidth = 50
+  val MinColumnWidth = 25
   val MaxColumnWidth = 200
 }
 
