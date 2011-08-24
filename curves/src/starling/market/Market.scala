@@ -266,7 +266,7 @@ trait IsBrentMonth{
  * Info like lot size, holidays etc can be found in dblQuotes in EAI
  */
 object Market {
-  lazy val provider = MarketProvider.provider
+  private def provider = MarketProvider.provider
   lazy val cals: BusinessCalendars = new BusinessCalendars(HolidayTablesFactory.holidayTables)
 
   lazy val all: List[CommodityMarket] = provider.allFuturesMarkets ::: Index.publishedIndexes

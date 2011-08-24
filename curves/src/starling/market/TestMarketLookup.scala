@@ -4,6 +4,9 @@ import starling.utils.StringIO
 import starling.calendar.{HolidayTablesFactory, BusinessCalendars}
 import io.Source
 
+object TestMarketCreator extends MarketLookupCreator {
+  def create = TestMarketLookup
+}
 
 case object TestMarketLookup extends MarketLookup {
   val file = Source.fromURL(getClass.getResource("/starling/market/Markets.csv")).getLines.toList

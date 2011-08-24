@@ -101,8 +101,9 @@ class StarlingInit( val props: Props,
   val businessCalendars = new BusinessCalendars(holidayTables)
   val expiryRules = new FuturesExpiryRulesImpl(eaiSqlServerDB, businessCalendars)
   FuturesExpiryRuleFactory.registerRulesImpl(expiryRules)
-  val marketLookup = new StarlingMarketLookup(starlingDB, businessCalendars, expiryRules)
-  MarketProvider.registerImpl(marketLookup)
+  MarketProvider.registerCreator(new MarketLookupCreator {
+    def create = new StarlingMarketLookup(starlingDB, businessCalendars, expiryRules)
+  })
   val richResultSetRowFactory = new RichResultSetRowFactory
 
   log.debug("Initializing: Rich DB Connections. Which use things like market factories for smarter deserialization...")

@@ -8,6 +8,7 @@ import starling.utils.sql.PersistAsBlob
 import starling.daterange.Day
 import starling.db.{MarketDataSet, DBWriter}
 import starling.utils.sql.QueryBuilder._
+import starling.market.MarketProvider
 
 class Patch106_AddSpreadMarkets extends Patch {
   val RB_CRACKS = ("RB Cracks", "Nymex RBOB vs Nymex WTI", 1000.0)
@@ -46,4 +47,6 @@ class Patch106_AddSpreadMarkets extends Patch {
   }
 
   def patchDescription = "Add spread markets"
+
+  MarketProvider.reload
 }

@@ -8,7 +8,7 @@ import starling.daterange._
 trait TestMarketTest extends TestMarketSpec with TestNGSuite
 
 trait TestMarketSpec extends ExpiryRulesSpec {
-  MarketProvider.registerImpl(TestMarketLookup)
+  MarketProvider.registerCreator(TestMarketCreator)
 }
 
 

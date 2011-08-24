@@ -4,6 +4,7 @@ import system.Patch
 import starling.services.StarlingInit
 import starling.richdb.RichDB
 import starling.db.DBWriter
+import starling.market.MarketProvider
 
 
 class Patch113_FixPatch106 extends Patch {
@@ -20,4 +21,5 @@ class Patch113_FixPatch106 extends Patch {
       }
     }
   }
+  MarketProvider.reload
 }
