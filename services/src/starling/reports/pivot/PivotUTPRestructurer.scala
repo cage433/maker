@@ -30,9 +30,6 @@ class PivotUTPRestructurer(
   spreadMonthsByStrategyAndMarket : Map[(Option[String], FuturesMarket), Set[Month]],
   indicesByStrategy : Map[Option[String], Set[FuturesFrontPeriodIndex]]
 ){
-
-  val nonSkewEnv = environment.setShiftsCanBeIgnored(true)
-
   /**
     Given a list of UTPs, return an equivalent list (in terms of position and MTM) such that
     futures are replaced by futures spreads. A similar transformation is applied to bank accounts 
