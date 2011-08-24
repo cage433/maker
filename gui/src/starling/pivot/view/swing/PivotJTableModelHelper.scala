@@ -248,11 +248,6 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
 
         val (newValue,newLabel) = if (s.isEmpty) (None, "") else {
           val (v,t) = pars.parse(s, extraFormatInfo)
-
-          println("")
-          println("Text  "  + t)
-          println("")
-
           (Some(v), t)
         }
 
