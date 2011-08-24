@@ -10,7 +10,7 @@ import swing.{ScrollPane, Label}
 import starling.pivot.PivotFormatter
 import starling.browser.common.GuiUtils._
 import starling.browser._
-import common.{NewPageButton, MigPanel}
+import common.{ButtonClickedEx, NewPageButton, MigPanel}
 import starling.rmi.StarlingServer
 import starling.daterange.Day
 import swing.event.ButtonClicked
@@ -140,11 +140,11 @@ class ValuationParametersPageComponent(context:PageContext, pageData:PageData) e
     val versionsButton = new NewPageButton {
       text = "Trade Versions"
       reactions += {
-        case ButtonClicked(b) => {
+        case ButtonClickedEx(b, e) => {
           val rp = data.reportParameters
           val page = SingleTradePage(data.tradeID, rp.tradeSelectionWithTimestamp.desk, TradeExpiryDay(rp.expiryDay),
             rp.tradeSelectionWithTimestamp.intradaySubgroupAndTimestamp.map(_._1))
-          context.goTo(page)
+          context.goTo(page, Modifiers.modifiers(e.getModifiers))
         }
       }
     }

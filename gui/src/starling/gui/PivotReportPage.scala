@@ -11,7 +11,7 @@ import starling.daterange.{Day}
 import java.awt.{Toolkit, Dimension}
 import javax.swing.ImageIcon
 import starling.browser._
-import common.{NListView, MigPanel}
+import common.{ExButton, ButtonClickedEx, NListView, MigPanel}
 
 class PivotReportPage {}
 
@@ -143,7 +143,7 @@ case class MainPivotReportPage(showParameters:Boolean, reportParameters:ReportPa
         case _ => throw new Exception("Don't know how to handle this type of page data")
       }
       
-      def update(rp: ReportParameters) {
+      def update(rp: ReportParameters, modifiers:Modifiers) {
         val optionsAvailable = pivotData.reportSpecificOptions.nonEmpty
         val noChoices = pivotPageState.pivotFieldParams.pivotFieldState match {
           case None => false // I don't think this can ever happen so I won't bother doing anything with it.
@@ -159,13 +159,13 @@ case class MainPivotReportPage(showParameters:Boolean, reportParameters:ReportPa
           pivotPageState
         }
 
-        context.createAndGoTo{
+        context.createAndGoTo({
           server => {
             // check to see if we have market data for the observation day and pnl from day, if we don't, import it
             // making new copies of the ReportParameters is the really ugly bit
             selfReportPage(rp = rp, pps = newPivotPageState)
           }
-        }
+        }, modifiers = modifiers)
       }
 
       val manualConfigPanel = new ManualReportConfigPanel(context, reportParameters, pivotPageState)
@@ -214,12 +214,12 @@ case class MainPivotReportPage(showParameters:Boolean, reportParameters:ReportPa
         }
         listenTo(presetReportPanel, manualConfigPanel, slideConfigPanel)
 
-        val runButton = new Button("Run") {
+        val runButton = new ExButton("Run") {
           tooltip = "Run the specified report (F9)"
           icon = StarlingIcons.icon("/icons/16x16_report.png")
           icon = new ImageIcon(getClass.getResource("/icons/16x16_report.png"))
           reactions += {
-            case ButtonClicked(b) => run()
+            case ButtonClickedEx(b, e) => run(Modifiers.modifiers(e.getModifiers))
           }
         }
 
@@ -234,18 +234,18 @@ case class MainPivotReportPage(showParameters:Boolean, reportParameters:ReportPa
 
         updateRunButton(generateRPs)
 
-        def run() {
+        def run(modifiers:Modifiers) {
           pivotPageState.pivotFieldParams.pivotFieldState.map { fs => {
             val otherLayoutInfo = pivotPageState.otherLayoutInfo
             context.putSetting(StandardUserSettingKeys.DefaultReportFields, (fs,otherLayoutInfo))
           }}
-          update(manualConfigPanel.generateReportParams(slideConfigPanel.slideConfig))
+          update(manualConfigPanel.generateReportParams(slideConfigPanel.slideConfig), modifiers)
         }
       }
 
       Some(ConfigPanels(
         List(presetReportPanel, manualConfigPanel, slideConfigPanel, tradeInfoPanel),
-        runPanel, Action("runReportAction") {runPanel.run()}))
+        runPanel, Action("runReportAction") {runPanel.run(Modifiers.None)}))
     } else {
       None
     }
@@ -292,8 +292,8 @@ object PivotReportPage {
         tooltip = "Show errors that occured whilst running this report"
         val leftIcon = StarlingIcons.im("/icons/error.png")
         reactions += {
-          case ButtonClicked(b) => {
-            pageContext.goTo(ReportErrorsPage(reportParameters))
+          case ButtonClickedEx(b, e) => {
+            pageContext.goTo(ReportErrorsPage(reportParameters), Modifiers.modifiers(e.getModifiers))
           }
         }
       }
@@ -307,8 +307,8 @@ object PivotReportPage {
         val leftIcon = StarlingIcons.im("/icons/16x16_market_data.png")
         focusable = false
         reactions += {
-          case ButtonClicked(b) => {
-            MarketDataPage.goTo(pageContext, ReportMarketDataPageIdentifier(reportParameters), None, None)
+          case ButtonClickedEx(b, e) => {
+            MarketDataPage.goTo(pageContext, ReportMarketDataPageIdentifier(reportParameters), None, None, Modifiers.modifiers(e.getModifiers))
           }
         }
       }

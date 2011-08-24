@@ -43,7 +43,7 @@ class NumberedButton(text:String, image:BufferedImage, buttonClicked:(Modifiers)
 
   reactions += {
     case MouseClicked(_,_,k,_,_) if enabled => {
-      buttonClicked(Modifiers.modifiers(k))
+      buttonClicked(Modifiers.modifiersEX(k))
       background = GuiUtils.TaskPageButtonBackgroundColour
     }
     case MouseEntered(_,_,_) if enabled => {background = GuiUtils.TaskPageButtonOverBackgroundColour}

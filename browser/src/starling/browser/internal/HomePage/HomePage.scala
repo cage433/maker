@@ -153,9 +153,9 @@ class StarlingHomePageComponent(context:PageContext, browserSize:Dimension, page
 
   override def defaultComponentForFocus = Some(bookmarksPanel.bookmarksListView.peer)
 
-  private val runAct = bookmarksPanel.goToBookmarkAction
-  peer.getInputMap(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT).put(KeyStroke.getKeyStroke(KeyEvent.VK_F9, 0), runAct.title)
-  peer.getActionMap.put(runAct.title, runAct.peer)
+  private val runAct = bookmarksPanel.goToBookmarkAction1
+  peer.getInputMap(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT).put(KeyStroke.getKeyStroke(KeyEvent.VK_F9, 0), runAct.getValue(javax.swing.Action.NAME))
+  peer.getActionMap.put(runAct.getValue(javax.swing.Action.NAME), runAct)
 
 
   add(c, "push,grow")

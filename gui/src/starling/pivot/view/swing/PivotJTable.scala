@@ -358,7 +358,7 @@ class PivotJTable(tableModel:PivotJTableModel, pivotTableView:PivotTableView, mo
           if (e.getClickCount() == 2) {
             val tableSelection = tableModel.mapCellToFields(row, col)
             if (tableSelection.nonEmpty) {
-              val modifiers = Modifiers.modifiers(e.getModifiersEx)
+              val modifiers = Modifiers.modifiersEX(e.getModifiersEx)
               pivotTableView.publish(TableDoubleClickEvent(model.getCurrentPivotFieldsState.filters, tableSelection, modifiers))
             }
           } else if (e.getClickCount() == 1) {

@@ -17,7 +17,7 @@ import starling.gui.custom._
 import starling.daterange.{Timestamp, Day}
 import starling.gui.StarlingLocalCache._
 import starling.browser._
-import common.{NewPageButton, MigPanel}
+import common.{ButtonClickedEx, NewPageButton, MigPanel}
 import starling.gui.utils.RichReactor._
 import starling.browser.common.RichCheckBox._
 
@@ -313,7 +313,7 @@ class TradeSelectionComponent(
     text = "View"
     tooltip = "View the trade corresponding to the trade id entered"
     enabled = deskCheckBox.selected
-    reactions += {case ButtonClicked(b) => viewTrade}
+    reactions += {case ButtonClickedEx(b, e) => viewTrade(Modifiers.modifiers(e.getModifiers))}
   }
   private val errorLabel = new Label(" ") {
     foreground = Color.RED
@@ -346,7 +346,7 @@ class TradeSelectionComponent(
     )
   }
 
-  private def viewTrade {
+  private def viewTrade(mods:Modifiers) {
     errorLabel.text = " "
     val desk = deskCombo.selection.item
     val textID = textIDField.text
@@ -356,7 +356,7 @@ class TradeSelectionComponent(
         SingleTradePage(tradeID, Some(desk), expiry, None)
       }, { case e:UnrecognisedTradeIDException => {
         errorLabel.text = e.getMessage
-      }}
+      }}, modifiers = mods
     )
   }
 
@@ -393,13 +393,13 @@ class TradeSelectionComponent(
     text = "Old Report"
     tooltip = "Configure a report to be run on the selected trades"
     reactions += {
-      case ButtonClicked(b) => {
+      case ButtonClickedEx(b, e) => {
         val deskWithTimestamp = deskCheckBox.ifSelected((deskCombo.selection.item, timestampsCombo.selectedTimestamp))
         val intradaySubgroup = intradayTradesCheckBox.ifSelected(IntradayGroups(intradayTradesCombo.selectedSubgroups))
         val selection = getSelection
         val tradePredicate = TradePredicate(selection._1, selection._2)
         val pData = TradeAndReferenceDataInfo(tradePredicate, deskWithTimestamp, intradaySubgroup, expiry.exp)
-        pageContext.goTo(ReportConfigurationPage(pData))
+        pageContext.goTo(ReportConfigurationPage(pData), Modifiers.modifiers(e.getModifiers))
       }
     }
   }
@@ -411,7 +411,7 @@ class TradeSelectionComponent(
     tooltip = "Configure a report to be run on the selected trades"
     mnemonic = swing.event.Key.C
     reactions += {
-      case ButtonClicked(b) => {
+      case ButtonClickedEx(b, e) => {
         val desk = deskCheckBox.ifSelected(deskCombo.selection.item)
         val deskWithTimestamp = deskCheckBox.ifSelected((deskCombo.selection.item, timestampsCombo.selectedTimestamp))
         val intradaySubgroupWithTimestamp =
@@ -452,7 +452,7 @@ class TradeSelectionComponent(
           expiry.exp,
           None,
           runReports = false)
-        pageContext.goTo(MainPivotReportPage(true,rp,PivotPageState(false, PivotFieldParams(true, Some(initialFieldsState)), otherLayoutInfo)))
+        pageContext.goTo(MainPivotReportPage(true,rp,PivotPageState(false, PivotFieldParams(true, Some(initialFieldsState)), otherLayoutInfo)), Modifiers.modifiers(e.getModifiers))
       }
     }
   }
@@ -467,7 +467,7 @@ class TradeSelectionComponent(
     enabled = isEnabled
     listenTo(timestampsCombo)
     reactions += {
-      case ButtonClicked(b) => {
+      case ButtonClickedEx(b, e) => {
         assert(deskCheckBox.selected, "Need a desk selected")
         assert(intradayTradesCheckBox.selected, "Need intraday trades selected")
         val tradeSystem = deskCombo.selection.item
@@ -479,7 +479,7 @@ class TradeSelectionComponent(
         val latestIntradayTimestamp = pageContext.localCache.latestTimestamp(intradaySubgroup)
 
         pageContext.createAndGoTo(server => new TradeReconciliationReportPage(tradeSelection, from, to,
-          latestIntradayTimestamp, data.pivotPageState))
+          latestIntradayTimestamp, data.pivotPageState), modifiers = Modifiers.modifiers(e.getModifiers))
       }
       case DeskClosed(desk, timestamp) => {
         enabled = isEnabled
@@ -496,7 +496,7 @@ class TradeSelectionComponent(
     enabled = isEnabled
     listenTo(timestampsCombo)
     reactions += {
-      case ButtonClicked(b) => {
+      case ButtonClickedEx(b, e) => {
         assert(deskCheckBox.selected, "Need a desk selected")
         assert(!intradayTradesCheckBox.selected, "Can't have intraday trades selected")
 
@@ -508,7 +508,7 @@ class TradeSelectionComponent(
 
         pageContext.createAndGoTo(server => TradeChangesReportPage(tradeSelection,
                 from, to,
-                PivotPageState(false, PivotFieldParams(true, None)), expiry.exp))
+                PivotPageState(false, PivotFieldParams(true, None)), expiry.exp), modifiers = Modifiers.modifiers(e.getModifiers))
       }
       case DeskClosed(desk, timestamp) => {
         enabled = isEnabled
@@ -572,7 +572,7 @@ class TradeSelectionComponent(
     case DayChangedEvent(`tradeExpiryDayChooser`, day) => generateNewPageFromState()
     case ButtonClicked(`deskCheckBox`) => generateNewPageFromState()
     case ButtonClicked(`intradayTradesCheckBox`) => generateNewPageFromState()
-    case KeyPressed(`textIDField`, scala.swing.event.Key.Enter, _, _) => viewTrade
+    case KeyPressed(`textIDField`, scala.swing.event.Key.Enter, m, _) => viewTrade(Modifiers.modifiersEX(m))
     case FilterSelectionChanged(`intradayTradesCombo`, _) => generateNewPageFromState()
   }
   listenTo(deskCheckBox, deskCombo.selection, timestampsCombo.selection, tradeExpiryDayChooser, intradayTradesCheckBox,

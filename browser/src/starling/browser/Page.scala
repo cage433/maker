@@ -59,13 +59,25 @@ case class PageBookmark(page:Page) extends Bookmark {
 case class Modifiers(ctrl:Boolean, shift:Boolean)
 object Modifiers {
   val None = Modifiers(false, false)
-  def modifiers(keyModifiers:scala.swing.event.Key.Modifiers) = {
+  def modifiersEX(keyModifiers:scala.swing.event.Key.Modifiers) = {
     val bothMask = scala.swing.event.Key.Modifier.Control | scala.swing.event.Key.Modifier.Shift
     if ((keyModifiers & bothMask) == bothMask) {
       Modifiers(true, true)
     } else if ((keyModifiers & scala.swing.event.Key.Modifier.Control) == scala.swing.event.Key.Modifier.Control) {
       Modifiers(true, false)
     } else if ((keyModifiers & scala.swing.event.Key.Modifier.Shift) == scala.swing.event.Key.Modifier.Shift) {
+      Modifiers(false, true)
+    } else {
+      None
+    }
+  }
+  def modifiers(keyModifiers:Int) = {
+    val bothMask = java.awt.event.ActionEvent.CTRL_MASK | java.awt.event.ActionEvent.SHIFT_MASK
+    if ((keyModifiers & bothMask) == bothMask) {
+      Modifiers(true, true)
+    } else if ((keyModifiers & java.awt.event.ActionEvent.CTRL_MASK) == java.awt.event.ActionEvent.CTRL_MASK) {
+      Modifiers(true, false)
+    } else if ((keyModifiers & java.awt.event.ActionEvent.SHIFT_MASK) == java.awt.event.ActionEvent.SHIFT_MASK) {
       Modifiers(false, true)
     } else {
       None

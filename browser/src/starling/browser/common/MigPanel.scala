@@ -8,9 +8,9 @@ import swing._
 import org.jdesktop.swingx.{JXList, JXLabel, JXPanel}
 import org.jdesktop.swingx.decorator.Highlighter
 import javax.swing._
-import org.jdesktop.swingx.painter.{PinstripePainter, ImagePainter, Painter}
 import swing.event.{MouseExited, MouseEntered, MouseClicked}
 import GuiUtils._
+import org.jdesktop.swingx.painter.{ImagePainter, PinstripePainter, Painter}
 
 class MigPanel(layoutConstraints:String = "", columnConstraints:String = "", rowConstraints:String = "")
         extends Panel with SequentialContainer.Wrapper {
@@ -143,6 +143,8 @@ class ImageButton(image:BufferedImage, action: => Unit) extends FixedImagePanel(
   }
   listenTo(mouse.clicks)
 }
+
+case class ButtonClickedEx(override val source: scala.swing.AbstractButton, e:java.awt.event.ActionEvent) extends scala.swing.event.ActionEvent(source)
 
 class VerticalButton(text:String, clockwise:Boolean = false) extends JButton {
   val f = getFont
