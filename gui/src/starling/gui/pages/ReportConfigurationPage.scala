@@ -16,7 +16,7 @@ import utils.RichReactor
 import RichReactor._
 import starling.gui.StarlingLocalCache._
 import starling.browser._
-import common.{NewPageButton, MigPanel}
+import common.{ButtonClickedEx, NewPageButton, MigPanel}
 
 case class ReportConfigurationPage(tradeAndReferenceDataInfo:TradeAndReferenceDataInfo) extends StarlingServerPage {
   def text = "Configure Report"
@@ -205,9 +205,9 @@ class ReportConfigurationComponent(context:PageContext, tradeAndReferenceDataInf
       }
 
       reactions += {
-        case ViewRequested(`envChooser`) => {
+        case ViewRequested(`envChooser`, mod) => {
           envChooser.invokeWithCurveIdentifier(context, (curveIdentifier:CurveIdentifierLabel) => {
-            context.goTo(new MarketDataPage(StandardMarketDataPageIdentifier(curveIdentifier.marketDataIdentifier), MarketDataPageState()))
+            context.goTo(new MarketDataPage(StandardMarketDataPageIdentifier(curveIdentifier.marketDataIdentifier), MarketDataPageState()), mod)
           })
         }
       }
@@ -222,7 +222,7 @@ class ReportConfigurationComponent(context:PageContext, tradeAndReferenceDataInf
 
     def component = comp
 
-    def runReport = {
+    def runReport(modifiers:Modifiers) {
       val tradeED = tradeLOC.selection.item.exp
       val tradeTS = tradeTSC.selectedTimestamp
       val tradeSelectionWithTimestamp = tradeSelection.withTimestamp(tradeTS, context.localCache.latestTimestamp)
@@ -231,7 +231,7 @@ class ReportConfigurationComponent(context:PageContext, tradeAndReferenceDataInf
           val reportParameters = ReportParameters(tradeSelectionWithTimestamp, curveIdentifier, comp.reportOptions,
             tradeED)
           new MainPivotReportPage(false, reportParameters, PivotPageState(false, PivotFieldParams(true, None)))
-        })
+        }, modifiers = modifiers)
       })
     }
 
@@ -310,9 +310,9 @@ class ReportConfigurationComponent(context:PageContext, tradeAndReferenceDataInf
       }
 
       reactions += {
-        case ViewRequested(`envChooser`) => {
+        case ViewRequested(`envChooser`, mod) => {
           envChooser.invokeWithCurveIdentifier(context, (curveIdentifier:CurveIdentifierLabel) => {
-            context.goTo(new MarketDataPage(StandardMarketDataPageIdentifier(curveIdentifier.marketDataIdentifier), MarketDataPageState()))
+            context.goTo(new MarketDataPage(StandardMarketDataPageIdentifier(curveIdentifier.marketDataIdentifier), MarketDataPageState()), mod)
           })
         }
       }
@@ -430,7 +430,7 @@ class ReportConfigurationComponent(context:PageContext, tradeAndReferenceDataInf
 
     def component = comp
 
-    def runReport = {
+    def runReport(modifiers:Modifiers) {
       val tradeED = tradeLOC.selection.item.exp
       val tradeTS = tradeTSC.selectedTimestamp
       val tradeSelectionWithTimestamp = tradeSelection.withTimestamp(tradeTS, context.localCache.latestTimestamp)
@@ -439,7 +439,7 @@ class ReportConfigurationComponent(context:PageContext, tradeAndReferenceDataInf
           val reportParameters = ReportParameters(tradeSelectionWithTimestamp, curveID, comp.reportOptions,
             tradeED)
           new MainPivotReportPage(false, reportParameters, PivotPageState(false, PivotFieldParams(true, None)))
-        })
+        }, modifiers = modifiers)
       })
     }
 
@@ -464,14 +464,14 @@ class ReportConfigurationComponent(context:PageContext, tradeAndReferenceDataInf
     val checkBoxPanel = generateCheckBoxPanel(slidableOptions)
     val comp = new MigPanel("insets 0") {
       reactions += {
-        case ViewRequested(`envChooserFrom`) => {
+        case ViewRequested(`envChooserFrom`, mod) => {
           envChooserFrom.invokeWithCurveIdentifier(context, (curveIdentifier:CurveIdentifierLabel) => {
-            context.goTo(new MarketDataPage(curveIdentifier.marketDataIdentifier, MarketDataPageState()))
+            context.goTo(new MarketDataPage(curveIdentifier.marketDataIdentifier, MarketDataPageState()), mod)
           })
         }
-        case ViewRequested(`envChooserTo`) => {
+        case ViewRequested(`envChooserTo`, mod) => {
           envChooserTo.invokeWithCurveIdentifier(context, (curveIdentifier:CurveIdentifierLabel) => {
-            context.goTo(new MarketDataPage(curveIdentifier.marketDataIdentifier, MarketDataPageState()))
+            context.goTo(new MarketDataPage(curveIdentifier.marketDataIdentifier, MarketDataPageState()), mod)
           })
         }
       }
@@ -488,7 +488,7 @@ class ReportConfigurationComponent(context:PageContext, tradeAndReferenceDataInf
 
     def component = comp
 
-    def runReport = {
+    def runReport(modifiers:Modifiers) {
       val tsFrom = tradeSelection.desk.map(m => tradeTSFrom.selectedTimestamp)
       val tsTo = tradeTSTo.selectedTimestamp
       val tradeSelectionWithTimestamp = tradeSelection.withTimestamp(tsTo, context.localCache.latestTimestamp)
@@ -507,7 +507,7 @@ class ReportConfigurationComponent(context:PageContext, tradeAndReferenceDataInf
               reportParameters,
               PivotPageState(false, PivotFieldParams(true, None))
             )
-          })
+          }, modifiers = modifiers)
         })
       })
     }
@@ -544,10 +544,10 @@ class ReportConfigurationComponent(context:PageContext, tradeAndReferenceDataInf
 
     def component = comp
 
-    def runReport = {
+    def runReport(modifiers:Modifiers) {
       context.createAndGoTo(server => TradeChangesReportPage(tradeSelection,
         timestampChooserFrom.selectedTimestamp, timestampChooserTo.selectedTimestamp,
-        PivotPageState(false, PivotFieldParams(true, None)), tradeExpiryDay))
+        PivotPageState(false, PivotFieldParams(true, None)), tradeExpiryDay), modifiers = modifiers)
     }
 
     override def componentState = TradeChangesCompState(timestampChooserFrom.selectedTimestamp, timestampChooserTo.selectedTimestamp)
@@ -575,14 +575,14 @@ class ReportConfigurationComponent(context:PageContext, tradeAndReferenceDataInf
       }
 
       reactions += {
-        case ViewRequested(`envChooserFrom`) => {
+        case ViewRequested(`envChooserFrom`, mod) => {
           envChooserFrom.invokeWithCurveIdentifier(context, (curveIdentifier:CurveIdentifierLabel) => {
-            context.goTo(new MarketDataPage(curveIdentifier.marketDataIdentifier, MarketDataPageState()))
+            context.goTo(new MarketDataPage(curveIdentifier.marketDataIdentifier, MarketDataPageState()), mod)
           })
         }
-        case ViewRequested(`envChooserTo`) => {
+        case ViewRequested(`envChooserTo`, mod) => {
           envChooserTo.invokeWithCurveIdentifier(context, (curveIdentifier:CurveIdentifierLabel) => {
-            context.goTo(new MarketDataPage(curveIdentifier.marketDataIdentifier, MarketDataPageState()))
+            context.goTo(new MarketDataPage(curveIdentifier.marketDataIdentifier, MarketDataPageState()), mod)
           })
         }
       }
@@ -602,14 +602,14 @@ class ReportConfigurationComponent(context:PageContext, tradeAndReferenceDataInf
 
     def component = comp
 
-    def runReport = {
+    def runReport(modifiers:Modifiers) {
       envChooserFrom.invokeWithCurveIdentifier(context, curveIdentifier1 => {
         envChooserTo.invokeWithCurveIdentifier(context, curveIdentifier2 => {
           context.createAndGoTo(server => DifferenceMainPivotReportPage(
             tradeSelection, curveIdentifier1, curveIdentifier2, comp.reportOptions,
             PivotPageState(false, PivotFieldParams(true, None)),
             tradeTSFrom.selectedTimestamp, tradeTSTo.selectedTimestamp,
-            tradeLOCFrom.selection.item.exp))
+            tradeLOCFrom.selection.item.exp), modifiers = modifiers)
         })
       })
     }
@@ -638,9 +638,9 @@ class ReportConfigurationComponent(context:PageContext, tradeAndReferenceDataInf
     val (envChooserPanel, envChooser, tradeTSC, tradeLOC) = generateEnvironmentChooserComponent("Valuation Environment")
     val comp = new MigPanel("insets 0") {
       reactions += {
-        case ViewRequested(`envChooser`) => {
+        case ViewRequested(`envChooser`, mod) => {
           envChooser.invokeWithCurveIdentifier(context, (curveIdentifier:CurveIdentifierLabel) => {
-            context.goTo(new MarketDataPage(curveIdentifier.marketDataIdentifier, MarketDataPageState()))
+            context.goTo(new MarketDataPage(curveIdentifier.marketDataIdentifier, MarketDataPageState()), mod)
           })
         }
       }
@@ -652,14 +652,14 @@ class ReportConfigurationComponent(context:PageContext, tradeAndReferenceDataInf
 
     def component = comp
 
-    def runReport = {
+    def runReport(modifiers:Modifiers) {
       val tradeED = tradeLOC.selection.item.exp // expiry day
       val tradeTS = tradeTSC.selectedTimestamp // timestamp
       val tradeSelectionWithTimestamp = tradeSelection.withTimestamp(tradeTS, context.localCache.latestTimestamp)
       envChooser.invokeWithCurveIdentifier(context, (curveIdentifier:CurveIdentifierLabel) => {
         context.createAndGoTo((server) => {
           new PnLReconciliationReportPage(tradeSelectionWithTimestamp, curveIdentifier, tradeED, PivotPageState(false, PivotFieldParams(true, None)))
-        })
+        }, modifiers = modifiers)
       })
     }
 
@@ -694,7 +694,7 @@ class ReportConfigurationComponent(context:PageContext, tradeAndReferenceDataInf
     text = "Run Report"
     tooltip = "Runs a report using the options specified"
     reactions += {
-      case ButtonClicked(b) => {reportOptionsPanel.currentReportPanel.runReport}
+      case ButtonClickedEx(b, e) => {reportOptionsPanel.currentReportPanel.runReport(Modifiers.modifiers(e.getModifiers))}
     }
   }
 
@@ -763,7 +763,7 @@ case class PnLDifferenceReportCompState(chooserState:MarketDataChooserState, tra
 
 trait ReportPanel {
   def component:Component
-  def runReport:Unit
+  def runReport(modifiers:Modifiers)
   def componentState:ComponentState = new ComponentState {}
-  def componentState_=(cs:ComponentState):Unit = {}
+  def componentState_=(cs:ComponentState) {}
 }

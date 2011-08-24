@@ -27,6 +27,7 @@ import javax.swing._
 import starling.pivot.view.swing.PivotTableType._
 import starling.pivot.HiddenType._
 import starling.browser.common._
+import starling.browser.Modifiers
 
 object PivotTableView {
   def createWithLayer(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSize:Dimension,
@@ -41,7 +42,7 @@ object PivotTableView {
 }
 
 case class FieldsChangedEvent(pivotFieldState:PivotFieldsState) extends Event
-case class TableDoubleClickEvent(filterFields:Seq[(Field,Selection)] , drillDownFields:Seq[(Field,Selection)], controlDown:Boolean) extends Event
+case class TableDoubleClickEvent(filterFields:Seq[(Field,Selection)] , drillDownFields:Seq[(Field,Selection)], modifiers:Modifiers) extends Event
 case class FullScreenSelectedEvent(currentState:HiddenType, newState:HiddenType, currentFrozen:Boolean) extends Event
 case class ShowErrorsEvent(errors:Set[StackTrace]) extends Event
 case class PivotEditsUpdatedEvent(edits:PivotEdits, source:PivotJTable) extends Event

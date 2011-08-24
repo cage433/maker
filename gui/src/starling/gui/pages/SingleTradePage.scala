@@ -19,8 +19,8 @@ import starling.daterange.{Day, TimeOfDay, Timestamp}
 import org.jdesktop.swingx.renderer.{DefaultTableRenderer, LabelProvider, StringValue}
 import swing.{Alignment, Component, Label}
 import starling.gui.StarlingLocalCache._
-import starling.browser.{PageComponent, Bookmark, PageData, PageContext}
-import starling.browser.common.{NewPageButton, MigPanel}
+import starling.browser.common.{ButtonClickedEx, NewPageButton, MigPanel}
+import starling.browser._
 
 case class SingleTradePage(tradeID:TradeIDLabel, desk:Option[Desk], tradeExpiryDay:TradeExpiryDay, intradayGroups:Option[IntradayGroups]) extends StarlingServerPage {
   def text = "Trade " + tradeID
@@ -193,7 +193,7 @@ class SingleTradePageComponent(context:PageContext, pageData:PageData) extends M
     })
 
     jTable.addMouseListener(new MouseAdapter {override def mouseClicked(e:MouseEvent) = {
-      if (e.getClickCount == 2) doValuation}}
+      if (e.getClickCount == 2) doValuation(Modifiers.modifiersEX(e.getModifiersEx))}}
     )
 
     val negativeHighlighter = new ColorHighlighter(new HighlightPredicate {
@@ -255,7 +255,7 @@ class SingleTradePageComponent(context:PageContext, pageData:PageData) extends M
       }
     }
 
-    def doValuation {
+    def doValuation(modifiers:Modifiers) {
       val selection = jTable.getSelectedRow
       if (selection != -1) {
         val row = stable.data(selection)
@@ -319,10 +319,10 @@ class SingleTradePageComponent(context:PageContext, pageData:PageData) extends M
           None,
           runReports = true)
 
-        context.goTo(new SingleTradeMainPivotReportPage(data.tradeID, rp, PivotPageState.default(initialFieldsState)))
+        context.goTo(new SingleTradeMainPivotReportPage(data.tradeID, rp, PivotPageState.default(initialFieldsState)), modifiers)
       }
     }
-    reactions += {case ButtonClicked(`button`) => doValuation}
+    reactions += {case ButtonClickedEx(`button`, e) => doValuation(Modifiers.modifiers(e.getModifiers))}
     listenTo(button)
   }
   add(mainPanel, "push, grow")
@@ -342,7 +342,7 @@ class SingleTradeMainPivotReportPage(val tradeID:TradeIDLabel, val reportParamet
       tooltip = "Show the parameters that were used to value this trade"
 
       reactions += {
-        case ButtonClicked(b) => context.goTo(ValuationParametersPage(tradeID, reportParameters0))
+        case ButtonClickedEx(b, e) => context.goTo(ValuationParametersPage(tradeID, reportParameters0), Modifiers.modifiers(e.getModifiers))
       }
     }
     valuationParametersButton :: buttons

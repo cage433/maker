@@ -4,12 +4,13 @@ import swing.Swing._
 import java.awt.{Dimension, Color}
 import swing.{Action, ScrollPane, ListView, Label, Component}
 import swing.event.{Event, SelectionChanged, KeyPressed, MouseClicked}
-import javax.swing._
 import starling.browser.common._
 import starling.browser.service.BookmarksUpdate
 import org.jdesktop.swingx.JXMonthView
-import starling.browser.{BrowserDay, Bookmark, BookmarkData, PageContext}
 import java.util.{Calendar, GregorianCalendar, Date => JDate}
+import starling.browser._
+import javax.swing._
+import java.awt.event.ActionEvent
 
 class MinimalSXMonthView extends Component {
   override lazy val peer = new JXMonthView
@@ -105,7 +106,7 @@ class BookmarksPanel(context:PageContext) extends MigPanel("") {
       DeleteBookmarkRequest(bookmarkSelected.name), (u:Unit) => {false}, (u:Unit) => {})
   }
 
-  def goToBookmark() {
+  def goToBookmark(modifiers:Modifiers) {
     val bookmark = bookmarksListView.selected
     val baseDay = if (bookmark.bookmark.daySensitive) {
       Some(dayPicker.date)
@@ -116,7 +117,7 @@ class BookmarksPanel(context:PageContext) extends MigPanel("") {
     context.createAndGoTo(serverContext => {
       val browserDay = baseDay.map( fromJavaDate )
       bookmark.bookmark.createPage(browserDay, serverContext, context)
-    })
+    }, modifiers = modifiers)
   }
 
   def fromJavaDate(date:java.util.Date):BrowserDay = {
@@ -129,13 +130,16 @@ class BookmarksPanel(context:PageContext) extends MigPanel("") {
     )
   }
 
-  val goToBookmarkAction = Action("Go"){goToBookmark()}
-  goToBookmarkAction.toolTip = "Go to the selected bookmark (F9)"
-  goToBookmarkAction.icon = NewPageButton.arrowImage
-  goToBookmarkAction.mnemonic = swing.event.Key.G.id
-
+  val goToBookmarkAction1 = new AbstractAction("Go", NewPageButton.arrowImage) {
+    putValue(javax.swing.Action.SHORT_DESCRIPTION, "Go to the selected bookmark (F9)")
+    putValue(javax.swing.Action.MNEMONIC_KEY, swing.event.Key.G.id)
+    def actionPerformed(e:ActionEvent) {
+      goToBookmark(Modifiers.modifiers(e.getModifiers))
+    }
+  }
+  
   val goToBookmarkButton = new NewPageButton {
-    action = goToBookmarkAction
+    peer.setAction(goToBookmarkAction1)
   }
   val bookmarkScrollPane = new ScrollPane(bookmarksListView)
   if (bookmarks.size <= 3) {
@@ -150,7 +154,7 @@ class BookmarksPanel(context:PageContext) extends MigPanel("") {
 
   def componentsEnabled = false // Not used
   def componentsEnabled_=(b:Boolean) {
-    goToBookmarkAction.enabled = b
+    goToBookmarkAction1.setEnabled(b)
     bookmarkScrollPane.enabled = b
     bookmarksListView.enabled = b
     dayPicker.enabled = b && valuationDayShouldBeEnabled
@@ -177,12 +181,12 @@ class BookmarksPanel(context:PageContext) extends MigPanel("") {
       }
       bookmarksListView.selectedOption = currentSelectedItem
     }
-    case MouseClicked(`bookmarksListView`,_,_,2,_) => goToBookmark()
+    case MouseClicked(`bookmarksListView`,_,m,2,_) => goToBookmark(Modifiers.modifiersEX(m))
     case KeyPressed(`bookmarksListView`, scala.swing.event.Key.Delete, _, _) => deleteBookmark()
     case SelectionChanged(`bookmarksListView`) => dayPicker.enabled = valuationDayShouldBeEnabled
-    case KeyPressed(`bookmarksListView`, scala.swing.event.Key.Enter, _,_) => goToBookmark()
-    case KeyPressed(`dayPicker`, scala.swing.event.Key.Enter, _,_) => goToBookmark()
-    case MouseClicked(`dayPicker`,_,_,2,_) => goToBookmark()
+    case KeyPressed(`bookmarksListView`, scala.swing.event.Key.Enter, m,_) => goToBookmark(Modifiers.modifiersEX(m))
+    case KeyPressed(`dayPicker`, scala.swing.event.Key.Enter, m,_) => goToBookmark(Modifiers.modifiersEX(m))
+    case MouseClicked(`dayPicker`,_,m,2,_) => goToBookmark(Modifiers.modifiersEX(m))
   }
   listenTo(context.remotePublisher, bookmarksListView.keys, bookmarksListView.mouse.clicks, bookmarksListView.selection, dayPicker.keys, dayPicker.mouse.clicks)
 
