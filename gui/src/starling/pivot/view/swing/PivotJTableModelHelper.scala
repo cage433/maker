@@ -100,6 +100,39 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
     (Map() ++ (keyFields.map(f => {f -> UndefinedValue}))) ++ singleValueFilters
   }
 
+  private def removeAddedRowsIfBlank(edits:PivotEdits):PivotEdits = {
+
+    val totalRows = fullTableModel.getRowCount
+    val totalColumns = fullTableModel.getColumnCount
+
+    (0 until totalRows).find(r => {
+      fullTableModel.getValueAt(r, 0) match {
+        case ac:AxisCell => ac.state == Added
+      }
+    }) match {
+      case None => edits
+      case Some(startRow) => {
+        val endRow = if (extraLine) totalRows - 1 else totalRows
+        def removeRow(r:Int) = {
+          (0 until totalColumns).map(c => {
+            fullTableModel.getValueAt(r, c) match {
+              case ac:AxisCell => ac.text
+              case tc:TableCell => tc.text
+            }
+          }).forall(_.isEmpty)
+        }
+        val newRowsToRemove = (startRow until endRow).zipWithIndex.flatMap{case (r, i) => {
+          if (removeRow(r)) {
+            Some(i)
+          } else {
+            None
+          }
+        }}
+        edits.removeNewRows(newRowsToRemove.toList)
+      }
+    }
+  }
+
   val rowHeaderTableModel = new PivotJTableModel {
     private val addedRows0 = new ListBuffer[Array[AxisCell]]
     private val blankCells = rowHeaderData0(0).map(av => {
@@ -198,6 +231,7 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
         }
       }}
       if (fireChange && edits != pivotEdits) {
+        edits = removeAddedRowsIfBlank(edits)
         updateEdits(edits, RowHeader)
       }
       edits
@@ -517,6 +551,7 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
         }
       }}
       if (fireChange && edits != pivotEdits) {
+        edits = removeAddedRowsIfBlank(edits)
         updateEdits(edits, Main)
       }
       edits
@@ -814,6 +849,7 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
         editsToUse = mod.deleteCells(cellsForMod, false)
       }}
       if (fireChange && editsToUse != pivotEdits) {
+        editsToUse = removeAddedRowsIfBlank(editsToUse)
         updateEdits(editsToUse, Full)
       }
       editsToUse

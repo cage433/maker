@@ -165,6 +165,11 @@ case class PivotEdits(edits:Map[KeyFilter,KeyEdits], newRows:List[Map[Field,Any]
   def withAddedRow(row:Map[Field,Any]) = {
     copy(newRows = newRows ::: List(row))
   }
+
+  def removeNewRows(indices:List[Int]) = {
+    val nRows = newRows.zipWithIndex.filterNot{case (_, i) => indices.contains(i)}.map(_._1)
+    copy(newRows = nRows)
+  }
 }
 object PivotEdits {
   val Null = PivotEdits(Map.empty, Nil)
