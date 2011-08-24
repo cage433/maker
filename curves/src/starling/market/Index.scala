@@ -262,6 +262,11 @@ case class FuturesFrontPeriodIndex(
   }
 
   override def reportDisplayName = "%s 1st %s" % (market.name, market.tenor.toString.toLowerCase)
+
+  /**
+   * This works for Comex and SFSE - may need to be overriden for others.
+   */
+  override def observationTimeOfDay = market.exchange.closeTime
 }
 
 abstract class MultiIndex(override val name: String) extends Index {

@@ -17,7 +17,13 @@ object TitanTradeStore {
   val grade_str = "Grade"
   val deliveryLocation_str = "Delivery Location"
   val destinationLocation_str = "Destination Location"
-  val labels = List(quotaID_str, tradeID_str, comment_str, submitted_str, shape_str, grade_str, deliveryLocation_str, destinationLocation_str)
+  val contractFinalised_str = "Contract Finalised"
+  val tolerancePlus_str = "Tolerance Plus"
+  val toleranceMinus_str = "Tolerance Minus"
+  val schedule_str = "Schedule"
+  val expectedSales_str = "Expected Sales"
+
+  val labels = List(quotaID_str, tradeID_str, comment_str, submitted_str, shape_str, grade_str, deliveryLocation_str, destinationLocation_str, contractFinalised_str, tolerancePlus_str, toleranceMinus_str, schedule_str, expectedSales_str)
 }
 
 class TitanTradeStore(db: RichDB, broadcaster:Broadcaster, tradeSystem:TradeSystem)
@@ -32,12 +38,19 @@ class TitanTradeStore(db: RichDB, broadcaster:Broadcaster, tradeSystem:TradeSyst
     val grade = row.getString("Grade")
     val deliveryLocation = row.getString("DeliveryLocation")
     val destinationLocation = row.getString("DestinationLocation")
-      
-    TitanTradeAttributes(quotaID, titanTradeID, comment, submitted, shape, grade, deliveryLocation, destinationLocation)
+    val contractFinalised = row.getString("ContractFinalised")
+    val tolerancePlus = row.getPercentage("TolerancePlus")
+    val toleranceMinus = row.getPercentage("ToleranceMinus")
+    val schedule = row.getDay("Schedule")
+    val expectedSales = row.getDay("ExpectedSales")
+
+    TitanTradeAttributes(quotaID, titanTradeID, comment, submitted, shape, grade, deliveryLocation, destinationLocation, contractFinalised, tolerancePlus, toleranceMinus, schedule, expectedSales)
   }
+
   def pivotInitialState(tradeableTypes:Set[TradeableType[_]]) = {
     PivotFieldsState(List(Field("Trade Count")))
   }
+
   def pivotDrillDownGroups() = {
     List(
       DrillDownInfo(PivotAxis( List(), List(), List(), false)),
@@ -46,7 +59,7 @@ class TitanTradeStore(db: RichDB, broadcaster:Broadcaster, tradeSystem:TradeSyst
     )
   }
 
-  override val tradeAttributeFieldDetails = {
+  override val tradeAttributeFieldDetails =
     TitanTradeStore.labels.map{ label => FieldDetails(label)}
-  }
 }
+
