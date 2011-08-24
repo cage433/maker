@@ -25,7 +25,7 @@ class SwapCalendarSpreadTests extends TestMarketTest {
           case ForwardPriceKey(_, d, _) => {
             forwardPrice
           }
-          case _: FixingKey => historicPrice
+          case _: IndexFixingKey => historicPrice
         }
 
         def marketDay = marketDayAndTime
@@ -95,7 +95,7 @@ class SwapCalendarSpreadTests extends TestMarketTest {
           case ForwardPriceKey(_, d, _) => {
             forwardPrice
           }
-          case _: FixingKey => historicPrice
+          case _: IndexFixingKey => historicPrice
           case DiscountRateKey(_, day, _) => new Quantity(math.exp(-zeroRate * day.endOfDay.timeSince(md)))
         }
 

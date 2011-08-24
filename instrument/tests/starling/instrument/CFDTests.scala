@@ -67,8 +67,8 @@ class CFDTests extends TestMarketTest {
       def applyOrMatchError(key: AtomicDatumKey) = key match {
         case ForwardPriceKey(`market1`, _, _) => fwdPrice1
         case ForwardPriceKey(`market2`, _, _) => fwdPrice2
-        case FixingKey(`index1`, _) => fixed1
-        case FixingKey(`index2`, _) => fixed2
+        case IndexFixingKey(`index1`, _) => fixed1
+        case IndexFixingKey(`index2`, _) => fixed2
       }
     })
   }

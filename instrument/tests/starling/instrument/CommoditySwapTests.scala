@@ -31,7 +31,7 @@ class CommoditySwapTests extends JonTestEnv {
       new TestingAtomicEnvironment() {
         def applyOrMatchError(key: AtomicDatumKey) = key match {
           case _: ForwardPriceKey => forwardPrice
-          case _: FixingKey => historicPrice
+          case _: IndexFixingKey => historicPrice
           case DiscountRateKey(_, day, _) => new Quantity(scala.math.exp(-0.05 * day.daysSinceInYears(marketDay.day)))
         }
 
@@ -74,7 +74,7 @@ class CommoditySwapTests extends JonTestEnv {
           case ForwardPriceKey(_, d, _) => {
             forwardPrice
           }
-          case _: FixingKey => historicPrice
+          case _: IndexFixingKey => historicPrice
           case DiscountRateKey(_, day, _) => new Quantity(scala.math.exp(-0.05 * day.daysSinceInYears(marketDay.day)))
         }
 
@@ -128,8 +128,8 @@ class CommoditySwapTests extends JonTestEnv {
       def applyOrMatchError(key: AtomicDatumKey) = key match {
         case ForwardPriceKey(`market1`, _, _) => Quantity(200, USD / MT)
         case ForwardPriceKey(`market2`, _, _) => Quantity(250, USD / BBL)
-        case FixingKey(`index1`, _) => Quantity(100, USD / MT)
-        case FixingKey(`index2`, _) => Quantity(150, USD / BBL)
+        case IndexFixingKey(`index1`, _) => Quantity(100, USD / MT)
+        case IndexFixingKey(`index2`, _) => Quantity(150, USD / BBL)
         case DiscountRateKey(_, day, _) => new Quantity(scala.math.exp(-0.05 * day.daysSinceInYears(marketDay.day)))
       }
     })
@@ -181,7 +181,7 @@ class CommoditySwapTests extends JonTestEnv {
       new TestingAtomicEnvironment() {
         def applyOrMatchError(key: AtomicDatumKey) = key match {
           case _: ForwardPriceKey => forwardPrice
-          case _: FixingKey => historicPrice
+          case _: IndexFixingKey => historicPrice
           case DiscountRateKey(_, day, _) => new Quantity(scala.math.exp(-0.05 * day.daysSinceInYears(marketDay.day)))
         }
 
@@ -233,7 +233,7 @@ class CommoditySwapTests extends JonTestEnv {
       new TestingAtomicEnvironment() {
         def applyOrMatchError(key: AtomicDatumKey) = key match {
           case _: ForwardPriceKey => forwardPrice
-          case _: FixingKey => historicPrice
+          case _: IndexFixingKey => historicPrice
           case DiscountRateKey(_, day, _) => new Quantity(scala.math.exp(-0.05 * day.daysSinceInYears(marketDay.day)))
         }
 
@@ -641,7 +641,7 @@ class CommoditySwapTests extends JonTestEnv {
         val outPrice = ForwardCurve(market, md, Map(md.day -> price.value)).price(d)
         outPrice
       }
-      case _: FixingKey => Quantity(0, USD / MT)
+      case _: IndexFixingKey => Quantity(0, USD / MT)
     }
     )).undiscounted
 
@@ -693,7 +693,7 @@ class CommoditySwapTests extends JonTestEnv {
       case ForwardPriceKey(`market`, d, _) => {
         price
       }
-      case FixingKey(_, d) => fixing
+      case IndexFixingKey(_, d) => fixing
     }
     )).undiscounted
 
@@ -813,7 +813,7 @@ class CommoditySwapTests extends JonTestEnv {
       new TestingAtomicEnvironment() {
         def applyOrMatchError(key: AtomicDatumKey) = key match {
           case ForwardPriceKey(market, _, _) => Quantity(123.45, USD / BBL)
-          case FixingKey(`index`, day) => {
+          case IndexFixingKey(`index`, day) => {
             fixings(day)
           }
         }

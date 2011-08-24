@@ -30,7 +30,7 @@ import starling.quantity.Quantity
 import starling.curves.DiscountRateKey
 import starling.curves.ForwardPriceKey
 import starling.curves.UnitTestingAtomicEnvironment
-import starling.curves.FixingKey
+import starling.curves.IndexFixingKey
 import starling.titan._
 import com.trafigura.edm.logistics.inventory.EDMInventoryItem
 import starling.services.rpc.logistics._
@@ -363,7 +363,7 @@ class MockEnvironmentProvider() extends EnvironmentProvider {
     new UnitTestingAtomicEnvironment(
       snapshotsAndData(snapshotID)._1.endOfDay,
       {
-        case FixingKey(index, _) => Quantity(snapshotsAndData(snapshotID)._3, index.priceUOM)
+        case IndexFixingKey(index, _) => Quantity(snapshotsAndData(snapshotID)._3, index.priceUOM)
         case ForwardPriceKey(market, _, _) => Quantity(snapshotsAndData(snapshotID)._2, market.priceUOM)
         case _: DiscountRateKey => new Quantity(1.0)
       }

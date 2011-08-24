@@ -11,7 +11,7 @@ import starling.curves.Environment
 import starling.curves.UnitTestingAtomicEnvironment
 import starling.curves.ForwardPriceKey
 import starling.curves.DiscountRateKey
-import starling.curves.FixingKey
+import starling.curves.IndexFixingKey
 import scala.collection.immutable.TreeMap
 
 class PhysicalMetalAssignmentTests extends StarlingTest {
@@ -21,7 +21,7 @@ class PhysicalMetalAssignmentTests extends StarlingTest {
       marketDay, 
       {
         case _: ForwardPriceKey => Quantity(97, USD/MT)
-        case _: FixingKey => Quantity(98, USD/MT)
+        case _: IndexFixingKey => Quantity(98, USD/MT)
         case DiscountRateKey(_, day, _) => new Quantity(math.exp(- 0.1 * day.endOfDay.timeSince(marketDay)))
       }
     )

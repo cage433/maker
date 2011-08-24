@@ -34,9 +34,9 @@ class FormulaIndexTests extends TestMarketTest with ShouldMatchers {
         case ForwardPriceKey(ICE_BRENT, Month(2010, 4), _) => Quantity(15, USD / BBL)
         case ForwardPriceKey(ICE_GAS_OIL, Month(2010, 4), _) => Quantity(18, USD / BBL)
 
-        case FixingKey(`WTI10`, day) => assert(WTI10.isObservationDay(day)); Quantity(8, USD / BBL)
-        case FixingKey(`BRT11`, day) => assert(BRT11.isObservationDay(day)); Quantity(12, USD / BBL)
-        case FixingKey(`GO11`, day) => assert(GO11.isObservationDay(day)); Quantity(15, USD / BBL)
+        case IndexFixingKey(`WTI10`, day) => assert(WTI10.isObservationDay(day)); Quantity(8, USD / BBL)
+        case IndexFixingKey(`BRT11`, day) => assert(BRT11.isObservationDay(day)); Quantity(12, USD / BBL)
+        case IndexFixingKey(`GO11`, day) => assert(GO11.isObservationDay(day)); Quantity(15, USD / BBL)
       }
     }
   )

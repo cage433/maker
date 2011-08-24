@@ -110,7 +110,7 @@ class MarketChangesPnl(d1: AtomicEnvironment, d2: AtomicEnvironment, utps : Map[
     case (_: OilVolSkewCurveKey, Some(2)) => ("Vol skew Gamma", "Vol")
   }
 
-  val ignore:Set[Class[_]] = Set(classOf[DiscountRateKey], classOf[FixingKey])
+  val ignore:Set[Class[_]] = Set(classOf[DiscountRateKey], classOf[IndexFixingKey])
 
   def rows(utpID: UTPIdentifier, instrument: UTP) = {
     List(MarketChangesPnlRow(utpID, instrument, groupName = null, componentName = null))

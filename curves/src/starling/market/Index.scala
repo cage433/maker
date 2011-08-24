@@ -78,7 +78,7 @@ trait Index {
 
 case class IndexSensitivity(coefficient : Double, index : Index)
 
-trait IndexWithKnownPrice extends Index with KnownObservation{
+trait IndexWithKnownPrice extends Index with KnownObservation {
   def fixingOrForwardPrice(env : Environment, observationDay : Day) : Quantity
   def currency : UOM
   def businessCalendar : BusinessCalendar
@@ -87,15 +87,16 @@ trait IndexWithKnownPrice extends Index with KnownObservation{
 /**
  * An index on a single underlying
  */
-trait SingleIndex extends IndexWithKnownPrice {
+trait SingleIndex extends IndexWithKnownPrice with FixingHistoryLookup with InstrumentLevelKnownPrice {
   override val name: String
 
   def market: CommodityMarket
 
   def level: Level
 
-  def fixing(env : InstrumentLevelEnvironment, observationDay : Day) = {
-    env.quantity(FixingKey(this, observationDay)) match {
+  override def fixing(env : InstrumentLevelEnvironment, observationDay : Day, forwardDate: Option[DateRange]) = {
+    require(forwardDate.isEmpty)
+    env.quantity(IndexFixingKey(this, observationDay)) match {
       case nq : NamedQuantity => {
         val fixed = new SimpleNamedQuantity(market.name + "." + observedPeriod(observationDay).toShortString + " Fixed", new Quantity(nq.value, nq.uom))
         SimpleNamedQuantity(observationDay.toString, fixed)
@@ -104,7 +105,7 @@ trait SingleIndex extends IndexWithKnownPrice {
     }
   }
 
-  def forwardPrice(env: InstrumentLevelEnvironment, observationDay: Day, ignoreShiftsIfPermitted: Boolean) = {
+  override def forwardPriceOnObservationDay(env: InstrumentLevelEnvironment, observationDay: Day, ignoreShiftsIfPermitted: Boolean) = {
     env.quantity(ForwardPriceKey(market, observedPeriod(observationDay), ignoreShiftsIfPermitted)) match {
       case nq : NamedQuantity =>  SimpleNamedQuantity(observationDay.toString, nq)
       case q => q
@@ -113,10 +114,20 @@ trait SingleIndex extends IndexWithKnownPrice {
 
   def fixingOrForwardPrice(env : Environment, observationDay : Day) = env.fixingOrForwardPrice(this, observationDay)
 
-  def fixing(slice: MarketDataSlice, observationDay : Day) = {
+  def observationTimeOfDay = ObservationTimeOfDay.Default
+
+  def storedFixingPeriod(date: Either[Day, DateRange]): StoredFixingPeriod = date match {
+    case Left(day) => storedFixingPeriodForDay(day)
+    case _ => throw new IllegalArgumentException("Invalid param for index: " + date)
+  }
+
+  def storedFixingPeriodForDay(day:Day) : StoredFixingPeriod
+
+  def fixing(slice: MarketDataSlice, observationDay : Day, storedFixingPeriod: Option[StoredFixingPeriod]) = {
+    require(storedFixingPeriod.isEmpty)
     val key = PriceFixingsHistoryDataKey(market)
     slice.fixings(key, ObservationPoint(observationDay, observationTimeOfDay))
-      .fixingFor(level, storedFixingPeriod(observationDay))
+      .fixingFor(level, storedFixingPeriodForDay(observationDay))
       .toQuantity
   }
 
@@ -156,7 +167,6 @@ trait SingleIndex extends IndexWithKnownPrice {
 
   def precision = market.precision
   def commodity = market.commodity
-  def observationTimeOfDay = ObservationTimeOfDay.Default
 
   def isObservationDay(day: Day): Boolean = businessCalendar.isBusinessDay(day)
   /**
@@ -179,8 +189,6 @@ trait SingleIndex extends IndexWithKnownPrice {
   def observedOptionPeriod(observationDay: Day) : DateRange
 
   def calendars = Set(businessCalendar)
-
-  def storedFixingPeriod(day:Day) : StoredFixingPeriod
 
   def convert(value: Quantity, uom: UOM): Option[Quantity] = {
     market.convert(value, uom)
@@ -210,26 +218,25 @@ case class PublishedIndex(
 )
   extends SwapMarket(name, lotSize, uom, currency, businessCalendar, eaiQuoteID, commodity, conversions, limSymbol, precision) with SingleIndex
 {
-  override def isObservationDay(day: Day): Boolean = businessCalendar.isBusinessDay(day)
+  override def isObservationDay(day: Day): Boolean = super[SingleIndex].isObservationDay(day)
 
-  override def convert(value: Quantity, uom: UOM) = value.in(uom)(conversions)
+  override def convert(value: Quantity, uom: UOM) = super[SwapMarket].convert(value, uom)
 
-  override def convertUOM(value: Quantity, uom: UOM) : Quantity = {
-    convert(value, uom) match {
-      case Some(beqv) => beqv
-      case None => throw new Exception(this + ": Couldn't convert from " + value + " to " + uom)
-    }
-  }
+  override def convertUOM(value: Quantity, uom: UOM) : Quantity = super[SwapMarket].convertUOM(value, uom)
 
   def observedPeriod(observationDay : Day) : DateRange = observationDay
 
-  def storedFixingPeriod(observationDay: Day) = StoredFixingPeriod.dateRange(observedPeriod(observationDay))
+  def storedFixingPeriodForDay(observationDay: Day) = StoredFixingPeriod.dateRange(observedPeriod(observationDay))
 
   def observedOptionPeriod(observationDay: Day) = observationDay
 
   override val priceUOM = currency / uom
 
   def market: CommodityMarket = this
+
+  override def fixing(slice: MarketDataSlice, observationDay: Day, storedFixingPeriod: Option[StoredFixingPeriod]) = super[SingleIndex].fixing(slice, observationDay, storedFixingPeriod)
+
+  override def fixing(env: InstrumentLevelEnvironment, observationDay: Day, forwardDate: Option[DateRange]) = super[SingleIndex].fixing(env, observationDay, forwardDate)
 }
 
 case class FuturesFrontPeriodIndex(
@@ -251,7 +258,7 @@ case class FuturesFrontPeriodIndex(
     }
     period
   }
-  def storedFixingPeriod(observationDay: Day) = StoredFixingPeriod.dateRange(observedPeriod(observationDay))
+  def storedFixingPeriodForDay(observationDay: Day) = StoredFixingPeriod.dateRange(observedPeriod(observationDay))
 
   def observedOptionPeriod(observationDay: Day) = market.frontOptionPeriod(
     observationDay.addBusinessDays(market.businessCalendar, rollBeforeDays)
@@ -426,7 +433,7 @@ object LmeSingleIndices{
       day.addBusinessDays(businessCalendar, 2)
     }
 
-    def storedFixingPeriod(day: Day) = StoredFixingPeriod.tenor(Tenor.CASH)
+    def storedFixingPeriodForDay(day: Day) = StoredFixingPeriod.tenor(Tenor.CASH)
 
     val eaiQuoteID = None
   }
@@ -437,7 +444,7 @@ object LmeSingleIndices{
       FuturesExchangeFactory.LME.threeMonthDate(day)
     }
 
-    def storedFixingPeriod(day: Day) = StoredFixingPeriod.tenor(Tenor.ThreeMonths)
+    def storedFixingPeriodForDay(day: Day) = StoredFixingPeriod.tenor(Tenor.ThreeMonths)
 
     val eaiQuoteID = None
   }
@@ -499,7 +506,9 @@ case class LmeCashSettlementIndex(market : FuturesMarket, level : Level) extends
     day.addBusinessDays(businessCalendar, 2)
   }
 
-  def storedFixingPeriod(day: Day) = StoredFixingPeriod.tenor(Tenor.CASH)
+  def storedFixingPeriodForDay(day: Day) = StoredFixingPeriod.tenor(Tenor.CASH)
+
+  override def observationTimeOfDay = ObservationTimeOfDay.Official
 }
 
 
@@ -511,7 +520,7 @@ case class LmeThreeMonthIndex(market : FuturesMarket, level : Level) extends LME
     FuturesExchangeFactory.LME.threeMonthDate(day)
   }
 
-  def storedFixingPeriod(day: Day) = StoredFixingPeriod.tenor(Tenor.ThreeMonths)
+  def storedFixingPeriodForDay(day: Day) = StoredFixingPeriod.tenor(Tenor.ThreeMonths)
 
 }
 

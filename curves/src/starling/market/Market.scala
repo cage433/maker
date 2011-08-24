@@ -10,10 +10,10 @@ import collection.immutable.Map
 import starling.utils.cache.CacheFactory
 import starling.varcalculator.{ForwardPriceRiskFactor, RiskFactor}
 import starling.calendar._
-import starling.marketdata.MarketDataKey
 import starling.utils.ImplicitConversions._
 import util.matching.Regex
-import starling.quantity.{Conversions, Quantity, UOM}
+import starling.marketdata.{PriceFixingsHistoryDataKey, MarketDataKey}
+import starling.quantity._
 
 trait Market extends Ordered[Market]{
   val name: String
@@ -41,7 +41,7 @@ abstract class CommodityMarket(
   @transient val limSymbol : Option[LimSymbol] = None,
   @transient val precision : Option[Precision] = None
 )
-  extends Market with HasImpliedVol with KnownObservation
+  extends Market with HasImpliedVol with KnownObservation with InstrumentLevelKnownPrice with FixingHistoryLookup
 {
   val uomName = uom.toString
 
@@ -93,9 +93,34 @@ abstract class CommodityMarket(
   }
 
   def premiumSettlementDay(tradeDay: Day) = tradeDay.addBusinessDays(businessCalendar, 5)
-}
 
-class UnknownTrinityMarketException(val code:String) extends Exception("Unknown trinity market: " + code)
+  def fixing(env: InstrumentLevelEnvironment, observationDay: Day, forwardDate: Option[DateRange]): Quantity = forwardDate match {
+    case Some(period) => {
+      env.quantity(MarketFixingKey(this, observationDay, period)) match {
+        case nq: NamedQuantity => {
+          val fixed = new SimpleNamedQuantity(name + "." + period.toShortString + " Fixed", new Quantity(nq.value, nq.uom))
+          SimpleNamedQuantity(observationDay.toString, fixed)
+        }
+        case q => q
+      }
+    }
+    case _ => throw new IllegalArgumentException("forwardDate is not defined")
+  }
+
+  override def forwardPriceForPeriod(env: InstrumentLevelEnvironment, period: DateRange, ignoreShiftsIfPermitted: Boolean) = {
+    env.quantity(ForwardPriceKey(this, period))
+  }
+
+  def fixing(slice: MarketDataSlice, observationDay: Day, storedFixingPeriod: Option[StoredFixingPeriod]) = storedFixingPeriod match {
+    case Some(period) => {
+      val key = PriceFixingsHistoryDataKey(this)
+      slice.fixings(key, ObservationPoint(observationDay, ObservationTimeOfDay.Default))
+        .fixingFor(Level.Close, period)
+        .toQuantity
+    }
+    case _ => throw new IllegalArgumentException("storedFixingPeriod not defined")
+  }
+}
 
 case class LimSymbol(name: String, multiplier: Double = 1)
 

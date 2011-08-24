@@ -38,10 +38,10 @@ trait JonTestEnv extends TestMarketTest {
           val carry = day.daysSinceInYears(Day(2011, 2, 1))
           Quantity(99.1965 + carry, datedBrent.priceUOM) + dPrice
         }
-        case FixingKey(`index`, d) => {
+        case IndexFixingKey(`index`, d) => {
           Quantity(wtiForward(d.containingMonth), wti.priceUOM)
         }
-        case FixingKey(`brent`, d) => {
+        case IndexFixingKey(`brent`, d) => {
           Quantity(wtiForward(d.containingMonth), brent.priceUOM)
         }
         case OilAtmVolAtomicDatumKey(`wti`, _, period, _) => {

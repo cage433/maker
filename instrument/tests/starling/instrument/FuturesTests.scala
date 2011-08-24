@@ -2,13 +2,13 @@ package starling.instrument
 
 import starling.utils.StarlingTest
 import starling.curves._
-import starling.daterange.{Day, Month}
 import starling.utils.ScalaTestUtils._
 import starling.quantity.UOM._
 import starling.utils.QuantityTestUtils._
 import starling.quantity.{UOM, Quantity}
 import starling.market._
 import starling.varcalculator.ForwardPriceRiskFactor
+import starling.daterange.{DayAndTime, DayAndNoTime, Day, Month}
 
 class FuturesTests extends TestMarketTest {
 	import org.testng.annotations._
@@ -24,8 +24,7 @@ class FuturesTests extends TestMarketTest {
   val atomicEnv = MappingAtomicEnvironment(
 	  Map(
       ForwardPriceKey(mkt, d) -> price,
-      USDFXRateKey(EUR) -> fxRate,
-      FixingKey(Index.WTI10, Market.NYMEX_WTI.lastTradingDay(Month(2009, 1))) -> fixing
+      USDFXRateKey(EUR) -> fxRate
     ),
    marketDay.endOfDay
 	)
@@ -44,15 +43,33 @@ class FuturesTests extends TestMarketTest {
 		assertQtyEquals(mtm, (price - K) * volume, 1e-6)
 	}
 
-  //dont @Test  Futures have no mtm when they expire at the moment 
+  @Test
   def testExpiredFuture() {
+    val market = Market.NYMEX_WTI
+    val period = Month(2009, 1)
+    val ltd = market.lastTradingDay(period)
+
+    val forward = Quantity(110, USD / BBL)
+    val fixed = Quantity(100, USD / BBL)
+
+    def environment(day:DayAndTime) = {
+      Environment(UnitTestingAtomicEnvironment(day, {
+        case ForwardPriceKey(market, period, _) => forward
+        case MarketFixingKey(market, ltd, period) => fixed
+      }))
+    }
     val v = Quantity(1000, UOM.BBL)
     val strike = Quantity(20, UOM.USD/UOM.BBL)
-    val future = Future(Market.NYMEX_WTI, Month(2009, 1), strike, v)
-    val forwardEnv = env.forwardState((marketDay + 100).endOfDay)
-    val mtm = future.mtm(forwardEnv)
-    assertQtyEquals(mtm, (fixing - strike) * v, 1e-6)
+    val future = Future(market, period, strike, v)
 
+    val mtmLive = future.mtm(environment(ltd.startOfDay()))
+    val mtmLtd = future.mtm(environment(ltd.endOfDay()))
+    val mtmLater = future.mtm(environment((ltd + 20).endOfDay()))
+
+    assertQtyEquals(mtmLive, (forward - strike) * v)
+    assertQtyEquals(mtmLtd, (fixed - strike) * v)
+    assertQtyEquals(mtmLtd, mtmLater)
+    assertNotSame(mtmLive, mtmLtd)
   }
 
   @Test

@@ -277,7 +277,7 @@ class PnlExplanationReportTests extends JonTestEnv {
       marketDay1,
       {
         case _ : ForwardPriceKey => 66.0(index.priceUOM)
-        case _ : FixingKey => 77.0(index.priceUOM)
+        case _ : IndexFixingKey => 77.0(index.priceUOM)
         case _ : DiscountRateKey => new Quantity(1.0)
       }
     )).forwardState(marketDay2).ignoreSwapRounding
@@ -285,8 +285,8 @@ class PnlExplanationReportTests extends JonTestEnv {
       marketDay2,
       {
         case _ : ForwardPriceKey => 65.0(index.priceUOM)
-        case FixingKey(_, day) if day == marketDay2.day => 79.0(index.priceUOM)
-        case _ : FixingKey => 77.0(index.priceUOM)
+        case IndexFixingKey(_, day) if day == marketDay2.day => 79.0(index.priceUOM)
+        case _ : IndexFixingKey => 77.0(index.priceUOM)
         case _ : DiscountRateKey => new Quantity(1.0)
       }
     )).ignoreSwapRounding
@@ -315,13 +315,13 @@ class PnlExplanationReportTests extends JonTestEnv {
     val env1 = Environment(UnitTestingAtomicEnvironment(
     marketDay1, {
       case _: ForwardPriceKey => price1
-      case _: FixingKey => 0(index.priceUOM)
+      case _: IndexFixingKey => 0(index.priceUOM)
     }
     )).forwardState(marketDay2)
     val env2 = Environment(UnitTestingAtomicEnvironment(
     marketDay2, {
       case _: ForwardPriceKey => price2
-      case _: FixingKey => 0(index.priceUOM)
+      case _: IndexFixingKey => 0(index.priceUOM)
     }
     )).undiscounted
 
