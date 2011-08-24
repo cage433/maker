@@ -329,18 +329,10 @@ class StarlingServerImpl(
   def createUserReport(reportParameters: ReportParameters) = userReportsService.createUserReport(reportParameters)
   def createReportParameters(userReportData: UserReportData, observationDay: Day) = userReportsService.createReportParameters(userReportData, observationDay)
 
-  def reportPivot(reportParameters: ReportParameters, layoutName:String) : PivotData = {
-    val layout = extraLayouts.find(_.layoutName == layoutName).getOrElse(throw new Exception("Could not find layout: " + layoutName))
-    reportPivot(reportParameters, PivotFieldParams(true, Some(layout.pivotFieldState)))
-  }
-
   def reportPivot(reportParameters: ReportParameters, pivotFieldParams:PivotFieldParams) = reportService.reportPivot(reportParameters, pivotFieldParams)
 
   val reportOptionsAvailable = reportService.pivotReportRunner.reportOptionsAvailable
 
-
-  def readSettings = userSettingsDatabase.loadSettings
-  def saveSettings(settings:UserSettingsLabel) {userSettingsDatabase.saveSettings(settings)}
 
   def tradeValuation(tradeIDLabel:TradeIDLabel, curveIdentifier:CurveIdentifierLabel, timestamp:Timestamp):TradeValuationAndDetails = {
     val tradeID = unLabel(tradeIDLabel)
@@ -553,11 +545,6 @@ class StarlingServerImpl(
     deskTradeSets(Some(desk), tradePredicate).flatMap(_.selectLiveAndErrorTrades(day, timestamp))
   }
 
-  def extraLayouts:List[PivotLayout] = userSettingsDatabase.readPivotLayouts(User.currentlyLoggedOn)
-  def extraLayouts(userName:String):List[PivotLayout] = userSettingsDatabase.readPivotLayouts(User(userName))
-  def saveLayout(pivotLayout:PivotLayout) = userSettingsDatabase.savePivotLayout(User.currentlyLoggedOn, pivotLayout)
-  def deleteLayout(layoutName:String) = userSettingsDatabase.deletePivotLayout(User.currentlyLoggedOn, layoutName)
-
   def referenceDataTables() = referenceData.referenceDataTables()
   def referencePivot(table: ReferenceDataLabel, pivotFieldParams: PivotFieldParams) = referenceData.referencePivot(table, pivotFieldParams)
   def ukBusinessCalendar = ukHolidayCalendar
@@ -582,8 +569,6 @@ class StarlingServerImpl(
   def orgPivot(pivotFieldParams:PivotFieldParams) = {
     PivotTableModel.createPivotData(new OrgPivotTableDataSource, pivotFieldParams)
   }
-
-  def logPageView(pageLogInfo:PageLogInfo) = userSettingsDatabase.logPageView(pageLogInfo)
 
   def userStatsPivot(pivotFieldParams:PivotFieldParams):PivotData = {
     val table = "PageViewLog"
@@ -643,10 +628,6 @@ class StarlingServerImpl(
   }
 
   def storeSystemInfo(info:OSInfo) = userSettingsDatabase.storeSystemInfo(User.currentlyLoggedOn, info)
-
-  def deleteBookmark(name:String) {userSettingsDatabase.deleteBookmark(User.currentlyLoggedOn, name)}
-  def saveBookmark(bookmark:BookmarkLabel) {userSettingsDatabase.saveBookmark(User.currentlyLoggedOn, bookmark)}
-  def bookmarks = userSettingsDatabase.bookmarks(User.currentlyLoggedOn)
 
   def saveUserReport(reportName:String, data:UserReportData, showParameters:Boolean) =
     userSettingsDatabase.saveUserReport(User.currentlyLoggedOn, reportName, data, showParameters)

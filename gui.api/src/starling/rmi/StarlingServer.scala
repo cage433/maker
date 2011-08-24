@@ -19,15 +19,11 @@ trait StarlingServer {
   def groupToDesksMap:Map[CaseInsensitive, Set[Desk]]
   def reportOptionsAvailable:ReportOptionsAvailable
   def reportPivot(reportParameters:ReportParameters, pivotFieldParams:PivotFieldParams):PivotData
-  def reportPivot(reportParameters:ReportParameters, layoutName:String):PivotData
   def diffReportPivot(tradeSelection:TradeSelection, curveIdentifierDm1:CurveIdentifierLabel, curveIdentifierD:CurveIdentifierLabel, reportOptions:ReportOptions, expiryDay:Day,fromTimestamp:TradeTimestamp, toTimestamp:TradeTimestamp, pivotFieldParams:PivotFieldParams):PivotData
   def tradeChanges(tradeSelection:TradeSelection,from:Timestamp,to:Timestamp, expiryDay:Day, pivotFieldParams:PivotFieldParams):PivotData
   def tradeReconciliation(tradeSelection:TradeSelection, from:TradeTimestamp, to:TradeTimestamp, intradayTimestamp: Timestamp, pivotFieldParams:PivotFieldParams):PivotData
   def pnlReconciliation(tradeSelection: TradeSelectionWithTimestamp, curveIdentifier: CurveIdentifierLabel, expiryDay:Day, pivotFieldParams: PivotFieldParams): PivotData
   def reportErrors(reportParameters:ReportParameters):ReportErrors
-
-  def readSettings:UserSettingsLabel
-  def saveSettings(settings:UserSettingsLabel)
 
   def readTradeVersions(tradeID:TradeIDLabel):(STable,List[FieldDetailsGroupLabel],List[CostsLabel])
   def tradeIDFor(desk:Desk, text:String):TradeIDLabel
@@ -42,9 +38,6 @@ trait StarlingServer {
   def latestTradeTimestamp(desk:Desk):TradeTimestamp
   def intradayLatest: Map[String, (User, Timestamp)]
   def clearCache:Unit
-  def extraLayouts:List[PivotLayout]
-  def saveLayout(pivotLayout:PivotLayout):Unit
-  def deleteLayout(layoutName:String):Unit
   def createReportParameters(userReportData:UserReportData, observationDay:Day):ReportParameters
   def createUserReport(reportParameters:ReportParameters):UserReportData
   def referenceDataTables():List[ReferenceDataLabel]
@@ -59,15 +52,10 @@ trait StarlingServer {
   def allUserNames:List[String]
   def isStarlingDeveloper:Boolean
 
-  def logPageView(pageLogInfo:PageLogInfo):Unit
   def userStatsPivot(pivotFieldParams:PivotFieldParams):PivotData
 
   def storeSystemInfo(info:OSInfo)
 
-  def saveBookmark(bookmark:BookmarkLabel)
-  def deleteBookmark(name:String)
-
-  def bookmarks:List[BookmarkLabel]
   def deleteUserReport(reportName:String)
   def saveUserReport(reportName:String, data:UserReportData, showParameters:Boolean)
 

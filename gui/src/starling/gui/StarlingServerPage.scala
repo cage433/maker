@@ -41,7 +41,6 @@ object StarlingLocalCache {
 }
 case class StarlingLocalCache(localCache:HeterogeneousMap[LocalCacheKey]) {
   import starling.gui.LocalCacheKeys._
-  def userPivotLayouts = localCache(UserPivotLayouts)
   def pricingGroups(maybeDesk:Option[Desk]):List[PricingGroup] = localCache(PricingGroups).intersect(validGroups(maybeDesk))
   def excelDataSets = localCache(ExcelDataSets)
   def currentUser = localCache(CurrentUser)

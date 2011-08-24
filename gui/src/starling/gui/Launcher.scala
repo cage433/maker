@@ -145,6 +145,7 @@ object Launcher extends Log {
       client.startBlocking
       val starlingServer = client.proxy(classOf[StarlingServer])
       val fc2Service = client.proxy(classOf[FC2Service])
+      val browserService = client.proxy(classOf[BrowserService])
       val extraInfo = overriddenUser match {
         case None => {
           // When the user isn't overridden, store the system info on each log on.
@@ -153,14 +154,14 @@ object Launcher extends Log {
         }
         case Some(_) => Some("You are " + starlingServer.whoAmI.name) // Want to see who I actually am, not who I tried to be.
       }
-      start(starlingServer, fc2Service, client.remotePublisher, extraInfo)
+      start(starlingServer, fc2Service, browserService, client.remotePublisher, extraInfo)
     }
     catch {
       case t => showErrorThenExit(t)
     }
   }
 
-  def start(starlingServer:StarlingServer, fc2Service:FC2Service, remotePublisher: Publisher, extraInfo:Option[String]) {
+  def start(starlingServer:StarlingServer, fc2Service:FC2Service, remoteBrowserService:BrowserService, remotePublisher: Publisher, extraInfo:Option[String]) {
     val postLocalCacheUpdatePublisher = new scala.swing.Publisher() {}
 
     BrowserLauncher.start(
@@ -222,19 +223,7 @@ object Launcher extends Log {
           override def helpEntries = StarlingHelpPage.starlingHelpEntry :: Nil
         }
 
-        def browserService = new BrowserService {
-
-          def name = starlingServer.name
-
-          def logPageView(info: PageLogInfo) { starlingServer.logPageView(info) }
-
-          def bookmarks = starlingServer.bookmarks
-          def saveBookmark(bookmark:BookmarkLabel) { starlingServer.saveBookmark(bookmark) }
-          def deleteBookmark(name:String) {starlingServer.deleteBookmark(name)}
-
-          def saveSettings(settings:UserSettingsLabel) = starlingServer.saveSettings(settings)
-          def readSettings = starlingServer.readSettings
-        }
+        def browserService = remoteBrowserService
       }
     }
 
@@ -261,9 +250,6 @@ object Launcher extends Log {
 
     val cacheMap = new HeterogeneousMap[LocalCacheKey]
     localCacheUpdatePublisher.reactions += {
-      case e: PivotLayoutUpdate if (e.user == username) => {
-        cacheMap(UserPivotLayouts) = e.userLayouts
-      }
       case ExcelMarketListUpdate(values) => {
         cacheMap(ExcelDataSets) = values
       }
@@ -314,7 +300,6 @@ object Launcher extends Log {
     import NotificationKeys._
     try {
       cacheMap(AllUserNames) = starlingServer.allUserNames
-      cacheMap(UserPivotLayouts) = starlingServer.extraLayouts
       cacheMap(PricingGroups) = fc2Service.pricingGroups
       cacheMap(ExcelDataSets) = fc2Service.excelDataSets
       cacheMap(Snapshots) = fc2Service.snapshots

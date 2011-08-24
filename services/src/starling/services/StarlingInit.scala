@@ -43,12 +43,13 @@ import collection.immutable.Map
 import starling.titan.{TitanSystemOfRecord, TitanTradeStore}
 import com.trafigura.services.trinity.TrinityService
 import com.trafigura.services.ResteasyServiceApi
-import starling.browser.service.{UserLoggedIn, Version}
 import com.trafigura.services.marketdata.{ExampleService, MarketDataServiceApi}
 import com.trafigura.services.{WebServiceFactory, DocumentationService, ResteasyServiceApi}
 import swing.event.Event
 import collection.mutable.ListBuffer
 import starling.fc2.api.FC2Service
+import starling.utils._
+import starling.browser.service.{BrowserService, UserLoggedIn, Version}
 
 class StarlingInit( val props: Props,
                     dbMigration: Boolean = true,
@@ -283,13 +284,16 @@ class StarlingInit( val props: Props,
 
    val latestTimestamp = if (forceGUICompatability) GUICode.latestTimestamp.toString else BouncyRMI.CodeVersionUndefined
 
+  val browserService = new BrowserServiceImpl(name, userSettingsDatabase)
+
   val rmiServerForGUI:BouncyRMIServer[User] = new BouncyRMIServer(
     rmiPort,
     auth, latestTimestamp, users,
     Set(classOf[UnrecognisedTradeIDException]),
     ChannelLoggedIn, "GUI",
     ThreadNamingProxy.proxy(starlingServer, classOf[StarlingServer]),
-    ThreadNamingProxy.proxy(fc2Service, classOf[FC2Service])
+    ThreadNamingProxy.proxy(fc2Service, classOf[FC2Service]),
+    ThreadNamingProxy.proxy(browserService, classOf[BrowserService])
   )
 
   log.info("Initialize public services for Titan components, service port: " + props.StarlingServiceRmiPort)
