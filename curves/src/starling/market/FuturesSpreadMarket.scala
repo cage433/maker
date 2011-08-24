@@ -37,7 +37,7 @@ class FuturesSpreadMarket(name: String, uom: UOM, ccy: UOM,
 }
 
 object FuturesSpreadMarket {
-  lazy val provider = MarketProvider.provider
+  private def provider = MarketProvider.provider
 
   def defaultExpiryRule(market1: FuturesMarket, market2: FuturesMarket) = new FuturesExpiryRule {
     def lastTradingDay(d: DateRange) = market1.lastTradingDay(d) max market2.lastTradingDay(d)

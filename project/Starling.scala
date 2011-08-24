@@ -6,6 +6,7 @@ object Dependencies{
 
   val testDependencies = Seq(
     "org.mockito" % "mockito-all" % "1.8.2" withSources(),
+    "org.scala-tools" %% "scala-stm" % "0.3",
     "org.testng" % "testng" % "5.8" classifier "jdk15" withSources()
   ) 
 
@@ -19,6 +20,7 @@ object Dependencies{
     "commons-codec" % "commons-codec" % "1.4" withSources(),
     "colt" % "colt" % "1.0.3",
     "com.thoughtworks.xstream" % "xstream" % "1.3.1" withSources(),
+    "org.scala-tools" %% "scala-stm" % "0.3",
     "org.testng" % "testng" % "5.8" classifier "jdk15" withSources()
   ) ++ testDependencies
 
@@ -211,11 +213,17 @@ object StarlingBuild extends Build{
     settings = standardSettings ++ Seq(libraryDependencies ++= guiApiDependencies)
   ) dependsOn(pivotUtils, quantity, auth, bouncyrmi, browserService)
 
+  lazy val fc2api = Project(
+    "fc2.api",
+    file("./fc2.api"),
+    settings = standardSettings ++ Seq(libraryDependencies ++= guiApiDependencies)
+  ) dependsOn(daterange, guiapi)
+
   lazy val curves = Project(
     "curves", 
     file("./curves"),
-    settings = standardSettings ++ Seq(libraryDependencies ++= testDependencies) 
-  ) dependsOn(utils % "test->test", daterange % "test->test", maths, pivotUtils, guiapi) 
+    settings = standardSettings ++ Seq(libraryDependencies ++= testDependencies)
+  ) dependsOn(utils % "compile;test->test", daterange % "test->test", maths, pivotUtils, guiapi)
 
   lazy val instrument = Project(
     "instrument", 
@@ -227,7 +235,7 @@ object StarlingBuild extends Build{
     "gui", 
     file("./gui"),
     settings = standardSettings ++ Seq(libraryDependencies ++= guiDependencies)
-  ) dependsOn(guiapi, browser)
+  ) dependsOn(guiapi, fc2api, browser)
 
   lazy val browser = Project(
     "browser",
@@ -289,7 +297,7 @@ object StarlingBuild extends Build{
   lazy val titan = Project(
     "titan", 
     file("./titan"),
-    settings = standardSettings 
+    settings = standardSettings ++ Seq(libraryDependencies ++= testDependencies)
   ) dependsOn(curves % "test->test", titanModel, databases)
 
   lazy val services = Project(
@@ -298,7 +306,7 @@ object StarlingBuild extends Build{
     settings = standardSettings ++ Seq(
       libraryDependencies ++= servicesDependencies ++ testDependencies
     )
-  ) dependsOn(curves % "test->test", loopyxl % "test->test", bouncyrmi, concurrent, loopyxl, titan, gui, browser)
+  ) dependsOn(curves % "test->test", loopyxl % "test->test", bouncyrmi, concurrent, loopyxl, titan, gui, fc2api, browser)
 
   lazy val devLauncher = Project(
     "devLauncher", 
@@ -351,6 +359,7 @@ object StarlingBuild extends Build{
     pivot, 
     pivotUtils,
     guiapi,
+    fc2api,
     curves,
     instrument,
     gui,

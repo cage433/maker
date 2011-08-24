@@ -17,9 +17,9 @@ class UserSettingsDatabase(val db:DB, broadcaster:Broadcaster) {
   // This is the standard number of characters in a var char column.
   private val colSize = 300
 
-  def loadSettings:UserSettingsLabel = {
-    val user = User.currentlyLoggedOn.username.take(colSize)
-    val q = select ("bundle, description, settings") from "usersettings" where ("starlinguser" eql LiteralString(user))
+  def loadSettings(user:User):UserSettingsLabel = {
+    val username = user.username.take(colSize)
+    val q = select ("bundle, description, settings") from "usersettings" where ("starlinguser" eql LiteralString(username))
     UserSettingsLabel(db.queryWithResult(q) { rs => UserSettingsEntry(
       rs.getString("bundle"), rs.getString("description"), rs.getString("settings")
     )})
@@ -29,19 +29,15 @@ class UserSettingsDatabase(val db:DB, broadcaster:Broadcaster) {
     allPivotLayouts
   }
 
-  private def saveSettings(user:String, settings:UserSettingsLabel) {
+  def saveSettings(user:User, settings:UserSettingsLabel) {
     db.inTransaction {
       writer => {
-        writer.delete("usersettings", ("starlinguser" eql LiteralString(user)))
+        writer.delete("usersettings", ("starlinguser" eql LiteralString(user.username.take(colSize))))
         settings.userSettings.foreach { entry =>
           writer.insert("usersettings", Map("starlinguser" -> user, "bundle" -> entry.bundle, "description" -> entry.key, "settings" -> entry.value))
         }
       }
     }
-  }
-
-  def saveSettings(settings: UserSettingsLabel) {
-    saveSettings(User.currentlyLoggedOn.username.take(colSize), settings)
   }
 
   def savePivotLayout(user:User, pivotLayout:PivotLayout) {

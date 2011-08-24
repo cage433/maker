@@ -43,11 +43,13 @@ import collection.immutable.Map
 import starling.titan.{TitanSystemOfRecord, TitanTradeStore}
 import com.trafigura.services.trinity.TrinityService
 import com.trafigura.services.ResteasyServiceApi
-import starling.browser.service.{UserLoggedIn, Version}
 import com.trafigura.services.marketdata.{ExampleService, MarketDataServiceApi}
 import com.trafigura.services.{WebServiceFactory, DocumentationService, ResteasyServiceApi}
 import swing.event.Event
 import collection.mutable.ListBuffer
+import starling.fc2.api.FC2Service
+import starling.utils._
+import starling.browser.service.{BrowserService, UserLoggedIn, Version}
 
 class StarlingInit( val props: Props,
                     dbMigration: Boolean = true,
@@ -101,8 +103,9 @@ class StarlingInit( val props: Props,
   val businessCalendars = new BusinessCalendars(holidayTables)
   val expiryRules = new FuturesExpiryRulesImpl(eaiSqlServerDB, businessCalendars)
   FuturesExpiryRuleFactory.registerRulesImpl(expiryRules)
-  val marketLookup = new StarlingMarketLookup(starlingDB, businessCalendars, expiryRules)
-  MarketProvider.registerImpl(marketLookup)
+  MarketProvider.registerCreator(new MarketLookupCreator {
+    def create = new StarlingMarketLookup(starlingDB, businessCalendars, expiryRules)
+  })
   val richResultSetRowFactory = new RichResultSetRowFactory
 
   log.debug("Initializing: Rich DB Connections. Which use things like market factories for smarter deserialization...")
@@ -246,9 +249,11 @@ class StarlingInit( val props: Props,
 
   val traders = new Traders(ldapUserLookup.user _)
 
-  val starlingServer = new StarlingServerImpl(name, reportContextBuilder, reportService, marketDataStore,
-    userSettingsDatabase, userReportsService, curveViewer, tradeStores, enabledDesks,
+  val starlingServer = new StarlingServerImpl(name, reportContextBuilder, reportService,
+    userSettingsDatabase, userReportsService, tradeStores, enabledDesks,
     version, referenceData, businessCalendars.UK, ldapUserLookup, eaiStarlingSqlServerDB, traders)
+
+  val fc2Service = new FC2ServiceImpl(marketDataStore, curveViewer, reportService)
 
   val rmiPort = props.RmiPort()
 
@@ -279,12 +284,16 @@ class StarlingInit( val props: Props,
 
    val latestTimestamp = if (forceGUICompatability) GUICode.latestTimestamp.toString else BouncyRMI.CodeVersionUndefined
 
+  val browserService = new BrowserServiceImpl(name, userSettingsDatabase)
+
   val rmiServerForGUI:BouncyRMIServer[User] = new BouncyRMIServer(
     rmiPort,
     auth, latestTimestamp, users,
     Set(classOf[UnrecognisedTradeIDException]),
     ChannelLoggedIn, "GUI",
-    ThreadNamingProxy.proxy(starlingServer, classOf[StarlingServer])
+    ThreadNamingProxy.proxy(starlingServer, classOf[StarlingServer]),
+    ThreadNamingProxy.proxy(fc2Service, classOf[FC2Service]),
+    ThreadNamingProxy.proxy(browserService, classOf[BrowserService])
   )
 
   log.info("Initialize public services for Titan components, service port: " + props.StarlingServiceRmiPort)

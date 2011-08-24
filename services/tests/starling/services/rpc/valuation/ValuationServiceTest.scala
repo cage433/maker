@@ -1,6 +1,5 @@
 package starling.services.rpc.valuation
 
-import starling.market.{MarketProvider, TestMarketLookup}
 import starling.services.rpc.refdata.FileMockedTitanServices
 import starling.services.rabbit.MockTitanRabbitEventServices
 import com.trafigura.common.control.PipedControl._
@@ -15,6 +14,7 @@ import com.trafigura.edm.logistics.inventory.EDMInventoryItem
 import starling.utils.{Stopwatch, StarlingTest, Log}
 import org.testng.annotations.{BeforeClass, Test}
 import starling.utils.Levels
+import starling.market.{TestMarketTest, MarketProvider, TestMarketLookup}
 
 
 /**
@@ -28,11 +28,11 @@ class ValuationServiceTest extends StarlingTest {
   var mockTitanLogisticsServices : FileMockedTitanLogisticsServices = null
   var mockRabbitEventServices : MockTitanRabbitEventServices = null
   var mockInventoryCache : TitanLogisticsServiceBasedInventoryCache = null
-  
+
   @BeforeClass
   def initMocks() {
 
-    MarketProvider.registerImpl(TestMarketLookup)
+    MarketProvider.registerCreator(starling.market.TestMarketCreator)
     mockTitanServices = new FileMockedTitanServices()
     mockTitanTradeService = new DefaultTitanTradeService(mockTitanServices)
     mockTitanTradeCache = new TitanTradeServiceBasedTradeCache(mockTitanTradeService)

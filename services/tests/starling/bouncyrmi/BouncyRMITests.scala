@@ -94,7 +94,7 @@ class BouncyRMITests extends StarlingTest {
 
   var someService:SomeService = null
   var server:BouncyRMIServer[User] = null
-  var client: BouncyRMIClient[Service] = null
+  var client: BouncyRMIClient = null
   val port1 = BouncyRMITestsObj.nextPort
   val port2 = BouncyRMITestsObj.nextPort
 
@@ -102,7 +102,7 @@ class BouncyRMITests extends StarlingTest {
   def before() {
     someService = new SomeService()
     server = new BouncyRMIServer(port1, auth, BouncyRMI.CodeVersion, new CopyOnWriteArraySet[User], Set(), ChannelLoggedIn, "", someService)
-    client = new BouncyRMIClient("localhost", port1, classOf[Service], auth = Client.Null, overriddenUser = None)
+    client = new BouncyRMIClient("localhost", port1, auth = Client.Null, overriddenUser = None)
   }
 
   def tearDown() {
@@ -120,7 +120,7 @@ class BouncyRMITests extends StarlingTest {
   def testClientStartAndStop() {
     client = new BouncyRMIClient(
       "localhost", port1,
-      classOf[Service], auth = Client.Null, overriddenUser = None)
+      auth = Client.Null, overriddenUser = None)
 
     var gotException = false
     try {
@@ -139,7 +139,7 @@ class BouncyRMITests extends StarlingTest {
     server.start
     client = new BouncyRMIClient(
       "localhost", port1,
-      classOf[Service], auth = Client.Null, overriddenUser = None)
+      auth = Client.Null, overriddenUser = None)
     client.reactions += {case StateChangeEvent(_, ClientDisconnected) => disconnected.flip}
     client.reactions += {case StateChangeEvent(_, ClientConnected) => connected.flip}
     client.startBlocking
@@ -157,7 +157,7 @@ class BouncyRMITests extends StarlingTest {
     val needsReboot = new WaitForFlag
     client = new BouncyRMIClient(
       "localhost", port1,
-      classOf[Service], auth = Client.Null, overriddenUser = None)
+      auth = Client.Null, overriddenUser = None)
     client.reactions += {case StateChangeEvent(_, ServerUpgrade(_)) => needsReboot.flip}
     client.start
 
@@ -172,7 +172,7 @@ class BouncyRMITests extends StarlingTest {
     val disconnected = new WaitForFlag
     client = new BouncyRMIClient(
       "localhost", port1,
-      classOf[Service], auth = Client.Null, overriddenUser = None)
+      auth = Client.Null, overriddenUser = None)
     client.reactions += {case StateChangeEvent(_, ServerDisconnected(_)) => disconnected.flip}
     client.startBlocking
     server.stop()
@@ -189,7 +189,7 @@ class BouncyRMITests extends StarlingTest {
     val connectedCount = new AtomicInteger(0)
     client = new BouncyRMIClient(
       "localhost", port1,
-      classOf[Service], auth = Client.Null, overriddenUser = None)
+      auth = Client.Null, overriddenUser = None)
     client.reactions += {case StateChangeEvent(_, ServerDisconnected(_)) => disconnected.flip}
     client.reactions += {
       case StateChangeEvent(_, ClientConnected) => {
@@ -214,11 +214,11 @@ class BouncyRMITests extends StarlingTest {
     server.start
     client = new BouncyRMIClient(
       "localhost", port1,
-      classOf[Service], auth = Client.Null, overriddenUser = None)
+      auth = Client.Null, overriddenUser = None)
     client.startBlocking
-    val resulta = client.proxy.foo("a")
-    val resultb = client.proxy.foo("b")
-    val resultc = client.proxy.foo("c")
+    val resulta = client.proxy(classOf[Service]).foo("a")
+    val resultb = client.proxy(classOf[Service]).foo("b")
+    val resultc = client.proxy(classOf[Service]).foo("c")
     client.stop
     server.stop()
     assertEquals(resulta, "#a")
@@ -236,9 +236,9 @@ class BouncyRMITests extends StarlingTest {
     server.start
     client = new BouncyRMIClient(
       "localhost", port1,
-      classOf[Service], auth = Client.Null, overriddenUser = None)
+      auth = Client.Null, overriddenUser = None)
     client.startBlocking
-    val result = client.proxy.foo(message)
+    val result = client.proxy(classOf[Service]).foo(message)
     client.stop
     server.stop()
     assertEquals(result, "#" + message)
@@ -277,7 +277,7 @@ class BouncyRMITests extends StarlingTest {
     server.start
 
     Thread.sleep(2000)
-    val result = client.proxy.foo("a")
+    val result = client.proxy(classOf[Service]).foo("a")
     client.stop
     server.stop()
     assertEquals(result, "#a")
@@ -288,10 +288,10 @@ class BouncyRMITests extends StarlingTest {
     server.start
     client = new BouncyRMIClient(
       "localhost", port1,
-      classOf[Service], auth = Client.Null, overriddenUser = None)
+      auth = Client.Null, overriddenUser = None)
     client.startBlocking
     try {
-      client.proxy.explode
+      client.proxy(classOf[Service]).explode
       fail("should have thrown exception")
     } catch {
       case e: Exception => {}
@@ -312,7 +312,7 @@ class BouncyRMITests extends StarlingTest {
     val clients = (for (i <- 1 to 2) yield {
       val client = new BouncyRMIClient(
         "localhost", port1,
-        classOf[Service], auth = Client.Null, overriddenUser = None)
+        auth = Client.Null, overriddenUser = None)
       client.startBlocking
       client
     }).toArray
@@ -322,7 +322,7 @@ class BouncyRMITests extends StarlingTest {
         try {
           for (x <- 1 to 10) {
             val client = clients(x % clients.length)
-            assertEquals("#a", client.proxy.foo("a"))
+            assertEquals("#a", client.proxy(classOf[Service]).foo("a"))
           }
         } catch {
           case e: Throwable => exceptions.put(i, e)
@@ -348,9 +348,9 @@ class BouncyRMITests extends StarlingTest {
     server.start
     val client1 = new BouncyRMIClient(
       "localhost", port1,
-      classOf[SomeService], auth = Client.Null, overriddenUser = None)
+      auth = Client.Null, overriddenUser = None)
     client1.startBlocking
-    val result = client1.proxy.methodNotOnTrait
+    val result = client1.proxy(classOf[SomeService]).methodNotOnTrait
     client1.stop
     server.stop()
     assertEquals(result, "yes")
@@ -362,12 +362,12 @@ class BouncyRMITests extends StarlingTest {
     val connected = new WaitForFlag
     client = new BouncyRMIClient(
       "localhost", port1,
-      classOf[Service], auth = Client.Null, overriddenUser = None)
+      auth = Client.Null, overriddenUser = None)
     client.reactions += {case StateChangeEvent(_, ServerDisconnected("patch release")) => disconnected.flip}
     client.reactions += {case StateChangeEvent(_, ClientConnected) => connected.flip}
     try {
       client.startBlocking
-      client.proxy.foo("f")
+      client.proxy(classOf[Service]).foo("f")
       fail("Expected exception as server is not running")
     } catch {
       case e: CannotConnectException => {assertEquals("Can not connect to server localhost:" + port1, e.getMessage)}
@@ -380,7 +380,7 @@ class BouncyRMITests extends StarlingTest {
     server.stop("patch release")
     disconnected.waitForFlip
     try {
-      client.proxy.foo("f")
+      client.proxy(classOf[Service]).foo("f")
       fail("Expected exception as server is not running")
     } catch {
       case e: OfflineException => {
@@ -408,7 +408,7 @@ class BouncyRMITests extends StarlingTest {
     serverOne.start
     try {
       Thread.sleep(2000) // wait for reconnect
-      client.proxy.foo("f")
+      client.proxy(classOf[Service]).foo("f")
       fail("Expected ServerUpgradeException")
     } catch {
       case e: ServerUpgradeException => {assertEquals("One", e.serverVersion)}
@@ -423,10 +423,10 @@ class BouncyRMITests extends StarlingTest {
     server.start
     val client1 = new BouncyRMIClient(
       "localhost", port1,
-      classOf[Service], auth = Client.Null, overriddenUser = None)
+      auth = Client.Null, overriddenUser = None)
     val client2 = new BouncyRMIClient(
       "localhost", port1,
-      classOf[Service], auth = Client.Null, overriddenUser = None)
+      auth = Client.Null, overriddenUser = None)
     val ping1 = new WaitForFlag
     val ping2 = new WaitForFlag
     client1.reactions += {case HelloEvent(name) => ping1.flip}
@@ -455,7 +455,7 @@ class BouncyRMITests extends StarlingTest {
     someService.broadcaster = broadcaster
     client.startBlocking
     (1 to 25).toArray.foreach{ i =>
-      val result = client.proxy.fakeMethodWithBroadcast(i + " Dave")
+      val result = client.proxy(classOf[Service]).fakeMethodWithBroadcast(i + " Dave")
     }
     client.stop
     server.stop()

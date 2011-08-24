@@ -13,7 +13,6 @@ import scala.swing.{ButtonGroup => ScalaButtonGroup}
 import scala.swing.{AbstractButton=> ScalaAbstractButton}
 import java.awt.event._
 import scala.swing.Swing._
-import starling.rmi.{StarlingServer}
 import collection.mutable.ListBuffer
 import starling.bouncyrmi.{BouncyRMIClient}
 import javax.security.auth.login.LoginException
@@ -33,7 +32,8 @@ import starling.pivot._
 import javax.swing.event.{ChangeEvent, ChangeListener}
 import GuiUtils._
 import starling.pivot.utils.PeriodPivotFormatter
-import scala.Some._
+import starling.fc2.api.FC2Service
+import starling.rmi.StarlingServer
 
 object StarlingServerNotificationHandlers {
   def notificationHandler = {
@@ -140,10 +140,12 @@ object Launcher extends Log {
       // TODO [03 Feb 2011] do something clever with this message.
 //      println(message)
     }
-    val client = new BouncyRMIClient(rmiHost, rmiPort, classOf[StarlingServer], auth(servicePrincipalName), logger, overriddenUser)
+    val client = new BouncyRMIClient(rmiHost, rmiPort, auth(servicePrincipalName), logger, overriddenUser)
     try {
       client.startBlocking
-      val starlingServer = client.proxy
+      val starlingServer = client.proxy(classOf[StarlingServer])
+      val fc2Service = client.proxy(classOf[FC2Service])
+      val browserService = client.proxy(classOf[BrowserService])
       val extraInfo = overriddenUser match {
         case None => {
           // When the user isn't overridden, store the system info on each log on.
@@ -152,27 +154,34 @@ object Launcher extends Log {
         }
         case Some(_) => Some("You are " + starlingServer.whoAmI.name) // Want to see who I actually am, not who I tried to be.
       }
-      start(starlingServer, client.remotePublisher, extraInfo)
+      start(starlingServer, fc2Service, browserService, client.remotePublisher, extraInfo)
     }
     catch {
       case t => showErrorThenExit(t)
     }
   }
 
-  def start(starlingServer:StarlingServer, remotePublisher: Publisher, extraInfo:Option[String]) {
+  def start(starlingServer:StarlingServer, fc2Service:FC2Service, remoteBrowserService:BrowserService, remotePublisher: Publisher, extraInfo:Option[String]) {
     val postLocalCacheUpdatePublisher = new scala.swing.Publisher() {}
 
     BrowserLauncher.start(
         postLocalCacheUpdatePublisher,
-        createCacheMap(starlingServer.whoAmI.name, starlingServer, postLocalCacheUpdatePublisher, remotePublisher),
+        createCacheMap(starlingServer.whoAmI.name, starlingServer, fc2Service, postLocalCacheUpdatePublisher, remotePublisher),
         extraInfo) {
       new ServerContext {
+
+        val starlingServerClass = classOf[StarlingServer]
+        val fc2ServiceClass = classOf[FC2Service]
 
         def username = starlingServer.whoAmI.name
         def version = starlingServer.version
 
         def lookup[T](klass:Class[T]) = {
-          if (klass == classOf[StarlingServer]) starlingServer.asInstanceOf[T] else throw new Exception("Don't know how to handle " + klass)
+          klass match {
+            case `starlingServerClass` => starlingServer.asInstanceOf[T]
+            case `fc2ServiceClass` => fc2Service.asInstanceOf[T]
+            case _ => throw new Exception("Don't know how to handle " + klass)
+          }
         }
 
         def browserBundles = List(browserContext)
@@ -214,19 +223,7 @@ object Launcher extends Log {
           override def helpEntries = StarlingHelpPage.starlingHelpEntry :: Nil
         }
 
-        def browserService = new BrowserService {
-
-          def name = starlingServer.name
-
-          def logPageView(info: PageLogInfo) { starlingServer.logPageView(info) }
-
-          def bookmarks = starlingServer.bookmarks
-          def saveBookmark(bookmark:BookmarkLabel) { starlingServer.saveBookmark(bookmark) }
-          def deleteBookmark(name:String) {starlingServer.deleteBookmark(name)}
-
-          def saveSettings(settings:UserSettingsLabel) = starlingServer.saveSettings(settings)
-          def readSettings = starlingServer.readSettings
-        }
+        def browserService = remoteBrowserService
       }
     }
 
@@ -235,6 +232,7 @@ object Launcher extends Log {
   def createCacheMap(
                       username:String,
                       starlingServer:StarlingServer,
+                      fc2Service:FC2Service,
                       postLocalCacheUpdatePublisher : Publisher,
                       remotePublisher: Publisher):HeterogeneousMap[LocalCacheKey] = {
     val localCacheUpdatePublisher = new scala.swing.Publisher() {}
@@ -252,9 +250,6 @@ object Launcher extends Log {
 
     val cacheMap = new HeterogeneousMap[LocalCacheKey]
     localCacheUpdatePublisher.reactions += {
-      case e: PivotLayoutUpdate if (e.user == username) => {
-        cacheMap(UserPivotLayouts) = e.userLayouts
-      }
       case ExcelMarketListUpdate(values) => {
         cacheMap(ExcelDataSets) = values
       }
@@ -305,15 +300,14 @@ object Launcher extends Log {
     import NotificationKeys._
     try {
       cacheMap(AllUserNames) = starlingServer.allUserNames
-      cacheMap(UserPivotLayouts) = starlingServer.extraLayouts
-      cacheMap(PricingGroups) = starlingServer.pricingGroups
-      cacheMap(ExcelDataSets) = starlingServer.excelDataSets
-      cacheMap(Snapshots) = starlingServer.snapshots
-      val (observationDaysForPricingGroup, observationDaysForExcel) = starlingServer.observationDays
+      cacheMap(PricingGroups) = fc2Service.pricingGroups
+      cacheMap(ExcelDataSets) = fc2Service.excelDataSets
+      cacheMap(Snapshots) = fc2Service.snapshots
+      val (observationDaysForPricingGroup, observationDaysForExcel) = fc2Service.observationDays
       cacheMap(ObservationDaysForPricingGroup) = observationDaysForPricingGroup
       cacheMap(ObservationDaysForExcel) = observationDaysForExcel
-      cacheMap(ExcelLatestMarketDataVersion) = starlingServer.excelLatestMarketDataVersions
-      cacheMap(PricingGroupLatestMarketDataVersion) = starlingServer.pricingGroupLatestMarketDataVersions
+      cacheMap(ExcelLatestMarketDataVersion) = fc2Service.excelLatestMarketDataVersions
+      cacheMap(PricingGroupLatestMarketDataVersion) = fc2Service.pricingGroupLatestMarketDataVersions
       cacheMap(LocalCacheKeys.ReportOptionsAvailable) = starlingServer.reportOptionsAvailable
       cacheMap(DeskCloses) = starlingServer.deskCloses
       cacheMap(IntradayLatest) = starlingServer.intradayLatest
@@ -323,8 +317,8 @@ object Launcher extends Log {
       cacheMap(Desks) = starlingServer.desks
       cacheMap(GroupToDesksMap) = starlingServer.groupToDesksMap
       cacheMap(IsStarlingDeveloper) = starlingServer.isStarlingDeveloper
-      cacheMap(EnvironmentRules) = starlingServer.environmentRules
-      cacheMap(CurveTypes) = starlingServer.curveTypes
+      cacheMap(EnvironmentRules) = fc2Service.environmentRules
+      cacheMap(CurveTypes) = fc2Service.curveTypes
 //      cacheMap(Bookmarks) = toBookmarks(starlingServer.bookmarks)
 
     } catch {

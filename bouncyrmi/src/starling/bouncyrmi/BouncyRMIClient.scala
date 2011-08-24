@@ -30,7 +30,7 @@ object Client {
 
 case class StateChangeEvent(previous: State, current: State) extends Event
 
-class BouncyRMIClient[C](host: String, port: Int, interface: Class[C], auth: Client, logger:(String)=>Unit=(x)=>{}, overriddenUser:Option[String] = None) {
+class BouncyRMIClient(host: String, port: Int, auth: Client, logger:(String)=>Unit=(x)=>{}, overriddenUser:Option[String] = None) {
   private val client = new Client(overriddenUser)
   lazy val clientTimer = new HashedWheelTimer
 
@@ -388,9 +388,9 @@ class BouncyRMIClient[C](host: String, port: Int, interface: Class[C], auth: Cli
     }
   }
 
-  val proxy: C = {
+  def proxy[C](klass:Class[C]): C = {
     val e = new Enhancer()
-    e.setSuperclass(interface)
+    e.setSuperclass(klass)
     e.setCallback(new MethodInterceptor() {
       def intercept(obj: Object, method: Method,
                     args: Array[Object], proxy: MethodProxy): Object = {

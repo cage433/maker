@@ -41,25 +41,50 @@ trait MarketLookup {
   lazy val indexEAIMap: Map[Int, Index] = allIndexes.flatMap(m => m.eaiQuoteID.map(_ -> m)).toMap
 }
 
-object MarketProvider {
-  private var impl: Option[MarketLookup] = None
+trait MarketLookupCreator {
+  /**
+   * This can be called multiple times (e.g. when a reload is needed)
+   */
+  def create: MarketLookup
+}
 
-  private val lock = new Object
-  def registerImpl(i: MarketLookup) {
-    lock.synchronized {
-      impl match {
-        case None => impl = Some(i)
-        case Some(currentMarketLookup) if i == currentMarketLookup => 
-        case _ => throw new Exception("Market provider implementation already registered")
-      }
+object MarketProvider {
+  import concurrent.stm._
+
+  private val creator = Ref(None: Option[MarketLookupCreator])
+  private val impl = Ref(None: Option[MarketLookup])
+
+  def registerCreator(c: MarketLookupCreator) {
+    atomic {
+      implicit txn =>
+        creator() match {
+          case None => {
+            creator() = Some(c)
+            impl() = Some(c.create)
+          }
+          case Some(currentMarketLookup) if c == currentMarketLookup =>
+          case _ => throw new Exception("Market provider creator implementation already registered")
+        }
     }
   }
 
-  def provider = {
-    impl match {
-    // if you get this when running a test change the test to extend TestMarketSpec
-      case None => throw new Exception("Market provider implementation not yet registered")
-      case Some(i) => i
-    }
+  def provider: MarketLookup = atomic {
+    implicit txn =>
+      impl() match {
+        // if you get this when running a test change the test to extend TestMarketSpec
+        case None => throw new Exception("Market provider implementation not yet registered")
+        case Some(i) => i
+      }
+  }
+
+  /**
+   * this should only be called from inside patches that change the markets
+   */
+  def reload = atomic {
+    implicit txn =>
+      creator() match {
+        case Some(c) => impl() = Some(c.create)
+        case _ => 
+      }
   }
 }

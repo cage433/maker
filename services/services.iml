@@ -457,6 +457,7 @@
     </orderEntry>
     <orderEntry type="module" module-name="browser" />
     <orderEntry type="module" module-name="gui" />
+    <orderEntry type="module" module-name="fc2.api" />
   </component>
 </module>
 

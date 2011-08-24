@@ -519,22 +519,6 @@ case object ClearServerSideCache extends StarlingSubmitRequest[Unit] {
   def submit(serverContext:StarlingServerContext) = {serverContext.server.clearCache}
 }
 
-case class SavePivotLayoutRequest(pivotLayout:PivotLayout) extends StarlingSubmitRequest[Unit] {
-  def submit(serverContext:StarlingServerContext) {serverContext.server.saveLayout(pivotLayout)}
-}
-case class DeletePivotLayoutRequest(layoutName:String) extends StarlingSubmitRequest[Unit] {
-  def submit(serverContext:StarlingServerContext) = {
-    serverContext.server.deleteLayout(layoutName)
-  }
-}
-
-case class ReplacePivotLayoutRequest(layout:PivotLayout) extends StarlingSubmitRequest[Unit] {
-  def submit(serverContext:StarlingServerContext) = {
-    serverContext.server.deleteLayout(layout.layoutName)
-    serverContext.server.saveLayout(layout)
-  }
-}
-
 case class AbstractPivotComponentState(filterText:String,
                                        colScrollPosition:Int,
                                        mainScrollPosition:Point,

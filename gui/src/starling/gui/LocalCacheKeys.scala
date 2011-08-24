@@ -10,7 +10,6 @@ import starling.utils.CaseInsensitive
 import starling.browser.LocalCacheKey
 
 object LocalCacheKeys {
-  val UserPivotLayouts                    = new LocalCacheKey[List[PivotLayout]]("The pivot layouts saved by the user")
   val PricingGroups                       = new LocalCacheKey[List[PricingGroup]]("PricingGroups")
   val ExcelDataSets                       = new LocalCacheKey[List[String]]("ExcelDataSets")
   val Snapshots                           = new LocalCacheKey[Map[MarketDataSelection,List[SnapshotIDLabel]]]("Snapshots")

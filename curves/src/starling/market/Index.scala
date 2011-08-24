@@ -305,7 +305,7 @@ abstract class MultiIndex(override val name: String) extends Index {
 }
 
 object Index {
-  lazy val provider = MarketProvider.provider
+  private def provider = MarketProvider.provider
 
   def indexFromName(name: String): Index = provider.index(name).getOrElse(throw new Exception("No index: " + name))
   def publishedIndexFromName(name: String): PublishedIndex = indexFromName(name).cast[PublishedIndex]

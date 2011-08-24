@@ -612,9 +612,9 @@ class TradeSelectionComponent(
 }
 
 case class SnapshotSubmitRequest(marketDataSelection:MarketDataSelection, observationDay:Day)
-  extends StarlingSubmitRequest[Option[SnapshotIDLabel]] {
+  extends FC2SubmitRequest[Option[SnapshotIDLabel]] {
 
-  def submit(serverContext:StarlingServerContext) = serverContext.server.snapshot(marketDataSelection, observationDay)
+  def submit(fc2Context:FC2Context) = fc2Context.service.snapshot(marketDataSelection, observationDay)
 }
 
 case class BookCloseRequest(desk:Desk) extends StarlingSubmitRequest[Unit] {
