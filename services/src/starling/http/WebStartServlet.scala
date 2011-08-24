@@ -18,7 +18,7 @@ object GUICode {
   val scalaLibraryJar = new File("lib/scala/scala-2.9.0.1.final/lib/scala-library.jar")
 
   // The order of this list matters. It is the order things are attempted to be loaded so ensure it is optimised.
-  val modules = List("daterange", "quantity", "utils", "auth", "bouncyrmi", "gui", "gui.api", "pivot", "pivot.utils", "browser", "browser.service")
+  val modules = List("daterange", "quantity", "utils", "auth", "bouncyrmi", "gui", "gui.api", "pivot", "pivot.utils", "browser", "browser.service", "fc2.api")
 
   val libJarNames = Map(
     "scala-library.jar" -> scalaLibraryJar,
