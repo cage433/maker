@@ -28,7 +28,7 @@ trait TitanPricingSpec {
     else {
       val premiumCurrency = premium.uom.numeratorUOM
       val priceCurrency = price.uom.numeratorUOM
-      price * env.forwardFXRate(premiumCurrency, priceCurrency, settlementDay) + premium.named("Premiuim")
+      price * env.forwardFXRate(premiumCurrency, priceCurrency, settlementDay) + premium.named("Premium")
     }
   }
 

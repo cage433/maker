@@ -79,6 +79,7 @@ case class DefaultTitanLogisticsInventoryServices(props: Props, titanEdmTradeSer
           case _ => throw new UnsupportedOperationException
         }
       }
+      def getAllInventory() : List[EDMInventoryItem] = getInventoryByGroupCompanyId("*")
     }
 }
 
@@ -143,6 +144,8 @@ case class FileMockedTitanLogisticsInventoryServices() extends TitanLogisticsInv
     def getInventoryById(inventoryId : Int) : EDMInventoryItem = inventoryMap(inventoryId.toString) // mimick service by throwning an exception on not found
     def getInventoryTreeByPurchaseQuotaId(quotaId : String) : List[EDMInventoryItem] = inventoryMap.values.toList.filter(_.purchaseAssignment.quotaName == quotaId)
     def getAllInventoryLeaves() : List[EDMInventoryItem] = findLeaves(inventoryMap.values.toList)
+    def getInventoryByGroupCompanyId(groupCompanyMappingCode : String) : List[EDMInventoryItem] = Nil // todo, provide mock impl
+    def getAllInventory() : List[EDMInventoryItem] = getInventoryByGroupCompanyId("*")
   }
 
   def updateInventory(item : EDMInventoryItem) {
@@ -183,7 +186,7 @@ case class LogisticsJsonMockDataFileGenerater(titanEdmTradeService : TitanServic
   //println("Inventory, loaded %d inventory items and found %d leaves".format(inventory.size, inventoryLeaves.size))
 
   println("getting assignments...")
-  val assignments : List[EDMAssignmentItem] = inventory.flatMap(i => {
+  val assignments : List[EDMAssignment] = inventory.flatMap(i => {
     val pa = assignmentService.getAssignmentById(i.purchaseAssignment.oid.contents) :: Nil
     i.salesAssignment match {
       case null => pa
