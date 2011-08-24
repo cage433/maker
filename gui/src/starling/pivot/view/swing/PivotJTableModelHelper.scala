@@ -247,7 +247,12 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
         val pars = parser(rowIndex, columnIndex)
 
         val (newValue,newLabel) = if (s.isEmpty) (None, "") else {
-          val (v,t) = pars.parse(s)
+          val (v,t) = pars.parse(s, extraFormatInfo)
+
+          println("")
+          println("Text  "  + t)
+          println("")
+
           (Some(v), t)
         }
 
@@ -562,7 +567,7 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
         val pars = parser(rowIndex, columnIndex)
 
         val (newValue,newLabel) = if (s.isEmpty) (None, "") else {
-          val (v,l) = pars.parse(s)
+          val (v,l) = pars.parse(s, extraFormatInfo)
           v match {
             case pq:PivotQuantity if uoms0.length > columnIndex => {
               val uom = uoms0(columnIndex)

@@ -8,7 +8,6 @@ import text.JTextComponent
 import swing.Swing._
 import org.jdesktop.jxlayer.JXLayer
 import java.awt.Cursor
-import starling.pivot.{EditableCellState, TableCell}
 import org.jdesktop.swingx.JXTable.GenericEditor
 import javax.swing.TransferHandler.TransferSupport
 import java.awt.datatransfer.{Clipboard, DataFlavor, StringSelection}
@@ -20,6 +19,7 @@ import starling.pivot.model.{AxisCell, PivotTableModel}
 import java.awt.event._
 import org.jdesktop.swingx.renderer.DefaultTableRenderer
 import starling.browser.Modifiers
+import starling.pivot.{PivotFormatter, EditableCellState, TableCell}
 
 object PivotJTable {
   val RowHeight = 16
@@ -164,7 +164,7 @@ class PivotJTable(tableModel:PivotJTableModel, pivotTableView:PivotTableView, mo
               val realColumn = startColumn + colIndex
               val parser = tableModel.parser(realRow, realColumn)
               try {
-                parser.parse(cell)
+                parser.parse(cell, PivotFormatter.DefaultExtraFormatInfo)
                 true
               } catch {
                 case e => false
@@ -288,7 +288,7 @@ class PivotJTable(tableModel:PivotJTableModel, pivotTableView:PivotTableView, mo
 
         val parser = tableModel.parser(r, c)
         val myRes = try {
-          parser.parse(t)
+          parser.parse(t, PivotFormatter.DefaultExtraFormatInfo)
           true
         } catch {
           case e => false

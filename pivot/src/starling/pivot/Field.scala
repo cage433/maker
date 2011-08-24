@@ -84,17 +84,17 @@ object Field {
 
 // NOTE - The implementations of Parser must be serializable (and easily serializable at that). i.e. an Object like TextPivotParser.
 trait PivotParser extends Serializable {
-  def parse(text:String):(Any,String)
+  def parse(text:String, extraFormatInfo:ExtraFormatInfo):(Any,String)
   def acceptableValues:Set[String] = Set.empty
 }
 object TextPivotParser extends PivotParser {
-  def parse(text:String) = (text,text)
+  def parse(text:String, extraFormatInfo:ExtraFormatInfo) = (text,text)
 }
 object IntPivotParser extends PivotParser {
-  def parse(text:String) = (text.toInt, text)
+  def parse(text:String, extraFormatInfo:ExtraFormatInfo) = (text.toInt, text)
 }
 object PivotQuantityPivotParser extends PivotParser {
-  def parse(text:String) = {
+  def parse(text:String, extraFormatInfo:ExtraFormatInfo) = {
     // This is a special case for the parser. We're not supplying a label as the caller will have to detect that this is a PivotQuantity, set the UOM
     // and then call toPrettyString on it.
     val textToUse = if (text.trim.startsWith("(")) {
@@ -527,7 +527,7 @@ class MarketValueComparer(backup: Ordering[Any]) extends Ordering[Any] {
 }
 
 object MarketValuePivotParser extends PivotParser {
-  def parse(text: String) = (MarketValue.fromString(text).pivotValue, text)
+  def parse(text: String, extraFormatInfo:ExtraFormatInfo) = (MarketValue.fromString(text).pivotValue, text)
 }
 
 class PivotQuantityFieldDetails(name:String) extends FieldDetails(Field(name)) {
