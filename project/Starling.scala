@@ -277,9 +277,9 @@ object StarlingBuild extends Build{
       cleanCopiedSrcTask := cleanCopiedSrc, 
       clean <<= clean.dependsOn(cleanGenSrcTask, cleanCopiedSrcTask),
       buildSrcTask := buildSource,
-      compile in Compile <<= (compile in Compile).dependsOn(buildSrcTask),
-      copyModelJarForIdea := copyModelJar
-    )
+      compile in Compile <<= (compile in Compile).dependsOn(buildSrcTask)
+    ) 
+    ++ copyModelSettings
   )
 
   lazy val starlingApi = Project(
@@ -376,7 +376,6 @@ object StarlingBuild extends Build{
 
   object TitanModel {
     import IO._
- //   import java.io.{File => JFile}
     val modelGenSrcDir = file("titan-scala-model/model-src/main/scala/")
     val copiedSrcDir = file("titan-scala-model/src")
     val modelRoot = file("titan-scala-model")
@@ -387,6 +386,10 @@ object StarlingBuild extends Build{
     val buildSrcTask = TaskKey[Unit]("build-src", "Build sources from model")
      
     val copyModelJarForIdea = TaskKey[Unit]("copy-model", "copy the edm model to the stored location in Git that is referenced by IntelliJ IDEA")
+
+    lazy val copyModelSettings : Seq[sbt.Project.Setting[_]] = Seq(
+      copyModelJarForIdea <<= (packageBin in Compile) map(_ => copyModelJar)
+    )
 
     def copyModelJar {
       val srcFile = new File(modelRoot + "/target/scala-2.9.0.1/titan-model_2.9.0-1-0.1.jar")
