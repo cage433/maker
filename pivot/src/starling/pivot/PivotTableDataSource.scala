@@ -131,7 +131,14 @@ case class PivotEdits(edits:Map[KeyFilter,KeyEdits], newRows:List[Map[Field,Any]
   }
   def withNewAmended(rowIndex:Int, field:Field, value:Option[Any]) = {
     val fixedNewRows = newRows.zipWithIndex.map{ case (row,index) => {
-      if (index == rowIndex) row.updated(field, value.getOrElse(UndefinedValue)) else row
+      if (index == rowIndex) {
+        value match {
+          case Some(v) => row.updated(field, v)
+          case None => row - field
+        }
+      } else {
+        row
+      }
     }}
 
     val filteredFixedNewRows = fixedNewRows.filterNot(m => {
