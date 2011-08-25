@@ -5,7 +5,7 @@ import collection.mutable.ListBuffer
 import swing.Swing._
 import java.awt.event.{MouseEvent, MouseAdapter, InputEvent, KeyEvent}
 import java.awt.{Color, Dimension}
-import javax.swing.{JPopupMenu, JTabbedPane, KeyStroke, JComponent}
+import javax.swing.{JPopupMenu, JTabbedPane, KeyStroke, JComponent, SwingUtilities}
 import swing._
 import starling.browser.common.{SXLayerScala, GuiUtils, MigPanel}
 import starling.browser.{ServerContext, LocalCache, Page}
@@ -173,16 +173,10 @@ class StarlingBrowserTabbedPane(homePage: Page, startPage:Either[Page,(ServerCon
   peer.setUI(new StarlingTabbedPaneUI)
   peer.addMouseListener(new MouseAdapter {
     override def mousePressed(e: MouseEvent) {
-      if (e.isPopupTrigger) {
+      if (SwingUtilities.isRightMouseButton(e)) {
         tabPopupMenu.show(e.getComponent, e.getX, e.getY)
       } else {
         selection.page.content.requestFocusInWindow()
-      }
-    }
-
-    override def mouseReleased(e: MouseEvent) {
-      if (e.isPopupTrigger) {
-        tabPopupMenu.show(e.getComponent, e.getX, e.getY)
       }
     }
   })

@@ -385,7 +385,7 @@ class PivotJTable(tableModel:PivotJTableModel, pivotTableView:PivotTableView, mo
               }
             }
           }
-        } else if (e.isPopupTrigger) {
+        } else if (SwingUtilities.isRightMouseButton(e)) {
           // If the cell that was clicked on is outside the current selection, select just it, otherwise leave the selection as is.
           if (!getSelectedCells.contains((row,col))) {
             setRowSelectionInterval(row,row)
