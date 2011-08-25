@@ -108,6 +108,7 @@ object StarlingBuild extends Build{
     ivyXML := <dependencies><exclude artifact="jcl-over-slf4j"/><exclude artifact="junit"/></dependencies>, 
     scalaVersion := "2.9.0-1",
     showLibsTask,
+    cleanKeepFiles <+= baseDirectory(_/"target/scala-2.9.0.1/cache"),
     writeClasspathScriptTask
   )
 
