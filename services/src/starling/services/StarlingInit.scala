@@ -296,7 +296,7 @@ class StarlingInit( val props: Props,
     ThreadNamingProxy.proxy(browserService, classOf[BrowserService])
   )
 
-  log.info("Initialize public services for Titan components, service port: " + props.StarlingServiceRmiPort)
+  log.info("Initialize public services for Titan components, service host/port: " + props.ExternalHostname + "/" + props.StarlingServiceRmiPort)
   val nullHandler = new ServerAuthHandler[User](new NullAuthHandler(Some(User.Dev)), users, ldapUserLookup,
         user => broadcaster.broadcast(UserLoggedIn(user.name)), ChannelLoggedIn)
   val rmiServerForTitan : BouncyRMIServer[User] = new BouncyRMIServer(

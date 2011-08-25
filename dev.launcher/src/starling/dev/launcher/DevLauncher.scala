@@ -29,16 +29,19 @@ object DevLauncher {
   }
 
   private def propsWithUnusedPort() = {
-    val fileProps = PropertiesMapBuilder.defaultProps
+    val fileProps = PropertiesMapBuilder.allProps
+    val starlingProps = PropertiesMapBuilder.starlingProps
+    val trafiguraProps = PropertiesMapBuilder.trafiguraProps
+
     var counter = 1
-    var props = new Props(fileProps)
+    var props = new Props(starlingProps, trafiguraProps)
 
     val localPorts = props.propertiesOfType(classOf[PropsHelper#LocalPort]).keySet
 
     val serverName = props.ServerName()
     while (!rmiPortAvailable(props)) {
       counter += 1
-      props = new Props(fileProps.filterKeys(p=>{!localPorts.contains(p.toLowerCase)}) + ("ServerName"->(serverName + " " + counter)))
+      props = new Props(fileProps.filterKeys(p=>{!localPorts.contains(p.toLowerCase)}) + ("ServerName"->(serverName + " " + counter)), trafiguraProps)
     }
     props
   }
