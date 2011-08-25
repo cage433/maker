@@ -204,7 +204,7 @@ class StarlingInit( val props: Props,
 
   val titanTradeCache = new DefaultTitanTradeCache(props)
   val titanServices = new DefaultTitanServices(props)
-  val logisticsServices = new DefaultTitanLogisticsServices(props, Some(titanServices))
+  val logisticsServices = new DefaultTitanLogisticsServices(props)
   val titanInventoryCache = new DefaultTitanLogisticsInventoryCache(props)
   val valuationService = new ValuationService(new DefaultEnvironmentProvider(marketDataStore), titanTradeCache, titanServices, logisticsServices, titanRabbitEventServices, titanInventoryCache)
   val marketDataService = new MarketDataService(marketDataStore, new DefaultEnvironmentProvider(marketDataStore))

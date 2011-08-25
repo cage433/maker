@@ -142,7 +142,7 @@ case class DefaultTitanLogisticsInventoryCache(props : Props) extends TitanLogis
   protected var assignmentIDtoInventoryIDMap : Map[String, String] = Map[String, String]()
 
   private val titanTradeService = new DefaultTitanServices(props)
-  private val titanLogisticsServices = DefaultTitanLogisticsServices(props, Some(titanTradeService))
+  private val titanLogisticsServices = DefaultTitanLogisticsServices(props)
   private def getAll() = try {
       titanLogisticsServices.inventoryService.service.getAllInventoryLeaves()
   } catch {
