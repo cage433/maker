@@ -199,7 +199,7 @@ class UserSettingsDatabase(val db:DB, broadcaster:Broadcaster) {
   }
 
   def allUsersWithSettings = {
-    db.queryWithResult("SELECT starlinguser from usersettings") {
+    db.queryWithResult("SELECT distinct(starlinguser) from usersettings") {
       rs => {
         rs.getString("starlinguser")
       }
