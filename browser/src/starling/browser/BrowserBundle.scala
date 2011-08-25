@@ -13,7 +13,7 @@ trait PageFactory {
 class PagePageFactory(page:Page) extends PageFactory {
   def create(serverContext: ServerContext) = page
 }
-class PageButton(val name:String, val pageFactory:PageFactory, val icon:BufferedImage, val key:Option[KeyStroke] = None)
+class PageButton(val name:String, val pageFactory:PageFactory, val icon:BufferedImage, val key:Option[KeyStroke] = None, val tooltip:Option[String]=None)
 
 object PageButton {
   def apply(name:String, page:Page, icon:BufferedImage) = {

@@ -8,10 +8,11 @@ import swing.event.{MouseExited, MouseEntered, MouseClicked}
 import starling.browser.Modifiers
 
 class NumberedButton(text:String, image:BufferedImage, buttonClicked:(Modifiers) => Unit, useBlueText:Boolean=true,
-                          number:Option[String]=None) extends MigPanel {
+                          number:Option[String]=None, tooltip0:Option[String]=None) extends MigPanel {
   background = GuiUtils.TaskPageButtonBackgroundColour
   border = LineBorder(GuiUtils.TaskPageButtonBorderColour)
   cursor = Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)
+  tooltip0.map(tt => tooltip = tt)
   val imagePanel = new FixedImagePanel(image)
   val label = if (useBlueText) {
     new Label("<html><u>" + text + "</u></html>") {

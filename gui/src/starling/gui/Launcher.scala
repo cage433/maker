@@ -481,28 +481,32 @@ object StarlingHomeButtons {
       "Trades",
       tradePage,
       StarlingIcons.im("/icons/32x32_trades.png"),
-      Some( KeyStroke.getKeyStroke(KeyEvent.VK_T, 0) )
+      Some( KeyStroke.getKeyStroke(KeyEvent.VK_T, 0) ),
+      Some("Trades (T)")
     )
 
     val refDataButton = new PageButton(
       "Reference Data",
       new PagePageFactory(ReferenceDataIndexPage),
       StarlingIcons.im("/icons/32x32_ref_data.png"),
-      Some( KeyStroke.getKeyStroke(KeyEvent.VK_R, 0) )
+      Some( KeyStroke.getKeyStroke(KeyEvent.VK_R, 0) ),
+      Some("Reference Data (R)")
     )
 
     val marketDataButton = new PageButton(
       "Market Data",
       marketDataPage,
       StarlingIcons.im("/icons/32x32_market_data.png"),
-      Some( KeyStroke.getKeyStroke(KeyEvent.VK_M, 0) )
+      Some( KeyStroke.getKeyStroke(KeyEvent.VK_M, 0) ),
+      Some("Market Data (M)")
     )
 
     val curveViewerButton = new PageButton(
       "Curve Viewer",
       curvePage,
       StarlingIcons.im("/icons/32x32_curve_viewer.png"),
-      Some( KeyStroke.getKeyStroke(KeyEvent.VK_C, 0) )
+      Some( KeyStroke.getKeyStroke(KeyEvent.VK_C, 0) ),
+      Some("Curve Viewer (C)")
     )
 
     tradesButton :: refDataButton :: marketDataButton :: curveViewerButton :: Nil

@@ -128,7 +128,8 @@ class StarlingHomePageComponent(context:PageContext, browserSize:Dimension, page
           val isLast = (index == homeButtons.size-1)
           val modifiers = (if (isFirst) ", skip 1" else "") + (if(isLast) ", wrap unrel" else "")
           val nb = new NumberedButton(button.name, button.icon, (modifiers) => {
-            context.createAndGoTo( (serverContext) => button.pageFactory.create(serverContext), modifiers=modifiers) })
+            context.createAndGoTo( (serverContext) => button.pageFactory.create(serverContext), modifiers=modifiers) },
+            tooltip0 = button.tooltip)
           add(nb, "sg" + modifiers)
         }}
         //add(tradeDataButton, "sg, skip 1")
