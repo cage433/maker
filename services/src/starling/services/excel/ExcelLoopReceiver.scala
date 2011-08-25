@@ -12,7 +12,7 @@ import starling.utils.{Stopable, Log}
 /**
  * Locally store curves uploaded from xlloop and hand them out as price data.
  */
-class ExcelLoopReceiver(ldapUser: LdapUserLookup, port: Int, handlers: Object*) extends Stopable with Runnable {
+class ExcelLoopReceiver(ldapUser: LdapUserLookup, port: Int, val handlers: Object*) extends Stopable with Runnable {
   val functionServer = new FunctionServer(port)
 
   override def start { super.start; new Thread(this).start }

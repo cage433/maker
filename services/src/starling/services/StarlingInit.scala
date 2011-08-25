@@ -280,7 +280,7 @@ class StarlingInit( val props: Props,
     new DiagnosticHandler(starlingServer))
 
   val loopyXLReceiver = new LoopyXLReceiver(props.LoopyXLPort(), auth,
-    new CurveHandler(curveViewer, marketDataStore))
+    (new CurveHandler(curveViewer, marketDataStore) :: excelLoopReceiver.handlers.toList) : _*)
 
    val latestTimestamp = if (forceGUICompatability) GUICode.latestTimestamp.toString else BouncyRMI.CodeVersionUndefined
 

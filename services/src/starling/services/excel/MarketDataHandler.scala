@@ -275,6 +275,7 @@ class MarketDataHandler(broadcaster : Broadcaster,
     val period = try {
       if (row(0) == null) None else objectToDateRange(observationPoint, row(0), tenor)
     } catch {
+      case e: NoSuchElementException => None
       case e: IllegalStateException => None
     }
 
