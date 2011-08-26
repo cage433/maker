@@ -186,7 +186,10 @@ class MarketDataPivotTableDataSource(reader: MarketDataReader, edits:PivotEdits,
   private def generateDataWithoutEdits(pfs : PivotFieldsState) = {
 
     val filtersUpToFirstMarketDataField = pfs.allFilterPaths.chopUpToFirstNon(inMemoryFields)
-    val filters: Set[(Field, Selection)] = filtersUpToFirstMarketDataField.toFilterSet
+    val filters: Set[(Field, Selection)] = filtersUpToFirstMarketDataField.toFilterSet.flatMap {
+      case (field,MeasurePossibleValuesFilter(_)) => Nil
+      case (field,SelectionPossibleValuesFilter(selection)) => List(field -> selection)
+    }
 
     val possibleValuesBuilder = new PossibleValuesBuilder(fieldDetails, filtersUpToFirstMarketDataField)
     for ((row,_) <- observationDayAndMarketDataKeyRows) {

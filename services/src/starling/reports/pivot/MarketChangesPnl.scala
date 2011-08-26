@@ -18,6 +18,7 @@ import starling.trade.Trade
 import starling.utils.{AppendingMap, AtomicDatumKeyUtils}
 import starling.gui.api.{ReportSpecificChoices, UTPIdentifier}
 import starling.daterange.Month
+import starling.utils.ImplicitConversions._
 
 object MarketChangesRiskFields extends RiskPivotFields[MarketChangesPnlRow]
 
@@ -383,9 +384,6 @@ class TradeChangesPnlPivotTableDataSource(tradeChangesFields:List[FieldDetailsGr
       }
     ) :: tradeChangesFields
 
-  private val fieldsByName = Map() ++ fieldDetails.map(f => f.field.name -> f.field)
-
-
   def unfilteredData(pfs: PivotFieldsState) = {
     def priceAndVolKeys(trade : Trade) = {
       trade.asUtpPortfolio.portfolio.keySet.toList.flatMap{
@@ -408,14 +406,15 @@ class TradeChangesPnlPivotTableDataSource(tradeChangesFields:List[FieldDetailsGr
             }
       }.map {
         details => {
-          new AppendingMap(details.trade.fields.maps + ("sd" -> Map(
-            pnlComponentField -> details.label, 
+          new AppendingMap(details.trade.fields.maps + ("sd" -> Map[Field,Any](
+            pnlComponentField -> details.label,
             pnlField -> details.pnl * details.scale,
             riskTypeField -> details.riskType,
             riskCommodityField -> details.riskCommodity,
-            riskMarketField -> details.riskMarket,
-            riskPeriodField -> OptionalPeriodLabel(details.period)
-          )))
+            riskMarketField -> details.riskMarket).addSome(
+              riskPeriodField, details.period
+            )
+          ))
         }
       }
     }

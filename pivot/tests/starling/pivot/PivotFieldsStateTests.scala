@@ -36,9 +36,9 @@ class PivotFieldsStateTests extends TestNGSuite {
       filters = List(Field("Day Change Component") -> SomeSelection(Set("n/a"))))
 
     val expected = FiltersList(List(
-      List(Field("Risk Market") -> AllSelection),
-      List(Field("Risk Market") -> AllSelection),
-      List(Field("Risk Market") -> AllSelection, Field("Day Change Component") -> SomeSelection(Set("n/a")))
+      List(Field("Risk Market") -> SelectionPossibleValuesFilter(AllSelection)),
+      List(Field("Risk Market") -> SelectionPossibleValuesFilter(AllSelection)),
+      List(Field("Risk Market") -> SelectionPossibleValuesFilter(AllSelection), Field("Day Change Component") -> SelectionPossibleValuesFilter(SomeSelection(Set("n/a"))))
     ))
     assertEquals(pfs.allFilterPaths, expected)
   }
@@ -56,9 +56,9 @@ class PivotFieldsStateTests extends TestNGSuite {
       filters = List(Field("Instrument") -> SomeSelection(Set("Future"))))
 
     val expected = FiltersList(List(
-      List(Field("Instrument") -> SomeSelection(Set("Future")), Field("Risk Market") -> AllSelection),
-      List(Field("Instrument") -> SomeSelection(Set("Future")), Field("Risk Market") -> AllSelection),
-      List(Field("Instrument") -> SomeSelection(Set("Future")), Field("Risk Market") -> AllSelection, Field("Day Change Component") -> AllSelection)
+      List(Field("Instrument") -> SelectionPossibleValuesFilter(SomeSelection(Set("Future"))), Field("Risk Market") -> SelectionPossibleValuesFilter(AllSelection)),
+      List(Field("Instrument") -> SelectionPossibleValuesFilter(SomeSelection(Set("Future"))), Field("Risk Market") -> SelectionPossibleValuesFilter(AllSelection)),
+      List(Field("Instrument") -> SelectionPossibleValuesFilter(SomeSelection(Set("Future"))), Field("Risk Market") -> SelectionPossibleValuesFilter(AllSelection), Field("Day Change Component") -> SelectionPossibleValuesFilter(AllSelection))
     ))
     assertEquals(pfs.allFilterPaths, expected)
   }
@@ -85,7 +85,7 @@ class PivotFieldsStateTests extends TestNGSuite {
 
     val expected = FiltersList(List(
       List(),
-      List(Field("Day Change Component") -> SomeSelection(Set("n/a")))
+      List(Field("Day Change Component") -> SelectionPossibleValuesFilter(SomeSelection(Set("n/a"))))
     ))
     assertEquals(pfs.allFilterPaths, expected)
   }

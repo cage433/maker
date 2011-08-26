@@ -667,7 +667,7 @@ object PivotTableModel {
                 nullValues ::: sorted.toList
               } catch {
                 case e =>
-                  println("Invalid objects, could not sort")
+                  println("Invalid objects, could not sort: " + fd.field)
                   arrayOfObjects.foreach{x => println(x + ", " + x.getClass)}
                   throw e
               }
