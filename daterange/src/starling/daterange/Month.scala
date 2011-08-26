@@ -1,7 +1,7 @@
 package starling.daterange
 
 import scala.util.matching.Regex
-import starling.daterange.DayOfWeek._
+import starling.utils.ImplicitConversions._
 
 /**
  * calendar month type.
@@ -11,12 +11,15 @@ import starling.daterange.DayOfWeek._
 case class Month(y : Int, m : Int) extends DateRange {
   require(m >= 1 && m <= 12, "Invalid month number:" + m)
 
-  override def toString = toPrintableForm
+  override def toString() = toPrintableForm
 
   def toPrintableForm = Month.months(m - 1).capitalize + " " + y
 
+  override def toShortString = Month.months(m - 1).capitalize.take(3) + " " + y
 
-  override def toShortString = Month.months(m - 1).capitalize.take(3) + " " + y 
+  def toReutersString = ReutersDeliveryMonthCodes.InverseCodes(m) + (y - 2000)
+  def toTinyString = Month.months(m - 1).capitalize.take(3) + (y - 2000)
+  def toNumericString = "%02d" % m + "/" + "%02d" % (y-2000)
 
   def min(that : Month) : Month = if (this < that) this else that
 
@@ -34,7 +37,7 @@ case class Month(y : Int, m : Int) extends DateRange {
   }
 
   @transient override lazy val firstDay : Day = Day(y, m, 1)
-  @transient override lazy val lastDay : Day = next.firstDay - 1 
+  @transient override lazy val lastDay : Day = next.firstDay - 1
 
   private def readResolve() : Object = Month(y, m)
 
@@ -58,6 +61,8 @@ case class Month(y : Int, m : Int) extends DateRange {
   def -(i : Int) = this + (-i)
 
   def - (that : Month) : Int = m - that.m + 12 * (y - that.y)
+
+  def / (that: Month): Spread[Month] = Spread(this, that)
 
   def tenor = Some(Month)
 
@@ -148,20 +153,18 @@ object Month extends TenorType with Serializable {
     }
   }
 
-  def shortName = "M"
+  override def shortNames = List("M", "MON")
 }
 
 object ReutersDeliveryMonthCodes {
-  import Month._
-
   lazy val reutersMonthYearRegex = ("(?i)(" + codes.keys.mkString("|") + """)[ -]?(.+)""").r
   lazy val reutersYearMonthRegex = ("(\\d+)(" + codes.keys.mkString("|") + ")").r
 
   /**
    * Parses months formatted as:
-   * "J0" = Jan 10
+   * "F0" = Jan 10
    * or
-   * "J10" = Jan 10
+   * "F10" = Jan 10
    */
   def parse(text : String): Option[Month] = {
 		text.toUpperCase match {
@@ -190,5 +193,7 @@ object ReutersDeliveryMonthCodes {
     "X" -> 11,
     "Z" -> 12
     )
+
+  lazy val InverseCodes = codes.map{_.swap}
 }
 

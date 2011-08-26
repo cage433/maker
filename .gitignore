@@ -1,6 +1,5 @@
 # Ignore all parent .gitignore files
 !*
-j
 # Starling's own ignore
 */test-output.timestamp
 generated.props.conf
@@ -42,3 +41,7 @@ external_imports
 .idea
 build-time
 !*.iml
+GPATH
+GRTAGS
+GSYMS
+GTAGS

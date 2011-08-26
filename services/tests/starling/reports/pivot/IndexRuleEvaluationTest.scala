@@ -29,7 +29,7 @@ class IndexRuleEvaluationTest extends JonTestEnv {
     val period = Month(2011, 4)
     val env = makeEnv(Day(2011, 4, 15).endOfDay)
 
-    val rows = IndexRuleEvaluation.rows(index, period, NonCommonPricingRule, Some(2), env)
+    val rows = IndexRuleEvaluation.averagePrice(index, period, NonCommonPricingRule, Some(2), env)
     assertTrue(wti.observationDays(period).forall(day => rows._1.find(r => r.market == wti.market && r.day == day && r.observed == wti.observedPeriod(day)) isDefined))
     assertTrue(brent.observationDays(period).forall(day => rows._1.find(r => r.market == brent.market && r.day == day && r.observed == brent.observedPeriod(day)) isDefined))
   }

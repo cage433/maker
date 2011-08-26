@@ -19,4 +19,8 @@ class DayAndTimeTests extends TestNGSuite{
     assertEquals(to.timeSince(from), expected, 1e-9)
     assertEquals(from.timeSince(to), -expected, 1e-9)
   }
+  @Test
+  def testDayFormat {
+    assertEquals("15/07/2011", Day(2011, 7, 15).toString("dd/MM/yyyy"))
+  }
 }

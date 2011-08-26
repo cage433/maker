@@ -1,8 +1,7 @@
 package starling.pivot
 
 import java.io.Serializable
-import model.UndefinedValue
-
+import model.{NoValue, UndefinedValue}
 import starling.quantity.{Percentage, Quantity}
 import starling.utils.Pattern._
 import starling.utils.ImplicitConversions._
@@ -11,7 +10,7 @@ import starling.utils.StarlingObject
 
 object EditableCellState extends Enumeration {
   type EditableCellState = Value
-  val Normal, Edited, Error, Added, Deleted, Tainted = Value
+  val Normal, Tainted, Edited, Deleted, Added, AddedBlank, Error= Value
 }
 import EditableCellState._
 
@@ -19,12 +18,13 @@ import EditableCellState._
  * Represents a cell in the Pivot table. Contains a value and rendering information
  */
 case class TableCell(value:Any, text:String, textPosition:TextPosition = CenterTextPosition, isError:Boolean = false,
-                     totalState:TotalState = NotTotal, editable:Boolean = false, state:EditableCellState = Normal, longText:Option[String] = None,
-                     warning:Option[String]= None, edits:Set[PivotEdit]=Set.empty) {
+                     totalState:TotalState = NotTotal, editable:Boolean = false, state:EditableCellState = Normal,
+                     longText:Option[String] = None, warning:Option[String]= None, edits:PivotEdits=PivotEdits.Null,
+                     originalValue:Option[Any]=None) {
   def this(value:Any) = this(value, value.toString)
 
   def asString = text
-//  override def toString = text
+
   def doubleValue:Option[Double] = {
     value match {
       case pq:PivotQuantity => pq.doubleValue
@@ -59,8 +59,9 @@ case class TableCell(value:Any, text:String, textPosition:TextPosition = CenterT
 object TableCell {
   def apply(value: Any) = new TableCell(value)
 
-  val Null = new TableCell(Set(), "")
-  val Undefined = new TableCell(UndefinedValue)
+  val Null = new TableCell(NoValue, "")
+  val Undefined = new TableCell(UndefinedValue, "n/a")
+  val UndefinedNew = new TableCell(UndefinedValue, "")
 
   def longText(pq: PivotQuantity) =
     (pq.explanation, pq.warning) match {

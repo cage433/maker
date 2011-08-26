@@ -1,9 +1,9 @@
 package starling.market
 
 import starling.calendar.{HolidayTablesFactory, BusinessCalendars}
-import starling.daterange.{TestHolidays, Day, Month, DateRange}
 import org.testng.annotations.{AfterTest, AfterSuite, BeforeSuite}
 import org.scalatest.testng.TestNGSuite
+import starling.daterange._
 
 trait TestMarketSpec extends ExpiryRulesSpec with TestNGSuite {
   val bla = new TestMarketLookup()
@@ -22,7 +22,9 @@ trait ExpiryRulesSpec extends PrecisionRulesSpec {
 
       override def expiryDay(d: DateRange) = lastTradingDay(d) - 1
 
-      override def csoExpiryDay(d: DateRange) = lastTradingDay(d) - 2
+      override def csoExpiryDay(s: Spread[_ <: DateRange]) = lastTradingDay(s.first) - 2
+
+      override def commoditySpreadOptionExpiryDay(d: DateRange) = lastTradingDay(d) - 2
     }
 
     def ruleOption(eaiQuoteID: Int) = eaiQuoteID match {
@@ -227,7 +229,7 @@ trait ExpiryRulesSpec extends PrecisionRulesSpec {
   val nymex_wti = new MonthFuturesExpiryRule {
     val name = "Test"
 
-    override def csoExpiryDay(d: DateRange) = oe(d.asInstanceOf[Month]) - 1
+    override def csoExpiryDay(s: Spread[_ <: DateRange]) = oe(s.asInstanceOf[Spread[Month]].first) - 1
 
     def expiryDayOfMonth(m: Month) = oe(m)
 

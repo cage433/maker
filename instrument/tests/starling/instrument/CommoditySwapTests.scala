@@ -32,7 +32,7 @@ class CommoditySwapTests extends JonTestEnv {
         def applyOrMatchError(key: AtomicDatumKey) = key match {
           case _: ForwardPriceKey => forwardPrice
           case _: FixingKey => historicPrice
-          case DiscountRateKey(_, day, _) => scala.math.exp(-0.05 * day.daysSinceInYears(marketDay.day))
+          case DiscountRateKey(_, day, _) => new Quantity(scala.math.exp(-0.05 * day.daysSinceInYears(marketDay.day)))
         }
 
         def marketDay = marketDayAndTime
@@ -44,7 +44,7 @@ class CommoditySwapTests extends JonTestEnv {
     val volume = Quantity(100, MT)
     val strike = Quantity(200, USD / MT)
 
-    val swap = new SingleCommoditySwap(
+    val swap = new SinglePeriodSwap(
       index,
       strike,
       volume,
@@ -75,7 +75,7 @@ class CommoditySwapTests extends JonTestEnv {
             forwardPrice
           }
           case _: FixingKey => historicPrice
-          case DiscountRateKey(_, day, _) => scala.math.exp(-0.05 * day.daysSinceInYears(marketDay.day))
+          case DiscountRateKey(_, day, _) => new Quantity(scala.math.exp(-0.05 * day.daysSinceInYears(marketDay.day)))
         }
 
         def marketDay = marketDayAndTime
@@ -89,7 +89,7 @@ class CommoditySwapTests extends JonTestEnv {
     val volume = Quantity(100, BBL)
     val strike = Quantity(200, USD / BBL)
 
-    val swap = new SingleCommoditySwap(
+    val swap = new SinglePeriodSwap(
       index,
       strike,
       volume,
@@ -130,7 +130,7 @@ class CommoditySwapTests extends JonTestEnv {
         case ForwardPriceKey(`market2`, _, _) => Quantity(250, USD / BBL)
         case FixingKey(`index1`, _) => Quantity(100, USD / MT)
         case FixingKey(`index2`, _) => Quantity(150, USD / BBL)
-        case DiscountRateKey(_, day, _) => scala.math.exp(-0.05 * day.daysSinceInYears(marketDay.day))
+        case DiscountRateKey(_, day, _) => new Quantity(scala.math.exp(-0.05 * day.daysSinceInYears(marketDay.day)))
       }
     })
 
@@ -138,21 +138,21 @@ class CommoditySwapTests extends JonTestEnv {
     val volume = Quantity(20, BBL)
     val strike = Quantity(0, USD / BBL)
 
-    val swapSingle1 = new SingleCommoditySwap(
+    val swapSingle1 = new SinglePeriodSwap(
       index1,
       Quantity(0, USD / MT),
       index1.market.convert(volume, MT).get,
       sep09,
       false
     )
-    val swapSingle2 = new SingleCommoditySwap(
+    val swapSingle2 = new SinglePeriodSwap(
       index2,
       strike,
       volume,
       sep09,
       false
     )
-    val swapSpread = new SingleCommoditySwap(
+    val swapSpread = new SinglePeriodSwap(
       spreadIndex,
       strike,
       volume,
@@ -182,7 +182,7 @@ class CommoditySwapTests extends JonTestEnv {
         def applyOrMatchError(key: AtomicDatumKey) = key match {
           case _: ForwardPriceKey => forwardPrice
           case _: FixingKey => historicPrice
-          case DiscountRateKey(_, day, _) => scala.math.exp(-0.05 * day.daysSinceInYears(marketDay.day))
+          case DiscountRateKey(_, day, _) => new Quantity(scala.math.exp(-0.05 * day.daysSinceInYears(marketDay.day)))
         }
 
         def marketDay = marketDayAndTime
@@ -225,6 +225,76 @@ class CommoditySwapTests extends JonTestEnv {
   }
 
   @Test
+  def testExplanationOfSwap{
+    val marketDayAndTime = Day(2009, 9, 15).startOfDay
+    val forwardPrice = Quantity(200, USD / MT)
+    val historicPrice = Quantity(100, USD / MT)
+    val env = Environment(
+      new TestingAtomicEnvironment() {
+        def applyOrMatchError(key: AtomicDatumKey) = key match {
+          case _: ForwardPriceKey => forwardPrice
+          case _: FixingKey => historicPrice
+          case DiscountRateKey(_, day, _) => new Quantity(scala.math.exp(-0.05 * day.daysSinceInYears(marketDay.day)))
+        }
+
+        def marketDay = marketDayAndTime
+      }
+    )
+    val index = Index.PREM_UNL_EURO_BOB_OXY_NWE_BARGES
+    val market = index.market
+    val sep09 = Month(2009, 9)
+    val oct09 = sep09 + 1
+    val volume = Quantity(100, MT)
+    val strike = Quantity(200, USD / MT)
+    val swapSeptoOct09 = new CommoditySwap(
+      index,
+      strike,
+      volume,
+      StripPeriod(sep09, oct09),
+      false
+    )
+    val swapExplanation = swapSeptoOct09.explanation(env)
+    assertEquals(swapExplanation.name, "Sum(SEP 2009 value, OCT 2009 value)")
+    assertEquals(swapExplanation.format(1), "Sum((((F_Ave - K) * Volume) * disc), (((F_Ave - K) * Volume) * disc))")
+
+    val sep09Explanation = swapSeptoOct09.subPeriodSwaps(0).explanation(env)
+    assertEquals(sep09Explanation.name, "(((F_Ave - K) * Volume) * disc)")
+    assertEquals(sep09Explanation.format(1), "(((Round(Average(Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus).SEPTEMBER 2009), 3) - 200.00 USD/MT) * 100.00 MT) * USD.07Oct2009)")
+
+    val ex0 = "(((Round(Average(FixingsHistoryKey(Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus)).01Sep2009, " +
+            "FixingsHistoryKey(Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus)).02Sep2009, " +
+            "FixingsHistoryKey(Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus)).03Sep2009, " +
+            "FixingsHistoryKey(Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus)).04Sep2009, " +
+            "FixingsHistoryKey(Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus)).07Sep2009, " +
+            "FixingsHistoryKey(Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus)).08Sep2009, " +
+            "FixingsHistoryKey(Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus)).09Sep2009, " +
+            "FixingsHistoryKey(Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus)).10Sep2009, " +
+            "FixingsHistoryKey(Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus)).11Sep2009, " +
+            "FixingsHistoryKey(Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus)).14Sep2009, 15Sep2009, 16Sep2009, " +
+            "17Sep2009, 18Sep2009, 21Sep2009, 22Sep2009, 23Sep2009, 24Sep2009, 25Sep2009, 28Sep2009, 29Sep2009, " +
+            "30Sep2009), 3) - 200.00 USD/MT) * 100.00 MT) * 1.00)"
+
+    val ex = "(((Round(Average(100.00 USD/MT, 100.00 USD/MT, 100.00 USD/MT, 100.00 USD/MT, 100.00 USD/MT, " +
+            "100.00 USD/MT, 100.00 USD/MT, 100.00 USD/MT, 100.00 USD/MT, 100.00 USD/MT, Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus).15Sep2009, " +
+            "Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus).16Sep2009, Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus).17Sep2009, " +
+            "Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus).18Sep2009, Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus).21Sep2009, " +
+            "Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus).22Sep2009, Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus).23Sep2009, " +
+            "Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus).24Sep2009, Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus).25Sep2009, " +
+            "Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus).28Sep2009, Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus).29Sep2009, " +
+            "Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus).30Sep2009), 3) - 200.00 USD/MT) * 100.00 MT) * 1.00)"
+
+    val ex1 = "(((Round(Average(100.00 USD/MT, 100.00 USD/MT, 100.00 USD/MT, 100.00 USD/MT, 100.00 USD/MT, " +
+            "100.00 USD/MT, 100.00 USD/MT, 100.00 USD/MT, 100.00 USD/MT, 100.00 USD/MT, 200.00 USD/MT, 200.00 USD/MT, " +
+            "200.00 USD/MT, 200.00 USD/MT, 200.00 USD/MT, 200.00 USD/MT, 200.00 USD/MT, 200.00 USD/MT, 200.00 USD/MT, " +
+            "200.00 USD/MT, 200.00 USD/MT, 200.00 USD/MT), 3) - 200.00 USD/MT) * 100.00 MT) * 1.00)"
+
+    assertEquals(sep09Explanation.format(2), ex0)
+    assertEquals(sep09Explanation.format(3), ex)
+    assertEquals(sep09Explanation.format(4), ex1)
+    assertEquals(sep09Explanation.format(5), ex1)
+  }
+
+  @Test
   def testC3651761 {
     val marketDayAndTime = Day(2011, 3, 16).startOfDay
     val frbob = Quantity(2.994, USD / GAL)
@@ -257,7 +327,7 @@ class CommoditySwapTests extends JonTestEnv {
     val strike = Quantity(80, USD / BBL)
     val volume = Quantity(1000, BBL)
     val swap1 = new CommoditySwap(market, strike, volume, period, true)
-    val swap2 = new SingleCommoditySwap(market, strike, volume, period, true)
+    val swap2 = new SinglePeriodSwap(market, strike, volume, period, true)
     val env = makeEnv(Day(2010, 12, 1).endOfDay).ignoreSwapRounding
     val price = env.averagePrice(market, period)
     val discount = env.discount(USD, CommoditySwap.swapSettlementDate(period.firstDay))
@@ -277,7 +347,7 @@ class CommoditySwapTests extends JonTestEnv {
     val marketDay = Day(2010, 12, 1).endOfDay
     val env = makeEnv(marketDay).ignoreSwapRounding
     val price1 = env.averagePrice(formulaIndex, period, CommonPricingRule, formulaIndex.priceUOM)
-    val swap1 = new SingleCommoditySwap(formulaIndex, strike, volume, period, true, pricingRule = CommonPricingRule)
+    val swap1 = new SinglePeriodSwap(formulaIndex, strike, volume, period, true, pricingRule = CommonPricingRule)
     val tradeDay = Day(2009, 1, 1)
     val mtm1 = swap1.mtm(env)
     assertQtyEquals((price1 - strike) * volume, mtm1)
@@ -327,7 +397,7 @@ class CommoditySwapTests extends JonTestEnv {
     val period = Month(2011, 4)
     val strike = Quantity(1, USD / BBL)
     val volume = Quantity(1000, BBL)
-    val cs = SingleCommoditySwap(index, strike, volume, period, true)
+    val cs = SinglePeriodSwap(index, strike, volume, period, true)
 
     for (marketDay <- Day(2011, 3, 15) until Day(2011, 5, 10); timeOfDay <- List(TimeOfDay.StartOfDay, TimeOfDay.EndOfDay)) {
       val marketDayAndTime = marketDay.atTimeOfDay(timeOfDay)
@@ -335,7 +405,7 @@ class CommoditySwapTests extends JonTestEnv {
 
       val position = cs.position(env, SwapPrice(index, period))
 
-      val obDays = index.observationDays(cs.averagingPeriod)
+      val obDays = index.observationDays(cs.period)
       val liveDays = cs.liveAveragingDays(marketDayAndTime).toList
       val fixedDays = obDays.filter(_.endOfDay <= marketDayAndTime)
       assertEquals(liveDays, obDays.filter(_.endOfDay > marketDayAndTime))
@@ -352,7 +422,7 @@ class CommoditySwapTests extends JonTestEnv {
     val apr = Month(2011, 4)
     val strike = Quantity(1, USD / BBL)
     val volume = Quantity(1000, BBL)
-    val cs = SingleCommoditySwap(index, strike, volume, period, true)
+    val cs = SinglePeriodSwap(index, strike, volume, period, true)
 
     for (marketDay <- apr.days; timeOfDay <- List(TimeOfDay.StartOfDay, TimeOfDay.EndOfDay)) {
       val marketDayAndTime = marketDay.atTimeOfDay(timeOfDay)
@@ -360,7 +430,7 @@ class CommoditySwapTests extends JonTestEnv {
 
       val position = cs.position(env, SwapPrice(index, period))
 
-      val obDays = index.observationDays(cs.averagingPeriod)
+      val obDays = index.observationDays(cs.period)
       val liveDays = cs.liveAveragingDays(marketDayAndTime).toList
       val fixedDays = obDays.filter(_.endOfDay <= marketDayAndTime)
       assertEquals(liveDays, obDays.filter(_.endOfDay > marketDayAndTime))
@@ -384,7 +454,7 @@ class CommoditySwapTests extends JonTestEnv {
     val period = Month(2011, 4)
     val strike = Quantity(1, USD / BBL)
     val volume = Quantity(1000, BBL)
-    val cs = SingleCommoditySwap(index, strike, volume, period, true)
+    val cs = SinglePeriodSwap(index, strike, volume, period, true)
 
     for (marketDay <- Day(2011, 3, 15) until Day(2011, 5, 10); timeOfDay <- List(TimeOfDay.StartOfDay, TimeOfDay.EndOfDay)) {
       val marketDayAndTime = marketDay.atTimeOfDay(timeOfDay)
@@ -459,8 +529,8 @@ class CommoditySwapTests extends JonTestEnv {
 
     val cs1 = new CommoditySwap(index, strike1, volume1, period, cleared = true, CommonPricingRule)
     val mtm1 = cs1.asUtpPortfolio(2 Jan 2011).mtm(env)
-    val scsA1 = new SingleCommoditySwap(mogas, strike1, volume1, period, cleared = true)
-    val scsA2 = new SingleCommoditySwap(brent, strike1.copy(value = 0.0), -volume1, period, cleared = true)
+    val scsA1 = new SinglePeriodSwap(mogas, strike1, volume1, period, cleared = true)
+    val scsA2 = new SinglePeriodSwap(brent, strike1.copy(value = 0.0), -volume1, period, cleared = true)
     assertQtyEquals(mtm1, scsA1.mtm(env) + scsA2.mtm(env), 1e-7)
 
     val strike2 = Quantity(10, USD / MT)
@@ -468,8 +538,8 @@ class CommoditySwapTests extends JonTestEnv {
 
     val cs2 = new CommoditySwap(index, strike2, volume2, period, cleared = true, CommonPricingRule)
     val mtm2 = cs2.asUtpPortfolio(2 Jan 2011).mtm(env)
-    val scsB1 = new SingleCommoditySwap(mogas, strike2, volume2, period, cleared = true)
-    val scsB2 = new SingleCommoditySwap(brent, strike2.copy(value = 0.0), -volume2, period, cleared = true)
+    val scsB1 = new SinglePeriodSwap(mogas, strike2, volume2, period, cleared = true)
+    val scsB2 = new SinglePeriodSwap(brent, strike2.copy(value = 0.0), -volume2, period, cleared = true)
     assertQtyEquals(mtm2, scsB1.mtm(env) + scsB2.mtm(env), 1e-7)
   }
 
@@ -540,12 +610,12 @@ class CommoditySwapTests extends JonTestEnv {
     val index = Index.PREM_UNL_EURO_BOB_OXY_NWE_BARGES
     val period = Month(2011, 10)
     val volume = 100(index.uom)
-    val swap = SingleCommoditySwap(index, 50(index.priceUOM), volume, period, cleared = true)
+    val swap = SinglePeriodSwap(index, 50(index.priceUOM), volume, period, cleared = true)
     val z = 0.1
     val env = Environment(UnitTestingAtomicEnvironment(
     marketDay, {
       case _: ForwardPriceKey => 70(index.priceUOM)
-      case DiscountRateKey(_, day, _) => math.exp(-z * (day.daysSinceInYears(marketDay.day)))
+      case DiscountRateKey(_, day, _) => new Quantity(math.exp(-z * (day.daysSinceInYears(marketDay.day))))
     }
     ))
     assertQtyEquals(volume, swap.position(env, PriceDifferentiable(index.market, period)), 1e-6)
@@ -558,7 +628,7 @@ class CommoditySwapTests extends JonTestEnv {
     val market = index.market
     val period = Month(2011, 4)
     val volume = 10000(index.uom)
-    val swap = SingleCommoditySwap(index, 0(index.priceUOM), volume, period, cleared = true)
+    val swap = SinglePeriodSwap(index, 0(index.priceUOM), volume, period, cleared = true)
 
     def make(md: DayAndTime, price: Quantity) = Environment(UnitTestingAtomicEnvironment(
     md, {
@@ -572,7 +642,7 @@ class CommoditySwapTests extends JonTestEnv {
 
     val marketDay1 = (13 Apr 2011).endOfDay
     val marketDay2 = (14 Apr 2011).startOfDay
-    val env1 = make(marketDay1, Quantity(1101.446448, USD / MT)).ignoreSwapRounding
+    val env1 = make(marketDay1, Quantity(1101.446448, USD / MT)).ignoreSwapRounding.forwardState(marketDay2)
     val env2 = make(marketDay2, Quantity(1098.461042, USD / MT)).ignoreSwapRounding
 
     val d1 = env1.atomicEnv
@@ -599,6 +669,7 @@ class CommoditySwapTests extends JonTestEnv {
 
     val (crossTerms, rounding, unexplained) = swap.components(env1, env2, environmentFor, USD, explainedTotal, curveKeys)
 
+    assertTrue(crossTerms.isAlmostZero)
     assertQtyEquals(rounding.quantityValue.get, 0(USD), 1e-5)
     assertQtyEquals(unexplained.quantityValue.get, 0(USD), 1e-5)
     assertQtyEquals(explainedTotal.quantityValue.get, -(14927)(USD), .1)
@@ -611,7 +682,7 @@ class CommoditySwapTests extends JonTestEnv {
     val period = Month(2011, 8)
 
     val volume = 10000(index.uom)
-    val swap = SingleCommoditySwap(index, 0(index.priceUOM), volume, period, cleared = true)
+    val swap = SinglePeriodSwap(index, 0(index.priceUOM), volume, period, cleared = true)
 
     def make(md: DayAndTime, price: Quantity, fixing: Quantity) = Environment(UnitTestingAtomicEnvironment(
     md, {
@@ -625,11 +696,11 @@ class CommoditySwapTests extends JonTestEnv {
     val marketDay1 = (13 Apr 2011).endOfDay
     val marketDay2 = (14 Apr 2011).endOfDay
     val f1 = Quantity(103.3333, USD / BBL)
-    val env1 = make(marketDay1, f1, Quantity(102.231, USD/BBL))
+    val env1Fwd = make(marketDay2, f1, Quantity(102.231, USD/BBL)).forwardState(marketDay2)
     val f2 = Quantity(110.5555, USD / BBL)
     val env2 = make(marketDay2, f2, Quantity(103.321, USD/BBL))
 
-    val d1 = env1.atomicEnv
+    val d1 = env1Fwd.atomicEnv
     val d2 = env2.atomicEnv
 
     val d2MTM = PivotQuantity.calcOrCatch({
@@ -639,7 +710,7 @@ class CommoditySwapTests extends JonTestEnv {
     val curveKeys = AtomicDatumKeyUtils.curveKeys(swap, d1.marketDay, USD)
 
     def environmentFor(curveKeys: Set[CurveKey]) = Environment(OverrideForCurveKeysEnvironment(d1, curveKeys, d2))
-    val explanation = swap.explain(env1, env2, environmentFor, USD)
+    val explanation = swap.explain(env1Fwd, env2, environmentFor, USD)
 
     val explainedTotal = explanation.map {
       _.value
@@ -647,13 +718,13 @@ class CommoditySwapTests extends JonTestEnv {
     println("et: " + explainedTotal)
 
 
-    val env1NoRounding = env1.copy(environmentParameters = DefaultRiskParameters)
+    val env1NoRounding = env1Fwd.copy(environmentParameters = DefaultRiskParameters)
     val env2NoRounding = env2.copy(environmentParameters = DefaultRiskParameters)
 
     val noRoundingPnl = PivotQuantity.calcOrCatch(swap.mtm(env2NoRounding) - swap.mtm(env1NoRounding))
-    val plainPnl = PivotQuantity.calcOrCatch(swap.mtm(env2) - swap.mtm(env1))
+    val plainPnl = PivotQuantity.calcOrCatch(swap.mtm(env2) - swap.mtm(env1Fwd))
 
-    val (crossTerms, rounding, unexplained) = swap.components(env1, env2, environmentFor, USD, explainedTotal, curveKeys)
+    val (crossTerms, rounding, unexplained) = swap.components(env1Fwd, env2, environmentFor, USD, explainedTotal, curveKeys)
 
     assertQtyEquals((noRoundingPnl  + rounding).quantityValue.get, plainPnl.quantityValue.get, 1e-5)
     assertQtyEquals(crossTerms.quantityValue.get, 0(USD), 1e-5)
@@ -704,8 +775,8 @@ class CommoditySwapTests extends JonTestEnv {
 
     // here create two single swaps and make sure they value the same
     val iOxy = Index.PREM_UNL_EURO_BOB_OXY_NWE_BARGES
-    val s1 = new SingleCommoditySwap(iOxy, 0.0(USD/BBL), volumeBBL, period, cleared = true)
-    val s2 = new SingleCommoditySwap(Index.BRT11, -K, -volumeBBL, period, cleared = true)
+    val s1 = new SinglePeriodSwap(iOxy, 0.0(USD/BBL), volumeBBL, period, cleared = true)
+    val s2 = new SinglePeriodSwap(Index.BRT11, -K, -volumeBBL, period, cleared = true)
 
     val s1mtm = s1.mtm(env1)
     assertQtyEquals(s1mtm, fOxy * volumeBBL, 1e-5)

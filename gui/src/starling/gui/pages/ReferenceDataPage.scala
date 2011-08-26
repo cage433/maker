@@ -10,7 +10,7 @@ import starling.pivot.view.swing.{StripedPanel, FixedImagePanel, MigPanel}
 import javax.swing.{KeyStroke, JComponent}
 import java.awt.event.KeyEvent
 import swing.{Action, Label}
-import starling.pivot.{PivotEdit, PivotFieldParams}
+import starling.pivot.{PivotEdits, PivotFieldParams}
 
 /**
  * The reference data pages for viewing markets, calendars etc.
@@ -20,10 +20,10 @@ case object ReferenceDataIndexPage extends Page {
   def text = "Reference Data"
   def icon = StarlingIcons.im("/icons/16x16_ref_data.png")
   def build(reader: PageBuildingContext) = ReferenceDataIndexPageData(reader.starlingServer.referenceDataTables(), reader.starlingServer.permissionToDoAdminLikeThings)
-  def createComponent(context: PageContext, data: PageData, bookmark:Bookmark, browserSize: Dimension) = {ReferenceDataIndexPageComponent(context, data)}
+  def createComponent(context: PageContext, data: PageData, bookmark:Bookmark, browserSize: Dimension) = {new ReferenceDataIndexPageComponent(context, data)}
 }
 
-case class ReferenceDataIndexPageComponent(context:PageContext, pageData:PageData) extends MigPanel("insets dialog") with PageComponent {
+class ReferenceDataIndexPageComponent(context:PageContext, pageData:PageData) extends MigPanel("insets dialog") with PageComponent {
   val data = pageData match {case d:ReferenceDataIndexPageData => d}
 
   val c = new StripedPanel("insets 0", "[grow][p][p][p][grow]", "[grow][p][p][p][p][grow 150]") {
@@ -71,7 +71,7 @@ case class ReferenceDataPage(table:ReferenceDataLabel, pivotPageState : PivotPag
   } else {
     StarlingIcons.im("/icons/16x16_calendar_day.png")
   }
-  def selfPage(pivotPageStateX: PivotPageState, edits:Set[PivotEdit]) = copy(pivotPageState=pivotPageStateX)
+  def selfPage(pivotPageStateX: PivotPageState, edits:PivotEdits) = copy(pivotPageState=pivotPageStateX)
   def dataRequest(pageBuildingContext: PageBuildingContext) = {
     pageBuildingContext.starlingServer.referencePivot(table, pivotPageState.pivotFieldParams)
   }

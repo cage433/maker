@@ -8,8 +8,12 @@ import swing.event.ButtonClicked
 import starling.gui.GuiUtils._
 import StandardUserSettingKeys.{ExtraFormattingInfo, LiveDefault}
 import javax.swing.{SpinnerNumberModel, JSpinner}
-import starling.pivot.{DecimalPlaces, ExtraFormatInfo, PivotFormatter}
-import swing.{CheckBox, Label, Button}
+import swing._
+import starling.daterange.{Day, Month}
+import starling.pivot._
+import starling.pivot.MonthFormat._
+import starling.pivot.utils.PeriodPivotFormatter
+import javax.swing.event.{ChangeEvent, ChangeListener}
 
 case class SettingsPage() extends Page {
   def text = "Settings"
@@ -24,7 +28,13 @@ class SettingsPageComponent(context:PageContext) extends MigPanel("insets 0") wi
   val decimalPlacesPanel = new MigPanel("insets n n n 0", "[" + StandardLeftIndent + "][p]") {
     def createSpinner(initialValue:Int) = {
       val maxDP = 10
-      val spinnerModel = new SpinnerNumberModel(initialValue, 0, maxDP, 1)
+      val spinnerModel = new SpinnerNumberModel(initialValue, 0, maxDP, 1) {
+        addChangeListener(new ChangeListener {
+          def stateChanged(e:ChangeEvent) {
+            saveSettings()
+          }
+        })
+      }
       new JSpinner(spinnerModel) {
         def format = {
           val num = getValue.asInstanceOf[Int]
@@ -78,31 +88,82 @@ class SettingsPageComponent(context:PageContext) extends MigPanel("insets 0") wi
   val generalPanel = new MigPanel("insets n n n 0", "[" + StandardLeftIndent + "][p]") {
     val defaultLiveCheckbox = new CheckBox("Default Live") {
       selected = currentLiveSetting
+      reactions += {case ButtonClicked(_) => saveSettings()}
     }
 
     add(LabelWithSeparator("General"), "spanx, growx, wrap")
     add(defaultLiveCheckbox, "skip 1")
   }
 
-  val saveButton = new Button {
-    text = "Save Settings"
-    tooltip = "Save the specified settings and update affected pages"
-    reactions += {
-      case ButtonClicked(b) => {
-        context.putSetting(ExtraFormattingInfo, ExtraFormatInfo(decimalPlacesPanel.decimalPlaces))
-        context.putSetting(LiveDefault, generalPanel.defaultLiveCheckbox.selected)
-      }
+  val dateRangeFormatPanel = new MigPanel("insets n n n 0", "[" + StandardLeftIndent + "][p]") {
+
+    val standardExtraInfo = ExtraFormatInfo(dateRangeFormat = DateRangeFormat(Standard))
+    val shortExtraInfo = ExtraFormatInfo(dateRangeFormat = DateRangeFormat(Short))
+    val numericExtraInfo = ExtraFormatInfo(dateRangeFormat = DateRangeFormat(Numeric))
+    val reutersExtraInfo = ExtraFormatInfo(dateRangeFormat = DateRangeFormat(Reuters))
+
+    val today = Day.today()
+    val sampleMonths = List(today.asMonthObject, today.addMonths(1).asMonthObject)
+
+    val standardSampleText = sampleMonths.map(m => PeriodPivotFormatter.format(m, standardExtraInfo).text).mkString("(", ", ", " ...)")
+    val shortSampleText = sampleMonths.map(m => PeriodPivotFormatter.format(m, shortExtraInfo).text).mkString("(", ", ", " ...)")
+    val numericSampleText = sampleMonths.map(m => PeriodPivotFormatter.format(m, numericExtraInfo).text).mkString("(", ", ", " ...)")
+    val reutersSampleText = sampleMonths.map(m => PeriodPivotFormatter.format(m, reutersExtraInfo).text).mkString("(", ", ", " ...)")
+
+    val standardLabel = new Label(standardSampleText)
+    val shortLabel = new Label(shortSampleText)
+    val numericLabel = new Label(numericSampleText)
+    val reutersLabel = new Label(reutersSampleText)
+
+    def createButton(name:String) = new RadioButton(name) {reactions += {case ButtonClicked(_) => saveSettings()}}
+
+    val standardButton = createButton("Standard")
+    val shortButton = createButton("Short")
+    val numericButton = createButton("Numeric")
+    val reutersButton = createButton("Reuters")
+    val group = new ButtonGroup(standardButton, shortButton, numericButton, reutersButton)
+
+    val buttonToType = Map[AbstractButton,DateRangeFormat](
+      standardButton -> DateRangeFormat(Standard),
+      shortButton -> DateRangeFormat(Short),
+      numericButton -> DateRangeFormat(Numeric),
+      reutersButton -> DateRangeFormat(Reuters))
+    val typeToButton = buttonToType.map{_.swap}
+
+    add(LabelWithSeparator("Month Format"), "spanx, growx, wrap")
+    add(standardButton, "skip1")
+    add(standardLabel, "wrap")
+    add(shortButton, "skip 1")
+    add(shortLabel, "wrap")
+    add(numericButton, "skip 1")
+    add(numericLabel, "wrap")
+    add(reutersButton, "skip 1")
+    add(reutersLabel)
+
+    def dateRangeFormat = {
+      buttonToType(group.selected.get)
     }
+    def dateRangeFormat_=(drf:DateRangeFormat) {
+      group.select(typeToButton(drf))
+    }
+
+    dateRangeFormat = currentSettings.dateRangeFormat
+  }
+
+  private def saveSettings() {
+    context.putSetting(ExtraFormattingInfo, ExtraFormatInfo(decimalPlacesPanel.decimalPlaces, dateRangeFormatPanel.dateRangeFormat))
+    context.putSetting(LiveDefault, generalPanel.defaultLiveCheckbox.selected)
   }
 
   add(generalPanel, "gapright unrel, ay top")
-  add(decimalPlacesPanel, "wrap unrel")
-  add(saveButton, "spanx, ax right")
+  add(decimalPlacesPanel, "gapright unrel, ay top")
+  add(dateRangeFormatPanel, "wrap unrel, ay top")
 
   reactions += {
     case UserSettingUpdated(ExtraFormattingInfo) => {
-      val dp = context.getSetting(ExtraFormattingInfo).decimalPlaces
-      decimalPlacesPanel.decimalPlaces = dp
+      val extraFormatInfo = context.getSetting(ExtraFormattingInfo)
+      decimalPlacesPanel.decimalPlaces = extraFormatInfo.decimalPlaces
+      dateRangeFormatPanel.dateRangeFormat = extraFormatInfo.dateRangeFormat
     }
     case UserSettingUpdated(LiveDefault) => {
       val b = context.getSetting(LiveDefault, false)

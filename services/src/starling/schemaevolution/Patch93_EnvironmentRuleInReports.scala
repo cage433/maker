@@ -9,7 +9,7 @@ import xstream.{Fields, Reader, MapBasedConverter}
 import starling.daterange.TimeOfDay
 import collection.immutable.SortedSet
 import starling.gui.api._
-import starling.utils.sql.AnObject
+import starling.utils.sql.PersistAsBlob
 
 class Patch93_EnvironmentRuleInReports extends Patch {
 

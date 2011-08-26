@@ -48,7 +48,7 @@ class RowComponent(model:PivotTableModel,  otherLayoutInfo:OtherLayoutInfo, view
 
   private val dropPanels = new ListBuffer[DropPanel]()
   private val blankDropLabel = if (fields.isEmpty) {
-    Some(EmptyDropLabel("Drop Row Fields Here", tableView))
+    Some(new EmptyDropLabel("Drop Row Fields Here", tableView))
   } else {
     None
   }

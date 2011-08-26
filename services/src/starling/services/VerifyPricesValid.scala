@@ -2,7 +2,7 @@ package starling.services
 
 import starling.daterange.Day
 import starling.db.MarketDataStore
-import starling.gui.api.{EmailEvent, MarketDataSelection, PricingGroup}
+import starling.gui.api.{EmailEvent, MarketDataSelection}
 import starling.market.FuturesExchange
 import starling.marketdata.PriceDataType
 import starling.pivot._
@@ -13,9 +13,8 @@ import starling.utils.ImplicitConversions._
 
 
 object VerifyPricesValid {
-  def apply(marketDataStore: MarketDataStore, pricingGroup: PricingGroup, exchange: FuturesExchange, broadcaster: Broadcaster,
-            from: String, to: String) = new VerifyPricesValid(
-    marketDataStore.pivot(MarketDataSelection(Some(pricingGroup)), PriceDataType), exchange, broadcaster, from, to)
+  def apply(marketDataStore: MarketDataStore, broadcaster: Broadcaster, dataFlow: DataFlow) = new VerifyPricesValid(
+    marketDataStore.pivot(MarketDataSelection(Some(dataFlow.pricingGroup)), PriceDataType), dataFlow.exchange, broadcaster, dataFlow.from, dataFlow.to)
 }
 
 class VerifyPricesValid(dataSource: PivotTableDataSource, exchange: FuturesExchange, broadcaster: Broadcaster,

@@ -46,12 +46,12 @@ object Hedge{
     val months = spreadMonths.toList.sortWith(_<_)
     val diffs = months.map(PriceDifferentiable(market, _))
 
-    val newDiffs = PriceDifferentiable(market, months.last) :: months.zip(months.tail).map{case (m1, m2) => FuturesSpreadPrice(market, m1, m2)}
+    val newDiffs = PriceDifferentiable(market, months.last) :: months.zip(months.tail).map{case (m1, m2) => FuturesSpreadPrice(market, m1 / m2)}
 
     val strike = Quantity(0, market.priceUOM)
     val spreads = calcHedge(env, diffs, CompositeInstrument(liveFutures), newDiffs).map{
       case (PriceDifferentiable(_, month), volume) => (Future(market, month, strike, Quantity(1, market.uom)).asInstanceOf[UTP], volume.value)
-      case (FuturesSpreadPrice(_, m1, m2), volume) => (FuturesCalendarSpread(market, m1, m2, strike, strike, Quantity(1, market.uom)).asInstanceOf[UTP], volume.value)
+      case (FuturesSpreadPrice(_, SpreadPeriod(m1: Month, m2: Month)), volume) => (FuturesCalendarSpread(market, m1, m2, strike, strike, Quantity(1, market.uom)).asInstanceOf[UTP], volume.value)
     }
     spreads + compensatingBankAccount(env, liveFutures, asListOfUTPS(spreads))
   }
@@ -157,7 +157,7 @@ object Hedge{
           _ match {
             case (PriceDifferentiable(_, month), volume) => (Future(market, month, strike, Quantity(1, market.uom)), volume.value)
             case k @ (SwapPrice(_, m), volume) => {
-              val swap = SingleCommoditySwap(index, strike, Quantity(1, market.uom), m, cleared = true)
+              val swap = SinglePeriodSwap(index, strike, Quantity(1, market.uom), m, cleared = true)
               val swapDelta = swap.firstOrderDerivative(env, k._1, swap.valuationCCY)
               val swapUndiscountedDelta = swap.firstOrderDerivative(env.undiscounted, k._1, swap.valuationCCY)
               val swapPosition = swap.position(env, k._1)

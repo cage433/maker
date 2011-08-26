@@ -8,7 +8,7 @@ import org.testng.Assert._
 import starling.curves._
 import starling.models.{American, European, Call}
 import starling.daterange.{Day, Month}
-import starling.instrument.{SingleAsianOption, AsianOption, ForwardOption, FuturesOption}
+import starling.instrument.{SingleAsianOption, AsianOption, FuturesOption}
 import starling.instrument.UTP
 import starling.market._
 

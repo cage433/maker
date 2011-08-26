@@ -9,6 +9,7 @@ import starling.trade.Trade
 import collection.mutable.ArraySeq
 import starling.eai.{EAIStrategyDB, Traders}
 import starling.daterange.Day
+import starling.market.{CommodityMarket, FuturesSpreadMarket}
 
 class ExcelTradeReader(eaiStrategyDB: EAIStrategyDB, traders: Traders) {
   import ExcelRow._
@@ -110,7 +111,10 @@ object ExcelTradeReader {
       assert(premium.isPositve, "Premiums should be positive: " + premium)
       val cp = row.counterParty
       val tradeDay = row.tradeDay
-      val settlementDay = row.market.premiumSettlementDay(tradeDay)
+      val settlementDay = row.market match {
+        case m: FuturesSpreadMarket => m.premiumSettlementDay(tradeDay)
+        case m: CommodityMarket => m.premiumSettlementDay(tradeDay)
+      }
       List(new PremiumCosts(settlementDay, cp, row.volume, premium))
     }
     case _ => Nil

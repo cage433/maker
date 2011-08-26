@@ -5,6 +5,7 @@ import starling.db.MarketDataReader
 import starling.curves.MissingMarketDataException
 import starling.quantity.Quantity
 import starling.daterange.{DateRange, Day, ObservationPoint}
+import starling.pivot.PivotQuantity
 
 
 trait PriceValidator {
@@ -34,10 +35,10 @@ class CompositePriceValidator(validators: Seq[PriceValidator]) extends PriceVali
 object MeanPriceValidator extends PriceValidator {
   def validate(timedKey: TimedMarketDataKey, priceData: PriceData) = {
     val prices = priceData.prices
-    lazy val mean = prices.values.map(_.value).sum / prices.size
+    lazy val mean = prices.values.map(_.quantityValue.get).sum / prices.size
 
     PriceData(prices.mapValues { price => {
-      val difference = price.value percentageDifference mean
+      val difference = price.quantityValue.get percentageDifference mean
       if (difference > 0.1) {
         price.copy(warning = Some("mean: " + mean + ", percent diff " + difference.toShortString + " > 10%"))
       } else {
@@ -49,13 +50,13 @@ object MeanPriceValidator extends PriceValidator {
 
 object RollingAveragePriceValidator extends PriceValidator {
   def validate(timedKey: TimedMarketDataKey, priceData: PriceData) = {
-    val prices: List[(DateRange, PriceValue)] = priceData.prices.toList.sortBy(_._1)
-    val values = prices.map(_._2.value.value)
+    val prices: List[(DateRange, PivotQuantity)] = priceData.prices.toList.sortBy(_._1)
+    val values = prices.map(_._2.quantityValue.get.value)
 
     val newPrices = movingAverage(values, 3).zip(prices).map { case (rollingAverage, (date, price) ) => {
-      val average = Quantity(rollingAverage, price.value.uom)
+      val average = Quantity(rollingAverage, price.quantityValue.get.uom)
 
-      val difference = price.value percentageDifference average
+      val difference = price.quantityValue.get percentageDifference average
       if (difference > 0.1) {
         date → price.copy(warning = Some("moving average: " + average + ", percent diff " + difference.toShortString + " > 10%"))
       } else {
@@ -90,9 +91,9 @@ class DayChangePriceValidator(reader: MarketDataReader) extends PriceValidator {
       case (period, currentPrice) => {
         val previousPrice = previous.prices.getOrElse(period, currentPrice)
 
-        val difference = previousPrice.value percentageDifference currentPrice.value
+        val difference = previousPrice.quantityValue.get percentageDifference currentPrice.quantityValue.get
         val anotated = if (difference > 0.2) {
-          currentPrice.copy(warning = Some("percent diff to " + previousPrice.value.value + " > 20%"))
+          currentPrice.copy(warning = Some("percent diff to " + previousPrice.quantityValue.get.value + " > 20%"))
         } else {
           currentPrice
         }

@@ -3,7 +3,7 @@ package starling.schemaevolution
 import starling.db.DBWriter
 import starling.richdb.RichDB
 import system.{PatchUtils, Patch}
-import starling.utils.sql.AnObject
+import starling.utils.sql.PersistAsBlob
 import starling.marketdata.{BradyMetalVolsDataKey, PriceDataKey}
 import starling.market.{FuturesMarket, Market}
 import starling.services.StarlingInit
@@ -45,7 +45,7 @@ class Patch46_ConvertMarketDataKeysWithBadMarketNames extends Patch {
         writer.queryForUpdate("select marketdatakey from MarketData where marketDataType != '<starling.marketdata.OilVolSurfaceDataType_-/>'") {
           rs => {
             val obj: Object = rs.getObject("marketdatakey")
-            rs.update(Map("marketdatakey" -> AnObject(obj)))
+            rs.update(Map("marketdatakey" -> PersistAsBlob(obj)))
           }
         }
       }

@@ -6,6 +6,7 @@ import starling.quantity.{SpreadQuantity, UOM, Quantity}
 import starling.daterange._
 import starling.curves.{PriceDifferentiable, Environment, SpreadAtmStdDevAtomicDatumKey, FuturesSpreadPrice}
 import starling.market.{Market, FuturesSpreadMarket}
+import starling.quantity.NamedQuantity
 
 case class FuturesCommoditySpread(market: FuturesSpreadMarket, month: Month, firstStrike: Quantity, secondStrike: Quantity, volume: Quantity)
         extends UTP with Tradeable with AsUtpPortfolio with MultiLeg {
@@ -14,7 +15,7 @@ case class FuturesCommoditySpread(market: FuturesSpreadMarket, month: Month, fir
     this(market, month, spread.copy(value = 0), -spread, volume)
   }
 
-  override def expiryDay() = Some(market.market1.lastTradingDay(month).min(market.market2.lastTradingDay(month)))
+  override def expiryDay() = Some(market.lastTradingDay(month))
 
   val future1: Future = Future(market.market1, month, firstStrike, volume)
   val future2: Future = Future(market.market2, month, secondStrike, volume.negate)
@@ -31,14 +32,17 @@ case class FuturesCommoditySpread(market: FuturesSpreadMarket, month: Month, fir
     future1.asUtpPortfolio ++
             future2.asUtpPortfolio
   }
+  def explanation(env : Environment) : NamedQuantity = {
+    future1.explanation(env).named("Future 1") + future2.explanation(env).named("Future 2")
+  }
 
   def legs = List(future1, future2)
 
   def instrumentType = FuturesCommoditySpread
 
-  def details = Map("Market" -> market, "Period" -> month, "InitialPrice" -> SpreadQuantity(firstStrike, secondStrike))
+  def detailsForUTPNOTUSED = persistedTradeableDetails - "Quantity"
 
-  def tradeableDetails = details + ("Quantity" -> volume)
+  def persistedTradeableDetails = Map("Market" -> market, "Period" -> month, "InitialPrice" -> SpreadQuantity(firstStrike, secondStrike), "Quantity" -> volume)
 
   def tradeableType = FuturesCommoditySpread
 

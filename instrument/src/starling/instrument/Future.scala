@@ -1,15 +1,14 @@
 package starling.instrument
 
-import starling.quantity.Quantity
 import starling.quantity.Quantity._
 import starling.quantity.UOM._
 import starling.utils.ImplicitConversions._
-import Math._
 import starling.richdb.RichInstrumentResultSetRow
 import starling.daterange._
 import starling.curves._
 import starling.daterange.DateRangePeriod
 import starling.market.{Index, FuturesFrontPeriodIndex, FuturesMarket, Market}
+import starling.quantity.{SimpleNamedQuantity, NamedQuantity, Quantity}
 
 /** A class which represents a futures trade
  */
@@ -18,6 +17,12 @@ case class Future(market: FuturesMarket, delivery: DateRange, strike: Quantity, 
   require(strike.denominatorUOM == volume.uom, "Can't handle strike in non-volume uom, strike: " + strike + ", volume: " + volume.uom)
   require(market.convert(volume, market.uom).isDefined, "Invalid volume UOM, can't convert to market uom: " + volume)
 
+  def explanation(env : Environment) : NamedQuantity = {
+    val namedEnv = env.withNaming()
+    val F = SimpleNamedQuantity("F", convertPrice(namedEnv, namedEnv.forwardPrice(market, delivery)))
+    (F - strike.named("K")) * volume.named("Volume")
+  }
+  
   def *(x : Double) = copy(volume = volume * x)
 
   def assets(env : Environment) = if (env.marketDay < lastTradingDay.endOfDay) {
@@ -64,8 +69,8 @@ case class Future(market: FuturesMarket, delivery: DateRange, strike: Quantity, 
   def instrumentType = Future
   def tradeableType = Future
 
-  def tradeableDetails :Map[String, Any] = Map("Market" -> market, "Period" -> delivery, "Initial Price" -> strike, "Quantity" -> volume)
-  def details :Map[String, Any] = Map("Market" -> market, "Period" -> delivery)
+  def persistedTradeableDetails :Map[String, Any] = Map("Market" -> market, "Period" -> delivery, "Initial Price" -> strike, "Quantity" -> volume)
+  def detailsForUTPNOTUSED :Map[String, Any] = Map("Market" -> market, "Period" -> delivery)
 
   def asUtpPortfolio(tradeDay:Day) = asUtpPortfolio
   def asUtpPortfolio = UTP_Portfolio(
@@ -80,7 +85,10 @@ case class Future(market: FuturesMarket, delivery: DateRange, strike: Quantity, 
   def periodKey = Some(DateRangePeriod(delivery))
 
   def price(env : Environment) = {
-    env.forwardPrice(market, delivery)
+    if(isLive(env.marketDay))
+      env.forwardPrice(market, delivery)
+    else
+      0 (market.priceUOM)
   }
 
   override def fixUpMyCashInstruments(ci: CashInstrument) = {

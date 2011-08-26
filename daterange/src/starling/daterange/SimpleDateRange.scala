@@ -17,6 +17,9 @@ case class SimpleDateRange(firstDay : Day, lastDay : Day) extends DateRange {
       throw new Exception ("SimpleDateRange " + this + " can't be broken into months")
     }
   }
+
+  def +(i: Int) = new SimpleDateRange(firstDay + i, lastDay + i)
+  def -(n: Int) = this + (-n)
 }
 
 object SimpleDateRange{

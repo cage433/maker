@@ -6,7 +6,7 @@ import scala.collection.JavaConversions
 import starling.utils.ImplicitConversions._
 
 
-class SampleTradeCapturer extends Application {
+class SampleTradeCapturer extends App {
   var factory = new ConnectionFactory()
 
   val conn = factory.newConnection("tradinghub-test")
@@ -26,7 +26,7 @@ class SampleTradeCapturer extends Application {
 
   while (true) {
     val delivery = consumer.nextDelivery
-    val headers = JavaConversions.asScalaMap(delivery.getProperties.getHeaders)
+    val headers = JavaConversions.mapAsScalaMap(delivery.getProperties.getHeaders)
     val header = (name : String) => headers.get(name).toString
 
     System.out.println(" [TradeCSv] Received (userName = %s, subGroupName = %s), data = %s" %

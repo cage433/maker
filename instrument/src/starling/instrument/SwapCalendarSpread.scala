@@ -6,6 +6,8 @@ import starling.curves._
 import starling.market._
 import rules.{NoPricingRule, CommonPricingRule, SwapPricingRule}
 import starling.daterange._
+import starling.quantity.NamedQuantity
+import starling.quantity.BinOpNamedQuantity
 
 /**
  * A SwapCalendarSpread is on a single index between 2 periods.
@@ -19,18 +21,30 @@ case class SwapCalendarSpread(index: SingleIndex,
 
   override def expiryDay() = Some(period.back.lastDay)
 
-  val front = new CommoditySwap(index, strike, volume, period.front, cleared = true)
-  val back = new CommoditySwap(index, strike.copy(value = 0.0), -volume, period.back, cleared = true)
+  private val settlementDay = CommoditySwap.swapSettlementDate(period.back.lastDay)
+  val front = new SinglePeriodSwap(index, strike, volume, period.front, cleared = true, settlementDayOption = Some(settlementDay))
+  val back = new SinglePeriodSwap(index, strike.copy(value = 0.0), -volume, period.back, cleared = true, settlementDayOption = Some(settlementDay))
+
+  def explanation(env : Environment) : NamedQuantity = {
+    val namedEnv = env.withNaming()
+    val discount = if (cleared) new Quantity(1.0) else namedEnv.discount(valuationCCY, settlementDay)
+    (price(namedEnv).asInstanceOf[NamedQuantity] - strike.named("K")) * volume.named("Volume") * discount
+  }
 
   def asUtpPortfolio(tradeDay: Day) = {
-    front.asUtpPortfolio(tradeDay) ++ back.asUtpPortfolio(tradeDay)
+    UTP_Portfolio(
+      Map(
+        front.copy(volume = front.volume.copy(value = 1.0)) -> front.volume.value, 
+        back.copy(volume = back.volume.copy(value = 1.0)) -> back.volume.value
+      )
+    )
   }
 
   def tradeableType = SwapCalendarSpread
 
   def assets(env: Environment) = asUtpPortfolio(env.marketDay.day).assets(env)
 
-  def price(env: Environment) = env.averagePrice(index, period.front) - env.averagePrice(index, period.back)
+  def price(env: Environment) = front.price(env) - back.price(env)
 
   def periodKey = Some(period)
 
@@ -46,7 +60,7 @@ case class SwapCalendarSpread(index: SingleIndex,
       liveAveragingDays
   }
 
-  def details = super.tradeableDetails
+  def detailsForUTPNOTUSED = super.persistedTradeableDetails
 
   def instrumentType = SwapCalendarSpread
 

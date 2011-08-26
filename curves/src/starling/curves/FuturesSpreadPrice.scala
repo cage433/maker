@@ -1,15 +1,19 @@
 package starling.curves
 
-import starling.market.FuturesMarket
-import starling.daterange.Month
 import starling.quantity.Quantity
-import starling.daterange.SpreadPeriod
-import starling.daterange.{TenorType, DayAndTime}
+import starling.daterange._
+import starling.market.{FuturesSpreadMarket, FuturesMarket}
 
-case class FuturesSpreadPrice(market : FuturesMarket, month1 : Month, month2 : Month) extends EnvironmentDifferentiable with PriceKey{
+case class FuturesSpreadPrice(market : FuturesMarket, period: Period) extends EnvironmentDifferentiable with PriceKey{
   
-  private val frontKey = PriceDifferentiable(market, month1)
-  private val backKey = PriceDifferentiable(market, month2)
+  private val (firstKey, secondKey) = (market, period) match {
+      case (fsm: FuturesSpreadMarket, DateRangePeriod(month: Month)) => {
+        (PriceDifferentiable(fsm.market1, month), PriceDifferentiable(fsm.market2, month))
+      }
+      case (f: FuturesMarket, SpreadPeriod(firstMonth: Month, secondMonth: Month)) => {
+        (PriceDifferentiable(market, firstMonth), PriceDifferentiable(market, secondMonth))
+      }
+    }
 
   def curveKey = ForwardCurveKey(market)
 
@@ -17,13 +21,13 @@ case class FuturesSpreadPrice(market : FuturesMarket, month1 : Month, month2 : M
     Quantity(0.1, market.priceUOM)
   }
   def shiftedEnvs(env : Environment, dP : Quantity) : (Environment, Environment) = {
-    val (dnFront, upFront) = frontKey.shiftedEnvs(env, dP / 2.0)
-    val (dnFrontDnBack, dnFrontUpBack) = backKey.shiftedEnvs(dnFront, dP / 2.0)
-    val (upFrontDnBack, upFrontUpBack) = backKey.shiftedEnvs(upFront, dP / 2.0)
+    val (dnFront, upFront) = firstKey.shiftedEnvs(env, dP / 2.0)
+    val (dnFrontDnBack, dnFrontUpBack) = secondKey.shiftedEnvs(dnFront, dP / 2.0)
+    val (upFrontDnBack, upFrontUpBack) = secondKey.shiftedEnvs(upFront, dP / 2.0)
     (dnFrontUpBack, upFrontDnBack)
   }
-  def periodKey = Some(SpreadPeriod(month1, month2))
-  def quantityValue (env : Environment) : Quantity = frontKey.quantityValue(env) - backKey.quantityValue(env)
+  def periodKey = Some(period)
+  def quantityValue (env : Environment) : Quantity = firstKey.quantityValue(env) - secondKey.quantityValue(env)
 
   def containingDifferentiable(marketDay : DayAndTime, tenor : TenorType) = this
 }

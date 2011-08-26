@@ -1,13 +1,12 @@
 package starling.gui.pages
 
 import starling.gui.{Page, PageContext, PageBuildingContext}
-import swing.Reactions
 import starling.daterange.{Day, Timestamp}
 import starling.gui.api._
 import starling.rmi.StarlingServer
 import collection.mutable.ListBuffer
 import swing.event.Event
-import starling.pivot.{PivotEdit, SomeSelection, Field, Selection}
+import starling.pivot.{PivotEdits, SomeSelection, Field, Selection}
 
 class PnlPivotReportPage
 
@@ -43,7 +42,7 @@ case class TradeChangesReportPage(tradeSelection:TradeSelection, from:TradeTimes
 
   def text = "Trade Changes " + tradeSelection + " " + from + " to " + to
   override def layoutType = Some("TradeChanges")
-  def selfPage(pivotPageState:PivotPageState, edits:Set[PivotEdit]) = copy(pivotPageState=pivotPageState)
+  def selfPage(pivotPageState:PivotPageState, edits:PivotEdits) = copy(pivotPageState=pivotPageState)
 
   override def refreshFunctions = {
     val functions = new ListBuffer[PartialFunction[Event,Page]]

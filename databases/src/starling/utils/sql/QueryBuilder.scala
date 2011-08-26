@@ -133,7 +133,6 @@ object QueryBuilder {
 }
 
 case class LiteralString(text:String)
-case class AnObject(obj:Object)
 
 object QueryBuilderMain {
   def main(args : Array[String]) {

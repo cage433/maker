@@ -1,6 +1,6 @@
 package starling.services.rpc.marketdata
 
-import starling.edm.EDMConversions._
+import starling.titan.EDMConversions._
 import starling.gui.api.{MarketDataSelection, PricingGroup, MarketDataIdentifier}
 import starling.marketdata.{SpotFXDataType, MarketDataType, PriceFixingsHistoryDataType}
 import starling.pivot._

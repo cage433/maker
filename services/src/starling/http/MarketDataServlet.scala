@@ -18,6 +18,7 @@ class MarketDataServlet(marketDataStore:MarketDataStore) extends HttpServlet {
   private val FilterField = Extractor.when[String](_.startsWith("@"), _.stripPrefix("@").replaceAll("_", " "))
   private val ConcatenatedFields = Extractor.map[Array[String]](_.flatMap(_.split(":")).toList)
   private val decimalPlaces = PivotFormatter.DefaultDecimalPlaces.copy(percentageFormat = "#0.0000")
+  private val extraFormatInfo = ExtraFormatInfo(decimalPlaces, PivotFormatter.DefaultDateRangeFormat)
 
   override def doGet(request: HttpServletRequest, response: HttpServletResponse) = {
     val params = HttpParams(request)
@@ -58,7 +59,7 @@ class MarketDataServlet(marketDataStore:MarketDataStore) extends HttpServlet {
 
         val (contentType, content) = request.getHeader("Accept") ?? "text/plain" match {
           case accept if accept.containsOneOf("text/html", "*/*") =>
-            "text/html" → pivotData.pivotTable.convertUsing(Utils.tableConverter, decimalPlaces)
+            "text/html" → pivotData.pivotTable.convertUsing(Utils.tableConverter, extraFormatInfo)
           case accept => "text/plain" → pivotData.pivotTable.asCSV
         }
 

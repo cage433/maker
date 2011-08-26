@@ -98,8 +98,7 @@ case class Formula(formula: String) {
     val mktInterp = new MktInterp(priceUOM, pr)
     val value1 = try {
       parser.computeExpression(formula, mktInterp).asInstanceOf[Double]
-    }
-    catch {
+    } catch {
       case e: CompilationException => {
         throw new InvalidFormulaException("Error compiling formula: " + formula, e)
       }

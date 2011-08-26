@@ -9,6 +9,7 @@ import starling.quantity.{SpreadQuantity, UOM, Quantity}
 import starling.curves.SpreadAtmStdDevAtomicDatumKey
 import starling.curves.FuturesSpreadPrice
 import starling.daterange._
+import starling.quantity.NamedQuantity
 
 case class FuturesCalendarSpread(market: FuturesMarket, firstMonth: Month, secondMonth: Month, firstStrike: Quantity, secondStrike: Quantity, volume: Quantity)
         extends UTP with Tradeable with AsUtpPortfolio with MultiLeg {
@@ -33,6 +34,10 @@ case class FuturesCalendarSpread(market: FuturesMarket, firstMonth: Month, secon
 
   def assets(env: Environment) = frontFuture.assets(env) ++ backFuture.assets(env)
 
+  def explanation(env : Environment) : NamedQuantity = {
+    frontFuture.explanation(env).named("Front") + backFuture.explanation(env).named("Back")
+  }
+  
   def asUtpPortfolio(tradeDay:Day) = {
     frontFuture.asUtpPortfolio ++
             backFuture.asUtpPortfolio
@@ -42,9 +47,9 @@ case class FuturesCalendarSpread(market: FuturesMarket, firstMonth: Month, secon
 
   def instrumentType = FuturesCalendarSpread
 
-  def details = Map("Market" -> market, "Period" -> Spread(firstMonth, secondMonth), "InitialPrice" -> SpreadQuantity(firstStrike, secondStrike))
+  def detailsForUTPNOTUSED = persistedTradeableDetails - "Quantity"
 
-  def tradeableDetails = details + ("Quantity" -> volume)
+  def persistedTradeableDetails = Map("Market" -> market, "Period" -> Spread(firstMonth, secondMonth), "InitialPrice" -> SpreadQuantity(firstStrike, secondStrike), "Quantity" -> volume)
 
   def tradeableType = FuturesCalendarSpread
 
@@ -53,7 +58,7 @@ case class FuturesCalendarSpread(market: FuturesMarket, firstMonth: Month, secon
 
   override def priceAndVolKeys(marketDay : DayAndTime) = {
     var (pk, _) = super.priceAndVolKeys(marketDay)
-    pk = if (pk.isEmpty) pk else Set(FuturesSpreadPrice(market, firstMonth, secondMonth))
+    pk = if (pk.isEmpty) pk else Set(FuturesSpreadPrice(market, firstMonth / secondMonth))
     (pk, Set())
   }
 

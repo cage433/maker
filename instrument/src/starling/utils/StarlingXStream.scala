@@ -116,7 +116,7 @@ object StarlingXStream {
 
   def write(obj:Object): String = {
     try {
-      xstream match {
+      val s = xstream match {
         case Some(xs) => {
           val sw = new StringWriter
           xs.marshal(obj,  new CompactWriter(sw));
@@ -127,6 +127,7 @@ object StarlingXStream {
           write(obj)
         }
       }
+      s.replaceAll("""<bitmap_\-0>\d+</bitmap_\-0>""", "")
     }
     catch {
       case e => {

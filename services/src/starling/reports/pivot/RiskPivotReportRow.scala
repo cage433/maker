@@ -14,8 +14,8 @@ import starling.reports.pivot.PivotReport._
 import starling.quantity.Quantity._
 import starling.market.rules.CommonPricingRule
 import starling.market._
-import starling.tradestore.{PeriodComparator, PeriodFieldDetails}
 import starling.gui.api.{ReportSpecificChoices, UTPIdentifier}
+import starling.marketdata.{PeriodComparator, PeriodFieldDetails}
 
 trait PivotReportRow{
   def utpID : UTPIdentifier
@@ -81,18 +81,18 @@ trait PivotRowShareableByRiskFactor[T]{
       case BankAccount(_, Some(mkt : FuturesMarket), None, period : DateRangePeriod) => Future(mkt, period.period, 0.0(mkt.priceUOM), 1.0(mkt.uom))
       case BankAccount(_, Some(mkt : FuturesMarket), None, SpreadPeriod(front : Month, back : Month)) => 
           FuturesCalendarSpread(mkt, front, back, 0.0(mkt.priceUOM), 0.0(mkt.priceUOM), 1.0(mkt.uom))
-      case BankAccount(_, None, Some(index : FuturesFrontPeriodIndex), period : DateRangePeriod) => SingleCommoditySwap(index, 0.0(index.priceUOM), 1.0(index.uom), period.period, cleared = true)
+      case BankAccount(_, None, Some(index : FuturesFrontPeriodIndex), period : DateRangePeriod) => SinglePeriodSwap(index, 0.0(index.priceUOM), 1.0(index.uom), period.period, cleared = true)
       case BankAccount(_, None, Some(multiIndex : MultiIndex), period : DateRangePeriod) => {
         val index = multiIndex.arbitraryIndexToAssignCashTo
-        SingleCommoditySwap(index, 0.0(index.priceUOM), 1.0(index.uom), period.period, cleared = true)
+        SinglePeriodSwap(index, 0.0(index.priceUOM), 1.0(index.uom), period.period, cleared = true)
       }
       case BankAccount(_, None, Some(index : SingleIndex), period : DateRangePeriod) => {
-        SingleCommoditySwap(index, 0.0(index.priceUOM), 1.0(index.uom), period.period, cleared = true)
+        SinglePeriodSwap(index, 0.0(index.priceUOM), 1.0(index.uom), period.period, cleared = true)
       }
 
       case CashInstrument(_, _, _, Some(Left(index : Index)), Some(DateRangePeriod(period))) => {
         // we default to a cleared swap with a common pricing rule. this may not be correct.
-        SingleCommoditySwap(index, 0.0(index.priceUOM), 1.0(index.uom), period, cleared = true, pricingRule = CommonPricingRule)
+        SinglePeriodSwap(index, 0.0(index.priceUOM), 1.0(index.uom), period, cleared = true, pricingRule = CommonPricingRule)
       }
       case CashInstrument(_, _, _, Some(Right(mkt: FuturesMarket)), Some(period : Period)) => {
         period match {
@@ -167,10 +167,9 @@ trait RiskPivotFields[T <: RiskPivotReportRow[T]]{
       }
     },
     new PivotReportField[T]("Risk Period") {
-      def value(reportRow : T) = OptionalPeriodLabel(reportRow.period)
-      override def pivotFieldDetails = new FieldDetails(name) {
-        override def nullValue() = OptionalPeriodLabel.Null
-        override def comparator = OptionalPeriodLabelComparator
+      def value(reportRow : T) = reportRow.period.getOrElse("NOPERIOD")
+      override def pivotFieldDetails = new PeriodFieldDetails(name) {
+        override def nullValue() = "NOPERIOD"
       }
     },
 

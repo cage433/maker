@@ -26,13 +26,10 @@ class TradeImporterFactory(
   }
 }
 
-class TradeImporter(systemOfRecord: SystemOfRecord, tradeStore: TradeStore,
-                    writeTimestamp: Timestamp = new Timestamp) {
+class TradeImporter(systemOfRecord: SystemOfRecord, tradeStore: TradeStore) {
 
-  def importAll(allTrades: Option[Seq[Trade]] = None): Boolean = TradeImporter.lock.synchronized {
-    Log.infoWithTime("Running trade import for " + systemOfRecord) {
-      val sw = new Stopwatch
-
+  def importAll(allTrades: Option[Seq[Trade]] = None, writeTimestamp: Timestamp = new Timestamp()): Boolean = TradeImporter.lock.synchronized {
+    Log.infoWithTime("Running trade import for " + systemOfRecord + " with timestamp " + writeTimestamp) {
       val trades = allTrades match {
         case Some(t) => t
         case None => {
@@ -45,6 +42,7 @@ class TradeImporter(systemOfRecord: SystemOfRecord, tradeStore: TradeStore,
           temp
         }
       }
+      assert(trades.map(_.tradeID).toSet.size == trades.size, "Duplicate trade ids!")
       tradeStore.storeTrades( (trade) => true, trades, writeTimestamp).changed
     }
   }

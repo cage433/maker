@@ -5,10 +5,13 @@ import ImplicitConversions._
 
 object Pattern {
   case class Extractor[A, B](f: A => Option[B]) {
-    def unapply(a: A) = f(a)
+    def unapply(a: A): Option[B] = try { f(a) } catch { case e => Log.warnF("Exception in Extractor", e)(None) }
     def unapply[C](ta: Traversable[A])(implicit g: Flattener[B, C]): Option[C] = g(ta.view.map(f))
 
     def compose[C](g: C => A) = new Extractor[C, B](f compose g)
+    def andThen[C](g: B => Option[C]) = new Extractor[A, C]((a:A) => f(a).flatMap(g))
+    def orElse(alternative: Extractor[A, B]): Extractor[A, B] = orElse(alternative.f)
+    def orElse(alternative: A => Option[B]): Extractor[A, B] = new Extractor[A, B](a => f(a).orElse(alternative(a)))
 
     object Pick {
       def unapply(ta: Traversable[A]) = pick(ta)(f)
@@ -30,11 +33,17 @@ object Pattern {
       def apply[A](pf: PartialFunction[List[String], A]) = from[String](s => regex.r.unapplySeq(s).flatMap(pf.lift(_)))
     }
 
+    def fromMap[K, V](map: Map[K, V]) = Extractor.from[K](map.get)
+
     class From[A] {
       def apply[B](f: A => Option[B]) = new Extractor(f)
 
       def partial = new {
         def apply[B](pf: PartialFunction[A, B]) = new Extractor(pf.lift)
+      }
+
+      def either = new {
+        def apply[L, R](f: A => Either[L, R]) = new Extractor((a:A) => f(a).right.toOption)
       }
     }
   }

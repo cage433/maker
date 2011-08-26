@@ -20,12 +20,6 @@ import org.testng.annotations.{AfterTest, AfterClass, Test}
 import starling.gui.api.{ReportSpecificChoices, UTPIdentifier}
 
 class RiskPivotReportTests extends TestMarketSpec with StarlingTest{
-
-  @AfterTest
-  def tearDown {
-    MP.stop
-  }
-
   @Test
   def testFuturesOption {
     val market = Market.NYMEX_WTI
@@ -40,7 +34,7 @@ class RiskPivotReportTests extends TestMarketSpec with StarlingTest{
         case _: ForwardPriceKey => Quantity(100, market.priceUOM)
         case _: OilAtmVolAtomicDatumKey => Percentage(0.4)
         case _: OilVolSkewAtomicDatumKey => Map[Double, Percentage]()
-        case _: DiscountRateKey => scala.math.exp(-0.0 * T)
+        case _: DiscountRateKey => new Quantity(scala.math.exp(-0.0 * T))
       }
     ))
 
@@ -89,7 +83,7 @@ class RiskPivotReportTests extends TestMarketSpec with StarlingTest{
         case _: ForwardPriceKey => Quantity(100, market.priceUOM)
         case _: OilAtmVolAtomicDatumKey => Percentage(0.4)
         case _: OilVolSkewAtomicDatumKey => Map[Double, Percentage]()
-        case _: DiscountRateKey => scala.math.exp(-0.0 * T)
+        case _: DiscountRateKey => new Quantity(scala.math.exp(-0.0 * T))
       }
     ))
 

@@ -62,6 +62,7 @@ object EquityPricesDataType extends MarketDataType {
   val priceField = new AveragePivotQuantityFieldDetails("Price")
   val fields = List(ricField, priceField)
   val keys = List(EquityPricesMarketDataKey)
+  def marketDataKeyFelds = Set(ricField.field)
   def keyFields = Set(ricField.field)
   def valueFields = Set(priceField.field)
   def createKey(values: Map[Field, Any]) = EquityPricesMarketDataKey

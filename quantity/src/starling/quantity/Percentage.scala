@@ -12,6 +12,8 @@ import starling.utils.Pattern._
  * value is the decimal value of a percentage: e.g. 10% = 0.1
  */
 case class Percentage(value : Double) {
+  import Percentage._
+
   assert(!value.isInfinite, "Percentage is infinite")
   assert(!value.isNaN, "Percentage is NaN")
 
@@ -19,8 +21,8 @@ case class Percentage(value : Double) {
   // e.g. 0.2435 * 100. = 24.349999999999998
   override def toString = MathUtil.roundToNdp(value * 100, 8) + "%"
 
-  def toShortString: String = toShortString("#0.00")
-  def toShortString(format: String): String = (value*100).format(format) + "%"
+  def toShortString: String = toShortString(DefaultFormat)
+  def toShortString(format: String): String = (value*100).format(format, addSpace = false) + "%"
 
   override def equals(other: Any) = other match {
     case p : Percentage => abs(p.value * 100 - this.value * 100) <= MathUtil.EPSILON
@@ -67,5 +69,7 @@ object Percentage {
   val Parse: Extractor[String, Percentage] = Extractor.from[String](text => text partialMatch {
     case Regex(value) => Percentage(value.toDouble)
   })
+
+  val DefaultFormat = "#0.00"
 }
 

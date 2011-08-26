@@ -154,6 +154,14 @@ object FieldOrColumnStructure {
 }
 
 case class ColumnTree(fieldOrColumnStructure:FieldOrColumnStructure, childStructure:ColumnTrees) {
+  def maxDepth:Int = {
+    val thisDepth = fieldOrColumnStructure.value match {
+      case Left(f) => 1
+      case Right(ct) => ct.maxDepth
+    }
+    thisDepth + childStructure.maxDepth
+  }
+
   def addAsFinalChild(f:Field, isM:Boolean):ColumnTree = {
     if (childStructure.trees.isEmpty) {
       ColumnTree(fieldOrColumnStructure, ColumnTrees(f, isM))
@@ -293,6 +301,7 @@ case class ColumnTrees(trees:List[ColumnTree]) {
   def bottomNonMeasureFields:List[Field] = trees.flatMap(_.bottomNonMeasureFields)
   def measureFieldsDirectlyBeneath(field:Field):List[Field] = trees.flatMap(_.measureFieldsDirectlyBeneath(field))
   def topMeasureFields:List[Field] = trees.flatMap(_.topMeasureFields)
+  def maxDepth:Int = (0 :: trees.map(_.maxDepth)).max
 
   def buildPathsWithPadding:List[ColumnStructurePath] = {
     val paths = buildPaths()
@@ -685,4 +694,4 @@ object PivotFieldsState {
   }
 }
 
-case class PivotFieldParams (calculate:Boolean, pivotFieldState:Option[PivotFieldsState])
+case class PivotFieldParams(calculate:Boolean, pivotFieldState:Option[PivotFieldsState])

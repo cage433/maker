@@ -1,15 +1,21 @@
 package starling.curves
 
 import starling.quantity.Quantity
-import starling.daterange.{Month, DateRange}
 import cern.colt.matrix.impl.{DenseDoubleMatrix1D => DVector, DenseDoubleMatrix2D => DMatrix}
 import starling.utils.conversions.RichColtMatrices._
 import cern.colt.matrix.{DoubleFactory1D, DoubleFactory2D, DoubleMatrix1D => Vector, DoubleMatrix2D => Matrix}
 import collection.immutable.List
 import cern.colt.matrix.linalg.{LUDecomposition, Algebra}
 import starling.utils.ImplicitConversions._
-import starling.marketdata.PriceValue
-
+import starling.pivot.{MarketValue, PivotQuantity}
+import starling.daterange._
+import starling.marketdata.PriceData._
+import starling.marketdata.PriceFixingsHistoryDataKey._
+import starling.marketdata.TimedMarketDataKey._
+import starling.marketdata.PriceDataKey._
+import starling.market.{Index, PublishedIndex}
+import starling.db.MarketDataReader
+import starling.marketdata._
 
 case class Months(months : List[Month]){
   def - (rhs : Months) : Months = {
@@ -68,15 +74,48 @@ class ProblemBuilder(dim : Int){
   }
 }
 
-object FreightCurve{
+object FreightCurve {
+
+  val freightMarketsWhichHavePrices = List(
+    "Baltic Supramax T/C Avg",
+    "Panamax T/C Average (Baltic)",
+    "Capesize T/C Average (Baltic)").map(Index.publishedIndexFromName)
+
+
+  /**
+   * Returns PriceData for the Freight markets we support. Note that Freight prices are published
+   * as CURMOM, CAL1 etc. This method turns then into date range
+   */
+  def freightPriceData(observationDay: Day, marketDataReader: MarketDataReader) = {
+    freightMarketsWhichHavePrices.flatMap { market =>
+      try {
+        val freightKey = PriceFixingsHistoryDataKey(market)
+        val freightPrices = marketDataReader.read(
+          TimedMarketDataKey(observationDay.atTimeOfDay(ObservationTimeOfDay.LondonClose), freightKey)
+        ).asInstanceOf[PriceFixingsHistoryData]
+        Some( PriceDataKey(market) -> FreightCurve.tenorsToPriceData(market, observationDay, freightPrices) )
+      } catch {
+        case e:MissingMarketDataException => None
+      }
+    }
+  }
+
+  def tenorsToPriceData(market:PublishedIndex, observationDay:Day, priceFixingTenors:PriceFixingsHistoryData) = {
+    val nextFloatingDay: Day = observationDay.nextBusinessDay(market.businessCalendar)
+    val p = priceFixingTenors.fixings.map {
+      case ( (_, storedFixingPeriod), MarketValue.Quantity(price) ) => storedFixingPeriod.toDateRange(nextFloatingDay) → price.pq
+    }
+    PriceData(p.toMap)
+  }
+
   // Create a reasonable monthly price map from a mixture of months, quarters and years. Note that discounting is ignored.
-  def calcMonthlyPricesFromArbitraryPeriods(rawPrices: Map[DateRange, PriceValue]): Map[Month, PriceValue] = if (rawPrices.isEmpty) {
+  def calcMonthlyPricesFromArbitraryPeriods(rawPrices: Map[DateRange, PivotQuantity]): Map[Month, Quantity] = if (rawPrices.isEmpty) {
     Map()
   } else {
-    val priceUOM = rawPrices.head._2.value.uom
+    val priceUOM = rawPrices.head._2.quantityValue.get.uom
 
-    calcMonthlyPricesFromArbitraryPeriodsWithUnusedPeriodList(rawPrices.mapValues(_.value.value))
-      ._1.mapValues(value => PriceValue(Quantity(value, priceUOM)))
+    calcMonthlyPricesFromArbitraryPeriodsWithUnusedPeriodList(rawPrices.mapValues(_.quantityValue.get.value))
+      ._1.mapValues(value => Quantity(value, priceUOM))
   }
 
   // For unit tests only. Gives the periods that were ignored through arbitrage

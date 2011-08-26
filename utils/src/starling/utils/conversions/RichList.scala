@@ -16,21 +16,6 @@ trait RichList {
   }
 
   class RichList[A](list : List[A]) {
-
-
-//    // TODO: Drop when we use scala 2.9
-//    def inits = list.reverse.tails.reverse.map(_.reverse)
-//
-//    // TODO: Drop when we use scala 2.9
-//    def tails = {
-//      def recurse(list : List[A]) : List[List[A]] = list match {
-//        case Nil => Nil
-//        case _ => list :: recurse(list.tail)
-//      }
-//
-//      recurse(list)
-//    }
-
     def castValues[T](error : Any => T)(implicit m : Manifest[T]) : List[T] = m.castAll(list, error)
     def filterCast[T](implicit m : Manifest[T]): List[T] = list.flatMap(m.cast(_))
 
@@ -88,5 +73,7 @@ trait RichList {
 
       results.toList
     }
+
+    def partialMap[B](pf: PartialFunction[A, B]): List[B] = flatMapO(pf.lift)
   }
 }

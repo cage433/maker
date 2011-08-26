@@ -2,6 +2,8 @@ package starling.curves
 
 import starling.utils.Log
 import starling.market.PublishedIndex
+import starling.props.PropsHelper
+import starling.services.StarlingInit
 
 object EAIAndStarlingMarketCompare {
   /**
@@ -46,8 +48,8 @@ object EAIAndStarlingMarketCompare {
         }
       }
       {
-        val eaiMarkets = eai.allFuturesMarkets.toSet
-        val starlingMarkets = starling.allFuturesMarkets.toSet
+        val eaiMarkets = eai.allMarkets.toSet
+        val starlingMarkets = starling.allMarkets.toSet
         val eaiExtras = eaiMarkets.filter(i => !starlingMarkets.find(_.name == i.name).isDefined)
         if (eaiExtras.size > 0) {
           Log.warn("EAI has some extra markets: " + eaiExtras)
@@ -64,5 +66,16 @@ object EAIAndStarlingMarketCompare {
         }
       }
     }
+  }
+
+  def main(args: Array[String]) {
+    val props = PropsHelper.defaultProps
+    val init = StarlingInit.devInstance
+    init.start
+    val eai = new EAIMarketLookup(init.eaiSqlServerDB, init.expiryRules)
+    val starling = new StarlingMarketLookup(init.starlingDB, init.businessCalendars, init.expiryRules)
+    compare(eai, starling)
+    
+    init.stop
   }
 }

@@ -1,0 +1,8 @@
+{                                                                                                   \
+    "Type": "com.trafigura.services.trinity.DepoRate",                                              \
+    "PeriodFromToday": false,                                                                       \
+    "Bid": 0.128,                                                                                   \
+    "Offer": 0.128,                                                                                 \
+    "Date": "01/01/1601",                                                                           \
+    "Period": "1D"                                                                                  \
+}

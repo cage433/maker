@@ -4,7 +4,7 @@ import system.Patch
 import starling.richdb.RichDB
 import starling.services.StarlingInit
 import starling.marketdata.PriceFixingsHistoryDataType
-import starling.utils.sql.AnObject
+import starling.utils.sql.PersistAsBlob
 import starling.daterange.Day
 import starling.db.{MarketDataSet, DBWriter}
 
@@ -75,7 +75,7 @@ class Patch105_RenameMarketsToEAINames extends Patch {
 
       starling.inTransaction {
         writer => {
-          writer.update("delete from MarketData where marketDataType = :t", Map("t" -> AnObject(PriceFixingsHistoryDataType)))
+          writer.update("delete from MarketData where marketDataType = :t", Map("t" -> PersistAsBlob(PriceFixingsHistoryDataType)))
         }
       }
 

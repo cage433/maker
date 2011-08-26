@@ -13,6 +13,7 @@ import starling.daterange.{Day}
 import view.swing._
 import java.awt.{Toolkit, Dimension}
 import javax.swing.ImageIcon
+import starling.utils.StackTraceToString
 
 class PivotReportPage {}
 
@@ -45,7 +46,7 @@ case class DifferenceMainPivotReportPage(
   }
 
   def text = tradeSelection + " " + curveIdentifierD + " vs " + curveIdentifierDm1
-  def selfPage(pps:PivotPageState, edits:Set[PivotEdit]) = copy(pivotPageState = pps)
+  def selfPage(pps:PivotPageState, edits:PivotEdits) = copy(pivotPageState = pps)
   override def toolbarButtons(pageContext:PageContext, data:PageData) =
     PivotReportPage.toolbarButtons(
       pageContext,
@@ -132,7 +133,7 @@ case class MainPivotReportPage(showParameters:Boolean, reportParameters:ReportPa
   def dataRequest(pageBuildingContext: PageBuildingContext) = {
     pageBuildingContext.cachingStarlingServer.reportPivot(reportParameters, pivotPageState.pivotFieldParams)
   }
-  def selfPage(pps:PivotPageState, edits:Set[PivotEdit]) = copy(pivotPageState = pps)
+  def selfPage(pps:PivotPageState, edits:PivotEdits) = copy(pivotPageState = pps)
   def selfReportPage(rp:ReportParameters, pps:PivotPageState = pivotPageState) = copy(reportParameters = rp, pivotPageState = pps)
   override def toolbarButtons(pageContext:PageContext, data:PageData) =
     PivotReportPage.toolbarButtons(pageContext, reportParameters, data, showParameters, pivotPageState)
@@ -281,18 +282,18 @@ case class ReportBookmark(showParameters:Boolean, userReportData:UserReportData,
 object PivotReportPage {
   def toolbarButtons(pageContext:PageContext, reportParameters:ReportParameters, data:PageData, showParameters:Boolean,
                             pivotPageState:PivotPageState) = {
-    val (pivotData, numErrors) = data match {
-      case PivotTablePageData(pivData,Some(pd),_) => pd match {
-        case PivotReportTablePageData(numErrors) => {
-          (pivData, numErrors)
+    val numErrors = data match {
+      case PivotTablePageData(_,Some(pd),_) => pd match {
+        case PivotReportTablePageData(nErrs) => {
+          nErrs
         }
         case scd => throw new Exception("Don't know how to handle this type of subclass page data: " + scd.getClass)
       }
-      case PivotTablePageData(pivData,None,_) => (pivData,0)
+      case PivotTablePageData(_,_,_) => 0
       case _ => throw new Exception("Don't know how to handle this type of page data")
     }
     
-    val buffer:ListBuffer[ToolBarButton] = new ListBuffer()
+    val buffer = new ListBuffer[ToolBarButton]()
     if (numErrors > 0) {
       buffer += new ToolBarButton {
         text = "Errors (" + numErrors + ")"
@@ -319,10 +320,6 @@ object PivotReportPage {
         }
       }
     }
-
-    val availablePages = pivotData.availablePages
-
-
 
     buffer.toList
   }

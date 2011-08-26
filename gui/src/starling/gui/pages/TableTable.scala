@@ -4,6 +4,8 @@ import starling.utils.STable
 import javax.swing.{JTable, JLabel, JScrollPane}
 import org.jdesktop.swingx.JXTable
 import javax.swing.table.AbstractTableModel
+import starling.pivot.TableCell
+
 object TableTable {
   val EmptyColumnHeader = "sdkjhsdfjkhsjkh"
 }
@@ -36,7 +38,11 @@ class TableTable(table:STable) extends JScrollPane {
     for (col <- 0 until getColumnCount) {
       var width = 80
       for (value <- table.columns(col).name :: table.data.map{_(col)}) {
-        tmpLabel.setText(value.toString)
+        val textToUse = value match {
+          case tc:TableCell => tc.text
+          case other => other.toString
+        }
+        tmpLabel.setText(textToUse)
         width = math.max(width, tmpLabel.getPreferredSize.width)
       }
       width = math.min(width + 5, maxWidth)

@@ -1,6 +1,5 @@
 package starling.eai.instrumentreaders
 
-import starling.systemofrecord.{InstrumentReader, SystemOfRecord}
 import starling.richdb.{RichDB, RichResultSetRow}
 import starling.utils.sql.QueryBuilder._
 import starling.db.EAITradeSystem
@@ -16,11 +15,12 @@ import starling.market._
 import starling.utils.{Log, Reflection}
 import starling.utils.sql.Clause
 import starling.utils.sql.Query
+import starling.systemofrecord.{SystemOfRecordBackedByADatabase, InstrumentReader, SystemOfRecord}
 
 /**
  * version is an option on a map of bookid to downloadid
  */
-case class EAISystemOfRecord(externalDB: RichDB, bookID: Int, downloadID: Int) extends SystemOfRecord(externalDB) {
+case class EAISystemOfRecord(externalDB: RichDB, bookID: Int, downloadID: Int) extends SystemOfRecordBackedByADatabase(externalDB) {
   import EAISystemOfRecord._
   private val etOptions = ((select ("tradeType =  "+ET_OPTION+", *") from ("tblPlutoETOptions t")), ("ContractDate" gt (31 Sep 2009)))
   private val futures = ((select ("tradeType =  "+FUTURE+",*") from ("tblPlutoFutures t")), ("ContractDate" gt (31 Sep 2009)))

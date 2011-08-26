@@ -12,10 +12,11 @@ import scala.{Right, Left}
 import collection.Set
 
 object ColumnDropPanel {
-  def prefSize(text:String) = TempGuiFieldNamePanel(text).preferredSize
+  def prefSize(text:String) = new TempGuiFieldNamePanel(text).preferredSize
+  def apply(fieldOrColumnStructure:FieldOrColumnStructure, position:Position.Position) = new ColumnDropPanel(fieldOrColumnStructure, position)
 }
 
-case class ColumnDropPanel(fieldOrColumnStructure:FieldOrColumnStructure, position:Position.Position) extends MigPanel("insets 0, gap 0px") {
+class ColumnDropPanel(val fieldOrColumnStructure:FieldOrColumnStructure, val position:Position.Position) extends MigPanel("insets 0, gap 0px") {
   opaque = false
   border = DropPanel.NormalBorder
   preferredSize = new Dimension(15,15)
@@ -144,7 +145,7 @@ class ColumnStructureComponent(columnStructure:ColumnTrees, guiFieldsMap:Map[Fie
   }
 }
 
-case class ColumnAndMeasureComponent(model:PivotTableModel, otherLayoutInfo:OtherLayoutInfo,
+class ColumnAndMeasureComponent(model:PivotTableModel, otherLayoutInfo:OtherLayoutInfo,
                         viewUI:PivotTableViewUI, tableView:PivotTableView) extends MigPanel("insets 0") with DropTarget {
   opaque = false
   private val cs = model.columns
@@ -196,7 +197,7 @@ case class ColumnAndMeasureComponent(model:PivotTableModel, otherLayoutInfo:Othe
   })
 
   private val blankDropLabel = if (fields.isEmpty) {
-    Some(EmptyDropLabel("Drop Column and Measure Fields Here", tableView))
+    Some(new EmptyDropLabel("Drop Column and Measure Fields Here", tableView))
   } else {
     None
   }
