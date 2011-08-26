@@ -18,7 +18,7 @@ trait Index {
   val name : String
   val eaiQuoteID: Option[Int]
 
-  val identifier = name
+  def identifier = name
   def priceUOM : UOM
   def uom : UOM
 
