@@ -606,7 +606,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
     tooltip = "Go to the settings page"
     reactions += {
       case ButtonClicked(e) => {
-        pageContext.goTo(SettingsPage(), Modifiers(true, false))
+        pageContext.goTo(SettingsPage(), Modifiers(true, true))
       }
     }
   }
