@@ -430,15 +430,7 @@ class PivotJTable(tableModel:PivotJTableModel, pivotTableView:PivotTableView, mo
               val resetItem = new MenuItem(resetAction)
               popup.add(resetItem.peer)
             }
-            popup.addSeparator()
           }
-
-          val fitColumnWidthAction = Action("Fit Column Width") {
-            println("Put this action in")
-          }
-          fitColumnWidthAction.enabled = false
-          val fitColumnWidthItem = new MenuItem(fitColumnWidthAction)
-          popup.add(fitColumnWidthItem.peer)
 
           popup.show(e.getComponent, point.x, point.y)
         }

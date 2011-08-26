@@ -23,6 +23,8 @@ import starling.browser.internal.UserSettings
 import service.internal.HeterogeneousMap
 import xstream.GuiStarlingXStream
 import swing.{Component, Label, Button}
+import javax.swing.KeyStroke
+import java.awt.event.KeyEvent
 
 /**
  * An alternative StarlingBrowser for testing gui features quickly
@@ -81,10 +83,10 @@ case class CannedHomePage() extends CannedPage {
 object CannedHomePagePageComponent {
   val icon = StarlingIcons.im("/icons/stock_chart-reorganize.png")
   def buttons = {
-    PageButton("Run", CannedPivotReportPage(PivotPageState(false, PivotFieldParams(true, None))), icon) ::
-    PageButton("Run Editable", EditableCannedPivotReportPage(PivotPageState(false, PivotFieldParams(true, None))), icon) ::
-    PageButton("Run Editable Specified", EditableSpecifiedCannedPivotReportPage(PivotPageState(false, PivotFieldParams(true, None))), icon) ::
-    PageButton("Run Slow", SlowCannedPivotReportPage(PivotPageState(false, PivotFieldParams(true, None))), icon) ::
+    PageButton("Run", CannedPivotReportPage(PivotPageState(false, PivotFieldParams(true, None))), icon, Some(KeyStroke.getKeyStroke(KeyEvent.VK_R,0))) ::
+    PageButton("Run Editable", EditableCannedPivotReportPage(PivotPageState(false, PivotFieldParams(true, None))), icon, Some(KeyStroke.getKeyStroke(KeyEvent.VK_E,0))) ::
+    PageButton("Run Editable Specified", EditableSpecifiedCannedPivotReportPage(PivotPageState(false, PivotFieldParams(true, None))), icon, Some(KeyStroke.getKeyStroke(KeyEvent.VK_S,0))) ::
+    PageButton("Run Slow", SlowCannedPivotReportPage(PivotPageState(false, PivotFieldParams(true, None))), icon, Some(KeyStroke.getKeyStroke(KeyEvent.VK_W,0))) ::
     Nil
   }
 }

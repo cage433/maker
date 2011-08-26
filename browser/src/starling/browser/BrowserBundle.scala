@@ -13,11 +13,13 @@ trait PageFactory {
 class PagePageFactory(page:Page) extends PageFactory {
   def create(serverContext: ServerContext) = page
 }
-class PageButton(val name:String, val pageFactory:PageFactory, val icon:BufferedImage, val key:Option[KeyStroke] = None, val tooltip:Option[String]=None)
+class PageButton(val name:String, val pageFactory:PageFactory, val icon:BufferedImage, val key:Option[KeyStroke] = None) {
+  val tooltip:Option[String] = key.map(k => {name + " (" + String.valueOf(k.getKeyCode.asInstanceOf[Char]).toUpperCase + ")"})
+}
 
 object PageButton {
-  def apply(name:String, page:Page, icon:BufferedImage) = {
-    new PageButton(name, new PagePageFactory(page), icon)
+  def apply(name:String, page:Page, icon:BufferedImage, key:Option[KeyStroke]) = {
+    new PageButton(name, new PagePageFactory(page), icon, key)
   }
 }
 trait BrowserBundle {
