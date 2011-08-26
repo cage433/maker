@@ -310,7 +310,7 @@ class RoundedNamedQuantityPanel(round:RoundedNamedQuantity, fi:ExtraFormatInfo) 
   }
 }
 
-class TopNamedQuantityComponent(quantity:SimpleNamedQuantity, formatInfo:ExtraFormatInfo=PivotFormatter.DefaultExtraFormatInfo) extends MigPanel with UpdateableNamedQuantityComponent {
+class TopNamedQuantityComponent(quantity:NamedQuantity, formatInfo:ExtraFormatInfo=PivotFormatter.DefaultExtraFormatInfo) extends MigPanel with UpdateableNamedQuantityComponent {
   background = ExplanationPanelBackgroundColour
   val (panelToAdd, quantityValue) = quantity.quantity match {
     case nq:NamedQuantity => (new ExpandCollapsePanel(quantity, formatInfo), nq.quantity)

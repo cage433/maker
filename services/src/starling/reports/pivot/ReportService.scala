@@ -190,18 +190,8 @@ class ReportService(reportContextBuilder:ReportContextBuilder, tradeStores: Trad
 
   def singleTradeReport(trade: Trade, curveIdentifier: CurveIdentifier): TradeValuation = {
     val defaultContext = reportContextBuilder.contextFromCurveIdentifier(curveIdentifier)
-    val explanation = trade.tradeable.explanation(defaultContext.environment)
-    if (trade.costs.nonEmpty) {
-      val explan = new SimpleNamedQuantity("Value", explanation)
-      val namedCosts = trade.costs.flatMap(c => c.costs.map(_.explanation(defaultContext.environment)))
-      val costs = FunctionNamedQuantity("Sum", namedCosts, namedCosts.map(_.quantity).sum).named("Costs")
-      val res = explan + costs
-      val finalRes = new SimpleNamedQuantity("P&L", res)
-      TradeValuation(finalRes)
-    } else {
-      val finalRes = new SimpleNamedQuantity("P&L", explanation)
-      TradeValuation(finalRes)
-    }
+    val explanation = trade.explain(defaultContext.environment)
+    TradeValuation(explanation)
   }
 
   val anotherCrazyCache = CacheFactory.getCache("PivotReport.tradeChanges", unique = true)

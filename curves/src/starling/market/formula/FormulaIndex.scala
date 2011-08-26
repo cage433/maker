@@ -17,7 +17,7 @@ class InvalidFormulaException(msg: String, t: Throwable) extends Exception(msg, 
  */
 case class FormulaIndex(formulaName: String, formula: Formula, ccy: UOM, uom: UOM, precision: Option[Precision], conversion: Option[Conversions], eaiQuoteID: Option[Int])
   extends MultiIndex(formulaName) {
-  def indexes = formula.indexes
+  lazy val indexes = formula.indexes
 
   def formulaString = formula.toString
 

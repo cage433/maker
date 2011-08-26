@@ -66,7 +66,7 @@ object MarketDataIdentifier {
     new MarketDataIdentifier(selection, new SpecificMarketDataVersion(version))
 }
 
-case class TradeValuation(explanation:SimpleNamedQuantity)
+case class TradeValuation(explanation:NamedQuantity)
 case class TradeValuationAndDetails(tradeValuation:TradeValuation, tradeRow:List[Any], fieldDetailsGroups:List[FieldDetailsGroupLabel], columns:List[SColumn])
 
 case class PricingGroup(name:String) {

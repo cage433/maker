@@ -30,6 +30,8 @@ class TestNonSkewDelta extends TestMarketTest{
       
       def pivotUTPType = throw new Exception("Unimplemented")
 
+      def explanation(env: Environment) = throw new Exception("Unimplemented")
+
       def atomicMarketDataKeys = Set[AtomicDatumKey]()
 
       def isLive(dayAndTime: DayAndTime) = true

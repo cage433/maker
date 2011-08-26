@@ -95,6 +95,9 @@ case class SinglePeriodSwap(
   assert(pricingRule.isValid(index.calendars), "Invalid pricing rule for " + index)
   require(index.convert(volume, strike.denominatorUOM).isDefined, "Couldn't convert volume into strike uom: " + (volume, strike) + ", " + index)
 
+  // volume converted so everything is in the context of the strike uom
+  val convertedVolume = index.convert(volume, strike.denominatorUOM).get
+
   def valuationCCY: UOM = strike.numeratorUOM
 
   private val averagingDays = period.days.filter(pricingRule.isObservationDay(index.calendars, _))
@@ -156,7 +159,7 @@ case class SinglePeriodSwap(
   def explanation(env : Environment) : NamedQuantity = {
     val namedEnv = env.withNaming()
     val price = SimpleNamedQuantity("F_Avg", namedEnv.averagePrice(index, period, pricingRule, priceUOM, priceRounding))
-    val undiscounted = (price - strike.named("K")) * volume.named("Volume")
+    val undiscounted = (price - strike.named("K")) * convertedVolume.named("Volume")
     if(cleared) {
       undiscounted
     } else {
@@ -189,7 +192,7 @@ case class SinglePeriodSwap(
       } else {
         val price = env.averagePrice(index, period, pricingRule, priceUOM, priceRounding)
 
-        val payment = (price - strike) * volume
+        val payment = (price - strike) * convertedVolume
         if (env.marketDay < days.last.endOfDay) {
           if(cleared) { // cleared means we're margining so no discounting
             List(Asset.estimatedCash(env.marketDay.day, payment, payment))

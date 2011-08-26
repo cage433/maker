@@ -273,9 +273,11 @@ class StarlingInit( val props: Props,
     }
   }
 
+  def currentUser() = User.currentlyLoggedOn
+
   val excelLoopReceiver = new ExcelLoopReceiver(ldapUserLookup, props.XLLoopPort(),
     new MarketDataHandler(broadcaster, starlingServer, marketDataStore),
-    new TradeHandler(broadcaster, new ExcelTradeReader(strategyDB, traders), intradayTradesDB, traders),
+    new TradeHandler(broadcaster, new ExcelTradeReader(strategyDB, traders, currentUser), intradayTradesDB, traders),
     new ReportHandler(userReportsService),
     new DiagnosticHandler(starlingServer))
 

@@ -56,6 +56,8 @@ class PnlExplanationReportTests extends JonTestEnv {
   class InstrumentWithIncorrectAtomicKeys(day:Day) extends UTP {
     def pivotUTPType = throw new Exception
 
+    protected def explanation(env: Environment) = throw new Exception
+
     def detailsForUTPNOTUSED = throw new Exception
     def instrumentType = throw new Exception
     def asUtpPortfolio = throw new Exception

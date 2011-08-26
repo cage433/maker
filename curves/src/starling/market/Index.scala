@@ -342,11 +342,11 @@ object Index {
   lazy val IPE_GAS_OIL_VS_IPE_BRENT = formulaIndexFromName("IPE Gas Oil (Settlement) vs IPE Brent")
   lazy val MOGAS_95_UNL_10PPM_NWE_BARGES_VS_IPE_BRENT = formulaIndexFromName("Mogas 95 Unl 10ppm NWE Barges (Argus) vs IPE Brent")
   lazy val NYMEX_WTI_VS_IPE_BRENT = formulaIndexFromName("NYMEX WTI vs IPE Brent")
+  lazy val NYMEX_RBOB_1ST_MONTH_VS_IPE_BRENT_1ST_MONTH = formulaIndexFromName("nymex rbob 1st month vs ipe brent 1st month (bbls)")
 
   lazy val allFuturesFrontPeriodIndexes = provider.allIndexes.flatMap{case f:FuturesFrontPeriodIndex => Some(f); case _ => None}
   lazy val allPublishedIndexes = provider.allIndexes.flatMap{case p:PublishedIndex => Some(p); case _ => None}
   lazy val marketToPublishedIndexMap: Map[CommodityMarket, PublishedIndex] = allPublishedIndexes.toMapWithKeys(_.market)
-  lazy val futuresMarketToFuturesFrontPeriodIndexMap: Map[FuturesMarket, FuturesFrontPeriodIndex] = allFuturesFrontPeriodIndexes.toMapWithKeys(_.market)
 
   lazy val futuresMarketToIndexMap = Map(
     Market.ICE_BRENT -> BRT11,

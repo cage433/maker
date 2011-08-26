@@ -10,6 +10,7 @@ import java.lang.String
 import starling.utils.ImplicitConversions._
 import starling.utils.Pattern._
 import java.text.DecimalFormat
+import starling.quantity.Quantity
 
 class QuantityDouble(d : Double){
   def apply(uom : UOM) = Quantity(d, uom)
@@ -88,6 +89,15 @@ object Quantity {
       } else {
         result
       }
+    }
+  }
+
+  def sumNamed(quantities : Iterable[NamedQuantity]):NamedQuantity = quantities match {
+    case Nil => NamedQuantity.NULL
+    case _ => {
+      val (sum, uom) = sumAsBigDecimal(quantities)
+      val result = Quantity(sum(mc).toDouble, uom)
+      FunctionNamedQuantity("Sum", quantities.toList.asInstanceOf[List[NamedQuantity]], result)
     }
   }
 

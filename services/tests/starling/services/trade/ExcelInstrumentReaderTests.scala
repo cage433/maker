@@ -13,6 +13,8 @@ import starling.market.rules.{NonCommonPricingRule, CommonPricingRule}
 import starling.market._
 
 class ExcelInstrumentReaderTests extends JonTestEnv {
+  val currentlyLoggedOn = User("jon.fox", "Jon Fox")
+
   @DataProvider(name = "testFutures")
   def testFuturesData = {
     val market1 = Market.NYMEX_WTI
@@ -50,7 +52,7 @@ class ExcelInstrumentReaderTests extends JonTestEnv {
 
   @Test(dataProvider = "testFutures")
   def testFutures(row: Map[String, Any], instrument: Tradeable) {
-    assertEquals(ExcelTradeReader.instrument(ExcelRow(row, traders)), instrument)
+    assertEquals(ExcelTradeReader.instrument(ExcelRow(row, traders, currentlyLoggedOn)), instrument)
   }
 
   @DataProvider(name = "testFuturesOptions")
@@ -64,7 +66,7 @@ class ExcelInstrumentReaderTests extends JonTestEnv {
 
   @Test(dataProvider = "testFuturesOptions")
   def testFuturesOptions(row: Map[String, Any], instrument: Tradeable) {
-    assertEquals(ExcelTradeReader.instrument(ExcelRow(row, traders)), instrument)
+    assertEquals(ExcelTradeReader.instrument(ExcelRow(row, traders, currentlyLoggedOn)), instrument)
   }
 
 
@@ -83,7 +85,7 @@ class ExcelInstrumentReaderTests extends JonTestEnv {
 
   @Test(dataProvider = "testSwapsData")
   def testSwaps(row: Map[String, Any], instrument: Tradeable) {
-    assertEquals(ExcelTradeReader.instrument(ExcelRow(row, traders)), instrument)
+    assertEquals(ExcelTradeReader.instrument(ExcelRow(row, traders, currentlyLoggedOn)), instrument)
   }
 
 
@@ -102,37 +104,37 @@ class ExcelInstrumentReaderTests extends JonTestEnv {
 
   @Test(dataProvider = "testAsianData")
   def testAsians(row: Map[String, Any], instrument: Tradeable) {
-    val excelRow = ExcelRow(row, traders)
+    val excelRow = ExcelRow(row, traders, currentlyLoggedOn)
     assertEquals(ExcelTradeReader.instrument(excelRow), instrument)
   }
 
   @Test(expectedExceptions = Array(classOf[AssertionError]))
   def testNegativePrices1 {
     val future = Map("id" -> 6, "size" -> -2, "unit" -> "lots", "market" -> "nymex rbob", "instr" -> "future", "period" -> "x10", "price" -> "-1.02")
-    ExcelRow(future, traders).price
+    ExcelRow(future, traders, currentlyLoggedOn).price
   }
 
   @Test(expectedExceptions = Array(classOf[AssertionError]))
   def testNegativePrices2 {
     val future = Map("id" -> 6, "size" -> -2, "unit" -> "lots", "market" -> "nymex rbob", "instr" -> "futures option", "period" -> "x10", "price" -> "-1.02")
-    ExcelRow(future, traders).price
+    ExcelRow(future, traders, currentlyLoggedOn).price
   }
 
   @Test(expectedExceptions = Array(classOf[AssertionError]))
   def testNegativePrices3 {
     val future = Map("id" -> 6, "size" -> -2, "unit" -> "lots", "market" -> "NYMEX WTI 1st month", "instr" -> "swap", "period" -> "x10", "price" -> "-1.02")
-    ExcelRow(future, traders).price
+    ExcelRow(future, traders, currentlyLoggedOn).price
   }
 
   @Test
   def testNegativePrices4 {
     val future = Map("id" -> 6, "size" -> -2, "unit" -> "lots", "market" -> "nymex rbob", "instr" -> "future", "period" -> "x10/z10", "price" -> "-1.02")
-    assertEquals (ExcelRow(future, traders).price, Quantity(-1.02, Market.NYMEX_GASOLINE.priceUOM))
+    assertEquals (ExcelRow(future, traders, currentlyLoggedOn).price, Quantity(-1.02, Market.NYMEX_GASOLINE.priceUOM))
   }
 
   @Test
   def testNegativePrices5 {
     val future = Map("id" -> 6, "size" -> -2, "unit" -> "bbls", "market" -> "Gas Oil Crack", "instr" -> "swap", "period" -> "x10/z10", "price" -> "-1.02")
-    assertEquals (ExcelRow(future, traders).price, Quantity(-1.02, Index.IPE_GAS_OIL_VS_IPE_BRENT.priceUOM))
+    assertEquals (ExcelRow(future, traders, currentlyLoggedOn).price, Quantity(-1.02, Index.IPE_GAS_OIL_VS_IPE_BRENT.priceUOM))
   }
 }

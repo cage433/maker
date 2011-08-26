@@ -270,7 +270,7 @@ class UTPTests extends IndexTest {
   def testExplanationValuation(tr : Tradeable){
     try {
       assertQtyEquals(
-        tr.explanation(env), 
+        tr.explanation(env),
         tr.asUtpPortfolio(Day(2009, 1, 1)).mtm(env, tr.valuationCCY),
         1e-7
       )
