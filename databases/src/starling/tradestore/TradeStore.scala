@@ -1,5 +1,6 @@
 package starling.tradestore
 
+import eai.EAITradeAttributes
 import starling.utils.sql._
 import starling.utils._
 import starling.pivot.{Field => PField}
@@ -672,6 +673,18 @@ abstract class TradeStore(db: RichDB, broadcaster:Broadcaster, tradeSystem: Trad
       val currentTrades = allTrades.filter(v => predicate(v._2.trade))
       val (added, updated, _) = writer.updateTrades(trades, currentTrades, timestamp)
 
+      // Some sanity checks. These will make the import slower but we've screwed up the trade table enough times that they're important to have
+      bookID match {
+        case Some(book) => {
+          val wrongOldTrades = allTrades.valuesIterator.filter(_.trade.attributes.asInstanceOf[EAITradeAttributes].bookID.id != book)
+          assert(wrongOldTrades.isEmpty, "read in some invalid trades:: " + wrongOldTrades.toList)
+
+          val wrongNewTrades = trades.filter(_.attributes.asInstanceOf[EAITradeAttributes].bookID.id != book)
+          assert(wrongNewTrades.isEmpty, "some new invalid trades:: " + wrongNewTrades.toList)
+        }
+        case _=>
+      }
+      
       val currentTradeIDs = currentTrades.map(_._1)
       // the update step above doesn't remove trades, so this needs to be done as a separate step
       val updateTradeIDs = Set[TradeID]() ++ trades.map(_.tradeID)
