@@ -6,7 +6,6 @@ object Dependencies{
 
   val testDependencies = Seq(
     "org.mockito" % "mockito-all" % "1.8.2" withSources(),
-    "org.scala-tools" %% "scala-stm" % "0.3",
     "org.testng" % "testng" % "5.8" classifier "jdk15" withSources()
   ) 
 
@@ -98,6 +97,19 @@ object StarlingBuild extends Build{
   import Dependencies._
   import Utils._
 
+  val useTitanModelBinaries = {
+    if (!new File("props.conf").exists)
+      true
+    else {
+      val serverSettingRegexp = """^ServerType\s*=\s*(\w+)\s*$""".r
+      scala.io.Source.fromFile("props.conf").getLines.toList.collect {
+        case serverSettingRegexp(serverType) => serverType
+      } match {
+        case List("FC2") => false
+        case _ => true
+      }
+    }
+  }
   lazy val standardSettings = Defaults.defaultSettings ++ Seq(
     unmanagedSourceDirectories in Compile <+= baseDirectory(_/"src"),
     unmanagedSourceDirectories in Test <+= baseDirectory(_/"tests"),
@@ -283,11 +295,21 @@ object StarlingBuild extends Build{
     ++ copyModelSettings
   )
 
-  lazy val starlingApi = Project(
-    "starlingApi", 
-    file("./starling.api"),
-    settings = standardSettings 
-  ) dependsOn(bouncyrmi, titanModel)
+  lazy val starlingApi = if (useTitanModelBinaries) {
+    Project(
+      "starlingApi", 
+      file("./starling.api"),
+      settings = standardSettings ++ 
+        Seq(unmanagedClasspath in Compile <++= (baseDirectory) map titanBinaryJars) ++ 
+        Seq(unmanagedClasspath in Test <++= (baseDirectory) map titanBinaryJars)
+    ) dependsOn(bouncyrmi)
+  } else {
+    Project(
+      "starlingApi", 
+      file("./starling.api"),
+      settings = standardSettings 
+    ) dependsOn(bouncyrmi, titanModel)
+  }
  
   lazy val databases = Project(
     "databases", 
@@ -295,19 +317,44 @@ object StarlingBuild extends Build{
     settings = standardSettings ++ Seq(libraryDependencies ++= databasesDependencies ++ testDependencies)
   ) dependsOn(curves % "test->test", VaR , pivot , guiapi , concurrent , auth , starlingApi )
 
-  lazy val titan = Project(
-    "titan", 
-    file("./titan"),
-    settings = standardSettings ++ Seq(libraryDependencies ++= testDependencies)
-  ) dependsOn(curves % "test->test", titanModel, databases)
+  lazy val titan = if (useTitanModelBinaries) {
+    Project(
+      "titan", 
+      file("./titan"),
+      settings = standardSettings ++ 
+        Seq(libraryDependencies ++= testDependencies) ++ 
+        Seq(unmanagedClasspath in Compile <++= (baseDirectory) map titanBinaryJars) ++ 
+        Seq(unmanagedClasspath in Test <++= (baseDirectory) map titanBinaryJars)
+    ) dependsOn(curves % "test->test", databases)
+  }
+  else {
+    Project(
+      "titan", 
+      file("./titan"),
+      settings = standardSettings ++ Seq(libraryDependencies ++= testDependencies) 
+    ) dependsOn(curves % "test->test", titanModel, databases)
+  }
 
-  lazy val services = Project(
-    "services", 
-    file("./services"),
-    settings = standardSettings ++ Seq(
-      libraryDependencies ++= servicesDependencies ++ testDependencies
-    )
-  ) dependsOn(curves % "test->test", loopyxl % "test->test", bouncyrmi, concurrent, loopyxl, titan, gui, fc2api, browser)
+  def titanBinaryJars(base : File) : Seq[Attributed[File]] = (((base / "../lib/titan-model-jars") ** "*.jar")).getFiles.map{f : File => Attributed.blank(f)}
+
+  lazy val services = if (useTitanModelBinaries) {
+    Project(
+      "services", 
+      file("./services"),
+      settings = standardSettings ++ 
+        Seq(libraryDependencies ++= servicesDependencies ++ testDependencies) ++ 
+        Seq(unmanagedClasspath in Compile <++= (baseDirectory) map titanBinaryJars) ++ 
+        Seq(unmanagedClasspath in Test <++= (baseDirectory) map titanBinaryJars)
+    ) dependsOn(curves % "test->test", loopyxl % "test->test", bouncyrmi, concurrent, loopyxl, titan, gui, fc2api, browser)
+  } else {
+    Project(
+      "services", 
+      file("./services"),
+      settings = standardSettings ++ Seq(
+        libraryDependencies ++= servicesDependencies ++ testDependencies
+      )
+    ) dependsOn(curves % "test->test", loopyxl % "test->test", bouncyrmi, concurrent, loopyxl, titan, gui, fc2api, browser)
+  }
 
   lazy val devLauncher = Project(
     "devLauncher", 
@@ -322,33 +369,11 @@ object StarlingBuild extends Build{
     file("./dummy-sbt-vim-hack"),
     settings = standardSettings
   ) dependsOn(
-    utils % "test->test", 
-    bouncyrmi % "test->test", 
-    auth % "test->test", 
-    concurrent % "test->test", 
-    quantity % "test->test", 
-    daterange % "test->test", 
-    loopyxl % "test->test", 
-    maths % "test->test", 
-    pivot % "test->test", 
-    pivotUtils % "test->test",
-    guiapi % "test->test",
-    curves % "test->test",
-    instrument % "test->test",
-    gui % "test->test",
-    browser % "test->test",
-    browserService % "test->test",
-    trade % "test->test",
-    VaR % "test->test",
-    titanModel % "test->test",
-    databases % "test->test",
-    titan % "test->test",
-    services % "compile->test;test->test",
-    devLauncher % "test->test"
+    childProjects.map(_ % "test->test") : _*
   )
 
-
-  val root = Project("starling", file("."), settings = standardSettings) aggregate (
+  def titanModelReference : List[ProjectReference] = if (useTitanModelBinaries) Nil else List(titanModel) 
+  def otherProjectRefereneces : List[ProjectReference] = List(
     utils, 
     bouncyrmi, 
     auth, 
@@ -368,20 +393,24 @@ object StarlingBuild extends Build{
     browserService,
     trade,
     VaR,
-    titanModel,
     databases,
     titan,
     services,
     devLauncher
   )
 
+  val childProjects : List[ProjectReference] =  otherProjectRefereneces ::: titanModelReference
+
+
+  val root = Project("starling", file("."), settings = standardSettings) aggregate (childProjects : _*)
+
   object TitanModel {
     import IO._
     val modelGenSrcDir = file("titan-scala-model/model-src/main/scala/")
     val copiedSrcDir = file("titan-scala-model/src")
     val modelRoot = file("titan-scala-model")
-    def cleanGenSrc = {println("Cleaning " + modelGenSrcDir); IO.delete(modelGenSrcDir) }
-    def cleanCopiedSrc = {println("Cleaning " + copiedSrcDir); IO.delete(copiedSrcDir) }
+    def cleanGenSrc = IO.delete(modelGenSrcDir)
+    def cleanCopiedSrc = IO.delete(copiedSrcDir) 
     val cleanGenSrcTask = TaskKey[Unit]("clean-src", "Clean model generated sources")
     val cleanCopiedSrcTask = TaskKey[Unit]("clean-copied-src", "Clean sources copied from model")
     val buildSrcTask = TaskKey[Unit]("build-src", "Build sources from model")
@@ -465,7 +494,6 @@ object StarlingBuild extends Build{
       
       inputTaskKey <<= inputTask { (argTask : TaskKey[Seq[String]]) => 
         (argTask) map { (args : Seq[String]) =>
-          println("args = " + args.mkString(","))
           f(args.toList)
         }
       }
@@ -482,8 +510,6 @@ object StarlingBuild extends Build{
     // write a classpatch script for dev
     val writeClasspathScript = TaskKey[Unit]("write-classpath")
     val writeClasspathScriptTask = writeClasspathScript <<= (target, fullClasspath in Test) map { (target, cp) =>
-      println("Target path is: " + target + "\n")
-      println("Full classpath is: " + cp.map(_.data).mkString(":"))
       import java.io._
       val file = new PrintWriter(new FileOutputStream(new File("set-classpath.sh")))
       val resourceDirs = cp.map(_.data).getFiles.toList.map(_.getPath).filter(_.endsWith("/classes")).map{s => s.replace("/classes", "/resources")}
