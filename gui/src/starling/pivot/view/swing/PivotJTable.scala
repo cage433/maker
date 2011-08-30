@@ -19,7 +19,7 @@ import starling.pivot.model.{AxisCell, PivotTableModel}
 import java.awt.event._
 import org.jdesktop.swingx.renderer.DefaultTableRenderer
 import starling.browser.Modifiers
-import starling.pivot.{PivotFormatter, EditableCellState, TableCell}
+import starling.pivot.{ColumnDetails, PivotFormatter, EditableCellState, TableCell}
 
 object PivotJTable {
   val RowHeight = 16
@@ -27,17 +27,15 @@ object PivotJTable {
   val MaxColumnWidth = 200
 }
 
-import PivotJTable._
-
 class PivotJTable(tableModel:PivotJTableModel, pivotTableView:PivotTableView, model:PivotTableModel,
-                  indentColumns:Array[Boolean]) extends JXTable(tableModel) {
+                  indentColumns:Array[Boolean], columnDetails:ColumnDetails) extends JXTable(tableModel) {
   setUI(new PivotTableUI)
   setAutoResizeMode(JTable.AUTO_RESIZE_OFF)
   getTableHeader.setReorderingAllowed(false)
   setFillsViewportHeight(true)
   setTableHeader(null)
   setCellSelectionEnabled(true)  
-  setDefaultRenderer(classOf[Object], new DefaultTableRenderer(new PivotCellProvider(indentColumns, MaxColumnWidth, tableModel)))
+  setDefaultRenderer(classOf[Object], new DefaultTableRenderer(new PivotCellProvider(indentColumns, columnDetails, tableModel)))
   setRowHeight(PivotJTable.RowHeight)
 
   // If the delete key is pressed when more than one cell is selected, delete all deletable cells.

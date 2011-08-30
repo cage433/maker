@@ -36,7 +36,12 @@ object PivotCellRenderer {
 
 import PivotCellRenderer._
 
-class PivotCellProvider(indentColumns:Array[Boolean], maxWidth:Int, tableModel:PivotJTableModel) extends LabelProvider {
+class PivotCellProvider(indentColumns:Array[Boolean], columnDetails:ColumnDetails, tableModel:PivotJTableModel) extends LabelProvider {
+  private val maxWidth = if (columnDetails.expandToFit) {
+    Integer.MAX_VALUE
+  } else {
+    PivotJTable.MaxColumnWidth
+  }
   override def format(context:CellContext) {
     val row = context.getRow
     val column = context.getColumn

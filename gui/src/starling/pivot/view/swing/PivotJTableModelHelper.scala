@@ -953,7 +953,13 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
   }
 
   def resizeRowHeaderColumns(fullTable:JTable, rowHeaderTable:JTable, rowComponent:RowComponent,
-                             rowFieldHeadingCount:Array[Int], sizerPanel:Panel, rowHeaderScrollPane:JScrollPane) {
+                             rowFieldHeadingCount:Array[Int], sizerPanel:Panel, rowHeaderScrollPane:JScrollPane,
+                             columnDetails:ColumnDetails) {
+    val maxWidth = if (columnDetails.expandToFit) {
+      Integer.MAX_VALUE
+    } else {
+      PivotJTable.MaxColumnWidth
+    }
     val tmpLabel = new JLabel("")
     def getRowHeaderMaxColumnWidth(col:Int) = {
       val numRows = rowHeaderTable.getRowCount
@@ -991,7 +997,7 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
         val widths = new Array[Int](count)
         for (c <- 0 until count) {
           val max = getRowHeaderMaxColumnWidth(col)
-          val preferredWidth = math.min(max + 5, PivotJTable.MaxColumnWidth)
+          val preferredWidth = math.min(max + 5, maxWidth)
           val fullColumn = fullColumnModel.getColumn(col)
           val rowHeaderColumn = rowHeaderColumnModel.getColumn(col)
           val widthToUse = preferredWidth
@@ -1056,11 +1062,16 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
 
   def resizeColumnHeaderAndMainTableColumns(fullTable:JTable, mainTable:JTable, colHeaderTable:JTable,
                                             colHeaderScrollPane:JScrollPane, columnHeaderScrollPanePanel:Panel,
-                                            mainTableScrollPane:JScrollPane) {
+                                            mainTableScrollPane:JScrollPane, columnDetails:ColumnDetails) {
     val numRows = mainTable.getRowCount
     val colOffset = rowHeaderColCount0
     val numCols = mainColCount0
     val rowOffset = colHeaderRowCount0
+    val maxWidth = if (columnDetails.expandToFit) {
+      Integer.MAX_VALUE
+    } else {
+      PivotJTable.MaxColumnWidth
+    }
 
     val tmpLabel = new JLabel("")
 
@@ -1125,7 +1136,7 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
         }
       }
       previousRow.map(w => {
-        math.min(w + 1, PivotJTable.MaxColumnWidth)
+        math.min(w + 1, maxWidth)
       })
     }
 

@@ -159,6 +159,19 @@ class PivotTablePageComponent(
       }}
     }
 
+    val expandColumnsToFitButton = new ToggleToolBarButton {
+      icon = StarlingIcons.ExpandColumnsToFit
+      tooltip = "Expand columns to fit or default column sizes"
+      selected = pivotPageState.otherLayoutInfo.columnDetails.expandToFit
+      reactions += {
+        case ButtonClicked(b) => {
+          val newColumnDetails = pivotPageState.otherLayoutInfo.columnDetails.copy(expandToFit = !pivotPageState.otherLayoutInfo.columnDetails.expandToFit)
+          pageContext.goTo(selfPage(pivotPageState.copy(
+            otherLayoutInfo = pivotPageState.otherLayoutInfo.copy(columnDetails = newColumnDetails)), edits))
+        }
+      }
+    }
+
     val rotateButton = new ToolBarButton {
       icon = StarlingIcons.Rotate
       tooltip = "Switch the row and column fields"
@@ -302,6 +315,7 @@ class PivotTablePageComponent(
     }
 
     add(lockScreenButton)
+    add(expandColumnsToFitButton)
     addSeparator
     add(clearPivotButton)
     add(rotateButton)

@@ -17,6 +17,7 @@ object StarlingIcons {
   lazy val Copy = StarlingIcons.icon("/icons/16x16_copy.png")
   lazy val Rotate = StarlingIcons.icon("/icons/16x16_rotate_cw.png")
   lazy val Lock = StarlingIcons.icon("/icons/16x16_split.png")
+  lazy val ExpandColumnsToFit = StarlingIcons.icon("/icons/16x16_expand_columns.png")
   lazy val Calculate = StarlingIcons.icon("/icons/16x16_calculator.png")
   lazy val SaveLayout = StarlingIcons.icon("/icons/16x16_layout_add.png")
   lazy val ValidationError = StarlingIcons.icon("/icons/validation.png")

@@ -509,11 +509,12 @@ class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSiz
 
   private def resizeColumnHeaderAndMainTableColumns {
     tableModelsHelper.resizeColumnHeaderAndMainTableColumns(fullTable, mainTable, colHeaderTable,
-      columnHeaderScrollPane, columnHeaderScrollPanePanel, mainTableScrollPane)
+      columnHeaderScrollPane, columnHeaderScrollPanePanel, mainTableScrollPane, otherLayoutInfo.columnDetails)
   }
 
   private def resizeRowHeaderTableColumns {
-    tableModelsHelper.resizeRowHeaderColumns(fullTable, rowHeaderTable, rowComponent, data.pivotTable.rowFieldHeadingCount, sizerPanel, rowHeaderTableScrollPane)
+    tableModelsHelper.resizeRowHeaderColumns(fullTable, rowHeaderTable, rowComponent,
+      data.pivotTable.rowFieldHeadingCount, sizerPanel, rowHeaderTableScrollPane, otherLayoutInfo.columnDetails)
     contentPanel.revalidate()
     contentPanel.repaint()
   }
@@ -591,10 +592,10 @@ class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSiz
     publish(CollapsedStateUpdated(columnCollapsedState = Some(newCollapsedColState)))
   }
 
-  private val fullTable = new PivotJTable(tableModelsHelper.fullTableModel, this, model, indents)
-  private val mainTable = new PivotJTable(tableModelsHelper.mainTableModel, this, model, indents)
-  private val rowHeaderTable = new PivotJTable(tableModelsHelper.rowHeaderTableModel, this, model, indents)
-  private val colHeaderTable = new PivotJTable(tableModelsHelper.colHeaderTableModel, this, model, indents)
+  private val fullTable = new PivotJTable(tableModelsHelper.fullTableModel, this, model, indents, otherLayoutInfo.columnDetails)
+  private val mainTable = new PivotJTable(tableModelsHelper.mainTableModel, this, model, indents, otherLayoutInfo.columnDetails)
+  private val rowHeaderTable = new PivotJTable(tableModelsHelper.rowHeaderTableModel, this, model, indents, otherLayoutInfo.columnDetails)
+  private val colHeaderTable = new PivotJTable(tableModelsHelper.colHeaderTableModel, this, model, indents, otherLayoutInfo.columnDetails)
   private val allTables = List(fullTable, mainTable, rowHeaderTable, colHeaderTable)
   mainTable.addFocusListener(new FocusAdapter {override def focusGained(e:FocusEvent) {lastTableToHaveFocus = mainTable}})
   colHeaderTable.addFocusListener(new FocusAdapter {override def focusGained(e:FocusEvent) {lastTableToHaveFocus = colHeaderTable}})
@@ -715,9 +716,10 @@ class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSiz
   columnHeaderHorizontalScrollBar.setModel(mainTableScrollPane.getHorizontalScrollBar.getModel)
 
   tableModelsHelper.fullTableModel.fireTableStructureChanged
-  tableModelsHelper.resizeRowHeaderColumns(fullTable, rowHeaderTable, rowComponent, data.pivotTable.rowFieldHeadingCount, sizerPanel, rowHeaderTableScrollPane)
+  tableModelsHelper.resizeRowHeaderColumns(fullTable, rowHeaderTable, rowComponent,
+    data.pivotTable.rowFieldHeadingCount, sizerPanel, rowHeaderTableScrollPane, otherLayoutInfo.columnDetails)
   tableModelsHelper.resizeColumnHeaderAndMainTableColumns(fullTable, mainTable, colHeaderTable, columnHeaderScrollPane,
-    columnHeaderScrollPanePanel, mainTableScrollPane)
+    columnHeaderScrollPanePanel, mainTableScrollPane, otherLayoutInfo.columnDetails)
 
   allTables foreach Highlighters.applyHighlighters
 
