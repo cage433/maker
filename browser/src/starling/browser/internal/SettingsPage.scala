@@ -23,8 +23,4 @@ class SettingsPageComponent(context:PageContext) extends MigPanel("insets 0") wi
   settingsComponents.zipWithIndex.foreach { case (component,index) => {
     add(component, "gapright unrel, ay top")
   }}
-//  add(generalPanel, "gapright unrel, ay top")
-//  add(decimalPlacesPanel, "gapright unrel, ay top")
-//  add(dateRangeFormatPanel, "wrap unrel, ay top")
-
 }

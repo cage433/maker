@@ -121,7 +121,7 @@ case class DecimalPlaces(defaultFormat:String, lotsFormat:String, priceFormat:St
 
 object MonthFormat extends Enumeration {
   type MonthFormat = Value
-  val Standard, Short, Numeric, Reuters = Value
+  val Standard, StandardCapitalised, Short, ShortCapitalised, ShortDash, ShortDashCapitalised, Numeric, Reuters = Value
 }
 import MonthFormat._
 
