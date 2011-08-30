@@ -337,12 +337,12 @@ class StarlingInit( val props: Props,
     new HttpServer(props.HttpServicePort(), props.HttpServiceExternalUrl(), serverName, Some(webXmlUrl), Nil) {
       override def start =
         log.infoF("HTTP web service external url = '%s', server name = '%s'" % (props.HttpServiceExternalUrl(), serverName)) {
-          super.start; DocumentationService.registerInstances(webServices : _*)
+          super.start; /*DocumentationService.registerInstances(webServices : _*)*/
         }
     }
   }
 
-  lazy val webServices = List(marketDataService, valuationService, DocumentationService, ExampleService)
+  lazy val webServices = List(marketDataService, valuationService, /*DocumentationService,*/ ExampleService)
   lazy val regressionServer = new RegressionServer(props.RegressionPort(), reportServlet)
 }
 

@@ -580,7 +580,11 @@ object StarlingSettings {
     lazy val dateRangeFormatPanel = new MigPanel("insets n n n 0", "[" + StandardLeftIndent + "][p]") {
       import MonthFormat._
       val standardExtraInfo = ExtraFormatInfo(dateRangeFormat = DateRangeFormat(Standard))
+      val standardCapitalisedExtraInfo = ExtraFormatInfo(dateRangeFormat = DateRangeFormat(StandardCapitalised))
       val shortExtraInfo = ExtraFormatInfo(dateRangeFormat = DateRangeFormat(Short))
+      val shortCapitalisedExtraInfo = ExtraFormatInfo(dateRangeFormat = DateRangeFormat(ShortCapitalised))
+      val shortDashExtraInfo = ExtraFormatInfo(dateRangeFormat = DateRangeFormat(ShortDash))
+      val shortDashCapitalisedExtraInfo = ExtraFormatInfo(dateRangeFormat = DateRangeFormat(ShortDashCapitalised))
       val numericExtraInfo = ExtraFormatInfo(dateRangeFormat = DateRangeFormat(Numeric))
       val reutersExtraInfo = ExtraFormatInfo(dateRangeFormat = DateRangeFormat(Reuters))
 
@@ -588,35 +592,60 @@ object StarlingSettings {
       val sampleMonths = List(today.asMonthObject, today.addMonths(1).asMonthObject)
 
       val standardSampleText = sampleMonths.map(m => PeriodPivotFormatter.format(m, standardExtraInfo).text).mkString("(", ", ", " ...)")
+      val standardCapitalisedSampleText = sampleMonths.map(m => PeriodPivotFormatter.format(m, standardCapitalisedExtraInfo).text).mkString("(", ", ", " ...)")
       val shortSampleText = sampleMonths.map(m => PeriodPivotFormatter.format(m, shortExtraInfo).text).mkString("(", ", ", " ...)")
+      val shortCapitalisedSampleText = sampleMonths.map(m => PeriodPivotFormatter.format(m, shortCapitalisedExtraInfo).text).mkString("(", ", ", " ...)")
+      val shortDashSampleText = sampleMonths.map(m => PeriodPivotFormatter.format(m, shortDashExtraInfo).text).mkString("(", ", ", " ...)")
+      val shortDashCapitalisedSampleText = sampleMonths.map(m => PeriodPivotFormatter.format(m, shortDashCapitalisedExtraInfo).text).mkString("(", ", ", " ...)")
       val numericSampleText = sampleMonths.map(m => PeriodPivotFormatter.format(m, numericExtraInfo).text).mkString("(", ", ", " ...)")
       val reutersSampleText = sampleMonths.map(m => PeriodPivotFormatter.format(m, reutersExtraInfo).text).mkString("(", ", ", " ...)")
 
       val standardLabel = new Label(standardSampleText)
+      val standardCapitalisedLabel = new Label(standardCapitalisedSampleText)
       val shortLabel = new Label(shortSampleText)
+      val shortCapitalisedLabel = new Label(shortCapitalisedSampleText)
+      val shortDashLabel = new Label(shortDashSampleText)
+      val shortDashCapitalisedLabel = new Label(shortDashCapitalisedSampleText)
       val numericLabel = new Label(numericSampleText)
       val reutersLabel = new Label(reutersSampleText)
 
       def createButton(name:String) = new RadioButton(name) {reactions += {case ButtonClicked(_) => saveSettings()}}
 
       val standardButton = createButton("Standard")
+      val standardCapitalisedButton = createButton("Standard Capitalised")
       val shortButton = createButton("Short")
+      val shortCapitalisedButton = createButton("Short Capitalised")
+      val shortDashButton = createButton("Short Dash")
+      val shortDashCapitalisedButton = createButton("Short Dash Capitalised")
       val numericButton = createButton("Numeric")
       val reutersButton = createButton("Reuters")
-      val group = new ScalaButtonGroup(standardButton, shortButton, numericButton, reutersButton)
 
       val buttonToType = Map[ScalaAbstractButton,DateRangeFormat](
         standardButton -> DateRangeFormat(Standard),
+        standardCapitalisedButton -> DateRangeFormat(StandardCapitalised),
         shortButton -> DateRangeFormat(Short),
+        shortCapitalisedButton -> DateRangeFormat(ShortCapitalised),
+        shortDashButton -> DateRangeFormat(ShortDash),
+        shortDashCapitalisedButton -> DateRangeFormat(ShortDashCapitalised),
         numericButton -> DateRangeFormat(Numeric),
         reutersButton -> DateRangeFormat(Reuters))
       val typeToButton = buttonToType.map{_.swap}
+
+      val group = new ScalaButtonGroup(buttonToType.keySet.toArray : _*)
 
       add(LabelWithSeparator("Month Format"), "spanx, growx, wrap")
       add(standardButton, "skip1")
       add(standardLabel, "wrap")
       add(shortButton, "skip 1")
       add(shortLabel, "wrap")
+      add(shortDashButton, "skip 1")
+      add(shortDashLabel, "wrap")
+      add(standardCapitalisedButton, "skip1")
+      add(standardCapitalisedLabel, "wrap")
+      add(shortCapitalisedButton, "skip 1")
+      add(shortCapitalisedLabel, "wrap")
+      add(shortDashCapitalisedButton, "skip 1")
+      add(shortDashCapitalisedLabel, "wrap")
       add(numericButton, "skip 1")
       add(numericLabel, "wrap")
       add(reutersButton, "skip 1")
