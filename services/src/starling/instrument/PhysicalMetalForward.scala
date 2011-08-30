@@ -183,8 +183,14 @@ object PhysicalMetalAssignmentForward {
 case class PhysicalMetalAssignmentForward(id : String, inventoryItem : EDMInventoryItem, quota : PhysicalMetalQuota)(implicit uomIdToName : Map[Int, String]) {
 
   def costsAndIncomeAssignmentValueBreakdown(env : Environment, snapshotId : String) : List[CostsAndIncomeAssignmentValuation] = {
-    val purchaseQty = fromTitanQuantity(inventoryItem.quantity)
-    val saleQty = purchaseQty // until logistics send us both quantities
+    val purchaseQty = fromTitanQuantity(inventoryItem.purchaseAssignment.quantity)
+
+    // would prefer the actual sales assignment quantity when known, otherwise fall back to the inventory quantity
+    //   (which may differ from the purchase assignment quantity over time)
+    val saleQty = Option(inventoryItem.salesAssignment) match {
+      case Some(salesAssignment) => salesAssignment.quantity
+      case _ => inventoryItem.quantity
+    }
 
     List(CostsAndIncomeAssignmentValuation(
       snapshotID = snapshotId,
