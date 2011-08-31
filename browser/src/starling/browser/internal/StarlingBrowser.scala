@@ -56,6 +56,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
   private val componentBufferWindow = 1
   val history = new ArrayBuffer[PageInfo]
   var current = -1
+  var autoRefresh:Option[CountDownLatch]=None
 
   private val mainPanel = new BorderPanel
   private val genericLockedUI = new GenericLockedUI
@@ -73,41 +74,28 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
 
   private lazy val publisherForPageContext = new Publisher() {}
 
+  private def updateRefreshState(currentPageInfo:PageInfo) {
+    val page = currentPageInfo.page
+    val latestPage = page.latestPage(lCache)
+    if (page != latestPage) {
+      currentPageInfo.refreshPage = Some(latestPage)
+    }
+  }
+
   reactions += {
     case EventBatch(events) => {
-
       events.foreach { e => publisherForPageContext.publish(e) }
 
-      events.foreach { e =>
-        history.foreach(pageInfo => {
-          val pageToCheck = pageInfo.refreshPage.getOrElse(pageInfo.page) //Without this multiple updates are lost
-          val matchingCallbacks = pageToCheck.refreshFunctions.filter(f=>f.isDefinedAt(e))
-          if (matchingCallbacks.size > 1) {
-            println("Warning: An event matched more than one function. Only the first will be applied")
-            println("  Page: " + pageToCheck.getClass + " " + pageToCheck)
-            println("  Event: " + e)
-            println()
-          }
-          matchingCallbacks.headOption match {
-            case None =>
-            case Some(f) => {
-              val newPage = f(e)
-              if (newPage != pageInfo.page) {
-                println("Update for page " + newPage)
-                pageInfo.refreshPage=Some(newPage)
-                if (pageInfo.autoRefresh.isDefined) {
-                  val autoRefresh = pageInfo.autoRefresh.get
-                  pageInfo.autoRefresh = None
-                  refresh(lockAndUnlockScreen=false, latch = Some(autoRefresh))
-                }
-              }
-            }
-          }
-        })
-      }
+      val currentPageInfo = history(current)
+      updateRefreshState(currentPageInfo)
+      
       if ((current >= 0) && (current < history.length)) {
-        if (history(current).refreshPage.isDefined) {
-          if (liveUpdateCheckbox.selected) {
+        if (currentPageInfo.refreshPage.isDefined) {
+          if (autoRefresh.isDefined) {
+            val autoRefresh0 = autoRefresh.get
+            autoRefresh = None
+            refresh(lockAndUnlockScreen=false, latch = Some(autoRefresh0))
+          } else if (liveUpdateCheckbox.selected) {
             refresh()
           } else {
             refreshButton.enabled = true
@@ -227,6 +215,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
 
   // pageInfo is the page you are going back to. indexGoingFrom is the "current" page.
   private def showPageBack(pageInfo: PageInfo, indexGoingFrom:Int) {
+    updateRefreshState(pageInfo)
     val page = pageInfo.page
     if (page.text == (history(indexGoingFrom).page.text)) {
       // Move back without sliding.
@@ -360,6 +349,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
   }
 
   private def showPageForward(pageInfo: PageInfo, indexGoingFrom:Int) {
+    updateRefreshState(pageInfo)
     if (history(indexGoingFrom).page.text == pageInfo.page.text) {
       showPage(pageInfo, indexGoingFrom)
       refreshButtonStatus
@@ -579,6 +569,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
         icon = new ImageIcon(page.icon)
         def apply() = {
           if (index != current) {
+            updateRefreshState(pageInfo)
             if (index > current) {
               goForwardToPage(pageInfo, index)
             } else {
@@ -761,19 +752,18 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
     val threadID = threadSequence
     waitingFor += Some(threadID)
     val timer = createTimer(threadID)
-    timer.start
-    val currentPageInfo = history(current)
-    currentPageInfo.autoRefresh=Some(new CountDownLatch(1))
-    pageBuilder.submit(submitRequest, history(current).autoRefresh.get, awaitRefresh, (didWait:Boolean, submitResponse:SubmitResponse) => {
+    timer.start()
+    autoRefresh=Some(new CountDownLatch(1))
+    pageBuilder.submit(submitRequest, autoRefresh.get, awaitRefresh, (didWait:Boolean, submitResponse:SubmitResponse) => {
       if (!didWait) {
-        currentPageInfo.autoRefresh = None
+        autoRefresh = None
       }
       if (waitingFor.contains(Some(threadID))) {
         waitingFor -= Some(threadID)
         //wait for needsRefresh
         submitResponse match {
           case SuccessSubmitResponse(data) => {
-            timer.stop
+            timer.stop()
             onComplete(data.asInstanceOf[R])
             starlingBrowserUI.clearContentPanel
             if (!keepScreenLocked) {
@@ -792,8 +782,8 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
             }
           }
           case FailureSubmitResponse(t) => {
-            timer.stop
-            t.printStackTrace
+            timer.stop()
+            t.printStackTrace()
             starlingBrowserUI.setError("There was an error when processing your request",BrowserStackTraceToString.string(t), {
               setScreenLocked(false)
               refreshButtonStatus
@@ -807,7 +797,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
 
   var busy = false
   private def createTimer(threadID:Int) = new Timer(1000, new ActionListener {
-    def actionPerformed(e: ActionEvent) = {
+    def actionPerformed(e: ActionEvent) {
       if (waitingFor.contains(Some(threadID))) {
         greyClient.setLocked(true)
         if (genericLockedUI.client != greyClient) greyClient.startDisplay
