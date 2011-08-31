@@ -18,7 +18,7 @@ import starling.titan.{TitanEdmTradeService, TitanServices}
 import com.trafigura.tradecapture.internal.refinedmetal.{Counterparty, Metal, Market, UOM, Shape, Grade, Location, DestinationLocation}
 import com.trafigura.timer.Timer
 import com.trafigura.edm.shared.types.TitanId
-
+import scala.collection.immutable.MapProxy
 
 /**
  * Tactical ref data, service proxies / data
@@ -43,15 +43,25 @@ case class DefaultTitanServices(props: Props) extends TitanServices {
 
   lazy val titanGetEdmTradesService: EdmGetTrades = new EdmGetTradesResourceProxy(ProxyFactory.create(classOf[EdmGetTradesResource], tradeServiceURL, clientExecutor))
 
-  lazy val edmMetalByGUID = Map[GUID, Metal]() ++ allTacticalRefDataMetals.map(e => e.guid -> e)
-  lazy val futuresExchangeByID = Map[String, Market]() ++ allTacticalRefDataExchanges.map(e => e.code -> e)
-  lazy val counterpartiesByGUID = Map[GUID, Counterparty]() ++ allTacticalRefDataCounterparties().map(e => e.guid -> e)
-  lazy val uomById = Map[Int, UOM]() ++ allTacticalRefDataUoms().map(e => e.oid -> e) // hack needed to allow for logistics special "equantity uoms"
+  class MapWithNicerErrors[K, V](map : Map[K, V], valueType : String, keyType : String = "GUID") extends MapProxy[K, V]{
+    def self = map
+    override def apply(k : K) = {
+      if (map.contains(k))
+        map(k)
+      else
+        throw new Exception("No " + valueType + " found for " + keyType + ", " + k)
+    }
+  }
 
-  lazy val shapesByGUID = Map[GUID, Shape]() ++ allTacticalRefDataShapes.map(e => e.guid -> e)
-  lazy val gradeByGUID = Map[GUID, Grade]() ++ allTacticalRefDataGrades.map(e => e.guid -> e)
-  lazy val locationsByGUID = Map[GUID, Location]() ++ allTacticalRefDataLocations.map(e => e.guid -> e)
-  lazy val destLocationsByGUID = Map[GUID, DestinationLocation]() ++ allTacticalRefDataDestinationLocations.map(e => e.guid -> e)
+  val edmMetalByGUID = new MapWithNicerErrors(Map[GUID, Metal]() ++ allTacticalRefDataMetals.map(e => e.guid -> e), "Metal")
+  val futuresExchangeByID = new MapWithNicerErrors(Map[String, Market]() ++ allTacticalRefDataExchanges.map(e => e.code -> e), "Market", "Exchange Code")
+  val counterpartiesByGUID = new MapWithNicerErrors(Map[GUID, Counterparty]() ++ allTacticalRefDataCounterparties().map(e => e.guid -> e), "Counterparty")
+  val uomById = new MapWithNicerErrors(Map[Int, UOM]() ++ allTacticalRefDataUoms().map(e => e.oid -> e), "UOM", "UOM ID") // hack needed to allow for logistics special "equantity uoms"
+
+  val shapesByGUID = new MapWithNicerErrors(Map[GUID, Shape]() ++ allTacticalRefDataShapes.map(e => e.guid -> e), "Shape")
+  val gradeByGUID = new MapWithNicerErrors(Map[GUID, Grade]() ++ allTacticalRefDataGrades.map(e => e.guid -> e), "Grade")
+  val locationsByGUID = new MapWithNicerErrors(Map[GUID, Location]() ++ allTacticalRefDataLocations.map(e => e.guid -> e), "Location")
+  val destLocationsByGUID = new MapWithNicerErrors(Map[GUID, DestinationLocation]() ++ allTacticalRefDataDestinationLocations.map(e => e.guid -> e), "DestinationLocation")
 
   def allTacticalRefDataMetals() = tacticalRefdataMetalsService.getMetals()
   def allTacticalRefDataExchanges() = tacticalRefdataMarketsService.getMarkets()

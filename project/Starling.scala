@@ -364,13 +364,25 @@ object StarlingBuild extends Build{
 
   // Evil hack so that I can get a classpath exported including the test-classes of all projects.
   // See bin/write-classpath-script.sh
-  lazy val dummy = Project(
-    "dummy",
-    file("./dummy-sbt-vim-hack"),
-    settings = standardSettings
-  ) dependsOn(
-    childProjects.map(_ % "test->test") : _*
-  )
+  lazy val dummy = if (useTitanModelBinaries) {
+    Project(
+      "dummy",
+      file("./dummy-sbt-vim-hack"),
+      settings = standardSettings ++
+        Seq(unmanagedClasspath in Compile <++= (baseDirectory) map titanBinaryJars) ++ 
+        Seq(unmanagedClasspath in Test <++= (baseDirectory) map titanBinaryJars)
+    ) dependsOn(
+      childProjects.map(_ % "test->test") : _*
+    )
+  } else {
+    Project(
+      "dummy",
+      file("./dummy-sbt-vim-hack"),
+      settings = standardSettings
+    ) dependsOn(
+      childProjects.map(_ % "test->test") : _*
+    )
+  }
 
   def titanModelReference : List[ProjectReference] = if (useTitanModelBinaries) Nil else List(titanModel) 
   def otherProjectRefereneces : List[ProjectReference] = List(

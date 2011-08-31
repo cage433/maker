@@ -57,14 +57,9 @@ object TitanIndexName {
   }
 }
 
-case class EDMPricingSpecConverter(metal : Metal, exchanges : Map[String, Market]) {
+case class EDMPricingSpecConverter(metal : Metal, exchanges : String => Market) {
   import TitanIndexName._
   def getIndex(exchangeID : String, indexName : TitanIndexName) : IndexWithKnownPrice = {
-    if (!exchanges.contains(exchangeID)){
-      exchanges.keySet.foreach(println)
-      println(exchangeID)
-    }
-
     RefinedTacticalRefDataConversions.index(exchanges(exchangeID), metal, indexName)
   }
 
