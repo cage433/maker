@@ -17,6 +17,7 @@ import com.trafigura.services.valuation.CostsAndIncomeQuotaValuation
 import com.trafigura.services.valuation.PricingValuationDetails
 import com.trafigura.edm.shared.types.{Date, Quantity => EDMQuantity}
 import com.trafigura.edm.logistics.inventory.{EDMAssignment, EDMInventoryItem}
+import starling.utils.Log
 
 
 case class PhysicalMetalQuota(
@@ -28,7 +29,7 @@ case class PhysicalMetalQuota(
 }
 
 
-object PhysicalMetalForward{
+object PhysicalMetalForward extends Log {
 
   private def getTradeId(t : EDMPhysicalTrade) = {
     if (t.titanId == null) {
@@ -68,7 +69,10 @@ object PhysicalMetalForward{
       PhysicalMetalForward(getTradeId(trade), quotas, isPurchase)
     }
     catch {
-      case ex => throw new Exception("Trade " + getTradeId(trade) + " failed to construct from EDM. " + ex.getMessage, ex)
+      case ex => {
+        log.debug("Failed to construct PhysicalMetalForward from EDM ", ex) //.getStackTrace.map(_.toString).mkString(",\n"))
+        throw new Exception("Trade with id " + getTradeId(trade) + " failed to construct from EDM. " + ex.getMessage, ex)
+      }
     }
   }
 
@@ -128,18 +132,22 @@ object CostsAndIncomeValuation{
   }
 }
 
-object PhysicalMetalAssignmentForward {
+object PhysicalMetalAssignmentForward extends Log {
   def apply(exchangesByID : Map[String, EDMMarket],
             edmMetalByGUID : Map[GUID, EDMMetal],
             quotaNameToQuotaMap : Map[String, PhysicalTradeQuota])
             (inventory : EDMInventoryItem)
             (implicit uomIdToNameMap : Map[Int, String]) : PhysicalMetalAssignmentForward = {
     try {
-      val purchaseQuota = quotaNameToQuotaMap(inventory.purchaseAssignment.quotaName)
+      val quotaMap = quotaNameToQuotaMap.withDefault(k => throw new Exception("Missing key '%s' for quota lookup".format(k)))
+
+      val purchaseQuota = quotaMap(inventory.purchaseAssignment.quotaName)
       val edmPurchasePricingSpec = purchaseQuota.detail.pricingSpec
       val edmSalePricingSpec = inventory.salesAssignment match {
         case null => edmPurchasePricingSpec
-        case salesAssignment : EDMAssignment => quotaNameToQuotaMap(salesAssignment.quotaName).detail.pricingSpec
+        case salesAssignment : EDMAssignment => {
+          quotaMap(salesAssignment.quotaName).detail.pricingSpec
+        }
       }
 
       val deliveryQuantity = purchaseQuota.detail.deliverySpecs.map{ds => fromTitanQuantity(ds.quantity)}.sum
@@ -159,7 +167,10 @@ object PhysicalMetalAssignmentForward {
       PhysicalMetalAssignmentForward(inventory.oid.contents.toString, inventory, quota)
     }
     catch {
-      case ex => throw new Exception("Inventory " + inventory.oid + " failed to construct from EDM. " + ex.getMessage, ex)
+      case ex => {
+        log.debug("Failed to construct PhysicalMetalAssignmentForward from EDM ", ex)
+        throw new Exception("Inventory with id " + inventory.oid.contents + " failed to construct from EDM. " + ex.getMessage, ex)
+      }
     }
   }
 
@@ -175,7 +186,7 @@ object PhysicalMetalAssignmentForward {
       Right(forward.costsAndIncomeAssignmentValueBreakdown(env, snapshotID))
     }
     catch {
-      case ex => Left("Error valuing inventory  " + inventory.oid + ", message was " + ex.getMessage)
+      case ex => Left("Error valuing inventory  " + inventory.oid.contents + ", message was " + ex.getMessage)
     }
   }
 }

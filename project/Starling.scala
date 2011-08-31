@@ -172,6 +172,7 @@ object StarlingBuild extends Build{
     file("./bouncyrmi"),
     settings = standardSettings ++ Seq(libraryDependencies ++= bouncyRmiDependencies)
   )
+
   lazy val auth = Project(
     "auth", 
     file("./auth"),

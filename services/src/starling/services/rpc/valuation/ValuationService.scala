@@ -516,8 +516,10 @@ class ValuationService(
   def valueAllAssignments(env : Environment, snapshotIDString : String) : CostAndIncomeAssignmentValuationServiceResults = {
     val sw = new Stopwatch()
 
-    val inventoryService = logisticsServices.inventoryService.service
-    val inventory = inventoryService.getAllInventoryLeaves()
+    //val inventoryService = logisticsServices.inventoryService.service
+    //val inventory = inventoryService.getAllInventoryLeaves()
+
+    val inventory = titanInventoryCache.getAllInventory()
 
     val quotaNameToQuotaMap = titanTradeCache.getAllTrades().flatMap(_.quotas).map(q => NeptuneId(q.detail.identifier.value).identifier -> q).toMap
 
@@ -865,7 +867,6 @@ object ValuationService extends App {
   val loadedExchanges = loadJsonValuesFromFile(exchangesFile).map(s => Market.fromJson(new JSONObject(s)).asInstanceOf[Market])
   val loadedTrades = loadJsonValuesFromFile(tradesFile).map(s => EDMPhysicalTrade.fromJson(new JSONObject(s)).asInstanceOf[EDMPhysicalTrade])
 
-  
   StarlingInit.devInstance.stop
 
   def writeJson[T <: ModelObject with Object { def toJson() : JSONObject }](fileName : String, objects : List[T]) {
