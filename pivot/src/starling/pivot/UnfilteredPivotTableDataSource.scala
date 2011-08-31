@@ -49,10 +49,12 @@ class PossibleValuesBuilder(val allFields:Seq[FieldDetails], val filtersList:Fil
         }
       } }
       matching.foreach {
+        case (field, MeasurePossibleValuesFilter(_)) =>
         case (field, _) => possibleValues(field) += getFieldValue(field)
       }
       nonMatching match {
         case Nil =>
+        case (field, MeasurePossibleValuesFilter(_)) :: _ =>
         case (field, _) :: _ => if (fieldDetailsMap.contains(field)) possibleValues(field) += getFieldValue(field)
       }
     }
