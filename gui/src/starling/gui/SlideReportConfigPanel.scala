@@ -2,12 +2,14 @@ package starling.gui
 
 import api.{SlideAttributes, ReportParameters, SlideParametersLabel}
 import pages.ConfigPanel
-import starling.pivot.view.swing.MigPanel
 import swing.{TextField, Alignment, Label, ComboBox, CheckBox}
 import starling.gui.utils.RichReactor._
-import starling.gui.GuiUtils._
 import swing.event.{EditDone, ButtonClicked, SelectionChanged}
 import javax.swing.{JComboBox, DefaultComboBoxModel}
+import starling.gui.StarlingLocalCache._
+import starling.browser.PageContext
+import starling.browser.common.GuiUtils._
+import starling.browser.common.{RoundedBorder, MigPanel}
 
 class SlideReportConfigPanel(context:PageContext, reportParameters:ReportParameters) extends MigPanel with ConfigPanel {
   def displayName = "Slides"

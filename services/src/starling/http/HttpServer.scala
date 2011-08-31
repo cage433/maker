@@ -6,18 +6,13 @@ import javax.servlet.http.{HttpServlet, HttpServletRequest, HttpServletResponse}
 import javax.servlet.Servlet
 import org.mortbay.jetty.handler.{ErrorHandler, AbstractHandler}
 import org.mortbay.jetty.Request
-import org.mortbay.jetty.servlet.{HashSessionManager, Context, ServletHolder}
+import org.mortbay.jetty.servlet.{Context, ServletHolder}
 import org.mortbay.jetty.webapp.WebAppContext
 import org.mortbay.jetty.{Server => JettyServer}
-import org.springframework.mail.javamail.JavaMailSenderImpl
-import starling.props.Props
-import org.mortbay.jetty.security._
 import starling.props.Props
 import xml._
-import starling.utils.Log
-import org.mortbay.component.LifeCycle
-import org.mortbay.component.LifeCycle.Listener
 import java.util.EventListener
+import starling.utils.{Stopable, Log}
 
 
 class HttpServer(portNo : Int,
@@ -25,7 +20,7 @@ class HttpServer(portNo : Int,
                  serverName : String,
                  descriptor : Option[String],
                  listeners : List[EventListener],
-                 servlets: (String, Servlet)*) {
+                 servlets: (String, Servlet)*) extends Stopable with Log {
 
   def this(props : Props, servlets: (String, Servlet)*) = 
     this(props.HttpPort(), props.ExternalUrl(), props.ServerName(), None, Nil, servlets:_*)
@@ -37,7 +32,7 @@ class HttpServer(portNo : Int,
 
   descriptor match {
     case Some(desc) => {
-      Log.info("Applying descriptor '%s' to web app context".format(desc))
+      log.info("Applying descriptor '%s' to web app context".format(desc))
       val wac : WebAppContext = new WebAppContext()
       wac.setResourceBase(".")
       wac.setDescriptor(desc)
@@ -48,7 +43,21 @@ class HttpServer(portNo : Int,
     case _ =>
   }
 
-  def stop {
+  override def start = {
+    super.start
+    // this needs to be the last servlet registered as it lists all the others
+    registerServlet(new RootServlet(servletPaths), "")
+
+    rootContext.setErrorHandler(errorHandler)
+    server.addHandler(rootContext)
+
+    server.start()
+
+    log.info("started on port: " + portNo)
+  }
+
+  override def stop {
+    super.stop
     server.stop
     server.join
   }
@@ -60,12 +69,12 @@ class HttpServer(portNo : Int,
 
   for((path, servlet) <- servlets) {
     val className : String = servlet.getClass.getName
-    Log.info("Registering servlet %s @ %s ".format(className, path))
+    log.info("Registering servlet %s @ %s ".format(className, path))
     registerServlet(servlet, path)
   }
 
   for (listener <- listeners) {
-    Log.info("Registering listener %s".format(listener.getClass.getName))
+    log.info("Registering listener %s".format(listener.getClass.getName))
     rootContext.addEventListener(listener)
   }
 
@@ -115,18 +124,6 @@ class HttpServer(portNo : Int,
   def registerServlet(servlet: Servlet, path: String) {
     rootContext.addServlet(new ServletHolder(servlet), "/" + path + "/*")
     servletPaths ::= path
-  }
-
-  def run() = {
-    // this needs to be the last servlet registered as it lists all the others
-    registerServlet(new RootServlet(servletPaths), "")
-
-    rootContext.setErrorHandler(errorHandler)
-    server.addHandler(rootContext)
-
-    server.start()
-
-    Log.info("HttpServer stared on port: " + portNo)
   }
 
   class RootServlet(servletPaths : List[String]) extends HttpServlet {

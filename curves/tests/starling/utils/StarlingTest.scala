@@ -2,12 +2,10 @@ package starling.utils
 
 import org.scalatest.testng.TestNGSuite
 import org.scalatest.WordSpec
-import starling.market.{MarketProvider, TestMarketLookup, ExpiryRulesSpec, TestMarketSpec}
+import starling.market._
 
-trait StarlingTest extends TestMarketSpec with ExpiryRulesSpec with TestNGSuite
+trait StarlingTest extends TestMarketTest with ExpiryRulesSpec with TestNGSuite
 
 trait StarlingSpec extends ExpiryRulesSpec with WordSpec {
-  val testmarketlookup = new TestMarketLookup()
-
-  MarketProvider.registerNewImplForTesting(Some(testmarketlookup))
+  MarketProvider.registerCreator(TestMarketCreator)
 }

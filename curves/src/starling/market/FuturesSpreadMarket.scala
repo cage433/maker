@@ -37,7 +37,7 @@ class FuturesSpreadMarket(name: String, uom: UOM, ccy: UOM,
 }
 
 object FuturesSpreadMarket {
-  lazy val provider = MarketProvider.provider
+  private def provider = MarketProvider.provider
 
   def defaultExpiryRule(market1: FuturesMarket, market2: FuturesMarket) = new FuturesExpiryRule {
     def lastTradingDay(d: DateRange) = market1.lastTradingDay(d) max market2.lastTradingDay(d)
@@ -53,7 +53,7 @@ object FuturesSpreadMarket {
    * Futures Commodity Spread Markets
    */
   lazy val RB_CRACKS = futuresMarketFromName("Nymex RBOB vs Nymex WTI")
-  lazy val RB_BRENT_CRACKS = futuresMarketFromName("NYMEX RBOB 1st Month vs IPE Brent 1st Month")
+  lazy val RB_BRENT_CRACKS = futuresMarketFromName("NYMEX RBOB 1st Month vs IPE Brent 1st Month (BBLS)")
   lazy val RBHO = futuresMarketFromName("Nymex RBOB vs Nymex Heat")
   lazy val GO_CRACKS = futuresMarketFromName("IPE Gas Oil (Settlement) vs IPE Brent")
   lazy val ICE_WTI_BRENT = futuresMarketFromName("ICE WTI 1st month vs ICE Brent 1st month")

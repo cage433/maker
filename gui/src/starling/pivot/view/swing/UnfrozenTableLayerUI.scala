@@ -2,11 +2,11 @@ package starling.pivot.view.swing
 
 import fieldchoosers.RowComponent
 import org.jdesktop.jxlayer.plaf.AbstractLayerUI
-import starling.gui.GuiUtils
 import javax.swing.{JPanel, JComponent}
 import net.miginfocom.swing.MigLayout
 import org.jdesktop.jxlayer.JXLayer
 import java.awt.{AWTEvent, BorderLayout, FlowLayout}
+import starling.browser.common.GuiUtils
 
 class UnfrozenTableLayerUI(rowComponent:RowComponent) extends AbstractLayerUI[JComponent] {
   private val contentPanel = new JPanel(new MigLayout("insets 0")) {

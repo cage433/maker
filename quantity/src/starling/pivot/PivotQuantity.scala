@@ -140,7 +140,7 @@ case class PivotQuantity(values:Map[UOM,Double], errors:Map[String,List[StackTra
     case None => false
   }
 
-  def explanation : Option[String] = quantityValue.map { q => q.format("#,##0.00#######################################")}
+  def explanation : Option[String] = quantityValue.map { q => q.toStringAllDecimalPlaces}
 }
 /**
  * This type class allows the Numeric implicit enabled methods to be used, like TraversableOnce

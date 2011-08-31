@@ -48,7 +48,7 @@ object ServerAxisNode {
   val Null = ServerAxisNode(AxisValue.Null)
 }
 case class ServerAxisNode(axisValue:AxisValue, children:Map[ChildKey,Map[AxisValue,ServerAxisNode]]=Map.empty) {
-  val childValues:List[ServerAxisNode] = children.values.map(_.values).flatten.toList
+  lazy val childValues:List[ServerAxisNode] = children.values.map(_.values).flatten.toList
 
   def add(values:List[AxisValue]):ServerAxisNode = {
     values match {
@@ -323,7 +323,7 @@ case class PivotTableConverter(otherLayoutInfo:OtherLayoutInfo = OtherLayoutInfo
       table.editableInfo match {
         case None => r
         case Some(info) => {
-          val keyFields = info.editableKeyFields.keySet
+          val keyFields = info.keyFields
           val editableColIndices = table.rowFields.zipWithIndex.filter{case (f,index) => keyFields.contains(f)}.map(_._2).toSet
           r.map(cols => {
             cols.zipWithIndex.map{case (cell,index) => if (cell.notTotalValue && editableColIndices.contains(index)) {
@@ -431,6 +431,11 @@ case class PivotTableConverter(otherLayoutInfo:OtherLayoutInfo = OtherLayoutInfo
   private def nMainTableCells(flattenedRowValues:List[List[AxisCell]], flattenedColValues:List[List[AxisCell]], extractUOMs:Boolean = true) = {
     val aggregatedMainBucket = table.aggregatedMainBucket
 
+    val measureFieldsEditable = table.editableInfo match {
+      case Some(ei) => ei.blankCellsEditable
+      case None => false
+    }
+
     //create the main table looping through the flattened rows and columns and looking up the sums in mainTableBucket
     val allUnits = Array.fill(scala.math.max(1, flattenedColValues.size))(Set[UOM]())
     val data: Array[Array[TableCell]] =
@@ -450,7 +455,7 @@ case class PivotTableConverter(otherLayoutInfo:OtherLayoutInfo = OtherLayoutInfo
               case _ =>
             }
           }
-
+          val measureField = columnValues.find(ac => ac.value.isMeasure)
           val tableCell = aggregatedMainBucket.get(key) match {
             case Some(measureCell) => {
               measureCell.value match {
@@ -458,12 +463,18 @@ case class PivotTableConverter(otherLayoutInfo:OtherLayoutInfo = OtherLayoutInfo
                 case Some(v) => appendUOM(v)
                 case None =>
               }
-              columnValues.find(ac => ac.value.isMeasure) match {
+              measureField match {
                 case None => {
                   // This is probably a "fake" message cell.
                   measureCell.value match {
                     case Some(v) => TableCell(v)
-                    case _ => TableCell.Null
+                    case _ => {
+                      if (measureCell.editable) {
+                        TableCell.EditableNull
+                      } else {
+                        TableCell.Null
+                      }
+                    }
                   }
                 }
                 case Some(measureAxisCell) => {
@@ -474,33 +485,38 @@ case class PivotTableConverter(otherLayoutInfo:OtherLayoutInfo = OtherLayoutInfo
                     case Some(UndefinedValue) => TableCell.Undefined
                     case Some(other) => table.formatInfo.fieldToFormatter(measureAxisCell.value.field).format(other, extraFormatInfo)
                   }
-                  tc.copy(state = measureCell.cellType, edits = measureCell.edits, originalValue = measureCell.originalValue)
+                  tc.copy(state = measureCell.cellType, edits = measureCell.edits, originalValue = measureCell.originalValue, editable = measureCell.editable)
                 }
               }
             }
-            case None => TableCell.Null
+            case None => {
+              measureField match {
+                case Some(ac) => {
+                  if (measureFieldsEditable && table.editableInfo.get.measureFields.contains(ac.value.field)) {
+                    TableCell.EditableNull
+                  } else {
+                    TableCell.Null
+                  }
+                }
+                case None => TableCell.Null
+              }
+            }
           }
 
           val columnSubTotal = columnValues.exists(_.totalState == SubTotal)
           val columnTotal = columnValues.exists(_.totalState == Total)
           val columnOtherValue = columnValues.exists(_.totalState == OtherValueTotal)
 
-          val editable = table.editableInfo match {
-            case None => false
-            case Some(editableInfo) => columnValues.map(_.value.field).toSet.intersect(editableInfo.editableMeasures.keySet).nonEmpty &&
-                    !(rowSubTotal || rowTotal || rowOtherValue || columnSubTotal || columnTotal || columnOtherValue)
-          }
-
           if ((rowTotal && columnSubTotal) || (columnTotal && rowSubTotal) || (rowTotal && columnTotal) || (rowSubTotal && columnSubTotal)) {
-            tableCell.copy(totalState=SubtotalTotal, editable = editable)
+            tableCell.copy(totalState=SubtotalTotal)
           } else if (rowTotal || columnTotal) {
-            tableCell.copy(totalState=Total, editable = editable)
+            tableCell.copy(totalState=Total)
           } else if (rowSubTotal || columnSubTotal) {
-            tableCell.copy(totalState=SubTotal, editable = editable)
+            tableCell.copy(totalState=SubTotal)
           } else if (rowOtherValue || columnOtherValue) {
-            tableCell.copy(totalState=OtherValueTotal, editable = editable)
+            tableCell.copy(totalState=OtherValueTotal)
           } else {
-            tableCell.copy(editable = editable)
+            tableCell
           }
         }).toArray
       }).toArray

@@ -12,8 +12,8 @@ trait HolidayTables {
 
   def financialHolidaysOption(name: String): Option[BusinessCalendarSet]
 
-  val UK: BusinessCalendarSet = regionHolidays("UK")
-  val US: BusinessCalendarSet = regionHolidays("US")
+  val UK: BusinessCalendarSet = regionHolidays("UK.txt")
+  val US: BusinessCalendarSet = regionHolidays("US.txt")
 
   // These codes come from looking up EAI.dbo.tblFCCalendars. It's manual job of looking up the name
   // of the exchange then finding the correct calendar ID. There's lots of near matches so it can't be automated.

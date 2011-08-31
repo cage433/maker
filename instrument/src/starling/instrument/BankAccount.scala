@@ -1,10 +1,10 @@
 package starling.instrument
 
-import starling.quantity.{Quantity, UOM}
 import starling.curves._
 import starling.richdb.RichInstrumentResultSetRow
 import starling.daterange._
 import starling.market.{Index, FuturesMarket}
+import starling.quantity.{SimpleNamedQuantity, Quantity, UOM}
 
 /**
  * Used to represent the cash part of a Futures's UTP
@@ -17,6 +17,8 @@ case class BankAccount(volume : Quantity, market : Option[FuturesMarket], index 
   def isLive(dayAndTime: DayAndTime) = true
   def valuationCCY = volume.uom
   def assets(env: Environment) = Assets(Asset.knownCash(env.marketDay.day, volume, env)) //Fix me?
+
+  def explanation(env: Environment) = new SimpleNamedQuantity("Amount", assets(env).mtm(env, UOM.USD))
 
   def daysForPositionReport(marketDay : DayAndTime) : Seq[Day] = List(marketDay.day)
   def * (scale : Double) = copy(volume = volume * scale)

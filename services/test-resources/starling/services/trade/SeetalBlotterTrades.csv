@@ -1,0 +1,848 @@
+ID	trade date	size	unit	market	instr	strike	p/c	period	ex	price	clearing house	counterparty	broker	strategy	trader	tradedFor	comment	entry date	pricing rule
+1	40633	100	LOTS	ICE WTI	FUTURE			06/11		106		ICE	ICE	64238	seetal patel
+2	40633	-100	LOTS	ICE BRENT	FUTURE			06/11		116.35		ICE	ICE	64238	seetal patel
+3
+4	40633	25	LOTS	ICE WTI	FUTURE			05/11		104.92		ICE	ICE	64241	seetal patel
+5	40633	25	LOTS	BRENT	FUTURE			05/11		116.191		ICE	ICE	64241	seetal patel
+6
+7	40633	-1.7	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus)	swap			04/11		1037.25				64239	seetal patel
+8	40633	7	LOTS	BRENT	FUTURE			05/11		116.06		ICE	ICE	64239	seetal patel
+9	40633	5	LOTS	BRENT	FUTURE			06/11		115.87		ICE	ICE	64239	seetal patel
+10	40633	2	LOTS	BRENT	FUTURE			06/11		115.9		ICE	ICE	64239	seetal patel
+11
+12
+13	40633	5.5	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus)	swap			04/11		1036				64239	seetal patel
+14	40633	-22	LOTS	BRENT	FUTURE			05/11		115.94		ICE	ICE	64239	seetal patel
+15	40633	-24	LOTS	BRENT	FUTURE			06/11		115.75		ICE	ICE	64239	seetal patel
+
+16	40637	16.5	KT	NYMEX RBOB vs Prem Unl Euro-Bob Oxy NWE Barges (Argus)	swap			Jun-11		10.8		NAURIN	INTERNAL	64239	seetal patel
+17	40637	-137	LOTS	NYMEX WTI	FUTURE			Jul-11		109		SPEC ARBS	INTERNAL	64239	seetal patel
+18	40637	137	LOTS	BRENT	FUTURE			Jul-11		118.05		SPEC ARBS	INTERNAL	64239	seetal patel
+19	40637	139	LOTS	NYMEX RBOB	FUTURE			jun11 / jul11		1.92		CED	INTERNAL	64239	seetal patel
+20	40637	-139	LOTS	NYMEX WTI	FUTURE			jun11 / jul11		-0.43		CED	INTERNAL	64239	seetal patel
+21	40637	16	LOTS	NYMEX RBOB	FUTURE			may11 / jun11		-10		CED	INTERNAL	64238	seetal patel
+22	40637	-44	LOTS	NYMEX WTI	FUTURE			Jul-11		109		CED	INTERNAL	64238	seetal patel
+23	40637	44	LOTS	BRENT	FUTURE			Jul-11		118.05		CED	INTERNAL	64238	seetal patel
+24	40637	-27	LOTS	BRENT	FUTURE			May-11		119.49		ICE	ICE	64239	seetal patel
+25	40637	-40	LOTS	BRENT	FUTURE			Jun-11		119.15		ICE	ICE	64239	seetal patel
+26	40637	8	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus)	swap			Apr-11		1069.4		SANJEEV	INTERNAL	64239	seetal patel
+27	40637	-198	LOTS	BRENT	FUTURE			may11 / jun11		0.66		CED	INTERNAL	64245	seetal patel
+28	40637	-9	LOTS	BRENT	FUTURE			jun11 / jul11		0.33		CED	INTERNAL	64245	seetal patel
+29	40637	-28	LOTS	BRENT	FUTURE			aug11 / sep11		0.36		CED	INTERNAL	64245	seetal patel
+30	40637	5	KT	NYMEX RBOB vs Prem Unl Euro-Bob Oxy NWE Barges (Argus)	swap			May-11		11.7		NOBLE	TFS	64238	seetal patel
+31	40637	25	LOTS	NYMEX RBOB	FUTURE			Jun-11		314.1		CED	INTERNAL	64238	seetal patel
+32	40637	-3	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus)	swap			May-11		1058.5		ARGUS PRICING	INTERNAL	64238	seetal patel
+33	40637	1.2	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus)	swap			May-11		1055.5		BRYAN	INTERNAL	64238	seetal patel
+34	40637	137	LOTS	NYMEX WTI	FUTURE			Jul-11		109		SPEC ARBS	INTERNAL	64238	seetal patel
+35	40637	-137	LOTS	BRENT	FUTURE			Jul-11		118.05		SPEC ARBS	INTERNAL	64238	seetal patel
+
+36	40638	-1	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			May-11		1060.5		Bryan	INTERNAL	64241	seetal patel
+37	40638	4	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			May-11		1060.5		SANJEEV	INTERNAL	64241	seetal patel
+38	40638	6	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus) vs IPE Brent	SWAP			Jun-11		6.9		BP	PVM	64239	seetal patel
+39	40638	-100	LOTS	WTI BRENT	FUTURE			Jun-11		-11.55		CED	INTERNAL	64238	seetal patel
+40	40638	-7	LOTS	NY WTI BRENT	FUTURE			Jul-11		-10.64		CED	INTERNAL	64238	seetal patel
+41	40638	-21	LOTS	NY WTI BRENT	FUTURE			Jul-11		-10.66		CED	INTERNAL	64238	seetal patel
+42	40638	-29	LOTS	NY WTI BRENT	FUTURE			Jul-11		-10.68		CED	INTERNAL	64238	seetal patel
+43	40638	-36	LOTS	NY WTI BRENT	FUTURE			Jul-11		-10.68		CED	INTERNAL	64238	seetal patel
+44	40638	75	LOTS	BRENT	FUTURE			May-11		120.59		ICE	ICE	64241	seetal patel
+45	40638	-4	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			May-11		1056		CONOCO	PVM	64241	seetal patel
+46	40638	-60	KT	NYMEX RBOB vs Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			May-11		11.4		PAT	INTERNAL	64238	seetal patel
+47	40638	37	KT	NYMEX RBOB vs Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			Jun-11		10.95		BRYAN	INTERNAL	64238	seetal patel
+48	40638	37	KT	NYMEX RBOB vs Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			Jul-11		10.2		BRYAN	INTERNAL	64238	seetal patel
+49	40638	-37	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			May-11		1000		SPEC SPREADS	INTERNAL	64238	seetal patel
+50	40638	37	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			Jun-11		995.5		SPEC SPREADS	INTERNAL	64238	seetal patel
+51	40638	37	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			May-11		1000		SPEC ARBS	INTERNAL	64245	seetal patel
+52	40638	-37	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			Jun-11		995.5		SPEC ARBS	INTERNAL	64245	seetal patel
+53	40638	-23	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			May-11		1000		SPEC SPREADS	INTERNAL	64238	seetal patel
+54	40638	23	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			Jul-11		990.5		SPEC SPREADS	INTERNAL	64238	seetal patel
+55	40638	23	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			May-11		1000		SPEC ARBS	INTERNAL	64245	seetal patel
+56	40638	-23	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			Jul-11		990.5		SPEC ARBS	INTERNAL	64245	seetal patel
+57	40638	308	LOTS	NYMEX RBOB	FUTURE			JUN11 / JUL11		0		CED	INTERNAL	64238	seetal patel
+58	40638	192	LOTS	NYMEX RBOB	FUTURE			JUN11 / AUG11		0		CED	INTERNAL	64238	seetal patel
+59	40638	37	KT	NYMEX RBOB vs Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			Aug-11		8.5		BRYAN	INTERNAL	64238	seetal patel
+60	40638	10	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus) vs Naphtha CIF NWE Physical	SWAP			May-11		52		NOBLE	PVM	64240	seetal patel
+
+61	40645	-12	KT	NYMEX RBOB vs Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			May-11		10.25		EGIS	INTERNAL	64238	seetal patel
+62	40645	5	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			MAY11 / SEP11		21		BRYAN	INTERNAL	64245	seetal patel
+63	40645	-7	KT	NYMEX RBOB vs Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			May-11		10		EGIS	INTERNAL	64238	seetal patel
+64	40645	-10	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			MAY11 / JUN11		7		MATT	INTERNAL	64245	seetal patel
+65	40645	-58	LOTS	NYMEX RBOB	FUTURE			May-11		321.33		CED	INTERNAL	64239	seetal patel
+66	40645	-58	LOTS	IPE Brent	FUTURE			May-11		124.15		CED	INTERNAL	64239	seetal patel
+67	40645	64	LOTS	NYMEX RBOB	FUTURE			MAY11 / JUN11		1.55		CED	INTERNAL	64239	seetal patel
+68	40645	-64	LOTS	IPE Brent	FUTURE			MAY11 / JUN11		0.57		CED	INTERNAL	64239	seetal patel
+69	40645	-5	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus) vs IPE Brent	SWAP			May-11		6.6		SHELL	PREBON	64239	seetal patel
+70	40645	0.72	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			May-11		1078		SPEC FP	INTERNAL	64239	seetal patel
+71	40645	-6	LOTS	IPE Brent	FUTURE			Jun-11		124.38		ICE	ICE	64239	seetal patel
+72	40645	1	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			APR11 / JUL11		27.5		DB (C)	PVM	64245	seetal patel
+73	40645	-1	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			APR11 / MAY11		15		MATT	INTERNAL	64245	seetal patel
+74	40645	5	KT	Naphtha CIF NWE Cargoes vs IPE Brent	SWAP			May-11		-6.9		BARCLAYS	PVM	64239	seetal patel
+75	40645	34	LOTS	NYMEX RBOB	FUTURE			Jun-11		320.4		CED	INTERNAL	64239	seetal patel
+76	40645	-34	LOTS	IPE Brent	FUTURE			Jun-11		123.99		CED	INTERNAL	64239	seetal patel
+
+77	40646	10	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			MAY11 / JUN11		9		MAB (C)	PVM	64245	seetal patel
+78	40646	4	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			May-11		1062.5		SANJEEV	INTERNAL	64239	seetal patel
+79	40646	-15	LOTS	IPE Brent	FUTURE			Jun-11		120.03		ICE	ICE	64245	seetal patel
+80	40646	-18	LOTS	IPE Brent	FUTURE			Jul-11		119.74		ICE	ICE	64245	seetal patel
+81	40646	50	LOTS	IPE Brent	FUTURE			May-11		121.23		ICE	ICE	64241	seetal patel
+82	40646	-4	LOTS	NYMEX WTI	FUTURE			MAY11 / AUG11		-1.84		CED	INTERNAL	64239	seetal patel
+83	40646	-4	LOTS	WTI BRENT	FUTURE			Jun-11		-13.72		CED	INTERNAL	64239	seetal patel
+84	40646	-2	LOTS	NYMEX WTI	FUTURE			JUN11 / SEP11		-1.44		CED	INTERNAL	64239	seetal patel
+85	40646	-24	LOTS	IPE Brent	FUTURE			JUN11 / SEP11		1		CED	INTERNAL	64239	seetal patel
+86	40646	-20	LOTS	IPE Brent	FUTURE			JUN11 / AUG11		0.95		CED	INTERNAL	64239	seetal patel
+87	40646	-61	LOTS	IPE Brent	FUTURE			JUN11 / AUG11		0.52		CED	INTERNAL	64239	seetal patel
+88	40646	11	LOTS	IPE Brent	FUTURE			JUN11 / JUL11		0.32		CED	INTERNAL	64239	seetal patel
+89	40646	-27	LOTS	IPE Brent	FUTURE			MAY11 / JUN11		0.46		CED	INTERNAL	64239	seetal patel
+90	40646	2	LOTS	IPE Brent	FUTURE			JUL11 / AUG11		0.32		CED	INTERNAL	64238	seetal patel
+91	40646	-5	LOTS	IPE Brent	FUTURE			JUN11 / DEC11		1.84		CED	INTERNAL	64238	seetal patel
+92	40646	-5	LOTS	IPE Brent	FUTURE			JUN11 / JAN12		2.1		CED	INTERNAL	64238	seetal patel
+93	40646	2	LOTS	NYMEX WTI	FUTURE			AUG11 / FEB12		-0.47		CED	INTERNAL	64238	seetal patel
+94	40646	5	LOTS	NYMEX WTI	FUTURE			JUN11 / JAN12		-1.68		CED	INTERNAL	64238	seetal patel
+95	40646	5	LOTS	NYMEX WTI	FUTURE			JUN11 / DEC11		-1.73		CED	INTERNAL	64238	seetal patel
+96	40646	-20	KT	NYMEX RBOB vs Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			May-11		10.3		BP	PVM	64238	seetal patel
+97	40646	6	KT	NYMEX RBOB vs Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			May-11		10.3		LEE	INTERNAL	64238	seetal patel
+
+98	40647	10	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			MAY11 / JUN11		8.5		BP	PVM	64245	seetal patel
+99	40647	-27	KB	Prem Unl Euro-Bob Oxy NWE Barges (Argus) vs IPE Brent	SWAP			May-11		8.25		WILL	INTERNAL	64239	seetal patel
+100	40647	6	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus) vs IPE Brent	SWAP			May-11		8.2		NOBLE	PVM	64239	seetal patel
+101	40647	25	KB	Prem Unl Euro-Bob Oxy NWE Barges (Argus) vs IPE Brent	SWAP			May-11		8.15		MAC (C)	PREBON	64239	seetal patel
+102	40647	-120	LOTS	NYMEX RBOB	FUTURE			Jun-11		320.08		CED	INTERNAL	64239	seetal patel
+103	40647	120	LOTS	ICE BRENT	FUTURE			Jun-11		121.41		CED	INTERNAL	64239	seetal patel
+104	40647	5	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			jun11 / sep11		18.5		ag	INTERNAL	64245	seetal patel
+105	40647	-200	LOTS	NYMEX RBOB	FUTURE			Jun-11		322.2		CED	INTERNAL	64239	seetal patel
+106	40647	200	LOTS	ICE BRENT	FUTURE			Jun-11		121.92		CED	INTERNAL	64239	seetal patel
+107	40647	-6	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			may11 / jun11		10.5		BP	PVM	64245	seetal patel
+
+108	40648	17	LOTS	NYMEX RBOB	FUTURE			MAY11 / JUN11		3.3		CED	INTERNAL	64245	seetal patel
+109	40648	-5	LOTS	NYMEX RBOB	FUTURE			MAY11 / JUN11		0		SPEC FP	INTERNAL	64245/64241	seetal patel
+110	40648	-53	KB	Prem Unl Euro-Bob Oxy NWE Barges (Argus) vs IPE Brent	SWAP			May-11		8.4		WILL	INTERNAL	64239	seetal patel
+111	40648	-40	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			MAY11 / JUN11		8.75		ARCADIA (C)	PVM	64245	seetal patel
+112	40648	1.800720288	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			MAY11 / JUL11		14.75		SPEC SPREADS	INTERNAL	64239/64245	seetal patel
+113	40648	-15	KB	IPE Brent 1st month	SWAP			MAY11 / JUL11		0.7		CED	INTERNAL	64239	seetal patel
+114	40648	-5	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			May-11		1082.75		SANJEEV	INTERNAL	64239	seetal patel
+115	40648	19	LOTS	ICE BRENT	FUTURE			Jun-11		121.774		ced	INTERNAL	64239	seetal patel
+116	40648	23	LOTS	ICE BRENT	FUTURE			Jul-11		121.445		ced	INTERNAL	64239	seetal patel
+
+117	40651	-1	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			May-11		1095		SANJEEV	INTERNAL	64238	seetal patel
+118	40651	17	LOTS	NYMEX RBOB	FUTURE			Jun-11		3.23		CED	INTERNAL	64238	seetal patel
+119	40651	-3	KT	Naphtha CIF NWE Cargoes vs IPE Brent	SWAP			Q111		-5.8		J ARON	PVM	64239	seetal patel
+
+120	40652	-4	LOTS	NYMEX RBOB	FUTURE			May-11		3.2371		CED	INTERNAL	64238	seetal patel
+121	40652	-5	LOTS	NYMEX RBOB	FUTURE			Jun-11		3.2		CED	INTERNAL	64238	seetal patel
+122	40652	-50	LOTS	ICE WTI	FUTURE			Jun-11		106.733		ICE	ICE	64241	seetal patel
+123	40652	50	LOTS	ICE WTI	FUTURE			Jun-11		106.73		ICE	ICE	64241	seetal patel
+124	40652	3	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			May-11		1078.5		SANJEEV	INTERNAL	64239	seetal patel
+125	40652	-11	LOTS	ICE BRENT	FUTURE			Jun-11		120.7		ICE	ICE	64239	seetal patel
+126	40652	-14	LOTS	ICE BRENT	FUTURE			Jul-11		120.39		ICE	ICE	64239	seetal patel
+127	40652	-25	LOTS	ICE BRENT	FUTURE			Jun-11		119.81		ICE	ICE	64241	seetal patel
+128	40652	-25	LOTS	ICE BRENT	FUTURE			Jun-11		120.24		ICE	ICE	64241	seetal patel
+129	40652	-12	LOTS	ICE BRENT	FUTURE			Jun-11		119.73		ICE	ICE	64241	seetal patel
+130	40652	-1	LOTS	ICE BRENT	FUTURE			Jun-11		119.74		ICE	ICE	64241	seetal patel
+131	40652	-2	LOTS	ICE BRENT	FUTURE			Jun-11		119.73		ICE	ICE	64241	seetal patel
+132	40652	-10	LOTS	ICE BRENT	FUTURE			Jun-11		119.7		ICE	ICE	64241	seetal patel
+
+133	40653	14	LOTS	NYMEX RBOB	FUTURE			Jun-11		321.8		NYMEX	BARX	64238	seetal patel
+134	40653	-2.761104442	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			May-11		1076.711643		SPEC FP	INTERNAL	64238 / 64241	seetal patel
+135	40653	1	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			May-11		1088		MAB (C)	PVM	64238	seetal patel
+136	40653	1	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			May-11		1089		MAB (C)	PVM	64238	seetal patel
+137	40653	3	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			May-11		1089		AOT (C)	PVM	64238	seetal patel
+138	40653	-33	LOTS	NYMEX RBOB	FUTURE			Jun-11		322.25		NYMEX	BARX	64238	seetal patel
+139	40653	5	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus) vs IPE Brent	SWAP			May-11		8.8		JPM (ICE CLEAR)	TFS	64239	seetal patel
+140	40653	4	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			May-11		1093.5		GLENCORE	OB	64239	seetal patel
+141	40653	-15	LOTS	ICE BRENT	FUTURE			Jun-11		122.68		ICE	ICE	64239	seetal patel
+142	40653	-18	LOTS	ICE BRENT	FUTURE			Jul-11		122.35		ICE	ICE	64239	seetal patel
+143	40653	-5	KT	NYMEX RBOB vs Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			May-11		10.35		JPM (C)	TFS	64238	seetal patel
+144	40653	-10	KT	NYMEX RBOB vs Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			May-11		10.35		CITADEL (C)	PVM	64238	seetal patel
+145	40653	10	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus) vs IPE Brent	SWAP			May-11		8.7		SHELL	PVM	64239	seetal patel
+146	40653	-2	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			May-11		1091		SAM	INTERNAL	64239	seetal patel
+147	40653	8	LOTS	ICE BRENT	FUTURE			Jun-11		122.5		ICE	ICE	64239	seetal patel
+148	40653	8	LOTS	ICE BRENT	FUTURE			Jul-11		122.15		ICE	ICE	64239	seetal patel
+149	40653	14	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			May-11		1091		ADDAX (C)	OB	64238	seetal patel
+150	40653	-250	KB	NYMEX RBOB vs Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			May-11		9.75		NOBLE	PVM	64238	seetal patel
+151	40653	-3	LOTS	NYMEX RBOB	FUTURE			Jun-11		321.3		NYMEX	BARX	64238	seetal patel
+152	40653	-4	LOTS	NYMEX RBOB	FUTURE			Jun-11		321		NYMEX	BARX	64238	seetal patel
+153	40653	-8	LOTS	NYMEX RBOB	FUTURE			Jun-11		320.9		NYMEX	BARX	64238	seetal patel
+154	40653	-7	LOTS	NYMEX RBOB	FUTURE			Jun-11		320.86		NYMEX	BARX	64238	seetal patel
+155	40653	-7	LOTS	NYMEX RBOB	FUTURE			Jun-11		320.85		NYMEX	BARX	64238	seetal patel
+156	40653	-1	LOTS	NYMEX RBOB	FUTURE			Jun-11		320.84		NYMEX	BARX	64238	seetal patel
+157	40653	-9	LOTS	NYMEX RBOB	FUTURE			Jun-11		320.83		NYMEX	BARX	64238	seetal patel
+158	40653	-1	LOTS	NYMEX RBOB	FUTURE			Jun-11		320.88		NYMEX	BARX	64238	seetal patel
+159	40653	-1	LOTS	NYMEX RBOB	FUTURE			Jun-11		320.82		NYMEX	BARX	64238	seetal patel
+160	40653	-3	LOTS	NYMEX RBOB	FUTURE			Jun-11		320.81		NYMEX	BARX	64238	seetal patel
+161	40653	-73	LOTS	NYMEX RBOB	FUTURE			Jun-11		320.8		NYMEX	BARX	64238	seetal patel
+162	40653	10	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			MAY11 / SEP11		29.5		MERCHANT (C)	PVM	64245	seetal patel
+163	40653	-10	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			MAY11 / JUN11		10		ARA MODEL	INTERNAL	64245	seetal patel
+164	40653	-30	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus) vs IPE Brent	SWAP			May-11		8.65		ARA MODEL	INTERNAL	64239	seetal patel
+165	40653	417	LOTS	NYMEX RBOB	FUTURE			Jun-11		321		ARA 	INTERNAL	64238	seetal patel
+166	40653	-50	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			May-11		1090.25		ARA 	INTERNAL	64238	seetal patel
+167	40653	20	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus) vs IPE Brent	SWAP			May-11		8.5		TOTSA	PVM	64239	seetal patel
+
+168	40668	-15	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			May-11		1120		ADDAX (C)	OB	64239	seetal patel
+169	40668	125	KB	IPE Brent 1st month	SWAP			May-11		119.29		CED	INTERNAL	64239	seetal patel
+170	40668	50	KB	Prem Unl Euro-Bob Oxy NWE Barges (Argus) vs IPE Brent	SWAP			Jun-11		11.8		MITSUI (C)	PREBON	64239	seetal patel
+171	40668	5	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus) vs IPE Brent	SWAP			May-11		15		SHELL	PVM	64239	seetal patel
+172	40668	2	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus) vs IPE Brent	SWAP			May-11		15.2		SHELL	OB	64239	seetal patel
+173	40668	3.5	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			MAY11 / JUN11		28.5		BP	PVM	64239	seetal patel
+174	40668	-29	KB	IPE Brent 1st month	SWAP			MAY11 / JUN11		0.19		CED	INTERNAL	64239	seetal patel
+175	40668	50	LOTS	ICE BRENT	FUTURE			Jun-11		117.99		CED	INTERNAL	64241	seetal patel
+176	40668	50	LOTS	ICE BRENT	FUTURE			Jun-11		118.03		CED	INTERNAL	64241	seetal patel
+177	40668	5	LOTS	NYMEX RBOB	FUTURE			Jul-11		319		CED	INTERNAL	64245	seetal patel
+178	40668	100	LOTS	NYMEX RBOB	FUTURE			JUN11 / JUL11		6.68		CED	INTERNAL	64245	seetal patel
+179	40668	100	LOTS	NYMEX RBOB	FUTURE			JUN11 / JUL11		6.6		CED	INTERNAL	64245	seetal patel
+
+180	40672	6	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			Jun-11		1027.922		SANJEEV	INTERNAL	64239	seetal patel
+181	40672	-50	KB	IPE Brent 1st month	SWAP			Jun-11		110.65		CED	INTERNAL	64239	seetal patel
+182	40672	18	LOTS	BRENT	FUTURE			jun11 / aug11		0.68		CED	INTERNAL	64238	seetal patel
+183	40672	-6	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			Jun-11		1043		ARCADIA (C)	PVM	64239	seetal patel
+184	40672	50	LOTS	ICE BRENT	FUTURE			Jul-11		112.29		CED	INTERNAL	64239	seetal patel
+185	40672	-27	LOTS	ICE BRENT	FUTURE			jul11 / aug11		0.32		CED	INTERNAL	64239	seetal patel
+186	40672	-237	LOTS	NYMEX RBOB	FUTURE			jun11 / jul11		0.105		CED	INTERNAL	64245	seetal patel
+187	40672	0.5	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			Jun-11		1042.75		BRYAN	INTERNAL	64239	seetal patel
+188	40672	-4	LOTS	ICE BRENT	FUTURE			Jul-11		112.31		CED	INTERNAL	64239	seetal patel
+189	40672	83	LOTS	RB CRACKS	FUTURE			Jun-11		33.9455		NYMEX	BARX	64239	seetal patel
+190	40672	50	LOTS	ICE BRENT	FUTURE			Jun-11		112.525		CED	INTERNAL	64241	seetal patel
+191	40672	200	LOTS	NYMEX RBOB	FUTURE			jun11 / jul11		0.102		CED	INTERNAL	64245	seetal patel
+192	40672	25	LOTS	ICE BRENT	FUTURE			Jun-11		111.45		CED	INTERNAL	64241	seetal patel
+193	40672	17	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			JUN11 / SEP11		50		BRYAN	INTERNAL	64245	seetal patel
+194	40672	200	LOTS	NYMEX RBOB	FUTURE			JUL11 / AUG11		0.083		CED	INTERNAL	64245	seetal patel
+
+195	40673	-25	LOTS	NYMEX RBOB	FUTURE			jun11 / jul11		0.129		CED	INTERNAL	64245	seetal patel
+196	40673	10	KT	NYMEX RBOB vs Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			Jun-11		0.101		NAURIN	INTERNAL	64238	seetal patel
+197	40673	2	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			jun11 / jul11		-2		EGIS	INTERNAL	64245	seetal patel
+198	40673	200	LOTS	NYMEX RBOB	FUTURE			jul11 / aug11		0.1041		NYMEX	BARX	64245	seetal patel
+199	40673	-1	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			Jun-11		1090		BRYAN	INTERNAL	64241	seetal patel
+200	40673	-8	KB	IPE Brent 1st month	SWAP			Jun-11		114		CED	INTERNAL	64241	seetal patel
+201	40673	-1	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus) vs IPE Brent	SWAP			Q411		4.95		VITOL	PVM	64239	seetal patel
+202	40673	10	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus) vs Naphtha CIF NWE Physical	SWAP			Jul-11		64		SAM	INTERNAL	64240	seetal patel
+203	40673	-75	LOTS	ICE BRENT	FUTURE			Jun-11		115.4		CED	INTERNAL	64241	seetal patel
+204	40673	75	LOTS	NYMEX RBOB	FUTURE			Jun-11		3.374		CED	INTERNAL	64241	seetal patel
+205	40673	100	LOTS	RB CRACKS	FUTURE			Jun-11		38.562		CED	INTERNAL	64239	seetal patel
+206	40673	2	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			May-11		1129		CRISTIAN WEBER 67390	INTERNAL	64241	seetal patel
+
+207	40675	35	LOTS	ICE BRENT	FUTURE			JUL11 / AUG11		0.49		CED	INTERNAL	64239	seetal patel
+208	40675	-10	LOTS	RB CRACKS	FUTURE			Jun-11		31.58		SPEC CRACKS	INTERNAL	64241	seetal patel
+209	40675	-4	KT	NYMEX RBOB vs Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			Jun-11		9.1		EGIS	INTERNAL	64238	seetal patel
+210	40675	-6	KT	NYMEX RBOB vs Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			Jul-11		8.15		SANJEEV	INTERNAL	64238	seetal patel
+211	40675	20	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			JUL11 / AUG11		14.25		JPM (C)	OB	64245	seetal patel
+212	40675	-12	LOTS	RBOB	FUTURE			Jun-11		306.17		NYMEX	BARX	64241	seetal patel
+213	40675	-12	LOTS	RBOB	FUTURE			AUG11 / SEP11		0.0432		NYMEX	BARX	64245	seetal patel
+
+214	40676	10	KB	NYMEX RBOB vs Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			May-11		5		SPEC ARBS	INTERNAL	64241	seetal patel
+215	40676	-16	KB	Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			may11 / jun11		0		SPEC SPREADS	INTERNAL	64241	seetal patel
+216	40676	-8	KB	Prem Unl Euro-Bob Oxy NWE Barges (Argus) vs IPE Brent	SWAP			Jun-11		5		SPEC CRACKS	INTERNAL	64241	seetal patel
+217	40676	-9	LOTS	NY WTI BRENT	FUTURE			Jun-11		-14.33		CED	INTERNAL	64239	seetal patel
+218	40676	-7	LOTS	ICE BRENT	FUTURE			jun11 / jul11		0.7		CED	INTERNAL	64239	seetal patel
+219	40676	-4	LOTS	NYMEX RBOB	FUTURE			Jun-11		3.0639		SPEC CRACKS	INTERNAL	64238	seetal patel
+220	40676	-6	KT	NYMEX RBOB vs Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			Jun-11		8		NOBLE	PVM	64238	seetal patel
+221	40676	-5	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			jul11 / aug11		9		STATOIL	PVM	64245	seetal patel
+222	40676	-10	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			jul11 / aug11		9		VITOL	PVM	64245	seetal patel
+223	40676	-42	KB	Prem Unl Euro-Bob Oxy NWE Barges (Argus) vs IPE Brent	SWAP			Jun-11		9.5		JPM (C)	TFS	64239	seetal patel
+224	40676	2	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			Jul-11		1006.5		SANJEEV	INTERNAL	64238	seetal patel
+225	40676	-17	LOTS	NYMEX RBOB	FUTURE			Aug-11		2.9578		NYMEX	BARX	64238	seetal patel
+226	40676	-17	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			jul11 / sep11		17		MAC (C)	PVM	64245	seetal patel
+227	40676	-15	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			jul11 / sep11		17		STATOIL	PVM	64245	seetal patel
+228	40676	200	LOTS	NYMEX RBOB	FUTURE			aug11 / sep11		0.0335		EGIS	INTERNAL	64245	seetal patel
+229	40676	-5	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			jul11 / dec11		60.5		BNP	TFS	64245	seetal patel
+230	40676	-5	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			jul11 / dec11		61		CITADEL (C)	TFS	64245	seetal patel
+231	40676	-3	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			jun11 / jul11		15		MITSUI (C)	PVM	64245	seetal patel
+232	40676	-20	LOTS	RB CRACKS	FUTURE			Jul-11		25.58		NYMEX	BARX	64239	seetal patel
+233	40676	-5	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			OCT11 / DEC11		10		BRYAN	PVM	64245	seetal patel
+
+234	40679	100	LOTS	NYMEX RBOB	FUTURE			aug11 / sep11		0.0343		EGIS	INTERNAL	64245	seetal patel
+235	40679	50	LOTS	WTI BRENT	FUTURE			Dec-11		-10.25		CED	INTERNAL	64238	seetal patel
+236	40679	-6	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			Jun-11		1015		ARCADIA (C)	PVM	64238	seetal patel
+237	40679	60	LOTS	NYMEX RBOB	FUTURE			Jul-11		2.975		NYMEX	BARX	64238	seetal patel
+238	40679	6	KB	Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			may11 / jun11		27		SPEC SPREADS	PVM	64238 / 64245	seetal patel
+239	40679	-10	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			Jun-11		1015.5		SHELL	PVM	64239	seetal patel
+240	40679	83	LOTS	ICE BRENT	FUTURE			Jul-11		111.8		ICE	ICE	64239	seetal patel
+241	40679	-45	LOTS	ICE BRENT	FUTURE			jul11 / aug11		0.46		CED	INTERNAL	64239	seetal patel
+242	40679	-4	KT	NYMEX RBOB vs Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			Jul-11		0.083		TELF (C)	PVM	64238	seetal patel
+243	40679	2	KT	NYMEX RBOB vs Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			Jul-11		0.083		LEE	INTERNAL	64238	seetal patel
+244	40679	2	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			Jun-11		1012.5		SANJEEV	INTERNAL	64239	seetal patel
+245	40679	-17	LOTS	ICE BRENT	FUTURE			Jul-11		111.86		ICE	ICE	64239	seetal patel
+246	40679	-5	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			JUN11 / JUL11		14		MERCURIA (C)	PVM	64245	seetal patel
+247	40679	-10	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			JUL11 / SEP11		14.5		STATOIL	PVM	64245	seetal patel
+248	40679	-5	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			AUG11 / SEP11		7.5		HARVEST (C)	PVM	64245	seetal patel
+249	40679	16	LOTS	NYMEX RBOB	FUTURE			AUG11 / SEP11		0.0333		CED	INTERNAL	64245	seetal patel
+250	40679	-5	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus) vs IPE Brent	SWAP			Jun-11		8.95		BNP	PREBON	64239	seetal patel
+251	40679	-42	KB	Prem Unl Euro-Bob Oxy NWE Barges (Argus) vs IPE Brent	SWAP			Jun-11		8.7		JPM (C)	PREBON	64239	seetal patel
+
+252	40694	10	KT	NYMEX RBOB vs Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			Jun-11		4.6		ARA MODEL JUN	INTERNAL	64238	seetal patel
+253	40694	2	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			q411		980		EGIS	INTERNAL	64239	seetal patel
+254	40694	2	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			q112		980		EGIS	INTERNAL	64239	seetal patel
+255	40694	-16.67	KB	IPE Brent 1st month	SWAP			q411		113.61		CED	INTERNAL	64239	seetal patel
+256	40694	-16.67	KB	IPE Brent 1st month	SWAP			q112		114.37		CED	INTERNAL	64239	seetal patel
+257	40694	25	LOTS	ICE BRENT	FUTURE			Jul-11		116.14		ICE	ICE	64241	seetal patel
+258	40694	-25	LOTS	ICE BRENT	FUTURE			Jul-11		116.142		ICE	ICE	64241	seetal patel
+259	40694	14	LOTS	ICE BRENT	FUTURE			JUL11 / AUG11		0.33		CED	INTERNAL	64238	seetal patel
+260	40694	100	LOTS	ICE BRENT	FUTURE			Sep-11		115.45		CED	INTERNAL	64241	seetal patel
+261	40694	-4	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus) vs IPE Brent	SWAP			Q411		3		CARGILL	PVM	64239	seetal patel
+262	40694	-16.67	KB	IPE Brent 1st month	SWAP			Q411		114.2		CED	INTERNAL	64239	seetal patel
+263	40694	16.67	KB	IPE Brent 1st month	SWAP			Q112		113.49		CED	INTERNAL	64239	seetal patel
+264	40694	2	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			Q411		980		SPEC SPREADS	INTERNAL	64239	seetal patel
+265	40694	-2	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			Q112		985		SPEC SPREADS	INTERNAL	64239	seetal patel
+266	40694	-50	LOTS	ICE BRENT	FUTURE			Sep-11		1		CED	INTERNAL	64241	seetal patel
+267	40694	-50	LOTS	ICE BRENT	FUTURE			Sep-11		1		CED	INTERNAL	64241	seetal patel
+268	40694	-10	KT	NYMEX RBOB vs Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			Jun-11		4.25		BP	PVM	64238	seetal patel
+269	40694	-15	KT	NYMEX RBOB vs Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			Jun-11		4.2		LEE	INTERNAL	64238	seetal patel
+270	40694	-200	LOTS	ICE WTI	FUTURE			SEP11 / DEC11		-0.89		CED	INTERNAL	64245	seetal patel
+
+271	40697	-5	KT	Naphtha CIF NWE Cargoes vs IPE Brent	SWAP			Jul-11		-7.5		JP SING (C)	TFS	64239	seetal patel
+272	40697	63	LOTS	NYMEX RBOB	FUTURE			JUL11 / AUG11		0.0235		SPEC SPREADS	INTERNAL	64238 / 64245	seetal patel
+273	40697	80	LOTS	NYMEX RBOB	FUTURE			JUL11 / AUG11		0.0235		SPEC SPREADS	INTERNAL	64242 / 64245	seetal patel
+274	40697	-2	LOTS	RB CRACKS	FUTURE			Jul-11		24.5		SPEC CRACKS	INTERNAL	64241 / 64239	seetal patel
+275	40697	-1	LOTS	ICE BRENT	FUTURE			Jul-11		114.91		CED	INTERNAL	64238	seetal patel
+276	40697	-2	LOTS	ICE BRENT	FUTURE			Aug-11		114.525		CED	INTERNAL	64238	seetal patel
+277	40697	2	LOTS	NYMEX WTI	FUTURE			Jul-11		99.865		CED	INTERNAL	64238	seetal patel
+278	40697	-3	LOTS	ICE BRENT	FUTURE			Jul-11		114.91		CED	INTERNAL	64242	seetal patel
+279	40697	1	LOTS	ICE BRENT	FUTURE			Aug-11		114.525		CED	INTERNAL	64242	seetal patel
+280	40697	2	LOTS	NYMEX WTI	FUTURE			Jul-11		99.865		CED	INTERNAL	64242	seetal patel
+281	40697	-1	LOTS	ICE BRENT	FUTURE			Jul-11		114.91		CED	INTERNAL	64245	seetal patel
+282	40697	1	LOTS	NYMEX RBOB	FUTURE			Jul-11		2.96425		CED	INTERNAL	64245	seetal patel
+283	40697	5	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus) vs Naphtha CIF NWE Physical	SWAP			Q411		7		SPEC DIFFS	INTERNAL	64240	seetal patel
+284	40697	79	LOTS	NYMEX RBOB	FUTURE			Aug-11		2.935		SPEC FLOW	INTERNAL	64242	seetal patel
+285	40697	5	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			AUG11 / SEP11		6.5		NOBLE	PVM	64245	seetal patel
+286	40697	15	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			AUG11 / SEP11		7.5		NOBLE	PVM	64245	seetal patel
+287	40697	-100	LOTS	WTI BRENT	FUTURE			Dec-11		-10.83		CED	INTERNAL	64238	seetal patel
+
+288	40700	-2	KT	NYMEX RBOB vs Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			Jul-11		0.058		SANJEEV	INTERNAL	64238	seetal patel
+289	40700	-2	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			Jul-11		1013		SAM	INTERNAL	64241	seetal patel
+290	40700	-1.5	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			Jul-11		1010		SAM	INTERNAL	64241	seetal patel
+291	40700	3.5	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			Jul-11		1009		SPEC FP	INTERNAL	64241	seetal patel
+292	40700	-10	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			JUN11 / AUG11		30.5		SAM	INTERNAL	64245	seetal patel
+293	40700	13	KT	NYMEX RBOB vs Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			Jun-11		0.0227		PLATTS SALES	INTERNAL	64238	seetal patel
+294	40700	-50	LOTS	RB CRACKS	FUTURE			Aug-11		24.14		NYMEX	BARX	64239	seetal patel
+
+295	40701	-6	LOTS	NYMEX RBOB	FUTURE			Jul-11		2.957		NYMEX	BARX	64245	seetal patel
+296	40701	50	KB	IPE Gas Oil (Settlement) vs IPE Brent	SWAP			Q411		16.5		KOCH	ICAP	64240	seetal patel
+297	40701	-50	KB	Prem Unl Euro-Bob Oxy NWE Barges (Argus) vs IPE Brent	SWAP			Jul-11		6.7		WILL	INTERNAL	64239	seetal patel
+298	40701	-50	LOTS	RB CRACKS	FUTURE			Aug-11		23.9		CED	INTERNAL	64239	seetal patel
+
+299	40704	3	KT	NYMEX RBOB vs Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			Jul-11		0.061		SANJEEV	INTERNAL	64238	seetal patel
+300	40704	-35	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			OCT11 / DEC11		10		EGIS	INTERNAL	64245	seetal patel
+301	40704	100	LOTS	NYMEX RBOB	FUTURE			JUL11 / AUG11		1.72		SPEC SPREADS	INTERNAL	64239 / 64245	seetal patel
+302	40704	100	LOTS	NYMEX WTI	FUTURE			JUL11 / AUG11		-0.52		SPEC CRACKS	INTERNAL	64245 / 64239	seetal patel
+303	40704	100	LOTS	NYMEX WTI	FUTURE			JUL11 / AUG11		-0.52		CED	INTERNAL	64245	seetal patel
+304	40704	-40	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			JUL11 / SEP11		7		LITASCO	PVM	64245	seetal patel
+305	40704	-50	LOTS	RB CRACKS	FUTURE			Aug-11		25.07		NYMEX	BARX	64239	seetal patel
+306	40704	-50	LOTS	RB CRACKS	FUTURE			Aug-11		25		NYMEX	BARX	64239	seetal patel
+307	40704	-200	LOTS	NY WTI BRENT	FUTURE			Aug-11		-17.5		CED	INTERNAL	64239	seetal patel
+308	40704	-475	LOTS	NYMEX RBOB	FUTURE			JUL11/AUG11		0.0168		NYMEX	BARX	64245	seetal patel
+
+309	40707	29.5	KT	NYMEX RBOB vs Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			Jul-11		0.064		MATT	INTERNAL	64238	seetal patel
+310	40707	-24	KT	NYMEX RBOB vs Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			Jul-11		0.071		PRICING	INTERNAL	64238	seetal patel
+311	40707	5	KT	Naphtha CIF NWE Cargoes vs IPE Brent	SWAP			Jul-11		-10		LEE	INTERNAL	64239	seetal patel
+312	40707	-5	KT	NYMEX RBOB vs Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			Jul-11		0.069		NOBLE	OB	64238	seetal patel
+313	40707	30	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			jul11 / sep11		5		BRYAN	INTERNAL	64245	seetal patel
+314	40707	1.3	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			Jun-11		1028		EGIS	INTERNAL	64238	seetal patel
+315	40707	-11	LOTS	NYMEX RBOB	FUTURE			Jul-11		3.0048		NYMEX	BARX	64238	seetal patel
+316	40707	5	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus) vs IPE Brent	SWAP			Jul-11		4.7		MS	PREBON	64239	seetal patel
+317	40707	-7	LOTS	NYMEX RBOB	FUTURE			jul11/aug11		0.0178		NYMEX	BARX	64245	seetal patel
+318	40707	-45	LOTS	NYMEX RBOB	FUTURE			jul11/aug11		0.0157		NYMEX	BARX	64245	seetal patel
+319	40707	5	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			OCT11/DEC11		9		ARCADIA (C)	PVM	64245	seetal patel
+
+320	40708	-149	LOTS	NYMEX RBOB	FUTURE			JUL11/AUG11		0.0235		NYMEX	BARX	64238	seetal patel
+321	40708	17.17	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			14jun11-30jun11 / JUL11		7		SPEC SPREADS	INTERNAL	64238 / 64245	seetal patel
+322	40708	-15	KB	NYMEX RBOB vs Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			14jun11-30jun11 		0.0674		SPEC SPREADS	INTERNAL	64238 / 64245	seetal patel
+323	40708	-27	KB	NYMEX RBOB vs Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			Jul-11		0.07		SPEC SPREADS	INTERNAL	64238 / 64245	seetal patel
+324	40708	-25	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			AUG11 /SEP11		4		MS	PVM	64245	seetal patel
+325	40708	-14.5	KT	NYMEX RBOB vs Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			Jul-11		0.072		PRICING	INTERNAL	64238	seetal patel
+326	40708	-50	LOTS	RB BRENT CRACKS	FUTURE			Aug-11		7.3		CED	INTERNAL	64239	seetal patel
+327	40708	-50	LOTS	RB BRENT CRACKS	FUTURE			Aug-11		7.4		CED	INTERNAL	64239	seetal patel
+328	40708	-5	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			JUL11 / AUG11		3		NV (C)	PVM	64245	seetal patel
+329	40708	-10	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			JUL11 / AUG11		3.5		MATT	INTERNAL	64245	seetal patel
+330	40708	5	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			JUL11 / SEP11		8		MATT	INTERNAL	64245	seetal patel
+331	40708	20	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			JUL11 / SEP11		7.25		LEE	INTERNAL	64245	seetal patel
+332	40708	36	KT	NYMEX RBOB vs Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			Jul-11		0.0705		PMI (C)	PVM	64238	seetal patel
+333	40708	-15	KT	NYMEX RBOB vs Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			Jul-11		0.0705		GRIZZLE	INTERNAL	64238	seetal patel
+334	40708	-5	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			JUL11 / AUG11		3.5		VITOL	OB	64245	seetal patel
+335	40708	-10	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			JUL11 / AUG11		3.5		NV (C)	OB	64245	seetal patel
+336	40708	-4	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			JUL11 / AUG11		4		SHELL	PVM	64245	seetal patel
+
+337	40709	-10	KT	NYMEX RBOB vs Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			Jul-11		0.0715		SANJEEV	INTERNAL	64238	seetal patel
+338	40709	21	KT	NYMEX RBOB vs Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			Jul-11		0.065		ARON	PVM	64238	seetal patel
+339	40709	-5	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			jul11 / sep11		10		MERCURIA (C)	PREBON	64245	seetal patel
+340	40709	1.5	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			Jul-11		1025.5		SAM	INTERNAL	64241	seetal patel
+341	40709	100	LOTS	RB Brent Cracks	Future			Aug-11		7.8		CED	INTERNAL	64239	seetal patel
+342	40709	-200	LOTS	ICE WTI	FUTURE			JUL11 / AUG11		-0.45		CED	INTERNAL	64245	seetal patel
+343	40709	-5	KT	NYMEX RBOB vs Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			Jul-11		0.066		SANJEEV	INTERNAL	64238	seetal patel
+344	40709	-150	KB	NYMEX RBOB vs Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			Jul-11		0.0674		SPEC CRACKS	INTERNAL	64238 / 64239	seetal patel
+345	40709	-88	LOTS	ICE BRENT	FUTURE			AUG11/SEP11		0.43		CED	INTERNAL	64239	seetal patel
+346	40709	9	KT	NYMEX RBOB vs Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			Jul-11		0.066		PMI (C)	OB	64238	seetal patel
+
+347	40710	-1.5	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			Jul-11		993		SAM	INTERNAL	64238	seetal patel
+348	40710	1	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			Jul-11		993		ARGUS	INTERNAL	64238	seetal patel
+349	40710	1.5	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			Jul-11		996.75		BRYAN	INTERNAL	64238	seetal patel
+350	40710	150	LOTS	ICE BRENT	FUTURE			Aug-11		113.719		ICE	ICE	64241	seetal patel
+351	40710	-75	LOTS	ICE BRENT	FUTURE			Aug-11		114.434		ICE	ICE	64241	seetal patel
+352	40710	23	KT	NYMEX RBOB vs Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			Jul-11		0.064		NAURIN	INTERNAL	64238	seetal patel
+353	40710	-10	KT	NYMEX RBOB vs Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			Aug-11		0.06		PAT	INTERNAL	64238	seetal patel
+354	40710	10	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			aug11 / sep11		5.25		VITOL	PVM	64245	seetal patel
+355	40710	-10	KT	Naphtha CIF NWE Cargoes vs IPE Brent	SWAP			Jul-11		-8.85		LEE	INTERNAL	64239	seetal patel
+356	40710	-67	LOTS	NYMEX RBOB	FUTURE			aug11 / sep11		0.021		NYMEX	BARX	64238	seetal patel
+357	40710	8.04	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			jul11/aug11		5		SPEC SPREADS	INTERNAL	64238	seetal patel
+358	40710	-5	KT	NYMEX RBOB vs Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			Jul-11		0.061		SANJEEV	INTERNAL	64238	seetal patel
+359	40710	-12	LOTS	NYMEX RBOB	FUTURE			Aug-11		2.921		ARGUS	0	64238	seetal patel
+360	40710	10	KT	NYMEX RBOB vs Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			Jul-11		0.055		PAT	INTERNAL	64238	seetal patel
+
+361	40711	10	KT	NYMEX RBOB vs Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			Jul-11		0.052		SANJEEV	INTERNAL	64238	seetal patel
+362	40711	-5	KT	NYMEX RBOB vs Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			Jul-11		0.055		BP	PREBON	64238	seetal patel
+363	40711	-10	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			Jul-11		990.1		ADDAX (C)	PVM	64239	seetal patel
+364	40711	83.3	KB	IPE Brent 1st month	SWAP			Jul-11		112.85		MS	PVM	64239	seetal patel
+
+365	40714	-5	KT	Naphtha CIF NWE Cargoes vs IPE Brent	SWAP			Jul-11		-8.55		BP	TFS	64239	seetal patel
+366	40714	-0.5	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			Jul-11		989.26		SPEC ARBS	INTERNAL	64241 / 64238	seetal patel
+
+367	40716	-12	KT	NYMEX RBOB vs Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			Jul-11		0.062		SANJEEV	INTERNAL	64238	seetal patel
+368	40716	4	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus) vs Naphtha CIF NWE Physical	SWAP			Jul-11		54		BRYAN	PREBON	64240	seetal patel
+369	40716	28	KT	NYMEX RBOB vs Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			Jul-11		0.0605		NAURIN	INTERNAL	64238	seetal patel
+370	40716	7.4	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus) 	SWAP			Jul-11		971.5		SAM	INTERNAL	64238	seetal patel
+371	40716	-7.5	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus) 	SWAP			Jul-11		973.25		CONOCO	OB	64238	seetal patel
+372	40716	5	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			JUL11/ AUG11		4.25		JPM (C)	PVM	64245	seetal patel
+373	40716	-20	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			SEP11 / OCT11		26.5		GREEN (C)	PVM	64245	seetal patel
+374	40716	-10	KT	NYMEX RBOB vs Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			Jul-11		0.062		JASON WEST	INTERNAL	64238	seetal patel
+375	40716	-175	LOTS	ICE BRENT	FUTURE			Aug-11		112.275		ICE	ICE	64241	seetal patel
+376	40716	-8	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			JUL11/ AUG11		4.75		BRYAN	INTERNAL	64245	seetal patel
+377	40716	100	LOTS	NYMEX RBOB	FUTURE			AUG11 / SEP11		0.019		NYMEX	BARX	64245	seetal patel
+
+378	40717	10	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			JUL11/AUG11		4.25		ADDAX (C)	PVM	64245	seetal patel
+
+379	40718	100	LOTS	ICE BRENT	FUTURE			Aug-11		106.899		ICE	ICE	64241	seetal patel
+380	40718	-50	LOTS	ICE BRENT	FUTURE			Aug-11		107.884		ICE	ICE	64241	seetal patel
+381	40718	1	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus) vs IPE Brent	SWAP			Jul-11		6.65		KOCH	PVM	64239	seetal patel
+382	40718	-10	KT	NYMEX RBOB vs Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			Jul-11		0.075		MERCURIA	PVM	64238	seetal patel
+383	40718	-5	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			sep11/dec11		32.5		BRYAN	INTERNAL	64245	seetal patel
+384	40718	6.5	KT	NYMEX RBOB vs Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			Jul-11		0.072		SANJEEV	INTERNAL	64238	seetal patel
+385	40718	7	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus) vs IPE Brent	SWAP			Q311		5.95		LITASCO	PVM	64239	seetal patel
+386	40718	5	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus) vs IPE Brent	SWAP			Q311		5.95		BP	PVM	64239	seetal patel
+387	40718	-4	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus) vs Naphtha CIF NWE Physical	SWAP			Jul-11		52		LEE	INTERNAL	64240	seetal patel
+388	40718	50	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus) 	SWAP			JUL11 / AUG11		2		PAT	INTERNAL	64245	seetal patel
+389	40718	5	KT	NYMEX RBOB vs Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			Jul-11		7.5		MITSUI (C)	TFS	64238	seetal patel
+390	40718	-5	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus) 	SWAP			AUG11 / DEC11		34.5		BRYAN	INTERNAL	64245	seetal patel
+
+391	40721	-10	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus) 	SWAP			JUL11 / AUG11		2.25		GUNVOR (C)	PVM	64245	seetal patel
+392	40721	-84	LOTS	NYMEX RBOB	FUTURE			AUG11/  SEP11		0.0227		MATT	INTERNAL	64245	seetal patel
+393	40721	50	LOTS	RB BRENT cracks	FUTURE			Aug-11		9.4032		CED	INTERNAL	64242	seetal patel
+394	40721	-50	kb	NYMEX RBOB 1st Month vs IPE Brent 1st Month (BBLS)	SWAP			Jul-11		9.32		EGIS	INTERNAL	64242	seetal patel
+395	40721	50	LOTS	RBHO	FUTURE			Aug-11		-0.0628		CED	INTERNAL	64242	seetal patel
+396	40721	-50	kb	NYMEX RBOB vs NYMEX Heat	SWAP			Jul-11		-0.0628		EGIS	INTERNAL	64242	seetal patel
+
+397	40722	-7	KT	NYMEX RBOB vs Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			Aug-11		0.059		MATT	INTERNAL	64238	seetal patel
+398	40722	3	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus) 	SWAP			AUG11 /SEP11		3.75		MATT	INTERNAL	64245	seetal patel
+399	40722	50	KB	Prem Unl Euro-Bob Oxy NWE Barges (Argus) vs IPE Brent	SWAP			Jul-11		6		MS	PREBON	64239	seetal patel
+400	40722	26	LOTS	ICE BRENT	FUTURE			AUG11 /SEP11		0.17		CED	INTERNAL	64242	seetal patel
+401	40722	5	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus) 	SWAP			AUG11 / OCT11		30		BRYAN	INTERNAL	64245	seetal patel
+
+402	40723	-5	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus) vs Naphtha CIF NWE Physical	SWAP			Jul-11		58.5		GUNVOR (C)	PVM	64239	seetal patel
+403	40723	-3	LOTS	ICE BRENT	FUTURE			Sep-11		109.26		ICE	ICE	64239	seetal patel
+404	40723	-5	KT	Naphtha CIF NWE Cargoes vs IPE Brent	SWAP			Jul-11		-8		BP	ASPEN	64239	seetal patel
+405	40723	-5	KT	Naphtha CIF NWE Cargoes vs IPE Brent	SWAP			Jul-11		-8		MERCURIA	ASPEN	64239	seetal patel
+406	40723	-10	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus) vs IPE Brent	SWAP			Jul-11		6.3		MERCURIA	PVM	64239	seetal patel
+407	40723	-80	LOTS	NYMEX RBOB	FUTURE			AUG11/SEP11		0.0299		NYMEX	BARX	64245	seetal patel
+408	40723	2	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			Sep-11		955.25		BRYAN	INTERNAL	64239	seetal patel
+409	40723	-17	LOTS	ICE BRENT	FUTURE			Oct-11		109.491		ICE	ICE	64239	seetal patel
+410	40723	50	LOTS	RB BRENT cracks	FUTURE			Aug-11		9.914		CED	INTERNAL	64242	seetal patel
+411	40723	-50	kb	NYMEX RBOB 1st Month vs IPE Brent 1st Month	SWAP			Jul-11		9.95		EGIS	INTERNAL	64242	seetal patel
+412	40723	50	LOTS	rbho	FUTURE			Aug-11		-0.0264		CED	INTERNAL	64242	seetal patel
+413	40723	-50	kb	NYMEX RBOB vs NYMEX Heat	SWAP			Jul-11		-0.0264		EGIS	INTERNAL	64242	seetal patel
+414	40723	30	LOTS	ICE BRENT	FUTURE			AUG11 / SEP11		0.06		CED	INTERNAL	64242	seetal patel
+415	40723	-9	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			JUL11 / AUG11		4		ARCADIA (C)	PVM	64245	seetal patel
+416	40723	-8	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			JUL11 / AUG11		4		MERCURIA	PVM	64245	seetal patel
+417	40723	-20	KT	NYMEX RBOB vs Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			Aug-11		0.063		LEE	INTERNAL	64238	seetal patel
+418	40723	5	KT	NYMEX RBOB vs Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			Aug-11		0.063		MATT	INTERNAL	64238	seetal patel
+419	40723	-13	KT	NYMEX RBOB vs Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			Jul-11		0.0825		NAURIN	INTERNAL	64238	seetal patel
+420	40723	8	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			Jul-11		979		SANJEEV	INTERNAL	64238	seetal patel
+421	40723	-67	LOTS	NYMEX RBOB	FUTURE			Aug-11		2.8833		CED	INTERNAL	64238	seetal patel
+422	40723	-7	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			Aug-11		984.5		PP (C)	PVM	64238	seetal patel
+423	40723	58	LOTS	NYMEX RBOB	FUTURE			Sep-11		2.876		NYMEX	PVM	64238	seetal patel
+
+424	40729	20	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			AUG11 / DEC11		46.5		BRYAN	INTERNAL	64245	seetal patel
+425	40729	-5	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus) vs IPE Brent	SWAP			Aug-11		7.85		BP	PVM	64239	seetal patel
+426	40729	-25	KB	Prem Unl Euro-Bob Oxy NWE Barges (Argus) vs IPE Brent	SWAP			Aug-11		7.85		BRYAN	INTERNAL	64239	seetal patel
+427	40729	3	LOTS	ICE BRENT	FUTURE			Aug-11		111.22		SPEC CRACKS	INTERNAL	64238/64239	seetal patel
+428	40729	-8	LOTS	NYMEX RBOB	FUTURE			Aug-11		2.96		SPEC SPREADS	INTERNAL	64238/64245	seetal patel
+429	40729	4	LOTS	ICE BRENT	FUTURE			Aug-11		111.22		SPEC SPREADS	INTERNAL	64238/64245	seetal patel
+430	40729	1	LOTS	ICE BRENT	FUTURE			Aug-11		111.22		SPEC SPREADS	INTERNAL	64242/64245	seetal patel
+431	40729	-2	LOTS	NYMEX RBOB	FUTURE			Aug-11		2.96		SPEC SPREADS	INTERNAL	64242/64245	seetal patel
+432	40729	-1	LOTS	NYMEX WTI	FUTURE			Aug-11		94.93		SPEC ARBS	INTERNAL	64242 / 64238	seetal patel
+433	40729	-2	LOTS	ICE BRENT	FUTURE			Aug-11		111.22		CED	INTERNAL	64245	seetal patel
+434	40729	4	LOTS	NY WTI Brent	FUTURE			Aug-11		-16.29		CED	INTERNAL	64238	seetal patel
+435	40729	-127	LOTS	ICE BRENT	FUTURE			AUG11 / SEP11		0.32		CED	INTERNAL	64239	seetal patel
+436	40729	10	LOTS	RB CRACKS	FUTURE			Aug-11		12.5148		NYMEX	BARX	64239	seetal patel
+437	40729	-5	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus) vs IPE Brent	SWAP			Sep-11		6.35		VITOL	OB	64239	seetal patel
+438	40729	112	LOTS	RB CRACKS	FUTURE			Aug-11		12		ARGUS	INTERNAL	64239	seetal patel
+439	40729	-7	KT	NYMEX RBOB vs Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			Aug-11		8.4		PRICING	INTERNAL	64238	seetal patel
+440	40729	50	KB	NYMEX RBOB vs Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			Jul-11		10.25		VITOL	OB	64238	seetal patel
+441	40729	-57	LOTS	NYMEX RBOB	FUTURE			aug11 / sep11		4.22		NYMEX	BARX	64238	seetal patel
+442	40729	6.84	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus) 	swap			jul11/aug11		5		PRICING	INTERNAL	64238	seetal patel
+
+443	40730	10	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus) vs IPE Brent	SWAP			bom		7.6		GLENCORE	PVM	64239	seetal patel
+444	40730	30	KT	NYMEX RBOB vs Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			Aug-11		0.0775		EGIS	INTERNAL	64238	seetal patel
+445	40730	-5	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus) vs IPE Brent	SWAP			Aug-11		7.3		BP	PVM	64239	seetal patel
+446	40730	5	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus) 	SWAP			aug11 / sep11		7		LITASCO	PVM	64239	seetal patel
+447	40730	18	LOTS	ICE BRENT	FUTURE			sep11 / oct11		0.02		CED	INTERNAL	64239	seetal patel
+448	40730	4	LOTS	ICE BRENT	FUTURE			oct11 / nov11		-0.09		CED	INTERNAL	64239	seetal patel
+449	40730	27	LOTS	NYMEX RBOB	FUTURE			aug11 / sep11		0.0418		CED	INTERNAL	64245	seetal patel
+450	40730	-11	KT	NYMEX RBOB vs Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			bom		0.106		SANJEEV	INTERNAL	64238	seetal patel
+451	40730	8	KT	NYMEX RBOB vs Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			bom		0.106		SPEC CRACKS	INTERNAL	64238 / 64239	seetal patel
+452	40730	-10	KT	NYMEX RBOB vs Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			bom		0.106		NAURIN	INTERNAL	64239	seetal patel
+453	40730	83	KB	NYMEX RBOB 1st Month vs IPE Brent 1st Month (BBLS)	SWAP			bom		11.7		SHELL	PVM	64239	seetal patel
+454	40730	67	LOTS	RB Cracks	FUTURE			Aug-11		27.4351		NYMEX	BARX	64239	seetal patel
+455	40730	-67	LOTS	NY WTI BRENT	FUTURE			Aug-11		-16.15		CED	INTERNAL	64239	seetal patel
+456	40730	-236	KB	NYMEX RBOB 1st month	SWAP			bom		2.9503		VITOL	PVM	64239	seetal patel
+457	40730	236	LOTS	NYMEX RBOB	FUTURE			Aug-11		2.95		VITOL (EFS)	PARIBAS	64239	seetal patel
+458	40730	1.2	KT	NYMEX RBOB vs Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			Jul-11		0.105		MATT	PVM	64238	seetal patel
+459	40730	1	KT	NYMEX RBOB vs Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			Jul-11		0.105		NOBLE	PVM	64238	seetal patel
+
+460	40731	102	LOTS	rb brent cracks	FUTURE			Aug-11		12.3718		NYMEX	BARX	64240	seetal patel
+461	40731	-144	KB	Naphtha CIF NWE Cargoes vs IPE Brent	SWAP			BOM		-6.55		SPEC CRACKS	INTERNAL	64240 / 64239	seetal patel
+462	40731	5	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus) vs IPE Brent	SWAP			BOM		8.2		BP	PVM	64240	seetal patel
+463	40731	5	KT	NYMEX RBOB vs Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			BOM		0.106		WESTY	INTERNAL	64240	seetal patel
+464	40731	8	LOTS	ICE BRENT	FUTURE			AUG11 / SEP11		0.47		CED	INTERNAL	64239	seetal patel
+465	40731	-22	LOTS	ICE BRENT	FUTURE			AUG11 / SEP11		0.46		CED	INTERNAL	64239	seetal patel
+466	40731	-24	LOTS	ICE BRENT	FUTURE			SEP11 / OCT11		-0.02		CED	INTERNAL	64239	seetal patel
+467	40731	-22	LOTS	ICE BRENT	FUTURE			SEP11 / NOV11		-0.12		CED	INTERNAL	64239	seetal patel
+468	40731	-29	LOTS	NYMEX RBOB	FUTURE			AUG11 / SEP11		0.0451		CED	INTERNAL	64245	seetal patel
+469	40731	50	KB	Prem Unl Euro-Bob Oxy NWE Barges (Argus) vs IPE Brent	SWAP			BOM		8		RELIANCE (C)	PVM	64239	seetal patel
+470	40731	50	KB	Prem Unl Euro-Bob Oxy NWE Barges (Argus) vs IPE Brent	SWAP			Aug-11		7.3		RELIANCE (C)	PVM	64239	seetal patel
+471	40731	-36	LOTS	rb brent cracks	FUTURE			Aug-11		12.3		NYMEX	BARX	64239	seetal patel
+472	40731	50	KB	NYMEX RBOB vs Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			BOM		0.106		WESTY	INTERNAL	64239	seetal patel
+473	40731	-5	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus) vs IPE Brent	SWAP			Aug-11		7.55		ARON	TFS	64239	seetal patel
+474	40731	-42	KB	Prem Unl Euro-Bob Oxy NWE Barges (Argus) vs IPE Brent	SWAP			Sep-11		6.6		MITSUI (C)	TFS	64239	seetal patel
+475	40731	-14	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			AUG11 / SEP11		9		PAUL SHORT	INTERNAL	64245	seetal patel
+
+476	40743	-2.5	KT	NYMEX RBOB 1st Month	SWAP			Q411		2.8865		JAMES TREBBLE	INTERNAL	64240	seetal patel
+477	40743	2.5	KT	Naphtha CIF NWE Cargoes	SWAP			Q411		977.86		JAMES TREBBLE	INTERNAL	64240	seetal patel
+478	40743	-2.5	KT	NYMEX RBOB 1st Month	SWAP			Q112		2.8865		JAMES TREBBLE	INTERNAL	64240	seetal patel
+479	40743	2.5	KT	Naphtha CIF NWE Cargoes	SWAP			Q112		977.86		JAMES TREBBLE	INTERNAL	64240	seetal patel
+480	40743	-2.5	KT	NYMEX RBOB 1st Month	SWAP			Q411		2.8865		ANAND SPEC	INTERNAL	64240	seetal patel
+481	40743	2.5	KT	Naphtha CIF NWE Cargoes	SWAP			Q411		977.86		ANAND SPEC	INTERNAL	64240	seetal patel
+482	40743	-2.5	KT	NYMEX RBOB 1st Month	SWAP			Q112		2.8865		ANAND SPEC	INTERNAL	64240	seetal patel
+483	40743	2.5	KT	Naphtha CIF NWE Cargoes	SWAP			Q112		977.86		ANAND SPEC	INTERNAL	64240	seetal patel
+484	40743	-1	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus) vs Naphtha CIF NWE Physical	SWAP			Q111		14		ANAND SPEC	INTERNAL	64240	seetal patel
+485	40743	-1	KT	NYMEX RBOB vs Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			Aug-11		0.081		ANAND SPEC	INTERNAL	64238	seetal patel
+486	40743	4	KT	NYMEX RBOB vs Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			Aug-11		0.081		SANJEEV	INTERNAL	64238	seetal patel
+487	40743	-5	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus) vs IPE Brent	SWAP			Aug-11		8.55		NOBLE	PVM	64239	seetal patel
+488	40743	-50	LOTS	rb brent cracks	FUTURE			Sep-11		11.81		NYMEX	BARX	64239	seetal patel
+489	40743	-50	LOTS	rb brent cracks	FUTURE			Sep-11		11.96		NYMEX	BARX	64239	seetal patel
+490	40743	-50	LOTS	rb brent cracks	FUTURE			Sep-11		11.73		NYMEX	BARX	64239	seetal patel
+491	40743	-7	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus) 	SWAP			AUG11 / SEP11		10.25		VITOL	PVM	64245	seetal patel
+492	40743	-100	LOTS	NYMEX RBOB	FUTURE			NOV11 / DEC11		0.0174		NYMEX	BARX	64245	seetal patel
+493	40743	-100	LOTS	NYMEX RBOB	FUTURE			NOV11 / DEC11		0.0175		NYMEX	BARX	64245	seetal patel
+494	40743	50	LOTS	ICE BRENT	FUTURE			Sep-11		117.64		CED	INTERNAL	64241	seetal patel
+495	40743	-50	LOTS	ICE BRENT	FUTURE			Sep-11		0		CED	INTERNAL	64241	seetal patel
+
+496	40744	-12	LOTS	ICE BRENT	FUTURE			Sep-11		117.9		CED	INTERNAL	64240	seetal patel
+497	40744	-10	KT	NYMEX RBOB vs Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			Aug-11		0.0775		VITOL	PVM	64238	seetal patel
+498	40744	-50	LOTS	rb brent cracks	FUTURE			Sep-11		11.501		NYMEX	BARX	64239	seetal patel
+499	40744	10	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus) vs Naphtha CIF NWE Physical	SWAP			Sep-11		53		TOTSA	PVM	64240	seetal patel
+500	40744	7	KT	NYMEX RBOB vs Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			Sep-11		-0.03		BRYAN	INTERNAL	64245	seetal patel
+501	40744	-7	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			aug11 / sep11		9		VITOL	PVM	64245	seetal patel
+502	40744	-7	KT	NYMEX RBOB vs Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			Aug-11		0.0766		SPEC ARBS	INTERNAL	64245/64238	seetal patel
+503	40744	100	LOTS	NYMEX RBOB	FUTURE			Sep-11		3.0765		SPEC CRACKS	INTERNAL	64239	seetal patel
+504	40744	-100	LOTS	ICE BRENT	FUTURE			Sep-11		118.16		CED	INTERNAL	64239	seetal patel
+505	40744	-150	LOTS	rb brent cracks	FUTURE			Sep-11		11.114		NYMEX	BARX	64239	seetal patel
+506	40744	125	LOTS	NY WTI BRENT	FUTURE			Sep-11		-19.55		CED	INTERNAL	64239	seetal patel
+507	40744	125	LOTS	NY WTI BRENT	FUTURE			Sep-11		-19.31		CED	INTERNAL	64239	seetal patel
+508	40744	-47	LOTS	NYMEX RBOB	FUTURE			NOV11 / DEC11		0.0155		NYMEX	BARX	64245	seetal patel
+
+509	40745	-25	LOTS	NY WTI BRENT	FUTURE			Sep-11		-19.82		CED	INTERNAL	64239	seetal patel
+510	40745	-100	LOTS	NY WTI BRENT	FUTURE			Sep-11		-19.75		CED	INTERNAL	64239	seetal patel
+511	40745	-25	LOTS	rb brent cracks	FUTURE			Sep-11		11.608		NYMEX	BARX	64239	seetal patel
+512	40745	-10	KT	NYMEX RBOB vs Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			Aug-11		0.0765		ENI (C)	PVM	64238	seetal patel
+513	40745	-5	KT	NYMEX RBOB vs Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			Aug-11		0.074		NV (C)	PVM	64238	seetal patel
+514	40745	25	LOTS	RB CRACKS	FUTURE			Sep-11		30.5		NYMEX	BARX	64239	seetal patel
+515	40745	50	LOTS	RB CRACKS	FUTURE			Sep-11		30		NYMEX	BARX	64239	seetal patel
+516	40745	50	LOTS	RB CRACKS	FUTURE			Sep-11		29.97		NYMEX	BARX	64239	seetal patel
+517	40745	50	LOTS	ICE BRENT	FUTURE			Sep-11		118.27		CED	INTERNAL	64241	seetal patel
+518	40745	25	LOTS	ICE BRENT	FUTURE			Sep-11		118.42		CED	INTERNAL	64241	seetal patel
+519	40745	100	LOTS	ICE BRENT	FUTURE			Sep-11		118.43		CED	INTERNAL	64241	seetal patel
+520	40745	-75	LOTS	ICE BRENT	FUTURE			Sep-11		119		CED	INTERNAL	64241	seetal patel
+521	40745	4	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus) 	SWAP			Aug-11		1057.5		AOT (C)	PVM	64238	seetal patel
+522	40745	-33	LOTS	NYMEX RBOB	FUTURE			Sep-11		3.0996		NYMEX	PVM	64238	seetal patel
+523	40745	36	KT	NYMEX RBOB vs Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			Aug-11		0.073		PMI (C)	INTERNAL	64238	seetal patel
+524	40745	-17	KT	NYMEX RBOB vs Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			Aug-11		0.073		ARA FWD POSITION (Deal 1)	INTERNAL	64238	seetal patel
+
+525	40746	-50	LOTS	ICE BRENT	FUTURE			Sep-11		117.97		CED	INTERNAL	64241	seetal patel
+526	40746	-25	LOTS	ICE BRENT	FUTURE			Sep-11		118.18		CED	INTERNAL	64241	seetal patel
+527	40746	-25	LOTS	ICE BRENT	FUTURE			Sep-11		118.46		CED	INTERNAL	64241	seetal patel
+528	40746	5	KT	NYMEX RBOB 1st Month	SWAP			q411		2.9026		EGIS	INTERNAL	64240	seetal patel
+529	40746	-5	KT	Naphtha CIF NWE Cargoes	SWAP			q411		998.003636		EGIS	INTERNAL	64240	seetal patel
+530	40746	5	KT	NYMEX RBOB 1st Month	SWAP			q112		2.9625		EGIS	INTERNAL	64240	seetal patel
+531	40746	-5	KT	Naphtha CIF NWE Cargoes	SWAP			q112		998.96025		EGIS	INTERNAL	64240	seetal patel
+532	40746	-50	LOTS	RB CRACKS	FUTURE			Sep-11		29.9		NYMEX	BARX	64239	seetal patel
+533	40746	-50	LOTS	RB CRACKS	FUTURE			Sep-11		29.9		NYMEX	BARX	64239	seetal patel
+534	40746	-25	LOTS	RB CRACKS	FUTURE			Sep-11		29.9		NYMEX	BARX	64239	seetal patel
+535	40746	-15	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus) 	SWAP			sep11 / oct11		29.5		VITOL	TFS	64245	seetal patel
+536	40746	-50	LOTS	NYMEX RBOB	FUTURE			Sep-11		3.0884		SPEC ARBS	INTERNAL	64238	seetal patel
+537	40746	6	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus) 	SWAP			Aug-11		1051.5		GLENCORE	PVM	64238	seetal patel
+538	40746	-25	LOTS	rb brent cracks	FUTURE			Sep-11		11.199		NYMEX	BARX	64239	seetal patel
+539	40746	-5	KT	NYMEX RBOB vs Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			Aug-11		0.07		NOBLE	PVM	64238	seetal patel
+
+540	40749	-50	LOTS	ICE BRENT	FUTURE			Sep-11		117.8		CED	INTERNAL	64241	seetal patel
+541	40749	-19	KT	NYMEX RBOB vs Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			Aug-11		0.074		AUG MODEL	INTERNAL	64238	seetal patel
+542	40749	3	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus) vs IPE Brent	SWAP			Aug-11		8.2		AUG MODEL	INTERNAL	64239	seetal patel
+543	40749	-50	LOTS	RB BRENT CRACKS	FUTURE			Sep-11		11.3		NYMEX	BARX	64239	seetal patel
+
+544	40752	28	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus) 	SWAP			AUG11 / SEP11		9.5		ARA FWD POSITION	INTERNAL	64245	seetal patel
+545	40752	-15	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus) 	SWAP			AUG11 / SEP11		9.5		GUNVOR (C)	PVM	64245	seetal patel
+546	40752	-10	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus) 	SWAP			AUG11 / SEP11		9.75		SHELL	PVM	64245	seetal patel
+547	40752	20	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus) 	SWAP			AUG11 / SEP11		9.75		BRYAN	PVM	64245	seetal patel
+548	40752	4	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus) 	SWAP			AUG11 / SEP11		9.75		WILL	PVM	64245	seetal patel
+549	40752	-42	KT	NYMEX RBOB vs Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			Aug-11		0.091		ARA FWD POSITION	INTERNAL	64238	seetal patel
+550	40752	5	KT	NYMEX RBOB vs Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			Aug-11		0.09		SHELL	PVM	64238	seetal patel
+551	40752	4	KT	NYMEX RBOB vs Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			Aug-11		0.09		BARCLAYS	PVM	64238	seetal patel
+552	40752	-3	KT	NYMEX RBOB vs Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			Aug-11		0.09		BRYAN	INTERNAL	64238	seetal patel
+553	40752	-10	KT	NYMEX RBOB vs Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			Aug-11		0.09		SANJEEV	INTERNAL	64238	seetal patel
+554	40752	10	KT	NYMEX RBOB vs Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			Aug-11		0.079		BP	TFS	64238	seetal patel
+555	40752	-6	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus) 	SWAP			Aug-11		1057		GUNVOR (C)	PVM	64238	seetal patel
+556	40752	50	LOTS	NYMEX RBOB	FUTURE			Sep-11		3.1085		CED	INTERNAL	64238	seetal patel
+
+557	40756	-20	KT	NYMEX RBOB vs Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			Aug-11		0.076		SANJEEV	INTERNAL	64238	seetal patel
+558	40756	-10	KT	NYMEX RBOB vs Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			Aug-11		0.07		MERCURIA	PVM	64238	seetal patel
+559	40756	10	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus) vs Naphtha CIF NWE Physical	SWAP			Sep-11		47		ANAND	INTERNAL	64240	seetal patel
+560	40756	-39	LOTS	rb brent cracks	FUTURE			Sep-11		11.601		NYMEX	BARX	64239	seetal patel
+561	40756	-50	LOTS	rb brent cracks	FUTURE			Sep-11		11.548		NYMEX	BARX	64239	seetal patel
+562	40756	-50	LOTS	rb brent cracks	FUTURE			Sep-11		12.209		NYMEX	BARX	64239	seetal patel
+563	40756	-11	LOTS	rb brent cracks	FUTURE			Sep-11		12.08		NYMEX	BARX	64239	seetal patel
+564	40756	-39	LOTS	ny wti brent	FUTURE			Sep-11		-21.16		CED	INTERNAL	64239	seetal patel
+565	40756	50	LOTS	ICE BRENT	FUTURE			Sep-11		119.52		CED	INTERNAL	64241	seetal patel
+566	40756	25	LOTS	ICE BRENT	FUTURE			Sep-11		119.25		CED	INTERNAL	64241	seetal patel
+567	40756	-10	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus) vs IPE Brent	SWAP			Sep-11		7.6		STATOIL	PVM	64240	seetal patel
+568	40756	10	KT	Naphtha CIF NWE Cargoes vs IPE Brent	SWAP			Sep-11		-6.4		LEE	INTERNAL	64240	seetal patel
+569	40756	-6	KB	IPE Brent 1st month	SWAP			Sep-11		118.3		CED	INTERNAL	64240	seetal patel
+570	40756	12	KB	IPE Brent 1st month	SWAP			Sep-11		118.58		CED	INTERNAL	64240	seetal patel
+
+571	40757	75	LOTS	ICE BRENT	FUTURE			Sep-11		115.73		CED	INTERNAL	64241	seetal patel
+572	40757	-50	LOTS	ICE BRENT	FUTURE			Sep-11		116.53		CED	INTERNAL	64241	seetal patel
+573	40757	-25	LOTS	ICE BRENT	FUTURE			Sep-11		116.6		CED	INTERNAL	64241	seetal patel
+574	40757	-25	LOTS	ICE BRENT	FUTURE			Sep-11		117.8		CED	INTERNAL	64241	seetal patel
+575	40757	285	KB	NYMEX RBOB vs Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			Aug-11		0.063		ARA FWD POSITION	INTERNAL	64238	seetal patel
+576	40757	2	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			Sep-11		1026		SAM	INTERNAL	64238	seetal patel
+577	40757	-17	LOTS	NYMEX RBOB	FUTURE			Oct-11		2.9083		CED	INTERNAL	64238	seetal patel
+578	40757	-5	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus) vs IPE Brent	SWAP			Sep-11		7.4		MERCURIA	PVM	64240	seetal patel
+579	40757	2.5	KT	Naphtha CIF NWE Cargoes vs IPE Brent	SWAP			Q411		-5.5		LEE	INTERNAL	64240	seetal patel
+580	40757	-23.3	KB	IPE Gas Oil (Settlement) vs IPE Brent	SWAP			Q411		15		SPEC CRACKS	INTERNAL	64240 / 64239	seetal patel
+
+581	40758	50	LOTS	ICE BRENT	FUTURE			Sep-11		115.42		CED	INTERNAL	64241	seetal patel
+582	40758	-50	LOTS	ICE BRENT	FUTURE			Sep-11		115.7		CED	INTERNAL	64241	seetal patel
+583	40758	50	LOTS	ICE BRENT	FUTURE			Sep-11		114.47		CED	INTERNAL	64241	seetal patel
+584	40758	2.5	KT	NYMEX RBOB vs Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			Sep-11		-0.033		PAT	INTERNAL	64238	seetal patel
+585	40758	-7	LOTS	ICE BRENT	FUTURE			Sep-11		115.72		CED	INTERNAL	64242	seetal patel
+586	40758	-2	LOTS	NYMEX RBOB	FUTURE			Sep-11		3.0047		CED	INTERNAL	64242	seetal patel
+587	40758	3	LOTS	NYMEX WTI	FUTURE			Sep-11		93.37		CED	INTERNAL	64242	seetal patel
+588	40758	15	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			SEP11/OCT11		29.5		TOTSA	TFS	64245	seetal patel
+589	40758	-50	LOTS	RB BRENT CRACKS	FUTURE			Sep-11		10.33156		CED	INTERNAL	64239	seetal patel
+590	40758	50	LOTS	RB BRENT CRACKS	FUTURE			Sep-11		10		NYMEX 	BARX	64239	seetal patel
+591	40758	243	LOTS	NYMEX RBOB	FUTURE			SEP11/OCT11		0.1277		NYMEX 	BARX	64245	seetal patel
+
+592	40759	-50	LOTS	RB BRENT CRACKS	future			Sep-11		9.47		NYMEX	BARX	64239	seetal patel
+593	40759	100	LOTS	RB BRENT CRACKS	future			Sep-11		9		NYMEX	BARX	64239	seetal patel
+594	40759	100	LOTS	RB BRENT CRACKS	future			Sep-11		8.33		NYMEX	BARX	64239	seetal patel
+595	40759	-3	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus) vs IPE Brent	SWAP			Q411		2.15		VITOL	OB	64240	seetal patel
+596	40759	23.5	KB	IPE Gas Oil (Settlement) vs IPE Brent	SWAP			Q411		14.65		SPEC CRACKS	INTERNAL	64240 / 64239	seetal patel
+597	40759	-50	KB	Prem Unl Euro-Bob Oxy NWE Barges (Argus) vs IPE Brent	SWAP			Sep-11		6.3		AOT (C)	PVM	64239	seetal patel
+598	40759	50	KB	Unl 92 Singapore Cargoes	SWAP			q112		115.5		WILL	INTERNAL	64238	seetal patel
+599	40759	-50	KB	Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			q112		964.614		WILL	INTERNAL	64238	seetal patel
+600	40759	7	LOTS	NYMEX RBOB	FUTURE			NOV11/DEC11		0.012		NYMEX	BARX	64245	seetal patel
+601	40759	-50	LOTS	NYMEX RBOB	FUTURE			sep11/oct11		0.1225		PAT AUG SEP	INTERNAL	64245	seetal patel
+602	40759	240	LOTS	NYMEX RBOB	FUTURE			nov11/dec11		0.0117		ced	INTERNAL	64245	seetal patel
+603	40759	100	LOTS	ICE BRENT	FUTURE			Sep-11		110.37		ced	INTERNAL	64241	seetal patel
+604	40759	-100	LOTS	ICE BRENT	FUTURE			Sep-11		110.81		ced	INTERNAL	64241	seetal patel
+
+605	40760	-200	LOTS	NYMEX RBOB	FUTURE			SEP11/OCT11		0.1155		EGIS Q4 ARBS	BARX	64242	seetal patel
+606	40760	-242	LOTS	NYMEX RBOB	FUTURE			SEP11/OCT11		0.114		ARA FWD POSITION	INTERNAL	64242	seetal patel
+607	40760	-80	KB	NYMEX RBOB vs NYMEX Heat	SWAP			BOM		-0.153		EGIS NY MODEL	INTERNAL	64242	seetal patel
+608	40760	-80	KB	NYMEX RBOB 1st Month vs IPE Brent 1st Month	SWAP			BOM		7.8		EGIS NY MODEL	INTERNAL	64242	seetal patel
+609	40760	141	LOTS	NYMEX RBOB	FUTURE			Oct-11		2.637		ARGUS	INTERNAL	64242	seetal patel
+610	40760	-58	LOTS	NYMEX RBOB	FUTURE			SEP11/OCT11		0.1125		ARA FWD POSITION	INTERNAL	64242	seetal patel
+611	40760	51	LOTS	ICE BRENT	FUTURE			SEP11/OCT11		0.04		CED	INTERNAL	64242	seetal patel
+612	40760	-80	LOTS	NYMEX HEAT	FUTURE			Sep-11		2.9207		NYMEX	BARX	64242	seetal patel
+613	40760	660	LOTS	NYMEX RBOB	FUTURE			Sep-11		2.7553		NYMEX	BARX	64242	seetal patel
+614	40760	-641	LOTS	NYMEX RBOB	FUTURE			Oct-11		2.6367		NYMEX	BARX	64242	seetal patel
+615	40760	-80	LOTS	ICE BRENT	FUTURE			Sep-11		108.8506		ICE	BARX	64242	seetal patel
+616	40760	-5	KT	3.5% Fuel FOB Rotterdam Barges vs IPE Brent	SWAP			Q411		-13.2		MAND (ICE)	TULLET	64244	seetal patel
+617	40760	-5	KT	3.5% Fuel FOB Rotterdam Barges vs IPE Brent	SWAP			Q411		-13.15		TOTSA	SPECTRON	64244	seetal patel
+618	40760	-5	KT	3.5% Fuel FOB Rotterdam Barges vs IPE Brent	SWAP			Q411		-13.1		JPM (ICE)	SPECTRON	64244	seetal patel
+619	40760	-50	LOTS	ICE BRENT	FUTURE			Sep-11		108.97		CED	INTERNAL	64241	seetal patel
+620	40760	50	LOTS	ICE BRENT	FUTURE			Sep-11		108.5		CED	INTERNAL	64241	seetal patel
+621	40760	30	KB	Prem Unl Euro-Bob Oxy NWE Barges (Argus) vs IPE Brent	SWAP			Q411		1.4		EGIS Q4 ARBS	INTERNAL	64240	seetal patel
+622	40760	-30	KB	IPE Gas Oil (Settlement) vs IPE Brent	SWAP			Q411		14.4		bp	ICAP	64240	seetal patel
+623	40760	5	KT	NYMEX RBOB vs Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			Oct-11		0.004		MERCURIA	PVM	64238	seetal patel
+
+624	40763	-1	LOTS	ICE BRENT	FUTURE			Sep-11		106.39		SPEC FLOW	INTERNAL	64238/64242	seetal patel
+625	40763	1	LOTS	NYMEX WTI	FUTURE			Sep-11		83.86		SPEC FLOW	INTERNAL	64238/64242	seetal patel
+626	40763	5	LOTS	NYMEX RBOB	FUTURE			Sep-11		2.7373		SPEC FLOW	INTERNAL	64239/64242	seetal patel
+627	40763	-1	LOTS	NYMEX WTI	FUTURE			Sep-11		83.86		SPEC FLOW	INTERNAL	64239/64242	seetal patel
+628	40763	4	LOTS	NYMEX WTI	FUTURE			Oct-11		84.35		SPEC FLOW	INTERNAL	64239/64242	seetal patel
+629	40763	4	LOTS	ICE BRENT	FUTURE			Sep-11		106.39		SPEC FLOW	INTERNAL	64239/64242	seetal patel
+630	40763	-1	LOTS	ICE BRENT	FUTURE			Nov-11		106.52		SPEC FLOW	INTERNAL	64239/64242	seetal patel
+631	40763	-1	LOTS	ICE BRENT	FUTURE			Dec-11		106.61		SPEC FLOW	INTERNAL	64239/64242	seetal patel
+632	40763	-5	LOTS	ICE BRENT	FUTURE			Jan-12		106.68		SPEC FLOW	INTERNAL	64239/64242	seetal patel
+633	40763	-3	LOTS	ICE BRENT	FUTURE			Feb-12		106.68		SPEC FLOW	INTERNAL	64239/64242	seetal patel
+634	40763	3	LOTS	ICE BRENT	FUTURE			Sep-11		106.39		CED	INTERNAL	64242	seetal patel
+635	40763	3	LOTS	NYMEX RBOB	FUTURE			Sep-11		2.7373		CED	INTERNAL	64242	seetal patel
+636	40763	4	LOTS	NYMEX WTI	FUTURE			Oct-11		84.35		CED	INTERNAL	64242	seetal patel
+637	40763	-1	LOTS	ICE BRENT	FUTURE			Nov-11		106.52		CED	INTERNAL	64242	seetal patel
+638	40763	-1	LOTS	ICE BRENT	FUTURE			Dec-11		106.61		CED	INTERNAL	64242	seetal patel
+639	40763	-5	LOTS	ICE BRENT	FUTURE			Jan-12		106.68		CED	INTERNAL	64242	seetal patel
+640	40763	-3	LOTS	ICE BRENT	FUTURE			Feb-12		106.68		CED	INTERNAL	64242	seetal patel
+641	40763	50	LOTS	ICE BRENT	FUTURE			Sep-11		105.66		CED	INTERNAL	64241	seetal patel
+642	40763	-50	LOTS	ICE BRENT	FUTURE			Sep-11		106.43		CED	INTERNAL	64241	seetal patel
+643	40763	-5	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus) vs Naphtha CIF NWE Physical	SWAP			Sep-11		44.5		CITADEL (C)	TFS	64240	seetal patel
+644	40763	-3	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus) vs Naphtha CIF NWE Physical	SWAP			Sep-11		44.5		MERCURIA	TFS	64240	seetal patel
+645	40763	10.5	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus) 	SWAP			Sep-11		938		LEE	INTERNAL	64245	seetal patel
+646	40763	-3.5	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus) 	SWAP			Q411		902		LEE	INTERNAL	64245	seetal patel
+
+647	40764	-100	LOTS	ICE BRENT	FUTURE			Sep-11		104.15		CED	INTERNAL	64241	seetal patel
+648	40764	-50	LOTS	ICE BRENT	FUTURE			Sep-11		104.18		CED	INTERNAL	64241	seetal patel
+649	40764	100	LOTS	ICE BRENT	FUTURE			Sep-11		103.595		CED	INTERNAL	64241	seetal patel
+650	40764	50	LOTS	ICE BRENT	FUTURE			Sep-11		104.1		CED	INTERNAL	64241	seetal patel
+
+651	40765	-1	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus) 	SWAP			Sep-11		927		VITOL	INTERNAL	64241	seetal patel
+652	40765	7	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus) vs IPE Brent	SWAP			Sep-11		6		WILL	INTERNAL	64239	seetal patel
+653	40765	-7	KT	NYMEX RBOB vs Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			Sep-11		-0.058		ROBERTO	INTERNAL	64238	seetal patel
+654	40765	-12	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus) vs IPE Brent	SWAP			Sep-11		6.1		WILL	INTERNAL	64239	seetal patel
+655	40765	3	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus) 	SWAP			Sep-11		933.25		AOT (C)	PVM	64239	seetal patel
+656	40765	-25	KB	IPE Brent 1st month	SWAP			Sep-11		106.07		CED	INTERNAL	64239	seetal patel
+657	40765	19.5	KT	NYMEX RBOB vs Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			Sep-11		-0.06		PRICING	INTERNAL	64238	seetal patel
+658	40765	5	KT	NYMEX RBOB vs Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			Oct-11		0.004		MERCURIA	PVM	64238	seetal patel
+659	40765	17	KB	NYMEX RBOB 1st Month vs IPE Brent 1st Month	SWAP			Sep-11		3.35		INFINIUM (C)	PVM	64238	seetal patel
+660	40765	-17	KB	Prem Unl Euro-Bob Oxy NWE Barges (Argus) vs IPE Brent	SWAP			Sep-11		5.8		SPEC CRACKS	INTERNAL	64238 / 64239	seetal patel
+661	40765	-15	KT	NYMEX RBOB vs Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			Sep-11		-0.058		BRYAN	INTERNAL	64238	seetal patel
+662	40765	-88	LOTS	ICE BRENT	FUTURE			Sep-11		104.56		CED	INTERNAL	64241	seetal patel
+
+663	40766	42	KB	Prem Unl Euro-Bob Oxy NWE Barges (Argus) vs IPE Brent	SWAP			Sep-11		6.4		HARVEST (C)	PVM	64239	seetal patel
+664	40766	50	LOTS	ICE BRENT	FUTURE			Sep-11		105		CED	INTERNAL	64241	seetal patel
+665	40766	-50	LOTS	ICE BRENT	FUTURE			Sep-11		105.5		CED	INTERNAL	64241	seetal patel
+666	40766	-50	LOTS	NYMEX RBOB	FUTURE			SEP11 / OCT11		0.168		ARGUS	INTERNAL	64245	seetal patel
+667	40766	-200	LOTS	NYMEX RBOB	FUTURE			SEP11 / OCT11		0.1565		NYMEX	BARX	64245	seetal patel
+668	40766	1	KT	NYMEX RBOB vs Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			Sep-11		-0.053		ROBERTO	INTERNAL	64238	seetal patel
+
+669	40767	-2	LOTS	NYMEX RBOB	FUTURE			Sep-11		2.823		NYMEX	BARX	64242	seetal patel
+670	40767	177	LOTS	NYMEX RBOB	FUTURE			Oct-11		2.6706		NYMEX	BARX	64242	seetal patel
+671	40767	-108	LOTS	NYMEX RBOB	FUTURE			Oct-11		2.6618		NYMEX	BARX	64242	seetal patel
+672	40767	25	LOTS	ICE BRENT	FUTURE			Sep-11		107.7524		ICE	BARX	64242	seetal patel
+673	40767	-50	LOTS	ICE BRENT	FUTURE			Sep-11		107.0624		ICE	BARX	64242	seetal patel
+674	40767	-225	LOTS	ICE BRENT	FUTURE			Oct-11		108.0732		ICE	BARX	64242	seetal patel
+675	40767	133	LOTS	NYMEX RBOB	FUTURE			Oct-11		2.657		ARGUS	INTERNAL	64242	seetal patel
+676	40767	-2	LOTS	NYMEX RBOB	FUTURE			Sep-11		2.8395		SPEC FLOW	INTERNAL	64245 / 64242	seetal patel
+677	40767	2	LOTS	NYMEX RBOB	FUTURE			Oct-11		2.6695		SPEC FLOW	INTERNAL	64245 / 64242	seetal patel
+678	40767	125	LOTS	NYMEX RBOB	FUTURE			Oct-11		2.6728		SPEC FLOW	INTERNAL	64239 / 64242	seetal patel
+679	40767	-125	LOTS	ICE BRENT	FUTURE			Oct-11		108.4		SPEC FLOW	INTERNAL	64239 / 64242	seetal patel
+680	40767	50	LOTS	NYMEX RBOB	FUTURE			Oct-11		2.6728		SPEC FLOW	INTERNAL	64239 / 64242	seetal patel
+681	40767	-50	LOTS	ICE BRENT	FUTURE			Oct-11		108.1076		SPEC FLOW	INTERNAL	64239 / 64242	seetal patel
+682	40767	25	LOTS	NYMEX RBOB	FUTURE			Oct-11		2.6728		SPEC FLOW	INTERNAL	64239 / 64242	seetal patel
+683	40767	-25	LOTS	ICE BRENT	FUTURE			Oct-11		108.2576		SPEC FLOW	INTERNAL	64239 / 64242	seetal patel
+684	40767	-50	LOTS	ICE BRENT	FUTURE			Sep-11		107.06		SPEC FLOW	INTERNAL	64241 / 64242	seetal patel
+685	40767	25	LOTS	ICE BRENT	FUTURE			Sep-11		107.7524		SPEC FLOW	INTERNAL	64241 / 64242	seetal patel
+686	40767	-25	LOTS	ICE BRENT	FUTURE			Oct-11		108.1		SPEC FLOW	INTERNAL	64241 / 64242	seetal patel
+687	40767	-25	LOTS	ICE BRENT	FUTURE			sep11/oct11		0.3		CED	INTERNAL	64241	seetal patel
+688	40767	-10	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus) vs Naphtha CIF NWE Physical	SWAP			Sep-11		37		PAT	INTERNAL	64240	seetal patel
+689	40767	2	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus) vs IPE Brent	SWAP			Q112		2.8		SHELL	PVM	64239	seetal patel
+
+690	40770	-25	LOTS	ICE BRENT	FUTURE			Oct-11		109.17		CED	INTERNAL	64241	seetal patel
+691	40770	100	LOTS	ICE BRENT	FUTURE			Sep-11		108.4843		ICE	BARX	64241	seetal patel
+692	40770	-50	LOTS	ICE BRENT	FUTURE			SEP11/OCT11		0.2		CED	INTERNAL	64241	seetal patel
+693	40770	20	KT	NYMEX RBOB vs Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			Sep-11		-0.053		EGIS	INTERNAL	64242	seetal patel
+694	40770	-20	KT	NYMEX RBOB vs Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			Oct-11		0.004		MS	PVM	64242	seetal patel
+695	40770	-167	LOTS	NYMEX RBOB	FUTURE			OCT11/NOV11		0.0351		NYMEX	BARX	64242	seetal patel
+696	40770	10	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			SEP11 / OCT11		31		BP	OB	64242	seetal patel
+697	40770	5	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			SEP11 / OCT11		31.5		MAB (C)	PVM	64242	seetal patel
+698	40770	5	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			SEP11 / OCT11		32		CITADEL (C)	TFS	64242	seetal patel
+699	40770	2	KT	NYMEX RBOB vs Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			Sep-11		-0.053		ARA FWD POSITION	INTERNAL	64238	seetal patel
+700	40770	30	LOTS	NYMEX RBOB	FUTURE			SEP11/OCT11		0.152		PRICING	INTERNAL	64245	seetal patel
+701	40770	-5.5	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			SEP11 / OCT11		32		ARA FWD POSITION	INTERNAL	64245	seetal patel
+702	40770	-21	LOTS	ICE BRENT	FUTURE			Oct-11		107.9		CED	INTERNAL	64239	seetal patel
+703	40770	21	LOTS	NYMEX RBOB	FUTURE			Oct-11		2.665		ARGUS	INTERNAL	64239	seetal patel
+704	40770	-5	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			SEP11 / DEC11		45.5		BRYAN	INTERNAL	64245	seetal patel
+705	40770	5	LOTS	ICE BRENT	FUTURE			Oct-11		108.3		CED	INTERNAL	64239	seetal patel
+706	40770	-5	LOTS	NYMEX RBOB	FUTURE			Oct-11		2.674		SPEC DIFFS	INTERNAL	64239 / 64240	seetal patel
+707	40770	65	LOTS	NYMEX RBOB	FUTURE			SEP11/OCT11		0.152		NYMEX	BARX	64245	seetal patel
+708	40770	9	LOTS	RB BRENT CRACKS	FUTURE			Oct-11		4		NYMEX	BARX	64239	seetal patel
+
+709	40710	25	LOTS	ICE BRENT	FUTURE			Oct-11		108.85		CED	INTERNAL	64241	seetal patel
+710	40710	-25	LOTS	ICE BRENT	FUTURE			Oct-11		109.58		CED	INTERNAL	64241	seetal patel
+711	40710	2	LOTS	NYMEX RBOB	FUTURE			Sep-11		2.8482		SPEC FLOW	INTERNAL	64239 / 64242	seetal patel
+712	40710	-4	LOTS	ICE BRENT	FUTURE			Oct-11		108.74		SPEC FLOW	INTERNAL	64239 / 64242	seetal patel
+713	40710	250	LOTS	NYMEX RBOB	FUTURE			SEP11/OCT11		0.1519		NYMEX	BARX	64241 / 64242	seetal patel
+
+714	40772	-50	LOTS	ICE BRENT	FUTURE			Oct-11		109.77		CED	INTERNAL	64241	seetal patel
+715	40772	-50	LOTS	ICE BRENT	FUTURE			Oct-11		110.87		CED	INTERNAL	64241	seetal patel
+716	40772	-25	LOTS	ICE BRENT	FUTURE			Oct-11		111.35		CED	INTERNAL	64241	seetal patel
+717	40772	75	LOTS	ICE BRENT	FUTURE			Oct-11		111.301		ICE	ICE	64241	seetal patel
+718	40772	-15	KT	IPE Gas Oil (Settlement) vs IPE Brent	SWAP			Q411		14.65		ROB	INTERNAL	64244	seetal patel
+719	40772	-7	KT	Jet CIF NWE Cargoes vs IPE Gas Oil (Settlement)	SWAP			Q411		93		ROB	INTERNAL	64244	seetal patel
+720	40772	-8	KT	Gas Oil ULSD 10ppm FOB Rotterdam Barges (Platts) vs IPE Gas Oil	SWAP			Q411		32.5		ROB	INTERNAL	64244	seetal patel
+721	40772	-3	KT	Naphtha CIF NWE Cargoes vs IPE Brent	SWAP			Q411		-4.8		LEE	INTERNAL	64244	seetal patel
+722	40772	-10.5	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus) vs IPE Brent	SWAP			Q411		2.4		SPEC CRACKS	INTERNAL	64244 / 64239	seetal patel
+723	40772	-1	KT	3.5% Fuel FOB Rotterdam Barges vs IPE Brent	SWAP			Q411		-13.35		JOHN ATTON	INTERNAL	64244	seetal patel
+724	40772	334	KB	Dated Brent vs IPE Brent (DFL)	SWAP			Q411		-0.03		JAAKO	INTERNAL	64244	seetal patel
+725	40772	3	KB	IPE Brent 1st month	SWAP			Q411		109.33		CED	INTERNAL	64244	seetal patel
+726	40772	-10	KT	1% Fuel FOB NWE Cargoes vs 3.5% Fuel FOB Rotterdam Barges	SWAP			Q411		24		GUNVOR (ICE)	SPECTRON	64244	seetal patel
+727	40772	-6	KT	1% Fuel FOB NWE Cargoes vs 3.5% Fuel FOB Rotterdam Barges	SWAP			Q411		24.5		MS (ICE)	TFS	64244	seetal patel
+728	40772	-5	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus) vs IPE Brent	SWAP			Q411		2.5		NOBLE	PVM	64239	seetal patel
+729	40772	-25	LOTS	ICE BRENT	FUTURE			Oct-11		109.89		CED	INTERNAL	64239	seetal patel
+730	40772	25	LOTS	NYMEX RBOB	FUTURE			Oct-11		2.723571429		ARGUS	INTERNAL	64239	seetal patel
+731	40772	-25	LOTS	ICE BRENT	FUTURE			Oct-11		109.79		SPEC FP	INTERNAL	64239/64241	seetal patel
+732	40772	25	LOTS	NYMEX RBOB	FUTURE			Oct-11		2.7333		ARGUS	INTERNAL	64239	seetal patel
+733	40772	-50	KB	Unl 92 Singapore Cargoes	SWAP			Q112		113.3451381		MATT	INTERNAL	64238	seetal patel
+734	40772	50	KB	Prem Unl Euro-Bob Oxy NWE Barges (Argus) 	SWAP			Q112		940		MATT	INTERNAL	64238	seetal patel
+735	40772	-112	LOTS	RB BRENT CRACKS	FUTURE			Oct-11		4.7386		NYMEX	BARX	64239	seetal patel
+736	40772	-2	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus) vs IPE Brent	SWAP			Q112		3.25		MATT TUNNEY	PVM	64239	seetal patel
+
+
+737	40773	5	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus) vs IPE Brent	SWAP			Q411		2.4		EGIS	INTERNAL	64239	seetal patel
+738	40773	4	LOTS	RB BRENT CRACKS	FUTURE			Oct-11		4.5		SPEC FLOW	INTERNAL	64239 / 64242	seetal patel
+739	40773	100	LOTS	RBHO 	FUTURE			Oct-11		-0.2324		SPEC FLOW	INTERNAL	64240 / 64242	seetal patel
+740	40773	-100	LOTS	RBHO 	FUTURE			Oct-11		-0.2321		SPEC FLOW	INTERNAL	64240 / 64242	seetal patel
+741	40773	100	LOTS	NYMEX HEAT	FUTURE			Oct-11		2.9372		NYMEX	BARX	64242	seetal patel
+742	40773	-100	LOTS	NYMEX HEAT	FUTURE			Oct-11		2.9383		NYMEX	BARX	64242	seetal patel
+743	40773	171	LOTS	NYMEX RBOB	FUTURE			Oct-11		2.6979		NYMEX	BARX	64242	seetal patel
+744	40773	-219	LOTS	NYMEX RBOB	FUTURE			Oct-11		2.6994		NYMEX	BARX	64242	seetal patel
+745	40773	-4	LOTS	ICE BRENT	FUTURE			Oct-11		109.915		ICE	BARX	64242	seetal patel
+746	40773	2	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			Dec-11		908.5		BRYAN	INTERNAL	64239	seetal patel
+747	40773	-17	KB	IPE Brent 1st month	SWAP			Dec-11		107.15		CED	INTERNAL	64239	seetal patel
+748	40773	-25	LOTS	ICE BRENT	FUTURE			Oct-11		107.72		CED	INTERNAL	64242	seetal patel
+749	40773	50	LOTS	ICE BRENT	FUTURE			Oct-11		107.77		CED	INTERNAL	64242	seetal patel
+750	40773	-25	LOTS	ICE BRENT	FUTURE			Oct-11		107.72		YI EE	INTERNAL	64242	seetal patel
+751	40773	65	LOTS	NYMEX RBOB	FUTURE			Oct-11		2.705		ARGUS	INTERNAL	64242	seetal patel
+752	40773	-25	LOTS	NYMEX RBOB	FUTURE			Oct-11		2.6969		ARGUS	INTERNAL	64242	seetal patel
+753	40773	33	LOTS	NYMEX RBOB	FUTURE			Oct-11		2.67		ARGUS	INTERNAL	64242	seetal patel
+754	40773	-17	lots	NYMEX RBOB 	FUTURE			Oct-11		2.6783		ARGUS	INTERNAL	64242	seetal patel
+755	40773	21	LOTS	NYMEX RBOB	FUTURE			Oct-11		2.6969		ARGUS	INTERNAL	64242	seetal patel
+756	40773	-25	lots	NYMEX RBOB 	FUTURE			Oct-11		2.677		ARGUS	INTERNAL	64242	seetal patel
+
+757	40774	-125	LOTS	ICE BRENT	FUTURE			Oct-11		107.45		SPEC FLOW	INTERNAL	64241/64242	seetal patel
+758	40774	25	LOTS	ICE BRENT	FUTURE			Oct-11		108.56		SPEC FLOW	INTERNAL	64241/64242	seetal patel
+759	40774	-117	LOTS	RB BRENT CRACKS	FUTURE			Oct-11		5.064		SPEC FLOW	INTERNAL	64239 / 64242	seetal patel
+760	40774	-142	LOTS	NYMEX RBOB	FUTURE			Oct-11		2.6825		NYMEX	BARX	64242	seetal patel
+761	40774	242	LOTS	ICE BRENT	FUTURE			Oct-11		107.332		ICE	BARX	64242	seetal patel
+762	40774	-225	LOTS	ICE BRENT	FUTURE			Oct-11		107.1653		ICE	BARX	64242	seetal patel
+763	40774	-25	LOTS	ICE BRENT	FUTURE			Oct-11		105.17		SPEC FP	INTERNAL	64239 / 64241	seetal patel
+764	40774	25	LOTS	NYMEX RBOB	FUTURE			Oct-11		2.623		ARGUS	INTERNAL	64239	seetal patel
+765	40774	-1	KT	NYMEX RBOB vs Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			Sep-11		-0.053		ARA FWD POSITION	INTERNAL	64239	seetal patel
+766	40774	-3	KB	Prem Unl Euro-Bob Oxy NWE Barges (Argus) vs IPE Brent	SWAP			Q411		2.75		SPEC DIFFS	INTERNAL	64239 / 64240	seetal patel
+767	40774	2	LOTS	NYMEX WTI	FUTURE			Sep-11		80.69		SPEC FLOW	BARX	64238 / 64242	seetal patel
+768	40774	-2	LOTS	ICE BRENT	FUTURE			Oct-11		106.13		SPEC FLOW	BARX	64238 / 64242	seetal patel
+769	40774	-3	LOTS	NYMEX WTI	FUTURE			Oct-11		80.69		SPEC FLOW	BARX	64239 / 64242	seetal patel
+770	40774	1	LOTS	NYMEX WTI	FUTURE			Nov-11		80.58		SPEC FLOW	BARX	64239 / 64242	seetal patel
+771	40774	1	LOTS	NYMEX WTI	FUTURE			Dec-11		80.9		SPEC FLOW	BARX	64239 / 64242	seetal patel
+772	40774	1	LOTS	NYMEX WTI	FUTURE			Jan-11		81.31		SPEC FLOW	BARX	64239 / 64242	seetal patel
+773	40774	0.7	KT	Naphtha CIF NWE Cargoes vs IPE Brent	SWAP			Sep-11		-3.35		LEE	INTERNAL	64240	seetal patel
+774	40774	-1	LOTS	NYMEX RBOB	FUTURE			Sep-11		2.7697		SPEC FLOW	BARX	64245 / 64242	seetal patel
+775	40774	1	LOTS	NYMEX RBOB	FUTURE			Oct-11		2.6438		SPEC FLOW	BARX	64245 / 64242	seetal patel
+776	40774	1	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			Oct-11		921		BALTICS	BARX	64239	seetal patel
+777	40774	-8	KB	IPE Brent 1st month	SWAP			Oct-11		107.1		CED	INTERNAL	64239	seetal patel
+778	40774	1	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus)	SWAP			Dec-11		906		BALTICS	BARX	64239	seetal patel
+779	40774	-8	KB	IPE Brent 1st month	SWAP			Dec-11		106.64		CED	INTERNAL	64239	seetal patel
+780	40774	25	LOTS	NYMEX RBOB	FUTURE			Oct-11		2.6911		ARA FWD POSITION	INTERNAL	64242	seetal patel
+781	40774	-8	LOTS	ICE BRENT	FUTURE			Oct-11		108.41		CED	INTERNAL	64239	seetal patel
+782	40774	8	LOTS	NYMEX RBOB	FUTURE			Oct-11		2.7		ARGUS	INTERNAL	64239	seetal patel
+
+783	40777	-5	KT	Prem Unl Euro-Bob Oxy NWE Barges (Argus) vs IPE Brent	SWAP			Q411		3.1		NOBLE	PVM	64239	seetal patel
+784	40777	-41	LOTS	NYMEX RBOB	FUTURE			Oct-11		2.666		ARA FWD POSITION	INTERNAL	64242	seetal patel
+785	40777	5	LOTS	NYMEX RBOB	FUTURE			Oct-11		2.66		ARA FWD POSITION	INTERNAL	64242	seetal patel
+786	40777	41	LOTS	NYMEX RBOB	FUTURE			Oct-11		2.666		NYMEX	BARX	64242	seetal patel
+787	40777	-5	LOTS	NYMEX RBOB	FUTURE			Oct-11		2.661		NYMEX	BARX	64242	seetal patel
+788	40777	75	LOTS	ICE BRENT	FUTURE			Oct-11		105.4885		NYMEX	BARX	64242	seetal patel
+789	40777	75	LOTS	ICE BRENT	FUTURE			Oct-11		105.4885		SPEC FLOW	BARX	64241 / 64242	seetal patel

@@ -7,39 +7,47 @@ import starling.db.MarketDataStore
 import starling.gui.api.{PricingGroup, MarketDataSelection}
 import starling.props.Props
 import starling.services.trinity.TrinityUploader
-import starling.utils.{Broadcaster, Log, Stoppable}
+import starling.utils.{Broadcaster, ObservingBroadcaster, Log, Stopable}
 
 import starling.market.FuturesExchangeFactory._
 import starling.utils.ImplicitConversions._
 
 
-class Scheduler(props: Props, forwardCurveTasks: List[TaskDescription] = Nil) extends Stoppable {
+class Scheduler(props: Props, forwardCurveTasks: List[TaskDescription] = Nil) extends Stopable with Log {
   private lazy val timer = new Timer(true)
   val tasks = if (props.ServerType() == "FC2") forwardCurveTasks else Nil
 
-  override def start = Log.infoF("Scheduling %s tasks for ServerType: %s" % (tasks.size, props.ServerType())) {
+  override def start = log.infoF("%s tasks for ServerType: %s" % (tasks.size, props.ServerType())) {
     super.start; tasks.map { case task => task.schedule(timer) }
   }
 
   override def stop = { super.stop; timer.cancel }
 }
 
-object Scheduler {
+object Scheduler extends Log {
   import PricingGroup._
   import ScheduledTime._
 
-  def create(businessCalendars: BusinessCalendars, marketDataStore: MarketDataStore, broadcaster: Broadcaster,
-             trinityUploader: TrinityUploader, props: Props): Scheduler = {
+  def create(businessCalendars: BusinessCalendars, marketDataStore: MarketDataStore, observingBroadcaster: ObservingBroadcaster,
+             trinityUploader: TrinityUploader, props: Props): Scheduler = log.infoWithTime("Creating scheduler") {
 
-    implicit def enrichDataFlow(dataFlow: DataFlow) = new {
-      val verifyPricesAvailable = ("Verify %s available" % dataFlow.sink) → VerifyPriceAvailable(marketDataStore, broadcaster, dataFlow)
+    val broadcaster = observingBroadcaster.broadcaster
+
+    val limFlows@List(lmeMetals, sfsMetals, comexMetals): List[DataFlow with MarketDataEventSource] = List(LME, SFS, COMEX)
+      .map(new DataFlow(_, Metals, Nil, props.MetalsEmailAddress(), props.LimEmailAddress(), "LIM") with NullMarketDataEventSource)
+
+    val balticMetals = new DataFlow(BALTIC, Metals, List("Panamax T/C Average (Baltic)"), props.MetalsEmailAddress(), props.WuXiEmailAddress(), "Excel") with NullMarketDataEventSource
+    val exbxgMetals = new DataFlow(EXBXG, Metals, Nil, props.MetalsEmailAddress(), props.WuXiEmailAddress(), "Excel") with NullMarketDataEventSource
+    val spotfx = SpotFXDataEventSource(Metals, SpotFXDataProvider(marketDataStore))
+    val libor = new PriceFixingDataEventSource(Metals, ReferenceInterestDataProvider(marketDataStore))
+
+    val marketDataAvailabilityBroadcaster = new MarketDataAvailabilityBroadcaster(observingBroadcaster,
+      exbxgMetals :: spotfx :: libor :: limFlows)
+
+    implicit def enrichDataFlow(dataFlow: DataFlow with MarketDataEventSource) = new {
+      val verifyPricesAvailable = ("Verify %s available" % dataFlow.sink) → VerifyPriceAvailable(marketDataAvailabilityBroadcaster, broadcaster, dataFlow)
       val verifyPricesValid = ("Verify %s valid" % dataFlow.sink) → VerifyPricesValid(marketDataStore, broadcaster, dataFlow)
     }
-
-    val List(lmeMetals, sfsMetals, comexMetals, balticMetals) = List(LME, SFS, COMEX, BALTIC)
-      .map(DataFlow(_, Metals, Nil, "LIM", props.MetalsEmailAddress(), props.LimEmailAddress()))
-
-    val exbxgMetals = DataFlow(EXBXG, Metals, Nil, "Excel", props.MetalsEmailAddress(), props.WuXiEmailAddress())
 
     def importMarketData(pricingGroup: PricingGroup) = new ImportMarketDataTask(marketDataStore, pricingGroup).
       withSource("LIM", marketDataStore.sourcesFor(pricingGroup).flatMap(_.description) : _*)
@@ -57,8 +65,7 @@ object Scheduler {
 
     new Scheduler(props, forwardCurveTasks =
       TaskDescription("Import LIM", everyFiveMinutes(businessCalendars.LME), importMarketData(Metals)) ::-
-      tasks(daily(businessCalendars.LME, 18 H 30),
-        balticMetals.copy(markets = List("Panamax T/C Average (Baltic)")).verifyPricesAvailable) ::-
+      tasks(daily(businessCalendars.LME, 18 H 30), balticMetals.verifyPricesAvailable) ::-
       TaskDescription("Upload Curves to Trinity", daily(businessCalendars.LME, 19 H 00), uploadCurvesToTrinity(Metals)) ::-
       tasks(daily(businessCalendars.SFE, 16 H 30), exbxgMetals.verifyPricesAvailable, exbxgMetals.verifyPricesValid) ::-
       tasks(daily(businessCalendars.LME, 23 H 30),

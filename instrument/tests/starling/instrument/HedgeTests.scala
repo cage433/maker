@@ -2,8 +2,6 @@ package starling.instrument
 
 import org.testng.annotations._
 import starling.daterange.Day
-import starling.curves.Environment
-import starling.curves.NullAtomicEnvironment
 import starling.utils.StarlingTest
 import starling.quantity.UOM._
 import starling.market.Market._
@@ -11,24 +9,18 @@ import starling.daterange.Month
 import starling.quantity.Quantity
 import starling.quantity.Quantity._
 import starling.daterange.DayAndTime
-import starling.curves.AtomicEnvironment
-import starling.curves.AtomicDatumKey
-import starling.curves.ForwardPriceKey
 import scala.math._
 import starling.utils.QuantityTestUtils._
 import starling.maths.RandomVariables
 import cern.jet.random.Uniform
 import starling.maths.RandomThing
 import starling.utils.CollectionUtils
-import starling.curves.UnitTestingAtomicEnvironment
-import starling.curves.DiscountRateKey
-import starling.curves.PriceDifferentiable
-import starling.curves.FixingKey
 import org.testng.Assert._
 import javax.management.remote.rmi._RMIConnection_Stub
-import starling.market.{TestMarketSpec, Market}
+import starling.market.{TestMarketTest, Market}
+import starling.curves._
 
-class HedgeTests extends TestMarketSpec {
+class HedgeTests extends TestMarketTest {
 
   def buildMonthGroups(
     u : Uniform = RandomVariables.standardUniform(12345),
@@ -89,7 +81,7 @@ class HedgeTests extends TestMarketSpec {
     val env = Environment(new UnitTestingAtomicEnvironment(marketDay, {
         case ForwardPriceKey(mkt, mth : Month, _) => Quantity(100 + mth.m, mkt.priceUOM)
         case DiscountRateKey(_, day, _) => new Quantity(math.exp(0.05 * day.daysSinceInYears(marketDay.day)))
-        case FixingKey(key, _) => Quantity(20, key.priceUOM)
+        case MarketFixingKey(key, _, _) => Quantity(20, key.priceUOM)
       }
     ))
     val hedges = Hedge.futuresSpreadHedgeUTPs(env, futures, months.toSet)
@@ -139,7 +131,7 @@ class HedgeTests extends TestMarketSpec {
         case ForwardPriceKey(mkt, mth : Month, _) => Quantity(100 + mth.m, mkt.priceUOM)
         case ForwardPriceKey(mkt, d : Day, _) => Quantity(100 + d.dayNumber, mkt.priceUOM)
         case DiscountRateKey(_, day, _) => new Quantity(math.exp(0.05 * day.daysSinceInYears(marketDay.day)))
-        case FixingKey(key, _) => Quantity(20, key.priceUOM)
+        case IndexFixingKey(key, _) => Quantity(20, key.priceUOM)
       }
     ))
     val futures = (for (i <- 0 to 200)  yield{

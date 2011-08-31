@@ -8,14 +8,14 @@ import starling.utils.CollectionUtils._
 import org.apache.commons.codec.digest.DigestUtils
 import starling.utils.cache.CacheFactory.{StatsListener, Cache, CacheImpl}
 
-private class Memcached(simple: SimpleCacheImpl) extends CacheImpl {
+private class Memcached(simple: SimpleCacheImpl) extends CacheImpl with Log {
   private val caches = new MapMaker().concurrencyLevel(16).makeMap[String, FutureTask[Cache]]
 
   lazy val connection: Option[MemcachedClient] = {
     val memcached = new MemcachedClient(new BinaryConnectionFactory(), AddrUtil.getAddresses("localhost:11211"))
     Thread.sleep(200)
     if (!memcached.getUnavailableServers.isEmpty) {
-      Log.warn("Failed to connect to memcached instance")
+      log.warn("Failed to connect to memcached instance")
       memcached.shutdown
       None
     } else {
@@ -31,7 +31,7 @@ private class Memcached(simple: SimpleCacheImpl) extends CacheImpl {
         new MemcachedCache(statsListener, c, simple, name)
       }
       case None => {
-        Log.warn("Creating non-memcached cache for `" + name + "`")
+        log.warn("Creating non-memcached cache for `" + name + "`")
         putIfAbsent(caches, name, simple.get(name, statsListener))._1
       }
     }
@@ -45,7 +45,9 @@ private class Memcached(simple: SimpleCacheImpl) extends CacheImpl {
   }
 }
 
-class MemcachedCache(statsListener: StatsListener, connection: MemcachedClient, simple: SimpleCacheImpl, name: String) extends Cache(statsListener) {
+class MemcachedCache(statsListener: StatsListener, connection: MemcachedClient, simple: SimpleCacheImpl, name: String)
+  extends Cache(statsListener) with Log {
+
   val prefix = name + "::"
   val simpleCache = simple.get(name, statsListener)
 
@@ -60,7 +62,7 @@ class MemcachedCache(statsListener: StatsListener, connection: MemcachedClient, 
           }
         } catch {
           case e => {
-            Log.warn("Problem dealing with memcache", e)
+            log.warn("Problem dealing with memcache", e)
             None
           }
         }
@@ -78,7 +80,7 @@ class MemcachedCache(statsListener: StatsListener, connection: MemcachedClient, 
     }
     catch {
       case e => {
-        Log.warn("Problem dealing with memcache", e)
+        log.warn("Problem dealing with memcache", e)
       }
     }
   }
@@ -113,7 +115,7 @@ class MemcachedCache(statsListener: StatsListener, connection: MemcachedClient, 
           }
         } catch {
           case e => {
-            Log.warn("Problem dealing with memcache", e)
+            log.warn("Problem dealing with memcache", e)
             calculatedValue
           }
         }

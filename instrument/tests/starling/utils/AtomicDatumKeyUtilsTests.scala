@@ -12,7 +12,7 @@ import starling.instrument.{SingleAsianOption, AsianOption, FuturesOption}
 import starling.instrument.UTP
 import starling.market._
 
-class AtomicDatumKeyUtilsTests extends TestMarketSpec {
+class AtomicDatumKeyUtilsTests extends TestMarketTest {
   @Test
   def testBucketing {
     val index = Index.PREM_UNL_EURO_BOB_OXY_NWE_BARGES

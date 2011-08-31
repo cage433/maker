@@ -56,6 +56,8 @@ class PnlExplanationReportTests extends JonTestEnv {
   class InstrumentWithIncorrectAtomicKeys(day:Day) extends UTP {
     def pivotUTPType = throw new Exception
 
+    protected def explanation(env: Environment) = throw new Exception
+
     def detailsForUTPNOTUSED = throw new Exception
     def instrumentType = throw new Exception
     def asUtpPortfolio = throw new Exception
@@ -187,8 +189,6 @@ class PnlExplanationReportTests extends JonTestEnv {
 
     val forward = new Future(market, env.marketDay.day, Quantity(0, market.priceUOM), Quantity(1000, market.uom))
 
-    println(forward.mtm(env))
-    println(forward.mtm(env.forwardState((Day(2009, 9, 15) + 10).endOfDay)))
     val expectedInterest = forward.mtm(env) * (1-env.discount(market.currency, forwardDay))
 
       val timeChangesPnl = new TimeChangesPnl(env, env.marketDay.nextDay, Map(UTPIdentifier(1) -> forward))
@@ -279,7 +279,7 @@ class PnlExplanationReportTests extends JonTestEnv {
       marketDay1,
       {
         case _ : ForwardPriceKey => 66.0(index.priceUOM)
-        case _ : FixingKey => 77.0(index.priceUOM)
+        case _ : IndexFixingKey => 77.0(index.priceUOM)
         case _ : DiscountRateKey => new Quantity(1.0)
       }
     )).forwardState(marketDay2).ignoreSwapRounding
@@ -287,8 +287,8 @@ class PnlExplanationReportTests extends JonTestEnv {
       marketDay2,
       {
         case _ : ForwardPriceKey => 65.0(index.priceUOM)
-        case FixingKey(_, day) if day == marketDay2.day => 79.0(index.priceUOM)
-        case _ : FixingKey => 77.0(index.priceUOM)
+        case IndexFixingKey(_, day) if day == marketDay2.day => 79.0(index.priceUOM)
+        case _ : IndexFixingKey => 77.0(index.priceUOM)
         case _ : DiscountRateKey => new Quantity(1.0)
       }
     )).ignoreSwapRounding
@@ -317,13 +317,13 @@ class PnlExplanationReportTests extends JonTestEnv {
     val env1 = Environment(UnitTestingAtomicEnvironment(
     marketDay1, {
       case _: ForwardPriceKey => price1
-      case _: FixingKey => 0(index.priceUOM)
+      case _: IndexFixingKey => 0(index.priceUOM)
     }
     )).forwardState(marketDay2)
     val env2 = Environment(UnitTestingAtomicEnvironment(
     marketDay2, {
       case _: ForwardPriceKey => price2
-      case _: FixingKey => 0(index.priceUOM)
+      case _: IndexFixingKey => 0(index.priceUOM)
     }
     )).undiscounted
 

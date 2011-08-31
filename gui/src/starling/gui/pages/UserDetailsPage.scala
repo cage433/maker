@@ -4,14 +4,15 @@ import starling.auth.User
 import starling.gui._
 import swing.Label
 import java.awt.{Color, Font, Dimension}
-import starling.pivot.view.swing.{StripedPanel, FixedImagePanel, MigPanel}
+import starling.browser.{PageComponent, Bookmark, PageData, PageContext}
+import starling.browser.common._
 
-case class UserDetailsPage(user:User) extends Page {
+case class UserDetailsPage(user:User) extends StarlingServerPage {
   def text = "User Details"
   def icon = StarlingIcons.im("/icons/16x16_user_dark.png")
 
-  def build(reader:PageBuildingContext) = null
-  def createComponent(context:PageContext, data:PageData, bookmark:Bookmark, browserSize:Dimension) = new UserDetailsPageComponent(context:PageContext, user:User)
+  def build(reader:StarlingServerContext) = null
+  def createComponent(context:PageContext, data:PageData, bookmark:Bookmark, browserSize:Dimension, previousPageData:Option[PageData]) = new UserDetailsPageComponent(context:PageContext, user:User)
 }
 
 class UserDetailsPageComponent(context:PageContext, user:User) extends MigPanel("insets dialog") with PageComponent {
@@ -32,7 +33,7 @@ class UserDetailsPageComponent(context:PageContext, user:User) extends MigPanel(
     val namePanel = new MigPanel("insets n 0 n n") {
       background = new Color(0,0,0,0)
       opaque = false
-      
+
       val userImage = StarlingIcons.im("/icons/32x32_user_dark.png")
       val userImagePanel = new FixedImagePanel(userImage)
 
@@ -41,8 +42,8 @@ class UserDetailsPageComponent(context:PageContext, user:User) extends MigPanel(
     }
 
     val orgImage = StarlingIcons.im("/icons/32x32_organisation.png")
-    val orgButton = new ReferenceDataButton("Organisation", orgImage, ctrlDown => {
-      context.goTo(OrgPage(PivotPageState()), ctrlDown)
+    val orgButton = new NumberedButton("Organisation", orgImage, modifiers => {
+      context.goTo(OrgPage(PivotPageState()), modifiers)
     })
 
     add(namePanel, "spanx 3, wrap")

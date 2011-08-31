@@ -219,7 +219,7 @@ class MarketDataHandler(broadcaster : Broadcaster,
     }
 
     val result = marketDataStore.saveAll(MarketDataSet.excel(label), observationPoint, allPrices)
-    "OK:" + result._1
+    "OK:" + result.maxVersion
   }
 
   @ExcelMethod
@@ -275,6 +275,7 @@ class MarketDataHandler(broadcaster : Broadcaster,
     val period = try {
       if (row(0) == null) None else objectToDateRange(observationPoint, row(0), tenor)
     } catch {
+      case e: NoSuchElementException => None
       case e: IllegalStateException => None
     }
 

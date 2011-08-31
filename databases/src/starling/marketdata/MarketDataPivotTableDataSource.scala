@@ -144,25 +144,24 @@ class MarketDataPivotTableDataSource(reader: MarketDataReader, edits:PivotEdits,
                 var modifiedRows = currentRows
 
                 maybeEdits match {
-                  case Some(edits) => {
-                    edits.foreach { case (keyFilter, keyEdit) => {
-                      modifiedRows = modifiedRows.flatMap { row => {
-                        if (keyFilter.matches(row)) {
-                            keyEdit match {
-                              case DeleteKeyEdit => None
-                              case AmendKeyEdit(amends) => {
-                                if (amends.values.toSet.contains(None)) {
-                                  None //Delete the row if the measure has been deleted
-                                } else {
-                                  Some( row ++ amends.filter(_._2.isDefined).mapValues(_.get) )
-                                }
-                              }
-                            }
+                  case Some(edits0) => {
+                    edits0.foreach { case (keyFilter, keyEdit) => {
+                      val (affectedRows, ignoredRows) = modifiedRows.partition(keyFilter.matches)
+                      val (fixedRows,newRows) = keyEdit match {
+                        case DeleteKeyEdit => (Nil,Nil)
+                        case AmendKeyEdit(amends) => {
+                          if (amends.values.toSet.contains(None)) {
+                            (Nil,Nil) //Delete the row if the measure has been deleted
                           } else {
-                            Some(row)
+                            (affectedRows.map{row =>
+                              row ++ amends.filter(_._2.isDefined).mapValues(_.get)
+                            },
+                                    if (affectedRows.isEmpty) keyFilter.keys.mapValues(_.values.iterator.next) ++ amends.mapValues(_.get) ::Nil else Nil)
                           }
-                        } }
-                      } }
+                        }
+                      }
+                      modifiedRows = (fixedRows.toList ::: newRows ::: ignoredRows.toList)
+                    } }
                   }
                   case None => {}
                 }
@@ -171,9 +170,8 @@ class MarketDataPivotTableDataSource(reader: MarketDataReader, edits:PivotEdits,
             }
             MarketDataEntry(timedKey.observationPoint, timedKey.key, marketDataType.createValue(amendRows ::: newRows))
           } }
-
-          marketDataStore.save(Map(editableSet -> newEntries))._2
-          true
+          val r:SaveResult = marketDataStore.save(Map(editableSet → newEntries))
+          r.anythingChanged
         }
       }
      }
@@ -188,7 +186,10 @@ class MarketDataPivotTableDataSource(reader: MarketDataReader, edits:PivotEdits,
   private def generateDataWithoutEdits(pfs : PivotFieldsState) = {
 
     val filtersUpToFirstMarketDataField = pfs.allFilterPaths.chopUpToFirstNon(inMemoryFields)
-    val filters: Set[(Field, Selection)] = filtersUpToFirstMarketDataField.toFilterSet
+    val filters: Set[(Field, Selection)] = filtersUpToFirstMarketDataField.toFilterSet.flatMap {
+      case (field,MeasurePossibleValuesFilter(_)) => Nil
+      case (field,SelectionPossibleValuesFilter(selection)) => List(field -> selection)
+    }
 
     val possibleValuesBuilder = new PossibleValuesBuilder(fieldDetails, filtersUpToFirstMarketDataField)
     for ((row,_) <- observationDayAndMarketDataKeyRows) {

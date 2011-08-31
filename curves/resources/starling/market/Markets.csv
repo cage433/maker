@@ -69,7 +69,7 @@ NYMEX Henry Hub Natural Gas Penultimate	Some(1661)	FuturesMarket	mmbtu	USD	NYM	S
 Platts Dubai 1st month	Some(6)	PublishedIndex	bbl	USD	PLD	Some(1000.0)	Day	Crude	Some(PCAAT00)	Some(1.0)	Some(3)	Some(2)			None	Mid						Some(7.25)
 NYMEX WTI 1st month	Some(7)	FuturesFrontPeriodIndex									Some(3)	Some(2)				Close	NYMEX WTI			0	1		
 HSFO 180 CST Singapore	Some(8)	PublishedIndex	MT	USD	PLD	Some(1000.0)	Day	FuelOil	Some(PUADV00)	Some(1.0)	Some(3)	Some(2)			None	Mid						Some(6.5)
-HSFO 180 CST Singapore vs 3.5% Fuel FOB Rotterdam Barges	Some(9)	FormulaIndex	MT	USD							Some(3)	Some(2)							1.0* MKT(8)- 1.0* MKT(5) 			Some(6.5)
+HSFO 180 CST Singapore (6.5) vs 3.5% Fuel FOB Rotterdam Barges	Some(9)	FormulaIndex	MT	USD							Some(3)	Some(2)							1.0* MKT(8)- 1.0* MKT(5) 			Some(6.5)
 No.6 1% NYH Cargoes	Some(10)	PublishedIndex	bbl	USD	PLH	Some(1000.0)	Day	FuelOil	Some(PUAAO00)	Some(1.0)	Some(3)	Some(2)			None	Mid						Some(6.35)
 No.6 3% USGC Waterborne	Some(11)	PublishedIndex	bbl	USD	PLH	Some(1000.0)	Day	FuelOil	Some(PUAFZ00)	Some(1.0)	Some(3)	Some(2)			None	Mid						Some(6.35)
 No.6 1% NYH Cargoes vs No.6 3% USGC Waterborne	Some(12)	FormulaIndex	bbl	USD							Some(3)	Some(2)							1.0* MKT(10)- 1.0* MKT(11) 			Some(6.5)
@@ -177,7 +177,7 @@ Gas Oil 0.2 FOB Rotterdam Barges	Some(129)	PublishedIndex	MT	USD	PLE	None	Day	Ga
 1% Fuel CIF NWE Cargoes	Some(130)	PublishedIndex	MT	USD	PLE	None	Day	FuelOil	Some(PUAAL00)	Some(1.0)	Some(3)	Some(2)			None	Mid						Some(6.35)
 Unl A4 Colonial Pipeline (monthly)	Some(131)	PublishedIndex	gal	USD	PLH	None	Day	Gasoline	None	None	Some(4)	Some(4)			None	Close						Some(8.45)
 Argus Propane CIF ARA vs Naphtha CIF NWE Cargoes	Some(132)	FormulaIndex	MT	USD							Some(3)	Some(2)							1.0* MKT(44)- 1.0* MKT(37) 			Some(9.0)
-HSFO 180 CST Singapore vs HSFO 380 CST Singapore	Some(133)	FormulaIndex	MT	USD							Some(3)	Some(4)							1.0* MKT(8)- 1.0* MKT(134) 			Some(6.5)
+HSFO 180 CST Singapore (6.5) vs HSFO 380 CST Singapore	Some(133)	FormulaIndex	MT	USD							Some(3)	Some(4)							1.0* MKT(8)- 1.0* MKT(134) 			Some(6.5)
 HSFO 380 CST Singapore	Some(134)	PublishedIndex	MT	USD	PLD	Some(1000.0)	Day	FuelOil	Some(PPXDK00)	Some(1.0)	Some(3)	Some(2)			None	Mid						Some(6.35)
 Minas ICP	Some(136)	PublishedIndex	bbl	USD	PLD	None	Day	Crude	None	None	Some(3)	Some(2)			None	Close						Some(7.46)
 Non-TET Butane (Platts)	Some(138)	PublishedIndex	gal	USD	PLH	None	Day	Butane	Some(PMAAI00)	Some(0.01)	Some(4)	Some(4)			None	Mid						Some(10.78571429)
@@ -1464,7 +1464,7 @@ Gas Oil ULSD 10ppm FOB Singapore vs Gasoil 0.5 Singapore	Some(1591)	FormulaIndex
 TD3 AG to Japan 260KT $/MT (Baltic)	Some(1592)	PublishedIndex	MT	USD	IcS	Some(1000.0)	Day	Freight	Some(BALTIC.DIRTY.TANKER.ROUTE.TD3.USDMT.CURMON)	Some(1.0)	Some(4)	Some(2)			None	Val						None
 Unl 92 FOB Singapore Cargoes (Platts) vs Naphtha FOB Singapore Cargoes (Platts)	Some(1593)	FormulaIndex	bbl	USD							Some(3)	Some(0)							1.0* MKT(198)- 1.0* MKT(24) 			Some(8.33)
 Argus Far East Index Propane/Butane Mixed	Some(1617)	PublishedIndex	MT	USD	ARH	None	Day	Propane	Some(GP7413MND)	Some(1.0)	Some(3)	Some(0)			None	Close						Some(12.4047619)
-NYMEX RBOB 1st Month vs IPE Brent 1st Month	Some(1618)	FormulaIndex/FuturesSpreadMarket	bbl	USD		Some(1000.0)	Month				Some(4)	Some(4)							1.0* MKT(933)- 1.0* MKT(28) 			Some(8.33)
+NYMEX RBOB 1st Month vs IPE Brent 1st Month (BBLS)	Some(1618)	FormulaIndex/FuturesSpreadMarket	bbl	USD		Some(1000.0)	Month				Some(4)	Some(4)							1.0* MKT(933)- 1.0* MKT(28) 			Some(8.33)
 Jet 54 FOB USGC Cargo (Argus)	Some(1619)	PublishedIndex	gal	USD	ARG	None	Day	JetKero	Some(GPUSP277)	Some(0.01)	Some(4)	Some(4)			None	Mid						Some(7.45)
 Henry Financial LD1 Fixed Price	Some(1620)	PublishedIndex	MT	USD	PLH	Some(25000.0)	Day	NatGas	Some(NG)	Some(0.1)	Some(6)	Some(6)			None	Close						Some(1.0)
 Houston Ship Channel (monthly)	Some(1621)	PublishedIndex	MT	USD	PLH	None	Day	NatGas	Some(IGBAP03)	Some(0.1)	Some(6)	Some(6)			None	Index						Some(1.0)

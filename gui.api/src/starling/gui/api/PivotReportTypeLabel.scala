@@ -32,5 +32,3 @@ case class OSInfo(name:String, arch:String, version:String, vmName:String, vmVen
 
 case class CostsInfo(name:String, value:Quantity, info:List[(String,String)])
 case class CostsLabel(costInfo:List[CostsInfo])
-
-case class BookmarkLabel(name:String, bookmark:String)

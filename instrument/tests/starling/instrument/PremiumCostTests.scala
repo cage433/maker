@@ -23,8 +23,6 @@ class PremiumCostTests extends StarlingTest{
       val mtm = option.mtm(env)
       val premiumPrice = mtm / volume
       val premium = PremiumCosts(marketDay.day, "fred", volume, premiumPrice)
-      println(premium)
-      println(premium.asUtpPortfolio(Day(2009, 1, 1)))
 
       assertQtyEquals(mtm + premium.mtm(env, UOM.USD), Quantity(0, UOM.USD), 1e-6)
     }

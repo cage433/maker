@@ -5,7 +5,8 @@ import collection.immutable.List
 import starling.utils.ImplicitConversions._
 import LoopyXL._
 import ProtocolBuffers._
-
+import scalaz._
+import Scalaz._
 
 object Marshallers {
   def unmarshallable(dataTypes : List[Class[_]]): List[Class[_]] = dataTypes.filterNot(contains(_))
@@ -15,7 +16,7 @@ object Marshallers {
 
   def shortNames(dataType: Class[_]): List[String] = {
     if (isSequence(dataType)) {
-      shortName(classOf[String]).replicate(10).toList
+      shortName(classOf[String]).replicate[List](10)
     } else {
       List(shortName(dataType))
     }

@@ -151,6 +151,7 @@ case class RefinedFixation(
 
   def periodKey = Some(DateRangePeriod(fixationDate))
 
+  def explanation(env: Environment) = throw new Exception("No explanation for Refined Fixation")
 }
 
 

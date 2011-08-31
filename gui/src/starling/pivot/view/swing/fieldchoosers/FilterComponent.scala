@@ -1,15 +1,15 @@
 package starling.pivot.view.swing.fieldchoosers
 
-import starling.pivot.model.PivotTableModel
 import starling.pivot.FieldChooserType.Filter
 import starling.pivot.view.swing._
 import swing.Label
 import starling.pivot.{Position, Field, OtherLayoutInfo}
 import collection.mutable.ListBuffer
 import java.awt.{Point, Dimension, Color, Rectangle, Graphics2D, RenderingHints}
-import starling.gui.{RoundedBorder, GuiUtils}
 import swing.event.{MouseExited, MouseEntered}
 import swing.Swing._
+import starling.pivot.model.{EditableInfo, PivotTableModel}
+import starling.browser.common.{RoundedBorder, MigPanel, GuiUtils}
 
 object DropPanel {
   val NormalBorder = RoundedBorder(Color.LIGHT_GRAY)
@@ -27,6 +27,14 @@ class DropPanel(val fieldAndPositions:List[(Field,Position.Position)]) extends M
   preferredSize = new Dimension(15,15)
   minimumSize = preferredSize
   private var mouseIn = false
+  private var delayReset0 = false
+  def delayReset() {delayReset0 = true}
+  private var forceTintedPaint0 = false
+  def forceTintedPaint() {
+    visible = true
+    border = OverBorder
+    forceTintedPaint0 = true
+  }
 
   reactions += {
     case MouseEntered(_,_,_) => {
@@ -35,13 +43,18 @@ class DropPanel(val fieldAndPositions:List[(Field,Position.Position)]) extends M
       repaint()
     }
     case MouseExited(_,_,_) => {
-      reset()
+      if (delayReset0) {
+        delayReset0 = false
+      } else {
+        reset()
+      }
     }
   }
   listenTo(mouse.moves)
 
   def reset() {
     border = DropPanel.NormalBorder
+    forceTintedPaint0 = false
     mouseIn = false
     repaint()
   }
@@ -54,7 +67,7 @@ class DropPanel(val fieldAndPositions:List[(Field,Position.Position)]) extends M
   }
 
   override protected def paintComponent(g:Graphics2D) {
-    if (!mouseIn) {
+    if (!mouseIn && !forceTintedPaint0) {
       super.paintComponent(g)
     } else {
       super.paintComponent(g)
@@ -74,6 +87,14 @@ class EmptyDropLabel(text0:String, view:PivotTableView) extends Label(text0) {
   minimumSize = prefSize
   enabled = false
   var mouseIn = false
+  private var delayReset0 = false
+  def delayReset() {delayReset0 = true}
+  private var forceTintedPaint0 = false
+  def forceTintedPaint() {
+    border = OverBorder
+    forceTintedPaint0 = true
+  }
+  
   reactions += {
     case MouseEntered(_,_,_) if view.fieldBeingDragged => {
       mouseIn = true
@@ -81,19 +102,24 @@ class EmptyDropLabel(text0:String, view:PivotTableView) extends Label(text0) {
       repaint()
     }
     case MouseExited(_,_,_) => {
-      reset()
+      if (delayReset0) {
+        delayReset0 = false
+      } else {
+        reset()
+      }
     }
   }
   listenTo(mouse.moves)
 
   def reset() {
     mouseIn = false
+    forceTintedPaint0 = false
     border = swing.Swing.EmptyBorder
     repaint()
   }
 
   override protected def paintComponent(g:Graphics2D) {
-    if (!mouseIn) {
+    if (!mouseIn && !forceTintedPaint0) {
       super.paintComponent(g)
     } else {
       super.paintComponent(g)
@@ -105,7 +131,7 @@ class EmptyDropLabel(text0:String, view:PivotTableView) extends Label(text0) {
 }
 
 class FilterComponent(model:PivotTableModel, otherLayoutInfo:OtherLayoutInfo,
-                         viewUI:PivotTableViewUI, tableView:PivotTableView)
+                         viewUI:PivotTableViewUI, tableView:PivotTableView, editableInfo:Option[EditableInfo])
         extends MigPanel("insets 1, gap 0px") with DropTarget {
   opaque = false
   border = MatteBorder(0,0,1,0,GuiUtils.BorderColour)
@@ -124,7 +150,7 @@ class FilterComponent(model:PivotTableModel, otherLayoutInfo:OtherLayoutInfo,
       currentlyActingAsMeasure, realMeasureField,
       model.treeDetails, (_field,depth) => {model.setDepth(_field,depth)},
       (_field, from) => (), filterData, transformData, otherLayoutInfo,
-      (_field, from) => (), subTotalToggleVisible, viewUI, tableView)
+      (_field, from) => (), subTotalToggleVisible, viewUI, tableView, editableInfo)
     (field -> new GuiFieldComponent(props))
   })
 
@@ -194,9 +220,11 @@ class FilterComponent(model:PivotTableModel, otherLayoutInfo:OtherLayoutInfo,
 
   def indexOfDrop(screenPoint:Point, field:Field) = {
     if (fields.isEmpty) {
+      blankDropLabel.foreach(_.delayReset())
       0
     } else {
       val (_, panel) = dropBoundsAndPanels(field).find{case (bound, _) => bound.contains(screenPoint)}.get
+      panel.delayReset()
       val (nextToField, pos) = panel.fieldAndPositions.head
       val fieldPos = fields.position(nextToField)
       pos match {

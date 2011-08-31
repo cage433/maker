@@ -12,6 +12,8 @@ import starling.utils.Utils
 import starling.pivot._
 import starling.utils.ImplicitConversions._
 import starling.utils.Pattern._
+import scalaz._
+import Scalaz._
 
 
 class MarketDataServlet(marketDataStore:MarketDataStore) extends HttpServlet {
@@ -40,7 +42,7 @@ class MarketDataServlet(marketDataStore:MarketDataStore) extends HttpServlet {
         val columns = fieldList("columns")
 
         val filters = params.params.collect { case (FilterField(field), ConcatenatedFields(vs)) =>
-          Field(field) → SomeSelection(vs.map(v => pivot.lookup(field).parser.parse(v)._1).toSet)
+          Field(field) → SomeSelection(vs.map(v => pivot.lookup(field).parser.parse(v, PivotFormatter.DefaultExtraFormatInfo)._1).toSet)
         }
 
         val pfs = PivotFieldsState.apply(
