@@ -24,7 +24,7 @@ trait Page {
   def shortText:String = text
   def createComponent(context:PageContext, data:PageData, bookmark:Bookmark, browserSize:Dimension, previousPageData:Option[PageData]):PageComponent
   def build(serverContext:SC):PageData
-  def refreshFunctions:Iterable[PartialFunction[Event,Page]] = Nil
+  def latestPage(localCache:LocalCache):Page = this
   def bookmark(serverContext:SC):Bookmark = new PageBookmark(this)
   type SC
   def createServerContext(sc:ServerContext):SC

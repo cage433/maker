@@ -10,7 +10,6 @@ import java.awt.{Dimension, Color}
 import starling.tradestore.TradePredicate
 import starling.pivot._
 import collection.Seq
-import collection.mutable.ListBuffer
 import controller.TreePivotFilter
 import javax.swing.DefaultComboBoxModel
 import starling.gui.custom._
@@ -88,19 +87,19 @@ case class TradeSelectionPage(
         pivotPageState, PivotEdits.Null, save, bookmark, browserSize))
   }
 
-  override def refreshFunctions = {
-    val functions = new ListBuffer[PartialFunction[Event, Page]]
-    tradeSelectionWithTimestamp.intradaySubgroupAndTimestamp match {
-      case Some((groups, _)) => functions += {
-        case IntradayUpdated(group, _, timestamp) if groups.subgroups.contains(group) => {
-          val newTPP = tpp.copy(intradaySubgroupAndTimestamp = tradeSelectionWithTimestamp.copyWithNewIntradaySubgroupTimestamp(timestamp).intradaySubgroupAndTimestamp)
-          this.copy(tpp = newTPP)
+  override def latestPage(localCache:LocalCache) = {
+    tpp.intradaySubgroupAndTimestamp match {
+      case Some((groups, timestamp)) => {
+        val latestTimestamp = localCache.latestTimestamp(groups)
+        if (latestTimestamp != timestamp) {
+          val newTPP = tpp.copy(intradaySubgroupAndTimestamp = Some((groups, latestTimestamp)))
+          copy(tpp = newTPP)
+        } else {
+          this
         }
       }
-      case _ =>
+      case _ => this
     }
-
-    functions.toList
   }
 
   override def bookmark(serverContext:StarlingServerContext):Bookmark = {

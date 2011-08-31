@@ -12,6 +12,7 @@ import java.awt.{Toolkit, Dimension}
 import javax.swing.ImageIcon
 import starling.browser._
 import common.{ExButton, ButtonClickedEx, NListView, MigPanel}
+import starling.gui.StarlingLocalCache._
 
 class PivotReportPage {}
 
@@ -38,11 +39,6 @@ case class DifferenceMainPivotReportPage(
       reportOptions, expiryDay, fromTimestamp, toTimestamp, pivotPageState.pivotFieldParams)
   }
 
-  override def refreshFunctions = {
-    val functions = new ListBuffer[PartialFunction[Event,Page]]
-    functions.toList
-  }
-
   def text = tradeSelection + " " + curveIdentifierD + " vs " + curveIdentifierDm1
   def selfPage(pps:PivotPageState, edits:PivotEdits) = copy(pivotPageState = pps)
   override def toolbarButtons(pageContext:PageContext, data:PageData) =
@@ -62,41 +58,33 @@ case class MainPivotReportPage(showParameters:Boolean, reportParameters:ReportPa
   override def icon = StarlingIcons.im("/icons/16x16_report.png")
   override def shortText = if (showParameters) shortTitle else reportParameters.shortText
 
-  override def refreshFunctions = {
-    val functions = new ListBuffer[PartialFunction[Event,Page]]
-    reportParameters.tradeSelectionWithTimestamp.intradaySubgroupAndTimestamp match {
-      case Some((groups, _)) => functions += {
-        case IntradayUpdated(group, _, timestamp) if groups.subgroups.contains(group) => selfReportPage(reportParameters.copyWithIntradayTimestamp(timestamp))
+  override def latestPage(localCache:LocalCache) = {
+    val page1 = reportParameters.tradeSelectionWithTimestamp.intradaySubgroupAndTimestamp match {
+      case Some((groups, _)) => {
+        val latestTimestamp = localCache.latestTimestamp(groups)
+        selfReportPage(reportParameters.copyWithIntradayTimestamp(latestTimestamp))
       }
-      case _ =>
+      case None => this
     }
-    val excelNames =
-      reportParameters.curveIdentifier.marketDataIdentifier.selection.excel.toList :::
-      reportParameters.pnlParameters.toList.flatMap {
-        pnlFrom => pnlFrom.curveIdentifierFrom.marketDataIdentifier.selection.excel.toList
-      }
 
-    if (!excelNames.isEmpty) {
-      functions += { case ExcelMarketDataUpdate(name, version) if (excelNames.contains(name)) => {
-        val pnlParameters = reportParameters.pnlParameters.map {
-          pnlParameters => {
-            pnlParameters.curveIdentifierFrom.marketDataIdentifier.selection.excel match {
-              case Some(`name`) => pnlParameters.copy(curveIdentifierFrom=pnlParameters.curveIdentifierFrom.copyVersion(version))
-              case _ => pnlParameters
-            }
+    val newPnlParameters:Option[PnlFromParameters] = reportParameters.pnlParameters.map {
+      pnlParameters => {
+        localCache.latestMarketDataVersionIfValid(pnlParameters.curveIdentifierFrom.marketDataIdentifier.selection) match {
+          case Some(v) => {
+            pnlParameters.copy(curveIdentifierFrom=pnlParameters.curveIdentifierFrom.copyVersion(v))
           }
+          case _ => pnlParameters
         }
-        val curveIdentifier = reportParameters.curveIdentifier.marketDataIdentifier.selection.excel match {
-          case Some(`name`) => reportParameters.curveIdentifier.copyVersion(version)
-          case None => reportParameters.curveIdentifier
-        }
-        selfReportPage(reportParameters.copy(curveIdentifier=curveIdentifier, pnlParameters=pnlParameters))
-      } }
+      }
+    }
+    val newCurveIdentifier = localCache.latestMarketDataVersionIfValid(reportParameters.curveIdentifier.marketDataIdentifier.selection) match {
+      case Some(v) => {
+        reportParameters.curveIdentifier.copyVersion(v)
+      }
+      case _ => reportParameters.curveIdentifier
     }
 
-    //TODO [02 Dec 2010] respond to PricingGroup market data changes
-
-    functions.toList
+    page1.selfReportPage(reportParameters.copy(curveIdentifier=newCurveIdentifier, pnlParameters=newPnlParameters))
   }
 
   override def finalDrillDownPage(fields:scala.Seq[(Field, Selection)], pageContext:PageContext, modifiers:Modifiers) {

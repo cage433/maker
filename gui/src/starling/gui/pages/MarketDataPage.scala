@@ -82,22 +82,20 @@ case class MarketDataPage(
     fc2Service.saveMarketData(marketDataIdentifier, pageState.marketDataType, edits)
   }
 
-  override def refreshFunctions = marketDataIdentifier match {
-    case StandardMarketDataPageIdentifier(c@MarketDataIdentifier(MarketDataSelection(pricingGroup, name), SpecificMarketDataVersion(_))) => {
-      PricingGroupMarketDataUpdate.matching(pricingGroup).andThen(update => {
-        // TODO - All edits are being removed - not just the ones that are cancelled out by the update.
-        copy(marketDataIdentifier=StandardMarketDataPageIdentifier(c.copyVersion(update.version)), pageState = pageState.copy(edits = PivotEdits.Null))
-      }) ::
-      ExcelMarketDataUpdate.matching(name).andThen(update => {
-        // TODO - All edits are being removed - not just the ones that are cancelled out by the update.
-        copy(marketDataIdentifier=StandardMarketDataPageIdentifier(c.copyVersion(update.version)), pageState = pageState.copy(edits = PivotEdits.Null))
-      }) ::
-      Nil
+  override def latestPage(localCache:LocalCache) = {
+    marketDataIdentifier match {
+      case StandardMarketDataPageIdentifier(mi) => {
+        localCache.latestMarketDataVersionIfValid(mi.selection) match {
+          case Some(v) => {
+            // TODO - All edits are being removed - not just the ones that are cancelled out by the update.
+            copy(marketDataIdentifier=StandardMarketDataPageIdentifier(mi.copyVersion(v)), pageState = pageState.copy(edits = PivotEdits.Null))
+          }
+          case _ => this
+        }
+      }
+      case _ => this
     }
-    case _ => Nil
   }
-
-  //private def copyVersion(version : Int) = copy(marketDataIdentifier = marketDataIdentifier.copyVersion(version))
 
   override def subClassesPageData(serverContext:ServerContext) = {
     val fc2Service = serverContext.lookup(classOf[FC2Service])
