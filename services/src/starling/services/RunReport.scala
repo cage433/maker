@@ -8,7 +8,8 @@ import starling.props.PropsHelper
 
 object RunReport {
   def main(args:Array[String]) {
-    val init = new StarlingInit(PropsHelper.defaultProps, false, false, false, false).start
+    val init = new StarlingInit(PropsHelper.defaultProps, false, false, false, false)
+    init.start
     init.userReportsService.runNamedReport(User.Dev, "AAA", Day(2011, 2, 14), None)
     println("")
     println("<----------->")

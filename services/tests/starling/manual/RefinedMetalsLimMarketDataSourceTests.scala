@@ -40,8 +40,8 @@ object RefinedMetalsLimMarketDataSourceTests {
       val source = new RefinedMetalsLimMarketDataSource(new LIMServer("ttraflonrh221", 6400))
       val updates = new DBMarketDataStore(init.starlingRichDB, Map(LIM → source)).importer.getUpdates(12 Apr 2011, LIM)
 
-      updates.get(LIM).map(_.foreach(println))
-      source.read(12 Apr 2011).foreach(println)
+      updates.get(LIM)
+      source.read(12 Apr 2011)
     }
 
     RegressionRunner.printNonDaemonThreads

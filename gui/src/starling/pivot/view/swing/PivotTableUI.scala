@@ -3,11 +3,11 @@ package starling.pivot.view.swing
 import javax.swing.plaf.basic.BasicTableUI
 import javax.swing.table.TableColumn
 import starling.pivot.{OtherValueTotal, SubTotal, Total, NotTotal}
-import starling.gui.GuiUtils._
 import javax.swing.{CellRendererPane, JTable, UIManager, JComponent}
 import starling.pivot.model.AxisCell
 import java.awt.{Color, Rectangle, Point, Graphics}
 import starling.pivot.EditableCellState._
+import starling.browser.common.GuiUtils._
 
 object PivotTableUI {
   val GridColour = UIManager.getColor("Table.gridColor")
@@ -46,6 +46,7 @@ object PivotTableUI {
                   case Edited => EditedCellColour
                   case Tainted => TaintedCellColour
                   case Added => AddedCellColour
+                  case AddedBlank => AddedBlankCellColour
                   case Normal => {
                     if (cellBelow.editable) {
                       RowHeaderEditableCellColour

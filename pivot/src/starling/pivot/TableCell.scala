@@ -60,6 +60,7 @@ object TableCell {
   def apply(value: Any) = new TableCell(value)
 
   val Null = new TableCell(NoValue, "")
+  val EditableNull = new TableCell(NoValue, "", editable = true)
   val Undefined = new TableCell(UndefinedValue, "n/a")
   val UndefinedNew = new TableCell(UndefinedValue, "")
 
@@ -76,7 +77,7 @@ object TableCell {
     new TableCell(pq, PivotFormatter.formatPivotQuantity(pq, formatInfo), RightTextPosition, pq.hasErrors, longText = t, warning = pq.warning)
   }
 
-  val PivotQuantity = Extractor.from[TableCell](_.pivotQuantityValue)
+  val PivotQuantity: Extractor[TableCell, PivotQuantity] = Extractor.from[TableCell](_.pivotQuantityValue)
 }
 
 class TotalState extends Serializable

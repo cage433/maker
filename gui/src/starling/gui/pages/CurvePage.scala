@@ -1,20 +1,20 @@
 package starling.gui.pages
 
-import starling.pivot.view.swing.MigPanel
 import starling.gui._
 import api._
 import swing._
 import starling.daterange.Day
 import starling.rmi.StarlingServer
 import starling.pivot.PivotEdits
+import starling.gui.StarlingLocalCache._
+import starling.browser.common.{GuiUtils, RoundedBorder, MigPanel}
+import starling.browser.{Modifiers, Bookmark, PageData, PageContext}
 
-
-case class CurvePage(curveLabel: CurveLabel, pivotPageState: PivotPageState) extends AbstractPivotPage(pivotPageState) {
+case class CurvePage(curveLabel: CurveLabel, pivotPageState: PivotPageState) extends AbstractFC2PivotPage(pivotPageState) {
   def marketDataIdentifier = curveLabel.marketDataIdentifier
 
   def text = "Curve Viewer"
   override def icon = StarlingIcons.im("/icons/16x16_curve_viewer.png")
-  override def layoutType = Some("Curve")
 
   override def refreshFunctions = marketDataIdentifier match {
     case MarketDataIdentifier(MarketDataSelection(pricingGroup, name), SpecificMarketDataVersion(_)) => {
@@ -31,8 +31,8 @@ case class CurvePage(curveLabel: CurveLabel, pivotPageState: PivotPageState) ext
 
   def selfPage(pivotPageState: PivotPageState, edits:PivotEdits) = copy(pivotPageState = pivotPageState)
 
-  def dataRequest(pageBuildingContext: PageBuildingContext) = {
-    pageBuildingContext.starlingServer.curvePivot(curveLabel, pivotPageState.pivotFieldParams)
+  def dataRequest(pageBuildingContext:FC2Context) = {
+    pageBuildingContext.cachingFC2Service.curvePivot(curveLabel, pivotPageState.pivotFieldParams)
   }
 
   override def configPanel(pageContext: PageContext, data:PageData) = {
@@ -65,7 +65,7 @@ case class CurvePage(curveLabel: CurveLabel, pivotPageState: PivotPageState) ext
     }
 
     marketDataSelectionPanel.reactions += {
-      case MarketDataSelectionChanged(selection) => { pageContext.goTo(latest(copySelection(selection)), false) }
+      case MarketDataSelectionChanged(selection) => { pageContext.goTo(latest(copySelection(selection)), Modifiers.None) }
     }
 
     def updatePopulatedDays {
@@ -94,18 +94,18 @@ case class CurvePage(curveLabel: CurveLabel, pivotPageState: PivotPageState) ext
     Some(ConfigPanels(List(configPanel), new Label(""), Action("BLA"){}))
   }
 
-  override def bookmark(server:StarlingServer):Bookmark = {
+  override def bookmark(serverContext:FC2Context):Bookmark = {
     CurveBookmark(curveLabel.curveType, curveLabel.environmentSpecification.environmentRule,
       curveLabel.marketDataIdentifier.selection, pivotPageState)
   }
 }
 
-case class CurveBookmark(curveType:CurveTypeLabel, envRuleLabel:EnvironmentRuleLabel, selection:MarketDataSelection, pivotPageState:PivotPageState) extends Bookmark {
+case class CurveBookmark(curveType:CurveTypeLabel, envRuleLabel:EnvironmentRuleLabel, selection:MarketDataSelection, pivotPageState:PivotPageState) extends FC2Bookmark {
   def daySensitive = true
-  def createPage(day0:Option[Day], server:StarlingServer, context:PageContext) = {
+  def createFC2Page(day0:Option[Day], fc2Context:FC2Context, context:PageContext) = {
     val day = day0.get
     val newEnvironmentSpecification = EnvironmentSpecificationLabel(day, envRuleLabel)
-    val newMarketDataIdentifier = server.latestMarketDataIdentifier(selection)
+    val newMarketDataIdentifier = fc2Context.service.latestMarketDataIdentifier(selection)
     val newCurveLabel = CurveLabel(curveType, newMarketDataIdentifier, newEnvironmentSpecification)
     CurvePage(newCurveLabel, pivotPageState)
   }

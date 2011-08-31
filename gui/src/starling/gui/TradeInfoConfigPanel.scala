@@ -1,12 +1,13 @@
 package starling.gui
 
-import api.{TradePageParameters, TradeExpiryDay, ReportParameters, TradeSelection}
+import api.{TradePageParameters, TradeExpiryDay, ReportParameters}
 import pages.{PivotPageState, TradeSelectionPage, ConfigPanel}
-import starling.pivot.view.swing.MigPanel
-import starling.gui.GuiUtils._
-import swing.{Button, Label}
+import starling.browser.common.GuiUtils._
+import swing.Label
 import swing.event.ButtonClicked
 import starling.pivot._
+import starling.browser.common.{ButtonClickedEx, NewPageButton, RoundedBorder, MigPanel}
+import starling.browser.{Modifiers, PageContext}
 
 class TradeInfoConfigPanel(context:PageContext, rp:ReportParameters) extends MigPanel() with ConfigPanel{
   val tradeSelection = rp.tradeSelectionWithTimestamp.asTradeSelection
@@ -52,9 +53,10 @@ class TradeInfoConfigPanel(context:PageContext, rp:ReportParameters) extends Mig
       }
     }
 
-    val fullDescriptionButton = new Button("View Trade Selection") {
+    val fullDescriptionButton = new NewPageButton {
+      text = "View Trade Selection"
       reactions += {
-        case ButtonClicked(b) => {
+        case ButtonClickedEx(b, e) => {
           val allFilters = (tradeSelection.tradePredicate.filter ::: tradeSelection.tradePredicate.selection.flatten).groupBy(_._1).map{case (k,v) => {
             val selections = v.map(_._2)
             if (selections.exists(s => {
@@ -88,7 +90,7 @@ class TradeInfoConfigPanel(context:PageContext, rp:ReportParameters) extends Mig
           context.goTo(TradeSelectionPage(TradePageParameters(rp.tradeSelectionWithTimestamp.deskAndTimestamp,
             rp.tradeSelectionWithTimestamp.intradaySubgroupAndTimestamp,
             TradeExpiryDay(rp.expiryDay)), pps
-          ))
+          ), Modifiers.modifiers(e.getModifiers))
         }
       }
     }

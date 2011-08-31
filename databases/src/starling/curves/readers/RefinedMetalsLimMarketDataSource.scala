@@ -19,7 +19,7 @@ import Pattern._
 import starling.utils.ImplicitConversions._
 
 
-case class RefinedMetalsLimMarketDataSource(limServer: LIMServer) extends MarketDataSource {
+case class RefinedMetalsLimMarketDataSource(limServer: LIMServer) extends MarketDataSource with Log {
   private val fixingsSources = PriceFixingsHistoryDataType → (List(LMEFixings, LIBORFixings, BloombergTokyoCompositeFXRates,
     BalticFixings,
     new MonthlyFuturesFixings(Trafigura.Bloomberg.Futures.Shfe, Settle),
@@ -34,9 +34,11 @@ case class RefinedMetalsLimMarketDataSource(limServer: LIMServer) extends Market
   override def description = List(fixingsSources, spotFXSources, priceSources).flatMap
     { case (marketDataType, sources) => marketDataType.name.pair(sources.flatMap(_.description)).map("%s → %s" % _) }
 
-  def read(day: Day) = Map(getValuesForType(PriceDataType, day, day, priceSources),
+  def read(day: Day) = log.infoWithTime("Getting data from LIM") {
+    Map(getValuesForType(PriceDataType, day, day, priceSources),
                            getValuesForType(SpotFXDataType, day, day, spotFXSources),
                            getValuesForType(PriceFixingsHistoryDataType, day.startOfFinancialYear, day, fixingsSources))
+  }
 
   private def getValuesForType(m: Any, start: Day, end: Day, sources: (MarketDataType, List[LimSource])) =
     (start, end, sources.head) → sources.tail.flatMap(source => getValues(source, start, end).toList)
@@ -56,7 +58,7 @@ case class RefinedMetalsLimMarketDataSource(limServer: LIMServer) extends Market
     source.marketDataEntriesFrom(prices).toList
       .map(_.copy(tag = Some("%s (%s)" % (source.getClass.getSimpleName, source.description.mkString(", ")))))
       .require(containsDistinctTimedKeys, "source: %s produced duplicate MarketDataKeys: " % source)
-      .debug(entries => "%s (%s): %s values" % (source.getClass.getSimpleName, source.description.mkString(", "), countData(entries)))
+      .debugV(entries => "%s (%s): %s values" % (source.getClass.getSimpleName, source.description.mkString(", "), countData(entries)))
   }
 
   private def countData(entries: List[MarketDataEntry]) = entries.map(_.data.size.getOrElse(0)).sum
@@ -76,14 +78,14 @@ abstract class LimSource(val levels: List[Level]) {
   protected def exchangeLookup(exchange: String) = if (exchange == "SHFE") "SFS" else exchange
 }
 
-abstract class HierarchicalLimSource(val parentNodes: List[LimNode], levels: List[Level]) extends LimSource(levels) {
+abstract class HierarchicalLimSource(val parentNodes: List[LimNode], levels: List[Level]) extends LimSource(levels) with Log {
   def description = parentNodes.map(node => node.name + " " + levelDescription)
   def relationsFrom(connection: LIMConnection) = connection.getAllRelChildren(parentNodes : _*).flatMap(safeRelationFrom)
   def relationExtractor: Extractor[String, Option[Relation]]
 
   private def safeRelationFrom(childRelation: String): Option[(Relation, String)] = try {
     relationExtractor.unapply(childRelation).flatOpt.optPair(childRelation)
-  } catch { case exception => { Log.debug("Malformed LIM relation: " + childRelation, exception); None } }
+  } catch { case exception => { log.debug("Malformed LIM relation: " + childRelation, exception); None } }
 }
 
 class PriceLimSource(relations: LIMRelation*) extends LimSource(List(Close)) {

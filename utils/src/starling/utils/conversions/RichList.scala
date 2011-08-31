@@ -13,11 +13,13 @@ trait RichList {
   implicit def enrichListOfTuple2[A, B](list: List[(A, B)]) = new RichList(list) {
     def mapFirst[C](f: A => C): List[(C, B)] = list.map(_.mapFirst(f))
     def mapSecond[C](f: B => C): List[(A, C)] = list.map(_.mapSecond(f))
+    def _1 = list.map(_._1)
+    def _2 = list.map(_._2)
   }
 
   class RichList[A](list : List[A]) {
     def castValues[T](error : Any => T)(implicit m : Manifest[T]) : List[T] = m.castAll(list, error)
-    def filterCast[T](implicit m : Manifest[T]): List[T] = list.flatMap(m.cast(_))
+    def filterCast[T](implicit m : Manifest[T]): List[T] = list.flatMap(m.safeCast(_))
 
     def allSame[B](f : A => B) : Boolean = {
       if (list.length > 1) {
@@ -75,5 +77,7 @@ trait RichList {
     }
 
     def partialMap[B](pf: PartialFunction[A, B]): List[B] = flatMapO(pf.lift)
+    def safeMap[B](f: A => B): List[B] = flatMapO(f.option)
+    def optMaxBy[B](f: A => B)(implicit cmp: Ordering[B]): Option[A] = if (list.isEmpty) None else Some(list.maxBy(f))
   }
 }

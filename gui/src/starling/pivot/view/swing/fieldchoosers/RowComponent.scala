@@ -1,6 +1,5 @@
 package starling.pivot.view.swing.fieldchoosers
 
-import starling.pivot.model.PivotTableModel
 import collection.mutable.ListBuffer
 import starling.pivot.view.swing._
 import starling.pivot.FieldChooserType._
@@ -8,8 +7,11 @@ import net.miginfocom.swing.MigLayout
 import starling.pivot.{Position, Field, OtherLayoutInfo}
 import java.awt.{Point, Rectangle}
 import scala.Some
+import starling.pivot.model.{EditableInfo, PivotTableModel}
+import starling.browser.common.MigPanel
 
-class RowComponent(model:PivotTableModel,  otherLayoutInfo:OtherLayoutInfo, viewUI:PivotTableViewUI, tableView:PivotTableView)
+class RowComponent(model:PivotTableModel,  otherLayoutInfo:OtherLayoutInfo, viewUI:PivotTableViewUI,
+                   tableView:PivotTableView, editableInfo:Option[EditableInfo])
         extends MigPanel("insets 1 1 1 " + (if (otherLayoutInfo.frozen) "1" else "0") + ", gap 0px") with DropTarget {
   opaque = false
 
@@ -38,7 +40,7 @@ class RowComponent(model:PivotTableModel,  otherLayoutInfo:OtherLayoutInfo, view
       currentlyActingAsMeasure, realMeasureField,
       model.treeDetails, (_field,depth) => {model.setDepth(_field,depth)},
       (_field, from) => (), filterData, transformData, otherLayoutInfo,
-      (_field, from) => subTotalSubTotalToggle(_field, from), subTotalToggleVisible, viewUI, tableView)
+      (_field, from) => subTotalSubTotalToggle(_field, from), subTotalToggleVisible, viewUI, tableView, editableInfo)
     (field -> new GuiFieldComponent(props))
   })
 
@@ -117,15 +119,25 @@ class RowComponent(model:PivotTableModel,  otherLayoutInfo:OtherLayoutInfo, view
 
   def indexOfDrop(screenPoint:Point, field:Field) = {
     if (fields.isEmpty) {
+      blankDropLabel.foreach(_.delayReset())
       0
     } else {
       val (_, panel) = dropBoundsAndPanels(field).find{case (bound, _) => bound.contains(screenPoint)}.get
+      panel.delayReset()
       val (nextToField, pos) = panel.fieldAndPositions.head
       val fieldPos = fields.position(nextToField)
       pos match {
         case Position.Left => math.max(fieldPos - 1, 0)
         case Position.Right => fieldPos + 1
       }
+    }
+  }
+
+  def fieldGoingToBeAddedToTheEnd() {
+    if (fields.isEmpty) {
+      blankDropLabel.foreach(_.forceTintedPaint())
+    } else {
+      dropPanels.last.forceTintedPaint()
     }
   }
 

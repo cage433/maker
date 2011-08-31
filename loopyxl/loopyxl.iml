@@ -11,17 +11,13 @@
     </facet>
   </component>
   <component name="NewModuleRootManager" inherit-compiler-output="false">
-    <output url="file://$MODULE_DIR$/target/scala_2.9.0-1/classes" />
-    <output-test url="file://$MODULE_DIR$/target/scala_2.9.0-1/test-classes" />
+    <output url="file://$MODULE_DIR$/target/scala-2.9.0.1/classes" />
+    <output-test url="file://$MODULE_DIR$/target/scala-2.9.0.1/test-classes" />
     <exclude-output />
     <content url="file://$MODULE_DIR$">
       <sourceFolder url="file://$MODULE_DIR$/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/tests" isTestSource="true" />
-      <sourceFolder url="file://$MODULE_DIR$/resources" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/target" />
-      <excludeFolder url="file://$MODULE_DIR$/target/scala_2.7.7/analysis" />
-      <excludeFolder url="file://$MODULE_DIR$/target/scala_2.7.7/test-analysis" />
-      <excludeFolder url="file://$MODULE_DIR$/test-output" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
@@ -32,11 +28,11 @@
     <orderEntry type="module-library" exported="">
       <library>
         <CLASSES>
-          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/compile/protobuf-java-2.3.0.jar!/" />
+          <root url="jar://$MODULE_DIR$/../.ivy/cache/com.google.protobuf/protobuf-java/jars/protobuf-java-2.3.0.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES>
-          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/compile/protobuf-java-2.3.0-sources.jar!/" />
+          <root url="jar://$MODULE_DIR$/../.ivy/cache/com.google.protobuf/protobuf-java/srcs/protobuf-java-2.3.0-sources.jar!/" />
         </SOURCES>
       </library>
     </orderEntry>

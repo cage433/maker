@@ -7,13 +7,11 @@ import event.{Event, ListSelectionChanged, ButtonClicked}
 import starling.pivot._
 import collection.mutable.ListBuffer
 import java.awt.datatransfer.StringSelection
-import starling.rmi.StarlingServer
-import collection.Seq
 import starling.daterange.{Day}
-import view.swing._
 import java.awt.{Toolkit, Dimension}
 import javax.swing.ImageIcon
-import starling.utils.StackTraceToString
+import starling.browser._
+import common.{ExButton, ButtonClickedEx, NListView, MigPanel}
 
 class PivotReportPage {}
 
@@ -31,11 +29,11 @@ case class DifferenceMainPivotReportPage(
         fromTimestamp: TradeTimestamp,
         toTimestamp: TradeTimestamp,
         expiryDay: Day
-        ) extends AbstractPivotPage(pivotPageState) {
+        ) extends AbstractStarlingPivotPage(pivotPageState) {
 
   assert(tradeSelection.intradaySubgroup.isEmpty, "Difference reports don't work with Excel trades")
 
-  def dataRequest(pageBuildingContext:PageBuildingContext) = {
+  def dataRequest(pageBuildingContext:StarlingServerContext) = {
     pageBuildingContext.cachingStarlingServer.diffReportPivot(tradeSelection, curveIdentifierDm1, curveIdentifierD,
       reportOptions, expiryDay, fromTimestamp, toTimestamp, pivotPageState.pivotFieldParams)
   }
@@ -58,12 +56,11 @@ case class DifferenceMainPivotReportPage(
 
 case class PivotReportTablePageData(numErrors:Int) extends PageData
 
-case class MainPivotReportPage(showParameters:Boolean, reportParameters:ReportParameters, pivotPageState:PivotPageState) extends AbstractPivotPage(pivotPageState) {
+case class MainPivotReportPage(showParameters:Boolean, reportParameters:ReportParameters, pivotPageState:PivotPageState) extends AbstractStarlingPivotPage(pivotPageState) {
   private def shortTitle = "Risk Report"
   def text = if (showParameters) shortTitle else reportParameters.text
   override def icon = StarlingIcons.im("/icons/16x16_report.png")
   override def shortText = if (showParameters) shortTitle else reportParameters.shortText
-  override def layoutType = Some(PivotLayout.ReportLayoutType)
 
   override def refreshFunctions = {
     val functions = new ListBuffer[PartialFunction[Event,Page]]
@@ -102,7 +99,7 @@ case class MainPivotReportPage(showParameters:Boolean, reportParameters:ReportPa
     functions.toList
   }
 
-  override def finalDrillDownPage(fields:scala.Seq[(Field, Selection)], pageContext:PageContext, ctrlDown:Boolean) {
+  override def finalDrillDownPage(fields:scala.Seq[(Field, Selection)], pageContext:PageContext, modifiers:Modifiers) {
     val selection = fields.find(f=>f._1.name == "Trade ID")
     val tradeID = selection match {
       case Some( (field,selection)) => {
@@ -115,22 +112,17 @@ case class MainPivotReportPage(showParameters:Boolean, reportParameters:ReportPa
     }
     tradeID match {
       case Some(trID) => {
-        val timestamp = trID.tradeSystem match {
-          case TradeSystemLabel.Intraday => reportParameters.tradeSelectionWithTimestamp.intradaySubgroupAndTimestamp.get._2
-          case _ => reportParameters.tradeSelectionWithTimestamp.deskAndTimestamp.get._2.timestamp
-        }
-        pageContext.goTo(SingleTradePage(trID, reportParameters.tradeSelectionWithTimestamp.deskAndTimestamp.map(_._1),
-            TradeExpiryDay(timestamp.toDay), reportParameters.tradeSelectionWithTimestamp.intradaySubgroupAndTimestamp.map(_._1)), newTab = ctrlDown)
+        pageContext.goTo(ValuationParametersPage(trID, reportParameters), modifiers = modifiers)
       }
       case None => None
     }
   }
 
-  override def subClassesPageData(reader:PageBuildingContext):Option[PageData] = {
+  override def subClassesPageData(reader:StarlingServerContext):Option[PageData] = {
     Some(PivotReportTablePageData(reader.cachingStarlingServer.reportErrors(reportParameters).errors.size))
   }
 
-  def dataRequest(pageBuildingContext: PageBuildingContext) = {
+  def dataRequest(pageBuildingContext:StarlingServerContext) = {
     pageBuildingContext.cachingStarlingServer.reportPivot(reportParameters, pivotPageState.pivotFieldParams)
   }
   def selfPage(pps:PivotPageState, edits:PivotEdits) = copy(pivotPageState = pps)
@@ -141,17 +133,17 @@ case class MainPivotReportPage(showParameters:Boolean, reportParameters:ReportPa
   override def configPanel(context:PageContext, data:PageData) = {
     if (showParameters) {
       val pivotData = data match {
-        case PivotTablePageData(pivData,Some(pd),layoutTypeOption) => pd match {
+        case PivotTablePageData(pivData,Some(pd)) => pd match {
           case PivotReportTablePageData(_) => {
             pivData
           }
           case scd => throw new Exception("Don't know how to handle this type of subclass page data: " + scd.getClass)
         }
-        case PivotTablePageData(pivData,None,layoutTypeOption) => pivData
+        case PivotTablePageData(pivData,None) => pivData
         case _ => throw new Exception("Don't know how to handle this type of page data")
       }
       
-      def update(rp: ReportParameters) {
+      def update(rp: ReportParameters, modifiers:Modifiers) {
         val optionsAvailable = pivotData.reportSpecificOptions.nonEmpty
         val noChoices = pivotPageState.pivotFieldParams.pivotFieldState match {
           case None => false // I don't think this can ever happen so I won't bother doing anything with it.
@@ -167,13 +159,13 @@ case class MainPivotReportPage(showParameters:Boolean, reportParameters:ReportPa
           pivotPageState
         }
 
-        context.createAndGoTo{
+        context.createAndGoTo({
           server => {
             // check to see if we have market data for the observation day and pnl from day, if we don't, import it
             // making new copies of the ReportParameters is the really ugly bit
             selfReportPage(rp = rp, pps = newPivotPageState)
           }
-        }
+        }, modifiers = modifiers)
       }
 
       val manualConfigPanel = new ManualReportConfigPanel(context, reportParameters, pivotPageState)
@@ -222,12 +214,12 @@ case class MainPivotReportPage(showParameters:Boolean, reportParameters:ReportPa
         }
         listenTo(presetReportPanel, manualConfigPanel, slideConfigPanel)
 
-        val runButton = new Button("Run") {
+        val runButton = new ExButton("Run") {
           tooltip = "Run the specified report (F9)"
           icon = StarlingIcons.icon("/icons/16x16_report.png")
           icon = new ImageIcon(getClass.getResource("/icons/16x16_report.png"))
           reactions += {
-            case ButtonClicked(b) => run()
+            case ButtonClickedEx(b, e) => run(Modifiers.modifiers(e.getModifiers))
           }
         }
 
@@ -242,39 +234,39 @@ case class MainPivotReportPage(showParameters:Boolean, reportParameters:ReportPa
 
         updateRunButton(generateRPs)
 
-        def run() {
+        def run(modifiers:Modifiers) {
           pivotPageState.pivotFieldParams.pivotFieldState.map { fs => {
             val otherLayoutInfo = pivotPageState.otherLayoutInfo
             context.putSetting(StandardUserSettingKeys.DefaultReportFields, (fs,otherLayoutInfo))
           }}
-          update(manualConfigPanel.generateReportParams(slideConfigPanel.slideConfig))
+          update(manualConfigPanel.generateReportParams(slideConfigPanel.slideConfig), modifiers)
         }
       }
 
       Some(ConfigPanels(
         List(presetReportPanel, manualConfigPanel, slideConfigPanel, tradeInfoPanel),
-        runPanel, Action("runReportAction") {runPanel.run()}))
+        runPanel, Action("runReportAction") {runPanel.run(Modifiers.None)}))
     } else {
       None
     }
   }
 
-  override def bookmark(server:StarlingServer):Bookmark = ReportBookmark(showParameters, server.createUserReport(reportParameters), pivotPageState)
+  override def bookmark(serverContext:StarlingServerContext):Bookmark = ReportBookmark(showParameters, serverContext.server.createUserReport(reportParameters), pivotPageState)
 }
 
-case class ReportBookmark(showParameters:Boolean, userReportData:UserReportData, pivotPageState:PivotPageState) extends Bookmark {
+case class ReportBookmark(showParameters:Boolean, userReportData:UserReportData, pivotPageState:PivotPageState) extends StarlingBookmark {
   def daySensitive = {
     userReportData.environmentRule match {
       case EnvironmentRuleLabel.RealTime => false
       case _ => true
     }
   }
-  def createPage(day:Option[Day], server:StarlingServer, context:PageContext) = {
+  def createStarlingPage(day:Option[Day], serverContext:StarlingServerContext, context:PageContext) = {
     val dayToUse = day match {
       case None => Day.today() // Real time
       case Some(d) => d
     }
-    val reportParameters = server.createReportParameters(userReportData, dayToUse)
+    val reportParameters = serverContext.server.createReportParameters(userReportData, dayToUse)
     MainPivotReportPage(showParameters, reportParameters, pivotPageState)
   }
 }
@@ -283,25 +275,25 @@ object PivotReportPage {
   def toolbarButtons(pageContext:PageContext, reportParameters:ReportParameters, data:PageData, showParameters:Boolean,
                             pivotPageState:PivotPageState) = {
     val numErrors = data match {
-      case PivotTablePageData(_,Some(pd),_) => pd match {
+      case PivotTablePageData(_,Some(pd)) => pd match {
         case PivotReportTablePageData(nErrs) => {
           nErrs
         }
         case scd => throw new Exception("Don't know how to handle this type of subclass page data: " + scd.getClass)
       }
-      case PivotTablePageData(_,_,_) => 0
+      case PivotTablePageData(_,_) => 0
       case _ => throw new Exception("Don't know how to handle this type of page data")
     }
     
-    val buffer = new ListBuffer[ToolBarButton]()
+    val buffer = new ListBuffer[NewPageToolBarButton]()
     if (numErrors > 0) {
-      buffer += new ToolBarButton {
+      buffer += new NewPageToolBarButton {
         text = "Errors (" + numErrors + ")"
         tooltip = "Show errors that occured whilst running this report"
-        icon = StarlingIcons.icon("/icons/error.png")
+        val leftIcon = StarlingIcons.im("/icons/error.png")
         reactions += {
-          case ButtonClicked(b) => {
-            pageContext.goTo(ReportErrorsPage(reportParameters))
+          case ButtonClickedEx(b, e) => {
+            pageContext.goTo(ReportErrorsPage(reportParameters), Modifiers.modifiers(e.getModifiers))
           }
         }
       }
@@ -309,13 +301,14 @@ object PivotReportPage {
 
     // Always add the market data button here.
     if (reportParameters.runReports) {
-      buffer += new ToolBarButton {
+      buffer += new NewPageToolBarButton {
         text = "Market Data"
         tooltip = "Show all market data used to calculate the values shown"
-        icon = StarlingIcons.icon("/icons/16x16_market_data.png")
+        val leftIcon = StarlingIcons.im("/icons/16x16_market_data.png")
+        focusable = false
         reactions += {
-          case ButtonClicked(b) => {
-            MarketDataPage.goTo(pageContext, ReportMarketDataPageIdentifier(reportParameters), None, None)
+          case ButtonClickedEx(b, e) => {
+            MarketDataPage.goTo(pageContext, ReportMarketDataPageIdentifier(reportParameters), None, None, Modifiers.modifiers(e.getModifiers))
           }
         }
       }
@@ -325,10 +318,10 @@ object PivotReportPage {
   }
 }
 
-case class ReportErrorsPage(reportParameters:ReportParameters) extends Page {
+case class ReportErrorsPage(reportParameters:ReportParameters) extends StarlingServerPage {
   def text = "Errors in " + reportParameters.text
-  def createComponent(context: PageContext, data: PageData, bookmark:Bookmark, browserSize:Dimension) = new PivotReportErrorPageComponent(context, data, browserSize)
-  def build(pageBuildingContext: PageBuildingContext) = {
+  def createComponent(context: PageContext, data: PageData, bookmark:Bookmark, browserSize:Dimension, previousPageData:Option[PageData]) = new PivotReportErrorPageComponent(context, data, browserSize, previousPageData)
+  def build(pageBuildingContext: StarlingServerContext) = {
     val errors = pageBuildingContext.cachingStarlingServer.reportErrors(reportParameters)
     val errorsToUse = errors.errors.map(e => ErrorViewElement(e.instrumentText, e.message))
     PivotReportErrorPageData(errorsToUse)
@@ -338,7 +331,7 @@ case class ReportErrorsPage(reportParameters:ReportParameters) extends Page {
 case class PivotReportErrorPageData(reportErrors:List[ErrorViewElement]) extends PageData
 
 
-class PivotReportErrorPageComponent(pageContext:PageContext, data:PageData, browserSize:Dimension) extends MigPanel("") with PageComponent {
+class PivotReportErrorPageComponent(pageContext:PageContext, data:PageData, browserSize:Dimension, previousPageData:Option[PageData]) extends MigPanel("") with PageComponent {
   val errors = data match {
     case d:PivotReportErrorPageData => d.reportErrors
   }
@@ -346,20 +339,20 @@ class PivotReportErrorPageComponent(pageContext:PageContext, data:PageData, brow
   add(errorView, "push, grow")
 }
 
-case class ReportCellErrorsPage(errors:List[StackTrace]) extends Page {
+case class ReportCellErrorsPage(errors:List[StackTrace]) extends StarlingServerPage {
   def text = "Errors"
   def icon = StarlingIcons.im("/icons/error.png")
-  def createComponent(context:PageContext, data:PageData, bookmark:Bookmark, browserSize:Dimension) = {
+  def createComponent(context:PageContext, data:PageData, bookmark:Bookmark, browserSize:Dimension, previousPageData:Option[PageData]) = {
     val errorsToUse = data match {
       case d:ReportCellErrorData => d.errors
     }
-    new ReportCellErrorsPageComponent(errorsToUse, browserSize)
+    new ReportCellErrorsPageComponent(errorsToUse, browserSize, previousPageData)
   }
-  def build(pageBuildingContext:PageBuildingContext) = {ReportCellErrorData(errors.map(d => ErrorViewElement(d.message, d.stackTrace)))}
+  def build(pageBuildingContext:StarlingServerContext) = {ReportCellErrorData(errors.map(d => ErrorViewElement(d.message, d.stackTrace)))}
 }
 case class ReportCellErrorData(errors:List[ErrorViewElement]) extends PageData
 
-class ReportCellErrorsPageComponent(errors:List[ErrorViewElement], browserSize:Dimension) extends MigPanel("") with PageComponent {
+class ReportCellErrorsPageComponent(errors:List[ErrorViewElement], browserSize:Dimension, previousPageData:Option[PageData]) extends MigPanel("") with PageComponent {
   val errorView = new ErrorView(errors, Some(scala.math.round(browserSize.height / 4.0f)))
   add(errorView, "push, grow")
 }

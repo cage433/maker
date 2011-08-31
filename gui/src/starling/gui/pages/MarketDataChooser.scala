@@ -1,23 +1,24 @@
 package starling.gui.pages
 
 import java.awt.{Color, Dimension}
-import collection.immutable.TreeSet
 import starling.gui.api._
 import swing.Swing._
 import swing.event.{Event, SelectionChanged, ButtonClicked, MouseClicked}
-import starling.pivot.view.swing.{NListView, MigPanel}
 import swing._
-import starling.gui.custom.{TitledDayPicker, SXMonthView}
-import starling.gui.{StandardUserSettingKeys, ComponentState, NewPageButton, PageContext}
 import starling.utils.{STable, SColumn}
 import starling.gui.utils.RichReactor
 import RichReactor._
 import starling.daterange.{ObservationTimeOfDay, ObservationPoint, Day}
+import starling.gui.StarlingLocalCache._
+import collection.immutable.{Map, TreeSet}
+import starling.gui.{TitledDayPicker, StandardUserSettingKeys}
+import starling.browser.common.{ButtonClickedEx, NewPageButton, NListView, MigPanel}
+import starling.browser.{Modifiers, ComponentState, PageContext}
 
 class MarketDataChooser(maybeDesk:Option[Desk], pageContext:PageContext, snapshotSelection:Option[SnapshotSelection],
                         showValuationDayPicker:Boolean=false) extends MigPanel("insets 0") {
   private val allPricingGroupsForDesk = pageContext.localCache.pricingGroups(maybeDesk)
-  private var snapshots = pageContext.localCache.snapshots(maybeDesk)
+  private var snapshots: Map[MarketDataSelection, List[SnapshotIDLabel]] = pageContext.localCache.snapshots(maybeDesk)
 
   override def enabled = super.enabled
   override def enabled_=(b:Boolean) = {
@@ -159,7 +160,7 @@ class MarketDataChooser(maybeDesk:Option[Desk], pageContext:PageContext, snapsho
     case PricingGroupObservationDay(pricingGroup, day) => {
       updatePopulatedObservationDays(marketDataSelection.selection)
     }
-    case MarketDataSnapshotSet(snapshots) => {
+    case _: MarketDataSnapshotSet => {
       this.snapshots = snapshots
       val selected = snapshotView.selected
       updateSnapshotList(marketDataSelection.selection)
@@ -199,8 +200,8 @@ class MarketDataChooser(maybeDesk:Option[Desk], pageContext:PageContext, snapsho
     case SelectionChanged(`valuationDayPicker`) => {
       thetaDayPicker.day = valuationDayPicker.day.nextBusinessDay(pageContext.localCache.ukBusinessCalendar)
     }
-    case ButtonClicked(`viewButton`) => publish(ViewRequested(MarketDataChooser.this))
-    case MouseClicked(`snapshotView`,_,_,2,_) => publish(ViewRequested(MarketDataChooser.this))
+    case ButtonClickedEx(`viewButton`, e) => publish(ViewRequested(MarketDataChooser.this, Modifiers.modifiers(e.getModifiers)))
+    case MouseClicked(`snapshotView`,_,e,2,_) => publish(ViewRequested(MarketDataChooser.this, Modifiers.modifiersEX(e)))
   }
   listenTo(marketDataSelection, marketDataDayPicker, valuationDayPicker, snapshotView.mouse.clicks, viewButton)
 
@@ -243,7 +244,7 @@ class MarketDataChooser(maybeDesk:Option[Desk], pageContext:PageContext, snapsho
 
 
 
-case class ViewRequested(source:MarketDataChooser) extends Event
+case class ViewRequested(source:MarketDataChooser, modifiers:Modifiers) extends Event
 case class SnapshotSelection(marketDataSelection:MarketDataSelection, entry:Option[MarketDataVersionEntry], observationDay:Day)
 
 abstract class MarketDataVersionEntry {

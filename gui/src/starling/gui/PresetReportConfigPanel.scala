@@ -4,8 +4,7 @@ import api._
 import api.MarketDataIdentifier._
 import pages._
 import pages.MarketDataSelectionChanged._
-import starling.pivot.view.swing.MigPanel
-import starling.gui.GuiUtils._
+import starling.browser.common.GuiUtils._
 import swing._
 import event.SelectionChanged._
 import event.{SelectionChanged, ButtonClicked}
@@ -13,7 +12,9 @@ import swing.Orientation._
 import collection.immutable.TreeSet
 import starling.daterange.Day
 import collection.mutable.ListBuffer
-import collection.mutable.ListBuffer._
+import starling.gui.StarlingLocalCache._
+import starling.browser.PageContext
+import starling.browser.common.{RoundedBorder, MigPanel}
 
 object ReportPreset extends Enumeration {
   type ReportPreset = Value
@@ -101,10 +102,10 @@ class PresetReportConfigPanel(context:PageContext, reportParameters:ReportParame
         realTimePanel.dayChangeCheckBox.preferredSize = new Dimension(realTimePanel.dayChangeCheckBox.preferredSize.width, useExcelButton.preferredSize.height)
 
         add(dayChangeCheckBox)
-        add(dayChangeDayChooser, "sgx")
+        add(dayChangeDayChooser)
         add(useExcelButton, "wrap")
         add(bookCloseLabel, "al right")
-        add(bookCloseChooser, "sgx")
+        add(bookCloseChooser, "spanx")
 
         def setDays(canUseExcel:Boolean, pnlParams:Option[PnlFromParameters]) {
           pnlParams match {
@@ -462,9 +463,15 @@ class PresetReportConfigPanel(context:PageContext, reportParameters:ReportParame
       }
       val marketIDFrom = MarketDataIdentifier(fromMarketDataSelection, marketDataVersion)
       val pnlFromDayAndTime = buttonPanel.cobPanel.dayChangePanel.dayChangeDayChooser.day.endOfDay()
+
+      val rule = marketDataSelection.pricingGroup match {
+        case Some(pg) if pg == PricingGroup.Metals => EnvironmentRuleLabel.AllCloses
+        case _ => EnvironmentRuleLabel.COB
+      }
+
       val cIDFrom = CurveIdentifierLabel(
         marketIDFrom,
-        EnvironmentRuleLabel.COB,
+        rule,
         pnlFromDayAndTime.day,
         pnlFromDayAndTime,
         pnlFromDayAndTime.nextBusinessDay(context.localCache.ukBusinessCalendar),

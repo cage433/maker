@@ -1,6 +1,6 @@
 package starling.pivot.view.swing
 
-import starling.gui.GuiUtils._
+import starling.browser.common.GuiUtils._
 import starling.pivot.PivotFieldsState
 import swing.Swing._
 import java.awt.event.{AdjustmentListener, AdjustmentEvent}
@@ -10,6 +10,7 @@ import java.awt.{RenderingHints, Graphics2D, Dimension, Color}
 import swing.{Component, RadioButton, CheckBox, Label}
 import starling.gui.api.{ReportSpecificChoices, ReportSpecificOptions}
 import starling.utils.Describable
+import starling.browser.common.{CrazyScrollPane, ArrowButton, MigPanel}
 
 abstract class ReportSpecificOptionsButtonPanel(constraints:String) extends MigPanel(constraints) {
   private val bkColour = background

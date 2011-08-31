@@ -26,10 +26,10 @@ class TradeImporterFactory(
   }
 }
 
-class TradeImporter(systemOfRecord: SystemOfRecord, tradeStore: TradeStore) {
+class TradeImporter(systemOfRecord: SystemOfRecord, tradeStore: TradeStore) extends Log {
 
   def importAll(allTrades: Option[Seq[Trade]] = None, writeTimestamp: Timestamp = new Timestamp()): Boolean = TradeImporter.lock.synchronized {
-    Log.infoWithTime("Running trade import for " + systemOfRecord + " with timestamp " + writeTimestamp) {
+    log.infoWithTime("Running trade import for " + systemOfRecord + " with timestamp " + writeTimestamp) {
       val trades = allTrades match {
         case Some(t) => t
         case None => {

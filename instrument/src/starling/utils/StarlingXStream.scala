@@ -107,7 +107,11 @@ object StarlingXStream {
   }
 
   def read(text:String):Any = xstream match {
-    case Some(xs) => xs.fromXML(text)
+    case Some(xs) => try {
+      xs.fromXML(text)
+    } catch {
+      case e => throw new Exception("fromXML failed for :" + text, e)
+    }
     case None => {
       xstream = Some(createXStream)
       read(text)

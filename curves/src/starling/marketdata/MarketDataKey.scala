@@ -3,7 +3,8 @@ package starling.marketdata
 import starling.pivot.Field
 import starling.curves.MarketDataSlice
 import starling.db.MarketDataReader
-import starling.daterange.ObservationPoint
+import starling.utils.Pattern.Extractor
+import starling.daterange.{Day, ObservationPoint}
 
 /**
  * The key used to look up market data from the database.

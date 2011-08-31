@@ -2,32 +2,81 @@ package starling.gui
 
 import api._
 import javax.swing._
-import pages.{HelpPage, StarlingHomePage, PageBuilder, StarlingBrowser}
+import pages._
 import scala.swing.event.WindowClosing
 import scala.swing.event.MouseClicked
 import scala.swing.event.ButtonClicked
+import scala.swing.event.Event
 import starling.gui.StandardUserSettingKeys._
-import swing._
-import scala.swing.Action
+import scala.swing._
+import scala.swing.{ButtonGroup => ScalaButtonGroup}
+import scala.swing.{AbstractButton=> ScalaAbstractButton}
 import java.awt.event._
 import scala.swing.Swing._
-import starling.rmi.{StarlingServer}
 import collection.mutable.ListBuffer
 import starling.bouncyrmi.{BouncyRMIClient}
 import javax.security.auth.login.LoginException
-import starling.pivot.view.swing.{FixedImagePanel, MigPanel, SXLayerScala}
-import starling.utils.{StackTraceToString, Log, HeterogeneousMap}
+import starling.utils.{StackTraceToString, Log}
 import starling.gui.LocalCacheKeys._
 import starling.daterange.Day
 import starling.auth.{Client, ClientLogin}
 import management.ManagementFactory
-import java.awt.{GraphicsEnvironment, Color, KeyboardFocusManager}
 import xstream.GuiStarlingXStream
+import starling.browser._
+import common._
+import starling.browser.service.internal.HeterogeneousMap
+import service._
+import java.awt.{Cursor, GraphicsEnvironment, Color, KeyboardFocusManager}
+import starling.browser.internal.{NotificationKeys, NotificationType, Notification}
+import starling.pivot._
+import javax.swing.event.{ChangeEvent, ChangeListener}
+import GuiUtils._
+import starling.pivot.utils.PeriodPivotFormatter
+import starling.fc2.api.FC2Service
+import starling.rmi.StarlingServer
 
+object StarlingServerNotificationHandlers {
+  def notificationHandler = {
+    import starling.gui.StarlingLocalCache._
+    new NotificationHook {
+      def handle(event:Event, cache:LocalCache, sendNotification:(Notification) => Unit) {
+        event match {
+          case DeskClosed(desk, timestamp) => {
+            if(cache.desks.contains(desk)) {
+              val old: Map[Desk, Map[Day, List[TradeTimestamp]]] = cache.localCache(DeskCloses)
+              val oldCloses: Map[Day, List[TradeTimestamp]] = old.getOrElse(desk, Map())
+              val newCloses: Map[Day, List[TradeTimestamp]] = oldCloses + (timestamp.closeDay -> (timestamp :: oldCloses.getOrElse(timestamp.closeDay, Nil)))
+              val newMap = old + (desk -> newCloses)
+              cache.localCache(DeskCloses) = newMap
+              val text = "Imported book close for " + desk + " (" + timestamp.timestamp.toStringMinutes + ")"
+              val notification =  Notification(text, StarlingIcons.icon("/icons/16x16_book.png"), NotificationType.Message, {})
+              sendNotification(notification)
+            }
+          }
+          case DeskCloseFailed(desk, timestamp, error) => {
+            if(cache.desks.contains(desk)) {
+              val old: Map[Desk, Map[Day, List[TradeTimestamp]]] = cache.localCache(DeskCloses)
+              val oldCloses: Map[Day, List[TradeTimestamp]] = old.getOrElse(desk, Map())
+              val newCloses: Map[Day, List[TradeTimestamp]] = oldCloses + (timestamp.closeDay -> (timestamp :: oldCloses.getOrElse(timestamp.closeDay, Nil)))
+              val newMap = old + (desk -> newCloses)
+              cache.localCache(DeskCloses) = newMap
+              val text = "Import failed for " + desk + " (" + timestamp.timestamp.toStringMinutes + ")"
+              val notification = Notification(text, StarlingIcons.icon("/icons/16x16_error.png"), NotificationType.Message, {})
+              sendNotification(notification)
+            }
+          }
+          case _ =>
+        }
+      }
+    }
+
+  }
+
+}
 /**
  * The entry point into the starling gui
  */
-object Launcher {
+object Launcher extends Log {
   def main(args: Array[String]) {
     if (args.length != 3) {
       throw new IllegalArgumentException("You need to specify 3 arguments: hostname, rmi port and servicePrincipalName")
@@ -81,22 +130,22 @@ object Launcher {
   var rmiHost = ""
   var rmiPort = -1
   var servicePrincipalName = ""
-  var numberOfClientsLaunched = 0
 
   def start(rmiHost: String, rmiPort: Int, servicePrincipalName: String, overriddenUser:Option[String] = None) {
     this.rmiHost = rmiHost
     this.rmiPort = rmiPort
     this.servicePrincipalName = servicePrincipalName
-    numberOfClientsLaunched += 1
 
     def logger(message:String) {
       // TODO [03 Feb 2011] do something clever with this message.
 //      println(message)
     }
-    val client = new BouncyRMIClient(rmiHost, rmiPort, classOf[StarlingServer], auth(servicePrincipalName), logger, overriddenUser)
+    val client = new BouncyRMIClient(rmiHost, rmiPort, auth(servicePrincipalName), logger, overriddenUser)
     try {
       client.startBlocking
-      val starlingServer = client.proxy
+      val starlingServer = client.proxy(classOf[StarlingServer])
+      val fc2Service = client.proxy(classOf[FC2Service])
+      val browserService = client.proxy(classOf[BrowserService])
       val extraInfo = overriddenUser match {
         case None => {
           // When the user isn't overridden, store the system info on each log on.
@@ -105,12 +154,181 @@ object Launcher {
         }
         case Some(_) => Some("You are " + starlingServer.whoAmI.name) // Want to see who I actually am, not who I tried to be.
       }
-      start(starlingServer, client.remotePublisher, new StarlingHomePage, extraInfo)
+      start(starlingServer, fc2Service, browserService, client.remotePublisher, extraInfo)
     }
     catch {
       case t => showErrorThenExit(t)
     }
   }
+
+  def start(starlingServer:StarlingServer, fc2Service:FC2Service, remoteBrowserService:BrowserService, remotePublisher: Publisher, extraInfo:Option[String]) {
+    val postLocalCacheUpdatePublisher = new scala.swing.Publisher() {}
+
+    BrowserLauncher.start(
+        postLocalCacheUpdatePublisher,
+        createCacheMap(starlingServer.whoAmI.name, starlingServer, fc2Service, postLocalCacheUpdatePublisher, remotePublisher),
+        extraInfo) {
+      new ServerContext {
+
+        val starlingServerClass = classOf[StarlingServer]
+        val fc2ServiceClass = classOf[FC2Service]
+
+        def username = starlingServer.whoAmI.name
+        def version = starlingServer.version
+
+        def lookup[T](klass:Class[T]) = {
+          klass match {
+            case `starlingServerClass` => starlingServer.asInstanceOf[T]
+            case `fc2ServiceClass` => fc2Service.asInstanceOf[T]
+            case _ => throw new Exception("Don't know how to handle " + klass)
+          }
+        }
+
+        def browserBundles = List(browserContext)
+
+        import StarlingLocalCache._
+        val browserContext = new BrowserBundle() {
+          def bundleName = "StarlingServer"
+          def marshal(obj: AnyRef) = GuiStarlingXStream.write(obj)
+          override def userPage(context:PageContext) = Some( UserDetailsPage(context.localCache.currentUser) )
+          override def hotKeys = HotKey(
+            KeyStroke.getKeyStroke(KeyEvent.VK_U, InputEvent.CTRL_DOWN_MASK | InputEvent.SHIFT_DOWN_MASK),
+            "utilsPage",
+            UtilsPage()) :: Nil
+
+          override def notificationHandlers = StarlingServerNotificationHandlers.notificationHandler :: Nil
+          def unmarshal(text: String) = GuiStarlingXStream.read(text).asInstanceOf[AnyRef]
+
+//            bookmark match {
+//              case rb:ReportBookmark => {
+//                val userReportData = rb.userReportData
+//                val pivotLayout = rb.pivotPageState.pivotFieldParams.pivotFieldState match {
+//                  case None => throw new Exception("I should have a layout at this stage")
+//                  case Some(pfs) => PivotLayout(name, pfs, true, rb.pivotPageState.otherLayoutInfo, "special", Nil)
+//                }
+//                starlingServer.saveUserReport(name, userReportData, showParameters)
+//                if (shouldSaveLayout && shouldAssociateLayout) {
+//                  // This is the case where it is a custom layout so we want to save the layout and associate it with this report
+//                  starlingServer.saveLayout(pivotLayout.copy(associatedReports = List(name)))
+//                } else if (shouldAssociateLayout) {
+//                  // This is the case where the layout is already saved but we want to associate it with this report.
+//                  starlingServer.deleteLayout(pivotLayout.layoutName)
+//                  starlingServer.saveLayout(pivotLayout.copy(associatedReports = name :: pivotLayout.associatedReports))
+//                }
+//              }
+//            }
+
+          override def settings(pageContext:PageContext) = StarlingSettings.create(pageContext)
+          override def homeButtons(pageContext:PageContext) = StarlingHomeButtons.create(pageContext)
+          override def helpEntries = StarlingHelpPage.starlingHelpEntry :: Nil
+        }
+
+        def browserService = remoteBrowserService
+      }
+    }
+
+  }
+
+  def createCacheMap(
+                      username:String,
+                      starlingServer:StarlingServer,
+                      fc2Service:FC2Service,
+                      postLocalCacheUpdatePublisher : Publisher,
+                      remotePublisher: Publisher):HeterogeneousMap[LocalCacheKey] = {
+    val localCacheUpdatePublisher = new scala.swing.Publisher() {}
+    remotePublisher.reactions += {
+      case batch:EventBatch => {
+        onEDT {
+          //This indirection between the remotePublisher ensures that pages see
+          // the events after the local cache is updated
+          // and also ensures that the pages receive the event on the EDT
+          batch.events.foreach { e => localCacheUpdatePublisher.publish(e) }
+          postLocalCacheUpdatePublisher.publish(batch)
+        }
+      }
+    }
+
+    val cacheMap = new HeterogeneousMap[LocalCacheKey]
+    localCacheUpdatePublisher.reactions += {
+      case ExcelMarketListUpdate(values) => {
+        cacheMap(ExcelDataSets) = values
+      }
+      case mdss: MarketDataSnapshotSet => {
+        val snapshotsBySelection = cacheMap(Snapshots)
+
+        val snapshots = snapshotsBySelection.get(mdss.selection)
+
+        val newLabels = snapshots match {
+          case None => List(mdss.newSnapshot)
+          case Some(labels) => mdss.newSnapshot :: labels
+        }
+
+        cacheMap(Snapshots) = snapshotsBySelection.updated(mdss.selection, newLabels)
+      }
+      case PricingGroupMarketDataUpdate(pg, version) => {
+        cacheMap(PricingGroupLatestMarketDataVersion) =
+                cacheMap(PricingGroupLatestMarketDataVersion) + (pg -> version)
+      }
+      case ExcelMarketDataUpdate(excel, version) => {
+        cacheMap(ExcelLatestMarketDataVersion) =
+                cacheMap(ExcelLatestMarketDataVersion) + (excel -> version)
+      }
+      case IntradayUpdated(group, user, timestamp) => {
+        cacheMap(IntradayLatest) = cacheMap(IntradayLatest) + (group -> (user, timestamp))
+      }
+      case ExcelObservationDay(name, day) => {
+        val current = cacheMap(ObservationDaysForExcel)
+        cacheMap(ObservationDaysForExcel) = {
+          current.updated(name, current.getOrElse(name, Set()) + day)
+        }
+      }
+      case PricingGroupObservationDay(pricingGroup, day) => {
+        val current = cacheMap(ObservationDaysForPricingGroup)
+        cacheMap(ObservationDaysForPricingGroup) = {
+          current.updated(pricingGroup, current.getOrElse(pricingGroup, Set()) + day)
+        }
+      }
+      case UserLoggedIn(username) => {
+        val current = cacheMap(LocalCache.AllUserNames)
+        if (!current.exists(_ == username)) {
+          cacheMap(LocalCache.AllUserNames) = username :: current
+        }
+      }
+    }
+
+    import LocalCache._
+    import NotificationKeys._
+    try {
+      cacheMap(AllUserNames) = starlingServer.allUserNames
+      cacheMap(PricingGroups) = fc2Service.pricingGroups
+      cacheMap(ExcelDataSets) = fc2Service.excelDataSets
+      cacheMap(Snapshots) = fc2Service.snapshots
+      val (observationDaysForPricingGroup, observationDaysForExcel) = fc2Service.observationDays
+      cacheMap(ObservationDaysForPricingGroup) = observationDaysForPricingGroup
+      cacheMap(ObservationDaysForExcel) = observationDaysForExcel
+      cacheMap(ExcelLatestMarketDataVersion) = fc2Service.excelLatestMarketDataVersions
+      cacheMap(PricingGroupLatestMarketDataVersion) = fc2Service.pricingGroupLatestMarketDataVersions
+      cacheMap(LocalCacheKeys.ReportOptionsAvailable) = starlingServer.reportOptionsAvailable
+      cacheMap(DeskCloses) = starlingServer.deskCloses
+      cacheMap(IntradayLatest) = starlingServer.intradayLatest
+      cacheMap(TradersBookLookup) = starlingServer.traders
+      cacheMap(CurrentUser) = starlingServer.whoAmI
+      cacheMap(UKBusinessCalendar) = starlingServer.ukBusinessCalendar
+      cacheMap(Desks) = starlingServer.desks
+      cacheMap(GroupToDesksMap) = starlingServer.groupToDesksMap
+      cacheMap(IsStarlingDeveloper) = starlingServer.isStarlingDeveloper
+      cacheMap(EnvironmentRules) = fc2Service.environmentRules
+      cacheMap(CurveTypes) = fc2Service.curveTypes
+//      cacheMap(Bookmarks) = toBookmarks(starlingServer.bookmarks)
+
+    } catch {
+      case e : Throwable =>
+        e.printStackTrace()
+        throw e
+    }
+    cacheMap
+  }
+
 
   private def getMessage(t: Throwable): String = {
     val m = if (t.getMessage == null) {
@@ -129,7 +347,7 @@ object Launcher {
   }
 
   def showErrorThenExit(t: Throwable) {
-    Log.fatal("Failed to start starling: ", t)
+    log.fatal("Failed to start starling: ", t)
     onEDT {
       GuiUtils.setLookAndFeel
       val f = new Frame {
@@ -179,7 +397,7 @@ object Launcher {
         import starling.utils.Utils._
         os match {
           case Linux => {
-            Log.error("Failed to initialise kerberos, either it isn't used on this system or the ticket cache is stale (try krenew). Skipping kerberos.")
+            log.error("Failed to initialise kerberos, either it isn't used on this system or the ticket cache is stale (try krenew). Skipping kerberos.")
             new Client(null, null) {
               override def ticket = null
             }
@@ -194,508 +412,269 @@ object Launcher {
       }
     }
   }
+}
 
-  def start(starlingServer: StarlingServer, remotePublisher: Publisher, homePage: Page, extraInfo:Option[String]) {
-    onEDT({
-      val title = starlingServer.name + " - Starling"
+object StarlingHomeButtons {
+  def create(context:PageContext) = {
+    import StarlingLocalCache._
 
-      val localCacheUpdatePublisher = new scala.swing.Publisher() {}
-      val postLocalCacheUpdatePublisher = new scala.swing.Publisher() {}
-
-      val settings = starlingServer.readSettings
-
-      remotePublisher.reactions += {
-        case batch:EventBatch => {
-          onEDT {
-            //This indirection between the remotePublisher ensures that pages see
-            // the events after the local cache is updated
-            // and also ensures that the pages receive the event on the EDT
-            batch.events.foreach { e => localCacheUpdatePublisher.publish(e) }
-            postLocalCacheUpdatePublisher.publish(batch)
-          }
-        }
-      }
-
-      val cacheMap = new HeterogeneousMap[Key]
-      val cache = LocalCache(cacheMap)
-      lazy val fc = new StarlingBrowserFrameContainer(starlingServer, cache, postLocalCacheUpdatePublisher, homePage,
-        settings, title, extraInfo)
-
-      // Must be called on the EDT
-      def sendNotification(notification:Notification) {
-        cacheMap(AllNotifications) = notification :: cacheMap(AllNotifications)
-        cacheMap(UserNotifications) = notification :: cacheMap(UserNotifications)
-        fc.updateNotifications
-      }
-
-      val username = starlingServer.whoAmI.username
-
-      def toBookmarks(labels:List[BookmarkLabel]) = {
-        labels.flatMap(s => {
-          try {
-            val bookmark = GuiStarlingXStream.read(s.bookmark).asInstanceOf[Bookmark]
-            val bookmarkName = s.name
-            BookmarkData(bookmarkName, bookmark) :: Nil
-          } catch {
-            case e => {
-              println("Error reading bookmark " + s.name)
-              e.printStackTrace()
-              Nil
+    def tradePage = {
+      new PageFactory() {
+        def create(serverContext: ServerContext) = {
+          val initial = {
+            val defaultSelection = (context.localCache.desks.headOption, None)
+            val lastSelection = context.getSetting(StandardUserSettingKeys.InitialTradeSelection, defaultSelection)
+            lastSelection match {
+              case (_, Some(groups)) => {
+                val validGroups = context.localCache.intradaySubgroups.keySet
+                if (groups.subgroups.forall(g => validGroups.exists(vg => vg.startsWith(g)))) lastSelection else defaultSelection
+              }
+              case _ => lastSelection
             }
           }
-        })
-      }
 
-      // We want to set up a local cache so that we don't always have to hit the server. This cache is populated on startup and then listens to
-      // the publisher to stay fresh.
-      localCacheUpdatePublisher.reactions += {
-        case e: PivotLayoutUpdate if (e.user == username) => {
-          cacheMap(UserPivotLayouts) = e.userLayouts
-        }
-        case e: BookmarksUpdate if e.user == username => {
-          cacheMap(Bookmarks) = toBookmarks(e.bookmarks)
-        }
-        case ExcelMarketListUpdate(values) => {
-          cacheMap(ExcelDataSets) = values
-        }
-        case MarketDataSnapshotSet(snapshots) => {
-          cacheMap(Snapshots) = snapshots
-        }
-        case PricingGroupMarketDataUpdate(pg, version) => {
-          cacheMap(PricingGroupLatestMarketDataVersion) =
-                  cacheMap(PricingGroupLatestMarketDataVersion) + (pg -> version)
-        }
-        case ExcelMarketDataUpdate(excel, version) => {
-          cacheMap(ExcelLatestMarketDataVersion) =
-                  cacheMap(ExcelLatestMarketDataVersion) + (excel -> version)
-        }
-        case DeskClosed(desk, timestamp) => {
-          if(cache.desks.contains(desk)) {
-            val old: Map[Desk, Map[Day, List[TradeTimestamp]]] = cacheMap(DeskCloses)
-            val oldCloses: Map[Day, List[TradeTimestamp]] = old.getOrElse(desk, Map())
-            val newCloses: Map[Day, List[TradeTimestamp]] = oldCloses + (timestamp.closeDay -> (timestamp :: oldCloses.getOrElse(timestamp.closeDay, Nil)))
-            val newMap = old + (desk -> newCloses)
-            cacheMap(DeskCloses) = newMap
-            val text = "Imported book close for " + desk + " (" + timestamp.timestamp.toStringMinutes + ")"
-            val notification =  Notification(text, StarlingIcons.icon("/icons/16x16_book.png"), NotificationType.Message, {})
-            sendNotification(notification)
-          }
-        }
-        case DeskCloseFailed(desk, timestamp, error) => {
-          if(cache.desks.contains(desk)) {
-            val old: Map[Desk, Map[Day, List[TradeTimestamp]]] = cacheMap(DeskCloses)
-            val oldCloses: Map[Day, List[TradeTimestamp]] = old.getOrElse(desk, Map())
-            val newCloses: Map[Day, List[TradeTimestamp]] = oldCloses + (timestamp.closeDay -> (timestamp :: oldCloses.getOrElse(timestamp.closeDay, Nil)))
-            val newMap = old + (desk -> newCloses)
-            cacheMap(DeskCloses) = newMap
-            val text = "Import failed for " + desk + " (" + timestamp.timestamp.toStringMinutes + ")"
-            val notification = Notification(text, StarlingIcons.icon("/icons/16x16_error.png"), NotificationType.Message, {})
-            sendNotification(notification)
-          }
-        }
-        case IntradayUpdated(group, user, timestamp) => {
-          cacheMap(IntradayLatest) = cacheMap(IntradayLatest) + (group -> (user, timestamp))
-        }
-        case ExcelObservationDay(name, day) => {
-          val current = cacheMap(ObservationDaysForExcel)
-          cacheMap(ObservationDaysForExcel) = {
-            current.updated(name, current.getOrElse(name, Set()) + day)
-          }
-        }
-        case PricingGroupObservationDay(pricingGroup, day) => {
-          val current = cacheMap(ObservationDaysForPricingGroup)
-          cacheMap(ObservationDaysForPricingGroup) = {
-            current.updated(pricingGroup, current.getOrElse(pricingGroup, Set()) + day)
-          }
-        }
-        case UserLoggedIn(user) => {
-          val current = cacheMap(AllUserNames)
-          if (!current.exists(_ == user.username)) {
-            cacheMap(AllUserNames) = user.username :: current
-          }
+          val deskWithTime = initial._1.flatMap(d => context.localCache.latestTimestamp(d).map(ts => (d, ts)))
+          val intradayWithTime = initial._2.map(groups => (groups, context.localCache.latestTimestamp(groups)))
+
+          TradeSelectionPage(TradePageParameters(
+            deskWithTime, intradayWithTime,
+            TradeExpiryDay(Day.today())), PivotPageState(false, PivotFieldParams(true, None)))
         }
       }
+    }
 
-      try {
-        cacheMap(AllUserNames) = starlingServer.allUserNames
-        cacheMap(UserPivotLayouts) = starlingServer.extraLayouts
-        cacheMap(PricingGroups) = starlingServer.pricingGroups
-        cacheMap(ExcelDataSets) = starlingServer.excelDataSets
-        cacheMap(Snapshots) = starlingServer.snapshots
-        val (observationDaysForPricingGroup, observationDaysForExcel) = starlingServer.observationDays
-        cacheMap(ObservationDaysForPricingGroup) = observationDaysForPricingGroup
-        cacheMap(ObservationDaysForExcel) = observationDaysForExcel
-        cacheMap(ExcelLatestMarketDataVersion) = starlingServer.excelLatestMarketDataVersions
-        cacheMap(PricingGroupLatestMarketDataVersion) = starlingServer.pricingGroupLatestMarketDataVersions
-        cacheMap(LocalCacheKeys.ReportOptionsAvailable) = starlingServer.reportOptionsAvailable
-        cacheMap(AllNotifications) = List()
-        cacheMap(UserNotifications) = List()
-        cacheMap(LocalCacheKeys.Version) = starlingServer.version
-        cacheMap(DeskCloses) = starlingServer.deskCloses
-        cacheMap(IntradayLatest) = starlingServer.intradayLatest
-        cacheMap(TradersBookLookup) = starlingServer.traders
-        cacheMap(CurrentUser) = starlingServer.whoAmI
-        cacheMap(UKBusinessCalendar) = starlingServer.ukBusinessCalendar
-        cacheMap(Desks) = starlingServer.desks
-        cacheMap(GroupToDesksMap) = starlingServer.groupToDesksMap
-        cacheMap(IsStarlingDeveloper) = starlingServer.isStarlingDeveloper
-        cacheMap(EnvironmentRules) = starlingServer.environmentRules
-        cacheMap(CurveTypes) = starlingServer.curveTypes
-        cacheMap(Bookmarks) = toBookmarks(starlingServer.bookmarks)
-
-        GuiUtils.setLookAndFeel
-      } catch {
-        case e : Throwable =>
-          e.printStackTrace()
-          throw e
+    def marketDataPage = new PageFactory() {
+      def create(serverContext: ServerContext) = {
+        MarketDataPage.pageFactory(context, StandardMarketDataPageIdentifier(defaultMarketDataIdentifier), None, None)(serverContext)
       }
+    }
 
-      fc
-    })    
+
+    def curvePage = {
+      new PageFactory {
+        def create(serverContext: ServerContext) = {
+          val curveLabel = CurveLabel(CurveTypeLabel("Price"), defaultMarketDataIdentifier, EnvironmentSpecificationLabel(
+            context.localCache.populatedDays(defaultMarketDataIdentifier.selection).lastOption.getOrElse(Day.today()),
+            context.localCache.environmentRulesForPricingGroup(defaultMarketDataIdentifier.selection.pricingGroup).head
+          ))
+
+          val initialState = PivotFieldsState(
+            dataFields = List(Field("Price"), Field("Input")),
+            columnFields = List(Field("Observation Time"), Field("Market")),
+            rowFields = List(Field("Period"))
+          )
+
+          new CurvePage(curveLabel, PivotPageState.default(initialState))
+        }
+      }
+    }
+
+    def defaultMarketDataIdentifier: MarketDataIdentifier = {
+      val initialSelection = context.getSetting(StandardUserSettingKeys.InitialMarketDataSelection,
+        MarketDataSelection(context.localCache.pricingGroups(None).headOption))
+      val latestMarketDataVersion = context.localCache.latestMarketDataVersion(initialSelection)
+
+      MarketDataIdentifier(initialSelection, latestMarketDataVersion)
+    }
+
+    val tradesButton = new PageButton(
+      "Trades",
+      tradePage,
+      StarlingIcons.im("/icons/32x32_trades.png"),
+      Some( KeyStroke.getKeyStroke(KeyEvent.VK_T, 0) )
+    )
+
+    val refDataButton = new PageButton(
+      "Reference Data",
+      new PagePageFactory(ReferenceDataIndexPage),
+      StarlingIcons.im("/icons/32x32_ref_data.png"),
+      Some( KeyStroke.getKeyStroke(KeyEvent.VK_R, 0) )
+    )
+
+    val marketDataButton = new PageButton(
+      "Market Data",
+      marketDataPage,
+      StarlingIcons.im("/icons/32x32_market_data.png"),
+      Some( KeyStroke.getKeyStroke(KeyEvent.VK_M, 0) )
+    )
+
+    val curveViewerButton = new PageButton(
+      "Curve Viewer",
+      curvePage,
+      StarlingIcons.im("/icons/32x32_curve_viewer.png"),
+      Some( KeyStroke.getKeyStroke(KeyEvent.VK_C, 0) )
+    )
+
+    tradesButton :: refDataButton :: marketDataButton :: curveViewerButton :: Nil
   }
 }
 
-trait ContainerMethods {
-  def createNewFrame(fromFrame: Option[StarlingBrowserFrame])
-  def closeFrame(frame: StarlingBrowserFrame)
-  def closeAllFrames(fromFrame: StarlingBrowserFrame)
-  def updateNotifications
-}
 
-class StarlingBrowserFrameContainer(starlingServer: StarlingServer, lCache: LocalCache, remotePublisher: Publisher,
-                                    homePage: Page, userSettings: UserSettings, frameTitle: String, extraInfo:Option[String]) extends ContainerMethods {
-  private val pageBuilder = new PageBuilder(new PageBuildingContext(starlingServer))
-  private val frames = new ListBuffer[StarlingBrowserFrame]
+object StarlingSettings {
 
-  def createNewFrame(fromFrame: Option[StarlingBrowserFrame]) = {
-    val newFrame = new StarlingBrowserFrame(homePage, pageBuilder, lCache, userSettings, remotePublisher, this, extraInfo)
-    frames += newFrame
-    newFrame.title = frameTitle
-    fromFrame match {
-      case None => {
-        // Load the user settings.
-        if (userSettings.settingExists(MainWindowBounds)) {
-          // Need to check if the screen is on the screen.
-          val frameBounds = userSettings.getSetting(MainWindowBounds)
-          if (GuiUtils.onScreen(frameBounds)) {
-            newFrame.peer.setBounds(frameBounds)
-          } else {
-            newFrame.pack
-            newFrame.centerOnScreen
+  def create(context:PageContext) = {
+
+    val currentSettings = context.getSetting(ExtraFormattingInfo, PivotFormatter.DefaultExtraFormatInfo)
+    val dp = currentSettings.decimalPlaces
+    def saveSettings() {
+      context.putSetting(ExtraFormattingInfo, ExtraFormatInfo(decimalPlacesPanel.decimalPlaces, dateRangeFormatPanel.dateRangeFormat))
+    }
+    lazy val decimalPlacesPanel = new MigPanel("insets n n n 0", "[" + StandardLeftIndent + "][p]") {
+      def createSpinner(initialValue:Int) = {
+        val maxDP = 10
+        val spinnerModel = new SpinnerNumberModel(initialValue, 0, maxDP, 1) {
+          addChangeListener(new ChangeListener {
+            def stateChanged(e:ChangeEvent) {
+              saveSettings()
+            }
+          })
+        }
+        new JSpinner(spinnerModel) {
+          def format = {
+            val num = getValue.asInstanceOf[Int]
+            if (num > 0) {
+              "#,##0." + List.fill(num)("0").mkString
+            } else {
+              "#,##0"
+            }
           }
+        }
+      }
+
+      def numFromText(t:String) = {
+        val lastIndex = t.lastIndexOf(".")
+        if (lastIndex == -1) {
+          0
         } else {
-          newFrame.pack
-          newFrame.centerOnScreen
-        }
-      }
-      case Some(fFrame) => {
-        // Display the new frame slightly below the other frame, with the same size.
-        newFrame.peer.setBounds(fFrame.bounds.x + 20, fFrame.bounds.y + 20, fFrame.bounds.width, fFrame.bounds.height)
-      }
-    }
-    newFrame.visible = true
-  }
-
-  private def saveUserSettings(frame: Frame) {
-    try {
-      userSettings.putSetting(MainWindowBounds, frame.bounds)
-      for (f <- frames) f.visible = false
-      starlingServer.saveSettings(userSettings)
-    } catch {
-      case e => println("Exception whilst saving user userSettings\n" + e)
-    }
-  }
-
-  def closeFrame(frame: StarlingBrowserFrame) = {
-    if ((frames.size == 1) && (Launcher.numberOfClientsLaunched <= 1)) {
-      // This is the last frame so ensure user userSettings are saved.
-      closeAllFrames(frame)
-    } else {
-      // There are other frames left so just dispose of this frame.
-      Launcher.numberOfClientsLaunched -= 1
-      frames -= frame
-      frame.visible = false
-      frame.dispose
-    }
-  }
-
-  def closeAllFrames(fromFrame: StarlingBrowserFrame) = {
-    println("Shutting down")
-    saveUserSettings(fromFrame)
-    System.exit(0)
-  }
-
-  def updateNotifications = {
-    frames.foreach(_.updateNotifications)
-  }
-
-  createNewFrame(None)
-}
-
-class StarlingBrowserFrame(homePage: Page, pageBuilder: PageBuilder, lCache: LocalCache, userSettings:UserSettings,
-                           remotePublisher: Publisher, containerMethods: ContainerMethods, extraInfo:Option[String])
-        extends Frame with WindowMethods {
-  private val exitAction = Action("Exit") {containerMethods.closeAllFrames(this)}
-  peer.getRootPane.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke(KeyEvent.VK_Q, InputEvent.CTRL_DOWN_MASK), "exitAction")
-  peer.getRootPane.getActionMap.put("exitAction", exitAction.peer)
-
-  private val newFrameAction = Action("New Frame") {containerMethods.createNewFrame(Some(this))}
-  peer.getRootPane.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke(KeyEvent.VK_N, InputEvent.CTRL_DOWN_MASK), "newFrameAction")
-  peer.getRootPane.getActionMap.put("newFrameAction", newFrameAction.peer)
-
-  private val showMessagesAction = Action("Show Messages") {
-    notificationPanel.visible = !notificationPanel.visible
-  }
-  peer.getRootPane.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke(KeyEvent.VK_M, InputEvent.CTRL_DOWN_MASK), "showMessagesAction")
-  peer.getRootPane.getActionMap.put("showMessagesAction", showMessagesAction.peer)
-
-  private val fakeMessagesAction = Action("Fake Message") {
-    val text = "This is a notification " + new java.util.Random().nextInt
-    val notification =  Notification(text, StarlingIcons.icon("/icons/16x16_book.png"), NotificationType.Action, {println(text)})
-
-    lCache.localCache(AllNotifications) = notification :: lCache.localCache(AllNotifications)
-    lCache.localCache(UserNotifications) = notification :: lCache.localCache(UserNotifications)
-    containerMethods.updateNotifications
-  }
-  peer.getRootPane.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke(KeyEvent.VK_M, InputEvent.CTRL_DOWN_MASK | InputEvent.SHIFT_DOWN_MASK), "fakeMessagesAction")
-  peer.getRootPane.getActionMap.put("fakeMessagesAction", fakeMessagesAction.peer)
-
-  private val closeFrameAction = Action("Close Window") {containerMethods.closeFrame(this)}
-//  peer.getRootPane.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke(KeyEvent.VK_W, InputEvent.CTRL_DOWN_MASK), "closeFrameAction")
-  peer.getRootPane.getRootPane.getActionMap.put("closeFrameAction", closeFrameAction.peer)
-
-  private val nineteenInchMode = Action("19 Inch Mode") {size = new Dimension(1280 - 60,1024 - 60)}
-  peer.getRootPane.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke(KeyEvent.VK_N, InputEvent.CTRL_DOWN_MASK | InputEvent.SHIFT_DOWN_MASK), "19InchMode")
-  peer.getRootPane.getActionMap.put("19InchMode", nineteenInchMode.peer)
-
-  def updateNotifications = notificationPanel.updateLayout
-  
-  reactions += {
-    case WindowClosing(_) => containerMethods.closeFrame(this)
-    case scala.swing.event.UIElementResized(_) => {updateNotifications}
-  }
-  listenTo(this)
-  private val mainIcon = StarlingIcons.icon("/icons/32x32/status/weather-clear.png").getImage
-  private val busyIcon = StarlingIcons.icon("/icons/32x32/status/weather-few-clouds.png").getImage
-  iconImage = mainIcon
-
-  private val initialStarlingBrowser = new StarlingBrowserTabbedPane(homePage, pageBuilder, lCache, userSettings,
-    remotePublisher, this, extraInfo, containerMethods, this)
-
-  private val notificationPanel = new NotificationPanel(size.width, lCache, containerMethods)
-  private val mainPanel = new MigPanel("insets 0, hidemode 3", "[p]", "[p]0[p]") {
-    //    background = new Color(91,139,216)
-    //    background = Color.WHITE
-    def setNewComponent(comp:Component) {
-      removeAll
-      add(comp, "push, grow, wrap")
-      add(notificationPanel, "growx")
-      revalidate
-      repaint
-    }
-  }
-  reactions += {
-    case MouseClicked(`initialStarlingBrowser`, _, _, 2, _) => {
-      // If the user double clicks to the right of the tab, create a new tab.
-      initialStarlingBrowser.createStarlingBrowser()
-    }
-  }
-  listenTo(initialStarlingBrowser.mouse.clicks)
-
-  private val tabbedPaneBuffer = new ListBuffer[StarlingBrowserTabbedPane]
-  tabbedPaneBuffer += initialStarlingBrowser
-  regenerateFromBuffer(initialStarlingBrowser.pages(0).content)
-
-  def splitVertically(eventFrom: StarlingBrowserTabbedPane) = {
-    val starlingBrowserTabbedPane = new StarlingBrowserTabbedPane(homePage, pageBuilder, lCache, userSettings,
-      remotePublisher, this, extraInfo, containerMethods, this)
-    reactions += {
-      case MouseClicked(`starlingBrowserTabbedPane`, _, _, 2, _) => {
-        // If the user double clicks to the right of the tab, create a new tab.
-        starlingBrowserTabbedPane.createStarlingBrowser()
-      }
-    }
-    listenTo(starlingBrowserTabbedPane.mouse.clicks)
-    val indexToAdd = tabbedPaneBuffer.indexOf(eventFrom) + 1
-    tabbedPaneBuffer.insert(indexToAdd, starlingBrowserTabbedPane)
-    regenerateFromBuffer(starlingBrowserTabbedPane.pages(0).content)
-  }
-
-  def setBusy(busy: Boolean) = {
-    if (busy) {
-      iconImage = busyIcon
-    } else {
-      // Check to see if any of the other tabs are busy before saying we are not busy any more.
-      if (tabbedPaneBuffer.flatMap(_.pages.reverse.tail.filter(_.content.asInstanceOf[SXLayerScala[Component]].getScalaComponent.asInstanceOf[StarlingBrowser].busy)).isEmpty) {
-        iconImage = mainIcon
-      }
-    }
-  }
-
-  def canClose = ((for (starlingTabbedPane <- tabbedPaneBuffer) yield starlingTabbedPane.pages.length).sum > 2)
-
-  def tabClosed() {
-    val starlingTabbedPanesToRemove = tabbedPaneBuffer.filter(_.pages.length == 1)
-    if (starlingTabbedPanesToRemove.size > 0) {
-      tabbedPaneBuffer --= starlingTabbedPanesToRemove
-      regenerateFromBuffer()
-    }
-  }
-
-  private def regenerateFromBuffer(focusComponent: Component = tabbedPaneBuffer.last.selection.page.content) {
-    // TODO [16 Apr 2010] ensure the correct size is used for the components in the split panes.
-    val componentToAdd = tabbedPaneBuffer.reduceRight[Component](new SplitPane(Orientation.Vertical, _, _) {
-      border = EmptyBorder
-    })
-    mainPanel.setNewComponent(componentToAdd)
-  }
-
-  def setDefaultButton(button: Option[Button]) {
-    defaultButton = button
-  }
-
-  def getDefaultButton = defaultButton
-
-  contents = mainPanel
-}
-
-trait WindowMethods {
-  def setBusy(busy: Boolean)
-  def splitVertically(eventFrom: StarlingBrowserTabbedPane)
-  def canClose:Boolean
-  def tabClosed()
-  def setDefaultButton(button:Option[Button])
-  def getDefaultButton:Option[Button]
-}
-
-class StarlingBrowserTabbedPane(homePage: Page, pageBuilder: PageBuilder, lCache: LocalCache, userSettings:UserSettings,
-                                remotePublisher: Publisher, windowMethods: WindowMethods, extraInfo:Option[String],
-                                containerMethods:ContainerMethods, parentFrame:StarlingBrowserFrame) extends TabbedPane {
-  override lazy val peer = new JTabbedPane with SuperMixin {
-    override def setSelectedIndex(index:Int) {
-      if (selection.index != -1) {
-        selection.page.content match {
-          case c:SXLayerScala[_] => c.asInstanceOf[SXLayerScala[StarlingBrowser]].getScalaComponent.unselected()
-          case _ =>
+          t.length - 1 - lastIndex
         }
       }
 
-      super.setSelectedIndex(index)
+      val defaultSpinner = createSpinner(numFromText(dp.defaultFormat))
+      val priceSpinner = createSpinner(numFromText(dp.priceFormat))
+      val currencySpinner = createSpinner(numFromText(dp.currencyFormat))
+      val lotsSpinner = createSpinner(numFromText(dp.lotsFormat))
+      val percentSpinner = createSpinner(numFromText(dp.percentageFormat))
 
-      // Tell the current page it has been selected.
-      selection.page.content match {
-        case c:SXLayerScala[_] => c.asInstanceOf[SXLayerScala[StarlingBrowser]].getScalaComponent.selected()
-        case _ =>
+      add(LabelWithSeparator("Decimal Places"), "spanx, growx, wrap")
+      add(new Label("Default:"), "skip 1")
+      add(defaultSpinner, "wrap")
+      add(new Label("Price:"), "skip 1")
+      add(priceSpinner, "wrap")
+      add(new Label("Currency:"), "skip 1")
+      add(currencySpinner, "wrap")
+      add(new Label("Lots:"), "skip 1")
+      add(lotsSpinner, "wrap")
+      add(new Label("Percent:"), "skip 1")
+      add(percentSpinner)
+
+      def decimalPlaces = DecimalPlaces(defaultSpinner.format, lotsSpinner.format, priceSpinner.format, currencySpinner.format, percentSpinner.format)
+      def decimalPlaces_=(dp:DecimalPlaces) {
+        defaultSpinner.setValue(numFromText(dp.defaultFormat))
+        priceSpinner.setValue(numFromText(dp.priceFormat))
+        currencySpinner.setValue(numFromText(dp.currencyFormat))
+        lotsSpinner.setValue(numFromText(dp.lotsFormat))
+        percentSpinner.setValue(numFromText(dp.percentageFormat))
       }
     }
-  }
+    lazy val dateRangeFormatPanel = new MigPanel("insets n n n 0", "[" + StandardLeftIndent + "][p]") {
+      import MonthFormat._
+      val standardExtraInfo = ExtraFormatInfo(dateRangeFormat = DateRangeFormat(Standard))
+      val standardCapitalisedExtraInfo = ExtraFormatInfo(dateRangeFormat = DateRangeFormat(StandardCapitalised))
+      val shortExtraInfo = ExtraFormatInfo(dateRangeFormat = DateRangeFormat(Short))
+      val shortCapitalisedExtraInfo = ExtraFormatInfo(dateRangeFormat = DateRangeFormat(ShortCapitalised))
+      val shortDashExtraInfo = ExtraFormatInfo(dateRangeFormat = DateRangeFormat(ShortDash))
+      val shortDashCapitalisedExtraInfo = ExtraFormatInfo(dateRangeFormat = DateRangeFormat(ShortDashCapitalised))
+      val numericExtraInfo = ExtraFormatInfo(dateRangeFormat = DateRangeFormat(Numeric))
+      val reutersExtraInfo = ExtraFormatInfo(dateRangeFormat = DateRangeFormat(Reuters))
 
-  focusable = false
-  peer.setUI(new StarlingTabbedPaneUI)
-  peer.addMouseListener(new MouseAdapter {
-    override def mousePressed(e: MouseEvent) {
-      if (e.isPopupTrigger) {
-        tabPopupMenu.show(e.getComponent, e.getX, e.getY)
-      } else {
-        selection.page.content.requestFocusInWindow()
+      val today = Day.today()
+      val sampleMonths = List(today.asMonthObject, today.addMonths(1).asMonthObject)
+
+      val standardSampleText = sampleMonths.map(m => PeriodPivotFormatter.format(m, standardExtraInfo).text).mkString("(", ", ", " ...)")
+      val standardCapitalisedSampleText = sampleMonths.map(m => PeriodPivotFormatter.format(m, standardCapitalisedExtraInfo).text).mkString("(", ", ", " ...)")
+      val shortSampleText = sampleMonths.map(m => PeriodPivotFormatter.format(m, shortExtraInfo).text).mkString("(", ", ", " ...)")
+      val shortCapitalisedSampleText = sampleMonths.map(m => PeriodPivotFormatter.format(m, shortCapitalisedExtraInfo).text).mkString("(", ", ", " ...)")
+      val shortDashSampleText = sampleMonths.map(m => PeriodPivotFormatter.format(m, shortDashExtraInfo).text).mkString("(", ", ", " ...)")
+      val shortDashCapitalisedSampleText = sampleMonths.map(m => PeriodPivotFormatter.format(m, shortDashCapitalisedExtraInfo).text).mkString("(", ", ", " ...)")
+      val numericSampleText = sampleMonths.map(m => PeriodPivotFormatter.format(m, numericExtraInfo).text).mkString("(", ", ", " ...)")
+      val reutersSampleText = sampleMonths.map(m => PeriodPivotFormatter.format(m, reutersExtraInfo).text).mkString("(", ", ", " ...)")
+
+      val standardLabel = new Label(standardSampleText)
+      val standardCapitalisedLabel = new Label(standardCapitalisedSampleText)
+      val shortLabel = new Label(shortSampleText)
+      val shortCapitalisedLabel = new Label(shortCapitalisedSampleText)
+      val shortDashLabel = new Label(shortDashSampleText)
+      val shortDashCapitalisedLabel = new Label(shortDashCapitalisedSampleText)
+      val numericLabel = new Label(numericSampleText)
+      val reutersLabel = new Label(reutersSampleText)
+
+      def createButton(name:String) = new RadioButton(name) {reactions += {case ButtonClicked(_) => saveSettings()}}
+
+      val standardButton = createButton("Standard")
+      val standardCapitalisedButton = createButton("Standard Capitalised")
+      val shortButton = createButton("Short")
+      val shortCapitalisedButton = createButton("Short Capitalised")
+      val shortDashButton = createButton("Short Dash")
+      val shortDashCapitalisedButton = createButton("Short Dash Capitalised")
+      val numericButton = createButton("Numeric")
+      val reutersButton = createButton("Reuters")
+
+      val buttonToType = Map[ScalaAbstractButton,DateRangeFormat](
+        standardButton -> DateRangeFormat(Standard),
+        standardCapitalisedButton -> DateRangeFormat(StandardCapitalised),
+        shortButton -> DateRangeFormat(Short),
+        shortCapitalisedButton -> DateRangeFormat(ShortCapitalised),
+        shortDashButton -> DateRangeFormat(ShortDash),
+        shortDashCapitalisedButton -> DateRangeFormat(ShortDashCapitalised),
+        numericButton -> DateRangeFormat(Numeric),
+        reutersButton -> DateRangeFormat(Reuters))
+      val typeToButton = buttonToType.map{_.swap}
+
+      val group = new ScalaButtonGroup(buttonToType.keySet.toArray : _*)
+
+      add(LabelWithSeparator("Month Format"), "spanx, growx, wrap")
+      add(standardButton, "skip1")
+      add(standardLabel, "wrap")
+      add(shortButton, "skip 1")
+      add(shortLabel, "wrap")
+      add(shortDashButton, "skip 1")
+      add(shortDashLabel, "wrap")
+      add(standardCapitalisedButton, "skip1")
+      add(standardCapitalisedLabel, "wrap")
+      add(shortCapitalisedButton, "skip 1")
+      add(shortCapitalisedLabel, "wrap")
+      add(shortDashCapitalisedButton, "skip 1")
+      add(shortDashCapitalisedLabel, "wrap")
+      add(numericButton, "skip 1")
+      add(numericLabel, "wrap")
+      add(reutersButton, "skip 1")
+      add(reutersLabel)
+
+      def dateRangeFormat = {
+        buttonToType(group.selected.get)
       }
-    }
-
-    override def mouseReleased(e: MouseEvent) {
-      if (e.isPopupTrigger) {
-        tabPopupMenu.show(e.getComponent, e.getX, e.getY)
+      def dateRangeFormat_=(drf:DateRangeFormat) {
+        group.select(typeToButton(drf))
       }
+
+      dateRangeFormat = currentSettings.dateRangeFormat
     }
-  })
-//  background = new Color(171, 206, 247) // Set this for deselected tabs.
-  background = new Color(164,201,246) // Set this for deselected tabs.
 
-  private val newTabAction = Action("New Tab") {createStarlingBrowser()}
-  peer.getInputMap(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT).put(KeyStroke.getKeyStroke(KeyEvent.VK_T, InputEvent.CTRL_DOWN_MASK), "newTabAction")
-  peer.getActionMap.put("newTabAction", newTabAction.peer)
+    new MigPanel("insets 0") {
+      add(decimalPlacesPanel, "gapright unrel, ay top")
+      add(dateRangeFormatPanel, "ay top")
+      reactions += {
+        case UserSettingUpdated(ExtraFormattingInfo) => {
+          val extraFormatInfo = context.getSetting(ExtraFormattingInfo)
+          decimalPlacesPanel.decimalPlaces = extraFormatInfo.decimalPlaces
+          dateRangeFormatPanel.dateRangeFormat = extraFormatInfo.dateRangeFormat
+        }
+      }
+      listenTo(context.remotePublisher)
+    } :: Nil
 
-  peer.getInputMap(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT).put(KeyStroke.getKeyStroke(KeyEvent.VK_F1, 0), "helpAction")
-  peer.getActionMap.put("helpAction", Action("helpAction"){createStarlingBrowser(true, Left(HelpPage))}.peer)
 
-  private val nextTabAction = Action("Next Tab") {
-    val nextIndex = selection.index + 1
-    if (nextIndex < pages.length - 1) {
-      selection.index = nextIndex
-    } else {
-      selection.index = 0
-    }
+
   }
-  private val previousTabAction = Action("Previous Tab") {
-    val previousIndex = selection.index - 1
-    if (previousIndex < 0) {
-      selection.index = pages.length - 2
-    } else {
-      selection.index = previousIndex
-    }
-  }
-  peer.getInputMap(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT).put(KeyStroke.getKeyStroke(KeyEvent.VK_PAGE_UP, InputEvent.CTRL_DOWN_MASK), "previousTabAction")
-  peer.getActionMap.put("previousTabAction", previousTabAction.peer)
-  peer.getInputMap(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT).put(KeyStroke.getKeyStroke(KeyEvent.VK_PAGE_DOWN, InputEvent.CTRL_DOWN_MASK), "nextTabAction")
-  peer.getActionMap.put("nextTabAction", nextTabAction.peer)
-
-  private val closeTabAction = Action("Close Tab") {
-    if (windowMethods.canClose) {
-      val selectionToRemove = selection.index
-      pages.remove(selectionToRemove)
-      val newSelection = if (selectionToRemove == pages.length - 1) selectionToRemove - 1 else selectionToRemove
-      selection.index = newSelection
-      windowMethods.tabClosed()
-      val browser = pages(newSelection).self.asInstanceOf[SXLayerScala[StarlingBrowser]].getScalaComponent
-      browser.selected()
-    } else {
-      containerMethods.closeFrame(parentFrame)
-    }
-  }
-  peer.getInputMap(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT).put(KeyStroke.getKeyStroke(KeyEvent.VK_F4, InputEvent.CTRL_DOWN_MASK), "closeTabAction")
-  peer.getInputMap(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT).put(KeyStroke.getKeyStroke(KeyEvent.VK_W, InputEvent.CTRL_DOWN_MASK), "closeTabAction")
-  peer.getActionMap.put("closeTabAction", closeTabAction.peer)
-
-  private val splitVerticallyAction = new Action("Split Vertically") {
-    icon = StarlingIcons.icon("/icons/splitVertically.png")
-    def apply() {
-      windowMethods.splitVertically(StarlingBrowserTabbedPane.this)
-    }
-  }
-
-  private val newTabItem = new MenuItem(newTabAction)
-  private val closeTabItem = new MenuItem(closeTabAction)
-  private val splitVerticallyItem = new MenuItem(splitVerticallyAction)
-  private val tabPopupMenu = new JPopupMenu
-  tabPopupMenu.setBorder(LineBorder(GuiUtils.BorderColour))
-  tabPopupMenu.add(newTabItem.peer)
-  tabPopupMenu.addSeparator()
-  tabPopupMenu.add(closeTabItem.peer)
-  tabPopupMenu.addSeparator()
-  tabPopupMenu.add(splitVerticallyItem.peer)
-
-  def createStarlingBrowser(gotoTab: Boolean = true, pageOrBuildPage: Either[Page, (StarlingServer => Page, PartialFunction[Throwable, Unit])] = Left(homePage)): StarlingBrowser = {
-    val (tabText, icon, addressText) = pageOrBuildPage match {
-      case Left(page) => (page.shortText, page.icon, page.text)
-      case _ => (" ", StarlingIcons.im("/icons/10x10_blank.png"), " ")
-    }
-    val tabComponent = new TabComponent(windowMethods, this, tabText, icon)
-    val starlingBrowser = new StarlingBrowser(pageBuilder, lCache, userSettings, remotePublisher, homePage, addressText,
-      windowMethods, tabComponent, createStarlingBrowser, extraInfo)
-    pages.insert(pages.length - 1, new scala.swing.TabbedPane.Page(tabText, starlingBrowser.starlingBrowserLayer, null))
-    val tabIndex = if (pages.length == 0) 0 else pages.length - 2
-    if (gotoTab) {
-      selection.index = tabIndex
-    }
-    peer.setTabComponentAt(tabIndex, tabComponent.peer)
-    onEDT(starlingBrowser.goTo(pageOrBuildPage, true))
-    starlingBrowser
-  }
-
-  // We want an new tab button.
-  pages += new scala.swing.TabbedPane.Page("", new Label("Blank Tab"), "Open a new tab")
-  peer.setTabComponentAt(0, TabComponent.createNewTabComponent(createStarlingBrowser()).peer)
-  peer.setEnabledAt(0, false)
-
-  // This is run for the side effects. That's a bit naughty!
-  createStarlingBrowser()
 }

@@ -3,12 +3,8 @@ package starling.bradyvarcalculator
 import starling.db._
 import starling.curves._
 import starling.marketdata._
-import starling.LIMServer
-import starling.rmi.StarlingServerImpl
-import starling.gui.api._
 import starling.daterange._
 import starling.reports.pivot.{CurveIdentifier, ReportContextBuilder}
-import starling.curves.EnvironmentRule
 
 import starling.utils.ImplicitConversions._
 
@@ -25,10 +21,12 @@ abstract class AbstractReportContext(
     if (curveIdentifier.valuationDayAndTime.day < curveIdentifier.tradesUpToDay) {
       throw new Exception("The valuation day can not be moved backwards")
     }
-    if (curveIdentifier.valuationDayAndTime.day > curveIdentifier.tradesUpToDay) {
+    if (curveIdentifier.valuationDayAndTime == baseEnvironment.marketDay) {
+      baseEnvironment
+    } else if (curveIdentifier.valuationDayAndTime > baseEnvironment.marketDay) {
       baseEnvironment.forwardState(curveIdentifier.valuationDayAndTime)
     } else {
-      baseEnvironment
+      throw new IllegalStateException("Can't move the valuation day back: " + (curveIdentifier.valuationDayAndTime, baseEnvironment.marketDay))
     }
   }
 

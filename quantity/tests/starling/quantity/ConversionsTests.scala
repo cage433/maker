@@ -14,7 +14,6 @@ class ConversionsTests extends TestNGSuite with ShouldMatchers {
       }
 
     inverseConversions.foreach{case(uom, expectedInverse, actualInverse) => {
-      println(uom + ": " + actualInverse)
       actualInverse should not be ===(Some(0.0))
       actualInverse should be === expectedInverse
     }}

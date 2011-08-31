@@ -9,9 +9,9 @@ import starling.varcalculator.ForwardPriceRiskFactor
 import org.testng.Assert
 import starling.utils.QuantityTestUtils._
 import starling.market.Market._
-import starling.market.{TestMarketSpec, CommodityMarket}
+import starling.market.{TestMarketTest, CommodityMarket}
 
-class FuturesPositionsTests extends TestMarketSpec {
+class FuturesPositionsTests extends TestMarketTest {
   private val prices:Map[CommodityMarket, Double] = Map(LME_LEAD -> 123.0, LME_ZINC -> 99.0, NYMEX_WTI -> 108.0,
     NYMEX_GASOLINE -> 88.0)
 

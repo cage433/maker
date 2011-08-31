@@ -1,10 +1,9 @@
 package starling.gui.pages
 
-import starling.pivot.view.swing.MigPanel
 import starling.gui._
 import api._
 import starling.pivot._
-import starling.gui.GuiUtils._
+import starling.browser.common.GuiUtils._
 import java.awt.Dimension
 import swing.event.{Event, ButtonClicked, SelectionChanged}
 import swing._
@@ -15,6 +14,42 @@ import starling.rmi.StarlingServer
 import starling.daterange.Day
 
 import starling.utils.ImplicitConversions._
+import starling.gui.StarlingLocalCache._
+import starling.browser.common.MigPanel
+import starling.browser._
+import starling.fc2.api.FC2Service
+import starling.utils.cache.ThreadSafeCachingProxy
+
+class FC2Context(val service:FC2Service) {
+  val cachingFC2Service:FC2Service = ThreadSafeCachingProxy.createProxy(service, classOf[FC2Service])
+}
+
+abstract class AbstractFC2PivotPage(pivotPageState:PivotPageState, edits:PivotEdits=PivotEdits.Null) extends
+  AbstractPivotPage(pivotPageState, edits) with FC2Page {
+}
+
+trait FC2Page extends Page {
+  def bundle = "StarlingServer"
+  type SC = FC2Context
+  def createServerContext(sc:ServerContext) = new FC2Context(sc.lookup(classOf[FC2Service]))
+}
+
+trait FC2SubmitRequest[R] extends SubmitRequest[R] {
+  def baseSubmit(serverContext:ServerContext) = {
+    submit(new FC2Context(serverContext.lookup(classOf[FC2Service])))
+  }
+  def submit(server:FC2Context):R
+}
+
+trait FC2Bookmark extends Bookmark {
+  def createFC2Page(day:Option[Day], fc2Context:FC2Context, context:PageContext):Page
+  def createPage(day:Option[BrowserDay], serverContext:ServerContext, context:PageContext):Page = {
+    val realDay = day.map( d => Day(d.year, d.month, d.dayOfMonth))
+    createFC2Page(realDay, new FC2Context(serverContext.lookup(classOf[FC2Service])), context)
+  }
+}
+
+
 
 /**
  * For viewing (and uploading?) market data.
@@ -25,18 +60,26 @@ case class MarketDataPage(
         ) extends AbstractPivotPage(pageState.pivotPageState, pageState.edits) {
   def this(mdi:MarketDataIdentifier, pageState : MarketDataPageState) = this(StandardMarketDataPageIdentifier(mdi), pageState)
 
+
+  def bundle = "StarlingServer"
+
+  type SC = ServerContext
+
+  def createServerContext(sc: ServerContext) = sc
+
   def text = "Market Data Viewer"
-  override def layoutType = Some("MarketData")
   override def icon = StarlingIcons.im("/icons/16x16_market_data.png")
 
   def selfPage(pivotPageState: PivotPageState, edits:PivotEdits) = new MarketDataPage(marketDataIdentifier, MarketDataPageState(pivotPageState, pageState.marketDataType, edits))
 
-  def dataRequest(pageBuildingContext: PageBuildingContext) = {
-    pageBuildingContext.cachingStarlingServer.readAllMarketData(marketDataIdentifier, pageState.marketDataType, pageState.edits, pageState.pivotPageState.pivotFieldParams)
+  def dataRequest(serverContext:ServerContext) = {
+    val fc2Service = serverContext.lookup(classOf[FC2Service])
+    fc2Service.readAllMarketData(marketDataIdentifier, pageState.marketDataType, pageState.edits, pageState.pivotPageState.pivotFieldParams)
   }
 
-  override def save(starlingServer:StarlingServer, edits:PivotEdits) = {
-    starlingServer.saveMarketData(marketDataIdentifier, pageState.marketDataType, edits)
+  override def save(serverContext:ServerContext, edits:PivotEdits) = {
+    val fc2Service = serverContext.lookup(classOf[FC2Service])
+    fc2Service.saveMarketData(marketDataIdentifier, pageState.marketDataType, edits)
   }
 
   override def refreshFunctions = marketDataIdentifier match {
@@ -56,8 +99,9 @@ case class MarketDataPage(
 
   //private def copyVersion(version : Int) = copy(marketDataIdentifier = marketDataIdentifier.copyVersion(version))
 
-  override def subClassesPageData(pageBuildingContext:PageBuildingContext) = {
-    val avaliableMarketDataTypes = pageBuildingContext.cachingStarlingServer.marketDataTypeLabels(marketDataIdentifier)
+  override def subClassesPageData(serverContext:ServerContext) = {
+    val fc2Service = serverContext.lookup(classOf[FC2Service])
+    val avaliableMarketDataTypes = fc2Service.marketDataTypeLabels(marketDataIdentifier)
     val selected = pageState.marketDataType match {
       case Some(mdt) => Some(mdt)
       case None => avaliableMarketDataTypes.headOption
@@ -65,7 +109,7 @@ case class MarketDataPage(
     Some(MarketDataPagePageData(avaliableMarketDataTypes, selected))
   }
 
-  override def createComponent(pageContext: PageContext, data: PageData, bookmark:Bookmark, browserSize:Dimension) = {
+  override def createComponent(pageContext: PageContext, data: PageData, bookmark:Bookmark, browserSize:Dimension, previousPageData:Option[PageData]) = {
     val marketDataPagePageData = data match {
       case v:PivotTablePageData => v.subClassesPageData match {
         case x:Option[_] => x.get.asInstanceOf[MarketDataPagePageData]
@@ -79,7 +123,8 @@ case class MarketDataPage(
       pageState, marketDataPagePageData)
   }
 
-  override def bookmark(server:StarlingServer):Bookmark = {
+  override def bookmark(serverContext:ServerContext):Bookmark = {
+    val starlingServer = serverContext.lookup(classOf[StarlingServer])
     val singleObservationDay = pageState.pivotPageState.pivotFieldParams.pivotFieldState match {
       case None => None
       case Some(pfs) => {
@@ -96,7 +141,7 @@ case class MarketDataPage(
       marketDataIdentifier match {
         case x:StandardMarketDataPageIdentifier => MarketDataBookmark(marketDataIdentifier.selection, newPageState)
         case x:ReportMarketDataPageIdentifier if x.reportParameters.curveIdentifier.tradesUpToDay == singleObservationDay.get => {
-          ReportMarketDataBookmark(marketDataIdentifier.selection, newPageState, server.createUserReport(x.reportParameters))
+          ReportMarketDataBookmark(marketDataIdentifier.selection, newPageState, starlingServer.createUserReport(x.reportParameters))
         }
         case _ => PageBookmark(this)
       }
@@ -107,40 +152,39 @@ case class MarketDataPage(
 }
 
 case class ReportMarketDataBookmark(selection:MarketDataSelection, pageState:MarketDataPageState,
-                                    userReportData:UserReportData) extends Bookmark {
+                                    userReportData:UserReportData) extends StarlingBookmark {
   def daySensitive = true
-  def createPage(day:Option[Day], server:StarlingServer, context:PageContext) = {
+  def createStarlingPage(day:Option[Day], serverContext:StarlingServerContext, context:PageContext) = {
     val newPFS = pageState.pivotPageState.pivotFieldParams.pivotFieldState.map(pfs => {
       pfs.addFilter((Field("Observation Day"), Set(day.get)))
     })
     val newPivotPageState = pageState.pivotPageState.copyPivotFieldsState(newPFS)
-    val newSelection = ReportMarketDataPageIdentifier(server.createReportParameters(userReportData, day.get))
+    val newSelection = ReportMarketDataPageIdentifier(serverContext.server.createReportParameters(userReportData, day.get))
     MarketDataPage(newSelection, pageState.copy(pivotPageState = newPivotPageState))
   }
 }
 
-case class MarketDataBookmark(selection:MarketDataSelection, pageState:MarketDataPageState) extends Bookmark {
+case class MarketDataBookmark(selection:MarketDataSelection, pageState:MarketDataPageState) extends FC2Bookmark {
   def daySensitive = true
-  def createPage(day:Option[Day], server:StarlingServer, context:PageContext) = {
+  def createFC2Page(day:Option[Day], serverContext:FC2Context, context:PageContext) = {
     val newPFS = pageState.pivotPageState.pivotFieldParams.pivotFieldState.map(pfs => {
       pfs.addFilter((Field("Observation Day"), Set(day.get)))
     })
     val newPivotPageState = pageState.pivotPageState.copyPivotFieldsState(newPFS)
-    val newSelection = StandardMarketDataPageIdentifier(server.latestMarketDataIdentifier(selection))
+    val newSelection = StandardMarketDataPageIdentifier(serverContext.service.latestMarketDataIdentifier(selection))
     MarketDataPage(newSelection, pageState.copy(pivotPageState = newPivotPageState))
   }
 }
 
 object MarketDataPage {
   //Goes to the MarketDataPage and picks the default market data type (if not specified) and pivot field state
-  def goTo(
+  def pageFactory(
             pageContext:PageContext,
             marketDataIdentifier:MarketDataPageIdentifier,
             marketDataType:Option[MarketDataTypeLabel],
-            observationDays:Option[Set[Day]],
-            ctrlDown:Boolean=false) {
-    pageContext.createAndGoTo( (server) => {
-      val mdt = marketDataType.orElse(server.marketDataTypeLabels(marketDataIdentifier).headOption)
+            observationDays:Option[Set[Day]]): ServerContext=>Page = {
+    (serverContext) => {
+      val mdt = marketDataType.orElse(serverContext.lookup(classOf[FC2Service]).marketDataTypeLabels(marketDataIdentifier).headOption)
       val fs = pageContext.getSetting(
         StandardUserSettingKeys.UserMarketDataTypeLayout, Map[MarketDataTypeLabel, PivotFieldsState]()
       ).get(mdt)
@@ -154,7 +198,15 @@ object MarketDataPage {
         marketDataType = mdt,
         pivotPageState = PivotPageState(false, PivotFieldParams(true, fieldsState))
       ))
-    }, newTab = ctrlDown)
+    }
+  }
+  def goTo(
+            pageContext:PageContext,
+            marketDataIdentifier:MarketDataPageIdentifier,
+            marketDataType:Option[MarketDataTypeLabel],
+            observationDays:Option[Set[Day]],
+            modifiers:Modifiers=Modifiers.None) {
+    pageContext.createAndGoTo( (sc) => pageFactory(pageContext, marketDataIdentifier, marketDataType, observationDays)(sc), modifiers= modifiers)
   }
 }
 
@@ -363,14 +415,9 @@ class MarketDataPageComponent(
   }
 
   pageContext.remotePublisher.reactions += {
-    case MarketDataSnapshotSet(snapshots) => {
+    case mdss: MarketDataSnapshotSet => if (thisPage.marketDataIdentifier.selection == mdss.selection) {
       this.suppressing(snapshotsComboBox.selection) {
-        val itemSelected = snapshotsComboBox.selection.item
-        snapshotsComboBoxModel.removeAllElements()
-
-        {val newSnapshots = snapshots.getOrElse(thisPage.marketDataIdentifier.selection, List())
-          SnapshotComboValue(None) :: newSnapshots.map(ss=>SnapshotComboValue(Some(ss))).toList}.foreach(snapshotsComboBoxModel.addElement(_))
-        snapshotsComboBox.selection.item = itemSelected
+        snapshotsComboBoxModel.addElement(SnapshotComboValue(Some(mdss.newSnapshot)))
       }
     }
   }

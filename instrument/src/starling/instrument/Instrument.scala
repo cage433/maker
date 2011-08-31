@@ -1,7 +1,6 @@
 package starling.instrument
 
 
-import starling.quantity.{Quantity, UOM}
 import starling.quantity.UOM.{USD, BBL}
 import starling.richdb.RichInstrumentResultSetRow
 import starling.quantity.Quantity._
@@ -15,6 +14,7 @@ import starling.utils.ImplicitConversions._
 import starling.models.DefaultRiskParameters
 import starling.utils.CollectionUtils
 import starling.instrument.physical.PhysicalMetalAssignment
+import starling.quantity.{NamedQuantity, Quantity, UOM}
 
 trait AsUtpPortfolio {
   def asUtpPortfolio(tradeDay:Day): UTP_Portfolio
@@ -88,7 +88,27 @@ object InstrumentType {
 trait Instrument extends Ordered[Instrument] with Greeks with PnlExplanation {
 
   def assets(env:Environment):Assets
-  
+
+  // Return a tree structure describing how mtm was calculated
+  def explain(env: Environment, ccy: UOM): NamedQuantity = {
+    val explained = if (ccy == valuationCCY)
+      explanation(env)
+    else
+      explanation(env) * (if (ccy == valuationCCY) new Quantity(1.0) else env.withNaming().spotFXRate(ccy, valuationCCY).named("Spot FX"))
+
+    assert(explained.isAlmostEqual(mtm(env), 1e-6), "Explanation not the same as the mtm: " + (explained, mtm(env)))
+    explained
+  }
+
+  def explain(env: Environment): NamedQuantity = explain(env, USD)
+
+  /**
+   * Explains the valuation of this instrument.
+   *
+   * Not to be called directly, that's why it's protected, call 'explain' above.
+   */
+  protected def explanation(env: Environment): NamedQuantity
+
   /** the MTM value of the given instrument using the environment curve data
   */
   def mtm(env : Environment):Quantity = assets(env).mtm(env, valuationCCY)
@@ -379,6 +399,8 @@ trait Instrument extends Ordered[Instrument] with Greeks with PnlExplanation {
 
 
 case class CompositeInstrument(insts : Seq[Instrument]) extends Instrument {
+
+  def explanation(env: Environment) = Quantity.sumNamed(insts.map(_.explain(env)))
 
   def valuationCCY = {
     val ccys : Set[UOM] = Set.empty ++ insts.map(_.valuationCCY)
