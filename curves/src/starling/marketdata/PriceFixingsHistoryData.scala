@@ -9,6 +9,7 @@ import starling.pivot.MarketValue
 import starling.quantity.Quantity
 import starling.utils.ImplicitConversions._
 import starling.utils.conversions.Tuple2Ordering
+import starling.curves.MissingMarketDataException
 
 
 case class PriceFixingsHistoryData(fixings: SortedMap[(Level, StoredFixingPeriod), MarketValue]) extends MarketData {
@@ -16,7 +17,7 @@ case class PriceFixingsHistoryData(fixings: SortedMap[(Level, StoredFixingPeriod
     fixings.get((level, period)) match {
       case Some(v) => v
       case _ =>  {
-        throw new Exception("No fixing found for " + level + " " + period +
+        throw new MissingMarketDataException("No fixing found for " + level + " " + period +
           ", only have levels: " + fixings.keys.map(_._1) + ", months: " + fixings.keys.map(_._2))
       }
     }

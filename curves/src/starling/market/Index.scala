@@ -11,6 +11,7 @@ import starling.calendar.{HolidayTablesFactory, BusinessCalendars, BusinessCalen
 import starling.utils.ImplicitConversions._
 import starling.utils.Pattern.Extractor
 import starling.quantity._
+import java.lang.IllegalStateException
 
 case class UnknownIndexException(msg: String, eaiQuoteID: Option[Int] = None) extends Exception(msg)
 
@@ -126,9 +127,13 @@ trait SingleIndex extends IndexWithKnownPrice with FixingHistoryLookup with Inst
   def fixing(slice: MarketDataSlice, observationDay : Day, storedFixingPeriod: Option[StoredFixingPeriod]) = {
     require(storedFixingPeriod.isEmpty)
     val key = PriceFixingsHistoryDataKey(market)
-    slice.fixings(key, ObservationPoint(observationDay, observationTimeOfDay))
-      .fixingFor(level, storedFixingPeriodForDay(observationDay))
-      .toQuantity
+    val fixingHistory = slice.fixings(key, ObservationPoint(observationDay, observationTimeOfDay))
+    val fixing = try {
+      fixingHistory.fixingFor(level, storedFixingPeriodForDay(observationDay))
+    } catch {
+      case ex => throw new Exception("Index " + this + ", observation day " + observationDay + ", period " + storedFixingPeriod + ", " + ex.getMessage, ex)
+    }
+    fixing.toQuantity
   }
 
   def lotSize = market.lotSize
@@ -245,11 +250,12 @@ case class FuturesFrontPeriodIndex(
   override val market : FuturesMarket,
   rollBeforeDays : Int,
   promptness : Int,
-  override val precision: Option[Precision],
-  override val level: Level = Level.Close
+  override val precision: Option[Precision]
  ) extends SingleIndex {
   val name = marketName
 
+  val level = market.exchange.fixingLevel
+  
   def observedPeriod(observationDay : Day) : DateRange = {
     val frontMonth = market.frontPeriod(observationDay.addBusinessDays(market.businessCalendar, rollBeforeDays))
     val period = frontMonth match {
@@ -472,11 +478,8 @@ object FuturesFrontPeriodIndex {
     new FuturesFrontPeriodIndex(name, None, market, 0, 1, None)
   }
 
-  def apply(market: FuturesMarket, level: Level) = {
-    val name = "%s 1st %s" % (market.name, market.tenor.toString.toLowerCase)
-    new FuturesFrontPeriodIndex(name, None, market, 0, 1, None, level)
-  }
 }
+
 
 trait LmeIndex extends IndexWithKnownPrice{
   def proxyIndex : SingleIndex

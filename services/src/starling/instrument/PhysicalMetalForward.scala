@@ -139,7 +139,7 @@ object PhysicalMetalAssignmentForward extends Log {
             (inventory : EDMInventoryItem)
             (implicit uomIdToNameMap : Map[Int, String]) : PhysicalMetalAssignmentForward = {
     try {
-      val quotaMap = quotaNameToQuotaMap.withDefault(k => throw new Exception("Missing key '%s' for quota lookup".format(k)))
+      val quotaMap : Map[String, PhysicalTradeQuota] = quotaNameToQuotaMap.withDefault(k => throw new Exception("Missing key '%s' for quota lookup".format(k)))
 
       val purchaseQuota = quotaMap(inventory.purchaseAssignment.quotaName)
       val edmPurchasePricingSpec = purchaseQuota.detail.pricingSpec
@@ -186,7 +186,7 @@ object PhysicalMetalAssignmentForward extends Log {
       Right(forward.costsAndIncomeAssignmentValueBreakdown(env, snapshotID))
     }
     catch {
-      case ex => Left("Error valuing inventory  " + inventory.oid.contents + ", message was " + ex.getMessage)
+      case ex => Left("Error valuing inventory  " + inventory.oid.contents + ", purchase assignment " + inventory.purchaseAssignment.oid.contents + ", sales assignment " + Option(inventory.salesAssignment).map(_.oid.contents.toString).getOrElse("No sales") + ", message was " + ex.getMessage)
     }
   }
 }

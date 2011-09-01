@@ -22,8 +22,8 @@ import starling.utils.ImplicitConversions._
 case class RefinedMetalsLimMarketDataSource(limServer: LIMServer) extends MarketDataSource with Log {
   private val fixingsSources = PriceFixingsHistoryDataType → (List(LMEFixings, LIBORFixings, BloombergTokyoCompositeFXRates,
     BalticFixings,
-    new MonthlyFuturesFixings(Trafigura.Bloomberg.Futures.Shfe, Settle),
-    new MonthlyFuturesFixings(Trafigura.Bloomberg.Futures.Comex, Close)) ::: SpotFXFixings.all)
+    new MonthlyFuturesFixings(Trafigura.Bloomberg.Futures.Shfe, FuturesExchangeFactory.SFS.fixingLevel),
+    new MonthlyFuturesFixings(Trafigura.Bloomberg.Futures.Comex, FuturesExchangeFactory.COMEX.fixingLevel)) ::: SpotFXFixings.all)
   private val spotFXSources = SpotFXDataType → List(BloombergGenericFXRates, CFETSSpotFXFixings)
   private val priceSources = PriceDataType → List(
     new PriceLimSource(new LMELIMRelation(Trafigura.Bloomberg.Metals.Lme, LMEClose)),

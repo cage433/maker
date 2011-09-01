@@ -2,7 +2,8 @@ package starling.services
 
 import excel._
 import jmx.StarlingJMX
-import rpc.logistics.DefaultTitanLogisticsServices
+import rpc.logistics.FileMockedTitanLogisticsServices._
+import rpc.logistics.{FileMockedTitanLogisticsServices, DefaultTitanLogisticsServices}
 import rpc.marketdata.MarketDataService
 import rpc.valuation._
 import starling.schemaevolution.system.PatchRunner
@@ -40,7 +41,6 @@ import starling.curves.{StarlingMarketLookup, FwdCurveAutoImport, CurveViewer}
 import starling.services.rpc.refdata._
 import starling.services.rabbit._
 import collection.immutable.Map
-import starling.titan.{TitanSystemOfRecord, TitanTradeStore}
 import com.trafigura.services.trinity.TrinityService
 import com.trafigura.services.ResteasyServiceApi
 import com.trafigura.services.marketdata.{ExampleService, MarketDataServiceApi}
@@ -50,6 +50,7 @@ import collection.mutable.ListBuffer
 import starling.fc2.api.FC2Service
 import starling.utils._
 import starling.browser.service.{BrowserService, UserLoggedIn, Version}
+import starling.titan.{TitanTradeCache, TitanSystemOfRecord, TitanTradeStore}
 
 class StarlingInit( val props: Props,
                     dbMigration: Boolean = true,
@@ -59,7 +60,8 @@ class StarlingInit( val props: Props,
                     startStarlingJMX: Boolean = true,
                     forceGUICompatability: Boolean = true,
                     startEAIAutoImportThread: Boolean = true,
-                    startRabbit: Boolean = true
+                    startRabbit: Boolean = true,
+                    testMode : Boolean = false
                     ) extends Stopable with Log {
 
   implicit def enrichBouncyServer(bouncy: BouncyRMIServer[_]) = new {
@@ -126,8 +128,14 @@ class StarlingInit( val props: Props,
 
   val trinityService = new TrinityService(ResteasyServiceApi(props.TrinityServiceUrl()))
 
-  val titanRabbitEventServices = new DefaultTitanRabbitEventServices(props)
-  log.debug("After rabbit start")
+  val titanRabbitEventServices = if (!testMode) {
+    new DefaultTitanRabbitEventServices(props)
+  }
+  else {
+    new MockTitanRabbitEventServices()
+  }
+
+  log.debug("Completed rabbit start")
 
   val broadcaster = ObservingBroadcaster(new CompositeBroadcaster(
       true                                      → new RMIBroadcaster(rmiServerForGUI),
@@ -202,10 +210,26 @@ class StarlingInit( val props: Props,
 
   val closedDesks = new ClosedDesks(broadcaster, starlingDB)
 
-  val titanTradeCache = new DefaultTitanTradeCache(props)
-  val titanServices = new DefaultTitanServices(props)
-  val logisticsServices = new DefaultTitanLogisticsServices(props)
-  val titanInventoryCache = new DefaultTitanLogisticsInventoryCache(props)
+  val (titanTradeCache : TitanTradeCache, titanServices, logisticsServices, titanInventoryCache) = if (!testMode) {
+    (
+      new DefaultTitanTradeCache(props),
+      new DefaultTitanServices(props),
+      new DefaultTitanLogisticsServices(props),
+      new DefaultTitanLogisticsInventoryCache(props)
+    )
+  }
+  else {
+    val fileMockedTitanServices = new FileMockedTitanServices()
+    val fileMockedTitanLogisticsServices = new FileMockedTitanLogisticsServices()
+    val mockTitanTradeService = new DefaultTitanTradeService(fileMockedTitanServices)
+    (
+      new TitanTradeServiceBasedTradeCache(mockTitanTradeService),
+      fileMockedTitanServices,
+      fileMockedTitanLogisticsServices,
+      new TitanLogisticsServiceBasedInventoryCache(fileMockedTitanLogisticsServices)
+    )
+  }
+
   val valuationService = new ValuationService(new DefaultEnvironmentProvider(marketDataStore), titanTradeCache, titanServices, logisticsServices, titanRabbitEventServices, titanInventoryCache)
   val marketDataService = new MarketDataService(marketDataStore, new DefaultEnvironmentProvider(marketDataStore))
 
@@ -353,6 +377,13 @@ class StarlingWebServices extends WebServiceFactory {
 object StarlingInit{
   lazy val devInstance = {
     new StarlingInit(PropsHelper.defaultProps, true, false, false, false, false, false, false, false).update(_.start)
+  }
+
+  /**
+   * defines a test service instance that runs RMI but uses mocked service stubs where appropriate
+   */
+  lazy val testInstance = {
+    new StarlingInit(PropsHelper.defaultProps, true, true, false, false, false, false, false, false, true).update(_.start)
   }
 }
 

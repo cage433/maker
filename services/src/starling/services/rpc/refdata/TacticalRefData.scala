@@ -53,15 +53,26 @@ case class DefaultTitanServices(props: Props) extends TitanServices {
     }
   }
 
-  val edmMetalByGUID = new MapWithNicerErrors(Map[GUID, Metal]() ++ allTacticalRefDataMetals.map(e => e.guid -> e), "Metal")
-  val futuresExchangeByID = new MapWithNicerErrors(Map[String, Market]() ++ allTacticalRefDataExchanges.map(e => e.code -> e), "Market", "Exchange Code")
-  val counterpartiesByGUID = new MapWithNicerErrors(Map[GUID, Counterparty]() ++ allTacticalRefDataCounterparties().map(e => e.guid -> e), "Counterparty")
-  val uomById = new MapWithNicerErrors(Map[Int, UOM]() ++ allTacticalRefDataUoms().map(e => e.oid -> e), "UOM", "UOM ID") // hack needed to allow for logistics special "equantity uoms"
+  val defaultMissingKeyExceptionMessage = "Missing key '%s' of type '%s', for values of type '%s'"
+  case class RichMap[K : Manifest, V : Manifest](map : Map[K, V]) {
+    def withException(s : String = defaultMissingKeyExceptionMessage) : Map[K, V] =
+      map.withDefault(k => throw new java.util.NoSuchElementException(s.format(k.toString, manifest[K].erasure.getName, manifest[V].erasure.getName)))
+  }
+  object RichMap {
+    implicit def toRichMap[K : Manifest, V : Manifest](map : Map[K, V]) = RichMap(map)
+  }
+  import RichMap._
 
-  val shapesByGUID = new MapWithNicerErrors(Map[GUID, Shape]() ++ allTacticalRefDataShapes.map(e => e.guid -> e), "Shape")
-  val gradeByGUID = new MapWithNicerErrors(Map[GUID, Grade]() ++ allTacticalRefDataGrades.map(e => e.guid -> e), "Grade")
-  val locationsByGUID = new MapWithNicerErrors(Map[GUID, Location]() ++ allTacticalRefDataLocations.map(e => e.guid -> e), "Location")
-  val destLocationsByGUID = new MapWithNicerErrors(Map[GUID, DestinationLocation]() ++ allTacticalRefDataDestinationLocations.map(e => e.guid -> e), "DestinationLocation")
+  val edmMetalByGUID = allTacticalRefDataMetals.map(e => e.guid -> e).toMap.withException()
+  //val edmMetalByGUID = new MapWithNicerErrors(Map[GUID, Metal]() ++ allTacticalRefDataMetals.map(e => e.guid -> e), "Metal")
+  val futuresExchangeByID = allTacticalRefDataExchanges.map(e => e.code -> e).toMap.withException()
+  val counterpartiesByGUID = allTacticalRefDataCounterparties().map(e => e.guid -> e).toMap.withException()
+  val uomById = allTacticalRefDataUoms().map(e => e.oid -> e).toMap.withException() // hack needed to allow for logistics special "equantity uoms"
+
+  val shapesByGUID = allTacticalRefDataShapes.map(e => e.guid -> e).toMap.withException()
+  val gradeByGUID = allTacticalRefDataGrades.map(e => e.guid -> e).toMap.withException()
+  val locationsByGUID = allTacticalRefDataLocations.map(e => e.guid -> e).toMap.withException()
+  val destLocationsByGUID = allTacticalRefDataDestinationLocations.map(e => e.guid -> e).toMap.withException()
 
   def allTacticalRefDataMetals() = tacticalRefdataMetalsService.getMetals()
   def allTacticalRefDataExchanges() = tacticalRefdataMarketsService.getMarkets()

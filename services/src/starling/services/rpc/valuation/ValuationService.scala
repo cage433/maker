@@ -36,6 +36,8 @@ import com.trafigura.edm.logistics.inventory.EDMInventoryItem
 import starling.services.rpc.logistics._
 import com.trafigura.events.DemultiplexerClient
 import com.trafigura.edm.shared.types.TitanId
+import com.trafigura.services.BouncyRMIServiceApi._
+import com.trafigura.services.BouncyRMIServiceApi
 
 /**
  * Trade cache provide trade map lookup by trade id and also a quota id to trade map lookup
@@ -512,12 +514,9 @@ class ValuationService(
     val env = environmentProvider.environment(snapshotIDString)
     valueAllAssignments(env, snapshotIDString)
   }
-
+  
   def valueAllAssignments(env : Environment, snapshotIDString : String) : CostAndIncomeAssignmentValuationServiceResults = {
     val sw = new Stopwatch()
-
-    //val inventoryService = logisticsServices.inventoryService.service
-    //val inventory = inventoryService.getAllInventoryLeaves()
 
     val inventory = titanInventoryCache.getAllInventory()
 
@@ -528,9 +527,9 @@ class ValuationService(
     val valuations = inventory.map(i => i.oid.contents.toString -> assignmentValuer(i))
     
     log.info("Valuation took " + sw)
-    val (worked, errors) = valuations.partition(_._2 isRight)
-    log.info("Worked " + worked.size + ", failed " + errors.size + ", took " + sw)
-    log.info("Failed valuation of inventory assignments (%d)...\n%s".format(errors.size, errors.mkString("\n")))
+    //val (worked, errors) = valuations.partition(_._2 isRight)
+    //log.debug("Worked " + worked.size + ", failed " + errors.size + ", took " + sw)
+    //log.debug("Failed valuation of inventory assignments (%d)...\n%s".format(errors.size, errors.mkString("\n")))
 
     CostAndIncomeAssignmentValuationServiceResults(snapshotIDString, valuations.toMap)
   }
@@ -885,4 +884,71 @@ object ValuationService extends App {
   import scala.io.Source._
   def loadJsonValuesFromFile(fileName : String) : List[String] = 
     fromFile(fileName).getLines.toList
+}
+
+
+/**
+ * Run up a test instance of the server and invoke the valuation service operations to test services using mock data
+ *   for service dependencies
+ */
+object ValuationServiceCompTest extends App {
+
+  println("Running main for valuation service tests")
+  val sw = Stopwatch()
+
+  val server = StarlingInit.testInstance
+  lazy val vs = server.valuationService
+
+  println("Took %s to start the test server".format(sw))
+
+  BouncyRMIServiceApi().using { valuationServiceRMI : ValuationServiceApi =>
+    val runCount = 5
+
+    def run[T](desc : String, f : () => T) = {
+      (1 to runCount).map {n =>
+        val sw = Stopwatch()
+        val valuations = f()
+        println("direct call for %s, run %d took %s".format(desc, n, sw))
+        (n, sw.toString, valuations)
+      }
+    }
+
+    def showResults[T <: Either[_, _]](ls : List[T], desc : String) = {
+      val (worked, errors) = ls.partition(_.isRight)
+
+      println("\nCalled valueAll for %s, %d worked, %d failed, took %s".format(desc, worked.size, errors.size, sw))
+
+      //println("\nSuccessful %s valuations:\n".format(desc))
+      //worked.foreach(println)
+
+      //println("\nFailed %s valuations:\n".format(desc))
+      //errors.foreach(println)
+    }
+
+    val directQuotaResults = run("Quota", () => vs.valueAllQuotas())
+    val rmiQuotaResults = run("Quota", () => valuationServiceRMI.valueAllQuotas())
+
+    val directInventoryResults = run("Inventory", () => vs.valueAllAssignments())
+    val rmiInventoryResults = run("Inventory", () => valuationServiceRMI.valueAllAssignments())
+
+//    val quotaValuations = valuationServiceRMI.valueAllQuotas()
+//    showResults(quotaValuations.tradeResults.values.toList, "Quotas")
+
+//    val inventoryValuations = vs.valueAllAssignments()
+//    showResults(inventoryValuations.assignmentValuationResults.values.toList, "Inventory")
+
+    println("\nDirect quota results")
+    directQuotaResults.map(r => (r._1, r._2, r._3.tradeResults.values.size, r._3.tradeResults.values.partition(_.isRight)._1.size)).foreach(println)
+
+    println("\nRMI quota results")
+    rmiQuotaResults.map(r => (r._1, r._2, r._3.tradeResults.values.size, r._3.tradeResults.values.partition(_.isRight)._1.size)).foreach(println)
+
+    println("\nDirect inventory results")
+    directInventoryResults.map(r => (r._1, r._2, r._3.assignmentValuationResults.values.size, r._3.assignmentValuationResults.values.partition(_.isRight)._1.size)).foreach(println)
+
+    println("\nRMI inventory results")
+    rmiInventoryResults.map(r => (r._1, r._2, r._3.assignmentValuationResults.values.size, r._3.assignmentValuationResults.values.partition(_.isRight)._1.size)).foreach(println)
+  }
+
+  server.stop
 }
