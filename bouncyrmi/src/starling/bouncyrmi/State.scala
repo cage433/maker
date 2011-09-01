@@ -88,6 +88,10 @@ case object ClientConnected extends State {
       t.printStackTrace
       Reconnecting(t)
     }
+    case ClientConnectedEvent => {
+      // TODO - this should never happen but it does. Need to do something about it.
+      ClientConnected
+    }
   }
 }
 
