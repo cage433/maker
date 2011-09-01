@@ -36,13 +36,13 @@ class BouncyRMIClient(host: String, port: Int, auth: Client, logger:(String)=>Un
 
   def start: Future[Option[scala.Throwable]] = {
     println("BouncyRMIClient connecting to %s:%d".format(host, port))
-    client.init
-    client.connect
+    client.init()
+    client.connect(false)
   }
 
   override def toString = "BouncyRMIClient:" + client.state.toString
 
-  def startBlocking = {
+  def startBlocking() {
     try {
       start.get match {
         case Some(t) => throw t
@@ -53,7 +53,7 @@ class BouncyRMIClient(host: String, port: Int, auth: Client, logger:(String)=>Un
     }
   }
 
-  def stop = client.stop
+  def stop() {client.stop()}
 
   private case class NamedThreadFactory(name: String) extends ThreadFactory {
     def newThread(r: Runnable) = {
@@ -85,14 +85,14 @@ class BouncyRMIClient(host: String, port: Int, auth: Client, logger:(String)=>Un
       s
     }
 
-    def init = {
+    def init() {
       bootstrap.setPipelineFactory(new ClientPipelineFactory(new ClientHandler, clientTimer, logger))
       bootstrap.setOption("keepAlive", true)
       bootstrap.setOption("remoteAddress", new InetSocketAddress(host, port))
     }
 
-    def connectBlocking = {
-      connect.get match {
+    def connectBlocking() {
+      connect(true).get match {
         case Some(t) => throw t
         case None =>
       }
@@ -101,7 +101,7 @@ class BouncyRMIClient(host: String, port: Int, auth: Client, logger:(String)=>Un
     private val reconnectKey = "ReconnectKey"
     private val reconnectMap = new ConcurrentHashMap[String,FutureTask[Option[Throwable]]]()
 
-    def connect = {
+    def connect(updateCache:Boolean) = {
       val call = new FutureTask[Option[Throwable]](new Callable[Option[Throwable]] {
         def call = {
           val semaphore = new Semaphore(0, true)
@@ -118,7 +118,7 @@ class BouncyRMIClient(host: String, port: Int, auth: Client, logger:(String)=>Un
                 Some(e)
               }
             }
-            semaphore.release
+            semaphore.release()
           } else {
             val ch = channelFuture.getChannel
             val sslHandler = ch.getPipeline.get(classOf[SslHandler])
@@ -130,7 +130,7 @@ class BouncyRMIClient(host: String, port: Int, auth: Client, logger:(String)=>Un
                 case e => result = Some(new CannotConnectException("SSL failed to connect, unrecognised reason", e))
               }
               Logger.warn("Client: SSL handshake failed")
-              semaphore.release
+              semaphore.release()
             } else {
               Logger.info("Client: SSL connected")
               channel = Some(ch)
@@ -138,7 +138,7 @@ class BouncyRMIClient(host: String, port: Int, auth: Client, logger:(String)=>Un
               reactions += {
                 case StateChangeEvent(_, _: ConnectingState) =>
                 case StateChangeEvent(f, ClientConnected) => {
-                  semaphore.release
+                  semaphore.release()
                 }
                 case StateChangeEvent(ServerDisconnected(msg), _) => {
                   //Preserve shutdown message if reconnect fails
@@ -154,7 +154,7 @@ class BouncyRMIClient(host: String, port: Int, auth: Client, logger:(String)=>Un
                     case AuthFailed => Some(new AuthFailedException("Authorisation failed against server"))
                     case _:NotConnected => Some(new OfflineException("Not connected."))
                   }
-                  semaphore.release
+                  semaphore.release()
                 }
               }
               stateTransition(ClientConnectedEvent)
@@ -162,9 +162,14 @@ class BouncyRMIClient(host: String, port: Int, auth: Client, logger:(String)=>Un
               ch.write(AuthMessage(auth.ticket, overriddenUser))
             }
           }
-          semaphore.acquire
+          semaphore.acquire()
           reconnectMap.clear() // This isn't the correct place to put this clear as there is still a window of opportunity for something to connect
                                 // at this point but until we come up with a better way of doing this, it'll do.
+          if (result == None && updateCache) {
+            println("")
+            println("WE HAVE RECONNECTED - do something about the cache")
+            println("")
+          }
           result
         }
       })
@@ -176,19 +181,19 @@ class BouncyRMIClient(host: String, port: Int, auth: Client, logger:(String)=>Un
       actualTask
     }
 
-    def reconnect {
+    def reconnect() {
       Logger.info("Starting reconnect")
 
       clientTimer.newTimeout(new TimerTask() {
         var delay = 100
 
-        def run(timeout: Timeout) = {
+        def run(timeout: Timeout) {
           try {
             state match {
               case ClientDisconnected =>
               case _:NotConnected => {
                 delay = delay * 2
-                connectBlocking
+                connectBlocking()
               }
             }
           }
@@ -215,12 +220,12 @@ class BouncyRMIClient(host: String, port: Int, auth: Client, logger:(String)=>Un
       //try to reconnect if offline
       try {
         state match {
-          case _:ServerDisconnected | _:ConnectFailed => connectBlocking
+          case _:ServerDisconnected | _:ConnectFailed => connectBlocking()
           case _ =>
         }
       } catch {
         case e:CannotConnectException =>
-        case _ => stop
+        case _ => stop()
       }
 
       val waiting = new Waiting
@@ -232,7 +237,7 @@ class BouncyRMIClient(host: String, port: Int, auth: Client, logger:(String)=>Un
               case Some(ch) => {
                 val result = ch.write(methodRequest)
                 result.addListener(new ChannelFutureListener {
-                  def operationComplete(future: ChannelFuture) = {
+                  def operationComplete(future: ChannelFuture) {
                     if (!future.isSuccess) {
                       waiting.exception(future.getCause)
                     }
@@ -261,7 +266,7 @@ class BouncyRMIClient(host: String, port: Int, auth: Client, logger:(String)=>Un
 
     private val closeMonitor = new AtomicBoolean(false)
 
-    private def close = {
+    private def close() {
       val hasAlreadyBeenClosed = closeMonitor.getAndSet(true)
       if (hasAlreadyBeenClosed) {
         Logger.warn("The client has already been closed so won't do anything here")
@@ -276,11 +281,11 @@ class BouncyRMIClient(host: String, port: Int, auth: Client, logger:(String)=>Un
           }
           case None =>
         }
-        connectExecutor.shutdown
+        connectExecutor.shutdown()
         clientTimer.stop
 
-        bootstrap.releaseExternalResources
-        publisher.shutdown
+        bootstrap.releaseExternalResources()
+        publisher.shutdown()
       }
     }
 
@@ -290,9 +295,9 @@ class BouncyRMIClient(host: String, port: Int, auth: Client, logger:(String)=>Un
       }
     }
 
-    def stop = {
+    def stop() {
       stateTransition(ClientDisconnectedEvent)
-      close
+      close()
     }
 
     def handleException(cause: Throwable, channel: Option[Channel]) {
@@ -302,7 +307,7 @@ class BouncyRMIClient(host: String, port: Int, auth: Client, logger:(String)=>Un
         case None =>
       }
       state match {
-        case ClientConnected => {reconnect}
+        case ClientConnected => {reconnect()}
         case _ =>
       }
       stateTransition(UnexpectedDisconnectEvent(cause))
@@ -320,7 +325,7 @@ class BouncyRMIClient(host: String, port: Int, auth: Client, logger:(String)=>Un
         state match {
           case ClientConnected => {
             stateTransition(ShutdownMessage("Server shutdown"))
-            reconnect
+            reconnect()
           }
           case _ =>
         }
@@ -328,8 +333,8 @@ class BouncyRMIClient(host: String, port: Int, auth: Client, logger:(String)=>Un
       }
 
       override def exceptionCaught(ctx: ChannelHandlerContext, e: ExceptionEvent) {
-        val cause = e.getCause();
-        handleException(cause, Some(ctx.getChannel()))
+        val cause = e.getCause
+        handleException(cause, Some(ctx.getChannel))
       }
 
       override def messageReceived(ctx: ChannelHandlerContext, e: MessageEvent) {
@@ -343,8 +348,8 @@ class BouncyRMIClient(host: String, port: Int, auth: Client, logger:(String)=>Un
             stateTransition(v) match {
               case s: ServerUpgrade => {
                 new Thread("Client closer thread") {
-                  override def run = {close}
-                }.start
+                  override def run() {close()}
+                }.start()
               }
               case _ => // all good
             }
@@ -356,7 +361,7 @@ class BouncyRMIClient(host: String, port: Int, auth: Client, logger:(String)=>Un
               case Some(ch) => {
                 channel = None
                 ch.close
-                reconnect
+                reconnect()
               }
               case None =>
             }
@@ -377,20 +382,20 @@ class BouncyRMIClient(host: String, port: Int, auth: Client, logger:(String)=>Un
           }
           case AuthFailedMessage => {
             stateTransition(AuthFailedMessage)
-            stop
+            stop()
           }
           case PongMessage =>
           case m => {
             Logger.error("Unrecognised message, disconnecting: " + m)
-            stop
+            stop()
           }
         }
       }
 
-      override def channelIdle(ctx: ChannelHandlerContext, e: IdleStateEvent) = {
+      override def channelIdle(ctx: ChannelHandlerContext, e: IdleStateEvent) {
         state match {
           case ClientConnected => {
-            e.getChannel().write(PingMessage)
+            e.getChannel.write(PingMessage)
           }
           case _ =>
         }
@@ -468,7 +473,7 @@ class BouncyRMIClient(host: String, port: Int, auth: Client, logger:(String)=>Un
       lock.synchronized {
         this.completed = true
         exception = e
-        lock.notify
+        lock.notify()
       }
     }
 
@@ -476,15 +481,15 @@ class BouncyRMIClient(host: String, port: Int, auth: Client, logger:(String)=>Un
       lock.synchronized {
         this.completed = true
         this.serverVersion = serverVersion
-        lock.notify
+        lock.notify()
       }
     }
 
-    def setResult(result: Object) = {
+    def setResult(result: Object) {
       lock.synchronized {
         this.completed = true
         this.result = result
-        lock.notify
+        lock.notify()
       }
     }
   }
