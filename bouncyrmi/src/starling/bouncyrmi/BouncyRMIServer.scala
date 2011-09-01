@@ -128,15 +128,10 @@ class BouncyRMIServer[User](val port: Int, authHandler: ServerAuthHandler[User],
       })
     }
 
-    override def channelDisconnected(ctx: ChannelHandlerContext, e: ChannelStateEvent) = {
+    override def channelDisconnected(ctx: ChannelHandlerContext, e: ChannelStateEvent) {
       val user = loggedIn.get(e.getChannel)
       Logger.info("Server: Client disconnected: " + e.getChannel.getRemoteAddress + " (" + user._1 + ")")
-      println("")
-      println("REMOVE")
-      println("BEFORE " + users)
       users.remove(user._2)
-      println("AFTER " + users)
-      println("")
       group.remove(e.getChannel)
       loggedIn.remove(e.getChannel)
     }

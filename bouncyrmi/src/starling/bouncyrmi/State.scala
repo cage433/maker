@@ -12,7 +12,7 @@ trait State {
     }
     catch {
       case e: Throwable => {
-        e.printStackTrace
+        e.printStackTrace()
         throw new Exception("No state transition from " + this + " with event " + event)
       }
     }
@@ -40,7 +40,7 @@ case class ConnectFailed(t: Throwable) extends NotConnected {
   private def stackTraceToString(throwable : Throwable) = {
     val stream = new ByteArrayOutputStream()
 		throwable.printStackTrace(new PrintStream(stream))
-		stream.toString()
+		stream.toString
   }
 }
 
@@ -64,7 +64,7 @@ trait ConnectingState extends State {
     case ClientConnectedEvent => ClientConnecting
     case ClientDisconnectedEvent => ClientDisconnected
     case UnexpectedDisconnectEvent(t) => {
-      t.printStackTrace
+      t.printStackTrace()
       Reconnecting(t)
     }
     case ShutdownMessage(msg) => ServerDisconnected(msg)
@@ -85,12 +85,8 @@ case object ClientConnected extends State {
     // events
     case ClientDisconnectedEvent => ClientDisconnected
     case UnexpectedDisconnectEvent(t) => {
-      t.printStackTrace
+      t.printStackTrace()
       Reconnecting(t)
-    }
-    case ClientConnectedEvent => {
-      // TODO - this should never happen but it does. Need to do something about it.
-      ClientConnected
     }
   }
 }

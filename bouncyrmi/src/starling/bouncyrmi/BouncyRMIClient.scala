@@ -13,7 +13,7 @@ import java.net.InetSocketAddress
 import org.jboss.netty.handler.ssl.SslHandler
 import javax.net.ssl.SSLHandshakeException
 import java.util.concurrent._
-import atomic.{AtomicBoolean, AtomicReference, AtomicInteger}
+import atomic.{AtomicBoolean, AtomicInteger}
 import org.jboss.netty.handler.timeout.{IdleStateEvent, IdleStateAwareChannelHandler}
 import org.jboss.netty.util.{HashedWheelTimer, Timeout, TimerTask}
 
@@ -98,8 +98,11 @@ class BouncyRMIClient(host: String, port: Int, auth: Client, logger:(String)=>Un
       }
     }
 
+    private val reconnectKey = "ReconnectKey"
+    private val reconnectMap = new ConcurrentHashMap[String,FutureTask[Option[Throwable]]]()
+
     def connect = {
-      val call = new Callable[Option[Throwable]] {
+      val call = new FutureTask[Option[Throwable]](new Callable[Option[Throwable]] {
         def call = {
           val semaphore = new Semaphore(0, true)
           val future = bootstrap.connect
@@ -141,8 +144,8 @@ class BouncyRMIClient(host: String, port: Int, auth: Client, logger:(String)=>Un
                   //Preserve shutdown message if reconnect fails
                   result = Some(new OfflineException(msg))
                 }
-                case StateChangeEvent(f, state) => {
-                  result = state match {
+                case StateChangeEvent(f, state0) => {
+                  result = state0 match {
                     case ClientConnecting => Some(new OfflineException("Not connected. Connecting"))
                     case Reconnecting(t) => Some(new OfflineException("Unexpected disconnect, in the process of reconnecting", t))
                     case ClientDisconnected => Some(new ClientOfflineException("Client disconnected, can't reuse"))
@@ -160,10 +163,17 @@ class BouncyRMIClient(host: String, port: Int, auth: Client, logger:(String)=>Un
             }
           }
           semaphore.acquire
+          reconnectMap.clear() // This isn't the correct place to put this clear as there is still a window of opportunity for something to connect
+                                // at this point but until we come up with a better way of doing this, it'll do.
           result
         }
+      })
+      var actualTask = reconnectMap.putIfAbsent(reconnectKey, call)
+      if (actualTask == null) {
+        actualTask = call
+        connectExecutor.submit(new Runnable() { def run() { actualTask.run() } })
       }
-      connectExecutor.submit(call)
+      actualTask
     }
 
     def reconnect {
