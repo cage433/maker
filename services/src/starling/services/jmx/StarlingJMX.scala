@@ -3,21 +3,21 @@ package starling.services.jmx
 import management.ManagementFactory
 import javax.management.ObjectName
 import starling.auth.User
-import java.util.{Set => JSet}
 import collection.JavaConversions._
 import starling.services.{ScheduledTask, Scheduler}
 import starling.daterange.Day
 import starling.utils.Stopable
+import java.util.{UUID, Set => JSet, Map => JMap}
 
 trait UsersMBean {
   def getUserDetails:JSet[String]
 }
 
-class Users(users0:JSet[User]) extends UsersMBean {
-  def getUserDetails:JSet[String] = new java.util.TreeSet[String](users0.map(user => user.name + " (" + user.phoneNumber + ")"))
+class Users(users0:JMap[UUID,User]) extends UsersMBean {
+  def getUserDetails:JSet[String] = new java.util.TreeSet[String](users0.values.map(user => user.name + " (" + user.phoneNumber + ")"))
 }
 
-class StarlingJMX(users:JSet[User], scheduler: Scheduler) extends Stopable {
+class StarlingJMX(users:JMap[UUID,User], scheduler: Scheduler) extends Stopable {
   val mbs = ManagementFactory.getPlatformMBeanServer
   val usersMBean = new Users(users)
   val usersName = new ObjectName("Starling:name=Users")

@@ -19,11 +19,11 @@ import org.jboss.netty.channel.SimpleChannelUpstreamHandler;
 
 import java.lang.reflect.InvocationTargetException
 import collection.mutable.HashMap
+import java.util.UUID
 
 
-
-class BouncyRMIServer[User](val port: Int, authHandler: ServerAuthHandler[User], version: String, users:java.util.Set[User],
-                            knownExceptionClasses:Set[Class[_]], loggedIn: LoggedIn[User], val name: String, serverContexts: AnyRef*) {
+class BouncyRMIServer[User](val port: Int, authHandler: ServerAuthHandler[User], version: String, users:java.util.Map[UUID,User],
+                            knownExceptionClasses:Set[Class[_]], loggedIn: LoggedIn[User,UUID], val name: String, serverContexts: AnyRef*) {
 
   lazy val serverTimer = new HashedWheelTimer
   private val serverContextsMap = new HashMap[String, AnyRef]
@@ -130,8 +130,13 @@ class BouncyRMIServer[User](val port: Int, authHandler: ServerAuthHandler[User],
 
     override def channelDisconnected(ctx: ChannelHandlerContext, e: ChannelStateEvent) = {
       val user = loggedIn.get(e.getChannel)
-      Logger.info("Server: Client disconnected: " + e.getChannel.getRemoteAddress + " (" + user + ")")
-      users.remove(user)
+      Logger.info("Server: Client disconnected: " + e.getChannel.getRemoteAddress + " (" + user._1 + ")")
+      println("")
+      println("REMOVE")
+      println("BEFORE " + users)
+      users.remove(user._2)
+      println("AFTER " + users)
+      println("")
       group.remove(e.getChannel)
       loggedIn.remove(e.getChannel)
     }

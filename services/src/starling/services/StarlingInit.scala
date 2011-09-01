@@ -18,7 +18,6 @@ import starling.curves.readers._
 import trade.ExcelTradeReader
 import trinity.{TrinityUploader, XRTGenerator, FCLGenerator}
 import starling.auth.{LdapUserLookup, User, ServerLogin}
-import java.util.concurrent.CopyOnWriteArraySet
 import starling.utils._
 import sql.ConnectionParams
 import starling.utils.ImplicitConversions._
@@ -50,6 +49,8 @@ import collection.mutable.ListBuffer
 import starling.fc2.api.FC2Service
 import starling.utils._
 import starling.browser.service.{BrowserService, UserLoggedIn, Version}
+import java.util.UUID
+import java.util.concurrent.{ConcurrentHashMap, CopyOnWriteArraySet}
 
 class StarlingInit( val props: Props,
                     dbMigration: Boolean = true,
@@ -257,7 +258,7 @@ class StarlingInit( val props: Props,
 
   val rmiPort = props.RmiPort()
 
-  val users = new CopyOnWriteArraySet[User]
+  val users = new ConcurrentHashMap[UUID,User]
 
   val jmx = new StarlingJMX(users, scheduler)
 
@@ -356,12 +357,12 @@ object StarlingInit{
   }
 }
 
-object ChannelLoggedIn extends LoggedIn[User] {
-  private val loggedIn = new ChannelLocal[User]()
+object ChannelLoggedIn extends LoggedIn[User,UUID] {
+  private val loggedIn = new ChannelLocal[(User,UUID)]()
 
-  def get(channel: Channel): User = loggedIn.get(channel)
-  def set(channel: Channel, user: User): User = loggedIn.set(channel, user)
-  def remove(channel: Channel): User = loggedIn.remove(channel)
+  def get(channel: Channel) = loggedIn.get(channel)
+  def set(channel: Channel, user: User, id:UUID) = loggedIn.set(channel, (user,id))
+  def remove(channel: Channel) = loggedIn.remove(channel)
   def setLoggedOn(user: Option[User]) {
     User.setLoggedOn(user)
   }

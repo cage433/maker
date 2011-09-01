@@ -1,6 +1,7 @@
 package starling.bouncyrmi
 
 import org.jboss.netty.channel._
+import java.util.UUID
 
 object Logger {
   def info(s: String, cause: Throwable = null) {}
@@ -34,8 +35,8 @@ class CallbackAuthHandler[User](delegate: AuthHandler[User], callback: Option[Us
   }
 }
 
-class ServerAuthHandler[User](auth: AuthHandler[User], users:java.util.Set[User], ldapUserLookup:BouncyLdapUserLookup[User],
-                              userConnected:(User) => Unit, loggedIn: LoggedIn[User])
+class ServerAuthHandler[User](auth: AuthHandler[User], users:java.util.Map[UUID,User], ldapUserLookup:BouncyLdapUserLookup[User],
+                              userConnected:(User) => Unit, loggedIn: LoggedIn[User,UUID])
   extends SimpleChannelUpstreamHandler with AuthHandler[User] {
 
   override def messageReceived(ctx: ChannelHandlerContext, e: MessageEvent) = {
@@ -60,8 +61,9 @@ class ServerAuthHandler[User](auth: AuthHandler[User], users:java.util.Set[User]
                   }
                 }
                 Logger.info("Server: Actually using the user " + userToUse)
-                loggedIn.set(channel, userToUse)
-                users.add(userToUse)
+                val id = UUID.randomUUID()
+                loggedIn.set(channel, userToUse, id)
+                users.put(id, userToUse)
                 channel.write(AuthSuccessfulMessage)
               }
               case None => {
@@ -86,7 +88,7 @@ class ServerAuthHandler[User](auth: AuthHandler[User], users:java.util.Set[User]
         }
       }
       case user => {
-        loggedIn.setLoggedOn(Some(user))
+        loggedIn.setLoggedOn(Some(user._1))
         ctx.sendUpstream(e)
         loggedIn.setLoggedOn(None)
       }

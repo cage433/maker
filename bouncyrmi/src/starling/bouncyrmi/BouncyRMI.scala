@@ -64,26 +64,12 @@ class ClientPipelineFactory(handler: SimpleChannelHandler, timer:HashedWheelTime
   }
 }
 
-//trait User
-//object User {
-//  def setLoggedOn(user: Option[User]) {}
-//}
-
-trait LoggedIn[User] {
-  def get(channel: Channel): User
-  def set(channel: Channel, user: User): User
-  def remove(channel: Channel): User
-
-  def setLoggedOn(user: Option[User])
+trait LoggedIn[T,U] {
+  def get(channel: Channel): (T,U)
+  def set(channel: Channel, user: T, id:U): (T,U)
+  def remove(channel: Channel): (T,U)
+  def setLoggedOn(user: Option[T])
 }
-
-
-
-//class LoggedIn[User] {
-//  def apply() = loggedIn
-//  // who is logged in on this channel
-//  val loggedIn = new ChannelLocal[User]()
-//}
 
 object BouncyRMI {
   val CodeVersionUndefined = "undefined"
@@ -126,8 +112,3 @@ class NamedDaemonThreadFactory(name: String) extends ThreadFactory {
     t
   }
 }
-
-// gzip
-// time requests (cpu and clock)
-// test stdout callback
-// github

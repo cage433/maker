@@ -8,9 +8,10 @@ import org.scalatest.testng.TestNGSuite
 import org.testng.annotations.{BeforeMethod, AfterMethod, AfterTest, Test}
 import starling.gui.api.{PricingGroup, PricingGroupMarketDataUpdate}
 import starling.utils.{Broadcaster, StarlingTest}
-import java.util.concurrent.{Executors, CopyOnWriteArraySet, TimeUnit}
 import starling.auth.{LdapUserLookup, User}
 import starling.services.ChannelLoggedIn
+import java.util.concurrent.{ConcurrentHashMap, Executors, CopyOnWriteArraySet, TimeUnit}
+import java.util.UUID
 
 class ClassWhichDoesNotImplementSerializable(val name: String) {
   override def equals(other: Any): Boolean = {
@@ -90,7 +91,7 @@ class BouncyRMITests extends StarlingTest {
 
   val auth = new ServerAuthHandler[User](new AuthHandler[User] {
     def authorized(ticket: Option[Array[Byte]]) = Some(User.Test)
-  }, new CopyOnWriteArraySet[User], new LdapUserLookup() with BouncyLdapUserLookup[User], x=>(), ChannelLoggedIn)
+  }, new ConcurrentHashMap[UUID,User], new LdapUserLookup() with BouncyLdapUserLookup[User], x=>(), ChannelLoggedIn)
 
   var someService:SomeService = null
   var server:BouncyRMIServer[User] = null
@@ -101,7 +102,7 @@ class BouncyRMITests extends StarlingTest {
   @BeforeMethod
   def before() {
     someService = new SomeService()
-    server = new BouncyRMIServer(port1, auth, BouncyRMI.CodeVersion, new CopyOnWriteArraySet[User], Set(), ChannelLoggedIn, "", someService)
+    server = new BouncyRMIServer(port1, auth, BouncyRMI.CodeVersion, new ConcurrentHashMap[UUID,User], Set(), ChannelLoggedIn, "", someService)
     client = new BouncyRMIClient("localhost", port1, auth = Client.Null, overriddenUser = None)
   }
 
@@ -151,7 +152,7 @@ class BouncyRMITests extends StarlingTest {
 
   @Test
   def testClientConnectFailsIfVersionsDoNotMatch() {
-    val server = new BouncyRMIServer(port1, auth, "Two", new CopyOnWriteArraySet[User], Set(), ChannelLoggedIn, "", new SomeService())
+    val server = new BouncyRMIServer(port1, auth, "Two", new ConcurrentHashMap[UUID,User], Set(), ChannelLoggedIn, "", new SomeService())
     server.start
 
     val needsReboot = new WaitForFlag
@@ -201,7 +202,7 @@ class BouncyRMITests extends StarlingTest {
     server.stop()
     disconnected.waitForFlip
     Thread.sleep(500) // client has to try a few times
-    server = new BouncyRMIServer(port1, auth, BouncyRMI.CodeVersion, new CopyOnWriteArraySet[User], Set(), ChannelLoggedIn, "", new SomeService())
+    server = new BouncyRMIServer(port1, auth, BouncyRMI.CodeVersion, new ConcurrentHashMap[UUID,User], Set(), ChannelLoggedIn, "", new SomeService())
     server.start
     secondConnect.waitForFlip
     client.stop
@@ -273,7 +274,7 @@ class BouncyRMITests extends StarlingTest {
     Thread.sleep(200)
     disconnected.waitForFlip
 
-    server = new BouncyRMIServer(port1, auth, BouncyRMI.CodeVersion, new CopyOnWriteArraySet[User], Set(), ChannelLoggedIn, "", new SomeService())
+    server = new BouncyRMIServer(port1, auth, BouncyRMI.CodeVersion, new ConcurrentHashMap[UUID,User], Set(), ChannelLoggedIn, "", new SomeService())
     server.start
 
     Thread.sleep(2000)
@@ -404,7 +405,7 @@ class BouncyRMITests extends StarlingTest {
     connected.waitForFlip
     server.stop()
     disconnected.waitForFlip
-    val serverOne = new BouncyRMIServer(port1, auth, "One", new CopyOnWriteArraySet[User], Set(), ChannelLoggedIn, "", new SomeService())
+    val serverOne = new BouncyRMIServer(port1, auth, "One", new ConcurrentHashMap[UUID,User], Set(), ChannelLoggedIn, "", new SomeService())
     serverOne.start
     try {
       Thread.sleep(2000) // wait for reconnect
