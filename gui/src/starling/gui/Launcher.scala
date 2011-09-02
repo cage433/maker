@@ -438,7 +438,7 @@ object StarlingHomeButtons {
 
           TradeSelectionPage(TradePageParameters(
             deskWithTime, intradayWithTime,
-            TradeExpiryDay(Day.today())), PivotPageState(false, PivotFieldParams(true, None)))
+            TradeExpiryDay(Day.today)), PivotPageState(false, PivotFieldParams(true, None)))
         }
       }
     }
@@ -454,7 +454,7 @@ object StarlingHomeButtons {
       new PageFactory {
         def create(serverContext: ServerContext) = {
           val curveLabel = CurveLabel(CurveTypeLabel("Price"), defaultMarketDataIdentifier, EnvironmentSpecificationLabel(
-            context.localCache.populatedDays(defaultMarketDataIdentifier.selection).lastOption.getOrElse(Day.today()),
+            context.localCache.populatedDays(defaultMarketDataIdentifier.selection).lastOption.getOrElse(Day.today),
             context.localCache.environmentRulesForPricingGroup(defaultMarketDataIdentifier.selection.pricingGroup).head
           ))
 
@@ -588,7 +588,7 @@ object StarlingSettings {
       val numericExtraInfo = ExtraFormatInfo(dateRangeFormat = DateRangeFormat(Numeric))
       val reutersExtraInfo = ExtraFormatInfo(dateRangeFormat = DateRangeFormat(Reuters))
 
-      val today = Day.today()
+      val today = Day.today
       val sampleMonths = List(today.asMonthObject, today.addMonths(1).asMonthObject)
 
       val standardSampleText = sampleMonths.map(m => PeriodPivotFormatter.format(m, standardExtraInfo).text).mkString("(", ", ", " ...)")

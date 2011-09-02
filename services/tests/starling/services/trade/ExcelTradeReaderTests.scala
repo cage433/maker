@@ -79,7 +79,7 @@ class ExcelTradeReaderTests extends JonTestEnv {
       reader.allTrades(header, rest, "test")
     }
 
-    val marketDayAndTime = Day(2011, 8, 1).endOfDay()
+    val marketDayAndTime = Day(2011, 8, 1).endOfDay
     val env = Environment(
       new TestingAtomicEnvironment() {
         def applyOrMatchError(key: AtomicDatumKey) = key match {

@@ -216,8 +216,8 @@ class Day private (@transient val year : Int, @transient val month : Int, @trans
     Day(month.y, month.m, dayNumber min month.lastDay.dayNumber)
   }
 
-  def endOfDay() = atTimeOfDay(EndOfDay)
-  def startOfDay() = atTimeOfDay(StartOfDay)
+  def endOfDay = atTimeOfDay(EndOfDay)
+  def startOfDay = atTimeOfDay(StartOfDay)
   def atTimeOfDay(timeOfDay : TimeOfDay) = DayAndTime(this, timeOfDay)
   def atTimeOfDay(timeOfDay: ObservationTimeOfDay) = ObservationPoint(this, timeOfDay)
   def atTimeOfDay(time: LocalTime, location: Location): DateTime = time.toDateTimeToday(location.timeZoneOn(this))

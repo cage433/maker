@@ -340,7 +340,7 @@ class DefaultEnvironmentProvider(marketDataStore : MarketDataStore) extends Envi
   }
   def mostRecentSnapshotIdentifierBeforeToday(): Option[String] = {
     updateSnapshotCache()
-    snapshotNameToIDCache.values.toList.filter(_.observationDay < Day.today()).sortWith(_ > _).headOption.map(_.id.toString)
+    snapshotNameToIDCache.values.toList.filter(_.observationDay < Day.today).sortWith(_ > _).headOption.map(_.id.toString)
   }
 
   def snapshotIDs(observationDay : Option[Day]) : List[SnapshotID] = {
@@ -680,7 +680,7 @@ class ValuationService(
         case UpdatedEventVerb => {
           val (snapshotIDString, env) = environmentProvider.mostRecentSnapshotIdentifierBeforeToday() match {
             case Some(snapshotId) => (snapshotId, environmentProvider.environment(snapshotId))
-            case None => ("No Snapshot found",  Environment(NullAtomicEnvironment((Day.today() - 1).startOfDay)))
+            case None => ("No Snapshot found",  Environment(NullAtomicEnvironment((Day.today - 1).startOfDay)))
           }
 
           val originalInventoryAssignmentValuations = valueInventoryAssignments(ids, env, snapshotIDString)
@@ -723,7 +723,7 @@ class ValuationService(
       val payloads = ev.content.body.payloads.filter(p => StarlingSnapshotIdPayload == p.payloadType)
       val ids = payloads.map(p => p.key.identifier)
       val newSnapshotId = payloads.map(p => p.key.identifier).max
-      val todaysSnapshots : List[SnapshotID] = environmentProvider.snapshotIDs(Some(Day.today())).sortWith(_.id > _.id)
+      val todaysSnapshots : List[SnapshotID] = environmentProvider.snapshotIDs(Some(Day.today)).sortWith(_.id > _.id)
       log.info("Snapshot event received for ids { %s }, using '%s'".format(ids.mkString(", "), newSnapshotId))
 
       if (todaysSnapshots.size > 1) {
@@ -770,7 +770,7 @@ class ValuationService(
 
     def getSnapshotAndEnv : (String, Environment) = environmentProvider.mostRecentSnapshotIdentifierBeforeToday() match {
       case Some(snapshotId) => (snapshotId, environmentProvider.environment(snapshotId))
-      case None => ("No Snapshot found",  Environment(NullAtomicEnvironment((Day.today() - 1).startOfDay)))
+      case None => ("No Snapshot found",  Environment(NullAtomicEnvironment((Day.today - 1).startOfDay)))
     }
 
     // publish the valuation updated event contaning payloads of the trade id's whose trade valuations have changed

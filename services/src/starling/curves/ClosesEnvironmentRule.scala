@@ -54,7 +54,7 @@ object ClosesEnvironmentRule extends EnvironmentRule {
       } }
     }
 
-    val environmentX = Environment(new MarketDataCurveObjectEnvironment(observationDay.endOfDay(), reader))
+    val environmentX = Environment(new MarketDataCurveObjectEnvironment(observationDay.endOfDay, reader))
 
     new EnvironmentWithDomain {
       val environment = environmentX

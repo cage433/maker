@@ -167,12 +167,12 @@ class SwapCalendarSpreadTests extends TestMarketTest {
           case _: ForwardPriceKey => Quantity(100, USD / MT)
         }
 
-        def marketDay = md.endOfDay()
+        def marketDay = md.endOfDay
       }
     ).undiscounted
 
     val keys = swap.asUtpPortfolio(md).portfolio.keys.map {
-      utp => utp.priceAndVolKeys(md.endOfDay())
+      utp => utp.priceAndVolKeys(md.endOfDay)
     }
 
     assertFalse(keys.isEmpty)

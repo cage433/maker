@@ -54,7 +54,7 @@ trait AveragePricingSpec extends TitanPricingSpec {
   def quotationPeriodEnd : Option[Day] = Some(observationDays.last)
   def indexName : String = index.name
 
-  def daysForPositionReport(marketDay: DayAndTime) = observationDays.filter(_.endOfDay() > marketDay)
+  def daysForPositionReport(marketDay: DayAndTime) = observationDays.filter(_.endOfDay > marketDay)
 
   def valuationCCY = premiumCCY.getOrElse(index.currency)
 }
@@ -201,7 +201,7 @@ case class UnknownPricingSpecification(
   def quotationPeriodEnd : Option[Day] = Some(month.lastDay)
   def indexName : String = index.name
 
-  def daysForPositionReport(marketDay: DayAndTime) = index.observationDays(month).filter(_.endOfDay() > marketDay)
+  def daysForPositionReport(marketDay: DayAndTime) = index.observationDays(month).filter(_.endOfDay > marketDay)
 
   def valuationCCY = premiumCCY.getOrElse(index.currency)
 }

@@ -148,7 +148,7 @@ class MtmPivotReport(@transient environment:Environment, @transient utps : Map[U
 
         def isPast(asset : Either[Asset, Throwable]) : Option[Boolean] = {
           asset match {
-            case Left(a) => Some(a.settlementDay.endOfDay() < environment.marketDay)
+            case Left(a) => Some(a.settlementDay.endOfDay < environment.marketDay)
             case Right(_) => None
           }
         }

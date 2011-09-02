@@ -103,7 +103,7 @@ case class TradeSelectionPage(
   }
 
   override def bookmark(serverContext:StarlingServerContext):Bookmark = {
-    val today = Day.today()
+    val today = Day.today
     val isLatestLiveOn = tpp.expiry.exp == today
     val latestTimestamp = tpp.deskAndTimestamp.map{case (desk, t) => (t, serverContext.server.latestTradeTimestamp(desk))}
     val isLatestBookClose = latestTimestamp match {
@@ -134,7 +134,7 @@ case class TradeSelectionBookmark(desk:Option[Desk], intradaySubgroups:Option[In
   def createStarlingPage(day:Option[Day], serverContext:StarlingServerContext, context:PageContext) = {
     val latestBookClose = desk.map{desk => (desk, context.localCache.latestTimestamp(desk).get)}
     val latestIntraday = intradaySubgroups.map(intra => (intra, context.localCache.latestTimestamp(intra)))
-    val today = Day.today()
+    val today = Day.today
     val tradesLiveOn = if (useStartOfYear) {
       latestBookClose match {
         case Some((_,timestamp)) => timestamp.closeDay.startOfFinancialYear

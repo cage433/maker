@@ -47,7 +47,7 @@ class NewSchemaMdDBTest extends TestMarketSpec {
   lazy val newSchemaMdDB: MdDB = new NewSchemaMdDB(db)
   lazy val slowMdDB: MdDB = new SlowMdDB(db)
 
-  @BeforeTest
+//  @BeforeTest
   def initialise() = {
     Class.forName("net.sourceforge.jtds.jdbc.Driver")
     connection = DriverManager.getConnection("jdbc:jtds:sqlserver://TTRAFLOCOSQL08.global.trafigura.com/starling_db_8;instance=DB08", "starling", "ng1lr4ts123!Y^%&$")
@@ -57,7 +57,7 @@ class NewSchemaMdDBTest extends TestMarketSpec {
     newSchemaMdDB.asInstanceOf[NewSchemaMdDB].initialise
   }
 
-  @AfterTest
+//  @AfterTest
   def tearDown() = {
     connection.close()
   }

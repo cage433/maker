@@ -17,7 +17,7 @@ class CashInstrumentTest extends StarlingTest {
       new UnitTestingAtomicEnvironment(marketDay, {
         key => key match {
           case DiscountRateKey(_, day, _) => {
-            val timeBetween = day.endOfDay().timeSince(marketDay)
+            val timeBetween = day.endOfDay.timeSince(marketDay)
             new Quantity(math.exp(-0.05 * timeBetween))
           }
         }

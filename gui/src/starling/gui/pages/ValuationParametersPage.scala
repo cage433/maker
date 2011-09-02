@@ -49,7 +49,7 @@ case class ValuationParametersBookmark(tradeID:TradeIDLabel, userReportData:User
 
   def createStarlingPage(day: Option[Day], serverContext: StarlingServerContext, context: PageContext) = {
     val dayToUse = day match {
-      case None => Day.today() // Real time
+      case None => Day.today // Real time
       case Some(d) => d
     }
     val reportParameters = serverContext.server.createReportParameters(userReportData, dayToUse)

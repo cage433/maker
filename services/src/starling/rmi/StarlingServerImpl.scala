@@ -478,7 +478,7 @@ class StarlingServerImpl(
     val ts = Timestamp.now
     val changed = tradeStores.tradeImporters(TitanTradeSystem).importAll(None, ts)
     if (changed) {
-      tradeStores.closedDesks.closeDesk(Desk.Titan, Day.today(), ts)
+      tradeStores.closedDesks.closeDesk(Desk.Titan, Day.today, ts)
     }
   }
 

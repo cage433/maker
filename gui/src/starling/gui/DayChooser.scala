@@ -9,7 +9,7 @@ import starling.daterange._
 import java.awt.{Dimension, KeyboardFocusManager, Cursor, Color}
 import starling.browser.common._
 
-class DayChooser(day0:Day = Day.today(), enableFlags:Boolean = true, showDay:Boolean=false) extends MigPanel("insets 0", "[p]0[p]") {
+class DayChooser(day0:Day = Day.today, enableFlags:Boolean = true, showDay:Boolean=false) extends MigPanel("insets 0", "[p]0[p]") {
 
   val enabledBorderColour = GuiUtils.BorderColour
   val disabledBorderColour = GuiUtils.DisabledBorderColour
@@ -58,7 +58,7 @@ class DayChooser(day0:Day = Day.today(), enableFlags:Boolean = true, showDay:Boo
     val monthView = new SXMonthView {
       traversable = true
       preferredColumnCount = 2
-      val today = Day.today()
+      val today = Day.today
       if (showPreviousMonth) {
         firstDisplayedDay = Month(today.year, today.month).previous.firstDay
       }
@@ -69,7 +69,7 @@ class DayChooser(day0:Day = Day.today(), enableFlags:Boolean = true, showDay:Boo
     }
 
     private def showPreviousMonth = {
-      val today = Day.today()
+      val today = Day.today
       today.dayNumber < 15
     }
 

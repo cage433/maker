@@ -62,9 +62,9 @@ class FuturesTests extends TestMarketTest {
     val strike = Quantity(20, UOM.USD/UOM.BBL)
     val future = Future(market, period, strike, v)
 
-    val mtmLive = future.mtm(environment(ltd.startOfDay()))
-    val mtmLtd = future.mtm(environment(ltd.endOfDay()))
-    val mtmLater = future.mtm(environment((ltd + 20).endOfDay()))
+    val mtmLive = future.mtm(environment(ltd.startOfDay))
+    val mtmLtd = future.mtm(environment(ltd.endOfDay))
+    val mtmLater = future.mtm(environment((ltd + 20).endOfDay))
 
     assertQtyEquals(mtmLive, (forward - strike) * v)
     assertQtyEquals(mtmLtd, (fixed - strike) * v)

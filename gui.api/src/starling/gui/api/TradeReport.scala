@@ -250,7 +250,7 @@ object CurveIdentifierLabel{
       EnvironmentRuleLabel.COB,
       day,
       day.atTimeOfDay(timeOfDayToUse),
-      day.nextBusinessDay(calendar).endOfDay(),
+      day.nextBusinessDay(calendar).endOfDay,
       TreeSet.empty[EnvironmentModifierLabel](EnvironmentModifierLabel.ordering)
     )
   }
