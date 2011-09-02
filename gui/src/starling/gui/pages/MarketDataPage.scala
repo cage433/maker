@@ -17,6 +17,7 @@ import starling.utils.ImplicitConversions._
 import starling.gui.StarlingLocalCache._
 import starling.browser.common.MigPanel
 import starling.browser._
+import common.RoundedBorder
 import starling.fc2.api.FC2Service
 import starling.utils.cache.ThreadSafeCachingProxy
 
@@ -107,20 +108,6 @@ case class MarketDataPage(
     Some(MarketDataPagePageData(avaliableMarketDataTypes, selected))
   }
 
-  override def createComponent(pageContext: PageContext, data: PageData, bookmark:Bookmark, browserSize:Dimension, previousPageData:Option[PageData]) = {
-    val marketDataPagePageData = data match {
-      case v:PivotTablePageData => v.subClassesPageData match {
-        case x:Option[_] => x.get.asInstanceOf[MarketDataPagePageData]
-      }
-    }
-    new MarketDataPageComponent(
-      pageContext,
-      this,
-      PivotComponent(text, pageContext, toolbarButtons(pageContext, data), None, finalDrillDownPage, selfPage, data,
-        pageState.pivotPageState, pageState.edits, save, bookmark, browserSize),
-      pageState, marketDataPagePageData)
-  }
-
   override def bookmark(serverContext:ServerContext):Bookmark = {
     val starlingServer = serverContext.lookup(classOf[StarlingServer])
     val singleObservationDay = pageState.pivotPageState.pivotFieldParams.pivotFieldState match {
@@ -146,6 +133,149 @@ case class MarketDataPage(
     } else {
       PageBookmark(this)
     }
+  }
+
+  override def configPanel(context:PageContext, pageData:PageData) = {
+    val data = pageData match {case v:PivotTablePageData => v.subClassesPageData match {case Some(d:MarketDataPagePageData) => d}}
+
+    //Save the layout as the default for use the next time this market data type is selected
+    (pageState.marketDataType, pageState.pivotPageState.pivotFieldParams.pivotFieldState) match {
+      case (Some(mdt), Some(pfs)) => context.putSetting(StandardUserSettingKeys.UserMarketDataTypeLayout,
+        context.getSetting(StandardUserSettingKeys.UserMarketDataTypeLayout, Map[MarketDataTypeLabel,PivotFieldsState]()) +
+                (mdt -> pfs)
+      )
+      case _ =>
+    }
+
+    val configPanel = new MigPanel with ConfigPanel {
+      def displayName = "Market Data Selection"
+
+      val pricingGroupPanel = new MigPanel {
+        border = RoundedBorder(colour = PivotTableBackgroundColour)
+
+        private val importButton = new Button {
+          val observationDay = Day.today.previousWeekday
+          enabled = !marketDataIdentifier.selection.isNull
+          tooltip = "Import and snapshot market data for previous weekday"
+          icon = StarlingIcons.icon("/icons/14x14_download_data.png")
+
+          reactions += {
+            case ButtonClicked(_) => {
+              val day = observationDay
+              context.submit(SnapshotSubmitRequest(marketDataIdentifier.selection, day.asInstanceOf[Day]))
+            }
+          }
+        }
+
+        val pricingGroupSelector = new MarketDataSelectionComponent(context, None, marketDataIdentifier.selection)
+
+        val snapshotsComboBoxModel = new DefaultComboBoxModel
+        val snapshotsComboBox = new ComboBox[SnapshotComboValue](List(SnapshotComboValue(None))) { // Got to pass a list in - not very good but we remove it straight away.
+          peer.setModel(snapshotsComboBoxModel)
+          snapshotsComboBoxModel.removeAllElements()
+
+          {val snapshots = context.localCache.snapshots(None).getOrElse(marketDataIdentifier.selection, List())
+            SnapshotComboValue(None) :: snapshots.map(ss=>SnapshotComboValue(Some(ss))).toList}.foreach(snapshotsComboBoxModel.addElement(_))
+
+          def initialize() {
+            selection.item = {
+              val mdi = marketDataIdentifier.marketDataIdentifier
+              mdi.marketDataVersion match {
+                case SnapshotMarketDataVersion(ss) => SnapshotComboValue(Some(ss))
+                case SpecificMarketDataVersion(version) => SnapshotComboValue(None)
+              }
+            }
+          }
+          initialize()
+          def value = {
+            selection.item match {
+              case SnapshotComboValue(Some(ss)) => SnapshotMarketDataVersion(ss)
+              case SnapshotComboValue(None) => SpecificMarketDataVersion(context.localCache.latestMarketDataVersion(marketDataIdentifier.selection))
+            }
+          }
+        }
+        val snapshotsPanel = new MigPanel("insets 0") {
+          add(new Label("as of:") {tooltip = "Market data as of selected date or current"})
+          add(snapshotsComboBox)
+        }
+
+        add(importButton)
+        add(pricingGroupSelector)
+        add(snapshotsPanel)
+      }
+
+      val extraPanel = new MigPanel("hidemode 3") {
+        border = RoundedBorder(colour = PivotTableBackgroundColour)
+
+        val typeLabel = new Label("Type:")
+
+        private val labels = if (data.marketDataTypeLabels.isEmpty) List(MarketDataTypeLabel("")) else data.marketDataTypeLabels
+        val dataTypeCombo = new ComboBox(labels) {
+          renderer = ListView.Renderer(_.toString)
+          data.selection match {
+            case Some(mdt) => selection.item = mdt
+            case None =>
+          }
+          enabled = data.marketDataTypeLabels.nonEmpty
+          minimumSize = new Dimension(100, preferredSize.height)
+        }
+
+        val filterDataCheckbox = new CheckBox("Filter Market Data For Report") {
+          if (marketDataIdentifier.filteredMarketData) {
+            selected = true
+            visible = true
+          } else {
+            visible = false
+          }
+        }
+
+        add(typeLabel)
+        add(dataTypeCombo)
+        add(filterDataCheckbox, "gapleft unrel")
+      }
+
+      context.remotePublisher.reactions += {
+        case mdss: MarketDataSnapshotSet => if (marketDataIdentifier.selection == mdss.selection) {
+          this.suppressing(pricingGroupPanel.snapshotsComboBox.selection) {
+            pricingGroupPanel.snapshotsComboBoxModel.addElement(SnapshotComboValue(Some(mdss.newSnapshot)))
+          }
+        }
+      }
+
+      add(pricingGroupPanel, "wrap")
+      add(extraPanel)
+
+      override def revert() {
+        this.suppressing(extraPanel.dataTypeCombo.selection, pricingGroupPanel.pricingGroupSelector, pricingGroupPanel.snapshotsComboBox.selection, extraPanel.filterDataCheckbox) {
+          data.selection match {
+            case Some(mdt) => extraPanel.dataTypeCombo.selection.item = mdt
+            case None =>
+          }
+          pricingGroupPanel.pricingGroupSelector.selection = marketDataIdentifier.selection
+          pricingGroupPanel.snapshotsComboBox.initialize()
+          extraPanel.filterDataCheckbox.selected = marketDataIdentifier.filteredMarketData
+        }
+      }
+
+      reactions += {
+        case SelectionChanged(extraPanel.dataTypeCombo) => {
+          val days = pageState.pivotPageState.pivotFieldParams.pivotFieldState.flatMap {
+            _.fieldSelection(Field("Observation Day")).asInstanceOf[Option[Set[Day]]]
+          }
+
+          MarketDataPage.goTo(context, marketDataIdentifier, Some(extraPanel.dataTypeCombo.selection.item), days)
+        }
+        case SelectionChanged(pricingGroupPanel.snapshotsComboBox) =>
+          context.goTo(copy(marketDataIdentifier=StandardMarketDataPageIdentifier(marketDataIdentifier.marketDataIdentifier.copy(marketDataVersion = pricingGroupPanel.snapshotsComboBox.value))))
+        case MarketDataSelectionChanged(selection) => context.goTo(
+          copy(marketDataIdentifier=StandardMarketDataPageIdentifier(MarketDataIdentifier(selection, context.localCache.latestMarketDataVersion(selection))))
+        )
+        case ButtonClicked(b) => {context.goTo(copy(marketDataIdentifier = StandardMarketDataPageIdentifier(marketDataIdentifier.marketDataIdentifier)))}
+      }
+      listenTo(extraPanel.dataTypeCombo.selection, pricingGroupPanel.pricingGroupSelector, pricingGroupPanel.snapshotsComboBox.selection, extraPanel.filterDataCheckbox)
+    }
+
+    Some(ConfigPanels(List(configPanel), new Label(""), Action("BLA"){}))
   }
 }
 
@@ -188,7 +318,7 @@ object MarketDataPage {
       ).get(mdt)
 
       val fieldsState = (fs, observationDays) match {
-        case (Some(fs), Some(days)) => Some(fs.addFilter(Field("Observation Day") → days.asInstanceOf[Set[Any]]))
+        case (Some(fs0), Some(days)) => Some(fs0.addFilter(Field("Observation Day") → days.asInstanceOf[Set[Any]]))
         case _ => fs
       }
 
@@ -211,7 +341,7 @@ object MarketDataPage {
 case class MarketDataSelectionChanged(selection:MarketDataSelection) extends Event
 
 object MarketDataSelectionComponent {
-  def storeMarketDataSelection(pageContext:PageContext, selection:MarketDataSelection) = {
+  def storeMarketDataSelection(pageContext:PageContext, selection:MarketDataSelection) {
     pageContext.putSetting(StandardUserSettingKeys.InitialMarketDataSelection, selection)
     selection.pricingGroup match {
       case Some(pg) => pageContext.putSetting(StandardUserSettingKeys.PricingGroupDefault, pg)
@@ -363,156 +493,6 @@ case class SnapshotComboValue(maybeSnapshot:Option[SnapshotIDLabel]) {
     case Some(ss) => ss.shortString
     case None => "Current"
   }
-}
-class MarketDataPageComponent(
-        pageContext : PageContext,
-        thisPage:MarketDataPage,
-        pivotComponent : PageComponent,
-        pageState : MarketDataPageState,
-        pageData:PageData
-        ) extends MigPanel("insets n n 0 0", "[" + StandardLeftIndent + "][p][p][grow][p]") with PageComponent {
-
-  //Save the layout as the default for use the next time this market data type is selected
-  (thisPage.pageState.marketDataType, thisPage.pageState.pivotPageState.pivotFieldParams.pivotFieldState) match {
-    case (Some(mdt), Some(pfs)) => pageContext.putSetting(StandardUserSettingKeys.UserMarketDataTypeLayout,
-      pageContext.getSetting(StandardUserSettingKeys.UserMarketDataTypeLayout, Map[MarketDataTypeLabel,PivotFieldsState]()) +
-      (mdt -> pfs)
-    )
-    case _ =>
-  }
-
-
-  val data = pageData match {case v:MarketDataPagePageData => v}
-
-  private val marketDataSelectionComponent = new MarketDataSelectionComponent(pageContext, None, thisPage.marketDataIdentifier.selection)
-
-  private val snapshotsComboBoxModel = new DefaultComboBoxModel
-  private val snapshotsComboBox = new ComboBox[SnapshotComboValue](List(SnapshotComboValue(None))) { // Got to pass a list in - not very good but we remove it straight away.
-    peer.setModel(snapshotsComboBoxModel)
-    snapshotsComboBoxModel.removeAllElements()
-    
-    {val snapshots = pageContext.localCache.snapshots(None).getOrElse(thisPage.marketDataIdentifier.selection, List())
-      SnapshotComboValue(None) :: snapshots.map(ss=>SnapshotComboValue(Some(ss))).toList}.foreach(snapshotsComboBoxModel.addElement(_))
-
-    def initialize() {
-      selection.item = {
-        val mdi = thisPage.marketDataIdentifier.marketDataIdentifier
-        mdi.marketDataVersion match {
-          case SnapshotMarketDataVersion(ss) => SnapshotComboValue(Some(ss))
-          case SpecificMarketDataVersion(version) => SnapshotComboValue(None)
-        }
-      }
-    }
-    initialize()
-    def value = {
-      selection.item match {
-        case SnapshotComboValue(Some(ss)) => SnapshotMarketDataVersion(ss)
-        case SnapshotComboValue(None) => SpecificMarketDataVersion(pageContext.localCache.latestMarketDataVersion(marketDataSelectionComponent.selection))
-      }
-    }
-  }
-
-  pageContext.remotePublisher.reactions += {
-    case mdss: MarketDataSnapshotSet => if (thisPage.marketDataIdentifier.selection == mdss.selection) {
-      this.suppressing(snapshotsComboBox.selection) {
-        snapshotsComboBoxModel.addElement(SnapshotComboValue(Some(mdss.newSnapshot)))
-      }
-    }
-  }
-
-  private val labels = if (data.marketDataTypeLabels.isEmpty) List(MarketDataTypeLabel("")) else data.marketDataTypeLabels
-  private val dataTypeCombo = new ComboBox(labels) {
-    renderer = ListView.Renderer(_.toString)
-    data.selection match {
-      case Some(mdt) => selection.item = mdt
-      case None =>
-    }
-    enabled = data.marketDataTypeLabels.nonEmpty
-    minimumSize = new Dimension(100, preferredSize.height)
-  }
-
-  private val filterDataCheckbox = new CheckBox("Filter Market Data For Report") {
-    reactions += {
-      case ButtonClicked(b) => { pageContext.goTo(thisPage.copy(marketDataIdentifier = StandardMarketDataPageIdentifier(thisPage.marketDataIdentifier.marketDataIdentifier)))}
-    }
-  }
-
-  private val importButton = new Button {
-    val observationDay = Day.today.previousWeekday
-    enabled = !thisPage.marketDataIdentifier.selection.isNull
-    tooltip = "Import and snapshot market data for previous weekday"
-    icon = StarlingIcons.icon("/icons/14x14_download_data.png")
-
-    reactions += {
-      case ButtonClicked(_) => {
-        val day = observationDay
-        pageContext.submit(SnapshotSubmitRequest(thisPage.marketDataIdentifier.selection, day.asInstanceOf[Day]))
-      }
-    }
-  }
-
-  override def restoreToCorrectViewForBack = {
-    this.suppressing(dataTypeCombo.selection, marketDataSelectionComponent, snapshotsComboBox.selection, filterDataCheckbox) {
-      pivotComponent.restoreToCorrectViewForBack
-      data.selection match {
-        case Some(mdt) => dataTypeCombo.selection.item = mdt
-        case None =>
-      }
-      marketDataSelectionComponent.selection = thisPage.marketDataIdentifier.selection
-      snapshotsComboBox.initialize()
-      filterDataCheckbox.selected = thisPage.marketDataIdentifier.filteredMarketData
-    }
-  }
-
-  override def resetDynamicState() {pivotComponent.resetDynamicState()}
-
-  override def getState = pivotComponent.getState
-  override def setState(state:Option[ComponentState]) {pivotComponent.setState(state)}
-  override def getTypeState = pivotComponent.getTypeState
-  override def setTypeState(typeState:Option[ComponentTypeState]) {pivotComponent.setTypeState(typeState)}
-  override def getTypeFocusInfo = pivotComponent.getTypeFocusInfo
-  override def setTypeFocusInfo(focusInfo:Option[TypeFocusInfo]) {pivotComponent.setTypeFocusInfo(focusInfo)}
-
-  override def pageShown() {pivotComponent.pageShown()}
-
-  reactions += {
-    case SelectionChanged(`dataTypeCombo`) => {
-      val days = thisPage.pageState.pivotPageState.pivotFieldParams.pivotFieldState.flatMap {
-        _.fieldSelection(Field("Observation Day")).asInstanceOf[Option[Set[Day]]]
-      }
-
-      MarketDataPage.goTo(pageContext, thisPage.marketDataIdentifier, Some(dataTypeCombo.selection.item), days)
-    }
-    case SelectionChanged(`snapshotsComboBox`) =>
-      pageContext.goTo(thisPage.copy(marketDataIdentifier=StandardMarketDataPageIdentifier(thisPage.marketDataIdentifier.marketDataIdentifier.copy(marketDataVersion = snapshotsComboBox.value))))
-    case MarketDataSelectionChanged(selection) => pageContext.goTo(
-      thisPage.copy(marketDataIdentifier=StandardMarketDataPageIdentifier(MarketDataIdentifier(selection, pageContext.localCache.latestMarketDataVersion(selection))))
-    )
-  }
-  listenTo(dataTypeCombo.selection, marketDataSelectionComponent, snapshotsComboBox.selection)
-
-  val snapshotsPanel = new MigPanel("insets 0") {
-    add(new Label("Market Data as of:"))
-    add(snapshotsComboBox)
-  }
-
-  if (thisPage.marketDataIdentifier.filteredMarketData) {
-    filterDataCheckbox.selected = true
-    filterDataCheckbox.visible = true
-  } else {
-    filterDataCheckbox.visible = false
-  }
-
-
-  add(LabelWithSeparator("Market Data Selection"), "spanx, growx, wrap")
-  add(importButton, "skip 1")
-  add(marketDataSelectionComponent, "skip 1")
-  add(snapshotsPanel, "skip 1, ay top, wrap unrel, gapright " + RightPanelSpace)
-  add(LabelWithSeparator("Select Market Data Type"), "spanx, growx, wrap")
-  add(new Label("Data Type:"), "skip 1, split, spanx")
-  add(dataTypeCombo)
-  add(filterDataCheckbox, "wrap unrel")
-  add(pivotComponent, "spanx, push, grow")
 }
 
 case class MarketDataPageState(

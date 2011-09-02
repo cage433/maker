@@ -383,7 +383,7 @@ object Day extends TenorType {
     Day(1899, 12, 30) + double.toInt
   }
 
-  def today() = fromMillis(System.currentTimeMillis)
+  def today = fromMillis(System.currentTimeMillis)
 
   def yesterday = today - 1
   def tomorrow = today + 1
