@@ -309,6 +309,7 @@ object StarlingBuild extends Build{
       file("./starling.api"),
       settings = standardSettings ++ 
         Seq(unmanagedClasspath in Compile <++= (baseDirectory) map titanBinaryJars) ++ 
+        Seq(unmanagedClasspath in Runtime <++= (baseDirectory) map titanBinaryJars) ++ 
         Seq(unmanagedClasspath in Test <++= (baseDirectory) map titanBinaryJars)
     ) dependsOn(bouncyrmi)
   } else {
@@ -338,6 +339,7 @@ object StarlingBuild extends Build{
       settings = standardSettings ++ 
         Seq(libraryDependencies ++= testDependencies) ++ 
         Seq(unmanagedClasspath in Compile <++= (baseDirectory) map titanBinaryJars) ++ 
+        Seq(unmanagedClasspath in Runtime <++= (baseDirectory) map titanBinaryJars) ++ 
         Seq(unmanagedClasspath in Test <++= (baseDirectory) map titanBinaryJars)
     ) dependsOn(curves % "test->test", databases)
   }
@@ -358,6 +360,7 @@ object StarlingBuild extends Build{
       settings = standardSettings ++ 
         Seq(libraryDependencies ++= servicesDependencies ++ testDependencies) ++ 
         Seq(unmanagedClasspath in Compile <++= (baseDirectory) map titanBinaryJars) ++ 
+        Seq(unmanagedClasspath in Runtime <++= (baseDirectory) map titanBinaryJars) ++ 
         Seq(unmanagedClasspath in Test <++= (baseDirectory) map titanBinaryJars)
     ) dependsOn(curves % "test->test", loopyxl % "test->test", bouncyrmi, concurrent, loopyxl, titan, gui, fc2api, browser)
   } else {
