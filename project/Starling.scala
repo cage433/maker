@@ -399,11 +399,22 @@ object StarlingBuild extends Build{
     settings = standardSettings ++ Seq()
   ) dependsOn()
 
-  lazy val launcher = Project(
-    "launcher", 
-    file("./launcher"),
-    settings = standardSettings
-  ) dependsOn(services, gui, singleClasspathManager)
+  lazy val launcher = if (useTitanModelBinaries) {
+    Project(
+      "launcher", 
+      file("./launcher"),
+      settings = standardSettings ++
+        Seq(unmanagedClasspath in Compile <++= (baseDirectory) map titanBinaryJars) ++ 
+        Seq(unmanagedClasspath in Runtime <++= (baseDirectory) map titanBinaryJars) ++ 
+        Seq(unmanagedClasspath in Test <++= (baseDirectory) map titanBinaryJars)
+    ) dependsOn(services, gui, singleClasspathManager)
+  } else {
+    Project(
+      "launcher", 
+      file("./launcher"),
+      settings = standardSettings
+    ) dependsOn(services, gui, singleClasspathManager)
+  }
 
   // Evil hack so that I can get a classpath exported including the test-classes of all projects.
   // See bin/write-classpath-script.sh
