@@ -219,8 +219,8 @@ class UTPTests extends IndexTest {
 
   @Test
   def testThereAreNoSurplusKeysInInstrumentTypeFieldsList() {
-    val instruments = tradeableProvider.flatMap(tradeables=>tradeables).flatMap{tradeable=>tradeable.asUtpPortfolio(Day(2009, 1, 1)).instruments}
-    val allFields = (TreeSet[String]() ++ instruments.flatMap(_.detailsForUTPNOTUSED.keySet.map(_.replaceAll(" ", "").toLowerCase))) + "error"
+    val instruments : Seq[UTP] = tradeableProvider.flatMap(tradeables=>tradeables).flatMap{tradeable=>tradeable.asUtpPortfolio(Day(2009, 1, 1)).instruments}
+    val allFields = (TreeSet[String]() ++ instruments.flatMap(_.fields.map(_.replaceAll(" ", "").toLowerCase))) + "error"
     val actual = TreeSet[String]() ++ InstrumentType.fields.map(_.replaceAll(" ", "").toLowerCase)
     assertEquals(actual, allFields)
   }

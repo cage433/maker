@@ -77,7 +77,12 @@ object InstrumentType {
     ("Estimated Delivery", classOf[Day]),
     ("Fixation Date", classOf[Day]),
     ("Is Average Fixation", classOf[String]),
-    ("Cash Instrument Type", classOf[String])
+    ("Cash Instrument Type", classOf[String]),
+    ("Premium", classOf[String]),
+    ("Quotation Period", classOf[String]),
+    ("Pricing Spec Name", classOf[String]),
+    ("Index", classOf[String]),
+    ("Commodity", classOf[String])
   )
   val fields = fieldsWithType.map(_._1)
   val lowercaseNoSpaceFields = fieldsWithType.map(_._1.toLowerCase.replaceAll(" ", ""))

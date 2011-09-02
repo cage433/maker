@@ -79,6 +79,7 @@ trait Index {
 
 case class IndexSensitivity(coefficient : Double, index : Index)
 
+//TODO - find out why we need this
 trait IndexWithKnownPrice extends Index with KnownObservation {
   def fixingOrForwardPrice(env : Environment, observationDay : Day) : Quantity
   def currency : UOM

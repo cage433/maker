@@ -8,6 +8,7 @@ import starling.market.rules.SwapPricingRule
 import starling.curves.Environment
 import starling.quantity.{NamedQuantity, SpreadOrQuantity, Quantity}
 import starling.quantity.UOM
+import starling.market.IndexWithKnownPrice
 
 trait Tradeable extends AsUtpPortfolio {
   def tradeableType : TradeableType[_]
@@ -98,7 +99,11 @@ object TradeableType {
     ("Fixations", classOf[List[RefinedFixation]]),
     ("Cash Instrument Type", classOf[CashInstrumentType]),
     ("Commodity", classOf[String]),
-    ("Pricing Spec Name", classOf[String])
+    ("Pricing Spec Name", classOf[String]),
+    ("Index", classOf[IndexWithKnownPrice]),
+    ("QuotationPeriod", classOf[DateRange]),
+    ("Premium", classOf[Quantity])
+
   )
   val fields = fieldsWithType.map(_._1)
   val drillDownFields = fields.filterNot(List("Float Payment Freq", "Fixed Basis", "Fixed Payment Freq", "Fixed Rate",

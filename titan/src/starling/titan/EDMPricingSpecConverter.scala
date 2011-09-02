@@ -3,7 +3,7 @@ package starling.titan
 import com.trafigura.tradinghub.support.GUID
 import starling.daterange.Day
 import com.trafigura.edm.physicaltradespecs.{PricingSpecification, FixedPricingSpecification, MonthAveragePricingSpecification, PartialAveragePricingSpecification,OptionalPricingSpecification,WeightedPricingSpecification,UnknownPricingSpecification => UNKPricingSpecification}
-import com.trafigura.edm.physicaltradespecs.{CashAveragePricingSpecificationIndex, ThreeMonthAveragePricingSpecificationIndex, LowestOfFourAveragePricingSpecificationIndex, AverageOfFourAveragePricingSpecificationIndex, MaxSettlementAveragePricingSpecificationIndex, CashUnknownPricingSpecificationIndex, ThreeMonthUnknownPricingSpecificationIndex, LowestOfFourUnknownPricingSpecificationIndex, AverageOfFourUnknownPricingSpecificationIndex, MaxSettlementUnknownPricingSpecificationIndex, AveragePricingSpecificationIndexEnum, UnknownPricingSpecificationIndexEnum}
+import com.trafigura.edm.physicaltradespecs.{CashAveragePricingSpecificationIndex, ThreeMonthAveragePricingSpecificationIndex, LowestOfFourAveragePricingSpecificationIndex, AverageOfFourAveragePricingSpecificationIndex, MaxSettlementAveragePricingSpecificationIndex, CashUnknownPricingSpecificationIndex, ThreeMonthUnknownPricingSpecificationIndex, LowestOfFourUnknownPricingSpecificationIndex, AverageOfFourUnknownPricingSpecificationIndex, MaxSettlementUnknownPricingSpecificationIndex, AveragePricingSpecificationIndexEnum, UnknownPricingSpecificationIndexEnum, PartialAverageDayQuantity}
 import com.trafigura.tradecapture.internal.refinedmetal.{Metal, Market}
 import starling.instrument._
 import physical._
@@ -11,6 +11,7 @@ import starling.quantity.{UOM, Quantity}
 import starling.titan.EDMConversions._
 import collection.immutable.{TreeMap, Map}
 import starling.market.IndexWithKnownPrice
+import starling.daterange.DateRange
 
 
 trait TitanIndexName {
@@ -67,33 +68,19 @@ case class EDMPricingSpecConverter(metal : Metal, exchanges : String => Market) 
     Option(edmPricingSpec) match {
       case Some(edmPSpec) => edmPSpec match {
         case spec : MonthAveragePricingSpecification => {
-          MonthAveragePricingSpec(
+          AveragePricingSpec(
             getIndex(spec.market, spec.index),
             Day.fromJodaDate(spec.qpMonth).containingMonth,
             spec.premium
           )
         }
         case spec : PartialAveragePricingSpecification => {
-          val dayQuantities = spec.dayQtyMap.map{
-            case dayQty => Day.fromJodaDate(dayQty.date) -> fromTitanQuantity(dayQty.quantity)
-          }.toMap
-          val totalQuantity = dayQuantities.map(_._2).sum
-
-          val sortedDayFractions = new TreeMap[Day, Double]() ++ dayQuantities.map{
-            case (day, qty) => day -> (qty / totalQuantity).value
-          }
-
-          val index = getIndex(spec.market, spec.index)
-          // Some of the day fractions are incorrect in titan - using non business days
-          val (validDayFractions, invalidDayFractions) = sortedDayFractions.partition{case (day, _) => index.isObservationDay(day)}
-          val invalidAmount = invalidDayFractions.values.sum
-
-          PartialAveragePricingSpec(
-            index,
-            new TreeMap[Day, Double]() ++ validDayFractions.mapValues(_ + invalidAmount / validDayFractions.size),
+          val days = spec.dayQtyMap.map{dq : PartialAverageDayQuantity => Day.fromJodaDate(dq.date)}.sortWith(_<_)
+          AveragePricingSpec(
+            getIndex(spec.market, spec.index),
+            DateRange(days.head, days.last),
             spec.premium
           )
-
         }
         case spec : OptionalPricingSpecification => {
           OptionalPricingSpec(

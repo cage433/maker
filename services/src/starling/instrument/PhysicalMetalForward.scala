@@ -125,9 +125,9 @@ object CostsAndIncomeValuation{
       pricingSpec.isComplete(env.marketDay),
       pricingSpec.fixedQuantity(env.marketDay, quantity),
       pricingSpec.pricingType,
-      pricingSpec.quotationPeriodStart.map(_.toJodaLocalDate),
-      pricingSpec.quotationPeriodEnd.map(_.toJodaLocalDate),
-      pricingSpec.indexName
+      pricingSpec.quotationPeriod.map(_.firstDay.toJodaLocalDate),
+      pricingSpec.quotationPeriod.map(_.lastDay.toJodaLocalDate),
+      pricingSpec.indexOption.map(_.toString).getOrElse("Undefined")
     )
   }
 }
