@@ -34,10 +34,7 @@ trait ServerContext {
   def username:String
   def lookup[T](klass:Class[T]):T
   def browserService:BrowserService
-  def browserBundles:List[BrowserBundle]
-  def version:Version
-  def bundleForName(name:String) = (RootBrowserContext :: browserBundles).find(_.bundleName == name).getOrElse(
-    throw new Exception("No browser bundle found with name " + name))
+  def extraInfo:Option[String] = None
 }
 
 case class BrowserDay(year:Int, month:Int, dayOfMonth:Int)
@@ -49,7 +46,7 @@ trait Bookmark {
 
 case class UserSettingUpdated(key:Key[_]) extends Event
 
-case class BookmarkData(name:String, bookmark:Bookmark)
+case class BookmarkData(name:String, bookmark:Option[Bookmark])
 
 case class PageBookmark(page:Page) extends Bookmark {
   def daySensitive = false

@@ -2,6 +2,7 @@ package starling.gui
 
 import api._
 import java.lang.String
+import osgi.GuiBromptonActivator
 import pages.PivotTablePageData._
 import pages.{PivotTablePageData, AbstractPivotPage, SingleTradePage, PivotPageState}
 import swing.event.ButtonClicked
@@ -22,28 +23,11 @@ import service._
 import starling.browser.internal.UserSettings
 import service.internal.HeterogeneousMap
 import xstream.GuiStarlingXStream
+import swing.{Publisher, Component, Label, Button}
 import swing.{Component, Label, Button}
 import javax.swing.KeyStroke
 import java.awt.event.KeyEvent
-
-/**
- * An alternative StarlingBrowser for testing gui features quickly
- */
-
-object CannedLauncher {
-  def main(args:Array[String]) {
-    System.setProperty("log4j.configuration", "utils/resources/log4j.properties")
-    BrowserLauncher.start(new scala.swing.Publisher() {}, new HeterogeneousMap[LocalCacheKey], None) {
-      new ServerContext {
-        def lookup[T](klass: Class[T]) = throw new Exception("Canned launcher has no services")
-        def version = Version("canned", "hostname", "db", false, None)
-        def browserBundles = List(CannedBrowserBundle)
-        def browserService = CannedBrowserService
-        def username = "Canned User"
-      }
-    }
-  }
-}
+import starling.browser.osgi.BrowserBromptonActivator
 
 object CannedBrowserService extends BrowserService {
   def name = "Canned"
@@ -52,11 +36,13 @@ object CannedBrowserService extends BrowserService {
   def saveBookmark(bookmark: BookmarkLabel) {println("We don't save canned bookmarks")}
   def deleteBookmark(name: String) {println("We don't delete canned bookmarks")}
   def bookmarks = Nil
+  def version = Version("name", "hostname", "db", false, None)
   def logPageView(info: PageLogInfo) { /*skip*/ }
 }
 
 object CannedBrowserBundle extends BrowserBundle {
   def bundleName = "Canned"
+  def initCache(cache: HeterogeneousMap[LocalCacheKey], publisher: Publisher) {}
   def marshal(obj: AnyRef) = GuiStarlingXStream.write(obj)
   def unmarshal(text: String) = GuiStarlingXStream.read(text).asInstanceOf[AnyRef]
   override def homeButtons(pageContext: PageContext) = CannedHomePagePageComponent.buttons

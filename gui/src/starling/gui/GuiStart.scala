@@ -2,6 +2,7 @@ package starling.gui
 
 import api._
 import javax.swing._
+import osgi.GuiBromptonActivator
 import pages._
 import scala.swing.event.WindowClosing
 import scala.swing.event.MouseClicked
@@ -76,17 +77,7 @@ object StarlingServerNotificationHandlers {
 /**
  * The entry point into the starling gui
  */
-object Launcher extends Log {
-  def main(args: Array[String]) {
-    if (args.length != 3) {
-      throw new IllegalArgumentException("You need to specify 3 arguments: hostname, rmi port and servicePrincipalName")
-    }
-    println(List() ++ args)
-    val rmiHost = args(0)
-    val rmiPort = args(1).toInt
-    val servicePrincipalName = args(2)
-    start(rmiHost, rmiPort, servicePrincipalName)
-  }
+object GuiStart extends Log {
 
   def systemInfo = {
     import starling.utils.ImplicitConversions._
@@ -126,129 +117,22 @@ object Launcher extends Log {
     )
   }
 
-  // These variables are a big hack so we remember what they are when running the start method when changing users.
-  var rmiHost = ""
-  var rmiPort = -1
-  var servicePrincipalName = ""
-
-  def start(rmiHost: String, rmiPort: Int, servicePrincipalName: String, overriddenUser:Option[String] = None) {
-    this.rmiHost = rmiHost
-    this.rmiPort = rmiPort
-    this.servicePrincipalName = servicePrincipalName
-
-    def logger(message:String) {
-      // TODO [03 Feb 2011] do something clever with this message.
-//      println(message)
-    }
-    val client = new BouncyRMIClient(rmiHost, rmiPort, auth(servicePrincipalName), logger, overriddenUser)
-    try {
-      client.startBlocking
-      val starlingServer = client.proxy(classOf[StarlingServer])
-      val fc2Service = client.proxy(classOf[FC2Service])
-      val browserService = client.proxy(classOf[BrowserService])
-      val extraInfo = overriddenUser match {
-        case None => {
-          // When the user isn't overridden, store the system info on each log on.
-          starlingServer.storeSystemInfo(systemInfo)
-          None
-        }
-        case Some(_) => Some("You are " + starlingServer.whoAmI.name) // Want to see who I actually am, not who I tried to be.
-      }
-      start(starlingServer, fc2Service, browserService, client.remotePublisher, extraInfo)
-    }
-    catch {
-      case t => showErrorThenExit(t)
-    }
-  }
-
-  def start(starlingServer:StarlingServer, fc2Service:FC2Service, remoteBrowserService:BrowserService, remotePublisher: Publisher, extraInfo:Option[String]) {
-    val postLocalCacheUpdatePublisher = new scala.swing.Publisher() {}
-
-    BrowserLauncher.start(
-        postLocalCacheUpdatePublisher,
-        createCacheMap(starlingServer.whoAmI.name, starlingServer, fc2Service, postLocalCacheUpdatePublisher, remotePublisher),
-        extraInfo) {
-      new ServerContext {
-
-        val starlingServerClass = classOf[StarlingServer]
-        val fc2ServiceClass = classOf[FC2Service]
-
-        def username = starlingServer.whoAmI.name
-        def version = starlingServer.version
-
-        def lookup[T](klass:Class[T]) = {
-          klass match {
-            case `starlingServerClass` => starlingServer.asInstanceOf[T]
-            case `fc2ServiceClass` => fc2Service.asInstanceOf[T]
-            case _ => throw new Exception("Don't know how to handle " + klass)
-          }
-        }
-
-        def browserBundles = List(browserContext)
-
-        import StarlingLocalCache._
-        val browserContext = new BrowserBundle() {
-          def bundleName = "StarlingServer"
-          def marshal(obj: AnyRef) = GuiStarlingXStream.write(obj)
-          override def userPage(context:PageContext) = Some( UserDetailsPage(context.localCache.currentUser) )
-          override def hotKeys = HotKey(
-            KeyStroke.getKeyStroke(KeyEvent.VK_U, InputEvent.CTRL_DOWN_MASK | InputEvent.SHIFT_DOWN_MASK),
-            "utilsPage",
-            UtilsPage()) :: Nil
-
-          override def notificationHandlers = StarlingServerNotificationHandlers.notificationHandler :: Nil
-          def unmarshal(text: String) = GuiStarlingXStream.read(text).asInstanceOf[AnyRef]
-
-//            bookmark match {
-//              case rb:ReportBookmark => {
-//                val userReportData = rb.userReportData
-//                val pivotLayout = rb.pivotPageState.pivotFieldParams.pivotFieldState match {
-//                  case None => throw new Exception("I should have a layout at this stage")
-//                  case Some(pfs) => PivotLayout(name, pfs, true, rb.pivotPageState.otherLayoutInfo, "special", Nil)
-//                }
-//                starlingServer.saveUserReport(name, userReportData, showParameters)
-//                if (shouldSaveLayout && shouldAssociateLayout) {
-//                  // This is the case where it is a custom layout so we want to save the layout and associate it with this report
-//                  starlingServer.saveLayout(pivotLayout.copy(associatedReports = List(name)))
-//                } else if (shouldAssociateLayout) {
-//                  // This is the case where the layout is already saved but we want to associate it with this report.
-//                  starlingServer.deleteLayout(pivotLayout.layoutName)
-//                  starlingServer.saveLayout(pivotLayout.copy(associatedReports = name :: pivotLayout.associatedReports))
-//                }
-//              }
-//            }
-
-          override def settings(pageContext:PageContext) = StarlingSettings.create(pageContext)
-          override def homeButtons(pageContext:PageContext) = StarlingHomeButtons.create(pageContext)
-          override def helpEntries = StarlingHelpPage.starlingHelpEntry :: Nil
-        }
-
-        def browserService = remoteBrowserService
-      }
-    }
-
-  }
-
-  def createCacheMap(
-                      username:String,
+  def initCacheMap(   cacheMap:HeterogeneousMap[LocalCacheKey],
                       starlingServer:StarlingServer,
                       fc2Service:FC2Service,
-                      postLocalCacheUpdatePublisher : Publisher,
-                      remotePublisher: Publisher):HeterogeneousMap[LocalCacheKey] = {
+                      publisher: Publisher) {
     val localCacheUpdatePublisher = new scala.swing.Publisher() {}
-    remotePublisher.reactions += {
+    publisher.reactions += {
       case batch:EventBatch => {
         onEDT {
           //This indirection between the remotePublisher ensures that pages see
           // the events after the local cache is updated
           // and also ensures that the pages receive the event on the EDT
           batch.events.foreach { e => localCacheUpdatePublisher.publish(e) }
-          postLocalCacheUpdatePublisher.publish(batch)
         }
       }
     }
 
-    val cacheMap = new HeterogeneousMap[LocalCacheKey]
     localCacheUpdatePublisher.reactions += {
       case ExcelMarketListUpdate(values) => {
         cacheMap(ExcelDataSets) = values

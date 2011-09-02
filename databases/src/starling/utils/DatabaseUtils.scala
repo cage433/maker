@@ -2,6 +2,7 @@ package starling.utils
 
 import sql.ConnectionParams
 import starling.db.DB
+import starling.dbx.DataSourceFactory
 
 
 object DatabaseUtils {
@@ -15,7 +16,7 @@ object DatabaseUtils {
     println("")
     println("Refreshing " + databaseName)
     println("")
-    val dataSource = ConnectionParams.getDataSource(database, user, pass)
+    val dataSource = DataSourceFactory.getDataSource(database, user, pass)
     val starlingDB = new DB(dataSource)
     // Copy the database from the last backup.
     starlingDB.inTransaction {
@@ -43,7 +44,7 @@ object DatabaseUtils {
     println("")
     println("Backing up " + backupName)
     println("")
-    val dataSource = ConnectionParams.getDataSource(database, user, pass)
+    val dataSource = DataSourceFactory.getDataSource(database, user, pass)
     val starlingDB = new DB(dataSource)
     // Copy the database from the last backup.
     starlingDB.inTransaction {

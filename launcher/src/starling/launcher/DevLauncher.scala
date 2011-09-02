@@ -1,6 +1,5 @@
-package starling.dev.launcher
+package starling.launcher
 
-import starling.gui.Launcher
 import starling.http.GUICode
 import starling.services.Server
 import starling.bouncyrmi.BouncyRMI
@@ -13,7 +12,7 @@ object DevLauncher {
     System.setProperty("log4j.configuration", "utils/resources/log4j.properties")
     val props = propsWithUnusedPort()
     Server.run(props, args)
-    System.setProperty(BouncyRMI.CodeVersionKey, GUICode.latestTimestamp.toString())
+    //System.setProperty(BouncyRMI.CodeVersionKey, GUICode.latestTimestamp.toString())
     Launcher.start(props.ExternalHostname(), props.RmiPort(), props.ServerPrincipalName())
   }
 

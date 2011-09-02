@@ -40,13 +40,14 @@ import starling.services.rabbit._
 import collection.immutable.Map
 import com.trafigura.services.trinity.TrinityService
 import com.trafigura.services.marketdata.{ExampleService, MarketDataServiceApi}
-import com.trafigura.services.{WebServiceFactory, ResteasyServiceApi}
 import starling.fc2.api.FC2Service
 import starling.utils._
 import starling.browser.service.{BrowserService, UserLoggedIn, Version}
+import starling.dbx.DataSourceFactory
 import starling.titan.{TitanTradeCache, TitanSystemOfRecord, TitanTradeStore}
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
+import com.trafigura.services.{DocumentationService, WebServiceFactory, ResteasyServiceApi}
 
 
 class StarlingInit( val props: Props,
@@ -75,7 +76,7 @@ class StarlingInit( val props: Props,
     startHttp                → List(httpServer, regressionServer, webServiceServer, trinityService),
     startStarlingJMX         → List(jmx),
     startEAIAutoImportThread → List(eaiAutoImport, fwdCurveAutoImport),
-    true                     → List(scheduler, Stopable(stopF = ConnectionParams.shutdown _))
+    true                     → List(scheduler, Stopable(stopF = DataSourceFactory.shutdown _))
   )
 
   override def start = { super.start; services.start }
@@ -307,7 +308,7 @@ class StarlingInit( val props: Props,
 
    val latestTimestamp = if (forceGUICompatability) GUICode.latestTimestamp.toString else BouncyRMI.CodeVersionUndefined
 
-  val browserService = new BrowserServiceImpl(name, userSettingsDatabase)
+  val browserService = new BrowserServiceImpl(name, version, userSettingsDatabase)
 
   val rmiServerForGUI:BouncyRMIServer[User] = new BouncyRMIServer(
     rmiPort,
@@ -342,7 +343,7 @@ class StarlingInit( val props: Props,
     val externalHostname = props.ExternalHostname()
     val xlloopUrl = props.XLLoopUrl()
     val rmiPort = props.RmiPort()
-    val webStartServlet = new WebStartServlet("webstart", serverName, externalURL, "starling.gui.Launcher",
+    val webStartServlet = new WebStartServlet("webstart", serverName, externalURL, "starling.launcher.Launcher",
       List(externalHostname, rmiPort.toString), xlloopUrl)
     val cannedWebStartServlet = new WebStartServlet("cannedwebstart", serverName, externalURL,
       "starling.gui.CannedLauncher", List(), xlloopUrl)
@@ -353,17 +354,17 @@ class StarlingInit( val props: Props,
   }
 
   lazy val webServiceServer = locally {
-    val webXmlUrl = this.getClass.getResource("../../webapp/WEB-INF/web.xml").toExternalForm
+    val webXmlUrl = "services/resources/webapp/WEB-INF/web.xml"//classOf[StarlingInit].getResource("../../webapp/WEB-INF/web.xml").toExternalForm
 
     new HttpServer(props.HttpServicePort(), props.HttpServiceExternalUrl(), serverName, Some(webXmlUrl), Nil) {
       override def start =
         log.infoF("HTTP web service external url = '%s', server name = '%s'" % (props.HttpServiceExternalUrl(), serverName)) {
-          super.start; /*DocumentationService.registerInstances(webServices : _*)*/
+          super.start; /*DocumentationService.registerInstances(webServices : _*) */
         }
     }
   }
 
-  lazy val webServices = List(marketDataService, valuationService, /*DocumentationService,*/ ExampleService)
+  lazy val webServices = List(marketDataService, valuationService, /*DocumentationService, */ExampleService)
   lazy val regressionServer = new RegressionServer(props.RegressionPort(), reportServlet)
 }
 

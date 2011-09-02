@@ -145,15 +145,17 @@ object Levels extends Enumeration {
 }
 
 object Log4JLogger {
-  System.setProperty("log4j.configuration", "utils/resources/log4j.properties")
+  //System.setProperty("log4j.configuration", "utils/resources/log4j.properties")
 
   lazy val logger = new Log4JLogger(Logger.getRootLogger, levelTransformer)
   def forName(name: String) = new Log4JLogger(Logger.getLogger(name), levelTransformer)
   def forClass(clazz: Class[_]) = new Log4JLogger(Logger.getLogger(clazz), levelTransformer)
 
   private val levelTransformer = new DynamicVariable[(Levels.Value) => Levels.Value](identity _)
-}
 
+  val isOsgi = try { classOf[Category].getClass.getMethod("getLevel"); false }
+    catch { case _:NoSuchMethodException => true }
+}
 
 class Log4JLogger(val logger: Logger, levelTransformer: DynamicVariable[(Levels.Value) => Levels.Value]) extends VarLogger {
   override def isTraceEnabled = isEnabledFor(Levels.Trace)
@@ -181,11 +183,15 @@ class Log4JLogger(val logger: Logger, levelTransformer: DynamicVariable[(Levels.
   override def fatal(msg: AnyRef, t: Throwable) = logger.fatal(msg, t)
 
   private def getInheritedLevel = {
-    def recurse(category: Category): Level = {
-      category.getLevel ?? recurse(category.getParent)
-    }
+    if (Log4JLogger.isOsgi) {
+      Levels.Info
+    } else {
+      def recurse(category: Category): Level = {
+        category.getLevel ?? recurse(category.getParent)
+      }
 
-    recurse(logger)
+      recurse(logger)
+    }
   }
 
   override def level = levelTransformer.value(getInheritedLevel match {

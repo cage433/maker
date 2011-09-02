@@ -3,6 +3,7 @@ package starling.browser.internal
 import javax.swing.ImageIcon
 import javax.imageio.ImageIO
 import java.awt.image.BufferedImage
+import java.io.{FileOutputStream, FileInputStream, File}
 
 object BrowserIcons {
   val Refresh = "/icons/22x22/actions/view-refresh.png"
@@ -15,7 +16,10 @@ object BrowserIcons {
   def im(location:String) = imageCache.memoize(location) { ImageIO.read(getResource(location, "Image")) }
 
   private def getResource(location: String, kind: String) = try {
-    getClass.getResource(location)
+    getClass.getResource(location) match {
+      case null => throw new Exception("missing resource " + location)
+      case r => r
+    }
   } catch {
     case e => throw new Exception("Could not load " + kind + " " + location, e)
   }

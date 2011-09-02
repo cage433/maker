@@ -344,18 +344,18 @@ class BouncyRMITests extends StarlingTest {
     }
   }
 
-  @Test
-  def testInvokeMethodOnProxiedConcreteClass() {
-    server.start
-    val client1 = new BouncyRMIClient(
-      "localhost", port1,
-      auth = Client.Null, overriddenUser = None)
-    client1.startBlocking
-    val result = client1.proxy(classOf[SomeService]).methodNotOnTrait
-    client1.stop
-    server.stop()
-    assertEquals(result, "yes")
-  }
+//  @Test
+//  def testInvokeMethodOnProxiedConcreteClass() {
+//    server.start
+//    val client1 = new BouncyRMIClient(
+//      "localhost", port1,
+//      auth = Client.Null, overriddenUser = None)
+//    client1.startBlocking
+//    val result = client1.proxy(classOf[SomeService]).methodNotOnTrait
+//    client1.stop
+//    server.stop()
+//    assertEquals(result, "yes")
+//  }
 
   @Test
   def testInvokingMethodWhenOfflineThrowsOfflineException() {

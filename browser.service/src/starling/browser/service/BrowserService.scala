@@ -16,4 +16,5 @@ trait BrowserService {
   def deleteBookmark(name:String)
   def bookmarks:List[BookmarkLabel]
   def logPageView(info:PageLogInfo)
+  def version:Version
 }

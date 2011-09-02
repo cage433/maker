@@ -8,13 +8,13 @@ import com.thoughtworks.xstream.XStream
 import scala.collection.JavaConversions
 import starling.market.{Index, CommodityMarket, Market, FuturesMarket}
 import java.io.StringWriter
-import com.thoughtworks.xstream.io.xml.{XppDriver, CompactWriter}
 import com.thoughtworks.xstream.mapper.{MapperWrapper, Mapper}
 import java.lang.Class
 import annotation.tailrec
 import starling.pivot.MarketValue
 import starling.xstream.{XstreamUOMConverter, XstreamDayConverter}
 import xstream.ScalaXStream
+import com.thoughtworks.xstream.io.xml.{DomDriver, XppDriver, CompactWriter}
 
 //import starling.db.FwdCurveAppPricingGroup
 
@@ -87,9 +87,9 @@ object StarlingXStream {
   }
 
   def createXStream = {
-    val anonymousIgnoringMapper = new AnonymousIgnoringMapper(new XStream().getMapper)
+    val anonymousIgnoringMapper = new AnonymousIgnoringMapper(new XStream(null, new DomDriver(), getClass.getClassLoader).getMapper)
 
-    val xs = new XStream(null, anonymousIgnoringMapper, new XppDriver())
+    val xs = new XStream(null, new DomDriver(), getClass.getClassLoader, anonymousIgnoringMapper)
     ScalaXStream.configure(xs)
 
     xs.registerConverter(new XstreamDayConverter)

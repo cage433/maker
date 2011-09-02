@@ -10,6 +10,7 @@ import starling.richdb.{RichDB}
 import starling.db.DBWriter
 import starling.utils.sql.QueryBuilder._
 import starling.services.StarlingInit
+import org.apache.commons.io.IOUtils
 
 //Note although there is a lot of error checking in this class one thing it does not check for is the possibility that
 //there are more patches applied then actually exist in the patch package.  This is on purpose just in case we want to
@@ -74,7 +75,10 @@ class PatchRunner(starling: RichDB, readOnlyMode: Boolean, startlingInit: Starli
     val packageDirectoryURL = getClass.getResource(packageDirectoryToSearch)
 
     //Get a list of the contents
-    val packageDirectoryContents = new File(packageDirectoryURL.toURI()).list().toList
+    val packageDirectoryContents = {
+      IOUtils.readLines(packageDirectoryURL.openConnection().getInputStream).toArray(new Array[String](0)).toList
+      //new File(packageDirectoryURL.toURI()).list().toList
+    }
 
     //Remove anything which is not a class
     val packageDirectoryClasses = packageDirectoryContents.filter(className => className.endsWith(".class"))

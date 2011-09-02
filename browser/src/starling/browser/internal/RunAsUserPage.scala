@@ -11,7 +11,7 @@ import service.UserLoggedIn
 case class RunAsUserPage() extends Page {
   def text = "Run as another user"
   def icon = BrowserIcons.im("/icons/16x16_user_dark.png")
-  def bundle = RootBrowserContext.bundleName
+  def bundle = RootBrowserBundle.bundleName
 
 
   def build(serverContext: String) = null

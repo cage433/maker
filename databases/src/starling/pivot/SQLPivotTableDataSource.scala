@@ -12,7 +12,6 @@ import collection.mutable.LinkedHashSet
 import collection.immutable.Set
 import collection.Seq
 import java.util.concurrent.{Executors, Executor}
-import oracle.net.aso._
 import starling.instrument.{DeletedInstrument}
 import starling.gui.api.UTPIdentifier
 import starling.daterange.{Timestamp, DateRange, Day}

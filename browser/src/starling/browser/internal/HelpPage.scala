@@ -17,7 +17,7 @@ import org.eclipse.mylyn.wikitext.textile.core.TextileLanguage
 
 case object HelpPage extends Page {
 
-  def bundle = RootBrowserContext.bundleName
+  def bundle = RootBrowserBundle.bundleName
 
   def build(serverContext: String) = null
 

@@ -11,8 +11,9 @@ import starling.browser.common.{SXLayerScala, GuiUtils, MigPanel}
 import starling.browser.{ServerContext, LocalCache, Page}
 
 class StarlingBrowserFrame(homePage: Page, startPage:Either[Page, (ServerContext => Page, PartialFunction[Throwable, Unit])], pageBuilder: PageBuilder, lCache: LocalCache, userSettings:UserSettings,
-                           remotePublisher: Publisher, containerMethods: ContainerMethods, extraInfo:Option[String])
+                           containerMethods: ContainerMethods, extraInfo:Option[String])
         extends Frame with WindowMethods {
+  private val remotePublisher = pageBuilder.remotePublisher
   private val exitAction = Action("Exit") {containerMethods.closeAllFrames(this)}
   peer.getRootPane.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke(KeyEvent.VK_Q, InputEvent.CTRL_DOWN_MASK), "exitAction")
   peer.getRootPane.getActionMap.put("exitAction", exitAction.peer)
@@ -252,7 +253,7 @@ class StarlingBrowserTabbedPane(homePage: Page, startPage:Either[Page,(ServerCon
       case _ => (" ", BrowserIcons.im("/icons/10x10_blank.png"), " ")
     }
     val tabComponent = new TabComponent(windowMethods, this, tabText, icon)
-    val starlingBrowser = new StarlingBrowser(pageBuilder, lCache, userSettings, remotePublisher, homePage, addressText,
+    val starlingBrowser = new StarlingBrowser(pageBuilder, lCache, userSettings, homePage, addressText,
       windowMethods, containerMethods, parentFrame, tabComponent, createStarlingBrowser, extraInfo)
     pages.insert(pages.length - 1, new scala.swing.TabbedPane.Page(tabText, starlingBrowser.starlingBrowserLayer, null))
     val tabIndex = if (pages.length == 0) 0 else pages.length - 2

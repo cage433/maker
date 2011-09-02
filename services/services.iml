@@ -25,100 +25,19 @@
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="library" name="scala-lib" level="project" />
     <orderEntry type="library" name="scala-swing-lib" level="project" />
-    <orderEntry type="module" module-name="utils" />
+    <orderEntry type="module" module-name="utils" exported="" />
     <orderEntry type="module" module-name="loopyxl" exported="" />
-    <orderEntry type="module" module-name="daterange" />
-    <orderEntry type="module" module-name="auth" />
+    <orderEntry type="module" module-name="daterange" exported="" />
+    <orderEntry type="module" module-name="auth" exported="" />
     <orderEntry type="module" module-name="gui.api" exported="" />
-    <orderEntry type="module" module-name="pivot" />
-    <orderEntry type="module" module-name="instrument" />
-    <orderEntry type="module" module-name="starling.api" />
-    <orderEntry type="module" module-name="titan" />
-    <orderEntry type="module-library" exported="">
-      <library>
-        <CLASSES>
-          <root url="jar://$MODULE_DIR$/lib/jminx-commons-logging-1.1.1.jar!/" />
-        </CLASSES>
-        <JAVADOC />
-        <SOURCES />
-      </library>
-    </orderEntry>
-    <orderEntry type="module-library" exported="">
-      <library>
-        <CLASSES>
-          <root url="jar://$MODULE_DIR$/lib/jminx-org.restlet.jar!/" />
-        </CLASSES>
-        <JAVADOC />
-        <SOURCES />
-      </library>
-    </orderEntry>
-    <orderEntry type="module-library" exported="">
-      <library>
-        <CLASSES>
-          <root url="jar://$MODULE_DIR$/lib/jminx-commons-lang-2.4.jar!/" />
-        </CLASSES>
-        <JAVADOC />
-        <SOURCES />
-      </library>
-    </orderEntry>
-    <orderEntry type="module-library" exported="">
-      <library>
-        <CLASSES>
-          <root url="jar://$MODULE_DIR$/lib/jminix-com.noelios.restlet.jar!/" />
-        </CLASSES>
-        <JAVADOC />
-        <SOURCES />
-      </library>
-    </orderEntry>
-    <orderEntry type="module-library" exported="">
-      <library>
-        <CLASSES>
-          <root url="jar://$MODULE_DIR$/lib/jminx-commons-beanutils-1.7.0.jar!/" />
-        </CLASSES>
-        <JAVADOC />
-        <SOURCES />
-      </library>
-    </orderEntry>
-    <orderEntry type="module-library" exported="">
-      <library>
-        <CLASSES>
-          <root url="jar://$MODULE_DIR$/lib/jminix-0.9.jar!/" />
-        </CLASSES>
-        <JAVADOC />
-        <SOURCES />
-      </library>
-    </orderEntry>
-    <orderEntry type="module-library" exported="">
-      <library>
-        <CLASSES>
-          <root url="jar://$MODULE_DIR$/lib/jminx-oro-2.0.8.jar!/" />
-        </CLASSES>
-        <JAVADOC />
-        <SOURCES />
-      </library>
-    </orderEntry>
+    <orderEntry type="module" module-name="pivot" exported="" />
+    <orderEntry type="module" module-name="instrument" exported="" />
+    <orderEntry type="module" module-name="starling.api" exported="" />
+    <orderEntry type="module" module-name="titan" exported="" />
     <orderEntry type="module-library" exported="">
       <library>
         <CLASSES>
           <root url="jar://$MODULE_DIR$/lib/jsch-0.1.44.jar!/" />
-        </CLASSES>
-        <JAVADOC />
-        <SOURCES />
-      </library>
-    </orderEntry>
-    <orderEntry type="module-library" exported="">
-      <library>
-        <CLASSES>
-          <root url="jar://$MODULE_DIR$/lib/jminx-org.restlet.ext.velocity_1.5.jar!/" />
-        </CLASSES>
-        <JAVADOC />
-        <SOURCES />
-      </library>
-    </orderEntry>
-    <orderEntry type="module-library" exported="">
-      <library>
-        <CLASSES>
-          <root url="jar://$MODULE_DIR$/lib/jminx-json-lib-2.2.3-jdk15.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />
@@ -136,34 +55,7 @@
     <orderEntry type="module-library" exported="">
       <library>
         <CLASSES>
-          <root url="jar://$MODULE_DIR$/lib/jminx-ezmorph-1.0.6.jar!/" />
-        </CLASSES>
-        <JAVADOC />
-        <SOURCES />
-      </library>
-    </orderEntry>
-    <orderEntry type="module-library" exported="">
-      <library>
-        <CLASSES>
-          <root url="jar://$MODULE_DIR$/lib/jminx-velocity-1.5.jar!/" />
-        </CLASSES>
-        <JAVADOC />
-        <SOURCES />
-      </library>
-    </orderEntry>
-    <orderEntry type="module-library" exported="">
-      <library>
-        <CLASSES>
-          <root url="jar://$MODULE_DIR$/lib/jminix-com.noelios.restlet.ext.servlet_2.5.jar!/" />
-        </CLASSES>
-        <JAVADOC />
-        <SOURCES />
-      </library>
-    </orderEntry>
-    <orderEntry type="module-library" exported="">
-      <library>
-        <CLASSES>
-          <root url="jar://$MODULE_DIR$/../.ivy/cache/javax.servlet/servlet-api/jars/servlet-api-2.5.jar!/" />
+          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/compile/servlet-api-2.5.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES>
@@ -456,9 +348,8 @@
         <SOURCES />
       </library>
     </orderEntry>
-    <orderEntry type="module" module-name="browser" />
-    <orderEntry type="module" module-name="gui" />
-    <orderEntry type="module" module-name="fc2.api" />
+    <orderEntry type="module" module-name="manager" exported="" />
+    <orderEntry type="module" module-name="fc2.api" exported="" />
   </component>
 </module>
 

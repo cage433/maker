@@ -49,14 +49,14 @@ case object ClientConnectedEvent
 case object ClientDisconnectedEvent
 case class UnexpectedDisconnectEvent(t: Throwable)
 
-class ClientPipelineFactory(handler: SimpleChannelHandler, timer:HashedWheelTimer, logger:(String)=>Unit) extends ChannelPipelineFactory {
+class ClientPipelineFactory(classLoader:ClassLoader, handler: SimpleChannelHandler, timer:HashedWheelTimer, logger:(String)=>Unit) extends ChannelPipelineFactory {
   def getPipeline() = {
     val pipeline = Channels.pipeline
     val engine = SslContextFactory.clientContext.createSSLEngine
     engine.setUseClientMode(true)
 
     pipeline.addLast("ssl", new SslHandler(engine))
-    BouncyRMI.addCommon(pipeline, timer, logger)
+    BouncyRMI.addCommon(classLoader, pipeline, timer, logger)
     //    pipeline.addLast("timeout", new ReadTimeoutHandler(BouncyRMI.timer, 10))
     pipeline.addLast("handler", handler)
 
@@ -78,23 +78,23 @@ object BouncyRMI {
 
   val CertIssuerName = "CN=starling"
 
-  def addCommon(pipeline: ChannelPipeline, timer:HashedWheelTimer, logger:(String)=>Unit) = {
+  def addCommon(classLoader:ClassLoader, pipeline: ChannelPipeline, timer:HashedWheelTimer, logger:(String)=>Unit) = {
     pipeline.addLast("compress", new MyCompressEncoder(Deflater.BEST_SPEED))
     pipeline.addLast("encoder", new ObjectEncoder())
     pipeline.addLast("decompress", new MyDecompressDecoder(200 * 1024 * 1024, logger))
-    pipeline.addLast("decoder", new ObjectDecoder(200 * 1024 * 1024))
+    pipeline.addLast("decoder", new ObjectDecoder(200 * 1024 * 1024, classLoader))
     pipeline.addLast("idle", new IdleStateHandler(timer, 0, 0, 5))
   }
 }
 
-class ServerPipelineFactory[User](authHandler: ServerAuthHandler[User], handler: SimpleChannelUpstreamHandler, timer:HashedWheelTimer, secured : Boolean = true) extends ChannelPipelineFactory {
+class ServerPipelineFactory[User](classLoader:ClassLoader, authHandler: ServerAuthHandler[User], handler: SimpleChannelUpstreamHandler, timer:HashedWheelTimer, secured : Boolean = true) extends ChannelPipelineFactory {
   def getPipeline() = {
     val pipeline = Channels.pipeline
     val engine = SslContextFactory.serverContext.createSSLEngine
     engine.setUseClientMode(false)
 
     if (secured == true) pipeline.addLast("ssl", new SslHandler(engine))
-    BouncyRMI.addCommon(pipeline, timer, (x)=>{})
+    BouncyRMI.addCommon(classLoader, pipeline, timer, (x)=>{})
     pipeline.addLast("threadPool", new ExecutionHandler(Executors.newCachedThreadPool(new NamedDaemonThreadFactory("Server worker"))))
     if (secured == true) pipeline.addLast("authHandler", authHandler)
     pipeline.addLast("handler", handler)

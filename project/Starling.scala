@@ -53,15 +53,22 @@ object Dependencies{
     "com.google.collections" % "google-collections" % "1.0" withSources()
   )
 
+  val managerDependencies = Seq(
+    "org.scala-lang" % "scala-swing" % "2.9.0-1" withSources()
+  )
+
   val databasesDependencies = Seq(
     "org.springframework" % "spring-jdbc" % "3.0.5.RELEASE" withSources(),
-    "com.jolbox" % "bonecp" % "0.7.1.RELEASE" intransitive() withSources(),
     "org.slf4j" % "slf4j-api" % "1.6.1" withSources(),
     "org.scala-tools.testing" % "scalacheck_2.9.0-1" % "1.9" withSources(),
     "org.apache.derby" % "derby" % "10.5.3.0_1",
     "hsqldb" % "hsqldb" % "1.8.0.10" % "test",
     "com.h2database" % "h2" % "1.2.131" % "test" withSources()
-  ) 
+  )
+
+  val dbxDependencies = Seq(
+    "com.jolbox" % "bonecp" % "0.7.1.RELEASE" intransitive() withSources()
+  )
   
   val titanModelDependencies = Seq(
     "org.slf4j" % "slf4j-api" % "1.6.1" withSources(),
@@ -171,7 +178,7 @@ object StarlingBuild extends Build{
     "bouncyrmi", 
     file("./bouncyrmi"),
     settings = standardSettings ++ Seq(libraryDependencies ++= bouncyRmiDependencies)
-  )
+  ) dependsOn(manager)
 
   lazy val auth = Project(
     "auth", 
@@ -255,7 +262,7 @@ object StarlingBuild extends Build{
     "browser",
     file("./browser"),
     settings = standardSettings ++ Seq(libraryDependencies ++= browserDependencies)
-  ) dependsOn(browserService)
+  ) dependsOn(browserService, manager)
 
   lazy val browserService = Project(
     "browser.service",
@@ -312,11 +319,17 @@ object StarlingBuild extends Build{
     ) dependsOn(bouncyrmi, titanModel)
   }
  
+  lazy val dbx = Project(
+    "dbx",
+    file("./dbx"),
+    settings = standardSettings ++ Seq(libraryDependencies ++= dbxDependencies)
+  ) dependsOn(manager)
+
   lazy val databases = Project(
     "databases", 
     file("./databases"),
     settings = standardSettings ++ Seq(libraryDependencies ++= databasesDependencies ++ testDependencies)
-  ) dependsOn(curves % "test->test", VaR , pivot , guiapi , concurrent , auth , starlingApi )
+  ) dependsOn(curves % "test->test", VaR , pivot , guiapi , concurrent , auth , starlingApi, dbx )
 
   lazy val titan = if (useTitanModelBinaries) {
     Project(
@@ -357,11 +370,37 @@ object StarlingBuild extends Build{
     ) dependsOn(curves % "test->test", loopyxl % "test->test", bouncyrmi, concurrent, loopyxl, titan, gui, fc2api, browser)
   }
 
-  lazy val devLauncher = Project(
-    "devLauncher", 
-    file("./dev.launcher"),
+  lazy val manager = Project(
+    "manager",
+    file("./manager"),
+    settings = standardSettings ++ Seq(
+      libraryDependencies ++= managerDependencies
+    )
+  ) dependsOn()
+
+  lazy val singleClasspathManager = Project(
+    "singleclasspathmanager",
+    file("./singleclasspathmanager"),
+    settings = standardSettings ++ Seq()
+  ) dependsOn(manager)
+
+  lazy val osgiManager = Project(
+    "osgimanager",
+    file("./osgimanager"),
+    settings = standardSettings ++ Seq()
+  ) dependsOn(manager)
+
+  lazy val osgiRun = Project(
+    "osgirun",
+    file("./osgirun"),
+    settings = standardSettings ++ Seq()
+  ) dependsOn()
+
+  lazy val launcher = Project(
+    "launcher", 
+    file("./launcher"),
     settings = standardSettings
-  ) dependsOn(services, gui)
+  ) dependsOn(services, gui, singleClasspathManager)
 
   // Evil hack so that I can get a classpath exported including the test-classes of all projects.
   // See bin/write-classpath-script.sh
@@ -409,7 +448,12 @@ object StarlingBuild extends Build{
     databases,
     titan,
     services,
-    devLauncher
+    launcher,
+    manager,
+    osgiManager,
+    singleClasspathManager,
+    osgiRun,
+    dbx
   )
 
   val childProjects : List[ProjectReference] =  otherProjectRefereneces ::: titanModelReference

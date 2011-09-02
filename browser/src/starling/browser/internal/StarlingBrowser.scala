@@ -2,6 +2,7 @@ package starling.browser.internal
 
 import collection.mutable.ArrayBuffer
 import starling.browser._
+import osgi.BundleAdded
 import service.{BookmarkLabel, EventBatch}
 import starling.browser.common._
 import java.util.concurrent.{CountDownLatch, ThreadFactory, Executors}
@@ -18,6 +19,9 @@ import java.awt.{RenderingHints, Graphics, Color, KeyboardFocusManager, Graphics
 import java.lang.reflect.UndeclaredThrowableException
 import net.miginfocom.layout.LinkHandler
 import util.{BrowserLog, BrowserStackTraceToString, BrowserThreadSafeCachingProxy}
+import com.googlecode.transloader.{ObjectWrapper, Transloader}
+import com.googlecode.transloader.clone.reflect.{ObjenesisInstantiationStrategy, MaximalCloningDecisionStrategy, ReflectionCloningStrategy}
+import com.googlecode.transloader.clone.SerializationCloningStrategy
 
 trait CurrentPage {
   def page:Page
@@ -25,8 +29,15 @@ trait CurrentPage {
   def bookmarkLabel(name:String):BookmarkLabel
 }
 
+object StarlingBrowser {
+  def reflectionCloningStrategy = new ReflectionCloningStrategy(
+    new MaximalCloningDecisionStrategy,
+    new ObjenesisInstantiationStrategy,
+    new SerializationCloningStrategy)
+}
+
 class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:UserSettings,
-                      val remotePublisher:Publisher, homePage:Page, initialAddressText:String,
+                      homePage:Page, initialAddressText:String,
                       windowMethods:WindowMethods, containerMethods:ContainerMethods, frame:StarlingBrowserFrame, tabComponent:TabComponent,
                       openTab:(Boolean,Either[Page,(ServerContext=>Page, PartialFunction[Throwable, Unit])])=>Unit,
                       extraInfo:Option[String])
@@ -83,6 +94,21 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
   }
 
   reactions += {
+    case BundleAdded(bundle) => {
+      if (bundle.bundleName == history(current).bundle) {
+        val currentPageInfo = history(current)
+        require(bundle.getClass.getClassLoader != currentPageInfo.page.getClass.getClassLoader)
+        val newPage = StarlingBrowser.reflectionCloningStrategy.cloneObjectUsingClassLoader(
+          currentPageInfo.page, bundle.getClass.getClassLoader).asInstanceOf[Page]
+        println(">> Page copy. here copied page from " + currentPageInfo.page.getClass.getClassLoader + " to " + newPage.getClass.getClassLoader)
+        currentPageInfo.refreshPage = Some(newPage)
+        if (liveUpdateCheckbox.selected) {
+          refresh()
+        } else {
+          refreshButton.enabled = true
+        }
+      }
+    }
     case EventBatch(events) => {
       events.foreach { e => publisherForPageContext.publish(e) }
 
@@ -105,7 +131,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
     }
     case e@UserSettingUpdated(_) => publisherForPageContext.publish(e)
   }
-  listenTo(remotePublisher)
+  listenTo(pageBuilder.remotePublisher)
 
   val pageContext = {
     new PageContext {
@@ -151,9 +177,9 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
         val oldValue = getSettingOption(key)
         userSettings.putSetting(key, value)
         oldValue match {
-          case None if value != None => StarlingBrowser.this.remotePublisher.publish(UserSettingUpdated(key))
+          case None if value != None => StarlingBrowser.this.pageBuilder.remotePublisher.publish(UserSettingUpdated(key))
           case Some(old) => if (value != old) {
-            StarlingBrowser.this.remotePublisher.publish(UserSettingUpdated(key))
+            StarlingBrowser.this.pageBuilder.remotePublisher.publish(UserSettingUpdated(key))
           }
           case _ =>
         }
@@ -1262,19 +1288,10 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
   }
 }
 //Caches all page data and launches threads calling back with swing thread when completed
-class PageBuilder(val serverContext:ServerContext) {
+class PageBuilder(val remotePublisher:Publisher, val serverContext:ServerContext, bundles:scala.collection.mutable.HashMap[String,BrowserBundle]) {
 
-  val browserBundle = RootBrowserContext
-
-  def browserBundles = browserBundle :: serverContext.browserBundles
-
-  def bundleFor(name:String) = {
-    val all = browserBundles
-    all.find(_.bundleName == name).getOrElse({
-      val bundleNames = all.map(_.bundleName)
-      throw new Exception("No bundle " + name + " found in " + bundleNames)
-    })
-  }
+  def browserBundles = bundles.values.toList
+  def bundleFor(name:String) = bundles.getOrElse(name, throw new Exception("No bundle for name " + name))
   val pageDataCache = new scala.collection.mutable.HashMap[Page,PageResponse]
   val threads = Executors.newFixedThreadPool(10, new ThreadFactory {
     def newThread(r:Runnable) = {

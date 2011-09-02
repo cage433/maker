@@ -8,7 +8,7 @@ case class SettingsPage() extends Page {
   def text = "Settings"
   def icon = BrowserIcons.im("/icons/16x16_settings.png")
 
-  def bundle = RootBrowserContext.bundleName
+  def bundle = RootBrowserBundle.bundleName
 
   def build(serverContext: String) = null
   type SC = String

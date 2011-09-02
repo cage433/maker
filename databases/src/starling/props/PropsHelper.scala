@@ -184,7 +184,7 @@ object PropsHelper {
         file.write( p + "\n")
       }
       file.write( "\n")
-      file.write( "#NOTE: This file is generated for reference. It is not read by starling\n")
+      file.write( "#NOTE:  This file is generated for reference. It is not read by starling\n")
     } finally {
       file.close()
     }

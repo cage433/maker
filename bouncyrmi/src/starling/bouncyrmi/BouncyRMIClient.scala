@@ -7,7 +7,6 @@ import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory
 import net.sf.cglib.proxy.MethodProxy
 import net.sf.cglib.proxy.MethodInterceptor
 import net.sf.cglib.proxy.Enhancer
-import java.lang.reflect.Method
 import org.jboss.netty.channel._
 import java.net.InetSocketAddress
 import org.jboss.netty.handler.ssl.SslHandler
@@ -16,6 +15,7 @@ import java.util.concurrent._
 import atomic.{AtomicBoolean, AtomicInteger}
 import org.jboss.netty.handler.timeout.{IdleStateEvent, IdleStateAwareChannelHandler}
 import org.jboss.netty.util.{HashedWheelTimer, Timeout, TimerTask}
+import java.lang.reflect.{InvocationHandler, Method}
 
 
 trait Client {
@@ -30,7 +30,7 @@ object Client {
 
 case class StateChangeEvent(previous: State, current: State) extends Event
 
-class BouncyRMIClient(host: String, port: Int, auth: Client, logger:(String)=>Unit=(x)=>{}, overriddenUser:Option[String] = None) {
+class BouncyRMIClient(host: String, port: Int, auth: Client, logger:(String)=>Unit=(x)=>{}, overriddenUser:Option[String] = None, classLoader:ClassLoader=Client.getClass.getClassLoader) {
   private val client = new Client(overriddenUser)
   lazy val clientTimer = new HashedWheelTimer
 
@@ -86,7 +86,7 @@ class BouncyRMIClient(host: String, port: Int, auth: Client, logger:(String)=>Un
     }
 
     def init() {
-      bootstrap.setPipelineFactory(new ClientPipelineFactory(new ClientHandler, clientTimer, logger))
+      bootstrap.setPipelineFactory(new ClientPipelineFactory(classLoader, new ClientHandler, clientTimer, logger))
       bootstrap.setOption("keepAlive", true)
       bootstrap.setOption("remoteAddress", new InetSocketAddress(host, port))
     }
@@ -404,21 +404,27 @@ class BouncyRMIClient(host: String, port: Int, auth: Client, logger:(String)=>Un
   }
 
   def proxy[C](klass:Class[C]): C = {
-    val e = new Enhancer()
-    e.setSuperclass(klass)
-    e.setCallback(new MethodInterceptor() {
-      def intercept(obj: Object, method: Method,
-                    args: Array[Object], proxy: MethodProxy): Object = {
-        if (method.getName == "finalize") {
-          null
-        } else {
-          client.invokeMethod(method, args, (e) => {
-            throw e
-          })
-        }
+//    val e = new Enhancer()
+//    e.setSuperclass(klass)
+//    e.setClassLoader()
+//    e.setCallback(new MethodInterceptor() {
+//      def intercept(obj: Object, method: Method,
+//                    args: Array[Object], proxy: MethodProxy): Object = {
+//        if (method.getName == "finalize") {
+//          null
+//        } else {
+//          client.invokeMethod(method, args, (e) => {
+//            throw e
+//          })
+//        }
+//      }
+//    });
+//    e.create().asInstanceOf[C]
+    java.lang.reflect.Proxy.newProxyInstance(klass.getClassLoader, Array(klass), new InvocationHandler {
+      def invoke(proxy: AnyRef, method: Method, args: Array[AnyRef]) = {
+        client.invokeMethod(method, args, (e) => { throw e}).asInstanceOf[Object]
       }
-    });
-    e.create().asInstanceOf[C]
+    }).asInstanceOf[C]
   }
 
   private val publisher = new Object() {

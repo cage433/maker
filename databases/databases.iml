@@ -34,15 +34,6 @@
     <orderEntry type="module-library" exported="">
       <library>
         <CLASSES>
-          <root url="jar://$MODULE_DIR$/lib/ojdbc6-11.2.0.1.0.jar!/" />
-        </CLASSES>
-        <JAVADOC />
-        <SOURCES />
-      </library>
-    </orderEntry>
-    <orderEntry type="module-library" exported="">
-      <library>
-        <CLASSES>
           <root url="jar://$MODULE_DIR$/lib/mimapi-2.2.0.jar!/" />
         </CLASSES>
         <JAVADOC />
@@ -230,6 +221,7 @@
         <SOURCES />
       </library>
     </orderEntry>
+    <orderEntry type="module" module-name="dbx" exported="" />
   </component>
 </module>
 

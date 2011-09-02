@@ -1,9 +1,9 @@
 package starling.rmi
 
-import starling.browser.service.{UserSettingsLabel, BookmarkLabel, PageLogInfo, BrowserService}
 import starling.auth.User
+import starling.browser.service._
 
-class BrowserServiceImpl(val name:String, userSettingsDatabase:UserSettingsDatabase) extends BrowserService {
+class BrowserServiceImpl(val name:String, val version:Version, userSettingsDatabase:UserSettingsDatabase) extends BrowserService {
   def readSettings = userSettingsDatabase.loadSettings(User.currentlyLoggedOn)
 
   def saveSettings(settings: UserSettingsLabel) = userSettingsDatabase.saveSettings(User.currentlyLoggedOn, settings)

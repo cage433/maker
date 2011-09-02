@@ -10,15 +10,15 @@ import javax.swing.{JComponent, KeyStroke}
 import starling.browser.service.Version
 import starling.browser._
 import common._
-import internal.{HelpPage, RootBrowserContext, BookmarksPanel, BrowserIcons}
+import internal.{HelpPage, RootBrowserBundle, BookmarksPanel, BrowserIcons}
 
 class HomePage
 
 case object StarlingHomePage extends Page {
 
-  def bundle = RootBrowserContext.bundleName
+  def bundle = RootBrowserBundle.bundleName
   def build(version: Version) = HomePagePageData(version)
-  def createServerContext(sc: ServerContext) = sc.version
+  def createServerContext(sc: ServerContext) = sc.browserService.version
   type SC = Version
 
   def createComponent(context: PageContext, data: PageData, bookmark:Bookmark, browserSize:Dimension, previousPageData:Option[PageData]) = new StarlingHomePageComponent(context, browserSize, data)

@@ -63,16 +63,16 @@ case class DefaultTitanServices(props: Props) extends TitanServices {
   }
   import RichMap._
 
-  val edmMetalByGUID = allTacticalRefDataMetals.map(e => e.guid -> e).toMap.withException()
+  lazy val edmMetalByGUID = allTacticalRefDataMetals.map(e => e.guid -> e).toMap.withException()
   //val edmMetalByGUID = new MapWithNicerErrors(Map[GUID, Metal]() ++ allTacticalRefDataMetals.map(e => e.guid -> e), "Metal")
-  val futuresExchangeByID = allTacticalRefDataExchanges.map(e => e.code -> e).toMap.withException()
-  val counterpartiesByGUID = allTacticalRefDataCounterparties().map(e => e.guid -> e).toMap.withException()
-  val uomById = allTacticalRefDataUoms().map(e => e.oid -> e).toMap.withException() // hack needed to allow for logistics special "equantity uoms"
+  lazy val futuresExchangeByID = allTacticalRefDataExchanges.map(e => e.code -> e).toMap.withException()
+  lazy val counterpartiesByGUID = allTacticalRefDataCounterparties().map(e => e.guid -> e).toMap.withException()
+  lazy val uomById = allTacticalRefDataUoms().map(e => e.oid -> e).toMap.withException() // hack needed to allow for logistics special "equantity uoms"
 
-  val shapesByGUID = allTacticalRefDataShapes.map(e => e.guid -> e).toMap.withException()
-  val gradeByGUID = allTacticalRefDataGrades.map(e => e.guid -> e).toMap.withException()
-  val locationsByGUID = allTacticalRefDataLocations.map(e => e.guid -> e).toMap.withException()
-  val destLocationsByGUID = allTacticalRefDataDestinationLocations.map(e => e.guid -> e).toMap.withException()
+  lazy val shapesByGUID = allTacticalRefDataShapes.map(e => e.guid -> e).toMap.withException()
+  lazy val gradeByGUID = allTacticalRefDataGrades.map(e => e.guid -> e).toMap.withException()
+  lazy val locationsByGUID = allTacticalRefDataLocations.map(e => e.guid -> e).toMap.withException()
+  lazy val destLocationsByGUID = allTacticalRefDataDestinationLocations.map(e => e.guid -> e).toMap.withException()
 
   def allTacticalRefDataMetals() = tacticalRefdataMetalsService.getMetals()
   def allTacticalRefDataExchanges() = tacticalRefdataMarketsService.getMarkets()

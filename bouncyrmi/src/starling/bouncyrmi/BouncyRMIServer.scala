@@ -34,7 +34,7 @@ class BouncyRMIServer[User](val port: Int, authHandler: ServerAuthHandler[User],
       new NioServerSocketChannelFactory(
         Executors.newCachedThreadPool(new NamedDaemonThreadFactory("ServerA")),
         Executors.newCachedThreadPool(new NamedDaemonThreadFactory("ServerB"))));
-    bootstrap.setPipelineFactory(new ServerPipelineFactory[User](authHandler, new ServerHandler(group), serverTimer))
+    bootstrap.setPipelineFactory(new ServerPipelineFactory[User](getClass.getClassLoader, authHandler, new ServerHandler(group), serverTimer))
     val channel = bootstrap.bind(new InetSocketAddress(port))
     val bound = false
 

@@ -15,8 +15,8 @@ import com.google.common.collect.MapMaker
  */
 object CacheFactory extends Log {
   private val caches:Map[CacheParams, CacheImpl] = Map(CacheParams(true, true) -> new SimpleCacheImpl(true), 
-    CacheParams(true, false) -> new SimpleCacheImpl(false),
-    CacheParams(false, true) -> new Memcached(new SimpleCacheImpl(true)))
+    CacheParams(true, false) -> new SimpleCacheImpl(false)/*,
+    CacheParams(false, true) -> new Memcached(new SimpleCacheImpl(true))*/)
 
   private val cacheCount = new AtomicInteger(0)
   private val cacheStats = new MapMaker().concurrencyLevel(16).makeMap[String, Stats]

@@ -15,10 +15,15 @@ import starling.daterange.Timestamp
 
 object GUICode {
 
-  val scalaLibraryJar = new File("lib/scala/scala-2.9.0.1.final/lib/scala-library.jar")
+  val dirPrefix = ""//if (getClass.getClassLoader.toString.charAt(0).isDigit) "../" else ""
+
+  println("DIR prefix " + dirPrefix)
+
+  val scalaLibraryJar = new File(dirPrefix + "lib/scala/scala-2.9.0.1.final/lib/scala-library.jar")
 
   // The order of this list matters. It is the order things are attempted to be loaded so ensure it is optimised.
-  val modules = List("daterange", "quantity", "utils", "auth", "bouncyrmi", "gui", "gui.api", "pivot", "pivot.utils", "browser", "browser.service", "fc2.api")
+  val modules = List("daterange", "quantity", "utils", "auth", "bouncyrmi", "gui", "gui.api",
+    "pivot", "pivot.utils", "browser", "browser.service", "fc2.api", "launcher", "manager", "singleclasspathmanager")
 
   val libJarNames = Map(
     "scala-library.jar" -> scalaLibraryJar,
@@ -62,8 +67,13 @@ object GUICode {
   }
 
   def lastModifiedForModule(module:String) = {
-    val outputPath = new File(module + "/target/scala-2.9.0.1/classes/")
-    findLastModified(outputPath)
+    val outputPath = new File(dirPrefix + module + "/target/scala-2.9.0.1/classes/")
+    val resourcesPath = new File(dirPrefix + module + "/resources")
+    val resourcesLastModified = if (resourcesPath.exists) findLastModified(resourcesPath) else 0
+    findLastModified(
+      outputPath,
+      initialValue =  resourcesLastModified
+    )
   }
 
   def findMatchingFiles(dir:File, matching:Regex = new Regex("^.*\\.(class|png|conf|auth|txt|properties)$")):List[File] = {
@@ -79,6 +89,7 @@ object GUICode {
   }
 
   def findLastModified(dir:File, matching:Regex = new Regex("^.*\\.(class|png|conf|auth|txt|properties)$"), initialValue:Long = 0):Long = {
+    if (!dir.exists) throw new Exception(dir + " does not exist")
     (initialValue /: dir.listFiles)((lastModified:Long, f:File) => {
       if (f.isDirectory) {
         findLastModified(f, matching, lastModified)
@@ -175,7 +186,7 @@ class WebStartServlet(prefix:String, serverName:String, externalURL:String, main
     } else if (path.equals("/app.txt")) {
       val writer =response.getWriter
       response.setContentType("text/plain")
-      writer.println("starling.gui.Launcher " + PropsHelper.defaultProps.ExternalHostname() + " " + PropsHelper.defaultProps.RmiPort() + " " + PropsHelper.defaultProps.ServerPrincipalName())
+      writer.println("starling.launcher.Launcher " + PropsHelper.defaultProps.ExternalHostname() + " " + PropsHelper.defaultProps.RmiPort() + " " + PropsHelper.defaultProps.ServerPrincipalName())
       val (modules, libJarNames) = GUICode.dependencies
       for ((module, lastModified) <- modules) {writer.println(moduleJarsPrefix + module + ".jar " + lastModified)}
       for ((libName, lastModified) <- libJarNames) {writer.println(externalJarsPrefix + libName + " " + lastModified)}

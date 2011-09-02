@@ -58,7 +58,6 @@ class ReferenceDataIndexPageComponent(context:PageContext, pageData:PageData) ex
     }
 
   }
-
   add(c, "push, grow")
 }
 

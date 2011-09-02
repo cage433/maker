@@ -22,7 +22,7 @@ object Server extends OutputPIDToFile {
   def run(props: Props, args: Array[String] = Array[String]()) {
     Log.infoWithTime("Launching starling server") {
 
-      server = new StarlingInit(props, true, true, true, startEAIAutoImportThread = props.ImportsBookClosesFromEAI(),
+      server = new StarlingInit(props, true, true, true, forceGUICompatability=false, startEAIAutoImportThread = props.ImportsBookClosesFromEAI(),
         startRabbit = props.RabbitEnabled())
       server.start
     }

@@ -58,7 +58,7 @@ class BookmarksPanel(context:PageContext) extends MigPanel("") {
         val l = super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus).asInstanceOf[JLabel]
         val bookmarkData = value.asInstanceOf[BookmarkData]
         l.setText(bookmarkData.name)
-        val iconToUse = if (bookmarkData.bookmark.daySensitive) {
+        val iconToUse = if (bookmarkData.bookmark.map(_.daySensitive).getOrElse(false)) {
           BrowserIcons.icon("/icons/10x10_calendar.png")
         } else {
           BrowserIcons.Blank10
@@ -107,17 +107,18 @@ class BookmarksPanel(context:PageContext) extends MigPanel("") {
   }
 
   def goToBookmark(modifiers:Modifiers) {
-    val bookmark = bookmarksListView.selected
-    val baseDay = if (bookmark.bookmark.daySensitive) {
-      Some(dayPicker.date)
-    } else {
-      None
+    bookmarksListView.selected.bookmark.foreach { bookmark =>
+      val baseDay = if (bookmark.daySensitive) {
+        Some(dayPicker.date)
+      } else {
+        None
+      }
+      publish(GoingToBookmark)
+      context.createAndGoTo(serverContext => {
+        val browserDay = baseDay.map( fromJavaDate )
+        bookmark.createPage(browserDay, serverContext, context)
+      }, modifiers = modifiers)
     }
-    publish(GoingToBookmark)
-    context.createAndGoTo(serverContext => {
-      val browserDay = baseDay.map( fromJavaDate )
-      bookmark.bookmark.createPage(browserDay, serverContext, context)
-    }, modifiers = modifiers)
   }
 
   def fromJavaDate(date:java.util.Date):BrowserDay = {
@@ -164,7 +165,7 @@ class BookmarksPanel(context:PageContext) extends MigPanel("") {
 
   def valuationDayShouldBeEnabled = {
     bookmarksListView.selectedOption match {
-      case Some(bookmark) => bookmark.bookmark.daySensitive
+      case Some(bookmark) => bookmark.bookmark.map(_.daySensitive).getOrElse(false)
       case _ => false
     }
   }

@@ -4,10 +4,11 @@ import collection.mutable.ListBuffer
 import starling.browser._
 import common.GuiUtils._
 import common.{MigPanel, GuiUtils}
-import service._
+import starling.browser.service.internal.HeterogeneousMap
 import com.thoughtworks.xstream.XStream
 import swing.{CheckBox, Frame, Publisher}
 import swing.event.ButtonClicked
+import com.thoughtworks.xstream.io.xml.DomDriver
 
 trait ContainerMethods {
   def createNewFrame(fromFrame: Option[StarlingBrowserFrame], startPage:Option[Either[Page,(ServerContext => Page, PartialFunction[Throwable,Unit])]]=None)
@@ -16,11 +17,12 @@ trait ContainerMethods {
   def updateNotifications
 }
 
-object RootBrowserContext extends BrowserBundle {
-  val xstream = new XStream()
+object RootBrowserBundle extends BrowserBundle {
+  val xstream = new XStream(new DomDriver())
   def bundleName = "Root"
   def marshal(obj: AnyRef) = xstream.toXML(obj)
   def unmarshal(text: String) = xstream.fromXML(text)
+  def initCache(cache: HeterogeneousMap[LocalCacheKey], publisher: Publisher) {}
   override def settings(pageContext:PageContext) = {
     def createGeneralPane(context:PageContext) = {
       val currentLiveSetting = context.getSetting(UserSettings.LiveDefault, false)
@@ -45,14 +47,13 @@ object RootBrowserContext extends BrowserBundle {
   }
 }
 
-class StarlingBrowserFrameContainer(serverContext: ServerContext, lCache: LocalCache, remotePublisher: Publisher,
+class StarlingBrowserFrameContainer(serverContext: ServerContext, lCache: LocalCache, pageBuilder:PageBuilder,
                                     homePage: Page, userSettings: UserSettings, frameTitle: String, extraInfo:Option[String]) extends ContainerMethods {
-  private val pageBuilder = new PageBuilder(serverContext)
   private val frames = new ListBuffer[StarlingBrowserFrame]
 
   def createNewFrame(fromFrame: Option[StarlingBrowserFrame], startPage:Option[Either[Page,(ServerContext => Page, PartialFunction[Throwable,Unit])]]) {
     val startPage0 = startPage.getOrElse(Left(homePage))
-    val newFrame = new StarlingBrowserFrame(homePage, startPage0, pageBuilder, lCache, userSettings, remotePublisher, this, extraInfo)
+    val newFrame = new StarlingBrowserFrame(homePage, startPage0, pageBuilder, lCache, userSettings, this, extraInfo)
     frames += newFrame
     newFrame.title = frameTitle
     fromFrame match {
@@ -93,12 +94,12 @@ class StarlingBrowserFrameContainer(serverContext: ServerContext, lCache: LocalC
   }
 
   def closeFrame(frame: StarlingBrowserFrame) = {
-    if ((frames.size == 1) && (BrowserLauncher.numberOfClientsLaunched <= 1)) {
+    if ((frames.size == 1) /* && (BrowserLauncher.numberOfClientsLaunched <= 1)*/) {
       // This is the last frame so ensure user userSettings are saved.
       closeAllFrames(frame)
     } else {
       // There are other frames left so just dispose of this frame.
-      BrowserLauncher.numberOfClientsLaunched -= 1
+      //BrowserLauncher.numberOfClientsLaunched -= 1
       frames -= frame
       frame.visible = false
       frame.dispose

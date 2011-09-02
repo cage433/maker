@@ -4,9 +4,18 @@ import org.jboss.netty.channel._
 import java.util.UUID
 
 object Logger {
-  def info(s: String, cause: Throwable = null) {}
-  def warn(s: String, cause: Throwable = null) {}
-  def error(s: String, cause: Throwable = null) {}
+  def info(s: String, cause: Throwable = null) {
+    println(s)
+    if (cause != null) cause.printStackTrace()
+  }
+  def warn(s: String, cause: Throwable = null) {
+    println(s)
+    if (cause != null) cause.printStackTrace()
+  }
+  def error(s: String, cause: Throwable = null) {
+    println(s)
+    if (cause != null) cause.printStackTrace()
+  }
 }
 
 trait BouncyLdapUserLookup[User] {
