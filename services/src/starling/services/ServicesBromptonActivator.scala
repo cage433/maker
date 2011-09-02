@@ -1,7 +1,7 @@
 package starling.services
 
 import starling.props.PropsHelper
-import starling.utils.PropertiesMapBuilder
+import starling.api.utils.PropertiesMapBuilder
 import java.io.File
 import javax.servlet.http.HttpServlet
 import starling.manager.{HttpContext, BromptonContext, BromptonActivator}

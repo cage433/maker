@@ -1,4 +1,4 @@
-package starling.utils
+package starling.quantity.utils
 
 import starling.quantity.Quantity
 import collection.{Map, TraversableOnce, MapProxy}

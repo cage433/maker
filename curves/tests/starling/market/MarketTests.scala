@@ -9,7 +9,7 @@ import starling.calendar.{BusinessCalendars, HolidayTablesFactory, HolidayTables
 import org.testng.Assert._
 import starling.quantity.Quantity
 import starling.quantity.UOM._
-import starling.utils.QuantityTestUtils._
+import starling.quantity.utils.QuantityTestUtils._
 
 class MarketTests extends TestMarketTest {
   @Test

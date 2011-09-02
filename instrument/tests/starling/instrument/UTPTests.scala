@@ -4,7 +4,7 @@ import physical.PhysicalMetalAssignment
 import starling.quantity.UOM._
 import starling.quantity.Quantity._
 import org.testng.annotations.{DataProvider, Test}
-import starling.utils.QuantityTestUtils._
+import starling.quantity.utils.QuantityTestUtils._
 import org.testng.Assert._
 import starling.curves._
 import interestrate.{DayCountActual365}

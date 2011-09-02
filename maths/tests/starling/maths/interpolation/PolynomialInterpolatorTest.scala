@@ -5,7 +5,7 @@ import org.testng.annotations.Test
 import cern.colt.matrix.impl.{DenseDoubleMatrix1D => DVector}
 import starling.utils.conversions.RichColtMatrices._
 import org.testng.Assert._
-import starling.utils.QuantityTestUtils._
+import starling.quantity.utils.QuantityTestUtils._
 import math.log
 
 class PolynomialInterpolatorTest extends TestNGSuite {

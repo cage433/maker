@@ -26,7 +26,7 @@ import starling.curves._
 import starling.daterange.Day
 import starling.market.{RIC, SpotUSDFXRiskFactorType}
 
-import starling.utils.QuantityTestUtils._
+import starling.quantity.utils.QuantityTestUtils._
 
 class NetEquityPositionTests extends StarlingTest {
 

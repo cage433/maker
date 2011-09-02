@@ -4,7 +4,7 @@ import starling.utils.StarlingTest
 import starling.curves._
 import starling.utils.ScalaTestUtils._
 import starling.quantity.UOM._
-import starling.utils.QuantityTestUtils._
+import starling.quantity.utils.QuantityTestUtils._
 import starling.quantity.{UOM, Quantity}
 import starling.market._
 import starling.varcalculator.ForwardPriceRiskFactor

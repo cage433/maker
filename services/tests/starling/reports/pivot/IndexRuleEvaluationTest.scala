@@ -6,7 +6,7 @@ import starling.quantity.UOM._
 import starling.quantity.Quantity
 import starling.quantity.RichQuantity._
 import starling.utils.ScalaTestUtils._
-import starling.utils.QuantityTestUtils._
+import starling.quantity.utils.QuantityTestUtils._
 import starling.market._
 import rules.{Precision, NonCommonPricingRule, CommonPricingRule}
 import starling.curves._

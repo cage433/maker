@@ -5,7 +5,7 @@ import org.testng.annotations.Test
 import org.testng.Assert._
 import starling.curves._
 import starling.quantity.UOM._
-import starling.utils.QuantityTestUtils._
+import starling.quantity.utils.QuantityTestUtils._
 import starling.quantity.{Percentage, Quantity}
 import starling.daterange.{Month, Day, DayAndTime}
 import starling.models.{Call, European}

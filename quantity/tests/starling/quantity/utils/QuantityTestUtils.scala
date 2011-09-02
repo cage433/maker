@@ -1,5 +1,4 @@
-package starling.utils
-
+package starling.quantity.utils
 
 import org.testng.Assert._
 import starling.quantity.{Quantity, UOM}

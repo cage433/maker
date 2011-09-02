@@ -2,7 +2,7 @@ package starling.models
 
 import org.scalatest.testng.TestNGSuite
 import org.testng.annotations.Test
-import starling.utils.QuantityTestUtils._
+import starling.quantity.utils.QuantityTestUtils._
 
 class CallOrPutTest extends TestNGSuite {
   @Test

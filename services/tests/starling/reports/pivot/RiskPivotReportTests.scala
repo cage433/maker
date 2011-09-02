@@ -7,7 +7,7 @@ import starling.quantity.UOM._
 import org.testng.Assert._
 import starling.curves._
 import starling.pivot.PivotQuantity
-import starling.utils.QuantityTestUtils._
+import starling.quantity.utils.QuantityTestUtils._
 import starling.models.{BlackScholes, European, Call}
 import starling.daterange.{DateRange, Month, Day}
 import starling.market._

@@ -10,7 +10,7 @@ import org.apache.commons.io.IOUtils
 import scala.collection.JavaConversions
 import java.awt.Color
 import starling.utils.ImplicitConversions._
-import starling.utils.PropertiesMapBuilder
+import starling.api.utils.PropertiesMapBuilder
 
 /**
  * Holds the code to manage properties. The properties are listed in Props

@@ -244,13 +244,13 @@ object StarlingBuild extends Build{
     "curves", 
     file("./curves"),
     settings = standardSettings ++ Seq(libraryDependencies ++= testDependencies)
-  ) dependsOn(utils % "compile;test->test", daterange % "test->test", maths, pivotUtils, guiapi)
+  ) dependsOn(utils % testDependency, daterange % "test->test", maths, pivotUtils, guiapi, quantity % testDependency)
 
   lazy val instrument = Project(
     "instrument", 
     file("./instrument"),
     settings = standardSettings ++ Seq(libraryDependencies ++= testDependencies) 
-  ) dependsOn(curves % "compile;test->test", daterange % "test->test")
+  ) dependsOn(curves % testDependency, daterange % "test->test")
 
   lazy val gui = Project(
     "gui", 

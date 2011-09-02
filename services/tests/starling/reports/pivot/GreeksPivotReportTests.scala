@@ -19,7 +19,7 @@ import starling.instrument.FuturesOption
 import starling.instrument.CompositeInstrument
 import starling.quantity.UOM
 import starling.quantity.UOM._
-import starling.utils.QuantityTestUtils._
+import starling.quantity.utils.QuantityTestUtils._
 import starling.curves.USDFXRateKey
 import starling.curves.ForwardPriceKey
 import starling.market.SingleIndex
@@ -40,7 +40,7 @@ import starling.daterange.{Week, Day, Month, DateRange}
 import starling.daterange.Day._
 import starling.market.BrentCFDSpreadIndex
 import starling.calendar.BrentMonth
-import starling.utils.SummingMap
+import starling.quantity.utils.SummingMap
 import starling.daterange.Period
 import starling.daterange.TenorType
 import starling.gui.api.{ReportSpecificChoices, UTPIdentifier}

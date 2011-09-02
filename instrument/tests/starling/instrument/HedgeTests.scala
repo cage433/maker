@@ -10,7 +10,7 @@ import starling.quantity.Quantity
 import starling.quantity.Quantity._
 import starling.daterange.DayAndTime
 import scala.math._
-import starling.utils.QuantityTestUtils._
+import starling.quantity.utils.QuantityTestUtils._
 import starling.maths.RandomVariables
 import cern.jet.random.Uniform
 import starling.maths.RandomThing

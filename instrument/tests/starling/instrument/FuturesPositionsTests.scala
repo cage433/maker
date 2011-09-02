@@ -7,7 +7,7 @@ import starling.quantity.UOM._
 import org.testng.annotations.Test
 import starling.varcalculator.ForwardPriceRiskFactor
 import org.testng.Assert
-import starling.utils.QuantityTestUtils._
+import starling.quantity.utils.QuantityTestUtils._
 import starling.market.Market._
 import starling.market.{TestMarketTest, CommodityMarket}
 

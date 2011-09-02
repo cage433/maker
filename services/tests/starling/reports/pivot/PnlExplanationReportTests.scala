@@ -6,7 +6,7 @@ import starling.instrument._
 import starling.curves._
 import starling.quantity.{Percentage, Quantity, UOM}
 import starling.quantity.UOM._
-import starling.utils.QuantityTestUtils._
+import starling.quantity.utils.QuantityTestUtils._
 import starling.concurrent.MP
 import org.testng.annotations.{AfterTest, AfterClass, Test}
 import starling.gui.api.{ReportSpecificChoices, UTPIdentifier}

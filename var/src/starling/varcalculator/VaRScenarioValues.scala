@@ -6,8 +6,8 @@ import cern.colt.matrix.{DoubleMatrix1D => Vector}
 import cern.colt.matrix.impl.{DenseDoubleMatrix1D => DVector, DenseDoubleMatrix2D => DMatrix}
 import starling.utils.conversions.RichColtMatrices._
 import starling.instrument.Instrument
-import starling.utils.Summable
 import cern.jet.math.Functions
+import starling.quantity.utils.Summable
 
 case class VarScenarioValues(values : Vector, errors:Set[Throwable]) extends Summable[VarScenarioValues]{
   def this(n : Int, t:Throwable) = this(new DVector(n), Set(t))

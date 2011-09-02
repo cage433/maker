@@ -1,9 +1,9 @@
 package starling.varcalculator
 
 
-import starling.utils.SummingMap
 import starling.quantity.{UOM, Quantity}
 import starling.market.{CommodityMarket, ForwardPriceRiskFactorType, VaRRiskFactorType, RiskFactorType}
+import starling.quantity.utils.SummingMap
 
 case class MarketPositions private (positions : SummingMap[VaRRiskFactorType]){
   positions.keySet.foreach(
