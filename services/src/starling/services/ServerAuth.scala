@@ -3,8 +3,9 @@ package starling.services
 import starling.utils.Log
 import starling.auth.{User, LdapUserLookup, ServerLogin}
 import starling.bouncyrmi.{BouncyLdapUserLookup, AuthHandler, ServerAuthHandler}
+import java.util.UUID
 
-class ServerAuth(login: ServerLogin, ldap: LdapUserLookup with BouncyLdapUserLookup[User], users:java.util.Set[User],
+class ServerAuth(login: ServerLogin, ldap: LdapUserLookup with BouncyLdapUserLookup[User], users:java.util.Map[UUID,User],
                  userConnected:(User) => Unit) {
 
   // The ticket username comes in the form of an email address

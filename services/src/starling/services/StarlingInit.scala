@@ -2,7 +2,6 @@ package starling.services
 
 import excel._
 import jmx.StarlingJMX
-import rpc.logistics.FileMockedTitanLogisticsServices._
 import rpc.logistics.{FileMockedTitanLogisticsServices, DefaultTitanLogisticsServices}
 import rpc.marketdata.MarketDataService
 import rpc.valuation._
@@ -19,9 +18,7 @@ import starling.curves.readers._
 import trade.ExcelTradeReader
 import trinity.{TrinityUploader, XRTGenerator, FCLGenerator}
 import starling.auth.{LdapUserLookup, User, ServerLogin}
-import java.util.concurrent.CopyOnWriteArraySet
-import starling.utils._
-import sql.ConnectionParams
+import starling.utils.sql.ConnectionParams
 import starling.utils.ImplicitConversions._
 import starling.tradeimport.{ClosedDesks, TradeImporterFactory, TradeImporter}
 import starling.tradestore.TradeStores
@@ -42,15 +39,15 @@ import starling.services.rpc.refdata._
 import starling.services.rabbit._
 import collection.immutable.Map
 import com.trafigura.services.trinity.TrinityService
-import com.trafigura.services.ResteasyServiceApi
 import com.trafigura.services.marketdata.{ExampleService, MarketDataServiceApi}
-import com.trafigura.services.{WebServiceFactory, DocumentationService, ResteasyServiceApi}
-import swing.event.Event
-import collection.mutable.ListBuffer
+import com.trafigura.services.{WebServiceFactory, ResteasyServiceApi}
 import starling.fc2.api.FC2Service
 import starling.utils._
 import starling.browser.service.{BrowserService, UserLoggedIn, Version}
 import starling.titan.{TitanTradeCache, TitanSystemOfRecord, TitanTradeStore}
+import java.util.UUID
+import java.util.concurrent.ConcurrentHashMap
+
 
 class StarlingInit( val props: Props,
                     dbMigration: Boolean = true,
@@ -281,7 +278,7 @@ class StarlingInit( val props: Props,
 
   val rmiPort = props.RmiPort()
 
-  val users = new CopyOnWriteArraySet[User]
+  val users = new ConcurrentHashMap[UUID,User]
 
   val jmx = new StarlingJMX(users, scheduler)
 
@@ -387,12 +384,12 @@ object StarlingInit{
   }
 }
 
-object ChannelLoggedIn extends LoggedIn[User] {
-  private val loggedIn = new ChannelLocal[User]()
+object ChannelLoggedIn extends LoggedIn[User,UUID] {
+  private val loggedIn = new ChannelLocal[(User,UUID)]()
 
-  def get(channel: Channel): User = loggedIn.get(channel)
-  def set(channel: Channel, user: User): User = loggedIn.set(channel, user)
-  def remove(channel: Channel): User = loggedIn.remove(channel)
+  def get(channel: Channel) = loggedIn.get(channel)
+  def set(channel: Channel, user: User, id:UUID) = loggedIn.set(channel, (user,id))
+  def remove(channel: Channel) = loggedIn.remove(channel)
   def setLoggedOn(user: Option[User]) {
     User.setLoggedOn(user)
   }

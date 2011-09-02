@@ -930,16 +930,23 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
       })
     }
     def withBuiltPage(page:Page, pageResponse:PageResponse) {
-      timer.stop
+      timer.stop()
       stopButton.enabled = false
       if (waitingFor.contains(Some(threadID))) {
         waitingFor -= Some(threadID)
         onEDT({
           def showError(title: String, message: String) {
             starlingBrowserUI.setError(title, message, {
+              val currentPageInfo:PageInfo = history(current)
+              currentPageInfo.pageComponent match {
+                case Some(pc) => {
+                  pc.resetDynamicState()
+                }
+                case None =>
+              }
               setScreenLocked(false)
               refreshButtonStatus
-              refreshButton.enabled = history(current).refreshPage.isDefined
+              refreshButton.enabled = currentPageInfo.refreshPage.isDefined
             })
           }
 
