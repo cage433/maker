@@ -135,7 +135,7 @@ case class MarketDataPage(
     }
   }
 
-  override def configPanel(context:PageContext, pageData:PageData) = {
+  override def configPanel(context:PageContext, pageData:PageData, tableSelection:() => TableSelection) = {
     val data = pageData match {case v:PivotTablePageData => v.subClassesPageData match {case Some(d:MarketDataPagePageData) => d}}
 
     //Save the layout as the default for use the next time this market data type is selected
