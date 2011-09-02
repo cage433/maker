@@ -17,7 +17,6 @@ import starling.gui.StarlingIcons
 import java.awt.datatransfer.StringSelection
 import java.awt.event._
 import starling.gui.api.ReportSpecificOptions
-import starling.gui.pages.ConfigPanels
 import collection.immutable.List
 import starling.utils.ImplicitConversions._
 import collection.mutable.{ListBuffer, HashMap}
@@ -27,13 +26,15 @@ import javax.swing._
 import starling.pivot.view.swing.PivotTableType._
 import starling.pivot.HiddenType._
 import starling.browser.common._
-import starling.browser.Modifiers
+import starling.browser.{PageData, PageContext, Modifiers}
+import starling.gui.pages.{TableSelection, ConfigPanels}
 
 object PivotTableView {
   def createWithLayer(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSize:Dimension,
-                      configPanels:Option[ConfigPanels], extraFormatInfo:ExtraFormatInfo, edits:PivotEdits, embedded:Boolean = true) = {
+                      configPanel:(() => TableSelection)=>Option[ConfigPanels],
+                      extraFormatInfo:ExtraFormatInfo, edits:PivotEdits, embedded:Boolean = true) = {
     val viewUI = new PivotTableViewUI
-    val view = new PivotTableView(data, otherLayoutInfo, browserSize, configPanels, extraFormatInfo, embedded, viewUI, edits)
+    val view = new PivotTableView(data, otherLayoutInfo, browserSize, configPanel, extraFormatInfo, embedded, viewUI, edits)
     val layer = new SXLayerScala(view, viewUI)
     layer
   }
@@ -52,7 +53,8 @@ case class CollapsedStateUpdated(rowCollapsedState:Option[CollapsedState]=None, 
 case class GridSelectionEvent(selection:Option[(String,Boolean)]) extends Event
 
 class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSize0:Dimension,
-                     configPanels:Option[ConfigPanels], extraFormatInfo:ExtraFormatInfo, embedded:Boolean,
+                     configPanel:(() => TableSelection)=>Option[ConfigPanels],
+                     extraFormatInfo:ExtraFormatInfo, embedded:Boolean,
                      viewUI:PivotTableViewUI, edits:PivotEdits)
         extends MigPanel("hidemode 2, insets 0, gap 0") {
   private var browserSize = browserSize0
@@ -860,13 +862,15 @@ class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSiz
     fieldChooserPanelHolder.setComponent(fieldPanel)
   }
 
-  private val configTabbedPane = configPanels match {
+  val actualConfigPanel = configPanel(selection _)
+
+  private val configTabbedPane = actualConfigPanel match {
     case None => None
     case Some(cp) => Some(new NTabbedPane(cp, true))
   }
 
   add(fieldChooserPanelHolder, "spany, growy")
-  configPanels.foreach(cp => {
+  actualConfigPanel.foreach(cp => {
     add(configTabbedPane.get, "grow, wrap")
   })
   add(toolbarPanel, "growx, wrap")
@@ -900,23 +904,26 @@ class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSiz
     hideDropTargets()
     allDropTargets.foreach(_.reset())
     if (toolbarPanel.visible) reverseToolBarState()
-    configPanels.foreach(_.revert())
+    actualConfigPanel.foreach(_.revert())
     reportSpecificPanels.foreach(_.resetButton)
   }
 
-  def selection = if (otherLayoutInfo.frozen) {
-    (filtersWithSome, mainTable.getSelectedCells.map(tup => {
-      val (row,col) = tup
-      tableModelsHelper.mainTableModel.mapCellToFields(row, col)
-    }))
-  } else {
-    (filtersWithSome, fullTable.getSelectedCells.map(tup => {
-      val (row,col) = tup
-      tableModelsHelper.fullTableModel.mapCellToFields(row, col)
-    }))
+  def selection = {
+    val r = if (otherLayoutInfo.frozen) {
+      (filtersWithSome, mainTable.getSelectedCells.map(tup => {
+        val (row,col) = tup
+        tableModelsHelper.mainTableModel.mapCellToFields(row, col)
+      }))
+    } else {
+      (filtersWithSome, fullTable.getSelectedCells.map(tup => {
+        val (row,col) = tup
+        tableModelsHelper.fullTableModel.mapCellToFields(row, col)
+      }))
+    }
+    TableSelection(r)
   }
 
-  configPanels match {
+  actualConfigPanel match {
     case None =>
     case Some(cp) => {
       val action = cp.extraComponentAction

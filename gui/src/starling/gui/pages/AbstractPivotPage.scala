@@ -31,6 +31,8 @@ abstract class AbstractStarlingPivotPage(pivotPageState:PivotPageState, edits:Pi
   AbstractPivotPage(pivotPageState, edits) with StarlingServerPage {
 }
 
+case class TableSelection(selection:(List[(Field, Selection)], List[scala.List[(Field, Selection)]]))
+
 abstract class AbstractPivotPage(pivotPageState:PivotPageState, edits:PivotEdits=PivotEdits.Null) extends Page {
   def icon = StarlingIcons.im("/icons/stock_chart-reorganize.png")
   def build(sc: SC) = PivotTablePageData(dataRequest(sc), subClassesPageData(sc))
@@ -40,9 +42,9 @@ abstract class AbstractPivotPage(pivotPageState:PivotPageState, edits:PivotEdits
   def subClassesPageData(pageBuildingContext:SC):Option[PageData] = None
   def finalDrillDownPage(fields:Seq[(Field,Selection)], pageContext:PageContext, modifiers:Modifiers) = ()
   def toolbarButtons(pageContext: PageContext, data:PageData):List[Button] = List()
-  def configPanel(pageContext:PageContext, data:PageData):Option[ConfigPanels] = None
+  def configPanel(pageContext:PageContext, data:PageData, tableSelection:() => TableSelection):Option[ConfigPanels] = None
   def createComponent(pageContext:PageContext, data:PageData, bookmark:Bookmark, browserSize:Dimension, previousPageData:Option[PageData]) : PageComponent = {
-    PivotComponent(text, pageContext, toolbarButtons(pageContext, data), configPanel(pageContext, data), finalDrillDownPage, selfPage,
+    PivotComponent(text, pageContext, toolbarButtons(pageContext, data), configPanel, finalDrillDownPage, selfPage,
       data, pivotPageState, edits, save, bookmark, browserSize, false)
   }
 }
@@ -91,7 +93,7 @@ object PivotComponent {
   def apply(text:String,
         pageContext:PageContext,
         toolbarButtons:List[Button],
-        configPanel:Option[ConfigPanels],
+        configPanel:(PageContext, PageData, () => TableSelection)=>Option[ConfigPanels],
         finalDrillDown:(Seq[(Field,Selection)],PageContext,Modifiers)=>Unit,
         selfPage:((PivotPageState,PivotEdits)=>Page),
         pageData:PageData,
@@ -114,7 +116,7 @@ object PivotComponent {
 }
 
 abstract class PivotComponent extends MigPanel("insets 0", "[fill,grow]", "[fill,grow]") with PageComponent {
-  def getSelection : (List[(Field, Selection)], List[scala.List[(Field, Selection)]])
+  def getSelection:TableSelection
 }
 
 class PivotTablePageGraphComponent(table:PivotTable) extends PivotComponent {
@@ -122,14 +124,14 @@ class PivotTablePageGraphComponent(table:PivotTable) extends PivotComponent {
   val pivotChart = new PivotChartView(pivotGrid)
   add(pivotChart, "push, grow")
 
-  def getSelection = (List(), List(List()))
+  def getSelection = TableSelection((List(), List(List())))
 }
 
 class PivotTablePageComponent(
         text:String,
         pageContext:PageContext,
         toolbarButtons:List[Button],
-        configPanel:Option[ConfigPanels],
+        configPanel:(PageContext, PageData, () => TableSelection)=>Option[ConfigPanels],
         finalDrillDown:(Seq[(Field,Selection)],PageContext,Modifiers)=>Unit,
         selfPage:((PivotPageState,PivotEdits)=>Page),
         pivotTablePageData:PivotTablePageData,
@@ -142,7 +144,7 @@ class PivotTablePageComponent(
 
   val data = pivotTablePageData.pivotData
   val extraFormatInfo = pageContext.getSetting(StandardUserSettingKeys.ExtraFormattingInfo, PivotFormatter.DefaultExtraFormatInfo)
-  val pivotTableComponent = PivotTableView.createWithLayer(data, pivotPageState.otherLayoutInfo, browserSize, configPanel, extraFormatInfo, edits, embedded)
+  val pivotTableComponent = PivotTableView.createWithLayer(data, pivotPageState.otherLayoutInfo, browserSize, (selectionF) => { configPanel(pageContext,pivotTablePageData,selectionF)}, extraFormatInfo, edits, embedded)
   val pivotComp = pivotTableComponent.getScalaComponent
 
   val currentFieldState = data.pivotFieldsState
