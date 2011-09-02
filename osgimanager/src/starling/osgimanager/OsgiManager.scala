@@ -2,8 +2,6 @@ package starling.osgimanager
 
 import java.lang.reflect.{Method, InvocationHandler}
 import starling.manager.BromptonServiceReference._
-import java.util.concurrent.ConcurrentHashMap
-
 import org.osgi.framework.{BundleActivator => OSGIBundleActivator}
 import org.osgi.framework.{BundleContext => OSGIBundleContext}
 import org.osgi.framework.ServiceReference
@@ -12,7 +10,6 @@ import java.util.concurrent.atomic.AtomicReference
 import java.io.{FileInputStream, File}
 import java.util.{Dictionary,Hashtable,Properties}
 import java.lang.reflect.{Proxy,InvocationHandler,Method}
-import java.util.concurrent.ConcurrentHashMap
 import org.osgi.framework.Bundle
 import org.osgi.framework.BundleEvent
 import org.osgi.service.cm.ManagedService
@@ -20,6 +17,7 @@ import org.osgi.service.cm.ConfigurationAdmin
 import starling.manager._
 import swing.Publisher
 import org.osgi.util.tracker.{ServiceTrackerCustomizer, ServiceTracker => OSGIServiceTracker, BundleTracker, BundleTrackerCustomizer}
+import java.util.concurrent.{CountDownLatch, ConcurrentHashMap}
 
 class OsgiManager
 
@@ -30,6 +28,7 @@ class BromptonOSGIActivator extends OSGIBundleActivator {
   var bundleTracker:BundleTracker = _
   var props:Option[Props] = None
   def start(context:OSGIBundleContext) {
+    val latch = context.getService(context.getServiceReference(classOf[CountDownLatch].getName)).asInstanceOf[CountDownLatch]
     import Bundle._
     bundleTracker = new BundleTracker(context, UNINSTALLED|INSTALLED|RESOLVED|STARTING|STOPPING|ACTIVE, new BundleTrackerCustomizer() {
       private def createHolder(bundle:Bundle) = {
@@ -41,10 +40,9 @@ class BromptonOSGIActivator extends OSGIBundleActivator {
             instance.asInstanceOf[BromptonActivator]
           }
           val context = new OSGIBromptonContext(bundle.getBundleContext)
-          val holder = new BundleActivatorHolder(activator, context)
+          val holder = new BundleActivatorHolder(activator, context, latch)
           println(">>Starting: " + bundle.getSymbolicName)
-          holder.start()
-          holder.props(props.get)
+          holder.doStart(props.get)
           Some(holder)
         } else {
           None
@@ -201,10 +199,6 @@ class ServiceTracker(context:OSGIBundleContext, klass:Class[_], properties:List[
   osgiTracker.open
 }
 class OSGIBromptonContext(val context:OSGIBundleContext) extends BromptonContext {
-  if (context == null) {
-    println("!!")
-    throw new Exception("Context is null")
-  }
   private val serviceProxies = new ConcurrentHashMap[Class[_],ServiceProxy[_]]()
   def nameThread[T](name:String, f:()=>T):T = {
     val currentName = Thread.currentThread.getName
@@ -243,12 +237,16 @@ class OSGIBromptonContext(val context:OSGIBundleContext) extends BromptonContext
     }
   }
 }
-class BundleActivatorHolder(activator:BromptonActivator, context:OSGIBromptonContext) {
+class BundleActivatorHolder(activator:BromptonActivator, context:OSGIBromptonContext, latch:CountDownLatch) {
   private var thread:Thread = _
-  def start() {
+  def doStart(props:Props) {
     thread = new Thread(new Runnable() { def run() {
       try {
         activator.start(context)
+        val classLoader = /*BundleDelegatingClassLoader.createBundleClassLoaderFor(
+            context.context.getBundle,*/
+          classOf[Props].getClassLoader//)
+        activator.init(context, props.applyOverrides(activator.getClass.getClassLoader, activator.defaults))
       } catch {
         case e:InterruptedException => {
           e.printStackTrace()
@@ -257,6 +255,8 @@ class BundleActivatorHolder(activator:BromptonActivator, context:OSGIBromptonCon
         case e => {
           e.printStackTrace()
         }
+      } finally {
+        latch.countDown()
       }
     } })
     thread.setName("Activator " + activator.getClass.getName)

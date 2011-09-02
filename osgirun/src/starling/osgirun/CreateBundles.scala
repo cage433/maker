@@ -19,12 +19,14 @@ object BundleName {
 }
 
 trait BundleDefinition {
+  def activator:Boolean
   def name:BundleName
   def lastModified:Long
   def inputStream:InputStream
 }
 
 class ExistingBundleDefinition(jarFile:File) extends BundleDefinition {
+  def activator = false
   val manifest = new JarFile(jarFile).getManifest
   val symbolicName = manifest.getMainAttributes.getValue("Bundle-SymbolicName")
   val version = manifest.getMainAttributes.getValue("Bundle-Version")
@@ -34,6 +36,7 @@ class ExistingBundleDefinition(jarFile:File) extends BundleDefinition {
 }
 
 class LoggingBundleDefinition(deligate:BundleDefinition) extends BundleDefinition {
+  def activator = deligate.activator
   def name = deligate.name
   def lastModified = deligate.lastModified
   def inputStream = {
@@ -212,6 +215,7 @@ class Manager(
       val jarFiles = jars.map(allJars)
       new BundleDefinition {
         def name = BundleName(bundleName, version)
+        def activator = false
         def lastModified = jarFiles.map(_.lastModified()).max
         def inputStream = {
           val allExcludes = jars.flatMap(packageExcludes).distinct
@@ -243,8 +247,10 @@ class Manager(
 
     val starlingBundles = bundles_.map { bundle =>
       new BundleDefinition {
+        private val bromptonActivator = bundle.bromptonActivator
         def name = BundleName(bundle.name, "0")
         def lastModified = bundle.latestTimestamp
+        def activator = bromptonActivator.isDefined
         def inputStream = {
           val builder = new Builder()
 
@@ -260,7 +266,7 @@ class Manager(
           var allIncludes = scala.collection.mutable.HashSet[String]()
           allIncludes ++= bundle.includes
           builder.setProperty( BUNDLE_SYMBOLICNAME, bundle.name )
-          bundle.bromptonActivator.map { activator =>
+          bromptonActivator.map { activator =>
             allIncludes += "net.sf.cglib.proxy"
             allIncludes += "net.sf.cglib.core"
             builder.setProperty( "Brompton-Activator", activator )

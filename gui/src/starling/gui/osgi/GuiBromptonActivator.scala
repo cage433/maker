@@ -19,6 +19,7 @@ import starling.bouncyrmi.{BouncyRMI, BouncyRMIClient}
 
 class GuiBromptonProps {
   def serverHostname:String = "localhost"
+
   def rmiPort:Int = 8881
   def principalName:String = "STARLING-TEST/dave-linux"
 }

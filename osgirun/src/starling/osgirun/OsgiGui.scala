@@ -63,8 +63,6 @@ object GuiBundles extends BundleDefinitions {
       bundles
     )
 
-    val d = manager.definitions
-    d.foreach(b => println(b.name))
-    d
+    manager.definitions
   }
 }

@@ -34,7 +34,8 @@ object ServerBundles extends BundleDefinitions {
       "h2-1.2.131.jar", "hsqldb-1.8.0.10.jar",
       "servlet-api-2.5.jar",
       "scala-compiler-src.jar", "scala-swing-src.jar", "scala-library-src.jar", "scala-compiler-2.8.1.jar", "scala-compiler-2.9.0-1.jar",
-      "scalacheck-2.9.0-1-1.9.jar"
+      "scalacheck-2.9.0-1-1.9.jar",
+      "org.osgi.compendium-4.2.0.jar", "org.osgi.core-4.2.0.jar"
     )
 
     val libIgnoreJars = Set("scalatest-1.6.1.jar")

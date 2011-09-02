@@ -4,6 +4,7 @@ import org.osgi.framework.launch.FrameworkFactory
 import java.util.{HashMap, ServiceLoader}
 import org.osgi.service.packageadmin.PackageAdmin
 import java.net.{ServerSocket, ConnectException, Socket}
+import java.util.concurrent.CountDownLatch
 
 trait BundleDefinitions {
   def bundles:List[BundleDefinition]
@@ -58,7 +59,11 @@ class OsgiInstance(name:String, bundles:BundleDefinitions) {
 
   def start = {
     update()
+    val activators = bundles.bundles.map(b => if (b.activator) 1 else 0).sum
+    val latch = new CountDownLatch(activators)
+    framework.getBundleContext.registerService(classOf[CountDownLatch].getName, latch, null)
     framework.start
+    latch.await()
   }
   def stop = {
     framework.stop
@@ -76,12 +81,14 @@ object OsgiInstance {
       case e:ConnectException => {
         val instance = new OsgiInstance(name, bundles)
         instance.start
-        val server = new ServerSocket(port)
-        while (true) {
-          val client = server.accept()
-          client.close()
-          instance.update()
-        }
+        new Thread(new Runnable() { def run() {
+          val server = new ServerSocket(port)
+          while (true) {
+            val client = server.accept()
+            client.close()
+            instance.update()
+          }
+        } }, "osgi-reload-listener").start()
       }
       //instance.stop
     }
