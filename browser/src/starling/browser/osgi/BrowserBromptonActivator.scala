@@ -34,7 +34,7 @@ class BrowserBromptonActivator extends BromptonActivator {
     } })
 
     val serverContext = new ServerContext() {
-      def username = "username"
+      def username = "username" // TODO - this is not used - can I take it out?
       def lookup[T](klass: Class[T]) = context.awaitService(klass)
       def browserService = context.awaitService(classOf[BrowserService])
     }
@@ -105,13 +105,13 @@ class BrowserBromptonActivator extends BromptonActivator {
         BookmarkData(label.name, None) // TODO - we are never returning a bookmark! If I take this out OSGI Gui doesn't load.
       } }
     }
-    val username = serverContext.username
+//    val username = serverContext.username
 
     onEDT({
       val title = browserService.name + " - Starling"
 
       cacheMap(LocalCache.Version) = serverContext.browserService.version
-      cacheMap(LocalCache.CurrentUserName) = username
+//      cacheMap(LocalCache.CurrentUserName) = username
       cacheMap(LocalCache.Bookmarks) = toBookmarks(bookmarks)
       cacheMap(NotificationKeys.AllNotifications) = List()
       cacheMap(NotificationKeys.UserNotifications) = List()
@@ -142,7 +142,8 @@ class BrowserBromptonActivator extends BromptonActivator {
               } }
             }
             batch.events.foreach {
-              case e: BookmarksUpdate if e.user == username => {
+//              case e: BookmarksUpdate if e.user == username => {
+              case e: BookmarksUpdate if e.user == cacheMap(LocalCache.CurrentUserName) => {
                 cacheMap(LocalCache.Bookmarks) = toBookmarks(e.bookmarks)
               }
               case _ =>

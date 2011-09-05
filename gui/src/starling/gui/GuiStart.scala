@@ -181,8 +181,9 @@ object GuiStart extends Log {
     }
 
     import LocalCache._
-    import NotificationKeys._
     try {
+      cacheMap(CurrentUser) = starlingServer.whoAmI
+      cacheMap(CurrentUserName) = cacheMap(CurrentUser).name
       cacheMap(AllUserNames) = starlingServer.allUserNames
       cacheMap(PricingGroups) = fc2Service.pricingGroups
       cacheMap(ExcelDataSets) = fc2Service.excelDataSets
@@ -196,15 +197,12 @@ object GuiStart extends Log {
       cacheMap(DeskCloses) = starlingServer.deskCloses
       cacheMap(IntradayLatest) = starlingServer.intradayLatest
       cacheMap(TradersBookLookup) = starlingServer.traders
-      cacheMap(CurrentUser) = starlingServer.whoAmI
       cacheMap(UKBusinessCalendar) = starlingServer.ukBusinessCalendar
       cacheMap(Desks) = starlingServer.desks
       cacheMap(GroupToDesksMap) = starlingServer.groupToDesksMap
       cacheMap(IsStarlingDeveloper) = starlingServer.isStarlingDeveloper
       cacheMap(EnvironmentRules) = fc2Service.environmentRules
       cacheMap(CurveTypes) = fc2Service.curveTypes
-//      cacheMap(Bookmarks) = toBookmarks(starlingServer.bookmarks)
-
     } catch {
       case e : Throwable =>
         e.printStackTrace()
