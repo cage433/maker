@@ -49,8 +49,7 @@ case class TradeSelectionPage(
   
   override def subClassesPageData(pageBuildingContext:StarlingServerContext) = {
     val desks = pageBuildingContext.server.desks
-    val admin = pageBuildingContext.server.permissionToDoAdminLikeThings
-    Some(TradeSelectionPageData(tpp.deskAndTimestamp.map(_._1), desks, tpp.intradaySubgroupAndTimestamp.map(_._1), admin, pivotPageState))
+    Some(TradeSelectionPageData(tpp.deskAndTimestamp.map(_._1), desks, tpp.intradaySubgroupAndTimestamp.map(_._1), pivotPageState))
   }
 
   override def finalDrillDownPage(fields:Seq[(Field, Selection)], pageContext:PageContext, modifiers:Modifiers) = {
@@ -548,7 +547,7 @@ case class TradeSelectionBookmark(desk:Option[Desk], intradaySubgroups:Option[In
 
 case class TradeSelectionPageData(desk:Option[Desk], desks:List[Desk],
                                intradaySubgroup:Option[IntradayGroups],
-                               admin: Boolean, pivotPageState:PivotPageState) extends PageData
+                               pivotPageState:PivotPageState) extends PageData
 
 object TimestampChooser {
   val defaultUnitialisedValue: TradeTimestamp = TradeTimestamp(new Timestamp, Day(1980, 1, 1), -1, None)

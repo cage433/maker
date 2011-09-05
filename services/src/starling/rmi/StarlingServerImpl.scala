@@ -548,11 +548,6 @@ class StarlingServerImpl(
   def referenceDataTables() = referenceData.referenceDataTables()
   def referencePivot(table: ReferenceDataLabel, pivotFieldParams: PivotFieldParams) = referenceData.referencePivot(table, pivotFieldParams)
   def ukBusinessCalendar = ukHolidayCalendar
-
-  def permissionToDoAdminLikeThings = {
-    Permission.isAdmin(User.currentlyLoggedOn)
-  }
-
   def whoAmI = User.currentlyLoggedOn
   def allUserNames:List[String] = userSettingsDatabase.allUsersWithSettings
   def isStarlingDeveloper = {

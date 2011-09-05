@@ -20,7 +20,7 @@ import starling.browser._
 case object ReferenceDataIndexPage extends StarlingServerPage {
   def text = "Reference Data"
   def icon = StarlingIcons.im("/icons/16x16_ref_data.png")
-  def build(starlingServerContext: StarlingServerContext) = ReferenceDataIndexPageData(starlingServerContext.server.referenceDataTables(), starlingServerContext.server.permissionToDoAdminLikeThings)
+  def build(starlingServerContext: StarlingServerContext) = ReferenceDataIndexPageData(starlingServerContext.server.referenceDataTables())
   def createComponent(context: PageContext, data: PageData, bookmark:Bookmark, browserSize:Dimension, previousPageData:Option[PageData]) = {new ReferenceDataIndexPageComponent(context, data)}
 }
 
@@ -28,10 +28,6 @@ class ReferenceDataIndexPageComponent(context:PageContext, pageData:PageData) ex
   val data = pageData match {case d:ReferenceDataIndexPageData => d}
 
   val c = new StripedPanel("insets 0", "[grow][p][p][p][grow]", "[grow][p][p][p][p][grow 150]") {
-    val portNumberString = (data.referenceTables.size + 1).toString + "."
-    ReferenceDataIndexPageComponent.this.peer.getInputMap(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT).
-            put(KeyStroke.getKeyStroke(KeyEvent.VK_1 + data.referenceTables.size, 0), portNumberString)
-
     val calendarImage = StarlingIcons.im("/icons/32x32_calendar.png")
     val otherRefDataImage = StarlingIcons.im("/icons/32x32_chart_line.png")
     for ((table,index) <- data.referenceTables.zipWithIndex) {
@@ -61,7 +57,7 @@ class ReferenceDataIndexPageComponent(context:PageContext, pageData:PageData) ex
   add(c, "push, grow")
 }
 
-case class ReferenceDataIndexPageData(referenceTables:List[ReferenceDataLabel], admin: Boolean) extends PageData
+case class ReferenceDataIndexPageData(referenceTables:List[ReferenceDataLabel]) extends PageData
 
 case class ReferenceDataPage(table:ReferenceDataLabel, pivotPageState : PivotPageState) extends AbstractStarlingPivotPage(pivotPageState) {
   def text = table.name
