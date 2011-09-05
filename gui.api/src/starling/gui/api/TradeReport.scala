@@ -1,17 +1,15 @@
 package starling.gui.api
 
 import collection.immutable.{TreeSet, SortedSet}
-import java.io.Serializable
 
 import starling.calendar.BusinessCalendar
 import starling.daterange._
-import starling.rmi.StarlingServer
 import starling.tradestore.TradePredicate
 import starling.utils.{StarlingEnum, ImplicitConversions, SColumn}
 import starling.varcalculator.NAhead
 
 import ImplicitConversions._
-import starling.quantity.{SimpleNamedQuantity, NamedQuantity, Quantity}
+import starling.quantity.{NamedQuantity, Quantity}
 
 class TradeReport
 
@@ -134,10 +132,6 @@ case class DeskTradeEvent(name:String) extends TradeEvent
 case object ExcelTradeEvent extends TradeEvent
 
 case class TradeSystemLabel(name:String, shortCode:String) {override def toString = name}
-
-object TradeSystemLabel {
-  val Intraday = TradeSystemLabel("Intraday", "int")
-}
 
 case class TradeExpiryDay(exp: Day) {
   override def toString = exp.toString

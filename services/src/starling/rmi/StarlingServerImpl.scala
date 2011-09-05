@@ -6,16 +6,14 @@ import java.util.concurrent.ConcurrentHashMap
 
 import starling.auth.{LdapUserLookup, User}
 import starling.calendar.BusinessCalendarSet
-import starling.curves.{EnvironmentRule, CurveViewer}
 import starling.daterange._
 import starling.db._
 import starling.eai.{Book, Traders}
 import starling.gui.api._
 import starling.pivot._
-import controller.{AxisNode, PivotTable}
+import controller.PivotTable
 import starling.pivot.model._
 import starling.reports.pivot._
-import starling.marketdata._
 import starling.services._
 import starling.trade.{Trade, TradeID, TradeSystem}
 import starling.tradestore.{TradeSet, TradePredicate, TradeStores}
@@ -23,10 +21,8 @@ import starling.tradestore.intraday.IntradayTradeAttributes
 import starling.utils._
 import starling.utils.sql.{FalseClause, From, RealTable}
 
-import starling.utils.ImplicitConversions._
 import starling.utils.sql.QueryBuilder._
-import starling.tradeimport.TradeImporter
-import starling.browser.service.{BookmarkLabel, PageLogInfo, UserSettingsLabel, Version}
+import starling.browser.service.Version
 
 class UserReportsService(
   val ukHolidayCalendar: BusinessCalendarSet,
@@ -318,8 +314,6 @@ class StarlingServerImpl(
     assert(tradeSets.size == 1, "Must have only 1 trade set")
     val tradeSet = tradeSets.head
 
-    val tradeSetsKey = tradeSets.map(ts => (ts._1.key, ts._2)).toList
-
     val pivot = reportService.pnlReconciliation(CurveIdentifier.unLabel(curveIdentifier), tradeSet._1, tradeSet._2, eaiStarlingDB)
     PivotTableModel.createPivotData(pivot, pivotFieldParams)
   }
@@ -539,7 +533,7 @@ class StarlingServerImpl(
   def latestTradeTimestamp(desk:Desk):TradeTimestamp = tradeStores.closedDesks.latestTradeTimestamp(desk)
 
   def intradayLatest = tradeStores.intradayTradeStore.intradayLatest
-  def clearCache = reportService.clearCache
+  def clearCache {reportService.clearCache()}
 
   def selectLiveAndErrorTrades(day: Day, timestamp: Timestamp, desk: Desk, tradePredicate: TradePredicate):List[Trade] = {
     deskTradeSets(Some(desk), tradePredicate).flatMap(_.selectLiveAndErrorTrades(day, timestamp))
@@ -622,10 +616,11 @@ class StarlingServerImpl(
     ), pivotFieldParams)
   }
 
-  def storeSystemInfo(info:OSInfo) = userSettingsDatabase.storeSystemInfo(User.currentlyLoggedOn, info)
+  def storeSystemInfo(info:OSInfo) {userSettingsDatabase.storeSystemInfo(User.currentlyLoggedOn, info)}
 
-  def saveUserReport(reportName:String, data:UserReportData, showParameters:Boolean) =
+  def saveUserReport(reportName:String, data:UserReportData, showParameters:Boolean) {
     userSettingsDatabase.saveUserReport(User.currentlyLoggedOn, reportName, data, showParameters)
-  def deleteUserReport(reportName:String) = userSettingsDatabase.deleteUserReport(User.currentlyLoggedOn, reportName)
+  }
+  def deleteUserReport(reportName:String) {userSettingsDatabase.deleteUserReport(User.currentlyLoggedOn, reportName)}
 
 }
