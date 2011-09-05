@@ -182,9 +182,9 @@ class Log4JLogger(val logger: Logger, levelTransformer: DynamicVariable[(Levels.
 
   override def fatal(msg: AnyRef, t: Throwable) = logger.fatal(msg, t)
 
-  private def getInheritedLevel = {
+  private def getInheritedLevel: Level = {
     if (Log4JLogger.isOsgi) {
-      Levels.Info
+      Level.INFO
     } else {
       def recurse(category: Category): Level = {
         category.getLevel ?? recurse(category.getParent)
