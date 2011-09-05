@@ -11,7 +11,7 @@
       <module fileurl="file://$PROJECT_DIR$/curves/curves.iml" filepath="$PROJECT_DIR$/curves/curves.iml" />
       <module fileurl="file://$PROJECT_DIR$/databases/databases.iml" filepath="$PROJECT_DIR$/databases/databases.iml" />
       <module fileurl="file://$PROJECT_DIR$/daterange/daterange.iml" filepath="$PROJECT_DIR$/daterange/daterange.iml" />
-      <module fileurl="file://$PROJECT_DIR$/db/dbx.iml" filepath="$PROJECT_DIR$/db/dbx.iml" />
+      <module fileurl="file://$PROJECT_DIR$/dbx/dbx.iml" filepath="$PROJECT_DIR$/dbx/dbx.iml" />
       <module fileurl="file://$PROJECT_DIR$/fc2.api/fc2.api.iml" filepath="$PROJECT_DIR$/fc2.api/fc2.api.iml" />
       <module fileurl="file://$PROJECT_DIR$/gui/gui.iml" filepath="$PROJECT_DIR$/gui/gui.iml" />
       <module fileurl="file://$PROJECT_DIR$/gui.api/gui.api.iml" filepath="$PROJECT_DIR$/gui.api/gui.api.iml" />
