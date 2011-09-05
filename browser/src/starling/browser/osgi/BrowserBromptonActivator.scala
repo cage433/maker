@@ -8,11 +8,9 @@ import starling.browser.internal._
 import javax.swing.UIManager
 import com.jgoodies.looks.plastic.PlasticXPLookAndFeel
 import starling.manager.{BromptonServiceReference, BromptonServiceTracker, BromptonContext, BromptonActivator}
-import starling.browser.BookmarkData._
 import swing.Swing._
 import starling.browser.common.GuiUtils
 import starling.browser._
-import starling.browser.LocalCache._
 import swing.event.Event
 
 case class BundleAdded(bundle:BrowserBundle) extends Event
@@ -24,15 +22,15 @@ class BrowserBromptonActivator extends BromptonActivator {
 
   def defaults = new BrowserPropsFoo
 
-  def init(context: BromptonContext, props: BrowserPropsFoo) = { }
+  def init(context: BromptonContext, props: BrowserPropsFoo) { }
 
   var fc:StarlingBrowserFrameContainer = _
 
-  def start(context: BromptonContext) = {
+  def start(context: BromptonContext) {
 
     javax.swing.SwingUtilities.invokeAndWait(new Runnable() { def run() {
-      UIManager.getDefaults().put("ClassLoader", classOf[PlasticXPLookAndFeel].getClassLoader)
-      GuiUtils.setLookAndFeel
+      UIManager.getDefaults.put("ClassLoader", classOf[PlasticXPLookAndFeel].getClassLoader)
+      GuiUtils.setLookAndFeel()
     } })
 
     val serverContext = new ServerContext() {
@@ -61,7 +59,7 @@ class BrowserBromptonActivator extends BromptonActivator {
     }
     val bookmarks = serverContext.browserService.bookmarks
     context.createServiceTracker(Some(classOf[BrowserBundle]), Nil, new BromptonServiceTracker {
-      def serviceAdded(ref: BromptonServiceReference, service: AnyRef) = {
+      def serviceAdded(ref: BromptonServiceReference, service: AnyRef) {
         val bundle = service.asInstanceOf[BrowserBundle]
         onEDT {
           val bundlesPublisher = new Publisher() {}
@@ -73,7 +71,7 @@ class BrowserBromptonActivator extends BromptonActivator {
           cacheMap(LocalCache.Bookmarks) = toBookmarks(bookmarks)
         }
       }
-      def serviceRemoved(ref: BromptonServiceReference) = {
+      def serviceRemoved(ref: BromptonServiceReference) {
         onEDT {
           val (bundle, bundlesPublisher) = bundlesByRef(ref)
           bundlesPublisher.deafTo(localCachePublisher)
@@ -104,7 +102,7 @@ class BrowserBromptonActivator extends BromptonActivator {
           case Some(bundle) => BookmarkData(label.name, Some(bundle.unmarshal(label.bookmark).asInstanceOf[Bookmark]))
           case None => BookmarkData(label.name, None)
         }
-        BookmarkData(label.name, None)
+        BookmarkData(label.name, None) // TODO - we are never returning a bookmark! If I take this out OSGI Gui doesn't load.
       } }
     }
     val username = serverContext.username
@@ -156,7 +154,7 @@ class BrowserBromptonActivator extends BromptonActivator {
     })
   }
 
-  def stop(context: BromptonContext) = {
+  def stop(context: BromptonContext) {
     System.exit(0) //TODO handle proper restart of browser so that users do not need to restart starling gui on upgrade
   }
 }

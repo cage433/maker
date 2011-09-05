@@ -233,11 +233,11 @@ object GuiStart extends Log {
   def showErrorThenExit(t: Throwable) {
     log.fatal("Failed to start starling: ", t)
     onEDT {
-      GuiUtils.setLookAndFeel
-      val f = new Frame {
+      GuiUtils.setLookAndFeel()
+      new Frame {
         title = "Could not start Starling"
         iconImage = StarlingIcons.icon("/icons/32x32/status/weather-few-clouds.png").getImage
-        val okButton = new Button("Ok") {reactions += {case ButtonClicked(e) => exit}}
+        val okButton = new Button("Ok") {reactions += {case ButtonClicked(e) => exit()}}
         contents = new MigPanel("insets n 0 n n") {
           val image = StarlingIcons.im("/icons/128x128_storm_dead_bird.png")
           val imagePanel = new FixedImagePanel(image)
@@ -258,16 +258,13 @@ object GuiStart extends Log {
           add(scrollPane, "gaptop 30lp, wrap unrel, push, grow")
           add(okButton, "split, spanx, tag ok")
         }
-        pack
-        centerOnScreen
+        pack()
+        centerOnScreen()
         defaultButton = okButton
         visible = true
-
-        reactions += {
-          case WindowClosing(w) => exit
-        }
-
-        def exit = System.exit(-1)
+        
+        reactions += {case WindowClosing(w) => exit()}
+        def exit() {System.exit(-1)}
       }
     }
   }
