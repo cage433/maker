@@ -127,8 +127,6 @@ object Desk extends StarlingEnum(classOf[Desk], (d: Desk) => d.name, true) {
   val Titan = Desk("Titan")
 
   val pricingGroups = values.flatMap(_.pricingGroups).distinct
-
-  private def label(tradeSystem:String, shortCode: String) = TradeSystemLabel(tradeSystem, shortCode)
 }
 
 class TradeEvent
