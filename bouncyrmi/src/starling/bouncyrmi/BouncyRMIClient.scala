@@ -17,6 +17,7 @@ import atomic.{AtomicBoolean, AtomicReference, AtomicInteger}
 import org.jboss.netty.handler.timeout.{IdleStateEvent, IdleStateAwareChannelHandler}
 import org.jboss.netty.util.{HashedWheelTimer, Timeout, TimerTask}
 
+
 trait Client {
   def ticket: Option[Array[Byte]]
 }
@@ -29,11 +30,12 @@ object Client {
 
 case class StateChangeEvent(previous: State, current: State) extends Event
 
-class BouncyRMIClient[C](host: String, port: Int, interface: Class[C], auth: Client, logger:(String)=>Unit=(x)=>{}, overriddenUser:Option[String] = None) {
+class BouncyRMIClient(host: String, port: Int, auth: Client, logger:(String)=>Unit=(x)=>{}, overriddenUser:Option[String] = None) {
   private val client = new Client(overriddenUser)
   lazy val clientTimer = new HashedWheelTimer
 
   def start: Future[Option[scala.Throwable]] = {
+    println("BouncyRMIClient connecting to %s:%d".format(host, port))
     client.init
     client.connect
   }
@@ -107,7 +109,7 @@ class BouncyRMIClient[C](host: String, port: Int, interface: Class[C], auth: Cli
           if (!channelFuture.isSuccess) {
             Logger.warn("Client: Failed to connect to server")
             result = channelFuture.getCause match {
-              case e: Exception => Some(new CannotConnectException("Can not connect to server", channelFuture.getCause))
+              case e: Exception => Some(new CannotConnectException("Can not connect to server %s:%d".format(host, port), channelFuture.getCause))
               case e => {
                 Logger.error("Failed to connect", e)
                 Some(e)
@@ -386,9 +388,9 @@ class BouncyRMIClient[C](host: String, port: Int, interface: Class[C], auth: Cli
     }
   }
 
-  val proxy: C = {
+  def proxy[C](klass:Class[C]): C = {
     val e = new Enhancer()
-    e.setSuperclass(interface)
+    e.setSuperclass(klass)
     e.setCallback(new MethodInterceptor() {
       def intercept(obj: Object, method: Method,
                     args: Array[Object], proxy: MethodProxy): Object = {

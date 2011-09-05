@@ -2,8 +2,8 @@ package starling.loopyxl
 
 import org.scalatest.matchers.ShouldMatchers
 import org.scalatest.testng.TestNGSuite
-import junit.framework.Assert._
 import org.testng.annotations.Test
+import org.testng.Assert._
 
 class ProtocolBuffersTest extends TestNGSuite with ShouldMatchers {
   import ProtocolBuffers._

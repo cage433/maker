@@ -95,9 +95,12 @@ case class SinglePeriodSwap(
   assert(pricingRule.isValid(index.calendars), "Invalid pricing rule for " + index)
   require(index.convert(volume, strike.denominatorUOM).isDefined, "Couldn't convert volume into strike uom: " + (volume, strike) + ", " + index)
 
+  // volume converted so everything is in the context of the strike uom
+  val convertedVolume = index.convert(volume, strike.denominatorUOM).get
+
   def valuationCCY: UOM = strike.numeratorUOM
 
-  private def averagingDays = period.days.filter(pricingRule.isObservationDay(index.calendars, _))
+  private val averagingDays = period.days.filter(pricingRule.isObservationDay(index.calendars, _))
 
   def liveAveragingDays(marketDay : DayAndTime) = averagingDays.filter(_.endOfDay > marketDay)
 
@@ -155,9 +158,14 @@ case class SinglePeriodSwap(
 
   def explanation(env : Environment) : NamedQuantity = {
     val namedEnv = env.withNaming()
-    val price = SimpleNamedQuantity("F_Ave", namedEnv.averagePrice(index, period, pricingRule, priceUOM, priceRounding))
-    val discount = SimpleNamedQuantity("disc", namedEnv.discount(valuationCCY, settlementDay))
-    (price - strike.named("K")) * volume.named("Volume") * discount
+    val price = SimpleNamedQuantity("F_Avg", namedEnv.averagePrice(index, period, pricingRule, priceUOM, priceRounding))
+    val undiscounted = (price - strike.named("K")) * convertedVolume.named("Volume")
+    if(cleared) {
+      undiscounted
+    } else {
+      val discount = SimpleNamedQuantity("disc", namedEnv.discount(valuationCCY, settlementDay))
+      undiscounted * discount
+    }
   }
 
   def instrumentType = CommoditySwap
@@ -184,7 +192,7 @@ case class SinglePeriodSwap(
       } else {
         val price = env.averagePrice(index, period, pricingRule, priceUOM, priceRounding)
 
-        val payment = (price - strike) * volume
+        val payment = (price - strike) * convertedVolume
         if (env.marketDay < days.last.endOfDay) {
           if(cleared) { // cleared means we're margining so no discounting
             List(Asset.estimatedCash(env.marketDay.day, payment, payment))

@@ -22,13 +22,11 @@ case class SwapCalendarSpread(index: SingleIndex,
   override def expiryDay() = Some(period.back.lastDay)
 
   private val settlementDay = CommoditySwap.swapSettlementDate(period.back.lastDay)
-  val front = new SinglePeriodSwap(index, strike, volume, period.front, cleared = true, settlementDayOption = Some(settlementDay))
-  val back = new SinglePeriodSwap(index, strike.copy(value = 0.0), -volume, period.back, cleared = true, settlementDayOption = Some(settlementDay))
+  val front = new SinglePeriodSwap(index, strike, volume, period.front, cleared = cleared, settlementDayOption = Some(settlementDay))
+  val back = new SinglePeriodSwap(index, strike.copy(value = 0.0), -volume, period.back, cleared = cleared, settlementDayOption = Some(settlementDay))
 
   def explanation(env : Environment) : NamedQuantity = {
-    val namedEnv = env.withNaming()
-    val discount = if (cleared) new Quantity(1.0) else namedEnv.discount(valuationCCY, settlementDay)
-    (price(namedEnv).asInstanceOf[NamedQuantity] - strike.named("K")) * volume.named("Volume") * discount
+    front.explanation(env).named("Front") + back.explanation(env).named("Back")
   }
 
   def asUtpPortfolio(tradeDay: Day) = {

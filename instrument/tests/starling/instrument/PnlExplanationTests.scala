@@ -10,7 +10,7 @@ import starling.utils.ScalaTestUtils._
 import starling.utils.QuantityTestUtils._
 import starling.curves._
 import starling.quantity.{Percentage, Quantity}
-import starling.market.{JonTestEnv, TestMarketSpec, FuturesMarket, Market}
+import starling.market.{JonTestEnv, TestMarketTest, FuturesMarket, Market}
 import starling.models.{American, European, Put, Call}
 import starling.daterange.Period._
 import starling.daterange._

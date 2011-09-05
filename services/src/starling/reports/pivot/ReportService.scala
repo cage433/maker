@@ -23,7 +23,7 @@ import starling.rmi.PivotData
 import collection.mutable.ListBuffer
 import starling.market._
 import starling.marketdata._
-import starling.quantity.{SimpleNamedQuantity, Percentage, UOM, Quantity}
+import starling.quantity._
 
 case class CurveIdentifier(
         marketDataIdentifier:MarketDataIdentifier,
@@ -180,9 +180,7 @@ class PivotReportRunner(reportContextBuilder:ReportContextBuilder) {
 /**
  * Joins up trades and market data to create reports
  */
-class ReportService(
-    reportContextBuilder:ReportContextBuilder,
-    tradeStores: TradeStores) {
+class ReportService(reportContextBuilder:ReportContextBuilder, tradeStores: TradeStores) {
 
   val pivotReportRunner = new PivotReportRunner(reportContextBuilder )
 
@@ -192,7 +190,7 @@ class ReportService(
 
   def singleTradeReport(trade: Trade, curveIdentifier: CurveIdentifier): TradeValuation = {
     val defaultContext = reportContextBuilder.contextFromCurveIdentifier(curveIdentifier)
-    val explanation = trade.tradeable.explanation(defaultContext.environment)
+    val explanation = trade.explain(defaultContext.environment)
     TradeValuation(explanation)
   }
 

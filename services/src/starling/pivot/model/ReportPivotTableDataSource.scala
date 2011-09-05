@@ -56,7 +56,7 @@ class ReportPivotTableDataSource(tradePivotTable:PivotTableDataSource, reports:L
    *        its own combined values which are then collected together with the trade combined values for that group
    */
   case class GroupedAndCombinedFieldBindingsBuilder(
-    tradeFilters          : Seq[(Field, Selection)],
+    tradeFilters          : Seq[(Field, PossibleValuesFilter)],
     tradeFieldsToGroupBy  : Seq[Field],
     tradeFieldsToCombine  : Seq[Field],
     reportSpecificOptions : Map[String, Any]

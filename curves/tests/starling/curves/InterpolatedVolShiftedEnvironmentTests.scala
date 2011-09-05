@@ -9,9 +9,9 @@ import starling.market.Market._
 import starling.market.Index._
 import starling.daterange.{Spread, Month, Day}
 import starling.quantity.{UOM, Quantity, Percentage}
-import starling.market.{TestMarketSpec, FuturesFrontPeriodIndex, Index}
+import starling.market.{TestMarketTest, FuturesFrontPeriodIndex, Index}
 
-class InterpolatedVolShiftedEnvironmentTests extends TestMarketSpec {
+class InterpolatedVolShiftedEnvironmentTests extends TestMarketTest {
 
   val marketDay = Day(2010, 1, 1).endOfDay
   val env = Environment(new NullAtomicEnvironment(marketDay))

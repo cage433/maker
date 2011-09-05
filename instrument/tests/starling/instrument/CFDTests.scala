@@ -16,7 +16,7 @@ import starling.daterange._
 import starling.daterange.Day._
 import starling.utils.{AtomicDatumKeyUtils, StarlingTest}
 
-class CFDTests extends TestMarketSpec {
+class CFDTests extends TestMarketTest {
   val platts_brent = Index.publishedIndexFromName("Platts Brent (April)")
   val spreadIndex = BrentCFDSpreadIndex.indexFor(new BrentMonth(4))
 
@@ -67,8 +67,8 @@ class CFDTests extends TestMarketSpec {
       def applyOrMatchError(key: AtomicDatumKey) = key match {
         case ForwardPriceKey(`market1`, _, _) => fwdPrice1
         case ForwardPriceKey(`market2`, _, _) => fwdPrice2
-        case FixingKey(`index1`, _) => fixed1
-        case FixingKey(`index2`, _) => fixed2
+        case IndexFixingKey(`index1`, _) => fixed1
+        case IndexFixingKey(`index2`, _) => fixed2
       }
     })
   }

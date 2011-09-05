@@ -8,7 +8,7 @@ import org.testng.annotations.AfterClass
 import cern.colt.matrix.impl.DenseDoubleMatrix2D
 import starling.utils.StarlingTest
 
-trait JonTestEnv extends TestMarketSpec {
+trait JonTestEnv extends TestMarketTest {
   def makeEnv(marketDay: DayAndTime, dVol: Double = 0.0, dPrice: Quantity = Quantity.NULL, dStdDev: Quantity = Quantity.NULL) = {
     import JonTestData._
 
@@ -38,10 +38,10 @@ trait JonTestEnv extends TestMarketSpec {
           val carry = day.daysSinceInYears(Day(2011, 2, 1))
           Quantity(99.1965 + carry, datedBrent.priceUOM) + dPrice
         }
-        case FixingKey(`index`, d) => {
+        case IndexFixingKey(`index`, d) => {
           Quantity(wtiForward(d.containingMonth), wti.priceUOM)
         }
-        case FixingKey(`brent`, d) => {
+        case IndexFixingKey(`brent`, d) => {
           Quantity(wtiForward(d.containingMonth), brent.priceUOM)
         }
         case OilAtmVolAtomicDatumKey(`wti`, _, period, _) => {

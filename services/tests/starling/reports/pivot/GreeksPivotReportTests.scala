@@ -62,7 +62,6 @@ class GreeksPivotReportTests extends StarlingTest {
         if (elt.getClass == klass)
           true
         else {
-          println("Expected " + klass + ", got " + elt.getClass)
           false
         }
     }
@@ -72,8 +71,6 @@ class GreeksPivotReportTests extends StarlingTest {
     if (seq.size == size)
       true
     else {
-      println("Expected " + size + ", got " + seq.size)
-      seq.foreach(println)
       false
     }
   }

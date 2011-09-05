@@ -43,6 +43,5 @@ class Test6_1 {
       <ParcelPricing>AllParcels</ParcelPricing>
     </PricingSchedule>
     val sched = PricingScheduleXMLParser.parse(xml, None)
-    println("sched: " + sched)
   }
 }

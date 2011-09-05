@@ -1,17 +1,21 @@
 package starling.gui.namedquantitycomponents
 
-import starling.gui.GuiUtils._
+import starling.browser.common.GuiUtils._
 import swing.Swing._
-import swing.event.MouseClicked
 import starling.quantity._
-import starling.pivot.view.swing.{PivotCellRenderer, MigPanel}
+import starling.pivot.view.swing.PivotCellRenderer
 import javax.swing.border.AbstractBorder
 import swing.Label
 import java.awt.{Color, Cursor, BasicStroke, Graphics, Insets, Graphics2D, Dimension}
-import javax.swing.JTable
 import javax.swing.table.{DefaultTableCellRenderer, AbstractTableModel}
 import starling.pivot.{QuantityLabelPivotFormatter, PivotFormatter, ExtraFormatInfo}
 import collection.mutable.ListBuffer
+import starling.browser.common.MigPanel
+import javax.swing.JTable
+import swing.event.MousePressed
+import org.jdesktop.swingx.JXTable
+import starling.pivot.view.swing.{PivotJTable, PivotCellRenderer}
+import org.jdesktop.swingx.decorator.{HighlightPredicate, ColorHighlighter}
 
 object NamedQuantityComponentHelper {
   def panel(namedQuantity:NamedQuantity, fi:ExtraFormatInfo) = {
@@ -31,6 +35,9 @@ object NamedQuantityComponentHelper {
       font = PivotCellRenderer.MonoSpacedFont
       text = text0
       tooltip = tooltip0
+      if (text0.startsWith("(")) {
+        foreground = Color.RED
+      }
     }
   }
 
@@ -46,7 +53,7 @@ object NamedQuantityComponentHelper {
     }
   }
 
-  def quantityText(q:Quantity, fi:ExtraFormatInfo) = QuantityLabelPivotFormatter.format(q, fi).text
+  def quantityText(q:Quantity, fi:ExtraFormatInfo) = q.toStringAllDecimalPlaces
 }
 import NamedQuantityComponentHelper._
 
@@ -88,9 +95,7 @@ class ExpandCollapsePanel(namedQuantity:NamedQuantity, fi:ExtraFormatInfo) exten
 
   add(label)
 
-  reactions += {
-    case MouseClicked(`label`,_,_,_,_) => {expandCollapse()}
-  }
+  reactions += {case MousePressed(`label`,_,_,_,false) => {expandCollapse()}}
   listenTo(label.mouse.clicks)
 
   def expandCollapse() {
@@ -117,6 +122,9 @@ class ExpandCollapsePanel(namedQuantity:NamedQuantity, fi:ExtraFormatInfo) exten
 class QuantityPanel(quantity:Quantity, fi:ExtraFormatInfo) extends Label with UpdateableNamedQuantityComponent {
   text = quantityText(quantity, fi)
   font = PivotCellRenderer.MonoSpacedFont
+  if (text.startsWith("(")) {
+    foreground = Color.RED
+  }
 
   def updateExtraInfo(newFI:ExtraFormatInfo) {
     text = quantityText(quantity, newFI)
@@ -171,10 +179,21 @@ class VerticalFunctionNamedQuantityPanel(func:FunctionNamedQuantity, fi:ExtraFor
         def getValueAt(rowIndex:Int, columnIndex:Int) = tableData(rowIndex)(columnIndex)
       }
     }
-    val jTable = new JTable(generateTableModel(table)) with UpdateableNamedQuantityComponent {
+
+    val negativeHighlighter = new ColorHighlighter(new HighlightPredicate {
+      def isHighlighted(renderer:java.awt.Component, adapter:org.jdesktop.swingx.decorator.ComponentAdapter) = {
+        adapter.getValue.toString.startsWith("(")
+      }
+    })
+    negativeHighlighter.setForeground(Color.RED)
+    negativeHighlighter.setSelectedForeground(Color.RED)
+
+    val jTable = new JXTable(generateTableModel(table)) with UpdateableNamedQuantityComponent {
       setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS)
       setBorder(MatteBorder(1, 1, 0, 0, TableGridColour))
       setCellSelectionEnabled(true)
+      setRowHeight(PivotJTable.RowHeight)
+      addHighlighter(negativeHighlighter)
 
       def updateExtraInfo(newFI:ExtraFormatInfo) {
         val table0 = func.parameters.map(row(_, newFI))
@@ -291,7 +310,7 @@ class RoundedNamedQuantityPanel(round:RoundedNamedQuantity, fi:ExtraFormatInfo) 
   }
 }
 
-class TopNamedQuantityComponent(quantity:SimpleNamedQuantity, formatInfo:ExtraFormatInfo=PivotFormatter.DefaultExtraFormatInfo) extends MigPanel with UpdateableNamedQuantityComponent {
+class TopNamedQuantityComponent(quantity:NamedQuantity, formatInfo:ExtraFormatInfo=PivotFormatter.DefaultExtraFormatInfo) extends MigPanel with UpdateableNamedQuantityComponent {
   background = ExplanationPanelBackgroundColour
   val (panelToAdd, quantityValue) = quantity.quantity match {
     case nq:NamedQuantity => (new ExpandCollapsePanel(quantity, formatInfo), nq.quantity)
@@ -341,7 +360,7 @@ class LShape extends Label {
   }
 }
 
-case class UnderLineDashedBorder() extends AbstractBorder {
+case class UnderLineDashedBorder(colour0:Color=LShape.colour) extends AbstractBorder {
   override def paintBorder(c:java.awt.Component, g:Graphics, x:Int, y:Int, width:Int, height:Int) {
     val g2 = g.asInstanceOf[Graphics2D]
 
@@ -349,28 +368,28 @@ case class UnderLineDashedBorder() extends AbstractBorder {
     val w = s.width - 1
     val h = s.height - 1
 
-    g2.setColor(colour)
+    g2.setColor(colour0)
     g2.setStroke(stroke)
     g2.drawLine(2,h,w,h)
   }
 
   override def getBorderInsets(c:java.awt.Component, insets:Insets) = {
-    insets.left = 1
-    insets.right = 1
-    insets.top = 1
-    insets.bottom = 1
+    insets.left = 0
+    insets.right = 0
+    insets.top = 0
+    insets.bottom = 0
     insets
   }
-  override def getBorderInsets(c:java.awt.Component) = new Insets(1,1,1,1)
+  override def getBorderInsets(c:java.awt.Component) = new Insets(0,0,0,0)
 }
 
 object NamedQuantityComponent {
   def main(args:Array[String]) {
     val price = Quantity(10.0, UOM.USD / UOM.BBL).named("F")
     val strike = Quantity(8.0, UOM.USD / UOM.BBL).named("K")
-    val volume = Quantity(100.0, UOM.BBL).named("Volume")
+//    val volume = Quantity(100.0, UOM.BBL).named("Volume")
     val discount = new Quantity(0.9).named("Discount")
-    val priceTimesVolume = ((price - strike) * volume) * discount
+//    val priceTimesVolume = ((price - strike) * volume) * discount
 
     val func = FunctionNamedQuantity("Sum", List(price.negate, strike.invert), price + strike, true) * discount.round(3)
 

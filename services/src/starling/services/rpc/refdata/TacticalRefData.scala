@@ -15,7 +15,7 @@ import com.trafigura.tradinghub.support.GUID
 import starling.services.rpc.valuation.ValuationService
 import starling.services.rpc.FileUtils
 import starling.titan.{TitanEdmTradeService, TitanServices}
-import com.trafigura.tradecapture.internal.refinedmetal.{Counterparty, Metal, Market, UOM}
+import com.trafigura.tradecapture.internal.refinedmetal.{Counterparty, Metal, Market, UOM, Shape, Grade, Location, DestinationLocation}
 import com.trafigura.timer.Timer
 import com.trafigura.edm.shared.types.TitanId
 
@@ -35,17 +35,33 @@ case class DefaultTitanServices(props: Props) extends TitanServices {
   private lazy val tacticalRefdataMarketsService: MarketService = new MarketServiceResourceProxy(ProxyFactory.create(classOf[MarketServiceResource], refdataServiceURL, clientExecutor))
   private lazy val tacticalRefdataCounterpartiesService : CounterpartyService = new CounterpartyServiceResourceProxy(ProxyFactory.create(classOf[CounterpartyServiceResource], refdataServiceURL, clientExecutor))
   private lazy val tacticalRefdataUomService : UOMService = new UOMServiceResourceProxy(ProxyFactory.create(classOf[UOMServiceResource], refdataServiceURL, clientExecutor))
+  
+  private lazy val tacticalRefdataShapesService : ShapeService = new ShapeServiceResourceProxy(ProxyFactory.create(classOf[ShapeServiceResource], refdataServiceURL, clientExecutor))
+  private lazy val tacticalRefdataGradesService : GradeService = new GradeServiceResourceProxy(ProxyFactory.create(classOf[GradeServiceResource], refdataServiceURL, clientExecutor))
+  private lazy val tacticalRefdataLocationsService : LocationService = new LocationServiceResourceProxy(ProxyFactory.create(classOf[LocationServiceResource], refdataServiceURL, clientExecutor))
+  private lazy val tacticalRefdataDestinationLocationsService : DestinationLocationService = new DestinationLocationServiceResourceProxy(ProxyFactory.create(classOf[DestinationLocationServiceResource], refdataServiceURL, clientExecutor))
+
   lazy val titanGetEdmTradesService: EdmGetTrades = new EdmGetTradesResourceProxy(ProxyFactory.create(classOf[EdmGetTradesResource], tradeServiceURL, clientExecutor))
 
-  lazy val edmMetalByGUID: Map[GUID, Metal] = Map[GUID, Metal]() ++ allTacticalRefDataMetals.map(e => (e.guid, e))
-  lazy val futuresExchangeByID: Map[String, Market] = Map[String, Market]() ++ allTacticalRefDataExchanges.map(e => (e.code, e))
-  lazy val counterpartiesByGUID: Map[GUID, Counterparty] = Map[GUID, Counterparty]() ++ allTacticalRefDataCounterparties().map(e => e.guid -> e)
-  lazy val uomById : Map[Int, UOM] = Map[Int, UOM]() ++ allTacticalRefDataUoms().map(e => e.oid -> e)
+  lazy val edmMetalByGUID = Map[GUID, Metal]() ++ allTacticalRefDataMetals.map(e => e.guid -> e)
+  lazy val futuresExchangeByID = Map[String, Market]() ++ allTacticalRefDataExchanges.map(e => e.code -> e)
+  lazy val counterpartiesByGUID = Map[GUID, Counterparty]() ++ allTacticalRefDataCounterparties().map(e => e.guid -> e)
+  lazy val uomById = Map[Int, UOM]() ++ allTacticalRefDataUoms().map(e => e.oid -> e) // hack needed to allow for logistics special "equantity uoms"
+
+  lazy val shapesByGUID = Map[GUID, Shape]() ++ allTacticalRefDataShapes.map(e => e.guid -> e)
+  lazy val gradeByGUID = Map[GUID, Grade]() ++ allTacticalRefDataGrades.map(e => e.guid -> e)
+  lazy val locationsByGUID = Map[GUID, Location]() ++ allTacticalRefDataLocations.map(e => e.guid -> e)
+  lazy val destLocationsByGUID = Map[GUID, DestinationLocation]() ++ allTacticalRefDataDestinationLocations.map(e => e.guid -> e)
 
   def allTacticalRefDataMetals() = tacticalRefdataMetalsService.getMetals()
   def allTacticalRefDataExchanges() = tacticalRefdataMarketsService.getMarkets()
   def allTacticalRefDataCounterparties() = tacticalRefdataCounterpartiesService.getCounterparties(true)
   def allTacticalRefDataUoms() = tacticalRefdataUomService.getUOMs()
+
+  def allTacticalRefDataShapes() = tacticalRefdataShapesService.getShapes()
+  def allTacticalRefDataGrades() = tacticalRefdataGradesService.getGrades()
+  def allTacticalRefDataLocations() = tacticalRefdataLocationsService.getLocations()
+  def allTacticalRefDataDestinationLocations() = tacticalRefdataDestinationLocationsService.getDestinationLocations()
 }
 
 /**
@@ -70,11 +86,12 @@ case class FileMockedTitanServices() extends TitanServices {
         error = null
       }).toList
     }
-    def getByOid(oid : Int) : Trade = tradeMap.get(oid) match {
+    def get(id : TitanId) : Trade = tradeMap.get(id) match {
       case Some(trade) => trade.asInstanceOf[EDMPhysicalTrade]
-      case _ => throw new Exception("Trade does not exist in mock data %d".format(oid))
+      case _ => throw new Exception("Trade does not exist in mock data %s".format(id))
     }
-    def getQuota(id : TitanId) = throw new Exception("Not implemented yet") // todo... implement
+    def getQuota(id : TitanId) = throw new Exception("Not implemented yet") // todo... implement if/when needed
+    def getByGuid(guid : GUID) = throw new Exception("Not implemented yet") // todo... implement if/when needed
   }
 
   lazy val edmMetalByGUID: Map[GUID, Metal] = loadedMetals.map(m => m.guid -> m).toMap
@@ -82,18 +99,28 @@ case class FileMockedTitanServices() extends TitanServices {
   lazy val uomById: Map[Int, UOM] = loadedUoms.map(e => e.oid -> e).toMap
   lazy val counterpartiesByGUID: Map[GUID, Counterparty] = Map[GUID, Counterparty]()
 
+  lazy val shapesByGUID = Map[GUID, Shape]() ++ allTacticalRefDataShapes.map(e => e.guid -> e)
+  lazy val gradeByGUID = Map[GUID, Grade]() ++ allTacticalRefDataGrades.map(e => e.guid -> e)
+  lazy val locationsByGUID = Map[GUID, Location]() ++ allTacticalRefDataLocations.map(e => e.guid -> e)
+  lazy val destLocationsByGUID = Map[GUID, DestinationLocation]() ++ allTacticalRefDataDestinationLocations.map(e => e.guid -> e)
+  
   def allTacticalRefDataFuturesMarkets() = Nil
   def allTacticalRefDataExchanges() = Nil
 
+  def allTacticalRefDataShapes() : List[Shape] = Nil
+  def allTacticalRefDataGrades() : List[Grade] = Nil
+  def allTacticalRefDataLocations() : List[Location] = Nil
+  def allTacticalRefDataDestinationLocations() : List[DestinationLocation] = Nil
+  
   import Timer._
   val loadedMetals = time(loadJsonValuesFromFileUrl(metalsFile).map(s => Metal.fromJson(new JSONObject(s)).asInstanceOf[Metal]), t => println("took %dms to get metals".format(t)))
   val loadedExchanges = time(loadJsonValuesFromFileUrl(exchangesFile).map(s => Market.fromJson(new JSONObject(s)).asInstanceOf[Market]), t => println("took %dms to get exchanges".format(t)))
   val loadedUoms = time(loadJsonValuesFromFileUrl(uomsFile).map(s => UOM.fromJson(new JSONObject(s)).asInstanceOf[UOM]), t => println("took %dms to get uom".format(t)))
   val loadedTrades = time(loadJsonValuesFromFileUrl(tradesFile, true).map(s => EDMPhysicalTrade.fromJson(new JSONObject(s)).asInstanceOf[EDMPhysicalTrade]), t => println("took %dms to get trades".format(t)))
-  var tradeMap = loadedTrades.map(t => t.oid -> t).toMap
+  var tradeMap = loadedTrades.map(t => t.titanId  -> t).toMap
 
   def updateTrade(trade : EDMPhysicalTrade) {
-    tradeMap = tradeMap.updated(trade.oid, trade)
+    tradeMap = tradeMap.updated(trade.titanId, trade)
   }
 }
 

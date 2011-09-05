@@ -6,6 +6,8 @@ import java.util.zip.{GZIPOutputStream, GZIPInputStream}
 import org.apache.commons.io.FileUtils
 import java.net.URL
 import io.Source
+import collection.Iterator
+import collection.mutable.ListBuffer
 
 object StringIO {
 
@@ -58,6 +60,12 @@ object StringIO {
     buffer.toString
   }
 
+  def readBytesFromFile(file: File): Array[Byte] = {
+    val is = new FileInputStream(file)
+
+    Iterator continually is.read takeWhile (-1 !=) map (_.toByte) toArray
+  }
+
   def readLinesFromFile(file: File) = readStringFromFile(file).split("\n").toList
   def readJoinedLinesFromFile(file: File) = readLinesFromFile(file).map(_.trim).mkString("\n").replace("\\\n", "").split("\n").toList
 
@@ -80,15 +88,7 @@ object StringIO {
     buffer.toString
   }
 
-  def resource(resource: String) = {
-    getClass.getResourceAsStream(resource)
-  }
-
-  def url(resource: String): URL = {
-    getClass.getResource(resource)
-  }
-
-  def lines(resource: String) = {
-    Source.fromURL(getClass.getResource(resource)).getLines
-  }
+  def resource(resource: String): InputStream   = getClass.getResourceAsStream(resource)
+  def url(resource: String): URL                = getClass.getResource(resource)
+  def lines(resource: String): Iterator[String] = Source.fromURL(getClass.getResource(resource)).getLines
 }

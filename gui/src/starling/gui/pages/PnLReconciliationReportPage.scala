@@ -2,22 +2,22 @@ package starling.gui.pages
 
 import starling.daterange.Day
 import starling.gui.api._
-import starling.gui.{PageContext, PageBuildingContext}
 import starling.rmi.StarlingServer
 import starling.pivot.{PivotEdits, SomeSelection, Selection, Field}
+import starling.gui.StarlingServerContext
+import starling.browser.{Modifiers, ServerContext, PageContext}
 
 case class PnLReconciliationReportPage(tradeSelectionWithTimestamp: TradeSelectionWithTimestamp, curveIdentifier: CurveIdentifierLabel,
-                                       expiryDay: Day, pivotPageState: PivotPageState) extends AbstractPivotPage(pivotPageState) {
+                                       expiryDay: Day, pivotPageState: PivotPageState) extends AbstractStarlingPivotPage(pivotPageState) {
   def text = "PnL Trade Reconciliation"
-  override def layoutType = Some("PnLTradeReconciliation")
 
   def selfPage(pivotPageState: PivotPageState, edits:PivotEdits) = copy(pivotPageState = pivotPageState)
 
-  def dataRequest(pageBuildingContext: PageBuildingContext) = {
+  def dataRequest(pageBuildingContext:StarlingServerContext) = {
     pageBuildingContext.cachingStarlingServer.pnlReconciliation(tradeSelectionWithTimestamp, curveIdentifier, expiryDay, pivotPageState.pivotFieldParams)
   }
 
-  override def finalDrillDownPage(fields: Seq[(Field, Selection)], pageContext: PageContext, ctrlDown: Boolean) = {
+  override def finalDrillDownPage(fields: Seq[(Field, Selection)], pageContext: PageContext, modifiers:Modifiers) = {
     val selection = fields.find(f => f._1.name == "Trade ID")
     val tradeID = selection match {
       case Some((field, selection)) => {
@@ -31,9 +31,9 @@ case class PnLReconciliationReportPage(tradeSelectionWithTimestamp: TradeSelecti
     tradeID match {
       case Some(trID) => {
         pageContext.createAndGoTo(
-          (starlingServer: StarlingServer) => {
+          (serverContext:ServerContext) => {
             SingleTradePage(trID, tradeSelectionWithTimestamp.desk, TradeExpiryDay(expiryDay), tradeSelectionWithTimestamp.intradaySubgroupAndTimestamp.map(_._1))
-          }, newTab = ctrlDown)
+          }, modifiers = modifiers)
       }
       case None => None
     }

@@ -148,6 +148,8 @@ object UOMSymbol{
   val primeForSymbol : Map[UOMSymbol, Int] = Map.empty ++ symbols.zip(Primes.firstNPrimes(symbols.size))
   val symbolForPrice : Map[Int, UOMSymbol] = Map.empty ++ primeForSymbol.view.map{case (s, p) => p -> s}
   val primes = symbolForPrice.keySet.toList.sortWith(_<_)
+
+  def fromName(name: String): Option[UOMSymbol] = symbols.find(_.names.contains(name))
 }
 
 case class UOMSymbol(name : CaseInsensitive, altNames : List[CaseInsensitive] = List()){

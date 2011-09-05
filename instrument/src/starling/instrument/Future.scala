@@ -19,31 +19,17 @@ case class Future(market: FuturesMarket, delivery: DateRange, strike: Quantity, 
 
   def explanation(env : Environment) : NamedQuantity = {
     val namedEnv = env.withNaming()
-    val F = SimpleNamedQuantity("F", convertPrice(namedEnv, namedEnv.forwardPrice(market, delivery)))
+    val F = SimpleNamedQuantity("F", convertPrice(namedEnv, namedEnv.fixingOrForwardPrice(market, lastTradingDay, delivery)))
     (F - strike.named("K")) * volume.named("Volume")
   }
   
   def *(x : Double) = copy(volume = volume * x)
 
-  def assets(env : Environment) = if (env.marketDay < lastTradingDay.endOfDay) {
-    val F = convertPrice(env, env.forwardPrice(market, delivery))
+  def assets(env: Environment) = {
+    val F = convertPrice(env, env.fixingOrForwardPrice(market, lastTradingDay, delivery))
     Assets(
       Asset.estimatedCash(env.marketDay.day, F * volume, F * volume),
       Asset.estimatedCash(env.marketDay.day, -strike * volume, -strike * volume)
-    )
-	} else {
-    //The cash for futures after the last trading day is probably wrong
-    //as the settlement day is market day
-    //maybe we should try to create the correct margining payments using the fixings?
-    //the trouble is the trade day becomes a valuation parameter
-    val index = Index.futuresMarketToFuturesFrontPeriodIndexMap.get(market) match {
-      case Some(i) => i
-      case _ => FuturesFrontPeriodIndex(market.name + " front period", None, market, 0, 1, None)
-    }
-    val fixings = convertPrice(env, env.indexFixing(index, lastTradingDay))
-    Assets(
-      Asset.estimatedCash(env.marketDay.day, fixings * volume, env),
-      Asset.estimatedCash(env.marketDay.day, -strike * volume, env) //strike is always zero because of the utps
     )
   }
 

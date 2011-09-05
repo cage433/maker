@@ -100,6 +100,39 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
     (Map() ++ (keyFields.map(f => {f -> UndefinedValue}))) ++ singleValueFilters
   }
 
+  private def removeAddedRowsIfBlank(edits:PivotEdits):PivotEdits = {
+
+    val totalRows = fullTableModel.getRowCount
+    val totalColumns = fullTableModel.getColumnCount
+
+    (0 until totalRows).find(r => {
+      fullTableModel.getValueAt(r, 0) match {
+        case ac:AxisCell => ac.state == Added
+      }
+    }) match {
+      case None => edits
+      case Some(startRow) => {
+        val endRow = if (extraLine) totalRows - 1 else totalRows
+        def removeRow(r:Int) = {
+          (0 until totalColumns).map(c => {
+            fullTableModel.getValueAt(r, c) match {
+              case ac:AxisCell => ac.text
+              case tc:TableCell => tc.text
+            }
+          }).forall(_.isEmpty)
+        }
+        val newRowsToRemove = (startRow until endRow).zipWithIndex.flatMap{case (r, i) => {
+          if (removeRow(r)) {
+            Some(i)
+          } else {
+            None
+          }
+        }}
+        edits.removeNewRows(newRowsToRemove.toList)
+      }
+    }
+  }
+
   val rowHeaderTableModel = new PivotJTableModel {
     private val addedRows0 = new ListBuffer[Array[AxisCell]]
     private val blankCells = rowHeaderData0(0).map(av => {
@@ -198,6 +231,7 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
         }
       }}
       if (fireChange && edits != pivotEdits) {
+        edits = removeAddedRowsIfBlank(edits)
         updateEdits(edits, RowHeader)
       }
       edits
@@ -228,7 +262,7 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
 
     override def parser(row:Int, col:Int) = {
       val rowHeaderField = rowHeaderData0(0)(col).value.field
-      editableInfo.get.editableKeyFields(rowHeaderField)
+      editableInfo.get.fieldToParser(rowHeaderField)
     }
 
     override def setValuesAt(values:List[TableValue], currentEdits:Option[PivotEdits], fireChange:Boolean) = {
@@ -247,7 +281,7 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
         val pars = parser(rowIndex, columnIndex)
 
         val (newValue,newLabel) = if (s.isEmpty) (None, "") else {
-          val (v,t) = pars.parse(s)
+          val (v,t) = pars.parse(s, extraFormatInfo)
           (Some(v), t)
         }
 
@@ -290,7 +324,7 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
 
     def acceptableValues(r:Int, c:Int) = {
       val rowHeaderField = rowHeaderData0(0)(c).value.field
-      val parser = editableInfo.get.editableKeyFields(rowHeaderField)
+      val parser = editableInfo.get.fieldToParser(rowHeaderField)
       parser.acceptableValues
     }
 
@@ -517,6 +551,7 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
         }
       }}
       if (fireChange && edits != pivotEdits) {
+        edits = removeAddedRowsIfBlank(edits)
         updateEdits(edits, Main)
       }
       edits
@@ -544,7 +579,7 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
 
     override def parser(row:Int, col:Int) = {
       val measureInfo = colHeaderData0.find(_(col).value.isMeasure).get(col)
-      editableInfo.get.editableMeasures(measureInfo.value.field)
+      editableInfo.get.fieldToParser(measureInfo.value.field)
     }
 
     override def setValuesAt(values:List[TableValue], currentEdits:Option[PivotEdits], fireChange:Boolean) = {
@@ -562,7 +597,7 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
         val pars = parser(rowIndex, columnIndex)
 
         val (newValue,newLabel) = if (s.isEmpty) (None, "") else {
-          val (v,l) = pars.parse(s)
+          val (v,l) = pars.parse(s, extraFormatInfo)
           v match {
             case pq:PivotQuantity if uoms0.length > columnIndex => {
               val uom = uoms0(columnIndex)
@@ -650,7 +685,7 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
 
     def acceptableValues(r:Int, c:Int) = {
       val measureInfo = colHeaderData0.find(_(c).value.isMeasure).get(c)
-      val parser = editableInfo.get.editableMeasures(measureInfo.value.field)
+      val parser = editableInfo.get.fieldToParser(measureInfo.value.field)
       parser.acceptableValues
     }
 
@@ -814,6 +849,7 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
         editsToUse = mod.deleteCells(cellsForMod, false)
       }}
       if (fireChange && editsToUse != pivotEdits) {
+        editsToUse = removeAddedRowsIfBlank(editsToUse)
         updateEdits(editsToUse, Full)
       }
       editsToUse
@@ -917,10 +953,16 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
   }
 
   def resizeRowHeaderColumns(fullTable:JTable, rowHeaderTable:JTable, rowComponent:RowComponent,
-                             rowFieldHeadingCount:Array[Int], sizerPanel:Panel, rowHeaderScrollPane:JScrollPane) {
+                             rowFieldHeadingCount:Array[Int], sizerPanel:Panel, rowHeaderScrollPane:JScrollPane,
+                             columnDetails:ColumnDetails) {
+    val maxWidth = if (columnDetails.expandToFit) {
+      Integer.MAX_VALUE
+    } else {
+      PivotJTable.MaxColumnWidth
+    }
+    val tmpLabel = new JLabel("")
     def getRowHeaderMaxColumnWidth(col:Int) = {
       val numRows = rowHeaderTable.getRowCount
-      val tmpLabel = new JLabel("")
       var max = -1
       var anyCollapsible = false
       for (row <- 0 until numRows) {
@@ -955,7 +997,7 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
         val widths = new Array[Int](count)
         for (c <- 0 until count) {
           val max = getRowHeaderMaxColumnWidth(col)
-          val preferredWidth = math.min(max + 5, PivotJTable.MaxColumnWidth)
+          val preferredWidth = math.min(max + 5, maxWidth)
           val fullColumn = fullColumnModel.getColumn(col)
           val rowHeaderColumn = rowHeaderColumnModel.getColumn(col)
           val widthToUse = preferredWidth
@@ -1020,11 +1062,16 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
 
   def resizeColumnHeaderAndMainTableColumns(fullTable:JTable, mainTable:JTable, colHeaderTable:JTable,
                                             colHeaderScrollPane:JScrollPane, columnHeaderScrollPanePanel:Panel,
-                                            mainTableScrollPane:JScrollPane) {
+                                            mainTableScrollPane:JScrollPane, columnDetails:ColumnDetails) {
     val numRows = mainTable.getRowCount
     val colOffset = rowHeaderColCount0
     val numCols = mainColCount0
     val rowOffset = colHeaderRowCount0
+    val maxWidth = if (columnDetails.expandToFit) {
+      Integer.MAX_VALUE
+    } else {
+      PivotJTable.MaxColumnWidth
+    }
 
     val tmpLabel = new JLabel("")
 
@@ -1089,7 +1136,7 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
         }
       }
       previousRow.map(w => {
-        math.min(w + 1, PivotJTable.MaxColumnWidth)
+        math.min(w + 1, maxWidth)
       })
     }
 

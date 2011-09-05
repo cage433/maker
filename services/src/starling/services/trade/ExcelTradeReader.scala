@@ -10,12 +10,15 @@ import collection.mutable.ArraySeq
 import starling.eai.{EAIStrategyDB, Traders}
 import starling.daterange.Day
 import starling.market.{CommodityMarket, FuturesSpreadMarket}
+import starling.auth.User
+import starling.concurrent.MP._
 
-class ExcelTradeReader(eaiStrategyDB: EAIStrategyDB, traders: Traders) {
+class ExcelTradeReader(eaiStrategyDB: EAIStrategyDB, traders: Traders, currentlyLoggedOn: () => User) {
   import ExcelRow._
 
-  def allTrades(header: Array[String], trades: List[ArraySeq[Object]], subgroupName: String): List[Trade] = {
-    allTrades(trades.map(tradeValues => header.zip(tradeValues).toMap), subgroupName)
+  def allTrades(header: Array[String], trades: List[Seq[Object]], subgroupName: String): List[Trade] = {
+    val empties = (" " * 20).split("")
+    allTrades(trades.map(tradeValues => header.zip(tradeValues ++ empties).toMap), subgroupName)
   }
 
   def allTrades(originalRows: List[Map[String, Object]], subgroupName: String): List[Trade] = {
@@ -25,6 +28,7 @@ class ExcelTradeReader(eaiStrategyDB: EAIStrategyDB, traders: Traders) {
   }
 
   def allTrades(originalRows: List[Map[String, Object]], subgroupName: String, f: Trade => Unit) {
+    val currentUser = currentlyLoggedOn()
     val sys = IntradayTradeSystem
 
     // non-blank rows, with the key in lower case
@@ -41,7 +45,7 @@ class ExcelTradeReader(eaiStrategyDB: EAIStrategyDB, traders: Traders) {
     val explodedRows = rows.flatMap {
       map => map(StrategyColumn) match {
         case CounterPartySpread(c1, c2) => {
-          val row = new ExcelRow(map, traders)
+          val row = new ExcelRow(map, traders, currentUser)
           val tradeID = row.formattedExcelColumnID
 
           // t1 is the same, just add 'a' to the row id
@@ -57,11 +61,14 @@ class ExcelTradeReader(eaiStrategyDB: EAIStrategyDB, traders: Traders) {
       }
     }
 
-    val tradeIDs = explodedRows.map(ExcelRow(_, traders).tradeID(""))
-    assert(tradeIDs.distinct.size == tradeIDs.size, "Duplicate IDs aren't allowed")
+    val dups = explodedRows.map(ExcelRow(_, traders, currentUser).formattedExcelColumnID).groupBy(a => a).filter(_._2.size > 1).keys
+    assert(dups.isEmpty, "Duplicate IDs aren't allowed: " + dups.mkString(", "))
 
-    for (row <- explodedRows) {
-      val excelRow = ExcelRow(row, traders)
+    val tradeIDs = explodedRows.map(ExcelRow(_, traders, currentUser).tradeID(""))
+
+    explodedRows.mpMap {
+      row =>
+      val excelRow = ExcelRow(row, traders, currentUser)
       try {
         val tradeDay = excelRow.tradeDay
         val counterParty = excelRow.counterParty
@@ -95,6 +102,7 @@ object ExcelTradeReader {
 
   def instrument(excelRow: ExcelRow): Tradeable = {
     try {
+      assert(readers.nonEmpty, "No readers defined")
       readers.filter(r => r.canRead(excelRow)) match {
         case reader :: Nil => reader.create(excelRow)
         case Nil => throw new Exception("No readers matched: " + excelRow)

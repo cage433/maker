@@ -3,13 +3,13 @@ package starling.pivot.view.swing
 import starling.gui.pages.ConfigPanels
 import swing.{Component, Label}
 import swing.Swing._
-import starling.gui.GuiUtils._
-import starling.gui.GuiUtils
+import starling.browser.common.GuiUtils._
 import javax.swing.border.AbstractBorder
 import java.awt._
 import java.awt.{Component => JComp}
 import javax.swing.JPopupMenu
 import swing.event.{MouseExited, MouseEntered, MousePressed, MouseClicked}
+import starling.browser.common.{MigPanel, GuiUtils}
 
 class NTabbedPane(configPanels:ConfigPanels, initiallyExpanded:Boolean)
         extends MigPanel("insets 1 0 0 1", "[fill,grow]", "[p]0[fill,grow]") {

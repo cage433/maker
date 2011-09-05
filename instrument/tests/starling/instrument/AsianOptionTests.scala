@@ -107,7 +107,7 @@ class AsianOptionTests extends JonTestEnv {
             case _: DiscountRateKey => new Quantity(1.0)
             case _: BradyMetalVolAtomicDatumKey => new Percentage(vol)
             case ForwardPriceKey(_, period, _) => prices(period)
-            case FixingKey(_, day) => fixings(day)
+            case IndexFixingKey(_, day) => fixings(day)
           }
         }
         )
@@ -156,7 +156,7 @@ class AsianOptionTests extends JonTestEnv {
 
           case _: BradyMetalVolAtomicDatumKey => Percentage(volatility)
           case _: ForwardPriceKey => Quantity(price, USD / MT)
-          case _: FixingKey => Quantity(price, USD / MT)
+          case _: IndexFixingKey => Quantity(price, USD / MT)
         }
       }
       )
@@ -192,7 +192,7 @@ class AsianOptionTests extends JonTestEnv {
 
           case _: BradyMetalVolAtomicDatumKey => Percentage(0.2)
           case _: ForwardPriceKey => fwdPrice
-          case _: FixingKey => fixingPrice
+          case _: IndexFixingKey => fixingPrice
         }
       }
       )
@@ -212,12 +212,12 @@ class AsianOptionTests extends JonTestEnv {
 
     assertEquals(explanation.format(1), ex0)
 
-    val ex = "((Curran-Call(Average(IPE Gas Oil.JANUARY 2010, IPE Gas Oil.JANUARY 2010, IPE Gas Oil.JANUARY 2010, " +
-            "IPE Gas Oil.JANUARY 2010, IPE Gas Oil.JANUARY 2010, IPE Gas Oil.JANUARY 2010, IPE Gas Oil.JANUARY 2010, " +
-            "IPE Gas Oil.FEBRUARY 2010, IPE Gas Oil.FEBRUARY 2010, IPE Gas Oil.FEBRUARY 2010, IPE Gas Oil.FEBRUARY 2010, " +
-            "IPE Gas Oil.FEBRUARY 2010, IPE Gas Oil.FEBRUARY 2010, IPE Gas Oil.FEBRUARY 2010, IPE Gas Oil.FEBRUARY 2010, " +
-            "IPE Gas Oil.FEBRUARY 2010, IPE Gas Oil.FEBRUARY 2010, IPE Gas Oil.FEBRUARY 2010, IPE Gas Oil.FEBRUARY 2010, " +
-            "IPE Gas Oil.FEBRUARY 2010, IPE Gas Oil.FEBRUARY 2010), 0.20, 100.00 USD/MT) * 123.00 MT) * 0.95)"
+    val ex = "((Curran-Call(Average(IPE Gas Oil.JAN 2010, IPE Gas Oil.JAN 2010, IPE Gas Oil.JAN 2010, " +
+            "IPE Gas Oil.JAN 2010, IPE Gas Oil.JAN 2010, IPE Gas Oil.JAN 2010, IPE Gas Oil.JAN 2010, " +
+            "IPE Gas Oil.FEB 2010, IPE Gas Oil.FEB 2010, IPE Gas Oil.FEB 2010, IPE Gas Oil.FEB 2010, " +
+            "IPE Gas Oil.FEB 2010, IPE Gas Oil.FEB 2010, IPE Gas Oil.FEB 2010, IPE Gas Oil.FEB 2010, " +
+            "IPE Gas Oil.FEB 2010, IPE Gas Oil.FEB 2010, IPE Gas Oil.FEB 2010, IPE Gas Oil.FEB 2010, " +
+            "IPE Gas Oil.FEB 2010, IPE Gas Oil.FEB 2010), 0.20, 100.00 USD/MT) * 123.00 MT) * 0.95)"
 
     val ex1 = "((Curran-Call(Average(101.00 USD/MT, 101.00 USD/MT, 101.00 USD/MT, 101.00 USD/MT, 101.00 USD/MT," +
             " 101.00 USD/MT, 101.00 USD/MT, 101.00 USD/MT, 101.00 USD/MT, 101.00 USD/MT, 101.00 USD/MT, 101.00 USD/MT, " +
@@ -267,8 +267,8 @@ class AsianOptionTests extends JonTestEnv {
             val forwardPrice = fixedAverage * n + 65.0 * m
             Quantity(forwardPrice, market.priceUOM)
           }
-          case FixingKey(`freightIndex`, _) => Quantity(50, freightIndex.priceUOM)
-          case FixingKey(`index`, _) => Quantity(50, market.priceUOM)
+          case IndexFixingKey(`freightIndex`, _) => Quantity(50, freightIndex.priceUOM)
+          case IndexFixingKey(`index`, _) => Quantity(50, market.priceUOM)
         }
       }
       )

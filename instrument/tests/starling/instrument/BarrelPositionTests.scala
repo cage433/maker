@@ -12,7 +12,7 @@ import starling.daterange.{TestHolidays, DayAndTime, Day, Month}
 import starling.quantity.{Percentage, Quantity}
 import starling.models.{European, Call}
 
-class BarrelPositionTests extends TestMarketSpec {
+class BarrelPositionTests extends TestMarketTest {
 
 	private val prices:Map[CommodityMarket, Double] = Map(
     LME_LEAD -> 123.0, NYMEX_WTI -> 108.0,

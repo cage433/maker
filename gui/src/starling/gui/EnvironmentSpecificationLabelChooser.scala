@@ -2,11 +2,11 @@ package starling.gui
 
 import api.{EnvironmentRuleLabel, EnvironmentSpecificationLabel}
 import pages.Revertable
-import starling.pivot.view.swing.MigPanel
 import starling.daterange._
 import swing.event.Event
 import swing.Component
 import utils.RichReactor._
+import starling.browser.common.MigPanel
 
 
 class EnvironmentSpecificationLabelChooser(environmentSpecificationLabel0: EnvironmentSpecificationLabel, rules:List[EnvironmentRuleLabel], enableFlags:Boolean = true)

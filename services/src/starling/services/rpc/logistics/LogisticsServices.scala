@@ -18,8 +18,8 @@ import org.codehaus.jettison.json.JSONObject
 /**
  * logistics service interface
  */
-case class DefaultTitanLogisticsServices(props: Props, titanEdmTradeService : Option[TitanServices] = None) extends TitanLogisticsServices {
-  val inventoryService = DefaultTitanLogisticsInventoryServices(props, titanEdmTradeService)
+case class DefaultTitanLogisticsServices(props: Props) extends TitanLogisticsServices {
+  val inventoryService = DefaultTitanLogisticsInventoryServices(props)
   val assignmentService = DefaultTitanLogisticsAssignmentServices(props, Some(inventoryService))
 }
 
@@ -48,7 +48,7 @@ case class DefaultTitanLogisticsAssignmentServices(props: Props, titanInventoryS
   }
 }
 
-case class DefaultTitanLogisticsInventoryServices(props: Props, titanEdmTradeService : Option[TitanServices] = None) extends TitanLogisticsInventoryServices {
+case class DefaultTitanLogisticsInventoryServices(props: Props) extends TitanLogisticsInventoryServices {
 
   private val rmetadminuser = props.ServiceInternalAdminUser()
   private val logisticsServiceURL = props.TitanLogisticsServiceUrl()
@@ -56,29 +56,8 @@ case class DefaultTitanLogisticsInventoryServices(props: Props, titanEdmTradeSer
 
   lazy val service: EdmInventoryService with Object { def getAllInventoryLeaves() : List[EDMInventoryItem] } =
     new EdmInventoryServiceResourceProxy(ProxyFactory.create(classOf[EdmInventoryServiceResource], logisticsServiceURL, clientExecutor)) {
-      def getAllInventoryLeaves() : List[EDMInventoryItem] = {
-
-        titanEdmTradeService match {
-          case Some(edmTradeService) => {
-            import LogisticServices._
-            /**
-             * temporary faked logisitcs service to get all inventory (by fetching all inventory by purchase quota ids)
-             */
-            val trades : List[EDMPhysicalTrade] = edmTradeService.titanGetEdmTradesService.getAll().results.map(_.trade).filter(_ != null).map(_.asInstanceOf[EDMPhysicalTrade])
-            val purchaseQuotas : List[PhysicalTradeQuota] = trades.filter(_.direction == EdmTrade.PURCHASE).flatMap(t => t.quotas)
-            def inventoryByPurchaseQuotaId(id : String) =
-              catching(classOf[Exception]) either this.getInventoryTreeByPurchaseQuotaId(id)
-
-            val quotaIds = purchaseQuotas.map(q => NeptuneId(q.detail.identifier.value).identifier).filter(_ != null)
-            val allInventory = quotaIds.map(id => inventoryByPurchaseQuotaId(id))
-
-            val inventory = allInventory.collect({ case Right(i) => i }).flatten
-            println("Fetched all inventory (%d)".format(inventory.size))
-            findLeaves(inventory)
-          }
-          case _ => throw new UnsupportedOperationException
-        }
-      }
+      def getAllInventoryLeaves() : List[EDMInventoryItem] = LogisticServices.findLeaves(getAllInventory())
+      def getAllInventory() : List[EDMInventoryItem] = getInventoryByGroupCompanyId("*")
     }
 }
 
@@ -143,6 +122,8 @@ case class FileMockedTitanLogisticsInventoryServices() extends TitanLogisticsInv
     def getInventoryById(inventoryId : Int) : EDMInventoryItem = inventoryMap(inventoryId.toString) // mimick service by throwning an exception on not found
     def getInventoryTreeByPurchaseQuotaId(quotaId : String) : List[EDMInventoryItem] = inventoryMap.values.toList.filter(_.purchaseAssignment.quotaName == quotaId)
     def getAllInventoryLeaves() : List[EDMInventoryItem] = findLeaves(inventoryMap.values.toList)
+    def getInventoryByGroupCompanyId(groupCompanyMappingCode : String) : List[EDMInventoryItem] = Nil // todo, provide mock impl
+    def getAllInventory() : List[EDMInventoryItem] = getInventoryByGroupCompanyId("*")
   }
 
   def updateInventory(item : EDMInventoryItem) {
@@ -183,7 +164,7 @@ case class LogisticsJsonMockDataFileGenerater(titanEdmTradeService : TitanServic
   //println("Inventory, loaded %d inventory items and found %d leaves".format(inventory.size, inventoryLeaves.size))
 
   println("getting assignments...")
-  val assignments : List[EDMAssignmentItem] = inventory.flatMap(i => {
+  val assignments : List[EDMAssignment] = inventory.flatMap(i => {
     val pa = assignmentService.getAssignmentById(i.purchaseAssignment.oid.contents) :: Nil
     i.salesAssignment match {
       case null => pa

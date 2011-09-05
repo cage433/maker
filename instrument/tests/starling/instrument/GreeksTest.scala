@@ -9,7 +9,7 @@ import starling.utils.QuantityTestUtils._
 import starling.curves._
 import starling.quantity.{Percentage, Quantity}
 import starling.daterange.{Month, Day}
-import starling.market.{JonTestEnv, TestMarketSpec, FuturesMarket, Market}
+import starling.market.{JonTestEnv, TestMarketTest, FuturesMarket, Market}
 import starling.models.{Put, Call}
 import starling.models._
 import starling.utils.AtomicDatumKeyUtils._

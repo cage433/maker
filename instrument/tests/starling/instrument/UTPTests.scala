@@ -45,8 +45,8 @@ class UTPTests extends IndexTest {
           case ForwardPriceKey(Index.DATED_BRENT, _, _) => 98 (USD/BBL)
           case ForwardPriceKey(`plattsJan`, _, _) => 95 (USD/BBL)
           case ForwardPriceKey(market, day, _) => 96 (market.priceUOM)
-          case FixingKey(`brentIndex`, _) => 97(USD/BBL)
-          case FixingKey(index, _) => 96(index.priceUOM)
+          case IndexFixingKey(`brentIndex`, _) => 97(USD/BBL)
+          case IndexFixingKey(index, _) => 96(index.priceUOM)
           case _ : BradyMetalVolAtomicDatumKey => Percentage(0.3)
           case _ : BradyFXVolSmileAtomicDatumKey => Map(0.5 -> Percentage(0.3))
           case _ : OilAtmVolAtomicDatumKey => Percentage(0.10)
@@ -270,7 +270,7 @@ class UTPTests extends IndexTest {
   def testExplanationValuation(tr : Tradeable){
     try {
       assertQtyEquals(
-        tr.explanation(env), 
+        tr.explanation(env),
         tr.asUtpPortfolio(Day(2009, 1, 1)).mtm(env, tr.valuationCCY),
         1e-7
       )

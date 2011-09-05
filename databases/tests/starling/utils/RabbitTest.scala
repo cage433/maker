@@ -49,7 +49,7 @@ class RabbitTest extends StarlingTest with ShouldMatchers {
   }
 }
 
-class QueuedRabbitMessageReceiver(host : String, queue : RabbitQueue) extends Stoppable {
+class QueuedRabbitMessageReceiver(host : String, queue : RabbitQueue) extends Stopable {
   private val receiver = new RabbitMessageReceiver(host, queue, message => { messages.add(message) })
 
   val messages = new LinkedBlockingQueue[RabbitMessage]
