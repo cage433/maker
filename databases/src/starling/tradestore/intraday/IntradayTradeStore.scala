@@ -13,10 +13,10 @@ import starling.auth.{User, LdapUserLookup}
 import starling.utils.Log
 import starling.trade.{Trade, TradeID, TradeAttributes}
 import starling.gui.api.IntradayUpdated
-import starling.utils.sql.{Clause, LiteralString, QueryBuilder}
-import QueryBuilder._
+import starling.dbx.QueryBuilder._
 import starling.tradestore.eai.ExternalSortIndexPivotTreePathOrdering
 import starling.tradestore.TradeStore.StoreResults
+import starling.dbx.{QueryBuilder, Clause, Query}
 
 case class IntradayTradeAttributes(strategyID: Option[TreeID], bookID: TreeID, dealID: Option[TreeID],
                                    trader: String, tradedFor: String, broker: String, comment: String, clearingHouse: String,

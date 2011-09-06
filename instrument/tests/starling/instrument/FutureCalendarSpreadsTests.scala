@@ -5,7 +5,7 @@ import starling.daterange.{Day, Month}
 import starling.daterange.Day._
 import starling.quantity.UOM._
 import starling.quantity.RichQuantity._
-import starling.utils.QuantityTestUtils._
+import starling.quantity.utils.QuantityTestUtils._
 import starling.quantity.{UOM, Quantity}
 import starling.market._
 import starling.varcalculator.ForwardPriceRiskFactor

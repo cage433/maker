@@ -5,7 +5,7 @@ import org.testng.Assert._
 import starling.quantity.UOM._
 import starling.quantity.RichQuantity._
 import starling.utils.ScalaTestUtils._
-import starling.utils.QuantityTestUtils._
+import starling.quantity.utils.QuantityTestUtils._
 import starling.market._
 import rules.{Precision, CommonPricingRule}
 import starling.curves._
@@ -14,7 +14,8 @@ import starling.daterange._
 import starling.daterange.Day._
 import starling.quantity.RichQuantity._
 import starling.pivot.PivotQuantity
-import starling.utils.{AtomicDatumKeyUtils, StarlingTest}
+import starling.instrument.utils._
+import starling.utils.{StarlingTest}
 import starling.quantity.{Conversions, Quantity}
 import starling.varcalculator.{ForwardPriceRiskFactor, RiskFactorUtils}
 import java.util.Random

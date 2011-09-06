@@ -5,7 +5,7 @@ import org.testng.annotations.Test
 import starling.quantity.UOM._
 import starling.market.Market._
 import org.testng.Assert._
-import starling.utils.QuantityTestUtils._
+import starling.quantity.utils.QuantityTestUtils._
 import starling.curves._
 import starling.market._
 import starling.daterange.{TestHolidays, DayAndTime, Day, Month}

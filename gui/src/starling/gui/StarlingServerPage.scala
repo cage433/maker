@@ -1,26 +1,14 @@
 package starling.gui
 
 import api._
-import java.awt.image.BufferedImage
 import pages.{TimestampChooser}
 import starling.rmi.StarlingServer
-import swing.event.Event
-import javax.imageio.ImageIO
-import java.io.{ByteArrayInputStream, ByteArrayOutputStream, BufferedOutputStream}
-import java.util.concurrent.{Callable, Future, Executors, CountDownLatch}
-import swing.{Publisher, Button, Component}
-import ref.SoftReference
-import javax.swing.border.Border
-import java.awt.{Dimension, Graphics2D}
 import starling.daterange.{Day, Timestamp}
 import collection.immutable.TreeSet
 import collection.SortedSet
-import javax.swing.BorderFactory
 import starling.eai.Book
 import starling.auth.User
-import java.awt.{Component=>AWTComp}
 import starling.browser._
-import internal.Notification
 import service.internal.HeterogeneousMap
 
 trait StarlingServerPage extends Page {

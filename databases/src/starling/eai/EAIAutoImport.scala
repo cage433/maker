@@ -2,7 +2,7 @@ package starling.eai
 
 import instrumentreaders.EAISystemOfRecord
 import starling.db.DB
-import starling.utils.sql.QueryBuilder._
+import starling.dbx.QueryBuilder._
 import starling.gui.api.Desk
 import java.util.{Timer, TimerTask}
 import starling.systemofrecord.SystemOfRecord
@@ -15,7 +15,8 @@ import starling.calendar.BusinessCalendarSet
 import collection.mutable.ArrayBuffer
 import starling.trade.Trade
 import org.springframework.dao.DeadlockLoserDataAccessException
-import starling.utils.{RepeatingTask, Log}
+import starling.databases.utils.RepeatingTask
+import starling.utils.{Log}
 
 
 /**

@@ -8,7 +8,7 @@ import starling.instrument._
 import javax.sql.DataSource
 import starling.curves.interestrate.DayCount
 import starling.quantity.{Quantity, UOM}
-import starling.utils.sql.ConnectionParams
+import starling.dbx.ConnectionParams
 import starling.market._
 import rules.SwapPricingRule
 import scala.collection.JavaConversions._

@@ -87,7 +87,7 @@ class StarlingHomePageComponent(context:PageContext, browserSize:Dimension, page
         foreground = new Color(255,221,138)
       }
       val userImage = BrowserIcons.im("/icons/32x32_user_dark.png")
-      val userButton = new NumberedButton(context.localCache.currentUserName, userImage,
+      val userButton = new NumberedButton(context.localCache.currentFullName, userImage,
         modifiers => {
           val userPages = context.bundles.flatMap(_.userPage(context))
           userPages match {

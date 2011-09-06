@@ -1,7 +1,9 @@
 package starling.eai.instrumentreaders
 
 import starling.richdb.{RichDB, RichResultSetRow}
-import starling.utils.sql.QueryBuilder._
+import starling.dbx.QueryBuilder._
+import starling.dbx.Clause
+import starling.dbx.Query
 import starling.db.EAITradeSystem
 import starling.tradestore.eai.{EAITradeAttributes}
 import starling.eai.TreeID
@@ -13,8 +15,8 @@ import starling.quantity.UOM._
 import starling.trade.{TradeID, Trade}
 import starling.market._
 import starling.utils.{Log, Reflection}
-import starling.utils.sql.Clause
-import starling.utils.sql.Query
+import starling.dbx.Clause
+import starling.dbx.Query
 import starling.systemofrecord.{SystemOfRecordBackedByADatabase, InstrumentReader, SystemOfRecord}
 
 /**

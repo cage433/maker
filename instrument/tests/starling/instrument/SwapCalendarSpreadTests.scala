@@ -4,7 +4,7 @@ import org.testng.annotations._
 import org.testng.Assert._
 import starling.quantity.UOM._
 import starling.quantity.Quantity
-import starling.utils.QuantityTestUtils._
+import starling.quantity.utils.QuantityTestUtils._
 import starling.market._
 import starling.curves._
 import starling.daterange._

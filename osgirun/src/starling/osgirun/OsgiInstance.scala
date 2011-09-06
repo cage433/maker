@@ -4,6 +4,7 @@ import org.osgi.framework.launch.FrameworkFactory
 import java.util.{HashMap, ServiceLoader}
 import org.osgi.service.packageadmin.PackageAdmin
 import java.net.{ServerSocket, ConnectException, Socket}
+import java.util.concurrent.CountDownLatch
 
 trait BundleDefinitions {
   def bundles:List[BundleDefinition]
@@ -33,18 +34,16 @@ class OsgiInstance(name:String, bundles:BundleDefinitions) {
 
     // uninstall, update, install, refresh & start.
     val uninstalled = (currentBundles.keySet -- newBundles.keySet).toList.map { bundleToRemove => currentBundles(bundleToRemove).uninstall(); currentBundles(bundleToRemove) }
-    val x = (newBundles.keySet & currentBundles.keySet).toList.map { commonBundle => {
+    val updated = (newBundles.keySet & currentBundles.keySet).toList.flatMap { commonBundle => {
       val newBundleDef = newBundles(commonBundle)
       val currentBundle = currentBundles(commonBundle)
       if (newBundleDef.lastModified > currentBundle.getLastModified) {
         currentBundle.update(newBundleDef.inputStream)
-        Left( currentBundle )
+        Some( currentBundle )
       } else {
-        Right( currentBundle )
+        None
       }
     }}
-    val updated = x.collect { case Left(b) => b}
-    val unchanged = x.collect { case Right(b) => b}
     val installed = (newBundles.keySet -- currentBundles.keySet).toList.map { newBundleName => {
       val newBundleDef = newBundles(newBundleName)
       context.installBundle("from-bnd:" + newBundleDef.name, newBundleDef.inputStream)
@@ -58,7 +57,11 @@ class OsgiInstance(name:String, bundles:BundleDefinitions) {
 
   def start = {
     update()
+    val activators = bundles.bundles.map(b => if (b.activator) 1 else 0).sum
+    val latch = new CountDownLatch(activators)
+    framework.getBundleContext.registerService(classOf[CountDownLatch].getName, latch, null)
     framework.start
+    latch.await()
   }
   def stop = {
     framework.stop
@@ -76,12 +79,14 @@ object OsgiInstance {
       case e:ConnectException => {
         val instance = new OsgiInstance(name, bundles)
         instance.start
-        val server = new ServerSocket(port)
-        while (true) {
-          val client = server.accept()
-          client.close()
-          instance.update()
-        }
+        new Thread(new Runnable() { def run() {
+          val server = new ServerSocket(port)
+          while (true) {
+            val client = server.accept()
+            client.close()
+            instance.update()
+          }
+        } }, "osgi-reload-listener").start()
       }
       //instance.stop
     }

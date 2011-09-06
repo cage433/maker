@@ -1,24 +1,28 @@
 package starling.gui.osgi
 
-import starling.manager.{BromptonContext, BromptonActivator}
 import starling.rmi.StarlingServer
 import starling.fc2.api.FC2Service
 import starling.browser.service.BrowserService
 import starling.gui.xstream.GuiStarlingXStream
-import starling.gui.pages.UserDetailsPage._
-import starling.browser.HotKey._
 import javax.swing.KeyStroke
 import java.awt.event.{InputEvent, KeyEvent}
-import starling.gui.pages.UtilsPage._
 import starling.browser.service.internal.HeterogeneousMap
 import starling.browser._
-import starling.gui.pages.{UtilsPage, UserDetailsPage}
 import starling.gui._
+import api._
+import pages.{ValuationParametersPage, UtilsPage, UserDetailsPage}
 import swing.Publisher
 import starling.bouncyrmi.{BouncyRMI, BouncyRMIClient}
+import starling.manager.{HttpContext, BromptonContext, BromptonActivator}
+import javax.servlet.http.{HttpServletResponse, HttpServletRequest, HttpServlet}
+import starling.pivot.{Field, SomeSelection}
+import starling.tradestore.TradePredicate
+import starling.daterange.{Day, TimeOfDay}
+import collection.immutable.TreeSet
 
 class GuiBromptonProps {
   def serverHostname:String = "localhost"
+
   def rmiPort:Int = 8881
   def principalName:String = "STARLING-TEST/dave-linux"
 }
@@ -35,7 +39,7 @@ class GuiBromptonActivator extends BromptonActivator {
 
     System.setProperty(BouncyRMI.CodeVersionKey, BouncyRMI.CodeVersionUndefined)
     client = new BouncyRMIClient(props.serverHostname, props.rmiPort, GuiStart.auth(props.principalName), classLoader=getClass.getClassLoader)
-    client.startBlocking
+    client.startBlocking()
     val starlingServer = client.proxy(classOf[StarlingServer])
     starlingServer.storeSystemInfo(GuiStart.systemInfo)
 
@@ -45,10 +49,41 @@ class GuiBromptonActivator extends BromptonActivator {
     context.registerService(classOf[FC2Service], fc2Service)
     context.registerService(classOf[BrowserService], client.proxy(classOf[BrowserService]))
     context.registerService(classOf[BrowserBundle], new StarlingBrowserBundle(starlingServer, fc2Service))
+
+    context.registerService(classOf[HttpServlet], new HttpServlet {
+      override def doGet(req:HttpServletRequest, resp:HttpServletResponse) {
+        val tradeID = req.getParameter("tradeID")
+        val snapshotID = req.getParameter("snapshotID")
+
+        val desk = Desk.Titan
+        val tradeTimestamp = starlingServer.deskCloses.get(desk).map(closes => closes.values.flatten.toList.sortWith(_.timestamp > _.timestamp)).get.head
+        val tradePredicate = TradePredicate(List(), List(List((Field("Trade ID"), SomeSelection(Set(tradeID))))))
+        val tradeSelection = TradeSelectionWithTimestamp(Some((desk, tradeTimestamp)), tradePredicate, None)
+
+        val curveIdentifier = {
+          val pricingGroup = PricingGroup.Metals
+          val marketDataSelection = MarketDataSelection(Some(pricingGroup))
+          val version = snapshotID.toInt
+          val enRule = EnvironmentRuleLabel.AllCloses
+          import EnvironmentModifierLabel._
+          val envMods = TreeSet[EnvironmentModifierLabel]() + zeroInterestRates
+          val ci = CurveIdentifierLabel.defaultLabelFromSingleDay(MarketDataIdentifier(marketDataSelection, version), starlingServer.ukBusinessCalendar)
+          ci.copy(thetaDayAndTime = ci.thetaDayAndTime.copyTimeOfDay(TimeOfDay.EndOfDay), environmentRule = enRule, envModifiers = envMods)
+        }
+
+        val slidableReportOptions = starlingServer.reportOptionsAvailable.options.filter(_.slidable)
+        val reportOptions = new ReportOptions(slidableReportOptions, None, None)
+
+        val tradeIDLabel = TradeIDLabel(tradeID, TradeSystemLabel("Titan", "ti"))
+        val rp = ReportParameters(tradeSelection, curveIdentifier, reportOptions, Day.today, None, true)
+
+        client.remotePublisher.publish(GotoPageEvent(ValuationParametersPage(tradeIDLabel, rp)))
+      }
+    }, List(HttpContext("gotoValuationScreen")))
   }
 
   def stop(context: BromptonContext) {
-    if (client != null) client.stop
+    if (client != null) client.stop()
   }
 }
 
@@ -63,7 +98,7 @@ class StarlingBrowserBundle(starlingServer:StarlingServer, fc2Service:FC2Service
     UtilsPage()) :: Nil
 
 
-  def initCache(cache: HeterogeneousMap[LocalCacheKey], publisher:Publisher) = {
+  def initCache(cache: HeterogeneousMap[LocalCacheKey], publisher:Publisher) {
     GuiStart.initCacheMap(cache, starlingServer, fc2Service, publisher)
   }
 

@@ -3,7 +3,7 @@ package starling.reports.pivot
 import starling.pivot._
 import starling.daterange.Timestamp
 import starling.utils.CollectionUtils
-import starling.utils.sql.QueryBuilder._
+import starling.dbx.QueryBuilder._
 import starling.tradestore.eai.EAITradeAttributes
 import starling.quantity.{Quantity, UOM}
 import starling.db.{DB}

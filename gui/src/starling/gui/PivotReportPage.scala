@@ -118,7 +118,7 @@ case class MainPivotReportPage(showParameters:Boolean, reportParameters:ReportPa
   override def toolbarButtons(pageContext:PageContext, data:PageData) =
     PivotReportPage.toolbarButtons(pageContext, reportParameters, data, showParameters, pivotPageState)
 
-  override def configPanel(context:PageContext, data:PageData) = {
+  override def configPanel(context:PageContext, data:PageData, tableSelection:() => TableSelection) = {
     if (showParameters) {
       val pivotData = data match {
         case PivotTablePageData(pivData,Some(pd)) => pd match {
@@ -164,7 +164,7 @@ case class MainPivotReportPage(showParameters:Boolean, reportParameters:ReportPa
       val presetReportPanel = new PresetReportConfigPanel(context, reportParameters, pivotPageState)
       val tradeInfoPanel = new TradeInfoConfigPanel(context, reportParameters)
 
-      val runPanel = new MigPanel("insets 0","[p]1lp[p]push") {
+      val runPanel = new MigPanel("insets 0") {
         reactions += {
           case UpdateRunButtonEvent(`presetReportPanel`) => {
             val rps = presetReportPanel.generateReportParameters match {

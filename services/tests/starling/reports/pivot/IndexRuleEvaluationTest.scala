@@ -6,7 +6,7 @@ import starling.quantity.UOM._
 import starling.quantity.Quantity
 import starling.quantity.RichQuantity._
 import starling.utils.ScalaTestUtils._
-import starling.utils.QuantityTestUtils._
+import starling.quantity.utils.QuantityTestUtils._
 import starling.market._
 import rules.{Precision, NonCommonPricingRule, CommonPricingRule}
 import starling.curves._
@@ -15,7 +15,7 @@ import starling.daterange._
 import starling.daterange.Day._
 import starling.quantity.RichQuantity._
 import starling.pivot.PivotQuantity
-import starling.utils.{AtomicDatumKeyUtils, StarlingTest}
+import starling.utils.{StarlingTest}
 import starling.instrument.CommoditySwap
 
 class IndexRuleEvaluationTest extends JonTestEnv {

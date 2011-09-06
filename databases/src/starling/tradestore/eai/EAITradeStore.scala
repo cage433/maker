@@ -10,7 +10,7 @@ import starling.richdb.{RichInstrumentResultSetRow, RichDB}
 import starling.tradestore.{TradeStore}
 import collection.immutable.{List, Set}
 import starling.utils.Broadcaster
-import starling.utils.sql.QueryBuilder._
+import starling.dbx.QueryBuilder._
 
 object EAITradeStore {
   val bookID_col = "Book ID"

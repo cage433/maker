@@ -1,7 +1,7 @@
 package starling.props
 
 
-import starling.utils.sql.ConnectionParams
+import starling.dbx.ConnectionParams
 import java.io._
 import java.lang.reflect.Modifier
 import java.util.{Properties => JProperties}
@@ -10,7 +10,7 @@ import org.apache.commons.io.IOUtils
 import scala.collection.JavaConversions
 import java.awt.Color
 import starling.utils.ImplicitConversions._
-import starling.utils.PropertiesMapBuilder
+import starling.api.utils.PropertiesMapBuilder
 
 /**
  * Holds the code to manage properties. The properties are listed in Props

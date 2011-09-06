@@ -15,7 +15,8 @@ import starling.concurrent.MP._
 import starling.tradestore.{TradeAndFields, TradeChanges}
 import starling.daterange.TimeOfDay
 import starling.trade.Trade
-import starling.utils.{AppendingMap, AtomicDatumKeyUtils}
+import starling.utils.{AppendingMap}
+import starling.instrument.utils.AtomicDatumKeyUtils
 import starling.gui.api.{ReportSpecificChoices, UTPIdentifier}
 import starling.daterange.Month
 import starling.utils.ImplicitConversions._

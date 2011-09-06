@@ -8,12 +8,12 @@ import starling.browser.internal._
 import javax.swing.UIManager
 import com.jgoodies.looks.plastic.PlasticXPLookAndFeel
 import starling.manager.{BromptonServiceReference, BromptonServiceTracker, BromptonContext, BromptonActivator}
-import starling.browser.BookmarkData._
 import swing.Swing._
 import starling.browser.common.GuiUtils
 import starling.browser._
-import starling.browser.LocalCache._
 import swing.event.Event
+import java.io.{File, FileInputStream}
+import java.util.{Hashtable, Properties}
 
 case class BundleAdded(bundle:BrowserBundle) extends Event
 case class BundleRemoved(bundle:BrowserBundle) extends Event
@@ -24,22 +24,23 @@ class BrowserBromptonActivator extends BromptonActivator {
 
   def defaults = new BrowserPropsFoo
 
-  def init(context: BromptonContext, props: BrowserPropsFoo) = { }
+  def start(context: BromptonContext) {}
 
   var fc:StarlingBrowserFrameContainer = _
 
-  def start(context: BromptonContext) = {
+  def init(context: BromptonContext, props: BrowserPropsFoo) {
 
     javax.swing.SwingUtilities.invokeAndWait(new Runnable() { def run() {
-      UIManager.getDefaults().put("ClassLoader", classOf[PlasticXPLookAndFeel].getClassLoader)
-      GuiUtils.setLookAndFeel
+      UIManager.getDefaults.put("ClassLoader", classOf[PlasticXPLookAndFeel].getClassLoader)
+      GuiUtils.setLookAndFeel()
     } })
 
     val serverContext = new ServerContext() {
-      def username = "username"
       def lookup[T](klass: Class[T]) = context.awaitService(klass)
       def browserService = context.awaitService(classOf[BrowserService])
     }
+
+    val userDetails = serverContext.browserService.user
 
     val localCachePublisher = new Publisher() {}
     val pageContextPublisher = new Publisher() {}
@@ -59,9 +60,9 @@ class BrowserBromptonActivator extends BromptonActivator {
         }
       }
     }
-    val bookmarks = serverContext.browserService.bookmarks
+    var bookmarks = serverContext.browserService.bookmarks
     context.createServiceTracker(Some(classOf[BrowserBundle]), Nil, new BromptonServiceTracker {
-      def serviceAdded(ref: BromptonServiceReference, service: AnyRef) = {
+      def serviceAdded(ref: BromptonServiceReference, service: AnyRef) {
         val bundle = service.asInstanceOf[BrowserBundle]
         onEDT {
           val bundlesPublisher = new Publisher() {}
@@ -73,7 +74,7 @@ class BrowserBromptonActivator extends BromptonActivator {
           cacheMap(LocalCache.Bookmarks) = toBookmarks(bookmarks)
         }
       }
-      def serviceRemoved(ref: BromptonServiceReference) = {
+      def serviceRemoved(ref: BromptonServiceReference) {
         onEDT {
           val (bundle, bundlesPublisher) = bundlesByRef(ref)
           bundlesPublisher.deafTo(localCachePublisher)
@@ -104,39 +105,36 @@ class BrowserBromptonActivator extends BromptonActivator {
           case Some(bundle) => BookmarkData(label.name, Some(bundle.unmarshal(label.bookmark).asInstanceOf[Bookmark]))
           case None => BookmarkData(label.name, None)
         }
-        BookmarkData(label.name, None)
       } }
     }
-    val username = serverContext.username
 
-    onEDT({
-      val title = browserService.name + " - Starling"
+    javax.swing.SwingUtilities.invokeAndWait(new Runnable {
+      def run() {
+        val title = browserService.name + " - Starling"
 
-      cacheMap(LocalCache.Version) = serverContext.browserService.version
-      cacheMap(LocalCache.CurrentUserName) = username
-      cacheMap(LocalCache.Bookmarks) = toBookmarks(bookmarks)
-      cacheMap(NotificationKeys.AllNotifications) = List()
-      cacheMap(NotificationKeys.UserNotifications) = List()
+        cacheMap(LocalCache.Version) = serverContext.browserService.version
+        cacheMap(LocalCache.CurrentUserName) = userDetails
+        cacheMap(LocalCache.Bookmarks) = toBookmarks(bookmarks)
+        cacheMap(NotificationKeys.AllNotifications) = List()
+        cacheMap(NotificationKeys.UserNotifications) = List()
 
-      val cache = LocalCache(cacheMap)
+        val cache = LocalCache(cacheMap)
 
-      val pageBuilder = new PageBuilder(pageContextPublisher, serverContext, bundlesByName)
-      fc = new StarlingBrowserFrameContainer(serverContext, cache, pageBuilder, StarlingHomePage,
-        settings, title, serverContext.extraInfo)
+        val pageBuilder = new PageBuilder(pageContextPublisher, serverContext, bundlesByName)
 
-      // Must be called on the EDT
-      def sendNotification(notification:Notification) {
-        import NotificationKeys._
-        cacheMap(AllNotifications) = notification :: cacheMap(AllNotifications)
-        cacheMap(UserNotifications) = notification :: cacheMap(UserNotifications)
-        fc.updateNotifications
-      }
+        fc = new StarlingBrowserFrameContainer(serverContext, cache, pageBuilder, StarlingHomePage, settings, title)
 
-      publisher.reactions += {
-        case batch:EventBatch => {
-          onEDT {
+        // Must be called on the EDT
+        def sendNotification(notification:Notification) {
+          import NotificationKeys._
+          cacheMap(AllNotifications) = notification :: cacheMap(AllNotifications)
+          cacheMap(UserNotifications) = notification :: cacheMap(UserNotifications)
+          fc.updateNotifications
+        }
+
+        localCachePublisher.reactions += {
+          case batch:EventBatch => {
             bundlesByName.foreach { case (name,bundle) =>
-              println("Passing  " + batch + " to " + name + " " + bundle.getClass.getClassLoader)
               bundle.notificationHandlers.foreach { handler => {
                 batch.events.foreach { e =>
                   handler.handle(e, cache, sendNotification)
@@ -144,19 +142,20 @@ class BrowserBromptonActivator extends BromptonActivator {
               } }
             }
             batch.events.foreach {
-              case e: BookmarksUpdate if e.user == username => {
-                cacheMap(LocalCache.Bookmarks) = toBookmarks(e.bookmarks)
+              case e: BookmarksUpdate if e.user == userDetails.username => {
+                bookmarks = e.bookmarks
+                cacheMap(LocalCache.Bookmarks) = toBookmarks(bookmarks)
               }
               case _ =>
             }
-            //pageContextPublisher.publish(batch)
           }
+          case GotoPageEvent(p) => onEDT(fc.showNewPage(p))
         }
       }
     })
   }
 
-  def stop(context: BromptonContext) = {
+  def stop(context: BromptonContext) {
     System.exit(0) //TODO handle proper restart of browser so that users do not need to restart starling gui on upgrade
   }
 }

@@ -1,8 +1,8 @@
 package starling.db
 
 import starling.richdb.RichDB
-import starling.utils.StarlingXStream
-import starling.utils.sql.QueryBuilder
+import starling.instrument.utils.StarlingXStream
+import starling.dbx.QueryBuilder
 import starling.curves.{MissingMarketDataException, MarketDataSlice}
 import starling.gui.api.PricingGroup
 import starling.daterange.{ObservationPoint}

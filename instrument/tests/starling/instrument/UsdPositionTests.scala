@@ -6,7 +6,7 @@ import starling.daterange.Day
 import starling.quantity.UOM._
 import starling.quantity.Quantity
 import starling.curves._
-import starling.utils.QuantityTestUtils._
+import starling.quantity.utils.QuantityTestUtils._
 import starling.market.Market
 
 class UsdPositionTests extends StarlingTest {

@@ -34,7 +34,7 @@ case class CurvePage(curveLabel: CurveLabel, pivotPageState: PivotPageState) ext
     pageBuildingContext.cachingFC2Service.curvePivot(curveLabel, pivotPageState.pivotFieldParams)
   }
 
-  override def configPanel(pageContext: PageContext, data:PageData) = {
+  override def configPanel(pageContext:PageContext, data:PageData, tableSelection:() => TableSelection) = {
     val marketDataSelectionPanel = new MarketDataSelectionComponent(pageContext, None, marketDataIdentifier.selection)
     val marketDataSelectionPanelPanel = new MigPanel {
       border = RoundedBorder(colour = GuiUtils.PivotTableBackgroundColour)

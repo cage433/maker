@@ -8,7 +8,7 @@ import starling.daterange.{DateRange, Month, DayAndTime, Day}
 import starling.calendar.{HolidayTablesFactory, BusinessCalendars, NullHolidays}
 import starling.varcalculator.ForwardPriceRiskFactor
 import starling.market._
-import starling.utils.QuantityTestUtils._
+import starling.quantity.utils.QuantityTestUtils._
 import org.testng.Assert
 
 class TestNonSkewDelta extends TestMarketTest{

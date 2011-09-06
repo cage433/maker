@@ -10,8 +10,8 @@ import starling.quantity.{Percentage, UOM, Quantity}
 import starling.market._
 import starling.calendar.BusinessCalendars
 import collection.immutable.{Map, TreeMap}
-import starling.utils.sql.QueryBuilder._
-import starling.utils.sql.Query
+import starling.dbx.QueryBuilder._
+import starling.dbx.Query
 import starling.pivot.MarketValue
 import starling.daterange.ObservationPoint._
 
@@ -286,7 +286,7 @@ case class FwdCurveDbMarketDataSource(varSqlDB: DB, businessCalendars: BusinessC
 
   case class OilVolSurfacesReader(observationDay: Day) {
     def read(vsk : OilVolSurfaceDataKey) = {
-      import starling.utils.sql.QueryBuilder._
+      import starling.dbx.QueryBuilder._
 
       val query = (select ("c.Delta, p.ForwardDate, p.Price")
         from ("%s c" % NonMetalsCurvesTable)

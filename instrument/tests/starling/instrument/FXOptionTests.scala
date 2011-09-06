@@ -7,7 +7,7 @@ import starling.daterange.{TimeOfDay, DayAndTime, Day}
 import org.testng.annotations.{DataProvider, Test}
 import starling.quantity.{UOM, Percentage, Quantity}
 import org.testng.Assert._
-import starling.utils.QuantityTestUtils._
+import starling.quantity.utils.QuantityTestUtils._
 import starling.models.{European, Put, Call}
 import starling.market.{Market, FuturesMarket, FXMarket}
 

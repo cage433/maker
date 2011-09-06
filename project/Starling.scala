@@ -10,6 +10,7 @@ object Dependencies{
   ) 
 
   val utilsDependencies = Seq(
+    "org.scala-lang" % "scala-swing" % "2.9.0-1" withSources(),
     "cglib" % "cglib-nodep" % "2.2" withSources(),
     "joda-time" % "joda-time" % "1.6" withSources(),
     "com.rabbitmq" % "amqp-client" % "1.7.2" withSources(),
@@ -44,7 +45,8 @@ object Dependencies{
     "net.debasishg" % "sjson_2.8.0" % "0.8" intransitive() withSources()
   ) 
   val guiDependencies = Seq(
-    "jfree" % "jfreechart" % "1.0.0"
+    "jfree" % "jfreechart" % "1.0.0",
+    "javax.servlet" % "servlet-api" % "2.5"
   ) 
 
   val browserDependencies = Seq(
@@ -58,7 +60,6 @@ object Dependencies{
   )
 
   val databasesDependencies = Seq(
-    "org.springframework" % "spring-jdbc" % "3.0.5.RELEASE" withSources(),
     "org.slf4j" % "slf4j-api" % "1.6.1" withSources(),
     "org.scala-tools.testing" % "scalacheck_2.9.0-1" % "1.9" withSources(),
     "org.apache.derby" % "derby" % "10.5.3.0_1",
@@ -67,7 +68,9 @@ object Dependencies{
   )
 
   val dbxDependencies = Seq(
-    "com.jolbox" % "bonecp" % "0.7.1.RELEASE" intransitive() withSources()
+    "com.jolbox" % "bonecp" % "0.7.1.RELEASE" intransitive() withSources(),
+    "org.springframework" % "spring-jdbc" % "3.0.5.RELEASE" withSources()
+
   )
   
   val titanModelDependencies = Seq(
@@ -96,6 +99,11 @@ object Dependencies{
     "com.trafigura.services" % "titan-core" % "LATEST",
     "com.trafigura.services" % "titan-security" % "LATEST",
     "com.trafigura.services" % "titan-utils" % "LATEST"
+  )
+
+  val singleClasspathManagerDependencies = Seq(
+    "javax.servlet" % "servlet-api" % "2.5",
+    "org.mortbay.jetty" % "jetty" % "6.1.26"
   )
 }
 
@@ -244,13 +252,13 @@ object StarlingBuild extends Build{
     "curves", 
     file("./curves"),
     settings = standardSettings ++ Seq(libraryDependencies ++= testDependencies)
-  ) dependsOn(utils % "compile;test->test", daterange % "test->test", maths, pivotUtils, guiapi)
+  ) dependsOn(utils % testDependency, daterange % "test->test", maths, pivotUtils, guiapi, quantity % testDependency)
 
   lazy val instrument = Project(
     "instrument", 
     file("./instrument"),
     settings = standardSettings ++ Seq(libraryDependencies ++= testDependencies) 
-  ) dependsOn(curves % "compile;test->test", daterange % "test->test")
+  ) dependsOn(curves % testDependency, daterange % "test->test")
 
   lazy val gui = Project(
     "gui", 
@@ -324,7 +332,7 @@ object StarlingBuild extends Build{
     "dbx",
     file("./dbx"),
     settings = standardSettings ++ Seq(libraryDependencies ++= dbxDependencies)
-  ) dependsOn(manager)
+  ) dependsOn(manager, utils, instrument)
 
   lazy val databases = Project(
     "databases", 
@@ -384,7 +392,7 @@ object StarlingBuild extends Build{
   lazy val singleClasspathManager = Project(
     "singleclasspathmanager",
     file("./singleclasspathmanager"),
-    settings = standardSettings ++ Seq()
+    settings = standardSettings ++ Seq(libraryDependencies ++= singleClasspathManagerDependencies)
   ) dependsOn(manager)
 
   lazy val osgiManager = Project(

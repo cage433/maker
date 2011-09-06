@@ -46,6 +46,15 @@
     </orderEntry>
     <orderEntry type="module" module-name="fc2.api" exported="" />
     <orderEntry type="module" module-name="manager" />
+    <orderEntry type="module-library">
+      <library>
+        <CLASSES>
+          <root url="jar://$MODULE_DIR$/../.ivy/cache/javax.servlet/servlet-api/jars/servlet-api-2.5.jar!/" />
+        </CLASSES>
+        <JAVADOC />
+        <SOURCES />
+      </library>
+    </orderEntry>
   </component>
 </module>
 

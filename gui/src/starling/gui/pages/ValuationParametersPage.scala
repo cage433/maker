@@ -1,19 +1,15 @@
 package starling.gui.pages
 
-import starling.utils.SColumn
 import starling.gui._
 import api._
 import namedquantitycomponents.TopNamedQuantityComponent
 import java.awt.{Color, Dimension}
-import starling.quantity.SimpleNamedQuantity
 import swing.{ScrollPane, Label}
 import starling.pivot.PivotFormatter
 import starling.browser.common.GuiUtils._
 import starling.browser._
 import common.{ButtonClickedEx, NewPageButton, MigPanel}
-import starling.rmi.StarlingServer
 import starling.daterange.Day
-import swing.event.ButtonClicked
 
 case class ValuationParametersPage(tradeID:TradeIDLabel, reportParameters:ReportParameters) extends StarlingServerPage {
   def text = "Valuation Parameters for " + tradeID.id

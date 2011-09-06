@@ -11,7 +11,7 @@ import starling.quantity.{Quantity, Percentage}
 import starling.quantity.UOM._
 import starling.quantity.Quantity._
 import starling.daterange._
-import starling.utils.QuantityTestUtils._
+import starling.quantity.utils.QuantityTestUtils._
 import org.scalatest.testng.TestNGSuite
 import starling.maths.StandardNormal
 import starling.utils.ImplicitConversions._

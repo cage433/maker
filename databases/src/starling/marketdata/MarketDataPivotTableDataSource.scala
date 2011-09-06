@@ -8,8 +8,8 @@ import starling.daterange.{Day, ObservationPoint}
 import starling.pivot.pivotparsers.DayPivotParser
 import starling.richdb.RichDB
 import starling.daterange.Timestamp
-import starling.utils.StarlingXStream
-import starling.utils.sql.{From, QueryBuilder, LiteralString}
+import starling.instrument.utils.StarlingXStream
+import starling.dbx.{From, QueryBuilder, LiteralString}
 import starling.daterange.{ObservationTimeOfDay, TimeOfDay, Day, ObservationPoint}
 import starling.utils.ImplicitConversions._
 import starling.gui.api._

@@ -11,7 +11,7 @@ import starling.utils.{NamedThreadFactory, Log, Stopwatch}
 import starling.db._
 import starling.tradestore.{TradeStore}
 import starling.trade.{Trade, TradeID, TradeSystem, TradeAttributes}
-import starling.utils.sql.Clause
+import starling.dbx.Clause
 import collection.mutable.{ArrayBuffer, HashSet => MHashSet}
 
 class TradeImporterFactory(

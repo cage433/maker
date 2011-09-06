@@ -4,10 +4,9 @@ import starling.utils.StarlingTest
 import starling.utils.Stopwatch._
 import collection.mutable.ListBuffer
 import starling.services.ServerHelper
-import starling.utils.sql.ConnectionParams
+import starling.dbx.ConnectionParams
 import java.io._
 import starling.db._
-import starling.utils.DatabaseUtils
 import starling.pivot.{PivotFieldParams, SomeSelection, Field}
 import starling.tradestore.TradePredicate
 import starling.daterange.{Timestamp, Day}
@@ -16,6 +15,7 @@ import starling.gui.api.ReportParameters
 import starling.bouncyrmi.{BouncyRMI, BouncyRMIClient}
 import starling.auth.Client
 import starling.props.{PropsHelper, Props}
+import starling.databases.utils.DatabaseUtils
 
 object EndToEndTest {
   val TestPropsName = "test_props.conf"

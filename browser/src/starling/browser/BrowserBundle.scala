@@ -45,3 +45,5 @@ trait BrowserBundle {
   def helpEntries:List[HelpEntry] = Nil
   def notificationHandlers:List[NotificationHook] = Nil
 }
+
+case class GotoPageEvent(page:Page) extends Event

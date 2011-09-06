@@ -4,8 +4,12 @@ import starling.instrument._
 import java.lang.String
 import starling.richdb.{RichDB, RichResultSetRow}
 import starling.utils._
-import sql.{SqlRenderer, Query}
+import starling.dbx.SqlRenderer
 import starling.trade.Trade
+import starling.dbx.QueryBuilder._
+import starling.dbx.Clause
+import starling.dbx.Query
+
 
 
 trait SystemOfRecord {

@@ -16,7 +16,8 @@ import starling.pivot.controller.PivotTable
 import starling.reports.pivot.ReportService
 import starling.rmi.{UserReportsService, PivotData, StarlingServer}
 import starling.auth.User
-import starling.utils.{RegressionRunner, StarlingTest}
+import starling.services.utils.RegressionRunner
+import starling.utils.{StarlingTest}
 
 class ReportServletTest extends StarlingTest with ShouldMatchers {
   lazy val reportServlet = new ReportServlet("reports", userReportsService)

@@ -18,7 +18,7 @@ import starling.curves.readers._
 import trade.ExcelTradeReader
 import trinity.{TrinityUploader, XRTGenerator, FCLGenerator}
 import starling.auth.{LdapUserLookup, User, ServerLogin}
-import starling.utils.sql.ConnectionParams
+import starling.dbx.ConnectionParams
 import starling.utils.ImplicitConversions._
 import starling.tradeimport.{ClosedDesks, TradeImporterFactory, TradeImporter}
 import starling.tradestore.TradeStores
@@ -42,13 +42,16 @@ import com.trafigura.services.trinity.TrinityService
 import com.trafigura.services.marketdata.{ExampleService, MarketDataServiceApi}
 import starling.fc2.api.FC2Service
 import starling.utils._
-import starling.browser.service.{BrowserService, UserLoggedIn, Version}
 import starling.dbx.DataSourceFactory
 import starling.titan.{TitanTradeCache, TitanSystemOfRecord, TitanTradeStore}
 import java.util.UUID
-import java.util.concurrent.ConcurrentHashMap
 import com.trafigura.services.{DocumentationService, WebServiceFactory, ResteasyServiceApi}
-
+import starling.instrument.utils.StarlingXStream
+import java.util.concurrent.{Executors, ConcurrentHashMap}
+import swing.event.Event
+import starling.utils.ClosureUtil._
+import starling.browser.service.{EventBatch, BrowserService, UserLoggedIn, Version}
+import starling.databases.utils.{RabbitBroadcaster, RabbitMessageSender}
 
 class StarlingInit( val props: Props,
                     dbMigration: Boolean = true,
@@ -393,5 +396,15 @@ object ChannelLoggedIn extends LoggedIn[User,UUID] {
   def remove(channel: Channel) = loggedIn.remove(channel)
   def setLoggedOn(user: Option[User]) {
     User.setLoggedOn(user)
+  }
+}
+
+
+class RMIBroadcaster(rmiServer0: => BouncyRMIServer[User]) extends Broadcaster {
+  lazy val executor = Executors.newCachedThreadPool()
+  lazy val rmiServer = rmiServer0
+
+  def broadcast(event: Event) = if (!event.isInstanceOf[RabbitEvent] && rmiServer != null) {
+    executor.execute { rmiServer.publish(EventBatch(List(event))) }
   }
 }

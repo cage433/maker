@@ -8,7 +8,7 @@ import starling.props.Props
 import starling.daterange.Timestamp
 import starling.richdb.{RichDB}
 import starling.db.DBWriter
-import starling.utils.sql.QueryBuilder._
+import starling.dbx.QueryBuilder._
 import starling.services.StarlingInit
 import org.apache.commons.io.IOUtils
 

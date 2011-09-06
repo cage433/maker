@@ -1,8 +1,8 @@
 package starling.browser.internal
 
 import swing.Swing._
-import java.awt.{Dimension, Color}
-import swing.{Action, ScrollPane, ListView, Label, Component}
+import java.awt.Dimension
+import swing.{ScrollPane, ListView, Label, Component}
 import swing.event.{Event, SelectionChanged, KeyPressed, MouseClicked}
 import starling.browser.common._
 import starling.browser.service.BookmarksUpdate
@@ -19,30 +19,10 @@ class MinimalSXMonthView extends Component {
   def date:JDate= peer.getFirstSelectionDate
   def date_=(day:JDate) {peer.setSelectionDate(day)}
   def preferredColumnCount = peer.getPreferredColumnCount
-  def preferredColumnCount_=(count:Int) = peer.setPreferredColumnCount(count)
+  def preferredColumnCount_=(count:Int) {peer.setPreferredColumnCount(count)}
   def firstDisplayedDay = peer.getFirstDisplayedDay
-  def firstDisplayedDay_=(day:JDate) = peer.setFirstDisplayedDay(day)
-//  peer.getSelectionModel.addDateSelectionListener(new DateSelectionListener {
-//    def valueChanged(ev:DateSelectionEvent) = {
-//      if (ev.getEventType == EventType.DATES_SET) {
-//        publish(SelectionChanged(SXMonthView.this))
-//      }
-//    }
-//  })
-//  peer.addActionListener(new ActionListener {
-//    def actionPerformed(e:ActionEvent) = {
-//      e.getActionCommand match {
-//        case JXMonthView.CANCEL_KEY => publish(MonthViewCancelEvent(SXMonthView.this))
-//        case JXMonthView.COMMIT_KEY => publish(MonthViewCommitEvent(SXMonthView.this, day))
-//        case _ =>
-//      }
-//    }
-//  })
+  def firstDisplayedDay_=(day:JDate) {peer.setFirstDisplayedDay(day)}
 }
-
-//case class MonthViewCancelEvent(source:Component) extends Event
-//case class MonthViewCommitEvent(source:Component, day:Day) extends Event
-
 
 class BookmarksPanel(context:PageContext) extends MigPanel("") {
   val iconLabel = new Label {
@@ -80,7 +60,7 @@ class BookmarksPanel(context:PageContext) extends MigPanel("") {
     c.setTime(now)
     val dayOfWeek = c.get(Calendar.DAY_OF_WEEK)
     c.add(Calendar.DAY_OF_WEEK, -1)
-    while (c.get(Calendar.DAY_OF_WEEK) == Calendar.SATURDAY || c.get(Calendar.DAY_OF_WEEK) == Calendar.SATURDAY) {
+    while (c.get(Calendar.DAY_OF_WEEK) == Calendar.SUNDAY || c.get(Calendar.DAY_OF_WEEK) == Calendar.SATURDAY) {
       c.add(Calendar.DAY_OF_WEEK, -1)
     }
     date = c.getTime

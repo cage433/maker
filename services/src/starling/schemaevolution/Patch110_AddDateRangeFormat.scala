@@ -4,7 +4,7 @@ import system.Patch
 import starling.services.StarlingInit
 import starling.richdb.RichDB
 import starling.db.DBWriter
-import starling.utils.StarlingXStream
+import starling.instrument.utils.StarlingXStream
 import xstream.{Fields, Reader, MapBasedConverter}
 import starling.pivot.model.CollapsedState
 import starling.pivot.{Field, Totals, OtherLayoutInfo, PivotFormatter}

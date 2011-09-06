@@ -5,7 +5,7 @@ import org.testng.Assert._
 import starling.quantity.UOM._
 import starling.quantity.Quantity
 import starling.utils.ScalaTestUtils._
-import starling.utils.QuantityTestUtils._
+import starling.quantity.utils.QuantityTestUtils._
 import starling.market._
 import starling.market.Index._
 import rules.CommonPricingRule
@@ -14,7 +14,8 @@ import starling.market.formula._
 import starling.calendar.BrentMonth
 import starling.daterange._
 import starling.daterange.Day._
-import starling.utils.{AtomicDatumKeyUtils, StarlingTest}
+import starling.instrument.utils._
+import starling.utils.{StarlingTest}
 
 class CFDTests extends TestMarketTest {
   val platts_brent = Index.publishedIndexFromName("Platts Brent (April)")

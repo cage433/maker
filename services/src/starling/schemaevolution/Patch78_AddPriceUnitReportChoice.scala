@@ -4,7 +4,7 @@ import system.Patch
 import starling.richdb.RichDB
 import starling.db.DBWriter
 import starling.pivot.PivotFieldsState
-import starling.utils.StarlingXStream
+import starling.instrument.utils.StarlingXStream
 import starling.utils.sql.PersistAsBlob
 import xstream.{ModifyClassWhichCanBeReadConverter, Fields, Reader, MapBasedConverter}
 import starling.services.StarlingInit

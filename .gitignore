@@ -46,3 +46,4 @@ GRTAGS
 GSYMS
 GTAGS
 dummy-sbt-vim-hack
+osgi-gui-cache/*

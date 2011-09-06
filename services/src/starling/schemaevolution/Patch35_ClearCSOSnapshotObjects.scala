@@ -3,7 +3,7 @@ package starling.schemaevolution
 import system.Patch
 import starling.db.DBWriter
 import starling.richdb.RichDB
-import starling.utils.sql.QueryBuilder
+import starling.dbx.QueryBuilder
 import starling.curves.SpreadStdDevSurfaceDataType
 import starling.services.StarlingInit
 

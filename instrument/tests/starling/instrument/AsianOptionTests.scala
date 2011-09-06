@@ -16,7 +16,7 @@ import starling.utils.conversions.RichColtMatrices._
 import starling.utils.ScalaTestUtils._
 import java.lang.Math._
 import java.lang.Math
-import starling.utils.QuantityTestUtils._
+import starling.quantity.utils.QuantityTestUtils._
 import starling.quantity.Percentage._
 import starling.models.{European, CallOrPut, Put, Call}
 import starling.utils.{Log, CollectionUtils, ScalaTestUtils}

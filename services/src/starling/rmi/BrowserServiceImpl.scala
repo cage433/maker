@@ -15,4 +15,9 @@ class BrowserServiceImpl(val name:String, val version:Version, userSettingsDatab
   def bookmarks = userSettingsDatabase.bookmarks(User.currentlyLoggedOn)
 
   def logPageView(info: PageLogInfo) = userSettingsDatabase.logPageView(info)
+
+  def user = {
+    val u = User.currentlyLoggedOn
+    UserDetails(u.username, u.name)
+  }
 }

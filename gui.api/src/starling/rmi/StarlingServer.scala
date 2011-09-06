@@ -43,9 +43,6 @@ trait StarlingServer {
   def referenceDataTables():List[ReferenceDataLabel]
   def referencePivot(table:ReferenceDataLabel, pivotFieldParams:PivotFieldParams):PivotData
   def ukBusinessCalendar:BusinessCalendar
-
-  // horrible hack, we need to figure out how to do this properly
-  def permissionToDoAdminLikeThings: Boolean
   def whoAmI:User
   def traders: Map[User,(Book, Desk)]
   def orgPivot(pivotFieldParams:PivotFieldParams):PivotData

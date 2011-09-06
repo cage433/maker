@@ -6,7 +6,7 @@ import starling.pivot.PivotQuantity
 import starling.reports.pivot.PivotReport._
 import starling.quantity.{UOM, Quantity}
 import starling.curves._
-import starling.utils.{AtomicDatumKeyUtils, CollectionUtils}
+import starling.utils.{CollectionUtils}
 import starling.instrument._
 import starling.market.FuturesMarket
 import starling.daterange._

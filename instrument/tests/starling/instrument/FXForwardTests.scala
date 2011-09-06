@@ -17,7 +17,7 @@ import reflect.Manifest
 import starling.market.SpotUSDFXRiskFactorType
 import starling.curves._
 import starling.daterange.{TimeOfDay, DayAndTime, Day}
-import starling.utils.QuantityTestUtils._
+import starling.quantity.utils.QuantityTestUtils._
 
 class FXForwardTests extends StarlingTest {
 

@@ -37,6 +37,9 @@ object GUICode {
     "browser-lib-jxlayer-4.0.jar" -> new File("browser/lib/jxlayer-4.0.jar"),
     "browser-lib-looks-2.3.1.jar" -> new File("browser/lib/looks-2.3.1.jar"),
     "gui-lib_managed-scala_2.9.0-1-compile-jfreechart-1.0.0.jar" -> new File(".ivy/cache/jfree/jfreechart/jars/jfreechart-1.0.0.jar"),
+    "gui-lib_managed-scala_2.9.0-1-compile-servlet-api-2.5.jar" -> new File(".ivy/cache/javax.servlet/servlet-api/jars/servlet-api-2.5.jar"),
+    "jetty" -> new File(".ivy/cache/org.mortbay.jetty/jetty/jars/jetty-6.1.26.jar"),
+    "jetty-utls" -> new File(".ivy/cache/org.mortbay.jetty/jetty-util/jars/jetty-util-6.1.26.jar"),
     "browser-lib-Miglayout-3-7-3-1-nick.jar" -> new File("browser/lib/Miglayout-3-7-3-1-nick.jar"),
     "gui-lib-org.eclipse.mylyn.wikitext.core_1.4.0.I20100805-0500-e3x.jar" -> new File("browser/lib/org.eclipse.mylyn.wikitext.core_1.4.0.I20100805-0500-e3x.jar"),
     "gui-lib-org.eclipse.mylyn.wikitext.textile.core_1.4.0.I20100805-0500-e3x.jar" -> new File("browser/lib/org.eclipse.mylyn.wikitext.textile.core_1.4.0.I20100805-0500-e3x.jar"),
@@ -186,7 +189,7 @@ class WebStartServlet(prefix:String, serverName:String, externalURL:String, main
     } else if (path.equals("/app.txt")) {
       val writer =response.getWriter
       response.setContentType("text/plain")
-      writer.println("starling.launcher.Launcher " + PropsHelper.defaultProps.ExternalHostname() + " " + PropsHelper.defaultProps.RmiPort() + " " + PropsHelper.defaultProps.ServerPrincipalName())
+      writer.println(mainClass + " " + PropsHelper.defaultProps.ExternalHostname() + " " + PropsHelper.defaultProps.RmiPort() + " " + PropsHelper.defaultProps.ServerPrincipalName())
       val (modules, libJarNames) = GUICode.dependencies
       for ((module, lastModified) <- modules) {writer.println(moduleJarsPrefix + module + ".jar " + lastModified)}
       for ((libName, lastModified) <- libJarNames) {writer.println(externalJarsPrefix + libName + " " + lastModified)}

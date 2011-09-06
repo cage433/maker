@@ -9,7 +9,8 @@ import starling.rmi.{UserReportsService, StarlingServer}
 import starling.auth.User
 import starling.utils.Pattern.Extractor
 import starling.pivot.controller.PivotTable
-import starling.utils.{Utils, RegressionRunner}
+import starling.services.utils.RegressionRunner
+import starling.utils.{Utils}
 import starling.utils.ImplicitConversions._
 import scalaz._
 import Scalaz._

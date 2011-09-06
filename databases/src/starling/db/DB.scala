@@ -5,8 +5,7 @@ import org.springframework.jdbc.datasource.{DataSourceUtils, DataSourceTransacti
 import starling.instrument._
 import javax.sql.DataSource
 import starling.utils.sql._
-import starling.utils.sql.QueryBuilder._
-import starling.utils.sql.Clause
+import starling.dbx.QueryBuilder._
 import org.springframework.transaction.support.{TransactionCallback, TransactionTemplate}
 import org.springframework.transaction.{TransactionStatus, TransactionDefinition}
 import starling.daterange._
@@ -22,7 +21,9 @@ import org.springframework.jdbc.core.simple.{SimpleJdbcTemplate, SimpleJdbcCall,
 import org.springframework.jdbc.`object`.BatchSqlUpdate
 import starling.quantity.{SpreadQuantity, Percentage, Quantity}
 import starling.eai.TreeID
-import starling.utils.{CaseInsensitive, CollectionUtils, Log, StarlingXStream}
+import starling.utils.{CaseInsensitive, CollectionUtils, Log}
+import starling.instrument.utils.StarlingXStream
+import starling.dbx._
 
 trait DBTrait[RSR <: ResultSetRow] {
   val dataSource: DataSource

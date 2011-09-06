@@ -25,7 +25,7 @@ import io.Source
 import collection.mutable.ArraySeq
 import starling.curves.Environment._
 import starling.curves._
-import starling.utils.QuantityTestUtils._
+import starling.quantity.utils.QuantityTestUtils._
 import starling.utils.{Log, StringIO}
 import starling.concurrent.MP._
 

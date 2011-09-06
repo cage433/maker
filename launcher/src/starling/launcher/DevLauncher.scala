@@ -5,7 +5,7 @@ import starling.services.Server
 import starling.bouncyrmi.BouncyRMI
 import starling.props.{PropsHelper, Props}
 import java.net.{BindException, ServerSocket}
-import starling.utils.PropertiesMapBuilder
+import starling.api.utils.PropertiesMapBuilder
 
 object DevLauncher {
   def main(args:Array[String]) {
