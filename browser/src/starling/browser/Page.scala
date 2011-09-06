@@ -4,7 +4,7 @@ import common.{MigPanel, GuiUtils}
 import internal._
 import java.awt.image.BufferedImage
 import service.internal.HeterogeneousMap
-import service.{BrowserService, Version}
+import service.{UserDetails, BrowserService, Version}
 import swing.event.Event
 import javax.swing.border.Border
 import java.awt.{Graphics2D, Dimension}
@@ -31,7 +31,6 @@ trait Page {
 }
 
 trait ServerContext {
-  def username:String
   def lookup[T](klass:Class[T]):T
   def browserService:BrowserService
   def extraInfo:Option[String] = None
@@ -111,7 +110,7 @@ trait PageData
 
 object LocalCache {
   val Version = new LocalCacheKey[Version]("Version")
-  val CurrentUserName = new LocalCacheKey[String]("CurrentUserName")
+  val CurrentUserName = new LocalCacheKey[UserDetails]("CurrentUserName")
   val AllUserNames = new LocalCacheKey[List[String]]("AllUserNames")
   val Bookmarks = new LocalCacheKey[List[BookmarkData]]("BookmarkData")
 }
@@ -128,7 +127,8 @@ case class LocalCacheKey[T](description: String) {
 case class LocalCache(localCache:HeterogeneousMap[LocalCacheKey]) {
   import NotificationKeys._
   def version = localCache(LocalCache.Version)
-  def currentUserName = localCache(LocalCache.CurrentUserName)
+  def currentUserName = localCache(LocalCache.CurrentUserName).username
+  def currentFullName = localCache(LocalCache.CurrentUserName).fullName
   def allUserNames = localCache(LocalCache.AllUserNames)
 
   def bookmarks = localCache(LocalCache.Bookmarks)

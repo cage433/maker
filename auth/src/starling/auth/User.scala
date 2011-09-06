@@ -27,7 +27,7 @@ case class User(username: String, name: String="", manager: Option[String]=None,
 
 object User {
   // Dev user for use during development
-  val Dev = User("Dev", "Dev", None, List("Starling Developers"), "+44 888 8888", "dev@trafigura.com", "IT Risk Systems")
+  val Dev = User("Dev", "Dev name", None, List("Starling Developers"), "+44 888 8888", "dev@trafigura.com", "IT Risk Systems")
   // Test user for automated tests
   val Test = User("Nobody", "Nobody", None, List(), "None", "None@trafigura.com", "None")
 

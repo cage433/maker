@@ -40,10 +40,6 @@ class GuiBromptonActivator extends BromptonActivator {
     val starlingServer = client.proxy(classOf[StarlingServer])
     starlingServer.storeSystemInfo(GuiStart.systemInfo)
 
-    context.registerService(classOf[UserDetails], new UserDetails {
-      def name = starlingServer.whoAmI.name
-      def username = starlingServer.whoAmI.username
-    })
     val fc2Service = client.proxy(classOf[FC2Service])
     context.registerService(classOf[Publisher], client.remotePublisher)
     context.registerService(classOf[StarlingServer], starlingServer)

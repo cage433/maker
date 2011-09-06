@@ -33,14 +33,12 @@ class BrowserBromptonActivator extends BromptonActivator {
       GuiUtils.setLookAndFeel()
     } })
 
-    val userDetails = context.awaitService(classOf[UserDetails])
-    val (username, name) = (userDetails.username, userDetails.name)
-
     val serverContext = new ServerContext() {
-      def username = name
       def lookup[T](klass: Class[T]) = context.awaitService(klass)
       def browserService = context.awaitService(classOf[BrowserService])
     }
+
+    val userDetails = serverContext.browserService.user
 
     val localCachePublisher = new Publisher() {}
     val pageContextPublisher = new Publisher() {}
@@ -60,7 +58,7 @@ class BrowserBromptonActivator extends BromptonActivator {
         }
       }
     }
-    val bookmarks = serverContext.browserService.bookmarks
+    var bookmarks = serverContext.browserService.bookmarks
     context.createServiceTracker(Some(classOf[BrowserBundle]), Nil, new BromptonServiceTracker {
       def serviceAdded(ref: BromptonServiceReference, service: AnyRef) {
         val bundle = service.asInstanceOf[BrowserBundle]
@@ -105,7 +103,6 @@ class BrowserBromptonActivator extends BromptonActivator {
           case Some(bundle) => BookmarkData(label.name, Some(bundle.unmarshal(label.bookmark).asInstanceOf[Bookmark]))
           case None => BookmarkData(label.name, None)
         }
-        BookmarkData(label.name, None) // TODO - we are never returning a bookmark! If I take this out OSGI Gui doesn't load.
       } }
     }
 
@@ -113,7 +110,7 @@ class BrowserBromptonActivator extends BromptonActivator {
       val title = browserService.name + " - Starling"
 
       cacheMap(LocalCache.Version) = serverContext.browserService.version
-      cacheMap(LocalCache.CurrentUserName) = name
+      cacheMap(LocalCache.CurrentUserName) = userDetails
       cacheMap(LocalCache.Bookmarks) = toBookmarks(bookmarks)
       cacheMap(NotificationKeys.AllNotifications) = List()
       cacheMap(NotificationKeys.UserNotifications) = List()
@@ -132,25 +129,23 @@ class BrowserBromptonActivator extends BromptonActivator {
         fc.updateNotifications
       }
 
-      publisher.reactions += {
+      localCachePublisher.reactions += {
         case batch:EventBatch => {
-          onEDT {
-            bundlesByName.foreach { case (name,bundle) =>
-              println("Passing  " + batch + " to " + name + " " + bundle.getClass.getClassLoader)
-              bundle.notificationHandlers.foreach { handler => {
-                batch.events.foreach { e =>
-                  handler.handle(e, cache, sendNotification)
-                }
-              } }
-            }
-            batch.events.foreach {
-              case e: BookmarksUpdate if e.user == username => {
-                cacheMap(LocalCache.Bookmarks) = toBookmarks(e.bookmarks)
+          bundlesByName.foreach { case (name,bundle) =>
+            bundle.notificationHandlers.foreach { handler => {
+              batch.events.foreach { e =>
+                handler.handle(e, cache, sendNotification)
               }
-              case _ =>
-            }
-            //pageContextPublisher.publish(batch)
+            } }
           }
+          batch.events.foreach {
+            case e: BookmarksUpdate if e.user == userDetails.username => {
+              bookmarks = e.bookmarks
+              cacheMap(LocalCache.Bookmarks) = toBookmarks(bookmarks)
+            }
+            case _ =>
+          }
+          //pageContextPublisher.publish(batch)
         }
       }
     })

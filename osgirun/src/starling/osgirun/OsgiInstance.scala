@@ -37,12 +37,12 @@ class OsgiInstance(name:String, bundles:BundleDefinitions) {
     val updated = (newBundles.keySet & currentBundles.keySet).toList.flatMap { commonBundle => {
       val newBundleDef = newBundles(commonBundle)
       val currentBundle = currentBundles(commonBundle)
-      //if (newBundleDef.lastModified > currentBundle.getLastModified || newBundleDef.name == "utils") {
+      if (newBundleDef.lastModified > currentBundle.getLastModified) {
         currentBundle.update(newBundleDef.inputStream)
         Some( currentBundle )
-      //} else {
-      //  Right( currentBundle )
-      //}
+      } else {
+        None
+      }
     }}
     val installed = (newBundles.keySet -- currentBundles.keySet).toList.map { newBundleName => {
       val newBundleDef = newBundles(newBundleName)

@@ -7,9 +7,11 @@ case class UserSettingsLabel(userSettings:List[UserSettingsEntry])
 case class BookmarkLabel(name:String, bundleName:String, bookmark:String)
 case class PageLogInfo(text:String,shortText:String,pageString:String, time:java.util.Date)
 case class UserLoggedIn(user:String) extends Event
+case class UserDetails(username:String, fullName:String)
 
 trait BrowserService {
   def name:String
+  def user:UserDetails
   def readSettings:UserSettingsLabel
   def saveSettings(settings:UserSettingsLabel)
   def saveBookmark(bookmark:BookmarkLabel)

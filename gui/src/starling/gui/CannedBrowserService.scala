@@ -28,6 +28,7 @@ object CannedBrowserService extends BrowserService {
   def bookmarks = Nil
   def version = Version("name", "hostname", "db", false, None)
   def logPageView(info: PageLogInfo) { /*skip*/ }
+  def user = UserDetails("Dev", "dev user")
 }
 
 object CannedBrowserBundle extends BrowserBundle {
