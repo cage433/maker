@@ -19,9 +19,9 @@ import starling.trade.{Trade, TradeID, TradeSystem}
 import starling.tradestore.{TradeSet, TradePredicate, TradeStores}
 import starling.tradestore.intraday.IntradayTradeAttributes
 import starling.utils._
-import starling.utils.sql.{FalseClause, From, RealTable}
+import starling.dbx.{FalseClause, From, RealTable}
 
-import starling.utils.sql.QueryBuilder._
+import starling.dbx.QueryBuilder._
 import starling.browser.service.Version
 
 class UserReportsService(

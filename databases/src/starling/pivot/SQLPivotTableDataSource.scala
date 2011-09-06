@@ -4,8 +4,9 @@ import org.springframework.jdbc.datasource.SingleConnectionDataSource
 import java.sql.DriverManager
 import starling.utils._
 import cache.CacheFactory
-import starling.utils.sql._
-import starling.utils.sql.QueryBuilder._
+import starling.dbx.QueryBuilder._
+import starling.dbx.Query._
+import starling.dbx._
 import starling.db._
 import starling.quantity.Quantity
 import collection.mutable.LinkedHashSet
@@ -15,6 +16,7 @@ import java.util.concurrent.{Executors, Executor}
 import starling.instrument.{DeletedInstrument}
 import starling.gui.api.UTPIdentifier
 import starling.daterange.{Timestamp, DateRange, Day}
+import starling.dbx.{Clause, Query}
 
 /**
  * An implementation of PivotTableDataSource backed by a database
@@ -121,7 +123,7 @@ case class QuantityStringColumnDefinition(override val name:String, override val
     } else {
       val clauses = values.map { v =>
         val q = v.asInstanceOf[Quantity]
-        (new starling.utils.sql.Field(fullSqlName) eql q.value) and (new starling.utils.sql.Field(fullSqlName+"UOM") eql q.uom.asString)
+        (new starling.dbx.Field(fullSqlName) eql q.value) and (new starling.dbx.Field(fullSqlName+"UOM") eql q.uom.asString)
       }
       List( (clauses.head /: clauses.tail) { _ or _ } )
     }
@@ -156,7 +158,7 @@ case class StrikeQuantityStringColumnDefinition(override val name:String, overri
     } else {
       val clauses = values.map { v =>
         val q = v.asInstanceOf[Quantity]
-        (new starling.utils.sql.Field(fullSqlName) eql q.value) and (new starling.utils.sql.Field(fullSqlName+"UOM") eql q.uom.asString)
+        (new starling.dbx.Field(fullSqlName) eql q.value) and (new starling.dbx.Field(fullSqlName+"UOM") eql q.uom.asString)
       }
       List( (clauses.head /: clauses.tail) { _ or _ } )
     }
@@ -262,7 +264,7 @@ class InMemorySQLPivotTableDataSource(
   val columns = columnGroups.flatMap(_._2).filterNot(_.name.equalsIgnoreCase("Costs"))
 
   val allRows = starling.utils.Log.infoWithTime("Reading all rows") {
-    import starling.utils.sql.QueryBuilder._
+    import starling.dbx.QueryBuilder._
     val selectString = columns.flatMap(_.selectFields).mkString(", ")
     val groupBys = columns.flatMap(_.groupByFields)
     val query = (select (selectString) from theFrom where builtInClauses groupBy groupBys)
@@ -334,7 +336,7 @@ class OnTheFlySQLPivotTableDataSource(
   }
 
   private def readPossibleValues(field:ColumnDefinition, filters:Seq[(ColumnDefinition,Selection)]):List[Any] = {
-    import starling.utils.sql.QueryBuilder._
+    import starling.dbx.QueryBuilder._
     var query =
       (select ("distinct " + field.selectFields.mkString(", "))
        from theFrom
@@ -349,7 +351,7 @@ class OnTheFlySQLPivotTableDataSource(
   }
 
   private def buildQuery(selectFields:List[ColumnDefinition], where:Seq[(ColumnDefinition,Selection)]) = {
-    import starling.utils.sql.QueryBuilder._
+    import starling.dbx.QueryBuilder._
     val selectString = selectFields.flatMap(_.selectFields).mkString(", ")
     val groupByFields = selectFields.flatMap(_.groupByFields)
     val clauses = buildClauses(where)
@@ -357,7 +359,7 @@ class OnTheFlySQLPivotTableDataSource(
   }
 
   private def buildClauses(filter:Seq[(ColumnDefinition,Selection)]):List[Clause] = {
-    import starling.utils.sql.QueryBuilder._
+    import starling.dbx.QueryBuilder._
     builtInClauses ::: filter.flatMap( t => {
       t._2 match {
         case AllSelection => List()

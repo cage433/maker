@@ -1,6 +1,6 @@
 package starling.utils
 
-import sql.ConnectionParams
+import starling.dbx.ConnectionParams
 import starling.db.DB
 import starling.dbx.DataSourceFactory
 

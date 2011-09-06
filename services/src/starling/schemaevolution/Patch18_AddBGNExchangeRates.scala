@@ -4,7 +4,7 @@ import system.Patch
 import starling.db.DBWriter
 import starling.richdb.RichDB
 import starling.daterange.Day
-import starling.utils.sql.QueryBuilder._
+import starling.dbx.QueryBuilder._
 import starling.utils.ImplicitConversions._
 import org.testng.annotations.Test
 import starling.marketdata.SpotFXData

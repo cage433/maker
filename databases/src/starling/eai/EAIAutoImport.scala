@@ -2,7 +2,7 @@ package starling.eai
 
 import instrumentreaders.EAISystemOfRecord
 import starling.db.DB
-import starling.utils.sql.QueryBuilder._
+import starling.dbx.QueryBuilder._
 import starling.gui.api.Desk
 import java.util.{Timer, TimerTask}
 import starling.systemofrecord.SystemOfRecord

@@ -7,7 +7,7 @@ import starling.db.{UpdateableResultSetRow, DBWriter}
 import starling.market.{FuturesMarket, FuturesExchangeFactory, Market}
 import starling.market.FuturesExchangeFactory._
 import starling.instrument.{AsianOption, FuturesOption}
-import starling.utils.sql.QueryBuilder._
+import starling.dbx.QueryBuilder._
 import starling.utils.{Log}
 import starling.instrument.utils.StarlingXStream
 import starling.services.StarlingInit

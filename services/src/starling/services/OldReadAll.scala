@@ -21,7 +21,8 @@ import java.io.File
 import starling.auth.{LdapUserLookup, User, ServerLogin}
 import java.util.concurrent.CopyOnWriteArraySet
 import starling.utils._
-import sql.{PersistAsBlob, ConnectionParams}
+import starling.dbx.ConnectionParams
+import sql.{PersistAsBlob}
 import starling.utils.ImplicitConversions._
 import starling.tradeimport.{ClosedDesks, TradeImporterFactory, TradeImporter}
 import starling.tradestore.TradeStores

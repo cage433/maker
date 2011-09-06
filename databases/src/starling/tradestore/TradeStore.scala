@@ -13,8 +13,7 @@ import collection.immutable.Set
 import starling.utils.cache.CacheFactory
 import starling.utils.ImplicitConversions._
 import starling.richdb.{RichInstrumentResultSetRow, RichDB}
-import starling.utils.sql.QueryBuilder._
-import starling.utils.sql.LiteralString
+import starling.dbx.QueryBuilder._
 import java.util.concurrent.atomic.AtomicReference
 import collection.immutable.List
 import starling.instrument._
@@ -29,6 +28,7 @@ import starling.quantity._
 import starling.gui.api._
 import starling.tradestore.TradeStore.StoreResults
 import starling.marketdata.PeriodFieldDetails
+import starling.dbx.{LiteralString, Clause, Query}
 
 //This is the code which maps from TradeableType.fields to FieldDetails
 object TradeableFields {

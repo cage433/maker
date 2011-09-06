@@ -2,8 +2,8 @@ package starling.curves
 
 import readers.FwdCurveDbMarketDataSource
 import starling.daterange.Day
-import starling.utils.sql.Query
-import starling.utils.sql.QueryBuilder._
+import starling.dbx.Query
+import starling.dbx.QueryBuilder._
 import starling.db._
 import starling.gui.api.MarketDataSelection
 import starling.utils.{Log, RepeatingTask}

@@ -1,7 +1,7 @@
 package starling.tradeimport
 
 import starling.db.DB
-import starling.utils.sql.QueryBuilder._
+import starling.dbx.QueryBuilder._
 import starling.calendar.BusinessCalendarSet
 import starling.daterange.{Day, Timestamp}
 import collection.SortedMap

@@ -1,6 +1,6 @@
 package starling.db
 
-import starling.utils.sql.QueryBuilder._
+import starling.dbx.QueryBuilder._
 import starling.quantity.Percentage
 import starling.marketdata._
 import starling.utils.ImplicitConversions._
@@ -23,6 +23,7 @@ import Scalaz._
 import collection.mutable.{ListBuffer, HashSet => MSet}
 import collection.immutable.{Iterable, Map, TreeMap}
 import starling.pivot.{PivotQuantity, PivotEdits, PivotTableDataSource, Field => PField}
+import starling.dbx._
 
 //import starling.props.Props.VarReportEmailFrom
 

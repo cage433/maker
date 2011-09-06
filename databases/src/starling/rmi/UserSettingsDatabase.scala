@@ -1,8 +1,7 @@
 package starling.rmi
 
-import starling.utils.sql.LiteralString
+import starling.dbx.QueryBuilder._
 import starling.db.DB
-import starling.utils.sql.QueryBuilder._
 import starling.auth.User
 import starling.gui.api._
 import starling.instrument.utils.StarlingXStream
@@ -11,6 +10,7 @@ import starling.pivot._
 import starling.daterange.{Day, Timestamp}
 import starling.calendar.BusinessCalendar
 import starling.browser.service._
+import starling.dbx.{LiteralString, Clause, Query}
 
 case class DayOffSet(offset:Int)
 

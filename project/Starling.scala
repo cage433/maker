@@ -58,7 +58,6 @@ object Dependencies{
   )
 
   val databasesDependencies = Seq(
-    "org.springframework" % "spring-jdbc" % "3.0.5.RELEASE" withSources(),
     "org.slf4j" % "slf4j-api" % "1.6.1" withSources(),
     "org.scala-tools.testing" % "scalacheck_2.9.0-1" % "1.9" withSources(),
     "org.apache.derby" % "derby" % "10.5.3.0_1",
@@ -67,7 +66,9 @@ object Dependencies{
   )
 
   val dbxDependencies = Seq(
-    "com.jolbox" % "bonecp" % "0.7.1.RELEASE" intransitive() withSources()
+    "com.jolbox" % "bonecp" % "0.7.1.RELEASE" intransitive() withSources(),
+    "org.springframework" % "spring-jdbc" % "3.0.5.RELEASE" withSources()
+
   )
   
   val titanModelDependencies = Seq(
@@ -324,7 +325,7 @@ object StarlingBuild extends Build{
     "dbx",
     file("./dbx"),
     settings = standardSettings ++ Seq(libraryDependencies ++= dbxDependencies)
-  ) dependsOn(manager)
+  ) dependsOn(manager, utils, instrument)
 
   lazy val databases = Project(
     "databases", 

@@ -4,8 +4,8 @@ import com.thoughtworks.xstream.converters.Converter
 import starling.richdb.{RichDB}
 import starling.instrument.utils.StarlingXStream
 import com.thoughtworks.xstream.XStream
-import starling.utils.sql.Clause
-import starling.utils.sql.QueryBuilder._
+import starling.dbx.Clause
+import starling.dbx.QueryBuilder._
 import starling.db.DBWriter
 
 class ConvertMarketData(dataTypeKey : String, convertingXStream : XStream){

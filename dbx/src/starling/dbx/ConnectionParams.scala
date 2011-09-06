@@ -1,5 +1,4 @@
-package starling.utils.sql
-
+package starling.dbx
 
 import starling.dbx.DataSourceFactory
 

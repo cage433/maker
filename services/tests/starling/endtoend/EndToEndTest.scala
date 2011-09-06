@@ -4,7 +4,7 @@ import starling.utils.StarlingTest
 import starling.utils.Stopwatch._
 import collection.mutable.ListBuffer
 import starling.services.ServerHelper
-import starling.utils.sql.ConnectionParams
+import starling.dbx.ConnectionParams
 import java.io._
 import starling.db._
 import starling.utils.DatabaseUtils
