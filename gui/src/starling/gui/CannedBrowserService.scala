@@ -1,33 +1,23 @@
 package starling.gui
 
-import api._
 import java.lang.String
-import osgi.GuiBromptonActivator
-import pages.PivotTablePageData._
-import pages.{PivotTablePageData, AbstractPivotPage, SingleTradePage, PivotPageState}
-import swing.event.ButtonClicked
+import pages.{AbstractPivotPage, PivotPageState}
 import starling.pivot.model._
 import java.awt.Dimension
 import starling.pivot._
-import java.lang.reflect.Method
-import net.sf.cglib.proxy.{MethodProxy, MethodInterceptor, Enhancer}
-import starling.rmi.StarlingServer
 import collection.Seq
 import starling.quantity.{UOM, Quantity}
-import starling.auth.User
-import starling.daterange.{Month, Year, Day}
-import collection.immutable.{Map, Iterable}
+import starling.daterange.Year
+import collection.immutable.Map
 import starling.browser._
 import common.{NumberedButton, MigPanel}
 import service._
-import starling.browser.internal.UserSettings
 import service.internal.HeterogeneousMap
 import xstream.GuiStarlingXStream
-import swing.{Publisher, Component, Label, Button}
-import swing.{Component, Label, Button}
+import swing.Publisher
+import swing.{Component, Label}
 import javax.swing.KeyStroke
 import java.awt.event.KeyEvent
-import starling.browser.osgi.BrowserBromptonActivator
 
 object CannedBrowserService extends BrowserService {
   def name = "Canned"

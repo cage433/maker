@@ -183,7 +183,6 @@ object GuiStart extends Log {
     import LocalCache._
     try {
       cacheMap(CurrentUser) = starlingServer.whoAmI
-      cacheMap(CurrentUserName) = cacheMap(CurrentUser).name
       cacheMap(AllUserNames) = starlingServer.allUserNames
       cacheMap(PricingGroups) = fc2Service.pricingGroups
       cacheMap(ExcelDataSets) = fc2Service.excelDataSets

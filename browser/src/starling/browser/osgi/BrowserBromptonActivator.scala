@@ -22,19 +22,22 @@ class BrowserBromptonActivator extends BromptonActivator {
 
   def defaults = new BrowserPropsFoo
 
-  def init(context: BromptonContext, props: BrowserPropsFoo) { }
+  def start(context: BromptonContext) {}
 
   var fc:StarlingBrowserFrameContainer = _
 
-  def start(context: BromptonContext) {
+  def init(context: BromptonContext, props: BrowserPropsFoo) {
 
     javax.swing.SwingUtilities.invokeAndWait(new Runnable() { def run() {
       UIManager.getDefaults.put("ClassLoader", classOf[PlasticXPLookAndFeel].getClassLoader)
       GuiUtils.setLookAndFeel()
     } })
 
+    val userDetails = context.awaitService(classOf[UserDetails])
+    val (username, name) = (userDetails.username, userDetails.name)
+
     val serverContext = new ServerContext() {
-      def username = "username" // TODO - this is not used - can I take it out?
+      def username = name
       def lookup[T](klass: Class[T]) = context.awaitService(klass)
       def browserService = context.awaitService(classOf[BrowserService])
     }
@@ -105,13 +108,12 @@ class BrowserBromptonActivator extends BromptonActivator {
         BookmarkData(label.name, None) // TODO - we are never returning a bookmark! If I take this out OSGI Gui doesn't load.
       } }
     }
-//    val username = serverContext.username
 
     onEDT({
       val title = browserService.name + " - Starling"
 
       cacheMap(LocalCache.Version) = serverContext.browserService.version
-//      cacheMap(LocalCache.CurrentUserName) = username
+      cacheMap(LocalCache.CurrentUserName) = name
       cacheMap(LocalCache.Bookmarks) = toBookmarks(bookmarks)
       cacheMap(NotificationKeys.AllNotifications) = List()
       cacheMap(NotificationKeys.UserNotifications) = List()
@@ -119,8 +121,8 @@ class BrowserBromptonActivator extends BromptonActivator {
       val cache = LocalCache(cacheMap)
 
       val pageBuilder = new PageBuilder(pageContextPublisher, serverContext, bundlesByName)
-      fc = new StarlingBrowserFrameContainer(serverContext, cache, pageBuilder, StarlingHomePage,
-        settings, title, serverContext.extraInfo)
+
+      fc = new StarlingBrowserFrameContainer(serverContext, cache, pageBuilder, StarlingHomePage, settings, title)
 
       // Must be called on the EDT
       def sendNotification(notification:Notification) {
@@ -142,8 +144,7 @@ class BrowserBromptonActivator extends BromptonActivator {
               } }
             }
             batch.events.foreach {
-//              case e: BookmarksUpdate if e.user == username => {
-              case e: BookmarksUpdate if e.user == cacheMap(LocalCache.CurrentUserName) => {
+              case e: BookmarksUpdate if e.user == username => {
                 cacheMap(LocalCache.Bookmarks) = toBookmarks(e.bookmarks)
               }
               case _ =>

@@ -15,6 +15,7 @@ class Booter {
     public static void main(String[] args) throws Exception {
         if (args.length != 2) {
             System.out.println("Usage: java -jar booter.jar <appurl> <appname>");
+            Thread.sleep(5000);
             System.exit(1);
         }
         URL appBaseURL = new URL(args[0]);

@@ -48,12 +48,12 @@ object RootBrowserBundle extends BrowserBundle {
 }
 
 class StarlingBrowserFrameContainer(serverContext: ServerContext, lCache: LocalCache, pageBuilder:PageBuilder,
-                                    homePage: Page, userSettings: UserSettings, frameTitle: String, extraInfo:Option[String]) extends ContainerMethods {
+                                    homePage: Page, userSettings: UserSettings, frameTitle: String) extends ContainerMethods {
   private val frames = new ListBuffer[StarlingBrowserFrame]
 
   def createNewFrame(fromFrame: Option[StarlingBrowserFrame], startPage:Option[Either[Page,(ServerContext => Page, PartialFunction[Throwable,Unit])]]) {
     val startPage0 = startPage.getOrElse(Left(homePage))
-    val newFrame = new StarlingBrowserFrame(homePage, startPage0, pageBuilder, lCache, userSettings, this, extraInfo)
+    val newFrame = new StarlingBrowserFrame(homePage, startPage0, pageBuilder, lCache, userSettings, this, serverContext.extraInfo)
     frames += newFrame
     newFrame.title = frameTitle
     fromFrame match {
