@@ -20,8 +20,6 @@ import org.codehaus.jettison.json.JSONArray
 import com.trafigura.common.control.PipedControl._
 import starling.utils.cache.CacheFactory
 import starling.curves.NullAtomicEnvironment
-import java.io.FileWriter
-import java.io.BufferedWriter
 import starling.services.rabbit._
 import com.trafigura.tradecapture.internal.refinedmetal.Market
 import com.trafigura.tradecapture.internal.refinedmetal.Metal
@@ -38,6 +36,7 @@ import com.trafigura.events.DemultiplexerClient
 import com.trafigura.edm.shared.types.TitanId
 import com.trafigura.services.BouncyRMIServiceApi._
 import com.trafigura.services.BouncyRMIServiceApi
+import java.io.{PrintWriter, FileWriter, BufferedWriter}
 
 /**
  * Trade cache provide trade map lookup by trade id and also a quota id to trade map lookup
@@ -894,29 +893,29 @@ object ValuationService extends App {
 object ValuationServiceCompTest extends App {
 
   println("Running main for valuation service tests")
-  val sw = Stopwatch()
+  val gSw = new Stopwatch()
 
   val server = StarlingInit.testInstance
   lazy val vs = server.valuationService
 
-  println("Took %s to start the test server".format(sw))
+  println("Took %s to start the test server".format(gSw))
 
   BouncyRMIServiceApi().using { valuationServiceRMI : ValuationServiceApi =>
-    val runCount = 5
+    val runCount = 10
 
-    def run[T](desc : String, f : () => T) = {
+    def run[T](desc : String, f : () => T) : List[(Int, Long, T)] = {
       (1 to runCount).map {n =>
-        val sw = Stopwatch()
+        val sw = new Stopwatch()
         val valuations = f()
-        println("direct call for %s, run %d took %s".format(desc, n, sw))
-        (n, sw.toString, valuations)
-      }
+        println("Call for %s, run %d took %s".format(desc, n, sw.toString()))
+        (n, sw.ms(), valuations)
+      }.toList
     }
 
     def showResults[T <: Either[_, _]](ls : List[T], desc : String) = {
       val (worked, errors) = ls.partition(_.isRight)
 
-      println("\nCalled valueAll for %s, %d worked, %d failed, took %s".format(desc, worked.size, errors.size, sw))
+      println("\nCalled valueAll for %s, %d worked, %d failed, took %s".format(desc, worked.size, errors.size, gSw))
 
       //println("\nSuccessful %s valuations:\n".format(desc))
       //worked.foreach(println)
@@ -925,11 +924,11 @@ object ValuationServiceCompTest extends App {
       //errors.foreach(println)
     }
 
-    val directQuotaResults = run("Quota", () => vs.valueAllQuotas())
-    val rmiQuotaResults = run("Quota", () => valuationServiceRMI.valueAllQuotas())
+    val directQuotaResults = run("Quota (direct)", () => vs.valueAllQuotas())
+    val rmiQuotaResults = run("Quota (rmi)", () => valuationServiceRMI.valueAllQuotas())
 
-    val directInventoryResults = run("Inventory", () => vs.valueAllAssignments())
-    val rmiInventoryResults = run("Inventory", () => valuationServiceRMI.valueAllAssignments())
+    val directInventoryResults = run("Inventory (direct)", () => vs.valueAllAssignments())
+    val rmiInventoryResults = run("Inventory (rmi)", () => valuationServiceRMI.valueAllAssignments())
 
 //    val quotaValuations = valuationServiceRMI.valueAllQuotas()
 //    showResults(quotaValuations.tradeResults.values.toList, "Quotas")
@@ -937,17 +936,23 @@ object ValuationServiceCompTest extends App {
 //    val inventoryValuations = vs.valueAllAssignments()
 //    showResults(inventoryValuations.assignmentValuationResults.values.toList, "Inventory")
 
-    println("\nDirect quota results")
-    directQuotaResults.map(r => (r._1, r._2, r._3.tradeResults.values.size, r._3.tradeResults.values.partition(_.isRight)._1.size)).foreach(println)
+    import java.io._
+    val output = new File("output.csv")
+    val w = new PrintWriter(output)
+    w.println("\nDirect quota results (average time = %dms)".format(average(rmiInventoryResults.map(_._2).toList)))
+    w.println(directQuotaResults.map(r => List(r._1, r._2, r._3.tradeResults.values.size, r._3.tradeResults.values.partition(_.isRight)._1.size).mkString(", ")).mkString("\n"))
 
-    println("\nRMI quota results")
-    rmiQuotaResults.map(r => (r._1, r._2, r._3.tradeResults.values.size, r._3.tradeResults.values.partition(_.isRight)._1.size)).foreach(println)
+    w.println("\nRMI quota results (average time = %dms)".format(average(rmiInventoryResults.map(_._2)toList)))
+    w.println(rmiQuotaResults.map(r => List(r._1, r._2, r._3.tradeResults.values.size, r._3.tradeResults.values.partition(_.isRight)._1.size).mkString(", ")).mkString("\n"))
 
-    println("\nDirect inventory results")
-    directInventoryResults.map(r => (r._1, r._2, r._3.assignmentValuationResults.values.size, r._3.assignmentValuationResults.values.partition(_.isRight)._1.size)).foreach(println)
+    w.println("\nDirect inventory results (average time = %dms)".format(average(rmiInventoryResults.map(_._2).toList)))
+    w.println(directInventoryResults.map(r => List(r._1, r._2, r._3.assignmentValuationResults.values.size, r._3.assignmentValuationResults.values.partition(_.isRight)._1.size).mkString(", ")).mkString("\n"))
 
-    println("\nRMI inventory results")
-    rmiInventoryResults.map(r => (r._1, r._2, r._3.assignmentValuationResults.values.size, r._3.assignmentValuationResults.values.partition(_.isRight)._1.size)).foreach(println)
+    w.println("\nRMI inventory results (average time = %dms)".format(average(rmiInventoryResults.map(_._2).toList)))
+    w.println(rmiInventoryResults.map(r => List(r._1, r._2, r._3.assignmentValuationResults.values.size, r._3.assignmentValuationResults.values.partition(_.isRight)._1.size).mkString(", ")).mkString("\n"))
+    w.flush
+    w.close
+    def average(ls : List[Long]) = ls.sum/ls.size
   }
 
   server.stop

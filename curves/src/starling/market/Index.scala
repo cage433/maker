@@ -79,8 +79,12 @@ trait Index {
 
 case class IndexSensitivity(coefficient : Double, index : Index)
 
-//TODO - find out why we need this
-trait IndexWithKnownPrice extends Index with KnownObservation {
+/**
+ * The cacnonical example is the Ave 4 LME index. It's not a single index as it depends on both
+ * cash and 3 month prices, but it does have a single price for each day, which can be displayed in the UI
+ * explanation of the valuation of physical forwards
+ */
+trait IndexWithDailyPrices extends Index with KnownObservation {
   def fixingOrForwardPrice(env : Environment, observationDay : Day) : Quantity
   def currency : UOM
   def businessCalendar : BusinessCalendar
@@ -89,7 +93,7 @@ trait IndexWithKnownPrice extends Index with KnownObservation {
 /**
  * An index on a single underlying
  */
-trait SingleIndex extends IndexWithKnownPrice with FixingHistoryLookup with InstrumentLevelKnownPrice {
+trait SingleIndex extends IndexWithDailyPrices with FixingHistoryLookup with InstrumentLevelKnownPrice {
   override val name: String
 
   def market: CommodityMarket
@@ -482,7 +486,7 @@ object FuturesFrontPeriodIndex {
 }
 
 
-trait LmeIndex extends IndexWithKnownPrice{
+trait LmeIndex extends IndexWithDailyPrices{
   def proxyIndex : SingleIndex
   def currency : UOM = proxyIndex.currency
   def businessCalendar : BusinessCalendar = proxyIndex.businessCalendar

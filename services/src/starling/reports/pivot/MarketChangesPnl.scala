@@ -406,7 +406,7 @@ class TradeChangesPnlPivotTableDataSource(tradeChangesFields:List[FieldDetailsGr
             }
       }.map {
         details => {
-          new AppendingMap(details.trade.fields.maps + ("sd" -> Map[Field,Any](
+          new AppendingMap(details.trade.fields.namedMaps + ("sd" -> Map[Field,Any](
             pnlComponentField -> details.label,
             pnlField -> details.pnl * details.scale,
             riskTypeField -> details.riskType,

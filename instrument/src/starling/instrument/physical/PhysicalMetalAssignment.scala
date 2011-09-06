@@ -6,10 +6,9 @@ import starling.daterange._
 import starling.instrument._
 import starling.quantity.{UOM, Quantity}
 import starling.utils.sql.PersistAsBlob
-import starling.market.{LmeSingleIndices, IndexWithKnownPrice}
 import collection.SortedMap
 import starling.quantity.NamedQuantity
-import starling.market.SingleIndex
+import starling.market._
 
 trait TitanPricingSpec {
   def price(env : Environment) : Quantity
@@ -41,10 +40,10 @@ trait TitanPricingSpec {
   def daysForPositionReport(marketDay : DayAndTime) : List[Day]
   def quotationPeriod : Option[DateRange]
   def premium : Quantity
-  def indexOption : Option[IndexWithKnownPrice]
+  def indexOption : Option[IndexWithDailyPrices]
 }
 
-case class AveragePricingSpec(index : IndexWithKnownPrice, period : DateRange, premium : Quantity) extends TitanPricingSpec{
+case class AveragePricingSpec(index : IndexWithDailyPrices, period : DateRange, premium : Quantity) extends TitanPricingSpec{
   val observationDays = index.observationDays(period)
   // Just a guess
   def settlementDay = period.lastDay.addBusinessDays(index.businessCalendar, 2)
@@ -149,7 +148,7 @@ case class FixedPricingSpec (settlementDay : Day, pricesByFraction : List[(Doubl
 
 case class UnknownPricingFixation(fraction : Double, price : Quantity)
 case class UnknownPricingSpecification(
-  index : IndexWithKnownPrice,
+  index : IndexWithDailyPrices,
   month : Month,
   fixations : List[UnknownPricingFixation],
   declarationDay : Day,
@@ -210,10 +209,8 @@ case class PhysicalMetalAssignment(
     deliveryDayLabel -> deliveryDay, 
     pricingSpecNameLabel -> pricingSpec.pricingType, 
     quantityLabel -> quantity,
-    quotationPeriodLabel -> pricingSpec.quotationPeriod,
-    premiumLabel -> pricingSpec.premium,
-    indexLabel -> pricingSpec.indexOption
-  )
+    premiumLabel -> pricingSpec.premium
+  ) ++  pricingSpec.indexOption.map(indexLabel -> _) ++ pricingSpec.quotationPeriod.map(quotationPeriodLabel -> _)
 
   def asUtpPortfolio(tradeDay:Day) = UTP_Portfolio(Map(copy(quantity = Quantity(1.0, quantity.uom)) -> quantity.value))
 

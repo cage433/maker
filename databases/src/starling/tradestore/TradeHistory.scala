@@ -3,35 +3,37 @@ package starling.tradestore
 import com.google.common.collect.MapMaker
 import collection.immutable.TreeMap
 import collection.{SortedMap, MapProxy}
-import starling.utils.AppendingMap
 import starling.pivot.{FieldDetails, Field}
-import starling.instrument.{Tradeable, UTP}
 import starling.daterange.{Day, Timestamp}
 import starling.trade.{TradeID, Trade}
 import collection.mutable.{HashMap, Map => MMap, Set => MSet}
 import starling.utils.cache.CacheFactory
+import starling.utils.{StarlingXStream, AppendingMap}
+import starling.instrument.{ErrorInstrument, Tradeable, UTP}
 
 class TradeHistory
 
-case class SingleTradeIDTradeVersions(
+case class SingleTradeIDTradeVersions( tradeID : TradeID, 
                                        earliest : Timestamp,
                                        latest : Timestamp,
                                        versions : TreeMap[Timestamp, TradeAndFields]
 )
 {
 
-  def this(ts : Timestamp, value : TradeAndFields) = {
-    this(ts, ts, TreeMap[Timestamp, TradeAndFields]() + (ts -> value))
+  def this(tradeID : TradeID, ts : Timestamp, value : TradeAndFields) = {
+    this(tradeID, ts, ts, TreeMap[Timestamp, TradeAndFields]() + (ts -> value))
   }
 
   def +(ts : Timestamp, value : TradeAndFields) : SingleTradeIDTradeVersions = {
     if (versions.contains(ts)){
-      assert(versions(ts) == value, "Two versions of the same thing with the same timestamp: " + (ts,value))
+      assert(versions(ts) == value, "Two versions of a trade (with the same trade id) with the same timestamp: new " + (ts,value) + ", original " + versions(ts))
       this
     } else {
-      new SingleTradeIDTradeVersions(earliest min ts, latest max ts, versions + (ts -> value))
+      new SingleTradeIDTradeVersions(tradeID, earliest min ts, latest max ts, versions + (ts -> value))
     }
   }
+
+
 
   def version(timestamp : Option[Timestamp]) : Option[TradeAndFields] = {
     versionWithTimestamp(timestamp.getOrElse(latest)) match {
@@ -59,15 +61,15 @@ class MultipleTradeIDTradeVersions extends MapProxy[TradeID, SingleTradeIDTradeV
     if (contains(tradeID)){
       self += (tradeID -> (self(tradeID) + (timestamp, value)))
     } else {
-      self += tradeID -> new SingleTradeIDTradeVersions(timestamp, value)
+      self += tradeID -> new SingleTradeIDTradeVersions(tradeID, timestamp, value)
     }
   }
 }
 
-case class TradeAndFields(id:Int, trade:Trade, fields:AppendingMap[Field, Any]=new AppendingMap(Map())) {
+case class TradeAndFields(id:Int, trade:Trade, fields:AppendingMap[Field, Any]=new AppendingMap(new TreeMap())) {
   def matches(tradeFilter:FieldDetailsTradeSelection) = tradeFilter(fields)
   def withNewInstrument(tradeable:Tradeable) = {
-    val maps = fields.maps.updated("Instrument", TradeableFields.createFieldValues(trade, tradeable))
+    val maps = fields.namedMaps.updated("Instrument", TradeableFields.createFieldValues(trade, tradeable))
     TradeAndFields(id, trade.copy(tradeable=tradeable), new AppendingMap(maps))
   }
 }

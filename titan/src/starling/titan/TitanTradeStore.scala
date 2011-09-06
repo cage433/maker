@@ -10,7 +10,6 @@ import starling.pivot.FieldDetails
 
 object TitanTradeStore {
   val quotaID_str = "Quota ID"
-  val tradeID_str = "Trade ID"
   val assignmentID_str = "Assignment ID"
   val titanTradeID_str = "Titan Trade ID"
   val inventoryID_str = "Inventory ID"
@@ -26,7 +25,7 @@ object TitanTradeStore {
   val schedule_str = "Schedule"
   val expectedSales_str = "Expected Sales"
 
-  val labels = List(quotaID_str, tradeID_str, assignmentID_str, titanTradeID_str, inventoryID_str, comment_str, submitted_str, shape_str, grade_str, deliveryLocation_str, destinationLocation_str, contractFinalised_str, tolerancePlus_str, toleranceMinus_str, schedule_str, expectedSales_str)
+  val labels = List(quotaID_str, assignmentID_str, titanTradeID_str, inventoryID_str, comment_str, submitted_str, shape_str, grade_str, deliveryLocation_str, destinationLocation_str, contractFinalised_str, tolerancePlus_str, toleranceMinus_str, schedule_str, expectedSales_str)
 }
 
 class TitanTradeStore(db: RichDB, broadcaster:Broadcaster, tradeSystem:TradeSystem)

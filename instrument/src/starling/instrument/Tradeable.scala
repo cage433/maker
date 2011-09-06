@@ -8,7 +8,7 @@ import starling.market.rules.SwapPricingRule
 import starling.curves.Environment
 import starling.quantity.{NamedQuantity, SpreadOrQuantity, Quantity}
 import starling.quantity.UOM
-import starling.market.IndexWithKnownPrice
+import starling.market.IndexWithDailyPrices
 
 trait Tradeable extends AsUtpPortfolio {
   def tradeableType : TradeableType[_]
@@ -100,8 +100,8 @@ object TradeableType {
     ("Cash Instrument Type", classOf[CashInstrumentType]),
     ("Commodity", classOf[String]),
     ("Pricing Spec Name", classOf[String]),
-    ("Index", classOf[IndexWithKnownPrice]),
-    ("QuotationPeriod", classOf[DateRange]),
+    ("Index", classOf[Option[IndexWithDailyPrices]]),
+    ("QuotationPeriod", classOf[Option[DateRange]]),
     ("Premium", classOf[Quantity])
 
   )
