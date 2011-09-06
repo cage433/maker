@@ -12,6 +12,8 @@ import swing.Swing._
 import starling.browser.common.GuiUtils
 import starling.browser._
 import swing.event.Event
+import java.io.{File, FileInputStream}
+import java.util.{Hashtable, Properties}
 
 case class BundleAdded(bundle:BrowserBundle) extends Event
 case class BundleRemoved(bundle:BrowserBundle) extends Event
@@ -106,8 +108,9 @@ class BrowserBromptonActivator extends BromptonActivator {
       } }
     }
 
-    onEDT({
-      val title = browserService.name + " - Starling"
+    javax.swing.SwingUtilities.invokeAndWait(new Runnable {
+      def run() {
+        val title = browserService.name + " - Starling"
 
       cacheMap(LocalCache.Version) = serverContext.browserService.version
       cacheMap(LocalCache.CurrentUserName) = userDetails
@@ -115,19 +118,19 @@ class BrowserBromptonActivator extends BromptonActivator {
       cacheMap(NotificationKeys.AllNotifications) = List()
       cacheMap(NotificationKeys.UserNotifications) = List()
 
-      val cache = LocalCache(cacheMap)
+        val cache = LocalCache(cacheMap)
 
-      val pageBuilder = new PageBuilder(pageContextPublisher, serverContext, bundlesByName)
+        val pageBuilder = new PageBuilder(pageContextPublisher, serverContext, bundlesByName)
 
-      fc = new StarlingBrowserFrameContainer(serverContext, cache, pageBuilder, StarlingHomePage, settings, title)
+        fc = new StarlingBrowserFrameContainer(serverContext, cache, pageBuilder, StarlingHomePage, settings, title)
 
-      // Must be called on the EDT
-      def sendNotification(notification:Notification) {
-        import NotificationKeys._
-        cacheMap(AllNotifications) = notification :: cacheMap(AllNotifications)
-        cacheMap(UserNotifications) = notification :: cacheMap(UserNotifications)
-        fc.updateNotifications
-      }
+        // Must be called on the EDT
+        def sendNotification(notification:Notification) {
+          import NotificationKeys._
+          cacheMap(AllNotifications) = notification :: cacheMap(AllNotifications)
+          cacheMap(UserNotifications) = notification :: cacheMap(UserNotifications)
+          fc.updateNotifications
+        }
 
       localCachePublisher.reactions += {
         case batch:EventBatch => {
@@ -145,7 +148,7 @@ class BrowserBromptonActivator extends BromptonActivator {
             }
             case _ =>
           }
-          //pageContextPublisher.publish(batch)
+          case GotoPageEvent(p) => onEDT(fc.showNewPage(p))
         }
       }
     })

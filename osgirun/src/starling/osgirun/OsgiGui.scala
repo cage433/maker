@@ -1,11 +1,20 @@
 package starling.osgirun
 
 import java.io.File
+import java.net.URL
 
 object OsgiGui {
 
   def main(args:Array[String]) {
+    println(args.toList)
+    System.setProperty("org.osgi.service.http.port", "7777")
     OsgiInstance.startOrTrigger("osgi-gui-cache", GuiBundles)
+    if (args.length == 1) {
+      val s = args(0).replaceFirst("starling://", "").replaceFirst("gotoValuationScreen/", "gotoValuationScreen")
+      val url = new URL("http://localhost:7777/" + s)
+      val stream = url.openStream()
+      stream.close()
+    }
   }
 
 }
@@ -63,6 +72,9 @@ object GuiBundles extends BundleDefinitions {
       bundles
     )
 
-    manager.definitions
+    manager.definitions ::: List(
+      new ExistingBundleDefinition(new File("osgirun/bundles/pax-web-extender-whiteboard-1.1.1.jar")),
+      new ExistingBundleDefinition(new File("osgirun/bundles/pax-web-jetty-bundle-1.1.1.jar"))
+    )
   }
 }

@@ -14,7 +14,7 @@ trait ContainerMethods {
   def createNewFrame(fromFrame: Option[StarlingBrowserFrame], startPage:Option[Either[Page,(ServerContext => Page, PartialFunction[Throwable,Unit])]]=None)
   def closeFrame(frame: StarlingBrowserFrame)
   def closeAllFrames(fromFrame: StarlingBrowserFrame)
-  def updateNotifications
+  def updateNotifications()
 }
 
 object RootBrowserBundle extends BrowserBundle {
@@ -66,12 +66,12 @@ class StarlingBrowserFrameContainer(serverContext: ServerContext, lCache: LocalC
           if (GuiUtils.onScreen(frameBounds)) {
             newFrame.peer.setBounds(frameBounds)
           } else {
-            newFrame.pack
-            newFrame.centerOnScreen
+            newFrame.pack()
+            newFrame.centerOnScreen()
           }
         } else {
-          newFrame.pack
-          newFrame.centerOnScreen
+          newFrame.pack()
+          newFrame.centerOnScreen()
         }
       }
       case Some(fFrame) => {
@@ -93,7 +93,7 @@ class StarlingBrowserFrameContainer(serverContext: ServerContext, lCache: LocalC
     }
   }
 
-  def closeFrame(frame: StarlingBrowserFrame) = {
+  def closeFrame(frame: StarlingBrowserFrame) {
     if ((frames.size == 1) /* && (BrowserLauncher.numberOfClientsLaunched <= 1)*/) {
       // This is the last frame so ensure user userSettings are saved.
       closeAllFrames(frame)
@@ -102,18 +102,41 @@ class StarlingBrowserFrameContainer(serverContext: ServerContext, lCache: LocalC
       //BrowserLauncher.numberOfClientsLaunched -= 1
       frames -= frame
       frame.visible = false
-      frame.dispose
+      frame.dispose()
     }
   }
 
-  def closeAllFrames(fromFrame: StarlingBrowserFrame) = {
+  def closeAllFrames(fromFrame: StarlingBrowserFrame) {
     println("Shutting down")
     saveUserSettings(fromFrame)
     System.exit(0)
   }
 
-  def updateNotifications = {
-    frames.foreach(_.updateNotifications)
+  def updateNotifications() {
+    frames.foreach(_.updateNotifications())
+  }
+
+  def showNewPage(page:Page) {
+    // Check to see if the page already exists, if it does, go to it otherwise create a new page.
+    frames.find(f => f.containsPage(page)) match {
+      case Some(cf) => {
+        println("")
+        println("FOUND PAGE - Trying TO show it")
+        println("")
+        cf.showPage(page)
+        cf.peer.toFront()
+        cf.repaint()
+      }
+      case None => {
+        println("")
+        println("CREATING NEW TAB")
+        println("")
+        // Can't find so create a new tab on the last frame
+        frames.last.showNewPage(page)
+        frames.last.peer.toFront()
+        frames.last.repaint()
+      }
+    }
   }
 
   createNewFrame(None)

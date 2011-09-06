@@ -656,7 +656,15 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
     foreground = Color.RED
   }
 
-  val currentPage = new CurrentPage {
+  def currentPage:Option[Page] = {
+    if (current >= 0 && current < history.length) {
+      Some(history(current).page)
+    } else {
+      None
+    }
+  }
+
+  private val currentPage0 = new CurrentPage {
     def page = history(current).page
     def bookmarkLabel(name: String) = {
       val currentPageInfo = history(current)
@@ -666,8 +674,8 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
     def bookmark = history(current).bookmark
   }
 
-  private val bookmarkButton = new BookmarkButton(currentPage, pageContext, pageBuilder)
-  private val bookmarkDropDownButton = new BookmarkDropDownButton(currentPage, pageContext)
+  private val bookmarkButton = new BookmarkButton(currentPage0, pageContext, pageBuilder)
+  private val bookmarkDropDownButton = new BookmarkDropDownButton(currentPage0, pageContext)
 
   refreshButtonStatus
 

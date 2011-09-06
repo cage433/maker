@@ -45,7 +45,8 @@ object Dependencies{
     "net.debasishg" % "sjson_2.8.0" % "0.8" intransitive() withSources()
   ) 
   val guiDependencies = Seq(
-    "jfree" % "jfreechart" % "1.0.0"
+    "jfree" % "jfreechart" % "1.0.0",
+    "javax.servlet" % "servlet-api" % "2.5"
   ) 
 
   val browserDependencies = Seq(
@@ -98,6 +99,11 @@ object Dependencies{
     "com.trafigura.services" % "titan-core" % "LATEST",
     "com.trafigura.services" % "titan-security" % "LATEST",
     "com.trafigura.services" % "titan-utils" % "LATEST"
+  )
+
+  val singleClasspathManagerDependencies = Seq(
+    "javax.servlet" % "servlet-api" % "2.5",
+    "org.mortbay.jetty" % "jetty" % "6.1.26"
   )
 }
 
@@ -386,7 +392,7 @@ object StarlingBuild extends Build{
   lazy val singleClasspathManager = Project(
     "singleclasspathmanager",
     file("./singleclasspathmanager"),
-    settings = standardSettings ++ Seq()
+    settings = standardSettings ++ Seq(libraryDependencies ++= singleClasspathManagerDependencies)
   ) dependsOn(manager)
 
   lazy val osgiManager = Project(
