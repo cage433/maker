@@ -15,7 +15,8 @@ import starling.calendar.BusinessCalendarSet
 import collection.mutable.ArrayBuffer
 import starling.trade.Trade
 import org.springframework.dao.DeadlockLoserDataAccessException
-import starling.utils.{RepeatingTask, Log}
+import starling.databases.utils.RepeatingTask
+import starling.utils.{Log}
 
 
 /**

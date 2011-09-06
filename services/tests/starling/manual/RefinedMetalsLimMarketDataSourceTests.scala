@@ -9,7 +9,7 @@ import starling.db.DBMarketDataStore
 import starling.db.MarketDataSet._
 import starling.marketdata.PriceFixingsHistoryDataKey
 import starling.market.{CommodityMarket, Market}
-import starling.utils.{RegressionRunner}
+import starling.services.utils.RegressionRunner
 
 object RefinedMetalsLimMarketDataSourceTests {
   def main(args:Array[String]) {

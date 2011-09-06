@@ -209,6 +209,7 @@
         </SOURCES>
       </library>
     </orderEntry>
+    <orderEntry type="library" name="scala-swing-lib" level="project" />
   </component>
 </module>
 

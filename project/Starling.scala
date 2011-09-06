@@ -10,6 +10,7 @@ object Dependencies{
   ) 
 
   val utilsDependencies = Seq(
+    "org.scala-lang" % "scala-swing" % "2.9.0-1" withSources(),
     "cglib" % "cglib-nodep" % "2.2" withSources(),
     "joda-time" % "joda-time" % "1.6" withSources(),
     "com.rabbitmq" % "amqp-client" % "1.7.2" withSources(),

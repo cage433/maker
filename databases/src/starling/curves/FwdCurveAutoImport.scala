@@ -6,7 +6,8 @@ import starling.dbx.Query
 import starling.dbx.QueryBuilder._
 import starling.db._
 import starling.gui.api.MarketDataSelection
-import starling.utils.{Log, RepeatingTask}
+import starling.databases.utils.RepeatingTask
+import starling.utils.{Log}
 import starling.calendar.BusinessCalendar
 
 class FwdCurveAutoImport(runEvery: Int, marketDataStore: MarketDataStore, marketDataSources: Set[MarketDataSet], businessCalendar: BusinessCalendar)

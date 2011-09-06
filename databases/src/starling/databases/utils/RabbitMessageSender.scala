@@ -1,9 +1,9 @@
-package starling.utils
+package starling.databases.utils
 
 import com.rabbitmq.client._
 import scala.collection.JavaConversions
 import starling.gui.api.RabbitMessage
-import ClosureUtil._
+import starling.utils.ClosureUtil._
 
 class RabbitMessageSender(host: String) {
   def send(queueName: String, message: RabbitMessage) =

@@ -1,8 +1,8 @@
-package starling.utils
+package starling.databases.utils
 
 import com.rabbitmq.client._
 
-import ClosureUtil._
+import starling.utils.ClosureUtil
 import java.io.IOException
 
 object ConnectionPool {

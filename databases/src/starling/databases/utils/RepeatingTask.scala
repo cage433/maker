@@ -1,6 +1,7 @@
-package starling.utils
+package starling.databases.utils
 
 import java.util.{Timer, TimerTask}
+import starling.utils.Stopable
 
 /**
  * @param runEvery number of seconds to run after, repeats

@@ -1,4 +1,4 @@
-package starling.utils
+package starling.databases.utils
 
 import starling.dbx.ConnectionParams
 import starling.db.DB
