@@ -12,6 +12,7 @@ import collection.SortedMap
 import starling.quantity.{Quantity, Percentage}
 import collection.immutable.{TreeMap, Map}
 import starling.marketdata.{MarketDataType, MarketDataKey}
+import starling.instrument.utils.StarlingXStream
 
 case class FirstKey(time: ObservationTimeOfDay, marketDataSet: MarketDataSet, marketDataType: MarketDataType, key: MarketDataKey)
 

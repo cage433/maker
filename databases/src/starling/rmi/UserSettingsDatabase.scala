@@ -5,7 +5,8 @@ import starling.db.DB
 import starling.utils.sql.QueryBuilder._
 import starling.auth.User
 import starling.gui.api._
-import starling.utils.{StarlingXStream, Broadcaster}
+import starling.instrument.utils.StarlingXStream
+import starling.utils.{Broadcaster}
 import starling.pivot._
 import starling.daterange.{Day, Timestamp}
 import starling.calendar.BusinessCalendar

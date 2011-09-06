@@ -84,8 +84,11 @@ class Module(root:File) {
   }
 }
 
-case class Bundle(name:String, workspace:File, exportAll:Boolean, internalJars:List[String], includes:List[String], excludes:List[String], dirs:List[String]) {
-  def modules = dirs.map(d => new Module(new File(workspace, d)))
+case class Bundle(name:String, workspace:File, bundleConfig:BundleConfig) {
+  def internalJars = bundleConfig.internalJars
+  def includes = bundleConfig.includes
+  def excludes = bundleConfig.excludes
+  def modules = bundleConfig.dirs.map(d => new Module(new File(workspace, d)))
   def bromptonActivator = classEndingWith("BromptonActivator.class")
   def osgiActivator = classEndingWith("OSGIActivator.class")
   def classEndingWith(suffix:String) = {
@@ -105,14 +108,15 @@ case class Bundle(name:String, workspace:File, exportAll:Boolean, internalJars:L
   def jars = modules.flatMap(_.jars)
 }
 
+case class BundleConfig(exportAll:Boolean=false, internalJars:List[String]=Nil, includes:List[String]=Nil, excludes:List[String]=Nil, dirs:List[String])
 class Manager(
                workspace:File,
                sharedJars:List[File],
                copyJars:Set[String],
                mergeJars:Map[(String,String),List[String]],
                ignoreJars:Set[String],
-               bundles:Map[String,(Boolean, List[String], (List[String], List[String]), List[String])]) {
-  val bundles_ = bundles.map { case (name, (exportAll, internalJars, (includes, excludes), dirs)) => new Bundle(name, workspace, exportAll, internalJars, includes, excludes, dirs) }
+               bundles:Map[String,BundleConfig]) {
+  val bundles_ = bundles.map { case (name, bundleConfig) => new Bundle(name, workspace, bundleConfig) }
 
   def versionName(filename:String) = {
     filename match {
@@ -201,7 +205,7 @@ class Manager(
 
     val mergeJarValues = mergeJars.flatMap(_._2).toSet
 
-    val internalJars = bundles_.flatMap(_.internalJars).toList
+    val internalJars = bundles_.flatMap(_.bundleConfig.internalJars).toList
 
     val skips = ignoreJars ++ copyJars ++ mergeJarValues ++ internalJars
 

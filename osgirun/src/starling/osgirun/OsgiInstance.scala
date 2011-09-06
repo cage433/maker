@@ -34,18 +34,16 @@ class OsgiInstance(name:String, bundles:BundleDefinitions) {
 
     // uninstall, update, install, refresh & start.
     val uninstalled = (currentBundles.keySet -- newBundles.keySet).toList.map { bundleToRemove => currentBundles(bundleToRemove).uninstall(); currentBundles(bundleToRemove) }
-    val x = (newBundles.keySet & currentBundles.keySet).toList.map { commonBundle => {
+    val updated = (newBundles.keySet & currentBundles.keySet).toList.flatMap { commonBundle => {
       val newBundleDef = newBundles(commonBundle)
       val currentBundle = currentBundles(commonBundle)
-      if (newBundleDef.lastModified > currentBundle.getLastModified) {
+      //if (newBundleDef.lastModified > currentBundle.getLastModified || newBundleDef.name == "utils") {
         currentBundle.update(newBundleDef.inputStream)
-        Left( currentBundle )
-      } else {
-        Right( currentBundle )
-      }
+        Some( currentBundle )
+      //} else {
+      //  Right( currentBundle )
+      //}
     }}
-    val updated = x.collect { case Left(b) => b}
-    val unchanged = x.collect { case Right(b) => b}
     val installed = (newBundles.keySet -- currentBundles.keySet).toList.map { newBundleName => {
       val newBundleDef = newBundles(newBundleName)
       context.installBundle("from-bnd:" + newBundleDef.name, newBundleDef.inputStream)

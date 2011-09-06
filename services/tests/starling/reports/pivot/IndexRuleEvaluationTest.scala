@@ -15,7 +15,7 @@ import starling.daterange._
 import starling.daterange.Day._
 import starling.quantity.RichQuantity._
 import starling.pivot.PivotQuantity
-import starling.utils.{AtomicDatumKeyUtils, StarlingTest}
+import starling.utils.{StarlingTest}
 import starling.instrument.CommoditySwap
 
 class IndexRuleEvaluationTest extends JonTestEnv {

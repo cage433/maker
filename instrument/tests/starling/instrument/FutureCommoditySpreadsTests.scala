@@ -3,6 +3,7 @@ package starling.instrument
 
 import starling.curves._
 import starling.utils._
+import starling.instrument.utils._
 import starling.daterange.{Day, Month}
 import starling.daterange.Day._
 import starling.quantity.UOM._

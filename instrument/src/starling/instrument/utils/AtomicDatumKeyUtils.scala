@@ -1,4 +1,4 @@
-package starling.utils
+package starling.instrument.utils
 
 import starling.quantity.UOM
 import starling.instrument.Instrument

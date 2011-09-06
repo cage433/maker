@@ -14,7 +14,8 @@ import starling.market.formula._
 import starling.calendar.BrentMonth
 import starling.daterange._
 import starling.daterange.Day._
-import starling.utils.{AtomicDatumKeyUtils, StarlingTest}
+import starling.instrument.utils._
+import starling.utils.{StarlingTest}
 
 class CFDTests extends TestMarketTest {
   val platts_brent = Index.publishedIndexFromName("Platts Brent (April)")

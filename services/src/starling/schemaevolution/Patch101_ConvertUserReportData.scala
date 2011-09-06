@@ -4,7 +4,7 @@ import system.Patch
 import starling.db.DBWriter
 import starling.richdb.RichDB
 import starling.services.StarlingInit
-import starling.utils.StarlingXStream
+import starling.instrument.utils.StarlingXStream
 import xstream.{Fields, Reader, MapBasedConverter}
 import collection.SortedMap
 import scala.Some

@@ -3,7 +3,7 @@ package starling.schemaevolution
 import system.Patch
 import starling.db.DBWriter
 import starling.richdb.RichDB
-import starling.utils.StarlingXStream
+import starling.instrument.utils.StarlingXStream
 import starling.utils.sql.PersistAsBlob
 import starling.curves.{SpreadStdDevSurfaceDataType}
 import xstream.{Fields, Reader, MapBasedConverter}

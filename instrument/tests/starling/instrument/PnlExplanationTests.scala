@@ -14,7 +14,8 @@ import starling.market.{JonTestEnv, TestMarketTest, FuturesMarket, Market}
 import starling.models.{American, European, Put, Call}
 import starling.daterange.Period._
 import starling.daterange._
-import starling.utils.{AtomicDatumKeyUtils, Log, StarlingTest}
+import starling.instrument.utils._
+import starling.utils.{Log, StarlingTest}
 
 class PnlExplanationTests extends JonTestEnv  with StarlingTest{
   @Test

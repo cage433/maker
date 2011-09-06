@@ -47,11 +47,11 @@ object GuiBundles extends BundleDefinitions {
     val excludes = List("cern.*", "com.rabbitmq.*", "net.spy.memcached.*", "org.apache.commons.codec.digest", "org.testng", "sjson.json.*")
 
     val bundles = Map(
-        "browser" -> (true, Nil, (Nil,Nil), List("browser")),
-        "browser.service" -> (true, Nil, (Nil,Nil), List("browser.service")),
-        "osgimanager" -> (false, Nil, (Nil,Nil), List("osgimanager")),
-        "manager" -> (true, Nil, (Nil,Nil), List("manager")),
-        "gui" -> (false, Nil, (includes, excludes),
+        "browser" -> BundleConfig(exportAll = true, dirs = List("browser")),
+        "browser.service" -> BundleConfig(exportAll = true, dirs = List("browser.service")),
+        "osgimanager" -> BundleConfig(dirs=List("osgimanager")),
+        "manager" -> BundleConfig(exportAll=true, dirs = List("manager")),
+        "gui" -> BundleConfig(false, Nil, includes, excludes,
           List("daterange", "quantity", "utils", "auth", "bouncyrmi", "gui", "gui.api", "pivot", "pivot.utils", "fc2.api")))
 
     val manager = new Manager(

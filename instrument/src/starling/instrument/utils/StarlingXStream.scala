@@ -1,4 +1,4 @@
-package starling.utils
+package starling.instrument.utils
 
 import collection.immutable.TreeMap
 import collection.SortedMap
@@ -13,9 +13,9 @@ import java.lang.Class
 import annotation.tailrec
 import starling.pivot.MarketValue
 import starling.xstream.{XstreamUOMConverter, XstreamDayConverter}
-import xstream.ScalaXStream
+import starling.utils.xstream.ScalaXStream
 import com.thoughtworks.xstream.io.xml.{DomDriver, XppDriver, CompactWriter}
-
+import starling.utils._
 //import starling.db.FwdCurveAppPricingGroup
 
 /**

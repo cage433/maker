@@ -11,6 +11,7 @@ import starling.utils.cache.CacheFactory
 import starling.daterange._
 import starling.calendar.Clock
 
+import starling.instrument.utils.StarlingXStream
 import starling.utils.Pattern._
 import java.lang.String
 import java.util.concurrent.atomic.AtomicInteger

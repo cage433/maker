@@ -1,6 +1,6 @@
 package starling.db
 
-import starling.utils.StarlingXStream
+import starling.instrument.utils.StarlingXStream
 import starling.daterange._
 
 import scala.collection.JavaConversions._

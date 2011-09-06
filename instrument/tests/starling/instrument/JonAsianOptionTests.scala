@@ -11,7 +11,7 @@ import starling.quantity.utils.QuantityTestUtils._
 import starling.market.{Market, Index, JonTestEnv}
 import starling.models.{DefaultRiskParameters, Call, Put}
 import starling.varcalculator.RiskFactorUtils._
-import starling.utils.AtomicDatumKeyUtils._
+import starling.instrument.utils.AtomicDatumKeyUtils._
 import starling.utils.StarlingTest
 
 /**

@@ -4,6 +4,8 @@ import org.testng.annotations.Test
 import starling.marketdata.{ForwardRateDataEntry, ForwardRateData}
 import org.testng.Assert._
 
+import starling.instrument.utils.StarlingXStream
+
 class ScalaXStreamTest extends StarlingTest {
   @Test
   def testList {

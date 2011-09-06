@@ -48,7 +48,7 @@ import starling.titan.{TitanTradeCache, TitanSystemOfRecord, TitanTradeStore}
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 import com.trafigura.services.{DocumentationService, WebServiceFactory, ResteasyServiceApi}
-
+import starling.instrument.utils.StarlingXStream
 
 class StarlingInit( val props: Props,
                     dbMigration: Boolean = true,

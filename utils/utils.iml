@@ -132,7 +132,7 @@
         </SOURCES>
       </library>
     </orderEntry>
-    <orderEntry type="module-library" exported="">
+    <orderEntry type="module-library" exported="" scope="TEST">
       <library>
         <CLASSES>
           <root url="jar://$MODULE_DIR$/../.ivy/cache/org.testng/testng/jars/testng-5.8-jdk15.jar!/" />

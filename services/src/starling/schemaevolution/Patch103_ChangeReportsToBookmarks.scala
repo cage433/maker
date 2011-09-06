@@ -3,7 +3,7 @@ package starling.schemaevolution
 import starling.services.StarlingInit
 import starling.richdb.RichDB
 import starling.db.DBWriter
-import starling.utils.StarlingXStream
+import starling.instrument.utils.StarlingXStream
 import starling.gui.api.UserReport._
 import starling.gui.api.{UserReport, UserReportData}
 import starling.pivot.PivotFieldParams._

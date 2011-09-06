@@ -15,7 +15,7 @@ import starling.daterange.Day._
 import starling.reports.pivot.PivotReport._
 import starling.market._
 import starling.models.{American, European, Call}
-import starling.utils.{AtomicDatumKeyUtils, StarlingTest}
+import starling.utils.{ StarlingTest}
 
 class PnlExplanationReportTests extends JonTestEnv {
   def noChoices = ReportSpecificChoices()

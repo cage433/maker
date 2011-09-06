@@ -2,7 +2,7 @@ package starling.schemaevolution.xstream
 
 import com.thoughtworks.xstream.converters.Converter
 import starling.richdb.{RichDB}
-import starling.utils.StarlingXStream
+import starling.instrument.utils.StarlingXStream
 import com.thoughtworks.xstream.XStream
 import starling.utils.sql.Clause
 import starling.utils.sql.QueryBuilder._

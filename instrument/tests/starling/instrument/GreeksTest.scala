@@ -12,7 +12,7 @@ import starling.daterange.{Month, Day}
 import starling.market.{JonTestEnv, TestMarketTest, FuturesMarket, Market}
 import starling.models.{Put, Call}
 import starling.models._
-import starling.utils.AtomicDatumKeyUtils._
+import starling.instrument.utils.AtomicDatumKeyUtils._
 
 class GreeksTest extends JonTestEnv {
 

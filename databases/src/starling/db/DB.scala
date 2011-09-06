@@ -22,7 +22,8 @@ import org.springframework.jdbc.core.simple.{SimpleJdbcTemplate, SimpleJdbcCall,
 import org.springframework.jdbc.`object`.BatchSqlUpdate
 import starling.quantity.{SpreadQuantity, Percentage, Quantity}
 import starling.eai.TreeID
-import starling.utils.{CaseInsensitive, CollectionUtils, Log, StarlingXStream}
+import starling.utils.{CaseInsensitive, CollectionUtils, Log}
+import starling.instrument.utils.StarlingXStream
 
 trait DBTrait[RSR <: ResultSetRow] {
   val dataSource: DataSource

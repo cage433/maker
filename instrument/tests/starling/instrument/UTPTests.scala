@@ -21,7 +21,8 @@ import cern.colt.matrix.impl.DenseDoubleMatrix2D
 import starling.quantity.{UOM, Percentage, Quantity}
 import starling.curves.ForwardPriceKey
 import starling.calendar.BrentMonth
-import starling.utils.{StarlingXStream, StarlingTest, Reflection}
+import starling.instrument.utils.StarlingXStream
+import starling.utils.{StarlingTest, Reflection}
 import starling.utils.sql.PersistAsBlob
 
 class UTPTests extends IndexTest {

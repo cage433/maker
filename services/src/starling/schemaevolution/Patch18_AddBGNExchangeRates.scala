@@ -10,7 +10,7 @@ import org.testng.annotations.Test
 import starling.marketdata.SpotFXData
 import starling.quantity.Quantity
 import starling.quantity.UOM._
-import starling.utils.StarlingXStream
+import starling.instrument.utils.StarlingXStream
 import collection.immutable.Map
 import starling.services.StarlingInit
 

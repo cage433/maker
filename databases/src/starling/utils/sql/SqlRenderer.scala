@@ -1,7 +1,8 @@
 package starling.utils.sql
 
 import org.springframework.jdbc.core.namedparam.{MapSqlParameterSource, NamedParameterUtils}
-import starling.utils.{StarlingXStream, Log}
+import starling.utils.{Log}
+import starling.instrument.utils.StarlingXStream
 
 case class SQL(val query:String, parameters:Map[String,Any])
 
