@@ -25,12 +25,6 @@ object InstallationHelper {
         <maxHeapSize>500</maxHeapSize>
         <opt>-Dsun.java2d.d3d=false</opt>
       </jre>
-      <splash>
-        <file>{splashPath}</file>
-        <waitForWindow>true</waitForWindow>
-        <timeout>60</timeout>
-        <timeoutErr>true</timeoutErr>
-      </splash>
       <versionInfo>
         <fileVersion>0.0.0.1</fileVersion>
         <txtFileVersion>Some more</txtFileVersion>
