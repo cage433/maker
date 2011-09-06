@@ -112,11 +112,11 @@ class BrowserBromptonActivator extends BromptonActivator {
       def run() {
         val title = browserService.name + " - Starling"
 
-      cacheMap(LocalCache.Version) = serverContext.browserService.version
-      cacheMap(LocalCache.CurrentUserName) = userDetails
-      cacheMap(LocalCache.Bookmarks) = toBookmarks(bookmarks)
-      cacheMap(NotificationKeys.AllNotifications) = List()
-      cacheMap(NotificationKeys.UserNotifications) = List()
+        cacheMap(LocalCache.Version) = serverContext.browserService.version
+        cacheMap(LocalCache.CurrentUserName) = userDetails
+        cacheMap(LocalCache.Bookmarks) = toBookmarks(bookmarks)
+        cacheMap(NotificationKeys.AllNotifications) = List()
+        cacheMap(NotificationKeys.UserNotifications) = List()
 
         val cache = LocalCache(cacheMap)
 
@@ -132,21 +132,22 @@ class BrowserBromptonActivator extends BromptonActivator {
           fc.updateNotifications
         }
 
-      localCachePublisher.reactions += {
-        case batch:EventBatch => {
-          bundlesByName.foreach { case (name,bundle) =>
-            bundle.notificationHandlers.foreach { handler => {
-              batch.events.foreach { e =>
-                handler.handle(e, cache, sendNotification)
-              }
-            } }
-          }
-          batch.events.foreach {
-            case e: BookmarksUpdate if e.user == userDetails.username => {
-              bookmarks = e.bookmarks
-              cacheMap(LocalCache.Bookmarks) = toBookmarks(bookmarks)
+        localCachePublisher.reactions += {
+          case batch:EventBatch => {
+            bundlesByName.foreach { case (name,bundle) =>
+              bundle.notificationHandlers.foreach { handler => {
+                batch.events.foreach { e =>
+                  handler.handle(e, cache, sendNotification)
+                }
+              } }
             }
-            case _ =>
+            batch.events.foreach {
+              case e: BookmarksUpdate if e.user == userDetails.username => {
+                bookmarks = e.bookmarks
+                cacheMap(LocalCache.Bookmarks) = toBookmarks(bookmarks)
+              }
+              case _ =>
+            }
           }
           case GotoPageEvent(p) => onEDT(fc.showNewPage(p))
         }
