@@ -17,8 +17,6 @@ import starling.quantity._
 
 trait Market extends Ordered[Market]{
   val name: String
-  val uomName: String
-
   def compare(that: Market) = this.name.compareTo(that.name)
 }
 
@@ -43,8 +41,6 @@ abstract class CommodityMarket(
 )
   extends Market with HasImpliedVol with KnownObservation with FixingHistoryLookup
 {
-  val uomName = uom.toString
-
   override def equals(p1: Any) = p1 match {
     case et: CommodityMarket => eaiQuoteID == et.eaiQuoteID && name.equalsIgnoreCase(et.name)
     case _ => super.equals(p1)

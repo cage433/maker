@@ -28,7 +28,7 @@ trait InstrumentLevelEnvironment extends AtomicEnvironmentHelper {
   def marketDay() : DayAndTime
   def discount(ccy : UOM, day : Day, ignoreShiftsIfPermitted : Boolean = false) : Quantity
   def fixing(underlying: SingleIndex, fixingDay : Day) : Quantity
-  def historicPrice(underlying: CommodityMarket, observationDay : Day, period: DateRange) : Quantity
+  def priceOnLastTradingDay(underlying: FuturesMarket, period: DateRange) : Quantity
   def indexForwardPrice(underlying: SingleIndex, observationDay : Day, ignoreShiftsIfPermitted : Boolean = false) : Quantity
   def forwardPrice(underlying: CommodityMarket, period: DateRange, ignoreShiftsIfPermitted : Boolean = false) : Quantity
 
@@ -59,7 +59,7 @@ class DefaultInstrumentLevelEnvironment(underlyingAtomicEnv : AtomicEnvironment)
   def fixing(underlying: SingleIndex, fixingDay : Day) : Quantity = {
     underlying.fixing(this, fixingDay)
   }
-  def historicPrice(underlying: CommodityMarket, observationDay: Day, period: DateRange) = underlying.historicPrice(this, observationDay, period)
+  def priceOnLastTradingDay(market: FuturesMarket, period: DateRange) = market.historicPrice(this, market.lastTradingDay(period), period)
 
   def indexForwardPrice(underlying: SingleIndex, observationDay : Day, ignoreShiftsIfPermitted : Boolean = false) : Quantity = {
     underlying.forwardPriceOnObservationDay(this, observationDay, ignoreShiftsIfPermitted)
@@ -367,8 +367,8 @@ object ParallelShiftInstrumentLevelVol{
 object ShiftMarketDayAtInstrumentLevel{
   def apply(originalEnv : InstrumentLevelEnvironment, newMarketDay : DayAndTime) : InstrumentLevelEnvironment = {
 
-    val overridenMethodNames = List("atomicEnv", "marketDay", "discount", "fixing", "copy", "historicPrice")
-    val List(atomicEnv, marketDay, discount, fixing, copy, historicPrice) = overridenMethodNames
+    val overridenMethodNames = List("atomicEnv", "marketDay", "discount", "fixing", "copy", "priceOnLastTradingDay")
+    val List(atomicEnv, marketDay, discount, fixing, copy, priceOnLastTradingDay) = overridenMethodNames
     assert(newMarketDay >= originalEnv.marketDay, "Can't shift time back")
     val forwardAtomicEnv = ForwardStateEnvironment(originalEnv.atomicEnv, newMarketDay)
 
@@ -396,10 +396,10 @@ object ShiftMarketDayAtInstrumentLevel{
                   forwardAtomicEnv.quantity(IndexFixingKey(index, fixingDay))
               }
             }
-            case `historicPrice` => {
+            case `priceOnLastTradingDay` => {
               args match {
-                case Array(market : CommodityMarket, observationDay : Day, period: DateRange) =>
-                  forwardAtomicEnv.quantity(MarketFixingKey(market, observationDay, period))
+                case Array(market : FuturesMarket, period: DateRange) =>
+                  forwardAtomicEnv.quantity(MarketFixingKey(market, market.lastTradingDay(period), period))
               }
             }
             case `copy` => ShiftMarketDayAtInstrumentLevel(originalEnv.copy(args(0).asInstanceOf[AtomicEnvironment]), newMarketDay)

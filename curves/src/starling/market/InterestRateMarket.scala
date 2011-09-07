@@ -14,7 +14,6 @@ case class InterestRateMarket(ccy : UOM)
 {
   def priceUOM = UOM.SCALAR
   val name = ccy.toString
-  val uomName = name
 
   def standardShift = Quantity(1e-4, UOM.SCALAR)
 

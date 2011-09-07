@@ -158,8 +158,9 @@ case class Environment(
     instrumentLevelEnv.fixing(index, fixingDay)
   }
 
-  def historicPrice(market: CommodityMarket, fixingDay: Day, period: DateRange) : Quantity = {
-    instrumentLevelEnv.historicPrice(market, fixingDay, period)
+
+  def priceOnLastTradingDay(market: FuturesMarket, period: DateRange) : Quantity = {
+    instrumentLevelEnv.priceOnLastTradingDay(market, period)
   }
 
   def indexForwardPrice(underlying: SingleIndex, observationDay : Day, ignoreShiftsIfPermitted : Boolean = false) : Quantity = {

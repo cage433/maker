@@ -27,7 +27,7 @@ case class Future(market: FuturesMarket, delivery: DateRange, strike: Quantity, 
 
   private def underlyingPrice(env : Environment) : Quantity = {
     val F_InMarketCurrency = if (lastTradingDay.endOfDay <= env.marketDay) {
-      env.historicPrice(market, lastTradingDay, delivery)
+      env.priceOnLastTradingDay(market, delivery)
     } else {
       env.forwardPrice(market, delivery)
     }
