@@ -8,7 +8,7 @@ import starling.daterange.{Day, Timestamp}
 import starling.trade.{TradeID, Trade}
 import collection.mutable.{HashMap, Map => MMap, Set => MSet}
 import starling.utils.cache.CacheFactory
-import starling.utils.{StarlingXStream, AppendingMap}
+import starling.utils.AppendingMap
 import starling.instrument.{ErrorInstrument, Tradeable, UTP}
 
 class TradeHistory
