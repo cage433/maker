@@ -273,10 +273,11 @@ object AxisNodeBuilder {
  */
 case class PivotTableConverter(otherLayoutInfo:OtherLayoutInfo = OtherLayoutInfo(), table:PivotTable,
                                extraFormatInfo:ExtraFormatInfo=PivotFormatter.DefaultExtraFormatInfo,
-                               fieldState:PivotFieldsState=PivotFieldsState()) {
+                               fieldState:PivotFieldsState=PivotFieldsState(), previousPivotTable:Option[PivotTable]=None) {
   val totals = otherLayoutInfo.totals
   val collapsedRowState = otherLayoutInfo.rowCollapsedState
   val collapsedColState = otherLayoutInfo.columnCollapsedState
+  private val previousAggregatedMainBucket = previousPivotTable.map(_.aggregatedMainBucket)
 
   def allTableCells(extractUOMs:Boolean = true) = {
     val grid = createGrid(extractUOMs)
@@ -456,7 +457,12 @@ case class PivotTableConverter(otherLayoutInfo:OtherLayoutInfo = OtherLayoutInfo
             }
           }
           val measureField = columnValues.find(ac => ac.value.isMeasure)
-          val tableCell = aggregatedMainBucket.get(key) match {
+          val measureCellOption = aggregatedMainBucket.get(key)
+          val matches = previousAggregatedMainBucket.map(pamb => {
+            pamb.get(key) == measureCellOption
+          })
+//          println("-- " + matches)
+          val tableCell = measureCellOption match {
             case Some(measureCell) => {
               measureCell.value match {
                 case Some(s:Set[_]) => s.foreach(appendUOM)

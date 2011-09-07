@@ -45,7 +45,7 @@ abstract class AbstractPivotPage(pivotPageState:PivotPageState, edits:PivotEdits
   def configPanel(pageContext:PageContext, data:PageData, tableSelection:() => TableSelection):Option[ConfigPanels] = None
   def createComponent(pageContext:PageContext, data:PageData, bookmark:Bookmark, browserSize:Dimension, previousPageData:Option[PageData]) : PageComponent = {
     PivotComponent(text, pageContext, toolbarButtons(pageContext, data), configPanel, finalDrillDownPage, selfPage,
-      data, pivotPageState, edits, save, bookmark, browserSize, false)
+      data, pivotPageState, edits, save, bookmark, browserSize, false, previousPageData)
   }
 }
 
@@ -102,7 +102,8 @@ object PivotComponent {
         save:(ServerContext, PivotEdits) => Boolean,
         bookmark:Bookmark,
         browserSize:Dimension,
-        embedded:Boolean = true):PivotComponent = {
+        embedded:Boolean = true,
+        previousPageData:Option[PageData]):PivotComponent = {
 
     val data = pageData.asInstanceOf[PivotTablePageData]
 
@@ -110,7 +111,7 @@ object PivotComponent {
       new PivotTablePageGraphComponent(data.pivotData.pivotTable)
     } else {
       new PivotTablePageComponent(text, pageContext, toolbarButtons, configPanel, finalDrillDown, selfPage, data,
-        pivotPageState, edits, save, bookmark, browserSize, embedded)
+        pivotPageState, edits, save, bookmark, browserSize, embedded, previousPageData)
     }
   }
 }
@@ -140,11 +141,13 @@ class PivotTablePageComponent(
         save:(ServerContext, PivotEdits) => Boolean,
         bookmark:Bookmark,
         browserSize:Dimension,
-        embedded:Boolean) extends PivotComponent {
+        embedded:Boolean,
+        previousPageData:Option[PageData]) extends PivotComponent {
 
   val data = pivotTablePageData.pivotData
   val extraFormatInfo = pageContext.getSetting(StandardUserSettingKeys.ExtraFormattingInfo, PivotFormatter.DefaultExtraFormatInfo)
-  val pivotTableComponent = PivotTableView.createWithLayer(data, pivotPageState.otherLayoutInfo, browserSize, (selectionF) => { configPanel(pageContext,pivotTablePageData,selectionF)}, extraFormatInfo, edits, embedded)
+  val pivotTableComponent = PivotTableView.createWithLayer(data, pivotPageState.otherLayoutInfo, browserSize,
+    (selectionF) => { configPanel(pageContext,pivotTablePageData,selectionF)}, extraFormatInfo, edits, embedded, previousPageData)
   val pivotComp = pivotTableComponent.getScalaComponent
 
   val currentFieldState = data.pivotFieldsState

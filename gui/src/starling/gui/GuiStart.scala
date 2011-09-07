@@ -124,12 +124,7 @@ object GuiStart extends Log {
     val localCacheUpdatePublisher = new scala.swing.Publisher() {}
     publisher.reactions += {
       case batch:EventBatch => {
-        onEDT {
-          //This indirection between the remotePublisher ensures that pages see
-          // the events after the local cache is updated
-          // and also ensures that the pages receive the event on the EDT
-          batch.events.foreach { e => localCacheUpdatePublisher.publish(e) }
-        }
+        batch.events.foreach { e => localCacheUpdatePublisher.publish(e) }
       }
     }
 
