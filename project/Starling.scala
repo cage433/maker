@@ -114,7 +114,7 @@ object StarlingBuild extends Build{
 
   val useTitanModelBinaries = {
     if (!new File("props.conf").exists)
-      true
+      false
     else {
       val serverSettingRegexp = """^ServerType\s*=\s*(\w+)\s*$""".r
       scala.io.Source.fromFile("props.conf").getLines.toList.collect {
