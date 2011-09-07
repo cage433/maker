@@ -10,7 +10,6 @@ import starling.quantity.UOM._
 import starling.market._
 import starling.models.Call
 import starling.market.Market._
-import starling.varcalculator.ForwardPriceRiskFactor
 import org.testng.annotations.Test
 import org.testng.Assert._
 import starling.daterange.{SpreadPeriod, StripPeriod, Day, Month, Quarter}

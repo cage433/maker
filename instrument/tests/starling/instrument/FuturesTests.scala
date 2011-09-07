@@ -7,7 +7,6 @@ import starling.quantity.UOM._
 import starling.quantity.utils.QuantityTestUtils._
 import starling.quantity.{UOM, Quantity}
 import starling.market._
-import starling.varcalculator.ForwardPriceRiskFactor
 import starling.daterange.{DayAndTime, DayAndNoTime, Day, Month}
 
 class FuturesTests extends TestMarketTest {
@@ -70,15 +69,6 @@ class FuturesTests extends TestMarketTest {
     assertQtyEquals(mtmLtd, (fixed - strike) * v)
     assertQtyEquals(mtmLtd, mtmLater)
     assertNotSame(mtmLive, mtmLtd)
-  }
-
-  @Test
-  def testParallelShiftDelta {
-    val parallelDelta = inst.riskFactorTypePosition(env, ForwardPriceRiskFactorType(mkt), inst.valuationCCY)
-    assertEquals(parallelDelta.uom, MT)
-    val fp = mkt.frontPeriod(marketDay).asInstanceOf[Day]
-    val delta = inst.riskFactorPosition(env, ForwardPriceRiskFactor(mkt, d - fp, d - fp), inst.valuationCCY)
-    assertEquals(parallelDelta, delta)
   }
 
 	@Test

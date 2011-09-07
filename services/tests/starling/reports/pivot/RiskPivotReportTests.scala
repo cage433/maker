@@ -83,7 +83,6 @@ class RiskPivotReportTests extends TestMarketTest with StarlingTest{
       }
     ))
 
-    val rfs = option.riskFactors(env, USD)
     val pivotReport = new GreeksPivotReport(env, (md.day + 1).endOfDay, Map(UTPIdentifier(1) -> option))
     val greeks = pivotReport.combine(pivotReport.rows(UTPIdentifier(1), option), ReportSpecificChoices(showEqFutures_str -> true))
 

@@ -16,7 +16,7 @@ import starling.daterange.SpreadPeriod
 import starling.curves.EnvironmentDifferentiable
 import starling.curves.VolKey
 import starling.curves.SpreadAtmStdDevAtomicDatumKey
-import starling.market.{FuturesSpreadMarket, ForwardPriceRiskFactorType, Market, FuturesMarket}
+import starling.market.{FuturesSpreadMarket, Market, FuturesMarket}
 import starling.quantity.NamedQuantity
 import starling.quantity.FunctionNamedQuantity
 

@@ -24,7 +24,7 @@ import org.mockito.{ArgumentMatcher, ArgumentCaptor}
 import reflect.Manifest
 import starling.curves._
 import starling.daterange.Day
-import starling.market.{RIC, SpotUSDFXRiskFactorType}
+import starling.market.RIC
 
 import starling.quantity.utils.QuantityTestUtils._
 
@@ -72,18 +72,6 @@ class NetEquityPositionTests extends StarlingTest {
      volume * price * spotFX,
      netEquityPosition.mtm(env, UOM.USD),
      1e-6)
-  }
-
-  @Test
-  def testVARRiskFactorsCADListedEquity {
-    val marketDay = Day(2009, 10, 1).endOfDay
-    val ric = RIC("SU.TO") //The .TO implies CAD
-    val netEquityPosition = NetEquityPosition(ric, Quantity(1000.0, SHARE))
-
-    val env = Environment(new NullAtomicEnvironment(marketDay))
-    val riskFactors = netEquityPosition.varRiskFactors(env, UOM.USD)
-
-    assertEquals(riskFactors, Set(SpotFXRiskFactor(UOM.CAD), EquityRiskFactor(ric)))
   }
 
 }

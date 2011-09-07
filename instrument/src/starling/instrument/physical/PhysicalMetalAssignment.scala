@@ -40,10 +40,10 @@ trait TitanPricingSpec {
   def daysForPositionReport(marketDay : DayAndTime) : List[Day]
   def quotationPeriod : Option[DateRange]
   def premium : Quantity
-  def indexOption : Option[IndexWithDailyPrices]
+  def indexOption : Option[TitanPricingIndex]
 }
 
-case class AveragePricingSpec(index : IndexWithDailyPrices, period : DateRange, premium : Quantity) extends TitanPricingSpec{
+case class AveragePricingSpec(index : TitanPricingIndex, period : DateRange, premium : Quantity) extends TitanPricingSpec{
   val observationDays = index.observationDays(period)
   // Just a guess
   def settlementDay = period.lastDay.addBusinessDays(index.businessCalendar, 2)
@@ -148,7 +148,7 @@ case class FixedPricingSpec (settlementDay : Day, pricesByFraction : List[(Doubl
 
 case class UnknownPricingFixation(fraction : Double, price : Quantity)
 case class UnknownPricingSpecification(
-  index : IndexWithDailyPrices,
+  index : TitanPricingIndex,
   month : Month,
   fixations : List[UnknownPricingFixation],
   declarationDay : Day,
@@ -210,7 +210,7 @@ case class PhysicalMetalAssignment(
     pricingSpecNameLabel -> pricingSpec.pricingType, 
     quantityLabel -> quantity,
     premiumLabel -> pricingSpec.premium
-  ) ++  pricingSpec.indexOption.map(indexLabel -> _) ++ pricingSpec.quotationPeriod.map(quotationPeriodLabel -> _)
+  ) ++  pricingSpec.indexOption.map(indexLabel -> _) ++ pricingSpec.quotationPeriod.map(quotationPeriodLabel -> _) ++ pricingSpec.indexOption.map(exchangeLabel -> _.market.exchange)
 
   def asUtpPortfolio(tradeDay:Day) = UTP_Portfolio(Map(copy(quantity = Quantity(1.0, quantity.uom)) -> quantity.value))
 

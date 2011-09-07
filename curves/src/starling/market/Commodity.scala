@@ -11,19 +11,6 @@ import starling.utils.CollectionUtils
 class Commodity {
   lazy val representativeMarket = Commodity.standardFuturesMarket(this)
   lazy val standardFuturesUOM = Commodity.standardFuturesUOM(this)
-  def toStandardFuturesLots(position : Quantity)(implicit conv: Conversions = Conversions.default): Quantity = {
-    position in representativeMarket.uom match {
-      case Some(positionInMarketUOM) => {
-        representativeMarket.lotSize match {
-          case Some(ls) => Quantity((positionInMarketUOM / ls).value, standardFuturesUOM)
-          case None => Quantity.NULL // FIXME this isn't a great thing to do
-        }
-      }
-      case None => {
-        throw new Exception("Couldn't convert " + position + " to "  + representativeMarket.uom + " of market " + representativeMarket)
-      }
-    }
-  }
 
   /**
    * Commodities are equal if their names are the same. FuelOil is FuelOil regardless of

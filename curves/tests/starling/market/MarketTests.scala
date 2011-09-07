@@ -52,7 +52,6 @@ class MarketTests extends TestMarketTest {
     // after the first wed we should see vol sensitivity to first wed of Feb
     assertEquals(Set(17 Feb 2010), Set() ++ observationDays.filter(_ > firstWednesday).map(mkt.frontOptionPeriod))
 
-    assertEquals(Month(2010, 4).thirdWednesday, mkt.nthOptionPeriod((1 Jan 2010).endOfDay, 3))
   }
 
   @Test

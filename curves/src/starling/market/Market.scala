@@ -6,7 +6,6 @@ import scala.None
 import starling.quantity.UOM._
 import starling.daterange._
 import collection.immutable.Map
-import starling.varcalculator.{ForwardPriceRiskFactor, RiskFactor}
 import starling.calendar._
 import starling.utils.ImplicitConversions._
 import util.matching.Regex
@@ -55,12 +54,6 @@ abstract class CommodityMarket(
   def positionUOM = uom
 
   @transient val priceUOM = currency / uom
-
-  def priceRiskFactor(marketDayAndTime: DayAndTime, dateRange: DateRange): Option[RiskFactor]
-
-  def nthPeriod(dayAndTime: DayAndTime, numPeriodsAhead: Int): DateRange
-
-  def nthOptionPeriod(dayAndTime: DayAndTime, numPeriodsAhead: Int): DateRange = nthPeriod(dayAndTime, numPeriodsAhead)
 
   def standardShift = {
     commodity match {
@@ -147,19 +140,6 @@ class FuturesMarket(
           with KnownExpiry {
   assert(commodity != null)
 
-  override def priceRiskFactor(marketDayAndTime: DayAndTime, dateRange: DateRange): Option[RiskFactor] = {
-    val offset = (tenor, dateRange) match {
-      case (Month, m: Month) => m - frontMonth(marketDayAndTime)
-      case (Day, d: Day) => d - frontPeriod(marketDayAndTime.day).asInstanceOf[Day]
-      case _ => throw new Exception(name + ":tenor, " + tenor + ", and dateRange, " + dateRange + " don't match for " + this)
-    }
-    if(offset < 0) {
-      None
-    } else {
-      Some(ForwardPriceRiskFactor(this, offset, offset))
-    }
-  }
-
   /**
    * Trinity stores Futures periods as days, regardless of the market
    * convention. This infers the corresponding period.
@@ -230,47 +210,8 @@ with HasInterpolation {
     period.containingMonth.thirdWednesday
   }
 
-  override def nthOptionPeriod(dayAndTime: DayAndTime, numPeriodsAhead: Int) = {
-    val period = frontOptionPeriod(dayAndTime.day)
-    frontOptionPeriod((period.firstMonth + numPeriodsAhead).firstDay)
-  }
 }
 
-/**
- * A Swap Market is a market used for forward prices for Swaps
- */
-class SwapMarket(
-  @transient name: String,
-  @transient lotSize: Option[Double],
-  @transient uom: UOM,
-  @transient currency: UOM,
-  @transient businessCalendar: BusinessCalendar,
-  @transient eaiQuoteID: Option[Int],
-  @transient commodity: Commodity,
-  @transient conversions: Conversions,
-  @transient limSymbol: Option[LimSymbol] = None,
-  @transient precision : Option[Precision] = None
-)
-  extends CommodityMarket(name, lotSize, uom, currency, businessCalendar, eaiQuoteID, Day, commodity, conversions, limSymbol, precision)
-  with HasInterpolation {
-  def priceRiskFactor(marketDayAndTime: DayAndTime, dateRange: DateRange) = {
-    val offset = (tenor, dateRange) match {
-      case (Day, d: Day) => d - marketDayAndTime.day
-      case _ => throw new Exception(name + ":tenor, " + tenor + ", and dateRange, " + dateRange + " don't match for " + this)
-    }
-    if(offset < 0) {
-      None
-    } else {
-      Some(ForwardPriceRiskFactor(this, offset, offset))
-    }
-  }
-
-  override def nthPeriod(dayAndTime: DayAndTime, numPeriodsAhead: Int): Day = tenor match {
-    case Day => dayAndTime.day + numPeriodsAhead
-  }
-  
-  def interpolation = InverseConstantInterpolation
-}
 
 trait IsBrentMonth{
   def month : BrentMonth

@@ -21,7 +21,6 @@ import starling.quantity.Percentage._
 import starling.models.{European, CallOrPut, Put, Call}
 import starling.utils.{Log, CollectionUtils, ScalaTestUtils}
 import starling.market._
-import starling.varcalculator.ForwardPriceRiskFactor
 import starling.daterange._
 
 class AsianOptionTests extends JonTestEnv {

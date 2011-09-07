@@ -8,7 +8,6 @@ import starling.quantity.RichQuantity._
 import starling.quantity.utils.QuantityTestUtils._
 import starling.quantity.{UOM, Quantity}
 import starling.market._
-import starling.varcalculator.ForwardPriceRiskFactor
 
 class FutureCalendarSpreadsTests extends JonTestEnv {
   import org.testng.annotations._

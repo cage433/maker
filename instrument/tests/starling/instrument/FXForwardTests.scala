@@ -14,7 +14,6 @@ import starling.varcalculator._
 import starling.quantity.{UOM, Quantity}
 import org.mockito.{ArgumentMatcher, ArgumentCaptor}
 import reflect.Manifest
-import starling.market.SpotUSDFXRiskFactorType
 import starling.curves._
 import starling.daterange.{TimeOfDay, DayAndTime, Day}
 import starling.quantity.utils.QuantityTestUtils._
@@ -32,22 +31,7 @@ class FXForwardTests extends StarlingTest {
         yield Array[Object](numeratorCCY / denominatorCCY, posisitonCCY)
       arguments.toArray
   }
-  @Test(dataProvider = "deltaPosition_UOM_provider")
-  def deltaPosition_UOMS_should_always_be_in_the_non_usd_currency(fxUnit : UOM, positionCCY : UOM){
-    val spotFxRates = Map(GBP -> 2.0, EUR -> 1.5, CHF -> 1.4)
-    val atomicEnv  = new TestingAtomicEnvironment{
-      def marketDay = Day(2008, 1, 1).endOfDay
-
-      def applyOrMatchError(key: AtomicDatumKey) = key match {
-        case USDFXRateKey(ccy) => Quantity(spotFxRates(ccy), USD/ccy)
-        case _ : DiscountRateKey => new Quantity(1.0)
-      }
-    }
-    val env = Environment(atomicEnv)
-    val fxForward = FXForward(Quantity(1.3, fxUnit), Quantity(1000, fxUnit.denominatorUOM), Day(2009, 1, 1))
-    val position = fxForward.asUtpPortfolio.riskFactorPosition(env, SpotFXRiskFactor(positionCCY), positionCCY)
-    assertEquals(position.uom, positionCCY)
-  }
+ 
 
 	@Test
 	/** Value a typical FX Forward and check its mtm is as expected

@@ -8,7 +8,7 @@ import starling.market.rules.SwapPricingRule
 import starling.curves.Environment
 import starling.quantity.{NamedQuantity, SpreadOrQuantity, Quantity}
 import starling.quantity.UOM
-import starling.market.IndexWithDailyPrices
+import starling.market.{FuturesExchange, IndexWithDailyPrices}
 
 trait Tradeable extends AsUtpPortfolio {
   def tradeableType : TradeableType[_]
@@ -102,7 +102,8 @@ object TradeableType {
     ("Pricing Spec Name", classOf[String]),
     ("Index", classOf[Option[IndexWithDailyPrices]]),
     ("QuotationPeriod", classOf[Option[DateRange]]),
-    ("Premium", classOf[Quantity])
+    ("Premium", classOf[Quantity]),
+    ("Exchange", classOf[FuturesExchange])
 
   )
   val fields = fieldsWithType.map(_._1)

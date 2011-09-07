@@ -1,7 +1,6 @@
 package starling.market
 
 import collection.immutable.Map
-import starling.varcalculator.{ForwardRateRiskFactor, RiskFactor}
 import starling.quantity.{Percentage, Quantity, UOM}
 import starling.curves.{ForwardForwardDiscountCurve, DiscountCurveKey}
 import starling.daterange.{DateRange, SimpleDateRange, DayAndTime}

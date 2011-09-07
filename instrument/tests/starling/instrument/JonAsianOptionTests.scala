@@ -6,11 +6,9 @@ import org.testng.Assert._
 import starling.quantity.Quantity
 import starling.quantity.UOM._
 import org.testng.annotations.{AfterClass, AfterMethod, BeforeMethod, Test}
-import starling.varcalculator.{RiskFactor, ForwardPriceRiskFactor}
 import starling.quantity.utils.QuantityTestUtils._
 import starling.market.{Market, Index, JonTestEnv}
 import starling.models.{DefaultRiskParameters, Call, Put}
-import starling.varcalculator.RiskFactorUtils._
 import starling.instrument.utils.AtomicDatumKeyUtils._
 import starling.utils.StarlingTest
 

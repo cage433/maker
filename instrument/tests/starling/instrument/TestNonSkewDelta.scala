@@ -6,7 +6,6 @@ import starling.curves._
 import starling.quantity.{Percentage, Quantity}
 import starling.daterange.{DateRange, Month, DayAndTime, Day}
 import starling.calendar.{HolidayTablesFactory, BusinessCalendars, NullHolidays}
-import starling.varcalculator.ForwardPriceRiskFactor
 import starling.market._
 import starling.quantity.utils.QuantityTestUtils._
 import org.testng.Assert
@@ -47,16 +46,17 @@ class TestNonSkewDelta extends TestMarketTest{
 
     }
 
-    val skewDelta = inst.riskFactorDerivative(env, ForwardPriceRiskFactor(Market.ICE_BRENT, 0, 20), USD)
+    val differentiable: PriceDifferentiable = PriceDifferentiable(Market.ICE_BRENT, DateRange(env.marketDay.day, env.marketDay.day + 600))
+    val skewDelta = inst.firstOrderDerivative(env, differentiable, USD)
     Assert.assertTrue(skewDelta.value < 0.9, "SkewDelta: " + skewDelta)
 
     val nonSkewEnv = env.setShiftsCanBeIgnored(true)
 
-    var nonSkewDelta = inst.riskFactorDerivative(nonSkewEnv, ForwardPriceRiskFactor(Market.ICE_BRENT, 0, 20), USD)
+    var nonSkewDelta = inst.firstOrderDerivative(nonSkewEnv, differentiable, USD)
     assertQtyEquals(nonSkewDelta, Quantity(1.0, BBL), 1e-6)
 
     val muchShiftedNonSkewEnv = nonSkewEnv.shiftPrice(Market.ICE_BRENT, Month(2011, 1), Quantity(1, USD/BBL)).forwardState(Day(2010, 1, 3).endOfDay).shiftFwdFwdRate(USD, Month(2010, 12), new Quantity(1e-4))
-    nonSkewDelta = inst.riskFactorDerivative(muchShiftedNonSkewEnv, ForwardPriceRiskFactor(Market.ICE_BRENT, 0, 20), USD)
+    nonSkewDelta = inst.firstOrderDerivative(muchShiftedNonSkewEnv, differentiable, USD)
     assertQtyEquals(nonSkewDelta, Quantity(1.0, BBL), 1e-6)
   }
 

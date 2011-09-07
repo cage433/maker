@@ -17,7 +17,6 @@ import starling.pivot.PivotQuantity
 import starling.instrument.utils._
 import starling.utils.{StarlingTest}
 import starling.quantity.{Conversions, Quantity}
-import starling.varcalculator.{ForwardPriceRiskFactor, RiskFactorUtils}
 import java.util.Random
 import starling.models.DefaultRiskParameters
 
@@ -64,58 +63,7 @@ class CommoditySwapTests extends JonTestEnv {
     assertQtyEquals(mtm, expectedMTM, 1e-6)
   }
 
-  //@Test
-  def testDelta {
-    val marketDayAndTime = Day(2009, 9, 15).startOfDay
-    val forwardPrice = Quantity(200, USD / BBL)
-    val historicPrice = Quantity(100, USD / BBL)
-    val env = Environment(
-      new TestingAtomicEnvironment() {
-        def applyOrMatchError(key: AtomicDatumKey) = key match {
-          case ForwardPriceKey(_, d, _) => {
-            forwardPrice
-          }
-          case _: IndexFixingKey => historicPrice
-          case DiscountRateKey(_, day, _) => new Quantity(scala.math.exp(-0.05 * day.daysSinceInYears(marketDay.day)))
-        }
-
-        def marketDay = marketDayAndTime
-      }
-    )
-
-    val index = Index.BRT11
-    val market = index.market
-
-    val period = Month(2009, 12)
-    val volume = Quantity(100, BBL)
-    val strike = Quantity(200, USD / BBL)
-
-    val swap = new SinglePeriodSwap(
-      index,
-      strike,
-      volume,
-      period,
-      false
-    )
-
-    val mtm = swap.mtm(env)
-
-    val observationDays = period.days.filter(market.isObservationDay(_)).toList
-    val fixingDays = observationDays.filter(_.endOfDay <= marketDayAndTime)
-    val forwardDays = observationDays filterNot (fixingDays contains)
-    val swapPrice = (historicPrice * fixingDays.size + forwardPrice * forwardDays.size) / observationDays.size
-    val discount = env.discount(USD, CommoditySwap.swapSettlementDate(period.firstDay))
-    val expectedMTM = (swapPrice - strike) * volume * discount
-    assertQtyEquals(mtm, expectedMTM, 1e-6)
-
-    val rfs = swap.riskFactors(env, USD).toArray
-    val delta1 = swap.riskFactorDerivative(env, rfs(0), USD)
-    val position1 = swap.riskFactorPosition(env, rfs(0), USD)
-    val delta2 = swap.riskFactorDerivative(env, rfs(1), USD)
-    val position2 = swap.riskFactorPosition(env, rfs(1), USD)
-  }
-
-  //@Test
+  @Test
   def testSpreadIndexSwap {
     val spreadIndex = Index.IPE_GAS_OIL_VS_IPE_BRENT
     val index1 = spreadIndex.indexes.head
@@ -172,7 +120,7 @@ class CommoditySwapTests extends JonTestEnv {
 
   /**test that a strip of swaps over two months has the same value as two monthly swaps
    */
-  //@Test
+  @Test
   def testMonthDecomposition {
     val marketDayAndTime = Day(2009, 9, 15).startOfDay
     val forwardPrice = Quantity(200, USD / MT)
@@ -225,7 +173,7 @@ class CommoditySwapTests extends JonTestEnv {
     )
   }
 
-  //@Test
+  @Test
   def testExplanationOfSwap{
     val marketDayAndTime = Day(2009, 9, 15).startOfDay
     val forwardPrice = Quantity(200, USD / MT)
@@ -300,7 +248,7 @@ class CommoditySwapTests extends JonTestEnv {
     assertEquals(sep09Explanation.format(5), ex1)
   }
 
-  //@Test
+  @Test
   def testC3651761 {
     val marketDayAndTime = Day(2011, 3, 16).startOfDay
     val frbob = Quantity(2.994, USD / GAL)
@@ -326,7 +274,7 @@ class CommoditySwapTests extends JonTestEnv {
     assertQtyEquals(cs.asUtpPortfolio(Day(2011, 3, 14)).mtm(env), (fixed - strike) * volume, 1e-6)
   }
 
-  //@Test
+  @Test
   def testUndiscountedMTM {
     val market = Index.WTI10
     val period = Month(2011, 5)
@@ -341,7 +289,7 @@ class CommoditySwapTests extends JonTestEnv {
     assertQtyEquals((price - strike) * volume, swap2.mtm(env))
   }
 
-  //@Test
+  @Test
   def testFormulaIndex {
     val formulaIndex = new FormulaIndex("WTI vs RBOB", Formula("MKT(7) - MKT(933)"), USD, BBL, None, None, None)
     val rbob = Index.RBOB10
@@ -379,7 +327,7 @@ class CommoditySwapTests extends JonTestEnv {
     assertEquals(swap1.priceAndVolKeys(marketDay), (priceKeys, Set.empty))
   }
 
-  //@Test
+  @Test
   def testFormulaIndexUTPs {
     val formula = new Formula("MKT(7) - MKT(28)")
     val formulaIndex = new FormulaIndex("RBOB vs Brent", formula, USD, BBL, None, None, None)
@@ -421,7 +369,7 @@ class CommoditySwapTests extends JonTestEnv {
     }
   }
 
-  //@Test
+  @Test
   def testSwapBOMPositionMidPricing {
     val index = Index.WTI10
     val period = BOM(14 Apr 2011)
@@ -454,7 +402,7 @@ class CommoditySwapTests extends JonTestEnv {
     }
   }
 
-  //@Test
+  @Test
   def testPrice {
     val index = Index.WTI10
     val period = Month(2011, 4)
@@ -477,7 +425,7 @@ class CommoditySwapTests extends JonTestEnv {
     }
   }
 
-  //@Test
+  @Test
   def testMonthlyPositionWhenPeriodSpansMonths {
     val index = Index.DATED_BRENT
     val period = DateRange(24 Feb 2011, 2 Mar 2011)

@@ -46,7 +46,7 @@ object  RefinedTacticalRefDataConversions {
   
   lazy val indices = List("Cash", "Three Month", "Average of Four", "Lowest of Four", "Max Settlement")
 
-  def index(exchange : RefMarket, metal : Metal, indexName : TitanIndexName) : IndexWithDailyPrices = {
+  def index(exchange : RefMarket, metal : Metal, indexName : TitanIndexName) : TitanPricingIndex = {
     val metalToMarketMap : Map[String, FuturesMarket] = exchange.mappingCode match {
       case `LME` => commodityNameToLMEMarket
       case `SHFE` => commodityNameToSHFEMarket

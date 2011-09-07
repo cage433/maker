@@ -15,7 +15,7 @@ class InvalidFormulaException(msg: String, t: Throwable) extends Exception(msg, 
  * An index based on a given formula. The formula is usually something like A - B. Where A and B are indexes (and
  * may be FormulaIndexes)
  */
-case class FormulaIndex(formulaName: String, formula: Formula, ccy: UOM, uom: UOM, precision: Option[Precision], conversion: Option[Conversions], eaiQuoteID: Option[Int])
+case class FormulaIndex(formulaName: String, formula: Formula, ccy: UOM, uom: UOM, precision: Option[Precision], conversion: Option[Conversions], override val eaiQuoteID: Option[Int])
   extends MultiIndex(formulaName) {
   lazy val indexes = formula.indexes
 
