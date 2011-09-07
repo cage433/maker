@@ -120,17 +120,11 @@ class StarlingBrowserFrameContainer(serverContext: ServerContext, lCache: LocalC
     // Check to see if the page already exists, if it does, go to it otherwise create a new page.
     frames.find(f => f.containsPage(page)) match {
       case Some(cf) => {
-        println("")
-        println("FOUND PAGE - Trying TO show it")
-        println("")
         cf.showPage(page)
         cf.peer.toFront()
         cf.repaint()
       }
       case None => {
-        println("")
-        println("CREATING NEW TAB")
-        println("")
         // Can't find so create a new tab on the last frame
         frames.last.showNewPage(page)
         frames.last.peer.toFront()
