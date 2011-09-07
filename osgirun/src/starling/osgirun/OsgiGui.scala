@@ -10,7 +10,9 @@ object OsgiGui {
     System.setProperty("org.osgi.service.http.port", "7777")
     OsgiInstance.startOrTrigger("osgi-gui-cache", GuiBundles)
     if (args.length == 1) {
-      val s = args(0).replaceFirst("starling://", "").replaceFirst("gotoValuationScreen/", "gotoValuationScreen")
+      val st = args(0)
+      val index = st.indexOf("://")
+      val s = st.substring(index + 3)
       val url = new URL("http://localhost:7777/" + s)
       val stream = url.openStream()
       stream.close()

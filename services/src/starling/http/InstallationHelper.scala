@@ -44,6 +44,7 @@ object InstallationHelper {
 """;!include "MUI2.nsh"
 
 !define product "Starling-""" + serverName + """"
+!define product_lower "starling-""" + serverName.toLowerCase + """"
 !define exe "${product}.exe"
 !define excel_ini "excel_plugin-""" + serverName + """.ini"
 !define excel_xll "excel_plugin-""" + serverName + """.xll"
@@ -79,6 +80,11 @@ SetOutPath $INSTDIR
 WriteRegDWORD HKLM "SYSTEM\CurrentControlSet\Control\Lsa\Kerberos" "allowtgtsessionkey" 1
 ; Add in the place Win 7 would expect it. Doesn't hurt XP to have it there too.
 WriteRegDWORD HKLM "SYSTEM\CurrentControlSet\Control\Lsa\Kerberos\Parameters" "allowtgtsessionkey" 1
+; Add registry keys so that the "starling" protocol is recognised
+WriteRegStr HKCR "${product_lower}" "" "$\"URL:${product} Protocol$\""
+WriteRegStr HKCR "${product_lower}" "URL Protocol" "$\"$\""
+WriteRegStr HKCR "${product_lower}\DefaultIcon" "" "$\"${exe},1$\""
+WriteRegStr HKCR "${product_lower}\shell\open\command" "" "$\"$INSTDIR\${exe}$\" $\"%1$\""
 
 File ${exe}
 File ${excel_ini}
@@ -124,6 +130,8 @@ RMDir "$SMPROGRAMS\${company}"
 Delete "$DESKTOP\${product}.lnk"
 ; Remove the key in the add/remove programs bit in control panel
 DeleteRegKey HKLM "${add_remove_key}"
+; Remove starling protocol association
+DeleteRegKey HKCR "${product_lower}"
 
 SectionEnd"""
   }

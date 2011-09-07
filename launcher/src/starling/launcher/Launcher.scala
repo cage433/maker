@@ -25,7 +25,9 @@ object Launcher {
       }
     }
     if (args.length == 4) {
-      val s = args(3).replaceFirst("starling://", "").replaceFirst("gotoValuationScreen/", "gotoValuationScreen")
+      val st = args(3)
+      val index = st.indexOf("://")
+      val s = st.substring(index + 3)
       val url = new URL("http://localhost:7777/" + s)
       val stream = url.openStream()
       stream.close()
@@ -33,7 +35,7 @@ object Launcher {
   }
   def start(rmiHost: String, rmiPort: Int, servicePrincipalName: String, overriddenUser:Option[String] = None) {
     val props = Map("serverHostname" -> rmiHost, "rmiPort" -> rmiPort.toString, "principalName" -> servicePrincipalName)
-    val activators = List(classOf[GuiBromptonActivator], classOf[BrowserBromptonActivator], classOf[JettyBromptonActivator])
+    val activators = List(classOf[JettyBromptonActivator], classOf[GuiBromptonActivator], classOf[BrowserBromptonActivator])
     val single = new SingleClasspathManager(props, activators)
     single.start()
   }

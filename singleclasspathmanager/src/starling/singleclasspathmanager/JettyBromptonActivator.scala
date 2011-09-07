@@ -17,7 +17,7 @@ class JettyBromptonActivator extends BromptonActivator {
 
     context.createServiceTracker(Some( classOf[HttpServlet]), Nil, new BromptonServiceTracker() {
       def serviceAdded(ref:BromptonServiceReference, service:AnyRef) {
-        rootContext.addServlet(new ServletHolder(service.asInstanceOf[HttpServlet]), "/gotoValuationScreen")
+        rootContext.addServlet(new ServletHolder(service.asInstanceOf[HttpServlet]), "/gotoValuationScreen/*")
       }
       def serviceRemoved(ref:BromptonServiceReference) {}
     })
