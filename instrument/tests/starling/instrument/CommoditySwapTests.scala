@@ -498,7 +498,7 @@ class CommoditySwapTests extends JonTestEnv {
     assertQtyEquals(marPos, 412000(BBL), 1e-7)
   }
 
-  //@Test
+  @Test
   def testPositionWhenBrentInMT {
     val index = Index.BRT11
     val period = Month(2012, 1)
@@ -516,7 +516,7 @@ class CommoditySwapTests extends JonTestEnv {
     assertQtyEquals(mtPos, volume, 1e-7)
   }
 
-  //@Test
+  @Test
   def testMogasVsBrentCanBeInMT {
     // Seetal can enter the trade in either MT or BBL
     val mogas = Index.MOGAS_95_UNL_10PPM_NWE_BARGES
@@ -549,7 +549,7 @@ class CommoditySwapTests extends JonTestEnv {
     assertQtyEquals(mtm2, scsB1.mtm(env) + scsB2.mtm(env), 1e-7)
   }
 
-  //@Test
+  @Test
   def testHedgingInstrumentForCommonSwap {
     // wti has a holiday in jan but brent doesn't. because we're using common pricing it means the swap will
     // have less sensitivity (one day less) to brent than a normal swap would. So the hedging instrument will
@@ -610,7 +610,7 @@ class CommoditySwapTests extends JonTestEnv {
     }
   }
 
-  //@Test
+  @Test
   def testPublishedIndexPosition {
     val marketDay = (5 Jan 2011).endOfDay
     val index = Index.PREM_UNL_EURO_BOB_OXY_NWE_BARGES
@@ -628,7 +628,7 @@ class CommoditySwapTests extends JonTestEnv {
     assertQtyEquals(volume, swap.position(env, SwapPrice(index, period)), 1e-6)
   }
 
-  //@Test
+  @Test
   def testPREM_UNL_EURO_BOB_OXY_NWE_BARGES {
     val index = Index.PREM_UNL_EURO_BOB_OXY_NWE_BARGES
     val market = index.market
@@ -680,7 +680,7 @@ class CommoditySwapTests extends JonTestEnv {
     assertQtyEquals(explainedTotal.quantityValue.get, -(14927)(USD), .1)
   }
 
-  //@Test
+  @Test
   def testBrentExplainRounding {
     val index = new FuturesFrontPeriodIndex("brent 1st", None, Market.ICE_BRENT, 0, 1, Some(Precision(2, 2)))
     val market = index.market
@@ -735,7 +735,7 @@ class CommoditySwapTests extends JonTestEnv {
     assertQtyEquals(unexplained.quantityValue.get, 0(USD), 1e-5)
   }
 
-  //@Test
+  @Test
   def testPREM_UNL_EURO_BOB_OXY_NWE_BARGES__vs__Brent {
     // volume in MT, strike in USD/BBL
     val formula = new Formula("MKT(" + Index.PREM_UNL_EURO_BOB_OXY_NWE_BARGES.eaiQuoteID.get + ")- MKT(" + Index.BRT11.eaiQuoteID.get + ")")
@@ -790,7 +790,7 @@ class CommoditySwapTests extends JonTestEnv {
     assertQtyEquals(mtm, s1mtm + s2mtm, 1e-5)
   }
 
-  //@Test
+  @Test
   def testPnLAndRounding {
     val marketDayAndTime = Day(2011, 4, 18).startOfDay
     val index = Index.WTI10
@@ -837,53 +837,5 @@ class CommoditySwapTests extends JonTestEnv {
     assertQtyEquals(mtm, Quantity(171040, USD), 1e-5)
   }
 
-  //@Test
-  def testDelta_PREM_UNL_EURO_BOB_OXY_NWE_BARGES__vs__Rbob {
-    val marketDayAndTime = Day(2009, 9, 15).startOfDay
-    val env = Environment(
-      new TestingAtomicEnvironment() {
-        def applyOrMatchError(key: AtomicDatumKey) = key match {
-          case ForwardPriceKey(m, d, _) => {
-            200 (m.priceUOM)
-          }
-        }
 
-        def marketDay = marketDayAndTime
-      }
-    ).undiscounted
-
-    val c = new Conversions(Map(BBL / MT -> 8.33))
-    val formula = new Formula("MKT(933)- MKT(1312)")
-    val index = new FormulaIndex("NYMEX RBOB vs Prem Unl Euro-Bob Oxy NWE Barges (Argus)", formula, USD, GAL, None, None, None)
-    val oxy = Index.PREM_UNL_EURO_BOB_OXY_NWE_BARGES
-    val rbob = Market.NYMEX_GASOLINE
-
-    val oct = Month(2011, 10)
-    val period = oct
-    val volume = -(6000)(MT)
-    val strike = -(4)(USD / GAL)
-
-    val swap = new CommoditySwap(
-      index,
-      strike,
-      volume,
-      period,
-      false,
-      CommonPricingRule
-    )
-
-    val s = swap.asUtpPortfolio(marketDayAndTime.day)
-    val rfs = s.riskFactors(env, USD).toArray
-    val basd = RiskFactorUtils.bucketRiskFactors(marketDayAndTime, rfs.toSet).flatMap {
-      case f:ForwardPriceRiskFactor => Some(f)
-      case _ => throw new Exception("???")
-    }
-    val brfs = basd.toArray
-    val delta1 = s.riskFactorDerivative(env, brfs(0), USD)
-    val delta2 = s.riskFactorDerivative(env, brfs(1), USD)
-    val delta3 = s.riskFactorDerivative(env, brfs(2), USD)
-
-    assertQtyEquals(delta1, -volume)
-    assertQtyEquals(delta2 + delta3, rbob.convertUOM(volume, GAL), 1e-4)
-  }
 }

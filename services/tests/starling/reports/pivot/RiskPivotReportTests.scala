@@ -2,21 +2,17 @@ package starling.reports.pivot
 
 import greeks.{GreekValues, GreeksPivotReport}
 import starling.utils.StarlingTest
-import starling.quantity.{UOM, Percentage, Quantity}
+import starling.quantity.{Percentage, Quantity}
 import starling.quantity.UOM._
-import org.testng.Assert._
 import starling.curves._
 import starling.pivot.PivotQuantity
 import starling.quantity.utils.QuantityTestUtils._
-import starling.models.{BlackScholes, European, Call}
-import starling.daterange.{DateRange, Month, Day}
+import starling.models.{European, Call}
 import starling.market._
-import starling.varcalculator.{RiskFactorUtils, RiskFactorUtilsForTrades, VolatilityRiskFactor, ForwardPriceRiskFactor}
 import starling.daterange.{DateRangePeriod, DateRange, Month, Day}
-import starling.instrument.{SingleAsianOption, AsianOption, FuturesOption}
+import starling.instrument.{SingleAsianOption, FuturesOption}
 import starling.reports.pivot.PivotReport._
-import starling.concurrent.MP
-import org.testng.annotations.{AfterTest, AfterClass, Test}
+import org.testng.annotations.Test
 import starling.gui.api.{ReportSpecificChoices, UTPIdentifier}
 
 class RiskPivotReportTests extends TestMarketTest with StarlingTest{

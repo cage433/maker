@@ -32,7 +32,6 @@
       <module fileurl="file://$PROJECT_DIR$/titan/titan.iml" filepath="$PROJECT_DIR$/titan/titan.iml" />
       <module fileurl="file://$PROJECT_DIR$/trade/trade.iml" filepath="$PROJECT_DIR$/trade/trade.iml" />
       <module fileurl="file://$PROJECT_DIR$/utils/utils.iml" filepath="$PROJECT_DIR$/utils/utils.iml" />
-      <module fileurl="file://$PROJECT_DIR$/var/var.iml" filepath="$PROJECT_DIR$/var/var.iml" />
     </modules>
   </component>
 </project>

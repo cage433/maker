@@ -26,7 +26,6 @@
     <orderEntry type="library" name="scala-lib" level="project" />
     <orderEntry type="library" name="scala-swing-lib" level="project" />
     <orderEntry type="module" module-name="auth" exported="" />
-    <orderEntry type="module" module-name="var" exported="" />
     <orderEntry type="module" module-name="pivot" exported="" />
     <orderEntry type="module" module-name="gui.api" exported="" />
     <orderEntry type="module" module-name="concurrent" exported="" />
@@ -222,6 +221,7 @@
       </library>
     </orderEntry>
     <orderEntry type="module" module-name="dbx" exported="" />
+    <orderEntry type="module" module-name="trade" exported="" />
   </component>
 </module>
 

@@ -1,13 +1,11 @@
 package starling.market
 
-import rules.{PrecisionRules, Precision, MarketPrecisionFactory}
+import rules.Precision
 import starling.curves._
 import scala.None
 import starling.quantity.UOM._
-import starling.db._
 import starling.daterange._
 import collection.immutable.Map
-import starling.utils.cache.CacheFactory
 import starling.varcalculator.{ForwardPriceRiskFactor, RiskFactor}
 import starling.calendar._
 import starling.utils.ImplicitConversions._

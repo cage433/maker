@@ -284,13 +284,6 @@ object StarlingBuild extends Build{
     settings = standardSettings 
   ) dependsOn(instrument)
 
-  lazy val VaR = Project(
-    "var", 
-    file("./var"),
-    settings = standardSettings 
-  ) dependsOn(trade)
-
-
   import TitanModel._
   lazy val titanModel = Project(
     "titan-model", 
@@ -338,7 +331,7 @@ object StarlingBuild extends Build{
     "databases", 
     file("./databases"),
     settings = standardSettings ++ Seq(libraryDependencies ++= databasesDependencies ++ testDependencies)
-  ) dependsOn(curves % "test->test", VaR , pivot , guiapi , concurrent , auth , starlingApi, dbx )
+  ) dependsOn(curves % "test->test", trade , pivot , guiapi , concurrent , auth , starlingApi, dbx )
 
   lazy val titan = if (useTitanModelBinaries) {
     Project(
@@ -466,7 +459,6 @@ object StarlingBuild extends Build{
     browser,
     browserService,
     trade,
-    VaR,
     databases,
     titan,
     services,
