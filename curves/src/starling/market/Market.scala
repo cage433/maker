@@ -41,7 +41,7 @@ abstract class CommodityMarket(
   @transient val limSymbol : Option[LimSymbol] = None,
   @transient val precision : Option[Precision] = None
 )
-  extends Market with HasImpliedVol with KnownObservation with InstrumentLevelKnownPrice with FixingHistoryLookup
+  extends Market with HasImpliedVol with KnownObservation with FixingHistoryLookup
 {
   val uomName = uom.toString
 
@@ -94,20 +94,18 @@ abstract class CommodityMarket(
 
   def premiumSettlementDay(tradeDay: Day) = tradeDay.addBusinessDays(businessCalendar, 5)
 
-  def fixing(env: InstrumentLevelEnvironment, observationDay: Day, forwardDate: Option[DateRange]): Quantity = forwardDate match {
-    case Some(period) => {
-      env.quantity(MarketFixingKey(this, observationDay, period)) match {
-        case nq: NamedQuantity => {
-          val fixed = new SimpleNamedQuantity(name + "." + period.toShortString + " Fixed", new Quantity(nq.value, nq.uom))
-          SimpleNamedQuantity(observationDay.toString, fixed)
-        }
-        case q => q
+  def historicPrice(env: InstrumentLevelEnvironment, observationDay: Day, period: DateRange): Quantity = {
+    require(observationDay.endOfDay <= env.marketDay, "Can't ask for historic rpice for " + this + " in the future")
+    env.quantity(MarketFixingKey(this, observationDay, period)) match {
+      case nq: NamedQuantity => {
+        val fixed = new SimpleNamedQuantity(name + "." + period.toShortString + " Fixed", new Quantity(nq.value, nq.uom))
+        SimpleNamedQuantity(observationDay.toString, fixed)
       }
+      case q => q
     }
-    case _ => throw new IllegalArgumentException("forwardDate is not defined")
   }
 
-  override def forwardPriceForPeriod(env: InstrumentLevelEnvironment, period: DateRange, ignoreShiftsIfPermitted: Boolean) = {
+  def forwardPrice(env: InstrumentLevelEnvironment, period: DateRange, ignoreShiftsIfPermitted: Boolean) = {
     env.quantity(ForwardPriceKey(this, period))
   }
 

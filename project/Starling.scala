@@ -475,7 +475,8 @@ object StarlingBuild extends Build{
     osgiManager,
     singleClasspathManager,
     osgiRun,
-    dbx
+    dbx,
+    starlingApi
   )
 
   val childProjects : List[ProjectReference] =  otherProjectRefereneces ::: titanModelReference

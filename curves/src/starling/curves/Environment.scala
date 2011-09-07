@@ -154,35 +154,26 @@ case class Environment(
      price
   }
 
-   def fixingOrForwardPrice(market: CommodityMarket, lastTradingDay: Day, forwardDate: DateRange) = {
-     val price = if (lastTradingDay.endOfDay <= marketDay) {
-       marketFixing(market, lastTradingDay, forwardDate)
-     } else {
-       forwardPrice(market, forwardDate)
-     }
-     price
-  }
-
   def indexFixing(index: SingleIndex, fixingDay: Day) : Quantity = {
-    instrumentLevelEnv.fixing(index, fixingDay, None)
+    instrumentLevelEnv.fixing(index, fixingDay)
   }
 
-  def marketFixing(market: CommodityMarket, fixingDay: Day, forwardDate: DateRange) : Quantity = {
-    instrumentLevelEnv.fixing(market, fixingDay, Some(forwardDate))
+  def historicPrice(market: CommodityMarket, fixingDay: Day, period: DateRange) : Quantity = {
+    instrumentLevelEnv.historicPrice(market, fixingDay, period)
   }
 
-  def indexForwardPrice(underlying: InstrumentLevelKnownPrice, observationDay : Day, ignoreShiftsIfPermitted : Boolean = false) : Quantity = {
+  def indexForwardPrice(underlying: SingleIndex, observationDay : Day, ignoreShiftsIfPermitted : Boolean = false) : Quantity = {
     instrumentLevelEnv.indexForwardPrice(underlying, observationDay, ignoreShiftsIfPermitted)
   }
 
   /** Returns the futures/forward price for the given market and forward date
    */
-  def forwardPrice(market: CommodityMarket, forwardDate : DateRange) : Quantity = {
-    instrumentLevelEnv.forwardPrice(market, forwardDate, false)
+  def forwardPrice(market: CommodityMarket, period : DateRange) : Quantity = {
+    instrumentLevelEnv.forwardPrice(market, period, false)
   }
 
-  def forwardPrice(market: CommodityMarket, forwardDate : DateRange, unit: UOM) : Quantity = {
-    (forwardPrice(market, forwardDate) * spotFXRate(unit.numeratorUOM, market.currency) in unit).getOrElse(
+  def forwardPrice(market: CommodityMarket, period : DateRange, unit: UOM) : Quantity = {
+    (forwardPrice(market, period) * spotFXRate(unit.numeratorUOM, market.currency) in unit).getOrElse(
       throw new Exception("Can't convert " + market + " price (" + market.priceUOM + ") to " + unit))
   }
 

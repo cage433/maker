@@ -93,15 +93,14 @@ trait IndexWithDailyPrices extends Index with KnownObservation {
 /**
  * An index on a single underlying
  */
-trait SingleIndex extends IndexWithDailyPrices with FixingHistoryLookup with InstrumentLevelKnownPrice {
+trait SingleIndex extends IndexWithDailyPrices with FixingHistoryLookup {
   override val name: String
 
   def market: CommodityMarket
 
   def level: Level
 
-  override def fixing(env : InstrumentLevelEnvironment, observationDay : Day, forwardDate: Option[DateRange]) = {
-    require(forwardDate.isEmpty)
+  def fixing(env : InstrumentLevelEnvironment, observationDay : Day) = {
     env.quantity(IndexFixingKey(this, observationDay)) match {
       case nq : NamedQuantity => {
         val fixed = new SimpleNamedQuantity(market.name + "." + observedPeriod(observationDay).toShortString + " Fixed", new Quantity(nq.value, nq.uom))
@@ -111,7 +110,7 @@ trait SingleIndex extends IndexWithDailyPrices with FixingHistoryLookup with Ins
     }
   }
 
-  override def forwardPriceOnObservationDay(env: InstrumentLevelEnvironment, observationDay: Day, ignoreShiftsIfPermitted: Boolean) = {
+  def forwardPriceOnObservationDay(env: InstrumentLevelEnvironment, observationDay: Day, ignoreShiftsIfPermitted: Boolean) = {
     env.quantity(ForwardPriceKey(market, observedPeriod(observationDay), ignoreShiftsIfPermitted)) match {
       case nq : NamedQuantity =>  SimpleNamedQuantity(observationDay.toString, nq)
       case q => q
@@ -246,7 +245,7 @@ case class PublishedIndex(
 
   override def fixing(slice: MarketDataSlice, observationDay: Day, storedFixingPeriod: Option[StoredFixingPeriod]) = super[SingleIndex].fixing(slice, observationDay, storedFixingPeriod)
 
-  override def fixing(env: InstrumentLevelEnvironment, observationDay: Day, forwardDate: Option[DateRange]) = super[SingleIndex].fixing(env, observationDay, forwardDate)
+  override def fixing(env: InstrumentLevelEnvironment, observationDay: Day) = super[SingleIndex].fixing(env, observationDay)
 }
 
 case class FuturesFrontPeriodIndex(
