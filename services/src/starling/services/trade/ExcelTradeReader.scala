@@ -3,10 +3,8 @@ package trade
 
 import instrumentreaders.ExcelInstrumentReader
 import starling.utils.Reflection
-import starling.db.IntradayTradeSystem
 import starling.instrument._
 import starling.trade.Trade
-import collection.mutable.ArraySeq
 import starling.eai.{EAIStrategyDB, Traders}
 import starling.daterange.Day
 import starling.market.{CommodityMarket, FuturesSpreadMarket}
@@ -22,14 +20,11 @@ class ExcelTradeReader(eaiStrategyDB: EAIStrategyDB, traders: Traders, currently
   }
 
   def allTrades(originalRows: List[Map[String, Object]], subgroupName: String): List[Trade] = {
-    var trades = List[Trade]()
-    allTrades(originalRows, subgroupName, t => trades ::= t)
-    trades.reverse
+    allTrades0(originalRows, subgroupName).reverse
   }
 
-  def allTrades(originalRows: List[Map[String, Object]], subgroupName: String, f: Trade => Unit) {
+  def allTrades0(originalRows: List[Map[String, Object]], subgroupName: String):List[Trade] = {
     val currentUser = currentlyLoggedOn()
-    val sys = IntradayTradeSystem
 
     // non-blank rows, with the key in lower case
     val rows: List[Map[String, Object]] = originalRows.map{
@@ -64,8 +59,6 @@ class ExcelTradeReader(eaiStrategyDB: EAIStrategyDB, traders: Traders, currently
     val dups = explodedRows.map(ExcelRow(_, traders, currentUser).formattedExcelColumnID).groupBy(a => a).filter(_._2.size > 1).keys
     assert(dups.isEmpty, "Duplicate IDs aren't allowed: " + dups.mkString(", "))
 
-    val tradeIDs = explodedRows.map(ExcelRow(_, traders, currentUser).tradeID(""))
-
     explodedRows.mpMap {
       row =>
       val excelRow = ExcelRow(row, traders, currentUser)
@@ -85,7 +78,7 @@ class ExcelTradeReader(eaiStrategyDB: EAIStrategyDB, traders: Traders, currently
           utp => utp.priceAndVolKeys(testDay)
         }
         
-        f(trade)
+        trade
       }
       catch {
         case e => {
