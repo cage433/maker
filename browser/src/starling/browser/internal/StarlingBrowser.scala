@@ -29,6 +29,7 @@ trait CurrentPage {
 }
 
 object StarlingBrowser {
+  val RefreshTime = 10000
   def reflectionCloningStrategy = new ReflectionCloningStrategy(
     new MaximalCloningDecisionStrategy,
     new ObjenesisInstantiationStrategy,
@@ -1109,15 +1110,6 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
   private var refreshButtonAnimator:Animator = null
 
   def refresh(lockAndUnlockScreen:Boolean=true, latch:Option[CountDownLatch] = None) {
-    if (refreshButtonAnimator != null) refreshButtonAnimator.stop()
-    refreshButtonAnimator = new Animator(10000, new TimingTargetAdapter {
-      override def timingEvent(fraction:Float) {
-        refreshButton.fadeColour = new Color(255,255,0,math.round((1.0f-fraction) * 128))
-        refreshButton.repaint()
-      }
-    })
-    refreshButtonAnimator.start()
-
     val pageInfo = history(current)
     val previousComponent = pageInfo.pageComponent.get
     val previousBookmark = pageInfo.bookmark
@@ -1126,7 +1118,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
     val (newPage, usePreviousPageData) = pageInfo.refreshPage.get
     val previousPageData = if (usePreviousPageData) {
       pageInfo.pageResponse match {
-        case SuccessPageResponse(pd,_) => Some(pd)
+        case SuccessPageResponse(pd,_) => Some(PreviousPageData(pd, previousComponent.getRefreshInfo))
         case _ => None
       }
     } else {None}
@@ -1167,6 +1159,14 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
           case Some(l) => l.countDown()
           case None =>
         }
+        if (refreshButtonAnimator != null) refreshButtonAnimator.stop()
+        refreshButtonAnimator = new Animator(StarlingBrowser.RefreshTime, new TimingTargetAdapter {
+          override def timingEvent(fraction:Float) {
+            refreshButton.fadeColour = new Color(255,255,0,math.round((1.0f-fraction) * 128))
+            refreshButton.repaint()
+          }
+        })
+        refreshButtonAnimator.start()
       }
     })
   }
@@ -1192,7 +1192,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
     })
   }
 
-  def createPopulatedComponent(page:Page, pageResponse:PageResponse, previousPageData:Option[PageData]=None) = {
+  def createPopulatedComponent(page:Page, pageResponse:PageResponse, previousPageData:Option[PreviousPageData]=None) = {
     pageResponse match {
       case SuccessPageResponse(pageData, bookmark) => {
         try {

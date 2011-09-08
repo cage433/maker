@@ -22,7 +22,7 @@ trait Page {
   def icon:BufferedImage
   def text:String
   def shortText:String = text
-  def createComponent(context:PageContext, data:PageData, bookmark:Bookmark, browserSize:Dimension, previousPageData:Option[PageData]):PageComponent
+  def createComponent(context:PageContext, data:PageData, bookmark:Bookmark, browserSize:Dimension, previousPageData:Option[PreviousPageData]):PageComponent
   def build(serverContext:SC):PageData
   def latestPage(localCache:LocalCache):Page = this
   def bookmark(serverContext:SC):Bookmark = new PageBookmark(this)
@@ -107,6 +107,7 @@ trait SubmitRequest[R] {
 }
 
 trait PageData
+case class PreviousPageData(pageData:PageData, refreshInfo:Option[RefreshInfo])
 
 object LocalCache {
   val Version = new LocalCacheKey[Version]("Version")
@@ -141,6 +142,7 @@ case class LocalCache(localCache:HeterogeneousMap[LocalCacheKey]) {
 trait ComponentState
 trait ComponentTypeState
 trait TypeFocusInfo
+trait RefreshInfo
 trait PageComponent extends Component {
   def getBorder:Option[Border] = Some(MatteBorder(1, 0, 0, 0, GuiUtils.BorderColour))
   def restoreToCorrectViewForBack() {}
@@ -153,6 +155,7 @@ trait PageComponent extends Component {
   def setTypeState(typeState:Option[ComponentTypeState]) {}
   def getTypeFocusInfo:Option[TypeFocusInfo] = None
   def setTypeFocusInfo(focusInfo:Option[TypeFocusInfo]) {}
+  def getRefreshInfo:Option[RefreshInfo] = None
   def pageResized(newSize:Dimension) {}
   def defaultComponentForFocus:Option[java.awt.Component] = None
 

@@ -18,7 +18,7 @@ case class RunAsUserPage() extends Page {
   type SC = String
   def createServerContext(sc: ServerContext) = ""
 
-  def createComponent(context:PageContext, data:PageData, bookmark:Bookmark, browserSize:Dimension, previousPageData:Option[PageData]) = new RunAsUserPageComponent(context)
+  def createComponent(context:PageContext, data:PageData, bookmark:Bookmark, browserSize:Dimension, previousPageData:Option[PreviousPageData]) = new RunAsUserPageComponent(context)
 }
 
 class RunAsUserPageComponent(context:PageContext) extends MigPanel("insets n n n 0", "[" + StandardLeftIndent + "][p][p]unrel[grow]") with PageComponent {

@@ -28,7 +28,7 @@ case class ValuationParametersPage(tradeID:TradeIDLabel, reportParameters:Report
       reader.cachingStarlingServer.tradeValuation(tradeID, reportParameters.curveIdentifier, timestampToUse),
       reportParameters, tradeID)
   }
-  def createComponent(context:PageContext, data:PageData, bookmark:Bookmark, browserSize:Dimension, previousPageData:Option[PageData]) = {
+  def createComponent(context:PageContext, data:PageData, bookmark:Bookmark, browserSize:Dimension, previousPageData:Option[PreviousPageData]) = {
     new ValuationParametersPageComponent(context, data)
   }
 

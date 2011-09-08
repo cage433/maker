@@ -40,7 +40,7 @@ abstract class AbstractPivotPage(pivotPageState:PivotPageState, edits:PivotEdits
   def finalDrillDownPage(fields:Seq[(Field,Selection)], pageContext:PageContext, modifiers:Modifiers) {}
   def toolbarButtons(pageContext: PageContext, data:PageData):List[Button] = List()
   def configPanel(pageContext:PageContext, data:PageData, tableSelection:() => TableSelection):Option[ConfigPanels] = None
-  def createComponent(pageContext:PageContext, data:PageData, bookmark:Bookmark, browserSize:Dimension, previousPageData:Option[PageData]) : PageComponent = {
+  def createComponent(pageContext:PageContext, data:PageData, bookmark:Bookmark, browserSize:Dimension, previousPageData:Option[PreviousPageData]) : PageComponent = {
     PivotComponent(text, pageContext, toolbarButtons(pageContext, data), configPanel, finalDrillDownPage, selfPage,
       data, pivotPageState, edits, save, bookmark, browserSize, false, previousPageData)
   }
@@ -100,7 +100,7 @@ object PivotComponent {
         bookmark:Bookmark,
         browserSize:Dimension,
         embedded:Boolean = true,
-        previousPageData:Option[PageData]):PivotComponent = {
+        previousPageData:Option[PreviousPageData]):PivotComponent = {
 
     val data = pageData.asInstanceOf[PivotTablePageData]
 
@@ -139,7 +139,7 @@ class PivotTablePageComponent(
         bookmark:Bookmark,
         browserSize:Dimension,
         embedded:Boolean,
-        previousPageData:Option[PageData]) extends PivotComponent {
+        previousPageData:Option[PreviousPageData]) extends PivotComponent {
 
   val data = pivotTablePageData.pivotData
   val extraFormatInfo = pageContext.getSetting(StandardUserSettingKeys.ExtraFormattingInfo, PivotFormatter.DefaultExtraFormatInfo)
@@ -526,6 +526,9 @@ class PivotTablePageComponent(
       case _ => 
     }
   }
+
+  override def getRefreshInfo = Some(pivotComp.refreshInfo)
+
   override def defaultComponentForFocus = pivotComp.defaultComponentForFocus
   override def pageResized(newSize:Dimension) {pivotComp.pageResized(newSize)}
   def getSelection = selection

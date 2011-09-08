@@ -51,7 +51,7 @@ trait CannedPage extends Page {
 case class CannedHomePage() extends CannedPage {
   def text = "Home"
   def build(reader: CannedServerContext) = { new PageData{} }
-  def createComponent(context: PageContext, data:PageData, bookmark:Bookmark, browserSize:Dimension, previousPageData:Option[PageData]) = {
+  def createComponent(context: PageContext, data:PageData, bookmark:Bookmark, browserSize:Dimension, previousPageData:Option[PreviousPageData]) = {
     new CannedHomePagePageComponent(context)
   }
   def icon = StarlingIcons.im("/icons/tablenew_16x16.png")
@@ -83,7 +83,7 @@ class CannedHomePagePageComponent(pageContext:PageContext) extends MigPanel("") 
 case class CannedDrilldownPage(fields:Seq[(Field,Any)]) extends CannedPage {
   def text = "Canned drilldown"
   def build(reader: CannedServerContext) = new PageData() {}
-  def createComponent(context: PageContext, data:PageData, bookmark:Bookmark, browserSize:Dimension, previousPageData:Option[PageData]) = {
+  def createComponent(context: PageContext, data:PageData, bookmark:Bookmark, browserSize:Dimension, previousPageData:Option[PreviousPageData]) = {
     new MigPanel("") with PageComponent {
       add(new Label("Drilldown"), "span")
       for ((field,value) <- fields) {

@@ -14,7 +14,7 @@ case class SettingsPage() extends Page {
   type SC = String
   def createServerContext(sc: ServerContext) = ""
 
-  def createComponent(context:PageContext, data:PageData, bookmark:Bookmark, browserSize:Dimension, previousPageData:Option[PageData]) = new SettingsPageComponent(context)
+  def createComponent(context:PageContext, data:PageData, bookmark:Bookmark, browserSize:Dimension, previousPageData:Option[PreviousPageData]) = new SettingsPageComponent(context)
 }
 
 class SettingsPageComponent(context:PageContext) extends MigPanel("insets 0") with PageComponent {
