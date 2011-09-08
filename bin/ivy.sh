@@ -1,0 +1,1 @@
+java  -Dhttp.proxyHost=localhost -Dhttp.proxyPort=3128 -Dhttp.nonProxyHosts=nexus.global.trafigura.com -jar /usr/share/java/ivy.jar -settings ../ivysettings.xml -retrieve "lib_managed/[artifact]-[type]-[revision].[ext]" -sync

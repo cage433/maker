@@ -16,21 +16,23 @@ object Launcher {
     val rmiPort = args(1).toInt
     val servicePrincipalName = args(2)
 
-    try {
-      val socket = new Socket("localhost", 7777)
-      socket.close()
-    } catch {
-      case e:ConnectException => {
-        start(rmiHost, rmiPort, servicePrincipalName)
-      }
-    }
     if (args.length == 4) {
+      try {
+        val socket = new Socket("localhost", 7777)
+        socket.close()
+      } catch {
+        case e:ConnectException => {
+          start(rmiHost, rmiPort, servicePrincipalName)
+        }
+      }
       val st = args(3)
       val index = st.indexOf("://")
       val s = st.substring(index + 3)
       val url = new URL("http://localhost:7777/" + s)
       val stream = url.openStream()
       stream.close()
+    } else {
+      start(rmiHost, rmiPort, servicePrincipalName)
     }
   }
   def start(rmiHost: String, rmiPort: Int, servicePrincipalName: String, overriddenUser:Option[String] = None) {

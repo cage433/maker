@@ -1,0 +1,10 @@
+<ivy-module version="1.0" xmlns:e="http://ant.apache.org/ivy/extra">
+  <info organisation="trafigura" module="manager" />
+  <configurations>
+    <conf name="default" transitive="false"/>
+  </configurations>
+  <dependencies>
+    <dependency org="org.scala-lang" name="scala-swing" rev="${scala_version}" />
+  </dependencies>
+</ivy-module>
+
