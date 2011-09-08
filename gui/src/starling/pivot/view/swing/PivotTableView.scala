@@ -27,7 +27,7 @@ import starling.browser.common._
 import starling.gui.pages.{PivotTablePageData, TableSelection, ConfigPanels}
 import org.jdesktop.animation.timing.{TimingTargetAdapter, Animator}
 import starling.browser.internal.StarlingBrowser
-import starling.browser.{RefreshInfo, PreviousPageData, PageData, Modifiers}
+import starling.browser.{RefreshInfo, PreviousPageData, Modifiers}
 import collection.immutable.{Map, List}
 
 object PivotTableView {
@@ -513,8 +513,9 @@ class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSiz
   private val viewConverter = PivotTableConverter(otherLayoutInfo, data.pivotTable, extraFormatInfo, data.pivotFieldsState, previousPageData0)
   private val (rowHeaderData, colHeaderData, mainData, colUOMs, cellUpdateList) = viewConverter.allTableCellsAndUOMs
   private val updateMap = new HashMap[(Int,Int),RefreshedCell]()
+  val (addRows, addCols) = if (otherLayoutInfo.frozen) (0,0) else (colHeaderData.length,rowHeaderData(0).length)
   cellUpdateList.foreach(c => {
-    updateMap += ((c.row, c.column) -> RefreshedCell((c.row, c.column), c.currentFraction, c.key))
+    updateMap += ((c.row + addRows, c.column + addCols) -> RefreshedCell(c.key, c.currentFraction))
   })
 
   def refreshInfo = PivotRefreshInfo(updateMap.values.map(rc => {PivotCellRefreshInfo(rc.key, rc.currentFraction + currentFraction)}).toList)
@@ -734,11 +735,16 @@ class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSiz
     columnHeaderScrollPanePanel, mainTableScrollPane, otherLayoutInfo.columnDetails)
 
   allTables foreach Highlighters.applyHighlighters
-  mainTable.addHighlighter(new MapHighlighter(updateMap))
+  if (otherLayoutInfo.frozen) {
+    mainTable.addHighlighter(new MapHighlighter(updateMap))
+  } else {
+    fullTable.addHighlighter(new MapHighlighter(updateMap))
+  }
 
   private var currentFraction = 0.0f
 
   private def startAnimation() {
+    val t = if (otherLayoutInfo.frozen) mainTable else fullTable
     new Animator(StarlingBrowser.RefreshTime, new TimingTargetAdapter {
       override def timingEvent(fraction:Float) {
         currentFraction = fraction
@@ -753,7 +759,7 @@ class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSiz
             }
           }
         }
-        doHighlighting(mainTable, updateMap)
+        doHighlighting(t, updateMap)
       }
       override def end() {updateMap.clear()}
     }).start()
@@ -968,7 +974,7 @@ class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSiz
   startAnimation()
 }
 
-case class RefreshedCell(index:(Int,Int), var currentFraction:Float, key:(List[ChildKey],List[ChildKey])) {
+case class RefreshedCell(key:(List[ChildKey],List[ChildKey]), var currentFraction:Float) {
   var currentColour = new Color(255,255,0,128)
 }
 
