@@ -738,7 +738,7 @@ class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSiz
             val cell = map(index)
             val currentFraction = fraction + cell.currentFraction
             if (currentFraction < 1.0f) {
-              val c = new Color(255,255,0, math.round((1.0f - currentFraction) * 255))
+              val c = new Color(255,255,0, math.round((1.0f - currentFraction) * 128))
               cell.currentColour = c
               t.repaint(t.getCellRect(index._1, index._2, false))
             }
