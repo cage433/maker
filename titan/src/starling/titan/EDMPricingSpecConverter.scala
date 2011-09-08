@@ -11,7 +11,7 @@ import starling.quantity.{UOM, Quantity}
 import starling.titan.EDMConversions._
 import collection.immutable.{TreeMap, Map}
 import starling.daterange.DateRange
-import starling.market.{TitanPricingIndex, IndexWithDailyPrices}
+import starling.market.IndexWithDailyPrices
 
 
 trait TitanIndexName {
@@ -60,7 +60,7 @@ object TitanIndexName {
 
 case class EDMPricingSpecConverter(metal : Metal, exchanges : String => Market) {
   import TitanIndexName._
-  def getIndex(exchangeID : String, indexName : TitanIndexName) : TitanPricingIndex = {
+  def getIndex(exchangeID : String, indexName : TitanIndexName) : IndexWithDailyPrices = {
     RefinedTacticalRefDataConversions.index(exchanges(exchangeID), metal, indexName)
   }
 
@@ -102,7 +102,7 @@ case class EDMPricingSpecConverter(metal : Metal, exchanges : String => Market) 
         }
         case spec : UNKPricingSpecification => {
           val qpMonth = Day.fromJodaDate(spec.qpMonth).containingMonth
-          val index: TitanPricingIndex = getIndex(spec.market, spec.index)
+          val index: IndexWithDailyPrices = getIndex(spec.market, spec.index)
           val declarationBy: Day = if (spec.declarationBy == null) qpMonth.lastDay.thisOrPreviousBusinessDay(index.businessCalendar) else Day.fromJodaDate(spec.declarationBy)
           UnknownPricingSpecification(
              index,

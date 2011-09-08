@@ -105,6 +105,8 @@ abstract class CommodityMarket(
     }
     case _ => throw new IllegalArgumentException("storedFixingPeriod not defined")
   }
+
+  def exchangeOption : Option[FuturesExchange] = None
 }
 
 case class LimSymbol(name: String, multiplier: Double = 1)

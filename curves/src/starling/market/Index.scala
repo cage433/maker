@@ -87,8 +87,8 @@ case class IndexSensitivity(coefficient : Double, index : Index)
 trait IndexWithDailyPrices extends Index with KnownObservation {
   def fixingOrForwardPrice(env : Environment, observationDay : Day) : Quantity
 
-  type marketType <: CommodityMarket
-  def market : marketType
+//  type marketType <: CommodityMarket
+  def market : CommodityMarket
   def lotSize = market.lotSize
 
   def businessCalendar = market.businessCalendar
@@ -103,11 +103,6 @@ trait IndexWithDailyPrices extends Index with KnownObservation {
   def isObservationDay(day: Day): Boolean = businessCalendar.isBusinessDay(day)
 
 }
-
-trait TitanPricingIndex extends IndexWithDailyPrices {
-  type marketType = FuturesMarket
-}
-
 
 /**
  * An index on a single underlying
@@ -157,8 +152,7 @@ trait SingleIndex extends IndexWithDailyPrices with FixingHistoryLookup {
     fixing.toQuantity
   }
 
-
-    /*
+   /*
      Shift vols of prices for the underlying market/period so that swap vols are also perturbed. Needs to be used with care,
      as it is possible that the SwapVol differentiable concerned may not be the only thing perturbed. Other SwapVols may depend
      on the same underlying prices. Compare with perturbations in InstrumentLevelEnvironment where vols for an exact averaging period
@@ -187,9 +181,6 @@ trait SingleIndex extends IndexWithDailyPrices with FixingHistoryLookup {
     }
     env.interpolatedVol(market, observedOptionPeriod(observationDay), Some(observationDay), Some(strike), isIndexVol = true, Some(averagePrice))
   }
-
-
-
 
   def makeAveragingPeriodMonthIfPossible(dateRange: DateRange): DateRange = {
     makeAveragingPeriodMonthIfPossible(dateRange, CommonPricingRule)
@@ -261,7 +252,7 @@ case class FuturesFrontPeriodIndex(
   rollBeforeDays : Int,
   promptness : Int,
   override val precision: Option[Precision]
- ) extends SingleIndex with TitanPricingIndex {
+ ) extends SingleIndex { //with TitanPricingIndex {
 
   def futuresMarket = market
   val name = marketName
@@ -463,13 +454,9 @@ object FuturesFrontPeriodIndex {
     val name = "%s 1st %s" % (market.name, market.tenor.toString.toLowerCase)
     new FuturesFrontPeriodIndex(name, None, market, 0, 1, None)
   }
-
 }
 
-
-
-
-trait LMESingleIndex extends SingleIndex with TitanPricingIndex {
+trait LMESingleIndex extends SingleIndex {
   def observedOptionPeriod(observationDay: Day) = throw new Exception("Options not supported for LME indices")
   override def observationTimeOfDay = ObservationTimeOfDay.Official
 }
@@ -486,7 +473,6 @@ case class LmeCashSettlementIndex(market : FuturesMarket, level : Level) extends
   override def observationTimeOfDay = ObservationTimeOfDay.Official
 }
 
-
 case class LmeThreeMonthIndex(market : FuturesMarket, level : Level) extends LMESingleIndex{
   val name = "LME " + market.commodity + " 3m " + level.name
 
@@ -499,7 +485,7 @@ case class LmeThreeMonthIndex(market : FuturesMarket, level : Level) extends LME
 
 }
 
-case class LmeLowestOfFourIndex(market : FuturesMarket) extends TitanPricingIndex{
+case class LmeLowestOfFourIndex(market : FuturesMarket) extends IndexWithDailyPrices {
   private val cashIndex = LmeCashSettlementIndex(market, Level.Bid)
   private val threeMonthIndex = LmeThreeMonthIndex(market, Level.Bid)
 
@@ -510,7 +496,7 @@ case class LmeLowestOfFourIndex(market : FuturesMarket) extends TitanPricingInde
   val name = "LME " + market.commodity + " low 4"
 }
 
-case class LmeAverageOfFourIndex(market : FuturesMarket) extends TitanPricingIndex{
+case class LmeAverageOfFourIndex(market : FuturesMarket) extends IndexWithDailyPrices {
   private val cashBidIndex = LmeCashSettlementIndex(market, Level.Bid)
   private val cashAskIndex = LmeCashSettlementIndex(market, Level.Ask)
   private val threeMonthBidIndex = LmeThreeMonthIndex(market, Level.Bid)
@@ -525,7 +511,7 @@ case class LmeAverageOfFourIndex(market : FuturesMarket) extends TitanPricingInd
   val name = "LME " + market.commodity + " average 4"
 }
 
-case class LmeAve4MaxSettIndex(market : FuturesMarket) extends TitanPricingIndex {
+case class LmeAve4MaxSettIndex(market : FuturesMarket) extends IndexWithDailyPrices {
   private val ave4Index = LmeAverageOfFourIndex(market)
   private val cashAskIndex = LmeCashSettlementIndex(market, Level.Ask)
   def indexes = ave4Index.indexes ++ cashAskIndex.indexes
