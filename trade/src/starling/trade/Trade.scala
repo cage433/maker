@@ -11,14 +11,13 @@ import starling.quantity.{SimpleNamedQuantity, UOM, Quantity}
  * like 'Portfolio', 'Trader', 'Strategy'
  */
 case class Trade(
-        tradeID: TradeID,
-        tradeDay: Day,
-        counterParty: String,
-        @transient attributes: TradeAttributes,
-        tradeable: Tradeable,
-        costs: List[Costs] = Nil
-        )
- extends Instrument {
+        tradeID : TradeID,
+        tradeDay : Day,
+        counterParty : String,
+        @transient attributes : TradeAttributes,
+        tradeable : Tradeable,
+        costs : List[Costs] = Nil) extends Instrument {
+
   def copyWithInstrument(instrument: Tradeable) = copy(tradeable = instrument)
 
   lazy val expiryDay = tradeable.expiryDay

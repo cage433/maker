@@ -172,6 +172,8 @@ class FuturesMarket(
   }
 
   val hasOptions = volatilityID.isDefined
+
+  override def exchangeOption : Option[FuturesExchange] = Some(exchange)
 }
 
 class LMEFuturesMarket(

@@ -6,7 +6,6 @@ import starling.daterange._
 import starling.instrument._
 import starling.quantity.{UOM, Quantity}
 import starling.utils.sql.PersistAsBlob
-import collection.SortedMap
 import starling.quantity.NamedQuantity
 import starling.market._
 
@@ -210,7 +209,9 @@ case class PhysicalMetalAssignment(
     pricingSpecNameLabel -> pricingSpec.pricingType, 
     quantityLabel -> quantity,
     premiumLabel -> pricingSpec.premium
-  ) ++  pricingSpec.indexOption.map(indexLabel -> _) ++ pricingSpec.quotationPeriod.map(quotationPeriodLabel -> _) ++ pricingSpec.indexOption.map(_.market).map(_.exchangeOption).map(exchange => exchangeLabel -> exchange)
+  ) ++ pricingSpec.indexOption.map(indexLabel -> _) ++
+    pricingSpec.quotationPeriod.map(quotationPeriodLabel -> _) ++
+    pricingSpec.indexOption.flatMap(_.market.exchangeOption).map(exchangeLabel -> _.name)
 
   def asUtpPortfolio(tradeDay:Day) = UTP_Portfolio(Map(copy(quantity = Quantity(1.0, quantity.uom)) -> quantity.value))
 

@@ -87,7 +87,6 @@ case class IndexSensitivity(coefficient : Double, index : Index)
 trait IndexWithDailyPrices extends Index with KnownObservation {
   def fixingOrForwardPrice(env : Environment, observationDay : Day) : Quantity
 
-//  type marketType <: CommodityMarket
   def market : CommodityMarket
   def lotSize = market.lotSize
 
@@ -101,7 +100,6 @@ trait IndexWithDailyPrices extends Index with KnownObservation {
   def convert(value: Quantity, uom: UOM): Option[Quantity] = market.convert(value, uom)
   def possiblePricingRules = List(NoPricingRule)
   def isObservationDay(day: Day): Boolean = businessCalendar.isBusinessDay(day)
-
 }
 
 /**

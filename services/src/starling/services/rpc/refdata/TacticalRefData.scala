@@ -15,14 +15,13 @@ import com.trafigura.tradinghub.support.GUID
 import starling.services.rpc.valuation.ValuationService
 import starling.services.rpc.FileUtils
 import starling.titan.{TitanEdmTradeService, TitanServices}
-import com.trafigura.tradecapture.internal.refinedmetal.{Counterparty, Metal, Market, UOM, Shape, Grade, Location, DestinationLocation}
+import com.trafigura.tradecapture.internal.refinedmetal.{Counterparty, Metal, Market, UOM, Shape, Grade, Location, DestinationLocation, GroupCompany}
 import com.trafigura.timer.Timer
 import com.trafigura.edm.shared.types.TitanId
-import scala.collection.immutable.MapProxy
 
 /**
  * Tactical ref data, service proxies / data
- *   also includes the trademgmt EDM trade serivce, this should be refactored to  separate out at some point
+ *   also includes the trademgmt EDM trade serivce, this should be refactored to separate out at some point
  */
 case class DefaultTitanServices(props: Props) extends TitanServices {
   val rmetadminuser = props.ServiceInternalAdminUser()
@@ -41,8 +40,11 @@ case class DefaultTitanServices(props: Props) extends TitanServices {
   private lazy val tacticalRefdataLocationsService : LocationService = new LocationServiceResourceProxy(ProxyFactory.create(classOf[LocationServiceResource], refdataServiceURL, clientExecutor))
   private lazy val tacticalRefdataDestinationLocationsService : DestinationLocationService = new DestinationLocationServiceResourceProxy(ProxyFactory.create(classOf[DestinationLocationServiceResource], refdataServiceURL, clientExecutor))
 
+  private lazy val tacticalRefdataGroupCompanyService : GroupCompanyService = new GroupCompanyServiceResourceProxy(ProxyFactory.create(classOf[GroupCompanyServiceResource], refdataServiceURL, clientExecutor))
+
   lazy val titanGetEdmTradesService: EdmGetTrades = new EdmGetTradesResourceProxy(ProxyFactory.create(classOf[EdmGetTradesResource], tradeServiceURL, clientExecutor))
 
+/*
   class MapWithNicerErrors[K, V](map : Map[K, V], valueType : String, keyType : String = "GUID") extends MapProxy[K, V]{
     def self = map
     override def apply(k : K) = {
@@ -52,6 +54,7 @@ case class DefaultTitanServices(props: Props) extends TitanServices {
         throw new Exception("No " + valueType + " found for " + keyType + ", " + k)
     }
   }
+*/
 
   val defaultMissingKeyExceptionMessage = "Missing key '%s' of type '%s', for values of type '%s'"
   case class RichMap[K : Manifest, V : Manifest](map : Map[K, V]) {
@@ -61,10 +64,10 @@ case class DefaultTitanServices(props: Props) extends TitanServices {
   object RichMap {
     implicit def toRichMap[K : Manifest, V : Manifest](map : Map[K, V]) = RichMap(map)
   }
-  import RichMap._
 
+  import RichMap._
+  // Maps of refdata objects by guid
   lazy val edmMetalByGUID = allTacticalRefDataMetals.map(e => e.guid -> e).toMap.withException()
-  //val edmMetalByGUID = new MapWithNicerErrors(Map[GUID, Metal]() ++ allTacticalRefDataMetals.map(e => e.guid -> e), "Metal")
   lazy val futuresExchangeByID = allTacticalRefDataExchanges.map(e => e.code -> e).toMap.withException()
   lazy val counterpartiesByGUID = allTacticalRefDataCounterparties().map(e => e.guid -> e).toMap.withException()
   lazy val uomById = allTacticalRefDataUoms().map(e => e.oid -> e).toMap.withException() // hack needed to allow for logistics special "equantity uoms"
@@ -73,6 +76,8 @@ case class DefaultTitanServices(props: Props) extends TitanServices {
   lazy val gradeByGUID = allTacticalRefDataGrades.map(e => e.guid -> e).toMap.withException()
   lazy val locationsByGUID = allTacticalRefDataLocations.map(e => e.guid -> e).toMap.withException()
   lazy val destLocationsByGUID = allTacticalRefDataDestinationLocations.map(e => e.guid -> e).toMap.withException()
+
+  lazy val groupCompaniesByGUID = allTacticalRefDataGroupCompanies.map(e => e.guid -> e).toMap.withException()
 
   def allTacticalRefDataMetals() = tacticalRefdataMetalsService.getMetals()
   def allTacticalRefDataExchanges() = tacticalRefdataMarketsService.getMarkets()
@@ -83,6 +88,7 @@ case class DefaultTitanServices(props: Props) extends TitanServices {
   def allTacticalRefDataGrades() = tacticalRefdataGradesService.getGrades()
   def allTacticalRefDataLocations() = tacticalRefdataLocationsService.getLocations()
   def allTacticalRefDataDestinationLocations() = tacticalRefdataDestinationLocationsService.getDestinationLocations()
+  def allTacticalRefDataGroupCompanies() = tacticalRefdataGroupCompanyService.getGroupCompanies()
 }
 
 /**
@@ -124,6 +130,7 @@ case class FileMockedTitanServices() extends TitanServices {
   lazy val gradeByGUID = Map[GUID, Grade]() ++ allTacticalRefDataGrades.map(e => e.guid -> e)
   lazy val locationsByGUID = Map[GUID, Location]() ++ allTacticalRefDataLocations.map(e => e.guid -> e)
   lazy val destLocationsByGUID = Map[GUID, DestinationLocation]() ++ allTacticalRefDataDestinationLocations.map(e => e.guid -> e)
+  lazy val groupCompaniesByGUID = Map[GUID, GroupCompany]() ++ allTacticalRefDataGroupCompanies.map(e => e.guid -> e)
   
   def allTacticalRefDataFuturesMarkets() = Nil
   def allTacticalRefDataExchanges() = Nil
@@ -132,6 +139,7 @@ case class FileMockedTitanServices() extends TitanServices {
   def allTacticalRefDataGrades() : List[Grade] = Nil
   def allTacticalRefDataLocations() : List[Location] = Nil
   def allTacticalRefDataDestinationLocations() : List[DestinationLocation] = Nil
+  def allTacticalRefDataGroupCompanies() : List[GroupCompany] = Nil
   
   import Timer._
   val loadedMetals = time(loadJsonValuesFromFileUrl(metalsFile).map(s => Metal.fromJson(new JSONObject(s)).asInstanceOf[Metal]), t => println("took %dms to get metals".format(t)))
@@ -178,12 +186,12 @@ case class FileMockedTitanServicesDataFileGenerator(titanEdmTradeService : Titan
   valuationService.marketDataSnapshotIDs().foreach(println)
   val valuations = valuationService.valueAllQuotas()
 
-//  valuations.tradeResults.foreach(println)
+  // valuations.tradeResults.foreach(println)
 
   val (worked, failed) = valuations.tradeResults.values.partition(_ isRight)
   failed.foreach(println)
   val tradeIds = valuations.tradeResults.collect{ case (id, Right(_)) => id }.toList
-  //val trades = valuationService.getTrades(tradeIds)
+  // val trades = valuationService.getTrades(tradeIds)
   val trades = titanEdmTradeService.titanGetEdmTradesService.getAll().results.map(_.trade).filter(_ != null)
 
   println("read %d trades ".format(trades.size))

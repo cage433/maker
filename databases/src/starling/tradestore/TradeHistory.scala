@@ -33,8 +33,6 @@ case class SingleTradeIDTradeVersions( tradeID : TradeID,
     }
   }
 
-
-
   def version(timestamp : Option[Timestamp]) : Option[TradeAndFields] = {
     versionWithTimestamp(timestamp.getOrElse(latest)) match {
       case Some((_, v)) => Some(v)
@@ -112,7 +110,6 @@ class TradeHistories() {
           if (! utpDetails.contains(utp)){
             utps += (utp -> getUtpID(utp))
             //utpDetails += utp -> ToFieldMap(utp.details)
-
           }
       }
     }
@@ -159,5 +156,3 @@ class TradeHistories() {
     }
   }
 }
-
-

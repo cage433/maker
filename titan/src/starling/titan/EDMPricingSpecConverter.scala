@@ -1,6 +1,5 @@
 package starling.titan
 
-import com.trafigura.tradinghub.support.GUID
 import starling.daterange.Day
 import com.trafigura.edm.physicaltradespecs.{PricingSpecification, FixedPricingSpecification, MonthAveragePricingSpecification, PartialAveragePricingSpecification,OptionalPricingSpecification,WeightedPricingSpecification,UnknownPricingSpecification => UNKPricingSpecification}
 import com.trafigura.edm.physicaltradespecs.{CashAveragePricingSpecificationIndex, ThreeMonthAveragePricingSpecificationIndex, LowestOfFourAveragePricingSpecificationIndex, AverageOfFourAveragePricingSpecificationIndex, MaxSettlementAveragePricingSpecificationIndex, CashUnknownPricingSpecificationIndex, ThreeMonthUnknownPricingSpecificationIndex, LowestOfFourUnknownPricingSpecificationIndex, AverageOfFourUnknownPricingSpecificationIndex, MaxSettlementUnknownPricingSpecificationIndex, AveragePricingSpecificationIndexEnum, UnknownPricingSpecificationIndexEnum, PartialAverageDayQuantity}
@@ -9,7 +8,6 @@ import starling.instrument._
 import physical._
 import starling.quantity.{UOM, Quantity}
 import starling.titan.EDMConversions._
-import collection.immutable.{TreeMap, Map}
 import starling.daterange.DateRange
 import starling.market.IndexWithDailyPrices
 
