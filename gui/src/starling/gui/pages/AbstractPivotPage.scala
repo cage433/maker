@@ -318,6 +318,7 @@ class PivotTablePageComponent(
 
     add(lockScreenButton)
     add(expandColumnsToFitButton)
+    add(removeZerosButton)
     addSeparator()
     add(clearPivotButton)
     add(rotateButton)
@@ -330,8 +331,6 @@ class PivotTablePageComponent(
     add(chartButton)
     addSeparator()
     add(toggleCalculateButton)
-    addSeparator()
-    add(removeZerosButton)
     addSeparator()
     if (data.pivotTable.editableInfo == None) {
       if (pageContext.localCache.version.production) {
