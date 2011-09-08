@@ -1,18 +1,15 @@
 package starling.gui.pages
 
-import starling.gui.StarlingLocalCache._
 import scala.swing._
 import event.ButtonClicked
-import starling.pivot.model.{CollapsedState, AxisCell}
 import starling.gui._
 import starling.pivot.view.swing._
 import starling.pivot._
 import controller.{PivotTable, PivotTableConverter}
-import starling.rmi.{StarlingServer, PivotData}
-import collection.mutable.HashSet
+import starling.rmi.PivotData
 import starling.utils.ImplicitConversions._
 import scala.swing.Swing._
-import java.awt.{AlphaComposite, Color, Dimension}
+import java.awt.{Color, Dimension}
 import starling.pivot.HiddenType._
 import starling.browser._
 import common.{GuiUtils, MigPanel}
@@ -40,7 +37,7 @@ abstract class AbstractPivotPage(pivotPageState:PivotPageState, edits:PivotEdits
   def save(sc:ServerContext, edits:PivotEdits):Boolean = throw new Exception("No implementation of save for this page")
   def selfPage(pivotPageState:PivotPageState, edits:PivotEdits=PivotEdits.Null):Page
   def subClassesPageData(pageBuildingContext:SC):Option[PageData] = None
-  def finalDrillDownPage(fields:Seq[(Field,Selection)], pageContext:PageContext, modifiers:Modifiers) = ()
+  def finalDrillDownPage(fields:Seq[(Field,Selection)], pageContext:PageContext, modifiers:Modifiers) {}
   def toolbarButtons(pageContext: PageContext, data:PageData):List[Button] = List()
   def configPanel(pageContext:PageContext, data:PageData, tableSelection:() => TableSelection):Option[ConfigPanels] = None
   def createComponent(pageContext:PageContext, data:PageData, bookmark:Bookmark, browserSize:Dimension, previousPageData:Option[PageData]) : PageComponent = {
@@ -55,14 +52,14 @@ trait Revertable {
 
 trait ConfigPanel extends Component with Revertable {
   def displayName:String
-  def revert() = this match {
-    case container: Container => container.contents.filterCast[Revertable].foreach(_.revert)
+  def revert() {this match {
+    case container: Container => container.contents.filterCast[Revertable].foreach(_.revert())
     case _ => throw new Exception("No implemented")
-  }
+  }}
 }
 
 case class ConfigPanels(configPanels:List[ConfigPanel], extraComponent:Component, extraComponentAction:Action) extends Revertable {
-  def revert() = configPanels.foreach(_.revert)
+  def revert() {configPanels.foreach(_.revert())}
 }
 
 case class PivotPageState(showChart:Boolean=false, pivotFieldParams:PivotFieldParams=PivotFieldParams(true, None),
@@ -259,7 +256,7 @@ class PivotTablePageComponent(
     val copyButton = new ToolBarButton {
       icon = StarlingIcons.Copy
       tooltip = "Copy the selected cells to the clipboard"
-      reactions += {case ButtonClicked(b) => pivotComp.copyReportToClip}
+      reactions += {case ButtonClicked(b) => pivotComp.copyReportToClip()}
     }
     val saveEditsButton = new ToolBarButton {
       icon = StarlingIcons.icon("/icons/16x16_save.png")
@@ -321,39 +318,39 @@ class PivotTablePageComponent(
 
     add(lockScreenButton)
     add(expandColumnsToFitButton)
-    addSeparator
+    addSeparator()
     add(clearPivotButton)
     add(rotateButton)
-    addSeparator
+    addSeparator()
     add(bottomTotalsButton)
     add(rowSubTotalsButton)
     add(rightTotalsButton)
     add(columnSubTotalsButton)
-    addSeparator
+    addSeparator()
     add(chartButton)
-    addSeparator
+    addSeparator()
     add(toggleCalculateButton)
-    addSeparator
+    addSeparator()
     add(removeZerosButton)
-    addSeparator
+    addSeparator()
     if (data.pivotTable.editableInfo == None) {
       if (pageContext.localCache.version.production) {
         add(copyButton, "pushx")
       } else {
         add(copyButton)
-        addSeparator
+        addSeparator()
         add(clearCacheButton, "pushx")
       }
     } else {
       add(copyButton)
-      addSeparator
+      addSeparator()
       if (pageContext.localCache.version.production) {
         add(saveEditsButton)
         add(resetEditsButton, "pushx")
       } else {
         add(saveEditsButton)
         add(resetEditsButton)
-        addSeparator
+        addSeparator()
         add(clearCacheButton, "pushx")
       }
     }
@@ -362,27 +359,27 @@ class PivotTablePageComponent(
       add(button)
     }
 
-    def addSeparator {
+    def addSeparator() {
       val separator = new Separator(Orientation.Vertical)
       add(separator, "pushy, growy, gapleft 2, gapright 1")
     }
 
-    private def resetTotals {
+    private def resetTotals() {
       bottomTotalsButton.selected = pivotPageState.otherLayoutInfo.totals.rowGrandTotal
       rightTotalsButton.selected = pivotPageState.otherLayoutInfo.totals.columnGrandTotal
       rowSubTotalsButton.selected = pivotPageState.otherLayoutInfo.totals.rowSubTotals
       columnSubTotalsButton.selected = pivotPageState.otherLayoutInfo.totals.columnSubTotals
     }
 
-    def resetToolbarState {
+    def resetToolbarState() {
       lockScreenButton.selected = pivotPageState.otherLayoutInfo.frozen
       toggleCalculateButton.selected = !pivotPageState.pivotFieldParams.calculate
-      resetTotals
+      resetTotals()
     }
 
-    resetTotals
+    resetTotals()
   }
-  pivotComp.setCustomToolBar(toolBar, () => toolBar.resetToolbarState)
+  pivotComp.setCustomToolBar(toolBar, () => toolBar.resetToolbarState())
 
   reactions += {
     case FieldsChangedEvent(pivotFieldState) => pageContext.goTo(selfPage(pivotPageState.copyPivotFieldsState(pivotFieldState), edits))
@@ -474,8 +471,8 @@ class PivotTablePageComponent(
 
   add(pivotTableComponent, "push, grow")
 
-  override def restoreToCorrectViewForBack  {pivotComp.reverse()}
-  override def resetDynamicState  {pivotComp.resetDynamicState()}
+  override def restoreToCorrectViewForBack()  {pivotComp.reverse()}
+  override def resetDynamicState()  {pivotComp.resetDynamicState()}
   def selection = {pivotComp.selection}
   override def getBorder = {
     if (pivotPageState.otherLayoutInfo.hiddenType == AllHidden) {
@@ -535,7 +532,7 @@ class PivotTablePageComponent(
 }
 
 case object ClearServerSideCache extends StarlingSubmitRequest[Unit] {
-  def submit(serverContext:StarlingServerContext) = {serverContext.server.clearCache}
+  def submit(serverContext:StarlingServerContext) {serverContext.server.clearCache}
 }
 
 case class AbstractPivotComponentState(filterText:String,
