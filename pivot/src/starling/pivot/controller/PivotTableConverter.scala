@@ -268,18 +268,18 @@ object AxisNodeBuilder {
   }
 }
 
-case class CellUpdateInfo(row:Int, column:Int, key:(List[ChildKey], List[ChildKey]), matches:Boolean)
+case class CellUpdateInfo(row:Int, column:Int, key:(List[ChildKey], List[ChildKey]), matches:Boolean, currentFraction:Float)
 
 /**
  * Supplies data for the pivot table view converted using totals and expand/collapse state.
  */
 case class PivotTableConverter(otherLayoutInfo:OtherLayoutInfo = OtherLayoutInfo(), table:PivotTable,
                                extraFormatInfo:ExtraFormatInfo=PivotFormatter.DefaultExtraFormatInfo,
-                               fieldState:PivotFieldsState=PivotFieldsState(), previousPivotTable:Option[PivotTable]=None) {
+                               fieldState:PivotFieldsState=PivotFieldsState(), previousPageData:Option[(PivotTable, Map[(List[ChildKey],List[ChildKey]),Float])]=None) {
   val totals = otherLayoutInfo.totals
   val collapsedRowState = otherLayoutInfo.rowCollapsedState
   val collapsedColState = otherLayoutInfo.columnCollapsedState
-  private val previousAggregatedMainBucket = previousPivotTable.map(_.aggregatedMainBucket)
+  private val previousAggregatedMainBucket = previousPageData.map(ppd => ppd._1.aggregatedMainBucket)
 
   def allTableCells(extractUOMs:Boolean = true) = {
     val grid = createGrid(extractUOMs)
@@ -462,7 +462,14 @@ case class PivotTableConverter(otherLayoutInfo:OtherLayoutInfo = OtherLayoutInfo
           val measureCellOption = aggregatedMainBucket.get(key)
           val cellUpdateInfo = previousAggregatedMainBucket.map(pamb => {
             val matches = (pamb.get(key) == measureCellOption)
-            CellUpdateInfo(rowIndex, columnIndex, key, matches)
+            if (!matches) {
+              CellUpdateInfo(rowIndex, columnIndex, key, matches, 0.0f)
+            } else {
+              previousPageData.get._2.get(key) match {
+                case Some(f) => CellUpdateInfo(rowIndex, columnIndex, key, false, f)
+                case None => CellUpdateInfo(rowIndex, columnIndex, key, matches, 0.0f)
+              }
+            }
           })
           val tableCell = measureCellOption match {
             case Some(measureCell) => {

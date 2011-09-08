@@ -5,7 +5,7 @@ import scala.swing._
 import javax.swing.event.{ListSelectionEvent, ListSelectionListener}
 import starling.pivot.model._
 import starling.pivot._
-import controller.PivotTableConverter
+import controller.{PivotTable, ChildKey, PivotTableConverter}
 import starling.pivot.FieldChooserType._
 import org.jdesktop.swingx.decorator.{HighlightPredicate}
 import org.jdesktop.swingx.JXTable
@@ -17,7 +17,6 @@ import starling.gui.StarlingIcons
 import java.awt.datatransfer.StringSelection
 import java.awt.event._
 import starling.gui.api.ReportSpecificOptions
-import collection.immutable.List
 import starling.utils.ImplicitConversions._
 import collection.mutable.HashMap
 import java.awt.{Graphics2D, Dimension, Color, GradientPaint, Cursor, AWTEvent, Toolkit, KeyboardFocusManager}
@@ -25,22 +24,22 @@ import javax.swing._
 import starling.pivot.view.swing.PivotTableType._
 import starling.pivot.HiddenType._
 import starling.browser.common._
-import starling.browser.{PageData, Modifiers}
 import starling.gui.pages.{PivotTablePageData, TableSelection, ConfigPanels}
 import org.jdesktop.animation.timing.{TimingTargetAdapter, Animator}
+import starling.browser.internal.StarlingBrowser
+import starling.browser.{RefreshInfo, PreviousPageData, PageData, Modifiers}
+import collection.immutable.{Map, List}
 
 object PivotTableView {
   def createWithLayer(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSize:Dimension,
                       configPanel:(() => TableSelection)=>Option[ConfigPanels],
                       extraFormatInfo:ExtraFormatInfo, edits:PivotEdits, embedded:Boolean = true,
-                      previousPageData:Option[PageData]) = {
+                      previousPageData:Option[PreviousPageData]) = {
     val viewUI = new PivotTableViewUI
     val view = new PivotTableView(data, otherLayoutInfo, browserSize, configPanel, extraFormatInfo, embedded, viewUI, edits, previousPageData)
     val layer = new SXLayerScala(view, viewUI)
     layer
   }
-
-  val RefreshFadeTime = 10000
 }
 
 case class FieldsChangedEvent(pivotFieldState:PivotFieldsState) extends Event
@@ -56,7 +55,7 @@ case class GridSelectionEvent(selection:Option[(String,Boolean)]) extends Event
 class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSize0:Dimension,
                      configPanel:(() => TableSelection)=>Option[ConfigPanels],
                      extraFormatInfo:ExtraFormatInfo, embedded:Boolean,
-                     viewUI:PivotTableViewUI, edits:PivotEdits, previousPageData:Option[PageData])
+                     viewUI:PivotTableViewUI, edits:PivotEdits, previousPageData:Option[PreviousPageData])
         extends MigPanel("hidemode 2, insets 0, gap 0") {
   private var browserSize = browserSize0
   private val model = new starling.pivot.model.PivotTableModel(data)
@@ -505,13 +504,20 @@ class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSiz
   }
   val sizerPanel = new FlowPanel {background = GuiUtils.PivotTableBackgroundColour}
 
-  private val previousPivotTable = previousPageData.map(_.asInstanceOf[PivotTablePageData].pivotData.pivotTable)
-  private val viewConverter = PivotTableConverter(otherLayoutInfo, data.pivotTable, extraFormatInfo, data.pivotFieldsState, previousPivotTable)
+  private val previousPageData0:Option[(PivotTable, Map[(List[ChildKey],List[ChildKey]),Float])] = previousPageData.map(ppd => {
+    val pivotTable = ppd.pageData.asInstanceOf[PivotTablePageData].pivotData.pivotTable
+    val refreshInfo = ppd.refreshInfo.get.asInstanceOf[PivotRefreshInfo]
+    val currentFractionMap = refreshInfo.cells.map(c => {c.key -> c.currentFraction}).toMap
+    (pivotTable, currentFractionMap)
+  })
+  private val viewConverter = PivotTableConverter(otherLayoutInfo, data.pivotTable, extraFormatInfo, data.pivotFieldsState, previousPageData0)
   private val (rowHeaderData, colHeaderData, mainData, colUOMs, cellUpdateList) = viewConverter.allTableCellsAndUOMs
   private val updateMap = new HashMap[(Int,Int),RefreshedCell]()
   cellUpdateList.foreach(c => {
-    updateMap += ((c.row, c.column) -> RefreshedCell((c.row, c.column), 0.0f))
+    updateMap += ((c.row, c.column) -> RefreshedCell((c.row, c.column), c.currentFraction, c.key))
   })
+
+  def refreshInfo = PivotRefreshInfo(updateMap.values.map(rc => {PivotCellRefreshInfo(rc.key, rc.currentFraction + currentFraction)}).toList)
 
   private def resizeColumnHeaderAndMainTableColumns() {
     tableModelsHelper.resizeColumnHeaderAndMainTableColumns(fullTable, mainTable, colHeaderTable,
@@ -730,9 +736,12 @@ class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSiz
   allTables foreach Highlighters.applyHighlighters
   mainTable.addHighlighter(new MapHighlighter(updateMap))
 
+  private var currentFraction = 0.0f
+
   private def startAnimation() {
-    new Animator(PivotTableView.RefreshFadeTime, new TimingTargetAdapter {
+    new Animator(StarlingBrowser.RefreshTime, new TimingTargetAdapter {
       override def timingEvent(fraction:Float) {
+        currentFraction = fraction
         def doHighlighting(t:JXTable, map:HashMap[(Int,Int),RefreshedCell]) {
           for (index <- map.keySet) {
             val cell = map(index)
@@ -959,7 +968,7 @@ class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSiz
   startAnimation()
 }
 
-case class RefreshedCell(index:(Int,Int), var currentFraction:Float) {
+case class RefreshedCell(index:(Int,Int), var currentFraction:Float, key:(List[ChildKey],List[ChildKey])) {
   var currentColour = new Color(255,255,0,128)
 }
 
@@ -968,3 +977,6 @@ class MapHighlighter(map:HashMap[(Int,Int),RefreshedCell]) extends UpdatingBackg
     map.keySet.contains((adapter.row,adapter.column))
   }
 }, map)
+
+case class PivotCellRefreshInfo(key:(List[ChildKey],List[ChildKey]), currentFraction:Float)
+case class PivotRefreshInfo(cells:List[PivotCellRefreshInfo]) extends RefreshInfo

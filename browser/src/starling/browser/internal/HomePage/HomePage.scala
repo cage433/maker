@@ -22,7 +22,7 @@ case object StarlingHomePage extends Page {
   def createServerContext(sc: ServerContext) = sc.browserService.version
   type SC = Version
 
-  def createComponent(context: PageContext, data: PageData, bookmark:Bookmark, browserSize:Dimension, previousPageData:Option[PageData]) = new StarlingHomePageComponent(context, browserSize, data)
+  def createComponent(context: PageContext, data: PageData, bookmark:Bookmark, browserSize:Dimension, previousPageData:Option[PreviousPageData]) = new StarlingHomePageComponent(context, browserSize, data)
   def text = "Starling"
   def icon = BrowserIcons.im("/icons/weather-clear.png")
 }
