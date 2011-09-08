@@ -1017,7 +1017,13 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
 
               val pageComponent = createPopulatedComponent(page, pageResponse)
               pageComponent.setTypeState(currentTypeState)
-              val pageInfo = new PageInfo(page, pageResponse, bookmark, Some(pageComponent), new SoftReference(pageComponent), None, None)
+              val latestPage = page.latestPage(lCache)
+              val needToRefreshPage = if (latestPage != page) {
+                Some((latestPage, true))
+              } else {
+                None
+              }
+              val pageInfo = new PageInfo(page, pageResponse, bookmark, Some(pageComponent), new SoftReference(pageComponent), None, needToRefreshPage)
               history.append(pageInfo)
               val oldCurrent = current
               current+=1
