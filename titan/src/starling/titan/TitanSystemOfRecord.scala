@@ -322,7 +322,6 @@ trait TitanTacticalRefData {
   val edmMetalByGUID: Map[GUID, Metal]
   val futuresExchangeByID: Map[String, Market]
   val counterpartiesByGUID: Map[GUID, Counterparty]
-  val uomById : Map[Int, UOM]
   val shapesByGUID : Map[GUID, Shape]
   val gradeByGUID : Map[GUID, Grade]
   val locationsByGUID : Map[GUID, Location]
@@ -335,4 +334,3 @@ trait TitanEdmTradeService {
 }
 
 trait TitanServices extends TitanTacticalRefData with TitanEdmTradeService
-

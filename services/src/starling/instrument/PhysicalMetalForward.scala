@@ -136,8 +136,7 @@ object PhysicalMetalAssignmentForward extends Log {
   def apply(exchangesByID : Map[String, EDMMarket],
             edmMetalByGUID : Map[GUID, EDMMetal],
             quotaNameToQuotaMap : Map[String, PhysicalTradeQuota])
-            (inventory : EDMInventoryItem)
-            (implicit uomIdToNameMap : Map[Int, String]) : PhysicalMetalAssignmentForward = {
+            (inventory : EDMInventoryItem) : PhysicalMetalAssignmentForward = {
     try {
       val quotaMap : Map[String, PhysicalTradeQuota] = quotaNameToQuotaMap.withDefault(k => throw new Exception("Missing key '%s' for quota lookup".format(k)))
 
@@ -178,8 +177,7 @@ object PhysicalMetalAssignmentForward extends Log {
             edmMetalByGUID : Map[GUID, EDMMetal],
             quotaNameToQuotaMap : Map[String, PhysicalTradeQuota],
             env : Environment, snapshotID : String)
-            (inventory : EDMInventoryItem)
-            (implicit uomIdToNameMap : Map[Int, String]): Either[String, List[CostsAndIncomeAssignmentValuation]] =  {
+            (inventory : EDMInventoryItem) : Either[String, List[CostsAndIncomeAssignmentValuation]] =  {
 
     try {
       val forward = PhysicalMetalAssignmentForward(exchangesByID, edmMetalByGUID, quotaNameToQuotaMap)(inventory)
@@ -191,7 +189,7 @@ object PhysicalMetalAssignmentForward extends Log {
   }
 }
 
-case class PhysicalMetalAssignmentForward(id : String, inventoryItem : EDMInventoryItem, quota : PhysicalMetalQuota)(implicit uomIdToName : Map[Int, String]) {
+case class PhysicalMetalAssignmentForward(id : String, inventoryItem : EDMInventoryItem, quota : PhysicalMetalQuota)/* (implicit uomIdToName : Map[Int, String]) */ {
 
   def costsAndIncomeAssignmentValueBreakdown(env : Environment, snapshotId : String) : List[CostsAndIncomeAssignmentValuation] = {
     val purchaseQty = fromTitanQuantity(inventoryItem.purchaseAssignment.quantity)

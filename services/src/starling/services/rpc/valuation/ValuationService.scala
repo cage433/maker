@@ -34,7 +34,6 @@ import com.trafigura.edm.logistics.inventory.EDMInventoryItem
 import starling.services.rpc.logistics._
 import com.trafigura.events.DemultiplexerClient
 import com.trafigura.edm.shared.types.TitanId
-import com.trafigura.services.BouncyRMIServiceApi._
 import com.trafigura.services.BouncyRMIServiceApi
 import java.io.{PrintWriter, FileWriter, BufferedWriter}
 
@@ -142,7 +141,6 @@ case class DefaultTitanLogisticsInventoryCache(props : Props) extends TitanLogis
   protected var inventoryMap : Map[String, EDMInventoryItem] = Map[String, EDMInventoryItem]()
   protected var assignmentIDtoInventoryIDMap : Map[String, String] = Map[String, String]()
 
-  private val titanTradeService = new DefaultTitanServices(props)
   private val titanLogisticsServices = DefaultTitanLogisticsServices(props)
   private def getAll() = try {
       titanLogisticsServices.inventoryService.service.getAllInventoryLeaves()
@@ -376,8 +374,6 @@ class MockEnvironmentProvider() extends EnvironmentProvider {
   def snapshotNameToID(name : String) : SnapshotID = throw new UnsupportedOperationException
 }
 
-//class ValuationServiceStub extends ValuationServicer()
-
 /**
  * Valuation service implementations
  */
@@ -393,13 +389,10 @@ class ValuationService(
 
   lazy val futuresExchangeByID = refData.futuresExchangeByID
   lazy val edmMetalByGUID = refData.edmMetalByGUID
-  lazy val uomById = refData.uomById
-  implicit lazy val uomIdToName : Map[Int, String] = uomById.values.map(e => e.oid -> e.name).toMap
 
   val eventHandler = new EventHandler
 
   rabbitEventServices.addClient(eventHandler)
-
 
   /**
    * value all edm trade quotas (that are completed) and return a structure containing a
@@ -447,7 +440,6 @@ class ValuationService(
 
     (snapshotIDString, valuation)
   }
-
 
   /**
    * value all costables by id
@@ -583,7 +575,6 @@ class ValuationService(
   def getTrades(tradeIds : List[String]) : List[EDMPhysicalTrade] = tradeIds.map(id => TitanId(id)).map(titanTradeCache.getTrade)
   def getFuturesExchanges = futuresExchangeByID.values
   def getMetals = edmMetalByGUID.values
-  def getUoms = uomById.values
     
 
   /**
@@ -730,7 +721,7 @@ class ValuationService(
           case StarlingMarketDataSnapshotIDSubject => {
             ev.verb match {
               case CreatedEventVerb => {
-                val previousSnapshotId = todaysSnapshots(1).id
+                val previousSnapshotId = todaysSnapshots(1).id.toString
                 log.info("New marketData snapshot event, revaluing received event using old snapshot %s new snapshot %s".format(previousSnapshotId, newSnapshotId))
                 val previousEnv = environmentProvider.environment(previousSnapshotId)
                 val newEnv = environmentProvider.environment(newSnapshotId)
@@ -748,7 +739,7 @@ class ValuationService(
                 val originalInventoryValuations = valueInventoryAssignments(Nil, previousEnv, previousSnapshotId)
                 val newInventoryValuations = valueInventoryAssignments(Nil, newEnv, newSnapshotId)
                 val inventoryIds = newInventoryValuations.assignmentValuationResults.keys.toList
-                val changedInventoryValueIDs = inventoryIds.filter(id => newInventoryValuations.assignmentValuationResults(id) != newInventoryValuations.assignmentValuationResults(id))
+                val changedInventoryValueIDs = inventoryIds.filter(id => originalInventoryValuations.assignmentValuationResults(id) != newInventoryValuations.assignmentValuationResults(id))
 
                 log.info("Inventory assignments revalued for new snapshot %s, number of changed valuations %d".format(newSnapshotId, changedInventoryValueIDs.size))
 
