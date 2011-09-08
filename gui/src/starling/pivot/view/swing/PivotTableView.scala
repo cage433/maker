@@ -27,6 +27,7 @@ import starling.pivot.HiddenType._
 import starling.browser.common._
 import starling.browser.{PageData, Modifiers}
 import starling.gui.pages.{PivotTablePageData, TableSelection, ConfigPanels}
+import org.jdesktop.animation.timing.{TimingTargetAdapter, Animator}
 
 object PivotTableView {
   def createWithLayer(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSize:Dimension,
@@ -502,13 +503,15 @@ class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSiz
     rowComponent.background = PivotTableBackgroundColour
     rowComponent.border = BorderFactory.createMatteBorder(0,0,1,1,GuiUtils.BorderColour)
   }
-  val sizerPanel = new FlowPanel {
-    background = GuiUtils.PivotTableBackgroundColour
-  }
+  val sizerPanel = new FlowPanel {background = GuiUtils.PivotTableBackgroundColour}
 
   private val previousPivotTable = previousPageData.map(_.asInstanceOf[PivotTablePageData].pivotData.pivotTable)
   private val viewConverter = PivotTableConverter(otherLayoutInfo, data.pivotTable, extraFormatInfo, data.pivotFieldsState, previousPivotTable)
-  private val (rowHeaderData, colHeaderData, mainData, colUOMs) = viewConverter.allTableCellsAndUOMs
+  private val (rowHeaderData, colHeaderData, mainData, colUOMs, cellUpdateList) = viewConverter.allTableCellsAndUOMs
+  private val updateMap = new HashMap[(Int,Int),RefreshedCell]()
+  cellUpdateList.foreach(c => {
+    updateMap += ((c.row, c.column) -> RefreshedCell((c.row, c.column), 0.0f))
+  })
 
   private def resizeColumnHeaderAndMainTableColumns() {
     tableModelsHelper.resizeColumnHeaderAndMainTableColumns(fullTable, mainTable, colHeaderTable,
@@ -538,7 +541,7 @@ class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSiz
 
   def extraFormatInfoUpdated(extraFormatInfo:ExtraFormatInfo) {
     val newConverter = viewConverter.copy(extraFormatInfo = extraFormatInfo)
-    val (newRowData,newColumnData,newMainTableCells,_) = newConverter.allTableCellsAndUOMs
+    val (newRowData,newColumnData,newMainTableCells,_,_) = newConverter.allTableCellsAndUOMs
     tableModelsHelper.setData(newRowData, newColumnData, newMainTableCells, extraFormatInfo)
   }
 
@@ -725,6 +728,27 @@ class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSiz
     columnHeaderScrollPanePanel, mainTableScrollPane, otherLayoutInfo.columnDetails)
 
   allTables foreach Highlighters.applyHighlighters
+  mainTable.addHighlighter(new MapHighlighter(updateMap))
+
+  private def startAnimation() {
+    new Animator(PivotTableView.RefreshFadeTime, new TimingTargetAdapter {
+      override def timingEvent(fraction:Float) {
+        def doHighlighting(t:JXTable, map:HashMap[(Int,Int),RefreshedCell]) {
+          for (index <- map.keySet) {
+            val cell = map(index)
+            val currentFraction = fraction + cell.currentFraction
+            if (currentFraction < 1.0f) {
+              val c = new Color(255,255,0, math.round((1.0f - currentFraction) * 255))
+              cell.currentColour = c
+              t.repaint(t.getCellRect(index._1, index._2, false))
+            }
+          }
+        }
+        doHighlighting(mainTable, updateMap)
+      }
+      override def end() {updateMap.clear()}
+    }).start()
+  }
 
   model.setPivotChangedListener((pivotFieldsState)=> {
     publish(FieldsChangedEvent(pivotFieldsState))
@@ -932,14 +956,15 @@ class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSiz
       peer.getActionMap.put(action.title, action.peer)
     }
   }
+  startAnimation()
 }
 
 case class RefreshedCell(index:(Int,Int), var currentFraction:Float) {
-  var currentColour = new Color(0,0,255,128)
+  var currentColour = new Color(255,255,0,128)
 }
 
 class MapHighlighter(map:HashMap[(Int,Int),RefreshedCell]) extends UpdatingBackgroundColourHighlighter(new HighlightPredicate {
   def isHighlighted(renderer:java.awt.Component, adapter:org.jdesktop.swingx.decorator.ComponentAdapter) = {
-    map.keySet.contains((adapter.column,adapter.row))
+    map.keySet.contains((adapter.row,adapter.column))
   }
 }, map)

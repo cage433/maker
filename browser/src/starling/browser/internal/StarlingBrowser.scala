@@ -89,25 +89,25 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
     val page = currentPageInfo.page
     val latestPage = page.latestPage(lCache)
     if (page != latestPage) {
-      currentPageInfo.refreshPage = Some(latestPage)
+      currentPageInfo.refreshPage = Some((latestPage, true))
     }
   }
 
   reactions += {
-    case BundleAdded(bundle) => {
+    case e@BundleAdded(bundle) => {
       if (bundle.bundleName == history(current).bundle) {
         val currentPageInfo = history(current)
         require(bundle.getClass.getClassLoader != currentPageInfo.page.getClass.getClassLoader)
         val newPage = StarlingBrowser.reflectionCloningStrategy.cloneObjectUsingClassLoader(
           currentPageInfo.page, bundle.getClass.getClassLoader).asInstanceOf[Page]
-        println(">> Page copy. here copied page from " + currentPageInfo.page.getClass.getClassLoader + " to " + newPage.getClass.getClassLoader)
-        currentPageInfo.refreshPage = Some(newPage)
+        currentPageInfo.refreshPage = Some((newPage, false))
         if (liveUpdateCheckbox.selected) {
           refresh()
         } else {
           refreshButton.enabled = true
         }
       }
+      publisherForPageContext.publish(e)
     }
     case EventBatch(events) => {
       events.foreach { e => publisherForPageContext.publish(e) }
@@ -1126,11 +1126,13 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
     val previousBookmark = pageInfo.bookmark
     val previousState = previousComponent.getState
     val previousTypeState = previousComponent.getTypeState
-    val previousPageData = pageInfo.pageResponse match {
-      case SuccessPageResponse(pd,_) => Some(pd)
-      case _ => None
-    }
-    val newPage = pageInfo.refreshPage.get
+    val (newPage, usePreviousPageData) = pageInfo.refreshPage.get
+    val previousPageData = if (usePreviousPageData) {
+      pageInfo.pageResponse match {
+        case SuccessPageResponse(pd,_) => Some(pd)
+        case _ => None
+      }
+    } else {None}
     if (lockAndUnlockScreen) {
       genericLockedUI.setLocked(true)
       tabComponent.setBusy(true)

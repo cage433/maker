@@ -13,7 +13,7 @@ class BoldFontHighlighter(predicate:HighlightPredicate) extends AbstractHighligh
 
 class UpdatingBackgroundColourHighlighter(predicate:HighlightPredicate, map:HashMap[(Int,Int),RefreshedCell]) extends AbstractHighlighter(predicate) {
   def doHighlight(component:Component, adapter:ComponentAdapter) = {
-    val index = (adapter.column,adapter.row)
+    val index = (adapter.row,adapter.column)
     if (map.keySet.contains(index)) {
       component.setBackground(map(index).currentColour)
     }

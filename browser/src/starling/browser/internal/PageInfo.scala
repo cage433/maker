@@ -3,20 +3,20 @@ package starling.browser.internal
 import starling.browser.{ComponentState, PageComponent, Bookmark, Page}
 import java.awt.image.BufferedImage
 import javax.imageio.ImageIO
-import java.util.concurrent.{Callable, Future, Executors, CountDownLatch}
+import java.util.concurrent.{Callable, Future, Executors}
 import java.io.{BufferedOutputStream, ByteArrayOutputStream, ByteArrayInputStream}
 import scala.ref.SoftReference
 
 class PageInfo(val page: Page, val pageResponse:PageResponse, val bookmark:Bookmark, var pageComponent:Option[PageComponent],
                var pageComponentSoft:SoftReference[PageComponent], var componentState:Option[ComponentState],
-               var refreshPage:Option[Page], var componentForFocus:Option[java.awt.Component]=None) {
+               var refreshPage:Option[(Page,Boolean)], var componentForFocus:Option[java.awt.Component]=None) {
   def image:BufferedImage = {
     if (future == null) {
       null
     } else {
       val byteArrayInputStream = new ByteArrayInputStream(future.get)
       val i = ImageIO.read(byteArrayInputStream)
-      byteArrayInputStream.close
+      byteArrayInputStream.close()
       i
     }
   }
@@ -36,7 +36,7 @@ class PageInfo(val page: Page, val pageResponse:PageResponse, val bookmark:Bookm
         ImageIO.write(iA(0), "png", bOut)
         iA(0) = null
         val bytes = out.toByteArray
-        bOut.close
+        bOut.close()
         bytes
       }
     })

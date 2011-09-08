@@ -1,7 +1,6 @@
 package starling.browser.internal
 
 import java.awt.Rectangle
-import starling.browser.service.internal.HeterogeneousMap
 import starling.browser.service.{UserSettingsLabel, UserSettingsEntry}
 import starling.browser.{BrowserBundle, ServerContext}
 import collection.mutable.{HashMap => MMap}
@@ -13,7 +12,9 @@ object UserSettings {
   val LiveDefault = new Key[Boolean]("LiveDefault", RootBrowserBundle.bundleName)
 }
 
-class UserSettingsValue(var value:Option[AnyRef], var data:String)
+class UserSettingsValue(var value:Option[AnyRef], var data:String) {
+  override def toString = "UserSettingsValue(" + value.toString + ", " + data + ")"
+}
 
 class UserSettings(initialSettings:UserSettingsLabel, publisher:Publisher) extends Serializable {
 
@@ -63,8 +64,10 @@ class UserSettings(initialSettings:UserSettingsLabel, publisher:Publisher) exten
 
   private def put[T](key: Key[T], value: T) {
     val bundleSettings = indexedEntries.getOrElseUpdate(key.bundle, new MMap[String,UserSettingsValue]())
-    val v = bundleSettings.getOrElseUpdate(key.description, new UserSettingsValue(Some(value.asInstanceOf[AnyRef]), ""))
-    v.data = bundles(key.bundle).marshal(value.asInstanceOf[AnyRef])
+    val someValue = Some(value.asInstanceOf[AnyRef])
+    val userSettingsValue = bundleSettings.getOrElseUpdate(key.description, new UserSettingsValue(someValue, ""))
+    userSettingsValue.value = someValue
+    userSettingsValue.data = bundles(key.bundle).marshal(value.asInstanceOf[AnyRef])
   }
 
   def settingExists[T](key: Key[T]):Boolean = {

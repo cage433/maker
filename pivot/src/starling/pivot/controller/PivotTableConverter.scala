@@ -268,6 +268,8 @@ object AxisNodeBuilder {
   }
 }
 
+case class CellUpdateInfo(row:Int, column:Int, key:(List[ChildKey], List[ChildKey]), matches:Boolean)
+
 /**
  * Supplies data for the pivot table view converted using totals and expand/collapse state.
  */
@@ -286,7 +288,7 @@ case class PivotTableConverter(otherLayoutInfo:OtherLayoutInfo = OtherLayoutInfo
 
   def allTableCellsAndUOMs = {
     val grid = createGrid(true)
-    (grid.rowData, grid.colData, grid.mainData, grid.colUOMS)
+    (grid.rowData, grid.colData, grid.mainData, grid.colUOMS, grid.cellUpdateInfoList)
   }
 
   def createGrid(extractUOMs:Boolean = true, addExtraColumnRow:Boolean = true):PivotGrid ={
@@ -382,7 +384,7 @@ case class PivotTableConverter(otherLayoutInfo:OtherLayoutInfo = OtherLayoutInfo
       PivotGrid(fakeRowData, fakeColData, fakeMainData)
     } else {
       // Note below that we are using rowData rather than rowDataWithNullsAdded. This is because the rowData matches the aggregatedMainBucket.
-      val (mainData, columnUOMs) = nMainTableCells(rowData, cdX, extractUOMs)
+      val (mainData, columnUOMs, cellUpdateInfoList) = nMainTableCells(rowData, cdX, extractUOMs)
 
       if (extractUOMs) {
         // Extract the UOM label as far towards the top of the column header table as possible.
@@ -425,7 +427,7 @@ case class PivotTableConverter(otherLayoutInfo:OtherLayoutInfo = OtherLayoutInfo
           }
         }
       }
-      PivotGrid(rowDataWithNullsAdded.map(_.toArray).toArray, colData, mainData, columnUOMs)
+      PivotGrid(rowDataWithNullsAdded.map(_.toArray).toArray, colData, mainData, columnUOMs, cellUpdateInfoList)
     }
   }
 
@@ -439,7 +441,7 @@ case class PivotTableConverter(otherLayoutInfo:OtherLayoutInfo = OtherLayoutInfo
 
     //create the main table looping through the flattened rows and columns and looking up the sums in mainTableBucket
     val allUnits = Array.fill(scala.math.max(1, flattenedColValues.size))(Set[UOM]())
-    val data: Array[Array[TableCell]] =
+    val dataAndCellInfo: Array[Array[(TableCell, Option[CellUpdateInfo])]] =
       (for ((rowValues, rowIndex) <- flattenedRowValues.zipWithIndex) yield {
         val rowSubTotal = rowValues.exists(_.totalState == SubTotal)
         val rowTotal = rowValues.exists(_.totalState == Total)
@@ -458,10 +460,10 @@ case class PivotTableConverter(otherLayoutInfo:OtherLayoutInfo = OtherLayoutInfo
           }
           val measureField = columnValues.find(ac => ac.value.isMeasure)
           val measureCellOption = aggregatedMainBucket.get(key)
-          val matches = previousAggregatedMainBucket.map(pamb => {
-            pamb.get(key) == measureCellOption
+          val cellUpdateInfo = previousAggregatedMainBucket.map(pamb => {
+            val matches = (pamb.get(key) == measureCellOption)
+            CellUpdateInfo(rowIndex, columnIndex, key, matches)
           })
-//          println("-- " + matches)
           val tableCell = measureCellOption match {
             case Some(measureCell) => {
               measureCell.value match {
@@ -513,7 +515,7 @@ case class PivotTableConverter(otherLayoutInfo:OtherLayoutInfo = OtherLayoutInfo
           val columnTotal = columnValues.exists(_.totalState == Total)
           val columnOtherValue = columnValues.exists(_.totalState == OtherValueTotal)
 
-          if ((rowTotal && columnSubTotal) || (columnTotal && rowSubTotal) || (rowTotal && columnTotal) || (rowSubTotal && columnSubTotal)) {
+          val tc = if ((rowTotal && columnSubTotal) || (columnTotal && rowSubTotal) || (rowTotal && columnTotal) || (rowSubTotal && columnSubTotal)) {
             tableCell.copy(totalState=SubtotalTotal)
           } else if (rowTotal || columnTotal) {
             tableCell.copy(totalState=Total)
@@ -524,9 +526,12 @@ case class PivotTableConverter(otherLayoutInfo:OtherLayoutInfo = OtherLayoutInfo
           } else {
             tableCell
           }
+          (tc, cellUpdateInfo)
         }).toArray
       }).toArray
 
+    val data = dataAndCellInfo.map(_.map(_._1))
+    val cellUpdateInfo = dataAndCellInfo.flatMap(_.flatMap(_._2)).toList.filter(!_.matches)
 
     if (extractUOMs) {
       // If a column only has one uom, set that uom as the column header.
@@ -554,7 +559,7 @@ case class PivotTableConverter(otherLayoutInfo:OtherLayoutInfo = OtherLayoutInfo
     })
 
 
-    (data, columnUOMs)
+    (data, columnUOMs, cellUpdateInfo)
   }
 
   def toSTable(name:String) = {

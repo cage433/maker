@@ -29,7 +29,9 @@ object RootBrowserBundle extends BrowserBundle {
       new MigPanel("insets n n n 0", "[" + StandardLeftIndent + "][p]") {
         val defaultLiveCheckbox = new CheckBox("Default Live") {
           selected = currentLiveSetting
-          reactions += {case ButtonClicked(_) => context.putSetting(UserSettings.LiveDefault, selected)}
+          reactions += {case ButtonClicked(_) => {
+            context.putSetting(UserSettings.LiveDefault, selected)
+          }}
         }
 
         add(LabelWithSeparator("General"), "spanx, growx, wrap")

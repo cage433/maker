@@ -6,7 +6,7 @@ import java.net.URL
 object OsgiGui {
 
   def main(args:Array[String]) {
-    println(args.toList)
+    println("Args: " + args.toList)
     System.setProperty("org.osgi.service.http.port", "7777")
     OsgiInstance.startOrTrigger("osgi-gui-cache", GuiBundles)
     if (args.length == 1) {
