@@ -103,6 +103,7 @@ class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSiz
     }
     if (noEffect) {
       hideDropTargets()
+      resizeSizerPanel()
     }
     noEffect
   }
@@ -898,12 +899,16 @@ class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSiz
 
   def pageResized(newSize:Dimension) {
     browserSize = newSize
+    resizeSizerPanel()
+  }
+
+  private def resizeSizerPanel() {
     if (!otherLayoutInfo.frozen) {
       val extraWidth = if (otherLayoutInfo.hiddenType == FieldListHidden || otherLayoutInfo.hiddenType == AllHidden) hiddenFieldPanel.size.width else fieldPanel.size.width
       if (extraWidth + rowComponent.size.width + columnAndMeasureComponent.preferredSize.width > (browserSize.width - browserSize.width / 4)) {
         sizerPanel.preferredSize = new Dimension(10, sizerPanel.size.height)
       } else {
-        sizerPanel.preferredSize = new Dimension(rowComponent.size.width-1, sizerPanel.size.height)
+        sizerPanel.preferredSize = new Dimension(rowComponent.preferredSize.width-1, sizerPanel.size.height)
       }
       revalidate()
     }
