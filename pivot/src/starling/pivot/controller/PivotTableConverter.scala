@@ -283,19 +283,18 @@ object AxisNodeBuilder {
   }
 }
 
-case class CellUpdateInfo(row:Int, column:Int, key:(List[ChildKey], List[ChildKey]), matches:Boolean, currentFraction:Float)
-case class AxisCellUpdateInfo(row:Int, column:Int, matches:Boolean, currentFraction:Float)
+case class CellUpdateInfo(row:Int, column:Int, matches:Boolean, currentFraction:Float)
 
 /**
  * Supplies data for the pivot table view converted using totals and expand/collapse state.
  */
 case class PivotTableConverter(otherLayoutInfo:OtherLayoutInfo = OtherLayoutInfo(), table:PivotTable,
                                extraFormatInfo:ExtraFormatInfo=PivotFormatter.DefaultExtraFormatInfo,
-                               fieldState:PivotFieldsState=PivotFieldsState(), previousPageData:Option[(PivotTable, Map[(List[ChildKey],List[ChildKey]),Float])]=None) {
+                               fieldState:PivotFieldsState=PivotFieldsState(), previousPageData:Option[PivotTable]=None) {
   val totals = otherLayoutInfo.totals
   val collapsedRowState = otherLayoutInfo.rowCollapsedState
   val collapsedColState = otherLayoutInfo.columnCollapsedState
-  private val previousAggregatedMainBucket = previousPageData.map(ppd => ppd._1.aggregatedMainBucket)
+  private val previousAggregatedMainBucket = previousPageData.map(_.aggregatedMainBucket)
 
   def allTableCells(extractUOMs:Boolean = true) = {
     val grid = createGrid(extractUOMs)
@@ -330,7 +329,7 @@ case class PivotTableConverter(otherLayoutInfo:OtherLayoutInfo = OtherLayoutInfo
     }
 
     val rowData = AxisNodeBuilder.flatten(table.rowNode.purge(rowsToRemove).getOrElse(AxisNode.Null), totals.rowGrandTotal,
-      totals.rowSubTotals, collapsedRowState, otherLayoutInfo.disabledSubTotals, table.formatInfo, extraFormatInfo, true, previousPageData.map(_._1.rowNode))
+      totals.rowSubTotals, collapsedRowState, otherLayoutInfo.disabledSubTotals, table.formatInfo, extraFormatInfo, true, previousPageData.map(_.rowNode))
 
     def insertNullWhenNoRowValues(grid:List[List[AxisCell]], nullCount:Int) = {
       grid.map{ r=> {
@@ -367,7 +366,7 @@ case class PivotTableConverter(otherLayoutInfo:OtherLayoutInfo = OtherLayoutInfo
       table.columnAxis.flatMap(an => findFieldsWithNullChildren(an)).distinct
     }
     val cdX = AxisNodeBuilder.flatten(table.columnNode, totals.columnGrandTotal, totals.columnSubTotals, collapsedColState,
-       extraDisabledSubTotals ::: otherLayoutInfo.disabledSubTotals, table.formatInfo, extraFormatInfo, false, previousPageData.map(_._1.columnNode))
+       extraDisabledSubTotals ::: otherLayoutInfo.disabledSubTotals, table.formatInfo, extraFormatInfo, false, previousPageData.map(_.columnNode))
     
     val cd = {
       val r = insertNullWhenNoRowValues(cdX, 1)
@@ -447,7 +446,7 @@ case class PivotTableConverter(otherLayoutInfo:OtherLayoutInfo = OtherLayoutInfo
 
       def axisCellUpdateInfo(cells:Array[Array[AxisCell]]) = {
         cells.zipWithIndex.flatMap{case (r, i) => r.zipWithIndex.flatMap{case (c, j) => {
-          if (c.changed) Some(AxisCellUpdateInfo(i, j, true, 0.0f)) else None
+          if (c.changed) Some(CellUpdateInfo(i, j, true, 0.0f)) else None
         }}}
       }
       val rowAxisCellUpdateInfo = axisCellUpdateInfo(rowDataArray).toList
@@ -491,14 +490,11 @@ case class PivotTableConverter(otherLayoutInfo:OtherLayoutInfo = OtherLayoutInfo
             val matches = (previousCellOption == measureCellOption)
             if (!matches) {
               previousCellOption match {
-                case Some(_) => CellUpdateInfo(rowIndex, columnIndex, key, matches, 0.0f)
-                case None => CellUpdateInfo(rowIndex, columnIndex, key, true, 0.0f)
+                case Some(_) => CellUpdateInfo(rowIndex, columnIndex, matches, 0.0f)
+                case None => CellUpdateInfo(rowIndex, columnIndex, true, 0.0f)
               }
             } else {
-              previousPageData.get._2.get(key) match {
-                case Some(f) => CellUpdateInfo(rowIndex, columnIndex, key, false, f)
-                case None => CellUpdateInfo(rowIndex, columnIndex, key, matches, 0.0f)
-              }
+              CellUpdateInfo(rowIndex, columnIndex, matches, 0.0f)
             }
           })
           val tableCell = measureCellOption match {

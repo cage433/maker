@@ -504,15 +504,15 @@ class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSiz
   }
   val sizerPanel = new FlowPanel {background = GuiUtils.PivotTableBackgroundColour}
 
-  private val previousPageData00:Option[(PivotTable, Map[(List[ChildKey],List[ChildKey]),Float], Map[(Int,Int),Float], Map[(Int,Int),Float])] = previousPageData.map(ppd => {
+  private val previousPageData00:Option[(PivotTable, Map[(Int,Int),Float], Map[(Int,Int),Float], Map[(Int,Int),Float])] = previousPageData.map(ppd => {
     val pivotTable = ppd.pageData.asInstanceOf[PivotTablePageData].pivotData.pivotTable
     val refreshInfo = ppd.refreshInfo.get.asInstanceOf[PivotRefreshInfo]
-    val currentFractionMap = refreshInfo.cells.map(c => {c.key -> c.currentFraction}).toMap
+    val currentFractionMap = refreshInfo.cells.map(c => {(c.row, c.column) -> c.currentFraction}).toMap
     val rowMap = refreshInfo.rowHeaderCells.map(c => ((c.row, c.column) -> c.currentFraction)).toMap
     val columnMap = refreshInfo.columnHeaderCells.map(c => ((c.row, c.column) -> c.currentFraction)).toMap
     (pivotTable, currentFractionMap, rowMap, columnMap)
   })
-  private val previousPageData0 = previousPageData00.map(v => (v._1, v._2))
+  private val previousPageData0 = previousPageData00.map(_._1)
   private val viewConverter = PivotTableConverter(otherLayoutInfo, data.pivotTable, extraFormatInfo, data.pivotFieldsState, previousPageData0)
   private val (rowHeaderData, colHeaderData, mainData, colUOMs, mainTableUpdateInfo, rowUpdateInfo, columnUpdateInfo) = viewConverter.allTableCellsAndUOMs
 
@@ -521,45 +521,51 @@ class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSiz
   private val columnHeaderTableUpdateMap = new HashMap[(Int,Int),RefreshedCell]()
   val (addRows, addCols) = if (otherLayoutInfo.frozen) (0,0) else (colHeaderData.length,rowHeaderData(0).length)
   mainTableUpdateInfo.foreach(c => {
-    mainTableUpdateMap += ((c.row + addRows, c.column + addCols) -> RefreshedCell(c.key, c.currentFraction))
+    mainTableUpdateMap += ((c.row + addRows, c.column + addCols) -> RefreshedCell(c.currentFraction))
+  })
+  previousPageData00.map(tup => {
+    val mainMap = tup._2
+    mainMap.foreach{case ((row, column), f) => {
+      mainTableUpdateMap.getOrElseUpdate((row + addRows, column + addCols), RefreshedCell(f))
+    }}
   })
   if (otherLayoutInfo.frozen) {
     rowUpdateInfo.foreach(c => {
-      rowHeaderTableUpdateMap += ((c.row, c.column) -> RefreshedCell(null, 0.0f))
+      rowHeaderTableUpdateMap += ((c.row, c.column) -> RefreshedCell(0.0f))
     })
     previousPageData00.map(tup => {
       val rowMap = tup._3
       rowMap.foreach{case (k, f) => {
-        rowHeaderTableUpdateMap.getOrElseUpdate(k, RefreshedCell(null, f))
+        rowHeaderTableUpdateMap.getOrElseUpdate(k, RefreshedCell(f))
       }}
     })
     columnUpdateInfo.foreach(c => {
-      columnHeaderTableUpdateMap += ((c.row, c.column) -> RefreshedCell(null, 0.0f))
+      columnHeaderTableUpdateMap += ((c.row, c.column) -> RefreshedCell(0.0f))
     })
     previousPageData00.map(tup => {
       val columnMap = tup._4
       columnMap.foreach{case (k, f) => {
-        columnHeaderTableUpdateMap.getOrElseUpdate(k, RefreshedCell(null, f))
+        columnHeaderTableUpdateMap.getOrElseUpdate(k, RefreshedCell(f))
       }}
     })
   } else {
     rowUpdateInfo.foreach(c => {
-      mainTableUpdateMap += ((c.row + addRows, c.column) -> RefreshedCell(null, 0.0f))
+      mainTableUpdateMap += ((c.row + addRows, c.column) -> RefreshedCell(0.0f))
     })
     previousPageData00.map(tup => {
       val rowMap = tup._3
       rowMap.foreach{case ((row, column), f) => {
-        val r = rowHeaderTableUpdateMap.getOrElseUpdate((row, column), RefreshedCell(null, f))
+        val r = mainTableUpdateMap.getOrElseUpdate((row + addRows, column), RefreshedCell(f))
         mainTableUpdateMap += ((row + addRows, column) -> r)
       }}
     })
     columnUpdateInfo.foreach(c => {
-      mainTableUpdateMap += ((c.row, c.column + addCols) -> RefreshedCell(null, 0.0f))
+      mainTableUpdateMap += ((c.row, c.column + addCols) -> RefreshedCell(0.0f))
     })
     previousPageData00.map(tup => {
       val columnMap = tup._4
       columnMap.foreach{case ((row, column), f) => {
-        val c = columnHeaderTableUpdateMap.getOrElseUpdate((row, column), RefreshedCell(null, f))
+        val c = mainTableUpdateMap.getOrElseUpdate((row, column + addCols), RefreshedCell(f))
         mainTableUpdateMap += ((row, column + addCols) -> c)
       }}
     })
@@ -567,18 +573,19 @@ class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSiz
 
   def refreshInfo = {
     val (mainRefreshInfo, rowRefreshInfo, columnRefreshInfo) = if (otherLayoutInfo.frozen) {
-      val m = mainTableUpdateMap.values.map(rc => {PivotCellRefreshInfo(rc.key, rc.currentFraction + currentFraction)}).toList
-      val r = rowHeaderTableUpdateMap.map{case ((row, column), rc) => {PivotCellRefreshInfo(rc.key, rc.currentFraction + currentFraction, row, column)}}.toList
-      val c = columnHeaderTableUpdateMap.map{case ((row, column), rc) => {PivotCellRefreshInfo(rc.key, rc.currentFraction + currentFraction, row, column)}}.toList
+      val m = mainTableUpdateMap.filter{case (_,v) => ((v.currentFraction + currentFraction) < 1.0f)}.map{case ((row, column), rc) => {PivotCellRefreshInfo(row, column, rc.currentFraction + currentFraction)}}.toList
+      val r = rowHeaderTableUpdateMap.filter{case (_,v) => ((v.currentFraction + currentFraction) < 1.0f)}.map{case ((row,column), rc) => {PivotCellRefreshInfo(row, column, rc.currentFraction + currentFraction)}}.toList
+      val c = columnHeaderTableUpdateMap.filter{case (_,v) => ((v.currentFraction + currentFraction) < 1.0f)}.map{case ((row,column), rc) => {PivotCellRefreshInfo(row, column, rc.currentFraction + currentFraction)}}.toList
       (m,r,c)
     } else {
-      val (m0, rest) = mainTableUpdateMap.partition{case ((row, column), _) => {
+      val (m0, rest) = mainTableUpdateMap.filter{case (_, v) => ((v.currentFraction + currentFraction) < 1.0f)}.partition{case ((row, column), _) => {
         (row >= addRows) && (column >= addCols)
       }}
+
       val (r0, c0) = rest.partition{case ((row,_), _) => row >= addRows}
-      val m = m0.values.map(rc => {PivotCellRefreshInfo(rc.key, rc.currentFraction + currentFraction)}).toList
-      val r = r0.map{case ((row, column), rc) => {PivotCellRefreshInfo(rc.key, rc.currentFraction + currentFraction, row - addRows, column)}}.toList
-      val c = c0.map{case ((row, column), rc) => {PivotCellRefreshInfo(rc.key, rc.currentFraction + currentFraction, row, column - addCols)}}.toList
+      val m = m0.map{case ((row, column), rc) => {PivotCellRefreshInfo(row - addRows, column - addCols, rc.currentFraction + currentFraction)}}.toList
+      val r = r0.map{case ((row, column), rc) => {PivotCellRefreshInfo(row - addRows, column, rc.currentFraction + currentFraction)}}.toList
+      val c = c0.map{case ((row, column), rc) => {PivotCellRefreshInfo(row, column - addCols, rc.currentFraction + currentFraction)}}.toList
       (m,r,c)
     }
     PivotRefreshInfo(mainRefreshInfo, rowRefreshInfo, columnRefreshInfo)
@@ -1047,7 +1054,7 @@ class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSiz
   startAnimation()
 }
 
-case class RefreshedCell(key:(List[ChildKey],List[ChildKey]), var currentFraction:Float) {
+case class RefreshedCell(var currentFraction:Float) {
   var currentColour = new Color(255,255,0,128)
 }
 
@@ -1057,6 +1064,6 @@ class MapHighlighter(map:HashMap[(Int,Int),RefreshedCell]) extends UpdatingBackg
   }
 }, map)
 
-case class PivotCellRefreshInfo(key:(List[ChildKey],List[ChildKey]), currentFraction:Float, row:Int = -1, column:Int = -1)
+case class PivotCellRefreshInfo(row:Int, column:Int, currentFraction:Float)
 case class PivotRefreshInfo(cells:List[PivotCellRefreshInfo], rowHeaderCells:List[PivotCellRefreshInfo],
                             columnHeaderCells:List[PivotCellRefreshInfo]) extends RefreshInfo
