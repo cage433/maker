@@ -43,7 +43,7 @@ class MarketDataPivotTableDataSource(reader: MarketDataReader, edits:PivotEdits,
 
   import scala.collection.mutable.{HashSet=>MSet}
 
-  //val cache = CacheFactory.getCache("cache")
+  val cache = CacheFactory.getCache("marketDataCache")
 
   val observationDayAndMarketDataKeys = reader.readAllObservationDayAndMarketDataKeys(marketDataType)
 
@@ -67,12 +67,10 @@ class MarketDataPivotTableDataSource(reader: MarketDataReader, edits:PivotEdits,
     marketDataTypeInitialPivotState.copy(filters=(observationDayField.field, observationDaySelection) :: marketDataTypeInitialPivotState.filters)
   }
 
-  def editableMarketDataSet = {
-    marketDataIdentifier.selection match {
-      case MarketDataSelection(None, None) => None
-      case MarketDataSelection(_, Some(excelName)) => Some(MarketDataSet.excel(excelName))
-      case MarketDataSelection(Some(pricingGroup), _) => MarketDataStore.editableMarketDataSetFor(pricingGroup)
-    }
+  private lazy val editableMarketDataSet = marketDataIdentifier.selection match {
+    case MarketDataSelection(None, None) => None
+    case MarketDataSelection(_, Some(excelName)) => Some(MarketDataSet.excel(excelName))
+    case MarketDataSelection(Some(pricingGroup), _) => MarketDataStore.editableMarketDataSetFor(pricingGroup)
   }
 
   override def editable = {
@@ -178,10 +176,9 @@ class MarketDataPivotTableDataSource(reader: MarketDataReader, edits:PivotEdits,
     }
   }
 
-  private def dataWithoutEdits(pfs : PivotFieldsState) = {
+  private def dataWithoutEdits(pfs : PivotFieldsState) = cache.memoize( (pfs, marketDataType, marketDataIdentifier), {
     generateDataWithoutEdits(pfs)
-    //cache.memoize(pfs, { generateDataWithoutEdits(pfs) })
-  }
+  } )
 
   private def generateDataWithoutEdits(pfs : PivotFieldsState) = {
 

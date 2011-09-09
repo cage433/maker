@@ -108,6 +108,9 @@ class Props(starlingProps:Map[String,String], trafiguraProps : Map[String, Strin
   object TitanRabbitPassword  extends StringProperty("trafiguraDev")
 
   def titanRabbitHostSet = TitanRabbitBrokerHost() != ""
+
+  // Deferrable patches
+  object UseFasterMarketDataSchema extends BooleanProperty(false)
 }
 
 object Props {

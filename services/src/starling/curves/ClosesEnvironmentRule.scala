@@ -42,7 +42,11 @@ object ClosesEnvironmentRule extends EnvironmentRule {
         }
       }
 
-      def fixings(key : PriceFixingsHistoryDataKey, observationPoint: ObservationPoint): PriceFixingsHistoryData = key.read(observationPoint, marketDataReader)
+      def fixings(key : PriceFixingsHistoryDataKey, observationPoint: ObservationPoint): PriceFixingsHistoryData = {
+        val closeTime = FuturesExchangeFactory.fromName(key.exchangeName).map(_.closeTime)
+
+        key.read(observationPoint.copyTime(closeTime), marketDataReader)
+      }
     }
 
     val marketsX = {

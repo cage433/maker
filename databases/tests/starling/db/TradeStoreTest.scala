@@ -25,10 +25,11 @@ import org.mockito.Mockito._
 import org.mockito.Matchers._
 import org.testng.annotations.{AfterMethod, BeforeMethod, Test}
 import java.sql.Connection
+import starling.props.PropsHelper
 
 class EAITradeStoreTest extends TestMarketTest {
 
-  lazy val marketDataStore = new DBMarketDataStore(db, Map(), Broadcaster.Null)
+  lazy val marketDataStore = DBMarketDataStore(PropsHelper.defaultProps, db, Map(), Broadcaster.Null)
 
   var db : RichDB = _
   var connection : Connection = _

@@ -5,6 +5,7 @@ import org.apache.log4j._
 import starling.utils.ImplicitConversions._
 import util.DynamicVariable
 import scalaz.Scalaz._
+import java.io.Serializable
 
 
 class AdaptingLogger(val rootLogger: VarLogger) extends VarLogger {
@@ -46,19 +47,23 @@ trait Log {
 }
 
 class ExtendedLog(adapted: VarLogger) extends AdaptingLogger(adapted) {
-  def infoWithTime[T](message:String)(f: =>T) = {
+  def infoWithTime[T](message: String)(f: => T): T = withTime(message, msg => info(msg), f)
+  def debugWithTime[T](message: String)(f: => T): T = withTime(message, msg => debug(msg), f)
+
+  private def withTime[T](message: String, logger: AnyRef => Unit, f: => T) = {
     val stopwatch = new Stopwatch()
     val oldThreadName = Thread.currentThread.getName
     try {
       Thread.currentThread.setName(oldThreadName + " > " + message)
-      info(message + " Start")
+      logger(message + " Start")
       val result = f;
-      println (message + " Complete. Time: " + stopwatch)
+      logger(message + " Complete. Time: " + stopwatch)
       result
     } finally {
       Thread.currentThread.setName(oldThreadName)
     }
   }
+
   def infoWithTimeGapTop[T](message:String)(f: =>T) = {
     println("")
     println("")
@@ -71,6 +76,7 @@ class ExtendedLog(adapted: VarLogger) extends AdaptingLogger(adapted) {
     r
   }
 
+  def debugF[T](msg: => AnyRef)(f: => T): T                  = {debug(msg); f}
   def infoF[T](msg: => AnyRef)(f: => T): T                   = {info(msg); f}
   def infoF[T](msg: => AnyRef, t: => Throwable)(f: => T): T  = {info(msg, t); f}
   def warnF[T](msg: => AnyRef)(f: => T): T                   = {warn(msg); f}

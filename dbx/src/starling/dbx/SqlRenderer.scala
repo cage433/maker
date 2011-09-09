@@ -144,6 +144,7 @@ class SqlRenderer {
     case NotNull(field) => (field.name + " is not null", Map())
     case IsNull(field) => (field.name + " is null", Map())
     case FalseClause => ("1=2", Map())
+    case TrueClause => ("1=1", Map())
     case and:And => {
       val left = expandClause(and.lClause)
       val right = expandClause(and.rClause)

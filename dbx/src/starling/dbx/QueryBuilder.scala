@@ -1,6 +1,15 @@
 package starling.dbx
 
 
+object QueryBuilder {
+  implicit def string2field(f: String) = new Field(f)
+
+  /** entrypoint for starting a select query */
+  def select(fields:String*) = Select(fields:_*)
+
+  def update(table:String) = Update(RealTable(table))
+}
+
 case class Query(select:Select, from:From, where: Option[Clause], groupBy:List[String], havingClause: Option[Clause], order: Option[Direction]) {
   def this(select:Select, from:From, where: Option[Clause], havingClause: Option[Clause], order: Option[Direction]) = this(select, from, where, List(), havingClause, order)
   def this(select:Select, from:String, joins:List[Join], where: Option[Clause], havingClause: Option[Clause], order: Option[Direction]) = this(select, From(RealTable(from), joins), where, List(), havingClause, order)
@@ -10,6 +19,7 @@ case class Query(select:Select, from:From, where: Option[Clause], groupBy:List[S
   def leftJoin(query:Query, alias:String, clause:Clause): Query = new Query(select, From(from.table, from.joins ::: Join(QueryTable(query, alias), "left", clause) :: Nil), where, groupBy, havingClause, order)
   def where(clause:Clause): Query = new Query(select, from, Some(clause), groupBy, havingClause, order)
   def where(clauses:List[Clause]): Query = new Query(select, from, Clause.join(clauses), groupBy, havingClause, order)
+  def where(clauses: Clause*): Query = where(clauses.toList)
   def groupBy(fields:List[String]) = new Query(select, from, where, fields, havingClause, order)
   def groupBy(field:String) = new Query(select, from, where, List(field), havingClause, order)
   def having(havingClause:Clause): Query = new Query(select, from, where, groupBy, Some(havingClause), order)
@@ -67,6 +77,9 @@ abstract class Clause {
   def or(otherField: Clause): Clause = Or(this, otherField)
 }
 object Clause {
+  import QueryBuilder._
+  import starling.utils.ImplicitConversions._
+
   def join(clauses:List[Clause]) = {
     if (clauses.isEmpty) {
       None
@@ -80,6 +93,12 @@ object Clause {
     } else {
       Some((clauses.head /: clauses.tail) { _ or _ })
     }
+  }
+  def optIn(name: String, values: Iterable[Option[Any]]): Clause = {
+    val valuesL = values.toList
+    val inClause = In(Field(name), valuesL.somes)
+
+    if (valuesL.contains(None)) (inClause or (name isNull)) else inClause
   }
 }
 
@@ -99,6 +118,7 @@ case class NotNull(f : Field) extends Clause
 case class IsNull(f : Field) extends Clause
 case class Not(val clause: Clause) extends Clause
 object FalseClause extends Clause
+object TrueClause extends Clause
 
 abstract class Direction
 case class Asc(field: String) extends Direction
@@ -113,7 +133,7 @@ case class Field(val name: String) {
   def lt(v: => Any) = LessThan(this, v)
   def lte(v: => Any) = LessThanOrEqual(this, v)
   def neq(v: => Any) = NotEquals(this, v)
-  def in(v: => Iterable[Any]) = In(this, v)
+  def in(v: => Iterable[Any]) = In(this, v.toList.distinct)
   def notIn(v: => Iterable[Any]) = NotIn(this, v)
   def isNotNull() = NotNull(this)
   def isNull() = IsNull(this)
@@ -121,15 +141,6 @@ case class Field(val name: String) {
   def desc = Desc(this.name)
 
   override def toString = name
-}
-
-object QueryBuilder {
-  implicit def string2field(f: String) = new Field(f)
-
-  /** entrypoint for starting a select query */
-  def select(fields:String*) = Select(fields:_*)
-
-  def update(table:String) = Update(RealTable(table))
 }
 
 case class LiteralString(text:String)

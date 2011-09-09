@@ -12,7 +12,9 @@ case class Grade(name : String)
 /**
  * benchmark data for (grade, hub) to quantity
  */
-case class GradeHubBenchmarkData(hubData : List[((Grade,Hub),Quantity)]) extends MarketData
+case class GradeHubBenchmarkData(hubData : List[((Grade,Hub),Quantity)]) extends MarketData {
+  def size = hubData.size
+}
 
 /**
  * Benchmark hub market data key represents a list of grade, hub market data rows keyed per commodity
@@ -128,4 +130,6 @@ case class BenchmarkLocationMarketDataKey(commodity : Commodity) extends MarketD
 /**
  * benchmark data for location to quantity
  */
-case class BenchmarkLocationData(locationData : Map[Location, Quantity]) extends MarketData
+case class BenchmarkLocationData(locationData : Map[Location, Quantity]) extends MarketData {
+  def size = locationData.size
+}

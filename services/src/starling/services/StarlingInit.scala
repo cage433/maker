@@ -53,6 +53,7 @@ import starling.utils.ClosureUtil._
 import starling.browser.service.{EventBatch, BrowserService, UserLoggedIn, Version}
 import starling.databases.utils.{RabbitBroadcaster, RabbitMessageSender}
 
+
 class StarlingInit( val props: Props,
                     dbMigration: Boolean = true,
                     startRMI: Boolean = true,
@@ -166,7 +167,7 @@ class StarlingInit( val props: Props,
       //Neptune -> new NeptuneBenchmarksMarketDataSource(neptuneRichDB) I don't want this persisted yet as it is likely to change
     )
 
-    val mds = new DBMarketDataStore(starlingRichDB, marketDataSources, broadcaster)
+    val mds = DBMarketDataStore(props, starlingRichDB, marketDataSources, broadcaster)
 
     val fwdCurveAutoImport = new FwdCurveAutoImport(60*15, mds, marketDataSources.flatMap {
       case (k, f: FwdCurveDbMarketDataSource) => Some(k)

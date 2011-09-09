@@ -36,13 +36,14 @@ object User {
    *
    * This uses threadlocal to store this but since every request runs in it's own thread this works fine.
    */
-  def currentlyLoggedOn = loggedOn.get.assert(user => user != null, "No user logged on")
+  def currentlyLoggedOn = optLoggedOn.getOrElse(throw new java.lang.AssertionError("No user logged on"))
+  def optLoggedOn: Option[User] = Option(loggedOn.get)
 
   private val loggedOn = new ThreadLocal[User]()
 
   def setLoggedOn(user: Option[User]) {
     if (user.isDefined) {
-      assert(loggedOn.get == null, "User already set: " + User.loggedOn.get)
+      assert(loggedOn.get == null, "User already set: " + loggedOn.get)
     }
     loggedOn.set(user)
   }

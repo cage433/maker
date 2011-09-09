@@ -61,7 +61,7 @@ case class RefinedMetalsLimMarketDataSource(limServer: LIMServer) extends Market
       .debugV(entries => "%s (%s): %s values" % (source.getClass.getSimpleName, source.description.mkString(", "), countData(entries)))
   }
 
-  private def countData(entries: List[MarketDataEntry]) = entries.map(_.data.size.getOrElse(0)).sum
+  private def countData(entries: List[MarketDataEntry]) = entries.map(_.data.size).sum
 }
 
 case class Prices[Relation](relation: Relation, priceByLevel: Map[Level, Double], observationDay: Day) {

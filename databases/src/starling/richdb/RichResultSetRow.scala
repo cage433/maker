@@ -57,11 +57,10 @@ object RichConversions {
 }
 
 class RichResultSetRowFactory extends ResultSetRowFactoryTrait[RichResultSetRow] {
-  def create(resultSet: ResultSet) = new RichResultSetRow(resultSet)
+  def create(resultSet: ResultSet, count: Int) = new RichResultSetRow(resultSet, count)
 }
 
-class RichResultSetRow(resultSet: ResultSet)
-  extends ResultSetRow(resultSet)
+class RichResultSetRow(resultSet: ResultSet, count: Int) extends ResultSetRow(resultSet, count)
   with RichInstrumentResultSetRow
 {
   def getMarket(column: String): CommodityMarket = Market.fromName(getString(column))
