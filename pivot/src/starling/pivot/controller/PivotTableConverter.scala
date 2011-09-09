@@ -461,9 +461,13 @@ case class PivotTableConverter(otherLayoutInfo:OtherLayoutInfo = OtherLayoutInfo
           val measureField = columnValues.find(ac => ac.value.isMeasure)
           val measureCellOption = aggregatedMainBucket.get(key)
           val cellUpdateInfo = previousAggregatedMainBucket.map(pamb => {
-            val matches = (pamb.get(key) == measureCellOption)
+            val previousCellOption = pamb.get(key)
+            val matches = (previousCellOption == measureCellOption)
             if (!matches) {
-              CellUpdateInfo(rowIndex, columnIndex, key, matches, 0.0f)
+              previousCellOption match {
+                case Some(_) => CellUpdateInfo(rowIndex, columnIndex, key, matches, 0.0f)
+                case None => CellUpdateInfo(rowIndex, columnIndex, key, true, 0.0f)
+              }
             } else {
               previousPageData.get._2.get(key) match {
                 case Some(f) => CellUpdateInfo(rowIndex, columnIndex, key, false, f)
