@@ -12,7 +12,9 @@ case class PivotGrid(
         colData:Array[Array[AxisCell]],
         mainData:Array[Array[TableCell]],
         colUOMS:Array[UOM] = Array(),
-        cellUpdateInfoList:List[CellUpdateInfo]=Nil) {
+        mainTableUpdateInfo:List[CellUpdateInfo]=Nil,
+        rowUpdateInfo:List[AxisCellUpdateInfo]=Nil,
+        columnUpdateInfo:List[AxisCellUpdateInfo]=Nil) {
 
   lazy val hasData = mainData.exists(_.exists(_.text != ""))
 

@@ -504,21 +504,85 @@ class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSiz
   }
   val sizerPanel = new FlowPanel {background = GuiUtils.PivotTableBackgroundColour}
 
-  private val previousPageData0:Option[(PivotTable, Map[(List[ChildKey],List[ChildKey]),Float])] = previousPageData.map(ppd => {
+  private val previousPageData00:Option[(PivotTable, Map[(List[ChildKey],List[ChildKey]),Float], Map[(Int,Int),Float], Map[(Int,Int),Float])] = previousPageData.map(ppd => {
     val pivotTable = ppd.pageData.asInstanceOf[PivotTablePageData].pivotData.pivotTable
     val refreshInfo = ppd.refreshInfo.get.asInstanceOf[PivotRefreshInfo]
     val currentFractionMap = refreshInfo.cells.map(c => {c.key -> c.currentFraction}).toMap
-    (pivotTable, currentFractionMap)
+    val rowMap = refreshInfo.rowHeaderCells.map(c => ((c.row, c.column) -> c.currentFraction)).toMap
+    val columnMap = refreshInfo.columnHeaderCells.map(c => ((c.row, c.column) -> c.currentFraction)).toMap
+    (pivotTable, currentFractionMap, rowMap, columnMap)
   })
+  private val previousPageData0 = previousPageData00.map(v => (v._1, v._2))
   private val viewConverter = PivotTableConverter(otherLayoutInfo, data.pivotTable, extraFormatInfo, data.pivotFieldsState, previousPageData0)
-  private val (rowHeaderData, colHeaderData, mainData, colUOMs, cellUpdateList) = viewConverter.allTableCellsAndUOMs
-  private val updateMap = new HashMap[(Int,Int),RefreshedCell]()
-  val (addRows, addCols) = if (otherLayoutInfo.frozen) (0,0) else (colHeaderData.length,rowHeaderData(0).length)
-  cellUpdateList.foreach(c => {
-    updateMap += ((c.row + addRows, c.column + addCols) -> RefreshedCell(c.key, c.currentFraction))
-  })
+  private val (rowHeaderData, colHeaderData, mainData, colUOMs, mainTableUpdateInfo, rowUpdateInfo, columnUpdateInfo) = viewConverter.allTableCellsAndUOMs
 
-  def refreshInfo = PivotRefreshInfo(updateMap.values.map(rc => {PivotCellRefreshInfo(rc.key, rc.currentFraction + currentFraction)}).toList)
+  private val mainTableUpdateMap = new HashMap[(Int,Int),RefreshedCell]()
+  private val rowHeaderTableUpdateMap = new HashMap[(Int,Int),RefreshedCell]()
+  private val columnHeaderTableUpdateMap = new HashMap[(Int,Int),RefreshedCell]()
+  val (addRows, addCols) = if (otherLayoutInfo.frozen) (0,0) else (colHeaderData.length,rowHeaderData(0).length)
+  mainTableUpdateInfo.foreach(c => {
+    mainTableUpdateMap += ((c.row + addRows, c.column + addCols) -> RefreshedCell(c.key, c.currentFraction))
+  })
+  if (otherLayoutInfo.frozen) {
+    rowUpdateInfo.foreach(c => {
+      rowHeaderTableUpdateMap += ((c.row, c.column) -> RefreshedCell(null, 0.0f))
+    })
+    previousPageData00.map(tup => {
+      val rowMap = tup._3
+      rowMap.foreach{case (k, f) => {
+        rowHeaderTableUpdateMap.getOrElseUpdate(k, RefreshedCell(null, f))
+      }}
+    })
+    columnUpdateInfo.foreach(c => {
+      columnHeaderTableUpdateMap += ((c.row, c.column) -> RefreshedCell(null, 0.0f))
+    })
+    previousPageData00.map(tup => {
+      val columnMap = tup._4
+      columnMap.foreach{case (k, f) => {
+        columnHeaderTableUpdateMap.getOrElseUpdate(k, RefreshedCell(null, f))
+      }}
+    })
+  } else {
+    rowUpdateInfo.foreach(c => {
+      mainTableUpdateMap += ((c.row + addRows, c.column) -> RefreshedCell(null, 0.0f))
+    })
+    previousPageData00.map(tup => {
+      val rowMap = tup._3
+      rowMap.foreach{case ((row, column), f) => {
+        val r = rowHeaderTableUpdateMap.getOrElseUpdate((row, column), RefreshedCell(null, f))
+        mainTableUpdateMap += ((row + addRows, column) -> r)
+      }}
+    })
+    columnUpdateInfo.foreach(c => {
+      mainTableUpdateMap += ((c.row, c.column + addCols) -> RefreshedCell(null, 0.0f))
+    })
+    previousPageData00.map(tup => {
+      val columnMap = tup._4
+      columnMap.foreach{case ((row, column), f) => {
+        val c = columnHeaderTableUpdateMap.getOrElseUpdate((row, column), RefreshedCell(null, f))
+        mainTableUpdateMap += ((row, column + addCols) -> c)
+      }}
+    })
+  }
+
+  def refreshInfo = {
+    val (mainRefreshInfo, rowRefreshInfo, columnRefreshInfo) = if (otherLayoutInfo.frozen) {
+      val m = mainTableUpdateMap.values.map(rc => {PivotCellRefreshInfo(rc.key, rc.currentFraction + currentFraction)}).toList
+      val r = rowHeaderTableUpdateMap.map{case ((row, column), rc) => {PivotCellRefreshInfo(rc.key, rc.currentFraction + currentFraction, row, column)}}.toList
+      val c = columnHeaderTableUpdateMap.map{case ((row, column), rc) => {PivotCellRefreshInfo(rc.key, rc.currentFraction + currentFraction, row, column)}}.toList
+      (m,r,c)
+    } else {
+      val (m0, rest) = mainTableUpdateMap.partition{case ((row, column), _) => {
+        (row >= addRows) && (column >= addCols)
+      }}
+      val (r0, c0) = rest.partition{case ((row,_), _) => row >= addRows}
+      val m = m0.values.map(rc => {PivotCellRefreshInfo(rc.key, rc.currentFraction + currentFraction)}).toList
+      val r = r0.map{case ((row, column), rc) => {PivotCellRefreshInfo(rc.key, rc.currentFraction + currentFraction, row - addRows, column)}}.toList
+      val c = c0.map{case ((row, column), rc) => {PivotCellRefreshInfo(rc.key, rc.currentFraction + currentFraction, row, column - addCols)}}.toList
+      (m,r,c)
+    }
+    PivotRefreshInfo(mainRefreshInfo, rowRefreshInfo, columnRefreshInfo)
+  }
 
   private def resizeColumnHeaderAndMainTableColumns() {
     tableModelsHelper.resizeColumnHeaderAndMainTableColumns(fullTable, mainTable, colHeaderTable,
@@ -548,7 +612,7 @@ class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSiz
 
   def extraFormatInfoUpdated(extraFormatInfo:ExtraFormatInfo) {
     val newConverter = viewConverter.copy(extraFormatInfo = extraFormatInfo)
-    val (newRowData,newColumnData,newMainTableCells,_,_) = newConverter.allTableCellsAndUOMs
+    val (newRowData,newColumnData,newMainTableCells,_,_,_,_) = newConverter.allTableCellsAndUOMs
     tableModelsHelper.setData(newRowData, newColumnData, newMainTableCells, extraFormatInfo)
   }
 
@@ -736,15 +800,20 @@ class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSiz
 
   allTables foreach Highlighters.applyHighlighters
   if (otherLayoutInfo.frozen) {
-    mainTable.addHighlighter(new MapHighlighter(updateMap))
+    mainTable.addHighlighter(new MapHighlighter(mainTableUpdateMap))
+    rowHeaderTable.addHighlighter(new MapHighlighter(rowHeaderTableUpdateMap))
   } else {
-    fullTable.addHighlighter(new MapHighlighter(updateMap))
+    fullTable.addHighlighter(new MapHighlighter(mainTableUpdateMap))
   }
 
   private var currentFraction = 0.0f
 
   private def startAnimation() {
-    val t = if (otherLayoutInfo.frozen) mainTable else fullTable
+    val tablesAndUpdateMaps = if (otherLayoutInfo.frozen) {
+      List((mainTable, mainTableUpdateMap), (rowHeaderTable, rowHeaderTableUpdateMap), (colHeaderTable, columnHeaderTableUpdateMap))
+    } else {
+      List((fullTable, mainTableUpdateMap))
+    }
     new Animator(StarlingBrowser.RefreshTime, new TimingTargetAdapter {
       override def timingEvent(fraction:Float) {
         currentFraction = fraction
@@ -759,9 +828,13 @@ class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSiz
             }
           }
         }
-        doHighlighting(t, updateMap)
+        tablesAndUpdateMaps.foreach{case (t,m) => doHighlighting(t, m)}
       }
-      override def end() {updateMap.clear()}
+      override def end() {
+        mainTableUpdateMap.clear()
+        rowHeaderTableUpdateMap.clear()
+        columnHeaderTableUpdateMap.clear()
+      }
     }).start()
   }
 
@@ -984,5 +1057,6 @@ class MapHighlighter(map:HashMap[(Int,Int),RefreshedCell]) extends UpdatingBackg
   }
 }, map)
 
-case class PivotCellRefreshInfo(key:(List[ChildKey],List[ChildKey]), currentFraction:Float)
-case class PivotRefreshInfo(cells:List[PivotCellRefreshInfo]) extends RefreshInfo
+case class PivotCellRefreshInfo(key:(List[ChildKey],List[ChildKey]), currentFraction:Float, row:Int = -1, column:Int = -1)
+case class PivotRefreshInfo(cells:List[PivotCellRefreshInfo], rowHeaderCells:List[PivotCellRefreshInfo],
+                            columnHeaderCells:List[PivotCellRefreshInfo]) extends RefreshInfo
