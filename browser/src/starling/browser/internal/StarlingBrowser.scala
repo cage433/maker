@@ -102,7 +102,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
         if (liveUpdateCheckbox.selected) {
           refresh()
         } else {
-          refreshButton.enabled = true
+          refreshAction.enabled = true
         }
       }
       publisherForPageContext.publish(e)
@@ -122,7 +122,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
           } else if (liveUpdateCheckbox.selected) {
             refresh()
           } else {
-            refreshButton.enabled = true
+            refreshAction.enabled = true
           }
         }
       }
@@ -222,7 +222,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
     undoButton.enabled = enabled
     forwardButton.enabled = enabled
     redoButton.enabled = enabled
-    refreshButton.enabled = enabled
+    refreshAction.enabled = enabled
     stopButton.enabled = enabled
     homeButton.enabled = enabled
     settingsButton.enabled = enabled
@@ -449,18 +449,17 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
     selected = pageContext.getSetting(UserSettings.LiveDefault, false)
   }
   listenTo(liveUpdateCheckbox)
-  reactions += { case ButtonClicked(`liveUpdateCheckbox`) => { if (refreshButton.enabled) refresh() } }
+  reactions += { case ButtonClicked(`liveUpdateCheckbox`) => { if (refreshAction.enabled) refresh() } }
 
 
+  val refreshAction = Action("") {refresh()}
+  refreshAction.enabled = false
+  refreshAction.icon = BrowserIcons.icon(BrowserIcons.Refresh)
+  refreshAction.toolTip = "Refresh"
   val refreshButton = new NavigationButton {
-    icon = BrowserIcons.icon(BrowserIcons.Refresh)
-    tooltip = "Refresh"
-    enabled = false
-    reactions += {
-      case ButtonClicked(button) => {
-        refresh()
-      }
-    }
+    action = refreshAction
+    peer.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke(KeyEvent.VK_F5, 0), "refreshAction")
+    peer.getActionMap.put("refreshAction", refreshAction.peer)
     var fadeColour = GuiUtils.ClearColour
     override protected def paintComponent(g:Graphics2D) {
       super.paintComponent(g)
@@ -480,7 +479,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
            peer.setEnabled(false)
            setScreenLocked(false)
            refreshButtonStatus()
-           refreshButton.enabled = history(current).refreshPage.isDefined
+           refreshAction.enabled = history(current).refreshPage.isDefined
          }
     }
     peer.setEnabled(false)
@@ -732,7 +731,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
       } else {
         setScreenLocked(false)
         refreshButtonStatus()
-        refreshButton.enabled = history(current).refreshPage.isDefined
+        refreshAction.enabled = history(current).refreshPage.isDefined
       }
     }
     val messageLength = 70
@@ -759,7 +758,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
     def reset() {
       setScreenLocked(false)
       refreshButtonStatus()
-      refreshButton.enabled = history(current).refreshPage.isDefined
+      refreshAction.enabled = history(current).refreshPage.isDefined
     }
 
     starlingBrowserUI.setError(title, error, reset())
@@ -769,7 +768,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
     starlingBrowserUI.clearContentPanel
     setScreenLocked(false)
     refreshButtonStatus()
-    refreshButton.enabled = history(current).refreshPage.isDefined
+    refreshAction.enabled = history(current).refreshPage.isDefined
   }
 
   def setDefaultButton(button:Option[Button]) {windowMethods.setDefaultButton(button)}
@@ -804,13 +803,13 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
             if (!didWait && !keepScreenLocked) {
               setScreenLocked(false)
               refreshButtonStatus()
-              refreshButton.enabled = history(current).refreshPage.isDefined
+              refreshAction.enabled = history(current).refreshPage.isDefined
             }
             // This is a hack for the portfolio table at the moment.
             if (didWait && !keepScreenLocked) {
               setScreenLocked(false)
               refreshButtonStatus()
-              refreshButton.enabled = history(current).refreshPage.isDefined
+              refreshAction.enabled = history(current).refreshPage.isDefined
             }
           }
           case FailureSubmitResponse(t) => {
@@ -819,7 +818,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
             starlingBrowserUI.setError("There was an error when processing your request",BrowserStackTraceToString.string(t), {
               setScreenLocked(false)
               refreshButtonStatus()
-              refreshButton.enabled = history(current).refreshPage.isDefined
+              refreshAction.enabled = history(current).refreshPage.isDefined
             })
           }
         }
@@ -978,7 +977,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
               }
               setScreenLocked(false)
               refreshButtonStatus()
-              refreshButton.enabled = currentPageInfo.refreshPage.isDefined
+              refreshAction.enabled = currentPageInfo.refreshPage.isDefined
             })
           }
 
@@ -1096,7 +1095,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
           starlingBrowserUI.setError("There was an error when processing your request", BrowserStackTraceToString.string(t), {
             setScreenLocked(false)
             refreshButtonStatus()
-            refreshButton.enabled = history(current).refreshPage.isDefined
+            refreshAction.enabled = history(current).refreshPage.isDefined
           })
         }
         def resetScreen() {
@@ -1106,7 +1105,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
           }
           setScreenLocked(false)
           refreshButtonStatus()
-          refreshButton.enabled = history(current).refreshPage.isDefined
+          refreshAction.enabled = history(current).refreshPage.isDefined
         }
         pageBuilder.build(unanticipatedException, resetScreen(), createPage, onException, withBuiltPage, updateTitle, firstPageInBrowser)
       }
@@ -1235,7 +1234,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
     setTitleText(page.text)
     addressIcon.image = page.icon
     tabComponent.setTextFromPage(page)
-    refreshButton.enabled = pageInfo.refreshPage.isDefined
+    refreshAction.enabled = pageInfo.refreshPage.isDefined
     mainPanel.peer.removeAll()
     LinkHandler.clearWeakReferencesNow()
 
