@@ -13,7 +13,6 @@ import scala.ref.SoftReference
 import net.miginfocom.swing.MigLayout
 import scala.swing.event.{MouseClicked, ButtonClicked, UIElementResized}
 import swing._
-import java.awt.event.{ActionListener, ActionEvent, InputEvent, KeyEvent}
 import javax.swing.{JComponent, AbstractAction, KeyStroke, JPanel, JPopupMenu, Timer, ImageIcon}
 import java.awt.{RenderingHints, Graphics, Color, KeyboardFocusManager, Graphics2D, Component => AWTComp}
 import java.lang.reflect.UndeclaredThrowableException
@@ -21,6 +20,7 @@ import net.miginfocom.layout.LinkHandler
 import util.{BrowserLog, BrowserStackTraceToString, BrowserThreadSafeCachingProxy}
 import com.googlecode.transloader.clone.reflect.{ObjenesisInstantiationStrategy, MaximalCloningDecisionStrategy, ReflectionCloningStrategy}
 import com.googlecode.transloader.clone.SerializationCloningStrategy
+import java.awt.event._
 
 trait CurrentPage {
   def page:Page
@@ -41,10 +41,11 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
                       windowMethods:WindowMethods, containerMethods:ContainerMethods, frame:StarlingBrowserFrame, tabComponent:TabComponent,
                       openTab:(Boolean,Either[Page,(ServerContext=>Page, PartialFunction[Throwable, Unit])])=>Unit,
                       extraInfo:Option[String])
-        extends MigPanel("insets 0") { starBrows:StarlingBrowser =>
+        extends MigPanel("insets 0") {
 
-  reactions += {
-    case UIElementResized(`starBrows`) => {
+  // I'm using a component listener here instead of an UIElementResized event as there seems to be two produced (Component and UIElement both produce one).
+  peer.addComponentListener(new ComponentAdapter {
+    override def componentResized(e:ComponentEvent) {
       val newSize = size
       history.foreach(pageInfo => {
         pageInfo.pageComponent match {
@@ -56,8 +57,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
         }
       })
     }
-  }
-  listenTo(starBrows)
+  })
 
   private val componentCaching = true
 
