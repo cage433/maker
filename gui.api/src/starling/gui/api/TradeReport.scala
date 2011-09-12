@@ -97,34 +97,36 @@ case class SnapshotIDLabel(observationDay: Day, id: Int, timestamp : Timestamp, 
   def identifier() = observationDay+"-"+id + "-" + timestamp
 }
 
+trait DeskInfo
 
-sealed case class Desk(name: String) {
-  import Desk._
-  import PricingGroup._
+case class EAIDeskInfo(book: Int) extends DeskInfo
 
+sealed case class Desk(name: String, pricingGroups: List[PricingGroup], deskInfo: Option[DeskInfo] = None) {
   override def toString = name
-
-  def pricingGroups = this match {
-    case Desk.LondonDerivativesOptions => List(PricingGroup.LondonDerivativesOptions, System, LimOnly)
-    case Desk.LondonDerivatives        => List(PricingGroup.LondonDerivatives, System, LimOnly)
-    case Desk.GasolineSpec             => List(PricingGroup.GasolineRoW, LimOnly)
-    case CrudeSpecNorthSea             => List(Crude, LimOnly)
-    case HoustonDerivatives            => List(BarryEckstein, LimOnly)
-    case Refined                       => List(System, Metals, Starling)
-    case Titan                         => List(Metals)
-  }
 }
 
-object Desk extends StarlingEnum(classOf[Desk], (d: Desk) => d.name, true) {
-  val LondonDerivativesOptions = Desk("London Derivatives Options")
-  val LondonDerivatives = Desk("London Derivatives")
-  val GasolineSpec = Desk("Gasoline Spec Global")
-  val CrudeSpecNorthSea = Desk("Crude Spec North Sea")
-  val HoustonDerivatives = Desk("Houston Derivatives")
-  val Refined = Desk("Refined")
-  val Titan = Desk("Titan")
+object Desk extends StarlingEnum(classOf[Desk], (d: Desk) => d.name, ignoreCase = true) {
+  import PricingGroup._
+
+  val LondonDerivativesOptions = Desk("London Derivatives Options", List(PricingGroup.LondonDerivativesOptions, System, LimOnly), Some(EAIDeskInfo(173)))
+  val LondonDerivatives = Desk("London Derivatives", List(PricingGroup.LondonDerivatives, System, LimOnly), Some(EAIDeskInfo(43)))
+  val GasolineSpec = Desk("Gasoline Spec Global", List(PricingGroup.GasolineRoW, LimOnly), Some(EAIDeskInfo(149)))
+  val CrudeSpecNorthSea = Desk("Crude Spec North Sea", List(Crude, LimOnly), Some(EAIDeskInfo(197)))
+  val HoustonDerivatives = Desk("Houston Derivatives", List(BarryEckstein, LimOnly), Some(EAIDeskInfo(190)))
+  val Refined = Desk("Refined", List(System, Metals, Starling))
+  val Titan = Desk("Titan", List(Metals))
 
   val pricingGroups = values.flatMap(_.pricingGroups).distinct
+
+  def eaiDesks = values.flatMap {
+    case d@Desk(_, _, Some(info: EAIDeskInfo)) => Some(d)
+    case _ => None
+  }
+
+  def eaiDeskFromID(bookID: Int) = eaiDesks.find {
+    case d@Desk(_, _, Some(info: EAIDeskInfo)) => info.book == bookID
+    case _ => false
+  }
 }
 
 class TradeEvent

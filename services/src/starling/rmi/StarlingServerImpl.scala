@@ -8,7 +8,7 @@ import starling.auth.{LdapUserLookup, User}
 import starling.calendar.BusinessCalendarSet
 import starling.daterange._
 import starling.db._
-import starling.eai.{Book, Traders}
+import starling.eai.{Traders}
 import starling.gui.api._
 import starling.pivot._
 import controller.PivotTable
@@ -477,9 +477,9 @@ class StarlingServerImpl(
   }
 
   def bookClose(desk: Desk) {
+    val valid = List(Desk.GasolineSpec, Desk.LondonDerivatives).map(_.name)
     val bookID = desk match {
-      case Desk.GasolineSpec => Book.GasolineSpec.bookID
-      case Desk.LondonDerivatives => Book.LondonDerivatives.bookID
+      case Desk(name, _, Some(info:EAIDeskInfo)) if valid.contains(name) => info.book
       case _ => throw new Exception("Book close is not enabled for " + desk)
     }
     val uuid = UUID.randomUUID.toString
@@ -553,7 +553,7 @@ class StarlingServerImpl(
     }
   }
 
-  def traders = allTraders.bookMap
+  def traders = allTraders.deskMap
 
   def orgPivot(pivotFieldParams:PivotFieldParams) = {
     PivotTableModel.createPivotData(new OrgPivotTableDataSource, pivotFieldParams)

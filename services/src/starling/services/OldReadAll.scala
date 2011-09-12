@@ -32,7 +32,7 @@ import starling.reports.pivot.{ReportContextBuilder, ReportService}
 import starling.LIMServer
 import starling.gui.api._
 import starling.bouncyrmi._
-import starling.eai.{Book, Traders, EAIAutoImport, EAIStrategyDB}
+import starling.eai.{Traders, EAIAutoImport, EAIStrategyDB}
 import org.springframework.mail.javamail.JavaMailSenderImpl
 import starling.rmi._
 import starling.calendar._

@@ -5,7 +5,7 @@ import starling.services.{ForwardCurveCommitResponse, ForwardCurveInfo}
 import starling.pivot._
 import starling.auth.User
 import starling.calendar.BusinessCalendar
-import starling.eai.{Book, Traders}
+import starling.eai.{Traders}
 import starling.utils.{CaseInsensitive, STable}
 import starling.daterange.{ObservationPoint, Day, Timestamp}
 import starling.browser.service.{PageLogInfo, BookmarkLabel, UserSettingsLabel, Version}
@@ -44,7 +44,7 @@ trait StarlingServer {
   def referencePivot(table:ReferenceDataLabel, pivotFieldParams:PivotFieldParams):PivotData
   def ukBusinessCalendar:BusinessCalendar
   def whoAmI:User
-  def traders: Map[User,(Book, Desk)]
+  def traders: Map[User, List[Desk]]
   def orgPivot(pivotFieldParams:PivotFieldParams):PivotData
   def allUserNames:List[String]
   def isStarlingDeveloper:Boolean

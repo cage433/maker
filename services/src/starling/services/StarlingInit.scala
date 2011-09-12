@@ -28,7 +28,6 @@ import starling.reports.pivot.{ReportContextBuilder, ReportService}
 import starling.LIMServer
 import starling.gui.api._
 import starling.bouncyrmi._
-import starling.eai.{Book, Traders, EAIAutoImport, EAIStrategyDB}
 import org.springframework.mail.javamail.JavaMailSenderImpl
 import starling.rmi._
 import starling.calendar._
@@ -52,6 +51,7 @@ import swing.event.Event
 import starling.utils.ClosureUtil._
 import starling.browser.service.{EventBatch, BrowserService, UserLoggedIn, Version}
 import starling.databases.utils.{RabbitBroadcaster, RabbitMessageSender}
+import starling.eai.{EAIDealBookMapping, Traders, EAIAutoImport, EAIStrategyDB}
 
 
 class StarlingInit( val props: Props,
@@ -184,12 +184,13 @@ class StarlingInit( val props: Props,
   }
 
   val strategyDB = new EAIStrategyDB(eaiSqlServerDB)
+  val eaiDealBookMapping = new EAIDealBookMapping(eaiSqlServerDB)
 
   val intradayTradesDB = new IntradayTradeStore(starlingRichDB, strategyDB, broadcaster, ldapUserLookup)
 
   // Brady trade stores, system of records, trade importers
 
-  val eaiTradeStores = Book.all.map(book=> book-> new EAITradeStore(starlingRichDB, broadcaster, strategyDB, book)).toMap
+  val eaiTradeStores = Desk.eaiDesks.map{case desk@Desk(_, _, Some(_:EAIDeskInfo)) => desk -> new EAITradeStore(starlingRichDB, broadcaster, strategyDB, desk)}.toMap
 
   val titanTradeStore = new TitanTradeStore(starlingRichDB, broadcaster, TitanTradeSystem)
 
@@ -303,7 +304,7 @@ class StarlingInit( val props: Props,
 
   val excelLoopReceiver = new ExcelLoopReceiver(ldapUserLookup, props.XLLoopPort(),
     new MarketDataHandler(broadcaster, starlingServer, marketDataStore),
-    new TradeHandler(broadcaster, new ExcelTradeReader(strategyDB, traders, currentUser), intradayTradesDB, traders),
+    new TradeHandler(broadcaster, new ExcelTradeReader(strategyDB, eaiDealBookMapping, traders, currentUser), intradayTradesDB, traders),
     new ReportHandler(userReportsService),
     new DiagnosticHandler(starlingServer))
 

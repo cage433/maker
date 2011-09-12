@@ -6,24 +6,26 @@ import starling.utils.Reflection
 import starling.instrument._
 import starling.trade.Trade
 import starling.eai.{EAIStrategyDB, Traders}
+import collection.mutable.ArraySeq
 import starling.daterange.Day
 import starling.market.{CommodityMarket, FuturesSpreadMarket}
 import starling.auth.User
 import starling.concurrent.MP._
+import starling.eai.{EAIDealBookMapping, EAIStrategyDB, Traders}
 
-class ExcelTradeReader(eaiStrategyDB: EAIStrategyDB, traders: Traders, currentlyLoggedOn: () => User) {
+class ExcelTradeReader(eaiStrategyDB: EAIStrategyDB, eaiDealBookMapping: EAIDealBookMapping, traders: Traders, currentlyLoggedOn: () => User) {
   import ExcelRow._
 
-  def allTrades(header: Array[String], trades: List[Seq[Object]], subgroupName: String): List[Trade] = {
+  def allTrades(header: Array[String], trades: List[Seq[Object]], subgroupNamePrefix: String): List[Trade] = {
     val empties = (" " * 20).split("")
-    allTrades(trades.map(tradeValues => header.zip(tradeValues ++ empties).toMap), subgroupName)
+    allTrades(trades.map(tradeValues => header.zip(tradeValues ++ empties).toMap), subgroupNamePrefix)
   }
 
-  def allTrades(originalRows: List[Map[String, Object]], subgroupName: String): List[Trade] = {
-    allTrades0(originalRows, subgroupName).reverse
+  def allTrades(originalRows: List[Map[String, Object]], subgroupNamePrefix: String): List[Trade] = {
+    allTrades0(originalRows, subgroupNamePrefix).reverse
   }
 
-  def allTrades0(originalRows: List[Map[String, Object]], subgroupName: String):List[Trade] = {
+  private def allTrades0(originalRows: List[Map[String, Object]], subgroupNamePrefix: String):List[Trade] = {
     val currentUser = currentlyLoggedOn()
 
     // non-blank rows, with the key in lower case
@@ -59,15 +61,15 @@ class ExcelTradeReader(eaiStrategyDB: EAIStrategyDB, traders: Traders, currently
     val dups = explodedRows.map(ExcelRow(_, traders, currentUser).formattedExcelColumnID).groupBy(a => a).filter(_._2.size > 1).keys
     assert(dups.isEmpty, "Duplicate IDs aren't allowed: " + dups.mkString(", "))
 
-    explodedRows.mpMap {
+    explodedRows.map {
       row =>
       val excelRow = ExcelRow(row, traders, currentUser)
       try {
         val tradeDay = excelRow.tradeDay
         val counterParty = excelRow.counterParty
 
-        val tradeID = excelRow.tradeID(subgroupName)
-        val tradeAttributes = excelRow.attributes(eaiStrategyDB, subgroupName)
+        val tradeAttributes = excelRow.attributes(eaiStrategyDB, eaiDealBookMapping, subgroupNamePrefix)
+        val tradeID = excelRow.tradeID(tradeAttributes.subgroupName)
         val trade = new Trade(tradeID, tradeDay, counterParty, tradeAttributes, ExcelTradeReader.instrument(excelRow),
           ExcelTradeReader.readCosts(excelRow))
 
@@ -88,6 +90,7 @@ class ExcelTradeReader(eaiStrategyDB: EAIStrategyDB, traders: Traders, currently
       }
     }
   }
+
 }
 
 object ExcelTradeReader {

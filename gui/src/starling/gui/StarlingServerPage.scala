@@ -6,7 +6,6 @@ import starling.rmi.StarlingServer
 import starling.daterange.{Day, Timestamp}
 import collection.immutable.TreeSet
 import collection.SortedSet
-import starling.eai.Book
 import starling.auth.User
 import starling.browser._
 import service.internal.HeterogeneousMap
@@ -57,7 +56,7 @@ case class StarlingLocalCache(localCache:HeterogeneousMap[LocalCacheKey]) {
     localCache(DeskCloses).get(desk).map(closes => closes.values.flatten.toList.sortWith(_.timestamp > _.timestamp)).getOrElse(Nil)
   }
 
-  def traderBookLookup: Map[User, (Book, Desk)] = localCache(TradersBookLookup)
+  def traderBookLookup: Map[User, List[Desk]] = localCache(TradersBookLookup)
 
   def curveTypes = localCache(CurveTypes)
 
