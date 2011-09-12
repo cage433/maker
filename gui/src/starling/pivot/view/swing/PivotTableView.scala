@@ -905,7 +905,7 @@ class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSiz
   private def resizeSizerPanel() {
     if (!otherLayoutInfo.frozen) {
       val extraWidth = if (otherLayoutInfo.hiddenType == FieldListHidden || otherLayoutInfo.hiddenType == AllHidden) hiddenFieldPanel.size.width else fieldPanel.size.width
-      if (extraWidth + rowComponent.size.width + columnAndMeasureComponent.preferredSize.width > (browserSize.width - browserSize.width / 4)) {
+      if (extraWidth + rowComponent.preferredSize.width + columnAndMeasureComponent.preferredSize.width > (browserSize.width - browserSize.width / 4)) {
         sizerPanel.preferredSize = new Dimension(10, sizerPanel.size.height)
       } else {
         sizerPanel.preferredSize = new Dimension(rowComponent.preferredSize.width-1, sizerPanel.size.height)
@@ -1031,6 +1031,7 @@ class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSiz
     if (toolbarPanel.visible) reverseToolBarState()
     actualConfigPanel.foreach(_.revert())
     reportSpecificPanels.foreach(_.resetButton)
+    resizeSizerPanel()
   }
 
   def selection = {
