@@ -9,7 +9,7 @@ import starling.pivot.PivotFormatter
 import starling.browser.common.GuiUtils._
 import starling.browser._
 import common.{ButtonClickedEx, NewPageButton, MigPanel}
-import starling.daterange.Day
+import starling.daterange.{DayAndNoTime, DayAndTime, Day}
 
 case class ValuationParametersPage(tradeID:TradeIDLabel, reportParameters:ReportParameters) extends StarlingServerPage {
   def text = "Valuation Parameters for " + tradeID.id
@@ -87,11 +87,18 @@ object ValuationParametersPageComponent {
       add(l("Environment Rule"), "skip 1")
       add(l2(ci.environmentRule.name), "wrap")
 
+      def dayAndTimeToString(dat:DayAndTime) = {
+        dat match {
+          case dant:DayAndNoTime => dant.day.toString
+          case DayAndTime(d, tod) => d.toString + ", " + tod.shortName
+        }
+      }
+
       add(l("Forward Observation"), "skip 1")
-      add(l2(ci.valuationDayAndTime.day), "wrap")
+      add(l2(dayAndTimeToString(ci.valuationDayAndTime)), "wrap")
 
       add(l("Theta to"), "skip 1")
-      add(l2(ci.thetaDayAndTime), "wrap")
+      add(l2(dayAndTimeToString(ci.thetaDayAndTime)), "wrap")
 
       add(l("Live on"), "skip 1")
       add(l2(rp.expiryDay), "wrap")
