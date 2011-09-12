@@ -62,21 +62,24 @@ class FixedImagePanel(var image0:BufferedImage) extends MigXPanel("insets 0") {
     bufferedImage
   }
 
-  private var greyedImage = generateGreyedImage
+  private var greyedImage:BufferedImage = _
 
   def image = image0
   def image_=(im:BufferedImage) {
     image0 = im
-    greyedImage = generateGreyedImage
+    greyedImage = null
     backgroundPainter = new ImagePainter(image0)
   }
 
   backgroundPainter = new ImagePainter(image0)
 
-  override def enabled_=(b:Boolean) = {
+  override def enabled_=(b:Boolean) {
     if (b) {
       backgroundPainter = new ImagePainter(image0)
     } else {
+      if (greyedImage == null) {
+        greyedImage = generateGreyedImage
+      }
       backgroundPainter = new ImagePainter(greyedImage)
     }
     super.enabled = b
@@ -109,7 +112,7 @@ class FixedImagePanelWithDisabledImageSupplied(image:BufferedImage,disabledImage
 
   backgroundPainter = new ImagePainter(image)
 
-  override def enabled_=(b:Boolean) = {
+  override def enabled_=(b:Boolean) {
     if (b) {
       backgroundPainter = new ImagePainter(image)
     } else {
@@ -179,9 +182,9 @@ class SXLabel(text0: String, icon0: Icon, align: Alignment.Value) extends Compon
   def this() = this("", EmptyIcon, Alignment.Center)
   def this(s: String) = this(s, EmptyIcon, Alignment.Center)
   def text: String = peer.getText
-  def text_=(s: String) = peer.setText(s)
+  def text_=(s: String) {peer.setText(s)}
   def icon: Icon = peer.getIcon
-  def icon_=(i: Icon) = peer.setIcon(i)
+  def icon_=(i: Icon) {peer.setIcon(i)}
 
   def textRotation = peer.getTextRotation
   def textRotation_=(textOrientation:Double) {peer.setTextRotation(textOrientation)}
@@ -236,10 +239,10 @@ class NListView[T](values:Seq[T]) extends ListView[T](values) {
   selection.intervalMode = ListView.IntervalMode.Single
 
   def selectedOption:Option[T] = if (selection.indices.isEmpty) None else Some(selected)
-  def selectedOption_=(v:Option[T]) = v match {
+  def selectedOption_=(v:Option[T]) {v match {
     case None => if (listData.nonEmpty) selectIndices(0)
     case Some(si) => if (listData.contains(si)) selected = si else if (listData.nonEmpty) selectIndices(0)
-  }
+  }}
   def selected:T = listData(selection.leadIndex)
   def selected_=(value:T) {selectIndices(listData.indexOf(value))}
 }
@@ -256,7 +259,7 @@ class ArrowButton(left:Boolean) extends Button {
   focusable = false
   private val ac = AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.7f)
 
-  override protected def paintComponent(g2:Graphics2D) = {
+  override protected def paintComponent(g2:Graphics2D) {
     val model = peer.getModel
     val colourToUse = if (model.isArmed && model.isPressed) {
       GUIFieldBottomColour.darker
@@ -283,7 +286,7 @@ class ArrowButton(left:Boolean) extends Button {
 }
 
 class CrazyScrollPaneLayout extends ScrollPaneLayout.UIResource {
-  override def layoutContainer(parent:java.awt.Container) = {
+  override def layoutContainer(parent:java.awt.Container) {
     val availR = parent.getBounds()
     availR.x = 0
     availR.y = 0
@@ -317,7 +320,7 @@ class CrazyScrollPaneLayout extends ScrollPaneLayout.UIResource {
 
 class CrazyScrollPane(c:Component, leftButton:ArrowButton, rightButton:ArrowButton) extends ScrollPane(c) {
   override lazy val peer: JScrollPane = new JScrollPane with SuperMixin {
-    override def setLayout(layout:LayoutManager) = {
+    override def setLayout(layout:LayoutManager) {
       setCorner(ScrollPaneConstants.LOWER_LEFT_CORNER, leftButton.peer)
       setCorner(ScrollPaneConstants.LOWER_RIGHT_CORNER, rightButton.peer)
       super.setLayout(new CrazyScrollPaneLayout())
