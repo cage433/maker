@@ -29,7 +29,7 @@ object GuiBundles extends BundleDefinitions {
   def bundles = {
 
     val browserLib = new File("browser/lib")
-    val sharedJars = List("jxlayer-4.0.jar", "looks-2.3.1.jar", "Miglayout-3-7-3-1-nick.jar",
+    val sharedJars = List("jxlayer-4.0.jar", "looks-2.3.1.jar", "miglayout-4.0-swing.jar",
       "org.eclipse.mylyn.wikitext.core_1.4.0.I20100805-0500-e3x.jar",
       "org.eclipse.mylyn.wikitext.textile.core_1.4.0.I20100805-0500-e3x.jar",
       "swingx-core-1.6.2.jar", "timingframework-1.0.jar"

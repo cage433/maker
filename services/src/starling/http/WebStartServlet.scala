@@ -39,7 +39,7 @@ object GUICode {
     "servlet-api" -> new File("gui/lib_managed/servlet-api-jar-2.5.jar"),
     "jetty" -> new File("services/lib_managed/jetty-jar-6.1.26.jar"),
     "jetty-utls" -> new File("services/lib_managed/jetty-util-jar-6.1.26.jar"),
-    "Miglayout-3-7-3-1-nick" -> new File("browser/lib/Miglayout-3-7-3-1-nick.jar"),
+    "browser-lib-miglayout-4.0-swing.jar" -> new File("browser/lib/miglayout-4.0-swing.jar"),
     "org.eclipse.mylyn.wikitext.core_1.4.0.I20100805-0500-e3x" -> new File("browser/lib/org.eclipse.mylyn.wikitext.core_1.4.0.I20100805-0500-e3x.jar"),
     "eclipse.mylyn.wikitext.textile.core_1.4.0.I20100805-0500-e3x" -> new File("browser/lib/org.eclipse.mylyn.wikitext.textile.core_1.4.0.I20100805-0500-e3x.jar"),
     "swingx-core" -> new File("browser/lib/swingx-core-1.6.2.jar"),

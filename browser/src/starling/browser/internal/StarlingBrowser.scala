@@ -1237,7 +1237,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
     tabComponent.setTextFromPage(page)
     refreshButton.enabled = pageInfo.refreshPage.isDefined
     mainPanel.peer.removeAll()
-    LinkHandler.clearLayouts()
+    LinkHandler.clearWeakReferencesNow()
 
     // If we are not caching (for debug reasons), remove the component here so it has to be regenerated.
     if (!componentCaching) {
