@@ -62,12 +62,11 @@ class FixedImagePanel(var image0:BufferedImage) extends MigXPanel("insets 0") {
     bufferedImage
   }
 
-  private var greyedImage:BufferedImage = _
+  private var greyedImage:BufferedImage = generateGreyedImage
 
   def image = image0
   def image_=(im:BufferedImage) {
     image0 = im
-    greyedImage = null
     backgroundPainter = new ImagePainter(image0)
   }
 
@@ -77,9 +76,6 @@ class FixedImagePanel(var image0:BufferedImage) extends MigXPanel("insets 0") {
     if (b) {
       backgroundPainter = new ImagePainter(image0)
     } else {
-      if (greyedImage == null) {
-        greyedImage = generateGreyedImage
-      }
       backgroundPainter = new ImagePainter(greyedImage)
     }
     super.enabled = b
