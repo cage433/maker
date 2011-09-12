@@ -41,7 +41,7 @@ class UnionPivotTableDataSource(a:PivotTableDataSource, b:PivotTableDataSource) 
 
   val fieldDetailsMap = Map() ++ fieldDetails.map { f => f.field -> f }
   private def pivotResult(fields:Set[Field], pfs:PivotFieldsState, pivotTableDataSource:PivotTableDataSource):PivotResult = {
-    pivotTableDataSource.data(pfs.keepAll(fields))
+    pivotTableDataSource.data(pfs)
   }
   def data(pfs : PivotFieldsState) = {
     val executorService = Executors.newFixedThreadPool(2, NamedThreadFactory("union worker"))
@@ -55,7 +55,6 @@ class UnionPivotTableDataSource(a:PivotTableDataSource, b:PivotTableDataSource) 
 
     val possibleValuesUnion = Map() ++ (resultA.possibleValues.keysIterator ++ resultB.possibleValues.keysIterator).map{
       field => {
-        val fieldDetails = fieldDetailsMap(field)
         val set = new LinkedHashSet[Any]()
         set ++= resultA.possibleValues.getOrElse(field, List(UndefinedValue))
         set ++= resultB.possibleValues.getOrElse(field, List(UndefinedValue))

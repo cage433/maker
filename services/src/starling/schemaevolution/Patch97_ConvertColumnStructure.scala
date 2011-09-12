@@ -12,6 +12,7 @@ import scala.Some
 import starling.pivot._
 import model.CollapsedState
 import starling.utils.sql.PersistAsBlob
+import starling.pivot.HiddenType._
 
 class Patch97_ConvertColumnStructure extends Patch {
 
@@ -61,10 +62,12 @@ class Patch97_ConvertColumnStructure extends Patch {
         val columnSubTotalsDisabled = fields.getFieldValue("columnSubTotalsDisabled").getOrElse(List()).asInstanceOf[List[Field]]
         val newDisabledSubTotals = (rowSubTotalsDisabled ::: columnSubTotalsDisabled).toSet.toList
 
-        OtherLayoutInfo(totals, frozen, fieldPanelCollapsed, rowCollapsedState, columnCollapsedState, newDisabledSubTotals)
+        val hiddenType = if (fieldPanelCollapsed) FieldListHidden else NothingHidden
+
+        OtherLayoutInfo(totals, frozen, rowCollapsedState, columnCollapsedState, newDisabledSubTotals, hiddenType = hiddenType)
       }
     },
-    Map("rowSubTotalsDisabled" -> classOf[List[Field]], "columnSubTotalsDisabled" -> classOf[List[Field]])
+    Map("rowSubTotalsDisabled" -> classOf[List[Field]], "columnSubTotalsDisabled" -> classOf[List[Field]], "fieldPanelCollapsed" -> classOf[Boolean])
   ))
 
   protected def runPatch(starlingInit:StarlingInit, starling:RichDB, writer:DBWriter) {

@@ -15,11 +15,17 @@ case class FixingsHistory(marketDayAndTime: DayAndTime, marketDataSlice: MarketD
   type CurveValuesType = Quantity
 
   def apply(point : AnyRef) : Quantity = point match {
-    case observationDay: Day => key.index.fixing(marketDataSlice, observationDay)
+    case (observationDay: Day, period: Option[StoredFixingPeriod]) => {
+      key.fixing.fixing(marketDataSlice, observationDay, period)
+    }
   }
 }
 
-case class FixingsHistoryKey(index : SingleIndex)
+trait FixingHistoryLookup {
+  def fixing(mds: MarketDataSlice, observationDay: Day, storedFixingPeriod: Option[StoredFixingPeriod]): Quantity
+}
+
+case class FixingsHistoryKey(fixing: FixingHistoryLookup)
   extends CurveKey {
 
   def buildFromMarketData(marketDayAndTime: DayAndTime, marketDataSlice: MarketDataSlice): CurveObject = {
@@ -29,12 +35,12 @@ case class FixingsHistoryKey(index : SingleIndex)
   def underlying = toString
 
   def typeName = "PriceFixingsHistory"
-
-  def priceUOM = index.priceUOM
 }
 
 
-case class FixingKey(index : SingleIndex, observationDay: Day) extends AtomicDatumKey(FixingsHistoryKey(index), observationDay) {
+case class IndexFixingKey(index : SingleIndex, observationDay: Day)
+  extends AtomicDatumKey(FixingsHistoryKey(index), (observationDay, None)) {
+
   def forwardStateValue(originalAtomicEnv: AtomicEnvironment, forwardDayAndTime: DayAndTime) = {
     if (observationDay.endOfDay <= originalAtomicEnv.marketDay) {
       originalAtomicEnv(this)
@@ -47,4 +53,21 @@ case class FixingKey(index : SingleIndex, observationDay: Day) extends AtomicDat
     
   }
   def nullValue = Quantity(1, index.priceUOM)
+}
+
+case class MarketFixingKey(market: CommodityMarket, observationDay: Day, forwardDate: DateRange)
+  extends AtomicDatumKey(FixingsHistoryKey(market), (observationDay, Some(StoredFixingPeriod.dateRange(forwardDate)))) {
+
+  def forwardStateValue(originalAtomicEnv: AtomicEnvironment, forwardDayAndTime: DayAndTime) = {
+    if (observationDay.endOfDay <= originalAtomicEnv.marketDay) {
+      originalAtomicEnv(this)
+    } else if (observationDay.endOfDay <= forwardDayAndTime) {
+      val env = Environment(originalAtomicEnv)
+      env.forwardPrice(market, forwardDate)
+    } else {
+      throw new Exception("Can't get fixing for day in the future")
+    }
+  }
+
+  def nullValue = Quantity(1, market.priceUOM)
 }

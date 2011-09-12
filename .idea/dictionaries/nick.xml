@@ -10,6 +10,7 @@
       <w>cmds</w>
       <w>commited</w>
       <w>dest</w>
+      <w>explan</w>
       <w>graphics2</w>
       <w>image1</w>
       <w>image2</w>
@@ -51,6 +52,7 @@
       <w>uninstall</w>
       <w>unmarshal</w>
       <w>uoms</w>
+      <w>updateable</w>
       <w>username</w>
       <w>uuid</w>
       <w>viewport</w>

@@ -5,27 +5,24 @@ import starling.auth.User
 import starling.utils.ImplicitConversions._
 import java.lang.String
 import collection.immutable.Map
-import starling.pivot.{ExtraFormatInfo, PivotLayout}
+import starling.pivot.PivotLayout
 import starling.daterange._
-import starling.gui.Key
+import starling.quantity.UOM
 
 class Events //The is just here as I find this class using "^n Events"
-
-case class EventBatch(events:Seq[Event]) extends Event //Needed so that many events are processed with one auto refresh
 
 case class IntradayUpdated(group: String, user: User, timestamp:Timestamp) extends Event
 case class DeskClosed(desk: Desk, timestamp:TradeTimestamp) extends Event
 case class DeskCloseFailed(desk: Desk, timestamp:TradeTimestamp, error: Throwable) extends Event
-case class MarketDataSnapshotSet(snapshots:Map[MarketDataSelection,List[SnapshotIDLabel]]) extends Event
+case class MarketDataSnapshotSet(selection: MarketDataSelection, previousSnapshot: Option[SnapshotIDLabel],
+                                 newSnapshot: SnapshotIDLabel, affectedObservationDays: Option[List[Day]]) extends Event
 case class MarketDataSnapshot(snapshotIDs : List[String]) extends Event
 case class PricingGroupMarketDataUpdate(pricingGroup:PricingGroup, version:Int) extends Event
 case class ExcelObservationDay(name:String, day:Day) extends Event
 case class PricingGroupObservationDay(pricingGroup:PricingGroup, day:Day) extends Event
 case class PivotLayoutUpdate(user:String, userLayouts:List[PivotLayout]) extends Event
-case class BookmarksUpdate(user:String, bookmarks:List[BookmarkLabel]) extends Event
 case class ExcelMarketListUpdate(values:List[String]) extends Event
 case class ExcelMarketDataUpdate(name:String, version:Int) extends Event
-case class UserSettingUpdated(key:Key[_]) extends Event
 
 object PricingGroupMarketDataUpdate {
   def matching(pricingGroupOption : Option[PricingGroup]) : PartialFunction[Event, PricingGroupMarketDataUpdate] = {
@@ -46,8 +43,6 @@ object ExcelMarketDataUpdate {
     case update@ExcelMarketDataUpdate(`name`, _) => update
   }
 }
-
-case class UserLoggedIn(user:User) extends Event
 
 case class RabbitMessage(body:String, headers:Map[String,Object])
 
@@ -106,3 +101,13 @@ case class UploadInterestRatesUpdate(user : User, label : String, observationDat
 }
 
 case class EmailEvent(from: String = "", to: String = "", subject: String = "", body: String = "") extends Event
+
+abstract class MarketDataEvent(val observationDay: Day, val label: SnapshotIDLabel, isCorrection: Boolean) extends Event
+case class SpotFXDataEvent(override val observationDay: Day, currencies: List[UOM],
+                           override val label: SnapshotIDLabel, isCorrection: Boolean)
+  extends MarketDataEvent(observationDay, label, isCorrection)
+
+case class ReferenceInterestRateDataEvent(override val observationDay: Day, exchange: String, currencies: List[UOM],
+                                          override val label: SnapshotIDLabel, isCorrection: Boolean)
+  extends MarketDataEvent(observationDay, label, isCorrection)
+

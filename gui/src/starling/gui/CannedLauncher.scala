@@ -2,11 +2,10 @@ package starling.gui
 
 import api._
 import java.lang.String
-import pages.{AbstractPivotPage, SingleTradePage, PivotPageState}
-import starling.pivot.view.swing.MigPanel
+import pages.PivotTablePageData._
+import pages.{PivotTablePageData, AbstractPivotPage, SingleTradePage, PivotPageState}
 import swing.event.ButtonClicked
 import starling.pivot.model._
-import swing.{Label, Button}
 import java.awt.Dimension
 import starling.pivot._
 import java.lang.reflect.Method
@@ -17,6 +16,15 @@ import starling.quantity.{UOM, Quantity}
 import starling.auth.User
 import starling.daterange.{Month, Year, Day}
 import collection.immutable.{Map, Iterable}
+import starling.browser._
+import common.{NumberedButton, MigPanel}
+import service._
+import starling.browser.internal.UserSettings
+import service.internal.HeterogeneousMap
+import xstream.GuiStarlingXStream
+import swing.{Component, Label, Button}
+import javax.swing.KeyStroke
+import java.awt.event.KeyEvent
 
 /**
  * An alternative StarlingBrowser for testing gui features quickly
@@ -25,104 +33,80 @@ import collection.immutable.{Map, Iterable}
 object CannedLauncher {
   def main(args:Array[String]) {
     System.setProperty("log4j.configuration", "utils/resources/log4j.properties")
-    val nullServer = {
-        val e = new Enhancer();
-        e.setSuperclass(classOf[StarlingServer])
-        e.setCallback(new MethodInterceptor() {
-          def intercept(obj:Object, method:Method,
-                        args:Array[Object], proxy:MethodProxy):Object = {
-            val name = method.getName
-            if (name=="tradeSystems") {
-              List(TradeSystemLabel("canned", "can"))
-            } else if (name=="readSettings") {
-              new UserSettings
-            } else if (name=="version") {
-              Version("canned", "cannedHostname", "cannedDatabase", false, None)
-            } else if (name=="desks") {
-              List(Desk("Canned"))
-            } else if (name=="userReports") {
-              List()
-            } else if (name=="extraLayouts") {
-              List()
-            } else if (name=="observationDays") {
-              (Map(),Map())
-            } else if (name=="whoAmI") {
-              User.Dev
-            } else if (name=="bookmarks") {
-              List()
-            } else {
-              null
-            }
-          }
-        })
-        e.create().asInstanceOf[StarlingServer]
+    BrowserLauncher.start(new scala.swing.Publisher() {}, new HeterogeneousMap[LocalCacheKey], None) {
+      new ServerContext {
+        def lookup[T](klass: Class[T]) = throw new Exception("Canned launcher has no services")
+        def version = Version("canned", "hostname", "db", false, None)
+        def browserBundles = List(CannedBrowserBundle)
+        def browserService = CannedBrowserService
+        def username = "Canned User"
       }
-    val publisher = new scala.swing.Publisher() {}
-    Launcher.start(nullServer, publisher, new CannedHomePage, None)
-//    Launcher.start(nullServer, publisher, CannedPivotReportPage(PivotPageState(false, PivotFieldParams(true, None))))
-    /*Launcher.start(nullServer, publisher, CannedPivotReportPage(PivotPageState(false,
-      PivotFieldParams(true, Some(PivotFieldsState(List(Field("PV")), List(Field("Trader"), Field("Product"),
-        Field("Lots"), Field("Strike")), List(Field("Trade")), List(), Totals(true,true,true)))), "")))*/
+    }
   }
+}
+
+object CannedBrowserService extends BrowserService {
+  def name = "Canned"
+  def readSettings = UserSettingsLabel(Nil)
+  def saveSettings(settings: UserSettingsLabel) {println("We don't save canned settings")}
+  def saveBookmark(bookmark: BookmarkLabel) {println("We don't save canned bookmarks")}
+  def deleteBookmark(name: String) {println("We don't delete canned bookmarks")}
+  def bookmarks = Nil
+  def logPageView(info: PageLogInfo) { /*skip*/ }
+}
+
+object CannedBrowserBundle extends BrowserBundle {
+  def bundleName = "Canned"
+  def marshal(obj: AnyRef) = GuiStarlingXStream.write(obj)
+  def unmarshal(text: String) = GuiStarlingXStream.read(text).asInstanceOf[AnyRef]
+  override def homeButtons(pageContext: PageContext) = CannedHomePagePageComponent.buttons
 }
 
 class NullPageData extends PageData
 
-case class CannedHomePage() extends Page {
+class CannedServerContext
+trait CannedPage extends Page {
+  def bundle = "Canned"
+  type SC = CannedServerContext
+  def createServerContext(sc:ServerContext) = new CannedServerContext
+}
+
+case class CannedHomePage() extends CannedPage {
   def text = "Home"
-  def build(reader: PageBuildingContext) = { new PageData{} }
-  def createComponent(context: PageContext, data:PageData, bookmark:Bookmark, browserSize:Dimension) = {
+  def build(reader: CannedServerContext) = { new PageData{} }
+  def createComponent(context: PageContext, data:PageData, bookmark:Bookmark, browserSize:Dimension, previousPageData:Option[PageData]) = {
     new CannedHomePagePageComponent(context)
   }
   def icon = StarlingIcons.im("/icons/tablenew_16x16.png")
 }
 
-class CannedHomePagePageComponent(pageContext:PageContext) extends MigPanel("") with PageComponent {
-  val runButton = new Button {
-    text = "Run"
-    reactions += {
-      case ButtonClicked(b) => pageContext.goTo(CannedPivotReportPage(PivotPageState(false, PivotFieldParams(true, None))))
-    }
+object CannedHomePagePageComponent {
+  val icon = StarlingIcons.im("/icons/stock_chart-reorganize.png")
+  def buttons = {
+    PageButton("Run", CannedPivotReportPage(PivotPageState(false, PivotFieldParams(true, None))), icon, Some(KeyStroke.getKeyStroke(KeyEvent.VK_R,0))) ::
+    PageButton("Run Editable", EditableCannedPivotReportPage(PivotPageState(false, PivotFieldParams(true, None))), icon, Some(KeyStroke.getKeyStroke(KeyEvent.VK_E,0))) ::
+    PageButton("Run Editable Specified", EditableSpecifiedCannedPivotReportPage(PivotPageState(false, PivotFieldParams(true, None))), icon, Some(KeyStroke.getKeyStroke(KeyEvent.VK_S,0))) ::
+    PageButton("Run Slow", SlowCannedPivotReportPage(PivotPageState(false, PivotFieldParams(true, None))), icon, Some(KeyStroke.getKeyStroke(KeyEvent.VK_W,0))) ::
+    Nil
   }
-  add(runButton)
-  add(new Button {
-    text = "Run Editable"
-    reactions += {
-      case ButtonClicked(b) => pageContext.goTo(EditableCannedPivotReportPage(PivotPageState(false, PivotFieldParams(true, None))))
-    }
-  })
-  add(new Button {
-    text = "Run Editable Specified"
-    reactions += {
-      case ButtonClicked(b) => pageContext.goTo(EditableSpecifiedCannedPivotReportPage(PivotPageState(false, PivotFieldParams(true, None))))
-    }
-  })
-  add(new Button {
-    text = "Run Diff"
-    reactions += {
-      case ButtonClicked(b) => pageContext.goTo(DiffCannedPivotReportPage(PivotPageState(false, PivotFieldParams(true, None))))
-    }
-  })
-  add(new Button {
-    text = "Run Slow"
-    reactions += {
-      case ButtonClicked(b) => pageContext.goTo(SlowCannedPivotReportPage(PivotPageState(false, PivotFieldParams(true, None))))
-    }
-  })
-  add(new Button {
-    text = "View Trade"
-    reactions += {
-      case ButtonClicked(b) => pageContext.goTo(SingleTradePage(TradeIDLabel(1234.toString, TradeSystemLabels.TrinityTradeSystem), Some(Desk("Trinity")), TradeExpiryDay(Day.today), None))
-    }
-  })
+}
+class CannedHomePagePageComponent(pageContext:PageContext) extends MigPanel("") with PageComponent {
 
-  override def defaultComponentForFocus = Some(runButton.peer)
+  var firstButton:Component = null
+  CannedHomePagePageComponent.buttons.foreach { button =>
+    val buttonComponent = new NumberedButton(button.name, button.icon, (modifiers) => {
+            pageContext.createAndGoTo( (serverContext) => button.pageFactory.create(serverContext), modifiers = modifiers) })
+    if (firstButton == null) firstButton = buttonComponent
+    add(buttonComponent)
+  }
+
+  override def defaultComponentForFocus = Some(firstButton.peer)
 }
 
-case class CannedDrilldownPage(fields:Seq[(Field,Any)]) extends Page {
+case class CannedDrilldownPage(fields:Seq[(Field,Any)]) extends CannedPage {
   def text = "Canned drilldown"
-  def build(reader: PageBuildingContext) = new PageData() {}
-  def createComponent(context: PageContext, data:PageData, bookmark:Bookmark, browserSize:Dimension) = {
+  def build(reader: CannedServerContext) = new PageData() {}
+  def createComponent(context: PageContext, data:PageData, bookmark:Bookmark, browserSize:Dimension, previousPageData:Option[PageData]) = {
     new MigPanel("") with PageComponent {
       add(new Label("Drilldown"), "span")
       for ((field,value) <- fields) {
@@ -133,58 +117,57 @@ case class CannedDrilldownPage(fields:Seq[(Field,Any)]) extends Page {
   def icon = StarlingIcons.im("/icons/tablenew_16x16.png")
 }
 
-case class SlowCannedPivotReportPage(pivotPageState:PivotPageState) extends AbstractPivotPage(pivotPageState) {
+abstract class AbstractCannedPivotPage(pivotPageState:PivotPageState, edits:PivotEdits = PivotEdits.Null) extends AbstractPivotPage(pivotPageState) with CannedPage {
+
+}
+
+case class SlowCannedPivotReportPage(pivotPageState:PivotPageState) extends AbstractCannedPivotPage(pivotPageState) {
   override def text = "Slow Canned Pivot Report"
-  override def layoutType = Some("Canned")
-  def dataRequest(pageBuildingContext:PageBuildingContext) = {
+  def dataRequest(pageBuildingContext:CannedServerContext) = {
     Thread.sleep(5*1000);
     PivotTableModel.createPivotData(new CannedDataSource, pivotPageState.pivotFieldParams)
   }
   def selfPage(pivotPageState:PivotPageState, edits:PivotEdits) = SlowCannedPivotReportPage(pivotPageState)
-  override def finalDrillDownPage(fields:Seq[(Field, Selection)], pageContext:PageContext, ctrlDown:Boolean) = pageContext.goTo(CannedDrilldownPage(fields), ctrlDown)
+  override def finalDrillDownPage(fields:Seq[(Field, Selection)], pageContext:PageContext, modifiers:Modifiers) {pageContext.goTo(CannedDrilldownPage(fields), modifiers)}
 }
 
-case class DiffCannedPivotReportPage(pivotPageState:PivotPageState) extends AbstractPivotPage(pivotPageState) {
+case class DiffCannedPivotReportPage(pivotPageState:PivotPageState) extends AbstractCannedPivotPage(pivotPageState) {
   override def text = "Diff Canned Pivot Report"
-  override def layoutType = Some("Canned")
-  def dataRequest(pageBuildingContext:PageBuildingContext) = {
+  def dataRequest(pageBuildingContext:CannedServerContext) = {
     val cannedDataSource = new CannedDataSource
     PivotTableModel.createPivotData(new DiffPivotTableDataSource(cannedDataSource, cannedDataSource, "D-1"), pivotPageState.pivotFieldParams)
   }
   def selfPage(pivotPageState:PivotPageState, edits:PivotEdits) = DiffCannedPivotReportPage(pivotPageState)
 }
 
-case class CannedPivotReportPage(pivotPageState:PivotPageState) extends AbstractPivotPage(pivotPageState) {
+case class CannedPivotReportPage(pivotPageState:PivotPageState) extends AbstractCannedPivotPage(pivotPageState) {
   override def text = "Canned Pivot Report"
-  override def layoutType = Some("Canned")
-  def dataRequest(pageBuildingContext:PageBuildingContext) = {
+  def dataRequest(pageBuildingContext:CannedServerContext) = {
     PivotTableModel.createPivotData(new CannedDataSource, pivotPageState.pivotFieldParams)
   }
   def selfPage(pivotPageState:PivotPageState, edits:PivotEdits) = CannedPivotReportPage(pivotPageState)
-  override def finalDrillDownPage(fields:Seq[(Field, Selection)], pageContext:PageContext, ctrlDown:Boolean) = pageContext.goTo(CannedDrilldownPage(fields), ctrlDown)
+  override def finalDrillDownPage(fields:Seq[(Field, Selection)], pageContext:PageContext, modifiers:Modifiers) {pageContext.goTo(CannedDrilldownPage(fields), modifiers)}
 }
 
-case class EditableCannedPivotReportPage(pivotPageState:PivotPageState) extends AbstractPivotPage(pivotPageState) {
+case class EditableCannedPivotReportPage(pivotPageState:PivotPageState) extends AbstractCannedPivotPage(pivotPageState) {
   override def text = "Editable Canned Pivot Report"
-  override def layoutType = Some("Canned")
-  def dataRequest(pageBuildingContext:PageBuildingContext) = {
+  def dataRequest(pageBuildingContext:CannedServerContext) = {
     PivotTableModel.createPivotData(new EditableCannedDataSource, pivotPageState.pivotFieldParams)
   }
   def selfPage(pPS:PivotPageState, edits:PivotEdits) = copy(pivotPageState = pPS)
-  override def finalDrillDownPage(fields:Seq[(Field, Selection)], pageContext:PageContext, ctrlDown:Boolean) = pageContext.goTo(CannedDrilldownPage(fields), ctrlDown)
+  override def finalDrillDownPage(fields:Seq[(Field, Selection)], pageContext:PageContext, modifiers:Modifiers) {pageContext.goTo(CannedDrilldownPage(fields), modifiers)}
 }
 
-case class EditableSpecifiedCannedPivotReportPage(pivotPageState:PivotPageState, edits:PivotEdits=PivotEdits.Null) extends AbstractPivotPage(pivotPageState, edits) {
+case class EditableSpecifiedCannedPivotReportPage(pivotPageState:PivotPageState, edits:PivotEdits=PivotEdits.Null) extends AbstractCannedPivotPage(pivotPageState, edits) {
   override def text = "Editable Canned Pivot Report With Specified Values"
-  override def layoutType = Some("Canned")
-  def dataRequest(pageBuildingContext:PageBuildingContext) = {
+  def dataRequest(pageBuildingContext:CannedServerContext) = {
     val ds = (new EditableSpecifiedCannedDataSource).editable.get.withEdits(edits)
     PivotTableModel.createPivotData(ds, pivotPageState.pivotFieldParams)
   }
   def selfPage(pPS:PivotPageState, edits0:PivotEdits) = copy(pivotPageState = pPS, edits = edits0)
-  override def finalDrillDownPage(fields:Seq[(Field, Selection)], pageContext:PageContext, ctrlDown:Boolean) = pageContext.goTo(CannedDrilldownPage(fields), ctrlDown)
+  override def finalDrillDownPage(fields:Seq[(Field, Selection)], pageContext:PageContext, modifiers:Modifiers) {pageContext.goTo(CannedDrilldownPage(fields), modifiers)}
 
-  override def save(starlingServer:StarlingServer, edits:PivotEdits) = {
+  override def save(starlingServer:ServerContext, edits:PivotEdits) = {
     println("EditableSpecifiedCannedPivotReportPage saved these " + " edits " + edits)
     true
   }
@@ -289,23 +272,23 @@ class EditableSpecifiedCannedDataSource extends UnfilteredPivotTableDataSource {
     val random = new java.util.Random(1234567890L)
     (for (trader <- traders; market <- markets) yield {
       if (random.nextInt(9) > 3) {
-        Some(Map(Field("Trader") -> trader, Field("Market") -> market, Field("Volume") -> random.nextInt(2000)))
+        Some(Map(Field("Trader") -> trader, Field("Market") -> market, Field("Volume") -> random.nextInt(2000), Field("Single Value") -> "Single Value Nick", Field("Non Editable") -> "bla"))
       } else {
         None
       }
-    }).flatten ::: List(Map(Field("Trader") -> "alex", Field("Market") -> "Unused", Field("Volume") -> 15))
+    }).flatten ::: List(Map(Field("Trader") -> "alex", Field("Market") -> "Unused", Field("Volume") -> 15, Field("Single Value") -> "Single Value Nick"))
   }
 
   val marketFieldDetails = new FieldDetails("Market") {
     override def parser = new CannedMarketPivotParser(markets.toSet + "Unused")
   }
 
-  def fieldDetailsGroups = List(FieldDetailsGroup("Group 1", FieldDetails("Trader"), marketFieldDetails, new SumIntFieldDetails("Volume")))
+  def fieldDetailsGroups = List(FieldDetailsGroup("Group 1", FieldDetails("Trader"), marketFieldDetails, new SumIntFieldDetails("Volume"), FieldDetails("Single Value"), FieldDetails("Non Editable")))
   def unfilteredData(pfs:PivotFieldsState) = data
 
   override def editable = Some(new EditPivot {
     def save(edits:PivotEdits) = {println("SAVE : " + edits); true}
-    def editableToKeyFields = Map(Field("Volume") -> Set(Field("Trader"), Field("Market")))
+    def editableToKeyFields = Map(Field("Volume") -> Set(Field("Trader"), Field("Market"), Field("Single Value")))
     def withEdits(edits:PivotEdits):PivotTableDataSource = {
       if (edits.isEmpty) {
         EditableSpecifiedCannedDataSource.this
@@ -318,7 +301,7 @@ class EditableSpecifiedCannedDataSource extends UnfilteredPivotTableDataSource {
             println("")
 
             val dWithDeletesAndAmends = d.map(m => {
-              val key = Map(Field("Trader") -> m(Field("Trader")), Field("Market") -> m(Field("Market")))
+              val key = Map(Field("Trader") -> m(Field("Trader")), Field("Market") -> m(Field("Market")), Field("Single Value") -> m(Field("Single Value")))
               m.map { case (field, value) => {
                 edits.editFor(key, field) match {
                   case None => field -> value
@@ -344,7 +327,7 @@ class EditableSpecifiedCannedDataSource extends UnfilteredPivotTableDataSource {
 }
 
 class CannedMarketPivotParser(markets:Set[String]) extends PivotParser {
-  def parse(text:String) = {
+  def parse(text:String, extraFormatInfo:ExtraFormatInfo) = {
     val lowerCaseMarkets = markets.map(_.trim().toLowerCase)
     if (lowerCaseMarkets(text.trim.toLowerCase)) {
       (text, text)

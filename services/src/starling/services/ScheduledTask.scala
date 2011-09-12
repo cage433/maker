@@ -6,7 +6,7 @@ import starling.daterange.Day
 import starling.pivot._
 import starling.utils.ImplicitConversions._
 import starling.gui.api.EmailEvent
-import starling.utils.{Stoppable, Broadcaster}
+import starling.utils.{Stopable, Broadcaster}
 
 
 trait ScheduledTaskAttributes {
@@ -16,7 +16,7 @@ trait ScheduledTaskAttributes {
   val EmailTo    = "EmailTo"
 }
 
-trait ScheduledTask extends ScheduledTaskAttributes with Stoppable { self =>
+trait ScheduledTask extends ScheduledTaskAttributes with Stopable { self =>
   def attribute(name: String, alternative: String = ""): ScheduledTaskAttribute = attributes.getOrElse(name, ScheduledTaskAttribute(alternative))
   def attributes: Map[String, ScheduledTaskAttribute] = Map()
   def perform(observationDay: Day) { if (isRunning) execute(observationDay) }

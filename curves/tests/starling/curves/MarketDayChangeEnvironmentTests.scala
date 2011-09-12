@@ -8,9 +8,9 @@ import starling.quantity.UOM._
 import starling.quantity.Percentage
 import starling.daterange.Month
 import starling.quantity.Quantity
-import starling.market.{TestMarketSpec, Index, FuturesFrontPeriodIndex, Market}
+import starling.market.{TestMarketTest, Index, FuturesFrontPeriodIndex, Market}
 
-class MarketDayChangeEnvironmentTests extends TestMarketSpec {
+class MarketDayChangeEnvironmentTests extends TestMarketTest {
   @Test
   def testMarketDayChanges{
     val marketDay = Day(2010, 1, 1).endOfDay

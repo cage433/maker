@@ -19,7 +19,7 @@ import starling.concurrent.MP
 import org.testng.annotations.{AfterTest, AfterClass, Test}
 import starling.gui.api.{ReportSpecificChoices, UTPIdentifier}
 
-class RiskPivotReportTests extends TestMarketSpec with StarlingTest{
+class RiskPivotReportTests extends TestMarketTest with StarlingTest{
   @Test
   def testFuturesOption {
     val market = Market.NYMEX_WTI

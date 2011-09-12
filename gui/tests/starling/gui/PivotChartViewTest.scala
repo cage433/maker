@@ -6,12 +6,13 @@ import starling.pivot.model._
 import scala.swing._
 import org.testng.Assert._
 import org.jfree.chart.plot.{XYPlot, CategoryPlot}
-import starling.pivot.view.swing.{MigPanel, ChartSuccess, ChartFailure, PivotChartView}
+import starling.pivot.view.swing.{ChartSuccess, ChartFailure, PivotChartView}
 import starling.varcalculator.NAhead
 import org.scalatest.testng.TestNGSuite
 import starling.pivot.controller.PivotGrid
 import starling.daterange.{Month, Day}
 import starling.pivot.{LeftTextPosition, NotTotal, Field, TableCell}
+import starling.browser.common.MigPanel
 
 object PivotChartViewTest {
 

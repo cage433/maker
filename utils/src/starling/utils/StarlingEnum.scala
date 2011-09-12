@@ -4,6 +4,8 @@ import java.lang.reflect.Method
 
 import starling.utils.ImplicitConversions._
 import starling.utils.Pattern._
+import scalaz._
+import Scalaz._
 
 class StarlingEnum[T](theType:Class[T], namer: T => String, ignoreCase: Boolean = false, otherTypes: List[Class[_]] = Nil) {
   val types = theType :: otherTypes

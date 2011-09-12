@@ -11,7 +11,7 @@ import starling.market._
 import starling.utils.QuantityTestUtils._
 import org.testng.Assert
 
-class TestNonSkewDelta extends TestMarketSpec{
+class TestNonSkewDelta extends TestMarketTest{
   @Test
   def testVolatilityDoesntChange{
     val env = Environment{
@@ -29,6 +29,8 @@ class TestNonSkewDelta extends TestMarketSpec{
     val inst = new Instrument(){
       
       def pivotUTPType = throw new Exception("Unimplemented")
+
+      def explanation(env: Environment) = throw new Exception("Unimplemented")
 
       def atomicMarketDataKeys = Set[AtomicDatumKey]()
 

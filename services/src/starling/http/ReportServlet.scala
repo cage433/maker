@@ -11,6 +11,8 @@ import starling.utils.Pattern.Extractor
 import starling.pivot.controller.PivotTable
 import starling.utils.{Utils, RegressionRunner}
 import starling.utils.ImplicitConversions._
+import scalaz._
+import Scalaz._
 
 /**
  * Exposes saved reports as csv files

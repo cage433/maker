@@ -3,7 +3,6 @@ package starling.daterange
 import org.scalatest.testng.TestNGSuite
 import org.testng.annotations.Test
 import org.testng.Assert._
-import starling.daterange.Tenor
 import starling.utils.ImplicitConversions._
 
 class TenorTest extends TestNGSuite {

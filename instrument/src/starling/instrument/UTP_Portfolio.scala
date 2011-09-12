@@ -26,10 +26,12 @@ case class UTP_Portfolio(portfolio : Map[UTP, Double]) extends Instrument {//} w
 		assert(portfolio.keySet.forall(_.valuationCCY == ccy), "Portfolio of mixed currency deals has no currency")
 		ccy
   }
- 
-	/** Values the portfolio - will fail if instruments have different currencies
-  */
-	override def mtm(env : Environment) : Quantity = {
+
+  def explanation(env: Environment) = throw new Exception("No explanation for UTP Portfolio")
+
+  /** Values the portfolio - will fail if instruments have different currencies
+   */
+  override def mtm(env : Environment) : Quantity = {
 			if (portfolio.isEmpty)
 				Quantity.NULL
 			else

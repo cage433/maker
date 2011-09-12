@@ -128,10 +128,10 @@ object EndToEndTest {
     def ticket = null
   }
   val props = PropsHelper.defaultProps
-  lazy val client = new BouncyRMIClient(props.ExternalHostname.value, props.RmiPort.value.toInt, classOf[StarlingServer], clientAuth, overriddenUser = None)
+  lazy val client = new BouncyRMIClient(props.ExternalHostname.value, props.RmiPort.value.toInt, clientAuth, overriddenUser = None)
   lazy val StarlingServer:StarlingServer = {
     client.start
-    client.proxy
+    client.proxy(classOf[StarlingServer])
   }
 
   def stopRMIConnection {

@@ -28,7 +28,7 @@ object BalticFixings extends HierarchicalLimSource(List(TopRelation.Energy.Tanke
     val period = StoredFixingPeriod.tenor(tenor)
   }
 
-  def relationExtractor = Extractor.regex("""BALTIC\.(\w+\.\w+)\.(\w+)""") {
+  def relationExtractor = Extractor.regex[Option[BalticRelation]]("""BALTIC\.(\w+\.\w+)\.(\w+)""") {
     case List(BalticMarket(market), Tenor.Parse(tenor)) => Some(BalticRelation(market, tenor))
   }
 

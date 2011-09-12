@@ -4,8 +4,9 @@ import org.mortbay.jetty.bio.{SocketConnector}
 import org.mortbay.jetty.servlet.{ServletHolder, Context}
 import org.mortbay.jetty.{Server => JettyServer}
 import starling.http.ReportServlet
+import starling.utils.Stopable
 
-class RegressionServer(port: Int, servlet: ReportServlet) {
+class RegressionServer(port: Int, servlet: ReportServlet) extends Stopable {
   lazy val regressionServer = {
     val server = new JettyServer()
     val connector = new SocketConnector()
@@ -17,11 +18,6 @@ class RegressionServer(port: Int, servlet: ReportServlet) {
     server
   }
 
-  def start {
-    regressionServer.start
-  }
-
-  def stop {
-    regressionServer.stop
-  }
+  override def start { super.start; regressionServer.start }
+  override def stop  { super.stop;  regressionServer.stop  }
 }

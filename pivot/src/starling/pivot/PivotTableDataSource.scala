@@ -131,7 +131,14 @@ case class PivotEdits(edits:Map[KeyFilter,KeyEdits], newRows:List[Map[Field,Any]
   }
   def withNewAmended(rowIndex:Int, field:Field, value:Option[Any]) = {
     val fixedNewRows = newRows.zipWithIndex.map{ case (row,index) => {
-      if (index == rowIndex) row.updated(field, value.getOrElse(UndefinedValue)) else row
+      if (index == rowIndex) {
+        value match {
+          case Some(v) => row.updated(field, v)
+          case None => row - field
+        }
+      } else {
+        row
+      }
     }}
 
     val filteredFixedNewRows = fixedNewRows.filterNot(m => {
@@ -165,6 +172,11 @@ case class PivotEdits(edits:Map[KeyFilter,KeyEdits], newRows:List[Map[Field,Any]
   def withAddedRow(row:Map[Field,Any]) = {
     copy(newRows = newRows ::: List(row))
   }
+
+  def removeNewRows(indices:List[Int]) = {
+    val nRows = newRows.zipWithIndex.filterNot{case (_, i) => indices.contains(i)}.map(_._1)
+    copy(newRows = nRows)
+  }
 }
 object PivotEdits {
   val Null = PivotEdits(Map.empty, Nil)
@@ -191,9 +203,6 @@ abstract class PivotTableDataSource extends PivotGridSource {
   def lookup(field: Field) = fieldDetails.find(_.field == field).get
   def lookup(fieldName: String): FieldDetails = lookup(Field(fieldName))
 
-  def parseFilter(field: Field, values: List[String]) =
-    (field, SomeSelection(values.map(value => lookup(field).parser.parse(value)._1).toSet))
-
   def editable:Option[EditPivot] = None
   def availablePages:List[String] = List()
   def reportSpecificOptions : List[(String, List[Any])] = Nil
@@ -201,6 +210,10 @@ abstract class PivotTableDataSource extends PivotGridSource {
 
   def gridFor(pivotState: Option[PivotFieldsState]) = {
     PivotTableConverter(table = PivotTableModel.createPivotTableData(this, pivotState)).createGrid()
+  }
+
+  def flattenedGridFor(pivotState: Option[PivotFieldsState]): List[List[Any]] = {
+    PivotTableModel.createPivotTableData(this, pivotState).toFlatRows(Totals.Null, convertToText = false)
   }
 
   protected def fieldDetails(names: String*) = names.toList.map(FieldDetails(_))
@@ -316,10 +329,10 @@ case class NewValue(value:Option[Any], rowIndex:Int, edits:PivotEdits) extends P
   def valueForGrouping(newRowsAtBottom:Boolean) = if (newRowsAtBottom) NewRowValue(rowIndex) else value.getOrElse(UndefinedValue)
 }
 
-case class MeasureCell(value:Option[Any], cellType:EditableCellState, edits:PivotEdits=PivotEdits.Null, originalValue:Option[Any]=None)
+case class MeasureCell(value:Option[Any], cellType:EditableCellState, edits:PivotEdits=PivotEdits.Null, originalValue:Option[Any]=None, editable:Boolean=false)
 object MeasureCell {
   val Null = MeasureCell(None, Normal)
-  val Undefined = MeasureCell(Some(UndefinedValue), Normal)
+  val EditableNull = MeasureCell(None, Normal, editable = true)
 }
 
 case class PivotResult(data:Seq[Map[Field,Any]], possibleValues:Map[Field,List[Any]]){

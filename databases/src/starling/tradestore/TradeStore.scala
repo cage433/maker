@@ -1,5 +1,6 @@
 package starling.tradestore
 
+import eai.EAITradeAttributes
 import starling.utils.sql._
 import starling.utils._
 import starling.pivot.{Field => PField}
@@ -332,13 +333,11 @@ abstract class TradeStore(db: RichDB, broadcaster:Broadcaster, tradeSystem: Trad
   }
 
   private def updateFullHistoryForTrade(tradeID: TradeID): Unit = {
-    new Object().synchronized {
-      val q = (select("*")
-        from (tableName + " t")
-        where ("tradeid" eql LiteralString(tradeID.id))
-        )
-      db.query(q)(addTradeRowToHistory)
-    }
+    val q = (select("*")
+            from (tableName + " t")
+            where ("tradeid" eql LiteralString(tradeID.id))
+            )
+    db.query(q)(addTradeRowToHistory)
   }
 
   private def getHistoryOrNone(tradeID : TradeID) = {
@@ -432,7 +431,7 @@ abstract class TradeStore(db: RichDB, broadcaster:Broadcaster, tradeSystem: Trad
         }
         def unfilteredData(pfs: PivotFieldsState) = mapList
       }
-      val measures = ds.fieldDetails.filter(fd => (fd.field.name != "Trade ID") && (fd.field.name != "Trade Count" && fd.field.name != "Version"))
+      val measures = ds.fieldDetails.filter(fd => (fd.field.name != "Trade Count" && fd.field.name != "Version"))
       val pivotTable = PivotTableModel.createPivotTableData(ds, PivotFieldsState(rowFields=List(PField("Version")), dataFields=measures.map(_.field)))
       (new PivotTableConverter(OtherLayoutInfo(), pivotTable).toSTable("Trade History"),
               fieldDetailsGroups0, costsVersions.toList)
@@ -607,7 +606,7 @@ abstract class TradeStore(db: RichDB, broadcaster:Broadcaster, tradeSystem: Trad
       FieldDetailsGroup("Trade Fields", JustTradeFields.fieldDetails),
       FieldDetailsGroup("Trade System Fields", tradeAttributeFieldDetails),
       FieldDetailsGroup("Instrument Fields", TradeableFields.fieldDetails.filter(fd=>allFieldNames.contains(fd.field.name)))
-    )
+    ).filter(_.fields.nonEmpty)
   }
 
   def latestTimestamp() = {
@@ -643,10 +642,6 @@ abstract class TradeStore(db: RichDB, broadcaster:Broadcaster, tradeSystem: Trad
     }.toMap
   }
 
-  private def tradeFromRow(row: RichInstrumentResultSetRow) = {
-    TradeStore.tradeFromRow(row, tradeSystem, createTradeAttributes(row))
-  }
-
   def pivotInitialState(tradeableTypes:Set[TradeableType[_]]): PivotFieldsState
 
   protected val instrumentFilteredDrillDown = {
@@ -678,6 +673,18 @@ abstract class TradeStore(db: RichDB, broadcaster:Broadcaster, tradeSystem: Trad
       val currentTrades = allTrades.filter(v => predicate(v._2.trade))
       val (added, updated, _) = writer.updateTrades(trades, currentTrades, timestamp)
 
+      // Some sanity checks. These will make the import slower but we've screwed up the trade table enough times that they're important to have
+      bookID match {
+        case Some(book) => {
+          val wrongOldTrades = allTrades.valuesIterator.filter(_.trade.attributes.asInstanceOf[EAITradeAttributes].bookID.id != book)
+          assert(wrongOldTrades.isEmpty, "read in some invalid trades:: " + wrongOldTrades.toList)
+
+          val wrongNewTrades = trades.filter(_.attributes.asInstanceOf[EAITradeAttributes].bookID.id != book)
+          assert(wrongNewTrades.isEmpty, "some new invalid trades:: " + wrongNewTrades.toList)
+        }
+        case _=>
+      }
+      
       val currentTradeIDs = currentTrades.map(_._1)
       // the update step above doesn't remove trades, so this needs to be done as a separate step
       val updateTradeIDs = Set[TradeID]() ++ trades.map(_.tradeID)

@@ -59,6 +59,7 @@ trait RichInstrumentResultSetRow {
   def getSingleIndexFromName(column: String) =  Index.singleIndexFromName(getString(column))
   def getString(name : String) : String
   def getStringOrNone(name : String) : Option[String] = if (isNull(name)) None else Some(getString(name))
+  def getDayOrNone(name : String) : Option[Day] = if (isNull(name)) None else Some(getDay(name))
   def getObject[T](column: String): T
   def getObjectOrElse[T](column: String, orElse: T): T = isNull(column) match {
     case true => orElse

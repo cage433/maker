@@ -9,13 +9,13 @@ trait MethodSource {
   def lookup(methodId: Int): DynamicMethod
 }
 
-class ReflectiveMethodSource(methodOwners: Traversable[MethodOwner]) extends MethodSource {
+class ReflectiveMethodSource(methodOwners: Traversable[MethodOwner]) extends MethodSource with Log {
   def this(owners: AnyRef*) = this(owners.map(owner => new MethodOwner(owner)))
 
   private val dynamicMethodsMap = methodOwners.dynamicMethods.toMapWithKeys(_.id)
-  Log.info("===")
-  dynamicMethodsMap.values.foreach(method => Log.info(method.name))
-  Log.info("===")
+  log.info("===")
+  dynamicMethodsMap.values.foreach(method => log.info(method.name))
+  log.info("===")
 
   def getMethods = dynamicMethodsMap.values.toList
   def lookup(methodId: Int) = dynamicMethodsMap.get(methodId).get
