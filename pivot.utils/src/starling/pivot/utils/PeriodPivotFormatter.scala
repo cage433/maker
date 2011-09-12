@@ -2,10 +2,10 @@ package starling.pivot.utils
 
 import starling.pivot._
 import starling.pivot.MonthFormat._
-import starling.daterange.{SpreadPeriod, DateRange, DateRangePeriod, Month}
+import starling.daterange._
 
 object PeriodPivotFormatter extends PivotFormatter {
-  def format(value:Any, formatInfo:ExtraFormatInfo) = {
+  def format(value:Any, formatInfo:ExtraFormatInfo):TableCell = {
 
     def match2(dateRange:DateRange) = {
       dateRange match {
@@ -33,6 +33,11 @@ object PeriodPivotFormatter extends PivotFormatter {
         val t1 = match2(dr1)
         val t2 = match2(dr2)
         t1.copy(value = sp, text = (t1.text + "/" + t2.text))
+      }
+      case sp@StripPeriod(p1, p2) => {
+        val tc1 = PeriodPivotFormatter.format(p1, formatInfo)
+        val tc2 = PeriodPivotFormatter.format(p2, formatInfo)
+        tc1.copy(value = sp, text = (tc1.text + "-" + tc2.text))
       }
       case other => DefaultPivotFormatter.format(other, formatInfo)
     }
