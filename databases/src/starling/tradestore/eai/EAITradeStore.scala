@@ -64,6 +64,7 @@ class EAITradeStore(db: RichDB, broadcaster:Broadcaster, eaiStrategyDB:EAIStrate
   def createTradeAttributes(row: RichInstrumentResultSetRow) = {
     import EAITradeStore._
     val bookID = row.getInt(bookID_col.replaceAll(" ", ""))
+    assert(bookID == book.bookID, "Reading in the wrong trade for this tradestore: " + (book, row))
     val strategyID = row.getInt("StrategyID")
     val dealID = row.getInt(dealID_str.replaceAll(" ", ""))
     val trader = row.getStringOrNone(trader_str).getOrElse("")

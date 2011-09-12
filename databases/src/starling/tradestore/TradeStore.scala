@@ -349,8 +349,9 @@ abstract class TradeStore(db: RichDB, broadcaster:Broadcaster, tradeSystem: Trad
   private def updateFullHistoryForTrade(tradeID: TradeID): Unit = {
     val q = (select("*")
             from (tableName + " t")
-            where ("tradeid" eql LiteralString(tradeID.id))
-            )
+            where (
+              ("tradeid" eql LiteralString(tradeID.id)) andMaybe (bookID.map(id => ("t.bookid" eql id)))
+            ))
     db.query(q)(addTradeRowToHistory)
   }
 
@@ -691,6 +692,11 @@ abstract class TradeStore(db: RichDB, broadcaster:Broadcaster, tradeSystem: Trad
       bookID match {
         case Some(book) => {
           val wrongOldTrades = allTrades.valuesIterator.filter(_.trade.attributes.asInstanceOf[EAITradeAttributes].bookID.id != book)
+          if(wrongOldTrades.nonEmpty) {
+            println("??????")
+            println("??????")
+            println("??????")
+          }
           assert(wrongOldTrades.isEmpty, "read in some invalid trades:: " + wrongOldTrades.toList)
 
           val wrongNewTrades = trades.filter(_.attributes.asInstanceOf[EAITradeAttributes].bookID.id != book)
