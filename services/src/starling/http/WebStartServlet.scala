@@ -19,42 +19,41 @@ object GUICode {
 
   println("DIR prefix " + dirPrefix)
 
-  val scalaLibraryJar = new File(dirPrefix + "lib/scala/scala-2.9.0.1.final/lib/scala-library.jar")
+  val scalaLibraryJar = new File(dirPrefix + "lib/scala/lib_managed/scala-library-jar-2.9.1.jar")
 
   // The order of this list matters. It is the order things are attempted to be loaded so ensure it is optimised.
   val modules = List("daterange", "quantity", "utils", "auth", "bouncyrmi", "gui", "gui.api",
     "pivot", "pivot.utils", "browser", "browser.service", "fc2.api", "launcher", "manager", "singleclasspathmanager")
 
   val libJarNames = Map(
-    "scala-library.jar" -> scalaLibraryJar,
-    "scala-swing.jar" -> new File("lib/scala/scala-2.9.0.1.final/lib/scala-swing.jar"),
-    "auth-lib-jna.jar" -> new File("auth/lib/jna.jar"),
-  //"auth-lib_managed-scala_2.9.0-1-compile-jna-3.0.9.jar" -> new File("auth/lib_managed/jna-jar-3.0.9.jar"),
-    "auth-lib-platform.jar" -> new File("auth/lib/platform.jar"),
-    "bouncyrmi-lib_managed-scala_2.9.0-1-compile-cglib-nodep-2.2.jar" -> new File("bouncyrmi/lib_managed/cglib-nodep-jar-2.2.jar"),
-    "bouncyrmi-lib_managed-scala_2.9.0-1-compile-commons-io-1.3.2.jar" -> new File("bouncyrmi/lib_managed/commons-io-jar-1.3.2.jar"),
-    "bouncyrmi-lib_managed-scala_2.9.0-1-compile-netty-3.2.5.Final.jar" -> new File("bouncyrmi/lib_managed/netty-bundle-3.2.5.Final.jar"),
-    "browser-lib-jxlayer-4.0.jar" -> new File("browser/lib/jxlayer-4.0.jar"),
-    "browser-lib-looks-2.3.1.jar" -> new File("browser/lib/looks-2.3.1.jar"),
-    "gui-lib_managed-scala_2.9.0-1-compile-jfreechart-1.0.0.jar" -> new File("gui/lib_managed/jfreechart-jar-1.0.0.jar"),
-    "gui-lib_managed-scala_2.9.0-1-compile-servlet-api-2.5.jar" -> new File("gui/lib_managed/servlet-api-jar-2.5.jar"),
+    "scala-library" -> scalaLibraryJar,
+    "scala-swing" -> new File("lib/scala/lib_managed/scala-swing-jar-2.9.1.jar"),
+    "jna" -> new File("auth/lib/jna.jar"),
+    "platform" -> new File("auth/lib/platform.jar"),
+    "cglib-nodep" -> new File("bouncyrmi/lib_managed/cglib-nodep-jar-2.2.jar"),
+    "commons-io" -> new File("bouncyrmi/lib_managed/commons-io-jar-1.3.2.jar"),
+    "netty" -> new File("bouncyrmi/lib_managed/netty-bundle-3.2.5.Final.jar"),
+    "jxlayer" -> new File("browser/lib/jxlayer-4.0.jar"),
+    "looks" -> new File("browser/lib/looks-2.3.1.jar"),
+    "jfreechart" -> new File("gui/lib_managed/jfreechart-jar-1.0.0.jar"),
+    "servlet-api" -> new File("gui/lib_managed/servlet-api-jar-2.5.jar"),
     "jetty" -> new File("services/lib_managed/jetty-jar-6.1.26.jar"),
     "jetty-utls" -> new File("services/lib_managed/jetty-util-jar-6.1.26.jar"),
-    "browser-lib-Miglayout-3-7-3-1-nick.jar" -> new File("browser/lib/Miglayout-3-7-3-1-nick.jar"),
-    "gui-lib-org.eclipse.mylyn.wikitext.core_1.4.0.I20100805-0500-e3x.jar" -> new File("browser/lib/org.eclipse.mylyn.wikitext.core_1.4.0.I20100805-0500-e3x.jar"),
-    "gui-lib-org.eclipse.mylyn.wikitext.textile.core_1.4.0.I20100805-0500-e3x.jar" -> new File("browser/lib/org.eclipse.mylyn.wikitext.textile.core_1.4.0.I20100805-0500-e3x.jar"),
-    "browser-lib-swingx-core-1.6.2.jar" -> new File("browser/lib/swingx-core-1.6.2.jar"),
-    "browser-lib-timingframework-1.0.jar" -> new File("browser/lib/timingframework-1.0.jar"),
-    "utils-lib_managed-scala_2.9.0-1-compile-commons-codec-1.4.jar" -> new File("utils/lib_managed/commons-codec-jar-1.4.jar"),
-    "utils-lib_managed-scala_2.9.0-1-compile-google-collections-1.0.jar" -> new File("utils/lib_managed/google-collections-jar-1.0.jar"),
-    "utils-lib_managed-scala_2.9.0-1-compile-joda-time-1.6.jar" -> new File("utils/lib_managed/joda-time-jar-1.6.jar"),
-    "utils-lib_managed-scala_2.9.0-1-compile-log4j-1.2.16.jar" -> new File("utils/lib_managed/log4j-bundle-1.2.16.jar"),
-    "utils-lib_managed-scala_2.9.0-1-compile-slf4j-api-1.6.1.jar" -> new File("databases/lib_managed/slf4j-api-jar-1.6.1.jar"),
-    "utils-lib_managed-scala_2.9.0-1-compile-slf4j-log4j12-1.6.1.jar" -> new File("utils/lib_managed/slf4j-log4j12-jar-1.6.1.jar"),
-    "utils-lib_managed-scala_2.9.0-1-compile-xstream-1.3.1.jar" -> new File("utils/lib_managed/xstream-jar-1.3.1.jar"),
-    "utils-lib-memcached-2.5.jar" -> new File("utils/lib/memcached-2.5.jar"),
-    "utils-lib-scalaz-core_2.9.0-1-6.0.1.jar" -> new File("utils/lib/scalaz-core_2.9.0-1-6.0.1.jar"),
-    "transloader-jar" -> new File("browser/lib/transloader-0.4.jar")
+    "Miglayout-3-7-3-1-nick" -> new File("browser/lib/Miglayout-3-7-3-1-nick.jar"),
+    "org.eclipse.mylyn.wikitext.core_1.4.0.I20100805-0500-e3x" -> new File("browser/lib/org.eclipse.mylyn.wikitext.core_1.4.0.I20100805-0500-e3x.jar"),
+    "eclipse.mylyn.wikitext.textile.core_1.4.0.I20100805-0500-e3x" -> new File("browser/lib/org.eclipse.mylyn.wikitext.textile.core_1.4.0.I20100805-0500-e3x.jar"),
+    "swingx-core" -> new File("browser/lib/swingx-core-1.6.2.jar"),
+    "timingframework" -> new File("browser/lib/timingframework-1.0.jar"),
+    "commons-codec" -> new File("utils/lib_managed/commons-codec-jar-1.4.jar"),
+    "google-collections" -> new File("utils/lib_managed/google-collections-jar-1.0.jar"),
+    "joda-time" -> new File("utils/lib_managed/joda-time-jar-1.6.jar"),
+    "log4j" -> new File("utils/lib_managed/log4j-bundle-1.2.16.jar"),
+    "slf4j-api" -> new File("databases/lib_managed/slf4j-api-jar-1.6.1.jar"),
+    "slf4j-log4j12" -> new File("utils/lib_managed/slf4j-log4j12-jar-1.6.1.jar"),
+    "xstream" -> new File("utils/lib_managed/xstream-jar-1.3.1.jar"),
+    "memcached" -> new File("utils/lib/memcached-2.5.jar"),
+    "scalaz-core" -> new File("utils/lib/scalaz-core_2.9.1-6.0.3.jar"),
+    "transloader" -> new File("browser/lib/transloader-0.4.jar")
   )
 
   def dependencies = {

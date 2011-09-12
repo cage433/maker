@@ -116,7 +116,7 @@
     <orderEntry type="module-library" exported="">
       <library>
         <CLASSES>
-          <root url="jar://$MODULE_DIR$/lib_managed/scalacheck_2.9.0-1-jar-1.9.jar!/" />
+          <root url="jar://$MODULE_DIR$/lib_managed/scalacheck_2.9.1-jar-1.9.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />
