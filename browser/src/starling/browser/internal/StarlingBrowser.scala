@@ -295,19 +295,21 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
   peer.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke(KeyEvent.VK_D, InputEvent.CTRL_DOWN_MASK), "reload")
   peer.getActionMap.put("reload", new AbstractAction () {
     def actionPerformed(p1: ActionEvent) {
-      val info = history(current)
-      val currentPage = info.page
-      val currentBookmark = info.bookmark
-      val currentState = info.pageComponent match {
-        case None => None
-        case Some(pc) => pc.getState
+      BrowserLog.infoWithTime("Rebuilding page component") {
+        val info = history(current)
+        val currentPage = info.page
+        val currentBookmark = info.bookmark
+        val currentState = info.pageComponent match {
+          case None => None
+          case Some(pc) => pc.getState
+        }
+        val rebuiltPageComponent = createPopulatedComponent(currentPage, info.pageResponse)
+        rebuiltPageComponent.setState(currentState)
+        val pageInfo = new PageInfo(currentPage, info.pageResponse, currentBookmark, Some(rebuiltPageComponent),
+          new SoftReference(rebuiltPageComponent), currentState, info.refreshPage)
+        history(current) = pageInfo
+        showPage(pageInfo, current)
       }
-      val rebuiltPageComponent = createPopulatedComponent(currentPage, info.pageResponse)
-      rebuiltPageComponent.setState(currentState)
-      val pageInfo = new PageInfo(currentPage, info.pageResponse, currentBookmark, Some(rebuiltPageComponent),
-        new SoftReference(rebuiltPageComponent), currentState, info.refreshPage)
-      history(current) = pageInfo
-      showPage(pageInfo, current)
     }
   })
 
