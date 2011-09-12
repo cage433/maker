@@ -67,6 +67,7 @@ class FixedImagePanel(var image0:BufferedImage) extends MigXPanel("insets 0") {
   def image = image0
   def image_=(im:BufferedImage) {
     image0 = im
+    greyedImage = generateGreyedImage
     backgroundPainter = new ImagePainter(image0)
   }
 
