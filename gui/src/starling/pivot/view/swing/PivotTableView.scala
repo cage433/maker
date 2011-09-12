@@ -234,8 +234,8 @@ class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSiz
       reactions += {
         case KeyPressed(`textField`, scala.swing.event.Key.Escape, _, _) => textField.text = ""
         case KeyReleased(`textField`, _, _, _) => {
-          // Ensure the fields aren't being displayed here.
-//          chooserPanel.resetImage
+          fieldListComponent.reset()
+          viewUI.resetImageProperties()
           fieldListComponent.setTextFilter(textField.text)
         }
         case MouseClicked(`clearImage`,_,_,_,_) => {
