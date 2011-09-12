@@ -139,7 +139,7 @@ object LMEFixings extends LimSource(List(Ask, Bid)) {
   case class LMEFixingRelation(ring: ObservationTimeOfDay, market: CommodityMarket, tenor: Tenor)
 
   private val tenors = List(Tenor.CASH, Tenor(Month, 3), Tenor(Month, 15), Tenor(Month, 27))
-  private val rings = List(AMR1, Official, PMR1, Unofficial)
+  private val rings = List(LME_AMR1, LME_Official, LME_PMR1, LME_Unofficial)
 
   def relationsFrom(connection: LIMConnection) = for (market <- LME.markets; ring <- rings; tenor <- tenors) yield {
     (LMEFixingRelation(ring, market, tenor), "TRAF.LME.%S.%S.%s" % (market.commodity, ring, tenor))

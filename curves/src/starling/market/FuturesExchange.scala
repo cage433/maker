@@ -41,7 +41,7 @@ object NeptunePricingExchange{
 }
 
 object FuturesExchangeFactory extends StarlingEnum(classOf[FuturesExchange], (f: FuturesExchange) => f.name, otherTypes = List(classOf[NeptunePricingExchange])) {
-  val LME = new FuturesExchange("LME", DailyDelivery, LMEClose) with NeptunePricingExchange{
+  val LME = new FuturesExchange("LME", DailyDelivery, LME_Official) with NeptunePricingExchange{
     def inferMarketFromCommodityName(neptuneCommodityName: String) = neptuneCommodityName match {
       case "Copper"	            => Market.LME_COPPER
       case "Lead"	              => Market.LME_LEAD

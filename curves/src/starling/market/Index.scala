@@ -456,7 +456,7 @@ object FuturesFrontPeriodIndex {
 
 trait LMESingleIndex extends SingleIndex {
   def observedOptionPeriod(observationDay: Day) = throw new Exception("Options not supported for LME indices")
-  override def observationTimeOfDay = ObservationTimeOfDay.Official
+  override def observationTimeOfDay = ObservationTimeOfDay.LME_Official
 }
 case class LmeCashSettlementIndex(market : FuturesMarket, level : Level) extends LMESingleIndex {
   val name = "LME " + market.commodity + " cash " + level.name
@@ -468,7 +468,7 @@ case class LmeCashSettlementIndex(market : FuturesMarket, level : Level) extends
 
   def storedFixingPeriodForDay(day: Day) = StoredFixingPeriod.tenor(Tenor.CASH)
 
-  override def observationTimeOfDay = ObservationTimeOfDay.Official
+  override def observationTimeOfDay = ObservationTimeOfDay.LME_Official
 }
 
 case class LmeThreeMonthIndex(market : FuturesMarket, level : Level) extends LMESingleIndex{
