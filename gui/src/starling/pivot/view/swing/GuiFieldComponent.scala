@@ -77,7 +77,7 @@ import GuiFieldComponent._
 class GuiFieldComponent(val props:GuiFieldComponentProps) extends MigPanel("insets 0, hidemode 3", "[p]0[p]") {
   opaque = false
 
-  val namePanel = new GuiFieldNamePanel(props, this)
+  val namePanel = new GuiFieldNamePanel(props)
   val treeLevelPanel = new TreeLevelPanel(props)
   val measureTogglePanel = new MeasureTogglePanel(props)
   val subTotalTogglePanel = new SubTotalTogglePanel(props)
@@ -220,7 +220,7 @@ class TempGuiFieldNamePanel(fieldName:String) extends MigPanel {
   }
 }
 
-class GuiFieldNamePanel(props:GuiFieldComponentProps, guiComp:GuiFieldComponent) extends MigPanel {
+class GuiFieldNamePanel(val props:GuiFieldComponentProps) extends MigPanel {
   opaque = false
   background = ClearColour
 

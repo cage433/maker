@@ -29,6 +29,7 @@ import org.jdesktop.animation.timing.{TimingTargetAdapter, Animator}
 import starling.browser.internal.StarlingBrowser
 import starling.browser.{RefreshInfo, PreviousPageData, Modifiers}
 import collection.immutable.{Map, List}
+import starling.utils.Log
 
 object PivotTableView {
   def createWithLayer(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSize:Dimension,
@@ -61,7 +62,7 @@ class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSiz
   private val model = new starling.pivot.model.PivotTableModel(data)
   private var reverseToolBarState:()=>Unit = null
 
-  private val fieldListComponent = new FieldListComponent(model, otherLayoutInfo, viewUI, this, data.pivotTable.editableInfo)
+  private val fieldListComponent = Log.infoWithTime("Creating field list component") {new FieldListComponent(model, otherLayoutInfo, viewUI, this, data.pivotTable.editableInfo)}
   private val columnAndMeasureComponent = new ColumnAndMeasureComponent(model, otherLayoutInfo, viewUI, this, data.pivotTable.editableInfo)
   private val filterComponent = new FilterComponent(model, otherLayoutInfo, viewUI, this, data.pivotTable.editableInfo)
   private val rowComponent = new RowComponent(model, otherLayoutInfo, viewUI, this, data.pivotTable.editableInfo)
