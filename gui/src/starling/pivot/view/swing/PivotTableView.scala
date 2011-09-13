@@ -516,7 +516,7 @@ class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSiz
   })
   private val previousPageData0 = previousPageData00.map(_._1)
   private val viewConverter = PivotTableConverter(otherLayoutInfo, data.pivotTable, extraFormatInfo, data.pivotFieldsState, previousPageData0)
-  private val (rowHeaderData, colHeaderData, mainData, colUOMs, mainTableUpdateInfo, rowUpdateInfo, columnUpdateInfo) = viewConverter.allTableCellsAndUOMs
+  private val (rowHeaderData, colHeaderData, mainData, colUOMs, mainTableUpdateInfo, rowUpdateInfo, columnUpdateInfo) = Log.infoWithTime("Run pivot converter") {viewConverter.allTableCellsAndUOMs}
 
   private val mainTableUpdateMap = new HashMap[(Int,Int),RefreshedCell]()
   private val rowHeaderTableUpdateMap = new HashMap[(Int,Int),RefreshedCell]()
