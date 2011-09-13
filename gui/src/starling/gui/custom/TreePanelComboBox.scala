@@ -2,15 +2,16 @@ package starling.gui.custom
 
 import swing.Label
 import starling.pivot.controller.TreePivotFilter
-import starling.gui.GuiUtils._
 import starling.gui.StarlingIcons._
 import starling.pivot.{AllSelection, SomeSelection, Selection}
 import java.awt.{Color, GradientPaint, Graphics2D, RenderingHints, Dimension, KeyboardFocusManager}
-import starling.pivot.view.swing.{FixedImagePanel, MigPanel, DisplayPopupEvent}
+import starling.pivot.view.swing.{DisplayPopupEvent}
 import swing.event._
 import swing.Swing._
 import javax.swing.event.{PopupMenuEvent, PopupMenuListener}
 import javax.swing.{UIManager, JPopupMenu}
+import starling.browser.common.GuiUtils._
+import starling.browser.common.{FixedImagePanel, MigPanel}
 
 object TreePanelComboBox {
   val NONE = new Object {

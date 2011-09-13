@@ -2,8 +2,8 @@ package starling.gui
 
 import swing._
 import event._
-import starling.pivot.view.swing.MigPanel
 import swing.ListView.Renderer
+import starling.browser.common.MigPanel
 
 abstract class TypedComboChooser[A](value0: A, values: List[A], typeRenderer: Renderer[A]) extends MigPanel("insets 0", "[p]") {
   val combo = new ComboBox(values) {

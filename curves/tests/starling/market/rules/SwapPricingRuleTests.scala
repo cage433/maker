@@ -1,13 +1,13 @@
 package starling.market.rules
 
-import starling.market.TestMarketSpec
+import starling.market.TestMarketTest
 import starling.market.Market._
 import starling.daterange.Month
 import org.testng.Assert._
 import org.testng.annotations.Test
 import starling.calendar.BusinessCalendarSet
 
-class SwapPricingRuleTests extends TestMarketSpec {
+class SwapPricingRuleTests extends TestMarketTest {
 
   @Test
   def testCommon {

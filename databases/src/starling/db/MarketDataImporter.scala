@@ -7,15 +7,15 @@ import starling.utils.ImplicitConversions._
 import starling.marketdata.MarketData
 
 
-class MarketDataImporter(marketDataStore: MarketDataStore) {
+class MarketDataImporter(marketDataStore: MarketDataStore) extends Log {
   def getUpdates(observationDay: Day, marketDataSets: MarketDataSet*) = marketDataSets.toMapWithValues(marketDataSet => {
     val getMarketData = (marketDataStore.marketData _).applyLast(marketDataSet)
 
     def logCount(name: String)(updates: List[MarketDataUpdate]) = updates.groupBy(_.tag).foreach {
-      case (tag, updatesForTag) => Log.info("%s %s for %s %s" % (updatesForTag.size, name, marketDataSet.name, tag.getOrElse("Unknown")))
+      case (tag, updatesForTag) => log.info("%s %s for %s %s" % (updatesForTag.size, name, marketDataSet.name, tag.getOrElse("Unknown")))
     }
 
-    marketDataStore.sourceFor(marketDataSet).flatMapL { marketDataSource => Log.infoWithTime("importing: " + marketDataSet.name) {
+    marketDataStore.sourceFor(marketDataSet).flatMapL { marketDataSource => log.infoWithTime("importing: " + marketDataSet.name) {
       val externalData = marketDataSource.asserting.read(observationDay).mapValues(_.filterNot(_.isEmpty))
       val existingData = externalData.keys.flatMap(getMarketData).toMap
 

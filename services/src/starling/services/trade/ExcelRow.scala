@@ -16,7 +16,7 @@ import starling.utils.{StringToInt, StringToDouble}
 import starling.utils.CollectionUtils._
 import starling.market._
 
-case class ExcelRow(row: Map[String, Any], traders: Traders) {
+case class ExcelRow(row: Map[String, Any], traders: Traders, currentlyLoggedOn: User) {
 
   import ExcelInstrumentReader._
   import ExcelRow._
@@ -84,6 +84,7 @@ case class ExcelRow(row: Map[String, Any], traders: Traders) {
       case "lot" | "lots" => {
         Quantity(size * lotSize, volumeUOM)
       }
+      case "kb" => fromLots(Quantity(size, UOM.K_BBL))
       case UOM.Parse(uom) => {
         // try to convert things to 'kb' to 1000 bbls, and 'kt' to 1000 mts. the conversion
         // won't try to convert things like bbls into mt etc as we want to preserve those units.
@@ -268,12 +269,14 @@ case class ExcelRow(row: Map[String, Any], traders: Traders) {
 
   def checkMarket {
     val name = marketStr
-    val all = (marketAliases.keys ++ indexAliases.keys).toSet
-    if (!all.contains(name)) {
-      val closest = closestLevenshteinString(all, name, 4)
-
-      if (closest.nonEmpty) {
-        val matches = closest.mkString(" or ")
+    if (!allNames.contains(name)) {
+      val closest = closestLevenshteinString(allNames, name, (name.size / 2) min 5)
+      val versus = name.contains("vs")
+      val matchingLength = if (name.size < 6) 15 else name.size * 2
+      val containing = allNames.filter(o => o.contains(name) && (versus || !o.contains("vs"))).filter(_.size < matchingLength)
+      val near = (closest.toList ::: containing.toList).distinct
+      if (near.nonEmpty) {
+        val matches = near.mkString(" or ")
         throw new Exception("Unexpected market name: " + name + " maybe: '" + matches + "'?")
       } else {
         throw new Exception("Unexpected market name: " + name)
@@ -387,7 +390,7 @@ case class ExcelRow(row: Map[String, Any], traders: Traders) {
       case _ => entryDay
     }
 
-    val username = User.currentlyLoggedOn.username
+    val username = currentlyLoggedOn.username
 
     new IntradayTradeAttributes(strategyID, bookID, dealID, trader, tradedFor, broker, comment, clearer, subgroupName, entryDate, username)
   }

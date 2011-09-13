@@ -4,7 +4,7 @@ import scala.swing.event.Event
 import java.nio.channels.ClosedChannelException
 import org.jboss.netty.handler.ssl.SslHandler
 import org.jboss.netty.channel.group.{ChannelGroupFuture, ChannelGroupFutureListener, DefaultChannelGroup}
-import org.jboss.netty.util.HashedWheelTimer;
+import org.jboss.netty.util.HashedWheelTimer
 import java.net.InetSocketAddress;
 import java.util.concurrent.Executors;
 import org.jboss.netty.bootstrap.ServerBootstrap;
@@ -20,8 +20,10 @@ import org.jboss.netty.channel.SimpleChannelUpstreamHandler;
 import java.lang.reflect.InvocationTargetException
 import collection.mutable.HashMap
 
-class BouncyRMIServer[User](port: Int, authHandler: ServerAuthHandler[User], version: String, users:java.util.Set[User],
-                            knownExceptionClasses:Set[Class[_]], loggedIn: LoggedIn[User], serverContexts: AnyRef*) {
+
+
+class BouncyRMIServer[User](val port: Int, authHandler: ServerAuthHandler[User], version: String, users:java.util.Set[User],
+                            knownExceptionClasses:Set[Class[_]], loggedIn: LoggedIn[User], val name: String, serverContexts: AnyRef*) {
 
   lazy val serverTimer = new HashedWheelTimer
   private val serverContextsMap = new HashMap[String, AnyRef]

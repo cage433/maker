@@ -15,7 +15,6 @@ object SendMethods extends App {
 
   private val loggingHandler = new AuthHandler[User] {
     def authorized(ticket: Option[Array[Byte]]) = {
-      println("authorized: " + ticket)
       None
     }
   }

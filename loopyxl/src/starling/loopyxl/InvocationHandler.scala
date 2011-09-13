@@ -9,11 +9,13 @@ import java.util.concurrent.atomic.AtomicInteger
 import starling.utils.{ClosureUtil, ImplicitConversions, Log}
 import ImplicitConversions._
 import ClosureUtil._
+import scalaz._
+import Scalaz._
 
 
 class InvocationHandler(id: AtomicInteger, methodSource: MethodSource, authenticatedUser: => Closeable)
   extends TypedHandler[InvocationRequest, InvocationResponse](
-  id, request => request.getInvocation, (builder, invocation) => builder.setInvocation(invocation)) {
+  id, request => request.getInvocation, (builder, invocation) => builder.setInvocation(invocation)) with Log {
 
   def handle(invocation: InvocationRequest) = invoke(invocation).mapFirst(InvocationResponse.newBuilder.setResult(_).build)
 
@@ -30,7 +32,7 @@ class InvocationHandler(id: AtomicInteger, methodSource: MethodSource, authentic
     case e => failure(e) → FAILURE
   }
 
-  private def failure(throwable: Throwable) = Log.errorF("Failure", throwable) {
+  private def failure(throwable: Throwable) = log.errorF("Failure", throwable) {
     InvocationValue.newBuilder.setType(InvocationValue.Type.STRING_VALUE)
       .setStringValue(throwable.getMessage ?? throwable.getClass.toString).build
   }

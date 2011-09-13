@@ -2,10 +2,10 @@ package starling.instrument
 
 import starling.curves.Environment
 import starling.richdb.RichInstrumentResultSetRow
-import starling.quantity.{Percentage, UOM, Quantity}
 import starling.daterange.{Month, DateRange, Day, DayAndTime}
 import starling.quantity.RichQuantity._
 import starling.instrument.CashInstrumentType._
+import starling.quantity._
 
 /**
  * To add costs, create this with any name, a pay rule that fits and an appropriate
@@ -18,6 +18,10 @@ abstract class Costs(cashInstrumentType: CashInstrumentType, counterParty: Strin
     val mtm = cost.mtm(env)
     mtm * env.spotFXRate(ccy, mtm.uom)
   }))
+
+  def explanation(env: Environment): NamedQuantity = {
+    new SimpleNamedQuantity("Costs", mtm(env, UOM.USD))
+  }
 
   def asUtpPortfolio(tradeDay:Day) = {
     val utps = Map[UTP, Double]() ++ costs.map {

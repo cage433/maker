@@ -15,10 +15,14 @@ case class Month(y : Int, m : Int) extends DateRange {
 
   def toPrintableForm = Month.months(m - 1).capitalize + " " + y
 
-  override def toShortString = Month.months(m - 1).capitalize.take(3) + " " + y
+  override def toShortString = Month.months(m - 1).take(3) + " " + y
+  def toShortStringCapitalised = Month.months(m - 1).toLowerCase.capitalize.take(3) + " " + y
 
   def toReutersString = ReutersDeliveryMonthCodes.InverseCodes(m) + (y - 2000)
-  def toTinyString = Month.months(m - 1).capitalize.take(3) + (y - 2000)
+  def toTinyString = Month.months(m - 1).take(3) + (y - 2000)
+  def toTinyStringCapitalised = Month.months(m - 1).toLowerCase.capitalize.take(3) + (y - 2000)
+  def toTinyStringDash = Month.months(m - 1).take(3) + "-" + (y - 2000)
+  def toTinyStringDashCapitalised = Month.months(m - 1).toLowerCase.capitalize.take(3) + "-" + (y - 2000)
   def toNumericString = "%02d" % m + "/" + "%02d" % (y-2000)
 
   def min(that : Month) : Month = if (this < that) this else that

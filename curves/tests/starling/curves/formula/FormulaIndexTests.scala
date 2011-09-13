@@ -19,7 +19,7 @@ import collection.immutable.List
 import rules.{NoPricingRule, NonCommonPricingRule, CommonPricingRule}
 import starling.quantity.{Conversions, Quantity}
 
-class FormulaIndexTests extends TestMarketSpec with ShouldMatchers {
+class FormulaIndexTests extends TestMarketTest with ShouldMatchers {
 
   val env = Environment(
     new TestingAtomicEnvironment() {
@@ -34,16 +34,16 @@ class FormulaIndexTests extends TestMarketSpec with ShouldMatchers {
         case ForwardPriceKey(ICE_BRENT, Month(2010, 4), _) => Quantity(15, USD / BBL)
         case ForwardPriceKey(ICE_GAS_OIL, Month(2010, 4), _) => Quantity(18, USD / BBL)
 
-        case FixingKey(`WTI10`, day) => assert(WTI10.isObservationDay(day)); Quantity(8, USD / BBL)
-        case FixingKey(`BRT11`, day) => assert(BRT11.isObservationDay(day)); Quantity(12, USD / BBL)
-        case FixingKey(`GO11`, day) => assert(GO11.isObservationDay(day)); Quantity(15, USD / BBL)
+        case IndexFixingKey(`WTI10`, day) => assert(WTI10.isObservationDay(day)); Quantity(8, USD / BBL)
+        case IndexFixingKey(`BRT11`, day) => assert(BRT11.isObservationDay(day)); Quantity(12, USD / BBL)
+        case IndexFixingKey(`GO11`, day) => assert(GO11.isObservationDay(day)); Quantity(15, USD / BBL)
       }
     }
   )
 
   @Test
   def testSimpleNonCommon {
-    val index = FormulaIndex("WTI vs BRT11", Formula("1.2 * MKT(7) - .8*MKT(28)"), USD, BBL, None, None, None)
+    val index = FormulaIndex("WTI vs BRT11", Formula("1.2 * MKT(7) - 0.8*MKT(28)"), USD, BBL, None, None, None)
     index.verify
 
     val index1 = WTI10
@@ -66,7 +66,7 @@ class FormulaIndexTests extends TestMarketSpec with ShouldMatchers {
 
   @Test
   def testSimple {
-    val index = FormulaIndex("WTI vs BRT11", Formula("1.2 * MKT(7) - .8*MKT(28)"), USD, BBL, None, None, None)
+    val index = FormulaIndex("WTI vs BRT11", Formula("1.2 * MKT(7) - 0.8*MKT(28)"), USD, BBL, None, None, None)
     index.verify
 
     val index1 = WTI10
@@ -109,7 +109,7 @@ class FormulaIndexTests extends TestMarketSpec with ShouldMatchers {
 
   @Test(expectedExceptions = Array(classOf[InvalidFormulaIndexException]))
   def testVerify {
-    val index = FormulaIndex("0.5 WTI vs 0.4 HO + 1.2 ?", Formula("0.5 MKT(7) - 0.4 MKT(29) - 1.2 MKT(1432)"), USD, BBL, None, None, None)
+    val index = FormulaIndex("0.5 WTI vs 0.4 HO + 1.2 ?", Formula("0.5*MKT(7) - 0.4 *MKT(29) - 1.2 *MKT(1432)"), USD, BBL, None, None, None)
     index.verify
   }
 

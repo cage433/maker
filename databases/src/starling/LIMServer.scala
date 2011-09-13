@@ -7,7 +7,8 @@ import market._
 import starling.utils.ImplicitConversions._
 import starling.utils.ClosureUtil._
 import utils.{MathUtil, Log}
-
+import scalaz._
+import Scalaz._
 
 class LIMServer(hostname: String, port: Int) {
   private def openConnection =
@@ -35,7 +36,7 @@ class LIMServer(hostname: String, port: Int) {
   def query[T](query: LIMConnection => T): T = using(openConnection)(query)
 }
 
-class LIMConnection(connection: MimConnection) {
+class LIMConnection(connection: MimConnection) extends Log {
   private val dataManager = connection.getDataManager
   private val schema = connection.getSchemaManager
 
@@ -82,7 +83,7 @@ class LIMConnection(connection: MimConnection) {
       dates.zip(values).filterNot(_._2.isNaN).toMap
     } catch {
       case e: MimException => {
-        Log.debug("Dodgy LIM", e)
+        log.debug("Dodgy LIM", e)
 
         Map()
       }
@@ -112,8 +113,8 @@ class LIMConnection(connection: MimConnection) {
         }
         result
       } else{
-          Log.info("Bad LIM query")
-          Log.info("\tquery " + query)
+          log.info("Bad LIM query")
+          log.info("\tquery " + query)
           throw new MissingMarketDataException("No LIM data for " + query)
       }
     } catch {
@@ -121,7 +122,7 @@ class LIMConnection(connection: MimConnection) {
         throw new MissingMarketDataException("LIM Error: No LIM data for " + query, e)
       }
       case e => {
-        Log.error("Failed to get LIM data, " + query, e)
+        log.error("Failed to get LIM data, " + query, e)
         throw e
       }
     }

@@ -120,7 +120,8 @@ object RegressionRunner {
       //SSHPortForwarding.forward(userName = "thomas.rynne", hostname = "starling", remotePort = 25848, privateKeyFile = keyFile) {
       //  port => {
           val starlingInit = new StarlingInit(props, true, true, true, startEAIAutoImportThread=false, startXLLoop = false,
-            startStarlingJMX = false, forceGUICompatability = false).start
+            startStarlingJMX = false, forceGUICompatability = false)
+          starlingInit.start
           try {
             val result = new RegressionRunner(CheckedInReports, new HttpReportSource(currentURL)).run(System.out)
             if (!result) {

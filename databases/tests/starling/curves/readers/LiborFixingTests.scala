@@ -8,11 +8,11 @@ import UOM._
 import starling.daterange._
 import io.Source
 import java.lang.String
-import junit.framework.Assert
 import Day._
 import org.scalatest.prop.Checkers
 import org.scalacheck.{Gen, Arbitrary, Prop}
 import Prop._
+import org.testng.Assert
 
 trait RichArbitrary {
   implicit def enrichArbitrary[T](arbitrary: Arbitrary[T]) = new {
@@ -25,7 +25,7 @@ class LiborFixingTests extends WordSpec with ShouldMatchers with Checkers with H
     expectedValueDays("Overnight_Fixing_Calendar_2011.txt").map { fixingEntry =>
       fixingEntry.valueDays.map { case ((tenor, fixingDay), expected) =>
         val fixing = fixingEntry.fixingFor(fixingDay)
-        Assert.assertEquals("Invalid value date, fixing: %s, tenor: %s" % (fixing, tenor), expected, fixing.valueDay(tenor))
+        Assert.assertEquals(fixing.valueDay(tenor), expected, "Invalid value date, fixing: %s, tenor: %s" % (fixing, tenor))
       }
     }
   }
@@ -39,7 +39,7 @@ class LiborFixingTests extends WordSpec with ShouldMatchers with Checkers with H
       fixingEntry.valueDays.map { case ((tenor, fixingDay), expected) =>
         if (!dodgyFixings.contains(fixingEntry.currency, fixingDay)) {
           val fixing = fixingEntry.fixingFor(fixingDay)
-          Assert.assertEquals("Invalid value date, fixing: %s, tenor: %s" % (fixing, tenor), expected, fixing.valueDay(tenor))
+          Assert.assertEquals(fixing.valueDay(tenor), expected, "Invalid value date, fixing: %s, tenor: %s" % (fixing, tenor))
         }
       }
     }

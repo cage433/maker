@@ -6,6 +6,8 @@ import swing.ListView
 import swing.event.Event
 
 import utils.RichReactor._
+import starling.gui.StarlingLocalCache._
+import starling.browser.PageContext
 
 case class CurveTypeChangedEvent(selected:CurveTypeLabel) extends Event
 

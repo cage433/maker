@@ -3,9 +3,9 @@ package starling.trade
 import starling.curves.{Environment}
 import java.lang.String
 import starling.pivot.Field._
-import starling.quantity.{UOM, Quantity}
 import starling.instrument._
 import starling.daterange.{DateRangePeriod, Day, DayAndTime}
+import starling.quantity.{SimpleNamedQuantity, UOM, Quantity}
 
 /**Fairly obvious trade class. TradeAttributes are system dependent and can be things
  * like 'Portfolio', 'Trader', 'Strategy'
@@ -24,6 +24,16 @@ case class Trade(
   lazy val expiryDay = tradeable.expiryDay
   def isErrorTrade = tradeable.isInstanceOf[ErrorInstrument]
   def isDeletedTrade = tradeable.isInstanceOf[DeletedInstrument]
+
+  protected def explanation(env: Environment) = {
+    val tr = tradeable.explanation(env)
+    val pnl = costs match {
+      case Nil => tr
+      case h::Nil => tr + h.explanation(env)
+      case _ => tr + new SimpleNamedQuantity("All Costs", Quantity.sumNamed(costs.map(_.explanation(env))))
+    }
+    pnl.named("P&L")
+  }
 
   def assets(env: Environment) = asUtpPortfolio.assets(env)
 

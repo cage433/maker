@@ -23,7 +23,7 @@ trait RichOrdering {
 
     val debug = if (!Log.isDebugEnabled) ordering else new NamedOrdering[T]("debug", ordering) {
       def compare(x: T, y: T) = {
-        ordering.compare(x, y).debug { result => "compare(%s, %s) = %d" % (x, y, result) }
+        ordering.compare(x, y).debugV { result => "compare(%s, %s) = %d" % (x, y, result) }
       }
     }
 

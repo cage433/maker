@@ -41,25 +41,50 @@ trait MarketLookup {
   lazy val indexEAIMap: Map[Int, Index] = allIndexes.flatMap(m => m.eaiQuoteID.map(_ -> m)).toMap
 }
 
+trait MarketLookupCreator {
+  /**
+   * This can be called multiple times (e.g. when a reload is needed)
+   */
+  def create: MarketLookup
+}
+
 object MarketProvider {
-  private var impl: Option[MarketLookup] = None
+  import concurrent.stm._
 
-  def registerImpl(i: MarketLookup) {
-    impl match {
-      case None => impl = Some(i)
-      case Some(_) => throw new Exception("Market provider implementation already registered")
+  private val creator = Ref(None: Option[MarketLookupCreator])
+  private val impl = Ref(None: Option[MarketLookup])
+
+  def registerCreator(c: MarketLookupCreator) {
+    atomic {
+      implicit txn =>
+        creator() match {
+          case None => {
+            creator() = Some(c)
+            impl() = Some(c.create)
+          }
+          case Some(currentMarketLookup) if c == currentMarketLookup =>
+          case _ => throw new Exception("Market provider creator implementation already registered")
+        }
     }
   }
 
-  def registerNewImplForTesting(i: Option[MarketLookup]) {
-    impl = i
+  def provider: MarketLookup = atomic {
+    implicit txn =>
+      impl() match {
+        // if you get this when running a test change the test to extend TestMarketSpec
+        case None => throw new Exception("Market provider implementation not yet registered")
+        case Some(i) => i
+      }
   }
 
-  def provider = {
-    impl match {
-    // if you get this when running a test change the test to extend TestMarketSpec
-      case None => throw new Exception("Market provider implementation not yet registered")
-      case Some(i) => i
-    }
+  /**
+   * this should only be called from inside patches that change the markets
+   */
+  def reload = atomic {
+    implicit txn =>
+      creator() match {
+        case Some(c) => impl() = Some(c.create)
+        case _ => 
+      }
   }
 }

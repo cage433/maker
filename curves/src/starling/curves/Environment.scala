@@ -63,6 +63,7 @@ case class Environment(
     case Some(prefix) => instrumentLevelEnv_.withNaming(prefix)
   }
   def withNaming(prefix : String = "") = copy(namingPrefix = Some(prefix))
+
   // Parameterless constructor for ThreadSafeCachingProxy
   def this() = this(null)
 
@@ -123,26 +124,15 @@ case class Environment(
 
   def spreadPrice(market: FuturesMarket, period: Period) = instrumentLevelEnv.spreadPrice(market, period: Period)
 
-  /** Returns the futures/forward price for the given market and forward date
-   */
-  def forwardPrice(market: CommodityMarket, forwardDate : DateRange) : Quantity = {
-    instrumentLevelEnv.quantity(ForwardPriceKey(market, forwardDate))
-  }
-
-  def forwardPrice(market: CommodityMarket, forwardDate : DateRange, unit: UOM) : Quantity = {
-    (forwardPrice(market, forwardDate) * spotFXRate(unit.numeratorUOM, market.currency) in unit).getOrElse(
-      throw new Exception("Can't convert " + market + " price (" + market.priceUOM + ") to " + unit))
-  }
-
   private var averagePriceCache = CacheFactory.getCache("Environment.averagePrice", unique = true)
 
-  def averagePrice(index: SingleIndex, averagingPeriod: DateRange): Quantity = averagePrice(index, averagingPeriod, None)
+  def averagePrice(index: IndexWithKnownPrice, averagingPeriod: DateRange): Quantity = averagePrice(index, averagingPeriod, None)
 
-  def averagePrice(index: SingleIndex, averagingPeriod: DateRange, rounding: Option[Int]): Quantity = averagePriceCache.memoize(
+  def averagePrice(index: IndexWithKnownPrice, averagingPeriod: DateRange, rounding: Option[Int]): Quantity = averagePriceCache.memoize(
     (index, averagingPeriod),
     (tuple: (Index, DateRange)) => {
       val observationDays = index.observationDays(averagingPeriod)
-      val price = Quantity.average(observationDays.map(fixingOrForwardPrice(index, _))) match {
+      val price = Quantity.average(observationDays.map(index.fixingOrForwardPrice(this, _))) match {
         case nq : NamedQuantity => SimpleNamedQuantity("Average(" + index + "." + averagingPeriod + ")", nq)
         case q : Quantity => q
       }
@@ -164,6 +154,37 @@ case class Environment(
      price
   }
 
+   def fixingOrForwardPrice(market: CommodityMarket, lastTradingDay: Day, forwardDate: DateRange) = {
+     val price = if (lastTradingDay.endOfDay <= marketDay) {
+       marketFixing(market, lastTradingDay, forwardDate)
+     } else {
+       forwardPrice(market, forwardDate)
+     }
+     price
+  }
+
+  def indexFixing(index: SingleIndex, fixingDay: Day) : Quantity = {
+    instrumentLevelEnv.fixing(index, fixingDay, None)
+  }
+
+  def marketFixing(market: CommodityMarket, fixingDay: Day, forwardDate: DateRange) : Quantity = {
+    instrumentLevelEnv.fixing(market, fixingDay, Some(forwardDate))
+  }
+
+  def indexForwardPrice(underlying: InstrumentLevelKnownPrice, observationDay : Day, ignoreShiftsIfPermitted : Boolean = false) : Quantity = {
+    instrumentLevelEnv.indexForwardPrice(underlying, observationDay, ignoreShiftsIfPermitted)
+  }
+
+  /** Returns the futures/forward price for the given market and forward date
+   */
+  def forwardPrice(market: CommodityMarket, forwardDate : DateRange) : Quantity = {
+    instrumentLevelEnv.forwardPrice(market, forwardDate, false)
+  }
+
+  def forwardPrice(market: CommodityMarket, forwardDate : DateRange, unit: UOM) : Quantity = {
+    (forwardPrice(market, forwardDate) * spotFXRate(unit.numeratorUOM, market.currency) in unit).getOrElse(
+      throw new Exception("Can't convert " + market + " price (" + market.priceUOM + ") to " + unit))
+  }
 
   /**
    * Average price for the period.
@@ -240,13 +261,6 @@ case class Environment(
       Percentage(log((d1 / d2).checkedValue(UOM.SCALAR)) / T)
   }
 
-  def indexFixing(index : SingleIndex, fixingDay : Day) : Quantity = {
-    instrumentLevelEnv.fixing(index, fixingDay)
-  }
-
-  def indexForwardPrice(index : SingleIndex, observationDay : Day, ignoreShiftsIfPermitted : Boolean = false) : Quantity = {
-    instrumentLevelEnv.indexForwardPrice(index, observationDay, ignoreShiftsIfPermitted)
-  }
 
 
   /**

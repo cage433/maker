@@ -16,7 +16,7 @@ case class SwapVol(index : SingleIndex, averagingPeriod : DateRange) extends Vol
     val vol = daysInFuture match {
       case Nil => Percentage(1e-6)
       case _ => {
-        val strike = index.forwardPrice(env.instrumentLevelEnv, averagingDays.last, ignoreShiftsIfPermitted = false)
+        val strike = env.instrumentLevelEnv.indexForwardPrice(index, averagingDays.last, ignoreShiftsIfPermitted = false)
         env.swapVol(index, SimpleDateRange.containingRange(daysInFuture), strike)
       }
     }

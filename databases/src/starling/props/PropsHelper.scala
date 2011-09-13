@@ -15,18 +15,21 @@ import starling.utils.PropertiesMapBuilder
 /**
  * Holds the code to manage properties. The properties are listed in Props
  */
-class PropsHelper(props : Map[String,String]) {
+class PropsHelper(starlingProps : Map[String,String], trafiguraProps : Map[String, String]) {
+
+  val props = trafiguraProps ++ starlingProps
 
   object MyPropertiesFile {
-    val lowercaseProps = props.map( (e) => (e._1.toLowerCase() -> e._2) )
+    def toLowerCase(propsMap : Map[String, String]) = propsMap.map( (e) => (e._1.toLowerCase() -> e._2) )
+    val lowercaseProps = toLowerCase(props)
     def hasProperty(name:String) = lowercaseProps.contains(name.toLowerCase)
-    def propertyNames = lowercaseProps.keySet
+    def starlingPropertyNames = toLowerCase(starlingProps).keySet
     def getProperty(name:String, defaultValue:String) : String = lowercaseProps.getOrElse(name.toLowerCase, defaultValue)
   }
 
   {
     //check for invalid entries
-    val invalidNames = MyPropertiesFile.propertyNames.filter(!properties.contains(_))
+    val invalidNames = MyPropertiesFile.starlingPropertyNames.filter(!properties.contains(_))
     if (!invalidNames.isEmpty) {
       println("There are invalid properties in props.conf. Starling can not start until they are removed.")
       invalidNames.foreach( (name) => println(" " + name))
@@ -141,7 +144,7 @@ class PropsHelper(props : Map[String,String]) {
 
 object PropsHelper {
 
-  val defaultProps = new Props(PropertiesMapBuilder.defaultProps)
+  val defaultProps = new Props(PropertiesMapBuilder.starlingProps, PropertiesMapBuilder.trafiguraProps)
 
   def createColourString(name:String):String = {
     //Generate a background colour from the name.

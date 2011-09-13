@@ -1,14 +1,13 @@
 package starling.gui
 
-import custom.{MonthViewCancelEvent, MonthViewCommitEvent, SXMonthView}
 import swing._
 import event._
-import starling.pivot.view.swing.{FixedImagePanel, MigPanel}
 import java.awt.image.BufferedImage
 import swing.Swing._
 import javax.swing.JPopupMenu
 import starling.daterange._
 import java.awt.{Dimension, KeyboardFocusManager, Cursor, Color}
+import starling.browser.common._
 
 class DayChooser(day0:Day = Day.today(), enableFlags:Boolean = true, showDay:Boolean=false) extends MigPanel("insets 0", "[p]0[p]") {
 

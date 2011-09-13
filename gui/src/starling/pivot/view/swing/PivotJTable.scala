@@ -3,40 +3,39 @@ package starling.pivot.view.swing
 import collection.mutable.ListBuffer
 import org.jdesktop.swingx.JXTable
 import javax.swing._
-import table.{TableModel, TableCellEditor}
+import table.TableCellEditor
 import text.JTextComponent
 import swing.Swing._
 import org.jdesktop.jxlayer.JXLayer
 import java.awt.Cursor
-import starling.pivot.{EditableCellState, TableCell}
-import org.jdesktop.swingx.table.NumberEditorExt
-import org.jdesktop.swingx.JXTable.{BooleanEditor, GenericEditor}
+import org.jdesktop.swingx.JXTable.GenericEditor
 import javax.swing.TransferHandler.TransferSupport
 import java.awt.datatransfer.{Clipboard, DataFlavor, StringSelection}
 import starling.utils.Log
-import starling.gui.GuiUtils
+import starling.browser.common.GuiUtils._
 import java.util.{StringTokenizer, Hashtable}
-import swing.{ScrollPane, ListView, MenuItem, Action}
-import starling.pivot.model.{EditableInfo, AxisCell, PivotTableModel}
+import swing.{MenuItem, Action}
+import starling.pivot.model.{AxisCell, PivotTableModel}
 import java.awt.event._
+import org.jdesktop.swingx.renderer.DefaultTableRenderer
+import starling.browser.Modifiers
+import starling.pivot.{ColumnDetails, PivotFormatter, EditableCellState, TableCell}
 
 object PivotJTable {
   val RowHeight = 16
-  val MinColumnWidth = 50
+  val MinColumnWidth = 25
   val MaxColumnWidth = 200
 }
 
-import PivotJTable._
-
 class PivotJTable(tableModel:PivotJTableModel, pivotTableView:PivotTableView, model:PivotTableModel,
-                  indentColumns:Array[Boolean]) extends JXTable(tableModel) {
+                  indentColumns:Array[Boolean], columnDetails:ColumnDetails) extends JXTable(tableModel) {
   setUI(new PivotTableUI)
   setAutoResizeMode(JTable.AUTO_RESIZE_OFF)
   getTableHeader.setReorderingAllowed(false)
   setFillsViewportHeight(true)
   setTableHeader(null)
   setCellSelectionEnabled(true)  
-  setDefaultRenderer(classOf[Object], new PivotCellRenderer(indentColumns, MaxColumnWidth))
+  setDefaultRenderer(classOf[Object], new DefaultTableRenderer(new PivotCellProvider(indentColumns, columnDetails, tableModel)))
   setRowHeight(PivotJTable.RowHeight)
 
   // If the delete key is pressed when more than one cell is selected, delete all deletable cells.
@@ -163,7 +162,7 @@ class PivotJTable(tableModel:PivotJTableModel, pivotTableView:PivotTableView, mo
               val realColumn = startColumn + colIndex
               val parser = tableModel.parser(realRow, realColumn)
               try {
-                parser.parse(cell)
+                parser.parse(cell, PivotFormatter.DefaultExtraFormatInfo)
                 true
               } catch {
                 case e => false
@@ -287,7 +286,7 @@ class PivotJTable(tableModel:PivotJTableModel, pivotTableView:PivotTableView, mo
 
         val parser = tableModel.parser(r, c)
         val myRes = try {
-          parser.parse(t)
+          parser.parse(t, PivotFormatter.DefaultExtraFormatInfo)
           true
         } catch {
           case e => false
@@ -357,8 +356,8 @@ class PivotJTable(tableModel:PivotJTableModel, pivotTableView:PivotTableView, mo
           if (e.getClickCount() == 2) {
             val tableSelection = tableModel.mapCellToFields(row, col)
             if (tableSelection.nonEmpty) {
-              val controlDown = (e.getModifiers & InputEvent.CTRL_MASK) == InputEvent.CTRL_MASK
-              pivotTableView.publish(TableDoubleClickEvent(model.getCurrentPivotFieldsState.filters, tableSelection, controlDown))
+              val modifiers = Modifiers.modifiersEX(e.getModifiersEx)
+              pivotTableView.publish(TableDoubleClickEvent(model.getCurrentPivotFieldsState.filters, tableSelection, modifiers))
             }
           } else if (e.getClickCount() == 1) {
             val cellRect = table.getCellRect(row, col, true)
@@ -409,10 +408,10 @@ class PivotJTable(tableModel:PivotJTableModel, pivotTableView:PivotTableView, mo
             }
           }}
 
-          if (deletableCells.nonEmpty || resetableCells.nonEmpty) {
-            val popup = new JPopupMenu
-            popup.setBorder(LineBorder(GuiUtils.BorderColour))
+          val popup = new JPopupMenu
+          popup.setBorder(LineBorder(BorderColour))
 
+          if (deletableCells.nonEmpty || resetableCells.nonEmpty) {
             if (deletableCells.nonEmpty) {
               val deleteActionName = if (deletableCells.size == 1) "Delete Cell" else "Delete Cells"
               val deleteAction = Action(deleteActionName) {
@@ -421,7 +420,6 @@ class PivotJTable(tableModel:PivotJTableModel, pivotTableView:PivotTableView, mo
               val deleteItem = new MenuItem(deleteAction)
               popup.add(deleteItem.peer)
             }
-
             if (resetableCells.nonEmpty) {
               val resetActionName = if (resetableCells.size == 1) "Reset Cell" else "Reset Cells"
               val resetAction = Action(resetActionName) {
@@ -430,9 +428,9 @@ class PivotJTable(tableModel:PivotJTableModel, pivotTableView:PivotTableView, mo
               val resetItem = new MenuItem(resetAction)
               popup.add(resetItem.peer)
             }
-
-            popup.show(e.getComponent, point.x, point.y)
           }
+
+          popup.show(e.getComponent, point.x, point.y)
         }
       }
     }

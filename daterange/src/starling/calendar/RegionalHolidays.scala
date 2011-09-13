@@ -14,7 +14,7 @@ trait RegionalHolidays extends HolidayTables {
 
   def regionHolidays(name: String) = {
     name match {
-      case "UK" | "US" => {
+      case "UK.txt" | "US.txt" => {
         BusinessCalendarSet(name, Location.Unknown, days(name))
       }
     }
