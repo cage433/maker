@@ -24,7 +24,7 @@ class UserDetailsPageComponent(context:PageContext, user:User) extends MigPanel(
 
     def sL(text0:String) = new Label {
       text = text0
-      foreground = Color.BLUE.darker
+      foreground = GuiUtils.BlueTextColour
       horizontalAlignment = swing.Alignment.Right
     }
 

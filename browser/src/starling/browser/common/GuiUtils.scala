@@ -22,7 +22,7 @@ object GuiUtils {
       if (b) separator.foreground = colour else separator.foreground = GuiUtils.BorderColour
       separator.repaint()
     }
-    val colour = Color.BLUE.darker
+    val colour = GuiUtils.BlueTextColour
     private val textLabel = new Label(text) {
       font = UIManager.getFont("TitledBorder.font")
       foreground = colour
@@ -37,7 +37,7 @@ object GuiUtils {
   def CentredLabelWithSeparator(text:String) = new MigPanel("insets 0") {
     opaque = false
     background = GuiUtils.ClearColour
-    val colour = Color.BLUE.darker
+    val colour = GuiUtils.BlueTextColour
     add(new Separator {
       foreground = colour
       background = colour.brighter
@@ -142,6 +142,8 @@ object GuiUtils {
   val BlendedErrorCellColour = TableSelectedColour.blend(ErrorCellColour, BlendFraction)
   val BlendedEditableCellColour = TableSelectedColour.blend(EditableCellColour, BlendFraction)
   val BlendedHeaderColour = TableSelectedColour.blend(PanelBackgroundColour, BlendFraction)
+
+  val BlueTextColour = new Color(0,0,178)
 
   lazy val DisabledBorderColour = UIManager.getColor("controlShadow")
   lazy val BorderColour = UIManager.getColor("controlDkShadow")

@@ -19,7 +19,7 @@ import java.awt.event._
 import starling.gui.api.ReportSpecificOptions
 import starling.utils.ImplicitConversions._
 import collection.mutable.HashMap
-import java.awt.{Graphics2D, Dimension, Color, GradientPaint, Cursor, AWTEvent, Toolkit, KeyboardFocusManager}
+import java.awt.{Graphics2D, Dimension, Color, GradientPaint, Cursor, AWTEvent, Toolkit, KeyboardFocusManager, Font}
 import javax.swing._
 import starling.pivot.view.swing.PivotTableType._
 import starling.pivot.HiddenType._
@@ -391,90 +391,6 @@ class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSiz
     }
   }
 
-  private val formulaBar = new MigPanel("insets 0, gap 0") {
-    var expanded = false
-    val iconHolder = new MigPanel("insets 2lp 3lp 0 3lp") {
-      border = MatteBorder(1,0,1,0, BorderColour)
-      add(new Label {
-        icon = StarlingIcons.icon("/icons/16x16_info.png")
-      }, "push, ay top")
-    }
-
-    private val onelineText = new TextField {
-      editable = false
-      background = Color.WHITE
-      maximumSize = new Dimension(Integer.MAX_VALUE, preferredSize.height)
-    }
-
-    private val textHolder = new MigPanel("insets 0") {
-      def update(c:Component) {
-        removeAll
-        add(c, "push,grow")
-        revalidate()
-        repaint()
-      }
-    }
-
-    private val multilineText = new TextArea {
-      editable = false
-      background = Color.WHITE
-      lineWrap = true
-      wordWrap = true
-      rows = 3
-      border = CompoundBorder(LineBorder(BorderColour), EmptyBorder(2))
-      minimumSize = preferredSize
-    }
-
-    def setText(t:String, summary:Boolean) {
-      onelineText.text = t
-      onelineText.peer.setHorizontalAlignment(if (summary) SwingConstants.RIGHT else SwingConstants.LEFT)
-      multilineText.text = t
-      if (summary) {
-        if (expanded) shrink()
-        expandButtonHolder.expandButton.visible = false
-      } else {
-        expandButtonHolder.expandButton.visible = true
-      }
-    }
-
-    def expand() {
-      expanded = true
-      expandButtonHolder.expandButton.icon = StarlingIcons.icon("/icons/scroll_up.png")
-      textHolder.update(multilineText)
-    }
-
-    def shrink() {
-      expanded = false
-      expandButtonHolder.expandButton.icon = StarlingIcons.icon("/icons/scroll_down.png")
-      textHolder.update(onelineText)
-    }
-
-    val expandButtonHolder = new MigPanel("insets 3lp 0 0 0") {
-      border = MatteBorder(1,0,1,0,BorderColour)
-      val expandButton = new Label {
-        icon = StarlingIcons.icon("/icons/scroll_down.png")
-        cursor = Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)
-        reactions += {
-          case scala.swing.event.MousePressed(_,_,_,_,_) => {
-            if (expanded) {
-              shrink()
-            } else {
-              expand()
-            }
-          }
-        }
-        listenTo(mouse.clicks)
-      }
-      add(expandButton, "push, ay top")
-    }
-
-    shrink()
-
-    add(iconHolder, "grow")
-    add(textHolder, "push,grow")
-    add(expandButtonHolder, "grow")
-  }
-
   private val toolbarPanel = new MigPanel("insets 0") {
     visible = false
     if (embedded) {
@@ -720,7 +636,7 @@ class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSiz
               val sum = values.sum
               val count = values.size
               val average = sum / count
-              Some( (" Average: " + average + " | Count: " + count + " | Sum: " + sum, true) )
+              Some( ("Average: " + average + "     Count: " + count + "     Sum: " + sum, true) )
             }
           }
         }
@@ -767,6 +683,103 @@ class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSiz
       fullTable.requestFocusInWindow
     }
   }
+
+  private val formulaBar = new MigPanel("insets 0, gap 0") {
+    var expanded = false
+    val iconHolder = new MigPanel("insets 2lp 3lp 0 3lp") {
+      border = MatteBorder(1,0,1,0, BorderColour)
+      add(new Label {
+        icon = StarlingIcons.icon("/icons/16x16_info.png")
+      }, "push, ay top")
+    }
+
+    private val onelineText = new TextField {
+      editable = false
+      background = Color.WHITE
+      maximumSize = new Dimension(Integer.MAX_VALUE, preferredSize.height)
+    }
+
+    private val textHolder = new MigPanel("insets 0") {
+      def update(c:Component) {
+        removeAll
+        add(c, "push,grow")
+        revalidate()
+        repaint()
+      }
+    }
+
+    private val multilineText = new TextArea {
+      editable = false
+      background = Color.WHITE
+      lineWrap = true
+      wordWrap = true
+      rows = 3
+      border = CompoundBorder(LineBorder(BorderColour), EmptyBorder(2))
+      minimumSize = preferredSize
+    }
+
+    def setText(t:String, summary:Boolean) {
+      onelineText.text = t
+      multilineText.text = t
+      if (summary) {
+        onelineText.foreground = GuiUtils.BlueTextColour
+        onelineText.peer.setHorizontalAlignment(SwingConstants.RIGHT)
+        if (expanded) shrink()
+        expandButtonHolder.visible = false
+      } else {
+        onelineText.foreground = Color.BLACK
+        onelineText.peer.setHorizontalAlignment(SwingConstants.LEFT)
+        expandButtonHolder.visible = true
+      }
+    }
+
+    def expand() {
+      expanded = true
+      expandButtonHolder.expandButton.icon = StarlingIcons.icon("/icons/scroll_up.png")
+      textHolder.update(multilineText)
+    }
+
+    def shrink() {
+      expanded = false
+      expandButtonHolder.expandButton.icon = StarlingIcons.icon("/icons/scroll_down.png")
+      textHolder.update(onelineText)
+    }
+
+    val expandButtonHolder = new MigPanel("insets 3lp 0 0 0") {
+      border = MatteBorder(1,0,1,1,BorderColour)
+      val expandButton = new Label {
+        icon = StarlingIcons.icon("/icons/scroll_down.png")
+        cursor = Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)
+        reactions += {
+          case scala.swing.event.MousePressed(_,_,_,_,_) => {
+            if (expanded) {
+              shrink()
+            } else {
+              expand()
+            }
+          }
+        }
+        listenTo(mouse.clicks)
+      }
+      add(expandButton, "push, ay top")
+    }
+
+    val infoPanel = new MigPanel("insets 2 0 0 0") {
+      border = MatteBorder(1,0,1,0,BorderColour)
+      def l(t:String) = new Label(t) {foreground = GuiUtils.BlueTextColour}
+      val rowAndColumnNumberLabel = l(" [" + fullTable.getRowCount.toString + " x " + fullTable.getColumnCount().toString + "]")
+
+      add(rowAndColumnNumberLabel, "ay top")
+    }
+
+    shrink()
+
+    add(iconHolder, "grow")
+    add(textHolder, "push,grow")
+    add(expandButtonHolder, "grow, hidemode 3")
+    add(infoPanel, "grow")
+  }
+
 
   private val (mainTableScrollPane, mainHScrollBarHolder, mainVScrollBarHolder) = {
     PivotTableViewHelper.generateScrollPaneHolders(mainTable)
@@ -958,7 +971,7 @@ class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSiz
       
       add(rowHeaderTableScrollPanePanel, "push, grow")
       add(mainTableScrollPane, "wrap")
-      add(mainHScrollBarHolder, "growx, span2")
+      add(mainHScrollBarHolder, "growx, spanx 2")
     }
   } else {
     val gap = if (otherLayoutInfo.hiddenType == AllHidden) "0" else "1"

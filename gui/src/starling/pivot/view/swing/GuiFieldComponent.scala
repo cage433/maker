@@ -666,7 +666,7 @@ class FilterLabelPanel(props:GuiFieldComponentProps)
   val label = new Label {
     font = GuiFieldFont
     text = ""
-    foreground = Color.BLUE.darker
+    foreground = GuiUtils.BlueTextColour
     maximumSize = new Dimension(150, Integer.MAX_VALUE)
 
     override def text_=(s:String) {
