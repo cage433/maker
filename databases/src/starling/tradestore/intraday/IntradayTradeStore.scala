@@ -12,11 +12,11 @@ import starling.eai.{TreeID, EAIStrategyDB}
 import starling.auth.{User, LdapUserLookup}
 import starling.utils.Log
 import starling.trade.{Trade, TradeID, TradeAttributes}
-import starling.gui.api.IntradayUpdated
 import starling.dbx.QueryBuilder._
 import starling.tradestore.eai.ExternalSortIndexPivotTreePathOrdering
 import starling.tradestore.TradeStore.StoreResults
 import starling.dbx.{QueryBuilder, Clause, Query}
+import starling.gui.api.{Desk, IntradayUpdated}
 
 case class IntradayTradeAttributes(strategyID: Option[TreeID], bookID: TreeID, dealID: Option[TreeID],
                                    trader: String, tradedFor: String, broker: String, comment: String, clearingHouse: String,
@@ -24,7 +24,7 @@ case class IntradayTradeAttributes(strategyID: Option[TreeID], bookID: TreeID, d
   import IntradayTradeAttributes._
 
   def details = Map(
-    bookID_str -> bookID.id,
+    "Book ID" -> bookID.id,
     strategyID_str -> (if (strategyID.isEmpty) TreeID(0) else strategyID.get),
     dealID_str -> (if (dealID.isEmpty) TreeID(0) else dealID.get),
     trader_str -> trader,

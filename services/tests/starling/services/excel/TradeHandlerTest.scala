@@ -45,18 +45,19 @@ class TradeHandlerTest extends StarlingTest {
     User.setLoggedOn(None)
   }
 
-  @Test
-  def shouldSendTradesFromTradeReaderToIntradayTradeStoreAndBroadCast {
-    when(tradeReader.allTrades(anyHeader, anyTrades, anySubgroupName)) thenReturn allTrades
-    when(intradayTradeStore.storeTrades(anyUser, anySubgroupName, same(allTrades))) thenReturn (StoreResults(1, 2, 3, tradesHash))
-    //when(ldapUserLookup.user(anyString)) thenReturn Some(anyUser)
-
-    assert(tradeHandler.blotterTrades("<subgroupName>", header, optionalAdditionalTrades) == "OK:" + tradesHash)
-
-    verify(intradayTradeStore).storeTrades(anyUser, anySubgroupName, same(allTrades))
-
-    verify(broadcaster).broadcast(
-      BlotterTradeUpdate(user, "Oil Derivatives/Scratch/Houston Derivatives/<name>/<subgroupName>", List( List("<header>"), List("<optionalAdditionalTrade>"))))
-  }
+  // I don't think anyone ever listened to this.
+//  @Test
+//  def shouldSendTradesFromTradeReaderToIntradayTradeStoreAndBroadCast {
+//    when(tradeReader.allTrades(anyHeader, anyTrades, anySubgroupName)) thenReturn allTrades
+//    when(intradayTradeStore.storeTrades(anyUser, anySubgroupName, same(allTrades))) thenReturn (StoreResults(1, 2, 3, tradesHash))
+//    //when(ldapUserLookup.user(anyString)) thenReturn Some(anyUser)
+//
+//    assert(tradeHandler.blotterTrades("<subgroupName>", header, optionalAdditionalTrades) == "OK:" + tradesHash)
+//
+//    verify(intradayTradeStore).storeTrades(anyUser, anySubgroupName, same(allTrades))
+//
+//    verify(broadcaster).broadcast(
+//      BlotterTradeUpdate(user, "Oil Derivatives/Scratch/Houston Derivatives/<name>/<subgroupName>", List( List("<header>"), List("<optionalAdditionalTrade>"))))
+//  }
 
 }

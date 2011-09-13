@@ -108,7 +108,7 @@ case class TradeSelectionPage(
         selected = data.desk.isDefined && enabled
       }
 
-      val deskCombo = if (data.desks.isEmpty) new ComboBox(List(Desk(""))) else new ComboBox(data.desks) {
+      val deskCombo = if (data.desks.isEmpty) new ComboBox(List(Desk("", Nil))) else new ComboBox(data.desks) {
         renderer = ListView.Renderer(_.name)
         data.desk match {
           case Some(d) => selection.item = d

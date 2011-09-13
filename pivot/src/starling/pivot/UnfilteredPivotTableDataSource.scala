@@ -43,9 +43,14 @@ class PossibleValuesBuilder(val allFields:Seq[FieldDetails], val filtersList:Fil
     // (if that exists)
     for (filters <- filtersList) {
       val (matching, nonMatching) = filters.span{case (field, selection) => {
-        fieldDetailsMap.get(field) match {
-          case None => false
-          case Some(fd) => selection.matches(fd, getFieldValue(field))
+        selection match {
+          case MeasurePossibleValuesFilter(_) => true
+          case _ => {
+            fieldDetailsMap.get(field) match {
+              case None => false
+              case Some(fd) => selection.matches(fd, getFieldValue(field))
+            }
+          }
         }
       } }
       matching.foreach {

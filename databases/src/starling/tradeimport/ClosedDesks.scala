@@ -17,7 +17,7 @@ class ClosedDesks(broadcaster: Broadcaster, db: DB) {
                     groupBy ("desk")
             )) {
       rs => {
-        (Desk(rs.getString("desk")), rs.getTimestamp("cl"))
+        (Desk.fromName(rs.getString("desk")), rs.getTimestamp("cl"))
       }
     }.toMap
   }
@@ -63,7 +63,7 @@ class ClosedDesks(broadcaster: Broadcaster, db: DB) {
           case null => None
           case e => Some(e)
         }
-        (Desk(rs.getString("desk")), rs.getDay("closedDay"), rs.getTimestamp("cl"), error)
+        (Desk.fromName(rs.getString("desk")), rs.getDay("closedDay"), rs.getTimestamp("cl"), error)
       }
     }.groupBy(_._1).mapValues(_.map(a => (a._2, a._3, a._4)))
   }

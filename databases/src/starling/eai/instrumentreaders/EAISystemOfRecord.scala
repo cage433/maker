@@ -147,13 +147,6 @@ case class EAISystemOfRecord(externalDB: RichDB, bookID: Int, downloadID: Int) e
 }
 
 object EAISystemOfRecord {
-  val LONDON_DERIVS_BOOK = 43
-  val GasolineSpec = 149
-  val LONDON_DERIVS_OPTIONS_BOOK = 173
-  val CrudeSpecNorthSea = 197
-  val HoustonDerivatives = 190
-  val BOOKS = List(LONDON_DERIVS_BOOK, LONDON_DERIVS_OPTIONS_BOOK, CrudeSpecNorthSea, GasolineSpec, HoustonDerivatives)
-
   val ET_OPTION = 1
   val FUTURE = 2
   val SWAP = 3

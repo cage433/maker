@@ -11,6 +11,7 @@ import starling.tradestore.{TradeStore}
 import collection.immutable.{List, Set}
 import starling.utils.Broadcaster
 import starling.dbx.QueryBuilder._
+import starling.gui.api.{EAIDeskInfo, Desk}
 
 object EAITradeStore {
   val bookID_col = "Book ID"
@@ -53,8 +54,9 @@ case class EAITradeAttributes(strategyID: TreeID, bookID: TreeID, dealID: TreeID
 }
 
 
-class EAITradeStore(db: RichDB, broadcaster:Broadcaster, eaiStrategyDB:EAIStrategyDB, book:Book) extends
-    TradeStore(db, broadcaster, EAITradeSystem, Some( book.bookID )) {
+class EAITradeStore(db: RichDB, broadcaster:Broadcaster, eaiStrategyDB:EAIStrategyDB, desk:Desk) extends
+    TradeStore(db, broadcaster, EAITradeSystem, Some( desk.deskInfo.get.asInstanceOf[EAIDeskInfo].book)) {
+
   lazy val usedStrategyIDs = new scala.collection.mutable.HashSet[Int]()
   val tableName = "EAITrade"
   val tradeAttributesFactory = EAITradeAttributes
@@ -64,7 +66,7 @@ class EAITradeStore(db: RichDB, broadcaster:Broadcaster, eaiStrategyDB:EAIStrate
   def createTradeAttributes(row: RichInstrumentResultSetRow) = {
     import EAITradeStore._
     val bookID = row.getInt(bookID_col.replaceAll(" ", ""))
-    assert(bookID == book.bookID, "Reading in the wrong trade for this tradestore: " + (book, row))
+    assert(bookID == desk.deskInfo.get.asInstanceOf[EAIDeskInfo].book, "Reading in the wrong trade for this tradestore: " + (desk, row))
     val strategyID = row.getInt("StrategyID")
     val dealID = row.getInt(dealID_str.replaceAll(" ", ""))
     val trader = row.getStringOrNone(trader_str).getOrElse("")
