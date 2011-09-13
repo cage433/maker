@@ -260,7 +260,6 @@ object TitanTradeAttributes{
       schedule = dummyDate,
       expectedSales = dummyDate
     )
-    
   }
 }
 

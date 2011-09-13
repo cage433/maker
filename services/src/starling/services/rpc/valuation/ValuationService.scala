@@ -34,9 +34,9 @@ import com.trafigura.edm.logistics.inventory.EDMInventoryItem
 import starling.services.rpc.logistics._
 import com.trafigura.events.DemultiplexerClient
 import com.trafigura.edm.shared.types.TitanId
-import com.trafigura.services.BouncyRMIServiceApi
 import java.io.{PrintWriter, FileWriter, BufferedWriter}
 import com.trafigura.services.marketdata.MarketDataServiceApi
+import com.trafigura.services.{TitanSerializableDate, BouncyRMIServiceApi}
 
 /**
  * Trade cache provide trade map lookup by trade id and also a quota id to trade map lookup
@@ -306,8 +306,9 @@ case class TitanTradeServiceBasedTradeCache(titanTradesService : TitanTradeServi
 
 trait EnvironmentProvider {
   def getSnapshots() : List[String]
-  def environment(snapshotID : String) : Environment
-  def updateSnapshotCache() 
+  def environment_(snapshotID : String, marketDay : Option[Day]) : Environment
+  def environment(snapshotID : String, marketDay : Option[TitanSerializableDate] = None) : Environment = environment_(snapshotID, marketDay.map{d => Day.fromLocalDate(d.value)})
+  def updateSnapshotCache()
   def snapshotNameToID(name : String) : SnapshotID
   def mostRecentSnapshotIdentifierBeforeToday(): Option[String] 
   def snapshotIDs(observationDay : Option[Day]) : List[SnapshotID]
@@ -318,12 +319,12 @@ class DefaultEnvironmentProvider(marketDataStore : MarketDataStore) extends Envi
   def snapshotNameToID(name : String) = snapshotNameToIDCache(name)
   private var snapshotNameToIDCache = Map[String, SnapshotID]()
   private var environmentCache = CacheFactory.getCache("ValuationService.environment", unique = true)
-  def environment(snapshotIDName: String): Environment = environmentCache.memoize(
+  def environment_(snapshotIDName: String, marketDay : Option[Day]): Environment = environmentCache.memoize(
     snapshotIDName,
     {snapshotIDName : String => {
       val snapshotID = snapshotNameToIDCache(snapshotIDName)
       val reader = new NormalMarketDataReader(marketDataStore, MarketDataIdentifier(snapshotID.marketDataSelection, snapshotID.version))
-      ClosesEnvironmentRule.createEnv(snapshotID.observationDay, reader).environment
+      ClosesEnvironmentRule.createEnv(marketDay.getOrElse(snapshotID.observationDay), reader).environment
     }}
   )
   private val lock = new Object()
@@ -359,7 +360,7 @@ class MockEnvironmentProvider() extends EnvironmentProvider {
   )
   def getSnapshots() : List[String] = snapshotsAndData.keySet.toList
   
-  def environment(snapshotID : String) : Environment = Environment(
+  def environment_(snapshotID : String, marketDay : Option[Day]) : Environment = Environment(
     new UnitTestingAtomicEnvironment(
       snapshotsAndData(snapshotID)._1.endOfDay,
       {
@@ -386,26 +387,50 @@ class ValuationService(
   rabbitEventServices : TitanRabbitEventServices,
   titanInventoryCache : TitanLogisticsInventoryCache) extends ValuationServiceApi with Log {
 
-  type TradeValuationResult = Either[String, List[CostsAndIncomeQuotaValuation]]
+  private type TradeValuationResult = Either[String, List[CostsAndIncomeQuotaValuation]]
 
-  lazy val futuresExchangeByID = refData.futuresExchangeByID
-  lazy val edmMetalByGUID = refData.edmMetalByGUID
+  private lazy val futuresExchangeByID = refData.futuresExchangeByID
+  private lazy val edmMetalByGUID = refData.edmMetalByGUID
 
-  val eventHandler = new EventHandler
+  private val eventHandler = new EventHandler
 
   rabbitEventServices.addClient(eventHandler)
+
+  /**
+   * Service implementations
+   */
+  def valueAllTradeQuotas(maybeSnapshotIdentifier : Option[String] = None, observationDate: Option[TitanSerializableDate] = None) : CostAndIncomeQuotaAssignmentValuationServiceResults = {
+
+    log.info("valueAllTradeQuotas called with snapshot id " + maybeSnapshotIdentifier + ", and observation date " + observationDate)
+    val snapshotIDString = resolveSnapshotIdString(maybeSnapshotIdentifier)
+    val sw = new Stopwatch()
+    val edmTrades = titanTradeCache.getAllTrades()
+    log.info("Got Edm Trade results, trade result count = " + edmTrades.size)
+    val env = environmentProvider.environment(snapshotIDString, observationDate)
+    val tradeValuer = PhysicalMetalForward.valueWithAssignments(futuresExchangeByID, edmMetalByGUID, env, snapshotIDString) _
+    log.info("Got %d completed physical trades".format(edmTrades.size))
+    sw.reset()
+    val valuations = edmTrades.map {
+      trade => (trade.titanId.value, tradeValuer(trade))
+    }.toMap
+    log.info("Valuation took " + sw)
+    val (worked, errors) = valuations.values.partition(_ isRight)
+    log.info("Worked " + worked.size + ", failed " + errors.size + ", took " + sw)
+    CostAndIncomeQuotaAssignmentValuationServiceResults(snapshotIDString, valuations)
+  }
+
 
   /**
    * value all edm trade quotas (that are completed) and return a structure containing a
    *   map from tradeId to either a list of CostsAndIncomeQuotaValuation or strings
    */
-  def valueAllQuotas(maybeSnapshotIdentifier: Option[String] = None): CostsAndIncomeQuotaValuationServiceResults = {
+  def valueAllQuotas(maybeSnapshotIdentifier: Option[String] = None, observationDate: Option[TitanSerializableDate] = None): CostsAndIncomeQuotaOnlyValuationServiceResults = {
     log.info("valueAllQuotas called with snapshot id " + maybeSnapshotIdentifier)
     val snapshotIDString = resolveSnapshotIdString(maybeSnapshotIdentifier)
     val sw = new Stopwatch()
     val edmTrades = titanTradeCache.getAllTrades()
     log.info("Got Edm Trade results, trade result count = " + edmTrades.size)
-    val env = environmentProvider.environment(snapshotIDString)
+    val env = environmentProvider.environment(snapshotIDString, observationDate)
     val tradeValuer = PhysicalMetalForward.value(futuresExchangeByID, edmMetalByGUID, env, snapshotIDString) _
     log.info("Got %d completed physical trades".format(edmTrades.size))
     sw.reset()
@@ -415,13 +440,13 @@ class ValuationService(
     log.info("Valuation took " + sw)
     val (worked, errors) = valuations.values.partition(_ isRight)
     log.info("Worked " + worked.size + ", failed " + errors.size + ", took " + sw)
-    CostsAndIncomeQuotaValuationServiceResults(snapshotIDString, valuations)
+    CostsAndIncomeQuotaOnlyValuationServiceResults(snapshotIDString, valuations)
   }
 
   /**
    * value the quotas of a specified trade
    */
-  def valueTradeQuotas(tradeId: String, maybeSnapshotIdentifier: Option[String] = None): (String, TradeValuationResult) = {
+  def valueTradeQuotas(tradeId: String, maybeSnapshotIdentifier: Option[String] = None, observationDate: Option[TitanSerializableDate] = None): (String, TradeValuationResult) = {
     log.info("valueTradeQuotas called for trade %d with snapshot id %s".format(tradeId, maybeSnapshotIdentifier))
     val snapshotIDString = resolveSnapshotIdString(maybeSnapshotIdentifier)
 
@@ -430,7 +455,7 @@ class ValuationService(
     val edmTradeResult = titanTradeCache.getTrade(TitanId(tradeId))
 
     log.info("Got Edm Trade result " + edmTradeResult)
-    val env = environmentProvider.environment(snapshotIDString)
+    val env = environmentProvider.environment(snapshotIDString, observationDate)
     val tradeValuer = PhysicalMetalForward.value(futuresExchangeByID, edmMetalByGUID, env, snapshotIDString) _
 
     val edmTrade: EDMPhysicalTrade = edmTradeResult.asInstanceOf[EDMPhysicalTrade]
@@ -438,21 +463,20 @@ class ValuationService(
     sw.reset()
     val valuation = tradeValuer(edmTrade)
     log.info("Valuation took " + sw)
-
     (snapshotIDString, valuation)
   }
 
   /**
    * value all costables by id
    */
-  def valueCostables(costableIds: List[String], maybeSnapshotIdentifier: Option[String]): CostsAndIncomeQuotaValuationServiceResults = {
+  def valueCostables(costableIds: List[String], maybeSnapshotIdentifier: Option[String], observationDate: Option[TitanSerializableDate] = None): CostsAndIncomeQuotaOnlyValuationServiceResults = {
     
     val snapshotIDString = resolveSnapshotIdString(maybeSnapshotIdentifier)
-    val env = environmentProvider.environment(snapshotIDString)
+    val env = environmentProvider.environment(snapshotIDString, observationDate)
     valueCostables(costableIds, env, snapshotIDString)
   }
   
-  def valueCostables(costableIds: List[String], env : Environment, snapshotIDString : String): CostsAndIncomeQuotaValuationServiceResults = {
+  def valueCostables(costableIds: List[String], env : Environment, snapshotIDString : String): CostsAndIncomeQuotaOnlyValuationServiceResults = {
     val sw = new Stopwatch()
 
     // value all trades (and therefor all quotas) keyed by trade ids
@@ -494,20 +518,20 @@ class ValuationService(
     val (worked, errors) = valuations.partition(_._2 isRight)
     log.info("Worked " + worked.size + ", failed " + errors.size + ", took " + sw)
     
-    CostsAndIncomeQuotaValuationServiceResults(snapshotIDString, valuations.toMap)
+    CostsAndIncomeQuotaOnlyValuationServiceResults(snapshotIDString, valuations.toMap)
   }
 
   /**
    * value all assignments by leaf inventory
    */
-  def valueAllAssignments(maybeSnapshotIdentifier : Option[String] = None) : CostAndIncomeAssignmentValuationServiceResults = {
+  def valueAllInventory(maybeSnapshotIdentifier : Option[String] = None, observationDate: Option[TitanSerializableDate] = None) : CostAndIncomeInventoryValuationServiceResults = {
  
     val snapshotIDString = resolveSnapshotIdString(maybeSnapshotIdentifier)
-    val env = environmentProvider.environment(snapshotIDString)
+    val env = environmentProvider.environment(snapshotIDString, observationDate)
     valueAllAssignments(env, snapshotIDString)
   }
   
-  def valueAllAssignments(env : Environment, snapshotIDString : String) : CostAndIncomeAssignmentValuationServiceResults = {
+  private def valueAllAssignments(env : Environment, snapshotIDString : String) : CostAndIncomeInventoryValuationServiceResults = {
     val sw = new Stopwatch()
 
     val inventory = titanInventoryCache.getAllInventory()
@@ -523,20 +547,20 @@ class ValuationService(
     //log.debug("Worked " + worked.size + ", failed " + errors.size + ", took " + sw)
     //log.debug("Failed valuation of inventory assignments (%d)...\n%s".format(errors.size, errors.mkString("\n")))
 
-    CostAndIncomeAssignmentValuationServiceResults(snapshotIDString, valuations.toMap)
+    CostAndIncomeInventoryValuationServiceResults(snapshotIDString, valuations.toMap)
   }
 
   /**
    * value all inventory assignments by inventory id
    */
-  def valueInventoryAssignments(inventoryIds: List[String], maybeSnapshotIdentifier: Option[String]): CostAndIncomeAssignmentValuationServiceResults = {
+  def valueInventory(inventoryIds: List[String], maybeSnapshotIdentifier: Option[String], observationDate: Option[TitanSerializableDate] = None): CostAndIncomeInventoryValuationServiceResults = {
 
     val snapshotIDString = resolveSnapshotIdString(maybeSnapshotIdentifier)
-    val env = environmentProvider.environment(snapshotIDString)
+    val env = environmentProvider.environment(snapshotIDString, observationDate)
     valueInventoryAssignments(inventoryIds, env, snapshotIDString)
   }
 
-  def valueInventoryAssignments(inventoryIds: List[String], env : Environment, snapshotIDString : String) : CostAndIncomeAssignmentValuationServiceResults = {
+  private def valueInventoryAssignments(inventoryIds: List[String], env : Environment, snapshotIDString : String) : CostAndIncomeInventoryValuationServiceResults = {
     val sw = new Stopwatch()
 
     val quotaNameToQuotaMap = titanTradeCache.getAllTrades().flatMap(_.quotas).map(q => NeptuneId(q.detail.identifier.value).identifier -> q).toMap
@@ -550,7 +574,7 @@ class ValuationService(
     log.info("Worked " + worked.size + ", failed " + errors.size + ", took " + sw)
     log.info("Failed valuation of inventory assignments (%d)...\n%s".format(errors.size, errors.mkString("\n")))
 
-    CostAndIncomeAssignmentValuationServiceResults(snapshotIDString, valuations.toMap)
+    CostAndIncomeInventoryValuationServiceResults(snapshotIDString, valuations.toMap)
   }
 
 
@@ -831,9 +855,13 @@ object ValuationService extends App {
 
   lazy val vs = StarlingInit.devInstance.valuationService
 
-  val valuations = vs.valueAllQuotas()
+  val quotaValuations = vs.valueAllTradeQuotas()
+  val (worked, failed) = quotaValuations.valuationResults.values.partition({ case Right(_) => true; case Left(_) => false })
+  println("Worked \n" + worked.mkString("\n") + "\nFailed \n" + failed.mkString("\n"))
 
-  val (worked, _) = valuations.tradeResults.values.partition({ case Right(_) => true; case Left(_) => false })
+  System.exit(0)
+  val valuations = vs.valueAllQuotas()
+  //val (worked, _) = valuations.tradeResults.values.partition({ case Right(_) => true; case Left(_) => false })
 
   val valuedTradeIds = valuations.tradeResults.collect{ case (id, Right(v)) => id }.toList
   val valuedTrades = vs.getTrades(valuedTradeIds)
@@ -921,8 +949,8 @@ object ValuationServicePerformanceTest extends App {
     val directQuotaResults = run("Quota (direct)", () => vs.valueAllQuotas())
     val rmiQuotaResults = run("Quota (rmi)", () => valuationServiceRMI.valueAllQuotas())
 
-    val directInventoryResults = run("Inventory (direct)", () => vs.valueAllAssignments())
-    val rmiInventoryResults = run("Inventory (rmi)", () => valuationServiceRMI.valueAllAssignments())
+    val directInventoryResults = run("Inventory (direct)", () => vs.valueAllInventory())
+    val rmiInventoryResults = run("Inventory (rmi)", () => valuationServiceRMI.valueAllInventory())
 
     val output = new File("valuation-service-timings.csv")
     val w = new PrintWriter(output)
@@ -977,7 +1005,7 @@ object ValuationServicePerformanceTest extends App {
 //    val quotaValuations = valuationServiceRMI.valueAllQuotas()
 //    showResults(quotaValuations.tradeResults.values.toList, "Quotas")
 
-//    val inventoryValuations = vs.valueAllAssignments()
+//    val inventoryValuations = vs.valueAllInventory()
 //    showResults(inventoryValuations.assignmentValuationResults.values.toList, "Inventory")
 
   def average(ls : List[Long]) = ls.sum/ls.size

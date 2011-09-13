@@ -127,6 +127,8 @@ case class FileMockedTitanServices() extends TitanServices {
   val loadedMetals = time(loadJsonValuesFromFileUrl(metalsFile).map(s => Metal.fromJson(new JSONObject(s)).asInstanceOf[Metal]), t => println("took %dms to get metals".format(t)))
   val loadedExchanges = time(loadJsonValuesFromFileUrl(exchangesFile).map(s => Market.fromJson(new JSONObject(s)).asInstanceOf[Market]), t => println("took %dms to get exchanges".format(t)))
   val loadedTrades = time(loadJsonValuesFromFileUrl(tradesFile, true).map(s => EDMPhysicalTrade.fromJson(new JSONObject(s)).asInstanceOf[EDMPhysicalTrade]), t => println("took %dms to get trades".format(t)))
+  println("trades loaded with quotas %d".format(loadedTrades.filter(_.quotas.size > 0).size))
+
   var tradeMap = loadedTrades.map(t => t.titanId  -> t).toMap
 
   def updateTrade(trade : EDMPhysicalTrade) {

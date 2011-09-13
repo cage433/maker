@@ -76,7 +76,7 @@ class ValuationServiceTest extends StarlingTest {
   @Test(enabled=true, groups = Array("ValuationService"))
   def testValuationServiceValuationUpdatedEvents() {
 
-    Log.level(Levels.Warn){
+    Log.level(Levels.Warn) {
       val sw = new Stopwatch()
 
       var updatedValuationIdList : List[String] = Nil
@@ -88,7 +88,8 @@ class ValuationServiceTest extends StarlingTest {
 
       val valuations = vs.valueAllQuotas()
 
-      val (worked, _) = valuations.tradeResults.values.partition(_ isRight)
+      val (worked, errored) = valuations.tradeResults.values.partition(_ isRight)
+
       val valuedTradeIds = valuations.tradeResults.collect {
         case (id, Right(v)) => id
       }.toList
@@ -96,8 +97,8 @@ class ValuationServiceTest extends StarlingTest {
 
       // select a trade for testing, take the first trade that was successfully valued as this
       // should ensure that it can be used reliably in this test (some trades may not have completed pricing spec information)
-      val firstTrade = valuedTrades.head // mockTitanTradeService.getAllTrades().head // valuedTrades.head
-      
+      val firstTrade = valuedTrades.filter(_.quotas.size > 0).head // mockTitanTradeService.getAllTrades().head // valuedTrades.head
+
       val testEventHandler = new MockEventHandler(handler)
 
       mockRabbitEventServices.eventDemux.addClient(testEventHandler)
@@ -133,9 +134,7 @@ class ValuationServiceTest extends StarlingTest {
       mockRabbitEventServices.rabbitEventPublisher.publish(eventArray)
 
       // check the updated valuation event is sent...
-
       assertTrue(updatedValuationIdList.contains(updatedTrade.titanId.value.toString), "Valuation service failed to raise valuation changed events for the changed trades")
-
     }
   }
 
@@ -163,7 +162,7 @@ class ValuationServiceTest extends StarlingTest {
         new MockEnvironmentProvider, mockTitanTradeCache, mockTitanServices, mockTitanLogisticsServices, mockRabbitEventServices, mockInventoryCache)
 
 
-      val assignmentValuations = vs.valueAllAssignments()
+      val assignmentValuations = vs.valueAllInventory()
 
       val (worked, failed) = assignmentValuations.assignmentValuationResults.values.partition(_ isRight)
       val valuedIds = assignmentValuations.assignmentValuationResults.collect {
