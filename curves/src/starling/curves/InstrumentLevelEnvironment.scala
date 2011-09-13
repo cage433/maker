@@ -28,6 +28,7 @@ trait InstrumentLevelEnvironment extends AtomicEnvironmentHelper {
   def marketDay() : DayAndTime
   def discount(ccy : UOM, day : Day, ignoreShiftsIfPermitted : Boolean = false) : Quantity
   def fixing(underlying: SingleIndex, fixingDay : Day) : Quantity
+  def priceOnDay(underlying: FuturesMarket, period: DateRange, fixingDay: Day) : Quantity
   def priceOnLastTradingDay(underlying: FuturesMarket, period: DateRange) : Quantity
   def indexForwardPrice(underlying: SingleIndex, observationDay : Day, ignoreShiftsIfPermitted : Boolean = false) : Quantity
   def forwardPrice(underlying: CommodityMarket, period: DateRange, ignoreShiftsIfPermitted : Boolean = false) : Quantity
@@ -59,7 +60,9 @@ class DefaultInstrumentLevelEnvironment(underlyingAtomicEnv : AtomicEnvironment)
   def fixing(underlying: SingleIndex, fixingDay : Day) : Quantity = {
     underlying.fixing(this, fixingDay)
   }
-  def priceOnLastTradingDay(market: FuturesMarket, period: DateRange) = market.historicPrice(this, market.lastTradingDay(period), period)
+  def priceOnDay(market: FuturesMarket, period: DateRange, fixingDay: Day) : Quantity = market.historicPrice(this, fixingDay, period)
+
+  def priceOnLastTradingDay(market: FuturesMarket, period: DateRange) = priceOnDay(market, period, market.lastTradingDay(period))
 
   def indexForwardPrice(underlying: SingleIndex, observationDay : Day, ignoreShiftsIfPermitted : Boolean = false) : Quantity = {
     underlying.forwardPriceOnObservationDay(this, observationDay, ignoreShiftsIfPermitted)

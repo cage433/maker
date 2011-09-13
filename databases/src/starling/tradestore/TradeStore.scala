@@ -743,7 +743,7 @@ abstract class TradeStore(db: RichDB, broadcaster:Broadcaster, tradeSystem: Trad
       val expiryDay = instrument.expiryDay match {
         case Some(day) => day
         case None => {
-          assert(instrument.isInstanceOf[ErrorInstrument] || instrument.isInstanceOf[DeletedInstrument], "Wrong type:" + instrument)
+          assert(instrument.isInstanceOf[ErrorInstrument] || instrument.isInstanceOf[DeletedInstrument], "No expiry error: " + instrument)
           null
         }
       }

@@ -158,6 +158,9 @@ case class Environment(
     instrumentLevelEnv.fixing(index, fixingDay)
   }
 
+  def priceOnDay(market: FuturesMarket, period: DateRange, fixingDay: Day) : Quantity = {
+    instrumentLevelEnv.priceOnDay(market, period, fixingDay)
+  }
 
   def priceOnLastTradingDay(market: FuturesMarket, period: DateRange) : Quantity = {
     instrumentLevelEnv.priceOnLastTradingDay(market, period)
