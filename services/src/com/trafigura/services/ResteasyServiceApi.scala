@@ -29,7 +29,7 @@ case class ResteasyServiceApi(baseUri: String) extends ServiceApi {
 object ResteasyServiceApi {
 
   {
-     RuntimeDelegate.setInstance(new ResteasyProviderFactory());
+     //RuntimeDelegate.setInstance(ResteasyProviderFactory.getInstance())
   }
 
   lazy val registerProviderInstance = {

@@ -20,7 +20,6 @@ import javax.security.auth.login.LoginException
 import starling.utils.{StackTraceToString, Log}
 import starling.gui.LocalCacheKeys._
 import starling.daterange.Day
-import starling.auth.{Client, ClientLogin}
 import management.ManagementFactory
 import xstream.GuiStarlingXStream
 import starling.browser._
@@ -35,6 +34,8 @@ import GuiUtils._
 import starling.pivot.utils.PeriodPivotFormatter
 import starling.fc2.api.FC2Service
 import starling.rmi.StarlingServer
+import starling.auth.{Client}
+import starling.auth.internal.{RealClient, ClientLogin}
 
 object StarlingServerNotificationHandlers {
   def notificationHandler = {
@@ -123,9 +124,7 @@ object GuiStart extends Log {
                       publisher: Publisher) {
     val localCacheUpdatePublisher = new scala.swing.Publisher() {}
     publisher.reactions += {
-      case batch:EventBatch => {
-        batch.events.foreach { e => localCacheUpdatePublisher.publish(e) }
-      }
+      case e => onEDT { localCacheUpdatePublisher.publish(e) }
     }
 
     localCacheUpdatePublisher.reactions += {
@@ -264,16 +263,14 @@ object GuiStart extends Log {
   def auth(servicePrincipalName: String): Client = {
     try {
       val subject = new ClientLogin().login
-      new Client(servicePrincipalName, subject)
+      new RealClient(servicePrincipalName, subject)
     } catch {
       case l: LoginException => {
         import starling.utils.Utils._
         os match {
           case Linux => {
             log.error("Failed to initialise kerberos, either it isn't used on this system or the ticket cache is stale (try krenew). Skipping kerberos.")
-            new Client(null, null) {
-              override def ticket = null
-            }
+            Client.Null
           }
           case _: Windows => {
             throw new Exception("Windows: Failed to initialise kerberos for Starling log in.", l)

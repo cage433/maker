@@ -40,7 +40,7 @@ class BrowserBromptonActivator extends BromptonActivator {
       def browserService = context.awaitService(classOf[BrowserService])
     }
 
-    val userDetails = serverContext.browserService.user
+    val userDetails = serverContext.browserService.userDetails
 
     val localCachePublisher = new Publisher() {}
     val pageContextPublisher = new Publisher() {}
@@ -132,27 +132,26 @@ class BrowserBromptonActivator extends BromptonActivator {
           fc.updateNotifications
         }
 
-        localCachePublisher.reactions += {
-          case batch:EventBatch => {
-            bundlesByName.foreach { case (name,bundle) =>
-              bundle.notificationHandlers.foreach { handler => {
-                batch.events.foreach { e =>
-                  handler.handle(e, cache, sendNotification)
-                }
-              } }
-            }
-            batch.events.foreach {
-              case e: BookmarksUpdate if e.user == userDetails.username => {
-                bookmarks = e.bookmarks
-                cacheMap(LocalCache.Bookmarks) = toBookmarks(bookmarks)
-              }
-              case _ =>
-            }
+      localCachePublisher.reactions += {
+        case e:Event => {
+          bundlesByName.foreach { case (name,bundle) =>
+            bundle.notificationHandlers.foreach { handler => {
+              handler.handle(e, cache, sendNotification)
+            } }
           }
-          case GotoPageEvent(p) => onEDT(fc.showNewPage(p))
         }
       }
-    })
+      localCachePublisher.reactions += {
+        case e: BookmarksUpdate if e.user == userDetails.username => {
+          bookmarks = e.bookmarks
+          cacheMap(LocalCache.Bookmarks) = toBookmarks(bookmarks)
+        }
+      }
+      localCachePublisher.reactions += {
+        case GotoPageEvent(p) => onEDT(fc.showNewPage(p))
+      }        
+    } })
+
   }
 
   def stop(context: BromptonContext) {

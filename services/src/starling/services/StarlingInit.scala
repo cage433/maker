@@ -17,7 +17,6 @@ import starling.neptune.{RefinedFixationSystemOfRecord, RefinedFixationTradeStor
 import starling.curves.readers._
 import trade.ExcelTradeReader
 import trinity.{TrinityUploader, XRTGenerator, FCLGenerator}
-import starling.auth.{LdapUserLookup, User, ServerLogin}
 import starling.dbx.ConnectionParams
 import starling.utils.ImplicitConversions._
 import starling.tradeimport.{ClosedDesks, TradeImporterFactory, TradeImporter}
@@ -27,12 +26,11 @@ import starling.trade.TradeSystem
 import starling.reports.pivot.{ReportContextBuilder, ReportService}
 import starling.LIMServer
 import starling.gui.api._
-import starling.bouncyrmi._
+import starling.eai.{Traders, EAIAutoImport, EAIStrategyDB}
 import org.springframework.mail.javamail.JavaMailSenderImpl
 import starling.rmi._
 import starling.calendar._
 import com.trafigura.services.valuation.{ValuationServiceApi, TradeManagementCacheNotReady}
-import org.jboss.netty.channel.{ChannelLocal, Channel}
 import starling.curves.{StarlingMarketLookup, FwdCurveAutoImport, CurveViewer}
 import starling.services.rpc.refdata._
 import starling.services.rabbit._
@@ -40,7 +38,6 @@ import collection.immutable.Map
 import com.trafigura.services.trinity.TrinityService
 import com.trafigura.services.marketdata.{ExampleService, MarketDataServiceApi}
 import starling.fc2.api.FC2Service
-import starling.utils._
 import starling.dbx.DataSourceFactory
 import starling.titan.{TitanTradeCache, TitanSystemOfRecord, TitanTradeStore}
 import java.util.UUID
@@ -49,12 +46,18 @@ import starling.instrument.utils.StarlingXStream
 import java.util.concurrent.{Executors, ConcurrentHashMap}
 import swing.event.Event
 import starling.utils.ClosureUtil._
-import starling.browser.service.{EventBatch, BrowserService, UserLoggedIn, Version}
+import starling.browser.service.{BrowserService, UserLoggedIn, Version}
 import starling.databases.utils.{RabbitBroadcaster, RabbitMessageSender}
+import starling.auth.{AuthHandler, LdapUserLookup, User}
+import starling.auth.internal.KerberosAuthHandler
+import starling.manager.BromptonContext
+import starling.utils._
 import starling.eai.{EAIDealBookMapping, Traders, EAIAutoImport, EAIStrategyDB}
 
 
 class StarlingInit( val props: Props,
+                    authHandler:AuthHandler = AuthHandler.Dev,
+                    rmiBroadcaster:Broadcaster = Broadcaster.Null,
                     dbMigration: Boolean = true,
                     startRMI: Boolean = true,
                     startHttp: Boolean = true,
@@ -66,31 +69,25 @@ class StarlingInit( val props: Props,
                     testMode : Boolean = false
                     ) extends Stopable with Log {
 
-  implicit def enrichBouncyServer(bouncy: BouncyRMIServer[_]) = new {
-    def toStoppable = Stopable(
-      () => {log.info(bouncy.name + " RMI started on port " + bouncy.port); bouncy.start}, () => bouncy.stop())
-  }
-
   private lazy val services = CompositeStopable(
     // Load all user settings, pivot layouts and user reports here to ensure we don't have any de-serialization issues. Do this before anyone can connect.
     true                     → List(Stopable(userSettingsDatabase.readAll _)),
     startRabbit              → List(titanRabbitEventServices),
     startXLLoop              → List(excelLoopReceiver, loopyXLReceiver),
-    startRMI                 → List(rmiServerForTitan.toStoppable, rmiServerForGUI.toStoppable),
     startHttp                → List(httpServer, regressionServer, webServiceServer, trinityService),
     startStarlingJMX         → List(jmx),
     startEAIAutoImportThread → List(eaiAutoImport, fwdCurveAutoImport),
     true                     → List(scheduler, Stopable(stopF = DataSourceFactory.shutdown _))
   )
 
-  override def start = { super.start; services.start }
-  override def stop =  { super.stop;  services.stop  }
+  override def start = { services.start }
+  override def stop =  { services.stop  }
 
   val runtime = Runtime.getRuntime
   log.info("maxMemory %sMB" % (runtime.maxMemory / 1024 / 1024))
 
   val name = props.ServerName()
-  val ldapUserLookup = new LdapUserLookup with BouncyLdapUserLookup[User]
+  val ldapUserLookup = new LdapUserLookup
 
   log.debug("Initializing basic DB connections...")
   val starlingDB = DB(props.StarlingDatabase())
@@ -140,10 +137,11 @@ class StarlingInit( val props: Props,
   log.debug("Completed rabbit start")
 
   val broadcaster = ObservingBroadcaster(new CompositeBroadcaster(
-      true                                      → new RMIBroadcaster(rmiServerForGUI),
       props.rabbitHostSet                       → new RabbitBroadcaster(new RabbitMessageSender(props.RabbitHost())),
       props.EnableVerificationEmails()          → new EmailBroadcaster(mailSender),
-      (startRabbit && props.titanRabbitHostSet) → TitanRabbitIdBroadcaster(titanRabbitEventServices.rabbitEventPublisher)))
+      (startRabbit && props.titanRabbitHostSet) → TitanRabbitIdBroadcaster(titanRabbitEventServices.rabbitEventPublisher),
+      true                                      → rmiBroadcaster
+  ))
 
   val revalSnapshotDb = new RevalSnapshotDB(starlingDB)
   val limServer = new LIMServer(props.LIMHost(), props.LIMPort())
@@ -167,7 +165,7 @@ class StarlingInit( val props: Props,
       //Neptune -> new NeptuneBenchmarksMarketDataSource(neptuneRichDB) I don't want this persisted yet as it is likely to change
     )
 
-    val mds = DBMarketDataStore(props, starlingRichDB, marketDataSources, broadcaster)
+    lazy val mds = DBMarketDataStore(props, starlingRichDB, marketDataSources, broadcaster)
 
     val fwdCurveAutoImport = new FwdCurveAutoImport(60*15, mds, marketDataSources.flatMap {
       case (k, f: FwdCurveDbMarketDataSource) => Some(k)
@@ -284,21 +282,7 @@ class StarlingInit( val props: Props,
 
   val rmiPort = props.RmiPort()
 
-  val users = new ConcurrentHashMap[UUID,User]
-
-  val jmx = new StarlingJMX(users, scheduler)
-
-  val auth:ServerAuthHandler[User] = props.UseAuth() match {
-    case false => {
-      log.warn("Auth disabled")
-      new ServerAuthHandler[User](new NullAuthHandler(Some(User.Dev)), users, ldapUserLookup,
-        user => broadcaster.broadcast(UserLoggedIn(user.name)), ChannelLoggedIn)
-    }
-    case true => {
-      val kerberos = new ServerLogin(props.KerberosPassword())
-      new ServerAuth(kerberos, ldapUserLookup, users, user => broadcaster.broadcast(UserLoggedIn(user.name))).handler
-    }
-  }
+  val jmx = new StarlingJMX(new ConcurrentHashMap[UUID,User], scheduler) //FIXME
 
   def currentUser() = User.currentlyLoggedOn
 
@@ -308,34 +292,10 @@ class StarlingInit( val props: Props,
     new ReportHandler(userReportsService),
     new DiagnosticHandler(starlingServer))
 
-  val loopyXLReceiver = new LoopyXLReceiver(props.LoopyXLPort(), auth,
+  val loopyXLReceiver = new LoopyXLReceiver(props.LoopyXLPort(), authHandler,
     (new CurveHandler(curveViewer, marketDataStore) :: excelLoopReceiver.handlers.toList) : _*)
 
-   val latestTimestamp = if (forceGUICompatability) GUICode.latestTimestamp.toString else BouncyRMI.CodeVersionUndefined
-
-  val browserService = new BrowserServiceImpl(name, version, userSettingsDatabase)
-
-  val rmiServerForGUI:BouncyRMIServer[User] = new BouncyRMIServer(
-    rmiPort,
-    auth, latestTimestamp, users,
-    Set(classOf[UnrecognisedTradeIDException]),
-    ChannelLoggedIn, "GUI",
-    ThreadNamingProxy.proxy(starlingServer, classOf[StarlingServer]),
-    ThreadNamingProxy.proxy(fc2Service, classOf[FC2Service]),
-    ThreadNamingProxy.proxy(browserService, classOf[BrowserService])
-  )
-
-  log.info("Initialize public services for Titan components, service host/port: " + props.ExternalHostname + "/" + props.StarlingServiceRmiPort)
-  val nullHandler = new ServerAuthHandler[User](new NullAuthHandler(Some(User.Dev)), users, ldapUserLookup,
-        user => broadcaster.broadcast(UserLoggedIn(user.name)), ChannelLoggedIn)
-  val rmiServerForTitan : BouncyRMIServer[User] = new BouncyRMIServer(
-    props.StarlingServiceRmiPort(),
-    nullHandler, BouncyRMI.CodeVersionUndefined, users,
-    Set(classOf[TradeManagementCacheNotReady], classOf[IllegalArgumentException]),
-    ChannelLoggedIn, "Titan",
-    ThreadNamingProxy.proxy(valuationService, classOf[ValuationServiceApi]),
-    ThreadNamingProxy.proxy(marketDataService, classOf[MarketDataServiceApi])
-  )
+  val browserService = new BrowserServiceImpl(name, version, userSettingsDatabase, broadcaster)
 
   val eaiAutoImport = new EAIAutoImport(15, starlingRichDB, eaiStarlingRichSqlServerDB, strategyDB, eaiTradeStores, closedDesks, enabledDesks)
 
@@ -369,44 +329,33 @@ class StarlingInit( val props: Props,
     }
   }
 
-  lazy val webServices = List(marketDataService, valuationService, /*DocumentationService, */ExampleService)
+  StarlingWebServices.webServices = List(marketDataService, valuationService, /*DocumentationService, */ExampleService)
   lazy val regressionServer = new RegressionServer(props.RegressionPort(), reportServlet)
 }
 
 class StarlingWebServices extends WebServiceFactory {
-  override val services = Server.server.webServices
+  override val services = {
+    if (StarlingWebServices.webServices == null) {
+      throw new Exception("StarlingWebServices.services has not been initialised")
+    } else {
+      StarlingWebServices.webServices
+    }
+  }
 }
 
-object StarlingInit{
+object StarlingWebServices {
+  var webServices:List[AnyRef] = _
+}
+
+object StarlingInit {
   lazy val devInstance = {
-    new StarlingInit(PropsHelper.defaultProps, true, false, false, false, false, false, false, false).update(_.start)
+    new StarlingInit(PropsHelper.defaultProps, AuthHandler.Dev, Broadcaster.Null, false, false, false, false, false, false, false).update(_.start)
   }
 
   /**
    * defines a test service instance that runs RMI but uses mocked service stubs where appropriate
    */
   lazy val testInstance = {
-    new StarlingInit(PropsHelper.defaultProps, true, true, false, false, false, false, false, false, true).update(_.start)
-  }
-}
-
-object ChannelLoggedIn extends LoggedIn[User,UUID] {
-  private val loggedIn = new ChannelLocal[(User,UUID)]()
-
-  def get(channel: Channel) = loggedIn.get(channel)
-  def set(channel: Channel, user: User, id:UUID) = loggedIn.set(channel, (user,id))
-  def remove(channel: Channel) = loggedIn.remove(channel)
-  def setLoggedOn(user: Option[User]) {
-    User.setLoggedOn(user)
-  }
-}
-
-
-class RMIBroadcaster(rmiServer0: => BouncyRMIServer[User]) extends Broadcaster {
-  lazy val executor = Executors.newCachedThreadPool()
-  lazy val rmiServer = rmiServer0
-
-  def broadcast(event: Event) = if (!event.isInstanceOf[RabbitEvent] && rmiServer != null) {
-    executor.execute { rmiServer.publish(EventBatch(List(event))) }
+    new StarlingInit(PropsHelper.defaultProps, AuthHandler.Dev, Broadcaster.Null, true, true, false, false, false, false, false, false, true).update(_.start)
   }
 }

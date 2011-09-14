@@ -5,28 +5,29 @@ import java.nio.channels.ClosedChannelException
 import org.jboss.netty.handler.ssl.SslHandler
 import org.jboss.netty.channel.group.{ChannelGroupFuture, ChannelGroupFutureListener, DefaultChannelGroup}
 import org.jboss.netty.util.HashedWheelTimer
-import java.net.InetSocketAddress;
-import java.util.concurrent.Executors;
+
+
 import org.jboss.netty.bootstrap.ServerBootstrap;
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
-import org.jboss.netty.channel.ChannelFuture;
-import org.jboss.netty.channel.ChannelFutureListener;
-import org.jboss.netty.channel.ChannelHandlerContext;
-import org.jboss.netty.channel.ChannelStateEvent;
-import org.jboss.netty.channel.ExceptionEvent;
-import org.jboss.netty.channel.MessageEvent;
-import org.jboss.netty.channel.SimpleChannelUpstreamHandler;
 
 import java.lang.reflect.InvocationTargetException
 import collection.mutable.HashMap
 import java.util.UUID
+import starling.auth.{AuthHandler, User}
+import java.util.concurrent.{ConcurrentHashMap, Executors}
+import org.jboss.netty.channel._
+import java.net.{URL, InetSocketAddress}
+import java.lang.ThreadLocal
+import starling.utils.ThreadNaming
 
+class BouncyRMIServer(val port: Int, auth: AuthHandler, version: String, knownExceptionClasses:Set[String]) {
 
-class BouncyRMIServer[User](val port: Int, authHandler: ServerAuthHandler[User], version: String, users:java.util.Map[UUID,User],
-                            knownExceptionClasses:Set[Class[_]], loggedIn: LoggedIn[User,UUID], val name: String, serverContexts: AnyRef*) {
+  val users:java.util.Map[UUID,User] = new java.util.concurrent.ConcurrentHashMap[UUID,User]()
+
+  val authHandler = new ServerAuthHandler(auth, users)
 
   lazy val serverTimer = new HashedWheelTimer
-  private val serverContextsMap = new HashMap[String, AnyRef]
+  private val serverContextsMap = new ConcurrentHashMap[String, AnyRef]
   
   class Binding {
     val group = new DefaultChannelGroup("server")
@@ -98,15 +99,20 @@ class BouncyRMIServer[User](val port: Int, authHandler: ServerAuthHandler[User],
     serverTimer.stop
   }
 
+  def addInstance(klass:String, instance:AnyRef) {
+    serverContextsMap.put(klass, instance)
+  }
+
+  def removeInstance(klass:String) {
+    serverContextsMap.remove(klass)
+  }
+
   def getServerContext(declaringClassName: String): AnyRef = {
-    def findAssignableContext = {
-      val declaringClass = Class.forName(declaringClassName)
-
-      serverContexts.find(context => declaringClass.isAssignableFrom(context.getClass))
-        .getOrElse(throw new Exception("Unknown service: " + declaringClassName))
+    val instance = serverContextsMap.get(declaringClassName)
+    if (instance == null) {
+      throw new Exception("No instance of type " + declaringClassName + " found " + serverContextsMap.keySet())
     }
-
-    serverContextsMap.getOrElseUpdate(declaringClassName, findAssignableContext)
+    instance
   }
 
   class ServerHandler(group: DefaultChannelGroup) extends SimpleChannelUpstreamHandler {
@@ -129,11 +135,11 @@ class BouncyRMIServer[User](val port: Int, authHandler: ServerAuthHandler[User],
     }
 
     override def channelDisconnected(ctx: ChannelHandlerContext, e: ChannelStateEvent) {
-      val user = loggedIn.get(e.getChannel)
+      val user = ChannelLoggedIn.get(e.getChannel)
       Logger.info("Server: Client disconnected: " + e.getChannel.getRemoteAddress + " (" + user._1 + ")")
       users.remove(user._2)
       group.remove(e.getChannel)
-      loggedIn.remove(e.getChannel)
+      ChannelLoggedIn.remove(e.getChannel)
     }
 
     override def messageReceived(ctx: ChannelHandlerContext, e: MessageEvent) {
@@ -162,16 +168,13 @@ class BouncyRMIServer[User](val port: Int, authHandler: ServerAuthHandler[User],
           if (clientVersion != version) {
             write(MethodInvocationBadVersion(id, version))
           } else {
-            val buffer = new StringBuilder
-            val paramClasses = params.map(classForNameWithPrimitiveCheck(_))
-
             def makeExceptionForClient(t : Throwable) : MethodInvocationException = {
               // No way currently of knowing whether the exception contains
               // objects outside the modules the client knows about.
               // This might be fixable when we rename our packages to starling.module....
 
               // We want to pass through certain exceptions that we know are on the gui class path because we match on them.
-              if (knownExceptionClasses.contains(t.getClass)) {
+              if (knownExceptionClasses.contains(t.getClass.getName)) {
                 MethodInvocationException(id, t)
               } else {
                 val exceptionWithoutStarlingData = new Exception(t.getClass + "\n" + t.getMessage)
@@ -182,12 +185,16 @@ class BouncyRMIServer[User](val port: Int, authHandler: ServerAuthHandler[User],
 
             val result = try {
               val serverContext = getServerContext(declaringClassName)
-
-              val method = serverContext.asInstanceOf[AnyRef].getClass.getMethod(name, paramClasses: _*)
+              val serverContextClass = serverContext.asInstanceOf[AnyRef].getClass
+              val paramClasses = params.map(classForNameWithPrimitiveCheck(serverContextClass.getClassLoader, _))
+              val method = serverContextClass.getMethod(name, paramClasses: _*)
               StdOut.setTee(line => e.getChannel.write(StdOutMessage(id, line)))
-              val r = method.invoke(serverContext, args: _ *)
+              val decodedArgs = args.map( arg => BouncyRMI.decode(serverContextClass.getClassLoader, arg))
+              val r = ThreadNaming.withNamedThread(declaringClassName+"#"+method.getName) {
+                method.invoke(serverContext, decodedArgs: _ *)
+              }
               StdOut.reset
-              MethodInvocationResult(id, r)
+              MethodInvocationResult(id, BouncyRMI.encode(r))
             } catch {
               case e: InvocationTargetException => {
                 e.getCause.printStackTrace()
@@ -208,7 +215,7 @@ class BouncyRMIServer[User](val port: Int, authHandler: ServerAuthHandler[User],
       }
     }
 
-    private def classForNameWithPrimitiveCheck(className: String): Class[_] = {
+    private def classForNameWithPrimitiveCheck(classLoader:ClassLoader, className: String): Class[_] = {
       className match {
         case "int" => java.lang.Integer.TYPE
         case "double" => java.lang.Double.TYPE
@@ -218,7 +225,7 @@ class BouncyRMIServer[User](val port: Int, authHandler: ServerAuthHandler[User],
         case "short" => java.lang.Short.TYPE
         case "char" => java.lang.Character.TYPE
         case "byte" => java.lang.Byte.TYPE
-        case _ => Class.forName(className)
+        case _ => classLoader.loadClass(className)
       }
     }
 
@@ -252,3 +259,24 @@ class BouncyRMIServer[User](val port: Int, authHandler: ServerAuthHandler[User],
     }
   }
 }
+
+//abstract class DeligatingClassLoader extends ClassLoader {
+//    def deligate:ClassLoader
+//    override def loadClass(name: String) = deligate.loadClass(name)
+//    override def loadClass(name: String, resolve: Boolean) = deligate.loadClass(name, resolve)
+//    override def findClass(name: String) = deligate.findClass(name)
+//    override def getResource(name: String) = deligate.getResource(name)
+//    override def getResources(name: String) = getResources(name)
+//    override def findResource(name: String) = findResource(name)
+//    override def findResources(name: String) = findResources(name)
+//    override def getResourceAsStream(name: String) = getResourceAsStream(name)
+//    override def definePackage(name: String, specTitle: String, specVersion: String, specVendor: String, implTitle: String, implVersion: String, implVendor: String, sealBase: URL) =
+//      deligate.definePackage(name, specTitle, specVersion, specVendor, implTitle, implVersion, implVendor, sealBase)
+//    override def getPackage(name: String) = deligate.getPackage(name)
+//    override def getPackages = deligate.getPackages
+//    override def findLibrary(libname: String) = deligate.findLibrary(libname)
+//    override def setDefaultAssertionStatus(enabled: Boolean) { deligate.setDefaultAssertionStatus(enabled) }
+//    override def setPackageAssertionStatus(packageName: String, enabled: Boolean) { deligate.setPackageAssertionStatus(packageName, enabled) }
+//    override def setClassAssertionStatus(className: String, enabled: Boolean) { deligate.setClassAssertionStatus(className, enabled) }
+//    override def clearAssertionStatus() { deligate.clearAssertionStatus()}
+//  }

@@ -18,18 +18,25 @@ import starling.manager._
 import swing.Publisher
 import org.osgi.util.tracker.{ServiceTrackerCustomizer, ServiceTracker => OSGIServiceTracker, BundleTracker, BundleTrackerCustomizer}
 import java.util.concurrent.{CountDownLatch, ConcurrentHashMap}
+import swing.event.Event
+import starling.utils.{Receiver, Broadcaster, ReceiversBroadcaster}
+import collection.JavaConversions
+
+trait PropsService {
+  def updated(props:Dictionary[String,String])
+}
 
 class OsgiManager
 
 class BundleHandle(var holder:Option[BundleActivatorHolder])
 
 class BromptonOSGIActivator extends OSGIBundleActivator {
-  private val config = false
   var bundleTracker:BundleTracker = _
   var props:Option[Props] = None
   def start(context:OSGIBundleContext) {
     val latch = context.getService(context.getServiceReference(classOf[CountDownLatch].getName)).asInstanceOf[CountDownLatch]
     import Bundle._
+
     bundleTracker = new BundleTracker(context, UNINSTALLED|INSTALLED|RESOLVED|STARTING|STOPPING|ACTIVE, new BundleTrackerCustomizer() {
       private def createHolder(bundle:Bundle) = {
         val activatorName = bundle.getHeaders.get("Brompton-Activator").asInstanceOf[String]
@@ -74,58 +81,35 @@ class BromptonOSGIActivator extends OSGIBundleActivator {
       def removedBundle(bundle:Bundle, event:BundleEvent, obj:Object) {
       }
     })
-    val propsService = new ManagedService() {
-      var firstCall = true
-      def updated(propsD:Dictionary[_,_]) {
-        val propsMap = if (propsD == null) Map[String,String]() else Util.dictionaryToMap[String,String](propsD)
-        props match {
-          case None => {
-            props = Some(new Props(propsMap))
-              bundleTracker.open()
-          }
-          case Some(p) => {
-            props = Some(new Props(propsMap))
-            bundleTracker.getBundles.foreach { bundle => {
-              bundleTracker.getObject(bundle) match {
-                case None => //Skip
-                case holder:BundleActivatorHolder => holder.props(props.get)
-              }
-            } }
-          }
-        }
+    val propsService = new PropsService() {
+      def updated(updatedProps:Dictionary[String,String]) {
+        props = Some(new Props(Util.dictionaryToMap(updatedProps)))
+        bundleTracker.open
       }
     }
-    context.addFrameworkListener(new FrameworkListener() {
-      def frameworkEvent(event:FrameworkEvent) {
-        println("Event " + event)
-        if (event.getThrowable != null) {
-          event.getThrowable.printStackTrace()
-        }
+    context.registerService(classOf[PropsService].getName, propsService, null)
+
+    val broadcaster = new ReceiversBroadcaster()
+    val receiverTracker = new OSGIServiceTracker(context, classOf[Receiver].getName, new ServiceTrackerCustomizer {
+      def addingService(ref: ServiceReference) = {
+        val receiver = context.getService(ref).asInstanceOf[Receiver]
+        broadcaster.addReceiver(ref, receiver)
+        "KEEP"
+      }
+      def modifiedService(ref: ServiceReference, x: AnyRef) {}
+      def removedService(ref: ServiceReference, x: AnyRef) {
+        broadcaster.removeReceiver(ref)
       }
     })
-    if (config) {
-      val admin = context.getService(context.getServiceReference(classOf[ConfigurationAdmin].getName)).asInstanceOf[ConfigurationAdmin]
-      val webConfig = admin.getConfiguration("org.ops4j.pax.web")
-      val propsConfig = admin.getConfiguration("props")
-      val p = new Properties()
-      p.load(new FileInputStream(new File("props.conf")))
-      propsConfig.update(p)
-      println("Setting http port")
-      webConfig.update(Util.mapToDictionary(Map("org.osgi.service.http.port" -> "9999")))
-      val managedServiceProperties = new Hashtable[String,String]()
-      managedServiceProperties.put(Constants.SERVICE_PID, "props")
-      context.registerService(classOf[ManagedService].getName, propsService, managedServiceProperties)
-    } else {
-      propsService.updated(Props.readDefault)
-    }
+    receiverTracker.open()
+    context.registerService(classOf[Broadcaster].getName, broadcaster, null)
   }
 
   def stop(context:OSGIBundleContext) {
     if (bundleTracker != null) {
       bundleTracker.getBundles.foreach { bundle =>
         bundleTracker.getObject(bundle) match {
-          case None =>
-          case holder:BundleActivatorHolder => holder.stop
+          case handle:BundleHandle => handle.holder.map(_.stop)
         }
       }
       bundleTracker.close()
@@ -180,17 +164,22 @@ class ServiceProxy[T](context:OSGIBundleContext, klass:Class[T], properties:List
         }
       }).asInstanceOf[T]
 }
-class ServiceTracker(context:OSGIBundleContext, klass:Class[_], properties:List[ServiceProperty], tracker:BromptonServiceTracker) {
-  private val osgiTracker:OSGIServiceTracker = new OSGIServiceTracker(context, klass.getName, new ServiceTrackerCustomizer {
+class ServiceTracker(context:OSGIBundleContext, klass:Option[Class[_]], properties:List[ServiceProperty], tracker:BromptonServiceTracker) {
+
+  val filters = klass.map(k => "(objectClass="+k.getName+")").toList ::: properties.map { sp => "("+sp.name+"="+sp.value+")"}
+  val filter = context.createFilter(filters.head)
+  private val osgiTracker:OSGIServiceTracker = new OSGIServiceTracker(context, filter, new ServiceTrackerCustomizer {
     def addingService(ref: ServiceReference) = {
+      val klassNames = ref.getProperty(Constants.OBJECTCLASS).asInstanceOf[Array[String]].toList
       val service = context.getService(ref)
-      println("Classloader of addingserice " + ref + " is " + service.getClass.getClassLoader)
-      tracker.serviceAdded(BromptonServiceReference(ref.toString), service)
+      println("Classloader of addingserice " + ref + " " + klassNames.toList)
+      tracker.serviceAdded(BromptonServiceReference(ref.toString, klassNames), service)
       osgiTracker.addingService(ref)
     }
 
     def removedService(ref: ServiceReference, x: AnyRef) {
-      tracker.serviceRemoved(BromptonServiceReference(ref.toString))
+      val klassNames = ref.getProperty(Constants.OBJECTCLASS).asInstanceOf[Array[String]].toList
+      tracker.serviceRemoved(BromptonServiceReference(ref.toString, klassNames))
     }
 
     def modifiedService(ref: ServiceReference, x: AnyRef) {
@@ -208,7 +197,7 @@ class OSGIBromptonContext(val context:OSGIBundleContext) extends BromptonContext
     r
   }
   def createServiceTracker(klass:Option[Class[_]], properties:List[ServiceProperty], tracker:BromptonServiceTracker) {
-    new ServiceTracker(context, klass.getOrElse(classOf[Object]), properties, tracker)
+    new ServiceTracker(context, klass, properties, tracker)
   }
   def awaitService[T](klass:Class[T]):T = {
     val myProxy = new ServiceProxy(context, klass, Nil)

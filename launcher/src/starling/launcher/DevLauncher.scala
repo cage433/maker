@@ -1,17 +1,16 @@
 package starling.launcher
 
 import starling.http.GUICode
-import starling.services.Server
-import starling.bouncyrmi.BouncyRMI
 import starling.props.{PropsHelper, Props}
 import java.net.{BindException, ServerSocket}
 import starling.api.utils.PropertiesMapBuilder
+import starling.startserver.Server
 
 object DevLauncher {
   def main(args:Array[String]) {
     System.setProperty("log4j.configuration", "utils/resources/log4j.properties")
     val props = propsWithUnusedPort()
-    Server.run(props, args)
+    Server.run()
     //System.setProperty(BouncyRMI.CodeVersionKey, GUICode.latestTimestamp.toString())
     Launcher.start(props.ExternalHostname(), props.RmiPort(), props.ServerPrincipalName())
   }
@@ -57,7 +56,7 @@ object DevRMILauncher {
   def main(args:Array[String]) {
     System.setProperty("log4j.configuration", "utils/resources/log4j.properties")
     val props = PropsHelper.defaultProps
-    System.setProperty(BouncyRMI.CodeVersionKey, GUICode.latestTimestamp.toString())
+    System.setProperty("starling.codeversion.timestamp", GUICode.latestTimestamp.toString())
     Launcher.start(props.ExternalHostname(), props.RmiPort(), props.ServerPrincipalName())
   }
 }

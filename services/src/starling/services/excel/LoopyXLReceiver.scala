@@ -3,17 +3,16 @@ package starling.services.excel
 import starling.loopyxl._
 import java.net.{Socket, ServerSocket}
 import java.util.concurrent.atomic.AtomicInteger
-import starling.bouncyrmi.AuthHandler
-import starling.auth.User
 import starling.utils._
 
 import starling.utils.ImplicitConversions._
 import LoopyXL._
 import MessageType._
 import ClosureUtil._
+import starling.auth.{AuthHandler, User}
 
 
-class LoopyXLReceiver(port : Int, authHandler: AuthHandler[User], owners: AnyRef*) extends StoppableThread(isRunning =>
+class LoopyXLReceiver(port : Int, authHandler: AuthHandler, owners: AnyRef*) extends StoppableThread(isRunning =>
   Log.infoF("LoopyXLReceiver started listening on port: " + port) {
     val id = new AtomicInteger();
     val methodSource = new ReflectiveMethodSource(owners : _*)

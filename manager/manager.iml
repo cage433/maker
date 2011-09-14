@@ -21,16 +21,16 @@
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="library" name="scala-lib" level="project" />
+    <orderEntry type="library" name="scala-swing-lib" level="project" />
     <orderEntry type="module-library">
       <library>
         <CLASSES>
-          <root url="jar://$MODULE_DIR$/lib/cglib-nodep-2.2.jar!/" />
+          <root url="jar://$MODULE_DIR$/lib_managed/cglib-nodep-jar-2.2.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />
       </library>
     </orderEntry>
-    <orderEntry type="library" name="scala-swing-lib" level="project" />
   </component>
 </module>
 

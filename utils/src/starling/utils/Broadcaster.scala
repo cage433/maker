@@ -14,9 +14,30 @@ trait Broadcaster {
   def broadcast(event: Event)
 }
 
+trait Receiver {
+  def event(event: Event)
+}
+
 object Broadcaster {
   val Null = new Broadcaster() { def broadcast(event: Event) {} }
 }
+
+class ReceiversBroadcaster extends Broadcaster {
+  val receivers = new java.util.concurrent.ConcurrentHashMap[AnyRef,Receiver]()
+  def addReceiver(ref:AnyRef, receiver:Receiver) {
+    receivers.put(ref, receiver)
+  }
+  def removeReceiver(ref:AnyRef) {
+    receivers.remove(ref)
+  }
+  def broadcast(event: Event) = {
+    import JavaConversions._
+    receivers.values().iterator().foreach { receiver => {
+      receiver.event(event)
+    }}
+  }
+}
+
 
 class CompositeBroadcaster(broadcasters: (Boolean, Broadcaster)*) extends Broadcaster {
   private val enabledBroadcasters = broadcasters.filter(_._1).map(_._2)

@@ -1,7 +1,6 @@
 package starling.services.excel
 
 import util.Random
-import starling.bouncyrmi.NullAuthHandler
 import starling.utils.ClosureUtil._
 import starling.utils.ImplicitConversions._
 import java.net.Socket
@@ -9,7 +8,7 @@ import java.io.InputStream
 import starling.loopyxl.LoopyXL.MessageType
 import starling.loopyxl.{MethodImplementation, LoopyXL}
 import scala.collection.JavaConversions._
-
+import starling.auth.{AuthHandler}
 
 object LoopyXLReceiverTests {
   def main(args: Array[String]) {
@@ -17,7 +16,7 @@ object LoopyXLReceiverTests {
 
     val port = 1024 + ((Random.nextInt() % 6400) * 10).abs + 5
 
-    using (new LoopyXLReceiver(port, new NullAuthHandler(None), new MethodImplementation)) { receiver => {
+    using (new LoopyXLReceiver(port, AuthHandler.Never, new MethodImplementation)) { receiver => {
       receiver.start
 
       Range(1, 250).map(i => receiveMethods(port)).map(_.close)

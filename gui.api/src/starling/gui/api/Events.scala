@@ -23,6 +23,7 @@ case class PricingGroupObservationDay(pricingGroup:PricingGroup, day:Day) extend
 case class PivotLayoutUpdate(user:String, userLayouts:List[PivotLayout]) extends Event
 case class ExcelMarketListUpdate(values:List[String]) extends Event
 case class ExcelMarketDataUpdate(name:String, version:Int) extends Event
+case class TestEvent(text:String) extends Event
 
 object PricingGroupMarketDataUpdate {
   def matching(pricingGroupOption : Option[PricingGroup]) : PartialFunction[Event, PricingGroupMarketDataUpdate] = {

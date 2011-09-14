@@ -24,7 +24,6 @@
     <orderEntry type="library" name="scala-lib" level="project" />
     <orderEntry type="module" module-name="auth" />
     <orderEntry type="module" module-name="utils" exported="" />
-    <orderEntry type="module" module-name="bouncyrmi" />
     <orderEntry type="module-library" exported="">
       <library>
         <CLASSES>

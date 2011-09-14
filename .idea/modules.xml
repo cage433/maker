@@ -29,6 +29,8 @@
       <module fileurl="file://$PROJECT_DIR$/singleclasspathmanager/singleclasspathmanager.iml" filepath="$PROJECT_DIR$/singleclasspathmanager/singleclasspathmanager.iml" />
       <module fileurl="file://$PROJECT_DIR$/starling.iml" filepath="$PROJECT_DIR$/starling.iml" />
       <module fileurl="file://$PROJECT_DIR$/starling.api/starling.api.iml" filepath="$PROJECT_DIR$/starling.api/starling.api.iml" />
+      <module fileurl="file://$PROJECT_DIR$/starling.client/starling.client.iml" filepath="$PROJECT_DIR$/starling.client/starling.client.iml" />
+      <module fileurl="file://$PROJECT_DIR$/startserver/startserver.iml" filepath="$PROJECT_DIR$/startserver/startserver.iml" />
       <module fileurl="file://$PROJECT_DIR$/titan/titan.iml" filepath="$PROJECT_DIR$/titan/titan.iml" />
       <module fileurl="file://$PROJECT_DIR$/trade/trade.iml" filepath="$PROJECT_DIR$/trade/trade.iml" />
       <module fileurl="file://$PROJECT_DIR$/utils/utils.iml" filepath="$PROJECT_DIR$/utils/utils.iml" />

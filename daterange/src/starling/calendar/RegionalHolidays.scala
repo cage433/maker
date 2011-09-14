@@ -8,7 +8,7 @@ trait RegionalHolidays extends HolidayTables {
 
   private def days(name: String) = {
     val resource = "/starling/calendar/" + name
-    val days = StringIO.readStringFromResource(resource).split('\n').map(Day.parse).toSet
+    val days = StringIO.readStringFromResource(classOf[RegionalHolidays], resource).split('\n').map(Day.parse).toSet
     days
   }
 

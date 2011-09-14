@@ -3,7 +3,7 @@ package starling.browser.internal
 import collection.mutable.ArrayBuffer
 import starling.browser._
 import osgi.BundleAdded
-import service.{BookmarkLabel, EventBatch}
+import service.{BookmarkLabel}
 import starling.browser.common._
 import java.util.concurrent.{CountDownLatch, ThreadFactory, Executors}
 import scala.swing.Swing._
@@ -11,8 +11,9 @@ import java.awt.image.BufferedImage
 import org.jdesktop.animation.timing.{TimingTargetAdapter, Animator}
 import scala.ref.SoftReference
 import net.miginfocom.swing.MigLayout
-import scala.swing.event.{MouseClicked, ButtonClicked, UIElementResized}
 import swing._
+import event.{Event, MouseClicked, ButtonClicked, UIElementResized}
+import java.awt.event.{ActionListener, ActionEvent, InputEvent, KeyEvent}
 import javax.swing.{JComponent, AbstractAction, KeyStroke, JPanel, JPopupMenu, Timer, ImageIcon}
 import java.awt.{RenderingHints, Graphics, Color, KeyboardFocusManager, Graphics2D, Component => AWTComp}
 import java.lang.reflect.UndeclaredThrowableException
@@ -107,27 +108,28 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
       }
       publisherForPageContext.publish(e)
     }
-    case EventBatch(events) => {
-      events.foreach { e => publisherForPageContext.publish(e) }
+    case e:Event => {
+      publisherForPageContext.publish(e)
 
-      val currentPageInfo = history(current)
-      updateRefreshState(currentPageInfo)
-      
-      if ((current >= 0) && (current < history.length)) {
-        if (currentPageInfo.refreshPage.isDefined) {
-          if (autoRefresh.isDefined) {
-            val autoRefresh0 = autoRefresh.get
-            autoRefresh = None
-            refresh(lockAndUnlockScreen=false, latch = Some(autoRefresh0))
-          } else if (liveUpdateCheckbox.selected) {
-            refresh()
-          } else {
-            refreshAction.enabled = true
+      if (history.nonEmpty) {
+        val currentPageInfo = history(current)
+        updateRefreshState(currentPageInfo)
+
+        if ((current >= 0) && (current < history.length)) {
+          if (currentPageInfo.refreshPage.isDefined) {
+            if (autoRefresh.isDefined) {
+              val autoRefresh0 = autoRefresh.get
+              autoRefresh = None
+              refresh(lockAndUnlockScreen=false, latch = Some(autoRefresh0))
+            } else if (liveUpdateCheckbox.selected) {
+              refresh()
+            } else {
+              refreshButton.enabled = true
+            }
           }
         }
       }
     }
-    case e@UserSettingUpdated(_) => publisherForPageContext.publish(e)
   }
   listenTo(pageBuilder.remotePublisher)
 

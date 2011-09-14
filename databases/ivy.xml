@@ -12,6 +12,8 @@
     <dependency org="org.springframework" name="spring-tx" rev="${spring_version}" />
     <dependency org="org.springframework" name="spring-core" rev="${spring_version}" />
     <dependency org="org.springframework" name="spring-beans" rev="${spring_version}" />
+   <!-- <dependency org="org.springframework" name="spring-context" rev="${spring_version}" /> --><!-- not really needed, osgi thinks it is -->
+   <!-- <dependency org="org.springframework" name="spring-context-support" rev="${spring_version}" /> --><!-- not really needed, osgi thinks it is -->
   </dependencies>
 </ivy-module>
 

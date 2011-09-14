@@ -41,7 +41,7 @@
         <SOURCES />
       </library>
     </orderEntry>
-    <orderEntry type="library" name="scala-swing-lib" level="project" />
+    <orderEntry type="library" exported="" name="scala-swing-lib" level="project" />
     <orderEntry type="module-library" exported="">
       <library>
         <CLASSES>

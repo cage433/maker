@@ -1,4 +1,4 @@
-package starling.auth
+package starling.auth.internal
 
 import java.util.Properties
 import javax.security.auth.Subject
@@ -10,7 +10,7 @@ import starling.utils.{StringIO, Log}
 import sun.misc.BASE64Decoder
 import java.io.File
 
-class ServerLogin(password: String) {
+private[internal] class ServerLogin(password: String) {
   Kerberos.init
   
   def login: Subject = {
@@ -20,7 +20,7 @@ class ServerLogin(password: String) {
   }
 }
 
-class Server {
+private [internal] object Server {
 
   /**
    * Verifies the service ticket in the given subject.
@@ -52,18 +52,17 @@ class Server {
 }
 
 
-object ServerLogin {
+private [internal] object ServerLogin {
   def main(args: Array[String]) {
     println(Kerberos.krb5Oid)
     val subject = new ServerLogin("suvmerinWiv0").login
-    val server = new Server
     val ticket = StringIO.readStringFromFile(new File("ticket"))
     val decoder: BASE64Decoder = new BASE64Decoder
-    server.verify(subject, decoder.decodeBuffer(ticket))
+    Server.verify(subject, decoder.decodeBuffer(ticket))
   }
 }
 
-class LoginCallbackHandler(password: String) extends CallbackHandler {
+private [internal] class LoginCallbackHandler(password: String) extends CallbackHandler {
   def handle(callbacks: Array[Callback]): Unit = {
     for (callback <- callbacks) callback match {
       case pc: PasswordCallback => pc.setPassword(password.toCharArray)

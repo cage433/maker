@@ -21,9 +21,8 @@ import starling.daterange.{Day, TimeOfDay}
 import collection.immutable.TreeSet
 
 class GuiBromptonProps {
-  def serverHostname:String = "localhost"
-
-  def rmiPort:Int = 8881
+  def serverRmiHost:String = "localhost"
+  def serverRmiPort:Int = throw new Exception("There is no default server rmi port")
   def principalName:String = "STARLING-TEST/dave-linux"
 }
 class GuiBromptonActivator extends BromptonActivator {
@@ -38,8 +37,8 @@ class GuiBromptonActivator extends BromptonActivator {
   def init(context: BromptonContext, props: GuiBromptonProps) {
 
     System.setProperty(BouncyRMI.CodeVersionKey, BouncyRMI.CodeVersionUndefined)
-    client = new BouncyRMIClient(props.serverHostname, props.rmiPort, GuiStart.auth(props.principalName), classLoader=getClass.getClassLoader)
-    client.startBlocking()
+    client = new BouncyRMIClient(props.serverRmiHost, props.serverRmiPort, GuiStart.auth(props.principalName))
+    client.startBlocking
     val starlingServer = client.proxy(classOf[StarlingServer])
     starlingServer.storeSystemInfo(GuiStart.systemInfo)
 

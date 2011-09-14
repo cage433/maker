@@ -8,11 +8,12 @@ import starling.curves.readers.RefinedMetalsLimMarketDataSource
 import starling.db.DBMarketDataStore
 import starling.db.MarketDataSet._
 import starling.services.utils.RegressionRunner
+import starling.auth.AuthHandler
 import starling.utils.Broadcaster
 
 object RefinedMetalsLimMarketDataSourceTests {
   def main(args:Array[String]) {
-    val init = new StarlingInit(PropsHelper.defaultProps, false, false, false, false)
+    val init = new StarlingInit(PropsHelper.defaultProps, AuthHandler.Dev, Broadcaster.Null, false, false, false, false)
 
 //    val x: Map[PriceFixingsHistoryDataKey, List[CommodityMarket]] = Market.markets.groupBy(PriceFixingsHistoryDataKey.apply(_))
 //    x.foreach { case (key, values) => {
@@ -49,7 +50,7 @@ object RefinedMetalsLimMarketDataSourceTests {
 
 object LimLiborMarketDataSourceTests {
   def main(args: Array[String]) {
-    val init = new StarlingInit(PropsHelper.defaultProps, false, false, false, false)
+    val init = new StarlingInit(PropsHelper.defaultProps, AuthHandler.Dev, Broadcaster.Null, false, false, false, false)
 
 //    val source = new LimLiborMarketDataSource(new LIMServer("ttraflonrh221", 6400))
 //    source.read(20 Apr 2011).foreach(println)
