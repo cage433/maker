@@ -70,7 +70,7 @@ class NewSchemaMdDBTest extends TestNGSuite with Checkers with Log {
   lazy val newSchemaMdDB = new NewSchemaMdDB(db)
   lazy val slowMdDB = new SlowMdDB(db)
 
-  @BeforeTest
+//  @BeforeTest
   def initialise() = try {
     val init = new StarlingInit(PropsHelper.defaultProps)
 //    Class.forName("net.sourceforge.jtds.jdbc.Driver")
@@ -82,7 +82,7 @@ class NewSchemaMdDBTest extends TestNGSuite with Checkers with Log {
     case e => println("initialisation died: "); e.printStackTrace; throw e
   }
 
-  @AfterTest
+//  @AfterTest
   def tearDown() = {
     val b = true
 
@@ -105,7 +105,7 @@ class NewSchemaMdDBTest extends TestNGSuite with Checkers with Log {
     assertList(fast, slow, "MarketDataSet names")
   }
 
-  @Test
+//  @Test
   def testObservationDaysByMarketDataSet {
     val slow = slowMdDB.observationDaysByMarketDataSet
     val fast = newSchemaMdDB.observationDaysByMarketDataSet
@@ -161,7 +161,7 @@ class NewSchemaMdDBTest extends TestNGSuite with Checkers with Log {
     assertMap(fast, slow, "Latest versions for market data sets")
   }
 
-  @Test(enabled = false) // I don't see the point of this test, commitId does not == version
+//  @Test(enabled = false) // I don't see the point of this test, commitId does not == version
   def testMaxVersionForMarketDataSetNames() = {
     // test one at a time
     val mdSetNames = newSchemaMdDB.marketDataSetNames().filter(n => n.startsWith(MarketDataSet.excelPrefix))
