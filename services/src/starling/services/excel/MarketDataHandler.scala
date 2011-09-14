@@ -389,7 +389,10 @@ class MarketDataHandler(broadcaster : Broadcaster,
       case SpreadParse(s) => {
         s: SpreadPeriod
       }
+      case DateRange(m: Month) if !spreadMarket => new SpreadPeriod(m, m.next)
+      case DateRange(m: Month) if spreadMarket => m: DateRangePeriod
       case "null" => throw new Exception("Range includes empty cells")
+      case p => throw new Exception("Unrecognised period: " + p)
     }
     val atmIndex = headers.indexOf("atm")
     val callIndex = headers.indexOf("call")
