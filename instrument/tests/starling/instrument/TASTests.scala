@@ -27,7 +27,7 @@ class TASTests extends TestMarketTest {
   }
 
   @Test
-  def test() {
+  def testNoValueBeforeMaturityAndLikeFutureAfterMaturity() {
 
     val ltd = market.lastTradingDay(period)
 

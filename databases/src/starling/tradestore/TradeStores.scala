@@ -34,11 +34,10 @@ case class TradeStores(
   def all = eaiTradeStores.values.toList ::: List(intradayTradeStore, refinedAssignmentTradeStore, refinedFixationTradeStore, titanTradeStore)
 
   private def eaiDesk(desk: Desk) = {
-    val bookID = desk.deskInfo.get.asInstanceOf[EAIDeskInfo].book
     desk -> new DeskDefinition() {
       def tradeSets(predicate: TradePredicate) = List(
         new TradeSet(EAITradeSystem, eaiStoreFor(desk), tradeImporters.get(EAITradeSystem),
-          predicate.addFilter(Field("Book"), Set(TreeID(bookID))))
+          predicate.addFilter(Field("Desk"), Set(desk.name)))
       )
       override def initialState = Some(PivotFieldsState(
         dataFields=List( Field("Trade Count") ),
@@ -90,6 +89,7 @@ case class TradeStores(
     val currentGroups = intradayTradeStore.intradayLatest.keySet
     val intradayTradesetsAndTimestamps = tradeSelection.intradaySubgroupAndTimestamp.toList.flatMap {
       case (subgroups, ts) => {
+
         val subgroupsToUse = subgroups.subgroups.flatMap(subgroup => {
           if (currentGroups.contains(subgroup)) {
             List(subgroup)
@@ -98,8 +98,8 @@ case class TradeStores(
           }
         })
         val predicate = tradeSelection.deskAndTimestamp.toList.flatMap {
-          case (Desk(_, _, Some(info:EAIDeskInfo)), tradeTimestamp) => {
-            List((Field("Entry Date"), GreaterThanSelection(tradeTimestamp.closeDay)), (Field("BookID"), SomeSelection(Set(info.book))))
+          case (desk, tradeTimestamp) => {
+            List((Field("Entry Date"), GreaterThanSelection(tradeTimestamp.closeDay)), (Field("Desk"), SomeSelection(Set(desk.name))))
           }
         }:::List((Field(IntradayTradeAttributes.subgroupName_str), SomeSelection(subgroupsToUse.toSet)))
 

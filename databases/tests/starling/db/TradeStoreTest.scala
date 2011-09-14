@@ -62,9 +62,9 @@ class EAITradeStoreTest extends TestMarketTest {
     when(eAIStrategyDB.pathFor(any(classOf[TreeID]))) thenReturn PivotTreePath("test [54418]")
     when(eAIStrategyDB.getStrategyFromDealId(any(classOf[TreeID]))) thenReturn Some(TreeID(54418))
 
-    val store = new EAITradeStore(db, broadcaster, eAIStrategyDB, Desk("test", Nil, Some(EAIDeskInfo(2))))
+    val store = new EAITradeStore(db, broadcaster, eAIStrategyDB, Desk.GasolineSpec)
 
-    val attr = EAITradeAttributes(TreeID(1), TreeID(2), TreeID(3), "trader", "tradedfor", "broker", "clearinghouse")
+    val attr = EAITradeAttributes(TreeID(1), TreeID(149), TreeID(3), "trader", "tradedfor", "broker", "clearinghouse")
 
     val trade1a = Trade(TradeID(1, EAITradeSystem), Day.today, "cp", attr, ErrorInstrument("error1"))
     val trade2a = Trade(TradeID(2, EAITradeSystem), Day.today, "cp", attr, CommoditySwap.sample)

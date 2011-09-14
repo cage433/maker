@@ -15,6 +15,7 @@ import starling.gui.api.{EAIDeskInfo, Desk}
 
 object EAITradeStore {
   val bookID_col = "Book ID"
+  val desk_str = "Desk"
   val dealID_str = "Deal ID"
   val trader_str = "Trader"
   val tradedFor_str = "Traded For"
@@ -30,6 +31,7 @@ case class EAITradeAttributes(strategyID: TreeID, bookID: TreeID, dealID: TreeID
   require(tradedFor != null)
   require(broker != null)
   require(clearingHouse != null)
+  lazy val desk = Desk.eaiDeskFromID(bookID.id).getOrElse(throw new Exception("Invalid book id: " + bookID.id))
 
   import EAITradeStore._
   def details = Map(
@@ -43,7 +45,7 @@ case class EAITradeAttributes(strategyID: TreeID, bookID: TreeID, dealID: TreeID
   )
 
   override def createFieldValues = Map(
-    Field("Book") -> bookID,
+    Field(desk_str) -> desk.name,
     //Strategy is intentionally excluded as it needs to hold the path, not just the id, so it is added in #joiningTradeAttributeFieldValues
     Field(dealID_str) -> dealID,
     Field(trader_str) -> trader,
@@ -83,7 +85,7 @@ class EAITradeStore(db: RichDB, broadcaster:Broadcaster, eaiStrategyDB:EAIStrate
   override val tradeAttributeFieldDetails = {
     import EAITradeStore._
     List(
-      FieldDetails("Book"), //Would like to hide this
+      FieldDetails(desk_str),
       new StrategyFieldDetails(new ExternalSortIndexPivotTreePathOrdering(eaiStrategyDB)),
       FieldDetails(dealID_str),
       FieldDetails(trader_str),
