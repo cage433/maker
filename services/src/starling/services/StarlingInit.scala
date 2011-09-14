@@ -148,7 +148,7 @@ class StarlingInit( val props: Props,
   val revalSnapshotDb = new RevalSnapshotDB(starlingDB)
   val limServer = new LIMServer(props.LIMHost(), props.LIMPort())
 
-  val (fwdCurveAutoImport, marketDataStore) = log.infoWithTime("Creating Market Data Store") {
+  lazy val (fwdCurveAutoImport, marketDataStore) = log.infoWithTime("Creating Market Data Store") {
     import MarketDataSet._
 
     val marketDataSources = Map(
