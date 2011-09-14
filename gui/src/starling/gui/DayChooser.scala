@@ -103,6 +103,7 @@ class DayChooser(day0:Day = Day.today, enableFlags:Boolean = true, showDay:Boole
         } else {
           0
         }
+        monthView.firstDisplayedDay = day
         popupMenu.show(peer, xPos, size.height-1)
         onEDT({
           KeyboardFocusManager.getCurrentKeyboardFocusManager.focusNextComponent(popupMenu)
