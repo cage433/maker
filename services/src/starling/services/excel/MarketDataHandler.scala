@@ -44,10 +44,11 @@ class MarketDataHandler(broadcaster : Broadcaster,
       "Range with the header row as a set of deltas from the ATM strike."))
   def uploadVols(excel: String,
                  observationDate: Object,
-                 marketStr: String,
+                 _marketStr: String,
                  doubleDates: Array[Double],
                  deltas: Array[Array[Object]]): String = {
 
+    val marketStr = _marketStr.trim
     val observationPoint = ObservationPoint.parse(observationDate)
 
     // TODO [07 Jan 2011] remove hard-coded months - needs to get base tenor from "market"
@@ -186,8 +187,8 @@ class MarketDataHandler(broadcaster : Broadcaster,
     val allPrices: Map[MarketDataKey, PriceData] = {
       if (header.toList.map(_.toString.toLowerCase) == List("market", "period", "price")) {
         val pricesByMarket = data.tail.flatMap { row =>
-          val marketName = row(0).asInstanceOf[String]
-          if (!marketName.trim.isEmpty) {
+          val marketName = row(0).asInstanceOf[String].trim
+          if (!marketName.isEmpty) {
             val market = Market.fromName(marketName)
             val period = objectToDateRange(observationPoint, row(1), market.tenor).getOrElse(throw new Exception("Can't parse " + row(1)))
             val price = row(2).asInstanceOf[Double]
@@ -205,7 +206,7 @@ class MarketDataHandler(broadcaster : Broadcaster,
         val prices = data.tail
         (for ((marketName, index) <- markets.zipWithIndex
               if marketName != null && marketName.isInstanceOf[String] && !marketName.toString.trim().isEmpty) yield {
-          val marketStr = marketName.asInstanceOf[String]
+          val marketStr = marketName.asInstanceOf[String].trim
           val market = ExcelInstrumentReader.commodityMarketOption(marketStr) match {
             case Some(m) => m
             case None => Market.fromName(marketName.asInstanceOf[String])
@@ -249,7 +250,7 @@ class MarketDataHandler(broadcaster : Broadcaster,
 
     assert(label.nonEmpty, "Can't have an empty label for the market data")
     val observationPoint = ObservationPoint.parse(observationDate)
-    val market = Market.fromName(marketName)
+    val market = Market.fromName(marketName.trim)
     val joinedPriceRange: Array[Array[Object]] = if (optionalPrices == null || optionalPrices.size == 0) {
       requiredPrices
     } else {
@@ -371,7 +372,7 @@ class MarketDataHandler(broadcaster : Broadcaster,
     val standardDeviations = _standardDeviations.tail.zipWithIndex.filterNot{case (_, i) => missingRows.contains(i)}.map(_._1)
 
     val observationPoint = ObservationPoint.parse(observationDate)
-    val (market, spreadMarket) = ExcelInstrumentReader.marketOption(marketName) match {
+    val (market, spreadMarket) = ExcelInstrumentReader.marketOption(marketName.trim) match {
       case Some(m: FuturesSpreadMarket) => (m, true)
       case Some(m: FuturesMarket) => (m, false)
       case None => throw new Exception("Invalid market: " + marketName)
