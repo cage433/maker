@@ -10,7 +10,7 @@ import starling.utils.{Receiver, Log, Broadcaster, ThreadNaming}
 //UnrecognisedTradeIDException
 class BouncyRMIServerProps {
   def rmiPort:Int = 15715
-  def starlingServiceRmiPort:Int = 112234
+  def starlingServiceRmiPort:Int = 11223
 }
 
 class BouncyRMIServerBromptonActivator extends BromptonActivator {
