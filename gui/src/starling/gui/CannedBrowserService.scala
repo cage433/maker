@@ -59,7 +59,7 @@ case class CannedHomePage() extends CannedPage {
 }
 
 object CannedHomePagePageComponent {
-  val icon = StarlingIcons.im("/icons/stock_chart-reorganize.png")
+  val icon = StarlingIcons.im("/icons/32x32_trades.png")
   def buttons = {
     PageButton("Run", CannedPivotReportPage(PivotPageState(false, PivotFieldParams(true, None))), icon, Some(KeyStroke.getKeyStroke(KeyEvent.VK_R,0))) ::
     PageButton("Run Editable", EditableCannedPivotReportPage(PivotPageState(false, PivotFieldParams(true, None))), icon, Some(KeyStroke.getKeyStroke(KeyEvent.VK_E,0))) ::
