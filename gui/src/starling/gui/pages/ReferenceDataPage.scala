@@ -2,13 +2,10 @@ package starling.gui.pages
 
 import starling.gui._
 import api.ReferenceDataLabel
-import swing.Swing._
-import java.awt.image.BufferedImage
-import java.awt.{Cursor, Color, Dimension}
-import swing.event.{MouseExited, MouseEntered, MouseClicked}
+import java.awt.{Color, Dimension}
 import javax.swing.{KeyStroke, JComponent}
 import java.awt.event.KeyEvent
-import swing.{Action, Label}
+import swing.Action
 import starling.pivot.{PivotEdits, PivotFieldParams}
 import starling.browser.common._
 import starling.browser._
@@ -39,7 +36,7 @@ class ReferenceDataIndexPageComponent(context:PageContext, pageData:PageData) ex
       }
       val shouldSkip2 = (table.name.toLowerCase.trim == "calendars")
       val numberString = (index + 1).toString + "."
-      def gotoPage(modifiers:Modifiers) = context.goTo(ReferenceDataPage(table, PivotPageState(false, PivotFieldParams(true, None))), modifiers)
+      def gotoPage(modifiers:Modifiers) {context.goTo(ReferenceDataPage(table, PivotPageState(false, PivotFieldParams(true, None))), modifiers)}
       val tableButton = new NumberedButton(table.name, imageToUse,
         gotoPage,
         number = Some(numberString))

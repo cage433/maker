@@ -1,7 +1,6 @@
 package starling.browser.common
 
 import java.awt.image.BufferedImage
-import swing.Swing._
 import swing.Label
 import java.awt.{Color, Cursor}
 import swing.event.{MouseExited, MouseEntered, MouseClicked}
