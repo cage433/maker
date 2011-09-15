@@ -12,7 +12,6 @@ import starling.services.rpc.refdata.FileMockedTitanServices
 import starling.titan.LogisticsServices._
 import starling.titan._
 import starling.services.rpc.FileUtils
-import com.trafigura.edm.trades.{Trade => EdmTrade}
 import org.codehaus.jettison.json.JSONObject
 
 /**

@@ -2,6 +2,7 @@ package starling.client
 
 import com.trafigura.services.valuation.ValuationServiceApi
 
+
 /**
  * Test main to check service operation and RMI etc
  */
