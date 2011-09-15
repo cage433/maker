@@ -24,8 +24,9 @@ case object ReferenceDataIndexPage extends StarlingServerPage {
   def createComponent(context: PageContext, data: PageData, bookmark:Bookmark, browserSize:Dimension, previousPageData:Option[PreviousPageData]) = {new ReferenceDataIndexPageComponent(context, data)}
 }
 
-class ReferenceDataIndexPageComponent(context:PageContext, pageData:PageData) extends MigPanel("insets dialog") with PageComponent {
+class ReferenceDataIndexPageComponent(context:PageContext, pageData:PageData) extends MigPanel("insets " + GuiUtils.StartPageInsets) with PageComponent {
   val data = pageData match {case d:ReferenceDataIndexPageData => d}
+  background = Color.WHITE
 
   val c = new StripedPanel("insets 0", "[grow][p][p][p][grow]", "[grow][p][p][p][p][grow 150]") {
     val calendarImage = StarlingIcons.im("/icons/32x32_calendar.png")

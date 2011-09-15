@@ -8,9 +8,11 @@ import swing.event.{MouseExited, MouseEntered, MouseClicked}
 import starling.browser.Modifiers
 
 class NumberedButton(text:String, image:BufferedImage, buttonClicked:(Modifiers) => Unit, useBlueText:Boolean=true,
-                          number:Option[String]=None, tooltip0:Option[String]=None) extends MigPanel with RoundedBackground {
+                          number:Option[String]=None, tooltip0:Option[String]=None,
+                          backgroundColour:Color=GuiUtils.TaskPageButtonBackgroundColour,
+                          backgroundOverColour:Color=GuiUtils.TaskPageButtonOverBackgroundColour) extends MigPanel with RoundedBackground {
 
-  background = GuiUtils.TaskPageButtonBackgroundColour
+  background = backgroundColour
   border = RoundedBorder(GuiUtils.TaskPageButtonBorderColour)
   cursor = Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)
   tooltip0.map(tt => tooltip = tt)
@@ -46,10 +48,10 @@ class NumberedButton(text:String, image:BufferedImage, buttonClicked:(Modifiers)
   reactions += {
     case MouseClicked(_,_,k,_,_) if enabled => {
       buttonClicked(Modifiers.modifiersEX(k))
-      background = GuiUtils.TaskPageButtonBackgroundColour
+      background = backgroundColour
     }
-    case MouseEntered(_,_,_) if enabled => {background = GuiUtils.TaskPageButtonOverBackgroundColour}
-    case MouseExited(_,_,_) if enabled => {background = GuiUtils.TaskPageButtonBackgroundColour}
+    case MouseEntered(_,_,_) if enabled => {background = backgroundOverColour}
+    case MouseExited(_,_,_) if enabled => {background = backgroundColour}
   }
   listenTo(mouse.clicks, mouse.moves)
 }

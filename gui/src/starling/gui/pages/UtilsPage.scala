@@ -1,14 +1,13 @@
 package starling.gui.pages
 
 import starling.gui._
-import java.awt.{Dimension}
 import javax.swing.{JComponent, KeyStroke}
 import java.awt.event.KeyEvent
-import starling.browser.common.{NumberedButton, StripedPanel, MigPanel}
 import starling.browser.internal.RunAsUserPage
 import starling.browser._
+import common.{GuiUtils, NumberedButton, StripedPanel, MigPanel}
 import swing._
-import event.{ButtonClicked, Event}
+import java.awt.{Color, Dimension}
 
 case class UtilsPage() extends StarlingServerPage {
   def text = "Utils"
@@ -17,7 +16,8 @@ case class UtilsPage() extends StarlingServerPage {
   def createComponent(context:PageContext, data:PageData, bookmark:Bookmark, browserSize:Dimension, previousPageData:Option[PreviousPageData]) = new UtilsPageComponent(context)
 }
 
-class UtilsPageComponent(context:PageContext) extends MigPanel("insets dialog") with PageComponent {
+class UtilsPageComponent(context:PageContext) extends MigPanel("insets " + GuiUtils.StartPageInsets) with PageComponent {
+  background = Color.WHITE
   val c = new StripedPanel("insets 0", "[grow][p][grow]", "[grow][p][grow 150]") {
     val statsImage = StarlingIcons.im("/icons/32x32_stats.png")
     val userStatsString = "1."

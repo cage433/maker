@@ -15,7 +15,8 @@ case class UserDetailsPage(user:User) extends StarlingServerPage {
   def createComponent(context:PageContext, data:PageData, bookmark:Bookmark, browserSize:Dimension, previousPageData:Option[PreviousPageData]) = new UserDetailsPageComponent(context:PageContext, user:User)
 }
 
-class UserDetailsPageComponent(context:PageContext, user:User) extends MigPanel("insets dialog") with PageComponent {
+class UserDetailsPageComponent(context:PageContext, user:User) extends MigPanel("insets " + GuiUtils.StartPageInsets) with PageComponent {
+  background = Color.WHITE
   val c = new StripedPanel("insets 0", "push[" + GuiUtils.StandardLeftIndent + "][p]unrel[p]push", "push[p]unrel[p][p][p][p]push[p]") {
     def titleLabel(text0:String) = new Label {
       text = text0
