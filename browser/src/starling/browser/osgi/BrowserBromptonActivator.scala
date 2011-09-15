@@ -15,8 +15,8 @@ import swing.event.Event
 import java.io.{File, FileInputStream}
 import java.util.{Hashtable, Properties}
 
-case class BundleAdded(bundle:BrowserBundle) extends Event
-case class BundleRemoved(bundle:BrowserBundle) extends Event
+case class BundleAdded(bundle:BrowserBundle) extends StarlingEvent
+case class BundleRemoved(bundle:BrowserBundle) extends StarlingEvent
 
 class BrowserPropsFoo
 class BrowserBromptonActivator extends BromptonActivator {
@@ -148,7 +148,7 @@ class BrowserBromptonActivator extends BromptonActivator {
         }
       }
       localCachePublisher.reactions += {
-        case GotoPageEvent(p) => onEDT(fc.showNewPage(p))
+        case GotoPageEvent(p) => fc.showNewPage(p)
       }        
     } })
 

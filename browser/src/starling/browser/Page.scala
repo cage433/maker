@@ -4,7 +4,7 @@ import common.{MigPanel, GuiUtils}
 import internal._
 import java.awt.image.BufferedImage
 import service.internal.HeterogeneousMap
-import service.{UserDetails, BrowserService, Version}
+import service.{StarlingEvent, UserDetails, BrowserService, Version}
 import swing.event.Event
 import javax.swing.border.Border
 import java.awt.{Graphics2D, Dimension}
@@ -43,7 +43,7 @@ trait Bookmark {
   def createPage(day:Option[BrowserDay], serverContext:ServerContext, context:PageContext):Page
 }
 
-case class UserSettingUpdated(key:Key[_]) extends Event
+case class UserSettingUpdated(key:Key[_]) extends StarlingEvent
 
 case class BookmarkData(name:String, bookmark:Option[Bookmark])
 

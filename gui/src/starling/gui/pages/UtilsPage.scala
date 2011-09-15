@@ -1,14 +1,13 @@
 package starling.gui.pages
 
 import starling.gui._
-import java.awt.{Dimension}
 import javax.swing.{JComponent, KeyStroke}
 import java.awt.event.KeyEvent
-import starling.browser.common.{NumberedButton, StripedPanel, MigPanel}
 import starling.browser.internal.RunAsUserPage
 import starling.browser._
+import common.{GuiUtils, NumberedButton, StripedPanel, MigPanel}
 import swing._
-import event.{ButtonClicked, Event}
+import java.awt.{Color, Dimension}
 
 case class UtilsPage() extends StarlingServerPage {
   def text = "Utils"
@@ -17,7 +16,8 @@ case class UtilsPage() extends StarlingServerPage {
   def createComponent(context:PageContext, data:PageData, bookmark:Bookmark, browserSize:Dimension, previousPageData:Option[PreviousPageData]) = new UtilsPageComponent(context)
 }
 
-class UtilsPageComponent(context:PageContext) extends MigPanel("insets dialog") with PageComponent {
+class UtilsPageComponent(context:PageContext) extends MigPanel("insets " + GuiUtils.StartPageInsets) with PageComponent {
+  background = Color.WHITE
   val c = new StripedPanel("insets 0", "[grow][p][grow]", "[grow][p][grow 150]") {
     val statsImage = StarlingIcons.im("/icons/32x32_stats.png")
     val userStatsString = "1."
@@ -49,36 +49,25 @@ class UtilsPageComponent(context:PageContext) extends MigPanel("insets dialog") 
             put(KeyStroke.getKeyStroke(KeyEvent.VK_3, 0), cannedPageString)
     UtilsPageComponent.this.peer.getActionMap.put(cannedPageString, Action(cannedPageString){gotoCannedPage(Modifiers.None)}.peer)
 
-    add(statsButton, "split, newline, skip1, sg")
-    add(runAsUserButton, "sg")
-    add(cannedPageButton, "sg")
+    def gotoEventViewerPage(modifiers:Modifiers) {
+      context.goTo(EventViewerPage())
+    }
+    val eventViewerString = "4"
+    val eventViewerImage = StarlingIcons.im("/icons/32x32_event.png")
+    val eventViewerButton = new NumberedButton("Event Viewer", eventViewerImage, (mods) => gotoEventViewerPage(mods), number = Some(eventViewerString))
+    UtilsPageComponent.this.peer.getInputMap(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT).
+            put(KeyStroke.getKeyStroke(KeyEvent.VK_4, 0), eventViewerString)
+    UtilsPageComponent.this.peer.getActionMap.put(eventViewerString, Action(eventViewerString){gotoEventViewerPage(Modifiers.None)}.peer)
 
-    val eventsArea = new TextArea() {
-      editable = false
+    val buttonHolder = new MigPanel("insets 0") {
+      opaque = false
+      add(statsButton, "sg")
+      add(runAsUserButton, "sg")
+      add(cannedPageButton, "sg")
+      add(eventViewerButton, "sg")
     }
 
-    val sendEventButton = new Button("Send Event") {
-      reactions += { case ButtonClicked(_) => context.submit(new SubmitRequest[Unit]() {
-        def baseSubmit(serverContext: ServerContext) = {
-          serverContext.browserService.testEvent()
-        }
-      })}
-    }
-    val clearButton = new Button("Clear") {
-      reactions += { case ButtonClicked(_) => eventsArea.text = "" }
-    }
-
-    add(sendEventButton, "sg")
-    add(clearButton, "sg")
-    add(new Label("Remote Events"), "sg")
-    add(eventsArea, "sg")
-    val myPublisher = new Publisher() {}
-    myPublisher.listenTo(context.remotePublisher)
-    myPublisher.reactions += {
-      case event:Event => {
-        eventsArea.append( event.toString + "\n")
-      }
-    }
+    add(buttonHolder, "newline, skip1")
   }
   add(c, "push, grow")
 }

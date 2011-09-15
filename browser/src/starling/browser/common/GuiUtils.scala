@@ -149,6 +149,8 @@ object GuiUtils {
   lazy val BorderColour = UIManager.getColor("controlDkShadow")
   lazy val DisabledComboBackground = UIManager.getColor("ComboBox.disabledBackground")
 
+  val StartPageInsets = "20lp"
+
   def setLookAndFeel() {
     PlatformDefaults.setPlatform(PlatformDefaults.GNOME)
     PlasticLookAndFeel.setTabStyle(PlasticLookAndFeel.TAB_STYLE_METAL_VALUE)

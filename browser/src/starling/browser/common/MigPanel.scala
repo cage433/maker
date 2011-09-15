@@ -11,6 +11,8 @@ import javax.swing._
 import swing.event.{MouseExited, MouseEntered, MouseClicked}
 import GuiUtils._
 import org.jdesktop.swingx.painter.{ImagePainter, PinstripePainter, Painter}
+import java.awt.geom.RoundRectangle2D
+import java.awt.geom.RoundRectangle2D.Float
 
 class MigPanel(layoutConstraints:String = "", columnConstraints:String = "", rowConstraints:String = "")
         extends Panel with SequentialContainer.Wrapper {
@@ -39,10 +41,28 @@ class MigXPanel (layoutConstraints:String="", columnConstraints:String="", rowCo
   def backgroundPainter_=(painter:Painter[_]) {peer.setBackgroundPainter(painter)}
 }
 
+trait RoundedBackground extends Component {
+  override protected def paintComponent(g:Graphics2D) {
+    val w = size.width - 2
+    val h = size.height - 1
+    val oldClip = g.getClip
+    val newClip = new RoundRectangle2D.Float(1.0f, 0.0f, w.toFloat, h.toFloat, 4.0f, 4.0f)
+    val overrideClip = !newClip.contains(oldClip.asInstanceOf[Rectangle])
+    if (overrideClip) {
+      g.setClip(newClip)
+    }
+    super.paintComponent(g)
+    if (overrideClip) {
+      g.setClip(oldClip)
+    }
+  }
+}
+
 class StripedPanel(layoutConstraints:String = "", columnConstraints:String = "", rowConstraints:String = "")
-        extends MigXPanel(layoutConstraints, columnConstraints, rowConstraints) {
+        extends MigXPanel(layoutConstraints, columnConstraints, rowConstraints) with RoundedBackground {
   background = GuiUtils.TaskPageBackgroundColour
   backgroundPainter = new PinstripePainter(Color.WHITE, 0.0, 0.5, 10.0)
+  border = RoundedBorder(GuiUtils.TaskPageButtonBorderColour)
 }
 
 class FixedImagePanel(var image0:BufferedImage) extends MigXPanel("insets 0") {

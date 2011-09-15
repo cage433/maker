@@ -1,9 +1,7 @@
 package starling.browser.internal.HomePage
 
-import scala.swing.Swing._
 import java.awt.{Font, Color, Dimension, Cursor}
 import java.awt.event.KeyEvent
-import org.jdesktop.swingx.painter.{CompoundPainter, GlossPainter}
 import scala.swing._
 import swing.event._
 import javax.swing.{JComponent, KeyStroke}
@@ -32,9 +30,9 @@ case class HomePagePageData(version:Version) extends PageData
 class StarlingHomePageComponent(context:PageContext, browserSize:Dimension, pageData:PageData) extends MigPanel("insets 0") with PageComponent {
   private val data = pageData match {case d:HomePagePageData => {d}}
 
-  private val bookmarksPanel = new BookmarksPanel(context)
+  private val bookmarksPanel = new BookmarksPanel(context) with RoundedBackground
   bookmarksPanel.background = GuiUtils.TaskPageButtonBackgroundColour
-  bookmarksPanel.border = LineBorder(GuiUtils.TaskPageButtonBorderColour)
+  bookmarksPanel.border = RoundedBorder(GuiUtils.TaskPageButtonBorderColour)
   val componentsBkColour = new Color(228, 231, 246)
   bookmarksPanel.bookmarksListView.background = componentsBkColour
   bookmarksPanel.dayPicker.background = componentsBkColour
@@ -53,9 +51,9 @@ class StarlingHomePageComponent(context:PageContext, browserSize:Dimension, page
     }
   }
 
-  private val versionPanel = new MigPanel("") {
-    border = LineBorder(GuiUtils.TaskPageButtonBorderColour)
-    background = GuiUtils.TaskPageButtonBackgroundColour
+  private val versionPanel = new MigPanel("") with RoundedBackground {
+    border = RoundedBorder(GuiUtils.TaskPageButtonBorderColour)
+    background = new Color(0,0,0,32)
 
     val ver = data.version
     if (ver.production) {
@@ -83,24 +81,23 @@ class StarlingHomePageComponent(context:PageContext, browserSize:Dimension, page
   }
 
   val c = new MigPanel("insets 0", "[grow,fill]", "[p]0[grow,fill]") {
-    val banner = new MigXPanel("insets 0", "[p][p][p]push[p]") {
-      background = GuiUtils.BannerColour
-      val gp = new GlossPainter
-      val sp = StripedCornerPainter(new Color(0,0,200))
-      backgroundPainter = new CompoundPainter(sp,gp)
 
-      val logoImage = BrowserIcons.im("/icons/small_sunny_bird2.png")
+    val banner = new MigPanel("insets 0", "[p][p]push[p]") {
+      background = Color.WHITE
+
+      val logoImage = BrowserIcons.im("/icons/small_sunny_bird3.png")
       val logo = new FixedImagePanel(logoImage)
 
-      val nameLabel = new Label {
-        text = "Starling"
-        font = new Font("Lucida Sans", Font.PLAIN, 30)
-      }
-      val welcomeLabel = new Label {
-        text = "W E L C O M E !"
+      val starlingLabel = new Label {
+        text = "S T A R L I N G"
         font = new Font("Dialog", Font.BOLD, 60)
-        foreground = new Color(255,221,138)
+        foreground = Color.BLACK
+        maximumSize = new Dimension(Integer.MAX_VALUE, preferredSize.height-20)
       }
+      val descLabel = new Label("Decision Support Engine") {
+        font = font.deriveFont(15.0f)
+      }
+
       val userImage = BrowserIcons.im("/icons/32x32_user_dark.png")
       val userButton = new NumberedButton(context.localCache.currentFullName, userImage,
         modifiers => {
@@ -110,16 +107,22 @@ class StarlingHomePageComponent(context:PageContext, browserSize:Dimension, page
             case page :: Nil => context.goTo(page, modifiers)
             case many => throw new Exception("There is more than one user page: " + many)
           }
-        }, false)
+        }, false, backgroundColour = Color.WHITE, backgroundOverColour = new Color(0,0,0,32))
       userButton.label.font = new Font("Serif", Font.PLAIN, 20)
 
+      val namePanel = new MigPanel("insets 0", rowConstraints = "[p]0[p]") {
+        background = Color.WHITE
+        add(starlingLabel, "wrap")
+        add(descLabel, "al right")
+      }
+
       add(logo)
-      add(nameLabel, "ay bottom, gapbottom 5lp")
-      add(welcomeLabel, "ay center, gapleft 20lp")
-      add(userButton, "ay center, gapright " + GuiUtils.StandardLeftIndent)
+      add(namePanel, "ay center, gapleft 35lp")
+      add(userButton, "ay center, gapright 20lp")
     }
 
-    val actionsPanelHolder = new MigPanel("insets dialog") {
+    val actionsPanelHolder = new MigPanel("insets 0 " + GuiUtils.StartPageInsets) {
+      background = Color.WHITE
       val actionsPanel = new StripedPanel("insets 0", "[grow][p][grow]", "[grow][p][p][grow 150][p]") {
 
         val helpLabelHolder = new MigPanel {

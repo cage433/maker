@@ -124,7 +124,7 @@ object GuiStart extends Log {
                       publisher: Publisher) {
     val localCacheUpdatePublisher = new scala.swing.Publisher() {}
     publisher.reactions += {
-      case e => onEDT { localCacheUpdatePublisher.publish(e) }
+      case e => localCacheUpdatePublisher.publish(e)
     }
 
     localCacheUpdatePublisher.reactions += {
