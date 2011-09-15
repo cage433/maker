@@ -148,7 +148,7 @@ case class DefaultTitanLogisticsInventoryCache(props : Props) extends TitanLogis
     case e : Throwable => throw new ExternalTitanServiceFailed(e)
   }
   private def getById(id : Int) = try {
-    titanLogisticsServices.inventoryService.service.getInventoryById(id)
+    titanLogisticsServices.inventoryService.service.getInventoryById(id).associatedInventory.head
   } catch {
     case e : Throwable => throw new ExternalTitanServiceFailed(e)
   }
@@ -219,7 +219,7 @@ case class TitanLogisticsServiceBasedInventoryCache(titanLogisticsServices : Tit
       inventoryMap(id)
     }
     else {
-      val item = titanLogisticsServices.inventoryService.service.getInventoryById(id.toInt)
+      val item = titanLogisticsServices.inventoryService.service.getInventoryById(id.toInt).associatedInventory.head
       inventoryMap += item.oid.contents.toString -> item
       inventoryMap(id)
     }

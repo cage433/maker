@@ -269,7 +269,10 @@ object TitanTradeAttributes{
  */
 object LogisticsServices {
   type EdmAssignmentServiceWithGetAllAssignments = EdmAssignmentService with Object { def getAllAssignments() : List[EDMAssignment] }
-  type EdmInventoryServiceWithGetAllInventory = EdmInventoryService with Object { def getAllInventoryLeaves() : List[EDMInventoryItem] }
+  type EdmInventoryServiceWithGetAllInventory = EdmInventoryService with Object {
+    def getAllInventoryLeaves() : List[EDMInventoryItem]
+    def getAllInventory() : LogisticsInventoryResponse
+  }
 }
 
 import LogisticsServices._
