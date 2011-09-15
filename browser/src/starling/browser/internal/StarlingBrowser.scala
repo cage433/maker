@@ -3,7 +3,7 @@ package starling.browser.internal
 import collection.mutable.ArrayBuffer
 import starling.browser._
 import osgi.BundleAdded
-import service.{BookmarkLabel}
+import service.{StarlingEvent, BookmarkLabel}
 import starling.browser.common._
 import java.util.concurrent.{CountDownLatch, ThreadFactory, Executors}
 import scala.swing.Swing._
@@ -108,7 +108,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
       }
       publisherForPageContext.publish(e)
     }
-    case e:Event => {
+    case e:StarlingEvent => {
       publisherForPageContext.publish(e)
 
       if (history.nonEmpty) {
@@ -124,7 +124,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
             } else if (liveUpdateCheckbox.selected) {
               refresh()
             } else {
-              refreshButton.enabled = true
+              refreshAction.enabled = true
             }
           }
         }

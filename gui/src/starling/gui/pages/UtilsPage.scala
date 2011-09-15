@@ -49,36 +49,25 @@ class UtilsPageComponent(context:PageContext) extends MigPanel("insets dialog") 
             put(KeyStroke.getKeyStroke(KeyEvent.VK_3, 0), cannedPageString)
     UtilsPageComponent.this.peer.getActionMap.put(cannedPageString, Action(cannedPageString){gotoCannedPage(Modifiers.None)}.peer)
 
-    add(statsButton, "split, newline, skip1, sg")
-    add(runAsUserButton, "sg")
-    add(cannedPageButton, "sg")
+    def gotoEventViewerPage(modifiers:Modifiers) {
+      context.goTo(EventViewerPage())
+    }
+    val eventViewerString = "4"
+    val eventViewerImage = StarlingIcons.im("/icons/32x32_event.png")
+    val eventViewerButton = new NumberedButton("Event Viewer", eventViewerImage, (mods) => gotoEventViewerPage(mods), number = Some(eventViewerString))
+    UtilsPageComponent.this.peer.getInputMap(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT).
+            put(KeyStroke.getKeyStroke(KeyEvent.VK_4, 0), eventViewerString)
+    UtilsPageComponent.this.peer.getActionMap.put(eventViewerString, Action(eventViewerString){gotoEventViewerPage(Modifiers.None)}.peer)
 
-    val eventsArea = new TextArea() {
-      editable = false
+    val buttonHolder = new MigPanel("insets 0") {
+      opaque = false
+      add(statsButton, "sg")
+      add(runAsUserButton, "sg")
+      add(cannedPageButton, "sg")
+      add(eventViewerButton, "sg")
     }
 
-    val sendEventButton = new Button("Send Event") {
-      reactions += { case ButtonClicked(_) => context.submit(new SubmitRequest[Unit]() {
-        def baseSubmit(serverContext: ServerContext) = {
-          serverContext.browserService.testEvent()
-        }
-      })}
-    }
-    val clearButton = new Button("Clear") {
-      reactions += { case ButtonClicked(_) => eventsArea.text = "" }
-    }
-
-    add(sendEventButton, "sg")
-    add(clearButton, "sg")
-    add(new Label("Remote Events"), "sg")
-    add(eventsArea, "sg")
-    val myPublisher = new Publisher() {}
-    myPublisher.listenTo(context.remotePublisher)
-    myPublisher.reactions += {
-      case event:Event => {
-        eventsArea.append( event.toString + "\n")
-      }
-    }
+    add(buttonHolder, "newline, skip1")
   }
   add(c, "push, grow")
 }

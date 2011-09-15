@@ -4,6 +4,7 @@ import internal.Notification
 import service.internal.HeterogeneousMap
 import java.awt.image.BufferedImage
 import javax.swing.{ImageIcon, KeyStroke}
+import service.StarlingEvent
 import swing.{Publisher, Component}
 import swing.event.Event
 
@@ -46,4 +47,4 @@ trait BrowserBundle {
   def notificationHandlers:List[NotificationHook] = Nil
 }
 
-case class GotoPageEvent(page:Page) extends Event
+case class GotoPageEvent(page:Page) extends StarlingEvent

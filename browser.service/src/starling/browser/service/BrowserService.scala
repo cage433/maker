@@ -1,12 +1,10 @@
 package starling.browser.service
 
-import scala.swing.event.Event
-
 case class UserSettingsEntry(bundle:String, key:String, value:String)
 case class UserSettingsLabel(userSettings:List[UserSettingsEntry])
 case class BookmarkLabel(name:String, bundleName:String, bookmark:String)
 case class PageLogInfo(text:String,shortText:String,pageString:String, time:java.util.Date)
-case class UserLoggedIn(user:String) extends Event
+case class UserLoggedIn(user:String) extends StarlingEvent
 case class UserDetails(username:String, fullName:String)
 
 trait BrowserService {

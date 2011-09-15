@@ -32,9 +32,9 @@ case class HomePagePageData(version:Version) extends PageData
 class StarlingHomePageComponent(context:PageContext, browserSize:Dimension, pageData:PageData) extends MigPanel("insets 0") with PageComponent {
   private val data = pageData match {case d:HomePagePageData => {d}}
 
-  private val bookmarksPanel = new BookmarksPanel(context)
+  private val bookmarksPanel = new BookmarksPanel(context) with RoundedBackground
   bookmarksPanel.background = GuiUtils.TaskPageButtonBackgroundColour
-  bookmarksPanel.border = LineBorder(GuiUtils.TaskPageButtonBorderColour)
+  bookmarksPanel.border = RoundedBorder(GuiUtils.TaskPageButtonBorderColour)
   val componentsBkColour = new Color(228, 231, 246)
   bookmarksPanel.bookmarksListView.background = componentsBkColour
   bookmarksPanel.dayPicker.background = componentsBkColour
@@ -53,8 +53,8 @@ class StarlingHomePageComponent(context:PageContext, browserSize:Dimension, page
     }
   }
 
-  private val versionPanel = new MigPanel("") {
-    border = LineBorder(GuiUtils.TaskPageButtonBorderColour)
+  private val versionPanel = new MigPanel("") with RoundedBackground {
+    border = RoundedBorder(GuiUtils.TaskPageButtonBorderColour)
     background = GuiUtils.TaskPageButtonBackgroundColour
 
     val ver = data.version
@@ -112,11 +112,15 @@ class StarlingHomePageComponent(context:PageContext, browserSize:Dimension, page
           }
         }, false)
       userButton.label.font = new Font("Serif", Font.PLAIN, 20)
+      val userButtonHolder = new MigPanel("insets 0") {
+        opaque = false
+        add(userButton, "push, grow")
+      }
 
       add(logo)
       add(nameLabel, "ay bottom, gapbottom 5lp")
       add(welcomeLabel, "ay center, gapleft 20lp")
-      add(userButton, "ay center, gapright " + GuiUtils.StandardLeftIndent)
+      add(userButtonHolder, "ay center, gapright " + GuiUtils.StandardLeftIndent)
     }
 
     val actionsPanelHolder = new MigPanel("insets dialog") {
