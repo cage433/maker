@@ -41,6 +41,7 @@
         <SOURCES />
       </library>
     </orderEntry>
+    <orderEntry type="module" module-name="utils" />
   </component>
 </module>
 

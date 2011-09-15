@@ -23,6 +23,8 @@ case class IntradayTradeAttributes(strategyID: Option[TreeID], bookID: TreeID, d
                                    subgroupName: String, entryDate: Day, username:String) extends TradeAttributes {
   import IntradayTradeAttributes._
 
+  lazy val desk = Desk.eaiDeskFromID(bookID.id).getOrElse(throw new Exception("Invalid book id: " + bookID.id))
+
   def details = Map(
     "Book ID" -> bookID.id,
     strategyID_str -> (if (strategyID.isEmpty) TreeID(0) else strategyID.get),
@@ -39,7 +41,7 @@ case class IntradayTradeAttributes(strategyID: Option[TreeID], bookID: TreeID, d
 
   override def createFieldValues = {
     Map(
-      Field("Book") -> bookID,
+      Field(desk_Str) -> desk.name,
       //Strategy is intentionally excluded as it needs to hold the path, not just the id, so it is added in #joiningTradeAttributeFieldValues
       Field(trader_str) -> trader,
       Field(tradedFor_str) -> tradedFor,
@@ -56,6 +58,7 @@ case class IntradayTradeAttributes(strategyID: Option[TreeID], bookID: TreeID, d
 
 object IntradayTradeAttributes {
   val bookID_str = "BookID"
+  val desk_Str = "Desk"
   val strategyID_str = "StrategyID"
   val dealID_str = "Deal ID"
   val trader_str = "Trader"
@@ -116,7 +119,7 @@ class IntradayTradeStore(
 
   override val tradeAttributeFieldDetails = {
     new StrategyFieldDetails(new ExternalSortIndexPivotTreePathOrdering(eaiStrategyDB)) ::
-    List(bookID_str, dealID_str, tradedFor_str, trader_str, broker_str, clearing_str, comment_str, subgroupName_str,
+    List(desk_Str, dealID_str, tradedFor_str, trader_str, broker_str, clearing_str, comment_str, subgroupName_str,
       entryDate_str, username_str).map(n=>FieldDetails(n))
   }
 

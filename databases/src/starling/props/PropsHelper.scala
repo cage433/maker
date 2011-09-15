@@ -30,7 +30,9 @@ class PropsHelper(starlingProps : Map[String,String], trafiguraProps : Map[Strin
   {
     //check for invalid entries
     val invalidNames = MyPropertiesFile.starlingPropertyNames.filter(!properties.contains(_))
-    if (!invalidNames.isEmpty) {
+    //hack until I have sorted out the props and osgi issue
+    val propsDefinedOutsideTheMainPropsClass = Set("useauth")
+    if (!(invalidNames -- propsDefinedOutsideTheMainPropsClass).isEmpty) {
       println("There are invalid properties in props.conf. Starling can not start until they are removed.")
       invalidNames.foreach( (name) => println(" " + name))
       System.exit(1)

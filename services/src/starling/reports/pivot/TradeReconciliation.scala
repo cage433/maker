@@ -10,7 +10,7 @@ class TradeReconciliation(tradeDiff: TradeDiff) extends UnfilteredPivotTableData
   val realTradeAttributeKeys = List()//(tradeAttributeKeys filterNot (List("Deal", "Strategy", "Book") contains)) ::: List("DealID", "BookID", "StrategyID")
   
   val fieldsToExcludeFromInitialState = List("Trade ID", "Maturity Day", "Delivery Day", "RIC", "Error", "Estimated Delivery", "Fixations",
-    "Timestamp", "Spread", "Trader", "Traded For", "Broker", IntradayTradeAttributes.subgroupName_str, "Trade Count", "Book", "Entry Date", "Username")
+    "Timestamp", "Spread", "Trader", "Traded For", "Broker", IntradayTradeAttributes.subgroupName_str, "Trade Count", "Entry Date", "Username")
 
 
   override def initialState = {

@@ -82,11 +82,10 @@ abstract class CommodityMarket(
   def premiumSettlementDay(tradeDay: Day) = tradeDay.addBusinessDays(businessCalendar, 5)
 
   def historicPrice(env: InstrumentLevelEnvironment, observationDay: Day, period: DateRange): Quantity = {
-    require(observationDay.endOfDay <= env.marketDay, "Can't ask for historic rpice for " + this + " in the future")
+    require(observationDay.endOfDay <= env.marketDay, "Can't ask for historic price for " + this + " in the future (observation, market day): " + (observationDay.endOfDay, env.marketDay))
     env.quantity(MarketFixingKey(this, observationDay, period)) match {
       case nq: NamedQuantity => {
-        val fixed = new SimpleNamedQuantity(name + "." + period.toShortString + " Fixed", new Quantity(nq.value, nq.uom))
-        SimpleNamedQuantity(observationDay.toString, fixed)
+        new SimpleNamedQuantity(name + "." + period.toShortString + "(Fixed."+observationDay+")", new Quantity(nq.value, nq.uom))
       }
       case q => q
     }

@@ -1,4 +1,4 @@
-package starling.auth;
+package starling.auth.internal;
 
 import com.sun.jna.NativeLong;
 import com.sun.jna.Pointer;

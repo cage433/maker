@@ -13,6 +13,8 @@ import starling.props.Props
 import xml._
 import java.util.EventListener
 import starling.utils.{Stopable, Log}
+import javax.ws.rs.ext.RuntimeDelegate
+import org.jboss.resteasy.spi.ResteasyProviderFactory
 
 
 class HttpServer(portNo : Int,
@@ -27,6 +29,10 @@ class HttpServer(portNo : Int,
 
   val server = new JettyServer(portNo)
   var servletPaths = List[String]()
+
+  RuntimeDelegate.setInstance(new ResteasyProviderFactory())
+
+
 
   val rootContext = new Context(server, "/", Context.SESSIONS);
 

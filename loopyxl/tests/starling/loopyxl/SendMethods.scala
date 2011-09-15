@@ -6,18 +6,13 @@ import java.net.ServerSocket
 import java.net.Socket
 import starling.utils.ClosureUtil
 import LoopyXL.MessageType._
-import starling.bouncyrmi.AuthHandler
 import java.util.concurrent.atomic.AtomicInteger
-import starling.auth.User
+import starling.auth.{AuthHandler, User}
 
 object SendMethods extends App {
   private val methodSource = new ReflectiveMethodSource(new MethodImplementation)
 
-  private val loggingHandler = new AuthHandler[User] {
-    def authorized(ticket: Option[Array[Byte]]) = {
-      None
-    }
-  }
+  private val loggingHandler = AuthHandler.Never
 
   private val id = new AtomicInteger(1)
   private val handlers = Map(

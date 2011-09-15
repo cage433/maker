@@ -120,7 +120,7 @@ class ManualReportConfigPanel(context:PageContext, reportParameters:ReportParame
 
     reactions += {
       case DayChangedEvent(`observationDayChooser`, d) => {
-        val timeOfDayToUse = if (d >= Day.today) TimeOfDay.StartOfDay else TimeOfDay.EndOfDay
+        val timeOfDayToUse = if ((d >= Day.today) && (environmentRule.rule == EnvironmentRuleLabel.RealTime)) TimeOfDay.StartOfDay else TimeOfDay.EndOfDay
         forwardObservationDayAndTimeChooser.dayAndTime = d.atTimeOfDay(timeOfDayToUse)
         liveOnDayChooser.day = d
       }

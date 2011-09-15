@@ -16,21 +16,12 @@ import atomic.{AtomicBoolean, AtomicInteger}
 import org.jboss.netty.handler.timeout.{IdleStateEvent, IdleStateAwareChannelHandler}
 import org.jboss.netty.util.{HashedWheelTimer, Timeout, TimerTask}
 import java.lang.reflect.{InvocationHandler, Method}
+import starling.auth.Client
 
-
-trait Client {
-  def ticket: Option[Array[Byte]]
-}
-
-object Client {
-  val Null: Client = new Client {
-    def ticket = null
-  }
-}
 
 case class StateChangeEvent(previous: State, current: State) extends Event
 
-class BouncyRMIClient(host: String, port: Int, auth: Client, logger:(String)=>Unit=(x)=>{}, overriddenUser:Option[String] = None, classLoader:ClassLoader=Client.getClass.getClassLoader) {
+class BouncyRMIClient(host: String, port: Int, auth: Client, logger:(String)=>Unit=(x)=>{}, overriddenUser:Option[String] = None) {
   private val client = new Client(overriddenUser)
   lazy val clientTimer = new HashedWheelTimer
 
@@ -86,7 +77,7 @@ class BouncyRMIClient(host: String, port: Int, auth: Client, logger:(String)=>Un
     }
 
     def init() {
-      bootstrap.setPipelineFactory(new ClientPipelineFactory(classLoader, new ClientHandler, clientTimer, logger))
+      bootstrap.setPipelineFactory(new ClientPipelineFactory(new ClientHandler, clientTimer, logger))
       bootstrap.setOption("keepAlive", true)
       bootstrap.setOption("remoteAddress", new InetSocketAddress(host, port))
     }
@@ -207,7 +198,7 @@ class BouncyRMIClient(host: String, port: Int, auth: Client, logger:(String)=>Un
       }, 100, TimeUnit.MILLISECONDS)
     }
 
-    def invokeMethod(method: Method, args: Array[Object], onException: (Throwable => Object)): Object = {
+    def invokeMethod(klass:Class[_], method: Method, args: Array[Object], onException: (Throwable => Object)): Object = {
       val id = sequence.getAndIncrement
       val methodRequest = new MethodInvocationRequest(
         BouncyRMI.CodeVersion,
@@ -215,7 +206,8 @@ class BouncyRMIClient(host: String, port: Int, auth: Client, logger:(String)=>Un
         method.getDeclaringClass.getName,
         method.getName,
         method.getParameterTypes.map(_.getName),
-        if (args == null) new Array(0) else args)
+        if (args == null) new Array(0) else args.map(a => BouncyRMI.encode(a))
+      )
 
       //try to reconnect if offline
       try {
@@ -228,7 +220,7 @@ class BouncyRMIClient(host: String, port: Int, auth: Client, logger:(String)=>Un
         case _ => stop()
       }
 
-      val waiting = new Waiting
+      val waiting = new Waiting(klass)
       waitingFor.put(id, waiting)
       try {
         state match {
@@ -368,7 +360,15 @@ class BouncyRMIClient(host: String, port: Int, auth: Client, logger:(String)=>Un
           }
           case StdOutMessage(_, line) => println("S: " + line)
           case ServerException(t: Throwable) => killAllWaitingFors(t)
-          case MethodInvocationResult(id, result) => waitingFor.get(id).setResult(result)
+          case MethodInvocationResult(id, result) => {
+            val waiting = waitingFor.get(id)
+//            println("Method invocation result on client: " + waiting.method)
+//            println("Method invocation result on client Class : " + waiting.method.getClass)
+//            println("Method invocation result on client CL : " + waiting.method.getClass.getClassLoader)
+//            val k = waiting.method.getClass
+//            val cl = waiting.method.getClass.getClassLoader
+            waiting.setResult(BouncyRMI.decode(waiting.klass.getClassLoader, result))
+          }
           case MethodInvocationException(id, t) => waitingFor.get(id).exception(t)
           case MethodInvocationBadVersion(id, serverVersion) => {
             channel match {
@@ -395,7 +395,7 @@ class BouncyRMIClient(host: String, port: Int, auth: Client, logger:(String)=>Un
       override def channelIdle(ctx: ChannelHandlerContext, e: IdleStateEvent) {
         state match {
           case ClientConnected => {
-            e.getChannel.write(PingMessage)
+            //e.getChannel.write(PingMessage)
           }
           case _ =>
         }
@@ -422,7 +422,7 @@ class BouncyRMIClient(host: String, port: Int, auth: Client, logger:(String)=>Un
 //    e.create().asInstanceOf[C]
     java.lang.reflect.Proxy.newProxyInstance(klass.getClassLoader, Array(klass), new InvocationHandler {
       def invoke(proxy: AnyRef, method: Method, args: Array[AnyRef]) = {
-        client.invokeMethod(method, args, (e) => { throw e}).asInstanceOf[Object]
+        client.invokeMethod(klass, method, args, (e) => { throw e}).asInstanceOf[Object]
       }
     }).asInstanceOf[C]
   }
@@ -435,6 +435,7 @@ class BouncyRMIClient(host: String, port: Int, auth: Client, logger:(String)=>Un
       try {
         executor.submit(new Runnable() {
           def run() {
+            println("s " + event)
             publisher.publish(event)
           }
         })
@@ -453,7 +454,7 @@ class BouncyRMIClient(host: String, port: Int, auth: Client, logger:(String)=>Un
   val reactions = publisher.reactions
   val remotePublisher = publisher.publisher
 
-  class Waiting {
+  class Waiting(val klass:Class[_]) {
     private val lock = new Object
     private var completed = false
     private var result: AnyRef = null

@@ -11,12 +11,13 @@ case class UserDetails(username:String, fullName:String)
 
 trait BrowserService {
   def name:String
-  def user:UserDetails
+  def userDetails:UserDetails
   def readSettings:UserSettingsLabel
   def saveSettings(settings:UserSettingsLabel)
   def saveBookmark(bookmark:BookmarkLabel)
   def deleteBookmark(name:String)
   def bookmarks:List[BookmarkLabel]
   def logPageView(info:PageLogInfo)
+  def testEvent()
   def version:Version
 }

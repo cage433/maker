@@ -6,13 +6,12 @@ import org.testng.Assert._
 import java.util.concurrent.atomic.AtomicInteger
 import org.scalatest.testng.TestNGSuite
 import org.testng.annotations.{BeforeMethod, AfterMethod, AfterTest, Test}
-import starling.gui.api.{PricingGroup, PricingGroupMarketDataUpdate}
-import starling.utils.{Broadcaster, StarlingTest}
-import starling.auth.{LdapUserLookup, User}
-import starling.services.ChannelLoggedIn
+import starling.utils.{Broadcaster}
 import java.util.concurrent.{ConcurrentHashMap, Executors, CopyOnWriteArraySet, TimeUnit}
 import java.util.UUID
+import starling.auth._
 
+case class TestEvent(i:Int) extends Event
 class ClassWhichDoesNotImplementSerializable(val name: String) {
   override def equals(other: Any): Boolean = {
     other match {
@@ -45,7 +44,7 @@ class SomeService extends Service {
   var broadcaster:Broadcaster = null
   def fakeMethodWithBroadcast(name:String) = {
     for (i <- 1 to 100) {
-      broadcaster.broadcast(PricingGroupMarketDataUpdate(PricingGroup.System, i))
+      broadcaster.broadcast(TestEvent(i))
     }
     Thread.sleep(10)
     name + " is bad"
@@ -87,14 +86,12 @@ object BouncyRMITestsObj {
     port
   }
 }
-class BouncyRMITests extends StarlingTest {
+class BouncyRMITests extends TestNGSuite {
 
-  val auth = new ServerAuthHandler[User](new AuthHandler[User] {
-    def authorized(ticket: Option[Array[Byte]]) = Some(User.Test)
-  }, new ConcurrentHashMap[UUID,User], new LdapUserLookup() with BouncyLdapUserLookup[User], x=>(), ChannelLoggedIn)
+  val auth = AuthHandler.Dev
 
   var someService:SomeService = null
-  var server:BouncyRMIServer[User] = null
+  var server: BouncyRMIServer = null
   var client: BouncyRMIClient = null
   val port1 = BouncyRMITestsObj.nextPort
   val port2 = BouncyRMITestsObj.nextPort
@@ -102,7 +99,8 @@ class BouncyRMITests extends StarlingTest {
   @BeforeMethod
   def before() {
     someService = new SomeService()
-    server = new BouncyRMIServer(port1, auth, BouncyRMI.CodeVersion, new ConcurrentHashMap[UUID,User], Set(), ChannelLoggedIn, "", someService)
+    server = new BouncyRMIServer(port1, auth, BouncyRMI.CodeVersion, Set())
+    server.addInstance(classOf[Service].getName, someService)
     client = new BouncyRMIClient("localhost", port1, auth = Client.Null, overriddenUser = None)
   }
 
@@ -152,7 +150,8 @@ class BouncyRMITests extends StarlingTest {
 
   @Test
   def testClientConnectFailsIfVersionsDoNotMatch() {
-    val server = new BouncyRMIServer(port1, auth, "Two", new ConcurrentHashMap[UUID,User], Set(), ChannelLoggedIn, "", new SomeService())
+    val server = new BouncyRMIServer(port1, auth, "Two", Set())
+    server.addInstance(classOf[Service].getName, new SomeService())
     server.start
 
     val needsReboot = new WaitForFlag
@@ -202,7 +201,8 @@ class BouncyRMITests extends StarlingTest {
     server.stop()
     disconnected.waitForFlip
     Thread.sleep(500) // client has to try a few times
-    server = new BouncyRMIServer(port1, auth, BouncyRMI.CodeVersion, new ConcurrentHashMap[UUID,User], Set(), ChannelLoggedIn, "", new SomeService())
+    server = new BouncyRMIServer(port1, auth, BouncyRMI.CodeVersion, Set())
+    server.addInstance(classOf[Service].getName, new SomeService())
     server.start
     secondConnect.waitForFlip
     client.stop
@@ -274,7 +274,8 @@ class BouncyRMITests extends StarlingTest {
     Thread.sleep(200)
     disconnected.waitForFlip
 
-    server = new BouncyRMIServer(port1, auth, BouncyRMI.CodeVersion, new ConcurrentHashMap[UUID,User], Set(), ChannelLoggedIn, "", new SomeService())
+    server = new BouncyRMIServer(port1, auth, BouncyRMI.CodeVersion, Set())
+    server.addInstance(classOf[Service].getName, new SomeService())
     server.start
 
     Thread.sleep(2000)
@@ -405,7 +406,8 @@ class BouncyRMITests extends StarlingTest {
     connected.waitForFlip
     server.stop()
     disconnected.waitForFlip
-    val serverOne = new BouncyRMIServer(port1, auth, "One", new ConcurrentHashMap[UUID,User], Set(), ChannelLoggedIn, "", new SomeService())
+    val serverOne = new BouncyRMIServer(port1, auth, "One", Set())
+    server.addInstance(classOf[Service].getName, new SomeService())
     serverOne.start
     try {
       Thread.sleep(2000) // wait for reconnect

@@ -43,6 +43,7 @@ class UTPTests extends IndexTest {
         key match {
           case DiscountRateKey(ccy, day, _) =>  new Quantity(math.exp(- zeroRates(ccy) * day.daysSinceInYears(marketDay.day)))
           case ForwardPriceKey(Market.NYMEX_WTI, Month(2010, 10), _) => 100 (Market.NYMEX_WTI.priceUOM) //for CSO
+          case MarketFixingKey(Market.NYMEX_WTI, _, _) => 50 (Market.NYMEX_WTI.priceUOM) //for CSO
           case ForwardPriceKey(Index.DATED_BRENT, _, _) => 98 (USD/BBL)
           case ForwardPriceKey(`plattsJan`, _, _) => 95 (USD/BBL)
           case ForwardPriceKey(market, day, _) => 96 (market.priceUOM)
@@ -91,6 +92,10 @@ class UTPTests extends IndexTest {
       // Future Spreads
       new FuturesCalendarSpread(Market.NYMEX_WTI, Month(2011, 1), Month(2011, 2), Quantity(55, USD/BBL), Quantity(56, USD/BBL), Quantity(1000, BBL)),
       new FuturesCalendarSpread(Market.NYMEX_WTI, Month(2011, 1), Month(2011, 2), Quantity(1, USD/BBL), Quantity(1000, BBL)),
+
+      // TAS
+      new TAS(Market.NYMEX_WTI, Month(2011, 1), Day(2008, 12, 1), Quantity(1000, BBL)),
+
 
       new FuturesCommoditySpread(FuturesSpreadMarket.RB_CRACKS, Month(2011, 1), Quantity(55, USD/BBL), Quantity(56, USD/BBL), Quantity(1000, BBL)),
       new FuturesCommoditySpread(FuturesSpreadMarket.RB_CRACKS, Month(2011, 1), Quantity(-1, USD/BBL), Quantity(1000, BBL)),

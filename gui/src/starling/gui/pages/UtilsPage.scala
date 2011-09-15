@@ -4,10 +4,11 @@ import starling.gui._
 import java.awt.{Dimension}
 import javax.swing.{JComponent, KeyStroke}
 import java.awt.event.KeyEvent
-import swing.Action
 import starling.browser.common.{NumberedButton, StripedPanel, MigPanel}
 import starling.browser.internal.RunAsUserPage
 import starling.browser._
+import swing._
+import event.{ButtonClicked, Event}
 
 case class UtilsPage() extends StarlingServerPage {
   def text = "Utils"
@@ -51,6 +52,33 @@ class UtilsPageComponent(context:PageContext) extends MigPanel("insets dialog") 
     add(statsButton, "split, newline, skip1, sg")
     add(runAsUserButton, "sg")
     add(cannedPageButton, "sg")
+
+    val eventsArea = new TextArea() {
+      editable = false
+    }
+
+    val sendEventButton = new Button("Send Event") {
+      reactions += { case ButtonClicked(_) => context.submit(new SubmitRequest[Unit]() {
+        def baseSubmit(serverContext: ServerContext) = {
+          serverContext.browserService.testEvent()
+        }
+      })}
+    }
+    val clearButton = new Button("Clear") {
+      reactions += { case ButtonClicked(_) => eventsArea.text = "" }
+    }
+
+    add(sendEventButton, "sg")
+    add(clearButton, "sg")
+    add(new Label("Remote Events"), "sg")
+    add(eventsArea, "sg")
+    val myPublisher = new Publisher() {}
+    myPublisher.listenTo(context.remotePublisher)
+    myPublisher.reactions += {
+      case event:Event => {
+        eventsArea.append( event.toString + "\n")
+      }
+    }
   }
   add(c, "push, grow")
 }

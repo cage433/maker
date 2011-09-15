@@ -1,25 +1,23 @@
 package starling.bouncyrmi
 
 import scala.swing.event.Event
-import java.io._
 import java.util.zip.{Inflater, Deflater}
 import org.apache.commons.io.input.ClassLoaderObjectInputStream
 import org.jboss.netty.handler.ssl.SslHandler
 import org.jboss.netty.handler.codec.oneone.OneToOneEncoder
 import org.jboss.netty.channel._
 import org.jboss.netty.handler.codec.compression.{ZlibDecoder, ZlibEncoder}
-import org.jboss.netty.handler.codec.serialization.ObjectDecoder
-import org.jboss.netty.handler.codec.serialization.ObjectEncoder
 import org.jboss.netty.handler.timeout._
 import org.jboss.netty.util.{HashedWheelTimer, Timer}
 import org.jboss.netty.handler.execution.{OrderedMemoryAwareThreadPoolExecutor, ExecutionHandler}
 import java.util.concurrent.{TimeUnit, Executors, ThreadFactory}
 import java.lang.Boolean
-
+import java.io._
+import org.jboss.netty.handler.codec.serialization.{ObjectEncoderOutputStream, ObjectDecoderInputStream, ObjectDecoder, ObjectEncoder}
 
 //Message classes
-case class MethodInvocationRequest(version: String, id: Int, declaringClass: String, method: String, parameters: Array[String], arguments: Array[Object])
-case class MethodInvocationResult(id: Int, result: Object)
+case class MethodInvocationRequest(version: String, id: Int, declaringClass: String, method: String, parameters: Array[String], arguments: Array[Array[Byte]])
+case class MethodInvocationResult(id: Int, result:Array[Byte])
 case class MethodInvocationException(id: Int, t: Throwable)
 case class ServerException(t: Throwable)
 case class MethodInvocationBadVersion(id: Int, serverVersion: String)
@@ -28,7 +26,9 @@ case class BroadcastMessage(event: Event)
 case class ShutdownMessage(message: String)
 case object VersionCheckRequest
 case class VersionCheckResponse(version: String)
-case class AuthMessage(ticket: Option[Array[Byte]], overriddenUser:Option[String])
+case class AuthMessage(ticket: Option[Array[Byte]], overriddenUser:Option[String]) {
+  assert(ticket != null)
+}
 case object AuthFailedMessage
 case object AuthSuccessfulMessage
 case object PingMessage
@@ -49,26 +49,19 @@ case object ClientConnectedEvent
 case object ClientDisconnectedEvent
 case class UnexpectedDisconnectEvent(t: Throwable)
 
-class ClientPipelineFactory(classLoader:ClassLoader, handler: SimpleChannelHandler, timer:HashedWheelTimer, logger:(String)=>Unit) extends ChannelPipelineFactory {
+class ClientPipelineFactory(handler: SimpleChannelHandler, timer:HashedWheelTimer, logger:(String)=>Unit) extends ChannelPipelineFactory {
   def getPipeline() = {
     val pipeline = Channels.pipeline
     val engine = SslContextFactory.clientContext.createSSLEngine
     engine.setUseClientMode(true)
 
     pipeline.addLast("ssl", new SslHandler(engine))
-    BouncyRMI.addCommon(classLoader, pipeline, timer, logger)
+    BouncyRMI.addCommon(pipeline, timer, logger)
     //    pipeline.addLast("timeout", new ReadTimeoutHandler(BouncyRMI.timer, 10))
     pipeline.addLast("handler", handler)
 
     pipeline
   }
-}
-
-trait LoggedIn[T,U] {
-  def get(channel: Channel): (T,U)
-  def set(channel: Channel, user: T, id:U): (T,U)
-  def remove(channel: Channel): (T,U)
-  def setLoggedOn(user: Option[T])
 }
 
 object BouncyRMI {
@@ -78,23 +71,37 @@ object BouncyRMI {
 
   val CertIssuerName = "CN=starling"
 
-  def addCommon(classLoader:ClassLoader, pipeline: ChannelPipeline, timer:HashedWheelTimer, logger:(String)=>Unit) = {
+  def addCommon(pipeline: ChannelPipeline, timer:HashedWheelTimer, logger:(String)=>Unit) = {
     pipeline.addLast("compress", new MyCompressEncoder(Deflater.BEST_SPEED))
     pipeline.addLast("encoder", new ObjectEncoder())
     pipeline.addLast("decompress", new MyDecompressDecoder(200 * 1024 * 1024, logger))
-    pipeline.addLast("decoder", new ObjectDecoder(200 * 1024 * 1024, classLoader))
+    pipeline.addLast("decoder", new ObjectDecoder(200 * 1024 * 1024, getClass.getClassLoader))
     pipeline.addLast("idle", new IdleStateHandler(timer, 0, 0, 5))
+  }
+
+  def encode(obj:Object) = {
+    val bout = new ByteArrayOutputStream()
+    val out = new ObjectEncoderOutputStream(bout)
+    out.writeObject(obj)
+    out.flush
+    out.close
+    bout.toByteArray
+  }
+
+  def decode(classLoader:ClassLoader, data:Array[Byte]) = {
+    val in = new ObjectDecoderInputStream(new ByteArrayInputStream(data), classLoader)
+    in.readObject()
   }
 }
 
-class ServerPipelineFactory[User](classLoader:ClassLoader, authHandler: ServerAuthHandler[User], handler: SimpleChannelUpstreamHandler, timer:HashedWheelTimer, secured : Boolean = true) extends ChannelPipelineFactory {
+class ServerPipelineFactory[User](classLoader:ClassLoader, authHandler: ServerAuthHandler, handler: SimpleChannelUpstreamHandler, timer:HashedWheelTimer, secured : Boolean = true) extends ChannelPipelineFactory {
   def getPipeline() = {
     val pipeline = Channels.pipeline
     val engine = SslContextFactory.serverContext.createSSLEngine
     engine.setUseClientMode(false)
 
     if (secured == true) pipeline.addLast("ssl", new SslHandler(engine))
-    BouncyRMI.addCommon(classLoader, pipeline, timer, (x)=>{})
+    BouncyRMI.addCommon(pipeline, timer, (x)=>{})
     pipeline.addLast("threadPool", new ExecutionHandler(Executors.newCachedThreadPool(new NamedDaemonThreadFactory("Server worker"))))
     if (secured == true) pipeline.addLast("authHandler", authHandler)
     pipeline.addLast("handler", handler)

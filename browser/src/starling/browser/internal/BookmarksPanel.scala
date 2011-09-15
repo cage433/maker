@@ -70,7 +70,7 @@ class BookmarksPanel(context:PageContext) extends MigPanel("") {
 
   def updateSelectedBookmark(b:Bookmark) {
     val data = bookmarksListView.listData
-    val indexToSelect = data.zipWithIndex.find{case (bd, _) => bd.bookmark == b} match {
+    val indexToSelect = data.zipWithIndex.find{case (bd, _) => bd.bookmark == Some(b)} match {
       case None => -1
       case Some((_, index)) => index
     }

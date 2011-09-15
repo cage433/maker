@@ -1,9 +1,11 @@
-package starling.utils
+package starling.services.utils
 
 import starling.services.StarlingInit
 import starling.gui.api.{PricingGroup, MarketDataSelection}
 import starling.props.PropsHelper
 import starling.daterange.{ObservationTimeOfDay, TimeOfDay, ObservationPoint, Day}
+import starling.auth.AuthHandler
+import starling.utils.{Broadcaster, Log}
 
 /**
  * Repopulates the last 100 days of market data. Handy when you add a new market and if we need
@@ -11,13 +13,13 @@ import starling.daterange.{ObservationTimeOfDay, TimeOfDay, ObservationPoint, Da
  */
 object RepopulateMarketData {
   def main(args: Array[String]) {
-    val init = new StarlingInit(PropsHelper.defaultProps, false, false, false, false)
+    val init = new StarlingInit(PropsHelper.defaultProps, AuthHandler.Dev, Broadcaster.Null, false, false, false, false)
     init.start
     init.marketDataStore.importData(MarketDataSelection(Some(PricingGroup.Metals)), Day(2011, 3, 31))
   }
 
   def foo(args: Array[String]) {
-    val init = new StarlingInit(PropsHelper.defaultProps, false, false, false, false)
+    val init = new StarlingInit(PropsHelper.defaultProps, AuthHandler.Dev, Broadcaster.Null, false, false, false, false)
     init.start
     if (args.length < 1) {
       Log.error("Need a pricing group:")

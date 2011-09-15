@@ -53,7 +53,12 @@ object DataSourceFactory {
     }
   }
 
-  def shutdown = dataSources.values.map(_.close)
+  def shutdown = {
+    dataSources.synchronized {
+      dataSources.values.map(_.close)
+      dataSources = Map[(String, String, String), BoneCPDataSource]()
+    }
+  }
 
   DriverManager.registerDriver(new net.sourceforge.jtds.jdbc.Driver())
   DriverManager.registerDriver(new oracle.jdbc.driver.OracleDriver())

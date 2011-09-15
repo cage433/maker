@@ -445,12 +445,14 @@ case class PivotTableConverter(otherLayoutInfo:OtherLayoutInfo = OtherLayoutInfo
       val rowDataArray = rowDataWithNullsAdded.map(_.toArray).toArray
 
       def axisCellUpdateInfo(cells:Array[Array[AxisCell]]) = {
-        cells.zipWithIndex.flatMap{case (r, i) => r.zipWithIndex.flatMap{case (c, j) => {
-          if (c.changed) Some(CellUpdateInfo(i, j, true, 0.0f)) else None
+        cells.zipWithIndex.flatMap{case (arrayOfCells, i) => arrayOfCells.zipWithIndex.flatMap{case (cell, j) => {
+          if (cell.changed) Some(CellUpdateInfo(i, j, true, 0.0f)) else None
         }}}
       }
-      val rowAxisCellUpdateInfo = axisCellUpdateInfo(rowDataArray).toList
-      val colAxisCellUpdateInfo = axisCellUpdateInfo(colData).toList
+      val (rowAxisCellUpdateInfo, colAxisCellUpdateInfo) = previousPageData match {
+        case None => (Nil,Nil)
+        case Some(_) => (axisCellUpdateInfo(rowDataArray).toList, axisCellUpdateInfo(colData).toList)
+      }
 
       PivotGrid(rowDataArray, colData, mainData, columnUOMs, cellUpdateInfoList, rowAxisCellUpdateInfo, colAxisCellUpdateInfo)
     }

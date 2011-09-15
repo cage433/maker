@@ -11,7 +11,8 @@ import starling.concurrent.MP
 import java.io._
 import java.net.{HttpURLConnection, URLConnection, URL}
 import starling.utils.ImplicitConversions._
-import starling.utils.Log
+import starling.auth.AuthHandler
+import starling.utils.{Broadcaster, Log}
 
 
 trait ReportSource {
@@ -120,7 +121,7 @@ object RegressionRunner {
       //val keyFile = System.getProperty("home.dir") + "/.ssh/id_rsa"
       //SSHPortForwarding.forward(userName = "thomas.rynne", hostname = "starling", remotePort = 25848, privateKeyFile = keyFile) {
       //  port => {
-          val starlingInit = new StarlingInit(props, true, true, true, startEAIAutoImportThread=false, startXLLoop = false,
+          val starlingInit = new StarlingInit(props, AuthHandler.Dev, Broadcaster.Null, true, true, true, startEAIAutoImportThread=false, startXLLoop = false,
             startStarlingJMX = false, forceGUICompatability = false)
           starlingInit.start
           try {

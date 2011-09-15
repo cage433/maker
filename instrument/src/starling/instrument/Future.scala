@@ -25,7 +25,7 @@ case class Future(market: FuturesMarket, delivery: DateRange, strike: Quantity, 
   
   def *(x : Double) = copy(volume = volume * x)
 
-  private def underlyingPrice(env : Environment) : Quantity = {
+  def underlyingPrice(env : Environment) : Quantity = {
     val F_InMarketCurrency = if (lastTradingDay.endOfDay <= env.marketDay) {
       env.priceOnLastTradingDay(market, delivery)
     } else {

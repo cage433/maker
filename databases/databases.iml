@@ -80,7 +80,7 @@
     <orderEntry type="module-library" exported="">
       <library>
         <CLASSES>
-          <root url="jar://$MODULE_DIR$/lib_managed/spring-tx-jar-3.0.5.RELEASE.jar!/" />
+          <root url="jar://$MODULE_DIR$/lib_managed/slf4j-api-jar-1.6.1.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />
@@ -89,7 +89,7 @@
     <orderEntry type="module-library" exported="">
       <library>
         <CLASSES>
-          <root url="jar://$MODULE_DIR$/lib_managed/slf4j-api-jar-1.6.1.jar!/" />
+          <root url="jar://$MODULE_DIR$/lib_managed/scalacheck_2.9.1-jar-1.9.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />
@@ -104,7 +104,7 @@
         <SOURCES />
       </library>
     </orderEntry>
-    <orderEntry type="module-library">
+    <orderEntry type="module-library" exported="">
       <library>
         <CLASSES>
           <root url="jar://$MODULE_DIR$/lib_managed/spring-beans-jar-3.0.5.RELEASE.jar!/" />
@@ -116,7 +116,25 @@
     <orderEntry type="module-library" exported="">
       <library>
         <CLASSES>
-          <root url="jar://$MODULE_DIR$/lib_managed/scalacheck_2.9.1-jar-1.9.jar!/" />
+          <root url="jar://$MODULE_DIR$/lib_managed/spring-tx-jar-3.0.5.RELEASE.jar!/" />
+        </CLASSES>
+        <JAVADOC />
+        <SOURCES />
+      </library>
+    </orderEntry>
+    <orderEntry type="module-library" exported="">
+      <library>
+        <CLASSES>
+          <root url="jar://$MODULE_DIR$/../dbx/lib_managed/spring-jdbc-jar-3.0.5.RELEASE.jar!/" />
+        </CLASSES>
+        <JAVADOC />
+        <SOURCES />
+      </library>
+    </orderEntry>
+    <orderEntry type="module-library" exported="">
+      <library>
+        <CLASSES>
+          <root url="jar://$MODULE_DIR$/../bouncyrmi/lib_managed/commons-logging-jar-1.1.1.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />

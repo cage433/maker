@@ -43,7 +43,16 @@
     <orderEntry type="module-library">
       <library>
         <CLASSES>
-          <root url="jar://$MODULE_DIR$/lib/org.eclipse.osgi_3.7.0.v20110613.jar!/" />
+          <root url="jar://$MODULE_DIR$/lib/org.apache.felix.framework-3.2.2.jar!/" />
+        </CLASSES>
+        <JAVADOC />
+        <SOURCES />
+      </library>
+    </orderEntry>
+    <orderEntry type="module-library">
+      <library>
+        <CLASSES>
+          <root url="jar://$MODULE_DIR$/../osgimanager/lib/org.osgi.compendium-4.2.0.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />

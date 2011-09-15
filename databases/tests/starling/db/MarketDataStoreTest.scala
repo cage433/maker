@@ -51,7 +51,7 @@ class MarketDataStoreTest extends TestMarketTest with ShouldMatchers {
     }
 
   }
-  @Test
+  @Test(enabled = false)
   def testDeletingPricesIsPersistent() {
     clearMarketData()
     val observationPoint = ObservationPoint(Day(2011, 1, 1), ObservationTimeOfDay.Default)
@@ -92,7 +92,7 @@ class MarketDataStoreTest extends TestMarketTest with ShouldMatchers {
     marketDataStore.query(marketDataIdentifier, PriceDataType) should equal (Nil)
   }
 
-  @Test
+  @Test(enabled = false)
   def testWritingSinglePriceIsPersistent() {
     clearMarketData()
     val observationPoint = ObservationPoint(Day(2011, 1, 1), ObservationTimeOfDay.Default)
@@ -110,7 +110,7 @@ class MarketDataStoreTest extends TestMarketTest with ShouldMatchers {
     read2 should equal( data2 )
   }
 
-  @Test
+  @Test(enabled = false)
   def testOverridenPricesAreMerged() {
     clearMarketData()
     val observationPoint = ObservationPoint(Day(2011, 1, 1), ObservationTimeOfDay.Default)
@@ -132,7 +132,7 @@ class MarketDataStoreTest extends TestMarketTest with ShouldMatchers {
     marketData should be === priceData(basePrices ++ overridingPrices)
   }
 
-  @Test
+  @Test(enabled = false)
   def testPivotOverObservationTime() {
     clearMarketData()
     val observationPoint = ObservationPoint(Day(2011, 1, 1), ObservationTimeOfDay.Default)

@@ -57,6 +57,7 @@ object TradeableType {
     DeletedInstrument,
     ErrorInstrument,
     Future,
+    TAS,
     FuturesCalendarSpread,
     FuturesCommoditySpread,
     CommoditySwap,

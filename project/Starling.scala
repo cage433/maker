@@ -82,13 +82,13 @@ object StarlingBuild extends Build{
     "bouncyrmi", 
     file("./bouncyrmi"),
     settings = standardSettings
-  ) dependsOn(manager)
+  ) dependsOn(manager, auth)
 
   lazy val auth = Project(
     "auth", 
     file("./auth"),
     settings = standardSettings
-  ) dependsOn (utils, bouncyrmi)
+  ) dependsOn (utils, manager)
 
   lazy val concurrent = Project(
     "concurrent", 
@@ -112,7 +112,7 @@ object StarlingBuild extends Build{
     "loopyxl", 
     file("./loopyxl"),
     settings = standardSettings
-  ) dependsOn(bouncyrmi, auth)
+  ) dependsOn(auth)
 
   lazy val maths = Project(
     "maths", 
@@ -203,19 +203,36 @@ object StarlingBuild extends Build{
         Seq(unmanagedClasspath in Compile <++= (baseDirectory) map titanBinaryJars) ++ 
         Seq(unmanagedClasspath in Runtime <++= (baseDirectory) map titanBinaryJars) ++ 
         Seq(unmanagedClasspath in Test <++= (baseDirectory) map titanBinaryJars)
-    ) dependsOn(bouncyrmi)
+    ) dependsOn()
   } else {
     Project(
       "starlingApi", 
       file("./starling.api"),
       settings = standardSettings 
-    ) dependsOn(bouncyrmi, titanModel)
+    ) dependsOn(titanModel)
   }
  
+  lazy val starlingClient = if (useTitanModelBinaries) {
+    Project(
+      "starlingClient",
+      file("./starling.client"),
+      settings = standardSettings ++
+        Seq(unmanagedClasspath in Compile <++= (baseDirectory) map titanBinaryJars) ++
+        Seq(unmanagedClasspath in Runtime <++= (baseDirectory) map titanBinaryJars) ++
+        Seq(unmanagedClasspath in Test <++= (baseDirectory) map titanBinaryJars)
+    ) dependsOn(starlingApi, bouncyrmi)
+  } else {
+    Project(
+      "starlingClient",
+      file("./starling.client"),
+      settings = standardSettings
+    ) dependsOn(starlingApi, bouncyrmi)
+  }
+
   lazy val dbx = Project(
     "dbx",
     file("./dbx"),
-    settings = standardSettings 
+    settings = standardSettings
   ) dependsOn(manager, utils, instrument)
 
   lazy val databases = Project(
@@ -252,13 +269,13 @@ object StarlingBuild extends Build{
         Seq(unmanagedClasspath in Compile <++= (baseDirectory) map titanBinaryJars) ++ 
         Seq(unmanagedClasspath in Runtime <++= (baseDirectory) map titanBinaryJars) ++ 
         Seq(unmanagedClasspath in Test <++= (baseDirectory) map titanBinaryJars)
-    ) dependsOn(curves % "test->test", loopyxl % "test->test", bouncyrmi, concurrent, loopyxl, titan, gui, fc2api, browser)
+    ) dependsOn(curves % "test->test", loopyxl % "test->test", concurrent, loopyxl, titan, gui, fc2api, browser)
   } else {
     Project(
       "services", 
       file("./services"),
       settings = standardSettings 
-    ) dependsOn(curves % "test->test", loopyxl % "test->test", bouncyrmi, concurrent, loopyxl, titan, gui)
+    ) dependsOn(curves % "test->test", loopyxl % "test->test", concurrent, loopyxl, titan, gui, fc2api, browser)
   }
 
   lazy val manager = Project(
@@ -271,19 +288,36 @@ object StarlingBuild extends Build{
     "singleclasspathmanager",
     file("./singleclasspathmanager"),
     settings = standardSettings
-  ) dependsOn(manager)
+  ) dependsOn(manager, utils)
 
   lazy val osgiManager = Project(
     "osgimanager",
     file("./osgimanager"),
     settings = standardSettings 
-  ) dependsOn(manager)
+  ) dependsOn(manager, utils)
 
   lazy val osgiRun = Project(
     "osgirun",
     file("./osgirun"),
     settings = standardSettings
   ) dependsOn()
+
+  lazy val startserver = if (useTitanModelBinaries) {
+    Project(
+      "startserver",
+      file("./startserver"),
+      settings = standardSettings ++
+        Seq(unmanagedClasspath in Compile <++= (baseDirectory) map titanBinaryJars) ++
+        Seq(unmanagedClasspath in Runtime <++= (baseDirectory) map titanBinaryJars) ++
+        Seq(unmanagedClasspath in Test <++= (baseDirectory) map titanBinaryJars)
+    ) dependsOn(services, starlingClient, singleClasspathManager)
+  } else {
+    Project(
+      "startserver",
+      file("./startserver"),
+      settings = standardSettings
+    ) dependsOn(services, starlingClient, singleClasspathManager)
+  }
 
   lazy val launcher = if (useTitanModelBinaries) {
     Project(
@@ -293,13 +327,13 @@ object StarlingBuild extends Build{
         Seq(unmanagedClasspath in Compile <++= (baseDirectory) map titanBinaryJars) ++ 
         Seq(unmanagedClasspath in Runtime <++= (baseDirectory) map titanBinaryJars) ++ 
         Seq(unmanagedClasspath in Test <++= (baseDirectory) map titanBinaryJars)
-    ) dependsOn(services, gui, singleClasspathManager)
+    ) dependsOn(startserver, gui, singleClasspathManager)
   } else {
     Project(
       "launcher", 
       file("./launcher"),
       settings = standardSettings
-    ) dependsOn(services, gui, singleClasspathManager)
+    ) dependsOn(startserver, gui, singleClasspathManager)
   }
 
   // Evil hack so that I can get a classpath exported including the test-classes of all projects.
@@ -353,7 +387,9 @@ object StarlingBuild extends Build{
     singleClasspathManager,
     osgiRun,
     dbx,
-    starlingApi
+    startserver,
+    starlingApi,
+    starlingClient
   )
 
   val childProjects : List[ProjectReference] =  otherProjectRefereneces ::: titanModelReference

@@ -36,6 +36,7 @@ object InstrumentType {
 
   val types = List[InstrumentType[_ <: UTP]](
     Future,
+    TAS,
     CommoditySwap,
     SwapCalendarSpread,
     FuturesOption,

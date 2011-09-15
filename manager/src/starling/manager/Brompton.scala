@@ -2,10 +2,8 @@ package starling.manager
 
 import net.sf.cglib.proxy.{MethodProxy, MethodInterceptor, Enhancer}
 import java.lang.reflect.Method
-import scala.swing.Publisher
-import java.util.Properties
-import collection.JavaConversions
 import java.io.{File, FileInputStream}
+import java.util.{Dictionary, Properties}
 
 class Brompton
 
@@ -18,14 +16,15 @@ trait BromptonActivator {
 }
 
 class ServiceProperty(val name:String, val value:AnyRef)
-//class ServiceRank(rank:Int) extends ServiceProperty(Constants.SERVICE_RANKING, new java.lang.Integer(rank))
+
 case class ServiceName(serviceName:String) extends ServiceProperty("name", serviceName)
 case class HttpContext(context:String) extends ServiceProperty("alias", "/"+context)
-object ExportRMIProperty extends ServiceProperty("export.rmi", java.lang.Boolean.TRUE)
+object ExportGuiRMIProperty extends ServiceProperty("export.rmi.gui", java.lang.Boolean.TRUE)
+object ExportTitanRMIProperty extends ServiceProperty("export.rmi.titan", java.lang.Boolean.TRUE)
 object ExportExcelProperty extends ServiceProperty("export.excel", java.lang.Boolean.TRUE)
 
 class NoServiceFoundException(time:Long) extends RuntimeException("No service found after " + time + "s")
-case class BromptonServiceReference(id:String)
+case class BromptonServiceReference(id:String, klasses:List[String])
 
 trait BromptonServiceTracker {
   def serviceAdded(ref:BromptonServiceReference, service:AnyRef)
@@ -48,12 +47,22 @@ trait BromptonContext {
 object Props {
   def readDefault = {
     val p = new Properties()
-    List(new File("props.conf"), new File("generated.props.conf")).foreach { file =>
+    List(new File("props.conf")).foreach { file =>
       if (file.exists) {
         p.load(new FileInputStream(file))
       }
     }
-    p
+    dictionaryToMap[String,String](p)
+  }
+  private def dictionaryToMap[K,V](dictionary:Dictionary[_,_]):Map[K,V] = {
+    var map = Map[K,V]()
+    val enumeration = dictionary.keys
+    while (enumeration.hasMoreElements) {
+      val key = enumeration.nextElement
+      val value = dictionary.get(key)
+      map = map.updated(key.asInstanceOf[K], value.asInstanceOf[V])
+    }
+    map
   }
 }
 
@@ -62,6 +71,7 @@ class Props(inputProperties:Map[String,String]) {
   val lowercaseLookup = inputProperties.map { case (k,_) => k.toLowerCase -> k }
   val stringClass = classOf[String]
   val intClass = classOf[Int]
+  val booleanClass = classOf[Boolean]
   val usedProperties = new scala.collection.mutable.HashSet[String]()
   def applyOverrides[T](classLoader:ClassLoader, props:T):T = {
     val e = new Enhancer()
@@ -77,6 +87,7 @@ class Props(inputProperties:Map[String,String]) {
              method.getReturnType match {
                case `stringClass` => value
                case `intClass` => new java.lang.Integer(value)
+               case `booleanClass` => java.lang.Boolean.valueOf(value)
                case other => throw new Exception("Unknown  type " + other)
              }
            }

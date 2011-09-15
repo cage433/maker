@@ -17,7 +17,7 @@ import org.jboss.resteasy.spi.ResteasyProviderFactory
 
 
 object DocumentationService extends DocumentationServiceApi {
-  RuntimeDelegate.setInstance(new ResteasyProviderFactory());
+  //RuntimeDelegate.setInstance(new ResteasyProviderFactory());
   private val serviceClasses = new ListBuffer[Class[_]] += getClass
   private val files: Map[String, File] = FileUtils.listFiles(new File("services/resources/com/trafigura/services/meta"),
     TrueFileFilter.INSTANCE, TrueFileFilter.INSTANCE).toList.asInstanceOf[List[File]].toMapWithKeys(_.getName)

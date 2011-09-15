@@ -38,7 +38,7 @@
         <SOURCES />
       </library>
     </orderEntry>
-    <orderEntry type="module" module-name="utils" />
+    <orderEntry type="module" module-name="utils" exported="" />
     <orderEntry type="module" module-name="instrument" />
     <orderEntry type="module-library" exported="">
       <library>
@@ -53,6 +53,24 @@
       <library>
         <CLASSES>
           <root url="jar://$MODULE_DIR$/lib_managed/spring-jdbc-jar-3.0.5.RELEASE.jar!/" />
+        </CLASSES>
+        <JAVADOC />
+        <SOURCES />
+      </library>
+    </orderEntry>
+    <orderEntry type="module-library" exported="">
+      <library>
+        <CLASSES>
+          <root url="jar://$MODULE_DIR$/../databases/lib_managed/spring-tx-jar-3.0.5.RELEASE.jar!/" />
+        </CLASSES>
+        <JAVADOC />
+        <SOURCES />
+      </library>
+    </orderEntry>
+    <orderEntry type="module-library" exported="">
+      <library>
+        <CLASSES>
+          <root url="jar://$MODULE_DIR$/../databases/lib_managed/spring-beans-jar-3.0.5.RELEASE.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />
