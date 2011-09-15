@@ -2,7 +2,6 @@ package starling.client
 
 import com.trafigura.services.valuation.ValuationServiceApi
 
-
 /**
  * Test main to check service operation and RMI etc
  */
@@ -34,9 +33,9 @@ object ValuationServiceApiTestRun {
       }
 
       def testAssignmentValuation() {
-        println("Calling valueAllAssignments...")
+        println("Calling valueAllInventory...")
         val sw = System.currentTimeMillis()
-        val assignmentValuationResult = valuationService.valueAllAssignments(None)
+        val assignmentValuationResult = valuationService.valueAllInventory(None)
         val (worked, errors) = assignmentValuationResult.assignmentValuationResults.values.partition(_ isRight)
         println("Worked " + worked.size + ", failed " + errors.size)
         println("Errors: ")

@@ -50,8 +50,8 @@ object ValuationServicePerformanceTest extends App {
     val directQuotaResults = run("Quota (direct)", () => vs.valueAllQuotas())
     val rmiQuotaResults = run("Quota (rmi)", () => valuationServiceRMI.valueAllQuotas())
 
-    val directInventoryResults = run("Inventory (direct)", () => vs.valueAllAssignments())
-    val rmiInventoryResults = run("Inventory (rmi)", () => valuationServiceRMI.valueAllAssignments())
+    val directInventoryResults = run("Inventory (direct)", () => vs.valueAllInventory())
+    val rmiInventoryResults = run("Inventory (rmi)", () => valuationServiceRMI.valueAllInventory())
 
     val output = new File("valuation-service-timings.csv")
     val w = new PrintWriter(output)
@@ -106,7 +106,7 @@ object ValuationServicePerformanceTest extends App {
 //    val quotaValuations = valuationServiceRMI.valueAllQuotas()
 //    showResults(quotaValuations.tradeResults.values.toList, "Quotas")
 
-//    val inventoryValuations = vs.valueAllAssignments()
+//    val inventoryValuations = vs.valueAllInventory()
 //    showResults(inventoryValuations.assignmentValuationResults.values.toList, "Inventory")
 
   def average(ls : List[Long]) = ls.sum/ls.size
