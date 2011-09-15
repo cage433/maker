@@ -322,7 +322,7 @@ class DefaultEnvironmentProvider(marketDataStore : MarketDataStore) extends Envi
     {snapshotIDName : String => {
       val snapshotID = snapshotNameToIDCache(snapshotIDName)
       val reader = new NormalMarketDataReader(marketDataStore, MarketDataIdentifier(snapshotID.marketDataSelection, snapshotID.version))
-      ClosesEnvironmentRule.createEnv(snapshotID.observationDay, reader).environment
+      new ClosesEnvironmentRule().createEnv(snapshotID.observationDay, reader).environment
     }}
   )
   private val lock = new Object()
