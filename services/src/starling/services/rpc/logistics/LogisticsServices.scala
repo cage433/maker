@@ -32,18 +32,16 @@ case class DefaultTitanLogisticsAssignmentServices(props: Props, titanInventoryS
       titanInventoryService match {
         case Some(inventoryService) => {
           val inventory = inventoryService.service.getAllInventoryLeaves()
-          val assignments : List[EDMAssignment] = inventory.flatMap(i => {
-            val pa = i.purchaseAssignment :: Nil
-              i.salesAssignment match {
-                case null => pa
-                case salesAssignment : EDMAssignment => salesAssignment :: pa
-              }
-            })
-          assignments
+          inventory.flatMap(assignmentsFromInventory)
         }
         case _ => throw new UnsupportedOperationException
       }
     }
+
+    private def assignmentsFromInventory(item : EDMInventoryItem) : List[EDMAssignment] = {
+      item.purchaseAssignment :: Option(item.salesAssignment).toList
+    }
+
   }
 }
 

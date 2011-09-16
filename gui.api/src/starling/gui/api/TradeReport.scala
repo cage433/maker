@@ -150,15 +150,32 @@ object TradeExpiryDay {
 
 case class IntradayGroups(subgroups:List[String])
 
-case class TradeTimestamp(timestamp:Timestamp, closeDay: Day, closeNumber: Int, error: Option[String]) {
-  def noCloseDay = closeDay.year == 1980
+object TradeTimestamp{
+  val magicNoBookClosesDay = Day(1980, 1, 1)
+  val magicLatestTimestampDay = Day(2981, 1, 1)
 
-  def asString = if(noCloseDay) {
-    "" // this is so that we can not have anything in combo box choosers
-  } else {
-    closeDay + " v" + closeNumber
+  def makeMagicLatestTimestamp(timestamp : Timestamp) = TradeTimestamp(
+      timestamp,
+      TradeTimestamp.magicLatestTimestampDay,
+      1,
+      None
+    )
+}
+case class TradeTimestamp(timestamp:Timestamp, closeDay: Day, closeNumber: Int, error: Option[String]) extends Ordered[TradeTimestamp] {
+  import TradeTimestamp._
+
+  def compare(that: TradeTimestamp) = {
+    timestamp.compare(that.timestamp) match {
+      case 0 => closeDay - that.closeDay
+      case other => other
+    }
   }
 
+  def asString = closeDay match {
+    case `magicNoBookClosesDay` => ""
+    case `magicLatestTimestampDay` => "Current"
+    case _ => closeDay + " v" + closeNumber
+  }
   override def toString = asString
 }
 

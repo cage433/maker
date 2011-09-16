@@ -484,18 +484,22 @@ case class TradeSelectionPage(
   }
 
   override def latestPage(localCache:LocalCache) = {
-    tpp.intradaySubgroupAndTimestamp match {
-      case Some((groups, timestamp)) => {
+    val newIntra = tpp.intradaySubgroupAndTimestamp match {
+      case intra@Some((groups, timestamp)) => {
         val latestTimestamp = localCache.latestTimestamp(groups)
         if (latestTimestamp != timestamp) {
-          val newTPP = tpp.copy(intradaySubgroupAndTimestamp = Some((groups, latestTimestamp)))
-          copy(tpp = newTPP)
+          Some((groups, latestTimestamp))
         } else {
-          this
+          intra
         }
       }
-      case _ => this
+      case _ => tpp.intradaySubgroupAndTimestamp
     }
+    val latestDeskTimestamp = tpp.deskAndTimestamp match {
+      case Some((desk, TradeTimestamp(_, TradeTimestamp.magicLatestTimestampDay, _, _))) => Some(desk, localCache.latestDeskTradeTimestamp(desk))
+      case other => other
+    }
+    copy(tpp = tpp.copy(intradaySubgroupAndTimestamp = newIntra, deskAndTimestamp = latestDeskTimestamp))
   }
 
   override def bookmark(serverContext:StarlingServerContext):Bookmark = {

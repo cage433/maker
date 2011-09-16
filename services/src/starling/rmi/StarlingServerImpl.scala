@@ -529,7 +529,7 @@ class StarlingServerImpl(
   }
   def version = versionInfo
 
-  def deskCloses = tradeStores.closedDesks.closedDesksByDay
+  def deskCloses = tradeStores.closedDesksByDay
   def latestTradeTimestamp(desk:Desk):TradeTimestamp = tradeStores.closedDesks.latestTradeTimestamp(desk)
 
   def intradayLatest = tradeStores.intradayTradeStore.intradayLatest

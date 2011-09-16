@@ -40,10 +40,9 @@ class TitanSystemOfRecord(
   refData : TitanTacticalRefData,
   logisticsServices : TitanLogisticsServices) extends SystemOfRecord {
 
-  lazy val quotaNameToTradeMap : Map[String, EDMPhysicalTrade] = Map() ++ titanTradeCache.getAllTrades().flatMap{trade =>  trade.asInstanceOf[EDMPhysicalTrade].quotas.map{q => NeptuneId(q.detail.identifier.value).identifier -> trade}}
-  lazy val quotaNameToQuotaMap : Map[String, PhysicalTradeQuota] = Map() ++ titanTradeCache.getAllTrades().flatMap{trade =>  trade.asInstanceOf[EDMPhysicalTrade].quotas.map{q => NeptuneId(q.detail.identifier.value).identifier -> q}}
+  lazy val quotaNameToTradeMap : Map[String, EDMPhysicalTrade] = titanTradeCache.quotaNameToTradeMap
 
-  lazy val tc = new TradeConverter(refData, quotaNameToTradeMap, quotaNameToQuotaMap)
+  lazy val tc = TradeConverter(refData, titanTradeCache)
   import tc._
 
   def allTrades(f: (Trade) => Unit) : (Int, Set[String]) = {
@@ -78,6 +77,12 @@ class TitanSystemOfRecord(
   }
 
   protected def readers = throw new UnsupportedOperationException()
+}
+
+object TradeConverter{
+  def apply(refData : TitanTacticalRefData, titanTradeCache : TitanTradeCache) : TradeConverter = {
+    new TradeConverter(refData, titanTradeCache.quotaNameToTradeMap, titanTradeCache.quotaNameToQuotaMap)
+  }
 }
 
 /**
@@ -313,7 +318,9 @@ trait TitanTradeCache {
   }
 
   def tradeIDFromQuotaID(quotaID: String): TitanId
-}
+
+  def quotaNameToTradeMap : Map[String, EDMPhysicalTrade] = Map() ++ getAllTrades().flatMap{trade =>  trade.asInstanceOf[EDMPhysicalTrade].quotas.map{q => NeptuneId(q.detail.identifier.value).identifier -> trade}}
+  def quotaNameToQuotaMap : Map[String, PhysicalTradeQuota] = Map() ++ getAllTrades().flatMap{trade =>  trade.asInstanceOf[EDMPhysicalTrade].quotas.map{q => NeptuneId(q.detail.identifier.value).identifier -> q}}}
 
 /**
  * Tactical ref data, service proxies / data
