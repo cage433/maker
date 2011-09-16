@@ -274,7 +274,7 @@ class StarlingInit( val props: Props,
 
   val starlingServer = new StarlingServerImpl(name,
     userSettingsDatabase, tradeStores, enabledDesks,
-    version, referenceData, businessCalendars.UK, ldapUserLookup, eaiStarlingSqlServerDB, traders)
+    version, referenceData, businessCalendars.UK, ldapUserLookup, eaiStarlingSqlServerDB, traders, rabbitEventDatabase)
 
   val fc2Service = new FC2ServiceImpl(marketDataStore, curveViewer, marketDataReadersProviders)
 
