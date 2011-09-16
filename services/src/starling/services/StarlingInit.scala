@@ -174,12 +174,13 @@ class StarlingInit( val props: Props,
     (fwdCurveAutoImport, mds)
   }
 
-  val userSettingsDatabase = new UserSettingsDatabase(starlingDB, broadcaster)
-
   if (dbMigration) log.infoWithTime("DB Migration") {
     //Ensure the schema is up to date
     new PatchRunner(starlingRichDB, props.ReadonlyMode(), this).updateSchemaIfRequired
   }
+
+  val userSettingsDatabase = new UserSettingsDatabase(starlingDB, broadcaster)
+  val rabbitEventDatabase = new RabbitEventDatabase(starlingDB, broadcaster)
 
   val strategyDB = new EAIStrategyDB(eaiSqlServerDB)
   val eaiDealBookMapping = new EAIDealBookMapping(eaiSqlServerDB)
@@ -231,7 +232,7 @@ class StarlingInit( val props: Props,
     )
   }
 
-  val valuationService = new ValuationService(new DefaultEnvironmentProvider(marketDataStore), titanTradeCache, titanServices, logisticsServices, titanRabbitEventServices, titanInventoryCache, Some(titanTradeStore))
+  val valuationService = new ValuationService(new DefaultEnvironmentProvider(marketDataStore), titanTradeCache, titanServices, logisticsServices, titanRabbitEventServices, titanInventoryCache, Some(titanTradeStore), rabbitEventDatabase)
   val marketDataService = new MarketDataService(marketDataStore, new DefaultEnvironmentProvider(marketDataStore))
 
   val titanSystemOfRecord = new TitanSystemOfRecord(titanTradeCache, titanServices, logisticsServices)

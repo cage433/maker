@@ -6,7 +6,6 @@ import starling.instrument.PhysicalMetalForward
 import starling.db.{NormalMarketDataReader, SnapshotID, MarketDataStore}
 import starling.curves.{ClosesEnvironmentRule, Environment}
 import starling.gui.api.{MarketDataIdentifier, PricingGroup}
-import starling.utils.{Log, Stopwatch}
 import starling.services.StarlingInit
 import com.trafigura.services.valuation._
 import starling.services.rpc.refdata._
@@ -34,6 +33,9 @@ import com.trafigura.events.DemultiplexerClient
 import com.trafigura.edm.shared.types.TitanId
 import java.io.{PrintWriter, FileWriter, BufferedWriter}
 import com.trafigura.services.{TitanSerializableDate}
+import starling.utils.{Broadcaster, Log, Stopwatch}
+import starling.rmi.RabbitEventDatabase
+
 //import com.trafigura.services.marketdata.MarketDataServiceApi
 import starling.tradestore.TradeStore
 import com.trafigura.edm.logistics.inventory.{EDMAssignmentItem, EDMInventoryItem}
@@ -395,7 +397,8 @@ class ValuationService(
   logisticsServices : TitanLogisticsServices,
   rabbitEventServices : TitanRabbitEventServices,
   titanInventoryCache : TitanLogisticsInventoryCache,
-  titanTradeStore : Option[TradeStore]  // Optional as I don't want to write a mock service for this yet
+  titanTradeStore : Option[TradeStore],  // Optional as I don't want to write a mock service for this yet
+  db:RabbitEventDatabase
 )
   extends ValuationServiceApi with Log
 {
@@ -405,7 +408,7 @@ class ValuationService(
   private lazy val futuresExchangeByID = refData.futuresExchangeByID
   private lazy val edmMetalByGUID = refData.edmMetalByGUID
 
-  private val eventHandler = new EventHandler
+  private val eventHandler = new EventHandler(db)
 
   rabbitEventServices.addClient(eventHandler)
 
@@ -618,7 +621,7 @@ class ValuationService(
   /**
    * handler for Titan rabbit events
    */
-  class EventHandler extends DemultiplexerClient {
+  class EventHandler(db:RabbitEventDatabase) extends DemultiplexerClient {
     import Event._
     lazy val rabbitPublishChangedValueEvents = publishStarlingChangedValueEvents(rabbitEventServices.rabbitEventPublisher)
     lazy val rabbitPublishNewValuationEvents = publishCreatedValuationEvents(rabbitEventServices.rabbitEventPublisher) _
@@ -630,6 +633,7 @@ class ValuationService(
         else if (LogisticsSource.equalsIgnoreCase(ev.source) && (EDMLogisticsSalesAssignmentSubject.equalsIgnoreCase(ev.subject) || EDMLogisticsInventorySubject.equalsIgnoreCase(ev.subject))) {
           logisticsAssignmentEventHander(ev)
         }
+        db.saveEvent(ev)
       }
     }
 

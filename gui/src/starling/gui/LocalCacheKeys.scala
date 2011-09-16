@@ -27,5 +27,6 @@ object LocalCacheKeys {
   val EnvironmentRules                    = new LocalCacheKey[Map[PricingGroup,List[EnvironmentRuleLabel]]]("EnvironmentRules")
   val CurveTypes                          = new LocalCacheKey[List[CurveTypeLabel]]("CurveTypes")
   val CurrentUser                         = new LocalCacheKey[User]("currentUser")
+  val LatestRabbitEvent                    = new LocalCacheKey[Long]("LatestRabbitEvent")
 }
 

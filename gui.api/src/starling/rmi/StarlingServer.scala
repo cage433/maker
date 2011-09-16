@@ -44,4 +44,7 @@ trait StarlingServer {
 
   def storeSystemInfo(info:OSInfo)
   def gitLog(pivotFieldParams:PivotFieldParams, numCommits:Int):PivotData
+
+  def rabbitEvents(pivotFieldParams:PivotFieldParams, number:Int):PivotData
+  def latestRabbitEvent:Long
 }

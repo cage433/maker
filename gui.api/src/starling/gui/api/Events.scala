@@ -26,6 +26,7 @@ case class PivotLayoutUpdate(user:String, userLayouts:List[PivotLayout]) extends
 case class ExcelMarketListUpdate(values:List[String]) extends StarlingEvent
 case class ExcelMarketDataUpdate(name:String, version:Int) extends StarlingEvent
 case class TestEvent(text:String) extends StarlingEvent
+case class RabbitEventReceived(latestTimestamp:Long) extends StarlingEvent
 
 object PricingGroupMarketDataUpdate {
   def matching(pricingGroupOption : Option[PricingGroup]) : PartialFunction[Event, PricingGroupMarketDataUpdate] = {

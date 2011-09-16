@@ -177,6 +177,9 @@ class DoubleSumColumnDefinition(override val name:String, override val sqlName:S
 class IntColumnDefinition(override val name:String, override val sqlName:String, override val table:String) extends FieldBasedColumnDefinition(name, sqlName, table) {
   override def read(resultSet: ResultSetRow) = resultSet.getInt(alias)
 }
+class LongColumnDefinition(override val name:String, override val sqlName:String, override val table:String) extends FieldBasedColumnDefinition(name, sqlName, table) {
+  override def read(resultSet: ResultSetRow) = resultSet.getLong(alias)
+}
 class UTPIdentifierColumnDefinition(
   override val name:String, val sqlName:String, val utpTable:String,
   tradeTable : String, partitioningTradeColumns : List[String]

@@ -178,6 +178,9 @@ object GuiStart extends Log {
         val current = cacheMap(DeskCloses)
         cacheMap(DeskCloses) = current + (Desk.Titan -> (current(Desk.Titan) + (TradeTimestamp.magicLatestTimestampDay -> List(TradeTimestamp.makeMagicLatestTimestamp(timestamp)))))
       }
+      case RabbitEventReceived(latestTimestamp) => {
+        cacheMap(LatestRabbitEvent) = latestTimestamp
+      }
     }
 
     import LocalCache._
@@ -202,6 +205,7 @@ object GuiStart extends Log {
       cacheMap(IsStarlingDeveloper) = starlingServer.isStarlingDeveloper
       cacheMap(EnvironmentRules) = fc2Service.environmentRules
       cacheMap(CurveTypes) = fc2Service.curveTypes
+      cacheMap(LatestRabbitEvent) = starlingServer.latestRabbitEvent
     } catch {
       case e : Throwable =>
         e.printStackTrace()

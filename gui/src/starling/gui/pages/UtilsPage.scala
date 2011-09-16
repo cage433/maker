@@ -52,7 +52,7 @@ class UtilsPageComponent(context:PageContext) extends MigPanel("insets " + GuiUt
     def gotoEventViewerPage(modifiers:Modifiers) {
       context.goTo(EventViewerPage())
     }
-    val eventViewerString = "4"
+    val eventViewerString = "4."
     val eventViewerImage = StarlingIcons.im("/icons/32x32_event.png")
     val eventViewerButton = new NumberedButton("Event Viewer", eventViewerImage, (mods) => gotoEventViewerPage(mods), number = Some(eventViewerString))
     UtilsPageComponent.this.peer.getInputMap(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT).
@@ -62,12 +62,23 @@ class UtilsPageComponent(context:PageContext) extends MigPanel("insets " + GuiUt
     def gotoGitLogPage(modifiers:Modifiers) {
       context.goTo(GitLogPage(PivotPageState()))
     }
-    val gitLogString = "5"
+    val gitLogString = "5."
     val gitLogImage = StarlingIcons.im("/icons/32x32_log.png")
     val gitLogButton = new NumberedButton("Git Log", gitLogImage, (mods) => gotoGitLogPage(mods), number = Some(gitLogString))
     UtilsPageComponent.this.peer.getInputMap(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT).
             put(KeyStroke.getKeyStroke(KeyEvent.VK_5, 0), gitLogString)
     UtilsPageComponent.this.peer.getActionMap.put(gitLogString, Action(gitLogString){gotoGitLogPage(Modifiers.None)}.peer)
+
+    def gotoRabbitEventViewerPage(modifiers:Modifiers) {
+      val latestRabbitEvent = context.localCache.localCache(LocalCacheKeys.LatestRabbitEvent)
+      context.goTo(RabbitEventViewerPage(PivotPageState(), RabbitEventViewerPageState(latestRabbitEvent)))
+    }
+    val rabbitEventViewerString = "6."
+    val rabbitEventViewerImage = StarlingIcons.im("/icons/32x32_event.png")
+    val rabbitEventViewerButton = new NumberedButton("Rabbit Event Viewer", rabbitEventViewerImage, (mods) => gotoRabbitEventViewerPage(mods), number = Some(rabbitEventViewerString))
+    UtilsPageComponent.this.peer.getInputMap(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT).
+            put(KeyStroke.getKeyStroke(KeyEvent.VK_6, 0), rabbitEventViewerString)
+    UtilsPageComponent.this.peer.getActionMap.put(rabbitEventViewerString, Action(rabbitEventViewerString){gotoRabbitEventViewerPage(Modifiers.None)}.peer)
 
     val buttonHolder = new MigPanel("insets 0") {
       opaque = false
@@ -76,6 +87,7 @@ class UtilsPageComponent(context:PageContext) extends MigPanel("insets " + GuiUt
       add(cannedPageButton, "sg, wrap")
       add(eventViewerButton, "split 3, spanx, ax center, sg")
       add(gitLogButton, "ax center, sg")
+      add(rabbitEventViewerButton, "ax center, sg")
     }
 
     add(buttonHolder, "newline, skip1")

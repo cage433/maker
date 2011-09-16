@@ -36,7 +36,8 @@ class StarlingServerImpl(
         ukHolidayCalendar: BusinessCalendarSet,
         ldapSearch: LdapUserLookup,
         eaiStarlingDB: DB,
-        val allTraders: Traders
+        val allTraders: Traders,
+        rabbitEventDatabase:RabbitEventDatabase
       ) extends StarlingServer with Log {
 
   def desks = {
@@ -339,4 +340,42 @@ class StarlingServerImpl(
     val gitPivotSource = new GitPivotDataSource(numCommits)
     PivotTableModel.createPivotData(gitPivotSource, pivotFieldParams)
   }
+
+  def rabbitEvents(pivotFieldParams:PivotFieldParams, number:Int) = {
+    val table = RabbitEventDatabase.TableName
+    val starlingID = "Starling ID"
+    val verb = "Verb"
+    val subject = "Subject"
+    val id = "ID"
+    val source = "Source"
+    val timestamp = "Timestamp"
+    val host = "Host"
+    val pid = "PID"
+    val body = "Body"
+
+    val columns = {
+      List(("Event Fields", List(
+        new LongColumnDefinition(starlingID, "starlingID", table),
+        StringColumnDefinition(verb, "verb", table),
+        StringColumnDefinition(subject, "subject", table),
+        StringColumnDefinition(id, "id", table),
+        StringColumnDefinition(source, "source", table),
+        TimestampColumnDefinition(timestamp, "timestamp", table),
+        StringColumnDefinition(host, "host", table),
+        new IntColumnDefinition(pid, "pid", table),
+        StringColumnDefinition(body, "body", table)
+      )))
+    }
+
+    PivotTableModel.createPivotData(new OnTheFlySQLPivotTableDataSource(
+      rabbitEventDatabase.db,
+      columns,
+      From(RealTable(table), List()),
+      List(),
+      PivotFieldsState(),
+      List()
+    ), pivotFieldParams)
+  }
+
+  def latestRabbitEvent = rabbitEventDatabase.latestID
 }

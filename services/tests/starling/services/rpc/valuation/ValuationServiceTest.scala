@@ -18,6 +18,7 @@ import starling.market.{TestMarketTest, MarketProvider, TestMarketLookup}
 import starling.tradestore.TradeStore
 import starling.instrument.TradeableType
 import starling.richdb.RichInstrumentResultSetRow
+import starling.rmi.RabbitEventDatabase
 
 
 /**
@@ -31,6 +32,7 @@ class ValuationServiceTest extends StarlingTest {
   var mockTitanLogisticsServices : FileMockedTitanLogisticsServices = null
   var mockRabbitEventServices : MockTitanRabbitEventServices = null
   var mockInventoryCache : TitanLogisticsServiceBasedInventoryCache = null
+  var mockDB : RabbitEventDatabase = null
 
   @BeforeClass
   def initMocks() {
@@ -42,6 +44,9 @@ class ValuationServiceTest extends StarlingTest {
     mockTitanLogisticsServices = FileMockedTitanLogisticsServices()
     mockRabbitEventServices = new MockTitanRabbitEventServices()
     mockInventoryCache = new TitanLogisticsServiceBasedInventoryCache(mockTitanLogisticsServices)
+    mockDB = new RabbitEventDatabase(null, null) {
+      override def saveEvent(ev:Event) {}
+    }
   }
   
   /**
@@ -86,7 +91,7 @@ class ValuationServiceTest extends StarlingTest {
       val handler = (ids : List[String]) => updatedValuationIdList = ids
       
       val vs = new ValuationService(
-        new MockEnvironmentProvider, mockTitanTradeCache, mockTitanServices, mockTitanLogisticsServices, mockRabbitEventServices, mockInventoryCache, None)
+        new MockEnvironmentProvider, mockTitanTradeCache, mockTitanServices, mockTitanLogisticsServices, mockRabbitEventServices, mockInventoryCache, None, mockDB)
 
       val valuations = vs.valueAllQuotas()
 
@@ -161,7 +166,7 @@ class ValuationServiceTest extends StarlingTest {
   //    val inventory = mockTitanLogisticsServices.inventoryService.service.getInventoryTreeByPurchaseQuotaId()
 
       val vs = new ValuationService(
-        new MockEnvironmentProvider, mockTitanTradeCache, mockTitanServices, mockTitanLogisticsServices, mockRabbitEventServices, mockInventoryCache, None)
+        new MockEnvironmentProvider, mockTitanTradeCache, mockTitanServices, mockTitanLogisticsServices, mockRabbitEventServices, mockInventoryCache, None, mockDB)
 
 
       val inventoryValuations = vs.valueAllInventory()
