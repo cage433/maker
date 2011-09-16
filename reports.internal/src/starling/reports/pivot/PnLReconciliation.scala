@@ -7,7 +7,7 @@ import starling.dbx.QueryBuilder._
 import starling.tradestore.eai.EAITradeAttributes
 import starling.quantity.{Quantity, UOM}
 import starling.db.{DB}
-import starling.trade.Trade
+import starling.instrument.Trade
 import starling.tradestore.{TradeSet, TradeAndFields}
 import starling.reports.internal.AbstractReportContext
 

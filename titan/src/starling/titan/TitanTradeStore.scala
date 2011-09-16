@@ -5,7 +5,7 @@ import starling.instrument.TradeableType
 import starling.pivot.{DrillDownInfo, PivotAxis, PivotFieldsState, Field}
 import starling.richdb.{RichDB, RichInstrumentResultSetRow}
 import starling.utils.Broadcaster
-import starling.trade.TradeSystem
+import starling.instrument.TradeSystem
 import starling.pivot.FieldDetails
 import starling.gui.api.{Desk, TradesUpdated}
 

@@ -17,7 +17,7 @@ import starling.models.{European, Call}
 import swing.event.Event
 import starling.utils.Broadcaster
 import starling.daterange._
-import starling.trade.{TradeID, Trade, TradeSystem}
+import starling.instrument.{TradeID, Trade, TradeSystem}
 import starling.tradestore.eai.{EAITradeStore, EAITradeAttributes}
 import starling.pivot.{PivotTreePath, SomeSelection, Field}
 import starling.eai.{EAIStrategyDB, TreeID}

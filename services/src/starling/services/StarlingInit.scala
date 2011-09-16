@@ -22,7 +22,7 @@ import starling.utils.ImplicitConversions._
 import starling.tradeimport.{ClosedDesks, TradeImporterFactory, TradeImporter}
 import starling.tradestore.TradeStores
 import starling.http._
-import starling.trade.TradeSystem
+import starling.instrument.TradeSystem
 import starling.LIMServer
 import starling.gui.api._
 import starling.eai.{Traders, EAIAutoImport, EAIStrategyDB}

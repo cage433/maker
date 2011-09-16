@@ -11,7 +11,7 @@ import starling.daterange.{Day, Timestamp}
 import starling.eai.{TreeID, EAIStrategyDB}
 import starling.auth.{User, LdapUserLookup}
 import starling.utils.Log
-import starling.trade.{Trade, TradeID, TradeAttributes}
+import starling.instrument.{Trade, TradeID, TradeAttributes}
 import starling.dbx.QueryBuilder._
 import starling.tradestore.eai.ExternalSortIndexPivotTreePathOrdering
 import starling.tradestore.TradeStore.StoreResults

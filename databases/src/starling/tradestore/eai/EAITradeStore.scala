@@ -3,7 +3,7 @@ package starling.tradestore.eai
 import starling.instrument.TradeableType
 import starling.daterange.Timestamp
 import starling.eai._
-import starling.trade.TradeAttributes
+import starling.instrument.TradeAttributes
 import starling.db.EAITradeSystem
 import starling.pivot._
 import starling.richdb.{RichInstrumentResultSetRow, RichDB}

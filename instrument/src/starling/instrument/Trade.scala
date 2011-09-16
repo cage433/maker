@@ -1,4 +1,4 @@
-package starling.trade
+package starling.instrument
 
 import starling.curves.{Environment}
 import java.lang.String

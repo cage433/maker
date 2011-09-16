@@ -20,7 +20,7 @@ import java.lang.String
 import starling.utils.{Broadcaster, AppendingMap, Log}
 import collection.{Iterable, Seq}
 import starling.daterange._
-import starling.trade.{TradeID, Trade, TradeSystem, TradeAttributes}
+import starling.instrument.{TradeID, Trade, TradeSystem, TradeAttributes}
 import math.Ordering
 import starling.quantity._
 import starling.gui.api._

@@ -15,7 +15,7 @@ import starling.db.IntradayTradeSystem
 import starling.daterange._
 import starling.tradestore.intraday.IntradayTradeAttributes
 import starling.auth.User
-import starling.trade.{Trade, TradeID}
+import starling.instrument.{Trade, TradeID}
 import starling.pivot.PivotTreePath
 import org.mockito.Mockito._
 import org.mockito.Matchers._

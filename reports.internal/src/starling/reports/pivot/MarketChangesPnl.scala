@@ -14,7 +14,7 @@ import starling.daterange.DayAndTime
 import starling.concurrent.MP._
 import starling.tradestore.{TradeAndFields, TradeChanges}
 import starling.daterange.TimeOfDay
-import starling.trade.Trade
+import starling.instrument.Trade
 import starling.utils.{AppendingMap}
 import starling.instrument.utils.AtomicDatumKeyUtils
 import starling.gui.api.{ReportSpecificChoices, UTPIdentifier}

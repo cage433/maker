@@ -38,7 +38,7 @@ import com.trafigura.services.{TitanSerializableDate}
 import starling.tradestore.TradeStore
 import com.trafigura.edm.logistics.inventory.{EDMAssignmentItem, EDMInventoryItem}
 import starling.daterange.{Timestamp, Day}
-import starling.trade.Trade
+import starling.instrument.Trade
 
 
 /**

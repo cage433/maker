@@ -7,7 +7,7 @@ import starling.daterange._
 import starling.tradestore.intraday.IntradayTradeAttributes
 import starling.db.IntradayTradeSystem
 import starling.auth.User
-import starling.trade.TradeID
+import starling.instrument.TradeID
 import starling.market.rules.{CommonPricingRule, SwapPricingRule}
 import starling.quantity.{UOM, Quantity}
 import starling.quantity.UOM._

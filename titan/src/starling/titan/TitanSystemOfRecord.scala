@@ -9,7 +9,7 @@ import starling.systemofrecord.SystemOfRecord
 import starling.daterange.Day
 import starling.daterange.Day._
 import starling.pivot.Field
-import starling.trade.{Trade, TradeID, TradeAttributes}
+import starling.instrument.{Trade, TradeID, TradeAttributes}
 import starling.instrument.physical.PhysicalMetalAssignment
 import starling.db.TitanTradeSystem
 import java.lang.UnsupportedOperationException

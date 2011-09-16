@@ -49,7 +49,6 @@
       </library>
     </orderEntry>
     <orderEntry type="module" module-name="dbx" exported="" />
-    <orderEntry type="module" module-name="trade" exported="" />
     <orderEntry type="module-library" scope="TEST">
       <library>
         <CLASSES>

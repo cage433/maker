@@ -5,7 +5,7 @@ import intraday.{IntradayTradeAttributes, IntradayTradeStore}
 import starling.db._
 import starling.neptune.{RefinedFixationTradeStore, RefinedAssignmentTradeStore}
 import starling.daterange.{Day, Timestamp}
-import starling.trade.{Trade, TradeID, TradeSystem}
+import starling.instrument.{Trade, TradeID, TradeSystem}
 import starling.pivot._
 import starling.tradeimport.{ClosedDesks, TradeImporter}
 import starling.eai.instrumentreaders.EAISystemOfRecord

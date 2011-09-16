@@ -14,7 +14,7 @@ import starling.pivot._
 import controller.PivotTable
 import starling.pivot.model._
 import starling.services._
-import starling.trade.{Trade, TradeID, TradeSystem}
+import starling.instrument.{Trade, TradeID, TradeSystem}
 import starling.tradestore.{TradeSet, TradePredicate, TradeStores}
 import starling.tradestore.intraday.IntradayTradeAttributes
 import starling.utils._

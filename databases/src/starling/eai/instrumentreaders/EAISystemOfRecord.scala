@@ -12,7 +12,7 @@ import starling.daterange.Day._
 import starling.instrument._
 import starling.quantity.Quantity
 import starling.quantity.UOM._
-import starling.trade.{TradeID, Trade}
+import starling.instrument.{TradeID, Trade}
 import starling.market._
 import starling.utils.{Log, Reflection}
 import starling.dbx.Clause

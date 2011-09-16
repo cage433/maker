@@ -5,7 +5,7 @@ import collection.immutable.TreeMap
 import collection.{SortedMap, MapProxy}
 import starling.pivot.{FieldDetails, Field}
 import starling.daterange.{Day, Timestamp}
-import starling.trade.{TradeID, Trade}
+import starling.instrument.{TradeID, Trade}
 import collection.mutable.{HashMap, Map => MMap, Set => MSet}
 import starling.utils.cache.CacheFactory
 import starling.utils.AppendingMap

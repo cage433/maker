@@ -15,7 +15,7 @@ import scala.collection.JavaConversions._
 import starling.models._
 import starling.daterange.{Day, Spread, DateRange}
 import starling.quantity.{SpreadQuantity, Quantity, UOM}
-import starling.trade.TradeSystem
+import starling.instrument.TradeSystem
 import starling.dbx.DataSourceFactory
 
 class RichDB(val dataSource : DataSource, factory : RichResultSetRowFactory) extends DBTrait[RichResultSetRow] {

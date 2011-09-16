@@ -12,7 +12,7 @@ import starling.tradestore.eai.EAITradeStore
 import starling.tradeimport.{TradeImporter, ClosedDesks}
 import starling.calendar.BusinessCalendarSet
 import collection.mutable.ArrayBuffer
-import starling.trade.Trade
+import starling.instrument.Trade
 import org.springframework.dao.DeadlockLoserDataAccessException
 import starling.databases.utils.RepeatingTask
 import starling.utils.{Log}

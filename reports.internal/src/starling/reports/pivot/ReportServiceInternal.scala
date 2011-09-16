@@ -18,7 +18,7 @@ import starling.gui.api._
 import starling.services.trade.TradeDiff
 import starling.utils.cache.CacheFactory
 import starling.tradestore._
-import starling.trade.{Trade}
+import starling.instrument.{Trade}
 import starling.rmi.PivotData
 import collection.mutable.ListBuffer
 import starling.market._

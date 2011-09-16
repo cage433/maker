@@ -6,7 +6,7 @@ import starling.services.trade.ExcelTradeReader
 import org.mockito.Mockito._
 import org.mockito.Matchers._
 import collection.immutable.Nil
-import starling.trade.Trade
+import starling.instrument.Trade
 import starling.gui.api.BlotterTradeUpdate
 import starling.utils.{Broadcaster, StarlingTest}
 import starling.utils.StarlingMatchers._

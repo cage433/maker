@@ -1,4 +1,4 @@
-package starling.trade
+package starling.instrument
 
 import java.io.Serializable
 import starling.utils.StarlingObject

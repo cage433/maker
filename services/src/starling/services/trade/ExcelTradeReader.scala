@@ -4,7 +4,7 @@ package trade
 import instrumentreaders.ExcelInstrumentReader
 import starling.utils.Reflection
 import starling.instrument._
-import starling.trade.Trade
+import starling.instrument.Trade
 import starling.eai.{EAIStrategyDB, Traders}
 import collection.mutable.ArraySeq
 import starling.daterange.Day

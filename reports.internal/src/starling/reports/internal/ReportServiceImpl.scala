@@ -8,8 +8,8 @@ import starling.daterange.{Timestamp, Day}
 import starling.reports.pivot.{CurveIdentifier, ReportServiceInternal}
 import starling.tradestore.{TradeStores, TradeSet}
 import starling.auth.User
-import starling.trade.TradeID._
-import starling.trade.{TradeSystem, TradeID}
+import starling.instrument.TradeID._
+import starling.instrument.{TradeSystem, TradeID}
 import starling.pivot.{FieldDetailsGroup, TableCell, PivotFieldParams}
 import starling.rmi.UserSettingsDatabase
 import starling.db.{DB, TradeSystems}

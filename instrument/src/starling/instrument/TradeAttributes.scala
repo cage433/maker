@@ -1,4 +1,4 @@
-package starling.trade
+package starling.instrument
 
 import starling.richdb.RichInstrumentResultSetRow
 import starling.pivot.{FieldDetails, Field}
