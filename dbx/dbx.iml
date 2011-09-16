@@ -39,7 +39,7 @@
       </library>
     </orderEntry>
     <orderEntry type="module" module-name="utils" exported="" />
-    <orderEntry type="module" module-name="instrument" />
+    <orderEntry type="module" module-name="instrument" exported="" />
     <orderEntry type="module-library" exported="">
       <library>
         <CLASSES>
