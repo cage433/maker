@@ -51,9 +51,12 @@ case class StarlingLocalCache(localCache:HeterogeneousMap[LocalCacheKey]) {
     }
   }
 
+  def latestDeskTradeTimestamp(desk:Desk) = localCache(DeskCloses)(desk)(TradeTimestamp.magicLatestTimestampDay).head
+
+
   def deskCloses(desk: Option[Desk]): List[TradeTimestamp] = desk.map(deskCloses).getOrElse(Nil)
   def deskCloses(desk: Desk): List[TradeTimestamp] = {
-    localCache(DeskCloses).get(desk).map(closes => closes.values.flatten.toList.sortWith(_.timestamp > _.timestamp)).getOrElse(Nil)
+    localCache(DeskCloses).get(desk).map(closes => closes.values.flatten.toList.sortWith(_ > _)).getOrElse(Nil)
   }
 
   def traderBookLookup: Map[User, List[Desk]] = localCache(TradersBookLookup)

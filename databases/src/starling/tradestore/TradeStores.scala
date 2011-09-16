@@ -85,6 +85,14 @@ case class TradeStores(
     }
   }
 
+  def closedDesksByDay: Map[Desk, Map[Day, List[TradeTimestamp]]] = {
+    val closes = closedDesks.closedDesksByDay
+    val titanLatestTradeTimestamp = TradeTimestamp.makeMagicLatestTimestamp(
+      titanTradeStore.cachedLatestTimestamp.get()
+    )
+    closes + (Desk.Titan -> (closes(Desk.Titan) + (TradeTimestamp.magicLatestTimestampDay -> List(titanLatestTradeTimestamp))))
+  }
+
   def toTradeSets(tradeSelection: TradeSelectionWithTimestamp): List[(TradeSet, Timestamp)] = {
     val currentGroups = intradayTradeStore.intradayLatest.keySet
     val intradayTradesetsAndTimestamps = tradeSelection.intradaySubgroupAndTimestamp.toList.flatMap {

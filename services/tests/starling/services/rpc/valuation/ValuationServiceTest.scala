@@ -15,6 +15,9 @@ import starling.utils.{Stopwatch, StarlingTest, Log}
 import org.testng.annotations.{BeforeClass, Test}
 import starling.utils.Levels
 import starling.market.{TestMarketTest, MarketProvider, TestMarketLookup}
+import starling.tradestore.TradeStore
+import starling.instrument.TradeableType
+import starling.richdb.RichInstrumentResultSetRow
 
 
 /**
@@ -83,8 +86,7 @@ class ValuationServiceTest extends StarlingTest {
       val handler = (ids : List[String]) => updatedValuationIdList = ids
       
       val vs = new ValuationService(
-        new MockEnvironmentProvider, mockTitanTradeCache, mockTitanServices, mockTitanLogisticsServices, mockRabbitEventServices, mockInventoryCache)
-
+        new MockEnvironmentProvider, mockTitanTradeCache, mockTitanServices, mockTitanLogisticsServices, mockRabbitEventServices, mockInventoryCache, None)
 
       val valuations = vs.valueAllQuotas()
 
@@ -160,7 +162,7 @@ class ValuationServiceTest extends StarlingTest {
   //    val inventory = mockTitanLogisticsServices.inventoryService.service.getInventoryTreeByPurchaseQuotaId()
 
       val vs = new ValuationService(
-        new MockEnvironmentProvider, mockTitanTradeCache, mockTitanServices, mockTitanLogisticsServices, mockRabbitEventServices, mockInventoryCache)
+        new MockEnvironmentProvider, mockTitanTradeCache, mockTitanServices, mockTitanLogisticsServices, mockRabbitEventServices, mockInventoryCache, None)
 
 
       val assignmentValuations = vs.valueAllAssignments()

@@ -7,6 +7,7 @@ import starling.richdb.{RichDB, RichInstrumentResultSetRow}
 import starling.utils.Broadcaster
 import starling.trade.TradeSystem
 import starling.pivot.FieldDetails
+import starling.gui.api.{Desk, TradesUpdated}
 
 object TitanTradeStore {
   val quotaID_str = "Quota ID"
@@ -67,5 +68,9 @@ class TitanTradeStore(db: RichDB, broadcaster:Broadcaster, tradeSystem:TradeSyst
 
   override val tradeAttributeFieldDetails =
     TitanTradeStore.labels.map{ label => FieldDetails(label)}
+
+  override def tradesChanged() = {
+   broadcaster.broadcast(TradesUpdated(Desk.Titan, cachedLatestTimestamp.get))
+  }
 }
 

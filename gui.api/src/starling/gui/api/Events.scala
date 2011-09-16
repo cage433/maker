@@ -13,6 +13,7 @@ import starling.browser.service.StarlingEvent
 class Events //The is just here as I find this class using "^n Events"
 
 case class IntradayUpdated(group: String, user: User, timestamp:Timestamp) extends StarlingEvent
+case class TradesUpdated(desk : Desk, timestamp :Timestamp) extends StarlingEvent
 case class DeskClosed(desk: Desk, timestamp:TradeTimestamp) extends StarlingEvent
 case class DeskCloseFailed(desk: Desk, timestamp:TradeTimestamp, error: Throwable) extends StarlingEvent
 case class MarketDataSnapshotSet(selection: MarketDataSelection, previousSnapshot: Option[SnapshotIDLabel],

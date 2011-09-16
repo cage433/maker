@@ -172,6 +172,10 @@ object GuiStart extends Log {
           cacheMap(LocalCache.AllUserNames) = username :: current
         }
       }
+      case TradesUpdated(desk, timestamp) => {
+        val current = cacheMap(DeskCloses)
+        cacheMap(DeskCloses) = current + (Desk.Titan -> (current(Desk.Titan) + (TradeTimestamp.magicLatestTimestampDay -> List(TradeTimestamp.makeMagicLatestTimestamp(timestamp)))))
+      }
     }
 
     import LocalCache._
