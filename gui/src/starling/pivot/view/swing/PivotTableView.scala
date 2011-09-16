@@ -517,8 +517,6 @@ class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSiz
   private def resizeRowHeaderTableColumns() {
     tableModelsHelper.resizeRowHeaderColumns(fullTable, rowHeaderTable, rowComponent,
       data.pivotTable.rowFieldHeadingCount, sizerPanel, rowHeaderTableScrollPane, otherLayoutInfo.columnDetails)
-    contentPanel.revalidate()
-    contentPanel.repaint()
   }
 
   private def updatePivotEdits(edits0:PivotEdits, tableType:PivotTableType) {
@@ -539,6 +537,10 @@ class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSiz
     val newConverter = viewConverter.copy(extraFormatInfo = extraFormatInfo)
     val (newRowData,newColumnData,newMainTableCells,_,_,_,_) = newConverter.allTableCellsAndUOMs
     tableModelsHelper.setData(newRowData, newColumnData, newMainTableCells, extraFormatInfo)
+    onEDT({
+      contentPanel.revalidate()
+      contentPanel.repaint()
+    })
   }
 
   // What I need to do here is loop through the row header table and decide which columns have collapsible elements. If a column does,
