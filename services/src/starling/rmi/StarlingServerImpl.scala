@@ -157,14 +157,7 @@ class UserReportsService(
           val bookCloseOffset = pnl.tradeTimestampFrom match {
             case Some(ts) => {
               reportParameters.tradeSelectionWithTimestamp.deskAndTimestamp match {
-                case Some((d,_)) => {
-                  val latestClose = tradeStores.closedDesks.latestTradeTimestamp(d)
-                  if (ts.closeDay == latestClose.closeDay) {
-                    Right(true)
-                  } else {
-                    Left(businessDaysBetween(baseDay, ts.closeDay))
-                  }
-                }
+                case Some((d,_)) => tradeVersionOffsetOrLatest(baseDay, d,  ts)
                 case None => Left(0)
               }
             }
@@ -184,16 +177,20 @@ class UserReportsService(
     }
   }
 
-  def tradeVersionOffsetOrLatest(baseDay:Day, deskAndTimestamp:Option[(Desk, TradeTimestamp)]) = {
+  private def tradeVersionOffsetOrLatest(baseDay : Day, d : Desk, ts : TradeTimestamp) : Either[Int, Boolean] = {
+    val latestClose = tradeStores.closedDesks.latestTradeTimestamp(d)
+    if (ts.closeDay == latestClose.closeDay) {
+      Right(true)
+    } else if (ts.closeDay == TradeTimestamp.magicLatestTimestampDay) {
+      Right(true)
+    } else {
+      Left(businessDaysBetween(baseDay, ts.closeDay))
+    }
+  }
+
+  def tradeVersionOffsetOrLatest(baseDay:Day, deskAndTimestamp:Option[(Desk, TradeTimestamp)]) : Either[Int, Boolean] = {
     deskAndTimestamp match {
-      case Some((d,ts)) => {
-        val latestClose = tradeStores.closedDesks.latestTradeTimestamp(d)
-        if (ts.closeDay == latestClose.closeDay) {
-          Right(true)
-        } else {
-          Left(businessDaysBetween(baseDay, ts.closeDay))
-        }
-      }
+      case Some((d,ts)) => tradeVersionOffsetOrLatest(baseDay, d, ts)
       case None => Left(0)
     }
   }

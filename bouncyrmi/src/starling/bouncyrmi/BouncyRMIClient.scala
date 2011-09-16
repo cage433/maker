@@ -435,7 +435,6 @@ class BouncyRMIClient(host: String, port: Int, auth: Client, logger:(String)=>Un
       try {
         executor.submit(new Runnable() {
           def run() {
-            println("s " + event)
             publisher.publish(event)
           }
         })
