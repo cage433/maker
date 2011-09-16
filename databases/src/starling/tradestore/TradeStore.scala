@@ -93,8 +93,7 @@ object JustTradeFields {
     new FieldDetails("Trade Count") {
       override def isDataField = true
       override def transformValueForGroupByField(a: Any) = "Undefined"
-      override def value(a: Any) = a
-      override def formatter = SetSizePivotFormatter
+      override def value(a: Any) = a.asInstanceOf[Set[_]].size
     },
     new FieldDetails("Trade ID") {
       override def formatter = TradeIDPivotFormatter

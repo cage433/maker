@@ -623,4 +623,8 @@ class StarlingServerImpl(
   }
   def deleteUserReport(reportName:String) {userSettingsDatabase.deleteUserReport(User.currentlyLoggedOn, reportName)}
 
+  def gitLog(pivotFieldParams:PivotFieldParams, numCommits:Int) = {
+    val gitPivotSource = new GitPivotDataSource(numCommits)
+    PivotTableModel.createPivotData(gitPivotSource, pivotFieldParams)
+  }
 }
