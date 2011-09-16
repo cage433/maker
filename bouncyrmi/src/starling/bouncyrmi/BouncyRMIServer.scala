@@ -188,12 +188,10 @@ class BouncyRMIServer(val port: Int, auth: AuthHandler, version: String, knownEx
               val serverContextClass = serverContext.asInstanceOf[AnyRef].getClass
               val paramClasses = params.map(classForNameWithPrimitiveCheck(serverContextClass.getClassLoader, _))
               val method = serverContextClass.getMethod(name, paramClasses: _*)
-              StdOut.setTee(line => e.getChannel.write(StdOutMessage(id, line)))
               val decodedArgs = args.map( arg => BouncyRMI.decode(serverContextClass.getClassLoader, arg))
               val r = ThreadUtils.withNamedThread(declaringClassName+"#"+method.getName) {
                 method.invoke(serverContext, decodedArgs: _ *)
               }
-              StdOut.reset
               MethodInvocationResult(id, BouncyRMI.encode(r))
             } catch {
               case e: InvocationTargetException => {
@@ -204,8 +202,6 @@ class BouncyRMIServer(val port: Int, auth: AuthHandler, version: String, knownEx
                 t.printStackTrace()
                 makeExceptionForClient(t)
               }
-            } finally {
-              StdOut.setTee(c => {})
             }
 
             write(result)
