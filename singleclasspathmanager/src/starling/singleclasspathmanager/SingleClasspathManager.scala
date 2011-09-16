@@ -17,6 +17,14 @@ class SingleClasspathManager(properties:Map[String,String], activators:List[Clas
     }
   }
 
+  def service[T](klass:Class[T]) = {
+    registry.toList.filter(_.klass == klass) match {
+      case Nil => throw new NoServiceFoundException(0)
+      case entry :: Nil => entry.service.asInstanceOf[T]
+      case many => throw new Exception("There is more than one " + klass + " service")
+    }
+  }
+
   var id = 0
   private var started = false
   private val instances = activators.map(_.newInstance)
@@ -40,11 +48,7 @@ class SingleClasspathManager(properties:Map[String,String], activators:List[Clas
       }
     }
     def awaitService[T](klass:Class[T]):T = {
-      registry.toList.filter(_.klass == klass) match {
-        case Nil => throw new NoServiceFoundException(0)
-        case entry :: Nil => entry.service.asInstanceOf[T]
-        case many => throw new Exception("There is more than one " + klass + " service")
-      }
+      service(klass)
     }
     def createServiceTracker(klass:Option[Class[_]], properties:List[ServiceProperty], tracker:BromptonServiceTracker):Unit = {
       val trackerEntry = TrackerEntry(klass, properties, tracker)

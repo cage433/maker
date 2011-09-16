@@ -21,7 +21,6 @@ object ValuationServiceApiTestRun {
         println("Worked " + worked.size + ", failed " + errors.size)
         println("Errors: ")
         errors.foreach(println)
-        println("Valuation service result, valued quotas, size %d, using snapshot %s, took %d ms".format(valuationResult.tradeResults.size, valuationResult.snapshotID, System.currentTimeMillis() - sw))
 
         val errs = errors.collect{ case Left(e) => e }.filter(e => !e.contains("Fixed pricing spec with no fixed prices")).filter(!_.contains("SHFE, Nickel"))
 
@@ -31,6 +30,8 @@ object ValuationServiceApiTestRun {
         println("\nMissing Markets " + missingMarkets.mkString("\n"))
         println("\nMissing Levels " + missingLevels.mkString("\n"))
         println("\nMisc " + other2.mkString("\n"))
+
+        println("Valuation service result, valued quotas, total size %d, worked %d, failed %d, using snapshot %s, took %d ms".format(valuationResult.tradeResults.size, worked.size, errors.size, valuationResult.snapshotID, System.currentTimeMillis() - sw))
       }
 
       def testAssignmentValuation() {
@@ -41,7 +42,6 @@ object ValuationServiceApiTestRun {
         println("Worked " + worked.size + ", failed " + errors.size)
         println("Errors: ")
         errors.foreach(println)
-        println("Valuation service result, valued assignment size %d, using snapshot %s, took %d ms".format(assignmentValuationResult.assignmentValuationResults.size, assignmentValuationResult.snapshotID, System.currentTimeMillis() - sw))
 
         val errs = errors.collect{ case Left(e) => e }.filter(e => !e.contains("Fixed pricing spec with no fixed prices")).filter(!_.contains("SHFE, Nickel"))
 
@@ -51,6 +51,8 @@ object ValuationServiceApiTestRun {
         println("\nMissing Markets " + missingMarkets.mkString("\n"))
         println("\nMissing Levels " + missingLevels.mkString("\n"))
         println("\nMisc " + other2.mkString("\n"))
+
+        println("Valuation service result, valued assignment total size %d, worked %d, failed %d, using snapshot %s, took %d ms".format(assignmentValuationResult.assignmentValuationResults.size, worked.size, errors.size, assignmentValuationResult.snapshotID, System.currentTimeMillis() - sw))
       }
 
       testQuotaValuation()

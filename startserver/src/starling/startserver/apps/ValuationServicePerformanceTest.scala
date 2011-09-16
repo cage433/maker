@@ -5,6 +5,11 @@ import starling.services.StarlingInit
 import com.trafigura.services.valuation.ValuationServiceApi
 import com.trafigura.services.marketdata.MarketDataServiceApi
 import starling.client.BouncyRMIServiceApi
+import starling.startserver.SingleClasspathBroadcasterActivator
+import starling.auth.osgi.AuthBromptonActivator
+import starling.services.osgi.ServicesBromptonActivator
+import starling.bouncyrmi.BouncyRMIServerBromptonActivator
+import starling.singleclasspathmanager.SingleClasspathManager
 
 
 /**
@@ -17,7 +22,20 @@ object ValuationServicePerformanceTest extends App {
   println("Running main for valuation service tests")
   val gSw = new Stopwatch()
 
-  val server = StarlingInit.testInstance
+  val server = {
+    /*
+    val activators = List(
+      classOf[SingleClasspathBroadcasterActivator],
+      classOf[AuthBromptonActivator],
+      classOf[ServicesBromptonActivator],
+      classOf[BouncyRMIServerBromptonActivator]
+    )
+    val single = new SingleClasspathManager(starling.manager.Props.readDefault, activators)
+    single.start
+    */
+    
+    StarlingInit.testInstance
+  }
   lazy val vs = server.valuationService
   lazy val mds = server.marketDataService
 
