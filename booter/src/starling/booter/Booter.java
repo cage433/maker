@@ -33,6 +33,7 @@ class Booter {
         if (!cacheDir.exists()) cacheDir.mkdir();
         File logFile = new File(cacheDir, "log.txt");
         System.setOut(new java.io.PrintStream(new TeeOutputStream(System.out, new FileOutputStream(logFile))));
+        System.setErr(new java.io.PrintStream(new TeeOutputStream(System.err, new FileOutputStream(logFile))));
         System.out.println("Cachdir: " + cacheDir.getAbsolutePath());
         run(cacheDir, appBaseURL, Arrays.copyOfRange(args, 2, args.length));
     }
