@@ -18,7 +18,7 @@ import java.util.concurrent.{ConcurrentHashMap, Executors}
 import org.jboss.netty.channel._
 import java.net.{URL, InetSocketAddress}
 import java.lang.ThreadLocal
-import starling.utils.ThreadNaming
+import starling.utils.ThreadUtils
 
 class BouncyRMIServer(val port: Int, auth: AuthHandler, version: String, knownExceptionClasses:Set[String]) {
 
@@ -190,7 +190,7 @@ class BouncyRMIServer(val port: Int, auth: AuthHandler, version: String, knownEx
               val method = serverContextClass.getMethod(name, paramClasses: _*)
               StdOut.setTee(line => e.getChannel.write(StdOutMessage(id, line)))
               val decodedArgs = args.map( arg => BouncyRMI.decode(serverContextClass.getClassLoader, arg))
-              val r = ThreadNaming.withNamedThread(declaringClassName+"#"+method.getName) {
+              val r = ThreadUtils.withNamedThread(declaringClassName+"#"+method.getName) {
                 method.invoke(serverContext, decodedArgs: _ *)
               }
               StdOut.reset

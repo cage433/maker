@@ -894,7 +894,7 @@ object ValuationService extends App {
 
   import org.codehaus.jettison.json.JSONObject
 
-  lazy val vs = StarlingInit.devInstance.valuationService
+  lazy val vs = StarlingInit.runningDevInstance.valuationService
 
   val quotaValuations = vs.valueAllTradeQuotas()
   val (worked, failed) = quotaValuations.valuationResults.values.partition({ case Right(_) => true; case Left(_) => false })
@@ -926,7 +926,7 @@ object ValuationService extends App {
   val loadedExchanges = loadJsonValuesFromFile(exchangesFile).map(s => Market.fromJson(new JSONObject(s)).asInstanceOf[Market])
   val loadedTrades = loadJsonValuesFromFile(tradesFile).map(s => EDMPhysicalTrade.fromJson(new JSONObject(s)).asInstanceOf[EDMPhysicalTrade])
 
-  StarlingInit.devInstance.stop
+  StarlingInit.runningDevInstance.stop
 
   def writeJson[T <: ModelObject with Object { def toJson() : JSONObject }](fileName : String, objects : List[T]) {
     try {

@@ -26,7 +26,6 @@
     <orderEntry type="library" name="scala-lib" level="project" />
     <orderEntry type="library" name="scala-swing-lib" level="project" />
     <orderEntry type="module" module-name="utils" exported="" />
-    <orderEntry type="module" module-name="loopyxl" exported="" />
     <orderEntry type="module" module-name="daterange" exported="" />
     <orderEntry type="module" module-name="auth" exported="" />
     <orderEntry type="module" module-name="gui.api" exported="" />
@@ -202,6 +201,7 @@
       </library>
     </orderEntry>
     <orderEntry type="module" module-name="gui" exported="" />
+    <orderEntry type="module" module-name="loopyxl" exported="" />
   </component>
 </module>
 

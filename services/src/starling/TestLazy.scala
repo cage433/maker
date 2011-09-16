@@ -12,7 +12,7 @@ import tradestore.TradePredicate
 
 object TestLazy extends App {
 
-  val in = starling.services.StarlingInit.devInstance
+  val in = starling.services.StarlingInit.runningDevInstance
   val ts = in.eaiTradeStores(Desk.LondonDerivativesOptions)
 
   val pfs = PivotFieldsState(rowFields=List(Field("Strategy")), columnFields=List(Field("Instrument"), Field("Market")), dataFields=List(Field("Trade Count")))

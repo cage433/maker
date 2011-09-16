@@ -34,8 +34,9 @@ object ValuationServicePerformanceTest extends App {
     single.start
     */
     
-    StarlingInit.testInstance
+    StarlingInit.runningTestInstance
   }
+
   lazy val vs = server.valuationService
   lazy val mds = server.marketDataService
 

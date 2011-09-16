@@ -6,7 +6,6 @@ import org.osgi.framework.{BundleActivator => OSGIBundleActivator}
 import org.osgi.framework.{BundleContext => OSGIBundleContext}
 import org.osgi.framework.ServiceReference
 import org.osgi.framework._
-import java.util.concurrent.atomic.AtomicReference
 import java.io.{FileInputStream, File}
 import java.util.{Dictionary,Hashtable,Properties}
 import java.lang.reflect.{Proxy,InvocationHandler,Method}
@@ -21,6 +20,8 @@ import java.util.concurrent.{CountDownLatch, ConcurrentHashMap}
 import swing.event.Event
 import starling.utils.{Receiver, Broadcaster, ReceiversBroadcaster}
 import collection.JavaConversions
+import net.sf.cglib.proxy.{MethodProxy, MethodInterceptor, Enhancer}
+import java.util.concurrent.atomic.{AtomicInteger, AtomicReference}
 
 trait PropsService {
   def updated(props:Dictionary[String,String])
@@ -33,6 +34,7 @@ class BundleHandle(var holder:Option[BundleActivatorHolder])
 class BromptonOSGIActivator extends OSGIBundleActivator {
   var bundleTracker:BundleTracker = _
   var props:Option[Props] = None
+  val serviceIDSequence = new java.util.concurrent.atomic.AtomicInteger()
   def start(context:OSGIBundleContext) {
     val latch = context.getService(context.getServiceReference(classOf[CountDownLatch].getName)).asInstanceOf[CountDownLatch]
     import Bundle._
@@ -46,7 +48,7 @@ class BromptonOSGIActivator extends OSGIBundleActivator {
             val instance = activatorClass.newInstance
             instance.asInstanceOf[BromptonActivator]
           }
-          val context = new OSGIBromptonContext(bundle.getBundleContext)
+          val context = new OSGIBromptonContext(serviceIDSequence, bundle.getBundleContext)
           val holder = new BundleActivatorHolder(activator, context, latch)
           println(">>Starting: " + bundle.getSymbolicName)
           holder.doStart(props.get)
@@ -150,44 +152,77 @@ class ServiceProxy[T](context:OSGIBundleContext, klass:Class[T], properties:List
   def start = tracker.open
   def stop = tracker.close
   def await = tracker.waitForService(0) //0 means forever
-  val proxy:T =
-      Proxy.newProxyInstance(klass.getClassLoader, Array(klass), new InvocationHandler() {
-        def invoke(proxy:Object, method:Method, args:Array[Object]) = {
-          val service = tracker.getServices.last//tracker.waitForService(10*1000)
-          if (service == null) throw new NoServiceFoundException(10)
-          if (!klass.isAssignableFrom(service.getClass)) {
-            println("ref " + tracker.getServiceReference)
-            println(service.getClass + " from " + service.getClass.getClassLoader)
-            println(klass + " from " + klass.getClassLoader)
-          }
-          method.invoke(service, args : _*)
-        }
-      }).asInstanceOf[T]
+  def proxy:T = {
+    if (!klass.isInterface) {
+      val s = tracker.waitForService(10*1000).asInstanceOf[T]
+      if (s == null) {
+        println("Have been waiting 10 seconds for a " + klass + " still waiting...")
+        val s1 = tracker.waitForService(0).asInstanceOf[T]
+        println("Got a " + klass)
+        s1
+      } else {
+        s
+      }
+    } else {
+      val e = new Enhancer()
+      e.setClassLoader(klass.getClassLoader)//classOf[Props].getClassLoader)
+      e.setSuperclass(klass)
+      e.setCallback(new MethodInterceptor() {
+         def intercept(obj:Object, method:Method,
+                      args:Array[Object], proxy:MethodProxy):Object = {
+           val service = tracker.waitForService(0)//getServices.last//tracker.waitForService(10*1000)
+           if (service == null) throw new NoServiceFoundException("No " + klass + " " + properties + " service found")
+           if (!klass.isAssignableFrom(service.getClass)) {
+             println("ref " + tracker.getServiceReference)
+             println(service.getClass + " from " + service.getClass.getClassLoader)
+             println(klass + " from " + klass.getClassLoader)
+           }
+           method.invoke(service, args : _*)
+         }
+      })
+      try {
+        e.create().asInstanceOf[T]
+      } catch {
+        case e:Exception => throw new Exception("Failed to create proxy for " + klass, e)
+      }
+    }
+  }
+//      Proxy.newProxyInstance(klass.getClassLoader, Array(klass), new InvocationHandler() {
+//        def invoke(proxy:Object, method:Method, args:Array[Object]) = {
+//        }
+//      }).asInstanceOf[T]
 }
-class ServiceTracker(context:OSGIBundleContext, klass:Option[Class[_]], properties:List[ServiceProperty], tracker:BromptonServiceTracker) {
+class ServiceTracker[T](val serviceIDSequence : AtomicInteger, context:OSGIBundleContext, klass:Option[Class[T]], properties:List[ServiceProperty], tracker:BromptonServiceCallback[T])
+  extends BromptonServiceTracker[T] {
 
   val filters = klass.map(k => "(objectClass="+k.getName+")").toList ::: properties.map { sp => "("+sp.name+"="+sp.value+")"}
   val filter = context.createFilter(filters.head)
   private val osgiTracker:OSGIServiceTracker = new OSGIServiceTracker(context, filter, new ServiceTrackerCustomizer {
     def addingService(ref: ServiceReference) = {
       val klassNames = ref.getProperty(Constants.OBJECTCLASS).asInstanceOf[Array[String]].toList
+      val serviceID = serviceIDSequence.getAndIncrement
       val service = context.getService(ref)
-      println("Classloader of addingserice " + ref + " " + klassNames.toList)
-      tracker.serviceAdded(BromptonServiceReference(ref.toString, klassNames), service)
+      val bromptonRef = BromptonServiceReference(serviceID.toString, klassNames)
+      tracker.serviceAdded(bromptonRef, service.asInstanceOf[T])
       osgiTracker.addingService(ref)
+      bromptonRef
     }
 
     def removedService(ref: ServiceReference, x: AnyRef) {
-      val klassNames = ref.getProperty(Constants.OBJECTCLASS).asInstanceOf[Array[String]].toList
-      tracker.serviceRemoved(BromptonServiceReference(ref.toString, klassNames))
+      val bromptonRef = x.asInstanceOf[BromptonServiceReference]
+      tracker.serviceRemoved(bromptonRef)
     }
 
     def modifiedService(ref: ServiceReference, x: AnyRef) {
     }
   })
   osgiTracker.open
+
+  def each(f: (T) => Unit) {
+    osgiTracker.getServices.foreach { service => f(service.asInstanceOf[T]) }
+  }
 }
-class OSGIBromptonContext(val context:OSGIBundleContext) extends BromptonContext {
+class OSGIBromptonContext(val serviceIDSequence : AtomicInteger, val context:OSGIBundleContext) extends BromptonContext {
   private val serviceProxies = new ConcurrentHashMap[Class[_],ServiceProxy[_]]()
   def nameThread[T](name:String, f:()=>T):T = {
     val currentName = Thread.currentThread.getName
@@ -196,8 +231,8 @@ class OSGIBromptonContext(val context:OSGIBundleContext) extends BromptonContext
     Thread.currentThread.setName(currentName)
     r
   }
-  def createServiceTracker(klass:Option[Class[_]], properties:List[ServiceProperty], tracker:BromptonServiceTracker) {
-    new ServiceTracker(context, klass, properties, tracker)
+  def createServiceTracker[T](klass:Option[Class[T]], properties:List[ServiceProperty], tracker:BromptonServiceCallback[T]) = {
+    new ServiceTracker[T](serviceIDSequence, context, klass, properties, tracker)
   }
   def awaitService[T](klass:Class[T]):T = {
     val myProxy = new ServiceProxy(context, klass, Nil)
@@ -241,7 +276,8 @@ class BundleActivatorHolder(activator:BromptonActivator, context:OSGIBromptonCon
           e.printStackTrace()
           /*caused by stop when still waiting*/
         }
-        case e => {
+        case e:Exception => {
+          println("Exception while starting " + activator.getClass)
           e.printStackTrace()
         }
       } finally {

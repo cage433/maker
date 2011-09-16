@@ -35,7 +35,7 @@ case class DifferenceMainPivotReportPage(
   assert(tradeSelection.intradaySubgroup.isEmpty, "Difference reports don't work with Excel trades")
 
   def dataRequest(pageBuildingContext:StarlingServerContext) = {
-    pageBuildingContext.cachingStarlingServer.diffReportPivot(tradeSelection, curveIdentifierDm1, curveIdentifierD,
+    pageBuildingContext.cachingReportService.diffReportPivot(tradeSelection, curveIdentifierDm1, curveIdentifierD,
       reportOptions, expiryDay, fromTimestamp, toTimestamp, pivotPageState.pivotFieldParams)
   }
 
@@ -107,11 +107,11 @@ case class MainPivotReportPage(showParameters:Boolean, reportParameters:ReportPa
   }
 
   override def subClassesPageData(reader:StarlingServerContext):Option[PageData] = {
-    Some(PivotReportTablePageData(reader.cachingStarlingServer.reportErrors(reportParameters).errors.size))
+    Some(PivotReportTablePageData(reader.cachingReportService.reportErrors(reportParameters).errors.size))
   }
 
   def dataRequest(pageBuildingContext:StarlingServerContext) = {
-    pageBuildingContext.cachingStarlingServer.reportPivot(reportParameters, pivotPageState.pivotFieldParams)
+    pageBuildingContext.cachingReportService.reportPivot(reportParameters, pivotPageState.pivotFieldParams)
   }
   def selfPage(pps:PivotPageState, edits:PivotEdits) = copy(pivotPageState = pps)
   def selfReportPage(rp:ReportParameters, pps:PivotPageState = pivotPageState) = copy(reportParameters = rp, pivotPageState = pps)
@@ -239,7 +239,7 @@ case class MainPivotReportPage(showParameters:Boolean, reportParameters:ReportPa
     }
   }
 
-  override def bookmark(serverContext:StarlingServerContext):Bookmark = ReportBookmark(showParameters, serverContext.server.createUserReport(reportParameters), pivotPageState)
+  override def bookmark(serverContext:StarlingServerContext):Bookmark = ReportBookmark(showParameters, serverContext.reportService.createUserReport(reportParameters), pivotPageState)
 }
 
 case class ReportBookmark(showParameters:Boolean, userReportData:UserReportData, pivotPageState:PivotPageState) extends StarlingBookmark {
@@ -254,7 +254,7 @@ case class ReportBookmark(showParameters:Boolean, userReportData:UserReportData,
       case None => Day.today // Real time
       case Some(d) => d
     }
-    val reportParameters = serverContext.server.createReportParameters(userReportData, dayToUse)
+    val reportParameters = serverContext.reportService.createReportParameters(userReportData, dayToUse)
     MainPivotReportPage(showParameters, reportParameters, pivotPageState)
   }
 }
@@ -310,7 +310,7 @@ case class ReportErrorsPage(reportParameters:ReportParameters) extends StarlingS
   def text = "Errors in " + reportParameters.text
   def createComponent(context: PageContext, data: PageData, bookmark:Bookmark, browserSize:Dimension, previousPageData:Option[PreviousPageData]) = new PivotReportErrorPageComponent(context, data, browserSize, previousPageData)
   def build(pageBuildingContext: StarlingServerContext) = {
-    val errors = pageBuildingContext.cachingStarlingServer.reportErrors(reportParameters)
+    val errors = pageBuildingContext.cachingReportService.reportErrors(reportParameters)
     val errorsToUse = errors.errors.map(e => ErrorViewElement(e.instrumentText, e.message))
     PivotReportErrorPageData(errorsToUse)
   }

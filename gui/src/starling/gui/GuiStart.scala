@@ -36,6 +36,7 @@ import starling.fc2.api.FC2Service
 import starling.rmi.StarlingServer
 import starling.auth.{Client}
 import starling.auth.internal.{RealClient, ClientLogin}
+import starling.reports.ReportService
 
 object StarlingServerNotificationHandlers {
   def notificationHandler = {
@@ -120,6 +121,7 @@ object GuiStart extends Log {
 
   def initCacheMap(   cacheMap:HeterogeneousMap[LocalCacheKey],
                       starlingServer:StarlingServer,
+                      reportService:ReportService,
                       fc2Service:FC2Service,
                       publisher: Publisher) {
     val localCacheUpdatePublisher = new scala.swing.Publisher() {}
@@ -190,7 +192,7 @@ object GuiStart extends Log {
       cacheMap(ObservationDaysForExcel) = observationDaysForExcel
       cacheMap(ExcelLatestMarketDataVersion) = fc2Service.excelLatestMarketDataVersions
       cacheMap(PricingGroupLatestMarketDataVersion) = fc2Service.pricingGroupLatestMarketDataVersions
-      cacheMap(LocalCacheKeys.ReportOptionsAvailable) = starlingServer.reportOptionsAvailable
+      cacheMap(LocalCacheKeys.ReportOptionsAvailable) = reportService.reportOptionsAvailable
       cacheMap(DeskCloses) = starlingServer.deskCloses
       cacheMap(IntradayLatest) = starlingServer.intradayLatest
       cacheMap(TradersBookLookup) = starlingServer.traders

@@ -23,12 +23,21 @@ object ExportGuiRMIProperty extends ServiceProperty("export.rmi.gui", java.lang.
 object ExportTitanRMIProperty extends ServiceProperty("export.rmi.titan", java.lang.Boolean.TRUE)
 object ExportExcelProperty extends ServiceProperty("export.excel", java.lang.Boolean.TRUE)
 
-class NoServiceFoundException(time:Long) extends RuntimeException("No service found after " + time + "s")
+class NoServiceFoundException(message:String) extends RuntimeException(message)
 case class BromptonServiceReference(id:String, klasses:List[String])
 
-trait BromptonServiceTracker {
-  def serviceAdded(ref:BromptonServiceReference, service:AnyRef)
+trait BromptonServiceCallback[T] {
+  def serviceAdded(ref:BromptonServiceReference, service:T)
   def serviceRemoved(ref:BromptonServiceReference)
+}
+
+trait BromptonServiceTracker[T] {
+  def each(f:T=>Unit):Unit
+  def flatMap[R](f:T=>Iterable[R]) = {
+    val arrayBuffer = new scala.collection.mutable.ArrayBuffer[R]()
+    each { service => arrayBuffer ++= f(service) }
+    arrayBuffer.toList
+  }
 }
 
 trait BromptonServiceRegistration {
@@ -41,7 +50,13 @@ trait BromptonContext {
       service:T,
       properties:List[ServiceProperty]=List()):BromptonServiceRegistration
   def awaitService[T](klass:Class[T]):T
-  def createServiceTracker(klass:Option[Class[_]], properties:List[ServiceProperty], serviceTracker:BromptonServiceTracker)
+  def createServiceTracker[T](
+    klass:Option[Class[T]],
+    properties:List[ServiceProperty]=Nil,
+    serviceTracker:BromptonServiceCallback[T]=new BromptonServiceCallback[T] {
+      def serviceAdded(ref: BromptonServiceReference, service: T) {}
+      def serviceRemoved(ref: BromptonServiceReference) {}
+    }):BromptonServiceTracker[T]
 }
 
 object Props {

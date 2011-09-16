@@ -23,7 +23,6 @@ import starling.tradeimport.{ClosedDesks, TradeImporterFactory, TradeImporter}
 import starling.tradestore.TradeStores
 import starling.http._
 import starling.trade.TradeSystem
-import starling.reports.pivot.{ReportContextBuilder, ReportService}
 import starling.LIMServer
 import starling.gui.api._
 import starling.eai.{Traders, EAIAutoImport, EAIStrategyDB}
@@ -59,22 +58,23 @@ class StarlingInit( val props: Props,
                     authHandler:AuthHandler = AuthHandler.Dev,
                     rmiBroadcaster:Broadcaster = Broadcaster.Null,
                     dbMigration: Boolean = true,
-                    startRMI: Boolean = true,
+                    startRMI: Boolean = true, //not used
                     startHttp: Boolean = true,
                     startXLLoop: Boolean = true,
                     startStarlingJMX: Boolean = true,
                     forceGUICompatability: Boolean = true,
                     startEAIAutoImportThread: Boolean = true,
                     startRabbit: Boolean = true,
-                    testMode : Boolean = false
+                    testMode : Boolean = false,
+                    marketDataReadersProviders:MarketDataPageIdentifierReaderProviders = MarketDataPageIdentifierReaderProviders.Empty
                     ) extends Stopable with Log {
 
   private lazy val services = CompositeStopable(
     // Load all user settings, pivot layouts and user reports here to ensure we don't have any de-serialization issues. Do this before anyone can connect.
     true                     → List(Stopable(userSettingsDatabase.readAll _)),
     startRabbit              → List(titanRabbitEventServices),
-    startXLLoop              → List(excelLoopReceiver, loopyXLReceiver),
-    startHttp                → List(httpServer, regressionServer, webServiceServer, trinityService),
+    startXLLoop              → List(excelLoopReceiver),
+    startHttp                → List(httpServer, webServiceServer, trinityService),
     startStarlingJMX         → List(jmx),
     startEAIAutoImportThread → List(eaiAutoImport, fwdCurveAutoImport),
     true                     → List(scheduler, Stopable(stopF = DataSourceFactory.shutdown _))
@@ -248,8 +248,6 @@ class StarlingInit( val props: Props,
     eaiTradeStores, intradayTradesDB,
     refinedAssignmentTradeStore, refinedFixationTradeStore, titanTradeStore)
 
-  val reportContextBuilder = new ReportContextBuilder(marketDataStore)
-  val reportService = new ReportService(reportContextBuilder,tradeStores)
 
   val hostname = try {
     InetAddress.getLocalHost.getHostName
@@ -270,15 +268,14 @@ class StarlingInit( val props: Props,
 
   val referenceData = new ReferenceData(businessCalendars, marketDataStore, strategyDB, scheduler)
 
-  val userReportsService = new UserReportsService(businessCalendars.UK, tradeStores, marketDataStore, userSettingsDatabase, reportService)
 
   val traders = new Traders(ldapUserLookup.user _)
 
-  val starlingServer = new StarlingServerImpl(name, reportContextBuilder, reportService,
-    userSettingsDatabase, userReportsService, tradeStores, enabledDesks,
+  val starlingServer = new StarlingServerImpl(name,
+    userSettingsDatabase, tradeStores, enabledDesks,
     version, referenceData, businessCalendars.UK, ldapUserLookup, eaiStarlingSqlServerDB, traders)
 
-  val fc2Service = new FC2ServiceImpl(marketDataStore, curveViewer, reportService)
+  val fc2Service = new FC2ServiceImpl(marketDataStore, curveViewer, marketDataReadersProviders)
 
   val rmiPort = props.RmiPort()
 
@@ -289,19 +286,15 @@ class StarlingInit( val props: Props,
   val excelLoopReceiver = new ExcelLoopReceiver(ldapUserLookup, props.XLLoopPort(),
     new MarketDataHandler(broadcaster, starlingServer, marketDataStore),
     new TradeHandler(broadcaster, new ExcelTradeReader(strategyDB, eaiDealBookMapping, traders, currentUser), intradayTradesDB, traders),
-    new ReportHandler(userReportsService),
     new DiagnosticHandler(starlingServer))
 
-  val loopyXLReceiver = new LoopyXLReceiver(props.LoopyXLPort(), authHandler,
-    (new CurveHandler(curveViewer, marketDataStore) :: excelLoopReceiver.handlers.toList) : _*)
+  val loopyXLReceivers = new CurveHandler(curveViewer, marketDataStore) :: excelLoopReceiver.handlers.toList
 
   val browserService = new BrowserServiceImpl(name, version, userSettingsDatabase, broadcaster)
 
   val eaiAutoImport = new EAIAutoImport(15, starlingRichDB, eaiStarlingRichSqlServerDB, strategyDB, eaiTradeStores, closedDesks, enabledDesks)
 
   val deltaCSVDir = props.DeltaCSVDir()
-
-  val reportServlet = new ReportServlet("reports", userReportsService) //Don't add to main web server (as this has no authentication)
 
   lazy val httpServer = locally {
     val externalURL = props.ExternalUrl()
@@ -330,7 +323,6 @@ class StarlingInit( val props: Props,
   }
 
   StarlingWebServices.webServices = List(marketDataService, valuationService, /*DocumentationService, */ExampleService)
-  lazy val regressionServer = new RegressionServer(props.RegressionPort(), reportServlet)
 }
 
 class StarlingWebServices extends WebServiceFactory {
@@ -348,14 +340,17 @@ object StarlingWebServices {
 }
 
 object StarlingInit {
-  lazy val devInstance = {
-    new StarlingInit(PropsHelper.defaultProps, AuthHandler.Dev, Broadcaster.Null, false, false, false, false, false, false, false).update(_.start)
+
+  lazy val devInstance = new StarlingInit(PropsHelper.defaultProps, AuthHandler.Dev, Broadcaster.Null, false, false, false, false, false, false, false)
+
+  lazy val runningDevInstance = {
+    devInstance.update(_.start)
   }
 
   /**
    * defines a test service instance that runs RMI but uses mocked service stubs where appropriate
    */
-  lazy val testInstance = {
+  lazy val runningTestInstance = {
     new StarlingInit(PropsHelper.defaultProps, AuthHandler.Dev, Broadcaster.Null, true, true, false, false, false, false, false, false, true).update(_.start)
   }
 }

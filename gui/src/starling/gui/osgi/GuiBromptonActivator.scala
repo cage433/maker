@@ -19,6 +19,7 @@ import starling.pivot.{Field, SomeSelection}
 import starling.tradestore.TradePredicate
 import starling.daterange.{Day, TimeOfDay}
 import collection.immutable.TreeSet
+import starling.reports.ReportService
 
 class GuiBromptonProps {
   def serverRmiHost:String = "localhost"
@@ -43,11 +44,15 @@ class GuiBromptonActivator extends BromptonActivator {
     starlingServer.storeSystemInfo(GuiStart.systemInfo)
 
     val fc2Service = client.proxy(classOf[FC2Service])
+    val reportService = client.proxy(classOf[ReportService])
+
     context.registerService(classOf[Publisher], client.remotePublisher)
     context.registerService(classOf[StarlingServer], starlingServer)
     context.registerService(classOf[FC2Service], fc2Service)
+    context.registerService(classOf[ReportService], reportService)
     context.registerService(classOf[BrowserService], client.proxy(classOf[BrowserService]))
-    context.registerService(classOf[BrowserBundle], new StarlingBrowserBundle(starlingServer, fc2Service))
+    context.registerService(classOf[BrowserBundle], new StarlingBrowserBundle(starlingServer, reportService, fc2Service))
+
 
     context.registerService(classOf[HttpServlet], new HttpServlet {
       override def doGet(req:HttpServletRequest, resp:HttpServletResponse) {
@@ -70,7 +75,7 @@ class GuiBromptonActivator extends BromptonActivator {
           ci.copy(thetaDayAndTime = ci.thetaDayAndTime.copyTimeOfDay(TimeOfDay.EndOfDay), environmentRule = enRule, envModifiers = envMods)
         }
 
-        val slidableReportOptions = starlingServer.reportOptionsAvailable.options.filter(_.slidable)
+        val slidableReportOptions = reportService.reportOptionsAvailable.options.filter(_.slidable)
         val reportOptions = new ReportOptions(slidableReportOptions, None, None)
 
         val tradeIDLabel = TradeIDLabel(tradeID, TradeSystemLabel("Titan", "ti"))
@@ -87,7 +92,7 @@ class GuiBromptonActivator extends BromptonActivator {
 }
 
 import StarlingLocalCache._
-class StarlingBrowserBundle(starlingServer:StarlingServer, fc2Service:FC2Service) extends BrowserBundle {
+class StarlingBrowserBundle(starlingServer:StarlingServer, reportService:ReportService, fc2Service:FC2Service) extends BrowserBundle {
   def bundleName = "StarlingServer"
   def marshal(obj: AnyRef) = GuiStarlingXStream.write(obj)
   override def userPage(context:PageContext) = Some( UserDetailsPage(context.localCache.currentUser) )
@@ -98,7 +103,7 @@ class StarlingBrowserBundle(starlingServer:StarlingServer, fc2Service:FC2Service
 
 
   def initCache(cache: HeterogeneousMap[LocalCacheKey], publisher:Publisher) {
-    GuiStart.initCacheMap(cache, starlingServer, fc2Service, publisher)
+    GuiStart.initCacheMap(cache, starlingServer, reportService, fc2Service, publisher)
   }
 
   override def notificationHandlers = StarlingServerNotificationHandlers.notificationHandler :: Nil

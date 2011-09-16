@@ -28,7 +28,6 @@
     <orderEntry type="module" module-name="browser" exported="" />
     <orderEntry type="module" module-name="fc2.api" exported="" />
     <orderEntry type="module" module-name="manager" />
-    <orderEntry type="module" module-name="manager" />
     <orderEntry type="module" module-name="bouncyrmi" />
     <orderEntry type="module-library">
       <library>
@@ -66,6 +65,7 @@
         <SOURCES />
       </library>
     </orderEntry>
+    <orderEntry type="module" module-name="reports" exported="" />
   </component>
 </module>
 

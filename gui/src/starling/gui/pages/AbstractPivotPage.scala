@@ -13,6 +13,7 @@ import java.awt.{Color, Dimension}
 import starling.pivot.HiddenType._
 import starling.browser._
 import common.{GuiUtils, MigPanel}
+import starling.reports.ReportService
 
 /**
  * An abstract page which holds a pivot table
@@ -533,8 +534,9 @@ class PivotTablePageComponent(
   def getSelection = selection
 }
 
-case object ClearServerSideCache extends StarlingSubmitRequest[Unit] {
-  def submit(serverContext:StarlingServerContext) {serverContext.server.clearCache}
+case object ClearServerSideCache extends SubmitRequest[Unit] {
+
+  def baseSubmit(serverContext: ServerContext) { serverContext.lookup(classOf[ReportService]).clearCache}
 }
 
 case class AbstractPivotComponentState(filterText:String,

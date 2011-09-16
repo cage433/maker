@@ -13,9 +13,8 @@ class SingleClasspathBroadcasterActivator extends BromptonActivator {
 
   def start(context: BromptonContext) {
     val broadcaster = new ReceiversBroadcaster()
-    context.createServiceTracker(Some(classOf[Receiver]), Nil, new BromptonServiceTracker {
-      def serviceAdded(ref: BromptonServiceReference, service: AnyRef) {
-        val receiver = service.asInstanceOf[Receiver]
+    context.createServiceTracker(Some(classOf[Receiver]), Nil, new BromptonServiceCallback[Receiver] {
+      def serviceAdded(ref: BromptonServiceReference, receiver: Receiver) {
         broadcaster.addReceiver(ref, receiver)
       }
       def serviceRemoved(ref: BromptonServiceReference) {

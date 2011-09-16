@@ -9,17 +9,22 @@ class SingleClasspathManager(properties:Map[String,String], activators:List[Clas
     def hasProperties(predicate:List[ServiceProperty]) = predicate.forall(p=>propertiesSet.contains(p))
   }
 
-  case class TrackerEntry(klass:Option[Class[_]], properties:List[ServiceProperty], tracker:BromptonServiceTracker) {
+  case class TrackerEntry[T](klass:Option[Class[_]], properties:List[ServiceProperty], callback:BromptonServiceCallback[T]) {
 
     def applyTo(services:List[ServiceEntry]) {
+      each { (ref, service) => callback.serviceAdded(ref, service) }
+    }
+
+    def each(f:( (BromptonServiceReference,T)=>Unit) ) {
+      val services = registry.toList
       val matches = services.filter { reg => reg.hasProperties(properties) && klass.map(_ == reg.klass).getOrElse(true) }
-      matches.foreach { reg => tracker.serviceAdded(reg.reference, reg.service) }
+      matches.foreach { reg => f(reg.reference, reg.service.asInstanceOf[T]) }
     }
   }
 
   def service[T](klass:Class[T]) = {
     registry.toList.filter(_.klass == klass) match {
-      case Nil => throw new NoServiceFoundException(0)
+      case Nil => throw new NoServiceFoundException("No " + klass + " service found")
       case entry :: Nil => entry.service.asInstanceOf[T]
       case many => throw new Exception("There is more than one " + klass + " service")
     }
@@ -29,7 +34,7 @@ class SingleClasspathManager(properties:Map[String,String], activators:List[Clas
   private var started = false
   private val instances = activators.map(_.newInstance)
   private val registry = new scala.collection.mutable.ArrayBuffer[ServiceEntry]()
-  private val trackers = new scala.collection.mutable.ArrayBuffer[TrackerEntry]()
+  private val trackers = new scala.collection.mutable.ArrayBuffer[TrackerEntry[_]]()
   private val context = new BromptonContext() {
     def registerService[T](
       klass:Class[T],
@@ -50,10 +55,15 @@ class SingleClasspathManager(properties:Map[String,String], activators:List[Clas
     def awaitService[T](klass:Class[T]):T = {
       service(klass)
     }
-    def createServiceTracker(klass:Option[Class[_]], properties:List[ServiceProperty], tracker:BromptonServiceTracker):Unit = {
-      val trackerEntry = TrackerEntry(klass, properties, tracker)
+    def createServiceTracker[T](klass:Option[Class[T]], properties:List[ServiceProperty], callback:BromptonServiceCallback[T]) = {
+      val trackerEntry = TrackerEntry(klass, properties, callback)
       trackerEntry.applyTo(registry.toList)
       trackers += trackerEntry
+      new BromptonServiceTracker[T] {
+        def each(f: (T) => Unit) {
+          trackerEntry.each { (ref,service) => f(service) }
+        }
+      }
     }
   }
 

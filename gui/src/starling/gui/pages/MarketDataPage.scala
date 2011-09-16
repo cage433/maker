@@ -20,6 +20,7 @@ import starling.browser._
 import common.RoundedBorder
 import starling.fc2.api.FC2Service
 import starling.utils.cache.ThreadSafeCachingProxy
+import starling.reports.ReportService
 
 class FC2Context(val service:FC2Service) {
   val cachingFC2Service:FC2Service = ThreadSafeCachingProxy.createProxy(service, classOf[FC2Service])
@@ -109,7 +110,7 @@ case class MarketDataPage(
   }
 
   override def bookmark(serverContext:ServerContext):Bookmark = {
-    val starlingServer = serverContext.lookup(classOf[StarlingServer])
+    val starlingServer = serverContext.lookup(classOf[ReportService])
     val singleObservationDay = pageState.pivotPageState.pivotFieldParams.pivotFieldState match {
       case None => None
       case Some(pfs) => {
@@ -287,7 +288,7 @@ case class ReportMarketDataBookmark(selection:MarketDataSelection, pageState:Mar
       pfs.addFilter((Field("Observation Day"), Set(day.get)))
     })
     val newPivotPageState = pageState.pivotPageState.copyPivotFieldsState(newPFS)
-    val newSelection = ReportMarketDataPageIdentifier(serverContext.server.createReportParameters(userReportData, day.get))
+    val newSelection = ReportMarketDataPageIdentifier(serverContext.reportService.createReportParameters(userReportData, day.get))
     MarketDataPage(newSelection, pageState.copy(pivotPageState = newPivotPageState))
   }
 }

@@ -112,7 +112,7 @@ object StarlingBuild extends Build{
     "loopyxl", 
     file("./loopyxl"),
     settings = standardSettings
-  ) dependsOn(auth)
+  ) dependsOn(manager, auth)
 
   lazy val maths = Project(
     "maths", 
@@ -156,11 +156,23 @@ object StarlingBuild extends Build{
     settings = standardSettings
   ) dependsOn(curves % testDependency, daterange % testDependency)
 
+  lazy val reports = Project(
+    "reports",
+    file("./reports"),
+    settings = standardSettings
+  ) dependsOn(guiapi)
+
+  lazy val reportsInternal = Project(
+    "reports.internal",
+    file("./reports.internal"),
+    settings = standardSettings
+  ) dependsOn(services)
+
   lazy val gui = Project(
     "gui", 
     file("./gui"),
     settings = standardSettings
-  ) dependsOn(fc2api, browser)
+  ) dependsOn(fc2api, reports, browser)
 
   lazy val browser = Project(
     "browser",
@@ -269,13 +281,13 @@ object StarlingBuild extends Build{
         Seq(unmanagedClasspath in Compile <++= (baseDirectory) map titanBinaryJars) ++ 
         Seq(unmanagedClasspath in Runtime <++= (baseDirectory) map titanBinaryJars) ++ 
         Seq(unmanagedClasspath in Test <++= (baseDirectory) map titanBinaryJars)
-    ) dependsOn(curves % "test->test", loopyxl % "test->test", concurrent, loopyxl, titan, gui, fc2api, browser)
+    ) dependsOn(curves % "test->test", concurrent, loopyxl, titan, gui, fc2api, browser)
   } else {
     Project(
       "services", 
       file("./services"),
       settings = standardSettings 
-    ) dependsOn(curves % "test->test", loopyxl % "test->test", concurrent, loopyxl, titan, gui, fc2api, browser)
+    ) dependsOn(curves % "test->test", concurrent, loopyxl, titan, gui, fc2api, browser)
   }
 
   lazy val manager = Project(
@@ -310,13 +322,13 @@ object StarlingBuild extends Build{
         Seq(unmanagedClasspath in Compile <++= (baseDirectory) map titanBinaryJars) ++
         Seq(unmanagedClasspath in Runtime <++= (baseDirectory) map titanBinaryJars) ++
         Seq(unmanagedClasspath in Test <++= (baseDirectory) map titanBinaryJars)
-    ) dependsOn(services, starlingClient, singleClasspathManager)
+    ) dependsOn(services, reportsInternal, starlingClient, singleClasspathManager)
   } else {
     Project(
       "startserver",
       file("./startserver"),
       settings = standardSettings
-    ) dependsOn(services, starlingClient, singleClasspathManager)
+    ) dependsOn(services, reportsInternal, starlingClient, singleClasspathManager)
   }
 
   lazy val launcher = if (useTitanModelBinaries) {

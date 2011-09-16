@@ -258,12 +258,13 @@ class Manager(
           if (version != "") {
             builder.setProperty( BUNDLE_VERSION, version )
           }
-          val includes = bundleName match {
+          val includes = (bundleName match {
             case "titan-hub-persistence-model" =>
               List("org.jboss.resteasy.client.core.marshallers", "org.jboss.resteasy.client.core")
             case "resteasy-jaxrs" => List("org.scannotation")
             case _ => Nil
-          }
+          }) ::: List("net.sf.cglib.proxy", "net.sf.cglib.core", "net.sf.cglib.reflect")
+
           builder.setProperty( EXPORT_PACKAGE, "*")
           builder.setProperty( IMPORT_PACKAGE, (allExcludes.map(p => "!"+p) ::: includes ::: List("*")).mkString(","))
           jarFiles.foreach(builder.addClasspath)
@@ -302,10 +303,10 @@ class Manager(
           var allIncludes = scala.collection.mutable.HashSet[String]()
           allIncludes ++= bundle.includes
           builder.setProperty( BUNDLE_SYMBOLICNAME, bundle.name )
+          allIncludes += "net.sf.cglib.proxy"
+          allIncludes += "net.sf.cglib.core"
+          allIncludes += "net.sf.cglib.reflect"
           bromptonActivator.map { activator =>
-            allIncludes += "net.sf.cglib.proxy"
-            allIncludes += "net.sf.cglib.core"
-            allIncludes += "net.sf.cglib.reflect"
             builder.setProperty( "Brompton-Activator", activator )
           }
           if (bundle.bundleConfig.exportAll) {

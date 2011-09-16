@@ -8,6 +8,7 @@ import starling.utils.Log
 import starling.props.{Props, PropsHelper}
 import management.ManagementFactory
 import java.io.File
+import starling.reports.osgi.ReportsBromptonActivator
 
 
 /**
@@ -22,10 +23,12 @@ object Server {
   def run() {
     System.setProperty("log4j.configuration", "utils/resources/log4j.properties")
     PropsHelper.writeDefaults
+    writePIDFile()
     val activators = List(
       classOf[SingleClasspathBroadcasterActivator],
       classOf[AuthBromptonActivator],
       classOf[ServicesBromptonActivator],
+      classOf[ReportsBromptonActivator],
       classOf[BouncyRMIServerBromptonActivator]
     )
     val single = new SingleClasspathManager(starling.manager.Props.readDefault, activators)

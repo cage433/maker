@@ -67,9 +67,9 @@ object GuiBundles extends BundleDefinitions {
       new File("utils/lib_managed/commons-io-jar-1.3.2.jar"),
       new File("osgirun/bundles/pax-logging-api-1.6.3.jar"),
       new File("osgirun/bundles/pax-logging-service-1.6.3.jar"),
-      new File("bouncyrmi/lib_managed/netty-3.2.5.Final.jar"),
-      new File("gui/lib_managed/jfreechart-1.0.0.jar"),
-      new File("gui/lib_managed/jcommon-1.0.0.jar"),
+      new File("bouncyrmi/lib_managed/netty-bundle-3.2.5.Final.jar"),
+      new File("gui/lib_managed/jfreechart-jar-1.0.0.jar"),
+      new File("gui/lib_managed/jcommon-jar-1.0.0.jar"),
       new File("utils/lib_managed/joda-time-jar-1.6.jar")
     )
 
@@ -87,7 +87,7 @@ object GuiBundles extends BundleDefinitions {
         "osgimanager" -> BundleConfig(exportAll=true, dirs=List("osgimanager")),
         "manager" -> BundleConfig(exportAll=true, dirs = List("manager")),
         "gui" -> BundleConfig(true, Nil, includes, excludes, Some("gui"),
-          List("daterange", "quantity", "utils", "auth", "bouncyrmi", "gui", "gui.api", "pivot", "pivot.utils", "fc2.api")))
+          List("daterange", "quantity", "utils", "auth", "bouncyrmi", "gui", "gui.api", "reports", "pivot", "pivot.utils", "fc2.api")))
 
     val manager = new Manager(
       new File("."),

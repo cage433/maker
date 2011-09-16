@@ -7,7 +7,7 @@ import starling.browser.internal.HomePage.StarlingHomePage
 import starling.browser.internal._
 import javax.swing.UIManager
 import com.jgoodies.looks.plastic.PlasticXPLookAndFeel
-import starling.manager.{BromptonServiceReference, BromptonServiceTracker, BromptonContext, BromptonActivator}
+import starling.manager.{BromptonServiceReference, BromptonServiceCallback, BromptonContext, BromptonActivator}
 import swing.Swing._
 import starling.browser.common.GuiUtils
 import starling.browser._
@@ -61,9 +61,8 @@ class BrowserBromptonActivator extends BromptonActivator {
       }
     }
     var bookmarks = serverContext.browserService.bookmarks
-    context.createServiceTracker(Some(classOf[BrowserBundle]), Nil, new BromptonServiceTracker {
-      def serviceAdded(ref: BromptonServiceReference, service: AnyRef) {
-        val bundle = service.asInstanceOf[BrowserBundle]
+    context.createServiceTracker(Some(classOf[BrowserBundle]), Nil, new BromptonServiceCallback[BrowserBundle] {
+      def serviceAdded(ref: BromptonServiceReference, bundle: BrowserBundle) {
         onEDT {
           val bundlesPublisher = new Publisher() {}
           bundlesPublisher.listenTo(localCachePublisher)

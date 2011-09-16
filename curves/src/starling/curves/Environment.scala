@@ -27,6 +27,8 @@ class MissingMarketDataException(s : String = "Missing data", cause : Throwable 
 class MissingPriceException(val marketName: String, val period: DateRange, msg : => String) extends MissingMarketDataException(msg)
 class MissingForwardFXException(val ccy: UOM, val forwardDay: Day, msg : => String) extends MissingMarketDataException(msg)
 
+class NoConstructorArgsEnvironment extends Environment(null, null)
+
 /** <p>
  * 		This class provides access to a snapshot of market data
  * 	</p>

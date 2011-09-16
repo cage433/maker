@@ -356,7 +356,7 @@ class SingleTradeMainPivotReportPage(val tradeID:TradeIDLabel, val reportParamet
     case _ => false
   }
   override def bookmark(serverContext:StarlingServerContext):Bookmark = {
-    SingleTradeReportBookmark(tradeID, serverContext.server.createUserReport(reportParameters0), pivotPageState)
+    SingleTradeReportBookmark(tradeID, serverContext.reportService.createUserReport(reportParameters0), pivotPageState)
   }
 }
 
@@ -366,7 +366,7 @@ case class SingleTradeReportBookmark(tradeID:TradeIDLabel, data:UserReportData, 
     day match {
       case None => throw new Exception("We need a day")
       case Some(d) => {
-        val reportParameters = serverContext.server.createReportParameters(data, d)
+        val reportParameters = serverContext.reportService.createReportParameters(data, d)
         new SingleTradeMainPivotReportPage(tradeID, reportParameters, pps)
       }
     }

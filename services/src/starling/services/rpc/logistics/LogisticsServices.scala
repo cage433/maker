@@ -207,7 +207,7 @@ object LogisticServices {
 
   def main(args : Array[String]) {
     println("running main for Logistics services")
-    val server = StarlingInit.devInstance
+    val server = StarlingInit.runningDevInstance
     val mockTitanServices = new FileMockedTitanServices()
     val logisticsServices = server.logisticsServices
     LogisticsJsonMockDataFileGenerator(mockTitanServices, logisticsServices)

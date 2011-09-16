@@ -124,8 +124,8 @@ class OsgiInstance(name:String, writePID:Boolean, properties:()=>Map[String,Stri
   def start = {
     if (writePID) { writePIDFile() }
     update()
-    val activators = bundles.bundles.map(b => if (b.activator) 1 else 0).sum
-    val latch = new CountDownLatch(activators)
+    val bundlesWithActivators = bundles.bundles.filter(_.activator).map(_.name)
+    val latch = new CountDownLatch(bundlesWithActivators.size)
     val bundleContext: BundleContext = framework.getBundleContext
     bundleContext.registerService(classOf[CountDownLatch].getName, latch, null)
     framework.start

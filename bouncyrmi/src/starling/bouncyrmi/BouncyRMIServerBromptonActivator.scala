@@ -5,7 +5,7 @@ import org.jboss.netty.channel.{ChannelLocal, Channel}
 import java.util.concurrent.Executors
 import swing.event.Event
 import starling.manager._
-import starling.utils.{Receiver, Log, Broadcaster, ThreadNaming}
+import starling.utils.{Receiver, Log, Broadcaster, ThreadUtils}
 
 //UnrecognisedTradeIDException
 class BouncyRMIServerProps {
@@ -43,7 +43,7 @@ class BouncyRMIServerBromptonActivator extends BromptonActivator {
     )
 
     def registerServiceTracker(serviceProperty:ServiceProperty, rmiServer:BouncyRMIServer) {
-      context.createServiceTracker(None, serviceProperty::Nil, new BromptonServiceTracker {
+      context.createServiceTracker(None, serviceProperty::Nil, new BromptonServiceCallback[AnyRef] {
         def serviceAdded(ref: BromptonServiceReference, service: AnyRef) = {
           rmiServer.addInstance(ref.klasses.head, service)
         }

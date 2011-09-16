@@ -111,10 +111,13 @@ object ServerBundles extends BundleDefinitions {
         "utils" -> BundleConfig(exportAll=true, dirs=List("utils")),
         "auth" -> BundleConfig(exportAll=true, dirs=List("auth")),
         "bouncyrmi" -> BundleConfig(exportAll=true, dirs=List("bouncyrmi")),
+        "reports" -> BundleConfig(exportAll=true, dirs=List("reports")),
+        "loopyxl" -> BundleConfig(exportAll=true, dirs=List("loopyxl")),
+        "reports.internal" -> BundleConfig(exportAll=true, dirs=List("reports.internal")),
         "main" -> BundleConfig(true, List("bonecp-bundle-0.7.1.RELEASE.jar"), includes, excludes, None, List(
           "daterange", "titan", "browser.service", "fc2.api",
           "concurrent", "curves",
-          "databases", "gui.api", "instrument", "loopyxl",
+          "databases", "gui.api", "instrument",
           "maths", "pivot", "pivot.utils",
           "quantity", "services", "starling.api",
           "trade", "dbx"

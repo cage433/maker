@@ -10,7 +10,8 @@ import starling.pivot._
 import starling.tradeimport.{ClosedDesks, TradeImporter}
 import starling.eai.instrumentreaders.EAISystemOfRecord
 import starling.eai.{TreeID}
-import starling.gui.api.{EAIDeskInfo, TradeTimestamp, Desk, TradeSelectionWithTimestamp}
+import starling.utils.STable
+import starling.gui.api._
 
 trait DeskDefinition {
   def tradeSets(predicate:TradePredicate):List[TradeSet]
@@ -30,6 +31,20 @@ case class TradeStores(
   refinedFixationTradeStore : RefinedFixationTradeStore,
   titanTradeStore : TradeStore
 ) {
+
+  private def label(fieldDetailsGroup:FieldDetailsGroup):FieldDetailsGroupLabel = FieldDetailsGroupLabel(fieldDetailsGroup.name, fieldDetailsGroup.fields.map(_.field.name))
+
+  def readTradeVersions(tradeID:TradeID):(STable,List[FieldDetailsGroupLabel],List[CostsLabel]) = {
+    storesFor(tradeID.tradeSystem).foreach { tradeStore => {
+      tradeStore.tradeHistory(tradeID) match {
+        case Some(res) => return (res._1, res._2.map(label(_)), res._3)
+        case None =>
+      }
+    }}
+    throw new Exception("Trade " + tradeID + " not found")
+
+  }
+
 
   def all = eaiTradeStores.values.toList ::: List(intradayTradeStore, refinedAssignmentTradeStore, refinedFixationTradeStore, titanTradeStore)
 
@@ -90,7 +105,7 @@ case class TradeStores(
     val titanLatestTradeTimestamp = TradeTimestamp.makeMagicLatestTimestamp(
       titanTradeStore.cachedLatestTimestamp.get()
     )
-    closes + (Desk.Titan -> (closes(Desk.Titan) + (TradeTimestamp.magicLatestTimestampDay -> List(titanLatestTradeTimestamp))))
+    closes + (Desk.Titan -> (closes.getOrElse(Desk.Titan, Map()) + (TradeTimestamp.magicLatestTimestampDay -> List(titanLatestTradeTimestamp))))
   }
 
   def toTradeSets(tradeSelection: TradeSelectionWithTimestamp): List[(TradeSet, Timestamp)] = {

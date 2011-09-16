@@ -7,9 +7,8 @@ import starling.services.StarlingInit
 import starling.curves.readers.RefinedMetalsLimMarketDataSource
 import starling.db.DBMarketDataStore
 import starling.db.MarketDataSet._
-import starling.services.utils.RegressionRunner
 import starling.auth.AuthHandler
-import starling.utils.Broadcaster
+import starling.utils.{ThreadUtils, Broadcaster}
 
 object RefinedMetalsLimMarketDataSourceTests {
   def main(args:Array[String]) {
@@ -44,7 +43,7 @@ object RefinedMetalsLimMarketDataSourceTests {
       source.read(12 Apr 2011)
     }
 
-    RegressionRunner.printNonDaemonThreads
+    ThreadUtils.printNonDaemonThreads
   }
 }
 
