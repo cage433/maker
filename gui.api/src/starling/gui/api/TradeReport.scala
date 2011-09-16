@@ -152,7 +152,7 @@ case class IntradayGroups(subgroups:List[String])
 
 object TradeTimestamp{
   val magicNoBookClosesDay = Day(1980, 1, 1)
-  val magicLatestTimestampDay = Day(2981, 1, 1)
+  val magicLatestTimestampDay = Day(2100, 1, 1)
 
   def makeMagicLatestTimestamp(timestamp : Timestamp) = TradeTimestamp(
       timestamp,
