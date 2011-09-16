@@ -56,4 +56,5 @@ trait StarlingServer {
   def deleteUserReport(reportName:String)
   def saveUserReport(reportName:String, data:UserReportData, showParameters:Boolean)
 
+  def gitLog(pivotFieldParams:PivotFieldParams, numCommits:Int):PivotData
 }

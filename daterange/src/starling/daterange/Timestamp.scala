@@ -13,6 +13,10 @@ case class Timestamp(instant : Long) extends Ordered[Timestamp] {
   def toJavaDate = new Date(instant)
 
   def day = Day.fromMillis(instant)
+  def month = {
+    val d = day
+    Month(d.year, d.month)
+  }
 
   def next = Timestamp(instant + 1)
 

@@ -59,12 +59,23 @@ class UtilsPageComponent(context:PageContext) extends MigPanel("insets " + GuiUt
             put(KeyStroke.getKeyStroke(KeyEvent.VK_4, 0), eventViewerString)
     UtilsPageComponent.this.peer.getActionMap.put(eventViewerString, Action(eventViewerString){gotoEventViewerPage(Modifiers.None)}.peer)
 
+    def gotoGitLogPage(modifiers:Modifiers) {
+      context.goTo(GitLogPage(PivotPageState()))
+    }
+    val gitLogString = "5"
+    val gitLogImage = StarlingIcons.im("/icons/32x32_log.png")
+    val gitLogButton = new NumberedButton("Git Log", gitLogImage, (mods) => gotoGitLogPage(mods), number = Some(gitLogString))
+    UtilsPageComponent.this.peer.getInputMap(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT).
+            put(KeyStroke.getKeyStroke(KeyEvent.VK_5, 0), gitLogString)
+    UtilsPageComponent.this.peer.getActionMap.put(gitLogString, Action(gitLogString){gotoGitLogPage(Modifiers.None)}.peer)
+
     val buttonHolder = new MigPanel("insets 0") {
       opaque = false
       add(statsButton, "sg")
       add(runAsUserButton, "sg")
-      add(cannedPageButton, "sg")
-      add(eventViewerButton, "sg")
+      add(cannedPageButton, "sg, wrap")
+      add(eventViewerButton, "split 3, spanx, ax center, sg")
+      add(gitLogButton, "ax center, sg")
     }
 
     add(buttonHolder, "newline, skip1")
