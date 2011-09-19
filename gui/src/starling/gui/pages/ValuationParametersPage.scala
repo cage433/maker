@@ -25,7 +25,7 @@ case class ValuationParametersPage(tradeID:TradeIDLabel, reportParameters:Report
       }
     }
     ValuationParametersPageData(
-      reader.cachingReportService.tradeValuation(tradeID, reportParameters.curveIdentifier, timestampToUse),
+      reader.reportService.tradeValuation(tradeID, reportParameters.curveIdentifier, timestampToUse),
       reportParameters, tradeID)
   }
   def createComponent(context:PageContext, data:PageData, bookmark:Bookmark, browserSize:Dimension, previousPageData:Option[PreviousPageData]) = {

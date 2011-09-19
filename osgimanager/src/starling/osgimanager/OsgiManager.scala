@@ -1,6 +1,5 @@
 package starling.osgimanager
 
-import java.lang.reflect.{Method, InvocationHandler}
 import starling.manager.BromptonServiceReference._
 import org.osgi.framework.{BundleActivator => OSGIBundleActivator}
 import org.osgi.framework.{BundleContext => OSGIBundleContext}
@@ -8,20 +7,22 @@ import org.osgi.framework.ServiceReference
 import org.osgi.framework._
 import java.io.{FileInputStream, File}
 import java.util.{Dictionary,Hashtable,Properties}
-import java.lang.reflect.{Proxy,InvocationHandler,Method}
 import org.osgi.framework.Bundle
 import org.osgi.framework.BundleEvent
 import org.osgi.service.cm.ManagedService
 import org.osgi.service.cm.ConfigurationAdmin
-import starling.manager._
 import swing.Publisher
 import org.osgi.util.tracker.{ServiceTrackerCustomizer, ServiceTracker => OSGIServiceTracker, BundleTracker, BundleTrackerCustomizer}
 import java.util.concurrent.{CountDownLatch, ConcurrentHashMap}
 import swing.event.Event
-import starling.utils.{Receiver, Broadcaster, ReceiversBroadcaster}
 import collection.JavaConversions
 import net.sf.cglib.proxy.{MethodProxy, MethodInterceptor, Enhancer}
 import java.util.concurrent.atomic.{AtomicInteger, AtomicReference}
+import starling.manager._
+import starling.utils.{Receiver, Broadcaster, ReceiversBroadcaster}
+import java.lang.reflect.{Method,UndeclaredThrowableException,InvocationTargetException}
+import starling.utils.cache.CacheFactory
+import utils.ThreadSafeCachingProxy
 
 trait PropsService {
   def updated(props:Dictionary[String,String])
@@ -170,6 +171,7 @@ class ServiceProxy[T](context:OSGIBundleContext, klass:Class[T], properties:List
       e.setCallback(new MethodInterceptor() {
          def intercept(obj:Object, method:Method,
                       args:Array[Object], proxy:MethodProxy):Object = {
+
            val service = tracker.waitForService(0)//getServices.last//tracker.waitForService(10*1000)
            if (service == null) throw new NoServiceFoundException("No " + klass + " " + properties + " service found")
            if (!klass.isAssignableFrom(service.getClass)) {
@@ -249,9 +251,10 @@ class OSGIBromptonContext(val serviceIDSequence : AtomicInteger, val context:OSG
   def registerService[T](klass:Class[T], service:T, properties:List[ServiceProperty]=List()) = {
     if (service == null) throw new Exception("Service is null")
     if (klass== null) throw new Exception("class is null")
+    val cachingService = ThreadSafeCachingProxy.createProxy(klass, service)
     val ref = context.registerService(
         klass.getName,
-        service.asInstanceOf[Object],
+        cachingService.asInstanceOf[Object],
         Util.servicePropertiesToDictionary(properties)
     )
     new BromptonServiceRegistration() {

@@ -293,6 +293,9 @@ class Manager(
 
           bundle.resources.foreach(builder.addClasspath)
           bundle.classes.foreach(builder.addClasspath)
+          bundle.bundleConfig.internalJars.foreach { jarName => {
+            builder.addClasspath(allJars(jarName))
+          }}
 
           val internalJars = bundle.internalJars.map(allJars)
           internalJars.foreach(builder.addClasspath)

@@ -16,7 +16,7 @@ case class TradeChangesReportPage(tradeSelection:TradeSelection, from:TradeTimes
   assert(tradeSelection.intradaySubgroup.isEmpty, "Trade changes report doesn't support excel trades")
 
   def dataRequest(pageBuildingContext:StarlingServerContext) = {
-    pageBuildingContext.cachingStarlingServer.tradeChanges(tradeSelection, from.timestamp, to.timestamp, from.timestamp.day.startOfFinancialYear, pivotPageState.pivotFieldParams)
+    pageBuildingContext.server.tradeChanges(tradeSelection, from.timestamp, to.timestamp, from.timestamp.day.startOfFinancialYear, pivotPageState.pivotFieldParams)
   }
 
   override def finalDrillDownPage(fields:Seq[(Field,Selection)], pageContext:PageContext, modifiers:Modifiers):Unit = {

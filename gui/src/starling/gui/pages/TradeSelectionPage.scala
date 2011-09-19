@@ -44,7 +44,7 @@ case class TradeSelectionPage(
 
   def dataRequest(pageBuildingContext:StarlingServerContext) = {
     val expiryDay = tpp.expiry.exp
-    pageBuildingContext.cachingStarlingServer.tradePivot(tradeSelectionWithTimestamp, expiryDay, pivotPageState.pivotFieldParams)
+    pageBuildingContext.server.tradePivot(tradeSelectionWithTimestamp, expiryDay, pivotPageState.pivotFieldParams)
   }
   
   override def subClassesPageData(pageBuildingContext:StarlingServerContext) = {

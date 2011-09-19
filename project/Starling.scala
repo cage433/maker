@@ -136,7 +136,7 @@ object StarlingBuild extends Build{
     "gui.api", 
     file("./gui.api"),
     settings = standardSettings
-  ) dependsOn(pivotUtils, quantity, auth, bouncyrmi, browserService)
+  ) dependsOn(pivotUtils, quantity, auth, bouncyrmi, browserService, manager)
 
   lazy val fc2api = Project(
     "fc2.api",
@@ -184,7 +184,7 @@ object StarlingBuild extends Build{
     "browserService",
     file("./browser.service"),
     settings = standardSettings
-  ) dependsOn()
+  ) dependsOn(manager)
 
   lazy val trade = Project(
     "trade", 
@@ -300,7 +300,7 @@ object StarlingBuild extends Build{
     "singleclasspathmanager",
     file("./singleclasspathmanager"),
     settings = standardSettings
-  ) dependsOn(manager, utils)
+  ) dependsOn(manager, utils, osgiManager)
 
   lazy val osgiManager = Project(
     "osgimanager",

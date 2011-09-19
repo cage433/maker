@@ -66,6 +66,7 @@
       </library>
     </orderEntry>
     <orderEntry type="module" module-name="reports" exported="" />
+    <orderEntry type="module" module-name="trade" exported="" />
   </component>
 </module>
 

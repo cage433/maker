@@ -3,10 +3,9 @@ package starling.utils.cache
 import com.google.common.collect.MapMaker
 import starling.utils.CollectionUtils._
 import java.util.concurrent.atomic.{AtomicLong, AtomicInteger}
-import collection.Iterable
 import java.lang.String
 import starling.utils.cache.CacheFactory.{StatsListener, Stats, Cache, CacheImpl}
-import java.util.concurrent.{Callable, ExecutionException, ConcurrentMap, FutureTask}
+import java.util.concurrent._
 
 class SimpleCacheImpl(soft: Boolean) extends CacheImpl {
   private val caches = new MapMaker().concurrencyLevel(16).makeMap[String, FutureTask[SimpleCache]]
@@ -61,6 +60,8 @@ class SimpleCache(statsListener: StatsListener, soft: Boolean) extends Cache(sta
       }
     }
   }
+
+  val sequence = new java.util.concurrent.atomic.AtomicInteger(0)
 
   def putIfAbsent[K,V](k: K, f: => V): (V, Boolean) = {
     val task = new FutureTask(new Callable[Either[V, (Throwable, Array[StackTraceElement])]]() {

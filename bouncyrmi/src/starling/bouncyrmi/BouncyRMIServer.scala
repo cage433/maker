@@ -203,7 +203,6 @@ class BouncyRMIServer(val port: Int, auth: AuthHandler, version: String, knownEx
                 makeExceptionForClient(t)
               }
             }
-
             write(result)
           }
         }

@@ -114,7 +114,7 @@ object ServerBundles extends BundleDefinitions {
         "reports" -> BundleConfig(exportAll=true, dirs=List("reports")),
         "loopyxl" -> BundleConfig(exportAll=true, dirs=List("loopyxl")),
         "reports.internal" -> BundleConfig(exportAll=true, dirs=List("reports.internal")),
-        "main" -> BundleConfig(true, List("bonecp-bundle-0.7.1.RELEASE.jar"), includes, excludes, None, List(
+        "main" -> BundleConfig(true, List("joda-time-jar-1.6.jar", "bonecp-bundle-0.7.1.RELEASE.jar"), includes, excludes, None, List(
           "daterange", "titan", "browser.service", "fc2.api",
           "concurrent", "curves",
           "databases", "gui.api", "instrument",

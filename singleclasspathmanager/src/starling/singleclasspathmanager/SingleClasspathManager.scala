@@ -1,6 +1,7 @@
 package starling.singleclasspathmanager
 
 import starling.manager._
+import starling.osgimanager.utils.ThreadSafeCachingProxy
 
 class SingleClasspathManager(properties:Map[String,String], activators:List[Class[_ <: BromptonActivator]]) {
   val props = new Props(properties)
@@ -42,7 +43,8 @@ class SingleClasspathManager(properties:Map[String,String], activators:List[Clas
       properties:List[ServiceProperty]=List()) = {
       if (!klass.isAssignableFrom(service.asInstanceOf[AnyRef].getClass)) throw new Exception(service + " is not a " + klass)
       val ref = { id+=1; BromptonServiceReference(id + ":" + klass, List(klass.getName)) }
-      val entry = ServiceEntry(klass, service.asInstanceOf[AnyRef], properties, ref)
+      val cachingService = ThreadSafeCachingProxy.createProxy(klass, service)
+      val entry = ServiceEntry(klass, cachingService.asInstanceOf[AnyRef], properties, ref)
       registry.append( entry )
 
       trackers.toList.foreach{ tracker => {
