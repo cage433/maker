@@ -38,10 +38,8 @@ case class DefaultTitanLogisticsAssignmentServices(props: Props, titanInventoryS
       }
     }
 
-    private def assignmentsFromInventory(item : EDMInventoryItem) : List[EDMAssignment] = {
+    private def assignmentsFromInventory(item : EDMInventoryItem) : List[EDMAssignment] =
       item.purchaseAssignment :: Option(item.salesAssignment).toList
-    }
-
   }
 }
 
