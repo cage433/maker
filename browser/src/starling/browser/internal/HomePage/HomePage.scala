@@ -94,7 +94,7 @@ class StarlingHomePageComponent(context:PageContext, browserSize:Dimension, page
         foreground = Color.BLACK
         maximumSize = new Dimension(Integer.MAX_VALUE, preferredSize.height-20)
       }
-      val descLabel = new Label("Decision Support Engine") {
+      val descLabel = new Label("Risk Engine") {
         font = font.deriveFont(15.0f)
       }
 
