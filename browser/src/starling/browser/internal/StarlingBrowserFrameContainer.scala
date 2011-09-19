@@ -50,10 +50,6 @@ object RootBrowserBundle extends BrowserBundle {
     }
     createGeneralPane(pageContext) :: Nil
   }
-  override def hotKeys = HotKey(
-    KeyStroke.getKeyStroke(KeyEvent.VK_U, InputEvent.CTRL_DOWN_MASK | InputEvent.SHIFT_DOWN_MASK),
-    "utilsPage",
-    UtilsPage) :: Nil
 }
 
 class StarlingBrowserFrameContainer(serverContext: ServerContext, lCache: LocalCache, pageBuilder:PageBuilder,

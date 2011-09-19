@@ -37,6 +37,7 @@ import starling.auth.{Client}
 import starling.auth.internal.{RealClient, ClientLogin}
 import starling.reports.ReportService
 import starling.browser.internal.{RunAsUserPage, NotificationKeys, NotificationType, Notification}
+import starling.rabbiteventviewer.api.RabbitEventViewerService
 
 object StarlingServerNotificationHandlers {
   def notificationHandler = {
@@ -123,6 +124,7 @@ object GuiStart extends Log {
                       starlingServer:StarlingServer,
                       reportService:ReportService,
                       fc2Service:FC2Service,
+                      rabbitEventService:RabbitEventViewerService,
                       publisher: Publisher) {
     val localCacheUpdatePublisher = new scala.swing.Publisher() {}
     publisher.reactions += {
@@ -205,7 +207,7 @@ object GuiStart extends Log {
       cacheMap(IsStarlingDeveloper) = starlingServer.isStarlingDeveloper
       cacheMap(EnvironmentRules) = fc2Service.environmentRules
       cacheMap(CurveTypes) = fc2Service.curveTypes
-      cacheMap(LatestRabbitEvent) = starlingServer.latestRabbitEvent
+      cacheMap(LatestRabbitEvent) = rabbitEventService.latestRabbitEvent
     } catch {
       case e : Throwable =>
         e.printStackTrace()

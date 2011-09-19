@@ -39,7 +39,6 @@ trait BrowserBundle {
 
   def initCache(cache:HeterogeneousMap[LocalCacheKey], publisher:Publisher)
 
-  def hotKeys:List[HotKey] = Nil
   def settings(pageContext:PageContext):List[Component] = Nil
   def utilButtons(pageContext:PageContext):List[PageButton] = Nil
   def homeButtons(pageContext:PageContext):List[PageButton] = Nil

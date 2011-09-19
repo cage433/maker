@@ -12,7 +12,7 @@ import starling.utils.{Broadcaster}
 import starling.db.{MarketDataStore, DB}
 import starling.tradestore.TradeStores
 import starling.calendar.BusinessCalendars
-import starling.rmi.{UserSettingsDatabase, BromptonTrackerBasedMarketDataPageIdentifierReaderProviders, StarlingServer}
+import starling.rmi.{RabbitEventDatabase, UserSettingsDatabase, BromptonTrackerBasedMarketDataPageIdentifierReaderProviders, StarlingServer}
 
 class ServicesProps
 class ServicesBromptonActivator extends BromptonActivator {
@@ -51,6 +51,9 @@ class ServicesBromptonActivator extends BromptonActivator {
     context.registerService(classOf[TradeStores], starlingInit.tradeStores)
     context.registerService(classOf[BusinessCalendars], starlingInit.businessCalendars)
     context.registerService(classOf[DB], starlingInit.eaiStarlingSqlServerDB)
+
+    context.registerService(classOf[RabbitEventDatabase], starlingInit.rabbitEventDatabase)
+
 
     starlingInit.loopyXLReceivers.foreach { receiver => {
       println("00000000000 registering loopy service")

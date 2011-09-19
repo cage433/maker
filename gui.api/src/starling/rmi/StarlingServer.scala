@@ -30,9 +30,6 @@ trait StarlingServer {
   @DoNotCache def storeSystemInfo(info:OSInfo)
   def gitLog(pivotFieldParams:PivotFieldParams, numCommits:Int):PivotData
 
-  def rabbitEvents(pivotFieldParams:PivotFieldParams, latestID:Long):PivotData
-  @DoNotCache def latestRabbitEvent:Long
-
   def desks:List[Desk]
   def groupToDesksMap:Map[CaseInsensitive, Set[Desk]]
   def tradeChanges(tradeSelection:TradeSelection,from:Timestamp,to:Timestamp, expiryDay:Day, pivotFieldParams:PivotFieldParams):PivotData

@@ -20,6 +20,7 @@ import starling.tradestore.TradePredicate
 import starling.daterange.{Day, TimeOfDay}
 import collection.immutable.TreeSet
 import starling.reports.ReportService
+import starling.rabbiteventviewer.api.RabbitEventViewerService
 
 class GuiBromptonProps {
   def serverRmiHost:String = "localhost"
@@ -45,13 +46,15 @@ class GuiBromptonActivator extends BromptonActivator {
 
     val fc2Service = client.proxy(classOf[FC2Service])
     val reportService = client.proxy(classOf[ReportService])
+    val rabbitEventViewerService = client.proxy(classOf[RabbitEventViewerService])
 
     context.registerService(classOf[Publisher], client.remotePublisher)
     context.registerService(classOf[StarlingServer], starlingServer)
     context.registerService(classOf[FC2Service], fc2Service)
+    context.registerService(classOf[RabbitEventViewerService], rabbitEventViewerService)
     context.registerService(classOf[ReportService], reportService)
     context.registerService(classOf[BrowserService], client.proxy(classOf[BrowserService]))
-    context.registerService(classOf[BrowserBundle], new StarlingBrowserBundle(starlingServer, reportService, fc2Service))
+    context.registerService(classOf[BrowserBundle], new StarlingBrowserBundle(starlingServer, reportService, fc2Service, rabbitEventViewerService))
 
 
     context.registerService(classOf[HttpServlet], new HttpServlet {
@@ -92,13 +95,13 @@ class GuiBromptonActivator extends BromptonActivator {
 }
 
 import StarlingLocalCache._
-class StarlingBrowserBundle(starlingServer:StarlingServer, reportService:ReportService, fc2Service:FC2Service) extends BrowserBundle {
+class StarlingBrowserBundle(starlingServer:StarlingServer, reportService:ReportService, fc2Service:FC2Service, rabbitEventService:RabbitEventViewerService) extends BrowserBundle {
   def bundleName = "StarlingServer"
   def marshal(obj: AnyRef) = GuiStarlingXStream.write(obj)
   override def userPage(context:PageContext) = Some( UserDetailsPage(context.localCache.currentUser) )
 
   def initCache(cache: HeterogeneousMap[LocalCacheKey], publisher:Publisher) {
-    GuiStart.initCacheMap(cache, starlingServer, reportService, fc2Service, publisher)
+    GuiStart.initCacheMap(cache, starlingServer, reportService, fc2Service, rabbitEventService, publisher)
   }
 
   override def notificationHandlers = StarlingServerNotificationHandlers.notificationHandler :: Nil

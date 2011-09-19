@@ -111,9 +111,11 @@ object ServerBundles extends BundleDefinitions {
         "utils" -> BundleConfig(exportAll=true, dirs=List("utils")),
         "auth" -> BundleConfig(exportAll=true, dirs=List("auth")),
         "bouncyrmi" -> BundleConfig(exportAll=true, dirs=List("bouncyrmi")),
-        "reports" -> BundleConfig(exportAll=true, dirs=List("reports")),
         "loopyxl" -> BundleConfig(exportAll=true, dirs=List("loopyxl")),
+        "reports" -> BundleConfig(exportAll=true, dirs=List("reports")),
         "reports.internal" -> BundleConfig(exportAll=true, dirs=List("reports.internal")),
+        "rabbit.event.viewer.service" -> BundleConfig(exportAll=true, includes=List("scala.math"), dirs=List("rabbit.event.viewer.service")),
+        "rabbit.event.viewer.api" -> BundleConfig(exportAll=true, dirs=List("rabbit.event.viewer.api")),
         "main" -> BundleConfig(true, List("joda-time-jar-1.6.jar", "bonecp-bundle-0.7.1.RELEASE.jar"), includes, excludes, None, List(
           "daterange", "titan", "browser.service", "fc2.api",
           "concurrent", "curves",

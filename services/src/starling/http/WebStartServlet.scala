@@ -23,7 +23,7 @@ object GUICode {
 
   // The order of this list matters. It is the order things are attempted to be loaded so ensure it is optimised.
   val modules = List("daterange", "quantity", "utils", "auth", "bouncyrmi", "gui", "gui.api",
-    "pivot", "pivot.utils", "browser", "browser.service", "fc2.api", "launcher", "manager", "singleclasspathmanager", "reports")
+    "pivot", "pivot.utils", "browser", "browser.service", "fc2.api", "launcher", "manager", "singleclasspathmanager", "reports", "rabbit.event.viewer.api")
 
   val libJarNames = Map(
     "scala-library" -> scalaLibraryJar,

@@ -168,11 +168,23 @@ object StarlingBuild extends Build{
     settings = standardSettings
   ) dependsOn(services)
 
+  lazy val rabbitEventViewerApi = Project(
+    "rabbit.event.viewer.api",
+    file("./rabbit.event.viewer.api"),
+    settings = standardSettings
+  ) dependsOn(pivot)
+
+  lazy val rabbitEventViewerService = Project(
+    "rabbit.event.viewer.service",
+    file("./rabbit.event.viewer.service"),
+    settings = standardSettings
+  ) dependsOn(rabbitEventViewerApi, pivot, databases, manager)
+
   lazy val gui = Project(
     "gui", 
     file("./gui"),
     settings = standardSettings
-  ) dependsOn(fc2api, reports, browser)
+  ) dependsOn(fc2api, reports, browser, rabbitEventViewerApi)
 
   lazy val browser = Project(
     "browser",
