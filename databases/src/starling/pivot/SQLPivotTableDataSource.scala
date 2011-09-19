@@ -17,6 +17,7 @@ import starling.instrument.{DeletedInstrument}
 import starling.gui.api.UTPIdentifier
 import starling.daterange.{Timestamp, DateRange, Day}
 import starling.dbx.{Clause, Query}
+import utils.TimestampPivotFormatter
 
 /**
  * An implementation of PivotTableDataSource backed by a database
@@ -110,6 +111,9 @@ case class StringColumnDefinition(override val name:String, override val sqlName
 case class TimestampColumnDefinition(override val name:String, override val sqlName:String, override val table:String) extends FieldBasedColumnDefinition(name, sqlName, table) {
   def read(resultSet:ResultSetRow) = {
     resultSet.getTimestamp(alias)
+  }
+  override def fieldDetails = new FieldDetails(name) {
+    override def formatter = TimestampPivotFormatter
   }
 }
 case class QuantityStringColumnDefinition(override val name:String, override val table:String) extends FieldBasedColumnDefinition(name, ColumnDefinition.toSql(name), table) {

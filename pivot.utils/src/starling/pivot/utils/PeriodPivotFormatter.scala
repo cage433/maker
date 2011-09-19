@@ -43,3 +43,24 @@ object PeriodPivotFormatter extends PivotFormatter {
     }
   }
 }
+
+object TimestampPivotFormatter extends PivotFormatter {
+  def format(value:Any, formatInfo:ExtraFormatInfo) = {
+    value match {
+      case t:Timestamp => {
+        val monthText = PeriodPivotFormatter.format(t.month, formatInfo).text
+        val dayString = {
+          val zz = t.day.dayNumber.toString
+          if (Character.isDigit(monthText(0))) {
+            zz + "/"
+          } else {
+            zz
+          }
+        }
+        val textToUse = dayString + monthText + " " + t.timeStringWithMilliSeconds
+        new TableCell(value, textToUse)
+      }
+      case _ => new TableCell(value)
+    }
+  }
+}

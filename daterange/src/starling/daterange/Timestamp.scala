@@ -28,6 +28,7 @@ case class Timestamp(instant : Long) extends Ordered[Timestamp] {
   def toStringSeconds = dt.toString("ddMMMyyyy HH:mm ss")
   def timeString = dt.toString("HH:mm")
   def timeStringWithSeconds = dt.toString("HH:mm ss")
+  def timeStringWithMilliSeconds = dt.toString("HH:mm:ss.SSS")
 
   override def compare(rhs : Timestamp) : Int = {
     if (instant < rhs.instant) -1 else if (instant > rhs.instant) 1 else 0

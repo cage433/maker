@@ -341,7 +341,7 @@ class StarlingServerImpl(
     PivotTableModel.createPivotData(gitPivotSource, pivotFieldParams)
   }
 
-  def rabbitEvents(pivotFieldParams:PivotFieldParams, number:Int) = {
+  def rabbitEvents(pivotFieldParams:PivotFieldParams, latestEvent:Long) = {
     val table = RabbitEventDatabase.TableName
     val starlingID = "Starling ID"
     val verb = "Verb"
@@ -360,7 +360,10 @@ class StarlingServerImpl(
         StringColumnDefinition(subject, "subject", table),
         StringColumnDefinition(id, "id", table),
         StringColumnDefinition(source, "source", table),
-        TimestampColumnDefinition(timestamp, "timestamp", table),
+        new TimestampColumnDefinition(timestamp, "timestamp", table),
+        new DayColumnDefinition("Day", table) {
+          override val fullSqlName = "timestamp"
+        },
         StringColumnDefinition(host, "host", table),
         new IntColumnDefinition(pid, "pid", table),
         StringColumnDefinition(body, "body", table)
