@@ -9,6 +9,9 @@ import com.thoughtworks.xstream.XStream
 import swing.{CheckBox, Frame, Publisher}
 import swing.event.ButtonClicked
 import com.thoughtworks.xstream.io.xml.DomDriver
+import java.awt.event.{KeyEvent, InputEvent}
+import javax.swing.KeyStroke
+import utilspage.UtilsPage
 
 trait ContainerMethods {
   def createNewFrame(fromFrame: Option[StarlingBrowserFrame], startPage:Option[Either[Page,(ServerContext => Page, PartialFunction[Throwable,Unit])]]=None)
@@ -47,6 +50,10 @@ object RootBrowserBundle extends BrowserBundle {
     }
     createGeneralPane(pageContext) :: Nil
   }
+  override def hotKeys = HotKey(
+    KeyStroke.getKeyStroke(KeyEvent.VK_U, InputEvent.CTRL_DOWN_MASK | InputEvent.SHIFT_DOWN_MASK),
+    "utilsPage",
+    UtilsPage) :: Nil
 }
 
 class StarlingBrowserFrameContainer(serverContext: ServerContext, lCache: LocalCache, pageBuilder:PageBuilder,

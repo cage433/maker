@@ -9,7 +9,7 @@ import starling.browser.service.Version
 import starling.browser._
 import common._
 import internal.{HelpPage, RootBrowserBundle, BookmarksPanel, BrowserIcons}
-import osgi.BundleAdded
+import osgi.{BundleRemoved, BundleAdded}
 
 class HomePage
 
@@ -151,12 +151,15 @@ class StarlingHomePageComponent(context:PageContext, browserSize:Dimension, page
     add(actionsPanelHolder)
   }
 
+  private def updateButtons() {
+    val homeButtons = context.bundles.flatMap { bundle => { bundle.homeButtons(context) }}
+    buttonPanel.update(homeButtons)
+    addButtonActions(homeButtons)
+  }
+
   reactions += {
-    case BundleAdded(_) => {
-      val homeButtons = context.bundles.flatMap { bundle => { bundle.homeButtons(context) }}
-      buttonPanel.update(homeButtons)
-      addButtonActions(homeButtons)
-    }
+    case BundleAdded(_) => updateButtons()
+    case BundleRemoved(_) => updateButtons()
   }
   listenTo(context.remotePublisher)
 
@@ -170,11 +173,7 @@ class StarlingHomePageComponent(context:PageContext, browserSize:Dimension, page
     }}
   }
 
-  {
-    val initialHomeButtons = context.bundles.flatMap { bundle => { bundle.homeButtons(context) }}
-    buttonPanel.update(initialHomeButtons)
-    addButtonActions(initialHomeButtons)
-  }
+  updateButtons()
 
   override def defaultComponentForFocus = Some(bookmarksPanel.bookmarksListView.peer)
 

@@ -10,7 +10,7 @@ import starling.browser.service.internal.HeterogeneousMap
 import starling.browser._
 import starling.gui._
 import api._
-import pages.{ValuationParametersPage, UtilsPage, UserDetailsPage}
+import pages.{ValuationParametersPage, UserDetailsPage}
 import swing.Publisher
 import starling.bouncyrmi.{BouncyRMI, BouncyRMIClient}
 import starling.manager.{HttpContext, BromptonContext, BromptonActivator}
@@ -96,11 +96,6 @@ class StarlingBrowserBundle(starlingServer:StarlingServer, reportService:ReportS
   def bundleName = "StarlingServer"
   def marshal(obj: AnyRef) = GuiStarlingXStream.write(obj)
   override def userPage(context:PageContext) = Some( UserDetailsPage(context.localCache.currentUser) )
-  override def hotKeys = HotKey(
-    KeyStroke.getKeyStroke(KeyEvent.VK_U, InputEvent.CTRL_DOWN_MASK | InputEvent.SHIFT_DOWN_MASK),
-    "utilsPage",
-    UtilsPage()) :: Nil
-
 
   def initCache(cache: HeterogeneousMap[LocalCacheKey], publisher:Publisher) {
     GuiStart.initCacheMap(cache, starlingServer, reportService, fc2Service, publisher)
@@ -130,5 +125,6 @@ class StarlingBrowserBundle(starlingServer:StarlingServer, reportService:ReportS
 
   override def settings(pageContext:PageContext) = StarlingSettings.create(pageContext)
   override def homeButtons(pageContext:PageContext) = StarlingHomeButtons.create(pageContext)
+  override def utilButtons(pageContext:PageContext) = StarlingUtilButtons.create(pageContext)
   override def helpEntries = StarlingHelpPage.starlingHelpEntry :: Nil
 }
