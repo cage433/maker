@@ -86,8 +86,8 @@ object GuiBundles extends BundleDefinitions {
         "browser.service" -> BundleConfig(exportAll=true, dirs = List("browser.service")),
         "osgimanager" -> BundleConfig(exportAll=true, dirs=List("osgimanager")),
         "manager" -> BundleConfig(exportAll=true, dirs = List("manager")),
-        "gui" -> BundleConfig(true, Nil, includes, excludes, Some("gui"),
-          List("daterange", "quantity", "utils", "auth", "bouncyrmi", "gui", "gui.api", "reports", "pivot", "pivot.utils", "fc2.api")))
+        "gui" -> BundleConfig(true, List("joda-time-jar-1.6.jar"), includes, excludes, Some("gui"),
+          List("daterange", "quantity", "utils", "auth", "bouncyrmi", "gui", "gui.api", "reports", "pivot", "pivot.utils", "fc2.api", "rabbit.event.viewer.api")))
 
     val manager = new Manager(
       new File("."),

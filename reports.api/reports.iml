@@ -16,6 +16,7 @@
     <exclude-output />
     <content url="file://$MODULE_DIR$/../reports">
       <sourceFolder url="file://$MODULE_DIR$/../reports/src" isTestSource="false" />
+      <excludeFolder url="file://$MODULE_DIR$/../reports/target" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />

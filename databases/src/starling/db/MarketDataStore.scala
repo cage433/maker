@@ -90,6 +90,7 @@ object MarketDataSet extends StarlingEnum(classOf[MarketDataSet], (m: MarketData
   val Crude = MarketDataSet("Crude", 300)
   val LondonDerivatives = MarketDataSet("London Derivatives", 400)
   val GasolineRoW = MarketDataSet("Gasoline RoW", 500)
+  val GasOil = MarketDataSet("Gas Oil", 501)
   val BarryEckstein = MarketDataSet("Barry Eckstein", 600)
   val LondonDerivativesOptions = MarketDataSet("London Derivatives Options", 700)
   val LimMetals = MarketDataSet("LimMetals", 800) //Refined Metals
@@ -119,6 +120,7 @@ object MarketDataStore {
     PricingGroup.Crude -> List(Starling, LIM, Crude),
     PricingGroup.LondonDerivatives -> List(Starling, LondonDerivatives, LIM),
     PricingGroup.GasolineRoW -> List(Starling, GasolineRoW, LIM),
+    PricingGroup.GasOil -> List(Starling, GasOil, LIM),
     PricingGroup.BarryEckstein -> List(Starling, BarryEckstein, System, LIM),
     PricingGroup.LondonDerivativesOptions -> List(Starling, LondonDerivativesOptions, System, LIM),
     PricingGroup.Starling -> List(Starling)

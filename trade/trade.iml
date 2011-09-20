@@ -21,6 +21,8 @@
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="library" name="scala-lib" level="project" />
+    <orderEntry type="module" module-name="auth" />
+    <orderEntry type="module" module-name="gui.api" />
   </component>
 </module>
 

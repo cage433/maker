@@ -27,7 +27,6 @@ import common._
 import starling.browser.service.internal.HeterogeneousMap
 import service._
 import java.awt.{Cursor, GraphicsEnvironment, Color, KeyboardFocusManager}
-import starling.browser.internal.{NotificationKeys, NotificationType, Notification}
 import starling.pivot._
 import javax.swing.event.{ChangeEvent, ChangeListener}
 import GuiUtils._
@@ -37,6 +36,8 @@ import starling.rmi.StarlingServer
 import starling.auth.{Client}
 import starling.auth.internal.{RealClient, ClientLogin}
 import starling.reports.ReportService
+import starling.browser.internal.{RunAsUserPage, NotificationKeys, NotificationType, Notification}
+import starling.rabbiteventviewer.api.RabbitEventViewerService
 
 object StarlingServerNotificationHandlers {
   def notificationHandler = {
@@ -123,6 +124,7 @@ object GuiStart extends Log {
                       starlingServer:StarlingServer,
                       reportService:ReportService,
                       fc2Service:FC2Service,
+                      rabbitEventService:RabbitEventViewerService,
                       publisher: Publisher) {
     val localCacheUpdatePublisher = new scala.swing.Publisher() {}
     publisher.reactions += {
@@ -205,7 +207,7 @@ object GuiStart extends Log {
       cacheMap(IsStarlingDeveloper) = starlingServer.isStarlingDeveloper
       cacheMap(EnvironmentRules) = fc2Service.environmentRules
       cacheMap(CurveTypes) = fc2Service.curveTypes
-      cacheMap(LatestRabbitEvent) = starlingServer.latestRabbitEvent
+      cacheMap(LatestRabbitEvent) = rabbitEventService.latestRabbitEvent
     } catch {
       case e : Throwable =>
         e.printStackTrace()
@@ -291,6 +293,66 @@ object GuiStart extends Log {
         }
       }
     }
+  }
+}
+
+object StarlingUtilButtons {
+  def create(context:PageContext) = {
+    def userStatsPage = {new PageFactory {def create(serverContext:ServerContext) = UserStatsPage(PivotPageState())}}
+    def runAsUserPage = {new PageFactory {def create(serverContext:ServerContext) = RunAsUserPage()}}
+    def cannedHomePage = {new PageFactory {def create(serverContext:ServerContext) = CannedHomePage()}}
+    def eventViewerPage = {new PageFactory {def create(serverContext:ServerContext) = EventViewerPage()}}
+    def gitLogPage = {new PageFactory {def create(serverContext:ServerContext) = GitLogPage(PivotPageState())}}
+    def rabbitEventPage = new PageFactory {
+      def create(serverContext:ServerContext) = {
+        val latestRabbitEvent = context.localCache.localCache(LocalCacheKeys.LatestRabbitEvent)
+        RabbitEventViewerPage(PivotPageState(), RabbitEventViewerPageState(latestRabbitEvent))
+      }
+    }
+
+    val tradesButton = new PageButton(
+      "View User Stats",
+      userStatsPage,
+      StarlingIcons.im("/icons/32x32_stats.png"),
+      Some( KeyStroke.getKeyStroke(KeyEvent.VK_S, 0) )
+    )
+
+    val runAsUserButton = new PageButton(
+      "Run As User",
+      runAsUserPage,
+      StarlingIcons.im("/icons/32x32_user_dark.png"),
+      Some( KeyStroke.getKeyStroke(KeyEvent.VK_U, 0) )
+    )
+
+    val cannedButton = new PageButton(
+      "Canned Page",
+      cannedHomePage,
+      StarlingIcons.im("/icons/32x32_canned_launcher.png"),
+      Some( KeyStroke.getKeyStroke(KeyEvent.VK_C, 0) )
+    )
+
+    val eventViewerButton = new PageButton(
+      "Starling Event Viewer",
+      eventViewerPage,
+      StarlingIcons.im("/icons/32x32_event.png"),
+      Some( KeyStroke.getKeyStroke(KeyEvent.VK_E, 0) )
+    )
+
+    val gitLogButton = new PageButton(
+      "Git Log",
+      gitLogPage,
+      StarlingIcons.im("/icons/32x32_log.png"),
+      Some( KeyStroke.getKeyStroke(KeyEvent.VK_G, 0) )
+    )
+
+    val rabbitEventButton = new PageButton(
+      "Rabbit Event Viewer",
+      rabbitEventPage,
+      StarlingIcons.im("/icons/32x32_event.png"),
+      Some( KeyStroke.getKeyStroke(KeyEvent.VK_R, 0) )
+    )
+
+    List(tradesButton, runAsUserButton, cannedButton, eventViewerButton, gitLogButton, rabbitEventButton)
   }
 }
 

@@ -4,23 +4,26 @@ import starling.daterange.Day
 import starling.rmi.PivotData
 import starling.pivot.{PivotEdits, PivotFieldParams}
 import starling.gui.api._
+import starling.manager.DoNotCache
 
 trait FC2Service {
-  def snapshots():Map[MarketDataSelection,List[SnapshotIDLabel]]
-  def observationDays():(Map[PricingGroup,Set[Day]], Map[String,Set[Day]])
+  @DoNotCache def snapshots():Map[MarketDataSelection,List[SnapshotIDLabel]]
+  @DoNotCache def observationDays():(Map[PricingGroup,Set[Day]], Map[String,Set[Day]])
   def pricingGroups():List[PricingGroup]
   def environmentRules():Map[PricingGroup,List[EnvironmentRuleLabel]]
   def curveTypes():List[CurveTypeLabel]
-  def excelDataSets():List[String]
-  def snapshot(marketDataSelection:MarketDataSelection, observationDay:Day): Option[SnapshotIDLabel]
-  def excelLatestMarketDataVersions:Map[String,Int]
-  def pricingGroupLatestMarketDataVersions:Map[PricingGroup,Int]
+  @DoNotCache def excelDataSets():List[String]
+  @DoNotCache def excelLatestMarketDataVersions:Map[String,Int]
+  @DoNotCache def pricingGroupLatestMarketDataVersions:Map[PricingGroup,Int]
+
+  @DoNotCache def snapshot(marketDataSelection:MarketDataSelection, observationDay:Day): Option[SnapshotIDLabel]
+
+  @DoNotCache def latestMarketDataIdentifier(selection:MarketDataSelection):MarketDataIdentifier
 
   def curvePivot(curveLabel: CurveLabel, pivotFieldParams:PivotFieldParams): PivotData
   def readAllMarketData(marketDataIdentifier:MarketDataPageIdentifier, marketDataType:Option[MarketDataTypeLabel], edits:PivotEdits, pivotFieldParams:PivotFieldParams):PivotData
-  def saveMarketData(marketDataIdentifier:MarketDataPageIdentifier, marketDataTypeLabel:Option[MarketDataTypeLabel], pivotEdits:PivotEdits):Boolean
+  @DoNotCache def saveMarketData(marketDataIdentifier:MarketDataPageIdentifier, marketDataTypeLabel:Option[MarketDataTypeLabel], pivotEdits:PivotEdits):Boolean
 
   def marketDataTypeLabels(marketDataIdentifier:MarketDataPageIdentifier):List[MarketDataTypeLabel]
 
-  def latestMarketDataIdentifier(selection:MarketDataSelection):MarketDataIdentifier
 }

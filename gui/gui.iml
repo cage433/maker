@@ -66,6 +66,8 @@
       </library>
     </orderEntry>
     <orderEntry type="module" module-name="reports" exported="" />
+    <orderEntry type="module" module-name="trade" exported="" />
+    <orderEntry type="module" module-name="rabbit.event.viewer.api" exported="" />
   </component>
 </module>
 

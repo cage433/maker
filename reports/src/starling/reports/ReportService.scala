@@ -6,6 +6,7 @@ import starling.pivot.PivotFieldParams
 import starling.rmi.PivotData
 import starling.auth.User
 import starling.pivot.controller.PivotTable
+import starling.manager.DoNotCache
 
 trait ReportService {
 
@@ -15,13 +16,13 @@ trait ReportService {
   def pnlReconciliation(tradeSelection: TradeSelectionWithTimestamp, curveIdentifier: CurveIdentifierLabel, expiryDay:Day, pivotFieldParams: PivotFieldParams): PivotData
   def reportErrors(reportParameters:ReportParameters):ReportErrors
   def tradeValuation(tradeID:TradeIDLabel, curveIdentifier:CurveIdentifierLabel, timestamp:Timestamp):TradeValuationAndDetails
-  def createReportParameters(userReportData:UserReportData, observationDay:Day):ReportParameters
-  def createUserReport(reportParameters:ReportParameters):UserReportData
-  def deleteUserReport(reportName:String)
-  def saveUserReport(reportName:String, data:UserReportData, showParameters:Boolean)
-  def clearCache:Unit
+  @DoNotCache def createReportParameters(userReportData:UserReportData, observationDay:Day):ReportParameters
+  @DoNotCache def createUserReport(reportParameters:ReportParameters):UserReportData
+  @DoNotCache def deleteUserReport(reportName:String)
+  @DoNotCache def saveUserReport(reportName:String, data:UserReportData, showParameters:Boolean)
+  @DoNotCache def clearCache:Unit
 
 
-  /*for regression runner */def allUserReports:Map[String,List[UserReport]]
-  /*for regression runner */def runNamedReport(user:User, reportName:String, day:Day, layout:Option[String]):Option[PivotTable]
+  /*for regression runner */ @DoNotCache def allUserReports:Map[String,List[UserReport]]
+  /*for regression runner */ @DoNotCache def runNamedReport(user:User, reportName:String, day:Day, layout:Option[String]):Option[PivotTable]
 }

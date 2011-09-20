@@ -10,7 +10,7 @@ import starling.browser.service.internal.HeterogeneousMap
 import starling.browser._
 import starling.gui._
 import api._
-import pages.{ValuationParametersPage, UtilsPage, UserDetailsPage}
+import pages.{ValuationParametersPage, UserDetailsPage}
 import swing.Publisher
 import starling.bouncyrmi.{BouncyRMI, BouncyRMIClient}
 import starling.manager.{HttpContext, BromptonContext, BromptonActivator}
@@ -20,6 +20,7 @@ import starling.tradestore.TradePredicate
 import starling.daterange.{Day, TimeOfDay}
 import collection.immutable.TreeSet
 import starling.reports.ReportService
+import starling.rabbiteventviewer.api.RabbitEventViewerService
 
 class GuiBromptonProps {
   def serverRmiHost:String = "localhost"
@@ -45,13 +46,15 @@ class GuiBromptonActivator extends BromptonActivator {
 
     val fc2Service = client.proxy(classOf[FC2Service])
     val reportService = client.proxy(classOf[ReportService])
+    val rabbitEventViewerService = client.proxy(classOf[RabbitEventViewerService])
 
     context.registerService(classOf[Publisher], client.remotePublisher)
     context.registerService(classOf[StarlingServer], starlingServer)
     context.registerService(classOf[FC2Service], fc2Service)
+    context.registerService(classOf[RabbitEventViewerService], rabbitEventViewerService)
     context.registerService(classOf[ReportService], reportService)
     context.registerService(classOf[BrowserService], client.proxy(classOf[BrowserService]))
-    context.registerService(classOf[BrowserBundle], new StarlingBrowserBundle(starlingServer, reportService, fc2Service))
+    context.registerService(classOf[BrowserBundle], new StarlingBrowserBundle(starlingServer, reportService, fc2Service, rabbitEventViewerService))
 
 
     context.registerService(classOf[HttpServlet], new HttpServlet {
@@ -92,18 +95,13 @@ class GuiBromptonActivator extends BromptonActivator {
 }
 
 import StarlingLocalCache._
-class StarlingBrowserBundle(starlingServer:StarlingServer, reportService:ReportService, fc2Service:FC2Service) extends BrowserBundle {
+class StarlingBrowserBundle(starlingServer:StarlingServer, reportService:ReportService, fc2Service:FC2Service, rabbitEventService:RabbitEventViewerService) extends BrowserBundle {
   def bundleName = "StarlingServer"
   def marshal(obj: AnyRef) = GuiStarlingXStream.write(obj)
   override def userPage(context:PageContext) = Some( UserDetailsPage(context.localCache.currentUser) )
-  override def hotKeys = HotKey(
-    KeyStroke.getKeyStroke(KeyEvent.VK_U, InputEvent.CTRL_DOWN_MASK | InputEvent.SHIFT_DOWN_MASK),
-    "utilsPage",
-    UtilsPage()) :: Nil
-
 
   def initCache(cache: HeterogeneousMap[LocalCacheKey], publisher:Publisher) {
-    GuiStart.initCacheMap(cache, starlingServer, reportService, fc2Service, publisher)
+    GuiStart.initCacheMap(cache, starlingServer, reportService, fc2Service, rabbitEventService, publisher)
   }
 
   override def notificationHandlers = StarlingServerNotificationHandlers.notificationHandler :: Nil
@@ -130,5 +128,6 @@ class StarlingBrowserBundle(starlingServer:StarlingServer, reportService:ReportS
 
   override def settings(pageContext:PageContext) = StarlingSettings.create(pageContext)
   override def homeButtons(pageContext:PageContext) = StarlingHomeButtons.create(pageContext)
+  override def utilButtons(pageContext:PageContext) = StarlingUtilButtons.create(pageContext)
   override def helpEntries = StarlingHelpPage.starlingHelpEntry :: Nil
 }

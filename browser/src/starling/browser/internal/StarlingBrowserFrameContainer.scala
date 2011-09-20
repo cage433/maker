@@ -9,6 +9,9 @@ import com.thoughtworks.xstream.XStream
 import swing.{CheckBox, Frame, Publisher}
 import swing.event.ButtonClicked
 import com.thoughtworks.xstream.io.xml.DomDriver
+import java.awt.event.{KeyEvent, InputEvent}
+import javax.swing.KeyStroke
+import utilspage.UtilsPage
 
 trait ContainerMethods {
   def createNewFrame(fromFrame: Option[StarlingBrowserFrame], startPage:Option[Either[Page,(ServerContext => Page, PartialFunction[Throwable,Unit])]]=None)

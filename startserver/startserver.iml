@@ -26,6 +26,7 @@
     <orderEntry type="module" module-name="singleclasspathmanager" />
     <orderEntry type="module" module-name="starling.client" />
     <orderEntry type="module" module-name="reports.internal" />
+    <orderEntry type="module" module-name="rabbit.event.viewer.service" />
   </component>
 </module>
 

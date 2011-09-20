@@ -19,12 +19,9 @@ import starling.browser.common.MigPanel
 import starling.browser._
 import common.RoundedBorder
 import starling.fc2.api.FC2Service
-import starling.utils.cache.ThreadSafeCachingProxy
 import starling.reports.ReportService
 
-class FC2Context(val service:FC2Service) {
-  val cachingFC2Service:FC2Service = ThreadSafeCachingProxy.createProxy(service, classOf[FC2Service])
-}
+class FC2Context(val service:FC2Service)
 
 abstract class AbstractFC2PivotPage(pivotPageState:PivotPageState, edits:PivotEdits=PivotEdits.Null) extends
   AbstractPivotPage(pivotPageState, edits) with FC2Page {

@@ -16,7 +16,7 @@ case class TradeReconciliationReportPage(tradeSelection:TradeSelection, from:Tra
   def selfPage(pivotPageState: PivotPageState, edits:PivotEdits) = copy(pivotPageState = pivotPageState)
 
   def dataRequest(pageBuildingContext:StarlingServerContext) = {
-    pageBuildingContext.cachingStarlingServer.tradeReconciliation(tradeSelection, from, to, intradayTimestamp, pivotPageState.pivotFieldParams)
+    pageBuildingContext.server.tradeReconciliation(tradeSelection, from, to, intradayTimestamp, pivotPageState.pivotFieldParams)
   }
 
   override def latestPage(localCache:LocalCache) = {

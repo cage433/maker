@@ -1,23 +1,27 @@
 package starling.rmi
 
 import starling.db.DB
-import starling.utils.Broadcaster
 import com.trafigura.shared.events.Event
 import starling.dbx.QueryBuilder._
 import starling.daterange.Timestamp
 import starling.gui.api.RabbitEventReceived
+import starling.utils.Broadcaster
 
 object DefaultRabbitEventDatabase {
   val TableName = "RabbitMessages"
 }
 import DefaultRabbitEventDatabase._
 
-trait RabbitEventDatabase{
-  def saveEvent(e:Event)
+trait RabbitEventDatabase {
+  def saveEvent(e : Event)
+  def latestID : Long
+  def db : DB
 }
 
-object NullRabbitEventDatabase extends RabbitEventDatabase{
+object NullRabbitEventDatabase extends RabbitEventDatabase {
   def saveEvent(e: Event) = {}
+  def latestID : Long = 0
+  def db : DB = null
 }
 
 class DefaultRabbitEventDatabase(val db:DB, broadcaster:Broadcaster) extends RabbitEventDatabase {

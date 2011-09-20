@@ -9,6 +9,7 @@ import starling.props.{Props, PropsHelper}
 import management.ManagementFactory
 import java.io.File
 import starling.reports.osgi.ReportsBromptonActivator
+import starling.rabbiteventviewer.internal.RabbitEventViewerServiceBromptonActivator
 
 
 /**
@@ -29,7 +30,8 @@ object Server {
       classOf[AuthBromptonActivator],
       classOf[ServicesBromptonActivator],
       classOf[ReportsBromptonActivator],
-      classOf[BouncyRMIServerBromptonActivator]
+      classOf[BouncyRMIServerBromptonActivator],
+      classOf[RabbitEventViewerServiceBromptonActivator]
     )
     val single = new SingleClasspathManager(starling.manager.Props.readDefault, activators)
     writePIDFile()
