@@ -1,7 +1,7 @@
 package starling.curves
 
 import starling.db.DB
-import starling.utils.sql.QueryBuilder._
+import starling.dbx.QueryBuilder._
 import starling.market.formula._
 import starling.quantity.Conversions
 import starling.quantity.UOM._

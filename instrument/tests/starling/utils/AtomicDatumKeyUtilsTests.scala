@@ -11,6 +11,7 @@ import starling.daterange.{Day, Month}
 import starling.instrument.{SingleAsianOption, AsianOption, FuturesOption}
 import starling.instrument.UTP
 import starling.market._
+import starling.instrument.utils._
 
 class AtomicDatumKeyUtilsTests extends TestMarketTest {
   @Test

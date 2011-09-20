@@ -51,6 +51,5 @@ case class Assets(assets:List[Asset]) {
 }
 
 object Assets {
-  private val empty = new Assets(List())
   def apply(assets : Asset*) = new Assets(assets.toList)
 }

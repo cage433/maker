@@ -4,7 +4,7 @@ import common.{MigPanel, GuiUtils}
 import internal._
 import java.awt.image.BufferedImage
 import service.internal.HeterogeneousMap
-import service.{BrowserService, Version}
+import service.{StarlingEvent, UserDetails, BrowserService, Version}
 import swing.event.Event
 import javax.swing.border.Border
 import java.awt.{Graphics2D, Dimension}
@@ -22,22 +22,18 @@ trait Page {
   def icon:BufferedImage
   def text:String
   def shortText:String = text
-  def createComponent(context:PageContext, data:PageData, bookmark:Bookmark, browserSize:Dimension, previousPageData:Option[PageData]):PageComponent
+  def createComponent(context:PageContext, data:PageData, bookmark:Bookmark, browserSize:Dimension, previousPageData:Option[PreviousPageData]):PageComponent
   def build(serverContext:SC):PageData
-  def refreshFunctions:Iterable[PartialFunction[Event,Page]] = Nil
+  def latestPage(localCache:LocalCache):Page = this
   def bookmark(serverContext:SC):Bookmark = new PageBookmark(this)
   type SC
   def createServerContext(sc:ServerContext):SC
 }
 
 trait ServerContext {
-  def username:String
   def lookup[T](klass:Class[T]):T
   def browserService:BrowserService
-  def browserBundles:List[BrowserBundle]
-  def version:Version
-  def bundleForName(name:String) = (RootBrowserContext :: browserBundles).find(_.bundleName == name).getOrElse(
-    throw new Exception("No browser bundle found with name " + name))
+  def extraInfo:Option[String] = None
 }
 
 case class BrowserDay(year:Int, month:Int, dayOfMonth:Int)
@@ -47,9 +43,9 @@ trait Bookmark {
   def createPage(day:Option[BrowserDay], serverContext:ServerContext, context:PageContext):Page
 }
 
-case class UserSettingUpdated(key:Key[_]) extends Event
+case class UserSettingUpdated(key:Key[_]) extends StarlingEvent
 
-case class BookmarkData(name:String, bookmark:Bookmark)
+case class BookmarkData(name:String, bookmark:Option[Bookmark])
 
 case class PageBookmark(page:Page) extends Bookmark {
   def daySensitive = false
@@ -111,10 +107,11 @@ trait SubmitRequest[R] {
 }
 
 trait PageData
+case class PreviousPageData(pageData:PageData, refreshInfo:Option[RefreshInfo])
 
 object LocalCache {
   val Version = new LocalCacheKey[Version]("Version")
-  val CurrentUserName = new LocalCacheKey[String]("CurrentUserName")
+  val CurrentUserName = new LocalCacheKey[UserDetails]("CurrentUserName")
   val AllUserNames = new LocalCacheKey[List[String]]("AllUserNames")
   val Bookmarks = new LocalCacheKey[List[BookmarkData]]("BookmarkData")
 }
@@ -131,7 +128,8 @@ case class LocalCacheKey[T](description: String) {
 case class LocalCache(localCache:HeterogeneousMap[LocalCacheKey]) {
   import NotificationKeys._
   def version = localCache(LocalCache.Version)
-  def currentUserName = localCache(LocalCache.CurrentUserName)
+  def currentUserName = localCache(LocalCache.CurrentUserName).username
+  def currentFullName = localCache(LocalCache.CurrentUserName).fullName
   def allUserNames = localCache(LocalCache.AllUserNames)
 
   def bookmarks = localCache(LocalCache.Bookmarks)
@@ -144,6 +142,7 @@ case class LocalCache(localCache:HeterogeneousMap[LocalCacheKey]) {
 trait ComponentState
 trait ComponentTypeState
 trait TypeFocusInfo
+trait RefreshInfo
 trait PageComponent extends Component {
   def getBorder:Option[Border] = Some(MatteBorder(1, 0, 0, 0, GuiUtils.BorderColour))
   def restoreToCorrectViewForBack() {}
@@ -156,6 +155,7 @@ trait PageComponent extends Component {
   def setTypeState(typeState:Option[ComponentTypeState]) {}
   def getTypeFocusInfo:Option[TypeFocusInfo] = None
   def setTypeFocusInfo(focusInfo:Option[TypeFocusInfo]) {}
+  def getRefreshInfo:Option[RefreshInfo] = None
   def pageResized(newSize:Dimension) {}
   def defaultComponentForFocus:Option[java.awt.Component] = None
 

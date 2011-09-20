@@ -1,7 +1,7 @@
 package starling.eai
 
 import starling.db.DB
-import starling.utils.sql.QueryBuilder._
+import starling.dbx.QueryBuilder._
 import starling.utils.cache.CacheFactory
 import starling.utils.Log
 

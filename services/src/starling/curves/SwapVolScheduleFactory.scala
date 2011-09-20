@@ -1,7 +1,6 @@
 package starling.curves
 
 import starling.db.MarketDataReader
-import starling.reports.pivot.IndexRuleEvaluation
 import starling.quantity.UOM._
 import starling.pivot._
 import starling.market.rules.{SwapPricingRule, NonCommonPricingRule, Precision}

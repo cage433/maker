@@ -1,19 +1,15 @@
 package starling.gui.pages
 
-import starling.utils.SColumn
 import starling.gui._
 import api._
 import namedquantitycomponents.TopNamedQuantityComponent
 import java.awt.{Color, Dimension}
-import starling.quantity.SimpleNamedQuantity
 import swing.{ScrollPane, Label}
 import starling.pivot.PivotFormatter
 import starling.browser.common.GuiUtils._
 import starling.browser._
 import common.{ButtonClickedEx, NewPageButton, MigPanel}
-import starling.rmi.StarlingServer
-import starling.daterange.Day
-import swing.event.ButtonClicked
+import starling.daterange.{DayAndNoTime, DayAndTime, Day}
 
 case class ValuationParametersPage(tradeID:TradeIDLabel, reportParameters:ReportParameters) extends StarlingServerPage {
   def text = "Valuation Parameters for " + tradeID.id
@@ -29,14 +25,14 @@ case class ValuationParametersPage(tradeID:TradeIDLabel, reportParameters:Report
       }
     }
     ValuationParametersPageData(
-      reader.cachingStarlingServer.tradeValuation(tradeID, reportParameters.curveIdentifier, timestampToUse),
+      reader.cachingReportService.tradeValuation(tradeID, reportParameters.curveIdentifier, timestampToUse),
       reportParameters, tradeID)
   }
-  def createComponent(context:PageContext, data:PageData, bookmark:Bookmark, browserSize:Dimension, previousPageData:Option[PageData]) = {
+  def createComponent(context:PageContext, data:PageData, bookmark:Bookmark, browserSize:Dimension, previousPageData:Option[PreviousPageData]) = {
     new ValuationParametersPageComponent(context, data)
   }
 
-  override def bookmark(serverContext: StarlingServerContext) = ValuationParametersBookmark(tradeID, serverContext.server.createUserReport(reportParameters))
+  override def bookmark(serverContext: StarlingServerContext) = ValuationParametersBookmark(tradeID, serverContext.reportService.createUserReport(reportParameters))
 }
 
 case class ValuationParametersBookmark(tradeID:TradeIDLabel, userReportData:UserReportData) extends StarlingBookmark {
@@ -49,10 +45,10 @@ case class ValuationParametersBookmark(tradeID:TradeIDLabel, userReportData:User
 
   def createStarlingPage(day: Option[Day], serverContext: StarlingServerContext, context: PageContext) = {
     val dayToUse = day match {
-      case None => Day.today() // Real time
+      case None => Day.today // Real time
       case Some(d) => d
     }
-    val reportParameters = serverContext.server.createReportParameters(userReportData, dayToUse)
+    val reportParameters = serverContext.reportService.createReportParameters(userReportData, dayToUse)
     ValuationParametersPage(tradeID, reportParameters)
   }
 }
@@ -91,11 +87,18 @@ object ValuationParametersPageComponent {
       add(l("Environment Rule"), "skip 1")
       add(l2(ci.environmentRule.name), "wrap")
 
+      def dayAndTimeToString(dat:DayAndTime) = {
+        dat match {
+          case dant:DayAndNoTime => dant.day.toString
+          case DayAndTime(d, tod) => d.toString + ", " + tod.shortName
+        }
+      }
+
       add(l("Forward Observation"), "skip 1")
-      add(l2(ci.valuationDayAndTime.day), "wrap")
+      add(l2(dayAndTimeToString(ci.valuationDayAndTime)), "wrap")
 
       add(l("Theta to"), "skip 1")
-      add(l2(ci.thetaDayAndTime), "wrap")
+      add(l2(dayAndTimeToString(ci.thetaDayAndTime)), "wrap")
 
       add(l("Live on"), "skip 1")
       add(l2(rp.expiryDay), "wrap")

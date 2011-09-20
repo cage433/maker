@@ -17,18 +17,20 @@ import starling.models.{European, Call}
 import swing.event.Event
 import starling.utils.Broadcaster
 import starling.daterange._
-import starling.trade.{TradeID, Trade, TradeSystem}
+import starling.instrument.{TradeID, Trade, TradeSystem}
 import starling.tradestore.eai.{EAITradeStore, EAITradeAttributes}
 import starling.pivot.{PivotTreePath, SomeSelection, Field}
-import starling.eai.{Book, EAIStrategyDB, TreeID}
+import starling.eai.{EAIStrategyDB, TreeID}
 import org.mockito.Mockito._
 import org.mockito.Matchers._
 import org.testng.annotations.{AfterMethod, BeforeMethod, Test}
 import java.sql.Connection
+import starling.props.PropsHelper
+import starling.gui.api.{Desk, EAIDeskInfo}
 
 class EAITradeStoreTest extends TestMarketTest {
 
-  lazy val marketDataStore = new DBMarketDataStore(db, Map(), Broadcaster.Null)
+  lazy val marketDataStore = DBMarketDataStore(PropsHelper.defaultProps, db, Map(), Broadcaster.Null)
 
   var db : RichDB = _
   var connection : Connection = _
@@ -60,9 +62,9 @@ class EAITradeStoreTest extends TestMarketTest {
     when(eAIStrategyDB.pathFor(any(classOf[TreeID]))) thenReturn PivotTreePath("test [54418]")
     when(eAIStrategyDB.getStrategyFromDealId(any(classOf[TreeID]))) thenReturn Some(TreeID(54418))
 
-    val store = new EAITradeStore(db, broadcaster, eAIStrategyDB, Book(2))
+    val store = new EAITradeStore(db, broadcaster, eAIStrategyDB, Desk.GasolineSpec)
 
-    val attr = EAITradeAttributes(TreeID(1), TreeID(2), TreeID(3), "trader", "tradedfor", "broker", "clearinghouse")
+    val attr = EAITradeAttributes(TreeID(1), TreeID(149), TreeID(3), "trader", "tradedfor", "broker", "clearinghouse")
 
     val trade1a = Trade(TradeID(1, EAITradeSystem), Day.today, "cp", attr, ErrorInstrument("error1"))
     val trade2a = Trade(TradeID(2, EAITradeSystem), Day.today, "cp", attr, CommoditySwap.sample)

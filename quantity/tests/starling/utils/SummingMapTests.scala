@@ -5,6 +5,7 @@ import org.testng.annotations.Test
 import starling.quantity.Quantity
 import org.testng.Assert
 import collection.immutable.SortedMap
+import starling.quantity.utils.SummingMap
 
 
 class SummingMapTests extends TestNGSuite {

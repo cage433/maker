@@ -9,7 +9,7 @@ import com.trafigura.edm.shared.types.{Currency => TitanCurrency, Date => TitanD
 import com.trafigura.services._
 import com.trafigura.services.marketdata.Maturity
 import starling.daterange.{DateRange, Tenor, SimpleDateRange, Day}
-import com.trafigura.commontypes.dataspecifications.{DateRange => TitanDateRange}
+import com.trafigura.edm.common.types.datespecifications.{DateRange => TitanDateRange}
 import valuation.TitanSnapshotIdentifier
 import starling.gui.api.{SpecificMarketDataVersion, MarketDataVersion}
 import starling.utils.Pattern.Extractor
@@ -84,8 +84,8 @@ object EDMConversions {
   implicit def enrichTitanDateRange(dateRange: TitanDateRange) = new {
     def fromTitan = new SimpleDateRange(startDay, endDay)
     def contains(date: TitanDate) = fromTitan.contains(date.fromTitan)
-    def startDay = Day.fromLocalDate(dateRange.start.toLocalDate)
-    def endDay = Day.fromLocalDate(dateRange.end.toLocalDate)
+    def startDay = Day.fromLocalDate(dateRange.start.dateValue)
+    def endDay = Day.fromLocalDate(dateRange.finish.dateValue)
   }
 
   implicit def enrichFundamentalUOM(uom: FundamentalUOM) = new {

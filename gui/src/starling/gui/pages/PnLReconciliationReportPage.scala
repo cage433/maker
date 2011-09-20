@@ -14,7 +14,7 @@ case class PnLReconciliationReportPage(tradeSelectionWithTimestamp: TradeSelecti
   def selfPage(pivotPageState: PivotPageState, edits:PivotEdits) = copy(pivotPageState = pivotPageState)
 
   def dataRequest(pageBuildingContext:StarlingServerContext) = {
-    pageBuildingContext.cachingStarlingServer.pnlReconciliation(tradeSelectionWithTimestamp, curveIdentifier, expiryDay, pivotPageState.pivotFieldParams)
+    pageBuildingContext.cachingReportService.pnlReconciliation(tradeSelectionWithTimestamp, curveIdentifier, expiryDay, pivotPageState.pivotFieldParams)
   }
 
   override def finalDrillDownPage(fields: Seq[(Field, Selection)], pageContext: PageContext, modifiers:Modifiers) = {

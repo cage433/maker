@@ -5,6 +5,9 @@ import org.testng.annotations.Test
 import org.testng.Assert._
 import starling.quantity.{Percentage, Quantity, UOM}
 import org.scalatest.matchers.ShouldMatchers
+import starling.utils.ImplicitConversions._
+import starling.marketdata.PriceData
+import starling.daterange.Month
 
 /**
  */
@@ -123,5 +126,66 @@ class PivotQuantityTest extends StarlingTest with ShouldMatchers {
   def explanationShouldReturnNamedQuantityExpression {
     val named = Quantity(10, UOM.USD).named("abc")
     PivotQuantity(named).explanation should be === Some(named.format(1))
+  }
+
+  @Test
+  def equalityUsesFormattedValues {
+    val lower = PivotQuantity(Quantity(10.0000, UOM.GBP))
+    val higher = PivotQuantity(Quantity(10.00004, UOM.GBP))
+    val highest = PivotQuantity(Quantity(10.0001, UOM.GBP))
+
+    assertEquals(lower, higher)
+    assertEquals(lower.hashCode(), higher.hashCode)
+
+    assertFalse(lower.equals(highest), "%s should not equal %s" % (lower.formattedValues, highest.formattedValues))
+    assertFalse(lower.hashCode().equals(highest.hashCode()), "%s should not have the same hashCode as %s" % (lower, highest))
+  }
+
+  @Test
+  def formattedValuesIncludes4DecimalPlaces {
+    val lower = PivotQuantity(Quantity(10.0000, UOM.GBP))
+    val higher = PivotQuantity(Quantity(10.00004, UOM.GBP))
+    val highest = PivotQuantity(Quantity(10.0001, UOM.GBP))
+
+    assertEquals(lower.formattedValues, Map(UOM.GBP → "10"))
+    assertEquals(higher.formattedValues, Map(UOM.GBP → "10"))
+    assertEquals(highest.formattedValues, Map(UOM.GBP → "10.0001"))
+  }
+
+  @Test
+  def priceDataEqualityUsesFormattedPivotQuantities {
+    def pq(value: Double): PivotQuantity = PivotQuantity(Map((UOM.USD / UOM.GAL) → value), Map(), None)
+
+    val expected = PriceData(Map(
+      Month(2011, 3) → pq(250.52500000000003),
+      Month(2011, 4) → pq(263.20000000000005),
+      Month(2011, 5) → pq(264.36500000000007),
+      Month(2011, 6) → pq(264.76000000000005),
+      Month(2011, 7) → pq(264.64500000000004),
+      Month(2011, 8) → pq(263.82000000000005),
+      Month(2011, 9) → pq(262.12000000000006),
+      Month(2011, 10) → pq(251.85500000000008),
+      Month(2011, 11) → pq(250.27000000000007),
+      Month(2011, 12) → pq(249.65500000000006),
+      Month(2012, 1) → pq(249.62000000000006),
+      Month(2012, 2) → pq(249.62000000000006)
+    ))
+
+    val actual = PriceData(Map(
+      Month(2011, 3) → pq(250.525),
+      Month(2011, 4) → pq(263.2),
+      Month(2011, 5) → pq(264.365),
+      Month(2011, 6) → pq(264.76),
+      Month(2011, 7) → pq(264.645),
+      Month(2011, 8) → pq(263.82),
+      Month(2011, 9) → pq(262.12),
+      Month(2011, 10) → pq(251.855),
+      Month(2011, 11) → pq(250.27),
+      Month(2011, 12) → pq(249.655),
+      Month(2012, 1) → pq(249.62),
+      Month(2012, 2) → pq(249.62)
+    ))
+
+    assertEquals(actual, expected)
   }
 }

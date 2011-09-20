@@ -8,7 +8,7 @@ import starling.db.RefinedAssignmentTradeSystem
 import starling.market.NeptunePricingExchange
 import starling.utils.ImplicitConversions._
 import starling.tradestore.TradeStore
-import starling.trade.TradeAttributes
+import starling.instrument.TradeAttributes
 import starling.pivot._
 import starling.pivot.Field._
 import starling.instrument.TradeableType

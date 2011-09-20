@@ -23,7 +23,6 @@ trait HasImpliedVol {
  */
 case class FXMarket(numeratorCcy : UOM, denominatorCcy : UOM) extends Market with HasImpliedVol{
   val name = numeratorCcy + "/" + denominatorCcy
-  val uomName = name
   def priceUOM = numeratorCcy / denominatorCcy
   def positionUOM = denominatorCcy
   def inverse = copy(denominatorCcy = numeratorCcy, numeratorCcy = denominatorCcy)

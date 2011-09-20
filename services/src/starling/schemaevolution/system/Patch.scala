@@ -6,6 +6,7 @@ import java.util.regex.Pattern
 import starling.richdb.RichDB
 import starling.db.DBWriter
 import starling.services.StarlingInit
+import starling.props.Props
 
 trait Patch {
 
@@ -32,6 +33,8 @@ trait Patch {
     //Return the tuple of patch number and description
     (patchNumber.toInt, patchName)
   }
+
+  def deferredReason(props: Props): Option[String] = None
 
   final def applyPatch(starlingInit: StarlingInit, starling: RichDB, writer: DBWriter) = {
     //Run the actual SQL script to update the schema and check completed successfully

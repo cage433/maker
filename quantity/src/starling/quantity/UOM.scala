@@ -114,7 +114,7 @@ object UOM {
 
   val MILLISECONDS = MILLISECONDS_SYMBOL.asUOM
 
-  lazy val currencies = currencySymbols.map(_.asUOM)
+  lazy val currencies = currencySymbols.map(_.asUOM).toSet
 
   def build(numerator : Int, denominator : Int) : UOM = {
   		UOM(numerator, denominator).reduce

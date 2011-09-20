@@ -20,6 +20,7 @@ import swing.event.MouseClicked
 import javax.swing.ImageIcon
 import starling.browser.common.RoundedBorder
 import starling.browser.LocalCacheKey
+import starling.browser.service.StarlingEvent
 
 object NotificationKeys {
   val AllNotifications                    = new LocalCacheKey[List[Notification]]("AllNotifications")
@@ -90,8 +91,8 @@ class NotificationPanel(frameWidth: => Int, cache:LocalCache, containerMethods:C
   add(closeButton)
 }
 
-case class NotificationLabelClosed(source:NotificationLabel) extends Event
-case class NotificationLabelAction(source:NotificationLabel) extends Event
+case class NotificationLabelClosed(source:NotificationLabel) extends StarlingEvent
+case class NotificationLabelAction(source:NotificationLabel) extends StarlingEvent
 
 class NotificationLabel(val notification:Notification) extends MigPanel("") {
   border = RoundedBorder()

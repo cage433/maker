@@ -1,21 +1,21 @@
 package starling.calendar
 
-import java.lang.String
-import starling.utils.Log
-
 object HolidayTablesFactory {
+
   private var holidayTablesImpl: Option[HolidayTables] = None
+  private var previousRegistrant: Exception = _
 
   def registerHolidayTablesImpl(holidayTables: HolidayTables) {
     holidayTablesImpl match {
-      case None => holidayTablesImpl = Some(holidayTables)
+      case None => registerNewHolidayTablesImplForTesting(Some(holidayTables))
       case Some(registeredHolidayTables) if registeredHolidayTables == holidayTables => {}
-      case Some(holidayTable) => throw new Exception("Implementation already registered")
+      case Some(holidayTable) => throw new Exception("Implementation already registered", previousRegistrant)
     }
   }
 
   def registerNewHolidayTablesImplForTesting(holidayTables: Option[HolidayTables]) {
-      holidayTablesImpl = holidayTables
+    holidayTablesImpl = holidayTables
+    previousRegistrant = new Exception("Previous registrant")
   }
 
   def holidaysTablesOption = holidayTablesImpl

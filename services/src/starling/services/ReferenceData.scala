@@ -21,9 +21,9 @@ class ReferenceData(businessCalendars: BusinessCalendars, marketDataStore: Marke
 
   val referenceDatas = List(
     "Futures Markets"   → futuresMarketPivot(),
+    "Futures Front Period Indexes" → futuresFronPeriodIndexes(),
     "Formula Indexes"   → formulaIndexes(),
     "Published Indexes" → publishedIndexes(),
-    "Futures Front Period Indexes" → futuresFronPeriodIndexes(),
     "Pricing Groups"    → pricingGroups(),
     "Schedules"         → schedules(scheduler),
     "Calendars"         → calendars(businessCalendars)

@@ -493,7 +493,7 @@ class ColumnTreesTest extends TestNGSuite {
     val expected = List(ColumnStructurePath(Some(Field("PV")),List((Field("PV"),0), (Field.NullField,0), (Field("Product"),0))),
       ColumnStructurePath(Some(Field("Gamma")),List((Field("Gamma"),1), (Field("Expiry"),0), (Field("Product"),0))))
 
-    val result = columnTrees.buildPathsWithPadding
+    val result = columnTrees.buildPathsWithPadding(Map(Field("PV") -> 1, Field("Gamma") -> 1, Field("Expiry") -> 1, Field("Product") -> 1))
     assertEquals(result, expected)
   }
   @Test

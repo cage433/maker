@@ -43,11 +43,11 @@ class FieldListComponent(model:PivotTableModel, otherLayoutInfo:OtherLayoutInfo,
       (_field,depth) => {model.setDepth(_field,depth)},
       (_field, from) => (), filterData, transformData, otherLayoutInfo,
       (_field, from) => (), subTotalToggleVisible, viewUI, mainComponent, editableInfo)
-    (field -> new GuiFieldComponent(props))
+    (field -> new GuiFieldNamePanel(props))
   })
 
   private val groupedFields = model.getGroupedFields(FieldList)
-  case class GUIFieldGroup(name:String, guiFields:List[GuiFieldComponent])
+  case class GUIFieldGroup(name:String, guiFields:List[GuiFieldNamePanel])
   private val guiFieldGroups = groupedFields.map(groupedField => {
     GUIFieldGroup(groupedField.name, groupedField.fieldList.fields.map(guiFieldsMap(_)))
   })
@@ -100,7 +100,7 @@ class FieldListComponent(model:PivotTableModel, otherLayoutInfo:OtherLayoutInfo,
 
   def show(draggedField:Field) {}
   def hide() {}
-  def reset() {guiFieldsMap.values.foreach(_.namePanel.reset())}
+  def reset() {guiFieldsMap.values.foreach(_.reset())}
 }
 
 class SpacerPanel(constraints:String) extends MigPanel(constraints) {

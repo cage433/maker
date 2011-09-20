@@ -1,6 +1,6 @@
 package starling.services.trade
 
-import starling.trade.TradeAttributes
+import starling.instrument.TradeAttributes
 import starling.tradestore.eai.EAITradeAttributes
 import starling.eai.{EAIStrategyDB, TreeID}
 import starling.eai.instrumentreaders.EAISystemOfRecord

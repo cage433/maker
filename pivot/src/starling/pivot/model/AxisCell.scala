@@ -23,6 +23,8 @@ case class AxisCell(value:AxisValue, span:Option[Int], label:String, collapsible
   def notTotalValue = !isTotalValue
   override def toString = text
   def valueText = value.valueText
+
+  @transient var changed = false
 }
 object AxisCell {
   val Null = AxisCell(AxisValue(Field.NullField, NullAxisValueType, 0), Some(1), "", None, true, NotTotal, 0, LeftTextPosition)

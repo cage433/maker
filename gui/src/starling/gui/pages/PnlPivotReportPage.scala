@@ -43,9 +43,4 @@ case class TradeChangesReportPage(tradeSelection:TradeSelection, from:TradeTimes
 
   def text = "Trade Changes " + tradeSelection + " " + from + " to " + to
   def selfPage(pivotPageState:PivotPageState, edits:PivotEdits) = copy(pivotPageState=pivotPageState)
-
-  override def refreshFunctions = {
-    val functions = new ListBuffer[PartialFunction[Event,Page]]
-    functions.toList
-  }
 }

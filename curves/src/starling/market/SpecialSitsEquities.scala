@@ -78,6 +78,8 @@ case class EquityPrices(prices:SortedMap[RIC,Quantity]) extends MarketData {
     assert(ric.priceUOM == price.uom, ric.priceUOM + " != " + price.uom + " for " + ric)
     price    
   }
+
+  def size = prices.size
 }
 
 case object EquityPricesMarketDataKey extends MarketDataKey {

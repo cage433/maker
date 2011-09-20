@@ -5,7 +5,7 @@ import org.testng.annotations.Test
 import org.testng.Assert._
 import starling.quantity.Quantity
 import starling.quantity.UOM._
-import starling.utils.QuantityTestUtils._
+import starling.quantity.utils.QuantityTestUtils._
 import starling.market.{TestMarketTest, Index, FuturesFrontPeriodIndex, PublishedIndex}
 
 class PricingFormulaParserTests extends TestMarketTest {
