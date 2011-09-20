@@ -105,7 +105,7 @@ case class DefaultTitanRabbitEventServices(props : Props) extends TitanRabbitEve
   val rabbitmq_exclusive = true
   val rabbitmq_publisher_autoDelete = false
   val rabbitmq_basicPropertiesDefault = new BasicProperties()
-  val rabbitmq_makeQueueNameUnique = true
+  val rabbitmq_makeQueueNameUnique = false
 
   val rabbitEventConnector = new RabbitConnector(
     rabbitmq_username,

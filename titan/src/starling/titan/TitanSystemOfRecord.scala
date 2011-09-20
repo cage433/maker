@@ -4,7 +4,7 @@ import com.trafigura.tradinghub.support.GUID
 import com.trafigura.edm.tradeservice.EdmGetTrades
 import com.trafigura.edm.physicaltradespecs.PhysicalTradeQuota
 import com.trafigura.edm.materialspecification.CommoditySpec
-import com.trafigura.edm.trades.{PhysicalTrade => EDMPhysicalTrade}
+import com.trafigura.edm.trades.{PhysicalTrade => EDMPhysicalTrade, Trade => EDMTrade}
 import starling.systemofrecord.SystemOfRecord
 import starling.daterange.Day
 import starling.pivot.Field
@@ -22,6 +22,18 @@ import com.trafigura.edm.shared.types.Quantity
 import com.trafigura.tradecapture.internal.refinedmetal._
 
 class ExternalTitanServiceFailed(cause : Throwable) extends Exception(cause)
+
+case class StarlingTradeAssignment(quotaName : String, quantity : Quantity, assignmentID : Option[String], inventoryID : Option[String] = None) {
+  def id = starlingTradeId(assignmentID, quotaName)
+
+  private def starlingTradeId(assignmentID : Option[String], quotaName : String) : String = {
+    assignmentID match {
+      case Some(id) => "A" + id
+      case None => "Q" + quotaName
+    }
+  }
+}
+
 
 // for some strange reason EDM trade service converts Neptune quota ID with prefix NEPTUNE:
 case class NeptuneId(id : String) {
@@ -44,17 +56,34 @@ class TitanSystemOfRecord(
   lazy val quotaMap = titanTradeCache.quotaNameToQuotaMap
 
   lazy val tc = TradeConverter(refData, titanTradeCache)
-  import tc._
 
   def allTrades(f: (Trade) => Unit) : (Int, Set[String]) = {
     
     val assignments = logisticsServices.assignmentService.service.getAllAssignments()
+    val assignedQuotaNames = assignments.map(_.quotaName)
+    val unassignedQuotas = quotaMap.filterKeys(k => assignedQuotaNames.exists(_ == k))
 
-    val tradeErrors = assignments.map(edmAssignment => {
+    // don't think this is a valid state - todo review this check for validity
+    val unassignedPurchaseQuotas = unassignedQuotas.keys.map(k => quotaNameToTradeMap(k)).filter(_.direction == EDMTrade.PURCHASE)
+    if (unassignedPurchaseQuotas.size > 0) {
+      val msg = "unexpected unassigned puchase quota found in the dataset, quotaName = " + unassignedPurchaseQuotas.mkString(", ")
+      println("********** DEBUG ********* " + msg)
+      //log.warn(msg)
+      //assert(false, msg)
+    }
+
+    /**
+     * create a list of all "assignments, some real and some dummy (unallocated) assignments representing unallocated sales assignments"
+     */
+    val actualAssignments : List[StarlingTradeAssignment] = assignments.map(a => StarlingTradeAssignment(a.quotaName, a.quantity, Some(a.oid.contents.toString), Some(a.inventoryId.toString)))
+    val dummyAssignments : List[StarlingTradeAssignment] = unassignedQuotas.map{ case (k, v) => StarlingTradeAssignment(k, v.detail.pricingSpec.quantity, None)}.toList
+    val allAssignments : List[StarlingTradeAssignment] = actualAssignments ::: dummyAssignments
+
+    val tradeErrors = allAssignments.map(assignment => {
       try {
-        val trade = tc.toTrade(edmAssignment.quotaName, edmAssignment.quantity,  Some(edmAssignment.oid.contents.toString), Some(edmAssignment.inventoryId.toString))
+        val trade = tc.toTrade(assignment)
         f(trade)
-        Right(edmAssignment.oid.contents.toString)
+        Right(assignment.id)
       }
       catch {
         case ex : ExternalTitanServiceFailed => throw ex.getCause
@@ -63,8 +92,8 @@ class TitanSystemOfRecord(
           val dummyDate = Day(1980, 1, 1)
 
           val errorTrade = Trade(
-            TradeID(edmAssignment.oid.contents, TitanTradeSystem),
-            dummyDate, "Unknown", TitanTradeAttributes.errorAttributes(edmAssignment.quotaName, Some(edmAssignment), quotaNameToTradeMap.get(edmAssignment.quotaName)), errorInstrument)
+            TradeID(assignment.id, TitanTradeSystem),
+            dummyDate, "Unknown", TitanTradeAttributes.errorAttributes(assignment.quotaName, Some(assignment), quotaNameToTradeMap.get(assignment.quotaName)), errorInstrument)
           f(errorTrade)
           Left(if (ex.getMessage == null) "Null Error Message" else ex.getMessage)
         }
@@ -108,18 +137,23 @@ class TradeConverter(refData : TitanTacticalRefData,
                      quotaNameToTradeMap : Map[String, EDMPhysicalTrade],
                      quotaNameToQuotaMap : Map[String, PhysicalTradeQuota]) {
 
+
+  def toTrade(starlingTradeAssignment : StarlingTradeAssignment) : Trade = {
+    toTrade(starlingTradeAssignment.quotaName, starlingTradeAssignment.quantity, starlingTradeAssignment.assignmentID, starlingTradeAssignment.inventoryID)
+  }
+
   // used when we have a concrete assignment
   def toTrade(assignment : EDMAssignment) : Trade = {
     toTrade(assignment.quotaName, assignment.quantity, Some(assignment.oid.contents.toString), Some(assignment.inventoryId.toString))
   }
-  
+
   def toTrade(quotaName : String, quantity : Quantity, assignmentID : Option[String], inventoryID : Option[String]) : Trade = {
 
     val quotaDetail = quotaNameToQuotaMap(quotaName).detail
     require(quotaDetail.deliverySpecs.size == 1, "Require exactly one delivery spec")
 
     val edmTrade = quotaNameToTradeMap(quotaName)
-    val groupCompany = refData.groupCompaniesByGUID(edmTrade.groupCompany).name
+    val groupCompany = refData.groupCompaniesByGUID.get(edmTrade.groupCompany).map(_.name).getOrElse("Unknown Group Company")
     val counterparty = refData.counterpartiesByGUID(edmTrade.counterparty.counterparty).name
     val deliverySpec = quotaDetail.deliverySpecs.head
     val (shape, grade) = deliverySpec.materialSpec match {
@@ -260,7 +294,7 @@ case class TitanTradeAttributes(
 }
 
 object TitanTradeAttributes{
-  def errorAttributes(quotaName : String, edmAssignment : Option[EDMAssignment], edmTrade : Option[EDMPhysicalTrade]) = {
+  def errorAttributes(quotaName : String, assignment : Option[StarlingTradeAssignment], edmTrade : Option[EDMPhysicalTrade]) = {
     val dummyDate = Day(1980, 1, 1)
     val titanTradeID = edmTrade match {
       case Some(trade) => trade.titanId.value
@@ -268,10 +302,10 @@ object TitanTradeAttributes{
     }
 
     TitanTradeAttributes(
-      assignmentID = edmAssignment.map(_.oid.contents.toString),
+      assignmentID = assignment.flatMap(_.assignmentID),
       quotaID = quotaName,
       titanTradeID = titanTradeID,
-      inventoryID = edmAssignment.map(_.inventoryId.toString),
+      inventoryID = assignment.flatMap(_.inventoryID),
       groupCompany = "",
       comment = "",
       submitted = dummyDate,
