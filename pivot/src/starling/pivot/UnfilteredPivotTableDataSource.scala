@@ -84,11 +84,15 @@ object UnfilteredPivotTableDataSource {
     val filteredData = if (pfs.filters.isEmpty) data else data.filter {
       row => {
         pfs.filters.forall{ case(field,selection) => {
-          val fieldDetails = fieldDetailsMap(field)
-          val rowValue = fieldDetails.transformValueForGroupByField(PivotValue.extractValue(row, field))
-          selection match {
-            case SomeSelection(values) => fieldDetails.matches(values, rowValue)
-            case _ => true
+          fieldDetailsMap.get(field) match {
+            case Some(fieldDetails) => {
+              val rowValue = fieldDetails.transformValueForGroupByField(PivotValue.extractValue(row, field))
+              selection match {
+                case SomeSelection(values) => fieldDetails.matches(values, rowValue)
+                case _ => true
+              }
+            }
+            case None => true
           }
         } }
       }
