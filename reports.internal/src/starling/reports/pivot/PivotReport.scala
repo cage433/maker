@@ -205,7 +205,7 @@ class PivotReportData[R <: PivotReportRow](data: Map[UTPIdentifier, Either[List[
 
   def errors = Map() ++ data.flatMap(tuple => tuple._2 match {
     case Left(_) => List()
-    case Right(t) => List(tuple._1 -> StackTraceToString(t))
+    case Right(t) => List(tuple._1 -> t.getMessage)
   })
 }
 object PivotReportData {
