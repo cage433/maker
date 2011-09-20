@@ -7,7 +7,6 @@ import com.trafigura.edm.materialspecification.CommoditySpec
 import com.trafigura.edm.trades.{PhysicalTrade => EDMPhysicalTrade}
 import starling.systemofrecord.SystemOfRecord
 import starling.daterange.Day
-import starling.daterange.Day._
 import starling.pivot.Field
 import starling.instrument.{Trade, TradeID, TradeAttributes}
 import starling.instrument.physical.PhysicalMetalAssignment
@@ -19,6 +18,7 @@ import com.trafigura.edm.logistics.inventory._
 import com.trafigura.edm.shared.types.{TitanId, Date, DateSpec, PercentageTolerance}
 import starling.quantity.Percentage
 import org.joda.time.LocalDate
+import com.trafigura.edm.shared.types.Quantity
 import com.trafigura.tradecapture.internal.refinedmetal._
 
 class ExternalTitanServiceFailed(cause : Throwable) extends Exception(cause)
@@ -41,6 +41,7 @@ class TitanSystemOfRecord(
   logisticsServices : TitanLogisticsServices) extends SystemOfRecord {
 
   lazy val quotaNameToTradeMap : Map[String, EDMPhysicalTrade] = titanTradeCache.quotaNameToTradeMap
+  lazy val quotaMap = titanTradeCache.quotaNameToQuotaMap
 
   lazy val tc = TradeConverter(refData, titanTradeCache)
   import tc._
@@ -51,7 +52,8 @@ class TitanSystemOfRecord(
 
     val tradeErrors = assignments.map(edmAssignment => {
       try {
-        f(edmAssignment)
+        val trade = tc.toTrade(edmAssignment.quotaName, edmAssignment.quantity,  Some(edmAssignment.oid.contents.toString), Some(edmAssignment.inventoryId.toString))
+        f(trade)
         Right(edmAssignment.oid.contents.toString)
       }
       catch {
@@ -60,7 +62,9 @@ class TitanSystemOfRecord(
           val errorInstrument = ErrorInstrument(StackTraceToString.string(ex).trim)
           val dummyDate = Day(1980, 1, 1)
 
-          val errorTrade = Trade(TradeID(edmAssignment.oid.contents, TitanTradeSystem), dummyDate, "Unknown", TitanTradeAttributes.errorAttributes(edmAssignment, quotaNameToTradeMap.get(edmAssignment.quotaName)), errorInstrument)
+          val errorTrade = Trade(
+            TradeID(edmAssignment.oid.contents, TitanTradeSystem),
+            dummyDate, "Unknown", TitanTradeAttributes.errorAttributes(edmAssignment.quotaName, Some(edmAssignment), quotaNameToTradeMap.get(edmAssignment.quotaName)), errorInstrument)
           f(errorTrade)
           Left(if (ex.getMessage == null) "Null Error Message" else ex.getMessage)
         }
@@ -71,8 +75,20 @@ class TitanSystemOfRecord(
   }
 
   def trade(id: String)(f: (Trade) => Unit) {
-    val edmAssignment = logisticsServices.assignmentService.service.getAssignmentById(id.toInt)
-    val tradeAssignment : Trade = tc.toTrade(edmAssignment)
+    val tradeAssignment = if (id.startsWith("A")) {
+      val edmAssignment = logisticsServices.assignmentService.service.getAssignmentById(id.substring(1).toInt)
+      val quota = quotaMap(edmAssignment.quotaName)
+      tc.toTrade(quota.detail.identifier.value, edmAssignment.quantity, Some(edmAssignment.oid.toString), Some(edmAssignment.inventoryId.toString))
+    }
+    else if (id.startsWith("Q")) {
+      val quotaName = id.substring(1)
+      val quota = quotaMap(quotaName)
+      tc.toTrade(quota.detail.identifier.value, quota.detail.pricingSpec.quantity, None, None)
+    }
+    else {
+      throw new Exception("Unexpeced trade id " + id)
+    }
+
     f(tradeAssignment)
   }
 
@@ -86,27 +102,29 @@ object TradeConverter{
 }
 
 /**
- * EDM to Starling Trade conversions
+ * EDM Inventory assignment to Starling "Trade" conversions
  */
 class TradeConverter(refData : TitanTacticalRefData,
                      quotaNameToTradeMap : Map[String, EDMPhysicalTrade],
                      quotaNameToQuotaMap : Map[String, PhysicalTradeQuota]) {
 
-  /**
-   * convert EDMAssignmentItem to a Starling Trade
-   */
-  implicit def toTrade(edmAssignment : EDMAssignment) : Trade = {
+  // used when we have a concrete assignment
+  def toTrade(assignment : EDMAssignment) : Trade = {
+    toTrade(assignment.quotaName, assignment.quantity, Some(assignment.oid.contents.toString), Some(assignment.inventoryId.toString))
+  }
+  
+  def toTrade(quotaName : String, quantity : Quantity, assignmentID : Option[String], inventoryID : Option[String]) : Trade = {
 
-    val quotaDetail = quotaNameToQuotaMap(edmAssignment.quotaName).detail
+    val quotaDetail = quotaNameToQuotaMap(quotaName).detail
     require(quotaDetail.deliverySpecs.size == 1, "Require exactly one delivery spec")
 
-    val edmTrade = quotaNameToTradeMap(edmAssignment.quotaName)
+    val edmTrade = quotaNameToTradeMap(quotaName)
     val groupCompany = refData.groupCompaniesByGUID(edmTrade.groupCompany).name
     val counterparty = refData.counterpartiesByGUID(edmTrade.counterparty.counterparty).name
     val deliverySpec = quotaDetail.deliverySpecs.head
     val (shape, grade) = deliverySpec.materialSpec match {
       case rms : com.trafigura.edm.materialspecification.RefinedMetalSpec => (
-        refData.shapesByGUID(rms.shape), 
+        refData.shapesByGUID(rms.shape),
         refData.gradeByGUID(rms.grade)
       )
       case _ => throw new Exception("Expected RefinedMetalSpec, recieved " + quotaDetail.deliverySpecs.head.materialSpec )
@@ -128,22 +146,21 @@ class TradeConverter(refData : TitanTacticalRefData,
 
     val tolerancePlus = getTolerancePercentage(tolerance.plus.amount)
     val toleranceMinus = getTolerancePercentage(tolerance.minus.amount)
-    
+
     def getDate(ds : DateSpec) : LocalDate = ds match {
-      case date : com.trafigura.edm.shared.types.Date => date.value 
+      case date : com.trafigura.edm.shared.types.Date => date.value
       case _ => throw new Exception("Unsupported DateSpec type")
     }
 
     val schedule = Day.fromLocalDate(getDate(deliverySpec.schedule))
     val expectedSales = Day.fromLocalDate(getDate(quotaDetail.expectedSales))
-    val assignmentId = edmAssignment.oid.contents
-    val quotaId = edmAssignment.quotaName
+    val quotaId = quotaName
 
     val attributes : TradeAttributes = TitanTradeAttributes(
-      assignmentId.toString,
+      assignmentID,
       quotaId,
       Option(edmTrade.titanId.value).getOrElse("NULL TITAN TRADE ID"),
-      edmAssignment.inventoryId.toString,
+      inventoryID,
       groupCompany,
       edmTrade.comments,
       Day.fromLocalDate(edmTrade.submitted.toLocalDate),
@@ -161,10 +178,10 @@ class TradeConverter(refData : TitanTacticalRefData,
     import EDMConversions._
 
     val metal : Metal = refData.edmMetalByGUID(quotaDetail.deliverySpecs.head.materialSpec.asInstanceOf[CommoditySpec].commodity)
-
     val priceSpecConverter = EDMPricingSpecConverter(metal, refData.futuresExchangeByID)
 
-    val deliveryQuantity = quotaDetail.deliverySpecs.map{ds => fromTitanQuantity(ds.quantity)}.sum
+    // todo - this is the wrong quantity at the assignment level??
+    val deliveryQuantity = quantity // = quotaDetail.deliverySpecs.map{ds => fromTitanQuantity(ds.quantity)}.sum
 
     val deliveryDay = Day.fromLocalDate(quotaDetail.deliverySpecs.head.schedule.asInstanceOf[Date].value)
 
@@ -180,22 +197,27 @@ class TradeConverter(refData : TitanTacticalRefData,
       println("NULL DATE  " + edmTrade.titanId)
     }
 
+    val tradeIDName = assignmentID match {
+      case Some(id) => "A" + id.toString
+      case None => "Q" + quotaName
+    }
     Trade(
-      TradeID(assignmentId, TitanTradeSystem),
+      TradeID(tradeIDName, TitanTradeSystem),
       Day.fromLocalDate(edmTrade.submitted.toLocalDate),
       counterparty,
-      attributes, 
-      tradeable, 
+      attributes,
+      tradeable,
       costs
       )
   }
+
 }
 
 case class TitanTradeAttributes(
-  assignmentID : String,
+  assignmentID : Option[String],
   quotaID : String,
   titanTradeID : String,
-  inventoryID : String,
+  inventoryID : Option[String],
   groupCompany : String,
   comment : String,
   submitted : Day,
@@ -217,8 +239,6 @@ case class TitanTradeAttributes(
   def details = Map(
     quotaID_str -> quotaID,
     titanTradeID_str -> titanTradeID,
-    assignmentID_str -> assignmentID,
-    inventoryID_str -> inventoryID,
     groupCompany_str -> groupCompany,
     comment_str -> comment,
     submitted_str -> submitted,
@@ -231,7 +251,7 @@ case class TitanTradeAttributes(
     toleranceMinus_str -> toleranceMinus,
     schedule_str -> schedule,
     expectedSales_str -> expectedSales
-  )
+  ) ++ assignmentID.map{id => assignmentID_str -> id} ++ inventoryID.map{id => inventoryID_str -> id}
 
   override def createFieldValues = details.map{
     case (k, v) => Field(k) -> v
@@ -240,7 +260,7 @@ case class TitanTradeAttributes(
 }
 
 object TitanTradeAttributes{
-  def errorAttributes(edmAssignment : EDMAssignment, edmTrade : Option[EDMPhysicalTrade]) = {
+  def errorAttributes(quotaName : String, edmAssignment : Option[EDMAssignment], edmTrade : Option[EDMPhysicalTrade]) = {
     val dummyDate = Day(1980, 1, 1)
     val titanTradeID = edmTrade match {
       case Some(trade) => trade.titanId.value
@@ -248,10 +268,10 @@ object TitanTradeAttributes{
     }
 
     TitanTradeAttributes(
-      assignmentID = edmAssignment.oid.contents.toString,
-      quotaID = edmAssignment.quotaName,
+      assignmentID = edmAssignment.map(_.oid.contents.toString),
+      quotaID = quotaName,
       titanTradeID = titanTradeID,
-      inventoryID = edmAssignment.inventoryId.toString,
+      inventoryID = edmAssignment.map(_.inventoryId.toString),
       groupCompany = "",
       comment = "",
       submitted = dummyDate,

@@ -38,7 +38,6 @@ import com.trafigura.services.trinity.TrinityService
 import com.trafigura.services.marketdata.{ExampleService, MarketDataServiceApi}
 import starling.fc2.api.FC2Service
 import starling.dbx.DataSourceFactory
-import starling.titan.{TitanTradeCache, TitanSystemOfRecord, TitanTradeStore}
 import java.util.UUID
 import com.trafigura.services.{DocumentationService, WebServiceFactory, ResteasyServiceApi}
 import starling.instrument.utils.StarlingXStream
@@ -52,7 +51,7 @@ import starling.auth.internal.KerberosAuthHandler
 import starling.manager.BromptonContext
 import starling.utils._
 import starling.eai.{EAIDealBookMapping, Traders, EAIAutoImport, EAIStrategyDB}
-
+import starling.titan._
 
 class StarlingInit( val props: Props,
                     authHandler:AuthHandler = AuthHandler.Dev,
@@ -180,7 +179,7 @@ class StarlingInit( val props: Props,
   }
 
   val userSettingsDatabase = new UserSettingsDatabase(starlingDB, broadcaster)
-  val rabbitEventDatabase = new RabbitEventDatabase(starlingDB, broadcaster)
+  val rabbitEventDatabase = new DefaultRabbitEventDatabase(starlingDB, broadcaster)
 
   val strategyDB = new EAIStrategyDB(eaiSqlServerDB)
   val eaiDealBookMapping = new EAIDealBookMapping(eaiSqlServerDB)
@@ -213,11 +212,17 @@ class StarlingInit( val props: Props,
   val closedDesks = new ClosedDesks(broadcaster, starlingDB)
 
   val (titanTradeCache : TitanTradeCache, titanServices, logisticsServices, titanInventoryCache) = if (!testMode) {
+    val titanServices = new DefaultTitanServices(props)
+    val titanLogisticsServices = new DefaultTitanLogisticsServices(props)
     (
       new DefaultTitanTradeCache(props),
-      new DefaultTitanServices(props),
-      new DefaultTitanLogisticsServices(props),
-      new DefaultTitanLogisticsInventoryCache(props)
+      titanServices,
+      titanLogisticsServices,
+      new TitanLogisticsInventoryCache(
+        titanLogisticsServices,
+        titanTradeCache,
+        titanServices,
+        Some(titanTradeStore))
     )
   }
   else {
@@ -228,11 +233,16 @@ class StarlingInit( val props: Props,
       new TitanTradeServiceBasedTradeCache(mockTitanTradeService),
       fileMockedTitanServices,
       fileMockedTitanLogisticsServices,
-      new TitanLogisticsServiceBasedInventoryCache(fileMockedTitanLogisticsServices)
+      new TitanLogisticsInventoryCache(fileMockedTitanLogisticsServices, titanTradeCache, fileMockedTitanServices, Some(titanTradeStore))
     )
   }
 
-  val valuationService = new ValuationService(new DefaultEnvironmentProvider(marketDataStore), titanTradeCache, titanServices, logisticsServices, titanRabbitEventServices, titanInventoryCache, Some(titanTradeStore), rabbitEventDatabase)
+  val valuationService = new ValuationService(
+    new DefaultEnvironmentProvider(marketDataStore), titanTradeCache,
+    titanServices, logisticsServices,
+    titanRabbitEventServices, titanInventoryCache,
+    Some(titanTradeStore), rabbitEventDatabase
+  )
   val marketDataService = new MarketDataService(marketDataStore, new DefaultEnvironmentProvider(marketDataStore))
 
   val titanSystemOfRecord = new TitanSystemOfRecord(titanTradeCache, titanServices, logisticsServices)

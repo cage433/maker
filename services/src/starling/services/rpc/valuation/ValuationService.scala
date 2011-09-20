@@ -34,7 +34,7 @@ import com.trafigura.edm.shared.types.TitanId
 import java.io.{PrintWriter, FileWriter, BufferedWriter}
 import com.trafigura.services.{TitanSerializableDate}
 import starling.utils.{Broadcaster, Log, Stopwatch}
-import starling.rmi.RabbitEventDatabase
+import starling.rmi.{RabbitEventDatabase, DefaultRabbitEventDatabase}
 
 //import com.trafigura.services.marketdata.MarketDataServiceApi
 import starling.tradestore.TradeStore
@@ -118,41 +118,16 @@ case class DefaultTitanTradeCache(props : Props) extends TitanTradeCache with Lo
   }
 }
 
-trait TitanLogisticsInventoryCache {
-  def getAssignmentsForInventory(id: String) = {
-    val inventory = getInventory(id)
-    inventory.purchaseAssignment :: Option(inventory.salesAssignment).toList
-  }
-  protected var inventoryMap: Map[String, EDMInventoryItem]
-  protected var assignmentIDtoInventoryIDMap : Map[String, String]
-  def getInventory(id: String): EDMInventoryItem
-  def getAllInventory(): List[EDMInventoryItem]
-  def removeInventory(id : String) {
-    inventoryMap = inventoryMap - id
-    assignmentIDtoInventoryIDMap.filter{ case (_, value) => value != id}
-  }
 
-  def addInventory(id : String) {
-    inventoryMap += id -> getInventory(id)
-    addInventoryAssignments(id)
-  }
+case class TitanLogisticsInventoryCache(
+    titanLogisticsServices : TitanLogisticsServices,
+    titanTradeCache : TitanTradeCache,
+    refData : TitanTacticalRefData,
+    titanTradeStore : Option[TitanTradeStore]) {
 
-  def addInventoryAssignments(id : String) {
-    val item = inventoryMap(id)
-    val assignmentToInventoryMapItems = (item.purchaseAssignment.oid.contents.toString, id) :: { if (item.salesAssignment != null) (item.salesAssignment.oid.contents.toString -> id) :: Nil else Nil }
-    assignmentIDtoInventoryIDMap ++= assignmentToInventoryMapItems
-  }
-
-  def inventoryIDFromAssignmentID(id: String): String
-
-}
-
-
-case class DefaultTitanLogisticsInventoryCache(props : Props) extends TitanLogisticsInventoryCache {
   protected var inventoryMap : Map[String, EDMInventoryItem] = Map[String, EDMInventoryItem]()
   protected var assignmentIDtoInventoryIDMap : Map[String, String] = Map[String, String]()
 
-  private val titanLogisticsServices = DefaultTitanLogisticsServices(props)
   private def getAll() = try {
       titanLogisticsServices.inventoryService.service.getAllInventoryLeaves()
   } catch {
@@ -162,6 +137,52 @@ case class DefaultTitanLogisticsInventoryCache(props : Props) extends TitanLogis
     titanLogisticsServices.inventoryService.service.getInventoryById(id).associatedInventory.head
   } catch {
     case e : Throwable => throw new ExternalTitanServiceFailed(e)
+  }
+
+  private def tradesForInventory(inventoryID: String): List[Trade] = {
+    val tradeConverter = TradeConverter(refData, titanTradeCache)
+    getAssignmentsForInventory(inventoryID).map(assignment => tradeConverter.toTrade(assignment))
+  }
+  private def writeToTradeStore(inventoryID : String) {
+    titanTradeStore match {
+      case Some(tradeStore) => {
+        val trades : Seq[Trade] = tradesForInventory(inventoryID)
+        val tradeIDs = trades.map(_.tradeID)
+        tradeStore.storeTrades((trade) => tradeIDs.contains(trade.tradeID), trades, new Timestamp())
+      }
+      case None =>
+    }
+  }
+  private def deleteFromTradeStore(inventoryID : String){
+    titanTradeStore match {
+      case Some(tradeStore) => {
+        val tradeIDs = tradesForInventory(inventoryID).map(_.tradeID)
+        tradeStore.storeTrades((trade) => tradeIDs.contains(trade.tradeID), Nil, new Timestamp())
+      }
+      case None =>
+    }
+  }
+  
+  def getAssignmentsForInventory(id: String) = {
+    val inventory = getInventory(id)
+    inventory.purchaseAssignment :: Option(inventory.salesAssignment).toList
+  }
+  def removeInventory(inventoryID : String) {
+    inventoryMap = inventoryMap - inventoryID
+    assignmentIDtoInventoryIDMap.filter{ case (_, value) => value != inventoryID}
+    deleteFromTradeStore(inventoryID)
+  }
+
+  def addInventory(inventoryID : String) {
+    inventoryMap += inventoryID -> getInventory(inventoryID)
+    addInventoryAssignments(inventoryID)
+    writeToTradeStore(inventoryID)
+  }
+
+  def addInventoryAssignments(inventoryID : String) {
+    val item = inventoryMap(inventoryID)
+    val assignmentToInventoryMapItems = (item.purchaseAssignment.oid.contents.toString -> inventoryID) :: Option(item.salesAssignment).toList.map(_.oid.contents.toString -> inventoryID)
+    assignmentIDtoInventoryIDMap ++= assignmentToInventoryMapItems
   }
 
   // Read all inventory from Titan and blast our cache
@@ -203,52 +224,15 @@ case class DefaultTitanLogisticsInventoryCache(props : Props) extends TitanLogis
     }
   }
 
-}
-
-case class TitanLogisticsServiceBasedInventoryCache(titanLogisticsServices : TitanLogisticsServices) extends TitanLogisticsInventoryCache {
-  protected var inventoryMap: Map[String, EDMInventoryItem] = Map[String, EDMInventoryItem]()
-  protected var assignmentIDtoInventoryIDMap : Map[String, String] = Map[String, String]()
-
-  // Read from Titan and blast our cache
-  def updateMap() {
-    val sw = new Stopwatch()
-    val edmInventoryResult = titanLogisticsServices.inventoryService.service.getAllInventoryLeaves()
-    inventoryMap = edmInventoryResult.map(i => (i.oid.contents.toString, i)).toMap
-  }
-
-  def getAllInventory() : List[EDMInventoryItem] = {
-    if (inventoryMap.size > 0) {
-      inventoryMap.values.toList
-    }
-    else {
-      updateMap()
-      inventoryMap.values.toList
-    }
-  }
-
-  def getInventory(id: String) : EDMInventoryItem = {
-    if (inventoryMap.contains(id)) {
-      inventoryMap(id)
-    }
-    else {
-      val item = titanLogisticsServices.inventoryService.service.getInventoryById(id.toInt).associatedInventory.head
-      inventoryMap += item.oid.contents.toString -> item
-      inventoryMap(id)
-    }
-  }
-
-  def inventoryIDFromAssignmentID(id: String): String = {
-    if (!assignmentIDtoInventoryIDMap.contains(id))
-      updateMap()
-    assignmentIDtoInventoryIDMap.get(id) match {
-      case Some(id) => id
-      case None => throw new Exception("Missing inventory " + id)
-    }
-  }
-
   def getInventoryByIds(ids : List[String]) = getAllInventory().filter(i => ids.exists(_ == i.oid.contents.toString))
 }
 
+
+object TitanLogisticsInventoryCache {
+  def apply(props : Props,titanTradeCache : TitanTradeCache, refData : TitanTacticalRefData, titanTradeStore : Option[TitanTradeStore]) : TitanLogisticsInventoryCache = {
+    new TitanLogisticsInventoryCache(DefaultTitanLogisticsServices(props), titanTradeCache, refData, titanTradeStore)
+  }
+}
 trait TitanTradeService {
   def getTrade(id : TitanId) : EDMPhysicalTrade
   def getAllTrades() : List[EDMPhysicalTrade]
@@ -398,17 +382,23 @@ class ValuationService(
   rabbitEventServices : TitanRabbitEventServices,
   titanInventoryCache : TitanLogisticsInventoryCache,
   titanTradeStore : Option[TradeStore],  // Optional as I don't want to write a mock service for this yet
-  db:RabbitEventDatabase
+  rabbitEventDb : RabbitEventDatabase
 )
-  extends ValuationServiceApi with Log
-{
+  extends ValuationServiceApi with Log {
 
   private type TradeValuationResult = Either[String, List[CostsAndIncomeQuotaValuation]]
 
   private lazy val futuresExchangeByID = refData.futuresExchangeByID
   private lazy val edmMetalByGUID = refData.edmMetalByGUID
 
-  private val eventHandler = new EventHandler(db)
+  private val eventHandler =
+    new TitanEventHandler( rabbitEventServices,
+                      this,
+                      titanTradeCache,
+                      titanInventoryCache,
+                      environmentProvider,
+                      refData,
+                      rabbitEventDb)
 
   rabbitEventServices.addClient(eventHandler)
 
@@ -547,7 +537,7 @@ class ValuationService(
     valueAllAssignments(env, snapshotIDString)
   }
   
-  private def valueAllAssignments(env : Environment, snapshotIDString : String) : CostAndIncomeInventoryValuationServiceResults = {
+  def valueAllAssignments(env : Environment, snapshotIDString : String) : CostAndIncomeInventoryValuationServiceResults = {
     val sw = new Stopwatch()
 
     val inventory = titanInventoryCache.getAllInventory()
@@ -576,7 +566,7 @@ class ValuationService(
     valueInventoryAssignments(inventoryIds, env, snapshotIDString)
   }
 
-  private def valueInventoryAssignments(inventoryIds: List[String], env : Environment, snapshotIDString : String) : CostAndIncomeInventoryValuationServiceResults = {
+  def valueInventoryAssignments(inventoryIds: List[String], env : Environment, snapshotIDString : String) : CostAndIncomeInventoryValuationServiceResults = {
     val sw = new Stopwatch()
 
     val quotaNameToQuotaMap = titanTradeCache.getAllTrades().flatMap(_.quotas).map(q => NeptuneId(q.detail.identifier.value).identifier -> q).toMap
@@ -616,253 +606,6 @@ class ValuationService(
   def getTrades(tradeIds : List[String]) : List[EDMPhysicalTrade] = tradeIds.map(id => TitanId(id)).map(titanTradeCache.getTrade)
   def getFuturesExchanges = futuresExchangeByID.values
   def getMetals = edmMetalByGUID.values
-    
-
-  /**
-   * handler for Titan rabbit events
-   */
-  class EventHandler(db:RabbitEventDatabase) extends DemultiplexerClient {
-    import Event._
-    lazy val rabbitPublishChangedValueEvents = publishStarlingChangedValueEvents(rabbitEventServices.rabbitEventPublisher)
-    lazy val rabbitPublishNewValuationEvents = publishCreatedValuationEvents(rabbitEventServices.rabbitEventPublisher) _
-    def handle(ev: Event) {
-      if (ev == null) log.warn("Got a null event") else {
-        if (TrademgmtSource == ev.source && (TradeSubject == ev.subject || NeptuneTradeSubject == ev.subject)) { // Must be some form of trade event from trademgmt source
-          tradeMgmtTradeEventHander(ev)
-        }
-        else if (LogisticsSource.equalsIgnoreCase(ev.source) && (EDMLogisticsSalesAssignmentSubject.equalsIgnoreCase(ev.subject) || EDMLogisticsInventorySubject.equalsIgnoreCase(ev.subject))) {
-          logisticsAssignmentEventHander(ev)
-        }
-        db.saveEvent(ev)
-      }
-    }
-
-    /**
-     * handler for trademgnt trade events
-     */
-    def tradeMgmtTradeEventHander(ev: Event) = {
-      log.info("handler: Got a trade event to process %s".format(ev.toString))
-
-      val tradePayloads = ev.content.body.payloads.filter(p => Event.RefinedMetalTradeIdPayload == p.payloadType)
-      val tradeIds = tradePayloads.map(p => p.key.identifier)
-      val titanIds = tradeIds.map(id =>TitanId(id))
-      log.info("Trade event received for ids { %s }".format(tradeIds.mkString(", ")))
-
-      ev.subject match {
-        case TradeSubject => {
-          ev.verb match {
-            case UpdatedEventVerb => {
-              val (snapshotIDString, env) = getSnapshotAndEnv
-              val originalTradeValuations = valueCostables(tradeIds, env, snapshotIDString)
-              titanIds.foreach{ id => titanTradeCache.removeTrade(id); titanTradeCache.addTrade(id)}
-              val newTradeValuations = valueCostables(tradeIds, env, snapshotIDString)
-              val changedIDs = tradeIds.filter{id => newTradeValuations.tradeResults(id) != originalTradeValuations.tradeResults(id)}
-
-              if (changedIDs != Nil)
-                rabbitPublishChangedValueEvents(changedIDs, RefinedMetalTradeIdPayload)
-
-              log.info("Trades revalued for received event using snapshot %s number of changed valuations %d".format(snapshotIDString, changedIDs.size))
-            }
-            case CreatedEventVerb => {
-              Log.info("New event received for %s".format(tradeIds))
-              titanIds.foreach(titanTradeCache.addTrade)
-            }
-            case CancelledEventVerb | RemovedEventVerb => {
-              Log.info("Cancelled / deleted event received for %s".format(titanIds))
-              titanIds.foreach(titanTradeCache.removeTrade)
-            }
-          }
-        }
-        // handle publishing of valuation status events (events saying if a new (completed) trade can be valued successfully or not)
-        case NeptuneTradeSubject => {
-          val completed = ev.content.body.payloads.filter(p => TradeStatusPayload == p.payloadType).filter(p => p.key.identifier == "completed").size > 0
-          if (completed) {
-            val (snapshotIDString, env) = getSnapshotAndEnv
-            val tradeValuations = valueCostables(tradeIds, env, snapshotIDString)
-            val valuationResults = tradeValuations.tradeResults.map(vr => {
-              vr._2 match {
-                case Right(v) => (vr._1, true)
-                case Left(e) => (vr._1, false)
-              }
-            }).toList
-            rabbitPublishNewValuationEvents(valuationResults)
-          }
-        }
-      }
-    }
-
-    /**
-     * handler for logistics assignment events
-     */
-    def logisticsAssignmentEventHander(ev: Event) = {
-      log.info("handler: Got an assignment event to process %s".format(ev.toString))
-
-      val payloads = ev.content.body.payloads
-      val ids : List[String] = if (Event.EDMLogisticsSalesAssignmentSubject == ev.subject) {
-        payloads.map(p => titanInventoryCache.inventoryIDFromAssignmentID(p.key.identifier)) // map back to inventory id
-      }
-      else if (Event.EDMLogisticsInventorySubject == ev.subject) {
-        payloads.map(p => p.key.identifier)
-      }
-      else Nil
-
-      log.info("Assignment event received for ids { %s }".format(ids.mkString(", ")))
-
-      def tradesForInventory(inventoryID : String) : List[Trade] = {
-        val tradeConverter = TradeConverter(refData, titanTradeCache)
-        titanInventoryCache.getAssignmentsForInventory(inventoryID)map(tradeConverter.toTrade)
-      }
-
-      def writeToTradeStore(inventoryID : String){
-        titanTradeStore match {
-          case Some(tradeStore) => {
-            val trades : Seq[Trade] = tradesForInventory(inventoryID)
-            val tradeIDs = trades.map(_.tradeID)
-            tradeStore.storeTrades((trade) => tradeIDs.contains(trade.tradeID), trades, new Timestamp())
-          }
-          case None =>
-        }
-      }
-      def deleteFromTradeStore(inventoryID : String){
-        titanTradeStore match {
-          case Some(tradeStore) => {
-            val tradeIDs = tradesForInventory(inventoryID).map(_.tradeID)
-            tradeStore.storeTrades((trade) => tradeIDs.contains(trade.tradeID), Nil, new Timestamp())
-          }
-          case None =>
-        }
-      }
-      ev.verb match {
-        case UpdatedEventVerb => {
-          val (snapshotIDString, env) = environmentProvider.mostRecentSnapshotIdentifierBeforeToday() match {
-            case Some(snapshotId) => (snapshotId, environmentProvider.environment(snapshotId))
-            case None => ("No Snapshot found",  Environment(NullAtomicEnvironment((Day.today - 1).startOfDay)))
-          }
-
-          val originalInventoryAssignmentValuations = valueInventoryAssignments(ids, env, snapshotIDString)
-          ids.foreach{ id => titanInventoryCache.removeInventory(id); titanInventoryCache.addInventory(id)}
-          ids.foreach(writeToTradeStore(_))
-          val newInventoryAssignmentValuations = valueInventoryAssignments(ids, env, snapshotIDString)
-
-          val changedIDs = ids.filter {id => newInventoryAssignmentValuations.assignmentValuationResults(id) != originalInventoryAssignmentValuations.assignmentValuationResults(id) }
-
-          if (changedIDs != Nil) {
-            rabbitPublishChangedValueEvents(changedIDs, EDMLogisticsInventoryIdPayload)
-          }
-
-          log.info("Assignments revalued for received event using snapshot %s number of changed valuations %d".format(snapshotIDString, changedIDs.size))
-        }
-        case CreatedEventVerb => {
-          Log.info("New event received for %s".format(ids))
-          if (Event.EDMLogisticsInventorySubject == ev.subject) {
-            ids.foreach(titanInventoryCache.addInventory)
-            ids.foreach(writeToTradeStore)
-          }
-        }
-        case CancelledEventVerb | RemovedEventVerb => {
-          Log.info("Cancelled / deleted event received for %s".format(ids))
-          if (Event.EDMLogisticsInventorySubject == ev.subject) {
-            ids.foreach(deleteFromTradeStore)
-            ids.foreach(titanInventoryCache.removeInventory)
-          }
-        }
-      }
-    }
-
-    /**
-     * handler for snapshot events
-     */
-    def marketDataSnapshotEventHander(ev: Event) = {
-      log.info("handler: Got a snapshot event to process %s".format(ev.toString))
-
-      /**
-       * logic:
-       *   take the most recent previous snapshot of the day and compare values using that snapshot and the new one, if different send events containing ids
-       *   else if there is no previous snapshot for today then do nothing
-       */
-      val payloads = ev.content.body.payloads.filter(p => StarlingSnapshotIdPayload == p.payloadType)
-      val ids = payloads.map(p => p.key.identifier)
-      val newSnapshotId = payloads.map(p => p.key.identifier).max
-      val todaysSnapshots : List[SnapshotID] = environmentProvider.snapshotIDs(Some(Day.today)).sortWith(_.id > _.id)
-      log.info("Snapshot event received for ids { %s }, using '%s'".format(ids.mkString(", "), newSnapshotId))
-
-      if (todaysSnapshots.size > 1) {
-        ev.subject match {
-          case StarlingMarketDataSnapshotIDSubject => {
-            ev.verb match {
-              case CreatedEventVerb => {
-                val previousSnapshotId = todaysSnapshots(1).id.toString
-                log.info("New marketData snapshot event, revaluing received event using old snapshot %s new snapshot %s".format(previousSnapshotId, newSnapshotId))
-                val previousEnv = environmentProvider.environment(previousSnapshotId)
-                val newEnv = environmentProvider.environment(newSnapshotId)
-
-                val originalTradeValuations = valueCostables(Nil, previousEnv, previousSnapshotId)
-                val newTradeValuations = valueCostables(Nil, newEnv, newSnapshotId)
-                val tradeIds = newTradeValuations.tradeResults.keys.toList
-                val changedTradeIDs = tradeIds.filter(id => newTradeValuations.tradeResults(id) != originalTradeValuations.tradeResults(id))
-
-                log.info("Trades revalued for new snapshot %s, number of changed valuations %d".format(newSnapshotId, changedTradeIDs.size))
-
-                if (changedTradeIDs != Nil)
-                  rabbitPublishChangedValueEvents(changedTradeIDs, RefinedMetalTradeIdPayload)
-
-                val originalInventoryValuations = valueInventoryAssignments(Nil, previousEnv, previousSnapshotId)
-                val newInventoryValuations = valueInventoryAssignments(Nil, newEnv, newSnapshotId)
-                val inventoryIds = newInventoryValuations.assignmentValuationResults.keys.toList
-                val changedInventoryValueIDs = inventoryIds.filter(id => originalInventoryValuations.assignmentValuationResults(id) != newInventoryValuations.assignmentValuationResults(id))
-
-                log.info("Inventory assignments revalued for new snapshot %s, number of changed valuations %d".format(newSnapshotId, changedInventoryValueIDs.size))
-
-                if (changedInventoryValueIDs != Nil)
-                  rabbitPublishChangedValueEvents(changedInventoryValueIDs, RefinedMetalTradeIdPayload)
-              }
-              case UpdatedEventVerb => {
-                log.info("Unhandled event for updated snapshot %s".format(ids))
-              }
-              case CancelledEventVerb | RemovedEventVerb => {
-                log.info("Unhandled cancelled / deleted event received for %s".format(ids))
-              }
-            }
-          }
-        }
-      }
-    }
-
-    def getSnapshotAndEnv : (String, Environment) = environmentProvider.mostRecentSnapshotIdentifierBeforeToday() match {
-      case Some(snapshotId) => (snapshotId, environmentProvider.environment(snapshotId))
-      case None => ("No Snapshot found",  Environment(NullAtomicEnvironment((Day.today - 1).startOfDay)))
-    }
-
-    // publish the valuation updated event contaning payloads of the trade id's whose trade valuations have changed
-    private val publishStarlingChangedValueEvents = publishChangedValueEvents(StarlingSource, StarlingValuationServiceSubject) _
-    private def publishChangedValueEvents(source : String, subject : String)
-                                         (eventPublisher : Publisher)(ids : List[String], payloadTypeParam : String = RefinedMetalTradeIdPayload) : Unit  = {
-
-      val payloadDetails = ids.map(id => (payloadTypeParam, id))
-      val payloads = createPayloads(source)(payloadDetails)
-      val events = createEvents(source, subject)(UpdatedEventVerb, payloads)
-      eventPublisher.publish(events)
-    }
-
-    private def publishCreatedValuationEvents(eventPublisher : Publisher)(newValuations : List[(String, Boolean)]) = {
-      val newValuationPayloads : List[(String, String)] = newValuations.flatMap(e => (RefinedMetalTradeIdPayload, e._1) :: (StarlingNewValuationServiceStatusPayload, e._2.toString) :: Nil)
-      val payloads = createStarlingPayloads(newValuationPayloads)
-      val newValuationEvents = createValuationServiceEvents(CreatedEventVerb, payloads)
-      eventPublisher.publish(newValuationEvents)
-    }
-
-    private val createValuationServiceEvents = createEvents(StarlingSource, StarlingValuationServiceSubject) _
-    private def createEvents(source : String, subject : String)(verb : EventVerbEnum, payloads : List[Payload]) : JSONArray = {
-      val keyIdentifier = System.currentTimeMillis.toString
-      val ev = EventFactory().createEvent(subject, verb, source, keyIdentifier, payloads)
-      ||> { new JSONArray } { r => r.put(ev.toJson) }
-    }
-
-    private val createStarlingPayloads = createPayloads(StarlingSource) _
-    private def createPayloads(source : String)(payloads : List[(String, String)]) : List[Payload] = {
-      payloads.map(p => EventPayloadFactory().createPayload(p._1, source, p._2))
-    }
-  }
 }
 
 /**
@@ -893,6 +636,7 @@ class ValuationServiceRpc(marketDataStore: MarketDataStore, valuationService: Va
   }
 }
 */
+
 
 object ValuationService extends App {
 

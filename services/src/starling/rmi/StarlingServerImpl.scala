@@ -37,7 +37,7 @@ class StarlingServerImpl(
         ldapSearch: LdapUserLookup,
         eaiStarlingDB: DB,
         val allTraders: Traders,
-        rabbitEventDatabase:RabbitEventDatabase
+        rabbitEventDatabase:DefaultRabbitEventDatabase
       ) extends StarlingServer with Log {
 
   def desks = {
@@ -342,7 +342,7 @@ class StarlingServerImpl(
   }
 
   def rabbitEvents(pivotFieldParams:PivotFieldParams, latestEvent:Long) = {
-    val table = RabbitEventDatabase.TableName
+    val table = DefaultRabbitEventDatabase.TableName
     val starlingID = "Starling ID"
     val verb = "Verb"
     val subject = "Subject"

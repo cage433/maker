@@ -7,12 +7,20 @@ import starling.dbx.QueryBuilder._
 import starling.daterange.Timestamp
 import starling.gui.api.RabbitEventReceived
 
-object RabbitEventDatabase {
+object DefaultRabbitEventDatabase {
   val TableName = "RabbitMessages"
 }
-import RabbitEventDatabase._
+import DefaultRabbitEventDatabase._
 
-class RabbitEventDatabase(val db:DB, broadcaster:Broadcaster) {
+trait RabbitEventDatabase{
+  def saveEvent(e:Event)
+}
+
+object NullRabbitEventDatabase extends RabbitEventDatabase{
+  def saveEvent(e: Event) = {}
+}
+
+class DefaultRabbitEventDatabase(val db:DB, broadcaster:Broadcaster) extends RabbitEventDatabase {
   private val colSize = 300
   private var maxID = {
     val q = (
