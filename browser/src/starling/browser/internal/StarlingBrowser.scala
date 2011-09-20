@@ -65,11 +65,11 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
 
   private val starlingBrowserUI = new StarlingBrowserUI
   val starlingBrowserLayer = new SXLayerScala(this, starlingBrowserUI)
-  var threadSequence = 0
+  private var threadSequence = 0
   private val componentBufferWindow = 1
-  val history = new ArrayBuffer[PageInfo]
-  var current = -1
-  var autoRefresh:Option[CountDownLatch]=None
+  private val history = new ArrayBuffer[PageInfo]
+  private var current = -1
+  private var autoRefresh:Option[CountDownLatch]=None
 
   private val mainPanel = new BorderPanel
   private val genericLockedUI = new GenericLockedUI
