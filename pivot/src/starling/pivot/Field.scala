@@ -36,7 +36,6 @@ object Field {
   val scratch_str = "Scratch"
   val enteredby_str = "Entered By"
   val systemTimestamp_str = "System Timestamp"
-  val bookID_str = "Book ID"
   val dealID_str = "Deal ID"
 
   val exchange_str = "Exchange"

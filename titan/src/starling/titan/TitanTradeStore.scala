@@ -31,7 +31,7 @@ object TitanTradeStore {
 }
 
 class TitanTradeStore(db: RichDB, broadcaster:Broadcaster, tradeSystem:TradeSystem)
-        extends TradeStore(db, broadcaster, tradeSystem, None) {
+        extends TradeStore(db, broadcaster, tradeSystem) {
   val tableName = "TitanTrade"
   def createTradeAttributes(row:RichInstrumentResultSetRow) = {
     val quotaID = row.getString("quotaID")
