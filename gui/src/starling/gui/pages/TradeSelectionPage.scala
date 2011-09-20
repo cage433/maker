@@ -296,15 +296,25 @@ case class TradeSelectionPage(
 
             val curveIdentifier = {
               val marketDataIdentifier = {
-                val defaultSelection = MarketDataSelection(context.localCache.pricingGroups(desk).headOption)
-                val selection = context.getSetting(
+                val pricingGroupsForDesk = context.localCache.pricingGroups(desk)
+                val defaultSelection = MarketDataSelection(pricingGroupsForDesk.headOption)
+
+
+                val selection1 = context.getSetting(
                   StandardUserSettingKeys.InitialMarketDataSelection,
                   defaultSelection
                 )
-                val version = context.localCache.latestMarketDataVersionIfValid(selection)
-                        .getOrElse(context.localCache.latestMarketDataVersion(defaultSelection))
 
-                MarketDataIdentifier(defaultSelection, version)
+                val selection2 = selection1.pricingGroup match {
+                  case Some(pg) if pricingGroupsForDesk.contains(pg) => selection1
+                  case _ => defaultSelection
+                }
+
+                val (version, selection) = context.localCache.latestMarketDataVersionIfValid(selection2) match {
+                  case Some(v) => (v, selection2)
+                  case None => (context.localCache.latestMarketDataVersion(defaultSelection), defaultSelection)
+                }
+                MarketDataIdentifier(selection, version)
               }
 
               CurveIdentifierLabel.defaultLabelFromSingleDay(marketDataIdentifier, context.localCache.ukBusinessCalendar)
