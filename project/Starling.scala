@@ -296,7 +296,7 @@ object StarlingBuild extends Build{
     "startserver",
     file("./startserver"),
     settings = standardSettings
-  ) dependsOn(services, reportsInternal, starlingClient, singleClasspathManager)
+  ) dependsOn(services, reportsInternal, starlingClient, singleClasspathManager, rabbitEventViewerService)
 
   lazy val launcher = Project(
     "launcher", 
