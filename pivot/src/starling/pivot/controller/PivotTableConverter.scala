@@ -598,12 +598,9 @@ case class PivotTableConverter(otherLayoutInfo:OtherLayoutInfo = OtherLayoutInfo
   }
 
   def toSTable(name:String) = {
-    val rowAxis = table.rowAxis
     val (rowHeaderCells, columnHeaderCells, mainTableCells) = allTableCells(false)
     val rowHeader= if (rowHeaderCells.isEmpty) List() else rowHeaderCells(0).map { cv => SColumn(cv.value.field.name) }.toList
-//    val columnHeader = columnHeaderCells(0).map { cv => SColumn(cv.value.field.name) }.toList
-    val columnHeader = columnHeaderCells(1).map { cv => SColumn(cv.label) }.toList
-
+    val columnHeader = columnHeaderCells(0).map { cv => SColumn(cv.label) }.toList
     //Does not work if the column area contains non-measures
     STable(
       name,
