@@ -1,375 +1,29 @@
 package starling.services.rpc.valuation
 
-import starling.props.Props
 import starling.instrument.PhysicalMetalAssignmentForward
 import starling.instrument.PhysicalMetalForward
-import starling.db.{NormalMarketDataReader, SnapshotID, MarketDataStore}
-import starling.curves.{ClosesEnvironmentRule, Environment}
-import starling.gui.api.{MarketDataIdentifier, PricingGroup}
+import starling.curves.Environment
 import starling.services.StarlingInit
 import com.trafigura.services.valuation._
-import starling.services.rpc.refdata._
 import com.trafigura.tradinghub.support.ModelObject
 import com.trafigura.edm.trades.{PhysicalTrade => EDMPhysicalTrade}
 import java.lang.Exception
-import com.trafigura.shared.events._
 import org.joda.time.LocalDate
-import org.codehaus.jettison.json.JSONArray
-import com.trafigura.common.control.PipedControl._
-import starling.utils.cache.CacheFactory
-import starling.curves.NullAtomicEnvironment
 import starling.services.rabbit._
 import com.trafigura.tradecapture.internal.refinedmetal.Market
 import com.trafigura.tradecapture.internal.refinedmetal.Metal
-import com.trafigura.services.rabbit.Publisher
-import starling.quantity.Quantity
-import starling.curves.DiscountRateKey
-import starling.curves.ForwardPriceKey
-import starling.curves.UnitTestingAtomicEnvironment
-import starling.curves.IndexFixingKey
 import starling.titan._
-import starling.services.rpc.logistics._
-import com.trafigura.events.DemultiplexerClient
 import com.trafigura.edm.shared.types.TitanId
-import java.io.{PrintWriter, FileWriter, BufferedWriter}
+import java.io.{FileWriter, BufferedWriter}
 import com.trafigura.services.{TitanSerializableDate}
-import starling.utils.{Broadcaster, Log, Stopwatch}
-import starling.rmi.{RabbitEventDatabase, DefaultRabbitEventDatabase}
+import starling.utils.{Log, Stopwatch}
+import starling.rmi.RabbitEventDatabase
 
-//import com.trafigura.services.marketdata.MarketDataServiceApi
 import starling.tradestore.TradeStore
-import com.trafigura.edm.logistics.inventory.{EDMAssignmentItem, EDMInventoryItem}
-import starling.daterange.{Timestamp, Day}
-import starling.instrument.Trade
+import starling.daterange.Day
 
 
-/**
- * Trade cache provide trade map lookup by trade id and also a quota id to trade map lookup
- */
-case class DefaultTitanTradeCache(props : Props) extends TitanTradeCache with Log {
-  protected var tradeMap = Map[TitanId, EDMPhysicalTrade]()
-  protected var quotaIDToTradeIDMap = Map[String, TitanId]()
 
-  private lazy val titanTradesService = new DefaultTitanServices(props).titanGetEdmTradesService
-  private def getAll() = try {
-      titanTradesService.getAll()
-  } catch {
-    case e : Throwable => { log.error("Error getting Titan EDM trades ", e); throw new ExternalTitanServiceFailed(e) }
-  }
-
-  private def getById(id : TitanId) = try {
-      titanTradesService.get(id)
-  } catch {
-    case e : Throwable => throw new ExternalTitanServiceFailed(e)
-  }
-
-  /*
-    Read all trades from Titan and blast our cache
-  */
-  def updateTradeMap() {
-    val sw = new Stopwatch()
-    val edmTradeResult = getAll()
-    log.info("Are EDM Trades available " + edmTradeResult.cached + ", took " + sw)
-    if (!edmTradeResult.cached) throw new TradeManagementCacheNotReady
-    log.info("Got Edm Trade results " + edmTradeResult.cached + ", trade result count = " + edmTradeResult.results.size)
-
-    val validTrades = edmTradeResult.results.filter(tr => tr.trade != null).map(_.trade.asInstanceOf[EDMPhysicalTrade])
-
-    // temporary code, trademgmt are sending us null titan ids
-    val (nullIds, validIds) = validTrades.span(_.titanId == null)
-    if (nullIds.size > 0) {
-      log.error("Null Titan trade IDs found!")
-      log.error("null ids \n%s\n%s".format(nullIds, validIds))
-      //assert(false, "Null titan ids found - fatal error")
-    }
-    tradeMap = validTrades/*.filter(pt => pt.tstate == CompletedTradeTstate)*/.map(t => (t.titanId, t)).toMap
-    tradeMap.keySet.foreach(addTradeQuotas)
-  }
-
-  def getAllTrades(): List[EDMPhysicalTrade] = {
-    if (tradeMap.size > 0) {
-      tradeMap.values.toList
-    }
-    else {
-      updateTradeMap()
-      tradeMap.values.toList
-    }
-  }
-
-  def getTrade(id: TitanId): EDMPhysicalTrade = {
-    if (tradeMap.contains(id)) {
-      tradeMap(id)
-    }
-    else {
-      val trade = getById(id)
-      tradeMap += trade.titanId -> trade.asInstanceOf[EDMPhysicalTrade]
-      addTradeQuotas(id)
-      tradeMap(id)
-    }
-  }
-
-  def tradeIDFromQuotaID(quotaID: String): TitanId = {
-    if (!quotaIDToTradeIDMap.contains(quotaID))
-      updateTradeMap()
-    quotaIDToTradeIDMap.get(quotaID) match {
-      case Some(tradeID) => tradeID
-      case None => throw new Exception("Missing quota " + quotaID)
-    }
-  }
-}
-
-
-case class TitanLogisticsInventoryCache(
-    titanLogisticsServices : TitanLogisticsServices,
-    titanTradeCache : TitanTradeCache,
-    refData : TitanTacticalRefData,
-    titanTradeStore : Option[TitanTradeStore]) {
-
-  protected var inventoryMap : Map[String, EDMInventoryItem] = Map[String, EDMInventoryItem]()
-  protected var assignmentIDtoInventoryIDMap : Map[String, String] = Map[String, String]()
-
-  private def getAll() = try {
-      titanLogisticsServices.inventoryService.service.getAllInventoryLeaves()
-  } catch {
-    case e : Throwable => throw new ExternalTitanServiceFailed(e)
-  }
-  private def getById(id : Int) = try {
-    titanLogisticsServices.inventoryService.service.getInventoryById(id).associatedInventory.head
-  } catch {
-    case e : Throwable => throw new ExternalTitanServiceFailed(e)
-  }
-
-  private def tradesForInventory(inventoryID: String): List[Trade] = {
-    val tradeConverter = TradeConverter(refData, titanTradeCache)
-    getAssignmentsForInventory(inventoryID).map(assignment => tradeConverter.toTrade(assignment))
-  }
-  private def writeToTradeStore(inventoryID : String) {
-    titanTradeStore match {
-      case Some(tradeStore) => {
-        val trades : Seq[Trade] = tradesForInventory(inventoryID)
-        val tradeIDs = trades.map(_.tradeID)
-        tradeStore.storeTrades((trade) => tradeIDs.contains(trade.tradeID), trades, new Timestamp())
-      }
-      case None =>
-    }
-  }
-  private def deleteFromTradeStore(inventoryID : String){
-    titanTradeStore match {
-      case Some(tradeStore) => {
-        val tradeIDs = tradesForInventory(inventoryID).map(_.tradeID)
-        tradeStore.storeTrades((trade) => tradeIDs.contains(trade.tradeID), Nil, new Timestamp())
-      }
-      case None =>
-    }
-  }
-  
-  def getAssignmentsForInventory(id: String) = {
-    val inventory = getInventory(id)
-    inventory.purchaseAssignment :: Option(inventory.salesAssignment).toList
-  }
-  def removeInventory(inventoryID : String) {
-    inventoryMap = inventoryMap - inventoryID
-    assignmentIDtoInventoryIDMap.filter{ case (_, value) => value != inventoryID}
-    deleteFromTradeStore(inventoryID)
-  }
-
-  def addInventory(inventoryID : String) {
-    inventoryMap += inventoryID -> getInventory(inventoryID)
-    addInventoryAssignments(inventoryID)
-    writeToTradeStore(inventoryID)
-  }
-
-  def addInventoryAssignments(inventoryID : String) {
-    val item = inventoryMap(inventoryID)
-    val assignmentToInventoryMapItems = (item.purchaseAssignment.oid.contents.toString -> inventoryID) :: Option(item.salesAssignment).toList.map(_.oid.contents.toString -> inventoryID)
-    assignmentIDtoInventoryIDMap ++= assignmentToInventoryMapItems
-  }
-
-  // Read all inventory from Titan and blast our cache
-  def updateMap() {
-    val sw = new Stopwatch()
-    val edmInventoryResult = getAll()
-    inventoryMap = edmInventoryResult.map(i => (i.oid.contents.toString, i)).toMap
-    inventoryMap.keySet.foreach(addInventoryAssignments)
-  }
-
-  def getAllInventory() : List[EDMInventoryItem] = {
-    if (inventoryMap.size > 0) {
-      inventoryMap.values.toList
-    }
-    else {
-      updateMap()
-      inventoryMap.values.toList
-    }
-  }
-
-  def getInventory(id: String) : EDMInventoryItem = {
-    if (inventoryMap.contains(id)) {
-      inventoryMap(id)
-    }
-    else {
-      val item = getById(id.toInt)
-      inventoryMap += item.oid.contents.toString -> item
-      addInventoryAssignments(id)
-      inventoryMap(id)
-    }
-  }
-
-  def inventoryIDFromAssignmentID(id: String): String = {
-    if (!assignmentIDtoInventoryIDMap.contains(id))
-      updateMap()
-    assignmentIDtoInventoryIDMap.get(id) match {
-      case Some(id) => id
-      case None => throw new Exception("Missing inventory " + id)
-    }
-  }
-
-  def getInventoryByIds(ids : List[String]) = getAllInventory().filter(i => ids.exists(_ == i.oid.contents.toString))
-}
-
-
-object TitanLogisticsInventoryCache {
-  def apply(props : Props,titanTradeCache : TitanTradeCache, refData : TitanTacticalRefData, titanTradeStore : Option[TitanTradeStore]) : TitanLogisticsInventoryCache = {
-    new TitanLogisticsInventoryCache(DefaultTitanLogisticsServices(props), titanTradeCache, refData, titanTradeStore)
-  }
-}
-trait TitanTradeService {
-  def getTrade(id : TitanId) : EDMPhysicalTrade
-  def getAllTrades() : List[EDMPhysicalTrade]
-}
-
-class DefaultTitanTradeService(titanServices : TitanServices) extends TitanTradeService with Log {
-
-  def getTrade(id : TitanId) : EDMPhysicalTrade = {
-    titanServices.titanGetEdmTradesService.get(id).asInstanceOf[EDMPhysicalTrade]
-  }
-
-  def getAllTrades() : List[EDMPhysicalTrade] = {
-    val sw = new Stopwatch()
-    val edmTradeResult = titanServices.titanGetEdmTradesService.getAll()
-    log.info("Are EDM Trades available " + edmTradeResult.cached + ", took " + sw)
-    if (!edmTradeResult.cached) throw new TradeManagementCacheNotReady
-    log.info("Got Edm Trade results " + edmTradeResult.cached + ", trade result count = " + edmTradeResult.results.size)
-    edmTradeResult.results.map(_.trade.asInstanceOf[EDMPhysicalTrade])
-  }
-}
-
-/**
- * Trade cache using supplied ref data
- */
-case class TitanTradeServiceBasedTradeCache(titanTradesService : TitanTradeService) extends TitanTradeCache {
-
-  protected var tradeMap = Map[TitanId, EDMPhysicalTrade]()
-  protected var quotaIDToTradeIDMap = Map[String, TitanId]()
-
-  // Read all trades from Titan and blast our cache
-  def updateTradeMap() {
-    tradeMap = titanTradesService.getAllTrades()/*.filter(pt => pt.tstate == CompletedTradeTstate)*/.map(t => (t.titanId, t)).toMap
-    tradeMap.keySet.foreach(addTradeQuotas)
-  }
-
-  def getAllTrades(): List[EDMPhysicalTrade] = {
-    if (tradeMap.size > 0) {
-      tradeMap.values.toList
-    }
-    else {
-      updateTradeMap()
-      tradeMap.values.toList
-    }
-  }
-
-  def getTrade(id: TitanId): EDMPhysicalTrade = {
-    if (tradeMap.contains(id)) {
-      tradeMap(id)
-    }
-    else {
-      val trade = titanTradesService.getTrade(id)
-      tradeMap += trade.titanId -> trade
-      tradeMap(id)
-    }
-  }
-
-  def tradeIDFromQuotaID(quotaID: String): TitanId = {
-    if (!quotaIDToTradeIDMap.contains(quotaID))
-      updateTradeMap()
-    quotaIDToTradeIDMap.get(quotaID) match {
-      case Some(tradeID) => tradeID
-      case None => throw new Exception("Missing quota " + quotaID)
-    }
-  }
-}
-
-trait EnvironmentProvider {
-  def getSnapshots() : List[String]
-  def environment_(snapshotID : String, marketDay : Option[Day]) : Environment
-  def environment(snapshotID : String, marketDay : Option[TitanSerializableDate] = None) : Environment = environment_(snapshotID, marketDay.map{d => Day.fromLocalDate(d.value)})
-  def updateSnapshotCache()
-  def snapshotNameToID(name : String) : SnapshotID
-  def mostRecentSnapshotIdentifierBeforeToday(): Option[String] 
-  def snapshotIDs(observationDay : Option[Day]) : List[SnapshotID]
-}
-
-class DefaultEnvironmentProvider(marketDataStore : MarketDataStore) extends EnvironmentProvider {
-  def getSnapshots() : List[String] = snapshotNameToIDCache.keySet.toList
-  def snapshotNameToID(name : String) = snapshotNameToIDCache(name)
-  private var snapshotNameToIDCache = Map[String, SnapshotID]()
-  private var environmentCache = CacheFactory.getCache("ValuationService.environment", unique = true)
-  def environment_(snapshotIDName: String, marketDay : Option[Day]): Environment = environmentCache.memoize(
-    snapshotIDName,
-    {snapshotIDName : String => {
-      val snapshotID = snapshotNameToIDCache(snapshotIDName)
-      val reader = new NormalMarketDataReader(marketDataStore, MarketDataIdentifier(snapshotID.marketDataSelection, snapshotID.version))
-      new ClosesEnvironmentRule().createEnv(marketDay.getOrElse(snapshotID.observationDay), reader).environment
-    }}
-  )
-  private val lock = new Object()
-
-  def updateSnapshotCache() {
-    lock.synchronized {
-      marketDataStore.snapshots().foreach {
-        s: SnapshotID =>
-          snapshotNameToIDCache += s.id.toString -> s
-      }
-    }
-  }
-  def mostRecentSnapshotIdentifierBeforeToday(): Option[String] = {
-    updateSnapshotCache()
-    snapshotNameToIDCache.values.toList.filter(_.observationDay < Day.today).sortWith(_ > _).headOption.map(_.id.toString)
-  }
-
-  def snapshotIDs(observationDay : Option[Day]) : List[SnapshotID] = {
-    updateSnapshotCache()
-    snapshotNameToIDCache.values.filter {
-      starlingSnapshotID =>
-        starlingSnapshotID.marketDataSelection.pricingGroup == Some(PricingGroup.Metals) && (observationDay.isEmpty || (starlingSnapshotID.observationDay == observationDay.get))
-    }.toList
-  }
-}
-
-class MockEnvironmentProvider() extends EnvironmentProvider {
-
-  private val snapshotsAndData = Map(
-    "Snapshot1" -> (Day(2011, 7, 7), 100.0, 99),
-    "Snapshot2" -> (Day(2011, 7, 7), 101.0, 98),
-    "Snapshot3" -> (Day(2011, 7, 8), 102.0, 97)
-  )
-  def getSnapshots() : List[String] = snapshotsAndData.keySet.toList
-  
-  def environment_(snapshotID : String, marketDay : Option[Day]) : Environment = Environment(
-    new UnitTestingAtomicEnvironment(
-      snapshotsAndData(snapshotID)._1.endOfDay,
-      {
-        case IndexFixingKey(index, _) => Quantity(snapshotsAndData(snapshotID)._3, index.priceUOM)
-        case ForwardPriceKey(market, _, _) => Quantity(snapshotsAndData(snapshotID)._2, market.priceUOM)
-        case _: DiscountRateKey => new Quantity(1.0)
-      }
-    )
-  )
-  def updateSnapshotCache() {}
-  def mostRecentSnapshotIdentifierBeforeToday(): Option[String] = Some(getSnapshots().head)
-  def snapshotIDs(observationDay : Option[Day]) : List[SnapshotID] = throw new UnsupportedOperationException
-  def snapshotNameToID(name : String) : SnapshotID = throw new UnsupportedOperationException
-}
 
 /**
  * Valuation service implementations
@@ -387,9 +41,6 @@ class ValuationService(
   extends ValuationServiceApi with Log {
 
   private type TradeValuationResult = Either[String, List[CostsAndIncomeQuotaValuation]]
-
-  private lazy val futuresExchangeByID = refData.futuresExchangeByID
-  private lazy val edmMetalByGUID = refData.edmMetalByGUID
 
   private val eventHandler =
     new TitanEventHandler( rabbitEventServices,
@@ -413,7 +64,7 @@ class ValuationService(
     val edmTrades = titanTradeCache.getAllTrades()
     log.info("Got Edm Trade results, trade result count = " + edmTrades.size)
     val env = environmentProvider.environment(snapshotIDString, observationDate)
-    val tradeValuer = PhysicalMetalForward.valueWithAssignments(futuresExchangeByID, edmMetalByGUID, env, snapshotIDString) _
+    val tradeValuer = PhysicalMetalForward.valueWithAssignments(refData.futuresExchangeByID, refData.edmMetalByGUID, env, snapshotIDString) _
     log.info("Got %d completed physical trades".format(edmTrades.size))
     sw.reset()
     val valuations = edmTrades.map {
@@ -437,7 +88,7 @@ class ValuationService(
     val edmTrades = titanTradeCache.getAllTrades()
     log.info("Got Edm Trade results, trade result count = " + edmTrades.size)
     val env = environmentProvider.environment(snapshotIDString, observationDate)
-    val tradeValuer = PhysicalMetalForward.value(futuresExchangeByID, edmMetalByGUID, env, snapshotIDString) _
+    val tradeValuer = PhysicalMetalForward.value(refData.futuresExchangeByID, refData.edmMetalByGUID, env, snapshotIDString) _
     log.info("Got %d completed physical trades".format(edmTrades.size))
     sw.reset()
     val valuations = edmTrades.map {
@@ -461,7 +112,7 @@ class ValuationService(
   }
 
   def valueTradeQuotas(tradeId : String, env : Environment, snapshotIDString : String): (String, TradeValuationResult) = {
-    val tradeValuer = PhysicalMetalForward.value(futuresExchangeByID, edmMetalByGUID, env, snapshotIDString) _
+    val tradeValuer = PhysicalMetalForward.value(refData.futuresExchangeByID, refData.edmMetalByGUID, env, snapshotIDString) _
     val edmTradeResult = titanTradeCache.getTrade(TitanId(tradeId))
     log.info("Got Edm Trade result " + edmTradeResult)
     val edmTrade: EDMPhysicalTrade = edmTradeResult.asInstanceOf[EDMPhysicalTrade]
@@ -488,7 +139,7 @@ class ValuationService(
 
     val quotaNameToQuotaMap = titanTradeCache.getAllTrades().flatMap(_.quotas).map(q => NeptuneId(q.detail.identifier.value).identifier -> q).toMap
 
-    val assignmentValuer = PhysicalMetalAssignmentForward.value(futuresExchangeByID, edmMetalByGUID, quotaNameToQuotaMap, env, snapshotIDString) _
+    val assignmentValuer = PhysicalMetalAssignmentForward.value(refData.futuresExchangeByID, refData.edmMetalByGUID, quotaNameToQuotaMap, env, snapshotIDString) _
 
     val valuations = inventory.map(i => i.oid.contents.toString -> assignmentValuer(i))
     
@@ -515,7 +166,7 @@ class ValuationService(
 
     val quotaNameToQuotaMap = titanTradeCache.getAllTrades().flatMap(_.quotas).map(q => NeptuneId(q.detail.identifier.value).identifier -> q).toMap
 
-    val assignmentValuer = PhysicalMetalAssignmentForward.value(futuresExchangeByID, edmMetalByGUID, quotaNameToQuotaMap, env, snapshotIDString) _
+    val assignmentValuer = PhysicalMetalAssignmentForward.value(refData.futuresExchangeByID, refData.edmMetalByGUID, quotaNameToQuotaMap, env, snapshotIDString) _
 
     val valuations = inventoryIds.map(i => i -> assignmentValuer(titanInventoryCache.getInventory(i)))
 
@@ -548,8 +199,8 @@ class ValuationService(
 
   // accessors for ref-data mappings
   def getTrades(tradeIds : List[String]) : List[EDMPhysicalTrade] = tradeIds.map(id => TitanId(id)).map(titanTradeCache.getTrade)
-  def getFuturesExchanges = futuresExchangeByID.values
-  def getMetals = edmMetalByGUID.values
+  def getFuturesExchanges = refData.futuresExchangeByID.values
+  def getMetals = refData.edmMetalByGUID.values
 }
 
 /**
