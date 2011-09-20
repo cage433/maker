@@ -1047,7 +1047,7 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
 
     val rowComponentPreferredSize = {
       if (rowComponent.numberOfFields > 0) {
-        (0 until numCols).map(c => rowComponent.guiField(c).preferredSize.width).sum
+        (0 until rowComponent.numberOfFields).map(c => rowComponent.guiField(c).preferredSize.width).sum
       } else {
         rowComponent.preferredSize.width
       }
