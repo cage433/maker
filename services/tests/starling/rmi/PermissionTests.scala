@@ -11,12 +11,12 @@ class PermissionTests {
   @Test
   def testGroups = {
     val jon = User("jon.fox", "Jon Fox", None, List("StaRling london DerivAtives"))
-    assertEquals(Permission.desks(jon), Set(Desk.LondonDerivativesOptions, Desk.LondonDerivatives))
+    assertEquals(Permission.desks(jon, true), Set(Desk.LondonDerivativesOptions, Desk.LondonDerivatives))
 
     val josh = User("josh.holmes", "Josh Holmes", None, List("StaRling houSton DerivAtives"))
-    assertEquals(Permission.desks(josh), Set(Desk.HoustonDerivatives))
+    assertEquals(Permission.desks(josh, true), Set(Desk.HoustonDerivatives))
 
     val seetal = User("seetal.patel", "Seetal Patel", None, List("StaRling Gasoline Spec GloBal"))
-    assertEquals(Permission.desks(seetal), Set(Desk.GasolineSpec))
+    assertEquals(Permission.desks(seetal, true), Set(Desk.GasolineSpec))
   }
 }

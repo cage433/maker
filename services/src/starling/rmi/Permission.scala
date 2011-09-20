@@ -9,16 +9,27 @@ object Permission {
 
   import Groups._
 
-  def desks(user: User): Set[Desk] = {
+  def desks(user: User, production:Boolean): Set[Desk] = {
     val desks = user.groups.flatMap {
       group => {
-        groupToDesksMap.getOrElse(group, Set())
+        groupToDesksMap(production).getOrElse(group, Set())
       }
     }.toSet
     desks
   }
 
-  val groupToDesksMap: Map[CaseInsensitive, Set[Desk]] =
+  def groupToDesksMap(production:Boolean) = if (production) productionGroupToDesksMap0 else devGroupToDesksMap0
+
+  private val productionGroupToDesksMap0: Map[CaseInsensitive, Set[Desk]] =
+    Map(
+      StarlingLondonDerivatives -> Set(Desk.LondonDerivativesOptions, Desk.LondonDerivatives),
+      StarlingGasolineSpec -> Set(Desk.GasolineSpec),
+      StarlingHoustonDerivatives -> Set(Desk.HoustonDerivatives),
+      StarlingDevelopers -> Desk.values.toSet,
+      StarlingAdmin -> Desk.values.toSet
+    )
+
+  private val devGroupToDesksMap0: Map[CaseInsensitive, Set[Desk]] =
     Map(
       StarlingLondonDerivatives -> Set(Desk.LondonDerivativesOptions, Desk.LondonDerivatives),
       StarlingGasolineSpec -> Set(Desk.GasolineSpec),

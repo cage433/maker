@@ -43,13 +43,13 @@ class StarlingServerImpl(
   def desks = {
     val user = User.currentlyLoggedOn
     val enabled = tradeStores.deskDefinitions.keysIterator.toList.filter(enabledDesks.contains)
-    val desksAllowed = Permission.desks(user)
+    val desksAllowed = Permission.desks(user, version.production)
     val userDesks = enabled.filter(desksAllowed.contains)
     log.info("Getting desks for user: " + user.name + ", desks: " + userDesks)
     userDesks
   }
 
-  def groupToDesksMap = Permission.groupToDesksMap
+  def groupToDesksMap = Permission.groupToDesksMap(version.production)
 
   private def unLabel(tradeID:TradeIDLabel):TradeID = TradeID(tradeID.id, unLabel(tradeID.tradeSystem))
   private def unLabel(tradeSystem:TradeSystemLabel):TradeSystem = TradeSystems.fromName(tradeSystem.name)
