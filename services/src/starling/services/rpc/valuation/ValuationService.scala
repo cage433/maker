@@ -455,77 +455,21 @@ class ValuationService(
   def valueTradeQuotas(tradeId: String, maybeSnapshotIdentifier: Option[String] = None, observationDate: Option[TitanSerializableDate] = None): (String, TradeValuationResult) = {
     log.info("valueTradeQuotas called for trade %d with snapshot id %s".format(tradeId, maybeSnapshotIdentifier))
     val snapshotIDString = resolveSnapshotIdString(maybeSnapshotIdentifier)
-
-    val sw = new Stopwatch()
-
-    val edmTradeResult = titanTradeCache.getTrade(TitanId(tradeId))
-
-    log.info("Got Edm Trade result " + edmTradeResult)
     val env = environmentProvider.environment(snapshotIDString, observationDate)
-    val tradeValuer = PhysicalMetalForward.value(futuresExchangeByID, edmMetalByGUID, env, snapshotIDString) _
 
+    valueTradeQuotas(tradeId, env, snapshotIDString)
+  }
+
+  def valueTradeQuotas(tradeId : String, env : Environment, snapshotIDString : String): (String, TradeValuationResult) = {
+    val tradeValuer = PhysicalMetalForward.value(futuresExchangeByID, edmMetalByGUID, env, snapshotIDString) _
+    val edmTradeResult = titanTradeCache.getTrade(TitanId(tradeId))
+    log.info("Got Edm Trade result " + edmTradeResult)
     val edmTrade: EDMPhysicalTrade = edmTradeResult.asInstanceOf[EDMPhysicalTrade]
     log.info("Got %s physical trade".format(edmTrade.toString))
-    sw.reset()
     val valuation = tradeValuer(edmTrade)
-    log.info("Valuation took " + sw)
     (snapshotIDString, valuation)
   }
-
-  /**
-   * value all costables by id
-   */
-  def valueCostables(costableIds: List[String], maybeSnapshotIdentifier: Option[String], observationDate: Option[TitanSerializableDate] = None): CostsAndIncomeQuotaOnlyValuationServiceResults = {
-    
-    val snapshotIDString = resolveSnapshotIdString(maybeSnapshotIdentifier)
-    val env = environmentProvider.environment(snapshotIDString, observationDate)
-    valueCostables(costableIds, env, snapshotIDString)
-  }
   
-  def valueCostables(costableIds: List[String], env : Environment, snapshotIDString : String): CostsAndIncomeQuotaOnlyValuationServiceResults = {
-    val sw = new Stopwatch()
-
-    // value all trades (and therefor all quotas) keyed by trade ids
-    val idsToUse = costableIds match {
-      case Nil | null => titanTradeCache.getAllTrades().map{trade => trade.titanId.value}
-      case list => list
-    }
-
-    var tradeValueCache = Map[String, TradeValuationResult]()
-    val tradeValuer = PhysicalMetalForward.value(futuresExchangeByID, edmMetalByGUID, env, snapshotIDString) _
-
-    def tradeValue(id : String): TradeValuationResult = {
-      if (!tradeValueCache.contains(id))
-        tradeValueCache += (id -> tradeValuer(titanTradeCache.getTrade(TitanId(id))))
-      tradeValueCache(id)
-    }
-
-    def quotaValue(id: String) = {
-      tradeValue(titanTradeCache.tradeIDFromQuotaID(id).value) match {
-        case Right(list) => Right(list.filter(_ .quotaID == id))
-        case other => other
-      }
-    }
-
-    val (tradeIDs, quotaIDs) = idsToUse.span {
-      id => try {
-        Integer.parseInt(id); true
-      } catch {
-        case _: NumberFormatException => false
-      }
-    }
-
-    val tradeValues = tradeIDs.map { case id => (id, tradeValue(id)) }
-    val quotaValues = quotaIDs.map { case id => (id, quotaValue(id)) }
-
-    val valuations = tradeValues ::: quotaValues
-
-    log.info("Valuation took " + sw)
-    val (worked, errors) = valuations.partition(_._2 isRight)
-    log.info("Worked " + worked.size + ", failed " + errors.size + ", took " + sw)
-    
-    CostsAndIncomeQuotaOnlyValuationServiceResults(snapshotIDString, valuations.toMap)
-  }
 
   /**
    * value all assignments by leaf inventory

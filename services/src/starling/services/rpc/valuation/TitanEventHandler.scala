@@ -64,15 +64,14 @@ class TitanEventHandler(rabbitEventServices : TitanRabbitEventServices,
         ev.verb match {
           case UpdatedEventVerb => {
             val (snapshotIDString, env) = getSnapshotAndEnv
-            val originalTradeValuations = valuationServices.valueCostables(tradeIds, env, snapshotIDString)
-            titanIds.foreach {
-              id => titanTradeCache.removeTrade(id); titanTradeCache.addTrade(id)
+            val changedIDs = tradeIds.filter{
+              id =>
+                val originalValue = valuationServices.valueTradeQuotas(id, env, snapshotIDString)
+                titanTradeCache.removeTrade(TitanId(id))
+                titanTradeCache.addTrade(TitanId(id))
+                val currentValue = valuationServices.valueTradeQuotas(id, env, snapshotIDString)
+                originalValue != currentValue
             }
-            val newTradeValuations = valuationServices.valueCostables(tradeIds, env, snapshotIDString)
-            val changedIDs = tradeIds.filter {
-              id => newTradeValuations.tradeResults(id) != originalTradeValuations.tradeResults(id)
-            }
-
             if (changedIDs != Nil)
               rabbitPublishChangedValueEvents(changedIDs, RefinedMetalTradeIdPayload)
 
@@ -93,13 +92,12 @@ class TitanEventHandler(rabbitEventServices : TitanRabbitEventServices,
         val completed = ev.content.body.payloads.filter(p => TradeStatusPayload == p.payloadType).filter(p => p.key.identifier == "completed").size > 0
         if (completed) {
           val (snapshotIDString, env) = getSnapshotAndEnv
-          val tradeValuations = valuationServices.valueCostables(tradeIds, env, snapshotIDString)
-          val valuationResults = tradeValuations.tradeResults.map(vr => {
-            vr._2 match {
-              case Right(v) => (vr._1, true)
-              case Left(e) => (vr._1, false)
+          val valuationResults : List[(String, Boolean)] = tradeIds.map{
+            id => valuationServices.valueTradeQuotas(id, env, snapshotIDString) match {
+              case (_, Right(_)) => (id, true)
+              case (_, Left(_)) => (id, false)
             }
-          }).toList
+          }
           rabbitPublishNewValuationEvents(valuationResults)
         }
       }
@@ -215,11 +213,10 @@ class TitanEventHandler(rabbitEventServices : TitanRabbitEventServices,
               log.info("New marketData snapshot event, revaluing received event using old snapshot %s new snapshot %s".format(previousSnapshotId, newSnapshotId))
               val previousEnv = environmentProvider.environment(previousSnapshotId)
               val newEnv = environmentProvider.environment(newSnapshotId)
-
-              val originalTradeValuations = valuationServices.valueCostables(Nil, previousEnv, previousSnapshotId)
-              val newTradeValuations = valuationServices.valueCostables(Nil, newEnv, newSnapshotId)
-              val tradeIds = newTradeValuations.tradeResults.keys.toList
-              val changedTradeIDs = tradeIds.filter(id => newTradeValuations.tradeResults(id) != originalTradeValuations.tradeResults(id))
+              val tradeIds = titanTradeCache.getAllTrades().map{trade => trade.titanId.value}.toList
+              val originalTradeValuations = tradeIds.map{id => id -> valuationServices.valueTradeQuotas(id, previousEnv, previousSnapshotId)._2}.toMap
+              val newTradeValuations = tradeIds.map{id => id -> valuationServices.valueTradeQuotas(id, newEnv, newSnapshotId)._2}.toMap
+              val changedTradeIDs = tradeIds.filter(id => newTradeValuations(id) != originalTradeValuations(id))
 
               log.info("Trades revalued for new snapshot %s, number of changed valuations %d".format(newSnapshotId, changedTradeIDs.size))
 
