@@ -152,7 +152,7 @@ case class TradeChanges(
 /**
  * A wrapper around the starling Trade tables.
  */
-abstract class TradeStore(db: RichDB, broadcaster:Broadcaster, tradeSystem: TradeSystem, bookID:Option[Int]) {
+abstract class TradeStore(db: RichDB, broadcaster:Broadcaster, tradeSystem: TradeSystem) {
 
   lazy val cachedLatestTimestamp:AtomicReference[Timestamp] = new AtomicReference(maxTimestamp())
 
@@ -224,7 +224,7 @@ abstract class TradeStore(db: RichDB, broadcaster:Broadcaster, tradeSystem: Trad
   private def buildStandardQuery(timestamp:Timestamp, expiryDay:Option[Day], key:String):(String,Map[String,Any]) = {
     var sql = "select * from " + tableName + """ t
     where timestamp < :%s and (:%s < timestampTo_cache or timestampTo_cache is null)
-    and t.instrument != 'Deleted Instrument'""" % (key, key) + bookID.map(c => " and bookid = " + c).getOrElse("")
+    and t.instrument != 'Deleted Instrument'""" % (key, key)
     var params = Map[String,Any](key->timestamp)
     expiryDay match {
       case Some(d) => {
@@ -272,7 +272,7 @@ abstract class TradeStore(db: RichDB, broadcaster:Broadcaster, tradeSystem: Trad
     val query = (
       select ("*")
         from (tableName + " t")
-        where (("t.timestamp" gte from) and ("t.timestamp" lt to) andMaybe (bookID.map(id => ("t.bookid" eql id))))
+        where (("t.timestamp" gte from) and ("t.timestamp" lt to))
       )
     db.query(query)(addTradeRowToHistory)
   }
@@ -281,7 +281,7 @@ abstract class TradeStore(db: RichDB, broadcaster:Broadcaster, tradeSystem: Trad
     val query = (
       select ("*")
       from (tableName + " t")
-      where (("t.timestamp" gt from) and ("t.timestamp" lte to) andMaybe (bookID.map(id => ("t.bookid" eql id))))
+      where (("t.timestamp" gt from) and ("t.timestamp" lte to))
     )
     db.query(query)(addTradeRowToHistory)
   }
@@ -349,7 +349,7 @@ abstract class TradeStore(db: RichDB, broadcaster:Broadcaster, tradeSystem: Trad
     val q = (select("*")
             from (tableName + " t")
             where (
-              ("tradeid" eql LiteralString(tradeID.id)) andMaybe (bookID.map(id => ("t.bookid" eql id)))
+              ("tradeid" eql LiteralString(tradeID.id))
             ))
     db.query(q)(addTradeRowToHistory)
   }
@@ -687,30 +687,13 @@ abstract class TradeStore(db: RichDB, broadcaster:Broadcaster, tradeSystem: Trad
       val currentTrades = allTrades.filter(v => predicate(v._2.trade))
       val (added, updated, _) = writer.updateTrades(trades, currentTrades, timestamp)
 
-      // Some sanity checks. These will make the import slower but we've screwed up the trade table enough times that they're important to have
-      bookID match {
-        case Some(book) => {
-          val wrongOldTrades = allTrades.valuesIterator.filter(_.trade.attributes.asInstanceOf[EAITradeAttributes].bookID.id != book)
-          if(wrongOldTrades.nonEmpty) {
-            println("??????")
-            println("??????")
-            println("??????")
-          }
-          assert(wrongOldTrades.isEmpty, "read in some invalid trades:: " + wrongOldTrades.toList)
-
-          val wrongNewTrades = trades.filter(_.attributes.asInstanceOf[EAITradeAttributes].bookID.id != book)
-          assert(wrongNewTrades.isEmpty, "some new invalid trades:: " + wrongNewTrades.toList)
-        }
-        case _=>
-      }
-      
       val currentTradeIDs = currentTrades.map(_._1)
       // the update step above doesn't remove trades, so this needs to be done as a separate step
       val updateTradeIDs = Set[TradeID]() ++ trades.map(_.tradeID)
       val deletedTradeIDs = currentTradeIDs.filterNot(id => updateTradeIDs.contains(id)).toSet
       writer.delete(deletedTradeIDs, timestamp)
 
-      Log.info("Deleting " + deletedTradeIDs.size + " trades for " + bookID + ". " + (allTrades.size, currentTrades.size, trades.size, added, updated))
+      Log.info("Deleting " + deletedTradeIDs.size + " trades. " + (allTrades.size, currentTrades.size, trades.size, added, updated))
 
       val hash = tradesHash(predicate)
       result = StoreResults(added, deletedTradeIDs.size, updated, hash)
