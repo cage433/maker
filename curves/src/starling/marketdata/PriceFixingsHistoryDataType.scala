@@ -3,7 +3,7 @@ package starling.marketdata
 import starling.pivot._
 import starling.market._
 import starling.daterange.StoredFixingPeriod
-import starling.quantity.Percentage
+import starling.quantity.{Quantity, Percentage}
 
 object PriceFixingsHistoryDataType extends MarketDataType {
   type dataType = PriceFixingsHistoryData
@@ -40,6 +40,7 @@ object PriceFixingsHistoryDataType extends MarketDataType {
   private def marketValue(value: Any) = value match {
     case pq: PivotQuantity => MarketValue.quantity(pq.quantityValue.get)
     case p: Percentage => MarketValue.percentage(p)
+    case q: Quantity => MarketValue.quantity(q)
     case s: String => MarketValue.fromString(s)
     case mv: MarketValue => mv
     case _ => throw new Exception("Unknown type: " + value)

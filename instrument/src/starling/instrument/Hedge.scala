@@ -10,10 +10,10 @@ import starling.curves.FuturesSpreadPrice
 import starling.curves.PriceDifferentiable
 import starling.curves.SwapPrice
 import starling.daterange._
-import starling.utils.{CollectionUtils, SummingMap}
-import starling.utils.SummingMap
+import starling.utils.CollectionUtils
 import starling.daterange._
 import starling.market.{Index, FuturesFrontPeriodIndex, FuturesMarket}
+import starling.quantity.utils.SummingMap
 
 object Hedge{
   private def calcHedge(

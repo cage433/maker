@@ -6,7 +6,7 @@ import system.Patch
 import starling.db.DBWriter
 import starling.richdb.RichDB
 import starling.utils.ImplicitConversions._
-import starling.utils.sql.QueryBuilder._
+import starling.dbx.QueryBuilder._
 import starling.daterange.{Month, Day}
 import starling.utils.Log
 import starling.services.StarlingInit

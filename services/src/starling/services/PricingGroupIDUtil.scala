@@ -15,7 +15,7 @@ import javax.xml.transform.TransformerFactory
 import trade.{ExcelTradeReader, ExcelTradesRange}
 import xml.{Utility, Node}
 import starling.props.Props
-import starling.utils.sql.ConnectionParams
+import starling.dbx.ConnectionParams
 import starling.db._
 import collection.immutable.{TreeSet, SortedMap, TreeMap}
 import starling.marketdata._
@@ -33,7 +33,7 @@ import starling.curves.{SpreadStdDevSurfaceData, SpreadStdDevSurfaceDataKey}
 import starling.pivot.model.{TotalAxisValueType, AxisValue, MeasureAxisValueType}
 import starling.auth.{LdapUserLookup, User}
 import starling.eai._
-import starling.trade.{TradeID, TradeAttributes}
+import starling.instrument.{TradeID, TradeAttributes}
 import org.boris.xlloop.xloper.{XLError, XLString, XLoper}
 import starling.rmi.{StarlingServer, StarlingServerImpl, UserSettingsDatabase}
 import org.springframework.mail.javamail.{JavaMailSender, JavaMailSenderImpl, MimeMessageHelper}

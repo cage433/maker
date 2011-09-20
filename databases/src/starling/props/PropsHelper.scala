@@ -1,7 +1,7 @@
 package starling.props
 
 
-import starling.utils.sql.ConnectionParams
+import starling.dbx.ConnectionParams
 import java.io._
 import java.lang.reflect.Modifier
 import java.util.{Properties => JProperties}
@@ -10,7 +10,7 @@ import org.apache.commons.io.IOUtils
 import scala.collection.JavaConversions
 import java.awt.Color
 import starling.utils.ImplicitConversions._
-import starling.utils.PropertiesMapBuilder
+import starling.api.utils.PropertiesMapBuilder
 
 /**
  * Holds the code to manage properties. The properties are listed in Props
@@ -30,7 +30,9 @@ class PropsHelper(starlingProps : Map[String,String], trafiguraProps : Map[Strin
   {
     //check for invalid entries
     val invalidNames = MyPropertiesFile.starlingPropertyNames.filter(!properties.contains(_))
-    if (!invalidNames.isEmpty) {
+    //hack until I have sorted out the props and osgi issue
+    val propsDefinedOutsideTheMainPropsClass = Set("useauth")
+    if (!(invalidNames -- propsDefinedOutsideTheMainPropsClass).isEmpty) {
       println("There are invalid properties in props.conf. Starling can not start until they are removed.")
       invalidNames.foreach( (name) => println(" " + name))
       System.exit(1)
@@ -184,7 +186,7 @@ object PropsHelper {
         file.write( p + "\n")
       }
       file.write( "\n")
-      file.write( "#NOTE: This file is generated for reference. It is not read by starling\n")
+      file.write( "#NOTE:  This file is generated for reference. It is not read by starling\n")
     } finally {
       file.close()
     }

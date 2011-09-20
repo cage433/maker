@@ -2,29 +2,28 @@ package starling.db
 
 
 import org.springframework.jdbc.datasource.{DataSourceUtils, DataSourceTransactionManager}
-import starling.instrument._
 import javax.sql.DataSource
 import starling.utils.sql._
-import starling.utils.sql.QueryBuilder._
-import starling.utils.sql.Clause
+import starling.dbx.QueryBuilder._
 import org.springframework.transaction.support.{TransactionCallback, TransactionTemplate}
 import org.springframework.transaction.{TransactionStatus, TransactionDefinition}
 import starling.daterange._
 import scala.collection.mutable.ListBuffer
-import org.springframework.dao.DataAccessException
-
 import scala.collection.JavaConversions._
 import scala.collection.JavaConversions
 import java.sql.{PreparedStatement, Connection, ResultSet}
 import org.springframework.jdbc.core.namedparam.{MapSqlParameterSource, NamedParameterUtils, NamedParameterJdbcTemplate}
-import org.springframework.jdbc.core.{PreparedStatementCreatorFactory, PreparedStatementCallback, RowMapper, ResultSetExtractor}
-import org.springframework.jdbc.core.simple.{SimpleJdbcTemplate, SimpleJdbcCall, SimpleJdbcInsert}
+import org.springframework.jdbc.core.{PreparedStatementCreatorFactory, PreparedStatementCallback, RowMapper}
+import org.springframework.jdbc.core.simple.SimpleJdbcInsert
 import org.springframework.jdbc.`object`.BatchSqlUpdate
 import starling.quantity.{SpreadQuantity, Percentage, Quantity}
 import starling.eai.TreeID
-import starling.utils.{CaseInsensitive, CollectionUtils, Log, StarlingXStream}
+import starling.utils.{CaseInsensitive, Log}
+import starling.instrument.utils.StarlingXStream
+import starling.dbx._
 
-trait DBTrait[RSR <: ResultSetRow] {
+
+trait DBTrait[RSR <: ResultSetRow] extends Log {
   val dataSource: DataSource
 
   def resultSetFactory: ResultSetRowFactoryTrait[RSR]
@@ -72,16 +71,25 @@ trait DBTrait[RSR <: ResultSetRow] {
     queryWithResult((select("*") from table)) {rs => rs.toString}.mkString("\n")
   }
 
-  def query(sql: String, parameters: Map[String, Any] = Map[String, Any]())(f: RSR => Unit) {
+  class NonAtomicInteger() {
+    private var counter: Int = 0
+
+    def incrementAndGet = { counter += 1; counter } // Cheaper than AtomicInteger.incrementAndGet ?
+    def get = counter
+  }
+
+  def query(sql: String, parameters: Map[String, Any] = Map[String, Any]())(f: RSR => Unit): Int = {
     try {
+      val counter = new NonAtomicInteger
       withTransaction(DB.DefaultIsolationLevel, true) {
         new NamedParameterJdbcTemplate(dataSource).query(sql, convertTypes(parameters), new RowMapper[Unit]() {
           def mapRow(rs: ResultSet, rowNum: Int) = {
-            f(resultSetFactory.create(rs)); Unit
+            f(resultSetFactory.create(rs, counter.incrementAndGet)); Unit
           }
         })
         null
       }
+      counter.get
     }
     catch {
       case e: RuntimeException if e.getCause != null => throw e.getCause // unwrap exception from transaction call
@@ -93,9 +101,10 @@ trait DBTrait[RSR <: ResultSetRow] {
    * Same as query but results of function f are returned as a List
    */
   def queryWithResult[T](sql: String, parameters: Map[String, Any] = Map[String, Any]())(f: RSR => T): List[T] = {
+    val counter = new NonAtomicInteger
     withTransaction(DB.DefaultIsolationLevel, true) {
       new NamedParameterJdbcTemplate(dataSource).query(sql, convertTypes(parameters), new RowMapper[Object]() {
-        def mapRow(rs: ResultSet, rowNum: Int) = f(resultSetFactory.create(rs)).asInstanceOf[Object]
+        def mapRow(rs: ResultSet, rowNum: Int) = f(resultSetFactory.create(rs, counter.incrementAndGet)).asInstanceOf[Object]
       })
     }.asInstanceOf[java.util.List[T]].toList
   }
@@ -125,7 +134,7 @@ trait DBTrait[RSR <: ResultSetRow] {
     queryWithOneResult(sql.query, sql.parameters)(f)
   }
 
-  def query(q: Query)(f: RSR => Unit) {
+  def query(q: Query)(f: RSR => Unit): Int = {
     val sql = renderer.render(q)
     query(sql.query, sql.parameters)(f)
   }
@@ -224,6 +233,8 @@ class DBWriter protected[db](dbTrait: DBTrait[_ <: ResultSetRow], dataSource: Da
   def update(sql: String) = {
     new NamedParameterJdbcTemplate(dataSource).update(sql, null.asInstanceOf[java.util.Map[String, Object]]);
   }
+
+  def updateMany(sqls: String*) = sqls.map(update(_))
 
   def update(sql: String, params: Map[String, Any]) = {
     new NamedParameterJdbcTemplate(dataSource).update(sql, dbTrait.convertTypes(params));

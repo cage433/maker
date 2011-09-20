@@ -6,7 +6,7 @@ import com.thoughtworks.xstream.io.{HierarchicalStreamReader, HierarchicalStream
 import com.thoughtworks.xstream.converters.{UnmarshallingContext, Converter, MarshallingContext}
 import java.lang.Class
 import collection.immutable.HashMap
-import starling.utils.StarlingXStream
+import starling.instrument.utils.StarlingXStream
 import javax.management.remote.rmi._RMIConnection_Stub
 
 class UnknownObjectType(field : String) {

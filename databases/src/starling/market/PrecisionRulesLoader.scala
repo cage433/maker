@@ -2,7 +2,8 @@ package starling.market
 
 import rules.{Precision, PrecisionRules}
 import starling.db.DB
-import starling.utils.sql.QueryBuilder._
+import starling.dbx.QueryBuilder._
+
 
 class PrecisionRulesLoader(eai: DB) extends PrecisionRules {
   lazy val rules = {

@@ -25,6 +25,7 @@ object ImplicitConversions extends RichAnys
   with RichTraversables
   with RichTuple
   with RichSeq
+  with RichSets
   with RichString
   with CollectionsSyntacticSugar
   with CompInt

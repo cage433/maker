@@ -11,8 +11,9 @@ import starling.browser.common.{SXLayerScala, GuiUtils, MigPanel}
 import starling.browser.{ServerContext, LocalCache, Page}
 
 class StarlingBrowserFrame(homePage: Page, startPage:Either[Page, (ServerContext => Page, PartialFunction[Throwable, Unit])], pageBuilder: PageBuilder, lCache: LocalCache, userSettings:UserSettings,
-                           remotePublisher: Publisher, containerMethods: ContainerMethods, extraInfo:Option[String])
+                           containerMethods: ContainerMethods, extraInfo:Option[String])
         extends Frame with WindowMethods {
+  private val remotePublisher = pageBuilder.remotePublisher
   private val exitAction = Action("Exit") {containerMethods.closeAllFrames(this)}
   peer.getRootPane.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke(KeyEvent.VK_Q, InputEvent.CTRL_DOWN_MASK), "exitAction")
   peer.getRootPane.getActionMap.put("exitAction", exitAction.peer)
@@ -34,7 +35,7 @@ class StarlingBrowserFrame(homePage: Page, startPage:Either[Page, (ServerContext
     import NotificationKeys._
     lCache.localCache(AllNotifications) = notification :: lCache.localCache(AllNotifications)
     lCache.localCache(UserNotifications) = notification :: lCache.localCache(UserNotifications)
-    containerMethods.updateNotifications
+    containerMethods.updateNotifications()
   }
   peer.getRootPane.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke(KeyEvent.VK_M, InputEvent.CTRL_DOWN_MASK | InputEvent.SHIFT_DOWN_MASK), "fakeMessagesAction")
   peer.getRootPane.getActionMap.put("fakeMessagesAction", fakeMessagesAction.peer)
@@ -47,11 +48,11 @@ class StarlingBrowserFrame(homePage: Page, startPage:Either[Page, (ServerContext
   peer.getRootPane.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke(KeyEvent.VK_N, InputEvent.CTRL_DOWN_MASK | InputEvent.SHIFT_DOWN_MASK), "19InchMode")
   peer.getRootPane.getActionMap.put("19InchMode", nineteenInchMode.peer)
 
-  def updateNotifications = notificationPanel.updateLayout
+  def updateNotifications() {notificationPanel.updateLayout}
 
   reactions += {
     case WindowClosing(_) => containerMethods.closeFrame(this)
-    case scala.swing.event.UIElementResized(_) => {updateNotifications}
+    case scala.swing.event.UIElementResized(_) => {updateNotifications()}
   }
   listenTo(this)
   private val mainIcon = BrowserIcons.icon("/icons/32x32/status/weather-clear.png").getImage
@@ -69,8 +70,8 @@ class StarlingBrowserFrame(homePage: Page, startPage:Either[Page, (ServerContext
       removeAll
       add(comp, "push, grow, wrap")
       add(notificationPanel, "growx")
-      revalidate
-      repaint
+      revalidate()
+      repaint()
     }
   }
   reactions += {
@@ -85,7 +86,7 @@ class StarlingBrowserFrame(homePage: Page, startPage:Either[Page, (ServerContext
   tabbedPaneBuffer += initialStarlingBrowser
   regenerateFromBuffer(initialStarlingBrowser.pages(0).content)
 
-  def splitVertically(eventFrom: StarlingBrowserTabbedPane) = {
+  def splitVertically(eventFrom: StarlingBrowserTabbedPane) {
     val starlingBrowserTabbedPane = new StarlingBrowserTabbedPane(homePage, startPage, pageBuilder, lCache, userSettings,
       remotePublisher, this, extraInfo, containerMethods, this)
     reactions += {
@@ -100,7 +101,7 @@ class StarlingBrowserFrame(homePage: Page, startPage:Either[Page, (ServerContext
     regenerateFromBuffer(starlingBrowserTabbedPane.pages(0).content)
   }
 
-  def setBusy(busy: Boolean) = {
+  def setBusy(busy: Boolean) {
     if (busy) {
       iconImage = busyIcon
     } else {
@@ -134,6 +135,38 @@ class StarlingBrowserFrame(homePage: Page, startPage:Either[Page, (ServerContext
   }
 
   def getDefaultButton = defaultButton
+
+  def containsPage(page:Page) = {
+    tabbedPaneBuffer.find(tp => {
+      tp.pages.find(p => {
+        p.content match {
+          case c:SXLayerScala[_] => c.asInstanceOf[SXLayerScala[StarlingBrowser]].getScalaComponent.currentPage match {
+            case Some(cp) => cp == page
+            case None => false
+          }
+          case _ => false
+        }
+      }).isDefined
+    }) match {
+      case Some(_) => true
+      case _ => false
+    }
+  }
+
+  def showNewPage(page:Page) {tabbedPaneBuffer.last.createStarlingBrowser(true, Left(page))}
+  def showPage(page:Page) {
+    val containingTP = tabbedPaneBuffer.find(tp => {
+      tp.pages.find(p => {
+        p.content match {
+          case c:SXLayerScala[_] => c.asInstanceOf[SXLayerScala[StarlingBrowser]].getScalaComponent.currentPage match {
+            case Some(cp) => cp == page
+            case None => false
+          }
+        }
+      }).isDefined
+    }).get
+    containingTP.selectPage(page)
+  }
 
   contents = mainPanel
 }
@@ -252,7 +285,7 @@ class StarlingBrowserTabbedPane(homePage: Page, startPage:Either[Page,(ServerCon
       case _ => (" ", BrowserIcons.im("/icons/10x10_blank.png"), " ")
     }
     val tabComponent = new TabComponent(windowMethods, this, tabText, icon)
-    val starlingBrowser = new StarlingBrowser(pageBuilder, lCache, userSettings, remotePublisher, homePage, addressText,
+    val starlingBrowser = new StarlingBrowser(pageBuilder, lCache, userSettings, homePage, addressText,
       windowMethods, containerMethods, parentFrame, tabComponent, createStarlingBrowser, extraInfo)
     pages.insert(pages.length - 1, new scala.swing.TabbedPane.Page(tabText, starlingBrowser.starlingBrowserLayer, null))
     val tabIndex = if (pages.length == 0) 0 else pages.length - 2
@@ -262,6 +295,18 @@ class StarlingBrowserTabbedPane(homePage: Page, startPage:Either[Page,(ServerCon
     peer.setTabComponentAt(tabIndex, tabComponent.peer)
     onEDT(starlingBrowser.goTo(pageOrBuildPage, true))
     starlingBrowser
+  }
+
+  def selectPage(page:Page) {
+    val (_, i) = pages.zipWithIndex.find{case (p, i) => {
+      p.content match {
+        case c:SXLayerScala[_] => c.asInstanceOf[SXLayerScala[StarlingBrowser]].getScalaComponent.currentPage match {
+          case Some(cp) => cp == page
+          case None => false
+        }
+      }
+    }}.get
+    selection.index = i
   }
 
   // We want an new tab button.

@@ -6,7 +6,7 @@ import org.testng.Assert._
 import starling.utils.ScalaTestUtils
 import starling.utils.ScalaTestUtils._
 import starling.quantity.{Quantity => Qty}
-import starling.utils.QuantityTestUtils._
+import starling.quantity.utils.QuantityTestUtils._
 import org.scalatest.matchers.ShouldMatchers
 import java.lang.String
 

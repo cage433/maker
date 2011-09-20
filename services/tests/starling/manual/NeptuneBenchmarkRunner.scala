@@ -4,6 +4,8 @@ import starling.services.StarlingInit
 import starling.props.PropsHelper
 import starling.curves.readers.NeptuneBenchmarksMarketDataSource
 import starling.daterange.Day
+import starling.auth.AuthHandler
+import starling.utils.Broadcaster
 
 /**
  * Created by IntelliJ IDEA.
@@ -16,7 +18,7 @@ import starling.daterange.Day
 object NeptuneBenchmarkRunner {
 
   def main(args:Array[String]) {
-    val init = new StarlingInit(PropsHelper.defaultProps, false, false, false, false)
+    val init = new StarlingInit(PropsHelper.defaultProps, AuthHandler.Dev, Broadcaster.Null, false, false, false, false)
 
     val source = new NeptuneBenchmarksMarketDataSource(init.neptuneRichDB)
     source.read(Day.today).foreach(println)

@@ -3,7 +3,7 @@ package starling.schemaevolution
 
 import java.sql.Connection
 import system.{PatchUtils, Patch}
-import starling.utils.sql.QueryBuilder._
+import starling.dbx.QueryBuilder._
 import starling.utils.{Log, StackTraceToString}
 import starling.instrument.{DeletedInstrument, ErrorInstrument, FXForward, Future}
 import starling.richdb.{RichResultSetRowFactory, RichDB}

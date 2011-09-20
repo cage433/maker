@@ -46,6 +46,6 @@ case class SpotFXDataKey(ccy: UOM) extends MarketDataKey {
 
 //For Example 0.0125 USD / JPY
 case class SpotFXData(rate: Quantity) extends MarketData {
-  override def size = Some(1)
+  override def size = 1
 }
 

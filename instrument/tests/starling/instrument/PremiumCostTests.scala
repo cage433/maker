@@ -6,7 +6,7 @@ import starling.models.{Call, European}
 import starling.curves.{NullAtomicEnvironment, Environment}
 import starling.daterange.{DayAndTime, Day, Month}
 import starling.utils.StarlingTest
-import starling.utils.QuantityTestUtils._
+import starling.quantity.utils.QuantityTestUtils._
 import starling.quantity.{UOM, Quantity}
 
 class PremiumCostTests extends StarlingTest{

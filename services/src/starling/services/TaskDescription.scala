@@ -18,9 +18,9 @@ case class TaskDescription(name: String, time: ScheduledTime, task: ScheduledTas
 
   def run = log.logException("Task %s failed" % name) {
     if (!Day.today.isBusinessDay(cal)) {
-      log.info("Not a business day in calendar: %s, thus skipping: " % (cal.name, name))
+      log.info("Not a business day in calendar: %s, thus skipping: %s" % (cal.name, name))
     } else if (!task.isRunning) {
-      log.info("Task is stopped, thus skipping: " % (cal.name, name))
+      log.info("Skipping deactivated 'scheduled' task: " + name)
     } else log.infoWithTime("Executing scheduled task: " + name) {
       task.perform(Day.today)
     }

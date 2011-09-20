@@ -9,8 +9,8 @@ import starling.utils.ImplicitConversions._
 import starling.calendar.Clock
 import starling.marketdata._
 import starling.pivot.PivotQuantity
-import org.scalatest.{WordSpec, BeforeAndAfterAll}
-import starling.market.{TestMarketSpec, TestMarketTest, Market}
+import org.scalatest.BeforeAndAfterAll
+import starling.market.{TestMarketSpec, Market}
 
 
 class MarketDataImporterTests extends StarlingSpec with ShouldMatchers with BeforeAndAfterAll with TestMarketSpec {
@@ -58,6 +58,10 @@ class MarketDataImporterTests extends StarlingSpec with ShouldMatchers with Befo
       importer.withExistingData(zincWithNoPrices).sourceWithNoData.updates should be === noUpdates
     }
 
+    "produce no updates when unchanged data is returned by the MarketDataSource" in {
+      importer.withExistingData(zincWithPrices).sourceWithData(zincWithPrices).updates should be === noUpdates
+    }
+
     "produce deletes when the same data is returned by the MarketDataSource, but the data is 'empty" in {
       importer.withExistingData(zincWithNoPrices).sourceWithData(zincWithNoPrices).updates should be === deletesFor(zincWithNoPrices)
     }
@@ -70,13 +74,9 @@ class MarketDataImporterTests extends StarlingSpec with ShouldMatchers with Befo
       importer.withExistingData(zincWithPrices).sourceWithData(zincWithChangedPrices).updates should be === savesFor(zincWithPrices → zincWithChangedPrices)
     }
 
-//    "produce saves when additional data is returned by the MarketDataSource" in {
-//      importer.withExistingData(zincWithPrices).sourceWithData(zincWithPrices, leadWithPrices).updates should be === savesFor(zincWithPrices → zincWithPrices, noData → leadWithPrices)
-//    }
-//
-//    "produce saves when unchanged data is returned by the MarketDataSource" in {
-//      importer.withExistingData(zincWithPrices).sourceWithData(zincWithPrices).updates should be === savesFor(zincWithPrices → zincWithPrices)
-//    }
+    "produce saves when additional data is returned by the MarketDataSource" in {
+      importer.withExistingData(zincWithPrices).sourceWithData(zincWithPrices, leadWithPrices).updates should be === savesFor(noData → leadWithPrices)
+    }
   }
 
   private val noData: MarketDataEntry = null
@@ -85,7 +85,7 @@ class MarketDataImporterTests extends StarlingSpec with ShouldMatchers with Befo
   private def saveFor(oldEntry: MarketDataEntry, newEntry: MarketDataEntry) = MarketDataUpdate(TimedMarketDataKey(observationPoint, newEntry.key), Some(newEntry.data), optVersioned(oldEntry))
   private def deletesFor(entries: MarketDataEntry*) = Map(LIM → entries.map(deleteFor).toList)
   private def deleteFor(entry: MarketDataEntry) = MarketDataUpdate(TimedMarketDataKey(observationPoint, entry.key), None, Some(versioned(entry)))
-  private def versioned(entry: MarketDataEntry) = VersionedMarketData(Clock.timestamp, 0, Some(entry.data))
+  private def versioned(entry: MarketDataEntry) = VersionedMarketData(0, Some(entry.data))
   private def optVersioned(entry: MarketDataEntry) = if (entry == null) None else Some(versioned(entry))
 
   private def importer() = {
@@ -95,12 +95,13 @@ class MarketDataImporterTests extends StarlingSpec with ShouldMatchers with Befo
       def updates = super.getUpdates(observationDay, LIM)
 
       def withNoExistingData() = updateThis {
-        when(marketDataStore.marketData(observationDay, observationDay, marketDataType, marketDataSet)) thenReturn Nil
+        when(marketDataStore.marketData(observationDay, observationDay, marketDataType, marketDataSet)) thenReturn
+          Map.empty[TimedMarketDataKey, VersionedMarketData]
       }
 
       def withExistingData(entries: MarketDataEntry*) = updateThis {
         when(marketDataStore.marketData(observationDay, observationDay, marketDataType, marketDataSet))
-          .thenReturn(entries.map(entry => (TimedMarketDataKey(observationPoint, entry.key), versioned(entry))).toList)
+          .thenReturn(entries.map(entry => (TimedMarketDataKey(observationPoint, entry.key), versioned(entry))).toMap)
       }
 
       def withNoSource = updateThis {

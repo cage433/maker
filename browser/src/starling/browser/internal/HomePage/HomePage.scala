@@ -1,27 +1,26 @@
 package starling.browser.internal.HomePage
 
-import scala.swing.Swing._
 import java.awt.{Font, Color, Dimension, Cursor}
 import java.awt.event.KeyEvent
-import org.jdesktop.swingx.painter.{CompoundPainter, GlossPainter}
 import scala.swing._
 import swing.event._
 import javax.swing.{JComponent, KeyStroke}
 import starling.browser.service.Version
 import starling.browser._
 import common._
-import internal.{HelpPage, RootBrowserContext, BookmarksPanel, BrowserIcons}
+import internal.{HelpPage, RootBrowserBundle, BookmarksPanel, BrowserIcons}
+import osgi.BundleAdded
 
 class HomePage
 
 case object StarlingHomePage extends Page {
 
-  def bundle = RootBrowserContext.bundleName
+  def bundle = RootBrowserBundle.bundleName
   def build(version: Version) = HomePagePageData(version)
-  def createServerContext(sc: ServerContext) = sc.version
+  def createServerContext(sc: ServerContext) = sc.browserService.version
   type SC = Version
 
-  def createComponent(context: PageContext, data: PageData, bookmark:Bookmark, browserSize:Dimension, previousPageData:Option[PageData]) = new StarlingHomePageComponent(context, browserSize, data)
+  def createComponent(context: PageContext, data: PageData, bookmark:Bookmark, browserSize:Dimension, previousPageData:Option[PreviousPageData]) = new StarlingHomePageComponent(context, browserSize, data)
   def text = "Starling"
   def icon = BrowserIcons.im("/icons/weather-clear.png")
 }
@@ -31,9 +30,9 @@ case class HomePagePageData(version:Version) extends PageData
 class StarlingHomePageComponent(context:PageContext, browserSize:Dimension, pageData:PageData) extends MigPanel("insets 0") with PageComponent {
   private val data = pageData match {case d:HomePagePageData => {d}}
 
-  private val bookmarksPanel = new BookmarksPanel(context)
+  private val bookmarksPanel = new BookmarksPanel(context) with RoundedBackground
   bookmarksPanel.background = GuiUtils.TaskPageButtonBackgroundColour
-  bookmarksPanel.border = LineBorder(GuiUtils.TaskPageButtonBorderColour)
+  bookmarksPanel.border = RoundedBorder(GuiUtils.TaskPageButtonBorderColour)
   val componentsBkColour = new Color(228, 231, 246)
   bookmarksPanel.bookmarksListView.background = componentsBkColour
   bookmarksPanel.dayPicker.background = componentsBkColour
@@ -52,9 +51,9 @@ class StarlingHomePageComponent(context:PageContext, browserSize:Dimension, page
     }
   }
 
-  private val versionPanel = new MigPanel("") {
-    border = LineBorder(GuiUtils.TaskPageButtonBorderColour)
-    background = GuiUtils.TaskPageButtonBackgroundColour
+  private val versionPanel = new MigPanel("") with RoundedBackground {
+    border = RoundedBorder(GuiUtils.TaskPageButtonBorderColour)
+    background = new Color(0,0,0,32)
 
     val ver = data.version
     if (ver.production) {
@@ -65,29 +64,42 @@ class StarlingHomePageComponent(context:PageContext, browserSize:Dimension, page
     }
   }
 
-  val homeButtons = context.bundles.flatMap { bundle => { bundle.homeButtons(context) }}
+  private val buttonPanel = new MigPanel("insets 0") {
+    opaque = false
+
+    def update(buttons:List[PageButton]) {
+      removeAll
+      buttons.foreach(button => {
+        val nb = new NumberedButton(button.name, button.icon, (modifiers) => {
+          context.createAndGoTo( (serverContext) => button.pageFactory.create(serverContext), modifiers=modifiers) },
+          tooltip0 = button.tooltip)
+        add(nb, "sg")
+      })
+      revalidate()
+      repaint()
+    }
+  }
 
   val c = new MigPanel("insets 0", "[grow,fill]", "[p]0[grow,fill]") {
-    val banner = new MigXPanel("insets 0", "[p][p][p]push[p]") {
-      background = GuiUtils.BannerColour
-      val gp = new GlossPainter
-      val sp = StripedCornerPainter(new Color(0,0,200))
-      backgroundPainter = new CompoundPainter(sp,gp)
 
-      val logoImage = BrowserIcons.im("/icons/small_sunny_bird2.png")
+    val banner = new MigPanel("insets 0", "[p][p]push[p]") {
+      background = Color.WHITE
+
+      val logoImage = BrowserIcons.im("/icons/small_sunny_bird3.png")
       val logo = new FixedImagePanel(logoImage)
 
-      val nameLabel = new Label {
-        text = "Starling"
-        font = new Font("Lucida Sans", Font.PLAIN, 30)
-      }
-      val welcomeLabel = new Label {
-        text = "W E L C O M E !"
+      val starlingLabel = new Label {
+        text = "S T A R L I N G"
         font = new Font("Dialog", Font.BOLD, 60)
-        foreground = new Color(255,221,138)
+        foreground = Color.BLACK
+        maximumSize = new Dimension(Integer.MAX_VALUE, preferredSize.height-20)
       }
+      val descLabel = new Label("Decision Support Engine") {
+        font = font.deriveFont(15.0f)
+      }
+
       val userImage = BrowserIcons.im("/icons/32x32_user_dark.png")
-      val userButton = new NumberedButton(context.localCache.currentUserName, userImage,
+      val userButton = new NumberedButton(context.localCache.currentFullName, userImage,
         modifiers => {
           val userPages = context.bundles.flatMap(_.userPage(context))
           userPages match {
@@ -95,17 +107,23 @@ class StarlingHomePageComponent(context:PageContext, browserSize:Dimension, page
             case page :: Nil => context.goTo(page, modifiers)
             case many => throw new Exception("There is more than one user page: " + many)
           }
-        }, false)
+        }, false, backgroundColour = Color.WHITE, backgroundOverColour = new Color(0,0,0,32))
       userButton.label.font = new Font("Serif", Font.PLAIN, 20)
 
+      val namePanel = new MigPanel("insets 0", rowConstraints = "[p]0[p]") {
+        background = Color.WHITE
+        add(starlingLabel, "wrap")
+        add(descLabel, "al right")
+      }
+
       add(logo)
-      add(nameLabel, "ay bottom, gapbottom 5lp")
-      add(welcomeLabel, "ay center, gapleft 20lp")
-      add(userButton, "ay center, gapright " + GuiUtils.StandardLeftIndent)
+      add(namePanel, "ay center, gapleft 35lp")
+      add(userButton, "ay center, gapright 20lp")
     }
 
-    val actionsPanelHolder = new MigPanel("insets dialog") {
-      val actionsPanel = new StripedPanel("insets 0", "[grow][p][p][p][p][grow]", "[grow][p][p][grow 150][p]") {
+    val actionsPanelHolder = new MigPanel("insets 0 " + GuiUtils.StartPageInsets) {
+      background = Color.WHITE
+      val actionsPanel = new StripedPanel("insets 0", "[grow][p][grow]", "[grow][p][p][grow 150][p]") {
 
         val helpLabelHolder = new MigPanel {
           background = new Color(0,0,0,0)
@@ -122,19 +140,8 @@ class StarlingHomePageComponent(context:PageContext, browserSize:Dimension, page
         }
 
         add(helpLabelHolder, "split, spanx, ax right, ay top, wrap")
-
-        homeButtons.zipWithIndex.foreach { case (button, index) => {
-          val isFirst = (index == 0)
-          val isLast = (index == homeButtons.size-1)
-          val modifiers = (if (isFirst) ", skip 1" else "") + (if(isLast) ", wrap unrel" else "")
-          val nb = new NumberedButton(button.name, button.icon, (modifiers) => {
-            context.createAndGoTo( (serverContext) => button.pageFactory.create(serverContext), modifiers=modifiers) },
-            tooltip0 = button.tooltip)
-          add(nb, "sg" + modifiers)
-        }}
-        //add(tradeDataButton, "sg, skip 1")
-
-        add(bookmarksPanel, "skip 1, spanx 4, growx, wrap")
+        add(buttonPanel, "skip 1, wrap")
+        add(bookmarksPanel, "skip 1, growx, wrap")
         add(versionPanel, "newline, split, spanx, ax center, gapbottom 5lp")
       }
       add(actionsPanel, "push,grow")
@@ -144,13 +151,30 @@ class StarlingHomePageComponent(context:PageContext, browserSize:Dimension, page
     add(actionsPanelHolder)
   }
 
-  homeButtons.foreach { button => {
-    button.key.foreach { key =>
-      val actionName = button.name + "Action"
-      peer.getInputMap(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT).put(key, actionName)
-      peer.getActionMap.put(actionName, Action(actionName) {context.createAndGoTo( (sc) => button.pageFactory.create(sc))}.peer)
+  reactions += {
+    case BundleAdded(_) => {
+      val homeButtons = context.bundles.flatMap { bundle => { bundle.homeButtons(context) }}
+      buttonPanel.update(homeButtons)
+      addButtonActions(homeButtons)
     }
-  }}
+  }
+  listenTo(context.remotePublisher)
+
+  private def addButtonActions(buttons:List[PageButton]) {
+    buttons.foreach { button => {
+      button.key.foreach { key =>
+        val actionName = button.name + "Action"
+        peer.getInputMap(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT).put(key, actionName)
+        peer.getActionMap.put(actionName, Action(actionName) {context.createAndGoTo( (sc) => button.pageFactory.create(sc))}.peer)
+      }
+    }}
+  }
+
+  {
+    val initialHomeButtons = context.bundles.flatMap { bundle => { bundle.homeButtons(context) }}
+    buttonPanel.update(initialHomeButtons)
+    addButtonActions(initialHomeButtons)
+  }
 
   override def defaultComponentForFocus = Some(bookmarksPanel.bookmarksListView.peer)
 

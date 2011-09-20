@@ -27,6 +27,8 @@ class MissingMarketDataException(s : String = "Missing data", cause : Throwable 
 class MissingPriceException(val marketName: String, val period: DateRange, msg : => String) extends MissingMarketDataException(msg)
 class MissingForwardFXException(val ccy: UOM, val forwardDay: Day, msg : => String) extends MissingMarketDataException(msg)
 
+class NoConstructorArgsEnvironment extends Environment(null, null)
+
 /** <p>
  * 		This class provides access to a snapshot of market data
  * 	</p>
@@ -126,9 +128,9 @@ case class Environment(
 
   private var averagePriceCache = CacheFactory.getCache("Environment.averagePrice", unique = true)
 
-  def averagePrice(index: IndexWithKnownPrice, averagingPeriod: DateRange): Quantity = averagePrice(index, averagingPeriod, None)
+  def averagePrice(index: IndexWithDailyPrices, averagingPeriod: DateRange): Quantity = averagePrice(index, averagingPeriod, None)
 
-  def averagePrice(index: IndexWithKnownPrice, averagingPeriod: DateRange, rounding: Option[Int]): Quantity = averagePriceCache.memoize(
+  def averagePrice(index: IndexWithDailyPrices, averagingPeriod: DateRange, rounding: Option[Int]): Quantity = averagePriceCache.memoize(
     (index, averagingPeriod),
     (tuple: (Index, DateRange)) => {
       val observationDays = index.observationDays(averagingPeriod)
@@ -154,35 +156,30 @@ case class Environment(
      price
   }
 
-   def fixingOrForwardPrice(market: CommodityMarket, lastTradingDay: Day, forwardDate: DateRange) = {
-     val price = if (lastTradingDay.endOfDay <= marketDay) {
-       marketFixing(market, lastTradingDay, forwardDate)
-     } else {
-       forwardPrice(market, forwardDate)
-     }
-     price
-  }
-
   def indexFixing(index: SingleIndex, fixingDay: Day) : Quantity = {
-    instrumentLevelEnv.fixing(index, fixingDay, None)
+    instrumentLevelEnv.fixing(index, fixingDay)
   }
 
-  def marketFixing(market: CommodityMarket, fixingDay: Day, forwardDate: DateRange) : Quantity = {
-    instrumentLevelEnv.fixing(market, fixingDay, Some(forwardDate))
+  def priceOnDay(market: FuturesMarket, period: DateRange, fixingDay: Day) : Quantity = {
+    instrumentLevelEnv.priceOnDay(market, period, fixingDay)
   }
 
-  def indexForwardPrice(underlying: InstrumentLevelKnownPrice, observationDay : Day, ignoreShiftsIfPermitted : Boolean = false) : Quantity = {
+  def priceOnLastTradingDay(market: FuturesMarket, period: DateRange) : Quantity = {
+    instrumentLevelEnv.priceOnLastTradingDay(market, period)
+  }
+
+  def indexForwardPrice(underlying: SingleIndex, observationDay : Day, ignoreShiftsIfPermitted : Boolean = false) : Quantity = {
     instrumentLevelEnv.indexForwardPrice(underlying, observationDay, ignoreShiftsIfPermitted)
   }
 
   /** Returns the futures/forward price for the given market and forward date
    */
-  def forwardPrice(market: CommodityMarket, forwardDate : DateRange) : Quantity = {
-    instrumentLevelEnv.forwardPrice(market, forwardDate, false)
+  def forwardPrice(market: CommodityMarket, period : DateRange) : Quantity = {
+    instrumentLevelEnv.forwardPrice(market, period, false)
   }
 
-  def forwardPrice(market: CommodityMarket, forwardDate : DateRange, unit: UOM) : Quantity = {
-    (forwardPrice(market, forwardDate) * spotFXRate(unit.numeratorUOM, market.currency) in unit).getOrElse(
+  def forwardPrice(market: CommodityMarket, period : DateRange, unit: UOM) : Quantity = {
+    (forwardPrice(market, period) * spotFXRate(unit.numeratorUOM, market.currency) in unit).getOrElse(
       throw new Exception("Can't convert " + market + " price (" + market.priceUOM + ") to " + unit))
   }
 

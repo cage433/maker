@@ -1,6 +1,6 @@
 package starling.services.trade
 
-import instrumentreaders.ExcelInstrumentReader
+import starling.services.trade.instrumentreaders.ExcelInstrumentReader
 import org.testng.Assert._
 import starling.quantity.Quantity
 import starling.quantity.RichQuantity._
@@ -15,8 +15,7 @@ import starling.db.IntradayTradeSystem
 import starling.daterange._
 import starling.tradestore.intraday.IntradayTradeAttributes
 import starling.auth.User
-import starling.eai.{Traders, TreeID, Tree, EAIStrategyDB}
-import starling.trade.{Trade, TradeID}
+import starling.instrument.{Trade, TradeID}
 import starling.pivot.PivotTreePath
 import org.mockito.Mockito._
 import org.mockito.Matchers._
@@ -25,9 +24,10 @@ import io.Source
 import collection.mutable.ArraySeq
 import starling.curves.Environment._
 import starling.curves._
-import starling.utils.QuantityTestUtils._
+import starling.quantity.utils.QuantityTestUtils._
 import starling.utils.{Log, StringIO}
 import starling.concurrent.MP._
+import starling.eai._
 
 class ExcelTradeReaderTests extends JonTestEnv {
   @AfterClass
@@ -43,6 +43,9 @@ class ExcelTradeReaderTests extends JonTestEnv {
   val eAIStrategyDB = mock(classOf[EAIStrategyDB])
   when(eAIStrategyDB.pathFor(any(classOf[TreeID]))) thenReturn PivotTreePath("test [54418]")
   when(eAIStrategyDB.getStrategyFromDealId(any(classOf[TreeID]))) thenReturn Some(TreeID(54418))
+
+  val eaiDealBookMapping = mock(classOf[EAIDealBookMapping])
+  when(eaiDealBookMapping.book(any(classOf[Int]))) thenReturn 173
 
   val jf = Some(User("jon.fox", "Jon Fox", None, Nil, "", "", ""))
   val sp = Some(User("seetal.patel", "Seetal Patel", None, Nil, "", "", ""))
@@ -61,10 +64,13 @@ class ExcelTradeReaderTests extends JonTestEnv {
       "broker" -> "ice", "strategy" -> "54418", "comment" -> "a test", "clearing house" -> "", "entry date" -> "")
 
 
-    val reader = new ExcelTradeReader(eAIStrategyDB, traders, currentUser)
+    val reader = new ExcelTradeReader(eAIStrategyDB, eaiDealBookMapping, traders, currentUser)
+
+    val prefix = "Oil Derivatives/Scratch/London Derivatives Options/Jon Fox/"
+
     val trade = reader.allTrades(List(row), "some group").head
-    val attr = IntradayTradeAttributes(Some(TreeID(54418)), TreeID(0), Some(TreeID(54418)), "Jon Fox", "Jaakko", "ice", "a test", "", "some group", Day(2010, 10, 1), "jon.fox")
-    val tradeID = TradeID("some group-0001", IntradayTradeSystem)
+    val attr = IntradayTradeAttributes(Some(TreeID(54418)), TreeID(173), Some(TreeID(54418)), "Jon Fox", "Jaakko", "ice", "a test", "", prefix + "some group", Day(2010, 10, 1), "jon.fox")
+    val tradeID = TradeID(prefix + "some group-0001", IntradayTradeSystem)
     assertEquals(trade, Trade(tradeID, 01 Oct 2010, "ttf", attr, Future(NYMEX_WTI, Month(2010, 12), 77.13(USD / BBL), -(13000.00)(BBL)), List()))
   }
 
@@ -74,12 +80,12 @@ class ExcelTradeReaderTests extends JonTestEnv {
 
     val header: Array[String] = a.head.split('\t')
     val rest = a.tail.map(_.split('\t').toSeq).asInstanceOf[List[Seq[Object]]]
-    val reader = new ExcelTradeReader(eAIStrategyDB, traders, currentUser)
+    val reader = new ExcelTradeReader(eAIStrategyDB, eaiDealBookMapping, traders, currentUser)
     val all: List[Trade] = Log.infoWithTime("all trades") {
       reader.allTrades(header, rest, "test")
     }
 
-    val marketDayAndTime = Day(2011, 8, 1).endOfDay()
+    val marketDayAndTime = Day(2011, 8, 1).endOfDay
     val env = Environment(
       new TestingAtomicEnvironment() {
         def applyOrMatchError(key: AtomicDatumKey) = key match {

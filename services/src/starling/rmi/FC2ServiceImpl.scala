@@ -9,12 +9,31 @@ import starling.curves.{CurveViewer, EnvironmentRule}
 import starling.fc2.api.FC2Service
 import starling.db._
 import starling.utils.ImplicitConversions._
-import starling.reports.pivot.ReportService
+import starling.manager.BromptonContext
+
+
+trait MarketDataPageIdentifierReaderProvider {
+  def readerFor(identifier:MarketDataPageIdentifier):Option[MarketDataReader]
+}
+
+trait MarketDataPageIdentifierReaderProviders {
+  def providers:List[MarketDataPageIdentifierReaderProvider]
+}
+object MarketDataPageIdentifierReaderProviders {
+  val Empty = new MarketDataPageIdentifierReaderProviders {
+    def providers = Nil
+  }
+}
+
+class BromptonTrackerBasedMarketDataPageIdentifierReaderProviders(context:BromptonContext) extends MarketDataPageIdentifierReaderProviders {
+  val tracker = context.createServiceTracker[MarketDataPageIdentifierReaderProvider](Some(classOf[MarketDataPageIdentifierReaderProvider]))
+  def providers = tracker.flatMap( s => List(s) ).toList
+}
 
 class FC2ServiceImpl(
                       snapshotDatabase:MarketDataStore,
                       curveViewer : CurveViewer,
-                      reportService:ReportService) extends FC2Service {
+                      marketDataReaderProviders:MarketDataPageIdentifierReaderProviders) extends FC2Service {
 
   private def unLabel(pricingGroup:PricingGroup) = pricingGroup
   private def unLabel(snapshotID:SnapshotIDLabel) = snapshotDatabase.snapshotFromID(snapshotID.id).get
@@ -97,10 +116,20 @@ class FC2ServiceImpl(
   }
 
   private def marketDataReaderFor(marketDataIdentifier:MarketDataPageIdentifier) = {
-    validate(marketDataIdentifier match {
+    val reader = marketDataIdentifier match {
       case StandardMarketDataPageIdentifier(mdi) => new NormalMarketDataReader(snapshotDatabase, mdi)
-      case ReportMarketDataPageIdentifier(rp) => reportService.recordedMarketDataReader(rp)
-    })
+      case _ => {
+        val readers = marketDataReaderProviders.providers.flatMap( provider => {
+          provider.readerFor(marketDataIdentifier)
+        })
+        readers match {
+          case Nil => throw new Exception("No market data reader found for " + marketDataIdentifier)
+          case one :: Nil => one
+          case _ => throw new Exception("More than one market data reader found for " + marketDataIdentifier)
+        }
+      }
+    }
+    validate(reader)
   }
 
   private def validate(reader: MarketDataReader): MarketDataReader = {
