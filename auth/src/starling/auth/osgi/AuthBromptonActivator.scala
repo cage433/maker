@@ -7,6 +7,12 @@ import starling.auth.internal.{LdapUserLookupImpl, KerberosAuthHandler}
 class AuthProps {
   def useAuth = true
 }
+
+/**
+ * AuthBromptonActivator is an implementation that creates then registers a KerberosAuthHandler on initialisation.
+ *
+ * @documented
+ */
 class AuthBromptonActivator extends BromptonActivator {
   type Props = AuthProps
   def defaults = new AuthProps
