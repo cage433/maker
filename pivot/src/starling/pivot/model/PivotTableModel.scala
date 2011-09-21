@@ -424,7 +424,14 @@ object PivotTableModel {
     //and the 'sum' of the data area values for each row-column pair
 
     val filters = pivotState.filters.toMap
-    val fieldsToDepth = treeDepths.map{case (field, (start, end)) => field -> (end - start + 1)}
+    val measureFields = pivotState.columns.measureFields.toSet
+    val fieldsToDepth = treeDepths.map{case (field, (start, end)) => {
+      if (measureFields.contains(field)) {
+        field -> 1
+      } else {
+        field -> (end - start + 1)
+      }
+    }}
     val allPaths = pivotState.columns.buildPathsWithPadding(fieldsToDepth)
     val maxColumnDepth = if (allPaths.isEmpty) 0 else allPaths.maximum(_.path.map{ case (field,_) => fieldsToDepth.getOrElse(field, 1)}.sum)
 

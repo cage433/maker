@@ -147,13 +147,7 @@ case class MainPivotReportPage(showParameters:Boolean, reportParameters:ReportPa
           pivotPageState
         }
 
-        context.createAndGoTo({
-          server => {
-            // check to see if we have market data for the observation day and pnl from day, if we don't, import it
-            // making new copies of the ReportParameters is the really ugly bit
-            selfReportPage(rp = rp, pps = newPivotPageState)
-          }
-        }, modifiers = modifiers)
+        context.goTo(selfReportPage(rp = rp, pps = newPivotPageState), modifiers = modifiers)
       }
 
       val manualConfigPanel = new ManualReportConfigPanel(context, reportParameters, pivotPageState)

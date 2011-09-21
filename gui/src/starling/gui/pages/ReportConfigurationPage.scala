@@ -227,7 +227,7 @@ class ReportConfigurationComponent(context:PageContext, tradeAndReferenceDataInf
       val tradeTS = tradeTSC.selectedTimestamp
       val tradeSelectionWithTimestamp = tradeSelection.withTimestamp(tradeTS, context.localCache.latestTimestamp)
       envChooser.invokeWithCurveIdentifier(context, (curveIdentifier:CurveIdentifierLabel) => {
-        context.createAndGoTo((server) => {
+        context.goTo({
           val reportParameters = ReportParameters(tradeSelectionWithTimestamp, curveIdentifier, comp.reportOptions,
             tradeED)
           new MainPivotReportPage(false, reportParameters, PivotPageState(false, PivotFieldParams(true, None)))
@@ -435,7 +435,7 @@ class ReportConfigurationComponent(context:PageContext, tradeAndReferenceDataInf
       val tradeTS = tradeTSC.selectedTimestamp
       val tradeSelectionWithTimestamp = tradeSelection.withTimestamp(tradeTS, context.localCache.latestTimestamp)
       envChooser.invokeWithCurveIdentifier(context, (curveID:CurveIdentifierLabel) => {
-        context.createAndGoTo((server) => {
+        context.goTo({
           val reportParameters = ReportParameters(tradeSelectionWithTimestamp, curveID, comp.reportOptions,
             tradeED)
           new MainPivotReportPage(false, reportParameters, PivotPageState(false, PivotFieldParams(true, None)))
@@ -494,7 +494,7 @@ class ReportConfigurationComponent(context:PageContext, tradeAndReferenceDataInf
       val tradeSelectionWithTimestamp = tradeSelection.withTimestamp(tsTo, context.localCache.latestTimestamp)
       envChooserFrom.invokeWithCurveIdentifier(context, curveIdentifier1 => {
         envChooserTo.invokeWithCurveIdentifier(context, curveIdentifier2 => {
-          context.createAndGoTo((server) => {
+          context.goTo({
             val reportParameters = new ReportParameters(
               tradeSelectionWithTimestamp,
               curveIdentifier2,
@@ -545,7 +545,7 @@ class ReportConfigurationComponent(context:PageContext, tradeAndReferenceDataInf
     def component = comp
 
     def runReport(modifiers:Modifiers) {
-      context.createAndGoTo(server => TradeChangesReportPage(tradeSelection,
+      context.goTo(TradeChangesReportPage(tradeSelection,
         timestampChooserFrom.selectedTimestamp, timestampChooserTo.selectedTimestamp,
         PivotPageState(false, PivotFieldParams(true, None)), tradeExpiryDay), modifiers = modifiers)
     }
@@ -605,7 +605,7 @@ class ReportConfigurationComponent(context:PageContext, tradeAndReferenceDataInf
     def runReport(modifiers:Modifiers) {
       envChooserFrom.invokeWithCurveIdentifier(context, curveIdentifier1 => {
         envChooserTo.invokeWithCurveIdentifier(context, curveIdentifier2 => {
-          context.createAndGoTo(server => DifferenceMainPivotReportPage(
+          context.goTo(DifferenceMainPivotReportPage(
             tradeSelection, curveIdentifier1, curveIdentifier2, comp.reportOptions,
             PivotPageState(false, PivotFieldParams(true, None)),
             tradeTSFrom.selectedTimestamp, tradeTSTo.selectedTimestamp,
@@ -657,7 +657,7 @@ class ReportConfigurationComponent(context:PageContext, tradeAndReferenceDataInf
       val tradeTS = tradeTSC.selectedTimestamp // timestamp
       val tradeSelectionWithTimestamp = tradeSelection.withTimestamp(tradeTS, context.localCache.latestTimestamp)
       envChooser.invokeWithCurveIdentifier(context, (curveIdentifier:CurveIdentifierLabel) => {
-        context.createAndGoTo((server) => {
+        context.goTo({
           new PnLReconciliationReportPage(tradeSelectionWithTimestamp, curveIdentifier, tradeED, PivotPageState(false, PivotFieldParams(true, None)))
         }, modifiers = modifiers)
       })

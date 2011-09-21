@@ -32,15 +32,16 @@ case class TradeChangesReportPage(tradeSelection:TradeSelection, from:TradeTimes
     }
     tradeID match {
       case Some(trID) => {
-        pageContext.createAndGoTo(
-          (serverContext:ServerContext) => {
-            SingleTradePage(trID, tradeSelection.desk, TradeExpiryDay(tradeExpiryDay), tradeSelection.intradaySubgroup)
-          }, modifiers = modifiers)
+        pageContext.goTo(
+          SingleTradePage(trID, tradeSelection.desk, TradeExpiryDay(tradeExpiryDay), tradeSelection.intradaySubgroup),
+          modifiers = modifiers
+        )
       }
       case None => None
     }
   }
 
   def text = "Trade Changes " + tradeSelection + " " + from + " to " + to
+  override def shortText = "Trade Changes"
   def selfPage(pivotPageState:PivotPageState, edits:PivotEdits) = copy(pivotPageState=pivotPageState)
 }

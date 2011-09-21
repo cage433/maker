@@ -25,7 +25,9 @@ class ReferenceDataIndexPageComponent(context:PageContext, pageData:PageData) ex
   val data = pageData match {case d:ReferenceDataIndexPageData => d}
   background = Color.WHITE
 
-  val c = new StripedPanel("insets 0", "[grow][p][p][p][grow]", "[grow][p][p][p][p][grow 150]") {
+  val buttonPanel = new MigPanel("insets 0", "[p][p][p]", "[p][p][p]") {
+    opaque = false
+
     val calendarImage = StarlingIcons.im("/icons/32x32_calendar.png")
     val otherRefDataImage = StarlingIcons.im("/icons/32x32_chart_line.png")
     for ((table,index) <- data.referenceTables.zipWithIndex) {
@@ -50,7 +52,10 @@ class ReferenceDataIndexPageComponent(context:PageContext, pageData:PageData) ex
       }
       add(tableButton, constraints + " ,sg")
     }
+  }
 
+  val c = new StripedPanel("insets 0", "[grow][p][grow]", "[grow][p][grow 150]") {
+    add(buttonPanel, "newline, skip 1")
   }
   add(c, "push, grow")
 }

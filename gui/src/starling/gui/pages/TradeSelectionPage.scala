@@ -65,27 +65,14 @@ case class TradeSelectionPage(
     }
     tradeID match {
       case Some(trID) => {
-        pageContext.createAndGoTo(
-          (serverContext:ServerContext) => {
-            SingleTradePage(trID, tradeSelection.desk, tpp.expiry, tradeSelection.intradaySubgroup)
-          }, modifiers = modifiers)
+        pageContext.goTo(
+          SingleTradePage(trID, tradeSelection.desk, tpp.expiry, tradeSelection.intradaySubgroup),
+          modifiers = modifiers
+        )
       }
       case None => None
     }
   }
-
-  /*override def createComponent(context:PageContext, data:PageData, bookmark:Bookmark, browserSize:Dimension, previousPageData:Option[PreviousPageData]) = {
-    val tradeSelectionPageData = data match {
-      case v:PivotTablePageData => v.subClassesPageData match {
-        case x:Option[_] => x.get.asInstanceOf[TradeSelectionPageData]
-      }
-    }
-    new TradeSelectionComponent(
-      text, context, tradeSelectionPageData, tpp.deskAndTimestamp.map(_._2), tpp.intradaySubgroupAndTimestamp.map(_._2),
-      tpp.expiry,
-      PivotComponent(text, context, toolbarButtons(context, data), configPanel(context, data), finalDrillDownPage, selfPage, data,
-        pivotPageState, PivotEdits.Null, save, bookmark, browserSize))
-  }*/
 
   override def configPanel(context:PageContext, pageData:PageData, tableSelection:() => TableSelection) = {
     val data = pageData match {case v:PivotTablePageData => v.subClassesPageData match {case Some(d:TradeSelectionPageData) => d}}
@@ -353,7 +340,7 @@ case class TradeSelectionPage(
             val to = timestampsCombo.maxTimestamp
             val latestIntradayTimestamp = context.localCache.latestTimestamp(intradaySubgroup)
 
-            context.createAndGoTo(server => new TradeReconciliationReportPage(tradeSelection, from, to,
+            context.goTo(new TradeReconciliationReportPage(tradeSelection, from, to,
               latestIntradayTimestamp, data.pivotPageState), modifiers = Modifiers.modifiers(e.getModifiers))
           }
           case DeskClosed(desk, timestamp) => {
@@ -381,7 +368,7 @@ case class TradeSelectionPage(
             val selection = tableSelection().selection
             val tradeSelection = TradeSelection(Some(tradeSystem), TradePredicate(selection._1, selection._2), None)
 
-            context.createAndGoTo(server => TradeChangesReportPage(tradeSelection,
+            context.goTo(TradeChangesReportPage(tradeSelection,
               from, to,
               PivotPageState(false, PivotFieldParams(true, None)), expiry.exp), modifiers = Modifiers.modifiers(e.getModifiers))
           }
