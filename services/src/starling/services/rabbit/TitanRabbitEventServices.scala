@@ -134,7 +134,7 @@ case class DefaultTitanRabbitEventServices(props : Props) extends TitanRabbitEve
 
   val rabbitListener = new RabbitListener(
     rabbitEventConnector,
-    rabbitmq_baseQueueName + serviceName,
+    rabbitmq_baseQueueName + "." + serviceName,
     rabbitmq_makeQueueNameUnique,
     rabbitmq_passive,
     rabbitmq_durable,

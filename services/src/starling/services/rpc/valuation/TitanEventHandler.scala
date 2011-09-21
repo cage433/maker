@@ -35,16 +35,24 @@ class TitanEventHandler(rabbitEventServices : TitanRabbitEventServices,
    * top level titan event handler
    */
   def handle(ev: Event) {
-    if (ev == null) log.warn("Got a null event")
-    else {
-      if (TrademgmtSource == ev.source && (TradeSubject == ev.subject || NeptuneTradeSubject == ev.subject)) {
-        // Must be some form of trade event from trademgmt source
-        tradeMgmtTradeEventHander(ev)
+    log.debug("Received event " + ev)
+    try {
+      if (ev == null)
+        log.warn("Got a null event")
+      else {
+        db.saveEvent(ev)
+        if (TrademgmtSource == ev.source && (TradeSubject == ev.subject || NeptuneTradeSubject == ev.subject)) {
+          // Must be some form of trade event from trademgmt source
+          tradeMgmtTradeEventHander(ev)
+        }
+        else if (LogisticsSource.equalsIgnoreCase(ev.source) && (EDMLogisticsSalesAssignmentSubject.equalsIgnoreCase(ev.subject) || EDMLogisticsInventorySubject.equalsIgnoreCase(ev.subject))) {
+          logisticsAssignmentEventHander(ev)
+        }
       }
-      else if (LogisticsSource.equalsIgnoreCase(ev.source) && (EDMLogisticsSalesAssignmentSubject.equalsIgnoreCase(ev.subject) || EDMLogisticsInventorySubject.equalsIgnoreCase(ev.subject))) {
-        logisticsAssignmentEventHander(ev)
-      }
-      db.saveEvent(ev)
+    } catch {
+      case e =>
+        log.warn("Error while processing event\n" +e.getStackTrace.mkString("\n"))
+        throw e
     }
   }
 
