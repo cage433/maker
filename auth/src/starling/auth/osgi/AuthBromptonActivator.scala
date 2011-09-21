@@ -5,7 +5,7 @@ import starling.auth.internal.KerberosAuthHandler
 import starling.auth.{AuthHandler, LdapUserLookup}
 
 class AuthProps {
-  def useAuth = false
+  def useAuth = true
 }
 class AuthBromptonActivator extends BromptonActivator {
   type Props = AuthProps
