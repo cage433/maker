@@ -12,8 +12,7 @@ import org.jdesktop.animation.timing.{TimingTargetAdapter, Animator}
 import scala.ref.SoftReference
 import net.miginfocom.swing.MigLayout
 import swing._
-import event.{Event, MouseClicked, ButtonClicked, UIElementResized}
-import java.awt.event.{ActionListener, ActionEvent, InputEvent, KeyEvent}
+import event.{MouseClicked, ButtonClicked}
 import javax.swing.{JComponent, AbstractAction, KeyStroke, JPanel, JPopupMenu, Timer, ImageIcon}
 import java.awt.{RenderingHints, Graphics, Color, KeyboardFocusManager, Graphics2D, Component => AWTComp}
 import java.lang.reflect.UndeclaredThrowableException
@@ -726,7 +725,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
     stopButton.enabled = false
   }
 
-  def submitYesNo[R,T](message0:String, description:String, submitRequest:SubmitRequest[R], awaitRefresh:R=>Boolean, onComplete:R => Unit, keepScreenLocked:Boolean) {
+  def submitYesNo[R](message0:String, description:String, submitRequest:SubmitRequest[R], awaitRefresh:R=>Boolean, onComplete:R => Unit, keepScreenLocked:Boolean) {
     genericLockedUI.setClient(greyClient)
     genericLockedUI.setLocked(true)
     setButtonsEnabled(false)
@@ -780,7 +779,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
   def getDefaultButton = windowMethods.getDefaultButton
   def requestFocusInCurrentPage() {currentComponent.requestFocusInWindow()}
 
-  def submit[R,T](submitRequest:SubmitRequest[R], awaitRefresh:R=>Boolean, onComplete:R => Unit, keepScreenLocked:Boolean) {
+  def submit[R](submitRequest:SubmitRequest[R], awaitRefresh:R=>Boolean, onComplete:R => Unit, keepScreenLocked:Boolean) {
     genericLockedUI.setLocked(true)
     tabComponent.setBusy(true)
     setButtonsEnabled(false)
@@ -1323,7 +1322,7 @@ class PageBuilder(val remotePublisher:Publisher, val serverContext:ServerContext
     pageToThens = Map()
   }
 
-  def submit[R,T](submitRequest:SubmitRequest[R], waitFor:CountDownLatch, awaitRefresh:R=>Boolean, then:((Boolean, SubmitResponse) => Unit)) {
+  def submit[R](submitRequest:SubmitRequest[R], waitFor:CountDownLatch, awaitRefresh:R=>Boolean, then:((Boolean, SubmitResponse) => Unit)) {
     threads.execute(new Runnable() {
       def run() {
         val (submitResponse, didWait) = BrowserLog.infoWithTime("Submit request " + submitRequest) {
