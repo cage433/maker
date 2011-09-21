@@ -168,7 +168,7 @@ case class UnknownPricingSpecification(
     val unfixedFraction = 1.0 - totalFixed
     val fixedPayment = Quantity.sum(fixations.zipWithIndex.map{ case (f, i) => f.price.named("Fix_" + i) * f.fraction}).named("Fixed")
     val unfixedPayment = (index.fixingOrForwardPrice(env, unfixedPriceDay) * unfixedFraction).named("Unfixed")
-    fixedPayment + unfixedPayment
+    addPremiumConvertingIfNecessary(env, fixedPayment + unfixedPayment, premium)
   }
 
   def dummyTransferPricingSpec = copy(premium = Quantity.NULL)

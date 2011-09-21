@@ -50,6 +50,8 @@ class DefaultRabbitEventDatabase(val db:DB, broadcaster:Broadcaster) extends Rab
     val pid:Int = e.content.header.pid
     val body = e.content.body.toJson.toString
 
+    val payloads = e.content.body.payloads.map{p => p.payloadType +": " + p.key.identifier}.mkString(", ")
+
     db.inTransaction{
       writer => {
         writer.insert(TableName, Map(
@@ -61,7 +63,9 @@ class DefaultRabbitEventDatabase(val db:DB, broadcaster:Broadcaster) extends Rab
           "timestamp" -> timestamp,
           "host" -> host,
           "pid" -> pid,
-          "body" -> body
+          "body" -> body,
+          "starlingtimestamp" -> new Timestamp(),
+          "payloads" -> payloads
         ))
       }
     }

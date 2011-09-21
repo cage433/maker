@@ -129,30 +129,6 @@ class TitanEventHandler(rabbitEventServices : TitanRabbitEventServices,
 
     log.info("Assignment event received for ids { %s }".format(ids.mkString(", ")))
 
-//    def tradesForInventory(inventoryID: String): List[Trade] = {
-//      val tradeConverter = TradeConverter(refData, titanTradeCache)
-//      titanInventoryCache.getAssignmentsForInventory(inventoryID) map (tradeConverter.toTrade)
-//    }
-
-//    def writeToTradeStore(inventoryID: String) {
-//      titanTradeStore match {
-//        case Some(tradeStore) => {
-//          val trades: Seq[Trade] = tradesForInventory(inventoryID)
-//          val tradeIDs = trades.map(_.tradeID)
-//          tradeStore.storeTrades((trade) => tradeIDs.contains(trade.tradeID), trades, new Timestamp())
-//        }
-//        case None =>
-//      }
-//    }
-//    def deleteFromTradeStore(inventoryID: String) {
-//      titanTradeStore match {
-//        case Some(tradeStore) => {
-//          val tradeIDs = tradesForInventory(inventoryID).map(_.tradeID)
-//          tradeStore.storeTrades((trade) => tradeIDs.contains(trade.tradeID), Nil, new Timestamp())
-//        }
-//        case None =>
-//      }
-//    }
 
     ev.verb match {
       case UpdatedEventVerb => {

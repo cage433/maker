@@ -10,7 +10,7 @@ class RabbitEventViewerContext(val service:RabbitEventViewerService)
 case class RabbitEventViewerPageState(latest:Long)
 
 case class RabbitEventViewerPage(pps:PivotPageState, pageState:RabbitEventViewerPageState) extends AbstractPivotPage(pps) {
-  def text = "Rabbit Event Vieweraaa"
+  def text = "Rabbit Event Viewer"
   override def icon = StarlingIcons.im("/icons/16x16_event.png")
 
   def bundle = "StarlingServer"
