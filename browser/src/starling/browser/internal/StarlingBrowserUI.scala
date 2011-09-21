@@ -3,8 +3,6 @@ package starling.browser.internal
 import org.jdesktop.jxlayer.plaf.AbstractLayerUI
 import net.miginfocom.swing.MigLayout
 import javax.swing.JComponent._
-import starling.browser.common.{MigPanel, GuiUtils}
-import starling.browser.common.{MigPanel, GuiUtils}
 import scala.swing.Component._
 import scala.swing.UIElement._
 import swing.event.ButtonClicked
@@ -16,10 +14,11 @@ import scala.swing.Action._
 import scala.swing._
 import org.jdesktop.jxlayer.JXLayer
 import java.awt.{FlowLayout, BorderLayout, Color, Dimension}
+import starling.browser.common._
 
 class StarlingBrowserUI extends AbstractLayerUI[JComponent] {
   private val contentPanel = new JPanel(new MigLayout("")) {
-    setBackground(GuiUtils.ClearColour)
+    setOpaque(false)
     setVisible(false)
   }
 
@@ -31,8 +30,8 @@ class StarlingBrowserUI extends AbstractLayerUI[JComponent] {
   }
 
   def setError(title:String, error:String, errorOK: => Unit) {
-    val errorPanel = new MigPanel("") {
-      border = BorderFactory.createLineBorder(BorderColour)
+    val errorPanel = new MigPanel("") with RoundedBackground {
+      border = RoundedBorder(Color.RED)
       minimumSize = new Dimension(10, 300)
       val okButton = new Button {
         text = "OK"
@@ -69,8 +68,8 @@ class StarlingBrowserUI extends AbstractLayerUI[JComponent] {
       windowMethods.setDefaultButton(oldDefaultButton)
     }
 
-    val yesNoPanel = new MigPanel("") {
-      border = BorderFactory.createLineBorder(new Color(158,16,40), 2)
+    val yesNoPanel = new MigPanel("") with RoundedBackground {
+      border = RoundedBorder(Color.RED)
       val label = new Label(message) {
         font = font.deriveFont(java.awt.Font.BOLD)
       }

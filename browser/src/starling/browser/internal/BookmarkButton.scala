@@ -3,12 +3,12 @@ package starling.browser.internal
 import scala._
 import swing._
 import swing.event.{MousePressed, ButtonClicked}
-import starling.browser.common.{GuiUtils, MigPanel}
 import javax.swing.{JPopupMenu, BorderFactory}
 import scala.swing.Swing._
 import starling.browser.{ServerContext, SubmitRequest, PageContext, Bookmark}
 import starling.browser.service.{BookmarksUpdate, BookmarkLabel}
 import java.awt.{Polygon, Graphics2D, Dimension, Color, RenderingHints, KeyboardFocusManager}
+import starling.browser.common.{RoundedBorder, RoundedBackground, GuiUtils, MigPanel}
 
 class BookmarkButton(currentPage: CurrentPage, context:PageContext, pageBuilder:PageBuilder) extends NavigationButton {
   val noBookmarkIcon = BrowserIcons.icon("/icons/22x22_empty_star.png")
@@ -30,8 +30,8 @@ class BookmarkButton(currentPage: CurrentPage, context:PageContext, pageBuilder:
   private def getText:String = savePanel.nameField.text
   private def clearUp() {savePanel.clearUp()}
 
-  val replacePanel = new MigPanel {
-    border = BorderFactory.createLineBorder(new Color(158,16,40), 2)
+  val replacePanel = new MigPanel with RoundedBackground {
+    border = RoundedBorder(Color.RED)
     private val questionIcon = new Label {
       icon = BrowserIcons.icon("/icons/128x128_question.png")
     }
@@ -69,13 +69,13 @@ class BookmarkButton(currentPage: CurrentPage, context:PageContext, pageBuilder:
     add(noButton, "al right, sg button")
   }
 
-  val savePanel = new MigPanel {
+  val savePanel = new MigPanel with RoundedBackground {
+    border = RoundedBorder(Color.RED)
     var oldDefaultButton:Option[Button] = None
 
     val infoIcon = new Label {
       icon = BrowserIcons.icon("/icons/128x128_info.png")
     }
-    border = BorderFactory.createLineBorder(new Color(158,16,40), 2)
     val label = new Label("Please Enter the Bookmark Name") {
       font = font.deriveFont(java.awt.Font.BOLD)
     }
@@ -123,6 +123,7 @@ class BookmarkButton(currentPage: CurrentPage, context:PageContext, pageBuilder:
   }
 
   val holderPanel = new MigPanel("insets 0") {
+    opaque = false
     def update(c:Component, setSize:Boolean) {
       removeAll
       if (setSize) {
