@@ -5,8 +5,19 @@ import java.lang.reflect.Method
 import java.io.{File, FileInputStream}
 import java.util.{Dictionary, Properties}
 
+/**
+ * Unused at the time of documenting.  9TBA, but possibly named after a type of folding bicycle?!)
+ * @documented
+ */
 class Brompton
 
+/**
+ * BromptonActivator provides a contract for initialising, starting and stopping a service that may wish to register
+ * itself with a container/context) and that requires properties.
+ *
+ * @see BromptonContext
+ * @documented
+ */
 trait BromptonActivator {
   type Props
   def defaults:Props
@@ -15,6 +26,10 @@ trait BromptonActivator {
   def stop(context:BromptonContext)
 }
 
+/**
+ * A generic (name, value) property pair for a service.
+ * @documented
+ */
 class ServiceProperty(val name:String, val value:AnyRef)
 
 case class ServiceName(serviceName:String) extends ServiceProperty("name", serviceName)
@@ -31,6 +46,11 @@ trait BromptonServiceCallback[T] {
   def serviceRemoved(ref:BromptonServiceReference)
 }
 
+/**
+ * BromptonServiceTracker provides a means of generating callbacks for each registered service of a certain type, or of
+ * dynamically mapping each to a different type.
+ * @documented
+ */
 trait BromptonServiceTracker[T] {
   def each(f:T=>Unit):Unit
   def flatMap[R](f:T=>Iterable[R]) = {
@@ -40,16 +60,45 @@ trait BromptonServiceTracker[T] {
   }
 }
 
+/**
+ * BromptonServiceRegistration provides the means to unregister a previously registered service.
+ * @documented
+ */
 trait BromptonServiceRegistration {
   def unregister():Unit
 }
 
+/**
+ * A BromptonServiceContext provides a contract to allow the registration and tracking of a generic service.
+ *
+ * @see BromptonServiceRegistration
+ * @see BromptonServiceCallback
+ * @documented
+ */
 trait BromptonContext {
+  /**
+   * Registers the given service against its type, with an optional list of properties.
+   *
+   * @return A instance which may be used to unregister the service.
+   */
   def registerService[T](
       klass:Class[T],
       service:T,
       properties:List[ServiceProperty]=List()):BromptonServiceRegistration
+
+  /**
+   * @return The service of the given type registered in this context.
+   * @throws RuntimeException may be thrown if no service of the given type is registered with this context.
+   */
   def awaitService[T](klass:Class[T]):T
+
+  /**
+   * Creates then returns a service tracker.
+   * @param klass The type of service to track, may not be null.
+   * @param properties An optional list of properties.
+   * @param serviceTracker The callback listener.
+   * @return The new tracker.
+   */
   def createServiceTracker[T](
     klass:Option[Class[T]],
     properties:List[ServiceProperty]=Nil,
@@ -59,6 +108,10 @@ trait BromptonContext {
     }):BromptonServiceTracker[T]
 }
 
+/**
+ * The Props object provides a singleton helper to read then return the contents of the application's "props.conf".
+ * @documented
+ */
 object Props {
   def readDefault = {
     val p = new Properties()
@@ -81,6 +134,11 @@ object Props {
   }
 }
 
+/**
+ * Props provides the implementation for a custom properties map.  It uses bytecode manipulation to allow matching
+ * method name properties to override actual method calls, for a given class loader's types.
+ * @documented
+ */
 class Props(inputProperties:Map[String,String]) {
   val normalised = inputProperties.map { case (k,v) => k.toLowerCase -> v }
   val lowercaseLookup = inputProperties.map { case (k,_) => k.toLowerCase -> k }
@@ -112,6 +170,11 @@ class Props(inputProperties:Map[String,String]) {
     })
     e.create().asInstanceOf[T]
   }
+
+  /**
+   * Informs this instance that its lifecycle is over.  It prints a list of unused properties to the standard output
+   * stream.
+   */
   def completed() {
     val unused = lowercaseLookup.filterKeys(usedProperties.contains)
     if (unused.nonEmpty) {
@@ -120,5 +183,3 @@ class Props(inputProperties:Map[String,String]) {
     }
   }
 }
-
-
