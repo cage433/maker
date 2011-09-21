@@ -1,6 +1,6 @@
 package starling.browser.internal.HomePage
 
-import java.awt.{Font, Color, Dimension, Cursor}
+import java.awt.{Font, Color, Dimension, Cursor, RenderingHints}
 import java.awt.event.KeyEvent
 import scala.swing._
 import swing.event._
@@ -10,6 +10,7 @@ import starling.browser._
 import common._
 import internal.{HelpPage, RootBrowserBundle, BookmarksPanel, BrowserIcons}
 import osgi.{BundleRemoved, BundleAdded}
+import scala.util.Random
 
 class HomePage
 
@@ -26,6 +27,12 @@ case object StarlingHomePage extends Page {
 }
 
 case class HomePagePageData(version:Version) extends PageData
+
+object StarlingHomePageComponent {
+  private val subTitles = Array("OLAP Platform", "Risk Management Framework", "Risk Management System", "Risk", "OLAP Reporting System", "Risk OLAP")
+  private val r = new Random()
+  def subTitle = subTitles(r.nextInt(subTitles.length))
+}
 
 class StarlingHomePageComponent(context:PageContext, browserSize:Dimension, pageData:PageData) extends MigPanel("insets 0") with PageComponent {
   private val data = pageData match {case d:HomePagePageData => {d}}
@@ -89,13 +96,23 @@ class StarlingHomePageComponent(context:PageContext, browserSize:Dimension, page
       val logo = new FixedImagePanel(logoImage)
 
       val starlingLabel = new Label {
-        text = "S T A R L I N G"
-        font = new Font("Dialog", Font.BOLD, 60)
-        foreground = Color.BLACK
+        text = "STARLING"
+        font = new Font("Dialog", Font.PLAIN, 64)
         maximumSize = new Dimension(Integer.MAX_VALUE, preferredSize.height-20)
+
+        override protected def paintComponent(g:Graphics2D) {
+          g.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON)
+          g.drawString(text, 0, size.height - 1)
+        }
       }
-      val descLabel = new Label("OLAP Platform") {
-        font = font.deriveFont(15.0f)
+
+      val descLabel = new Label(StarlingHomePageComponent.subTitle) {
+        font = new Font("Dialog", Font.PLAIN, 14)
+        foreground = new Color(0,0,0,128)
+        override protected def paintComponent(g:Graphics2D) {
+          g.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON)
+          g.drawString(text, 0, size.height - g.getFontMetrics.getDescent)
+        }
       }
 
       val userImage = BrowserIcons.im("/icons/32x32_user_dark.png")
@@ -113,7 +130,7 @@ class StarlingHomePageComponent(context:PageContext, browserSize:Dimension, page
       val namePanel = new MigPanel("insets 0", rowConstraints = "[p]0[p]") {
         background = Color.WHITE
         add(starlingLabel, "wrap")
-        add(descLabel, "al right")
+        add(descLabel, "al right, gapright 5lp")
       }
 
       add(logo)
