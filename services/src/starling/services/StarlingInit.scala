@@ -213,10 +213,11 @@ class StarlingInit( val props: Props,
   val closedDesks = new ClosedDesks(broadcaster, starlingDB)
 
   val (titanTradeCache : TitanTradeCache, titanServices, logisticsServices, titanInventoryCache) = if (!testMode) {
+    val titanTradeCache = new DefaultTitanTradeCache(props)
     val titanServices = new DefaultTitanServices(props)
     val titanLogisticsServices = new DefaultTitanLogisticsServices(props)
     (
-      new DefaultTitanTradeCache(props),
+      titanTradeCache,
       titanServices,
       titanLogisticsServices,
       new TitanLogisticsInventoryCache(

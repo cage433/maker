@@ -1,4 +1,4 @@
 truncate table RabbitMessages
 
-alter table TitanTrade add payloads [varchar](max) NULL
-alter table TitanTrade add starlingTimestamp [datetime]  NULL
+alter table RabbitMessages add payloads [varchar](max) NULL
+alter table RabbitMessages add starlingTimestamp [datetime]  NULL
