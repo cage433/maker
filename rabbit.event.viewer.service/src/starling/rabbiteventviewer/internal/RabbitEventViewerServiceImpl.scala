@@ -14,10 +14,12 @@ class RabbitEventViewerServiceImpl(eventDatabase:RabbitEventDatabase) extends Ra
     val subject = "Subject"
     val id = "ID"
     val source = "Source"
-    val timestamp = "Timestamp"
+    val timestamp = "Message Time (UTC)"
+    val starlingTimestamp = "Received Time (UK)"
     val host = "Host"
     val pid = "PID"
     val body = "Body"
+    val payloads = "Payloads"
 
     val columns = {
       List(("Event Fields", List(
@@ -27,12 +29,14 @@ class RabbitEventViewerServiceImpl(eventDatabase:RabbitEventDatabase) extends Ra
         StringColumnDefinition(id, "id", table),
         StringColumnDefinition(source, "source", table),
         new TimestampColumnDefinition(timestamp, "timestamp", table),
+        new TimestampColumnDefinition(starlingTimestamp, "starlingTimestamp", table),
         new DayColumnDefinition("Day", table) {
           override val fullSqlName = "timestamp"
         },
         StringColumnDefinition(host, "host", table),
         new IntColumnDefinition(pid, "pid", table),
-        StringColumnDefinition(body, "body", table)
+        StringColumnDefinition(body, "body", table),
+        StringColumnDefinition(payloads, "payloads", table)
       )))
     }
 

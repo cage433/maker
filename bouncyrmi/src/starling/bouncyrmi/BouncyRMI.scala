@@ -89,7 +89,7 @@ object BouncyRMI {
   }
 
   def decode(classLoader:ClassLoader, data:Array[Byte]) = {
-    val in = new ObjectDecoderInputStream(new ByteArrayInputStream(data), classLoader, 20 * 1024 * 1024)
+    val in = new ObjectDecoderInputStream(new ByteArrayInputStream(data), classLoader, 200 * 1024 * 1024)
     in.readObject()
   }
 }
