@@ -13,6 +13,7 @@ import starling.titan.LogisticsServices._
 import starling.titan._
 import starling.services.rpc.FileUtils
 import org.codehaus.jettison.json.JSONObject
+import starling.utils.conversions.RichMapWithErrors._
 
 /**
  * logistics service interface
@@ -105,8 +106,8 @@ case class FileMockedTitanLogisticsInventoryServices() extends TitanLogisticsInv
   //val loadedInventory = loadJsonValuesFromFileUrl(inventoryPath).map(s => EDMInventoryItem.fromJson(new JSONObject(s)).asInstanceOf[EDMInventoryItem])
   val loadedInventory = loadJsonValuesFromFileUrl(inventoryPath).map(s => LogisticsInventoryResponse.fromJson(new JSONObject(s)).asInstanceOf[LogisticsInventoryResponse]).head
   
-  var inventoryMap : Map[String, EDMInventoryItem] = loadedInventory.associatedInventory.map(i => i.oid.contents.toString -> i).toMap
-  val quotaMap : Map[String, EDMLogisticsQuota] = loadedInventory.associatedQuota.map(q => q.quotaName -> q).toMap
+  var inventoryMap : Map[String, EDMInventoryItem] = loadedInventory.associatedInventory.map(i => i.oid.contents.toString -> i).toMap.withException()
+  val quotaMap : Map[String, EDMLogisticsQuota] = loadedInventory.associatedQuota.map(q => q.quotaName -> q).toMap.withException()
 
   //val loadedInventory = (0 until jsonInventory.length()).map(idx => EDMInventoryItem.fromJson(jsonInventory.getJSONObject(idx)).asInstanceOf[EDMInventoryItem]).toList
 //  val assignmentsFile = "/tests/valuationservice/testdata/logisticsEdmAllSalesAssignments.json"

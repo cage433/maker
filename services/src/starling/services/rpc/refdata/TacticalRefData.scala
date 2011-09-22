@@ -18,6 +18,7 @@ import starling.titan.{TitanEdmTradeService, TitanServices}
 import com.trafigura.tradecapture.internal.refinedmetal.{Counterparty, Metal, Market, Shape, Grade, Location, DestinationLocation, GroupCompany}
 import com.trafigura.timer.Timer
 import com.trafigura.edm.shared.types.TitanId
+import starling.utils.conversions.RichMapWithErrors._
 
 /**
  * Tactical ref data, service proxies / data
@@ -43,16 +44,6 @@ case class DefaultTitanServices(props: Props) extends TitanServices {
 
   lazy val titanGetEdmTradesService: EdmGetTrades = new EdmGetTradesResourceProxy(ProxyFactory.create(classOf[EdmGetTradesResource], tradeServiceURL, clientExecutor))
 
-  val defaultMissingKeyExceptionMessage = "Missing key '%s' of type '%s', for values of type '%s'"
-  case class RichMap[K : Manifest, V : Manifest](map : Map[K, V]) {
-    def withException(s : String = defaultMissingKeyExceptionMessage) : Map[K, V] =
-      map.withDefault(k => throw new java.util.NoSuchElementException(s.format(k.toString, manifest[K].erasure.getName, manifest[V].erasure.getName)))
-  }
-  object RichMap {
-    implicit def toRichMap[K : Manifest, V : Manifest](map : Map[K, V]) = RichMap(map)
-  }
-
-  import RichMap._
   // Maps of refdata objects by guid
   lazy val edmMetalByGUID = allTacticalRefDataMetals.map(e => e.guid -> e).toMap.withException()
   lazy val futuresExchangeByID = allTacticalRefDataExchanges.map(e => e.code -> e).toMap.withException()

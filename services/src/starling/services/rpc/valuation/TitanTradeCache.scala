@@ -8,7 +8,7 @@ import java.lang.Exception
 import starling.titan._
 import com.trafigura.edm.shared.types.TitanId
 import starling.utils.{Log, Stopwatch}
-
+import starling.utils.conversions.RichMapWithErrors._
 
 
 /**
@@ -17,8 +17,8 @@ import starling.utils.{Log, Stopwatch}
 
 
 case class DefaultTitanTradeCache(props : Props) extends TitanTradeCache with Log {
-  protected var tradeMap = Map[TitanId, EDMPhysicalTrade]()
-  protected var quotaIDToTradeIDMap = Map[String, TitanId]()
+  protected var tradeMap = Map[TitanId, EDMPhysicalTrade]().withException()
+  protected var quotaIDToTradeIDMap = Map[String, TitanId]().withException()
 
   private lazy val titanTradesService = new DefaultTitanServices(props).titanGetEdmTradesService
   private def getAll() = try {
@@ -52,7 +52,8 @@ case class DefaultTitanTradeCache(props : Props) extends TitanTradeCache with Lo
       log.error("null ids \n%s\n%s".format(nullIds, validIds))
       //assert(false, "Null titan ids found - fatal error")
     }
-    tradeMap = validTrades/*.filter(pt => pt.tstate == CompletedTradeTstate)*/.map(t => (t.titanId, t)).toMap
+    // todo, line below, we really should filter for completed trades only??
+    tradeMap = validTrades/*.filter(pt => pt.tstate == CompletedTradeTstate)*/.map(t => (t.titanId, t)).toMap.withException()
     tradeMap.keySet.foreach(addTradeQuotas)
   }
 
@@ -94,8 +95,8 @@ case class DefaultTitanTradeCache(props : Props) extends TitanTradeCache with Lo
  */
 case class TitanTradeServiceBasedTradeCache(titanTradesService : TitanTradeService) extends TitanTradeCache {
 
-  protected var tradeMap = Map[TitanId, EDMPhysicalTrade]()
-  protected var quotaIDToTradeIDMap = Map[String, TitanId]()
+  protected var tradeMap = Map[TitanId, EDMPhysicalTrade]().withException()
+  protected var quotaIDToTradeIDMap = Map[String, TitanId]().withException()
 
   // Read all trades from Titan and blast our cache
   def updateTradeMap() {
@@ -133,3 +134,4 @@ case class TitanTradeServiceBasedTradeCache(titanTradesService : TitanTradeServi
     }
   }
 }
+

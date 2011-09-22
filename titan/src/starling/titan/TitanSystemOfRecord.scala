@@ -20,18 +20,23 @@ import starling.quantity.Percentage
 import org.joda.time.LocalDate
 import com.trafigura.edm.shared.types.Quantity
 import com.trafigura.tradecapture.internal.refinedmetal._
+import starling.utils.conversions.RichMapWithErrors._
+import StarlingTradeAssignment._
 
 class ExternalTitanServiceFailed(cause : Throwable) extends Exception(cause)
 
-case class StarlingTradeAssignment(quotaName : String, quantity : Quantity, assignmentID : Option[String], inventoryID : Option[String] = None) {
+case class StarlingTradeAssignment(quotaName : String, quantity : Quantity, assignmentID : Option[String] = None, inventoryID : Option[String] = None) {
   def id = starlingTradeId(assignmentID, quotaName)
-
   private def starlingTradeId(assignmentID : Option[String], quotaName : String) : String = {
     assignmentID match {
-      case Some(id) => "A" + id
-      case None => "Q" + quotaName
+      case Some(id) => assignmentPrefix + id
+      case None => quotaPrefix + quotaName
     }
   }
+}
+case object StarlingTradeAssignment {
+  val assignmentPrefix = "A-"
+  val quotaPrefix = "Q-"
 }
 
 
@@ -61,7 +66,7 @@ class TitanSystemOfRecord(
     
     val assignments = logisticsServices.assignmentService.service.getAllAssignments()
     val assignedQuotaNames = assignments.map(_.quotaName)
-    val unassignedQuotas = quotaMap.filterKeys(k => assignedQuotaNames.exists(_ == k))
+    val unassignedQuotas = quotaMap.filterKeys(k => !assignedQuotaNames.exists(_ == k))
 
     // don't think this is a valid state - todo review this check for validity
     val unassignedPurchaseQuotas = unassignedQuotas.keys.map(k => quotaNameToTradeMap(k)).filter(_.direction == EDMTrade.PURCHASE)
@@ -76,7 +81,7 @@ class TitanSystemOfRecord(
      * create a list of all "assignments, some real and some dummy (unallocated) assignments representing unallocated sales assignments"
      */
     val actualAssignments : List[StarlingTradeAssignment] = assignments.map(a => StarlingTradeAssignment(a.quotaName, a.quantity, Some(a.oid.contents.toString), Some(a.inventoryId.toString)))
-    val dummyAssignments : List[StarlingTradeAssignment] = unassignedQuotas.map{ case (k, v) => StarlingTradeAssignment(k, v.detail.pricingSpec.quantity, None)}.toList
+    val dummyAssignments : List[StarlingTradeAssignment] = unassignedQuotas.map{ case (k, v) => StarlingTradeAssignment(k, v.detail.pricingSpec.quantity)}.toList
     val allAssignments : List[StarlingTradeAssignment] = actualAssignments ::: dummyAssignments
 
     val tradeErrors = allAssignments.map(assignment => {
@@ -104,15 +109,16 @@ class TitanSystemOfRecord(
   }
 
   def trade(id: String)(f: (Trade) => Unit) {
-    val tradeAssignment = if (id.startsWith("A")) {
-      val edmAssignment = logisticsServices.assignmentService.service.getAssignmentById(id.substring(1).toInt)
+    import StarlingTradeAssignment._
+    val tradeAssignment = if (id.startsWith(assignmentPrefix)) {
+      val edmAssignment = logisticsServices.assignmentService.service.getAssignmentById(id.substring(assignmentPrefix.size).toInt)
       val quota = quotaMap(edmAssignment.quotaName)
-      tc.toTrade(quota.detail.identifier.value, edmAssignment.quantity, Some(edmAssignment.oid.toString), Some(edmAssignment.inventoryId.toString))
+      tc.toTrade(id, quota.detail.identifier.value, edmAssignment.quantity, Some(edmAssignment.oid.toString), Some(edmAssignment.inventoryId.toString))
     }
-    else if (id.startsWith("Q")) {
-      val quotaName = id.substring(1)
+    else if (id.startsWith(quotaPrefix)) {
+      val quotaName = id.substring(quotaPrefix.size)
       val quota = quotaMap(quotaName)
-      tc.toTrade(quota.detail.identifier.value, quota.detail.pricingSpec.quantity, None, None)
+      tc.toTrade(id, quota.detail.identifier.value, quota.detail.pricingSpec.quantity, None, None)
     }
     else {
       throw new Exception("Unexpeced trade id " + id)
@@ -139,15 +145,15 @@ class TradeConverter(refData : TitanTacticalRefData,
 
 
   def toTrade(starlingTradeAssignment : StarlingTradeAssignment) : Trade = {
-    toTrade(starlingTradeAssignment.quotaName, starlingTradeAssignment.quantity, starlingTradeAssignment.assignmentID, starlingTradeAssignment.inventoryID)
+    toTrade(starlingTradeAssignment.id : String, starlingTradeAssignment.quotaName, starlingTradeAssignment.quantity, starlingTradeAssignment.assignmentID, starlingTradeAssignment.inventoryID)
   }
 
   // used when we have a concrete assignment
   def toTrade(assignment : EDMAssignment) : Trade = {
-    toTrade(assignment.quotaName, assignment.quantity, Some(assignment.oid.contents.toString), Some(assignment.inventoryId.toString))
+    toTrade(assignmentPrefix + assignment.oid.contents.toString, assignment.quotaName, assignment.quantity, Some(assignment.oid.contents.toString), Some(assignment.inventoryId.toString))
   }
 
-  def toTrade(quotaName : String, quantity : Quantity, assignmentID : Option[String], inventoryID : Option[String]) : Trade = {
+  def toTrade(id : String, quotaName : String, quantity : Quantity, assignmentID : Option[String], inventoryID : Option[String]) : Trade = {
 
     val quotaDetail = quotaNameToQuotaMap(quotaName).detail
     require(quotaDetail.deliverySpecs.size == 1, "Require exactly one delivery spec")
@@ -231,12 +237,9 @@ class TradeConverter(refData : TitanTacticalRefData,
       println("NULL DATE  " + edmTrade.titanId)
     }
 
-    val tradeIDName = assignmentID match {
-      case Some(id) => "A" + id.toString
-      case None => "Q" + quotaName
-    }
+
     Trade(
-      TradeID(tradeIDName, TitanTradeSystem),
+      TradeID(id, TitanTradeSystem),
       Day.fromLocalDate(edmTrade.submitted.toLocalDate),
       counterparty,
       attributes,
@@ -373,8 +376,11 @@ trait TitanTradeCache {
 
   def tradeIDFromQuotaID(quotaID: String): TitanId
 
-  def quotaNameToTradeMap : Map[String, EDMPhysicalTrade] = Map() ++ getAllTrades().flatMap{trade =>  trade.asInstanceOf[EDMPhysicalTrade].quotas.map{q => NeptuneId(q.detail.identifier.value).identifier -> trade}}
-  def quotaNameToQuotaMap : Map[String, PhysicalTradeQuota] = Map() ++ getAllTrades().flatMap{trade =>  trade.asInstanceOf[EDMPhysicalTrade].quotas.map{q => NeptuneId(q.detail.identifier.value).identifier -> q}}}
+  def quotaNameToTradeMap : Map[String, EDMPhysicalTrade] =
+    getAllTrades().flatMap{trade =>  trade.asInstanceOf[EDMPhysicalTrade].quotas.map{q => NeptuneId(q.detail.identifier.value).identifier -> trade}}.toMap.withException()
+  def quotaNameToQuotaMap : Map[String, PhysicalTradeQuota] =
+    getAllTrades().flatMap{trade =>  trade.asInstanceOf[EDMPhysicalTrade].quotas.map{q => NeptuneId(q.detail.identifier.value).identifier -> q}}.toMap.withException()
+}
 
 /**
  * Tactical ref data, service proxies / data

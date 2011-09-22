@@ -51,7 +51,7 @@ class TitanTradeStore(db: RichDB, broadcaster:Broadcaster, tradeSystem:TradeSyst
     val schedule = row.getDay("Schedule")
     val expectedSales = row.getDay("ExpectedSales")
 
-    TitanTradeAttributes(Some(assignmentID), quotaID, titanTradeID, Some(inventoryID), groupCompany, comment, submitted, shape, grade, deliveryLocation, destinationLocation, contractFinalised, tolerancePlus, toleranceMinus, schedule, expectedSales)
+    TitanTradeAttributes(Option(assignmentID), quotaID, titanTradeID, Option(inventoryID), groupCompany, comment, submitted, shape, grade, deliveryLocation, destinationLocation, contractFinalised, tolerancePlus, toleranceMinus, schedule, expectedSales)
   }
 
   def pivotInitialState(tradeableTypes:Set[TradeableType[_]]) = {
