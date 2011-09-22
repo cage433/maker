@@ -36,7 +36,7 @@ import starling.rmi.StarlingServer
 import starling.auth.{Client}
 import starling.auth.internal.{RealClient, ClientLogin}
 import starling.reports.ReportService
-import starling.browser.internal.{RunAsUserPage, NotificationKeys, NotificationType, Notification}
+import starling.browser.internal.{NotificationKeys, NotificationType, Notification}
 import starling.rabbiteventviewer.api.RabbitEventViewerService
 
 object StarlingServerNotificationHandlers {

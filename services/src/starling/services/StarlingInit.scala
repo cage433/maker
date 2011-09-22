@@ -314,7 +314,7 @@ class StarlingInit( val props: Props,
     val externalHostname = props.ExternalHostname()
     val xlloopUrl = props.XLLoopUrl()
     val rmiPort = props.RmiPort()
-    val webStartServlet = new WebStartServlet("webstart", serverName, externalURL, "starling.launcher.Launcher",
+    val webStartServlet = new WebStartServlet("webstart", serverName, externalURL, "starling.gui.Launcher",
       List(externalHostname, rmiPort.toString), xlloopUrl)
     val cannedWebStartServlet = new WebStartServlet("cannedwebstart", serverName, externalURL,
       "starling.gui.CannedLauncher", List(), xlloopUrl)
