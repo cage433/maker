@@ -7,12 +7,23 @@ import swing.event.Event
 import starling.manager._
 import starling.utils.{Receiver, Log, Broadcaster, ThreadUtils}
 
+/**
+ * Defines the rmiPort=15715 and starlingServiceRmiPort=11223 default properties.
+ *
+ * @documented
+ */
 //UnrecognisedTradeIDException
 class BouncyRMIServerProps {
   def rmiPort:Int = 15715
   def starlingServiceRmiPort:Int = 11223
 }
 
+/**
+ * BouncyRMIServerBromptonActivator is an implementation to create, initialise, register and start the Starling GUI and
+ * Titan RMI servers.
+ * 
+ * @documented
+ */
 class BouncyRMIServerBromptonActivator extends BromptonActivator {
   type Props = BouncyRMIServerProps
 
@@ -21,6 +32,9 @@ class BouncyRMIServerBromptonActivator extends BromptonActivator {
   var rmiServerForGUI:BouncyRMIServer = _
   var rmiServerForTitan : BouncyRMIServer = _
 
+  /**
+   * Creates, initialises, registers and starts the RMI servers.
+   */
   def init(context: BromptonContext, props: BouncyRMIServerProps) {
     val realProps = context.awaitService(classOf[starling.props.Props])
     val authHandler = context.awaitService(classOf[AuthHandler])
@@ -62,8 +76,14 @@ class BouncyRMIServerBromptonActivator extends BromptonActivator {
 
   }
 
+  /**
+   * does nothing
+   */
   def start(context: BromptonContext) {}
 
+  /**
+   * does nothing
+   */
   def stop(context: BromptonContext) {}
 }
 

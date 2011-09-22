@@ -10,14 +10,27 @@ import starling.reports.internal.{ReportHandler, ReportServiceImpl, UserReportsS
 import starling.db.{DB, MarketDataStore}
 import starling.manager.{ExportGuiRMIProperty, ExportExcelProperty, BromptonContext, BromptonActivator}
 
+/**
+ * Empty properties definition.
+ *
+ * @documented
+ */
 class ReportsProps
 
+/**
+ * ReportsBromptonActivator creates, initialises then registers the report services in its init method.
+ *
+ * @documented
+ */
 class ReportsBromptonActivator extends BromptonActivator {
 
   type Props = ReportsProps
 
   def defaults = new ReportsProps
 
+  /**
+   * Creates, initialises then registers the reports services.
+   */
   def init(context: BromptonContext, props: ReportsProps) {
 
     val realProps = context.awaitService(classOf[starling.props.Props])
@@ -47,7 +60,13 @@ class ReportsBromptonActivator extends BromptonActivator {
     context.registerService(classOf[MarketDataPageIdentifierReaderProvider], reportRecordingMarketDataReaderProvider)
   }
 
+  /**
+   * does nothing.
+   */
   def start(context: BromptonContext) {}
 
+  /**
+   * does nothing.
+   */
   def stop(context: BromptonContext) {}
 }
