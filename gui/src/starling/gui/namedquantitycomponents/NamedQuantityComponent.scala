@@ -160,10 +160,16 @@ class FunctionNamedQuantityPanel(func:FunctionNamedQuantity, fi:ExtraFormatInfo)
 
 class VerticalFunctionNamedQuantityPanel(func:FunctionNamedQuantity, fi:ExtraFormatInfo) extends MigPanel("insets 0, gap 0") with UpdateableNamedQuantityComponent {
   background = ExplanationPanelBackgroundColour
-  val funcLabel = label(func.functionName, quantityText(func.result, fi))
+  val funcPanel = new MigPanel("insets 0, gap 0") {
+    background = ExplanationPanelBackgroundColour
+    val qt = quantityText(func.result, fi)
+    val funcLabel = label(func.functionName + " = ", qt)
+    add(funcLabel)
+    add(label(qt))
+  }
   val allPanels = new ListBuffer[UpdateableNamedQuantityComponent]()
 
-  add(funcLabel, "ay top")
+  add(funcPanel, "ay top")
 
   val table = func.parameters.map(row(_, fi))
   if (!table.contains(None)) {
@@ -223,7 +229,7 @@ class VerticalFunctionNamedQuantityPanel(func:FunctionNamedQuantity, fi:ExtraFor
   }
 
   def updateExtraInfo(newFI:ExtraFormatInfo) {
-    funcLabel.tooltip = quantityText(func.result, newFI)
+    funcPanel.funcLabel.tooltip = quantityText(func.result, newFI)
     allPanels.foreach(_.updateExtraInfo(newFI))
   }
 }
