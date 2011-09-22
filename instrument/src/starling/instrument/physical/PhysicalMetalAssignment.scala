@@ -160,11 +160,17 @@ case class UnknownPricingSpecification(
 
   def price(env: Environment) = {
     val totalFixed = fixations.map(_.fraction).sum
-    val thirdWednesday = month.firstDay.dayOnOrAfter(DayOfWeek.wednesday) + 14
-    val unfixedPriceDay = if (env.marketDay >= thirdWednesday.endOfDay)
-      month.lastDay.thisOrPreviousBusinessDay(index.businessCalendar)
-    else
-      thirdWednesday
+    val lme = FuturesExchangeFactory.LME
+    val unfixedPriceDay : Day = index.market.asInstanceOf[FuturesMarket].exchange match {
+      case `lme` => {
+        val thirdWednesday = month.firstDay.dayOnOrAfter(DayOfWeek.wednesday) + 14
+        if (env.marketDay >= thirdWednesday.endOfDay)
+          month.lastDay.thisOrPreviousBusinessDay(index.businessCalendar)
+        else
+          thirdWednesday
+      }
+      case _ => month.lastDay.thisOrPreviousBusinessDay(index.market.businessCalendar)
+    }
     val unfixedFraction = 1.0 - totalFixed
     val fixedPayment = Quantity.sum(fixations.zipWithIndex.map{ case (f, i) => f.price.named("Fix_" + i) * f.fraction}).named("Fixed")
     val unfixedPayment = (index.fixingOrForwardPrice(env, unfixedPriceDay) * unfixedFraction).named("Unfixed")
