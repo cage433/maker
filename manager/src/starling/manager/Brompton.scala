@@ -15,6 +15,7 @@ class Brompton
  * BromptonActivator provides a contract for initialising, starting and stopping a service that may wish to register
  * itself with a container/context) and that requires properties.
  *
+ * @diagram dev/services/starling/docs/Server Activation.png
  * @see BromptonContext
  * @documented
  */
@@ -73,6 +74,7 @@ trait BromptonServiceRegistration {
  *
  * @see BromptonServiceRegistration
  * @see BromptonServiceCallback
+ * @diagram dev/services/starling/docs/Server Activation.png
  * @documented
  */
 trait BromptonContext {
@@ -110,6 +112,7 @@ trait BromptonContext {
 
 /**
  * The Props object provides a singleton helper to read then return the contents of the application's "props.conf".
+ * @diagram dev/services/starling/docs/Server Activation.png
  * @documented
  */
 object Props {
@@ -137,6 +140,7 @@ object Props {
 /**
  * Props provides the implementation for a custom properties map.  It uses bytecode manipulation to allow matching
  * method name properties to override actual method calls, for a given class loader's types.
+ * @diagram dev/services/starling/docs/Server Activation.png
  * @documented
  */
 class Props(inputProperties:Map[String,String]) {
