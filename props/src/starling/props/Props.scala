@@ -1,9 +1,7 @@
 package starling.props
 
-
 import java.net.InetAddress
 import starling.props.PropsHelper._
-import starling.LIMServer
 import java.io.File
 
 class Props(starlingProps:Map[String,String], trafiguraProps : Map[String, String]) extends PropsHelper(starlingProps, trafiguraProps) {
@@ -78,6 +76,7 @@ class Props(starlingProps:Map[String,String], trafiguraProps : Map[String, Strin
 
   object KerberosPassword extends StringProperty("suvmerinWiv0")
   object ServerPrincipalName extends StringProperty("STARLING-TEST/dave-linux")
+  object UseAuth extends BooleanProperty(false)
   object NoMP extends BooleanProperty(false)
   object ImportsBookClosesFromEAI extends BooleanProperty(true)
 

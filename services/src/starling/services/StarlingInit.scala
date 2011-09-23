@@ -17,7 +17,6 @@ import starling.neptune.{RefinedFixationSystemOfRecord, RefinedFixationTradeStor
 import starling.curves.readers._
 import trade.ExcelTradeReader
 import trinity.{TrinityUploader, XRTGenerator, FCLGenerator}
-import starling.dbx.ConnectionParams
 import starling.utils.ImplicitConversions._
 import starling.tradeimport.{ClosedDesks, TradeImporterFactory, TradeImporter}
 import starling.tradestore.TradeStores

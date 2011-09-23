@@ -21,6 +21,7 @@ import starling.eai.TreeID
 import starling.utils.{CaseInsensitive, Log}
 import starling.instrument.utils.StarlingXStream
 import starling.dbx._
+import starling.props.ConnectionParams
 
 
 trait DBTrait[RSR <: ResultSetRow] extends Log {
@@ -383,7 +384,7 @@ class DB(val dataSource: DataSource) extends DBTrait[ResultSetRow] {
 object DB {
   import java.sql.Connection._
 
-  def apply(connectionParams: ConnectionParams) = new DB(connectionParams.dataSource)
+  def apply(connectionParams: ConnectionParams) = new DB(DataSourceFactory.getDataSource(connectionParams.url, connectionParams.username, connectionParams.password))
 
   val DefaultIsolationLevel = TRANSACTION_READ_COMMITTED
 }

@@ -22,6 +22,7 @@ class BouncyRMIServerBromptonActivator extends BromptonActivator {
   var rmiServerForTitan : BouncyRMIServer = _
 
   def init(context: BromptonContext, props: BouncyRMIServerProps) {
+    val realProps = context.awaitService(classOf[starling.props.Props])
     val authHandler = context.awaitService(classOf[AuthHandler])
     val receiver = new Receiver {
       def event(event: Event) = {
@@ -31,13 +32,13 @@ class BouncyRMIServerBromptonActivator extends BromptonActivator {
     context.registerService(classOf[Receiver], receiver)
 
     rmiServerForGUI = new BouncyRMIServer(
-      props.rmiPort, authHandler, BouncyRMI.CodeVersionUndefined, Set("starling.gui.api.UnrecognisedTradeIDException")
+      realProps.RmiPort(), authHandler, BouncyRMI.CodeVersionUndefined, Set("starling.gui.api.UnrecognisedTradeIDException")
     )
 
     Log.info("Initialize public services for Titan components, service port: " + props.starlingServiceRmiPort)
 
     rmiServerForTitan = new BouncyRMIServer(
-      props.starlingServiceRmiPort,
+      realProps.StarlingServiceRmiPort(),
       AuthHandler.Dev, BouncyRMI.CodeVersionUndefined,
       Set("com.trafigura.services.valuation.TradeManagementCacheNotReady", "java.lang.IllegalArgumentException")
     )

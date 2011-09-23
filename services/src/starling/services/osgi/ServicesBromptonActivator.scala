@@ -28,6 +28,8 @@ class ServicesBromptonActivator extends BromptonActivator {
 
     val props = PropsHelper.defaultProps
 
+    context.registerService(classOf[starling.props.Props], props)
+
     val bromptonMarketDataReaderProviders = new BromptonTrackerBasedMarketDataPageIdentifierReaderProviders(context)
 
     starlingInit = new StarlingInit(

@@ -15,7 +15,6 @@ import javax.xml.transform.TransformerFactory
 import trade.{ExcelTradeReader, ExcelTradesRange}
 import xml.{Utility, Node}
 import starling.props.Props
-import starling.dbx.ConnectionParams
 import starling.db._
 import collection.immutable.{TreeSet, SortedMap, TreeMap}
 import starling.marketdata._

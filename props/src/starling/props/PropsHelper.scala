@@ -1,7 +1,5 @@
 package starling.props
 
-
-import starling.dbx.ConnectionParams
 import java.io._
 import java.lang.reflect.Modifier
 import java.util.{Properties => JProperties}

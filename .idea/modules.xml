@@ -24,6 +24,7 @@
       <module fileurl="file://$PROJECT_DIR$/osgirun/osgirun.iml" filepath="$PROJECT_DIR$/osgirun/osgirun.iml" />
       <module fileurl="file://$PROJECT_DIR$/pivot/pivot.iml" filepath="$PROJECT_DIR$/pivot/pivot.iml" />
       <module fileurl="file://$PROJECT_DIR$/pivot.utils/pivot.utils.iml" filepath="$PROJECT_DIR$/pivot.utils/pivot.utils.iml" />
+      <module fileurl="file://$PROJECT_DIR$/props/props.iml" filepath="$PROJECT_DIR$/props/props.iml" />
       <module fileurl="file://$PROJECT_DIR$/quantity/quantity.iml" filepath="$PROJECT_DIR$/quantity/quantity.iml" />
       <module fileurl="file://$PROJECT_DIR$/rabbit.event.viewer.api/rabbit.event.viewer.api.iml" filepath="$PROJECT_DIR$/rabbit.event.viewer.api/rabbit.event.viewer.api.iml" />
       <module fileurl="file://$PROJECT_DIR$/rabbit.event.viewer.service/rabbit.event.viewer.service.iml" filepath="$PROJECT_DIR$/rabbit.event.viewer.service/rabbit.event.viewer.service.iml" />

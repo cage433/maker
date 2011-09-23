@@ -82,13 +82,13 @@ object StarlingBuild extends Build{
     "bouncyrmi", 
     file("./bouncyrmi"),
     settings = standardSettings
-  ) dependsOn(manager, auth)
+  ) dependsOn(manager, auth, props)
 
   lazy val auth = Project(
     "auth", 
     file("./auth"),
     settings = standardSettings
-  ) dependsOn (utils, manager)
+  ) dependsOn (utils, manager, props)
 
   lazy val concurrent = Project(
     "concurrent", 
@@ -101,6 +101,12 @@ object StarlingBuild extends Build{
     file("./quantity"),
     settings = standardSettings
   ) dependsOn (utils)
+
+  lazy val props = Project(
+    "props",
+    file("./props"),
+    settings = standardSettings
+  ) dependsOn(starlingApi, utils)
 
   lazy val daterange = Project(
     "daterange", 
@@ -252,7 +258,7 @@ object StarlingBuild extends Build{
     "databases", 
     file("./databases"),
     settings = standardSettings 
-  ) dependsOn(curves % "test->test", pivot , guiapi , concurrent , auth , starlingApi, dbx )
+  ) dependsOn(curves % "test->test", pivot , guiapi , concurrent , auth , starlingApi, dbx, props)
 
   lazy val titan = Project(
     "titan", 
