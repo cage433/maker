@@ -46,3 +46,7 @@ GRTAGS
 GSYMS
 GTAGS
 dummy-sbt-vim-hack
+osgi-gui-cache/*
+osgi-server-cache/*
+set-classpath.sh
+

@@ -5,7 +5,7 @@ import starling.db.DBWriter
 import starling.richdb.RichDB
 import starling.utils.Log
 import starling.market.{Freight, Market, FuturesMarket}
-import starling.utils.sql.QueryBuilder._
+import starling.dbx.QueryBuilder._
 import starling.daterange.DateRange
 import starling.instrument.{Future}
 import starling.services.StarlingInit

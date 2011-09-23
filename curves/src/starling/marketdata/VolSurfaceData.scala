@@ -122,6 +122,7 @@ case class OilVolSurfaceData(
     "must match the number of skews (" + skews.size + ")")
 
   def nonEmpty = periods.nonEmpty
+  def size = periods.size
 
   if (skews.size > 0) assert(skews(0).size == periods.size, "The number of skew columns (" + skews(0).size + ") must match the number of periods (" + periods.size + ")")
 
@@ -204,9 +205,10 @@ case class BradyFXVolSurfaceData(
   vols : Array[Array[Percentage]] //deltas, then days
 )
   extends MarketData {
-  override def toString =
-    "BradyFXVolSurfaceData: \n"+
-    deltas.toList + "\n " + vols.map(_.toList).mkString("\n ") 
+
+  override def toString = "BradyFXVolSurfaceData: \n" + deltas.toList + "\n " + vols.map(_.toList).mkString("\n ")
+
+  def size = vols.size
 }
 
 
@@ -262,6 +264,7 @@ case class BradyMetalVolsDataKey(market : CommodityMarket) extends MarketDataKey
 case class BradyMetalVolsData(vols:SortedMap[(Double, DateRange), Percentage])
   extends MarketData
 {
+  def size = vols.size
   def days = (Set() ++ vols.map(_._1._2.asInstanceOf[Day])).toList.sortWith(_ < _)
   def months:List[Month] = (Set() ++ vols.map(_._1._2.asInstanceOf[Month])).toList.sortWith(_ < _)
   def volsForPeriod(period:DateRange): Map[Double, Percentage] = Map() ++ vols.filter(t=>period.contains(t._1._2)).map(t=>t._1._1 -> t._2)

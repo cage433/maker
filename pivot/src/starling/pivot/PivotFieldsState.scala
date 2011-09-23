@@ -312,16 +312,26 @@ case class ColumnTrees(trees:List[ColumnTree]) {
   def topMeasureFields:List[Field] = trees.flatMap(_.topMeasureFields)
   def maxDepth:Int = (0 :: trees.map(_.maxDepth)).max
 
-  def buildPathsWithPadding:List[ColumnStructurePath] = {
+  def buildPathsWithPadding(depths:Map[Field,Int]):List[ColumnStructurePath] = {
     val paths = buildPaths()
 
-    val foo:Map[Field, List[(Field, Int)]] = paths.flatMap(_.path.zipWithIndex.map{case ((f,pos), i) => {
-      (f, i)
-    }}).groupBy(_._1)
-    val bar:Map[Field, Int] = foo.mapValues( list => list.map(_._2).max)
+    val allIndicesOfEachField:Map[Field, List[Int]] = paths.flatMap{ structurePath => {
+      val fieldDepths:Map[Field, Int] = structurePath.path.map{ case(field, _) => field -> depths.getOrElse(field, 1) }.toMap
+      var d = 0
+      var x = new scala.collection.mutable.ArrayBuffer[(Field,Int)]()
+      fieldDepths.foreach { case (field,depth) => {
+        x += ( (field,d) )
+        d += depth
+      }}
+      x
+      }
+    }.groupBy(_._1).mapValues( _.map(_._2) )
+    val highestIndexOfEachField:Map[Field, Int] = allIndicesOfEachField.mapValues( _.max )
     paths.map { path => {
-      val paddedPath = path.path.zipWithIndex.flatMap { case ((field,pos),index) => {
-        val nullsRequired = bar(field) - index
+      var index = 0
+      val paddedPath = path.path.flatMap { case (field,pos) => {
+        val nullsRequired = highestIndexOfEachField(field) - index
+        index += depths.getOrElse(field, 1) + nullsRequired
         List.fill(nullsRequired)( (Field.NullField, pos)) ::: List( (field,pos))
       }}
       path.copy(path=paddedPath)

@@ -1,0 +1,12 @@
+<ivy-module version="1.0" xmlns:e="http://ant.apache.org/ivy/extra">
+  <info organisation="trafigura" module="loopyxl" />
+  <configurations>
+    <conf name="default" transitive="false"/>
+  </configurations>
+  <dependencies>
+    <dependency org="com.google.protobuf" name="protobuf-java" rev="2.3.0" />
+  </dependencies>
+</ivy-module>
+
+
+

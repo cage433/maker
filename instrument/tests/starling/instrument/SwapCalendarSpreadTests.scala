@@ -4,7 +4,7 @@ import org.testng.annotations._
 import org.testng.Assert._
 import starling.quantity.UOM._
 import starling.quantity.Quantity
-import starling.utils.QuantityTestUtils._
+import starling.quantity.utils.QuantityTestUtils._
 import starling.market._
 import starling.curves._
 import starling.daterange._
@@ -167,12 +167,12 @@ class SwapCalendarSpreadTests extends TestMarketTest {
           case _: ForwardPriceKey => Quantity(100, USD / MT)
         }
 
-        def marketDay = md.endOfDay()
+        def marketDay = md.endOfDay
       }
     ).undiscounted
 
     val keys = swap.asUtpPortfolio(md).portfolio.keys.map {
-      utp => utp.priceAndVolKeys(md.endOfDay())
+      utp => utp.priceAndVolKeys(md.endOfDay)
     }
 
     assertFalse(keys.isEmpty)

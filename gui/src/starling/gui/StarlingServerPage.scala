@@ -1,38 +1,32 @@
 package starling.gui
 
 import api._
-import java.awt.image.BufferedImage
 import pages.{TimestampChooser}
 import starling.rmi.StarlingServer
-import swing.event.Event
-import javax.imageio.ImageIO
-import java.io.{ByteArrayInputStream, ByteArrayOutputStream, BufferedOutputStream}
-import java.util.concurrent.{Callable, Future, Executors, CountDownLatch}
-import swing.{Publisher, Button, Component}
-import ref.SoftReference
-import javax.swing.border.Border
-import java.awt.{Dimension, Graphics2D}
 import starling.daterange.{Day, Timestamp}
 import collection.immutable.TreeSet
 import collection.SortedSet
-import javax.swing.BorderFactory
-import starling.eai.Book
 import starling.auth.User
-import java.awt.{Component=>AWTComp}
 import starling.browser._
-import internal.Notification
 import service.internal.HeterogeneousMap
+import starling.reports.ReportService
 
 trait StarlingServerPage extends Page {
   def bundle = "StarlingServer"
   type SC = StarlingServerContext
-  def createServerContext(sc:ServerContext) = new StarlingServerContext(sc.lookup(classOf[StarlingServer]))
+  def createServerContext(sc:ServerContext) = new StarlingServerContext(
+    sc.lookup(classOf[StarlingServer]),
+    sc.lookup(classOf[ReportService])
+  )
 }
 trait StarlingBookmark extends Bookmark {
   def createStarlingPage(day:Option[Day], serverContext:StarlingServerContext, context:PageContext):Page
   def createPage(day:Option[BrowserDay], serverContext:ServerContext, context:PageContext):Page = {
     val realDay = day.map( d => Day(d.year, d.month, d.dayOfMonth))
-    createStarlingPage(realDay, new StarlingServerContext(serverContext.lookup(classOf[StarlingServer])), context)
+    createStarlingPage(realDay, new StarlingServerContext(
+      serverContext.lookup(classOf[StarlingServer]),
+      serverContext.lookup(classOf[ReportService])
+    ), context)
   }
 }
 
@@ -64,12 +58,15 @@ case class StarlingLocalCache(localCache:HeterogeneousMap[LocalCacheKey]) {
     }
   }
 
+  def latestDeskTradeTimestamp(desk:Desk) = localCache(DeskCloses)(desk)(TradeTimestamp.magicLatestTimestampDay).head
+
+
   def deskCloses(desk: Option[Desk]): List[TradeTimestamp] = desk.map(deskCloses).getOrElse(Nil)
   def deskCloses(desk: Desk): List[TradeTimestamp] = {
-    localCache(DeskCloses).get(desk).map(closes => closes.values.flatten.toList.sortWith(_.timestamp > _.timestamp)).getOrElse(Nil)
+    localCache(DeskCloses).get(desk).map(closes => closes.values.flatten.toList.sortWith(_ > _)).getOrElse(Nil)
   }
 
-  def traderBookLookup: Map[User, (Book, Desk)] = localCache(TradersBookLookup)
+  def traderBookLookup: Map[User, List[Desk]] = localCache(TradersBookLookup)
 
   def curveTypes = localCache(CurveTypes)
 

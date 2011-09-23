@@ -6,6 +6,7 @@ import starling.utils.ImplicitConversions._
 import starling.utils.Pattern._
 import scalaz._
 import Scalaz._
+import java.util.concurrent.atomic.AtomicInteger
 
 class StarlingEnum[T](theType:Class[T], namer: T => String, ignoreCase: Boolean = false, otherTypes: List[Class[_]] = Nil) {
   val types = theType :: otherTypes
@@ -22,7 +23,7 @@ class StarlingEnum[T](theType:Class[T], namer: T => String, ignoreCase: Boolean 
   lazy val sortIndex = values.zipWithIndex.toMap
   private lazy val valuesByName = values.toMapWithKeys(v => toCase(namer(v)))
 
-  def fromName(name: String) = find(name).getOrElse(throwUnknown(name))
+  def fromName(name: String): T = find(name).getOrElse(throwUnknown(name))
   def fromName(name: Option[String]): Option[T] = name.map(fromName)
   def find(name: String) = valuesByName.get(toCase(name))
   val Parse: Extractor[Any, T] = Extractor.from[Any](value => find((value ?? "").toString))

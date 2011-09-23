@@ -22,7 +22,7 @@ object GuiUtils {
       if (b) separator.foreground = colour else separator.foreground = GuiUtils.BorderColour
       separator.repaint()
     }
-    val colour = Color.BLUE.darker
+    val colour = GuiUtils.BlueTextColour
     private val textLabel = new Label(text) {
       font = UIManager.getFont("TitledBorder.font")
       foreground = colour
@@ -37,7 +37,7 @@ object GuiUtils {
   def CentredLabelWithSeparator(text:String) = new MigPanel("insets 0") {
     opaque = false
     background = GuiUtils.ClearColour
-    val colour = Color.BLUE.darker
+    val colour = GuiUtils.BlueTextColour
     add(new Separator {
       foreground = colour
       background = colour.brighter
@@ -143,16 +143,16 @@ object GuiUtils {
   val BlendedEditableCellColour = TableSelectedColour.blend(EditableCellColour, BlendFraction)
   val BlendedHeaderColour = TableSelectedColour.blend(PanelBackgroundColour, BlendFraction)
 
+  val BlueTextColour = new Color(0,0,178)
+
   lazy val DisabledBorderColour = UIManager.getColor("controlShadow")
   lazy val BorderColour = UIManager.getColor("controlDkShadow")
   lazy val DisabledComboBackground = UIManager.getColor("ComboBox.disabledBackground")
 
-  def setLookAndFeel() {
-    val platform = PlatformDefaults.getPlatform
-    if (platform == PlatformDefaults.MAC_OSX) {
-      PlatformDefaults.setPlatform(PlatformDefaults.WINDOWS_XP)
-    }
+  val StartPageInsets = "20lp"
 
+  def setLookAndFeel() {
+    PlatformDefaults.setPlatform(PlatformDefaults.GNOME)
     PlasticLookAndFeel.setTabStyle(PlasticLookAndFeel.TAB_STYLE_METAL_VALUE)
     UIManager.setLookAndFeel(LookAndFeel)
     val backColour = PanelBackgroundColour

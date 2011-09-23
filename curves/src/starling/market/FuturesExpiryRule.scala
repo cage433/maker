@@ -238,7 +238,7 @@ abstract class FuturesExpiryRules(businessCalendars: BusinessCalendars) {
     // The 15th day of the spot month (postponed if legal holidays)
     // http://www.shfe.com.cn/Ehome/contracts.jsp?&subjectpid=9&subjectid=904&startpage=8####
     def lastTradingDayOfMonth(m: Month): Day = {
-      (m.firstDay + 15).thisOrNextBusinessDay(businessCalendars.SFS)
+      (m.firstDay + 14).thisOrNextBusinessDay(businessCalendars.SFS)
     }
 
     /**

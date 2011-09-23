@@ -8,7 +8,7 @@ import starling.richdb.{RichDB, RichResultSetRow}
 import starling.db.{RefinedAssignmentTradeSystem}
 import starling.market.{Commodity, NeptunePricingExchange, FuturesMarket}
 import starling.utils.Reflection
-import starling.trade.{Trade, TradeID}
+import starling.instrument.{Trade, TradeID}
 import starling.systemofrecord.{SystemOfRecordBackedByADatabase, InstrumentReader, SystemOfRecord}
 
 class RefinedAssignmentSystemOfRecord(externalDB : RichDB) extends SystemOfRecordBackedByADatabase(externalDB){

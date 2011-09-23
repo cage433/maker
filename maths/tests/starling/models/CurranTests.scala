@@ -1,7 +1,7 @@
 package starling.models
 
 import org.scalatest.testng.TestNGSuite
-import starling.utils.QuantityTestUtils._
+import starling.quantity.utils.QuantityTestUtils._
 import starling.quantity.Quantity
 import org.testng.Assert._
 import starling.daterange._

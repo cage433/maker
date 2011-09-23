@@ -79,7 +79,7 @@ class Patch105_RenameMarketsToEAINames extends Patch {
         }
       }
 
-      starlingInit.marketDataStore.importFor(Day.today.previousWeekday, MarketDataSet("LIM"))
+      starlingInit.marketDataStore.importFor(Day.today.previousWeekday, MarketDataSet.fromName("LIM"))
     }
   }
 

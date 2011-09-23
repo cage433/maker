@@ -70,7 +70,7 @@ object EAIAndStarlingMarketCompare {
 
   def main(args: Array[String]) {
     val props = PropsHelper.defaultProps
-    val init = StarlingInit.devInstance
+    val init = StarlingInit.runningDevInstance
     init.start
     val eai = new EAIMarketLookup(init.eaiSqlServerDB, init.expiryRules)
     val starling = new StarlingMarketLookup(init.starlingDB, init.businessCalendars, init.expiryRules)

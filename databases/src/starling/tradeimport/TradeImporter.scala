@@ -10,8 +10,9 @@ import starling.daterange.{Timestamp, DayAndTime, Day}
 import starling.utils.{NamedThreadFactory, Log, Stopwatch}
 import starling.db._
 import starling.tradestore.{TradeStore}
-import starling.trade.{Trade, TradeID, TradeSystem, TradeAttributes}
-import starling.utils.sql.Clause
+import starling.instrument.Trade
+import starling.instrument.{TradeID, TradeSystem, TradeAttributes}
+import starling.dbx.Clause
 import collection.mutable.{ArrayBuffer, HashSet => MHashSet}
 
 class TradeImporterFactory(

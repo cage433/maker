@@ -3,14 +3,14 @@ package starling.quantity
 import starling.quantity.UOM._
 import math.{abs => mabs}
 import java.io.Serializable
-import starling.utils.{MathUtil, Summable}
+import utils.Summable
+import starling.utils.{MathUtil}
 import starling.utils.ImplicitConversions._
 import starling.pivot.{StackTrace, PivotQuantity}
 import java.lang.String
 import starling.utils.ImplicitConversions._
 import starling.utils.Pattern._
 import java.text.DecimalFormat
-import starling.quantity.Quantity
 
 class QuantityDouble(d : Double){
   def apply(uom : UOM) = Quantity(d, uom)

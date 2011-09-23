@@ -6,6 +6,7 @@ import org.testng.Assert._
 import starling.quantity.Quantity
 import starling.quantity.UOM._
 import ScalaTestUtils._
+import starling.quantity.utils.SummingMap
 
 class TestSummingMap{
   @Test

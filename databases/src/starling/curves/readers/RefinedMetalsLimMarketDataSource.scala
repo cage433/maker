@@ -22,8 +22,8 @@ import starling.utils.ImplicitConversions._
 case class RefinedMetalsLimMarketDataSource(limServer: LIMServer) extends MarketDataSource with Log {
   private val fixingsSources = PriceFixingsHistoryDataType → (List(LMEFixings, LIBORFixings, BloombergTokyoCompositeFXRates,
     BalticFixings,
-    new MonthlyFuturesFixings(Trafigura.Bloomberg.Futures.Shfe, Settle),
-    new MonthlyFuturesFixings(Trafigura.Bloomberg.Futures.Comex, Close)) ::: SpotFXFixings.all)
+    new MonthlyFuturesFixings(Trafigura.Bloomberg.Futures.Shfe, FuturesExchangeFactory.SFS.fixingLevel),
+    new MonthlyFuturesFixings(Trafigura.Bloomberg.Futures.Comex, FuturesExchangeFactory.COMEX.fixingLevel)) ::: SpotFXFixings.all)
   private val spotFXSources = SpotFXDataType → List(BloombergGenericFXRates, CFETSSpotFXFixings)
   private val priceSources = PriceDataType → List(
     new PriceLimSource(new LMELIMRelation(Trafigura.Bloomberg.Metals.Lme, LMEClose)),
@@ -61,7 +61,7 @@ case class RefinedMetalsLimMarketDataSource(limServer: LIMServer) extends Market
       .debugV(entries => "%s (%s): %s values" % (source.getClass.getSimpleName, source.description.mkString(", "), countData(entries)))
   }
 
-  private def countData(entries: List[MarketDataEntry]) = entries.map(_.data.size.getOrElse(0)).sum
+  private def countData(entries: List[MarketDataEntry]) = entries.map(_.data.size).sum
 }
 
 case class Prices[Relation](relation: Relation, priceByLevel: Map[Level, Double], observationDay: Day) {
@@ -139,7 +139,7 @@ object LMEFixings extends LimSource(List(Ask, Bid)) {
   case class LMEFixingRelation(ring: ObservationTimeOfDay, market: CommodityMarket, tenor: Tenor)
 
   private val tenors = List(Tenor.CASH, Tenor(Month, 3), Tenor(Month, 15), Tenor(Month, 27))
-  private val rings = List(AMR1, Official, PMR1, Unofficial)
+  private val rings = List(LME_AMR1, LME_Official, LME_PMR1, LME_Unofficial)
 
   def relationsFrom(connection: LIMConnection) = for (market <- LME.markets; ring <- rings; tenor <- tenors) yield {
     (LMEFixingRelation(ring, market, tenor), "TRAF.LME.%S.%S.%s" % (market.commodity, ring, tenor))

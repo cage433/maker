@@ -1,7 +1,9 @@
 package starling.eai.instrumentreaders
 
 import starling.richdb.{RichDB, RichResultSetRow}
-import starling.utils.sql.QueryBuilder._
+import starling.dbx.QueryBuilder._
+import starling.dbx.Clause
+import starling.dbx.Query
 import starling.db.EAITradeSystem
 import starling.tradestore.eai.{EAITradeAttributes}
 import starling.eai.TreeID
@@ -10,11 +12,11 @@ import starling.daterange.Day._
 import starling.instrument._
 import starling.quantity.Quantity
 import starling.quantity.UOM._
-import starling.trade.{TradeID, Trade}
+import starling.instrument.{TradeID, Trade}
 import starling.market._
 import starling.utils.{Log, Reflection}
-import starling.utils.sql.Clause
-import starling.utils.sql.Query
+import starling.dbx.Clause
+import starling.dbx.Query
 import starling.systemofrecord.{SystemOfRecordBackedByADatabase, InstrumentReader, SystemOfRecord}
 
 /**
@@ -145,13 +147,6 @@ case class EAISystemOfRecord(externalDB: RichDB, bookID: Int, downloadID: Int) e
 }
 
 object EAISystemOfRecord {
-  val LONDON_DERIVS_BOOK = 43
-  val GasolineSpec = 149
-  val LONDON_DERIVS_OPTIONS_BOOK = 173
-  val CrudeSpecNorthSea = 197
-  val HoustonDerivatives = 190
-  val BOOKS = List(LONDON_DERIVS_BOOK, LONDON_DERIVS_OPTIONS_BOOK, CrudeSpecNorthSea, GasolineSpec, HoustonDerivatives)
-
   val ET_OPTION = 1
   val FUTURE = 2
   val SWAP = 3

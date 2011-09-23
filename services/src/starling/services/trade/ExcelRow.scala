@@ -1,20 +1,21 @@
 package starling.services.trade
 
-import instrumentreaders.{ExcelInstrumentReaderException, ExcelInstrumentReader}
+import starling.services.trade.instrumentreaders.{ExcelInstrumentReaderException, ExcelInstrumentReader}
 import starling.models._
 import starling.instrument._
 import starling.daterange._
 import starling.tradestore.intraday.IntradayTradeAttributes
 import starling.db.IntradayTradeSystem
 import starling.auth.User
-import starling.trade.TradeID
-import starling.eai.{Traders, TreeID, EAIStrategyDB}
+import starling.instrument.TradeID
 import starling.market.rules.{CommonPricingRule, SwapPricingRule}
 import starling.quantity.{UOM, Quantity}
 import starling.quantity.UOM._
 import starling.utils.{StringToInt, StringToDouble}
 import starling.utils.CollectionUtils._
 import starling.market._
+import starling.eai._
+import starling.gui.api.Desk
 
 case class ExcelRow(row: Map[String, Any], traders: Traders, currentlyLoggedOn: User) {
 
@@ -345,12 +346,6 @@ case class ExcelRow(row: Map[String, Any], traders: Traders, currentlyLoggedOn: 
 
   def comment = string(CommentColumn, 255)
 
-
-  val bookIDs = traders.bookMap.map {
-    case (user, (book, _)) => (user.name.toLowerCase -> TreeID(book.bookID))
-  }
-
-
   def getStrategyFromDealId(eaiStrategyDB: EAIStrategyDB, userDealID: String): (Option[TreeID], Option[TreeID]) = {
     val (strategyID, dealID) = userDealID match {
       case empty: String if empty.trim.isEmpty => (None, None)
@@ -364,7 +359,7 @@ case class ExcelRow(row: Map[String, Any], traders: Traders, currentlyLoggedOn: 
     (strategyID, dealID)
   }
 
-  def attributes(eaiStrategyDB: EAIStrategyDB, subgroupName: String) = {
+  def attributes(eaiStrategyDB: EAIStrategyDB, eaiDealBookMapping: EAIDealBookMapping, subgroupNamePrefix: String) = {
     val r = getStrategyFromDealId(eaiStrategyDB, row(StrategyColumn).toString)
 
     val strategyID: Option[TreeID] = r._1
@@ -375,12 +370,10 @@ case class ExcelRow(row: Map[String, Any], traders: Traders, currentlyLoggedOn: 
       case empty: String if empty.trim.isEmpty => trader
       case s => s
     }
-    assert(bookIDs.contains(trader.toLowerCase), "Don't recognised name of trader: '" + string(TraderColumn) + "', map used: " + bookIDs)
 
-    val bookID = bookIDs.get(tradedFor.toLowerCase) match {
-      case Some(id) => id
-      case None => TreeID(0)
-    }
+    assert(traders.trader(trader).isDefined, "Don't recognised name of trader: '" + string(TraderColumn) + "', used: " + traders.traders.map(_.name))
+
+    val bookID = TreeID(eaiDealBookMapping.book(dealID.get.id))
     val broker = this.broker
     val comment = this.comment
     val clearer = this.clearingHouse
@@ -392,7 +385,27 @@ case class ExcelRow(row: Map[String, Any], traders: Traders, currentlyLoggedOn: 
 
     val username = currentlyLoggedOn.username
 
+    val subgroupName = generateSubgroupName(currentlyLoggedOn, subgroupNamePrefix, bookID.id)
+
     new IntradayTradeAttributes(strategyID, bookID, dealID, trader, tradedFor, broker, comment, clearer, subgroupName, entryDate, username)
+  }
+
+  private def generateSubgroupName(user:User, subgroupNamePrefix:String, bookID: Int) = {
+    val subgroup = subgroupNamePrefix.trim
+    val traderUsers = traders.traders
+
+    val s = "Oil Derivatives/"
+    if (traderUsers.contains(user) && ("live" == subgroup.toLowerCase)) {
+      val desk = Desk.eaiDeskFromID(bookID).get
+      s + "Live/" + desk.name + "/" + user.username
+    } else {
+      s + "Scratch/" + (if (traderUsers.contains(user)) {
+        val desk = Desk.eaiDeskFromID(bookID).get
+        desk.name + "/" + user.name + "/" + subgroup
+      } else {
+        "No Desk/" + user.name + "/" + subgroup
+      })
+    }
   }
 }
 

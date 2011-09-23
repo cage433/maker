@@ -4,18 +4,19 @@ import starling.auth.User
 import starling.gui._
 import swing.Label
 import java.awt.{Color, Font, Dimension}
-import starling.browser.{PageComponent, Bookmark, PageData, PageContext}
 import starling.browser.common._
+import starling.browser._
 
 case class UserDetailsPage(user:User) extends StarlingServerPage {
   def text = "User Details"
   def icon = StarlingIcons.im("/icons/16x16_user_dark.png")
 
   def build(reader:StarlingServerContext) = null
-  def createComponent(context:PageContext, data:PageData, bookmark:Bookmark, browserSize:Dimension, previousPageData:Option[PageData]) = new UserDetailsPageComponent(context:PageContext, user:User)
+  def createComponent(context:PageContext, data:PageData, bookmark:Bookmark, browserSize:Dimension, previousPageData:Option[PreviousPageData]) = new UserDetailsPageComponent(context:PageContext, user:User)
 }
 
-class UserDetailsPageComponent(context:PageContext, user:User) extends MigPanel("insets dialog") with PageComponent {
+class UserDetailsPageComponent(context:PageContext, user:User) extends MigPanel("insets " + GuiUtils.StartPageInsets) with PageComponent {
+  background = Color.WHITE
   val c = new StripedPanel("insets 0", "push[" + GuiUtils.StandardLeftIndent + "][p]unrel[p]push", "push[p]unrel[p][p][p][p]push[p]") {
     def titleLabel(text0:String) = new Label {
       text = text0
@@ -24,7 +25,7 @@ class UserDetailsPageComponent(context:PageContext, user:User) extends MigPanel(
 
     def sL(text0:String) = new Label {
       text = text0
-      foreground = Color.BLUE.darker
+      foreground = GuiUtils.BlueTextColour
       horizontalAlignment = swing.Alignment.Right
     }
 

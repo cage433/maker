@@ -1,5 +1,7 @@
 package starling.utils
 
+import collection.immutable.SortedMap
+
 /**
  * A very partial implementation of Map, intended to replace code such as
  *  map1 ++ map2
@@ -30,13 +32,17 @@ package starling.utils
  *
  */
 
-class AppendingMap[A, B](val maps : Map[String,Map[A, B]]) extends scala.collection.immutable.Map[A, B]{
+class AppendingMap[A, B](val namedMaps : Map[String,Map[A, B]]) extends scala.collection.immutable.Map[A, B]{
   def -(key: A) = throw new UnsupportedOperationException()
 
   def +[B1 >: B](kv: (A, B1)) = throw new UnsupportedOperationException()
 
+  val maps: List[Map[A, B]] = namedMaps.values.toList
+
   def iterator = new Iterator[(A,B)] {
-    val mapsIterator = maps.values.iterator
+    val mapsIterator = {
+      maps.iterator
+    }
     var currentIterator:Iterator[(A,B)] = null
     def hasNext = {
       while((currentIterator == null || !currentIterator.hasNext) && mapsIterator.hasNext) {
@@ -49,11 +55,8 @@ class AppendingMap[A, B](val maps : Map[String,Map[A, B]]) extends scala.collect
     }
   }
 
-  def appendKeys(set:scala.collection.mutable.Set[A]) {
-    maps.values.foreach { _.keySet.foreach { set+= _ } }
-  }
+  override def keySet = Set() ++ maps.flatMap(_.keySet)
 
-  override def keySet = Set() ++ maps.values.flatMap(_.keySet)
 
   /**
    * Note that
@@ -63,7 +66,8 @@ class AppendingMap[A, B](val maps : Map[String,Map[A, B]]) extends scala.collect
    *
    * If both contain 'key' then in the former case map1's value is returned, in the latter it is map2's
    */
-  def get(key: A) = maps.values.find(_.contains(key)) match {
+
+  def get(key: A) = maps.find(_.contains(key)) match {
     case Some(map) => map.get(key)
     case None => None
   }

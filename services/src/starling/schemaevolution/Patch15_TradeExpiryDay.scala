@@ -30,7 +30,7 @@ class Patch15_TradeExpiryDay extends Patch {
         val instrumentName = row.getString("Instrument")
         val instrumentType = TradeableType.fromName(instrumentName)
         val instrument = instrumentType.createTradeable(row)
-        import starling.utils.sql.QueryBuilder._
+        import starling.dbx.QueryBuilder._
         writer.update(table, Map("expiryDay_cache"->(instrument.expiryDay match {
           case Some(day) => day
           case None => null

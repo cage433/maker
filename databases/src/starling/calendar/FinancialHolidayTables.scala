@@ -3,7 +3,7 @@ package starling.calendar
 import java.lang.String
 import starling.db.DB
 import scala.collection.mutable
-import starling.utils.sql.QueryBuilder._
+import starling.dbx.QueryBuilder._
 import starling.daterange.{Location, Day}
 
 
