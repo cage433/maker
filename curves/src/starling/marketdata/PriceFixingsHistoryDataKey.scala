@@ -26,7 +26,7 @@ case class PriceFixingsHistoryDataKey(marketName: String, exchangeName: Option[S
 }
 
 object PriceFixingsHistoryDataKey {
-  val currencyNames = UOMSymbol.currencySymbols.map(_.name)
+  val currencyNames = UOM.currencies.map(_.identifier)
 
   def apply(market: CommodityMarket): PriceFixingsHistoryDataKey =
     PriceFixingsHistoryDataKey(tradeableNameOf(market), exchangeOf(market))

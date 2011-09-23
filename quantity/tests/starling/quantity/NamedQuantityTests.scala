@@ -1,5 +1,6 @@
 package starling.quantity
 
+import starling.quantity.UOM._
 import org.scalatest.matchers.ShouldMatchers
 import org.scalatest.testng.TestNGSuite
 import org.testng.annotations.Test

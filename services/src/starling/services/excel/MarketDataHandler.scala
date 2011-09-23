@@ -230,7 +230,7 @@ class MarketDataHandler(broadcaster : Broadcaster,
   def uploadFX(label:String, observationDate: Object, currencyName: String, rate:Double) = {
     assert(label.nonEmpty, "Can't have an empty label for the market data")
     val observationPoint = ObservationPoint.parse(observationDate)
-    val currency = UOM.parseCurrency(currencyName).getOrElse(throw new Exception("Unknown currency " + currencyName))
+    val currency = UOM.parseCurrency(currencyName)
     val fxRate = new SpotFXData(Quantity(rate, UOM.USD/ currency))
     val result = marketDataStore.save(MarketDataSet.excel(label), TimedMarketDataKey(observationPoint, SpotFXDataKey(currency)), fxRate)
     "OK:" + result
@@ -306,7 +306,7 @@ class MarketDataHandler(broadcaster : Broadcaster,
     assert(label.nonEmpty, "Can't have an empty label for the market data")
 
     val observationPoint = ObservationPoint.parse(observationDate)
-    val ccy = UOM.parseCurrency(currency).getOrElse(throw new Exception(currency + " is not a known currency"))
+    val ccy = UOM.parseCurrency(currency)
     val rows = (periods zip rates).flatMap{
       case (period, rate) => {
         if (period != 0) {
@@ -335,7 +335,7 @@ class MarketDataHandler(broadcaster : Broadcaster,
     assert(label.nonEmpty, "Can't have an empty label for the market data")
 
     val observationPoint = ObservationPoint.parse(observationDate)
-    val ccy = UOM.parseCurrency(currency).getOrElse(throw new Exception(currency + " is not a known currency"))
+    val ccy = UOM.parseCurrency(currency)
     val periods = periods0.map(StoredFixingPeriod.parse)
     val levels = levels0.map(Level.fromName)
     val percents = rates.map(MarketValue.percentage)

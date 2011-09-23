@@ -60,11 +60,11 @@ object EDMConversions {
   }
 
   implicit def enrichSerializableCurrency(currency: TitanSerializableCurrency) = new {
-    def fromSerializable = edmToStarlingUomSymbol(currency.name).asUOM
+    def fromSerializable = UOM.asUOM(edmToStarlingUomSymbol(currency.name))
   }
 
   val UOMToTitanCurrency: Extractor[UOM, TitanSerializableCurrency] = Extractor.from[UOM](_.serializableCurrency)
-  val StringToTitanCurrency: Extractor[String, TitanSerializableCurrency] = UOM.Currency.andThen(UOMToTitanCurrency)
+  val StringToTitanCurrency: Extractor[Any, TitanSerializableCurrency] = UOM.Currency.andThen(UOMToTitanCurrency)
 
   implicit def enrichTitanSnapshotIdentifier(snapshotId: TitanSnapshotIdentifier) = new {
     def toTitanDate = TitanSerializableDate(snapshotId.snapshotDay)
@@ -89,7 +89,7 @@ object EDMConversions {
   }
 
   implicit def enrichFundamentalUOM(uom: FundamentalUOM) = new {
-    def fromTitan = edmToStarlingUomSymbol(uom.name).asUOM
+    def fromTitan = UOM.asUOM(edmToStarlingUomSymbol(uom.name))
     def titanCurrency: TitanCurrency = TitanCurrency().update(_.name = uom.name)
   }
 
@@ -131,7 +131,7 @@ object EDMConversions {
   }
 
   implicit def toTitanQuantity(q : Quantity) : TitanQuantity = {
-    val symbolPowers = q.uom.asSymbolMap()
+    val symbolPowers = q.uom.asSymbolMap
 
     // create edm UOMs, EDM symbol list is GBP, USD, JPY, RMB, MTS, LBS
 
@@ -146,7 +146,7 @@ object EDMConversions {
   }
 
   implicit def toTitanSerializableQuantity(q : Quantity) : TitanSerializableQuantity = {
-    val symbolPowers = q.uom.asSymbolMap()
+    val symbolPowers = q.uom.asSymbolMap
 
     val uomMap = symbolPowers.map{
       case (starlingUOMSymbol, power) => (
@@ -179,6 +179,6 @@ object EDMConversions {
 //    LegacyCurrency.Usd -> "USD",
 //    LegacyCurrency.Zar -> "ZAR"
   )
-  val starlingUomToEdmUomName: Map[UOM, String] = starlingUomSymbolToEdmUom.mapKeys(_.asUOM)
+  val starlingUomToEdmUomName: Map[UOM, String] = starlingUomSymbolToEdmUom.mapKeys(UOM.asUOM(_))
   val edmToStarlingUomSymbol: Map[String, UOMSymbol] = starlingUomSymbolToEdmUom.map(_.swap) + ("ECB" -> eur)
 }

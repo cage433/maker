@@ -63,4 +63,14 @@ class MarketTests extends TestMarketTest {
     val squareRatio = mkt.convertUOM(fourBBLSquared, MT * MT) / fourBBLSquared
     assertQtyEquals(squareRatio, ratio * ratio, 1e-6)
   }
+
+  @Test
+  def testConversionsOfPowersInverse{
+    val twoMT = Quantity(2.0, MT)
+    val mkt = Market.NYMEX_WTI
+    val ratio = mkt.convertUOM(twoMT, BBL) / twoMT
+    val fourMTSquared = twoMT * twoMT
+    val squareRatio = mkt.convertUOM(fourMTSquared, BBL * BBL) / fourMTSquared
+    assertQtyEquals(squareRatio, ratio * ratio, 1e-6)
+  }
 }

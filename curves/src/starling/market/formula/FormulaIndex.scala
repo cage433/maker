@@ -34,15 +34,8 @@ case class FormulaIndex(formulaName: String, formula: Formula, ccy: UOM, uom: UO
           }
           case q : Quantity => q
         }
-        val conversion = price.copy(value = 1.0) / checkedConvert(index, price.copy(value = 1.0), priceUOM)
-        if(conversion.isScalar) {
-          price
-        } else {
-          price match {
-            case nq: NamedQuantity => nq / SimpleNamedQuantity("Conversion", conversion)
-            case q => q / conversion
-          }
-        }
+        val converted = checkedConvert(index, price, priceUOM)
+        converted
       }
       case _ => throw new Exception("Couldn't work out price for formula index on complex indices: " + this)
     }

@@ -4,14 +4,12 @@ import starling.utils.CaseInsensitive
 import starling.utils.CaseInsensitive._
 
 object UOMSymbol{
-  def apply(name : String, altNames: String*) : UOMSymbol = {
-    UOMSymbol(name, altNames.toList)
-  }
-  def apply(name : String, altNames: List[String]) : UOMSymbol = {
-    new UOMSymbol(name, altNames.map(CaseInsensitive(_)))
-  }
-  def apply(names: List[String]): UOMSymbol = apply(names.head, names.tail)
+  lazy val primesIterator = Primes.primeStreamIterator(2)
 
+  def apply(names: CaseInsensitive*) : UOMSymbol = {
+    val prime = primesIterator.next()
+    new UOMSymbol(prime, names.toList)
+  }
   val SHARE_SYMBOL = UOMSymbol("Share")
 
   // The compiler rejects assigning all the currencies in one go, so have to create 3 separate lists
@@ -23,21 +21,26 @@ object UOMSymbol{
 
   val zCurrencies3@List(sgd, thb, trySymbol, usd, zar) = currencies("SGD", "THB", "TRY", "USD", "ZAR")
 
-  private def currencies(symbols: String*): List[UOMSymbol] = symbols.toList.map(symbol => UOMSymbol(symbol.split("/").toList))
+  private def currencies(symbols: String*): List[UOMSymbol] = symbols.toList.map(symbol => UOMSymbol(symbol.split("/").map(new CaseInsensitive(_)) :_*))
 
   // this isn't a currency, but a kind of index for shipping. it's used in place of a currency in
   // the EAI tables, though.
   val WSC_SYMBOL = UOMSymbol("WSC", "Worldscale")
 
+  val US_CENT_SYMBOL = UOMSymbol("¢", "US CENT")
+
   val SHORT_TONNE_SYMBOL = UOMSymbol("S/T")
   val TONNE_SYMBOL = UOMSymbol("MT", "TONNE")
   val C_TONNE_SYMBOL = UOMSymbol("c MT", "c TONNE")
   val KILO_TONNE_SYMBOL = UOMSymbol("KT", "KILOTONNE")
-  val BARREL_SYMBOL = UOMSymbol("bbl", List("BARREL", "BBLS"))
+  val BARREL_SYMBOL = UOMSymbol("bbl", "BARREL", "BBLS")
+  val KILOBARREL_SYMBOL = UOMSymbol("Kbbl")
   val OUNCE_SYMBOL = UOMSymbol("oz", "TROY OUNCE")
-  val POUND_SYMBOL = UOMSymbol(List("lb", "POUND", "lbs"))
+  val POUND_SYMBOL = UOMSymbol("lb", "POUND", "lbs")
   val GRAM_SYMBOL = UOMSymbol("g", "GRAM")
+  val KILOGRAM_SYMBOL = UOMSymbol("kg")
   val GALLON_SYMBOL = UOMSymbol("gal", "US GALLON")
+  val KILGALLON_SYMBOL = UOMSymbol("Kgal")
   val KILOLITRE_SYMBOL = UOMSymbol("kl", "KILOLITRE")
   val LITRE_SYMBOL = UOMSymbol("l", "LITRE")
   val CUBIC_METRE_SYMBOL = UOMSymbol("m3", "CUBIC METRE")
@@ -47,12 +50,10 @@ object UOMSymbol{
   val THERMS_SYMBOL = UOMSymbol("thm", "THERM")
   val BUSHEL_SOY_SYMBOL = UOMSymbol("bu(soy)", "BUSHEL (SOY)", "bu")
   val BUSHEL_CORN_SYMBOL = UOMSymbol("bu(corn)", "BUSHEL (CORN)")
-  val BUSHEL_WHEAT_SYMBOL = UOMSymbol(List("bus", "BUSHEL (WHEAT)", "Bushel (BUS)"))
+  val BUSHEL_WHEAT_SYMBOL = UOMSymbol("bus", "BUSHEL (WHEAT)", "Bushel (BUS)")
   val SHORT_TON_SYMBOL = UOMSymbol("st", "SHORT TON")
 
   val PERCENT_SYMBOL = UOMSymbol("%")
-  
-  val US_CENT_SYMBOL = UOMSymbol("¢", "US CENT")
 
   val DAY_SYMBOL = UOMSymbol("DAY", "days")
   val MONTH_SYMBOL = UOMSymbol("MONTH")
@@ -84,18 +85,19 @@ object UOMSymbol{
 
   val MILLISECONDS_SYMBOL = UOMSymbol("ms")
 
-  val currencySymbols : List[UOMSymbol] = zCurrencies ++ zCurrencies2 ++ zCurrencies3 ++ List(US_CENT_SYMBOL)
-
-  val nonCurrencySymbols = List(
+  val symbols: List[UOMSymbol] = List(
     SHORT_TONNE_SYMBOL,
     TONNE_SYMBOL,
     C_TONNE_SYMBOL,
     KILO_TONNE_SYMBOL,
     BARREL_SYMBOL,
+    KILOBARREL_SYMBOL,
     OUNCE_SYMBOL,
-    POUND_SYMBOL, 
+    POUND_SYMBOL,
     GRAM_SYMBOL,
+    KILOGRAM_SYMBOL,
     GALLON_SYMBOL,
+    KILGALLON_SYMBOL,
     KILOLITRE_SYMBOL,
     LITRE_SYMBOL,
     CUBIC_METRE_SYMBOL,
@@ -136,27 +138,30 @@ object UOMSymbol{
     SHORT_TON_SYMBOL,
     MILLISECONDS_SYMBOL,
     PERCENT_SYMBOL,
-    SHARE_SYMBOL
-  )
-  
-  val symbols = currencySymbols ++ nonCurrencySymbols
+    SHARE_SYMBOL,
+    US_CENT_SYMBOL
+  ) ++ zCurrencies ++ zCurrencies2 ++ zCurrencies3
+
   // Map of name and altname to symbol
   val symbolMap : Map[CaseInsensitive, UOMSymbol] = Map[CaseInsensitive, UOMSymbol]() ++ symbols.flatMap(sym => sym.names.map((_,sym)))
   
   // We associate a prime number with each symbol. This allows an efficient representation of
   // quantities with fast arithmetic
-  val primeForSymbol : Map[UOMSymbol, Int] = Map.empty ++ symbols.zip(Primes.firstNPrimes(symbols.size))
-  val symbolForPrice : Map[Int, UOMSymbol] = Map.empty ++ primeForSymbol.view.map{case (s, p) => p -> s}
-  val primes = symbolForPrice.keySet.toList.sortWith(_<_)
+  val primeForSymbol : Map[UOMSymbol, Long] = symbols.map(s => (s -> s.prime.toLong)).toMap
+  private val symbolForPrimeMap : Map[Long, UOMSymbol] = primeForSymbol.map{case (s, p) => p -> s}
+  def symbolForPrime(prime: Long) = symbolForPrimeMap.get(prime) match {
+    case Some(s) => s
+    case None => throw new Exception("Can't find symbol for prime " + prime + ", this happens if you add a new symbol but don't add it to the 'symbols' list.")
+  }
+  val primes = symbolForPrimeMap.keySet.toList.sortWith(_<_)
 
   def fromName(name: String): Option[UOMSymbol] = symbols.find(_.names.contains(name))
 }
 
-case class UOMSymbol(name : CaseInsensitive, altNames : List[CaseInsensitive] = List()){
-  import UOMSymbol._
-  lazy val asUOM : UOM = UOM.build(primeForSymbol(this), 1)
-
-  def names : List[CaseInsensitive] = name :: altNames
+case class UOMSymbol(prime: Int, names: List[CaseInsensitive]) {
+  assert(names.nonEmpty)
+  assert(Primes.isPrime(prime))
+  def name = names.head
 
   override def toString = name
 }

@@ -63,9 +63,29 @@ import starling.quantity.RichQuantity._
 
   @Test
   def shouldApplyFixedConversions {
+    // dollar and cent
+    assertEquals(1 (USD) / 1(US_CENT), (100 (SCALAR)))
+    assertEquals(10 (USD*USD / BBL) / 1 (USD/BBL), 10 (USD))
+    assertEquals(10(USD * USD) / 1(US_CENT), 1000(USD))
+    assertEquals(10(USD * USD *USD) / 1(US_CENT), 1000(USD*USD))
+    assertEquals(10(USD * USD *USD) / 1(USD), 10(USD*USD))
+    assertEquals(10 (USD*USD / BBL) / 1 (US_CENT/BBL), 1000 (USD))
     assertEquals(256 (US_CENT) in USD, Some(2.56 (USD)))
+    assertEquals(2 (USD) + 56 (US_CENT), 2.56 (USD))
+    assertEquals(2 (USD/BBL) + 56 (US_CENT/BBL), 2.56 (USD/BBL))
+    assertEquals(2 (USD/GAL) + 42 (USD/BBL),  3 (USD/GAL))
+
+    // more complicated conversions (checked against wolframalpha.com)
+    assertEquals(10 (USD/(G*G)) in (USD/(KG*KG)),  Some(10e6 (USD/(KG*KG))))
+    assertQtyOptionClose(10 (USD/(KG*KG)) in (USD/(LB*LB)),  Some(2.057 (USD/(LB*LB))))
+    assertEquals(10000 (G*G/USD) in (KG*KG/USD), Some(.01 (KG*KG/USD)))
+
+    // mass and volume
+    assertEquals(10 (USD/G) in (USD/KG), Some(10000 (USD/KG)))
+    assertEquals(10 (USD/G) / 1 (USD/KG), (10000 (SCALAR)))
     assertEquals(0.01 (MT) in G, Some(10000 (G)))
     assertEquals(100 (L) in M3, Some(0.1 (M3)))
+    assertEquals(2.43 (USD/GAL) in (US_CENT/GAL), Some(243 (US_CENT/GAL)))
 
     // check that it doesn't apply changes it shouldn't have conversions for
     assertEquals(10 (GBP) in USD, None)
@@ -86,6 +106,25 @@ import starling.quantity.RichQuantity._
     assertQtyOptionClose(1.0 (KL^2) in (L^2), Some(1000000.0 (L^2)))
     assertQtyOptionClose(1000.0 (OZ/GAL) in (LB/BBL), Some(2880.0 (LB/BBL)))
     assertQtyOptionClose(1.0 (USD/GAL) in (USD/BBL), Some(42.0 (USD/BBL)))
+  }
+
+  @Test
+  def shouldConvertChained {
+    val bblPerMT = 50
+    val map = Map(UOM.BBL / UOM.MT -> BigDecimal(bblPerMT))
+
+    implicit val conv = Conversions(map)
+
+    assertEquals(10 (USD/BBL) in (USD/MT), Some(500 (USD/MT))) // 50 * 10
+    assertEquals(10 (USD/BBL) in (USD/KG), 500 (USD/MT) in (USD/KG))
+
+    // and inverted
+    assertEquals(100 (USD/MT) in (USD/BBL), Some(2 (USD/BBL))) // 100 / 50
+    assertEquals(100 (USD/MT) in (USD/L), 2 (USD/BBL) in (USD/L))
+
+    // and with powers
+    assertEquals(100 (USD/(MT*MT)) in (USD/(BBL*BBL)), Some(.04 (USD/(BBL*BBL)))) // 100 / (50*50)
+    assertEquals(100 (USD/(MT*MT)) in (USD/(L*L)), .04 (USD/(BBL*BBL)) in (USD/(L*L)))
   }
 
   @Test
@@ -125,15 +164,6 @@ import starling.quantity.RichQuantity._
   def testRounding = {
     assertQtyEquals(123.0725(USD).round(3), 123.073(USD))
     assertQtyEquals(123.072499(USD).round(3), 123.072(USD))
-  }
-
-
-  @Test
-  def uomScaling {
-    val unscaled = Qty(1000, GBP)
-    val scaled = unscaled in (GBP * 1000)
-
-    scaled should be === Some(Qty(1, GBP * 1000))
   }
 
   @Test

@@ -9,7 +9,7 @@ import starling.pivot._
 
 object ForwardRateDataType extends MarketDataType {
   type dataType = ForwardRateData
-  val keys = UOMSymbol.currencySymbols.map(s => ForwardRateDataKey(s.asUOM))
+  val keys = UOM.currencies.map(s => ForwardRateDataKey(s))
 
   def marketDataKeyFelds = Set(currencyField.field)
   override def keyFields:Set[Field] = Set(currencyField.field, formatField.field, dayField.field, instrumentTypeField.field)

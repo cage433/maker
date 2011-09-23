@@ -99,7 +99,7 @@ case class Environment(
     assert(ccy2.isCurrency, ccy2 + " is not a currency")
     (ccy1, ccy2) match {
       case (ccy1, ccy2) if ccy1 == ccy2 => new Quantity(1.0)
-      case (USD, US_CENT) => (1/100.0) (USD/US_CENT)
+      case (USD, US_CENT) => Quantity(1, SCALAR)
       case (`USD`, ccy) => instrumentLevelEnv.quantity(USDFXRateKey(ccy))
       case (ccy, `USD`) => spotFXRate(USD, ccy).invert
       case _ => spotFXRate(ccy1, USD) * spotFXRate(USD, ccy2)
@@ -215,6 +215,7 @@ case class Environment(
     /**	Returns the discount rate for the given currency and date
    */
   def discount(ccy : UOM, forwardDate : Day) : Quantity = {
+    assert(ccy.isCurrency, "'" + ccy + "' is not a currency")
     instrumentLevelEnv.discount(ccy, forwardDate)
   }
 

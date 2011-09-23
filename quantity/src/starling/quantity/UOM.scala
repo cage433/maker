@@ -1,134 +1,140 @@
 package starling.quantity
 
-import starling.utils.CaseInsensitive
 import starling.utils.CaseInsensitive._
 import starling.utils.cache.CacheFactory
 
 import starling.utils.ImplicitConversions._
 import starling.utils.Pattern._
+import starling.utils.{StarlingEnum, CaseInsensitive}
+import collection.immutable.Map
 
 
-object UOM {
-  def apply(numerator : Long, denominator : Long) : UOM = UOM(Ratio(1,1), Ratio(numerator, denominator))
+object UOM extends StarlingEnum(classOf[UOM], (u: UOM) => u.toString, ignoreCase = true) {
+  def apply(symbol: UOMSymbol): UOM = new UOM(Ratio(UOMType.unique.prime, 1), Ratio(symbol.prime, 1), 1.0)
 
-  val Parse: Extractor[String, UOM] = Extractor.from[String](value => fromStringOption(value))
-  val Currency: Extractor[String, UOM] = Parse.filter(_.isCurrency)
+  def apply(uomType: UOMType, symbol: UOMSymbol, scale: BigDecimal): UOM = new UOM(Ratio(uomType.prime, 1), Ratio(symbol.prime, 1), scale)
+
+  //  val Parse: Extractor[String, UOM] = Extractor.from[String](value => fromStringOption(value))
+  val Currency: Extractor[Any, UOM] = Parse.filter(_.isCurrency)
+  val primes = Primes.firstNPrimes(200)
 
   import UOMSymbol._
-  val NULL = UOM.build(0, 1)
-  val SCALAR = UOM.build(1, 1)
+  import UOMType.Currencies
 
-  val AED = aed.asUOM
-  val AUD = aud.asUOM
-  val BGN = bgn.asUOM
-  val BRL = brl.asUOM
-  val CAD = cad.asUOM
-  val CHF = chf.asUOM
-  val CNY = cny.asUOM
-  val CZK = czk.asUOM
-  val DKK = dkk.asUOM
-  val EUR = eur.asUOM
-  val GBP = gbp.asUOM
-  val HKD = hkd.asUOM
-  val HRK = hrk.asUOM
-  val HUF = huf.asUOM
-  val IDR = idr.asUOM
-  val ILS = ils.asUOM
-  val INR = inr.asUOM
-  val JPY = jpy.asUOM
-  val KRW = krw.asUOM
-  val LTL = ltl.asUOM
-  val LVL = lvl.asUOM
-  val MXN = mxn.asUOM
-  val MYR = myr.asUOM
-  val NAD = nad.asUOM
-  val NOK = nok.asUOM
-  val NZD = nzd.asUOM
-  val PHP = php.asUOM
-  val PLN = pln.asUOM
-  val RON = ron.asUOM
-  val RUB = rub.asUOM
-  val SEK = sek.asUOM
-  val SGD = sgd.asUOM
-  val THB = thb.asUOM
-  val TRY = trySymbol.asUOM
-  val USD = usd.asUOM
-  val WSC = WSC_SYMBOL.asUOM
-  val ZAR = zar.asUOM
-  val US_CENT = US_CENT_SYMBOL.asUOM
-  val SHARE = SHARE_SYMBOL.asUOM
+  val NULL = new UOM(Ratio(0, 1), Ratio(0, 1), 1.0)
+  val SCALAR = new UOM(Ratio(1, 1), Ratio(1, 1), 1.0)
 
-  val ST = SHORT_TONNE_SYMBOL.asUOM
-  val MT = TONNE_SYMBOL.asUOM
-  val C_MT = C_TONNE_SYMBOL.asUOM
-  val K_MT = KILO_TONNE_SYMBOL.asUOM
-  val BBL = BARREL_SYMBOL.asUOM
-  val K_BBL = BBL * 1000
-  val OZ = OUNCE_SYMBOL.asUOM
-  val LB = POUND_SYMBOL.asUOM
-  val G = GRAM_SYMBOL.asUOM
-  val KG = G * 1000
-  val GAL = GALLON_SYMBOL.asUOM
-  val KL = KILOLITRE_SYMBOL.asUOM
-  val L = LITRE_SYMBOL.asUOM
-  val M3 = CUBIC_METRE_SYMBOL.asUOM
-  val C_M3 = C_CUBIC_METRE_SYMBOL.asUOM
-  val MMBTU = MMBTU_SYMBOL.asUOM
-  val THERMS = THERMS_SYMBOL.asUOM
-  val ML = MILLILITRE_SYMBOL.asUOM
+  val AED = UOM(Currencies.AED, aed, 1.0)
+  val AUD = UOM(Currencies.AUD, aud, 1.0)
+  val BGN = UOM(Currencies.BGN, bgn, 1.0)
+  val BRL = UOM(Currencies.BRL, brl, 1.0)
+  val CAD = UOM(Currencies.CAD, cad, 1.0)
+  val CHF = UOM(Currencies.CHF, chf, 1.0)
+  val CNY = UOM(Currencies.CNY, cny, 1.0)
+  val CZK = UOM(Currencies.CZK, czk, 1.0)
+  val DKK = UOM(Currencies.DKK, dkk, 1.0)
+  val EUR = UOM(Currencies.EUR, eur, 1.0)
+  val GBP = UOM(Currencies.GBP, gbp, 1.0)
+  val HKD = UOM(Currencies.HKD, hkd, 1.0)
+  val HRK = UOM(Currencies.HRK, hrk, 1.0)
+  val HUF = UOM(Currencies.HUF, huf, 1.0)
+  val IDR = UOM(Currencies.IDR, idr, 1.0)
+  val ILS = UOM(Currencies.ILS, ils, 1.0)
+  val INR = UOM(Currencies.INR, inr, 1.0)
+  val JPY = UOM(Currencies.JPY, jpy, 1.0)
+  val KRW = UOM(Currencies.KRW, krw, 1.0)
+  val LTL = UOM(Currencies.LTL, ltl, 1.0)
+  val LVL = UOM(Currencies.LVL, lvl, 1.0)
+  val MXN = UOM(Currencies.MXN, mxn, 1.0)
+  val MYR = UOM(Currencies.MYR, myr, 1.0)
+  val NAD = UOM(Currencies.NAD, nad, 1.0)
+  val NOK = UOM(Currencies.NOK, nok, 1.0)
+  val NZD = UOM(Currencies.NZD, nzd, 1.0)
+  val PHP = UOM(Currencies.PHP, php, 1.0)
+  val PLN = UOM(Currencies.PLN, pln, 1.0)
+  val RON = UOM(Currencies.RON, ron, 1.0)
+  val RUB = UOM(Currencies.RUB, rub, 1.0)
+  val SEK = UOM(Currencies.SEK, sek, 1.0)
+  val SGD = UOM(Currencies.SGD, sgd, 1.0)
+  val THB = UOM(Currencies.THB, thb, 1.0)
+  val TRY = UOM(Currencies.TRY, trySymbol, 1.0)
+  val US_CENT = UOM(Currencies.USD, US_CENT_SYMBOL, 1.0)
+  val USD = UOM(Currencies.USD, usd, 100.0)
+  val WSC = UOM(Currencies.WSC, WSC_SYMBOL, 1.0)
+  val ZAR = UOM(Currencies.ZAR, zar, 1.0)
 
-  val PERCENT = PERCENT_SYMBOL.asUOM
+  // MASS
+  val G = UOM(UOMType.MASS, GRAM_SYMBOL, 1.0)
+  val KG = UOM(UOMType.MASS, KILOGRAM_SYMBOL, 1000.0)
+  val MT = UOM(UOMType.MASS, TONNE_SYMBOL, 1e6)
+  val ST = UOM(UOMType.MASS, SHORT_TONNE_SYMBOL, 907184.74)
+  val C_MT = UOM(UOMType.MASS, C_TONNE_SYMBOL, 100 * 1e6)
+  val K_MT = UOM(UOMType.MASS, KILO_TONNE_SYMBOL, 1000 * 1e6)
+  val LB = UOM(UOMType.MASS, POUND_SYMBOL, .45359237 * KG.v)
+  val OZ = UOM(UOMType.MASS, OUNCE_SYMBOL, LB.v * .06857) // Troy OZ
 
-  val DAY = DAY_SYMBOL.asUOM
-  val MONTH = MONTH_SYMBOL.asUOM
-  val YEAR = YEAR_SYMBOL.asUOM
+  // Volume
+  val ML = UOM(UOMType.VOLUME, MILLILITRE_SYMBOL, 1.0)
+  val L = UOM(UOMType.VOLUME, LITRE_SYMBOL, 1000)
+  val KL = UOM(UOMType.VOLUME, KILOLITRE_SYMBOL, 1000 * 1000)
+  val GAL = UOM(UOMType.VOLUME, GALLON_SYMBOL, L.v * 3.785411784)
+  val K_GAL = UOM(UOMType.VOLUME, KILGALLON_SYMBOL, GAL.v * 1000)
+  val BBL = UOM(UOMType.VOLUME, BARREL_SYMBOL, GAL.v * 42)
+  val K_BBL = UOM(UOMType.VOLUME, KILOBARREL_SYMBOL, BBL.v * 1000)
+  val M3 = UOM(UOMType.VOLUME, CUBIC_METRE_SYMBOL, 1e6)
+  val C_M3 = UOM(UOMType.VOLUME, C_CUBIC_METRE_SYMBOL, 100 * 1e6)
 
-  val COMEX_GOLD_LOTS = COMEX_GOLD_LOTS_SYMBOL.asUOM
-  val LME_LEAD_LOTS = LME_LEAD_LOTS_SYMBOL.asUOM
-  val COMEX_SILVER_LOTS = COMEX_SILVER_LOTS_SYMBOL.asUOM
-  val LME_ALUMINIUM_LOTS = LME_ALUMINIUM_LOTS_SYMBOL.asUOM
-  val LME_COPPER_LOTS = LME_COPPER_LOTS_SYMBOL.asUOM
-  val LME_NICKEL_LOTS = LME_NICKEL_LOTS_SYMBOL.asUOM
-  val SHANGHAI_RUBBER_LOTS = SHANGHAI_RUBBER_LOTS_SYMBOL.asUOM
-  val LME_ZINC_LOTS = LME_ZINC_LOTS_SYMBOL.asUOM
-  val LME_TIN_LOTS = LME_TIN_LOTS_SYMBOL.asUOM
-  val LME_MOLYBDENUM_LOTS = LME_MOLYBDENUM_LOTS_SYMBOL.asUOM
-  val COMEX_PALLADIUM_LOTS = COMEX_PALLADIUM_LOTS_SYMBOL.asUOM
-  val STEEL_REBAR_SHANGHAI_LOTS = STEEL_REBAR_SHANGHAI_LOTS_SYMBOL.asUOM
-  val IRON_ORE_LOTS = IRON_ORE_LOTS_SYMBOL.asUOM
-  val COMEX_PLATINUM_LOTS = COMEX_PLATINUM_LOTS_SYMBOL.asUOM
-  val BALTIC_PANAMAX_LOTS = BALTIC_PANAMAX_LOTS_SYMBOL.asUOM
-  val NYMEX_WTI_LOTS = NYMEX_WTI_LOTS_SYMBOL.asUOM
-  val NYMEX_GASOLINE_LOTS = NYMEX_GASOLINE_LOTS_SYMBOL.asUOM
-  val ICE_BRENT_LOTS = ICE_BRENT_LOTS_SYMBOL.asUOM
-  val ICE_GAS_OIL_LOTS = ICE_GAS_OIL_LOTS_SYMBOL.asUOM
-  val NYMEX_HEATING_LOTS = NYMEX_HEATING_LOTS_SYMBOL.asUOM
-  val NYMEX_SINGAPORE_FUEL_OIL_LOTS = NYMEX_SINGAPORE_FUEL_OIL_LOTS_SYMBOL.asUOM
-  val NYMEX_NATGAS_LOTS_LOTS = NYMEX_NATGAS_LOTS_SYMBOL.asUOM
-  val DUBAI_CRUDE_LOTS = DUBAI_CRUDE_LOTS_SYMBOL.asUOM
+  // Time
+  val MILLISECONDS = UOM(UOMType.TIME, MILLISECONDS_SYMBOL, 1.0)
 
-  val BUSHEL_SOY = BUSHEL_SOY_SYMBOL.asUOM
-  val BUSHEL_CORN = BUSHEL_CORN_SYMBOL.asUOM
-  val BUSHEL_WHEAT = BUSHEL_WHEAT_SYMBOL.asUOM
-  val SHORT_TON = SHORT_TON_SYMBOL.asUOM
+  // Heat energy
+  val THERMS = UOM(UOMType.HEAT_ENERGY, THERMS_SYMBOL, 1)
+  val MMBTU = UOM(UOMType.HEAT_ENERGY, MMBTU_SYMBOL, 10)
 
-  val MILLISECONDS = MILLISECONDS_SYMBOL.asUOM
+  // Other
+  val SHARE = UOM(SHARE_SYMBOL)
 
-  lazy val currencies = currencySymbols.map(_.asUOM).toSet
+  val PERCENT = UOM(PERCENT_SYMBOL)
 
-  def build(numerator : Int, denominator : Int) : UOM = {
-  		UOM(numerator, denominator).reduce
-  }
+  val DAY = UOM(DAY_SYMBOL)
+  val MONTH = UOM(MONTH_SYMBOL)
+  val YEAR = UOM(YEAR_SYMBOL)
 
-  private def getSymbolOption(text: CaseInsensitive): Option[UOM] = {
-    require(!text.isEmpty, "Empty UOM")
-    val (scale, uomString) = if (text.startsWith("K ")) {
-      (1000, text.substring(2).toString)
-    } else {
-      (1, text.toString)
-    }
-    symbolMap.get(CaseInsensitive(uomString)).map(_.asUOM * scale)
-  }
+  val COMEX_GOLD_LOTS = UOM(COMEX_GOLD_LOTS_SYMBOL)
+  val LME_LEAD_LOTS = UOM(LME_LEAD_LOTS_SYMBOL)
+  val COMEX_SILVER_LOTS = UOM(COMEX_SILVER_LOTS_SYMBOL)
+  val LME_ALUMINIUM_LOTS = UOM(LME_ALUMINIUM_LOTS_SYMBOL)
+  val LME_COPPER_LOTS = UOM(LME_COPPER_LOTS_SYMBOL)
+  val LME_NICKEL_LOTS = UOM(LME_NICKEL_LOTS_SYMBOL)
+  val SHANGHAI_RUBBER_LOTS = UOM(SHANGHAI_RUBBER_LOTS_SYMBOL)
+  val LME_ZINC_LOTS = UOM(LME_ZINC_LOTS_SYMBOL)
+  val LME_TIN_LOTS = UOM(LME_TIN_LOTS_SYMBOL)
+  val LME_MOLYBDENUM_LOTS = UOM(LME_MOLYBDENUM_LOTS_SYMBOL)
+  val COMEX_PALLADIUM_LOTS = UOM(COMEX_PALLADIUM_LOTS_SYMBOL)
+  val STEEL_REBAR_SHANGHAI_LOTS = UOM(STEEL_REBAR_SHANGHAI_LOTS_SYMBOL)
+  val IRON_ORE_LOTS = UOM(IRON_ORE_LOTS_SYMBOL)
+  val COMEX_PLATINUM_LOTS = UOM(COMEX_PLATINUM_LOTS_SYMBOL)
+  val BALTIC_PANAMAX_LOTS = UOM(BALTIC_PANAMAX_LOTS_SYMBOL)
+  val NYMEX_WTI_LOTS = UOM(NYMEX_WTI_LOTS_SYMBOL)
+  val NYMEX_GASOLINE_LOTS = UOM(NYMEX_GASOLINE_LOTS_SYMBOL)
+  val ICE_BRENT_LOTS = UOM(ICE_BRENT_LOTS_SYMBOL)
+  val ICE_GAS_OIL_LOTS = UOM(ICE_GAS_OIL_LOTS_SYMBOL)
+  val NYMEX_HEATING_LOTS = UOM(NYMEX_HEATING_LOTS_SYMBOL)
+  val NYMEX_SINGAPORE_FUEL_OIL_LOTS = UOM(NYMEX_SINGAPORE_FUEL_OIL_LOTS_SYMBOL)
+  val NYMEX_NATGAS_LOTS_LOTS = UOM(NYMEX_NATGAS_LOTS_SYMBOL)
+  val DUBAI_CRUDE_LOTS = UOM(DUBAI_CRUDE_LOTS_SYMBOL)
+
+  val BUSHEL_SOY = UOM(BUSHEL_SOY_SYMBOL)
+  val BUSHEL_CORN = UOM(BUSHEL_CORN_SYMBOL)
+  val BUSHEL_WHEAT = UOM(BUSHEL_WHEAT_SYMBOL)
+
+  val uoms = values filterNot List(NULL, SCALAR).contains
+
+  lazy val currencies = uoms.filter(_.isCurrency)
+  val uomMap: Map[(Long, Long), UOM] = uoms.map(u => (u.uType.numerator, u.subType.numerator) -> u).toMap
+  val symbolToUOMMap: Map[UOMSymbol, UOM] = uoms.map(u => (UOMSymbol.symbolForPrime(u.subType.numerator) -> u)).toMap
+
+  private def getSymbolOption(text: CaseInsensitive): Option[UOM] = UOMSymbol.fromName(text).map(UOM.asUOM)
 
   private var uomCache = CacheFactory.getCache("UOM.fromString", unique = true)
   private val FXRegex = """(.*)( per |/)(.*)""".r
@@ -136,9 +142,9 @@ object UOM {
   def fromStringOption(text: String): Option[UOM] = {
     uomCache.memoize((text), (tuple: (String)) => {
       text match {
-          // check the length so that S/T doesn't fall in here. I don't know any FX that is 3 chars or less
+        // check the length so that S/T doesn't fall in here. I don't know any FX that is 3 chars or less
         case FXRegex(num, _, dem) if text.length > 3 => (getSymbolOption(num.trim), getSymbolOption(dem.trim)) partialMatch {
-          case (Some(n), Some(d)) => n / d
+          case (Some(n), Some(d)) => n.div(d)._1
         }
         case _ => getSymbolOption(text.trim)
       }
@@ -152,95 +158,32 @@ object UOM {
     }
   }
 
-  def fromIdentifier(uomString : String) = fromString(uomString)
+  def parseCurrency(text: String) = {
+    val u = fromString(text)
+    require(u.isCurrency, u + " is not a currency")
+    u
+  }
 
-  private val allCurrencies = currencySymbols.toMapWithManyKeys(_.names).mapValues(_.asUOM)
-  def parseCurrency(text:String) = allCurrencies.get(text)
+  def fromIdentifier(uomString: String) = fromString(uomString)
 
-  def fromSymbolMap(symbolMap : Map[UOMSymbol, Int]) : UOM = {
-    if (symbolMap.isEmpty)
-      // We could equally return SCALAR here - not sure it matters
-      UOM.NULL
-    else {
-      (UOM.SCALAR /: symbolMap.toList){
-        case (accumulator, (sym, power)) =>
-          accumulator * (sym.asUOM ^ power)
+  def fromSymbolMap(symbolMap: Map[UOMSymbol, Int], empty: UOM = NULL): UOM = {
+    if (symbolMap.isEmpty) {
+      empty
+    } else {
+      (UOM.SCALAR /: symbolMap.toList) {
+        case (accumulator, (sym, power)) => {
+          val uom = symbolToUOMMap(sym)
+          accumulator.mult((uom ^ power))._1
+        }
       }
     }
   }
 
-}
+  def asUOM(uomSymbol: UOMSymbol): UOM = symbolToUOMMap(uomSymbol)
 
-/**
- * scale is e.g kilo, centi, mega etc
- */
-case class UOM private (scale : Ratio, value : Ratio) extends RatioT[UOM] {
-  import UOM._
-
-  def compare(rhs: UOM) = asString.compareTo(rhs.asString)
-  def *(rhs : Long) = UOM(scale * rhs, value)
-  def *(rhs : UOM) = UOM(scale * rhs.scale, value * rhs.value)
-  def /(rhs : UOM) = UOM(scale / rhs.scale, value / rhs.value)
-  def ^(power : Int) = UOM(scale ^ power, value ^ power)
-  def reduce : UOM = UOM(scale.reduce, value.reduce)
-  def inverse : UOM = UOM(scale.inverse, value.inverse)
-  def gcd(rhs : UOM) = UOM(scale.gcd(rhs.scale), value.gcd(rhs.value))
-  def unscaled = UOM(Ratio(1,1), value)
-  def replace(uom1 : UOM, uom2 : UOM) = {
-    def recurse(u : UOM) : UOM = {
-      if (u.gcd(uom1) == uom1)
-        uom2 * recurse(u / uom1)
-      else if (u.gcd(uom1.inverse) == uom1.inverse)
-        recurse(u * uom1) / uom2
-      else 
-        u
-    }
-    if (uom1 == uom2)
-      this
-    else
-      recurse(this)
-  }
-
-  override def toString = asString
-
-
-  def identifier = asString
-
-  lazy val asString : String = {
-    // sort so that it's easy to see when 2 string units are the same
-    val symMap = asSymbolMap.map{
-      case (sym, power) => (sym.name, power)
-    }.toList.sortWith(_._1 < _._1)
-
-    val num = symMap.map {
-      case (symName, power) if power == 1 => symName
-      case (symName, power) if power > 1 => symName + "^" + power
-      case _ => ""
-    }.foldLeft("")(_+_)
-
-    val den = symMap.map {
-      case (symName, power) if power == -1 => symName
-      case (symName, power) if power < -1 => symName + "^" + -power
-      case _ => ""
-    }.foldLeft("")(_+_)
-
-    val sep = if (isFX) " per " else "/"
-
-    (scale.reduce, den) match {
-      case (Ratio(1000, 1), "") => "K " + num
-      case (Ratio(1, 1), "")    => num
-      case (other, "")          => other + " " + num
-      case (Ratio(1000, 1), _)  => "K " + num + sep + den
-      case (Ratio(1, 1), _)     => num + sep + den
-      case (Ratio(1, 1000), _)  => num + sep + "K " + den
-      case (other, _)           => other + " " + num + sep + den
-    }
-  }
-
-  def asSymbolMap() : Map[UOMSymbol, Int] = {
-    // Note - both NULL and SCALAR become an empty map
-  	def recurse (n : Long, primes : List[Int], acc : Map[Int, Int]) : Map[Int, Int] = n match {
-      case 0 => acc		// Should only happen for the null unit
+  def decomposePrimes(n: Long): Map[Int, Int] = {
+    def recurse(n: Long, primes: List[Int], acc: Map[Int, Int]): Map[Int, Int] = n match {
+      case 0 => acc // Should only happen for the null unit
       case 1 => acc
       case _ => primes match {
         case p :: rest =>
@@ -252,20 +195,168 @@ case class UOM private (scale : Ratio, value : Ratio) extends RatioT[UOM] {
           throw new IllegalStateException("Prime decomposition is badly wrong")
       }
     }
-    def decompose(n : Long) : Map[Int, Int] = recurse(n, UOMSymbol.primes, Map.empty[Int, Int])
-    val reducedUOM = reduce
-    val negativePowers = decompose(reducedUOM.value.denominator).mapValues(_ * -1)
-    val primePowers = decompose(reducedUOM.value.numerator) ++ negativePowers
-    Map.empty ++ primePowers.map{case (p, n) => (UOMSymbol.symbolForPrice(p) -> n)}
+    recurse(n, UOM.primes, Map.empty[Int, Int])
+  }
+}
+
+case class UOM(uType: Ratio, subType: Ratio, v: BigDecimal) extends Ordered[UOM] {
+
+  def plus(o: UOM): Option[BigDecimal] = o match {
+    case UOM(`uType`, `subType`, _) => Some(1.0)
+    case UOM(`uType`, oSubType, oV) => Some(oV / v)
+    case _ => None
   }
 
+  def minus(o: UOM): Option[BigDecimal] = this.plus(o)
 
-  def numeratorUOM : UOM = UOM(scale.numeratorRatio, Ratio(reduce.value.numerator, 1))
-  def denominatorUOM : UOM = UOM(scale.denominatorRatio, Ratio(reduce.value.denominator, 1))
+  def /(o: UOM) = this.div(o) match {
+    case (u, bd) if bd == 1 => u
+    case (u, bd) => throw new Exception("Can't ignore result of division " + this + "/" + o + ": " + (u, bd))
+  }
+  def *(o: UOM) = this.mult(o) match {
+    case (u, bd) if bd == 1 => u
+    case (u, bd) => throw new Exception("Can't ignore result of mult " + this + "*" + o + ": " + (u, bd))
+  }
 
-  def isNull = this == NULL
-  def isScalar = this.value == SCALAR.value
-  def isCurrency = currencies.contains(this)
-  def isProperUOM = !(isScalar || isNull)
+  def div(o: UOM) = this.mult(o.inverse)
+
+  def mult(o: UOM): (UOM, BigDecimal) = {
+    val notReduced = UOM(uType * o.uType, subType * o.subType, v * o.v)
+    val uGCD = notReduced.uType.gcd
+    if (uGCD > 1) {
+      val sGCD = notReduced.subType.gcd
+      val decomposedU = UOM.decomposePrimes(uGCD)
+      val decomposedS = UOM.decomposePrimes(sGCD)
+      if (decomposedU.values.sum == decomposedS.values.sum) {
+        val reduced = notReduced.copy(uType = notReduced.uType.reduce, subType = notReduced.subType.reduce)
+
+        (reduced, 1.0)
+      } else {
+        def remove(pp: Long, primes: List[Long], removed: Int, max: Int): Long = if (removed < max) {
+          val prime = primes.find(p => pp % p == 0).get
+          val newPP = pp / prime
+          remove(newPP, primes, removed + 1, max)
+        } else {
+          pp
+        }
+        var subType = notReduced.subType
+        decomposedU.map {
+          case (u, num) => {
+            val matches = UOM.uomMap.keySet.filter {
+              case (a, _) => a == u
+            }.map(_._2).toList
+            subType = Ratio(remove(subType.numerator, matches, 0, num), remove(subType.denominator, matches, 0, num))
+          }
+        }
+
+        val uType = notReduced.uType.reduce
+        val reducedWrongV = notReduced.copy(uType, subType)
+        val reduced = UOM.fromSymbolMap(reducedWrongV.asSymbolMap, UOM.SCALAR)
+        val multiplier = (reducedWrongV.v / reduced.v)
+        (reduced, multiplier)
+      }
+    } else {
+      (notReduced, 1.0)
+    }
+  }
+
+  def ^(power: Int) = {
+    val absPower = (this /: (2 to power.abs)) {
+      case (a, _) => a * this
+    }
+    if (power < 0) {
+      absPower.inverse
+    } else {
+      absPower
+    }
+  }
+
+  def inverse = UOM(uType.inverse, subType.inverse, 1 / v)
+
+  def isNull = this == UOM.NULL
+
+  def isScalar = this == UOM.SCALAR
+
+  override def toString = asString
+
+  def compare(rhs: UOM) = asString.compareTo(rhs.asString)
+
+  override def hashCode() = asString.hashCode()
+
+  override def equals(obj: Any) = obj match {
+    case UOM(`uType`, `subType`, _) => true
+    case _ => false
+  }
+
+  def identifier = asString
+
+  lazy val asString = {
+    val symMap = asSymbolMap.map {
+      case (sym, power) => (sym.name, power)
+    }.toList.sortWith(_._1 < _._1)
+
+    val num = symMap.map {
+      case (symName, power) if power == 1 => symName
+      case (symName, power) if power > 1 => symName + "^" + power
+      case _ => ""
+    }.foldLeft("")(_ + _)
+
+    val den = symMap.map {
+      case (symName, power) if power == -1 => symName
+      case (symName, power) if power < -1 => symName + "^" + -power
+      case _ => ""
+    }.foldLeft("")(_ + _)
+
+    val sep = if (isFX) " per " else "/"
+
+    (num, den) match {
+      case (num, "") => num
+      case ("", den) => den
+      case _ => num + sep + den
+    }
+  }
+
+  def asSymbolMap: Map[UOMSymbol, Int] = {
+    // Note - both NULL and SCALAR become an empty map
+
+    val reducedUOM = this
+    val negativePowers = UOM.decomposePrimes(reducedUOM.subType.denominator).mapValues(_ * -1)
+    val primePowers = UOM.decomposePrimes(reducedUOM.subType.numerator) ++ negativePowers
+    Map.empty ++ primePowers.map {
+      case (p, n) => (UOMSymbol.symbolForPrime(p) -> n)
+    }
+  }
+
+  def numeratorUOM: UOM = this match {
+    case UOM.NULL => UOM.NULL
+    case _ => UOM.fromSymbolMap(asSymbolMap.filterValues(_ > 0), UOM.SCALAR)
+  }
+
+  def denominatorUOM: UOM = this match {
+    case UOM.NULL => UOM.SCALAR // matching logic from before refactor
+    case _ => {
+      val filterValues = asSymbolMap.filterValues(_ < 0)
+      val uom = UOM.fromSymbolMap(filterValues, UOM.SCALAR)
+      uom.inverse
+    }
+  }
+
+  def replace(uom1: UOM, uom2: UOM) = {
+    def recurse(u: UOM): UOM = {
+      if (u.uType.gcd(uom1.uType) == uom1.uType)
+        uom2 * recurse(u /uom1)
+      else if (u.uType.gcd(uom1.uType.inverse) == uom1.uType.inverse)
+        recurse(u * uom1) / uom2
+      else
+        u
+    }
+    if (uom1 == uom2)
+      this
+    else
+      recurse(this)
+  }
+
+  def isCurrency: Boolean = UOMType.Currencies.isCurrency(uType)
+
   def isFX = numeratorUOM.isCurrency && denominatorUOM.isCurrency
 }

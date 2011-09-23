@@ -6,10 +6,10 @@ import starling.pivot._
 
 object SpotFXDataType extends MarketDataType {
   type dataType = SpotFXData
-  val keys = UOMSymbol.currencySymbols.filterNot(_ == UOMSymbol.usd).map(s=>SpotFXDataKey(s.asUOM))
+  val keys = UOM.currencies.filterNot(_ == UOM.USD).map(s=>SpotFXDataKey(s))
   val currencyField = FieldDetails("Currency")
   val rateField = new PivotQuantityFieldDetails("Rate")
-  override def createKey(values:Map[Field,Any]):MarketDataKey = SpotFXDataKey(UOM.parseCurrency(values(currencyField.field).asInstanceOf[String]).get)
+  override def createKey(values:Map[Field,Any]):MarketDataKey = SpotFXDataKey(UOM.parseCurrency(values(currencyField.field).asInstanceOf[String]))
   override def createValue(values:List[Map[Field,Any]]):dataType = {
     values match {
       case Nil => throw new Exception("Can't create spot fx rate from no rows")

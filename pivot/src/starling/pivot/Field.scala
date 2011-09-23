@@ -107,7 +107,7 @@ object PivotQuantityPivotParser extends PivotParser {
 
 case class DecimalPlaces(defaultFormat:String, lotsFormat:String, priceFormat:String, currencyFormat:String, percentageFormat:String) {
   def format(uom:UOM) = {
-    if (uom.scale == Ratio(1000,1) || (uom == UOM.K_BBL || uom == UOM.C_M3 || uom == UOM.K_MT))
+    if ((uom == UOM.K_BBL || uom == UOM.C_M3 || uom == UOM.K_MT))
       lotsFormat
     else if (uom.isCurrency)
       currencyFormat

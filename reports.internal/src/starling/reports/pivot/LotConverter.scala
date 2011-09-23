@@ -27,9 +27,8 @@ object LotConverter {
     case `BBL` => K_BBL
     case `MT` => K_MT
     case `M3` => C_M3
-    case `USD` => USD * 1000
-    case `GammaUOM`  => GammaUOM * 1000
-    case `GAL` => GAL * 1000
+    case `GAL` => K_GAL
+    case `GammaUOM`  => (K_BBL ^2) / USD
     case other => other
   }
 

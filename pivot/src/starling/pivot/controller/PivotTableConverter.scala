@@ -427,14 +427,14 @@ case class PivotTableConverter(otherLayoutInfo:OtherLayoutInfo = OtherLayoutInfo
             spans.toList
           }
 
-          var columnsNotHandled = (0 until columnUOMs.length).toSet.filter(n => columnUOMs(n).asString.length() > 0)
+          var columnsNotHandled = (0 until columnUOMs.length).toSet.filter(n => columnUOMs(n).toString.length() > 0)
           var currentRow = startRow
           while (columnsNotHandled.nonEmpty && (currentRow < colData.length)) {
             val spans = getSpans(colData(currentRow)).filter{case (start, end) => columnsNotHandled.contains(start)}
             spans.foreach{case (start, end) => {
               if ((start to end).map(c => columnUOMs(c)).distinct.size == 1) {
                 val current = colData(currentRow)(start)
-                val uom = columnUOMs(start).asString
+                val uom = columnUOMs(start).toString
                 if (uom.length > 0) {
                   colData(currentRow)(start) = current.changeLabel(current.text + " (" + uom + ")")
                 }

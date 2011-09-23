@@ -53,12 +53,16 @@ object Quantity {
   val Parse: Extractor[String, Quantity] =
     Extractor.from[String](_.partialMatch { case Regex(value, UOM.Parse(uom)) => fromString(value, uom) })
 
-  private def sumAsBigDecimal(quantities: Iterable[Quantity]) = {
+  private def sumAsBigDecimal(quantities: Iterable[Quantity]): (BigDecimal, UOM) = {
     if(quantities.nonEmpty) {
       val uoms = quantities.map(_.uom).toSet
-      assert(uoms.size == 1, "Can't sum quantities of different units: " + uoms)
-      val sum = (BigDecimal("0") /: quantities.map(q => BigDecimal(q.value)))(_ + _)
-      (sum, uoms.head)
+      if(uoms.size == 1) {
+        val sum = (BigDecimal("0") /: quantities.map(q => BigDecimal(q.value)))(_ + _)
+        (sum, uoms.head)
+      } else {
+        val sum = (Quantity.NULL /: quantities)(_ + _)
+        (BigDecimal(sum.value), sum.uom)
+      }
     } else {
       (BigDecimal("0"), UOM.NULL)
     }
@@ -145,24 +149,13 @@ class Quantity(val value : Double, val uom : UOM) extends Ordered[Quantity] with
   def pq : PivotQuantity = PivotQuantity(Map(uom -> value), Map[String, List[StackTrace]]())
 
   def in(otherUOM : UOM)(implicit conv: Conversions = Conversions.default): Option[Quantity] = {
-    conv.convert(uom, otherUOM).map((ratio) => this * Quantity(ratio, otherUOM / uom))
+    conv.convert(uom, otherUOM).map((ratio) => Quantity((this.value * ratio).toDouble, otherUOM))
   }
 
   def inUOM(uom: UOM)(implicit conv: Conversions = Conversions.default): Quantity = {
     in(uom)(conv) match {
       case Some(beqv) => beqv
       case None => throw new Exception(this + ": Couldn't convert from " + this + " to " + uom)
-    }
-  }
-
-  /**
-   * Converts to this Quanity's base unit, or None. For example 1KG would become 1000G
-   */
-  def inBaseUnit: Option[Quantity] = {
-    Conversions.baseUOM(uom) match {
-      case Some(`uom`) => Some(this)
-      case Some(baseUOM) => this in baseUOM
-      case _ => None
     }
   }
 
@@ -175,8 +168,8 @@ class Quantity(val value : Double, val uom : UOM) extends Ordered[Quantity] with
       rhs match {
         case Quantity(0.0, UOM.NULL) => this
         case Quantity(x, this.uom) => Quantity(value + x, uom)
-        case Quantity(x, otherUOM) => rhs in this.uom match {
-          case Some(rhsInThisUOM) => this + rhsInThisUOM
+        case Quantity(x, otherUOM) => this.uom.plus(otherUOM) match {
+          case Some(conversion) => this + rhs.copy(value = rhs.value * conversion.toDouble, uom = this.uom)
           case _ => throw new IllegalStateException(
             "Attempting to add two quantities with different units " + uom + " : " + rhs.uom + " : " + (this, rhs)
           )
@@ -185,9 +178,12 @@ class Quantity(val value : Double, val uom : UOM) extends Ordered[Quantity] with
   }
 
   def * (rhs : Double) : Quantity = Quantity(value * rhs, uom)
-  def * (rhs : Quantity) : Quantity = {
-//    assert(uom != UOM.NULL && rhs.uom != UOM.NULL, "Can't multiply quantities with null units - you probably should have used the scalar unit")
-    Quantity(value * rhs.value, uom * rhs.uom)
+
+  def *(rhs: Quantity): Quantity = {
+    //    assert(uom != UOM.NULL && rhs.uom != UOM.NULL, "Can't multiply quantities with null units - you probably should have used the scalar unit")
+    (uom.mult(rhs.uom)) match {
+      case (newUOM, c) => Quantity((c * value * rhs.value).toDouble, newUOM)
+    }
   }
 
   def * (rhs : Percentage) : Quantity = this * rhs.value
@@ -296,6 +292,17 @@ abstract class NamedQuantity(val quantity : Quantity) extends Quantity(quantity.
   override def abs                 = FunctionNamedQuantity("abs", List(this), quantity.abs)
   override def invert              = InvertNamedQuantity(this)
   override def negate              = unary_-
+  override def in(otherUOM : UOM)(implicit conv: Conversions = Conversions.default): Option[Quantity] = {
+    conv.convert(uom, otherUOM).map((ratio) => if (ratio == 1.0) {
+      this
+    }else{
+      val cq = Quantity((this.value * ratio).toDouble, otherUOM)
+      (uom.div(otherUOM)) match {
+        case (UOM.SCALAR, _) => FunctionNamedQuantity("ConvertTo "+otherUOM, List(this), cq, custom = true)
+        case _ => this * (SimpleNamedQuantity("Conversion", Quantity(ratio.toDouble, otherUOM/uom)))
+      }
+    })
+  }
   private def isAlmostOne(value: Double): Boolean          = (value - 1).abs < MathUtil.EPSILON
   private def isAlmostOne(percentage: Percentage): Boolean = isAlmostOne(percentage.value)
   private def guard(condition: Boolean, fn: => NamedQuantity) = if (condition) this else fn

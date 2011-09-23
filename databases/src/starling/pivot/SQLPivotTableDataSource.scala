@@ -127,7 +127,7 @@ case class QuantityStringColumnDefinition(override val name:String, override val
     } else {
       val clauses = values.map { v =>
         val q = v.asInstanceOf[Quantity]
-        (new starling.dbx.Field(fullSqlName) eql q.value) and (new starling.dbx.Field(fullSqlName+"UOM") eql q.uom.asString)
+        (new starling.dbx.Field(fullSqlName) eql q.value) and (new starling.dbx.Field(fullSqlName+"UOM") eql q.uom.toString)
       }
       List( (clauses.head /: clauses.tail) { _ or _ } )
     }

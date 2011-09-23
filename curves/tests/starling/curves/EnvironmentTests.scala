@@ -18,13 +18,8 @@ class EnvironmentTests extends TestMarketTest {
       case _ => throw new Exception("not needed")
     }
     ))
-
-    val oneDollar = Quantity(1, USD)
-    val oneHundredCent = Quantity(100, US_CENT)
-    assertEquals(oneDollar * env.spotFXRate(USD, USD), oneDollar)
-    val cent = env.spotFXRate(US_CENT, USD)
-    assertEquals(oneDollar * cent, oneHundredCent)
-    assertEquals(oneHundredCent * env.spotFXRate(USD, US_CENT), oneDollar)
+    val conv = env.spotFXRate(US_CENT, USD)
+    assertEquals(conv, Quantity(1, SCALAR))
   }
 
   @Test

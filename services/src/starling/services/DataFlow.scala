@@ -83,7 +83,7 @@ trait DataFlowDataProvider[K, MarketType, CurveType]{
 }
 
 case class SpotFXDataProvider (marketDataStore : MarketDataStore) extends DataFlowDataProvider[Day, UOM, Quantity] {
-  private val titanCurrencies = EDMConversions.starlingUomSymbolToEdmUom.mapKeys(_.asUOM)
+  private val titanCurrencies = EDMConversions.starlingUomSymbolToEdmUom.mapKeys(UOM.asUOM)
     .filterKeys(uom => uom.isCurrency && uom != UOM.USD)
   private val marketDataKeys: Some[Set[MarketDataKey]] = Some(titanCurrencies.keySet.map(SpotFXDataKey(_)))
 
