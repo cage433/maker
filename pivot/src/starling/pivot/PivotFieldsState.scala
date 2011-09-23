@@ -61,7 +61,7 @@ trait PossibleValuesFilter {
   def matches(fieldDetails:FieldDetails, value : Any) : Boolean
 }
 case class MeasurePossibleValuesFilter(field:Field) extends PossibleValuesFilter{
-  def matches(fieldDetails:FieldDetails, value : Any) : Boolean = (value != UndefinedValue)
+  def matches(fieldDetails:FieldDetails, value : Any) : Boolean = true //(value != UndefinedValue)
 }
 case class SelectionPossibleValuesFilter(selection:Selection) extends PossibleValuesFilter {
   def matches(fieldDetails:FieldDetails, value : Any) : Boolean = selection.matches(fieldDetails, value)
