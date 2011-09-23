@@ -18,7 +18,7 @@ case class VerifyPriceAvailable(marketDataAvailability: MarketDataAvailabilityCh
     marketDataAvailability.await(dataFlow)
     None
   } else {
-    Some(email.copy(subject = "Missing Prices for: %s on %s" % (dataFlow.description, observationDay),
-                    body = <p>No Prices have been uploaded for {dataFlow.description} on {observationDay}</p>.toString))
+    Some(email.copy(subject = "Missing Prices for: %s on %s" % (dataFlow.description, observationDay.toString),
+                    body = <p>No Prices have been uploaded for {dataFlow.description} on {observationDay.toString}</p>.toString))
   }
 }
