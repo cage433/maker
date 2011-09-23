@@ -81,6 +81,21 @@ case class MarketDataPage(
     fc2Service.saveMarketData(marketDataIdentifier, pageState.marketDataType, edits)
   }
 
+  override def postSave(i:Int, context:PageContext) {
+    marketDataIdentifier match {
+      case StandardMarketDataPageIdentifier(mi) => {
+        context.localCache.latestMarketDataVersionIfValid(mi.selection) match {
+          case Some(v) => {
+            val maxVersion = math.max(i, v)
+            val newPage = copy(marketDataIdentifier=StandardMarketDataPageIdentifier(mi.copyVersion(maxVersion)), pageState = pageState.copy(edits = PivotEdits.Null))
+            context.goTo(newPage)
+          }
+          case None =>
+        }
+      }
+    }
+  }
+
   override def latestPage(localCache:LocalCache) = {
     marketDataIdentifier match {
       case StandardMarketDataPageIdentifier(mi) => {

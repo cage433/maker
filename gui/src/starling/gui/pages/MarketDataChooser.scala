@@ -116,7 +116,7 @@ class MarketDataChooser(maybeDesk:Option[Desk], pageContext:PageContext, snapsho
       case Some(SnapshotVersionEntry(ss)) => invokeAction(SnapshotMarketDataVersion(ss))
       case Some(ImportAndSnapshotEntry) => pageContext.submit(
         SnapshotSubmitRequest(snapshotSelection.marketDataSelection, snapshotSelection.observationDay),
-        (snapshot: Option[SnapshotIDLabel])=>{SnapshotMarketDataVersion(snapshot).map(invokeAction)}, true, (r:Option[SnapshotIDLabel]) => false)
+        (snapshot: Option[SnapshotIDLabel])=>{SnapshotMarketDataVersion(snapshot).map(invokeAction)}, true)
     }
   }
 

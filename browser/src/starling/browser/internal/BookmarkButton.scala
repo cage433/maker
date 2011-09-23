@@ -179,7 +179,7 @@ class BookmarkButton(currentPage: CurrentPage, context:PageContext, pageBuilder:
 
         context.submitYesNo("Delete Bookmark?",
           "Are you sure you want to delete the \"" + bookmarkName + "\" bookmark?",
-          DeleteBookmarkRequest(bookmarkName), awaitRefresh = (u:Unit) => {false}, onComplete = (u:Unit) => { clearUp _}, keepScreenLocked = false)
+          DeleteBookmarkRequest(bookmarkName), onComplete = (u:Unit) => { clearUp _}, keepScreenLocked = false)
       } else {
         val oldDefaultButton = context.getDefaultButton
         savePanel.oldDefaultButton = oldDefaultButton

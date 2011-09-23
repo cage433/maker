@@ -22,7 +22,7 @@ object RegressionRunner {
       classOf[ServicesBromptonActivator],
       classOf[ReportsBromptonActivator]
     )
-    val single = new SingleClasspathManager(starling.manager.Props.readDefault, activators)
+    val single = new SingleClasspathManager(starling.manager.Props.readDefault, false, activators)
     single.start
     val reportService = single.service(classOf[ReportService])
 

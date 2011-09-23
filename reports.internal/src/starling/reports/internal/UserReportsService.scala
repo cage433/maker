@@ -6,12 +6,6 @@ import starling.db.MarketDataStore
 import starling.rmi.UserSettingsDatabase
 import starling.auth.User
 import starling.pivot.controller.PivotTable
-import starling.pivot.PivotFieldParams._
-import starling.gui.api.CurveIdentifierLabel._
-import starling.gui.api.MarketDataIdentifier._
-import starling.gui.api.PnlFromParameters._
-import starling.gui.api.ReportParameters._
-import starling.gui.api.UserReportData._
 import starling.gui.api._
 import starling.daterange.{Timestamp, Day}
 import starling.reports.pivot.ReportServiceInternal

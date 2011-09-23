@@ -83,7 +83,7 @@ class BookmarksPanel(context:PageContext) extends MigPanel("") {
     val bookmarkSelected = bookmarksListView.selected
     context.submitYesNo("Delete Bookmark?",
       "Are you sure you want to delete the \"" + bookmarkSelected.name + "\" bookmark?",
-      DeleteBookmarkRequest(bookmarkSelected.name), (u:Unit) => {false}, (u:Unit) => {})
+      DeleteBookmarkRequest(bookmarkSelected.name), (u:Unit) => {})
   }
 
   def goToBookmark(modifiers:Modifiers) {

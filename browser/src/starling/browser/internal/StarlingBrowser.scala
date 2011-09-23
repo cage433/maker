@@ -5,7 +5,7 @@ import starling.browser._
 import osgi.BundleAdded
 import service.{StarlingEvent, BookmarkLabel}
 import starling.browser.common._
-import java.util.concurrent.{CountDownLatch, ThreadFactory, Executors}
+import java.util.concurrent.{ThreadFactory, Executors}
 import scala.swing.Swing._
 import java.awt.image.BufferedImage
 import org.jdesktop.animation.timing.{TimingTargetAdapter, Animator}
@@ -68,7 +68,6 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
   private val componentBufferWindow = 1
   private val history = new ArrayBuffer[PageInfo]
   private var current = -1
-  private var autoRefresh:Option[CountDownLatch]=None
 
   private val mainPanel = new BorderPanel
   private val genericLockedUI = new GenericLockedUI
@@ -81,6 +80,8 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
 
   private val slideTime = 250
   private val slideAcceleration = 0.2f
+
+  private var submitCount = 0
 
   private lazy val publisherForPageContext = new Publisher() {}
 
@@ -117,11 +118,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
 
         if ((current >= 0) && (current < history.length)) {
           if (currentPageInfo.refreshPage.isDefined) {
-            if (autoRefresh.isDefined) {
-              val autoRefresh0 = autoRefresh.get
-              autoRefresh = None
-              refresh(lockAndUnlockScreen=false, latch = Some(autoRefresh0))
-            } else if (liveUpdateCheckbox.selected) {
+            if (liveUpdateCheckbox.selected && submitCount == 0) {
               refresh()
             } else {
               refreshAction.enabled = true
@@ -159,8 +156,8 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
           }
         }
       }
-      def submit[R](submitRequest:SubmitRequest[R], onComplete:R => Unit, keepScreenLocked:Boolean, awaitRefresh:R=>Boolean=(r:R)=>false) {StarlingBrowser.this.submit(submitRequest, awaitRefresh, onComplete, keepScreenLocked)}
-      def submitYesNo[R](message:String, description:String, submitRequest:SubmitRequest[R], awaitRefresh:R=>Boolean, onComplete:R => Unit, keepScreenLocked:Boolean) {StarlingBrowser.this.submitYesNo(message, description, submitRequest, awaitRefresh, onComplete, keepScreenLocked)}
+      def submit[R](submitRequest:SubmitRequest[R], onComplete:R => Unit, keepScreenLocked:Boolean) {StarlingBrowser.this.submit(submitRequest, onComplete, keepScreenLocked)}
+      def submitYesNo[R](message:String, description:String, submitRequest:SubmitRequest[R], onComplete:R => Unit, keepScreenLocked:Boolean) {StarlingBrowser.this.submitYesNo(message, description, submitRequest, onComplete, keepScreenLocked)}
       def clearCache() {StarlingBrowser.this.clearCache()}
       def setContent(content:Component, cancelAction:Option[()=> Unit]) {StarlingBrowser.this.setContent(content, cancelAction)}
       def setErrorMessage(title:String, error:String) {StarlingBrowser.this.setError(title, error)}
@@ -322,7 +319,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
     tooltip = "Back to previous page (Backspace or Alt+Left)"
 	  reactions += {
       case ButtonClicked(button) => {
-        starlingBrowserUI.clearContentPanel
+        starlingBrowserUI.clearContentPanel()
         backPageAction.actionPerformed(null)
       }
     }
@@ -340,7 +337,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
 
     reactions += {
       case ButtonClicked(button) => {
-        starlingBrowserUI.clearContentPanel
+        starlingBrowserUI.clearContentPanel()
         undoAction.peer.actionPerformed(null)
       }
     }
@@ -348,7 +345,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
 
   private val redoAction = Action("redoAction") {
     history(current).componentForFocus = currentFocus
-    starlingBrowserUI.clearContentPanel
+    starlingBrowserUI.clearContentPanel()
     currentComponent.resetDynamicState()
     val oldIndex = current
     current+=1
@@ -369,7 +366,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
 
     reactions += {
       case ButtonClicked(button) => {
-        starlingBrowserUI.clearContentPanel
+        starlingBrowserUI.clearContentPanel()
         redoAction.peer.actionPerformed(null)
       }
     }
@@ -426,7 +423,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
     tooltip = "Forward to next page (Alt+Right)"
 	  reactions += {
          case ButtonClicked(button) => {
-           starlingBrowserUI.clearContentPanel
+           starlingBrowserUI.clearContentPanel()
            currentComponent.resetDynamicState()
 
            val oldIndex = current
@@ -492,7 +489,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
     tooltip = "Home"
 		reactions += {
          case ButtonClicked(button) => {
-           starlingBrowserUI.clearContentPanel
+           starlingBrowserUI.clearContentPanel()
         	 goTo(homePage, false)
          }
     }
@@ -723,13 +720,15 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
     stopButton.enabled = false
   }
 
-  def submitYesNo[R](message0:String, description:String, submitRequest:SubmitRequest[R], awaitRefresh:R=>Boolean, onComplete:R => Unit, keepScreenLocked:Boolean) {
+  def submitYesNo[R](message0:String, description:String, submitRequest:SubmitRequest[R], onComplete:R => Unit, keepScreenLocked:Boolean) {
+    submitCount += 1
     genericLockedUI.setClient(greyClient)
     genericLockedUI.setLocked(true)
     setButtonsEnabled(false)
     def userSelected(b:Boolean) {
+      submitCount -= 1
       if (b) {
-        submit(submitRequest, awaitRefresh, onComplete, keepScreenLocked)
+        submit(submitRequest, onComplete, keepScreenLocked)
       } else {
         setScreenLocked(false)
         refreshButtonStatus()
@@ -767,7 +766,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
   }
 
   def clearContent() {
-    starlingBrowserUI.clearContentPanel
+    starlingBrowserUI.clearContentPanel()
     setScreenLocked(false)
     refreshButtonStatus()
     refreshAction.enabled = history(current).refreshPage.isDefined
@@ -777,7 +776,8 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
   def getDefaultButton = windowMethods.getDefaultButton
   def requestFocusInCurrentPage() {currentComponent.requestFocusInWindow()}
 
-  def submit[R](submitRequest:SubmitRequest[R], awaitRefresh:R=>Boolean, onComplete:R => Unit, keepScreenLocked:Boolean) {
+  def submit[R](submitRequest:SubmitRequest[R], onComplete:R => Unit, keepScreenLocked:Boolean) {
+    submitCount += 1
     genericLockedUI.setLocked(true)
     tabComponent.setBusy(true)
     setButtonsEnabled(false)
@@ -786,11 +786,8 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
     waitingFor += Some(threadID)
     val timer = createTimer(threadID)
     timer.start()
-    autoRefresh=Some(new CountDownLatch(1))
-    pageBuilder.submit(submitRequest, autoRefresh.get, awaitRefresh, (didWait:Boolean, submitResponse:SubmitResponse) => {
-      if (!didWait) {
-        autoRefresh = None
-      }
+    pageBuilder.submit(submitRequest, (submitResponse:SubmitResponse) => {
+      submitCount -= 1
       if (waitingFor.contains(Some(threadID))) {
         waitingFor -= Some(threadID)
         //wait for needsRefresh
@@ -798,20 +795,18 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
           case SuccessSubmitResponse(data) => {
             timer.stop()
             onComplete(data.asInstanceOf[R])
-            starlingBrowserUI.clearContentPanel
+            starlingBrowserUI.clearContentPanel()
             if (!keepScreenLocked) {
-              setScreenLocked(false)
-            }
-            if (!didWait && !keepScreenLocked) {
-              setScreenLocked(false)
-              refreshButtonStatus()
-              refreshAction.enabled = history(current).refreshPage.isDefined
-            }
-            // This is a hack for the portfolio table at the moment.
-            if (didWait && !keepScreenLocked) {
-              setScreenLocked(false)
-              refreshButtonStatus()
-              refreshAction.enabled = history(current).refreshPage.isDefined
+              val currentPageInfo = history(current)
+              updateRefreshState(currentPageInfo)
+              refreshAction.enabled = currentPageInfo.refreshPage.isDefined
+              val shouldRefresh = liveUpdateCheckbox.selected && refreshAction.enabled
+              if (shouldRefresh) {
+                refresh()
+              } else {
+                setScreenLocked(false)
+                refreshButtonStatus()
+              }
             }
           }
           case FailureSubmitResponse(t) => {
@@ -1116,7 +1111,12 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
 
   private var refreshButtonAnimator:Animator = null
 
-  def refresh(lockAndUnlockScreen:Boolean=true, latch:Option[CountDownLatch] = None) {
+  def refresh() {
+    genericLockedUI.setLocked(true)
+    tabComponent.setBusy(true)
+    setButtonsEnabled(false)
+    stopButton.enabled = true
+
     val pageInfo = history(current)
     val previousComponent = pageInfo.pageComponent.get
     val previousBookmark = pageInfo.bookmark
@@ -1128,22 +1128,16 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
         case SuccessPageResponse(pd,_) => Some(PreviousPageData(pd, previousComponent.getRefreshInfo))
         case _ => None
       }
-    } else {None}
-    if (lockAndUnlockScreen) {
-      genericLockedUI.setLocked(true)
-      tabComponent.setBusy(true)
-      setButtonsEnabled(false)
-      stopButton.enabled = true
-      refreshButtonStatus()
+    } else {
+      None
     }
 
     threadSequence+=1
     val threadID = threadSequence
     waitingFor += Some(threadID)
     val timer = createTimer(threadID)
-    if (lockAndUnlockScreen) {
-      timer.start()
-    }
+    timer.start()
+
     pageBuilder.refresh(newPage, (pageResponse:PageResponse) => {
       timer.stop()
       if (waitingFor.contains(Some(threadID))) {
@@ -1158,14 +1152,8 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
         val pageInfo = new PageInfo(newPage, pageResponse, newBookmark, Some(pageComponent), new SoftReference(pageComponent), previousState, None)
         history(current) = pageInfo
         showPage(pageInfo, current)
-        if (lockAndUnlockScreen) {
-          setScreenLocked(false)
-          refreshButtonStatus()
-        }
-        latch match {
-          case Some(l) => l.countDown()
-          case None =>
-        }
+        setScreenLocked(false)
+        refreshButtonStatus()
         if (refreshButtonAnimator != null) refreshButtonAnimator.stop()
         refreshButtonAnimator = new Animator(StarlingBrowser.RefreshTime, new TimingTargetAdapter {
           override def timingEvent(fraction:Float) {
@@ -1320,20 +1308,18 @@ class PageBuilder(val remotePublisher:Publisher, val serverContext:ServerContext
     pageToThens = Map()
   }
 
-  def submit[R](submitRequest:SubmitRequest[R], waitFor:CountDownLatch, awaitRefresh:R=>Boolean, then:((Boolean, SubmitResponse) => Unit)) {
+  def submit[R](submitRequest:SubmitRequest[R], then:((SubmitResponse) => Unit)) {
     threads.execute(new Runnable() {
       def run() {
-        val (submitResponse, didWait) = BrowserLog.infoWithTime("Submit request " + submitRequest) {
+        val submitResponse = BrowserLog.infoWithTime("Submit request " + submitRequest) {
           try {
             val r = submitRequest.baseSubmit(serverContext)
-            val dw = awaitRefresh(r)
-            if (dw) waitFor.await()
-            (SuccessSubmitResponse(r),dw)
+            SuccessSubmitResponse(r)
           } catch {
-            case t => (FailureSubmitResponse(t),false)
+            case t => FailureSubmitResponse(t)
           }
         }
-        onEDT(then(didWait, submitResponse))
+        onEDT(then(submitResponse))
       }
     })
   }

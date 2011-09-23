@@ -17,7 +17,7 @@ object CannedLauncher {
   def main(args:Array[String]) {
     System.setProperty("log4j.configuration", "utils/resources/log4j.properties")
     val activators = List(classOf[CannedActivator], classOf[BrowserBromptonActivator])
-    val single = new SingleClasspathManager(Map(), activators)
+    val single = new SingleClasspathManager(Map(), true, activators)
     single.start()
   }
 }
