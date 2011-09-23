@@ -56,7 +56,7 @@ class ReportPivotTableDataSource(tradePivotTable:PivotTableDataSource, reports:L
    *        its own combined values which are then collected together with the trade combined values for that group
    */
   case class GroupedAndCombinedFieldBindingsBuilder(
-    tradeFilters          : Seq[(Field, PossibleValuesFilter)],
+    tradeFilters          : FiltersList,
     tradeFieldsToGroupBy  : Seq[Field],
     tradeFieldsToCombine  : Seq[Field],
     reportSpecificOptions : Map[String, Any]
@@ -68,7 +68,7 @@ class ReportPivotTableDataSource(tradePivotTable:PivotTableDataSource, reports:L
     private val groupCombinedValuesMap =  MutableMap[FieldValues, MutableMap[UTPIdentifier, (Double, FieldValues)]]()
 
     private def rowMatchesSelection(row: FieldBindings): Boolean = {
-      tradeFilters.forall {case (field, selection) => selection.matches(allFieldToFieldDetails(field), row.getOrElse(field, UndefinedValue))}
+      tradeFilters.exists(_.forall {case (field, selection) => selection.matches(allFieldToFieldDetails(field), row.getOrElse(field, UndefinedValue))})
     }
 
     private def incrementUtpVolumeAndCombineTradeFieldValues(groupValues: FieldValues, row : FieldBindings){
@@ -149,7 +149,7 @@ class ReportPivotTableDataSource(tradePivotTable:PivotTableDataSource, reports:L
     val groupByFields = (pfs.filterAreaFields ++ pfs.rowFields ++ pfs.columns.columnFields).filter(tradeFields.contains).filterNot(tradeFilterFieldsInTheFilterArea.contains)
 
     val groupedCombinedFieldBindingsBuilder = new GroupedAndCombinedFieldBindingsBuilder(
-      tradeFilters = allFilterPathsUpToFirstReportFilter.toFilterSet.toList,
+      tradeFilters = allFilterPathsUpToFirstReportFilter,
       tradeFieldsToGroupBy = groupByFields,
       tradeFieldsToCombine = pfs.columns.measureFields.filter(f => tradeFields.contains(f)),
       pfs.reportSpecificChoices.toMap

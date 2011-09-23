@@ -43,14 +43,9 @@ class PossibleValuesBuilder(val allFields:Seq[FieldDetails], val filtersList:Fil
     // (if that exists)
     for (filters <- filtersList) {
       val (matching, nonMatching) = filters.span{case (field, selection) => {
-        selection match {
-          case MeasurePossibleValuesFilter(_) => true
-          case _ => {
-            fieldDetailsMap.get(field) match {
-              case None => false
-              case Some(fd) => selection.matches(fd, getFieldValue(field))
-            }
-          }
+        fieldDetailsMap.get(field) match {
+          case None => false
+          case Some(fd) => selection.matches(fd, getFieldValue(field))
         }
       } }
       matching.foreach {
@@ -83,17 +78,16 @@ object UnfilteredPivotTableDataSource {
 
     val filteredData = if (pfs.filters.isEmpty) data else data.filter {
       row => {
-        pfs.filters.forall{ case(field,selection) => {
-          fieldDetailsMap.get(field) match {
-            case Some(fieldDetails) => {
-              val rowValue = fieldDetails.transformValueForGroupByField(PivotValue.extractValue(row, field))
-              selection match {
-                case SomeSelection(values) => fieldDetails.matches(values, rowValue)
-                case _ => true
+        possibleValueFieldList.filters.exists { filters => {
+          filters.forall{ case(field,selection) => {
+            fieldDetailsMap.get(field) match {
+              case Some(fieldDetails) => {
+                val rowValue = fieldDetails.transformValueForGroupByField(PivotValue.extractValue(row, field))
+                selection.matches(fieldDetails, rowValue)
               }
+              case None => true
             }
-            case None => true
-          }
+          } }
         } }
       }
     }

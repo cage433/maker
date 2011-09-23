@@ -61,13 +61,13 @@ trait PossibleValuesFilter {
   def matches(fieldDetails:FieldDetails, value : Any) : Boolean
 }
 case class MeasurePossibleValuesFilter(field:Field) extends PossibleValuesFilter{
-  def matches(fieldDetails:FieldDetails, value : Any) : Boolean = true //(value != UndefinedValue)
+  def matches(fieldDetails:FieldDetails, value : Any) : Boolean = (value != UndefinedValue)
 }
 case class SelectionPossibleValuesFilter(selection:Selection) extends PossibleValuesFilter {
   def matches(fieldDetails:FieldDetails, value : Any) : Boolean = selection.matches(fieldDetails, value)
 }
 case class FiltersList(filters:List[List[(Field,PossibleValuesFilter)]]) extends Iterable[List[(Field,PossibleValuesFilter)]] {
-  def toFilterSet = filters.flatten.toSet
+  private def toFilterSet = filters.flatten.toSet
   def allFields = toFilterSet.map(_._1)
   def iterator = filters.iterator
   def chopUpToFirstNon(fields:Set[Field]) = {

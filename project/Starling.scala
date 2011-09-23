@@ -172,7 +172,7 @@ object StarlingBuild extends Build{
     "rabbit.event.viewer.api",
     file("./rabbit.event.viewer.api"),
     settings = standardSettings
-  ) dependsOn(pivot)
+  ) dependsOn(pivot, manager)
 
   lazy val rabbitEventViewerService = Project(
     "rabbit.event.viewer.service",

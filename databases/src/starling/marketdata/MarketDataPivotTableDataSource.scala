@@ -183,7 +183,9 @@ class MarketDataPivotTableDataSource(reader: MarketDataReader, edits:PivotEdits,
   private def generateDataWithoutEdits(pfs : PivotFieldsState) = {
 
     val filtersUpToFirstMarketDataField = pfs.allFilterPaths.chopUpToFirstNon(inMemoryFields)
-    val filters: Set[(Field, Selection)] = filtersUpToFirstMarketDataField.toFilterSet.flatMap {
+    //FIXME toSet.toList probably means the filtering is incorrect when there is more than one filter path
+    val foo = filtersUpToFirstMarketDataField.flatten.toSet
+    val filters: Set[(Field, Selection)] = foo.flatMap {
       case (field,MeasurePossibleValuesFilter(_)) => Nil
       case (field,SelectionPossibleValuesFilter(selection)) => List(field -> selection)
     }
@@ -205,6 +207,7 @@ class MarketDataPivotTableDataSource(reader: MarketDataReader, edits:PivotEdits,
     val data = if (marketDataFields.isEmpty) {
       observationDayAndMarketDataKeyRows.keys
     } else {
+
       def selectedValues[T : Manifest](f: Field): Option[Set[Option[T]]] = {
         filters.find { case (field, selection) => field == f && selection.isInstanceOf[SomeSelection] }
           .map { case (_, SomeSelection(values)) => {
