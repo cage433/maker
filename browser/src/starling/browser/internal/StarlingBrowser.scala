@@ -227,7 +227,6 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
     refreshAction.enabled = enabled
     stopButton.enabled = enabled
     homeButton.enabled = enabled
-    settingsButton.enabled = enabled
     liveUpdateCheckbox.enabled = enabled
     bookmarkButton.enabled = enabled
     bookmarkDropDownButton.enabled = enabled
@@ -716,7 +715,6 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
     undoButton.enabled = (current > 0)
     forwardButton.enabled = (current < (history.size-1))
     redoButton.enabled = (current < (history.size-1))
-    settingsButton.enabled = true
     bookmarkButton.enabled = true
     bookmarkDropDownButton.enabled = true
     enableAddressBar(true)

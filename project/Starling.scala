@@ -184,7 +184,7 @@ object StarlingBuild extends Build{
     "gui", 
     file("./gui"),
     settings = standardSettings
-  ) dependsOn(fc2api, reports, browser, rabbitEventViewerApi)
+  ) dependsOn(fc2api, reports, browser, rabbitEventViewerApi, singleClasspathManager)
 
   lazy val browser = Project(
     "browser",

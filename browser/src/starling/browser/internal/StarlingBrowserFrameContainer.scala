@@ -52,11 +52,16 @@ object RootBrowserBundle extends BrowserBundle {
   }
 }
 
+object StarlingBrowserFrameContainer {
+  var numberOfFramesOpen = 0
+}
+
 class StarlingBrowserFrameContainer(serverContext: ServerContext, lCache: LocalCache, pageBuilder:PageBuilder,
                                     homePage: Page, userSettings: UserSettings, frameTitle: String) extends ContainerMethods {
   private val frames = new ListBuffer[StarlingBrowserFrame]
 
   def createNewFrame(fromFrame: Option[StarlingBrowserFrame], startPage:Option[Either[Page,(ServerContext => Page, PartialFunction[Throwable,Unit])]]) {
+    StarlingBrowserFrameContainer.numberOfFramesOpen += 1
     val startPage0 = startPage.getOrElse(Left(homePage))
     val newFrame = new StarlingBrowserFrame(homePage, startPage0, pageBuilder, lCache, userSettings, this, serverContext.extraInfo)
     frames += newFrame
@@ -99,12 +104,12 @@ class StarlingBrowserFrameContainer(serverContext: ServerContext, lCache: LocalC
   }
 
   def closeFrame(frame: StarlingBrowserFrame) {
-    if ((frames.size == 1) /* && (BrowserLauncher.numberOfClientsLaunched <= 1)*/) {
+    if ((frames.size == 1)  && (StarlingBrowserFrameContainer.numberOfFramesOpen <= 1)) {
       // This is the last frame so ensure user userSettings are saved.
       closeAllFrames(frame)
     } else {
       // There are other frames left so just dispose of this frame.
-      //BrowserLauncher.numberOfClientsLaunched -= 1
+      StarlingBrowserFrameContainer.numberOfFramesOpen -= 1
       frames -= frame
       frame.visible = false
       frame.dispose()

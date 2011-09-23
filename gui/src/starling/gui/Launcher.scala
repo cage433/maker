@@ -1,4 +1,4 @@
-package starling.launcher
+package starling.gui
 
 import starling.gui.osgi.GuiBromptonActivator
 import starling.browser.osgi.BrowserBromptonActivator
@@ -35,8 +35,19 @@ object Launcher {
       start(rmiHost, rmiPort, servicePrincipalName)
     }
   }
+
+  // These variables are a big hack so we remember what they are when running the start method when changing users.
+  var rmiHost = ""
+  var rmiPort = -1
+  var servicePrincipalName = ""
+
   def start(rmiHost: String, rmiPort: Int, servicePrincipalName: String, overriddenUser:Option[String] = None) {
-    val props = Map("serverRmiHost" -> rmiHost, "serverRmiPort" -> rmiPort.toString, "principalName" -> servicePrincipalName)
+
+    this.rmiHost = rmiHost
+    this.rmiPort = rmiPort
+    this.servicePrincipalName = servicePrincipalName
+
+    val props = Map("serverRmiHost" -> rmiHost, "serverRmiPort" -> rmiPort.toString, "principalName" -> servicePrincipalName, "overriddenUser" -> overriddenUser.getOrElse("NoUser"))
     val activators = List(classOf[JettyBromptonActivator], classOf[GuiBromptonActivator], classOf[BrowserBromptonActivator])
     val single = new SingleClasspathManager(props, activators)
     single.start()

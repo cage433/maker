@@ -32,6 +32,7 @@ class BookmarkButton(currentPage: CurrentPage, context:PageContext, pageBuilder:
 
   val replacePanel = new MigPanel with RoundedBackground {
     border = RoundedBorder(Color.RED)
+    background = Color.WHITE
     private val questionIcon = new Label {
       icon = BrowserIcons.icon("/icons/128x128_question.png")
     }
@@ -71,6 +72,7 @@ class BookmarkButton(currentPage: CurrentPage, context:PageContext, pageBuilder:
 
   val savePanel = new MigPanel with RoundedBackground {
     border = RoundedBorder(Color.RED)
+    background = Color.WHITE
     var oldDefaultButton:Option[Button] = None
 
     val infoIcon = new Label {

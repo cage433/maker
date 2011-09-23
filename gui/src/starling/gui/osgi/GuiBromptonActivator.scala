@@ -26,6 +26,7 @@ class GuiBromptonProps {
   def serverRmiHost:String = "localhost"
   def serverRmiPort:Int = throw new Exception("There is no default server rmi port")
   def principalName:String = "STARLING-TEST/dave-linux"
+  def overriddenUser:String = "NoUser"
 }
 class GuiBromptonActivator extends BromptonActivator {
   type Props = GuiBromptonProps
@@ -39,7 +40,8 @@ class GuiBromptonActivator extends BromptonActivator {
   def init(context: BromptonContext, props: GuiBromptonProps) {
 
     System.setProperty(BouncyRMI.CodeVersionKey, BouncyRMI.CodeVersionUndefined)
-    client = new BouncyRMIClient(props.serverRmiHost, props.serverRmiPort, GuiStart.auth(props.principalName))
+    val overriddenUser = if (props.overriddenUser == "NoUser") None else Some(props.overriddenUser)
+    client = new BouncyRMIClient(props.serverRmiHost, props.serverRmiPort, GuiStart.auth(props.principalName), overriddenUser = overriddenUser)
     client.startBlocking
     val starlingServer = client.proxy(classOf[StarlingServer])
     starlingServer.storeSystemInfo(GuiStart.systemInfo)

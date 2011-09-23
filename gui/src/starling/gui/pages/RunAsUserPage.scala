@@ -1,4 +1,4 @@
-package starling.browser.internal
+package starling.gui.pages
 
 import java.awt.{Color, Dimension}
 import swing.{TextField, Label, Button, ScrollPane}
@@ -7,11 +7,15 @@ import starling.browser.common.{NListView, MigPanel}
 import starling.browser.common.GuiUtils._
 import starling.browser._
 import service.UserLoggedIn
+import starling.gui.StarlingLocalCache._
+import starling.gui.{Launcher, StarlingIcons}
 
 case class RunAsUserPage() extends Page {
   def text = "Run as another user"
-  def icon = BrowserIcons.im("/icons/16x16_user_dark.png")
-  def bundle = RootBrowserBundle.bundleName
+//  def icon = BrowserIcons.im("/icons/16x16_user_dark.png")
+  def icon = StarlingIcons.im("/icons/16x16_user_dark.png")
+//  def bundle = RootBrowserBundle.bundleName
+  def bundle = "StarlingServer"
 
 
   def build(serverContext: String) = null
@@ -35,18 +39,18 @@ class RunAsUserPageComponent(context:PageContext) extends MigPanel("insets n n n
   }
 
   private def runAsUser() {
-//    if (context.localCache.isStarlingDeveloper) {
-//      errorLabel.text = ""
-//      val userName = userField.text.trim
-//      new Thread {
-//        override def run() {
-//          Thread.currentThread().setContextClassLoader(RunAsUserPage.getClass.getClassLoader)
-//          Launcher.start(Launcher.rmiHost,Launcher.rmiPort,Launcher.servicePrincipalName,Some(userName))
-//        }
-//      }.start()
-//    } else {
-//      errorLabel.text = "<html><b>You do not have permission to change to a different user</b></html>"
-//    }
+    if (context.localCache.isStarlingDeveloper) {
+      errorLabel.text = ""
+      val userName = userField.text.trim
+      new Thread {
+        override def run() {
+          Thread.currentThread().setContextClassLoader(RunAsUserPage.getClass.getClassLoader)
+          Launcher.start(Launcher.rmiHost,Launcher.rmiPort,Launcher.servicePrincipalName,Some(userName))
+        }
+      }.start()
+    } else {
+      errorLabel.text = "<html><b>You do not have permission to change to a different user</b></html>"
+    }
   }
 
   reactions += {
