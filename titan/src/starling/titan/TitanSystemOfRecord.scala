@@ -271,8 +271,8 @@ case class TitanTradeAttributes(
     extends TradeAttributes 
 {
   import TitanTradeStore._
-  require(quotaID != null)
-  require(titanTradeID != null)
+  require(quotaID != null, "quotaID cannot be null")
+  require(titanTradeID != null, "titanTradeID cannot be null")
   def details = Map(
     quotaID_str -> quotaID,
     titanTradeID_str -> titanTradeID,
