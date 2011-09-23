@@ -220,7 +220,7 @@ class StarlingInit( val props: Props,
       titanTradeCache,
       titanServices,
       titanLogisticsServices,
-      new TitanLogisticsInventoryCache(
+      new DefaultTitanLogisticsInventoryCache(
         titanLogisticsServices,
         titanTradeCache,
         titanServices,
@@ -235,7 +235,7 @@ class StarlingInit( val props: Props,
       new TitanTradeServiceBasedTradeCache(mockTitanTradeService),
       fileMockedTitanServices,
       fileMockedTitanLogisticsServices,
-      new TitanLogisticsInventoryCache(fileMockedTitanLogisticsServices, titanTradeCache, fileMockedTitanServices, Some(titanTradeStore))
+      new DefaultTitanLogisticsInventoryCache(fileMockedTitanLogisticsServices, titanTradeCache, fileMockedTitanServices, Some(titanTradeStore))
     )
   }
 

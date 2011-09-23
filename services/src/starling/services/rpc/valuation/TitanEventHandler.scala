@@ -21,7 +21,7 @@ import starling.titan.{TitanTacticalRefData, TitanTradeCache}
 class TitanEventHandler(rabbitEventServices : TitanRabbitEventServices,
                    valuationServices : ValuationService,
                    titanTradeCache : TitanTradeCache,
-                   titanInventoryCache : TitanLogisticsInventoryCache,
+                   titanInventoryCache : DefaultTitanLogisticsInventoryCache,
                    environmentProvider : EnvironmentProvider,
                    refData : TitanTacticalRefData,
                    db : RabbitEventDatabase) extends DemultiplexerClient with Log {
@@ -30,6 +30,8 @@ class TitanEventHandler(rabbitEventServices : TitanRabbitEventServices,
 
   lazy val rabbitPublishChangedValueEvents = publishStarlingChangedValueEvents(rabbitEventServices.rabbitEventPublisher)
   lazy val rabbitPublishNewValuationEvents = publishCreatedValuationEvents(rabbitEventServices.rabbitEventPublisher) _
+
+  val EDMLogisticsQuotaSubject = "logistics quota" // todo, another constant that appears missing in the EDM model, needs raising to logistics, todo...
 
   /**
    * top level titan event handler
@@ -45,7 +47,8 @@ class TitanEventHandler(rabbitEventServices : TitanRabbitEventServices,
           // Must be some form of trade event from trademgmt source
           tradeMgmtTradeEventHander(ev)
         }
-        else if (LogisticsSource.equalsIgnoreCase(ev.source) && (EDMLogisticsSalesAssignmentSubject.equalsIgnoreCase(ev.subject) || EDMLogisticsInventorySubject.equalsIgnoreCase(ev.subject))) {
+        else if (LogisticsSource.equalsIgnoreCase(ev.source) &&
+          (EDMLogisticsSalesAssignmentSubject.equalsIgnoreCase(ev.subject) || EDMLogisticsInventorySubject.equalsIgnoreCase(ev.subject) || EDMLogisticsQuotaSubject.equalsIgnoreCase(ev.subject))) {
           logisticsAssignmentEventHander(ev)
         }
       }
@@ -112,24 +115,32 @@ class TitanEventHandler(rabbitEventServices : TitanRabbitEventServices,
     }
   }
 
+
+  private def getID(payload : Payload) = payload.key.identifier
+
   /**
    * handler for logistics assignment events
    */
   def logisticsAssignmentEventHander(ev: Event) = {
-    log.info("handler: Got an assignment event to process %s".format(ev.toString))
+    log.info("handler: Got a logistics event to process %s".format(ev.toString))
 
     val payloads = ev.content.body.payloads
-    val ids: List[String] = if (Event.EDMLogisticsSalesAssignmentSubject == ev.subject) {
-      payloads.map(p => titanInventoryCache.inventoryIDFromAssignmentID(p.key.identifier)) // map back to inventory id
+    val ids: List[String] = if (Event.EDMLogisticsSalesAssignmentSubject.equalsIgnoreCase(ev.subject)) {
+      payloads.map(p => titanInventoryCache.inventoryIDFromAssignmentID(getID(p))) // map back to inventory id
     }
-    else if (Event.EDMLogisticsInventorySubject == ev.subject) {
-      payloads.map(p => p.key.identifier)
+    else if (Event.EDMLogisticsInventorySubject.equalsIgnoreCase(ev.subject)) {
+      payloads.map(p => getID(p))
+    }
+    else if (EDMLogisticsQuotaSubject.equalsIgnoreCase(ev.subject)) {
+      payloads.filter(p => "LogisticsQuota".equalsIgnoreCase(p.payloadType)).map(p => getID(p))
     }
     else Nil
 
-    log.info("Assignment event received for ids { %s }".format(ids.mkString(", ")))
+    log.info("Logistics event received for ids { %s }".format(ids.mkString(", ")))
 
 
+    // todo, need to remove logistics quota somehow here, since we can't reliably do it from inventory (can we?)
+    
     ev.verb match {
       case UpdatedEventVerb => {
         val (snapshotIDString, env) = environmentProvider.mostRecentSnapshotIdentifierBeforeToday() match {
@@ -139,9 +150,8 @@ class TitanEventHandler(rabbitEventServices : TitanRabbitEventServices,
 
         val originalInventoryAssignmentValuations = valuationServices.valueInventoryAssignments(ids, env, snapshotIDString)
         ids.foreach {
-          id => titanInventoryCache.removeInventory(id); titanInventoryCache.addInventory(id)
+          id => titanInventoryCache.remove(id); titanInventoryCache.addByID(id)
         }
-        //ids.foreach(writeToTradeStore(_))
         val newInventoryAssignmentValuations = valuationServices.valueInventoryAssignments(ids, env, snapshotIDString)
 
         val changedIDs = ids.filter {
@@ -157,15 +167,13 @@ class TitanEventHandler(rabbitEventServices : TitanRabbitEventServices,
       case CreatedEventVerb => {
         Log.info("New event received for %s".format(ids))
         if (Event.EDMLogisticsInventorySubject == ev.subject) {
-          ids.foreach(titanInventoryCache.addInventory)
-          //ids.foreach(writeToTradeStore)
+          ids.foreach(titanInventoryCache.addByID)
         }
       }
       case CancelledEventVerb | RemovedEventVerb => {
         Log.info("Cancelled / deleted event received for %s".format(ids))
         if (Event.EDMLogisticsInventorySubject == ev.subject) {
-          //ids.foreach(deleteFromTradeStore)
-          ids.foreach(titanInventoryCache.removeInventory)
+          ids.foreach(titanInventoryCache.remove)
         }
       }
     }
@@ -173,6 +181,8 @@ class TitanEventHandler(rabbitEventServices : TitanRabbitEventServices,
 
   /**
    * handler for market data snapshot events
+   *
+   * todo, has the call for this been removed, if so how are we now generating these events (or are we not)?
    */
   def marketDataSnapshotEventHander(ev: Event) = {
     log.info("handler: Got a snapshot event to process %s".format(ev.toString))

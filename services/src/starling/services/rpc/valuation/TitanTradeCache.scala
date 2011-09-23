@@ -14,46 +14,25 @@ import starling.utils.conversions.RichMapWithErrors._
 /**
  * Trade cache provide trade map lookup by trade id and also a quota id to trade map lookup
  */
-
-
 case class DefaultTitanTradeCache(props : Props) extends TitanTradeCache with Log {
   protected var tradeMap = Map[TitanId, EDMPhysicalTrade]().withException()
   protected var quotaIDToTradeIDMap = Map[String, TitanId]().withException()
 
-  private lazy val titanTradesService = new DefaultTitanServices(props).titanGetEdmTradesService
-  private def getAll() = try {
-      titanTradesService.getAll()
-  } catch {
-    case e : Throwable => { log.error("Error getting Titan EDM trades ", e); throw new ExternalTitanServiceFailed(e) }
-  }
+  private lazy val titanServices = new DefaultTitanServices(props)
+  private lazy val titanTradeService : TitanTradeService = new DefaultTitanTradeService(titanServices)
 
-  private def getById(id : TitanId) = try {
-      titanTradesService.get(id)
-  } catch {
-    case e : Throwable => throw new ExternalTitanServiceFailed(e)
-  }
+  private def getAll() = titanTradeService.getAllTrades()
+  private def getById(id : TitanId) = titanTradeService.getTrade(id)
 
-  /*
-    Read all trades from Titan and blast our cache
-  */
+  /**
+   * Read all trades from Titan and blast our cache
+   */
   def updateTradeMap() {
-    val sw = new Stopwatch()
-    val edmTradeResult = getAll()
-    log.info("Are EDM Trades available " + edmTradeResult.cached + ", took " + sw)
-    if (!edmTradeResult.cached) throw new TradeManagementCacheNotReady
-    log.info("Got Edm Trade results " + edmTradeResult.cached + ", trade result count = " + edmTradeResult.results.size)
 
-    val validTrades = edmTradeResult.results.filter(tr => tr.trade != null).map(_.trade.asInstanceOf[EDMPhysicalTrade])
+    val edmTrades = getAll() // get all edm physical trades from the underlying service
 
-    // temporary code, trademgmt are sending us null titan ids
-    val (nullIds, validIds) = validTrades.span(_.titanId == null)
-    if (nullIds.size > 0) {
-      log.error("Null Titan trade IDs found!")
-      log.error("null ids \n%s\n%s".format(nullIds, validIds))
-      //assert(false, "Null titan ids found - fatal error")
-    }
-    // todo, line below, we really should filter for completed trades only??
-    tradeMap = validTrades/*.filter(pt => pt.tstate == CompletedTradeTstate)*/.map(t => (t.titanId, t)).toMap.withException()
+    // todo, line below, should we really filter for completed trades only - probably??
+    tradeMap = edmTrades/*.filter(pt => pt.tstate == CompletedTradeTstate)*/.map(t => (t.titanId, t)).toMap.withException()
     tradeMap.keySet.foreach(addTradeQuotas)
   }
 
@@ -61,7 +40,7 @@ case class DefaultTitanTradeCache(props : Props) extends TitanTradeCache with Lo
     if (tradeMap.size > 0) {
       tradeMap.values.toList
     }
-    else {
+    else { // if we've not yet cached anything, get everything to start with
       updateTradeMap()
       tradeMap.values.toList
     }
@@ -134,4 +113,3 @@ case class TitanTradeServiceBasedTradeCache(titanTradesService : TitanTradeServi
     }
   }
 }
-

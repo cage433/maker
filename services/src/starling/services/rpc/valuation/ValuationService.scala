@@ -34,7 +34,7 @@ class ValuationService(
   refData : TitanTacticalRefData,
   logisticsServices : TitanLogisticsServices,
   rabbitEventServices : TitanRabbitEventServices,
-  titanInventoryCache : TitanLogisticsInventoryCache,
+  titanInventoryCache : DefaultTitanLogisticsInventoryCache,
   titanTradeStore : Option[TradeStore],  // Optional as I don't want to write a mock service for this yet
   rabbitEventDb : RabbitEventDatabase
 )
@@ -135,7 +135,7 @@ class ValuationService(
   def valueAllAssignments(env : Environment, snapshotIDString : String) : CostAndIncomeInventoryValuationServiceResults = {
     val sw = new Stopwatch()
 
-    val inventory = titanInventoryCache.getAllInventory()
+    val inventory = titanInventoryCache.getAll()
 
     val quotaNameToQuotaMap = titanTradeCache.getAllTrades().flatMap(_.quotas).map(q => NeptuneId(q.detail.identifier.value).identifier -> q).toMap
 
@@ -168,7 +168,7 @@ class ValuationService(
 
     val assignmentValuer = PhysicalMetalAssignmentForward.value(refData.futuresExchangeByID, refData.edmMetalByGUID, quotaNameToQuotaMap, env, snapshotIDString) _
 
-    val valuations = inventoryIds.map(i => i -> assignmentValuer(titanInventoryCache.getInventory(i)))
+    val valuations = inventoryIds.map(i => i -> assignmentValuer(titanInventoryCache.getByID(i)))
 
     log.info("Valuation took " + sw)
     val (worked, errors) = valuations.partition(_._2 isRight)

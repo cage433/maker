@@ -34,7 +34,17 @@ class DefaultTitanTradeService(titanServices : TitanServices) extends TitanTrade
       log.info("Are EDM Trades available " + edmTradeResult.cached + ", took " + sw)
       if (!edmTradeResult.cached) throw new TradeManagementCacheNotReady
       log.info("Got Edm Trade results " + edmTradeResult.cached + ", trade result count = " + edmTradeResult.results.size)
-      edmTradeResult.results.map(_.trade.asInstanceOf[EDMPhysicalTrade])
+      val edmTrades = edmTradeResult.results.map(_.trade.asInstanceOf[EDMPhysicalTrade])
+
+      // temporary code, trademgmt are sending us null titan ids
+      val (nullIds, validIds) = edmTrades.span(_.titanId == null)
+      if (nullIds.size > 0) {
+        log.error("Null Titan trade IDs found!")
+        log.error("null ids \n%s\n%s".format(nullIds, validIds))
+        //assert(false, "Null titan ids found - fatal error")
+      }
+
+      edmTrades
     }
     catch {
       case e : Throwable => throw new ExternalTitanServiceFailed(e)

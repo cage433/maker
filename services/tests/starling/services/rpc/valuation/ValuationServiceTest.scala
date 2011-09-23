@@ -31,7 +31,7 @@ class ValuationServiceTest extends StarlingTest {
   var mockTitanTradeCache : TitanTradeServiceBasedTradeCache = null
   var mockTitanLogisticsServices : FileMockedTitanLogisticsServices = null
   var mockRabbitEventServices : MockTitanRabbitEventServices = null
-  var mockInventoryCache : TitanLogisticsInventoryCache = null
+  var mockInventoryCache : DefaultTitanLogisticsInventoryCache = null
   var mockDB = NullRabbitEventDatabase
 
   @BeforeClass
@@ -43,7 +43,7 @@ class ValuationServiceTest extends StarlingTest {
     mockTitanTradeCache = new TitanTradeServiceBasedTradeCache(mockTitanTradeService)
     mockTitanLogisticsServices = FileMockedTitanLogisticsServices()
     mockRabbitEventServices = new MockTitanRabbitEventServices()
-    mockInventoryCache = new TitanLogisticsInventoryCache(mockTitanLogisticsServices, mockTitanTradeCache, mockTitanServices, None)
+    mockInventoryCache = new DefaultTitanLogisticsInventoryCache(mockTitanLogisticsServices, mockTitanTradeCache, mockTitanServices, None)
   }
   
   /**
