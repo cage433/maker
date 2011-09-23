@@ -769,7 +769,7 @@ class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSiz
     val infoPanel = new MigPanel("insets 2 0 0 0") {
       border = MatteBorder(1,0,1,0,BorderColour)
       def l(t:String) = new Label(t) {foreground = GuiUtils.BlueTextColour}
-      val rowAndColumnNumberLabel = l(" [" + fullTable.getRowCount.toString + " x " + fullTable.getColumnCount().toString + "] ")
+      val rowAndColumnNumberLabel = l(" [" + mainTable.getRowCount.toString + " x " + mainTable.getColumnCount().toString + "] ")
 
       add(rowAndColumnNumberLabel, "ay top")
     }
