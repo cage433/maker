@@ -26,6 +26,14 @@ trait GenericServiceDataCache[T, K] {
   //def update(item : T)
 }
 
+trait logisticsQuotaCache {
+  def getAll() : List[EDMLogisticsQuota]
+  def getByID(id : String) : List[EDMLogisticsQuota]
+  def addQuota(quota : EDMLogisticsQuota)
+  def addQuota(quotaID : String)
+  def removeQuota(id : String)
+}
+
 case class DefaultTitanLogisticsInventoryCache(
     titanLogisticsServices : TitanLogisticsServices,
     titanTradeCache : TitanTradeCache,
