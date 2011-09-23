@@ -121,10 +121,11 @@ case class DefaultTitanLogisticsInventoryCache(
     else {
       val inventoryResponse = getInventoryById(id.toInt)
       val inventoryList = inventoryResponse.associatedInventory
+      //println("***** found associated inventory " + inventoryList)
       assert(inventoryList.size <= 1, "Incorrect number of inventory items returned, expected exactly 1, got " + inventoryList.size)
       val quotasList = inventoryResponse.associatedQuota
       logisticsIDtoQuotaMap ++= quotasList.map(q => q.quotaId.toString -> q).toMap
-      inventoryResponse.associatedInventory.headOption match {
+      inventoryList.headOption match {
         case Some(item) => {
           inventoryMap += item.oid.contents.toString -> item
           addInventoryAssignments(id)
@@ -148,7 +149,6 @@ case class DefaultTitanLogisticsInventoryCache(
                   val trade = tradeConverter.toTrade(logisticsUnallocatedQuota)
                   tradeStore.storeTrades((trade) => logisticsUnallocatedQuotas.map(_.id).contains(trade.tradeID), List(trade), new Timestamp())
                 })
-                inventoryMap(id)
               }
               catch {
                 case ex => {
@@ -157,12 +157,14 @@ case class DefaultTitanLogisticsInventoryCache(
                 }
               }
             }
-            case None => {
-              val msg = "Missing inventory from service, requested by id item %s, this missing item in the cache may lead to unexpected results".format(id)
-              Log.warn(msg)
-              throw new Exception("Inventory cache miss - " + msg)
-            }
+            case None => //
           }
+          inventoryMap(id)
+        }
+        case None => {
+          val msg = "Missing inventory from service, requested by id item %s, this missing item in the cache may lead to unexpected results".format(id)
+          Log.warn(msg)
+          throw new Exception("Inventory cache miss - " + msg)
         }
       }
     }
