@@ -18,7 +18,9 @@ import java.util.{Hashtable, Properties}
 case class BundleAdded(bundle:BrowserBundle) extends StarlingEvent
 case class BundleRemoved(bundle:BrowserBundle) extends StarlingEvent
 
-class BrowserPropsFoo
+class BrowserPropsFoo {
+  def overriddenUser:String = "NoUser"
+}
 class BrowserBromptonActivator extends BromptonActivator {
   type Props = BrowserPropsFoo
 
@@ -121,7 +123,8 @@ class BrowserBromptonActivator extends BromptonActivator {
 
         val pageBuilder = new PageBuilder(pageContextPublisher, serverContext, bundlesByName)
 
-        fc = new StarlingBrowserFrameContainer(serverContext, cache, pageBuilder, StarlingHomePage, settings, title)
+        val extraInfo = if (props.overriddenUser == "NoUser") None else Some("You are " + props.overriddenUser)
+        fc = new StarlingBrowserFrameContainer(serverContext, cache, pageBuilder, StarlingHomePage, settings, title, extraInfo)
 
         // Must be called on the EDT
         def sendNotification(notification:Notification) {

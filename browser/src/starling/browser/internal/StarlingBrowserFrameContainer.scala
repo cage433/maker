@@ -57,13 +57,14 @@ object StarlingBrowserFrameContainer {
 }
 
 class StarlingBrowserFrameContainer(serverContext: ServerContext, lCache: LocalCache, pageBuilder:PageBuilder,
-                                    homePage: Page, userSettings: UserSettings, frameTitle: String) extends ContainerMethods {
+                                    homePage: Page, userSettings: UserSettings, frameTitle: String, extraInfo:Option[String]) extends ContainerMethods {
   private val frames = new ListBuffer[StarlingBrowserFrame]
 
   def createNewFrame(fromFrame: Option[StarlingBrowserFrame], startPage:Option[Either[Page,(ServerContext => Page, PartialFunction[Throwable,Unit])]]) {
     StarlingBrowserFrameContainer.numberOfFramesOpen += 1
     val startPage0 = startPage.getOrElse(Left(homePage))
-    val newFrame = new StarlingBrowserFrame(homePage, startPage0, pageBuilder, lCache, userSettings, this, serverContext.extraInfo)
+//    val newFrame = new StarlingBrowserFrame(homePage, startPage0, pageBuilder, lCache, userSettings, this, serverContext.extraInfo)
+    val newFrame = new StarlingBrowserFrame(homePage, startPage0, pageBuilder, lCache, userSettings, this, extraInfo)
     frames += newFrame
     newFrame.title = frameTitle
     fromFrame match {
