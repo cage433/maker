@@ -186,7 +186,7 @@ object PivotEdits {
 //Row is deletable when // TODO [21 Jan 2011] we'll decide later
 trait EditPivot {
   def editableToKeyFields:Map[Field,Set[Field]]
-  def save(edits:PivotEdits):Boolean
+  def save(edits:PivotEdits):Int
   def withEdits(edits:PivotEdits):PivotTableDataSource
 }
 

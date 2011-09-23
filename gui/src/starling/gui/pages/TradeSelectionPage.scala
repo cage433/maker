@@ -193,7 +193,6 @@ case class TradeSelectionPage(
           message,
           description,
           request,
-          (p:Unit) => {false},
           (p:Unit) => {}
         )
       }

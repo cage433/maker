@@ -49,7 +49,7 @@ object Launcher {
 
     val props = Map("serverRmiHost" -> rmiHost, "serverRmiPort" -> rmiPort.toString, "principalName" -> servicePrincipalName, "overriddenUser" -> overriddenUser.getOrElse("NoUser"))
     val activators = List(classOf[JettyBromptonActivator], classOf[GuiBromptonActivator], classOf[BrowserBromptonActivator])
-    val single = new SingleClasspathManager(props, activators)
+    val single = new SingleClasspathManager(props, true, activators)
     single.start()
   }
 }

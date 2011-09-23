@@ -33,7 +33,7 @@ object Server {
       classOf[BouncyRMIServerBromptonActivator],
       classOf[RabbitEventViewerServiceBromptonActivator]
     )
-    val single = new SingleClasspathManager(starling.manager.Props.readDefault, activators)
+    val single = new SingleClasspathManager(starling.manager.Props.readDefault, false, activators)
     writePIDFile()
     Log.infoWithTime("Launching starling server") {
       single.start()

@@ -169,7 +169,7 @@ class MarketDataPivotTableDataSource(reader: MarketDataReader, edits:PivotEdits,
             MarketDataEntry(timedKey.observationPoint, timedKey.key, marketDataType.createValue(amendRows ::: newRows))
           } }
           val r:SaveResult = marketDataStore.save(Map(editableSet → newEntries))
-          r.anythingChanged
+          r.maxVersion
         }
       }
      }

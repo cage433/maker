@@ -22,7 +22,7 @@ trait FC2Service {
 
   def curvePivot(curveLabel: CurveLabel, pivotFieldParams:PivotFieldParams): PivotData
   def readAllMarketData(marketDataIdentifier:MarketDataPageIdentifier, marketDataType:Option[MarketDataTypeLabel], edits:PivotEdits, pivotFieldParams:PivotFieldParams):PivotData
-  @DoNotCache def saveMarketData(marketDataIdentifier:MarketDataPageIdentifier, marketDataTypeLabel:Option[MarketDataTypeLabel], pivotEdits:PivotEdits):Boolean
+  @DoNotCache def saveMarketData(marketDataIdentifier:MarketDataPageIdentifier, marketDataTypeLabel:Option[MarketDataTypeLabel], pivotEdits:PivotEdits):Int
 
   def marketDataTypeLabels(marketDataIdentifier:MarketDataPageIdentifier):List[MarketDataTypeLabel]
 

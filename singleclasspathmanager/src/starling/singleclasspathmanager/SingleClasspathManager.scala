@@ -3,7 +3,7 @@ package starling.singleclasspathmanager
 import starling.manager._
 import starling.osgimanager.utils.ThreadSafeCachingProxy
 
-class SingleClasspathManager(properties:Map[String,String], activators:List[Class[_ <: BromptonActivator]]) {
+class SingleClasspathManager(properties:Map[String,String], cacheServices:Boolean, activators:List[Class[_ <: BromptonActivator]]) {
   val props = new Props(properties)
   case class ServiceEntry(klass:Class[_], service:AnyRef, properties:List[ServiceProperty], reference:BromptonServiceReference) {
     private val propertiesSet = properties.toSet
@@ -43,7 +43,7 @@ class SingleClasspathManager(properties:Map[String,String], activators:List[Clas
       properties:List[ServiceProperty]=List()) = {
       if (!klass.isAssignableFrom(service.asInstanceOf[AnyRef].getClass)) throw new Exception(service + " is not a " + klass)
       val ref = { id+=1; BromptonServiceReference(id + ":" + klass, List(klass.getName)) }
-      val cachingService = ThreadSafeCachingProxy.createProxy(klass, service)
+      val cachingService = if (cacheServices) ThreadSafeCachingProxy.createProxy(klass, service) else service
       val entry = ServiceEntry(klass, cachingService.asInstanceOf[AnyRef], properties, ref)
       registry.append( entry )
 
