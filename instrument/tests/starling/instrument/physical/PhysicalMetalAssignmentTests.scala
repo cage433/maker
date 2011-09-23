@@ -94,12 +94,12 @@ class PhysicalMetalAssignmentTests extends StarlingTest {
 
   @Test
   def testFixedPrixingSpec{
-    val fixedSpec = FixedPricingSpec(Day(2011, 8, 31), List((0.5, Quantity(98, USD/MT)), (0.8, Quantity(103, USD/MT))))
+    val fixedSpec = FixedPricingSpec(Day(2011, 8, 31), List((0.5, Quantity(98, USD/MT)), (0.8, Quantity(103, USD/MT))), Quantity(1.5, USD/MT))
     val assignment = PhysicalMetalAssignment("Lead", Quantity(100, MT), Day(2011, 9, 1), fixedSpec) 
     val explanation = assignment.explanation(env)
     assertEquals(explanation.name, "((-F * Volume) * Discount)")
-    assertEquals(explanation.format(1), "((-(Sum((F_0 * 0.5), (F_1 * 0.8)) / 1.3) * 100.00 MT) * USD.31Aug2011)")
-    val lastExplanation = "((-(Sum((98.00 USD/MT * 0.50), (103.00 USD/MT * 0.80)) / 1.30) * 100.00 MT) * 0.99)"
+    assertEquals(explanation.format(1), "((-((Sum((F_0 * 0.5), (F_1 * 0.8)) / 1.3) + Premium) * 100.00 MT) * USD.31Aug2011)")
+    val lastExplanation = "((-((Sum((98.00 USD/MT * 0.50), (103.00 USD/MT * 0.80)) / 1.30) + 1.50 USD/MT) * 100.00 MT) * 0.99)"
     assertEquals(explanation.format(2), lastExplanation)
     assertEquals(explanation.format(3), lastExplanation)
   }

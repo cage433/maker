@@ -112,16 +112,17 @@ case class WeightedPricingSpec(specs : List[(Double, TitanPricingSpec)]) extends
 }
 case class InvalidTitanPricingSpecException(msg : String) extends Exception(msg)
 
-case class FixedPricingSpec (settlementDay : Day, pricesByFraction : List[(Double, Quantity)]) extends TitanPricingSpec{
+case class FixedPricingSpec (settlementDay : Day, pricesByFraction : List[(Double, Quantity)], premium : Quantity) extends TitanPricingSpec{
 
   def price(env: Environment) = {
     val totalFraction = pricesByFraction.map(_._1).sum
     if (totalFraction == 0){
         throw new InvalidTitanPricingSpecException("Fixed Pricing Spec with no fixed prices")
     } else {
-      Quantity.sum(pricesByFraction.zipWithIndex.map{
+      val fixedPriceComponent = Quantity.sum(pricesByFraction.zipWithIndex.map{
         case ((qty, prc), i) => prc.named("F_" + i) * qty
       }) / totalFraction
+      addPremiumConvertingIfNecessary(env, fixedPriceComponent, premium)
     }
   }
 
@@ -132,8 +133,7 @@ case class FixedPricingSpec (settlementDay : Day, pricesByFraction : List[(Doubl
   def quotationPeriodStart : Option[Day] = None
   def quotationPeriodEnd : Option[Day] = None
   def indexName : String = "No Index"
-  def premium = Quantity.NULL
-
+  
   def daysForPositionReport(marketDay: DayAndTime) = List(marketDay.day)
 
   def valuationCCY = {

@@ -125,7 +125,8 @@ case class EDMPricingSpecConverter(metal : Metal, exchanges : String => Market) 
                 val fraction = (fromTitanQuantity(comp.quantity) / deliveryQuantity).checkedValue(UOM.SCALAR)
                 (fraction, fromTitanQuantity(comp.price))
               }
-            }
+            },
+            spec.premium
           )
         }
         case _ => throw new Exception("Unsupported pricing spec type " + edmPricingSpec)
