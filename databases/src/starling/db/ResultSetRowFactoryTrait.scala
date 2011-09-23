@@ -32,6 +32,13 @@ object ResultSetRow {
   val xstreamCache = CacheFactory.getCache("XStream")
 }
 
+/**
+ * ResultSetRow is an implementation providing some basic read methods to wrap and enrich a JDBC ResultSet through to
+ * some commonly used Starling types (e.g. Quantity, Day, DateRange), other useful meta-state concerning a row's
+ * column (e.g. whether it is null or exists) and to convert its contents to a simple map.
+ *
+ * @documented 
+ */
 class ResultSetRow(resultSet: ResultSet, val count: Int) {
   def wasNull() = resultSet.wasNull()
 

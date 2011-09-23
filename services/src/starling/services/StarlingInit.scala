@@ -81,7 +81,14 @@ class StarlingInit( val props: Props,
     true                     → List(Stopable(stopF = DataSourceFactory.shutdown _))
   )
 
+  /**
+   * Starts the services as configured by this instance's state.
+   */
   override def start = { services.start }
+
+  /**
+   * Stops this instance's services.
+   */
   override def stop =  { services.stop  }
 
   val runtime = Runtime.getRuntime

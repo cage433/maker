@@ -5,6 +5,13 @@ import java.lang.String
 import starling.daterange.{Location, Day}
 import starling.daterange.Location._
 
+/**
+ * HolidayTables provides a basis from which other holiday tables may be defined, e.g. financial and regional ones.
+ * It references two flat file structures, "UK.txt" and "US.txt" for its UK and US holidays, respectively, and defines
+ * some further exchange values based on its implementation's results for their respective names ("LME", "SFS", etc.).
+ *
+ * @documented
+ */
 trait HolidayTables {
   def regionHolidays(name: String): BusinessCalendarSet
 
@@ -30,6 +37,11 @@ trait HolidayTables {
   val LBMA: BusinessCalendarSet = BusinessCalendarSet("LBMA", London, financialHolidays("LBM").holidays ++ UK.holidays.filter(_ < (2 Apr 2010)))
 }
 
+/**
+ * A singleton instance defining empty/void financial and regional holidays.
+ *
+ * @documented
+ */
 object NullHolidays extends HolidayTables {
   def financialHolidaysOption(name: String) = Some(BusinessCalendarSet(name, Unknown, Set[Day]()))
 

@@ -23,7 +23,11 @@ import starling.instrument.utils.StarlingXStream
 import starling.dbx._
 import starling.props.ConnectionParams
 
-
+/**
+ * DBTrait defines some core behaviour to aid transactional relational database access.
+ *
+ * @documented
+ */
 trait DBTrait[RSR <: ResultSetRow] extends Log {
   val dataSource: DataSource
 
@@ -375,6 +379,9 @@ class DBWriter protected[db](dbTrait: DBTrait[_ <: ResultSetRow], dataSource: Da
   }
 }
 
+/**
+ * DB extends the DBTrait to provide a wrapper implementation around a DataSource and a ResultSetRowFactory.
+ */
 class DB(val dataSource: DataSource) extends DBTrait[ResultSetRow] {
   lazy val factory = new ResultSetRowFactory
 

@@ -6,6 +6,11 @@ import starling.pivot.{PivotEdits, PivotFieldParams}
 import starling.gui.api._
 import starling.manager.DoNotCache
 
+/**
+ * The forward curves service API.
+ *
+ * @documented
+ */
 trait FC2Service {
   @DoNotCache def snapshots():Map[MarketDataSelection,List[SnapshotIDLabel]]
   @DoNotCache def observationDays():(Map[PricingGroup,Set[Day]], Map[String,Set[Day]])

@@ -14,6 +14,12 @@ import starling.dbx.{LiteralString, Clause, Query}
 
 case class DayOffSet(offset:Int)
 
+/**
+ * The UserSettingsDatabase is an implementation providing read/write access to a user's settings in a database.  It
+ * uses a broadcaster to allow changes to a user's bookmarks or pivot table layout to be distributed as an event.
+ *
+ * @documented
+ */
 class UserSettingsDatabase(val db:DB, broadcaster:Broadcaster) {
   // This is the standard number of characters in a var char column.
   private val colSize = 300

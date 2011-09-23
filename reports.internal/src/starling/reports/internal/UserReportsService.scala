@@ -11,6 +11,12 @@ import starling.daterange.{Timestamp, Day}
 import starling.reports.pivot.ReportServiceInternal
 import starling.pivot.{PivotFieldParams, PivotFieldsState}
 
+/**
+ * UserReportsService provides an implementation to run pivot table reports for a user.  It requires access to the
+ * holiday calendar, the trade, market data and user settings databases, and the reports service.
+ * 
+ * @documented
+ */
 class UserReportsService(
   val ukHolidayCalendar: BusinessCalendarSet,
   tradeStores:TradeStores,

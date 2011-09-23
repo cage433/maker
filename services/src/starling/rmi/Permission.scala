@@ -5,10 +5,23 @@ import starling.auth.User
 import starling.utils.CaseInsensitive._
 import starling.utils.CaseInsensitive
 
+/**
+ * The Permission singleton implementation defines the mapping from the production and development environments to
+ * the set of desks for each by Group value.
+ *
+ * @see Groups
+ * @documented
+ */
 object Permission {
 
   import Groups._
 
+  /**
+   * @param user The user.
+   * @param production A statement as to whether the production group is required, true if it is, false if the
+   * development one is.
+   * @return The set of desks for the given user's groups in the production or development environments. 
+   */
   def desks(user: User, production:Boolean): Set[Desk] = {
     val desks = user.groups.flatMap {
       group => {
@@ -18,6 +31,10 @@ object Permission {
     desks
   }
 
+  /**
+   * Returns the (group, desks) maps for the production or development environments.
+   * @param production true if production desks are required, false if development ones are.
+   */
   def groupToDesksMap(production:Boolean) = if (production) productionGroupToDesksMap0 else devGroupToDesksMap0
 
   private val productionGroupToDesksMap0: Map[CaseInsensitive, Set[Desk]] =
@@ -40,6 +57,11 @@ object Permission {
     )
 }
 
+/**
+ * The Groups singleton defines a set of case insensitive groups against which Desks may be persmissioned.
+ *
+ * @documented
+ */
 object Groups {
   val StarlingDevelopers = "Starling Developers".i
   val StarlingAdmin = "Starling Admin".i

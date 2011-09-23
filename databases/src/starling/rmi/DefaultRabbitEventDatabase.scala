@@ -12,20 +12,38 @@ object DefaultRabbitEventDatabase {
 }
 import DefaultRabbitEventDatabase._
 
+/**
+ * The RabbitEventDatabase provides a contract for accessing the Rabbit MQ database.  Along with an accessor to the
+ * DB reference, it allows Events to be saved to the database and returns the ID of the latest event.
+ *
+ * @documented
+ */
 trait RabbitEventDatabase {
   def saveEvent(e : Event)
   def latestID : Long
   def db : DB
 }
 
+/**
+ * NullRabbitEventDatabase provides a singleton implementation referencing a null DB.
+ */
 object NullRabbitEventDatabase extends RabbitEventDatabase {
+  /**Does nothing.*/
   def saveEvent(e: Event) = {}
+  /**@return 0*/
   def latestID : Long = 0
+  /**@return null*/
   def db : DB = null
 }
 
+/**
+ * DefaultRabbitEventDatabase provides a simple, default implementation of the RabbitEventDatabase.
+ *
+ * @documented
+ */
 class DefaultRabbitEventDatabase(val db:DB, broadcaster:Broadcaster) extends RabbitEventDatabase {
   private val colSize = 300
+  // load the initial value
   private var maxID = {
     val q = (
             select("max(starlingID) maxID")
@@ -37,8 +55,10 @@ class DefaultRabbitEventDatabase(val db:DB, broadcaster:Broadcaster) extends Rab
     }
   }
 
+  // synchronizes on this instance
   def latestID = synchronized {maxID}
 
+  // saves the event, sychronizing on this instance to write a new maximum ID
   def saveEvent(e:Event) {synchronized {
     maxID += 1
     val verb:String = e.verb.toJson.take(colSize)

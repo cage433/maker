@@ -9,6 +9,12 @@ case class PageLogInfo(text:String,shortText:String,pageString:String, time:java
 case class UserLoggedIn(user:String) extends StarlingEvent
 case class UserDetails(username:String, fullName:String)
 
+/**
+ * BrowserService provides a contract giving read access to a user's details, and read/write access to a user's
+ * settings and bookmarks.
+ *
+ * @documented
+ */
 trait BrowserService {
   def name:String
   @DoNotCache def userDetails:UserDetails
