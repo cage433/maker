@@ -6,256 +6,29 @@ import java.util.concurrent.ConcurrentHashMap
 
 import starling.auth.{LdapUserLookup, User}
 import starling.calendar.BusinessCalendarSet
-import starling.curves.{EnvironmentRule, CurveViewer}
 import starling.daterange._
 import starling.db._
-import starling.eai.{Book, Traders}
+import starling.eai.{Traders}
 import starling.gui.api._
 import starling.pivot._
-import controller.{AxisNode, PivotTable}
+import controller.PivotTable
 import starling.pivot.model._
-import starling.reports.pivot._
-import starling.marketdata._
 import starling.services._
-import starling.trade.{Trade, TradeID, TradeSystem}
+import starling.instrument.{Trade, TradeID, TradeSystem}
 import starling.tradestore.{TradeSet, TradePredicate, TradeStores}
 import starling.tradestore.intraday.IntradayTradeAttributes
 import starling.utils._
-import starling.utils.sql.{FalseClause, From, RealTable}
+import cache.CacheFactory
+import starling.dbx.{FalseClause, From, RealTable}
 
-import starling.utils.ImplicitConversions._
-import starling.utils.sql.QueryBuilder._
-import starling.tradeimport.TradeImporter
-import starling.browser.service.{BookmarkLabel, PageLogInfo, UserSettingsLabel, Version}
-
-class UserReportsService(
-  val ukHolidayCalendar: BusinessCalendarSet,
-  tradeStores:TradeStores,
-  marketDataStore:MarketDataStore,
-  userSettingsDatabase:UserSettingsDatabase,
-  reportService:ReportService) {
-
-  def extraLayouts(user:User) = userSettingsDatabase.readPivotLayouts(user)
-  def allUserReports = userSettingsDatabase.allUserReports
-
-  def pivotTableFor(user:User, reportName:String, day:Day, pivotFieldState:PivotFieldsState): PivotTable = {
-    runNamedReportForLayout(user, reportName, day, pivotFieldState)
-      .getOrElse(throw new Exception("No report found for " + user.name + " " + reportName))
-  }
-
-  def runNamedReportForLayout(user:User, reportName:String, day:Day, pivotFieldState:PivotFieldsState) = {
-    withReportParameters(user, reportName, day, (report,reportParameters) => {
-      val pivotData = reportService.reportPivot(reportParameters, PivotFieldParams(true, Some(pivotFieldState)))
-      pivotData.pivotTable
-    })
-  }
-
-  def runNamedReport(user:User, reportName:String, day:Day, layout:Option[String]):Option[PivotTable] = {
-    withReportParameters(user, reportName, day, (report,reportParameters) => {
-        val layouts = userSettingsDatabase.readPivotLayouts(user)
-        val layoutName = layout.getOrElse(reportName)
-        val reportLayout = layouts.find(_.layoutName == layoutName) match {
-          case None => throw new Exception("The layout wasn't found. Please specify a valid layout")
-          case Some(rl) => rl
-        }
-        val pivotData = reportService.reportPivot(reportParameters, PivotFieldParams(true, Some(reportLayout.pivotFieldState)))
-        pivotData.pivotTable
-      })
-  }
-
-  private def withReportParameters[R](user:User, reportName:String, day:Day, action:(UserReport, ReportParameters)=>R) = {
-    userSettingsDatabase.findReport(user, reportName) match {
-      case Some(report) => {
-        val reportParameters = createReportParameters(report.data, day)
-        Some(action(report, reportParameters))
-      }
-      case None => None
-    }
-  }
-
-  def latestMarketDataIdentifier(selection:MarketDataSelection) = marketDataStore.latestMarketDataIdentifier(selection)
-
-  def createReportParameters(userReportData:UserReportData, baseDay:Day) = {
-    val tradeSelection = userReportData.tradeSelection
-    val desk = tradeSelection.desk
-    val intradaySubgroup = tradeSelection.intradaySubgroup
-
-    val marketDataVersion = marketDataStore.latest(userReportData.marketDataSelection)
-
-    val curveIdentifierLabel = CurveIdentifierLabel(
-      MarketDataIdentifier(userReportData.marketDataSelection, marketDataVersion),
-      userReportData.environmentRule,
-      baseDay,
-      applyOffset(baseDay, userReportData.valuationDayOffset).atTimeOfDay(userReportData.valuationDayTimeOfDay),
-      applyOffset(baseDay, userReportData.thetaDayOffset).atTimeOfDay(userReportData.thetaDayTimeOfDay),
-      userReportData.environmentModifiers
-    )
-
-    val pnlOptions = userReportData.pnl.map {
-      case (marketDayOffset, bookCloseOffset, useExcel, timeOfDay) => {
-        val pnlFromDay = applyOffset(baseDay, marketDayOffset)
-
-        val fromCurveIdentifierLabel = {
-          val marketDataSelection = {
-            if (useExcel) {
-              userReportData.marketDataSelection
-            } else {
-              userReportData.marketDataSelection.copy(excel = None)
-            }
-          }
-          val rule = if(useExcel) {
-            EnvironmentRuleLabel.RealTime
-          } else {
-            EnvironmentRuleLabel.COB
-          }
-          CurveIdentifierLabel(
-            MarketDataIdentifier(marketDataSelection, marketDataVersion),
-            rule,
-            pnlFromDay,
-            pnlFromDay.atTimeOfDay(timeOfDay),
-            pnlFromDay.nextBusinessDay(ukHolidayCalendar).atTimeOfDay(userReportData.thetaDayTimeOfDay),
-            userReportData.environmentModifiers
-          )
-        }
-
-        val tradeTS = bookCloseOffset match {
-          case Left(offset) => createTradeTimestamp(desk, applyOffset(baseDay, offset))
-          case Right(_) if desk.isDefined => tradeStores.closedDesks.latestTradeTimestamp(desk.get)
-          case _ => createTradeTimestamp(desk, baseDay) // this doesn't matter as it'll never be used
-        }
-
-        PnlFromParameters(
-          Some(tradeTS),
-          fromCurveIdentifierLabel
-        )
-      }
-    }
-
-    val bookCloseDay0 = bookCloseDay(desk, userReportData.tradeVersionOffSetOrLive, baseDay)
-    val tradeSelectionWithTimestamp = new TradeSelectionWithTimestamp(desk.map((_, bookCloseDay0.get)),
-      tradeSelection.tradePredicate, intradaySubgroupAndTimestamp(intradaySubgroup))
-
-    val tradeExpiryDay0 = tradeExpiryDay(baseDay, userReportData.liveOnOffSet)
-    ReportParameters(tradeSelectionWithTimestamp, curveIdentifierLabel, userReportData.reportOptions, tradeExpiryDay0, pnlOptions)
-  }
-
-  def createUserReport(reportParameters:ReportParameters):UserReportData = {
-    val baseDay = reportParameters.curveIdentifier.tradesUpToDay
-    val bookCloseOffset = tradeVersionOffsetOrLatest(baseDay, reportParameters.tradeSelectionWithTimestamp.deskAndTimestamp)
-    UserReportData(
-      tradeSelection = reportParameters.tradeSelectionWithTimestamp.asTradeSelection,
-      marketDataSelection = reportParameters.curveIdentifier.marketDataIdentifier.selection,
-      environmentModifiers = reportParameters.curveIdentifier.envModifiers,
-      reportOptions = reportParameters.reportOptions,
-      environmentRule = reportParameters.curveIdentifier.environmentRule,
-      valuationDayOffset = businessDaysBetween(baseDay, reportParameters.curveIdentifier.valuationDayAndTime.day),
-      valuationDayTimeOfDay = reportParameters.curveIdentifier.valuationDayAndTime.timeOfDay,
-      thetaDayOffset = businessDaysBetween(baseDay, reportParameters.curveIdentifier.thetaDayAndTime.day),
-      thetaDayTimeOfDay = reportParameters.curveIdentifier.thetaDayAndTime.timeOfDay,
-      tradeVersionOffSetOrLive = bookCloseOffset,
-      liveOnOffSet = liveOnOffsetOrStartOfYear(baseDay, reportParameters.expiryDay),
-      pnl = reportParameters.pnlParameters.map {
-        case pnl => {
-          val marketDayOffset = businessDaysBetween(baseDay, pnl.curveIdentifierFrom.tradesUpToDay)
-          val timeOfDay = pnl.curveIdentifierFrom.valuationDayAndTime.timeOfDay
-          val bookCloseOffset = pnl.tradeTimestampFrom match {
-            case Some(ts) => {
-              reportParameters.tradeSelectionWithTimestamp.deskAndTimestamp match {
-                case Some((d,_)) => {
-                  val latestClose = tradeStores.closedDesks.latestTradeTimestamp(d)
-                  if (ts.closeDay == latestClose.closeDay) {
-                    Right(true)
-                  } else {
-                    Left(businessDaysBetween(baseDay, ts.closeDay))
-                  }
-                }
-                case None => Left(0)
-              }
-            }
-            case None => Left(0)
-          }
-          (marketDayOffset, bookCloseOffset, pnl.curveIdentifierFrom.marketDataIdentifier.selection.excel != None, timeOfDay)
-        }
-      }
-    )
-  }
-
-  private def businessDaysBetween(day1:Day, day2:Day) = {
-    if (!ukHolidayCalendar.isBusinessDay(day1) || !ukHolidayCalendar.isBusinessDay(day2) ) {
-      0 //A hack just to stop exceptions if ever run on a holiday. I don't know what the correct behaviour is
-    } else {
-      day1.businessDaysBetween(day2, ukHolidayCalendar)
-    }
-  }
-
-  def tradeVersionOffsetOrLatest(baseDay:Day, deskAndTimestamp:Option[(Desk, TradeTimestamp)]) = {
-    deskAndTimestamp match {
-      case Some((d,ts)) => {
-        val latestClose = tradeStores.closedDesks.latestTradeTimestamp(d)
-        if (ts.closeDay == latestClose.closeDay) {
-          Right(true)
-        } else {
-          Left(businessDaysBetween(baseDay, ts.closeDay))
-        }
-      }
-      case None => Left(0)
-    }
-  }
-
-  def liveOnOffsetOrStartOfYear(baseDay:Day, expiryDay:Day) = {
-    if (baseDay.startOfFinancialYear == expiryDay) {
-      Right(true)
-    } else {
-      Left(businessDaysBetween(baseDay, expiryDay))
-    }
-  }
-
-  def createTradeTimestamp(desk:Option[Desk], closeDay:Day) = {
-    desk match {
-      case Some(d) => tradeStores.deskDefinitions(d).tradeTimestampForOffset(closeDay)
-      case None => throw new Exception("No desk")
-    }
-  }
-
-  def bookCloseDay(desk:Option[Desk], tradeVersionOffSetOrLive:Either[Int,Boolean], baseDay:Day) = {
-    tradeVersionOffSetOrLive match {
-      case Left(offset) if desk.isDefined => Some(createTradeTimestamp(desk, applyOffset(baseDay, offset)))
-      case Right(_) if desk.isDefined => Some(tradeStores.closedDesks.latestTradeTimestamp(desk.get))
-      case _ => None
-    }
-  }
-
-  def applyOffset(base:Day,numberOfDays:Int) = {
-    base.addBusinessDays(ukHolidayCalendar, numberOfDays)
-  }
-
-  def intradaySubgroupAndTimestamp(intradaySubgroup:Option[IntradayGroups]):Option[(IntradayGroups, Timestamp)] = {
-    intradaySubgroup.map(intra => {
-      val latestIntradayTimestamp = {
-        val groupsToUserTimestamp = tradeStores.intradayTradeStore.intradayLatest
-        val validGroups = groupsToUserTimestamp.keySet.filter(g => {
-          intra.subgroups.toSet.exists(t => g.startsWith(t))
-        })
-        validGroups.map(g => groupsToUserTimestamp(g)._2).max
-      }
-      (intra, latestIntradayTimestamp)
-    })
-  }
-
-  def tradeExpiryDay(baseDay:Day, either:Either[Int,Boolean]):Day = {
-    either match {
-      case Left(offset) => applyOffset(baseDay, offset)
-      case Right(_) => baseDay.startOfFinancialYear
-    }
-  }
-}
+import starling.dbx.QueryBuilder._
+import starling.browser.service.Version
+import trade.TradeDiff
+import starling.trades.internal.TradeChangesPivotTableDataSource
 
 class StarlingServerImpl(
         val name:String,
-        reportContextBuilder:ReportContextBuilder,
-        reportService:ReportService,
         userSettingsDatabase:UserSettingsDatabase,
-        userReportsService:UserReportsService,
         tradeStores:TradeStores,
         enabledDesks: Set[Desk],
         versionInfo:Version,
@@ -263,7 +36,8 @@ class StarlingServerImpl(
         ukHolidayCalendar: BusinessCalendarSet,
         ldapSearch: LdapUserLookup,
         eaiStarlingDB: DB,
-        val allTraders: Traders
+        val allTraders: Traders,
+        rabbitEventDatabase:RabbitEventDatabase
       ) extends StarlingServer with Log {
 
   def desks = {
@@ -281,25 +55,25 @@ class StarlingServerImpl(
   private def unLabel(tradeSystem:TradeSystemLabel):TradeSystem = TradeSystems.fromName(tradeSystem.name)
 
   private def label(tradeSystem:TradeSystem) = TradeSystemLabel(tradeSystem.name, tradeSystem.shortCode)
-  private def label(fieldDetailsGroup:FieldDetailsGroup):FieldDetailsGroupLabel = FieldDetailsGroupLabel(fieldDetailsGroup.name, fieldDetailsGroup.fields.map(_.field.name))
-
-  def diffReportPivot(tradeSelection:TradeSelection, curveIdentifierDm1:CurveIdentifierLabel, curveIdentifierD:CurveIdentifierLabel,
-                      reportOptions:ReportOptions, expiryDay:Day,fromTimestamp:TradeTimestamp, toTimestamp:TradeTimestamp,
-                      pivotFieldParams:PivotFieldParams) = {
-    val reportDataDMinus1 = reportService.reportPivotTableDataSource(ReportParameters(tradeSelection.withDeskTimestamp(fromTimestamp), curveIdentifierDm1, reportOptions, expiryDay))
-    val reportDataD = reportService.reportPivotTableDataSource(ReportParameters(tradeSelection.withDeskTimestamp(toTimestamp), curveIdentifierD, reportOptions, expiryDay))
-    val pivot = new DiffPivotTableDataSource(reportDataD._2, reportDataDMinus1._2, "D-1") {
-    }
-    PivotTableModel.createPivotData(pivot, pivotFieldParams)
-  }
 
   def tradeChanges(tradeSelection:TradeSelection, from:Timestamp, to:Timestamp, expiryDay:Day, pivotFieldParams:PivotFieldParams) = {
     val tradeSets = toIntraddayTradeSets(tradeSelection, None) ::: deskTradeSets(tradeSelection.desk, tradeSelection.tradePredicate)
     val pivots = tradeSets.map { tradeSet =>
-      reportService.tradeChanges(tradeSet, from, to, expiryDay:Day)
+      tradeChanges(tradeSet, from, to, expiryDay:Day)
     }
     PivotTableModel.createPivotData(UnionPivotTableDataSource.join(pivots), pivotFieldParams)
   }
+
+  val tradeChangesCache = CacheFactory.getCache("PivotReport.tradeChanges", unique = true)
+
+  private def tradeChanges(tradeSet: TradeSet, t1: Timestamp, t2: Timestamp, expiryDay:Day) = {
+    val key = List("tradeChanges", tradeSet.key, t1, t2, expiryDay)
+    tradeChangesCache.memoize((key), {
+      val tradeChanges = Log.infoWithTime("Trade Changes read") {tradeSet.tradeChanges(t1, t2, expiryDay)}
+      new TradeChangesPivotTableDataSource(tradeChanges)
+    })
+  }
+
 
   def tradeReconciliation(tradeSelection:TradeSelection, from:TradeTimestamp, to:TradeTimestamp, intradayTimestamp: Timestamp, pivotFieldParams:PivotFieldParams) = {
     val eaiTrades = deskTradeSets(tradeSelection.desk, tradeSelection.tradePredicate)
@@ -307,66 +81,12 @@ class StarlingServerImpl(
     // we want to reconcile against (start day + 1) up to end day (inclusive). Quite often this will just be one day.
     val entryDays = (from.closeDay upto to.closeDay).toList.filterNot(_ == from.closeDay)
     val intradayTrades = toIntraddayTradeSets(tradeSelection, Some(entryDays))
-    val pivot = reportService.tradeReconciliation(eaiTrades.head, from.timestamp, to.timestamp, intradayTimestamp, intradayTrades)
+    def tradeReconciliation(tradeSet1: TradeSet, from: Timestamp, to: Timestamp, intradayTimestamp: Timestamp, tradeSet2: List[TradeSet]) = {
+      new TradeReconciliation(TradeDiff(tradeSet1, from, to, intradayTimestamp, tradeSet2))
+    }
+    val pivot = tradeReconciliation(eaiTrades.head, from.timestamp, to.timestamp, intradayTimestamp, intradayTrades)
     PivotTableModel.createPivotData(pivot, pivotFieldParams)
   }
-
-  def pnlReconciliation(tradeSelection: TradeSelectionWithTimestamp, curveIdentifier: CurveIdentifierLabel, expiryDay: Day, pivotFieldParams: PivotFieldParams) = {
-    assert(tradeSelection.intradaySubgroupAndTimestamp.isEmpty, "Can't do a pnl reconciliation with intraday trades")
-
-    val tradeSets: List[(TradeSet, Timestamp)] = tradeStores.toTradeSets(tradeSelection)
-    assert(tradeSets.size == 1, "Must have only 1 trade set")
-    val tradeSet = tradeSets.head
-
-    val tradeSetsKey = tradeSets.map(ts => (ts._1.key, ts._2)).toList
-
-    val pivot = reportService.pnlReconciliation(CurveIdentifier.unLabel(curveIdentifier), tradeSet._1, tradeSet._2, eaiStarlingDB)
-    PivotTableModel.createPivotData(pivot, pivotFieldParams)
-  }
-
-  def reportErrors(reportParameters:ReportParameters):ReportErrors = reportService.reportErrors(reportParameters)
-    
-  def createUserReport(reportParameters: ReportParameters) = userReportsService.createUserReport(reportParameters)
-  def createReportParameters(userReportData: UserReportData, observationDay: Day) = userReportsService.createReportParameters(userReportData, observationDay)
-
-  def reportPivot(reportParameters: ReportParameters, pivotFieldParams:PivotFieldParams) = reportService.reportPivot(reportParameters, pivotFieldParams)
-
-  val reportOptionsAvailable = reportService.pivotReportRunner.reportOptionsAvailable
-
-
-  def tradeValuation(tradeIDLabel:TradeIDLabel, curveIdentifier:CurveIdentifierLabel, timestamp:Timestamp):TradeValuationAndDetails = {
-    val tradeID = unLabel(tradeIDLabel)
-    val stores = tradeStores.storesFor(tradeID.tradeSystem)
-    stores.foreach { tradeStore => {
-      tradeStore.readTrade(tradeID, Some(timestamp)) match {
-        case None =>
-        case Some(trade) => {
-          val tradeValuation = reportService.singleTradeReport(trade, CurveIdentifier.unLabel(curveIdentifier))
-
-          val (stable, fieldDetailsGroups, _) = readTradeVersions(tradeIDLabel)
-          val cols = stable.columns
-
-          val tableRow = stable.data.find(row => {
-            (row(1).asInstanceOf[TableCell].value == timestamp)
-          }).getOrElse(stable.data.last)
-
-          return TradeValuationAndDetails(tradeValuation, tableRow, fieldDetailsGroups, cols)
-        }
-      }
-    }}
-    throw new Exception(tradeID + " not found")
-  }
-
-
-//  def latestTradeTimestamp(desk:Option[Desk], excel:Option[String]) = {
-//    val tradeSets = deskTradeSets(desk, TradePredicate.Null)
-//    val deskTimestamps = tradeSets.map(tradeStore => tradeStore.latestTimestamp())
-//    val allTimestamps = deskTimestamps ::: excel.map(g=>tradeStores.intradayTradeStore.latestTimestamp()).toList
-//    allTimestamps match {
-//      case Nil => Timestamp(0)
-//      case list => list.max
-//    }
-//  }
 
   /**
    * Desk to TradeSet with no filters.
@@ -461,15 +181,7 @@ class StarlingServerImpl(
   }
 
   def readTradeVersions(tradeIDLabel:TradeIDLabel):(STable,List[FieldDetailsGroupLabel],List[CostsLabel]) = {
-    val tradeID = unLabel(tradeIDLabel)
-    tradeStores.storesFor(tradeID.tradeSystem).foreach { tradeStore => {
-      tradeStore.tradeHistory(tradeID) match {
-        case Some(res) => return (res._1, res._2.map(label(_)), res._3)
-        case None =>
-      }
-    }}
-    throw new Exception("Trade " + tradeIDLabel + " not found")
-
+    tradeStores.readTradeVersions(unLabel(tradeIDLabel))
   }
 
   private val importTradesMap = new ConcurrentHashMap[Desk,Boolean]
@@ -478,14 +190,14 @@ class StarlingServerImpl(
     val ts = Timestamp.now
     val changed = tradeStores.tradeImporters(TitanTradeSystem).importAll(None, ts)
     if (changed) {
-      tradeStores.closedDesks.closeDesk(Desk.Titan, Day.today(), ts)
+      tradeStores.closedDesks.closeDesk(Desk.Titan, Day.today, ts)
     }
   }
 
   def bookClose(desk: Desk) {
+    val valid = List(Desk.GasolineSpec, Desk.LondonDerivatives).map(_.name)
     val bookID = desk match {
-      case Desk.GasolineSpec => Book.GasolineSpec.bookID
-      case Desk.LondonDerivatives => Book.LondonDerivatives.bookID
+      case Desk(name, _, Some(info:EAIDeskInfo)) if valid.contains(name) => info.book
       case _ => throw new Exception("Book close is not enabled for " + desk)
     }
     val uuid = UUID.randomUUID.toString
@@ -535,11 +247,11 @@ class StarlingServerImpl(
   }
   def version = versionInfo
 
-  def deskCloses = tradeStores.closedDesks.closedDesksByDay
+  def deskCloses = tradeStores.closedDesksByDay
   def latestTradeTimestamp(desk:Desk):TradeTimestamp = tradeStores.closedDesks.latestTradeTimestamp(desk)
 
   def intradayLatest = tradeStores.intradayTradeStore.intradayLatest
-  def clearCache = reportService.clearCache
+  def clearCache {}
 
   def selectLiveAndErrorTrades(day: Day, timestamp: Timestamp, desk: Desk, tradePredicate: TradePredicate):List[Trade] = {
     deskTradeSets(Some(desk), tradePredicate).flatMap(_.selectLiveAndErrorTrades(day, timestamp))
@@ -548,11 +260,6 @@ class StarlingServerImpl(
   def referenceDataTables() = referenceData.referenceDataTables()
   def referencePivot(table: ReferenceDataLabel, pivotFieldParams: PivotFieldParams) = referenceData.referencePivot(table, pivotFieldParams)
   def ukBusinessCalendar = ukHolidayCalendar
-
-  def permissionToDoAdminLikeThings = {
-    Permission.isAdmin(User.currentlyLoggedOn)
-  }
-
   def whoAmI = User.currentlyLoggedOn
   def allUserNames:List[String] = userSettingsDatabase.allUsersWithSettings
   def isStarlingDeveloper = {
@@ -564,7 +271,7 @@ class StarlingServerImpl(
     }
   }
 
-  def traders = allTraders.bookMap
+  def traders = allTraders.deskMap
 
   def orgPivot(pivotFieldParams:PivotFieldParams) = {
     PivotTableModel.createPivotData(new OrgPivotTableDataSource, pivotFieldParams)
@@ -627,10 +334,51 @@ class StarlingServerImpl(
     ), pivotFieldParams)
   }
 
-  def storeSystemInfo(info:OSInfo) = userSettingsDatabase.storeSystemInfo(User.currentlyLoggedOn, info)
+  def storeSystemInfo(info:OSInfo) {userSettingsDatabase.storeSystemInfo(User.currentlyLoggedOn, info)}
 
-  def saveUserReport(reportName:String, data:UserReportData, showParameters:Boolean) =
-    userSettingsDatabase.saveUserReport(User.currentlyLoggedOn, reportName, data, showParameters)
-  def deleteUserReport(reportName:String) = userSettingsDatabase.deleteUserReport(User.currentlyLoggedOn, reportName)
+  def gitLog(pivotFieldParams:PivotFieldParams, numCommits:Int) = {
+    val gitPivotSource = new GitPivotDataSource(numCommits)
+    PivotTableModel.createPivotData(gitPivotSource, pivotFieldParams)
+  }
 
+  def rabbitEvents(pivotFieldParams:PivotFieldParams, latestEvent:Long) = {
+    val table = RabbitEventDatabase.TableName
+    val starlingID = "Starling ID"
+    val verb = "Verb"
+    val subject = "Subject"
+    val id = "ID"
+    val source = "Source"
+    val timestamp = "Timestamp"
+    val host = "Host"
+    val pid = "PID"
+    val body = "Body"
+
+    val columns = {
+      List(("Event Fields", List(
+        new LongColumnDefinition(starlingID, "starlingID", table),
+        StringColumnDefinition(verb, "verb", table),
+        StringColumnDefinition(subject, "subject", table),
+        StringColumnDefinition(id, "id", table),
+        StringColumnDefinition(source, "source", table),
+        new TimestampColumnDefinition(timestamp, "timestamp", table),
+        new DayColumnDefinition("Day", table) {
+          override val fullSqlName = "timestamp"
+        },
+        StringColumnDefinition(host, "host", table),
+        new IntColumnDefinition(pid, "pid", table),
+        StringColumnDefinition(body, "body", table)
+      )))
+    }
+
+    PivotTableModel.createPivotData(new OnTheFlySQLPivotTableDataSource(
+      rabbitEventDatabase.db,
+      columns,
+      From(RealTable(table), List()),
+      List(),
+      PivotFieldsState(),
+      List()
+    ), pivotFieldParams)
+  }
+
+  def latestRabbitEvent = rabbitEventDatabase.latestID
 }

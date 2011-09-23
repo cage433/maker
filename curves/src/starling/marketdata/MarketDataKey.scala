@@ -1,10 +1,13 @@
 package starling.marketdata
 
-import starling.pivot.Field
 import starling.curves.MarketDataSlice
 import starling.db.MarketDataReader
-import starling.utils.Pattern.Extractor
-import starling.daterange.{Day, ObservationPoint}
+import starling.daterange.ObservationPoint
+import collection.immutable.TreeMap
+import starling.pivot.Field
+import starling.utils.ImplicitConversions._
+import scalaz.Scalaz._
+import starling.utils.sql.PersistAsBlob
 
 /**
  * The key used to look up market data from the database.
@@ -47,6 +50,15 @@ trait MarketDataKey {
   def dataTypeKey = dataType.name
 
   def unmarshallDB(dbValue: Any): marketDataType = dbValue.asInstanceOf[marketDataType]
+
+  def valueKey(row: Map[Field, Any]): MarketDataValueKey = {
+    val fields = dataType.keyFields -- fieldValues.keySet
+
+    MarketDataValueKey(-1, TreeMap.empty[Field, Any](Field.ordering) ++ (row.filterKeys(fields.contains)))
+  }
+
+  def valueKeys(data: Option[MarketData]): List[MarketDataValueKey] = data.fold(valueKeys(_), Nil)
+  def valueKeys(data: MarketData) = castRows(data).map(valueKey(_)).toList
 }
 
 case class TimedMarketDataKey(observationPoint: ObservationPoint, key: MarketDataKey) {
@@ -60,4 +72,10 @@ case class TimedMarketDataKey(observationPoint: ObservationPoint, key: MarketDat
   def unmarshallDB(dbValue: Any) = key.unmarshallDB(dbValue)
 
   def asTuple = (observationPoint, key)
+}
+
+case class MarketDataValueKey(id: Int, value: Map[Field, Any]) {
+  def sameValuesAs(that: MarketDataValueKey) = that.copy(id = id) == this
+
+  lazy val dbMap: Map[String, Any] = Map("valueKey" → new PersistAsBlob(value.mapKeys(_.name).sorted))
 }

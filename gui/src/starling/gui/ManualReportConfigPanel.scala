@@ -120,7 +120,7 @@ class ManualReportConfigPanel(context:PageContext, reportParameters:ReportParame
 
     reactions += {
       case DayChangedEvent(`observationDayChooser`, d) => {
-        val timeOfDayToUse = if (d >= Day.today) TimeOfDay.StartOfDay else TimeOfDay.EndOfDay
+        val timeOfDayToUse = if ((d >= Day.today) && (environmentRule.rule == EnvironmentRuleLabel.RealTime)) TimeOfDay.StartOfDay else TimeOfDay.EndOfDay
         forwardObservationDayAndTimeChooser.dayAndTime = d.atTimeOfDay(timeOfDayToUse)
         liveOnDayChooser.day = d
       }
@@ -260,7 +260,7 @@ class ManualReportConfigPanel(context:PageContext, reportParameters:ReportParame
     val valuationDay = observationDayChooser.day
     val environmentRule = day2Panel.environmentRule.rule
     val forwardValuationDayAndTime = day2Panel.forwardObservationDayAndTimeChooser.dayAndTime
-    val thetaDayAndTime: DayAndTime = day2Panel.thetaToDayChooser.day.endOfDay()
+    val thetaDayAndTime: DayAndTime = day2Panel.thetaToDayChooser.day.endOfDay
 
     val marketDataVersion = context.localCache.latestMarketDataVersion(marketDataSelection)
 
@@ -280,7 +280,7 @@ class ManualReportConfigPanel(context:PageContext, reportParameters:ReportParame
         marketIDFrom,
         rule,
         pnlFromDayAndTime.day,
-        pnlFromDayAndTime.day.endOfDay(),
+        pnlFromDayAndTime.day.endOfDay,
         pnlFromDayAndTime.nextBusinessDay(context.localCache.ukBusinessCalendar),
         envMods)
       if (tradeSel.desk.isEmpty) {

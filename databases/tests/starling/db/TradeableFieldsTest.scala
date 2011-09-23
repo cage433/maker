@@ -7,7 +7,7 @@ import starling.quantity.UOM._
 import starling.market._
 import starling.models.Put
 import starling.daterange._
-import starling.trade.{TradeID, Trade}
+import starling.instrument.{TradeID, Trade}
 import starling.tradestore._
 import eai.EAITradeAttributes
 import starling.quantity.RichQuantity._

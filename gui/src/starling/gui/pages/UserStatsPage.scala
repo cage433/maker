@@ -5,7 +5,7 @@ import starling.pivot.PivotEdits
 
 case class UserStatsPage(pivotPageState:PivotPageState) extends AbstractStarlingPivotPage(pivotPageState) {
   def text = "User Stats"
-  override val icon = StarlingIcons.im("/icons/16x16_stats.png")
+  override def icon = StarlingIcons.im("/icons/16x16_stats.png")
 
   def selfPage(pps:PivotPageState, edits:PivotEdits) = copy(pivotPageState = pps)
   def dataRequest(pageBuildingContext:StarlingServerContext) = {

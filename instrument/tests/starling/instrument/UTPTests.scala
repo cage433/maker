@@ -4,7 +4,7 @@ import physical.PhysicalMetalAssignment
 import starling.quantity.UOM._
 import starling.quantity.Quantity._
 import org.testng.annotations.{DataProvider, Test}
-import starling.utils.QuantityTestUtils._
+import starling.quantity.utils.QuantityTestUtils._
 import org.testng.Assert._
 import starling.curves._
 import interestrate.{DayCountActual365}
@@ -21,7 +21,8 @@ import cern.colt.matrix.impl.DenseDoubleMatrix2D
 import starling.quantity.{UOM, Percentage, Quantity}
 import starling.curves.ForwardPriceKey
 import starling.calendar.BrentMonth
-import starling.utils.{StarlingXStream, StarlingTest, Reflection}
+import starling.instrument.utils.StarlingXStream
+import starling.utils.{StarlingTest, Reflection}
 import starling.utils.sql.PersistAsBlob
 
 class UTPTests extends IndexTest {
@@ -42,6 +43,7 @@ class UTPTests extends IndexTest {
         key match {
           case DiscountRateKey(ccy, day, _) =>  new Quantity(math.exp(- zeroRates(ccy) * day.daysSinceInYears(marketDay.day)))
           case ForwardPriceKey(Market.NYMEX_WTI, Month(2010, 10), _) => 100 (Market.NYMEX_WTI.priceUOM) //for CSO
+          case MarketFixingKey(Market.NYMEX_WTI, _, _) => 50 (Market.NYMEX_WTI.priceUOM) //for CSO
           case ForwardPriceKey(Index.DATED_BRENT, _, _) => 98 (USD/BBL)
           case ForwardPriceKey(`plattsJan`, _, _) => 95 (USD/BBL)
           case ForwardPriceKey(market, day, _) => 96 (market.priceUOM)
@@ -90,6 +92,10 @@ class UTPTests extends IndexTest {
       // Future Spreads
       new FuturesCalendarSpread(Market.NYMEX_WTI, Month(2011, 1), Month(2011, 2), Quantity(55, USD/BBL), Quantity(56, USD/BBL), Quantity(1000, BBL)),
       new FuturesCalendarSpread(Market.NYMEX_WTI, Month(2011, 1), Month(2011, 2), Quantity(1, USD/BBL), Quantity(1000, BBL)),
+
+      // TAS
+      new TAS(Market.NYMEX_WTI, Month(2011, 1), Day(2008, 12, 1), Quantity(1000, BBL)),
+
 
       new FuturesCommoditySpread(FuturesSpreadMarket.RB_CRACKS, Month(2011, 1), Quantity(55, USD/BBL), Quantity(56, USD/BBL), Quantity(1000, BBL)),
       new FuturesCommoditySpread(FuturesSpreadMarket.RB_CRACKS, Month(2011, 1), Quantity(-1, USD/BBL), Quantity(1000, BBL)),
@@ -219,8 +225,8 @@ class UTPTests extends IndexTest {
 
   @Test
   def testThereAreNoSurplusKeysInInstrumentTypeFieldsList() {
-    val instruments = tradeableProvider.flatMap(tradeables=>tradeables).flatMap{tradeable=>tradeable.asUtpPortfolio(Day(2009, 1, 1)).instruments}
-    val allFields = (TreeSet[String]() ++ instruments.flatMap(_.detailsForUTPNOTUSED.keySet.map(_.replaceAll(" ", "").toLowerCase))) + "error"
+    val instruments : Seq[UTP] = tradeableProvider.flatMap(tradeables=>tradeables).flatMap{tradeable=>tradeable.asUtpPortfolio(Day(2009, 1, 1)).instruments}
+    val allFields = (TreeSet[String]() ++ instruments.flatMap(_.fields.map(_.replaceAll(" ", "").toLowerCase))) + "error"
     val actual = TreeSet[String]() ++ InstrumentType.fields.map(_.replaceAll(" ", "").toLowerCase)
     assertEquals(actual, allFields)
   }

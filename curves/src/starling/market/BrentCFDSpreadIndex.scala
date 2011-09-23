@@ -29,8 +29,6 @@ case class BrentCFDSpreadIndex(forwardBrent: PublishedIndex, month: BrentMonth) 
   def uom = BBL
 
   def priceUOM = USD / BBL
-
-  val eaiQuoteID = None
 }
 
 object BrentCFDSpreadIndex {

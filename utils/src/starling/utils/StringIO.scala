@@ -74,10 +74,10 @@ object StringIO {
       .map(line => (line.replace("JOINLINES", ""), line.replace("JOINLINES", "\\\n"))).toList
   }
 
-  def readStringFromResource(resource : String) = {
+  def readStringFromResource(sampleClass:Class[_], resource : String) = {
     val buffer = new StringBuffer
-    val asStream = getClass.getResourceAsStream(resource)
-    assert(asStream != null, "Couldn't load resource: " + resource)
+    val asStream = sampleClass.getResourceAsStream(resource)
+    assert(asStream != null, "Couldn't load resource: " + resource + " from " + sampleClass + " " + sampleClass.getClassLoader)
     val iStream = new InputStreamReader(asStream)
     val tmp = new Array[Char](4096)
     while(iStream.ready) {
@@ -88,7 +88,10 @@ object StringIO {
     buffer.toString
   }
 
-  def resource(resource: String): InputStream   = getClass.getResourceAsStream(resource)
-  def url(resource: String): URL                = getClass.getResource(resource)
+  def url(sampleClass:Class[_], resource: String): URL = {
+    val u = sampleClass.getResource(resource)
+    if (u == null) throw new Exception("No resource found for " + resource)
+    u
+  }
   def lines(resource: String): Iterator[String] = Source.fromURL(getClass.getResource(resource)).getLines
 }

@@ -77,78 +77,79 @@ import GuiFieldComponent._
 class GuiFieldComponent(val props:GuiFieldComponentProps) extends MigPanel("insets 0, hidemode 3", "[p]0[p]") {
   opaque = false
 
-  val namePanel = new GuiFieldNamePanel(props, this)
+  val namePanel = new GuiFieldNamePanel(props)
   val treeLevelPanel = new TreeLevelPanel(props)
   val measureTogglePanel = new MeasureTogglePanel(props)
   val subTotalTogglePanel = new SubTotalTogglePanel(props)
   val filterLabelPanel = new FilterLabelPanel(props)
-  val possibleValuesAndSelectionToUse = getPossibleValuesAndSelection
-
-  private def getPossibleValuesAndSelection = props.filterData.possibleValuesAndSelection match {
-    case None => (TreePivotFilter(TreePivotFilterNode("All", "All", List())), AllSelection)
-    case Some(d) => d
-  }
-
-  private val transformData = props.transformData
-
-  val filterPopupPanel = new TreePanel(possibleValuesAndSelectionToUse, transformData.showOther, transformData.transforms)
-
-  val popupMenu = new JPopupMenu {
-    add(filterPopupPanel.peer)
-    addPopupMenuListener(new PopupMenuListener {
-      def popupMenuCanceled(e:PopupMenuEvent) {}
-      def popupMenuWillBecomeInvisible(e:PopupMenuEvent) {
-        // Whenever the popup panel is hidden, ensure it represents the state of the page.
-        filterPopupPanel.filterPanel.textField.text = ""
-        filterPopupPanel.filterHelper.resetPopup(getPossibleValuesAndSelection, props.transformData.transforms)
-      }
-      def popupMenuWillBecomeVisible(e:PopupMenuEvent) {}
-    })
-  }
-  popupMenu.setBorder(CompoundBorder(LineBorder(GuiUtils.BorderColour), LineBorder(GuiUtils.PanelBackgroundColour, 2)))
   val filterButtonPanel = FilterButtonPanel(props)
 
-  val (values, selection) = possibleValuesAndSelectionToUse
-  val (textToUse, numberTextToUse) = selection match {
-    case AllSelection => {(filterPopupPanel.treeComponent.rootNode.getUserObject.asInstanceOf[CheckBoxListElement].label,"")}
-    case SomeSelection(selectedValues) if selectedValues.isEmpty => {(TreePanelComboBox.NONE.toString, "0")}
-    case SomeSelection(selectedValues) => {
-      // Need to use the label
-      (selectedValues.toList.map(v => {
-        val s = filterPopupPanel.filterHelper.valueToLabelMap.getOrElse(v, "Unknown:" + v)
-        if (s.length == 0) " " else s
-      }).mkString(","), selectedValues.size.toString)
+  // Only need the filter if we are not a measure field. It is quite an expensive operation.
+  if (!props.measureField) {
+    def getPossibleValuesAndSelection = props.filterData.possibleValuesAndSelection match {
+      case None => (TreePivotFilter(TreePivotFilterNode("All", "All", List())), AllSelection)
+      case Some(d) => d
     }
-  }
-  filterLabelPanel.label.text = textToUse
-  filterButtonPanel.numberText = numberTextToUse
+    val possibleValuesAndSelectionToUse = getPossibleValuesAndSelection
+    val transformData = props.transformData
+    val filterPopupPanel = new TreePanel(possibleValuesAndSelectionToUse, transformData.showOther, transformData.transforms)
 
-  reactions += {
-    case DisplayPopupEvent(`filterButtonPanel`) => {
-      // Find out where to display the popup.
-      if (filterPopupPanel.preferredSize.width < 200) {
-        filterPopupPanel.preferredSize = new Dimension(200, filterPopupPanel.preferredSize.height)
-      }
-      val yPos = filterButtonPanel.size.height - 1
-      val xPos = filterButtonPanel.size.width - filterPopupPanel.preferredSize.width - 7
-      filterPopupPanel.scrollToFirstSelectedNode
-      popupMenu.show(filterButtonPanel.peer, xPos, yPos-1)
-      onEDT({
-        KeyboardFocusManager.getCurrentKeyboardFocusManager.focusNextComponent(popupMenu)
-        filterPopupPanel.filterPanel.textField.requestFocusInWindow()
+    val popupMenu = new JPopupMenu {
+      add(filterPopupPanel.peer)
+      addPopupMenuListener(new PopupMenuListener {
+        def popupMenuCanceled(e:PopupMenuEvent) {}
+        def popupMenuWillBecomeInvisible(e:PopupMenuEvent) {
+          // Whenever the popup panel is hidden, ensure it represents the state of the page.
+          filterPopupPanel.filterPanel.textField.text = ""
+          filterPopupPanel.filterHelper.resetPopup(getPossibleValuesAndSelection, props.transformData.transforms)
+        }
+        def popupMenuWillBecomeVisible(e:PopupMenuEvent) {}
       })
     }
-    case FilterSelectionChanged(`filterPopupPanel`, sel) => props.filterData.onFilterChange(props.field, sel)
-    case OtherValueSelectionChanged(`filterPopupPanel`, sel) => {
-      // In all cases sel should be some selection.
-      sel match {
-        case SomeSelection(s) => props.transformData.onTransformChange(props.field, FilterWithOtherTransform(s))
-        case _ => throw new Exception("This should never happen")
+    popupMenu.setBorder(CompoundBorder(LineBorder(GuiUtils.BorderColour), LineBorder(GuiUtils.PanelBackgroundColour, 2)))
+
+    val (values, selection) = possibleValuesAndSelectionToUse
+    val (textToUse, numberTextToUse) = selection match {
+      case AllSelection => {(filterPopupPanel.treeComponent.rootNode.getUserObject.asInstanceOf[CheckBoxListElement].label,"")}
+      case SomeSelection(selectedValues) if selectedValues.isEmpty => {(TreePanelComboBox.NONE.toString, "0")}
+      case SomeSelection(selectedValues) => {
+        // Need to use the label
+        (selectedValues.toList.map(v => {
+          val s = filterPopupPanel.filterHelper.valueToLabelMap.getOrElse(v, "Unknown:" + v)
+          if (s.length == 0) " " else s
+        }).mkString(","), selectedValues.size.toString)
       }
     }
-    case CancelEvent(`filterPopupPanel`) => popupMenu.setVisible(false)
+    filterLabelPanel.label.text = textToUse
+    filterButtonPanel.numberText = numberTextToUse
+
+    reactions += {
+      case DisplayPopupEvent(`filterButtonPanel`) => {
+        // Find out where to display the popup.
+        if (filterPopupPanel.preferredSize.width < 200) {
+          filterPopupPanel.preferredSize = new Dimension(200, filterPopupPanel.preferredSize.height)
+        }
+        val yPos = filterButtonPanel.size.height - 1
+        val xPos = filterButtonPanel.size.width - filterPopupPanel.preferredSize.width - 7
+        filterPopupPanel.scrollToFirstSelectedNode
+        popupMenu.show(filterButtonPanel.peer, xPos, yPos-1)
+        onEDT({
+          KeyboardFocusManager.getCurrentKeyboardFocusManager.focusNextComponent(popupMenu)
+          filterPopupPanel.filterPanel.textField.requestFocusInWindow()
+        })
+      }
+      case FilterSelectionChanged(`filterPopupPanel`, sel) => props.filterData.onFilterChange(props.field, sel)
+      case OtherValueSelectionChanged(`filterPopupPanel`, sel) => {
+        // In all cases sel should be some selection.
+        sel match {
+          case SomeSelection(s) => props.transformData.onTransformChange(props.field, FilterWithOtherTransform(s))
+          case _ => throw new Exception("This should never happen")
+        }
+      }
+      case CancelEvent(`filterPopupPanel`) => popupMenu.setVisible(false)
+    }
+    listenTo(filterButtonPanel, filterPopupPanel)
   }
-  listenTo(filterButtonPanel, filterPopupPanel)
 
   // If the tree level panel is available, we want to grow this so the buttons are on the left rather than growing the name panel and putting the
   // buttons on the right.
@@ -220,7 +221,7 @@ class TempGuiFieldNamePanel(fieldName:String) extends MigPanel {
   }
 }
 
-class GuiFieldNamePanel(props:GuiFieldComponentProps, guiComp:GuiFieldComponent) extends MigPanel {
+class GuiFieldNamePanel(val props:GuiFieldComponentProps) extends MigPanel {
   opaque = false
   background = ClearColour
 
@@ -665,7 +666,7 @@ class FilterLabelPanel(props:GuiFieldComponentProps)
   val label = new Label {
     font = GuiFieldFont
     text = ""
-    foreground = Color.BLUE.darker
+    foreground = GuiUtils.BlueTextColour
     maximumSize = new Dimension(150, Integer.MAX_VALUE)
 
     override def text_=(s:String) {

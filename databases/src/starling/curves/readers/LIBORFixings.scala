@@ -108,6 +108,5 @@ object LIBORFixing {
 
   val calendars = overnightCalendars ++ spotNextCalendars
   val currencies = calendars.keySet
-
-  def firstTenorFor(currency: UOM) = if (overnightCalendars.keySet.contains(currency)) Tenor.ON else Tenor.SN
+  def firstTenorFor(currency: UOM) = if (overnightCalendars.contains(currency)) Tenor.ON else Tenor.SN
 }

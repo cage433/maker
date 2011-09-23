@@ -194,27 +194,38 @@ case class AxisNode(axisValue:AxisValue, children:List[AxisNode]=Nil) {
     }
   }
 
-  def flatten(path:List[AxisValue], subTotals:Boolean, recursiveCollapsed:Boolean, collapsedState:CollapsedState,
+  def flatten(previous:Option[AxisNode], refresh:Boolean, path:List[AxisValue], subTotals:Boolean, recursiveCollapsed:Boolean, collapsedState:CollapsedState,
               disabledSubTotals:List[Field], formatInfo:FormatInfo, extraFormatInfo:ExtraFormatInfo):List[List[AxisCell]] = {
     val pathToHere = axisValue :: path
     val collapsed = recursiveCollapsed || collapsedState.collapsed(pathToHere.reverse.tail) || (subTotals && axisValue.isTotal)
-    val filteredChildren = (if (collapsed) {
-      children.filter { c=> c.axisValue.isTotal || c.axisValue.isMeasure }
-    } else if (!subTotals || disabledSubTotals.contains(axisValue.field)) {
-      children.filterNot { c=> c.axisValue.isTotal }
-    } else {
-      children
-    })
-    val childCells:List[List[AxisCell]] = filteredChildren.flatMap{ child=>child.flatten(pathToHere, subTotals,
+    def createFilteredChildren(node:AxisNode):List[AxisNode] = {
+      (if (collapsed) {
+        node.children.filter { c=> c.axisValue.isTotal || c.axisValue.isMeasure }
+      } else if (!subTotals || disabledSubTotals.contains(axisValue.field)) {
+        node.children.filterNot { c=> c.axisValue.isTotal }
+      } else {
+        node.children
+      })
+    }
+    val myFilteredChildren = createFilteredChildren(this)
+    val previousFilteredChildren:Map[AxisValue,AxisNode] = previous match {
+      case None => Map.empty
+      case Some(p) => createFilteredChildren(p).map { node => node.axisValue -> node }.toMap
+    }
+    val filteredChildren:List[(AxisNode, Option[AxisNode])] = myFilteredChildren.map { child => (child, previousFilteredChildren.get(child.axisValue)) }
+    val childCells:List[List[AxisCell]] = filteredChildren.flatMap{ case(child, previousChild) =>child.flatten(previousChild, refresh, pathToHere, subTotals,
       collapsed, collapsedState, disabledSubTotals, formatInfo, extraFormatInfo)}
-    val f = childCells match {
+    val changed = refresh && (Some(axisValue) != previous.map(_.axisValue))
+    val childCellsWithoutTotals:List[List[AxisCell]] = childCells match {
       case Nil => {
         val (text, alignment) = AxisNode.textAndAlignment(axisValue, formatInfo, extraFormatInfo)
-        List(List(AxisCell(axisValue, Some(1), text, None, false, NotTotal, 0, alignment)))
+        val ac = AxisCell(axisValue, Some(1), text, None, false, NotTotal, 0, alignment)
+        ac.changed = changed
+        List(List(ac))
       }
       case head :: tail => {
         val totalSpan = childCells.flatMap(_.head.span).sum
-        val nonMeasureFilteredChildren = filteredChildren.filterNot(_.axisValue.isMeasure)
+        val nonMeasureFilteredChildren = filteredChildren.filterNot(_._1.axisValue.isMeasure)
         val collapsible = if (axisValue.isTotal || recursiveCollapsed || (!collapsed && (nonMeasureFilteredChildren.size <= 1))) None else Some(collapsed)
         val fixedHead = head match {
           case first :: rest if (axisValue.isTotal && first.value.isTotal)  => {
@@ -223,19 +234,23 @@ case class AxisNode(axisValue:AxisValue, children:List[AxisNode]=Nil) {
           case _ => head
         }
         val (text, alignment) = AxisNode.textAndAlignment(axisValue, formatInfo, extraFormatInfo)
-        List(AxisCell(axisValue, Some(totalSpan), text, collapsible, false, NotTotal, 0, alignment) :: fixedHead) ::: tail.zipWithIndex.map{ case(c,index) => {
-          AxisCell(axisValue, None, text, None, true, NotTotal, index+1, alignment) :: c
+        val ac = AxisCell(axisValue, Some(totalSpan), text, collapsible, false, NotTotal, 0, alignment)
+        ac.changed = changed
+        List(ac :: fixedHead) ::: tail.zipWithIndex.map{ case(c,index) => {
+          val ac0 = AxisCell(axisValue, None, text, None, true, NotTotal, index + 1, alignment)
+          ac0.changed = changed
+          ac0 :: c
         }}
       }
     }
     if (axisValue.isTotal) {
-      f.map(_.map(_.copy(totalState=SubTotal)))
+      childCellsWithoutTotals.map(_.map(_.copy(totalState=SubTotal)))
     } else if (axisValue.isOtherValue) {
-      f.map(_.map(ac => {
+      childCellsWithoutTotals.map(_.map(ac => {
         if (ac.isTotalValue) ac else ac.copy(totalState=OtherValueTotal)
       }))
     } else {
-      f
+      childCellsWithoutTotals
     }
   }
 }
@@ -243,12 +258,12 @@ case class AxisNode(axisValue:AxisValue, children:List[AxisNode]=Nil) {
 object AxisNodeBuilder {
   def flatten(node:AxisNode, grandTotals:Boolean, subTotals:Boolean, collapsedState:CollapsedState,
               disabledSubTotals:List[Field], formatInfo:FormatInfo, extraFormatInfo:ExtraFormatInfo,
-              grandTotalsOnEachSide:Boolean):List[List[AxisCell]] = {
+              grandTotalsOnEachSide:Boolean, previousNode:Option[AxisNode]=None):List[List[AxisCell]] = {
     val disabledSubTotalsToUse = Field.NullField :: Field.RootField :: disabledSubTotals
-    val cells = node.flatten(List(), subTotals, false, collapsedState, disabledSubTotalsToUse, formatInfo, extraFormatInfo)
+    val cells = node.flatten(previousNode, previousNode.isDefined, List(), subTotals, false, collapsedState, disabledSubTotalsToUse, formatInfo, extraFormatInfo)
     val width = cells(0).length
     val grandTotalRows = if (grandTotals) {
-      val rows = node.flatten(List(), false, true, collapsedState, disabledSubTotalsToUse, formatInfo, extraFormatInfo)
+      val rows = node.flatten(previousNode, previousNode.isDefined, List(), false, true, collapsedState, disabledSubTotalsToUse, formatInfo, extraFormatInfo)
       rows.map(l => l.map(_.copy(totalState=Total)).padTo(width, AxisCell.NullTotal))
     } else {
       List()
@@ -268,15 +283,18 @@ object AxisNodeBuilder {
   }
 }
 
+case class CellUpdateInfo(row:Int, column:Int, matches:Boolean, currentFraction:Float)
+
 /**
  * Supplies data for the pivot table view converted using totals and expand/collapse state.
  */
 case class PivotTableConverter(otherLayoutInfo:OtherLayoutInfo = OtherLayoutInfo(), table:PivotTable,
                                extraFormatInfo:ExtraFormatInfo=PivotFormatter.DefaultExtraFormatInfo,
-                               fieldState:PivotFieldsState=PivotFieldsState()) {
+                               fieldState:PivotFieldsState=PivotFieldsState(), previousPageData:Option[PivotTable]=None) {
   val totals = otherLayoutInfo.totals
   val collapsedRowState = otherLayoutInfo.rowCollapsedState
   val collapsedColState = otherLayoutInfo.columnCollapsedState
+  private val previousAggregatedMainBucket = previousPageData.map(_.aggregatedMainBucket)
 
   def allTableCells(extractUOMs:Boolean = true) = {
     val grid = createGrid(extractUOMs)
@@ -285,7 +303,7 @@ case class PivotTableConverter(otherLayoutInfo:OtherLayoutInfo = OtherLayoutInfo
 
   def allTableCellsAndUOMs = {
     val grid = createGrid(true)
-    (grid.rowData, grid.colData, grid.mainData, grid.colUOMS)
+    (grid.rowData, grid.colData, grid.mainData, grid.colUOMS, grid.mainTableUpdateInfo, grid.rowUpdateInfo, grid.columnUpdateInfo)
   }
 
   def createGrid(extractUOMs:Boolean = true, addExtraColumnRow:Boolean = true):PivotGrid ={
@@ -311,7 +329,7 @@ case class PivotTableConverter(otherLayoutInfo:OtherLayoutInfo = OtherLayoutInfo
     }
 
     val rowData = AxisNodeBuilder.flatten(table.rowNode.purge(rowsToRemove).getOrElse(AxisNode.Null), totals.rowGrandTotal,
-      totals.rowSubTotals, collapsedRowState, otherLayoutInfo.disabledSubTotals, table.formatInfo, extraFormatInfo, true)
+      totals.rowSubTotals, collapsedRowState, otherLayoutInfo.disabledSubTotals, table.formatInfo, extraFormatInfo, true, previousPageData.map(_.rowNode))
 
     def insertNullWhenNoRowValues(grid:List[List[AxisCell]], nullCount:Int) = {
       grid.map{ r=> {
@@ -348,7 +366,7 @@ case class PivotTableConverter(otherLayoutInfo:OtherLayoutInfo = OtherLayoutInfo
       table.columnAxis.flatMap(an => findFieldsWithNullChildren(an)).distinct
     }
     val cdX = AxisNodeBuilder.flatten(table.columnNode, totals.columnGrandTotal, totals.columnSubTotals, collapsedColState,
-       extraDisabledSubTotals ::: otherLayoutInfo.disabledSubTotals, table.formatInfo, extraFormatInfo, false)
+       extraDisabledSubTotals ::: otherLayoutInfo.disabledSubTotals, table.formatInfo, extraFormatInfo, false, previousPageData.map(_.columnNode))
     
     val cd = {
       val r = insertNullWhenNoRowValues(cdX, 1)
@@ -381,7 +399,7 @@ case class PivotTableConverter(otherLayoutInfo:OtherLayoutInfo = OtherLayoutInfo
       PivotGrid(fakeRowData, fakeColData, fakeMainData)
     } else {
       // Note below that we are using rowData rather than rowDataWithNullsAdded. This is because the rowData matches the aggregatedMainBucket.
-      val (mainData, columnUOMs) = nMainTableCells(rowData, cdX, extractUOMs)
+      val (mainData, columnUOMs, cellUpdateInfoList) = nMainTableCells(rowData, cdX, extractUOMs)
 
       if (extractUOMs) {
         // Extract the UOM label as far towards the top of the column header table as possible.
@@ -424,7 +442,19 @@ case class PivotTableConverter(otherLayoutInfo:OtherLayoutInfo = OtherLayoutInfo
           }
         }
       }
-      PivotGrid(rowDataWithNullsAdded.map(_.toArray).toArray, colData, mainData, columnUOMs)
+      val rowDataArray = rowDataWithNullsAdded.map(_.toArray).toArray
+
+      def axisCellUpdateInfo(cells:Array[Array[AxisCell]]) = {
+        cells.zipWithIndex.flatMap{case (arrayOfCells, i) => arrayOfCells.zipWithIndex.flatMap{case (cell, j) => {
+          if (cell.changed) Some(CellUpdateInfo(i, j, true, 0.0f)) else None
+        }}}
+      }
+      val (rowAxisCellUpdateInfo, colAxisCellUpdateInfo) = previousPageData match {
+        case None => (Nil,Nil)
+        case Some(_) => (axisCellUpdateInfo(rowDataArray).toList, axisCellUpdateInfo(colData).toList)
+      }
+
+      PivotGrid(rowDataArray, colData, mainData, columnUOMs, cellUpdateInfoList, rowAxisCellUpdateInfo, colAxisCellUpdateInfo)
     }
   }
 
@@ -438,7 +468,7 @@ case class PivotTableConverter(otherLayoutInfo:OtherLayoutInfo = OtherLayoutInfo
 
     //create the main table looping through the flattened rows and columns and looking up the sums in mainTableBucket
     val allUnits = Array.fill(scala.math.max(1, flattenedColValues.size))(Set[UOM]())
-    val data: Array[Array[TableCell]] =
+    val dataAndCellInfo: Array[Array[(TableCell, Option[CellUpdateInfo])]] =
       (for ((rowValues, rowIndex) <- flattenedRowValues.zipWithIndex) yield {
         val rowSubTotal = rowValues.exists(_.totalState == SubTotal)
         val rowTotal = rowValues.exists(_.totalState == Total)
@@ -456,7 +486,20 @@ case class PivotTableConverter(otherLayoutInfo:OtherLayoutInfo = OtherLayoutInfo
             }
           }
           val measureField = columnValues.find(ac => ac.value.isMeasure)
-          val tableCell = aggregatedMainBucket.get(key) match {
+          val measureCellOption = aggregatedMainBucket.get(key)
+          val cellUpdateInfo = previousAggregatedMainBucket.map(pamb => {
+            val previousCellOption = pamb.get(key)
+            val matches = (previousCellOption == measureCellOption)
+            if (!matches) {
+              previousCellOption match {
+                case Some(_) => CellUpdateInfo(rowIndex, columnIndex, matches, 0.0f)
+                case None => CellUpdateInfo(rowIndex, columnIndex, true, 0.0f)
+              }
+            } else {
+              CellUpdateInfo(rowIndex, columnIndex, matches, 0.0f)
+            }
+          })
+          val tableCell = measureCellOption match {
             case Some(measureCell) => {
               measureCell.value match {
                 case Some(s:Set[_]) => s.foreach(appendUOM)
@@ -507,7 +550,7 @@ case class PivotTableConverter(otherLayoutInfo:OtherLayoutInfo = OtherLayoutInfo
           val columnTotal = columnValues.exists(_.totalState == Total)
           val columnOtherValue = columnValues.exists(_.totalState == OtherValueTotal)
 
-          if ((rowTotal && columnSubTotal) || (columnTotal && rowSubTotal) || (rowTotal && columnTotal) || (rowSubTotal && columnSubTotal)) {
+          val tc = if ((rowTotal && columnSubTotal) || (columnTotal && rowSubTotal) || (rowTotal && columnTotal) || (rowSubTotal && columnSubTotal)) {
             tableCell.copy(totalState=SubtotalTotal)
           } else if (rowTotal || columnTotal) {
             tableCell.copy(totalState=Total)
@@ -518,9 +561,12 @@ case class PivotTableConverter(otherLayoutInfo:OtherLayoutInfo = OtherLayoutInfo
           } else {
             tableCell
           }
+          (tc, cellUpdateInfo)
         }).toArray
       }).toArray
 
+    val data = dataAndCellInfo.map(_.map(_._1))
+    val cellUpdateInfo = dataAndCellInfo.flatMap(_.flatMap(_._2)).toList.filter(!_.matches)
 
     if (extractUOMs) {
       // If a column only has one uom, set that uom as the column header.
@@ -548,7 +594,7 @@ case class PivotTableConverter(otherLayoutInfo:OtherLayoutInfo = OtherLayoutInfo
     })
 
 
-    (data, columnUOMs)
+    (data, columnUOMs, cellUpdateInfo)
   }
 
   def toSTable(name:String) = {

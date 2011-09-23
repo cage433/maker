@@ -40,6 +40,8 @@ case class SpreadStdDevSurfaceData(
       case _ => false
     }
   }
+
+  def size = periods.length
 }
 
 class SpreadStdDevSurfaceDataBuilder {

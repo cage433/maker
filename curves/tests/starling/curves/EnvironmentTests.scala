@@ -2,7 +2,7 @@ package starling.curves
 
 import starling.quantity.UOM._
 import org.testng.Assert._
-import starling.utils.QuantityTestUtils._
+import starling.quantity.utils.QuantityTestUtils._
 import org.testng.annotations.Test
 import starling.market.{TestMarketTest, Market}
 import starling.quantity.{Percentage, Quantity}

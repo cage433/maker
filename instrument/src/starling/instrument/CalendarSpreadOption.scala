@@ -8,7 +8,7 @@ import starling.models._
 import starling.quantity.Quantity._
 import starling.curves.Environment
 import starling.daterange._
-import starling.market.{ForwardPriceRiskFactorType, Market, FuturesMarket}
+import starling.market.{Market, FuturesMarket}
 import java.lang.String
 import starling.utils.Log
 import starling.curves.FuturesSpreadPrice

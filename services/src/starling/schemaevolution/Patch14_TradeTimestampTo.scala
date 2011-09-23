@@ -6,7 +6,7 @@ import starling.richdb.RichDB
 import java.sql.{Connection, Statement, ResultSet}
 import starling.props.Props
 import starling.daterange.Timestamp
-import starling.utils.sql.QueryBuilder._
+import starling.dbx.QueryBuilder._
 import starling.services.StarlingInit
 
 /**

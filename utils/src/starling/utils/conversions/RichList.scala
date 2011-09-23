@@ -3,12 +3,13 @@ package starling.utils.conversions
 import collection.mutable.ListBuffer
 
 import starling.utils.ImplicitConversions._
+import scalaz.Scalaz._
 
 
 trait RichList {
   implicit def enrichList[A](list : List[A]) = new RichList(list)
   implicit def enrichListOfOptions[A](list : List[Option[A]]) = new RichList(list) {
-    lazy val somes = list.flatMap(_.toList)
+    lazy val somes: List[A] = list.flatMap(_.toList)
   }
   implicit def enrichListOfTuple2[A, B](list: List[(A, B)]) = new RichList(list) {
     def mapFirst[C](f: A => C): List[(C, B)] = list.map(_.mapFirst(f))
@@ -78,6 +79,8 @@ trait RichList {
 
     def partialMap[B](pf: PartialFunction[A, B]): List[B] = flatMapO(pf.lift)
     def safeMap[B](f: A => B): List[B] = flatMapO(f.option)
-    def optMaxBy[B](f: A => B)(implicit cmp: Ordering[B]): Option[A] = if (list.isEmpty) None else Some(list.maxBy(f))
+    def optMax(implicit cmd: Ordering[A]): Option[A] = noneEmpty(_.max)
+    def optMaxBy[B](f: A => B)(implicit cmp: Ordering[B]): Option[A] = noneEmpty(_.maxBy(f))
+    def noneEmpty[B](f: List[A] => B): Option[B] = list.isEmpty ? none[B] | some(f(list))
   }
 }

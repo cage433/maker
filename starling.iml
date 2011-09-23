@@ -14,8 +14,14 @@
     <exclude-output />
     <content url="file://$MODULE_DIR$">
       <excludeFolder url="file://$MODULE_DIR$/.ivy" />
+      <excludeFolder url="file://$MODULE_DIR$/.settings" />
+      <excludeFolder url="file://$MODULE_DIR$/component-tests" />
+      <excludeFolder url="file://$MODULE_DIR$/dummy-sbt-vim-hack" />
       <excludeFolder url="file://$MODULE_DIR$/logs" />
       <excludeFolder url="file://$MODULE_DIR$/modulejarcache" />
+      <excludeFolder url="file://$MODULE_DIR$/osgi-gui-cache" />
+      <excludeFolder url="file://$MODULE_DIR$/refined-service" />
+      <excludeFolder url="file://$MODULE_DIR$/refinedtestclient" />
       <excludeFolder url="file://$MODULE_DIR$/target" />
       <excludeFolder url="file://$MODULE_DIR$/test-output" />
       <excludeFolder url="file://$MODULE_DIR$/titan-scala-model" />

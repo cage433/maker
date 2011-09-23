@@ -11,23 +11,31 @@
       <module fileurl="file://$PROJECT_DIR$/curves/curves.iml" filepath="$PROJECT_DIR$/curves/curves.iml" />
       <module fileurl="file://$PROJECT_DIR$/databases/databases.iml" filepath="$PROJECT_DIR$/databases/databases.iml" />
       <module fileurl="file://$PROJECT_DIR$/daterange/daterange.iml" filepath="$PROJECT_DIR$/daterange/daterange.iml" />
-      <module fileurl="file://$PROJECT_DIR$/dev.launcher/dev.launcher.iml" filepath="$PROJECT_DIR$/dev.launcher/dev.launcher.iml" />
+      <module fileurl="file://$PROJECT_DIR$/dbx/dbx.iml" filepath="$PROJECT_DIR$/dbx/dbx.iml" />
       <module fileurl="file://$PROJECT_DIR$/fc2.api/fc2.api.iml" filepath="$PROJECT_DIR$/fc2.api/fc2.api.iml" />
       <module fileurl="file://$PROJECT_DIR$/gui/gui.iml" filepath="$PROJECT_DIR$/gui/gui.iml" />
       <module fileurl="file://$PROJECT_DIR$/gui.api/gui.api.iml" filepath="$PROJECT_DIR$/gui.api/gui.api.iml" />
       <module fileurl="file://$PROJECT_DIR$/instrument/instrument.iml" filepath="$PROJECT_DIR$/instrument/instrument.iml" />
+      <module fileurl="file://$PROJECT_DIR$/launcher/launcher.iml" filepath="$PROJECT_DIR$/launcher/launcher.iml" />
       <module fileurl="file://$PROJECT_DIR$/loopyxl/loopyxl.iml" filepath="$PROJECT_DIR$/loopyxl/loopyxl.iml" />
+      <module fileurl="file://$PROJECT_DIR$/manager/manager.iml" filepath="$PROJECT_DIR$/manager/manager.iml" />
       <module fileurl="file://$PROJECT_DIR$/maths/maths.iml" filepath="$PROJECT_DIR$/maths/maths.iml" />
+      <module fileurl="file://$PROJECT_DIR$/osgimanager/osgimanager.iml" filepath="$PROJECT_DIR$/osgimanager/osgimanager.iml" />
+      <module fileurl="file://$PROJECT_DIR$/osgirun/osgirun.iml" filepath="$PROJECT_DIR$/osgirun/osgirun.iml" />
       <module fileurl="file://$PROJECT_DIR$/pivot/pivot.iml" filepath="$PROJECT_DIR$/pivot/pivot.iml" />
       <module fileurl="file://$PROJECT_DIR$/pivot.utils/pivot.utils.iml" filepath="$PROJECT_DIR$/pivot.utils/pivot.utils.iml" />
       <module fileurl="file://$PROJECT_DIR$/quantity/quantity.iml" filepath="$PROJECT_DIR$/quantity/quantity.iml" />
+      <module fileurl="file://$PROJECT_DIR$/reports.api/reports.iml" filepath="$PROJECT_DIR$/reports.api/reports.iml" />
+      <module fileurl="file://$PROJECT_DIR$/reports/reports.internal.iml" filepath="$PROJECT_DIR$/reports/reports.internal.iml" />
       <module fileurl="file://$PROJECT_DIR$/services/services.iml" filepath="$PROJECT_DIR$/services/services.iml" />
+      <module fileurl="file://$PROJECT_DIR$/singleclasspathmanager/singleclasspathmanager.iml" filepath="$PROJECT_DIR$/singleclasspathmanager/singleclasspathmanager.iml" />
       <module fileurl="file://$PROJECT_DIR$/starling.iml" filepath="$PROJECT_DIR$/starling.iml" />
       <module fileurl="file://$PROJECT_DIR$/starling.api/starling.api.iml" filepath="$PROJECT_DIR$/starling.api/starling.api.iml" />
+      <module fileurl="file://$PROJECT_DIR$/starling.client/starling.client.iml" filepath="$PROJECT_DIR$/starling.client/starling.client.iml" />
+      <module fileurl="file://$PROJECT_DIR$/startserver/startserver.iml" filepath="$PROJECT_DIR$/startserver/startserver.iml" />
       <module fileurl="file://$PROJECT_DIR$/titan/titan.iml" filepath="$PROJECT_DIR$/titan/titan.iml" />
       <module fileurl="file://$PROJECT_DIR$/trade/trade.iml" filepath="$PROJECT_DIR$/trade/trade.iml" />
       <module fileurl="file://$PROJECT_DIR$/utils/utils.iml" filepath="$PROJECT_DIR$/utils/utils.iml" />
-      <module fileurl="file://$PROJECT_DIR$/var/var.iml" filepath="$PROJECT_DIR$/var/var.iml" />
     </modules>
   </component>
 </project>

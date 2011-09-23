@@ -12,6 +12,7 @@ import java.awt.{Toolkit, Dimension}
 import javax.swing.ImageIcon
 import starling.browser._
 import common.{ExButton, ButtonClickedEx, NListView, MigPanel}
+import starling.gui.StarlingLocalCache._
 
 class PivotReportPage {}
 
@@ -34,13 +35,8 @@ case class DifferenceMainPivotReportPage(
   assert(tradeSelection.intradaySubgroup.isEmpty, "Difference reports don't work with Excel trades")
 
   def dataRequest(pageBuildingContext:StarlingServerContext) = {
-    pageBuildingContext.cachingStarlingServer.diffReportPivot(tradeSelection, curveIdentifierDm1, curveIdentifierD,
+    pageBuildingContext.cachingReportService.diffReportPivot(tradeSelection, curveIdentifierDm1, curveIdentifierD,
       reportOptions, expiryDay, fromTimestamp, toTimestamp, pivotPageState.pivotFieldParams)
-  }
-
-  override def refreshFunctions = {
-    val functions = new ListBuffer[PartialFunction[Event,Page]]
-    functions.toList
   }
 
   def text = tradeSelection + " " + curveIdentifierD + " vs " + curveIdentifierDm1
@@ -62,41 +58,33 @@ case class MainPivotReportPage(showParameters:Boolean, reportParameters:ReportPa
   override def icon = StarlingIcons.im("/icons/16x16_report.png")
   override def shortText = if (showParameters) shortTitle else reportParameters.shortText
 
-  override def refreshFunctions = {
-    val functions = new ListBuffer[PartialFunction[Event,Page]]
-    reportParameters.tradeSelectionWithTimestamp.intradaySubgroupAndTimestamp match {
-      case Some((groups, _)) => functions += {
-        case IntradayUpdated(group, _, timestamp) if groups.subgroups.contains(group) => selfReportPage(reportParameters.copyWithIntradayTimestamp(timestamp))
+  override def latestPage(localCache:LocalCache) = {
+    val page1 = reportParameters.tradeSelectionWithTimestamp.intradaySubgroupAndTimestamp match {
+      case Some((groups, _)) => {
+        val latestTimestamp = localCache.latestTimestamp(groups)
+        selfReportPage(reportParameters.copyWithIntradayTimestamp(latestTimestamp))
       }
-      case _ =>
+      case None => this
     }
-    val excelNames =
-      reportParameters.curveIdentifier.marketDataIdentifier.selection.excel.toList :::
-      reportParameters.pnlParameters.toList.flatMap {
-        pnlFrom => pnlFrom.curveIdentifierFrom.marketDataIdentifier.selection.excel.toList
-      }
 
-    if (!excelNames.isEmpty) {
-      functions += { case ExcelMarketDataUpdate(name, version) if (excelNames.contains(name)) => {
-        val pnlParameters = reportParameters.pnlParameters.map {
-          pnlParameters => {
-            pnlParameters.curveIdentifierFrom.marketDataIdentifier.selection.excel match {
-              case Some(`name`) => pnlParameters.copy(curveIdentifierFrom=pnlParameters.curveIdentifierFrom.copyVersion(version))
-              case _ => pnlParameters
-            }
+    val newPnlParameters:Option[PnlFromParameters] = reportParameters.pnlParameters.map {
+      pnlParameters => {
+        localCache.latestMarketDataVersionIfValid(pnlParameters.curveIdentifierFrom.marketDataIdentifier.selection) match {
+          case Some(v) => {
+            pnlParameters.copy(curveIdentifierFrom=pnlParameters.curveIdentifierFrom.copyVersion(v))
           }
+          case _ => pnlParameters
         }
-        val curveIdentifier = reportParameters.curveIdentifier.marketDataIdentifier.selection.excel match {
-          case Some(`name`) => reportParameters.curveIdentifier.copyVersion(version)
-          case None => reportParameters.curveIdentifier
-        }
-        selfReportPage(reportParameters.copy(curveIdentifier=curveIdentifier, pnlParameters=pnlParameters))
-      } }
+      }
+    }
+    val newCurveIdentifier = localCache.latestMarketDataVersionIfValid(reportParameters.curveIdentifier.marketDataIdentifier.selection) match {
+      case Some(v) => {
+        reportParameters.curveIdentifier.copyVersion(v)
+      }
+      case _ => reportParameters.curveIdentifier
     }
 
-    //TODO [02 Dec 2010] respond to PricingGroup market data changes
-
-    functions.toList
+    page1.selfReportPage(reportParameters.copy(curveIdentifier=newCurveIdentifier, pnlParameters=newPnlParameters))
   }
 
   override def finalDrillDownPage(fields:scala.Seq[(Field, Selection)], pageContext:PageContext, modifiers:Modifiers) {
@@ -119,18 +107,18 @@ case class MainPivotReportPage(showParameters:Boolean, reportParameters:ReportPa
   }
 
   override def subClassesPageData(reader:StarlingServerContext):Option[PageData] = {
-    Some(PivotReportTablePageData(reader.cachingStarlingServer.reportErrors(reportParameters).errors.size))
+    Some(PivotReportTablePageData(reader.cachingReportService.reportErrors(reportParameters).errors.size))
   }
 
   def dataRequest(pageBuildingContext:StarlingServerContext) = {
-    pageBuildingContext.cachingStarlingServer.reportPivot(reportParameters, pivotPageState.pivotFieldParams)
+    pageBuildingContext.cachingReportService.reportPivot(reportParameters, pivotPageState.pivotFieldParams)
   }
   def selfPage(pps:PivotPageState, edits:PivotEdits) = copy(pivotPageState = pps)
   def selfReportPage(rp:ReportParameters, pps:PivotPageState = pivotPageState) = copy(reportParameters = rp, pivotPageState = pps)
   override def toolbarButtons(pageContext:PageContext, data:PageData) =
     PivotReportPage.toolbarButtons(pageContext, reportParameters, data, showParameters, pivotPageState)
 
-  override def configPanel(context:PageContext, data:PageData) = {
+  override def configPanel(context:PageContext, data:PageData, tableSelection:() => TableSelection) = {
     if (showParameters) {
       val pivotData = data match {
         case PivotTablePageData(pivData,Some(pd)) => pd match {
@@ -176,7 +164,7 @@ case class MainPivotReportPage(showParameters:Boolean, reportParameters:ReportPa
       val presetReportPanel = new PresetReportConfigPanel(context, reportParameters, pivotPageState)
       val tradeInfoPanel = new TradeInfoConfigPanel(context, reportParameters)
 
-      val runPanel = new MigPanel("insets 0","[p]1lp[p]push") {
+      val runPanel = new MigPanel("insets 0") {
         reactions += {
           case UpdateRunButtonEvent(`presetReportPanel`) => {
             val rps = presetReportPanel.generateReportParameters match {
@@ -251,7 +239,7 @@ case class MainPivotReportPage(showParameters:Boolean, reportParameters:ReportPa
     }
   }
 
-  override def bookmark(serverContext:StarlingServerContext):Bookmark = ReportBookmark(showParameters, serverContext.server.createUserReport(reportParameters), pivotPageState)
+  override def bookmark(serverContext:StarlingServerContext):Bookmark = ReportBookmark(showParameters, serverContext.reportService.createUserReport(reportParameters), pivotPageState)
 }
 
 case class ReportBookmark(showParameters:Boolean, userReportData:UserReportData, pivotPageState:PivotPageState) extends StarlingBookmark {
@@ -263,10 +251,10 @@ case class ReportBookmark(showParameters:Boolean, userReportData:UserReportData,
   }
   def createStarlingPage(day:Option[Day], serverContext:StarlingServerContext, context:PageContext) = {
     val dayToUse = day match {
-      case None => Day.today() // Real time
+      case None => Day.today // Real time
       case Some(d) => d
     }
-    val reportParameters = serverContext.server.createReportParameters(userReportData, dayToUse)
+    val reportParameters = serverContext.reportService.createReportParameters(userReportData, dayToUse)
     MainPivotReportPage(showParameters, reportParameters, pivotPageState)
   }
 }
@@ -320,9 +308,9 @@ object PivotReportPage {
 
 case class ReportErrorsPage(reportParameters:ReportParameters) extends StarlingServerPage {
   def text = "Errors in " + reportParameters.text
-  def createComponent(context: PageContext, data: PageData, bookmark:Bookmark, browserSize:Dimension, previousPageData:Option[PageData]) = new PivotReportErrorPageComponent(context, data, browserSize, previousPageData)
+  def createComponent(context: PageContext, data: PageData, bookmark:Bookmark, browserSize:Dimension, previousPageData:Option[PreviousPageData]) = new PivotReportErrorPageComponent(context, data, browserSize, previousPageData)
   def build(pageBuildingContext: StarlingServerContext) = {
-    val errors = pageBuildingContext.cachingStarlingServer.reportErrors(reportParameters)
+    val errors = pageBuildingContext.cachingReportService.reportErrors(reportParameters)
     val errorsToUse = errors.errors.map(e => ErrorViewElement(e.instrumentText, e.message))
     PivotReportErrorPageData(errorsToUse)
   }
@@ -331,7 +319,7 @@ case class ReportErrorsPage(reportParameters:ReportParameters) extends StarlingS
 case class PivotReportErrorPageData(reportErrors:List[ErrorViewElement]) extends PageData
 
 
-class PivotReportErrorPageComponent(pageContext:PageContext, data:PageData, browserSize:Dimension, previousPageData:Option[PageData]) extends MigPanel("") with PageComponent {
+class PivotReportErrorPageComponent(pageContext:PageContext, data:PageData, browserSize:Dimension, previousPageData:Option[PreviousPageData]) extends MigPanel("") with PageComponent {
   val errors = data match {
     case d:PivotReportErrorPageData => d.reportErrors
   }
@@ -342,7 +330,7 @@ class PivotReportErrorPageComponent(pageContext:PageContext, data:PageData, brow
 case class ReportCellErrorsPage(errors:List[StackTrace]) extends StarlingServerPage {
   def text = "Errors"
   def icon = StarlingIcons.im("/icons/error.png")
-  def createComponent(context:PageContext, data:PageData, bookmark:Bookmark, browserSize:Dimension, previousPageData:Option[PageData]) = {
+  def createComponent(context:PageContext, data:PageData, bookmark:Bookmark, browserSize:Dimension, previousPageData:Option[PreviousPageData]) = {
     val errorsToUse = data match {
       case d:ReportCellErrorData => d.errors
     }
@@ -352,7 +340,7 @@ case class ReportCellErrorsPage(errors:List[StackTrace]) extends StarlingServerP
 }
 case class ReportCellErrorData(errors:List[ErrorViewElement]) extends PageData
 
-class ReportCellErrorsPageComponent(errors:List[ErrorViewElement], browserSize:Dimension, previousPageData:Option[PageData]) extends MigPanel("") with PageComponent {
+class ReportCellErrorsPageComponent(errors:List[ErrorViewElement], browserSize:Dimension, previousPageData:Option[PreviousPageData]) extends MigPanel("") with PageComponent {
   val errorView = new ErrorView(errors, Some(scala.math.round(browserSize.height / 4.0f)))
   add(errorView, "push, grow")
 }

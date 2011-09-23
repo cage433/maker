@@ -13,8 +13,9 @@ import java.util.*;
  */
 class Booter {
     public static void main(String[] args) throws Exception {
-        if (args.length != 2) {
+        if (args.length < 2) {
             System.out.println("Usage: java -jar booter.jar <appurl> <appname>");
+            Thread.sleep(5000);
             System.exit(1);
         }
         URL appBaseURL = new URL(args[0]);
@@ -32,11 +33,12 @@ class Booter {
         if (!cacheDir.exists()) cacheDir.mkdir();
         File logFile = new File(cacheDir, "log.txt");
         System.setOut(new java.io.PrintStream(new TeeOutputStream(System.out, new FileOutputStream(logFile))));
+        System.setErr(new java.io.PrintStream(new TeeOutputStream(System.err, new FileOutputStream(logFile))));
         System.out.println("Cachdir: " + cacheDir.getAbsolutePath());
-        run(cacheDir, appBaseURL);
+        run(cacheDir, appBaseURL, Arrays.copyOfRange(args, 2, args.length));
     }
 
-    public static void run(File cacheDir, URL baseURL) throws Exception {
+    public static void run(File cacheDir, URL baseURL, String[] args) throws Exception {
 
         //HACK this should probably be specified in app.txt
         System.setProperty("log4j.configuration", "utils/resources/log4j.properties");
@@ -67,7 +69,16 @@ class Booter {
         }
         String[] firstLine = lines.get(0).split(" ");
         String mainClass = firstLine[0];
-        String[] applicationArguments = Arrays.copyOfRange(firstLine, 1, firstLine.length);
+        String[] appTxtArgs = Arrays.copyOfRange(firstLine, 1, firstLine.length);
+        int applicationArgsLength = appTxtArgs.length + args.length;
+        String[] applicationArgs = new String[applicationArgsLength];
+        for (int i = 0; i < applicationArgsLength; i++) {
+            if (i < appTxtArgs.length) {
+                applicationArgs[i] = appTxtArgs[i];
+            } else {
+                applicationArgs[i] = args[i - appTxtArgs.length];
+            }
+        }
         Map<String, Long> remoteJarsToTimestamps = new HashMap<String, Long>();
         for (String line : lines.subList(1, lines.size())) {
             String jar = line.split(" ")[0];
@@ -144,7 +155,7 @@ class Booter {
             });
             Class launcher = classLoader.loadClass(mainClass);
             Method main = launcher.getMethod("main", new Class[]{String[].class});
-            main.invoke(null, new Object[]{applicationArguments});
+            main.invoke(null, new Object[]{applicationArgs});
         } catch (Exception e) {
             e.printStackTrace();
         }

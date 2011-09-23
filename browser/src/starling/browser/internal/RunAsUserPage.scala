@@ -11,14 +11,14 @@ import service.UserLoggedIn
 case class RunAsUserPage() extends Page {
   def text = "Run as another user"
   def icon = BrowserIcons.im("/icons/16x16_user_dark.png")
-  def bundle = RootBrowserContext.bundleName
+  def bundle = RootBrowserBundle.bundleName
 
 
   def build(serverContext: String) = null
   type SC = String
   def createServerContext(sc: ServerContext) = ""
 
-  def createComponent(context:PageContext, data:PageData, bookmark:Bookmark, browserSize:Dimension, previousPageData:Option[PageData]) = new RunAsUserPageComponent(context)
+  def createComponent(context:PageContext, data:PageData, bookmark:Bookmark, browserSize:Dimension, previousPageData:Option[PreviousPageData]) = new RunAsUserPageComponent(context)
 }
 
 class RunAsUserPageComponent(context:PageContext) extends MigPanel("insets n n n 0", "[" + StandardLeftIndent + "][p][p]unrel[grow]") with PageComponent {

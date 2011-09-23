@@ -13,6 +13,8 @@ import starling.props.Props
 import xml._
 import java.util.EventListener
 import starling.utils.{Stopable, Log}
+import javax.ws.rs.ext.RuntimeDelegate
+import org.jboss.resteasy.spi.ResteasyProviderFactory
 
 
 class HttpServer(portNo : Int,
@@ -28,12 +30,17 @@ class HttpServer(portNo : Int,
   val server = new JettyServer(portNo)
   var servletPaths = List[String]()
 
+  RuntimeDelegate.setInstance(new ResteasyProviderFactory())
+
+
+
   val rootContext = new Context(server, "/", Context.SESSIONS);
 
   descriptor match {
     case Some(desc) => {
       log.info("Applying descriptor '%s' to web app context".format(desc))
       val wac : WebAppContext = new WebAppContext()
+      wac.setClassLoader(this.getClass.getClassLoader)
       wac.setResourceBase(".")
       wac.setDescriptor(desc)
       wac.setContextPath("/")
@@ -65,7 +72,7 @@ class HttpServer(portNo : Int,
   // some test servlets
   registerServlet(new StatusServlet(), "status")
   registerServlet(new RestfulServlet("Some Test String"), "test")
-  registerServlet(new org.jminix.console.servlet.MiniConsoleServlet(), "jmx")
+  //registerServlet(new org.jminix.console.servlet.MiniConsoleServlet(), "jmx")
 
   for((path, servlet) <- servlets) {
     val className : String = servlet.getClass.getName
@@ -124,6 +131,18 @@ class HttpServer(portNo : Int,
   def registerServlet(servlet: Servlet, path: String) {
     rootContext.addServlet(new ServletHolder(servlet), "/" + path + "/*")
     servletPaths ::= path
+  }
+
+  def run() = {
+    // this needs to be the last servlet registered as it lists all the others
+    registerServlet(new RootServlet(servletPaths), "")
+
+    rootContext.setErrorHandler(errorHandler)
+    server.addHandler(rootContext)
+
+    server.start()
+
+    Log.info("HttpServer stared on  port: " + portNo)
   }
 
   class RootServlet(servletPaths : List[String]) extends HttpServlet {

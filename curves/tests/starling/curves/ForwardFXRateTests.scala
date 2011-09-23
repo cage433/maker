@@ -7,7 +7,7 @@ import starling.curves.TestEnvironmentBuilder._
 import starling.quantity.UOM._
 import starling.quantity.Quantity
 import starling.utils.ScalaTestUtils._
-import starling.utils.QuantityTestUtils._
+import starling.quantity.utils.QuantityTestUtils._
 
 class ForwardFXRateTests extends StarlingTest {
 

@@ -69,13 +69,16 @@ object PriceDataType extends MarketDataType {
   override def valueFields = Set(priceField.field)
 
   override def createValue(values: List[Map[Field, Any]]) = {
-    val pairs = (values.map { v => {
-      v(periodField.field).asInstanceOf[DateRange] → v(priceField.field).asInstanceOf[PivotQuantity]
-    } }).toMap
+    val pairs = (values.map { v => v(periodField.field).asInstanceOf[DateRange] → getPrice(v) }).toMap
     PriceData(pairs)
   }
 
   override def createKey(values: Map[Field, Any]) = PriceDataKey(Market.fromName(values(marketField.field).asInstanceOf[String]))
+
+  private def getPrice(map: Map[Field, Any]): PivotQuantity = map(priceField.field) match {
+    case pq: PivotQuantity => pq
+    case q: Quantity => PivotQuantity(q)
+  }
 }
 
 case class PriceDataKey(market: CommodityMarket) extends MarketDataKey {
@@ -115,12 +118,12 @@ case class PriceData(prices: Map[DateRange, PivotQuantity]) extends MarketData {
   override def marshall = PriceDataDTO(TreeMap.empty[DateRange, Double] ++ prices.mapValues(_.doubleValue.get))
 
   lazy val sortedKeys = marshall.prices.keySet
-  override def size = Some(prices.size)
+  override def size = prices.size
 }
 
 object PriceData {
   def fromSorted(prices: SortedMap[DateRange, Double], uom: UOM) = PriceData(prices.mapValues(price => Quantity(price, uom).pq).toMap)
   def create(prices: TraversableOnce[(DateRange, Double)], uom: UOM) = fromMap(prices.toMap, uom)
   def fromMap(prices: Map[DateRange, Quantity]) = PriceData(prices.mapValues(_.pq))
-  def fromMap(prices: Map[DateRange, Double], uom: UOM) = PriceData(prices.mapValues(price => Quantity(price, uom).pq))
+  def fromMap(prices: Map[_ <: DateRange, Double], uom: UOM) = PriceData(prices.asInstanceOf[Map[DateRange, Double]].mapValues(price => Quantity(price, uom).pq))
 }

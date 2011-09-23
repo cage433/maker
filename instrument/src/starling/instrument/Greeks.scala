@@ -5,7 +5,7 @@ import starling.quantity.UOM._
 import starling.daterange.TimeOfDay._
 import starling.quantity.{Percentage, UOM, Quantity}
 import starling.curves._
-import starling.utils.AtomicDatumKeyUtils._
+import starling.instrument.utils.AtomicDatumKeyUtils._
 import starling.daterange.DayAndTime
 
 case class UnsupportedDerivativeKeyException(atomicDatumKey: AtomicDatumKey) extends Exception("Key " + atomicDatumKey + " is not supported for calculating derivative")
