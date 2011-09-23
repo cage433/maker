@@ -40,7 +40,6 @@ class ValuationService(
 )
   extends ValuationServiceApi with Log {
 
-  private type TradeValuationResult = Either[String, List[CostsAndIncomeQuotaValuation]]
 
   private val eventHandler =
     new TitanEventHandler( rabbitEventServices,
@@ -76,51 +75,25 @@ class ValuationService(
     CostAndIncomeQuotaAssignmentValuationServiceResults(snapshotIDString, valuations)
   }
 
-
-  /**
-   * value all edm trade quotas (that are completed) and return a structure containing a
-   *   map from tradeId to either a list of CostsAndIncomeQuotaValuation or strings
+    /**
+   * Service implementations
    */
-  def valueAllQuotas(maybeSnapshotIdentifier: Option[String] = None, observationDate: Option[TitanSerializableDate] = None): CostsAndIncomeQuotaOnlyValuationServiceResults = {
-    log.info("valueAllQuotas called with snapshot id " + maybeSnapshotIdentifier)
-    val snapshotIDString = resolveSnapshotIdString(maybeSnapshotIdentifier)
-    val sw = new Stopwatch()
-    val edmTrades = titanTradeCache.getAllTrades()
-    log.info("Got Edm Trade results, trade result count = " + edmTrades.size)
-    val env = environmentProvider.environment(snapshotIDString, observationDate)
-    val tradeValuer = PhysicalMetalForward.value(refData.futuresExchangeByID, refData.edmMetalByGUID, env, snapshotIDString) _
-    log.info("Got %d completed physical trades".format(edmTrades.size))
-    sw.reset()
-    val valuations = edmTrades.map {
-      trade => (trade.titanId.value, tradeValuer(trade))
-    }.toMap
-    log.info("Valuation took " + sw)
-    val (worked, errors) = valuations.values.partition(_ isRight)
-    log.info("Worked " + worked.size + ", failed " + errors.size + ", took " + sw)
-    CostsAndIncomeQuotaOnlyValuationServiceResults(snapshotIDString, valuations)
-  }
+  def valueSingleTradeQuotas(tradeID : String, maybeSnapshotIdentifier : Option[String] = None, observationDate: Option[TitanSerializableDate] = None) : (String, Either[String, List[QuotaValuation]]) = {
 
-  /**
-   * value the quotas of a specified trade
-   */
-  def valueTradeQuotas(tradeId: String, maybeSnapshotIdentifier: Option[String] = None, observationDate: Option[TitanSerializableDate] = None): (String, TradeValuationResult) = {
-    log.info("valueTradeQuotas called for trade %d with snapshot id %s".format(tradeId, maybeSnapshotIdentifier))
+    log.info("valueAllTradeQuotas called with snapshot id " + maybeSnapshotIdentifier + ", and observation date " + observationDate)
     val snapshotIDString = resolveSnapshotIdString(maybeSnapshotIdentifier)
     val env = environmentProvider.environment(snapshotIDString, observationDate)
-
-    valueTradeQuotas(tradeId, env, snapshotIDString)
+    valueSingleTradeQuotas(tradeID, env, snapshotIDString)
   }
 
-  def valueTradeQuotas(tradeId : String, env : Environment, snapshotIDString : String): (String, TradeValuationResult) = {
-    val tradeValuer = PhysicalMetalForward.value(refData.futuresExchangeByID, refData.edmMetalByGUID, env, snapshotIDString) _
-    val edmTradeResult = titanTradeCache.getTrade(TitanId(tradeId))
-    log.info("Got Edm Trade result " + edmTradeResult)
-    val edmTrade: EDMPhysicalTrade = edmTradeResult.asInstanceOf[EDMPhysicalTrade]
-    log.info("Got %s physical trade".format(edmTrade.toString))
-    val valuation = tradeValuer(edmTrade)
-    (snapshotIDString, valuation)
-  }
-  
+  def valueSingleTradeQuotas(tradeId : String, env : Environment, snapshotIDString : String): (String, Either[String, List[QuotaValuation]]) = {
+      val tradeValuer = PhysicalMetalForward.valueWithAssignments(refData.futuresExchangeByID, refData.edmMetalByGUID, env, snapshotIDString) _
+      val edmTradeResult = titanTradeCache.getTrade(TitanId(tradeId))
+      log.debug("Got Edm Trade result " + edmTradeResult)
+      val edmTrade: EDMPhysicalTrade = edmTradeResult.asInstanceOf[EDMPhysicalTrade]
+      log.debug("Got %s physical trade".format(edmTrade.toString))
+      (snapshotIDString, tradeValuer(edmTrade))
+    }
 
   /**
    * value all assignments by leaf inventory
@@ -244,10 +217,10 @@ class ValuationServiceRpc(marketDataStore: MarketDataStore, valuationService: Va
 //  println("Worked \n" + worked.mkString("\n") + "\nFailed \n" + failed.mkString("\n"))
 //
 //  System.exit(0)
-//  val valuations = vs.valueAllQuotas()
+//  val valuations = vs.valueAllTradeQuotas()
 //  //val (worked, _) = valuations.tradeResults.values.partition({ case Right(_) => true; case Left(_) => false })
 //
-//  val valuedTradeIds = valuations.tradeResults.collect{ case (id, Right(v)) => id }.toList
+//  val valuedTradeIds = valuations.valuationResults.collect{ case (id, Right(v)) => id }.toList
 //  val valuedTrades = vs.getTrades(valuedTradeIds)
 //  val markets = vs.getMetals.toList
 //  val exchanges = vs.getFuturesExchanges.toList

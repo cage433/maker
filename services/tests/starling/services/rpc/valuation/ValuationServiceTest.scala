@@ -90,11 +90,11 @@ class ValuationServiceTest extends StarlingTest {
       val vs = new ValuationService(
         new MockEnvironmentProvider, mockTitanTradeCache, mockTitanServices, mockTitanLogisticsServices, mockRabbitEventServices, mockInventoryCache, None, mockDB)
 
-      val valuations = vs.valueAllQuotas()
+      val valuations = vs.valueAllTradeQuotas()
 
-      val (worked, errored) = valuations.tradeResults.values.partition(_ isRight)
+      val (worked, errored) = valuations.valuationResults.values.partition(_ isRight)
 
-      val valuedTradeIds = valuations.tradeResults.collect {
+      val valuedTradeIds = valuations.valuationResults.collect {
         case (id, Right(v)) => id
       }.toList
       val valuedTrades = vs.getTrades(valuedTradeIds)

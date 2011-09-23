@@ -153,13 +153,13 @@ case class FileMockedTitanServicesDataFileGenerator(titanEdmTradeService : Titan
    * get edm trades and store in mock data file
    */
   valuationService.marketDataSnapshotIDs().foreach(println)
-  val valuations = valuationService.valueAllQuotas()
+  val valuations = valuationService.valueAllTradeQuotas()
 
   // valuations.tradeResults.foreach(println)
 
-  val (worked, failed) = valuations.tradeResults.values.partition(_ isRight)
+  val (worked, failed) = valuations.valuationResults.values.partition(_ isRight)
   failed.foreach(println)
-  val tradeIds = valuations.tradeResults.collect{ case (id, Right(_)) => id }.toList
+  val tradeIds = valuations.valuationResults.collect{ case (id, Right(_)) => id }.toList
   // val trades = valuationService.getTrades(tradeIds)
   val trades = titanEdmTradeService.titanGetEdmTradesService.getAll().results.map(_.trade).filter(_ != null)
 

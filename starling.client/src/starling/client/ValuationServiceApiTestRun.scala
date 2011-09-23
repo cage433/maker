@@ -16,8 +16,8 @@ object ValuationServiceApiTestRun {
       def testQuotaValuation() {
         println("Calling valueAllQuotas...")
         val sw = System.currentTimeMillis()
-        val valuationResult = valuationService.valueAllQuotas(None) // (snapshots.map(_.id).headOption)
-        val (worked, errors) = valuationResult.tradeResults.values.partition(_ isRight)
+        val valuationResult = valuationService.valueAllTradeQuotas(None) // (snapshots.map(_.id).headOption)
+        val (worked, errors) = valuationResult.valuationResults.values.partition(_ isRight)
         println("Worked " + worked.size + ", failed " + errors.size)
         println("Errors: ")
         errors.foreach(println)
@@ -31,7 +31,7 @@ object ValuationServiceApiTestRun {
         println("\nMissing Levels " + missingLevels.mkString("\n"))
         println("\nMisc " + other2.mkString("\n"))
 
-        println("Valuation service result, valued quotas, total size %d, worked %d, failed %d, using snapshot %s, took %d ms".format(valuationResult.tradeResults.size, worked.size, errors.size, valuationResult.snapshotID, System.currentTimeMillis() - sw))
+        println("Valuation service result, valued quotas, total size %d, worked %d, failed %d, using snapshot %s, took %d ms".format(valuationResult.valuationResults.size, worked.size, errors.size, valuationResult.snapshotID, System.currentTimeMillis() - sw))
       }
 
       def testAssignmentValuation() {
