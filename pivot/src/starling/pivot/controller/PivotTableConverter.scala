@@ -6,7 +6,7 @@ import starling.quantity.{SpreadOrQuantity, Quantity, UOM}
 import starling.utils.ImplicitConversions._
 import collection.mutable.ListBuffer
 import collection.Set
-import collection.immutable.{Iterable, Map}
+import collection.immutable.Map
 import starling.utils.{STable, SColumn}
 
 
@@ -309,7 +309,7 @@ case class PivotTableConverter(otherLayoutInfo:OtherLayoutInfo = OtherLayoutInfo
   def createGrid(extractUOMs:Boolean = true, addExtraColumnRow:Boolean = true):PivotGrid ={
     val aggregatedMainBucket = table.aggregatedMainBucket
     val zeroFields = table.zeroFields
-    val rowsToRemove:Set[List[ChildKey]] = if (otherLayoutInfo.removeZeros && (fieldState.columns.allFields.toSet & zeroFields).nonEmpty) {
+    val rowsToRemove:Set[List[ChildKey]] = (if (otherLayoutInfo.removeZeros && (fieldState.columns.allFields.toSet & zeroFields).nonEmpty) {
       val rows:Set[List[ChildKey]] = aggregatedMainBucket.groupBy{case ((r,c),v) => r}.keySet
       rows.flatMap(row => {
         val onlyZeroFieldColumnsMap = aggregatedMainBucket.filter{case ((r,c),_) => {
@@ -318,15 +318,18 @@ case class PivotTableConverter(otherLayoutInfo:OtherLayoutInfo = OtherLayoutInfo
             case Some(an) => zeroFields.contains(an.field)
           })
         }}
-        if (onlyZeroFieldColumnsMap.forall{case (_,v) => v match {
-          case q:Quantity => q.isAlmostZero
-          case pq:PivotQuantity => pq.isAlmostZero
-          case _ => false
+        if (onlyZeroFieldColumnsMap.forall{case (k,measureCell) => {
+          measureCell.value match {
+            case Some(q:Quantity) => q.isAlmostZero
+            case Some(pq:PivotQuantity) if pq.values.size <= 1 => pq.isAlmostZero
+            case Some(pq:PivotQuantity) => true
+            case _ => false
+          }
         }}) Some(row) else None
       })
     } else {
       Set[List[ChildKey]]()
-    }
+    }).map(l => (AxisValue.Null.childKey :: l))
 
     val rowData = AxisNodeBuilder.flatten(table.rowNode.purge(rowsToRemove).getOrElse(AxisNode.Null), totals.rowGrandTotal,
       totals.rowSubTotals, collapsedRowState, otherLayoutInfo.disabledSubTotals, table.formatInfo, extraFormatInfo, true, previousPageData.map(_.rowNode))
@@ -587,7 +590,7 @@ case class PivotTableConverter(otherLayoutInfo:OtherLayoutInfo = OtherLayoutInfo
 
     val columnUOMs = allUnits.map(uomSet => {
       if (uomSet.size == 1) {
-        uomSet.iterator.next
+        uomSet.iterator.next()
       } else {
         UOM.NULL
       }
