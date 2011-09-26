@@ -23,27 +23,35 @@ object ThreadSafeCachingProxy{
         new InvocationHandler {
           def invoke(proxy: Object, method: Method, args: Array[Object]) = {
             def invokeMethod() = { method.invoke(original, args: _ *) }
-            if (method.getAnnotation(classOf[DoNotCache]) != null) {
-              invokeMethod()
-            } else {
-              val methodInvocation = MethodInvocation(method.getDeclaringClass.getName, method.getName, if (args==null) List() else args.toList)
-              try {
+            try {
+              if (method.getAnnotation(classOf[DoNotCache]) != null) {
+                invokeMethod()
+              } else {
+                val methodInvocation = MethodInvocation(method.getDeclaringClass.getName, method.getName, if (args == null) List() else args.toList)
                 try {
-                  cache.memoize(methodInvocation, invokeMethod() )
-                } catch {
-                  case e: UndeclaredThrowableException => throw e.getUndeclaredThrowable
-                  case e: InvocationTargetException => throw e.getTargetException
-                }
-              } catch {
-                case e => {
-                  cache.remove(methodInvocation)
-                  throw e
+                  cache.memoize(methodInvocation, invokeMethod())
                 }
               }
+            } catch {
+              case e: Throwable => throw rootCause(e)
             }
           }
         }
       ).asInstanceOf[T]
     }
+  }
+
+  private def rootCause(e: Throwable) = {
+    def rec(e: Throwable, depth: Int): Throwable = if (depth < 5) {
+      e match {
+        case i: InvocationTargetException => rec(i.getCause, depth + 1)
+        case i: UndeclaredThrowableException => rec(i.getCause, depth + 1)
+        case _ => e
+      }
+    } else {
+      e
+    }
+    val cause = rec(e, 0)
+    cause
   }
 }

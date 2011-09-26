@@ -97,7 +97,7 @@ abstract class CommodityMarket(
 
   def fixing(slice: MarketDataSlice, observationDay: Day, storedFixingPeriod: Option[StoredFixingPeriod]) = storedFixingPeriod match {
     case Some(period) => {
-      val key = PriceFixingsHistoryDataKey(this)
+      val key = PriceFixingsHistoryDataKey(this.marketDataMarket)
       slice.fixings(key, ObservationPoint(observationDay, ObservationTimeOfDay.Default))
         .fixingFor(Level.Close, period)
         .toQuantity

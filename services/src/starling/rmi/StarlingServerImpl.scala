@@ -39,10 +39,10 @@ class StarlingServerImpl(
   def allUserNames:List[String] = userSettingsDatabase.allUsersWithSettings
   def isStarlingDeveloper = {
     if (version.production) {
-      User.currentlyLoggedOn.groups.contains(Groups.StarlingDevelopers)
+      User.currentlyLoggedOn.groups.contains(Groups.StarlingProductionAdmin)
     } else {
       val groups = User.currentlyLoggedOn.groups
-      groups.contains(Groups.StarlingDevelopers) || groups.contains(Groups.StarlingTesters)
+      groups.contains(Groups.StarlingDevelopers) || groups.contains(Groups.StarlingTesters) || groups.contains(Groups.StarlingProductionAdmin)
     }
   }
 

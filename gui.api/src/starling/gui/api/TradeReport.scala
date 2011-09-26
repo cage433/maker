@@ -144,8 +144,8 @@ object Desk extends StarlingEnum(classOf[Desk], (d: Desk) => d.name, ignoreCase 
 
   val LondonDerivativesOptions = Desk("London Derivatives Options", List(PricingGroup.LondonDerivativesOptions, System, LimOnly), Some(EAIDeskInfo(173)))
   val LondonDerivatives = Desk("London Derivatives", List(PricingGroup.LondonDerivatives, System, LimOnly), Some(EAIDeskInfo(43)))
-  val Gasoline_Physical_Barges_and_ARA_blending = Desk("Gasoline Physical Barges & ARA blending", List(PricingGroup.GasolineRoW, LimOnly), Some(EAIDeskInfo(117)))
-  val Gasoil_Spec = Desk("Gasoil Spec", List(PricingGroup.GasOil, LimOnly), Some(EAIDeskInfo(22)))
+  val GasolinePhysicalBargesAndARABlending = Desk("Gasoline Physical Barges & ARA blending", List(PricingGroup.GasolineRoW, LimOnly), Some(EAIDeskInfo(117)))
+  val GasoilSpec = Desk("Gasoil Spec", List(PricingGroup.GasOil, LimOnly), Some(EAIDeskInfo(22)))
   val GasolineSpec = Desk("Gasoline Spec Global", List(PricingGroup.GasolineRoW, LimOnly), Some(EAIDeskInfo(149)))
   val CrudeSpecNorthSea = Desk("Crude Spec North Sea", List(Crude, LimOnly), Some(EAIDeskInfo(197)))
   val HoustonDerivatives = Desk("Houston Derivatives", List(BarryEckstein, LimOnly), Some(EAIDeskInfo(190)))
