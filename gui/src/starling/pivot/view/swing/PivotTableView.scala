@@ -401,7 +401,7 @@ class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSiz
   reactions += {
     case GridSelectionEvent(selection) => {
       val (text, summary) = selection.getOrElse(("", false))
-      formulaBar.setText(text, summary)
+      InfoBar.setText(text, summary)
     }
   }
 
@@ -674,8 +674,10 @@ class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSiz
     PivotTableViewHelper.generateScrollPaneHolders(layer)
   }
   if (embedded && otherLayoutInfo.hiddenType == AllHidden) {
-    fullTableScrollPane.setBorder(MatteBorder(1,1,0,0,BorderColour))
+    fullTableScrollPane.setBorder(MatteBorder(0,1,0,0,BorderColour))
     fullHScrollBarHolder.border = MatteBorder(0,1,1,0,BorderColour)
+  } else if (otherLayoutInfo.hiddenType == AllHidden) {
+    fullTableScrollPane.setBorder(EmptyBorder)
   }
 
   def giveDefaultFocus() {
@@ -686,7 +688,7 @@ class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSiz
     }
   }
 
-  private val formulaBar = new MigPanel("insets 0, gap 0") {
+  private val InfoBar = new MigPanel("insets 0, gap 0") {
     var expanded = false
     val iconHolder = new MigPanel("insets 2lp 3lp 0 3lp") {
       border = MatteBorder(1,0,1,0, BorderColour)
@@ -872,7 +874,11 @@ class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSiz
 
   val iconToUse = if (otherLayoutInfo.hiddenType == AllHidden) StarlingIcons.im("/icons/16x15_out_fullscreen.png") else StarlingIcons.im("/icons/16x15_fullscreen.png")
   val fullScreenButton = new ImageButton(iconToUse, gotoFullScreen()) {
-    border = MatteBorder(1,1,0,1,BorderColour)
+    if (otherLayoutInfo.hiddenType == HiddenType.AllHidden) {
+      border = MatteBorder(0,1,0,1,BorderColour)
+    } else {
+      border = MatteBorder(1,1,0,1,BorderColour)
+    }
   }
   
   // I shouldn't be doing this here but if we don't have report specific panels, the filter field chooser should have a different border.
@@ -1015,7 +1021,7 @@ class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSiz
     add(configTabbedPane.get, "grow, wrap")
   })
   add(toolbarPanel, "growx, wrap")
-  add(formulaBar, "growx, wrap")
+  add(InfoBar, "growx, wrap")
   add(contentPanel, "push, grow")
 
   if (otherLayoutInfo.hiddenType == AllHidden) {
@@ -1031,7 +1037,6 @@ class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSiz
     columnHeaderScrollPanePanel.visible = false
 
     toolbarPanel.visible = false
-    formulaBar.visible = false
   }
 
   def resetDynamicState() {
