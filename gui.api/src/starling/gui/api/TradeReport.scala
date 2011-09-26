@@ -1,17 +1,15 @@
 package starling.gui.api
 
 import collection.immutable.{TreeSet, SortedSet}
-import java.io.Serializable
 
 import starling.calendar.BusinessCalendar
 import starling.daterange._
-import starling.rmi.StarlingServer
 import starling.tradestore.TradePredicate
 import starling.utils.{StarlingEnum, ImplicitConversions, SColumn}
 import starling.varcalculator.NAhead
 
 import ImplicitConversions._
-import starling.quantity.{SimpleNamedQuantity, NamedQuantity, Quantity}
+import starling.quantity.{NamedQuantity, Quantity}
 
 class TradeReport
 
@@ -99,36 +97,37 @@ case class SnapshotIDLabel(observationDay: Day, id: Int, timestamp : Timestamp, 
   def identifier() = observationDay+"-"+id + "-" + timestamp
 }
 
+trait DeskInfo
 
-sealed case class Desk(name: String) {
-  import Desk._
-  import PricingGroup._
+case class EAIDeskInfo(book: Int) extends DeskInfo
 
+sealed case class Desk(name: String, pricingGroups: List[PricingGroup], deskInfo: Option[DeskInfo] = None) {
   override def toString = name
-
-  def pricingGroups = this match {
-    case Desk.LondonDerivativesOptions => List(PricingGroup.LondonDerivativesOptions, System, LimOnly)
-    case Desk.LondonDerivatives        => List(PricingGroup.LondonDerivatives, System, LimOnly)
-    case Desk.GasolineSpec             => List(PricingGroup.GasolineRoW, LimOnly)
-    case CrudeSpecNorthSea             => List(Crude, LimOnly)
-    case HoustonDerivatives            => List(BarryEckstein, LimOnly)
-    case Refined                       => List(System, Metals, Starling)
-    case Titan                         => List(Metals)
-  }
 }
 
-object Desk extends StarlingEnum(classOf[Desk], (d: Desk) => d.name, true) {
-  val LondonDerivativesOptions = Desk("London Derivatives Options")
-  val LondonDerivatives = Desk("London Derivatives")
-  val GasolineSpec = Desk("Gasoline Spec Global")
-  val CrudeSpecNorthSea = Desk("Crude Spec North Sea")
-  val HoustonDerivatives = Desk("Houston Derivatives")
-  val Refined = Desk("Refined")
-  val Titan = Desk("Titan")
+object Desk extends StarlingEnum(classOf[Desk], (d: Desk) => d.name, ignoreCase = true) {
+  import PricingGroup._
+
+  val LondonDerivativesOptions = Desk("London Derivatives Options", List(PricingGroup.LondonDerivativesOptions, System, LimOnly), Some(EAIDeskInfo(173)))
+  val LondonDerivatives = Desk("London Derivatives", List(PricingGroup.LondonDerivatives, System, LimOnly), Some(EAIDeskInfo(43)))
+  val Gasoline_Physical_Barges_and_ARA_blending = Desk("Gasoline Physical Barges & ARA blending", List(PricingGroup.GasolineRoW, LimOnly), Some(EAIDeskInfo(117)))
+  val GasolineSpec = Desk("Gasoline Spec Global", List(PricingGroup.GasolineRoW, LimOnly), Some(EAIDeskInfo(149)))
+  val CrudeSpecNorthSea = Desk("Crude Spec North Sea", List(Crude, LimOnly), Some(EAIDeskInfo(197)))
+  val HoustonDerivatives = Desk("Houston Derivatives", List(BarryEckstein, LimOnly), Some(EAIDeskInfo(190)))
+  val Refined = Desk("Refined", List(System, Metals, Starling))
+  val Titan = Desk("Titan", List(Metals))
 
   val pricingGroups = values.flatMap(_.pricingGroups).distinct
 
-  private def label(tradeSystem:String, shortCode: String) = TradeSystemLabel(tradeSystem, shortCode)
+  def eaiDesks = values.flatMap {
+    case d@Desk(_, _, Some(info: EAIDeskInfo)) => Some(d)
+    case _ => None
+  }
+
+  def eaiDeskFromID(bookID: Int) = eaiDesks.find {
+    case d@Desk(_, _, Some(info: EAIDeskInfo)) => info.book == bookID
+    case _ => false
+  }
 }
 
 class TradeEvent
@@ -136,10 +135,6 @@ case class DeskTradeEvent(name:String) extends TradeEvent
 case object ExcelTradeEvent extends TradeEvent
 
 case class TradeSystemLabel(name:String, shortCode:String) {override def toString = name}
-
-object TradeSystemLabel {
-  val Intraday = TradeSystemLabel("Intraday", "int")
-}
 
 case class TradeExpiryDay(exp: Day) {
   override def toString = exp.toString
@@ -155,15 +150,32 @@ object TradeExpiryDay {
 
 case class IntradayGroups(subgroups:List[String])
 
-case class TradeTimestamp(timestamp:Timestamp, closeDay: Day, closeNumber: Int, error: Option[String]) {
-  def noCloseDay = closeDay.year == 1980
+object TradeTimestamp{
+  val magicNoBookClosesDay = Day(1980, 1, 1)
+  val magicLatestTimestampDay = Day(2100, 1, 1)
 
-  def asString = if(noCloseDay) {
-    "" // this is so that we can not have anything in combo box choosers
-  } else {
-    closeDay + " v" + closeNumber
+  def makeMagicLatestTimestamp(timestamp : Timestamp) = TradeTimestamp(
+      timestamp,
+      TradeTimestamp.magicLatestTimestampDay,
+      1,
+      None
+    )
+}
+case class TradeTimestamp(timestamp:Timestamp, closeDay: Day, closeNumber: Int, error: Option[String]) extends Ordered[TradeTimestamp] {
+  import TradeTimestamp._
+
+  def compare(that: TradeTimestamp) = {
+    timestamp.compare(that.timestamp) match {
+      case 0 => closeDay - that.closeDay
+      case other => other
+    }
   }
 
+  def asString = closeDay match {
+    case `magicNoBookClosesDay` => ""
+    case `magicLatestTimestampDay` => "Current"
+    case _ => closeDay + " v" + closeNumber
+  }
   override def toString = asString
 }
 
@@ -250,7 +262,7 @@ object CurveIdentifierLabel{
       EnvironmentRuleLabel.COB,
       day,
       day.atTimeOfDay(timeOfDayToUse),
-      day.nextBusinessDay(calendar).endOfDay(),
+      day.nextBusinessDay(calendar).endOfDay,
       TreeSet.empty[EnvironmentModifierLabel](EnvironmentModifierLabel.ordering)
     )
   }

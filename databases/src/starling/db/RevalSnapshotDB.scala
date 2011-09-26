@@ -24,7 +24,7 @@ class RevalSnapshotDB(starlingDB:DB) {
     starlingDB.inTransaction {
       dbWriter => {
         Log.infoWithTime("Reval snapshot") {
-          import starling.utils.sql.QueryBuilder._
+          import starling.dbx.QueryBuilder._
           val query =
           (select ("IDENTID as TRADEID, " + revalFields.mkString(", "))
            from ("T_REVAL_TRADES")
@@ -51,7 +51,7 @@ class RevalSnapshotDB(starlingDB:DB) {
   }
 
   def tradeDetails(snapshotID:Long, tradeID:String):Option[STable] = {
-    import starling.utils.sql.QueryBuilder._
+    import starling.dbx.QueryBuilder._
     val query =
       (select ("*")
        from ("revalsnapshot")
@@ -87,7 +87,7 @@ class RevalSnapshotDB(starlingDB:DB) {
   }
 
   def readSnapshot(snapshotID:Long):STable = {
-    import starling.utils.sql.QueryBuilder._
+    import starling.dbx.QueryBuilder._
     val query =
       (select ("*")
        from ("REVALSNAPSHOT")

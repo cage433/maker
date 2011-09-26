@@ -1,16 +1,15 @@
 package starling.pivot.view.swing
 
 import javax.swing._
-import table.DefaultTableCellRenderer
 import swing.Label
-import starling.daterange.DateRange
 import starling.pivot._
 import model._
 import starling.reports.pivot.OptionalPeriodLabel
 import starling.gui.{StarlingIcons}
 import starling.quantity.{Quantity, Percentage}
-import java.awt.{Color, Font}
+import java.awt.Font
 import org.jdesktop.swingx.renderer.{CellContext, LabelProvider}
+import starling.daterange.{Period, DateRange}
 
 object PivotCellRenderer {
   val ErrorIcon = StarlingIcons.icon("/icons/12x12_error.png")
@@ -24,7 +23,7 @@ object PivotCellRenderer {
   // It's crazy that I'm setting the size here, but on windows xp, the default size of 11 just looks awful with a monospace font!
   val MonoSpacedFont = new Font("Monospaced", Font.PLAIN, 12)
   def selectFont(value:Any) = {
-    if (value.isInstanceOf[DateRange] || value.isInstanceOf[NullableDay] ||
+    if (value.isInstanceOf[Period] || value.isInstanceOf[DateRange] || value.isInstanceOf[NullableDay] ||
             value.isInstanceOf[PivotQuantity] || value.isInstanceOf[OptionalPeriodLabel] || value.isInstanceOf[Percentage] ||
             value.isInstanceOf[NullablePeriod] || value.isInstanceOf[Quantity]) {
       MonoSpacedFont

@@ -10,7 +10,7 @@ import starling.curves.{MarketDataCurveObjectEnvironment, Environment}
  */
 object ReplFunctions  {
 
-  def init() = starling.services.StarlingInit.devInstance
+  def init() = starling.services.StarlingInit.runningDevInstance
 
   lazy val devInstance = init()
 

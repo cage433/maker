@@ -4,11 +4,10 @@ import starling.gui._
 import api._
 import swing._
 import starling.daterange.Day
-import starling.rmi.StarlingServer
 import starling.pivot.PivotEdits
 import starling.gui.StarlingLocalCache._
 import starling.browser.common.{GuiUtils, RoundedBorder, MigPanel}
-import starling.browser.{Modifiers, Bookmark, PageData, PageContext}
+import starling.browser._
 
 case class CurvePage(curveLabel: CurveLabel, pivotPageState: PivotPageState) extends AbstractFC2PivotPage(pivotPageState) {
   def marketDataIdentifier = curveLabel.marketDataIdentifier
@@ -16,13 +15,13 @@ case class CurvePage(curveLabel: CurveLabel, pivotPageState: PivotPageState) ext
   def text = "Curve Viewer"
   override def icon = StarlingIcons.im("/icons/16x16_curve_viewer.png")
 
-  override def refreshFunctions = marketDataIdentifier match {
-    case MarketDataIdentifier(MarketDataSelection(pricingGroup, name), SpecificMarketDataVersion(_)) => {
-      PricingGroupMarketDataUpdate.matching(pricingGroup).andThen(update => copyVersion(update.version)) ::
-      ExcelMarketDataUpdate.matching(name).andThen(update => copyVersion(update.version)) ::
-      Nil
+  override def latestPage(localCache:LocalCache) = {
+    localCache.latestMarketDataVersionIfValid(curveLabel.marketDataIdentifier.selection) match {
+      case Some(v) => {
+        copyVersion(v)
+      }
+      case None => this
     }
-    case _ => Nil
   }
 
   private def copyVersion(version: Int) = copy(curveLabel = curveLabel.copyVersion(version))
@@ -35,7 +34,7 @@ case class CurvePage(curveLabel: CurveLabel, pivotPageState: PivotPageState) ext
     pageBuildingContext.cachingFC2Service.curvePivot(curveLabel, pivotPageState.pivotFieldParams)
   }
 
-  override def configPanel(pageContext: PageContext, data:PageData) = {
+  override def configPanel(pageContext:PageContext, data:PageData, tableSelection:() => TableSelection) = {
     val marketDataSelectionPanel = new MarketDataSelectionComponent(pageContext, None, marketDataIdentifier.selection)
     val marketDataSelectionPanelPanel = new MigPanel {
       border = RoundedBorder(colour = GuiUtils.PivotTableBackgroundColour)
@@ -68,15 +67,15 @@ case class CurvePage(curveLabel: CurveLabel, pivotPageState: PivotPageState) ext
       case MarketDataSelectionChanged(selection) => { pageContext.goTo(latest(copySelection(selection)), Modifiers.None) }
     }
 
-    def updatePopulatedDays {
+    def updatePopulatedDays() {
       envSpecChooser.flagged = pageContext.localCache.populatedDays(marketDataIdentifier.selection).toSet
     }
 
-    updatePopulatedDays
+    updatePopulatedDays()
     envSpecChooser.listenTo(pageContext.remotePublisher)
 
     envSpecChooser.dayChooser.reactions += {
-      case ExcelObservationDay(_, _) | PricingGroupObservationDay(_, _) => updatePopulatedDays
+      case ExcelObservationDay(_, _) | PricingGroupObservationDay(_, _) => updatePopulatedDays()
     }
 
     envSpecChooser.reactions += {

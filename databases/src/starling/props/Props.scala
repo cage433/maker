@@ -78,7 +78,6 @@ class Props(starlingProps:Map[String,String], trafiguraProps : Map[String, Strin
 
   object KerberosPassword extends StringProperty("suvmerinWiv0")
   object ServerPrincipalName extends StringProperty("STARLING-TEST/dave-linux")
-  object UseAuth extends BooleanProperty(false)
   object NoMP extends BooleanProperty(false)
   object ImportsBookClosesFromEAI extends BooleanProperty(true)
 
@@ -108,6 +107,9 @@ class Props(starlingProps:Map[String,String], trafiguraProps : Map[String, Strin
   object TitanRabbitPassword  extends StringProperty("trafiguraDev")
 
   def titanRabbitHostSet = TitanRabbitBrokerHost() != ""
+
+  // Deferrable patches
+  object UseFasterMarketDataSchema extends BooleanProperty(false)
 }
 
 object Props {

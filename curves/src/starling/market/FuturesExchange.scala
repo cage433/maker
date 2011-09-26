@@ -17,7 +17,7 @@ case object MonthlyDelivery extends DeliveryType {
   val name = "Monthly Delivery"
 }
 
-case class FuturesExchange(name: String, deliveryType: DeliveryType, closeTime:ObservationTimeOfDay) {
+case class FuturesExchange(name: String, deliveryType: DeliveryType, closeTime:ObservationTimeOfDay, fixingLevel : Level = Level.Close) {
   lazy val markets = Market.futuresMarkets.filter(_.exchange == this)
   lazy val marketsByCommodityName = markets.toMapWithKeys(_.commodity.name.toLowerCase)
 }
@@ -41,7 +41,7 @@ object NeptunePricingExchange{
 }
 
 object FuturesExchangeFactory extends StarlingEnum(classOf[FuturesExchange], (f: FuturesExchange) => f.name, otherTypes = List(classOf[NeptunePricingExchange])) {
-  val LME = new FuturesExchange("LME", DailyDelivery, LMEClose) with NeptunePricingExchange{
+  val LME = new FuturesExchange("LME", DailyDelivery, LME_Official) with NeptunePricingExchange{
     def inferMarketFromCommodityName(neptuneCommodityName: String) = neptuneCommodityName match {
       case "Copper"	            => Market.LME_COPPER
       case "Lead"	              => Market.LME_LEAD
@@ -112,7 +112,7 @@ object FuturesExchangeFactory extends StarlingEnum(classOf[FuturesExchange], (f:
     }
   }
   val NYMEX = new FuturesExchange("NYMEX", MonthlyDelivery, Default)
-  val SFS = new FuturesExchange("SFS", MonthlyDelivery, SHFEClose) // Shanghai futures exchange
+  val SFS = new FuturesExchange("SFS", MonthlyDelivery, SHFEClose, fixingLevel = Level.Settle) // Shanghai futures exchange
   val BALTIC = new FuturesExchange("Baltic Exchange", MonthlyDelivery, Default)
   val ICE = new FuturesExchange("ICE", MonthlyDelivery, Default)
   val MDEX = new FuturesExchange("MDEX", MonthlyDelivery, Default) // Malaysia Derivatives Exchange

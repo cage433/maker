@@ -79,8 +79,8 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
     rowHeaderTableModel.fireTableRowsUpdated(0, rowHeaderTableModel.getRowCount-1)
     colHeaderTableModel.fireTableRowsUpdated(0, colHeaderTableModel.getRowCount-1)
     fullTableModel.fireTableRowsUpdated(0, fullTableModel.getRowCount-1)
-    resizeRowHeaderTableColumns
     resizeMainTableColumns
+    resizeRowHeaderTableColumns
   }
 
   def uoms = uoms0
@@ -986,10 +986,15 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
     val fullColumnModel = fullTable.getColumnModel
     val rowHeaderColumnModel = rowHeaderTable.getColumnModel
     val numCols = rowHeaderColCount0
+    val widthToCheck = if (rowComponent.numberOfFields > 0) {
+      rowComponent.guiField(0).initialPreferredSize.width
+    } else {
+      rowComponent.preferredSize.width
+    }
     var col = 0
     if ((rowComponent.numberOfFields == 0) ||
             ((numCols == 1) && (rowComponent.numberOfFields > 0) &&
-                    (getRowHeaderMaxColumnWidth(0) < rowComponent.preferredSize.width))) {
+                    (getRowHeaderMaxColumnWidth(0) < widthToCheck))) {
       fullColumnModel.getColumn(0).setPreferredWidth(rowComponent.preferredSize.width)
       rowHeaderColumnModel.getColumn(0).setPreferredWidth(rowComponent.preferredSize.width)
     } else {
@@ -1039,7 +1044,16 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
         rowHeaderColumnModel.getColumn(0).setPreferredWidth(firstColWidth)
       }
     }
-    val width = math.max(rowComponent.preferredSize.width, (0 until numCols).map(c => rowHeaderColumnModel.getColumn(c).getPreferredWidth).sum)
+
+    val rowComponentPreferredSize = {
+      if (rowComponent.numberOfFields > 0) {
+        (0 until numCols).map(c => rowComponent.guiField(c).preferredSize.width).sum
+      } else {
+        rowComponent.preferredSize.width
+      }
+    }
+
+    val width = math.max(rowComponentPreferredSize, (0 until numCols).map(c => rowHeaderColumnModel.getColumn(c).getPreferredWidth).sum)
     val height = colHeaderRowCount0 * PivotJTable.RowHeight
     sizerPanel.preferredSize = new Dimension(width-1,10)
     rowComponent.preferredSize = new Dimension(width,height)

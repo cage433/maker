@@ -36,6 +36,16 @@ trait MarketDataReader {
     }
   }
 
+  def readMostRecent(numberOfDaysToLookBack : Int, observationDay : Day, timeOfDay : ObservationTimeOfDay, key : MarketDataKey) : MarketData = {
+    def tryToRead(day : Day) : MarketData = try {
+      read(TimedMarketDataKey(ObservationPoint(day, timeOfDay), key))
+    } catch {
+      case _: MissingMarketDataException if observationDay - day.previousWeekday <= numberOfDaysToLookBack => tryToRead(day.previousWeekday)
+      case e => throw e
+    }
+    tryToRead(observationDay)
+  }
+
   def readAs[T <: MarketData](timedKey: TimedMarketDataKey) = read(timedKey).asInstanceOf[T]
 
   def readAllPrices(observationPoint:ObservationPoint):List[(PriceDataKey, PriceData)] = {

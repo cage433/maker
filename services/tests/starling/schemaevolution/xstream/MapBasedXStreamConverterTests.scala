@@ -3,7 +3,7 @@ package starling.schemaevolution.xstream
 import starling.utils.StarlingTest
 import org.testng.annotations.Test
 import com.thoughtworks.xstream.XStream
-import starling.utils.StarlingXStream
+import starling.instrument.utils.StarlingXStream
 import org.testng.Assert
 import starling.quantity.Percentage
 import starling.marketdata.{ImpliedVolEntryKey, ImpliedVolData}

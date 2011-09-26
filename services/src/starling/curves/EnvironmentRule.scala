@@ -20,7 +20,8 @@ object EnvironmentRule {
   import ObservationTimeOfDay._
 
   private val metalRules = List(
-    ClosesEnvironmentRule,
+    ClosesEnvironmentRule(),
+    ClosesEnvironmentRule(allowOldPricesToBeUsed = true),
     new VanillaEnvironmentRule((day)=>ObservationPoint(day, SHFEClose), TimeOfDay.EndOfDay, new EnvironmentRuleLabel(SHFEClose.name)),
     TimeShiftToLMECloseEnvironmentRule
   )

@@ -100,10 +100,14 @@ class PivotJTable(tableModel:PivotJTableModel, pivotTableView:PivotTableView, mo
         val minCol = getColumnModel.getSelectionModel.getMinSelectionIndex
         (minRow, minCol)
       }
-      getValueAt(startRow, startColumn) match {
-        case tc:TableCell => tc.editable
-        case ac:AxisCell => ac.editable
-        case _ => false
+      if (startRow >= 0 && startColumn >= 0 && startRow < getRowCount && startColumn < getColumnCount()) {
+        getValueAt(startRow, startColumn) match {
+          case tc:TableCell => tc.editable
+          case ac:AxisCell => ac.editable
+          case _ => false
+        }
+      } else {
+        false
       }
     }
 

@@ -8,6 +8,7 @@ import starling.curves.SpreadStdDevSurfaceDataType
  * There is one of these for each time of market data. eg. prices, spotfx, forward rates...
  */
 trait MarketDataType {
+
   type dataType <: MarketData
 
   val name: String = getClass.getName.substring(getClass.getName.lastIndexOf(".") + 1).stripSuffix("DataType$")
@@ -26,6 +27,8 @@ trait MarketDataType {
    * contain user overrides and data from Lim
    */
   def createValue(values: List[Map[Field, Any]]): dataType
+
+  def getValues(row: Map[Field, Any]): List[Any] = valueFields.toList.flatMap(row.get(_))
 
   override val toString = name
 

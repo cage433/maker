@@ -5,7 +5,7 @@ import org.testng.annotations.Test
 import starling.curves._
 import starling.daterange.{Day, Month}
 import starling.quantity.UOM._
-import starling.utils.QuantityTestUtils._
+import starling.quantity.utils.QuantityTestUtils._
 import starling.market.{Index, TestMarketTest}
 
 class KuduCommoditySwapTests extends TestMarketTest {

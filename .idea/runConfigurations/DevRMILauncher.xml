@@ -6,7 +6,7 @@
         <option name="ENABLED" value="true" />
       </pattern>
     </extension>
-    <option name="MAIN_CLASS_NAME" value="starling.dev.launcher.DevRMILauncher" />
+    <option name="MAIN_CLASS_NAME" value="starling.launcher.DevRMILauncher" />
     <option name="VM_PARAMETERS" value="-Dsun.awt.disablegrab=true -Xmx500m" />
     <option name="PROGRAM_PARAMETERS" value="" />
     <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$" />
@@ -15,7 +15,7 @@
     <option name="ENABLE_SWING_INSPECTOR" value="false" />
     <option name="ENV_VARIABLES" />
     <option name="PASS_PARENT_ENVS" value="true" />
-    <module name="dev.launcher" />
+    <module name="launcher" />
     <envs />
     <RunnerSettings RunnerId="Debug">
       <option name="DEBUG_PORT" value="49998" />

@@ -2,7 +2,7 @@ package starling.curves
 
 import starling.utils.StarlingTest
 import starling.quantity.UOM._
-import starling.utils.QuantityTestUtils._
+import starling.quantity.utils.QuantityTestUtils._
 import org.testng.annotations.{DataProvider, Test}
 import starling.daterange.{Year, Quarter, Month, DateRange}
 import starling.maths.RandomVariables

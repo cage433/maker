@@ -6,7 +6,8 @@ import starling.gui.api.{IntradayUpdated, TradeTimestamp, TradeSelection}
 import collection.mutable.ListBuffer
 import swing.event.Event
 import starling.pivot.PivotEdits
-import starling.browser.Page
+import starling.browser.{LocalCache, Page}
+import starling.gui.StarlingLocalCache._
 
 case class TradeReconciliationReportPage(tradeSelection:TradeSelection, from:TradeTimestamp, to:TradeTimestamp,
                                          intradayTimestamp: Timestamp, pivotPageState:PivotPageState) extends AbstractStarlingPivotPage(pivotPageState) {
@@ -18,16 +19,13 @@ case class TradeReconciliationReportPage(tradeSelection:TradeSelection, from:Tra
     pageBuildingContext.cachingStarlingServer.tradeReconciliation(tradeSelection, from, to, intradayTimestamp, pivotPageState.pivotFieldParams)
   }
 
-  override def refreshFunctions = {
-    val functions = new ListBuffer[PartialFunction[Event, Page]]
+  override def latestPage(localCache:LocalCache) = {
     tradeSelection.intradaySubgroup match {
-      case Some(groups) => functions += {
-        case IntradayUpdated(group, _, timestamp) if groups.subgroups.contains(group) => {
-          this.copy(intradayTimestamp = timestamp)
-        }
+      case Some(groups) => {
+        val latestTimestamp = localCache.latestTimestamp(groups)
+        copy(intradayTimestamp = latestTimestamp)
       }
-      case _ =>
+      case _ => this
     }
-    functions.toList
   }
 }
