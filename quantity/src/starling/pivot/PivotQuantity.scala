@@ -24,12 +24,21 @@ object StackTrace {
   }
 }
 
+/**
+ * Defines the error state wrapping its name with a fold implementation that dynamically invokes one of three functions
+ * from the type. 
+ */
 case class ErrorState(name: String) {
   import ErrorState._
 
   def fold[A](g: => A, w: => A, e: => A) = if (this == Warning) w else if (this == Error) e else g
 }
 
+/**
+ * The Starling enumeration of error states, look-ups being case sensitive and by name.
+ *
+ * @documented
+ */
 object ErrorState extends StarlingEnum(classOf[ErrorState], (es: ErrorState) => es.name) {
   val Good    = ErrorState("Good")
   val Warning = ErrorState("Warning")

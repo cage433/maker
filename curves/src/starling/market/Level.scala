@@ -11,6 +11,12 @@ case class Level(name: String) extends Ordered[Level] {
   def compare(that: Level) = this.name.compare(that.name)
 }
 
+/**
+ * The Starling enumeration of the levels of indexes observed price.  Look-ups are by case insensitive name.  Values
+ * take natural ordering over their names.
+ *
+ * @documented
+ */
 object Level extends StarlingEnum(classOf[Level], (l: Level) => l.name, ignoreCase = true) {
   val Live = Level("Live")
   val Close = Level("Close")

@@ -37,7 +37,7 @@ case class FuturesExchange(name: String, deliveryType: DeliveryType, closeTime:O
 }
 
 /**
- * Neptune uses contracts on COMEX and LME to price its trades
+ * Neptune uses contracts on COMEX and LME to price its trades.
  *
  * @documented
  */
@@ -58,8 +58,8 @@ object NeptunePricingExchange{
 
 /**
  * FuturesExchangeFactory is an enumeration of FuturesExchange-s with look-up by a defined, case sensitive name.  Two
- * instances, LME and COMEX, provide further helpers to infer associated Neptune pricing exchange values, e.g.
- * the market for a Neptune commodity name at a futures exchange.
+ * instances, LME and COMEX, provide further helpers to infer associated NeptunePricingExchange values, e.g.
+ * the market for a Neptune commodity name at the LME or COMEX exchange.
  *
  * @see FuturesExchange
  * @see NeptunePricingExchange
