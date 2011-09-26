@@ -35,9 +35,12 @@ class PossibleValuesBuilder(val allFields:Seq[FieldDetails], val filtersList:Fil
   }
 
   def +=(row : Map[Field,Any]) {
-    def getFieldValue(field : Field) : Any = {
+    def getFieldValue(field : Field, isForPossibleValues: Boolean) : Any = {
       val value = PivotValue.extractValue(row, field)
-      fieldDetailsMap(field).transformValueForGroupByField(value)
+      if(isForPossibleValues)
+        fieldDetailsMap(field).transformValueForGroupByField(value)
+      else
+        value
     }
     // Need to add values for all matching selections and the first non-matching
     // (if that exists)
@@ -45,17 +48,17 @@ class PossibleValuesBuilder(val allFields:Seq[FieldDetails], val filtersList:Fil
       val (matching, nonMatching) = filters.span{case (field, selection) => {
         fieldDetailsMap.get(field) match {
           case None => false
-          case Some(fd) => selection.matches(fd, getFieldValue(field))
+          case Some(fd) => selection.matches(fd, getFieldValue(field, false))
         }
       } }
       matching.foreach {
         case (field, MeasurePossibleValuesFilter(_)) =>
-        case (field, _) => possibleValues(field) += getFieldValue(field)
+        case (field, _) => possibleValues(field) += getFieldValue(field, true)
       }
       nonMatching match {
         case Nil =>
         case (field, MeasurePossibleValuesFilter(_)) :: _ =>
-        case (field, _) :: _ => if (fieldDetailsMap.contains(field)) possibleValues(field) += getFieldValue(field)
+        case (field, _) :: _ => if (fieldDetailsMap.contains(field)) possibleValues(field) += getFieldValue(field, true)
       }
     }
   }
