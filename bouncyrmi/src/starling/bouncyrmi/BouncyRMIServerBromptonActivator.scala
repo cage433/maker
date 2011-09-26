@@ -32,7 +32,7 @@ class BouncyRMIServerBromptonActivator extends BromptonActivator {
     context.registerService(classOf[Receiver], receiver)
 
     rmiServerForGUI = new BouncyRMIServer(
-      realProps.RmiPort(), authHandler, BouncyRMI.CodeVersionUndefined, Set("starling.gui.api.UnrecognisedTradeIDException")
+      realProps.RmiPort(), authHandler, BouncyRMI.CodeVersionUndefined, Set("starling.gui.api.UnrecognisedTradeIDException"), registerUserMBean = true
     )
 
     Log.info("Initialize public services for Titan components, service port: " + props.starlingServiceRmiPort)
