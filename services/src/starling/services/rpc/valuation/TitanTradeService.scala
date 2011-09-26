@@ -43,7 +43,6 @@ class DefaultTitanTradeService(titanServices : TitanServices) extends TitanTrade
         log.error("null ids \n%s\n%s".format(nullIds, validIds))
         //assert(false, "Null titan ids found - fatal error")
       }
-
       edmTrades
     }
     catch {

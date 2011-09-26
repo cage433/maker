@@ -12,7 +12,6 @@ import starling.instrument.{Trade, TradeID, TradeAttributes}
 import starling.instrument.physical.PhysicalMetalAssignment
 import starling.db.TitanTradeSystem
 import java.lang.UnsupportedOperationException
-import starling.utils.StackTraceToString
 import starling.instrument.{ErrorInstrument, Costs, Tradeable}
 import com.trafigura.edm.logistics.inventory._
 import com.trafigura.edm.shared.types.{TitanId, Date, DateSpec, PercentageTolerance}
@@ -22,6 +21,7 @@ import com.trafigura.edm.shared.types.Quantity
 import com.trafigura.tradecapture.internal.refinedmetal._
 import starling.utils.conversions.RichMapWithErrors._
 import StarlingTradeAssignment._
+import starling.utils.{Log, StackTraceToString}
 
 class ExternalTitanServiceFailed(cause : Throwable) extends Exception(cause)
 
@@ -55,7 +55,7 @@ case class NeptuneId(id : String) {
 class TitanSystemOfRecord(
   titanTradeCache : TitanTradeCache,
   refData : TitanTacticalRefData,
-  logisticsServices : TitanLogisticsServices) extends SystemOfRecord {
+  logisticsServices : TitanLogisticsServices) extends SystemOfRecord with Log {
 
   lazy val quotaNameToTradeMap : Map[String, EDMPhysicalTrade] = titanTradeCache.quotaNameToTradeMap
   lazy val quotaMap = titanTradeCache.quotaNameToQuotaMap
@@ -65,23 +65,27 @@ class TitanSystemOfRecord(
   def allTrades(f: (Trade) => Unit) : (Int, Set[String]) = {
     
     val assignments = logisticsServices.assignmentService.service.getAllAssignments()
+
+    // check for a null quota id key, this should not happen and could cause errors later on
+    quotaMap.get(null) match {
+      case Some(q) => log.warn("Found null quota names from trade cache quota map, " + q)
+      case None => 
+    }
+    
     val assignedQuotaNames = assignments.map(_.quotaName)
     val unassignedQuotas = quotaMap.filterKeys(k => !assignedQuotaNames.exists(_ == k))
 
-    // don't think this is a valid state - todo review this check for validity
+    // don't think this is a valid state - todo review this check for validity,
+    //   until we know more, it will produce a warning if we find purchase quotas with no assignments at all
     val unassignedPurchaseQuotas = unassignedQuotas.keys.map(k => quotaNameToTradeMap(k)).filter(_.direction == EDMTrade.PURCHASE)
-    if (unassignedPurchaseQuotas.size > 0) {
-      val msg = "unexpected unassigned puchase quota found in the dataset, quotaName = " + unassignedPurchaseQuotas.mkString(", ")
-      println("********** DEBUG ********* " + msg)
-      //log.warn(msg)
-      //assert(false, msg)
-    }
+    if (unassignedPurchaseQuotas.size > 0)
+      log.warn("unexpected unassigned puchase quota found in the dataset, quotaName = " + unassignedPurchaseQuotas.mkString(", "))
 
     /**
      * create a list of all "assignments, some real and some dummy (unallocated) assignments representing unallocated sales assignments"
      */
     val actualAssignments : List[StarlingTradeAssignment] = assignments.map(a => StarlingTradeAssignment(a.quotaName, a.quantity, Some(a.oid.contents.toString), Some(a.inventoryId.toString)))
-    val dummyAssignments : List[StarlingTradeAssignment] = unassignedQuotas.map{ case (k, v) => StarlingTradeAssignment(k, v.detail.pricingSpec.quantity)}.toList
+    val dummyAssignments : List[StarlingTradeAssignment] = unassignedQuotas.map{ case (k, v) => StarlingTradeAssignment(Option(k).getOrElse("<Null Quota ID>"), v.detail.pricingSpec.quantity)}.toList
     val allAssignments : List[StarlingTradeAssignment] = actualAssignments ::: dummyAssignments
 
     val tradeErrors = allAssignments.map(assignment => {
@@ -270,9 +274,15 @@ case class TitanTradeAttributes(
 ) 
     extends TradeAttributes 
 {
-  import TitanTradeStore._
+
+  if (quotaID == null) {
+    println("quota was null")
+  }
   require(quotaID != null, "quotaID cannot be null")
   require(titanTradeID != null, "titanTradeID cannot be null")
+
+  import TitanTradeStore._
+  
   def details = Map(
     quotaID_str -> quotaID,
     titanTradeID_str -> titanTradeID,

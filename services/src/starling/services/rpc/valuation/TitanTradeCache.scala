@@ -3,13 +3,12 @@ package starling.services.rpc.valuation
 import starling.props.Props
 import com.trafigura.services.valuation._
 import starling.services.rpc.refdata._
-import com.trafigura.edm.trades.{PhysicalTrade => EDMPhysicalTrade}
 import java.lang.Exception
 import starling.titan._
 import com.trafigura.edm.shared.types.TitanId
 import starling.utils.{Log, Stopwatch}
 import starling.utils.conversions.RichMapWithErrors._
-
+import com.trafigura.edm.trades.{CompletedTradeState, TradeStateEnum, Trade, PhysicalTrade => EDMPhysicalTrade}
 
 /**
  * Trade cache provide trade map lookup by trade id and also a quota id to trade map lookup
@@ -31,8 +30,8 @@ case class DefaultTitanTradeCache(props : Props) extends TitanTradeCache with Lo
 
     val edmTrades = getAll() // get all edm physical trades from the underlying service
 
-    // todo, line below, should we really filter for completed trades only - probably??
-    tradeMap = edmTrades/*.filter(pt => pt.tstate == CompletedTradeTstate)*/.map(t => (t.titanId, t)).toMap.withException()
+    // we only want to operate on completed trades
+    tradeMap = edmTrades.filter(pt => pt.state == CompletedTradeState).map(t => (t.titanId, t)).toMap.withException()
     tradeMap.keySet.foreach(addTradeQuotas)
   }
 
