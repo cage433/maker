@@ -78,7 +78,6 @@ case class AveragePricingSpec(index : IndexWithDailyPrices, period : DateRange, 
 case class OptionalPricingSpec(choices : List[TitanPricingSpec], declarationDay : Day, chosenSpec : Option[TitanPricingSpec]) extends TitanPricingSpec {
 
   private val specToUse = chosenSpec.getOrElse(choices.head)
-  println("***** spec = " + specToUse.toString)
   def settlementDay(marketDay : DayAndTime) = specToUse.settlementDay(marketDay)
   def price(env: Environment) = {
     assert(chosenSpec.isDefined || env.marketDay < declarationDay.endOfDay, "Optional pricing spec must be fixed by " + declarationDay)

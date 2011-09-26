@@ -260,6 +260,7 @@ object PhysicalMetalForward extends Log {
             val deliveryDay = Day.fromLocalDate(detail.deliverySpecs.head.schedule.asInstanceOf[Date].value)
 
             val pricingSpec = EDMPricingSpecConverter(edmMetalByGUID(commodityGUIDs.head), exchangesByID).fromEdmPricingSpec(deliveryDay, deliveryQuantity, detail.pricingSpec)
+            
 
             /**
              * Fetch the associated logistics inventory and associated logistics quota so that we can retrieve the fields relevant to the valuation process
