@@ -67,7 +67,7 @@ case class MainPivotReportPage(showParameters:Boolean, reportParameters:ReportPa
       case None => this
     }
 
-    val newPnlParameters:Option[PnlFromParameters] = reportParameters.pnlParameters.map {
+    val newPnlParameters:Option[PnlFromParameters] = page1.reportParameters.pnlParameters.map {
       pnlParameters => {
         localCache.latestMarketDataVersionIfValid(pnlParameters.curveIdentifierFrom.marketDataIdentifier.selection) match {
           case Some(v) => {
@@ -77,14 +77,14 @@ case class MainPivotReportPage(showParameters:Boolean, reportParameters:ReportPa
         }
       }
     }
-    val newCurveIdentifier = localCache.latestMarketDataVersionIfValid(reportParameters.curveIdentifier.marketDataIdentifier.selection) match {
+    val newCurveIdentifier = localCache.latestMarketDataVersionIfValid(page1.reportParameters.curveIdentifier.marketDataIdentifier.selection) match {
       case Some(v) => {
-        reportParameters.curveIdentifier.copyVersion(v)
+        page1.reportParameters.curveIdentifier.copyVersion(v)
       }
-      case _ => reportParameters.curveIdentifier
+      case _ => page1.reportParameters.curveIdentifier
     }
 
-    page1.selfReportPage(reportParameters.copy(curveIdentifier=newCurveIdentifier, pnlParameters=newPnlParameters))
+    page1.selfReportPage(page1.reportParameters.copy(curveIdentifier=newCurveIdentifier, pnlParameters=newPnlParameters))
   }
 
   override def finalDrillDownPage(fields:scala.Seq[(Field, Selection)], pageContext:PageContext, modifiers:Modifiers) {
