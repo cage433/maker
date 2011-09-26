@@ -3,7 +3,9 @@ package starling.market
 import starling.utils.StarlingEnum
 
 /**
- * Nicked from Kudu. The level of some indexes observed price
+ * Nicked from Kudu. The level of some indexes observed price.
+ *
+ * @documented
  */
 case class Level(name: String) extends Ordered[Level] {
   def compare(that: Level) = this.name.compare(that.name)

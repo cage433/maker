@@ -8,6 +8,16 @@ import scalaz._
 import Scalaz._
 import java.util.concurrent.atomic.AtomicInteger
 
+/**
+ * StarlingEnum defines a base class from which enumerated types in Starling should be derived.  It provides overloaded
+ * look-up functions to retrieve each instance of the enumerated type by its (optionally case insensitive) name.
+ *
+ * Some subtleties of the implementation being that:
+ * - Only lazy vals may reference its values, from-name look-up functions or sort indices; and
+ * - Each instance _may_ provide a list of other types associated with it.
+ *
+ * @documented
+ */
 class StarlingEnum[T](theType:Class[T], namer: T => String, ignoreCase: Boolean = false, otherTypes: List[Class[_]] = Nil) {
   val types = theType :: otherTypes
   lazy val values:List[T] = try {
