@@ -960,6 +960,11 @@ class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSiz
     Some(fullTable)
   }
 
+  private val bottomRightCornerPanel = new MigPanel("insets 0") {
+    background = Color.WHITE
+    border = MatteBorder(0,0,1,1,BorderColour)
+  }
+
   private val contentPanel = if (otherLayoutInfo.frozen) {
     new MigPanel("hidemode 2, insets 0", "[p]0[fill, grow]0[p]", extraRow + "[p]1[p]1[p]0[fill, grow]0[p]") {
       background = PivotTableBackgroundColour
@@ -980,6 +985,7 @@ class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSiz
       add(rowHeaderTableScrollPanePanel, "push, grow")
       add(mainTableScrollPane, "wrap")
       add(mainHScrollBarHolder, "growx, spanx 2")
+      add(bottomRightCornerPanel, "grow")
     }
   } else {
     val gap = if (otherLayoutInfo.hiddenType == AllHidden) "0" else "1"
@@ -1000,6 +1006,7 @@ class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSiz
       add(fullVScrollBarHolder, "growy, wrap")
 
       add(fullHScrollBarHolder, "growx, spanx 2")
+      add(bottomRightCornerPanel, "grow")
     }
   }
 
