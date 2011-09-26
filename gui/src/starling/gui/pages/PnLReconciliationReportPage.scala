@@ -18,7 +18,10 @@ case class PnLReconciliationReportPage(tradeSelectionWithTimestamp: TradeSelecti
   }
 
   override def finalDrillDownPage(fields: Seq[(Field, Selection)], pageContext: PageContext, modifiers:Modifiers) = {
-    val selection = fields.find(f => f._1.name == "Trade ID")
+    val selection = fields.find(f=>f._1.name == "Trade ID" && (f._2 match {
+      case SomeSelection(vs) if vs.size == 1 => true
+      case _ => false
+    }))
     val tradeID = selection match {
       case Some((field, selection)) => {
         selection match {
