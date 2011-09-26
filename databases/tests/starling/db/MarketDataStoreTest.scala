@@ -123,10 +123,10 @@ class MarketDataStoreTest extends TestMarketTest with ShouldMatchers {
     val basePrices = Map(jan → 50.0, feb → 60.0)
     val overridingPrices = Map(feb → 80.0, mar → 70.0)
 
-    marketDataStore.save(MarketDataSet.Starling, timedKey, priceData(basePrices))
+    marketDataStore.save(MarketDataSet.ManualMetals, timedKey, priceData(basePrices))
     marketDataStore.save(overrridingMDS, timedKey, priceData(overridingPrices))
 
-    val reader = NormalMarketDataReader(marketDataStore, MarketDataSelection(Some(PricingGroup.Starling), Some("Override")))
+    val reader = NormalMarketDataReader(marketDataStore, MarketDataSelection(Some(PricingGroup.Metals), Some("Override")))
     val marketData = reader.read(timedKey)
 
     marketData should be === priceData(basePrices ++ overridingPrices)

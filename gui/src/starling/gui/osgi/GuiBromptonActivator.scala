@@ -20,6 +20,7 @@ import starling.tradestore.TradePredicate
 import starling.daterange.{Day, TimeOfDay}
 import collection.immutable.TreeSet
 import starling.reports.ReportService
+import starling.trade.TradeService
 import starling.rabbiteventviewer.api.RabbitEventViewerService
 
 class GuiBromptonProps {
@@ -44,6 +45,7 @@ class GuiBromptonActivator extends BromptonActivator {
     client = new BouncyRMIClient(props.serverRmiHost, props.serverRmiPort, GuiStart.auth(props.principalName), overriddenUser = overriddenUser)
     client.startBlocking
     val starlingServer = client.proxy(classOf[StarlingServer])
+    val tradeService = client.proxy(classOf[TradeService])
     starlingServer.storeSystemInfo(GuiStart.systemInfo)
 
     val fc2Service = client.proxy(classOf[FC2Service])
@@ -55,8 +57,9 @@ class GuiBromptonActivator extends BromptonActivator {
     context.registerService(classOf[FC2Service], fc2Service)
     context.registerService(classOf[RabbitEventViewerService], rabbitEventViewerService)
     context.registerService(classOf[ReportService], reportService)
+    context.registerService(classOf[TradeService], tradeService)
     context.registerService(classOf[BrowserService], client.proxy(classOf[BrowserService]))
-    context.registerService(classOf[BrowserBundle], new StarlingBrowserBundle(starlingServer, reportService, fc2Service, rabbitEventViewerService))
+    context.registerService(classOf[BrowserBundle], new StarlingBrowserBundle(starlingServer, reportService, fc2Service, rabbitEventViewerService, tradeService))
 
 
     context.registerService(classOf[HttpServlet], new HttpServlet {
@@ -65,7 +68,7 @@ class GuiBromptonActivator extends BromptonActivator {
         val snapshotID = req.getParameter("snapshotID")
 
         val desk = Desk.Titan
-        val tradeTimestamp = starlingServer.deskCloses.get(desk).map(closes => closes.values.flatten.toList.sortWith(_.timestamp > _.timestamp)).get.head
+        val tradeTimestamp = tradeService.deskCloses.get(desk).map(closes => closes.values.flatten.toList.sortWith(_.timestamp > _.timestamp)).get.head
         val tradePredicate = TradePredicate(List(), List(List((Field("Trade ID"), SomeSelection(Set(tradeID))))))
         val tradeSelection = TradeSelectionWithTimestamp(Some((desk, tradeTimestamp)), tradePredicate, None)
 
@@ -97,13 +100,18 @@ class GuiBromptonActivator extends BromptonActivator {
 }
 
 import StarlingLocalCache._
-class StarlingBrowserBundle(starlingServer:StarlingServer, reportService:ReportService, fc2Service:FC2Service, rabbitEventService:RabbitEventViewerService) extends BrowserBundle {
+class StarlingBrowserBundle(
+                             starlingServer:StarlingServer,
+                             reportService:ReportService,
+                             fc2Service:FC2Service,
+                             rabbitEventService:RabbitEventViewerService,
+                             tradeService:TradeService) extends BrowserBundle {
   def bundleName = "StarlingServer"
   def marshal(obj: AnyRef) = GuiStarlingXStream.write(obj)
   override def userPage(context:PageContext) = Some( UserDetailsPage(context.localCache.currentUser) )
 
   def initCache(cache: HeterogeneousMap[LocalCacheKey], publisher:Publisher) {
-    GuiStart.initCacheMap(cache, starlingServer, reportService, fc2Service, rabbitEventService, publisher)
+    GuiStart.initCacheMap(cache, starlingServer, reportService, fc2Service, tradeService, rabbitEventService, publisher)
   }
 
   override def notificationHandlers = StarlingServerNotificationHandlers.notificationHandler :: Nil

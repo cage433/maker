@@ -106,7 +106,7 @@ object StarlingBuild extends Build{
     "props",
     file("./props"),
     settings = standardSettings
-  ) dependsOn(starlingApi, utils)
+  ) dependsOn(starlingApi, utils, manager)
 
   lazy val daterange = Project(
     "daterange", 
@@ -190,7 +190,7 @@ object StarlingBuild extends Build{
     "gui", 
     file("./gui"),
     settings = standardSettings
-  ) dependsOn(fc2api, reports, browser, rabbitEventViewerApi, singleClasspathManager)
+  ) dependsOn(fc2api, trade, reports, browser, rabbitEventViewerApi, singleClasspathManager)
 
   lazy val browser = Project(
     "browser",
@@ -208,7 +208,19 @@ object StarlingBuild extends Build{
     "trade", 
     file("./trade"),
     settings = standardSettings 
-  ) dependsOn()
+  ) dependsOn(auth, guiapi, manager)
+
+  lazy val metals = Project(
+    "metals",
+    file("./metals"),
+    settings = standardSettings
+  ) dependsOn(services, tradeInternal)
+
+  lazy val tradeInternal = Project(
+    "trade.internal",
+    file("./trade.internal"),
+    settings = standardSettings
+  ) dependsOn(services, trade, manager)
 
   import TitanModel._
   lazy val titanModel = Project(
@@ -302,7 +314,7 @@ object StarlingBuild extends Build{
     "startserver",
     file("./startserver"),
     settings = standardSettings
-  ) dependsOn(services, reportsInternal, starlingClient, singleClasspathManager, rabbitEventViewerService)
+  ) dependsOn(services, reportsInternal, tradeInternal, metals, starlingClient, singleClasspathManager, rabbitEventViewerService)
 
   lazy val launcher = Project(
     "launcher", 

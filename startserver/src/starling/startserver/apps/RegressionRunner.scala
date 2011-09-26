@@ -16,23 +16,15 @@ object RegressionRunner {
   val defaultDay = Day(2011, 6, 24)
 
   def main(args:Array[String]) {
-    val activators = List(
-      classOf[SingleClasspathBroadcasterActivator],
-      classOf[AuthBromptonActivator],
-      classOf[ServicesBromptonActivator],
-      classOf[ReportsBromptonActivator]
-    )
-    val single = new SingleClasspathManager(starling.manager.Props.readDefault, false, activators)
-    single.start
-    val reportService = single.service(classOf[ReportService])
-
-    val result = new RegressionRunner(CheckedInReports, new ReportServiceSource(reportService)).run(System.out)
-    if (!result) {
-      println("##teamcity[buildStatus status='FAILURE' text='Regression failed']")
-      System.out.flush
-      System.exit(1) // this allows us to git bisect run to automatically find the failing version
-    }
-    ThreadUtils.printNonDaemonThreads
+    BaseRunner.runWithoutListening() { lookup => {
+      val reportService = lookup(classOf[ReportService])
+      val result = new RegressionRunner(CheckedInReports, new ReportServiceSource(reportService)).run(System.out)
+      if (!result) {
+        println("##teamcity[buildStatus status='FAILURE' text='Regression failed']")
+        System.out.flush
+        System.exit(1) // this allows us to git bisect run to automatically find the failing version
+      }
+    } }
   }
 }
 

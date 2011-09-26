@@ -24,7 +24,7 @@ import java.awt.{Dimension, Color}
 case class SingleTradePage(tradeID:TradeIDLabel, desk:Option[Desk], tradeExpiryDay:TradeExpiryDay, intradayGroups:Option[IntradayGroups]) extends StarlingServerPage {
   def text = "Trade " + tradeID
   def icon = StarlingIcons.im("/icons/tablenew_16x16.png")
-  def build(reader:StarlingServerContext) = TradeData(tradeID, reader.server.readTradeVersions(tradeID), desk, tradeExpiryDay, intradayGroups)
+  def build(reader:StarlingServerContext) = TradeData(tradeID, reader.tradeService.readTradeVersions(tradeID), desk, tradeExpiryDay, intradayGroups)
   def createComponent(context:PageContext, data:PageData, bookmark:Bookmark, browserSize:Dimension, previousPageData:Option[PreviousPageData]) = new SingleTradePageComponent(context, data)
 }
 

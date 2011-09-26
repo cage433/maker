@@ -13,6 +13,9 @@ class KerberosAuthHandler(serverPassword:String, ldap:LdapUserLookup) extends Au
 
 
   def authorized(ticket: Array[Byte], sudo:Option[String]) = {
+    if (ticket.isEmpty) {
+      None
+    }
     val subject = login.login
     try {
       Server.verify(subject, ticket).flatMap { ticketUsername =>

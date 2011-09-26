@@ -8,7 +8,7 @@ import starling.browser.common.GuiUtils._
 import starling.browser._
 import service.UserLoggedIn
 import starling.gui.StarlingLocalCache._
-import starling.gui.{Launcher, StarlingIcons}
+import starling.gui.{StarlingIcons}
 
 case class RunAsUserPage() extends Page {
   def text = "Run as another user"
@@ -45,7 +45,9 @@ class RunAsUserPageComponent(context:PageContext) extends MigPanel("insets n n n
       new Thread {
         override def run() {
           Thread.currentThread().setContextClassLoader(RunAsUserPage.getClass.getClassLoader)
-          Launcher.start(Launcher.rmiHost,Launcher.rmiPort,Launcher.servicePrincipalName,Some(userName))
+          val launcherKlass = getClass.getClassLoader.loadClass("starling.launcher.Launcher")
+          val startWithUserMethod = launcherKlass.getMethod("startWithUser", classOf[String])
+          startWithUserMethod.invoke(null, userName)
         }
       }.start()
     } else {

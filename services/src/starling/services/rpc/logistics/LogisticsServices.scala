@@ -1,6 +1,5 @@
 package starling.services.rpc.logistics
 
-import starling.props.Props
 import com.trafigura.services.security.ComponentTestClientExecutor
 import org.jboss.resteasy.client.{ProxyFactory, ClientExecutor}
 import com.trafigura.edm.logistics.inventory._
@@ -14,6 +13,7 @@ import starling.titan._
 import starling.services.rpc.FileUtils
 import org.codehaus.jettison.json.JSONObject
 import starling.utils.conversions.RichMapWithErrors._
+import starling.props.{PropsHelper, Props}
 
 /**
  * logistics service interface
@@ -205,11 +205,9 @@ object LogisticServices {
     inventory.filter(item => !inventory.exists(i => i.parentId == Some(item.oid)))
 
   def main(args : Array[String]) {
-    println("running main for Logistics services")
-    val server = StarlingInit.runningDevInstance
+    val props = PropsHelper.defaultProps
     val mockTitanServices = new FileMockedTitanServices()
-    val logisticsServices = server.logisticsServices
+    val logisticsServices = new DefaultTitanLogisticsServices(props)
     LogisticsJsonMockDataFileGenerator(mockTitanServices, logisticsServices)
-    server.stop
   }
 }

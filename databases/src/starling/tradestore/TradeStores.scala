@@ -12,6 +12,8 @@ import starling.eai.instrumentreaders.EAISystemOfRecord
 import starling.eai.{TreeID}
 import starling.utils.STable
 import starling.gui.api._
+import scala.collection.JavaConversions._
+
 
 trait DeskDefinition {
   def tradeSets(predicate:TradePredicate):List[TradeSet]
@@ -23,14 +25,20 @@ trait DeskDefinition {
  * Holds all the trades stores and has methods to retrieve the appropriate one
  */
 case class TradeStores(
-  tradeImporters:Map[TradeSystem,TradeImporter],
   closedDesks: ClosedDesks,
   eaiTradeStores: Map[Desk,EAITradeStore],
   intradayTradeStore: IntradayTradeStore,
-  refinedAssignmentTradeStore: RefinedAssignmentTradeStore,
-  refinedFixationTradeStore : RefinedFixationTradeStore,
   titanTradeStore : TradeStore
 ) {
+
+  def registerTradeImporter(key:Object, tradeImporter:TradeImporter) {
+    tradeImporters.put(key, tradeImporter)
+  }
+  def unregister(key:Object) {
+    tradeImporters.remove(key)
+  }
+
+  val tradeImporters = new java.util.concurrent.ConcurrentHashMap[Object,TradeImporter]()
 
   private def label(fieldDetailsGroup:FieldDetailsGroup):FieldDetailsGroupLabel = FieldDetailsGroupLabel(fieldDetailsGroup.name, fieldDetailsGroup.fields.map(_.field.name))
 
@@ -46,12 +54,12 @@ case class TradeStores(
   }
 
 
-  def all = eaiTradeStores.values.toList ::: List(intradayTradeStore, refinedAssignmentTradeStore, refinedFixationTradeStore, titanTradeStore)
+  def all = eaiTradeStores.values.toList ::: List(intradayTradeStore, titanTradeStore)
 
   private def eaiDesk(desk: Desk) = {
     desk -> new DeskDefinition() {
       def tradeSets(predicate: TradePredicate) = List(
-        new TradeSet(EAITradeSystem, eaiStoreFor(desk), tradeImporters.get(EAITradeSystem),
+        new TradeSet(EAITradeSystem, eaiStoreFor(desk),
           predicate.addFilter(Field("Desk"), Set(desk.name)))
       )
       override def initialState = Some(PivotFieldsState(
@@ -66,16 +74,14 @@ case class TradeStores(
     }
   }
 
+  def findImporter(tradeSystem:TradeSystem) = {
+    tradeImporters.values().find(_.tradeSystem == tradeSystem).getOrElse(throw new Exception("No importer found for " + tradeSystem))
+  }
+
   val deskDefinitions = Map[Desk,DeskDefinition](
-    Desk.Refined -> new DeskDefinition() {
-      def tradeSets(predicate: TradePredicate) = List(
-        new TradeSet(RefinedAssignmentTradeSystem, standardStoreFor(RefinedAssignmentTradeSystem), tradeImporters.get(RefinedAssignmentTradeSystem), predicate),
-        new TradeSet(RefinedFixationTradeSystem, standardStoreFor(RefinedFixationTradeSystem), tradeImporters.get(RefinedFixationTradeSystem), predicate)
-      )
-    },
     Desk.Titan -> new DeskDefinition() {
       def tradeSets(predicate: TradePredicate) = List(
-        new TradeSet(TitanTradeSystem, standardStoreFor(TitanTradeSystem), tradeImporters.get(TitanTradeSystem), predicate)
+        new TradeSet(TitanTradeSystem, standardStoreFor(TitanTradeSystem), predicate)
       )
     }
   ) ++ Desk.eaiDesks.map(eaiDesk)
@@ -84,8 +90,6 @@ case class TradeStores(
 
   def standardStoreFor(tradeSystemName: TradeSystem):TradeStore = tradeSystemName match {
     case IntradayTradeSystem => intradayTradeStore
-    case RefinedAssignmentTradeSystem  => refinedAssignmentTradeStore
-    case RefinedFixationTradeSystem => refinedFixationTradeStore
     case TitanTradeSystem => titanTradeStore
   }
 
@@ -126,7 +130,7 @@ case class TradeStores(
           }
         }:::List((Field(IntradayTradeAttributes.subgroupName_str), SomeSelection(subgroupsToUse.toSet)))
 
-        List((new TradeSet(IntradayTradeSystem, intradayTradeStore, None,
+        List((new TradeSet(IntradayTradeSystem, intradayTradeStore,
           TradePredicate(predicate ::: tradeSelection.tradePredicate.filter, tradeSelection.tradePredicate.selection)),
                 ts))
       }
@@ -143,7 +147,6 @@ case class TradeStores(
 class TradeSet(
         val tradeSystem:TradeSystem,
         tradeStore:TradeStore,
-        tradeImporter:Option[TradeImporter],
         val tradePredicate:TradePredicate) {
   val key = (tradeSystem, tradePredicate)
   
@@ -183,7 +186,7 @@ class TradeSet(
   }
 
   def forTradeDays(tradeDays: Set[Day]) = {
-    new TradeSet(tradeSystem, tradeStore, tradeImporter, TradePredicate((Field("Trade Day"), new SomeSelection(tradeDays.asInstanceOf[Set[Any]])) :: tradePredicate.filter, tradePredicate.selection))
+    new TradeSet(tradeSystem, tradeStore, TradePredicate((Field("Trade Day"), new SomeSelection(tradeDays.asInstanceOf[Set[Any]])) :: tradePredicate.filter, tradePredicate.selection))
   }
 }
 

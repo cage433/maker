@@ -6,11 +6,9 @@ import starling.auth.User
 import starling.services.{ScheduledTask, Scheduler}
 import starling.daterange.Day
 import starling.utils.Stopable
-import java.util.{UUID, Set => JSet, Map => JMap}
+import java.util.{UUID, Map => JMap}
 
-
-
-class StarlingJMX(users:JMap[UUID,User], scheduler: Scheduler) extends Stopable {
+class StarlingJMX(scheduler: Scheduler) extends Stopable {
   val mbs = ManagementFactory.getPlatformMBeanServer
 
   override def start {

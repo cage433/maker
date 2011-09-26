@@ -25,7 +25,7 @@ class ServerAuthHandler(auth: AuthHandler, users:java.util.Map[UUID,User]) exten
   override def messageReceived(ctx: ChannelHandlerContext, e: MessageEvent) = {
     val channel = ctx.getChannel
     ChannelLoggedIn.get(channel) match {
-      case null => {
+      case None => {
         e.getMessage match {
           case AuthMessage(ticket, overriddenUser) => {
             Logger.info("Server: User login message found")
@@ -59,7 +59,7 @@ class ServerAuthHandler(auth: AuthHandler, users:java.util.Map[UUID,User]) exten
           }
         }
       }
-      case user => {
+      case Some(user) => {
         ChannelLoggedIn.setLoggedOn(Some(user._1))
         ctx.sendUpstream(e)
         ChannelLoggedIn.setLoggedOn(None)
@@ -71,7 +71,7 @@ class ServerAuthHandler(auth: AuthHandler, users:java.util.Map[UUID,User]) exten
 object ChannelLoggedIn {
   private val loggedIn = new ChannelLocal[(User,UUID)]()
 
-  def get(channel: Channel) = loggedIn.get(channel)
+  def get(channel: Channel) = loggedIn.get(channel) match { case null => None; case x => Some(x) }
   def set(channel: Channel, user: User, id:UUID) = loggedIn.set(channel, (user,id))
   def remove(channel: Channel) = loggedIn.remove(channel)
   def setLoggedOn(user: Option[User]) {

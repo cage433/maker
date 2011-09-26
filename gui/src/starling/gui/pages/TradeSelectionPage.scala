@@ -20,6 +20,7 @@ import common.RoundedBorder
 import common.{ButtonClickedEx, NewPageButton, MigPanel}
 import starling.gui.utils.RichReactor._
 import starling.browser.common.RichCheckBox._
+import starling.trade.TradeService
 
 /**
  * Page that allows you to select trades.
@@ -44,11 +45,11 @@ case class TradeSelectionPage(
 
   def dataRequest(pageBuildingContext:StarlingServerContext) = {
     val expiryDay = tpp.expiry.exp
-    pageBuildingContext.server.tradePivot(tradeSelectionWithTimestamp, expiryDay, pivotPageState.pivotFieldParams)
+    pageBuildingContext.tradeService.tradePivot(tradeSelectionWithTimestamp, expiryDay, pivotPageState.pivotFieldParams)
   }
   
   override def subClassesPageData(pageBuildingContext:StarlingServerContext) = {
-    val desks = pageBuildingContext.server.desks
+    val desks = pageBuildingContext.tradeService.desks
     Some(TradeSelectionPageData(tpp.deskAndTimestamp.map(_._1), desks, tpp.intradaySubgroupAndTimestamp.map(_._1), pivotPageState))
   }
 
@@ -207,7 +208,7 @@ case class TradeSelectionPage(
         val textID = textIDField.text
         context.createAndGoTo(
         (serverContext:ServerContext) => {
-          val tradeID = serverContext.lookup(classOf[StarlingServer]).tradeIDFor(desk, textID)
+          val tradeID = serverContext.lookup(classOf[TradeService]).tradeIDFor(desk, textID)
           SingleTradePage(tradeID, Some(desk), expiry, None)
         }, { case e:UnrecognisedTradeIDException => {
           errorLabel.text = e.getMessage
@@ -500,7 +501,7 @@ case class TradeSelectionPage(
   override def bookmark(serverContext:StarlingServerContext):Bookmark = {
     val today = Day.today
     val isLatestLiveOn = tpp.expiry.exp == today
-    val latestTimestamp = tpp.deskAndTimestamp.map{case (desk, t) => (t, serverContext.server.latestTradeTimestamp(desk))}
+    val latestTimestamp = tpp.deskAndTimestamp.map{case (desk, t) => (t, serverContext.tradeService.latestTradeTimestamp(desk))}
     val isLatestBookClose = latestTimestamp match {
       case Some((t1,t2)) => t1 == t2
       case _ => true
@@ -629,9 +630,9 @@ case class SnapshotSubmitRequest(marketDataSelection:MarketDataSelection, observ
 case class BookCloseRequest(desk:Desk) extends StarlingSubmitRequest[Unit] {
   def submit(serverContext:StarlingServerContext) = {
     if (desk == Desk.Titan) {
-      serverContext.server.importTitanTrades()
+      serverContext.tradeService.importTitanTrades()
     } else {
-      serverContext.server.bookClose(desk)
+      serverContext.tradeService.bookClose(desk)
     }
   }
 }

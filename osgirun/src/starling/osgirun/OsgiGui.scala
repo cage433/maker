@@ -79,7 +79,7 @@ object GuiBundles extends BundleDefinitions {
 
     val includes = List("com.thoughtworks.xstream.converters.extended", "com.thoughtworks.xstream.converters.enums",
         "com.thoughtworks.xstream.converters.basic", "org.joda.time.base", "org.joda.time.chrono", "org.jboss.netty.channel", "net.sf.cglib.reflect")
-    val excludes = List("cern.*", "com.rabbitmq.*", "net.spy.memcached.*", "org.apache.commons.codec.digest", "org.testng", "sjson.json.*")
+    val excludes = List("cern.*", "com.rabbitmq.*", "net.spy.memcached.*", "org.apache.commons.codec.digest", "org.testng", "sjson.json.*", "starling.props.*")
 
     val bundles = Map(
         "browser" -> BundleConfig(exportAll=true, dirs = List("browser")),
@@ -87,7 +87,7 @@ object GuiBundles extends BundleDefinitions {
         "osgimanager" -> BundleConfig(exportAll=true, dirs=List("osgimanager")),
         "manager" -> BundleConfig(exportAll=true, dirs = List("manager")),
         "gui" -> BundleConfig(true, List("joda-time-jar-1.6.jar"), includes, excludes, Some("gui"),
-          List("daterange", "quantity", "utils", "auth", "bouncyrmi", "gui", "gui.api", "reports", "pivot", "pivot.utils", "fc2.api", "rabbit.event.viewer.api")))
+          List("daterange", "quantity", "utils", "auth", "bouncyrmi", "gui", "gui.api", "reports", "pivot", "trade", "pivot.utils", "fc2.api", "rabbit.event.viewer.api")))
 
     val manager = new Manager(
       new File("."),

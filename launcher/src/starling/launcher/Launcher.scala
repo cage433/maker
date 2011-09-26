@@ -1,4 +1,4 @@
-package starling.gui
+package starling.launcher
 
 import starling.gui.osgi.GuiBromptonActivator
 import starling.browser.osgi.BrowserBromptonActivator
@@ -36,10 +36,17 @@ object Launcher {
     }
   }
 
+  def startWithUser(overriddenUser:String) {
+    if (rmiPort == -1) {
+      throw new Exception("You can only run as user once start has been called")
+    }
+    start(rmiHost, rmiPort, servicePrincipalName, Some(overriddenUser))
+  }
+
   // These variables are a big hack so we remember what they are when running the start method when changing users.
-  var rmiHost = ""
-  var rmiPort = -1
-  var servicePrincipalName = ""
+  private var rmiHost = ""
+  private var rmiPort = -1
+  private var servicePrincipalName = ""
 
   def start(rmiHost: String, rmiPort: Int, servicePrincipalName: String, overriddenUser:Option[String] = None) {
 

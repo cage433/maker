@@ -233,58 +233,58 @@ class ValuationServiceRpc(marketDataStore: MarketDataStore, valuationService: Va
 */
 
 
-object ValuationService extends App {
-
-  import org.codehaus.jettison.json.JSONObject
-
-  lazy val vs = StarlingInit.runningDevInstance.valuationService
-
-  val quotaValuations = vs.valueAllTradeQuotas()
-  val (worked, failed) = quotaValuations.valuationResults.values.partition({ case Right(_) => true; case Left(_) => false })
-  println("Worked \n" + worked.mkString("\n") + "\nFailed \n" + failed.mkString("\n"))
-
-  System.exit(0)
-  val valuations = vs.valueAllQuotas()
-  //val (worked, _) = valuations.tradeResults.values.partition({ case Right(_) => true; case Left(_) => false })
-
-  val valuedTradeIds = valuations.tradeResults.collect{ case (id, Right(v)) => id }.toList
-  val valuedTrades = vs.getTrades(valuedTradeIds)
-  val markets = vs.getMetals.toList
-  val exchanges = vs.getFuturesExchanges.toList
-
-  /**
-   * Write out EDM trades from trade service (that can be valued successfully) and the ref-data markets and exchanges
-   *   so that the file mocked services can use canned data for tests (note this data needs moving into resources to update
-   *   canned data for the tests...)
-   */
-  val tradesFile = "/tmp/edmTrades.json"
-  val marketsFile = "/tmp/markets.json"
-  val exchangesFile = "/tmp/exchanges.json"
-
-  writeJson(tradesFile, valuedTrades)
-  writeJson(marketsFile, markets)
-  writeJson(exchangesFile, exchanges)
-
-  val loadedMarkets = loadJsonValuesFromFile(marketsFile).map(s => Metal.fromJson(new JSONObject(s)).asInstanceOf[Metal])
-  val loadedExchanges = loadJsonValuesFromFile(exchangesFile).map(s => Market.fromJson(new JSONObject(s)).asInstanceOf[Market])
-  val loadedTrades = loadJsonValuesFromFile(tradesFile).map(s => EDMPhysicalTrade.fromJson(new JSONObject(s)).asInstanceOf[EDMPhysicalTrade])
-
-  StarlingInit.runningDevInstance.stop
-
-  def writeJson[T <: ModelObject with Object { def toJson() : JSONObject }](fileName : String, objects : List[T]) {
-    try {
-      val fStream = new FileWriter(fileName)
-      val bWriter = new BufferedWriter(fStream)
-      objects.foreach(obj => bWriter.write(obj.toJson().toString() + "\n" ))
-      bWriter.flush()
-      fStream.close()
-    }
-    catch {
-      case ex : Exception => println("Error: " + ex.getMessage())
-    }
-  }
-
-  import scala.io.Source._
-  def loadJsonValuesFromFile(fileName : String) : List[String] = 
-    fromFile(fileName).getLines.toList
-}
+//object ValuationService extends App {
+//
+//  import org.codehaus.jettison.json.JSONObject
+//
+//  lazy val vs = StarlingInit.runningDevInstance.valuationService
+//
+//  val quotaValuations = vs.valueAllTradeQuotas()
+//  val (worked, failed) = quotaValuations.valuationResults.values.partition({ case Right(_) => true; case Left(_) => false })
+//  println("Worked \n" + worked.mkString("\n") + "\nFailed \n" + failed.mkString("\n"))
+//
+//  System.exit(0)
+//  val valuations = vs.valueAllQuotas()
+//  //val (worked, _) = valuations.tradeResults.values.partition({ case Right(_) => true; case Left(_) => false })
+//
+//  val valuedTradeIds = valuations.tradeResults.collect{ case (id, Right(v)) => id }.toList
+//  val valuedTrades = vs.getTrades(valuedTradeIds)
+//  val markets = vs.getMetals.toList
+//  val exchanges = vs.getFuturesExchanges.toList
+//
+//  /**
+//   * Write out EDM trades from trade service (that can be valued successfully) and the ref-data markets and exchanges
+//   *   so that the file mocked services can use canned data for tests (note this data needs moving into resources to update
+//   *   canned data for the tests...)
+//   */
+//  val tradesFile = "/tmp/edmTrades.json"
+//  val marketsFile = "/tmp/markets.json"
+//  val exchangesFile = "/tmp/exchanges.json"
+//
+//  writeJson(tradesFile, valuedTrades)
+//  writeJson(marketsFile, markets)
+//  writeJson(exchangesFile, exchanges)
+//
+//  val loadedMarkets = loadJsonValuesFromFile(marketsFile).map(s => Metal.fromJson(new JSONObject(s)).asInstanceOf[Metal])
+//  val loadedExchanges = loadJsonValuesFromFile(exchangesFile).map(s => Market.fromJson(new JSONObject(s)).asInstanceOf[Market])
+//  val loadedTrades = loadJsonValuesFromFile(tradesFile).map(s => EDMPhysicalTrade.fromJson(new JSONObject(s)).asInstanceOf[EDMPhysicalTrade])
+//
+//  StarlingInit.runningDevInstance.stop
+//
+//  def writeJson[T <: ModelObject with Object { def toJson() : JSONObject }](fileName : String, objects : List[T]) {
+//    try {
+//      val fStream = new FileWriter(fileName)
+//      val bWriter = new BufferedWriter(fStream)
+//      objects.foreach(obj => bWriter.write(obj.toJson().toString() + "\n" ))
+//      bWriter.flush()
+//      fStream.close()
+//    }
+//    catch {
+//      case ex : Exception => println("Error: " + ex.getMessage())
+//    }
+//  }
+//
+//  import scala.io.Source._
+//  def loadJsonValuesFromFile(fileName : String) : List[String] =
+//    fromFile(fileName).getLines.toList
+//}

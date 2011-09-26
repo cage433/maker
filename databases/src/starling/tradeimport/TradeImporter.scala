@@ -27,7 +27,7 @@ class TradeImporterFactory(
   }
 }
 
-class TradeImporter(systemOfRecord: SystemOfRecord, tradeStore: TradeStore) extends Log {
+class TradeImporter(val tradeSystem:TradeSystem, systemOfRecord: SystemOfRecord, tradeStore: TradeStore) extends Log {
 
   def importAll(allTrades: Option[Seq[Trade]] = None, writeTimestamp: Timestamp = new Timestamp()): Boolean = TradeImporter.lock.synchronized {
     log.infoWithTime("Running trade import for " + systemOfRecord + " with timestamp " + writeTimestamp) {

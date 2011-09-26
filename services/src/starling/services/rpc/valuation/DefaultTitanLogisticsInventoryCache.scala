@@ -10,6 +10,7 @@ import starling.utils.conversions.RichMapWithErrors._
 import com.trafigura.edm.logistics.inventory.{EDMLogisticsQuota, EDMInventoryItem}
 import starling.utils.{Log, Stopwatch}
 import com.trafigura.edm.shared.types.Quantity
+import starling.tradestore.TradeStore
 
 
 /**
@@ -38,7 +39,7 @@ case class DefaultTitanLogisticsInventoryCache(
     titanLogisticsServices : TitanLogisticsServices,
     titanTradeCache : TitanTradeCache,
     refData : TitanTacticalRefData,
-    titanTradeStore : Option[TitanTradeStore]) extends GenericServiceDataCache[EDMInventoryItem, String] with Log {
+    titanTradeStore : Option[TradeStore]) extends GenericServiceDataCache[EDMInventoryItem, String] with Log {
 
   // internal maps that for the cache lookup
   protected var inventoryMap : Map[String, EDMInventoryItem] = Map[String, EDMInventoryItem]().withException()

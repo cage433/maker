@@ -27,6 +27,8 @@
     <orderEntry type="module" module-name="starling.client" />
     <orderEntry type="module" module-name="reports.internal" />
     <orderEntry type="module" module-name="rabbit.event.viewer.service" />
+    <orderEntry type="module" module-name="trade.internal" />
+    <orderEntry type="module" module-name="metals" />
   </component>
 </module>
 

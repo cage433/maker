@@ -122,8 +122,7 @@ object MarketDataStore {
     PricingGroup.GasolineRoW -> List(Starling, GasolineRoW, LIM),
     PricingGroup.GasOil -> List(Starling, GasOil, LIM),
     PricingGroup.BarryEckstein -> List(Starling, BarryEckstein, System, LIM),
-    PricingGroup.LondonDerivativesOptions -> List(Starling, LondonDerivativesOptions, System, LIM),
-    PricingGroup.Starling -> List(Starling)
+    PricingGroup.LondonDerivativesOptions -> List(Starling, LondonDerivativesOptions, System, LIM)
   )
 
   val manuallyEditableMarketDataSets = Set(ManualMetals, Starling)
@@ -153,6 +152,8 @@ object MarketDataStore {
 trait MarketDataStore {
   val pricingGroupsDefinitions = MarketDataStore.pricingGroupsDefinitions
   val pricingGroups = MarketDataStore.pricingGroups
+
+  def readAll()
 
   def excelDataSets: List[String]
 

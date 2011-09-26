@@ -13,6 +13,7 @@ import starling.db.{MarketDataStore, DB}
 import starling.tradestore.TradeStores
 import starling.calendar.BusinessCalendars
 import starling.rmi.{RabbitEventDatabase, UserSettingsDatabase, BromptonTrackerBasedMarketDataPageIdentifierReaderProviders, StarlingServer}
+import starling.curves.CurveViewer
 
 class ServicesProps
 class ServicesBromptonActivator extends BromptonActivator {
@@ -26,9 +27,7 @@ class ServicesBromptonActivator extends BromptonActivator {
     val authHandler = context.awaitService(classOf[AuthHandler])
     val osgiBroadcaster = context.awaitService(classOf[Broadcaster])
 
-    val props = PropsHelper.defaultProps
-
-    context.registerService(classOf[starling.props.Props], props)
+    val props = context.awaitService(classOf[starling.props.Props])
 
     val bromptonMarketDataReaderProviders = new BromptonTrackerBasedMarketDataPageIdentifierReaderProviders(context)
 
@@ -41,8 +40,6 @@ class ServicesBromptonActivator extends BromptonActivator {
       startRabbit = props.RabbitEnabled(),
       marketDataReadersProviders = bromptonMarketDataReaderProviders
     )
-    context.registerService(classOf[ValuationServiceApi], starlingInit.valuationService, ExportTitanRMIProperty::Nil)
-    context.registerService(classOf[MarketDataServiceApi], starlingInit.marketDataService,ExportTitanRMIProperty::Nil)
     context.registerService(classOf[StarlingServer], starlingInit.starlingServer,ExportGuiRMIProperty::Nil)
     context.registerService(classOf[FC2Service], starlingInit.fc2Service,ExportGuiRMIProperty::Nil)
     context.registerService(classOf[BrowserService], starlingInit.browserService,ExportGuiRMIProperty::Nil)
@@ -50,15 +47,10 @@ class ServicesBromptonActivator extends BromptonActivator {
 
     context.registerService(classOf[UserSettingsDatabase], starlingInit.userSettingsDatabase)
     context.registerService(classOf[MarketDataStore], starlingInit.marketDataStore)
-    context.registerService(classOf[TradeStores], starlingInit.tradeStores)
     context.registerService(classOf[BusinessCalendars], starlingInit.businessCalendars)
-    context.registerService(classOf[DB], starlingInit.eaiStarlingSqlServerDB)
-
-    context.registerService(classOf[RabbitEventDatabase], starlingInit.rabbitEventDatabase)
-
+    context.registerService(classOf[CurveViewer], starlingInit.curveViewer)
 
     starlingInit.loopyXLReceivers.foreach { receiver => {
-      println("00000000000 registering loopy service")
       context.registerService(classOf[AnyRef], receiver, ExportExcelProperty::Nil)
     }}
 

@@ -20,11 +20,12 @@ class ReportsBromptonActivator extends BromptonActivator {
 
   def init(context: BromptonContext, props: ReportsProps) {
 
+    val realProps = context.awaitService(classOf[starling.props.Props])
     val marketDataStore = context.awaitService(classOf[MarketDataStore])
     val tradeStores = context.awaitService(classOf[TradeStores])
     val businessCalendars = context.awaitService(classOf[BusinessCalendars])
     val userSettingsDatabase = context.awaitService(classOf[UserSettingsDatabase])
-    val eaiStarlingDB = context.awaitService(classOf[DB])
+    val eaiStarlingDB = DB(realProps.StarlingDatabase())
 
     val reportContextBuilder = new ReportContextBuilder(marketDataStore)
     val reportServiceInternal = new ReportServiceInternal(reportContextBuilder,tradeStores)

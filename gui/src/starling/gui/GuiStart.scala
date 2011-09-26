@@ -37,6 +37,8 @@ import starling.auth.{Client}
 import starling.auth.internal.{RealClient, ClientLogin}
 import starling.reports.ReportService
 import starling.browser.internal.{NotificationKeys, NotificationType, Notification}
+import starling.trade.TradeService
+import starling.browser.internal.{NotificationKeys, NotificationType, Notification}
 import starling.rabbiteventviewer.api.RabbitEventViewerService
 
 object StarlingServerNotificationHandlers {
@@ -124,6 +126,7 @@ object GuiStart extends Log {
                       starlingServer:StarlingServer,
                       reportService:ReportService,
                       fc2Service:FC2Service,
+                      tradeService:TradeService,
                       rabbitEventService:RabbitEventViewerService,
                       publisher: Publisher) {
     val localCacheUpdatePublisher = new scala.swing.Publisher() {}
@@ -198,12 +201,12 @@ object GuiStart extends Log {
       cacheMap(ExcelLatestMarketDataVersion) = fc2Service.excelLatestMarketDataVersions
       cacheMap(PricingGroupLatestMarketDataVersion) = fc2Service.pricingGroupLatestMarketDataVersions
       cacheMap(LocalCacheKeys.ReportOptionsAvailable) = reportService.reportOptionsAvailable
-      cacheMap(DeskCloses) = starlingServer.deskCloses
-      cacheMap(IntradayLatest) = starlingServer.intradayLatest
-      cacheMap(TradersBookLookup) = starlingServer.traders
+      cacheMap(DeskCloses) = tradeService.deskCloses
+      cacheMap(IntradayLatest) = tradeService.intradayLatest
+      cacheMap(TradersBookLookup) = tradeService.traders
       cacheMap(UKBusinessCalendar) = starlingServer.ukBusinessCalendar
-      cacheMap(Desks) = starlingServer.desks
-      cacheMap(GroupToDesksMap) = starlingServer.groupToDesksMap
+      cacheMap(Desks) = tradeService.desks
+      cacheMap(GroupToDesksMap) = tradeService.groupToDesksMap
       cacheMap(IsStarlingDeveloper) = starlingServer.isStarlingDeveloper
       cacheMap(EnvironmentRules) = fc2Service.environmentRules
       cacheMap(CurveTypes) = fc2Service.curveTypes

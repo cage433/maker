@@ -20,6 +20,8 @@
       <module fileurl="file://$PROJECT_DIR$/loopyxl/loopyxl.iml" filepath="$PROJECT_DIR$/loopyxl/loopyxl.iml" />
       <module fileurl="file://$PROJECT_DIR$/manager/manager.iml" filepath="$PROJECT_DIR$/manager/manager.iml" />
       <module fileurl="file://$PROJECT_DIR$/maths/maths.iml" filepath="$PROJECT_DIR$/maths/maths.iml" />
+      <module fileurl="file://$PROJECT_DIR$/metals/metals.iml" filepath="$PROJECT_DIR$/metals/metals.iml" />
+      <module fileurl="file://$PROJECT_DIR$/oil/oil.iml" filepath="$PROJECT_DIR$/oil/oil.iml" />
       <module fileurl="file://$PROJECT_DIR$/osgimanager/osgimanager.iml" filepath="$PROJECT_DIR$/osgimanager/osgimanager.iml" />
       <module fileurl="file://$PROJECT_DIR$/osgirun/osgirun.iml" filepath="$PROJECT_DIR$/osgirun/osgirun.iml" />
       <module fileurl="file://$PROJECT_DIR$/pivot/pivot.iml" filepath="$PROJECT_DIR$/pivot/pivot.iml" />

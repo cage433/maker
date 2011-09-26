@@ -16,8 +16,9 @@ import starling.utils.ImplicitConversions._
 /**
  * Represents reference data (calendars, markets, ...) as pivots where possible
  */
-class ReferenceData(businessCalendars: BusinessCalendars, marketDataStore: MarketDataStore, strategyDB: EAIStrategyDB,
-                    scheduler: Scheduler) {
+class ReferenceData(businessCalendars: BusinessCalendars,
+                    marketDataStore: MarketDataStore
+                    /*scheduler: Scheduler FIXME*/) {
 
   val referenceDatas = List(
     "Futures Markets"   → futuresMarketPivot(),
@@ -25,7 +26,7 @@ class ReferenceData(businessCalendars: BusinessCalendars, marketDataStore: Marke
     "Formula Indexes"   → formulaIndexes(),
     "Published Indexes" → publishedIndexes(),
     "Pricing Groups"    → pricingGroups(),
-    "Schedules"         → schedules(scheduler),
+    //"Schedules"         → schedules(scheduler),
     "Calendars"         → calendars(businessCalendars)
 //    "Strategies"        → strategies(strategyDB))
     )
@@ -252,42 +253,4 @@ class ReferenceData(businessCalendars: BusinessCalendars, marketDataStore: Marke
       period → task.time.description, calendar → task.cal.name, producer → task.attribute(DataSource), active → task.task.isRunning,
       consumer → task.attribute(DataSink), sender → task.attribute(EmailFrom), recipients → task.attribute(EmailTo)))
   }
-
-
-
-//  def strategies(strategyDB:EAIStrategyDB) = {
-//    new UnfilteredPivotTableDataSource() {
-//      val strategyFilter = new TreeFieldDetails(treeID => strategyDB.tree.calculateNodeAndAllChildren(treeID).map(_.id), "Strategy Filter")
-//      val strategy = new TreeFieldDetails(treeID => strategyDB.tree.calculateNodeAndAllChildren(treeID).map(_.id), "Strategy")
-//      val label = FieldDetails("Label")
-//
-//      def fieldDetailsGroups = List(FieldDetailsGroup("Strategy",
-//        strategyFilter :: strategy :: label :: Nil
-//      ))
-//
-//      override val initialState = new PivotFieldsState()
-//        dataFields=List(label.field),
-//        rowFields=List(strategy.field),
-//        filters=List( (strategyFilter.field, AllSelection) )
-//      )
-//
-//      override def treeFields = Map(strategy.field -> strategyDB.tree, strategyFilter.field -> strategyDB.tree)
-//
-//      def unfilteredData(pfs : PivotFieldsState) = {
-//        val data = strategyDB.tree.pathToNode.filter { case (path,node) => {
-//            path.startsWith("Spec/London/London Derivatives") || path.startsWith("Spec/London/Derivatives")
-//          }
-//        }.map { case(path, node) =>
-//          val m=Map(
-//            strategyFilter.field -> node,
-//            strategy.field -> node,
-//            label.field -> path
-//          )
-//          println("Map " + m)
-//          m
-//        }.toList
-//        PivotResult(data, Map())
-//      }
-//    }
-//  }
 }

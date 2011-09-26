@@ -10,6 +10,9 @@ import management.ManagementFactory
 import java.io.File
 import starling.reports.osgi.ReportsBromptonActivator
 import starling.rabbiteventviewer.internal.RabbitEventViewerServiceBromptonActivator
+import starling.trade.internal.osgi.TradeBromptonActivator
+import starling.props.internal.PropsBromptonActivator
+import starling.metals.MetalsBromptonActivator
 
 
 /**
@@ -26,11 +29,14 @@ object Server {
     PropsHelper.writeDefaults
     writePIDFile()
     val activators = List(
+      classOf[PropsBromptonActivator],
       classOf[SingleClasspathBroadcasterActivator],
       classOf[AuthBromptonActivator],
       classOf[ServicesBromptonActivator],
+      classOf[TradeBromptonActivator],
       classOf[ReportsBromptonActivator],
       classOf[BouncyRMIServerBromptonActivator],
+      classOf[MetalsBromptonActivator],
       classOf[RabbitEventViewerServiceBromptonActivator]
     )
     val single = new SingleClasspathManager(starling.manager.Props.readDefault, false, activators)

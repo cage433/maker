@@ -81,7 +81,6 @@ object PricingGroup extends StarlingEnum(classOf[PricingGroup], (pg: PricingGrou
   val BarryEckstein = PricingGroup("Barry Eckstein")
   val GasolineRoW = PricingGroup("Gasoline RoW")
   val GasOil = PricingGroup("Gas Oil")
-  val Starling = PricingGroup("Starling")
 }
 
 case class FieldDetailsGroupLabel(groupName:String, childNames:List[String])
@@ -116,7 +115,6 @@ object Desk extends StarlingEnum(classOf[Desk], (d: Desk) => d.name, ignoreCase 
   val GasolineSpec = Desk("Gasoline Spec Global", List(PricingGroup.GasolineRoW, LimOnly), Some(EAIDeskInfo(149)))
   val CrudeSpecNorthSea = Desk("Crude Spec North Sea", List(Crude, LimOnly), Some(EAIDeskInfo(197)))
   val HoustonDerivatives = Desk("Houston Derivatives", List(BarryEckstein, LimOnly), Some(EAIDeskInfo(190)))
-  val Refined = Desk("Refined", List(System, Metals, Starling))
   val Titan = Desk("Titan", List(Metals))
 
   val pricingGroups = values.flatMap(_.pricingGroups).distinct

@@ -107,6 +107,7 @@ object ServerBundles extends BundleDefinitions {
       Map(
         "osgimanager" -> BundleConfig(exportAll=true, dirs=List("osgimanager")),
         "manager" -> BundleConfig(exportAll=true, dirs=List("manager")),
+        "props" -> BundleConfig(exportAll=true, dirs=List("props")),
         //"dbx" -> BundleConfig(exportAll=true, internalJars=List("bonecp-bundle-0.7.1.RELEASE.jar"), dirs=List("dbx")),
         "utils" -> BundleConfig(exportAll=true, dirs=List("utils")),
         "auth" -> BundleConfig(exportAll=true, dirs=List("auth")),
@@ -114,15 +115,18 @@ object ServerBundles extends BundleDefinitions {
         "loopyxl" -> BundleConfig(exportAll=true, dirs=List("loopyxl")),
         "reports" -> BundleConfig(exportAll=true, dirs=List("reports")),
         "reports.internal" -> BundleConfig(exportAll=true, dirs=List("reports.internal")),
+        "trade" -> BundleConfig(exportAll=true, dirs=List("trade"), includes = List("org.joda.time", "org.joda.time.base", "org.joda.time.chrono", "starling.tradestore", "starling.pivot", "scala.math")),
+        "trade.internal" -> BundleConfig(exportAll=true, dirs=List("trade.internal")),
         "rabbit.event.viewer.service" -> BundleConfig(exportAll=true, includes=List("scala.math"), dirs=List("rabbit.event.viewer.service")),
         "rabbit.event.viewer.api" -> BundleConfig(exportAll=true, dirs=List("rabbit.event.viewer.api")),
+        "metals" -> BundleConfig(exportAll=true, dirs=List("metals")),
         "main" -> BundleConfig(true, List("joda-time-jar-1.6.jar", "bonecp-bundle-0.7.1.RELEASE.jar"), includes, excludes, None, List(
           "daterange", "titan", "browser.service", "fc2.api",
           "concurrent", "curves",
           "databases", "gui.api", "instrument",
           "maths", "pivot", "pivot.utils",
           "quantity", "services", "starling.api",
-          "trade", "dbx"
+          "dbx"
         ))
       )
     )
