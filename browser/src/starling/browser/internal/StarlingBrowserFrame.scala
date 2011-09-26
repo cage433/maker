@@ -64,8 +64,7 @@ class StarlingBrowserFrame(homePage: Page, startPage:Either[Page, (ServerContext
 
   private val notificationPanel = new NotificationPanel(size.width, lCache, containerMethods)
   private val mainPanel = new MigPanel("insets 0, hidemode 3", "[p]", "[p]0[p]") {
-    //    background = new Color(91,139,216)
-    //    background = Color.WHITE
+    background = Color.WHITE
     def setNewComponent(comp:Component) {
       removeAll
       add(comp, "push, grow, wrap")
