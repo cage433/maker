@@ -122,7 +122,9 @@ class ManualReportConfigPanel(context:PageContext, reportParameters:ReportParame
       case DayChangedEvent(`observationDayChooser`, d) => {
         val timeOfDayToUse = if ((d >= Day.today) && (environmentRule.rule == EnvironmentRuleLabel.RealTime)) TimeOfDay.StartOfDay else TimeOfDay.EndOfDay
         forwardObservationDayAndTimeChooser.dayAndTime = d.atTimeOfDay(timeOfDayToUse)
-        liveOnDayChooser.day = d
+        if (liveOnDayChooser.day != d.startOfFinancialYear) {
+          liveOnDayChooser.day = d
+        }
       }
       case DayAndTimeChangedEvent(`forwardObservationDayAndTimeChooser`, dayAndTime) => {
         thetaToDayChooser.day = dayAndTime.day.nextBusinessDay(context.localCache.ukBusinessCalendar)
