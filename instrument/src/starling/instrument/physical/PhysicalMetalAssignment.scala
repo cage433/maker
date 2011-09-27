@@ -179,9 +179,10 @@ case class UnknownPricingSpecification(
 
   def settlementDay(marketDay : DayAndTime) = TitanPricingSpec.calcSettlementDay(index, unfixedPriceDay(marketDay))
   
-  private val lme = FuturesExchangeFactory.LME
 
-  private def unfixedPriceDay(marketDay : DayAndTime) = index.market.asInstanceOf[FuturesMarket].exchange match {
+  private def unfixedPriceDay(marketDay : DayAndTime) = {
+    val lme = FuturesExchangeFactory.LME
+    index.market.asInstanceOf[FuturesMarket].exchange match {
       case `lme` => {
         val thirdWednesday = month.firstDay.dayOnOrAfter(DayOfWeek.wednesday) + 14
         if (marketDay >= thirdWednesday.endOfDay)
@@ -190,7 +191,8 @@ case class UnknownPricingSpecification(
           thirdWednesday
       }
       case _ => month.lastDay.thisOrPreviousBusinessDay(index.market.businessCalendar)
-    }
+    }}
+
   def price(env: Environment) = {
     val totalFixed = fixations.map(_.fraction).sum
     val unfixedFraction = 1.0 - totalFixed
