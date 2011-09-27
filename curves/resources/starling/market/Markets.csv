@@ -11,7 +11,7 @@ TOCOM Gas Oil	Some(135)	FuturesMarket	kl	JPY	TCF	Some(100.0)	Month	GasOil	Some(T
 IPE Natural Gas	Some(139)	FuturesMarket	MT	GBP	IPF	Some(1000.0)	Month	NatGas	Some(IPE.NBP)	Some(0.01)	Some(0)	Some(2)	EAIExpiryRule(139)	ICE	Some(6)							Some(1.0)
 NYMEX Henry Hub Natural Gas	Some(140)	FuturesMarket	mmbtu	USD	NYM	Some(10000.0)	Month	NatGas	Some(NG)	Some(0.1)	Some(6)	Some(3)	EAIExpiryRule(140)	NYMEX	Some(9)							Some(1.0)
 COMEX Aluminium	Some(544)	FuturesMarket	lb	USD	NYM	Some(44000.0)	Month	Aluminium	Some(ALMN)	Some(1.0)	Some(3)	Some(2)	Comex PT/PA	COMEX	None							None
-COMEX High Grade Copper	Some(545)	FuturesMarket	lb	USD	NYM	Some(25000.0)	Month	Copper	Some(COMEX.HGC)	Some(1.0)	Some(3)	Some(2)	EAIExpiryRule(545)	COMEX	None							None
+COMEX High Grade Copper	Some(545)	FuturesMarket	lb	USD	NYM	Some(25000.0)	Month	Copper	Some(HG)	Some(0.01)	Some(3)	Some(2)	EAIExpiryRule(545)	COMEX	None							None
 COMEX Gold	Some(546)	FuturesMarket	oz	USD	NYM	Some(100.0)	Month	Gold	Some(GC)	Some(1.0)	Some(3)	Some(2)	Comex Gold/Silver/HG Copper	COMEX	None							None
 COMEX Silver	Some(547)	FuturesMarket	oz	USD	NYM	Some(5000.0)	Month	Silver	Some(COMEX.SIC)	Some(1.0)	Some(3)	Some(2)	Comex Gold/Silver/HG Copper	COMEX	None							None
 LME Aluminium Alloy	Some(548)	FuturesMarket	MT	USD	LME	Some(20.0)	Day	AluminiumAlloy	Some(LCH.LME.ALUMINIUMALLOY)	Some(1.0)	Some(3)	Some(2)	LME	LME	None							None
