@@ -31,8 +31,8 @@ import starling.db.{DB, TitanTradeSystem, MarketDataStore}
 import starling.calendar.BusinessCalendars
 import starling.curves.CurveViewer
 import starling.rmi.{RabbitEventDatabase, DefaultRabbitEventDatabase}
-import starling.utils.{Receiver, Broadcaster, ObservingBroadcaster, CompositeBroadcaster}
 import swing.event.Event
+import starling.utils._
 
 
 class MetalsBromptonActivator extends BromptonActivator {
@@ -59,6 +59,10 @@ class MetalsBromptonActivator extends BromptonActivator {
     }
     else {
       new MockTitanRabbitEventServices()
+    }
+
+    if (props.RabbitEnabled()) {
+      titanRabbitEventServices.start
     }
 
     val (titanTradeCache : TitanTradeCache, titanServices, logisticsServices, titanInventoryCache) = if (!testMode) {
@@ -145,7 +149,6 @@ class MetalsBromptonActivator extends BromptonActivator {
   }
 
   def stop(context: BromptonContext) {
-
   }
 }
 

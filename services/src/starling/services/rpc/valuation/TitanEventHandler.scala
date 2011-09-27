@@ -208,7 +208,19 @@ class TitanEventHandler(rabbitEventServices : TitanRabbitEventServices,
             case CreatedEventVerb => {
               val previousSnapshotId = todaysSnapshots(1).id.toString
               log.info("New marketData snapshot event, revaluing received event using old snapshot %s new snapshot %s".format(previousSnapshotId, newSnapshotId))
+
+              // just some extra logging until we understand potential bug around new snapshot ids not being found
+              val oldSnapshots = environmentProvider.getSnapshots()
+              log.debug("old snapshots %s".format(oldSnapshots.mkString(", ")))
               environmentProvider.updateSnapshotCache()
+              val newSnapshots = environmentProvider.getSnapshots()
+              log.debug("new snapshots %s".format(newSnapshots.mkString(", ")))
+
+              val missingSnapshotIds = ids.filter(id => !newSnapshots.contains(id))
+              if (missingSnapshotIds.size > 0) {
+                log.warn("New snapshot id event received for %s not found in the environment provider {}".format(missingSnapshotIds.mkString(", "), newSnapshots.mkString(", ")))
+              }
+
               val previousEnv = environmentProvider.environment(previousSnapshotId)
               val newEnv = environmentProvider.environment(newSnapshotId)
               val tradeIds = titanTradeCache.getAllTrades().map{trade => trade.titanId.value}.toList

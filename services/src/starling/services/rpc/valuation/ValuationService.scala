@@ -23,8 +23,6 @@ import starling.tradestore.TradeStore
 import starling.daterange.Day
 
 
-
-
 /**
  * Valuation service implementations
  */

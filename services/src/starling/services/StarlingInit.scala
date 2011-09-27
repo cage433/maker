@@ -62,7 +62,6 @@ class StarlingInit( val props: Props,
                     startStarlingJMX: Boolean = true,
                     forceGUICompatability: Boolean = true,
                     startEAIAutoImportThread: Boolean = true,
-                    startRabbit: Boolean = true,
                     testMode : Boolean = false,
                     marketDataReadersProviders:MarketDataPageIdentifierReaderProviders = MarketDataPageIdentifierReaderProviders.Empty
                     ) extends Stopable with Log {
@@ -113,8 +112,6 @@ class StarlingInit( val props: Props,
 
   // The Market data store needs some of it's own xstream converters
   MarketDataXStreamConverters.converters.foreach(StarlingXStream.registerConverter)
-
-  log.debug("Completed rabbit start")
 
   val revalSnapshotDb = new RevalSnapshotDB(starlingDB)
   val limServer = new LIMServer(props.LIMHost(), props.LIMPort())
@@ -215,6 +212,6 @@ object StarlingInit {
    * defines a test service instance that runs RMI but uses mocked service stubs where appropriate
    */
   lazy val runningTestInstance = {
-    new StarlingInit(PropsHelper.defaultProps, AuthHandler.Dev, Broadcaster.Null, true, true, false, false, false, false, false, false, true).update(_.start)
+    new StarlingInit(PropsHelper.defaultProps, AuthHandler.Dev, Broadcaster.Null, true, true, false, false, false, false, false, false).update(_.start)
   }
 }

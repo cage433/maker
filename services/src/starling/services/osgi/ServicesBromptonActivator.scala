@@ -33,7 +33,6 @@ class ServicesBromptonActivator extends BromptonActivator {
       true, true, true,
       forceGUICompatability=false,
       startEAIAutoImportThread=props.ImportsBookClosesFromEAI(),
-      startRabbit = props.RabbitEnabled(),
       marketDataReadersProviders = bromptonMarketDataReaderProviders
     )
     context.registerService(classOf[StarlingServer], starlingInit.starlingServer,ExportGuiRMIProperty::Nil)

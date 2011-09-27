@@ -36,7 +36,7 @@ class DefaultEnvironmentProvider(marketDataStore : MarketDataStore) extends Envi
   def snapshotNameToID(name : String) = snapshotNameToIDCache(name)
 
   private var snapshotNameToIDCache : Map[String, SnapshotID] = Map[String, SnapshotID]().withDefault(idNameKey => {
-    Log.warn("Missing snapshot ID requested, key = '%s', available snapshots are \n%s".format(idNameKey, snapshotNameToIDCache.keys.mkString(", ")))
+    Log.warn("Missing snapshot ID requested, key = '%s', available snapshots in environment provider are \n%s".format(idNameKey, snapshotNameToIDCache.keys.mkString(", ")))
     throw new Exception("Missing snapshot ID requested, key = '%s'".format(idNameKey))
   })
 
