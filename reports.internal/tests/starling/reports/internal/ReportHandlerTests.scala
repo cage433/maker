@@ -20,7 +20,7 @@ class ReportHandlerTests extends StarlingTest with ShouldMatchers {
   var userReportService: UserReportsService = _
 
   // Data
-  val user = User("<userName>", "<name>", None, Nil, "<phoneNumber>", "<email>", "<departments>")
+  val user = User("<userName>", "<name>", None, None, Nil, "<phoneNumber>", "<email>", "<departments>")
   val reportName = "<reportName>"
   val day = Day(2010, 1, 1)
   val pivotTable = mock(classOf[PivotTable])

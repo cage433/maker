@@ -1,9 +1,9 @@
 package starling.launcher
 
-import starling.gui.osgi.GuiBromptonActivator
 import starling.browser.osgi.BrowserBromptonActivator
 import starling.singleclasspathmanager.{JettyBromptonActivator, SingleClasspathManager}
 import java.net.{ConnectException, Socket, URL}
+import starling.gui.osgi.{GuiLaunchParameters, GuiBromptonActivator}
 
 //Starts the gui without osgi
 object Launcher {
@@ -54,9 +54,10 @@ object Launcher {
     this.rmiPort = rmiPort
     this.servicePrincipalName = servicePrincipalName
 
-    val props = Map("serverRmiHost" -> rmiHost, "serverRmiPort" -> rmiPort.toString, "principalName" -> servicePrincipalName, "overriddenUser" -> overriddenUser.getOrElse("NoUser"))
+    val launchParameters = GuiLaunchParameters(rmiHost, rmiPort, servicePrincipalName, overriddenUser)
+
     val activators = List(classOf[JettyBromptonActivator], classOf[GuiBromptonActivator], classOf[BrowserBromptonActivator])
-    val single = new SingleClasspathManager(props, true, activators)
+    val single = new SingleClasspathManager(true, activators, List( (classOf[GuiLaunchParameters], launchParameters) ) )
     single.start()
   }
 }

@@ -6,8 +6,6 @@ import starling.utils.cache.CacheFactory
 
 /**
  * Caches the result of all method calls unless they have the annotation @DoNotCache
- *
- * @documented
  */
 object ThreadSafeCachingProxy{
   case class MethodInvocation(klass:String, method:String, args:List[Any])

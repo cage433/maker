@@ -80,10 +80,10 @@ class TitanEventHandler(rabbitEventServices : TitanRabbitEventServices,
             val (snapshotIDString, env) = getSnapshotAndEnv
             val changedIDs = tradeIds.filter{
               id =>
-                val originalValue = valuationServices.valueTradeQuotas(id, env, snapshotIDString)
+                val originalValue = valuationServices.valueSingleTradeQuotas(id, env, snapshotIDString)
                 titanTradeCache.removeTrade(TitanId(id))
                 titanTradeCache.addTrade(TitanId(id))
-                val currentValue = valuationServices.valueTradeQuotas(id, env, snapshotIDString)
+                val currentValue = valuationServices.valueSingleTradeQuotas(id, env, snapshotIDString)
                 originalValue != currentValue
             }
             if (changedIDs != Nil)
@@ -107,7 +107,7 @@ class TitanEventHandler(rabbitEventServices : TitanRabbitEventServices,
         if (completed) {
           val (snapshotIDString, env) = getSnapshotAndEnv
           val valuationResults : List[(String, Boolean)] = tradeIds.map{
-            id => valuationServices.valueTradeQuotas(id, env, snapshotIDString) match {
+            id => valuationServices.valueSingleTradeQuotas(id, env, snapshotIDString) match {
               case (_, Right(_)) => (id, true)
               case (_, Left(_)) => (id, false)
             }
@@ -212,8 +212,8 @@ class TitanEventHandler(rabbitEventServices : TitanRabbitEventServices,
               val previousEnv = environmentProvider.environment(previousSnapshotId)
               val newEnv = environmentProvider.environment(newSnapshotId)
               val tradeIds = titanTradeCache.getAllTrades().map{trade => trade.titanId.value}.toList
-              val originalTradeValuations = tradeIds.map{id => id -> valuationServices.valueTradeQuotas(id, previousEnv, previousSnapshotId)._2}.toMap
-              val newTradeValuations = tradeIds.map{id => id -> valuationServices.valueTradeQuotas(id, newEnv, newSnapshotId)._2}.toMap
+              val originalTradeValuations = tradeIds.map{id => id -> valuationServices.valueSingleTradeQuotas(id, previousEnv, previousSnapshotId)._2}.toMap
+              val newTradeValuations = tradeIds.map{id => id -> valuationServices.valueSingleTradeQuotas(id, newEnv, newSnapshotId)._2}.toMap
               val changedTradeIDs = tradeIds.filter(id => newTradeValuations(id) != originalTradeValuations(id))
 
               log.info("Trades revalued for new snapshot %s, number of changed valuations %d".format(newSnapshotId, changedTradeIDs.size))

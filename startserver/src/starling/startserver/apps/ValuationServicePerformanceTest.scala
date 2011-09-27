@@ -55,9 +55,8 @@ object ValuationServicePerformanceTest extends App {
     }
 
     BouncyRMIServiceApi().using { valuationServiceRMI : ValuationServiceApi =>
-      val directQuotaResults = run("Quota (direct)", () => vs.valueAllQuotas())
-      val rmiQuotaResults = run("Quota (rmi)", () => valuationServiceRMI.valueAllQuotas())
-
+      val directQuotaResults = run("Quota (direct)", () => vs.valueAllTradeQuotas())
+      val rmiQuotaResults = run("Quota (rmi)", () => valuationServiceRMI.valueAllTradeQuotas())
       val directInventoryResults = run("Inventory (direct)", () => vs.valueAllInventory())
       val rmiInventoryResults = run("Inventory (rmi)", () => valuationServiceRMI.valueAllInventory())
 
@@ -66,21 +65,20 @@ object ValuationServicePerformanceTest extends App {
 
       def printHeaders() = w.println("Run number, time (ms), total record count, successfully valued record count\n")
 
-      w.println("\nDirect quota results (average time = %dms)".format(average(rmiInventoryResults.map(_._2).toList)))
-      printHeaders()
-      w.println(directQuotaResults.map(r => List(r._1, r._2, r._3.tradeResults.values.size, r._3.tradeResults.values.partition(_.isRight)._1.size).mkString(", ")).mkString("\n"))
-
       w.println("\nRMI quota results (average time = %dms)".format(average(rmiInventoryResults.map(_._2).toList)))
       printHeaders()
-      w.println(rmiQuotaResults.map(r => List(r._1, r._2, r._3.tradeResults.values.size, r._3.tradeResults.values.partition(_.isRight)._1.size).mkString(", ")).mkString("\n"))
-
-      w.println("\nDirect inventory results (average time = %dms)".format(average(rmiInventoryResults.map(_._2).toList)))
+      w.println(rmiQuotaResults.map(r => List(r._1, r._2, r._3.valuationResults.values.size, r._3.valuationResults.values.partition(_.isRight)._1.size).mkString(", ")).mkString("\n"))
+      w.println("\nDirect quota results (average time = %dms)".format(average(directQuotaResults.map(_._2).toList)))
       printHeaders()
-      w.println(directInventoryResults.map(r => List(r._1, r._2, r._3.assignmentValuationResults.values.size, r._3.assignmentValuationResults.values.partition(_.isRight)._1.size).mkString(", ")).mkString("\n"))
+      w.println(directQuotaResults.map(r => List(r._1, r._2, r._3.valuationResults.values.size, r._3.valuationResults.values.partition(_.isRight)._1.size).mkString(", ")).mkString("\n"))
 
       w.println("\nRMI inventory results (average time = %dms)".format(average(rmiInventoryResults.map(_._2).toList)))
       printHeaders()
-      w.println(rmiInventoryResults.map(r => List(r._1, r._2, r._3.assignmentValuationResults.values.size, r._3.assignmentValuationResults.values.partition(_.isRight)._1.size).mkString(", ")).mkString("\n"))
+      w.println(rmiQuotaResults.map(r => List(r._1, r._2, r._3.valuationResults.values.size, r._3.valuationResults.values.partition(_.isRight)._1.size).mkString(", ")).mkString("\n"))
+      w.println("\nDirect inventory results (average time = %dms)".format(average(directInventoryResults.map(_._2).toList)))
+      printHeaders()
+      w.println(directInventoryResults.map(r => List(r._1, r._2, r._3.assignmentValuationResults.values.size, r._3.assignmentValuationResults.values.partition(_.isRight)._1.size).mkString(", ")).mkString("\n"))
+
       w.flush
       w.close
     }

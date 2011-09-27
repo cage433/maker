@@ -6,11 +6,6 @@ import starling.utils.StarlingEnum
 import starling.utils.ImplicitConversions._
 import starling.daterange.{Day, ObservationTimeOfDay}
 
-/**
- * DeliveryType defines a contract for a Starling delivery type wrapping only its name.
- *
- * @documented
- */
 trait DeliveryType {
   val name: String
   override def toString = name
@@ -22,24 +17,13 @@ case object MonthlyDelivery extends DeliveryType {
   val name = "Monthly Delivery"
 }
 
-/**
- * FuturesExchange wraps a future exchange's name, delivery type (e.g. monthly or daily), its close time and fixing
- * level.  Each instance also wraps lists of the futures and commodity markets for its value.
- * 
- * @see DeliveryType
- * @see ObservationTimeOfDay
- * @see Level
- * @documented
- */
 case class FuturesExchange(name: String, deliveryType: DeliveryType, closeTime:ObservationTimeOfDay, fixingLevel : Level = Level.Close) {
   lazy val markets = Market.futuresMarkets.filter(_.exchange == this)
   lazy val marketsByCommodityName = markets.toMapWithKeys(_.commodity.name.toLowerCase)
 }
 
 /**
- * Neptune uses contracts on COMEX and LME to price its trades.
- *
- * @documented
+ * Neptune uses contracts on COMEX and LME to price its trades
  */
 trait NeptunePricingExchange extends FuturesExchange{
   def inferMarketFromCommodityName(neptuneCommodityName : String) : FuturesMarket
@@ -56,15 +40,6 @@ object NeptunePricingExchange{
   }
 }
 
-/**
- * FuturesExchangeFactory is an enumeration of FuturesExchange-s with look-up by a defined, case sensitive name.  Two
- * instances, LME and COMEX, provide further helpers to infer associated NeptunePricingExchange values, e.g.
- * the market for a Neptune commodity name at the LME or COMEX exchange.
- *
- * @see FuturesExchange
- * @see NeptunePricingExchange
- * @documented
- */
 object FuturesExchangeFactory extends StarlingEnum(classOf[FuturesExchange], (f: FuturesExchange) => f.name, otherTypes = List(classOf[NeptunePricingExchange])) {
   val LME = new FuturesExchange("LME", DailyDelivery, LME_Official) with NeptunePricingExchange{
     def inferMarketFromCommodityName(neptuneCommodityName: String) = neptuneCommodityName match {

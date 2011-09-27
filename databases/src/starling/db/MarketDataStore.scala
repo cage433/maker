@@ -70,15 +70,6 @@ case class MarketDataSet(name: String, priority: Int) {
   def isExcel = name.startsWith(MarketDataSet.excelPrefix)
 }
 
-/**
- * The partially dynamic Starling MarketDataSet (MDS) enumeration.  Apart from the defined values (e.g. LIM, System,
- * Crude) further dynamic ones may also be created to denote market data that has been imported from Excel.  Look-ups
- * are case sensitive based on the MDS's name.  An Excel one takes the original MDS's name with the #excelPrefix.  A
- * special case is the "Official:Metlals" name, which takes the ManualMetals prefix. Each MDS has an ID, all Excel ones
- * use the Integer#MAX_VALUE.  
- *
- * @documented
- */
 object MarketDataSet extends StarlingEnum(classOf[MarketDataSet], (m: MarketDataSet) => m.name) {
   val excelPrefix = "Excel:"
 
@@ -157,11 +148,7 @@ object MarketDataStore {
 /**
  * Wraps a data type to provide version information.
  */
-/**
- * MarketDataStore defines a contract to provide versioned market data from the database.
- *
- * @documented
- */
+
 trait MarketDataStore {
   val pricingGroupsDefinitions = MarketDataStore.pricingGroupsDefinitions
   val pricingGroups = MarketDataStore.pricingGroups

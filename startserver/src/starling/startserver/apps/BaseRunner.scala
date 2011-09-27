@@ -15,7 +15,7 @@ trait Lookup {
 object BaseRunner {
 
   private def runWith(activators:List[Class[_ <: BromptonActivator]])(f:(Lookup)=>Unit) {
-    val single = new SingleClasspathManager(starling.manager.Props.readDefault, false, activators)
+    val single = new SingleClasspathManager(false, activators)
     single.start
     val lookup = new Lookup {
       def apply[T](klass: Class[T]) = single.service(klass)

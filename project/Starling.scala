@@ -272,11 +272,22 @@ object StarlingBuild extends Build{
     settings = standardSettings 
   ) dependsOn(curves % "test->test", pivot , guiapi , concurrent , auth , starlingApi, dbx, props)
 
-  lazy val titan = Project(
-    "titan", 
-    file("./titan"),
-    settings = standardSettings 
-  ) dependsOn(curves % "test->test", titanModel, databases)
+  lazy val titan = if (useTitanModelBinaries){
+		Project(
+				"titan", 
+				file("./titan"),
+					settings = standardSettings ++ 
+						Seq(unmanagedJars in Compile <++= (baseDirectory) map titanBinaryJars) ++ 
+						Seq(unmanagedJars in Runtime <++= (baseDirectory) map titanBinaryJars) ++ 
+						Seq(unmanagedJars in Test <++= (baseDirectory) map titanBinaryJars)
+			) dependsOn(curves % "test->test", databases)
+	} else {
+		Project(
+				"titan", 
+				file("./titan"),
+				settings = standardSettings 
+			) dependsOn(curves % "test->test", titanModel, databases)
+	}
 
   def titanBinaryJars(base : File) : Seq[Attributed[File]] = (((base / "../lib/titan-model-jars") ** "*.jar")).getFiles.map{f : File => Attributed.blank(f)}
 

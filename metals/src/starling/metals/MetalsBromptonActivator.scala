@@ -34,16 +34,8 @@ import starling.rmi.{RabbitEventDatabase, DefaultRabbitEventDatabase}
 import starling.utils.{Receiver, Broadcaster, ObservingBroadcaster, CompositeBroadcaster}
 import swing.event.Event
 
-class MetalsProps
 
 class MetalsBromptonActivator extends BromptonActivator {
-  type Props = MetalsProps
-
-  def defaults = new MetalsProps
-
-  def init(context: BromptonContext, props: MetalsProps) {
-
-  }
 
   def start(context: BromptonContext) {
 

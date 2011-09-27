@@ -22,11 +22,6 @@ object Broadcaster {
   val Null = new Broadcaster() { def broadcast(event: Event) {} }
 }
 
-/**
- * ReceiversBroadcaster provides an implementation to allow the broadcast of an Event to a key-managed map of Receivers.
- * 
- * @documented
- */
 class ReceiversBroadcaster extends Broadcaster {
   val receivers = new java.util.concurrent.ConcurrentHashMap[AnyRef,Receiver]()
   def addReceiver(ref:AnyRef, receiver:Receiver) {
@@ -66,3 +61,4 @@ case class ObservingBroadcaster(broadcaster: Broadcaster) extends Broadcaster {
     broadcaster.broadcast(event)
   }
 }
+

@@ -34,9 +34,6 @@ class OilAndMetalsVARLimMarketDataSource(limServer: LIMServer) extends MarketDat
       val pubMarkets = publishedIndexes.map(index => (index.market, index.level)).groupInto(_._1, _._2)
 
       pubMarkets.flatMap { case (market, levels) => {
-        if (market.name == "Gas Oil 0.2 CIF NWE Cargoes") {
-          println("odd market")
-        }
         val pricesByObservationDay: Map[Day, Traversable[(Level, Double)]] = levels.flatMap { level => {
           val spotData: Map[Day, Double] = try {
             limServer.getSpotData(market.limSymbol.get, level, day - daysInThePast, day)

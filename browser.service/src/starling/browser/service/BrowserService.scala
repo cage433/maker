@@ -7,14 +7,8 @@ case class UserSettingsLabel(userSettings:List[UserSettingsEntry])
 case class BookmarkLabel(name:String, bundleName:String, bookmark:String)
 case class PageLogInfo(text:String,shortText:String,pageString:String, time:java.util.Date)
 case class UserLoggedIn(user:String) extends StarlingEvent
-case class UserDetails(username:String, fullName:String)
+case class UserDetails(username:String, fullName:String, realUsername:Option[String]=None)
 
-/**
- * BrowserService provides a contract giving read access to a user's details, and read/write access to a user's
- * settings and bookmarks.
- *
- * @documented
- */
 trait BrowserService {
   def name:String
   @DoNotCache def userDetails:UserDetails

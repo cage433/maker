@@ -4,8 +4,6 @@ import starling.rmi.StarlingServer
 import starling.fc2.api.FC2Service
 import starling.browser.service.BrowserService
 import starling.gui.xstream.GuiStarlingXStream
-import javax.swing.KeyStroke
-import java.awt.event.{InputEvent, KeyEvent}
 import starling.browser.service.internal.HeterogeneousMap
 import starling.browser._
 import starling.gui._
@@ -23,26 +21,16 @@ import starling.reports.ReportService
 import starling.trade.TradeService
 import starling.rabbiteventviewer.api.RabbitEventViewerService
 
-class GuiBromptonProps {
-  def serverRmiHost:String = "localhost"
-  def serverRmiPort:Int = throw new Exception("There is no default server rmi port")
-  def principalName:String = "STARLING-TEST/dave-linux"
-  def overriddenUser:String = "NoUser"
-}
+case class GuiLaunchParameters(serverRmiHost:String, serverRmiPort:Int, principalName:String, runAs:Option[String])
+
 class GuiBromptonActivator extends BromptonActivator {
-  type Props = GuiBromptonProps
-
-  def defaults = new GuiBromptonProps
-
   var client:BouncyRMIClient = _
 
-  def start(context: BromptonContext) { }
-
-  def init(context: BromptonContext, props: GuiBromptonProps) {
-
+  def start(context: BromptonContext) {
+    val guiLaunchParameters = context.awaitService(classOf[GuiLaunchParameters])
     System.setProperty(BouncyRMI.CodeVersionKey, BouncyRMI.CodeVersionUndefined)
-    val overriddenUser = if (props.overriddenUser == "NoUser") None else Some(props.overriddenUser)
-    client = new BouncyRMIClient(props.serverRmiHost, props.serverRmiPort, GuiStart.auth(props.principalName), overriddenUser = overriddenUser)
+    val overriddenUser = guiLaunchParameters.runAs
+    client = new BouncyRMIClient(guiLaunchParameters.serverRmiHost, guiLaunchParameters.serverRmiPort, GuiStart.auth(guiLaunchParameters.principalName), overriddenUser = overriddenUser)
     client.startBlocking
     val starlingServer = client.proxy(classOf[StarlingServer])
     val tradeService = client.proxy(classOf[TradeService])

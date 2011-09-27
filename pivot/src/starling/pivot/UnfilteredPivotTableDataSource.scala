@@ -8,8 +8,6 @@ import collection.immutable.Map
 /**
  * Many pivot table data sources aren't able (or willing) to apply filters to their output or collect the distinct
  * values of those fields. In that case they should derive from this class, which will handle that for them.
- *
- * @documented
  */
 abstract class UnfilteredPivotTableDataSource extends PivotTableDataSource {
 
@@ -81,10 +79,12 @@ object UnfilteredPivotTableDataSource {
       }
     }
 
-    val filteredData = if (pfs.filters.isEmpty) data else data.filter {
+    val filteredData = if (pfs.filters.isEmpty) data
+    else data.filter {
       row => {
-        possibleValueFieldList.filters.exists { filters => {
-          filters.forall{ case(field,selection) => {
+        // This used to be possibleValueFieldList.fitlers.exists( ... but this means there are sometimes many blank rows when for example looking at one market in the market data viewer)
+        pfs.filters.forall {
+          case (field, selection) => {
             fieldDetailsMap.get(field) match {
               case Some(fieldDetails) => {
                 val rowValue = fieldDetails.transformValueForGroupByField(PivotValue.extractValue(row, field))
@@ -92,8 +92,8 @@ object UnfilteredPivotTableDataSource {
               }
               case None => true
             }
-          } }
-        } }
+          }
+        }
       }
     }
     PivotResult(filteredData, possibleValuesBuilder.build)

@@ -97,7 +97,13 @@ class PriceLimSource(relations: LIMRelation*) extends LimSource(List(Close)) {
 
   def marketDataEntriesFrom(allPrices: List[Prices[LimPrice]]) = allPrices.groupBy(group _)
     .map { case ((market, observationPeriod), prices) => MarketDataEntry(observationPeriod, PriceDataKey(market),
-        PriceData.create(prices.map(price => price.relation.period → price.priceFor(Close)), market.priceUOM))
+        PriceData.create(prices.map(price => {
+          val limMultiplier = market.limSymbol match {
+            case Some(ls) => ls.multiplier
+            case None => 1.0
+          }
+          price.relation.period → (price.priceFor(Close) * limMultiplier)
+        }), market.priceUOM))
     }
 
   private def group(prices: Prices[LimPrice]) =
@@ -120,9 +126,13 @@ class MonthlyFuturesFixings(parentNodes: List[LimNode], levels: List[Level]) ext
 
   def marketDataEntriesFrom(fixings: List[Prices[MonthlyFuturesRelation]]) = {
     fixings.groupBy(group).map { case ((market, observationPoint), prices) => {
-      val data = prices.flatMap { price => price.priceByLevel.map { case (level, priceAtLevel) =>
-        (level, StoredFixingPeriod.dateRange(price.relation.month)) → MarketValue.quantity(priceAtLevel, market.priceUOM)
-      } }
+      val data = prices.flatMap { price => price.priceByLevel.map { case (level, priceAtLevel) => {
+        val limMultiplier = market.limSymbol match {
+          case Some(ls) => ls.multiplier
+          case None => 1.0
+        }
+        (level, StoredFixingPeriod.dateRange(price.relation.month)) → MarketValue.quantity(priceAtLevel * limMultiplier, market.priceUOM)
+      } } }
 
       MarketDataEntry(observationPoint, PriceFixingsHistoryDataKey(market), PriceFixingsHistoryData.create(data))
     } }

@@ -3,17 +3,7 @@ package starling.singleclasspathmanager
 import starling.manager._
 import starling.osgimanager.utils.ThreadSafeCachingProxy
 
-/**
- * SingleClasspathManager provides the means to create new instances of, then start, a number of BromptonActivator-s.
- * It creates a private, custom BromptonContext with which each activator's services may be registered.  This context
- * uses the ThreadSafeCachingProxy to create a proxy that may cache method invokation values.
- *
- * @see ThreadSafeCachingProxy
- * @diagram dev/services/starling/docs/Server Activation.png
- * @documented
- */
-class SingleClasspathManager(properties:Map[String,String], cacheServices:Boolean, activators:List[Class[_ <: BromptonActivator]]) {
-  val props = new Props(properties)
+class SingleClasspathManager(cacheServices:Boolean, activators:List[Class[_ <: BromptonActivator]], initialServices:List[(Class[_],AnyRef)]=Nil) {
   case class ServiceEntry(klass:Class[_], service:AnyRef, properties:List[ServiceProperty], reference:BromptonServiceReference) {
     private val propertiesSet = properties.toSet
     def hasProperties(predicate:List[ServiceProperty]) = predicate.forall(p=>propertiesSet.contains(p))
@@ -40,34 +30,38 @@ class SingleClasspathManager(properties:Map[String,String], cacheServices:Boolea
     }
   }
 
+  private def register(klass:Class[_], service:AnyRef, properties:List[ServiceProperty]) {
+    if (!klass.isAssignableFrom(service.asInstanceOf[AnyRef].getClass)) throw new Exception(service + " is not a " + klass)
+    val ref = { id+=1; BromptonServiceReference(id + ":" + klass, List(klass.getName)) }
+    val entry = ServiceEntry(klass, service.asInstanceOf[AnyRef], properties, ref)
+    registry.append( entry )
+    trackers.toList.foreach{ tracker => {
+      tracker.applyTo(List(entry))
+    }}
+  }
+
   var id = 0
   private var started = false
   private val instances = activators.map(_.newInstance)
   private val registry = new scala.collection.mutable.ArrayBuffer[ServiceEntry]()
   private val trackers = new scala.collection.mutable.ArrayBuffer[TrackerEntry[_]]()
+
+  initialServices.foreach { case (klass,instance) => register(klass, instance, Nil)}
+
   private val context = new BromptonContext() {
     def registerService[T](
       klass:Class[T],
       service:T,
       properties:List[ServiceProperty]=List()) = {
-      if (!klass.isAssignableFrom(service.asInstanceOf[AnyRef].getClass)) throw new Exception(service + " is not a " + klass)
-      val ref = { id+=1; BromptonServiceReference(id + ":" + klass, List(klass.getName)) }
       val cachingService = if (cacheServices) ThreadSafeCachingProxy.createProxy(klass, service) else service
-      val entry = ServiceEntry(klass, cachingService.asInstanceOf[AnyRef], properties, ref)
-      registry.append( entry )
-
-      trackers.toList.foreach{ tracker => {
-        tracker.applyTo(List(entry))
-      }}
+      register(klass, cachingService.asInstanceOf[AnyRef], properties)
       new BromptonServiceRegistration() {
         def unregister() { throw new Exception("Unsupported") }
       }
     }
-
     def awaitService[T](klass:Class[T]):T = {
       service(klass)
     }
-
     def createServiceTracker[T](klass:Option[Class[T]], properties:List[ServiceProperty], callback:BromptonServiceCallback[T]) = {
       val trackerEntry = TrackerEntry(klass, properties, callback)
       trackerEntry.applyTo(registry.toList)
@@ -80,14 +74,7 @@ class SingleClasspathManager(properties:Map[String,String], cacheServices:Boolea
     }
   }
 
-  /**
-   * Starts then initialises each instance of this manager's activator types with a specialised BromptonContext.  The
-   * context uses a ThreadSafeCachingProxy.  When each activator has been started and initialised this instance informs
-   * its properties instance by invoking its Props#completed method.
-   *
-   * @throws Exception if this instance is already started.
-   * @see ThreadSafeCachingProxy
-   */
+
   def start() {
     this synchronized {
       if (started) throw new Exception("Already started")
@@ -95,17 +82,9 @@ class SingleClasspathManager(properties:Map[String,String], cacheServices:Boolea
       val classLoader = classOf[SingleClasspathManager].getClassLoader
       instances.foreach { activator => {
         activator.start(context)
-        activator.init(context, props.applyOverrides(classLoader, activator.defaults))
       } }
-      props.completed()
     }
   }
-
-  /**
-   * Stops this instance and each of its activators.
-   *
-   * @throws Exception if this instance is not started.
-   */
   def stop() {
     this synchronized {
       if (!started) throw new Exception("Not started yet")

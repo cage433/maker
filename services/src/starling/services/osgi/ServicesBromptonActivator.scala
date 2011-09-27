@@ -15,32 +15,10 @@ import starling.calendar.BusinessCalendars
 import starling.rmi.{RabbitEventDatabase, UserSettingsDatabase, BromptonTrackerBasedMarketDataPageIdentifierReaderProviders, StarlingServer}
 import starling.curves.CurveViewer
 
-/**
- * Empty default properties.
- *
- * @documented
- */
-class ServicesProps
-
-/**
- * ServicesBromptonActivator creates a StarlingInit instance, registers its services in its start method then starts
- * it.  The StarlingInit may be stopped at a later time.
- * 
- * @documented
- */
 class ServicesBromptonActivator extends BromptonActivator {
-
-  type Props = ServicesProps
-  def defaults = new ServicesProps
 
   var starlingInit:StarlingInit = _
 
-  /**
-   * Creates then registers with the given context the services from a StarlingInit instance.  This instance is
-   * retained to allow it to be stopped at a later time.
-   *
-   * @param context The service context.
-   */
   def start(context: BromptonContext) {
     val authHandler = context.awaitService(classOf[AuthHandler])
     val osgiBroadcaster = context.awaitService(classOf[Broadcaster])
@@ -62,6 +40,7 @@ class ServicesBromptonActivator extends BromptonActivator {
     context.registerService(classOf[FC2Service], starlingInit.fc2Service,ExportGuiRMIProperty::Nil)
     context.registerService(classOf[BrowserService], starlingInit.browserService,ExportGuiRMIProperty::Nil)
 
+
     context.registerService(classOf[UserSettingsDatabase], starlingInit.userSettingsDatabase)
     context.registerService(classOf[MarketDataStore], starlingInit.marketDataStore)
     context.registerService(classOf[BusinessCalendars], starlingInit.businessCalendars)
@@ -75,10 +54,6 @@ class ServicesBromptonActivator extends BromptonActivator {
     //starlingInit.servlets.foreach { case (name, servlet) => context.registerService(classOf[HttpServlet], servlet, List(HttpContext(name)))}
   }
 
-  /** Does nothing. */
-  def init(context: BromptonContext, props: ServicesProps) { }
-
-  /** Stops this instance's StarlingInit, if it has one. */
   def stop(context: BromptonContext) {
     if (starlingInit != null) {
       starlingInit.stop

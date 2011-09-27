@@ -260,6 +260,7 @@ object PhysicalMetalForward extends Log {
             val deliveryDay = Day.fromLocalDate(detail.deliverySpecs.head.schedule.asInstanceOf[Date].value)
 
             val pricingSpec = EDMPricingSpecConverter(edmMetalByGUID(commodityGUIDs.head), exchangesByID).fromEdmPricingSpec(deliveryDay, deliveryQuantity, detail.pricingSpec)
+            
 
             /**
              * Fetch the associated logistics inventory and associated logistics quota so that we can retrieve the fields relevant to the valuation process
@@ -299,19 +300,6 @@ object PhysicalMetalForward extends Log {
     }
   }
 
-  def value(exchangesByID : Map[String, EDMMarket], edmMetalByGUID : Map[GUID, EDMMetal], env : Environment, snapshotID : String)(trade : EDMPhysicalTrade) : Either[String, List[CostsAndIncomeQuotaValuation]] = {
-    try {
-      val forward = PhysicalMetalForward(exchangesByID, edmMetalByGUID)(trade)
-      Right(forward.costsAndIncomeValueBreakdown(env, snapshotID))
-    }
-    catch {
-      case ex => {
-        Log.warn("Error valuing trade " + getTradeId(trade) + ", message was " + ex.getMessage)
-        Left("Error valuing trade " + getTradeId(trade) + ", message was " + ex.getMessage)
-      }
-    }
-  }
-
   /**
    * value full quota with associated assignments/inventory and adjustments for allocated quantities at the quota level
    */
@@ -334,52 +322,6 @@ object PhysicalMetalForward extends Log {
  * represents a physical metal forward position
  */
 case class PhysicalMetalForward(tradeID : String, quotas : List[PhysicalMetalQuota], isPurchase : Boolean) {
-
-  /**
-   * provide a valiation breakdown at the quota level without taking account of assignments/inventory
-   */
-  def costsAndIncomeValueBreakdown(env: Environment, snapshotID: String): List[CostsAndIncomeQuotaValuation] = {
-    quotas.map {
-      quota =>
-        // todo, at some point the transfer pricing spec should be a real expected transfer spec not a dummy one we made up...
-        val pricingSpec = quota.contractPricingSpec
-        val transferPricingSpec = quota.benchmarkPricingSpec
-
-        val (purchaseSpec, saleSpec) =
-          if (isPurchase)
-            (pricingSpec, transferPricingSpec)
-          else
-            (transferPricingSpec, pricingSpec)
-
-        /**
-         * work out the quota level quantities
-         *   from the direction and rules around allocated quantities and fully allocated status
-         */
-        val (purchaseQuotaQty, salesQuotaQty) = if (!isPurchase) {
-          // this is sale so (purchase = benchmark, sale = contract)
-          if (!quota.fullyAllocated)
-            (quota.quantity, quota.quantity - quota.allocatedAssignmentQuantity)
-          else
-            (quota.quantity, quota.quantity * 0)
-        }
-        else {
-          // this is purchase so (purchase = contract, sale = benchmark)
-          (quota.quantity, quota.quantity - quota.allocatedAssignmentQuantity)
-        }
-
-        CostsAndIncomeQuotaValuation(
-          snapshotID,
-          purchaseValuationDetails = CostsAndIncomeValuation.build(env, purchaseQuotaQty, purchaseSpec),
-          saleValuationDetails = CostsAndIncomeValuation.build(env, salesQuotaQty, saleSpec),
-          benchmarkPremium = Quantity.NULL,
-          freightParity = Quantity.NULL,
-          quotaID = quota.quotaID,
-          quantity = quota.quantity,
-          direction = if (isPurchase) EDMTrade.PURCHASE else EDMTrade.SALE,
-          benchmarkdirection = if (isPurchase) Some(EDMTrade.SALE) else Some(EDMTrade.PURCHASE)
-        )
-    }
-  }
 
   /**
    * value trade quotas with their associated assignment values and adjusted quota portion values

@@ -4,12 +4,6 @@ import starling.utils.Log
 import starling.auth.{User, LdapUserLookup, AuthHandler}
 import java.util.logging.Logger
 
-/**
- * KerbersoAtuhHandler provides an authorization service based on an LDAP user lookup.
- *
- * @see LdapUserLookup
- * @documented
- */
 class KerberosAuthHandler(serverPassword:String, ldap:LdapUserLookup) extends AuthHandler {
 
   val login = new ServerLogin(serverPassword)
@@ -26,14 +20,18 @@ class KerberosAuthHandler(serverPassword:String, ldap:LdapUserLookup) extends Au
     try {
       Server.verify(subject, ticket).flatMap { ticketUsername =>
         val UserName(username) = ticketUsername
-        val realUser = ldap.user(username)
-        sudo match {
-          case None => realUser
-          case Some(oUser) => {
-            //Logger.info("Server: Overriding User to " + oUser)
-            ldap.user(oUser) match {
-              case None => throw new Exception("Server: Couldn't override user to " + oUser + " as it was not found in ldap")
-              case Some(u) => Some(u)
+
+        ldap.user(username) match {
+          case None => None
+          case Some(realUser) => {
+            sudo match {
+              case None => Some(realUser)
+              case Some(sudoUsername) => {
+                ldap.user(sudoUsername) match {
+                  case None => throw new Exception("Server: Couldn't override user to " + sudoUsername + " as it was not found in ldap")
+                  case Some(user) => Some(user.copy(realUsername=Some(realUser.username)))
+                }
+              }
             }
           }
         }

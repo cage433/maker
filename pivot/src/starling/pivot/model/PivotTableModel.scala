@@ -102,7 +102,8 @@ object AxisValue {
 }
 
 /**
- * This represents the underlying pivot table model and contains the representation rendered by the views.
+ * This represents the underlying pivot table model
+ * and contains the representation rendered by the views
  */
 class PivotTableModel(data:PivotData) {
   private val fieldState = data.pivotFieldsState
@@ -313,25 +314,7 @@ case class CombinedDataFieldTotal(fieldDetails:FieldDetails, override val aggreg
   }
 }
 
-/**
- * PivotTableModel is a singleton implementation providing factory methods for PivotData and PivotTable-s with various
- * other helper methods for associated functions.
- *
- * @documented
- */
 object PivotTableModel {
-  /**
-   * Returns the given pivot field states unless its report specific choices are empty and the given report specific
-   * options contain entries, when a new field fields state instance is created using the given one's copy method with
-   * the given report speicific choices.
-   *
-   * (No side affects on given parameters.)
-   *
-   * @param fs The pivot field state whose report specific options may be set, if they are not already.
-   * @param reportSpecificOptions The default choices to set, if not empty.
-   * @return The report specific options.
-   * @see PivotFieldsState#copy
-   */
   def setDefaultReportSpecificChoices(reportSpecificOptions:List[(String,List[Any])], fs:PivotFieldsState) = {
     if (fs.reportSpecificChoices.isEmpty && reportSpecificOptions.nonEmpty) {
       // I need to set the default report specific choices so that layouts are consistent.
@@ -347,13 +330,6 @@ object PivotTableModel {
     }
   }
 
-  /**
-   * Creates a new PivotData instance from the given parameters.
-   *
-   * @param dataSource The pivot table data source.
-   * @param pivotFieldParams The field parameters.
-   * @return The new pivot data instance.
-   */
   def createPivotData(dataSource:PivotTableDataSource, pivotFieldParams:PivotFieldParams):PivotData = {
 //    dataSource.fieldDetailsGroups.flatMap(_.fields.map(_.field.name)).update { fieldNames =>
 //      require(!fieldNames.containsDuplicates, "DataSource: " + dataSource.getClass + " contains duplicate fields: " + fieldNames.sortWith(_ < _))

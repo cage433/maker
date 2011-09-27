@@ -9,7 +9,15 @@ import starling.utils.CaseInsensitive._
 import starling.utils.ImplicitConversions._
 import starling.utils.{ClosureUtil, CaseInsensitive, Log}
 
-case class User(username: String, name: String="", manager: Option[String]=None, groups: List[CaseInsensitive]=List(), phoneNumber:String="", email:String="", department:String="") {
+case class User(
+                 username: String,
+                 name: String="",
+                 realUsername:Option[String]=None, //when using 'Run As'
+                 manager: Option[String]=None,
+                 groups: List[CaseInsensitive]=List(),
+                 phoneNumber:String="",
+                 email:String="",
+                 department:String="") {
   override def toString = username
 
   override def equals(obj: Any) = obj match {
@@ -27,9 +35,9 @@ case class User(username: String, name: String="", manager: Option[String]=None,
 
 object User {
   // Dev user for use during development
-  val Dev = User("Dev", "Dev name", None, List("Starling Developers"), "+44 888 8888", "dev@trafigura.com", "IT Risk Systems")
+  val Dev = User("Dev", "Dev name", None, None, List("Starling Developers"), "+44 888 8888", "dev@trafigura.com", "IT Risk Systems")
   // Test user for automated tests
-  val Test = User("Nobody", "Nobody", None, List(), "None", "None@trafigura.com", "None")
+  val Test = User("Nobody", "Nobody", None, None, List(), "None", "None@trafigura.com", "None")
 
   /**
    * The user who is currently logged on.

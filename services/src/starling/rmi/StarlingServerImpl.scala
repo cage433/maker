@@ -16,13 +16,6 @@ import starling.dbx.{FalseClause, From, RealTable}
 import starling.dbx.QueryBuilder._
 import starling.browser.service.Version
 
-/**
- * StarlingServerImpl provides a named and versioned implementation of the StarlingServer with Logging.
- * 
- * It delegates its messages to the various helpers it wraps.  
- *
- * @documented
- */
 class StarlingServerImpl(
         val name:String,
         userSettingsDatabase:UserSettingsDatabase,
@@ -32,7 +25,6 @@ class StarlingServerImpl(
       ) extends StarlingServer with Log {
 
   def referenceDataTables() = referenceData.referenceDataTables()
-  /** @return The reference data tables' names. */
   def referencePivot(table: ReferenceDataLabel, pivotFieldParams: PivotFieldParams) = referenceData.referencePivot(table, pivotFieldParams)
   def ukBusinessCalendar = ukHolidayCalendar
   def whoAmI = User.currentlyLoggedOn
@@ -108,6 +100,7 @@ class StarlingServerImpl(
   }
 
   def version = versionInfo
+
 
   def storeSystemInfo(info:OSInfo) {userSettingsDatabase.storeSystemInfo(User.currentlyLoggedOn, info)}
 
