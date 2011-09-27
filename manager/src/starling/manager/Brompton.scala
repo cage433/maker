@@ -5,8 +5,10 @@ import java.lang.reflect.Method
 import java.io.{File, FileInputStream}
 import java.util.{Dictionary, Properties}
 
-
-// TODO [DM][2011-09-27] unused?
+/**
+ * Unused at the time of documenting.  9TBA, but possibly named after a type of folding bicycle?!)
+ * @documented
+ */
 class Brompton
 
 /**
