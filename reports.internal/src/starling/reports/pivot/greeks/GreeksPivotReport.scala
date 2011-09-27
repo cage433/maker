@@ -150,7 +150,7 @@ class GreeksPivotReport(@transient environment : Environment, thetaDayAndTime : 
 
   override def reportSpecificOptions : ReportSpecificOptions = {
     super.reportSpecificOptions :+ 
-      (positionType_str -> List(default_str, barrel_str, cubic_metre_str, tonne_str, usd_str)) :+
+      (positionType_str -> List(default_str, barrel_str, tonne_str, usd_str)) :+
       (price_unit_str -> List(position_str, quoted_str)) :+
       (lots_str -> List(false, true)) :+
       (atmVega_str -> List(false, true))

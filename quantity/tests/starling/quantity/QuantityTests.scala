@@ -91,6 +91,7 @@ import starling.quantity.RichQuantity._
     assertEquals(10 (GBP) in USD, None)
     assertEquals(1 (MT) in USD, None)
     assertEquals(1 (MT) in GAL, None)
+    assertEquals(1 (BBL) in M3, None)
 
     // check that conversions via third units also work
     assertEquals(1 (M3) in KL, Some(1 (KL)))

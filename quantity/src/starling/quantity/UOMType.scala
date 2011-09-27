@@ -13,6 +13,7 @@ object UOMType {
 
   val MASS = create()
   val VOLUME = create()
+  val OIL_VOLUME = create() // can't convert oil volumes to other volumes: http://en.wikipedia.org/wiki/Oil_barrel#Conversion_to_metric_units
   val TIME = create()
   val HEAT_ENERGY = create()
 
