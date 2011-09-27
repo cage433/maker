@@ -4,13 +4,7 @@ import starling.manager._
 import starling.osgimanager.utils.ThreadSafeCachingProxy
 
 /**
- * SingleClasspathManager provides the means to create new instances of, then start, a number of BromptonActivator-s.
- * It creates a private, custom BromptonContext with which each activator's services may be registered.  This context
- * uses the ThreadSafeCachingProxy to create a proxy that may cache method invokation values.
- *
- * @see ThreadSafeCachingProxy
- * @diagram dev/services/starling/docs/Server Activation.png
- * @documented
+ * SingleClasspathManager provides the means to create new instances of then start a number of BromptonActivator-s.
  */
 class SingleClasspathManager(properties:Map[String,String], cacheServices:Boolean, activators:List[Class[_ <: BromptonActivator]]) {
   val props = new Props(properties)
@@ -63,11 +57,9 @@ class SingleClasspathManager(properties:Map[String,String], cacheServices:Boolea
         def unregister() { throw new Exception("Unsupported") }
       }
     }
-
     def awaitService[T](klass:Class[T]):T = {
       service(klass)
     }
-
     def createServiceTracker[T](klass:Option[Class[T]], properties:List[ServiceProperty], callback:BromptonServiceCallback[T]) = {
       val trackerEntry = TrackerEntry(klass, properties, callback)
       trackerEntry.applyTo(registry.toList)
@@ -80,14 +72,6 @@ class SingleClasspathManager(properties:Map[String,String], cacheServices:Boolea
     }
   }
 
-  /**
-   * Starts then initialises each instance of this manager's activator types with a specialised BromptonContext.  The
-   * context uses a ThreadSafeCachingProxy.  When each activator has been started and initialised this instance informs
-   * its properties instance by invoking its Props#completed method.
-   *
-   * @throws Exception if this instance is already started.
-   * @see ThreadSafeCachingProxy
-   */
   def start() {
     this synchronized {
       if (started) throw new Exception("Already started")
@@ -100,12 +84,6 @@ class SingleClasspathManager(properties:Map[String,String], cacheServices:Boolea
       props.completed()
     }
   }
-
-  /**
-   * Stops this instance and each of its activators.
-   *
-   * @throws Exception if this instance is not started.
-   */
   def stop() {
     this synchronized {
       if (!started) throw new Exception("Not started yet")

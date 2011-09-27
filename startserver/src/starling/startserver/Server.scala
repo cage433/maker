@@ -20,7 +20,6 @@ import starling.metals.MetalsBromptonActivator
  * (using its main(..) method) or programmatically by invoking its run() method.
  * 
  * @see run
- * @diagram dev/services/starling/docs/Server Activation.png
  * @documented
  */
 object Server {
