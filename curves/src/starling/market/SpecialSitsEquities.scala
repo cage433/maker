@@ -1,13 +1,13 @@
 package starling.market
 
 import starling.daterange.{DayAndTime, Day}
-import starling.marketdata.{MarketDataKey, MarketData, MarketDataType}
 import starling.pivot._
 import starling.quantity.{Quantity, UOM}
 import collection.SortedMap
 import starling.curves._
 import collection.immutable.TreeMap
 import starling.daterange.TenorType
+import starling.marketdata.{ReferenceDataLookup, MarketDataKey, MarketData, MarketDataType}
 
 /**
  */
@@ -62,15 +62,21 @@ object EquityPricesDataType extends MarketDataType {
   val priceField = new AveragePivotQuantityFieldDetails("Price")
   val fields = List(ricField, priceField)
   val keys = List(EquityPricesMarketDataKey)
-  def marketDataKeyFelds = Set(ricField.field)
+  def marketDataKeyFields = Set(ricField.field)
   def keyFields = Set(ricField.field)
-  def valueFields = Set(priceField.field)
-  def createKey(values: Map[Field, Any]) = EquityPricesMarketDataKey
-  def createValue(values: List[Map[Field, Any]]) = EquityPrices(TreeMap.empty[RIC,Quantity](RIC.ordering) ++ values.map{m =>
-    RIC(m(ricField.field).asInstanceOf[String]) -> m(Field("Price")).asInstanceOf[PivotQuantity].quantityValue.get
-  })
+  def valueFields = List(priceField.field)
+  def createKey(row: Row) = EquityPricesMarketDataKey
+  def createValue(rows: List[Row]) = EquityPrices(rows.map { row =>
+    RIC(row.string(ricField)) → row.pivotQuantity(priceField).quantityValue.get
+  } )
   type dataType = EquityPrices
 }
+
+object EquityPrices {
+  def apply(traversable: Traversable[(RIC, Quantity)]): EquityPrices =
+    EquityPrices(TreeMap.empty[RIC,Quantity](RIC.ordering) ++ traversable)
+}
+
 case class EquityPrices(prices:SortedMap[RIC,Quantity]) extends MarketData {
 
   def apply(ric:RIC) = {
@@ -87,8 +93,8 @@ case object EquityPricesMarketDataKey extends MarketDataKey {
   type marketDataDBType = EquityPrices
   def dataType = EquityPricesDataType
   def subTypeKey = ""
-  override def rows(data : EquityPrices) = data.prices.map {
-    case(ric,price) => Map(
+  override def rows(data : EquityPrices, referenceDataLookup: ReferenceDataLookup) = data.prices.map {
+    case(ric,price) => Row(
       Field("RIC") -> ric.code,
       Field("Price") -> price.pq
     )

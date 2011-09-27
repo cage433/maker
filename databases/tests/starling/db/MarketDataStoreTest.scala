@@ -21,7 +21,7 @@ import starling.props.PropsHelper
 class MarketDataStoreTest extends TestMarketTest with ShouldMatchers {
   import MarketDataStore._
 
-  lazy val marketDataStore = DBMarketDataStore(PropsHelper.defaultProps, db, Map(), Broadcaster.Null)
+  lazy val marketDataStore = DBMarketDataStore(PropsHelper.defaultProps, db, Map())
 
   var db : RichDB = _
   var connection : Connection = _

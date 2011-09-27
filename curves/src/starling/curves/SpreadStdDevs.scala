@@ -1,6 +1,5 @@
 package starling.curves
 
-import starling.marketdata.{MarketDataType, MarketData, MarketDataKey}
 import starling.market.{Market, WTI, FuturesMarket}
 import cern.colt.matrix.DoubleMatrix2D
 import starling.quantity.{UOM, Quantity, Percentage}
@@ -10,6 +9,7 @@ import scala.math._
 import collection.immutable.TreeMap
 import starling.pivot._
 import collection.mutable.HashMap
+import starling.marketdata.{ReferenceDataLookup, MarketDataType, MarketData, MarketDataKey}
 
 class SpreadStdDevs
 
@@ -86,7 +86,7 @@ case class SpreadStdDevSurfaceDataKey(market : FuturesMarket)
   def dataType = SpreadStdDevSurfaceDataType
   def subTypeKey = market.toString
 
-  override def rows(data: SpreadStdDevSurfaceData) = {
+  override def rows(data: SpreadStdDevSurfaceData, referenceDataLookup: ReferenceDataLookup) = {
     val periods = data.periods zipWithIndex
     val dataRows = periods.flatMap {
       case (period, index) => {
@@ -104,7 +104,7 @@ case class SpreadStdDevSurfaceDataKey(market : FuturesMarket)
               }
               case DateRangePeriod(dr: Month) => ("None", dr, dr)
             }
-            Map(
+            Row(
               SpreadStdDevSurfaceDataType.marketField.field -> market.name,
               SpreadStdDevSurfaceDataType.spreadTypeField.field -> gap,
               SpreadStdDevSurfaceDataType.firstPeriodField.field -> first,
@@ -138,16 +138,16 @@ object SpreadStdDevSurfaceDataType extends MarketDataType {
   }
   val stdDevField: FieldDetails = new QuantityLabelFieldDetails("Standard Deviation")
 
-  def marketDataKeyFelds = Set(marketField.field)
+  def marketDataKeyFields = Set(marketField.field)
   override def keyFields = Set(marketField.field, firstPeriodField.field, lastPeriodField.field, periodField.field, deltaField.field, spreadTypeField.field)
-  override def valueFields = Set(stdDevField.field)
-  override def createKey(values: Map[Field, Any]) = SpreadStdDevSurfaceDataKey(Market.futuresMarketFromName(values(marketField.field).asInstanceOf[String]))
-  def createValue(values: List[Map[Field, Any]]) = {
+  override def valueFields = List(stdDevField.field)
+  override def createKey(row: Row) = SpreadStdDevSurfaceDataKey(Market.futuresMarketFromName(row.string(marketField)))
+  def createValue(rows: List[Row]) = {
     val builder = new SpreadStdDevSurfaceDataBuilder()
-    values.foreach { row => {
-      val period = row(periodField.field).asInstanceOf[Period]
-      val stdDev = row(stdDevField.field).asInstanceOf[Quantity]
-      row(deltaField.field) match {
+    rows.foreach { row => {
+      val period = row[Period](periodField)
+      val stdDev = row.quantity(stdDevField)
+      row.string(deltaField) match {
         case "ATM" => builder.addAtm(period, stdDev)
         case "Put" => builder.addPut(period, stdDev)
         case "Call" => builder.addCall(period, stdDev)

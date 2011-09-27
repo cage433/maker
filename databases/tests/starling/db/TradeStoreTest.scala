@@ -27,10 +27,11 @@ import org.testng.annotations.{AfterMethod, BeforeMethod, Test}
 import java.sql.Connection
 import starling.props.PropsHelper
 import starling.gui.api.{Desk, EAIDeskInfo}
+import starling.marketdata.ReferenceDataLookup
+
 
 class EAITradeStoreTest extends TestMarketTest {
-
-  lazy val marketDataStore = DBMarketDataStore(PropsHelper.defaultProps, db, Map(), Broadcaster.Null)
+  lazy val marketDataStore = DBMarketDataStore(PropsHelper.defaultProps, db, Map())
 
   var db : RichDB = _
   var connection : Connection = _

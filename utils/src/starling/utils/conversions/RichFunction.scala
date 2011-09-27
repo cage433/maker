@@ -3,6 +3,7 @@ package starling.utils.conversions
 import scala.util.control.Exception._
 import starling.utils.Stopwatch
 import starling.utils.ImplicitConversions._
+import scalaz.Scalaz._
 
 
 trait RichFunction {
@@ -14,7 +15,7 @@ trait RichFunction {
     def ***[C, D](pf: PartialFunction[C, D]) = enrichPartialFunction(this) *** pf
     def either: A => Either[Throwable, B] = (a: A) => catching(classOf[Exception]) either(f(a))
     def option: A => Option[B] = (a: A) => catching(classOf[Exception]) opt (f(a))
-    def withTime: (A) => (B, Stopwatch) = (a: A) => new Stopwatch().apply(stopwatch => f(a) → stopwatch)
+    def withTime: (A) => (B, Stopwatch) = (a: A) => new Stopwatch() |> { f(a) → _ }
   }
 
   implicit def enrichPredicate[A](p: A => Boolean) = new RichFunction1(p) {
@@ -41,7 +42,6 @@ trait RichFunction {
 
   class RichFunction4[A, B, C, D, R](f: (A, B, C, D) => R) extends (((A, B, C, D)) => R) {
     def apply(t: (A, B, C, D)) = f.tupled(t)
-    def applyLast(d: D): (A, B, C) => R = (a, b, c) => f(a, b, c, d)
   }
 
   implicit def enrichPartialFunction[A, B](pf1: PartialFunction[A, B]) = new {

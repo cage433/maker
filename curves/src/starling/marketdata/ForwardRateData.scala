@@ -11,35 +11,28 @@ object ForwardRateDataType extends MarketDataType {
   type dataType = ForwardRateData
   val keys = UOM.currencies.map(s => ForwardRateDataKey(s))
 
-  def marketDataKeyFelds = Set(currencyField.field)
+  def marketDataKeyFields = Set(currencyField.field)
   override def keyFields:Set[Field] = Set(currencyField.field, formatField.field, dayField.field, instrumentTypeField.field)
-  override def valueFields:Set[Field] = Set(rateField.field, discountField.field)
+  override def valueFields = List(rateField.field)
 
   val currencyField = FieldDetails("Currency")
   val formatField = FieldDetails("Format")
   val instrumentTypeField = FieldDetails("Instrument Type")
   val dayField = FieldDetails("Day")
   val rateField = FieldDetails.createMeasure("Rate")
-  val discountField = FieldDetails.createMeasure("Discount")
 
-
-  def createKey(values: Map[Field, Any]) = ForwardRateDataKey(values(currencyField.field).asInstanceOf[UOM])
-  def createValue(values: List[Map[Field, Any]]) = ForwardRateData(values.map { x => {
-    ForwardRateDataEntry(
-      x(dayField.field).asInstanceOf[Day],
-      x(formatField.field).asInstanceOf[String],
-      x(instrumentTypeField.field).asInstanceOf[String],
-      x.get(rateField.field).map(_.asInstanceOf[Percentage].value).getOrElse(x(discountField.field).asInstanceOf[Double])
-    )
-  }})
+  def createKey(row: Row) = ForwardRateDataKey(row[UOM](currencyField))
+  def createValue(rows: List[Row]) = ForwardRateData(rows.map { row =>
+    ForwardRateDataEntry(row[Day](dayField), row.string(formatField), row.string(instrumentTypeField), row[Percentage](rateField))
+  })
 
   val initialPivotState = PivotFieldsState(
-    dataFields=List(discountField.field),
+    dataFields=List(rateField.field),
     rowFields=List(dayField.field),
     columnFields=List(currencyField.field)
   )
 
-  val fields = List(currencyField, formatField, instrumentTypeField, dayField, rateField, discountField)
+  val fields = List(currencyField, formatField, instrumentTypeField, dayField, rateField)
 }
 
 case class ForwardRateDataEntry(forwardDay : Day, format : String, trinityInstrumentType : String, rate : Double) {
@@ -55,14 +48,10 @@ case class ForwardRateDataKey(ccy : UOM) extends MarketDataKey {
   def dataType = ForwardRateDataType
   def subTypeKey = ccy.toString
 
-  override def rows(data : ForwardRateData) = data.entries.map { entry =>
-    val rateField = if (entry.isDiscount) {
-      ForwardRateDataType.discountField.field -> entry.rate
-    } else {
-      ForwardRateDataType.rateField.field -> Percentage(entry.rate)
-    }
+  override def rows(data : ForwardRateData, referenceDataLookup: ReferenceDataLookup) = data.entries.map { entry =>
+    val rateField = ForwardRateDataType.rateField.field -> Percentage(entry.rate)
 
-    Map(
+    Row(
         ForwardRateDataType.currencyField.field -> ccy,
         ForwardRateDataType.formatField.field -> (if (entry.format== null) "" else entry.format),
         ForwardRateDataType.instrumentTypeField.field -> entry.trinityInstrumentType,

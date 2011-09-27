@@ -17,6 +17,7 @@ import scala.math._
 import starling.utils.cache.{SimpleCache, CacheFactory}
 import stress.CommodityPriceStress
 import starling.quantity._
+import starling.marketdata.{Material, NeptuneCountry}
 
 /**
  * Throw this if a curve object is incapable of providing a value
@@ -70,6 +71,13 @@ case class Environment(
   def this() = this(null)
 
   def atomicEnv = instrumentLevelEnv.atomicEnv
+
+  def benchmark(country: NeptuneCountry, material: Material) = {
+    val areaMaterialBenchmark = instrumentLevelEnv.quantity(AreaMaterialBenchmarkAtomicKey(country.area, material))
+    val commodityCountryBenchmark = instrumentLevelEnv.quantity(CommodityCountryBenchmarkAtomicKey(material.commodity, country))
+
+    areaMaterialBenchmark + commodityCountryBenchmark
+  }
 
   // cache for optimization of greek calculations. Will cache shifted environments, forward state envs and mtms
   // Level of indirection so that InstrumentLevelPerturbedEnvironment can avoid using the same cache as the

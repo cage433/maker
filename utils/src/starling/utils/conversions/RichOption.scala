@@ -1,8 +1,12 @@
 package starling.utils.conversions
 
+import scalaz.Scalaz._
+import starling.utils.ImplicitConversions._
+
 
 trait RichOption {
   implicit def enrichOption[A](option: Option[A]) = new {
+    def either[L, R](l: => L, r: A => R): Either[L, R] = option.fold(a => Right(r(a)), Left(l))
     def optPair[B](b: B): Option[(A, B)] = option.map(_ → b)
     def flatMapL[B](f: A => List[B]): List[B] = option.map(f).getOrElse(Nil)
   }

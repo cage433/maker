@@ -160,7 +160,7 @@ object UOM extends StarlingEnum(classOf[UOM], (u: UOM) => u.toString, ignoreCase
     }
   }
 
-  def parseCurrency(text: String) = {
+  def parseCurrency(text: String): UOM = {
     val u = fromString(text)
     require(u.isCurrency, u + " is not a currency")
     u

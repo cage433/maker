@@ -9,22 +9,16 @@ object SpotFXDataType extends MarketDataType {
   val keys = UOM.currencies.filterNot(_ == UOM.USD).map(s=>SpotFXDataKey(s))
   val currencyField = FieldDetails("Currency")
   val rateField = new PivotQuantityFieldDetails("Rate")
-  override def createKey(values:Map[Field,Any]):MarketDataKey = SpotFXDataKey(UOM.parseCurrency(values(currencyField.field).asInstanceOf[String]))
-  override def createValue(values:List[Map[Field,Any]]):dataType = {
-    values match {
-      case Nil => throw new Exception("Can't create spot fx rate from no rows")
-      case one :: Nil => SpotFXData(one(rateField.field).asInstanceOf[PivotQuantity].quantityValue.get)
-      case _ => throw new Exception("Can't create spot fx rate from more than one row " + values)
-    }
-  }
+  def createKey(row: Row) = SpotFXDataKey(UOM.parseCurrency(row.string(currencyField)))
+  def createValue(rows: List[Row]) = SpotFXData(Row.singleRow(rows, "spot fx rate").pivotQuantity(rateField).quantityValue.get)
 
   val initialPivotState = PivotFieldsState(
     dataFields=List(rateField.field),
     rowFields=List(currencyField.field)
   )
-  def marketDataKeyFelds = Set(currencyField.field)
+  def marketDataKeyFields = Set(currencyField.field)
   def keyFields = Set(currencyField.field)
-  def valueFields = Set(rateField.field)
+  def valueFields = List(rateField.field)
   val fields = List(currencyField, rateField)
 }
 
@@ -36,12 +30,12 @@ case class SpotFXDataKey(ccy: UOM) extends MarketDataKey {
   type marketDataDBType = SpotFXData
   def dataType = SpotFXDataType
   def subTypeKey = ccy.toString
-  override def rows(data : SpotFXData) = List(Map(
-    SpotFXDataType.currencyField.field -> ccy.toString,
-    SpotFXDataType.rateField.field -> PivotQuantity(data.rate)
+  override def rows(data : SpotFXData, referenceDataLookup: ReferenceDataLookup) = List(Row(
+    SpotFXDataType.currencyField.field → ccy.toString,
+    SpotFXDataType.rateField.field → PivotQuantity(data.rate)
    ))
 
-  def fieldValues = Map(SpotFXDataType.currencyField.field -> ccy.toString)
+  def fieldValues = Map(SpotFXDataType.currencyField.field → ccy.toString)
 }
 
 //For Example 0.0125 USD / JPY

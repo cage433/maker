@@ -12,34 +12,6 @@ import starling.utils.ImplicitConversions._
 import starling.utils.Pattern._
 import java.text.DecimalFormat
 
-class QuantityDouble(d : Double){
-  def apply(uom : UOM) = Quantity(d, uom)
-}
-class QuantityInt(n : Int){
-  def apply(uom : UOM) = Quantity(n, uom)
-}
-
-/**
- * This type class allows the Numeric implicit enabled methods to be used, like TraversableOnce
- * product and sum methods.
- */
-trait QuantityIsNumeric extends Numeric[Quantity] {
-  def compare(p1: Quantity, p2: Quantity) = p1 compare p2
-  def toDouble(x: Quantity) = throw new IllegalStateException("Can't convert Quantity to double.")
-  def toFloat(x: Quantity) = throw new IllegalStateException("Can't convert Quantity to float.")
-  def toLong(x: Quantity) = throw new IllegalStateException("Can't convert Quantity to long.")
-  def toInt(x: Quantity) = throw new IllegalStateException("Can't convert Quantity to int.")
-
-  def fromInt(x: Int) = Quantity(x.toDouble, UOM.SCALAR)
-  def negate(x: Quantity) = -x
-  def times(x: Quantity, y: Quantity) = x * y
-  def minus(x: Quantity, y: Quantity) = x - y
-  def plus(x: Quantity, y: Quantity) = x + y
-
-  override def zero = Quantity(0.0, UOM.NULL)
-  override def one = Quantity(1.0, UOM.SCALAR)
-}
-
 object Quantity {
   val Regex = """([0-9.,]*) (.*)""".r
   val mc = java.math.MathContext.DECIMAL128
@@ -126,7 +98,7 @@ class Quantity(val value : Double, val uom : UOM) extends Ordered[Quantity] with
   override def compare(rhs : Quantity) : Int = {
     if(uom != rhs.uom) {
       // allow people to do Quantity(20, BBL) >= 0 etc.
-      assert((isZero && uom.isScalar) || (rhs.isZero && rhs.uom.isScalar), "UOMs not the same, can't compare: " + (uom, rhs.uom))
+      assert((isZero && uom.isScalar) || (rhs.isZero && rhs.isScalar), "UOMs not the same, can't compare: " + (uom, rhs.uom))
     }
     if (value < rhs.value)
       -1
@@ -135,7 +107,7 @@ class Quantity(val value : Double, val uom : UOM) extends Ordered[Quantity] with
     else 0
   }
   def format(fmt : String, useUOM:Boolean = true, addSpace: Boolean = false) = {
-    val uomPart = if (useUOM && !uom.isScalar && !uom.isNull) " " + uom else ""
+    val uomPart = if (useUOM && !isScalar && !uom.isNull) " " + uom else ""
     value.format(fmt, addSpace) + uomPart
   }
   def format(decimalFormat: DecimalFormat) = decimalFormat.format(value)
@@ -153,10 +125,7 @@ class Quantity(val value : Double, val uom : UOM) extends Ordered[Quantity] with
   }
 
   def inUOM(uom: UOM)(implicit conv: Conversions = Conversions.default): Quantity = {
-    in(uom)(conv) match {
-      case Some(beqv) => beqv
-      case None => throw new Exception(this + ": Couldn't convert from " + this + " to " + uom)
-    }
+    in(uom)(conv).getOrElse(throw new Exception(this + ": Couldn't convert from " + this + " to " + uom))
   }
 
   def isScalar = uom.isScalar
@@ -187,21 +156,11 @@ class Quantity(val value : Double, val uom : UOM) extends Ordered[Quantity] with
   }
 
   def * (rhs : Percentage) : Quantity = this * rhs.value
-
   def / (rhs : Double) : Quantity = Quantity(value / rhs, uom)
-  /** Divide by another Quantity
-   */
   def / (rhs : Quantity) = this * (rhs.invert)
-
-
   def abs = Quantity(mabs(value), uom)
-  
   def negate = unary_-
-
   def unary_- : Quantity = Quantity(-value, uom)
-
-  /** subtract another quantity from this
-   */
   def - (rhs : Quantity) : Quantity = this + -rhs
 
   /** return the inversion of this
@@ -275,6 +234,34 @@ class Quantity(val value : Double, val uom : UOM) extends Ordered[Quantity] with
   def named(name: String) = SimpleNamedQuantity(name, this)
 
   def round(dp: Int) = copy(value = MathUtil.roundToNdp(value, dp))
+}
+
+class QuantityDouble(d : Double){
+  def apply(uom : UOM) = Quantity(d, uom)
+}
+class QuantityInt(n : Int){
+  def apply(uom : UOM) = Quantity(n, uom)
+}
+
+/**
+ * This type class allows the Numeric implicit enabled methods to be used, like TraversableOnce
+ * product and sum methods.
+ */
+trait QuantityIsNumeric extends Numeric[Quantity] {
+  def compare(p1: Quantity, p2: Quantity) = p1 compare p2
+  def toDouble(x: Quantity) = throw new IllegalStateException("Can't convert Quantity to double.")
+  def toFloat(x: Quantity) = throw new IllegalStateException("Can't convert Quantity to float.")
+  def toLong(x: Quantity) = throw new IllegalStateException("Can't convert Quantity to long.")
+  def toInt(x: Quantity) = throw new IllegalStateException("Can't convert Quantity to int.")
+
+  def fromInt(x: Int) = Quantity(x.toDouble, UOM.SCALAR)
+  def negate(x: Quantity) = -x
+  def times(x: Quantity, y: Quantity) = x * y
+  def minus(x: Quantity, y: Quantity) = x - y
+  def plus(x: Quantity, y: Quantity) = x + y
+
+  override def zero = Quantity(0.0, UOM.NULL)
+  override def one = Quantity(1.0, UOM.SCALAR)
 }
 
 abstract class NamedQuantity(val quantity : Quantity) extends Quantity(quantity.value, quantity.uom){

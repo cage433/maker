@@ -78,6 +78,7 @@ case class MeasureAxisValueType(field:Field) extends AxisValueType {
 }
 
 case class AxisValue(field:Field, value:AxisValueType, position:Int, newRowsAtBottom:Boolean=false) {
+  def isNull = field.name == "Null"
   def valueText = value.value.toString
   def toTotal = copy(value = TotalAxisValueType)
   def isTotal = value == TotalAxisValueType

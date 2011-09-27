@@ -4,6 +4,8 @@ import starling.utils.ImplicitConversions._
 
 
 trait RichEither {
+  implicit def enrichEither[L, R](either: Either[L, R]) = new RichEither(either)
+
   implicit def enrichExceptionalEither[L <: Throwable, R](either: Either[L, R]) = new RichEither(either) {
     def printStackTrace = update(_.printStackTrace, identity)
     def getOrThrow = either.fold(throw _, identity)
@@ -34,6 +36,8 @@ trait RichEither {
   }
 
   class RichEither[L, R](either: Either[L, R]) {
+    def mapLeft[L2](l: L => L2): Either[L2, R] = map(l, identity)
+    def mapRight[R2](r: R => R2): Either[L, R2] = map(identity, r)
     def map[LV, RV](left: L => LV, right: R => RV): Either[LV, RV] = either.fold(l => Left(left(l)), r => Right(right(r)))
     def update[LV, RV](left: L => LV, right: R => RV): Either[L, R] = { either.fold(left, right); either }
     def toOption = either.right.toOption

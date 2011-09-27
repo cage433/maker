@@ -176,7 +176,6 @@ trait PivotQuantityIsNumeric extends Numeric[PivotQuantity] {
 object PivotQuantity {
   implicit object PivotQuantityIsNumeric extends PivotQuantityIsNumeric
   val NULL = new PivotQuantity(Map[UOM,Double](), Map[String,List[StackTrace]]())
-  val QuantityValue: Extractor[Any, Quantity] = Extractor.from[Any](_.safeCast[PivotQuantity].flatMap(_.quantityValue))
   def sum(qs : Seq[PivotQuantity]) = (PivotQuantity.NULL /: qs)(_+_)
   def create(values:Map[UOM,Double], errors:Set[Throwable]) = new PivotQuantity(values, errors)
   

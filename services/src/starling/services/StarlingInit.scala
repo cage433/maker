@@ -51,6 +51,8 @@ import starling.utils._
 import starling.eai.{EAIDealBookMapping, Traders, EAIAutoImport, EAIStrategyDB}
 import starling.titan._
 import starling.auth.internal.{LdapUserLookupImpl, KerberosAuthHandler}
+import starling.marketdata.DBReferenceDataLookup
+
 
 class StarlingInit( val props: Props,
                     authHandler:AuthHandler = AuthHandler.Dev,
@@ -116,6 +118,8 @@ class StarlingInit( val props: Props,
   val revalSnapshotDb = new RevalSnapshotDB(starlingDB)
   val limServer = new LIMServer(props.LIMHost(), props.LIMPort())
 
+  val referenceDataLookup = DBReferenceDataLookup(neptuneRichDB)
+
   lazy val (fwdCurveAutoImport, marketDataStore) = log.infoWithTime("Creating Market Data Store") {
     import MarketDataSet._
 
@@ -132,16 +136,18 @@ class StarlingInit( val props: Props,
       //TrinityLive → new TrinityMarketDataSource(trintityRichDB, BradyProfilePricingGroup.liveBradyProfilePricingGroup),
       //GalenaLive → new GalenaMarketDataSource(galenaRichDB, BradyProfilePricingGroup.liveBradyProfilePricingGroup),
       //GalenaFullCurve → new GalenaMarketDataSource(galenaRichDB, BradyProfilePricingGroup.fullCurveBradyProfilePricingGroup),
-      TrinityDiscountFactorCSV → new TrinityDiscountFactorCSVDataSource()//,
-      //Neptune -> new NeptuneBenchmarksMarketDataSource(neptuneRichDB) I don't want this persisted yet as it is likely to change
+      Neptune → CompositeMarketDataSource(new NeptuneGradeAreaBenchmarksMarketDataSource(neptuneRichDB),
+                                          new NeptuneCountryBenchmarksMarketDataSource(neptuneRichDB),
+                                          new NeptuneFreightParityMarketDataSource(neptuneRichDB))
     )
 
-    lazy val mds = DBMarketDataStore(props, starlingRichDB, marketDataSources, rmiBroadcaster)
+    lazy val mds = Log.infoWithTime("Creating DBMarketDataStore") {
+      DBMarketDataStore(props, starlingRichDB, marketDataSources, rmiBroadcaster, referenceDataLookup)
+    }
 
-    val fwdCurveAutoImport = new FwdCurveAutoImport(60*15, mds, marketDataSources.flatMap {
-      case (k, f: FwdCurveDbMarketDataSource) => Some(k)
-      case _ => None
-    }.toSet, businessCalendars.US_UK)
+    val fwdCurveAutoImport = new FwdCurveAutoImport(60*15, mds,
+      marketDataSources.filterValues(_.isInstanceOf[FwdCurveDbMarketDataSource]).keySet, businessCalendars.US_UK)
+
     (fwdCurveAutoImport, mds)
   }
 
@@ -171,7 +177,7 @@ class StarlingInit( val props: Props,
     userSettingsDatabase,
     version, referenceData, businessCalendars.UK)
 
-  val fc2Service = new FC2ServiceImpl(marketDataStore, curveViewer, marketDataReadersProviders)
+  val fc2Service = new FC2ServiceImpl(marketDataStore, curveViewer, marketDataReadersProviders, referenceDataLookup)
 
   def currentUser() = User.currentlyLoggedOn
 

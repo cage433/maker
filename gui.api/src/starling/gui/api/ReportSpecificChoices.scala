@@ -3,6 +3,7 @@ package starling.gui.api
 import starling.daterange._
 import starling.utils.{ImplicitConversions, Describable}
 import ImplicitConversions._
+import scalaz.Scalaz._
 
 
 class ReportSpecificChoices(protected val choices : Map[String, Any] = Map()) {
@@ -16,11 +17,11 @@ class ReportSpecificChoices(protected val choices : Map[String, Any] = Map()) {
   def isSubsetOf(options : ReportSpecificOptions) : Describable[Boolean] = {
     val invalidLabels = labels \\ options.labels
     val invalidValues = labels.flatMap{ label =>
-      (!options.valuesFor(label).contains(choices(label))).toOption(label, choices(label))
+      (!options.valuesFor(label).contains(choices(label))).option(label, choices(label))
     }
 
-    val labelsMessage = (!invalidLabels.isEmpty).toOption("labels: " + invalidLabels.quote.mkString(","))
-    val valuesMessage = (invalidLabels.isEmpty && !invalidValues.isEmpty).toOption(
+    val labelsMessage = (!invalidLabels.isEmpty).option("labels: " + invalidLabels.quote.mkString(","))
+    val valuesMessage = (invalidLabels.isEmpty && !invalidValues.isEmpty).option(
       "values: " + invalidValues.map(lv => "%s -> %s" % (lv._1, lv._2)).mkString(","))
 
     Describable(invalidLabels.isEmpty && invalidValues.isEmpty,

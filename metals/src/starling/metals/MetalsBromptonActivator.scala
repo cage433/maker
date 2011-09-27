@@ -124,6 +124,7 @@ class MetalsBromptonActivator extends BromptonActivator {
       new XRTGenerator(marketDataStore), trinityService, props)
 
     val scheduler = Scheduler.create(businessCalendars, marketDataStore, broadcaster, trinityUploader, props)
+    scheduler.start
 
     val jmx = new StarlingJMX(scheduler)
 

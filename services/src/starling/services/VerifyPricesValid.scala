@@ -10,6 +10,7 @@ import controller.CombinedCell
 import starling.utils.Broadcaster
 
 import starling.utils.ImplicitConversions._
+import scalaz.Scalaz._
 
 
 object VerifyPricesValid {
@@ -26,7 +27,7 @@ class VerifyPricesValid(dataSource: PivotTableDataSource, exchange: FuturesExcha
     val filter = filters("Exchange" → exchange.name, "Observation Day" → observationDay)
     val grid = dataSource.gridFor(Some(pfs.copy(filters = filter ++ filters("Validity" → "Invalid"))))
 
-    (grid.hasData).toOption {
+    (grid.hasData).option {
       email.copy(subject = "Validation errors for: %s" % filterToString(filter),
         body = <html>
                  <p>Validation errors for: { filterToString(filter) }</p>

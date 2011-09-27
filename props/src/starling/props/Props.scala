@@ -109,6 +109,8 @@ class Props(starlingProps:Map[String,String], trafiguraProps : Map[String, Strin
 
   // Deferrable patches
   object UseFasterMarketDataSchema extends BooleanProperty(false)
+  object ImportBenchmarksFromNeptune extends BooleanProperty(false)
+  object ImportFreightParityFromNeptune extends BooleanProperty(false)
 }
 
 object Props {

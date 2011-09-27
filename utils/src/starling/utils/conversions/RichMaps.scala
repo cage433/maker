@@ -18,6 +18,7 @@ trait RichMaps {
 
 class RichMap[K,V](map : Map[K,V]) {
   def get(key: Option[K]) = key.map(map.get(_)).flatOpt
+  def either(key: K): Either[K, V] = map.get(key).either(key, identity)
   def getOrUpdate(k: K, f: (V) => V) = map.get(k).fold(v => map.updated(k, f(v)), map)
   def slice(keys : Any*) : Map[K,V] = if (keys.isEmpty) map else map.filterKeys(key => keys.contains(key))
   def mapValue(key: K, f: V => V): Map[K,V] = map.updated(key, f(map(key)))
@@ -39,11 +40,14 @@ class RichMap[K,V](map : Map[K,V]) {
   def filterKeysNot(f: K => Boolean): Map[K, V] = map.filterKeys(!f(_))
   def filterValues(f: V => Boolean): Map[K, V] = map.filter(p => f(p._2))
   def filterValuesNot(f: V => Boolean): Map[K, V] = map.filter(p => !f(p._2))
+  def forallValues(p: V => Boolean): Boolean = map.forall(kv => p(kv._2))
   def toExtractor = Extractor.from[K](map.get)
   def valueExists(p: V => Boolean): Boolean = map.exists(kv => p(kv._2))
   def difference(other: Map[K, V]): Map[K, V] = map.filterKeys(key => map.get(key) != other.get(key))
   def mapValuesEagerly[C](f: V => C): Map[K, C] = map.mapValues(f).toList.toMap
   def mutable: MMap[K, V] = MMap.empty[K, V] ++ map
+  def partitionKeys(p: K => Boolean): (Map[K, V], Map[K, V]) = map.partition(kv => p(kv._1))
+  def ifDefined[B](f: (Map[K, V] => B)): Option[B] = map.isEmpty ? none[B] | some(f(map))
 }
 
 class RichMultiMap[K, V](map : Map[K, Set[V]]) extends RichMap[K, Set[V]](map) {

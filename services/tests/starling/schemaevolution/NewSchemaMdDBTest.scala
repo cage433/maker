@@ -24,7 +24,7 @@ object NewSchemaMdDBTestUtil {
     HolidayTablesFactory.registerNewHolidayTablesImplForTesting(None)
     val init = new StarlingInit(PropsHelper.defaultProps)
 
-    (new NewSchemaMdDB(init.starlingRichDB), new SlowMdDB(init.starlingRichDB))
+    (new NewSchemaMdDB(init.starlingRichDB, ReferenceDataLookup.Null), new SlowMdDB(init.starlingRichDB))
   }
 
 
@@ -61,13 +61,27 @@ object NewSchemaMdDBTestUtil {
 // TODO examine the data differences: are they expected?
 // - Some may be, as COLLATE has been introduced in the SELECT statements, and the ordering is not considered important.
 // - NOTE: The use of COLLATE ties the implementation to MS-SQL Server.
-class NewSchemaMdDBTest extends TestNGSuite with Checkers with Log {
+object NewSchemaMdDBTest extends Checkers with Log {
+  def main(args: Array[String]) {
+//    testCheckIntegrity
+//    testMarketDataSets
+    testObservationDaysByMarketDataSet
+//    testLatestExcelVersions
+//    testLatestVersionForMarketDataSets
+//    testMaxVersionForMarketDataSetNames
+//    testMarketDataTypes
+//    testLatestMarketData
+//    testQuery
+//    testQueryForObservationDayAndMarketDataKeys
+//    testReadLatest
+  }
+
   import NewSchemaMdDBTestUtil._
 
   private var db: RichDB = _
   private var connection: Connection = _
   // new SlowMdDB(db), new MarketDataTags(db), marketDataSources, broadcaster
-  lazy val newSchemaMdDB = new NewSchemaMdDB(db)
+  lazy val newSchemaMdDB = new NewSchemaMdDB(db, ReferenceDataLookup.Null)
   lazy val slowMdDB = new SlowMdDB(db)
 
 //  @BeforeTest

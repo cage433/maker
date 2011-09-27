@@ -356,16 +356,11 @@ case class MarketDataSelectionChanged(selection:MarketDataSelection) extends Eve
 object MarketDataSelectionComponent {
   def storeMarketDataSelection(pageContext:PageContext, selection:MarketDataSelection) {
     pageContext.putSetting(StandardUserSettingKeys.InitialMarketDataSelection, selection)
-    selection.pricingGroup match {
-      case Some(pg) => pageContext.putSetting(StandardUserSettingKeys.PricingGroupDefault, pg)
-      case None =>
-    }
-    selection.excel match {
-      case Some(excel) => pageContext.putSetting(StandardUserSettingKeys.ExcelMarketDataDefault, excel)
-      case None =>
-    }
+    selection.pricingGroup.map(pg => pageContext.putSetting(StandardUserSettingKeys.PricingGroupDefault, pg))
+    selection.excel.map(excel => pageContext.putSetting(StandardUserSettingKeys.ExcelMarketDataDefault, excel))
   }
 }
+
 class MarketDataSelectionComponent(pageContext:PageContext, maybeDesk:Option[Desk],
                                    marketDataSelection:MarketDataSelection,
                                    orientation:scala.swing.Orientation.Value=scala.swing.Orientation.Horizontal)

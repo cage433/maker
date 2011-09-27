@@ -66,7 +66,7 @@ object Scheduler extends Log {
     log.info("instantiating...")
 
     new Scheduler(props, forwardCurveTasks =
-      //TaskDescription("Import LIM", everyFiveMinutes(businessCalendars.LME), importMarketData(Metals)) ::-
+      TaskDescription("Import LIM", everyFiveMinutes(businessCalendars.LME), importMarketData(Metals)) ::-
       tasks(daily(businessCalendars.LME, 18 H 30), balticMetals.verifyPricesAvailable) ::-
       TaskDescription("Upload Curves to Trinity", daily(businessCalendars.LME, 19 H 00), uploadCurvesToTrinity(Metals)) ::-
       tasks(daily(businessCalendars.SFE, 16 H 30), exbxgMetals.verifyPricesAvailable, exbxgMetals.verifyPricesValid) ::-

@@ -5,12 +5,12 @@ import starling.props.PropsHelper
 import starling.utils._
 import java.lang.String
 import starling.daterange.ObservationTimeOfDay
-import starling.pivot.Field
 import collection.SortedMap
 import starling.quantity.UOM
 import collection.immutable.Map
 import starling.marketdata.{MarketDataValueKey, MarketDataTypes, MarketDataKey}
 import starling.utils.ImplicitConversions._
+import starling.pivot.{Row, Field}
 
 object NewReadAll {
   def main(args: Array[String]) {
@@ -44,7 +44,7 @@ object NewReadAll {
 
       val valueKeys = Log.infoWithTime("valueKeys") {
         init.starlingDB.queryWithResult("select * from ValueKey") { rs => {
-          MarketDataValueKey(rs.getInt("id"), rs.getObject[Map[Field, Any]]("value"))
+          MarketDataValueKey(rs.getInt("id"), Row(rs.getObject[Map[Field, Any]]("value")))
         } }.toMapWithKeys(_.id)
       }
 

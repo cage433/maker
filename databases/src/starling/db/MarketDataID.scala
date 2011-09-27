@@ -2,18 +2,19 @@ package starling.db
 
 import starling.daterange.ObservationPoint
 import starling.quantity.{Percentage, Quantity}
-import starling.pivot.{Field, PivotQuantity}
 import starling.instrument.utils.StarlingXStream
 import starling.utils.Log
 import starling.utils.ImplicitConversions._
-import collection.Iterable
-import starling.marketdata.{MarketDataValueKey, MarketData, TimedMarketDataKey, MarketDataKey}
+import starling.pivot.{Row, PivotQuantity}
+import starling.marketdata._
 
 /**
  * Uniquely identifies a market data object in the database. Versioning is added
  * on top of this by the VersionedDatabase mixin.
  */
 case class MarketDataID(observationPoint: ObservationPoint, marketDataSet: MarketDataSet, subTypeKey: MarketDataKey) extends Log {
+  private val noComment: String = null
+
   def conditions : Map[String, Any] = Map(
     "observationTime" -> observationPoint.timeName,
     "observationDay" -> observationPoint.day.getOrElse(null),
@@ -21,15 +22,18 @@ case class MarketDataID(observationPoint: ObservationPoint, marketDataSet: Marke
     "marketDataType" -> StarlingXStream.write(subTypeKey.dataType),
     "marketDataKey" -> StarlingXStream.write(subTypeKey))
 
-  def extractValue(row: Map[Field, Any]): Option[(String, Double)] = subTypeKey.dataType.getValues(row) match {
-    case List(Quantity(value, uom)) => Some((uom.toString, value))
-    case List(PivotQuantity.QuantityValue(Quantity(value, uom))) => Some((uom.toString, value))
-    case List(Percentage(pc)) => Some(("%", pc))
-    case other => log.debug("Couldn't extract: %s, key: %s" % (other, subTypeKey)); None
+  def extractValue(row: Row): Option[(String, Double, String)] = subTypeKey.dataType.getValues(row) match {
+    case List(Quantity(value, uom)) => Some((uom.toString, value, noComment))
+    case List(pq: PivotQuantity) => pq.quantityValue.map(q => (q.uom.toString, q.value, noComment))
+    case List(Percentage(pc)) => Some(("%", pc, noComment))
+    case List(Quantity(value, uom), comment: String) => Some((uom.toString, value, comment))
+    case other => log.warn("Couldn't extract: %s, key: %s" % (other, subTypeKey)); None
   }
 
-  def extractValues(marketData: MarketData): Iterable[(MarketDataValueKey, String, Double)] = subTypeKey.castRows(marketData)
-    .flatMap(row => extractValue(row).map { case (uom, value) => (subTypeKey.valueKey(row), uom, value) })
+  def extractValues(marketData: MarketData, referenceDataLookup: ReferenceDataLookup) = {
+    subTypeKey.castRows(marketData, referenceDataLookup)
+      .flatMap(row => extractValue(row).map { case (uom, value, comment) => (subTypeKey.valueKey(row), uom, value, comment) })
+  }
 
   val extendedKey = MarketDataExtendedKey(-1, marketDataSet, subTypeKey.dataType, observationPoint.timeOfDay, subTypeKey)
 }

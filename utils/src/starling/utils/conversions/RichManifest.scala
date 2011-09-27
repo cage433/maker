@@ -12,7 +12,7 @@ trait RichManifest {
     def cast(any: Any): T = safeCast(any).getOrElse(
       throw new Exception("%s [%s] is not of type %s" % (any, getClassOf(any), manifest.erasure)))
 
-    def safeCast(any: Any): Option[T] = if (isInstance(any)) Some(any.asInstanceOf[T]) else None
+    def safeCast(any: Any): Option[T] = if (any != null && isInstance(any)) Some(any.asInstanceOf[T]) else None
     def castAll(list: List[Any], error: Any => T): List[T] = list.map(value => safeCast(value).getOrElse(error(value)))
     def requireNotNull(value: T) = {
       val n = nullTypes(value)

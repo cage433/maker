@@ -9,7 +9,6 @@ import starling.utils.ClosureUtil._
 import starling.curves.SpreadStdDevSurfaceData
 import starling.quantity.{UOM, Quantity, Percentage}
 import starling.daterange.{Day, SpreadPeriod, Period, ObservationTimeOfDay}
-import starling.pivot.{Field, PivotQuantity}
 import scala.Any
 import collection.mutable.{Map => MMap}
 import java.util.concurrent.ConcurrentMap
@@ -19,15 +18,31 @@ import starling.marketdata._
 import starling.instrument.utils.StarlingXStream
 import starling.services.StarlingInit
 import starling.richdb.RichDB
-import system.Patch
-import starling.props.{Props, PropsHelper}
+import starling.props.PropsHelper
+import starling.pivot.{Row, Field, PivotQuantity}
+import system.{PatchContext, Patch}
 
 
 class Patch120_MigrateMarketDataToFasterSchema extends Patch {
-  override def deferredReason(props: Props) = props.UseFasterMarketDataSchema() ? none[String] | some("takes ~40 minutes")
+  override def deferredReason(context: PatchContext) =
+    context.props.UseFasterMarketDataSchema() ? none[String] | some("takes ~40 minutes")
 
   protected def runPatch(starlingInit: StarlingInit, starling: RichDB, writer: DBWriter) =
     MigrateMarketDataSchema(writer, starling.db).migrateData
+}
+
+class Patch120_MakeVersionNullableInMarketDataComment extends Patch {
+  override def deferredReason(context: PatchContext) = context.dependsOn[Patch120_MigrateMarketDataToFasterSchema]
+
+  protected def runPatch(starlingInit: StarlingInit, starling: RichDB, writer: DBWriter) =
+    writer.update("ALTER TABLE MarketDataCommit ALTER COLUMN version int NULL")
+}
+
+class Patch120_Add_Comment_To_MarketDataValue extends Patch {
+  override def deferredReason(context: PatchContext) = context.dependsOn[Patch120_MigrateMarketDataToFasterSchema]
+
+  protected def runPatch(starlingInit: StarlingInit, starling: RichDB, writer: DBWriter) =
+    writer.update("ALTER TABLE MarketDataValue ADD comment varchar(128) NULL")
 }
 
 object MigrateMarketDataSchema extends Log {
@@ -223,7 +238,7 @@ case class MigrateMarketDataSchema(writer: DBWriter, db: DB) extends Log {
     } else {
       extendedKeys ++= db.queryWithResult("SELECT * FROM MarketDataExtendedKey") { MarketDataExtendedKey(_) }.toMapWithValues(_.id)
       valueKeys ++= db.queryWithResult("SELECT * FROM MarketDataValueKey") { rs =>
-        MarketDataValueKey(rs.getInt("id"), rs.getObject[Map[Field, Any]]("valueKey"))
+        MarketDataValueKey(rs.getInt("id"), Row(rs.getObject[Map[String, Any]]("valueKey").mapKeys(Field(_))))
       }.toMapWithValues(_.id)
     }
 
@@ -238,11 +253,7 @@ case class MigrateMarketDataSchema(writer: DBWriter, db: DB) extends Log {
     writer.insertAndReturnKey("MarketDataValueKey", "id", key.dbMap).toInt
   })
 
-  private def getValues(key: MarketDataKey, row: Map[Field, Any]): List[Any] = {
-    key.dataType.valueFields.toList.flatMap(f => row.get(f))
-  }
-
-  private def getUOMValueOption(key: MarketDataKey, row: Map[Field, Any]): Option[(String, Double)] = {
+  private def getUOMValueOption(key: MarketDataKey, row: Row): Option[(String, Double)] = {
     val values: List[Any] = getValues(key, row)
 
     val uomValueOption: Option[(String, Double)] = values match {
@@ -261,17 +272,21 @@ case class MigrateMarketDataSchema(writer: DBWriter, db: DB) extends Log {
     uomValueOption
   }
 
-  private def readRows(xml: String, key: MarketDataKey, version: Int): Iterable[Map[Field, Any]] = {
+  private def getValues(key: MarketDataKey, row: Row): List[Any] = {
+    key.dataType.valueFields.toList.flatMap(f => row.get[Any](f))
+  }
+
+  private def readRows(xml: String, key: MarketDataKey, version: Int): Iterable[Row] = {
     val refactoredData = try {
       StarlingXStream.read(cleanUpXml(xml))
     } catch {
       case e => log.fatal(xml); log.fatal("broken version: " + version); throw e
     }
 
-    key.castRows(key.unmarshallDB(refactoredData))
+    key.castRows(key.unmarshallDB(refactoredData), ReferenceDataLookup.Null)
   }
 
-  private def getValueKey(key: MarketDataKey, row: Map[Field, Any]): MarketDataValueKey = {
+  private def getValueKey(key: MarketDataKey, row: Row): MarketDataValueKey = {
     val fields = key.dataType.keyFields -- key.fieldValues.keySet
 
     MarketDataValueKey(-1, row.filterKeys(fields.contains))
@@ -529,7 +544,7 @@ case class MigrateMarketDataSchema(writer: DBWriter, db: DB) extends Log {
       val obj = StarlingXStream.read(cleanUpXml(xml))
 
       obj.safeCast[PriceFixingsHistoryData].map { priceFixingsHistoryData => {
-        val rows: Iterable[Map[Field, Any]] = PriceFixingsHistoryDataKey("", Some("")).castRows(priceFixingsHistoryData)
+        val rows: Iterable[Row] = PriceFixingsHistoryDataKey("", Some("")).castRows(priceFixingsHistoryData, ReferenceDataLookup.Null)
 
         println(rows)
       } }

@@ -8,6 +8,7 @@ import collection.mutable.ListBuffer
 import collection.Set
 import collection.immutable.Map
 import starling.utils.{STable, SColumn}
+import scalaz.Scalaz._
 
 
 object AxisNode {
@@ -181,7 +182,7 @@ case class ServerAxisNode(axisValue:AxisValue, children:Map[ChildKey,Map[AxisVal
 
 case class AxisNode(axisValue:AxisValue, children:List[AxisNode]=Nil) {
   def purge(remove:Set[List[ChildKey]], parent:List[ChildKey] = Nil):Option[AxisNode] = {
-    val pathToMe = axisValue.childKey :: parent
+    val pathToMe = axisValue.isNull ? parent | axisValue.childKey :: parent
     if (children.isEmpty) {
       if (remove.contains(pathToMe.reverse)) None else Some(this)
     } else {
@@ -318,14 +319,7 @@ case class PivotTableConverter(otherLayoutInfo:OtherLayoutInfo = OtherLayoutInfo
             case Some(an) => zeroFields.contains(an.field)
           })
         }}
-        if (onlyZeroFieldColumnsMap.forall{case (k,measureCell) => {
-          measureCell.value match {
-            case Some(q:Quantity) => q.isAlmostZero
-            case Some(pq:PivotQuantity) if pq.values.size <= 1 => pq.isAlmostZero
-            case Some(pq:PivotQuantity) => true
-            case _ => false
-          }
-        }}) Some(row) else None
+        onlyZeroFieldColumnsMap.forallValues(_.isAlmoseZero) option (row)
       })
     } else {
       Set[List[ChildKey]]()

@@ -6,7 +6,7 @@ import starling.quantity.{UOM, Percentage}
 import starling.daterange.{DateRange, Day}
 import starling.market.{InterestRateMarket, Market, FXMarket, HasImpliedVol}
 import collection.immutable.TreeMap
-import starling.pivot.{Field, PivotFieldsState, SomeSelection, FieldDetails}
+import starling.pivot._
 
 /**
  * These should no longer be needed. Originally held implied vols gathered from Trinity reval tables, however
@@ -37,11 +37,11 @@ object ImpliedVolDataType extends MarketDataType {
     exerciseDayField,
     volatilityField)
 
-  def marketDataKeyFelds = throw new Exception("Implement if we need to do Metals VAR")
+  def marketDataKeyFields = throw new Exception("Implement if we need to do Metals VAR")
   def keyFields = throw new Exception("Implement if we need to do Metals VAR")
   def valueFields = throw new Exception("Implement if we need to do Metals VAR")
-  def createKey(values: Map[Field, Any]) = throw new Exception("Implement if we need to do Metals VAR")
-  def createValue(values: List[Map[Field, Any]]) = throw new Exception("Implement if we need to do Metals VAR")
+  def createKey(row: Row) = throw new Exception("Implement if we need to do Metals VAR")
+  def createValue(rows: List[Row]) = throw new Exception("Implement if we need to do Metals VAR")
 }
 
 case class ImpliedVolEntryKey(period: DateRange, strike: Double, exerciseDay: Day)
@@ -62,17 +62,18 @@ case class ImpliedVolDataKey(market : HasImpliedVol) extends MarketDataKey {
   def dataType = ImpliedVolDataType
   def subTypeKey = market.name
 
-  override def rows(data : ImpliedVolData) = data.surface.map((tuple2) => {
-        val (key, vol) = tuple2
-        Map(
-          ImpliedVolDataType.marketField.field -> market.name,
-          ImpliedVolDataType.periodField.field -> key.period,
-          ImpliedVolDataType.strikeField.field -> key.strike,
-          ImpliedVolDataType.exerciseDayField.field -> key.exerciseDay,
-          ImpliedVolDataType.volatilityField.field -> vol)
+  override def rows(data : ImpliedVolData, referenceDataLookup: ReferenceDataLookup) = data.surface.map((tuple2) => {
+    val (key, vol) = tuple2
+    Row(
+      ImpliedVolDataType.marketField.field → market.name,
+      ImpliedVolDataType.periodField.field → key.period,
+      ImpliedVolDataType.strikeField.field → key.strike,
+      ImpliedVolDataType.exerciseDayField.field → key.exerciseDay,
+      ImpliedVolDataType.volatilityField.field → vol)
+    }
+  )
 
-      })
-  def fieldValues = Map(ImpliedVolDataType.marketField.field -> market.name)
+  def fieldValues = Map(ImpliedVolDataType.marketField.field → market.name)
 }
 
 case class ImpliedVolData(surface : SortedMap[ImpliedVolEntryKey, Percentage]) extends MarketData {

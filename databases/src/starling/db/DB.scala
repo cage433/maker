@@ -144,6 +144,10 @@ trait DBTrait[RSR <: ResultSetRow] extends Log {
 
   def convertTypes(params: Map[String, Any]): java.util.Map[String, AnyRef] = DBConvert.convertTypes(params)
 
+  def lookupTable(table: String, from: String, to: String) = queryWithResult(select(from + ", " + to) from(table)) { rs =>
+    rs.getString(from) → rs.getString(to)
+  }.toMap
+
   protected def createWriter: DBWriter = new DBWriter(DBTrait.this, dataSource)
 }
 

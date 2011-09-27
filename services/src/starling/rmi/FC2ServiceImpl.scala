@@ -33,7 +33,8 @@ class BromptonTrackerBasedMarketDataPageIdentifierReaderProviders(context:Brompt
 class FC2ServiceImpl(
                       snapshotDatabase:MarketDataStore,
                       curveViewer : CurveViewer,
-                      marketDataReaderProviders:MarketDataPageIdentifierReaderProviders) extends FC2Service {
+                      marketDataReaderProviders:MarketDataPageIdentifierReaderProviders,
+                      referenceDataLookup: ReferenceDataLookup) extends FC2Service {
 
   private def unLabel(pricingGroup:PricingGroup) = pricingGroup
   private def unLabel(snapshotID:SnapshotIDLabel) = snapshotDatabase.snapshotFromID(snapshotID.id).get
@@ -86,7 +87,8 @@ class FC2ServiceImpl(
       case Some(mdt) => Some(realTypeFor(mdt))
     }
     marketDataType match {
-      case Some(mdt) => new MarketDataPivotTableDataSource(reader, edits, Some(snapshotDatabase), marketDataIdentifier.marketDataIdentifier, mdt)
+      case Some(mdt) => new MarketDataPivotTableDataSource(reader, edits, Some(snapshotDatabase),
+        marketDataIdentifier.marketDataIdentifier, mdt, referenceDataLookup)
       case None => NullPivotTableDataSource
     }
   }

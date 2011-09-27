@@ -64,21 +64,17 @@ object PriceDataType extends MarketDataType {
   )
 
   lazy val fields = List(exchangeField, marketField, marketCommodityField, marketTenorField, periodField, priceField, validity)
-  def marketDataKeyFelds = Set(marketField.field)
+  def marketDataKeyFields = Set(marketField.field)
   override def keyFields = Set(marketField, periodField).map(_.field)
-  override def valueFields = Set(priceField.field)
+  override def valueFields = List(priceField.field)
 
-  override def createValue(values: List[Map[Field, Any]]) = {
-    val pairs = (values.map { v => v(periodField.field).asInstanceOf[DateRange] → getPrice(v) }).toMap
+  override def createValue(rows: List[Row]) = {
+    val pairs = rows.map { row => row[DateRange](periodField) → row.pivotQuantity(priceField) }.toMap
+
     PriceData(pairs)
   }
 
-  override def createKey(values: Map[Field, Any]) = PriceDataKey(Market.fromName(values(marketField.field).asInstanceOf[String]))
-
-  private def getPrice(map: Map[Field, Any]): PivotQuantity = map(priceField.field) match {
-    case pq: PivotQuantity => pq
-    case q: Quantity => PivotQuantity(q)
-  }
+  override def createKey(row: Row) = PriceDataKey(Market.fromName(row.string(marketField)))
 }
 
 case class PriceDataKey(market: CommodityMarket) extends MarketDataKey {
@@ -90,13 +86,14 @@ case class PriceDataKey(market: CommodityMarket) extends MarketDataKey {
   def dataType = PriceDataType
   def subTypeKey = market.name
 
-  override def rows(data : PriceData) = data.prices.map { case (period, price) => {
-    Map(marketField.field → market.name,
+  override def rows(data : PriceData, referenceDataLookup: ReferenceDataLookup) = data.prices.map { case (period, price) => {
+    Row(marketField.field → market.name,
         marketCommodityField.field → market.commodity.toString,
         marketTenorField.field → market.tenor.toString,
         periodField.field → period,
         validity.field → price.warning.isEmpty,
-        priceField.field → price).addSome(exchangeField.field → market.safeCast[FuturesMarket].map(_.exchange.name))
+        priceField.field → price) +?
+      (exchangeField.field → market.safeCast[FuturesMarket].map(_.exchange.name))
   } }
 
   override def unmarshallDB(dbValue: Any): marketDataType =

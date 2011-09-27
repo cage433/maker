@@ -13,10 +13,10 @@ object QueryBuilder {
 case class Query(select:Select, from:From, where: Option[Clause], groupBy:List[String], havingClause: Option[Clause], order: Option[Direction]) {
   def this(select:Select, from:From, where: Option[Clause], havingClause: Option[Clause], order: Option[Direction]) = this(select, from, where, List(), havingClause, order)
   def this(select:Select, from:String, joins:List[Join], where: Option[Clause], havingClause: Option[Clause], order: Option[Direction]) = this(select, From(RealTable(from), joins), where, List(), havingClause, order)
-  def innerJoin(table:String, clause:Clause): Query = new Query(select, From(from.table, from.joins ::: Join(RealTable(table), "inner", clause) :: Nil), where, groupBy, havingClause, order)
-  def innerJoin(query : Query, alias:String, clause:Clause) = new Query(select, From(from.table, from.joins ::: Join(QueryTable(query, alias), "inner", clause) :: Nil), where, groupBy, havingClause, order)
-  def leftJoin(table:String, clause:Clause): Query = new Query(select, From(from.table, from.joins ::: Join(RealTable(table), "left", clause) :: Nil), where, groupBy, havingClause, order)
-  def leftJoin(query:Query, alias:String, clause:Clause): Query = new Query(select, From(from.table, from.joins ::: Join(QueryTable(query, alias), "left", clause) :: Nil), where, groupBy, havingClause, order)
+  def innerJoin(table:String, clause:Clause): Query = join(RealTable(table), clause, "inner")
+  def innerJoin(query : Query, alias:String, clause:Clause) = join(QueryTable(query, alias), clause, "inner")
+  def leftJoin(table:String, clause:Clause): Query = join(RealTable(table), clause, "left")
+  def leftJoin(query:Query, alias:String, clause:Clause): Query = join(QueryTable(query, alias), clause, "left")
   def where(clause:Clause): Query = new Query(select, from, Some(clause), groupBy, havingClause, order)
   def where(clauses:List[Clause]): Query = new Query(select, from, Clause.join(clauses), groupBy, havingClause, order)
   def where(clauses: Clause*): Query = where(clauses.toList)
@@ -34,6 +34,10 @@ case class Query(select:Select, from:From, where: Option[Clause], groupBy:List[S
   override def toString = {
     val q = new SqlRenderer().render(this)
   	"Query: " + q.query + "\nParameters: " + q.parameters 
+  }
+
+  private def join(table: Table, clause: Clause, joinType: String): Query = {
+    new Query(select, From(from.table, from.joins ::: Join(table, joinType, clause) :: Nil), where, groupBy, havingClause, order)
   }
 }
 
