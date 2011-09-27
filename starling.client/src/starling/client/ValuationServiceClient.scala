@@ -6,12 +6,15 @@ import com.trafigura.services.valuation.ValuationServiceApi
 /**
  * Test main to check service operation and RMI etc
  */
-object ValuationServiceApiTestRun {
+object ValuationServiceClient {
   def main(args:Array[String]) {
     BouncyRMIServiceApi().using { valuationService: ValuationServiceApi =>
       println("Calling marketDataSnapshotIDs...")
       val snapshots = valuationService.marketDataSnapshotIDs(None)
+
       snapshots.foreach(println)
+
+      valuationService.valueAllTradeQuotas(Some("bogus id"))
 
       def testQuotaValuation() {
         println("Calling valueAllQuotas...")

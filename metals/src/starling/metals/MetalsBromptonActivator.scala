@@ -26,12 +26,13 @@ import starling.manager.{ExportTitanRMIProperty, BromptonContext, BromptonActiva
 import com.trafigura.services.marketdata.{MarketDataServiceApi, ExampleService}
 import starling.titan.{TitanSystemOfRecord, TitanTradeStore, TitanTradeCache}
 import starling.tradeimport.TradeImporter
-import starling.utils.{Broadcaster, ObservingBroadcaster, CompositeBroadcaster}
 import starling.richdb.{RichResultSetRowFactory, RichDB}
 import starling.db.{DB, TitanTradeSystem, MarketDataStore}
 import starling.calendar.BusinessCalendars
 import starling.curves.CurveViewer
 import starling.rmi.{RabbitEventDatabase, DefaultRabbitEventDatabase}
+import starling.utils.{Receiver, Broadcaster, ObservingBroadcaster, CompositeBroadcaster}
+import swing.event.Event
 
 class MetalsProps
 
@@ -103,9 +104,12 @@ class MetalsBromptonActivator extends BromptonActivator {
     val broadcaster = ObservingBroadcaster(new CompositeBroadcaster(
         props.rabbitHostSet                       → new RabbitBroadcaster(new RabbitMessageSender(props.RabbitHost())),
         props.EnableVerificationEmails()          → new EmailBroadcaster(mailSender),
-        (startRabbit && props.titanRabbitHostSet) → TitanRabbitIdBroadcaster(titanRabbitEventServices.rabbitEventPublisher),
-        true                                      → osgiBroadcaster
+        (startRabbit && props.titanRabbitHostSet) → TitanRabbitIdBroadcaster(titanRabbitEventServices.rabbitEventPublisher)
     ))
+
+    context.registerService(classOf[Receiver], new Receiver() {
+      def event(event: Event) = broadcaster.broadcast(event)
+    })
 
     val trinityService = new TrinityService(ResteasyServiceApi(props.TrinityServiceUrl()))
 

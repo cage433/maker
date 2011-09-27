@@ -12,6 +12,7 @@ import starling.curves.UnitTestingAtomicEnvironment
 import starling.curves.IndexFixingKey
 import com.trafigura.services.{TitanSerializableDate}
 import starling.daterange.Day
+import starling.utils.Log
 
 
 trait EnvironmentProvider {
@@ -25,11 +26,22 @@ trait EnvironmentProvider {
 }
 
 
-class DefaultEnvironmentProvider(marketDataStore : MarketDataStore) extends EnvironmentProvider {
+/**
+ * Standard environment provider, contains snapshot id name (string) to SnapshotID cache
+ *   and a means to get environments by snapshot id name
+ */
+class DefaultEnvironmentProvider(marketDataStore : MarketDataStore) extends EnvironmentProvider with Log {
+  private val lock = new Object()
   def getSnapshots() : List[String] = snapshotNameToIDCache.keySet.toList
   def snapshotNameToID(name : String) = snapshotNameToIDCache(name)
-  private var snapshotNameToIDCache = Map[String, SnapshotID]()
+
+  private var snapshotNameToIDCache : Map[String, SnapshotID] = Map[String, SnapshotID]().withDefault(idNameKey => {
+    Log.warn("Missing snapshot ID requested, key = '%s', available snapshots are \n%s".format(idNameKey, snapshotNameToIDCache.keys.mkString(", ")))
+    throw new Exception("Missing snapshot ID requested, key = '%s'".format(idNameKey))
+  })
+
   private var environmentCache = CacheFactory.getCache("ValuationService.environment", unique = true)
+
   def environment_(snapshotIDName: String, marketDay : Option[Day]): Environment = environmentCache.memoize(
     snapshotIDName,
     {snapshotIDName : String => {
@@ -38,16 +50,16 @@ class DefaultEnvironmentProvider(marketDataStore : MarketDataStore) extends Envi
       new ClosesEnvironmentRule().createEnv(marketDay.getOrElse(snapshotID.observationDay), reader).environment
     }}
   )
-  private val lock = new Object()
 
   def updateSnapshotCache() {
     lock.synchronized {
       marketDataStore.snapshots().foreach {
-        s: SnapshotID =>
+        s : SnapshotID =>
           snapshotNameToIDCache += s.id.toString -> s
       }
     }
   }
+
   def mostRecentSnapshotIdentifierBeforeToday(): Option[String] = {
     updateSnapshotCache()
     snapshotNameToIDCache.values.toList.filter(_.observationDay < Day.today).sortWith(_ > _).headOption.map(_.id.toString)

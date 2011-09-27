@@ -51,6 +51,9 @@ class TitanEventHandler(rabbitEventServices : TitanRabbitEventServices,
           (EDMLogisticsSalesAssignmentSubject.equalsIgnoreCase(ev.subject) || EDMLogisticsInventorySubject.equalsIgnoreCase(ev.subject) || EDMLogisticsQuotaSubject.equalsIgnoreCase(ev.subject))) {
           logisticsAssignmentEventHander(ev)
         }
+        else if (StarlingSource.equalsIgnoreCase(ev.source) && StarlingMarketDataSnapshotIDSubject.equalsIgnoreCase(ev.subject)) {
+          marketDataSnapshotEventHander(ev)
+        }
       }
     } catch {
       case e =>
@@ -205,6 +208,7 @@ class TitanEventHandler(rabbitEventServices : TitanRabbitEventServices,
             case CreatedEventVerb => {
               val previousSnapshotId = todaysSnapshots(1).id.toString
               log.info("New marketData snapshot event, revaluing received event using old snapshot %s new snapshot %s".format(previousSnapshotId, newSnapshotId))
+              environmentProvider.updateSnapshotCache()
               val previousEnv = environmentProvider.environment(previousSnapshotId)
               val newEnv = environmentProvider.environment(newSnapshotId)
               val tradeIds = titanTradeCache.getAllTrades().map{trade => trade.titanId.value}.toList
