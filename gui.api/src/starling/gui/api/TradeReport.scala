@@ -67,39 +67,19 @@ object MarketDataIdentifier {
 case class TradeValuation(explanation:NamedQuantity)
 case class TradeValuationAndDetails(tradeValuation:TradeValuation, tradeRow:List[Any], fieldDetailsGroups:List[FieldDetailsGroupLabel], columns:List[SColumn])
 
-/**
- * PricingGroup provides a simple wrapper around a defined name for instances of the PricingGroup enumeration.
- *
- * @documented
- */
 case class PricingGroup(name:String) {
   override def toString = name
 }
 
-/**
- * PricingGroup provides a singleton implementation of the Starling pricing groups with simple, case-sensitive look-up
- * by a defined name. (Each instance is documented with its name.)
- *
- * @documented
- */
 object PricingGroup extends StarlingEnum(classOf[PricingGroup], (pg: PricingGroup) => pg.name) {
-  /**"Metals"*/
   val Metals = PricingGroup("Metals")
-  /**"System"*/
   val System = PricingGroup("System")
-  /**"LIM Only" */
   val LimOnly = PricingGroup("LIM Only")
-  /**"Crude"*/
   val Crude = PricingGroup("Crude")
-  /**"London Derivatives Options"*/
   val LondonDerivativesOptions = PricingGroup("London Derivatives Options")
-  /**"London Derivatives"*/
   val LondonDerivatives = PricingGroup("London Derivatives")
-  /**"Barry Eckstein"*/
   val BarryEckstein = PricingGroup("Barry Eckstein")
-  /**"Gasoline RoW"*/
   val GasolineRoW = PricingGroup("Gasoline RoW")
-  /**"Gas Oil"*/
   val GasOil = PricingGroup("Gas Oil")
 }
 
@@ -117,28 +97,14 @@ case class SnapshotIDLabel(observationDay: Day, id: Int, timestamp : Timestamp, 
   def identifier() = observationDay+"-"+id + "-" + timestamp
 }
 
-/**
- * DeskInfo defines a marker type for desk-related information.
- */
 trait DeskInfo
 
-/**
- * EAIDeskInfo provides a simple case class of the DeskInfo type wrapping a single EAI book Id.
- *
- * @documented
- */
 case class EAIDeskInfo(book: Int) extends DeskInfo
 
 sealed case class Desk(name: String, pricingGroups: List[PricingGroup], deskInfo: Option[DeskInfo] = None) {
   override def toString = name
 }
 
-/**
- * Desk provides a singleton implementation of the Starling desks in which each instance is associated with a list of
- * PricingGroup-s and any associated EAIDeskInfo and has a case insensitive look-up by name.
- *
- * @documented
- */
 object Desk extends StarlingEnum(classOf[Desk], (d: Desk) => d.name, ignoreCase = true) {
   import PricingGroup._
 

@@ -34,18 +34,12 @@ object ObservationPoint {
   }
 }
 
-/**
- * ObservationTimeOfDay defines a case class that provides an ordering by declaration position and wraps a defined name.
- *
- * @documented
- */
 case class ObservationTimeOfDay private (name: String) extends Ordered[ObservationTimeOfDay] {
   override def toString = name
   def compare(that: ObservationTimeOfDay) = {
     val lhsIndex = ObservationTimeOfDay.sortIndex(that)
     val rhsIndex = ObservationTimeOfDay.sortIndex(this)
     if (lhsIndex == rhsIndex) {
-      // TODO [DM][2011-09-26] understand how the names can be different if the sort indices are equal
       this.name.compare(that.name)
     } else {
       rhsIndex - lhsIndex
@@ -53,12 +47,6 @@ case class ObservationTimeOfDay private (name: String) extends Ordered[Observati
   }
 }
 
-/**
- * ObservationTimeOfDay provides a singleton implementation of the Starling observation time of day enumeration with a
- * case insensitive look-up by its defined name.
- *
- * @documented
- */
 object ObservationTimeOfDay extends StarlingEnum(classOf[ObservationTimeOfDay], (o:ObservationTimeOfDay) => o.name, true) {
   val Default = new ObservationTimeOfDay("Default")
   val LMEClose = new ObservationTimeOfDay("LME Close")
