@@ -11,8 +11,7 @@ import scalaz._
 import Scalaz._
 
 class LIMServer(hostname: String, port: Int) {
-  private def openConnection =
-    new LIMConnection(ConnectionFactory.connect(hostname, port, "Starling"))
+  private def openConnection = new LIMConnection(ConnectionFactory.connect(hostname, port, "Starling"))
 
   def getSpotData(limSymbol: LimSymbol, level: Level, startDate: Day, endDate: Day) : Map[Day, Double] = {
     val symbol = limSymbol.name
@@ -22,9 +21,10 @@ class LIMServer(hostname: String, port: Int) {
     } else
       "SHOW 1: " + level.name + " of front " + symbol + " WHEN Date is from " + startDate.toLIM + " to " + endDate.toLIM
 
-    query(_.getData(limQL)).mapValues(_(0)).filterNot{
-      case (_, p) => p.isNaN || p.isInfinity
-    }
+    val data = query(_.getData(limQL)).mapValues(_(0)).filterNot { case (_, p) => p.isNaN || p.isInfinity }
+
+    // HACK: For some markets LIM is not returning a range of values but only the latest value, better to pretend there are no values at all.
+    if (data.size == 1) Map.empty else data
   }
 
   def getMultipleData(symbols : List[String], startDate : Day, endDate : Day) = {
@@ -133,6 +133,16 @@ class LIMConnection(connection: MimConnection) extends Log {
 object LIMServer {
   def main(args:Array[String]) {
     val server = new LIMServer("lim-london-live", 6400)
+    val days = List(Day(2011, 9, 19), Day(2011, 9, 20))
+    val daysInThePast = 365
+
+    // HACK TEST
+    val data = days.toMapWithValues { day => server.getSpotData(LimSymbol("POAAC00"), Level.Mid, day - daysInThePast, day) }         // Should produce multiple values
+    //val data = days.toMapWithValues { day => server.getSpotData(LimSymbol("CL"), Level.Mid, day - daysInThePast, day) }            // Does produce multiple values
+//    val data = days.toMapWithValues { day => server.getSpotData(LimSymbol("PA0005643.6.0"), Level.Mid, day - daysInThePast, day) } // Does produce multiple values
+
+    data.foreach(println)
+
 //    Log.infoWithTime("") {
 //      (1 until 10).foreach { i => {
 //        List("GCC", "GCC.A", "HGC", "PAC", "PLC", "SIC", "SIC.A").foreach { code => {

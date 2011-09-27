@@ -20,10 +20,7 @@ class OilAndMetalsVARLimMarketDataSource(limServer: LIMServer) extends MarketDat
 
   def read(day:Day) = {
     val (futuresFrontPeriodIndexes, publishedIndexes) = {
-      val futuresFrontPeriodIndexes =
-        (Index.futuresMarketIndexes).filter(index =>
-          index.market.limSymbol.isDefined)
-
+      val futuresFrontPeriodIndexes = (Index.futuresMarketIndexes).filter(index => index.market.limSymbol.isDefined)
       val publishedIndexes = Index.publishedIndexes.filter(_.market.limSymbol.isDefined)
 
       val ambiguous = (futuresFrontPeriodIndexes.map(_.market.asInstanceOf[CommodityMarket]) & publishedIndexes.map(_.market)).toList
@@ -36,36 +33,32 @@ class OilAndMetalsVARLimMarketDataSource(limServer: LIMServer) extends MarketDat
     val fixingsForPublishedIndex = {
       val pubMarkets = publishedIndexes.map(index => (index.market, index.level)).groupInto(_._1, _._2)
 
-      pubMarkets.flatMap {
-        case (market, levels) => {
-          val pricesByObservationDay = levels.flatMap {
-            level => {
-              val spotData: Map[Day, Double] = try {
-                limServer.getSpotData(market.limSymbol.get, level, day - daysInThePast, day)
-              } catch {
-                case m: MissingMarketDataException => {
-                  Log.warn("No market data for " + market.limSymbol)
-                  Map()
-                }
-              }
-              spotData.map {
-                case (d: Day, p: Double) => (d, (level, p * market.limSymbol.get.multiplier))
-              }
-
-            }
-          }.groupInto(_._1, _._2)
-
-          pricesByObservationDay.map {
-            case (day, prices) =>
-              MarketDataEntry(ObservationPoint(day), PriceFixingsHistoryDataKey(market),
-                PriceFixingsHistoryData.create(prices.map {
-                  case (level, price) =>
-                    (level, StoredFixingPeriod.dateRange(day)) → MarketValue.quantity(price, market.priceUOM)
-                }.toMap)
-              )
-          }
+      pubMarkets.flatMap { case (market, levels) => {
+        if (market.name == "Gas Oil 0.2 CIF NWE Cargoes") {
+          println("odd market")
         }
-      }
+        val pricesByObservationDay: Map[Day, Traversable[(Level, Double)]] = levels.flatMap { level => {
+          val spotData: Map[Day, Double] = try {
+            limServer.getSpotData(market.limSymbol.get, level, day - daysInThePast, day)
+          } catch {
+            case m: MissingMarketDataException => {
+              Log.warn("No market data for " + market.limSymbol)
+              Map()
+            }
+          }
+          spotData.map {
+            case (d: Day, p: Double) => (d, (level, p * market.limSymbol.get.multiplier))
+          }
+        } }.groupInto(_._1, _._2)
+
+        pricesByObservationDay.map { case (day, prices) =>
+          MarketDataEntry(ObservationPoint(day), PriceFixingsHistoryDataKey(market),
+            PriceFixingsHistoryData.create(prices.map { case (level, price) =>
+              (level, StoredFixingPeriod.dateRange(day)) → MarketValue.quantity(price, market.priceUOM)
+            }.toMap)
+          )
+        }
+      } }
     }.toList
 
     val fixingsForFrontMonthIndexes = futuresFrontPeriodIndexes.mapDistinct(_.market)
@@ -103,7 +96,7 @@ class OilAndMetalsVARLimMarketDataSource(limServer: LIMServer) extends MarketDat
         val fixings = deliveryMonthToPrice.toMap.mapKeys(deliveryMonth => (level, StoredFixingPeriod.dateRange(deliveryMonth)))
 
         MarketDataEntry(observationPoint, PriceFixingsHistoryDataKey(market), PriceFixingsHistoryData.create(fixings))
-    }.toList
+    }.toList.sortBy(_.observationPoint.day)
     allFixings
   }
 }
