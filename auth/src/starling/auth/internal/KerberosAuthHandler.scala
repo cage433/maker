@@ -4,12 +4,6 @@ import starling.utils.Log
 import starling.auth.{User, LdapUserLookup, AuthHandler}
 import java.util.logging.Logger
 
-/**
- * KerbersoAtuhHandler provides an authorization service based on an LDAP user lookup.
- *
- * @see LdapUserLookup
- * @documented
- */
 class KerberosAuthHandler(serverPassword:String, ldap:LdapUserLookup) extends AuthHandler {
 
   val login = new ServerLogin(serverPassword)

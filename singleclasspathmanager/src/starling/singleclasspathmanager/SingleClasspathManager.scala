@@ -3,9 +3,6 @@ package starling.singleclasspathmanager
 import starling.manager._
 import starling.osgimanager.utils.ThreadSafeCachingProxy
 
-/**
- * SingleClasspathManager provides the means to create new instances of then start a number of BromptonActivator-s.
- */
 class SingleClasspathManager(properties:Map[String,String], cacheServices:Boolean, activators:List[Class[_ <: BromptonActivator]]) {
   val props = new Props(properties)
   case class ServiceEntry(klass:Class[_], service:AnyRef, properties:List[ServiceProperty], reference:BromptonServiceReference) {
