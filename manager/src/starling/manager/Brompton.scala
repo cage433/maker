@@ -29,7 +29,6 @@ trait BromptonActivator {
 
 /**
  * A generic (name, value) property pair for a service.
- * 
  * @documented
  */
 class ServiceProperty(val name:String, val value:AnyRef)
@@ -71,8 +70,7 @@ trait BromptonServiceRegistration {
 }
 
 /**
- * A BromptonServiceContext provides a contract to allow the generic registration, tracking and retrieval of a
- * service by its registered type.
+ * A BromptonServiceContext provides a contract to allow the registration and tracking of a generic service.
  *
  * @see BromptonServiceRegistration
  * @see BromptonServiceCallback
@@ -82,9 +80,7 @@ trait BromptonServiceRegistration {
 trait BromptonContext {
   /**
    * Registers the given service against its type, with an optional list of properties.
-   * @param klass The type under which the service should be registered, must be assignable from the service's type.
-   * @param The service, may not be null.
-   * @param properties The service's properties, optional.
+   *
    * @return A instance which may be used to unregister the service.
    */
   def registerService[T](
@@ -94,7 +90,7 @@ trait BromptonContext {
 
   /**
    * @return The service of the given type registered in this context.
-   * @throws Exception may be thrown if exactly one service of the given type is not held in this context.
+   * @throws RuntimeException may be thrown if no service of the given type is registered with this context.
    */
   def awaitService[T](klass:Class[T]):T
 

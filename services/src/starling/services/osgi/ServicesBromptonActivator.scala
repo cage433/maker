@@ -15,11 +15,6 @@ import starling.calendar.BusinessCalendars
 import starling.rmi.{RabbitEventDatabase, UserSettingsDatabase, BromptonTrackerBasedMarketDataPageIdentifierReaderProviders, StarlingServer}
 import starling.curves.CurveViewer
 
-/**
- * Empty default properties.
- *
- * @documented
- */
 class ServicesProps
 class ServicesBromptonActivator extends BromptonActivator {
 

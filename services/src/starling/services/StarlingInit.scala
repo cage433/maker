@@ -52,12 +52,6 @@ import starling.eai.{EAIDealBookMapping, Traders, EAIAutoImport, EAIStrategyDB}
 import starling.titan._
 import starling.auth.internal.{LdapUserLookupImpl, KerberosAuthHandler}
 
-/**
- * StarlingInit is an implementation to initialise, start and wrap the many core Starling services and their various
- * helpers.  
- * 
- * @documented
- */
 class StarlingInit( val props: Props,
                     authHandler:AuthHandler = AuthHandler.Dev,
                     rmiBroadcaster:Broadcaster = Broadcaster.Null,

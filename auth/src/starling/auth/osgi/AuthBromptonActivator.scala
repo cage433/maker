@@ -4,11 +4,6 @@ import starling.manager.{BromptonContext, BromptonActivator}
 import starling.auth.{AuthHandler, LdapUserLookup}
 import starling.auth.internal.{LdapUserLookupImpl, KerberosAuthHandler}
 
-/**
- * Defines the useAuth=true property.
- * 
- * @documented
- */
 class AuthProps {
   def useAuth = true
 }
