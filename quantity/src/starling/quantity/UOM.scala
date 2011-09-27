@@ -139,7 +139,7 @@ object UOM extends StarlingEnum(classOf[UOM], (u: UOM) => u.toString, ignoreCase
   private def getSymbolOption(text: CaseInsensitive): Option[UOM] = UOMSymbol.fromName(text).map(UOM.asUOM)
 
   private var uomCache = CacheFactory.getCache("UOM.fromString", unique = true)
-  private val FXRegex = """(.*)( per |/)(.*)""".r
+  private val FXRegex = """(.*)([ ]?per[ ]?|/)(.*)""".r
 
   def fromStringOption(text: String): Option[UOM] = {
     uomCache.memoize((text), (tuple: (String)) => {
