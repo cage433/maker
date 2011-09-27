@@ -59,75 +59,35 @@ class StarlingBrowserFrame(homePage: Page, startPage:Either[Page, (ServerContext
   private val busyIcon = BrowserIcons.icon("/icons/32x32/status/weather-few-clouds.png").getImage
   iconImage = mainIcon
 
-  private val initialStarlingBrowser = new StarlingBrowserTabbedPane(homePage, startPage, pageBuilder, lCache, userSettings,
+  private val browserTabbedPane = new StarlingBrowserTabbedPane(homePage, startPage, pageBuilder, lCache, userSettings,
     remotePublisher, this, extraInfo, containerMethods, this)
 
   private val notificationPanel = new NotificationPanel(size.width, lCache, containerMethods)
   private val mainPanel = new MigPanel("insets 0, hidemode 3", "[p]", "[p]0[p]") {
     background = Color.WHITE
-    def setNewComponent(comp:Component) {
-      removeAll
-      add(comp, "push, grow, wrap")
-      add(notificationPanel, "growx")
-      revalidate()
-      repaint()
-    }
+    add(browserTabbedPane, "push, grow, wrap")
+    add(notificationPanel, "growx")
   }
   reactions += {
-    case MouseClicked(`initialStarlingBrowser`, _, _, 2, _) => {
+    case MouseClicked(`browserTabbedPane`, _, _, 2, _) => {
       // If the user double clicks to the right of the tab, create a new tab.
-      initialStarlingBrowser.createStarlingBrowser()
+      browserTabbedPane.createStarlingBrowser()
     }
   }
-  listenTo(initialStarlingBrowser.mouse.clicks)
-
-  private val tabbedPaneBuffer = new ListBuffer[StarlingBrowserTabbedPane]
-  tabbedPaneBuffer += initialStarlingBrowser
-  regenerateFromBuffer(initialStarlingBrowser.pages(0).content)
-
-  def splitVertically(eventFrom: StarlingBrowserTabbedPane) {
-    val starlingBrowserTabbedPane = new StarlingBrowserTabbedPane(homePage, startPage, pageBuilder, lCache, userSettings,
-      remotePublisher, this, extraInfo, containerMethods, this)
-    reactions += {
-      case MouseClicked(`starlingBrowserTabbedPane`, _, _, 2, _) => {
-        // If the user double clicks to the right of the tab, create a new tab.
-        starlingBrowserTabbedPane.createStarlingBrowser()
-      }
-    }
-    listenTo(starlingBrowserTabbedPane.mouse.clicks)
-    val indexToAdd = tabbedPaneBuffer.indexOf(eventFrom) + 1
-    tabbedPaneBuffer.insert(indexToAdd, starlingBrowserTabbedPane)
-    regenerateFromBuffer(starlingBrowserTabbedPane.pages(0).content)
-  }
+  listenTo(browserTabbedPane.mouse.clicks)
 
   def setBusy(busy: Boolean) {
     if (busy) {
       iconImage = busyIcon
     } else {
       // Check to see if any of the other tabs are busy before saying we are not busy any more.
-      if (tabbedPaneBuffer.flatMap(_.pages.reverse.tail.filter(_.content.asInstanceOf[SXLayerScala[Component]].getScalaComponent.asInstanceOf[StarlingBrowser].busy)).isEmpty) {
+      if (browserTabbedPane.pages.reverse.tail.filter(_.content.asInstanceOf[SXLayerScala[Component]].getScalaComponent.asInstanceOf[StarlingBrowser].busy).isEmpty) {
         iconImage = mainIcon
       }
     }
   }
 
-  def canClose = ((for (starlingTabbedPane <- tabbedPaneBuffer) yield starlingTabbedPane.pages.length).sum > 2)
-
-  def tabClosed() {
-    val starlingTabbedPanesToRemove = tabbedPaneBuffer.filter(_.pages.length == 1)
-    if (starlingTabbedPanesToRemove.size > 0) {
-      tabbedPaneBuffer --= starlingTabbedPanesToRemove
-      regenerateFromBuffer()
-    }
-  }
-
-  private def regenerateFromBuffer(focusComponent: Component = tabbedPaneBuffer.last.selection.page.content) {
-    // TODO [16 Apr 2010] ensure the correct size is used for the components in the split panes.
-    val componentToAdd = tabbedPaneBuffer.reduceRight[Component](new SplitPane(Orientation.Vertical, _, _) {
-      border = EmptyBorder
-    })
-    mainPanel.setNewComponent(componentToAdd)
-  }
+  def canClose = (browserTabbedPane.pages.size > 2)
 
   def setDefaultButton(button: Option[Button]) {
     defaultButton = button
@@ -136,35 +96,23 @@ class StarlingBrowserFrame(homePage: Page, startPage:Either[Page, (ServerContext
   def getDefaultButton = defaultButton
 
   def containsPage(page:Page) = {
-    tabbedPaneBuffer.find(tp => {
-      tp.pages.find(p => {
-        p.content match {
-          case c:SXLayerScala[_] => c.asInstanceOf[SXLayerScala[StarlingBrowser]].getScalaComponent.currentPage match {
-            case Some(cp) => cp == page
-            case None => false
-          }
-          case _ => false
+    browserTabbedPane.pages.find(p => {
+      p.content match {
+        case c:SXLayerScala[_] => c.asInstanceOf[SXLayerScala[StarlingBrowser]].getScalaComponent.currentPage match {
+          case Some(cp) => cp == page
+          case None => false
         }
-      }).isDefined
+        case _ => false
+      }
     }) match {
       case Some(_) => true
       case _ => false
     }
   }
 
-  def showNewPage(page:Page) {tabbedPaneBuffer.last.createStarlingBrowser(true, Left(page))}
+  def showNewPage(page:Page) {browserTabbedPane.createStarlingBrowser(true, Left(page))}
   def showPage(page:Page) {
-    val containingTP = tabbedPaneBuffer.find(tp => {
-      tp.pages.find(p => {
-        p.content match {
-          case c:SXLayerScala[_] => c.asInstanceOf[SXLayerScala[StarlingBrowser]].getScalaComponent.currentPage match {
-            case Some(cp) => cp == page
-            case None => false
-          }
-        }
-      }).isDefined
-    }).get
-    containingTP.selectPage(page)
+    browserTabbedPane.selectPage(page)
   }
 
   contents = mainPanel
@@ -172,9 +120,7 @@ class StarlingBrowserFrame(homePage: Page, startPage:Either[Page, (ServerContext
 
 trait WindowMethods {
   def setBusy(busy: Boolean)
-  def splitVertically(eventFrom: StarlingBrowserTabbedPane)
   def canClose:Boolean
-  def tabClosed()
   def setDefaultButton(button:Option[Button])
   def getDefaultButton:Option[Button]
 }
@@ -212,7 +158,6 @@ class StarlingBrowserTabbedPane(homePage: Page, startPage:Either[Page,(ServerCon
       }
     }
   })
-//  background = new Color(171, 206, 247) // Set this for deselected tabs.
   background = new Color(164,201,246) // Set this for deselected tabs.
 
   private val newTabAction = Action("New Tab") {createStarlingBrowser()}
@@ -249,7 +194,6 @@ class StarlingBrowserTabbedPane(homePage: Page, startPage:Either[Page,(ServerCon
       pages.remove(selectionToRemove)
       val newSelection = if (selectionToRemove == pages.length - 1) selectionToRemove - 1 else selectionToRemove
       selection.index = newSelection
-      windowMethods.tabClosed()
       val browser = pages(newSelection).self.asInstanceOf[SXLayerScala[StarlingBrowser]].getScalaComponent
       browser.selected()
     } else {
@@ -260,23 +204,13 @@ class StarlingBrowserTabbedPane(homePage: Page, startPage:Either[Page,(ServerCon
   peer.getInputMap(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT).put(KeyStroke.getKeyStroke(KeyEvent.VK_W, InputEvent.CTRL_DOWN_MASK), "closeTabAction")
   peer.getActionMap.put("closeTabAction", closeTabAction.peer)
 
-  private val splitVerticallyAction = new Action("Split Vertically") {
-    icon = BrowserIcons.icon("/icons/splitVertically.png")
-    def apply() {
-      windowMethods.splitVertically(StarlingBrowserTabbedPane.this)
-    }
-  }
-
   private val newTabItem = new MenuItem(newTabAction)
   private val closeTabItem = new MenuItem(closeTabAction)
-  private val splitVerticallyItem = new MenuItem(splitVerticallyAction)
   private val tabPopupMenu = new JPopupMenu
   tabPopupMenu.setBorder(LineBorder(GuiUtils.BorderColour))
   tabPopupMenu.add(newTabItem.peer)
   tabPopupMenu.addSeparator()
   tabPopupMenu.add(closeTabItem.peer)
-  tabPopupMenu.addSeparator()
-  tabPopupMenu.add(splitVerticallyItem.peer)
 
   def createStarlingBrowser(gotoTab: Boolean = true, pageOrBuildPage: Either[Page, (ServerContext => Page, PartialFunction[Throwable, Unit])] = startPage): StarlingBrowser = {
     val (tabText, icon, addressText) = pageOrBuildPage match {

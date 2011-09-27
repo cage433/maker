@@ -28,7 +28,6 @@ class TabComponent(windowMethods:WindowMethods, tabbedPane:TabbedPane, initialTe
       tabbedPane.pages.remove(selectionToRemove)
       val newSelection = if (selectionToRemove == tabbedPane.pages.length - 1) selectionToRemove - 1 else selectionToRemove
       tabbedPane.selection.index = newSelection
-      windowMethods.tabClosed
     }
   }
 
