@@ -33,16 +33,8 @@ import starling.calendar.BusinessCalendars
 import starling.curves.CurveViewer
 import starling.rmi.{RabbitEventDatabase, DefaultRabbitEventDatabase}
 
-class MetalsProps
 
 class MetalsBromptonActivator extends BromptonActivator {
-  type Props = MetalsProps
-
-  def defaults = new MetalsProps
-
-  def init(context: BromptonContext, props: MetalsProps) {
-
-  }
 
   def start(context: BromptonContext) {
 

@@ -20,13 +20,7 @@ import starling.auth.{User, LdapUserLookup}
 import starling.manager._
 import starling.rmi.StarlingServer
 
-class TradeProps
 class TradeBromptonActivator extends BromptonActivator {
-  type Props = TradeProps
-
-  def defaults = new TradeProps
-
-  def init(context: BromptonContext, props: TradeProps) {}
 
   def start(context: BromptonContext) {
 

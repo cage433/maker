@@ -1,16 +1,8 @@
 package starling.manager
 
-import net.sf.cglib.proxy.{MethodProxy, MethodInterceptor, Enhancer}
-import java.lang.reflect.Method
-import java.io.{File, FileInputStream}
-import java.util.{Dictionary, Properties}
-
 class Brompton
 
 trait BromptonActivator {
-  type Props
-  def defaults:Props
-  def init(context:BromptonContext, props:Props)
   def start(context:BromptonContext)
   def stop(context:BromptonContext)
 }
@@ -58,67 +50,4 @@ trait BromptonContext {
       def serviceRemoved(ref: BromptonServiceReference) {}
     }):BromptonServiceTracker[T]
 }
-
-object Props {
-  def readDefault = {
-    val p = new Properties()
-    List(new File("props.conf")).foreach { file =>
-      if (file.exists) {
-        p.load(new FileInputStream(file))
-      }
-    }
-    dictionaryToMap[String,String](p)
-  }
-  private def dictionaryToMap[K,V](dictionary:Dictionary[_,_]):Map[K,V] = {
-    var map = Map[K,V]()
-    val enumeration = dictionary.keys
-    while (enumeration.hasMoreElements) {
-      val key = enumeration.nextElement
-      val value = dictionary.get(key)
-      map = map.updated(key.asInstanceOf[K], value.asInstanceOf[V])
-    }
-    map
-  }
-}
-
-class Props(inputProperties:Map[String,String]) {
-  val normalised = inputProperties.map { case (k,v) => k.toLowerCase -> v }
-  val lowercaseLookup = inputProperties.map { case (k,_) => k.toLowerCase -> k }
-  val stringClass = classOf[String]
-  val intClass = classOf[Int]
-  val booleanClass = classOf[Boolean]
-  val usedProperties = new scala.collection.mutable.HashSet[String]()
-  def applyOverrides[T](classLoader:ClassLoader, props:T):T = {
-    val e = new Enhancer()
-    e.setClassLoader(classLoader)//classOf[Props].getClassLoader)
-    e.setSuperclass(props.asInstanceOf[AnyRef].getClass)
-    e.setCallback(new MethodInterceptor() {
-       def intercept(obj:Object, method:Method,
-                    args:Array[Object], proxy:MethodProxy):Object = {
-         val lowerName = method.getName.toLowerCase
-         normalised.get(lowerName) match {
-           case Some(value) => {
-             usedProperties += lowerName
-             method.getReturnType match {
-               case `stringClass` => value
-               case `intClass` => new java.lang.Integer(value)
-               case `booleanClass` => java.lang.Boolean.valueOf(value)
-               case other => throw new Exception("Unknown  type " + other)
-             }
-           }
-           case None => proxy.invokeSuper(obj, args)
-         }
-       }
-    })
-    e.create().asInstanceOf[T]
-  }
-  def completed() {
-    val unused = lowercaseLookup.filterKeys(usedProperties.contains)
-    if (unused.nonEmpty) {
-      println("Unused properties:")
-      unused.foreach(p => println("  " + p))
-    }
-  }
-}
-
 

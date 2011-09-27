@@ -15,11 +15,7 @@ import starling.calendar.BusinessCalendars
 import starling.rmi.{RabbitEventDatabase, UserSettingsDatabase, BromptonTrackerBasedMarketDataPageIdentifierReaderProviders, StarlingServer}
 import starling.curves.CurveViewer
 
-class ServicesProps
 class ServicesBromptonActivator extends BromptonActivator {
-
-  type Props = ServicesProps
-  def defaults = new ServicesProps
 
   var starlingInit:StarlingInit = _
 
@@ -57,8 +53,6 @@ class ServicesBromptonActivator extends BromptonActivator {
     starlingInit.start
     //starlingInit.servlets.foreach { case (name, servlet) => context.registerService(classOf[HttpServlet], servlet, List(HttpContext(name)))}
   }
-
-  def init(context: BromptonContext, props: ServicesProps) { }
 
   def stop(context: BromptonContext) {
     if (starlingInit != null) {

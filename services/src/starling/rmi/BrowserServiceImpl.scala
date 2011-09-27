@@ -25,6 +25,6 @@ class BrowserServiceImpl(val name:String, val version:Version, userSettingsDatab
   def userDetails = {
     val user = User.currentlyLoggedOn
     broadcaster.broadcast(UserLoggedIn(user.username))
-    UserDetails(user.username, user.name)
+    UserDetails(user.username, user.name, user.realUsername)
   }
 }

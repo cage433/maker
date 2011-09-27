@@ -18,19 +18,11 @@ import java.util.{Hashtable, Properties}
 case class BundleAdded(bundle:BrowserBundle) extends StarlingEvent
 case class BundleRemoved(bundle:BrowserBundle) extends StarlingEvent
 
-class BrowserPropsFoo {
-  def overriddenUser:String = "NoUser"
-}
 class BrowserBromptonActivator extends BromptonActivator {
-  type Props = BrowserPropsFoo
-
-  def defaults = new BrowserPropsFoo
-
-  def start(context: BromptonContext) {}
 
   var fc:StarlingBrowserFrameContainer = _
 
-  def init(context: BromptonContext, props: BrowserPropsFoo) {
+  def start(context: BromptonContext) {
 
     javax.swing.SwingUtilities.invokeAndWait(new Runnable() { def run() {
       UIManager.getDefaults.put("ClassLoader", classOf[PlasticXPLookAndFeel].getClassLoader)
@@ -90,16 +82,6 @@ class BrowserBromptonActivator extends BromptonActivator {
 
     context.registerService(classOf[BrowserBundle], RootBrowserBundle)
 
-    /*
-
-      Need to change Browser Launcher so that Browser can respond to bundles being added and removed
-      Then GUI might work with osgi (need home page and settings to track bundle events)
-      maybe give bundles a handle to initalise the localcache
-      Make pages refresh when bundle changes
-      Then make bouncy rmi client an osgi bundle
-      then get gui to download bundles over http (like booter)
-     */
-
     def toBookmarks(bookmarks:List[BookmarkLabel]) = {
       bookmarks.map { label => {
         bundlesByName.get(label.bundleName) match {
@@ -123,7 +105,7 @@ class BrowserBromptonActivator extends BromptonActivator {
 
         val pageBuilder = new PageBuilder(pageContextPublisher, serverContext, bundlesByName)
 
-        val extraInfo = if (props.overriddenUser == "NoUser") None else Some("You are " + props.overriddenUser)
+        val extraInfo = userDetails.realUsername.map(u => "You are " + userDetails.fullName)
         fc = new StarlingBrowserFrameContainer(serverContext, cache, pageBuilder, StarlingHomePage, settings, title, extraInfo)
 
         // Must be called on the EDT

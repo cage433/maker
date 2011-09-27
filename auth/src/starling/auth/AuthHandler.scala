@@ -19,8 +19,11 @@ object AuthHandler {
   }
   val Dev = new AuthHandler {
     def authorized(ticket: Array[Byte], sudo:Option[String]) = {
-      if (sudo.isDefined) throw new Exception("Dev auth handler does not support sudo")
-      Some(User.Dev)
+      sudo match {
+        case None => Some(User.Dev)
+        case Some(username) => Some(User(username, username, Some(User.Dev.username)))
+      }
+
     }
   }
 }

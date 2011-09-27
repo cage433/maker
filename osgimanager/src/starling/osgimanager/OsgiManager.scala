@@ -34,7 +34,6 @@ class BundleHandle(var holder:Option[BundleActivatorHolder])
 
 class BromptonOSGIActivator extends OSGIBundleActivator {
   var bundleTracker:BundleTracker = _
-  var props:Option[Props] = None
   val serviceIDSequence = new java.util.concurrent.atomic.AtomicInteger()
   def start(context:OSGIBundleContext) {
     val latch = context.getService(context.getServiceReference(classOf[CountDownLatch].getName)).asInstanceOf[CountDownLatch]
@@ -52,7 +51,7 @@ class BromptonOSGIActivator extends OSGIBundleActivator {
           val context = new OSGIBromptonContext(serviceIDSequence, bundle.getBundleContext)
           val holder = new BundleActivatorHolder(activator, context, latch)
           println(">>Starting: " + bundle.getSymbolicName)
-          holder.doStart(props.get)
+          holder.doStart()
           Some(holder)
         } else {
           None
@@ -84,13 +83,7 @@ class BromptonOSGIActivator extends OSGIBundleActivator {
       def removedBundle(bundle:Bundle, event:BundleEvent, obj:Object) {
       }
     })
-    val propsService = new PropsService() {
-      def updated(updatedProps:Dictionary[String,String]) {
-        props = Some(new Props(Util.dictionaryToMap(updatedProps)))
-        bundleTracker.open
-      }
-    }
-    context.registerService(classOf[PropsService].getName, propsService, null)
+    bundleTracker.open
 
     val broadcaster = new ReceiversBroadcaster()
     val receiverTracker = new OSGIServiceTracker(context, classOf[Receiver].getName, new ServiceTrackerCustomizer {
@@ -266,14 +259,10 @@ class OSGIBromptonContext(val serviceIDSequence : AtomicInteger, val context:OSG
 }
 class BundleActivatorHolder(activator:BromptonActivator, context:OSGIBromptonContext, latch:CountDownLatch) {
   private var thread:Thread = _
-  def doStart(props:Props) {
+  def doStart() {
     thread = new Thread(new Runnable() { def run() {
       try {
         activator.start(context)
-        val classLoader = /*BundleDelegatingClassLoader.createBundleClassLoaderFor(
-            context.context.getBundle,*/
-          classOf[Props].getClassLoader//)
-        activator.init(context, props.applyOverrides(activator.getClass.getClassLoader, activator.defaults))
       } catch {
         case e:InterruptedException => {
           e.printStackTrace()
@@ -290,19 +279,6 @@ class BundleActivatorHolder(activator:BromptonActivator, context:OSGIBromptonCon
     thread.setName("Activator " + activator.getClass.getName)
     thread.setDaemon(true)
     thread.start()
-  }
-  def props(props:Props) {
-    val t = new Thread(new Runnable() { def run() {
-      try {
-        val classLoader = /*BundleDelegatingClassLoader.createBundleClassLoaderFor(
-            context.context.getBundle,*/
-          classOf[Props].getClassLoader//)
-        activator.init(context, props.applyOverrides(activator.getClass.getClassLoader, activator.defaults))
-      } catch {
-        case e => e.printStackTrace()
-      }
-    } })
-    t.start()
   }
   def stop() {
     thread.interrupt()

@@ -121,7 +121,7 @@ class LdapUserLookupImpl extends Ldap with LdapUserLookup {
     val email = m.getOrElse("mail", Set("")).headOption.getOrElse("")
     val department = m.getOrElse("department", Set("")).headOption.getOrElse("")
 
-    User(username, name, manager, groups.toList, phoneNumber, email, department)
+    User(username, name, None, manager, groups.toList, phoneNumber, email, department)
   }
 
 }

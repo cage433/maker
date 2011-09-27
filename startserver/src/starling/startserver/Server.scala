@@ -39,7 +39,7 @@ object Server {
       classOf[MetalsBromptonActivator],
       classOf[RabbitEventViewerServiceBromptonActivator]
     )
-    val single = new SingleClasspathManager(starling.manager.Props.readDefault, false, activators)
+    val single = new SingleClasspathManager(false, activators)
     writePIDFile()
     Log.infoWithTime("Launching starling server") {
       single.start()
