@@ -40,6 +40,7 @@ case class TableCell(value:Any, text:String, textPosition:TextPosition = CenterT
       case q:Quantity => Some(q.value)
       case d:Double => Some(d)
       case i:Int => Some(i.doubleValue)
+      case p:Percentage => Some(p.decimalValue)
       case _ => None
     }
   }

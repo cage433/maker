@@ -582,11 +582,11 @@ case class PivotTableConverter(otherLayoutInfo:OtherLayoutInfo = OtherLayoutInfo
       }
     }
 
-    val columnUOMs = allUnits.map(uomSet => {
+    val columnUOMs = allUnits.flatMap(uomSet => {
       if (uomSet.size == 1) {
-        uomSet.iterator.next()
+        Some(uomSet.iterator.next())
       } else {
-        UOM.NULL
+        None
       }
     })
 
