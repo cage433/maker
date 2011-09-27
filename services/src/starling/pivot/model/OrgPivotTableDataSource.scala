@@ -12,11 +12,6 @@ object OrgPivotTableDataSource {
   }
 }
 
-/**
- * The OrgPivotTableDataSource is an implementation providing the organisation pivot table data.
- *
- * @documented
- */
 class OrgPivotTableDataSource extends UnfilteredPivotTableDataSource {
   val name = FieldDetails("Name")
   val phone = FieldDetails("Phone")

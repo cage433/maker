@@ -162,7 +162,6 @@ class IntradayTradeStore(
           case u => ldapSearch.user(u) match {
             case Some(u) => u
             case None => {
-              // TODO [DM][20110923]: review: should the username be logged?
               Log.error("Invalid user in DB. Entries belonging to this user will have to be deleted")
               User.Test
             }

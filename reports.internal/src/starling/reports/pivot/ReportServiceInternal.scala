@@ -50,10 +50,7 @@ object CurveIdentifier {
 
 
 /**
- * ReportContextBuilder is an implementation wrapping a MarketDataStore to create a report context from a
- * CurveIdentifier and any number of EnvironmentSlider-s.
- *
- * @documented
+ * Creates a report context from a CurveIdentifier
  */
 class ReportContextBuilder(marketDataStore:MarketDataStore) {
 
@@ -78,9 +75,7 @@ class ReportContextBuilder(marketDataStore:MarketDataStore) {
 
 /**
  * Wraps the different PivotReport classes and runs a report (given a CurveIdentifier ReportOptions and UTPs)
- * Just returns the ReportData which is used in ReportPivotTableDataSource to create a pivot.
- *
- * @documented
+ * Just returns the ReportData which is used in ReportPivotTableDataSource to create a pivot
  */
 class PivotReportRunner(reportContextBuilder:ReportContextBuilder) {
   val marketSlideAttributes = Market.all.map(m => SlideAttributes(m.name, Some(m.standardShift.uom.toString), m.standardShift.value.toString))
@@ -184,9 +179,7 @@ class PivotReportRunner(reportContextBuilder:ReportContextBuilder) {
 }
 
 /**
- * Joins trades and market data to create reports.
- *
- * @documented
+ * Joins up trades and market data to create reports
  */
 class ReportServiceInternal(reportContextBuilder:ReportContextBuilder, tradeStores: TradeStores) {
 

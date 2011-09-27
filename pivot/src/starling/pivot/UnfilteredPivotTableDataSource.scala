@@ -8,8 +8,6 @@ import collection.immutable.Map
 /**
  * Many pivot table data sources aren't able (or willing) to apply filters to their output or collect the distinct
  * values of those fields. In that case they should derive from this class, which will handle that for them.
- *
- * @documented
  */
 abstract class UnfilteredPivotTableDataSource extends PivotTableDataSource {
 

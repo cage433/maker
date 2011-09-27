@@ -60,9 +60,13 @@ class ReportsBromptonActivator extends BromptonActivator {
     context.registerService(classOf[MarketDataPageIdentifierReaderProvider], reportRecordingMarketDataReaderProvider)
   }
 
-  /** Does nothing.  */
+  /**
+   * does nothing.
+   */
   def start(context: BromptonContext) {}
 
-  /** Does nothing. */
+  /**
+   * does nothing.
+   */
   def stop(context: BromptonContext) {}
 }

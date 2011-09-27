@@ -1,11 +1,5 @@
 package starling.calendar
 
-/**
- * BusinessCalendars is an implementation wrapping an HolidayTables instance to provide some convenience member value
- * accessors for commonly referenced countries and exchanges.
- *
- * @documented
- */
 class BusinessCalendars(val holidayTables : HolidayTables) {
   def financialHolidaysOption(code: String)= holidayTables.financialHolidaysOption(code)
 

@@ -21,12 +21,6 @@ class AuthProps {
 class AuthBromptonActivator extends BromptonActivator {
   type Props = AuthProps
   def defaults = new AuthProps
-  /**
-   * Creates then registers with the given context a KerberosAuthHandler unless useAuth is overridden to false, when
-   * the AuthHandler.Dev instance is used, instead.
-   *
-   * @param context The service context.
-   */
   def init(context: BromptonContext, props: AuthProps) {
     val realProps = context.awaitService(classOf[starling.props.Props])
     val ldapUserLookup = new LdapUserLookupImpl()
@@ -34,10 +28,10 @@ class AuthBromptonActivator extends BromptonActivator {
     context.registerService(classOf[AuthHandler], auth)
     context.registerService(classOf[LdapUserLookup], ldapUserLookup)
   }
-  /** Does nothing. */
   def start(context: BromptonContext) {
+
   }
-  /** Does nothing. */
   def stop(context: BromptonContext) {
+
   }
 }

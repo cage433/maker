@@ -148,11 +148,7 @@ object MarketDataStore {
 /**
  * Wraps a data type to provide version information.
  */
-/**
- * MarketDataStore defines a contract to provide versioned market data from the database.
- *
- * @documented
- */
+
 trait MarketDataStore {
   val pricingGroupsDefinitions = MarketDataStore.pricingGroupsDefinitions
   val pricingGroups = MarketDataStore.pricingGroups

@@ -22,10 +22,7 @@ trait DeskDefinition {
 }
 
 /**
- * TradeStores is an implementation to hold all the trades stores.  It has methods to retrieve the appropriate ones
- * for various natural keys (including for a Desk and a TradeSystem) and for more complex criteria.
- *
- * @documented
+ * Holds all the trades stores and has methods to retrieve the appropriate one
  */
 case class TradeStores(
   closedDesks: ClosedDesks,
@@ -192,3 +189,4 @@ class TradeSet(
     new TradeSet(tradeSystem, tradeStore, TradePredicate((Field("Trade Day"), new SomeSelection(tradeDays.asInstanceOf[Set[Any]])) :: tradePredicate.filter, tradePredicate.selection))
   }
 }
+

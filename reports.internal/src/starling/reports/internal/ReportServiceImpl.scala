@@ -18,10 +18,6 @@ import starling.db.{DB, TradeSystems}
 //        reportService:ReportService,
 //        userReportsService:UserReportsService,
 
-/**
- * 
- * @documented
- */
 class ReportServiceImpl(
                          reportService:ReportServiceInternal,
                          userReportsService:UserReportsService,
