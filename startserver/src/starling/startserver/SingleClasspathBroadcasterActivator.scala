@@ -4,16 +4,9 @@ import starling.utils.{Broadcaster, Receiver, ReceiversBroadcaster}
 import starling.manager._
 
 /**
- * Adds the things which usually get added in osgi.
+ * Adds the things which usally get added in osgi
  */
 class NullProps
-
-/**
- * SingleClasspathBroadcasterActivator is an implementation to create then register a ReceiversBroadcaster service in
- * its start method.  There it also creates a tracker to enable added/removed services to be tracked.
- *
- * @documented
- */
 class SingleClasspathBroadcasterActivator extends BromptonActivator {
   type Props = NullProps
   def defaults = new NullProps
