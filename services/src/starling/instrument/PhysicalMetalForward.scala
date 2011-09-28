@@ -6,18 +6,17 @@ import starling.curves.Environment
 import starling.daterange.Day
 import com.trafigura.tradinghub.support.GUID
 import com.trafigura.tradecapture.internal.refinedmetal.{Market => EDMMarket, Metal => EDMMetal}
-import starling.titan.{EDMPricingSpecConverter, EDMConversions}
 import starling.titan.EDMConversions._
 import com.trafigura.edm.materialspecification.CommoditySpec
 import com.trafigura.edm.trades.{Trade => EDMTrade, PhysicalTrade => EDMPhysicalTrade}
 import com.trafigura.edm.physicaltradespecs.PhysicalTradeQuota
 import java.lang.Exception
-import EDMConversions._
 import starling.utils.Log
 import com.trafigura.edm.shared.types.{TitanId, Date, Quantity => EDMQuantity}
 import com.trafigura.edm.logistics.inventory._
 import com.trafigura.services.valuation._
 import com.trafigura.services.TitanSerializableQuantity
+import starling.titan.{NeptuneId, EDMPricingSpecConverter, EDMConversions}
 
 
 /**
@@ -215,21 +214,9 @@ case class PhysicalMetalQuota(
 }
 
 
-//case class InventoryQuantities(inventoryID : String, received : Option[Quantity], delivered : Option[Quantity], current : Quantity){
-//  def purchaseAssignmentQuantity = received.getOrElse(current)
-//}
-
-
 object PhysicalMetalForward extends Log {
 
   private def getTradeId(t : EDMPhysicalTrade) : String = Option(t.titanId).map(_.value).getOrElse("<null>")
-
-  // **********
-  // very temporary, until we merge from master (with logistics updates)
-  // **********
-  trait EDMLogisticsQuota {
-    val fullyAllocated : Boolean
-  }
 
   def isPurchase(direction : String): Boolean = {
     val isPurchase = direction match {
@@ -240,11 +227,10 @@ object PhysicalMetalForward extends Log {
     isPurchase
   }
 
-  def apply(
-            exchangesByID : Map[String, EDMMarket],
+  def apply(exchangesByID : Map[String, EDMMarket],
             edmMetalByGUID : Map[GUID, EDMMetal],
-            inventoryByQuotaID : Map[TitanId, List[EDMInventoryItem]] = Map(),
-            logisticsQuotaByQuotaID : Map[TitanId, EDMLogisticsQuota] = Map())
+            inventoryByQuotaID : Map[TitanId, List[EDMInventoryItem]],
+            logisticsQuotaByQuotaID : Map[TitanId, EDMLogisticsQuota])
             (trade : EDMPhysicalTrade) : PhysicalMetalForward = {
 
     try {
@@ -260,16 +246,22 @@ object PhysicalMetalForward extends Log {
             val deliveryDay = Day.fromLocalDate(detail.deliverySpecs.head.schedule.asInstanceOf[Date].value)
 
             val pricingSpec = EDMPricingSpecConverter(edmMetalByGUID(commodityGUIDs.head), exchangesByID).fromEdmPricingSpec(deliveryDay, deliveryQuantity, detail.pricingSpec)
-            
 
             /**
              * Fetch the associated logistics inventory and associated logistics quota so that we can retrieve the fields relevant to the valuation process
              *   which include the fullyAllocated (bool) and the allocatedQuantity (quantity) fields from the associated logistics quota
              */
-            val inventoryItems = inventoryByQuotaID.get(detail.identifier).flatten.toList.map(i => Inventory(i))
-            if (isPurchaseTrade)
-              assert(inventoryItems.size > 0, "Purchase quota %s with no logistics inventory".format(detail.identifier.value))
+            val inventoryItems = inventoryByQuotaID.get(NeptuneId(detail.identifier).titanId).flatten.toList.map(i => Inventory(i))
+
+            if (inventoryItems.size <= 0) {
+              log.warn("Missing inventory found for quota %s".format(detail.identifier.value))
+            }
+            else {
+              log.debug("Quota %s has inventory %s".format(detail.identifier.value, inventoryItems.mkString(", ")))
+            }
             
+            //assert(inventoryItems.size > 0, "Purchase quota %s with no logistics inventory".format(detail.identifier.value))
+
             //def getLogisticsQuota(quotaName : String) : Option[EDMLogisticsQuota] = inventory.associatedQuota.find(_.quotaName == detail.quotaName)
             //val logisticsQuota : Option[EDMLogisticsQuota] = getLogisticsQuota(details.quotaName)
             
@@ -303,9 +295,17 @@ object PhysicalMetalForward extends Log {
   /**
    * value full quota with associated assignments/inventory and adjustments for allocated quantities at the quota level
    */
-  def valueWithAssignments(exchangesByID : Map[String, EDMMarket], edmMetalByGUID : Map[GUID, EDMMetal], env : Environment, snapshotID : String)(trade : EDMPhysicalTrade) : Either[String, List[QuotaValuation]] = {
+  def valueWithAssignments(
+          exchangesByID : Map[String, EDMMarket],
+          edmMetalByGUID : Map[GUID, EDMMetal],
+          inventoryByQuotaID : Map[TitanId, List[EDMInventoryItem]],
+          logisticsQuotaByQuotaID : Map[TitanId, EDMLogisticsQuota],
+          env : Environment,
+          snapshotID : String)
+          (trade : EDMPhysicalTrade) : Either[String, List[QuotaValuation]] = {
+
     try {
-      val forward = PhysicalMetalForward(exchangesByID, edmMetalByGUID)(trade)
+      val forward = PhysicalMetalForward(exchangesByID, edmMetalByGUID, inventoryByQuotaID, logisticsQuotaByQuotaID)(trade)
       Right(forward.costsAndIncomeQuotaValueBreakdown(env, snapshotID))
     }
     catch {

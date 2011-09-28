@@ -39,16 +39,22 @@ case object StarlingTradeAssignment {
   val quotaPrefix = "Q-"
 }
 
-
-// for some strange reason EDM trade service converts Neptune quota ID with prefix NEPTUNE:
+// for some strange reason EDM trade service converts titan quota ID with prefix NEPTUNE:
 case class NeptuneId(id : String) {
+  import NeptuneId._
   def identifier : String = identifier(id)
+  def titanId : TitanId = TitanId(identifier)
   def identifier(ident : String) : String = ident match {
     case i : String if i != null => {
-      val neptunePrefix = "NEPTUNE:"
       ident.substring(neptunePrefix.length)
     }
     case null => null
+  }
+}
+object NeptuneId {
+  val neptunePrefix = "NEPTUNE:"
+  def apply(titanId : TitanId) : NeptuneId = {
+    NeptuneId(titanId.value)
   }
 }
 

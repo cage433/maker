@@ -21,7 +21,7 @@ import starling.rmi.RabbitEventDatabase
 
 import starling.tradestore.TradeStore
 import starling.daterange.Day
-
+import com.trafigura.edm.logistics.inventory.{EDMLogisticsQuota, EDMInventoryItem}
 
 /**
  * Valuation service implementations
@@ -40,13 +40,14 @@ class ValuationService(
 
 
   private val eventHandler =
-    new TitanEventHandler( rabbitEventServices,
-                      this,
-                      titanTradeCache,
-                      titanInventoryCache,
-                      environmentProvider,
-                      refData,
-                      rabbitEventDb)
+    new TitanEventHandler(
+        rabbitEventServices,
+        this,
+        titanTradeCache,
+        titanInventoryCache,
+        environmentProvider,
+        refData,
+        rabbitEventDb)
 
   rabbitEventServices.addClient(eventHandler)
 
@@ -61,7 +62,18 @@ class ValuationService(
     val edmTrades = titanTradeCache.getAllTrades()
     log.info("Got Edm Trade results, trade result count = " + edmTrades.size)
     val env = environmentProvider.environment(snapshotIDString, observationDate)
-    val tradeValuer = PhysicalMetalForward.valueWithAssignments(refData.futuresExchangeByID, refData.edmMetalByGUID, env, snapshotIDString) _
+
+    val inventory = titanInventoryCache.getAll()
+
+    def quotaNames(inventory : EDMInventoryItem) : List[String] = inventory.purchaseAssignment.quotaName :: Option(inventory.salesAssignment).map(_.quotaName).toList
+
+    val quotaNamesForInventory : List[(List[TitanId], EDMInventoryItem)] = inventory.map(i => (quotaNames(i), i)).map(i => i._1.map(qn => TitanId(qn)) -> i._2)
+    val quotaToInventory : List[(TitanId, EDMInventoryItem)] = quotaNamesForInventory.flatMap(i => i._1.map(x => (x -> i._2)))
+    val inventoryByQuotaID : Map[TitanId, List[EDMInventoryItem]] = quotaToInventory.groupBy(_._1).map(x => x._1 -> x._2.map(_._2))
+    val logisticsQuotaByQuotaID : Map[TitanId, EDMLogisticsQuota] = Map() // this isn't currently implemented, probably best to complete after refactoring is completed
+
+    val tradeValuer = PhysicalMetalForward.valueWithAssignments(refData.futuresExchangeByID, refData.edmMetalByGUID, inventoryByQuotaID, logisticsQuotaByQuotaID, env, snapshotIDString) _
+
     log.info("Got %d completed physical trades".format(edmTrades.size))
     sw.reset()
     val valuations = edmTrades.map {
@@ -85,16 +97,17 @@ class ValuationService(
   }
 
   def valueSingleTradeQuotas(tradeId : String, env : Environment, snapshotIDString : String): (String, Either[String, List[QuotaValuation]]) = {
-      val tradeValuer = PhysicalMetalForward.valueWithAssignments(refData.futuresExchangeByID, refData.edmMetalByGUID, env, snapshotIDString) _
-      val edmTradeResult = titanTradeCache.getTrade(TitanId(tradeId))
-      log.debug("Got Edm Trade result " + edmTradeResult)
-      val edmTrade: EDMPhysicalTrade = edmTradeResult.asInstanceOf[EDMPhysicalTrade]
-      log.debug("Got %s physical trade".format(edmTrade.toString))
-      (snapshotIDString, tradeValuer(edmTrade))
-    }
+    val tradeValuer = PhysicalMetalForward.valueWithAssignments(refData.futuresExchangeByID, refData.edmMetalByGUID, Map(), Map(), env, snapshotIDString) _
+    val edmTradeResult = titanTradeCache.getTrade(TitanId(tradeId))
+    log.debug("Got Edm Trade result " + edmTradeResult)
+    val edmTrade: EDMPhysicalTrade = edmTradeResult.asInstanceOf[EDMPhysicalTrade]
+    log.debug("Got %s physical trade".format(edmTrade.toString))
+    (snapshotIDString, tradeValuer(edmTrade))
+  }
+
 
   /**
-   * value all assignments by leaf inventory
+   * value all inventory assignments by leaf inventory
    */
   def valueAllInventory(maybeSnapshotIdentifier : Option[String] = None, observationDate: Option[TitanSerializableDate] = None) : CostAndIncomeInventoryValuationServiceResults = {
  

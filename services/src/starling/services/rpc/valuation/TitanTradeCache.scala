@@ -23,20 +23,23 @@ case class DefaultTitanTradeCache(props : Props) extends TitanTradeCache with Lo
   private def getAll() = titanTradeService.getAllTrades()
   private def getById(id : TitanId) = titanTradeService.getTrade(id)
 
+  private var cacheLoaded = false
+
   /**
    * Read all trades from Titan and blast our cache
    */
   def updateTradeMap() {
 
     val edmTrades = getAll() // get all edm physical trades from the underlying service
+    cacheLoaded = true
 
-    // we only want to operate on completed trades
+    // we only want to operate on completed trades (at this time)
     tradeMap = edmTrades.filter(pt => pt.state == CompletedTradeState).map(t => (t.titanId, t)).toMap.withException()
     tradeMap.keySet.foreach(addTradeQuotas)
   }
 
   def getAllTrades(): List[EDMPhysicalTrade] = {
-    if (tradeMap.size > 0) {
+    if (cacheLoaded) {
       tradeMap.values.toList
     }
     else { // if we've not yet cached anything, get everything to start with
