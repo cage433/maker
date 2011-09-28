@@ -422,6 +422,9 @@ object StarlingBuild extends Build{
 
     def buildSource {
       lazy val buildUsingBinaryTooling = true
+      lazy val rubyModelPathFinder = {
+        (new File(modelRoot, "/../../../model/model/")** "*.rb")
+      }
       
       def latestRubyFileTime = {
         val files = rubyModelPathFinder.getFiles
@@ -440,10 +443,6 @@ object StarlingBuild extends Build{
       val toolingLauncher = if (buildUsingBinaryTooling == true) new File(modelRoot, "../../../mdl/bindinggen.rb") else new File(modelRoot, "/model/tooling/binding-generator/thubc.rb")
 
       val generateModelMainSourceCmd = new java.lang.ProcessBuilder("ruby", toolingLauncher.getAbsolutePath, "-o", modelGenSrcDir.getAbsolutePath, "-b", "../../../mdl/starling/bindings.rb", "../../../mdl/starling/model.rb") directory modelRoot
-
-      lazy val rubyModelPathFinder = {
-        (new File(modelRoot, "/../../../model/model/")** "*.rb")
-      }
 
       lazy val nonModelSourcePath = new File(modelRoot, "src")
       def copyNonModelSource  = {
