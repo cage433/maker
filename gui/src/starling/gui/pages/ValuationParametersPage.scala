@@ -32,7 +32,7 @@ case class ValuationParametersPage(tradeID:TradeIDLabel, reportParameters:Report
     new ValuationParametersPageComponent(context, data)
   }
 
-  override def bookmark(serverContext: StarlingServerContext) = ValuationParametersBookmark(tradeID, serverContext.reportService.createUserReport(reportParameters))
+  override def bookmark(serverContext: StarlingServerContext, pd:PageData) = ValuationParametersBookmark(tradeID, serverContext.reportService.createUserReport(reportParameters))
 }
 
 case class ValuationParametersBookmark(tradeID:TradeIDLabel, userReportData:UserReportData) extends StarlingBookmark {

@@ -25,7 +25,7 @@ trait Page {
   def createComponent(context:PageContext, data:PageData, bookmark:Bookmark, browserSize:Dimension, previousPageData:Option[PreviousPageData]):PageComponent
   def build(serverContext:SC):PageData
   def latestPage(localCache:LocalCache):Page = this
-  def bookmark(serverContext:SC):Bookmark = new PageBookmark(this)
+  def bookmark(serverContext:SC, pageData:PageData):Bookmark = new PageBookmark(this)
   type SC
   def createServerContext(sc:ServerContext):SC
 }

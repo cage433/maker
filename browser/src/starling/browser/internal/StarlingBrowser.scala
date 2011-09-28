@@ -1331,7 +1331,7 @@ class PageBuilder(val remotePublisher:Publisher, val serverContext:ServerContext
           try {
             PageLogger.logPageView(page, serverContext.browserService)
             val builtPage = page.build(page.createServerContext(serverContext))
-            val bookmark = page.bookmark(page.createServerContext(serverContext))
+            val bookmark = page.bookmark(page.createServerContext(serverContext), builtPage)
             SuccessPageResponse(builtPage, bookmark)
           } catch {
             case t => FailurePageResponse(t)
@@ -1353,7 +1353,7 @@ class PageBuilder(val remotePublisher:Publisher, val serverContext:ServerContext
           try {
             PageLogger.logPageView(newPage, serverContext.browserService)
             val builtPage = newPage.build(newPage.createServerContext(serverContext))
-            val bookmark = newPage.bookmark(newPage.createServerContext(serverContext))
+            val bookmark = newPage.bookmark(newPage.createServerContext(serverContext), builtPage)
             SuccessPageResponse(builtPage, bookmark)
           } catch {
             case t => FailurePageResponse(t)
@@ -1403,7 +1403,7 @@ class PageBuilder(val remotePublisher:Publisher, val serverContext:ServerContext
               try {
                 PageLogger.logPageView(page, serverContext.browserService)
                 val builtPage = page.build(page.createServerContext(serverContext))
-                val bookmark = page.bookmark(page.createServerContext(serverContext))
+                val bookmark = page.bookmark(page.createServerContext(serverContext), builtPage)
                 SuccessPageResponse(builtPage, bookmark)
               } catch {
                 //case t:TooLongFrameException => FailurePageResponse(new Exception("Too much data, try refining pivot view", t))

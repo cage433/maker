@@ -93,7 +93,7 @@ case class CurvePage(curveLabel: CurveLabel, pivotPageState: PivotPageState) ext
     Some(ConfigPanels(List(configPanel), new Label(""), Action("BLA"){}))
   }
 
-  override def bookmark(serverContext:FC2Context):Bookmark = {
+  override def bookmark(serverContext:FC2Context, pd:PageData):Bookmark = {
     CurveBookmark(curveLabel.curveType, curveLabel.environmentSpecification.environmentRule,
       curveLabel.marketDataIdentifier.selection, pivotPageState)
   }

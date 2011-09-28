@@ -236,7 +236,7 @@ case class MainPivotReportPage(showParameters:Boolean, reportParameters:ReportPa
     }
   }
 
-  override def bookmark(serverContext:StarlingServerContext):Bookmark = ReportBookmark(showParameters, serverContext.reportService.createUserReport(reportParameters), pivotPageState)
+  override def bookmark(serverContext:StarlingServerContext, pd:PageData):Bookmark = ReportBookmark(showParameters, serverContext.reportService.createUserReport(reportParameters), pivotPageState)
 }
 
 case class ReportBookmark(showParameters:Boolean, userReportData:UserReportData, pivotPageState:PivotPageState) extends StarlingBookmark {

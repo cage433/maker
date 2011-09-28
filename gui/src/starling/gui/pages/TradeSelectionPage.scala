@@ -498,7 +498,7 @@ case class TradeSelectionPage(
     copy(tpp = tpp.copy(intradaySubgroupAndTimestamp = newIntra, deskAndTimestamp = latestDeskTimestamp))
   }
 
-  override def bookmark(serverContext:StarlingServerContext):Bookmark = {
+  override def bookmark(serverContext:StarlingServerContext, pd:PageData):Bookmark = {
     val today = Day.today
     val isLatestLiveOn = tpp.expiry.exp == today
     val latestTimestamp = tpp.deskAndTimestamp.map{case (desk, t) => (t, serverContext.tradeService.latestTradeTimestamp(desk))}

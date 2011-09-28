@@ -121,19 +121,22 @@ case class MarketDataPage(
     Some(MarketDataPagePageData(avaliableMarketDataTypes, selected))
   }
 
-  override def bookmark(serverContext:ServerContext):Bookmark = {
+  override def bookmark(serverContext:ServerContext, pd:PageData):Bookmark = {
     val starlingServer = serverContext.lookup(classOf[ReportService])
-    val singleObservationDay = pageState.pivotPageState.pivotFieldParams.pivotFieldState match {
-      case None => None
-      case Some(pfs) => {
-        pfs.fieldSelection(Field("Observation Day")) match {
+
+    val singleObservationDay = pd match {
+      case PivotTablePageData(pivotData,_) => {
+        pivotData.pivotFieldsState.fieldSelection(Field("Observation Day")) match {
           case Some(s) if s.size == 1 => Some(s.head)
           case _ => None
         }
       }
+      case _ => None
     }
+    
     if (singleObservationDay.isDefined && marketDataIdentifier.isCurrent) {
-      val newPivotFieldState = pageState.pivotPageState.pivotFieldParams.pivotFieldState.get.removeFilter(Field("Observation Day"))
+      val pfs = pd.asInstanceOf[PivotTablePageData].pivotData.pivotFieldsState
+      val newPivotFieldState = pfs.removeFilter(Field("Observation Day"))
       val newPivotPageState = pageState.pivotPageState.copyPivotFieldsState(newPivotFieldState)
       val newPageState = pageState.copy(pivotPageState = newPivotPageState)
       marketDataIdentifier match {

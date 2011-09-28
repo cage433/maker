@@ -355,7 +355,7 @@ class SingleTradeMainPivotReportPage(val tradeID:TradeIDLabel, val reportParamet
     }
     case _ => false
   }
-  override def bookmark(serverContext:StarlingServerContext):Bookmark = {
+  override def bookmark(serverContext:StarlingServerContext, pd:PageData):Bookmark = {
     SingleTradeReportBookmark(tradeID, serverContext.reportService.createUserReport(reportParameters0), pivotPageState)
   }
 }
