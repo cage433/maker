@@ -30,6 +30,7 @@ import starling.browser.internal.StarlingBrowser
 import starling.browser.{RefreshInfo, PreviousPageData, Modifiers}
 import collection.immutable.{Map, List}
 import starling.utils.Log
+import starling.gui.custom.{EnterPressed, FindTextChanged, FindPanel}
 
 object PivotTableView {
   def createWithLayer(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSize:Dimension,
@@ -1023,13 +1024,167 @@ class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSiz
     case Some(cp) => Some(new NTabbedPane(cp, true))
   }
 
+  private def findText(text:String, direction:Int, moveBeforeFind:Boolean) {
+    val rowCount = fullTable.getRowCount
+    val colCount = fullTable.getColumnCount()
+    val selectedCells = getSelectedCells
+    
+    var (currentRow, currentCol) = selectedCells match {
+      case Left(fullTableCells) => fullTableCells.lastOption.getOrElse((0,0))
+      case Right((mainCells, rowCells, columnCells)) => {
+        if (mainCells.nonEmpty) {
+          val (row, col) = mainCells.last
+          (row + colHeaderTable.getRowCount, col + rowHeaderTable.getColumnCount())
+        } else if (columnCells.nonEmpty) {
+          val (row, col) = columnCells.last
+          (row, col + rowHeaderTable.getColumnCount())
+        } else if (rowCells.nonEmpty) {
+          val (row, col) = rowCells.last
+          (row + colHeaderTable.getRowCount, col)
+        } else {
+          (0,0)
+        }
+      }
+    }
+
+    def updatePosition() {
+      def sortOutRow() {
+        currentRow += direction
+        if (currentRow == rowCount) {
+          currentRow = 0
+        } else if (currentRow == -1) {
+          currentRow = rowCount - 1
+        }
+      }
+
+      currentCol += direction
+      if (currentCol == colCount) {
+        currentCol = 0
+        sortOutRow()
+      } else if (currentCol == -1) {
+        currentCol = colCount - 1
+        sortOutRow()
+      }
+    }
+
+    if (moveBeforeFind) {
+      updatePosition()
+    }
+
+    val startRow = currentRow
+    val startCol = currentCol
+    var found = false
+    var notFound = false
+    while (!found && !notFound) {
+      val searchValue = (fullTable.getValueAt(currentRow, currentCol) match {
+        case tc:TableCell => tc.text
+        case ac:AxisCell => ac.text
+      }).toLowerCase
+      if (searchValue.contains(text)) {
+        found = true
+      } else {
+        updatePosition()
+        if ((currentRow == startRow) && (currentCol == startCol)) {
+          notFound = true
+        }
+      }
+    }
+
+    if (found) {
+      val (rowToUse, columnToUse, tableToUse) = selectedCells match {
+        case Left(_) => (currentRow, currentCol, fullTable)
+        case Right(_) => {
+          if (currentRow >= colHeaderTable.getRowCount && currentCol >= rowHeaderTable.getColumnCount()) {
+            (currentRow - colHeaderTable.getRowCount, currentCol - rowHeaderTable.getColumnCount(), mainTable)
+          } else if (currentRow >= colHeaderTable.getRowCount) {
+            (currentRow - colHeaderTable.getRowCount, currentCol, rowHeaderTable)
+          } else {
+            (currentRow, currentCol - rowHeaderTable.getColumnCount(), colHeaderTable)
+          }
+        }
+      }
+      tableToUse.setRowSelectionInterval(rowToUse, rowToUse)
+      tableToUse.setColumnSelectionInterval(columnToUse, columnToUse)
+      tableToUse.scrollRectToVisible(new Rectangle(tableToUse.getCellRect(rowToUse, columnToUse, true)))
+    }
+  }
+
+  val findBar = new MigPanel("insets 3lp", "[p][p][p]3lp[p]") {
+    visible = false
+    border = MatteBorder(0,0,1,1,BorderColour)
+
+    def hidePanel() {
+      findPanel.resetText()
+      previousButton.enabled = false
+      nextButton.enabled = false
+      visible = false
+      updateFocusBasedOnCellSelection()
+    }
+
+    val hidePanelAction = swing.Action("hidePanelAction") {hidePanel()}
+    peer.getInputMap(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT).put(KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0), "hidePanelAction")
+    peer.getActionMap.put("hidePanelAction", hidePanelAction.peer)
+
+    val closeButton = new TwoFixedImagePanel(
+      StarlingIcons.im("/icons/close.png"),
+      StarlingIcons.im("/icons/stop.png"),
+      hidePanel()) {
+      tooltip = "Close find bar"
+      focusable = false
+    }
+    val previousButton = new Button {
+      text = "Previous"
+      mnemonic = swing.event.Key.P
+      icon = StarlingIcons.icon("/icons/16x16_previous.png")
+      focusable = false
+      enabled = false
+      reactions += {
+        case swing.event.ButtonClicked(e) => findText(findPanel.findText.toLowerCase, -1, true)
+      }
+    }
+    val nextButton = new Button {
+      text = "Next"
+      mnemonic = swing.event.Key.N
+      icon = StarlingIcons.icon("/icons/16x16_next.png")
+      focusable = false
+      enabled = false
+      reactions += {
+        case  swing.event.ButtonClicked(e) => findText(findPanel.findText.toLowerCase, 1, true)
+      }
+    }
+
+    val findPanel = new FindPanel
+
+    reactions += {
+      case EnterPressed(false) => findText(findPanel.findText.toLowerCase, 1, true)
+      case EnterPressed(true) => findText(findPanel.findText.toLowerCase, -1, true)
+      case FindTextChanged(text) => {
+        if (text.nonEmpty) {
+          nextButton.enabled = true
+          previousButton.enabled = true
+          findText(text.toLowerCase, 1, false)
+        } else {
+          nextButton.enabled = false
+          previousButton.enabled = false
+        }
+      }
+    }
+    listenTo(findPanel)
+
+    add(closeButton)
+    add(findPanel, "growy")
+    add(previousButton)
+    add(nextButton)
+  }
+
   add(fieldChooserPanelHolder, "spany, growy")
   actualConfigPanel.foreach(cp => {
     add(configTabbedPane.get, "grow, wrap")
   })
   add(toolbarPanel, "growx, wrap")
   add(InfoBar, "growx, wrap")
-  add(contentPanel, "push, grow")
+  add(contentPanel, "push, grow, wrap")
+  add(findBar, "growx")
 
   if (otherLayoutInfo.hiddenType == AllHidden) {
     fieldChooserPanelHolder.visible = false
@@ -1076,6 +1231,14 @@ class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSiz
     }
     TableSelection(r)
   }
+  private val showFindAction = swing.Action("showFindAction") {
+    findBar.visible = true
+    findBar.findPanel.findFieldRequestFocus()
+  }
+  allTables.foreach(t => {
+    t.getInputMap(JComponent.WHEN_FOCUSED).put(KeyStroke.getKeyStroke(KeyEvent.VK_F, InputEvent.CTRL_DOWN_MASK), "showFindAction")
+    t.getActionMap.put("showFindAction", showFindAction.peer)
+  })
 
   actualConfigPanel match {
     case None =>
