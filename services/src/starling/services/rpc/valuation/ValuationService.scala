@@ -56,7 +56,7 @@ class ValuationService(
    */
   def valueAllTradeQuotas(maybeSnapshotIdentifier : Option[String] = None, observationDate: Option[TitanSerializableDate] = None) : CostAndIncomeQuotaAssignmentValuationServiceResults = {
 
-    log.info("valueAllTradeQuotas called with snapshot id " + maybeSnapshotIdentifier + ", and observation date " + observationDate)
+    log.info("valueAllTradeQuotas called with snapshot id %s and observation date %s".format(maybeSnapshotIdentifier, observationDate))
     val snapshotIDString = resolveSnapshotIdString(maybeSnapshotIdentifier)
     val sw = new Stopwatch()
     val edmTrades = titanTradeCache.getAllTrades()
@@ -90,7 +90,7 @@ class ValuationService(
    */
   def valueSingleTradeQuotas(tradeID : String, maybeSnapshotIdentifier : Option[String] = None, observationDate: Option[TitanSerializableDate] = None) : (String, Either[String, List[QuotaValuation]]) = {
 
-    log.info("valueAllTradeQuotas called with snapshot id " + maybeSnapshotIdentifier + ", and observation date " + observationDate)
+    log.info("valueSingleTradeQuotas called for %s with snapshot id %s and observation date %s".format(tradeID, maybeSnapshotIdentifier, observationDate))
     val snapshotIDString = resolveSnapshotIdString(maybeSnapshotIdentifier)
     val env = environmentProvider.environment(snapshotIDString, observationDate)
     valueSingleTradeQuotas(tradeID, env, snapshotIDString)
