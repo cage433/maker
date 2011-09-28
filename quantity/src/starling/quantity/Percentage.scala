@@ -19,10 +19,11 @@ case class Percentage(value : Double) {
 
   // we need to round to 8 dp because multiplying by 100 can introduce floating point errors
   // e.g. 0.2435 * 100. = 24.349999999999998
-  override def toString = MathUtil.roundToNdp(value * 100, 8) + "%"
-
+  def toLongString:String = MathUtil.roundToNdp(value * 100, 8) + "%"
   def toShortString: String = toShortString(DefaultFormat)
   def toShortString(format: String, addSpace:Boolean = false): String = (value*100).format(format, addSpace = addSpace) + "%"
+
+  override def toString = toLongString
 
   override def equals(other: Any) = other match {
     case p : Percentage => abs(p.value * 100 - this.value * 100) <= MathUtil.EPSILON

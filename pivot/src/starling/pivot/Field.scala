@@ -467,7 +467,7 @@ object PercentagePivotFormatter extends PivotFormatter {
     value match {
       case s:Set[_] if s.size > PivotFormatter.MaxSetSize => new TableCell(s, s.size + " values")
       case s:Set[_] => new TableCell(s, s.map(_.asInstanceOf[Percentage].toShortString(formatInfo.decimalPlaces.percentageFormat, addSpace = true)).mkString(","))
-      case p:Percentage => new TableCell(p, p.toShortString(formatInfo.decimalPlaces.percentageFormat, addSpace = true), RightTextPosition)
+      case p:Percentage => new TableCell(p, p.toShortString(formatInfo.decimalPlaces.percentageFormat, addSpace = true), RightTextPosition, longText = Some(p.toLongString))
     }
   }
 }
