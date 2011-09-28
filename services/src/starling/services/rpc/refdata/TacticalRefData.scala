@@ -152,7 +152,6 @@ case class FileMockedTitanServicesDataFileGenerator(titanEdmTradeService : Titan
   /**
    * get edm trades and store in mock data file
    */
-  valuationService.marketDataSnapshotIDs().foreach(println)
   val valuations = valuationService.valueAllTradeQuotas()
 
   // valuations.tradeResults.foreach(println)

@@ -45,7 +45,7 @@ class MetalsBromptonActivator extends BromptonActivator {
     val marketDataStore = context.awaitService(classOf[MarketDataStore])
     val tradeStores = context.awaitService(classOf[TradeStores])
 
-    val titanTradeStore = tradeStores.titanTradeStore
+    val titanTradeStore = tradeStores.titanTradeStore.asInstanceOf[TitanTradeStore]
 
     val starlingDB = DB(props.StarlingDatabase())
 
@@ -92,7 +92,7 @@ class MetalsBromptonActivator extends BromptonActivator {
         )
       }
 
-    val titanSystemOfRecord = new TitanSystemOfRecord(titanTradeCache, titanServices, logisticsServices)
+    val titanSystemOfRecord = new TitanSystemOfRecord(titanServices, logisticsServices)
     val titanTradeImporter = new TradeImporter(TitanTradeSystem, titanSystemOfRecord, titanTradeStore)
 
     context.registerService(classOf[TradeImporter], titanTradeImporter)

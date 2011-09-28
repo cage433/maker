@@ -39,38 +39,11 @@ object StarlingBuild extends Build{
 
   val testDependency = "compile;test->test"
 
-  val crazyTestListener = new sbt.TestsListener{
-
-    //Used by the test framework for logging test results
-    def doComplete (finalResult: TestResult.Value){
-      println("Called doComplete")
-    }
-
-    //called once, at end.
-    def doInit{
-      println("Called doInit")
-    }
-
-    //called once, at beginning.
-    def endGroup (name: String, result: TestResult.Value) {
-      println("Called endGroup")
-    }
-
-    //called if test completed
-    def endGroup (name: String, t: Throwable){
-      println("Called endGroup")
-    }
-
-    //called if there was an error during test
-    def startGroup (name: String){
-      println("Called startGroup")
-    }
-
-    //called for each class or equivalent grouping
-    def testEvent (event: TestEvent){
-      println("Called testEvent " + event)
-    }
-  }
+  lazy val manager = Project(
+    "manager",
+    file("./manager"),
+    settings = standardSettings 
+  ) 
 
   lazy val utils = Project(
     "utils", 
@@ -78,17 +51,11 @@ object StarlingBuild extends Build{
     settings = standardSettings 
   )
 
-  lazy val bouncyrmi = Project(
-    "bouncyrmi", 
-    file("./bouncyrmi"),
+  lazy val osgiRun = Project(
+    "osgirun",
+    file("./osgirun"),
     settings = standardSettings
-  ) dependsOn(manager, auth, props)
-
-  lazy val auth = Project(
-    "auth", 
-    file("./auth"),
-    settings = standardSettings
-  ) dependsOn (utils, manager, props)
+  ) 
 
   lazy val concurrent = Project(
     "concurrent", 
@@ -102,29 +69,17 @@ object StarlingBuild extends Build{
     settings = standardSettings
   ) dependsOn (utils)
 
-  lazy val props = Project(
-    "props",
-    file("./props"),
-    settings = standardSettings
-  ) dependsOn(starlingApi, utils, manager)
+  lazy val osgiManager = Project(
+    "osgimanager",
+    file("./osgimanager"),
+    settings = standardSettings 
+  ) dependsOn(manager, utils)
 
-  lazy val daterange = Project(
-    "daterange", 
-    file("./daterange"),
+  lazy val singleClasspathManager = Project(
+    "singleclasspathmanager",
+    file("./singleclasspathmanager"),
     settings = standardSettings
-  ) dependsOn(utils)
-
-  lazy val loopyxl = Project(
-    "loopyxl", 
-    file("./loopyxl"),
-    settings = standardSettings
-  ) dependsOn(manager, auth)
-
-  lazy val maths = Project(
-    "maths", 
-    file("./maths"),
-    settings = standardSettings
-  ) dependsOn(quantity % testDependency, daterange % testDependency)
+  ) dependsOn(manager, utils, osgiManager)
 
   lazy val pivot = Project(
     "pivot", 
@@ -138,89 +93,25 @@ object StarlingBuild extends Build{
     settings = standardSettings
   ) dependsOn(daterange, pivot)
 
-  lazy val guiapi = Project(
-    "gui.api", 
-    file("./gui.api"),
+  lazy val daterange = Project(
+    "daterange", 
+    file("./daterange"),
     settings = standardSettings
-  ) dependsOn(pivotUtils, quantity, auth, bouncyrmi, browserService, manager)
+  ) dependsOn(utils)
 
-  lazy val fc2Facility = Project(
-    "fc2.facility",
-    file("./fc2.facility"),
+
+  lazy val titanReturnTypes = Project(
+    "titan.return.types",
+    file("./titan.return.types"),
     settings = standardSettings
-  ) dependsOn(daterange, guiapi)
+  ) dependsOn(daterange, quantity)
 
-  lazy val curves = Project(
-    "curves", 
-    file("./curves"),
+  lazy val maths = Project(
+    "maths", 
+    file("./maths"),
     settings = standardSettings
-  ) dependsOn(utils % testDependency, daterange % testDependency, maths, pivotUtils, guiapi, quantity % testDependency)
+  ) dependsOn(quantity % testDependency, daterange % testDependency)
 
-  lazy val instrument = Project(
-    "instrument", 
-    file("./instrument"),
-    settings = standardSettings
-  ) dependsOn(curves % testDependency, daterange % testDependency)
-
-  lazy val reportsFacility = Project(
-    "reports.facility",
-    file("./reports.facility"),
-    settings = standardSettings
-  ) dependsOn(guiapi)
-
-  lazy val reportsImpl = Project(
-    "reports.impl",
-    file("./reports.impl"),
-    settings = standardSettings
-  ) dependsOn(services)
-
-  lazy val rabbitEventViewerApi = Project(
-    "rabbit.event.viewer.api",
-    file("./rabbit.event.viewer.api"),
-    settings = standardSettings
-  ) dependsOn(pivot, manager)
-
-  lazy val rabbitEventViewerService = Project(
-    "rabbit.event.viewer.service",
-    file("./rabbit.event.viewer.service"),
-    settings = standardSettings
-  ) dependsOn(rabbitEventViewerApi, pivot, databases, manager)
-
-  lazy val gui = Project(
-    "gui", 
-    file("./gui"),
-    settings = standardSettings
-  ) dependsOn(fc2Facility, tradeFacility, reportsFacility, browser, rabbitEventViewerApi, singleClasspathManager)
-
-  lazy val browser = Project(
-    "browser",
-    file("./browser"),
-    settings = standardSettings
-  ) dependsOn(browserService, manager)
-
-  lazy val browserService = Project(
-    "browserService",
-    file("./browser.service"),
-    settings = standardSettings
-  ) dependsOn(manager)
-
-  lazy val tradeFacility = Project(
-    "trade.facility",
-    file("./trade.facility"),
-    settings = standardSettings 
-  ) dependsOn(auth, guiapi, manager)
-
-  lazy val metals = Project(
-    "metals",
-    file("./metals"),
-    settings = standardSettings
-  ) dependsOn(services, tradeImpl)
-
-  lazy val tradeImpl = Project(
-    "trade.impl",
-    file("./trade.impl"),
-    settings = standardSettings
-  ) dependsOn(services, tradeFacility, manager)
 
   import TitanModel._
   lazy val titanModel = Project(
@@ -245,14 +136,99 @@ object StarlingBuild extends Build{
         Seq(unmanagedJars in Compile <++= (baseDirectory) map titanBinaryJars) ++ 
         Seq(unmanagedJars in Runtime <++= (baseDirectory) map titanBinaryJars) ++ 
         Seq(unmanagedJars in Test <++= (baseDirectory) map titanBinaryJars)
-    ) dependsOn()
+    ) dependsOn(titanReturnTypes)
   } else {
     Project(
       "starlingApi", 
       file("./starling.api"),
       settings = standardSettings 
-    ) dependsOn(titanModel)
+    ) dependsOn(titanModel, titanReturnTypes)
   }
+
+  lazy val props = Project(
+    "props",
+    file("./props"),
+    settings = standardSettings
+  ) dependsOn(utils, manager)
+
+  lazy val auth = Project(
+    "auth", 
+    file("./auth"),
+    settings = standardSettings
+  ) dependsOn (utils, manager, props)
+
+  lazy val bouncyrmi = Project(
+    "bouncyrmi", 
+    file("./bouncyrmi"),
+    settings = standardSettings
+  ) dependsOn(manager, auth, props)
+
+  lazy val loopyxl = Project(
+    "loopyxl", 
+    file("./loopyxl"),
+    settings = standardSettings
+  ) dependsOn(manager, auth)
+
+  lazy val browserService = Project(
+    "browserService",
+    file("./browser.service"),
+    settings = standardSettings
+  ) dependsOn(manager)
+
+  lazy val browser = Project(
+    "browser",
+    file("./browser"),
+    settings = standardSettings
+  ) dependsOn(browserService, manager)
+
+  lazy val guiapi = Project(
+    "gui.api", 
+    file("./gui.api"),
+    settings = standardSettings
+  ) dependsOn(pivotUtils, quantity, auth, bouncyrmi, browserService, manager)
+
+  lazy val fc2Facility = Project(
+    "fc2.facility",
+    file("./fc2.facility"),
+    settings = standardSettings
+  ) dependsOn(daterange, guiapi)
+
+  lazy val curves = Project(
+    "curves", 
+    file("./curves"),
+    settings = standardSettings
+  ) dependsOn(utils % testDependency, daterange % testDependency, maths, pivotUtils, guiapi, quantity % testDependency)
+
+  lazy val instrument = Project(
+    "instrument", 
+    file("./instrument"),
+    settings = standardSettings
+  ) dependsOn(curves % testDependency, daterange % testDependency, titanReturnTypes)
+
+  lazy val reportsFacility = Project(
+    "reports.facility",
+    file("./reports.facility"),
+    settings = standardSettings
+  ) dependsOn(guiapi)
+
+  lazy val rabbitEventViewerApi = Project(
+    "rabbit.event.viewer.api",
+    file("./rabbit.event.viewer.api"),
+    settings = standardSettings
+  ) dependsOn(pivot, manager)
+
+  lazy val gui = Project(
+    "gui", 
+    file("./gui"),
+    settings = standardSettings
+  ) dependsOn(fc2Facility, tradeFacility, reportsFacility, browser, rabbitEventViewerApi, singleClasspathManager)
+
+  lazy val tradeFacility = Project(
+    "trade", 
+    file("./trade.facility"),
+    settings = standardSettings 
+  ) dependsOn(auth, guiapi, manager)
+
  
   lazy val starlingClient = Project(
     "starlingClient",
@@ -271,6 +247,12 @@ object StarlingBuild extends Build{
     file("./databases"),
     settings = standardSettings 
   ) dependsOn(curves % "test->test", pivot , guiapi , concurrent , auth , starlingApi, dbx, props)
+
+  lazy val rabbitEventViewerService = Project(
+    "rabbit.event.viewer.service",
+    file("./rabbit.event.viewer.service"),
+    settings = standardSettings
+  ) dependsOn(rabbitEventViewerApi, pivot, databases, manager)
 
   lazy val titan = if (useTitanModelBinaries){
 		Project(
@@ -295,31 +277,26 @@ object StarlingBuild extends Build{
     "services", 
     file("./services"),
     settings = standardSettings 
-  ) dependsOn(curves % "test->test", concurrent, loopyxl, titan, gui, fc2Facility, browser)
+  ) dependsOn(curves % "test->test", concurrent, loopyxl, titan, gui, fc2Facility, browser, titanReturnTypes)
 
-  lazy val manager = Project(
-    "manager",
-    file("./manager"),
-    settings = standardSettings 
-  ) dependsOn()
-
-  lazy val singleClasspathManager = Project(
-    "singleclasspathmanager",
-    file("./singleclasspathmanager"),
+  lazy val tradeImpl = Project(
+    "trade.impl",
+    file("./trade.impl"),
     settings = standardSettings
-  ) dependsOn(manager, utils, osgiManager)
+  ) dependsOn(services, tradeFacility, manager)
 
-  lazy val osgiManager = Project(
-    "osgimanager",
-    file("./osgimanager"),
-    settings = standardSettings 
-  ) dependsOn(manager, utils)
-
-  lazy val osgiRun = Project(
-    "osgirun",
-    file("./osgirun"),
+  lazy val metals = Project(
+    "metals",
+    file("./metals"),
     settings = standardSettings
-  ) dependsOn()
+  ) dependsOn(services, tradeImpl)
+
+  lazy val reportsImpl = Project(
+    "reports.impl",
+    file("./reports.impl"),
+    settings = standardSettings
+  ) dependsOn(services)
+
 
   lazy val startserver = Project(
     "startserver",

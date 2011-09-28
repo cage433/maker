@@ -18,7 +18,7 @@ import starling.utils.Log
 trait EnvironmentProvider {
   def getSnapshots() : List[String]
   def environment_(snapshotID : String, marketDay : Option[Day]) : Environment
-  def environment(snapshotID : String, marketDay : Option[TitanSerializableDate] = None) : Environment = environment_(snapshotID, marketDay.map{d => Day.fromLocalDate(d.value)})
+  def environment(snapshotID : String, marketDay : Option[Day] = None) : Environment = environment_(snapshotID, marketDay)
   def updateSnapshotCache()
   def snapshotNameToID(name : String) : SnapshotID
   def mostRecentSnapshotIdentifierBeforeToday(): Option[String]

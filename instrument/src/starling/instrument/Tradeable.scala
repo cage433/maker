@@ -104,7 +104,10 @@ object TradeableType {
     ("Index", classOf[Option[IndexWithDailyPrices]]),
     ("QuotationPeriod", classOf[Option[DateRange]]),
     ("Premium", classOf[Quantity]),
-    ("Exchange", classOf[FuturesExchange])
+    ("Exchange", classOf[FuturesExchange]),
+    ("Inventory ID", classOf[String]),
+    ("Inventory Quantity", classOf[Quantity]),
+    ("Assignment ID", classOf[String])
 
   )
   val fields = fieldsWithType.map(_._1)

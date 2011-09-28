@@ -3,6 +3,7 @@ package starling.client
 import org.joda.time.LocalDate
 import com.trafigura.services._
 import com.trafigura.services.marketdata._
+import starling.daterange.Day
 
 
 object MarketDataClient {
@@ -10,9 +11,10 @@ object MarketDataClient {
 
   def test(serviceApi: ServiceApi) = serviceApi.using { marketData: MarketDataServiceApi =>
 
-    val date = new LocalDate(2011, 9, 14)
+    val day = Day(2011, 6, 24)
+    val date = day.toLocalDate
     val observationDay = new TitanSerializableDate(date)
-    val snapshotId = new TitanSnapshotIdentifier("4439", date)
+    val snapshotId = new TitanSnapshotIdentifier("4439", day)
 
     ///////////////////
     // Spot FX Examples

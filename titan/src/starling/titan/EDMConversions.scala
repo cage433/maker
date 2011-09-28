@@ -45,7 +45,7 @@ object EDMConversions {
   }
 
   implicit def enrichSnapshotID(snapshotID: SnapshotID) = new {
-    def toSerializable = TitanSnapshotIdentifier(snapshotID.id.toString, snapshotID.observationDay.toJodaLocalDate)
+    def toSerializable = TitanSnapshotIdentifier(snapshotID.id.toString, snapshotID.observationDay)
   }
 
   // 'Serializable' implicits
@@ -67,8 +67,8 @@ object EDMConversions {
 
   implicit def enrichTitanSnapshotIdentifier(snapshotId: TitanSnapshotIdentifier) = new {
     def intId = snapshotId.id.toInt
-    def toTitanDate = TitanSerializableDate(snapshotId.snapshotDay)
-    def toDay = Day.fromLocalDate(snapshotId.snapshotDay)
+    def toTitanDate = TitanSerializableDate(snapshotId.snapshotDay.toJodaLocalDate)
+    def toDay = snapshotId.snapshotDay
 //    def toMarketDataVersion(marketDataStore: MarketDataStore) = SnapshotMarketDataVersion(fromTitan(marketDataStore).label)
     def fromTitan(marketDataStore: MarketDataStore): Option[SnapshotID] = marketDataStore.snapshotFromID(intId)
   }

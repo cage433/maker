@@ -84,7 +84,10 @@ object InstrumentType {
     ("Pricing Spec Name", classOf[String]),
     ("Index", classOf[String]),
     ("Commodity", classOf[String]),
-    ("Exchange", classOf[FuturesExchange])
+    ("Exchange", classOf[FuturesExchange]),
+    ("Inventory ID", classOf[String]),
+    ("Inventory Quantity", classOf[Quantity]),
+    ("Assignment ID", classOf[String])
   )
   val fields = fieldsWithType.map(_._1)
   val lowercaseNoSpaceFields = fieldsWithType.map(_._1.toLowerCase.replaceAll(" ", ""))

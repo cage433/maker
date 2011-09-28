@@ -1,7 +1,5 @@
 package starling.services.rpc.valuation
 
-import starling.instrument.PhysicalMetalAssignmentForward
-import starling.instrument.PhysicalMetalForward
 import starling.curves.Environment
 import starling.services.StarlingInit
 import com.trafigura.services.valuation._
@@ -20,9 +18,8 @@ import starling.rmi.RabbitEventDatabase
 
 import starling.tradestore.TradeStore
 import starling.daterange.Day
-import com.trafigura.edm.logistics.inventory.{EDMLogisticsQuota, EDMInventoryItem}
-import com.trafigura.services.{TitanSnapshotIdentifier, TitanSerializableDate}
-
+import starling.instrument.physical.PhysicalMetalForward
+import valuation.{CostAndIncomeQuotaAssignmentValuationServiceResults, CostAndIncomeInventoryValuationServiceResults, QuotaValuation}
 
 /**
  * Valuation service implementations
@@ -34,7 +31,7 @@ class ValuationService(
   logisticsServices : TitanLogisticsServices,
   rabbitEventServices : TitanRabbitEventServices,
   titanInventoryCache : DefaultTitanLogisticsInventoryCache,
-  titanTradeStore : Option[TradeStore],  // Optional as I don't want to write a mock service for this yet
+  titanTradeStore : Option[TitanTradeStore],  // Optional as I don't want to write a mock service for this yet
   rabbitEventDb : RabbitEventDatabase
 )
   extends ValuationServiceApi with Log {
@@ -52,33 +49,33 @@ class ValuationService(
 
   rabbitEventServices.addClient(eventHandler)
 
-  /**
-   * Service implementations
-   */
-  def valueAllTradeQuotas(maybeSnapshotIdentifier : Option[String] = None, observationDate: Option[TitanSerializableDate] = None) : CostAndIncomeQuotaAssignmentValuationServiceResults = {
+  private def valueForward(env : Environment, snapshotIDString : String, fwd : PhysicalMetalForward) : (String, Either[String, List[QuotaValuation]]) = {
+     try {
+        (fwd.tradeID, Right(fwd.costsAndIncomeQuotaValueBreakdown(env, snapshotIDString)))
+      } catch {
+        case ex =>
+          Log.warn("Error valuing trade " + fwd.tradeID + ", message was " + ex.getMessage)
+          (fwd.tradeID, Left("Error valuing trade " + fwd.tradeID + ", message was " + ex.getMessage))
+      }
+  }
+
+  def valueAllTradeQuotas(maybeSnapshotIdentifier : Option[String] = None, observationDate: Option[Day] = None) : CostAndIncomeQuotaAssignmentValuationServiceResults = {
 
     log.info("valueAllTradeQuotas called with snapshot id %s and observation date %s".format(maybeSnapshotIdentifier, observationDate))
     val snapshotIDString = resolveSnapshotIdString(maybeSnapshotIdentifier)
     val sw = new Stopwatch()
-    val edmTrades = titanTradeCache.getAllTrades()
-    log.info("Got Edm Trade results, trade result count = " + edmTrades.size)
+    val forwards : List[PhysicalMetalForward] = titanTradeStore.get.getAllForwards()
+    log.info("Got Edm Trade results, trade result count = " + forwards.size)
     val env = environmentProvider.environment(snapshotIDString, observationDate)
-
-    val inventory = titanInventoryCache.getAll()
-
-    def quotaNames(inventory : EDMInventoryItem) : List[String] = inventory.purchaseAssignment.quotaName :: Option(inventory.salesAssignment).map(_.quotaName).toList
-
-    val quotaNamesForInventory : List[(List[TitanId], EDMInventoryItem)] = inventory.map(i => (quotaNames(i), i)).map(i => i._1.map(qn => TitanId(qn)) -> i._2)
-    val quotaToInventory : List[(TitanId, EDMInventoryItem)] = quotaNamesForInventory.flatMap(i => i._1.map(x => (x -> i._2)))
-    val inventoryByQuotaID : Map[TitanId, List[EDMInventoryItem]] = quotaToInventory.groupBy(_._1).map(x => x._1 -> x._2.map(_._2))
-    val logisticsQuotaByQuotaID : Map[TitanId, EDMLogisticsQuota] = Map() // this isn't currently implemented, probably best to complete after refactoring is completed
-
-    val tradeValuer = PhysicalMetalForward.valueWithAssignments(refData.futuresExchangeByID, refData.edmMetalByGUID, inventoryByQuotaID, logisticsQuotaByQuotaID, env, snapshotIDString) _
-
-    log.info("Got %d completed physical trades".format(edmTrades.size))
-    sw.reset()
-    val valuations = edmTrades.map {
-      trade => (trade.titanId.value, tradeValuer(trade))
+    val valuations = forwards.map{
+      fwd =>
+      try {
+        (fwd.tradeID, Right(fwd.costsAndIncomeQuotaValueBreakdown(env, snapshotIDString)))
+      } catch {
+        case ex =>
+          Log.warn("Error valuing trade " + fwd.tradeID + ", message was " + ex.getMessage)
+          (fwd.tradeID, Left("Error valuing trade " + fwd.tradeID + ", message was " + ex.getMessage))
+      }
     }.toMap
     log.info("Valuation took " + sw)
     val (worked, errors) = valuations.values.partition(_ isRight)
@@ -86,10 +83,34 @@ class ValuationService(
     CostAndIncomeQuotaAssignmentValuationServiceResults(snapshotIDString, valuations)
   }
 
+
+  /**
+   * Service implementations
+   */
+//  def valueAllTradeQuotas(maybeSnapshotIdentifier : Option[String] = None, observationDate: Option[Day] = None) : CostAndIncomeQuotaAssignmentValuationServiceResults = {
+//
+//    log.info("valueAllTradeQuotas called with snapshot id " + maybeSnapshotIdentifier + ", and observation date " + observationDate)
+//    val snapshotIDString = resolveSnapshotIdString(maybeSnapshotIdentifier)
+//    val sw = new Stopwatch()
+//    val edmTrades = titanTradeCache.getAllTrades()
+//    log.info("Got Edm Trade results, trade result count = " + edmTrades.size)
+//    val env = environmentProvider.environment(snapshotIDString, observationDate)
+//    val tradeValuer = PhysicalMetalForward.valueWithAssignments(refData.futuresExchangeByID, refData.edmMetalByGUID, env, snapshotIDString) _
+//    log.info("Got %d completed physical trades".format(edmTrades.size))
+//    sw.reset()
+//    val valuations = edmTrades.map {
+//      trade => (trade.titanId.value, tradeValuer(trade))
+//    }.toMap
+//    log.info("Valuation took " + sw)
+//    val (worked, errors) = valuations.values.partition(_ isRight)
+//    log.info("Worked " + worked.size + ", failed " + errors.size + ", took " + sw)
+//    CostAndIncomeQuotaAssignmentValuationServiceResults(snapshotIDString, valuations)
+//  }
+
     /**
    * Service implementations
    */
-  def valueSingleTradeQuotas(tradeID : String, maybeSnapshotIdentifier : Option[String] = None, observationDate: Option[TitanSerializableDate] = None) : (String, Either[String, List[QuotaValuation]]) = {
+  def valueSingleTradeQuotas(tradeID : String, maybeSnapshotIdentifier : Option[String] = None, observationDate: Option[Day] = None) : (String, Either[String, List[QuotaValuation]]) = {
 
     log.info("valueSingleTradeQuotas called for %s with snapshot id %s and observation date %s".format(tradeID, maybeSnapshotIdentifier, observationDate))
     val snapshotIDString = resolveSnapshotIdString(maybeSnapshotIdentifier)
@@ -98,19 +119,21 @@ class ValuationService(
   }
 
   def valueSingleTradeQuotas(tradeId : String, env : Environment, snapshotIDString : String): (String, Either[String, List[QuotaValuation]]) = {
-    val tradeValuer = PhysicalMetalForward.valueWithAssignments(refData.futuresExchangeByID, refData.edmMetalByGUID, Map(), Map(), env, snapshotIDString) _
-    val edmTradeResult = titanTradeCache.getTrade(TitanId(tradeId))
-    log.debug("Got Edm Trade result " + edmTradeResult)
-    val edmTrade: EDMPhysicalTrade = edmTradeResult.asInstanceOf[EDMPhysicalTrade]
-    log.debug("Got %s physical trade".format(edmTrade.toString))
-    (snapshotIDString, tradeValuer(edmTrade))
-  }
 
+      val forward : PhysicalMetalForward = titanTradeStore.get.getForward(tradeId)
+      valueForward(env, snapshotIDString, forward)
+//      val tradeValuer = PhysicalMetalForward.valueWithAssignments(refData.futuresExchangeByID, refData.edmMetalByGUID, env, snapshotIDString) _
+//      val edmTradeResult = titanTradeCache.getTrade(TitanId(tradeId))
+//      log.debug("Got Edm Trade result " + edmTradeResult)
+//      val edmTrade: EDMPhysicalTrade = edmTradeResult.asInstanceOf[EDMPhysicalTrade]
+//      log.debug("Got %s physical trade".format(edmTrade.toString))
+//      (snapshotIDString, tradeValuer(edmTrade))
+    }
 
   /**
    * value all inventory assignments by leaf inventory
    */
-  def valueAllInventory(maybeSnapshotIdentifier : Option[String] = None, observationDate: Option[TitanSerializableDate] = None) : CostAndIncomeInventoryValuationServiceResults = {
+  def valueAllInventory(maybeSnapshotIdentifier : Option[String] = None, observationDate: Option[Day] = None) : CostAndIncomeInventoryValuationServiceResults = {
  
     val snapshotIDString = resolveSnapshotIdString(maybeSnapshotIdentifier)
     val env = environmentProvider.environment(snapshotIDString, observationDate)
@@ -118,28 +141,29 @@ class ValuationService(
   }
   
   def valueAllAssignments(env : Environment, snapshotIDString : String) : CostAndIncomeInventoryValuationServiceResults = {
-    val sw = new Stopwatch()
-
-    val inventory = titanInventoryCache.getAll()
-
-    val quotaNameToQuotaMap = titanTradeCache.getAllTrades().flatMap(_.quotas).map(q => NeptuneId(q.detail.identifier.value).identifier -> q).toMap
-
-    val assignmentValuer = PhysicalMetalAssignmentForward.value(refData.futuresExchangeByID, refData.edmMetalByGUID, quotaNameToQuotaMap, env, snapshotIDString) _
-
-    val valuations = inventory.map(i => i.oid.contents.toString -> assignmentValuer(i))
-    
-    log.info("Valuation took " + sw)
-    //val (worked, errors) = valuations.partition(_._2 isRight)
-    //log.debug("Worked " + worked.size + ", failed " + errors.size + ", took " + sw)
-    //log.debug("Failed valuation of inventory assignments (%d)...\n%s".format(errors.size, errors.mkString("\n")))
-
-    CostAndIncomeInventoryValuationServiceResults(snapshotIDString, valuations.toMap)
+//    val sw = new Stopwatch()
+//
+//    val inventory = titanInventoryCache.getAll()
+//
+//    val quotaNameToQuotaMap = titanTradeCache.getAllTrades().flatMap(_.quotas).map(q => NeptuneId(q.detail.identifier.value).identifier -> q).toMap
+//
+//    val assignmentValuer = PhysicalMetalAssignmentForward.value(refData.futuresExchangeByID, refData.edmMetalByGUID, quotaNameToQuotaMap, env, snapshotIDString) _
+//
+//    val valuations = inventory.map(i => i.oid.contents.toString -> assignmentValuer(i))
+//
+//    log.info("Valuation took " + sw)
+//    //val (worked, errors) = valuations.partition(_._2 isRight)
+//    //log.debug("Worked " + worked.size + ", failed " + errors.size + ", took " + sw)
+//    //log.debug("Failed valuation of inventory assignments (%d)...\n%s".format(errors.size, errors.mkString("\n")))
+//
+//    CostAndIncomeInventoryValuationServiceResults(snapshotIDString, valuations.toMap)
+    null
   }
 
   /**
    * value all inventory assignments by inventory id
    */
-  def valueInventory(inventoryIds: List[String], maybeSnapshotIdentifier: Option[String], observationDate: Option[TitanSerializableDate] = None): CostAndIncomeInventoryValuationServiceResults = {
+  def valueInventory(inventoryIds: List[String], maybeSnapshotIdentifier: Option[String], observationDate: Option[Day] = None): CostAndIncomeInventoryValuationServiceResults = {
 
     val snapshotIDString = resolveSnapshotIdString(maybeSnapshotIdentifier)
     val env = environmentProvider.environment(snapshotIDString, observationDate)
@@ -147,29 +171,30 @@ class ValuationService(
   }
 
   def valueInventoryAssignments(inventoryIds: List[String], env : Environment, snapshotIDString : String) : CostAndIncomeInventoryValuationServiceResults = {
-    val sw = new Stopwatch()
-
-    val quotaNameToQuotaMap = titanTradeCache.getAllTrades().flatMap(_.quotas).map(q => NeptuneId(q.detail.identifier.value).identifier -> q).toMap
-
-    val assignmentValuer = PhysicalMetalAssignmentForward.value(refData.futuresExchangeByID, refData.edmMetalByGUID, quotaNameToQuotaMap, env, snapshotIDString) _
-
-    val valuations = inventoryIds.map(i => i -> assignmentValuer(titanInventoryCache.getByID(i)))
-
-    log.info("Valuation took " + sw)
-    val (worked, errors) = valuations.partition(_._2 isRight)
-    log.info("Worked " + worked.size + ", failed " + errors.size + ", took " + sw)
-    log.info("Failed valuation of inventory assignments (%d)...\n%s".format(errors.size, errors.mkString("\n")))
-
-    CostAndIncomeInventoryValuationServiceResults(snapshotIDString, valuations.toMap)
+//    val sw = new Stopwatch()
+//
+//    val quotaNameToQuotaMap = titanTradeCache.getAllTrades().flatMap(_.quotas).map(q => NeptuneId(q.detail.identifier.value).identifier -> q).toMap
+//
+//    val assignmentValuer = PhysicalMetalAssignmentForward.value(refData.futuresExchangeByID, refData.edmMetalByGUID, quotaNameToQuotaMap, env, snapshotIDString) _
+//
+//    val valuations = inventoryIds.map(i => i -> assignmentValuer(titanInventoryCache.getByID(i)))
+//
+//    log.info("Valuation took " + sw)
+//    val (worked, errors) = valuations.partition(_._2 isRight)
+//    log.info("Worked " + worked.size + ", failed " + errors.size + ", took " + sw)
+//    log.info("Failed valuation of inventory assignments (%d)...\n%s".format(errors.size, errors.mkString("\n")))
+//
+//    CostAndIncomeInventoryValuationServiceResults(snapshotIDString, valuations.toMap)
+    null
   }
 
 
   /**
    * Return all snapshots for a given observation day, or every snapshot if no day is supplied
    */
-  def marketDataSnapshotIDs(observationDay: Option[LocalDate] = None): List[TitanSnapshotIdentifier] = {
-    environmentProvider.snapshotIDs(observationDay.map(Day.fromJodaDate)).map {
-      starlingSnapshotID => TitanSnapshotIdentifier(starlingSnapshotID.id.toString, starlingSnapshotID.observationDay.toJodaLocalDate)
+  def marketDataSnapshotIDs(observationDay: Option[Day] = None): List[TitanSnapshotIdentifier] = {
+    environmentProvider.snapshotIDs(observationDay).map {
+      starlingSnapshotID => TitanSnapshotIdentifier(starlingSnapshotID.id.toString, starlingSnapshotID.observationDay)
     }
   }
 
@@ -256,7 +281,7 @@ class ValuationServiceRpc(marketDataStore: MarketDataStore, valuationService: Va
 //
 //  StarlingInit.runningDevInstance.stop
 //
-//  def writeJson[T <: ModelObject with Object { def toJson() : JSONObject }](fileName : String, objects : List[T]) {
+//  def writeJson[T git<: ModelObject with Object { def toJson() : JSONObject }](fileName : String, objects : List[T]) {
 //    try {
 //      val fStream = new FileWriter(fileName)
 //      val bWriter = new BufferedWriter(fStream)

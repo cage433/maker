@@ -34,7 +34,7 @@ object ExampleService extends ExampleServiceApi {
   private val rates: HashMap[ReferenceRateSource, ReferenceInterestRate] = new HashMap
 
   def getReferenceInterestRate(source: ReferenceRateSource) = rates.getOrElseUpdate(source,
-    ReferenceInterestRate(TitanSnapshotIdentifier("dummy", Day.today.toLocalDate),
+    ReferenceInterestRate(TitanSnapshotIdentifier("dummy", Day.today),
       TitanSerializableDate(Day.today.toLocalDate), source, RelativeMaturity.get("1D"),
       TitanSerializableCurrency("GBP"), TitanSerializablePercentage(0.123)))
 
@@ -70,7 +70,7 @@ object ExampleClient {
 
     println(exampleService.getReferenceInterestRate(ReferenceRateSource("LIBOR")))
 
-    val rate = ReferenceInterestRate(TitanSnapshotIdentifier("dummy", Day.today.toLocalDate),
+    val rate = ReferenceInterestRate(TitanSnapshotIdentifier("dummy", Day.today),
       TitanSerializableDate(Day.today.toLocalDate), ReferenceRateSource("LIBOR"), NamedMaturity.ON,
       TitanSerializableCurrency("GBP"), TitanSerializablePercentage(0.987))
 

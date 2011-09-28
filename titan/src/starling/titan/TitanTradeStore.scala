@@ -8,6 +8,7 @@ import starling.utils.Broadcaster
 import starling.instrument.TradeSystem
 import starling.pivot.FieldDetails
 import starling.gui.api.{Desk, TradesUpdated}
+import starling.instrument.physical.PhysicalMetalForward
 
 object TitanTradeStore {
   val quotaID_str = "Quota ID"
@@ -71,6 +72,15 @@ class TitanTradeStore(db: RichDB, broadcaster:Broadcaster, tradeSystem:TradeSyst
 
   override def tradesChanged() = {
    broadcaster.broadcast(TradesUpdated(Desk.Titan, cachedLatestTimestamp.get))
+  }
+  def getAllForwards() : List[PhysicalMetalForward] = {
+    null
+  }
+  def getForward(titanTradeID : String) : PhysicalMetalForward = {
+    null
+  }
+  def updateForward(fwd : PhysicalMetalForward){
+//    fwd.asStarlingTrades...
   }
 }
 

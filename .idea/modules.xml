@@ -39,6 +39,7 @@
       <module fileurl="file://$PROJECT_DIR$/starling.client/starling.client.iml" filepath="$PROJECT_DIR$/starling.client/starling.client.iml" />
       <module fileurl="file://$PROJECT_DIR$/startserver/startserver.iml" filepath="$PROJECT_DIR$/startserver/startserver.iml" />
       <module fileurl="file://$PROJECT_DIR$/titan/titan.iml" filepath="$PROJECT_DIR$/titan/titan.iml" />
+      <module fileurl="file://$PROJECT_DIR$/titan.return.types/titan.return.types.iml" filepath="$PROJECT_DIR$/titan.return.types/titan.return.types.iml" />
       <module fileurl="file://$PROJECT_DIR$/trade.facility/trade.facility.iml" filepath="$PROJECT_DIR$/trade.facility/trade.facility.iml" />
       <module fileurl="file://$PROJECT_DIR$/trade.impl/trade.impl.iml" filepath="$PROJECT_DIR$/trade.impl/trade.impl.iml" />
       <module fileurl="file://$PROJECT_DIR$/utils/utils.iml" filepath="$PROJECT_DIR$/utils/utils.iml" />

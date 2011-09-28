@@ -14,8 +14,6 @@ import starling.dbx.Query
 
 trait SystemOfRecord {
 
-  def trade(tradeID: String)(f: Trade => Unit) : Unit
-
   /**
    * Return is a count of the number of errors, together with the set of
    * unique errors
