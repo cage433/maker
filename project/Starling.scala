@@ -412,7 +412,7 @@ object StarlingBuild extends Build{
     )
 
     def copyModelJar {
-      val srcFile = new File(modelRoot + "/target/scala-2.9.1.final/titan-model_2.9.1-0.1.jar")
+      val srcFile = new File(modelRoot + "/target/scala-2.9.1/titan-model_2.9.1-0.1.jar")
       val destFile = new File("./lib/titan-model-jars/scala-model-with-persistence.jar")
       println("copying target jar %s to %s".format(srcFile, destFile))
       val r = copyFile(srcFile, destFile)
