@@ -232,11 +232,11 @@ object AverageVolatilityPivotFormatter extends PivotFormatter {
     value match {
       case s:Set[_] if s.isEmpty => TableCell.Null
       case pq:PivotQuantity => TableCell.fromPivotQuantity(pq, formatInfo)
-      case p:Percentage => new TableCell(p, p.toShortString, RightTextPosition)
+      case p:Percentage => new TableCell(p, p.toShortString(formatInfo.decimalPlaces.percentageFormat, addSpace = true), RightTextPosition)
       case l:List[_] if l.size == 2 => {
         val p = l.head.asInstanceOf[Percentage]
         val s = l.tail.head.asInstanceOf[Double]
-        new TableCell(l, p.toShortString + " & " + s.format(formatInfo.decimalPlaces.defaultFormat), RightTextPosition)
+        new TableCell(l, p.toShortString(formatInfo.decimalPlaces.percentageFormat, addSpace = true) + " & " + s.format(formatInfo.decimalPlaces.defaultFormat), RightTextPosition)
       }
     }
   }
@@ -386,8 +386,10 @@ object FieldDetails {
     override def parser = parser0
     override def formatter = formatter0
   }
-  def createMeasure(name:String) = new FieldDetails(name) {
+  def createMeasure(name:String, formatter0:PivotFormatter = DefaultPivotFormatter, parser0:PivotParser = TextPivotParser) = new FieldDetails(name) {
     override def isDataField = true
+    override def formatter = formatter0
+    override def parser = parser0
   }
 }
 
@@ -464,7 +466,7 @@ object PercentagePivotFormatter extends PivotFormatter {
   def format(value:Any, formatInfo:ExtraFormatInfo) = {
     value match {
       case s:Set[_] if s.size > PivotFormatter.MaxSetSize => new TableCell(s, s.size + " values")
-      case s:Set[_] => new TableCell(s, s.map(_.asInstanceOf[Percentage].toShortString).mkString(","))
+      case s:Set[_] => new TableCell(s, s.map(_.asInstanceOf[Percentage].toShortString(formatInfo.decimalPlaces.percentageFormat, addSpace = true)).mkString(","))
       case p:Percentage => new TableCell(p, p.toShortString(formatInfo.decimalPlaces.percentageFormat, addSpace = true), RightTextPosition)
     }
   }

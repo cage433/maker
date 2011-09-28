@@ -118,9 +118,9 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
 
         if ((current >= 0) && (current < history.length)) {
           if (currentPageInfo.refreshPage.isDefined) {
-            if (liveUpdateCheckbox.selected && submitCount == 0) {
+            if (liveUpdateCheckbox.selected && submitCount == 0 && !genericLockedUI.isLocked) {
               refresh()
-            } else {
+            } else if (!genericLockedUI.isLocked) {
               refreshAction.enabled = true
             }
           }

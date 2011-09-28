@@ -100,10 +100,7 @@ case class MarketDataPage(
     marketDataIdentifier match {
       case StandardMarketDataPageIdentifier(mi) => {
         localCache.latestMarketDataVersionIfValid(mi.selection) match {
-          case Some(v) => {
-            // TODO - All edits are being removed - not just the ones that are cancelled out by the update.
-            copy(marketDataIdentifier=StandardMarketDataPageIdentifier(mi.copyVersion(v)), pageState = pageState.copy(edits = PivotEdits.Null))
-          }
+          case Some(v) => copy(marketDataIdentifier=StandardMarketDataPageIdentifier(mi.copyVersion(v)))
           case _ => this
         }
       }
@@ -282,11 +279,11 @@ case class MarketDataPage(
           MarketDataPage.goTo(context, marketDataIdentifier, Some(extraPanel.dataTypeCombo.selection.item), days)
         }
         case SelectionChanged(pricingGroupPanel.snapshotsComboBox) =>
-          context.goTo(copy(marketDataIdentifier=StandardMarketDataPageIdentifier(marketDataIdentifier.marketDataIdentifier.copy(marketDataVersion = pricingGroupPanel.snapshotsComboBox.value))))
+          context.goTo(copy(marketDataIdentifier=StandardMarketDataPageIdentifier(marketDataIdentifier.marketDataIdentifier.copy(marketDataVersion = pricingGroupPanel.snapshotsComboBox.value)), pageState = pageState.copy(edits = PivotEdits.Null)))
         case MarketDataSelectionChanged(selection) => context.goTo(
-          copy(marketDataIdentifier=StandardMarketDataPageIdentifier(MarketDataIdentifier(selection, context.localCache.latestMarketDataVersion(selection))))
+          copy(marketDataIdentifier=StandardMarketDataPageIdentifier(MarketDataIdentifier(selection, context.localCache.latestMarketDataVersion(selection))), pageState = pageState.copy(edits = PivotEdits.Null))
         )
-        case ButtonClicked(b) => {context.goTo(copy(marketDataIdentifier = StandardMarketDataPageIdentifier(marketDataIdentifier.marketDataIdentifier)))}
+        case ButtonClicked(extraPanel.filterDataCheckbox) => {context.goTo(copy(marketDataIdentifier = StandardMarketDataPageIdentifier(marketDataIdentifier.marketDataIdentifier), pageState = pageState.copy(edits = PivotEdits.Null)))}
       }
       listenTo(extraPanel.dataTypeCombo.selection, pricingGroupPanel.pricingGroupSelector, pricingGroupPanel.snapshotsComboBox.selection, extraPanel.filterDataCheckbox)
     }

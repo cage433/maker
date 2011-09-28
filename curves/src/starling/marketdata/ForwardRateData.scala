@@ -19,7 +19,7 @@ object ForwardRateDataType extends MarketDataType {
   val formatField = FieldDetails("Format")
   val instrumentTypeField = FieldDetails("Instrument Type")
   val dayField = FieldDetails("Day")
-  val rateField = FieldDetails.createMeasure("Rate")
+  val rateField = FieldDetails.createMeasure("Rate", PercentagePivotFormatter, PercentagePivotParser)
 
   def createKey(row: Row) = ForwardRateDataKey(row[UOM](currencyField))
   def createValue(rows: List[Row]) = ForwardRateData(rows.map { row =>
