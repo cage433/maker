@@ -101,7 +101,7 @@ class Props(starlingProps:Map[String,String], trafiguraProps : Map[String, Strin
   object TitanLogisticsServiceUrl extends StringProperty(LogisticsServiceLocation() + RestEasyRpcMount)
 
   // Titan Rabbit related configuration
-  object TitanRabbitBrokerHost  extends StringProperty("localhost")
+  object TitanRabbitBrokerHost  extends StringProperty("")
   object TitanRabbitUserName  extends StringProperty("trafiguraDev")
   object TitanRabbitPassword  extends StringProperty("trafiguraDev")
 
