@@ -17,14 +17,14 @@ case class UTP_Portfolio(portfolio : Map[UTP, Double]) extends Instrument {//} w
   def pivotUTPType = throw new Exception("Unimplemented")
 
 
-	/** Returns the valuation currency for the instruments in this portfolio. Fails
-  * 	if the portfolio is empty or if there is a mixture of currencies.
-  */
-  def valuationCCY : UOM = {
-		assert(!portfolio.isEmpty, "Empty portfolios have no currency")
-		val ccy = portfolio.keySet.iterator.next.valuationCCY
-		assert(portfolio.keySet.forall(_.valuationCCY == ccy), "Portfolio of mixed currency deals has no currency")
-		ccy
+  /**Returns the valuation currency for the instruments in this portfolio. Fails
+   * 	if the portfolio is empty or if there is a mixture of currencies.
+   */
+  def valuationCCY: UOM = {
+    assert(!portfolio.isEmpty, "Empty portfolios have no currency")
+    val ccys = portfolio.keySet.map(_.valuationCCY)
+    assert(ccys.size == 1, "Portfolio of mixed currency deals has no currency: " + ccys)
+    ccys.head
   }
 
   def explanation(env: Environment) = throw new Exception("No explanation for UTP Portfolio")

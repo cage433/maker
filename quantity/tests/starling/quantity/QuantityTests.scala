@@ -50,11 +50,6 @@ import starling.quantity.RichQuantity._
   }
 
   @Test
-  def testPrimes{
-    assertEquals(List(2, 3, 5, 7, 11, 13, 17, 19, 23), Primes.firstNPrimes(9))
-  }
-  
-  @Test
   def almostEq() {
     assertTrue(Qty(6, USD).isAlmostEqual(Qty(5, USD), 1.1))
     assertFalse(Qty(6, USD).isAlmostEqual(Qty(5, USD), .9))
@@ -214,5 +209,46 @@ import starling.quantity.RichQuantity._
     }
 
     parsed should be === original
+  }
+
+  @Test
+  def testBase {
+    (1 (KG) inBaseUOM) should be === 1000 (G)
+    (1 (MT) inBaseUOM) should be === 1e6 (G)
+    (1 (GAL) inBaseUOM) should be === 1 (GAL)
+    (1 (BBL) inBaseUOM) should be === 42 (GAL)
+
+    (1000 (USD/KG) inBaseUOM) should be === 1 (USD/G)
+    (1000 (US_CENT/KG) inBaseUOM) should be === .01 (USD/G)
+  }
+
+  @DataProvider(name = "testNotEquals")
+  def testNotEqualsProvider = constructArgs(
+    (1 (USD), (1 (GBP))),
+    (1 (GAL), (1 (BBL))),
+    (1 (USD), (101 (US_CENT)))
+  )
+
+  @Test(dataProvider = "testNotEquals")
+  def testNotEquals(a: Quantity, b: Quantity) {
+    a should not be === (b)
+    assertFalse(a.isAlmostEqual(b, .001))
+  }
+
+  @DataProvider(name = "testEquals")
+  def testEqualsProvider = constructArgs(
+    (1 (USD), (1 (USD))),
+    (1 (GAL), (1 (GAL))),
+    (1000 (L), (1 (KL))),
+    (1000 (G), (1 (KG))),
+    (1000 (L), (1 (KL))),
+    (1 (USD), (100 (US_CENT))),
+    (1.5 (USD), (150 (US_CENT)))
+  )
+  @Test(dataProvider = "testEquals")
+  def testEquals(a: Quantity, b: Quantity) {
+    a should be === b
+    a.hashCode should be === b.hashCode
+    assertTrue(a.isAlmostEqual(b, 0))
   }
 }

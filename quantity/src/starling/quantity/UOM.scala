@@ -16,7 +16,6 @@ object UOM extends StarlingEnum(classOf[UOM], (u: UOM) => u.toString, ignoreCase
 
   //  val Parse: Extractor[String, UOM] = Extractor.from[String](value => fromStringOption(value))
   val Currency: Extractor[Any, UOM] = Parse.filter(_.isCurrency)
-  val primes = Primes.firstNPrimes(200)
 
   import UOMSymbol._
   import UOMType.Currencies
@@ -58,8 +57,8 @@ object UOM extends StarlingEnum(classOf[UOM], (u: UOM) => u.toString, ignoreCase
   val SGD = UOM(Currencies.SGD, sgd, 1.0)
   val THB = UOM(Currencies.THB, thb, 1.0)
   val TRY = UOM(Currencies.TRY, trySymbol, 1.0)
-  val US_CENT = UOM(Currencies.USD, US_CENT_SYMBOL, 1.0)
-  val USD = UOM(Currencies.USD, usd, 100.0)
+  val US_CENT = UOM(Currencies.USD, US_CENT_SYMBOL, .01)
+  val USD = UOM(Currencies.USD, usd, 1.0)
   val WSC = UOM(Currencies.WSC, WSC_SYMBOL, 1.0)
   val ZAR = UOM(Currencies.ZAR, zar, 1.0)
 
@@ -70,7 +69,7 @@ object UOM extends StarlingEnum(classOf[UOM], (u: UOM) => u.toString, ignoreCase
   val ST = UOM(UOMType.MASS, SHORT_TONNE_SYMBOL, 907184.74)
   val C_MT = UOM(UOMType.MASS, C_TONNE_SYMBOL, 100 * 1e6)
   val K_MT = UOM(UOMType.MASS, KILO_TONNE_SYMBOL, 1000 * 1e6)
-  val LB = UOM(UOMType.MASS, POUND_SYMBOL, .45359237 * KG.v)
+  val LB = UOM(UOMType.MASS, POUND_SYMBOL,.45359237 * KG.v)
   val OZ = UOM(UOMType.MASS, OUNCE_SYMBOL, LB.v * .06857) // Troy OZ
 
   // Volume
@@ -131,10 +130,15 @@ object UOM extends StarlingEnum(classOf[UOM], (u: UOM) => u.toString, ignoreCase
   val BUSHEL_WHEAT = UOM(BUSHEL_WHEAT_SYMBOL)
 
   val uoms = values filterNot List(NULL, SCALAR).contains
+  val primes = uoms.flatMap{case UOM(Ratio(p1, _), Ratio(p2, _), _) => Set(p1.toInt, p2.toInt)}.distinct
 
-  lazy val currencies = uoms.filter(_.isCurrency)
+  lazy val currencies: List[UOM] = uoms.filter(_.isCurrency)
   val uomMap: Map[(Long, Long), UOM] = uoms.map(u => (u.uType.numerator, u.subType.numerator) -> u).toMap
   val symbolToUOMMap: Map[UOMSymbol, UOM] = uoms.map(u => (UOMSymbol.symbolForPrime(u.subType.numerator) -> u)).toMap
+  val baseMap: Map[Ratio, UOM] = uoms.flatMap {
+    case u@UOM(uType, _, v) if v == 1.0 => Some((uType -> u))
+    case _ => None
+  }.toMap
 
   private def getSymbolOption(text: CaseInsensitive): Option[UOM] = UOMSymbol.fromName(text).map(UOM.asUOM)
 
@@ -194,7 +198,7 @@ object UOM extends StarlingEnum(classOf[UOM], (u: UOM) => u.toString, ignoreCase
           else
             recurse(n, rest, acc)
         case Nil =>
-          throw new IllegalStateException("Prime decomposition is badly wrong")
+          throw new IllegalStateException("Prime decomposition is badly wrong: " + n)
       }
     }
     recurse(n, UOM.primes, Map.empty[Int, Int])
@@ -213,11 +217,12 @@ case class UOM(uType: Ratio, subType: Ratio, v: BigDecimal) extends Ordered[UOM]
 
   def /(o: UOM) = this.div(o) match {
     case (u, bd) if bd == 1 => u
-    case (u, bd) => throw new Exception("Can't ignore result of division " + this + "/" + o + ": " + (u, bd))
+    case (u, bd) => throw new Exception("Can't ignore result of division " + this + "/" + o + ": " +(u, bd))
   }
+
   def *(o: UOM) = this.mult(o) match {
     case (u, bd) if bd == 1 => u
-    case (u, bd) => throw new Exception("Can't ignore result of mult " + this + "*" + o + ": " + (u, bd))
+    case (u, bd) => throw new Exception("Can't ignore result of mult " + this + "*" + o + ": " +(u, bd))
   }
 
   def div(o: UOM) = this.mult(o.inverse)
@@ -346,7 +351,7 @@ case class UOM(uType: Ratio, subType: Ratio, v: BigDecimal) extends Ordered[UOM]
   def replace(uom1: UOM, uom2: UOM) = {
     def recurse(u: UOM): UOM = {
       if (u.uType.gcd(uom1.uType) == uom1.uType)
-        uom2 * recurse(u /uom1)
+        uom2 * recurse(u / uom1)
       else if (u.uType.gcd(uom1.uType.inverse) == uom1.uType.inverse)
         recurse(u * uom1) / uom2
       else
@@ -359,6 +364,22 @@ case class UOM(uType: Ratio, subType: Ratio, v: BigDecimal) extends Ordered[UOM]
   }
 
   def isCurrency: Boolean = UOMType.Currencies.isCurrency(uType)
+
+  /**
+   * E.g. if this is US_CENT will return USD, or Pence will return GBP
+   */
+  def toBaseCurrency: UOM = {
+    assert(isCurrency, "Not a currency: " + this)
+    UOM.baseMap(uType)
+  }
+
+
+  def toBaseUnit: UOM = {
+    val base = asSymbolMap.map {
+      case (sym, pow) => (UOMSymbol.symbolForPrime(UOM.baseMap(UOM.symbolToUOMMap(sym).uType).subType.numerator) -> pow)
+    }
+    UOM.fromSymbolMap(base)
+  }
 
   def isFX = numeratorUOM.isCurrency && denominatorUOM.isCurrency
 }

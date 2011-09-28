@@ -98,10 +98,13 @@ trait Instrument extends Ordered[Instrument] with Greeks with PnlExplanation {
 
   // Return a tree structure describing how mtm was calculated
   def explain(env: Environment, ccy: UOM): NamedQuantity = {
-    val explained = if (ccy == valuationCCY)
-      explanation(env)
-    else
-      explanation(env) * (if (ccy == valuationCCY) new Quantity(1.0) else env.withNaming().spotFXRate(ccy, valuationCCY).named("Spot FX"))
+    val explained = explanation(env) in ccy match {
+      case Some(ex) => ex
+      case None => {
+        val spotFX = env.withNaming().spotFXRate(ccy, valuationCCY).named("Spot FX")
+        (explanation(env) * spotFX) inUOM ccy
+      }
+    }
 
     assert(explained.isAlmostEqual(mtm(env), 1e-6), "Explanation not the same as the mtm: " + (explained, mtm(env)))
     explained

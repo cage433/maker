@@ -100,14 +100,10 @@ case class Environment(
   /**	Returns the current spot fx rate in units ccy1 / ccy2
    */
   def spotFXRate(ccy1: UOM, ccy2: UOM): Quantity = {
-    if (!(ccy1.isCurrency && ccy2.isCurrency)){
-      println("Not currency")
-    }
     assert(ccy1.isCurrency, ccy1 + " is not a currency")
     assert(ccy2.isCurrency, ccy2 + " is not a currency")
     (ccy1, ccy2) match {
       case (ccy1, ccy2) if ccy1 == ccy2 => new Quantity(1.0)
-      case (USD, US_CENT) => Quantity(1, SCALAR)
       case (`USD`, ccy) => instrumentLevelEnv.quantity(USDFXRateKey(ccy))
       case (ccy, `USD`) => spotFXRate(USD, ccy).invert
       case _ => spotFXRate(ccy1, USD) * spotFXRate(USD, ccy2)

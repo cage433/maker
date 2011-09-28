@@ -60,7 +60,7 @@ class FutureCommoditySpreadsTests extends JonTestEnv {
         val differentiable = s.asInstanceOf[EnvironmentDifferentiable with PriceKey]
         val delta = fs.delta(env, differentiable, USD)
         assertTrue(delta != 0, "delta: " + delta)
-        assertEquals(delta, f1.delta(env, differentiable, USD) + f2.delta(env, differentiable, USD))
+        assertQtyEquals(delta, f1.delta(env, differentiable, USD) + f2.delta(env, differentiable, USD), 1e-9)
       }
     }
   }

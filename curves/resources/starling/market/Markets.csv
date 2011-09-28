@@ -24,7 +24,7 @@ LME Zinc	Some(554)	FuturesMarket	MT	USD	LME	Some(25.0)	Day	Zinc	Some(LCH.LME.ZIN
 NYMEX Brent	Some(605)	FuturesMarket	bbl	USD	NYM	Some(1000.0)	Month	Brent	Some(FB)	Some(1.0)	Some(3)	Some(2)	EAIExpiryRule(1)	NYMEX	Some(37)							Some(7.57)
 COMEX Palladium	Some(683)	FuturesMarket	oz	USD	NYM	Some(1.0)	Month	Palladium	Some(COMEX.PAC)	Some(1.0)	Some(3)	Some(2)	Comex PT/PA	COMEX	None							None
 COMEX Platinum	Some(684)	FuturesMarket	oz	USD	NYM	Some(1.0)	Month	Platinum	Some(COMEX.PLC)	Some(1.0)	Some(3)	Some(2)	Comex PT/PA	COMEX	None							None
-NYMEX RBOB	Some(880)	FuturesMarket	gal	USD	NYM	Some(42000.0)	Month	Gasoline	Some(RB.UNL)	Some(0.01)	Some(4)	Some(4)	EAIExpiryRule(880)	NYMEX	Some(23)							Some(8.33)
+NYMEX RBOB	Some(880)	FuturesMarket	gal	USC	NYM	Some(42000.0)	Month	Gasoline	Some(RB.UNL)	Some(0.01)	Some(4)	Some(4)	EAIExpiryRule(880)	NYMEX	Some(23)							Some(8.33)
 ICE WTI	Some(890)	FuturesMarket	bbl	USD	IPE	Some(1000.0)	Month	WTI	Some(WI)	Some(1.0)	Some(3)	Some(4)	EAIExpiryRule(890)	ICE	Some(12)							Some(7.6)
 ICE RBOB	Some(913)	FuturesMarket	gal	USD	IPE	Some(1000.0)	Month	Gasoline	Some(IPRBOB)	Some(0.01)	Some(4)	Some(4)	EAIExpiryRule(913)	ICE	None							Some(8.33)
 ICE Heat	Some(914)	FuturesMarket	gal	USD	IPE	Some(1000.0)	Month	HeatingOil	Some(IPHO)	Some(0.01)	Some(4)	Some(4)	EAIExpiryRule(914)	ICE	None							Some(7.45)

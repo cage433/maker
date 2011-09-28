@@ -124,6 +124,14 @@ class Quantity(val value : Double, val uom : UOM) extends Ordered[Quantity] with
     conv.convert(uom, otherUOM).map((ratio) => Quantity((this.value * ratio).toDouble, otherUOM))
   }
 
+  /**
+   * E.g. 1000 Cent/KG to .01 USD/G
+   * used for equals and hashcode
+   */
+  def inBaseUOM = {
+    this.inUOM(uom.toBaseUnit)
+  }
+
   def inUOM(uom: UOM)(implicit conv: Conversions = Conversions.default): Quantity = {
     in(uom)(conv).getOrElse(throw new Exception(this + ": Couldn't convert from " + this + " to " + uom))
   }
@@ -175,10 +183,12 @@ class Quantity(val value : Double, val uom : UOM) extends Ordered[Quantity] with
   /** Returns the value after asserting the UOM is as expected
    */
   def checkedValue(expectedUOM : UOM) : Double = {
-    assert(expectedUOM == uom, "Expected UOM " + expectedUOM + ", got unit " + uom + ".")
-    value
+    this in expectedUOM match {
+      case Some(q) => q.value
+      case None => throw new java.lang.AssertionError("Expected UOM " + expectedUOM + ", got unit " + uom + ".")
+    }
   }
-  
+
   def numeratorUOM = uom.numeratorUOM
   def denominatorUOM = uom.denominatorUOM
 
@@ -186,10 +196,29 @@ class Quantity(val value : Double, val uom : UOM) extends Ordered[Quantity] with
 
   override def equals(other: Any) = other match {
     case Quantity(this.value, this.uom) => true
+    case Quantity(_, this.uom) => false
+    case other: Quantity => {
+      val thisBase = this.inBaseUOM
+      other.inBaseUOM match {
+        case Quantity(thisBase.value, thisBase.uom) => true
+        case _ => false
+      }
+    }
     case _ => false
   }
 
-  override val hashCode = value.hashCode
+  def isAlmostEqual(other : Quantity, tolerance : Double) = {
+    val thisBase = this.inBaseUOM
+    val otherBase = other.inBaseUOM
+    val tol = Quantity(tolerance, uom).inBaseUOM
+    thisBase.uom == otherBase.uom && (
+            mabs(thisBase.value - otherBase.value) <= tol.value.abs ||
+            thisBase.value.isInfinite && otherBase.value.isInfinite ||
+            thisBase.value.isNaN && otherBase.value.isNaN
+            )
+  }
+
+  override lazy val hashCode = inBaseUOM.value.hashCode
 
   def isAlmostZero : Boolean = value.abs < MathUtil.EPSILON
   def isZero : Boolean = value == 0.0
@@ -204,14 +233,6 @@ class Quantity(val value : Double, val uom : UOM) extends Ordered[Quantity] with
       case (_, 0) => Percentage(1)
       case _ => Percentage(((this - other).abs / this).value)
     }
-  }
-
-  def isAlmostEqual(other : Quantity, tolerance : Double) = {
-    uom == other.uom && (
-            mabs(value - other.value) <= tolerance.abs ||
-            value.isInfinite && other.value.isInfinite ||
-            value.isNaN && value.isNaN
-            )
   }
 
   /**
@@ -279,7 +300,7 @@ abstract class NamedQuantity(val quantity : Quantity) extends Quantity(quantity.
   override def abs                 = FunctionNamedQuantity("abs", List(this), quantity.abs)
   override def invert              = InvertNamedQuantity(this)
   override def negate              = unary_-
-  override def in(otherUOM : UOM)(implicit conv: Conversions = Conversions.default): Option[Quantity] = {
+  override def in(otherUOM : UOM)(implicit conv: Conversions = Conversions.default): Option[NamedQuantity] = {
     conv.convert(uom, otherUOM).map((ratio) => if (ratio == 1.0) {
       this
     }else{
@@ -290,6 +311,14 @@ abstract class NamedQuantity(val quantity : Quantity) extends Quantity(quantity.
       }
     })
   }
+
+  override def inUOM(uom: UOM)(implicit conv: Conversions): NamedQuantity = {
+    in(uom)(conv) match {
+      case Some(beqv) => beqv
+      case None => throw new Exception(this + ": Couldn't convert from " + this + " to " + uom)
+    }
+  }
+
   private def isAlmostOne(value: Double): Boolean          = (value - 1).abs < MathUtil.EPSILON
   private def isAlmostOne(percentage: Percentage): Boolean = isAlmostOne(percentage.value)
   private def guard(condition: Boolean, fn: => NamedQuantity) = if (condition) this else fn

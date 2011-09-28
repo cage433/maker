@@ -4,7 +4,7 @@ import starling.utils.CaseInsensitive
 import starling.utils.CaseInsensitive._
 
 object UOMSymbol{
-  lazy val primesIterator = Primes.primeStreamIterator(2)
+  lazy val primesIterator = Primes.primeStreamIterator
 
   def apply(names: CaseInsensitive*) : UOMSymbol = {
     val prime = primesIterator.next()
@@ -27,7 +27,7 @@ object UOMSymbol{
   // the EAI tables, though.
   val WSC_SYMBOL = UOMSymbol("WSC", "Worldscale")
 
-  val US_CENT_SYMBOL = UOMSymbol("¢", "US CENT")
+  val US_CENT_SYMBOL = UOMSymbol("¢", "US CENT", "USC")
 
   val SHORT_TONNE_SYMBOL = UOMSymbol("S/T")
   val TONNE_SYMBOL = UOMSymbol("MT", "TONNE")

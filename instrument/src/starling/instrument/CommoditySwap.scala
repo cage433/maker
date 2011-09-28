@@ -56,7 +56,6 @@ case class CommoditySwap(
 
   def asUtpPortfolio(tradeDay: Day) = {
     val swapMap : Map[UTP, Double] = subPeriodSwaps.map{swap => swap.copy(strike = Quantity(0, swap.strike.uom), volume = Quantity(1.0, swap.volume.uom)) -> swap.volume.value}.toMap
-    val ccy = strike.numeratorUOM
 
     val cashMap = dateRanges.map {
       case subPeriod => {
@@ -67,7 +66,7 @@ case class CommoditySwap(
         } else {
           BankAccount(1.0(valuationCCY), None, Some(index), subPeriod)
         }
-        cash -> (-strike * volume).checkedValue(ccy)
+        cash -> (-strike * volume).checkedValue(valuationCCY)
       }
     }.toMap
 
@@ -98,7 +97,7 @@ case class SinglePeriodSwap(
   // volume converted so everything is in the context of the strike uom
   val convertedVolume = index.convert(volume, strike.denominatorUOM).get
 
-  def valuationCCY: UOM = strike.numeratorUOM
+  def valuationCCY: UOM = strike.numeratorUOM.toBaseCurrency
 
   private val averagingDays = period.days.filter(pricingRule.isObservationDay(index.calendars, _))
 

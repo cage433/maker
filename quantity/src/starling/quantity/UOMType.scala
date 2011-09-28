@@ -5,7 +5,7 @@ import starling.utils.StarlingEnum
 case class UOMType(prime: Int)
 
 object UOMType {
-  val primesIterator = Primes.primeStreamIterator(3)
+  val primesIterator = Primes.primeStreamIterator
 
   private def create() : UOMType = {
     new UOMType(primesIterator.next)

@@ -43,20 +43,20 @@ case class Future(market: FuturesMarket, delivery: DateRange, strike: Quantity, 
     )
   }
 
-  private def convertPriceToStrikeCurrency(env: Environment, price: Quantity) = {
-    var result = price
-    if (market.currency != valuationCCY){
+  private def convertPriceToStrikeCurrency(env: Environment, price: Quantity) = price in strike.uom match {
+    case Some(p) => p
+    case None => {
       // For cross currency futures I don't think we should ne using a forward price, i.e. multiplying by the forward fx rate,
       // because of novation. Multiplying by spot is the only thing that makes sense to me.
-      result *= env.spotFXRate(valuationCCY, market.currency)
+      var result = price * env.spotFXRate(valuationCCY, market.currency)
+      result = market.convertUOM(result, strike.uom)
+      result
     }
-    result = market.convertUOM(result, strike.uom)
-    result
   }
 
   override def expiryDay() = Some(lastTradingDay)
 
-  val valuationCCY = strike.numeratorUOM
+  val valuationCCY = strike.numeratorUOM.toBaseCurrency
 
   val lastTradingDay = market.lastTradingDay(delivery)
 
@@ -72,7 +72,7 @@ case class Future(market: FuturesMarket, delivery: DateRange, strike: Quantity, 
   def asUtpPortfolio = UTP_Portfolio(
     Map(
       Future(market, delivery, Quantity(0.0, strike.uom), Quantity(1.0, volume.uom)) -> volume.value,
-      BankAccount(1.0(valuationCCY), Some(market), None, delivery) -> (- strike * volume).value
+      BankAccount(1.0(valuationCCY), Some(market), None, delivery) -> (-strike * volume).checkedValue(valuationCCY)
       )
   )
 
