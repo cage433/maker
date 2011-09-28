@@ -369,10 +369,10 @@ class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSiz
       case Right((m,r,c)) => {
         if (m.nonEmpty) {
           mainTable.requestFocusInWindow()
-        } else if (r.nonEmpty) {
-          rowHeaderTable.requestFocusInWindow()
         } else if (c.nonEmpty) {
           colHeaderTable.requestFocusInWindow()
+        } else {
+          rowHeaderTable.requestFocusInWindow()
         }
       }
     }
