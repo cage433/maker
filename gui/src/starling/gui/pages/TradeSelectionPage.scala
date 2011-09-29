@@ -20,7 +20,7 @@ import common.RoundedBorder
 import common.{ButtonClickedEx, NewPageButton, MigPanel}
 import starling.gui.utils.RichReactor._
 import starling.browser.common.RichCheckBox._
-import starling.trade.TradeService
+import starling.trade.facility.TradeFacility
 
 /**
  * Page that allows you to select trades.
@@ -208,7 +208,7 @@ case class TradeSelectionPage(
         val textID = textIDField.text
         context.createAndGoTo(
         (serverContext:ServerContext) => {
-          val tradeID = serverContext.lookup(classOf[TradeService]).tradeIDFor(desk, textID)
+          val tradeID = serverContext.lookup(classOf[TradeFacility]).tradeIDFor(desk, textID)
           SingleTradePage(tradeID, Some(desk), expiry, None)
         }, { case e:UnrecognisedTradeIDException => {
           errorLabel.text = e.getMessage

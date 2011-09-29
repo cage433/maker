@@ -31,15 +31,15 @@ import starling.pivot._
 import javax.swing.event.{ChangeEvent, ChangeListener}
 import GuiUtils._
 import starling.pivot.utils.PeriodPivotFormatter
-import starling.fc2.api.FC2Service
+import starling.fc2.api.FC2Facility
 import starling.rmi.StarlingServer
 import starling.auth.{Client}
 import starling.auth.internal.{RealClient, ClientLogin}
-import starling.reports.ReportService
 import starling.browser.internal.{NotificationKeys, NotificationType, Notification}
-import starling.trade.TradeService
+import starling.trade.facility.TradeFacility
 import starling.browser.internal.{NotificationKeys, NotificationType, Notification}
 import starling.rabbiteventviewer.api.RabbitEventViewerService
+import starling.reports.facility.ReportFacility
 
 object StarlingServerNotificationHandlers {
   def notificationHandler = {
@@ -124,9 +124,9 @@ object GuiStart extends Log {
 
   def initCacheMap(   cacheMap:HeterogeneousMap[LocalCacheKey],
                       starlingServer:StarlingServer,
-                      reportService:ReportService,
-                      fc2Service:FC2Service,
-                      tradeService:TradeService,
+                      reportService:ReportFacility,
+                      fc2Service:FC2Facility,
+                      tradeService:TradeFacility,
                       rabbitEventService:RabbitEventViewerService,
                       publisher: Publisher) {
     val localCacheUpdatePublisher = new scala.swing.Publisher() {}

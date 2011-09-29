@@ -3,7 +3,7 @@ package starling.startserver.apps
 import starling.startserver.SingleClasspathBroadcasterActivator
 import starling.auth.osgi.AuthBromptonActivator
 import starling.services.osgi.ServicesBromptonActivator
-import starling.reports.osgi.ReportsBromptonActivator
+import starling.reports.impl.ReportsBromptonActivator
 import starling.singleclasspathmanager.SingleClasspathManager
 import starling.utils.ThreadUtils
 import starling.manager.BromptonActivator

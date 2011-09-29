@@ -26,7 +26,7 @@
     <orderEntry type="library" name="scala-swing-lib" level="project" />
     <orderEntry type="module" module-name="gui.api" exported="" />
     <orderEntry type="module" module-name="browser" exported="" />
-    <orderEntry type="module" module-name="fc2.api" exported="" />
+    <orderEntry type="module" module-name="fc2.facility" exported="" />
     <orderEntry type="module" module-name="manager" />
     <orderEntry type="module" module-name="bouncyrmi" />
     <orderEntry type="module-library">
@@ -65,8 +65,8 @@
         <SOURCES />
       </library>
     </orderEntry>
-    <orderEntry type="module" module-name="reports" exported="" />
-    <orderEntry type="module" module-name="trade" exported="" />
+    <orderEntry type="module" module-name="reports.facility" exported="" />
+    <orderEntry type="module" module-name="trade.facility" exported="" />
     <orderEntry type="module" module-name="rabbit.event.viewer.api" exported="" />
   </component>
 </module>

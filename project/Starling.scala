@@ -144,9 +144,9 @@ object StarlingBuild extends Build{
     settings = standardSettings
   ) dependsOn(pivotUtils, quantity, auth, bouncyrmi, browserService, manager)
 
-  lazy val fc2api = Project(
-    "fc2.api",
-    file("./fc2.api"),
+  lazy val fc2Facility = Project(
+    "fc2.facility",
+    file("./fc2.facility"),
     settings = standardSettings
   ) dependsOn(daterange, guiapi)
 
@@ -162,15 +162,15 @@ object StarlingBuild extends Build{
     settings = standardSettings
   ) dependsOn(curves % testDependency, daterange % testDependency)
 
-  lazy val reports = Project(
-    "reports",
-    file("./reports"),
+  lazy val reportsFacility = Project(
+    "reports.facility",
+    file("./reports.facility"),
     settings = standardSettings
   ) dependsOn(guiapi)
 
-  lazy val reportsInternal = Project(
-    "reports.internal",
-    file("./reports.internal"),
+  lazy val reportsImpl = Project(
+    "reports.impl",
+    file("./reports.impl"),
     settings = standardSettings
   ) dependsOn(services)
 
@@ -190,7 +190,7 @@ object StarlingBuild extends Build{
     "gui", 
     file("./gui"),
     settings = standardSettings
-  ) dependsOn(fc2api, trade, reports, browser, rabbitEventViewerApi, singleClasspathManager)
+  ) dependsOn(fc2Facility, tradeFacility, reportsFacility, browser, rabbitEventViewerApi, singleClasspathManager)
 
   lazy val browser = Project(
     "browser",
@@ -204,9 +204,9 @@ object StarlingBuild extends Build{
     settings = standardSettings
   ) dependsOn(manager)
 
-  lazy val trade = Project(
-    "trade", 
-    file("./trade"),
+  lazy val tradeFacility = Project(
+    "trade.facility",
+    file("./trade.facility"),
     settings = standardSettings 
   ) dependsOn(auth, guiapi, manager)
 
@@ -214,13 +214,13 @@ object StarlingBuild extends Build{
     "metals",
     file("./metals"),
     settings = standardSettings
-  ) dependsOn(services, tradeInternal)
+  ) dependsOn(services, tradeImpl)
 
-  lazy val tradeInternal = Project(
-    "trade.internal",
-    file("./trade.internal"),
+  lazy val tradeImpl = Project(
+    "trade.impl",
+    file("./trade.impl"),
     settings = standardSettings
-  ) dependsOn(services, trade, manager)
+  ) dependsOn(services, tradeFacility, manager)
 
   import TitanModel._
   lazy val titanModel = Project(
@@ -295,7 +295,7 @@ object StarlingBuild extends Build{
     "services", 
     file("./services"),
     settings = standardSettings 
-  ) dependsOn(curves % "test->test", concurrent, loopyxl, titan, gui, fc2api, browser)
+  ) dependsOn(curves % "test->test", concurrent, loopyxl, titan, gui, fc2Facility, browser)
 
   lazy val manager = Project(
     "manager",
@@ -325,7 +325,7 @@ object StarlingBuild extends Build{
     "startserver",
     file("./startserver"),
     settings = standardSettings
-  ) dependsOn(services, reportsInternal, tradeInternal, metals, starlingClient, singleClasspathManager, rabbitEventViewerService)
+  ) dependsOn(services, reportsImpl, tradeImpl, metals, starlingClient, singleClasspathManager, rabbitEventViewerService)
 
   lazy val launcher = Project(
     "launcher", 
@@ -368,13 +368,13 @@ object StarlingBuild extends Build{
     pivot, 
     pivotUtils,
     guiapi,
-    fc2api,
+    fc2Facility,
     curves,
     instrument,
     gui,
     browser,
     browserService,
-    trade,
+    tradeFacility,
     databases,
     titan,
     services,

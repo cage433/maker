@@ -2,15 +2,15 @@ package starling.gui
 
 import starling.rmi.{StarlingServer}
 import starling.browser.{ServerContext, SubmitRequest}
-import starling.reports.ReportService
-import starling.trade.TradeService
+import starling.reports.facility.ReportFacility
+import starling.trade.facility.TradeFacility
 
 trait StarlingSubmitRequest[R] extends SubmitRequest[R] {
   def baseSubmit(serverContext:ServerContext) = {
     submit(new StarlingServerContext(
       serverContext.lookup(classOf[StarlingServer]),
-      serverContext.lookup(classOf[ReportService]),
-      serverContext.lookup(classOf[TradeService])
+      serverContext.lookup(classOf[ReportFacility]),
+      serverContext.lookup(classOf[TradeFacility])
     ))
   }
   def submit(server:StarlingServerContext):R
@@ -18,7 +18,7 @@ trait StarlingSubmitRequest[R] extends SubmitRequest[R] {
 
 class StarlingServerContext(
     val server:StarlingServer,
-    val reportService:ReportService,
-    val tradeService:TradeService)
+    val reportService:ReportFacility,
+    val tradeService:TradeFacility)
 
 

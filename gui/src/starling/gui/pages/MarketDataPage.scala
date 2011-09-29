@@ -18,10 +18,11 @@ import starling.gui.StarlingLocalCache._
 import starling.browser.common.MigPanel
 import starling.browser._
 import common.RoundedBorder
-import starling.fc2.api.FC2Service
-import starling.reports.ReportService
+import starling.fc2.api.FC2Facility
+import starling.reports.facility.ReportFacility
 
-class FC2Context(val service:FC2Service)
+
+class FC2Context(val service:FC2Facility)
 
 abstract class AbstractFC2PivotPage(pivotPageState:PivotPageState, edits:PivotEdits=PivotEdits.Null) extends
   AbstractPivotPage(pivotPageState, edits) with FC2Page {
@@ -30,12 +31,12 @@ abstract class AbstractFC2PivotPage(pivotPageState:PivotPageState, edits:PivotEd
 trait FC2Page extends Page {
   def bundle = "StarlingServer"
   type SC = FC2Context
-  def createServerContext(sc:ServerContext) = new FC2Context(sc.lookup(classOf[FC2Service]))
+  def createServerContext(sc:ServerContext) = new FC2Context(sc.lookup(classOf[FC2Facility]))
 }
 
 trait FC2SubmitRequest[R] extends SubmitRequest[R] {
   def baseSubmit(serverContext:ServerContext) = {
-    submit(new FC2Context(serverContext.lookup(classOf[FC2Service])))
+    submit(new FC2Context(serverContext.lookup(classOf[FC2Facility])))
   }
   def submit(server:FC2Context):R
 }
@@ -44,7 +45,7 @@ trait FC2Bookmark extends Bookmark {
   def createFC2Page(day:Option[Day], fc2Context:FC2Context, context:PageContext):Page
   def createPage(day:Option[BrowserDay], serverContext:ServerContext, context:PageContext):Page = {
     val realDay = day.map( d => Day(d.year, d.month, d.dayOfMonth))
-    createFC2Page(realDay, new FC2Context(serverContext.lookup(classOf[FC2Service])), context)
+    createFC2Page(realDay, new FC2Context(serverContext.lookup(classOf[FC2Facility])), context)
   }
 }
 
@@ -72,12 +73,12 @@ case class MarketDataPage(
   def selfPage(pivotPageState: PivotPageState, edits:PivotEdits) = new MarketDataPage(marketDataIdentifier, MarketDataPageState(pivotPageState, pageState.marketDataType, edits))
 
   def dataRequest(serverContext:ServerContext) = {
-    val fc2Service = serverContext.lookup(classOf[FC2Service])
+    val fc2Service = serverContext.lookup(classOf[FC2Facility])
     fc2Service.readAllMarketData(marketDataIdentifier, pageState.marketDataType, pageState.edits, pageState.pivotPageState.pivotFieldParams)
   }
 
   override def save(serverContext:ServerContext, edits:PivotEdits) = {
-    val fc2Service = serverContext.lookup(classOf[FC2Service])
+    val fc2Service = serverContext.lookup(classOf[FC2Facility])
     fc2Service.saveMarketData(marketDataIdentifier, pageState.marketDataType, edits)
   }
 
@@ -109,7 +110,7 @@ case class MarketDataPage(
   }
 
   override def subClassesPageData(serverContext:ServerContext) = {
-    val fc2Service = serverContext.lookup(classOf[FC2Service])
+    val fc2Service = serverContext.lookup(classOf[FC2Facility])
     val avaliableMarketDataTypes = fc2Service.marketDataTypeLabels(marketDataIdentifier)
     val selected = pageState.marketDataType match {
       case Some(mdt) => Some(mdt)
@@ -119,7 +120,7 @@ case class MarketDataPage(
   }
 
   override def bookmark(serverContext:ServerContext, pd:PageData):Bookmark = {
-    val starlingServer = serverContext.lookup(classOf[ReportService])
+    val starlingServer = serverContext.lookup(classOf[ReportFacility])
 
     val singleObservationDay = pd match {
       case PivotTablePageData(pivotData,_) => {
@@ -325,7 +326,7 @@ object MarketDataPage {
             marketDataType:Option[MarketDataTypeLabel],
             observationDays:Option[Set[Day]]): ServerContext=>Page = {
     (serverContext) => {
-      val mdt = marketDataType.orElse(serverContext.lookup(classOf[FC2Service]).marketDataTypeLabels(marketDataIdentifier).headOption)
+      val mdt = marketDataType.orElse(serverContext.lookup(classOf[FC2Facility]).marketDataTypeLabels(marketDataIdentifier).headOption)
       val fs = pageContext.getSetting(
         StandardUserSettingKeys.UserMarketDataTypeLayout, Map[MarketDataTypeLabel, PivotFieldsState]()
       ).get(mdt)

@@ -1,7 +1,7 @@
 package starling.gui.osgi
 
 import starling.rmi.StarlingServer
-import starling.fc2.api.FC2Service
+import starling.fc2.api.FC2Facility
 import starling.browser.service.BrowserService
 import starling.gui.xstream.GuiStarlingXStream
 import starling.browser.service.internal.HeterogeneousMap
@@ -17,9 +17,9 @@ import starling.pivot.{Field, SomeSelection}
 import starling.tradestore.TradePredicate
 import starling.daterange.{Day, TimeOfDay}
 import collection.immutable.TreeSet
-import starling.reports.ReportService
-import starling.trade.TradeService
 import starling.rabbiteventviewer.api.RabbitEventViewerService
+import starling.trade.facility.TradeFacility
+import starling.reports.facility.ReportFacility
 
 case class GuiLaunchParameters(serverRmiHost:String, serverRmiPort:Int, principalName:String, runAs:Option[String])
 
@@ -33,19 +33,19 @@ class GuiBromptonActivator extends BromptonActivator {
     client = new BouncyRMIClient(guiLaunchParameters.serverRmiHost, guiLaunchParameters.serverRmiPort, GuiStart.auth(guiLaunchParameters.principalName), overriddenUser = overriddenUser)
     client.startBlocking
     val starlingServer = client.proxy(classOf[StarlingServer])
-    val tradeService = client.proxy(classOf[TradeService])
+    val tradeService = client.proxy(classOf[TradeFacility])
     starlingServer.storeSystemInfo(GuiStart.systemInfo)
 
-    val fc2Service = client.proxy(classOf[FC2Service])
-    val reportService = client.proxy(classOf[ReportService])
+    val fc2Service = client.proxy(classOf[FC2Facility])
+    val reportService = client.proxy(classOf[ReportFacility])
     val rabbitEventViewerService = client.proxy(classOf[RabbitEventViewerService])
 
     context.registerService(classOf[Publisher], client.remotePublisher)
     context.registerService(classOf[StarlingServer], starlingServer)
-    context.registerService(classOf[FC2Service], fc2Service)
+    context.registerService(classOf[FC2Facility], fc2Service)
     context.registerService(classOf[RabbitEventViewerService], rabbitEventViewerService)
-    context.registerService(classOf[ReportService], reportService)
-    context.registerService(classOf[TradeService], tradeService)
+    context.registerService(classOf[ReportFacility], reportService)
+    context.registerService(classOf[TradeFacility], tradeService)
     context.registerService(classOf[BrowserService], client.proxy(classOf[BrowserService]))
     context.registerService(classOf[BrowserBundle], new StarlingBrowserBundle(starlingServer, reportService, fc2Service, rabbitEventViewerService, tradeService))
 
@@ -90,10 +90,10 @@ class GuiBromptonActivator extends BromptonActivator {
 import StarlingLocalCache._
 class StarlingBrowserBundle(
                              starlingServer:StarlingServer,
-                             reportService:ReportService,
-                             fc2Service:FC2Service,
+                             reportService:ReportFacility,
+                             fc2Service:FC2Facility,
                              rabbitEventService:RabbitEventViewerService,
-                             tradeService:TradeService) extends BrowserBundle {
+                             tradeService:TradeFacility) extends BrowserBundle {
   def bundleName = "StarlingServer"
   def marshal(obj: AnyRef) = GuiStarlingXStream.write(obj)
   override def userPage(context:PageContext) = Some( UserDetailsPage(context.localCache.currentUser) )

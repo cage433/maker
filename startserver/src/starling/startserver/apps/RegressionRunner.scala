@@ -1,23 +1,17 @@
 package starling.startserver.apps
 
-import starling.startserver.SingleClasspathBroadcasterActivator
-import starling.auth.osgi.AuthBromptonActivator
-import starling.services.osgi.ServicesBromptonActivator
-import starling.singleclasspathmanager.SingleClasspathManager
-import starling.reports.ReportService
 import starling.daterange.Day
 import io.Source
 import java.io.{PrintStream, File}
 import starling.auth.{User}
-import starling.utils.ThreadUtils
-import starling.reports.osgi.ReportsBromptonActivator
+import starling.reports.facility.ReportFacility
 
 object RegressionRunner {
   val defaultDay = Day(2011, 6, 24)
 
   def main(args:Array[String]) {
     BaseRunner.runWithoutListening() { lookup => {
-      val reportService = lookup(classOf[ReportService])
+      val reportService = lookup(classOf[ReportFacility])
       val result = new RegressionRunner(CheckedInReports, new ReportServiceSource(reportService)).run(System.out)
       if (!result) {
         println("##teamcity[buildStatus status='FAILURE' text='Regression failed']")
@@ -33,8 +27,8 @@ trait ReportSource {
   def reports:Set[String]
   def report(name:String, day:Day):String
 }
-class ReportServiceSource(reportService:ReportService) extends ReportSource {
-  def name = "jvm ReportService"
+class ReportServiceSource(reportService:ReportFacility) extends ReportSource {
+  def name = "jvm ReportFacility"
   def reports = {
     Set() ++ reportService.allUserReports.flatMap { case(user,reports) => {
       reports.map { report=> {

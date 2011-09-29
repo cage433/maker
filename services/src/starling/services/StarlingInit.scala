@@ -35,7 +35,7 @@ import starling.services.rabbit._
 import collection.immutable.Map
 import com.trafigura.services.trinity.TrinityService
 import com.trafigura.services.marketdata.{ExampleService, MarketDataServiceApi}
-import starling.fc2.api.FC2Service
+import starling.fc2.api.FC2Facility
 import starling.dbx.DataSourceFactory
 import java.util.UUID
 import com.trafigura.services.{DocumentationService, WebServiceFactory, ResteasyServiceApi}
@@ -177,7 +177,7 @@ class StarlingInit( val props: Props,
     userSettingsDatabase,
     version, referenceData, businessCalendars.UK)
 
-  val fc2Service = new FC2ServiceImpl(marketDataStore, curveViewer, marketDataReadersProviders, referenceDataLookup)
+  val fc2Service = new FC2FacilityImpl(marketDataStore, curveViewer, marketDataReadersProviders, referenceDataLookup)
 
   def currentUser() = User.currentlyLoggedOn
 

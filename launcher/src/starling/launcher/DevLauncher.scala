@@ -5,7 +5,6 @@ import starling.props.{PropsHelper, Props}
 import java.net.{BindException, ServerSocket}
 import starling.api.utils.PropertiesMapBuilder
 import starling.startserver.Server
-import starling.launcher.Launcher
 
 object DevLauncher {
   def main(args:Array[String]) {

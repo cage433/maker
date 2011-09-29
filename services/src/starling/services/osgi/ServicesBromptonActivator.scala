@@ -5,7 +5,7 @@ import starling.services.{StarlingInit}
 import starling.auth.AuthHandler
 import com.trafigura.services.valuation.ValuationServiceApi
 import com.trafigura.services.marketdata.MarketDataServiceApi
-import starling.fc2.api.FC2Service
+import starling.fc2.api.FC2Facility
 import starling.browser.service.BrowserService
 import starling.manager._
 import starling.utils.{Broadcaster}
@@ -36,7 +36,7 @@ class ServicesBromptonActivator extends BromptonActivator {
       marketDataReadersProviders = bromptonMarketDataReaderProviders
     )
     context.registerService(classOf[StarlingServer], starlingInit.starlingServer,ExportGuiRMIProperty::Nil)
-    context.registerService(classOf[FC2Service], starlingInit.fc2Service,ExportGuiRMIProperty::Nil)
+    context.registerService(classOf[FC2Facility], starlingInit.fc2Service,ExportGuiRMIProperty::Nil)
     context.registerService(classOf[BrowserService], starlingInit.browserService,ExportGuiRMIProperty::Nil)
 
 

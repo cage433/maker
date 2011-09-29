@@ -8,9 +8,9 @@ import starling.utils.Log
 import starling.props.{Props, PropsHelper}
 import management.ManagementFactory
 import java.io.File
-import starling.reports.osgi.ReportsBromptonActivator
+import starling.reports.impl.ReportsBromptonActivator
 import starling.rabbiteventviewer.internal.RabbitEventViewerServiceBromptonActivator
-import starling.trade.internal.osgi.TradeBromptonActivator
+import starling.trade.impl.osgi.TradeBromptonActivator
 import starling.props.internal.PropsBromptonActivator
 import starling.metals.MetalsBromptonActivator
 
