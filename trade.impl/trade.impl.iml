@@ -21,9 +21,9 @@
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="library" name="scala-lib" level="project" />
-    <orderEntry type="module" module-name="trade" exported="" />
     <orderEntry type="module" module-name="manager" exported="" />
     <orderEntry type="module" module-name="services" exported="" />
+    <orderEntry type="module" module-name="trade.facility" exported="" />
   </component>
 </module>
 
