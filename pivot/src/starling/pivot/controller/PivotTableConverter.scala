@@ -451,6 +451,10 @@ case class PivotTableConverter(otherLayoutInfo:OtherLayoutInfo = OtherLayoutInfo
         case Some(_) => (axisCellUpdateInfo(rowDataArray).toList, axisCellUpdateInfo(colData).toList)
       }
 
+      println("")
+      println("CUOMS " + columnUOMs.length + " : " + columnUOMs.toList)
+      println("")
+
       PivotGrid(rowDataArray, colData, mainData, columnUOMs, cellUpdateInfoList, rowAxisCellUpdateInfo, colAxisCellUpdateInfo)
     }
   }
@@ -582,11 +586,11 @@ case class PivotTableConverter(otherLayoutInfo:OtherLayoutInfo = OtherLayoutInfo
       }
     }
 
-    val columnUOMs = allUnits.flatMap(uomSet => {
+    val columnUOMs = allUnits.map(uomSet => {
       if (uomSet.size == 1) {
-        Some(uomSet.iterator.next())
+        uomSet.iterator.next()
       } else {
-        None
+        UOM.NULL
       }
     })
 
