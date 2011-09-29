@@ -82,7 +82,7 @@ class TradeBromptonActivator extends BromptonActivator {
     )
 
     context.registerService(classOf[TradeStores], tradeStores)
-    context.registerService(classOf[AnyRef], tradeHandler, ExportExcelProperty::Nil)
+    context.registerService(classOf[AnyRef], tradeHandler, ExportXlloopProperty::ExportLoopyProperty::Nil)
     context.registerService(classOf[TradeFacility], tradeService, ExportGuiRMIProperty::Nil)
   }
 

@@ -12,11 +12,10 @@ class SingleClasspathManager(cacheServices:Boolean, activators:List[Class[_ <: B
   case class TrackerEntry[T](klass:Option[Class[_]], properties:List[ServiceProperty], callback:BromptonServiceCallback[T]) {
 
     def applyTo(services:List[ServiceEntry]) {
-      each { (ref, service) => callback.serviceAdded(ref, service) }
+      each(services) { (ref, service) => callback.serviceAdded(ref, service) }
     }
 
-    def each(f:( (BromptonServiceReference,T)=>Unit) ) {
-      val services = registry.toList
+    def each(services:List[ServiceEntry])(f:( (BromptonServiceReference,T)=>Unit) ) {
       val matches = services.filter { reg => reg.hasProperties(properties) && klass.map(_ == reg.klass).getOrElse(true) }
       matches.foreach { reg => f(reg.reference, reg.service.asInstanceOf[T]) }
     }
@@ -68,7 +67,7 @@ class SingleClasspathManager(cacheServices:Boolean, activators:List[Class[_ <: B
       trackers += trackerEntry
       new BromptonServiceTracker[T] {
         def each(f: (T) => Unit) {
-          trackerEntry.each { (ref,service) => f(service) }
+          trackerEntry.each(registry.toList) { (ref,service) => f(service) }
         }
       }
     }

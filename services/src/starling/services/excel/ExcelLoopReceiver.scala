@@ -8,19 +8,41 @@ import starling.auth.{LdapUserLookup, User}
 import org.boris.xlloop.xloper.{XLError, XLString, XLoper}
 import java.net.SocketException
 import starling.utils.{Stopable, Log}
+import scala.collection.JavaConversions._
 
 /**
  * Locally store curves uploaded from xlloop and hand them out as price data.
  */
-class ExcelLoopReceiver(ldapUser: LdapUserLookup, port: Int, val handlers: Object*) extends Stopable with Runnable {
+class ExcelLoopReceiver(ldapUser: LdapUserLookup, port: Int) extends Stopable with Runnable {
   val functionServer = new FunctionServer(port)
 
   override def start { super.start; new Thread(this).start }
   override def stop  { super.stop;  functionServer.stop()  }
 
-  def run = {
+  val lock = new Object()
+  val objects = new scala.collection.mutable.HashMap[Object,AnyRef]()
+  var functionHandler:IFunctionHandler = createFunctionHandler()
+
+  def register(key:Object, instance:AnyRef) {
+    lock synchronized {
+      objects.update(key, instance)
+      functionHandler = createFunctionHandler()
+    }
+  }
+  def unregister(key:Object) {
+    lock synchronized {
+      objects.remove(key)
+      functionHandler = createFunctionHandler()
+    }
+  }
+
+  def currentFunctionHandler = {
+    lock synchronized { functionHandler }
+  }
+
+  def createFunctionHandler() = {
     val reflect = new ReflectFunctionHandler
-    handlers.map {
+    objects.values.foreach {
       handler => reflect.addMethods("Starling.", handler)
     }
 
@@ -30,7 +52,7 @@ class ExcelLoopReceiver(ldapUser: LdapUserLookup, port: Int, val handlers: Objec
     val composite = new CompositeFunctionHandler
     composite.add(reflect)
     composite.add(functionInfo)
-    val exceptionWrapper = new IFunctionHandler() {
+    new IFunctionHandler() {
       def hasFunction(f: String) = composite.hasFunction(f)
 
       def execute(context: IFunctionContext, name: String, args: Array[XLoper]): XLoper = {
@@ -75,7 +97,17 @@ class ExcelLoopReceiver(ldapUser: LdapUserLookup, port: Int, val handlers: Objec
         }
       }
     }
-    functionServer.setFunctionHandler(exceptionWrapper)
+  }
+
+  def run = {
+    functionServer.setFunctionHandler(new IFunctionHandler() {
+      def execute(context: IFunctionContext, name: String, args: Array[XLoper]) = {
+        currentFunctionHandler.execute(context, name, args)
+      }
+      def hasFunction(name: String) = {
+        currentFunctionHandler.hasFunction(name)
+      }
+    })
 
     println("XLLoop Thread listening on port " + functionServer.getPort + "...")
     try {

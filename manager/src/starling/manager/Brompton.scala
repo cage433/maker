@@ -13,7 +13,8 @@ case class ServiceName(serviceName:String) extends ServiceProperty("name", servi
 case class HttpContext(context:String) extends ServiceProperty("alias", "/"+context)
 object ExportGuiRMIProperty extends ServiceProperty("export.rmi.gui", java.lang.Boolean.TRUE)
 object ExportTitanRMIProperty extends ServiceProperty("export.rmi.titan", java.lang.Boolean.TRUE)
-object ExportExcelProperty extends ServiceProperty("export.excel", java.lang.Boolean.TRUE)
+object ExportXlloopProperty extends ServiceProperty("export.xlloop", java.lang.Boolean.TRUE)
+object ExportLoopyProperty extends ServiceProperty("export.loopy", java.lang.Boolean.TRUE)
 
 class NoServiceFoundException(message:String) extends RuntimeException(message)
 case class BromptonServiceReference(id:String, klasses:List[String])

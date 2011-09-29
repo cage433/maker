@@ -60,7 +60,6 @@ class StarlingInit( val props: Props,
                     dbMigration: Boolean = true,
                     startRMI: Boolean = true, //not used
                     startHttp: Boolean = true,
-                    startXLLoop: Boolean = true,
                     startStarlingJMX: Boolean = true,
                     forceGUICompatability: Boolean = true,
                     startEAIAutoImportThread: Boolean = true,
@@ -70,7 +69,6 @@ class StarlingInit( val props: Props,
 
   private lazy val services = CompositeStopable(
     true                     → List(Stopable(userSettingsDatabase.readAll _)),
-    startXLLoop              → List(excelLoopReceiver),
     startHttp                → List(httpServer),
     startEAIAutoImportThread → List(/*eaiAutoImport, */fwdCurveAutoImport), //FIXME
     true                     → List(Stopable(stopF = DataSourceFactory.shutdown _))
@@ -185,11 +183,11 @@ class StarlingInit( val props: Props,
 
   def currentUser() = User.currentlyLoggedOn
 
-  val excelLoopReceiver = new ExcelLoopReceiver(ldapUserLookup, props.XLLoopPort(),
-    new MarketDataHandler(rmiBroadcaster, starlingServer, marketDataStore),
-    new DiagnosticHandler(starlingServer))
+  val marketDataHandler = new MarketDataHandler(rmiBroadcaster, starlingServer, marketDataStore)
+  val diagnosticHandler = new DiagnosticHandler(starlingServer)
 
-  val loopyXLReceivers = new CurveHandler(curveViewer, marketDataStore) :: excelLoopReceiver.handlers.toList
+  val xlloopAndloopyReceivers = marketDataHandler :: diagnosticHandler :: Nil
+  val curveHandler = new CurveHandler(curveViewer, marketDataStore)
 
   val browserService = new BrowserServiceImpl(name, version, userSettingsDatabase, rmiBroadcaster)
 
@@ -212,7 +210,7 @@ class StarlingInit( val props: Props,
 
 object StarlingInit {
 
-  lazy val devInstance = new StarlingInit(PropsHelper.defaultProps, AuthHandler.Dev, Broadcaster.Null, false, false, false, false, false, false, false)
+  lazy val devInstance = new StarlingInit(PropsHelper.defaultProps, AuthHandler.Dev, Broadcaster.Null, false, false, false, false, false, false)
 
   lazy val runningDevInstance = {
     devInstance.update(_.start)
@@ -222,6 +220,6 @@ object StarlingInit {
    * defines a test service instance that runs RMI but uses mocked service stubs where appropriate
    */
   lazy val runningTestInstance = {
-    new StarlingInit(PropsHelper.defaultProps, AuthHandler.Dev, Broadcaster.Null, true, true, false, false, false, false, false, false).update(_.start)
+    new StarlingInit(PropsHelper.defaultProps, AuthHandler.Dev, Broadcaster.Null, true, true, false, false, false, false, false).update(_.start)
   }
 }

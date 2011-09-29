@@ -14,10 +14,13 @@ import starling.tradestore.TradeStores
 import starling.calendar.BusinessCalendars
 import starling.rmi.{RabbitEventDatabase, UserSettingsDatabase, BromptonTrackerBasedMarketDataPageIdentifierReaderProviders, StarlingServer}
 import starling.curves.CurveViewer
+import starling.services.excel.ExcelLoopReceiver
+import starling.loopyxl.ReflectiveMethodSource
 
 class ServicesBromptonActivator extends BromptonActivator {
 
   var starlingInit:StarlingInit = _
+  var excelLoopReceiver:ExcelLoopReceiver = _
 
   def start(context: BromptonContext) {
     val authHandler = context.awaitService(classOf[AuthHandler])
@@ -45,9 +48,21 @@ class ServicesBromptonActivator extends BromptonActivator {
     context.registerService(classOf[BusinessCalendars], starlingInit.businessCalendars)
     context.registerService(classOf[CurveViewer], starlingInit.curveViewer)
 
-    starlingInit.loopyXLReceivers.foreach { receiver => {
-      context.registerService(classOf[AnyRef], receiver, ExportExcelProperty::Nil)
+    starlingInit.xlloopAndloopyReceivers.foreach { receiver => {
+      context.registerService(classOf[AnyRef], receiver, ExportLoopyProperty::ExportXlloopProperty::Nil)
     }}
+    context.registerService(classOf[AnyRef], starlingInit.curveHandler, ExportXlloopProperty::Nil)
+
+    excelLoopReceiver = new ExcelLoopReceiver(starlingInit.ldapUserLookup, props.XLLoopPort())
+    context.createServiceTracker(None,  ExportXlloopProperty::Nil, new BromptonServiceCallback[AnyRef] {
+      def serviceAdded(ref: BromptonServiceReference, service: AnyRef) = {
+        excelLoopReceiver.register(ref, service)
+      }
+      def serviceRemoved(ref: BromptonServiceReference) = {
+        excelLoopReceiver.unregister(ref)
+      }
+    })
+    excelLoopReceiver.start
 
     starlingInit.start
     //starlingInit.servlets.foreach { case (name, servlet) => context.registerService(classOf[HttpServlet], servlet, List(HttpContext(name)))}
@@ -56,6 +71,9 @@ class ServicesBromptonActivator extends BromptonActivator {
   def stop(context: BromptonContext) {
     if (starlingInit != null) {
       starlingInit.stop
+    }
+    if (excelLoopReceiver != null) {
+      excelLoopReceiver.stop
     }
   }
 }

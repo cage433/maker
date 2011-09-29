@@ -7,7 +7,7 @@ import starling.reports.facility.ReportFacility
 import starling.rmi.{MarketDataPageIdentifierReaderProvider, UserSettingsDatabase}
 import starling.gui.api.{ReportMarketDataPageIdentifier, MarketDataPageIdentifier}
 import starling.db.{DB, MarketDataStore}
-import starling.manager.{ExportGuiRMIProperty, ExportExcelProperty, BromptonContext, BromptonActivator}
+import starling.manager.{ExportGuiRMIProperty, ExportXlloopProperty, BromptonContext, BromptonActivator}
 
 class ReportsBromptonActivator extends BromptonActivator {
 
@@ -34,7 +34,7 @@ class ReportsBromptonActivator extends BromptonActivator {
       }
     }
 
-    context.registerService(classOf[AnyRef], new ReportHandler(userReportsService), ExportExcelProperty::Nil)
+    context.registerService(classOf[AnyRef], new ReportHandler(userReportsService), ExportXlloopProperty::Nil)
     context.registerService(classOf[ReportFacility], reportService, ExportGuiRMIProperty::Nil)
     context.registerService(classOf[MarketDataPageIdentifierReaderProvider], reportRecordingMarketDataReaderProvider)
   }
