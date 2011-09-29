@@ -56,15 +56,15 @@ class Patch126_FixOilCentMarkets extends Patch {
 
           writer.queryForUpdate(q) {
             rs => {
-              val key = rs.getObject[Object]("data")
-              val newKey = key match {
-                case p: PriceDataDTO => {
+              val key = rs.getObjectOption[Object]("data")
+              val newKeyOption = key match {
+                case Some(p : PriceDataDTO) => {
                   val prices = p.prices.map({
                     case (dr, price) => (dr -> (BigDecimal(price) * 100).toDouble)
                   })
-                  PriceDataDTO(prices)
+                  Some(PriceDataDTO(prices))
                 }
-                case p: PriceFixingsHistoryData => {
+                case Some(p : PriceFixingsHistoryData) => {
                   var crap = new TreeMap[(Level, StoredFixingPeriod), MarketValue]()(p.fixings.ordering)
                   p.fixings.map {
                     case f@(a, MarketValue(Left(q))) => {
@@ -73,10 +73,11 @@ class Patch126_FixOilCentMarkets extends Patch {
                       f
                     }
                   }
-                  PriceFixingsHistoryData(crap)
+                  Some(PriceFixingsHistoryData(crap))
                 }
+                case None => None
               }
-              rs.update(Map("data" -> PersistAsBlob(newKey)))
+              newKeyOption.foreach{newKey =>  rs.update(Map("data" -> PersistAsBlob(newKey)))}
             }
           }
         }
