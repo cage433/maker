@@ -12,7 +12,7 @@
       <module fileurl="file://$PROJECT_DIR$/databases/databases.iml" filepath="$PROJECT_DIR$/databases/databases.iml" />
       <module fileurl="file://$PROJECT_DIR$/daterange/daterange.iml" filepath="$PROJECT_DIR$/daterange/daterange.iml" />
       <module fileurl="file://$PROJECT_DIR$/dbx/dbx.iml" filepath="$PROJECT_DIR$/dbx/dbx.iml" />
-      <module fileurl="file://$PROJECT_DIR$/fc2.api/fc2.facility.iml" filepath="$PROJECT_DIR$/fc2.api/fc2.facility.iml" />
+      <module fileurl="file://$PROJECT_DIR$/fc2.facility/fc2.facility.iml" filepath="$PROJECT_DIR$/fc2.facility/fc2.facility.iml" />
       <module fileurl="file://$PROJECT_DIR$/gui/gui.iml" filepath="$PROJECT_DIR$/gui/gui.iml" />
       <module fileurl="file://$PROJECT_DIR$/gui.api/gui.api.iml" filepath="$PROJECT_DIR$/gui.api/gui.api.iml" />
       <module fileurl="file://$PROJECT_DIR$/instrument/instrument.iml" filepath="$PROJECT_DIR$/instrument/instrument.iml" />
@@ -30,8 +30,8 @@
       <module fileurl="file://$PROJECT_DIR$/quantity/quantity.iml" filepath="$PROJECT_DIR$/quantity/quantity.iml" />
       <module fileurl="file://$PROJECT_DIR$/rabbit.event.viewer.api/rabbit.event.viewer.api.iml" filepath="$PROJECT_DIR$/rabbit.event.viewer.api/rabbit.event.viewer.api.iml" />
       <module fileurl="file://$PROJECT_DIR$/rabbit.event.viewer.service/rabbit.event.viewer.service.iml" filepath="$PROJECT_DIR$/rabbit.event.viewer.service/rabbit.event.viewer.service.iml" />
-      <module fileurl="file://$PROJECT_DIR$/reports.api/reports.facility.iml" filepath="$PROJECT_DIR$/reports.api/reports.facility.iml" />
-      <module fileurl="file://$PROJECT_DIR$/reports/reports.impl.iml" filepath="$PROJECT_DIR$/reports/reports.impl.iml" />
+      <module fileurl="file://$PROJECT_DIR$/reports.facility/reports.facility.iml" filepath="$PROJECT_DIR$/reports.facility/reports.facility.iml" />
+      <module fileurl="file://$PROJECT_DIR$/reports.impl/reports.impl.iml" filepath="$PROJECT_DIR$/reports.impl/reports.impl.iml" />
       <module fileurl="file://$PROJECT_DIR$/services/services.iml" filepath="$PROJECT_DIR$/services/services.iml" />
       <module fileurl="file://$PROJECT_DIR$/singleclasspathmanager/singleclasspathmanager.iml" filepath="$PROJECT_DIR$/singleclasspathmanager/singleclasspathmanager.iml" />
       <module fileurl="file://$PROJECT_DIR$/starling.iml" filepath="$PROJECT_DIR$/starling.iml" />
@@ -39,8 +39,8 @@
       <module fileurl="file://$PROJECT_DIR$/starling.client/starling.client.iml" filepath="$PROJECT_DIR$/starling.client/starling.client.iml" />
       <module fileurl="file://$PROJECT_DIR$/startserver/startserver.iml" filepath="$PROJECT_DIR$/startserver/startserver.iml" />
       <module fileurl="file://$PROJECT_DIR$/titan/titan.iml" filepath="$PROJECT_DIR$/titan/titan.iml" />
-      <module fileurl="file://$PROJECT_DIR$/trade/trade.facility.iml" filepath="$PROJECT_DIR$/trade/trade.facility.iml" />
-      <module fileurl="file://$PROJECT_DIR$/trade.internal/trade.impl.iml" filepath="$PROJECT_DIR$/trade.internal/trade.impl.iml" />
+      <module fileurl="file://$PROJECT_DIR$/trade.facility/trade.facility.iml" filepath="$PROJECT_DIR$/trade.facility/trade.facility.iml" />
+      <module fileurl="file://$PROJECT_DIR$/trade.impl/trade.impl.iml" filepath="$PROJECT_DIR$/trade.impl/trade.impl.iml" />
       <module fileurl="file://$PROJECT_DIR$/utils/utils.iml" filepath="$PROJECT_DIR$/utils/utils.iml" />
     </modules>
   </component>
