@@ -422,7 +422,7 @@ object UnallocatedSalesQuota extends InstrumentType[UnallocatedSalesQuota] with 
     val benchmarkDeliveryDay = Option(row.getDay(benchmarkPricingSpecLabel))
     val benchmarkPricingSpec = Option(row.getObject[TitanPricingSpec](benchmarkPricingSpecLabel))
 
-    UnallocatedSalesQuota(commodityName, quantity, deliveryDay, pricingSpec, Some(deliveryDay), benchmarkPricingSpec)
+    UnallocatedSalesQuota(commodityName, quantity, deliveryDay, pricingSpec, benchmarkDeliveryDay, benchmarkPricingSpec)
   }
 
   def sample = UnallocatedSalesQuota("Copper", Quantity(100, MT), Day(2012, 10, 12),
@@ -589,7 +589,6 @@ object PhysicalMetalAssignmentOrUnassignedSalesQuota{
   val premiumLabel = "premium"
   val exchangeLabel = "exchange"
   val indexLabel = "index"
-  val isAllocatedLabel = "isAllocated"
   val isPurchaseLabel = "isPurchase"
 }
 

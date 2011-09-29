@@ -217,7 +217,7 @@ class StarlingBrowserTabbedPane(homePage: Page, startPage:Either[Page,(ServerCon
   tabPopupMenu.addSeparator()
   tabPopupMenu.add(closeTabItem.peer)
 
-  def createStarlingBrowser(gotoTab: Boolean = true, pageOrBuildPage: Either[Page, (ServerContext => Page, PartialFunction[Throwable, Unit])] = Left(homePage)): StarlingBrowser = {
+  def createStarlingBrowser(gotoTab: Boolean = true, pageOrBuildPage: Either[Page, (ServerContext => Page, PartialFunction[Throwable, Unit])] = Left(homePage)) {
     val (tabText, icon, addressText) = pageOrBuildPage match {
       case Left(page) => (page.shortText, page.icon, page.text)
       case _ => (" ", BrowserIcons.im("/icons/10x10_blank.png"), " ")
@@ -231,8 +231,7 @@ class StarlingBrowserTabbedPane(homePage: Page, startPage:Either[Page,(ServerCon
       selection.index = tabIndex
     }
     peer.setTabComponentAt(tabIndex, tabComponent.peer)
-    onEDT(starlingBrowser.goTo(pageOrBuildPage, true))
-    starlingBrowser
+    onEDT(starlingBrowser.goTo(pageOrBuildPage))
   }
 
   def selectedPage:Page = {

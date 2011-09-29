@@ -141,7 +141,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
           if (modifiers.shift) {
             containerMethods.createNewFrame(Some(frame), Some(Left(page)))
           } else {
-            StarlingBrowser.this.goTo(page, false)
+            StarlingBrowser.this.goTo(page)
           }
         }
       }
@@ -152,7 +152,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
           if (modifiers.shift) {
             containerMethods.createNewFrame(Some(frame), Some(Right((serverContext, onException))))
           } else {
-            StarlingBrowser.this.goTo(Right((serverContext, onException)), false)
+            StarlingBrowser.this.goTo(Right((serverContext, onException)))
           }
         }
       }
@@ -487,11 +487,11 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
   val homeButton = new NavigationButton {
     icon = BrowserIcons.icon("/icons/22x22/actions/go-home.png")
     tooltip = "Home"
-		reactions += {
-         case ButtonClicked(button) => {
-           starlingBrowserUI.clearContentPanel()
-        	 goTo(homePage, false)
-         }
+    reactions += {
+      case ButtonClicked(button) => {
+        starlingBrowserUI.clearContentPanel()
+        goTo(homePage)
+      }
     }
   }
 
@@ -935,9 +935,9 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
     }
   }
 
-  def goTo(page:Page, firstPageInBrowser:Boolean) { goTo(Left(page), firstPageInBrowser) }
+  def goTo(page:Page) { goTo(Left(page)) }
 
-  def goTo(pageOrPageBuilder:Either[Page,(ServerContext=>Page, PartialFunction[Throwable, Unit])], firstPageInBrowser:Boolean) {
+  def goTo(pageOrPageBuilder:Either[Page,(ServerContext=>Page, PartialFunction[Throwable, Unit])]) {
     genericLockedUI.setLocked(true)
     tabComponent.setBusy(true)
     setButtonsEnabled(false)
@@ -957,11 +957,12 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
       })
     }
     def withBuiltPage(page:Page, pageResponse:PageResponse) {
+      assert(javax.swing.SwingUtilities.isEventDispatchThread, "This must be called on the EDT")
       timer.stop()
       stopButton.enabled = false
       if (waitingFor.contains(Some(threadID))) {
         waitingFor -= Some(threadID)
-        onEDT({
+        onEDT({ // I shouldn't really need to do another onEDT here but if I don't, clicking on the Home Button causes the slide effect to flicker.
           def showError(title: String, message: String) {
             starlingBrowserUI.setError(title, message, {
               val currentPageInfo:PageInfo = history(current)
@@ -979,9 +980,6 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
 
           // If we have an error and apply special processing here if required, otherwise display page as desired.
           pageResponse match {
-//            case FailurePageResponse(t:OfflineException) => showError("Cannot Connect to Starling", "Starling is currently offline, please try again later or contact a developer.")
-//            case FailurePageResponse(t:ClientOfflineException) => showError("Not connected to Starling", "The client can't connect to Starling, trying restarting the client, if that fails contact a developer.")
-//            case FailurePageResponse(t:ServerUpgradeException) => showError("Starling has been Upgraded", "Starling has been upgraded. Please restart your gui.")
             case FailurePageResponse(t:Exception) => t match {
               case e: UndeclaredThrowableException => {
                 e.printStackTrace()
@@ -1032,17 +1030,15 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
                 addressIcon.image = page.icon
                 tabComponent.setTextFromPage(page)
 
-                onEDT({
+                onEDT({ // This onEDT is needed as we need to give the component time to get onto the page before we can paint it into a buffer.
                   val image2 = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB)
                   val graphics = image2.getGraphics
                   pageComponent.peer.paint(graphics)
                   graphics.dispose()
 
                   forwardSlideClient.setImages(image, image2)
-
                   genericLockedUI.setClient(forwardSlideClient)
                   imageClient.reset
-
 
                   val animator = new Animator(slideTime)
                   animator.setAcceleration(slideAcceleration)
@@ -1080,7 +1076,11 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
     }
 
     pageOrPageBuilder match {
-      case Left(page) => pageBuilder.build(page, (page:Page,pageResponse:PageResponse) => withBuiltPage(page, pageResponse))
+      case Left(page) => {
+        pageBuilder.build(page, (page:Page,pageResponse:PageResponse) => {
+          withBuiltPage(page, pageResponse)
+        })
+      }
       case Right((createPage,onException)) => {
         def unanticipatedException(t:Throwable) {
           timer.stop()
@@ -1103,7 +1103,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
           refreshButtonStatus()
           refreshAction.enabled = history(current).refreshPage.isDefined
         }
-        pageBuilder.build(unanticipatedException, resetScreen(), createPage, onException, withBuiltPage, updateTitle, firstPageInBrowser)
+        pageBuilder.build(unanticipatedException, resetScreen(), createPage, onException, withBuiltPage, updateTitle)
       }
     }
   }
@@ -1365,16 +1365,11 @@ class PageBuilder(val remotePublisher:Publisher, val serverContext:ServerContext
   private var pageToThens:Map[Page, List[(Page,PageResponse) => Unit]] = Map()
 
   def build(unanticipatedException: Throwable => Unit, resetScreen: =>Unit, createPage:ServerContext=>Page,
-            onException:PartialFunction[Throwable, Unit],then:(Page,PageResponse)=>Unit, thenWithPage:Page => Unit,
-            firstPageInBrowser:Boolean) {
+            onException:PartialFunction[Throwable, Unit],then:(Page,PageResponse)=>Unit, thenWithPage:Page => Unit) {
     threads.execute(new Runnable() { def run() {
       try {
         val page = createPage(serverContext)
-        // You only want to do this if this is the first page for the tab/window.
-        if (firstPageInBrowser) {
-          thenWithPage(page)
-        }
-        build(page, then)
+        onEDT(build(page, then))
       } catch {
         case t:Throwable => {
           if (onException.isDefinedAt(t)) {
@@ -1390,6 +1385,7 @@ class PageBuilder(val remotePublisher:Publisher, val serverContext:ServerContext
     }})
   }
 
+  // This method has to be called on the EDT.
   def build(page:Page, then:(Page,PageResponse)=>Unit) {
     if (pageDataCache.contains(page)) {
       then(page,pageDataCache(page))
@@ -1410,8 +1406,9 @@ class PageBuilder(val remotePublisher:Publisher, val serverContext:ServerContext
               }
             }
             onEDT({
-              if(pageResponse.isInstanceOf[SuccessPageResponse])
+              if(pageResponse.isInstanceOf[SuccessPageResponse]) {
                 pageDataCache(page) = pageResponse
+              }
               pageToThens(page).foreach(_(page,pageResponse))
               pageToThens -= page
             })
