@@ -1,14 +1,16 @@
 package starling.auth
 
+import starling.manager.DoNotCache
+
 trait AuthHandler {
   /**
    * If authorized a User should be returned. Otherwise
    * None.
    */
-  def authorized(ticket: Option[Array[Byte]], sudo:Option[String]): Option[User] = ticket.flatMap(authorized(_, sudo))
-  def authorized(ticket: Array[Byte], sudo:Option[String]): Option[User]
+  @DoNotCache def authorized(ticket: Option[Array[Byte]], sudo:Option[String]): Option[User] = ticket.flatMap(authorized(_, sudo))
+  @DoNotCache def authorized(ticket: Array[Byte], sudo:Option[String]): Option[User]
 
-  def withCallback(callback : Option[User] => Unit) = new CallbackAuthHandler(this, callback)
+  @DoNotCache def withCallback(callback : Option[User] => Unit) = new CallbackAuthHandler(this, callback)
 }
 
 object AuthHandler {
@@ -17,8 +19,11 @@ object AuthHandler {
   }
   val Dev = new AuthHandler {
     def authorized(ticket: Array[Byte], sudo:Option[String]) = {
-      if (sudo.isDefined) throw new Exception("Dev auth handler does not support sudo")
-      Some(User.Dev)
+      sudo match {
+        case None => Some(User.Dev)
+        case Some(username) => Some(User(username, username, Some(User.Dev.username)))
+      }
+
     }
   }
 }

@@ -8,7 +8,6 @@ import starling.instrument._
 import javax.sql.DataSource
 import starling.curves.interestrate.DayCount
 import starling.quantity.{Quantity, UOM}
-import starling.dbx.ConnectionParams
 import starling.market._
 import rules.SwapPricingRule
 import scala.collection.JavaConversions._
@@ -17,10 +16,11 @@ import starling.daterange.{Day, Spread, DateRange}
 import starling.quantity.{SpreadQuantity, Quantity, UOM}
 import starling.instrument.TradeSystem
 import starling.dbx.DataSourceFactory
+import starling.props.ConnectionParams
 
 class RichDB(val dataSource : DataSource, factory : RichResultSetRowFactory) extends DBTrait[RichResultSetRow] {
   def this(connectionParams: ConnectionParams, factory : RichResultSetRowFactory) =
-    this(connectionParams.dataSource, factory)
+    this(DataSourceFactory.getDataSource(connectionParams.url, connectionParams.username, connectionParams.password), factory)
 
   def db = new DB(dataSource)
 

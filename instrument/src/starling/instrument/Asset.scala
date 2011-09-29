@@ -43,8 +43,13 @@ case class Asset(known:Boolean, assetType:AnyRef, settlementDay:Day, amount:Quan
 
 case class Assets(assets:List[Asset]) {
   def mtm(env: Environment, ccy: UOM) = Quantity.sum(Quantity(0, ccy) :: assets.map(asset => {
-    val fXRate = env.spotFXRate(ccy, asset.mtm.uom)
-    asset.mtm * fXRate
+    asset.mtm in ccy match {
+      case Some(mtm) => mtm
+      case None => {
+        val fXRate = env.spotFXRate(ccy, asset.mtm.uom)
+        (asset.mtm * fXRate) inUOM ccy
+      }
+    }
   }))
   def ++ (other:Assets) = Assets(assets ::: other.assets)
   def * (volume:Double) = Assets(assets.map(_ * volume))

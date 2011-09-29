@@ -18,13 +18,11 @@ import starling.gui.StarlingLocalCache._
 import starling.browser.common.MigPanel
 import starling.browser._
 import common.RoundedBorder
-import starling.fc2.api.FC2Service
-import starling.utils.cache.ThreadSafeCachingProxy
-import starling.reports.ReportService
+import starling.fc2.api.FC2Facility
+import starling.reports.facility.ReportFacility
 
-class FC2Context(val service:FC2Service) {
-  val cachingFC2Service:FC2Service = ThreadSafeCachingProxy.createProxy(service, classOf[FC2Service])
-}
+
+class FC2Context(val service:FC2Facility)
 
 abstract class AbstractFC2PivotPage(pivotPageState:PivotPageState, edits:PivotEdits=PivotEdits.Null) extends
   AbstractPivotPage(pivotPageState, edits) with FC2Page {
@@ -33,12 +31,12 @@ abstract class AbstractFC2PivotPage(pivotPageState:PivotPageState, edits:PivotEd
 trait FC2Page extends Page {
   def bundle = "StarlingServer"
   type SC = FC2Context
-  def createServerContext(sc:ServerContext) = new FC2Context(sc.lookup(classOf[FC2Service]))
+  def createServerContext(sc:ServerContext) = new FC2Context(sc.lookup(classOf[FC2Facility]))
 }
 
 trait FC2SubmitRequest[R] extends SubmitRequest[R] {
   def baseSubmit(serverContext:ServerContext) = {
-    submit(new FC2Context(serverContext.lookup(classOf[FC2Service])))
+    submit(new FC2Context(serverContext.lookup(classOf[FC2Facility])))
   }
   def submit(server:FC2Context):R
 }
@@ -47,7 +45,7 @@ trait FC2Bookmark extends Bookmark {
   def createFC2Page(day:Option[Day], fc2Context:FC2Context, context:PageContext):Page
   def createPage(day:Option[BrowserDay], serverContext:ServerContext, context:PageContext):Page = {
     val realDay = day.map( d => Day(d.year, d.month, d.dayOfMonth))
-    createFC2Page(realDay, new FC2Context(serverContext.lookup(classOf[FC2Service])), context)
+    createFC2Page(realDay, new FC2Context(serverContext.lookup(classOf[FC2Facility])), context)
   }
 }
 
@@ -75,23 +73,35 @@ case class MarketDataPage(
   def selfPage(pivotPageState: PivotPageState, edits:PivotEdits) = new MarketDataPage(marketDataIdentifier, MarketDataPageState(pivotPageState, pageState.marketDataType, edits))
 
   def dataRequest(serverContext:ServerContext) = {
-    val fc2Service = serverContext.lookup(classOf[FC2Service])
+    val fc2Service = serverContext.lookup(classOf[FC2Facility])
     fc2Service.readAllMarketData(marketDataIdentifier, pageState.marketDataType, pageState.edits, pageState.pivotPageState.pivotFieldParams)
   }
 
   override def save(serverContext:ServerContext, edits:PivotEdits) = {
-    val fc2Service = serverContext.lookup(classOf[FC2Service])
+    val fc2Service = serverContext.lookup(classOf[FC2Facility])
     fc2Service.saveMarketData(marketDataIdentifier, pageState.marketDataType, edits)
+  }
+
+  override def postSave(i:Int, context:PageContext) {
+    marketDataIdentifier match {
+      case StandardMarketDataPageIdentifier(mi) => {
+        context.localCache.latestMarketDataVersionIfValid(mi.selection) match {
+          case Some(v) => {
+            val maxVersion = math.max(i, v)
+            val newPage = copy(marketDataIdentifier=StandardMarketDataPageIdentifier(mi.copyVersion(maxVersion)), pageState = pageState.copy(edits = PivotEdits.Null))
+            context.goTo(newPage)
+          }
+          case None =>
+        }
+      }
+    }
   }
 
   override def latestPage(localCache:LocalCache) = {
     marketDataIdentifier match {
       case StandardMarketDataPageIdentifier(mi) => {
         localCache.latestMarketDataVersionIfValid(mi.selection) match {
-          case Some(v) => {
-            // TODO - All edits are being removed - not just the ones that are cancelled out by the update.
-            copy(marketDataIdentifier=StandardMarketDataPageIdentifier(mi.copyVersion(v)), pageState = pageState.copy(edits = PivotEdits.Null))
-          }
+          case Some(v) => copy(marketDataIdentifier=StandardMarketDataPageIdentifier(mi.copyVersion(v)))
           case _ => this
         }
       }
@@ -100,7 +110,7 @@ case class MarketDataPage(
   }
 
   override def subClassesPageData(serverContext:ServerContext) = {
-    val fc2Service = serverContext.lookup(classOf[FC2Service])
+    val fc2Service = serverContext.lookup(classOf[FC2Facility])
     val avaliableMarketDataTypes = fc2Service.marketDataTypeLabels(marketDataIdentifier)
     val selected = pageState.marketDataType match {
       case Some(mdt) => Some(mdt)
@@ -109,19 +119,22 @@ case class MarketDataPage(
     Some(MarketDataPagePageData(avaliableMarketDataTypes, selected))
   }
 
-  override def bookmark(serverContext:ServerContext):Bookmark = {
-    val starlingServer = serverContext.lookup(classOf[ReportService])
-    val singleObservationDay = pageState.pivotPageState.pivotFieldParams.pivotFieldState match {
-      case None => None
-      case Some(pfs) => {
-        pfs.fieldSelection(Field("Observation Day")) match {
+  override def bookmark(serverContext:ServerContext, pd:PageData):Bookmark = {
+    val starlingServer = serverContext.lookup(classOf[ReportFacility])
+
+    val singleObservationDay = pd match {
+      case PivotTablePageData(pivotData,_) => {
+        pivotData.pivotFieldsState.fieldSelection(Field("Observation Day")) match {
           case Some(s) if s.size == 1 => Some(s.head)
           case _ => None
         }
       }
+      case _ => None
     }
+    
     if (singleObservationDay.isDefined && marketDataIdentifier.isCurrent) {
-      val newPivotFieldState = pageState.pivotPageState.pivotFieldParams.pivotFieldState.get.removeFilter(Field("Observation Day"))
+      val pfs = pd.asInstanceOf[PivotTablePageData].pivotData.pivotFieldsState
+      val newPivotFieldState = pfs.removeFilter(Field("Observation Day"))
       val newPivotPageState = pageState.pivotPageState.copyPivotFieldsState(newPivotFieldState)
       val newPageState = pageState.copy(pivotPageState = newPivotPageState)
       marketDataIdentifier match {
@@ -267,11 +280,11 @@ case class MarketDataPage(
           MarketDataPage.goTo(context, marketDataIdentifier, Some(extraPanel.dataTypeCombo.selection.item), days)
         }
         case SelectionChanged(pricingGroupPanel.snapshotsComboBox) =>
-          context.goTo(copy(marketDataIdentifier=StandardMarketDataPageIdentifier(marketDataIdentifier.marketDataIdentifier.copy(marketDataVersion = pricingGroupPanel.snapshotsComboBox.value))))
+          context.goTo(copy(marketDataIdentifier=StandardMarketDataPageIdentifier(marketDataIdentifier.marketDataIdentifier.copy(marketDataVersion = pricingGroupPanel.snapshotsComboBox.value)), pageState = pageState.copy(edits = PivotEdits.Null)))
         case MarketDataSelectionChanged(selection) => context.goTo(
-          copy(marketDataIdentifier=StandardMarketDataPageIdentifier(MarketDataIdentifier(selection, context.localCache.latestMarketDataVersion(selection))))
+          copy(marketDataIdentifier=StandardMarketDataPageIdentifier(MarketDataIdentifier(selection, context.localCache.latestMarketDataVersion(selection))), pageState = pageState.copy(edits = PivotEdits.Null))
         )
-        case ButtonClicked(b) => {context.goTo(copy(marketDataIdentifier = StandardMarketDataPageIdentifier(marketDataIdentifier.marketDataIdentifier)))}
+        case ButtonClicked(extraPanel.filterDataCheckbox) => {context.goTo(copy(marketDataIdentifier = StandardMarketDataPageIdentifier(marketDataIdentifier.marketDataIdentifier), pageState = pageState.copy(edits = PivotEdits.Null)))}
       }
       listenTo(extraPanel.dataTypeCombo.selection, pricingGroupPanel.pricingGroupSelector, pricingGroupPanel.snapshotsComboBox.selection, extraPanel.filterDataCheckbox)
     }
@@ -313,7 +326,7 @@ object MarketDataPage {
             marketDataType:Option[MarketDataTypeLabel],
             observationDays:Option[Set[Day]]): ServerContext=>Page = {
     (serverContext) => {
-      val mdt = marketDataType.orElse(serverContext.lookup(classOf[FC2Service]).marketDataTypeLabels(marketDataIdentifier).headOption)
+      val mdt = marketDataType.orElse(serverContext.lookup(classOf[FC2Facility]).marketDataTypeLabels(marketDataIdentifier).headOption)
       val fs = pageContext.getSetting(
         StandardUserSettingKeys.UserMarketDataTypeLayout, Map[MarketDataTypeLabel, PivotFieldsState]()
       ).get(mdt)
@@ -344,16 +357,11 @@ case class MarketDataSelectionChanged(selection:MarketDataSelection) extends Eve
 object MarketDataSelectionComponent {
   def storeMarketDataSelection(pageContext:PageContext, selection:MarketDataSelection) {
     pageContext.putSetting(StandardUserSettingKeys.InitialMarketDataSelection, selection)
-    selection.pricingGroup match {
-      case Some(pg) => pageContext.putSetting(StandardUserSettingKeys.PricingGroupDefault, pg)
-      case None =>
-    }
-    selection.excel match {
-      case Some(excel) => pageContext.putSetting(StandardUserSettingKeys.ExcelMarketDataDefault, excel)
-      case None =>
-    }
+    selection.pricingGroup.map(pg => pageContext.putSetting(StandardUserSettingKeys.PricingGroupDefault, pg))
+    selection.excel.map(excel => pageContext.putSetting(StandardUserSettingKeys.ExcelMarketDataDefault, excel))
   }
 }
+
 class MarketDataSelectionComponent(pageContext:PageContext, maybeDesk:Option[Desk],
                                    marketDataSelection:MarketDataSelection,
                                    orientation:scala.swing.Orientation.Value=scala.swing.Orientation.Horizontal)

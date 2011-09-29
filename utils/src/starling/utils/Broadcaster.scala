@@ -19,7 +19,7 @@ trait Receiver {
 }
 
 object Broadcaster {
-  val Null = new Broadcaster() { def broadcast(event: Event) {} }
+  object Null extends Broadcaster { def broadcast(event: Event) {} }
 }
 
 class ReceiversBroadcaster extends Broadcaster {

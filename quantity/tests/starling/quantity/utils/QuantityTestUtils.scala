@@ -8,15 +8,16 @@ object QuantityTestUtils{
   /** Assert that UOMs match and that values are within tolerance
    */
   def assertQtyEquals(actual : Quantity, expected : Quantity, tol : Double = 0.0, message : String = ""){
-    val extra = if (actual.uom != expected.uom) " (" + actual.uom + "!=" + expected.uom + ")" else ""
-    assertEquals(actual.value, expected.value, tol, message + extra)
-    assertEquals(actual.uom, expected.uom, message)
+    if(!actual.isAlmostEqual(expected, tol)) {
+      throw new java.lang.AssertionError("assertion failed: " + message + "(" + actual + " != " + expected + " )")
+    }
   }
 
   def assertPivotQtyEquals(actualPQ : PivotQuantity, expected : Quantity, tol : Double = 0.0, message : String = ""){
     val actual = actualPQ.quantityValue.get
-    assertEquals(actual.value, expected.value, tol, message)
-    assertEquals(actual.uom, expected.uom, message)
+    if(!actual.isAlmostEqual(expected, tol)) {
+      throw new java.lang.AssertionError("assertion failed: " + message + "(" + actual + " != " + expected + " )")
+    }
   }
 
   def assertQtyOptionClose(actual : Option[Quantity], expected : Option[Quantity], tol : Double = 1e-3, min : Double = 1e-9, message : String = ""){
@@ -29,15 +30,17 @@ object QuantityTestUtils{
   /** Assert that the percentage difference between two quantities is small
    */
   def assertQtyClose(actual : Quantity, expected : Quantity, tol : Double = 1e-8, min : Double = 1e-9, message : String = ""){
-    assertEquals(actual.uom, expected.uom, message)
-    val (a, e) = (actual.value, expected.value)
+    val actualBase = actual.inBaseUOM
+    val expectedBase = expected.inBaseUOM
+    assertEquals(actualBase.uom, expectedBase.uom, message)
+    val (a, e) = (actualBase.value, expectedBase.value)
     if (a.abs < min){
       // Dealing with very small values,
       assert(a * e >= 0, "Signs differ " + message)
       assert(e.abs < 2 * min, "More than double " + message)
     } else {
       val diff = (a - e) / a
-      assert(diff.abs <= tol, "Expected " + expected + ", got " + actual + "\ndiff = "+ diff + "\n" +  message)
+      assert(diff.abs <= tol, "Expected " + expectedBase + ", got " + actualBase + "\ndiff = "+ diff + "\n" +  message)
     }
   }
 }

@@ -12,17 +12,33 @@ import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
 
 import java.lang.reflect.InvocationTargetException
 import collection.mutable.HashMap
-import java.util.UUID
 import starling.auth.{AuthHandler, User}
 import java.util.concurrent.{ConcurrentHashMap, Executors}
 import org.jboss.netty.channel._
 import java.net.{URL, InetSocketAddress}
 import java.lang.ThreadLocal
 import starling.utils.ThreadUtils
+import java.util.{UUID, Set => JSet, Map => JMap}
+import management.ManagementFactory
+import javax.management.ObjectName
+import collection.JavaConversions._
 
-class BouncyRMIServer(val port: Int, auth: AuthHandler, version: String, knownExceptionClasses:Set[String]) {
+trait UsersMBean {
+  def getUserDetails:JSet[String]
+}
+class Users(users0:JMap[UUID,User]) extends UsersMBean {
+  def getUserDetails:JSet[String] = new java.util.TreeSet[String](users0.values.map(user => user.name + " (" + user.phoneNumber + ")"))
+}
+
+class BouncyRMIServer(val port: Int, auth: AuthHandler, version: String, knownExceptionClasses:Set[String], registerUserMBean:Boolean=false) {
 
   val users:java.util.Map[UUID,User] = new java.util.concurrent.ConcurrentHashMap[UUID,User]()
+
+  if (registerUserMBean) {
+    val usersMBean = new Users(users)
+    val usersName = new ObjectName("Starling:name=Users")
+    val mbs = ManagementFactory.getPlatformMBeanServer.registerMBean(usersMBean, usersName)
+  }
 
   val authHandler = new ServerAuthHandler(auth, users)
 
@@ -135,11 +151,17 @@ class BouncyRMIServer(val port: Int, auth: AuthHandler, version: String, knownEx
     }
 
     override def channelDisconnected(ctx: ChannelHandlerContext, e: ChannelStateEvent) {
-      val user = ChannelLoggedIn.get(e.getChannel)
-      Logger.info("Server: Client disconnected: " + e.getChannel.getRemoteAddress + " (" + user._1 + ")")
-      users.remove(user._2)
+      ChannelLoggedIn.get(e.getChannel) match {
+        case None => {
+          Logger.info("Server: Client disconnected: " + e.getChannel.getRemoteAddress + " (no user)")
+        }
+        case Some(user) => {
+          Logger.info("Server: Client disconnected: " + e.getChannel.getRemoteAddress + " (" + user._1 + ")")
+          users.remove(user._2)
+          ChannelLoggedIn.remove(e.getChannel)
+        }
+      }
       group.remove(e.getChannel)
-      ChannelLoggedIn.remove(e.getChannel)
     }
 
     override def messageReceived(ctx: ChannelHandlerContext, e: MessageEvent) {
@@ -203,7 +225,6 @@ class BouncyRMIServer(val port: Int, auth: AuthHandler, version: String, knownEx
                 makeExceptionForClient(t)
               }
             }
-
             write(result)
           }
         }

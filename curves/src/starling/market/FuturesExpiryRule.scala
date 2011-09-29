@@ -79,6 +79,7 @@ abstract class FuturesExpiryRules(businessCalendars: BusinessCalendars) {
   def rule(eaiQuoteID: Int): Option[FuturesExpiryRule] = {
     val rule = ruleOption(eaiQuoteID)
     eaiQuoteID match {
+      case 15 => Some(NYMEX_HEAT) // EAI is wrong for some HEAT dates
       case 890 => Some(ICE_WTI) // EAI is missing some older ICE WTI rules
       case _ => rule
     }
@@ -117,6 +118,29 @@ abstract class FuturesExpiryRules(businessCalendars: BusinessCalendars) {
     }
 
     def lastTradingDayOfMonth(m: Month): Day = futuresExpiryRule.lastTradingDay(m)
+  }
+
+  /**
+   * Tries to use DB for expiry rules but falls back on definition
+   */
+  lazy val NYMEX_HEAT = new MonthFuturesExpiryRule {
+    lazy val futuresExpiryRule = Market.NYMEX_HEATING.eaiQuoteID.flatMap(ruleOption).get
+
+    lazy val name = futuresExpiryRule.name
+
+    def expiryDayOfMonth(m: Month) = futuresExpiryRule.expiryDay(m)
+
+    def lastTradingDayOfMonth(m: Month): Day =  {
+      val ltd = futuresExpiryRule.lastTradingDay(m)
+
+      val cal = Market.NYMEX_HEATING.businessCalendar
+      if (ltd.isBusinessDay(cal)) {
+        ltd
+      } else {
+        // "Trading in a current month shall cease on the last business day of the month preceding the delivery month."
+        (m - 1).lastDay.thisOrPreviousBusinessDay(cal)
+      }
+    }
   }
 
   lazy val WTI_Brent_Spread = new MonthFuturesExpiryRule {

@@ -35,7 +35,7 @@ case class DifferenceMainPivotReportPage(
   assert(tradeSelection.intradaySubgroup.isEmpty, "Difference reports don't work with Excel trades")
 
   def dataRequest(pageBuildingContext:StarlingServerContext) = {
-    pageBuildingContext.cachingReportService.diffReportPivot(tradeSelection, curveIdentifierDm1, curveIdentifierD,
+    pageBuildingContext.reportService.diffReportPivot(tradeSelection, curveIdentifierDm1, curveIdentifierD,
       reportOptions, expiryDay, fromTimestamp, toTimestamp, pivotPageState.pivotFieldParams)
   }
 
@@ -67,7 +67,7 @@ case class MainPivotReportPage(showParameters:Boolean, reportParameters:ReportPa
       case None => this
     }
 
-    val newPnlParameters:Option[PnlFromParameters] = reportParameters.pnlParameters.map {
+    val newPnlParameters:Option[PnlFromParameters] = page1.reportParameters.pnlParameters.map {
       pnlParameters => {
         localCache.latestMarketDataVersionIfValid(pnlParameters.curveIdentifierFrom.marketDataIdentifier.selection) match {
           case Some(v) => {
@@ -77,18 +77,21 @@ case class MainPivotReportPage(showParameters:Boolean, reportParameters:ReportPa
         }
       }
     }
-    val newCurveIdentifier = localCache.latestMarketDataVersionIfValid(reportParameters.curveIdentifier.marketDataIdentifier.selection) match {
+    val newCurveIdentifier = localCache.latestMarketDataVersionIfValid(page1.reportParameters.curveIdentifier.marketDataIdentifier.selection) match {
       case Some(v) => {
-        reportParameters.curveIdentifier.copyVersion(v)
+        page1.reportParameters.curveIdentifier.copyVersion(v)
       }
-      case _ => reportParameters.curveIdentifier
+      case _ => page1.reportParameters.curveIdentifier
     }
 
-    page1.selfReportPage(reportParameters.copy(curveIdentifier=newCurveIdentifier, pnlParameters=newPnlParameters))
+    page1.selfReportPage(page1.reportParameters.copy(curveIdentifier=newCurveIdentifier, pnlParameters=newPnlParameters))
   }
 
   override def finalDrillDownPage(fields:scala.Seq[(Field, Selection)], pageContext:PageContext, modifiers:Modifiers) {
-    val selection = fields.find(f=>f._1.name == "Trade ID")
+    val selection = fields.find(f=>f._1.name == "Trade ID" && (f._2 match {
+      case SomeSelection(vs) if vs.size == 1 => true
+      case _ => false
+    }))
     val tradeID = selection match {
       case Some( (field,selection)) => {
         selection match {
@@ -107,11 +110,11 @@ case class MainPivotReportPage(showParameters:Boolean, reportParameters:ReportPa
   }
 
   override def subClassesPageData(reader:StarlingServerContext):Option[PageData] = {
-    Some(PivotReportTablePageData(reader.cachingReportService.reportErrors(reportParameters).errors.size))
+    Some(PivotReportTablePageData(reader.reportService.reportErrors(reportParameters).errors.size))
   }
 
   def dataRequest(pageBuildingContext:StarlingServerContext) = {
-    pageBuildingContext.cachingReportService.reportPivot(reportParameters, pivotPageState.pivotFieldParams)
+    pageBuildingContext.reportService.reportPivot(reportParameters, pivotPageState.pivotFieldParams)
   }
   def selfPage(pps:PivotPageState, edits:PivotEdits) = copy(pivotPageState = pps)
   def selfReportPage(rp:ReportParameters, pps:PivotPageState = pivotPageState) = copy(reportParameters = rp, pivotPageState = pps)
@@ -147,13 +150,7 @@ case class MainPivotReportPage(showParameters:Boolean, reportParameters:ReportPa
           pivotPageState
         }
 
-        context.createAndGoTo({
-          server => {
-            // check to see if we have market data for the observation day and pnl from day, if we don't, import it
-            // making new copies of the ReportParameters is the really ugly bit
-            selfReportPage(rp = rp, pps = newPivotPageState)
-          }
-        }, modifiers = modifiers)
+        context.goTo(selfReportPage(rp = rp, pps = newPivotPageState), modifiers = modifiers)
       }
 
       val manualConfigPanel = new ManualReportConfigPanel(context, reportParameters, pivotPageState)
@@ -239,7 +236,7 @@ case class MainPivotReportPage(showParameters:Boolean, reportParameters:ReportPa
     }
   }
 
-  override def bookmark(serverContext:StarlingServerContext):Bookmark = ReportBookmark(showParameters, serverContext.reportService.createUserReport(reportParameters), pivotPageState)
+  override def bookmark(serverContext:StarlingServerContext, pd:PageData):Bookmark = ReportBookmark(showParameters, serverContext.reportService.createUserReport(reportParameters), pivotPageState)
 }
 
 case class ReportBookmark(showParameters:Boolean, userReportData:UserReportData, pivotPageState:PivotPageState) extends StarlingBookmark {
@@ -310,7 +307,7 @@ case class ReportErrorsPage(reportParameters:ReportParameters) extends StarlingS
   def text = "Errors in " + reportParameters.text
   def createComponent(context: PageContext, data: PageData, bookmark:Bookmark, browserSize:Dimension, previousPageData:Option[PreviousPageData]) = new PivotReportErrorPageComponent(context, data, browserSize, previousPageData)
   def build(pageBuildingContext: StarlingServerContext) = {
-    val errors = pageBuildingContext.cachingReportService.reportErrors(reportParameters)
+    val errors = pageBuildingContext.reportService.reportErrors(reportParameters)
     val errorsToUse = errors.errors.map(e => ErrorViewElement(e.instrumentText, e.message))
     PivotReportErrorPageData(errorsToUse)
   }

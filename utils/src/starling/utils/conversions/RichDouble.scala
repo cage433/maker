@@ -30,11 +30,8 @@ trait RichDouble {
     /**
      * If === zero then return Epsilon, otherwise this
      */
-    def nonZero = if(d == 0.0) {
-      MathUtil.EPSILON
-    } else {
-      d
-    }
+    def nonZero = if (d == 0.0) MathUtil.EPSILON else d
+    def isAlmostZero = d.abs < MathUtil.EPSILON
   }
 
   object DoubleParse {

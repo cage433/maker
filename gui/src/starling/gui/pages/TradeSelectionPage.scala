@@ -20,6 +20,7 @@ import common.RoundedBorder
 import common.{ButtonClickedEx, NewPageButton, MigPanel}
 import starling.gui.utils.RichReactor._
 import starling.browser.common.RichCheckBox._
+import starling.trade.facility.TradeFacility
 
 /**
  * Page that allows you to select trades.
@@ -44,16 +45,19 @@ case class TradeSelectionPage(
 
   def dataRequest(pageBuildingContext:StarlingServerContext) = {
     val expiryDay = tpp.expiry.exp
-    pageBuildingContext.cachingStarlingServer.tradePivot(tradeSelectionWithTimestamp, expiryDay, pivotPageState.pivotFieldParams)
+    pageBuildingContext.tradeService.tradePivot(tradeSelectionWithTimestamp, expiryDay, pivotPageState.pivotFieldParams)
   }
   
   override def subClassesPageData(pageBuildingContext:StarlingServerContext) = {
-    val desks = pageBuildingContext.server.desks
+    val desks = pageBuildingContext.tradeService.desks
     Some(TradeSelectionPageData(tpp.deskAndTimestamp.map(_._1), desks, tpp.intradaySubgroupAndTimestamp.map(_._1), pivotPageState))
   }
 
   override def finalDrillDownPage(fields:Seq[(Field, Selection)], pageContext:PageContext, modifiers:Modifiers) = {
-    val selection = fields.find(f=>f._1.name == "Trade ID")
+    val selection = fields.find(f=>f._1.name == "Trade ID" && (f._2 match {
+      case SomeSelection(vs) if vs.size == 1 => true
+      case _ => false
+    }))
     val tradeID = selection match {
       case Some( (field,selection)) => {
         selection match {
@@ -65,27 +69,14 @@ case class TradeSelectionPage(
     }
     tradeID match {
       case Some(trID) => {
-        pageContext.createAndGoTo(
-          (serverContext:ServerContext) => {
-            SingleTradePage(trID, tradeSelection.desk, tpp.expiry, tradeSelection.intradaySubgroup)
-          }, modifiers = modifiers)
+        pageContext.goTo(
+          SingleTradePage(trID, tradeSelection.desk, tpp.expiry, tradeSelection.intradaySubgroup),
+          modifiers = modifiers
+        )
       }
       case None => None
     }
   }
-
-  /*override def createComponent(context:PageContext, data:PageData, bookmark:Bookmark, browserSize:Dimension, previousPageData:Option[PreviousPageData]) = {
-    val tradeSelectionPageData = data match {
-      case v:PivotTablePageData => v.subClassesPageData match {
-        case x:Option[_] => x.get.asInstanceOf[TradeSelectionPageData]
-      }
-    }
-    new TradeSelectionComponent(
-      text, context, tradeSelectionPageData, tpp.deskAndTimestamp.map(_._2), tpp.intradaySubgroupAndTimestamp.map(_._2),
-      tpp.expiry,
-      PivotComponent(text, context, toolbarButtons(context, data), configPanel(context, data), finalDrillDownPage, selfPage, data,
-        pivotPageState, PivotEdits.Null, save, bookmark, browserSize))
-  }*/
 
   override def configPanel(context:PageContext, pageData:PageData, tableSelection:() => TableSelection) = {
     val data = pageData match {case v:PivotTablePageData => v.subClassesPageData match {case Some(d:TradeSelectionPageData) => d}}
@@ -190,11 +181,7 @@ case class TradeSelectionPage(
 
       private val refreshTradesButton = new Button {
         enabled = {
-          deskCheckBox.selected && {
-            deskCombo.selection.item == Desk.GasolineSpec ||
-                    deskCombo.selection.item == Desk.LondonDerivatives ||
-                    deskCombo.selection.item == Desk.Titan
-          }
+          deskCheckBox.selected
         }
         icon = StarlingIcons.icon("/icons/14x14_download_data.png")
         tooltip = "Force book close"
@@ -210,7 +197,6 @@ case class TradeSelectionPage(
           message,
           description,
           request,
-          (p:Unit) => {false},
           (p:Unit) => {}
         )
       }
@@ -222,7 +208,7 @@ case class TradeSelectionPage(
         val textID = textIDField.text
         context.createAndGoTo(
         (serverContext:ServerContext) => {
-          val tradeID = serverContext.lookup(classOf[StarlingServer]).tradeIDFor(desk, textID)
+          val tradeID = serverContext.lookup(classOf[TradeFacility]).tradeIDFor(desk, textID)
           SingleTradePage(tradeID, Some(desk), expiry, None)
         }, { case e:UnrecognisedTradeIDException => {
           errorLabel.text = e.getMessage
@@ -300,15 +286,25 @@ case class TradeSelectionPage(
 
             val curveIdentifier = {
               val marketDataIdentifier = {
-                val defaultSelection = MarketDataSelection(context.localCache.pricingGroups(desk).headOption)
-                val selection = context.getSetting(
+                val pricingGroupsForDesk = context.localCache.pricingGroups(desk)
+                val defaultSelection = MarketDataSelection(pricingGroupsForDesk.headOption)
+
+
+                val selection1 = context.getSetting(
                   StandardUserSettingKeys.InitialMarketDataSelection,
                   defaultSelection
                 )
-                val version = context.localCache.latestMarketDataVersionIfValid(selection)
-                        .getOrElse(context.localCache.latestMarketDataVersion(defaultSelection))
 
-                MarketDataIdentifier(defaultSelection, version)
+                val selection2 = selection1.pricingGroup match {
+                  case Some(pg) if pricingGroupsForDesk.contains(pg) => selection1
+                  case _ => defaultSelection
+                }
+
+                val (version, selection) = context.localCache.latestMarketDataVersionIfValid(selection2) match {
+                  case Some(v) => (v, selection2)
+                  case None => (context.localCache.latestMarketDataVersion(defaultSelection), defaultSelection)
+                }
+                MarketDataIdentifier(selection, version)
               }
 
               CurveIdentifierLabel.defaultLabelFromSingleDay(marketDataIdentifier, context.localCache.ukBusinessCalendar)
@@ -347,7 +343,7 @@ case class TradeSelectionPage(
             val to = timestampsCombo.maxTimestamp
             val latestIntradayTimestamp = context.localCache.latestTimestamp(intradaySubgroup)
 
-            context.createAndGoTo(server => new TradeReconciliationReportPage(tradeSelection, from, to,
+            context.goTo(new TradeReconciliationReportPage(tradeSelection, from, to,
               latestIntradayTimestamp, data.pivotPageState), modifiers = Modifiers.modifiers(e.getModifiers))
           }
           case DeskClosed(desk, timestamp) => {
@@ -375,7 +371,7 @@ case class TradeSelectionPage(
             val selection = tableSelection().selection
             val tradeSelection = TradeSelection(Some(tradeSystem), TradePredicate(selection._1, selection._2), None)
 
-            context.createAndGoTo(server => TradeChangesReportPage(tradeSelection,
+            context.goTo(TradeChangesReportPage(tradeSelection,
               from, to,
               PivotPageState(false, PivotFieldParams(true, None)), expiry.exp), modifiers = Modifiers.modifiers(e.getModifiers))
           }
@@ -502,10 +498,10 @@ case class TradeSelectionPage(
     copy(tpp = tpp.copy(intradaySubgroupAndTimestamp = newIntra, deskAndTimestamp = latestDeskTimestamp))
   }
 
-  override def bookmark(serverContext:StarlingServerContext):Bookmark = {
+  override def bookmark(serverContext:StarlingServerContext, pd:PageData):Bookmark = {
     val today = Day.today
     val isLatestLiveOn = tpp.expiry.exp == today
-    val latestTimestamp = tpp.deskAndTimestamp.map{case (desk, t) => (t, serverContext.server.latestTradeTimestamp(desk))}
+    val latestTimestamp = tpp.deskAndTimestamp.map{case (desk, t) => (t, serverContext.tradeService.latestTradeTimestamp(desk))}
     val isLatestBookClose = latestTimestamp match {
       case Some((t1,t2)) => t1 == t2
       case _ => true
@@ -634,9 +630,9 @@ case class SnapshotSubmitRequest(marketDataSelection:MarketDataSelection, observ
 case class BookCloseRequest(desk:Desk) extends StarlingSubmitRequest[Unit] {
   def submit(serverContext:StarlingServerContext) = {
     if (desk == Desk.Titan) {
-      serverContext.server.importTitanTrades()
+      serverContext.tradeService.importTitanTrades()
     } else {
-      serverContext.server.bookClose(desk)
+      serverContext.tradeService.bookClose(desk)
     }
   }
 }

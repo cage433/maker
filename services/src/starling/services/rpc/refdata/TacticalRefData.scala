@@ -18,6 +18,7 @@ import starling.titan.{TitanEdmTradeService, TitanServices}
 import com.trafigura.tradecapture.internal.refinedmetal.{Counterparty, Metal, Market, Shape, Grade, Location, DestinationLocation, GroupCompany}
 import com.trafigura.timer.Timer
 import com.trafigura.edm.shared.types.TitanId
+import starling.utils.conversions.RichMapWithErrors._
 
 /**
  * Tactical ref data, service proxies / data
@@ -43,16 +44,6 @@ case class DefaultTitanServices(props: Props) extends TitanServices {
 
   lazy val titanGetEdmTradesService: EdmGetTrades = new EdmGetTradesResourceProxy(ProxyFactory.create(classOf[EdmGetTradesResource], tradeServiceURL, clientExecutor))
 
-  val defaultMissingKeyExceptionMessage = "Missing key '%s' of type '%s', for values of type '%s'"
-  case class RichMap[K : Manifest, V : Manifest](map : Map[K, V]) {
-    def withException(s : String = defaultMissingKeyExceptionMessage) : Map[K, V] =
-      map.withDefault(k => throw new java.util.NoSuchElementException(s.format(k.toString, manifest[K].erasure.getName, manifest[V].erasure.getName)))
-  }
-  object RichMap {
-    implicit def toRichMap[K : Manifest, V : Manifest](map : Map[K, V]) = RichMap(map)
-  }
-
-  import RichMap._
   // Maps of refdata objects by guid
   lazy val edmMetalByGUID = allTacticalRefDataMetals.map(e => e.guid -> e).toMap.withException()
   lazy val futuresExchangeByID = allTacticalRefDataExchanges.map(e => e.code -> e).toMap.withException()
@@ -162,13 +153,13 @@ case class FileMockedTitanServicesDataFileGenerator(titanEdmTradeService : Titan
    * get edm trades and store in mock data file
    */
   valuationService.marketDataSnapshotIDs().foreach(println)
-  val valuations = valuationService.valueAllQuotas()
+  val valuations = valuationService.valueAllTradeQuotas()
 
   // valuations.tradeResults.foreach(println)
 
-  val (worked, failed) = valuations.tradeResults.values.partition(_ isRight)
+  val (worked, failed) = valuations.valuationResults.values.partition(_ isRight)
   failed.foreach(println)
-  val tradeIds = valuations.tradeResults.collect{ case (id, Right(_)) => id }.toList
+  val tradeIds = valuations.valuationResults.collect{ case (id, Right(_)) => id }.toList
   // val trades = valuationService.getTrades(tradeIds)
   val trades = titanEdmTradeService.titanGetEdmTradesService.getAll().results.map(_.trade).filter(_ != null)
 
@@ -178,16 +169,4 @@ case class FileMockedTitanServicesDataFileGenerator(titanEdmTradeService : Titan
 
   val loadedTrades = loadJsonValuesFromFile(tradesFile, true).map(s => EDMPhysicalTrade.fromJson(new JSONObject(s)).asInstanceOf[EDMPhysicalTrade])
   println("loaded %d trades = ".format(loadedTrades.size))
-}
-
-object RefDataServices {
-
-  def main(args : Array[String]) {
-    println("running main for tactical ref data services")
-    val server = StarlingInit.runningDevInstance
-    val edmTradeService = server.titanServices
-    val valuationService = server.valuationService
-    FileMockedTitanServicesDataFileGenerator(edmTradeService, valuationService)
-    server.stop
-  }
 }

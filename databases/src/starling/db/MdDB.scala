@@ -11,7 +11,7 @@ import starling.richdb.RichResultSetRow
 
 object MdDB {
   def apply(db: DBTrait[RichResultSetRow]): MdDB = if (false) {
-    val fast = VersionTransformingMdDB(new NewSchemaMdDB(db), db).toIdentity // removes timing differences between slow & fast
+    val fast = VersionTransformingMdDB(new NewSchemaMdDB(db, ReferenceDataLookup.Null), db).toIdentity
     val slow = VersionTransformingMdDB(new SlowMdDB(db), db).reverse
 
     VerifyingDynamicProxy.create(fast, slow, throwFailures = false)

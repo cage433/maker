@@ -25,7 +25,7 @@ trait Page {
   def createComponent(context:PageContext, data:PageData, bookmark:Bookmark, browserSize:Dimension, previousPageData:Option[PreviousPageData]):PageComponent
   def build(serverContext:SC):PageData
   def latestPage(localCache:LocalCache):Page = this
-  def bookmark(serverContext:SC):Bookmark = new PageBookmark(this)
+  def bookmark(serverContext:SC, pageData:PageData):Bookmark = new PageBookmark(this)
   type SC
   def createServerContext(sc:ServerContext):SC
 }
@@ -84,8 +84,8 @@ object Modifiers {
 trait PageContext {
 	def goTo(page:Page, modifiers:Modifiers=Modifiers.None, compToFocus:Option[AWTComp]=None)
   def createAndGoTo(buildPage:ServerContext=>Page, onException:PartialFunction[Throwable, Unit] = { case e:UnsupportedOperationException => {}}, modifiers:Modifiers=Modifiers.None, compToFocus:Option[AWTComp]=None)
-  def submit[R](submitRequest:SubmitRequest[R], onComplete:R=>Unit=(r:R)=>(), keepScreenLocked:Boolean = false, awaitRefresh:R=>Boolean=(r:R)=>false)
-  def submitYesNo[R](message:String, description:String, submitRequest:SubmitRequest[R], awaitRefresh:R=>Boolean, onComplete:R=>Unit, keepScreenLocked:Boolean = false)
+  def submit[R](submitRequest:SubmitRequest[R], onComplete:R=>Unit=(r:R)=>(), keepScreenLocked:Boolean = false)
+  def submitYesNo[R](message:String, description:String, submitRequest:SubmitRequest[R], onComplete:R=>Unit, keepScreenLocked:Boolean = false)
   def clearCache()
   def setContent(content:Component, cancelAction:Option[()=> Unit])
   def setErrorMessage(title:String, error:String)

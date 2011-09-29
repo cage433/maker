@@ -6,8 +6,9 @@ import starling.quantity.{SpreadOrQuantity, Quantity, UOM}
 import starling.utils.ImplicitConversions._
 import collection.mutable.ListBuffer
 import collection.Set
-import collection.immutable.{Iterable, Map}
+import collection.immutable.Map
 import starling.utils.{STable, SColumn}
+import scalaz.Scalaz._
 
 
 object AxisNode {
@@ -181,7 +182,7 @@ case class ServerAxisNode(axisValue:AxisValue, children:Map[ChildKey,Map[AxisVal
 
 case class AxisNode(axisValue:AxisValue, children:List[AxisNode]=Nil) {
   def purge(remove:Set[List[ChildKey]], parent:List[ChildKey] = Nil):Option[AxisNode] = {
-    val pathToMe = axisValue.childKey :: parent
+    val pathToMe = axisValue.isNull ? parent | axisValue.childKey :: parent
     if (children.isEmpty) {
       if (remove.contains(pathToMe.reverse)) None else Some(this)
     } else {
@@ -309,7 +310,7 @@ case class PivotTableConverter(otherLayoutInfo:OtherLayoutInfo = OtherLayoutInfo
   def createGrid(extractUOMs:Boolean = true, addExtraColumnRow:Boolean = true):PivotGrid ={
     val aggregatedMainBucket = table.aggregatedMainBucket
     val zeroFields = table.zeroFields
-    val rowsToRemove:Set[List[ChildKey]] = if (otherLayoutInfo.removeZeros && (fieldState.columns.allFields.toSet & zeroFields).nonEmpty) {
+    val rowsToRemove:Set[List[ChildKey]] = (if (otherLayoutInfo.removeZeros && (fieldState.columns.allFields.toSet & zeroFields).nonEmpty) {
       val rows:Set[List[ChildKey]] = aggregatedMainBucket.groupBy{case ((r,c),v) => r}.keySet
       rows.flatMap(row => {
         val onlyZeroFieldColumnsMap = aggregatedMainBucket.filter{case ((r,c),_) => {
@@ -318,15 +319,11 @@ case class PivotTableConverter(otherLayoutInfo:OtherLayoutInfo = OtherLayoutInfo
             case Some(an) => zeroFields.contains(an.field)
           })
         }}
-        if (onlyZeroFieldColumnsMap.forall{case (_,v) => v match {
-          case q:Quantity => q.isAlmostZero
-          case pq:PivotQuantity => pq.isAlmostZero
-          case _ => false
-        }}) Some(row) else None
+        onlyZeroFieldColumnsMap.forallValues(_.isAlmoseZero) option (row)
       })
     } else {
       Set[List[ChildKey]]()
-    }
+    })
 
     val rowData = AxisNodeBuilder.flatten(table.rowNode.purge(rowsToRemove).getOrElse(AxisNode.Null), totals.rowGrandTotal,
       totals.rowSubTotals, collapsedRowState, otherLayoutInfo.disabledSubTotals, table.formatInfo, extraFormatInfo, true, previousPageData.map(_.rowNode))
@@ -424,14 +421,14 @@ case class PivotTableConverter(otherLayoutInfo:OtherLayoutInfo = OtherLayoutInfo
             spans.toList
           }
 
-          var columnsNotHandled = (0 until columnUOMs.length).toSet.filter(n => columnUOMs(n).asString.length() > 0)
+          var columnsNotHandled = (0 until columnUOMs.length).toSet.filter(n => columnUOMs(n).toString.length() > 0)
           var currentRow = startRow
           while (columnsNotHandled.nonEmpty && (currentRow < colData.length)) {
             val spans = getSpans(colData(currentRow)).filter{case (start, end) => columnsNotHandled.contains(start)}
             spans.foreach{case (start, end) => {
               if ((start to end).map(c => columnUOMs(c)).distinct.size == 1) {
                 val current = colData(currentRow)(start)
-                val uom = columnUOMs(start).asString
+                val uom = columnUOMs(start).toString
                 if (uom.length > 0) {
                   colData(currentRow)(start) = current.changeLabel(current.text + " (" + uom + ")")
                 }
@@ -453,6 +450,10 @@ case class PivotTableConverter(otherLayoutInfo:OtherLayoutInfo = OtherLayoutInfo
         case None => (Nil,Nil)
         case Some(_) => (axisCellUpdateInfo(rowDataArray).toList, axisCellUpdateInfo(colData).toList)
       }
+
+      println("")
+      println("CUOMS " + columnUOMs.length + " : " + columnUOMs.toList)
+      println("")
 
       PivotGrid(rowDataArray, colData, mainData, columnUOMs, cellUpdateInfoList, rowAxisCellUpdateInfo, colAxisCellUpdateInfo)
     }
@@ -587,7 +588,7 @@ case class PivotTableConverter(otherLayoutInfo:OtherLayoutInfo = OtherLayoutInfo
 
     val columnUOMs = allUnits.map(uomSet => {
       if (uomSet.size == 1) {
-        uomSet.iterator.next
+        uomSet.iterator.next()
       } else {
         UOM.NULL
       }
@@ -598,12 +599,9 @@ case class PivotTableConverter(otherLayoutInfo:OtherLayoutInfo = OtherLayoutInfo
   }
 
   def toSTable(name:String) = {
-    val rowAxis = table.rowAxis
     val (rowHeaderCells, columnHeaderCells, mainTableCells) = allTableCells(false)
     val rowHeader= if (rowHeaderCells.isEmpty) List() else rowHeaderCells(0).map { cv => SColumn(cv.value.field.name) }.toList
-//    val columnHeader = columnHeaderCells(0).map { cv => SColumn(cv.value.field.name) }.toList
     val columnHeader = columnHeaderCells(1).map { cv => SColumn(cv.label) }.toList
-
     //Does not work if the column area contains non-measures
     STable(
       name,

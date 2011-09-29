@@ -43,7 +43,7 @@ trait RichList {
 
     def &(other: List[A]) = list.toSet & other.toSet
 
-    def toOption[T](value: => T) = (!list.isEmpty).toOption(value)
+    def toOption[T](value: => T) = (!list.isEmpty).option(value)
 
     def flatMapO[B](f: A => Option[B]): List[B] = list.map(f).somes
 
@@ -79,8 +79,8 @@ trait RichList {
 
     def partialMap[B](pf: PartialFunction[A, B]): List[B] = flatMapO(pf.lift)
     def safeMap[B](f: A => B): List[B] = flatMapO(f.option)
-    def optMax(implicit cmd: Ordering[A]): Option[A] = noneEmpty(_.max)
-    def optMaxBy[B](f: A => B)(implicit cmp: Ordering[B]): Option[A] = noneEmpty(_.maxBy(f))
-    def noneEmpty[B](f: List[A] => B): Option[B] = list.isEmpty ? none[B] | some(f(list))
+    def optMax(implicit cmd: Ordering[A]): Option[A] = ifDefined(_.max)
+    def optMaxBy[B](f: A => B)(implicit cmp: Ordering[B]): Option[A] = ifDefined(_.maxBy(f))
+    def ifDefined[B](f: List[A] => B): Option[B] = list.isEmpty ? none[B] | some(f(list))
   }
 }

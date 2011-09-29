@@ -11,7 +11,7 @@ TOCOM Gas Oil	Some(135)	FuturesMarket	kl	JPY	TCF	Some(100.0)	Month	GasOil	Some(T
 IPE Natural Gas	Some(139)	FuturesMarket	MT	GBP	IPF	Some(1000.0)	Month	NatGas	Some(IPE.NBP)	Some(0.01)	Some(0)	Some(2)	EAIExpiryRule(139)	ICE	Some(6)							Some(1.0)
 NYMEX Henry Hub Natural Gas	Some(140)	FuturesMarket	mmbtu	USD	NYM	Some(10000.0)	Month	NatGas	Some(NG)	Some(0.1)	Some(6)	Some(3)	EAIExpiryRule(140)	NYMEX	Some(9)							Some(1.0)
 COMEX Aluminium	Some(544)	FuturesMarket	lb	USD	NYM	Some(44000.0)	Month	Aluminium	Some(ALMN)	Some(1.0)	Some(3)	Some(2)	Comex PT/PA	COMEX	None							None
-COMEX High Grade Copper	Some(545)	FuturesMarket	lb	USD	NYM	Some(25000.0)	Month	Copper	Some(COMEX.HGC)	Some(1.0)	Some(3)	Some(2)	EAIExpiryRule(545)	COMEX	None							None
+COMEX High Grade Copper	Some(545)	FuturesMarket	lb	USD	NYM	Some(25000.0)	Month	Copper	Some(HG)	Some(0.01)	Some(3)	Some(2)	EAIExpiryRule(545)	COMEX	None							None
 COMEX Gold	Some(546)	FuturesMarket	oz	USD	NYM	Some(100.0)	Month	Gold	Some(GC)	Some(1.0)	Some(3)	Some(2)	Comex Gold/Silver/HG Copper	COMEX	None							None
 COMEX Silver	Some(547)	FuturesMarket	oz	USD	NYM	Some(5000.0)	Month	Silver	Some(COMEX.SIC)	Some(1.0)	Some(3)	Some(2)	Comex Gold/Silver/HG Copper	COMEX	None							None
 LME Aluminium Alloy	Some(548)	FuturesMarket	MT	USD	LME	Some(20.0)	Day	AluminiumAlloy	Some(LCH.LME.ALUMINIUMALLOY)	Some(1.0)	Some(3)	Some(2)	LME	LME	None							None
@@ -24,7 +24,7 @@ LME Zinc	Some(554)	FuturesMarket	MT	USD	LME	Some(25.0)	Day	Zinc	Some(LCH.LME.ZIN
 NYMEX Brent	Some(605)	FuturesMarket	bbl	USD	NYM	Some(1000.0)	Month	Brent	Some(FB)	Some(1.0)	Some(3)	Some(2)	EAIExpiryRule(1)	NYMEX	Some(37)							Some(7.57)
 COMEX Palladium	Some(683)	FuturesMarket	oz	USD	NYM	Some(1.0)	Month	Palladium	Some(COMEX.PAC)	Some(1.0)	Some(3)	Some(2)	Comex PT/PA	COMEX	None							None
 COMEX Platinum	Some(684)	FuturesMarket	oz	USD	NYM	Some(1.0)	Month	Platinum	Some(COMEX.PLC)	Some(1.0)	Some(3)	Some(2)	Comex PT/PA	COMEX	None							None
-NYMEX RBOB	Some(880)	FuturesMarket	gal	USD	NYM	Some(42000.0)	Month	Gasoline	Some(RB.UNL)	Some(0.01)	Some(4)	Some(4)	EAIExpiryRule(880)	NYMEX	Some(23)							Some(8.33)
+NYMEX RBOB	Some(880)	FuturesMarket	gal	USC	NYM	Some(42000.0)	Month	Gasoline	Some(RB.UNL)	Some(0.01)	Some(4)	Some(4)	EAIExpiryRule(880)	NYMEX	Some(23)							Some(8.33)
 ICE WTI	Some(890)	FuturesMarket	bbl	USD	IPE	Some(1000.0)	Month	WTI	Some(WI)	Some(1.0)	Some(3)	Some(4)	EAIExpiryRule(890)	ICE	Some(12)							Some(7.6)
 ICE RBOB	Some(913)	FuturesMarket	gal	USD	IPE	Some(1000.0)	Month	Gasoline	Some(IPRBOB)	Some(0.01)	Some(4)	Some(4)	EAIExpiryRule(913)	ICE	None							Some(8.33)
 ICE Heat	Some(914)	FuturesMarket	gal	USD	IPE	Some(1000.0)	Month	HeatingOil	Some(IPHO)	Some(0.01)	Some(4)	Some(4)	EAIExpiryRule(914)	ICE	None							Some(7.45)

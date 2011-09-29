@@ -16,7 +16,7 @@ trait BundleDefinitions {
   def systemPackages:List[String]
 }
 
-class OsgiInstance(name:String, writePID:Boolean, properties:()=>Map[String,String], bundles:BundleDefinitions) {
+class OsgiInstance(name:String, writePID:Boolean, bundles:BundleDefinitions) {
   //System.setProperty("log4j.configuration", "log4j.properties")
   System.setProperty("org.ops4j.pax.logging.DefaultServiceLog.level", "INFO")
 
@@ -130,16 +130,6 @@ class OsgiInstance(name:String, writePID:Boolean, properties:()=>Map[String,Stri
     bundleContext.registerService(classOf[CountDownLatch].getName, latch, null)
     framework.start
 
-    val tracker:ServiceTracker = new ServiceTracker(bundleContext, "starling.osgimanager.PropsService", null) {
-      override def addingService(reference: ServiceReference) = {
-        val propsService = bundleContext.getService(reference)
-        val propertiesAsDictionary = mapToDictionary(properties())
-        propsService.getClass.getMethod("updated", classOf[Dictionary[_,_]]).invoke(propsService, propertiesAsDictionary)
-        null
-      }
-    }
-    tracker.open()
-
     latch.await()
   }
   def stop = {
@@ -163,7 +153,7 @@ object OsgiInstance {
       println("triggered reload")
     } catch {
       case e:ConnectException => {
-        val instance = new OsgiInstance(name, writePID, properties, bundles)
+        val instance = new OsgiInstance(name, writePID, bundles)
         instance.start
         new Thread(new Runnable() { def run() {
           val server = new ServerSocket(port)

@@ -10,7 +10,7 @@ import starling.utils.ImplicitConversions._
 import collection.immutable.Map
 import starling.daterange.{Tenor, Day}
 import starling.quantity.{Percentage, UOM}
-
+import scalaz.Scalaz._
 
 class VerifyLiborMaturitiesAvailable(marketDataStore: MarketDataStore, broadcaster: Broadcaster, from: String, to: String)
   extends EmailingScheduledTask(broadcaster, from, to) {
@@ -21,7 +21,7 @@ class VerifyLiborMaturitiesAvailable(marketDataStore: MarketDataStore, broadcast
     val missingTenorsByCurrency = currencies.toMapWithValues(currency => tenorsFor(currency) \\ tenorsByCurrency(currency))
       .filterValuesNot(_.isEmpty).sortBy(_.toString)
 
-    (missingTenorsByCurrency.size > 0).toOption {
+    (missingTenorsByCurrency.size > 0).option {
       email.copy(subject = "Missing Libor Maturities in LIM, observation day: " + observationDay,
         body = <html>
                  <p>The following LIBOR tenors are required by Trinity but are missing in LIM</p>

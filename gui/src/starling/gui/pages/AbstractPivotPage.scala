@@ -13,7 +13,7 @@ import java.awt.{Color, Dimension}
 import starling.pivot.HiddenType._
 import starling.browser._
 import common.{GuiUtils, MigPanel}
-import starling.reports.ReportService
+import starling.reports.facility.ReportFacility
 
 /**
  * An abstract page which holds a pivot table
@@ -35,7 +35,8 @@ abstract class AbstractPivotPage(pivotPageState:PivotPageState, edits:PivotEdits
   def icon = StarlingIcons.im("/icons/stock_chart-reorganize.png")
   def build(sc: SC) = PivotTablePageData(dataRequest(sc), subClassesPageData(sc))
   def dataRequest(pageBuildingContext:SC):PivotData
-  def save(sc:ServerContext, edits:PivotEdits):Boolean = throw new Exception("No implementation of save for this page")
+  def save(sc:ServerContext, edits:PivotEdits):Int = throw new Exception("No implementation of save for this page")
+  def postSave(i:Int, context:PageContext) {throw new Exception("No implementation of postSave for this page")}
   def selfPage(pivotPageState:PivotPageState, edits:PivotEdits=PivotEdits.Null):Page
   def subClassesPageData(pageBuildingContext:SC):Option[PageData] = None
   def finalDrillDownPage(fields:Seq[(Field,Selection)], pageContext:PageContext, modifiers:Modifiers) {}
@@ -43,7 +44,7 @@ abstract class AbstractPivotPage(pivotPageState:PivotPageState, edits:PivotEdits
   def configPanel(pageContext:PageContext, data:PageData, tableSelection:() => TableSelection):Option[ConfigPanels] = None
   def createComponent(pageContext:PageContext, data:PageData, bookmark:Bookmark, browserSize:Dimension, previousPageData:Option[PreviousPageData]) : PageComponent = {
     PivotComponent(text, pageContext, toolbarButtons(pageContext, data), configPanel, finalDrillDownPage, selfPage,
-      data, pivotPageState, edits, save, bookmark, browserSize, false, previousPageData)
+      data, pivotPageState, edits, save, postSave, bookmark, browserSize, false, previousPageData)
   }
 }
 
@@ -97,7 +98,8 @@ object PivotComponent {
         pageData:PageData,
         pivotPageState:PivotPageState,
         edits:PivotEdits,
-        save:(ServerContext, PivotEdits) => Boolean,
+        save:(ServerContext, PivotEdits) => Int,
+        postSave:(Int, PageContext) => Unit,
         bookmark:Bookmark,
         browserSize:Dimension,
         embedded:Boolean = true,
@@ -109,7 +111,7 @@ object PivotComponent {
       new PivotTablePageGraphComponent(data.pivotData.pivotTable)
     } else {
       new PivotTablePageComponent(text, pageContext, toolbarButtons, configPanel, finalDrillDown, selfPage, data,
-        pivotPageState, edits, save, bookmark, browserSize, embedded, previousPageData)
+        pivotPageState, edits, save, postSave, bookmark, browserSize, embedded, previousPageData)
     }
   }
 }
@@ -136,7 +138,8 @@ class PivotTablePageComponent(
         pivotTablePageData:PivotTablePageData,
         pivotPageState:PivotPageState,
         edits:PivotEdits,
-        save:(ServerContext, PivotEdits) => Boolean,
+        save:(ServerContext, PivotEdits) => Int,
+        postSave:(Int, PageContext) => Unit,
         bookmark:Bookmark,
         browserSize:Dimension,
         embedded:Boolean,
@@ -267,11 +270,11 @@ class PivotTablePageComponent(
       val numEditsString = numEdits.toString
 
       def saveEdits() {
-        pageContext.submit(new SubmitRequest[Boolean] {
+        pageContext.submit(new SubmitRequest[Int] {
           def baseSubmit(serverContext:ServerContext) = {
             save(serverContext, edits)
           }
-        }, awaitRefresh = (b:Boolean) => b)
+        }, onComplete = (r:Int) => postSave(r, pageContext))
       }
       reactions += {case ButtonClicked(b) => saveEdits()}
 
@@ -536,7 +539,7 @@ class PivotTablePageComponent(
 
 case object ClearServerSideCache extends SubmitRequest[Unit] {
 
-  def baseSubmit(serverContext: ServerContext) { serverContext.lookup(classOf[ReportService]).clearCache}
+  def baseSubmit(serverContext: ServerContext) { serverContext.lookup(classOf[ReportFacility]).clearCache}
 }
 
 case class AbstractPivotComponentState(filterText:String,

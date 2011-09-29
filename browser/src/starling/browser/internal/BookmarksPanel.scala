@@ -11,9 +11,26 @@ import java.util.{Calendar, GregorianCalendar, Date => JDate}
 import starling.browser._
 import javax.swing._
 import java.awt.event.ActionEvent
+import org.jdesktop.swingx.plaf.basic.BasicMonthViewUI
 
 class MinimalSXMonthView extends Component {
-  override lazy val peer = new JXMonthView
+  var dayOfWeekHeight = 0
+  var monthHeaderHeight = 0
+  override lazy val peer = new JXMonthView {
+    setUI(new BasicMonthViewUI {
+      override def getDayBoundsInMonth(month:JDate, row:Int, column:Int) = {
+        val r = super.getDayBoundsInMonth(month, row, column)
+        dayOfWeekHeight = r.height
+        r
+      }
+
+      override def getMonthHeaderBounds(date:JDate, includeInsets:Boolean) = {
+        val r = super.getMonthHeaderBounds(date, includeInsets)
+        monthHeaderHeight = r.height
+        r
+      }
+    })
+  }
   def traversable:Boolean = peer.isTraversable
   def traversable_=(traversable:Boolean) {peer.setTraversable(traversable)}
   def date:JDate= peer.getFirstSelectionDate
@@ -83,7 +100,7 @@ class BookmarksPanel(context:PageContext) extends MigPanel("") {
     val bookmarkSelected = bookmarksListView.selected
     context.submitYesNo("Delete Bookmark?",
       "Are you sure you want to delete the \"" + bookmarkSelected.name + "\" bookmark?",
-      DeleteBookmarkRequest(bookmarkSelected.name), (u:Unit) => {false}, (u:Unit) => {})
+      DeleteBookmarkRequest(bookmarkSelected.name), (u:Unit) => {})
   }
 
   def goToBookmark(modifiers:Modifiers) {
@@ -167,7 +184,7 @@ class BookmarksPanel(context:PageContext) extends MigPanel("") {
     case SelectionChanged(`bookmarksListView`) => dayPicker.enabled = valuationDayShouldBeEnabled
     case KeyPressed(`bookmarksListView`, scala.swing.event.Key.Enter, m,_) => goToBookmark(Modifiers.modifiersEX(m))
     case KeyPressed(`dayPicker`, scala.swing.event.Key.Enter, m,_) => goToBookmark(Modifiers.modifiersEX(m))
-    case MouseClicked(`dayPicker`,_,m,2,_) => goToBookmark(Modifiers.modifiersEX(m))
+    case MouseClicked(`dayPicker`,p,m,2,_) if dayPicker.enabled && (p.y > (dayPicker.dayOfWeekHeight + dayPicker.monthHeaderHeight)) => goToBookmark(Modifiers.modifiersEX(m))
   }
   listenTo(context.remotePublisher, bookmarksListView.keys, bookmarksListView.mouse.clicks, bookmarksListView.selection, dayPicker.keys, dayPicker.mouse.clicks)
 

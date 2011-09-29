@@ -14,7 +14,6 @@ import starling.dbx.QueryBuilder._
 import starling.gui.api.{EAIDeskInfo, Desk}
 
 object EAITradeStore {
-  val bookID_col = "Book ID"
   val desk_str = "Desk"
   val dealID_str = "Deal ID"
   val trader_str = "Trader"
@@ -35,7 +34,6 @@ case class EAITradeAttributes(strategyID: TreeID, bookID: TreeID, dealID: TreeID
 
   import EAITradeStore._
   def details = Map(
-    bookID_col -> bookID.id,
     "StrategyID" -> strategyID.id,
     dealID_str -> dealID.id,
     trader_str -> trader,
@@ -57,18 +55,18 @@ case class EAITradeAttributes(strategyID: TreeID, bookID: TreeID, dealID: TreeID
 
 
 class EAITradeStore(db: RichDB, broadcaster:Broadcaster, eaiStrategyDB:EAIStrategyDB, desk:Desk) extends
-    TradeStore(db, broadcaster, EAITradeSystem, Some( desk.deskInfo.get.asInstanceOf[EAIDeskInfo].book)) {
+    TradeStore(db, broadcaster, EAITradeSystem) {
 
   lazy val usedStrategyIDs = new scala.collection.mutable.HashSet[Int]()
-  val tableName = "EAITrade"
+  val tableName = "EAITrade_book_" + desk.deskInfo.get.asInstanceOf[EAIDeskInfo].book
+
   val tradeAttributesFactory = EAITradeAttributes
-  
+
   populateUsedIds()
 
   def createTradeAttributes(row: RichInstrumentResultSetRow) = {
     import EAITradeStore._
-    val bookID = row.getInt(bookID_col.replaceAll(" ", ""))
-    assert(bookID == desk.deskInfo.get.asInstanceOf[EAIDeskInfo].book, "Reading in the wrong trade for this tradestore: " + (desk, row))
+    val bookID = desk.deskInfo.get.asInstanceOf[EAIDeskInfo].book
     val strategyID = row.getInt("StrategyID")
     val dealID = row.getInt(dealID_str.replaceAll(" ", ""))
     val trader = row.getStringOrNone(trader_str).getOrElse("")
@@ -97,7 +95,7 @@ class EAITradeStore(db: RichDB, broadcaster:Broadcaster, eaiStrategyDB:EAIStrate
 
   private def populateUsedIds() {
     usedStrategyIDs.clear
-    usedStrategyIDs ++= db.queryWithResult("select distinct strategyID from EAITrade", Map()) { rs=> rs.getInt("strategyID") }
+    usedStrategyIDs ++= db.queryWithResult("select distinct strategyID from " + tableName, Map()) { rs=> rs.getInt("strategyID") }
   }
   override def tradesChanged() = {
     populateUsedIds

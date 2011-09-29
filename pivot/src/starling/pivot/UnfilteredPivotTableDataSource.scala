@@ -35,32 +35,30 @@ class PossibleValuesBuilder(val allFields:Seq[FieldDetails], val filtersList:Fil
   }
 
   def +=(row : Map[Field,Any]) {
-    def getFieldValue(field : Field) : Any = {
+    def getFieldValue(field : Field, isForPossibleValues: Boolean) : Any = {
       val value = PivotValue.extractValue(row, field)
-      fieldDetailsMap(field).transformValueForGroupByField(value)
+      if(isForPossibleValues)
+        fieldDetailsMap(field).transformValueForGroupByField(value)
+      else
+        value
     }
     // Need to add values for all matching selections and the first non-matching
     // (if that exists)
     for (filters <- filtersList) {
       val (matching, nonMatching) = filters.span{case (field, selection) => {
-        selection match {
-          case MeasurePossibleValuesFilter(_) => true
-          case _ => {
-            fieldDetailsMap.get(field) match {
-              case None => false
-              case Some(fd) => selection.matches(fd, getFieldValue(field))
-            }
-          }
+        fieldDetailsMap.get(field) match {
+          case None => false
+          case Some(fd) => selection.matches(fd, getFieldValue(field, false))
         }
       } }
       matching.foreach {
         case (field, MeasurePossibleValuesFilter(_)) =>
-        case (field, _) => possibleValues(field) += getFieldValue(field)
+        case (field, _) => possibleValues(field) += getFieldValue(field, true)
       }
       nonMatching match {
         case Nil =>
         case (field, MeasurePossibleValuesFilter(_)) :: _ =>
-        case (field, _) :: _ => if (fieldDetailsMap.contains(field)) possibleValues(field) += getFieldValue(field)
+        case (field, _) :: _ => if (fieldDetailsMap.contains(field)) possibleValues(field) += getFieldValue(field, true)
       }
     }
   }
@@ -81,16 +79,21 @@ object UnfilteredPivotTableDataSource {
       }
     }
 
-    val filteredData = if (pfs.filters.isEmpty) data else data.filter {
+    val filteredData = if (pfs.filters.isEmpty) data
+    else data.filter {
       row => {
-        pfs.filters.forall{ case(field,selection) => {
-          val fieldDetails = fieldDetailsMap(field)
-          val rowValue = fieldDetails.transformValueForGroupByField(PivotValue.extractValue(row, field))
-          selection match {
-            case SomeSelection(values) => fieldDetails.matches(values, rowValue)
-            case _ => true
+        // This used to be possibleValueFieldList.fitlers.exists( ... but this means there are sometimes many blank rows when for example looking at one market in the market data viewer)
+        pfs.filters.forall {
+          case (field, selection) => {
+            fieldDetailsMap.get(field) match {
+              case Some(fieldDetails) => {
+                val rowValue = fieldDetails.transformValueForGroupByField(PivotValue.extractValue(row, field))
+                selection.matches(fieldDetails, rowValue)
+              }
+              case None => true
+            }
           }
-        } }
+        }
       }
     }
     PivotResult(filteredData, possibleValuesBuilder.build)

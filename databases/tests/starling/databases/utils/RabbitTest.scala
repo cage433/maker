@@ -8,9 +8,8 @@ import org.testng.annotations.Test
 import starling.gui.api.RabbitMessage
 import ClosureUtil._
 import util.Random
-
 import starling.databases.utils.{RabbitMessageReceiver, RabbitMessageSender, RabbitQueue}
-import starling.utils.QueuedRabbitMessageReceiver
+
 
 class RabbitTest extends StarlingTest with ShouldMatchers {
   @Test(enabled=false, description="Unable to test until it's possible to run a rabbitmq server from within the test")

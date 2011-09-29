@@ -2,20 +2,15 @@ package starling.loopyxl
 
 import starling.auth.AuthHandler
 import starling.manager._
-import java.util.Collection
 import collection.JavaConversions
+import starling.props.Props
 
-class LoopyxlProps {
-  def loopyXLPort = 5566
-}
 class LoopyxlBromptonActivator extends BromptonActivator {
-  type Props = LoopyxlProps
-  def defaults = new LoopyxlProps
 
   var receiver : LoopyXLReceiver = _
 
-  def init(context: BromptonContext, props: LoopyxlProps) {
-
+  def start(context: BromptonContext) = {
+    val props = context.awaitService(classOf[Props])
     val auth = context.awaitService(classOf[AuthHandler])
     val methodsByService = new java.util.concurrent.ConcurrentHashMap[BromptonServiceReference,List[DynamicMethod]]()
     val methodsById = new java.util.concurrent.ConcurrentHashMap[Int,DynamicMethod]()
@@ -47,11 +42,9 @@ class LoopyxlBromptonActivator extends BromptonActivator {
         method
       }
     }
-    receiver = new LoopyXLReceiver(props.loopyXLPort, auth, osgiMethodSource)
+    receiver = new LoopyXLReceiver(props.LoopyXLPort(), auth, osgiMethodSource)
     receiver.start
   }
-
-  def start(context: BromptonContext) = {}
 
   def stop(context: BromptonContext) = {
     if (receiver != null) receiver.stop

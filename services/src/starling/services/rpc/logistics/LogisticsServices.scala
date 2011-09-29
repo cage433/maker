@@ -1,6 +1,5 @@
 package starling.services.rpc.logistics
 
-import starling.props.Props
 import com.trafigura.services.security.ComponentTestClientExecutor
 import org.jboss.resteasy.client.{ProxyFactory, ClientExecutor}
 import com.trafigura.edm.logistics.inventory._
@@ -13,6 +12,8 @@ import starling.titan.LogisticsServices._
 import starling.titan._
 import starling.services.rpc.FileUtils
 import org.codehaus.jettison.json.JSONObject
+import starling.utils.conversions.RichMapWithErrors._
+import starling.props.{PropsHelper, Props}
 
 /**
  * logistics service interface
@@ -105,8 +106,8 @@ case class FileMockedTitanLogisticsInventoryServices() extends TitanLogisticsInv
   //val loadedInventory = loadJsonValuesFromFileUrl(inventoryPath).map(s => EDMInventoryItem.fromJson(new JSONObject(s)).asInstanceOf[EDMInventoryItem])
   val loadedInventory = loadJsonValuesFromFileUrl(inventoryPath).map(s => LogisticsInventoryResponse.fromJson(new JSONObject(s)).asInstanceOf[LogisticsInventoryResponse]).head
   
-  var inventoryMap : Map[String, EDMInventoryItem] = loadedInventory.associatedInventory.map(i => i.oid.contents.toString -> i).toMap
-  val quotaMap : Map[String, EDMLogisticsQuota] = loadedInventory.associatedQuota.map(q => q.quotaName -> q).toMap
+  var inventoryMap : Map[String, EDMInventoryItem] = loadedInventory.associatedInventory.map(i => i.oid.contents.toString -> i).toMap.withException()
+  val quotaMap : Map[String, EDMLogisticsQuota] = loadedInventory.associatedQuota.map(q => q.quotaName -> q).toMap.withException()
 
   //val loadedInventory = (0 until jsonInventory.length()).map(idx => EDMInventoryItem.fromJson(jsonInventory.getJSONObject(idx)).asInstanceOf[EDMInventoryItem]).toList
 //  val assignmentsFile = "/tests/valuationservice/testdata/logisticsEdmAllSalesAssignments.json"
@@ -204,11 +205,9 @@ object LogisticServices {
     inventory.filter(item => !inventory.exists(i => i.parentId == Some(item.oid)))
 
   def main(args : Array[String]) {
-    println("running main for Logistics services")
-    val server = StarlingInit.runningDevInstance
+    val props = PropsHelper.defaultProps
     val mockTitanServices = new FileMockedTitanServices()
-    val logisticsServices = server.logisticsServices
+    val logisticsServices = new DefaultTitanLogisticsServices(props)
     LogisticsJsonMockDataFileGenerator(mockTitanServices, logisticsServices)
-    server.stop
   }
 }

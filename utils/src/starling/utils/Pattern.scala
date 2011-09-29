@@ -1,6 +1,7 @@
 package starling.utils
 
 import ImplicitConversions._
+import scalaz.Scalaz._
 
 
 object Pattern extends Log {
@@ -23,8 +24,8 @@ object Pattern extends Log {
   object Extractor {
     def from[A] = new From[A]
     def when[A] = new {
-      def apply(f: A => Boolean) = from[A]((a:A) => f(a).toOption(a))
-      def apply[B](f: A => Boolean, g: A => B) = from[A]((a:A) => f(a).toOption(g(a)))
+      def apply(f: A => Boolean) = from[A]((a:A) => f(a).option(a))
+      def apply[B](f: A => Boolean, g: A => B) = from[A]((a:A) => f(a).option(g(a)))
     }
 
     def map[A] = new {

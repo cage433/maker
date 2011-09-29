@@ -80,7 +80,7 @@ class IntradayTradeStore(
         eaiStrategyDB: EAIStrategyDB,
         broadcaster: Broadcaster,
         ldapSearch: LdapUserLookup
-        ) extends TradeStore(db, broadcaster, IntradayTradeSystem, None) {
+        ) extends TradeStore(db, broadcaster, IntradayTradeSystem) {
 
   import IntradayTradeAttributes._
 

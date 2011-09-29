@@ -19,7 +19,7 @@ trait PriceValidator {
 }
 
 object PriceValidator {
-  val Null = new PriceValidator {
+  object Null extends PriceValidator {
     def validate(timedKey: TimedMarketDataKey, priceData: PriceData) = priceData
   }
 }

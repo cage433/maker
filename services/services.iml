@@ -118,7 +118,7 @@
       </library>
     </orderEntry>
     <orderEntry type="module" module-name="manager" exported="" />
-    <orderEntry type="module" module-name="fc2.api" exported="" />
+    <orderEntry type="module" module-name="fc2.facility" exported="" />
     <orderEntry type="module-library">
       <library>
         <CLASSES>

@@ -21,6 +21,7 @@ import starling.eai.TreeID
 import starling.utils.{CaseInsensitive, Log}
 import starling.instrument.utils.StarlingXStream
 import starling.dbx._
+import starling.props.ConnectionParams
 
 
 trait DBTrait[RSR <: ResultSetRow] extends Log {
@@ -142,6 +143,10 @@ trait DBTrait[RSR <: ResultSetRow] extends Log {
   def metadata = dataSource.getConnection.getMetaData
 
   def convertTypes(params: Map[String, Any]): java.util.Map[String, AnyRef] = DBConvert.convertTypes(params)
+
+  def lookupTable(table: String, from: String, to: String) = queryWithResult(select(from + ", " + to) from(table)) { rs =>
+    rs.getString(from) → rs.getString(to)
+  }.toMap
 
   protected def createWriter: DBWriter = new DBWriter(DBTrait.this, dataSource)
 }
@@ -383,7 +388,7 @@ class DB(val dataSource: DataSource) extends DBTrait[ResultSetRow] {
 object DB {
   import java.sql.Connection._
 
-  def apply(connectionParams: ConnectionParams) = new DB(connectionParams.dataSource)
+  def apply(connectionParams: ConnectionParams) = new DB(DataSourceFactory.getDataSource(connectionParams.url, connectionParams.username, connectionParams.password))
 
   val DefaultIsolationLevel = TRANSACTION_READ_COMMITTED
 }

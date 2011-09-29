@@ -2,6 +2,7 @@ package starling.utils.conversions
 
 import starling.utils.{ImplicitConversions, Log}
 import ImplicitConversions._
+import scalaz.Scalaz._
 
 trait RichAnys {
   implicit def enrichAny[T](value: T) = new RichAny(value)
@@ -20,10 +21,7 @@ class RichAny[T](protected val value: T) {
 
   def add[A, B](tuple: (A, B)): (T, A, B) = (value, tuple._1, tuple._2)
   def add[A, B, C](tuple: (A, B, C)): (T, A, B, C) = (value, tuple._1, tuple._2, tuple._3)
-  def apply[V](fn: T => V): V = fn(value)
-  def apply[V](pfn: PartialFunction[T, V]): Option[V] = pfn.lift(value)
-  def applyTo[V](fn: T => V): V = apply(fn)
-  def applyTo[V](pfn: PartialFunction[T, V]): Option[V] = apply(pfn)
+  def ||>[V](pfn: PartialFunction[T, V]): Option[V] = pfn.lift(value)
   def applyIf[V](condition: => Boolean, t: T => V, f: T => V): V = if (condition) t(value) else f(value)
   def applyIf(condition: => Boolean, t: T => T): T = if (condition) t(value) else value
   def applyIf(condition: T => Boolean, t: T => T): T = applyIf(condition(value), t)
@@ -43,11 +41,12 @@ class RichAny[T](protected val value: T) {
   def isOneOf(values : T*) = values.contains(value)
   def isOneOf(values : Set[T]) = values.contains(value)
   val repeat : Seq[T] = Stream.continually(value).toSeq
-  def partialMatch[V](pfn: PartialFunction[T, V]): Option[V] = apply(pfn)
+  def partialMatch[V](pfn: PartialFunction[T, V]): Option[V] = ||>(pfn)
   def partialMatchO[V](pfn: PartialFunction[T, Option[V]]): Option[V] = partialMatch(pfn).flatOpt
   def safePartialMatch[V](message: => String)(pfn: PartialFunction[T, V]): Option[V] =
-    try { apply(pfn) } catch { case _ => Log.warn(message + ": " + value); None }
+    try { ||>(pfn) } catch { case _ => Log.warn(message + ": " + value); None }
 
+  def equalTo[V: Manifest](f: V => Boolean): Boolean = safeCast[V].map(f).getOrElse(false)
   def safeCast[V: Manifest]: Option[V] = implicitly[Manifest[V]].safeCast(value)
   def cast[V: Manifest]: V = implicitly[Manifest[V]].cast(value)
   def castOrElse[V: Manifest](alternative: T => V): V = implicitly[Manifest[V]].safeCast(value).getOrElse(alternative(value))

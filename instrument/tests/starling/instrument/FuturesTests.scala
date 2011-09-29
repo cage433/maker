@@ -1,9 +1,8 @@
 package starling.instrument
 
-import starling.utils.StarlingTest
 import starling.curves._
-import starling.utils.ScalaTestUtils._
 import starling.quantity.UOM._
+import starling.quantity.Quantity._
 import starling.quantity.utils.QuantityTestUtils._
 import starling.quantity.{UOM, Quantity}
 import starling.market._
@@ -69,6 +68,42 @@ class FuturesTests extends TestMarketTest {
     assertQtyEquals(mtmLtd, (fixed - strike) * v)
     assertQtyEquals(mtmLtd, mtmLater)
     assertNotSame(mtmLive, mtmLtd)
+  }
+
+  @Test
+  def testRBOBFuture() {
+    val market = Market.NYMEX_GASOLINE
+    val period = Month(2009, 1)
+    val ltd = market.lastTradingDay(period)
+
+    val forward = Quantity(110, US_CENT / GAL)
+    val fixed = Quantity(100, US_CENT / GAL)
+
+    def environment(day:DayAndTime) = {
+      Environment(UnitTestingAtomicEnvironment(day, {
+        case ForwardPriceKey(market, period, _) => forward
+        case MarketFixingKey(market, ltd, period) => fixed
+      }))
+    }
+    val v = Quantity(42000, UOM.GAL)
+    val strike = Quantity(200, UOM.US_CENT/UOM.GAL)
+    val future = Future(market, period, strike, v)
+
+    val envLive = environment(ltd.startOfDay)
+    val mtmLive = future.mtm(envLive)
+    val mtmLtd = future.mtm(environment(ltd.endOfDay))
+    val mtmLater = future.mtm(environment((ltd + 20).endOfDay))
+
+    assertQtyEquals(mtmLive, (forward - strike) * v)
+    assertQtyEquals(mtmLtd, (fixed - strike) * v)
+    assertQtyEquals(mtmLtd, mtmLater)
+    assertNotSame(mtmLive, mtmLtd)
+
+    val explainedLive = future.explain(envLive)
+    assertQtyEquals(mtmLive, explainedLive, 1e-6)
+
+    assertQtyEquals(future.delta(environment(ltd.startOfDay), USD), v)
+    assertQtyEquals(future.centreGamma(environment(ltd.startOfDay), USD), 0 (GAL*GAL/USD))
   }
 
 	@Test

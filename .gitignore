@@ -13,6 +13,7 @@ starling.running
 core/.emacs-ide/
 core/logs/
 */target*
+*.*/target*
 **/classes
 **/test-classes
 derby.log

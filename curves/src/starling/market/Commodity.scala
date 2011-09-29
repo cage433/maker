@@ -2,13 +2,13 @@ package starling.market
 
 import starling.quantity.UOM._
 import starling.market.Market._
-import starling.quantity.{Conversions, UOM, Quantity}
+import starling.quantity.UOM
+import starling.utils.ClosureUtil._
 import starling.utils.ImplicitConversions._
-import net.sf.cglib.core.CollectionUtils
-import starling.utils.CollectionUtils
 
 
 class Commodity {
+  def hasRepresentativeMarket = Commodity.hasStandardFuturesMarket(this)
   lazy val representativeMarket = Commodity.standardFuturesMarket(this)
   lazy val standardFuturesUOM = Commodity.standardFuturesUOM(this)
 
@@ -17,13 +17,8 @@ class Commodity {
    * what the conversion is. The conversion shouldn't be stored in Commodity, it should be separate, but
    * I won't refactor for the moment as it might clash badly with Alex's market refactor.
    */
-  override def equals(obj: Any) = obj match {
-    case c:Commodity => c.name == this.name
-    case _ => false
-  }
-
+  override def equals(obj: Any) = obj.equalTo[Commodity](_.name == name)
   override def hashCode = name.hashCode
-
   lazy val name = getClass.getName.substring(getClass.getName.lastIndexOf(".") + 1).stripSuffix("$")
   override def toString = name
 }
@@ -83,67 +78,57 @@ object Commodity{
 
   lazy val all = metalsCommodities ::: oilCommodities ::: gasCommodities ::: otherCommodities
 
-  def standardFuturesMarket(commodity : Commodity) : FuturesMarket = {
-    commodity match {
-      case Gold => COMEX_GOLD
-      case Lead => LME_LEAD
-      case Silver => COMEX_SILVER
-      case Aluminium => LME_ALUMINIUM
-      case Copper => LME_COPPER
-      case Nickel => LME_NICKEL
-      case Zinc => LME_ZINC
-      case Tin => LME_TIN
-      case Molybdenum => LME_MOLYBDENUM
-      case Palladium => COMEX_PALLADIUM
-      case Steel => STEEL_REBAR_SHANGHAI
-      case Platinum => COMEX_PLATINUM
-      case WTI => NYMEX_WTI
-      case Gasoline => NYMEX_GASOLINE
-      case Brent => ICE_BRENT
-      case GasOil => ICE_GAS_OIL
-      case HeatingOil => NYMEX_HEATING
-      case FuelOil => NYMEX_SINGAPORE_FUEL_OIL
-      case NatGas => NYMEX_NAT_GAS
-   }
+  def standardFuturesMarket(commodity : Commodity) : FuturesMarket = commodity match {
+    case Gold => COMEX_GOLD
+    case Lead => LME_LEAD
+    case Silver => COMEX_SILVER
+    case Aluminium => LME_ALUMINIUM
+    case Copper => LME_COPPER
+    case Nickel => LME_NICKEL
+    case Zinc => LME_ZINC
+    case Tin => LME_TIN
+    case Molybdenum => LME_MOLYBDENUM
+    case Palladium => COMEX_PALLADIUM
+    case Steel => STEEL_REBAR_SHANGHAI
+    case Platinum => COMEX_PLATINUM
+    case WTI => NYMEX_WTI
+    case Gasoline => NYMEX_GASOLINE
+    case Brent => ICE_BRENT
+    case GasOil => ICE_GAS_OIL
+    case HeatingOil => NYMEX_HEATING
+    case FuelOil => NYMEX_SINGAPORE_FUEL_OIL
+    case NatGas => NYMEX_NAT_GAS
+    case _ => throw new Exception("Unknown Standard Futures Market for: " + commodity)
   }
 
-  def standardFuturesUOM(commodity : Commodity) : UOM = {
-    commodity match {
-      case Gold => COMEX_GOLD_LOTS
-      case Lead => LME_LEAD_LOTS
-      case Silver => COMEX_SILVER_LOTS
-      case Aluminium => LME_ALUMINIUM_LOTS
-      case Copper => LME_COPPER_LOTS
-      case Nickel => LME_NICKEL_LOTS
-      case Rubber => SHANGHAI_RUBBER_LOTS
-      case Zinc => LME_ZINC_LOTS
-      case Tin => LME_TIN_LOTS
-      case Molybdenum => LME_MOLYBDENUM_LOTS
-      case Palladium => COMEX_PALLADIUM_LOTS
-      case Steel => STEEL_REBAR_SHANGHAI_LOTS
-      case IronOre => IRON_ORE_LOTS
-      case Platinum => COMEX_PLATINUM_LOTS
-      case Freight => BALTIC_PANAMAX_LOTS
-      case WTI => NYMEX_WTI_LOTS
-      case Gasoline => NYMEX_GASOLINE_LOTS
-      case Brent => ICE_BRENT_LOTS
-      case GasOil => ICE_GAS_OIL_LOTS
-      case HeatingOil => NYMEX_HEATING_LOTS
-      case FuelOil => NYMEX_SINGAPORE_FUEL_OIL_LOTS
-      case NatGas => NYMEX_NATGAS_LOTS_LOTS
-   }
+  def standardFuturesUOM(commodity : Commodity) : UOM = commodity match {
+    case Gold => COMEX_GOLD_LOTS
+    case Lead => LME_LEAD_LOTS
+    case Silver => COMEX_SILVER_LOTS
+    case Aluminium => LME_ALUMINIUM_LOTS
+    case Copper => LME_COPPER_LOTS
+    case Nickel => LME_NICKEL_LOTS
+    case Rubber => SHANGHAI_RUBBER_LOTS
+    case Zinc => LME_ZINC_LOTS
+    case Tin => LME_TIN_LOTS
+    case Molybdenum => LME_MOLYBDENUM_LOTS
+    case Palladium => COMEX_PALLADIUM_LOTS
+    case Steel => STEEL_REBAR_SHANGHAI_LOTS
+    case IronOre => IRON_ORE_LOTS
+    case Platinum => COMEX_PLATINUM_LOTS
+    case Freight => BALTIC_PANAMAX_LOTS
+    case WTI => NYMEX_WTI_LOTS
+    case Gasoline => NYMEX_GASOLINE_LOTS
+    case Brent => ICE_BRENT_LOTS
+    case GasOil => ICE_GAS_OIL_LOTS
+    case HeatingOil => NYMEX_HEATING_LOTS
+    case FuelOil => NYMEX_SINGAPORE_FUEL_OIL_LOTS
+    case NatGas => NYMEX_NATGAS_LOTS_LOTS
+    case _ => throw new Exception("Unknown Standard Futures UOM for: " + commodity)
   }
 
-  private lazy val CommodityNameToCommodity = Map() ++ all.map(c => (c.name -> c))
+  lazy val CommodityNameToCommodity = all.toMapWithKeys(_.name)
   def fromName(name:String) = fromNameOption(name).getOrElse(throw new Exception("No such commodity" + name))
   def fromNameOption(name: String) = CommodityNameToCommodity.get(name)
-
-  def hasStandardFuturesMarket(commodity:Commodity) = {
-    try {
-      standardFuturesMarket(commodity)
-      true
-    } catch {
-      case me:MatchError => false
-    }
-  }
+  def hasStandardFuturesMarket(commodity:Commodity) = succeeds(standardFuturesMarket(commodity))
 }

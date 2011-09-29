@@ -13,20 +13,20 @@ import scala.collection.JavaConversions._
 import starling.quantity.{Quantity, UOM, Percentage}
 import scalaz.Scalaz._
 import starling.auth.User
-import collection.immutable._
 import starling.richdb.RichResultSetRow
-import starling.pivot.{Field => PField}
 import collection.mutable.{ListBuffer, Map => MMap}
 import concurrent.SyncVar
+import starling.pivot.{Row, Field => PField}
+import collection.immutable._
 
 
-class NewSchemaMdDB(db: DBTrait[RichResultSetRow]) extends MdDB with Log {
+class NewSchemaMdDB(db: DBTrait[RichResultSetRow], referenceDataLookup: ReferenceDataLookup) extends MdDB with Log {
   val extendedKeys = JConcurrentMapWrapper(new java.util.concurrent.ConcurrentHashMap[Int, MarketDataExtendedKey](
     db.queryWithResult("SELECT * FROM MarketDataExtendedKey") { rs => MarketDataExtendedKey(rs) }.toMapWithKeys(_.id)))
 
   val valueKeys = JConcurrentMapWrapper(new java.util.concurrent.ConcurrentHashMap[Int, MarketDataValueKey](
     db.queryWithResult("SELECT * FROM MarketDataValueKey") { rs =>
-      MarketDataValueKey(rs.getInt("id"), rs.getObject[Map[String, Any]]("valueKey").mapKeys(PField(_)))
+      MarketDataValueKey(rs.getInt("id"), Row(rs.getObject[Map[String, Any]]("valueKey").mapKeys(PField(_))))
     }.toMapWithKeys(_.id)))
 
   log.debug("Loaded %s extended keys, %s value keys" % (extendedKeys.size, valueKeys.size))
@@ -48,13 +48,7 @@ class NewSchemaMdDB(db: DBTrait[RichResultSetRow]) extends MdDB with Log {
     }
   }
 
-  class RichSyncVar[A](initial: => A) extends SyncVar[A] {
-    put(initial)
-
-    def update(f: (A) => A) = synchronized { put(f(get)) }
-  }
-
-  private val observationDaysByMarketDataSetCache = new RichSyncVar[Map[String, Set[Day]]](db.queryWithResult(
+  private val observationDaysByMarketDataSetCache = new SynchronizedVar[Map[String, Set[Day]]](db.queryWithResult(
         select("DISTINCT observationDay, marketDataSet")
          from ("MarketDataValue v")
     innerJoin ("MarketDataExtendedKey k", "k.id" eql "v.extendedKey")
@@ -120,17 +114,22 @@ class NewSchemaMdDB(db: DBTrait[RichResultSetRow]) extends MdDB with Log {
 //    }
   }
 
-  def store(data: Iterable[MarketDataUpdate], marketDataSet: MarketDataSet): SaveResult = {
+  def store(marketDataUpdates: Iterable[MarketDataUpdate], marketDataSet: MarketDataSet): SaveResult = {
     var update = false
-    var innerMaxVersion = 0
+    var innerMaxVersion = 0//updates.flatMap(_.existingVersion).
     val cacheChanges = ListBuffer[(String, Day)]()
 
-    db.inTransaction(writer => data.map { action =>
-      updateIt(writer, action.dataIdFor(marketDataSet), action.existingData, action.data).foreach { result =>
-        cacheChanges ++= result.cacheChanges
-        if (result.changed) update = true
-        innerMaxVersion = scala.math.max(innerMaxVersion, result.version)
+    db.inTransaction(writer => {
+      val updates: Iterable[Map[String, Any]] = marketDataUpdates.flatMap { marketDataUpdate =>
+        updateIt(writer, marketDataUpdate, marketDataSet).map(result => {
+          cacheChanges ++= result.cacheChanges
+          if (result.changed) update = true
+          innerMaxVersion = scala.math.max(innerMaxVersion, result.version)
+          result.updates
+        } ).getOrElse(Nil)
       }
+
+      writer.insert("MarketDataValue", updates.toSeq)
     } )
 
     observationDaysByMarketDataSetCache.update(_ union cacheChanges.toMultiMap)
@@ -173,26 +172,23 @@ class NewSchemaMdDB(db: DBTrait[RichResultSetRow]) extends MdDB with Log {
   }.toSet
 
   def latestMarketData(from: Day, to: Day, marketDataType: MarketDataType, marketDataSet: MarketDataSet) = {
-    require(marketDataType.valueFields.size == 1, "Market data type %s has multiple value field keys: %s "
-      % (marketDataType, marketDataType.valueFields))
+//    require(marketDataType.valueFields.size == 1, "Market data type %s has multiple value field keys: %s "
+//      % (marketDataType, marketDataType.valueFields))
 
     val values = db.queryWithResult(
-      select("v.observationDay", "v.extendedKey", "v.valueKey", "v.value", "v.uom, v.commitId")
-        from("MarketDataValue v")
-       where("v.observationDay" gte from, "v.observationDay" lte to)
-         and("v.extendedKey" in extendedKeyIdsFor(marketDataType, List(marketDataSet)))
+      select("*")
+        from("MarketDataValue")
+       where("observationDay" gte from, "observationDay" lte to)
+         and("extendedKey" in extendedKeyIdsFor(marketDataType, List(marketDataSet))
+         and("value" isNotNull))
     ) { marketDataValue(_) }
 
     values.groupBy(_.timedKey).mapValuesEagerly { valuesForTimeKey => {
-      val latestValuesByValueKey = valuesForTimeKey.groupBy(_.valueKey).mapValues(_.maxBy(_.commitId)).filterValuesNot(_.isDelete)
+      val latestValuesByValueKey = valuesForTimeKey.groupBy(_.valueKey).mapValues(_.maxBy(_.commitId))
       val maxCommitId = latestValuesByValueKey.values.map(_.commitId).maxOr(0)
-      val valueMaps = latestValuesByValueKey.map { case (valKey, dayValue) => valKey.value + dayValue.fieldValue }.toList
+      val valueRows = latestValuesByValueKey.map { case (valKey, dayValue) => valKey.row + dayValue.row }.toList
 
-      try {
-        VersionedMarketData(maxCommitId, marketDataType.createValue(valueMaps))
-      } catch {
-        case e => throw e
-      }
+      VersionedMarketData(maxCommitId, marketDataType.createValue(valueRows))
     } }
   }
 
@@ -201,39 +197,37 @@ class NewSchemaMdDB(db: DBTrait[RichResultSetRow]) extends MdDB with Log {
             marketDataKeys: Option[Set[MarketDataKey]]): List[(TimedMarketDataKey, MarketData)] = {
 
     val mostRecentValues = log.infoWithTime("query.mostRecentValues") {
-      val commitClause = "v.commitId" lte version
-      val observationDayClause = observationDays.fold(Clause.optIn("v.observationDay", _), TrueClause)
-      val extendedKeyClause = "v.extendedKey" in extendedKeyIdsFor(marketDataType, mds, observationTimes, marketDataKeys)
+      val commitClause = "commitId" lte version
+      val observationDayClause = observationDays.fold(Clause.optIn("observationDay", _), TrueClause)
+      val extendedKeyClause = "extendedKey" in extendedKeyIdsFor(marketDataType, mds, observationTimes, marketDataKeys)
 
       val values = MarketDataValueMap()
 
-      db.query(select("v.observationDay", "v.extendedKey", "v.valueKey", "v.value", "v.uom, v.commitId")
-                 from("MarketDataValue v")
-                where(commitClause, observationDayClause, extendedKeyClause)
+      db.query(select("*")
+                 from("MarketDataValue")
+                where(commitClause, observationDayClause, extendedKeyClause, "value" isNotNull)
 //              orderBy("commitId".asc)
       ) { marketDataValue(_).update(values) }
 
       values.values
     }
 
-    val timedData: Map[TimedMarketDataKey, List[Map[PField, Any]]] =
-      mostRecentValues.toList.groupInto(kv => (kv._1._1), kv => (kv._1._2.value + kv._2._2)).mapValues(_.toList)
+    val timedData: Map[TimedMarketDataKey, List[Row]] =
+      mostRecentValues.toList.groupInto(kv => (kv._1._1), kv => (kv._1._2.row + kv._2._2)).mapValues(_.toList)
 
     timedData.mapValues(marketDataType.createValue(_)).toList
   }
 
   def queryForObservationDayAndMarketDataKeys(version: Int, mds: List[MarketDataSet], marketDataType: MarketDataType) = {
     db.queryWithResult(
-      select("distinct v.observationDay, v.extendedKey")
+      select("distinct observationDay, extendedKey")
         from("MarketDataValue v")
-       where("v.commitId" lte version, "v.extendedKey" in extendedKeyIdsFor(marketDataType, mds))) { rs =>
+       where("commitId" lte version, "extendedKey" in extendedKeyIdsFor(marketDataType, mds))) { rs =>
 
       val extendedKey = extendedKeys(rs.getInt("extendedKey"))
       val observationTime = extendedKey.time
       val marketDataKey = extendedKey.marketDataKey
-
-      val observationPoint = rs.getDayOption("observationDay").
-        fold(observationDay => observationDay.atTimeOfDay(observationTime), ObservationPoint.RealTime)
+      val observationPoint = rs.getDayOption("observationDay").fold(_.atTimeOfDay(observationTime), ObservationPoint.RealTime)
 
       TimedMarketDataKey(observationPoint, marketDataKey)
     }
@@ -245,29 +239,31 @@ class NewSchemaMdDB(db: DBTrait[RichResultSetRow]) extends MdDB with Log {
 
     val values = if (keys.isEmpty) Nil else db.queryWithResult(
       select("*")
-        from("MarketDataValue v")
-       where("v.observationDay" eql id.observationPoint.day.getOrElse(null), "v.extendedKey" in keys)
+        from("MarketDataValue")
+       where("observationDay" eql id.observationPoint.day.getOrElse(null), "extendedKey" in keys, "value" isNotNull)
     ) { rs => marketDataValue(rs) }
 
     if (values.isEmpty) None else {
       val latestValuesByValueKey = values.groupBy(_.valueKey).mapValues(_.maxBy(_.commitId))
       val maxCommitId = latestValuesByValueKey.values.map(_.commitId).maxOr(0)
-      val valueMaps = latestValuesByValueKey.map { case (valKey, dayValue) => valKey.value + dayValue.fieldValue }.toList
+      val valueRows = latestValuesByValueKey.map { case (valKey, dayValue) => valKey.row + dayValue.row }.toList
 
-      Some(VersionedMarketData(maxCommitId, Option(id.subTypeKey.dataType.createValue(valueMaps))))
+      Some(VersionedMarketData(maxCommitId, Option(id.subTypeKey.dataType.createValue(valueRows))))
     }
   }
 
-  case class UpdateResult(changed: Boolean, version: Int, cacheChanges: List[(String, Day)] = Nil)
+  case class UpdateResult(changed: Boolean, version: Int, cacheChanges: List[(String, Day)] = Nil, updates: List[Map[String, Any]] = Nil)
 
-  private def updateIt(writer: DBWriter, id: MarketDataID, existingData: Option[VersionedMarketData],
-                       maybeData: Option[MarketData]): Option[UpdateResult] = {
+  private def updateIt(writer: DBWriter, anUpdate: MarketDataUpdate, marketDataSet: MarketDataSet): Option[UpdateResult] = {
+    val id = anUpdate.dataIdFor(marketDataSet)
+    val existingData = anUpdate.existingData
+    val maybeData = anUpdate.data
 
     def findOrUpdateExtendedKey(key: MarketDataExtendedKey, commitId: Int): MarketDataExtendedKey =
-      extendedKeys.findOrUpdate(_._2.sameValuesAs(key), insertExtendedKey(key).apply(k => (k.id, k)))._2
+      extendedKeys.findOrUpdate(_._2.sameValuesAs(key), insertExtendedKey(key) |> (k => (k.id, k)))._2
 
     def findOrUpdateValueKey(key: MarketDataValueKey): MarketDataValueKey =
-      valueKeys.findOrUpdate(_._2.sameValuesAs(key), insertValueKey(key).apply(k => (k.id, k)))._2
+      valueKeys.findOrUpdate(_._2.sameValuesAs(key), insertValueKey(key) |> (k => (k.id, k)))._2
 
     def insertExtendedKey(key: MarketDataExtendedKey) = key.copy(id = insertKey("MarketDataExtendedKey", key.dbMap))
     def insertValueKey(key: MarketDataValueKey) = key.copy(id = insertKey("MarketDataValueKey", key.dbMap))
@@ -278,36 +274,41 @@ class NewSchemaMdDB(db: DBTrait[RichResultSetRow]) extends MdDB with Log {
 
     (existingData, maybeData) match {
       case (None, None) => None
-      case (Some(VersionedMarketData(version, Some(oldData))), Some(newData)) if oldData == newData => Some(UpdateResult(false, version))
+      case (Some(VersionedMarketData(version, Some(old))), Some(newData)) if old == newData => Some(UpdateResult(false, version))
       case _ => {
         val commitId = nextCommitId
         val extendedKey = findOrUpdateExtendedKey(id.extendedKey, commitId)
         val observationDay = id.observationPoint.day.getOrElse(null)
-        val template = Map("observationDay" → observationDay, "extendedKey" → extendedKey.id, "commitId" → commitId)
-        val existingValueKeys = id.subTypeKey.valueKeys(existingData.flatMap(_.data))
 
-        val deletes: Map[MarketDataValueKey, Map[String, Any]] = existingValueKeys.toMapWithValues { valueKey =>
-          template + ("valueKey" → valueKey) + ("value" → null) + ("uom" → null)
-        }
+        val existingValueKeys = id.subTypeKey.valueKeys(existingData.flatMap(_.data), referenceDataLookup).
+          map(findOrUpdateValueKey(_))
+
+        val template = Map("observationDay" → observationDay, "extendedKey" → extendedKey.id, "commitId" → commitId,
+                           "value" → null, "uom" → null, "comment" → null)
 
         // [TODO] 6 Sep 2011: Don't insert if the value + unit hasn't changed
-        val inserts: Map[MarketDataValueKey, Map[String, Any]] = maybeData match {
-          case None => Map.empty[MarketDataValueKey, Map[String, Any]]
-          case Some(data) => id.extractValues(data).map { case (valueKey, uom, value) =>
-            valueKey → (template + ("valueKey" → findOrUpdateValueKey(valueKey).id) + ("value" → value) + ("uom" → uom))
-          }.toMap
-        }
+        val inserts = maybeData.map { data => id.extractValues(data, referenceDataLookup).map {
+          case (valueKeyWithNoId, uom, value, comment) => findOrUpdateValueKey(valueKeyWithNoId) |> { valueKey =>
+            valueKey → (template + ("valueKey" → valueKey.id) + ("value" → value) + ("uom" → uom) + ("comment" → comment))
+          } }
+        }.getOrElse(Nil).toMap
 
-        writer.insert("MarketDataValue", (deletes ++ inserts).values.toSeq)
+        val deletes: Map[MarketDataValueKey, Map[String, Any]] = existingValueKeys.toMapWithValues(valueKey =>
+          template + ("valueKey" → valueKey.id)) -- inserts.keySet
 
-        Some(UpdateResult(true, commitId, List((extendedKey.marketDataSet.name, observationDay))))
+        //log.info("%s: inserts: %s\ndeletes: %s" % (marketDataSet.name, inserts, deletes.keySet))
+
+        val updates = (deletes ++ inserts).values.toList
+        //writer.insert("MarketDataValue", updates)
+
+        Some(UpdateResult(true, commitId, List((extendedKey.marketDataSet.name, observationDay)), updates))
       }
     }
   }
 
   private def marketDataValue(rs: RichResultSetRow) =
     MarketDataValue(rs.getDay("observationDay"), extendedKeys(rs.getInt("extendedKey")), valueKeys(rs.getInt("valueKey")),
-      rs.getDouble("value"), rs.getString("uom"), rs.getInt("commitId"))
+      rs.getDouble("value"), rs.getString("uom"), rs.getStringOption("comment"), rs.getInt("commitId"))
 
   private def extendedKeyIdsFor(marketDataType: MarketDataType, mds: List[MarketDataSet],
     observationTimes: Option[Set[ObservationTimeOfDay]] = None, marketDataKeys: Option[Set[MarketDataKey]] = None): List[Int] = {
@@ -319,19 +320,19 @@ class NewSchemaMdDB(db: DBTrait[RichResultSetRow]) extends MdDB with Log {
   }
 
   private case class MarketDataValueMap(
-    values: MMap[(TimedMarketDataKey, MarketDataValueKey), (MarketDataSet, (PField, Any), Int)] = MMap.empty) {
+    values: MMap[(TimedMarketDataKey, MarketDataValueKey), (MarketDataSet, Row, Int)] = MMap.empty) {
 
-    def update(combinedKey: (TimedMarketDataKey, MarketDataValueKey), combinedValue: (MarketDataSet, (PField, Any), Int)) {
-      val (_, (_, value), _) = combinedValue
+    def update(combinedKey: (TimedMarketDataKey, MarketDataValueKey), combinedValue: (MarketDataSet, Row, Int)) {
+      val (_, row, _) = combinedValue
 
-      if (value == null) values.remove(combinedKey) else log.debugF("Updating latest value: " + (combinedKey, combinedValue)) {
+      if (row.isEmpty) values.remove(combinedKey) else log.debugF("Updating latest value: " + (combinedKey, combinedValue)) {
         values.update(combinedKey, combinedValue)
       }
     }
   }
 
   case class MarketDataValue(observationDay: Day, extendedKey: MarketDataExtendedKey, valueKey: MarketDataValueKey,
-                                     value: Double, uom: String, commitId: Int) {
+                             value: Double, uom: String, comment: Option[String], commitId: Int) {
 
     def update(map: MarketDataValueMap) = map.values.get(combinedKey) match {
       case Some((oldMarketDataSet, fieldValue, _)) if oldMarketDataSet.priority > marketDataSet.priority =>
@@ -345,20 +346,22 @@ class NewSchemaMdDB(db: DBTrait[RichResultSetRow]) extends MdDB with Log {
       }
     }
 
-    val isDelete = uom == null
     val marketDataSet = extendedKey.marketDataSet
     val timedKey = TimedMarketDataKey(ObservationPoint(observationDay, extendedKey.time), extendedKey.marketDataKey)
+    val valueFields = extendedKey.marketDataType.valueFields
     val marketDataTypeValueKey: PField = extendedKey.marketDataType.valueFields.head
     val combinedKey = (timedKey, valueKey)
-    val combinedValue = (marketDataSet, fieldValue, commitId)
+    val combinedValue = (marketDataSet, row, commitId)
 
-    // Should these just be creating MarketValues ?
-    def fieldValue: (PField, Any) = (marketDataTypeValueKey, (uom ?? "").trim match {
-      case "" => null
+    require(comment.isDefined == (valueFields.size == 2), "Inconsistent number of fields (%s) vs values (%s)" %
+      (valueFields, List(Some(value), comment).flatten))
+
+    def row = Row(valueFields.head, uom match {
+      case "" => Quantity(value, UOM.SCALAR)
       case "%" => Percentage(value)
       case UOM.Parse(unit) => Quantity(value, unit)
       case _ => throw new Exception("Unrecognized uom: " + uom)
-    })
+    }) +? comment.map(valueFields.tail.head → _)
   }
 }
 

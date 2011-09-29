@@ -1,16 +1,14 @@
 package starling.gui.osgi
 
 import starling.rmi.StarlingServer
-import starling.fc2.api.FC2Service
+import starling.fc2.api.FC2Facility
 import starling.browser.service.BrowserService
 import starling.gui.xstream.GuiStarlingXStream
-import javax.swing.KeyStroke
-import java.awt.event.{InputEvent, KeyEvent}
 import starling.browser.service.internal.HeterogeneousMap
 import starling.browser._
 import starling.gui._
 import api._
-import pages.{ValuationParametersPage, UtilsPage, UserDetailsPage}
+import pages.{ValuationParametersPage, UserDetailsPage}
 import swing.Publisher
 import starling.bouncyrmi.{BouncyRMI, BouncyRMIClient}
 import starling.manager.{HttpContext, BromptonContext, BromptonActivator}
@@ -19,39 +17,37 @@ import starling.pivot.{Field, SomeSelection}
 import starling.tradestore.TradePredicate
 import starling.daterange.{Day, TimeOfDay}
 import collection.immutable.TreeSet
-import starling.reports.ReportService
+import starling.rabbiteventviewer.api.RabbitEventViewerService
+import starling.trade.facility.TradeFacility
+import starling.reports.facility.ReportFacility
 
-class GuiBromptonProps {
-  def serverRmiHost:String = "localhost"
-  def serverRmiPort:Int = throw new Exception("There is no default server rmi port")
-  def principalName:String = "STARLING-TEST/dave-linux"
-}
+case class GuiLaunchParameters(serverRmiHost:String, serverRmiPort:Int, principalName:String, runAs:Option[String])
+
 class GuiBromptonActivator extends BromptonActivator {
-  type Props = GuiBromptonProps
-
-  def defaults = new GuiBromptonProps
-
   var client:BouncyRMIClient = _
 
-  def start(context: BromptonContext) { }
-
-  def init(context: BromptonContext, props: GuiBromptonProps) {
-
+  def start(context: BromptonContext) {
+    val guiLaunchParameters = context.awaitService(classOf[GuiLaunchParameters])
     System.setProperty(BouncyRMI.CodeVersionKey, BouncyRMI.CodeVersionUndefined)
-    client = new BouncyRMIClient(props.serverRmiHost, props.serverRmiPort, GuiStart.auth(props.principalName))
+    val overriddenUser = guiLaunchParameters.runAs
+    client = new BouncyRMIClient(guiLaunchParameters.serverRmiHost, guiLaunchParameters.serverRmiPort, GuiStart.auth(guiLaunchParameters.principalName), overriddenUser = overriddenUser)
     client.startBlocking
     val starlingServer = client.proxy(classOf[StarlingServer])
+    val tradeService = client.proxy(classOf[TradeFacility])
     starlingServer.storeSystemInfo(GuiStart.systemInfo)
 
-    val fc2Service = client.proxy(classOf[FC2Service])
-    val reportService = client.proxy(classOf[ReportService])
+    val fc2Service = client.proxy(classOf[FC2Facility])
+    val reportService = client.proxy(classOf[ReportFacility])
+    val rabbitEventViewerService = client.proxy(classOf[RabbitEventViewerService])
 
     context.registerService(classOf[Publisher], client.remotePublisher)
     context.registerService(classOf[StarlingServer], starlingServer)
-    context.registerService(classOf[FC2Service], fc2Service)
-    context.registerService(classOf[ReportService], reportService)
+    context.registerService(classOf[FC2Facility], fc2Service)
+    context.registerService(classOf[RabbitEventViewerService], rabbitEventViewerService)
+    context.registerService(classOf[ReportFacility], reportService)
+    context.registerService(classOf[TradeFacility], tradeService)
     context.registerService(classOf[BrowserService], client.proxy(classOf[BrowserService]))
-    context.registerService(classOf[BrowserBundle], new StarlingBrowserBundle(starlingServer, reportService, fc2Service))
+    context.registerService(classOf[BrowserBundle], new StarlingBrowserBundle(starlingServer, reportService, fc2Service, rabbitEventViewerService, tradeService))
 
 
     context.registerService(classOf[HttpServlet], new HttpServlet {
@@ -60,7 +56,7 @@ class GuiBromptonActivator extends BromptonActivator {
         val snapshotID = req.getParameter("snapshotID")
 
         val desk = Desk.Titan
-        val tradeTimestamp = starlingServer.deskCloses.get(desk).map(closes => closes.values.flatten.toList.sortWith(_.timestamp > _.timestamp)).get.head
+        val tradeTimestamp = tradeService.deskCloses.get(desk).map(closes => closes.values.flatten.toList.sortWith(_.timestamp > _.timestamp)).get.head
         val tradePredicate = TradePredicate(List(), List(List((Field("Trade ID"), SomeSelection(Set(tradeID))))))
         val tradeSelection = TradeSelectionWithTimestamp(Some((desk, tradeTimestamp)), tradePredicate, None)
 
@@ -92,18 +88,18 @@ class GuiBromptonActivator extends BromptonActivator {
 }
 
 import StarlingLocalCache._
-class StarlingBrowserBundle(starlingServer:StarlingServer, reportService:ReportService, fc2Service:FC2Service) extends BrowserBundle {
+class StarlingBrowserBundle(
+                             starlingServer:StarlingServer,
+                             reportService:ReportFacility,
+                             fc2Service:FC2Facility,
+                             rabbitEventService:RabbitEventViewerService,
+                             tradeService:TradeFacility) extends BrowserBundle {
   def bundleName = "StarlingServer"
   def marshal(obj: AnyRef) = GuiStarlingXStream.write(obj)
   override def userPage(context:PageContext) = Some( UserDetailsPage(context.localCache.currentUser) )
-  override def hotKeys = HotKey(
-    KeyStroke.getKeyStroke(KeyEvent.VK_U, InputEvent.CTRL_DOWN_MASK | InputEvent.SHIFT_DOWN_MASK),
-    "utilsPage",
-    UtilsPage()) :: Nil
-
 
   def initCache(cache: HeterogeneousMap[LocalCacheKey], publisher:Publisher) {
-    GuiStart.initCacheMap(cache, starlingServer, reportService, fc2Service, publisher)
+    GuiStart.initCacheMap(cache, starlingServer, reportService, fc2Service, tradeService, rabbitEventService, publisher)
   }
 
   override def notificationHandlers = StarlingServerNotificationHandlers.notificationHandler :: Nil
@@ -130,5 +126,6 @@ class StarlingBrowserBundle(starlingServer:StarlingServer, reportService:ReportS
 
   override def settings(pageContext:PageContext) = StarlingSettings.create(pageContext)
   override def homeButtons(pageContext:PageContext) = StarlingHomeButtons.create(pageContext)
+  override def utilButtons(pageContext:PageContext) = StarlingUtilButtons.create(pageContext)
   override def helpEntries = StarlingHelpPage.starlingHelpEntry :: Nil
 }

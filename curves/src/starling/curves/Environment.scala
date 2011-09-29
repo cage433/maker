@@ -17,6 +17,7 @@ import scala.math._
 import starling.utils.cache.{SimpleCache, CacheFactory}
 import stress.CommodityPriceStress
 import starling.quantity._
+import starling.marketdata.{Material, NeptuneCountry}
 
 /**
  * Throw this if a curve object is incapable of providing a value
@@ -71,6 +72,13 @@ case class Environment(
 
   def atomicEnv = instrumentLevelEnv.atomicEnv
 
+  def benchmark(country: NeptuneCountry, material: Material) = {
+    val areaMaterialBenchmark = instrumentLevelEnv.quantity(AreaMaterialBenchmarkAtomicKey(country.area, material))
+    val commodityCountryBenchmark = instrumentLevelEnv.quantity(CommodityCountryBenchmarkAtomicKey(material.commodity, country))
+
+    areaMaterialBenchmark + commodityCountryBenchmark
+  }
+
   // cache for optimization of greek calculations. Will cache shifted environments, forward state envs and mtms
   // Level of indirection so that InstrumentLevelPerturbedEnvironment can avoid using the same cache as the
   // object it overrides
@@ -92,14 +100,10 @@ case class Environment(
   /**	Returns the current spot fx rate in units ccy1 / ccy2
    */
   def spotFXRate(ccy1: UOM, ccy2: UOM): Quantity = {
-    if (!(ccy1.isCurrency && ccy2.isCurrency)){
-      println("Not currency")
-    }
     assert(ccy1.isCurrency, ccy1 + " is not a currency")
     assert(ccy2.isCurrency, ccy2 + " is not a currency")
     (ccy1, ccy2) match {
       case (ccy1, ccy2) if ccy1 == ccy2 => new Quantity(1.0)
-      case (USD, US_CENT) => (1/100.0) (USD/US_CENT)
       case (`USD`, ccy) => instrumentLevelEnv.quantity(USDFXRateKey(ccy))
       case (ccy, `USD`) => spotFXRate(USD, ccy).invert
       case _ => spotFXRate(ccy1, USD) * spotFXRate(USD, ccy2)
@@ -215,6 +219,7 @@ case class Environment(
     /**	Returns the discount rate for the given currency and date
    */
   def discount(ccy : UOM, forwardDate : Day) : Quantity = {
+    assert(ccy.isCurrency, "'" + ccy + "' is not a currency")
     instrumentLevelEnv.discount(ccy, forwardDate)
   }
 

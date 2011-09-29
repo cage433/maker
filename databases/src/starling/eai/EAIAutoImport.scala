@@ -1,7 +1,6 @@
 package starling.eai
 
 import instrumentreaders.EAISystemOfRecord
-import starling.db.DB
 import starling.dbx.QueryBuilder._
 import java.util.{Timer, TimerTask}
 import starling.systemofrecord.SystemOfRecord
@@ -17,6 +16,7 @@ import org.springframework.dao.DeadlockLoserDataAccessException
 import starling.databases.utils.RepeatingTask
 import starling.utils.{Log}
 import starling.gui.api.{EAIDeskInfo, Desk}
+import starling.db.{EAITradeSystem, DB}
 
 
 /**
@@ -135,7 +135,7 @@ class EAIAutoImport(runEvery: Int, starlingDB: RichDB, externalDB: RichDB, eaiSt
             // we want a transaction around the import and desk close so if the desk close fails we roll back
             // the trade import.
             starlingDB.inTransaction(writer => {
-              new TradeImporter(systemOfRecord, tradeStore).importAll(Some(trades), bookToImportTimestamp)
+              new TradeImporter(EAITradeSystem, systemOfRecord, tradeStore).importAll(Some(trades), bookToImportTimestamp)
               closedDesks.closeDesk(deskToClose, closeDay, bookToImportTimestamp)
             })
           }

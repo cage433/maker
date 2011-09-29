@@ -1,34 +1,36 @@
 package starling.marketdata
 
-import starling.pivot.{Field, PivotFieldsState, FieldDetails}
 import starling.market.EquityPricesDataType
 import starling.curves.SpreadStdDevSurfaceDataType
+import starling.pivot.{Row, Field, PivotFieldsState, FieldDetails}
 
 /**
  * There is one of these for each time of market data. eg. prices, spotfx, forward rates...
  */
 trait MarketDataType {
+  val readonly: Boolean = false
 
   type dataType <: MarketData
 
   val name: String = getClass.getName.substring(getClass.getName.lastIndexOf(".") + 1).stripSuffix("DataType$")
 
   // Fields needed to uniquely define a MarketDataKey. For prices it would be market
-  def marketDataKeyFelds: Set[Field]
+  def marketDataKeyFields: Set[Field]
 
   // Fields needed to uniquely define some market datum. For prices it would be market and period.
   def keyFields: Set[Field]
 
   // The field (always one?) for the market data - e.g. price
-  def valueFields: Set[Field] // TODO [08 Jun 2011] Shouldn't valueFields be everything other than the keyFields ?
-  def createKey(values: Map[Field, Any]): MarketDataKey
+  def valueFields: List[Field] // TODO [08 Jun 2011] Shouldn't valueFields be everything other than the keyFields ?
+  def zeroFields: List[Field] = valueFields
+  def createKey(row: Row): MarketDataKey
 
   /**Creates a market data type from the list of field values. Typically these
    * contain user overrides and data from Lim
    */
-  def createValue(values: List[Map[Field, Any]]): dataType
+  def createValue(rows: List[Row]): dataType
 
-  def getValues(row: Map[Field, Any]): List[Any] = valueFields.toList.flatMap(row.get(_))
+  def getValues(row: Row): List[Any] = valueFields.toList.flatMap(row.get[Any](_))
 
   override val toString = name
 
@@ -46,7 +48,6 @@ object MarketDataTypes {
   // This list is used to load MarketDataType-s from the database. (It was indirectly used to populate the drop down
   // list in the market data viewer but is reported not to be anymore).
   val types = List(
-    GradeHubBenchmarkDataType,
     PriceDataType,
     BradyFXVolSurfaceDataType,
     BradyMetalVolsDataType,
@@ -57,7 +58,9 @@ object MarketDataTypes {
     SpreadStdDevSurfaceDataType,
     EquityPricesDataType,
     ImpliedVolDataType,
-    BenchmarkLocationMarketDataType
+    GradeAreaBenchmarkDataType,
+    CountryBenchmarkDataType,
+    FreightParityDataType
   )
 
   def fromName(name: String) = types.find(_.name == name).getOrElse(

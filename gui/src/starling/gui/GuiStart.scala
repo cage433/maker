@@ -27,16 +27,19 @@ import common._
 import starling.browser.service.internal.HeterogeneousMap
 import service._
 import java.awt.{Cursor, GraphicsEnvironment, Color, KeyboardFocusManager}
-import starling.browser.internal.{NotificationKeys, NotificationType, Notification}
 import starling.pivot._
 import javax.swing.event.{ChangeEvent, ChangeListener}
 import GuiUtils._
 import starling.pivot.utils.PeriodPivotFormatter
-import starling.fc2.api.FC2Service
+import starling.fc2.api.FC2Facility
 import starling.rmi.StarlingServer
 import starling.auth.{Client}
 import starling.auth.internal.{RealClient, ClientLogin}
-import starling.reports.ReportService
+import starling.browser.internal.{NotificationKeys, NotificationType, Notification}
+import starling.trade.facility.TradeFacility
+import starling.browser.internal.{NotificationKeys, NotificationType, Notification}
+import starling.rabbiteventviewer.api.RabbitEventViewerService
+import starling.reports.facility.ReportFacility
 
 object StarlingServerNotificationHandlers {
   def notificationHandler = {
@@ -121,8 +124,10 @@ object GuiStart extends Log {
 
   def initCacheMap(   cacheMap:HeterogeneousMap[LocalCacheKey],
                       starlingServer:StarlingServer,
-                      reportService:ReportService,
-                      fc2Service:FC2Service,
+                      reportService:ReportFacility,
+                      fc2Service:FC2Facility,
+                      tradeService:TradeFacility,
+                      rabbitEventService:RabbitEventViewerService,
                       publisher: Publisher) {
     val localCacheUpdatePublisher = new scala.swing.Publisher() {}
     publisher.reactions += {
@@ -196,16 +201,16 @@ object GuiStart extends Log {
       cacheMap(ExcelLatestMarketDataVersion) = fc2Service.excelLatestMarketDataVersions
       cacheMap(PricingGroupLatestMarketDataVersion) = fc2Service.pricingGroupLatestMarketDataVersions
       cacheMap(LocalCacheKeys.ReportOptionsAvailable) = reportService.reportOptionsAvailable
-      cacheMap(DeskCloses) = starlingServer.deskCloses
-      cacheMap(IntradayLatest) = starlingServer.intradayLatest
-      cacheMap(TradersBookLookup) = starlingServer.traders
+      cacheMap(DeskCloses) = tradeService.deskCloses
+      cacheMap(IntradayLatest) = tradeService.intradayLatest
+      cacheMap(TradersBookLookup) = tradeService.traders
       cacheMap(UKBusinessCalendar) = starlingServer.ukBusinessCalendar
-      cacheMap(Desks) = starlingServer.desks
-      cacheMap(GroupToDesksMap) = starlingServer.groupToDesksMap
+      cacheMap(Desks) = tradeService.desks
+      cacheMap(GroupToDesksMap) = tradeService.groupToDesksMap
       cacheMap(IsStarlingDeveloper) = starlingServer.isStarlingDeveloper
       cacheMap(EnvironmentRules) = fc2Service.environmentRules
       cacheMap(CurveTypes) = fc2Service.curveTypes
-      cacheMap(LatestRabbitEvent) = starlingServer.latestRabbitEvent
+      cacheMap(LatestRabbitEvent) = rabbitEventService.latestRabbitEvent
     } catch {
       case e : Throwable =>
         e.printStackTrace()
@@ -291,6 +296,66 @@ object GuiStart extends Log {
         }
       }
     }
+  }
+}
+
+object StarlingUtilButtons {
+  def create(context:PageContext) = {
+    def userStatsPage = {new PageFactory {def create(serverContext:ServerContext) = UserStatsPage(PivotPageState())}}
+    def runAsUserPage = {new PageFactory {def create(serverContext:ServerContext) = RunAsUserPage()}}
+    def cannedHomePage = {new PageFactory {def create(serverContext:ServerContext) = CannedHomePage()}}
+    def eventViewerPage = {new PageFactory {def create(serverContext:ServerContext) = EventViewerPage()}}
+    def gitLogPage = {new PageFactory {def create(serverContext:ServerContext) = GitLogPage(PivotPageState())}}
+    def rabbitEventPage = new PageFactory {
+      def create(serverContext:ServerContext) = {
+        val latestRabbitEvent = context.localCache.localCache(LocalCacheKeys.LatestRabbitEvent)
+        RabbitEventViewerPage(PivotPageState(), RabbitEventViewerPageState(latestRabbitEvent))
+      }
+    }
+
+    val tradesButton = new PageButton(
+      "View User Stats",
+      userStatsPage,
+      StarlingIcons.im("/icons/32x32_stats.png"),
+      Some( KeyStroke.getKeyStroke(KeyEvent.VK_S, 0) )
+    )
+
+    val runAsUserButton = new PageButton(
+      "Run As User",
+      runAsUserPage,
+      StarlingIcons.im("/icons/32x32_user_dark.png"),
+      Some( KeyStroke.getKeyStroke(KeyEvent.VK_U, 0) )
+    )
+
+    val cannedButton = new PageButton(
+      "Canned Page",
+      cannedHomePage,
+      StarlingIcons.im("/icons/32x32_canned_launcher.png"),
+      Some( KeyStroke.getKeyStroke(KeyEvent.VK_C, 0) )
+    )
+
+    val eventViewerButton = new PageButton(
+      "Starling Event Viewer",
+      eventViewerPage,
+      StarlingIcons.im("/icons/32x32_event.png"),
+      Some( KeyStroke.getKeyStroke(KeyEvent.VK_E, 0) )
+    )
+
+    val gitLogButton = new PageButton(
+      "Git Log",
+      gitLogPage,
+      StarlingIcons.im("/icons/32x32_log.png"),
+      Some( KeyStroke.getKeyStroke(KeyEvent.VK_G, 0) )
+    )
+
+    val rabbitEventButton = new PageButton(
+      "Rabbit Event Viewer",
+      rabbitEventPage,
+      StarlingIcons.im("/icons/32x32_event.png"),
+      Some( KeyStroke.getKeyStroke(KeyEvent.VK_R, 0) )
+    )
+
+    List(tradesButton, runAsUserButton, cannedButton, eventViewerButton, gitLogButton, rabbitEventButton)
   }
 }
 

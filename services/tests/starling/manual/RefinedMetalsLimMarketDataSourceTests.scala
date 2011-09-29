@@ -8,7 +8,9 @@ import starling.curves.readers.RefinedMetalsLimMarketDataSource
 import starling.db.DBMarketDataStore
 import starling.db.MarketDataSet._
 import starling.auth.AuthHandler
-import starling.utils.{ThreadUtils, Broadcaster}
+import starling.utils.ThreadUtils
+import starling.utils.Broadcaster
+
 
 object RefinedMetalsLimMarketDataSourceTests {
   def main(args:Array[String]) {
@@ -37,7 +39,8 @@ object RefinedMetalsLimMarketDataSourceTests {
     }
     else {
       val source = new RefinedMetalsLimMarketDataSource(new LIMServer("ttraflonrh221", 6400))
-      val updates = DBMarketDataStore(init.props, init.starlingRichDB, Map(LIM → source), Broadcaster.Null).importer.getUpdates(12 Apr 2011, LIM)
+      val updates = DBMarketDataStore(init.props, init.starlingRichDB, Map(LIM → source))
+        .importer.getUpdates(12 Apr 2011, LIM)
 
       updates.get(LIM)
       source.read(12 Apr 2011)

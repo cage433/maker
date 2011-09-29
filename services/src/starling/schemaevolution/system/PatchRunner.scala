@@ -4,7 +4,6 @@ package starling.schemaevolution.system
 import java.sql.{ResultSet, Connection}
 import java.io.File
 import starling.utils.Log
-import starling.props.Props
 import starling.daterange.Timestamp
 import starling.richdb.{RichDB}
 import starling.db.DBWriter
@@ -27,7 +26,7 @@ class PatchRunner(starling: RichDB, readOnlyMode: Boolean, startlingInit: Starli
 
     Log.info("SCHEMAEVOLUTION: Checking patch level and applying required patches if necessary")
 
-      val alreadyAppliedPatches = Set() ++ getListOfAlreadyAppliedPatches(starling)
+    val alreadyAppliedPatches: Set[String] = Set() ++ getListOfAlreadyAppliedPatches(starling)
 
     val patchesToApply = getListOfAvailablePatchesFromClasspath.filter(
       patch => !alreadyAppliedPatches.contains(patch.patchName)
@@ -48,14 +47,12 @@ class PatchRunner(starling: RichDB, readOnlyMode: Boolean, startlingInit: Starli
     val sortedPatchesToApply = patchesToApply.sortWith(_.patchNumber < _.patchNumber)
 
     //Apply the patches
-    val deferredPatches: Map[Patch, String] = sortedPatchesToApply.flatMap { patch => {
-      Log.infoWithTime("Applying any patches (" + sortedPatchesToApply.size + ")") {
-        applyPatch(startlingInit, starling, patch).map { deferredReason => (patch, deferredReason) }
-      }
-    } }.toMap
+    val deferredPatches: Map[Patch, String] = Log.infoWithTime("Applying any patches (" + sortedPatchesToApply.size + ")") {
+      sortedPatchesToApply.toMapWithSomeValues(applyPatch(startlingInit, starling, _, alreadyAppliedPatches))
+    }
 
     deferredPatches.foreach { case (patch, deferredReason) =>
-      Log.warn("====== PATCH: %s DEFERRED BECAUSE: %s ======" % (patch, deferredReason))
+      Log.warn("====== PATCH DEFERRED: %s BECAUSE: %s ======" % (patch, deferredReason))
     }
 
     //Check that all the patches are applied now
@@ -120,8 +117,8 @@ class PatchRunner(starling: RichDB, readOnlyMode: Boolean, startlingInit: Starli
                                           "dateApplied" -> new Timestamp))
   }
 
-  private def applyPatch(starlingInit: StarlingInit, starling: RichDB, patch: Patch): Option[String] = {
-    val deferredReason = patch.deferredReason(starlingInit.props)
+  private def applyPatch(starlingInit: StarlingInit, starling: RichDB, patch: Patch, appliedPatches: Set[String]): Option[String] = {
+    val deferredReason = patch.deferredReason(new PatchContext(starlingInit.props, appliedPatches))
 
     if (deferredReason.isEmpty) {
       Log.infoWithTime("SCHEMAEVOLUTION: About to apply patch [%d] with name [%s]" % (patch.patchNumber, patch.patchName)) {
@@ -136,4 +133,6 @@ class PatchRunner(starling: RichDB, readOnlyMode: Boolean, startlingInit: Starli
 
     deferredReason
   }
+
+
 }

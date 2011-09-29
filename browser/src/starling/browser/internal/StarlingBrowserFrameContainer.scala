@@ -9,6 +9,9 @@ import com.thoughtworks.xstream.XStream
 import swing.{CheckBox, Frame, Publisher}
 import swing.event.ButtonClicked
 import com.thoughtworks.xstream.io.xml.DomDriver
+import java.awt.event.{KeyEvent, InputEvent}
+import javax.swing.KeyStroke
+import utilspage.UtilsPage
 
 trait ContainerMethods {
   def createNewFrame(fromFrame: Option[StarlingBrowserFrame], startPage:Option[Either[Page,(ServerContext => Page, PartialFunction[Throwable,Unit])]]=None)
@@ -49,13 +52,19 @@ object RootBrowserBundle extends BrowserBundle {
   }
 }
 
+object StarlingBrowserFrameContainer {
+  var numberOfFramesOpen = 0
+}
+
 class StarlingBrowserFrameContainer(serverContext: ServerContext, lCache: LocalCache, pageBuilder:PageBuilder,
-                                    homePage: Page, userSettings: UserSettings, frameTitle: String) extends ContainerMethods {
+                                    homePage: Page, userSettings: UserSettings, frameTitle: String, extraInfo:Option[String]) extends ContainerMethods {
   private val frames = new ListBuffer[StarlingBrowserFrame]
 
   def createNewFrame(fromFrame: Option[StarlingBrowserFrame], startPage:Option[Either[Page,(ServerContext => Page, PartialFunction[Throwable,Unit])]]) {
+    StarlingBrowserFrameContainer.numberOfFramesOpen += 1
     val startPage0 = startPage.getOrElse(Left(homePage))
-    val newFrame = new StarlingBrowserFrame(homePage, startPage0, pageBuilder, lCache, userSettings, this, serverContext.extraInfo)
+//    val newFrame = new StarlingBrowserFrame(homePage, startPage0, pageBuilder, lCache, userSettings, this, serverContext.extraInfo)
+    val newFrame = new StarlingBrowserFrame(homePage, startPage0, pageBuilder, lCache, userSettings, this, extraInfo)
     frames += newFrame
     newFrame.title = frameTitle
     fromFrame match {
@@ -96,12 +105,12 @@ class StarlingBrowserFrameContainer(serverContext: ServerContext, lCache: LocalC
   }
 
   def closeFrame(frame: StarlingBrowserFrame) {
-    if ((frames.size == 1) /* && (BrowserLauncher.numberOfClientsLaunched <= 1)*/) {
+    if ((frames.size == 1)  && (StarlingBrowserFrameContainer.numberOfFramesOpen <= 1)) {
       // This is the last frame so ensure user userSettings are saved.
       closeAllFrames(frame)
     } else {
       // There are other frames left so just dispose of this frame.
-      //BrowserLauncher.numberOfClientsLaunched -= 1
+      StarlingBrowserFrameContainer.numberOfFramesOpen -= 1
       frames -= frame
       frame.visible = false
       frame.dispose()

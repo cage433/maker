@@ -3,9 +3,10 @@ package starling.pivot.model
 import collection.Seq
 import starling.pivot._
 import starling.auth.LdapUserLookup
+import starling.auth.internal.LdapUserLookupImpl
 
 object OrgPivotTableDataSource {
-  private val ldapUser = new LdapUserLookup
+  private val ldapUser = new LdapUserLookupImpl
   lazy val Users = {
     ('A' to 'Z').flatMap(letter => ldapUser.usersStartingWith(letter)).toList 
   }

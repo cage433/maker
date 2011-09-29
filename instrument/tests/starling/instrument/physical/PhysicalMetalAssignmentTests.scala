@@ -94,12 +94,12 @@ class PhysicalMetalAssignmentTests extends StarlingTest {
 
   @Test
   def testFixedPrixingSpec{
-    val fixedSpec = FixedPricingSpec(Day(2011, 8, 31), List((0.5, Quantity(98, USD/MT)), (0.8, Quantity(103, USD/MT))))
+    val fixedSpec = FixedPricingSpec(Day(2011, 8, 31), List((0.5, Quantity(98, USD/MT)), (0.8, Quantity(103, USD/MT))), Quantity(1.5, USD/MT))
     val assignment = PhysicalMetalAssignment("Lead", Quantity(100, MT), Day(2011, 9, 1), fixedSpec) 
     val explanation = assignment.explanation(env)
     assertEquals(explanation.name, "((-F * Volume) * Discount)")
-    assertEquals(explanation.format(1), "((-(Sum((F_0 * 0.5), (F_1 * 0.8)) / 1.3) * 100.00 MT) * USD.31Aug2011)")
-    val lastExplanation = "((-(Sum((98.00 USD/MT * 0.50), (103.00 USD/MT * 0.80)) / 1.30) * 100.00 MT) * 0.99)"
+    assertEquals(explanation.format(1), "((-((Sum((F_0 * 0.5), (F_1 * 0.8)) / 1.3) + Premium) * 100.00 MT) * USD.31Aug2011)")
+    val lastExplanation = "((-((Sum((98.00 USD/MT * 0.50), (103.00 USD/MT * 0.80)) / 1.30) + 1.50 USD/MT) * 100.00 MT) * 0.99)"
     assertEquals(explanation.format(2), lastExplanation)
     assertEquals(explanation.format(3), lastExplanation)
   }
@@ -119,10 +119,10 @@ class PhysicalMetalAssignmentTests extends StarlingTest {
     val assignment = PhysicalMetalAssignment("Lead", Quantity(100, MT), Day(2011, 9, 1), unknownPricingSpec) 
     val explanation = assignment.explanation(env)
     assertEquals(explanation.name, "((-F * Volume) * Discount)")
-    assertEquals(explanation.format(1), "((-(Fixed + Unfixed) * 100.00 MT) * USD.02Sep2011)")
-    assertEquals(explanation.format(2), "((-(Sum((Fix_0 * 0.2), (Fix_1 * -0.1)) + (17Aug2011 * 0.9)) * 100.00 MT) * 0.99)")
-    assertEquals(explanation.format(3), "((-(Sum((98.00 USD/MT * 0.20), (98.00 USD/MT * (0.10))) + (LME Copper.19Aug2011 * 0.90)) * 100.00 MT) * 0.99)")
-    val lastExplanation = "((-(Sum((98.00 USD/MT * 0.20), (98.00 USD/MT * (0.10))) + (97.00 USD/MT * 0.90)) * 100.00 MT) * 0.99)"
+    assertEquals(explanation.format(1), "((-((Fixed + Unfixed) + Premium) * 100.00 MT) * USD.19Aug2011)")
+    assertEquals(explanation.format(2), "((-((Sum((Fix_0 * 0.2), (Fix_1 * -0.1)) + (17Aug2011 * 0.9)) + 1.50 USD/MT) * 100.00 MT) * 1.00)")
+    assertEquals(explanation.format(3), "((-((Sum((98.00 USD/MT * 0.20), (98.00 USD/MT * (0.10))) + (LME Copper.19Aug2011 * 0.90)) + 1.50 USD/MT) * 100.00 MT) * 1.00)")
+    val lastExplanation = "((-((Sum((98.00 USD/MT * 0.20), (98.00 USD/MT * (0.10))) + (97.00 USD/MT * 0.90)) + 1.50 USD/MT) * 100.00 MT) * 1.00)"
     assertEquals(explanation.format(4), lastExplanation)
     assertEquals(explanation.format(5), lastExplanation)
   }

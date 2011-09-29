@@ -372,11 +372,6 @@ class HashMapConverter(override val mapper : Mapper) extends MapConverter(mapper
 
   override def canConvert(clazz : Class[_]) = classOf[HashMap[_, _]].isAssignableFrom(clazz)
 
-  override def marshal(value : AnyRef, writer : HierarchicalStreamWriter, context : MarshallingContext) = {
-    println("Here's the hashmap: " + value)
-    throw new Exception("Disabled persistance of HashMaps as the order is not consistent so you get duplicates. Use a SortedMap")
-  }
-
   override def unmarshal(reader : HierarchicalStreamReader, context : UnmarshallingContext) = {
     val r = unmarshal(reader, context, x => HashMap(x : _*))
     log.debug("hashmap:: " + r)

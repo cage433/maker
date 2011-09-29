@@ -1,9 +1,9 @@
 package starling.singleclasspathmanager
 
 import starling.manager._
+import starling.osgimanager.utils.ThreadSafeCachingProxy
 
-class SingleClasspathManager(properties:Map[String,String], activators:List[Class[_ <: BromptonActivator]]) {
-  val props = new Props(properties)
+class SingleClasspathManager(cacheServices:Boolean, activators:List[Class[_ <: BromptonActivator]], initialServices:List[(Class[_],AnyRef)]=Nil) {
   case class ServiceEntry(klass:Class[_], service:AnyRef, properties:List[ServiceProperty], reference:BromptonServiceReference) {
     private val propertiesSet = properties.toSet
     def hasProperties(predicate:List[ServiceProperty]) = predicate.forall(p=>propertiesSet.contains(p))
@@ -30,24 +30,31 @@ class SingleClasspathManager(properties:Map[String,String], activators:List[Clas
     }
   }
 
+  private def register(klass:Class[_], service:AnyRef, properties:List[ServiceProperty]) {
+    if (!klass.isAssignableFrom(service.asInstanceOf[AnyRef].getClass)) throw new Exception(service + " is not a " + klass)
+    val ref = { id+=1; BromptonServiceReference(id + ":" + klass, List(klass.getName)) }
+    val entry = ServiceEntry(klass, service.asInstanceOf[AnyRef], properties, ref)
+    registry.append( entry )
+    trackers.toList.foreach{ tracker => {
+      tracker.applyTo(List(entry))
+    }}
+  }
+
   var id = 0
   private var started = false
   private val instances = activators.map(_.newInstance)
   private val registry = new scala.collection.mutable.ArrayBuffer[ServiceEntry]()
   private val trackers = new scala.collection.mutable.ArrayBuffer[TrackerEntry[_]]()
+
+  initialServices.foreach { case (klass,instance) => register(klass, instance, Nil)}
+
   private val context = new BromptonContext() {
     def registerService[T](
       klass:Class[T],
       service:T,
       properties:List[ServiceProperty]=List()) = {
-      if (!klass.isAssignableFrom(service.asInstanceOf[AnyRef].getClass)) throw new Exception(service + " is not a " + klass)
-      val ref = { id+=1; BromptonServiceReference(id + ":" + klass, List(klass.getName)) }
-      val entry = ServiceEntry(klass, service.asInstanceOf[AnyRef], properties, ref)
-      registry.append( entry )
-
-      trackers.toList.foreach{ tracker => {
-        tracker.applyTo(List(entry))
-      }}
+      val cachingService = if (cacheServices) ThreadSafeCachingProxy.createProxy(klass, service) else service
+      register(klass, cachingService.asInstanceOf[AnyRef], properties)
       new BromptonServiceRegistration() {
         def unregister() { throw new Exception("Unsupported") }
       }
@@ -67,6 +74,7 @@ class SingleClasspathManager(properties:Map[String,String], activators:List[Clas
     }
   }
 
+
   def start() {
     this synchronized {
       if (started) throw new Exception("Already started")
@@ -74,9 +82,7 @@ class SingleClasspathManager(properties:Map[String,String], activators:List[Clas
       val classLoader = classOf[SingleClasspathManager].getClassLoader
       instances.foreach { activator => {
         activator.start(context)
-        activator.init(context, props.applyOverrides(classLoader, activator.defaults))
       } }
-      props.completed()
     }
   }
   def stop() {

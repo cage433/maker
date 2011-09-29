@@ -27,7 +27,7 @@ class TradeHandlerTest extends StarlingTest {
   val header: Array[Array[Object]] = Array(Array("<header>"))
   val optionalAdditionalTrades: Array[Array[Object]] = Array(Array("<optionalAdditionalTrade>"))
   val tradesHash: Long = 123
-  val user = User("<userName>", "<name>", None, Nil, "<phoneNumber>", "<email>", "<departments>")
+  val user = User("<userName>", "<name>", None, None, Nil, "<phoneNumber>", "<email>", "<departments>")
   var traders: Traders = new Traders((s) => Some(user))
 
   @BeforeClass

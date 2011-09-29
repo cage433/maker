@@ -18,6 +18,7 @@ import starling.dbx._
 import collection.mutable.{ListBuffer, HashSet => MSet}
 import starling.gui.api._
 import starling.props.Props
+import scala.concurrent.SyncVar
 
 // TODO [07 Sep 2010] move me somewhere proper
 case class RelativeImpliedVolData(vols: Map[DateRange, Map[Double, Percentage]]) {
@@ -41,30 +42,7 @@ case class RelativeImpliedVolData(vols: Map[DateRange, Map[Double, Percentage]])
  */
 case class NoMarketDataForDayException(observationDay: Day, m: String) extends Exception(m)
 
-trait MarketDataSource { self =>
-  def read(day: Day): Map[(Day, Day, MarketDataType), List[MarketDataEntry]]
 
-  def asserting(): MarketDataSource = new MarketDataSource {
-    def read(day: Day) = {
-      val map: Map[(Day, Day, MarketDataType), List[MarketDataEntry]] = self.read(day)
-      val result = map.updateIt(r => duplicateTimedKeys(r).require(_.isEmpty, "source: %s produced duplicate 'timed' keys: " % self))
-      result
-    }
-
-    def duplicateTimedKeys(map: Map[(Day, Day, MarketDataType), List[MarketDataEntry]]): List[TimedMarketDataKey] =
-      map.values.flatMap(duplicateTimedKeys).toList
-  }
-
-  protected def containsDistinctTimedKeys(entries: List[MarketDataEntry]): Boolean = duplicateTimedKeys(entries).isEmpty
-
-  protected def duplicateTimedKeys(entries: List[MarketDataEntry]) = entries.map(_.timedKey).duplicates
-
-  def description: List[String] = Nil
-}
-
-class AdaptingMarketDataSource(adaptee: MarketDataSource) extends MarketDataSource {
-  def read(day: Day) = adaptee.read(day)
-}
 
 case class MarketDataSet(name: String, priority: Int) {
   def isExcel = name.startsWith(MarketDataSet.excelPrefix)
@@ -90,11 +68,11 @@ object MarketDataSet extends StarlingEnum(classOf[MarketDataSet], (m: MarketData
   val Crude = MarketDataSet("Crude", 300)
   val LondonDerivatives = MarketDataSet("London Derivatives", 400)
   val GasolineRoW = MarketDataSet("Gasoline RoW", 500)
+  val GasOil = MarketDataSet("Gas Oil", 501)
   val BarryEckstein = MarketDataSet("Barry Eckstein", 600)
   val LondonDerivativesOptions = MarketDataSet("London Derivatives Options", 700)
   val LimMetals = MarketDataSet("LimMetals", 800) //Refined Metals
-  val TrinityDiscountFactorCSV = MarketDataSet("TrinityDiscountFactorCSV", 900)
-  val Neptune = MarketDataSet("TrinityDiscountFactorCSV", 1000)
+  val Neptune = MarketDataSet("Neptune", 1000)
   val ManualMetals = MarketDataSet("ManualMetals", 1100)
   val Starling = MarketDataSet("Starling", 1200)
 
@@ -113,15 +91,15 @@ object MarketDataStore {
   import MarketDataSet._
 
   val pricingGroupsDefinitions = Map[PricingGroup, List[MarketDataSet]](
-    PricingGroup.Metals -> List(ManualMetals, LimMetals, TrinityDiscountFactorCSV, Neptune),
-    PricingGroup.LimOnly -> List(LIM),
-    PricingGroup.System -> List(Starling, LIM, System),
-    PricingGroup.Crude -> List(Starling, LIM, Crude),
-    PricingGroup.LondonDerivatives -> List(Starling, LondonDerivatives, LIM),
-    PricingGroup.GasolineRoW -> List(Starling, GasolineRoW, LIM),
-    PricingGroup.BarryEckstein -> List(Starling, BarryEckstein, System, LIM),
-    PricingGroup.LondonDerivativesOptions -> List(Starling, LondonDerivativesOptions, System, LIM),
-    PricingGroup.Starling -> List(Starling)
+    PricingGroup.Metals → List(ManualMetals, LimMetals, Neptune),
+    PricingGroup.LimOnly → List(LIM),
+    PricingGroup.System → List(Starling, LIM, System),
+    PricingGroup.Crude → List(Starling, LIM, Crude),
+    PricingGroup.LondonDerivatives → List(Starling, LondonDerivatives, LIM),
+    PricingGroup.GasolineRoW → List(Starling, GasolineRoW, LIM),
+    PricingGroup.GasOil → List(Starling, GasOil, LIM),
+    PricingGroup.BarryEckstein → List(Starling, BarryEckstein, System, LIM),
+    PricingGroup.LondonDerivativesOptions → List(Starling, LondonDerivativesOptions, System, LIM)
   )
 
   val manuallyEditableMarketDataSets = Set(ManualMetals, Starling)
@@ -151,6 +129,8 @@ object MarketDataStore {
 trait MarketDataStore {
   val pricingGroupsDefinitions = MarketDataStore.pricingGroupsDefinitions
   val pricingGroups = MarketDataStore.pricingGroups
+
+  def readAll()
 
   def excelDataSets: List[String]
 
@@ -192,7 +172,7 @@ trait MarketDataStore {
 
   def readLatest[T <: MarketData](marketDataSet: MarketDataSet, timedKey: TimedMarketDataKey): Option[T]
 
-  def save(marketDataSetToData: Map[MarketDataSet, Iterable[MarketDataEntry]]): SaveResult
+  def save(marketDataSetToData: Map[MarketDataSet, List[MarketDataEntry]]): SaveResult
 
   def save(marketDataSet: MarketDataSet, timedKey: TimedMarketDataKey, marketData: MarketData): Int
 
@@ -228,9 +208,9 @@ object VersionedMarketData {
 case class MarketDataEntry(observationPoint: ObservationPoint, key: MarketDataKey, data: MarketData, tag: Option[String] = None) {
   val dataType = key.dataType
 
-  def isEmpty = key.castRows(data).isEmpty
+  def isEmpty = key.castRows(data, ReferenceDataLookup.Null).isEmpty // data.size == 0
 
-  def toSave(existingData: Option[VersionedMarketData]) = if (isEmpty) None else Some(MarketDataUpdate(timedKey, Some(data), existingData, tag))
+  def toSave(existingData: Option[VersionedMarketData]) = !isEmpty option(MarketDataUpdate(timedKey, Some(data), existingData, tag))
 
   def toUpdate(existingData: Option[VersionedMarketData]) = toSave(existingData).getOrElse(MarketDataUpdate(timedKey, None, existingData, tag))
 
@@ -241,13 +221,12 @@ case class MarketDataEntry(observationPoint: ObservationPoint, key: MarketDataKe
 
 case class MarketDataUpdate(timedKey: TimedMarketDataKey, data: Option[MarketData], existingData: Option[VersionedMarketData],
                             tag: Option[String] = None) {
+
   def observationPoint = timedKey.observationPoint
-
   def marketDataKey = timedKey.key
-
   def dataIdFor(marketDataSet: MarketDataSet) = MarketDataID(timedKey, marketDataSet)
-
   def indexedData(marketDataSet: MarketDataSet) = dataIdFor(marketDataSet) → data
+  def existingVersion: Option[Int] = existingData.map(_.version)
 }
 
 
@@ -369,19 +348,17 @@ class MarketDataTags(db: DBTrait[RichResultSetRow]) {
 
 object DBMarketDataStore {
   def apply(props: Props, db: DBTrait[RichResultSetRow], marketDataSources: Map[MarketDataSet, MarketDataSource],
-            broadcaster: Broadcaster): DBMarketDataStore = {
+    broadcaster: Broadcaster = Broadcaster.Null, referenceDataLookup: ReferenceDataLookup = ReferenceDataLookup.Null): DBMarketDataStore = {
 
-    val mddb = if (props.UseFasterMarketDataSchema()) new NewSchemaMdDB(db) else new SlowMdDB(db)
+    val mddb = if (props.UseFasterMarketDataSchema()) new NewSchemaMdDB(db, referenceDataLookup) else new SlowMdDB(db)
 
-    new DBMarketDataStore(mddb, new MarketDataTags(db), marketDataSources, broadcaster)
+    new DBMarketDataStore(mddb, new MarketDataTags(db), marketDataSources, broadcaster, referenceDataLookup)
   }
 }
 
 // TODO [12 May 2011] move me somewhere proper
-class DBMarketDataStore(db: MdDB,
-                        tags: MarketDataTags,
-                        val marketDataSources: Map[MarketDataSet, MarketDataSource],
-                        broadcaster: Broadcaster) extends MarketDataStore with Log {
+class DBMarketDataStore(db: MdDB, tags: MarketDataTags, val marketDataSources: Map[MarketDataSet, MarketDataSource],
+  broadcaster: Broadcaster, referenceDataLookup: ReferenceDataLookup) extends MarketDataStore with Log {
 
   db.checkIntegrity()
 
@@ -394,22 +371,15 @@ class DBMarketDataStore(db: MdDB,
   }
 
   def sourceFor(marketDataSet: MarketDataSet) = marketDataSources.get(marketDataSet)
-
   def sourcesFor(pricingGroup: PricingGroup) = marketDataSets(MarketDataSelection(Some(pricingGroup))).flatMap(sourceFor(_))
 
-  private var excelDataSetsCache = {
-    scala.collection.mutable.ArrayBuffer[String]() ++ db.marketDataSetNames().flatMap {
-      name => {
-        if (name.startsWith(MarketDataSet.excelPrefix)) {
-          Some(name.stripPrefix(MarketDataSet.excelPrefix))
-        } else {
-          None
-        }
-      }
-    }
+  private lazy val excelDataSetsCache = new SynchronizedVar(db.marketDataSetNames().collect {
+    case name if name.startsWith(MarketDataSet.excelPrefix) => name.stripPrefix(MarketDataSet.excelPrefix)
+  }) {
+    override def set(values: List[String]) { super.set(values.sortWith(_ < _)) }
   }
 
-  private val (observationDaysByPricingGroupCache, observationDaysByExcelCache) = {
+  private lazy val (observationDaysByPricingGroupCache, observationDaysByExcelCache) = {
     val observationDays = db.observationDaysByMarketDataSet
 
     val observationDaysByPricingGroupCache = pricingGroupsDefinitions.mapValues { marketDataSets =>
@@ -422,7 +392,7 @@ class DBMarketDataStore(db: MdDB,
     (observationDaysByPricingGroupCache, observationDaysByExcelCache)
   }
 
-  def excelDataSets: List[String] = excelDataSetsCache.toList
+  def excelDataSets: List[String] = excelDataSetsCache.get
 
   def pricingGroupForName(name: String) = MarketDataStore.pricingGroupForName(name)
 
@@ -441,7 +411,8 @@ class DBMarketDataStore(db: MdDB,
       val reader = new NormalMarketDataReader(this, marketDataIdentifier)
       val validatingReader = validate(reader)
 
-      new MarketDataPivotTableDataSource(validatingReader, PivotEdits.Null, Some(this), marketDataIdentifier, marketDataType)
+      new MarketDataPivotTableDataSource(validatingReader, PivotEdits.Null, Some(this), marketDataIdentifier, marketDataType,
+        referenceDataLookup)
     })
   }
 
@@ -490,18 +461,16 @@ class DBMarketDataStore(db: MdDB,
   }
 
   def saveAll(marketDataSet: MarketDataSet, observationPoint: ObservationPoint, data: Map[MarketDataKey, MarketData]): SaveResult = {
-    val dataX = for ((marketDataKey, marketData) <- data) yield {
-      MarketDataEntry(observationPoint, marketDataKey, marketData)
-    }
-    save(Map(marketDataSet -> dataX))
+    val dataX = data.map { case (marketDataKey, marketData) => MarketDataEntry(observationPoint, marketDataKey, marketData) }
+
+    save(Map(marketDataSet -> dataX.toList))
   }
 
-  def save(marketDataSetToData: Map[MarketDataSet, Iterable[MarketDataEntry]]): SaveResult = {
-    val setToUpdates = marketDataSetToData.map {
-      case (marketDataSet, values) => {
-        (marketDataSet, values.map(entry => entry.toUpdate(db.readLatest(entry.dataIdFor(marketDataSet)))))
-      }
-    }
+  def save(marketDataSetToData: Map[MarketDataSet, List[MarketDataEntry]]): SaveResult = {
+    val setToUpdates = marketDataSetToData.map { case (marketDataSet, values) => {
+      (marketDataSet, values.map(entry => entry.toUpdate(db.readLatest(entry.dataIdFor(marketDataSet)))))
+    } }
+
     saveActions(setToUpdates)
   }
 
@@ -534,7 +503,6 @@ class DBMarketDataStore(db: MdDB,
     SaveResult(maxVersion, changedMarketDataSets.nonEmpty, Some(allChangedDays.distinct.toList))
   }
 
-
   private def saveActions(data: Iterable[MarketDataUpdate], marketDataSet: MarketDataSet,
                           changedMarketDataSets: scala.collection.mutable.HashMap[MarketDataSet, (Set[Day], Int)]): Int = {
 
@@ -543,24 +511,22 @@ class DBMarketDataStore(db: MdDB,
       changedMarketDataSets(marketDataSet) = (data.flatMap(_.observationPoint.day.toList).toSet, innerMaxVersion)
     }
 
-    MarketDataSet.fromExcel(marketDataSet).map {
-      name =>
-        if (!excelDataSetsCache.contains(name)) {
-          excelDataSetsCache.append(name)
-          excelDataSetsCache = excelDataSetsCache.sortWith(_ < _)
-          broadcaster.broadcast(ExcelMarketListUpdate(excelDataSetsCache.toList))
-        }
-        // TODO [02 Jun 2011] Should this be getOrElseUpdate ? Stacy
-        val days = observationDaysByExcelCache(name)
+    MarketDataSet.fromExcel(marketDataSet).map { name =>
+      if (!excelDataSetsCache.get.contains(name)) {
+        excelDataSetsCache.update(name :: _)
+        broadcaster.broadcast(ExcelMarketListUpdate(excelDataSetsCache.get))
+      }
+      // TODO [02 Jun 2011] Should this be getOrElseUpdate ? Stacy
+      val days = observationDaysByExcelCache(name)
 
-        data.flatMap(_.observationPoint.day.toList).filterNot(day => days.contains(day)).foreach(day => {
-          days += day
-          broadcaster.broadcast(ExcelObservationDay(name, day))
-        })
+      data.flatMap(_.observationPoint.day.toList).filterNot(day => days.contains(day)).foreach(day => {
+        days += day
+        broadcaster.broadcast(ExcelObservationDay(name, day))
+      })
 
-        if (update) {
-          broadcaster.broadcast(ExcelMarketDataUpdate(name, innerMaxVersion))
-        }
+      if (update) {
+        broadcaster.broadcast(ExcelMarketDataUpdate(name, innerMaxVersion))
+      }
     }
 
     innerMaxVersion
@@ -571,11 +537,12 @@ class DBMarketDataStore(db: MdDB,
   }
 
   def importData(marketDataSelection: MarketDataSelection, observationDay: Day) = {
-    importFor(observationDay, marketDataSets(marketDataSelection): _*)
+    val marketDataSets = marketDataSelection.pricingGroup.flatMapL(pgl => pricingGroupsDefinitions(PricingGroup(pgl.name)))
+
+    importFor(observationDay, marketDataSets: _*)
   }
 
   val importLock = new Object
-
 
   def importFor(observationDay: Day, marketDataSets: MarketDataSet*) = importLock.synchronized {
     log.infoWithTime("saving market data: " + observationDay) {
@@ -596,18 +563,17 @@ class DBMarketDataStore(db: MdDB,
 
     val saveResult = importData(marketDataSelection, observationDay)
 
-    getMaxVersion(marketDataSelection).map {
-      version =>
-        val (snapshotID, justCreated) = tags.snapshot(version, marketDataSelection, observationDay)
+    getMaxVersion(marketDataSelection).map { version =>
+      val (snapshotID, justCreated) = tags.snapshot(version, marketDataSelection, observationDay)
 
-        println("snapshotid: " + snapshotID)
+      println("snapshotid: " + snapshotID)
 
-        if (justCreated) {
-          broadcaster.broadcast(MarketDataSnapshotSet(marketDataSelection, previousSnapshot, snapshotID.label,
-            saveResult.affectedObservationDays))
-          broadcaster.broadcast(MarketDataSnapshot(List(snapshotID.id.toString)))
-        }
-        snapshotID
+      if (justCreated) {
+        broadcaster.broadcast(MarketDataSnapshotSet(marketDataSelection, previousSnapshot, snapshotID.label,
+          saveResult.affectedObservationDays))
+        broadcaster.broadcast(MarketDataSnapshot(List(snapshotID.id.toString)))
+      }
+      snapshotID
     }
   }
 
@@ -617,11 +583,8 @@ class DBMarketDataStore(db: MdDB,
   }
 
   def snapshotFromID(snapshotID: Int): Option[SnapshotID] = tags.snapshotFromID(snapshotID)
-
   def snapshots(): List[SnapshotID] = tags.snapshots()
-
   def snapshotsByMarketDataSelection(): Map[MarketDataSelection, List[SnapshotIDLabel]] = tags.snapshotsByMarketDataSelection()
-
   def observationDaysByPricingGroup(): Map[PricingGroup, Set[Day]] = observationDaysByPricingGroupCache.mapValues(_.toSet)
   def observationDaysByExcel(): Map[String, Set[Day]] = observationDaysByExcelCache.mapValues(_.toSet)
 

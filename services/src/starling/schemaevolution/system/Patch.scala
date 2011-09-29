@@ -1,19 +1,17 @@
 package starling.schemaevolution.system
 
-
 import java.sql.Connection
 import java.util.regex.Pattern
 import starling.richdb.RichDB
 import starling.db.DBWriter
 import starling.services.StarlingInit
 import starling.props.Props
+import scalaz.Scalaz._
 
-trait Patch {
 
-  override def toString = patchNumber+":"+patchName
-
-  val (patchNumber, patchName) = {
-    val fullClassName = getClass.getName
+object Patch {
+  def patchProps(patchClass: Class[_]): (Int, String) = {
+    val fullClassName = patchClass.getName
     val patchClassName = fullClassName.substring(fullClassName.lastIndexOf(".") + 1)
 
     //Create a regular expression to get the patch number and the description string
@@ -33,8 +31,15 @@ trait Patch {
     //Return the tuple of patch number and description
     (patchNumber.toInt, patchName)
   }
+}
 
-  def deferredReason(props: Props): Option[String] = None
+trait Patch {
+
+  override def toString = patchNumber+":"+patchName
+
+  val (patchNumber, patchName) = Patch.patchProps(getClass)
+
+  def deferredReason(context: PatchContext): Option[String] = None
 
   final def applyPatch(starlingInit: StarlingInit, starling: RichDB, writer: DBWriter) = {
     //Run the actual SQL script to update the schema and check completed successfully
@@ -51,4 +56,11 @@ trait Patch {
   protected def checkRunPatchCompletedSuccessfully(starling: RichDB) = {
   }
 
+}
+
+class PatchContext(val props: Props, appliedPatches: Set[String]) {
+  def dependsOn[T <: Patch](implicit m: Manifest[T]): Option[String] = dependsOn(Patch.patchProps(m.erasure)._2)
+
+  private def dependsOn(patchName: String): Option[String] =
+    appliedPatches.contains(patchName) ? none[String] | some("Depends on " + patchName)
 }

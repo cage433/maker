@@ -20,10 +20,10 @@ import collection.immutable.{Map, TreeMap}
 import scalaz._
 import Scalaz._
 import collection.immutable.{Iterable, Map, TreeMap}
-import starling.pivot.{PivotQuantity, PivotEdits, PivotTableDataSource, Field => PField}
 import collection.JavaConversions._
 import collection.mutable.{HashMap, SetBuilder, ListBuffer, HashSet => MSet}
 import starling.instrument.utils.StarlingXStream
+import starling.pivot.{Row, PivotQuantity, PivotEdits, PivotTableDataSource, Field => PField}
 
 //import starling.props.Props.VarReportEmailFrom
 
@@ -279,12 +279,11 @@ class SlowMdDB(db: DBTrait[RichResultSetRow]) extends MdDB with Log {
     val latestValues = new scala.collection.mutable.HashMap[String, (MarketData)]()
 
     def addEntry(timeOfDay: String, day: Option[Day], key: MarketDataKey) {
-      val allDataForKeyAndDay: List[Map[PField, Any]] = mds.reverse.flatMap(mds => {
-        latestValues.get(mds.name).toList.flatMap(data => key.castRows(data))
+      val allDataForKeyAndDay: List[Row] = mds.reverse.flatMap(mds => {
+        latestValues.get(mds.name).toList.flatMap(data => key.castRows(data, ReferenceDataLookup.Null))
       })
-      val rowsFromOneMap = MarketDataStore.applyOverrideRule(marketDataType, allDataForKeyAndDay)
-      if (rowsFromOneMap.nonEmpty) {
-        val marketData = marketDataType.createValue(rowsFromOneMap)
+      MarketDataStore.applyOverrideRule(marketDataType, allDataForKeyAndDay.map(_.value)).ifDefined { rowsFromOneMap =>
+        val marketData = marketDataType.createValue(Row.create(rowsFromOneMap))
         val observationPoint = day match {
           case None => ObservationPoint.RealTime
           case Some(day) => ObservationPoint(day, ObservationTimeOfDay.fromName(timeOfDay))

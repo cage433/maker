@@ -12,7 +12,7 @@ class EDMConversionsTests extends StarlingTest{
 
   @DataProvider(name = "testConversionRoundTripProvider")
   def testConversionRoundTripProvider = constructDataProviderArgs(
-    List(100 (USD), 10(GBP), 8(GBP/MT), 5(GBP/MT^3), 2((LB * GBP^2)/(MT * CNY)))
+    List(100 (USD), 10(GBP), 8(GBP/MT), 5(GBP/MT^3), 2((LB * GBP^2)/(CNY)))
   )
   @Test(dataProvider = "testConversionRoundTripProvider")
   def testConversionRoundTrip(q : Quantity){

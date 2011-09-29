@@ -80,7 +80,7 @@ object PricingGroup extends StarlingEnum(classOf[PricingGroup], (pg: PricingGrou
   val LondonDerivatives = PricingGroup("London Derivatives")
   val BarryEckstein = PricingGroup("Barry Eckstein")
   val GasolineRoW = PricingGroup("Gasoline RoW")
-  val Starling = PricingGroup("Starling")
+  val GasOil = PricingGroup("Gas Oil")
 }
 
 case class FieldDetailsGroupLabel(groupName:String, childNames:List[String])
@@ -110,11 +110,11 @@ object Desk extends StarlingEnum(classOf[Desk], (d: Desk) => d.name, ignoreCase 
 
   val LondonDerivativesOptions = Desk("London Derivatives Options", List(PricingGroup.LondonDerivativesOptions, System, LimOnly), Some(EAIDeskInfo(173)))
   val LondonDerivatives = Desk("London Derivatives", List(PricingGroup.LondonDerivatives, System, LimOnly), Some(EAIDeskInfo(43)))
-  val Gasoline_Physical_Barges_and_ARA_blending = Desk("Gasoline Physical Barges & ARA blending", List(PricingGroup.GasolineRoW, LimOnly), Some(EAIDeskInfo(117)))
+  val GasolinePhysicalBargesAndARABlending = Desk("Gasoline Physical Barges & ARA blending", List(PricingGroup.GasolineRoW, LimOnly), Some(EAIDeskInfo(117)))
+  val GasoilSpec = Desk("Gasoil Spec", List(PricingGroup.GasOil, LimOnly), Some(EAIDeskInfo(22)))
   val GasolineSpec = Desk("Gasoline Spec Global", List(PricingGroup.GasolineRoW, LimOnly), Some(EAIDeskInfo(149)))
   val CrudeSpecNorthSea = Desk("Crude Spec North Sea", List(Crude, LimOnly), Some(EAIDeskInfo(197)))
   val HoustonDerivatives = Desk("Houston Derivatives", List(BarryEckstein, LimOnly), Some(EAIDeskInfo(190)))
-  val Refined = Desk("Refined", List(System, Metals, Starling))
   val Titan = Desk("Titan", List(Metals))
 
   val pricingGroups = values.flatMap(_.pricingGroups).distinct

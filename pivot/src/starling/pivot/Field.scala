@@ -36,7 +36,6 @@ object Field {
   val scratch_str = "Scratch"
   val enteredby_str = "Entered By"
   val systemTimestamp_str = "System Timestamp"
-  val bookID_str = "Book ID"
   val dealID_str = "Deal ID"
 
   val exchange_str = "Exchange"
@@ -95,20 +94,28 @@ object IntPivotParser extends PivotParser {
 }
 object PivotQuantityPivotParser extends PivotParser {
   def parse(text:String, extraFormatInfo:ExtraFormatInfo) = {
-    // This is a special case for the parser. We're not supplying a label as the caller will have to detect that this is a PivotQuantity, set the UOM
-    // and then call toPrettyString on it.
-    val textToUse = if (text.trim.startsWith("(")) {
-      "-" + text.replaceAll("\\(", "").replaceAll("\\)", "")
+    val textNoCommas = text.replaceAll(",", "").trim()
+    val cleanTextMaybeWithUOM = if (textNoCommas.startsWith("(")) {
+      "-" + textNoCommas.replaceAll("\\(", "").replaceAll("\\)", "")
     } else {
-      text
+      textNoCommas
     }
-    (PivotQuantity(textToUse.toDouble),"")
+    val letterIndex = cleanTextMaybeWithUOM.indexWhere(_.isLetter)
+    if (letterIndex == -1) {
+      // No UOM specified
+      (PivotQuantity(cleanTextMaybeWithUOM.toDouble),"")
+    } else {
+      val (number, uomString) = cleanTextMaybeWithUOM.splitAt(letterIndex)
+      val uom = UOM.fromString(uomString)
+      val pq = PivotQuantity(new Quantity(number.toDouble, uom))
+      (pq, PivotFormatter.formatPivotQuantity(pq, extraFormatInfo, false) + uom.asString)
+    }
   }
 }
 
 case class DecimalPlaces(defaultFormat:String, lotsFormat:String, priceFormat:String, currencyFormat:String, percentageFormat:String) {
   def format(uom:UOM) = {
-    if (uom.scale == Ratio(1000,1) || (uom == UOM.K_BBL || uom == UOM.C_M3 || uom == UOM.K_MT))
+    if ((uom == UOM.K_BBL || uom == UOM.C_M3 || uom == UOM.K_MT))
       lotsFormat
     else if (uom.isCurrency)
       currencyFormat
@@ -225,11 +232,11 @@ object AverageVolatilityPivotFormatter extends PivotFormatter {
     value match {
       case s:Set[_] if s.isEmpty => TableCell.Null
       case pq:PivotQuantity => TableCell.fromPivotQuantity(pq, formatInfo)
-      case p:Percentage => new TableCell(p, p.toShortString, RightTextPosition)
+      case p:Percentage => new TableCell(p, p.toShortString(formatInfo.decimalPlaces.percentageFormat, addSpace = true), RightTextPosition)
       case l:List[_] if l.size == 2 => {
         val p = l.head.asInstanceOf[Percentage]
         val s = l.tail.head.asInstanceOf[Double]
-        new TableCell(l, p.toShortString + " & " + s.format(formatInfo.decimalPlaces.defaultFormat), RightTextPosition)
+        new TableCell(l, p.toShortString(formatInfo.decimalPlaces.percentageFormat, addSpace = true) + " & " + s.format(formatInfo.decimalPlaces.defaultFormat), RightTextPosition)
       }
     }
   }
@@ -379,8 +386,10 @@ object FieldDetails {
     override def parser = parser0
     override def formatter = formatter0
   }
-  def createMeasure(name:String) = new FieldDetails(name) {
+  def createMeasure(name:String, formatter0:PivotFormatter = DefaultPivotFormatter, parser0:PivotParser = TextPivotParser) = new FieldDetails(name) {
     override def isDataField = true
+    override def formatter = formatter0
+    override def parser = parser0
   }
 }
 
@@ -424,6 +433,7 @@ class AveragePivotQuantityFieldDetails(name:String) extends FieldDetails(Field(n
 class PercentageLabelFieldDetails(name:String) extends FieldDetails(Field(name)) {
   override def value(a:Any):Any = setToValue(a.asInstanceOf[Set[Any]])
   override def formatter = PercentagePivotFormatter
+  override def parser = PercentagePivotParser
   private def setToValue(set:Set[Any]) = {
     if (set.size == 1) {
       set.toList.head
@@ -433,12 +443,31 @@ class PercentageLabelFieldDetails(name:String) extends FieldDetails(Field(name))
   }
 }
 
+object PercentagePivotParser extends PivotParser {
+  def parse(text:String, extraFormatInfo:ExtraFormatInfo) = {
+    val textNoCommas = text.replaceAll(",", "").trim()
+    val cleanTextMaybeWithPercentage = if (textNoCommas.startsWith("(")) {
+      "-" + textNoCommas.replaceAll("\\(", "").replaceAll("\\)", "")
+    } else {
+      textNoCommas
+    }
+    val doubleValue = if (cleanTextMaybeWithPercentage.contains("%")) {
+      val textWithoutPercentage = cleanTextMaybeWithPercentage.replace("%", "")
+      textWithoutPercentage.toDouble / 100.0
+    } else {
+      cleanTextMaybeWithPercentage.toDouble
+    }
+    val percentage = Percentage(doubleValue)
+    (percentage, PercentagePivotFormatter.format(percentage, extraFormatInfo).text)
+  }
+}
+
 object PercentagePivotFormatter extends PivotFormatter {
   def format(value:Any, formatInfo:ExtraFormatInfo) = {
     value match {
       case s:Set[_] if s.size > PivotFormatter.MaxSetSize => new TableCell(s, s.size + " values")
-      case s:Set[_] => new TableCell(s, s.map(_.asInstanceOf[Percentage].toShortString).mkString(","))
-      case p:Percentage => new TableCell(p, p.toShortString(formatInfo.decimalPlaces.percentageFormat), RightTextPosition)
+      case s:Set[_] => new TableCell(s, s.map(_.asInstanceOf[Percentage].toShortString(formatInfo.decimalPlaces.percentageFormat, addSpace = true)).mkString(","))
+      case p:Percentage => new TableCell(p, p.toShortString(formatInfo.decimalPlaces.percentageFormat, addSpace = true), RightTextPosition, longText = Some(p.toLongString))
     }
   }
 }

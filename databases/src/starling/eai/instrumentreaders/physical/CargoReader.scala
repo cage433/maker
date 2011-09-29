@@ -1,17 +1,15 @@
 package starling.eai.instrumentreaders.physical
 
 import starling.systemofrecord.InstrumentReader
-import starling.daterange.DateRange
-import starling.instrument.CommoditySwap
 import starling.richdb.RichResultSetRow
-import starling.quantity.Quantity
 import starling.quantity.UOM._
 import starling.eai.instrumentreaders.EAISystemOfRecord
 import starling.market.formula.FormulaIndex
-import starling.instrument.physical.{Incoterm, Cargo}
+import starling.marketdata.IncotermCode
+import starling.instrument.physical.Cargo
 import starling.market.Index
 import starling.pricingschedule.PricingScheduleXMLParser
-import starling.market.rules.{Precision, CommonPricingRule}
+import starling.market.rules.Precision
 
 class CargoReader extends InstrumentReader {
 
@@ -60,7 +58,7 @@ class CargoReader extends InstrumentReader {
     val swapPricingRule = rs.getSwapPricingRule("PricingRule")
 
     val incoterm = rs.getString("incoterm") match {
-      case Incoterm(i) => i
+      case IncotermCode(i) => i
     }
 
     Cargo(quantity, incoterm, blDate, index, schedule, swapPricingRule)

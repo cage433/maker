@@ -18,8 +18,8 @@ import starling.market.{TestMarketTest, MarketProvider, TestMarketLookup}
 import starling.tradestore.TradeStore
 import starling.instrument.TradeableType
 import starling.richdb.RichInstrumentResultSetRow
-import starling.rmi.RabbitEventDatabase
-
+import starling.rmi.{NullRabbitEventDatabase, DefaultRabbitEventDatabase}
+import starling.titan.{TitanTradeStore, TitanTacticalRefData, TitanTradeCache, TitanLogisticsServices}
 
 /**
  * Valuation service tests
@@ -31,8 +31,8 @@ class ValuationServiceTest extends StarlingTest {
   var mockTitanTradeCache : TitanTradeServiceBasedTradeCache = null
   var mockTitanLogisticsServices : FileMockedTitanLogisticsServices = null
   var mockRabbitEventServices : MockTitanRabbitEventServices = null
-  var mockInventoryCache : TitanLogisticsServiceBasedInventoryCache = null
-  var mockDB : RabbitEventDatabase = null
+  var mockInventoryCache : DefaultTitanLogisticsInventoryCache = null
+  var mockDB = NullRabbitEventDatabase
 
   @BeforeClass
   def initMocks() {
@@ -43,10 +43,7 @@ class ValuationServiceTest extends StarlingTest {
     mockTitanTradeCache = new TitanTradeServiceBasedTradeCache(mockTitanTradeService)
     mockTitanLogisticsServices = FileMockedTitanLogisticsServices()
     mockRabbitEventServices = new MockTitanRabbitEventServices()
-    mockInventoryCache = new TitanLogisticsServiceBasedInventoryCache(mockTitanLogisticsServices)
-    mockDB = new RabbitEventDatabase(null, null) {
-      override def saveEvent(ev:Event) {}
-    }
+    mockInventoryCache = new DefaultTitanLogisticsInventoryCache(mockTitanLogisticsServices, mockTitanTradeCache, mockTitanServices, None)
   }
   
   /**
@@ -93,11 +90,11 @@ class ValuationServiceTest extends StarlingTest {
       val vs = new ValuationService(
         new MockEnvironmentProvider, mockTitanTradeCache, mockTitanServices, mockTitanLogisticsServices, mockRabbitEventServices, mockInventoryCache, None, mockDB)
 
-      val valuations = vs.valueAllQuotas()
+      val valuations = vs.valueAllTradeQuotas()
 
-      val (worked, errored) = valuations.tradeResults.values.partition(_ isRight)
+      val (worked, errored) = valuations.valuationResults.values.partition(_ isRight)
 
-      val valuedTradeIds = valuations.tradeResults.collect {
+      val valuedTradeIds = valuations.valuationResults.collect {
         case (id, Right(v)) => id
       }.toList
       val valuedTrades = vs.getTrades(valuedTradeIds)
@@ -163,7 +160,7 @@ class ValuationServiceTest extends StarlingTest {
       //val salesAssignments = mockTitanLogisticsServices.assignmentService.service.getAllSalesAssignments()
       //val assignments = mockTitanLogisticsServices.assignmentService.service.getAllSalesAssignments()
       //val inventory = mockTitanLogisticsServices.inventoryService.service.getAllInventoryLeaves()
-  //    val inventory = mockTitanLogisticsServices.inventoryService.service.getInventoryTreeByPurchaseQuotaId()
+      //val inventory = mockTitanLogisticsServices.inventoryService.service.getInventoryTreeByPurchaseQuotaId()
 
       val vs = new ValuationService(
         new MockEnvironmentProvider, mockTitanTradeCache, mockTitanServices, mockTitanLogisticsServices, mockRabbitEventServices, mockInventoryCache, None, mockDB)

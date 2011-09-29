@@ -47,8 +47,8 @@ class ExcelTradeReaderTests extends JonTestEnv {
   val eaiDealBookMapping = mock(classOf[EAIDealBookMapping])
   when(eaiDealBookMapping.book(any(classOf[Int]))) thenReturn 173
 
-  val jf = Some(User("jon.fox", "Jon Fox", None, Nil, "", "", ""))
-  val sp = Some(User("seetal.patel", "Seetal Patel", None, Nil, "", "", ""))
+  val jf = Some(User("jon.fox", "Jon Fox", None, None, Nil, "", "", ""))
+  val sp = Some(User("seetal.patel", "Seetal Patel", None, None, Nil, "", "", ""))
   def currentUser() = jf.get
   val traders = new Traders({
     s => s match {

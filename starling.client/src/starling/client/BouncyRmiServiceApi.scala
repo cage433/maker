@@ -20,7 +20,7 @@ Starling service RMI hostname and port must be set. In trafigura.properties, set
 
         otherwise in props.conf set
           ExternalHostname= <hostname>
-          ServiceRmiPort= <port>
+          StarlingServiceRmiPort= <port>
 
         The host and port can be found in the Starling server logs. Look for a line like
 

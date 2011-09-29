@@ -11,22 +11,6 @@ import starling.daterange.{SpreadPeriod, Spread, Day, Month}
 
 class EnvironmentTests extends TestMarketTest {
 
-
-  @Test
-  def testSimpleSpotFX = {
-    val env = Environment(new UnitTestingAtomicEnvironment(Day(2011, 1, 1).endOfDay, {
-      case _ => throw new Exception("not needed")
-    }
-    ))
-
-    val oneDollar = Quantity(1, USD)
-    val oneHundredCent = Quantity(100, US_CENT)
-    assertEquals(oneDollar * env.spotFXRate(USD, USD), oneDollar)
-    val cent = env.spotFXRate(US_CENT, USD)
-    assertEquals(oneDollar * cent, oneHundredCent)
-    assertEquals(oneHundredCent * env.spotFXRate(USD, US_CENT), oneDollar)
-  }
-
   @Test
   def testPriceShifts = {
     val NymexWTI = Market.NYMEX_WTI

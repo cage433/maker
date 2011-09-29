@@ -51,7 +51,7 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
                      editableInfo:Option[EditableInfo],
                      var rowHeaderData0:Array[Array[AxisCell]],
                      var colHeaderData0:Array[Array[AxisCell]],
-                     var uoms0:Array[UOM],
+                     uoms0:Array[UOM],
                      resizeMainTableColumns: =>Unit,
                      resizeRowHeaderTableColumns: =>Unit,
                      fieldState:PivotFieldsState,
@@ -82,9 +82,6 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
     resizeMainTableColumns
     resizeRowHeaderTableColumns
   }
-
-  def uoms = uoms0
-  def uoms_=(u:Array[UOM]) {uoms0 = u}
 
   private def singleValueFilters() = {
     Map() ++ fieldState.filterAreaFields.flatMap(f => {
@@ -599,7 +596,7 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
         val (newValue,newLabel) = if (s.isEmpty) (None, "") else {
           val (v,l) = pars.parse(s, extraFormatInfo)
           v match {
-            case pq:PivotQuantity if uoms0.length > columnIndex => {
+            case pq:PivotQuantity if l.isEmpty && (uoms0.length > columnIndex) => {
               val uom = uoms0(columnIndex)
               val dv = pq.doubleValue.get
               val newPQ = new PivotQuantity(dv, uom)
@@ -1047,7 +1044,7 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
 
     val rowComponentPreferredSize = {
       if (rowComponent.numberOfFields > 0) {
-        (0 until numCols).map(c => rowComponent.guiField(c).preferredSize.width).sum
+        (0 until rowComponent.numberOfFields).map(c => rowComponent.guiField(c).preferredSize.width).sum
       } else {
         rowComponent.preferredSize.width
       }

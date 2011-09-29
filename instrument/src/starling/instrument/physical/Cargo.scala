@@ -9,8 +9,9 @@ import starling.daterange.{DateRange, DayAndTime, Day}
 import starling.instrument._
 import starling.richdb.RichInstrumentResultSetRow
 import starling.quantity.{SimpleNamedQuantity, NamedQuantity, Quantity}
+import starling.marketdata.IncotermCode
 
-case class Cargo(quantity: Quantity, incoterm: Incoterm, blDate: Day, index: FormulaIndex, pricingSchedule: PricingSchedule, pricingRule: SwapPricingRule)
+case class Cargo(quantity: Quantity, incoterm: IncotermCode, blDate: Day, index: FormulaIndex, pricingSchedule: PricingSchedule, pricingRule: SwapPricingRule)
   extends UTP with Tradeable {
 
   val calendar = pricingRule.calendar(index.calendars)

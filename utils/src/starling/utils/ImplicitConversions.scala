@@ -5,7 +5,6 @@ import conversions._
 
 object ImplicitConversions extends RichAnys
   with RichArray
-  with RichBoolean
   with RichCollection
   with RichDateTime
   with RichDouble

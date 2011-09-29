@@ -2,24 +2,18 @@ package starling.browser.internal
 
 import org.jdesktop.jxlayer.plaf.AbstractLayerUI
 import net.miginfocom.swing.MigLayout
-import javax.swing.JComponent._
-import starling.browser.common.{MigPanel, GuiUtils}
-import starling.browser.common.{MigPanel, GuiUtils}
-import scala.swing.Component._
-import scala.swing.UIElement._
 import swing.event.ButtonClicked
-import scala.swing.TextComponent._
 import starling.browser.common.GuiUtils._
-import javax.swing.{KeyStroke, BorderFactory, JPanel, JComponent}
+import javax.swing.{KeyStroke, JPanel, JComponent}
 import java.awt.event.KeyEvent
-import scala.swing.Action._
 import scala.swing._
 import org.jdesktop.jxlayer.JXLayer
 import java.awt.{FlowLayout, BorderLayout, Color, Dimension}
+import starling.browser.common._
 
 class StarlingBrowserUI extends AbstractLayerUI[JComponent] {
   private val contentPanel = new JPanel(new MigLayout("")) {
-    setBackground(GuiUtils.ClearColour)
+    setOpaque(false)
     setVisible(false)
   }
 
@@ -31,14 +25,15 @@ class StarlingBrowserUI extends AbstractLayerUI[JComponent] {
   }
 
   def setError(title:String, error:String, errorOK: => Unit) {
-    val errorPanel = new MigPanel("") {
-      border = BorderFactory.createLineBorder(BorderColour)
+    val errorPanel = new MigPanel("") with RoundedBackground {
+      border = RoundedBorder(Color.RED)
+      background = Color.WHITE
       minimumSize = new Dimension(10, 300)
       val okButton = new Button {
         text = "OK"
         reactions += {
           case ButtonClicked(e) => {
-            clearContentPanel
+            clearContentPanel()
             errorOK
           }
         }
@@ -48,15 +43,16 @@ class StarlingBrowserUI extends AbstractLayerUI[JComponent] {
       add(new ScrollPane(new TextArea() {
         text = error
         editable = false
+        background = new Color(247,231,228)
       }), "skip 1, pushy, growy, wrap unrel")
       add(okButton, "spanx, split, al r, tag ok")
     }
 
     contentPanel.removeAll()
-    contentPanel.add(errorPanel.peer, "push, al c c")
+    contentPanel.add(errorPanel.peer, "gaptop 41lp, push, al c c")
 
     contentPanel.setVisible(true)
-    contentPanel.revalidate
+    contentPanel.revalidate()
     errorPanel.okButton.requestFocusInWindow()
   }
 
@@ -64,13 +60,14 @@ class StarlingBrowserUI extends AbstractLayerUI[JComponent] {
     val oldDefaultButton = windowMethods.getDefaultButton
 
     def clearUp(action:Boolean) {
-      clearContentPanel
+      clearContentPanel()
       onEvent(action)
       windowMethods.setDefaultButton(oldDefaultButton)
     }
 
-    val yesNoPanel = new MigPanel("") {
-      border = BorderFactory.createLineBorder(new Color(158,16,40), 2)
+    val yesNoPanel = new MigPanel("") with RoundedBackground {
+      border = RoundedBorder(Color.RED)
+      background = Color.WHITE
       val label = new Label(message) {
         font = font.deriveFont(java.awt.Font.BOLD)
       }
@@ -101,9 +98,9 @@ class StarlingBrowserUI extends AbstractLayerUI[JComponent] {
 
     contentPanel.add(yesNoPanel.peer, "push, al c c")
     contentPanel.setVisible(true)
-    contentPanel.revalidate
+    contentPanel.revalidate()
     windowMethods.setDefaultButton(Some(yesNoPanel.yesButton))
-    yesNoPanel.yesButton.requestFocusInWindow
+    yesNoPanel.yesButton.requestFocusInWindow()
   }
 
   def setContent(content:Component, cancelAction:Option[()=> Unit]) {
@@ -117,15 +114,15 @@ class StarlingBrowserUI extends AbstractLayerUI[JComponent] {
     content.peer.getActionMap.put("Escape", escapeAction.peer)
     contentPanel.add(content.peer, "push, al c c")
     contentPanel.setVisible(true)
-    contentPanel.revalidate
+    contentPanel.revalidate()
   }
 
-  def clearContentPanel {
+  def clearContentPanel() {
     contentPanel.setVisible(false)
-    contentPanel.removeAll
+    contentPanel.removeAll()
   }
 
-  override def installUI(c: JComponent) = {
+  override def installUI(c: JComponent) {
     super.installUI(c)
     val layer = c.asInstanceOf[JXLayer[JComponent]]
     val glassPane = layer.getGlassPane
@@ -133,7 +130,7 @@ class StarlingBrowserUI extends AbstractLayerUI[JComponent] {
     glassPane.add(contentPanel)
   }
 
-  override def uninstallUI(c: JComponent) = {
+  override def uninstallUI(c: JComponent) {
     super.uninstallUI(c)
     val layer = c.asInstanceOf[JXLayer[JComponent]]
     val glassPane = layer.getGlassPane

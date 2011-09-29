@@ -1,18 +1,8 @@
 package starling.browser.internal
 
-object NotificationType extends Enumeration {
-  type NotificationType = Value
-  val Action, Message = Value
-}
-
-import NotificationType._
 import starling.browser.LocalCache
 import starling.browser.common.MigPanel
-import swing.UIElement._
 import starling.browser.common.TwoFixedImagePanel
-import swing.Component._
-import swing.event.Event
-import starling.browser.common.RoundedBorder._
 import swing.Label
 import java.awt.Color
 import java.awt.Cursor
@@ -21,6 +11,14 @@ import javax.swing.ImageIcon
 import starling.browser.common.RoundedBorder
 import starling.browser.LocalCacheKey
 import starling.browser.service.StarlingEvent
+import swing.Swing._
+
+object NotificationType extends Enumeration {
+  type NotificationType = Value
+  val Action, Message = Value
+}
+
+import NotificationType._
 
 object NotificationKeys {
   val AllNotifications                    = new LocalCacheKey[List[Notification]]("AllNotifications")
@@ -29,20 +27,21 @@ object NotificationKeys {
 
 class NotificationPanel(frameWidth: => Int, cache:LocalCache, containerMethods:ContainerMethods) extends MigPanel("", "[p]push[p]") {
   visible = false
+  border = MatteBorder(1,0,0,0,new Color(182,182,182))
 
-  def closeAll = {
-    cache.removeAllUserNotifications
-    containerMethods.updateNotifications
+  def closeAll()  {
+    cache.removeAllUserNotifications()
+    containerMethods.updateNotifications()
   }
 
   val closeButton = new TwoFixedImagePanel(
     BrowserIcons.im("/icons/close.png"),
     BrowserIcons.im("/icons/stop.png"),
-    closeAll) {
+    closeAll()) {
     tooltip = "Close notification panel"
   }
 
-  def updateLayout = notificationLabelPanel.updateLayout
+  def updateLayout() {notificationLabelPanel.updateLayout()}
 
   val notificationLabelPanel = new MigPanel("insets 0") {
     private def getWidthOfNotifications(notes:List[NotificationLabel]):Int = notes.map(_.preferredSize.width).sum
@@ -51,16 +50,16 @@ class NotificationPanel(frameWidth: => Int, cache:LocalCache, containerMethods:C
     reactions += {
       case NotificationLabelClosed(nl) => {
         cache.removeUserNotification(nl.notification)
-        containerMethods.updateNotifications
+        containerMethods.updateNotifications()
       }
       case NotificationLabelAction(nl) => {
-        nl.notification.action
+        nl.notification.action()
         cache.removeUserNotification(nl.notification)
-        containerMethods.updateNotifications
+        containerMethods.updateNotifications()
       }
     }
 
-    def updateLayout {
+    def updateLayout() {
       var nll = generateLabels
       removeAll
 
@@ -77,8 +76,8 @@ class NotificationPanel(frameWidth: => Int, cache:LocalCache, containerMethods:C
           listenTo(nl)
           add(nl)
         })
-        revalidate
-        repaint
+        revalidate()
+        repaint()
 
         NotificationPanel.this.visible = true
       } else {
@@ -124,7 +123,7 @@ class NotificationLabel(val notification:Notification) extends MigPanel("") {
 }
 
 class Notification(val text:String, val icon:ImageIcon, val notificationType:NotificationType, action0: => Unit) {
-  def action = action0
+  def action() {action0}
 }
 object Notification {
   def apply(text:String, icon:ImageIcon, notificationType:NotificationType, action: => Unit) =

@@ -111,4 +111,10 @@ class StarlingTabbedPaneUI extends MetalTabbedPaneUI {
     }
     g.setColor(oldColour)
   }
+  override def paintContentBorderRightEdge(g:Graphics, tabPlacement:Int, selectedIndex:Int, x:Int, y:Int, w:Int, h:Int) {}
+  override def paintContentBorderLeftEdge(g:Graphics, tabPlacement:Int, selectedIndex:Int, x:Int, y:Int, w:Int, h:Int) {}
+  override def paintContentBorderBottomEdge(g:Graphics, tabPlacement:Int, selectedIndex:Int, x:Int, y:Int, w:Int, h:Int) {}
+
+  private val starlingTabbedPaneInsets = new Insets(2,0,0,0)
+  override def getContentBorderInsets(tabPlacement:Int) = starlingTabbedPaneInsets
 }

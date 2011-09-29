@@ -34,6 +34,7 @@
       </library>
     </orderEntry>
     <orderEntry type="module" module-name="manager" />
+    <orderEntry type="module" module-name="props" />
   </component>
 </module>
 

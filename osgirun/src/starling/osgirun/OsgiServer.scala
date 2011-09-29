@@ -107,20 +107,26 @@ object ServerBundles extends BundleDefinitions {
       Map(
         "osgimanager" -> BundleConfig(exportAll=true, dirs=List("osgimanager")),
         "manager" -> BundleConfig(exportAll=true, dirs=List("manager")),
+        "props" -> BundleConfig(exportAll=true, dirs=List("props")),
         //"dbx" -> BundleConfig(exportAll=true, internalJars=List("bonecp-bundle-0.7.1.RELEASE.jar"), dirs=List("dbx")),
         "utils" -> BundleConfig(exportAll=true, dirs=List("utils")),
         "auth" -> BundleConfig(exportAll=true, dirs=List("auth")),
         "bouncyrmi" -> BundleConfig(exportAll=true, dirs=List("bouncyrmi")),
-        "reports" -> BundleConfig(exportAll=true, dirs=List("reports")),
         "loopyxl" -> BundleConfig(exportAll=true, dirs=List("loopyxl")),
-        "reports.internal" -> BundleConfig(exportAll=true, dirs=List("reports.internal")),
-        "main" -> BundleConfig(true, List("bonecp-bundle-0.7.1.RELEASE.jar"), includes, excludes, None, List(
-          "daterange", "titan", "browser.service", "fc2.api",
+        "reports.facility" -> BundleConfig(exportAll=true, dirs=List("reports.facility")),
+        "reports.impl" -> BundleConfig(exportAll=true, dirs=List("reports.impl")),
+        "trade.facility" -> BundleConfig(exportAll=true, dirs=List("trade.facility"), includes = List("org.joda.time", "org.joda.time.base", "org.joda.time.chrono", "starling.tradestore", "starling.pivot", "scala.math")),
+        "trade.impl" -> BundleConfig(exportAll=true, dirs=List("trade.impl")),
+        "rabbit.event.viewer.service" -> BundleConfig(exportAll=true, includes=List("scala.math"), dirs=List("rabbit.event.viewer.service")),
+        "rabbit.event.viewer.api" -> BundleConfig(exportAll=true, dirs=List("rabbit.event.viewer.api")),
+        "metals" -> BundleConfig(exportAll=true, dirs=List("metals")),
+        "main" -> BundleConfig(true, List("joda-time-jar-1.6.jar", "bonecp-bundle-0.7.1.RELEASE.jar"), includes, excludes, None, List(
+          "daterange", "titan", "browser.service", "fc2.facility",
           "concurrent", "curves",
           "databases", "gui.api", "instrument",
           "maths", "pivot", "pivot.utils",
           "quantity", "services", "starling.api",
-          "trade", "dbx"
+          "dbx"
         ))
       )
     )

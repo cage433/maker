@@ -1,23 +1,17 @@
 package starling.auth.osgi
 
 import starling.manager.{BromptonContext, BromptonActivator}
-import starling.auth.internal.KerberosAuthHandler
 import starling.auth.{AuthHandler, LdapUserLookup}
+import starling.auth.internal.{LdapUserLookupImpl, KerberosAuthHandler}
 
-class AuthProps {
-  def useAuth = false
-}
 class AuthBromptonActivator extends BromptonActivator {
-  type Props = AuthProps
-  def defaults = new AuthProps
-  def init(context: BromptonContext, props: AuthProps) {
-    val auth = if (props.useAuth) new KerberosAuthHandler("suvmerinWiv0", new LdapUserLookup()) else AuthHandler.Dev
-    context.registerService(classOf[AuthHandler], auth)
-  }
   def start(context: BromptonContext) {
-
+    val props = context.awaitService(classOf[starling.props.Props])
+    val ldapUserLookup = new LdapUserLookupImpl()
+    val auth = if (props.UseAuth()) new KerberosAuthHandler("suvmerinWiv0", ldapUserLookup) else AuthHandler.Dev
+    context.registerService(classOf[AuthHandler], auth)
+    context.registerService(classOf[LdapUserLookup], ldapUserLookup)
   }
   def stop(context: BromptonContext) {
-
   }
 }

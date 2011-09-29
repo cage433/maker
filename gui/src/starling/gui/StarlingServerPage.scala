@@ -9,14 +9,16 @@ import collection.SortedSet
 import starling.auth.User
 import starling.browser._
 import service.internal.HeterogeneousMap
-import starling.reports.ReportService
+import starling.reports.facility.ReportFacility
+import starling.trade.facility.TradeFacility
 
 trait StarlingServerPage extends Page {
   def bundle = "StarlingServer"
   type SC = StarlingServerContext
   def createServerContext(sc:ServerContext) = new StarlingServerContext(
     sc.lookup(classOf[StarlingServer]),
-    sc.lookup(classOf[ReportService])
+    sc.lookup(classOf[ReportFacility]),
+    sc.lookup(classOf[TradeFacility])
   )
 }
 trait StarlingBookmark extends Bookmark {
@@ -25,7 +27,8 @@ trait StarlingBookmark extends Bookmark {
     val realDay = day.map( d => Day(d.year, d.month, d.dayOfMonth))
     createStarlingPage(realDay, new StarlingServerContext(
       serverContext.lookup(classOf[StarlingServer]),
-      serverContext.lookup(classOf[ReportService])
+      serverContext.lookup(classOf[ReportFacility]),
+      serverContext.lookup(classOf[TradeFacility])
     ), context)
   }
 }

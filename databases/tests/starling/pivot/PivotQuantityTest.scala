@@ -113,8 +113,6 @@ class PivotQuantityTest extends StarlingTest with ShouldMatchers {
   def shouldUseLotsFormatWhenUOMHasScaleOf1000 {
     val dp = PivotFormatter.DefaultDecimalPlaces
     assertEquals(dp.format(UOM.K_BBL), PivotFormatter.LotsFormat)
-    assertEquals(dp.format(UOM.BBL * 1000), PivotFormatter.LotsFormat)
-    assertEquals(dp.format(UOM.USD * 1000), PivotFormatter.LotsFormat)
   }
 
   @Test

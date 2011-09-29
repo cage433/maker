@@ -12,34 +12,6 @@ import starling.utils.ImplicitConversions._
 import starling.utils.Pattern._
 import java.text.DecimalFormat
 
-class QuantityDouble(d : Double){
-  def apply(uom : UOM) = Quantity(d, uom)
-}
-class QuantityInt(n : Int){
-  def apply(uom : UOM) = Quantity(n, uom)
-}
-
-/**
- * This type class allows the Numeric implicit enabled methods to be used, like TraversableOnce
- * product and sum methods.
- */
-trait QuantityIsNumeric extends Numeric[Quantity] {
-  def compare(p1: Quantity, p2: Quantity) = p1 compare p2
-  def toDouble(x: Quantity) = throw new IllegalStateException("Can't convert Quantity to double.")
-  def toFloat(x: Quantity) = throw new IllegalStateException("Can't convert Quantity to float.")
-  def toLong(x: Quantity) = throw new IllegalStateException("Can't convert Quantity to long.")
-  def toInt(x: Quantity) = throw new IllegalStateException("Can't convert Quantity to int.")
-
-  def fromInt(x: Int) = Quantity(x.toDouble, UOM.SCALAR)
-  def negate(x: Quantity) = -x
-  def times(x: Quantity, y: Quantity) = x * y
-  def minus(x: Quantity, y: Quantity) = x - y
-  def plus(x: Quantity, y: Quantity) = x + y
-
-  override def zero = Quantity(0.0, UOM.NULL)
-  override def one = Quantity(1.0, UOM.SCALAR)
-}
-
 object Quantity {
   val Regex = """([0-9.,]*) (.*)""".r
   val mc = java.math.MathContext.DECIMAL128
@@ -53,12 +25,16 @@ object Quantity {
   val Parse: Extractor[String, Quantity] =
     Extractor.from[String](_.partialMatch { case Regex(value, UOM.Parse(uom)) => fromString(value, uom) })
 
-  private def sumAsBigDecimal(quantities: Iterable[Quantity]) = {
+  private def sumAsBigDecimal(quantities: Iterable[Quantity]): (BigDecimal, UOM) = {
     if(quantities.nonEmpty) {
       val uoms = quantities.map(_.uom).toSet
-      assert(uoms.size == 1, "Can't sum quantities of different units: " + uoms)
-      val sum = (BigDecimal("0") /: quantities.map(q => BigDecimal(q.value)))(_ + _)
-      (sum, uoms.head)
+      if(uoms.size == 1) {
+        val sum = (BigDecimal("0") /: quantities.map(q => BigDecimal(q.value)))(_ + _)
+        (sum, uoms.head)
+      } else {
+        val sum = (Quantity.NULL /: quantities)(_ + _)
+        (BigDecimal(sum.value), sum.uom)
+      }
     } else {
       (BigDecimal("0"), UOM.NULL)
     }
@@ -122,7 +98,7 @@ class Quantity(val value : Double, val uom : UOM) extends Ordered[Quantity] with
   override def compare(rhs : Quantity) : Int = {
     if(uom != rhs.uom) {
       // allow people to do Quantity(20, BBL) >= 0 etc.
-      assert((isZero && uom.isScalar) || (rhs.isZero && rhs.uom.isScalar), "UOMs not the same, can't compare: " + (uom, rhs.uom))
+      assert((isZero && uom.isScalar) || (rhs.isZero && rhs.isScalar), "UOMs not the same, can't compare: " + (uom, rhs.uom))
     }
     if (value < rhs.value)
       -1
@@ -131,7 +107,7 @@ class Quantity(val value : Double, val uom : UOM) extends Ordered[Quantity] with
     else 0
   }
   def format(fmt : String, useUOM:Boolean = true, addSpace: Boolean = false) = {
-    val uomPart = if (useUOM && !uom.isScalar && !uom.isNull) " " + uom else ""
+    val uomPart = if (useUOM && !isScalar && !uom.isNull) " " + uom else ""
     value.format(fmt, addSpace) + uomPart
   }
   def format(decimalFormat: DecimalFormat) = decimalFormat.format(value)
@@ -145,25 +121,19 @@ class Quantity(val value : Double, val uom : UOM) extends Ordered[Quantity] with
   def pq : PivotQuantity = PivotQuantity(Map(uom -> value), Map[String, List[StackTrace]]())
 
   def in(otherUOM : UOM)(implicit conv: Conversions = Conversions.default): Option[Quantity] = {
-    conv.convert(uom, otherUOM).map((ratio) => this * Quantity(ratio, otherUOM / uom))
-  }
-
-  def inUOM(uom: UOM)(implicit conv: Conversions = Conversions.default): Quantity = {
-    in(uom)(conv) match {
-      case Some(beqv) => beqv
-      case None => throw new Exception(this + ": Couldn't convert from " + this + " to " + uom)
-    }
+    conv.convert(uom, otherUOM).map((ratio) => Quantity((this.value * ratio).toDouble, otherUOM))
   }
 
   /**
-   * Converts to this Quanity's base unit, or None. For example 1KG would become 1000G
+   * E.g. 1000 Cent/KG to .01 USD/G
+   * used for equals and hashcode
    */
-  def inBaseUnit: Option[Quantity] = {
-    Conversions.baseUOM(uom) match {
-      case Some(`uom`) => Some(this)
-      case Some(baseUOM) => this in baseUOM
-      case _ => None
-    }
+  def inBaseUOM = {
+    this.inUOM(uom.toBaseUnit)
+  }
+
+  def inUOM(uom: UOM)(implicit conv: Conversions = Conversions.default): Quantity = {
+    in(uom)(conv).getOrElse(throw new Exception(this + ": Couldn't convert from " + this + " to " + uom))
   }
 
   def isScalar = uom.isScalar
@@ -175,8 +145,8 @@ class Quantity(val value : Double, val uom : UOM) extends Ordered[Quantity] with
       rhs match {
         case Quantity(0.0, UOM.NULL) => this
         case Quantity(x, this.uom) => Quantity(value + x, uom)
-        case Quantity(x, otherUOM) => rhs in this.uom match {
-          case Some(rhsInThisUOM) => this + rhsInThisUOM
+        case Quantity(x, otherUOM) => this.uom.plus(otherUOM) match {
+          case Some(conversion) => this + rhs.copy(value = rhs.value * conversion.toDouble, uom = this.uom)
           case _ => throw new IllegalStateException(
             "Attempting to add two quantities with different units " + uom + " : " + rhs.uom + " : " + (this, rhs)
           )
@@ -185,27 +155,20 @@ class Quantity(val value : Double, val uom : UOM) extends Ordered[Quantity] with
   }
 
   def * (rhs : Double) : Quantity = Quantity(value * rhs, uom)
-  def * (rhs : Quantity) : Quantity = {
-//    assert(uom != UOM.NULL && rhs.uom != UOM.NULL, "Can't multiply quantities with null units - you probably should have used the scalar unit")
-    Quantity(value * rhs.value, uom * rhs.uom)
+
+  def *(rhs: Quantity): Quantity = {
+    //    assert(uom != UOM.NULL && rhs.uom != UOM.NULL, "Can't multiply quantities with null units - you probably should have used the scalar unit")
+    (uom.mult(rhs.uom)) match {
+      case (newUOM, c) => Quantity((c * value * rhs.value).toDouble, newUOM)
+    }
   }
 
   def * (rhs : Percentage) : Quantity = this * rhs.value
-
   def / (rhs : Double) : Quantity = Quantity(value / rhs, uom)
-  /** Divide by another Quantity
-   */
   def / (rhs : Quantity) = this * (rhs.invert)
-
-
   def abs = Quantity(mabs(value), uom)
-  
   def negate = unary_-
-
   def unary_- : Quantity = Quantity(-value, uom)
-
-  /** subtract another quantity from this
-   */
   def - (rhs : Quantity) : Quantity = this + -rhs
 
   /** return the inversion of this
@@ -220,10 +183,12 @@ class Quantity(val value : Double, val uom : UOM) extends Ordered[Quantity] with
   /** Returns the value after asserting the UOM is as expected
    */
   def checkedValue(expectedUOM : UOM) : Double = {
-    assert(expectedUOM == uom, "Expected UOM " + expectedUOM + ", got unit " + uom + ".")
-    value
+    this in expectedUOM match {
+      case Some(q) => q.value
+      case None => throw new java.lang.AssertionError("Expected UOM " + expectedUOM + ", got unit " + uom + ".")
+    }
   }
-  
+
   def numeratorUOM = uom.numeratorUOM
   def denominatorUOM = uom.denominatorUOM
 
@@ -231,10 +196,29 @@ class Quantity(val value : Double, val uom : UOM) extends Ordered[Quantity] with
 
   override def equals(other: Any) = other match {
     case Quantity(this.value, this.uom) => true
+    case Quantity(_, this.uom) => false
+    case other: Quantity => {
+      val thisBase = this.inBaseUOM
+      other.inBaseUOM match {
+        case Quantity(thisBase.value, thisBase.uom) => true
+        case _ => false
+      }
+    }
     case _ => false
   }
 
-  override val hashCode = value.hashCode
+  def isAlmostEqual(other : Quantity, tolerance : Double) = {
+    val thisBase = this.inBaseUOM
+    val otherBase = other.inBaseUOM
+    val tol = Quantity(tolerance, uom).inBaseUOM
+    thisBase.uom == otherBase.uom && (
+            mabs(thisBase.value - otherBase.value) <= tol.value.abs ||
+            thisBase.value.isInfinite && otherBase.value.isInfinite ||
+            thisBase.value.isNaN && otherBase.value.isNaN
+            )
+  }
+
+  override lazy val hashCode = inBaseUOM.value.hashCode
 
   def isAlmostZero : Boolean = value.abs < MathUtil.EPSILON
   def isZero : Boolean = value == 0.0
@@ -249,14 +233,6 @@ class Quantity(val value : Double, val uom : UOM) extends Ordered[Quantity] with
       case (_, 0) => Percentage(1)
       case _ => Percentage(((this - other).abs / this).value)
     }
-  }
-
-  def isAlmostEqual(other : Quantity, tolerance : Double) = {
-    uom == other.uom && (
-            mabs(value - other.value) <= tolerance.abs ||
-            value.isInfinite && other.value.isInfinite ||
-            value.isNaN && value.isNaN
-            )
   }
 
   /**
@@ -281,6 +257,34 @@ class Quantity(val value : Double, val uom : UOM) extends Ordered[Quantity] with
   def round(dp: Int) = copy(value = MathUtil.roundToNdp(value, dp))
 }
 
+class QuantityDouble(d : Double){
+  def apply(uom : UOM) = Quantity(d, uom)
+}
+class QuantityInt(n : Int){
+  def apply(uom : UOM) = Quantity(n, uom)
+}
+
+/**
+ * This type class allows the Numeric implicit enabled methods to be used, like TraversableOnce
+ * product and sum methods.
+ */
+trait QuantityIsNumeric extends Numeric[Quantity] {
+  def compare(p1: Quantity, p2: Quantity) = p1 compare p2
+  def toDouble(x: Quantity) = throw new IllegalStateException("Can't convert Quantity to double.")
+  def toFloat(x: Quantity) = throw new IllegalStateException("Can't convert Quantity to float.")
+  def toLong(x: Quantity) = throw new IllegalStateException("Can't convert Quantity to long.")
+  def toInt(x: Quantity) = throw new IllegalStateException("Can't convert Quantity to int.")
+
+  def fromInt(x: Int) = Quantity(x.toDouble, UOM.SCALAR)
+  def negate(x: Quantity) = -x
+  def times(x: Quantity, y: Quantity) = x * y
+  def minus(x: Quantity, y: Quantity) = x - y
+  def plus(x: Quantity, y: Quantity) = x + y
+
+  override def zero = Quantity(0.0, UOM.NULL)
+  override def one = Quantity(1.0, UOM.SCALAR)
+}
+
 abstract class NamedQuantity(val quantity : Quantity) extends Quantity(quantity.value, quantity.uom){
   import NamedQuantity._
   def format(level : Int) : String
@@ -296,6 +300,25 @@ abstract class NamedQuantity(val quantity : Quantity) extends Quantity(quantity.
   override def abs                 = FunctionNamedQuantity("abs", List(this), quantity.abs)
   override def invert              = InvertNamedQuantity(this)
   override def negate              = unary_-
+  override def in(otherUOM : UOM)(implicit conv: Conversions = Conversions.default): Option[NamedQuantity] = {
+    conv.convert(uom, otherUOM).map((ratio) => if (ratio == 1.0) {
+      this
+    }else{
+      val cq = Quantity((this.value * ratio).toDouble, otherUOM)
+      (uom.div(otherUOM)) match {
+        case (UOM.SCALAR, _) => FunctionNamedQuantity("ConvertTo "+otherUOM, List(this), cq, custom = true)
+        case _ => this * (SimpleNamedQuantity("Conversion", Quantity(ratio.toDouble, otherUOM/uom)))
+      }
+    })
+  }
+
+  override def inUOM(uom: UOM)(implicit conv: Conversions): NamedQuantity = {
+    in(uom)(conv) match {
+      case Some(beqv) => beqv
+      case None => throw new Exception(this + ": Couldn't convert from " + this + " to " + uom)
+    }
+  }
+
   private def isAlmostOne(value: Double): Boolean          = (value - 1).abs < MathUtil.EPSILON
   private def isAlmostOne(percentage: Percentage): Boolean = isAlmostOne(percentage.value)
   private def guard(condition: Boolean, fn: => NamedQuantity) = if (condition) this else fn

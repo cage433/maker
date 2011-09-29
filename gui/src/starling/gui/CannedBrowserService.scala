@@ -147,7 +147,7 @@ case class EditableSpecifiedCannedPivotReportPage(pivotPageState:PivotPageState,
 
   override def save(starlingServer:ServerContext, edits:PivotEdits) = {
     println("EditableSpecifiedCannedPivotReportPage saved these " + " edits " + edits)
-    true
+    0
   }
 }
 
@@ -234,7 +234,7 @@ class CannedDataSource extends UnfilteredPivotTableDataSource {
 
 class EditableCannedDataSource extends CannedDataSource {
   override def editable = Some(new EditPivot {
-    def save(edits:PivotEdits) = {println("SAVE : " + edits); true}
+    def save(edits:PivotEdits) = {println("SAVE : " + edits); 0}
     def editableToKeyFields = Map(Field("PV") -> Set(Field("Lots")), Field("Gamma") -> Set(Field("Lots"), Field("Product"), Field("Strike")))
     def withEdits(edits:PivotEdits) = null
   })
@@ -265,7 +265,7 @@ class EditableSpecifiedCannedDataSource extends UnfilteredPivotTableDataSource {
   def unfilteredData(pfs:PivotFieldsState) = data
 
   override def editable = Some(new EditPivot {
-    def save(edits:PivotEdits) = {println("SAVE : " + edits); true}
+    def save(edits:PivotEdits) = {println("SAVE : " + edits); 0}
     def editableToKeyFields = Map(Field("Volume") -> Set(Field("Trader"), Field("Market"), Field("Single Value")))
     def withEdits(edits:PivotEdits):PivotTableDataSource = {
       if (edits.isEmpty) {

@@ -31,7 +31,7 @@ object TitanTradeStore {
 }
 
 class TitanTradeStore(db: RichDB, broadcaster:Broadcaster, tradeSystem:TradeSystem)
-        extends TradeStore(db, broadcaster, tradeSystem, None) {
+        extends TradeStore(db, broadcaster, tradeSystem) {
   val tableName = "TitanTrade"
   def createTradeAttributes(row:RichInstrumentResultSetRow) = {
     val quotaID = row.getString("quotaID")
@@ -51,7 +51,7 @@ class TitanTradeStore(db: RichDB, broadcaster:Broadcaster, tradeSystem:TradeSyst
     val schedule = row.getDay("Schedule")
     val expectedSales = row.getDay("ExpectedSales")
 
-    TitanTradeAttributes(assignmentID, quotaID, titanTradeID, inventoryID, groupCompany, comment, submitted, shape, grade, deliveryLocation, destinationLocation, contractFinalised, tolerancePlus, toleranceMinus, schedule, expectedSales)
+    TitanTradeAttributes(Option(assignmentID), quotaID, titanTradeID, Option(inventoryID), groupCompany, comment, submitted, shape, grade, deliveryLocation, destinationLocation, contractFinalised, tolerancePlus, toleranceMinus, schedule, expectedSales)
   }
 
   def pivotInitialState(tradeableTypes:Set[TradeableType[_]]) = {

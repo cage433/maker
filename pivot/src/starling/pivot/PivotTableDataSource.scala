@@ -10,6 +10,9 @@ import collection.immutable.{Map, TreeMap}
 import collection.Set
 import collection.script.Start
 import reflect.AnyValManifest
+import starling.quantity.Quantity
+import scalaz.Scalaz._
+
 
 case class FieldDetailsGroup(name:String, fields:List[FieldDetails]) {
   def toFieldGroup = {
@@ -24,7 +27,8 @@ object FieldDetailsGroup {
 case class FieldGroup(name:String, fields:List[Field])
 
 case class KeyFilter(keys:Map[Field,SomeSelection]) {
-  def matches(rowKeys:Map[Field,Any]) = keys.forall{ case (field, selection) => rowKeys.get(field).map(v => selection.values.contains(v)).getOrElse(false) }
+  def matches(rowKeys:Map[Field,Any]): Boolean = matches(Row(rowKeys))
+  def matches(row: Row): Boolean = keys.forall { case (field, selection) => row.matches(field, selection) }
   def isOverriddenBy(newDelete:KeyFilter) = {
     newDelete.keys.forall{ case (key,value) => {
       keys.get(key) == Some(value)
@@ -186,7 +190,7 @@ object PivotEdits {
 //Row is deletable when // TODO [21 Jan 2011] we'll decide later
 trait EditPivot {
   def editableToKeyFields:Map[Field,Set[Field]]
-  def save(edits:PivotEdits):Boolean
+  def save(edits:PivotEdits):Int
   def withEdits(edits:PivotEdits):PivotTableDataSource
 }
 
@@ -329,7 +333,19 @@ case class NewValue(value:Option[Any], rowIndex:Int, edits:PivotEdits) extends P
   def valueForGrouping(newRowsAtBottom:Boolean) = if (newRowsAtBottom) NewRowValue(rowIndex) else value.getOrElse(UndefinedValue)
 }
 
-case class MeasureCell(value:Option[Any], cellType:EditableCellState, edits:PivotEdits=PivotEdits.Null, originalValue:Option[Any]=None, editable:Boolean=false)
+case class MeasureCell(value:Option[Any], cellType:EditableCellState, edits:PivotEdits=PivotEdits.Null, originalValue:Option[Any]=None, editable:Boolean=false) {
+  def isAlmoseZero = value.fold(isAlmostZero, false)
+
+  private def isAlmostZero(any: Any): Boolean = any match {
+    case d:Double => d.isAlmostZero
+    case q:Quantity => q.isAlmostZero
+    case pq:PivotQuantity if pq.values.size <= 1 => pq.isAlmostZero
+    case pq:PivotQuantity => true
+    case set: Set[_] => set.forall(isAlmostZero)
+    case _ => false
+  }
+}
+
 object MeasureCell {
   val Null = MeasureCell(None, Normal)
   val EditableNull = MeasureCell(None, Normal, editable = true)

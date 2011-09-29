@@ -1,9 +1,9 @@
 package starling.launcher
 
-import starling.gui.osgi.GuiBromptonActivator
 import starling.browser.osgi.BrowserBromptonActivator
 import starling.singleclasspathmanager.{JettyBromptonActivator, SingleClasspathManager}
 import java.net.{ConnectException, Socket, URL}
+import starling.gui.osgi.{GuiLaunchParameters, GuiBromptonActivator}
 
 //Starts the gui without osgi
 object Launcher {
@@ -35,10 +35,29 @@ object Launcher {
       start(rmiHost, rmiPort, servicePrincipalName)
     }
   }
+
+  def startWithUser(overriddenUser:String) {
+    if (rmiPort == -1) {
+      throw new Exception("You can only run as user once start has been called")
+    }
+    start(rmiHost, rmiPort, servicePrincipalName, Some(overriddenUser))
+  }
+
+  // These variables are a big hack so we remember what they are when running the start method when changing users.
+  private var rmiHost = ""
+  private var rmiPort = -1
+  private var servicePrincipalName = ""
+
   def start(rmiHost: String, rmiPort: Int, servicePrincipalName: String, overriddenUser:Option[String] = None) {
-    val props = Map("serverRmiHost" -> rmiHost, "serverRmiPort" -> rmiPort.toString, "principalName" -> servicePrincipalName)
+
+    this.rmiHost = rmiHost
+    this.rmiPort = rmiPort
+    this.servicePrincipalName = servicePrincipalName
+
+    val launchParameters = GuiLaunchParameters(rmiHost, rmiPort, servicePrincipalName, overriddenUser)
+
     val activators = List(classOf[JettyBromptonActivator], classOf[GuiBromptonActivator], classOf[BrowserBromptonActivator])
-    val single = new SingleClasspathManager(props, activators)
+    val single = new SingleClasspathManager(true, activators, List( (classOf[GuiLaunchParameters], launchParameters) ) )
     single.start()
   }
 }

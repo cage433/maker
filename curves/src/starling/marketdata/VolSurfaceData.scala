@@ -15,18 +15,18 @@ object OilVolSurfaceDataType extends MarketDataType{
   type dataType = OilVolSurfaceData
   lazy val keys : List[OilVolSurfaceDataKey] = Market.all.filter(_.volatilityID.isDefined).map(OilVolSurfaceDataKey)
 
-  def marketDataKeyFelds = Set(marketField.field)
+  def marketDataKeyFields = Set(marketField.field)
   override def keyFields = Set(marketField.field, periodField.field, deltaField.field)
-  override def valueFields = Set(volatilityField.field)
-  def createKey(values: Map[Field, Any]) = OilVolSurfaceDataKey(Market.fromName(values(marketField.field).asInstanceOf[String]))
-  def createValue(values: List[Map[Field, Any]]) = {
+  override def valueFields = List(volatilityField.field)
+  def createKey(row: Row) = OilVolSurfaceDataKey(Market.fromName(row.string(marketField)))
+  def createValue(rows: List[Row]) = {
     val builder = new Builder()
-    values.foreach { row => {
-      val period = row(periodField.field).asInstanceOf[DateRange]
-      val vol = row(volatilityField.field).asInstanceOf[Percentage]
-      row(deltaField.field) match {
+    rows.foreach { row => {
+      val period = row[DateRange](periodField)
+      val vol = row[Percentage](volatilityField)
+      row.string(deltaField) match {
         case "ATM" => builder.addAtm(period, vol)
-        case delta:String => builder.add(period, delta.toDouble, vol)
+        case delta => builder.add(period, delta.toDouble, vol)
       }
     }}
     builder.build
@@ -56,20 +56,22 @@ case class OilVolSurfaceDataKey(market: CommodityMarket) extends MarketDataKey {
   type marketDataDBType = OilVolSurfaceData
   def dataType = OilVolSurfaceDataType
   def subTypeKey = market.toString
-  override def rows(data : OilVolSurfaceData) = (data.periods zipWithIndex).flatMap { case (period, index) => {
-    val atmVol = data.atmVols(index)
-    (data.skewDeltas zip data.skews).map { case (delta, vols) => {
-      Map(
-        OilVolSurfaceDataType.marketField.field -> market.name,
-        OilVolSurfaceDataType.periodField.field -> period,
-        OilVolSurfaceDataType.deltaField.field -> delta.toString,
-        OilVolSurfaceDataType.volatilityField.field -> vols(index))
-    }} ++ List(Map(
-        OilVolSurfaceDataType.marketField.field -> market.name,
-        OilVolSurfaceDataType.periodField.field -> period,
-        OilVolSurfaceDataType.deltaField.field -> "ATM",
-        OilVolSurfaceDataType.volatilityField.field -> atmVol))
-  }}
+  override def rows(data : OilVolSurfaceData, referenceDataLookup: ReferenceDataLookup) = (data.periods zipWithIndex).flatMap {
+    case (period, index) => {
+      val atmVol = data.atmVols(index)
+      (data.skewDeltas zip data.skews).map { case (delta, vols) => {
+        Row(
+          OilVolSurfaceDataType.marketField.field -> market.name,
+          OilVolSurfaceDataType.periodField.field -> period,
+          OilVolSurfaceDataType.deltaField.field -> delta.toString,
+          OilVolSurfaceDataType.volatilityField.field -> vols(index))
+      }} ++ List(Row(
+          OilVolSurfaceDataType.marketField.field -> market.name,
+          OilVolSurfaceDataType.periodField.field -> period,
+          OilVolSurfaceDataType.deltaField.field -> "ATM",
+          OilVolSurfaceDataType.volatilityField.field -> atmVol))
+    }
+  }
 
   def fieldValues = Map(OilVolSurfaceDataType.marketField.field -> market.name)
 }
@@ -160,10 +162,9 @@ object BradyFXVolSurfaceDataType extends MarketDataType {
   val periodField: FieldDetails = FieldDetails("Period")
   val deltaField: FieldDetails = FieldDetails("Delta")
   val volatilityField: FieldDetails = new PercentageLabelFieldDetails("Volatility")
-
-  def createKey(values: Map[Field, Any]) = throw new Exception("Implement if we need to do Metals VAR")
-  def createValue(values: List[Map[Field, Any]]) = throw new Exception("Implement if we need to do Metals VAR")
-  def marketDataKeyFelds = throw new Exception("Implement if we need to do Metals VAR")
+  def createKey(row: Row) = throw new Exception("Implement if we need to do Metals VAR")
+  def createValue(rows: List[Row]) = throw new Exception("Implement if we need to do Metals VAR")
+  def marketDataKeyFields = throw new Exception("Implement if we need to do Metals VAR")
   def keyFields = throw new Exception("Implement if we need to do Metals VAR")
   def valueFields = throw new Exception("Implement if we need to do Metals VAR")
   val fields = List(marketField, periodField, deltaField, volatilityField)
@@ -181,11 +182,11 @@ case class BradyFXVolSurfaceDataKey(market : FXMarket)  extends MarketDataKey {
   type marketDataDBType = BradyFXVolSurfaceData
   def subTypeKey = market.name
   def dataType = BradyFXVolSurfaceDataType
-  override def rows(data : BradyFXVolSurfaceData) = {
+  override def rows(data : BradyFXVolSurfaceData, referenceDataLookup: ReferenceDataLookup) = {
     (data.deltas zip data.vols).flatMap((tuple2) => {
         val (delta, vols) = tuple2
         (vols zip data.forwardDays).map { case (vol, day) =>
-        Map(
+        Row(
           BradyFXVolSurfaceDataType.marketField.field -> market.name,
           BradyFXVolSurfaceDataType.periodField.field -> day,
           BradyFXVolSurfaceDataType.deltaField.field -> delta.toString,
@@ -234,11 +235,11 @@ object BradyMetalVolsDataType extends MarketDataType {
     volatilityField,
     deltaField)
 
-  def marketDataKeyFelds = throw new Exception("Implement if we need to do Metals VAR")
+  def marketDataKeyFields = throw new Exception("Implement if we need to do Metals VAR")
   def keyFields = throw new Exception("Implement if we need to do Metals VAR")
   def valueFields = throw new Exception("Implement if we need to do Metals VAR")
-  def createKey(values: Map[Field, Any]) = throw new Exception("Implement if we need to do Metals VAR")
-  def createValue(values: List[Map[Field, Any]]) = throw new Exception("Implement if we need to do Metals VAR")
+  def createKey(row: Row) = throw new Exception("Implement if we need to do Metals VAR")
+  def createValue(rows: List[Row]) = throw new Exception("Implement if we need to do Metals VAR")
 }
 
 case class BradyMetalVolsDataKey(market : CommodityMarket) extends MarketDataKey {
@@ -246,14 +247,14 @@ case class BradyMetalVolsDataKey(market : CommodityMarket) extends MarketDataKey
   type marketDataDBType = BradyMetalVolsData
   def dataType = BradyMetalVolsDataType
   def subTypeKey =  market.name
-  override def rows(data : BradyMetalVolsData) = (data.vols).map{case((delta,period),vol) => {
-        Map(
-          BradyMetalVolsDataType.marketField.field -> market.name,
-          BradyMetalVolsDataType.periodField.field -> period,
-          BradyMetalVolsDataType.deltaField.field -> delta,
-          BradyMetalVolsDataType.volatilityField.field -> vol)
-
-      }}
+  override def rows(data : BradyMetalVolsData, referenceDataLookup: ReferenceDataLookup) = (data.vols).map {
+    case ((delta,period),vol) => Row(
+      BradyMetalVolsDataType.marketField.field -> market.name,
+      BradyMetalVolsDataType.periodField.field -> period,
+      BradyMetalVolsDataType.deltaField.field -> delta,
+      BradyMetalVolsDataType.volatilityField.field -> vol
+    )
+  }
 
   def fieldValues = Map(BradyMetalVolsDataType.marketField.field -> market.name)
 }

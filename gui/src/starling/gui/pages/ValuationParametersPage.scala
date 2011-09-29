@@ -25,14 +25,14 @@ case class ValuationParametersPage(tradeID:TradeIDLabel, reportParameters:Report
       }
     }
     ValuationParametersPageData(
-      reader.cachingReportService.tradeValuation(tradeID, reportParameters.curveIdentifier, timestampToUse),
+      reader.reportService.tradeValuation(tradeID, reportParameters.curveIdentifier, timestampToUse),
       reportParameters, tradeID)
   }
   def createComponent(context:PageContext, data:PageData, bookmark:Bookmark, browserSize:Dimension, previousPageData:Option[PreviousPageData]) = {
     new ValuationParametersPageComponent(context, data)
   }
 
-  override def bookmark(serverContext: StarlingServerContext) = ValuationParametersBookmark(tradeID, serverContext.reportService.createUserReport(reportParameters))
+  override def bookmark(serverContext: StarlingServerContext, pd:PageData) = ValuationParametersBookmark(tradeID, serverContext.reportService.createUserReport(reportParameters))
 }
 
 case class ValuationParametersBookmark(tradeID:TradeIDLabel, userReportData:UserReportData) extends StarlingBookmark {

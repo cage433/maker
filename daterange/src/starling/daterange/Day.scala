@@ -360,7 +360,7 @@ object Day extends TenorType {
    */
   private val dayArrayStart = calculateJulianDayNumber(1980, 1, 1)
   private val dayArray = {
-    val arrayEnd = calculateJulianDayNumber(2100, 1, 1)
+    val arrayEnd = calculateJulianDayNumber(2100, 1, 2)
     val array = new Array[Day](arrayEnd - dayArrayStart)
     for (jDay <- dayArrayStart until arrayEnd) {
       array(jDay - dayArrayStart) = constructFromJulianNumber(jDay)
