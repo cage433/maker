@@ -615,15 +615,14 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
     historySelector.show(addressBar.peer, 5, addressBar.size.height-1)
   }
 
-  private val settingsButton = new NavigationButton {
-    icon = BrowserIcons.icon("/icons/22x22/categories/preferences-system.png")
-    tooltip = "Go to the settings page"
-    reactions += {
-      case ButtonClicked(e) => {
-        pageContext.goTo(SettingsPage(), Modifiers(true, true))
-      }
-    }
-  }
+  private val viewSettingsAction = Action("") {pageContext.goTo(SettingsPage(), Modifiers(true, true))}
+  viewSettingsAction.icon = BrowserIcons.icon("/icons/22x22/categories/preferences-system.png")
+  viewSettingsAction.toolTip = "Go to the settings page"
+  private val settingsButton = new NavigationButton {action = viewSettingsAction}
+
+  peer.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke(KeyEvent.VK_S, InputEvent.CTRL_DOWN_MASK | InputEvent.ALT_DOWN_MASK), "viewSettingsAction")
+  peer.getActionMap.put("viewSettingsAction", viewSettingsAction.peer)
+  
   println("XXXXXXX " + this.getClass.getClassLoader)
   var currentComponent:PageComponent = new NullPageComponent()
   mainPanel.peer.add(currentComponent.peer)
