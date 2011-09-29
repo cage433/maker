@@ -26,7 +26,7 @@ trait MdDB {
   def checkIntegrity(): Unit
   def readAll(): Unit
   def marketDataSetNames(): List[String]
-  def observationDaysByMarketDataSet: Map[String, Set[Day]]
+  def observationDaysByMarketDataSet: MultiMap[String, Day]
   def latestVersionForMarketDataSets(): Map[MarketDataSet, Int]
   def latestObservationDaysFor(marketDataSets: List[MarketDataSet], marketDataType: MarketDataType): Option[Day]
   def latestExcelVersions(): Map[String, Int]

@@ -105,7 +105,7 @@ class MarketDataImporterTests extends StarlingSpec with ShouldMatchers with Befo
       }
 
       def withNoSource = updateThis {
-        when(marketDataStore.sourceFor(marketDataSet)) thenReturn None
+        when(marketDataStore.sourcesFor(marketDataSet)) thenReturn Nil
       }
 
       def sourceWithNoData() = withSource.updateThis {
@@ -121,10 +121,10 @@ class MarketDataImporterTests extends StarlingSpec with ShouldMatchers with Befo
       }
 
       private def withSource = updateThis {
-        when(marketDataStore.sourceFor(marketDataSet)) thenReturn Some(marketDataSource)
+        when(marketDataStore.sourcesFor(marketDataSet)) thenReturn List(marketDataSource)
       }
 
-      private val noData: Map[(Day, Day, MarketDataType), List[MarketDataEntry]] = Map()
+      private val noData: MultiMap[(Day, Day, MarketDataType), MarketDataEntry] = Map()
       private val noEntries: List[MarketDataEntry] = Nil
 
       private val noDataOnObservationDay = Map((observationDay, observationDay, marketDataType) → noEntries)

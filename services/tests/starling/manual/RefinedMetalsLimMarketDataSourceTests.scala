@@ -10,6 +10,7 @@ import starling.db.MarketDataSet._
 import starling.auth.AuthHandler
 import starling.utils.ThreadUtils
 import starling.utils.Broadcaster
+import starling.utils.ImplicitConversions._
 
 
 object RefinedMetalsLimMarketDataSourceTests {
@@ -39,7 +40,7 @@ object RefinedMetalsLimMarketDataSourceTests {
     }
     else {
       val source = new RefinedMetalsLimMarketDataSource(new LIMServer("ttraflonrh221", 6400))
-      val updates = DBMarketDataStore(init.props, init.starlingRichDB, Map(LIM → source))
+      val updates = DBMarketDataStore(init.props, init.starlingRichDB, MultiMap(LIM ->> source))
         .importer.getUpdates(12 Apr 2011, LIM)
 
       updates.get(LIM)

@@ -7,13 +7,17 @@ import scalaz.Scalaz._
 import collection.immutable.{Map, TreeMap}
 
 trait RichMaps {
+  type MultiMap[K, V] = Map[K, List[V]]
+
   implicit def enrichMap[K, V](value : Map[K,V]) = new RichMap(value)
-  implicit def enrichMultiMap[K, V](value : Map[K, Set[V]]) = new RichMultiMap[K, V](value)
+  implicit def enrichMultiMap[K, V](value : MultiMap[K, V]) = new RichMultiMap[K, V](value)
   implicit def enrichNestedMap[K1, K2, V](value: Map[K1, Map[K2, V]]) = new RichMap[K1, Map[K2, V]](value) {
     def flipNesting = value.toList.flatMap { case (k1, k2vs) => k2vs.map { case (k2, v) => (k2, (k1, v)) } }
       .groupInto(_.head, _.tail).mapValues(_.toMap)
   }
   implicit def enrichMutableMap[K, V](value: MMap[K, V]) = new RichMutableMap(value)
+
+  def MultiMap[K, V](entries: (K, List[V])*): MultiMap[K, V] = entries.toMap
 }
 
 class RichMap[K,V](map : Map[K,V]) {
@@ -51,13 +55,13 @@ class RichMap[K,V](map : Map[K,V]) {
   def ifDefined[B](f: (Map[K, V] => B)): Option[B] = map.isEmpty ? none[B] | some(f(map))
 }
 
-class RichMultiMap[K, V](map : Map[K, Set[V]]) extends RichMap[K, Set[V]](map) {
+class RichMultiMap[K, V](map : Map[K, List[V]]) extends RichMap[K, List[V]](map) {
   def contains(key : K, value : V) : Boolean = map.get(key).map(_.contains(value)).getOrElse(false)
   def contains(pair : (K, V)) : Boolean = contains(pair._1, pair._2)
-  def allValues: Set[V] = map.values.flatten.toSet
-  def union(k: K, v: Set[V]): Map[K, Set[V]] = map.getOrUpdate(k, old => old +++ v)
-  def union(kv: (K, Set[V])): Map[K, Set[V]] = map.getOrUpdate(kv._1, old => old +++ kv._2)
-  def union(other: Map[K, Set[V]]): Map[K, Set[V]] = other.foldLeft(map)(_.union(_))
+  def allValues: List[V] = map.values.flatten.toList
+  def union(k: K, v: List[V]): Map[K, List[V]] = map.getOrUpdate(k, old => (old ++ v).distinct)
+  def union(kv: (K, List[V])): Map[K, List[V]] = union(kv._1, kv._2)
+  def union(other: Map[K, List[V]]): Map[K, List[V]] = (map ++ other).mapValues(_.distinct)
 }
 
 class RichMutableMap[K, V](map: MMap[K, V]) {

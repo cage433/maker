@@ -48,12 +48,12 @@ class NewSchemaMdDB(db: DBTrait[RichResultSetRow], referenceDataLookup: Referenc
     }
   }
 
-  private val observationDaysByMarketDataSetCache = new SynchronizedVar[Map[String, Set[Day]]](db.queryWithResult(
+  private val observationDaysByMarketDataSetCache = new SynchronizedVar[MultiMap[String, Day]](db.queryWithResult(
         select("DISTINCT observationDay, marketDataSet")
          from ("MarketDataValue v")
     innerJoin ("MarketDataExtendedKey k", "k.id" eql "v.extendedKey")
         where ("observationDay" isNotNull)) { rs => (rs.getString("marketDataSet"), rs.getDay("observationDay")) }
-    .toMultiMap.withDefaultValue(Set.empty[Day])
+    .toMultiMap.withDefaultValue(List.empty[Day])
   )
 
   def observationDaysByMarketDataSet = observationDaysByMarketDataSetCache.get
@@ -224,7 +224,7 @@ class NewSchemaMdDB(db: DBTrait[RichResultSetRow], referenceDataLookup: Referenc
       values.values
     }
 
-    val timedData: Map[TimedMarketDataKey, List[Row]] =
+    val timedData: MultiMap[TimedMarketDataKey, Row] =
       mostRecentValues.toList.groupInto(kv => (kv._1._1), kv => (kv._1._2.row + kv._2._2)).mapValues(_.toList)
 
     timedData.mapValues(marketDataType.createValue(_)).toList

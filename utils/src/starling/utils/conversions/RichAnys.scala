@@ -56,6 +56,7 @@ class RichAny[T](protected val value: T) {
 
   def ::-(list: List[T]): List[T] = value :: list
   def ::-(anotherElem: T): List[T] = value :: anotherElem :: Nil
+  def ->>[V](vs: V*): (T, List[V]) = (value, vs.toList)
 
   private def perform(action: => Unit): T = { action; value }
 }

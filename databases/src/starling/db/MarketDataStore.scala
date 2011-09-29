@@ -93,16 +93,16 @@ object MarketDataStore {
 
   import MarketDataSet._
 
-  val pricingGroupsDefinitions = Map[PricingGroup, List[MarketDataSet]](
-    PricingGroup.Metals → List(ManualMetals, LimMetals, Neptune),
-    PricingGroup.LimOnly → List(LIM),
-    PricingGroup.System → List(Starling, LIM, System),
-    PricingGroup.Crude → List(Starling, LIM, Crude),
-    PricingGroup.LondonDerivatives → List(Starling, LondonDerivatives, LIM),
-    PricingGroup.GasolineRoW → List(Starling, GasolineRoW, LIM),
-    PricingGroup.GasOil → List(Starling, GasOil, LIM),
-    PricingGroup.BarryEckstein → List(Starling, BarryEckstein, System, LIM),
-    PricingGroup.LondonDerivativesOptions → List(Starling, LondonDerivativesOptions, System, LIM)
+  val pricingGroupsDefinitions = MultiMap[PricingGroup, MarketDataSet](
+    PricingGroup.Metals ->> (ManualMetals, LimMetals, Neptune),
+    PricingGroup.LimOnly ->> LIM,
+    PricingGroup.System ->> (Starling, LIM, System),
+    PricingGroup.Crude ->> (Starling, LIM, Crude),
+    PricingGroup.LondonDerivatives ->> (Starling, LondonDerivatives, LIM),
+    PricingGroup.GasolineRoW ->> (Starling, GasolineRoW, LIM),
+    PricingGroup.GasOil ->> (Starling, GasOil, LIM),
+    PricingGroup.BarryEckstein ->> (Starling, BarryEckstein, System, LIM),
+    PricingGroup.LondonDerivativesOptions ->> (Starling, LondonDerivativesOptions, System, LIM)
   )
 
   val manuallyEditableMarketDataSets = Set(ManualMetals, Starling)
@@ -138,7 +138,6 @@ trait MarketDataStore {
   def excelDataSets: List[String]
 
   def importData(marketDataSelection: MarketDataSelection, observationDay: Day): SaveResult
-
   def importFor(observationDay: Day, marketDataSets: MarketDataSet*): SaveResult
 
   def latest(selection: MarketDataSelection): Int
@@ -162,7 +161,6 @@ trait MarketDataStore {
   def marketDataTypes(marketDataIdentifier: MarketDataIdentifier): List[MarketDataType]
 
   def observationDaysByExcel(): Map[String, Set[Day]]
-
   def observationDaysByPricingGroup(): Map[PricingGroup, Set[Day]]
 
   def pivot(marketDataIdentifier: MarketDataIdentifier, marketDataType: MarketDataType): PivotTableDataSource
@@ -177,7 +175,7 @@ trait MarketDataStore {
 
   def readLatest[T <: MarketData](marketDataSet: MarketDataSet, timedKey: TimedMarketDataKey): Option[T]
 
-  def save(marketDataSetToData: Map[MarketDataSet, List[MarketDataEntry]]): SaveResult
+  def save(marketDataSetToData: MultiMap[MarketDataSet, MarketDataEntry]): SaveResult
 
   def save(marketDataSet: MarketDataSet, timedKey: TimedMarketDataKey, marketData: MarketData): Int
 
@@ -187,14 +185,12 @@ trait MarketDataStore {
 
   def snapshots(): List[SnapshotID]
 
-  def snapshotsByMarketDataSelection(): Map[MarketDataSelection, List[SnapshotIDLabel]]
+  def snapshotsByMarketDataSelection(): MultiMap[MarketDataSelection, SnapshotIDLabel]
 
   def snapshotFromID(snapshotID: Int): Option[SnapshotID]
-
   def snapshotFromID(snapshotID: Option[Int]): Option[SnapshotID] = snapshotID.map(snapshotFromID(_)).flatOpt
 
-  def sourceFor(marketDataSet: MarketDataSet): Option[MarketDataSource]
-
+  def sourcesFor(marketDataSet: MarketDataSet): List[MarketDataSource]
   def sourcesFor(pricingGroup: PricingGroup): List[MarketDataSource]
 }
 
@@ -336,7 +332,7 @@ class MarketDataTags(db: DBTrait[RichResultSetRow]) {
 
   private def snapshotIDFromResultSetRow(rs: RichResultSetRow) = SnapshotID(rs)
 
-  def snapshotsByMarketDataSelection(): Map[MarketDataSelection, List[SnapshotIDLabel]] = {
+  def snapshotsByMarketDataSelection(): MultiMap[MarketDataSelection, SnapshotIDLabel] = {
     snapshots().groupBy(_.marketDataSelection).map {
       case (selection, snapshots) => selection -> snapshots.map(_.label).sortWith(_ > _)
     }
@@ -356,8 +352,9 @@ class MarketDataTags(db: DBTrait[RichResultSetRow]) {
   }
 }
 
+
 object DBMarketDataStore {
-  def apply(props: Props, db: DBTrait[RichResultSetRow], marketDataSources: Map[MarketDataSet, MarketDataSource],
+  def apply(props: Props, db: DBTrait[RichResultSetRow], marketDataSources: MultiMap[MarketDataSet, MarketDataSource],
     broadcaster: Broadcaster = Broadcaster.Null, referenceDataLookup: ReferenceDataLookup = ReferenceDataLookup.Null): DBMarketDataStore = {
 
     val mddb = if (props.UseFasterMarketDataSchema()) new NewSchemaMdDB(db, referenceDataLookup) else new SlowMdDB(db)
@@ -367,7 +364,7 @@ object DBMarketDataStore {
 }
 
 // TODO [12 May 2011] move me somewhere proper
-class DBMarketDataStore(db: MdDB, tags: MarketDataTags, val marketDataSources: Map[MarketDataSet, MarketDataSource],
+class DBMarketDataStore(db: MdDB, tags: MarketDataTags, val marketDataSources: MultiMap[MarketDataSet, MarketDataSource],
   broadcaster: Broadcaster, referenceDataLookup: ReferenceDataLookup) extends MarketDataStore with Log {
 
   db.checkIntegrity()
@@ -380,8 +377,8 @@ class DBMarketDataStore(db: MdDB, tags: MarketDataTags, val marketDataSources: M
     db.readAll()
   }
 
-  def sourceFor(marketDataSet: MarketDataSet) = marketDataSources.get(marketDataSet)
-  def sourcesFor(pricingGroup: PricingGroup) = marketDataSets(MarketDataSelection(Some(pricingGroup))).flatMap(sourceFor(_))
+  def sourcesFor(marketDataSet: MarketDataSet) = marketDataSources(marketDataSet)
+  def sourcesFor(pricingGroup: PricingGroup) = marketDataSets(MarketDataSelection(Some(pricingGroup))).flatMap(sourcesFor(_))
 
   private lazy val excelDataSetsCache = new SynchronizedVar(db.marketDataSetNames().collect {
     case name if name.startsWith(MarketDataSet.excelPrefix) => name.stripPrefix(MarketDataSet.excelPrefix)
@@ -478,7 +475,7 @@ class DBMarketDataStore(db: MdDB, tags: MarketDataTags, val marketDataSources: M
     save(Map(marketDataSet -> dataX.toList))
   }
 
-  def save(marketDataSetToData: Map[MarketDataSet, List[MarketDataEntry]]): SaveResult = {
+  def save(marketDataSetToData: MultiMap[MarketDataSet, MarketDataEntry]): SaveResult = {
     val setToUpdates = marketDataSetToData.map { case (marketDataSet, values) => {
       (marketDataSet, values.map(entry => entry.toUpdate(db.readLatest(entry.dataIdFor(marketDataSet)))))
     } }
@@ -558,7 +555,7 @@ class DBMarketDataStore(db: MdDB, tags: MarketDataTags, val marketDataSources: M
 
   def importFor(observationDay: Day, marketDataSets: MarketDataSet*) = importLock.synchronized {
     log.infoWithTime("saving market data: " + observationDay) {
-      val updates: Map[MarketDataSet, scala.List[MarketDataUpdate]] = importer.getUpdates(observationDay, marketDataSets: _*)
+      val updates: MultiMap[MarketDataSet, MarketDataUpdate] = importer.getUpdates(observationDay, marketDataSets: _*)
 
       log.infoWithTime("Number of updates: " + updates.mapValues(_.toList.size)) {
         saveActions(updates)
@@ -596,7 +593,7 @@ class DBMarketDataStore(db: MdDB, tags: MarketDataTags, val marketDataSources: M
 
   def snapshotFromID(snapshotID: Int): Option[SnapshotID] = tags.snapshotFromID(snapshotID)
   def snapshots(): List[SnapshotID] = tags.snapshots()
-  def snapshotsByMarketDataSelection(): Map[MarketDataSelection, List[SnapshotIDLabel]] = tags.snapshotsByMarketDataSelection()
+  def snapshotsByMarketDataSelection(): MultiMap[MarketDataSelection, SnapshotIDLabel] = tags.snapshotsByMarketDataSelection()
   def observationDaysByPricingGroup(): Map[PricingGroup, Set[Day]] = observationDaysByPricingGroupCache.mapValues(_.toSet)
   def observationDaysByExcel(): Map[String, Set[Day]] = observationDaysByExcelCache.mapValues(_.toSet)
 

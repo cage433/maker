@@ -38,10 +38,10 @@ object ErrorState extends StarlingEnum(classOf[ErrorState], (es: ErrorState) => 
   def apply(hasWarnings: Boolean, hasErrors: Boolean): ErrorState = if (hasErrors) Error else if (hasWarnings) Warning else Good
 }
 
-case class PivotQuantity(values:Map[UOM,Double], errors:Map[String,List[StackTrace]], warning:Option[String]=None) extends Serializable {
+case class PivotQuantity(values:Map[UOM,Double], errors:MultiMap[String,StackTrace], warning:Option[String]=None) extends Serializable {
   def this(values:Map[UOM,Double], errors:Set[Throwable]) = this(values, Map() ++ PivotQuantity.throwableToError(errors))
   def this(value:Double, errors:Set[Throwable]) = this(Map(UOM.SCALAR->value), errors)
-  def this(value:Double, uom:UOM) = this(Map(uom->value), Map[String,List[StackTrace]]())
+  def this(value:Double, uom:UOM) = this(Map(uom->value), MultiMap[String, StackTrace]())
   def this(throwables:Set[Throwable]) = this(Map[UOM,Double](), throwables)
   def this(throwable:Throwable) = this(Set(throwable))
   def copyErrors(errors: Set[Throwable]) = copy(errors = PivotQuantity.throwableToError(errors))
@@ -175,7 +175,7 @@ trait PivotQuantityIsNumeric extends Numeric[PivotQuantity] {
 
 object PivotQuantity {
   implicit object PivotQuantityIsNumeric extends PivotQuantityIsNumeric
-  val NULL = new PivotQuantity(Map[UOM,Double](), Map[String,List[StackTrace]]())
+  val NULL = new PivotQuantity(Map[UOM,Double](), MultiMap[String, StackTrace]())
   def sum(qs : Seq[PivotQuantity]) = (PivotQuantity.NULL /: qs)(_+_)
   def create(values:Map[UOM,Double], errors:Set[Throwable]) = new PivotQuantity(values, errors)
   
@@ -190,7 +190,7 @@ object PivotQuantity {
   def apply(value: Quantity): PivotQuantity = value.pq
   def apply(value: Quantity, errors: Set[Throwable]): PivotQuantity = this.apply(value).copyErrors(errors)
 
-  def throwableToError(errors: Set[Throwable]): Map[String, List[StackTrace]] =
+  def throwableToError(errors: Set[Throwable]): MultiMap[String, StackTrace] =
     errors.map{StackTrace.apply}.groupBy(_.message).mapValues(_.toList)
 }
 

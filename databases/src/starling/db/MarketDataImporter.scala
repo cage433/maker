@@ -7,13 +7,14 @@ import starling.utils.ImplicitConversions._
 
 
 class MarketDataImporter(marketDataStore: MarketDataStore) extends Log {
-  def getUpdates(observationDay: Day, marketDataSets: MarketDataSet*) = marketDataSets.toMapWithValues(marketDataSet =>
-    marketDataStore.sourceFor(marketDataSet).flatMapL { marketDataSource =>
-      log.infoWithTime("importing: %s (%s)" % (marketDataSet.name, marketDataSource.getClass.getName)) {
-        updatesFor(observationDay, marketDataSet, marketDataSource)
+  def getUpdates(observationDay: Day, marketDataSets: MarketDataSet*): MultiMap[MarketDataSet, MarketDataUpdate] =
+    marketDataSets.toMapWithValues(marketDataSet =>
+      marketDataStore.sourcesFor(marketDataSet).flatMap { marketDataSource =>
+        log.infoWithTime("importing: %s (%s)" % (marketDataSet.name, marketDataSource.name)) {
+          updatesFor(observationDay, marketDataSet, marketDataSource)
+        }
       }
-    }
-  )
+    )
 
   private def updatesFor(observationDay: Day, marketDataSet: MarketDataSet, marketDataSource: MarketDataSource) = {
     def logCount(name: String)(updates: List[MarketDataUpdate]) = updates.groupBy(_.tag).foreach { case (tag, updatesForTag) => {

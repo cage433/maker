@@ -247,10 +247,6 @@ case class CurveIdentifierLabel(
         envModifiers:SortedSet[EnvironmentModifierLabel]) {
 
   def copyVersion(version: Int) = copy(marketDataIdentifier = marketDataIdentifier.copyVersion(version))
-
-  private def contains(daysForPricingGroup: Map[PricingGroup, Set[Day]]) : Boolean = {
-    marketDataIdentifier.pricingGroupMatches(pricingGroup => daysForPricingGroup.contains(pricingGroup, tradesUpToDay))
-  }
 }
 
 object CurveIdentifierLabel{

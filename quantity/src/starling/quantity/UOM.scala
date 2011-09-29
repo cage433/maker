@@ -5,8 +5,8 @@ import starling.utils.cache.CacheFactory
 
 import starling.utils.ImplicitConversions._
 import starling.utils.Pattern._
-import starling.utils.{StarlingEnum, CaseInsensitive}
 import collection.immutable.Map
+import starling.utils.{StarlingEnum, CaseInsensitive}
 
 
 object UOM extends StarlingEnum(classOf[UOM], (u: UOM) => u.toString, ignoreCase = true) {
@@ -14,7 +14,7 @@ object UOM extends StarlingEnum(classOf[UOM], (u: UOM) => u.toString, ignoreCase
 
   def apply(uomType: UOMType, symbol: UOMSymbol, scale: BigDecimal): UOM = new UOM(Ratio(uomType.prime, 1), Ratio(symbol.prime, 1), scale)
 
-  //  val Parse: Extractor[String, UOM] = Extractor.from[String](value => fromStringOption(value))
+  override val Parse: Extractor[Any, UOM] = Extractor.from[Any]((a: Any) => fromStringOption(a.toString))
   val Currency: Extractor[Any, UOM] = Parse.filter(_.isCurrency)
 
   import UOMSymbol._

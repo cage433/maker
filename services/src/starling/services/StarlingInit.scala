@@ -121,23 +121,23 @@ class StarlingInit( val props: Props,
   lazy val (fwdCurveAutoImport, marketDataStore) = log.infoWithTime("Creating Market Data Store") {
     import MarketDataSet._
 
-    val marketDataSources = Map(
-      LimMetals → new RefinedMetalsLimMarketDataSource(limServer),
-      LIM → new OilAndMetalsVARLimMarketDataSource(limServer),
-      System → new FwdCurveDbMarketDataSource(varSqlServerDB, businessCalendars, 1),
-      Crude → new FwdCurveDbMarketDataSource(varSqlServerDB, businessCalendars, 5),
-      LondonDerivatives → new FwdCurveDbMarketDataSource(varSqlServerDB, businessCalendars, 4),
-      BarryEckstein → new FwdCurveDbMarketDataSource(varSqlServerDB, businessCalendars, 3),
-      GasolineRoW → new FwdCurveDbMarketDataSource(varSqlServerDB, businessCalendars, 21),
-      GasOil → new FwdCurveDbMarketDataSource(varSqlServerDB, businessCalendars, 7),
-      LondonDerivativesOptions → new FwdCurveDbMarketDataSource(varSqlServerDB, businessCalendars, 45),
+    val marketDataSources = MultiMap[MarketDataSet, MarketDataSource](
+      LimMetals ->> new RefinedMetalsLimMarketDataSource(limServer),
+      LIM ->> new OilAndMetalsVARLimMarketDataSource(limServer),
+      System ->> new FwdCurveDbMarketDataSource(varSqlServerDB, businessCalendars, 1),
+      Crude ->> new FwdCurveDbMarketDataSource(varSqlServerDB, businessCalendars, 5),
+      LondonDerivatives ->> new FwdCurveDbMarketDataSource(varSqlServerDB, businessCalendars, 4),
+      BarryEckstein ->> new FwdCurveDbMarketDataSource(varSqlServerDB, businessCalendars, 3),
+      GasolineRoW ->> new FwdCurveDbMarketDataSource(varSqlServerDB, businessCalendars, 21),
+      GasOil ->> new FwdCurveDbMarketDataSource(varSqlServerDB, businessCalendars, 7),
+      LondonDerivativesOptions ->> new FwdCurveDbMarketDataSource(varSqlServerDB, businessCalendars, 45),
       //TrinityLive → new TrinityMarketDataSource(trintityRichDB, BradyProfilePricingGroup.liveBradyProfilePricingGroup),
       //GalenaLive → new GalenaMarketDataSource(galenaRichDB, BradyProfilePricingGroup.liveBradyProfilePricingGroup),
       //GalenaFullCurve → new GalenaMarketDataSource(galenaRichDB, BradyProfilePricingGroup.fullCurveBradyProfilePricingGroup),
-      Neptune → CompositeMarketDataSource(new NeptuneGradeAreaBenchmarksMarketDataSource(neptuneRichDB),
-                                          new NeptuneCountryBenchmarksMarketDataSource(neptuneRichDB),
-                                          new NeptuneFreightParityMarketDataSource(neptuneRichDB))
-    )
+      Neptune ->> (new NeptuneGradeAreaBenchmarksMarketDataSource(neptuneRichDB),
+                   new NeptuneCountryBenchmarksMarketDataSource(neptuneRichDB),
+                   new NeptuneFreightParityMarketDataSource(neptuneRichDB))
+    ).withDefaultValue(Nil)
 
     lazy val mds = Log.infoWithTime("Creating DBMarketDataStore") {
       DBMarketDataStore(props, starlingRichDB, marketDataSources, rmiBroadcaster, referenceDataLookup)

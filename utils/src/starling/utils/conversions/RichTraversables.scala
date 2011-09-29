@@ -7,8 +7,8 @@ import collection.mutable.{Map => MMap}
 trait RichTraversables {
   implicit def enrichTraversable[A](traversable: Traversable[A]): RichTraversable[A] = new RichTraversable(traversable)
   implicit def enrichPairTraversable[A, B](traversable: Traversable[(A, B)]) = new RichTraversable(traversable) {
-    def toMultiMap: Map[A, Set[B]] = MMap.empty[A, Set[B]].updateIt { map =>
-      traversable.foreach { case (key, value) => map.put(key, (map.getOrElse(key, Set[B]()) + value)) }
+    def toMultiMap: MultiMap[A, B] = MMap.empty[A, List[B]].updateIt { map =>
+      traversable.foreach { case (key, value) => map.put(key, value :: map.getOrElse(key, List.empty[B])) }
     }.toMap
     def swap: Traversable[(B, A)] = traversable.map(_.swap)
     def toMutableMap: MMap[A, B] = MMap.empty[A, B] ++ traversable
@@ -32,8 +32,8 @@ class RichTraversable[A](traversable: Traversable[A]) {
   def toMapWithKeys[K](keyF: A => K):                  Map[K, A]      = pair(keyF).swap.toMap
   def toMapWithSomeKeys[K](keyF: A => Option[K]):      Map[K, A]      = optPair(keyF).swap.toMap
   def toMapWithManyKeys[K](keyF: A => List[K]):        Map[K, A]      = pairWithTraversable(keyF).swap.toMap
-  def toMultiMapWithSomeKeys[K](keyF: A => Option[K]): Map[K, Set[A]] = optPair(keyF).swap.toMultiMap
-  def toMultiMapWithKeys[K](keyF: A => K):             Map[K, Set[A]] = pair(keyF).swap.toMultiMap
+  def toMultiMapWithSomeKeys[K](keyF: A => Option[K]): MultiMap[K, A] = optPair(keyF).swap.toMultiMap
+  def toMultiMapWithKeys[K](keyF: A => K):             MultiMap[K, A] = pair(keyF).swap.toMultiMap
   def toMapWithValues[V](valueF: A => V):              Map[A, V]      = pair(valueF).toMap
   def toMapWithSomeValues[V](valueF: A => Option[V]):  Map[A, V]      = optPair(valueF).toMap;
 

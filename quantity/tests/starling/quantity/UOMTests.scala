@@ -9,6 +9,7 @@ import org.scalatest.matchers.ShouldMatchers
 import org.testng.annotations.{DataProvider, Test}
 import starling.utils.ScalaTestUtils
 import ScalaTestUtils._
+import starling.utils.ImplicitConversions._
 
 class UOMTests extends TestNGSuite with ShouldMatchers {
   @Test
@@ -133,5 +134,10 @@ class UOMTests extends TestNGSuite with ShouldMatchers {
   @Test(dataProvider = "symbolMapConversionSupplier")
   def testSymbolMapConversion(uom : UOM){
     assertEquals(UOM.fromSymbolMap(uom.asSymbolMap), uom)
+  }
+
+  @Test def extractorTest {
+    List("USD", "MT", "USD/MT").flatMap { _ partialMatch { case UOM.Parse(uom) => uom } } should be ===
+      List(UOM.USD, UOM.MT, UOM.USD / UOM.MT)
   }
 }
