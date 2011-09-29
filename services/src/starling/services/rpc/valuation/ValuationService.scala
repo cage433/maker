@@ -15,13 +15,14 @@ import com.trafigura.tradecapture.internal.refinedmetal.Metal
 import starling.titan._
 import com.trafigura.edm.shared.types.TitanId
 import java.io.{FileWriter, BufferedWriter}
-import com.trafigura.services.{TitanSerializableDate}
 import starling.utils.{Log, Stopwatch}
 import starling.rmi.RabbitEventDatabase
 
 import starling.tradestore.TradeStore
 import starling.daterange.Day
 import com.trafigura.edm.logistics.inventory.{EDMLogisticsQuota, EDMInventoryItem}
+import com.trafigura.services.{TitanSnapshotIdentifier, TitanSerializableDate}
+
 
 /**
  * Valuation service implementations

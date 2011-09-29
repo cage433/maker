@@ -6,6 +6,7 @@ import collection.mutable.HashMap
 import com.trafigura.services._
 
 
+
 @Path("/Example")
 trait ExampleServiceApi extends DocumentedService {
   @Path("ReferenceInterestRate/{source}") @Example("LIBOR")
@@ -33,7 +34,8 @@ object ExampleService extends ExampleServiceApi {
   private val rates: HashMap[ReferenceRateSource, ReferenceInterestRate] = new HashMap
 
   def getReferenceInterestRate(source: ReferenceRateSource) = rates.getOrElseUpdate(source,
-    ReferenceInterestRate(TitanSerializableDate(Day.today.toLocalDate), source, RelativeMaturity.get("1D"),
+    ReferenceInterestRate(TitanSnapshotIdentifier("dummy", Day.today.toLocalDate),
+      TitanSerializableDate(Day.today.toLocalDate), source, RelativeMaturity.get("1D"),
       TitanSerializableCurrency("GBP"), TitanSerializablePercentage(0.123)))
 
   def getReferenceInterestRates(source: ReferenceRateSource) =
@@ -68,8 +70,10 @@ object ExampleClient {
 
     println(exampleService.getReferenceInterestRate(ReferenceRateSource("LIBOR")))
 
-    val rate = ReferenceInterestRate(TitanSerializableDate(Day.today.toLocalDate), ReferenceRateSource("LIBOR"), NamedMaturity.ON,
+    val rate = ReferenceInterestRate(TitanSnapshotIdentifier("dummy", Day.today.toLocalDate),
+      TitanSerializableDate(Day.today.toLocalDate), ReferenceRateSource("LIBOR"), NamedMaturity.ON,
       TitanSerializableCurrency("GBP"), TitanSerializablePercentage(0.987))
+
     exampleService.setReferenceInterestRate(ReferenceRateSource("LIBOR"),
       rate)
 

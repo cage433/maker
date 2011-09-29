@@ -111,10 +111,7 @@ class FC2FacilityImpl(
   def pricingGroupLatestMarketDataVersions = Map() ++ snapshotDatabase.latestPricingGroupVersions.filterKeys(pricingGroups()).toMap
 
   def latestSnapshotID(pricingGroup:PricingGroup, observationDay:Day) = {
-    snapshotDatabase.latestSnapshot(pricingGroup, observationDay) match {
-      case None => None
-      case Some(x) => Some(label(x))
-    }
+    snapshotDatabase.latestSnapshot(pricingGroup, observationDay) map(label)
   }
 
   private def marketDataReaderFor(marketDataIdentifier:MarketDataPageIdentifier) = {

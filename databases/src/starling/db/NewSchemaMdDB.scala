@@ -77,10 +77,22 @@ class NewSchemaMdDB(db: DBTrait[RichResultSetRow], referenceDataLookup: Referenc
 //  }.toSet
 
 
+
   override def latestVersionForAllMarketDataSets() = {
     db.queryWithResult("SELECT extendedKey, MAX(commitid) AS maxCommitId FROM MarketDataValue GROUP BY extendedKey ORDER BY maxCommitId") { rs =>
       (extendedKeys(rs.getInt("extendedKey")).marketDataSet, rs.getInt("maxCommitId"))
     }.toMap
+  }
+
+  // TODO [29 Sep 2011] Make quicker (i.e. use extended key cache)
+  def latestObservationDaysFor(marketDataSets: List[MarketDataSet], marketDataType: MarketDataType) = {
+    db.queryWithOneResult(
+       select("MAX(v.observationDay) AS maxObservationDay")
+         from("MarketDataValue v")
+    innerJoin("MarketDataExtendedKey ek", "ek.id" eql "v.extendedKey")
+        where("ek.marketDataType" eql PersistAsBlob(marketDataType))
+          and("ek.marketDataSet" in marketDataSets.map(_.name))
+    ) { rs => rs.getDay("maxObservationDay") }
   }
 
   def latestVersionForMarketDataSets(): Map[MarketDataSet, Int] = {

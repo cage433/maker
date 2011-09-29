@@ -28,6 +28,7 @@ trait MdDB {
   def marketDataSetNames(): List[String]
   def observationDaysByMarketDataSet: Map[String, Set[Day]]
   def latestVersionForMarketDataSets(): Map[MarketDataSet, Int]
+  def latestObservationDaysFor(marketDataSets: List[MarketDataSet], marketDataType: MarketDataType): Option[Day]
   def latestExcelVersions(): Map[String, Int]
   def store(data: Iterable[MarketDataUpdate], marketDataSet: MarketDataSet): SaveResult
   def maxVersionForMarketDataSetNames(names: List[String]): Option[Int]

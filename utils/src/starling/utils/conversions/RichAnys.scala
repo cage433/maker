@@ -7,12 +7,8 @@ import scalaz.Scalaz._
 trait RichAnys {
   implicit def enrichAny[T](value: T) = new RichAny(value)
 
-  def notNull(namedValues: (String, Any)*) {
-    val namesOfMissingValues = namedValues.toList.filter(_._2 == null)._1
-
-    if (namesOfMissingValues.size > 0) {
-      throw new IllegalArgumentException("Missing values: " + namesOfMissingValues.mkString(", "))
-    }
+  def notNull(namedValues: (String, Any)*) = namedValues.filter(_._2 == null)._1.ifDefined { namesOfMissingValues =>
+    throw new IllegalArgumentException("Missing values: " + namesOfMissingValues.mkString(", "))
   }
 }
 

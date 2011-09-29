@@ -9,6 +9,7 @@ trait RichOption {
     def either[L, R](l: => L, r: A => R): Either[L, R] = option.fold(a => Right(r(a)), Left(l))
     def optPair[B](b: B): Option[(A, B)] = option.map(_ → b)
     def flatMapL[B](f: A => List[B]): List[B] = option.map(f).getOrElse(Nil)
+    def getOrThrow(msg: => String) = option.getOrElse(throw new Exception(msg))
   }
   implicit def enrichTraversableOption[A](option : Option[Traversable[A]]) =
     new RichTraversableOption(option)
