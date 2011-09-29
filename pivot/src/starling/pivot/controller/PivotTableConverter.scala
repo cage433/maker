@@ -451,10 +451,6 @@ case class PivotTableConverter(otherLayoutInfo:OtherLayoutInfo = OtherLayoutInfo
         case Some(_) => (axisCellUpdateInfo(rowDataArray).toList, axisCellUpdateInfo(colData).toList)
       }
 
-      println("")
-      println("CUOMS " + columnUOMs.length + " : " + columnUOMs.toList)
-      println("")
-
       PivotGrid(rowDataArray, colData, mainData, columnUOMs, cellUpdateInfoList, rowAxisCellUpdateInfo, colAxisCellUpdateInfo)
     }
   }

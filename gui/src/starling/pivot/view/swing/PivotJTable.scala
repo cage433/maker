@@ -16,10 +16,10 @@ import starling.browser.common.GuiUtils._
 import java.util.{StringTokenizer, Hashtable}
 import swing.{MenuItem, Action}
 import starling.pivot.model.{AxisCell, PivotTableModel}
-import java.awt.event._
 import org.jdesktop.swingx.renderer.DefaultTableRenderer
 import starling.browser.Modifiers
 import starling.pivot.{ColumnDetails, PivotFormatter, EditableCellState, TableCell}
+import java.awt.event._
 
 object PivotJTable {
   val RowHeight = 16
@@ -51,6 +51,11 @@ class PivotJTable(tableModel:PivotJTableModel, pivotTableView:PivotTableView, mo
           }
         }}
         tableModel.deleteCells(deletableCells, true)
+      } else if (e.getKeyCode == KeyEvent.VK_ESCAPE) {
+        if (getCellEditor == null) {
+          putClientProperty("JTable.autoStartsEdit", false)
+          clearSelection()
+        } 
       } else if (e.getKeyCode == KeyEvent.VK_S && (e.getModifiersEx & InputEvent.CTRL_DOWN_MASK) == InputEvent.CTRL_DOWN_MASK) {
         putClientProperty("JTable.autoStartsEdit", false)
         pivotTableView.publish(SavePivotEdits)
@@ -320,7 +325,7 @@ class PivotJTable(tableModel:PivotJTableModel, pivotTableView:PivotTableView, mo
 
   override def removeEditor() {
     super.removeEditor()
-    tableModel.finishedEditing
+    tableModel.finishedEditing()
   }
 
   def getSelectedCells = {
@@ -341,7 +346,7 @@ class PivotJTable(tableModel:PivotJTableModel, pivotTableView:PivotTableView, mo
     }
   }
 
-  def setSelectedCells(cells:List[(Int,Int)]) = {
+  def setSelectedCells(cells:List[(Int,Int)]) {
     for ((row,col) <- cells) {
       if (row >= 0 && row < getRowCount && col >= 0 && col < getColumnCount()) {
         addRowSelectionInterval(row,row)
@@ -351,19 +356,19 @@ class PivotJTable(tableModel:PivotJTableModel, pivotTableView:PivotTableView, mo
   }
 
   addMouseListener(new MouseAdapter {
-    override def mousePressed(e:MouseEvent) = {
+    override def mousePressed(e:MouseEvent) {
       val point = e.getPoint
       val table = e.getSource.asInstanceOf[JXTable]
       val (row, col) = (table.rowAtPoint(point), table.columnAtPoint(point))
       if ((row != -1) && (col != -1)) {
         if (SwingUtilities.isLeftMouseButton(e)) {
-          if (e.getClickCount() == 2) {
+          if (e.getClickCount == 2) {
             val tableSelection = tableModel.mapCellToFields(row, col)
             if (tableSelection.nonEmpty) {
               val modifiers = Modifiers.modifiersEX(e.getModifiersEx)
               pivotTableView.publish(TableDoubleClickEvent(model.getCurrentPivotFieldsState.filters, tableSelection, modifiers))
             }
-          } else if (e.getClickCount() == 1) {
+          } else if (e.getClickCount == 1) {
             val cellRect = table.getCellRect(row, col, true)
             table.getValueAt(row, col) match {
               case tableCell:TableCell => {
@@ -495,7 +500,7 @@ class PivotJTable(tableModel:PivotJTableModel, pivotTableView:PivotTableView, mo
     }
   })
 
-  override def doFind = {}
+  override def doFind() {}
 
   // Preparing the editor like this means that when you start typing the text already there is replaced. However, this messes up the F2 behaviour.
   override def prepareEditor(editor:TableCellEditor, row:Int, column:Int) = {
@@ -511,7 +516,7 @@ class PivotJTable(tableModel:PivotJTableModel, pivotTableView:PivotTableView, mo
         }
       }
       comp.setText(text)
-      comp.selectAll
+      comp.selectAll()
     }
     e
   }
@@ -533,7 +538,7 @@ class PivotJTable(tableModel:PivotJTableModel, pivotTableView:PivotTableView, mo
       if (cellEditor != null && !cellEditor.stopCellEditing) {
 
       } else {
-        requestFocus
+        requestFocus()
       }
     } else {
       editCellAt(leadRow, leadColumn, null)
@@ -547,7 +552,7 @@ class PivotJTable(tableModel:PivotJTableModel, pivotTableView:PivotTableView, mo
             tc.setCaretPosition(tc.getText.length)
           })
         }
-        editorComp.requestFocus
+        editorComp.requestFocus()
       }
     }
   }
@@ -575,6 +580,6 @@ class PivotJTable(tableModel:PivotJTableModel, pivotTableView:PivotTableView, mo
         })
       }
     }
-    sb.toString
+    sb.toString()
   }
 }
