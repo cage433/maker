@@ -165,6 +165,10 @@ class StarlingBrowserTabbedPane(homePage: Page, startPage:Either[Page,(ServerCon
   peer.getInputMap(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT).put(KeyStroke.getKeyStroke(KeyEvent.VK_T, InputEvent.CTRL_DOWN_MASK), "newTabAction")
   peer.getActionMap.put("newTabAction", newTabAction.peer)
 
+  private val newTabAtCurrentPageAction = Action("New Tab At Current Page") {createStarlingBrowser(pageOrBuildPage = Left(selectedPage))}
+  peer.getInputMap(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT).put(KeyStroke.getKeyStroke(KeyEvent.VK_T, InputEvent.CTRL_DOWN_MASK | InputEvent.SHIFT_DOWN_MASK), "newTabAtCurrentPageAction")
+  peer.getActionMap.put("newTabAtCurrentPageAction", newTabAtCurrentPageAction.peer)
+
   peer.getInputMap(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT).put(KeyStroke.getKeyStroke(KeyEvent.VK_F1, 0), "helpAction")
   peer.getActionMap.put("helpAction", Action("helpAction"){createStarlingBrowser(true, Left(HelpPage))}.peer)
 
