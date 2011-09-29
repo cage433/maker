@@ -36,7 +36,7 @@ abstract class AverageOption(
     }
   }
 
-  val valuationCCY = strike.numeratorUOM.toBaseCurrency
+  val valuationCCY = strike.numeratorUOM.inBaseCurrency
 }
 
 abstract class SingleAverageOption(
@@ -84,7 +84,7 @@ abstract class SingleAverageOption(
     undiscountedPrice(env)._1 * volume
   }
 
-  def valuationCCY = strike.numeratorUOM.toBaseCurrency
+  def valuationCCY = strike.numeratorUOM.inBaseCurrency
 
   def daysForPositionReport(marketDay : DayAndTime) : Seq[Day] = {
     val liveAveragingDays = averagingDays.filter(_.endOfDay > marketDay)

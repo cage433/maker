@@ -56,7 +56,7 @@ case class Future(market: FuturesMarket, delivery: DateRange, strike: Quantity, 
 
   override def expiryDay() = Some(lastTradingDay)
 
-  val valuationCCY = strike.numeratorUOM.toBaseCurrency
+  val valuationCCY = strike.numeratorUOM.inBaseCurrency
 
   val lastTradingDay = market.lastTradingDay(delivery)
 

@@ -56,6 +56,7 @@ trait Patch {
   protected def checkRunPatchCompletedSuccessfully(starling: RichDB) = {
   }
 
+  def requiresRestart = false
 }
 
 class PatchContext(val props: Props, appliedPatches: Set[String]) {

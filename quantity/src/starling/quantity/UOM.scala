@@ -368,13 +368,13 @@ case class UOM(uType: Ratio, subType: Ratio, v: BigDecimal) extends Ordered[UOM]
   /**
    * E.g. if this is US_CENT will return USD, or Pence will return GBP
    */
-  def toBaseCurrency: UOM = {
+  def inBaseCurrency: UOM = {
     assert(isCurrency, "Not a currency: " + this)
     UOM.baseMap(uType)
   }
 
 
-  def toBaseUnit: UOM = {
+  def inBaseUnit: UOM = {
     val base = asSymbolMap.map {
       case (sym, pow) => (UOMSymbol.symbolForPrime(UOM.baseMap(UOM.symbolToUOMMap(sym).uType).subType.numerator) -> pow)
     }

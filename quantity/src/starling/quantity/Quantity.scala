@@ -129,7 +129,15 @@ class Quantity(val value : Double, val uom : UOM) extends Ordered[Quantity] with
    * used for equals and hashcode
    */
   def inBaseUOM = {
-    this.inUOM(uom.toBaseUnit)
+    this.inUOM(uom.inBaseUnit)
+  }
+
+  /**
+   * E.g. 100 Cent would convert to 1 USD
+   */
+  def inBaseCurrency = {
+    assert(this.uom.isCurrency, "Can't convert this to currency: " + this)
+    this.inUOM(uom.inBaseCurrency)
   }
 
   def inUOM(uom: UOM)(implicit conv: Conversions = Conversions.default): Quantity = {
@@ -306,7 +314,7 @@ abstract class NamedQuantity(val quantity : Quantity) extends Quantity(quantity.
     }else{
       val cq = Quantity((this.value * ratio).toDouble, otherUOM)
       (uom.div(otherUOM)) match {
-        case (UOM.SCALAR, _) => FunctionNamedQuantity("ConvertTo "+otherUOM, List(this), cq, custom = true)
+        case (UOM.SCALAR, _) => FunctionNamedQuantity("Convert " + uom + " To " + otherUOM, List(this), cq, custom = true)
         case _ => this * (SimpleNamedQuantity("Conversion", Quantity(ratio.toDouble, otherUOM/uom)))
       }
     })

@@ -50,11 +50,11 @@ class FuturesOptionReader extends InstrumentReader {
         (market, delivery, expiryDay, volume)
       }
     }
-
-    val strike = rs.getDouble("StrikePrice")
+    val ccy = market.currency.inBaseCurrency
+    val uom = market.uom
+    val strike = Quantity(rs.getDouble("StrikePrice"), ccy / uom) inUOM market.priceUOM
     val callPut = rs.getCallPut("CallPut")
     val optionType = rs.getExerciseType("optiontype")
-    FuturesOption(market, expiryDay, delivery, Quantity(strike, market.currency / market.uom),
-      volume, callPut, optionType)
+    FuturesOption(market, expiryDay, delivery, strike, volume, callPut, optionType)
   }
 }

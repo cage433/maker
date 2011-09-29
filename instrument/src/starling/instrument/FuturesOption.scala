@@ -29,7 +29,7 @@ case class FuturesOption(
   require(strike.denominatorUOM == market.uom, "Can't handle strike in non-market uom, strike: " + strike + ", market: " + market.uom)
   require(volume.uom == market.uom, "Can't handle volume in non-market uom, volume: " + volume + ", market: " + market.uom)
 
-	val valuationCCY = strike.numeratorUOM.toBaseCurrency
+	val valuationCCY = strike.numeratorUOM.inBaseCurrency
 
 
   override def forwardState(env: Environment, dayAndTime: DayAndTime) = {

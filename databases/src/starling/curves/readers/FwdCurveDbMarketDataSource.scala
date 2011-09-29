@@ -267,8 +267,12 @@ case class FwdCurveDbMarketDataSource(varSqlDB: DB, businessCalendars: BusinessC
         varSqlDB.query(query, Map("EAIQuoteID" -> eaiQuoteID.get, "PricingGroupID" -> pricingGroupID, "ObservationDate" -> observationDay)) {
           rs => {
             val delivery = deliveryPeriod(market, rs)
-            val price = rs.getDouble("Price")
-            pricePoints += (delivery -> price)
+
+            // FC app always has the price in a base currency. e.g. Rbob is in USD/GAL but should be in C/GAL
+            val fcaPrimeUOM = market.currency.inBaseCurrency / market.uom
+            val priceUOM = market.priceUOM // correct unit
+            val price = Quantity(rs.getDouble("Price"), fcaPrimeUOM) inUOM priceUOM
+            pricePoints += (delivery -> price.value)
           }
         }
       }

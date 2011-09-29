@@ -4,7 +4,6 @@ import starling.systemofrecord.InstrumentReader
 import starling.richdb.RichResultSetRow
 import starling.instrument.AsianOption
 import starling.quantity.{UOM, Quantity}
-import starling.utils.Log
 
 class AsianOptionReader extends InstrumentReader {
   import EAISystemOfRecord._
@@ -24,7 +23,9 @@ class AsianOptionReader extends InstrumentReader {
       case true => rs.getDay("ContractDate").containingMonth // TODO [28 Apr 2010] is this correct?
       case false => rs.getDateRange("AveragingStartDate", "AveragingEndDate")
     }
-    val strike = rs.getDouble("StrikePrice")
+    val ccy = index.currency.inBaseCurrency
+    val uom = index.uom
+    val strike = Quantity(rs.getDouble("StrikePrice"), ccy / uom) inUOM index.priceUOM
     val amount = rs.getInt("TradeType") match {
       case ET_OPTION => {
         val lotSize = index.lotSize.get
@@ -35,6 +36,6 @@ class AsianOptionReader extends InstrumentReader {
 
     val callPut = rs.getCallPut("CallPut")
 
-    AsianOption(index, index.makeAveragingPeriodMonthIfPossible(delivery), Quantity(strike, index.priceUOM), Quantity(amount, index.uom), callPut)
+    AsianOption(index, index.makeAveragingPeriodMonthIfPossible(delivery), strike, Quantity(amount, index.uom), callPut)
   }
 }

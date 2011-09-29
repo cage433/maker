@@ -14,10 +14,12 @@ class FutureReader extends InstrumentReader {
   override def create(rs: RichResultSetRow) = {
     val market = rs.getFuturesMarketFromEAIQuoteID("eaiquoteid")
     val deliveryMonth = rs.getDay("ContractDate").containingMonth
-    val strike = rs.getDouble("EntryPrice")
+    val ccy = market.currency.inBaseCurrency
+    val uom = market.uom
+    val strike = Quantity(rs.getDouble("EntryPrice"), ccy / uom) inUOM market.priceUOM
     val lotSize = market.lotSize.get
     val amount = Quantity(rs.getDouble("Quantity") * lotSize, market.uom)
 
-    Future(market, deliveryMonth, Quantity(strike, market.currency / market.uom), amount)
+    Future(market, deliveryMonth, strike, amount)
   }
 }

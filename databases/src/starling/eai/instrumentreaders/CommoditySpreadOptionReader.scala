@@ -30,7 +30,10 @@ class CommoditySpreadOptionReader extends InstrumentReader {
     val lotSize = market.lotSize.get
     val volume = Quantity(amount * lotSize, market.uom)
 
-    val strike = Quantity(rs.getDouble("StrikePrice"), market.currency / market.uom)
+    val ccy = market.currency.inBaseCurrency
+    val uom = market.uom
+    val strike = Quantity(rs.getDouble("StrikePrice"), ccy / uom) inUOM market.priceUOM
+
     val callPut = rs.getCallPut("CallPut")
     CommoditySpreadOption(market, month, strike, volume, callPut)
   }

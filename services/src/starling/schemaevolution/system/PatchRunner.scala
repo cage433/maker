@@ -22,7 +22,7 @@ class PatchRunner(starling: RichDB, readOnlyMode: Boolean, startlingInit: Starli
     updateSchemaIfRequired
   }
 
-  def updateSchemaIfRequired() {
+  def updateSchemaIfRequired(): Boolean = {
 
     Log.info("SCHEMAEVOLUTION: Checking patch level and applying required patches if necessary")
 
@@ -35,21 +35,26 @@ class PatchRunner(starling: RichDB, readOnlyMode: Boolean, startlingInit: Starli
    //If there are no patches to apply say so and return coz there is nothing to do
     if(patchesToApply.size == 0) {
       Log.info("SCHEMAEVOLUTION: No Patches to apply")
-      return
+      return false
     }
 
     if (readOnlyMode) {
       Log.info("Should apply patches " + patchesToApply + " but in readonly mode")
-      return
+      return false
     }
 
     //Sort the patches to apply
     val sortedPatchesToApply = patchesToApply.sortWith(_.patchNumber < _.patchNumber)
 
     //Apply the patches
-    val deferredPatches: Map[Patch, String] = Log.infoWithTime("Applying any patches (" + sortedPatchesToApply.size + ")") {
-      sortedPatchesToApply.toMapWithSomeValues(applyPatch(startlingInit, starling, _, alreadyAppliedPatches))
+    val allPatches = Log.infoWithTime("Applying any patches (" + sortedPatchesToApply.size + ")") {
+      sortedPatchesToApply.map(p => {
+        p -> applyPatch(startlingInit, starling, p, alreadyAppliedPatches)
+      }).toMap
     }
+
+    val deferredPatches: Map[Patch, String] = allPatches.flatMap{case (p, Left(Some(s))) => Some(p -> s); case _ => None}
+    val requiresRestart = allPatches.find{case (_, Right(true)) => true; case _ => false}.isDefined
 
     deferredPatches.foreach { case (patch, deferredReason) =>
       Log.warn("====== PATCH DEFERRED: %s BECAUSE: %s ======" % (patch, deferredReason))
@@ -63,6 +68,8 @@ class PatchRunner(starling: RichDB, readOnlyMode: Boolean, startlingInit: Starli
     if(unAppliedPatches.size != 0) {
       throw new RuntimeException("SCHEMAEVOLUTION: The following patches have not been applied correctly, cannot continue [" + unAppliedPatches + "]")
     }
+
+    requiresRestart
   }
 
   private def getListOfAlreadyAppliedPatches(starlingDB:RichDB) = {
@@ -117,7 +124,7 @@ class PatchRunner(starling: RichDB, readOnlyMode: Boolean, startlingInit: Starli
                                           "dateApplied" -> new Timestamp))
   }
 
-  private def applyPatch(starlingInit: StarlingInit, starling: RichDB, patch: Patch, appliedPatches: Set[String]): Option[String] = {
+  private def applyPatch(starlingInit: StarlingInit, starling: RichDB, patch: Patch, appliedPatches: Set[String]): Either[Option[String], Boolean] = {
     val deferredReason = patch.deferredReason(new PatchContext(starlingInit.props, appliedPatches))
 
     if (deferredReason.isEmpty) {
@@ -129,9 +136,10 @@ class PatchRunner(starling: RichDB, readOnlyMode: Boolean, startlingInit: Starli
           markPatchAsApplied(writer, patch)
         } }
       }
+      Right(patch.requiresRestart)
+    } else {
+      Left(deferredReason)
     }
-
-    deferredReason
   }
 
 

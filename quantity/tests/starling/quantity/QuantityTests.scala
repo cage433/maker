@@ -67,6 +67,9 @@ import starling.quantity.RichQuantity._
     assertEquals(10 (USD*USD / BBL) / 1 (US_CENT/BBL), 1000 (USD))
     assertEquals(256 (US_CENT) in USD, Some(2.56 (USD)))
     assertEquals(2 (USD) + 56 (US_CENT), 2.56 (USD))
+    assertEquals(2 (USD) - 56 (US_CENT), 1.44 (USD))
+    assertEquals(201 (US_CENT) - 1 (US_CENT), 2 (USD))
+    assertEquals(201 (US_CENT) - 1 (US_CENT), 200 (US_CENT))
     assertEquals(2 (USD/BBL) + 56 (US_CENT/BBL), 2.56 (USD/BBL))
     assertEquals(2 (USD/GAL) + 42 (USD/BBL),  3 (USD/GAL))
 

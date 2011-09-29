@@ -36,7 +36,7 @@ abstract class Swap(
     "Cleared" -> cleared,
     "PricingRule" -> pricingRule)
 
-  def valuationCCY: UOM = strike.numeratorUOM.toBaseCurrency
+  def valuationCCY: UOM = strike.numeratorUOM.inBaseCurrency
 
   override def fixUpMyCashInstruments(ci: CashInstrument) = {
     // sometimes the cash instrument has already been assigned to a market and period and we don't want to override that here

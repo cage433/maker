@@ -18,15 +18,17 @@ class CommoditySwapsReader extends InstrumentReader {
     val start = rs.getDay("StartDate")
     val end = rs.getDay("EndDate")
     val amount = rs.getQuantity("Quantity")
-    val ccy = index.priceUOM.numeratorUOM
-    val strike = Quantity(rs.getDouble("FixedPrice"), ccy / amount.uom)
+    val uom = amount.uom
+    val marketCcy = index.priceUOM.numeratorUOM
+    val eaiCCY = marketCcy.inBaseCurrency // EAI will have cents markets in USD
+    // convert from usd to cent if we need to
+    val strike = Quantity(rs.getDouble("FixedPrice"), eaiCCY / uom) inUOM (marketCcy / uom)
     val cleared = rs.getInt("TradeType") == CLEARPORT_SWAP
     val rule = if (cleared) {
       rs.getSwapPricingRule("PricingRule")
     } else {
       rs.getSwapPricingRule("PricingRule", "PricingRuleDefault")
     }
-//    val averaging = index.makeAveragingPeriodMonthIfPossible(DateRange(start, end), rule)
     val averaging = DateRange(start, end)
 
     CommoditySwap(index, strike, amount, averaging, cleared, rule)

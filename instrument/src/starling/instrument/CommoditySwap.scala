@@ -97,7 +97,7 @@ case class SinglePeriodSwap(
   // volume converted so everything is in the context of the strike uom
   val convertedVolume = index.convert(volume, strike.denominatorUOM).get
 
-  def valuationCCY: UOM = strike.numeratorUOM.toBaseCurrency
+  def valuationCCY: UOM = strike.numeratorUOM.inBaseCurrency
 
   private val averagingDays = period.days.filter(pricingRule.isObservationDay(index.calendars, _))
 

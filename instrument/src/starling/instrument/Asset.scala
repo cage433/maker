@@ -6,17 +6,22 @@ import starling.curves.Environment
 import starling.market.{CommodityMarket}
 
 object Asset {
-  def estimatedCash(settlementDay:Day, amount:Quantity, mtm:Quantity) = Asset(false, amount.uom, settlementDay, amount, mtm)
+  def estimatedCash(settlementDay:Day, amount:Quantity, mtm:Quantity) = {
+    val trueAmount = amount.inBaseCurrency
+    val trueMtm = mtm.inBaseCurrency
+    Asset(false, trueAmount.uom, settlementDay, trueAmount, trueMtm)
+  }
   def estimatedCash(settlementDay:Day, amount:Quantity, env:Environment) = cash(false, settlementDay, amount, env)
   def knownCash(settlementDay:Day, amount:Quantity, env:Environment) = cash(true, settlementDay, amount, env)
 
   private def cash(known:Boolean, settlementDay:Day, amount:Quantity, env:Environment) = {
+    val trueAmount = amount.inBaseCurrency
     val discount = if (settlementDay > env.marketDay.day) {
-      env.discount(amount.uom, settlementDay)
+      env.discount(trueAmount.uom, settlementDay)
     } else {
       new Quantity(1)
     }
-    Asset(known, amount.uom.toString, settlementDay, amount, amount * discount)
+    Asset(known, trueAmount.uom.toString, settlementDay, trueAmount, trueAmount * discount)
   }
 
   def estimatedPhysical(market:String, settlementDay:Day, amount:Quantity, mtm:Quantity) =

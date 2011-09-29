@@ -153,7 +153,11 @@ class StarlingInit( val props: Props,
 
   if (dbMigration) log.infoWithTime("DB Migration") {
     //Ensure the schema is up to date
-    new PatchRunner(starlingRichDB, props.ReadonlyMode(), this).updateSchemaIfRequired
+    val requiresRestart = new PatchRunner(starlingRichDB, props.ReadonlyMode(), this).updateSchemaIfRequired
+    if(requiresRestart) {
+      Log.warn("A patch applied required a restart. Exiting Starling")
+      System.exit(1)
+    }
   }
 
   val userSettingsDatabase = new UserSettingsDatabase(starlingDB, rmiBroadcaster)
