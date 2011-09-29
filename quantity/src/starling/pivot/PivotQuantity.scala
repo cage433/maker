@@ -141,7 +141,7 @@ case class PivotQuantity(values:Map[UOM,Double], errors:Map[String,List[StackTra
     case None => false
   }
 
-  def explanation : Option[String] = quantityValue.map { q => q.toStringAllDecimalPlaces}
+  def explanation : Option[String] = quantityValue.map { q => q.toStringAllDecimalPlaces(false)}
 
   override def equals(that: Any): Boolean = that match {
     case pq: PivotQuantity => errors.equals(pq.errors) && warning.equals(pq.warning) &&

@@ -53,7 +53,7 @@ object NamedQuantityComponentHelper {
     }
   }
 
-  def quantityText(q:Quantity, fi:ExtraFormatInfo) = q.toStringAllDecimalPlaces
+  def quantityText(q:Quantity, fi:ExtraFormatInfo) = q.toStringAllDecimalPlaces()
 }
 import NamedQuantityComponentHelper._
 

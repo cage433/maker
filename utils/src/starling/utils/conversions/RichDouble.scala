@@ -17,10 +17,10 @@ trait RichDouble {
 //    def fmt(n : Int) : String = fmt("0." + "0" * n)
     def ^+ = Math.max(d, 0)
 
-    def format(formatString: String, addSpace: Boolean = true) = {
+    def format(formatString: String, addSpace: Boolean = true, negativeBrackets: Boolean = true) = {
       val decimalFormat = new DecimalFormat(formatString)
       decimalFormat.setRoundingMode(RoundingMode.HALF_UP)
-      if (d < 0.0) {
+      if (d < 0.0 && negativeBrackets) {
         "(" + decimalFormat.format(d.abs) + ")"
       } else {
         decimalFormat.format(d) + (if(addSpace) " " else "")

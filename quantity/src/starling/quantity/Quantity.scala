@@ -106,14 +106,14 @@ class Quantity(val value : Double, val uom : UOM) extends Ordered[Quantity] with
       1
     else 0
   }
-  def format(fmt : String, useUOM:Boolean = true, addSpace: Boolean = false) = {
+  def format(fmt : String, useUOM:Boolean = true, addSpace: Boolean = false, negativeBrackets: Boolean = true) = {
     val uomPart = if (useUOM && !isScalar && !uom.isNull) " " + uom else ""
-    value.format(fmt, addSpace) + uomPart
+    value.format(fmt, addSpace, negativeBrackets) + uomPart
   }
   def format(decimalFormat: DecimalFormat) = decimalFormat.format(value)
   def formatNoUOM(fmt:String) = format(fmt, false)
   override def toString = format(Quantity.FormatString)
-  def toStringAllDecimalPlaces = format("#,##0.00#######################################")
+  def toStringAllDecimalPlaces(negativeBrackets:Boolean=true) = format("#,##0.00#######################################", negativeBrackets = negativeBrackets)
   def toStringWithSpace = format(Quantity.FormatString, addSpace = true)
   def this(value : Double, uom : String) = this(value, UOM.fromString(uom))
   def this(value : Double) = this(value, UOM.SCALAR)
