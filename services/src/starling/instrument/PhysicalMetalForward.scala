@@ -5,17 +5,17 @@ import starling.quantity.Quantity
 import starling.curves.Environment
 import starling.daterange.Day
 import com.trafigura.tradinghub.support.GUID
-import com.trafigura.tradecapture.internal.refinedmetal.{Market => EDMMarket, Metal => EDMMetal}
+import com.trafigura.trademgmt.internal.refinedmetal.{Market => EDMMarket, Metal => EDMMetal}
 import starling.titan.{EDMPricingSpecConverter, EDMConversions}
-import com.trafigura.edm.materialspecification.CommoditySpec
-import com.trafigura.edm.trades.{Trade => EDMTrade, PhysicalTrade => EDMPhysicalTrade}
-import com.trafigura.edm.physicaltradespecs.PhysicalTradeQuota
+import com.trafigura.edm.trademgmt.materialspecification.CommoditySpec
+import com.trafigura.edm.trademgmt.trades.{Trade => EDMTrade, PhysicalTrade => EDMPhysicalTrade}
+import com.trafigura.edm.trademgmt.physicaltradespecs.PhysicalTradeQuota
 import java.lang.Exception
 import EDMConversions._
 import com.trafigura.services.valuation.CostsAndIncomeAssignmentValuation
 import com.trafigura.services.valuation.CostsAndIncomeQuotaValuation
 import com.trafigura.services.valuation.PricingValuationDetails
-import com.trafigura.edm.shared.types.{Date, Quantity => EDMQuantity}
+import com.trafigura.edm.common.units.{Date, Quantity => EDMQuantity}
 import com.trafigura.edm.logistics.inventory.{EDMAssignment, EDMInventoryItem}
 
 

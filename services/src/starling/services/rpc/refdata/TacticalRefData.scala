@@ -3,21 +3,21 @@ package starling.services.rpc.refdata
 import starling.props.Props
 import com.trafigura.services.security.ComponentTestClientExecutor
 import org.jboss.resteasy.client.{ProxyFactory, ClientExecutor}
-import com.trafigura.tradecapture.internal.refinedmetalreferencedataservice._
-import com.trafigura.edm.tradeservice.{EdmGetTradesResource, EdmGetTradesResourceProxy, EdmGetTrades}
-import com.trafigura.edm.trades.{PhysicalTrade => EDMPhysicalTrade}
+import com.trafigura.trademgmt.internal.refinedmetalreferencedata._
+import com.trafigura.edm.trademgmt.trade.{EdmGetTradesResource, EdmGetTradesResourceProxy, EdmGetTrades}
+import com.trafigura.edm.trademgmt.trades.{PhysicalTrade => EDMPhysicalTrade}
 import org.codehaus.jettison.json.JSONObject
-import com.trafigura.edm.tradeservice.TradeResults
-import com.trafigura.edm.trades.Trade
-import com.trafigura.edm.tradeservice.TradeResult
+import com.trafigura.edm.trademgmt.trade.TradeResults
+import com.trafigura.edm.trademgmt.trades.Trade
+import com.trafigura.edm.trademgmt.trade.TradeResult
 import starling.services.StarlingInit
 import com.trafigura.tradinghub.support.GUID
 import starling.services.rpc.valuation.ValuationService
 import starling.services.rpc.FileUtils
 import starling.titan.{TitanEdmTradeService, TitanServices}
-import com.trafigura.tradecapture.internal.refinedmetal.{Counterparty, Metal, Market, UOM, Shape, Grade, Location, DestinationLocation}
+import com.trafigura.trademgmt.internal.refinedmetal.{Counterparty, Metal, Market, UOM, Shape, Grade, Location, DestinationLocation}
 import com.trafigura.timer.Timer
-import com.trafigura.edm.shared.types.TitanId
+import com.trafigura.edm.common.units.TitanId
 
 
 /**
@@ -69,7 +69,7 @@ case class DefaultTitanServices(props: Props) extends TitanServices {
  */
 case class FileMockedTitanServices() extends TitanServices {
    
-  import com.trafigura.edm.trades.{PhysicalTrade => EDMPhysicalTrade}
+  import com.trafigura.edm.trademgmt.trades.{PhysicalTrade => EDMPhysicalTrade}
   import starling.services.rpc.FileUtils._
 
   val resourcePath = "/tests/valuationservice/testdata"

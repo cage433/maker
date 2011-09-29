@@ -1,4 +1,4 @@
-in_namespace('EDM.PricingSchedules') {
+in_namespace('EDM.TradeMgmt.PricingSchedules') {
 
   define('PricingSchedule', :abstract => true) {
     field 'oid',                           :integer, :identifier => true

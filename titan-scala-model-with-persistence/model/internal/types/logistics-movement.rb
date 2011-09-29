@@ -8,7 +8,7 @@ in_namespace('Internal.Logistics.Movement') {
   define('BillOfLading') {
 	field 'billOfLadingId',		:integer
 	field 'blNumber',		:string
-        field 'quantity',		'TradeCapture.Internal.RefinedMetal.Quantity'
+        field 'quantity',		'TradeMgmt.Internal.RefinedMetal.Quantity'
 	field 'blDate',			:date
 	field 'originalReceived',	:boolean
   }
@@ -19,8 +19,8 @@ in_namespace('Internal.Logistics.Movement') {
 	field 'truckBillOfLading',	:string, :optional => true
 	field 'carrierId',		:guid, :optional => true        # :references => 'Counterparty(oid)
 	field 'bundles',		:integer, :optional => true
-	field 'grossWeight', 		'TradeCapture.Internal.RefinedMetal.Quantity', :optional => true
-	field 'netWeight',		'TradeCapture.Internal.RefinedMetal.Quantity', :optional => true
+	field 'grossWeight', 		'TradeMgmt.Internal.RefinedMetal.Quantity', :optional => true
+	field 'netWeight',		'TradeMgmt.Internal.RefinedMetal.Quantity', :optional => true
 	field 'departDate',		:'LocalDateTime', :optional => true
 	field 'departDateTimeStatus',   :enum, :enumerated => ['ESTIMATED', 'ACTUAL']
 	field 'arriveDate',		:'LocalDateTime', :optional => true
@@ -34,8 +34,8 @@ in_namespace('Internal.Logistics.Movement') {
         field 'wagonReference',		:string, :optional => true
 	field 'wagonBillOfLading',	:string, :optional => true
 	field 'bundles',		:integer, :optional => true
-	field 'grossWeight', 		'TradeCapture.Internal.RefinedMetal.Quantity', :optional => true
-	field 'netWeight',		'TradeCapture.Internal.RefinedMetal.Quantity', :optional => true
+	field 'grossWeight', 		'TradeMgmt.Internal.RefinedMetal.Quantity', :optional => true
+	field 'netWeight',		'TradeMgmt.Internal.RefinedMetal.Quantity', :optional => true
 	field 'departDate',		:'LocalDateTime', :optional => true
 	field 'departDateTimeStatus',   :enum, :enumerated => ['ESTIMATED', 'ACTUAL']
 	field 'arriveDate',		:'LocalDateTime', :optional => true
@@ -85,7 +85,7 @@ in_namespace('Internal.Logistics.Movement') {
     field 'audit',                      'Audit'
     field 'trafficOperatorId',          :integer        # :references => 'User(oid)'
     field 'status',                     :enum, :enumerated => ['PLANNED', 'INTRANSIT', 'ARRIVED', 'COMPLETE', 'CANCELLED']
-    field 'quantity',                   'TradeCapture.Internal.RefinedMetal.Quantity', :optional => true
+    field 'quantity',                   'TradeMgmt.Internal.RefinedMetal.Quantity', :optional => true
     field 'agentId',                    :guid, :optional => true        # :references => 'Counterparty(oid)'
     field 'agentReference',             :string, :optional => true
     field 'comments',                   :string, :optional => true

@@ -5,14 +5,14 @@ import com.trafigura.services.security.ComponentTestClientExecutor
 import org.jboss.resteasy.client.{ProxyFactory, ClientExecutor}
 import com.trafigura.edm.logistics.inventory._
 import starling.services.StarlingInit
-import com.trafigura.edm.physicaltradespecs.PhysicalTradeQuota
-import com.trafigura.edm.trades.{PhysicalTrade => EDMPhysicalTrade}
+import com.trafigura.edm.trademgmt.physicaltradespecs.PhysicalTradeQuota
+import com.trafigura.edm.trademgmt.trades.{PhysicalTrade => EDMPhysicalTrade}
 import scala.util.control.Exception.catching
 import starling.services.rpc.refdata.FileMockedTitanServices
 import starling.titan.LogisticsServices._
 import starling.titan._
 import starling.services.rpc.FileUtils
-import com.trafigura.edm.trades.{Trade => EdmTrade}
+import com.trafigura.edm.trademgmt.trades.{Trade => EdmTrade}
 import org.codehaus.jettison.json.JSONObject
 
 /**

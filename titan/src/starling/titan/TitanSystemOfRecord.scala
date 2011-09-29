@@ -1,11 +1,11 @@
 package starling.titan
 
 import com.trafigura.tradinghub.support.GUID
-import com.trafigura.edm.tradeservice.EdmGetTrades
-import com.trafigura.tradecapture.internal.refinedmetal.{Counterparty, Market, Metal, UOM, Grade, Shape, Location, DestinationLocation}
-import com.trafigura.edm.physicaltradespecs.PhysicalTradeQuota
-import com.trafigura.edm.materialspecification.CommoditySpec
-import com.trafigura.edm.trades.{PhysicalTrade => EDMPhysicalTrade}
+import com.trafigura.edm.trademgmt.trade.EdmGetTrades
+import com.trafigura.trademgmt.internal.refinedmetal.{Counterparty, Market, Metal, UOM, Grade, Shape, Location, DestinationLocation}
+import com.trafigura.edm.trademgmt.physicaltradespecs.PhysicalTradeQuota
+import com.trafigura.edm.trademgmt.materialspecification.CommoditySpec
+import com.trafigura.edm.trademgmt.trades.{PhysicalTrade => EDMPhysicalTrade}
 import starling.systemofrecord.SystemOfRecord
 import starling.daterange.Day
 import starling.daterange.Day._
@@ -17,7 +17,7 @@ import java.lang.UnsupportedOperationException
 import starling.utils.StackTraceToString
 import starling.instrument.{ErrorInstrument, Costs, Tradeable}
 import com.trafigura.edm.logistics.inventory._
-import com.trafigura.edm.shared.types.{TitanId, Date, DateSpec, PercentageTolerance}
+import com.trafigura.edm.common.units.{TitanId, Date, DateSpec, PercentageTolerance}
 import starling.quantity.Percentage
 import org.joda.time.LocalDate
 
@@ -97,7 +97,7 @@ class TradeConverter( refData : TitanTacticalRefData,
     require(quotaDetail.deliverySpecs.size == 1, "Require exactly one delivery spec")
     val deliverySpec = quotaDetail.deliverySpecs.head
     val (shape, grade) = deliverySpec.materialSpec match {
-      case rms : com.trafigura.edm.materialspecification.RefinedMetalSpec => (
+      case rms : com.trafigura.edm.trademgmt.materialspecification.RefinedMetalSpec => (
         refData.shapesByGUID(rms.shape), 
         refData.gradeByGUID(rms.grade)
       )
@@ -123,7 +123,7 @@ class TradeConverter( refData : TitanTacticalRefData,
     val toleranceMinus = getTolerancePercentage(tolerance.minus.amount)
     
     def getDate(ds : DateSpec) : LocalDate = ds match {
-      case date : com.trafigura.edm.shared.types.Date => date.value 
+      case date : com.trafigura.edm.common.units.Date => date.value
       case _ => throw new Exception("Unsupported DateSpec type")
     }
 

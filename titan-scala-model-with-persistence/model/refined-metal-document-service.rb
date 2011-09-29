@@ -1,5 +1,5 @@
 #// This is the Refined metal document service interface
-in_namespace('TradeCapture.Internal.RefinedMetalDocumentService') {
+in_namespace('TradeMgmt.Internal.RefinedMetalDocument') {
 
   define('BinaryData') {
     field 'data', :string

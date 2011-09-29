@@ -1,4 +1,4 @@
-in_namespace('EDM.PaymentSpecs') {
+in_namespace('EDM.TradeMgmt.PaymentSpecs') {
 
 #  define('EDMPaymentMethod') {
 #    field 'oid',                            :integer, :identifier => true
@@ -16,7 +16,7 @@ in_namespace('EDM.PaymentSpecs') {
 #  }
   
 #  define('EDMGuarantee') {
-#    field 'amount',                         :'EDM.shared.types.Quantity'
+#    field 'amount',                         :'EDM.Common.Units.Quantity'
 #    field 'requiredBy',                     :date
 #  }
 
@@ -49,9 +49,9 @@ in_namespace('EDM.PaymentSpecs') {
  }
 
  define('CreditTerms') {
-    field 'interestRuleTillPaymentDate',  :'EDM.PaymentSpecs.InterestRule'
+    field 'interestRuleTillPaymentDate',  :'EDM.TradeMgmt.PaymentSpecs.InterestRule'
     field 'interestTillPaymentDate',      :real
-    field 'interestRuleAfterPaymentDate', :'EDM.PaymentSpecs.InterestRule'
+    field 'interestRuleAfterPaymentDate', :'EDM.TradeMgmt.PaymentSpecs.InterestRule'
     field 'interestAfterPaymentDate',     :real
     field 'maximumDays',                  :integer
  }
@@ -64,7 +64,7 @@ in_namespace('EDM.PaymentSpecs') {
      
   define('EDMPresentedDocument') {
     field 'oid',                            :integer, :identifier => true
-    field 'documentType',                   :integer_key, :references => 'TradeCapture.Internal.RefinedMetal.DocumentType(oid)'
+    field 'documentType',                   :integer_key, :references => 'TradeMgmt.Internal.RefinedMetal.DocumentType(oid)'
     field 'description',                    :string
     field 'original',                       :boolean
   }
@@ -76,7 +76,7 @@ in_namespace('EDM.PaymentSpecs') {
   define('EDMPaymentSpec') {
     constant 'commentLength', 4000
 #    field 'oid',                               :integer, :identifier => true
-    field 'paymentCurrency',                   :'EDM.shared.types.Currency'
+    field 'paymentCurrency',                   :'EDM.Common.Units.Currency'
     field 'sellerChargesRechargedToBuyer',     :boolean, :optional => true
     field 'comments',                          :string, :optional => true, :max_length => EDMPaymentSpec::COMMENTLENGTH
     field 'paymentMethods'				,            :list, :element_type => 'EDMPaymentMethod'

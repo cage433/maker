@@ -12,7 +12,7 @@ import starling.services.StarlingInit
 import com.trafigura.services.valuation._
 import starling.services.rpc.refdata._
 import com.trafigura.tradinghub.support.ModelObject
-import com.trafigura.edm.trades.{PhysicalTrade => EDMPhysicalTrade}
+import com.trafigura.edm.trademgmt.trades.{PhysicalTrade => EDMPhysicalTrade}
 import java.lang.Exception
 import com.trafigura.shared.events._
 import org.joda.time.LocalDate
@@ -23,8 +23,8 @@ import starling.curves.NullAtomicEnvironment
 import java.io.FileWriter
 import java.io.BufferedWriter
 import starling.services.rabbit._
-import com.trafigura.tradecapture.internal.refinedmetal.Market
-import com.trafigura.tradecapture.internal.refinedmetal.Metal
+import com.trafigura.trademgmt.internal.refinedmetal.Market
+import com.trafigura.trademgmt.internal.refinedmetal.Metal
 import com.trafigura.services.rabbit.Publisher
 import starling.quantity.Quantity
 import starling.curves.DiscountRateKey
@@ -35,7 +35,7 @@ import starling.titan._
 import com.trafigura.edm.logistics.inventory.EDMInventoryItem
 import starling.services.rpc.logistics._
 import com.trafigura.events.DemultiplexerClient
-import com.trafigura.edm.shared.types.TitanId
+import com.trafigura.edm.common.units.TitanId
 
 /**
  * Trade cache provide trade map lookup by trade id and also a quota id to trade map lookup

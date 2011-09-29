@@ -3,7 +3,7 @@ expose 'ContractDocumentParameters'
 
 # this is the model as used for Release 1 of RMET
 
-in_namespace('TradeCapture.Internal.RefinedMetal') {
+in_namespace('TradeMgmt.Internal.RefinedMetal') {
 
   # used in summary and contract documents to represent a pricing fixation
   define('DocumentPricingFixationParams') {
