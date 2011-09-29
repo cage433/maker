@@ -34,7 +34,7 @@ class FCLGenerator(businessCalendars:BusinessCalendars, curveViewer: CurveViewer
 }
 
 object FCLGenerator {
-  def extractData(ukUS:BusinessCalendar, data: PivotGrid) = data.rowData.zip(data.mainData).toList.partialMap {
+  def extractData(ukUS:BusinessCalendar, data: PivotGrid) = data.rowData.zip(data.mainData).toList.collect {
     case (Array(AxisCell.ValueText(Index.PublishedIndex(index)), periodCell), Array(priceCell)) => {
       val trinityKey = TrinityUploadCodeMapper.trinityCurveKeys(index)
       val price = priceCell.doubleValue.get

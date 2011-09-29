@@ -19,6 +19,8 @@ class RichTraversable[A](traversable: Traversable[A]) {
   // TODO [08 Mar 2011] Replace with maxBy, minBy when we use scala 2.9
   def maximum[B](f: A => B)(implicit cmp: Ordering[B]): B = traversable.map(f).max
   def minimum[B](f: A => B)(implicit cmp: Ordering[B]): B = traversable.map(f).min
+  def optMax(implicit cmd: Ordering[A]): Option[A] = traversable.ifDefined(_.max)
+  def optMaxBy[B](f: A => B)(implicit cmp: Ordering[B]): Option[A] = traversable.ifDefined(_.maxBy(f))
   def mapDistinct[B](f: A => B): Set[B] = traversable.map(f).toSeq.distinct.toSet
 
   def findEnsureOnlyOne(p: A => Boolean) = traversable.filter(p) match {

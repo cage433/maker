@@ -18,6 +18,7 @@ trait RichMaps {
 
 class RichMap[K,V](map : Map[K,V]) {
   def get(key: Option[K]) = key.map(map.get(_)).flatOpt
+  def getOrThrow(key: K, msg: String) = map.getOrElse(key, throw new Exception(msg))
   def either(key: K): Either[K, V] = map.get(key).either(key, identity)
   def getOrUpdate(k: K, f: (V) => V) = map.get(k).fold(v => map.updated(k, f(v)), map)
   def slice(keys : Any*) : Map[K,V] = if (keys.isEmpty) map else map.filterKeys(key => keys.contains(key))

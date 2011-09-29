@@ -7,6 +7,7 @@ import starling.quantity.UOM._
 import org.testng.annotations.{DataProvider, Test}
 import starling.utils.ScalaTestUtils._
 import org.testng.Assert._
+import com.trafigura.services.TitanSerializableCurrency
 
 class EDMConversionsTests extends StarlingTest{
 
@@ -18,5 +19,9 @@ class EDMConversionsTests extends StarlingTest{
   def testConversionRoundTrip(q : Quantity){
     import starling.titan.EDMConversions._
      assertEquals(q, fromTitanQuantity(toTitanQuantity(q)))
+  }
+
+  @Test def titanSerializableCurrencyShouldRestrictUOMsInTheSameWaysAsEDMConversions {
+    assertEquals(EDMConversions.starlingCurrencyToEdmCurrency.values.toSet, TitanSerializableCurrency.titanCurrencies.toSet)
   }
 }

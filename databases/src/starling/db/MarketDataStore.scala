@@ -13,12 +13,15 @@ import starling.utils._
 import scalaz._
 import Scalaz._
 import collection.immutable.{Iterable, Map, TreeMap}
+import sql.PersistAsBlob
+import sql.PersistAsBlob._
 import starling.pivot.{PivotEdits, PivotTableDataSource, Field => PField}
 import starling.dbx._
 import collection.mutable.{ListBuffer, HashSet => MSet}
 import starling.gui.api._
 import starling.props.Props
 import scala.concurrent.SyncVar
+import QueryBuilder._
 
 // TODO [07 Sep 2010] move me somewhere proper
 case class RelativeImpliedVolData(vols: Map[DateRange, Map[Double, Percentage]]) {
@@ -147,10 +150,12 @@ trait MarketDataStore {
     v => MarketDataIdentifier(selection, v), latestMarketDataIdentifier(selection))
 
   def latestObservationDayForMarketDataSet(marketDataSet: MarketDataSet): Option[Day]
+  def latestObservationDayFor(pricingGroup: PricingGroup, marketDataType: MarketDataType): Day
 
   def latestPricingGroupVersions: Map[PricingGroup, Int]
 
   def latestSnapshot(pricingGroup: PricingGroup, observationDay: Day): Option[SnapshotID]
+  def latestSnapshot(pricingGroup: PricingGroup): Option[SnapshotID]
 
   def marketData(from: Day, to: Day, marketDataType: MarketDataType, marketDataSet: MarketDataSet): Map[TimedMarketDataKey, VersionedMarketData]
 
@@ -284,20 +289,25 @@ class MarketDataTags(db: DBTrait[RichResultSetRow]) {
   }
 
   def latestSnapshot(pricingGroup: PricingGroup, observationDay: Day): Option[SnapshotID] = {
-    db.queryWithOneResult("""
-    select *
-    from MarketDataTag
-    where
-      pricingGroup = :pricingGroup
-      and observationDay = :observationDay
-    order by snapshotTime desc
-    """, Map("pricingGroup" -> StarlingXStream.write(pricingGroup), "observationDay" -> observationDay)) {
-      rs => SnapshotID(rs)
-    }
+    db.queryWithOneResult(
+      select("mdt.*")
+        from("MarketDataTag mdt")
+       where("marketDataSelection" eql PersistAsBlob(MarketDataSelection(Some(pricingGroup))))
+         and("observationDay" eql observationDay)
+     orderBy("snapshotTime" desc))
+    { SnapshotID(_) }
+  }
+
+  def latestSnapshot(pricingGroup: PricingGroup): Option[SnapshotID] = {
+    db.queryWithOneResult(
+         select("mdt.*")
+           from("MarketDataTag mdt")
+          where("marketDataSelection" eql PersistAsBlob(MarketDataSelection(Some(pricingGroup))))
+        orderBy("snapshotTime" desc))
+    { SnapshotID(_) }
   }
 
   def snapshot(version: Int, marketDataSelection: MarketDataSelection, observationDay: Day) = {
-    import QueryBuilder._
     val optSnapshot = db.queryWithOneResult((select("*") from "MarketDataTag" where (("version" eql version)
       and ("marketDataSelection" eql LiteralString(StarlingXStream.write(marketDataSelection)))
       and ("observationDay" eql observationDay)))) {
@@ -460,6 +470,8 @@ class DBMarketDataStore(db: MdDB, tags: MarketDataTags, val marketDataSources: M
     tags.latestSnapshot(pricingGroup, observationDay)
   }
 
+  def latestSnapshot(pricingGroup: PricingGroup) = tags.latestSnapshot(pricingGroup)
+
   def saveAll(marketDataSet: MarketDataSet, observationPoint: ObservationPoint, data: Map[MarketDataKey, MarketData]): SaveResult = {
     val dataX = data.map { case (marketDataKey, marketData) => MarketDataEntry(observationPoint, marketDataKey, marketData) }
 
@@ -597,6 +609,11 @@ class DBMarketDataStore(db: MdDB, tags: MarketDataTags, val marketDataSources: M
       case _ =>
     }
     days.toList.sortWith(_ > _).headOption
+  }
+
+  def latestObservationDayFor(pricingGroup: PricingGroup, marketDataType: MarketDataType) = {
+    db.latestObservationDaysFor(pricingGroupsDefinitions(pricingGroup), marketDataType)
+      .getOrThrow("No observation days for: " + marketDataType)
   }
 
   private def marketDataSets(marketDataIdentifier: MarketDataIdentifier): List[MarketDataSet] = marketDataSets(marketDataIdentifier.selection)

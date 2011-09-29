@@ -13,7 +13,9 @@ import starling.singleclasspathmanager.SingleClasspathManager
 import starling.titan.TitanEdmTradeService
 import starling.services.rpc.valuation.ValuationService
 import starling.services.rpc.marketdata.MarketDataService
-
+import starling.daterange.Day
+import starling.utils.ImplicitConversions._
+import starling.titan.EDMConversions._
 
 /**
  * Run up a test instance of the server and invoke the valuation service operations to test services using mock data
@@ -84,8 +86,11 @@ object ValuationServicePerformanceTest extends App {
     }
 
     BouncyRMIServiceApi().using { marketDataRMI : MarketDataServiceApi =>
-      val rmiSpotFXResults = run("Spot FX (rmi)", () => mds.getSpotFXRates(None, None))
-      val rmiReferenceInterestRatesResults = run("Reference interest rates (rmi)", () => mds.getReferenceInterestRates(None, None))
+      val latestSnapshot = mds.latestSnapshotID().getOrThrow("No snapshots")
+      val today = Day.today.toSerializable
+
+      val rmiSpotFXResults = run("Spot FX (rmi)", () => mds.getSpotFXRates(latestSnapshot, today))
+      val rmiReferenceInterestRatesResults = run("Reference interest rates (rmi)", () => mds.getReferenceInterestRates(latestSnapshot, today))
       val rmiSnapshotIds = run("Reference interest rates (rmi)", () => mds.marketDataSnapshotIDs())
 
       val output = new File("marketdata-service-timings.csv")

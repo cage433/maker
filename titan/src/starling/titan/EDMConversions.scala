@@ -10,10 +10,9 @@ import com.trafigura.services._
 import com.trafigura.services.marketdata.Maturity
 import starling.daterange.{DateRange, Tenor, SimpleDateRange, Day}
 import com.trafigura.edm.common.types.datespecifications.{DateRange => TitanDateRange}
-import valuation.TitanSnapshotIdentifier
-import starling.gui.api.{SpecificMarketDataVersion, MarketDataVersion}
 import starling.utils.Pattern.Extractor
-import starling.db.SnapshotID
+import starling.db.{MarketDataStore, SnapshotID}
+import starling.gui.api.{SnapshotMarketDataVersion, SpecificMarketDataVersion, MarketDataVersion}
 
 case class InvalidUomException(msg : String) extends Exception(msg)
 
@@ -67,9 +66,11 @@ object EDMConversions {
   val StringToTitanCurrency: Extractor[Any, TitanSerializableCurrency] = UOM.Currency.andThen(UOMToTitanCurrency)
 
   implicit def enrichTitanSnapshotIdentifier(snapshotId: TitanSnapshotIdentifier) = new {
+    def intId = snapshotId.id.toInt
     def toTitanDate = TitanSerializableDate(snapshotId.snapshotDay)
     def toDay = Day.fromLocalDate(snapshotId.snapshotDay)
-    def toMarketDataVersion: Option[MarketDataVersion] = snapshotId.intId.map(SpecificMarketDataVersion(_))
+//    def toMarketDataVersion(marketDataStore: MarketDataStore) = SnapshotMarketDataVersion(fromTitan(marketDataStore).label)
+    def fromTitan(marketDataStore: MarketDataStore): Option[SnapshotID] = marketDataStore.snapshotFromID(intId)
   }
 
   // Titan implicits
@@ -157,14 +158,17 @@ object EDMConversions {
     TitanSerializableQuantity(q.value, uomMap)
   }
 
-  val starlingUomSymbolToEdmUom = Map(
+  val starlingCurrencyToEdmCurrency = Map(
     aed -> "AED",
     gbp -> "GBP",
     eur -> "EUR",
     zar -> "ZAR",
     usd -> "USD",
     jpy -> "JPY",
-    cny -> "RMB",
+    cny -> "RMB"
+  )
+
+  val starlingUomSymbolToEdmUom = starlingCurrencyToEdmCurrency ++ Map(
     TONNE_SYMBOL -> "MTS",
     POUND_SYMBOL -> "LBS"
 
