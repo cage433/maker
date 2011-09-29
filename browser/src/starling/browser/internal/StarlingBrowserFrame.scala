@@ -1,7 +1,6 @@
 package starling.browser.internal
 
 import swing.event.{MouseClicked, WindowClosing}
-import collection.mutable.ListBuffer
 import swing.Swing._
 import java.awt.event.{MouseEvent, MouseAdapter, InputEvent, KeyEvent}
 import java.awt.{Color, Dimension}
@@ -22,6 +21,12 @@ class StarlingBrowserFrame(homePage: Page, startPage:Either[Page, (ServerContext
   peer.getRootPane.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke(KeyEvent.VK_N, InputEvent.CTRL_DOWN_MASK), "newFrameAction")
   peer.getRootPane.getActionMap.put("newFrameAction", newFrameAction.peer)
 
+  private val newFrameAtCurrentPageAction = Action("New Frame At Current Page") {
+    containerMethods.createNewFrame(Some(this), startPage = Some(Left(browserTabbedPane.selectedPage)))
+  }
+  peer.getRootPane.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke(KeyEvent.VK_N, InputEvent.CTRL_DOWN_MASK | InputEvent.SHIFT_DOWN_MASK), "newFrameAtCurrentPageAction")
+  peer.getRootPane.getActionMap.put("newFrameAtCurrentPageAction", newFrameAtCurrentPageAction.peer)
+
   private val showMessagesAction = Action("Show Messages") {
     notificationPanel.visible = !notificationPanel.visible
   }
@@ -40,15 +45,11 @@ class StarlingBrowserFrame(homePage: Page, startPage:Either[Page, (ServerContext
   peer.getRootPane.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke(KeyEvent.VK_M, InputEvent.CTRL_DOWN_MASK | InputEvent.SHIFT_DOWN_MASK), "fakeMessagesAction")
   peer.getRootPane.getActionMap.put("fakeMessagesAction", fakeMessagesAction.peer)
 
-  private val closeFrameAction = Action("Close Window") {containerMethods.closeFrame(this)}
-//  peer.getRootPane.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke(KeyEvent.VK_W, InputEvent.CTRL_DOWN_MASK), "closeFrameAction")
-  peer.getRootPane.getRootPane.getActionMap.put("closeFrameAction", closeFrameAction.peer)
-
   private val nineteenInchMode = Action("19 Inch Mode") {size = new Dimension(1280 - 60,1024 - 60)}
-  peer.getRootPane.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke(KeyEvent.VK_N, InputEvent.CTRL_DOWN_MASK | InputEvent.SHIFT_DOWN_MASK), "19InchMode")
+  peer.getRootPane.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke(KeyEvent.VK_D, InputEvent.CTRL_DOWN_MASK | InputEvent.SHIFT_DOWN_MASK), "19InchMode")
   peer.getRootPane.getActionMap.put("19InchMode", nineteenInchMode.peer)
 
-  def updateNotifications() {notificationPanel.updateLayout}
+  def updateNotifications() {notificationPanel.updateLayout()}
 
   reactions += {
     case WindowClosing(_) => containerMethods.closeFrame(this)
@@ -212,7 +213,7 @@ class StarlingBrowserTabbedPane(homePage: Page, startPage:Either[Page,(ServerCon
   tabPopupMenu.addSeparator()
   tabPopupMenu.add(closeTabItem.peer)
 
-  def createStarlingBrowser(gotoTab: Boolean = true, pageOrBuildPage: Either[Page, (ServerContext => Page, PartialFunction[Throwable, Unit])] = startPage): StarlingBrowser = {
+  def createStarlingBrowser(gotoTab: Boolean = true, pageOrBuildPage: Either[Page, (ServerContext => Page, PartialFunction[Throwable, Unit])] = Left(homePage)): StarlingBrowser = {
     val (tabText, icon, addressText) = pageOrBuildPage match {
       case Left(page) => (page.shortText, page.icon, page.text)
       case _ => (" ", BrowserIcons.im("/icons/10x10_blank.png"), " ")
@@ -230,8 +231,17 @@ class StarlingBrowserTabbedPane(homePage: Page, startPage:Either[Page,(ServerCon
     starlingBrowser
   }
 
+  def selectedPage:Page = {
+    selection.page.content match {
+      case c:SXLayerScala[_] => c.asInstanceOf[SXLayerScala[StarlingBrowser]].getScalaComponent.currentPage match {
+        case Some(cp) => cp
+        case None => throw new Exception("I would always expect a page to be available at this point")
+      }
+    }
+  }
+
   def selectPage(page:Page) {
-    val (_, i) = pages.zipWithIndex.find{case (p, i) => {
+    val (_, i) = pages.zipWithIndex.find{case (p, _) => {
       p.content match {
         case c:SXLayerScala[_] => c.asInstanceOf[SXLayerScala[StarlingBrowser]].getScalaComponent.currentPage match {
           case Some(cp) => cp == page
@@ -248,5 +258,5 @@ class StarlingBrowserTabbedPane(homePage: Page, startPage:Either[Page,(ServerCon
   peer.setEnabledAt(0, false)
 
   // This is run for the side effects. That's a bit naughty!
-  createStarlingBrowser()
+  createStarlingBrowser(pageOrBuildPage = startPage)
 }
