@@ -1,4 +1,4 @@
-package starling.gui
+package starling.browser.common
 
 import java.awt.image.BufferedImage
 import java.awt.geom.{Point2D, Ellipse2D}
@@ -54,5 +54,5 @@ object TextureUtils {
 }
 
 object Textures {
-  val PunchedSheetTexture = TextureUtils.punchedSheet(12)
+  lazy val PunchedSheetTexture = TextureUtils.punchedSheet(12)
 }
