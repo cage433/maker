@@ -178,7 +178,7 @@ object GuiUtils {
     UIManager.put("ComboBox.selectionForeground", Color.BLACK)
     UIManager.put("TableHeader.background", backColour)
     UIManager.put("ScrollPane.background", backColour)
-    UIManager.put("TabbedPane.selected", GuiUtils.StarlingBrowserTopFadeColour) // This is the colour of the tabs when selected.
+    UIManager.put("TabbedPane.selected", backColour) // This is the colour of the tabs when selected.
     val buttonSelectColour = new Color(208, 208, 208)
     UIManager.put("ToggleButton.select", buttonSelectColour);
     UIManager.put("Button.select", buttonSelectColour)

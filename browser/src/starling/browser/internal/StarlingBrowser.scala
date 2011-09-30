@@ -675,7 +675,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
 
   refreshButtonStatus()
 
-  private val actionPanel = new MigXPanel("", "[p]0[p][p]0[p][p]") {
+  private val actionPanel = new MigPanel("", "[p]0[p][p]0[p][p]") {
     add(backButton)
     add(undoButton)
     add(redoButton)
@@ -689,13 +689,6 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
     add(settingsButton)
     add(bookmarkButton, "split 2, gap after 0")
     add(bookmarkDropDownButton, "gap before 0, growy")
-
-    val version = lCache.version
-    val (topColour,bottomColour) = version.colour match {
-      case None => (GuiUtils.StarlingBrowserTopFadeColour, GuiUtils.StarlingBrowserBottomFadeColour)
-      case Some(c) => (c, c)
-    }
-    backgroundPainter = new VerticalGradientPaint(topColour, bottomColour)
   }
 
   peer.add(actionPanel.peer, "pushx, growx, wrap 0")
@@ -1438,13 +1431,14 @@ case class SuccessSubmitResponse[R](data:R) extends SubmitResponse
 case class FailureSubmitResponse(t:Throwable) extends SubmitResponse
 
 class NullPageComponent extends FlowPanel with PageComponent {
+  background = Color.WHITE
   contents += new Label("Loading...")
   // This is used as the initial size if the user has no settings. It is also used when splitting tabs.
   preferredSize = new Dimension(1250, 750)
+  border = MatteBorder(1,0,0,0,GuiUtils.BorderColour)
 }
 
 class NavigationButton extends Button {
   focusable = false
-  background = GuiUtils.ClearColour
   opaque = false
 }
