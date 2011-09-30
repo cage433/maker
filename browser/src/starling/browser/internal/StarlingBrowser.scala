@@ -1173,7 +1173,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
 
   private def currentFocus = {
     val focusOwner = KeyboardFocusManager.getCurrentKeyboardFocusManager.getFocusOwner
-    if (focusOwner != null) {
+    if (focusOwner != null && !genericLockedUI.isLocked) {
       Some(focusOwner)
     } else {
       None
@@ -1181,9 +1181,13 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
   }
 
   def selected() {
-    focusedComponent.foreach(fc => {
-      onEDT(onEDT(fc.requestFocusInWindow()))
-    })
+    focusedComponent match {
+      case Some(fc) => onEDT(onEDT(fc.requestFocusInWindow()))
+      case None if !genericLockedUI.isLocked => onEDT(onEDT({
+        currentComponent.defaultComponentForFocus.foreach(_.requestFocusInWindow())
+      }))
+      case _ =>
+    }
   }
 
   def createPopulatedComponent(page:Page, pageResponse:PageResponse, previousPageData:Option[PreviousPageData]=None) = {
