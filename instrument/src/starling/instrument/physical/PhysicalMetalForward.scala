@@ -23,6 +23,6 @@ case class PhysicalMetalForward(
   }
 
   def asStarlingTrades : List[Trade] = {
-    null
+    Nil
   }
 }

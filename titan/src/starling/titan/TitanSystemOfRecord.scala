@@ -288,6 +288,7 @@ class TitanSystemOfRecord(
 
     //val assignments = logisticsServices.assignmentService.service.getAllAssignments()
     val edmTrades : List[EDMPhysicalTrade] = titanTradeServices.getAllCompletedTrades()
+    println("No of edm tardes = " + edmTrades.size)
     val inventory = logisticsServices.inventoryService.service.getAllInventoryLeaves()
 
     def quotaNames(inventory : EDMInventoryItem) : List[String] = inventory.purchaseAssignment.quotaName :: Option(inventory.salesAssignment).map(_.quotaName).toList
@@ -305,9 +306,16 @@ class TitanSystemOfRecord(
           fwd.asStarlingTrades
         } catch {
           case e =>
-            List(Trade(
-                  TradeID(edmTrade.titanId.value, TitanTradeSystem),
-                  TitanTradeAttributes.dummyDate, "Unknown", TitanTradeAttributes.errorAttributes(edmTrade), new ErrorInstrument(e.getMessage)))
+            try {
+              println("Got an exception")
+              List(Trade(
+                    TradeID(edmTrade.titanId.value, TitanTradeSystem),
+                    TitanTradeAttributes.dummyDate, "Unknown", TitanTradeAttributes.errorAttributes(edmTrade), new ErrorInstrument(e.getMessage)))
+            } catch {
+              case e =>
+                println("Weird exception")
+                throw e
+            }
         }
     }
 
