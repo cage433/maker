@@ -44,7 +44,9 @@ trait RichFunction {
     def apply(t: (A, B, C, D)) = f.tupled(t)
   }
 
-  implicit def enrichPartialFunction[A, B](pf1: PartialFunction[A, B]) = new {
+  implicit def enrichPartialFunction[A, B](pf: PartialFunction[A, B]) = new RichPartialFunction(pf)
+
+  class RichPartialFunction[A, B](pf1: PartialFunction[A, B]) {
     def ***[C, D](pf2: PartialFunction[C, D]) = new PartialFunction[(A, C), (B, D)] {
       def isDefinedAt(pair: (A, C)) = pf1.isDefinedAt(pair._1) && pf2.isDefinedAt(pair._2)
       def apply(pair: (A, C)) = (pf1.apply(pair._1), pf2.apply(pair._2))

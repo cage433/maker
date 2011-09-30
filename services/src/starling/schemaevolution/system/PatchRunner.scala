@@ -12,11 +12,12 @@ import starling.services.StarlingInit
 import org.apache.commons.io.IOUtils
 import starling.utils.ImplicitConversions._
 import collection.immutable.Map
+import collection.mutable.{Set => MSet}
 
 //Note although there is a lot of error checking in this class one thing it does not check for is the possibility that
 //there are more patches applied then actually exist in the patch package.  This is on purpose just in case we want to
 //start clearing out old patches if the numbers start getting high.
-class PatchRunner(starling: RichDB, readOnlyMode: Boolean, startlingInit: StarlingInit) {
+class PatchRunner(starling: RichDB, readOnlyMode: Boolean, starlingInit: StarlingInit) {
 
   def main(args:Array[String]) {
     updateSchemaIfRequired
@@ -26,7 +27,7 @@ class PatchRunner(starling: RichDB, readOnlyMode: Boolean, startlingInit: Starli
 
     Log.info("SCHEMAEVOLUTION: Checking patch level and applying required patches if necessary")
 
-    val alreadyAppliedPatches: Set[String] = Set() ++ getListOfAlreadyAppliedPatches(starling)
+    val alreadyAppliedPatches: MSet[String] = MSet() ++ getListOfAlreadyAppliedPatches(starling)
 
     val patchesToApply = getListOfAvailablePatchesFromClasspath.filter(
       patch => !alreadyAppliedPatches.contains(patch.patchName)
@@ -48,13 +49,14 @@ class PatchRunner(starling: RichDB, readOnlyMode: Boolean, startlingInit: Starli
 
     //Apply the patches
     val allPatches = Log.infoWithTime("Applying any patches (" + sortedPatchesToApply.size + ")") {
-      sortedPatchesToApply.map(p => {
-        p -> applyPatch(startlingInit, starling, p, alreadyAppliedPatches)
-      }).toMap
+      sortedPatchesToApply.toMapWithValues(p => {
+        applyPatch(starlingInit, starling, p, new PatchContext(starlingInit.props, alreadyAppliedPatches.toSet))
+          .update(identity, _ => alreadyAppliedPatches.add(p.patchName))
+      })
     }
 
-    val deferredPatches: Map[Patch, String] = allPatches.flatMap{case (p, Left(Some(s))) => Some(p -> s); case _ => None}
-    val requiresRestart = allPatches.find{case (_, Right(true)) => true; case _ => false}.isDefined
+    val deferredPatches: Map[Patch, String] = allPatches.collectValues { case Left(Some(deferredReason)) => deferredReason }
+    val requiresRestart = allPatches.exists { case (_, Right(true)) => true; case _ => false }
 
     deferredPatches.foreach { case (patch, deferredReason) =>
       Log.warn("====== PATCH DEFERRED: %s BECAUSE: %s ======" % (patch, deferredReason))
@@ -124,8 +126,8 @@ class PatchRunner(starling: RichDB, readOnlyMode: Boolean, startlingInit: Starli
                                           "dateApplied" -> new Timestamp))
   }
 
-  private def applyPatch(starlingInit: StarlingInit, starling: RichDB, patch: Patch, appliedPatches: Set[String]): Either[Option[String], Boolean] = {
-    val deferredReason = patch.deferredReason(new PatchContext(starlingInit.props, appliedPatches))
+  private def applyPatch(starlingInit: StarlingInit, starling: RichDB, patch: Patch, context: PatchContext): Either[Option[String], Boolean] = {
+    val deferredReason = patch.deferredReason(context)
 
     if (deferredReason.isEmpty) {
       Log.infoWithTime("SCHEMAEVOLUTION: About to apply patch [%d] with name [%s]" % (patch.patchNumber, patch.patchName)) {
