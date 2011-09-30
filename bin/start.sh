@@ -9,7 +9,7 @@ cd $BUILD_PATH
 NAME=$(dirname $(dirname $(pwd)))
 cd ..
 
-assertEquals 'Java(TM) SE Runtime Environment (build 1.6.0_22-b04)', "`java -version 2>&1 | grep Env`", 'Invalid Java version'
+assertEquals 'Java(TM) SE Runtime Environment (build 1.6.0_25-b06)', "`java -version 2>&1 | grep Env`", 'Invalid Java version'
 
 if [ -f pid.txt ]; then
     echo
