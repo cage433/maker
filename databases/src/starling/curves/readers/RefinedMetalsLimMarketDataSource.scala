@@ -35,8 +35,8 @@ case class RefinedMetalsLimMarketDataSource(limServer: LIMServer) extends Market
     { case (marketDataType, sources) => marketDataType.name.pair(sources.flatMap(_.description)).map("%s → %s" % _) }
 
   def read(day: Day) = log.infoWithTime("Getting data from LIM") {
-    Map(getValuesForType(PriceDataType, day, day, priceSources),
-                           getValuesForType(SpotFXDataType, day, day, spotFXSources),
+    Map(getValuesForType(PriceDataType, day.startOfFinancialYear, day, priceSources),
+                           getValuesForType(SpotFXDataType, day.startOfFinancialYear, day, spotFXSources),
                            getValuesForType(PriceFixingsHistoryDataType, day.startOfFinancialYear, day, fixingsSources))
   }
 
