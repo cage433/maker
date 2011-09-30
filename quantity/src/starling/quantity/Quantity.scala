@@ -204,15 +204,17 @@ class Quantity(val value : Double, val uom : UOM) extends Ordered[Quantity] with
 
   override def equals(other: Any) = other match {
     case Quantity(this.value, this.uom) => true
-    case Quantity(_, this.uom) => false
-    case other: Quantity => {
-      val thisBase = this.inBaseUOM
-      other.inBaseUOM match {
-        case Quantity(thisBase.value, thisBase.uom) => true
-        case _ => false
-      }
-    }
+    case Quantity(_, this.uom) => false // different values, same uom - false
+    case q @ Quantity(_, UOM(this.uom.uType, _, _)) => compareInBaseUOM(q.asInstanceOf[Quantity]) // same main type, could be equal
     case _ => false
+  }
+
+  private def compareInBaseUOM(other: Quantity) = {
+    val thisBase = this.inBaseUOM
+    other.inBaseUOM match {
+      case Quantity(thisBase.value, thisBase.uom) => true
+      case _ => false
+    }
   }
 
   def isAlmostEqual(other : Quantity, tolerance : Double) = {

@@ -3,6 +3,7 @@ package starling.quantity
 import UOM._
 import java.io.Serializable
 import starling.utils.ImplicitConversions._
+import starling.utils.cache.CacheFactory
 
 /**
  * Converts between UOMs given a table of conversions.
@@ -13,10 +14,12 @@ protected[quantity] class Conversions(val conversions: Map[UOM, BigDecimal]) ext
     case (u@UOM(uType, _, _), _) => (uType -> u)
   }
 
+  private val conversionCache = CacheFactory.getCache("Conversions.conversionCache", unique = true)
+
   /**
    * Don't ever call this directly. Use Quantity.in
    */
-  protected[quantity] def convert(from: UOM, to: UOM): Option[BigDecimal] = if (from == to) {
+  protected[quantity] def convert(from: UOM, to: UOM): Option[BigDecimal] = conversionCache.memoize((from, to), {if (from == to) {
     Some(BigDecimal(1.0))
   } else if (to.isScalar || to.isNull) {
     Some(BigDecimal(1.0))
@@ -51,14 +54,14 @@ protected[quantity] class Conversions(val conversions: Map[UOM, BigDecimal]) ext
         }
       }
     }
-  }
+  }})
 
   private def decomposePrime(long: Long): (Int, Int) = {
     UOM.decomposePrimes(long).toList match {
       case (p, n) :: Nil => (p, n)
     }
   }
-  
+
   def +(conv: (UOM, BigDecimal)): Conversions = new Conversions(conversions + conv)
 
   override def toString = conversions.map(_.toString).mkString(", ")

@@ -135,10 +135,28 @@ object UOM extends StarlingEnum(classOf[UOM], (u: UOM) => u.toString, ignoreCase
   lazy val currencies: List[UOM] = uoms.filter(_.isCurrency)
   val uomMap: Map[(Long, Long), UOM] = uoms.map(u => (u.uType.numerator, u.subType.numerator) -> u).toMap
   val symbolToUOMMap: Map[UOMSymbol, UOM] = uoms.map(u => (UOMSymbol.symbolForPrime(u.subType.numerator) -> u)).toMap
-  val baseMap: Map[Ratio, UOM] = uoms.flatMap {
-    case u@UOM(uType, _, v) if v == 1.0 => Some((uType -> u))
-    case _ => None
-  }.toMap
+
+  /**
+   * Map of UOM symbol to their base - e.g. CENT -> USD or KG -> G
+   */
+  protected[quantity] val baseMap: Map[UOMSymbol, UOMSymbol] = {
+    val bases: Map[Ratio, UOMSymbol] = uoms.flatMap {
+      case u@UOM(uType, subType, v) if v == 1.0 => Some((uType -> UOMSymbol.symbolForPrime(subType.numerator)))
+      case _ => None
+    }.toMap
+    uoms.map {
+      case UOM(uType, subType, _) => (UOMSymbol.symbolForPrime(subType.numerator) -> bases(uType))
+    }.toMap
+  }
+
+  private val baseConversionCache = CacheFactory.getCache("UOM.baseConversionCache", unique = true)
+
+  protected[quantity] def baseFor(uom: UOM): UOM = baseConversionCache.memoize(uom, {
+    val base = uom.asSymbolMap.map {
+      case (sym, pow) => (UOM.baseMap(sym) -> pow)
+    }
+    UOM.fromSymbolMap(base)
+  })
 
   private def getSymbolOption(text: CaseInsensitive): Option[UOM] = UOMSymbol.fromName(text).map(UOM.asUOM)
 
@@ -288,7 +306,7 @@ case class UOM(uType: Ratio, subType: Ratio, v: BigDecimal) extends Ordered[UOM]
 
   def compare(rhs: UOM) = asString.compareTo(rhs.asString)
 
-  override def hashCode() = asString.hashCode()
+  override def hashCode() = uType.hashCode() ^ subType.hashCode()
 
   override def equals(obj: Any) = obj match {
     case UOM(`uType`, `subType`, _) => true
@@ -370,16 +388,11 @@ case class UOM(uType: Ratio, subType: Ratio, v: BigDecimal) extends Ordered[UOM]
    */
   def inBaseCurrency: UOM = {
     assert(isCurrency, "Not a currency: " + this)
-    UOM.baseMap(uType)
+    inBaseUnit
   }
 
 
-  def inBaseUnit: UOM = {
-    val base = asSymbolMap.map {
-      case (sym, pow) => (UOMSymbol.symbolForPrime(UOM.baseMap(UOM.symbolToUOMMap(sym).uType).subType.numerator) -> pow)
-    }
-    UOM.fromSymbolMap(base)
-  }
+  def inBaseUnit: UOM = UOM.baseFor(this)
 
   def isFX = numeratorUOM.isCurrency && denominatorUOM.isCurrency
 }
