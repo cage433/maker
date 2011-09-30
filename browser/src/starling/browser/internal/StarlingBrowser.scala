@@ -63,7 +63,9 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
   private val componentCaching = true
 
   private val starlingBrowserUI = new StarlingBrowserUI
-  val starlingBrowserLayer = new SXLayerScala(this, starlingBrowserUI)
+  val starlingBrowserLayer = new SXLayerScala(this, starlingBrowserUI) {
+    focusable = false
+  }
   private var threadSequence = 0
   private val componentBufferWindow = 1
   private val history = new ArrayBuffer[PageInfo]
