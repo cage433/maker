@@ -13,7 +13,7 @@ import starling.utils.ImplicitConversions._
 
 class Patch121_ImportBenchmarksFromNeptune extends Patch {
   override def deferredReason(context: PatchContext) =
-    context.props.ImportBenchmarksFromNeptune() ? none[String] | some("Awaiting cutover from Neptune to Starling")
+    context.props.ImportBenchmarksFromNeptune() ? none[(Int, String)] | some((121, "Awaiting cutover from Neptune to Starling"))
 
   protected def runPatch(init: StarlingInit, starling: RichDB, writer: DBWriter) = init.marketDataStore.save(Map(
     MarketDataSet.ManualMetals → read(init.neptuneRichDB, Day.today).allValues))
@@ -25,7 +25,7 @@ class Patch121_ImportBenchmarksFromNeptune extends Patch {
 
 class Patch121_ImportFreightParityFromNeptune extends Patch {
   override def deferredReason(context: PatchContext) =
-    context.props.ImportFreightParityFromNeptune() ? none[String] | some("Awaiting cutover from Neptune to Starling")
+    context.props.ImportFreightParityFromNeptune() ? none[(Int, String)] | some((121, "Awaiting cutover from Neptune to Starling"))
 
   protected def runPatch(init: StarlingInit, starling: RichDB, writer: DBWriter) = init.marketDataStore.save(Map(
     MarketDataSet.ManualMetals → read(init.neptuneRichDB, Day.today).allValues))

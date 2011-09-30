@@ -4,6 +4,7 @@ import org.joda.time.LocalDate
 import com.trafigura.services._
 import com.trafigura.services.marketdata._
 import starling.daterange.Day
+import valuation.TitanMarketDataIdentifier
 
 
 object MarketDataClient {
@@ -13,8 +14,9 @@ object MarketDataClient {
 
     val day = Day(2011, 6, 24)
     val date = day.toLocalDate
-    val observationDay = new TitanSerializableDate(date)
-    val snapshotId = new TitanSnapshotIdentifier("4439", day)
+    val observationDay = TitanSerializableDate(date)
+    val titanSnapshotIdentifier: TitanSnapshotIdentifier = TitanSnapshotIdentifier("4439")
+    val marketDataID = TitanMarketDataIdentifier(titanSnapshotIdentifier, day)
 
     ///////////////////
     // Spot FX Examples
@@ -22,14 +24,14 @@ object MarketDataClient {
 
     { // Latest SpotFX
       val latestSnapshot: TitanSnapshotIdentifier = marketData.latestSnapshotID().getOrElse(throw new Exception("No snapshots"))
-      val latestSpotFXRates: List[SpotFXRate] = marketData.getSpotFXRates(latestSnapshot, observationDay)
+      val latestSpotFXRates: List[SpotFXRate] = marketData.getSpotFXRates(marketDataID)
 
       println("latest getSpotFXRates:...")
       latestSpotFXRates.foreach(println)
     }
 
     { // SpotFX for a given snapshot
-      val spotFXRates: List[SpotFXRate] = marketData.getSpotFXRates(snapshotId, observationDay)
+      val spotFXRates: List[SpotFXRate] = marketData.getSpotFXRates(marketDataID)
 
       println("getSpotFXRates:...")
       spotFXRates.foreach(println)
@@ -39,9 +41,9 @@ object MarketDataClient {
       val currencies = TitanSerializableCurrency.titanCurrencies.map(TitanSerializableCurrency(_))
 
       for (from <- currencies; to <- currencies) {
-        val spotFXRate: SpotFXRate = marketData.getSpotFXRate(snapshotId, observationDay, from, to)
+        val spotFXRate: SpotFXRate = marketData.getSpotFXRate(marketDataID, from, to)
 
-        println("getSpotFXRate(%s, %s, %s) = %s".format(snapshotId, from, to, spotFXRate))
+        println("getSpotFXRate(%s, %s, %s) = %s".format(marketDataID, from, to, spotFXRate))
       }
     }
 
@@ -50,7 +52,7 @@ object MarketDataClient {
     ///////////////////////////////////
 
     {
-      val interestRates: List[ReferenceInterestRate] = marketData.getReferenceInterestRates(snapshotId, observationDay)
+      val interestRates: List[ReferenceInterestRate] = marketData.getReferenceInterestRates(marketDataID)
 
       println("getReferenceInterestRates:...")
       interestRates.foreach(println)
@@ -58,17 +60,17 @@ object MarketDataClient {
 
     {
       val interestRate: ReferenceInterestRate = marketData.getReferenceInterestRate(
-        snapshotId, observationDay, ReferenceRateSource("LIBOR"), Maturity.get("1M"), TitanSerializableCurrency("GBP"))
+        marketDataID, ReferenceRateSource("LIBOR"), Maturity.get("1M"), TitanSerializableCurrency("GBP"))
 
       println("getReferenceInterestRate: " + interestRate)
     }
 
     {
       val domesticRates: List[ReferenceInterestRate] = {
-        val from = TitanSerializableDate(new LocalDate(2011, 7, 1))
-        val to = TitanSerializableDate(new LocalDate(2011, 7, 6))
+        val from = Day(2011, 7, 1)
+        val to = Day(2011, 7, 6)
 
-        marketData.getReferenceInterestRates(snapshotId, from, to, ReferenceRateSource("Domestic Rate"),
+        marketData.getReferenceInterestRates(titanSnapshotIdentifier, from, to, ReferenceRateSource("Domestic Rate"),
           Maturity.get("ON"), TitanSerializableCurrency("RMB"))
       }
 

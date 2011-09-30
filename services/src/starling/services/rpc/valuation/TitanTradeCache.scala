@@ -12,7 +12,7 @@ import com.trafigura.edm.trades.{CompletedTradeState, TradeStateEnum, Trade, Phy
 
 /**
  * Trade cache provide trade map lookup by trade id and also a quota id to trade map lookup
- */
+
 case class DefaultTitanTradeCache(props : Props) extends TitanTradeCache with Log {
   protected var tradeMap = Map[TitanId, EDMPhysicalTrade]().withException()
   protected var quotaIDToTradeIDMap = Map[String, TitanId]().withException()
@@ -115,3 +115,5 @@ case class TitanTradeServiceBasedTradeCache(titanTradesService : TitanTradeServi
     }
   }
 }
+
+ */

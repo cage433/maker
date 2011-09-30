@@ -1,5 +1,6 @@
 package starling.startserver.apps
 
+/*
 import starling.services.rpc.refdata.FileMockedTitanServicesDataFileGenerator
 import starling.titan.TitanEdmTradeService
 import starling.services.rpc.valuation.ValuationService
@@ -14,5 +15,5 @@ object RefDataServices {
       FileMockedTitanServicesDataFileGenerator(edmTradeService, valuationService)
     }
   }
-
 }
+*/

@@ -9,7 +9,6 @@ import starling.instrument.Trade
 import starling.utils.conversions.RichMapWithErrors._
 import com.trafigura.edm.logistics.inventory.{EDMLogisticsQuota, EDMInventoryItem}
 import starling.utils.{Log, Stopwatch}
-import com.trafigura.edm.shared.types.Quantity
 import starling.tradestore.TradeStore
 
 
@@ -35,6 +34,7 @@ trait logisticsQuotaCache {
   def removeQuota(id : String)
 }
 
+/*
 case class DefaultTitanLogisticsInventoryCache(
     titanLogisticsServices : TitanLogisticsServices,
     titanTradeCache : TitanTradeCache,
@@ -59,7 +59,7 @@ case class DefaultTitanLogisticsInventoryCache(
   }
 
   private def tradesForInventory(inventoryID: String): List[Trade] = {
-    val tradeConverter = TradeConverter(refData, titanTradeCache)
+    val tradeConverter =  TradeConverter(refData, titanTradeCache)
     getAssignmentsForInventory(inventoryID).map(assignment => tradeConverter.toTrade(assignment))
   }
   private def writeToTradeStore(inventoryID : String) {
@@ -197,3 +197,5 @@ object DefaultTitanLogisticsInventoryCache {
   }
 }
 
+
+*/

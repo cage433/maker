@@ -127,6 +127,7 @@ case class FileMockedTitanServices() extends TitanServices {
   }
 }
 
+/*
 case class FileMockedTitanServicesDataFileGenerator(titanEdmTradeService : TitanEdmTradeService, valuationService : ValuationService) {
 
   import org.codehaus.jettison.json.JSONObject
@@ -169,3 +170,4 @@ case class FileMockedTitanServicesDataFileGenerator(titanEdmTradeService : Titan
   val loadedTrades = loadJsonValuesFromFile(tradesFile, true).map(s => EDMPhysicalTrade.fromJson(new JSONObject(s)).asInstanceOf[EDMPhysicalTrade])
   println("loaded %d trades = ".format(loadedTrades.size))
 }
+*/

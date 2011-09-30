@@ -1,6 +1,6 @@
 package starling.instrument
 
-import physical.PhysicalMetalAssignment
+import physical.{UnallocatedSalesQuota, PhysicalMetalAssignment}
 import starling.quantity.UOM._
 import starling.quantity.Quantity._
 import org.testng.annotations.{DataProvider, Test}
@@ -111,7 +111,8 @@ class UTPTests extends IndexTest {
       // Commodity Spread Options
       CommoditySpreadOption(FuturesSpreadMarket.ICE_WTI_BRENT, Month(2011, 1), Quantity(-1, USD/BBL), Quantity(1000, BBL), Call),
 
-      PhysicalMetalAssignment.sample
+      PhysicalMetalAssignment.sample,
+      UnallocatedSalesQuota.sample
 
     ).map(Array[Tradeable](_))
   }
@@ -228,6 +229,12 @@ class UTPTests extends IndexTest {
     val instruments : Seq[UTP] = tradeableProvider.flatMap(tradeables=>tradeables).flatMap{tradeable=>tradeable.asUtpPortfolio(Day(2009, 1, 1)).instruments}
     val allFields = (TreeSet[String]() ++ instruments.flatMap(_.fields.map(_.replaceAll(" ", "").toLowerCase))) + "error"
     val actual = TreeSet[String]() ++ InstrumentType.fields.map(_.replaceAll(" ", "").toLowerCase)
+    if (actual != allFields){
+      println("All - actual")
+      (allFields -- actual).foreach(println)
+      println("actual - all")
+      (actual -- allFields).foreach(println)
+    }
     assertEquals(actual, allFields)
   }
 
@@ -236,6 +243,12 @@ class UTPTests extends IndexTest {
     val tradeables = tradeableProvider.flatMap(tradeables=>tradeables)
     val allFields = (TreeSet[String]() ++ tradeables.flatMap(_.shownTradeableDetails.keySet.map(_.replaceAll(" ", "").toLowerCase))) + "error"
     val actual = TreeSet[String]() ++ TradeableType.fields.map(_.replaceAll(" ", "").toLowerCase)
+    if (actual != allFields){
+      println("All - actual")
+      (allFields -- actual).foreach(println)
+      println("actual - all")
+      (actual -- allFields).foreach(println)
+    }
     assertEquals(actual, allFields)
   }
 

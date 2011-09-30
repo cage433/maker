@@ -19,7 +19,7 @@ import starling.tradestore.TradeStore
 import starling.instrument.TradeableType
 import starling.richdb.RichInstrumentResultSetRow
 import starling.rmi.{NullRabbitEventDatabase, DefaultRabbitEventDatabase}
-import starling.titan.{TitanTradeStore, TitanTacticalRefData, TitanTradeCache, TitanLogisticsServices}
+import starling.titan.{TitanTradeStore, TitanTacticalRefData, TitanLogisticsServices}
 
 /**
  * Valuation service tests
@@ -28,10 +28,8 @@ class ValuationServiceTest extends StarlingTest {
 
   var mockTitanServices : FileMockedTitanServices = null
   var mockTitanTradeService : DefaultTitanTradeService = null
-  var mockTitanTradeCache : TitanTradeServiceBasedTradeCache = null
   var mockTitanLogisticsServices : FileMockedTitanLogisticsServices = null
   var mockRabbitEventServices : MockTitanRabbitEventServices = null
-  var mockInventoryCache : DefaultTitanLogisticsInventoryCache = null
   var mockDB = NullRabbitEventDatabase
 
   @BeforeClass
@@ -40,12 +38,11 @@ class ValuationServiceTest extends StarlingTest {
     MarketProvider.registerCreator(starling.market.TestMarketCreator)
     mockTitanServices = new FileMockedTitanServices()
     mockTitanTradeService = new DefaultTitanTradeService(mockTitanServices)
-    mockTitanTradeCache = new TitanTradeServiceBasedTradeCache(mockTitanTradeService)
     mockTitanLogisticsServices = FileMockedTitanLogisticsServices()
     mockRabbitEventServices = new MockTitanRabbitEventServices()
-    mockInventoryCache = new DefaultTitanLogisticsInventoryCache(mockTitanLogisticsServices, mockTitanTradeCache, mockTitanServices, None)
   }
-  
+
+/*
   /**
    * valuation mock event handler for valuation service published events
    */
@@ -243,4 +240,5 @@ class ValuationServiceTest extends StarlingTest {
   def main(args : Array[String]) {
     testValuationServiceValuationUpdatedEvents
   }
+*/
 }

@@ -1,6 +1,6 @@
 package starling.instrument
 
-import physical.PhysicalMetalAssignment
+import physical.{UnallocatedSalesQuota, PhysicalMetalAssignment}
 import starling.daterange.{DateRange, DayAndTime, Day}
 import starling.richdb.RichInstrumentResultSetRow
 import starling.utils.ImplicitConversions._
@@ -72,7 +72,8 @@ object TradeableType {
     RefinedFixationsForSplit,
     NetEquityPosition,
     CashInstrument,
-    PhysicalMetalAssignment
+    PhysicalMetalAssignment,
+    UnallocatedSalesQuota
   )
   def fromName(name : String) = types.find(_.name == name) match {
     case Some(t) => types.find(_.name == name).get // some scala bug means have to do it this way
@@ -100,14 +101,20 @@ object TradeableType {
     ("Fixations", classOf[List[RefinedFixation]]),
     ("Cash Instrument Type", classOf[CashInstrumentType]),
     ("Commodity", classOf[String]),
-    ("Pricing Spec Name", classOf[String]),
-    ("Index", classOf[Option[IndexWithDailyPrices]]),
-    ("QuotationPeriod", classOf[Option[DateRange]]),
+    ("Contract Index", classOf[Option[IndexWithDailyPrices]]),
     ("Premium", classOf[Quantity]),
     ("Exchange", classOf[FuturesExchange]),
     ("Inventory ID", classOf[String]),
     ("Inventory Quantity", classOf[Quantity]),
-    ("Assignment ID", classOf[String])
+    ("Assignment ID", classOf[String]) ,
+    ("Direction", classOf[String]),
+    ("Contract Delivery Day", classOf[Day]),
+    ("Benchmark Delivery Day", classOf[Day]),
+    ("Contract Delivery Location", classOf[String]),
+    ("Benchmark Delivery Location", classOf[String]),
+    ("Contract Pricing Spec Name", classOf[String]),
+    ("Grade", classOf[String])
+
 
   )
   val fields = fieldsWithType.map(_._1)

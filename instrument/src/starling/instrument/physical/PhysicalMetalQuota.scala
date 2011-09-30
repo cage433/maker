@@ -8,19 +8,15 @@ import starling.quantity.{Percentage, Quantity}
 
 
 case class PhysicalMetalQuota(
-  isPurchase : Boolean,
   quotaID : String,
   assignments : List[PhysicalMetalAssignment],
-  unallocatedSalesPortion : Option[UnallocatedSalesQuota],
-  deliveryLocation : String,
-  destinationLocation : String,
-  shape : String,
-  grade : String,
-  tolerancePlus : Percentage,
-  toleranceMinus : Percentage,
-  contractDeliveryDay : Day,
-  benchmarkDeliveryDay : Day
+  unallocatedSalesPortion : Option[UnallocatedSalesQuota]
 ) {
+
+  def isPurchase = unallocatedSalesPortion match {
+    case Some(_) => false
+    case None => assignments.head.isPurchase
+  }
 
   def fullyAllocated = {
     assert(!isPurchase, "Full allocation applies only to sales")
@@ -28,49 +24,6 @@ case class PhysicalMetalQuota(
   }
 
 
-
-  // the unallocated quota quantity
-//  def unallocatedQuotaQuantity : Quantity = {
-//    assignments.find(! _.isAllocated).map(_.assignmentQuantity).getOrElse(Quantity.NULL)
-//    /**
-//     * work out the quota level quantities
-//     *   from the direction and rules around allocated quantities and fully allocated status
-//     */
-//    if (isPurchase) {
-//      unallocatedAssignments.map(_.assignmentQuantity).sum
-//    } else {
-//        if (!fullyAllocated)
-//          quantity - allocatedAssignmentQuantity
-//        else
-//          quantity * 0 // quota level quantity is zero when fully allocated on the sales side
-//    }
-//  }
-
-  // using actual assignment level quantities
-//  def allocatedAssignmentQuantity : Quantity = {
-//    allocatedAssignments.map{a => fromTitanQuantity(a.assignmentQuantity)}.sum
-//  }
-
-//  private def makeAssignment(a : EDMAssignment, i : Inventory) = PhysicalMetalAssignment(a, i, contractPricingSpec, benchmarkPricingSpec)
-//  private def allocatedAssignments : List[PhysicalMetalAssignment] = {
-//    if (isPurchase) {
-//      // return purchase assignments that have been allocated to a corresponding sales assignment via the assigned inventory
-//      inventory.filter(i => Option(i.item.salesAssignment).isDefined).map{i => makeAssignment(i.item.purchaseAssignment, i)}
-//    }
-//    else
-//      // return the sales assignments (all)
-//      inventory.map{i =>
-//        makeAssignment(i.item.salesAssignment, i)
-//      }
-//  }
-
-//  private def unallocatedAssignments : List[PhysicalMetalAssignment] = {
-//    if (isPurchase)
-//      inventory.filterNot(i => Option(i.item.salesAssignment).isDefined).map{i => makeAssignment(i.item.purchaseAssignment, i)}
-//    else
-//      Nil
-//  }
-//  private implicit def toValuationMap[A <: AssignmentValuation](values : List[A]) : Map[String, A] = values.map{v => v.assignmentID -> v}.toMap
 
   lazy val (allocatedAssignments, unallocatedAssignments) =  assignments.partition(_.isAllocated)
 
@@ -137,4 +90,3 @@ case class PhysicalMetalQuota(
     }
   }
 }
-
