@@ -1,6 +1,6 @@
 package starling.reports.impl
 
-import pivot.{CurveIdentifier, ReportServiceInternal}
+import pivot.{CurveIdentifierFactory, CurveIdentifier, ReportServiceInternal}
 import starling.gui.api.ReportParameters._
 import starling.pivot.model.{PivotTableModel, DiffPivotTableDataSource}
 import starling.gui.api._
@@ -23,7 +23,8 @@ class ReportFacilityImpl(
                          userReportsService:UserReportsService,
                          tradeStores:TradeStores,
                          userSettingsDatabase:UserSettingsDatabase,
-                         eaiStarlingDB:DB) extends ReportFacility {
+                         eaiStarlingDB:DB,
+                         curveIdentifierFactory: CurveIdentifierFactory) extends ReportFacility {
 
   private def unLabel(tradeID:TradeIDLabel):TradeID = TradeID(tradeID.id, unLabel(tradeID.tradeSystem))
   private def unLabel(tradeSystem:TradeSystemLabel):TradeSystem = TradeSystems.fromName(tradeSystem.name)
@@ -48,7 +49,7 @@ class ReportFacilityImpl(
     assert(tradeSets.size == 1, "Must have only 1 trade set")
     val tradeSet = tradeSets.head
 
-    val pivot = reportService.pnlReconciliation(CurveIdentifier.unLabel(curveIdentifier), tradeSet._1, tradeSet._2, eaiStarlingDB)
+    val pivot = reportService.pnlReconciliation(curveIdentifierFactory.unLabel(curveIdentifier), tradeSet._1, tradeSet._2, eaiStarlingDB)
     PivotTableModel.createPivotData(pivot, pivotFieldParams)
   }
 
@@ -69,7 +70,7 @@ class ReportFacilityImpl(
       tradeStore.readTrade(tradeID, Some(timestamp)) match {
         case None =>
         case Some(trade) => {
-          val tradeValuation = reportService.singleTradeReport(trade, CurveIdentifier.unLabel(curveIdentifier))
+          val tradeValuation = reportService.singleTradeReport(trade, curveIdentifierFactory.unLabel(curveIdentifier))
 
           val (stable, fieldDetailsGroups, _) = tradeStores.readTradeVersions(tradeID)
           val cols = stable.columns

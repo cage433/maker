@@ -13,7 +13,7 @@ import starling.marketdata.ForwardRateData
 case class CurveSpecification(curveType: CurveType, marketDataIdentifier: MarketDataIdentifier,
                               environmentSpecification: EnvironmentSpecification)
 
-class CurveViewer(marketDataStore : MarketDataStore) {
+class CurveViewer(marketDataStore : MarketDataStore, environmentRules: EnvironmentRules) {
   val curveTypeLookup = Map(CurveTypeLabel("Price") → PriceCurveFactory,
                             CurveTypeLabel("Pricing Schedule") → PricingScheduleFactory,
                             CurveTypeLabel("Implied Vol") -> ImpliedVolCurveTypeFactory,
@@ -38,8 +38,11 @@ class CurveViewer(marketDataStore : MarketDataStore) {
   private def createPivot(curveLabel: CurveLabel): PivotTableDataSource = {
     val curveType: CurveType = curveTypeLookup(curveLabel.curveType)
     val reader = new NormalMarketDataReader(marketDataStore, curveLabel.marketDataIdentifier)
-    curveType.create(reader, EnvironmentSpecification.forLabel(curveLabel.environmentSpecification))
+    curveType.create(reader, forLabel(curveLabel.environmentSpecification))
   }
+
+  private def forLabel(label: EnvironmentSpecificationLabel) =
+    new EnvironmentSpecification(label.observationDay, environmentRules.forLabel(label.environmentRule))
 }
 
 trait CurveType {

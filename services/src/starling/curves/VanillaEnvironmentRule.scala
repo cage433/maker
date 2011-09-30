@@ -3,15 +3,15 @@ package starling.curves
 import starling.daterange._
 import starling.marketdata._
 import starling.utils.ImplicitConversions._
-import starling.gui.api.EnvironmentRuleLabel
 import starling.market.{CommodityMarket, FuturesMarket}
 import starling.db.{MarketDataReaderMarketDataSlice, MarketDataReader}
+import starling.gui.api.{PricingGroup, EnvironmentRuleLabel}
 
 
 class VanillaEnvironmentRule(
     pointRule:(Day)=>ObservationPoint,
     timeOfDay:TimeOfDay,
-    val label: EnvironmentRuleLabel) extends EnvironmentRule {
+    val label: EnvironmentRuleLabel, val pricingGroups: List[PricingGroup]) extends EnvironmentRule {
 
   override def createNullAtomicEnvironment(observationDay: Day) = new NullAtomicEnvironment(observationDay.atTimeOfDay(timeOfDay))
 

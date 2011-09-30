@@ -13,12 +13,3 @@ class EnvironmentSpecification(val observationDay: Day, val environmentRule: Env
     case _ => false
   }
 }
-
-object EnvironmentSpecification {
-  def forLabel(label: EnvironmentSpecificationLabel) =
-    new EnvironmentSpecification(label.observationDay, EnvironmentRule.forLabel(label.environmentRule))
-}
-
-
-
-

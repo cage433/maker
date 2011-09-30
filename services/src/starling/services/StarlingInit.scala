@@ -29,7 +29,6 @@ import org.springframework.mail.javamail.JavaMailSenderImpl
 import starling.rmi._
 import starling.calendar._
 import com.trafigura.services.valuation.{ValuationServiceApi, TradeManagementCacheNotReady}
-import starling.curves.{StarlingMarketLookup, FwdCurveAutoImport, CurveViewer}
 import starling.services.rpc.refdata._
 import starling.services.rabbit._
 import collection.immutable.Map
@@ -52,7 +51,7 @@ import starling.eai.{EAIDealBookMapping, Traders, EAIAutoImport, EAIStrategyDB}
 import starling.titan._
 import starling.auth.internal.{LdapUserLookupImpl, KerberosAuthHandler}
 import starling.marketdata.DBReferenceDataLookup
-
+import starling.curves._
 
 class StarlingInit( val props: Props,
                     authHandler:AuthHandler = AuthHandler.Dev,
@@ -171,7 +170,8 @@ class StarlingInit( val props: Props,
   private val guiColour = if (production || props.UseProductionColour()) None else Some(PropsHelper.createColour(serverName))
   val version = Version(serverName, hostname, props.StarlingDatabase().url, production, guiColour)
 
-  val curveViewer = new CurveViewer(marketDataStore)
+  val environmentRules = new EnvironmentRules
+  val curveViewer = new CurveViewer(marketDataStore, environmentRules)
 
   val referenceData = new ReferenceData(businessCalendars, marketDataStore/*, scheduler*/) //add scheduler
 
@@ -179,7 +179,8 @@ class StarlingInit( val props: Props,
     userSettingsDatabase,
     version, referenceData, businessCalendars.UK)
 
-  val fc2Service = new FC2FacilityImpl(marketDataStore, curveViewer, marketDataReadersProviders, referenceDataLookup)
+  val fc2Service = new FC2FacilityImpl(marketDataStore, curveViewer, marketDataReadersProviders, referenceDataLookup,
+    environmentRules)
 
   def currentUser() = User.currentlyLoggedOn
 

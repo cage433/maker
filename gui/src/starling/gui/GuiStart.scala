@@ -208,7 +208,7 @@ object GuiStart extends Log {
       cacheMap(Desks) = tradeService.desks
       cacheMap(GroupToDesksMap) = tradeService.groupToDesksMap
       cacheMap(IsStarlingDeveloper) = starlingServer.isStarlingDeveloper
-      cacheMap(EnvironmentRules) = fc2Service.environmentRules
+      cacheMap(EnvironmentRules) = fc2Service.environmentRuleLabels
       cacheMap(CurveTypes) = fc2Service.curveTypes
       cacheMap(LatestRabbitEvent) = rabbitEventService.latestRabbitEvent
     } catch {

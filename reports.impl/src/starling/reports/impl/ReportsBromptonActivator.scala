@@ -1,6 +1,6 @@
 package starling.reports.impl
 
-import starling.reports.impl.pivot.{ReportServiceInternal, ReportContextBuilder}
+import pivot.{CurveIdentifierFactory, ReportServiceInternal, ReportContextBuilder}
 import starling.tradestore.TradeStores
 import starling.calendar.BusinessCalendars
 import starling.reports.facility.ReportFacility
@@ -8,6 +8,7 @@ import starling.rmi.{MarketDataPageIdentifierReaderProvider, UserSettingsDatabas
 import starling.gui.api.{ReportMarketDataPageIdentifier, MarketDataPageIdentifier}
 import starling.db.{DB, MarketDataStore}
 import starling.manager.{ExportGuiRMIProperty, ExportXlloopProperty, BromptonContext, BromptonActivator}
+import starling.curves.EnvironmentRules
 
 class ReportsBromptonActivator extends BromptonActivator {
 
@@ -17,13 +18,14 @@ class ReportsBromptonActivator extends BromptonActivator {
     val tradeStores = context.awaitService(classOf[TradeStores])
     val businessCalendars = context.awaitService(classOf[BusinessCalendars])
     val userSettingsDatabase = context.awaitService(classOf[UserSettingsDatabase])
+    val curveIdentifierFactory = new CurveIdentifierFactory(context.awaitService(classOf[EnvironmentRules]))
     val eaiStarlingDB = DB(props.StarlingDatabase())
 
     val reportContextBuilder = new ReportContextBuilder(marketDataStore)
-    val reportServiceInternal = new ReportServiceInternal(reportContextBuilder,tradeStores)
+    val reportServiceInternal = new ReportServiceInternal(reportContextBuilder, tradeStores, curveIdentifierFactory)
     val userReportsService = new UserReportsService(businessCalendars.UK, tradeStores, marketDataStore, userSettingsDatabase, reportServiceInternal)
 
-    val reportService = new ReportFacilityImpl(reportServiceInternal, userReportsService, tradeStores, userSettingsDatabase, eaiStarlingDB)
+    val reportService = new ReportFacilityImpl(reportServiceInternal, userReportsService, tradeStores, userSettingsDatabase, eaiStarlingDB, curveIdentifierFactory)
 
     val reportRecordingMarketDataReaderProvider = new MarketDataPageIdentifierReaderProvider() {
       def readerFor(identifier: MarketDataPageIdentifier) = {

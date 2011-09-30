@@ -4,13 +4,14 @@ import starling.daterange._
 import starling.utils.ImplicitConversions._
 import ObservationTimeOfDay._
 import collection.immutable.List
-import starling.gui.api.EnvironmentRuleLabel
 import starling.db.{MarketDataReaderMarketDataSlice, MarketDataReader}
 import starling.quantity.Quantity
 import starling.market.{FuturesExchangeFactory, Market, FuturesMarket}
 import starling.marketdata._
+import starling.gui.api.{PricingGroup, EnvironmentRuleLabel}
 
 object TimeShiftToLMECloseEnvironmentRule extends EnvironmentRule {
+  val pricingGroups = List(PricingGroup.Metals)
   val observationTimeOfDay = ObservationTimeOfDay.LMEClose
   val label = EnvironmentRuleLabel("Time shift to " + observationTimeOfDay.name)
   val exchanges = Set(FuturesExchangeFactory.SFS, FuturesExchangeFactory.LME)

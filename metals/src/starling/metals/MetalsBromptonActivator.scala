@@ -29,11 +29,14 @@ import starling.tradeimport.TradeImporter
 import starling.richdb.{RichResultSetRowFactory, RichDB}
 import starling.db.{DB, TitanTradeSystem, MarketDataStore}
 import starling.calendar.BusinessCalendars
-import starling.curves.CurveViewer
 import starling.rmi.{RabbitEventDatabase, DefaultRabbitEventDatabase}
 import swing.event.Event
 import starling.utils._
-
+import starling.curves.ClosesEnvironmentRule._
+import starling.daterange.ObservationPoint._
+import starling.daterange.{ObservationPoint, TimeOfDay}
+import starling.curves._
+import starling.gui.api.{PricingGroup, EnvironmentRuleLabel}
 
 class MetalsBromptonActivator extends BromptonActivator {
 
@@ -147,6 +150,23 @@ class MetalsBromptonActivator extends BromptonActivator {
     context.registerService(classOf[MarketDataServiceApi], marketDataService,ExportTitanRMIProperty::Nil)
 
     context.registerService(classOf[RabbitEventDatabase], rabbitEventDatabase)
+
+    {
+      import starling.daterange.ObservationTimeOfDay._
+
+      val metalRules = List(
+        ClosesEnvironmentRule(),
+        ClosesEnvironmentRule(allowOldPricesToBeUsed = true),
+        new VanillaEnvironmentRule((day)=>ObservationPoint(day, SHFEClose), TimeOfDay.EndOfDay,
+          new EnvironmentRuleLabel(SHFEClose.name), List(PricingGroup.Metals)),
+        TimeShiftToLMECloseEnvironmentRule
+      )
+
+      metalRules.foreach(context.registerService(classOf[EnvironmentRule], _))
+
+
+    }
+
   }
 
   def stop(context: BromptonContext) {

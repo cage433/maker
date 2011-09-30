@@ -13,9 +13,12 @@ import starling.db.{MarketDataStore, DB}
 import starling.tradestore.TradeStores
 import starling.calendar.BusinessCalendars
 import starling.rmi.{RabbitEventDatabase, UserSettingsDatabase, BromptonTrackerBasedMarketDataPageIdentifierReaderProviders, StarlingServer}
-import starling.curves.CurveViewer
 import starling.services.excel.ExcelLoopReceiver
 import starling.loopyxl.ReflectiveMethodSource
+import starling.curves.{VanillaEnvironmentRule, EnvironmentRule, EnvironmentRules, CurveViewer}
+import starling.daterange.ObservationPoint._
+import starling.daterange.{ObservationPoint, TimeOfDay, ObservationTimeOfDay}
+import starling.gui.api.{PricingGroup, EnvironmentRuleLabel}
 
 class ServicesBromptonActivator extends BromptonActivator {
 
@@ -52,6 +55,29 @@ class ServicesBromptonActivator extends BromptonActivator {
       context.registerService(classOf[AnyRef], receiver, ExportLoopyProperty::ExportXlloopProperty::Nil)
     }}
     context.registerService(classOf[AnyRef], starlingInit.curveHandler, ExportXlloopProperty::Nil)
+
+    { // Environment Rules
+      context.registerService(classOf[EnvironmentRules], starlingInit.environmentRules)
+      context.createServiceTracker(Some(classOf[EnvironmentRule]), serviceTracker = new BromptonServiceCallback[EnvironmentRule] {
+        def serviceAdded(ref: BromptonServiceReference, environmentRule: EnvironmentRule) = {
+          starlingInit.environmentRules.add(environmentRule)
+        }
+
+        def serviceRemoved(ref: BromptonServiceReference) = {
+          throw new Exception("Not implemented")
+        }
+      })
+
+      val everythingButMetals = PricingGroup.values - PricingGroup.Metals
+      val Default = new VanillaEnvironmentRule((day)=>ObservationPoint(day, ObservationTimeOfDay.Default), TimeOfDay.EndOfDay,
+        EnvironmentRuleLabel.COB, everythingButMetals)
+
+      val RealTime = new VanillaEnvironmentRule((day)=>ObservationPoint.RealTime, TimeOfDay.StartOfDay,
+        EnvironmentRuleLabel.RealTime, everythingButMetals)
+
+      context.registerService(classOf[EnvironmentRule], Default)
+      context.registerService(classOf[EnvironmentRule], RealTime)
+    }
 
     excelLoopReceiver = new ExcelLoopReceiver(starlingInit.ldapUserLookup, props.XLLoopPort())
     context.createServiceTracker(None,  ExportXlloopProperty::Nil, new BromptonServiceCallback[AnyRef] {

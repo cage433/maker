@@ -10,7 +10,7 @@ trait FC2Facility {
   @DoNotCache def snapshots():Map[MarketDataSelection,List[SnapshotIDLabel]]
   @DoNotCache def observationDays():(Map[PricingGroup,Set[Day]], Map[String,Set[Day]])
   def pricingGroups():List[PricingGroup]
-  def environmentRules():Map[PricingGroup,List[EnvironmentRuleLabel]]
+  def environmentRuleLabels():Map[PricingGroup,List[EnvironmentRuleLabel]]
   def curveTypes():List[CurveTypeLabel]
   @DoNotCache def excelDataSets():List[String]
   @DoNotCache def excelLatestMarketDataVersions:Map[String,Int]

@@ -3,17 +3,19 @@ package starling.curves
 import starling.daterange._
 import starling.marketdata._
 import starling.utils.ImplicitConversions._
-import starling.gui.api.EnvironmentRuleLabel
 import starling.db.MarketDataReader
 import starling.quantity.UOM
-import starling.calendar.BusinessCalendar
-import starling.pivot.MarketValue
 import starling.market._
 
+import ObservationTimeOfDay._
+import starling.market.FuturesExchangeFactory._
+import starling.gui.api.{PricingGroup, EnvironmentRuleLabel}
 
 
 case class ClosesEnvironmentRule(allowOldPricesToBeUsed : Boolean = false) extends EnvironmentRule {
-  import EnvironmentRule._
+  val pricingGroups = List(PricingGroup.Metals)
+  val exchangeCloses = Map(SFS → SHFEClose, LME → LMEClose, COMEX → COMEXClose)
+  val marketCloses = exchangeCloses.composeKeys((market: FuturesMarket) => market.exchange)
 
   val label = if (allowOldPricesToBeUsed) EnvironmentRuleLabel("Most recent closes") else EnvironmentRuleLabel.AllCloses
   private val numberOfDaysToLookBack = if (allowOldPricesToBeUsed) 7 else 0

@@ -36,10 +36,10 @@ case class CurveIdentifier(
   override def toString = marketDataIdentifier + " " + tradesUpToDay
 }
 
-object CurveIdentifier {
+class CurveIdentifierFactory(environmentRules: EnvironmentRules) {
   def unLabel(label:CurveIdentifierLabel):CurveIdentifier = CurveIdentifier(
     label.marketDataIdentifier,
-    EnvironmentRule.forLabel(label.environmentRule),
+    environmentRules.forLabel(label.environmentRule),
     label.tradesUpToDay,
     label.valuationDayAndTime,
     label.thetaDayAndTime,
@@ -181,7 +181,7 @@ class PivotReportRunner(reportContextBuilder:ReportContextBuilder) {
 /**
  * Joins up trades and market data to create reports
  */
-class ReportServiceInternal(reportContextBuilder:ReportContextBuilder, tradeStores: TradeStores) {
+class ReportServiceInternal(reportContextBuilder:ReportContextBuilder, tradeStores: TradeStores, curveIdentifierFactory: CurveIdentifierFactory) {
 
   val pivotReportRunner = new PivotReportRunner(reportContextBuilder )
 
@@ -210,7 +210,7 @@ class ReportServiceInternal(reportContextBuilder:ReportContextBuilder, tradeStor
     val allUtps = readUTPs(reportParameters)
     val utpsKey = allUtps.keySet
     cache.memoize((utpsKey, reportParameters.curveIdentifier, reportParameters.reportOptions), {
-      pivotReportRunner.runReport( CurveIdentifier.unLabel(reportParameters.curveIdentifier), reportParameters.reportOptions, allUtps)
+      pivotReportRunner.runReport( curveIdentifierFactory.unLabel(reportParameters.curveIdentifier), reportParameters.reportOptions, allUtps)
     })
   }
 
@@ -332,7 +332,7 @@ class ReportServiceInternal(reportContextBuilder:ReportContextBuilder, tradeStor
           }
           pnlReport(
             tradeSet,
-            CurveIdentifier.unLabel(pnlFromParameters.curveIdentifierFrom), CurveIdentifier.unLabel(reportParameters.curveIdentifier),
+            curveIdentifierFactory.unLabel(pnlFromParameters.curveIdentifierFrom), curveIdentifierFactory.unLabel(reportParameters.curveIdentifier),
             fromTimestamp, timestamp,
             reportParameters.expiryDay,
             reportParameters.runReports)

@@ -5,11 +5,11 @@ import starling.gui.api._
 import starling.pivot.model.PivotTableModel
 import starling.pivot.{NullPivotTableDataSource, PivotFieldParams, PivotEdits}
 import starling.marketdata._
-import starling.curves.{CurveViewer, EnvironmentRule}
 import starling.fc2.api.FC2Facility
 import starling.db._
 import starling.utils.ImplicitConversions._
 import starling.manager.BromptonContext
+import starling.curves.{EnvironmentRules, CurveViewer, EnvironmentRule}
 
 
 trait MarketDataPageIdentifierReaderProvider {
@@ -34,7 +34,8 @@ class FC2FacilityImpl(
                       snapshotDatabase:MarketDataStore,
                       curveViewer : CurveViewer,
                       marketDataReaderProviders:MarketDataPageIdentifierReaderProviders,
-                      referenceDataLookup: ReferenceDataLookup) extends FC2Facility {
+                      referenceDataLookup: ReferenceDataLookup,
+                      environmentRules: EnvironmentRules) extends FC2Facility {
 
   private def unLabel(pricingGroup:PricingGroup) = pricingGroup
   private def unLabel(snapshotID:SnapshotIDLabel) = snapshotDatabase.snapshotFromID(snapshotID.id).get
@@ -47,15 +48,7 @@ class FC2FacilityImpl(
   }
   def excelDataSets() = snapshotDatabase.excelDataSets
 
-  def environmentRules = {
-    pricingGroups.map { pg => {
-      val rules = pg match {
-        case PricingGroup.Metals => EnvironmentRule.metalsRulesLabels
-        case _ => EnvironmentRule.defaultRulesLabels
-      }
-      pg -> rules
-    } }.toMap
-  }
+  def environmentRuleLabels = pricingGroups.toMapWithValues(environmentRules.forPricingGroup(_).map(_.label))
 
   val curveTypes = curveViewer.curveTypes
 
