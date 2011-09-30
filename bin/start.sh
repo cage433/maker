@@ -1,11 +1,16 @@
 #!/bin/bash
 
+function assertEquals { if [ "$1" != "$2" ]; then echo "$3: expected \"$1\", but was: \"$2\""; exit 1; fi }
+
 TARGETS=${@-clean compile}
 
 BUILD_PATH=$(dirname $0)
 cd $BUILD_PATH
 NAME=$(dirname $(dirname $(pwd)))
 cd ..
+
+assertEquals 'Java(TM) SE Runtime Environment (build 1.6.0_22-b04)', "`java -version 2>&1 | grep Env`", 'Invalid Java version'
+
 if [ -f pid.txt ]; then
     echo
     echo "It looks like the program is already running as there is a pid.txt file. Please either stop the application or remove the pid.txt file."
