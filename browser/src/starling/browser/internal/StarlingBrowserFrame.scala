@@ -129,9 +129,10 @@ trait WindowMethods {
 class StarlingBrowserTabbedPane(homePage: Page, startPage:Either[Page,(ServerContext => Page, PartialFunction[Throwable,Unit])], pageBuilder: PageBuilder, lCache: LocalCache, userSettings:UserSettings,
                                 remotePublisher: Publisher, windowMethods: WindowMethods, extraInfo:Option[String],
                                 containerMethods:ContainerMethods, parentFrame:StarlingBrowserFrame) extends TabbedPane {
+  var doUnselection = true
   override lazy val peer = new JTabbedPane with SuperMixin {
     override def setSelectedIndex(index:Int) {
-      if (selection.index != -1) {
+      if (selection.index != -1 && doUnselection) {
         selection.page.content match {
           case c:SXLayerScala[_] => c.asInstanceOf[SXLayerScala[StarlingBrowser]].getScalaComponent.unselected()
           case _ =>
@@ -198,9 +199,9 @@ class StarlingBrowserTabbedPane(homePage: Page, startPage:Either[Page,(ServerCon
       val selectionToRemove = selection.index
       pages.remove(selectionToRemove)
       val newSelection = if (selectionToRemove == pages.length - 1) selectionToRemove - 1 else selectionToRemove
+      doUnselection = false
       selection.index = newSelection
-      val browser = pages(newSelection).self.asInstanceOf[SXLayerScala[StarlingBrowser]].getScalaComponent
-      browser.selected()
+      doUnselection = true
     } else {
       containerMethods.closeFrame(parentFrame)
     }
