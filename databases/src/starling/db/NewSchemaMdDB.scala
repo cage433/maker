@@ -18,6 +18,7 @@ import collection.mutable.{ListBuffer, Map => MMap}
 import concurrent.SyncVar
 import starling.pivot.{Row, Field => PField}
 import collection.immutable._
+import collection.Iterator
 
 
 class NewSchemaMdDB(db: DBTrait[RichResultSetRow], referenceDataLookup: ReferenceDataLookup) extends MdDB with Log {
@@ -187,13 +188,17 @@ class NewSchemaMdDB(db: DBTrait[RichResultSetRow], referenceDataLookup: Referenc
 //    require(marketDataType.valueFields.size == 1, "Market data type %s has multiple value field keys: %s "
 //      % (marketDataType, marketDataType.valueFields))
 
-    val values = db.queryWithResult(
-      select("*")
-        from("MarketDataValue")
-       where("observationDay" gte from, "observationDay" lte to)
-         and("extendedKey" in extendedKeyIdsFor(marketDataType, List(marketDataSet))
-         and("value" isNotNull))
-    ) { marketDataValue(_) }
+    val extendedKeyIds = extendedKeyIdsFor(marketDataType, List(marketDataSet))
+
+    val values = extendedKeyIds.grouped(1998).toList.flatMap { chunk => { //limit is 2000 but there is from and to
+      db.queryWithResult(
+        select("*")
+          from("MarketDataValue")
+         where("observationDay" gte from, "observationDay" lte to)
+           and("extendedKey" in chunk
+           and("value" isNotNull))
+      ) { marketDataValue(_) }
+    } }
 
     values.groupBy(_.timedKey).mapValuesEagerly { valuesForTimeKey => {
       val latestValuesByValueKey = valuesForTimeKey.groupBy(_.valueKey).mapValues(_.maxBy(_.commitId))
@@ -318,7 +323,7 @@ class NewSchemaMdDB(db: DBTrait[RichResultSetRow], referenceDataLookup: Referenc
     }
   }
 
-  private def marketDataValue(rs: RichResultSetRow) =
+  private def marketDataValue(rs: RichResultSetRow):MarketDataValue =
     MarketDataValue(rs.getDay("observationDay"), extendedKeys(rs.getInt("extendedKey")), valueKeys(rs.getInt("valueKey")),
       rs.getDouble("value"), rs.getString("uom"), rs.getStringOption("comment"), rs.getInt("commitId"))
 
