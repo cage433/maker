@@ -240,13 +240,16 @@ import starling.quantity.RichQuantity._
 
   @DataProvider(name = "testEquals")
   def testEqualsProvider = constructArgs(
-    (1 (USD), (1 (USD))),
-    (1 (GAL), (1 (GAL))),
-    (1000 (L), (1 (KL))),
-    (1000 (G), (1 (KG))),
-    (1000 (L), (1 (KL))),
-    (1 (USD), (100 (US_CENT))),
-    (1.5 (USD), (150 (US_CENT)))
+    (1(USD), (1(USD))),
+    (1(GAL), (1(GAL))),
+    (1000(L), (1(KL))),
+    (1000(G), (1(KG))),
+    (1000(L), (1(KL))),
+    (1(USD), (100(US_CENT))),
+    (1000(USD/(KG*KG)), (.1(US_CENT/(G*G)))),
+    (123.456789(GAL), (2.939447357142857(BBL))),
+    (123.456789(OZ), (.0038398553738104024(MT))),
+    (1.5(USD), (150(US_CENT)))
   )
   @Test(dataProvider = "testEquals")
   def testEquals(a: Quantity, b: Quantity) {

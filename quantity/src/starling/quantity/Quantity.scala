@@ -121,7 +121,12 @@ class Quantity(val value : Double, val uom : UOM) extends Ordered[Quantity] with
   def pq : PivotQuantity = PivotQuantity(Map(uom -> value), Map[String, List[StackTrace]]())
 
   def in(otherUOM : UOM)(implicit conv: Conversions = Conversions.default): Option[Quantity] = {
-    conv.convert(uom, otherUOM).map((ratio) => Quantity((this.value * ratio).toDouble, otherUOM))
+    conv.convert(uom, otherUOM).map {
+      (ratio) => {
+        val newValue = (BigDecimal(this.value) * ratio).toDouble
+        Quantity(newValue, otherUOM)
+      }
+    }
   }
 
   /**
@@ -211,7 +216,8 @@ class Quantity(val value : Double, val uom : UOM) extends Ordered[Quantity] with
 
   private def compareInBaseUOM(other: Quantity) = {
     val thisBase = this.inBaseUOM
-    other.inBaseUOM match {
+    val otherBase = other.inBaseUOM
+    otherBase match {
       case Quantity(thisBase.value, thisBase.uom) => true
       case _ => false
     }
@@ -228,7 +234,12 @@ class Quantity(val value : Double, val uom : UOM) extends Ordered[Quantity] with
             )
   }
 
-  override lazy val hashCode = inBaseUOM.value.hashCode
+  /**
+   * Should be: inBaseUOM.value.hashCode
+   * but this is faster. Multiplaction is in the same order as base conversion is
+   * so any floating errors should be the same in both equals and hashCode
+   */
+  override lazy val hashCode = (uom.v * value).toDouble.hashCode
 
   def isAlmostZero : Boolean = value.abs < MathUtil.EPSILON
   def isZero : Boolean = value == 0.0

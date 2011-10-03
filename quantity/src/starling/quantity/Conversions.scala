@@ -39,7 +39,7 @@ protected[quantity] class Conversions(val conversions: Map[UOM, BigDecimal]) ext
           case Some(u) => {
             val (SCALAR, c1) = u.div(convertNoPowers)
             val c2 = conversions(u)
-            val conversion = 1 / (c2 * c1)
+            val conversion = BigDecimal("1") / (c2 * c1)
             Some(conversion.pow(numPow))
           }
           case _ => baseConverions.get(lookup.inverse) match {
