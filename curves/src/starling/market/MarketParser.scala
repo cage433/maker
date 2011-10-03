@@ -65,6 +65,8 @@ class MarketParser(businessCalendars: BusinessCalendars, futuresExpiryRules: Fut
             val limMultiplier = line.getFromOption[Double]("limMultiplier")
             val lim = (limSymbol, limMultiplier) match {
               case (Some(s), Some(m)) => Some(LimSymbol(s, m))
+              case (Some(s), None) => Some(LimSymbol(s, 1))
+              case (None, Some(_)) => throw new Exception("You can't have a multiplier without a lim symbol")
               case _ => None
             }
 
