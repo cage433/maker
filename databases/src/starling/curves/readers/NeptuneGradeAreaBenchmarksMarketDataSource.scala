@@ -30,7 +30,7 @@ class NeptuneGradeAreaBenchmarksMarketDataSource(neptuneDB:RichDB) extends Marke
     rows.map { case (neptuneCommodity, values) =>
       val data = values.map { case (grade, area, price) => (grade, area) → neptuneCommodity.toQuantity(price) }
 
-      MarketDataEntry(ObservationPoint(day), neptuneCommodity.gradeAreaBenchmarkKey, GradeAreaBenchmarkData(data.toList))
+      MarketDataEntry(ObservationPoint(day), neptuneCommodity.gradeAreaBenchmarkKey, GradeAreaBenchmarkData(data.toMap))
     }.toList
   }
 

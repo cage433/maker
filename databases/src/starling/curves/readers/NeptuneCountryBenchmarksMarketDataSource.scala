@@ -30,7 +30,7 @@ class NeptuneCountryBenchmarksMarketDataSource(neptuneDB: RichDB) extends Market
     rows.map { case (neptuneCommodity, values) =>
       val data = values.map { case (countryCode, price) => countryCode → neptuneCommodity.toQuantity(price) }
 
-      MarketDataEntry(ObservationPoint(day), neptuneCommodity.countryBenchmarkKey, CountryBenchmarkData(data.toList))
+      MarketDataEntry(ObservationPoint(day), neptuneCommodity.countryBenchmarkKey, CountryBenchmarkData(data.toMap))
     }.toList
   }
 

@@ -21,7 +21,7 @@ case class Grade(code:GradeCode, name:String) {
 case class Material(commodity:Commodity, grade:Grade)
 
 /** benchmark data for (grade, area) to quantity */
-case class GradeAreaBenchmarkData(areaData : List[((GradeCode, AreaCode), Quantity)]) extends MarketData {
+case class GradeAreaBenchmarkData(areaData : Map[(GradeCode, AreaCode), Quantity]) extends MarketData {
   def size = areaData.size
 }
 
@@ -70,6 +70,6 @@ object GradeAreaBenchmarkDataType extends MarketDataType {
   def createValue(rows: List[Row]) = {
     val data = rows.map { row => (row[Grade](gradeField).code, row[Area](areaField).code) → row.quantity(benchmarkPriceField) }
 
-    GradeAreaBenchmarkData(data)
+    GradeAreaBenchmarkData(data.toMap)
   }
 }

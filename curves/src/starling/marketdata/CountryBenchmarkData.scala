@@ -8,7 +8,7 @@ import scalaz.Scalaz._
 /**
  * benchmark data for 'neptune country' to quantity
  */
-case class CountryBenchmarkData(countryData : List[(NeptuneCountryCode, Quantity)]) extends MarketData {
+case class CountryBenchmarkData(countryData : Map[NeptuneCountryCode, Quantity]) extends MarketData {
   def size = countryData.size
 }
 
@@ -34,9 +34,9 @@ object CountryBenchmarkDataType extends MarketDataType {
   def createKey(row: Row) = CountryBenchmarkMarketDataKey(Commodity.fromName(row.string(commodityField)))
 
   def createValue(rows: List[Row]) = {
-    val data = rows.map { row => (row[NeptuneCountry](countryField).code, row.quantity(benchmarkPriceField)) }
+    val data = rows.map { row => row[NeptuneCountry](countryField).code -> row.quantity(benchmarkPriceField) }
 
-    CountryBenchmarkData(data)
+    CountryBenchmarkData(data.toMap)
   }
 }
 
