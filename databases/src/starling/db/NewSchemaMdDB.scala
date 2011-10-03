@@ -195,18 +195,22 @@ class NewSchemaMdDB(db: DBTrait[RichResultSetRow], referenceDataLookup: Referenc
         select("*")
           from("MarketDataValue")
          where("observationDay" gte from, "observationDay" lte to)
-           and("extendedKey" in chunk
-           and("value" isNotNull))
+           and("extendedKey" in chunk)
       ) { marketDataValue(_) }
     } }
 
     values.groupBy(_.timedKey).mapValuesEagerly { valuesForTimeKey => {
       val latestValuesByValueKey = valuesForTimeKey.groupBy(_.valueKey).mapValues(_.maxBy(_.commitId))
-      val maxCommitId = latestValuesByValueKey.values.map(_.commitId).maxOr(0)
-      val valueRows = latestValuesByValueKey.map { case (valKey, dayValue) => valKey.row + dayValue.row }.toList
+      val latestValuesByValueKeyWithoutDeletes = latestValuesByValueKey.filter(_._2.isNotDelete)
+      if (latestValuesByValueKeyWithoutDeletes.isEmpty) {
+        None
+      } else {
+        val maxCommitId = latestValuesByValueKey.values.map(_.commitId).maxOr(0)
+        val valueRows = latestValuesByValueKey.map { case (valKey, dayValue) => valKey.row + dayValue.row.get }.toList
 
-      VersionedMarketData(maxCommitId, marketDataType.createValue(valueRows))
-    } }
+        Some( VersionedMarketData(maxCommitId, marketDataType.createValue(valueRows)) )
+      }
+    } }.collectValues { case Some(v) => v }
   }
 
   def query(version: Int, mds: List[MarketDataSet], marketDataType: MarketDataType,
@@ -218,21 +222,25 @@ class NewSchemaMdDB(db: DBTrait[RichResultSetRow], referenceDataLookup: Referenc
       val observationDayClause = observationDays.fold(Clause.optIn("observationDay", _), TrueClause)
       val extendedKeyClause = "extendedKey" in extendedKeyIdsFor(marketDataType, mds, observationTimes, marketDataKeys)
 
-      val values = MarketDataValueMap()
+      val values = new MarketDataValueMap()
 
       db.query(select("*")
                  from("MarketDataValue")
-                where(commitClause, observationDayClause, extendedKeyClause, "value" isNotNull)
+                where(commitClause, observationDayClause, extendedKeyClause)
 //              orderBy("commitId".asc)
       ) { marketDataValue(_).update(values) }
 
       values.values
     }
 
-    val timedData: MultiMap[TimedMarketDataKey, Row] =
-      mostRecentValues.toList.groupInto(kv => (kv._1._1), kv => (kv._1._2.row + kv._2._2)).mapValues(_.toList)
+    val timedData: MultiMap[TimedMarketDataKey, Row] = {
+      val filteredRows = mostRecentValues.toList.filter(_._2._2.isDefined)
+      filteredRows.groupInto(kv => (kv._1._1), kv => (kv._1._2.row + kv._2._2.get)).mapValues(_.toList)
+    }
 
-    timedData.mapValues(marketDataType.createValue(_)).toList
+    val nonEmptyTimedData = timedData.filter(_._2.nonEmpty)
+
+    nonEmptyTimedData.mapValues(marketDataType.createValue(_)).toList
   }
 
   def queryForObservationDayAndMarketDataKeys(version: Int, mds: List[MarketDataSet], marketDataType: MarketDataType) = {
@@ -257,13 +265,16 @@ class NewSchemaMdDB(db: DBTrait[RichResultSetRow], referenceDataLookup: Referenc
     val values = if (keys.isEmpty) Nil else db.queryWithResult(
       select("*")
         from("MarketDataValue")
-       where("observationDay" eql id.observationPoint.day.getOrElse(null), "extendedKey" in keys, "value" isNotNull)
+       where("observationDay" eql id.observationPoint.day.getOrElse(null), "extendedKey" in keys)
     ) { rs => marketDataValue(rs) }
 
-    if (values.isEmpty) None else {
-      val latestValuesByValueKey = values.groupBy(_.valueKey).mapValues(_.maxBy(_.commitId))
-      val maxCommitId = latestValuesByValueKey.values.map(_.commitId).maxOr(0)
-      val valueRows = latestValuesByValueKey.map { case (valKey, dayValue) => valKey.row + dayValue.row }.toList
+    val latestValuesByValueKey = values.groupBy(_.valueKey).mapValues(_.maxBy(_.commitId))
+    val filteredLatestValues = latestValuesByValueKey.filter(_._2.isNotDelete)
+    if (filteredLatestValues.isEmpty) {
+      None
+    } else {
+      val maxCommitId = filteredLatestValues.values.map(_.commitId).maxOr(0)
+      val valueRows = filteredLatestValues.map { case (valKey, dayValue) => valKey.row + dayValue.row.get }.toList
 
       Some(VersionedMarketData(maxCommitId, Option(id.subTypeKey.dataType.createValue(valueRows))))
     }
@@ -336,10 +347,10 @@ class NewSchemaMdDB(db: DBTrait[RichResultSetRow], referenceDataLookup: Referenc
     ).keys.toList.distinct
   }
 
-  private case class MarketDataValueMap(
-    values: MMap[(TimedMarketDataKey, MarketDataValueKey), (MarketDataSet, Row, Int)] = MMap.empty) {
+  private class MarketDataValueMap(
+    val values: MMap[(TimedMarketDataKey, MarketDataValueKey), (MarketDataSet, Option[Row], Int)] = MMap.empty) {
 
-    def update(combinedKey: (TimedMarketDataKey, MarketDataValueKey), combinedValue: (MarketDataSet, Row, Int)) {
+    def update(combinedKey: (TimedMarketDataKey, MarketDataValueKey), combinedValue: (MarketDataSet, Option[Row], Int)) {
       val (_, row, _) = combinedValue
 
       if (row.isEmpty) values.remove(combinedKey) else log.debugF("Updating latest value: " + (combinedKey, combinedValue)) {
@@ -362,7 +373,7 @@ class NewSchemaMdDB(db: DBTrait[RichResultSetRow], referenceDataLookup: Referenc
         map.update(combinedKey, combinedValue)
       }
     }
-
+    def isNotDelete = row.isDefined
     val marketDataSet = extendedKey.marketDataSet
     val timedKey = TimedMarketDataKey(ObservationPoint(observationDay, extendedKey.time), extendedKey.marketDataKey)
     val valueFields = extendedKey.marketDataType.valueFields
@@ -370,15 +381,19 @@ class NewSchemaMdDB(db: DBTrait[RichResultSetRow], referenceDataLookup: Referenc
     val combinedKey = (timedKey, valueKey)
     val combinedValue = (marketDataSet, row, commitId)
 
-    require(comment.isDefined == (valueFields.size == 2), "Inconsistent number of fields (%s) vs values (%s)" %
-      (valueFields, List(Some(value), comment).flatten))
 
-    def row = Row(valueFields.head, uom match {
-      case "" => Quantity(value, UOM.SCALAR)
-      case "%" => Percentage(value)
-      case UOM.Parse(unit) => Quantity(value, unit)
-      case _ => throw new Exception("Unrecognized uom: " + uom)
-    }) +? comment.map(valueFields.tail.head → _)
+    lazy val row = if (value==null || uom == null) {
+      None
+    } else {
+      require(comment.isDefined == (valueFields.size == 2), "Inconsistent number of fields (%s) vs values (%s)" %
+        (valueFields, List(Some(value), comment).flatten))
+      Some(Row(valueFields.head, uom match {
+        case "" => Quantity(value, UOM.SCALAR)
+        case "%" => Percentage(value)
+        case UOM.Parse(unit) => Quantity(value, unit)
+        case _ => throw new Exception("Unrecognized uom: " + uom + " in row " + timedKey + " " + valueFields + " " + value)
+      }) +? comment.map(valueFields.tail.head → _))
+    }
   }
 }
 
