@@ -390,7 +390,7 @@ class DBMarketDataStore(db: MdDB, tags: MarketDataTags, val marketDataSources: M
     val observationDays = db.observationDaysByMarketDataSet
 
     val observationDaysByPricingGroupCache = pricingGroupsDefinitions.mapValues { marketDataSets =>
-      new MSet() ++ marketDataSets.flatMap(marketDataSet => observationDays(marketDataSet.name))
+      new MSet() ++ marketDataSets.flatMap(marketDataSet => observationDays.getOrElse(marketDataSet.name, Nil))
     }.withDefaultValue(new MSet())
 
     val observationDaysByExcelCache =
