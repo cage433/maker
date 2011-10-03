@@ -57,9 +57,7 @@ class CargoReader extends InstrumentReader {
 
     val swapPricingRule = rs.getSwapPricingRule("PricingRule")
 
-    val incoterm = rs.getString("incoterm") match {
-      case IncotermCode(i) => i
-    }
+    val incoterm = IncotermCode(rs.getString("incoterm"))
 
     Cargo(quantity, incoterm, blDate, index, schedule, swapPricingRule)
   }
