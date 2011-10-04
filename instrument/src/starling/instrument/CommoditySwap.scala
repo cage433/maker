@@ -211,6 +211,7 @@ case class SinglePeriodSwap(
     Assets(assets)
   }
 
+  override def knownConversion = Some(index)
 }
 
 object CommoditySwap extends InstrumentType[SinglePeriodSwap] with TradeableType[CommoditySwap] {

@@ -108,7 +108,11 @@ class GreeksPivotReport(@transient environment : Environment, thetaDayAndTime : 
             pq.quantityValue match {
               case Some(q) => {
                 val newUOM = q.uom.replace(market.uom, uom)
-                PQ(market.convertUOM(q, newUOM))
+
+                row.conversion match {
+                  case Some(kc) => PQ(kc.convertUOM(q, newUOM))
+                  case _ => PQ(market.convertUOM(q, newUOM))
+                }
               }
               case None => pq
             }

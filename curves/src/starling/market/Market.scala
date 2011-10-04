@@ -36,7 +36,7 @@ abstract class CommodityMarket(
   @transient val limSymbol : Option[LimSymbol] = None,
   @transient val precision : Option[Precision] = None
 )
-  extends Market with HasImpliedVol with KnownObservation with FixingHistoryLookup
+  extends Market with HasImpliedVol with KnownObservation with FixingHistoryLookup with KnownConversions
 {
   override def equals(p1: Any) = p1 match {
     case et: CommodityMarket => eaiQuoteID == et.eaiQuoteID && name.equalsIgnoreCase(et.name)
@@ -70,13 +70,6 @@ abstract class CommodityMarket(
 
   def convert(value: Quantity, uom: UOM): Option[Quantity] = {
     value.in(uom)(conversions)
-  }
-
-  def convertUOM(volume : Quantity, uom : UOM) : Quantity = {
-    convert(volume, uom) match {
-      case Some(beqv) => beqv
-      case None => throw new Exception(this + ": Couldn't convert from " + volume + " to " + uom)
-    }
   }
 
   def premiumSettlementDay(tradeDay: Day) = tradeDay.addBusinessDays(businessCalendar, 5)

@@ -85,20 +85,28 @@ trait PnlExplanation {
             envDiff => {
               val greeksPnl = {
                 val (foChange, soChange, valueChange, d1PriceX) = try {
-
-                  val (valueChange, d1Price) = (atmVega, envDiff) match {
+                  val (valueChange, d1Price, zeroVols) = (atmVega, envDiff) match {
                     case (false, volKey: EnvironmentDifferentiable with VolKey) => {
-                      (interpolatedVol(d2Env, volKey) - interpolatedVol(d1EnvFwd, volKey), None)
+                      val d2Vol = interpolatedVol(d2Env, volKey)
+                      val d1FwdVol = interpolatedVol(d1EnvFwd, volKey)
+                      val change = d2Vol - d1FwdVol
+                      (change, None, d2Vol.isZero && d1FwdVol.isZero)
                     }
                     case _ => {
                       val d1 = envDiff.quantityValue(d1EnvFwd)
                       val change = envDiff.quantityValue(d2Env) - d1
-                      (change, Some(d1))
+                      (change, Some(d1), false)
                     }
                   }
-                  val foDeriv = PivotQuantity.calcOrCatch(firstOrderDerivative(d1EnvFwd, envDiff, ccy, shiftInterpolatedVols = !atmVega))
-                  val soDeriv = PivotQuantity.calcOrCatch(secondOrderDerivativeWithCrossTerm(d1EnvFwd, envDiff, ccy, diffsForThisCurveKey.toList, shiftInterpolatedVols = !atmVega))
-                  (foDeriv * valueChange, soDeriv * (valueChange * valueChange) / 2, PivotQuantity(valueChange), d1Price.map( p => PivotQuantity(p)))
+                  if(zeroVols) {
+                    // bit of a hack but we have no way to access if 'ZeroVols' was checked in the GUI. If it has been checked
+                    // we can't do numeric diff and we report no sensitivity to vol.
+                    (PivotQuantity.NULL, PivotQuantity.NULL, PivotQuantity(valueChange), None)
+                  } else {
+                    val foDeriv = PivotQuantity.calcOrCatch(firstOrderDerivative(d1EnvFwd, envDiff, ccy, shiftInterpolatedVols = !atmVega))
+                    val soDeriv = PivotQuantity.calcOrCatch(secondOrderDerivativeWithCrossTerm(d1EnvFwd, envDiff, ccy, diffsForThisCurveKey.toList, shiftInterpolatedVols = !atmVega))
+                    (foDeriv * valueChange, soDeriv * (valueChange * valueChange) / 2, PivotQuantity(valueChange), d1Price.map(p => PivotQuantity(p)))
+                  }
                 } catch {
                   case e => {
                     (new PivotQuantity(e), new PivotQuantity(e), new PivotQuantity(e), None)
