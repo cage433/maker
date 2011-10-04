@@ -13,25 +13,27 @@ import starling.marketdata._
 
 
 class NeptuneCountryBenchmarksMarketDataSource(neptuneDB: RichDB) extends MarketDataSource with Log {
-  def read(day: Day) = Map((day, day, CountryBenchmarkDataType) → readCountryBenchmarks(day))
+  def read(day: Day) = {
+    val today = Day.today
+    val entries = {
+      val (rows, invalidRows) = neptuneDB.queryWithResult(
+          select("material.description as material_description", "country_code", "benchmark_rate")
+            from("[live].[country_mat_benchmark] country_mat_benchmark")
+        leftJoin("[live].[material] material", "material.code" eql "country_mat_benchmark.material_code")) { rs =>
 
-  def readCountryBenchmarks(day:Day):List[MarketDataEntry] = {
-    val (rows, invalidRows) = neptuneDB.queryWithResult(
-        select("material.description as material_description", "country_code", "benchmark_rate")
-          from("[live].[country_mat_benchmark] country_mat_benchmark")
-      leftJoin("[live].[material] material", "material.code" eql "country_mat_benchmark.material_code")) { rs =>
+        NeptuneCommodity(rs.getString("material_description")) →
+          (NeptuneCountryCode(rs.getString("country_code")), rs.getDouble("benchmark_rate"))
+      }.toMultiMap.partitionKeys(_.isValid)
 
-      NeptuneCommodity(rs.getString("material_description")) →
-        (NeptuneCountryCode(rs.getString("country_code")), rs.getDouble("benchmark_rate"))
-    }.toMultiMap.partitionKeys(_.isValid)
+      invalidRows.ifDefined { logInvalid("Cannot import contry benchmarks for neptune commodities: ", _) }
 
-    invalidRows.ifDefined { logInvalid("Cannot import contry benchmarks for neptune commodities: ", _) }
+      rows.map { case (neptuneCommodity, values) =>
+        val data = values.map { case (countryCode, price) => countryCode → neptuneCommodity.toQuantity(price) }
 
-    rows.map { case (neptuneCommodity, values) =>
-      val data = values.map { case (countryCode, price) => countryCode → neptuneCommodity.toQuantity(price) }
-
-      MarketDataEntry(ObservationPoint(day), neptuneCommodity.countryBenchmarkKey, CountryBenchmarkData(data.toMap))
-    }.toList
+        MarketDataEntry(ObservationPoint(today), neptuneCommodity.countryBenchmarkKey, CountryBenchmarkData(data.toMap))
+      }.toList
+    }
+    Map((today, today, CountryBenchmarkDataType) → entries)
   }
 
   private def logInvalid(msg: String, commodities: Map[NeptuneCommodity, _]) = log.warn(msg + commodities.keys.mkString(", "))
