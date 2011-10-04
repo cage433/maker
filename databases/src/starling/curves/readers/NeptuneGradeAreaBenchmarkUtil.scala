@@ -12,7 +12,7 @@ import collection.immutable.Map
 import starling.marketdata._
 
 
-class NeptuneGradeAreaBenchmarksMarketDataSource(neptuneDB:RichDB) extends MarketDataSource with Log {
+class NeptuneGradeAreaBenchmarkUtil(neptuneDB:RichDB) extends Log {
   def read(day: Day) = {
     val today = Day.today
     val entries = {

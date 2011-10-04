@@ -1,7 +1,11 @@
 package starling.calendar
 
+import starling.daterange.Location
+
 class BusinessCalendars(val holidayTables : HolidayTables) {
   def financialHolidaysOption(code: String)= holidayTables.financialHolidaysOption(code)
+
+  def weekDay(location: Location = Location.London) = new WeekdayBusinessCalendar(location)
 
   // Countries
   lazy val UK = holidayTables.UK

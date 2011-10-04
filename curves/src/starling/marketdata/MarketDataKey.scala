@@ -2,12 +2,12 @@ package starling.marketdata
 
 import starling.curves.MarketDataSlice
 import starling.db.MarketDataReader
-import starling.daterange.ObservationPoint
 import collection.immutable.TreeMap
 import starling.utils.ImplicitConversions._
 import scalaz.Scalaz._
 import starling.utils.sql.PersistAsBlob
 import starling.pivot.{Row, Field}
+import starling.daterange.{Day, ObservationPoint}
 
 /**
  * The key used to look up market data from the database.
@@ -75,6 +75,7 @@ case class TimedMarketDataKey(observationPoint: ObservationPoint, key: MarketDat
   def unmarshallDB(dbValue: Any) = key.unmarshallDB(dbValue)
 
   def asTuple = (observationPoint, key)
+  def copyDay(other: Day) = copy(observationPoint.copyDay(other))
 }
 
 case class MarketDataValueKey(id: Int, row: Row) {

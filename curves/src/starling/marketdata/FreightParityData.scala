@@ -8,11 +8,6 @@ case class FreightParityData(parityRate: Double, comment: String) extends Market
   def size = 1
 }
 
-case class ContractualLocationCode(code: String)
-case class ContractualLocation(code: ContractualLocationCode, name: String) {
-  override def toString = name
-}
-
 case class FreightParityDataKey(contractualIncoterm: IncotermCode, contractualLocation: ContractualLocationCode,
   destinationIncoterm: IncotermCode, destinationLocation: NeptuneCountryCode) extends MarketDataKey {
 
@@ -44,7 +39,7 @@ object FreightParityDataType extends MarketDataType {
     List("Contractual Inco Terms", "Contractual Location", "Destination Inco Terms", "Destination Location").map(FieldDetails(_))
 
   val values@List(parityRateField, commentField) =
-    List(FieldDetails.createMeasure("Parity Rate"), FieldDetails.createMeasure("Comment"))
+    List(FieldDetails.createMeasure("Parity Rate", parser0 = PivotQuantityPivotParser), FieldDetails.createMeasure("Comment"))
 
   val fields = keys ::: values
   override val keyFields = keys.map(_.field).toSet
@@ -60,4 +55,9 @@ object FreightParityDataType extends MarketDataType {
   def createValue(rows: List[Row]): dataType = Row.singleRow(rows, "freight parity rate") |> { row =>
     FreightParityData(row.quantity(parityRateField).value, row.string(commentField))
   }
+}
+
+case class ContractualLocationCode(code: String)
+case class ContractualLocation(code: ContractualLocationCode, name: String) {
+  override def toString = name
 }

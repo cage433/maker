@@ -40,11 +40,7 @@ object BusinessCalendar{
     def isHoliday(day : Day) = false
     def location = Location.Unknown
   }
-  val WeekdayBusinessCalendar = new BusinessCalendar {
-    def name = "Weekday"
-    def location = Location.Unknown
-    def isHoliday(day:Day) = day.isWeekendDay
-  }
+  val WeekdayBusinessCalendar = new WeekdayBusinessCalendar(Location.Unknown)
 
   case class ErrorCalendar(code: String) extends BusinessCalendar {
     def location = Location.Unknown
@@ -57,4 +53,9 @@ object BusinessCalendar{
   }
 
   def error(code: String) = ErrorCalendar(code)
+}
+
+class WeekdayBusinessCalendar(override val location: Location) extends BusinessCalendar {
+  def name = "Weekday"
+  def isHoliday(day:Day) = day.isWeekendDay
 }

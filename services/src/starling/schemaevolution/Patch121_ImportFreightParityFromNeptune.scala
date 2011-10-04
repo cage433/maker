@@ -11,14 +11,12 @@ import scalaz.Scalaz._
 import starling.utils.ImplicitConversions._
 
 
-class Patch121_ImportBenchmarksFromNeptune extends Patch {
+class Patch121_ImportFreightParityFromNeptune extends Patch {
   override def deferredReason(context: PatchContext) =
-    context.props.ImportBenchmarksFromNeptune() ? none[String] | some("Awaiting cutover from Neptune to Starling")
+    context.props.ImportFreightParityFromNeptune() ? none[String] | some("Awaiting cutover from Neptune to Starling")
 
   protected def runPatch(init: StarlingInit, starling: RichDB, writer: DBWriter) = init.marketDataStore.save(Map(
     MarketDataSet.ManualMetals → read(init.neptuneRichDB, Day.today).allValues))
 
-  private def read(neptuneDB: RichDB, day: Day) =
-    new NeptuneGradeAreaBenchmarkUtil(neptuneDB).read(day) ++
-    new NeptuneCountryBenchmarksUtil(neptuneDB).read(day)
+  private def read(neptuneDB: RichDB, day: Day) = new NeptuneFreightParityUtil(neptuneDB).read(day)
 }

@@ -11,7 +11,10 @@ import starling.utils.{ObservingBroadcaster, Log, Stopable}
 
 import starling.market.FuturesExchangeFactory._
 import starling.utils.ImplicitConversions._
-
+import starling.gui.api.{MarketDataIdentifier, PricingGroup, MarketDataSelection}
+import starling.marketdata.FreightParityDataType
+import starling.db.{MarketDataEntry, MarketDataSet, MarketDataStore}
+import starling.daterange.Day
 
 class Scheduler(props: Props, forwardCurveTasks: List[TaskDescription] = Nil) extends Stopable with Log {
   private lazy val timer = new Timer(true)
@@ -67,6 +70,7 @@ object Scheduler extends Log {
 
     new Scheduler(props, forwardCurveTasks =
       TaskDescription("Import LIM", everyFiveMinutes(businessCalendars.LME), importMarketData(Metals)) ::-
+      TaskDescription("Copy Freight Parity & Benchmarks", hourly(businessCalendars.weekDay()), CopyManualData(marketDataStore)) ::-
       tasks(daily(businessCalendars.LME, 18 H 30), balticMetals.verifyPricesAvailable) ::-
       TaskDescription("Upload Curves to Trinity", daily(businessCalendars.LME, 19 H 00), uploadCurvesToTrinity(Metals)) ::-
       tasks(daily(businessCalendars.SFE, 16 H 30), exbxgMetals.verifyPricesAvailable, exbxgMetals.verifyPricesValid) ::-

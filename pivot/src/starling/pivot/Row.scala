@@ -49,8 +49,12 @@ case class Row(value: Map[Field, Any]) {
   def get[T](field: Field): Option[T] = value.get(field).asInstanceOf[Option[T]]
 
   def double(fieldDetails: FieldDetails): Double = apply[Double](fieldDetails)
-  def quantity(fieldDetails: FieldDetails): Quantity = apply[Quantity](fieldDetails)
   def string(fieldDetails: FieldDetails): String = apply[String](fieldDetails)
+
+  def quantity(fieldDetails: FieldDetails): Quantity = apply[Any](fieldDetails) match {
+    case q: Quantity => q
+    case pq: PivotQuantity => pq.quantityValue.get
+  }
 
   def pivotQuantity(fieldDetails: FieldDetails): PivotQuantity = apply[Any](fieldDetails) match {
     case q: Quantity => PivotQuantity(q)

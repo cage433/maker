@@ -75,18 +75,9 @@ object MarketDataSet extends StarlingEnum(classOf[MarketDataSet], (m: MarketData
   val BarryEckstein = MarketDataSet("Barry Eckstein", 600)
   val LondonDerivativesOptions = MarketDataSet("London Derivatives Options", 700)
   val LimMetals = MarketDataSet("LimMetals", 800) //Refined Metals
-  val Neptune = MarketDataSet("Neptune", 1000)
+  // val Neptune = MarketDataSet("Neptune", 1000)
   val ManualMetals = MarketDataSet("ManualMetals", 1100)
   val Starling = MarketDataSet("Starling", 1200)
-
-  /*
-   val TrinityLive = MarketDataSet("Trinity/Live")
-   val GalenaLive = MarketDataSet("Galena/Live")
-   val GalenaFullCurve = MarketDataSet("Galena/FullCurve")
-   val VarMetalsFreight = MarketDataSet("Var:Metals+Freight")
-   val VarGalenaLondon = MarketDataSet("Var:GalenaLondon")
-   val VarGalenaOil= MarketDataSet("Var:GalenaOil")
-  */
 }
 
 object MarketDataStore {
@@ -94,7 +85,7 @@ object MarketDataStore {
   import MarketDataSet._
 
   val pricingGroupsDefinitions = MultiMap[PricingGroup, MarketDataSet](
-    PricingGroup.Metals ->> (ManualMetals, LimMetals, Neptune),
+    PricingGroup.Metals ->> (ManualMetals, LimMetals),
     PricingGroup.LimOnly ->> LIM,
     PricingGroup.System ->> (Starling, LIM, System),
     PricingGroup.Crude ->> (Starling, LIM, Crude),
@@ -181,6 +172,8 @@ trait MarketDataStore {
 
   def saveAll(marketDataSet: MarketDataSet, observationPoint: ObservationPoint, data: Map[MarketDataKey, MarketData]): SaveResult
 
+  def update(marketDataSetToData: Map[MarketDataSet, Iterable[MarketDataUpdate]]): SaveResult
+
   def snapshot(marketDataSelection: MarketDataSelection, doImport: Boolean, observationDay: Day): Option[SnapshotID]
 
   def snapshots(): List[SnapshotID]
@@ -227,7 +220,6 @@ case class MarketDataUpdate(timedKey: TimedMarketDataKey, data: Option[MarketDat
   def marketDataKey = timedKey.key
   def dataIdFor(marketDataSet: MarketDataSet) = MarketDataID(timedKey, marketDataSet)
   def indexedData(marketDataSet: MarketDataSet) = dataIdFor(marketDataSet) → data
-  def existingVersion: Option[Int] = existingData.map(_.version)
 }
 
 
@@ -480,10 +472,10 @@ class DBMarketDataStore(db: MdDB, tags: MarketDataTags, val marketDataSources: M
       (marketDataSet, values.map(entry => entry.toUpdate(db.readLatest(entry.dataIdFor(marketDataSet)))))
     } }
 
-    saveActions(setToUpdates)
+    update(setToUpdates)
   }
 
-  def saveActions(marketDataSetToData: Map[MarketDataSet, Iterable[MarketDataUpdate]]): SaveResult = this.synchronized {
+  def update(marketDataSetToData: Map[MarketDataSet, Iterable[MarketDataUpdate]]): SaveResult = this.synchronized {
     val changedMarketDataSets = new scala.collection.mutable.HashMap[MarketDataSet, (Set[Day], Int)]()
     val allChangedDays = new ListBuffer[Day]
 
@@ -558,7 +550,7 @@ class DBMarketDataStore(db: MdDB, tags: MarketDataTags, val marketDataSources: M
       val updates: MultiMap[MarketDataSet, MarketDataUpdate] = importer.getUpdates(observationDay, marketDataSets: _*)
 
       log.infoWithTime("Number of updates: " + updates.mapValues(_.toList.size)) {
-        saveActions(updates)
+        update(updates)
       }
     }
   }

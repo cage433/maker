@@ -31,7 +31,7 @@ object RefinedMetalsLimMarketDataSourceTests {
     val importing = true
 
     if (importing) {
-      init.marketDataStore.importFor(10 Sep 2011, Neptune)//LIM, System)
+      init.marketDataStore.importFor(10 Sep 2011, LIM)//LIM, System)
 //      val map = init.marketDataStore.marketDataSources(LimMetals).read(25 Apr 2011)
 //      val days = map.mapValues(mde => mde.map(_.observationPoint.day)).toSet
 //      println("map:: " + map)

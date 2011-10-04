@@ -2,7 +2,7 @@ package starling.manual
 
 import starling.services.StarlingInit
 import starling.props.PropsHelper
-import starling.curves.readers.NeptuneGradeAreaBenchmarksMarketDataSource
+import starling.curves.readers.NeptuneGradeAreaBenchmarkUtil
 import starling.daterange.Day
 import starling.auth.AuthHandler
 import starling.utils.Broadcaster
@@ -20,7 +20,7 @@ object NeptuneBenchmarkRunner {
   def main(args:Array[String]) {
     val init = new StarlingInit(PropsHelper.defaultProps, AuthHandler.Dev, Broadcaster.Null, false, false, false, false)
 
-    val source = new NeptuneGradeAreaBenchmarksMarketDataSource(init.neptuneRichDB)
+    val source = new NeptuneGradeAreaBenchmarkUtil(init.neptuneRichDB)
     source.read(Day.today).foreach(println)
 
     println("DONE")

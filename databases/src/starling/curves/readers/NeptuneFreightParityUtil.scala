@@ -11,7 +11,7 @@ import starling.richdb.{RichResultSetRowFactory, RichDB}
 
 import starling.utils.ImplicitConversions._
 
-class NeptuneFreightParityMarketDataSource(neptuneDB: RichDB) extends MarketDataSource {
+class NeptuneFreightParityUtil(neptuneDB: RichDB) {
   def read(day: Day):MultiMap[(Day, Day, MarketDataType), MarketDataEntry] = readAll()
   def readAll(): MultiMap[(Day, Day, MarketDataType), MarketDataEntry] = {
     val today = Day.today
@@ -29,10 +29,10 @@ class NeptuneFreightParityMarketDataSource(neptuneDB: RichDB) extends MarketData
   }
 }
 
-object NeptuneFreightParityMarketDataSource {
+object NeptuneFreightParityUtil {
   def main(args:Array[String]) {
     val db = new RichDB(PropsHelper.defaultProps.NeptuneDatabase(), new RichResultSetRowFactory)
-    val entries = new NeptuneFreightParityMarketDataSource(db).readAll.values.iterator.next.groupBy(_.key)
+    val entries = new NeptuneFreightParityUtil(db).readAll.values.iterator.next.groupBy(_.key)
     entries.foreach(println)
   }
 }

@@ -129,13 +129,10 @@ class StarlingInit( val props: Props,
       BarryEckstein ->> new FwdCurveDbMarketDataSource(varSqlServerDB, businessCalendars, 3),
       GasolineRoW ->> new FwdCurveDbMarketDataSource(varSqlServerDB, businessCalendars, 21),
       GasOil ->> new FwdCurveDbMarketDataSource(varSqlServerDB, businessCalendars, 7),
-      LondonDerivativesOptions ->> new FwdCurveDbMarketDataSource(varSqlServerDB, businessCalendars, 45),
-      //TrinityLive → new TrinityMarketDataSource(trintityRichDB, BradyProfilePricingGroup.liveBradyProfilePricingGroup),
-      //GalenaLive → new GalenaMarketDataSource(galenaRichDB, BradyProfilePricingGroup.liveBradyProfilePricingGroup),
-      //GalenaFullCurve → new GalenaMarketDataSource(galenaRichDB, BradyProfilePricingGroup.fullCurveBradyProfilePricingGroup),
-      Neptune ->> (new NeptuneGradeAreaBenchmarksMarketDataSource(neptuneRichDB),
-                   new NeptuneCountryBenchmarksMarketDataSource(neptuneRichDB),
-                   new NeptuneFreightParityMarketDataSource(neptuneRichDB))
+      LondonDerivativesOptions ->> new FwdCurveDbMarketDataSource(varSqlServerDB, businessCalendars, 45)
+//      Neptune ->> (new NeptuneGradeAreaBenchmarksMarketDataSource(neptuneRichDB),
+//                   new NeptuneCountryBenchmarksMarketDataSource(neptuneRichDB),
+//                   new NeptuneFreightParityMarketDataSource(neptuneRichDB))
     ).withDefaultValue(Nil)
 
     lazy val mds = Log.infoWithTime("Creating DBMarketDataStore") {
