@@ -1,0 +1,247 @@
+package starling.titan
+
+import starling.utils.Log
+import com.trafigura.edm.trades.{Trade => EDMTrade, PhysicalTrade => EDMPhysicalTrade}
+import com.trafigura.edm.physicaltradespecs.{DeliverySpec, QuotaDetails}
+import com.trafigura.edm.materialspecification.CommoditySpec
+import com.trafigura.edm.logistics.inventory.{EDMAssignment, EDMLogisticsQuota, EDMInventoryItem}
+import com.trafigura.edm.shared.types.{DateSpec, PercentageTolerance, TitanId}
+import starling.titan.EDMConversions._
+import com.trafigura.tradinghub.support.GUID
+import org.joda.time.LocalDate
+import starling.daterange.Day
+import starling.instrument.physical._
+import starling.quantity.{Quantity, Percentage}
+import starling.instrument.TradeID._
+import starling.db.TitanTradeSystem
+import starling.instrument.{TradeID, Trade}
+
+
+class PhysicalMetalForwardBuilder(refData: TitanTacticalRefData,
+            inventoryByQuotaID: Map[TitanId, List[EDMInventoryItem]],
+            logisticsQuotaByQuotaID: Map[TitanId, EDMLogisticsQuota]) extends Log {
+  import refData._
+
+  private def getTitanTradeId(t: EDMPhysicalTrade): String = NeptuneId(t.titanId).identifier
+
+  private def isPurchase(direction: String) = direction match {
+    case EDMTrade.PURCHASE => true
+    case EDMTrade.SALE => false
+    case _ => throw new Exception(" Invalid direction " + direction)
+  }
+
+  def apply(trades: List[Trade]) : PhysicalMetalForward = {
+
+    val allAssignmentsWithAttributes = trades.map{
+      trade =>
+        (trade.tradeable.asInstanceOf[PhysicalMetalAssignmentOrUnassignedSalesQuota], trade.attributes.asInstanceOf[TitanTradeAttributes])
+      }
+    val allAssignments = allAssignmentsWithAttributes.map(_._1)
+    val allAttributes = allAssignmentsWithAttributes.map(_._2)
+    def singleValue[B](fn :PhysicalMetalAssignmentOrUnassignedSalesQuota => B) : B = {
+      val set = allAssignments.map(fn).toSet
+      assert(set.size == 1)
+      set.head
+    }
+    def singleAttribute[B](fn : TitanTradeAttributes => B) = {
+      val set = allAttributes.map(fn).toSet
+      assert(set.size == 1)
+      set.head
+    }
+
+    allAssignments match {
+      case Nil => throw new Exception("Can not construct Physical Metal Forward from zero trade assignments")
+      case _ => {
+        val tradeID = singleAttribute(_.titanTradeID)
+
+        val quotas : List[PhysicalMetalQuota] = allAssignmentsWithAttributes.groupBy(a => a._2.quotaID).map{ case (quotaID, assignmentsWithAttributes)  => {
+          val assignments = assignmentsWithAttributes.map(_._1)
+          val quotaAssignments = assignments.collect { case p : PhysicalMetalAssignment => p }
+          val unallocatedSalesAssignments = assignments.collect { case p : UnallocatedSalesQuota => p }
+          PhysicalMetalQuota(
+            quotaID,
+            quotaAssignments,
+            unallocatedSalesAssignments.headOption
+          )
+        }}.toList
+
+        PhysicalMetalForward(tradeID, quotas)
+      }
+    }
+  }
+
+  def apply(trade: EDMPhysicalTrade) : List[Trade] = {
+    val groupCompany = groupCompaniesByGUID.get(trade.groupCompany).map(_.name).getOrElse("Unknown Group Company")
+    val counterparty = counterpartiesByGUID(trade.counterparty.counterparty).name
+    val comments = trade.comments
+    val contractFinalised = trade.contractFinalised.toString
+
+    try {
+      val isPurchaseTrade: Boolean = isPurchase(trade.direction)
+
+      def deliveryQuantity(detail: QuotaDetails) = {
+        detail.deliverySpecs.map {
+          ds => fromTitanQuantity(ds.quantity)
+        }.sum
+      }
+      def shapeAndGrade(spec : DeliverySpec) = {
+        spec.materialSpec match {
+          case rms: com.trafigura.edm.materialspecification.RefinedMetalSpec => (
+            shapesByGUID(rms.shape),
+            gradeByGUID(rms.grade)
+            )
+          case _ => throw new Exception("Expected RefinedMetalSpec, recieved " + spec.materialSpec)
+        }
+      }
+      def tolerance(spec : DeliverySpec) = {
+        val tolerance = spec.tolerance match {
+          case tol: PercentageTolerance => tol
+          case _ => throw new Exception("Unsupported tolerance")
+        }
+        def getTolerancePercentage(percentage: Option[Double]): Percentage = percentage match {
+          case Some(percentage) => Percentage(percentage)
+          case _ => Percentage(0.0)
+        }
+        (getTolerancePercentage(tolerance.plus.amount), getTolerancePercentage(tolerance.minus.amount))
+      }
+      def locations(spec : DeliverySpec) = {
+        (locationsByGUID(spec.deliveryLocations.head.location), destLocationsByGUID(spec.destinationLocation))
+      }
+      def deliverySpec_(detail : QuotaDetails) = {
+        assert(detail.deliverySpecs.size == 1, "Requires there to be a single delivery spec")
+        detail.deliverySpecs.head
+      }
+      def deliveryDays(detail : QuotaDetails) = {
+        def getDate(ds : DateSpec) : LocalDate = ds match {
+          case date : com.trafigura.edm.shared.types.Date => date.value
+          case _ => throw new Exception("Unsupported DateSpec type")
+        }
+        val contractDeliveryDay = Day.fromLocalDate(getDate(deliverySpec_(detail).schedule))
+        val benchmarkDeliveryDay = Day.fromLocalDate(getDate(detail.expectedSales))
+        (contractDeliveryDay, benchmarkDeliveryDay)
+      }
+
+      val submittedDay = Day.fromLocalDate(trade.submitted.toLocalDate)
+
+      val trades: List[Trade] = {
+        trade.quotas.map(_.detail).flatMap {
+          detail =>
+            val commodityGUIDs: Set[GUID] = detail.deliverySpecs.map(_.materialSpec.asInstanceOf[CommoditySpec].commodity).toSet
+
+            assert(commodityGUIDs.size == 1, "Trade " + getTitanTradeId(trade) + " has multiple commodities")
+
+            val (contractDeliveryDay, benchmarkDeliveryDay) = deliveryDays(detail)
+            val contractPricingSpec = EDMPricingSpecConverter(edmMetalByGUID(commodityGUIDs.head), futuresExchangeByID).fromEdmPricingSpec(contractDeliveryDay, deliveryQuantity(detail), detail.pricingSpec)
+
+            val inventoryItems = inventoryByQuotaID.get(NeptuneId(detail.identifier).titanId).flatten.toList.map(i => Inventory(i))
+
+            val commodityName = edmMetalByGUID(commodityGUIDs.head).name
+            val deliverySpec = deliverySpec_(detail)
+            val (shape, grade) = shapeAndGrade(deliverySpec)
+
+            val (tolerancePlus, toleranceMinus) = tolerance(deliverySpec)
+
+            val (contractDeliveryLocation, benchmarkDeliveryLocation) = locations(deliverySpec)
+            val quotaQuantity : Quantity = deliverySpec.quantity
+            val quotaID = NeptuneId(detail.identifier).identifier
+            def makeAssignment(ass: EDMAssignment, inv: Inventory, isPurchase: Boolean) = {
+              PhysicalMetalAssignment(
+                ass.oid.contents.toString,
+                inv.assignmentQuantity,
+                commodityName,
+                contractDeliveryDay,
+                contractPricingSpec,
+                contractDeliveryLocation.name,
+                if (inv.isAllocated) None else Some(benchmarkDeliveryDay),
+                if (inv.isAllocated) None else Some(benchmarkDeliveryLocation.name),
+                isPurchase,
+                inventoryID = ass.inventoryId.toString,
+                inventoryQuantity = inv.currentQuantity,
+                grade = grade.name
+              )
+            }
+            def makeTradeAttributes(inventoryID : Option[String]) = {
+              TitanTradeAttributes(
+                  quotaID,
+                  quotaQuantity,
+                  getTitanTradeId(trade),
+                  inventoryID,
+                  groupCompany,
+                  comments,
+                  submittedDay,
+                  shape.name,
+                  contractFinalised,
+                  tolerancePlus,
+                  toleranceMinus
+              )
+            }
+            if (isPurchaseTrade) {
+              val trades = inventoryItems.map {
+                inv =>
+                  val assignment = makeAssignment(inv.item.purchaseAssignment, inv, true)
+                  val attributes = makeTradeAttributes(Some(inv.id))
+                  Trade(
+                    TradeID(inv.item.purchaseAssignment.oid.contents.toString, TitanTradeSystem),
+                    submittedDay,
+                    counterparty,
+                    attributes,
+                    assignment
+                  )
+              }
+              trades
+            }
+            else {
+              val logisticsQuota: Option[EDMLogisticsQuota] = logisticsQuotaByQuotaID.get(detail.identifier)
+              val isFullyAllocated = logisticsQuota.map(_.fullyAllocated).getOrElse(false)
+              val assignmentTrades = inventoryItems.map {
+                inv =>
+                  val assignment = makeAssignment(inv.item.salesAssignment, inv, false)
+                  val attributes = makeTradeAttributes(Some(inv.id))
+                  Trade(
+                    TradeID(inv.item.salesAssignment.oid.contents.toString, TitanTradeSystem),
+                    submittedDay,
+                    counterparty,
+                    attributes,
+                    assignment
+                  )
+              }
+              val unassignedSalesQuota = if (isFullyAllocated)
+                None
+              else {
+                val unallocatedQuantity = deliveryQuantity(detail) - assignmentTrades.map(_.tradeable.asInstanceOf[PhysicalMetalAssignment].quantity).sum
+
+                val unallocatedQuota = UnallocatedSalesQuota(
+                  unallocatedQuantity,
+                  commodityName,
+                  contractDeliveryDay,
+                  contractPricingSpec,
+                  contractDeliveryLocation.name,
+                  Some(benchmarkDeliveryDay),
+                  Some(benchmarkDeliveryLocation.name),
+                  grade.name
+                )
+                val attributes = makeTradeAttributes(None)
+                Some(Trade(
+                  TradeID("Q-" + quotaID, TitanTradeSystem),
+                  submittedDay,
+                  counterparty,
+                  attributes,
+                  unallocatedQuota
+                ))
+              }
+              unassignedSalesQuota.toList ::: assignmentTrades
+            }
+        }
+      }
+
+      trades
+    }
+    catch {
+      case ex => {
+        log.debug("Failed to construct PhysicalMetalForward from EDM ", ex) //.getStackTrace.map(_.toString).mkString(",\n"))
+        throw new Exception("Trade with id " + getTitanTradeId(trade) + " failed to construct from EDM. " + ex.getMessage, ex)
+      }
+    }
+  }
+
+}

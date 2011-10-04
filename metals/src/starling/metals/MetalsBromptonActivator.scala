@@ -24,7 +24,6 @@ import org.springframework.mail.javamail.JavaMailSenderImpl
 import com.trafigura.services.valuation.ValuationServiceApi
 import starling.manager.{ExportTitanRMIProperty, BromptonContext, BromptonActivator}
 import com.trafigura.services.marketdata.{MarketDataServiceApi, ExampleService}
-import starling.titan.{TitanSystemOfRecord, TitanTradeStore, TitanTradeCache}
 import starling.tradeimport.TradeImporter
 import starling.richdb.{RichResultSetRowFactory, RichDB}
 import starling.db.{DB, TitanTradeSystem, MarketDataStore}
@@ -38,6 +37,8 @@ import starling.daterange.{ObservationPoint, TimeOfDay}
 import starling.curves._
 import starling.gui.api.{PricingGroup, EnvironmentRuleLabel}
 import starling.marketdata.ReferenceDataLookup
+import starling.titan.TitanTradeStoreManager._
+import starling.titan.{TitanTradeStoreManager, TitanSystemOfRecord, TitanTradeStore}
 
 class MetalsBromptonActivator extends BromptonActivator {
 
@@ -70,32 +71,18 @@ class MetalsBromptonActivator extends BromptonActivator {
       titanRabbitEventServices.start
     }
 
-    val (titanTradeCache : TitanTradeCache, titanServices, logisticsServices, titanInventoryCache) = if (!testMode) {
-        val titanTradeCache = new DefaultTitanTradeCache(props)
-        val titanServices = new DefaultTitanServices(props)
-        val titanLogisticsServices = new DefaultTitanLogisticsServices(props)
-        (
-          titanTradeCache,
-          titanServices,
-          titanLogisticsServices,
-          new DefaultTitanLogisticsInventoryCache(
-            titanLogisticsServices,
-            titanTradeCache,
-            titanServices,
-            Some(titanTradeStore))
+    val (titanServices, logisticsServices) = if (!testMode) {
+      (
+        new DefaultTitanServices(props),
+        new DefaultTitanLogisticsServices(props)
         )
-      }
-      else {
-        val fileMockedTitanServices = new FileMockedTitanServices()
-        val fileMockedTitanLogisticsServices = new FileMockedTitanLogisticsServices()
-        val mockTitanTradeService = new DefaultTitanTradeService(fileMockedTitanServices)
-        (
-          new TitanTradeServiceBasedTradeCache(mockTitanTradeService),
-          fileMockedTitanServices,
-          fileMockedTitanLogisticsServices,
-          new DefaultTitanLogisticsInventoryCache(fileMockedTitanLogisticsServices, null/*titanTradeCache*/, fileMockedTitanServices, Some(titanTradeStore))
+    }
+    else {
+      (
+        new FileMockedTitanServices(),
+        new FileMockedTitanLogisticsServices()
         )
-      }
+    }
 
     val titanSystemOfRecord = new TitanSystemOfRecord(titanServices, logisticsServices)
     val titanTradeImporter = new TradeImporter(TitanTradeSystem, titanSystemOfRecord, titanTradeStore)
@@ -119,9 +106,17 @@ class MetalsBromptonActivator extends BromptonActivator {
     val environmentProvider = new DefaultEnvironmentProvider(marketDataStore, referenceDataLookup)
     val valuationService = new ValuationService(
       environmentProvider,
-      titanTradeCache, titanServices, logisticsServices, titanRabbitEventServices,
-      titanInventoryCache, Some(titanTradeStore), rabbitEventDatabase)
+      titanTradeStore)
     val marketDataService = new MarketDataService(marketDataStore, environmentProvider)
+
+    val eventHandler = new TitanEventHandler(
+      titanRabbitEventServices,
+      TitanTradeStoreManager(titanServices, titanTradeStore, titanServices, logisticsServices),
+      environmentProvider,
+      rabbitEventDatabase)
+
+    titanRabbitEventServices.addClient(eventHandler)
+
 
     val businessCalendars = context.awaitService(classOf[BusinessCalendars])
     val curveViewer = context.awaitService(classOf[CurveViewer])

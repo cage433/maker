@@ -3,7 +3,6 @@ package starling.instrument.physical
 import starling.utils.StarlingTest
 import org.testng.annotations._
 import org.testng.Assert._
-import starling.quantity.Quantity
 import starling.quantity.UOM._
 import starling.market.LmeSingleIndices
 import starling.daterange.{Month, Day}
@@ -14,7 +13,7 @@ import starling.curves.DiscountRateKey
 import starling.curves.IndexFixingKey
 import scala.collection.immutable.TreeMap
 import starling.daterange.DateRange
-
+import starling.quantity.{Percentage, UOM, Quantity}
 
 /**
  * Commenting out until everything settles down - AMc 29/9/11
@@ -36,7 +35,14 @@ class PhysicalMetalAssignmentTests extends StarlingTest {
   ///@Test
   def testAverageExplanation{
     val monthSpec = AveragePricingSpec(LmeSingleIndices.cuCashBid, Month(2011, 8), Quantity(1.5, USD/MT))
-    val assignment = PhysicalMetalAssignment("1234", "Lead", Quantity(100, MT), Day(2011, 9, 1), monthSpec, benchmarkDeliveryDay = None, benchmarkPricingSpec = None, isPurchase = true, inventoryID = "inventory id", inventoryQuantity = Quantity(90, MT))
+
+    val assignment = PhysicalMetalAssignment(
+      "1234", Quantity(100, MT), "Lead", Day(2011, 9, 1), monthSpec, "France",
+      benchmarkDeliveryDay = None, benchmarkDeliveryLocation = Some("Italy"),
+      isPurchase = true, inventoryID = "inventory id", inventoryQuantity = Quantity(90, MT),
+      grade = "grade"
+    )
+
     val explanation = assignment.explanation(env)
     assertEquals(explanation.name, "((-F * Volume) * Discount)")
     assertEquals(explanation.format(1), "((-(Average(LME Copper cash Bid.AUGUST 2011) + Premium) * 100.00 MT) * USD.02Sep2011)")
@@ -65,7 +71,14 @@ class PhysicalMetalAssignmentTests extends StarlingTest {
       Day(2011, 8, 18) -> 0.1
     )
     val weightedAverageSpec = WeightedPricingSpec(List((0.4, monthSpec), (0.6, monthSpec2)))
-    val assignment = PhysicalMetalAssignment("1234", "Lead", Quantity(100, MT), Day(2011, 9, 1), weightedAverageSpec, benchmarkDeliveryDay = None, benchmarkPricingSpec = None, isPurchase = true, inventoryID = "inventory id", inventoryQuantity = Quantity(90, MT))
+
+    val assignment = PhysicalMetalAssignment(
+      "1234", Quantity(100, MT), "Lead", Day(2011, 9, 1), weightedAverageSpec, "France",
+      benchmarkDeliveryDay = None, benchmarkDeliveryLocation = Some("Italy"),
+      isPurchase = true, inventoryID = "inventory id", inventoryQuantity = Quantity(90, MT),
+      grade = "grade"
+    )
+
     val explanation = assignment.explanation(env)
     assertEquals(explanation.name, "((-F * Volume) * Discount)")
     //val ex = "((-Sum(((Average(CU Cash Bid.AUGUST 2011) + Premium) * 0.4), ((Sum((02Aug2011 * 0.1), (03Aug2011 * 0.1), (04Aug2011 * 0.2), (10Aug2011 * 0.1), (11Aug2011 * 0.1), (16Aug2011 * 0.2), (17Aug2011 * 0.1), (18Aug2011 * 0.1)) + Premium) * 0.6)) * 100.00 MT) * USD.02Sep2011)"
@@ -88,8 +101,10 @@ class PhysicalMetalAssignmentTests extends StarlingTest {
     val monthSpec = AveragePricingSpec(LmeSingleIndices.cuCashBid, Month(2011, 8), Quantity(1.5, USD/MT))
     val partialSpec = AveragePricingSpec(LmeSingleIndices.cuCashBid, DateRange(Day(2011, 9, 1), Day(2011, 9, 10)), Quantity(4.5, USD/MT))
     val optionalSpec = OptionalPricingSpec(List(monthSpec, partialSpec), Day(2011, 8, 25), chosenSpec = None)
-    val optAssignment = PhysicalMetalAssignment("123", "Lead", Quantity(100, MT), Day(2011, 9, 1), optionalSpec, benchmarkDeliveryDay = None, benchmarkPricingSpec = None, isPurchase = true, inventoryID = "inventory id", inventoryQuantity = Quantity(90, MT))
-    val monthAssignment = PhysicalMetalAssignment("123", "Lead", Quantity(100, MT), Day(2011, 9, 1), monthSpec, benchmarkDeliveryDay = None, benchmarkPricingSpec = None, isPurchase = true, inventoryID = "inventory id", inventoryQuantity = Quantity(90, MT))
+    val optAssignment = PhysicalMetalAssignment("123", Quantity(100, MT), "Lead", Day(2011, 9, 1), optionalSpec, "France", benchmarkDeliveryDay = None, benchmarkDeliveryLocation = Some("Italy"), isPurchase = true, inventoryID = "inventory id", inventoryQuantity = Quantity(90, MT),
+      grade = "grade")
+    val monthAssignment = PhysicalMetalAssignment("123", Quantity(100, MT), "Lead", Day(2011, 9, 1), monthSpec, "France", benchmarkDeliveryDay = None, benchmarkDeliveryLocation = Some("Italy"), isPurchase = true, inventoryID = "inventory id", inventoryQuantity = Quantity(90, MT),
+      grade = "grade")
     val optExp = optAssignment.explanation(env)
     val monthExp = monthAssignment.explanation(env)
     for (i <- List(0, 1, 2, 3, 4, 5))
@@ -99,7 +114,8 @@ class PhysicalMetalAssignmentTests extends StarlingTest {
   //@Test
   def testFixedPrixingSpec{
     val fixedSpec = FixedPricingSpec(Day(2011, 8, 31), List((0.5, Quantity(98, USD/MT)), (0.8, Quantity(103, USD/MT))), Quantity(1.5, USD/MT))
-    val assignment = PhysicalMetalAssignment("abc", "Lead", Quantity(100, MT), Day(2011, 9, 1), fixedSpec, benchmarkDeliveryDay = None, benchmarkPricingSpec = None, isPurchase = true, inventoryID = "inventory id", inventoryQuantity = Quantity(90, MT))
+    val assignment = PhysicalMetalAssignment("abc", Quantity(100, MT), "Lead", Day(2011, 9, 1), fixedSpec, "France", benchmarkDeliveryDay = None, benchmarkDeliveryLocation = Some("Italy"), isPurchase = true, inventoryID = "inventory id", inventoryQuantity = Quantity(90, MT),
+      grade = "grade")
     val explanation = assignment.explanation(env)
     assertEquals(explanation.name, "((-F * Volume) * Discount)")
     assertEquals(explanation.format(1), "((-((Sum((F_0 * 0.5), (F_1 * 0.8)) / 1.3) + Premium) * 100.00 MT) * USD.31Aug2011)")
@@ -120,7 +136,8 @@ class PhysicalMetalAssignmentTests extends StarlingTest {
       Day(2011, 8, 31),
       Quantity(1.5, USD/MT)
     )
-    val assignment = PhysicalMetalAssignment("123", "Lead", Quantity(100, MT), Day(2011, 9, 1), unknownPricingSpec, benchmarkDeliveryDay = None, benchmarkPricingSpec = None, isPurchase = true, inventoryID = "inventory id", inventoryQuantity = Quantity(90, MT))
+    val assignment = PhysicalMetalAssignment("123", Quantity(100, MT), "Lead", Day(2011, 9, 1), unknownPricingSpec, "France", benchmarkDeliveryDay = None, benchmarkDeliveryLocation = Some("Italy"), isPurchase = true, inventoryID = "inventory id", inventoryQuantity = Quantity(90, MT),
+      grade = "grade")
     val explanation = assignment.explanation(env)
     assertEquals(explanation.name, "((-F * Volume) * Discount)")
     assertEquals(explanation.format(1), "((-((Fixed + Unfixed) + Premium) * 100.00 MT) * USD.19Aug2011)")

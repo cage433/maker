@@ -4,13 +4,7 @@ import starling.quantity.Quantity
 import starling.daterange.Day
 
 
-case class CostAndIncomeQuotaAssignmentValuationServiceResults(
-  snapshotID : String,
-  valuationResults : Map[String, Either[String, List[QuotaValuation]]])
 
-case class CostAndIncomeInventoryValuationServiceResults(
-  snapshotID : String,
-  assignmentValuationResults : Map[String, Either[String, List[CostsAndIncomeInventoryValuation]]])
 
 case class PricingValuationDetails(
   // currently excludes premium - need to check with business

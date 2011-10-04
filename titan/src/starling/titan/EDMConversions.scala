@@ -13,6 +13,7 @@ import com.trafigura.edm.common.types.datespecifications.{DateRange => TitanDate
 import starling.utils.Pattern.Extractor
 import starling.db.{MarketDataStore, SnapshotID}
 import starling.gui.api.{SnapshotMarketDataVersion, SpecificMarketDataVersion, MarketDataVersion}
+import com.trafigura.services.valuation.TitanMarketDataIdentifier
 
 case class InvalidUomException(msg : String) extends Exception(msg)
 
@@ -45,7 +46,7 @@ object EDMConversions {
   }
 
   implicit def enrichSnapshotID(snapshotID: SnapshotID) = new {
-    def toSerializable = TitanSnapshotIdentifier(snapshotID.id.toString, snapshotID.observationDay)
+    def toSerializable = TitanSnapshotIdentifier(snapshotID.id.toString)
   }
 
   // 'Serializable' implicits
@@ -65,11 +66,15 @@ object EDMConversions {
   val UOMToTitanCurrency: Extractor[UOM, TitanSerializableCurrency] = Extractor.from[UOM](_.serializableCurrency)
   val StringToTitanCurrency: Extractor[Any, TitanSerializableCurrency] = UOM.Currency.andThen(UOMToTitanCurrency)
 
-  implicit def enrichTitanSnapshotIdentifier(snapshotId: TitanSnapshotIdentifier) = new {
-    def intId = snapshotId.id.toInt
-    def toTitanDate = TitanSerializableDate(snapshotId.snapshotDay.toJodaLocalDate)
-    def toDay = snapshotId.snapshotDay
-//    def toMarketDataVersion(marketDataStore: MarketDataStore) = SnapshotMarketDataVersion(fromTitan(marketDataStore).label)
+  implicit def enrichTitanMarketDataIdentifier(marketDataID : TitanMarketDataIdentifier) = new {
+    def intId = marketDataID.snapshotIdentifier.id.toInt
+    def toTitanDate = TitanSerializableDate(marketDataID.observationDay.toJodaLocalDate)
+    def toDay = marketDataID.observationDay
+    def fromTitan(marketDataStore: MarketDataStore): Option[SnapshotID] = marketDataStore.snapshotFromID(intId)
+  }
+
+  implicit def enrichTitanMarketDataIdentifier(snapshotID : TitanSnapshotIdentifier) = new {
+    def intId = snapshotID.id.toInt
     def fromTitan(marketDataStore: MarketDataStore): Option[SnapshotID] = marketDataStore.snapshotFromID(intId)
   }
 

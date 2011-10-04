@@ -2,7 +2,6 @@ package starling.startserver.apps
 
 import starling.utils.Stopwatch
 import starling.services.StarlingInit
-import com.trafigura.services.valuation.ValuationServiceApi
 import com.trafigura.services.marketdata.MarketDataServiceApi
 import starling.client.BouncyRMIServiceApi
 import starling.startserver.SingleClasspathBroadcasterActivator
@@ -16,6 +15,7 @@ import starling.services.rpc.marketdata.MarketDataService
 import starling.daterange.Day
 import starling.utils.ImplicitConversions._
 import starling.titan.EDMConversions._
+import com.trafigura.services.valuation.{TitanMarketDataIdentifier, ValuationServiceApi}
 
 /**
  * Run up a test instance of the server and invoke the valuation service operations to test services using mock data
@@ -57,29 +57,25 @@ object ValuationServicePerformanceTest extends App {
     }
 
     BouncyRMIServiceApi().using { valuationServiceRMI : ValuationServiceApi =>
-      val directQuotaResults = run("Quota (direct)", () => vs.valueAllTradeQuotas())
-      val rmiQuotaResults = run("Quota (rmi)", () => valuationServiceRMI.valueAllTradeQuotas())
-      val directInventoryResults = run("Inventory (direct)", () => vs.valueAllInventory())
-      val rmiInventoryResults = run("Inventory (rmi)", () => valuationServiceRMI.valueAllInventory())
+      val snapshotID = vs.marketDataSnapshotIDs(Some(Day.today)).head
+      val marketDataID = TitanMarketDataIdentifier(snapshotID, Day.today)
+      val directQuotaResults = run("Quota (direct)", () => vs.valueAllTradeQuotas(marketDataID))
+      val rmiQuotaResults = run("Quota (rmi)", () => valuationServiceRMI.valueAllTradeQuotas(marketDataID))
 
       val output = new File("valuation-service-timings.csv")
       val w = new PrintWriter(output)
 
       def printHeaders() = w.println("Run number, time (ms), total record count, successfully valued record count\n")
 
-      w.println("\nRMI quota results (average time = %dms)".format(average(rmiInventoryResults.map(_._2).toList)))
       printHeaders()
-      w.println(rmiQuotaResults.map(r => List(r._1, r._2, r._3.valuationResults.values.size, r._3.valuationResults.values.partition(_.isRight)._1.size).mkString(", ")).mkString("\n"))
+      w.println(rmiQuotaResults.map(r => List(r._1, r._2, r._3.values.size, r._3.values.partition(_.isRight)._1.size).mkString(", ")).mkString("\n"))
       w.println("\nDirect quota results (average time = %dms)".format(average(directQuotaResults.map(_._2).toList)))
       printHeaders()
-      w.println(directQuotaResults.map(r => List(r._1, r._2, r._3.valuationResults.values.size, r._3.valuationResults.values.partition(_.isRight)._1.size).mkString(", ")).mkString("\n"))
+      w.println(directQuotaResults.map(r => List(r._1, r._2, r._3.values.size, r._3.values.partition(_.isRight)._1.size).mkString(", ")).mkString("\n"))
 
-      w.println("\nRMI inventory results (average time = %dms)".format(average(rmiInventoryResults.map(_._2).toList)))
       printHeaders()
-      w.println(rmiQuotaResults.map(r => List(r._1, r._2, r._3.valuationResults.values.size, r._3.valuationResults.values.partition(_.isRight)._1.size).mkString(", ")).mkString("\n"))
-      w.println("\nDirect inventory results (average time = %dms)".format(average(directInventoryResults.map(_._2).toList)))
+      w.println(rmiQuotaResults.map(r => List(r._1, r._2, r._3.values.size, r._3.values.partition(_.isRight)._1.size).mkString(", ")).mkString("\n"))
       printHeaders()
-      w.println(directInventoryResults.map(r => List(r._1, r._2, r._3.assignmentValuationResults.values.size, r._3.assignmentValuationResults.values.partition(_.isRight)._1.size).mkString(", ")).mkString("\n"))
 
       w.flush
       w.close
@@ -87,10 +83,11 @@ object ValuationServicePerformanceTest extends App {
 
     BouncyRMIServiceApi().using { marketDataRMI : MarketDataServiceApi =>
       val latestSnapshot = mds.latestSnapshotID().getOrThrow("No snapshots")
-      val today = Day.today.toSerializable
+      val today = Day.today
+      val latestMarketDataID = TitanMarketDataIdentifier(latestSnapshot, today)
 
-      val rmiSpotFXResults = run("Spot FX (rmi)", () => mds.getSpotFXRates(latestSnapshot, today))
-      val rmiReferenceInterestRatesResults = run("Reference interest rates (rmi)", () => mds.getReferenceInterestRates(latestSnapshot, today))
+      val rmiSpotFXResults = run("Spot FX (rmi)", () => mds.getSpotFXRates(latestMarketDataID))
+      val rmiReferenceInterestRatesResults = run("Reference interest rates (rmi)", () => mds.getReferenceInterestRates(latestMarketDataID))
       val rmiSnapshotIds = run("Reference interest rates (rmi)", () => mds.marketDataSnapshotIDs())
 
       val output = new File("marketdata-service-timings.csv")

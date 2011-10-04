@@ -80,14 +80,20 @@ object InstrumentType {
     ("Is Average Fixation", classOf[String]),
     ("Cash Instrument Type", classOf[String]),
     ("Premium", classOf[String]),
-    ("Quotation Period", classOf[String]),
-    ("Pricing Spec Name", classOf[String]),
-    ("Index", classOf[String]),
+    ("Contract Pricing Spec Name", classOf[String]),
+    ("Contract Index", classOf[String]),
     ("Commodity", classOf[String]),
     ("Exchange", classOf[FuturesExchange]),
     ("Inventory ID", classOf[String]),
     ("Inventory Quantity", classOf[Quantity]),
-    ("Assignment ID", classOf[String])
+    ("Assignment ID", classOf[String]),
+    ("Benchmark Delivery Day", classOf[Day]),
+    ("Direction", classOf[String]),
+    ("Grade", classOf[String]),
+    ("Benchmark Delivery Location", classOf[String]),
+    ("Contract Delivery Day", classOf[Day]),
+    ("Contract Delivery Location", classOf[String])
+
   )
   val fields = fieldsWithType.map(_._1)
   val lowercaseNoSpaceFields = fieldsWithType.map(_._1.toLowerCase.replaceAll(" ", ""))

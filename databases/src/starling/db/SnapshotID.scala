@@ -21,6 +21,12 @@ case class SnapshotID(
   def shortString = observationDay + " (s" + id + ")"
 
   def label = SnapshotIDLabel(observationDay, id, timestamp, version)
+
+  /**
+   * Used to identify a unique snapshot to the outside world. Not exposing 'id' itself in case
+   * we ever want to change our internal identifiers
+   */
+  def identifier = id.toString
 }
 
 object SnapshotID {

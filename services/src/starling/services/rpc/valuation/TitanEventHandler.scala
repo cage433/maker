@@ -12,19 +12,17 @@ import com.trafigura.common.control.PipedControl._
 import com.trafigura.edm.shared.types.TitanId
 import starling.curves.{NullAtomicEnvironment, Environment}
 import starling.services.rabbit.{EventPayloadFactory, EventFactory, TitanRabbitEventServices}
-import starling.titan.{TitanTacticalRefData, TitanTradeCache}
-
+import starling.titan.{TitanTradeStoreManager, TitanTradeStore, TitanTacticalRefData}
+import starling.instrument.physical.PhysicalMetalForward
 
 /**
  * handler for Titan rabbit events
  */
 class TitanEventHandler(rabbitEventServices : TitanRabbitEventServices,
-                   valuationServices : ValuationService,
-                   titanTradeCache : TitanTradeCache,
-                   titanInventoryCache : DefaultTitanLogisticsInventoryCache,
-                   environmentProvider : EnvironmentProvider,
-                   refData : TitanTacticalRefData,
-                   db : RabbitEventDatabase) extends DemultiplexerClient with Log {
+                        titanTradeStoreManager : TitanTradeStoreManager,
+                        environmentProvider : EnvironmentProvider,
+                        db : RabbitEventDatabase) extends DemultiplexerClient with Log {
+
 
   import Event._
 
@@ -49,7 +47,7 @@ class TitanEventHandler(rabbitEventServices : TitanRabbitEventServices,
         }
         else if (LogisticsSource.equalsIgnoreCase(ev.source) &&
           (EDMLogisticsSalesAssignmentSubject.equalsIgnoreCase(ev.subject) || EDMLogisticsInventorySubject.equalsIgnoreCase(ev.subject) || EDMLogisticsQuotaSubject.equalsIgnoreCase(ev.subject))) {
-          logisticsAssignmentEventHander(ev)
+          logisticsInventoryEventHander(ev)
         }
         else if (StarlingSource.equalsIgnoreCase(ev.source) && StarlingMarketDataSnapshotIDSubject.equalsIgnoreCase(ev.subject)) {
           marketDataSnapshotEventHander(ev)
@@ -72,20 +70,12 @@ class TitanEventHandler(rabbitEventServices : TitanRabbitEventServices,
     val tradeIds = tradePayloads.map(p => p.key.identifier)
     val titanIds = tradeIds.map(id => TitanId(id))
     log.info("Trade event received for ids { %s }".format(tradeIds.mkString(", ")))
-
+    val (snapshotIDString, env) = environmentProvider.recentRepresentativeEnvironment
     ev.subject match {
-      case TradeSubject => {
+      case TradeSubject | NeptuneTradeSubject => {
         ev.verb match {
           case UpdatedEventVerb => {
-            val (snapshotIDString, env) = getSnapshotAndEnv
-            val changedIDs = tradeIds.filter{
-              id =>
-                val originalValue = valuationServices.valueSingleTradeQuotas(id, env, snapshotIDString)
-                titanTradeCache.removeTrade(TitanId(id))
-                titanTradeCache.addTrade(TitanId(id))
-                val currentValue = valuationServices.valueSingleTradeQuotas(id, env, snapshotIDString)
-                originalValue != currentValue
-            }
+            val changedIDs = tradeIds.filter(titanTradeStoreManager.updateTrade(env, _))
             if (changedIDs != Nil)
               rabbitPublishChangedValueEvents(changedIDs, RefinedMetalTradeIdPayload)
 
@@ -93,11 +83,11 @@ class TitanEventHandler(rabbitEventServices : TitanRabbitEventServices,
           }
           case CreatedEventVerb => {
             Log.info("New event received for %s".format(tradeIds))
-            titanIds.foreach(titanTradeCache.addTrade)
+            tradeIds.foreach(titanTradeStoreManager.updateTrade(env, _))
           }
           case CancelledEventVerb | RemovedEventVerb => {
             Log.info("Cancelled / deleted event received for %s".format(titanIds))
-            titanIds.foreach(titanTradeCache.removeTrade)
+            tradeIds.foreach(titanTradeStoreManager.deleteTrade)
           }
         }
       }
@@ -105,13 +95,10 @@ class TitanEventHandler(rabbitEventServices : TitanRabbitEventServices,
       case NeptuneTradeSubject => {
         val completed = ev.content.body.payloads.filter(p => TradeStatusPayload == p.payloadType).filter(p => p.key.identifier == "completed").size > 0
         if (completed) {
-          val (snapshotIDString, env) = getSnapshotAndEnv
-          val valuationResults : List[(String, Boolean)] = tradeIds.map{
-            id => valuationServices.valueSingleTradeQuotas(id, env, snapshotIDString) match {
-              case (_, Right(_)) => (id, true)
-              case (_, Left(_)) => (id, false)
+          val valuationResults : List[(String, Boolean)] = tradeIds.map {
+            id =>
+              (id, titanTradeStoreManager.titanTradeStore.getForward(id).costsAndIncomeQuotaValueBreakdown(env).isRight)
             }
-          }
           rabbitPublishNewValuationEvents(valuationResults)
         }
       }
@@ -124,17 +111,14 @@ class TitanEventHandler(rabbitEventServices : TitanRabbitEventServices,
   /**
    * handler for logistics assignment events
    */
-  def logisticsAssignmentEventHander(ev: Event) = {
+  def logisticsInventoryEventHander(ev: Event) = {
     log.info("handler: Got a logistics event to process %s".format(ev.toString))
 
     val payloads = ev.content.body.payloads
-    val ids: List[String] = if (Event.EDMLogisticsSalesAssignmentSubject.equalsIgnoreCase(ev.subject)) {
-      payloads.map(p => titanInventoryCache.inventoryIDFromAssignmentID(getID(p))) // map back to inventory id
-    }
-    else if (Event.EDMLogisticsInventorySubject.equalsIgnoreCase(ev.subject)) {
+    val ids = if (Event.EDMLogisticsInventorySubject.equalsIgnoreCase(ev.subject)) {
       payloads.map(p => getID(p))
-    }
-    else if (EDMLogisticsQuotaSubject.equalsIgnoreCase(ev.subject)) {
+    } else if (EDMLogisticsQuotaSubject.equalsIgnoreCase(ev.subject)) {
+      // todo, need to handle these ids...
       payloads.filter(p => "LogisticsQuota".equalsIgnoreCase(p.payloadType)).map(p => getID(p))
     }
     else Nil
@@ -143,40 +127,34 @@ class TitanEventHandler(rabbitEventServices : TitanRabbitEventServices,
 
 
     // todo, need to remove logistics quota somehow here, since we can't reliably do it from inventory (can we?)
-    
+
+    val marketDay = Day.today.previousWeekday
+
     ev.verb match {
       case UpdatedEventVerb => {
-        val (snapshotIDString, env) = environmentProvider.mostRecentSnapshotIdentifierBeforeToday() match {
-          case Some(snapshotId) => (snapshotId, environmentProvider.environment(snapshotId))
-          case None => ("No Snapshot found", Environment(NullAtomicEnvironment((Day.today - 1).startOfDay)))
+        val (snapshotIDString, env) = environmentProvider.mostRecentSnapshotIdentifierBeforeToday match {
+          case Some(snapshotId) => (snapshotId, environmentProvider.environment(snapshotId, marketDay))
+          case None => ("No Snapshot found", Environment(NullAtomicEnvironment(marketDay.startOfDay)))
         }
 
-        val originalInventoryAssignmentValuations = valuationServices.valueInventoryAssignments(ids, env, snapshotIDString)
-        ids.foreach {
-          id => titanInventoryCache.remove(id); titanInventoryCache.addByID(id)
-        }
-        val newInventoryAssignmentValuations = valuationServices.valueInventoryAssignments(ids, env, snapshotIDString)
+        val changedForwardIDs = ids.flatMap(id => titanTradeStoreManager.updateInventory(env, id))
 
-        val changedIDs = ids.filter {
-          id => newInventoryAssignmentValuations.assignmentValuationResults(id) != originalInventoryAssignmentValuations.assignmentValuationResults(id)
+        if (changedForwardIDs != Nil) {
+          rabbitPublishChangedValueEvents(changedForwardIDs, EDMLogisticsInventoryIdPayload)
         }
 
-        if (changedIDs != Nil) {
-          rabbitPublishChangedValueEvents(changedIDs, EDMLogisticsInventoryIdPayload)
-        }
-
-        log.info("Assignments revalued for received event using snapshot %s number of changed valuations %d".format(snapshotIDString, changedIDs.size))
+        log.info("Assignments revalued for received event using snapshot %s number of changed valuations %d".format(snapshotIDString, changedForwardIDs.size))
       }
       case CreatedEventVerb => {
         Log.info("New event received for %s".format(ids))
         if (Event.EDMLogisticsInventorySubject == ev.subject) {
-          ids.foreach(titanInventoryCache.addByID)
+          ids.foreach(titanTradeStoreManager.updateInventory(Environment(NullAtomicEnvironment(marketDay.startOfDay)), _))
         }
       }
       case CancelledEventVerb | RemovedEventVerb => {
         Log.info("Cancelled / deleted event received for %s".format(ids))
         if (Event.EDMLogisticsInventorySubject == ev.subject) {
-          ids.foreach(titanInventoryCache.remove)
+          ids.foreach(titanTradeStoreManager.deleteInventory)
         }
       }
     }
@@ -197,9 +175,43 @@ class TitanEventHandler(rabbitEventServices : TitanRabbitEventServices,
      */
     val payloads = ev.content.body.payloads.filter(p => StarlingSnapshotIdPayload == p.payloadType)
     val ids = payloads.map(p => p.key.identifier)
-    val newSnapshotId = payloads.map(p => p.key.identifier).max
-    val todaysSnapshots: List[SnapshotID] = environmentProvider.snapshotIDs(Some(Day.today)).sortWith(_.id > _.id)
-    log.info("Snapshot event received for ids { %s }, using '%s'".format(ids.mkString(", "), newSnapshotId))
+
+    ev.subject match {
+      case StarlingMarketDataSnapshotIDSubject => {
+        ev.verb match {
+          case CreatedEventVerb => {
+            environmentProvider.snapshots().filter(_.observationDay == Day.today).sortWith(_.id > _.id) match {
+              case newSnapshotId :: previousSnapshotId :: _ => {
+                val previousEnv = environmentProvider.environment(previousSnapshotId, Day.today)
+                val newEnv = environmentProvider.environment(newSnapshotId, Day.today)
+                val changedTradeIDs = titanTradeStoreManager.titanTradeStore.getAllForwards.filter{
+                  fwd =>
+                    val originalValuation = fwd.costsAndIncomeQuotaValueBreakdown(previousEnv)
+                    val newValuation = fwd.costsAndIncomeQuotaValueBreakdown(newEnv)
+                    originalValuation != newValuation
+                }.map(_.tradeID)
+
+                log.info("Trades revalued for new snapshot %s, number of changed valuations %d".format(newSnapshotId, changedTradeIDs.size))
+
+                if (changedTradeIDs != Nil)
+                  rabbitPublishChangedValueEvents(changedTradeIDs, RefinedMetalTradeIdPayload)
+              }
+              case _ =>
+            }
+          }
+          case UpdatedEventVerb => {
+            log.info("Unhandled event for updated snapshot %s".format(ids))
+          }
+          case CancelledEventVerb | RemovedEventVerb => {
+            log.info("Unhandled cancelled / deleted event received for %s".format(ids))
+          }
+        }
+      }
+    }
+  }
+
+
+/*
 
     if (todaysSnapshots.size > 1) {
       ev.subject match {
@@ -210,7 +222,7 @@ class TitanEventHandler(rabbitEventServices : TitanRabbitEventServices,
               log.info("New marketData snapshot event, revaluing received event using old snapshot %s new snapshot %s".format(previousSnapshotId, newSnapshotId))
 
               // just some extra logging until we understand potential bug around new snapshot ids not being found
-              val oldSnapshots = environmentProvider.getSnapshots()
+              val oldSnapshots = environmentProvider.snapshots
               log.debug("old snapshots %s".format(oldSnapshots.mkString(", ")))
               environmentProvider.updateSnapshotCache()
               val newSnapshots = environmentProvider.getSnapshots()
@@ -221,12 +233,14 @@ class TitanEventHandler(rabbitEventServices : TitanRabbitEventServices,
                 log.warn("New snapshot id event received for %s not found in the environment provider {}".format(missingSnapshotIds.mkString(", "), newSnapshots.mkString(", ")))
               }
 
-              val previousEnv = environmentProvider.environment(previousSnapshotId)
-              val newEnv = environmentProvider.environment(newSnapshotId)
-              val tradeIds = titanTradeCache.getAllTrades().map{trade => trade.titanId.value}.toList
-              val originalTradeValuations = tradeIds.map{id => id -> valuationServices.valueSingleTradeQuotas(id, previousEnv, previousSnapshotId)._2}.toMap
-              val newTradeValuations = tradeIds.map{id => id -> valuationServices.valueSingleTradeQuotas(id, newEnv, newSnapshotId)._2}.toMap
-              val changedTradeIDs = tradeIds.filter(id => newTradeValuations(id) != originalTradeValuations(id))
+              val previousEnv = environmentProvider.environment(previousSnapshotId, Day.today)
+              val newEnv = environmentProvider.environment(newSnapshotId, Day.today)
+              val changedTradeIDs = titanTradeStoreManager.titanTradeStore.getAllForwards.filter{
+                fwd =>
+                  val originalValuation = valuationServices.valueForward(previousEnv, fwd)
+                  val newValuation = valuationServices.valueForward(newEnv, fwd)
+                  originalValuation != newValuation
+              }.map(_.tradeID)
 
               log.info("Trades revalued for new snapshot %s, number of changed valuations %d".format(newSnapshotId, changedTradeIDs.size))
 
@@ -254,11 +268,8 @@ class TitanEventHandler(rabbitEventServices : TitanRabbitEventServices,
       }
     }
   }
+  */
 
-  def getSnapshotAndEnv: (String, Environment) = environmentProvider.mostRecentSnapshotIdentifierBeforeToday() match {
-    case Some(snapshotId) => (snapshotId, environmentProvider.environment(snapshotId))
-    case None => ("No Snapshot found", Environment(NullAtomicEnvironment((Day.today - 1).startOfDay)))
-  }
 
   // publish the valuation updated event contaning payloads of the trade id's whose trade valuations have changed
   private val publishStarlingChangedValueEvents = publishChangedValueEvents(StarlingSource, StarlingValuationServiceSubject) _
