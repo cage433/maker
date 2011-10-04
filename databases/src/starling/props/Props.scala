@@ -6,7 +6,7 @@ import starling.props.PropsHelper._
 import starling.LIMServer
 import java.io.File
 
-class Props(props:Map[String,String]) extends PropsHelper(props) {
+class Props(starlingProps:Map[String,String], trafiguraProps : Map[String, String]) extends PropsHelper(starlingProps, trafiguraProps) {
   object ServerName extends ServerNameStringProperty()
   object ServerType extends EnumProperty("Dev", "FC2", "Oil")
   object ServerNameOrBlank extends StringProperty(ServerName())
@@ -40,12 +40,12 @@ class Props(props:Map[String,String]) extends PropsHelper(props) {
   object JmxPort extends LocalPort(1024 + ((ServerName().hashCode.abs % 6400) * 10) + 3) //used by start.sh
   object RegressionPort extends LocalPort(1024 + ((ServerName().hashCode.abs % 6400) * 10) + 4)
   object LoopyXLPort extends LocalPort(1024 + ((ServerName().hashCode.abs % 6400) * 10) + 5)
-  object HttpEdmServicePort extends LocalPort(1024 + ((ServerName().hashCode.abs % 6400) * 10) + 6)
-  object StarlingServiceRmiPort extends LocalPort(1024 + ((ServerName().hashCode.abs % 6400) * 10) +7)
+  object HttpServicePort extends LocalPort(1024 + ((ServerName().hashCode.abs % 6400) * 10) + 6)
+  object StarlingServiceRmiPort extends LocalPort(1024 + ((ServerName().hashCode.abs % 6400) * 10) + 7)
 
   object ExternalHostname extends StringProperty(InetAddress.getLocalHost().getHostName)
   object ExternalUrl extends StringProperty("http://" + ExternalHostname() + ":" + HttpPort())
-  object EdmExternalUrl extends StringProperty("http://" + ExternalHostname() + ":" + HttpEdmServicePort())
+  object HttpServiceExternalUrl extends StringProperty("http://" + ExternalHostname() + ":" + HttpServicePort())
   object XLLoopUrl extends StringProperty(ExternalHostname() + ":" + XLLoopPort())
 
   object RabbitEnabled extends BooleanProperty(true)
@@ -78,7 +78,6 @@ class Props(props:Map[String,String]) extends PropsHelper(props) {
 
   object KerberosPassword extends StringProperty("suvmerinWiv0")
   object ServerPrincipalName extends StringProperty("STARLING-TEST/dave-linux")
-  object UseAuth extends BooleanProperty(false)
   object NoMP extends BooleanProperty(false)
   object ImportsBookClosesFromEAI extends BooleanProperty(true)
 
@@ -108,6 +107,9 @@ class Props(props:Map[String,String]) extends PropsHelper(props) {
   object TitanRabbitPassword  extends StringProperty("trafiguraDev")
 
   def titanRabbitHostSet = TitanRabbitBrokerHost() != ""
+
+  // Deferrable patches
+  object UseFasterMarketDataSchema extends BooleanProperty(false)
 }
 
 object Props {

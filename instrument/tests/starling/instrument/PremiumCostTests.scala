@@ -6,7 +6,7 @@ import starling.models.{Call, European}
 import starling.curves.{NullAtomicEnvironment, Environment}
 import starling.daterange.{DayAndTime, Day, Month}
 import starling.utils.StarlingTest
-import starling.utils.QuantityTestUtils._
+import starling.quantity.utils.QuantityTestUtils._
 import starling.quantity.{UOM, Quantity}
 
 class PremiumCostTests extends StarlingTest{
@@ -23,8 +23,6 @@ class PremiumCostTests extends StarlingTest{
       val mtm = option.mtm(env)
       val premiumPrice = mtm / volume
       val premium = PremiumCosts(marketDay.day, "fred", volume, premiumPrice)
-      println(premium)
-      println(premium.asUtpPortfolio(Day(2009, 1, 1)))
 
       assertQtyEquals(mtm + premium.mtm(env, UOM.USD), Quantity(0, UOM.USD), 1e-6)
     }

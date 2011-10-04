@@ -1,7 +1,7 @@
 package starling.props
 
 
-import starling.utils.sql.ConnectionParams
+import starling.dbx.ConnectionParams
 import java.io._
 import java.lang.reflect.Modifier
 import java.util.{Properties => JProperties}
@@ -10,24 +10,29 @@ import org.apache.commons.io.IOUtils
 import scala.collection.JavaConversions
 import java.awt.Color
 import starling.utils.ImplicitConversions._
-import starling.utils.PropertiesMapBuilder
+import starling.api.utils.PropertiesMapBuilder
 
 /**
  * Holds the code to manage properties. The properties are listed in Props
  */
-class PropsHelper(props : Map[String,String]) {
+class PropsHelper(starlingProps : Map[String,String], trafiguraProps : Map[String, String]) {
+
+  val props = trafiguraProps ++ starlingProps
 
   object MyPropertiesFile {
-    val lowercaseProps = props.map( (e) => (e._1.toLowerCase() -> e._2) )
+    def toLowerCase(propsMap : Map[String, String]) = propsMap.map( (e) => (e._1.toLowerCase() -> e._2) )
+    val lowercaseProps = toLowerCase(props)
     def hasProperty(name:String) = lowercaseProps.contains(name.toLowerCase)
-    def propertyNames = lowercaseProps.keySet
+    def starlingPropertyNames = toLowerCase(starlingProps).keySet
     def getProperty(name:String, defaultValue:String) : String = lowercaseProps.getOrElse(name.toLowerCase, defaultValue)
   }
 
   {
     //check for invalid entries
-    val invalidNames = MyPropertiesFile.propertyNames.filter(!properties.contains(_))
-    if (!invalidNames.isEmpty) {
+    val invalidNames = MyPropertiesFile.starlingPropertyNames.filter(!properties.contains(_))
+    //hack until I have sorted out the props and osgi issue
+    val propsDefinedOutsideTheMainPropsClass = Set("useauth")
+    if (!(invalidNames -- propsDefinedOutsideTheMainPropsClass).isEmpty) {
       println("There are invalid properties in props.conf. Starling can not start until they are removed.")
       invalidNames.foreach( (name) => println(" " + name))
       System.exit(1)
@@ -141,7 +146,7 @@ class PropsHelper(props : Map[String,String]) {
 
 object PropsHelper {
 
-  val defaultProps = new Props(PropertiesMapBuilder.defaultProps)
+  val defaultProps = new Props(PropertiesMapBuilder.starlingProps, PropertiesMapBuilder.trafiguraProps)
 
   def createColourString(name:String):String = {
     //Generate a background colour from the name.
@@ -181,7 +186,7 @@ object PropsHelper {
         file.write( p + "\n")
       }
       file.write( "\n")
-      file.write( "#NOTE: This file is generated for reference. It is not read by starling\n")
+      file.write( "#NOTE:  This file is generated for reference. It is not read by starling\n")
     } finally {
       file.close()
     }

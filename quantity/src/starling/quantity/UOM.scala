@@ -11,7 +11,8 @@ import starling.utils.Pattern._
 object UOM {
   def apply(numerator : Long, denominator : Long) : UOM = UOM(Ratio(1,1), Ratio(numerator, denominator))
 
-  val Parse = Extractor.from[String](value => fromStringOption(value))
+  val Parse: Extractor[String, UOM] = Extractor.from[String](value => fromStringOption(value))
+  val Currency: Extractor[String, UOM] = Parse.filter(_.isCurrency)
 
   import UOMSymbol._
   val NULL = UOM.build(0, 1)
@@ -113,7 +114,7 @@ object UOM {
 
   val MILLISECONDS = MILLISECONDS_SYMBOL.asUOM
 
-  lazy val currencies = currencySymbols.map(_.asUOM)
+  lazy val currencies = currencySymbols.map(_.asUOM).toSet
 
   def build(numerator : Int, denominator : Int) : UOM = {
   		UOM(numerator, denominator).reduce

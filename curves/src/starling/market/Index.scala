@@ -11,14 +11,15 @@ import starling.calendar.{HolidayTablesFactory, BusinessCalendars, BusinessCalen
 import starling.utils.ImplicitConversions._
 import starling.utils.Pattern.Extractor
 import starling.quantity._
+import java.lang.IllegalStateException
 
 case class UnknownIndexException(msg: String, eaiQuoteID: Option[Int] = None) extends Exception(msg)
 
 trait Index {
   val name : String
-  val eaiQuoteID: Option[Int]
+  val eaiQuoteID: Option[Int] = None
 
-  val identifier = name
+  def identifier = name
   def priceUOM : UOM
   def uom : UOM
 
@@ -78,40 +79,78 @@ trait Index {
 
 case class IndexSensitivity(coefficient : Double, index : Index)
 
+/**
+ * The cacnonical example is the Ave 4 LME index. It's not a single index as it depends on both
+ * cash and 3 month prices, but it does have a single price for each day, which can be displayed in the UI
+ * explanation of the valuation of physical forwards
+ */
+trait IndexWithDailyPrices extends Index with KnownObservation {
+  def fixingOrForwardPrice(env : Environment, observationDay : Day) : Quantity
+
+  def market : CommodityMarket
+  def lotSize = market.lotSize
+
+  def businessCalendar = market.businessCalendar
+  def precision = market.precision
+  def commodity = market.commodity
+  def priceUOM : UOM = market.priceUOM
+  def currency = market.currency
+  def uom = market.uom
+  def calendars = Set(businessCalendar)
+  def convert(value: Quantity, uom: UOM): Option[Quantity] = market.convert(value, uom)
+  def possiblePricingRules = List(NoPricingRule)
+  def isObservationDay(day: Day): Boolean = businessCalendar.isBusinessDay(day)
+}
 
 /**
  * An index on a single underlying
  */
-trait SingleIndex extends Index with KnownObservation {
+trait SingleIndex extends IndexWithDailyPrices with FixingHistoryLookup {
   override val name: String
-
-  def market: CommodityMarket
 
   def level: Level
 
   def fixing(env : InstrumentLevelEnvironment, observationDay : Day) = {
-    env.quantity(FixingKey(this, observationDay))
+    env.quantity(IndexFixingKey(this, observationDay)) match {
+      case nq : NamedQuantity => {
+        val fixed = new SimpleNamedQuantity(market.name + "." + observedPeriod(observationDay).toShortString + " Fixed", new Quantity(nq.value, nq.uom))
+        SimpleNamedQuantity(observationDay.toString, fixed)
+      }
+      case q => q
+    }
   }
 
-  def forwardPrice(env: InstrumentLevelEnvironment, observationDay: Day, ignoreShiftsIfPermitted: Boolean) = {
+  def forwardPriceOnObservationDay(env: InstrumentLevelEnvironment, observationDay: Day, ignoreShiftsIfPermitted: Boolean) = {
     env.quantity(ForwardPriceKey(market, observedPeriod(observationDay), ignoreShiftsIfPermitted)) match {
       case nq : NamedQuantity =>  SimpleNamedQuantity(observationDay.toString, nq)
       case q => q
     }
   }
 
-  def fixing(slice: MarketDataSlice, observationDay : Day) = {
-    val key = PriceFixingsHistoryDataKey(market)
-    slice.fixings(key, ObservationPoint(observationDay, observationTimeOfDay))
-      .fixingFor(level, storedFixingPeriod(observationDay))
-      .toQuantity
+  def fixingOrForwardPrice(env : Environment, observationDay : Day) = env.fixingOrForwardPrice(this, observationDay)
+
+  def observationTimeOfDay = ObservationTimeOfDay.Default
+
+  def storedFixingPeriod(date: Either[Day, DateRange]): StoredFixingPeriod = date match {
+    case Left(day) => storedFixingPeriodForDay(day)
+    case _ => throw new IllegalArgumentException("Invalid param for index: " + date)
   }
 
-  def lotSize = market.lotSize
+  def storedFixingPeriodForDay(day:Day) : StoredFixingPeriod
 
-  def businessCalendar = market.businessCalendar
+  def fixing(slice: MarketDataSlice, observationDay : Day, storedFixingPeriod: Option[StoredFixingPeriod]) = {
+    require(storedFixingPeriod.isEmpty)
+    val key = PriceFixingsHistoryDataKey(market)
+    val fixingHistory = slice.fixings(key, ObservationPoint(observationDay, observationTimeOfDay))
+    val fixing = try {
+      fixingHistory.fixingFor(level, storedFixingPeriodForDay(observationDay))
+    } catch {
+      case ex => throw new Exception("Index " + this + ", observation day " + observationDay + ", period " + storedFixingPeriod + ", " + ex.getMessage, ex)
+    }
+    fixing.toQuantity
+  }
 
-    /*
+   /*
      Shift vols of prices for the underlying market/period so that swap vols are also perturbed. Needs to be used with care,
      as it is possible that the SwapVol differentiable concerned may not be the only thing perturbed. Other SwapVols may depend
      on the same underlying prices. Compare with perturbations in InstrumentLevelEnvironment where vols for an exact averaging period
@@ -141,21 +180,6 @@ trait SingleIndex extends Index with KnownObservation {
     env.interpolatedVol(market, observedOptionPeriod(observationDay), Some(observationDay), Some(strike), isIndexVol = true, Some(averagePrice))
   }
 
-  def precision = market.precision
-  def commodity = market.commodity
-  def observationTimeOfDay = ObservationTimeOfDay.Default
-
-  def isObservationDay(day: Day): Boolean = businessCalendar.isBusinessDay(day)
-  /**
-   * Kind of sucks having to pass in average price. It's the forward price, not necessarily for the observed
-   * period for this day, rather the observed period for the averaging period for which the vol is being
-   * calculated.
-   */
-  def priceUOM : UOM = market.priceUOM
-  def currency = market.currency
-  def uom = market.uom
-
-
   def makeAveragingPeriodMonthIfPossible(dateRange: DateRange): DateRange = {
     makeAveragingPeriodMonthIfPossible(dateRange, CommonPricingRule)
   }
@@ -165,22 +189,9 @@ trait SingleIndex extends Index with KnownObservation {
   // There should really be a different index for this
   def observedOptionPeriod(observationDay: Day) : DateRange
 
-  def calendars = Set(businessCalendar)
 
-  def storedFixingPeriod(day:Day) : StoredFixingPeriod
-
-  def convert(value: Quantity, uom: UOM): Option[Quantity] = {
-    market.convert(value, uom)
-  }
-
-  def possiblePricingRules = List(NoPricingRule)
 
   def indexes = Set(this)
-}
-
-abstract class FuturesIndex(override val name: String, val market: FuturesMarket,
-                           val level: Level = Level.Unknown) extends SingleIndex {
-
 }
 
 case class PublishedIndex(
@@ -196,44 +207,56 @@ case class PublishedIndex(
   override val precision : Option[Precision] = None,
   override val level: Level = Level.Mid
 )
-  extends SwapMarket(name, lotSize, uom, currency, businessCalendar, eaiQuoteID, commodity, conversions, limSymbol, precision) with SingleIndex
+  extends CommodityMarket(name, lotSize, uom, currency, businessCalendar, eaiQuoteID, Day, commodity, conversions, limSymbol, precision) with SingleIndex with HasInterpolation
 {
-  override def isObservationDay(day: Day): Boolean = businessCalendar.isBusinessDay(day)
+  type marketType = CommodityMarket
+  override def isObservationDay(day: Day): Boolean = super[SingleIndex].isObservationDay(day)
 
-  override def convert(value: Quantity, uom: UOM) = value.in(uom)(conversions)
+  override def convert(value: Quantity, uom: UOM): Option[Quantity] = {
+     value.in(uom)(conversions)
+   }
 
-  override def convertUOM(value: Quantity, uom: UOM) : Quantity = {
-    convert(value, uom) match {
+//  override def convert(value: Quantity, uom: UOM) = super[SwapMarket].convert(value, uom)
+
+//  override def convertUOM(value: Quantity, uom: UOM) : Quantity = super[SwapMarket].convertUOM(value, uom)
+  override def convertUOM(volume : Quantity, uom : UOM) : Quantity = {
+    convert(volume, uom) match {
       case Some(beqv) => beqv
-      case None => throw new Exception(this + ": Couldn't convert from " + value + " to " + uom)
+      case None => throw new Exception(this + ": Couldn't convert from " + volume + " to " + uom)
     }
   }
 
   def observedPeriod(observationDay : Day) : DateRange = observationDay
 
-  def storedFixingPeriod(observationDay: Day) = StoredFixingPeriod.dateRange(observedPeriod(observationDay))
+  def storedFixingPeriodForDay(observationDay: Day) = StoredFixingPeriod.dateRange(observedPeriod(observationDay))
 
   def observedOptionPeriod(observationDay: Day) = observationDay
 
   override val priceUOM = currency / uom
 
   def market: CommodityMarket = this
+
+  override def fixing(slice: MarketDataSlice, observationDay: Day, storedFixingPeriod: Option[StoredFixingPeriod]) = super[SingleIndex].fixing(slice, observationDay, storedFixingPeriod)
+
+  override def fixing(env: InstrumentLevelEnvironment, observationDay: Day) = super[SingleIndex].fixing(env, observationDay)
+
+  def interpolation = InverseConstantInterpolation
 }
 
 case class FuturesFrontPeriodIndex(
   marketName: String,
-  eaiQuoteID: Option[Int],
+  override val eaiQuoteID: Option[Int],
   override val market : FuturesMarket,
   rollBeforeDays : Int,
   promptness : Int,
-  override val precision: Option[Precision],
-  override val level: Level = Level.Close
- ) extends FuturesIndex(
-  marketName,
-  market,
-  level
- ){
+  override val precision: Option[Precision]
+ ) extends SingleIndex { //with TitanPricingIndex {
 
+  def futuresMarket = market
+  val name = marketName
+
+  val level = market.exchange.fixingLevel
+  
   def observedPeriod(observationDay : Day) : DateRange = {
     val frontMonth = market.frontPeriod(observationDay.addBusinessDays(market.businessCalendar, rollBeforeDays))
     val period = frontMonth match {
@@ -242,7 +265,7 @@ case class FuturesFrontPeriodIndex(
     }
     period
   }
-  def storedFixingPeriod(observationDay: Day) = StoredFixingPeriod.dateRange(observedPeriod(observationDay))
+  def storedFixingPeriodForDay(observationDay: Day) = StoredFixingPeriod.dateRange(observedPeriod(observationDay))
 
   def observedOptionPeriod(observationDay: Day) = market.frontOptionPeriod(
     observationDay.addBusinessDays(market.businessCalendar, rollBeforeDays)
@@ -253,6 +276,11 @@ case class FuturesFrontPeriodIndex(
   }
 
   override def reportDisplayName = "%s 1st %s" % (market.name, market.tenor.toString.toLowerCase)
+
+  /**
+   * This works for Comex and SFSE - may need to be overriden for others.
+   */
+  override def observationTimeOfDay = market.exchange.closeTime
 }
 
 abstract class MultiIndex(override val name: String) extends Index {
@@ -291,7 +319,7 @@ abstract class MultiIndex(override val name: String) extends Index {
 }
 
 object Index {
-  lazy val provider = MarketProvider.provider
+  private def provider = MarketProvider.provider
 
   def indexFromName(name: String): Index = provider.index(name).getOrElse(throw new Exception("No index: " + name))
   def publishedIndexFromName(name: String): PublishedIndex = indexFromName(name).cast[PublishedIndex]
@@ -321,11 +349,11 @@ object Index {
   lazy val IPE_GAS_OIL_VS_IPE_BRENT = formulaIndexFromName("IPE Gas Oil (Settlement) vs IPE Brent")
   lazy val MOGAS_95_UNL_10PPM_NWE_BARGES_VS_IPE_BRENT = formulaIndexFromName("Mogas 95 Unl 10ppm NWE Barges (Argus) vs IPE Brent")
   lazy val NYMEX_WTI_VS_IPE_BRENT = formulaIndexFromName("NYMEX WTI vs IPE Brent")
+  lazy val NYMEX_RBOB_1ST_MONTH_VS_IPE_BRENT_1ST_MONTH = formulaIndexFromName("nymex rbob 1st month vs ipe brent 1st month (bbls)")
 
   lazy val allFuturesFrontPeriodIndexes = provider.allIndexes.flatMap{case f:FuturesFrontPeriodIndex => Some(f); case _ => None}
   lazy val allPublishedIndexes = provider.allIndexes.flatMap{case p:PublishedIndex => Some(p); case _ => None}
   lazy val marketToPublishedIndexMap: Map[CommodityMarket, PublishedIndex] = allPublishedIndexes.toMapWithKeys(_.market)
-  lazy val futuresMarketToFuturesFrontPeriodIndexMap: Map[FuturesMarket, FuturesFrontPeriodIndex] = allFuturesFrontPeriodIndexes.toMapWithKeys(_.market)
 
   lazy val futuresMarketToIndexMap = Map(
     Market.ICE_BRENT -> BRT11,
@@ -336,7 +364,12 @@ object Index {
     Market.ICE_WTI -> ICEWTI10
   )
 
-  lazy val lmeIndices = Market.futuresMarkets.filter(_.exchange == FuturesExchangeFactory.LME).map(LmeCashSettlementIndex)
+  lazy val lmeIndices = for (
+      market <- Market.futuresMarkets;
+      if (market.exchange == FuturesExchangeFactory.LME);
+      level <- List(Level.Bid, Level.Ask)
+    )
+      yield(LmeCashSettlementIndex(market, level))
 
   lazy val indicesToImportFixingsForFromEAI: List[SingleIndex] = allFuturesFrontPeriodIndexes ::: allPublishedIndexes
 
@@ -391,52 +424,26 @@ object Index {
   }
 
   def markets(index: Index): Set[CommodityMarket] = index.indexes.flatMap {
-    case si => Set(si.market)
+    case si => Set(si.market.asInstanceOf[CommodityMarket])
   }
 }
 
 object LmeSingleIndices{
-  abstract class LMEIndex(name : String, market : FuturesMarket, level : Level) extends FuturesIndex(name, market, level = level){
-    def observedOptionPeriod(observationDay: Day) = throw new Exception("Options not supported for LME indices")
-    override def observationTimeOfDay = ObservationTimeOfDay.Official
-  }
+  val cuCashBid = new LmeCashSettlementIndex(Market.LME_COPPER, level = Level.Bid)
+  val cuCashOffer = new LmeCashSettlementIndex(Market.LME_COPPER, level = Level.Ask)
+  val cu3MBid = new LmeThreeMonthIndex(Market.LME_COPPER, level = Level.Bid)
+  val cu3MOffer = new LmeThreeMonthIndex(Market.LME_COPPER, level = Level.Ask)
 
-  class LMECashIndex(name : String, market : FuturesMarket, level : Level) extends LMEIndex(name, market, level){
-    def observedPeriod(day : Day) = {
-      assert(isObservationDay(day), day + " is not an observation day for " + this)
-      day.addBusinessDays(businessCalendar, 2)
-    }
+  val alCashBid = new LmeCashSettlementIndex(Market.LME_ALUMINIUM, level = Level.Bid)
+  val alCashOffer = new LmeCashSettlementIndex(Market.LME_ALUMINIUM, level = Level.Ask)
+  val al3MBid = new LmeThreeMonthIndex(Market.LME_ALUMINIUM, level = Level.Bid)
+  val al3MOffer = new LmeThreeMonthIndex(Market.LME_ALUMINIUM, level = Level.Ask)
 
-    def storedFixingPeriod(day: Day) = StoredFixingPeriod.tenor(Tenor.CASH)
+  val niCashBid = new LmeCashSettlementIndex(Market.LME_NICKEL, level = Level.Bid)
 
-    val eaiQuoteID = None
-  }
-
-  class LMEThreeMonthIndex(name : String, market : FuturesMarket, level : Level) extends LMEIndex(name, market, level){
-    def observedPeriod(day : Day) = {
-      assert(isObservationDay(day), day + " is not an observation day for " + this)
-      FuturesExchangeFactory.LME.threeMonthDate(day)
-    }
-
-    def storedFixingPeriod(day: Day) = StoredFixingPeriod.tenor(Tenor.ThreeMonths)
-
-    val eaiQuoteID = None
-  }
-  val cuCashBid = new LMECashIndex("CU Cash Bid", Market.LME_COPPER, level = Level.Bid)
-  val cuCashOffer = new LMECashIndex("CU Settlement", Market.LME_COPPER, level = Level.Ask)
-  val cu3MBid = new LMEThreeMonthIndex("CU 3m Seller", Market.LME_COPPER, level = Level.Bid)
-  val cu3MOffer = new LMEThreeMonthIndex("CU 3m Buyer", Market.LME_COPPER, level = Level.Ask)
-
-  val alCashBid = new LMECashIndex("CU Cash Bid", Market.LME_ALUMINIUM, level = Level.Bid)
-  val alCashOffer = new LMECashIndex("CU Settlement", Market.LME_ALUMINIUM, level = Level.Ask)
-  val al3MBid = new LMEThreeMonthIndex("CU 3m Seller", Market.LME_ALUMINIUM, level = Level.Bid)
-  val al3MOffer = new LMEThreeMonthIndex("CU 3m Buyer", Market.LME_ALUMINIUM, level = Level.Ask)
-
-  val niCashBid = new LMECashIndex("CU Cash Bid", Market.LME_NICKEL, level = Level.Bid)
-
-  val niCashOffer = new LMECashIndex("CU Settlement", Market.LME_NICKEL, level = Level.Ask)
-  val ni3MBid = new LMEThreeMonthIndex("CU 3m Seller", Market.LME_NICKEL, level = Level.Bid)
-  val ni3MOffer = new LMEThreeMonthIndex("CU 3m Buyer", Market.LME_NICKEL, level = Level.Ask)
+  val niCashOffer = new LmeCashSettlementIndex(Market.LME_NICKEL, level = Level.Ask)
+  val ni3MBid = new LmeThreeMonthIndex(Market.LME_NICKEL, level = Level.Bid)
+  val ni3MOffer = new LmeThreeMonthIndex(Market.LME_NICKEL, level = Level.Ask)
 
 }
 
@@ -445,39 +452,72 @@ object FuturesFrontPeriodIndex {
     val name = "%s 1st %s" % (market.name, market.tenor.toString.toLowerCase)
     new FuturesFrontPeriodIndex(name, None, market, 0, 1, None)
   }
-
-  def apply(market: FuturesMarket, level: Level) = {
-    val name = "%s 1st %s" % (market.name, market.tenor.toString.toLowerCase)
-    new FuturesFrontPeriodIndex(name, None, market, 0, 1, None, level)
-  }
 }
 
-case class LmeCashSettlementIndex(futuresMarket : FuturesMarket) extends FuturesIndex("LME " + futuresMarket.commodity + " cash", futuresMarket, level = Level.Ask){
+trait LMESingleIndex extends SingleIndex {
   def observedOptionPeriod(observationDay: Day) = throw new Exception("Options not supported for LME indices")
+  override def observationTimeOfDay = ObservationTimeOfDay.LME_Official
+}
+case class LmeCashSettlementIndex(market : FuturesMarket, level : Level) extends LMESingleIndex {
+  val name = "LME " + market.commodity + " cash " + level.name
 
   def observedPeriod(day : Day) = {
     assert(isObservationDay(day), day + " is not an observation day for " + this)
     day.addBusinessDays(businessCalendar, 2)
   }
 
-  def storedFixingPeriod(day: Day) = StoredFixingPeriod.tenor(Tenor.CASH)
+  def storedFixingPeriodForDay(day: Day) = StoredFixingPeriod.tenor(Tenor.CASH)
 
-  override def observationTimeOfDay = ObservationTimeOfDay.Official
-
-  val eaiQuoteID = None
+  override def observationTimeOfDay = ObservationTimeOfDay.LME_Official
 }
 
-case class LmeThreeMonthBuyerIndex(futuresMarket : FuturesMarket) extends FuturesIndex("LME " + futuresMarket.commodity + " 3m Buyer", futuresMarket, level = Level.Bid){
-  def observedOptionPeriod(observationDay: Day) = throw new Exception("Options not supported for LME indices")
+case class LmeThreeMonthIndex(market : FuturesMarket, level : Level) extends LMESingleIndex{
+  val name = "LME " + market.commodity + " 3m " + level.name
 
   def observedPeriod(day : Day) = {
     assert(isObservationDay(day), day + " is not an observation day for " + this)
     FuturesExchangeFactory.LME.threeMonthDate(day)
   }
 
-  def storedFixingPeriod(day: Day) = StoredFixingPeriod.tenor(Tenor.ThreeMonths)
+  def storedFixingPeriodForDay(day: Day) = StoredFixingPeriod.tenor(Tenor.ThreeMonths)
 
-  override def observationTimeOfDay = ObservationTimeOfDay.Official
-
-  val eaiQuoteID = None
 }
+
+case class LmeLowestOfFourIndex(market : FuturesMarket) extends IndexWithDailyPrices {
+  private val cashIndex = LmeCashSettlementIndex(market, Level.Bid)
+  private val threeMonthIndex = LmeThreeMonthIndex(market, Level.Bid)
+
+  def fixingOrForwardPrice(env : Environment, observationDay : Day) : Quantity = {
+    cashIndex.fixingOrForwardPrice(env, observationDay) min threeMonthIndex.fixingOrForwardPrice(env, observationDay)
+  }
+  def indexes = Set(cashIndex, threeMonthIndex)
+  val name = "LME " + market.commodity + " low 4"
+}
+
+case class LmeAverageOfFourIndex(market : FuturesMarket) extends IndexWithDailyPrices {
+  private val cashBidIndex = LmeCashSettlementIndex(market, Level.Bid)
+  private val cashAskIndex = LmeCashSettlementIndex(market, Level.Ask)
+  private val threeMonthBidIndex = LmeThreeMonthIndex(market, Level.Bid)
+  private val threeMonthAskIndex = LmeThreeMonthIndex(market, Level.Ask)
+
+  def fixingOrForwardPrice(env : Environment, observationDay : Day) : Quantity = {
+    Quantity.average(
+      indexes.toList.map(_.fixingOrForwardPrice(env, observationDay))
+    )
+  }
+  def indexes = Set(cashBidIndex, cashAskIndex, threeMonthBidIndex, threeMonthAskIndex)
+  val name = "LME " + market.commodity + " average 4"
+}
+
+case class LmeAve4MaxSettIndex(market : FuturesMarket) extends IndexWithDailyPrices {
+  private val ave4Index = LmeAverageOfFourIndex(market)
+  private val cashAskIndex = LmeCashSettlementIndex(market, Level.Ask)
+  def indexes = ave4Index.indexes ++ cashAskIndex.indexes
+  def fixingOrForwardPrice(env : Environment, observationDay : Day) : Quantity = {
+    // Despite the misleading name for this index, it is actually a minimum
+    ave4Index.fixingOrForwardPrice(env, observationDay) min cashAskIndex.fixingOrForwardPrice(env, observationDay)
+  }
+
+  val name = "LME " + market.commodity + " ave 4 max sett"
+}
+

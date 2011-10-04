@@ -3,7 +3,7 @@ package starling.instrument
 import starling.daterange.Period
 import starling.marketdata.MarketData
 import cern.colt.matrix.DoubleMatrix2D
-import starling.utils.AtomicDatumKeyUtils
+import starling.instrument.utils.AtomicDatumKeyUtils
 import starling.quantity.{Percentage, UOM, Quantity}
 import starling.quantity.UOM._
 import starling.quantity.RichQuantity._

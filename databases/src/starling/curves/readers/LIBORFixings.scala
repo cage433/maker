@@ -26,7 +26,7 @@ object LIBORFixings extends HierarchicalLimSource(TopRelation.Trafigura.Bloomber
     val group = (interestRateType, currency)
   }
 
-  def relationExtractor = Extractor.regex("""TRAF\.(\w+)\.(\w+)\.(\w+)""") {
+  def relationExtractor = Extractor.regex[Option[LIBORRelation]]("""TRAF\.(\w+)\.(\w+)\.(\w+)""") {
     case List(rateType, UOM.Parse(ccy), Tenor.Parse(tenor)) => Some(LIBORRelation(rateType, ccy, StoredFixingPeriod.tenor(tenor)))
   }
 
@@ -108,6 +108,5 @@ object LIBORFixing {
 
   val calendars = overnightCalendars ++ spotNextCalendars
   val currencies = calendars.keySet
-
-  def firstTenorFor(currency: UOM) = if (overnightCalendars.keySet.contains(currency)) Tenor.ON else Tenor.SN
+  def firstTenorFor(currency: UOM) = if (overnightCalendars.contains(currency)) Tenor.ON else Tenor.SN
 }

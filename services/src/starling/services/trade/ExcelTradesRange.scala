@@ -9,7 +9,7 @@ import starling.richdb.RichInstrumentResultSetRow
 import starling.eai.{TreeID, EAIStrategyDB}
 import starling.models.{Put, Call, CallOrPut}
 import starling.quantity.{SpreadQuantity, UOM, Quantity, Percentage}
-import starling.trade.{TradeID, Trade}
+import starling.instrument.{TradeID, Trade}
 import starling.market.{FuturesMarket, Market, Index}
 
 case class ExcelTradesRange(subgroupName : String,

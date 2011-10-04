@@ -14,7 +14,7 @@ import starling.eai.TreeID
 import starling.tradestore.intraday.IntradayTradeAttributes
 import starling.tradestore.TradeAndFields
 import starling.utils.{AppendingMap, StarlingTest}
-import starling.trade.{TradeID, TradeSystem, Trade, TradeAttributes}
+import starling.instrument.{TradeID, TradeSystem, Trade, TradeAttributes}
 
 class TradeDiffTests extends StarlingTest {
   private def tradeIDs(ts: (TradeAndFields, TradeAndFields)) = (ts._1.trade.tradeID, ts._2.trade.tradeID)

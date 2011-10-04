@@ -1,7 +1,7 @@
 package starling.pivot.view.swing
 
 import starling.pivot._
-import starling.gui.GuiUtils._
+import starling.browser.common.GuiUtils._
 import starling.pivot.model.AxisCell
 import starling.quantity.{SpreadOrQuantity, Quantity}
 import java.awt.{Component, Color}
@@ -122,8 +122,6 @@ object Highlighters {
     })
     editableCellsHighlighter.setBackground(EditableCellColour)
     editableCellsHighlighter.setSelectedBackground(BlendedEditableCellColour)
-    editableCellsHighlighter.setForeground(new Color(0,0,1))
-    editableCellsHighlighter.setForeground(new Color(0,0,0)) // This is a hack as there seems to be a problem with the selected highlighter for deleted cells.
 
     val deletedCellsHighlighter = new ColorHighlighter(new HighlightPredicate {
       def isHighlighted(renderer:java.awt.Component, adapter:org.jdesktop.swingx.decorator.ComponentAdapter) = {

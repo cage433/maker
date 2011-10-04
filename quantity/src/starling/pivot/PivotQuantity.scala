@@ -1,10 +1,11 @@
 package starling.pivot
 
-import math.abs
 import java.io.Serializable
 import starling.quantity._
 import collection.immutable.Map
 import starling.utils.{StarlingEnum, StackTraceToString}
+import starling.utils.Pattern.Extractor
+import starling.utils.ImplicitConversions._
 
 case class PivotPercentage(percent:Option[Percentage]) {
   override def toString = percent match {
@@ -140,7 +141,16 @@ case class PivotQuantity(values:Map[UOM,Double], errors:Map[String,List[StackTra
     case None => false
   }
 
-  def explanation : Option[String] = quantityValue.map { q => q.format("#,##0.00#######################################")}
+  def explanation : Option[String] = quantityValue.map { q => q.toStringAllDecimalPlaces}
+
+  override def equals(that: Any): Boolean = that match {
+    case pq: PivotQuantity => errors.equals(pq.errors) && warning.equals(pq.warning) &&
+      formattedValues.equals(pq.formattedValues)
+    case _ => false
+  }
+
+  override def hashCode() = (formattedValues, errors, warning).hashCode()
+  def formattedValues: Map[UOM, String] = values.mapValues(_.format("##########.####", addSpace = false))
 }
 /**
  * This type class allows the Numeric implicit enabled methods to be used, like TraversableOnce
@@ -166,6 +176,7 @@ trait PivotQuantityIsNumeric extends Numeric[PivotQuantity] {
 object PivotQuantity {
   implicit object PivotQuantityIsNumeric extends PivotQuantityIsNumeric
   val NULL = new PivotQuantity(Map[UOM,Double](), Map[String,List[StackTrace]]())
+  val QuantityValue: Extractor[Any, Quantity] = Extractor.from[Any](_.safeCast[PivotQuantity].flatMap(_.quantityValue))
   def sum(qs : Seq[PivotQuantity]) = (PivotQuantity.NULL /: qs)(_+_)
   def create(values:Map[UOM,Double], errors:Set[Throwable]) = new PivotQuantity(values, errors)
   

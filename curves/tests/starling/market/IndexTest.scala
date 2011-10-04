@@ -7,7 +7,7 @@ import starling.quantity.UOM._
 import scala.collection.JavaConversions._
 import starling.utils.CaseInsensitive._
 
-class IndexTest extends TestMarketSpec{
+class IndexTest extends TestMarketTest{
   @Test
   def caseInsenstive {
     val testMarket = Market.LME_LEAD

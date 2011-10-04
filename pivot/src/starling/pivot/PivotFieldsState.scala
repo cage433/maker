@@ -1,6 +1,7 @@
 package starling.pivot
 
 import java.io.Serializable
+import model.UndefinedValue
 import starling.utils.StarlingObject
 import collection.SortedMap
 import starling.utils.ImplicitConversions._
@@ -56,8 +57,16 @@ object Position extends Enumeration {
   type Position = Value
   val Top,Left,Bottom,Right,Other = Value
 }
-
-case class FiltersList(filters:List[List[(Field,Selection)]]) extends Iterable[List[(Field,Selection)]] {
+trait PossibleValuesFilter {
+  def matches(fieldDetails:FieldDetails, value : Any) : Boolean
+}
+case class MeasurePossibleValuesFilter(field:Field) extends PossibleValuesFilter{
+  def matches(fieldDetails:FieldDetails, value : Any) : Boolean = (value != UndefinedValue)
+}
+case class SelectionPossibleValuesFilter(selection:Selection) extends PossibleValuesFilter {
+  def matches(fieldDetails:FieldDetails, value : Any) : Boolean = selection.matches(fieldDetails, value)
+}
+case class FiltersList(filters:List[List[(Field,PossibleValuesFilter)]]) extends Iterable[List[(Field,PossibleValuesFilter)]] {
   def toFilterSet = filters.flatten.toSet
   def allFields = toFilterSet.map(_._1)
   def iterator = filters.iterator
@@ -303,16 +312,26 @@ case class ColumnTrees(trees:List[ColumnTree]) {
   def topMeasureFields:List[Field] = trees.flatMap(_.topMeasureFields)
   def maxDepth:Int = (0 :: trees.map(_.maxDepth)).max
 
-  def buildPathsWithPadding:List[ColumnStructurePath] = {
+  def buildPathsWithPadding(depths:Map[Field,Int]):List[ColumnStructurePath] = {
     val paths = buildPaths()
 
-    val foo:Map[Field, List[(Field, Int)]] = paths.flatMap(_.path.zipWithIndex.map{case ((f,pos), i) => {
-      (f, i)
-    }}).groupBy(_._1)
-    val bar:Map[Field, Int] = foo.mapValues( list => list.map(_._2).max)
+    val allIndicesOfEachField:Map[Field, List[Int]] = paths.flatMap{ structurePath => {
+      val fieldDepths:Map[Field, Int] = structurePath.path.map{ case(field, _) => field -> depths.getOrElse(field, 1) }.toMap
+      var d = 0
+      var x = new scala.collection.mutable.ArrayBuffer[(Field,Int)]()
+      fieldDepths.foreach { case (field,depth) => {
+        x += ( (field,d) )
+        d += depth
+      }}
+      x
+      }
+    }.groupBy(_._1).mapValues( _.map(_._2) )
+    val highestIndexOfEachField:Map[Field, Int] = allIndicesOfEachField.mapValues( _.max )
     paths.map { path => {
-      val paddedPath = path.path.zipWithIndex.flatMap { case ((field,pos),index) => {
-        val nullsRequired = bar(field) - index
+      var index = 0
+      val paddedPath = path.path.flatMap { case (field,pos) => {
+        val nullsRequired = highestIndexOfEachField(field) - index
+        index += depths.getOrElse(field, 1) + nullsRequired
         List.fill(nullsRequired)( (Field.NullField, pos)) ::: List( (field,pos))
       }}
       path.copy(path=paddedPath)
@@ -633,14 +652,10 @@ class PivotFieldsState(
   }
 
   def allFilterPaths = {
-    val columnPaths = columns.buildPaths().map(path => {
-      path.path.map(_._1).filter(f => {
-        path.dataField match {
-          case None => true
-          case Some(df) => df != f
-        }
-      })
+    val columnPaths:List[List[Field]] = columns.buildPaths().map(path => {
+      path.path.map(_._1)
     })
+    val measures = columns.measureFields
     val allPaths: List[scala.List[Field]] = if (rowFields.isEmpty) {
       if (columnPaths.isEmpty) {
         List(Nil)
@@ -651,15 +666,20 @@ class PivotFieldsState(
       rowFields :: columnPaths.map(p=>rowFields:::p)
     }
 
-    val filterFieldToSelection = Map() ++ filters.map(t=>t._1->t._2)
+    val filterFieldToSelection:Map[Field, Selection] = Map() ++ filters.map(t=>t._1->t._2)
 
-    val filtersList = allPaths.map(path => filtersInTheFilterArea ::: path.map {
+    val filtersList = allPaths.map(path => filtersInTheFilterArea.map{case (f,s) => f -> SelectionPossibleValuesFilter(s)} ::: path.map {
       field => {
-        val selection = filterFieldToSelection.get(field) match {
-          case Some(s) => s
-          case None => AllSelection
+        val filter:PossibleValuesFilter = if (measures.contains(field)) {
+          MeasurePossibleValuesFilter(field)
+        } else {
+          val selection = filterFieldToSelection.get(field) match {
+            case Some(s) => s
+            case None => AllSelection
+          }
+          SelectionPossibleValuesFilter(selection)
         }
-        (field, selection)
+        (field, filter)
       }
     })
     FiltersList(filtersList)
@@ -692,6 +712,8 @@ object PivotFieldsState {
       transforms=transforms
     )
   }
+
+  val Blank = new PivotFieldsState()
 }
 
 case class PivotFieldParams(calculate:Boolean, pivotFieldState:Option[PivotFieldsState])

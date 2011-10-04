@@ -8,8 +8,8 @@ import starling.daterange.{Day, ObservationPoint}
 import starling.pivot.pivotparsers.DayPivotParser
 import starling.richdb.RichDB
 import starling.daterange.Timestamp
-import starling.utils.StarlingXStream
-import starling.utils.sql.{From, QueryBuilder, LiteralString}
+import starling.instrument.utils.StarlingXStream
+import starling.dbx.{From, QueryBuilder, LiteralString}
 import starling.daterange.{ObservationTimeOfDay, TimeOfDay, Day, ObservationPoint}
 import starling.utils.ImplicitConversions._
 import starling.gui.api._
@@ -43,7 +43,7 @@ class MarketDataPivotTableDataSource(reader: MarketDataReader, edits:PivotEdits,
 
   import scala.collection.mutable.{HashSet=>MSet}
 
-  //val cache = CacheFactory.getCache("cache")
+  val cache = CacheFactory.getCache("marketDataCache")
 
   val observationDayAndMarketDataKeys = reader.readAllObservationDayAndMarketDataKeys(marketDataType)
 
@@ -67,12 +67,10 @@ class MarketDataPivotTableDataSource(reader: MarketDataReader, edits:PivotEdits,
     marketDataTypeInitialPivotState.copy(filters=(observationDayField.field, observationDaySelection) :: marketDataTypeInitialPivotState.filters)
   }
 
-  def editableMarketDataSet = {
-    marketDataIdentifier.selection match {
-      case MarketDataSelection(None, None) => None
-      case MarketDataSelection(_, Some(excelName)) => Some(MarketDataSet.excel(excelName))
-      case MarketDataSelection(Some(pricingGroup), _) => MarketDataStore.editableMarketDataSetFor(pricingGroup)
-    }
+  private lazy val editableMarketDataSet = marketDataIdentifier.selection match {
+    case MarketDataSelection(None, None) => None
+    case MarketDataSelection(_, Some(excelName)) => Some(MarketDataSet.excel(excelName))
+    case MarketDataSelection(Some(pricingGroup), _) => MarketDataStore.editableMarketDataSetFor(pricingGroup)
   }
 
   override def editable = {
@@ -144,25 +142,24 @@ class MarketDataPivotTableDataSource(reader: MarketDataReader, edits:PivotEdits,
                 var modifiedRows = currentRows
 
                 maybeEdits match {
-                  case Some(edits) => {
-                    edits.foreach { case (keyFilter, keyEdit) => {
-                      modifiedRows = modifiedRows.flatMap { row => {
-                        if (keyFilter.matches(row)) {
-                            keyEdit match {
-                              case DeleteKeyEdit => None
-                              case AmendKeyEdit(amends) => {
-                                if (amends.values.toSet.contains(None)) {
-                                  None //Delete the row if the measure has been deleted
-                                } else {
-                                  Some( row ++ amends.filter(_._2.isDefined).mapValues(_.get) )
-                                }
-                              }
-                            }
+                  case Some(edits0) => {
+                    edits0.foreach { case (keyFilter, keyEdit) => {
+                      val (affectedRows, ignoredRows) = modifiedRows.partition(keyFilter.matches)
+                      val (fixedRows,newRows) = keyEdit match {
+                        case DeleteKeyEdit => (Nil,Nil)
+                        case AmendKeyEdit(amends) => {
+                          if (amends.values.toSet.contains(None)) {
+                            (Nil,Nil) //Delete the row if the measure has been deleted
                           } else {
-                            Some(row)
+                            (affectedRows.map{row =>
+                              row ++ amends.filter(_._2.isDefined).mapValues(_.get)
+                            },
+                                    if (affectedRows.isEmpty) keyFilter.keys.mapValues(_.values.iterator.next) ++ amends.mapValues(_.get) ::Nil else Nil)
                           }
-                        } }
-                      } }
+                        }
+                      }
+                      modifiedRows = (fixedRows.toList ::: newRows ::: ignoredRows.toList)
+                    } }
                   }
                   case None => {}
                 }
@@ -171,24 +168,25 @@ class MarketDataPivotTableDataSource(reader: MarketDataReader, edits:PivotEdits,
             }
             MarketDataEntry(timedKey.observationPoint, timedKey.key, marketDataType.createValue(amendRows ::: newRows))
           } }
-
-          marketDataStore.save(Map(editableSet -> newEntries))._2
-          true
+          val r:SaveResult = marketDataStore.save(Map(editableSet → newEntries))
+          r.anythingChanged
         }
       }
      }
     }
   }
 
-  private def dataWithoutEdits(pfs : PivotFieldsState) = {
+  private def dataWithoutEdits(pfs : PivotFieldsState) = cache.memoize( (pfs, marketDataType, marketDataIdentifier), {
     generateDataWithoutEdits(pfs)
-    //cache.memoize(pfs, { generateDataWithoutEdits(pfs) })
-  }
+  } )
 
   private def generateDataWithoutEdits(pfs : PivotFieldsState) = {
 
     val filtersUpToFirstMarketDataField = pfs.allFilterPaths.chopUpToFirstNon(inMemoryFields)
-    val filters: Set[(Field, Selection)] = filtersUpToFirstMarketDataField.toFilterSet
+    val filters: Set[(Field, Selection)] = filtersUpToFirstMarketDataField.toFilterSet.flatMap {
+      case (field,MeasurePossibleValuesFilter(_)) => Nil
+      case (field,SelectionPossibleValuesFilter(selection)) => List(field -> selection)
+    }
 
     val possibleValuesBuilder = new PossibleValuesBuilder(fieldDetails, filtersUpToFirstMarketDataField)
     for ((row,_) <- observationDayAndMarketDataKeyRows) {

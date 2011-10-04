@@ -4,8 +4,7 @@ import api._
 import api.MarketDataIdentifier._
 import pages._
 import pages.MarketDataSelectionChanged._
-import starling.pivot.view.swing.MigPanel
-import starling.gui.GuiUtils._
+import starling.browser.common.GuiUtils._
 import swing._
 import event.SelectionChanged._
 import event.{SelectionChanged, ButtonClicked}
@@ -13,7 +12,9 @@ import swing.Orientation._
 import collection.immutable.TreeSet
 import starling.daterange.Day
 import collection.mutable.ListBuffer
-import collection.mutable.ListBuffer._
+import starling.gui.StarlingLocalCache._
+import starling.browser.PageContext
+import starling.browser.common.{RoundedBorder, MigPanel}
 
 object ReportPreset extends Enumeration {
   type ReportPreset = Value
@@ -80,7 +81,7 @@ class PresetReportConfigPanel(context:PageContext, reportParameters:ReportParame
       listenTo(dayChangeCheckBox)
     }
 
-    val observationDayChooser = new DayChooser(Day.today().previousBusinessDay(context.localCache.ukBusinessCalendar))
+    val observationDayChooser = new DayChooser(Day.today.previousBusinessDay(context.localCache.ukBusinessCalendar))
 
     val cobPanel = new MigPanel("insets 0", "[p]unrel[p]unrel[p]") {
       val dayChangePanel = new MigPanel("insets 0, hidemode 3") {
@@ -101,10 +102,10 @@ class PresetReportConfigPanel(context:PageContext, reportParameters:ReportParame
         realTimePanel.dayChangeCheckBox.preferredSize = new Dimension(realTimePanel.dayChangeCheckBox.preferredSize.width, useExcelButton.preferredSize.height)
 
         add(dayChangeCheckBox)
-        add(dayChangeDayChooser, "sgx")
+        add(dayChangeDayChooser)
         add(useExcelButton, "wrap")
         add(bookCloseLabel, "al right")
-        add(bookCloseChooser, "sgx")
+        add(bookCloseChooser, "spanx")
 
         def setDays(canUseExcel:Boolean, pnlParams:Option[PnlFromParameters]) {
           pnlParams match {
@@ -248,14 +249,14 @@ class PresetReportConfigPanel(context:PageContext, reportParameters:ReportParame
   private def isRealTime(rp:ReportParameters) = {
     val realTime = new ListBuffer[Boolean]()
 
-    val today = Day.today()
+    val today = Day.today
     val nextBusinessDay = today.nextBusinessDay(context.localCache.ukBusinessCalendar)
     val previousBusinessDay = today.previousBusinessDay(context.localCache.ukBusinessCalendar)
 
     realTime += (rp.curveIdentifier.environmentRule == EnvironmentRuleLabel.RealTime)
     realTime += (rp.curveIdentifier.tradesUpToDay == today)
-    realTime += (rp.curveIdentifier.valuationDayAndTime == today.startOfDay())
-    realTime += (rp.curveIdentifier.thetaDayAndTime == nextBusinessDay.endOfDay())
+    realTime += (rp.curveIdentifier.valuationDayAndTime == today.startOfDay)
+    realTime += (rp.curveIdentifier.thetaDayAndTime == nextBusinessDay.endOfDay)
 
     realTime += (rp.expiryDay == today)
 
@@ -300,8 +301,8 @@ class PresetReportConfigPanel(context:PageContext, reportParameters:ReportParame
 
     cob += ((rp.expiryDay == observationDayUsed) || (rp.expiryDay == observationDayUsed.startOfFinancialYear))
     cob += (rp.curveIdentifier.environmentRule == enRule)
-    cob += (rp.curveIdentifier.valuationDayAndTime == observationDayUsed.endOfDay())
-    cob += (rp.curveIdentifier.thetaDayAndTime == nextBusinessDay.endOfDay())
+    cob += (rp.curveIdentifier.valuationDayAndTime == observationDayUsed.endOfDay)
+    cob += (rp.curveIdentifier.thetaDayAndTime == nextBusinessDay.endOfDay)
 
     val desk = rp.tradeSelectionWithTimestamp.desk
     val allBookCloses = context.localCache.deskCloses(desk) match {
@@ -349,7 +350,7 @@ class PresetReportConfigPanel(context:PageContext, reportParameters:ReportParame
   }
 
   def generateRealTimeReportParameters = {
-    val today = Day.today()
+    val today = Day.today
     
     val desk = reportParameters.tradeSelectionWithTimestamp.desk
     val allBookCloses = context.localCache.deskCloses(desk) match {
@@ -380,8 +381,8 @@ class PresetReportConfigPanel(context:PageContext, reportParameters:ReportParame
       marketIDTo,
       EnvironmentRuleLabel.RealTime,
       today,
-      today.startOfDay(),
-      nextBusinessDay.endOfDay(),
+      today.startOfDay,
+      nextBusinessDay.endOfDay,
       envMods)
 
     val newReportOptions = reportParameters.reportOptions
@@ -389,7 +390,7 @@ class PresetReportConfigPanel(context:PageContext, reportParameters:ReportParame
     val pnlParams = if (buttonPanel.realTimePanel.dayChangeCheckBox.selected) {
       val fromMarketDataSelection = marketDataSelection.noExcel
       val marketIDFrom = MarketDataIdentifier(fromMarketDataSelection, marketDataVersion)
-      val pnlFromDayAndTime = previousBusinessDay.endOfDay()
+      val pnlFromDayAndTime = previousBusinessDay.endOfDay
       val cIDFrom = CurveIdentifierLabel(
         marketIDFrom,
         EnvironmentRuleLabel.COB,
@@ -446,8 +447,8 @@ class PresetReportConfigPanel(context:PageContext, reportParameters:ReportParame
       marketIDTo,
       EnvironmentRuleLabel.COB,
       observationDay,
-      observationDay.endOfDay(),
-      nextBusinessDay.endOfDay(),
+      observationDay.endOfDay,
+      nextBusinessDay.endOfDay,
       envMods)
 
     val newReportOptions = reportParameters.reportOptions
@@ -461,10 +462,16 @@ class PresetReportConfigPanel(context:PageContext, reportParameters:ReportParame
         marketDataSelection.noExcel
       }
       val marketIDFrom = MarketDataIdentifier(fromMarketDataSelection, marketDataVersion)
-      val pnlFromDayAndTime = buttonPanel.cobPanel.dayChangePanel.dayChangeDayChooser.day.endOfDay()
+      val pnlFromDayAndTime = buttonPanel.cobPanel.dayChangePanel.dayChangeDayChooser.day.endOfDay
+
+      val rule = marketDataSelection.pricingGroup match {
+        case Some(pg) if pg == PricingGroup.Metals => EnvironmentRuleLabel.AllCloses
+        case _ => EnvironmentRuleLabel.COB
+      }
+
       val cIDFrom = CurveIdentifierLabel(
         marketIDFrom,
-        EnvironmentRuleLabel.COB,
+        rule,
         pnlFromDayAndTime.day,
         pnlFromDayAndTime,
         pnlFromDayAndTime.nextBusinessDay(context.localCache.ukBusinessCalendar),

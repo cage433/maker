@@ -7,15 +7,16 @@ import starling.gui.api.Desk
 
 class Traders(lookup: String => Option[User]) {
 
-  lazy val bookMap:Map[User,(Book,Desk)] = {
+  def trader(name: String): Option[User] = traders.find(_.name.equalsIgnoreCase(name))
+
+  lazy val deskMap:Map[User, List[Desk]] = {
+
+    val JaakkoAhmala  = doLookup("jaakko.ahmala")
+    val SeetalPatel = doLookup("seetal.patel")
+
     // london derivatives option
     val JonFox = doLookup("jon.fox")
     val AndreasMattsson = doLookup("andreas.mattsson")
-
-    // london derivatives
-    val JaakkoAhmala  = doLookup("jaakko.ahmala")
-    val SeetalPatel = doLookup("seetal.patel")
-    val MarkHeath = doLookup("mark.heath")
 
     // north sea crude spec trades are all done under the same user
     val CrudeSpecNorthSeaTraders = Some(User("crudenorthseaspec", "crudenorthseaspec"))
@@ -24,17 +25,16 @@ class Traders(lookup: String => Option[User]) {
     val MatthewTunney = doLookup("matthew.tunney")
     val JoshHolmes = doLookup("josh.holmes")
 
-    Map(JonFox -> (Book.LondonDerivativesOptions, Desk.LondonDerivativesOptions),
-        AndreasMattsson -> (Book.LondonDerivativesOptions, Desk.LondonDerivativesOptions),
+    Map(JonFox -> List(Desk.LondonDerivativesOptions),
+        AndreasMattsson ->  List(Desk.LondonDerivativesOptions),
 
-        SeetalPatel -> (Book.GasolineSpec, Desk.GasolineSpec),
-        MarkHeath -> (Book.LondonDerivatives, Desk.LondonDerivatives),
-        JaakkoAhmala -> (Book.LondonDerivatives, Desk.LondonDerivatives),
+        SeetalPatel ->  List(Desk.GasolineSpec),
+        JaakkoAhmala ->  List(Desk.LondonDerivatives),
 
-        CrudeSpecNorthSeaTraders -> (Book.CrudeSpecNorthSea, Desk.CrudeSpecNorthSea),
+        CrudeSpecNorthSeaTraders ->  List(Desk.CrudeSpecNorthSea),
 
-        MatthewTunney -> (Book.HoustonDerivatives, Desk.HoustonDerivatives),
-        JoshHolmes -> (Book.HoustonDerivatives, Desk.HoustonDerivatives)
+        MatthewTunney ->  List(Desk.HoustonDerivatives),
+        JoshHolmes ->  List(Desk.HoustonDerivatives)
     ).flatMap {
       case (Some(t), b) => {
         Some(t -> b)
@@ -45,7 +45,7 @@ class Traders(lookup: String => Option[User]) {
     }
   }
 
-  lazy val traders = bookMap.keys.toList
+  lazy val traders: List[User] = deskMap.keys.toList
 
   def getLiveUserName(user : User) = {
     if (!traders.contains(user)) throw new Exception("Not a valid live trader: " + user)

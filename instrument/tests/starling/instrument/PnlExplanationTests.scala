@@ -7,14 +7,15 @@ import org.testng.Assert._
 import starling.quantity.UOM._
 import starling.quantity.RichQuantity._
 import starling.utils.ScalaTestUtils._
-import starling.utils.QuantityTestUtils._
+import starling.quantity.utils.QuantityTestUtils._
 import starling.curves._
 import starling.quantity.{Percentage, Quantity}
-import starling.market.{JonTestEnv, TestMarketSpec, FuturesMarket, Market}
+import starling.market.{JonTestEnv, TestMarketTest, FuturesMarket, Market}
 import starling.models.{American, European, Put, Call}
 import starling.daterange.Period._
 import starling.daterange._
-import starling.utils.{AtomicDatumKeyUtils, Log, StarlingTest}
+import starling.instrument.utils._
+import starling.utils.{Log, StarlingTest}
 
 class PnlExplanationTests extends JonTestEnv  with StarlingTest{
   @Test

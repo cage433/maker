@@ -7,8 +7,10 @@ import starling.daterange._
 import starling.utils.Log
 import starling.{LIMServer, LimNode}
 import starling.utils.Pattern.Extractor
+import scalaz._
+import Scalaz._
 
-trait LIMRelation {
+trait LIMRelation extends Log {
   val node: LimNode
 
   def parse(childRelation: String) = try {
@@ -18,7 +20,7 @@ trait LIMRelation {
   }
 
   protected val extractor: Extractor[String, Option[LimPrice]]
-  protected def debug[T](message: String): Option[T] = { Log.debug(message); None }
+  protected def debug[T](message: String): Option[T] = { log.debug(message); None }
 }
 
 case class LimPrice(market: CommodityMarket, period: DateRange, observationTimeOfDay: ObservationTimeOfDay)
@@ -26,13 +28,14 @@ case class LimPrice(market: CommodityMarket, period: DateRange, observationTimeO
 class LMELIMRelation(val node: LimNode, observationTimeOfDay: ObservationTimeOfDay) extends LIMRelation {
   private lazy val lmeMarkets = FuturesExchangeFactory.LME.marketsByCommodityName + "steelbillet" → Market.LME_STEEL_BILLETS
 
-  protected val extractor = Extractor.regex("""TRAF\.LME\.(\w+)\.(\d+)\.(\d+)\.(\d+)""") { case List(commodity, y, m, d) =>
-    some(LimPrice(lmeMarkets(commodity.toLowerCase), Day(y, m, d), observationTimeOfDay))
+  protected val extractor = Extractor.regex[Option[LimPrice]]("""TRAF\.LME\.(\w+)\.(\d+)\.(\d+)\.(\d+)""") {
+    case List(commodity, y, m, d) => some(LimPrice(lmeMarkets(commodity.toLowerCase), Day(y, m, d), observationTimeOfDay))
   }
 }
 
 class MonthlyLIMRelation(val node: LimNode, observationTimeOfDay: ObservationTimeOfDay) extends LIMRelation {
-  protected val extractor = Extractor.regex("""TRAF\.(\w+)\.(\w+)_(\w+)""") { case List(exchange, lim, deliveryMonth) =>
+  protected val extractor = Extractor.regex[Option[LimPrice]]("""TRAF\.(\w+)\.(\w+)_(\w+)""") {
+    case List(exchange, lim, deliveryMonth) =>
     val optMarket = Market.fromExchangeAndLimSymbol(exchangeLookup(exchange), lim)
     val optMonth = ReutersDeliveryMonthCodes.parse(deliveryMonth)
 
@@ -52,7 +55,7 @@ object CMPTLIMRelation extends LIMRelation {
   // TODO [10 Jun 2011] Change PriceDataKey so that it uses a market name
   private val limPriceTemplate = LimPrice(null, null, ObservationTimeOfDay.SHFEClose)
 
-  protected val extractor = Extractor.regex("""TRAF\.CFETS\.CNY\.(\w+)""") { case List(reutersDeliveryMonth) =>
+  protected val extractor = Extractor.regex[Option[LimPrice]]("""TRAF\.CFETS\.CNY\.(\w+)""") { case List(reutersDeliveryMonth) =>
     ReutersDeliveryMonthCodes.parse(reutersDeliveryMonth).map(month => limPriceTemplate.copy(period = month))
   }
 }

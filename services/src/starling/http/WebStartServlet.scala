@@ -15,34 +15,46 @@ import starling.daterange.Timestamp
 
 object GUICode {
 
-  val scalaLibraryJar = new File("lib/scala/scala-2.9.0.1.final/lib/scala-library.jar")
+  val dirPrefix = ""//if (getClass.getClassLoader.toString.charAt(0).isDigit) "../" else ""
+
+  println("DIR prefix " + dirPrefix)
+
+  val scalaLibraryJar = new File(dirPrefix + "lib/scala/lib_managed/scala-library-jar-2.9.1.jar")
 
   // The order of this list matters. It is the order things are attempted to be loaded so ensure it is optimised.
-  val modules = List("daterange", "quantity", "utils", "auth", "bouncyrmi", "gui", "gui.api", "pivot", "pivot.utils")
-
-  // We know that in practise these jars are not used by the GUI
-  val bigJarsThatAreNotRequired = Set(
-    "colt-1.2.0.jar", "testng-5.8-jdk15.jar", "commons-collections-3.2.1.jar",
-    "scalatest-1.0.jar", "cron4j-2.2.1.jar", "amqp-client-1.7.0.2.jar")
+  val modules = List("daterange", "quantity", "utils", "auth", "bouncyrmi", "gui", "gui.api",
+    "pivot", "pivot.utils", "browser", "browser.service", "fc2.api", "launcher", "manager", "singleclasspathmanager", "reports")
 
   val libJarNames = Map(
-    "scala-library.jar" -> scalaLibraryJar,
-    "scala-swing.jar" -> new File("lib/scala/scala-2.9.0.1.final/lib/scala-swing.jar")
-  ) ++ modules.flatMap(module => {
-    val lib = new File(module + "/lib/")
-    val libManaged = new File(module + "/lib_managed/scala_2.9.0-1/compile/")
-    def jarsFromDir(dir : File) = {
-      if (dir.exists) {
-        val jarFiles = dir.listFiles.toList.filter(_.getPath.endsWith(".jar")).filterNot{path => {
-          bigJarsThatAreNotRequired.contains(path.getName)
-        }}
-        jarFiles.map{ file => file.getPath.replaceAll("/", "-") -> file}
-      } else {
-        List()
-      }
-    }
-    jarsFromDir(lib) ::: jarsFromDir(libManaged)
-  })
+    "scala-library" -> scalaLibraryJar,
+    "scala-swing" -> new File("lib/scala/lib_managed/scala-swing-jar-2.9.1.jar"),
+    "jna" -> new File("auth/lib/jna.jar"),
+    "platform" -> new File("auth/lib/platform.jar"),
+    "cglib-nodep" -> new File("bouncyrmi/lib_managed/cglib-nodep-jar-2.2.jar"),
+    "commons-io" -> new File("bouncyrmi/lib_managed/commons-io-jar-1.3.2.jar"),
+    "netty" -> new File("bouncyrmi/lib_managed/netty-bundle-3.2.5.Final.jar"),
+    "jxlayer" -> new File("browser/lib/jxlayer-4.0.jar"),
+    "looks" -> new File("browser/lib/looks-2.3.1.jar"),
+    "jfreechart" -> new File("gui/lib_managed/jfreechart-jar-1.0.0.jar"),
+    "servlet-api" -> new File("gui/lib_managed/servlet-api-jar-2.5.jar"),
+    "jetty" -> new File("services/lib_managed/jetty-jar-6.1.26.jar"),
+    "jetty-utls" -> new File("services/lib_managed/jetty-util-jar-6.1.26.jar"),
+    "browser-lib-miglayout-4.0-swing.jar" -> new File("browser/lib/miglayout-4.0-swing.jar"),
+    "org.eclipse.mylyn.wikitext.core_1.4.0.I20100805-0500-e3x" -> new File("browser/lib/org.eclipse.mylyn.wikitext.core_1.4.0.I20100805-0500-e3x.jar"),
+    "eclipse.mylyn.wikitext.textile.core_1.4.0.I20100805-0500-e3x" -> new File("browser/lib/org.eclipse.mylyn.wikitext.textile.core_1.4.0.I20100805-0500-e3x.jar"),
+    "swingx-core" -> new File("browser/lib/swingx-core-1.6.2.jar"),
+    "timingframework" -> new File("browser/lib/timingframework-1.0.jar"),
+    "commons-codec" -> new File("utils/lib_managed/commons-codec-jar-1.4.jar"),
+    "google-collections" -> new File("utils/lib_managed/google-collections-jar-1.0.jar"),
+    "joda-time" -> new File("utils/lib_managed/joda-time-jar-1.6.jar"),
+    "log4j" -> new File("utils/lib_managed/log4j-bundle-1.2.16.jar"),
+    "slf4j-api" -> new File("databases/lib_managed/slf4j-api-jar-1.6.1.jar"),
+    "slf4j-log4j12" -> new File("utils/lib_managed/slf4j-log4j12-jar-1.6.1.jar"),
+    "xstream" -> new File("utils/lib_managed/xstream-jar-1.3.1.jar"),
+    "memcached" -> new File("utils/lib/memcached-2.5.jar"),
+    "scalaz-core" -> new File("utils/lib/scalaz-core_2.9.1-6.0.3.jar"),
+    "transloader" -> new File("browser/lib/transloader-0.4.jar")
+  )
 
   def dependencies = {
     (modules.map { module => module -> lastModifiedForModule(module) }, libJarNames.mapValues(file=>file.lastModified))
@@ -54,8 +66,8 @@ object GUICode {
   }
 
   def lastModifiedForModule(module:String) = {
-    val outputPath = new File(module + "/target/scala_2.9.0-1/classes/")
-    val resourcesPath = new File(module + "/resources")
+    val outputPath = new File(dirPrefix + module + "/target/scala-2.9.1.final/classes/")
+    val resourcesPath = new File(dirPrefix + module + "/resources")
     val resourcesLastModified = if (resourcesPath.exists) findLastModified(resourcesPath) else 0
     findLastModified(
       outputPath,
@@ -76,6 +88,7 @@ object GUICode {
   }
 
   def findLastModified(dir:File, matching:Regex = new Regex("^.*\\.(class|png|conf|auth|txt|properties)$"), initialValue:Long = 0):Long = {
+    if (!dir.exists) throw new Exception(dir + " does not exist")
     (initialValue /: dir.listFiles)((lastModified:Long, f:File) => {
       if (f.isDirectory) {
         findLastModified(f, matching, lastModified)
@@ -172,7 +185,7 @@ class WebStartServlet(prefix:String, serverName:String, externalURL:String, main
     } else if (path.equals("/app.txt")) {
       val writer =response.getWriter
       response.setContentType("text/plain")
-      writer.println("starling.gui.Launcher " + PropsHelper.defaultProps.ExternalHostname() + " " + PropsHelper.defaultProps.RmiPort() + " " + PropsHelper.defaultProps.ServerPrincipalName())
+      writer.println(mainClass + " " + PropsHelper.defaultProps.ExternalHostname() + " " + PropsHelper.defaultProps.RmiPort() + " " + PropsHelper.defaultProps.ServerPrincipalName())
       val (modules, libJarNames) = GUICode.dependencies
       for ((module, lastModified) <- modules) {writer.println(moduleJarsPrefix + module + ".jar " + lastModified)}
       for ((libName, lastModified) <- libJarNames) {writer.println(externalJarsPrefix + libName + " " + lastModified)}
@@ -191,9 +204,8 @@ class WebStartServlet(prefix:String, serverName:String, externalURL:String, main
         if (moduleJarFile.exists) {
           moduleJarFile
         } else {
-          val outputPath = new File(module + "/target/scala_2.9.0-1/classes/")
-          val resourcesPath = new File(module + "/resources")
-          generateJar(moduleJarFile, outputPath, resourcesPath)
+          val outputPath = new File(module + "/target/scala-2.9.1.final/classes/")
+          generateJar(moduleJarFile, outputPath)
           moduleJarFile.setLastModified(lastModified)
           moduleJarFile
         }
@@ -284,7 +296,7 @@ class WebStartServlet(prefix:String, serverName:String, externalURL:String, main
         if (booterJarFile.exists) {
           booterJarFile
         } else {
-          generateJar(booterJarFile, classes, new File("no"), Some("starling.booter.Booter"))
+          generateJar(booterJarFile, classes, Some("starling.booter.Booter"))
           signJar(booterJarFile)
           booterJarFile.setLastModified(timestamp)
           booterJarFile
@@ -338,17 +350,15 @@ class WebStartServlet(prefix:String, serverName:String, externalURL:String, main
   }
 
 
-  private def generateJar(jarFile:File, outputPath:File, resourcesPath:File, main:Option[String] = None) {
+  private def generateJar(jarFile:File, outputPath:File, main:Option[String] = None) {
     val jarOutputStream = new JarOutputStream(new BufferedOutputStream(new FileOutputStream(jarFile)))
-    for (dir <- List(outputPath, resourcesPath)) {
-      if (dir.exists) {
-        val files = GUICode.findMatchingFiles(dir).map(_.getPath)
-        for (outputFile <- files) {
-          jarOutputStream.putNextEntry(new JarEntry(outputFile.substring(dir.getPath.length+1)))
-          val inputStream = new BufferedInputStream(new FileInputStream(outputFile))
-          IO.copy(inputStream, jarOutputStream)
-          inputStream.close
-        }
+    if (outputPath.exists) {
+      val files = GUICode.findMatchingFiles(outputPath).map(_.getPath)
+      for (outputFile <- files) {
+        jarOutputStream.putNextEntry(new JarEntry(outputFile.substring(outputPath.getPath.length+1)))
+        val inputStream = new BufferedInputStream(new FileInputStream(outputFile))
+        IO.copy(inputStream, jarOutputStream)
+        inputStream.close
       }
     }
     main match {

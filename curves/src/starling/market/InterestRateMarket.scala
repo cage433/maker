@@ -1,7 +1,6 @@
 package starling.market
 
 import collection.immutable.Map
-import starling.varcalculator.{ForwardRateRiskFactor, RiskFactor}
 import starling.quantity.{Percentage, Quantity, UOM}
 import starling.curves.{ForwardForwardDiscountCurve, DiscountCurveKey}
 import starling.daterange.{DateRange, SimpleDateRange, DayAndTime}
@@ -14,7 +13,6 @@ case class InterestRateMarket(ccy : UOM)
 {
   def priceUOM = UOM.SCALAR
   val name = ccy.toString
-  val uomName = name
 
   def standardShift = Quantity(1e-4, UOM.SCALAR)
 

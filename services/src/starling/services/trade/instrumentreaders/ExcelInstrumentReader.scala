@@ -76,11 +76,13 @@ object ExcelInstrumentReader {
       RB_CRACKS -> "nymex rbob vs ipe brent",
       RB_BRENT_CRACKS -> "rb brent cracks",
       RBHO -> "rbho",
+      NYMEX_GASOLINE -> "rbob",
       GO_CRACKS -> "go cracks",
       GO_CRACKS -> "ipe gas oil vs ipe brent",
       ICE_WTI_BRENT -> "wti brent",
       ICE_WTI_BRENT -> "ice wti vs ice brent",
-      NYMEX_WTI_BRENT -> "ny wti brent"
+      NYMEX_WTI_BRENT -> "ny wti brent",
+      RB_BRENT_CRACKS -> "nymex rbob 1st month vs ipe brent 1st month"
     )
   }
 
@@ -90,7 +92,12 @@ object ExcelInstrumentReader {
   /**
    * aliases between what the traders put in the blotter and what we call the indexes
    */
-  val indexAliases: Map[String, Index] = Map("gas oil crack" -> Index.IPE_GAS_OIL_VS_IPE_BRENT) ++ Index.all.map(i => i.name.toLowerCase -> i).toMap
+  val indexAliases: Map[String, Index] = Map(
+    "gas oil crack" -> Index.IPE_GAS_OIL_VS_IPE_BRENT,
+    "nymex rbob 1st month vs ipe brent 1st month" -> Index.NYMEX_WTI_VS_IPE_BRENT
+  ) ++ Index.all.map(i => i.name.toLowerCase -> i).toMap
+
+  val allNames = (marketAliases.keys ++ indexAliases.keys).toSet
 
   def indexOption(indexName: String) = indexAliases.get(indexName.toLowerCase)
 }

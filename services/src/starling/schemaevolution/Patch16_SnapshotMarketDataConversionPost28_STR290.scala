@@ -19,7 +19,7 @@ import scala.collection.JavaConversions._
 import collection.immutable.{HashMap, TreeMap}
 import collection.mutable.ListBuffer
 import starling.services.StarlingInit
-import starling.utils.StarlingXStream
+import starling.instrument.utils.StarlingXStream
 import starling.utils.xstream.TreeMapConverter
 
 class Patch16_SnapshotMarketDataConversionPost28_STR290 extends Patch {

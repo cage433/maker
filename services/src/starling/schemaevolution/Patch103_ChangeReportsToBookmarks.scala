@@ -3,14 +3,42 @@ package starling.schemaevolution
 import starling.services.StarlingInit
 import starling.richdb.RichDB
 import starling.db.DBWriter
-import starling.utils.StarlingXStream
+import starling.instrument.utils.StarlingXStream
 import starling.gui.api.UserReport._
 import starling.gui.api.{UserReport, UserReportData}
 import starling.pivot.PivotFieldParams._
 import starling.pivot._
+import model.CollapsedState
 import system.{PatchUtils, Patch}
+import xstream.{Fields, Reader, MapBasedConverter}
+import starling.pivot.HiddenType._
 
 class Patch103_ChangeReportsToBookmarks extends Patch {
+  val convertingXStream = StarlingXStream.createXStream
+  convertingXStream.registerConverter(new MapBasedConverter(
+    StarlingXStream.createXStream,
+    classOf[OtherLayoutInfo],
+    new Reader {
+      def create(fields:Fields) = {
+        val totals = fields.getFieldValue("totals").getOrElse(Totals.Null).asInstanceOf[Totals]
+        val frozen = fields.getFieldValue("frozen").getOrElse(true).asInstanceOf[Boolean]
+        val fieldPanelCollapsed = fields.getFieldValue("fieldPanelCollapsed").getOrElse(false).asInstanceOf[Boolean]
+        val rowCollapsedState = fields.getFieldValue("rowCollapsedState").getOrElse(CollapsedState.None).asInstanceOf[CollapsedState]
+        val columnCollapsedState = fields.getFieldValue("columnCollapsedState").getOrElse(CollapsedState.None).asInstanceOf[CollapsedState]
+
+        val rowSubTotalsDisabled = fields.getFieldValue("rowSubTotalsDisabled").getOrElse(List()).asInstanceOf[List[Field]]
+        val columnSubTotalsDisabled = fields.getFieldValue("columnSubTotalsDisabled").getOrElse(List()).asInstanceOf[List[Field]]
+        val newDisabledSubTotals = (rowSubTotalsDisabled ::: columnSubTotalsDisabled).toSet.toList
+
+        val hiddenType = if (fieldPanelCollapsed) FieldListHidden else NothingHidden
+
+        OtherLayoutInfo(totals, frozen, rowCollapsedState, columnCollapsedState, newDisabledSubTotals, hiddenType = hiddenType)
+      }
+    },
+    Map("fieldPanelCollapsed" -> classOf[Boolean])
+  ))
+
+
   protected def runPatch(starlingInit:StarlingInit, starling:RichDB, writer:DBWriter) {
     writer.update(PatchUtils.getFileFromClasspath("/schemaevolution/Patch103_CreateBookmarksTableAgain.sql"))
 
@@ -47,7 +75,7 @@ class Patch103_ChangeReportsToBookmarks extends Patch {
         (username,
         PivotLayout(layoutName,
           StarlingXStream.read(rs.getString("layout")).asInstanceOf[PivotFieldsState],
-          true, StarlingXStream.read(rs.getString("otherLayoutInfo")).asInstanceOf[OtherLayoutInfo],
+          true, convertingXStream.fromXML(rs.getString("otherLayoutInfo")).asInstanceOf[OtherLayoutInfo],
           rs.getString("layoutType"), associatedReports))
       }
     }

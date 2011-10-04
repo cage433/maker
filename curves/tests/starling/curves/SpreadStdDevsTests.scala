@@ -4,7 +4,7 @@ import starling.utils.StarlingTest
 import org.testng.annotations.{Test, DataProvider}
 import org.testng.Assert._
 import starling.quantity.UOM._
-import starling.market.{Market, TestMarketSpec}
+import starling.market.{Market, TestMarketTest}
 import collection.immutable.TreeMap
 import starling.marketdata._
 import starling.quantity.{Percentage, Quantity}
@@ -13,7 +13,7 @@ import cern.colt.matrix.impl.DenseDoubleMatrix2D
 import starling.models.{Call, BlackScholes}
 import starling.maths.{LeastSquaresFit, BisectSolve}
 
-class SpreadStdDevsTests extends TestMarketSpec {
+class SpreadStdDevsTests extends TestMarketTest {
 
   @DataProvider(name = "zeroSkewProvider")
   def zeroSkewProvider = {

@@ -6,7 +6,7 @@ import java.awt.image.BufferedImage
 import java.awt.{GradientPaint, Graphics2D, Dimension, Color, RenderingHints, Point, KeyboardFocusManager}
 import java.awt.event.{ComponentEvent, ComponentAdapter}
 import org.jdesktop.swingx.image.ColorTintFilter
-import starling.gui.GuiUtils._
+import starling.browser.common.GuiUtils._
 import starling.pivot.model.TreeDetails
 import org.jdesktop.swingx.graphics.ShadowRenderer
 import swing._
@@ -16,7 +16,11 @@ import javax.swing.event.{PopupMenuListener, PopupMenuEvent}
 import javax.swing.{JPopupMenu, SwingUtilities}
 import starling.gui.custom._
 import starling.pivot._
-import starling.gui.{GuiUtils, StarlingIcons}
+import starling.gui.StarlingIcons
+import starling.gui.namedquantitycomponents.UnderLineDashedBorder
+import starling.pivot.model.EditableInfo
+import starling.pivot.HiddenType._
+import starling.browser.common.{FixedImagePanel, ImageButtonWithDisabledImageSupplied, MigPanel, GuiUtils}
 
 case class GuiFieldComponentProps(field:Field, locationOfField:FieldChooserType,
                                   showDepthPanel:Boolean, measureField:Boolean, realMeasureField:Boolean,
@@ -24,7 +28,9 @@ case class GuiFieldComponentProps(field:Field, locationOfField:FieldChooserType,
                                   onMeasureChange:(Field, FieldChooserType) => Unit,
                                   filterData:FilterData, transformData:TransformData,
                                   otherLayoutInfo:OtherLayoutInfo, onSubTotalToggle:(Field, FieldChooserType) => Unit,
-                                  showSubTotalToggle:Boolean, viewUI:PivotTableViewUI, tableView:PivotTableView)
+                                  showSubTotalToggle:Boolean, viewUI:PivotTableViewUI, tableView:PivotTableView, editableInfo:Option[EditableInfo]) {
+  val react = (otherLayoutInfo.hiddenType != AllHidden)
+}
 
 case class FilterData(possibleValuesAndSelection:Option[(TreePivotFilter, Selection)], onFilterChange:((Field, Selection) => Unit))
 case class TransformData(showOther:Boolean, transforms:Option[FilterWithOtherTransform], onTransformChange:((Field,FilterWithOtherTransform) => Unit))
@@ -68,81 +74,82 @@ object GuiFieldComponent {
 
 import GuiFieldComponent._
 
-class GuiFieldComponent(val props:GuiFieldComponentProps) extends MigPanel("insets 0, hidemode 3", "[p]0[p]0[p]0[p]0[p]0[p]") {
+class GuiFieldComponent(val props:GuiFieldComponentProps) extends MigPanel("insets 0, hidemode 3", "[p]0[p]") {
   opaque = false
 
-  val namePanel = new GuiFieldNamePanel(props, this)
+  val namePanel = new GuiFieldNamePanel(props)
   val treeLevelPanel = new TreeLevelPanel(props)
   val measureTogglePanel = new MeasureTogglePanel(props)
   val subTotalTogglePanel = new SubTotalTogglePanel(props)
   val filterLabelPanel = new FilterLabelPanel(props)
-  val possibleValuesAndSelectionToUse = getPossibleValuesAndSelection
-
-  private def getPossibleValuesAndSelection = props.filterData.possibleValuesAndSelection match {
-    case None => (TreePivotFilter(TreePivotFilterNode("All", "All", List())), AllSelection)
-    case Some(d) => d
-  }
-
-  private val transformData = props.transformData
-
-  val filterPopupPanel = new TreePanel(possibleValuesAndSelectionToUse, transformData.showOther, transformData.transforms)
-
-  val popupMenu = new JPopupMenu {
-    add(filterPopupPanel.peer)
-    addPopupMenuListener(new PopupMenuListener {
-      def popupMenuCanceled(e:PopupMenuEvent) {}
-      def popupMenuWillBecomeInvisible(e:PopupMenuEvent) {
-        // Whenever the popup panel is hidden, ensure it represents the state of the page.
-        filterPopupPanel.filterPanel.textField.text = ""
-        filterPopupPanel.filterHelper.resetPopup(getPossibleValuesAndSelection, props.transformData.transforms)
-      }
-      def popupMenuWillBecomeVisible(e:PopupMenuEvent) {}
-    })
-  }
-  popupMenu.setBorder(CompoundBorder(LineBorder(GuiUtils.BorderColour), LineBorder(GuiUtils.PanelBackgroundColour, 2)))
   val filterButtonPanel = FilterButtonPanel(props)
 
-  val (values, selection) = possibleValuesAndSelectionToUse
-  val (textToUse, numberTextToUse) = selection match {
-    case AllSelection => {(filterPopupPanel.treeComponent.rootNode.getUserObject.asInstanceOf[CheckBoxListElement].label,"")}
-    case SomeSelection(selectedValues) if selectedValues.isEmpty => {(TreePanelComboBox.NONE.toString, "0")}
-    case SomeSelection(selectedValues) => {
-      // Need to use the label
-      (selectedValues.toList.map(v => {
-        val s = filterPopupPanel.filterHelper.valueToLabelMap.getOrElse(v, "Unknown:" + v)
-        if (s.length == 0) " " else s
-      }).mkString(","), selectedValues.size.toString)
+  // Only need the filter if we are not a measure field. It is quite an expensive operation.
+  if (!props.measureField) {
+    def getPossibleValuesAndSelection = props.filterData.possibleValuesAndSelection match {
+      case None => (TreePivotFilter(TreePivotFilterNode("All", "All", List())), AllSelection)
+      case Some(d) => d
     }
-  }
-  filterLabelPanel.label.text = textToUse
-  filterButtonPanel.numberText = numberTextToUse
+    val possibleValuesAndSelectionToUse = getPossibleValuesAndSelection
+    val transformData = props.transformData
+    val filterPopupPanel = new TreePanel(possibleValuesAndSelectionToUse, transformData.showOther, transformData.transforms)
 
-  reactions += {
-    case DisplayPopupEvent(`filterButtonPanel`) => {
-      // Find out where to display the popup.
-      if (filterPopupPanel.preferredSize.width < 200) {
-        filterPopupPanel.preferredSize = new Dimension(200, filterPopupPanel.preferredSize.height)
-      }
-      val yPos = filterButtonPanel.size.height - 1
-      val xPos = filterButtonPanel.size.width - filterPopupPanel.preferredSize.width - 7
-      filterPopupPanel.scrollToFirstSelectedNode
-      popupMenu.show(filterButtonPanel.peer, xPos, yPos-1)
-      onEDT({
-        KeyboardFocusManager.getCurrentKeyboardFocusManager.focusNextComponent(popupMenu)
-        filterPopupPanel.filterPanel.textField.requestFocusInWindow()
+    val popupMenu = new JPopupMenu {
+      add(filterPopupPanel.peer)
+      addPopupMenuListener(new PopupMenuListener {
+        def popupMenuCanceled(e:PopupMenuEvent) {}
+        def popupMenuWillBecomeInvisible(e:PopupMenuEvent) {
+          // Whenever the popup panel is hidden, ensure it represents the state of the page.
+          filterPopupPanel.filterPanel.textField.text = ""
+          filterPopupPanel.filterHelper.resetPopup(getPossibleValuesAndSelection, props.transformData.transforms)
+        }
+        def popupMenuWillBecomeVisible(e:PopupMenuEvent) {}
       })
     }
-    case FilterSelectionChanged(`filterPopupPanel`, sel) => props.filterData.onFilterChange(props.field, sel)
-    case OtherValueSelectionChanged(`filterPopupPanel`, sel) => {
-      // In all cases sel should be some selection.
-      sel match {
-        case SomeSelection(s) => props.transformData.onTransformChange(props.field, FilterWithOtherTransform(s))
-        case _ => throw new Exception("This should never happen")
+    popupMenu.setBorder(CompoundBorder(LineBorder(GuiUtils.BorderColour), LineBorder(GuiUtils.PanelBackgroundColour, 2)))
+
+    val (values, selection) = possibleValuesAndSelectionToUse
+    val (textToUse, numberTextToUse) = selection match {
+      case AllSelection => {(filterPopupPanel.treeComponent.rootNode.getUserObject.asInstanceOf[CheckBoxListElement].label,"")}
+      case SomeSelection(selectedValues) if selectedValues.isEmpty => {(TreePanelComboBox.NONE.toString, "0")}
+      case SomeSelection(selectedValues) => {
+        // Need to use the label
+        (selectedValues.toList.map(v => {
+          val s = filterPopupPanel.filterHelper.valueToLabelMap.getOrElse(v, "Unknown:" + v)
+          if (s.length == 0) " " else s
+        }).mkString(","), selectedValues.size.toString)
       }
     }
-    case CancelEvent(`filterPopupPanel`) => popupMenu.setVisible(false)
+    filterLabelPanel.label.text = textToUse
+    filterButtonPanel.numberText = numberTextToUse
+
+    reactions += {
+      case DisplayPopupEvent(`filterButtonPanel`) => {
+        // Find out where to display the popup.
+        if (filterPopupPanel.preferredSize.width < 200) {
+          filterPopupPanel.preferredSize = new Dimension(200, filterPopupPanel.preferredSize.height)
+        }
+        val yPos = filterButtonPanel.size.height - 1
+        val xPos = filterButtonPanel.size.width - filterPopupPanel.preferredSize.width - 7
+        filterPopupPanel.scrollToFirstSelectedNode
+        popupMenu.show(filterButtonPanel.peer, xPos, yPos-1)
+        onEDT({
+          KeyboardFocusManager.getCurrentKeyboardFocusManager.focusNextComponent(popupMenu)
+          filterPopupPanel.filterPanel.textField.requestFocusInWindow()
+        })
+      }
+      case FilterSelectionChanged(`filterPopupPanel`, sel) => props.filterData.onFilterChange(props.field, sel)
+      case OtherValueSelectionChanged(`filterPopupPanel`, sel) => {
+        // In all cases sel should be some selection.
+        sel match {
+          case SomeSelection(s) => props.transformData.onTransformChange(props.field, FilterWithOtherTransform(s))
+          case _ => throw new Exception("This should never happen")
+        }
+      }
+      case CancelEvent(`filterPopupPanel`) => popupMenu.setVisible(false)
+    }
+    listenTo(filterButtonPanel, filterPopupPanel)
   }
-  listenTo(filterButtonPanel, filterPopupPanel)
 
   // If the tree level panel is available, we want to grow this so the buttons are on the left rather than growing the name panel and putting the
   // buttons on the right.
@@ -214,7 +221,7 @@ class TempGuiFieldNamePanel(fieldName:String) extends MigPanel {
   }
 }
 
-class GuiFieldNamePanel(props:GuiFieldComponentProps, guiComp:GuiFieldComponent) extends MigPanel {
+class GuiFieldNamePanel(val props:GuiFieldComponentProps) extends MigPanel {
   opaque = false
   background = ClearColour
 
@@ -227,19 +234,22 @@ class GuiFieldNamePanel(props:GuiFieldComponentProps, guiComp:GuiFieldComponent)
   private var display = true
 
   private var dragging = false
+  private var drawFieldTinted = false
+  private val editableField = props.editableInfo match {
+    case None => false
+    case Some(ei) => ei.fieldToParser.keySet.contains(props.field)
+  }
 
   // As I'm drawing a measure symbol on real measure fields, I need to give a little bit more space.
-  private val nameToUse = if (drawMeasureMark) {
-    props.field.name + "  "
-  } else {
-    props.field.name
-  }
-
-  private val label = new Label(nameToUse) {
+  val extraSpace = if (drawMeasureMark) ",gapright 6lp" else ""
+  private val label = new Label(props.field.name) {
     font = GuiFieldFont
     visible = false
+    if (editableField) {
+      border = UnderLineDashedBorder(Color.GRAY)
+    }
   }
-  add(label, "pushx,growx")
+  add(label, "pushx,growx" + extraSpace)
 
   minimumSize = new Dimension(math.max(preferredSize.width, PivotJTable.MinColumnWidth), preferredSize.height)
 
@@ -337,7 +347,7 @@ class GuiFieldNamePanel(props:GuiFieldComponentProps, guiComp:GuiFieldComponent)
   private var imageStartPoint = PivotTableViewUI.NullPoint
 
   reactions += {
-    case MousePressed(_,p,_,_,_) => {
+    case MousePressed(_,p,_,_,_) if props.react => {
       display = false
       offSet = p
       props.tableView.draggedField = props.field
@@ -346,31 +356,30 @@ class GuiFieldNamePanel(props:GuiFieldComponentProps, guiComp:GuiFieldComponent)
       imageStartPoint = displayPoint
       props.viewUI.setImageProperties(shadowImage, displayPoint, 1.0f)
     }
-    case MouseClicked(_,_,_,2,_) => {
+    case MouseClicked(_,_,_,2,_) if props.react => {
       dragging = false
       display = true
+      drawFieldTinted = true
       props.tableView.fieldBeingDragged = false
-      props.viewUI.resetImageProperties()
-      
       props.tableView.fieldDoubleClicked(props.field, props.locationOfField)
     }
-    case MouseEntered(_, _, _) if !props.tableView.drag => {
+    case MouseEntered(_, _, _) if props.react && !props.tableView.drag => {
       display = false
       val displayPoint = SwingUtilities.convertPoint(peer, 0, -2, props.tableView.peer)
       props.viewUI.setImageProperties(shadowImage, displayPoint, 1.0f)
     }
-    case MouseExited(_, _, _) if !props.tableView.drag => {
+    case MouseExited(_, _, _) if props.react && !props.tableView.drag => {
       display = true
       props.viewUI.resetImageProperties()
     }
-    case MouseReleased(_,p,_,_,_) => {
-      val oldDragging = dragging
+    case MouseReleased(_,p,_,_,_) if props.react => {
+      val wasDragging = dragging
       dragging = false
       display = true
       props.tableView.mouseDown = false
       props.tableView.fieldBeingDragged = false
 
-      if (oldDragging) {
+      if (wasDragging) {
         val screenPoint = new Point(p)
         SwingUtilities.convertPointToScreen(screenPoint, peer)
         val animateBack = props.tableView.fieldDropped(props.field, props.locationOfField, screenPoint)
@@ -381,6 +390,7 @@ class GuiFieldNamePanel(props:GuiFieldComponentProps, guiComp:GuiFieldComponent)
           val widthAndHeight = new Point(widthToMove, heightToMove)
           props.viewUI.animate(shadowImage, imageStartPoint, widthAndHeight)
         } else {
+          drawFieldTinted = true
           props.viewUI.resetImageProperties()
         }
       } else {
@@ -389,7 +399,7 @@ class GuiFieldNamePanel(props:GuiFieldComponentProps, guiComp:GuiFieldComponent)
       }
       repaint()
     }
-    case MouseDragged(_,p,_) => {
+    case MouseDragged(_,p,_) if props.react => {
       if (!dragging) {
         dragging = true
         props.tableView.fieldBeingDragged = true
@@ -401,12 +411,12 @@ class GuiFieldNamePanel(props:GuiFieldComponentProps, guiComp:GuiFieldComponent)
   listenTo(mouse.clicks, mouse.moves)
 
   override protected def paintComponent(g:Graphics2D) {
-    if (display && !dragging) {
+    if (display && !dragging && !drawFieldTinted) {
       if ((image == null) || (image.getWidth != size.width) || (image.getHeight != size.height)) {
         image = createMainImage
       }
       g.drawImage(image, 0, 0, null)
-    } else if (dragging) {
+    } else if (dragging || drawFieldTinted) {
       if ((tintedImage == null) || (tintedImage.getWidth != size.width) || (tintedImage.getHeight != size.height)) {
         if ((image == null) || (image.getWidth != size.width) || (image.getHeight != size.height)) {
           image = createMainImage
@@ -427,6 +437,7 @@ class GuiFieldNamePanel(props:GuiFieldComponentProps, guiComp:GuiFieldComponent)
 
   def reset() {
     dragging = false
+    drawFieldTinted = false
     display = true
     image = null
     tintedImage = null
@@ -655,7 +666,7 @@ class FilterLabelPanel(props:GuiFieldComponentProps)
   val label = new Label {
     font = GuiFieldFont
     text = ""
-    foreground = Color.BLUE.darker
+    foreground = GuiUtils.BlueTextColour
     maximumSize = new Dimension(150, Integer.MAX_VALUE)
 
     override def text_=(s:String) {

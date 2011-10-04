@@ -9,7 +9,7 @@ import starling.richdb.RichInstrumentResultSetRow
 import starling.quantity.{UOM, Quantity}
 import starling.daterange.{DateRange, Month, Day, DayAndTime}
 import starling.market._
-import starling.utils.StarlingXStream
+import starling.instrument.utils.StarlingXStream
 import java.lang.String
 import starling.curves.Environment
 import starling.daterange.DateRangePeriod
@@ -151,6 +151,7 @@ case class RefinedFixation(
 
   def periodKey = Some(DateRangePeriod(fixationDate))
 
+  def explanation(env: Environment) = throw new Exception("No explanation for Refined Fixation")
 }
 
 

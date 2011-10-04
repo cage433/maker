@@ -24,17 +24,9 @@ object Permission {
       StarlingGasolineSpec -> Set(Desk.GasolineSpec),
       StarlingHoustonDerivatives -> Set(Desk.HoustonDerivatives),
       StarlingDevelopers -> Desk.values.toSet,
+      StarlingTesters -> Desk.values.toSet,
       StarlingAdmin -> Desk.values.toSet
     )
-
-  def isAdmin(user: User): Boolean = {
-    user.groups.find{
-      case StarlingDevelopers => true
-      case StarlingAdmin => true
-      case StarlingLucerneAdmin => true
-      case _ => false
-    }.isDefined
-  }
 }
 
 object Groups {

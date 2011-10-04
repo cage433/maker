@@ -22,14 +22,14 @@ class AxisTreeTester extends TestNGSuite {
   @Test
   def testFlattenSingle {
     val node = AxisNode(av("P"), List())
-    val flatten = node.flatten(List(), false, false, CollapsedState.None, List(), formatInfo, PivotFormatter.DefaultExtraFormatInfo)
+    val flatten = node.flatten(None, false, List(), false, false, CollapsedState.None, List(), formatInfo, PivotFormatter.DefaultExtraFormatInfo)
     assertEquals(flatten, List(List(AxisCell(av("P"), Some(1), "P", None, false, NotTotal, 0, LeftTextPosition))))
   }
 
   @Test
   def testFlattenChildren {
     val node = AxisNode(av("P"), List( AxisNode(av("c1"), List()), AxisNode(av("c2"), List())))
-    val flatten = node.flatten(List(), false, false, CollapsedState.None, List(), formatInfo, PivotFormatter.DefaultExtraFormatInfo)
+    val flatten = node.flatten(None, false, List(), false, false, CollapsedState.None, List(), formatInfo, PivotFormatter.DefaultExtraFormatInfo)
     assertEquals(
       flatten,
       List(

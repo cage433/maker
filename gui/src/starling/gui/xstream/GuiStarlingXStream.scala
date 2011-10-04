@@ -7,9 +7,9 @@ import com.thoughtworks.xstream.mapper.{MapperWrapper, Mapper}
 import starling.xstream.{XstreamUOMConverter, XstreamDayConverter}
 import starling.pivot.MarketValue
 import java.io.StringWriter
-import com.thoughtworks.xstream.io.xml.{CompactWriter, XppDriver}
 import starling.utils.xstream.ScalaXStream
 import starling.utils.{CaseInsensitive, Log}
+import com.thoughtworks.xstream.io.xml.{DomDriver, CompactWriter, XppDriver}
 
 /**
  * A wrapper around XStream which adds conversions to make the xml more readable
@@ -68,9 +68,9 @@ object GuiStarlingXStream {
   }
 
   def createXStream = {
-    val anonymousIgnoringMapper = new AnonymousIgnoringMapper(new XStream().getMapper)
+    val anonymousIgnoringMapper = new AnonymousIgnoringMapper(new XStream(null, new DomDriver(), getClass.getClassLoader).getMapper)
 
-    val xs = new XStream(null, anonymousIgnoringMapper, new XppDriver())
+    val xs = new XStream(null, new DomDriver(), getClass.getClassLoader, anonymousIgnoringMapper)
     ScalaXStream.configure(xs)
 
     xs.registerConverter(new XstreamDayConverter)

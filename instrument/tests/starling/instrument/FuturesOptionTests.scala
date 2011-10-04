@@ -6,12 +6,11 @@ import org.testng.Assert._
 
 import starling.quantity.UOM._
 import starling.utils.ScalaTestUtils._
-import starling.utils.QuantityTestUtils._
+import starling.quantity.utils.QuantityTestUtils._
 import starling.curves._
 import starling.daterange.{Month, Day}
-import starling.market.{TestMarketSpec, FuturesMarket, Market}
+import starling.market.{TestMarketTest, FuturesMarket, Market}
 import starling.quantity.{UOM, Percentage, Quantity}
-import starling.varcalculator.ForwardPriceRiskFactor
 import starling.models._
 
 class FuturesOptionTests extends StarlingTest {
@@ -166,7 +165,7 @@ class FuturesOptionTests extends StarlingTest {
     )
     val explanation = option.explanation(env)
     assertEquals(explanation.name, "((FuturesOption-European-Call(F, K, Vol, T) * Volume) * Discount)")
-    assertEquals(explanation.format(1), "((FuturesOption-European-Call(A Test Market.OCTOBER 2012, 100.00 USD/MT, 39.98%, 1.72) * 100.00 MT) * USD.20Sep2012)")
+    assertEquals(explanation.format(1), "((FuturesOption-European-Call(A Test Market.OCT 2012, 100.00 USD/MT, 39.98%, 1.72) * 100.00 MT) * USD.20Sep2012)")
     val lastExplanation = "((FuturesOption-European-Call(99.00 USD/MT, 100.00 USD/MT, 0.40, 1.72) * 100.00 MT) * 0.95)"
     assertEquals(explanation.format(2), lastExplanation)
     assertEquals(explanation.format(3), lastExplanation)

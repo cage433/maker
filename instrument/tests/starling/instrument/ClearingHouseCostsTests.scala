@@ -5,11 +5,11 @@ import org.testng.annotations.Test
 import starling.quantity.RichQuantity._
 import starling.quantity.UOM._
 import starling.quantity.Percentage
-import starling.market.{TestMarketSpec, Market}
+import starling.market.{TestMarketTest, Market}
 import starling.daterange.{Day, Year}
 import starling.instrument.CashInstrumentType._
 
-class ClearingHouseCostsTests extends TestMarketSpec {
+class ClearingHouseCostsTests extends TestMarketTest {
 
   @Test
   def testSinglePayment {

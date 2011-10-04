@@ -1,6 +1,6 @@
 package starling.db
 
-import starling.utils.StarlingXStream
+import starling.instrument.utils.StarlingXStream
 import starling.daterange._
 
 import scala.collection.JavaConversions._
@@ -8,16 +8,17 @@ import com.thoughtworks.xstream.converters.ConversionException
 import starling.quantity._
 import java.sql.{ResultSetMetaData, ResultSet}
 import starling.utils.cache.CacheFactory
+import scalaz.Scalaz._
 
 trait ResultSetRowFactoryTrait[RSR <: ResultSetRow] {
-  def create(resultSet: ResultSet): RSR
+  def create(resultSet: ResultSet, count: Int): RSR
 }
 
 class ResultSetRowFactory extends ResultSetRowFactoryTrait[ResultSetRow] {
-  def create(resultSet: ResultSet) = new ResultSetRow(resultSet)
+  def create(resultSet: ResultSet, count: Int) = new ResultSetRow(resultSet, count)
 }
 
-class UpdateableResultSetRow(resultSet: ResultSet) extends ResultSetRow(resultSet) {
+class UpdateableResultSetRow(resultSet: ResultSet) extends ResultSetRow(resultSet, 0) {
   def update(values:Map[String,Any]) {
     val convertedParameters = DBConvert.convertTypes(values)
     for ((name, value) <- convertedParameters) {
@@ -31,7 +32,7 @@ object ResultSetRow {
   val xstreamCache = CacheFactory.getCache("XStream")
 }
 
-class ResultSetRow(resultSet: ResultSet) {
+class ResultSetRow(resultSet: ResultSet, val count: Int) {
   def wasNull() = resultSet.wasNull()
 
   /**
@@ -53,6 +54,7 @@ class ResultSetRow(resultSet: ResultSet) {
   }
 
   def getInt(column: String) = resultSet.getInt(column)
+  def getIntOption(column: String) = notNull(column) option(getInt(column))
 
   def getString(column: String) = try{
     resultSet.getString(column) match {
@@ -71,8 +73,7 @@ class ResultSetRow(resultSet: ResultSet) {
   }
 
   def getDouble(column: String) = resultSet.getDouble(column)
-
-  def getDoubleOrNone(column : String) = if (isNull(column)) None else Some(getDouble(column))
+  def getDoubleOption(column : String) = notNull(column) option(getDouble(column))
 
   def getLong(column: String) = resultSet.getLong(column)
 

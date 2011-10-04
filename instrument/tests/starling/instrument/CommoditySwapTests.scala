@@ -5,7 +5,7 @@ import org.testng.Assert._
 import starling.quantity.UOM._
 import starling.quantity.RichQuantity._
 import starling.utils.ScalaTestUtils._
-import starling.utils.QuantityTestUtils._
+import starling.quantity.utils.QuantityTestUtils._
 import starling.market._
 import rules.{Precision, CommonPricingRule}
 import starling.curves._
@@ -14,15 +14,15 @@ import starling.daterange._
 import starling.daterange.Day._
 import starling.quantity.RichQuantity._
 import starling.pivot.PivotQuantity
-import starling.utils.{AtomicDatumKeyUtils, StarlingTest}
+import starling.instrument.utils._
+import starling.utils.{StarlingTest}
 import starling.quantity.{Conversions, Quantity}
-import starling.varcalculator.{ForwardPriceRiskFactor, RiskFactorUtils}
 import java.util.Random
 import starling.models.DefaultRiskParameters
 
 class CommoditySwapTests extends JonTestEnv {
 
-  @Test
+  //@Test
   def testMTM {
     val marketDayAndTime = Day(2009, 9, 15).startOfDay
     val forwardPrice = Quantity(200, USD / MT)
@@ -31,7 +31,7 @@ class CommoditySwapTests extends JonTestEnv {
       new TestingAtomicEnvironment() {
         def applyOrMatchError(key: AtomicDatumKey) = key match {
           case _: ForwardPriceKey => forwardPrice
-          case _: FixingKey => historicPrice
+          case _: IndexFixingKey => historicPrice
           case DiscountRateKey(_, day, _) => new Quantity(scala.math.exp(-0.05 * day.daysSinceInYears(marketDay.day)))
         }
 
@@ -64,57 +64,6 @@ class CommoditySwapTests extends JonTestEnv {
   }
 
   @Test
-  def testDelta {
-    val marketDayAndTime = Day(2009, 9, 15).startOfDay
-    val forwardPrice = Quantity(200, USD / BBL)
-    val historicPrice = Quantity(100, USD / BBL)
-    val env = Environment(
-      new TestingAtomicEnvironment() {
-        def applyOrMatchError(key: AtomicDatumKey) = key match {
-          case ForwardPriceKey(_, d, _) => {
-            forwardPrice
-          }
-          case _: FixingKey => historicPrice
-          case DiscountRateKey(_, day, _) => new Quantity(scala.math.exp(-0.05 * day.daysSinceInYears(marketDay.day)))
-        }
-
-        def marketDay = marketDayAndTime
-      }
-    )
-
-    val index = Index.BRT11
-    val market = index.market
-
-    val period = Month(2009, 12)
-    val volume = Quantity(100, BBL)
-    val strike = Quantity(200, USD / BBL)
-
-    val swap = new SinglePeriodSwap(
-      index,
-      strike,
-      volume,
-      period,
-      false
-    )
-
-    val mtm = swap.mtm(env)
-
-    val observationDays = period.days.filter(market.isObservationDay(_)).toList
-    val fixingDays = observationDays.filter(_.endOfDay <= marketDayAndTime)
-    val forwardDays = observationDays filterNot (fixingDays contains)
-    val swapPrice = (historicPrice * fixingDays.size + forwardPrice * forwardDays.size) / observationDays.size
-    val discount = env.discount(USD, CommoditySwap.swapSettlementDate(period.firstDay))
-    val expectedMTM = (swapPrice - strike) * volume * discount
-    assertQtyEquals(mtm, expectedMTM, 1e-6)
-
-    val rfs = swap.riskFactors(env, USD).toArray
-    val delta1 = swap.riskFactorDerivative(env, rfs(0), USD)
-    val position1 = swap.riskFactorPosition(env, rfs(0), USD)
-    val delta2 = swap.riskFactorDerivative(env, rfs(1), USD)
-    val position2 = swap.riskFactorPosition(env, rfs(1), USD)
-  }
-
-  @Test
   def testSpreadIndexSwap {
     val spreadIndex = Index.IPE_GAS_OIL_VS_IPE_BRENT
     val index1 = spreadIndex.indexes.head
@@ -128,8 +77,8 @@ class CommoditySwapTests extends JonTestEnv {
       def applyOrMatchError(key: AtomicDatumKey) = key match {
         case ForwardPriceKey(`market1`, _, _) => Quantity(200, USD / MT)
         case ForwardPriceKey(`market2`, _, _) => Quantity(250, USD / BBL)
-        case FixingKey(`index1`, _) => Quantity(100, USD / MT)
-        case FixingKey(`index2`, _) => Quantity(150, USD / BBL)
+        case IndexFixingKey(`index1`, _) => Quantity(100, USD / MT)
+        case IndexFixingKey(`index2`, _) => Quantity(150, USD / BBL)
         case DiscountRateKey(_, day, _) => new Quantity(scala.math.exp(-0.05 * day.daysSinceInYears(marketDay.day)))
       }
     })
@@ -181,7 +130,7 @@ class CommoditySwapTests extends JonTestEnv {
       new TestingAtomicEnvironment() {
         def applyOrMatchError(key: AtomicDatumKey) = key match {
           case _: ForwardPriceKey => forwardPrice
-          case _: FixingKey => historicPrice
+          case _: IndexFixingKey => historicPrice
           case DiscountRateKey(_, day, _) => new Quantity(scala.math.exp(-0.05 * day.daysSinceInYears(marketDay.day)))
         }
 
@@ -233,7 +182,7 @@ class CommoditySwapTests extends JonTestEnv {
       new TestingAtomicEnvironment() {
         def applyOrMatchError(key: AtomicDatumKey) = key match {
           case _: ForwardPriceKey => forwardPrice
-          case _: FixingKey => historicPrice
+          case _: IndexFixingKey => historicPrice
           case DiscountRateKey(_, day, _) => new Quantity(scala.math.exp(-0.05 * day.daysSinceInYears(marketDay.day)))
         }
 
@@ -255,32 +204,37 @@ class CommoditySwapTests extends JonTestEnv {
     )
     val swapExplanation = swapSeptoOct09.explanation(env)
     assertEquals(swapExplanation.name, "Sum(SEP 2009 value, OCT 2009 value)")
-    assertEquals(swapExplanation.format(1), "Sum((((F_Ave - K) * Volume) * disc), (((F_Ave - K) * Volume) * disc))")
+    assertEquals(swapExplanation.format(1), "Sum((((F_Avg - K) * Volume) * disc), (((F_Avg - K) * Volume) * disc))")
 
     val sep09Explanation = swapSeptoOct09.subPeriodSwaps(0).explanation(env)
-    assertEquals(sep09Explanation.name, "(((F_Ave - K) * Volume) * disc)")
+    assertEquals(sep09Explanation.name, "(((F_Avg - K) * Volume) * disc)")
     assertEquals(sep09Explanation.format(1), "(((Round(Average(Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus).SEPTEMBER 2009), 3) - 200.00 USD/MT) * 100.00 MT) * USD.07Oct2009)")
 
-    val ex0 = "(((Round(Average(FixingsHistoryKey(Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus)).01Sep2009, " +
-            "FixingsHistoryKey(Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus)).02Sep2009, " +
-            "FixingsHistoryKey(Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus)).03Sep2009, " +
-            "FixingsHistoryKey(Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus)).04Sep2009, " +
-            "FixingsHistoryKey(Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus)).07Sep2009, " +
-            "FixingsHistoryKey(Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus)).08Sep2009, " +
-            "FixingsHistoryKey(Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus)).09Sep2009, " +
-            "FixingsHistoryKey(Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus)).10Sep2009, " +
-            "FixingsHistoryKey(Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus)).11Sep2009, " +
-            "FixingsHistoryKey(Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus)).14Sep2009, 15Sep2009, 16Sep2009, " +
-            "17Sep2009, 18Sep2009, 21Sep2009, 22Sep2009, 23Sep2009, 24Sep2009, 25Sep2009, 28Sep2009, 29Sep2009, " +
-            "30Sep2009), 3) - 200.00 USD/MT) * 100.00 MT) * 1.00)"
+    val ex0 = "(((Round(Average(01Sep2009, 02Sep2009, 03Sep2009, 04Sep2009, 07Sep2009, 08Sep2009, 09Sep2009, " +
+            "10Sep2009, 11Sep2009, 14Sep2009, 15Sep2009, 16Sep2009, 17Sep2009, 18Sep2009, 21Sep2009, 22Sep2009, " +
+            "23Sep2009, 24Sep2009, 25Sep2009, 28Sep2009, 29Sep2009, 30Sep2009), 3) - 200.00 USD/MT) * 100.00 MT) * 1.00)"
 
-    val ex = "(((Round(Average(100.00 USD/MT, 100.00 USD/MT, 100.00 USD/MT, 100.00 USD/MT, 100.00 USD/MT, " +
-            "100.00 USD/MT, 100.00 USD/MT, 100.00 USD/MT, 100.00 USD/MT, 100.00 USD/MT, Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus).15Sep2009, " +
-            "Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus).16Sep2009, Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus).17Sep2009, " +
-            "Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus).18Sep2009, Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus).21Sep2009, " +
-            "Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus).22Sep2009, Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus).23Sep2009, " +
-            "Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus).24Sep2009, Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus).25Sep2009, " +
-            "Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus).28Sep2009, Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus).29Sep2009, " +
+    val ex = "(((Round(Average(Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus).01Sep2009 Fixed, " +
+            "Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus).02Sep2009 Fixed, " +
+            "Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus).03Sep2009 Fixed, " +
+            "Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus).04Sep2009 Fixed, " +
+            "Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus).07Sep2009 Fixed, " +
+            "Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus).08Sep2009 Fixed, " +
+            "Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus).09Sep2009 Fixed, " +
+            "Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus).10Sep2009 Fixed, " +
+            "Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus).11Sep2009 Fixed, " +
+            "Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus).14Sep2009 Fixed, " +
+            "Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus).15Sep2009, " +
+            "Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus).16Sep2009, " +
+            "Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus).17Sep2009, " +
+            "Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus).18Sep2009, " +
+            "Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus).21Sep2009, " +
+            "Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus).22Sep2009, " +
+            "Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus).23Sep2009, " +
+            "Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus).24Sep2009, " +
+            "Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus).25Sep2009, " +
+            "Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus).28Sep2009, " +
+            "Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus).29Sep2009, " +
             "Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus).30Sep2009), 3) - 200.00 USD/MT) * 100.00 MT) * 1.00)"
 
     val ex1 = "(((Round(Average(100.00 USD/MT, 100.00 USD/MT, 100.00 USD/MT, 100.00 USD/MT, 100.00 USD/MT, " +
@@ -636,7 +590,7 @@ class CommoditySwapTests extends JonTestEnv {
         val outPrice = ForwardCurve(market, md, Map(md.day -> price.value)).price(d)
         outPrice
       }
-      case _: FixingKey => Quantity(0, USD / MT)
+      case _: IndexFixingKey => Quantity(0, USD / MT)
     }
     )).undiscounted
 
@@ -656,7 +610,6 @@ class CommoditySwapTests extends JonTestEnv {
     val explainedTotal = explanation.map {
       _.value
     }.toList.sum
-    println("et: " + explainedTotal)
 
     val allCurveKeysMtm = PivotQuantity.calcOrCatch({
       swap.mtm(environmentFor(curveKeys), USD)
@@ -689,7 +642,7 @@ class CommoditySwapTests extends JonTestEnv {
       case ForwardPriceKey(`market`, d, _) => {
         price
       }
-      case FixingKey(_, d) => fixing
+      case IndexFixingKey(_, d) => fixing
     }
     )).undiscounted
 
@@ -715,7 +668,6 @@ class CommoditySwapTests extends JonTestEnv {
     val explainedTotal = explanation.map {
       _.value
     }.toList.sum
-    println("et: " + explainedTotal)
 
 
     val env1NoRounding = env1Fwd.copy(environmentParameters = DefaultRiskParameters)
@@ -810,7 +762,7 @@ class CommoditySwapTests extends JonTestEnv {
       new TestingAtomicEnvironment() {
         def applyOrMatchError(key: AtomicDatumKey) = key match {
           case ForwardPriceKey(market, _, _) => Quantity(123.45, USD / BBL)
-          case FixingKey(`index`, day) => {
+          case IndexFixingKey(`index`, day) => {
             fixings(day)
           }
         }
@@ -833,53 +785,5 @@ class CommoditySwapTests extends JonTestEnv {
     assertQtyEquals(mtm, Quantity(171040, USD), 1e-5)
   }
 
-  @Test
-  def testDelta_PREM_UNL_EURO_BOB_OXY_NWE_BARGES__vs__Rbob {
-    val marketDayAndTime = Day(2009, 9, 15).startOfDay
-    val env = Environment(
-      new TestingAtomicEnvironment() {
-        def applyOrMatchError(key: AtomicDatumKey) = key match {
-          case ForwardPriceKey(m, d, _) => {
-            200 (m.priceUOM)
-          }
-        }
 
-        def marketDay = marketDayAndTime
-      }
-    ).undiscounted
-
-    val c = new Conversions(Map(BBL / MT -> 8.33))
-    val formula = new Formula("MKT(933)- MKT(1312)")
-    val index = new FormulaIndex("NYMEX RBOB vs Prem Unl Euro-Bob Oxy NWE Barges (Argus)", formula, USD, GAL, None, None, None)
-    val oxy = Index.PREM_UNL_EURO_BOB_OXY_NWE_BARGES
-    val rbob = Market.NYMEX_GASOLINE
-
-    val oct = Month(2011, 10)
-    val period = oct
-    val volume = -(6000)(MT)
-    val strike = -(4)(USD / GAL)
-
-    val swap = new CommoditySwap(
-      index,
-      strike,
-      volume,
-      period,
-      false,
-      CommonPricingRule
-    )
-
-    val s = swap.asUtpPortfolio(marketDayAndTime.day)
-    val rfs = s.riskFactors(env, USD).toArray
-    val basd = RiskFactorUtils.bucketRiskFactors(marketDayAndTime, rfs.toSet).flatMap {
-      case f:ForwardPriceRiskFactor => Some(f)
-      case _ => throw new Exception("???")
-    }
-    val brfs = basd.toArray
-    val delta1 = s.riskFactorDerivative(env, brfs(0), USD)
-    val delta2 = s.riskFactorDerivative(env, brfs(1), USD)
-    val delta3 = s.riskFactorDerivative(env, brfs(2), USD)
-
-    assertQtyEquals(delta1, -volume)
-    assertQtyEquals(delta2 + delta3, rbob.convertUOM(volume, GAL), 1e-4)
-  }
 }

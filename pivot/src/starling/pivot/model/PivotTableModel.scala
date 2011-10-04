@@ -11,8 +11,8 @@ import starling.quantity.Quantity
 import starling.pivot.EditableCellState._
 import starling.pivot._
 import controller.ChildKey
-import collection.immutable.TreeMap
-import collection.mutable.HashMap
+import collection.immutable.{Map, TreeMap}
+import collection.mutable.{HashSet, HashMap}
 
 class FieldList(pivotTableModel:PivotTableModel, _fields:Seq[Field], fieldChooserType:FieldChooserType) {
   def get(index:Int) = _fields(index)
@@ -254,14 +254,20 @@ object NullDataFieldTotal extends DataFieldTotal {
   def addValue(value:PivotValue) = throw new Exception()
   def addGroup(other:DataFieldTotal) = other
   def isAlmostZero = true
-  def measureCell = MeasureCell(None, Normal)
+  def measureCell = MeasureCell.Null
 }
 
-case class EmptyDataFieldTotal(fieldDetails:FieldDetails) extends DataFieldTotal {
-  def addValue(value:PivotValue) = SingleDataFieldTotal(fieldDetails, value)
+case class EmptyDataFieldTotal(fieldDetails:FieldDetails, editable:Boolean, blankCellsEditable:Boolean) extends DataFieldTotal {
+  def addValue(value:PivotValue) = SingleDataFieldTotal(fieldDetails, value, editable)
   def addGroup(other:DataFieldTotal) = other
   def isAlmostZero = false // TODO - look at this
-  def measureCell = MeasureCell(None, Normal)
+  def measureCell = {
+    if (blankCellsEditable) {
+      MeasureCell.EditableNull
+    } else {
+      MeasureCell.Null
+    }
+  }
 }
 
 trait NonEmptyDataFieldTotal extends DataFieldTotal {
@@ -284,7 +290,7 @@ trait NonEmptyDataFieldTotal extends DataFieldTotal {
   })
 }
 
-case class SingleDataFieldTotal(fieldDetails:FieldDetails, value:PivotValue) extends NonEmptyDataFieldTotal {
+case class SingleDataFieldTotal(fieldDetails:FieldDetails, value:PivotValue, editable:Boolean) extends NonEmptyDataFieldTotal {
   override def aggregateValue = value.value.map(v=>fieldDetails.combineFirstGroup(v))
   override def aggregateOriginal = value.originalValue.map(v=>fieldDetails.combineFirstGroup(v))
   def measureCell = {
@@ -292,7 +298,7 @@ case class SingleDataFieldTotal(fieldDetails:FieldDetails, value:PivotValue) ext
       case Some(valueOrDeletedValue) => Some(fieldDetails.value(fieldDetails.combineFirstGroup(valueOrDeletedValue)))
       case None => None
     }
-    MeasureCell(vv, value.cellType, edits, value.originalValue)
+    MeasureCell(vv, value.cellType, edits, value.originalValue, editable)
   }
   override val edits = value.edits
 }
@@ -332,7 +338,7 @@ object PivotTableModel {
     val (fs, pivotTable) = if (pivotFieldParams.calculate) {
       _createPivotTableData(dataSource, pivotFieldParams.pivotFieldState)
     } else {
-      val pfs = pivotFieldParams.pivotFieldState.getOrElse(new PivotFieldsState())
+      val pfs = pivotFieldParams.pivotFieldState.getOrElse(PivotFieldsState.Blank)
       val pt = PivotTable.singleCellPivotTable("Calculation is off")
       (pfs, pt)
     }
@@ -370,163 +376,153 @@ object PivotTableModel {
     (fs, createPivotTableData(pivot, fs))
   }
 
-  def createPivotTableData(dataSource:PivotTableDataSource, pivotState:PivotFieldsState):PivotTable = {
-    if (pivotState.columns.isInvalid) {
-      PivotTable.singleCellPivotTable("Too many measures")
-    } else {
-      val then = System.currentTimeMillis
-      val filters = pivotState.filters.toMap
-      val treeDepths = Map() ++ dataSource.fieldDetails.filter(_.isInstanceOf[TreeFieldDetails]).map(_.field).map(field => field -> pivotState.treeDepths.getOrElse(field, (3, 7)))
-      val maxDepths = new scala.collection.mutable.HashMap[Field, Int]
+  private def allEditableInfo(fieldDetailsLookup:Map[Field,FieldDetails], editPivot0:Option[EditPivot],
+                              pivotState:PivotFieldsState):AllEditableInfo = {
+    editPivot0 match {
+      case None => {
+        val em:Set[Field] = Set.empty
+        AllEditableInfo(None, em, false)
+      }
+      case Some(editPivot) => {
+        val keyFields = editPivot.editableToKeyFields.flatMap(_._2).toSet
+        val measureFieldsToParser = editPivot.editableToKeyFields.keySet.map(f => f -> fieldDetailsLookup(f).parser).toMap
+        val keyFieldsToParser = editPivot.editableToKeyFields.values.toSet.flatten.map(f => f -> fieldDetailsLookup(f).parser).toMap
 
-      val fieldDetailsLookup = Map() ++ dataSource.fieldDetails.map(fd => fd.field -> fd) + (Field.NullField -> FieldDetails("Null"))
-      val pivotResult = dataSource.data(pivotState)
-      val allPaths = pivotState.columns.buildPathsWithPadding
-      val maxColumnDepth = if (allPaths.isEmpty) 0 else allPaths.maximum(_.path.size)
+        val filterFields = pivotState.filters.filterNot(_._2 == AllSelection).map(_._1).toSet
+        val rowAreaFiltersPresent = pivotState.rowFields.exists(f => filterFields.contains(f))
+        val extraLine = editPivot.editableToKeyFields.exists{case (editableField,keyFields) => {
+          pivotState.columns.contains(editableField) &&
+                  keyFieldsInColumnArea(keyFields.toSet, pivotState).isEmpty &&
+                  !rowAreaFiltersPresent
+        }}
 
-      val editableInfo = {
-        dataSource.editable match {
-          case None => None
-          case Some(editPivot) => {
-            // Work out if all the fields are in the appropriate places (rows or columns, or filter area with one selection)
-            val editableMeasureFields = editPivot.editableToKeyFields.flatMap{case (editableField,keyFields) => {
-              if (pivotState.columns.hasPathContaining(keyFieldsInColumnArea(keyFields.toSet, pivotState) + editableField)) {
-                Some(editableField)
-              } else {
-                None
+        val allEditableMeasures = editPivot.editableToKeyFields.keySet
+
+        val blankEditable = keyFields.forall(f => {
+          pivotState.rowFields.contains(f) ||
+                  pivotState.columns.contains(f) ||
+                  pivotState.filtersInTheFilterArea.exists{case (f0, sel) => {
+                    (f == f0) && (sel match {
+                      case SomeSelection(s) if s.size == 1 => true
+                      case _ => false
+                    })
+                  }}
+        })
+
+        // I have to pull out the set here as there is a strange serializable problem if I don't.
+        val measureFieldsSet = Set() ++ measureFieldsToParser.keySet
+
+        AllEditableInfo(Some(EditableInfo(keyFields, measureFieldsSet, measureFieldsToParser ++ keyFieldsToParser, extraLine, blankEditable)), allEditableMeasures, blankEditable)
+      }
+    }
+  }
+
+  private def generateMainData(pivotState:PivotFieldsState, pivotResult:PivotResult,
+                               fieldDetailsLookup:Map[Field,FieldDetails], treeDepths:Map[Field,(Int, Int)],
+                               allEditableInfo:AllEditableInfo):(HashMap[(List[ChildKey],List[ChildKey]), DataFieldTotal], ServerAxisNode, ServerAxisNode, Map[Field,Int]) = {
+    //Make one pass through all the rows building up row and column trees
+    //and the 'sum' of the data area values for each row-column pair
+
+    val filters = pivotState.filters.toMap
+    val fieldsToDepth = treeDepths.map{case (field, (start, end)) => field -> (end - start + 1)}
+    val allPaths = pivotState.columns.buildPathsWithPadding(fieldsToDepth)
+    val maxColumnDepth = if (allPaths.isEmpty) 0 else allPaths.maximum(_.path.map{ case (field,_) => fieldsToDepth.getOrElse(field, 1)}.sum)
+
+    val mainTableBucket = new scala.collection.mutable.HashMap[(List[ChildKey], List[ChildKey]), DataFieldTotal]
+    var rowAxisRoot = ServerAxisNode.Null
+    var columnAxisRoot = ServerAxisNode.Null
+    val maxDepths = new scala.collection.mutable.HashMap[Field, Int]
+
+    val forceNewRowsToBottom = allEditableInfo.editableInfo.map(_.extraLine).getOrElse(false)
+
+    val rowValuesAlreadyAdded = new HashSet[AxisValueList[AxisValue]]()
+    val columnValuesAlreadyAdded = new HashSet[AxisValueList[AxisValue]]()
+
+    for (row <- pivotResult.data) {
+      def valuesForField(field:Field) : List[Any] = {
+        val rawValue = row.getOrElse(field, UndefinedValue)
+        val fd = fieldDetailsLookup(field)
+        fd match {
+          case _:TreeFieldDetails => {
+            val path = rawValue.asInstanceOf[PivotTreePath]
+            val (start, end) = treeDepths(field)
+            pivotState.transforms.get(field) match {
+              case Some(FilterWithOtherTransform(selection)) => {
+                val selectedPaths = selection.asInstanceOf[Set[PivotTreePath]]
+                if (selectedPaths.exists(_.equalOrParentOf(path))) {
+                  maxDepths.getOrElseUpdate(field, {scala.math.max(maxDepths.getOrElse(field, 0), path.size)})
+                  path.between(start, end).reverse
+                } else {
+                  (start to end).map(c => {
+                    val paths = List.fill(c)(FilterWithOtherTransform.Other.toString)
+                    PivotTreePath(paths)
+                  }).toList.reverse
+                }
               }
-            }}
-            val editableKeyFields = editableMeasureFields.flatMap(field => {
-              val keyFields = editPivot.editableToKeyFields(field)
-              keyFields filter pivotState.rowFields.contains
-            })
-
-            val filterFields = pivotState.filters.filter(_._2 != AllSelection).map(_._1).toSet
-            val rowAreaFiltersPresent = pivotState.rowFields.exists(f => filterFields.contains(f))
-            val extraLine = editPivot.editableToKeyFields.exists{case (editableField,keyFields) => {
-              pivotState.columns.contains(editableField) &&
-                keyFieldsInColumnArea(keyFields.toSet, pivotState).isEmpty &&
-                !rowAreaFiltersPresent
-            }}
-
-            val keyFields = editPivot.editableToKeyFields.flatMap(_._2).toSet
-            val editableMeasures = Map() ++ editableMeasureFields.map(f => (f -> fieldDetailsLookup(f).parser))
-            val editableKeys = Map() ++ editableKeyFields.map(f => (f -> fieldDetailsLookup(f).parser))
-
-            Some(EditableInfo(keyFields, editableMeasures, editableKeys, extraLine))
+              case None => {
+                maxDepths.getOrElseUpdate(field, {scala.math.max(maxDepths.getOrElse(field, 0), path.size)})
+                path.between(start, end).reverse
+              }
+            }
+          }
+          case _ => {
+            val value = {
+              val v = fd.transformValueForGroupByField(rawValue)
+              pivotState.transforms.get(field) match {
+                case Some(FilterWithOtherTransform(selection)) => {
+                  if (selection.contains(v)) v else FilterWithOtherTransform.Other
+                }
+                case None => v
+              }
+            }
+            value :: Nil
           }
         }
       }
 
-      val forceNewRowsToBottom = editableInfo.map(_.extraLine).getOrElse(false)
+      val rowValuesOption:Option[AxisValueList[AxisValue]] = {
+        val dataFields = pivotState.columns.measureFields
 
-      //Make one pass through all the rows building up row and column trees
-      //and the 'sum' of the data area values for each row-column pair
-      val mainTableBucket = new scala.collection.mutable.HashMap[(List[ChildKey], List[ChildKey]), DataFieldTotal]
-      var rowAxisRoot = ServerAxisNode.Null
-      var columnAxisRoot = ServerAxisNode.Null
-
-      for (row <- pivotResult.data) {
-        def valuesForField(field:Field) : List[Any] = {
-          val rawValue = row.getOrElse(field, UndefinedValue)
-          val fd = fieldDetailsLookup(field)
-          fd match {
-            case _:TreeFieldDetails => {
-              val path = rawValue.asInstanceOf[PivotTreePath]
-              val (start, end) = treeDepths(field)
-              pivotState.transforms.get(field) match {
-                case Some(FilterWithOtherTransform(selection)) => {
-                  val selectedPaths = selection.asInstanceOf[Set[PivotTreePath]]
-                  if (selectedPaths.exists(_.equalOrParentOf(path))) {
-                    maxDepths.getOrElseUpdate(field, {scala.math.max(maxDepths.getOrElse(field, 0), path.size)})
-                    path.between(start, end).reverse
-                  } else {
-                    (start to end).map(c => {
-                      val paths = List.fill(c)(FilterWithOtherTransform.Other.toString)
-                      PivotTreePath(paths)
-                    }).toList.reverse
-                  }
-                }
-                case None => {
-                  maxDepths.getOrElseUpdate(field, {scala.math.max(maxDepths.getOrElse(field, 0), path.size)})
-                  path.between(start, end).reverse
-                }
-              }
-            }
-            case _ => {
-              val value = {
-                val v = fd.transformValueForGroupByField(rawValue)
-                pivotState.transforms.get(field) match {
-                  case Some(FilterWithOtherTransform(selection)) => {
-                    if (selection.contains(v)) v else FilterWithOtherTransform.Other
-                  }
-                  case None => v
-                }
-              }
-              value :: Nil
+        def buildRow(soFar:List[AxisValue], left:List[Field]):Option[List[AxisValue]] = {
+          left match {
+            case Nil => Some(soFar)
+            case field :: tail => {
+              val values = valuesForField(field)
+              val axisValues = values.map{ v => AxisValue(field, new ValueAxisValueType(v), 0, forceNewRowsToBottom) }
+              buildRow(axisValues ::: soFar, tail)
             }
           }
         }
+        if (dataFields.isEmpty || dataFields.exists(row.contains(_))) {
+          buildRow(List(), pivotState.rowFields).map(_.reverse)
+        } else {
+          //If dataFields are specified only show rows which have a value for one of the fields
+          None
+        }
+      }.map(l=>new AxisValueList(l))
 
-        val rowValuesOption:Option[AxisValueList[AxisValue]] = {
-          val dataFields = pivotState.columns.measureFields
-
-          def buildRow(soFar:List[AxisValue], left:List[Field]):Option[List[AxisValue]] = {
-            left match {
-              case Nil => Some(soFar)
-              case field :: tail => {
-                val values = valuesForField(field)
-                val axisValues = values.map{ v => AxisValue(field, new ValueAxisValueType(v), 0, forceNewRowsToBottom) }
-                buildRow(axisValues ::: soFar, tail)
+      val columnValuesList:List[(Option[Field], AxisValueList[AxisValue])] = {
+        allPaths.flatMap {
+          path => {
+            def getAxisValues(head:Field, index:Int) = {
+              val someValue = PivotValue.extractValue(row, head)
+              val matches = filters.get(head).map{ selection=>selection.matches(fieldDetailsLookup(head), someValue) }.getOrElse(true)
+              if (!matches) {
+                None
+              } else {
+                val values = valuesForField(head)
+                Some(values.map{ v => AxisValue(head, new ValueAxisValueType(v), index) })
               }
             }
-          }
-          if (dataFields.isEmpty || dataFields.exists(row.contains(_))) {
-            buildRow(List(), pivotState.rowFields).map(_.reverse)
-          } else {
-            //If dataFields are specified only show rows which have a value for one of the fields
-            None
-          }
-        }.map(l=>new AxisValueList(l))
 
-        val columnValuesList:List[(Option[Field], AxisValueList[AxisValue])] = {
-          allPaths.flatMap {
-            path => {
-              def getAxisValues(head:Field, index:Int) = {
-                val someValue = PivotValue.extractValue(row, head)
-                val matches = filters.get(head).map{ selection=>selection.matches(fieldDetailsLookup(head), someValue) }.getOrElse(true)
-                if (!matches) {
-                  None
-                } else {
-                  val values = valuesForField(head)
-                  Some(values.map{ v => AxisValue(head, new ValueAxisValueType(v), index) })
-                }
-              }
+            path.dataField match {
+              case Some(df) => row.get(df) match { //This path has a datafield
+                case Some(dataValue) => { //This row has a value for the datafield
 
-              path.dataField match {
-                case Some(df) => row.get(df) match { //This path has a datafield
-                  case Some(dataValue) => { //This row has a value for the datafield
-
-                    def buildKey(soFar:List[AxisValue], fields:List[(Field, Int)]):Option[(Option[Field], List[AxisValue])] = {
-                      fields match {
-                        case Nil => Some((Some(df), soFar))
-                        case (head, index) :: rest if (head == df) => buildKey(AxisValue(head, MeasureAxisValueType(df), index) :: soFar, rest)
-                        case (head, index) :: rest => {
-                          getAxisValues(head, index) match {
-                            case None => None
-                            case Some(axisValues) => buildKey(axisValues ::: soFar, rest)
-                          }
-                        }
-                      }
-                    }
-                    buildKey(List(), path.path)
-                  }
-                  case None => None
-                }
-                case None => {
                   def buildKey(soFar:List[AxisValue], fields:List[(Field, Int)]):Option[(Option[Field], List[AxisValue])] = {
                     fields match {
-                      case Nil => Some((None, soFar))
+                      case Nil => Some((Some(df), soFar))
+                      case (head, index) :: rest if (head == df) => buildKey(AxisValue(head, MeasureAxisValueType(df), index) :: soFar, rest)
                       case (head, index) :: rest => {
                         getAxisValues(head, index) match {
                           case None => None
@@ -537,138 +533,189 @@ object PivotTableModel {
                   }
                   buildKey(List(), path.path)
                 }
+                case None => None
               }
-            }
-          }.map {
-            case (df, values) =>
-              val path = values.reverse
-              val padding = (for (i <- path.size until maxColumnDepth) yield AxisValue.Null).toList
-              (df, new AxisValueList(path ::: padding))
-          }
-        }
-
-        if (columnValuesList.nonEmpty) {
-          for ((dataFieldOption, columnValues) <- columnValuesList) {
-            for (rowValues <- rowValuesOption) {
-
-              rowAxisRoot = rowAxisRoot.add(rowValues.list)
-              columnAxisRoot = columnAxisRoot.add(columnValues.list)
-
-              val rowColumnKey = (rowValues.list.map(_.childKey), columnValues.list.map(_.childKey))
-              dataFieldOption.foreach { df => {
-                if (!mainTableBucket.contains(rowColumnKey)) {
-                  mainTableBucket(rowColumnKey) = new EmptyDataFieldTotal(fieldDetailsLookup(df))
-                }
-                mainTableBucket(rowColumnKey) = mainTableBucket(rowColumnKey).addValue(PivotValue.create(row(df)))
-              }}
-            }
-          }
-        } else if (rowValuesOption.isDefined && rowValuesOption.get.list.nonEmpty) {
-          for (rowValues <- rowValuesOption) {
-            rowAxisRoot = rowAxisRoot.add(rowValues.list)
-          }
-        }
-      }
-
-      rowAxisRoot = rowAxisRoot.withTotals
-      columnAxisRoot = columnAxisRoot.withTotals
-
-      val formatInfo = FormatInfo(Map() ++ fieldDetailsLookup.map{case (f,fd) => (f -> fd.formatter)})
-
-      def permutations(list:List[ChildKey]):List[List[ChildKey]] = {
-        (list.size to 0 by -1).map(col => {
-          val (start,end) = list.splitAt(col)
-          start ::: end.map(c => if (c.isMeasure) c else c.toTotal)
-        }).toList.distinct
-      }
-
-      (Map() ++ mainTableBucket).foreach {
-        case ((row, column), sum) => {
-          val columnPermutations = permutations(column)
-          val rowPermutations = permutations(row)
-          for (rowP <- rowPermutations;
-               colP <- columnPermutations) {
-            val key = (rowP, colP)
-            if (key != (row, column)) {
-              val current = mainTableBucket.getOrElseUpdate(key, NullDataFieldTotal)
-              mainTableBucket(key) = current.addGroup(sum)
-            }
-          }
-        }
-      }
-
-      val equalToReferenceTableCellMap = new HashMap[Any,MeasureCell]
-      val equalToReferenceAxisValueListMap = new HashMap[List[ChildKey],List[ChildKey]]
-      val equalToReferenceAxisValue = new HashMap[ChildKey,ChildKey]
-
-      def compress(k1:List[ChildKey]) = {
-        val compressed = k1.map( v => equalToReferenceAxisValue.getOrElseUpdate(v,v))
-        equalToReferenceAxisValueListMap.getOrElseUpdate(compressed,compressed)
-      }
-
-      val aggregatedMainBucket = mainTableBucket.map{case ((k1,k2),v) => {
-        val cv = v.measureCell
-        ((compress(k1),compress(k2)),
-                equalToReferenceTableCellMap.getOrElseUpdate(cv,cv))}
-      }
-
-      val possibleValuesConvertedToTree = pivotResult.possibleValues.map {
-        case (field, unsortedValues) => {
-          val fd = fieldDetailsLookup(field)
-          fd match {
-            case _:TreeFieldDetails => {
-              val pivotTreePaths = unsortedValues.filterNot(_ == UndefinedValue).castValues[PivotTreePath] { uncastable =>
-                throw new IllegalStateException("The value " + uncastable + " for " + field + " is not a PivotPathTree") }
-
-              field -> toTree(pivotTreePaths, fd.comparator)
-            }
-            case _ => {
-              val values = {
-                // We are using java sorting here because everything is java comparable where as strings are not scala ordered.
-                val unsortedPivotValuesOrUndefined = unsortedValues.map { value => {
-                  val v1 = PivotValue.create(value)
-                  v1.originalValue.getOrElse(v1.value.getOrElse(UndefinedValue))
-                } }
-                val (normalValues, nullValues) = unsortedPivotValuesOrUndefined.partition(_ != UndefinedValue)
-                val arrayOfObjects = normalValues.toArray.asInstanceOf[Array[Object]]
-                try {
-                  val sorted = arrayOfObjects.sorted(new Ordering[Any]() {
-                    def compare(x:Any, y:Any) = {
-                      fd.comparator.compare(x, y)
+              case None => {
+                def buildKey(soFar:List[AxisValue], fields:List[(Field, Int)]):Option[(Option[Field], List[AxisValue])] = {
+                  fields match {
+                    case Nil => Some((None, soFar))
+                    case (head, index) :: rest => {
+                      getAxisValues(head, index) match {
+                        case None => None
+                        case Some(axisValues) => buildKey(axisValues ::: soFar, rest)
+                      }
                     }
-                  })
-                  nullValues ::: sorted.toList
-                } catch {
-                  case e =>
-                    println("Invalid objects, could not sort")
-                    arrayOfObjects.foreach{x => println(x + ", " + x.getClass)}
-                    throw e
+                  }
                 }
+                buildKey(List(), path.path)
               }
-              field -> TreePivotFilter(TreePivotFilterNode("All", "All", values.map(v => TreePivotFilterNode(v, v.toString, List()))))
             }
           }
+        }.map {
+          case (df, values) =>
+            val path = values.reverse
+            val padding = (for (i <- path.size until maxColumnDepth) yield AxisValue.Null).toList
+            (df, new AxisValueList(path ::: padding))
         }
       }
 
-      def fieldIndexes(fields:List[Field]):Array[Int] = {
-        fields.map {
-          field => {
-            val fd = fieldDetailsLookup(field)
-            fd match {
-              case _:TreeFieldDetails => (treeDepths(field)._2 - treeDepths(field)._1) + 1
-              case _=> 1
+      if (columnValuesList.nonEmpty) {
+        for ((dataFieldOption, columnValues) <- columnValuesList) {
+          for (rowValues <- rowValuesOption) {
+
+            if (!rowValuesAlreadyAdded.contains(rowValues)) {
+              rowAxisRoot = rowAxisRoot.add(rowValues.list)
+              rowValuesAlreadyAdded += rowValues
             }
+            if (!columnValuesAlreadyAdded.contains(columnValues)) {
+              columnAxisRoot = columnAxisRoot.add(columnValues.list)
+              columnValuesAlreadyAdded += columnValues
+            }
+
+            val rowColumnKey = (rowValues.list.map(_.childKey), columnValues.list.map(_.childKey))
+            dataFieldOption.foreach { df => {
+              if (!mainTableBucket.contains(rowColumnKey)) {
+                mainTableBucket(rowColumnKey) = new EmptyDataFieldTotal(fieldDetailsLookup(df), allEditableInfo.editableMeasures.contains(df), allEditableInfo.blankCellsEditable)
+              }
+              mainTableBucket(rowColumnKey) = mainTableBucket(rowColumnKey).addValue(PivotValue.create(row(df)))
+            }}
           }
-        }.toArray
+        }
+      } else if (rowValuesOption.isDefined && rowValuesOption.get.list.nonEmpty) {
+        for (rowValues <- rowValuesOption if !rowValuesAlreadyAdded.contains(rowValues)) {
+          rowAxisRoot = rowAxisRoot.add(rowValues.list)
+          rowValuesAlreadyAdded += rowValues
+        }
       }
+    }
+
+    val rowTotals = rowAxisRoot.withTotals
+    val columnTotals = columnAxisRoot.withTotals
+    (mainTableBucket, rowTotals, columnTotals, maxDepths.toMap)
+  }
+
+  private def withSubtotals(mainTableBucket:HashMap[(scala.List[ChildKey],scala.List[ChildKey]), DataFieldTotal]) = {
+    def permutations(list:List[ChildKey]):List[List[ChildKey]] = {
+      val values = (list.size to 0 by -1).map(col => {
+        val (start,end) = list.splitAt(col)
+        start ::: end.map(c => if (c.isMeasure) c else c.toTotal)
+      }).toList
+      val distinctValues = values.distinct
+      distinctValues
+    }
+
+    mainTableBucket.toList.foreach {
+      case ((row, column), sum) => {
+        val columnPermutations = permutations(column)
+        val rowPermutations = permutations(row)
+        for (rowP <- rowPermutations;
+             colP <- columnPermutations) {
+          val key = (rowP, colP)
+          if (key != (row, column)) {
+            val current = mainTableBucket.getOrElseUpdate(key, NullDataFieldTotal)
+            mainTableBucket(key) = current.addGroup(sum)
+          }
+        }
+      }
+    }
+    mainTableBucket
+  }
+
+  private def compress(bucket:HashMap[(scala.List[ChildKey],scala.List[ChildKey]), DataFieldTotal]) = {
+    val equalToReferenceTableCellMap = new HashMap[Any,MeasureCell]
+    val equalToReferenceAxisValueListMap = new HashMap[List[ChildKey],List[ChildKey]]
+    val equalToReferenceAxisValue = new HashMap[ChildKey,ChildKey]
+
+    def compress(k1:List[ChildKey]) = {
+      val compressed = k1.map( v => equalToReferenceAxisValue.getOrElseUpdate(v,v))
+      equalToReferenceAxisValueListMap.getOrElseUpdate(compressed,compressed)
+    }
+
+    val compressedBucket = bucket.map{case ((k1,k2),v) => {
+      val cv = v.measureCell
+      ((compress(k1),compress(k2)),
+              equalToReferenceTableCellMap.getOrElseUpdate(cv,cv))}
+    }
+    compressedBucket.toMap
+  }
+
+  private def possibleValuesToTree(pivotResult:PivotResult, fieldDetailsLookup:Map[Field,FieldDetails]) = {
+    pivotResult.possibleValues.map {
+      case (field, unsortedValues) => {
+        val fd = fieldDetailsLookup(field)
+        fd match {
+          case _:TreeFieldDetails => {
+            val pivotTreePaths = unsortedValues.filterNot(_ == UndefinedValue).castValues[PivotTreePath] { uncastable =>
+              throw new IllegalStateException("The value " + uncastable + " for " + field + " is not a PivotPathTree") }
+
+            field -> toTree(pivotTreePaths, fd.comparator)
+          }
+          case _ => {
+            val values = {
+              // We are using java sorting here because everything is java comparable where as strings are not scala ordered.
+              val unsortedPivotValuesOrUndefined = unsortedValues.map { value => {
+                val v1 = PivotValue.create(value)
+                v1.originalValue.getOrElse(v1.value.getOrElse(UndefinedValue))
+              } }
+              val (normalValues, nullValues) = unsortedPivotValuesOrUndefined.partition(_ != UndefinedValue)
+              val arrayOfObjects = normalValues.toArray.asInstanceOf[Array[Object]]
+              try {
+                val sorted = arrayOfObjects.sorted(new Ordering[Any]() {
+                  def compare(x:Any, y:Any) = {
+                    fd.comparator.compare(x, y)
+                  }
+                })
+                nullValues ::: sorted.toList
+              } catch {
+                case e =>
+                  println("Invalid objects, could not sort: " + fd.field)
+                  arrayOfObjects.foreach{x => println(x + ", " + x.getClass)}
+                  throw e
+              }
+            }
+            field -> TreePivotFilter(TreePivotFilterNode("All", "All", values.map(v => TreePivotFilterNode(v, v.toString, List()))))
+          }
+        }
+      }
+    }
+  }
+
+  private def fieldIndexes(fields:List[Field], treeDepths:Map[Field,(Int,Int)], fieldDetailsLookup:Map[Field,FieldDetails]):Array[Int] = {
+    fields.map {
+      field => {
+        val fd = fieldDetailsLookup(field)
+        fd match {
+          case _:TreeFieldDetails => (treeDepths(field)._2 - treeDepths(field)._1) + 1
+          case _=> 1
+        }
+      }
+    }.toArray
+  }
+
+  def createPivotTableData(dataSource:PivotTableDataSource, pivotState:PivotFieldsState):PivotTable = {
+    if (pivotState.columns.isInvalid) {
+      PivotTable.singleCellPivotTable("Too many measures")
+    } else {
+      val then = System.currentTimeMillis
+
+      val fieldDetailsLookup = Map() ++ dataSource.fieldDetails.map(fd => fd.field -> fd) + (Field.NullField -> FieldDetails("Null"))
+      val allEditableInfo0 = allEditableInfo(fieldDetailsLookup, dataSource.editable, pivotState)
+      val treeDepths = Map() ++ dataSource.fieldDetails.filter(_.isInstanceOf[TreeFieldDetails]).map(_.field).map(field => field -> pivotState.treeDepths.getOrElse(field, (3, 7)))
+
+      val pivotResult = Log.infoWithTimeGapTop("Data from data source"){dataSource.data(pivotState)}
+      val (mainTableBucket, rowAxisRoot, columnAxisRoot, maxDepths) = Log.infoWithTime("Generating bucket"){generateMainData(pivotState, pivotResult, fieldDetailsLookup, treeDepths, allEditableInfo0)}
+      val mainTableBucketWithSubtotals = Log.infoWithTimeGapBottom("Adding subtotals"){withSubtotals(mainTableBucket)}
+      val compressedMap = compress(mainTableBucketWithSubtotals)
+      val possibleValuesConvertedToTree = possibleValuesToTree(pivotResult, fieldDetailsLookup)
+      val rowFieldHeadingCount = fieldIndexes(pivotState.rowFields, treeDepths, fieldDetailsLookup)
+      val formatInfo = FormatInfo(Map() ++ fieldDetailsLookup.map{case (f,fd) => (f -> fd.formatter)})
 
       // determine how long it runs for
       val now = System.currentTimeMillis
       Log.debug("Pivot Table Model generated in " + (now - then) + "ms")
-      PivotTable(pivotState.rowFields, fieldIndexes(pivotState.rowFields), rowAxisRoot.toGUIAxisNode(fieldDetailsLookup),
+      PivotTable(pivotState.rowFields, rowFieldHeadingCount, rowAxisRoot.toGUIAxisNode(fieldDetailsLookup),
         columnAxisRoot.toGUIAxisNode(fieldDetailsLookup), possibleValuesConvertedToTree,
-        TreeDetails(treeDepths, maxDepths.toMap), editableInfo, formatInfo, aggregatedMainBucket.toMap, dataSource.zeroFields.toSet)
+        TreeDetails(treeDepths, maxDepths), allEditableInfo0.editableInfo, formatInfo, compressedMap, dataSource.zeroFields.toSet)
     }
   }
 
@@ -700,8 +747,10 @@ object PivotTableModel {
 
 case class TreeDetails(treeDepths:Map[Field, (Int, Int)], maxTreeDepths:Map[Field, Int])
 
-case class EditableInfo(keyFields:Set[Field], editableMeasures:Map[Field,PivotParser], editableKeyFields:Map[Field,PivotParser], extraLine:Boolean)
+case class EditableInfo(keyFields:Set[Field], measureFields:Set[Field], fieldToParser:Map[Field,PivotParser], extraLine:Boolean, blankCellsEditable:Boolean)
 case class FormatInfo(fieldToFormatter:Map[Field,PivotFormatter])
 object FormatInfo {
   val Blank = FormatInfo(Map())
 }
+
+case class AllEditableInfo(editableInfo:Option[EditableInfo], editableMeasures:Set[Field], blankCellsEditable:Boolean)

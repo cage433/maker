@@ -3,7 +3,8 @@ package starling.quantity
 import starling.quantity.UOM._
 import math.{abs => mabs}
 import java.io.Serializable
-import starling.utils.{MathUtil, Summable}
+import utils.Summable
+import starling.utils.{MathUtil}
 import starling.utils.ImplicitConversions._
 import starling.pivot.{StackTrace, PivotQuantity}
 import java.lang.String
@@ -91,6 +92,15 @@ object Quantity {
     }
   }
 
+  def sumNamed(quantities : Iterable[NamedQuantity]):NamedQuantity = quantities match {
+    case Nil => NamedQuantity.NULL
+    case _ => {
+      val (sum, uom) = sumAsBigDecimal(quantities)
+      val result = Quantity(sum(mc).toDouble, uom)
+      FunctionNamedQuantity("Sum", quantities.toList.asInstanceOf[List[NamedQuantity]], result)
+    }
+  }
+
   implicit def doubleToScalarQuantity(d : Double) : Quantity = Quantity(d, UOM.SCALAR)
   implicit def integerToScalarQuantity(i : Int) : Quantity = Quantity(i, UOM.SCALAR)
   implicit def doubleToQuantityDouble(d : Double) : QuantityDouble = new QuantityDouble(d)
@@ -127,6 +137,7 @@ class Quantity(val value : Double, val uom : UOM) extends Ordered[Quantity] with
   def format(decimalFormat: DecimalFormat) = decimalFormat.format(value)
   def formatNoUOM(fmt:String) = format(fmt, false)
   override def toString = format(Quantity.FormatString)
+  def toStringAllDecimalPlaces = format("#,##0.00#######################################")
   def toStringWithSpace = format(Quantity.FormatString, addSpace = true)
   def this(value : Double, uom : String) = this(value, UOM.fromString(uom))
   def this(value : Double) = this(value, UOM.SCALAR)

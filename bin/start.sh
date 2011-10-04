@@ -31,11 +31,6 @@ else
 
     mkdir -p booter/out/
 
-    # I'm actually going to compile the whole project here because the server needs to serve up gui class files but
-    # because it doesn't depend on it, they don't get compiled automatically when you start the server.
-    echo "Compiling... "
-    nohup java -jar sbt/sbt-launch.jar "project dev.launcher" compile >> logs/fullCompile.log 2>&1 &&
-
     # Want to compile the booter module (and jar it). It is written in java and used in the exe generation. This should
     # probably be done in SBT.
     echo "Compile booter"
@@ -51,7 +46,9 @@ else
       -Dcom.sun.management.jmxremote.port=$JMX_PORT \
       -Dcom.sun.management.jmxremote.authenticate=false \
       -Dcom.sun.management.jmxremote.ssl=false \
-      -jar sbt/sbt-launch.jar "project services" run-server >> logs/stdouterr.log 2>&1 &
+      -Dsbt.ivy.home=.ivy \
+      -Dhttp.nonProxyHosts=nexus.global.trafigura.com \
+      -jar sbt/sbt-launch.jar "project launcher" "run-main starling.startserver.Server" >> logs/stdouterr.log 2>&1 &
 
     #Note: OutputPIDToFile.scala is used to write pid.txt
 fi

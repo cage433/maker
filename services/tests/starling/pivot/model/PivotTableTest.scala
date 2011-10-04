@@ -78,7 +78,7 @@ class PivotTableTest extends TestNGSuite {
         }
       }
     }
-    permutations(List("WTI", "Feb", "Delta")).foreach(println)
+    permutations(List("WTI", "Feb", "Delta"))
   }
 
   @Test

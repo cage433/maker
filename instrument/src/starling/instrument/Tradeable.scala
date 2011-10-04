@@ -8,6 +8,7 @@ import starling.market.rules.SwapPricingRule
 import starling.curves.Environment
 import starling.quantity.{NamedQuantity, SpreadOrQuantity, Quantity}
 import starling.quantity.UOM
+import starling.market.{FuturesExchange, IndexWithDailyPrices}
 
 trait Tradeable extends AsUtpPortfolio {
   def tradeableType : TradeableType[_]
@@ -17,14 +18,7 @@ trait Tradeable extends AsUtpPortfolio {
   def isLive(dayAndTime : DayAndTime) : Boolean
   def valuationCCY : UOM
 
-  // Return a tree structure describing how mtm was calculated
-  def explanation(env : Environment, ccy : UOM) : NamedQuantity = {
-    if (ccy == valuationCCY)
-      explanation(env)
-    else
-      explanation(env) * (if (ccy == valuationCCY) new Quantity(1.0) else env.withNaming().spotFXRate(ccy, valuationCCY).named("Spot FX"))
-  }
-  def explanation(env : Environment) : NamedQuantity 
+  def explanation(env: Environment): NamedQuantity
 
   /**
    * Hack so that for Jons option the premium has an associated market/index + period
@@ -63,6 +57,7 @@ object TradeableType {
     DeletedInstrument,
     ErrorInstrument,
     Future,
+    TAS,
     FuturesCalendarSpread,
     FuturesCommoditySpread,
     CommoditySwap,
@@ -105,7 +100,12 @@ object TradeableType {
     ("Fixations", classOf[List[RefinedFixation]]),
     ("Cash Instrument Type", classOf[CashInstrumentType]),
     ("Commodity", classOf[String]),
-    ("Pricing Spec Name", classOf[String])
+    ("Pricing Spec Name", classOf[String]),
+    ("Index", classOf[Option[IndexWithDailyPrices]]),
+    ("QuotationPeriod", classOf[Option[DateRange]]),
+    ("Premium", classOf[Quantity]),
+    ("Exchange", classOf[FuturesExchange])
+
   )
   val fields = fieldsWithType.map(_._1)
   val drillDownFields = fields.filterNot(List("Float Payment Freq", "Fixed Basis", "Fixed Payment Freq", "Fixed Rate",

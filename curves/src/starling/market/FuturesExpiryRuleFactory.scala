@@ -7,19 +7,16 @@ import starling.utils.Log
 object FuturesExpiryRuleFactory {
   private var expiryRulesImpl : Option[FuturesExpiryRules] = None
 
+  private val lock = new Object
 	def registerRulesImpl(rules : FuturesExpiryRules){
-		expiryRulesImpl match {
-			case None => expiryRulesImpl = Some(rules)
-			case Some(_) => throw new Exception("Implementation already registered")
-		}
+	  lock.synchronized {
+      expiryRulesImpl match {
+        case None => expiryRulesImpl = Some(rules)
+        case Some(currentRules) if rules == currentRules => 
+        case _ => throw new Exception("Implementation already registered")
+      }
+    }
 	}
-
-  /**
-   * Same as registerRulesImpl but allows new rules to be registerd
-   */
-  def registerNewRulesImplForTesting(rules : Option[FuturesExpiryRules]){
-    expiryRulesImpl = rules
-  }
 
   def expiryRuleOpton = expiryRulesImpl
 

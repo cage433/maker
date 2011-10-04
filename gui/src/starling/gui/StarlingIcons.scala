@@ -7,7 +7,6 @@ import starling.utils.ImplicitConversions._
 
 object StarlingIcons {
 
-  val Refresh = "/icons/22x22/actions/view-refresh.png"
   val MarketData = "/icons/16x16_market_data.png"
 
   lazy val RowGrandTotals = StarlingIcons.icon("/icons/16x16_stock_top_bottom_totals.png")
@@ -18,10 +17,10 @@ object StarlingIcons {
   lazy val Copy = StarlingIcons.icon("/icons/16x16_copy.png")
   lazy val Rotate = StarlingIcons.icon("/icons/16x16_rotate_cw.png")
   lazy val Lock = StarlingIcons.icon("/icons/16x16_split.png")
+  lazy val ExpandColumnsToFit = StarlingIcons.icon("/icons/16x16_expand_columns.png")
   lazy val Calculate = StarlingIcons.icon("/icons/16x16_calculator.png")
   lazy val SaveLayout = StarlingIcons.icon("/icons/16x16_layout_add.png")
   lazy val ValidationError = StarlingIcons.icon("/icons/validation.png")
-  lazy val Blank10 = StarlingIcons.icon("/icons/10x10_blank.png")
 
   val SaveReportConfiguration = "/icons/16x16_star_add.png"
 
@@ -32,7 +31,11 @@ object StarlingIcons {
   def im(location:String) = imageCache.memoize(location, ImageIO.read(getResource(location, "Image")))
 
   private def getResource(location: String, kind: String) = try {
-    getClass.getResource(location)
+    val url = getClass.getResource(location)
+    if (url == null) {
+      throw new Exception("No resource found for " + location)
+    }
+    url
   }
   catch {
     case e => throw new Exception("Could not load %s: %s" % (kind, location), e)

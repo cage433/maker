@@ -1,12 +1,12 @@
 package starling.gui.custom
 
-import starling.pivot.view.swing.{FixedImagePanel, MigPanel}
 import swing.Swing._
 import java.awt.{Cursor, Graphics2D, Color}
 import swing.event._
 import swing.{Label, TextField}
 import javax.swing.ImageIcon
-import starling.gui.{GuiUtils, StarlingIcons}
+import starling.gui.StarlingIcons
+import starling.browser.common.{GuiUtils, FixedImagePanel, MigPanel}
 
 class FindPanel extends MigPanel("insets 0", "[p][p]0[p]") {
   private val findIcon = new FixedImagePanel(StarlingIcons.im("/icons/16x16find.png"))

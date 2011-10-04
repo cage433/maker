@@ -4,16 +4,15 @@ import starling.LIMServer
 import starling.props.PropsHelper
 import starling.daterange.Day._
 import starling.services.StarlingInit
-import starling.curves.readers.{RefinedMetalsLimMarketDataSource}
+import starling.curves.readers.RefinedMetalsLimMarketDataSource
 import starling.db.DBMarketDataStore
 import starling.db.MarketDataSet._
-import starling.marketdata.PriceFixingsHistoryDataKey
-import starling.market.{CommodityMarket, Market}
-import starling.utils.{RegressionRunner}
+import starling.auth.AuthHandler
+import starling.utils.{ThreadUtils, Broadcaster}
 
 object RefinedMetalsLimMarketDataSourceTests {
   def main(args:Array[String]) {
-    val init = new StarlingInit(PropsHelper.defaultProps, false, false, false, false)
+    val init = new StarlingInit(PropsHelper.defaultProps, AuthHandler.Dev, Broadcaster.Null, false, false, false, false)
 
 //    val x: Map[PriceFixingsHistoryDataKey, List[CommodityMarket]] = Market.markets.groupBy(PriceFixingsHistoryDataKey.apply(_))
 //    x.foreach { case (key, values) => {
@@ -38,19 +37,19 @@ object RefinedMetalsLimMarketDataSourceTests {
     }
     else {
       val source = new RefinedMetalsLimMarketDataSource(new LIMServer("ttraflonrh221", 6400))
-      val updates = new DBMarketDataStore(init.starlingRichDB, Map(LIM → source)).importer.getUpdates(12 Apr 2011, LIM)
+      val updates = DBMarketDataStore(init.props, init.starlingRichDB, Map(LIM → source), Broadcaster.Null).importer.getUpdates(12 Apr 2011, LIM)
 
-      updates.get(LIM).map(_.foreach(println))
-      source.read(12 Apr 2011).foreach(println)
+      updates.get(LIM)
+      source.read(12 Apr 2011)
     }
 
-    RegressionRunner.printNonDaemonThreads
+    ThreadUtils.printNonDaemonThreads
   }
 }
 
 object LimLiborMarketDataSourceTests {
   def main(args: Array[String]) {
-    val init = new StarlingInit(PropsHelper.defaultProps, false, false, false, false)
+    val init = new StarlingInit(PropsHelper.defaultProps, AuthHandler.Dev, Broadcaster.Null, false, false, false, false)
 
 //    val source = new LimLiborMarketDataSource(new LIMServer("ttraflonrh221", 6400))
 //    source.read(20 Apr 2011).foreach(println)

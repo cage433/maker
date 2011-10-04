@@ -5,43 +5,47 @@ import scala.swing._
 import javax.swing.event.{ListSelectionEvent, ListSelectionListener}
 import starling.pivot.model._
 import starling.pivot._
-import controller.PivotTableConverter
+import controller.{PivotTable, ChildKey, PivotTableConverter}
 import starling.pivot.FieldChooserType._
 import org.jdesktop.swingx.decorator.{HighlightPredicate}
 import org.jdesktop.swingx.JXTable
 import swing.event.{Event, MouseClicked, KeyPressed, KeyReleased}
 import starling.rmi.PivotData
 import scala.swing.Swing._
-import starling.gui.GuiUtils._
-import starling.gui.{GuiUtils, OldPageData, ComponentRefreshState, StarlingIcons}
+import starling.browser.common.GuiUtils._
+import starling.gui.StarlingIcons
 import java.awt.datatransfer.StringSelection
 import java.awt.event._
 import starling.gui.api.ReportSpecificOptions
-import starling.gui.pages.ConfigPanels
-import collection.immutable.List
 import starling.utils.ImplicitConversions._
-import collection.mutable.{ListBuffer, HashMap}
-import org.jdesktop.animation.timing.{TimingTargetAdapter, Animator}
-import java.awt.{Container, Graphics2D, Dimension, Color, GradientPaint, Cursor, AWTEvent, Toolkit, KeyboardFocusManager, Component => AWTComp}
+import collection.mutable.HashMap
+import java.awt.{Graphics2D, Dimension, Color, GradientPaint, Cursor, AWTEvent, Toolkit, KeyboardFocusManager, Font}
 import javax.swing._
-import org.jfree.chart.labels.PieToolTipGenerator
 import starling.pivot.view.swing.PivotTableType._
+import starling.pivot.HiddenType._
+import starling.browser.common._
+import starling.gui.pages.{PivotTablePageData, TableSelection, ConfigPanels}
+import org.jdesktop.animation.timing.{TimingTargetAdapter, Animator}
+import starling.browser.internal.StarlingBrowser
+import starling.browser.{RefreshInfo, PreviousPageData, Modifiers}
+import collection.immutable.{Map, List}
+import starling.utils.Log
 
 object PivotTableView {
   def createWithLayer(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSize:Dimension,
-                      configPanels:Option[ConfigPanels], extraFormatInfo:ExtraFormatInfo, edits:PivotEdits, embedded:Boolean = true) = {
+                      configPanel:(() => TableSelection)=>Option[ConfigPanels],
+                      extraFormatInfo:ExtraFormatInfo, edits:PivotEdits, embedded:Boolean = true,
+                      previousPageData:Option[PreviousPageData]) = {
     val viewUI = new PivotTableViewUI
-    val view = new PivotTableView(data, otherLayoutInfo, browserSize, configPanels, extraFormatInfo, embedded, viewUI, edits)
+    val view = new PivotTableView(data, otherLayoutInfo, browserSize, configPanel, extraFormatInfo, embedded, viewUI, edits, previousPageData)
     val layer = new SXLayerScala(view, viewUI)
     layer
   }
-
-  val RefreshFadeTime = 10000
 }
 
 case class FieldsChangedEvent(pivotFieldState:PivotFieldsState) extends Event
-case class TableDoubleClickEvent(filterFields:Seq[(Field,Selection)] , drillDownFields:Seq[(Field,Selection)], controlDown:Boolean) extends Event
-case class FullScreenSelectedEvent(data:String) extends Event
+case class TableDoubleClickEvent(filterFields:Seq[(Field,Selection)] , drillDownFields:Seq[(Field,Selection)], modifiers:Modifiers) extends Event
+case class FullScreenSelectedEvent(currentState:HiddenType, newState:HiddenType, currentFrozen:Boolean) extends Event
 case class ShowErrorsEvent(errors:Set[StackTrace]) extends Event
 case class PivotEditsUpdatedEvent(edits:PivotEdits, source:PivotJTable) extends Event
 case object SavePivotEdits extends Event
@@ -50,17 +54,18 @@ case class CollapsedStateUpdated(rowCollapsedState:Option[CollapsedState]=None, 
 case class GridSelectionEvent(selection:Option[(String,Boolean)]) extends Event
 
 class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSize0:Dimension,
-                     configPanels:Option[ConfigPanels], extraFormatInfo:ExtraFormatInfo, embedded:Boolean,
-                     viewUI:PivotTableViewUI, edits:PivotEdits)
-        extends MigPanel("insets 0, gap 0") {
+                     configPanel:(() => TableSelection)=>Option[ConfigPanels],
+                     extraFormatInfo:ExtraFormatInfo, embedded:Boolean,
+                     viewUI:PivotTableViewUI, edits:PivotEdits, previousPageData:Option[PreviousPageData])
+        extends MigPanel("hidemode 2, insets 0, gap 0") {
   private var browserSize = browserSize0
   private val model = new starling.pivot.model.PivotTableModel(data)
   private var reverseToolBarState:()=>Unit = null
 
-  private val fieldListComponent = new FieldListComponent(model, otherLayoutInfo, viewUI, this)
-  private val columnAndMeasureComponent = new ColumnAndMeasureComponent(model, otherLayoutInfo, viewUI, this)
-  private val filterComponent = new FilterComponent(model, otherLayoutInfo, viewUI, this)
-  private val rowComponent = new RowComponent(model, otherLayoutInfo, viewUI, this)
+  private val fieldListComponent = new FieldListComponent(model, otherLayoutInfo, viewUI, this, data.pivotTable.editableInfo)
+  private val columnAndMeasureComponent = new ColumnAndMeasureComponent(model, otherLayoutInfo, viewUI, this, data.pivotTable.editableInfo)
+  private val filterComponent = new FilterComponent(model, otherLayoutInfo, viewUI, this, data.pivotTable.editableInfo)
+  private val rowComponent = new RowComponent(model, otherLayoutInfo, viewUI, this, data.pivotTable.editableInfo)
 
   private val allDropTargets = List(fieldListComponent, columnAndMeasureComponent, filterComponent, rowComponent)
 
@@ -99,6 +104,7 @@ class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSiz
     }
     if (noEffect) {
       hideDropTargets()
+      resizeSizerPanel()
     }
     noEffect
   }
@@ -109,8 +115,10 @@ class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSiz
       model.publishFieldStateChange(field, 0, from, FieldList)
     } else {
       if (model.isMeasureField(field)) {
+        columnAndMeasureComponent.fieldGoingToBeAddedToTheEnd()
         model.publishFieldStateChange(field, model.columns.addDataField(field), from)
       } else {
+        rowComponent.fieldGoingToBeAddedToTheEnd()
         model.publishFieldStateChange(field, rowComponent.numberOfFields, from, Rows)
       }
     }
@@ -149,8 +157,8 @@ class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSiz
     def setComponent(comp:Component) {
       removeAll
       add(comp, "push, grow")
-      PivotTableView.this.revalidate
-      PivotTableView.this.repaint
+      PivotTableView.this.revalidate()
+      PivotTableView.this.repaint()
 
       minimumSize = new Dimension(preferredSize.width + 1, 10)
     }
@@ -168,7 +176,7 @@ class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSiz
       border = MatteBorder(0, 0, 0, 1, BorderColour)
       add(listHeaderLabel, "gapbefore 1lp")
 
-      override def paintComponent(g2:Graphics2D) = {
+      override def paintComponent(g2:Graphics2D) {
         val oldPaint = g2.getPaint
         g2.setPaint(new GradientPaint(0, 0, new Color(145, 181, 255), 0, size.height, new Color(96, 123, 183)))
         g2.fillRect(0, 0, size.width, size.height)
@@ -186,7 +194,7 @@ class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSiz
         listenTo(mouse.clicks)
       }
       val gradientPanel = new MigPanel("insets 0") {
-        override def paintComponent(g2:Graphics2D) = {
+        override def paintComponent(g2:Graphics2D) {
           val oldPaint = g2.getPaint
           g2.setPaint(new GradientPaint(0, 0, Color.WHITE, 0, size.height, new Color(179, 197, 231)))
           g2.fillRect(0, 0, size.width, size.height)
@@ -206,7 +214,7 @@ class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSiz
         add(search, "gapbefore 2lp, gapafter 2lp, align center center, push")
       }
       val textField = new TextField {
-        override protected def paintBorder(g:Graphics2D) = {
+        override protected def paintBorder(g:Graphics2D) {
           super.paintBorder(g)
           val width = size.width - 1
           val height = size.height - 2
@@ -227,8 +235,8 @@ class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSiz
       reactions += {
         case KeyPressed(`textField`, scala.swing.event.Key.Escape, _, _) => textField.text = ""
         case KeyReleased(`textField`, _, _, _) => {
-          // Ensure the fields aren't being displayed here.
-//          chooserPanel.resetImage
+          fieldListComponent.reset()
+          viewUI.resetImageProperties()
           fieldListComponent.setTextFilter(textField.text)
         }
         case MouseClicked(`clearImage`,_,_,_,_) => {
@@ -247,7 +255,7 @@ class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSiz
     add(chooserLayerScrollPane.peer, "grow, push")
     add(fakeVChooserScrollBarHolder.peer, "grow")
 
-    override def paintComponent(g:Graphics2D) = {
+    override def paintComponent(g:Graphics2D) {
       super.paintComponent(g)
       if (embedded) {
         g.setColor(BorderColour)
@@ -275,26 +283,26 @@ class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSiz
     val verticalButton = new VerticalButton(FieldListText) {
       setFocusable(false)
       addActionListener(new ActionListener {
-        def actionPerformed(e: ActionEvent) = {PivotTableView.this.publish(FieldPanelEvent(false))}
+        def actionPerformed(e: ActionEvent) {PivotTableView.this.publish(FieldPanelEvent(false))}
       })
     }
     add(verticalButton)
   }
 
   def getColScrollPos = columnAndMeasureScrollPane.peer.getViewport.getViewPosition.x
-  def setColScrollPos(pos:Int) = columnAndMeasureScrollPane.peer.getViewport.setViewPosition(new Point(pos,0))
+  def setColScrollPos(pos:Int) {columnAndMeasureScrollPane.peer.getViewport.setViewPosition(new Point(pos,0))}
   def getRSScrollPos = reportSpecificOptionsScrollPane.peer.getViewport.getViewPosition.x
-  def setRSScrollPos(pos:Int) = reportSpecificOptionsScrollPane.peer.getViewport.setViewPosition(new Point(pos,0))
+  def setRSScrollPos(pos:Int) {reportSpecificOptionsScrollPane.peer.getViewport.setViewPosition(new Point(pos,0))}
   def getMainScrollPos = if (otherLayoutInfo.frozen) {
     mainTableScrollPane.getViewport.getViewPosition
   } else {
     fullTableScrollPane.getViewport.getViewPosition
   }
-  def setMainScrollPos(pos:Point) = if (otherLayoutInfo.frozen) {
+  def setMainScrollPos(pos:Point) {if (otherLayoutInfo.frozen) {
     mainTableScrollPane.getViewport.setViewPosition(pos)
   } else {
     fullTableScrollPane.getViewport.setViewPosition(pos)
-  }
+  }}
   def getSelectedCells = {
     if (otherLayoutInfo.frozen) {
       Right(mainTable.getSelectedCells, rowHeaderTable.getSelectedCells, colHeaderTable.getSelectedCells)
@@ -351,7 +359,12 @@ class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSiz
 
   def updateFocusBasedOnCellSelection() {
     getSelectedCells match {
-      case Left(_) => fullTable.requestFocusInWindow()
+      case Left(_) => {
+        val r = fullTable.requestFocusInWindow()
+        if (!r) {
+          KeyboardFocusManager.getCurrentKeyboardFocusManager.focusNextComponent(fullTable)
+        }
+      }
       case Right((m,r,c)) => {
         if (m.nonEmpty) {
           mainTable.requestFocusInWindow()
@@ -378,90 +391,6 @@ class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSiz
     }
   }
 
-  private val formulaBar = new MigPanel("insets 0, gap 0") {
-    var expanded = false
-    val iconHolder = new MigPanel("insets 2lp 3lp 0 3lp") {
-      border = MatteBorder(1,0,1,0, BorderColour)
-      add(new Label {
-        icon = StarlingIcons.icon("/icons/16x16_info.png")
-      }, "push, ay top")
-    }
-
-    private val onelineText = new TextField {
-      editable = false
-      background = Color.WHITE
-      maximumSize = new Dimension(Integer.MAX_VALUE, preferredSize.height)
-    }
-
-    private val textHolder = new MigPanel("insets 0") {
-      def update(c:Component) {
-        removeAll
-        add(c, "push,grow")
-        revalidate
-        repaint
-      }
-    }
-
-    private val multilineText = new TextArea {
-      editable = false
-      background = Color.WHITE
-      lineWrap = true
-      wordWrap = true
-      rows = 3
-      border = CompoundBorder(LineBorder(BorderColour), EmptyBorder(2))
-      minimumSize = preferredSize
-    }
-
-    def setText(t:String, summary:Boolean) {
-      onelineText.text = t
-      onelineText.peer.setHorizontalAlignment(if (summary) SwingConstants.RIGHT else SwingConstants.LEFT)
-      multilineText.text = t
-      if (summary) {
-        if (expanded) shrink
-        expandButtonHolder.expandButton.visible = false
-      } else {
-        expandButtonHolder.expandButton.visible = true
-      }
-    }
-
-    def expand {
-      expanded = true
-      expandButtonHolder.expandButton.icon = StarlingIcons.icon("/icons/scroll_up.png")
-      textHolder.update(multilineText)
-    }
-
-    def shrink {
-      expanded = false
-      expandButtonHolder.expandButton.icon = StarlingIcons.icon("/icons/scroll_down.png")
-      textHolder.update(onelineText)
-    }
-
-    val expandButtonHolder = new MigPanel("insets 3lp 0 0 0") {
-      border = MatteBorder(1,0,1,0,BorderColour)
-      val expandButton = new Label {
-        icon = StarlingIcons.icon("/icons/scroll_down.png")
-        cursor = Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)
-        reactions += {
-          case scala.swing.event.MousePressed(_,_,_,_,_) => {
-            if (expanded) {
-              shrink
-            } else {
-              expand
-            }
-          }
-        }
-        listenTo(mouse.clicks)
-      }
-      add(expandButton, "push, ay top")
-    }
-
-    shrink
-
-    add(iconHolder, "grow")
-    add(textHolder, "push,grow")
-    add(expandButtonHolder, "grow")
-  }
-
   private val toolbarPanel = new MigPanel("insets 0") {
     visible = false
     if (embedded) {
@@ -478,42 +407,116 @@ class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSiz
 
   def setCustomToolBar(component:Component, reverseToolBarState:()=>Unit) {
     toolbarPanel.peer.add(component.peer, "pushx, growx")
-    toolbarPanel.visible = true
+    if (otherLayoutInfo.hiddenType != AllHidden) {
+      toolbarPanel.visible = true
+    }
     this.reverseToolBarState = reverseToolBarState
   }
 
   private val columnAndMeasureScrollPane = PivotTableViewHelper.generateScrollableFieldChooser(columnAndMeasureComponent, columnAndMeasureComponent, this)
 
-  /*private val rowFieldChooserInsets = if (otherLayoutInfo.frozen) {
-    "insets 1 1 1 1"
-  } else {
-    "insets 1 1 1 0"
-  }
-  private val rowFieldChooser = FieldChooser(new MigLayout(rowFieldChooserInsets + ", gap 0px"), layerUI, " Drop Row Fields Here",
-    true, Rows, model, layerUI, this, otherLayoutInfo)
-  private val rowFieldPanel = rowFieldChooser.getView
-  allFieldChoosers(Rows) = rowFieldPanel*/
   if (!otherLayoutInfo.frozen) {
     rowComponent.opaque = true
     rowComponent.background = PivotTableBackgroundColour
     rowComponent.border = BorderFactory.createMatteBorder(0,0,1,1,GuiUtils.BorderColour)
   }
-  val sizerPanel = new FlowPanel {
-    background = GuiUtils.PivotTableBackgroundColour
+  val sizerPanel = new FlowPanel {background = GuiUtils.PivotTableBackgroundColour}
+
+  private val previousPageData00:Option[(PivotTable, Map[(Int,Int),Float], Map[(Int,Int),Float], Map[(Int,Int),Float])] = previousPageData.map(ppd => {
+    val pivotTable = ppd.pageData.asInstanceOf[PivotTablePageData].pivotData.pivotTable
+    val refreshInfo = ppd.refreshInfo.get.asInstanceOf[PivotRefreshInfo]
+    val currentFractionMap = refreshInfo.cells.map(c => {(c.row, c.column) -> c.currentFraction}).toMap
+    val rowMap = refreshInfo.rowHeaderCells.map(c => ((c.row, c.column) -> c.currentFraction)).toMap
+    val columnMap = refreshInfo.columnHeaderCells.map(c => ((c.row, c.column) -> c.currentFraction)).toMap
+    (pivotTable, currentFractionMap, rowMap, columnMap)
+  })
+  private val previousPageData0 = previousPageData00.map(_._1)
+  private val viewConverter = PivotTableConverter(otherLayoutInfo, data.pivotTable, extraFormatInfo, data.pivotFieldsState, previousPageData0)
+  private val (rowHeaderData, colHeaderData, mainData, colUOMs, mainTableUpdateInfo, rowUpdateInfo, columnUpdateInfo) = Log.infoWithTime("Run pivot converter") {viewConverter.allTableCellsAndUOMs}
+
+  private val mainTableUpdateMap = new HashMap[(Int,Int),RefreshedCell]()
+  private val rowHeaderTableUpdateMap = new HashMap[(Int,Int),RefreshedCell]()
+  private val columnHeaderTableUpdateMap = new HashMap[(Int,Int),RefreshedCell]()
+  val (addRows, addCols) = if (otherLayoutInfo.frozen) (0,0) else (colHeaderData.length,rowHeaderData(0).length)
+  mainTableUpdateInfo.foreach(c => {
+    mainTableUpdateMap += ((c.row + addRows, c.column + addCols) -> RefreshedCell(c.currentFraction))
+  })
+  previousPageData00.map(tup => {
+    val mainMap = tup._2
+    mainMap.foreach{case ((row, column), f) => {
+      mainTableUpdateMap.getOrElseUpdate((row + addRows, column + addCols), RefreshedCell(f))
+    }}
+  })
+  if (otherLayoutInfo.frozen) {
+    rowUpdateInfo.foreach(c => {
+      rowHeaderTableUpdateMap += ((c.row, c.column) -> RefreshedCell(0.0f))
+    })
+    previousPageData00.map(tup => {
+      val rowMap = tup._3
+      rowMap.foreach{case (k, f) => {
+        rowHeaderTableUpdateMap.getOrElseUpdate(k, RefreshedCell(f))
+      }}
+    })
+    columnUpdateInfo.foreach(c => {
+      columnHeaderTableUpdateMap += ((c.row, c.column) -> RefreshedCell(0.0f))
+    })
+    previousPageData00.map(tup => {
+      val columnMap = tup._4
+      columnMap.foreach{case (k, f) => {
+        columnHeaderTableUpdateMap.getOrElseUpdate(k, RefreshedCell(f))
+      }}
+    })
+  } else {
+    rowUpdateInfo.foreach(c => {
+      mainTableUpdateMap += ((c.row + addRows, c.column) -> RefreshedCell(0.0f))
+    })
+    previousPageData00.map(tup => {
+      val rowMap = tup._3
+      rowMap.foreach{case ((row, column), f) => {
+        val r = mainTableUpdateMap.getOrElseUpdate((row + addRows, column), RefreshedCell(f))
+        mainTableUpdateMap += ((row + addRows, column) -> r)
+      }}
+    })
+    columnUpdateInfo.foreach(c => {
+      mainTableUpdateMap += ((c.row, c.column + addCols) -> RefreshedCell(0.0f))
+    })
+    previousPageData00.map(tup => {
+      val columnMap = tup._4
+      columnMap.foreach{case ((row, column), f) => {
+        val c = mainTableUpdateMap.getOrElseUpdate((row, column + addCols), RefreshedCell(f))
+        mainTableUpdateMap += ((row, column + addCols) -> c)
+      }}
+    })
   }
 
-  private val viewConverter = PivotTableConverter(otherLayoutInfo, data.pivotTable, extraFormatInfo, data.pivotFieldsState)
-  private val (rowHeaderData, colHeaderData, mainData, colUOMs) = viewConverter.allTableCellsAndUOMs
+  def refreshInfo = {
+    val (mainRefreshInfo, rowRefreshInfo, columnRefreshInfo) = if (otherLayoutInfo.frozen) {
+      val m = mainTableUpdateMap.filter{case (_,v) => ((v.currentFraction + currentFraction) < 1.0f)}.map{case ((row, column), rc) => {PivotCellRefreshInfo(row, column, rc.currentFraction + currentFraction)}}.toList
+      val r = rowHeaderTableUpdateMap.filter{case (_,v) => ((v.currentFraction + currentFraction) < 1.0f)}.map{case ((row,column), rc) => {PivotCellRefreshInfo(row, column, rc.currentFraction + currentFraction)}}.toList
+      val c = columnHeaderTableUpdateMap.filter{case (_,v) => ((v.currentFraction + currentFraction) < 1.0f)}.map{case ((row,column), rc) => {PivotCellRefreshInfo(row, column, rc.currentFraction + currentFraction)}}.toList
+      (m,r,c)
+    } else {
+      val (m0, rest) = mainTableUpdateMap.filter{case (_, v) => ((v.currentFraction + currentFraction) < 1.0f)}.partition{case ((row, column), _) => {
+        (row >= addRows) && (column >= addCols)
+      }}
 
-  private def resizeColumnHeaderAndMainTableColumns {
+      val (r0, c0) = rest.partition{case ((row,_), _) => row >= addRows}
+      val m = m0.map{case ((row, column), rc) => {PivotCellRefreshInfo(row - addRows, column - addCols, rc.currentFraction + currentFraction)}}.toList
+      val r = r0.map{case ((row, column), rc) => {PivotCellRefreshInfo(row - addRows, column, rc.currentFraction + currentFraction)}}.toList
+      val c = c0.map{case ((row, column), rc) => {PivotCellRefreshInfo(row, column - addCols, rc.currentFraction + currentFraction)}}.toList
+      (m,r,c)
+    }
+    PivotRefreshInfo(mainRefreshInfo, rowRefreshInfo, columnRefreshInfo)
+  }
+
+  private def resizeColumnHeaderAndMainTableColumns() {
     tableModelsHelper.resizeColumnHeaderAndMainTableColumns(fullTable, mainTable, colHeaderTable,
-      columnHeaderScrollPane, columnHeaderScrollPanePanel, mainTableScrollPane)
+      columnHeaderScrollPane, columnHeaderScrollPanePanel, mainTableScrollPane, otherLayoutInfo.columnDetails)
   }
 
-  private def resizeRowHeaderTableColumns {
-    tableModelsHelper.resizeRowHeaderColumns(fullTable, rowHeaderTable, rowComponent, data.pivotTable.rowFieldHeadingCount, sizerPanel, rowHeaderTableScrollPane)
-    contentPanel.revalidate()
-    contentPanel.repaint()
+  private def resizeRowHeaderTableColumns() {
+    tableModelsHelper.resizeRowHeaderColumns(fullTable, rowHeaderTable, rowComponent,
+      data.pivotTable.rowFieldHeadingCount, sizerPanel, rowHeaderTableScrollPane, otherLayoutInfo.columnDetails)
   }
 
   private def updatePivotEdits(edits0:PivotEdits, tableType:PivotTableType) {
@@ -527,13 +530,17 @@ class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSiz
   }
 
   private val tableModelsHelper = new PivotJTableModelHelper(mainData, data.pivotTable.editableInfo,
-    rowHeaderData, colHeaderData, colUOMs, resizeColumnHeaderAndMainTableColumns, resizeRowHeaderTableColumns,
+    rowHeaderData, colHeaderData, colUOMs, resizeColumnHeaderAndMainTableColumns(), resizeRowHeaderTableColumns(),
     data.pivotFieldsState, extraFormatInfo, edits, (edits0, tableType) => updatePivotEdits(edits0, tableType), data.pivotTable.formatInfo)
 
   def extraFormatInfoUpdated(extraFormatInfo:ExtraFormatInfo) {
     val newConverter = viewConverter.copy(extraFormatInfo = extraFormatInfo)
-    val (newRowData,newColumnData,newMainTableCells,_) = newConverter.allTableCellsAndUOMs
+    val (newRowData,newColumnData,newMainTableCells,_,_,_,_) = newConverter.allTableCellsAndUOMs
     tableModelsHelper.setData(newRowData, newColumnData, newMainTableCells, extraFormatInfo)
+    onEDT({
+      contentPanel.revalidate()
+      contentPanel.repaint()
+    })
   }
 
   // What I need to do here is loop through the row header table and decide which columns have collapsible elements. If a column does,
@@ -552,7 +559,7 @@ class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSiz
   }
 
   private var lastTableToHaveFocus:PivotJTable = null
-  def copyReportToClip {
+  def copyReportToClip() {
     val convertSelectedCellsToString = if (otherLayoutInfo.frozen) {
       if (lastTableToHaveFocus != null) {
         lastTableToHaveFocus.convertSelectedCellsToString
@@ -589,10 +596,10 @@ class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSiz
     publish(CollapsedStateUpdated(columnCollapsedState = Some(newCollapsedColState)))
   }
 
-  private val fullTable = new PivotJTable(tableModelsHelper.fullTableModel, this, model, indents)
-  private val mainTable = new PivotJTable(tableModelsHelper.mainTableModel, this, model, indents)
-  private val rowHeaderTable = new PivotJTable(tableModelsHelper.rowHeaderTableModel, this, model, indents)
-  private val colHeaderTable = new PivotJTable(tableModelsHelper.colHeaderTableModel, this, model, indents)
+  private val fullTable = new PivotJTable(tableModelsHelper.fullTableModel, this, model, indents, otherLayoutInfo.columnDetails)
+  private val mainTable = new PivotJTable(tableModelsHelper.mainTableModel, this, model, indents, otherLayoutInfo.columnDetails)
+  private val rowHeaderTable = new PivotJTable(tableModelsHelper.rowHeaderTableModel, this, model, indents, otherLayoutInfo.columnDetails)
+  private val colHeaderTable = new PivotJTable(tableModelsHelper.colHeaderTableModel, this, model, indents, otherLayoutInfo.columnDetails)
   private val allTables = List(fullTable, mainTable, rowHeaderTable, colHeaderTable)
   mainTable.addFocusListener(new FocusAdapter {override def focusGained(e:FocusEvent) {lastTableToHaveFocus = mainTable}})
   colHeaderTable.addFocusListener(new FocusAdapter {override def focusGained(e:FocusEvent) {lastTableToHaveFocus = colHeaderTable}})
@@ -603,12 +610,12 @@ class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSiz
   class TableSelectionListener(table: PivotJTable, otherTablesToClearSelectionOn:PivotJTable*) extends ListSelectionListener {
     var lastEvent : Option[GridSelectionEvent] = None
 
-    def valueChanged(e: ListSelectionEvent) = {
+    def valueChanged(e: ListSelectionEvent) {
       if (!ignoreSelectionEvents) { //skip events generated by clearing the selection on other tables
         ignoreSelectionEvents = true
         otherTablesToClearSelectionOn.foreach{ t => {
-          t.getColumnModel.getSelectionModel.clearSelection
-          t.getSelectionModel.clearSelection
+          t.getColumnModel.getSelectionModel.clearSelection()
+          t.getSelectionModel.clearSelection()
         } }
         ignoreSelectionEvents = false
         val selection:Option[(String,Boolean)] = table.getSelectedCells match {
@@ -631,7 +638,7 @@ class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSiz
               val sum = values.sum
               val count = values.size
               val average = sum / count
-              Some( (" Average: " + average + " | Count: " + count + " | Sum: " + sum, true) )
+              Some( ("Average: " + average + "     Count: " + count + "     Sum: " + sum, true) )
             }
           }
         }
@@ -666,14 +673,115 @@ class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSiz
     }.peer
     PivotTableViewHelper.generateScrollPaneHolders(layer)
   }
+  if (embedded && otherLayoutInfo.hiddenType == AllHidden) {
+    fullTableScrollPane.setBorder(MatteBorder(1,1,0,0,BorderColour))
+    fullHScrollBarHolder.border = MatteBorder(0,1,1,0,BorderColour)
+  }
 
-  def giveDefaultFocus {
+  def giveDefaultFocus() {
     if (otherLayoutInfo.frozen) {
       mainTable.requestFocusInWindow
     } else {
       fullTable.requestFocusInWindow
     }
   }
+
+  private val formulaBar = new MigPanel("insets 0, gap 0") {
+    var expanded = false
+    val iconHolder = new MigPanel("insets 2lp 3lp 0 3lp") {
+      border = MatteBorder(1,0,1,0, BorderColour)
+      add(new Label {
+        icon = StarlingIcons.icon("/icons/16x16_info.png")
+      }, "push, ay top")
+    }
+
+    private val onelineText = new TextField {
+      editable = false
+      background = Color.WHITE
+      maximumSize = new Dimension(Integer.MAX_VALUE, preferredSize.height)
+    }
+
+    private val textHolder = new MigPanel("insets 0") {
+      def update(c:Component) {
+        removeAll
+        add(c, "push,grow")
+        revalidate()
+        repaint()
+      }
+    }
+
+    private val multilineText = new TextArea {
+      editable = false
+      background = Color.WHITE
+      lineWrap = true
+      wordWrap = true
+      rows = 3
+      border = CompoundBorder(LineBorder(BorderColour), EmptyBorder(2))
+      minimumSize = preferredSize
+    }
+
+    def setText(t:String, summary:Boolean) {
+      onelineText.text = t
+      multilineText.text = t
+      if (summary) {
+        onelineText.foreground = GuiUtils.BlueTextColour
+        onelineText.peer.setHorizontalAlignment(SwingConstants.RIGHT)
+        if (expanded) shrink()
+        expandButtonHolder.visible = false
+      } else {
+        onelineText.foreground = Color.BLACK
+        onelineText.peer.setHorizontalAlignment(SwingConstants.LEFT)
+        expandButtonHolder.visible = true
+      }
+    }
+
+    def expand() {
+      expanded = true
+      expandButtonHolder.expandButton.icon = StarlingIcons.icon("/icons/scroll_up.png")
+      textHolder.update(multilineText)
+    }
+
+    def shrink() {
+      expanded = false
+      expandButtonHolder.expandButton.icon = StarlingIcons.icon("/icons/scroll_down.png")
+      textHolder.update(onelineText)
+    }
+
+    val expandButtonHolder = new MigPanel("insets 3lp 0 0 0") {
+      border = MatteBorder(1,0,1,1,BorderColour)
+      val expandButton = new Label {
+        icon = StarlingIcons.icon("/icons/scroll_down.png")
+        cursor = Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)
+        reactions += {
+          case scala.swing.event.MousePressed(_,_,_,_,_) => {
+            if (expanded) {
+              shrink()
+            } else {
+              expand()
+            }
+          }
+        }
+        listenTo(mouse.clicks)
+      }
+      add(expandButton, "push, ay top")
+    }
+
+    val infoPanel = new MigPanel("insets 2 0 0 0") {
+      border = MatteBorder(1,0,1,0,BorderColour)
+      def l(t:String) = new Label(t) {foreground = GuiUtils.BlueTextColour}
+      val rowAndColumnNumberLabel = l(" [" + fullTable.getRowCount.toString + " x " + fullTable.getColumnCount().toString + "] ")
+
+      add(rowAndColumnNumberLabel, "ay top")
+    }
+
+    shrink()
+
+    add(iconHolder, "grow")
+    add(textHolder, "push,grow")
+    add(expandButtonHolder, "grow, hidemode 3")
+    add(infoPanel, "grow")
+  }
+
 
   private val (mainTableScrollPane, mainHScrollBarHolder, mainVScrollBarHolder) = {
     PivotTableViewHelper.generateScrollPaneHolders(mainTable)
@@ -708,82 +816,51 @@ class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSiz
   columnHeaderHorizontalScrollBar.setPreferredSize(new Dimension(0, 0))
   columnHeaderHorizontalScrollBar.setModel(mainTableScrollPane.getHorizontalScrollBar.getModel)
 
-  tableModelsHelper.fullTableModel.fireTableStructureChanged
-  tableModelsHelper.resizeRowHeaderColumns(fullTable, rowHeaderTable, rowComponent, data.pivotTable.rowFieldHeadingCount, sizerPanel, rowHeaderTableScrollPane)
+  tableModelsHelper.fullTableModel.fireTableStructureChanged()
+  tableModelsHelper.resizeRowHeaderColumns(fullTable, rowHeaderTable, rowComponent,
+    data.pivotTable.rowFieldHeadingCount, sizerPanel, rowHeaderTableScrollPane, otherLayoutInfo.columnDetails)
   tableModelsHelper.resizeColumnHeaderAndMainTableColumns(fullTable, mainTable, colHeaderTable, columnHeaderScrollPane,
-    columnHeaderScrollPanePanel, mainTableScrollPane)
-  
-  def setRefreshState(rState:PivotTableViewRefreshState) {
-    // This is being set from previous component on refresh.
-    refreshMainMap ++= rState.refreshCellMainMap
-    refreshRowMap ++= rState.refreshCellRowMap
-    refreshColMap ++= rState.refreshCellColMap
+    columnHeaderScrollPanePanel, mainTableScrollPane, otherLayoutInfo.columnDetails)
+
+  allTables foreach Highlighters.applyHighlighters
+  if (otherLayoutInfo.frozen) {
+    mainTable.addHighlighter(new MapHighlighter(mainTableUpdateMap))
+    rowHeaderTable.addHighlighter(new MapHighlighter(rowHeaderTableUpdateMap))
+  } else {
+    fullTable.addHighlighter(new MapHighlighter(mainTableUpdateMap))
   }
 
-  def getRefreshState = {
-    def setFractions(map:HashMap[(Int, Int), RefreshedCell]) {
-      for (index <- map.keySet) {
-        val currentFraction = map(index).currentFraction + currentAnimatorFraction
-        map(index).currentFraction = currentFraction
-      }
+  private var currentFraction = 0.0f
+
+  private def startAnimation() {
+    val tablesAndUpdateMaps = if (otherLayoutInfo.frozen) {
+      List((mainTable, mainTableUpdateMap), (rowHeaderTable, rowHeaderTableUpdateMap), (colHeaderTable, columnHeaderTableUpdateMap))
+    } else {
+      List((fullTable, mainTableUpdateMap))
     }
-    setFractions(refreshRowMap)
-    setFractions(refreshColMap)
-    setFractions(refreshMainMap)
-
-    PivotTableViewRefreshState(refreshRowMap,refreshColMap,refreshMainMap)
-  }
-
-  def getOldPageData = AbstractPivotComponentOldPageData(tableModelsHelper.rowHeaderData0, tableModelsHelper.colHeaderData0, tableModelsHelper.data0)
-
-  private val refreshMainMap = new HashMap[(Int,Int),RefreshedCell]()
-  private val refreshRowMap = new HashMap[(Int,Int),RefreshedCell]()
-  private val refreshColMap = new HashMap[(Int,Int),RefreshedCell]()
-
-  private var currentAnimatorFraction = 0.0f
-  private val refreshMainHighlighter = new MapHighlighter(refreshMainMap)
-
-  private def startAnimation {
-    new Animator(PivotTableView.RefreshFadeTime, new TimingTargetAdapter {
-      override def timingEvent(fraction:Float) = {
-        currentAnimatorFraction = fraction
+    new Animator(StarlingBrowser.RefreshTime, new TimingTargetAdapter {
+      override def timingEvent(fraction:Float) {
+        currentFraction = fraction
         def doHighlighting(t:JXTable, map:HashMap[(Int,Int),RefreshedCell]) {
           for (index <- map.keySet) {
             val cell = map(index)
             val currentFraction = fraction + cell.currentFraction
             if (currentFraction < 1.0f) {
-              val c = new Color(87,206,255,math.round((1.0f-currentFraction) * 255))
+              val c = new Color(255,255,0, math.round((1.0f - currentFraction) * 128))
               cell.currentColour = c
-              t.repaint(t.getCellRect(index._2, index._1, false))
+              t.repaint(t.getCellRect(index._1, index._2, false))
             }
           }
         }
-        doHighlighting(fullTable, refreshMainMap)
+        tablesAndUpdateMaps.foreach{case (t,m) => doHighlighting(t, m)}
       }
-      override def end = {
-        refreshMainMap.clear
-        refreshRowMap.clear
-        refreshColMap.clear
+      override def end() {
+        mainTableUpdateMap.clear()
+        rowHeaderTableUpdateMap.clear()
+        columnHeaderTableUpdateMap.clear()
       }
-    }).start
+    }).start()
   }
-
-  def updateRefreshHighlighter(row:Set[(Int,Int)], col:Set[(Int,Int)], main:Set[(Int,Int)]) {
-    // This is being called once we have figured out what is different about this page compared to the last page.
-    for (index <- row) {
-      refreshRowMap(index) = RefreshedCell(index,0.0f)
-    }
-    for (index <- col) {
-      refreshColMap(index) = RefreshedCell(index,0.0f)
-    }
-    for (index <- main) {
-      refreshMainMap(index) = RefreshedCell(index,0.0f)
-    }
-    startAnimation
-  }
-
-  allTables foreach Highlighters.applyHighlighters
-//  fullTable.addHighlighter(refreshMainHighlighter)
 
   model.setPivotChangedListener((pivotFieldsState)=> {
     publish(FieldsChangedEvent(pivotFieldsState))
@@ -793,26 +870,31 @@ class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSiz
     new ReportSpecificOptions(data.reportSpecificOptions), model)
   val reportPanelsAvailable = reportSpecificPanels.nonEmpty
 
-  val fullScreenButtonPanel = new MigPanel("insets 0") {
-    if (reportPanelsAvailable) {
-      border = EmptyBorder
-    } else {
-      border = MatteBorder(0, 0, 1, 0, BorderColour)
-    }
-    opaque = false
-    background = new Color(0, 0, 0, 0)
-    val fullScreenButton = new ImageButton(StarlingIcons.im("/icons/16x16_view-fullscreen2.png"), gotoFullScreen) {
-      border = MatteBorder(0, 1, 1, 0, BorderColour)
-    }
-    add(fullScreenButton, "growy, ay top")
+  val iconToUse = if (otherLayoutInfo.hiddenType == AllHidden) StarlingIcons.im("/icons/16x15_out_fullscreen.png") else StarlingIcons.im("/icons/16x15_fullscreen.png")
+  val fullScreenButton = new ImageButton(iconToUse, gotoFullScreen()) {
+    border = MatteBorder(1,1,0,1,BorderColour)
   }
+  
   // I shouldn't be doing this here but if we don't have report specific panels, the filter field chooser should have a different border.
   if (reportPanelsAvailable) {
     filterComponent.border = MatteBorder(1,0,1,0,BorderColour)
   }
 
-  private def gotoFullScreen {
-    publish(FullScreenSelectedEvent(tableModelsHelper.tableAsString))
+  private def gotoFullScreen() {
+    val (newHiddenType, newFrozen) = if (otherLayoutInfo.hiddenType == AllHidden) {
+      val oht = otherLayoutInfo.oldHiddenType match {
+        case Some(ht) => ht
+        case None => NothingHidden
+      }
+      val of = otherLayoutInfo.oldFrozen match {
+        case Some(f) => f
+        case None => true
+      }
+      (oht, of)
+    } else {
+      (AllHidden, otherLayoutInfo.frozen)
+    }
+    publish(FullScreenSelectedEvent(otherLayoutInfo.hiddenType, newHiddenType, newFrozen))
   }
 
   val reportsPanel = new MigPanel("insets 0, gapx 0") {
@@ -833,12 +915,16 @@ class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSiz
 
   def pageResized(newSize:Dimension) {
     browserSize = newSize
+    resizeSizerPanel()
+  }
+
+  private def resizeSizerPanel() {
     if (!otherLayoutInfo.frozen) {
-      val extraWidth = if (otherLayoutInfo.fieldPanelCollapsed) hiddenFieldPanel.size.width else fieldPanel.size.width
-      if (extraWidth + rowComponent.size.width + columnAndMeasureComponent.preferredSize.width > (browserSize.width - browserSize.width / 4)) {
+      val extraWidth = if (otherLayoutInfo.hiddenType == FieldListHidden || otherLayoutInfo.hiddenType == AllHidden) hiddenFieldPanel.size.width else fieldPanel.size.width
+      if (extraWidth + rowComponent.preferredSize.width + columnAndMeasureComponent.preferredSize.width > (browserSize.width - browserSize.width / 4)) {
         sizerPanel.preferredSize = new Dimension(10, sizerPanel.size.height)
       } else {
-        sizerPanel.preferredSize = new Dimension(rowComponent.size.width-1, sizerPanel.size.height)
+        sizerPanel.preferredSize = new Dimension(rowComponent.preferredSize.width-1, sizerPanel.size.height)
       }
       revalidate()
     }
@@ -850,7 +936,7 @@ class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSiz
       columnAndMeasureScrollPane.minimumSize = new Dimension(10, columnAndMeasureComponent.preferredSize.height)
 
       if (!otherLayoutInfo.frozen && updateSizerPanel) {
-        val extraWidth = if (otherLayoutInfo.fieldPanelCollapsed) hiddenFieldPanel.preferredSize.width else fieldPanel.preferredSize.width
+        val extraWidth = if (otherLayoutInfo.hiddenType == FieldListHidden || otherLayoutInfo.hiddenType == AllHidden) hiddenFieldPanel.preferredSize.width else fieldPanel.preferredSize.width
         if (extraWidth + rowComponent.preferredSize.width + columnAndMeasureComponent.preferredSize.width > (browserSize.width - browserSize.width / 4)) {
           sizerPanel.preferredSize = new Dimension(10, sizerPanel.preferredSize.height)
         }
@@ -869,64 +955,84 @@ class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSiz
   }
 
   private val contentPanel = if (otherLayoutInfo.frozen) {
-    new MigPanel("insets 0", "[p]0[fill, grow]0[p]", extraRow + "[p]1[p]1[p]0[fill, grow]0[p]") {
+    new MigPanel("hidemode 2, insets 0", "[p]0[fill, grow]0[p]", extraRow + "[p]1[p]1[p]0[fill, grow]0[p]") {
       background = PivotTableBackgroundColour
 
       if (reportPanelsAvailable) {
-        add(rsScrollPaneHolder, "spanx, split, growx")
-        add(fullScreenButtonPanel, "gapleft 0, growy, wrap")
+        add(rsScrollPaneHolder, "spanx, growx, wrap")
         add(filterComponent, "spanx, split, growx, wrap")
       } else {
-        add(filterComponent, "spanx, split, growx")
-        add(fullScreenButtonPanel, "gapleft 0, growy, wrap")
+        add(filterComponent, "spanx, growx, wrap")
       }
       add(rowComponent, "spany 2, growx, ay bottom, ax left")
       add(columnAndMeasureScrollPane, "spanx, growx, wrap")
       add(columnHeaderScrollPanePanel, "skip 1, pushx, growx")
+
+      add(fullScreenButton, "flowy, split, spany 2, gapbottom 0")
+      add(mainVScrollBarHolder, "growy, wrap")
       
-      add(mainVScrollBarHolder, "spany 2, growy, wrap")
       add(rowHeaderTableScrollPanePanel, "push, grow")
       add(mainTableScrollPane, "wrap")
-      add(mainHScrollBarHolder, "growx, span2")
+      add(mainHScrollBarHolder, "growx, spanx 2")
     }
   } else {
-    new MigPanel("insets 0", "[p]0[fill, grow]0[p]", extraRow + "[p]1[p]1[fill, grow]0[p]") {
+    val gap = if (otherLayoutInfo.hiddenType == AllHidden) "0" else "1"
+    new MigPanel("hidemode 2, insets 0", "[p]0[fill, grow]0[p]", extraRow + "[p]" + gap + "[p]" + gap + "[fill, grow]0[p]") {
       background = PivotTableBackgroundColour
 
       if (reportPanelsAvailable) {
-        add(rsScrollPaneHolder, "spanx, split, growx")
-        add(fullScreenButtonPanel, "gapleft 0, growy, wrap")
+        add(rsScrollPaneHolder, "spanx, growx, wrap")
         add(filterComponent, "spanx, split, growx, wrap")
       } else {
-        add(filterComponent, "spanx, split, growx")
-        add(fullScreenButtonPanel, "gapleft 0, growy, wrap")
+        add(filterComponent, "spanx, growx, wrap")
       }
       add(sizerPanel, "split, spanx, gapright 0")
       add(columnAndMeasureScrollPane, "growx, wrap")
       add(fullTableScrollPane, "push, grow, spanx 2")
+
+      add(fullScreenButton, "flowy, split, gapbottom 0")
       add(fullVScrollBarHolder, "growy, wrap")
+
       add(fullHScrollBarHolder, "growx, spanx 2")
     }
   }
 
-  if (otherLayoutInfo.fieldPanelCollapsed) {
+  if (otherLayoutInfo.hiddenType == FieldListHidden) {
     fieldChooserPanelHolder.setComponent(hiddenFieldPanel)
   } else {
     fieldChooserPanelHolder.setComponent(fieldPanel)
   }
 
-  private val configTabbedPane = configPanels match {
+  val actualConfigPanel = configPanel(selection _)
+
+  private val configTabbedPane = actualConfigPanel match {
     case None => None
     case Some(cp) => Some(new NTabbedPane(cp, true))
   }
 
   add(fieldChooserPanelHolder, "spany, growy")
-  configPanels.foreach(cp => {
+  actualConfigPanel.foreach(cp => {
     add(configTabbedPane.get, "grow, wrap")
   })
   add(toolbarPanel, "growx, wrap")
   add(formulaBar, "growx, wrap")
   add(contentPanel, "push, grow")
+
+  if (otherLayoutInfo.hiddenType == AllHidden) {
+    fieldChooserPanelHolder.visible = false
+
+    sizerPanel.visible = false
+
+    configTabbedPane.foreach(_.visible = false)
+
+    rsScrollPaneHolder.visible = false
+    filterComponent.visible = false
+    columnAndMeasureScrollPane.visible = false
+    columnHeaderScrollPanePanel.visible = false
+
+    toolbarPanel.visible = false
+    formulaBar.visible = false
+  }
 
   def resetDynamicState() {
     viewUI.resetImageProperties()
@@ -939,23 +1045,27 @@ class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSiz
     hideDropTargets()
     allDropTargets.foreach(_.reset())
     if (toolbarPanel.visible) reverseToolBarState()
-    configPanels.foreach(_.revert())
+    actualConfigPanel.foreach(_.revert())
     reportSpecificPanels.foreach(_.resetButton)
+    resizeSizerPanel()
   }
 
-  def selection = if (otherLayoutInfo.frozen) {
-    (filtersWithSome, mainTable.getSelectedCells.map(tup => {
-      val (row,col) = tup
-      tableModelsHelper.mainTableModel.mapCellToFields(row, col)
-    }))
-  } else {
-    (filtersWithSome, fullTable.getSelectedCells.map(tup => {
-      val (row,col) = tup
-      tableModelsHelper.fullTableModel.mapCellToFields(row, col)
-    }))
+  def selection = {
+    val r = if (otherLayoutInfo.frozen) {
+      (filtersWithSome, mainTable.getSelectedCells.map(tup => {
+        val (row,col) = tup
+        tableModelsHelper.mainTableModel.mapCellToFields(row, col)
+      }))
+    } else {
+      (filtersWithSome, fullTable.getSelectedCells.map(tup => {
+        val (row,col) = tup
+        tableModelsHelper.fullTableModel.mapCellToFields(row, col)
+      }))
+    }
+    TableSelection(r)
   }
 
-  configPanels match {
+  actualConfigPanel match {
     case None =>
     case Some(cp) => {
       val action = cp.extraComponentAction
@@ -963,16 +1073,19 @@ class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSiz
       peer.getActionMap.put(action.title, action.peer)
     }
   }
+  startAnimation()
 }
 
-case class RefreshedCell(index:(Int,Int), var currentFraction:Float) {
-  var currentColour = new Color(0,0,255,128)
+case class RefreshedCell(var currentFraction:Float) {
+  var currentColour = new Color(255,255,0,128)
 }
-case class PivotTableViewRefreshState(refreshCellRowMap:HashMap[(Int,Int),RefreshedCell], refreshCellColMap:HashMap[(Int,Int),RefreshedCell], refreshCellMainMap:HashMap[(Int,Int),RefreshedCell]) extends ComponentRefreshState
-case class AbstractPivotComponentOldPageData(rowData:Array[Array[AxisCell]], colData:Array[Array[AxisCell]], mainData:Array[Array[TableCell]]) extends OldPageData
 
 class MapHighlighter(map:HashMap[(Int,Int),RefreshedCell]) extends UpdatingBackgroundColourHighlighter(new HighlightPredicate {
   def isHighlighted(renderer:java.awt.Component, adapter:org.jdesktop.swingx.decorator.ComponentAdapter) = {
-    map.keySet.contains((adapter.column,adapter.row))
+    map.keySet.contains((adapter.row,adapter.column))
   }
 }, map)
+
+case class PivotCellRefreshInfo(row:Int, column:Int, currentFraction:Float)
+case class PivotRefreshInfo(cells:List[PivotCellRefreshInfo], rowHeaderCells:List[PivotCellRefreshInfo],
+                            columnHeaderCells:List[PivotCellRefreshInfo]) extends RefreshInfo

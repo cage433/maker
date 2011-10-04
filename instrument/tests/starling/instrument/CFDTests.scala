@@ -5,7 +5,7 @@ import org.testng.Assert._
 import starling.quantity.UOM._
 import starling.quantity.Quantity
 import starling.utils.ScalaTestUtils._
-import starling.utils.QuantityTestUtils._
+import starling.quantity.utils.QuantityTestUtils._
 import starling.market._
 import starling.market.Index._
 import rules.CommonPricingRule
@@ -14,9 +14,10 @@ import starling.market.formula._
 import starling.calendar.BrentMonth
 import starling.daterange._
 import starling.daterange.Day._
-import starling.utils.{AtomicDatumKeyUtils, StarlingTest}
+import starling.instrument.utils._
+import starling.utils.{StarlingTest}
 
-class CFDTests extends TestMarketSpec {
+class CFDTests extends TestMarketTest {
   val platts_brent = Index.publishedIndexFromName("Platts Brent (April)")
   val spreadIndex = BrentCFDSpreadIndex.indexFor(new BrentMonth(4))
 
@@ -67,8 +68,8 @@ class CFDTests extends TestMarketSpec {
       def applyOrMatchError(key: AtomicDatumKey) = key match {
         case ForwardPriceKey(`market1`, _, _) => fwdPrice1
         case ForwardPriceKey(`market2`, _, _) => fwdPrice2
-        case FixingKey(`index1`, _) => fixed1
-        case FixingKey(`index2`, _) => fixed2
+        case IndexFixingKey(`index1`, _) => fixed1
+        case IndexFixingKey(`index2`, _) => fixed2
       }
     })
   }

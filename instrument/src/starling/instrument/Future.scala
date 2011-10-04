@@ -19,35 +19,31 @@ case class Future(market: FuturesMarket, delivery: DateRange, strike: Quantity, 
 
   def explanation(env : Environment) : NamedQuantity = {
     val namedEnv = env.withNaming()
-    val F = SimpleNamedQuantity("F", convertPrice(namedEnv, namedEnv.forwardPrice(market, delivery)))
+    val F = SimpleNamedQuantity("F", underlyingPrice(namedEnv))
     (F - strike.named("K")) * volume.named("Volume")
   }
   
   def *(x : Double) = copy(volume = volume * x)
 
-  def assets(env : Environment) = if (env.marketDay < lastTradingDay.endOfDay) {
-    val F = convertPrice(env, env.forwardPrice(market, delivery))
+  def underlyingPrice(env : Environment) : Quantity = {
+    val F_InMarketCurrency = if (lastTradingDay.endOfDay <= env.marketDay) {
+      env.priceOnLastTradingDay(market, delivery)
+    } else {
+      env.forwardPrice(market, delivery)
+    }
+
+    convertPriceToStrikeCurrency(env, F_InMarketCurrency)
+  }
+
+  def assets(env: Environment) = {
+    val F = underlyingPrice(env)
     Assets(
       Asset.estimatedCash(env.marketDay.day, F * volume, F * volume),
       Asset.estimatedCash(env.marketDay.day, -strike * volume, -strike * volume)
     )
-	} else {
-    //The cash for futures after the last trading day is probably wrong
-    //as the settlement day is market day
-    //maybe we should try to create the correct margining payments using the fixings?
-    //the trouble is the trade day becomes a valuation parameter
-    val index = Index.futuresMarketToFuturesFrontPeriodIndexMap.get(market) match {
-      case Some(i) => i
-      case _ => FuturesFrontPeriodIndex(market.name + " front period", None, market, 0, 1, None)
-    }
-    val fixings = convertPrice(env, env.indexFixing(index, lastTradingDay))
-    Assets(
-      Asset.estimatedCash(env.marketDay.day, fixings * volume, env),
-      Asset.estimatedCash(env.marketDay.day, -strike * volume, env) //strike is always zero because of the utps
-    )
   }
 
-  private def convertPrice(env: Environment, price: Quantity) = {
+  private def convertPriceToStrikeCurrency(env: Environment, price: Quantity) = {
     var result = price
     if (market.currency != valuationCCY){
       // For cross currency futures I don't think we should ne using a forward price, i.e. multiplying by the forward fx rate,

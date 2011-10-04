@@ -1,7 +1,6 @@
 package starling.instrument
 
 
-import starling.quantity.{Quantity, UOM}
 import starling.quantity.UOM.{USD, BBL}
 import starling.richdb.RichInstrumentResultSetRow
 import starling.quantity.Quantity._
@@ -15,6 +14,7 @@ import starling.utils.ImplicitConversions._
 import starling.models.DefaultRiskParameters
 import starling.utils.CollectionUtils
 import starling.instrument.physical.PhysicalMetalAssignment
+import starling.quantity.{NamedQuantity, Quantity, UOM}
 
 trait AsUtpPortfolio {
   def asUtpPortfolio(tradeDay:Day): UTP_Portfolio
@@ -36,6 +36,7 @@ object InstrumentType {
 
   val types = List[InstrumentType[_ <: UTP]](
     Future,
+    TAS,
     CommoditySwap,
     SwapCalendarSpread,
     FuturesOption,
@@ -77,7 +78,13 @@ object InstrumentType {
     ("Estimated Delivery", classOf[Day]),
     ("Fixation Date", classOf[Day]),
     ("Is Average Fixation", classOf[String]),
-    ("Cash Instrument Type", classOf[String])
+    ("Cash Instrument Type", classOf[String]),
+    ("Premium", classOf[String]),
+    ("Quotation Period", classOf[String]),
+    ("Pricing Spec Name", classOf[String]),
+    ("Index", classOf[String]),
+    ("Commodity", classOf[String]),
+    ("Exchange", classOf[FuturesExchange])
   )
   val fields = fieldsWithType.map(_._1)
   val lowercaseNoSpaceFields = fieldsWithType.map(_._1.toLowerCase.replaceAll(" ", ""))
@@ -88,7 +95,27 @@ object InstrumentType {
 trait Instrument extends Ordered[Instrument] with Greeks with PnlExplanation {
 
   def assets(env:Environment):Assets
-  
+
+  // Return a tree structure describing how mtm was calculated
+  def explain(env: Environment, ccy: UOM): NamedQuantity = {
+    val explained = if (ccy == valuationCCY)
+      explanation(env)
+    else
+      explanation(env) * (if (ccy == valuationCCY) new Quantity(1.0) else env.withNaming().spotFXRate(ccy, valuationCCY).named("Spot FX"))
+
+    assert(explained.isAlmostEqual(mtm(env), 1e-6), "Explanation not the same as the mtm: " + (explained, mtm(env)))
+    explained
+  }
+
+  def explain(env: Environment): NamedQuantity = explain(env, USD)
+
+  /**
+   * Explains the valuation of this instrument.
+   *
+   * Not to be called directly, that's why it's protected, call 'explain' above.
+   */
+  protected def explanation(env: Environment): NamedQuantity
+
   /** the MTM value of the given instrument using the environment curve data
   */
   def mtm(env : Environment):Quantity = assets(env).mtm(env, valuationCCY)
@@ -134,86 +161,6 @@ trait Instrument extends Ordered[Instrument] with Greeks with PnlExplanation {
     this.toString.compare(rhs.toString)
   }
 
-  /** Returns the relevant VaR risk factors as of the given market day, when the deal is
-   * valued in the given currency
-   * <p>
-   */
-   //TODO [21 Oct 2009] This kind of sucks - either
-   //TODO [21 Oct 2009]       a) Lose atomicMarketDataKeys and put this method in the Instrument sub classes
-   //TODO [21 Oct 2009]       b) pass the request to the key itself
-  def riskFactors(env: Environment, ccy : UOM) : Set[RiskFactor] = {
-    val marketDayAndTime : DayAndTime = env.marketDay
-    val marketDay: Day = marketDayAndTime.day
-
-    val rfs= atomicMarketDataKeys(env.marketDay).flatMap{
-      key => key match {
-        case ForwardPriceKey(market, dateRange, _) => market.priceRiskFactor(marketDayAndTime, dateRange)
-        case USDFXRateKey(currency) if currency != ccy => Some(SpotFXRiskFactor(currency))
-        case OilAtmVolAtomicDatumKey(market, _, period, _) => Some(VolatilityRiskFactor(market, period))
-        case EquityPriceKey(ric) => Some(EquityRiskFactor(ric))
-        case BradyMetalVolAtomicDatumKey(market, period) => Some(VolatilityRiskFactor(market, period))
-
-        // Put this back when we find a decent source of historic interest rates
-//        case DiscountRateKey(currency, day) => {
-//          val firstDay = marketDayAndTime.timeOfDay match {
-//            case TimeOfDay.EndOfDay => marketDay + 1
-//            case TimeOfDay.StartOfDay => marketDay
-//          }
-//          if (day > firstDay)
-//            Some(ForwardRateRiskFactor(currency, firstDay - marketDay, day - marketDay))
-//          else
-//            None
-//        }
-        
-        case _ => None
-      }
-    }
-    Set.empty ++ rfs
-  }
-
-  def varRiskFactors(env : Environment, ccy : UOM) : Set[VaRRiskFactor] = riskFactors(env, ccy).flatMap{
-    case vrf : VaRRiskFactor => Some(vrf)
-    case _ => None
-  }
-  /**
-   * An instrument may have many risk factors wrt the same market/type - e.g. daily
-   * LME Lead price risk factors. This merges these so that each market/type
-   * is represented by a single risk factor
-   */
-  private def mergedVaRRiskFactors(env: Environment, valCCY : UOM) : Set[VaRRiskFactor] = {
-    var set = Set[VaRRiskFactor]()
-    varRiskFactors(env, valCCY).foreach{
-      rf => set.find{case rf_ => rf_.riskFactorType == rf.riskFactorType} match {
-        case Some(rf_) => {
-          set = set - rf_
-          set = set + (rf merge rf_)
-        }
-        case None => {
-          set = set + rf
-        }
-      }
-    }
-    set
-  }
-  
-  def riskFactorDerivative(envs : ShiftedEnvironments, valuationCurrency : UOM) : Quantity = {
-    val mtmUp = mtm(envs.upEnv, valuationCurrency)
-    val mtmDown = mtm(envs.downEnv, valuationCurrency)
-    (mtmUp - mtmDown) / (envs.dP *  2.0)
-  }
-
-  def riskFactorDerivative(env : Environment, rf : RiskFactor, valuationCurrency : UOM) : Quantity = {
-    riskFactorDerivative(rf.shiftedEnvironments(env), valuationCurrency)
-  }
-
-  def riskFactorPosition(envs : ShiftedEnvironments, rf : RiskFactor, valCCY : UOM) : Quantity = {
-    val delta = riskFactorDerivative(envs, valCCY)
-    if(delta.isZero) {
-      0 (rf.riskFactorType.positionUOM)
-    } else {
-      riskFactorPosition(envs, rf, delta, valCCY)
-    }
-  }
 
   /**
    * calculate position, or volume of standard hedging instrument. Kind of sucks that
@@ -260,94 +207,6 @@ trait Instrument extends Ordered[Instrument] with Greeks with PnlExplanation {
     hedge
   }
 
-  def riskFactorPosition(envs : ShiftedEnvironments, rf : RiskFactor, delta: Quantity, valCCY : UOM) : Quantity = {
-    val env = envs.env
-    val marketDay = env.marketDay.day
-    val hedgingInstrument:HedgingTradeable = rf match {
-      case ForwardPriceRiskFactor(market, nDaysToStart, nDaysToEnd)
-      => market match {
-        case f: FuturesMarket => Future(f, f.nthPeriod(env.marketDay, nDaysToEnd), 0(market.priceUOM), 1(market.uom))
-      }
-      case EquityRiskFactor(ric) => NetEquityPosition(ric, Quantity(1, UOM.SHARE))
-      case SpotFXRiskFactor(ccy) => new FXForward(env.spotFXRate(USD, ccy), 1.0 (ccy), marketDay)
-    }
-
-    val hedgeDelta = hedgingInstrument.asUtpPortfolio().riskFactorDerivative(envs, valCCY)
-    val hedgeRatio = if (delta.isZero && hedgeDelta.isZero) 0.0 else (delta / hedgeDelta).checkedValue(UOM.SCALAR)
-    hedgeRatio (rf.riskFactorType.positionUOM)
-  }
-  def riskFactorPosition(env : Environment, rf : RiskFactor, valCCY : UOM) : Quantity = {
-    riskFactorPosition(rf.shiftedEnvironments(env), rf, valCCY)
-  }
-
-  /**
-   * Total position wrt to some risk factor type, i.e. parallel shift delta wrt WTI prices,
-   * or parallel shift vega wrt WTI vols
-   */
-  // TODO [20 May 2010] distinguish between Vol and Prices - are they the same RiskFactorMarket?
-  // TODO [20 May 2010] ensure maximalRiskFactors returns a single risk factor per market/risk type
-  def riskFactorTypePosition(env : Environment, rfType : RiskFactorType, valCCY : UOM) : Quantity = {
-    mergedVaRRiskFactors(env, valCCY).find(_.riskFactorType == rfType) match {
-      case Some(rf) => riskFactorPosition(env, rf, valCCY)
-      case None => 0 (rfType.positionUOM)
-    }
-  }
-
-  /**
-   * Returns a map of market -> parallel shift position wrt that market
-   */
-  def parallelShiftPositions(env : Environment) : MarketPositions = {
-    (new MarketPositions /: mergedVaRRiskFactors(env, USD).map{ rf => rf.riskFactorType -> riskFactorPosition(env, rf, USD)}) (_+_)
-  }
-
-  def usdDeltaPosition(env : Environment, riskFactor : VaRRiskFactor) : Quantity = {
-    usdDeltaPosition(env, riskFactor, riskFactorPosition(env, riskFactor, USD))
-  }
-
-  def usdDeltaPosition(env : Environment, riskFactor : VaRRiskFactor, delta: Quantity) : Quantity = {
-    val naturalCurrencyDeltaPosition = delta * riskFactor.price(env)
-    val spotFXRate = env.spotFXRate(USD, naturalCurrencyDeltaPosition.uom)
-    naturalCurrencyDeltaPosition * spotFXRate
-  }
-
-  def oilBarrelPosition(env: Environment, rf: RiskFactor): Quantity = {
-    val position = riskFactorPosition(env, rf, valuationCCY)
-    oilBarrelPosition(rf, position)
-  }
-
-  def oilBarrelPosition(rf: RiskFactor, position: Quantity): Quantity = {
-    rf match {
-      case ForwardPriceRiskFactor(market, _, _) if market.commodity.isInstanceOf[OilCommodity] =>
-        market.convertUOM(position, BBL)
-      case _ => Quantity.NULL
-    }
-  }
-  def oilBarrelPosition(env: Environment): Quantity = {
-    Quantity.sum(mergedVaRRiskFactors(env, valuationCCY).toList.map(oilBarrelPosition(env, _)))
-  }
-
-  def commodityFuturesPosition(env : Environment, rf : RiskFactor) : Quantity = {
-    val position = riskFactorPosition(env, rf, valuationCCY)
-    commodityFuturesPosition(rf, position)
-  }
-
-  def commodityFuturesPosition(rf: RiskFactor, position: Quantity): Quantity = {
-    rf match {
-      case prf : ForwardPriceRiskFactor => {
-         prf.market.commodity.toStandardFuturesLots(position)(prf.market.conversions)
-      }
-      case _ => Quantity.NULL
-    }
-  }
-
-  /**
-   *  Calculates the sum of delta * price, converted to USD, for all the risk factors of this instrument
-   * Used to produce 'signed' VaR for Lawrence, who wants to see VaR with the same sign as this number,
-   * rather than always being negative
-   */
-  def usdDeltaPosition(env : Environment) : Quantity = {
-    Quantity.sum(varRiskFactors(env, USD).toList.map(usdDeltaPosition(env, _)))
-  }
 
   def instrumentVolume : Quantity = {
     throw new UnsupportedOperationException
@@ -379,6 +238,8 @@ trait Instrument extends Ordered[Instrument] with Greeks with PnlExplanation {
 
 
 case class CompositeInstrument(insts : Seq[Instrument]) extends Instrument {
+
+  def explanation(env: Environment) = Quantity.sumNamed(insts.map(_.explain(env)))
 
   def valuationCCY = {
     val ccys : Set[UOM] = Set.empty ++ insts.map(_.valuationCCY)

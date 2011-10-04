@@ -1,16 +1,15 @@
 package starling.gui
 
-import custom.{MonthViewCancelEvent, MonthViewCommitEvent, SXMonthView}
 import swing._
 import event._
-import starling.pivot.view.swing.{FixedImagePanel, MigPanel}
 import java.awt.image.BufferedImage
 import swing.Swing._
 import javax.swing.JPopupMenu
 import starling.daterange._
 import java.awt.{Dimension, KeyboardFocusManager, Cursor, Color}
+import starling.browser.common._
 
-class DayChooser(day0:Day = Day.today(), enableFlags:Boolean = true, showDay:Boolean=false) extends MigPanel("insets 0", "[p]0[p]") {
+class DayChooser(day0:Day = Day.today, enableFlags:Boolean = true, showDay:Boolean=false) extends MigPanel("insets 0", "[p]0[p]") {
 
   val enabledBorderColour = GuiUtils.BorderColour
   val disabledBorderColour = GuiUtils.DisabledBorderColour
@@ -59,7 +58,7 @@ class DayChooser(day0:Day = Day.today(), enableFlags:Boolean = true, showDay:Boo
     val monthView = new SXMonthView {
       traversable = true
       preferredColumnCount = 2
-      val today = Day.today()
+      val today = Day.today
       if (showPreviousMonth) {
         firstDisplayedDay = Month(today.year, today.month).previous.firstDay
       }
@@ -70,7 +69,7 @@ class DayChooser(day0:Day = Day.today(), enableFlags:Boolean = true, showDay:Boo
     }
 
     private def showPreviousMonth = {
-      val today = Day.today()
+      val today = Day.today
       today.dayNumber < 15
     }
 
@@ -104,6 +103,7 @@ class DayChooser(day0:Day = Day.today(), enableFlags:Boolean = true, showDay:Boo
         } else {
           0
         }
+        monthView.firstDisplayedDay = day
         popupMenu.show(peer, xPos, size.height-1)
         onEDT({
           KeyboardFocusManager.getCurrentKeyboardFocusManager.focusNextComponent(popupMenu)

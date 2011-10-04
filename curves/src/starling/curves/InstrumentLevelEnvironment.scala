@@ -27,9 +27,12 @@ trait InstrumentLevelEnvironment extends AtomicEnvironmentHelper {
   def apply(key : AtomicDatumKey) : Any
   def marketDay() : DayAndTime
   def discount(ccy : UOM, day : Day, ignoreShiftsIfPermitted : Boolean = false) : Quantity
-  def fixing(index : SingleIndex, fixingDay : Day) : Quantity
+  def fixing(underlying: SingleIndex, fixingDay : Day) : Quantity
+  def priceOnDay(underlying: FuturesMarket, period: DateRange, fixingDay: Day) : Quantity
+  def priceOnLastTradingDay(underlying: FuturesMarket, period: DateRange) : Quantity
+  def indexForwardPrice(underlying: SingleIndex, observationDay : Day, ignoreShiftsIfPermitted : Boolean = false) : Quantity
+  def forwardPrice(underlying: CommodityMarket, period: DateRange, ignoreShiftsIfPermitted : Boolean = false) : Quantity
 
-  def indexForwardPrice(index : SingleIndex, observationDay : Day, ignoreShiftsIfPermitted : Boolean = false) : Quantity
   def interpolatedVol(market : HasImpliedVol, period : DateRange, exerciseDay : Option[Day], strike : Option[Quantity], isIndexVol : Boolean, forwardPrice: Option[Quantity]) : Percentage
   def spreadStdDev(market: FuturesMarket, period: Period, exerciseDay: Day, strike: Quantity) : Quantity
   def indexVol(index : SingleIndex, observationDay : Day, strike : Quantity, averagePrice : Quantity) : Percentage
@@ -54,12 +57,19 @@ class DefaultInstrumentLevelEnvironment(underlyingAtomicEnv : AtomicEnvironment)
   def shiftAtomicEnv(fn : AtomicEnvironment => AtomicEnvironment) = copy(fn(atomicEnv))
   def marketDay() : DayAndTime = atomicEnv().marketDay
   def discount(ccy : UOM, day : Day, ignoreShiftsIfPermitted : Boolean = false) : Quantity = atomicEnv.quantity(DiscountRateKey(ccy, day, ignoreShiftsIfPermitted))
-  def fixing(index : SingleIndex, fixingDay : Day) : Quantity = {
-    index.fixing(this, fixingDay)
+  def fixing(underlying: SingleIndex, fixingDay : Day) : Quantity = {
+    underlying.fixing(this, fixingDay)
+  }
+  def priceOnDay(market: FuturesMarket, period: DateRange, fixingDay: Day) : Quantity = market.historicPrice(this, fixingDay, period)
+
+  def priceOnLastTradingDay(market: FuturesMarket, period: DateRange) = priceOnDay(market, period, market.lastTradingDay(period))
+
+  def indexForwardPrice(underlying: SingleIndex, observationDay : Day, ignoreShiftsIfPermitted : Boolean = false) : Quantity = {
+    underlying.forwardPriceOnObservationDay(this, observationDay, ignoreShiftsIfPermitted)
   }
 
-  def indexForwardPrice(index : SingleIndex, observationDay : Day, ignoreShiftsIfPermitted : Boolean = false) : Quantity = {
-    index.forwardPrice(this, observationDay, ignoreShiftsIfPermitted)
+  def forwardPrice(underlying: CommodityMarket, period: DateRange, ignoreShiftsIfPermitted: Boolean) = {
+    underlying.forwardPrice(this, period, ignoreShiftsIfPermitted)
   }
 
   def spreadPrice(market : FuturesMarket, period: Period) = {
@@ -73,7 +83,7 @@ class DefaultInstrumentLevelEnvironment(underlyingAtomicEnv : AtomicEnvironment)
     }
   }
   /**
-   * Having to pass in the boolean flag 'inIndexVol' is a bit of a hack. The reason it is used is so that a key recording environment can catch
+   * Having to pass in the boolean flag 'isIndexVol' is a bit of a hack. The reason it is used is so that a key recording environment can catch
    * whether the vol we are getting is then used to create a swap vol, or a simple futures/forward vol. This is needed for reporting
    */
   def interpolatedVol(market : HasImpliedVol, period : DateRange, exerciseDay : Option[Day], strike : Option[Quantity], isIndexVol : Boolean, forwardPrice: Option[Quantity] = None) : Percentage = {
@@ -360,8 +370,8 @@ object ParallelShiftInstrumentLevelVol{
 object ShiftMarketDayAtInstrumentLevel{
   def apply(originalEnv : InstrumentLevelEnvironment, newMarketDay : DayAndTime) : InstrumentLevelEnvironment = {
 
-    val overridenMethodNames = List("atomicEnv", "marketDay", "discount", "fixing", "copy")
-    val List(atomicEnv, marketDay, discount, fixing, copy) = overridenMethodNames
+    val overridenMethodNames = List("atomicEnv", "marketDay", "discount", "fixing", "copy", "priceOnLastTradingDay")
+    val List(atomicEnv, marketDay, discount, fixing, copy, priceOnLastTradingDay) = overridenMethodNames
     assert(newMarketDay >= originalEnv.marketDay, "Can't shift time back")
     val forwardAtomicEnv = ForwardStateEnvironment(originalEnv.atomicEnv, newMarketDay)
 
@@ -386,7 +396,13 @@ object ShiftMarketDayAtInstrumentLevel{
             case `fixing` => {
               args match {
                 case Array(index : SingleIndex, fixingDay : Day) =>
-                  forwardAtomicEnv.quantity(FixingKey(index, fixingDay))
+                  forwardAtomicEnv.quantity(IndexFixingKey(index, fixingDay))
+              }
+            }
+            case `priceOnLastTradingDay` => {
+              args match {
+                case Array(market : FuturesMarket, period: DateRange) =>
+                  forwardAtomicEnv.quantity(MarketFixingKey(market, market.lastTradingDay(period), period))
               }
             }
             case `copy` => ShiftMarketDayAtInstrumentLevel(originalEnv.copy(args(0).asInstanceOf[AtomicEnvironment]), newMarketDay)
@@ -402,53 +418,4 @@ object ShiftMarketDayAtInstrumentLevel{
     })
     e.create().asInstanceOf[InstrumentLevelEnvironment]
   }
-}
-
-class CacheEnvironmentDifferentiables(originalEnv : InstrumentLevelEnvironment)  extends InstrumentLevelEnvironment{
-  val cache = scala.collection.mutable.Set[EnvironmentDifferentiable]()
-
-  def interpolatedVol(market : HasImpliedVol, period : DateRange, exerciseDay : Option[Day], strike : Option[Quantity], isIndexVol : Boolean, forwardPrice: Option[Quantity]) = {
-    market match {
-      case cm : CommodityMarket => cm.commodity match {
-        case _ : OilCommodity => cache.add(OilAtmVolAtomicDatumKey(cm, exerciseDay, period))
-        case _ : MetalCommodity => cache.add(BradyMetalVolAtomicDatumKey(cm, period))
-      }
-      case _ =>
-    }
-    originalEnv.interpolatedVol(market, period, exerciseDay, strike, isIndexVol, forwardPrice)
-  }
-  def spreadStdDev(market: FuturesMarket, period: Period, exerciseDay: Day, strike: Quantity) = {
-    cache.add(SpreadAtmStdDevAtomicDatumKey(market, period))
-    originalEnv.spreadStdDev(market, period, exerciseDay, strike)
-  }
-  def indexVol(index : SingleIndex, observationDay : Day, strike : Quantity, averagePrice : Quantity) = {
-    cache.add(SwapVol(index, observationDay))
-    originalEnv.indexVol(index, observationDay, strike, averagePrice)
-  }
-  def indexForwardPrice(index : SingleIndex, observationDay : Day, ignoreShiftsIfPermitted : Boolean = false) : Quantity = {
-    cache.add(SwapPrice(index, observationDay))
-    originalEnv.indexForwardPrice(index, observationDay, ignoreShiftsIfPermitted)
-  }
-  def spreadPrice(market : FuturesMarket, period: Period) = {
-    cache.add(FuturesSpreadPrice(market, period))
-    originalEnv.spreadPrice(market, period)
-  }
-  def atomicEnv = originalEnv.atomicEnv
-  def apply(key : AtomicDatumKey) : Any = {
-    key match {
-      case ForwardPriceKey(market, period, _) => {
-        cache.add(PriceDifferentiable(market, period))
-      }
-      case _ =>
-    }
-    originalEnv.apply(key)
-  }
-  def shiftsCanBeIgnored = originalEnv.shiftsCanBeIgnored
-  def setShiftsCanBeIgnored(canBeIgnored : Boolean) = new CacheEnvironmentDifferentiables(originalEnv.setShiftsCanBeIgnored(canBeIgnored))
-  def shiftAtomicEnv(fn : AtomicEnvironment => AtomicEnvironment) = new CacheEnvironmentDifferentiables(originalEnv.shiftAtomicEnv(fn))
-  def marketDay() : DayAndTime = originalEnv.marketDay
-
-  def copy(newAtomicEnv : AtomicEnvironment) = new CacheEnvironmentDifferentiables(originalEnv.copy(newAtomicEnv))
-  def discount(ccy : UOM, day : Day, ignoreShiftsIfPermitted : Boolean = false) = originalEnv.discount(ccy, day, ignoreShiftsIfPermitted)
-  def fixing(index : SingleIndex, fixingDay : Day) = originalEnv.fixing(index, fixingDay)
 }

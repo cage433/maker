@@ -2,14 +2,14 @@ package starling.curves
 
 import starling.quantity.UOM._
 import org.testng.Assert._
-import starling.utils.QuantityTestUtils._
+import starling.quantity.utils.QuantityTestUtils._
 import org.testng.annotations.Test
-import starling.market.{TestMarketSpec, Market}
+import starling.market.{TestMarketTest, Market}
 import starling.quantity.{Percentage, Quantity}
 import cern.colt.matrix.impl.DenseDoubleMatrix2D
 import starling.daterange.{SpreadPeriod, Spread, Day, Month}
 
-class EnvironmentTests extends TestMarketSpec {
+class EnvironmentTests extends TestMarketTest {
 
 
   @Test

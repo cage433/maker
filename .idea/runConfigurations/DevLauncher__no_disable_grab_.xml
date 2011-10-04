@@ -6,7 +6,7 @@
         <option name="ENABLED" value="true" />
       </pattern>
     </extension>
-    <option name="MAIN_CLASS_NAME" value="starling.dev.launcher.DevLauncher" />
+    <option name="MAIN_CLASS_NAME" value="starling.launcher.DevLauncher" />
     <option name="VM_PARAMETERS" value="-server -XX:MaxPermSize=512m -Xss128k -Xmx6000m" />
     <option name="PROGRAM_PARAMETERS" value="" />
     <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$" />
@@ -15,7 +15,7 @@
     <option name="ENABLE_SWING_INSPECTOR" value="false" />
     <option name="ENV_VARIABLES" />
     <option name="PASS_PARENT_ENVS" value="true" />
-    <module name="dev.launcher" />
+    <module name="launcher" />
     <envs />
     <RunnerSettings RunnerId="Profile ">
       <option name="myExternalizedOptions" value="&#10;alloc-size-limit-enabled=true&#10;alloc-record-each=10&#10;alloc-size-limit=10485176&#10;alloc-record-each-enabled=true&#10;additional-options2=onexit\=snapshot&#10;startup=0&#10;" />

@@ -1,7 +1,8 @@
 package starling.gui.pages
 
-import starling.gui.PageContext
 import starling.pivot.controller.{TreePivotFilterNode, TreePivotFilter}
+import starling.gui.StarlingLocalCache._
+import starling.browser.PageContext
 
 object IntradayGroupBuilder {
   def subgroupsToPaths(subgroups:List[String]):List[TreePivotFilterNode] = {

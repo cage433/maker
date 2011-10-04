@@ -1,7 +1,7 @@
 package starling.curves.readers
 
 import starling.db.{MarketDataEntry, MarketDataSource, DB}
-import starling.utils.conversions.RichTraversable
+import starling.utils.conversions.RichTraversables
 
 //import starling.utils.ImplicitConversions._
 import starling.daterange.{ObservationPoint, Day}

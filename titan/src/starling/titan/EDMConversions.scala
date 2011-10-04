@@ -9,8 +9,11 @@ import com.trafigura.edm.shared.types.{Currency => TitanCurrency, Date => TitanD
 import com.trafigura.services._
 import com.trafigura.services.marketdata.Maturity
 import starling.daterange.{DateRange, Tenor, SimpleDateRange, Day}
-import com.trafigura.commontypes.dataspecifications.{DateRange => TitanDateRange}
-
+import com.trafigura.edm.common.types.datespecifications.{DateRange => TitanDateRange}
+import valuation.TitanSnapshotIdentifier
+import starling.gui.api.{SpecificMarketDataVersion, MarketDataVersion}
+import starling.utils.Pattern.Extractor
+import starling.db.SnapshotID
 
 case class InvalidUomException(msg : String) extends Exception(msg)
 
@@ -42,6 +45,10 @@ object EDMConversions {
     def toSerializable = TitanSerializableDate(day.toLocalDate)
   }
 
+  implicit def enrichSnapshotID(snapshotID: SnapshotID) = new {
+    def toSerializable = TitanSnapshotIdentifier(snapshotID.id.toString, snapshotID.observationDay.toJodaLocalDate)
+  }
+
   // 'Serializable' implicits
   implicit def enrichSerializableDate(date: TitanSerializableDate) = new {
     def fromSerializable = Day.fromLocalDate(date.value)
@@ -56,6 +63,15 @@ object EDMConversions {
     def fromSerializable = edmToStarlingUomSymbol(currency.name).asUOM
   }
 
+  val UOMToTitanCurrency: Extractor[UOM, TitanSerializableCurrency] = Extractor.from[UOM](_.serializableCurrency)
+  val StringToTitanCurrency: Extractor[String, TitanSerializableCurrency] = UOM.Currency.andThen(UOMToTitanCurrency)
+
+  implicit def enrichTitanSnapshotIdentifier(snapshotId: TitanSnapshotIdentifier) = new {
+    def toTitanDate = TitanSerializableDate(snapshotId.snapshotDay)
+    def toDay = Day.fromLocalDate(snapshotId.snapshotDay)
+    def toMarketDataVersion: Option[MarketDataVersion] = snapshotId.intId.map(SpecificMarketDataVersion(_))
+  }
+
   // Titan implicits
   implicit def enrichTitanQuantity(q: TitanQuantity) = new {
     def fromTitan = fromTitanQuantity(q)
@@ -68,8 +84,8 @@ object EDMConversions {
   implicit def enrichTitanDateRange(dateRange: TitanDateRange) = new {
     def fromTitan = new SimpleDateRange(startDay, endDay)
     def contains(date: TitanDate) = fromTitan.contains(date.fromTitan)
-    def startDay = Day.fromLocalDate(dateRange.start.toLocalDate)
-    def endDay = Day.fromLocalDate(dateRange.end.toLocalDate)
+    def startDay = Day.fromLocalDate(dateRange.start.dateValue)
+    def endDay = Day.fromLocalDate(dateRange.finish.dateValue)
   }
 
   implicit def enrichFundamentalUOM(uom: FundamentalUOM) = new {

@@ -11,20 +11,21 @@
     </facet>
   </component>
   <component name="NewModuleRootManager" inherit-compiler-output="false">
-    <output url="file://$MODULE_DIR$/target/scala_2.9.0-1/classes" />
-    <output-test url="file://$MODULE_DIR$/target/scala_2.9.0-1/test-classes" />
+    <output url="file://$MODULE_DIR$/target/scala-2.9.1.final/classes" />
+    <output-test url="file://$MODULE_DIR$/target/scala-2.9.1.final/test-classes" />
     <exclude-output />
     <content url="file://$MODULE_DIR$">
       <sourceFolder url="file://$MODULE_DIR$/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/tests" isTestSource="true" />
+      <excludeFolder url="file://$MODULE_DIR$/target" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="library" name="scala-lib" level="project" />
+    <orderEntry type="library" name="scala-swing-lib" level="project" />
     <orderEntry type="module" module-name="auth" exported="" />
     <orderEntry type="module" module-name="pivot.utils" exported="" />
     <orderEntry type="module" module-name="quantity" exported="" />
-    <orderEntry type="module" module-name="bouncyrmi" exported="" />
     <orderEntry type="module-library" exported="">
       <library>
         <CLASSES>
@@ -34,15 +35,14 @@
         <SOURCES />
       </library>
     </orderEntry>
+    <orderEntry type="module" module-name="browser.service" exported="" />
     <orderEntry type="module-library" exported="">
       <library>
         <CLASSES>
-          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/compile/sjson_2.8.0-0.8.jar!/" />
+          <root url="jar://$MODULE_DIR$/lib_managed/sjson_2.8.0-jar-0.8.jar!/" />
         </CLASSES>
         <JAVADOC />
-        <SOURCES>
-          <root url="jar://$MODULE_DIR$/lib_managed/scala_2.9.0-1/compile/sjson_2.8.0-0.8-sources.jar!/" />
-        </SOURCES>
+        <SOURCES />
       </library>
     </orderEntry>
   </component>

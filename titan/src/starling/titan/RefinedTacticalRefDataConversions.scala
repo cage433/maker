@@ -43,8 +43,10 @@ object  RefinedTacticalRefDataConversions {
   lazy val metalNameToWuxiMarket = Map(
     "Nickel" -> EXBG_NICKEL
   )
+  
+  lazy val indices = List("Cash", "Three Month", "Average of Four", "Lowest of Four", "Max Settlement")
 
-  def guessAtIndex(exchange : RefMarket, metal : Metal) : SingleIndex = {
+  def index(exchange : RefMarket, metal : Metal, indexName : TitanIndexName) : IndexWithDailyPrices = {
     val metalToMarketMap : Map[String, FuturesMarket] = exchange.mappingCode match {
       case `LME` => commodityNameToLMEMarket
       case `SHFE` => commodityNameToSHFEMarket
@@ -57,10 +59,14 @@ object  RefinedTacticalRefDataConversions {
       throw new Exception("No market found for " + exchange.mappingCode + ", " + metal.name)
     val futuresMarket = metalToMarketMap(metal.name)
 
-    exchange.mappingCode match {
-      case `LME` => LmeCashSettlementIndex(futuresMarket)
-      case `SHFE` | `WUXI` => FuturesFrontPeriodIndex(futuresMarket, Level.Settle)
-      case _ => FuturesFrontPeriodIndex(futuresMarket)
+    (exchange.mappingCode, indexName) match {
+      case (`LME`, CashIndex) => LmeCashSettlementIndex(futuresMarket, Level.Ask)
+      case (`LME`, ThreeMonthIndex) => LmeThreeMonthIndex(futuresMarket, Level.Bid)
+      case (`LME`, LowestOfFourIndex) => LmeLowestOfFourIndex(futuresMarket)
+      case (`LME`, AverageOfFourIndex) => LmeAverageOfFourIndex(futuresMarket)
+      case (`LME`, Ave4MaxSettIndex) => LmeAve4MaxSettIndex(futuresMarket)
+      case (_, CashIndex) => FuturesFrontPeriodIndex(futuresMarket)
+      case (exchange, indexname) => throw new Exception("Unrecognised index + " + indexname + " for exchange " + exchange)
     }
 
   }

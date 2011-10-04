@@ -30,7 +30,7 @@ class FuturesCommoditySpreadTests extends StarlingTest {
     val explanation = spread.explanation(env)
     assertEquals(explanation.name, "(Future 1 + Future 2)")
     assertEquals(explanation.format(1), "(((F - K) * Volume) + ((F - K) * Volume))")
-    assertEquals(explanation.format(2), "(((NYMEX RBOB.JANUARY 2012 - 88.00 USD/gal) * 1,000.00 gal) + ((NYMEX Heat.JANUARY 2012 - 99.00 USD/gal) * (1,000.00) gal))")
+    assertEquals(explanation.format(2), "(((NYMEX RBOB.JAN 2012 - 88.00 USD/gal) * 1,000.00 gal) + ((NYMEX Heat.JAN 2012 - 99.00 USD/gal) * (1,000.00) gal))")
     val lastExplanation = "(((200.00 USD/gal - 88.00 USD/gal) * 1,000.00 gal) + ((180.00 USD/gal - 99.00 USD/gal) * (1,000.00) gal))"
     assertEquals(explanation.format(3), lastExplanation)
     assertEquals(explanation.format(4), lastExplanation)

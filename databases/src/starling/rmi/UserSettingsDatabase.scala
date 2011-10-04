@@ -1,17 +1,16 @@
 package starling.rmi
 
-import starling.utils.sql.LiteralString
+import starling.dbx.QueryBuilder._
 import starling.db.DB
-import starling.gui.UserSettings
-import starling.utils.sql.QueryBuilder._
 import starling.auth.User
 import starling.gui.api._
-import com.thoughtworks.xstream.io.StreamException
-import starling.utils.{StarlingXStream, Broadcaster}
+import starling.instrument.utils.StarlingXStream
+import starling.utils.{Broadcaster}
 import starling.pivot._
-import collection.mutable.ListBuffer
 import starling.daterange.{Day, Timestamp}
 import starling.calendar.BusinessCalendar
+import starling.browser.service._
+import starling.dbx.{LiteralString, Clause, Query}
 
 case class DayOffSet(offset:Int)
 
@@ -19,52 +18,27 @@ class UserSettingsDatabase(val db:DB, broadcaster:Broadcaster) {
   // This is the standard number of characters in a var char column.
   private val colSize = 300
 
-  def loadSettings:UserSettings = {
-    val user = User.currentlyLoggedOn.username.take(colSize)
-    val q = select ("settings") from "usersettings" where ("starlinguser" eql LiteralString(user))
-    db.queryWithOneResult(q) { rs => rs.getString("settings")} match {
-      case Some(xml : String) => try {
-        StarlingXStream.read(xml).asInstanceOf[UserSettings]
-      } catch {
-        case e:StreamException => new UserSettings //If the UserSettings classes have changed just return empty settings
-      }
-      case None => new UserSettings
-    }
+  def loadSettings(user:User):UserSettingsLabel = {
+    val username = user.username.take(colSize)
+    val q = select ("bundle, description, settings") from "usersettings" where ("starlinguser" eql LiteralString(username))
+    UserSettingsLabel(db.queryWithResult(q) { rs => UserSettingsEntry(
+      rs.getString("bundle"), rs.getString("description"), rs.getString("settings")
+    )})
   }
 
   def readAll() {
-    allSettings
     allPivotLayouts
-    allBookmarks
   }
 
-  def allSettings:List[(String, UserSettings)] = {
-    db.queryWithResult("SELECT * from usersettings") {
-      rs => {
-        (rs.getString("starlinguser"), StarlingXStream.read(rs.getString("settings")).asInstanceOf[UserSettings])
-      }
-    }
-  }
-
-  def saveAllSettings(settings:List[(String, UserSettings)]) {
+  def saveSettings(user:User, settings:UserSettingsLabel) {
     db.inTransaction {
       writer => {
-        settings.foreach{case (username, userSettings) => saveSettings(username.take(colSize), userSettings)}
+        writer.delete("usersettings", ("starlinguser" eql LiteralString(user.username.take(colSize))))
+        settings.userSettings.foreach { entry =>
+          writer.insert("usersettings", Map("starlinguser" -> user, "bundle" -> entry.bundle, "description" -> entry.key, "settings" -> entry.value))
+        }
       }
     }
-  }
-
-  private def saveSettings(user:String, settings:UserSettings) {
-    db.inTransaction {
-      writer => {
-        writer.delete("usersettings", ("starlinguser" eql LiteralString(user)))
-        writer.insert("usersettings", Map("starlinguser" -> user, "settings" -> StarlingXStream.write(settings)))
-      }
-    }
-  }
-
-  def saveSettings(settings: UserSettings) {
-    saveSettings(User.currentlyLoggedOn.username.take(colSize), settings)
   }
 
   def savePivotLayout(user:User, pivotLayout:PivotLayout) {
@@ -182,26 +156,18 @@ class UserSettingsDatabase(val db:DB, broadcaster:Broadcaster) {
   def bookmarks(user:User):List[BookmarkLabel] = {
     val userName = user.username.take(colSize)
     db.queryWithResult("SELECT * FROM Bookmarks where starlingUser = :user", Map("user" -> userName)) {
-      rs => BookmarkLabel(rs.getString("bookmarkName"), rs.getString("bookmark"))
+      rs => BookmarkLabel(rs.getString("bookmarkName"), rs.getString("bundle"), rs.getString("bookmark"))
     }
-  }
-
-  def allBookmarks:Map[String, List[BookmarkLabel]] = {
-    db.queryWithResult("SELECT * FROM Bookmarks", Map()) {
-      rs => {
-        val user = rs.getString("starlingUser")
-        val bookmark = BookmarkLabel(rs.getString("bookmarkName"), rs.getString("bookmark"))
-        (user, bookmark)
-      }
-    }.groupBy(_._1).mapValues(_.map(_._2))
   }
 
   def saveBookmark(user:User, bookmarkLabel:BookmarkLabel) {
     val username = user.username.take(colSize)
     val bookmarkName = bookmarkLabel.name.take(colSize)
+    val bundle = bookmarkLabel.bundleName
     db.inTransaction {
       writer => {
-        writer.insert("Bookmarks", Map("starlingUser" -> username, "bookmarkName" -> bookmarkName, "bookmark" -> bookmarkLabel.bookmark))
+        writer.insert("Bookmarks", Map("starlingUser" -> username, "bookmarkName" -> bookmarkName,
+          "bundle" -> bundle, "bookmark" -> bookmarkLabel.bookmark))
       }
     }
     broadcaster.broadcast(BookmarksUpdate(user.username, bookmarks(user)))
@@ -234,7 +200,7 @@ class UserSettingsDatabase(val db:DB, broadcaster:Broadcaster) {
   }
 
   def allUsersWithSettings = {
-    db.queryWithResult("SELECT starlinguser from usersettings") {
+    db.queryWithResult("SELECT distinct(starlinguser) from usersettings") {
       rs => {
         rs.getString("starlinguser")
       }

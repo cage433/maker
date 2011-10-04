@@ -1,24 +1,19 @@
 package starling.market
 
-import rules.{PrecisionRules, Precision, MarketPrecisionFactory}
+import rules.Precision
 import starling.curves._
 import scala.None
 import starling.quantity.UOM._
-import starling.db._
 import starling.daterange._
 import collection.immutable.Map
-import starling.utils.cache.CacheFactory
-import starling.varcalculator.{ForwardPriceRiskFactor, RiskFactor}
 import starling.calendar._
-import starling.marketdata.MarketDataKey
 import starling.utils.ImplicitConversions._
 import util.matching.Regex
-import starling.quantity.{Conversions, Quantity, UOM}
+import starling.marketdata.{PriceFixingsHistoryDataKey, MarketDataKey}
+import starling.quantity._
 
 trait Market extends Ordered[Market]{
   val name: String
-  val uomName: String
-
   def compare(that: Market) = this.name.compareTo(that.name)
 }
 
@@ -41,10 +36,8 @@ abstract class CommodityMarket(
   @transient val limSymbol : Option[LimSymbol] = None,
   @transient val precision : Option[Precision] = None
 )
-  extends Market with HasImpliedVol with KnownObservation
+  extends Market with HasImpliedVol with KnownObservation with FixingHistoryLookup
 {
-  val uomName = uom.toString
-
   override def equals(p1: Any) = p1 match {
     case et: CommodityMarket => eaiQuoteID == et.eaiQuoteID && name.equalsIgnoreCase(et.name)
     case _ => super.equals(p1)
@@ -61,12 +54,6 @@ abstract class CommodityMarket(
   def positionUOM = uom
 
   @transient val priceUOM = currency / uom
-
-  def priceRiskFactor(marketDayAndTime: DayAndTime, dateRange: DateRange): Option[RiskFactor]
-
-  def nthPeriod(dayAndTime: DayAndTime, numPeriodsAhead: Int): DateRange
-
-  def nthOptionPeriod(dayAndTime: DayAndTime, numPeriodsAhead: Int): DateRange = nthPeriod(dayAndTime, numPeriodsAhead)
 
   def standardShift = {
     commodity match {
@@ -93,9 +80,33 @@ abstract class CommodityMarket(
   }
 
   def premiumSettlementDay(tradeDay: Day) = tradeDay.addBusinessDays(businessCalendar, 5)
-}
 
-class UnknownTrinityMarketException(val code:String) extends Exception("Unknown trinity market: " + code)
+  def historicPrice(env: InstrumentLevelEnvironment, observationDay: Day, period: DateRange): Quantity = {
+    require(observationDay.endOfDay <= env.marketDay, "Can't ask for historic price for " + this + " in the future (observation, market day): " + (observationDay.endOfDay, env.marketDay))
+    env.quantity(MarketFixingKey(this, observationDay, period)) match {
+      case nq: NamedQuantity => {
+        new SimpleNamedQuantity(name + "." + period.toShortString + "(Fixed."+observationDay+")", new Quantity(nq.value, nq.uom))
+      }
+      case q => q
+    }
+  }
+
+  def forwardPrice(env: InstrumentLevelEnvironment, period: DateRange, ignoreShiftsIfPermitted: Boolean) = {
+    env.quantity(ForwardPriceKey(this, period))
+  }
+
+  def fixing(slice: MarketDataSlice, observationDay: Day, storedFixingPeriod: Option[StoredFixingPeriod]) = storedFixingPeriod match {
+    case Some(period) => {
+      val key = PriceFixingsHistoryDataKey(this)
+      slice.fixings(key, ObservationPoint(observationDay, ObservationTimeOfDay.Default))
+        .fixingFor(Level.Close, period)
+        .toQuantity
+    }
+    case _ => throw new IllegalArgumentException("storedFixingPeriod not defined")
+  }
+
+  def exchangeOption : Option[FuturesExchange] = None
+}
 
 case class LimSymbol(name: String, multiplier: Double = 1)
 
@@ -130,19 +141,6 @@ class FuturesMarket(
           with KnownExpiry {
   assert(commodity != null)
 
-  override def priceRiskFactor(marketDayAndTime: DayAndTime, dateRange: DateRange): Option[RiskFactor] = {
-    val offset = (tenor, dateRange) match {
-      case (Month, m: Month) => m - frontMonth(marketDayAndTime)
-      case (Day, d: Day) => d - frontPeriod(marketDayAndTime.day).asInstanceOf[Day]
-      case _ => throw new Exception(name + ":tenor, " + tenor + ", and dateRange, " + dateRange + " don't match for " + this)
-    }
-    if(offset < 0) {
-      None
-    } else {
-      Some(ForwardPriceRiskFactor(this, offset, offset))
-    }
-  }
-
   /**
    * Trinity stores Futures periods as days, regardless of the market
    * convention. This infers the corresponding period.
@@ -173,6 +171,8 @@ class FuturesMarket(
   }
 
   val hasOptions = volatilityID.isDefined
+
+  override def exchangeOption : Option[FuturesExchange] = Some(exchange)
 }
 
 class LMEFuturesMarket(
@@ -213,47 +213,8 @@ with HasInterpolation {
     period.containingMonth.thirdWednesday
   }
 
-  override def nthOptionPeriod(dayAndTime: DayAndTime, numPeriodsAhead: Int) = {
-    val period = frontOptionPeriod(dayAndTime.day)
-    frontOptionPeriod((period.firstMonth + numPeriodsAhead).firstDay)
-  }
 }
 
-/**
- * A Swap Market is a market used for forward prices for Swaps
- */
-class SwapMarket(
-  @transient name: String,
-  @transient lotSize: Option[Double],
-  @transient uom: UOM,
-  @transient currency: UOM,
-  @transient businessCalendar: BusinessCalendar,
-  @transient eaiQuoteID: Option[Int],
-  @transient commodity: Commodity,
-  @transient conversions: Conversions,
-  @transient limSymbol: Option[LimSymbol] = None,
-  @transient precision : Option[Precision] = None
-)
-  extends CommodityMarket(name, lotSize, uom, currency, businessCalendar, eaiQuoteID, Day, commodity, conversions, limSymbol, precision)
-  with HasInterpolation {
-  def priceRiskFactor(marketDayAndTime: DayAndTime, dateRange: DateRange) = {
-    val offset = (tenor, dateRange) match {
-      case (Day, d: Day) => d - marketDayAndTime.day
-      case _ => throw new Exception(name + ":tenor, " + tenor + ", and dateRange, " + dateRange + " don't match for " + this)
-    }
-    if(offset < 0) {
-      None
-    } else {
-      Some(ForwardPriceRiskFactor(this, offset, offset))
-    }
-  }
-
-  override def nthPeriod(dayAndTime: DayAndTime, numPeriodsAhead: Int): Day = tenor match {
-    case Day => dayAndTime.day + numPeriodsAhead
-  }
-  
-  def interpolation = InverseConstantInterpolation
-}
 
 trait IsBrentMonth{
   def month : BrentMonth
@@ -266,7 +227,7 @@ trait IsBrentMonth{
  * Info like lot size, holidays etc can be found in dblQuotes in EAI
  */
 object Market {
-  lazy val provider = MarketProvider.provider
+  private def provider = MarketProvider.provider
   lazy val cals: BusinessCalendars = new BusinessCalendars(HolidayTablesFactory.holidayTables)
 
   lazy val all: List[CommodityMarket] = provider.allFuturesMarkets ::: Index.publishedIndexes

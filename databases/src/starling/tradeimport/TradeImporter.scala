@@ -10,8 +10,9 @@ import starling.daterange.{Timestamp, DayAndTime, Day}
 import starling.utils.{NamedThreadFactory, Log, Stopwatch}
 import starling.db._
 import starling.tradestore.{TradeStore}
-import starling.trade.{Trade, TradeID, TradeSystem, TradeAttributes}
-import starling.utils.sql.Clause
+import starling.instrument.Trade
+import starling.instrument.{TradeID, TradeSystem, TradeAttributes}
+import starling.dbx.Clause
 import collection.mutable.{ArrayBuffer, HashSet => MHashSet}
 
 class TradeImporterFactory(
@@ -26,10 +27,10 @@ class TradeImporterFactory(
   }
 }
 
-class TradeImporter(systemOfRecord: SystemOfRecord, tradeStore: TradeStore) {
+class TradeImporter(systemOfRecord: SystemOfRecord, tradeStore: TradeStore) extends Log {
 
   def importAll(allTrades: Option[Seq[Trade]] = None, writeTimestamp: Timestamp = new Timestamp()): Boolean = TradeImporter.lock.synchronized {
-    Log.infoWithTime("Running trade import for " + systemOfRecord + " with timestamp " + writeTimestamp) {
+    log.infoWithTime("Running trade import for " + systemOfRecord + " with timestamp " + writeTimestamp) {
       val trades = allTrades match {
         case Some(t) => t
         case None => {

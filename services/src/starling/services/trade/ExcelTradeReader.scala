@@ -3,29 +3,30 @@ package trade
 
 import instrumentreaders.ExcelInstrumentReader
 import starling.utils.Reflection
-import starling.db.IntradayTradeSystem
 import starling.instrument._
-import starling.trade.Trade
-import collection.mutable.ArraySeq
+import starling.instrument.Trade
 import starling.eai.{EAIStrategyDB, Traders}
+import collection.mutable.ArraySeq
 import starling.daterange.Day
 import starling.market.{CommodityMarket, FuturesSpreadMarket}
+import starling.auth.User
+import starling.concurrent.MP._
+import starling.eai.{EAIDealBookMapping, EAIStrategyDB, Traders}
 
-class ExcelTradeReader(eaiStrategyDB: EAIStrategyDB, traders: Traders) {
+class ExcelTradeReader(eaiStrategyDB: EAIStrategyDB, eaiDealBookMapping: EAIDealBookMapping, traders: Traders, currentlyLoggedOn: () => User) {
   import ExcelRow._
 
-  def allTrades(header: Array[String], trades: List[ArraySeq[Object]], subgroupName: String): List[Trade] = {
-    allTrades(trades.map(tradeValues => header.zip(tradeValues).toMap), subgroupName)
+  def allTrades(header: Array[String], trades: List[Seq[Object]], subgroupNamePrefix: String): List[Trade] = {
+    val empties = (" " * 20).split("")
+    allTrades(trades.map(tradeValues => header.zip(tradeValues ++ empties).toMap), subgroupNamePrefix)
   }
 
-  def allTrades(originalRows: List[Map[String, Object]], subgroupName: String): List[Trade] = {
-    var trades = List[Trade]()
-    allTrades(originalRows, subgroupName, t => trades ::= t)
-    trades.reverse
+  def allTrades(originalRows: List[Map[String, Object]], subgroupNamePrefix: String): List[Trade] = {
+    allTrades0(originalRows, subgroupNamePrefix).reverse
   }
 
-  def allTrades(originalRows: List[Map[String, Object]], subgroupName: String, f: Trade => Unit) {
-    val sys = IntradayTradeSystem
+  private def allTrades0(originalRows: List[Map[String, Object]], subgroupNamePrefix: String):List[Trade] = {
+    val currentUser = currentlyLoggedOn()
 
     // non-blank rows, with the key in lower case
     val rows: List[Map[String, Object]] = originalRows.map{
@@ -41,7 +42,7 @@ class ExcelTradeReader(eaiStrategyDB: EAIStrategyDB, traders: Traders) {
     val explodedRows = rows.flatMap {
       map => map(StrategyColumn) match {
         case CounterPartySpread(c1, c2) => {
-          val row = new ExcelRow(map, traders)
+          val row = new ExcelRow(map, traders, currentUser)
           val tradeID = row.formattedExcelColumnID
 
           // t1 is the same, just add 'a' to the row id
@@ -57,17 +58,18 @@ class ExcelTradeReader(eaiStrategyDB: EAIStrategyDB, traders: Traders) {
       }
     }
 
-    val tradeIDs = explodedRows.map(ExcelRow(_, traders).tradeID(""))
-    assert(tradeIDs.distinct.size == tradeIDs.size, "Duplicate IDs aren't allowed")
+    val dups = explodedRows.map(ExcelRow(_, traders, currentUser).formattedExcelColumnID).groupBy(a => a).filter(_._2.size > 1).keys
+    assert(dups.isEmpty, "Duplicate IDs aren't allowed: " + dups.mkString(", "))
 
-    for (row <- explodedRows) {
-      val excelRow = ExcelRow(row, traders)
+    explodedRows.map {
+      row =>
+      val excelRow = ExcelRow(row, traders, currentUser)
       try {
         val tradeDay = excelRow.tradeDay
         val counterParty = excelRow.counterParty
 
-        val tradeID = excelRow.tradeID(subgroupName)
-        val tradeAttributes = excelRow.attributes(eaiStrategyDB, subgroupName)
+        val tradeAttributes = excelRow.attributes(eaiStrategyDB, eaiDealBookMapping, subgroupNamePrefix)
+        val tradeID = excelRow.tradeID(tradeAttributes.subgroupName)
         val trade = new Trade(tradeID, tradeDay, counterParty, tradeAttributes, ExcelTradeReader.instrument(excelRow),
           ExcelTradeReader.readCosts(excelRow))
 
@@ -78,7 +80,7 @@ class ExcelTradeReader(eaiStrategyDB: EAIStrategyDB, traders: Traders) {
           utp => utp.priceAndVolKeys(testDay)
         }
         
-        f(trade)
+        trade
       }
       catch {
         case e => {
@@ -88,6 +90,7 @@ class ExcelTradeReader(eaiStrategyDB: EAIStrategyDB, traders: Traders) {
       }
     }
   }
+
 }
 
 object ExcelTradeReader {
@@ -95,6 +98,7 @@ object ExcelTradeReader {
 
   def instrument(excelRow: ExcelRow): Tradeable = {
     try {
+      assert(readers.nonEmpty, "No readers defined")
       readers.filter(r => r.canRead(excelRow)) match {
         case reader :: Nil => reader.create(excelRow)
         case Nil => throw new Exception("No readers matched: " + excelRow)
