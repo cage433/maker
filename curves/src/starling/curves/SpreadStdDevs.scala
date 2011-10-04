@@ -119,7 +119,7 @@ case class SpreadStdDevSurfaceDataKey(market : FuturesMarket)
     dataRows
   }
 
-  def fieldValues = Map(SpreadStdDevSurfaceDataType.marketField.field -> market.name)
+  def fieldValues(referenceDataLookup: ReferenceDataLookup) = Map(SpreadStdDevSurfaceDataType.marketField.field → market.name)
 }
 
 object SpreadStdDevSurfaceDataType extends MarketDataType {

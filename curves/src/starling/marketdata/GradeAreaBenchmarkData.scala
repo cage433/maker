@@ -33,7 +33,7 @@ case class GradeAreaBenchmarkMarketDataKey(commodity : Commodity) extends Market
   type marketDataDBType = GradeAreaBenchmarkData
   def dataType = GradeAreaBenchmarkDataType
   def subTypeKey = commodity.toString
-  def fieldValues = Map(commodityField.field -> commodity.name)
+  def fieldValues(referenceDataLookup: ReferenceDataLookup) = Map(commodityField.field → commodity.name)
 
   override def rows(marketData: GradeAreaBenchmarkData, referenceDataLookup: ReferenceDataLookup) = {
     marketData.areaData.map { case ((gradeCode, areaCode), price) => Row(

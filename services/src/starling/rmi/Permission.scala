@@ -7,7 +7,7 @@ import starling.utils.CaseInsensitive
 
 object Permission {
 
-  import Groups._
+  import starling.auth.Groups._
 
   def desks(user: User, production:Boolean): Set[Desk] = {
     val desks = user.groups.flatMap {
@@ -35,14 +35,4 @@ object Permission {
     )
 }
 
-object Groups {
-  val StarlingDevelopers = "Starling Developers".i
-  val StarlingProductionAdmin = "Starling Production Admins".i
-  val StarlingShanghai = "Starling Shanghai".i
-  val StarlingLucerne = "Starling Lucerne".i
-  val StarlingLucerneAdmin = "Starling Lucerne Admin".i
-  val StarlingTesters = "Starling Testers".i
-  val StarlingLondonDerivatives = "Starling London derivatives".i
-  val StarlingGasolineSpec = "Starling Gasoline Spec Global".i
-  val StarlingHoustonDerivatives = "Starling Houston Derivatives".i
-}
+

@@ -19,6 +19,8 @@ import starling.curves.{VanillaEnvironmentRule, EnvironmentRule, EnvironmentRule
 import starling.daterange.ObservationPoint._
 import starling.daterange.{ObservationPoint, TimeOfDay, ObservationTimeOfDay}
 import starling.gui.api.{PricingGroup, EnvironmentRuleLabel}
+import starling.marketdata.ReferenceDataLookup
+import starling.utils.ImplicitConversions._
 
 class ServicesBromptonActivator extends BromptonActivator {
 
@@ -69,15 +71,17 @@ class ServicesBromptonActivator extends BromptonActivator {
       })
 
       val everythingButMetals = PricingGroup.values - PricingGroup.Metals
-      val Default = new VanillaEnvironmentRule((day)=>ObservationPoint(day, ObservationTimeOfDay.Default), TimeOfDay.EndOfDay,
-        EnvironmentRuleLabel.COB, everythingButMetals)
+      val Default = new VanillaEnvironmentRule(_.atTimeOfDay(ObservationTimeOfDay.Default), TimeOfDay.EndOfDay,
+        EnvironmentRuleLabel.COB, everythingButMetals, starlingInit.referenceDataLookup)
 
-      val RealTime = new VanillaEnvironmentRule((day)=>ObservationPoint.RealTime, TimeOfDay.StartOfDay,
-        EnvironmentRuleLabel.RealTime, everythingButMetals)
+      val RealTime = new VanillaEnvironmentRule(_ => ObservationPoint.RealTime, TimeOfDay.StartOfDay,
+        EnvironmentRuleLabel.RealTime, everythingButMetals, starlingInit.referenceDataLookup)
 
       context.registerService(classOf[EnvironmentRule], Default)
       context.registerService(classOf[EnvironmentRule], RealTime)
     }
+
+    context.registerService(classOf[ReferenceDataLookup], starlingInit.referenceDataLookup)
 
     excelLoopReceiver = new ExcelLoopReceiver(starlingInit.ldapUserLookup, props.XLLoopPort())
     context.createServiceTracker(None,  ExportXlloopProperty::Nil, new BromptonServiceCallback[AnyRef] {

@@ -39,7 +39,7 @@ trait MarketDataKey {
   // E.g. for price data this would have commodity, market, Exchange
   // Used as an optimisation. The gui first gets the markets from this function to display in
   // the field chooser - base on the choice 'rows' is called to get the actual market data to display.
-  def fieldValues:Map[Field,Any]
+  def fieldValues(referenceDataLookup: ReferenceDataLookup = ReferenceDataLookup.Null) :Map[Field,Any]
 
   def read(slice:MarketDataSlice):marketDataType = cast(slice.read(this))
   def read(observationPoint: ObservationPoint, reader: MarketDataReader): marketDataType =
@@ -52,7 +52,7 @@ trait MarketDataKey {
   def unmarshallDB(dbValue: Any): marketDataType = dbValue.asInstanceOf[marketDataType]
 
   def valueKey(row: Row): MarketDataValueKey = {
-    val fields = dataType.keyFields -- fieldValues.keySet
+    val fields = dataType.keyFields -- fieldValues().keySet
 
     MarketDataValueKey(-1, row.filterKeys(fields.contains))
   }
@@ -70,7 +70,7 @@ case class TimedMarketDataKey(observationPoint: ObservationPoint, key: MarketDat
   def timeName = observationPoint.timeName
 
   def dataType = key.dataType
-  def fieldValues = key.fieldValues
+  def fieldValues(referenceDataLookup: ReferenceDataLookup) = key.fieldValues(referenceDataLookup)
   def castRows(marketData: MarketData, referenceDataLookup: ReferenceDataLookup) = key.castRows(marketData, referenceDataLookup)
   def unmarshallDB(dbValue: Any) = key.unmarshallDB(dbValue)
 

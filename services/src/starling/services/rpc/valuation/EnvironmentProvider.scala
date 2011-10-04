@@ -13,6 +13,7 @@ import starling.curves.IndexFixingKey
 import com.trafigura.services.{TitanSerializableDate}
 import starling.daterange.Day
 import starling.utils.Log
+import starling.marketdata.ReferenceDataLookup
 
 
 trait EnvironmentProvider {
@@ -30,7 +31,7 @@ trait EnvironmentProvider {
  * Standard environment provider, contains snapshot id name (string) to SnapshotID cache
  *   and a means to get environments by snapshot id name
  */
-class DefaultEnvironmentProvider(marketDataStore : MarketDataStore) extends EnvironmentProvider with Log {
+class DefaultEnvironmentProvider(marketDataStore : MarketDataStore, referenceDataLookup: ReferenceDataLookup) extends EnvironmentProvider with Log {
   private val lock = new Object()
   def getSnapshots() : List[String] = snapshotNameToIDCache.keySet.toList
   def snapshotNameToID(name : String) = snapshotNameToIDCache(name)
@@ -47,7 +48,7 @@ class DefaultEnvironmentProvider(marketDataStore : MarketDataStore) extends Envi
     {snapshotIDName : String => {
       val snapshotID = snapshotNameToIDCache(snapshotIDName)
       val reader = new NormalMarketDataReader(marketDataStore, MarketDataIdentifier(snapshotID.marketDataSelection, snapshotID.version))
-      new ClosesEnvironmentRule().createEnv(marketDay.getOrElse(snapshotID.observationDay), reader).environment
+      new ClosesEnvironmentRule(referenceDataLookup = referenceDataLookup).createEnv(marketDay.getOrElse(snapshotID.observationDay), reader).environment
     }}
   )
 

@@ -35,7 +35,7 @@ case class SpotFXDataKey(ccy: UOM) extends MarketDataKey {
     SpotFXDataType.rateField.field → PivotQuantity(data.rate)
    ))
 
-  def fieldValues = Map(SpotFXDataType.currencyField.field → ccy.toString)
+  def fieldValues(referenceDataLookup: ReferenceDataLookup) = Map(SpotFXDataType.currencyField.field → ccy.toString)
 }
 
 //For Example 0.0125 USD / JPY

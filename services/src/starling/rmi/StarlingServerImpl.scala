@@ -2,7 +2,6 @@ package starling.rmi
 
 import collection.immutable.{Set, List}
 
-import starling.auth.{LdapUserLookup, User}
 import starling.calendar.BusinessCalendarSet
 import starling.daterange._
 import starling.db._
@@ -15,6 +14,7 @@ import starling.dbx.{FalseClause, From, RealTable}
 
 import starling.dbx.QueryBuilder._
 import starling.browser.service.Version
+import starling.auth.{Groups, LdapUserLookup, User}
 
 class StarlingServerImpl(
         val name:String,

@@ -73,7 +73,7 @@ case class OilVolSurfaceDataKey(market: CommodityMarket) extends MarketDataKey {
     }
   }
 
-  def fieldValues = Map(OilVolSurfaceDataType.marketField.field -> market.name)
+  def fieldValues(referenceDataLookup: ReferenceDataLookup) = Map(OilVolSurfaceDataType.marketField.field → market.name)
 }
 
 
@@ -194,7 +194,7 @@ case class BradyFXVolSurfaceDataKey(market : FXMarket)  extends MarketDataKey {
         }
     })
   }
-  def fieldValues = Map(BradyFXVolSurfaceDataType.marketField.field->market.name)
+  def fieldValues(referenceDataLookup: ReferenceDataLookup) = Map(BradyFXVolSurfaceDataType.marketField.field → market.name)
 }
 
 /**
@@ -256,7 +256,7 @@ case class BradyMetalVolsDataKey(market : CommodityMarket) extends MarketDataKey
     )
   }
 
-  def fieldValues = Map(BradyMetalVolsDataType.marketField.field -> market.name)
+  def fieldValues(referenceDataLookup: ReferenceDataLookup) = Map(BradyMetalVolsDataType.marketField.field → market.name)
 }
 
 /**

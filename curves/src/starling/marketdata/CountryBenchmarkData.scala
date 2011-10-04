@@ -50,7 +50,7 @@ case class CountryBenchmarkMarketDataKey(commodity : Commodity) extends MarketDa
   type marketDataDBType = CountryBenchmarkData
   def dataType = CountryBenchmarkDataType
   def subTypeKey = commodity.toString
-  def fieldValues = Map(commodityField.field -> commodity.name)
+  def fieldValues(referenceDataLookup: ReferenceDataLookup) = Map(commodityField.field → commodity.name)
 
   override def rows(marketData: CountryBenchmarkData, referenceDataLookup: ReferenceDataLookup) = {
     marketData.countryData.map { case (countryCode, price) => Row(
@@ -63,6 +63,6 @@ case class CountryBenchmarkMarketDataKey(commodity : Commodity) extends MarketDa
 
 // Prefixing these classes with 'Neptune' because they aren't really countries, they are Country + Location
 case class NeptuneCountryCode(code: String)
-case class NeptuneCountry(code: NeptuneCountryCode, name: String, area: Area) {
-  override def toString = name + "(" + area.name + ")"
+case class NeptuneCountry(code: NeptuneCountryCode, name: String, area: Option[Area]) {
+  override def toString = name
 }

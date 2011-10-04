@@ -4,6 +4,7 @@ import starling.quantity.Quantity
 import starling.daterange.DateRange
 
 abstract class DelegatingAtomicEnvironment(val atomicEnv: AtomicEnvironment) extends AtomicEnvironment {
+  override def referenceDataLookup = atomicEnv.referenceDataLookup
   def apply(key: AtomicDatumKey) = atomicEnv.apply(key)
   def shiftsCanBeIgnored = atomicEnv.shiftsCanBeIgnored
   def marketDay = atomicEnv.marketDay

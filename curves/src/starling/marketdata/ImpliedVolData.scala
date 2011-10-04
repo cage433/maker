@@ -73,7 +73,7 @@ case class ImpliedVolDataKey(market : HasImpliedVol) extends MarketDataKey {
     }
   )
 
-  def fieldValues = Map(ImpliedVolDataType.marketField.field → market.name)
+  def fieldValues(referenceDataLookup: ReferenceDataLookup) = Map(ImpliedVolDataType.marketField.field → market.name)
 }
 
 case class ImpliedVolData(surface : SortedMap[ImpliedVolEntryKey, Percentage]) extends MarketData {

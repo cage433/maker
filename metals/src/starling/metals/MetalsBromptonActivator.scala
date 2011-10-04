@@ -37,6 +37,7 @@ import starling.daterange.ObservationPoint._
 import starling.daterange.{ObservationPoint, TimeOfDay}
 import starling.curves._
 import starling.gui.api.{PricingGroup, EnvironmentRuleLabel}
+import starling.marketdata.ReferenceDataLookup
 
 class MetalsBromptonActivator extends BromptonActivator {
 
@@ -47,6 +48,7 @@ class MetalsBromptonActivator extends BromptonActivator {
 
     val marketDataStore = context.awaitService(classOf[MarketDataStore])
     val tradeStores = context.awaitService(classOf[TradeStores])
+    val referenceDataLookup = context.awaitService(classOf[ReferenceDataLookup])
 
     val titanTradeStore = tradeStores.titanTradeStore.asInstanceOf[TitanTradeStore]
 
@@ -114,11 +116,12 @@ class MetalsBromptonActivator extends BromptonActivator {
 
     val rabbitEventDatabase = new DefaultRabbitEventDatabase(starlingDB, broadcaster)
 
+    val environmentProvider = new DefaultEnvironmentProvider(marketDataStore, referenceDataLookup)
     val valuationService = new ValuationService(
-      new DefaultEnvironmentProvider(marketDataStore),
+      environmentProvider,
       titanTradeCache, titanServices, logisticsServices, titanRabbitEventServices,
       titanInventoryCache, Some(titanTradeStore), rabbitEventDatabase)
-    val marketDataService = new MarketDataService(marketDataStore, new DefaultEnvironmentProvider(marketDataStore))
+    val marketDataService = new MarketDataService(marketDataStore, environmentProvider)
 
     val businessCalendars = context.awaitService(classOf[BusinessCalendars])
     val curveViewer = context.awaitService(classOf[CurveViewer])
@@ -155,11 +158,11 @@ class MetalsBromptonActivator extends BromptonActivator {
       import starling.daterange.ObservationTimeOfDay._
 
       val metalRules = List(
-        ClosesEnvironmentRule(),
-        ClosesEnvironmentRule(allowOldPricesToBeUsed = true),
-        new VanillaEnvironmentRule((day)=>ObservationPoint(day, SHFEClose), TimeOfDay.EndOfDay,
-          new EnvironmentRuleLabel(SHFEClose.name), List(PricingGroup.Metals)),
-        TimeShiftToLMECloseEnvironmentRule
+        ClosesEnvironmentRule(referenceDataLookup),
+        ClosesEnvironmentRule(referenceDataLookup, allowOldPricesToBeUsed = true),
+        new VanillaEnvironmentRule(_.atTimeOfDay(SHFEClose), TimeOfDay.EndOfDay, new EnvironmentRuleLabel(SHFEClose.name),
+          List(PricingGroup.Metals), referenceDataLookup),
+        new TimeShiftToLMECloseEnvironmentRule(referenceDataLookup)
       )
 
       metalRules.foreach(context.registerService(classOf[EnvironmentRule], _))

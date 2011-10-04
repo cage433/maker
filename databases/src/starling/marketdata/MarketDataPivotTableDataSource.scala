@@ -50,7 +50,8 @@ class MarketDataPivotTableDataSource(reader: MarketDataReader, edits:PivotEdits,
   val observationDayAndMarketDataKeys = reader.readAllObservationDayAndMarketDataKeys(marketDataType)
 
   val observationDayAndMarketDataKeyRows: Map[Map[Field, Any],TimedMarketDataKey] = observationDayAndMarketDataKeys.map { timedKey =>
-    (timedKey.fieldValues + (observationTimeField.field → timedKey.timeName) addSome (observationDayField.field → timedKey.day)) -> timedKey
+    (timedKey.fieldValues(referenceDataLookup) + (observationTimeField.field → timedKey.timeName)
+      addSome (observationDayField.field → timedKey.day)) → timedKey
   }.toMap
   val allMarketDataKeys = observationDayAndMarketDataKeys.map(_.key).toSet
 
@@ -184,7 +185,7 @@ class MarketDataPivotTableDataSource(reader: MarketDataReader, edits:PivotEdits,
     }
 
     val marketDataKeyFields = allMarketDataKeys.headOption match {
-      case Some(mdf) => mdf.fieldValues.keySet.toList
+      case Some(mdf) => mdf.fieldValues().keySet.toList
       case None => List()
     }
 
@@ -209,7 +210,7 @@ class MarketDataPivotTableDataSource(reader: MarketDataReader, edits:PivotEdits,
 
       val keyClause: Option[Set[MarketDataKey]] = if(keyFilters.isEmpty) None else {
         val filterKeys: Set[MarketDataKey] = allMarketDataKeys.filter { key => {
-          val fieldValuesForkey: Map[starling.pivot.Field,Any] = key.fieldValues
+          val fieldValuesForkey: Map[starling.pivot.Field,Any] = key.fieldValues(referenceDataLookup)
           keyFilters.forall { case (field, values) =>
             fieldValuesForkey.get(field).map(value => values.contains(value)).getOrElse(true)
           }
@@ -260,7 +261,7 @@ class MarketDataPivotTableDataSource(reader: MarketDataReader, edits:PivotEdits,
 
     val addedRows = edits.newRows.zipWithIndex.map{case (row,index) => {
       val fixedRow = if (marketDataType.marketDataKeyFields.forall(f => row.contains(f) && row(f) != UndefinedValue)) {
-        row ++ marketDataType.createKey(Row(row)).fieldValues
+        row ++ marketDataType.createKey(Row(row)).fieldValues(referenceDataLookup)
       } else {
         row
       }

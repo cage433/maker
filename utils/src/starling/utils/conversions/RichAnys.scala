@@ -21,7 +21,7 @@ class RichAny[T](protected val value: T) {
   def applyIf[V](condition: => Boolean, t: T => V, f: T => V): V = if (condition) t(value) else f(value)
   def applyIf(condition: => Boolean, t: T => T): T = if (condition) t(value) else value
   def applyIf(condition: T => Boolean, t: T => T): T = applyIf(condition(value), t)
-  def applyAll(fns: (T => T)*): T = fns.foldLeft(value) { (acc, fn) => fn(acc) }
+  def applyAll(fns: (T => T)*): T = Function.chain(fns)(value)
   def update[V](actions: (T => V)*): T = { actions.foreach(_.apply(value)); value }
   def updateIt[V](actions: (T => V)*): T = update(actions : _*)
   def compareTo(other : T)(implicit ev : Ordering[T]) = ev.compare(value, other)
@@ -57,6 +57,8 @@ class RichAny[T](protected val value: T) {
   def ::-(list: List[T]): List[T] = value :: list
   def ::-(anotherElem: T): List[T] = value :: anotherElem :: Nil
   def ->>[V](vs: V*): (T, List[V]) = (value, vs.toList)
+
+  def const[V] = (v:V) => value
 
   private def perform(action: => Unit): T = { action; value }
 }

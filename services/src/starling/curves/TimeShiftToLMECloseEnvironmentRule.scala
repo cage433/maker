@@ -10,7 +10,7 @@ import starling.market.{FuturesExchangeFactory, Market, FuturesMarket}
 import starling.marketdata._
 import starling.gui.api.{PricingGroup, EnvironmentRuleLabel}
 
-object TimeShiftToLMECloseEnvironmentRule extends EnvironmentRule {
+class TimeShiftToLMECloseEnvironmentRule(referenceDataLookup: ReferenceDataLookup) extends EnvironmentRule {
   val pricingGroups = List(PricingGroup.Metals)
   val observationTimeOfDay = ObservationTimeOfDay.LMEClose
   val label = EnvironmentRuleLabel("Time shift to " + observationTimeOfDay.name)
@@ -32,13 +32,13 @@ object TimeShiftToLMECloseEnvironmentRule extends EnvironmentRule {
 
     def previousEnv(day:Day, timeOfDay:ObservationTimeOfDay, overrides:Map[MarketDataType,ObservationTimeOfDay]) = {
       val slice = new MarketDataReaderMarketDataSlice(reader, ObservationPoint(day, timeOfDay), overrides)
-      Environment(new NamingAtomicEnvironment(new MarketDataCurveObjectEnvironment(day.endOfDay, slice), timeOfDay.name))
+      Environment(new NamingAtomicEnvironment(new MarketDataCurveObjectEnvironment(day.endOfDay, slice, referenceDataLookup = referenceDataLookup), timeOfDay.name))
     }
 
     val env = {
       val envDayAndTime = observationDay.endOfDay
       val slice = new MarketDataReaderMarketDataSlice(reader, ObservationPoint(observationDay, observationTimeOfDay), Map(SpotFXDataType -> LondonClose))
-      new MarketDataCurveObjectEnvironment(envDayAndTime, slice) {
+      new MarketDataCurveObjectEnvironment(envDayAndTime, slice, referenceDataLookup = referenceDataLookup) {
         override def curve(curveKey: CurveKey) = {
           curveKey match {
             case ForwardCurveKey(market:FuturesMarket) if (needsShift.contains(market)) => {

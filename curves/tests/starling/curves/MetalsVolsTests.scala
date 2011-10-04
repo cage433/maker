@@ -26,7 +26,7 @@ class MetalsVolsTests extends TestMarketTest {
         })
 
         def fixings(key : PriceFixingsHistoryDataKey, observationPoint: ObservationPoint) = throw new Exception("Not implemented")
-      }
+      }, false, ReferenceDataLookup.Null
       )
     val env = Environment(atomicEnv)
 

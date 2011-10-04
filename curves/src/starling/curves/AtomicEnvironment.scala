@@ -62,6 +62,8 @@ abstract class TestingAtomicEnvironment(var shiftsCanBeIgnored : Boolean = false
  * @see Environment
  */
 trait AtomicEnvironment extends AtomicEnvironmentHelper{
+  def referenceDataLookup: ReferenceDataLookup = ReferenceDataLookup.Null
+
   /**	Returns the value of a market datum
    * 	@param key Specifies an item of market data
    * 	@return The value of the market data
@@ -258,7 +260,8 @@ case class MappingCurveObjectEnvironment(
 case class MarketDataCurveObjectEnvironment(
   marketDayAndTime:DayAndTime,
   marketDataSlice:MarketDataSlice,
-  shiftsCanBeIgnored : Boolean = false
+  shiftsCanBeIgnored : Boolean = false,
+  override val referenceDataLookup: ReferenceDataLookup
 ) extends CurveObjectEnvironment {
 
   def marketDay = marketDayAndTime

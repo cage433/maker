@@ -3,15 +3,13 @@ package starling.curves
 import starling.daterange._
 import starling.marketdata._
 import starling.utils.ImplicitConversions._
-import starling.market.{CommodityMarket, FuturesMarket}
+import starling.market.CommodityMarket
 import starling.db.{MarketDataReaderMarketDataSlice, MarketDataReader}
 import starling.gui.api.{PricingGroup, EnvironmentRuleLabel}
 
 
-class VanillaEnvironmentRule(
-    pointRule:(Day)=>ObservationPoint,
-    timeOfDay:TimeOfDay,
-    val label: EnvironmentRuleLabel, val pricingGroups: List[PricingGroup]) extends EnvironmentRule {
+class VanillaEnvironmentRule(pointRule:(Day)=>ObservationPoint, timeOfDay:TimeOfDay, val label: EnvironmentRuleLabel,
+  val pricingGroups: List[PricingGroup], referenceDataLookup: ReferenceDataLookup) extends EnvironmentRule {
 
   override def createNullAtomicEnvironment(observationDay: Day) = new NullAtomicEnvironment(observationDay.atTimeOfDay(timeOfDay))
 
@@ -21,7 +19,7 @@ class VanillaEnvironmentRule(
     val environmentX = {
       val slice = new MarketDataReaderMarketDataSlice(marketDataReader, observationPoint)
       val dayAndTime = observationDay.atTimeOfDay(timeOfDay)
-      Environment(new MarketDataCurveObjectEnvironment(dayAndTime, slice))
+      Environment(new MarketDataCurveObjectEnvironment(dayAndTime, slice, referenceDataLookup = referenceDataLookup))
     }
 
     new EnvironmentWithDomain {

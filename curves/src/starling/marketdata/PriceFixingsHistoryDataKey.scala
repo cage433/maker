@@ -23,7 +23,7 @@ case class PriceFixingsHistoryDataKey(marketName: String, exchangeName: Option[S
     }
   }
 
-  def fieldValues = Map(PriceFixingsHistoryDataType.marketField.field → marketName)
+  def fieldValues(referenceDataLookup: ReferenceDataLookup) = Map(PriceFixingsHistoryDataType.marketField.field → marketName)
 }
 
 object PriceFixingsHistoryDataKey {

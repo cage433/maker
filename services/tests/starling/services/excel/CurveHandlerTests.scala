@@ -11,6 +11,7 @@ import starling.gui.api._
 import starling.curves.{EnvironmentSpecification, ClosesEnvironmentRule, CurveViewer}
 import starling.pivot.{PivotQuantity, Field, PivotFieldsState}
 import starling.quantity.UOM
+import starling.marketdata.ReferenceDataLookup
 
 
 class CurveHandlerTests extends StarlingTest with ShouldMatchers {
@@ -25,7 +26,7 @@ class CurveHandlerTests extends StarlingTest with ShouldMatchers {
     val pricingGroup: PricingGroup = PricingGroup.Metals
     val selection: MarketDataSelection = MarketDataSelection(Some(pricingGroup))
     val observationDay: Day = Day.today
-    val environmentRule = ClosesEnvironmentRule().label
+    val environmentRule = ClosesEnvironmentRule.label()
     val environmentSpecification = EnvironmentSpecificationLabel(observationDay, environmentRule)
     val dataIdentifier: MarketDataIdentifier = MarketDataIdentifier(selection, 123)
     val fieldsState: PivotFieldsState = PivotFieldsState(dataFields = List(Field("Price")),

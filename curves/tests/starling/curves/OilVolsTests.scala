@@ -84,7 +84,7 @@ class OilVolsTests extends JonTestEnv {
           case p : PriceDataKey => PriceData.create(periods.map(_ -> 100.0), market.priceUOM)
         })
         def fixings(key : PriceFixingsHistoryDataKey, observationPoint: ObservationPoint) = throw new Exception("Not implemented")
-      }
+      }, false, ReferenceDataLookup.Null
     )
     val env = Environment(atomicEnv).undiscounted
     atmVols.zip(periods).foreach {

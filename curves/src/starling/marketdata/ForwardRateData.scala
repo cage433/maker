@@ -59,7 +59,7 @@ case class ForwardRateDataKey(ccy : UOM) extends MarketDataKey {
         rateField
     )
   }
-  def fieldValues = Map(ForwardRateDataType.currencyField.field -> ccy)
+  def fieldValues(referenceDataLookup: ReferenceDataLookup) = Map(ForwardRateDataType.currencyField.field → ccy)
 }
 
 case class ForwardRateData(entries : List[ForwardRateDataEntry]) extends MarketData {

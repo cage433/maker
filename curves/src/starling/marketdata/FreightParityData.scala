@@ -22,15 +22,15 @@ case class FreightParityDataKey(contractualIncoterm: IncotermCode, contractualLo
   type marketDataDBType = FreightParityData
   def dataType = FreightParityDataType
   def subTypeKey = ""
-  def fieldValues = Map(contractualIncotermField.field → contractualIncoterm.code,
-    contractualLocationField.field → contractualLocation.code, destinationIncotermField.field → destinationIncoterm.code,
-    destinationLocationField.field → destinationLocation.code)
-
-  override def rows(marketData: FreightParityData, referenceDataLookup: ReferenceDataLookup): List[Row] = List(Row(
+  def fieldValues(referenceDataLookup: ReferenceDataLookup) = Map(
     contractualIncotermField.field → referenceDataLookup.incotermFor(contractualIncoterm),
     contractualLocationField.field → referenceDataLookup.contractLocationFor(contractualLocation),
     destinationIncotermField.field → referenceDataLookup.incotermFor(destinationIncoterm),
-    destinationLocationField.field → referenceDataLookup.countryFor(destinationLocation),
+    destinationLocationField.field → referenceDataLookup.countryFor(destinationLocation)
+  )
+
+  override def rows(marketData: FreightParityData, referenceDataLookup: ReferenceDataLookup): List[Row] = List(Row(
+    fieldValues(referenceDataLookup),
     parityRateField.field → Quantity(marketData.parityRate, UOM.USD / UOM.MT),
     commentField.field → marketData.comment
   ))

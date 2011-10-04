@@ -10,14 +10,13 @@ import starling.utils.ImplicitConversions._
 /**
  * Class for atomic benchmark data
  */
-case class AreaMaterialBenchmarkAtomicKey(
-  area:Area, material:Material,
+case class AreaBenchmarkAtomicKey(area: AreaCode, commodity: Commodity, grade: GradeCode,
   override val ignoreShiftsIfPermitted : Boolean = false
 ) 
-  extends AtomicDatumKey(AreaMaterialBenchmarkCurveKey(material.commodity), (area.code, material.grade.code), ignoreShiftsIfPermitted)
+  extends AtomicDatumKey(AreaBenchmarkCurveKey(commodity), (area, grade), ignoreShiftsIfPermitted)
 {
   def periodKey : Option[Period] = None
-  def nullValue = Quantity(0.0, material.commodity.representativeMarket.priceUOM)
+  def nullValue = Quantity(0.0, commodity.representativeMarket.priceUOM)
   def forwardStateValue(originalAtomicEnv: AtomicEnvironment, forwardDayAndTime: DayAndTime) = {
     originalAtomicEnv.apply(this)
   }
@@ -26,19 +25,19 @@ case class AreaMaterialBenchmarkAtomicKey(
 /**
  * Benchmark curve key for benchmark area data
  */
-case class AreaMaterialBenchmarkCurveKey(commodity : Commodity) extends NonHistoricalCurveKey[GradeAreaBenchmarkData]{
+case class AreaBenchmarkCurveKey(commodity : Commodity) extends NonHistoricalCurveKey[GradeAreaBenchmarkData]{
   override def typeName = "Price"
   def marketDataKey = GradeAreaBenchmarkMarketDataKey(commodity)
   def underlying = commodity.toString + " Benchmark"
   def buildFromMarketData(marketDay : DayAndTime, marketData : GradeAreaBenchmarkData) : CurveObject = {
-    AreaMaterialBenchmarkCurveObject(marketDay, marketData)
+    AreaBenchmarkCurveObject(marketDay, marketData)
   }
 }
 
 /**
  * Benchmark Location Curve for benchmarks using grade and area location as keys
  */
-case class AreaMaterialBenchmarkCurveObject(marketDayAndTime : DayAndTime, marketData : GradeAreaBenchmarkData) extends CurveObject {
+case class AreaBenchmarkCurveObject(marketDayAndTime : DayAndTime, marketData : GradeAreaBenchmarkData) extends CurveObject {
   val marketDataMap = marketData.areaData.toMap.withDefaultValue(Quantity.NULL)
   type CurveValuesType = Quantity
 
@@ -51,10 +50,10 @@ case class AreaMaterialBenchmarkCurveObject(marketDayAndTime : DayAndTime, marke
   }
 }
 
-case class CommodityCountryBenchmarkAtomicKey(commodity: Commodity, country: NeptuneCountry,
+case class CountryBenchmarkAtomicKey(commodity: Commodity, country: NeptuneCountryCode,
   override val ignoreShiftsIfPermitted: Boolean = false
 )
-  extends AtomicDatumKey(CommodityCountryBenchmarkCurveKey(commodity), country.code, ignoreShiftsIfPermitted)
+  extends AtomicDatumKey(CountryBenchmarkCurveKey(commodity), country, ignoreShiftsIfPermitted)
 {
   def periodKey : Option[Period] = None
   def nullValue = Quantity(0.0, commodity.representativeMarket.priceUOM)
@@ -66,12 +65,12 @@ case class CommodityCountryBenchmarkAtomicKey(commodity: Commodity, country: Nep
 /**
  * Benchmark curve key for benchmark location data
  */
-case class CommodityCountryBenchmarkCurveKey(commodity : Commodity) extends NonHistoricalCurveKey[CountryBenchmarkData]{
+case class CountryBenchmarkCurveKey(commodity : Commodity) extends NonHistoricalCurveKey[CountryBenchmarkData]{
   override def typeName = "Price"
   def marketDataKey = CountryBenchmarkMarketDataKey(commodity)
   def underlying = commodity.toString + " Benchmark"
   def buildFromMarketData(marketDay : DayAndTime, marketData : CountryBenchmarkData) : CurveObject = {
-    CommodityCountryBenchmarkCurveObject(marketDay, marketData)
+    CountryBenchmarkCurveObject(marketDay, marketData)
   }
 }
 
@@ -79,7 +78,7 @@ case class CommodityCountryBenchmarkCurveKey(commodity : Commodity) extends NonH
 /**
  * Benchmark Location Curve for benchmarks using grade and location as keys
  */
-case class CommodityCountryBenchmarkCurveObject(marketDayAndTime : DayAndTime, marketData : CountryBenchmarkData) extends CurveObject {
+case class CountryBenchmarkCurveObject(marketDayAndTime : DayAndTime, marketData : CountryBenchmarkData) extends CurveObject {
   val countryData = marketData.countryData.toMap.withDefaultValue(Quantity.NULL)
   type CurveValuesType = Quantity
 

@@ -13,6 +13,7 @@ case class ObservationPoint(point:Option[(Day,ObservationTimeOfDay)]) {
     case (Some(newTime), Some((day, _))) => ObservationPoint(Some(day, newTime))
     case _ => this
   }
+  def copyDay(day: Day) = ObservationPoint(day, timeOfDay)
 }
 
 object ObservationPoint {

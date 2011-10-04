@@ -11,13 +11,17 @@ import ObservationTimeOfDay._
 import starling.market.FuturesExchangeFactory._
 import starling.gui.api.{PricingGroup, EnvironmentRuleLabel}
 
+object ClosesEnvironmentRule {
+  def label(allowOldPricesToBeUsed: Boolean = false): EnvironmentRuleLabel =
+    if (allowOldPricesToBeUsed) EnvironmentRuleLabel("Most recent closes") else EnvironmentRuleLabel.AllCloses
+}
 
-case class ClosesEnvironmentRule(allowOldPricesToBeUsed : Boolean = false) extends EnvironmentRule {
+case class ClosesEnvironmentRule(referenceDataLookup: ReferenceDataLookup, allowOldPricesToBeUsed : Boolean = false) extends EnvironmentRule {
   val pricingGroups = List(PricingGroup.Metals)
   val exchangeCloses = Map(SFS → SHFEClose, LME → LMEClose, COMEX → COMEXClose)
   val marketCloses = exchangeCloses.composeKeys((market: FuturesMarket) => market.exchange)
 
-  val label = if (allowOldPricesToBeUsed) EnvironmentRuleLabel("Most recent closes") else EnvironmentRuleLabel.AllCloses
+  val label = ClosesEnvironmentRule.label(allowOldPricesToBeUsed)
   private val numberOfDaysToLookBack = if (allowOldPricesToBeUsed) 7 else 0
   
   lazy val marketsWithCloseTimeOfDay = Market.futuresMarkets.optPair(marketCloses.get(_)).toList
@@ -74,7 +78,7 @@ case class ClosesEnvironmentRule(allowOldPricesToBeUsed : Boolean = false) exten
       } }
     }
 
-    val environmentX = Environment(new MarketDataCurveObjectEnvironment(if (allowOldPricesToBeUsed) observationDay.startOfDay else observationDay.endOfDay, reader))
+    val environmentX = Environment(new MarketDataCurveObjectEnvironment(if (allowOldPricesToBeUsed) observationDay.startOfDay else observationDay.endOfDay, reader, false, referenceDataLookup))
 
     new EnvironmentWithDomain {
       val environment = environmentX

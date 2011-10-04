@@ -184,20 +184,23 @@ class NewSchemaMdDB(db: DBTrait[RichResultSetRow], referenceDataLookup: Referenc
 //    }
   }.toSet
 
+  private def queryUsingExtendedKeys[T](extendedKeyIds: List[Int], query: Query)(f: RichResultSetRow => T): List[T] = {
+    val keys = extendedKeyIds.flatMap(extendedKeys.get(_))
+    extendedKeyIds.grouped(1900).toList.flatMap { chunk => { //limit is 2000 but use 1900 to leave space for other parameters
+      db.queryWithResult(query and("extendedKey" in chunk))(f)
+    } }
+  }
+
   def latestMarketData(from: Day, to: Day, marketDataType: MarketDataType, marketDataSet: MarketDataSet) = {
 //    require(marketDataType.valueFields.size == 1, "Market data type %s has multiple value field keys: %s "
 //      % (marketDataType, marketDataType.valueFields))
 
     val extendedKeyIds = extendedKeyIdsFor(marketDataType, List(marketDataSet))
 
-    val values = extendedKeyIds.grouped(1998).toList.flatMap { chunk => { //limit is 2000 but there is from and to
-      db.queryWithResult(
-        select("*")
-          from("MarketDataValue")
-         where("observationDay" gte from, "observationDay" lte to)
-           and("extendedKey" in chunk)
-      ) { marketDataValue(_) }
-    } }
+    val values = queryUsingExtendedKeys(extendedKeyIds,
+      select("*")
+        from("MarketDataValue")
+       where("observationDay" gte from, "observationDay" lte to)) { marketDataValue(_) }
 
     values.groupBy(_.timedKey).mapValuesEagerly { valuesForTimeKey => {
       val latestValuesByValueKey = valuesForTimeKey.groupBy(_.valueKey).mapValues(_.maxBy(_.commitId))
@@ -217,17 +220,19 @@ class NewSchemaMdDB(db: DBTrait[RichResultSetRow], referenceDataLookup: Referenc
             observationDays: Option[Set[Option[Day]]], observationTimes: Option[Set[ObservationTimeOfDay]],
             marketDataKeys: Option[Set[MarketDataKey]]): List[(TimedMarketDataKey, MarketData)] = {
 
+//    log.infoWithTime("query(%d, (%s), %s, %s, %s, %s)" %
+//      (version, mds.map(_.name), marketDataType.name, observationDays, observationTimes, marketDataKeys)) {
+
     val mostRecentValues = log.infoWithTime("query.mostRecentValues") {
       val commitClause = "commitId" lte version
       val observationDayClause = observationDays.fold(Clause.optIn("observationDay", _), TrueClause)
-      val extendedKeyClause = "extendedKey" in extendedKeyIdsFor(marketDataType, mds, observationTimes, marketDataKeys)
 
       val values = new MarketDataValueMap()
 
-      db.query(select("*")
-                 from("MarketDataValue")
-                where(commitClause, observationDayClause, extendedKeyClause)
-//              orderBy("commitId".asc)
+      queryUsingExtendedKeys(extendedKeyIdsFor(marketDataType, mds, observationTimes, marketDataKeys),
+        select("*")
+          from("MarketDataValue")
+         where(commitClause, observationDayClause)
       ) { marketDataValue(_).update(values) }
 
       values.values
@@ -246,8 +251,11 @@ class NewSchemaMdDB(db: DBTrait[RichResultSetRow], referenceDataLookup: Referenc
   def queryForObservationDayAndMarketDataKeys(version: Int, mds: List[MarketDataSet], marketDataType: MarketDataType) = {
     db.queryWithResult(
       select("distinct observationDay, extendedKey")
-        from("MarketDataValue v")
-       where("commitId" lte version, "extendedKey" in extendedKeyIdsFor(marketDataType, mds))) { rs =>
+        from("MarketDataValue v, MarketDataExtendedKey ek")
+       where("commitId" lte version)
+         and("v.extendedKey" eql "ek.id")
+         and("ek.marketDataSet" in mds.map(_.name))
+         and("ek.marketDataType" eql marketDataType.name)) { rs =>
 
       val extendedKey = extendedKeys(rs.getInt("extendedKey"))
       val observationTime = extendedKey.time
@@ -262,10 +270,10 @@ class NewSchemaMdDB(db: DBTrait[RichResultSetRow], referenceDataLookup: Referenc
     val keys = extendedKeyIdsFor(id.subTypeKey.dataType, List(id.marketDataSet), Some(Set(id.observationPoint.timeOfDay)),
       Some(Set(id.subTypeKey)))
 
-    val values = if (keys.isEmpty) Nil else db.queryWithResult(
+    val values = if (keys.isEmpty) Nil else queryUsingExtendedKeys(keys,
       select("*")
         from("MarketDataValue")
-       where("observationDay" eql id.observationPoint.day.getOrElse(null), "extendedKey" in keys)
+       where("observationDay" eql id.observationPoint.day.getOrElse(null))
     ) { rs => marketDataValue(rs) }
 
     val latestValuesByValueKey = values.groupBy(_.valueKey).mapValues(_.maxBy(_.commitId))

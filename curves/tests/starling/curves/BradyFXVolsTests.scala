@@ -43,7 +43,7 @@ class BradyFXVolsTests extends TestMarketTest{
           case SpotFXDataKey(_) => SpotFXData(Quantity(1.5, USD/EUR))
         })
         def fixings(key : PriceFixingsHistoryDataKey, observationPoint: ObservationPoint) = throw new Exception("Not implemented")
-      }
+      }, false, ReferenceDataLookup.Null
       )
 
     /* For each delta/day, determine the corresponding strike by inverting the atm delta function. Then

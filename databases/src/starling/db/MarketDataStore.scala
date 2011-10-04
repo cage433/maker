@@ -209,7 +209,7 @@ object VersionedMarketData {
 case class MarketDataEntry(observationPoint: ObservationPoint, key: MarketDataKey, data: MarketData, tag: Option[String] = None) {
   val dataType = key.dataType
 
-  def isEmpty = key.castRows(data, ReferenceDataLookup.Null).isEmpty // data.size == 0
+  def isEmpty = data.size == 0 // key.castRows(data, ReferenceDataLookup.Null).isEmpty
 
   def toSave(existingData: Option[VersionedMarketData]) = !isEmpty option(MarketDataUpdate(timedKey, Some(data), existingData, tag))
 

@@ -99,7 +99,7 @@ case object EquityPricesMarketDataKey extends MarketDataKey {
       Field("Price") -> price.pq
     )
   }
-  def fieldValues = Map()
+  def fieldValues(referenceDataLookup: ReferenceDataLookup) = Map()
 }
 
 case class EquityPriceCurveObject(val marketDayAndTime:DayAndTime, ric:RIC, price:Quantity) extends CurveObject {

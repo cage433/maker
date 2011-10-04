@@ -287,7 +287,7 @@ case class MigrateMarketDataSchema(writer: DBWriter, db: DB) extends Log {
   }
 
   private def getValueKey(key: MarketDataKey, row: Row): MarketDataValueKey = {
-    val fields = key.dataType.keyFields -- key.fieldValues.keySet
+    val fields = key.dataType.keyFields -- key.fieldValues().keySet
 
     MarketDataValueKey(-1, row.filterKeys(fields.contains))
   }

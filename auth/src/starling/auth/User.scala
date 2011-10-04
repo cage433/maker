@@ -35,7 +35,7 @@ case class User(
 
 object User {
   // Dev user for use during development
-  val Dev = User("Dev", "Dev name", None, None, List("Starling Developers"), "+44 888 8888", "dev@trafigura.com", "IT Risk Systems")
+  val Dev = User("Dev", "Dev name", None, None, List(Groups.StarlingDevelopers), "+44 888 8888", "dev@trafigura.com", "IT Risk Systems")
   // Test user for automated tests
   val Test = User("Nobody", "Nobody", None, None, List(), "None", "None@trafigura.com", "None")
 
@@ -64,4 +64,16 @@ object User {
 
 trait LdapUserLookup {
   def user(username: String): Option[User]
+}
+
+object Groups {
+  val StarlingDevelopers = "Starling Developers".i
+  val StarlingProductionAdmin = "Starling Production Admins".i
+  val StarlingShanghai = "Starling Shanghai".i
+  val StarlingLucerne = "Starling Lucerne".i
+  val StarlingLucerneAdmin = "Starling Lucerne Admin".i
+  val StarlingTesters = "Starling Testers".i
+  val StarlingLondonDerivatives = "Starling London derivatives".i
+  val StarlingGasolineSpec = "Starling Gasoline Spec Global".i
+  val StarlingHoustonDerivatives = "Starling Houston Derivatives".i
 }

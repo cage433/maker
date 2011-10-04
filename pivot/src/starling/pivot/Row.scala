@@ -10,6 +10,7 @@ import starling.utils.sql.PersistAsBlob
 
 object Row {
   def apply(entries: (Field, Any)*) = new Row(entries.toMap)
+  def apply(map: Map[Field, Any], entries: (Field, Any)*): Row = new Row(map) + apply(entries : _*)
   def apply(field: Field, value: Any): Row = apply((field, value))
 
   def singleRow(rows: List[Row], dataTypeName: String): Row = rows match {

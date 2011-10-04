@@ -99,7 +99,7 @@ case class PriceDataKey(market: CommodityMarket) extends MarketDataKey {
   override def unmarshallDB(dbValue: Any): marketDataType =
     PriceData.fromSorted(dbValue.asInstanceOf[marketDataDBType].prices, market.priceUOM)
 
-  def fieldValues = Map(
+  def fieldValues(referenceDataLookup: ReferenceDataLookup) = Map(
     PriceDataType.marketField.field → market.name,
     PriceDataType.marketCommodityField.field → market.commodity.toString,
     PriceDataType.marketTenorField.field → market.tenor.toString).addSome(
