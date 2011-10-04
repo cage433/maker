@@ -82,7 +82,7 @@ in_namespace('TradeMgmt.Internal.Permission') {
     field 'role', :integer_key, :references => 'TradeMgmt.Internal.Permission.Role(oid)'
   }
   
-    define('TrafficOperatorAndTradersForGC') {
+    define('TradersAndTrafOps') {
     field 'gcCode',                     :string
     field 'traders',                   :list, :element_type => 'User', :optional => true
     field 'trafficOperators',          :list, :element_type => 'User', :optional => true
