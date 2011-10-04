@@ -87,6 +87,8 @@ class UserReportsService(
               userReportData.marketDataSelection.copy(excel = None)
             }
           }
+          val marketDataVersion = marketDataStore.latest(marketDataSelection)
+
           val rule = if(useExcel) {
             EnvironmentRuleLabel.RealTime
           } else {

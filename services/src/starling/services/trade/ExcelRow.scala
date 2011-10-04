@@ -374,6 +374,12 @@ case class ExcelRow(row: Map[String, Any], traders: Traders, currentlyLoggedOn: 
     assert(traders.trader(trader).isDefined, "Don't recognised name of trader: '" + string(TraderColumn) + "', used: " + traders.traders.map(_.name))
 
     val bookID = TreeID(eaiDealBookMapping.book(dealID.get.id))
+    Desk.eaiDeskFromID(bookID.id) match {
+      case None => { // sanity check
+        throw new Exception("Deal id " + dealID.get.id + " refers to a book (" + bookID + ") that Starling doesn't support.")
+      }
+      case _ =>
+    }
     val broker = this.broker
     val comment = this.comment
     val clearer = this.clearingHouse
