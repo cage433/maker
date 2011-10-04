@@ -54,21 +54,10 @@
       com.trafigura.services.build.BuildInfoServlet
     </servlet-class>
   </servlet>
-  <servlet>
-    <servlet-name>ServiceReporter</servlet-name>
-    <servlet-class>
-      com.trafigura.services.report.ServiceReporterServlet
-    </servlet-class>
-  </servlet>
-
 
   <servlet-mapping>
     <servlet-name>Info</servlet-name>
     <url-pattern>/info</url-pattern>
-  </servlet-mapping>
-  <servlet-mapping>
-    <servlet-name>ServiceReporter</servlet-name>
-    <url-pattern>/status</url-pattern>
   </servlet-mapping>
 <!--
   <servlet-mapping>
