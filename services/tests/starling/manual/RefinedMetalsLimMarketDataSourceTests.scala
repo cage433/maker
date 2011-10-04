@@ -31,7 +31,7 @@ object RefinedMetalsLimMarketDataSourceTests {
     val importing = true
 
     if (importing) {
-      init.marketDataStore.importFor(10 May 2011, LimMetals)//LIM, System)
+      init.marketDataStore.importFor(10 Sep 2011, Neptune)//LIM, System)
 //      val map = init.marketDataStore.marketDataSources(LimMetals).read(25 Apr 2011)
 //      val days = map.mapValues(mde => mde.map(_.observationPoint.day)).toSet
 //      println("map:: " + map)
@@ -41,7 +41,7 @@ object RefinedMetalsLimMarketDataSourceTests {
     else {
       val source = new RefinedMetalsLimMarketDataSource(new LIMServer("ttraflonrh221", 6400))
       val updates = DBMarketDataStore(init.props, init.starlingRichDB, MultiMap(LIM ->> source))
-        .importer.getUpdates(12 Apr 2011, LIM)
+        .importer.getUpdates(12 Sep 2011, LIM)
 
       updates.get(LIM)
       source.read(12 Apr 2011)

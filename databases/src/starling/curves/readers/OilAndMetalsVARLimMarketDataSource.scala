@@ -12,8 +12,7 @@ import starling.pivot.MarketValue
 import starling.concurrent.MP._
 import starling.db.{NoMarketDataForDayException, MarketDataEntry, MarketDataSource}
 import starling.curves.MissingMarketDataException
-import starling.utils.Log
-
+import starling.utils.{MathUtil, Log}
 
 class OilAndMetalsVARLimMarketDataSource(limServer: LIMServer) extends MarketDataSource {
   val daysInThePast = 365
@@ -44,7 +43,7 @@ class OilAndMetalsVARLimMarketDataSource(limServer: LIMServer) extends MarketDat
             }
           }
           spotData.map {
-            case (d: Day, p: Double) => (d, (level, p * market.limSymbol.get.multiplier))
+            case (d: Day, p: Double) => (d, (level, MathUtil.roundToNdp(p * market.limSymbol.get.multiplier, 6)))
           }
         } }.groupInto(_._1, _._2)
 
@@ -82,7 +81,8 @@ class OilAndMetalsVARLimMarketDataSource(limServer: LIMServer) extends MarketDat
         val prices = connection.getPrices(relationToDeliveryMonth.keys, level, lastObservationDay - daysInThePast, lastObservationDay)
           .groupInto {
           case ((relation, observationDay), price) => {
-            (ObservationPoint(observationDay), relationToDeliveryMonth(relation) → MarketValue.quantity(price * limSymbol.multiplier, market.priceUOM))
+            val roundedPrice = MathUtil.roundToNdp(price * limSymbol.multiplier, 6)
+            (ObservationPoint(observationDay), relationToDeliveryMonth(relation) → MarketValue.quantity(roundedPrice, market.priceUOM))
           }
         }
         prices

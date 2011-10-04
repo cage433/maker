@@ -77,4 +77,19 @@ class SpreadStdDevsTests extends TestMarketTest {
       1e-6
     )
   }
+
+  @Test
+  def testBuilder() {
+    val builder = new SpreadStdDevSurfaceDataBuilder
+    val period1: SpreadPeriod = SpreadPeriod(Month(2011, 1), Month(2011, 2))
+    val period3: SpreadPeriod = SpreadPeriod(Month(2011, 3), Month(2011, 4))
+    val period2: SpreadPeriod = SpreadPeriod(Month(2011, 2), Month(2011, 3))
+    builder.addAtm(period2, new Quantity(2))
+    builder.addAtm(period1, new Quantity(2))
+    builder.addAtm(period3, new Quantity(3))
+    val data = builder.build
+
+    assertEquals(List(period1, period2, period3), data.periods.toList)
+
+  }
 }

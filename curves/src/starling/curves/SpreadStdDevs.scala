@@ -10,6 +10,7 @@ import collection.immutable.TreeMap
 import starling.pivot._
 import collection.mutable.HashMap
 import starling.marketdata.{ReferenceDataLookup, MarketDataType, MarketData, MarketDataKey}
+import scalaz.Scalaz._
 
 class SpreadStdDevs
 
@@ -26,6 +27,8 @@ case class SpreadStdDevSurfaceData(
   assert(periods.length == atm.length, "Spread periods must correspond to std.dev. data")
   assert(periods.length == call.length, "Spread periods must correspond to std.dev. data")
   assert(periods.length == put.length, "Spread periods must correspond to std.dev. data")
+  assert(periods.toList == periods.toList.sortWith(_ < _))
+  assert(!uom.isNull, "UOM can not be null for spread std devs")
 
   //hashCode and equals are overridden because arrays uses reference equality
   override def hashCode() = periods.toList.hashCode ^ atm.toList.hashCode
@@ -41,12 +44,14 @@ case class SpreadStdDevSurfaceData(
     }
   }
 
+  override def toString = "SpreadStdDevSurfaceData(" +
+    periods.toList + ", " + atm.toList + ", " + call.toList + ", " + put.toList + ", " + uom + ")"
+
   def size = periods.length
 }
 
-class SpreadStdDevSurfaceDataBuilder {
+class SpreadStdDevSurfaceDataBuilder(var uom:Option[UOM] = None) {
 
-  var uom:Option[UOM] = None
   val atms = new HashMap[Period,Double]()
   val puts = new HashMap[Period,Double]()
   val calls = new HashMap[Period,Double]()
@@ -56,6 +61,7 @@ class SpreadStdDevSurfaceDataBuilder {
   def addCall(period: Period, stdDev:Quantity):Unit = store(calls, period, stdDev)
 
   private def store(map:HashMap[Period,Double], period: Period, stdDev:Quantity) {
+    require(!map.contains(period), "there is already a value for " + period)
     map(period) = stdDev.value
     uom match {
       case None => uom = Some(stdDev.uom)
@@ -64,6 +70,10 @@ class SpreadStdDevSurfaceDataBuilder {
     }
   }
 
+  def buildIfDefined = {
+    val data = build
+    data.periods.nonEmpty option (data)
+  }
   def build = {
     import Spread._
 

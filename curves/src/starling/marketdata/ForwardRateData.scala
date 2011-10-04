@@ -37,6 +37,7 @@ object ForwardRateDataType extends MarketDataType {
 
 case class ForwardRateDataEntry(forwardDay : Day, format : String, trinityInstrumentType : String, rate : Double) {
   def isDiscount = format == "Discount"
+  def key() = (forwardDay, format, trinityInstrumentType)
 }
 
 case class ForwardRateDataKey(ccy : UOM) extends MarketDataKey {
@@ -65,6 +66,16 @@ case class ForwardRateDataKey(ccy : UOM) extends MarketDataKey {
 case class ForwardRateData(entries : List[ForwardRateDataEntry]) extends MarketData {
   def lastDay = entries.maximum(_.forwardDay)
   def size = entries.size
+  private def toMap() = {
+    entries.groupBy(_.key())
+  }
+  override def equals(obj: Any) = {
+    obj match {
+      case rhs:ForwardRateData => toMap() == rhs.toMap()
+      case _ => false
+    }
+  }
+  override def hashCode = toMap().hashCode
 }
 
 

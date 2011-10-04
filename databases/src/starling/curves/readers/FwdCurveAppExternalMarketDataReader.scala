@@ -6,7 +6,6 @@ import starling.daterange._
 import starling.db._
 import starling.curves._
 import starling.marketdata._
-import collection.immutable.TreeMap
 import starling.quantity.UOM._
 import starling.utils.ImplicitConversions._
 import starling.quantity.{Percentage, UOM, Quantity}
@@ -16,6 +15,7 @@ import starling.market._
 import starling.LIMServer
 import collection.SortedMap
 import starling.gui.api.MarketDataIdentifier
+import collection.immutable.{Iterable, TreeMap}
 
 
 object FwdCurveAppExternalMarketDataReader {
@@ -30,36 +30,32 @@ object FwdCurveAppExternalMarketDataReader {
       6 -> List(3137, 3138, 3139),
       12 -> List(3140, 3141, 3142)))
 
-  def constructSpreadStdDev[T](
+  def constructSpreadStdDev(
           market : FuturesMarket,
           uom : UOM,
           priceLookup : (List[Int]) => Option[List[PriceData]]
-          ) : Option[T] = {
-    spreadStandardDeviationCurveIDs.get(market).flatMap(curveInfo => {
-      curveInfo.map(tuple => {
+          ) : Option[SpreadStdDevSurfaceData] = {
+    val builder = new SpreadStdDevSurfaceDataBuilder(Some(uom))
+    spreadStandardDeviationCurveIDs.get(market).foreach(curveInfo => {
+      curveInfo.foreach (tuple => {
         val (spreadSize, curveIDs) = tuple
-        priceLookup(curveIDs).flatMap(curveData => {
+        priceLookup(curveIDs).foreach(curveData => {
           val atmCurve :: callCurve :: putCurve :: Nil = curveData
           if (atmCurve.prices.nonEmpty &&
               (atmCurve.prices.keySet == callCurve.prices.keySet) &&
               (atmCurve.prices.keySet == putCurve.prices.keySet)) {
-            val months : Array[Month] = atmCurve.prices.keySet.filter(_.tenor == Some(Month)).map(_.asInstanceOf[Month]).toArray
-            val spreads : Array[Period] = months.map(m => SpreadPeriod(m, m + spreadSize))
-            Some(SpreadStdDevSurfaceData(spreads,
-              months.map(m => atmCurve.prices(m).quantityValue.get.value),
-              months.map(m => callCurve.prices(m).quantityValue.get.value),
-              months.map(m => putCurve.prices(m).quantityValue.get.value),
-              uom
-            ))
-          } else None
+            val months : Array[Month] = atmCurve.prices.keySet.filter(_.tenor == Some(Month)).map(_.asInstanceOf[Month]).toArray.sortWith(_ < _)
+
+            months.zipWithIndex.foreach { case(m, index) => {
+              val period = SpreadPeriod(m, m + spreadSize)
+              builder.addAtm(period, atmCurve.prices(m).quantityValue.get)
+              builder.addCall(period, callCurve.prices(m).quantityValue.get)
+              builder.addPut(period, putCurve.prices(m).quantityValue.get)
+            } }
+          }
         })
-      }).reduceRight((_, _) match {
-        case (Some(a), Some(b)) => Some(SpreadStdDevSurfaceData(
-          a.periods ++ b.periods, a.atm ++ b.atm, a.call ++ b.call, a.put ++ b.put, uom))
-        case (Some(a), None) => Some(a)
-        case (None, Some(b)) => Some(b)
-        case (None, None) => None
-      }).map(_.asInstanceOf[T])
+      })
     })
+    builder.buildIfDefined
   }
 }

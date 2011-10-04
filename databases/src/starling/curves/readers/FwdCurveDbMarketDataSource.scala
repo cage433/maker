@@ -14,6 +14,7 @@ import starling.dbx.QueryBuilder._
 import starling.dbx.Query
 import starling.pivot.MarketValue
 import starling.daterange.ObservationPoint._
+import starling.utils.MathUtil
 
 case class FwdCurveDbMarketDataSource(varSqlDB: DB, businessCalendars: BusinessCalendars, pricingGroupID: Int) extends MarketDataSource {
 
@@ -164,7 +165,7 @@ case class FwdCurveDbMarketDataSource(varSqlDB: DB, businessCalendars: BusinessC
       varSqlDB.queryWithOneResult[MarketData](query, Map("CurveID" -> curveID, "PricingGroupID" -> 1, // TODO [05 Apr 2011] magic pricing group
         "ObservationDate" -> observationDay)) {
         rs => {
-          SpotFXData(Quantity(rs.getDouble("price"), ccy / USD).invert)
+          SpotFXData(Quantity(rs.getDouble("price"), ccy / USD).invert.round(8)) //rounding because we only store 8 decimal places
         }
       } match {
       // TODO [05 Apr 2011] the SpotFXData object should contain an optional quantity - so as not to throw an exception
@@ -234,7 +235,7 @@ case class FwdCurveDbMarketDataSource(varSqlDB: DB, businessCalendars: BusinessC
         rs => {
           val observationDate = rs.getDay("ObservationDate")
           val delivery = deliveryPeriod(market, rs)
-          val price = MarketValue.quantity(rs.getDouble("Price"), market.priceUOM)
+          val price = MarketValue.quantity(MathUtil.roundToNdp(rs.getDouble("Price"), 8), market.priceUOM)
 
           (observationDate, PriceFixingsHistoryData.create(Map((level, StoredFixingPeriod.dateRange(delivery)) → price)))
         }
