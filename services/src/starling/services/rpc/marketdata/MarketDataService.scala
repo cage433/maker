@@ -34,7 +34,7 @@ class MarketDataService(marketDataStore: MarketDataStore, environmentProvider: E
     val (uomFrom, uomTo) = (fromTSC.fromSerializable, toTSC.fromSerializable)
 
     val rates = spotFXRatesFor(snapshotId, observationDay, SpotFXDataKey(uomFrom), SpotFXDataKey(uomTo))
-      .toMapWithKeys(_.uom.denominatorUOM) + (UOM.USD → Quantity(1, UOM.SCALAR))
+      .toMapWithKeys(_.uom.denominatorUOM) + (UOM.USD → Quantity.ONE)
 
     (for (from <- rates.get(uomFrom); to <- rates.get(uomTo)) yield SpotFXRate(snapshotId, observationDay, (from / to).toSerializable))
       .getOrElse(throw new IllegalArgumentException("No Spot FX Rate for %s/%s observed on %s" % (fromTSC, toTSC, snapshotId)))

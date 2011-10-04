@@ -169,8 +169,8 @@ trait PivotQuantityIsNumeric extends Numeric[PivotQuantity] {
   def minus(x: PivotQuantity, y: PivotQuantity) = x - y
   def plus(x: PivotQuantity, y: PivotQuantity) = x + y
 
-  override def zero = PivotQuantity(Quantity(0.0, UOM.NULL))
-  override def one = PivotQuantity(Quantity(1.0, UOM.SCALAR))
+  override def zero = PivotQuantity(Quantity.NULL)
+  override def one = PivotQuantity(Quantity.ONE)
 }
 
 object PivotQuantity {

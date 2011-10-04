@@ -38,7 +38,7 @@ case class AreaBenchmarkCurveKey(commodity : Commodity) extends NonHistoricalCur
  * Benchmark Location Curve for benchmarks using grade and area location as keys
  */
 case class AreaBenchmarkCurveObject(marketDayAndTime : DayAndTime, marketData : GradeAreaBenchmarkData) extends CurveObject {
-  val marketDataMap = marketData.areaData.toMap.withDefaultValue(Quantity.NULL)
+  val marketDataMap = marketData.areaData.withDefaultValue(Quantity.NULL)
   type CurveValuesType = Quantity
 
   def apply(point : AnyRef) = point match {
@@ -79,7 +79,7 @@ case class CountryBenchmarkCurveKey(commodity : Commodity) extends NonHistorical
  * Benchmark Location Curve for benchmarks using grade and location as keys
  */
 case class CountryBenchmarkCurveObject(marketDayAndTime : DayAndTime, marketData : CountryBenchmarkData) extends CurveObject {
-  val countryData = marketData.countryData.toMap.withDefaultValue(Quantity.NULL)
+  val countryData = marketData.countryData.withDefaultValue(Quantity.NULL)
   type CurveValuesType = Quantity
 
   def apply(point : AnyRef) = point match {

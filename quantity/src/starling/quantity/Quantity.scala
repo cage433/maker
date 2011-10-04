@@ -156,7 +156,7 @@ class Quantity(val value : Double, val uom : UOM) extends Ordered[Quantity] with
       rhs
     else
       rhs match {
-        case Quantity(0.0, UOM.NULL) => this
+        case Quantity.NULL => this
         case Quantity(x, this.uom) => Quantity(value + x, uom)
         case Quantity(x, otherUOM) => this.uom.plus(otherUOM) match {
           case Some(conversion) => this + rhs.copy(value = rhs.value * conversion.toDouble, uom = this.uom)
@@ -302,8 +302,8 @@ trait QuantityIsNumeric extends Numeric[Quantity] {
   def minus(x: Quantity, y: Quantity) = x - y
   def plus(x: Quantity, y: Quantity) = x + y
 
-  override def zero = Quantity(0.0, UOM.NULL)
-  override def one = Quantity(1.0, UOM.SCALAR)
+  override def zero = Quantity.NULL
+  override def one = Quantity.ONE
 }
 
 abstract class NamedQuantity(val quantity : Quantity) extends Quantity(quantity.value, quantity.uom){

@@ -257,4 +257,20 @@ import starling.quantity.RichQuantity._
     a.hashCode should be === b.hashCode
     assertTrue(a.isAlmostEqual(b, 0))
   }
+
+  @Test def nullIsAdditiveZero = for (zero <- additiveZeros; value <- values) {
+    zero + value should be === value.copy()
+    value + zero should be === value.copy()
+    value - zero should be === value.copy()
+  }
+
+  @Test def oneIsMultiplicativeZero = for (one <- multiplicativeZeros; value <- values) {
+    one * value should be === value.copy()
+    value * one should be === value.copy()
+    value / one should be === value.copy()
+  }
+
+  private def values = Quantity(12.34, UOM.USD) :: multiplicativeZeros ::: additiveZeros
+  private def additiveZeros = List(Quantity.NULL, Quantity(0, UOM.NULL))
+  private def multiplicativeZeros = List(Quantity.ONE, Quantity(1, UOM.SCALAR))
 }

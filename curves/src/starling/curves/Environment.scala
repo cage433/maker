@@ -85,6 +85,13 @@ case class Environment(
   private def countryBenchmark(commodity: Commodity, countryCode: NeptuneCountryCode): Quantity =
     instrumentLevelEnv.quantity(CountryBenchmarkAtomicKey(commodity, countryCode))
 
+  def freightParity(contractualIncoterm: IncotermCode, contractualLocation: ContractualLocationCode,
+                    destinationIncoterm: IncotermCode, destinationLocation: NeptuneCountryCode) = {
+
+    instrumentLevelEnv.quantity(
+      FreightParityAtomicKey(contractualIncoterm, contractualLocation, destinationIncoterm, destinationLocation))
+  }
+
   // cache for optimization of greek calculations. Will cache shifted environments, forward state envs and mtms
   // Level of indirection so that InstrumentLevelPerturbedEnvironment can avoid using the same cache as the
   // object it overrides
