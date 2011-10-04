@@ -25,7 +25,7 @@ import system.{PatchContext, Patch}
 
 class Patch120_MigrateMarketDataToFasterSchema extends Patch {
   override def deferredReason(context: PatchContext) =
-    context.props.UseFasterMarketDataSchema() ? none[(Int, String)] | some((120, "takes ~40 minutes"))
+    context.props.UseFasterMarketDataSchema() ? none[String] | some("takes ~40 minutes")
 
   protected def runPatch(starlingInit: StarlingInit, starling: RichDB, writer: DBWriter) =
     MigrateMarketDataSchema(writer, starling.db).migrateData

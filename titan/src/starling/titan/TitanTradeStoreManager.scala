@@ -40,13 +40,14 @@ case class TitanTradeStoreManager(
    * Returns list of trade ids that have changed
    */
   def updateInventory(env : Environment, inventoryID : String) : List[String] = {
-    val oldForwards = forwardsByInventory(inventoryID).map{fwd => fwd.tradeID -> fwd}.toMap
+    val oldTrades = forwardsByInventory(inventoryID).map{fwd => fwd.tradeID -> fwd}.toMap
+    // val newTrades = oldTrades.map{trade => trade.copy(tradeable = tradeable.updateInventory(...))}
     // update trade store
     val newForwards = forwardsByInventory(inventoryID).map{fwd => fwd.tradeID -> fwd}.toMap
 
-    (oldForwards.keySet ++ newForwards.keySet).filter {
+    (oldTrades.keySet ++ newForwards.keySet).filter {
       id =>
-        (oldForwards.get(id), newForwards.get(id)) match {
+        (oldTrades.get(id), newForwards.get(id)) match {
           case (Some(fwd1), Some(fwd2)) => fwd1.costsAndIncomeQuotaValueBreakdown(env) != fwd2.costsAndIncomeQuotaValueBreakdown(env)
           case _ => true
         }

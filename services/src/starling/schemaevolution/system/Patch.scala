@@ -39,7 +39,7 @@ trait Patch {
 
   val (patchNumber, patchName) = Patch.patchProps(getClass)
 
-  def deferredReason(context: PatchContext): Option[(Int, String)] = None
+  def deferredReason(context: PatchContext): Option[String] = None
 
   final def applyPatch(starlingInit: StarlingInit, starling: RichDB, writer: DBWriter) = {
     //Run the actual SQL script to update the schema and check completed successfully
@@ -59,9 +59,9 @@ trait Patch {
   def requiresRestart = false
 }
 
-class PatchContext(val props: Props, appliedPatches: Set[(Int, String)]) {
-  def dependsOn[T <: Patch](implicit m: Manifest[T]): Option[(Int, String)] = dependsOn(Patch.patchProps(m.erasure)._1, Patch.patchProps(m.erasure)._2)
+class PatchContext(val props: Props, appliedPatches: Set[String]) {
+  def dependsOn[T <: Patch](implicit m: Manifest[T]): Option[String] = dependsOn(Patch.patchProps(m.erasure)._2)
 
-  private def dependsOn(patchNumber : Int, patchName: String): Option[(Int, String)] =
-    appliedPatches.contains(patchNumber, patchName) ? none[(Int, String)] | some((patchNumber, "Depends on " + patchName))
+  private def dependsOn(patchName: String): Option[String] =
+    appliedPatches.contains(patchName) ? none[String] | some("Depends on " + patchName)
 }

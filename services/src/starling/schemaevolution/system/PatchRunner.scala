@@ -27,10 +27,10 @@ class PatchRunner(starling: RichDB, readOnlyMode: Boolean, starlingInit: Starlin
 
     Log.info("SCHEMAEVOLUTION: Checking patch level and applying required patches if necessary")
 
-    val alreadyAppliedPatches: MSet[(Int, String)] = MSet() ++ getListOfAlreadyAppliedPatches(starling)
+    val alreadyAppliedPatches: MSet[String] = MSet() ++ getListOfAlreadyAppliedPatches(starling)
 
     val patchesToApply = getListOfAvailablePatchesFromClasspath.filter(
-      patch => !alreadyAppliedPatches.contains((patch.patchNumber, patch.patchName))
+      patch => !alreadyAppliedPatches.contains(patch.patchName)
     )
 
    //If there are no patches to apply say so and return coz there is nothing to do
@@ -51,11 +51,11 @@ class PatchRunner(starling: RichDB, readOnlyMode: Boolean, starlingInit: Starlin
     val allPatches = Log.infoWithTime("Applying any patches (" + sortedPatchesToApply.size + ")") {
       sortedPatchesToApply.toMapWithValues(p => {
         applyPatch(starlingInit, starling, p, new PatchContext(starlingInit.props, alreadyAppliedPatches.toSet))
-          .update(identity, _ => alreadyAppliedPatches.add((p.patchNumber, p.patchName)))
+          .update(identity, _ => alreadyAppliedPatches.add(p.patchName))
       })
     }
 
-    val deferredPatches: Map[Patch, (Int, String)] = allPatches.collectValues { case Left(Some(deferredReason)) => deferredReason }
+    val deferredPatches: Map[Patch, String] = allPatches.collectValues { case Left(Some(deferredReason)) => deferredReason }
     val requiresRestart = allPatches.exists { case (_, Right(true)) => true; case _ => false }
 
     deferredPatches.foreach { case (patch, deferredReason) =>
@@ -64,7 +64,7 @@ class PatchRunner(starling: RichDB, readOnlyMode: Boolean, starlingInit: Starlin
 
     //Check that all the patches are applied now
     val currentlyAppliedPatches = Set() ++ getListOfAlreadyAppliedPatches(starling)
-    val unAppliedPatches = patchesToApply.filter(patch => !currentlyAppliedPatches.contains((patch.patchNumber, patch.patchName))).sortWith(_.patchNumber > _.patchNumber)
+    val unAppliedPatches = patchesToApply.filter(patch => !currentlyAppliedPatches.contains(patch.patchName)).sortWith(_.patchNumber > _.patchNumber)
       .filterNot(deferredPatches.contains(_))
 
     if(unAppliedPatches.size != 0) {
@@ -75,7 +75,7 @@ class PatchRunner(starling: RichDB, readOnlyMode: Boolean, starlingInit: Starlin
   }
 
   private def getListOfAlreadyAppliedPatches(starlingDB:RichDB) = {
-    starlingDB.queryWithResult( (select("patchName, patchNumber") from "SchemaEvolutionPatch")) { rs=>(rs.getInt("patchNumber"), rs.getString("patchName"))}
+    starlingDB.queryWithResult( (select("patchName, patchNumber") from "SchemaEvolutionPatch")) { rs=>rs.getString("patchName")}
   }
 
   private def getListOfAvailablePatchesFromClasspath(): List[Patch] = {
@@ -114,7 +114,11 @@ class PatchRunner(starling: RichDB, readOnlyMode: Boolean, starlingInit: Starlin
     }
 
     //Create the list of patch classes
-    createListOfPatchClasses(List(), patchClasses)
+    val patches = createListOfPatchClasses(List(), patchClasses)
+    patches.groupBy(_.patchName).foreach{ case (name, patches) =>
+      assert(patches.size == 1, "Patch " + name + " used more than once")
+    }
+    patches
   }
 
   private def markPatchAsApplied(writer:DBWriter, patch: Patch) = {
@@ -126,7 +130,7 @@ class PatchRunner(starling: RichDB, readOnlyMode: Boolean, starlingInit: Starlin
                                           "dateApplied" -> new Timestamp))
   }
 
-  private def applyPatch(starlingInit: StarlingInit, starling: RichDB, patch: Patch, context: PatchContext): Either[Option[(Int, String)], Boolean] = {
+  private def applyPatch(starlingInit: StarlingInit, starling: RichDB, patch: Patch, context: PatchContext): Either[Option[String], Boolean] = {
     val deferredReason = patch.deferredReason(context)
 
     if (deferredReason.isEmpty) {
