@@ -3,7 +3,7 @@ package starling.curves
 import starling.curves.readers.FwdCurveAppExternalMarketDataReader
 import starling.marketdata._
 import starling.richdb.RichDB
-import starling.utils.sql.QueryBuilder
+import starling.dbx.QueryBuilder
 import starling.db._
 import starling.LIMServer
 import starling.quantity.{Percentage, UOM}

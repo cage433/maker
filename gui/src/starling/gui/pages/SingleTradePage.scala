@@ -5,10 +5,8 @@ import starling.gui._
 import starling.browser.common.GuiUtils._
 import javax.swing.ListSelectionModel
 import starling.pivot._
-import swing.event.ButtonClicked
 import javax.swing.event.{ListSelectionEvent, ListSelectionListener}
 import starling.tradestore.TradePredicate
-import java.awt.{Color, Dimension}
 import org.jdesktop.swingx.decorator.{ColorHighlighter, HighlightPredicate}
 import java.awt.event.{MouseEvent, MouseAdapter}
 import collection.mutable.ListBuffer
@@ -21,12 +19,13 @@ import swing.{Alignment, Component, Label}
 import starling.gui.StarlingLocalCache._
 import starling.browser.common.{ButtonClickedEx, NewPageButton, MigPanel}
 import starling.browser._
+import java.awt.{Dimension, Color}
 
 case class SingleTradePage(tradeID:TradeIDLabel, desk:Option[Desk], tradeExpiryDay:TradeExpiryDay, intradayGroups:Option[IntradayGroups]) extends StarlingServerPage {
   def text = "Trade " + tradeID
   def icon = StarlingIcons.im("/icons/tablenew_16x16.png")
   def build(reader:StarlingServerContext) = TradeData(tradeID, reader.cachingStarlingServer.readTradeVersions(tradeID), desk, tradeExpiryDay, intradayGroups)
-  def createComponent(context:PageContext, data:PageData, bookmark:Bookmark, browserSize:Dimension, previousPageData:Option[PageData]) = new SingleTradePageComponent(context, data)
+  def createComponent(context:PageContext, data:PageData, bookmark:Bookmark, browserSize:Dimension, previousPageData:Option[PreviousPageData]) = new SingleTradePageComponent(context, data)
 }
 
 object SingleTradePageComponent {
@@ -110,7 +109,7 @@ object SingleTradePageComponent {
       negativeHighlighter.setSelectedForeground(Color.RED)
       costsChooser.jTable.addHighlighter(negativeHighlighter)
       costsChooser.jTable.getSelectionModel.addListSelectionListener(new ListSelectionListener {
-        def valueChanged(e:ListSelectionEvent) = {
+        def valueChanged(e:ListSelectionEvent) {
           if (!e.getValueIsAdjusting) {
             updateInfoPanel(costsChooser.jTable.getSelectedRow)
           }
@@ -120,8 +119,8 @@ object SingleTradePageComponent {
         def update(comp:Component) {
           removeAll
           add(comp, "push,grow")
-          revalidate
-          repaint
+          revalidate()
+          repaint()
         }
       }
       def updateInfoPanel(index:Int) {
@@ -185,14 +184,14 @@ class SingleTradePageComponent(context:PageContext, pageData:PageData) extends M
     val rowToSelect = stable.data.size - 1
     jTable.setRowSelectionInterval(rowToSelect, rowToSelect)
     jTable.getSelectionModel.addListSelectionListener(new ListSelectionListener {
-      def valueChanged(e:ListSelectionEvent) = {
+      def valueChanged(e:ListSelectionEvent) {
         if (!e.getValueIsAdjusting) {
-          updateTradePanel
+          updateTradePanel()
         }
       }
     })
 
-    jTable.addMouseListener(new MouseAdapter {override def mouseClicked(e:MouseEvent) = {
+    jTable.addMouseListener(new MouseAdapter {override def mouseClicked(e:MouseEvent) {
       if (e.getClickCount == 2) doValuation(Modifiers.modifiersEX(e.getModifiersEx))}}
     )
 
@@ -223,7 +222,7 @@ class SingleTradePageComponent(context:PageContext, pageData:PageData) extends M
     jTable.setDefaultRenderer(classOf[Object], new DefaultTableRenderer(provider))
 
     val tradePanel = new MigPanel {
-      def clear = removeAll
+      def clear() {removeAll}
       def addPanel(p:MigPanel) {
         add(p, "ay top, gapright unrel")
       }
@@ -231,7 +230,7 @@ class SingleTradePageComponent(context:PageContext, pageData:PageData) extends M
         add(comp, constraints)
       }
     }
-    updateTradePanel
+    updateTradePanel()
 
     val button = new NewPageButton {
       text = "Value"
@@ -242,16 +241,16 @@ class SingleTradePageComponent(context:PageContext, pageData:PageData) extends M
     add(tradePanel, "split 2, skip 1")
     add(button, "ay top, gapright " + RightPanelSpace)
 
-    def updateTradePanel {
+    def updateTradePanel() {
       val selection = jTable.getSelectedRow
       if (selection != -1) {
-        tradePanel.clear
+        tradePanel.clear()
         val row = stable.data(selection)
         val panels = SingleTradePageComponent.generateTradePanels(row, fieldDetailsGroups, stable.columns)
         panels.foreach(tradePanel.addPanel)
         tradePanel.addComp(SingleTradePageComponent.generateCostsPanel(costs(selection)), "newline, split, spanx, growx")
-        tradePanel.revalidate
-        tradePanel.repaint
+        tradePanel.revalidate()
+        tradePanel.repaint()
       }
     }
 
@@ -269,7 +268,7 @@ class SingleTradePageComponent(context:PageContext, pageData:PageData) extends M
             }
           }
           case Some(d) => {
-            if(jTable.getRowCount() - 1 == selection) {
+            if(jTable.getRowCount - 1 == selection) {
               // we've selected the most up to date
                val tradeTimestamp = context.localCache.deskCloses(desk).sortWith(_.timestamp >= _.timestamp).head
               (Some((d, tradeTimestamp)), None)
@@ -357,7 +356,7 @@ class SingleTradeMainPivotReportPage(val tradeID:TradeIDLabel, val reportParamet
     case _ => false
   }
   override def bookmark(serverContext:StarlingServerContext):Bookmark = {
-    SingleTradeReportBookmark(tradeID, serverContext.server.createUserReport(reportParameters0), pivotPageState)
+    SingleTradeReportBookmark(tradeID, serverContext.reportService.createUserReport(reportParameters0), pivotPageState)
   }
 }
 
@@ -367,7 +366,7 @@ case class SingleTradeReportBookmark(tradeID:TradeIDLabel, data:UserReportData, 
     day match {
       case None => throw new Exception("We need a day")
       case Some(d) => {
-        val reportParameters = serverContext.server.createReportParameters(data, d)
+        val reportParameters = serverContext.reportService.createReportParameters(data, d)
         new SingleTradeMainPivotReportPage(tradeID, reportParameters, pps)
       }
     }

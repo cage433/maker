@@ -8,7 +8,7 @@ import starling.quantity.UOM._
 import starling.market.Market._
 import starling.daterange.{Month, Day}
 import starling.daterange.Day._
-import starling.utils.QuantityTestUtils._
+import starling.quantity.utils.QuantityTestUtils._
 import starling.market.Index._
 import org.testng.annotations.Test
 import org.testng.Assert._

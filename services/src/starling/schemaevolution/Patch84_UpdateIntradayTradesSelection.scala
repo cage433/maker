@@ -3,7 +3,7 @@ package starling.schemaevolution
 import system.Patch
 import starling.richdb.RichDB
 import starling.db.DBWriter
-import starling.utils.StarlingXStream
+import starling.instrument.utils.StarlingXStream
 import starling.collection.TreeSelection
 import starling.utils.sql.PersistAsBlob
 import xstream.{Fields, Reader, MapBasedConverter}

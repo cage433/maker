@@ -5,7 +5,7 @@ import collection.mutable.HashMap
 import com.thoughtworks.xstream.io.{HierarchicalStreamReader, HierarchicalStreamWriter}
 import com.thoughtworks.xstream.converters.{UnmarshallingContext, MarshallingContext, Converter}
 
-import starling.utils.StarlingXStream
+import starling.instrument.utils.StarlingXStream
 
 
 /** Class for patching case classes, only works if the case class attributes are primative */

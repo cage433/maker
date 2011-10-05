@@ -1,7 +1,6 @@
 package starling.curves
 
 import starling.marketdata.{SpotFXDataKey, SpotFXData}
-import starling.varcalculator.{RiskFactor, SpotFXRiskFactor}
 import starling.quantity.{UOM, Quantity}
 import starling.quantity.UOM.USD
 import starling.daterange.{Day, DayAndTime}

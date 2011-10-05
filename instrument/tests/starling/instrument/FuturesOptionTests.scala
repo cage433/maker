@@ -6,12 +6,11 @@ import org.testng.Assert._
 
 import starling.quantity.UOM._
 import starling.utils.ScalaTestUtils._
-import starling.utils.QuantityTestUtils._
+import starling.quantity.utils.QuantityTestUtils._
 import starling.curves._
 import starling.daterange.{Month, Day}
 import starling.market.{TestMarketTest, FuturesMarket, Market}
 import starling.quantity.{UOM, Percentage, Quantity}
-import starling.varcalculator.ForwardPriceRiskFactor
 import starling.models._
 
 class FuturesOptionTests extends StarlingTest {

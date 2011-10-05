@@ -165,14 +165,14 @@ class BookmarkButton(currentPage: CurrentPage, context:PageContext, pageBuilder:
   }
 
   private def checkIfBookmarkIsKnown = {
-    val bookmarks = context.localCache.bookmarks.map(_.bookmark)
+    val bookmarks = context.localCache.bookmarks.flatMap(_.bookmark)
     bookmarks.contains(currentPage.bookmark)
   }
 
   reactions += {
     case ButtonClicked(b) => {
       if (knownBookmark0) {
-        val bookmarkName = context.localCache.bookmarks.find(_.bookmark == currentPage.bookmark).get.name
+        val bookmarkName = context.localCache.bookmarks.find(_.bookmark == Some(currentPage.bookmark)).get.name
 
         context.submitYesNo("Delete Bookmark?",
           "Are you sure you want to delete the \"" + bookmarkName + "\" bookmark?",

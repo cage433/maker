@@ -3,8 +3,7 @@ package starling.db
 import starling.marketdata._
 import starling.gui.api._
 import starling.daterange._
-import starling.market.{Market, FuturesMarket, CommodityMarket}
-import starling.curves.ObservationDay
+
 
 class NormalMarketDataReader(marketDataStore: MarketDataStore, marketDataIdentifier: MarketDataIdentifier)
   extends MarketDataReader {
@@ -22,4 +21,9 @@ class NormalMarketDataReader(marketDataStore: MarketDataStore, marketDataIdentif
   def readAllObservationDayAndMarketDataKeys(marketDataType: MarketDataType) = {
     marketDataStore.queryForObservationDayAndMarketDataKeys(marketDataIdentifier, marketDataType)
   }
+}
+
+object NormalMarketDataReader {
+  def apply(marketDataStore: MarketDataStore, selection: MarketDataSelection) =
+    new NormalMarketDataReader(marketDataStore, marketDataStore.latestMarketDataIdentifier(selection))
 }

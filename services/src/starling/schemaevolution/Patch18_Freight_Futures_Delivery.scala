@@ -6,7 +6,7 @@ import starling.richdb.RichDB
 import starling.utils.Log
 import starling.instrument.Future
 import starling.market.{Freight, Market, FuturesMarket}
-import starling.utils.sql.QueryBuilder._
+import starling.dbx.QueryBuilder._
 import starling.services.StarlingInit
 
 class Patch18_Freight_Futures_Delivery extends Patch {

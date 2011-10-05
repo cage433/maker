@@ -8,14 +8,15 @@ import starling.instrument._
 import javax.sql.DataSource
 import starling.curves.interestrate.DayCount
 import starling.quantity.{Quantity, UOM}
-import starling.utils.sql.ConnectionParams
+import starling.dbx.ConnectionParams
 import starling.market._
 import rules.SwapPricingRule
 import scala.collection.JavaConversions._
 import starling.models._
 import starling.daterange.{Day, Spread, DateRange}
 import starling.quantity.{SpreadQuantity, Quantity, UOM}
-import starling.trade.TradeSystem
+import starling.instrument.TradeSystem
+import starling.dbx.DataSourceFactory
 
 class RichDB(val dataSource : DataSource, factory : RichResultSetRowFactory) extends DBTrait[RichResultSetRow] {
   def this(connectionParams: ConnectionParams, factory : RichResultSetRowFactory) =
@@ -56,11 +57,10 @@ object RichConversions {
 }
 
 class RichResultSetRowFactory extends ResultSetRowFactoryTrait[RichResultSetRow] {
-  def create(resultSet: ResultSet) = new RichResultSetRow(resultSet)
+  def create(resultSet: ResultSet, count: Int) = new RichResultSetRow(resultSet, count)
 }
 
-class RichResultSetRow(resultSet: ResultSet)
-  extends ResultSetRow(resultSet)
+class RichResultSetRow(resultSet: ResultSet, count: Int) extends ResultSetRow(resultSet, count)
   with RichInstrumentResultSetRow
 {
   def getMarket(column: String): CommodityMarket = Market.fromName(getString(column))

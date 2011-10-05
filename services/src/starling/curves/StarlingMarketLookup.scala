@@ -3,7 +3,7 @@ package starling.curves
 import starling.db.DB
 import starling.calendar.BusinessCalendars
 import starling.market._
-import starling.utils.sql.QueryBuilder._
+import starling.dbx.QueryBuilder._
 import starling.utils.Log
 import java.util.concurrent.atomic.AtomicBoolean
 

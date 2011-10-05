@@ -2,7 +2,6 @@ package starling.curves
 
 import interestrate.{DayCountActual365, DayCountActualActual}
 import starling.marketdata.{ForwardRateDataKey, ForwardRateDataEntry, ForwardRateData}
-import starling.varcalculator.RiskFactor
 import math._
 import starling.daterange.{DateRange, Day, DayAndTime}
 import starling.quantity.{Percentage, UOM, Quantity}
@@ -166,7 +165,6 @@ class ForwardForwardDiscountCurve(
 
 
 case class DiscountCurveKey(ccy : UOM) extends NonHistoricalCurveKey[ForwardRateData]{
-  def build(marketDayAndTime : DayAndTime, riskFactorPrices: Map[RiskFactor, Quantity]) = throw new UnsupportedOperationException("Discounts are not currently risk factors")
   def marketDataKey = ForwardRateDataKey(ccy)
   def buildFromMarketData(marketDayAndTime: DayAndTime, forwardRateData: ForwardRateData):SimpleDiscountCurve = {
     // put the results in date order

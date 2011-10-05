@@ -3,12 +3,15 @@ package starling.utils
 import java.net.{URLDecoder, URLEncoder}
 
 import starling.utils.Pattern._
+import scalaz.Scalaz._
+import collection.Seq
 
 
 trait RichString {
 	implicit def StringToRichString(s : String) = new RichString(s)
 
   def box(args: Seq[Any]): Array[AnyRef] = args.flatMap(boxValue).toArray
+  def nullsafe(args: Seq[Any]): Seq[Any] = args.map(_ ?? "null")
 
   private def boxValue(x: Any): Seq[AnyRef] = {
     if (x == null) {
@@ -30,7 +33,7 @@ trait RichString {
   }
 
 	class RichString(s: String){
-		def % (args: Any*) = String.format(s, box(args):_*)
+		def % (args: Any*) = String.format(s, box(nullsafe(args)):_*)
 
 		def join(elems: Iterable[Any]): String = join(elems.iterator)
 		def join(elems: Iterator[Any]): String = {
@@ -58,5 +61,6 @@ trait RichString {
     def emptyTo(alternative: String) = if (s == null || s.trim.isEmpty) alternative else s
     def uncapitalize: String = if (s == null || s.isEmpty) s else s.charAt(0).toLower + s.substring(1)
     def strip(toRemove: String*): String = (s /: toRemove)((acc, itemToRemove) => acc.replaceAll(itemToRemove, ""))
+    def prefixWith(prefix: String) = if (s.startsWith(prefix)) s else prefix + s
 	}
 }

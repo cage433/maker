@@ -5,12 +5,12 @@ import starling.props.PropsHelper
 import starling.utils._
 import java.lang.String
 import starling.daterange.ObservationTimeOfDay
-import starling.marketdata.MarketDataTypes
 import starling.pivot.Field
 import collection.SortedMap
 import starling.quantity.UOM
 import collection.immutable.Map
-import starling.marketdata.MarketDataKey
+import starling.marketdata.{MarketDataValueKey, MarketDataTypes, MarketDataKey}
+import starling.utils.ImplicitConversions._
 
 object NewReadAll {
   def main(args: Array[String]) {
@@ -38,25 +38,16 @@ object NewReadAll {
     System.exit(0)
 
     Log.infoWithTime("Readall") {
-      val firstKeys = Log.infoWithTime("firstkeys") {
-        Map() ++ init.starlingDB.queryWithResult("select * from ExtendedMarketDataKey") {
-          rs => {
-            val id = rs.getInt("id")
-            val time = ObservationTimeOfDay.fromName(rs.getString("observationTime"))
-            val marketDataSet = MarketDataSet(rs.getString("marketDataSet"))
-            val marketDataType = MarketDataTypes.fromName(rs.getString("marketDataSet"))
-            val key = rs.getObject[MarketDataKey]("marketDataKey")
-            id -> FirstKey(time, marketDataSet, marketDataType, key)
-          }
-        }
+      val extendedKeys = Log.infoWithTime("extendedKeys") {
+        init.starlingDB.queryWithResult("select * from ExtendedMarketDataKey") { MarketDataExtendedKey(_) }.toMapWithKeys(_.id)
       }
-      val secondKeys = Log.infoWithTime("valueKeys") {
-        Map() ++ init.starlingDB.queryWithResult("select * from ValueKey") {
-          rs => {
-            rs.getInt("id") -> SecondKey(rs.getObject[SortedMap[Field, Any]]("value"))
-          }
-        }
+
+      val valueKeys = Log.infoWithTime("valueKeys") {
+        init.starlingDB.queryWithResult("select * from ValueKey") { rs => {
+          MarketDataValueKey(rs.getInt("id"), rs.getObject[Map[Field, Any]]("value"))
+        } }.toMapWithKeys(_.id)
       }
+
       val commits = Log.infoWithTime("commits") {
         Map() ++ init.starlingDB.queryWithResult("select * from MarketDataCommit") {
           rs => {
@@ -64,12 +55,13 @@ object NewReadAll {
           }
         }
       }
+
       Log.infoWithTime("values") {
         init.starlingDB.query("select * from MarketDataValues") {
           rs => {
             val day = rs.getDayOption("observationDay")
-            val firstKey = firstKeys(rs.getInt("extendedKey"))
-            val secondKey = secondKeys(rs.getInt("valueKey"))
+            val firstKey = extendedKeys(rs.getInt("extendedKey"))
+            val secondKey = valueKeys(rs.getInt("valueKey"))
             val value = rs.getDouble("value")
             val uom = {
               val text = rs.getString("uom")

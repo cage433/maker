@@ -9,6 +9,8 @@ import starling.utils.ClosureUtil._
 import xml._
 import javax.xml.parsers.SAXParserFactory
 import java.lang.StackTraceElement
+import org.jboss.resteasy.spi.ResteasyProviderFactory
+import javax.ws.rs.ext.RuntimeDelegate
 import org.joda.time.LocalDate
 import org.joda.time.format.DateTimeFormat
 import javax.ws.rs.ext.ExceptionMapper
@@ -18,7 +20,6 @@ import javax.ws.rs.core.Response.Status
 import javax.ws.rs.core.{MediaType, Response}
 import java.lang.reflect.InvocationTargetException
 
-
 case class ResteasyServiceApi(baseUri: String) extends ServiceApi {
   ResteasyServiceApi.registerProviderInstance
 
@@ -26,6 +27,11 @@ case class ResteasyServiceApi(baseUri: String) extends ServiceApi {
 }
 
 object ResteasyServiceApi {
+
+  {
+     //RuntimeDelegate.setInstance(ResteasyProviderFactory.getInstance())
+  }
+
   lazy val registerProviderInstance = {
     val providerFactory = ResteasyProviderFactory.getInstance
     providerFactory.registerProviderInstance(new JsonDeserializerMessageBodyReader)

@@ -9,26 +9,25 @@ import controller.PivotTableConverter
 import model.{UndefinedValue, CollapsedState, PivotTableModel}
 import starling.pivot.Field._
 import starling.db.DBWriter
-import collection.immutable.Set
 import starling.utils.cache.CacheFactory
 import starling.utils.ImplicitConversions._
 import starling.richdb.{RichInstrumentResultSetRow, RichDB}
-import starling.utils.sql.QueryBuilder._
-import starling.utils.sql.LiteralString
+import starling.dbx.QueryBuilder._
 import java.util.concurrent.atomic.AtomicReference
-import collection.immutable.List
 import starling.instrument._
 import starling.pivot._
 import java.lang.String
 import starling.utils.{Broadcaster, AppendingMap, Log}
 import collection.{Iterable, Seq}
 import starling.daterange._
-import starling.trade.{TradeID, Trade, TradeSystem, TradeAttributes}
+import starling.instrument.{TradeID, Trade, TradeSystem, TradeAttributes}
 import math.Ordering
 import starling.quantity._
 import starling.gui.api._
 import starling.tradestore.TradeStore.StoreResults
 import starling.marketdata.PeriodFieldDetails
+import collection.immutable.{TreeMap, Set, List}
+import starling.dbx.{LiteralString, Clause, Query}
 
 //This is the code which maps from TradeableType.fields to FieldDetails
 object TradeableFields {
@@ -60,7 +59,7 @@ object TradeableFields {
       case (_, `quantity`) => (new QuantityLabelFieldDetails(name), (t:Trade,q:Any) => q)
       case (_,_) => (FieldDetails(name), (t:Trade,v:Any)=>v.toString.asInstanceOf[Any])
     }
-  } }
+  }}
   private val normalizedNameToFieldAndMapper:Map[String,(FieldDetails,(Trade,Any)=>Any)] = Map() ++ fieldDetailsAndMapper.map{t=>t._1.field.name.removeWhiteSpace.toLowerCase->t}
 
   val fieldDetails = fieldDetailsAndMapper.map(_._1).toList
@@ -94,8 +93,7 @@ object JustTradeFields {
     new FieldDetails("Trade Count") {
       override def isDataField = true
       override def transformValueForGroupByField(a: Any) = "Undefined"
-      override def value(a: Any) = a
-      override def formatter = SetSizePivotFormatter
+      override def value(a: Any) = a.asInstanceOf[Set[_]].size
     },
     new FieldDetails("Trade ID") {
       override def formatter = TradeIDPivotFormatter
@@ -301,12 +299,27 @@ abstract class TradeStore(db: RichDB, broadcaster:Broadcaster, tradeSystem: Trad
   /**
    * Ensure that we have all trade versions after the given timestamp, and also the latest version before the timestamp,
    * for all trades that are live on or after the given expiry day
+   *
+   * Hmmm... What if the expiry day changes with each version.... The invariant above needs to be more precise.
+   *
+   * Initial load gives us a state where the condition holds for earliestTimestamp = Now and expiryDay = previousBusiness Day
+   *
+   * Thereafter we only pass in earlier timestamps, and/or earlier expiry days.
+   *
+   * // TODO - refactor this - spent an afternnon trying to understand it. If expiry day was fixed, we could move
+   * timestamp back by loading all trade versions where
+   *    trade.timestampToCache > timestamp && trade.timestampToCache < earliestTimeStamp
    */
   private def updateTradeHistories(timestamp : Timestamp, expiryDay : Option[Day]) {
     lock.synchronized {
 
       if (!initialLoadDone) {
         Log.infoWithTime("Updating trades as of " + timestamp + ", expiry day " + expiryDay) {
+          /*
+            At this point earliestTimestamp = Now and earliestExpiryDay = previous week day
+            Load all trades whose expiry day is strictly after the previous weekday, which are currently the valid version,
+            (i.e. timestamp < Now and either timestampTo_cache > Now or timestampTo_Cache == NULL)
+           */
           initialLoad()
         }
         initialLoadDone = true
@@ -323,7 +336,7 @@ abstract class TradeStore(db: RichDB, broadcaster:Broadcaster, tradeSystem: Trad
         importTradesVersionsBeforeTimestampAndAfterExpiryDay(timestamp min earliestTimestamp, minExpiryDay)
         if (timestamp < earliestTimestamp) {
           //read changes to trades which have already been read
-          Log.info("Doing another quick update " + timestamp + " < " + earliestTimestamp)
+          Log.warn("Doing another quick update " + timestamp + " < " + earliestTimestamp)
           importOldVersions(timestamp, earliestTimestamp) //picks up amendments between timestamp and earliestTimestamp
         }
         earliestExpiryDay = minExpiryDay
@@ -335,8 +348,9 @@ abstract class TradeStore(db: RichDB, broadcaster:Broadcaster, tradeSystem: Trad
   private def updateFullHistoryForTrade(tradeID: TradeID): Unit = {
     val q = (select("*")
             from (tableName + " t")
-            where ("tradeid" eql LiteralString(tradeID.id))
-            )
+            where (
+              ("tradeid" eql LiteralString(tradeID.id)) andMaybe (bookID.map(id => ("t.bookid" eql id)))
+            ))
     db.query(q)(addTradeRowToHistory)
   }
 
@@ -389,7 +403,7 @@ abstract class TradeStore(db: RichDB, broadcaster:Broadcaster, tradeSystem: Trad
     var allTradeableTypes = new scala.collection.mutable.HashSet[TradeableType[_]]()
     val rows = trades.flatMap { tradeAndFields =>
       val joinedTradeAttributeDetails = joiningTradeAttributeFieldValues(tradeAndFields.trade.attributes)
-      val tradeFields = new AppendingMap(Map("Join"->joinedTradeAttributeDetails) ++ tradeAndFields.fields.maps)
+      val tradeFields = new AppendingMap(Map("Join"->joinedTradeAttributeDetails) ++ tradeAndFields.fields.namedMaps)
       if (filter(tradeFields)) {
         allTradeableTypes += tradeAndFields.trade.tradeable.tradeableType
         Some(TradeAndFields(tradeAndFields.id, tradeAndFields.trade, tradeFields))
@@ -459,7 +473,7 @@ abstract class TradeStore(db: RichDB, broadcaster:Broadcaster, tradeSystem: Trad
       updateTradeHistories(t, None)
       tradeHistories.tradeRowsAsOf(t, None).map { row => {
         //Add join based fields like Strategy and 'Group Company'
-        val fields = new AppendingMap(row.fields.maps + ("Joining"->joiningTradeAttributeFieldValues(row.trade.attributes)))
+        val fields = new AppendingMap(row.fields.namedMaps + ("Joining"->joiningTradeAttributeFieldValues(row.trade.attributes)))
         val newRow = TradeAndFields(row.id, row.trade, fields)
         (row.trade.tradeID, newRow)
       }}.toMap
@@ -563,7 +577,7 @@ abstract class TradeStore(db: RichDB, broadcaster:Broadcaster, tradeSystem: Trad
           versions.flatMap { case TradeAndFields(_, trade, details) => {
             tradeableTypes += trade.tradeable.tradeableType
             val joinedTradeAttributeDetails = joiningTradeAttributeFieldValues(trade.attributes)
-            val tradeFields = new AppendingMap(Map("Join"->joinedTradeAttributeDetails) ++ details.maps)
+            val tradeFields = new AppendingMap(Map("Join"->joinedTradeAttributeDetails) ++ details.namedMaps)
             if (filter(tradeFields)) {
               val utps = tradeHistories.tradeUTPs(trade)
               utps.map {
@@ -578,7 +592,7 @@ abstract class TradeStore(db: RichDB, broadcaster:Broadcaster, tradeSystem: Trad
                       PField(instrumentID_str) -> utpID,
                       PField(tradeCount_str) -> details(PField(tradeID_str)),
                       PField(utpVolume_str) -> volume
-                    )) ++ tradeFields.maps //++tradeHistories.utpDetails(utp),
+                    )) ++ tradeFields.namedMaps //++tradeHistories.utpDetails(utp),
                   )
                 }
 
@@ -621,7 +635,7 @@ abstract class TradeStore(db: RichDB, broadcaster:Broadcaster, tradeSystem: Trad
       case TradeAndFields(_, trade, details) => {
 
         val joinedTradeAttributeDetails = joiningTradeAttributeFieldValues(trade.attributes)
-        val tradeFields = new AppendingMap(Map("Join"->joinedTradeAttributeDetails) ++ details.maps)
+        val tradeFields = new AppendingMap(Map("Join"->joinedTradeAttributeDetails) ++ details.namedMaps)
         if (filter(tradeFields)) {
           val utps = tradeHistories.tradeUTPs(trade)
           utps.map{
@@ -677,6 +691,11 @@ abstract class TradeStore(db: RichDB, broadcaster:Broadcaster, tradeSystem: Trad
       bookID match {
         case Some(book) => {
           val wrongOldTrades = allTrades.valuesIterator.filter(_.trade.attributes.asInstanceOf[EAITradeAttributes].bookID.id != book)
+          if(wrongOldTrades.nonEmpty) {
+            println("??????")
+            println("??????")
+            println("??????")
+          }
           assert(wrongOldTrades.isEmpty, "read in some invalid trades:: " + wrongOldTrades.toList)
 
           val wrongNewTrades = trades.filter(_.attributes.asInstanceOf[EAITradeAttributes].bookID.id != book)
@@ -723,7 +742,7 @@ abstract class TradeStore(db: RichDB, broadcaster:Broadcaster, tradeSystem: Trad
       val expiryDay = instrument.expiryDay match {
         case Some(day) => day
         case None => {
-          assert(instrument.isInstanceOf[ErrorInstrument] || instrument.isInstanceOf[DeletedInstrument], "Wrong type:" + instrument)
+          assert(instrument.isInstanceOf[ErrorInstrument] || instrument.isInstanceOf[DeletedInstrument], "No expiry error: " + instrument)
           null
         }
       }

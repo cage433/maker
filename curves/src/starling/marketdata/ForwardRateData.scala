@@ -75,6 +75,7 @@ case class ForwardRateDataKey(ccy : UOM) extends MarketDataKey {
 
 case class ForwardRateData(entries : List[ForwardRateDataEntry]) extends MarketData {
   def lastDay = entries.maximum(_.forwardDay)
+  def size = entries.size
 }
 
 

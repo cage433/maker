@@ -8,13 +8,13 @@ case class SettingsPage() extends Page {
   def text = "Settings"
   def icon = BrowserIcons.im("/icons/16x16_settings.png")
 
-  def bundle = RootBrowserContext.bundleName
+  def bundle = RootBrowserBundle.bundleName
 
   def build(serverContext: String) = null
   type SC = String
   def createServerContext(sc: ServerContext) = ""
 
-  def createComponent(context:PageContext, data:PageData, bookmark:Bookmark, browserSize:Dimension, previousPageData:Option[PageData]) = new SettingsPageComponent(context)
+  def createComponent(context:PageContext, data:PageData, bookmark:Bookmark, browserSize:Dimension, previousPageData:Option[PreviousPageData]) = new SettingsPageComponent(context)
 }
 
 class SettingsPageComponent(context:PageContext) extends MigPanel("insets 0") with PageComponent {

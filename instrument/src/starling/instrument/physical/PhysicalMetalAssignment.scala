@@ -6,9 +6,8 @@ import starling.daterange._
 import starling.instrument._
 import starling.quantity.{UOM, Quantity}
 import starling.utils.sql.PersistAsBlob
-import starling.market.{LmeSingleIndices, IndexWithKnownPrice}
-import collection.SortedMap
 import starling.quantity.NamedQuantity
+import starling.market._
 
 trait TitanPricingSpec {
   def price(env : Environment) : Quantity
@@ -37,63 +36,36 @@ trait TitanPricingSpec {
   def fixedQuantity(marketDay : DayAndTime, totalQuantity : Quantity) : Quantity
   def isComplete(marketDay : DayAndTime) : Boolean
   def pricingType : String
-  def quotationPeriodStart : Option[Day]
-  def quotationPeriodEnd : Option[Day]
-  def indexName : String
-  def premium : Quantity
   def daysForPositionReport(marketDay : DayAndTime) : List[Day]
+  def quotationPeriod : Option[DateRange]
+  def premium : Quantity
+  def indexOption : Option[IndexWithDailyPrices]
 }
 
+case class AveragePricingSpec(index : IndexWithDailyPrices, period : DateRange, premium : Quantity) extends TitanPricingSpec{
+  val observationDays = index.observationDays(period)
+  // Just a guess
+  def settlementDay = period.lastDay.addBusinessDays(index.businessCalendar, 2)
+  def price(env: Environment) = addPremiumConvertingIfNecessary(env, env.averagePrice(index, period), premium)
+  def dummyTransferPricingSpec = copy(premium = Quantity.NULL)
+  def fixedQuantity(marketDay : DayAndTime, totalQuantity : Quantity) : Quantity = totalQuantity * observedDays(marketDay).size / observationDays.size
+  def pricingType : String = "Month Average"
 
-trait AveragePricingSpec extends TitanPricingSpec {
-  def observationDays : List[Day]
-  def index : IndexWithKnownPrice
   protected def observedDays(marketDay : DayAndTime) = observationDays.filter(_.endOfDay <= marketDay)
   def isComplete(marketDay : DayAndTime) = observedDays(marketDay).size == observationDays.size
-  def quotationPeriodStart : Option[Day] = Some(observationDays.head)
-  def quotationPeriodEnd : Option[Day] = Some(observationDays.last)
-  def indexName : String = index.name
-
-  def daysForPositionReport(marketDay: DayAndTime) = observationDays.filter(_.endOfDay() > marketDay)
+  def indexOption = Some(index)
+  def quotationPeriod = Some(period)
+  def daysForPositionReport(marketDay: DayAndTime) = observationDays.filter(_.endOfDay > marketDay)
 
   def valuationCCY = premiumCCY.getOrElse(index.currency)
 }
 
-case class MonthAveragePricingSpec(index : IndexWithKnownPrice, month : Month, premium : Quantity) extends AveragePricingSpec{
-  val observationDays = index.observationDays(month)
-  // Just a guess
-  def settlementDay = month.lastDay.addBusinessDays(index.businessCalendar, 2)
-  def price(env: Environment) = addPremiumConvertingIfNecessary(env, env.averagePrice(index, month), premium)
-  def dummyTransferPricingSpec = copy(premium = Quantity.NULL)
-  def fixedQuantity(marketDay : DayAndTime, totalQuantity : Quantity) : Quantity = totalQuantity * observedDays(marketDay).size / observationDays.size
-  def pricingType : String = "Month Average"
-}
-
-case class PartialAveragePricingSpec(index : IndexWithKnownPrice, dayFractions : SortedMap[Day, Double], premium : Quantity) extends AveragePricingSpec {
-
-  val observationDays = dayFractions.keySet.toList.sortWith(_<_)
-  def settlementDay = dayFractions.keys.toList.sortWith(_>_).head.addBusinessDays(index.businessCalendar, 2)
-
-  def price(env: Environment) = {
-    val priceFractions = dayFractions.map {
-        case (day, frac) => index.fixingOrForwardPrice(env, day) * frac
-      }
-    addPremiumConvertingIfNecessary(
-      env,
-      Quantity.sum(priceFractions),
-      premium
-    )
-  }
-
-  def dummyTransferPricingSpec = copy(premium = Quantity.NULL)
-  def fixedQuantity(marketDay : DayAndTime, totalQuantity : Quantity) : Quantity = totalQuantity * observationDays.filter(_.endOfDay <= marketDay).map(dayFractions).sum
-  def pricingType : String = "Partial Average"
-}
 
 case class OptionalPricingSpec(choices : List[TitanPricingSpec], declarationDay : Day, chosenSpec : Option[TitanPricingSpec]) extends TitanPricingSpec {
 
   private val specToUse = chosenSpec.getOrElse(choices.head)
-  def settlementDay = choices.map(_.settlementDay).sortWith(_>_).head
+  println("***** spec = " + specToUse.toString)
+  def settlementDay = specToUse.settlementDay 
   def price(env: Environment) = {
     assert(chosenSpec.isDefined || env.marketDay < declarationDay.endOfDay, "Optional pricing spec must be fixed by " + declarationDay)
     specToUse.price(env)
@@ -103,14 +75,13 @@ case class OptionalPricingSpec(choices : List[TitanPricingSpec], declarationDay 
   def fixedQuantity(marketDay : DayAndTime, totalQuantity : Quantity) = specToUse.fixedQuantity(marketDay, totalQuantity)
   def isComplete(marketDay : DayAndTime) = specToUse.isComplete(marketDay)
   def pricingType : String = chosenSpec match {case Some(spec) => spec.pricingType; case None => "Optional"}
-  def quotationPeriodStart : Option[Day] = specToUse.quotationPeriodStart
-  def quotationPeriodEnd : Option[Day] = specToUse.quotationPeriodEnd
-  def indexName : String = specToUse.indexName
   def premium = specToUse.premium
 
   def daysForPositionReport(marketDay: DayAndTime) = specToUse.daysForPositionReport(marketDay)
 
   def valuationCCY = specToUse.valuationCCY
+  def quotationPeriod = specToUse.quotationPeriod
+  def indexOption = specToUse.indexOption
 }
 
 case class WeightedPricingSpec(specs : List[(Double, TitanPricingSpec)]) extends TitanPricingSpec{
@@ -121,9 +92,9 @@ case class WeightedPricingSpec(specs : List[(Double, TitanPricingSpec)]) extends
   def fixedQuantity(marketDay : DayAndTime, totalQuantity : Quantity) = specs.map{case (wt, spec) => spec.fixedQuantity(marketDay, totalQuantity) * wt}.sum
   def isComplete(marketDay : DayAndTime) = specs.forall{_._2.isComplete(marketDay)}
   def pricingType : String = "Weighted"
-  def quotationPeriodStart : Option[Day] = specs.map(_._2.quotationPeriodStart).filter(_.isDefined).map(_.get).sortWith(_<_).headOption
-  def quotationPeriodEnd : Option[Day] = specs.map(_._2.quotationPeriodEnd).filter(_.isDefined).map(_.get).sortWith(_<_).lastOption
-  def indexName : String = specs.head._2.indexName
+
+  private def quotationPeriodStart : Option[Day] = specs.map(_._2.quotationPeriod).collect{case Some(period) => period.firstDay}.sortWith(_<_).headOption
+  private def quotationPeriodEnd : Option[Day] = specs.map(_._2.quotationPeriod).collect{case Some(period) => period.lastDay}.sortWith(_<_).lastOption
   def premium = specs.map{case (wt, spec) => spec.premium * wt}.sum
 
   def daysForPositionReport(marketDay: DayAndTime) = specs.flatMap{case (amt, spec) => spec.daysForPositionReport(marketDay) }.distinct
@@ -133,6 +104,11 @@ case class WeightedPricingSpec(specs : List[(Double, TitanPricingSpec)]) extends
     assert(ccys.size == 1, "No unique valuation currency")
     ccys.head
   }
+  def quotationPeriod = (quotationPeriodStart, quotationPeriodEnd) match {
+    case (Some(d1), Some(d2)) => Some(DateRange(d1, d2))
+    case _ => None
+  }
+  def indexOption = None
 }
 case class InvalidTitanPricingSpecException(msg : String) extends Exception(msg)
 
@@ -165,11 +141,13 @@ case class FixedPricingSpec (settlementDay : Day, pricesByFraction : List[(Doubl
     assert(ccys.size == 1, "No unique valuation currency")
     ccys.head
   }
+  def quotationPeriod = None
+  def indexOption = None
 }
 
 case class UnknownPricingFixation(fraction : Double, price : Quantity)
 case class UnknownPricingSpecification(
-  index : IndexWithKnownPrice,
+  index : IndexWithDailyPrices,
   month : Month,
   fixations : List[UnknownPricingFixation],
   declarationDay : Day,
@@ -201,25 +179,39 @@ case class UnknownPricingSpecification(
   def quotationPeriodEnd : Option[Day] = Some(month.lastDay)
   def indexName : String = index.name
 
-  def daysForPositionReport(marketDay: DayAndTime) = index.observationDays(month).filter(_.endOfDay() > marketDay)
+  def daysForPositionReport(marketDay: DayAndTime) = index.observationDays(month).filter(_.endOfDay > marketDay)
 
   def valuationCCY = premiumCCY.getOrElse(index.currency)
+  def quotationPeriod = Some(month)
+  def indexOption = Some(index)
 }
 
-case class PhysicalMetalAssignment(commodityName : String, quantity : Quantity, deliveryDay : Day, pricingSpec : TitanPricingSpec) extends UTP with Tradeable {
+case class PhysicalMetalAssignment(
+  commodityName : String, 
+  quantity : Quantity, 
+  deliveryDay : Day, 
+  pricingSpec : TitanPricingSpec) extends UTP with Tradeable {
   import PhysicalMetalAssignment._
 
   def isLive(dayAndTime: DayAndTime) = !pricingSpec.isComplete(dayAndTime)
 
   def valuationCCY = pricingSpec.valuationCCY
 
-  def detailsForUTPNOTUSED :Map[String, Any] = Map()
+  def detailsForUTPNOTUSED :Map[String, Any] = shownTradeableDetails
 
   def instrumentType = PhysicalMetalAssignment
   def tradeableType = PhysicalMetalAssignment
 
   def persistedTradeableDetails : Map[String, Any] = Map(commodityLabel -> commodityName, deliveryDayLabel -> deliveryDay, quantityLabel -> quantity, pricingSpecLabel -> PersistAsBlob(pricingSpec))
-  override def shownTradeableDetails = Map(commodityLabel -> commodityName, deliveryDayLabel -> deliveryDay, pricingSpecNameLabel -> pricingSpec.pricingType, quantityLabel -> quantity)
+  override def shownTradeableDetails = Map(
+    commodityLabel -> commodityName, 
+    deliveryDayLabel -> deliveryDay, 
+    pricingSpecNameLabel -> pricingSpec.pricingType, 
+    quantityLabel -> quantity,
+    premiumLabel -> pricingSpec.premium
+  ) ++ pricingSpec.indexOption.map(indexLabel -> _) ++
+    pricingSpec.quotationPeriod.map(quotationPeriodLabel -> _) ++
+    pricingSpec.indexOption.flatMap(_.market.exchangeOption).map(exchangeLabel -> _.name)
 
   def asUtpPortfolio(tradeDay:Day) = UTP_Portfolio(Map(copy(quantity = Quantity(1.0, quantity.uom)) -> quantity.value))
 
@@ -261,10 +253,7 @@ case class PhysicalMetalAssignment(commodityName : String, quantity : Quantity, 
 
   def price(env: Environment) = pricingSpec.price(env)
 
-  def periodKey = (pricingSpec.quotationPeriodStart, pricingSpec.quotationPeriodEnd) match {
-    case (Some(d1), Some(d2)) => Some(DateRange(d1, d2))
-    case _ => None
-  }
+  def periodKey = pricingSpec.quotationPeriod.map(DateRangePeriod)
 
   def *(scale: Double) = this.copy(quantity = quantity * scale)
 
@@ -278,12 +267,13 @@ case class PhysicalMetalAssignment(commodityName : String, quantity : Quantity, 
 object PhysicalMetalAssignment extends InstrumentType[PhysicalMetalAssignment] with TradeableType[PhysicalMetalAssignment]{
   val deliveryDayLabel = "deliveryDay"
   val commodityLabel = "commodity"
-  val quotaIDLabel = "quotaID"
-  val titanTradeIDLabel = "titanTradeID"
   val quantityLabel = "Quantity"
   val pricingSpecNameLabel = "pricingSpecName"
   val pricingSpecLabel = "pricingSpec"
-
+  val quotationPeriodLabel = "quotationPeriod"
+  val premiumLabel = "premium"
+  val exchangeLabel = "exchange"
+  val indexLabel = "index"
 
   val name = "Physical Metal Assignment"
   
@@ -294,5 +284,5 @@ object PhysicalMetalAssignment extends InstrumentType[PhysicalMetalAssignment] w
     val pricingSpec = row.getObject[TitanPricingSpec](pricingSpecLabel)
     PhysicalMetalAssignment(commodityName, quantity, deliveryDay, pricingSpec)
   }
-  def sample = PhysicalMetalAssignment("Aluminium", Quantity(100, UOM.MT), Day(2011, 10, 10), MonthAveragePricingSpec(LmeSingleIndices.alCashBid, Month(2011, 10), Quantity.NULL))
+  def sample = PhysicalMetalAssignment("Aluminium", Quantity(100, UOM.MT), Day(2011, 10, 10), AveragePricingSpec(LmeSingleIndices.alCashBid, Month(2011, 10), Quantity.NULL))
 }

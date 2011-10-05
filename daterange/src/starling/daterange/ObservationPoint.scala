@@ -58,8 +58,8 @@ object ObservationTimeOfDay extends StarlingEnum(classOf[ObservationTimeOfDay], 
 
   val RealTime = new ObservationTimeOfDay("Real Time")
 
-  val Official = new ObservationTimeOfDay("Official")
-  val Unofficial = new ObservationTimeOfDay("Unofficial")
-  val AMR1 = new ObservationTimeOfDay("AMR1")
-  val PMR1 = new ObservationTimeOfDay("PMR1")
+  val LME_Official = new ObservationTimeOfDay("Official")
+  val LME_Unofficial = new ObservationTimeOfDay("Unofficial")
+  val LME_AMR1 = new ObservationTimeOfDay("AMR1")
+  val LME_PMR1 = new ObservationTimeOfDay("PMR1")
 }

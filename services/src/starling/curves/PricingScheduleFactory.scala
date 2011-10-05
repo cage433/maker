@@ -1,7 +1,6 @@
 package starling.curves
 
 import starling.db.MarketDataReader
-import starling.reports.pivot.IndexRuleEvaluation
 import starling.quantity.UOM._
 import starling.pivot._
 import starling.market.rules.{SwapPricingRule, NonCommonPricingRule, Precision}
@@ -10,6 +9,7 @@ import starling.daterange.{Day, DateRange, Month}
 import starling.market.{CommodityMarket, Index}
 import starling.utils.cache.CacheFactory
 import starling.market.formula.FormulaIndex
+import starling.index.IndexRuleEvaluation
 
 object PricingScheduleFactory extends CurveType {
   def create(marketDataReader: MarketDataReader, envSpec: EnvironmentSpecification) = {

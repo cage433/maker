@@ -6,7 +6,6 @@ import starling.daterange._
 import starling.db._
 import starling.curves._
 import starling.marketdata._
-import starling.varcalculator.VarConstants
 import collection.immutable.TreeMap
 import starling.quantity.UOM._
 import starling.utils.ImplicitConversions._

@@ -216,8 +216,8 @@ class Day private (@transient val year : Int, @transient val month : Int, @trans
     Day(month.y, month.m, dayNumber min month.lastDay.dayNumber)
   }
 
-  def endOfDay() = atTimeOfDay(EndOfDay)
-  def startOfDay() = atTimeOfDay(StartOfDay)
+  def endOfDay = atTimeOfDay(EndOfDay)
+  def startOfDay = atTimeOfDay(StartOfDay)
   def atTimeOfDay(timeOfDay : TimeOfDay) = DayAndTime(this, timeOfDay)
   def atTimeOfDay(timeOfDay: ObservationTimeOfDay) = ObservationPoint(this, timeOfDay)
   def atTimeOfDay(time: LocalTime, location: Location): DateTime = time.toDateTimeToday(location.timeZoneOn(this))
@@ -352,7 +352,7 @@ object Day extends TenorType {
 //    })
   }  
   /**
-   * All days are pre-allocated in a 50 year block, which seems to cover all current usage.
+   * All days are pre-allocated in a 100 year block, which seems to cover all current usage.
    * This is basically a flyweight pattern which means that there will only ever be the same
    * number of allocated instances of Day and all usages are references to them. This helps
    * prevent memory churn when doing date-heavy processing (e.g: TreeSet/Map of DateRange)
@@ -360,7 +360,7 @@ object Day extends TenorType {
    */
   private val dayArrayStart = calculateJulianDayNumber(1980, 1, 1)
   private val dayArray = {
-    val arrayEnd = calculateJulianDayNumber(2040, 1, 1)
+    val arrayEnd = calculateJulianDayNumber(2100, 1, 1)
     val array = new Array[Day](arrayEnd - dayArrayStart)
     for (jDay <- dayArrayStart until arrayEnd) {
       array(jDay - dayArrayStart) = constructFromJulianNumber(jDay)
@@ -383,7 +383,7 @@ object Day extends TenorType {
     Day(1899, 12, 30) + double.toInt
   }
 
-  def today() = fromMillis(System.currentTimeMillis)
+  def today = fromMillis(System.currentTimeMillis)
 
   def yesterday = today - 1
   def tomorrow = today + 1

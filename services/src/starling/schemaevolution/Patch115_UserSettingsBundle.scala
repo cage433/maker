@@ -4,8 +4,7 @@ import system.Patch
 import starling.services.StarlingInit
 import starling.richdb.RichDB
 import starling.db.DBWriter
-import starling.browser.internal.UserSettings
-import starling.utils.StarlingXStream
+import starling.instrument.utils.StarlingXStream
 
 class Patch115_UserSettingsBundle extends Patch {
 

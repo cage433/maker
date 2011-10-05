@@ -2,7 +2,7 @@ package starling.services
 
 import excel._
 import jmx.StarlingJMX
-import rpc.logistics.DefaultTitanLogisticsServices
+import rpc.logistics.{FileMockedTitanLogisticsServices, DefaultTitanLogisticsServices}
 import rpc.marketdata.MarketDataService
 import rpc.valuation._
 import starling.schemaevolution.system.PatchRunner
@@ -17,76 +17,77 @@ import starling.neptune.{RefinedFixationSystemOfRecord, RefinedFixationTradeStor
 import starling.curves.readers._
 import trade.ExcelTradeReader
 import trinity.{TrinityUploader, XRTGenerator, FCLGenerator}
-import starling.auth.{LdapUserLookup, User, ServerLogin}
-import java.util.concurrent.CopyOnWriteArraySet
-import starling.utils._
-import sql.ConnectionParams
+import starling.dbx.ConnectionParams
 import starling.utils.ImplicitConversions._
 import starling.tradeimport.{ClosedDesks, TradeImporterFactory, TradeImporter}
 import starling.tradestore.TradeStores
 import starling.http._
-import starling.trade.TradeSystem
-import starling.reports.pivot.{ReportContextBuilder, ReportService}
+import starling.instrument.TradeSystem
 import starling.LIMServer
 import starling.gui.api._
-import starling.bouncyrmi._
-import starling.eai.{Book, Traders, EAIAutoImport, EAIStrategyDB}
+import starling.eai.{Traders, EAIAutoImport, EAIStrategyDB}
 import org.springframework.mail.javamail.JavaMailSenderImpl
 import starling.rmi._
 import starling.calendar._
 import com.trafigura.services.valuation.{ValuationServiceApi, TradeManagementCacheNotReady}
-import org.jboss.netty.channel.{ChannelLocal, Channel}
 import starling.curves.{StarlingMarketLookup, FwdCurveAutoImport, CurveViewer}
 import starling.services.rpc.refdata._
 import starling.services.rabbit._
 import collection.immutable.Map
-import starling.titan.{TitanSystemOfRecord, TitanTradeStore}
 import com.trafigura.services.trinity.TrinityService
-import com.trafigura.services.ResteasyServiceApi
 import com.trafigura.services.marketdata.{ExampleService, MarketDataServiceApi}
-import com.trafigura.services.{WebServiceFactory, DocumentationService, ResteasyServiceApi}
-import swing.event.Event
-import collection.mutable.ListBuffer
 import starling.fc2.api.FC2Service
-import starling.utils._
+import starling.dbx.DataSourceFactory
+import starling.titan.{TitanTradeCache, TitanSystemOfRecord, TitanTradeStore}
+import java.util.UUID
+import com.trafigura.services.{DocumentationService, WebServiceFactory, ResteasyServiceApi}
+import starling.instrument.utils.StarlingXStream
+import java.util.concurrent.{Executors, ConcurrentHashMap}
+import swing.event.Event
+import starling.utils.ClosureUtil._
 import starling.browser.service.{BrowserService, UserLoggedIn, Version}
+import starling.databases.utils.{RabbitBroadcaster, RabbitMessageSender}
+import starling.auth.{AuthHandler, LdapUserLookup, User}
+import starling.auth.internal.KerberosAuthHandler
+import starling.manager.BromptonContext
+import starling.utils._
+import starling.eai.{EAIDealBookMapping, Traders, EAIAutoImport, EAIStrategyDB}
+
 
 class StarlingInit( val props: Props,
+                    authHandler:AuthHandler = AuthHandler.Dev,
+                    rmiBroadcaster:Broadcaster = Broadcaster.Null,
                     dbMigration: Boolean = true,
-                    startRMI: Boolean = true,
+                    startRMI: Boolean = true, //not used
                     startHttp: Boolean = true,
                     startXLLoop: Boolean = true,
                     startStarlingJMX: Boolean = true,
                     forceGUICompatability: Boolean = true,
                     startEAIAutoImportThread: Boolean = true,
-                    startRabbit: Boolean = true
+                    startRabbit: Boolean = true,
+                    testMode : Boolean = false,
+                    marketDataReadersProviders:MarketDataPageIdentifierReaderProviders = MarketDataPageIdentifierReaderProviders.Empty
                     ) extends Stopable with Log {
-
-  implicit def enrichBouncyServer(bouncy: BouncyRMIServer[_]) = new {
-    def toStoppable = Stopable(
-      () => {log.info(bouncy.name + " RMI started on port " + bouncy.port); bouncy.start}, () => bouncy.stop())
-  }
 
   private lazy val services = CompositeStopable(
     // Load all user settings, pivot layouts and user reports here to ensure we don't have any de-serialization issues. Do this before anyone can connect.
     true                     → List(Stopable(userSettingsDatabase.readAll _)),
     startRabbit              → List(titanRabbitEventServices),
-    startXLLoop              → List(excelLoopReceiver, loopyXLReceiver),
-    startRMI                 → List(rmiServerForTitan.toStoppable, rmiServerForGUI.toStoppable),
-    startHttp                → List(httpServer, regressionServer, webServiceServer, trinityService),
+    startXLLoop              → List(excelLoopReceiver),
+    startHttp                → List(httpServer, webServiceServer, trinityService),
     startStarlingJMX         → List(jmx),
     startEAIAutoImportThread → List(eaiAutoImport, fwdCurveAutoImport),
-    true                     → List(scheduler, Stopable(stopF = ConnectionParams.shutdown _))
+    true                     → List(scheduler, Stopable(stopF = DataSourceFactory.shutdown _))
   )
 
-  override def start = { super.start; services.start }
-  override def stop =  { super.stop;  services.stop  }
+  override def start = { services.start }
+  override def stop =  { services.stop  }
 
   val runtime = Runtime.getRuntime
   log.info("maxMemory %sMB" % (runtime.maxMemory / 1024 / 1024))
 
   val name = props.ServerName()
-  val ldapUserLookup = new LdapUserLookup with BouncyLdapUserLookup[User]
+  val ldapUserLookup = new LdapUserLookup
 
   log.debug("Initializing basic DB connections...")
   val starlingDB = DB(props.StarlingDatabase())
@@ -126,19 +127,26 @@ class StarlingInit( val props: Props,
 
   val trinityService = new TrinityService(ResteasyServiceApi(props.TrinityServiceUrl()))
 
-  val titanRabbitEventServices = new DefaultTitanRabbitEventServices(props)
-  log.debug("After rabbit start")
+  val titanRabbitEventServices = if (!testMode) {
+    new DefaultTitanRabbitEventServices(props)
+  }
+  else {
+    new MockTitanRabbitEventServices()
+  }
+
+  log.debug("Completed rabbit start")
 
   val broadcaster = ObservingBroadcaster(new CompositeBroadcaster(
-      true                                      → new RMIBroadcaster(rmiServerForGUI),
       props.rabbitHostSet                       → new RabbitBroadcaster(new RabbitMessageSender(props.RabbitHost())),
       props.EnableVerificationEmails()          → new EmailBroadcaster(mailSender),
-      (startRabbit && props.titanRabbitHostSet) → TitanRabbitIdBroadcaster(titanRabbitEventServices.rabbitEventPublisher)))
+      (startRabbit && props.titanRabbitHostSet) → TitanRabbitIdBroadcaster(titanRabbitEventServices.rabbitEventPublisher),
+      true                                      → rmiBroadcaster
+  ))
 
   val revalSnapshotDb = new RevalSnapshotDB(starlingDB)
   val limServer = new LIMServer(props.LIMHost(), props.LIMPort())
 
-  val (fwdCurveAutoImport, marketDataStore) = log.infoWithTime("Creating Market Data Store") {
+  lazy val (fwdCurveAutoImport, marketDataStore) = log.infoWithTime("Creating Market Data Store") {
     import MarketDataSet._
 
     val marketDataSources = Map(
@@ -157,7 +165,7 @@ class StarlingInit( val props: Props,
       //Neptune -> new NeptuneBenchmarksMarketDataSource(neptuneRichDB) I don't want this persisted yet as it is likely to change
     )
 
-    val mds = new DBMarketDataStore(starlingRichDB, marketDataSources, broadcaster)
+    lazy val mds = DBMarketDataStore(props, starlingRichDB, marketDataSources, broadcaster)
 
     val fwdCurveAutoImport = new FwdCurveAutoImport(60*15, mds, marketDataSources.flatMap {
       case (k, f: FwdCurveDbMarketDataSource) => Some(k)
@@ -166,20 +174,22 @@ class StarlingInit( val props: Props,
     (fwdCurveAutoImport, mds)
   }
 
-  val userSettingsDatabase = new UserSettingsDatabase(starlingDB, broadcaster)
-
   if (dbMigration) log.infoWithTime("DB Migration") {
     //Ensure the schema is up to date
     new PatchRunner(starlingRichDB, props.ReadonlyMode(), this).updateSchemaIfRequired
   }
 
+  val userSettingsDatabase = new UserSettingsDatabase(starlingDB, broadcaster)
+  val rabbitEventDatabase = new RabbitEventDatabase(starlingDB, broadcaster)
+
   val strategyDB = new EAIStrategyDB(eaiSqlServerDB)
+  val eaiDealBookMapping = new EAIDealBookMapping(eaiSqlServerDB)
 
   val intradayTradesDB = new IntradayTradeStore(starlingRichDB, strategyDB, broadcaster, ldapUserLookup)
 
   // Brady trade stores, system of records, trade importers
 
-  val eaiTradeStores = Book.all.map(book=> book-> new EAITradeStore(starlingRichDB, broadcaster, strategyDB, book)).toMap
+  val eaiTradeStores = Desk.eaiDesks.map{case desk@Desk(_, _, Some(_:EAIDeskInfo)) => desk -> new EAITradeStore(starlingRichDB, broadcaster, strategyDB, desk)}.toMap
 
   val titanTradeStore = new TitanTradeStore(starlingRichDB, broadcaster, TitanTradeSystem)
 
@@ -202,11 +212,27 @@ class StarlingInit( val props: Props,
 
   val closedDesks = new ClosedDesks(broadcaster, starlingDB)
 
-  val titanTradeCache = new DefaultTitanTradeCache(props)
-  val titanServices = new DefaultTitanServices(props)
-  val logisticsServices = new DefaultTitanLogisticsServices(props)
-  val titanInventoryCache = new DefaultTitanLogisticsInventoryCache(props)
-  val valuationService = new ValuationService(new DefaultEnvironmentProvider(marketDataStore), titanTradeCache, titanServices, logisticsServices, titanRabbitEventServices, titanInventoryCache)
+  val (titanTradeCache : TitanTradeCache, titanServices, logisticsServices, titanInventoryCache) = if (!testMode) {
+    (
+      new DefaultTitanTradeCache(props),
+      new DefaultTitanServices(props),
+      new DefaultTitanLogisticsServices(props),
+      new DefaultTitanLogisticsInventoryCache(props)
+    )
+  }
+  else {
+    val fileMockedTitanServices = new FileMockedTitanServices()
+    val fileMockedTitanLogisticsServices = new FileMockedTitanLogisticsServices()
+    val mockTitanTradeService = new DefaultTitanTradeService(fileMockedTitanServices)
+    (
+      new TitanTradeServiceBasedTradeCache(mockTitanTradeService),
+      fileMockedTitanServices,
+      fileMockedTitanLogisticsServices,
+      new TitanLogisticsServiceBasedInventoryCache(fileMockedTitanLogisticsServices)
+    )
+  }
+
+  val valuationService = new ValuationService(new DefaultEnvironmentProvider(marketDataStore), titanTradeCache, titanServices, logisticsServices, titanRabbitEventServices, titanInventoryCache, Some(titanTradeStore), rabbitEventDatabase)
   val marketDataService = new MarketDataService(marketDataStore, new DefaultEnvironmentProvider(marketDataStore))
 
   val titanSystemOfRecord = new TitanSystemOfRecord(titanTradeCache, titanServices, logisticsServices)
@@ -223,8 +249,6 @@ class StarlingInit( val props: Props,
     eaiTradeStores, intradayTradesDB,
     refinedAssignmentTradeStore, refinedFixationTradeStore, titanTradeStore)
 
-  val reportContextBuilder = new ReportContextBuilder(marketDataStore)
-  val reportService = new ReportService(reportContextBuilder,tradeStores)
 
   val hostname = try {
     InetAddress.getLocalHost.getHostName
@@ -245,83 +269,40 @@ class StarlingInit( val props: Props,
 
   val referenceData = new ReferenceData(businessCalendars, marketDataStore, strategyDB, scheduler)
 
-  val userReportsService = new UserReportsService(businessCalendars.UK, tradeStores, marketDataStore, userSettingsDatabase, reportService)
 
   val traders = new Traders(ldapUserLookup.user _)
 
-  val starlingServer = new StarlingServerImpl(name, reportContextBuilder, reportService,
-    userSettingsDatabase, userReportsService, tradeStores, enabledDesks,
-    version, referenceData, businessCalendars.UK, ldapUserLookup, eaiStarlingSqlServerDB, traders)
+  val starlingServer = new StarlingServerImpl(name,
+    userSettingsDatabase, tradeStores, enabledDesks,
+    version, referenceData, businessCalendars.UK, ldapUserLookup, eaiStarlingSqlServerDB, traders, rabbitEventDatabase)
 
-  val fc2Service = new FC2ServiceImpl(marketDataStore, curveViewer, reportService)
+  val fc2Service = new FC2ServiceImpl(marketDataStore, curveViewer, marketDataReadersProviders)
 
   val rmiPort = props.RmiPort()
 
-  val users = new CopyOnWriteArraySet[User]
-
-  val jmx = new StarlingJMX(users, scheduler)
-
-  val auth:ServerAuthHandler[User] = props.UseAuth() match {
-    case false => {
-      log.warn("Auth disabled")
-      new ServerAuthHandler[User](new NullAuthHandler(Some(User.Dev)), users, ldapUserLookup,
-        user => broadcaster.broadcast(UserLoggedIn(user.name)), ChannelLoggedIn)
-    }
-    case true => {
-      val kerberos = new ServerLogin(props.KerberosPassword())
-      new ServerAuth(kerberos, ldapUserLookup, users, user => broadcaster.broadcast(UserLoggedIn(user.name))).handler
-    }
-  }
+  val jmx = new StarlingJMX(new ConcurrentHashMap[UUID,User], scheduler) //FIXME
 
   def currentUser() = User.currentlyLoggedOn
 
   val excelLoopReceiver = new ExcelLoopReceiver(ldapUserLookup, props.XLLoopPort(),
     new MarketDataHandler(broadcaster, starlingServer, marketDataStore),
-    new TradeHandler(broadcaster, new ExcelTradeReader(strategyDB, traders, currentUser), intradayTradesDB, traders),
-    new ReportHandler(userReportsService),
+    new TradeHandler(broadcaster, new ExcelTradeReader(strategyDB, eaiDealBookMapping, traders, currentUser), intradayTradesDB, traders),
     new DiagnosticHandler(starlingServer))
 
-  val loopyXLReceiver = new LoopyXLReceiver(props.LoopyXLPort(), auth,
-    (new CurveHandler(curveViewer, marketDataStore) :: excelLoopReceiver.handlers.toList) : _*)
+  val loopyXLReceivers = new CurveHandler(curveViewer, marketDataStore) :: excelLoopReceiver.handlers.toList
 
-   val latestTimestamp = if (forceGUICompatability) GUICode.latestTimestamp.toString else BouncyRMI.CodeVersionUndefined
-
-  val browserService = new BrowserServiceImpl(name, userSettingsDatabase)
-
-  val rmiServerForGUI:BouncyRMIServer[User] = new BouncyRMIServer(
-    rmiPort,
-    auth, latestTimestamp, users,
-    Set(classOf[UnrecognisedTradeIDException]),
-    ChannelLoggedIn, "GUI",
-    ThreadNamingProxy.proxy(starlingServer, classOf[StarlingServer]),
-    ThreadNamingProxy.proxy(fc2Service, classOf[FC2Service]),
-    ThreadNamingProxy.proxy(browserService, classOf[BrowserService])
-  )
-
-  log.info("Initialize public services for Titan components, service host/port: " + props.ExternalHostname + "/" + props.StarlingServiceRmiPort)
-  val nullHandler = new ServerAuthHandler[User](new NullAuthHandler(Some(User.Dev)), users, ldapUserLookup,
-        user => broadcaster.broadcast(UserLoggedIn(user.name)), ChannelLoggedIn)
-  val rmiServerForTitan : BouncyRMIServer[User] = new BouncyRMIServer(
-    props.StarlingServiceRmiPort(),
-    nullHandler, BouncyRMI.CodeVersionUndefined, users,
-    Set(classOf[TradeManagementCacheNotReady], classOf[IllegalArgumentException]),
-    ChannelLoggedIn, "Titan",
-    ThreadNamingProxy.proxy(valuationService, classOf[ValuationServiceApi]),
-    ThreadNamingProxy.proxy(marketDataService, classOf[MarketDataServiceApi])
-  )
+  val browserService = new BrowserServiceImpl(name, version, userSettingsDatabase, broadcaster)
 
   val eaiAutoImport = new EAIAutoImport(15, starlingRichDB, eaiStarlingRichSqlServerDB, strategyDB, eaiTradeStores, closedDesks, enabledDesks)
 
   val deltaCSVDir = props.DeltaCSVDir()
-
-  val reportServlet = new ReportServlet("reports", userReportsService) //Don't add to main web server (as this has no authentication)
 
   lazy val httpServer = locally {
     val externalURL = props.ExternalUrl()
     val externalHostname = props.ExternalHostname()
     val xlloopUrl = props.XLLoopUrl()
     val rmiPort = props.RmiPort()
-    val webStartServlet = new WebStartServlet("webstart", serverName, externalURL, "starling.gui.Launcher",
+    val webStartServlet = new WebStartServlet("webstart", serverName, externalURL, "starling.launcher.Launcher",
       List(externalHostname, rmiPort.toString), xlloopUrl)
     val cannedWebStartServlet = new WebStartServlet("cannedwebstart", serverName, externalURL,
       "starling.gui.CannedLauncher", List(), xlloopUrl)
@@ -332,37 +313,45 @@ class StarlingInit( val props: Props,
   }
 
   lazy val webServiceServer = locally {
-    val webXmlUrl = this.getClass.getResource("../../webapp/WEB-INF/web.xml").toExternalForm
+    val webXmlUrl = "services/resources/webapp/WEB-INF/web.xml"//classOf[StarlingInit].getResource("../../webapp/WEB-INF/web.xml").toExternalForm
 
     new HttpServer(props.HttpServicePort(), props.HttpServiceExternalUrl(), serverName, Some(webXmlUrl), Nil) {
       override def start =
         log.infoF("HTTP web service external url = '%s', server name = '%s'" % (props.HttpServiceExternalUrl(), serverName)) {
-          super.start; /*DocumentationService.registerInstances(webServices : _*)*/
+          super.start; /*DocumentationService.registerInstances(webServices : _*) */
         }
     }
   }
 
-  lazy val webServices = List(marketDataService, valuationService, /*DocumentationService,*/ ExampleService)
-  lazy val regressionServer = new RegressionServer(props.RegressionPort(), reportServlet)
+  StarlingWebServices.webServices = List(marketDataService, valuationService, /*DocumentationService, */ExampleService)
 }
 
 class StarlingWebServices extends WebServiceFactory {
-  override val services = Server.server.webServices
-}
-
-object StarlingInit{
-  lazy val devInstance = {
-    new StarlingInit(PropsHelper.defaultProps, true, false, false, false, false, false, false, false).update(_.start)
+  override val services = {
+    if (StarlingWebServices.webServices == null) {
+      throw new Exception("StarlingWebServices.services has not been initialised")
+    } else {
+      StarlingWebServices.webServices
+    }
   }
 }
 
-object ChannelLoggedIn extends LoggedIn[User] {
-  private val loggedIn = new ChannelLocal[User]()
+object StarlingWebServices {
+  var webServices:List[AnyRef] = _
+}
 
-  def get(channel: Channel): User = loggedIn.get(channel)
-  def set(channel: Channel, user: User): User = loggedIn.set(channel, user)
-  def remove(channel: Channel): User = loggedIn.remove(channel)
-  def setLoggedOn(user: Option[User]) {
-    User.setLoggedOn(user)
+object StarlingInit {
+
+  lazy val devInstance = new StarlingInit(PropsHelper.defaultProps, AuthHandler.Dev, Broadcaster.Null, false, false, false, false, false, false, false)
+
+  lazy val runningDevInstance = {
+    devInstance.update(_.start)
+  }
+
+  /**
+   * defines a test service instance that runs RMI but uses mocked service stubs where appropriate
+   */
+  lazy val runningTestInstance = {
+    new StarlingInit(PropsHelper.defaultProps, AuthHandler.Dev, Broadcaster.Null, true, true, false, false, false, false, false, false, true).update(_.start)
   }
 }

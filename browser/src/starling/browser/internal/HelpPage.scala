@@ -17,7 +17,7 @@ import org.eclipse.mylyn.wikitext.textile.core.TextileLanguage
 
 case object HelpPage extends Page {
 
-  def bundle = RootBrowserContext.bundleName
+  def bundle = RootBrowserBundle.bundleName
 
   def build(serverContext: String) = null
 
@@ -28,7 +28,7 @@ case object HelpPage extends Page {
   def text = "Help"
   def icon = BrowserIcons.im("/icons/16x16_Help.png")
 
-  def createComponent(pageContext: PageContext, data: PageData, bookmark:Bookmark, browserSize:Dimension, previousPageData:scala.Option[PageData]) = {
+  def createComponent(pageContext: PageContext, data: PageData, bookmark:Bookmark, browserSize:Dimension, previousPageData:scala.Option[PreviousPageData]) = {
     val component = new WikiPageComponent(pageContext)
 
     val markup = pageContext.bundles.flatMap(_.helpEntries.map(_.markup)).mkString("\n")

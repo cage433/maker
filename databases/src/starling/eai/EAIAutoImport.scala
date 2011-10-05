@@ -2,8 +2,7 @@ package starling.eai
 
 import instrumentreaders.EAISystemOfRecord
 import starling.db.DB
-import starling.utils.sql.QueryBuilder._
-import starling.gui.api.Desk
+import starling.dbx.QueryBuilder._
 import java.util.{Timer, TimerTask}
 import starling.systemofrecord.SystemOfRecord
 import starling.tradestore.TradeStore
@@ -13,25 +12,26 @@ import starling.tradestore.eai.EAITradeStore
 import starling.tradeimport.{TradeImporter, ClosedDesks}
 import starling.calendar.BusinessCalendarSet
 import collection.mutable.ArrayBuffer
-import starling.trade.Trade
+import starling.instrument.Trade
 import org.springframework.dao.DeadlockLoserDataAccessException
-import starling.utils.{RepeatingTask, Log}
+import starling.databases.utils.RepeatingTask
+import starling.utils.{Log}
+import starling.gui.api.{EAIDeskInfo, Desk}
 
 
 /**
  * @param runEvery number of seconds to run after, repeats
  */
-class EAIAutoImport(runEvery: Int, starlingDB: RichDB, externalDB: RichDB, eaiStrategyDB: EAIStrategyDB, tradeStores: Map[Book,TradeStore], closedDesks: ClosedDesks, enabledDesks: Set[Desk])
+class EAIAutoImport(runEvery: Int, starlingDB: RichDB, externalDB: RichDB, eaiStrategyDB: EAIStrategyDB, tradeStores: Map[Desk,TradeStore], closedDesks: ClosedDesks, enabledDesks: Set[Desk])
   extends RepeatingTask(runEvery, "EAIAutoImport") {
 
   import EAISystemOfRecord._
 
-  val bookMap = Map(LONDON_DERIVS_BOOK -> Desk.LondonDerivatives,
-    LONDON_DERIVS_OPTIONS_BOOK -> Desk.LondonDerivativesOptions,
-    CrudeSpecNorthSea -> Desk.CrudeSpecNorthSea,
-    GasolineSpec -> Desk.GasolineSpec,
-    HoustonDerivatives -> Desk.HoustonDerivatives)
-    .filter(e => enabledDesks.contains(e._2))
+  val bookMap = Desk.eaiDesks.map {
+    case d@Desk(_, _, Some(info:EAIDeskInfo)) => {
+      (info.book -> d)
+    }
+  }.toMap.filter(e => enabledDesks.contains(e._2))
 
   // filter only import desks that are enabled in props
 
@@ -131,7 +131,7 @@ class EAIAutoImport(runEvery: Int, starlingDB: RichDB, externalDB: RichDB, eaiSt
 
             assert(done) // sanity check
 
-            val tradeStore = tradeStores(Book(bookToImport))
+            val tradeStore = tradeStores(deskToClose)
             // we want a transaction around the import and desk close so if the desk close fails we roll back
             // the trade import.
             starlingDB.inTransaction(writer => {

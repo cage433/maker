@@ -2,7 +2,7 @@ package starling.db
 
 import starling.daterange._
 import starling.instrument._
-import starling.trade.{TradeID, TradeSystem}
+import starling.instrument.{TradeID, TradeSystem}
 
 case object EAITradeSystem extends TradeSystem("EAI", "eai")
 case object IntradayTradeSystem extends TradeSystem("Intraday", "int")
