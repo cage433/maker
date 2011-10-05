@@ -39,7 +39,7 @@ in_namespace('TradeMgmt.Internal.Permission') {
   }
   
   service('DesktopPermissionService') {
-    operation('GetTradersAndTrafficOperators', :returns => list('TradersAndTrafOps')) {
+    operation('GetTradersAndTrafficOperators', :returns => list('TrafficOperatorAndTradersForGC')) {
       parameter 'gcs' , list(:string)
     }  
   }
