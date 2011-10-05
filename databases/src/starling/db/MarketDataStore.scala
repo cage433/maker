@@ -164,7 +164,7 @@ trait MarketDataStore {
 
   def queryForObservationDayAndMarketDataKeys(marketDataIdentifier: MarketDataIdentifier, marketDataType: MarketDataType): List[TimedMarketDataKey]
 
-  def readLatest[T <: MarketData](marketDataSet: MarketDataSet, timedKey: TimedMarketDataKey): Option[T]
+  def readLatest(marketDataSet: MarketDataSet, timedKey: TimedMarketDataKey): Option[VersionedMarketData]
 
   def save(marketDataSetToData: MultiMap[MarketDataSet, MarketDataEntry]): SaveResult
 
@@ -425,17 +425,10 @@ class DBMarketDataStore(db: MdDB, tags: MarketDataTags, val marketDataSources: M
     }
   }
 
-  def readLatest[T <: MarketData](marketDataSet: MarketDataSet, timedKey: TimedMarketDataKey): Option[T] = {
-    val id = MarketDataID(timedKey.observationPoint, marketDataSet, timedKey.key)
-    readLatest(id) match {
-      case None => None
-      case Some(data) => data.data.map(_.asInstanceOf[T])
-    }
-  }
+  def readLatest(marketDataSet: MarketDataSet, timedKey: TimedMarketDataKey): Option[VersionedMarketData] =
+    readLatest(MarketDataID(timedKey.observationPoint, marketDataSet, timedKey.key))
 
-  def readLatest[T <: MarketData](id: MarketDataID) = {
-    db.readLatest(id)
-  }
+  def readLatest[T <: MarketData](id: MarketDataID) = db.readLatest(id)
 
   def latestPricingGroupVersions: Map[PricingGroup, Int] = {
     val lookup = db.latestVersionForMarketDataSets()

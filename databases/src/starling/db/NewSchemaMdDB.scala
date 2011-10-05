@@ -185,7 +185,6 @@ class NewSchemaMdDB(db: DBTrait[RichResultSetRow], referenceDataLookup: Referenc
   }.toSet
 
   private def queryUsingExtendedKeys[T](extendedKeyIds: List[Int], query: Query)(f: RichResultSetRow => T): List[T] = {
-    val keys = extendedKeyIds.flatMap(extendedKeys.get(_))
     extendedKeyIds.grouped(1900).toList.flatMap { chunk => { //limit is 2000 but use 1900 to leave space for other parameters
       db.queryWithResult(query and("extendedKey" in chunk))(f)
     } }
@@ -230,9 +229,10 @@ class NewSchemaMdDB(db: DBTrait[RichResultSetRow], referenceDataLookup: Referenc
       val values = new MarketDataValueMap()
 
       queryUsingExtendedKeys(extendedKeyIdsFor(marketDataType, mds, observationTimes, marketDataKeys),
-        select("*")
-          from("MarketDataValue")
-         where(commitClause, observationDayClause)
+         select("*")
+           from("MarketDataValue")
+          where(commitClause, observationDayClause)
+        orderBy("commitId" asc)
       ) { marketDataValue(_).update(values) }
 
       values.values

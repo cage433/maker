@@ -33,7 +33,6 @@ case class FreightParityDataKey(contractualIncoterm: IncotermCode, contractualLo
 
 object FreightParityDataType extends MarketDataType {
   type dataType = FreightParityData
-  override val readonly = true
 
   val keys@List(contractualIncotermField, contractualLocationField, destinationIncotermField, destinationLocationField) =
     List("Contractual Inco Terms", "Contractual Location", "Destination Inco Terms", "Destination Location").map(FieldDetails(_))

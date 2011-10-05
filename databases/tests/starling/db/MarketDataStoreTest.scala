@@ -71,7 +71,7 @@ class MarketDataStoreTest extends TestMarketTest with ShouldMatchers {
     val versionInt = versionAfterDelete.get.version
     val versionedData1 = VersionedMarketData(versionInt, Some(data1))
     marketDataStore.update(Map(MarketDataSet.Starling -> List(MarketDataUpdate(timedKey, None, Some(versionedData1)))))
-    val read2:Option[SpotFXData] = marketDataStore.readLatest(MarketDataSet.Starling, timedKey)
+    val read2 = marketDataStore.readLatest(MarketDataSet.Starling, timedKey).flatMap(_.data)
     read2 should equal( None )
 
     val pfs = PivotFieldsState(
@@ -101,12 +101,12 @@ class MarketDataStoreTest extends TestMarketTest with ShouldMatchers {
 
     val data1 = SpotFXData(Quantity(1, UOM.EUR / UOM.USD))
     marketDataStore.save(MarketDataSet.Starling, timedKey, data1)
-    val read1:SpotFXData = marketDataStore.readLatest(MarketDataSet.Starling, timedKey).get
+    val read1 = marketDataStore.readLatest(MarketDataSet.Starling, timedKey).get.data.get
     read1 should equal( data1 )
 
     val data2 = SpotFXData(Quantity(2, UOM.EUR / UOM.USD))
     marketDataStore.save(MarketDataSet.Starling, timedKey, data2)
-    val read2:SpotFXData = marketDataStore.readLatest(MarketDataSet.Starling, timedKey).get
+    val read2 = marketDataStore.readLatest(MarketDataSet.Starling, timedKey).get.data.get
     read2 should equal( data2 )
   }
 

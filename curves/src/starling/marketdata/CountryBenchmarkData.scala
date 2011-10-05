@@ -5,9 +5,6 @@ import starling.market.Commodity
 import starling.pivot._
 import scalaz.Scalaz._
 
-/**
- * benchmark data for 'neptune country' to quantity
- */
 case class CountryBenchmarkData(countryData : Map[NeptuneCountryCode, Quantity]) extends MarketData {
   def size = countryData.size
 }
@@ -34,15 +31,12 @@ object CountryBenchmarkDataType extends MarketDataType {
   def createKey(row: Row) = CountryBenchmarkMarketDataKey(Commodity.fromName(row.string(commodityField)))
 
   def createValue(rows: List[Row]) = {
-    val data = rows.map { row => row[NeptuneCountry](countryField).code -> row.quantity(benchmarkPriceField) }
+    val data = rows.map { row => row[NeptuneCountry](countryField).code → row.quantity(benchmarkPriceField) }
 
     CountryBenchmarkData(data.toMap)
   }
 }
 
-/**
- * Benchmark area market data key represents a list of grade, location market data rows keyed per commodity
- */
 case class CountryBenchmarkMarketDataKey(commodity : Commodity) extends MarketDataKey {
   import CountryBenchmarkDataType._
 
@@ -54,9 +48,9 @@ case class CountryBenchmarkMarketDataKey(commodity : Commodity) extends MarketDa
 
   override def rows(marketData: CountryBenchmarkData, referenceDataLookup: ReferenceDataLookup) = {
     marketData.countryData.map { case (countryCode, price) => Row(
-      commodityField.field -> commodity.name,
-      countryField.field -> referenceDataLookup.countryFor(countryCode),
-      benchmarkPriceField.field -> price
+      commodityField.field → commodity.name,
+      countryField.field → referenceDataLookup.countryFor(countryCode),
+      benchmarkPriceField.field → price
     ) }
   }
 }

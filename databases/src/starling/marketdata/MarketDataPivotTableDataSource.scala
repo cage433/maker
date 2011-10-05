@@ -111,23 +111,9 @@ class MarketDataPivotTableDataSource(reader: MarketDataReader, edits:PivotEdits,
             val newRows = Row.create(groupedNewRows.getOrElse(timedKey, Nil))
             val maybeEdits = editsByTimedKeys.get(timedKey)
 
-            val latest: Option[MarketData] = marketDataStore.readLatest(editableSet, timedKey)
-            val amendRows = latest match {
-              case None => {
-                maybeEdits.map( _.flatMap { case (keyFilter, keyEdit) => {
-                  keyEdit match {
-                    case DeleteKeyEdit => Nil //Ignore, we can't override existing values with a 'delete'
-                    case AmendKeyEdit(amends) => {
-                      if (amends.values.toSet.contains(None)) {
-                        Nil //Ignore, we can't override existing values with a 'delete'
-                      } else {
-                        Row(keyFilter.keys.mapValues(_.values.iterator.next) ++ amends.mapValues(_.get)) ::Nil
-                      }
-                    }
-                  }
-                }}).getOrElse(Nil)
-              }
-              case Some(readData) => {
+            val latest: Option[VersionedMarketData] = marketDataStore.readLatest(editableSet, timedKey)
+            latest match {
+              case Some(v@VersionedMarketData(_, Some(readData))) => {
                 val currentRows = timedKey.key.castRows(readData, referenceDataLookup)
                 var modifiedRows = currentRows
 
@@ -152,14 +138,35 @@ class MarketDataPivotTableDataSource(reader: MarketDataReader, edits:PivotEdits,
                   }
                   case None => {}
                 }
-                modifiedRows.toList
+                val rows: List[Row] = modifiedRows.toList ::: newRows
+                if (rows.isEmpty) {
+                  MarketDataUpdate(timedKey, None, Some(v))
+                } else {
+                  MarketDataEntry(timedKey.observationPoint, timedKey.key, marketDataType.createValue(rows))
+                    .toUpdate(Some(v))
+                }
+
+              }
+              case _ => {
+                val modifiedRows = maybeEdits.map( _.flatMap { case (keyFilter, keyEdit) => {
+                  keyEdit match {
+                    case DeleteKeyEdit => Nil //Ignore, we can't override existing values with a 'delete'
+                    case AmendKeyEdit(amends) => {
+                      if (amends.values.toSet.contains(None)) {
+                        Nil //Ignore, we can't override existing values with a 'delete'
+                      } else {
+                        Row(keyFilter.keys.mapValues(_.values.iterator.next) ++ amends.mapValues(_.get)) ::Nil
+                      }
+                    }
+                  }
+                }}).getOrElse(Nil)
+                MarketDataEntry(timedKey.observationPoint, timedKey.key, marketDataType.createValue(modifiedRows.toList ::: newRows)).toUpdate(None)
               }
             }
 
-            MarketDataEntry(timedKey.observationPoint, timedKey.key, marketDataType.createValue(amendRows ::: newRows))
           } }
 
-          val r:SaveResult = marketDataStore.save(Map(editableSet → newEntries.toList))
+          val r:SaveResult = marketDataStore.update(Map(editableSet → newEntries.toList))
           r.maxVersion
         }
       }
