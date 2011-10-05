@@ -15,54 +15,9 @@ trait HasInterpolation {
   def interpolation: InterpolationMethod
 }
 
-trait InterpolationMethod{
-  def interpolate(days : Array[Day], prices : Array[Double], day : Day) : Double
-}
 
-/** Interpolates a forward curve linearly. Currently extrapolates if interpoland is beyond
- * 	the last available day.
- * 	@todo - Find out if extrapolation should be switched off
- */
-object LinearInterpolation extends InterpolationMethod{
-  def interpolate(days : Array[Day], prices : Array[Double], day : Day) : Double = {
-  		val i_firstOnOrAfter = days.indexWhere(_ >= day)
 
-  		val value = i_firstOnOrAfter match {
-  		  case -1 => prices.last
-  		  case 0 => prices(0)
-  		  case _	=> {
-  		    val p0 = prices(i_firstOnOrAfter - 1)
-  		    val p1 = prices(i_firstOnOrAfter)
-  		    val x0 = 0
-  		    val x1 = days(i_firstOnOrAfter).daysSinceInYears(days(i_firstOnOrAfter - 1))
-  		    val x = day.daysSinceInYears(days(i_firstOnOrAfter - 1))
-        
-  		    p0 + (p1 - p0) * x / x1
-  		  }
-  		}
-      assert(value > 0, "Non positive price " + value)
-      value
-  }
-}
 
-/**
- * Interpolates by returning the value of the first available price point on or
- * before the interpolated day. Currently extrapolates if interpoland is before
- * the first available day.
- * @todo - Find out if extrapolation should be switched off
- */
-object InverseConstantInterpolation extends InterpolationMethod{
-  def interpolate(days : Array[Day], prices : Array[Double], day : Day) : Double = {
-  		assert(prices.size > 0, "Can't interpolate without prices")
-  		val i_firstStrictlyAfter = days.indexWhere(_ > day)
-
-  		i_firstStrictlyAfter match {
-  		  case -1 => prices.last
-        case 0 => prices.head
-  		  case _ => prices(i_firstStrictlyAfter - 1)
-      }
-	}
-}
 
 
 case class ForwardCurveKey(market : CommodityMarket) extends NonHistoricalCurveKey[PriceData] {
