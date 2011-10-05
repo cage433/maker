@@ -14,10 +14,15 @@ import starling.utils.Pattern.Extractor
 import starling.db.{MarketDataStore, SnapshotID}
 import starling.gui.api.{SnapshotMarketDataVersion, SpecificMarketDataVersion, MarketDataVersion}
 import com.trafigura.services.valuation.TitanMarketDataIdentifier
+import com.trafigura.edm.logistics.inventory.EDMInventoryItem
+import starling.instrument.Trade
 
 case class InvalidUomException(msg : String) extends Exception(msg)
 
 object EDMConversions {
+  implicit def enrichEDMInventoryItem(inv : EDMInventoryItem) = new {
+    val id = inv.oid.contents.toString
+  }
   // Starling implicits
   implicit def enrichQuantity(q: Quantity) = new {
     def toTitan = toTitanQuantity(q)
@@ -161,6 +166,13 @@ object EDMConversions {
       )
     }.toMap
     TitanSerializableQuantity(q.value, uomMap)
+  }
+
+  implicit def enhanceStarlingTrade(trade : Trade) = new {
+    def titanTradeID : Option[String] = trade.attributes match {
+      case tta : TitanTradeAttributes => Some(tta.titanTradeID)
+      case _ => None
+    }
   }
 
   val starlingCurrencyToEdmCurrency = Map(

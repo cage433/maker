@@ -30,45 +30,6 @@ class PhysicalMetalForwardBuilder(refData: TitanTacticalRefData,
     case _ => throw new Exception(" Invalid direction " + direction)
   }
 
-  def apply(trades: List[Trade]) : PhysicalMetalForward = {
-
-    val allAssignmentsWithAttributes = trades.map{
-      trade =>
-        (trade.tradeable.asInstanceOf[PhysicalMetalAssignmentOrUnassignedSalesQuota], trade.attributes.asInstanceOf[TitanTradeAttributes])
-      }
-    val allAssignments = allAssignmentsWithAttributes.map(_._1)
-    val allAttributes = allAssignmentsWithAttributes.map(_._2)
-    def singleValue[B](fn :PhysicalMetalAssignmentOrUnassignedSalesQuota => B) : B = {
-      val set = allAssignments.map(fn).toSet
-      assert(set.size == 1)
-      set.head
-    }
-    def singleAttribute[B](fn : TitanTradeAttributes => B) = {
-      val set = allAttributes.map(fn).toSet
-      assert(set.size == 1)
-      set.head
-    }
-
-    allAssignments match {
-      case Nil => throw new Exception("Can not construct Physical Metal Forward from zero trade assignments")
-      case _ => {
-        val tradeID = singleAttribute(_.titanTradeID)
-
-        val quotas : List[PhysicalMetalQuota] = allAssignmentsWithAttributes.groupBy(a => a._2.quotaID).map{ case (quotaID, assignmentsWithAttributes)  => {
-          val assignments = assignmentsWithAttributes.map(_._1)
-          val quotaAssignments = assignments.collect { case p : PhysicalMetalAssignment => p }
-          val unallocatedSalesAssignments = assignments.collect { case p : UnallocatedSalesQuota => p }
-          PhysicalMetalQuota(
-            quotaID,
-            quotaAssignments,
-            unallocatedSalesAssignments.headOption
-          )
-        }}.toList
-
-        PhysicalMetalForward(tradeID, quotas)
-      }
-    }
-  }
 
   def apply(trade: EDMPhysicalTrade) : List[Trade] = {
     val groupCompany = groupCompaniesByGUID.get(trade.groupCompany).map(_.name).getOrElse("Unknown Group Company")
@@ -245,3 +206,54 @@ class PhysicalMetalForwardBuilder(refData: TitanTacticalRefData,
   }
 
 }
+
+object PhysicalMetalForwardBuilder{
+  def apply(trades: List[Trade]) : Either[String, PhysicalMetalForward] = {
+
+    try {
+      val allAssignmentsWithAttributes = trades.map {
+        trade =>
+          (trade.tradeable.asInstanceOf[PhysicalMetalAssignmentOrUnassignedSalesQuota], trade.attributes.asInstanceOf[TitanTradeAttributes])
+      }
+      val allAssignments = allAssignmentsWithAttributes.map(_._1)
+      val allAttributes = allAssignmentsWithAttributes.map(_._2)
+
+      def singleAttribute[B](fn: TitanTradeAttributes => B) = {
+        val set = allAttributes.map(fn).toSet
+        assert(set.size == 1)
+        set.head
+      }
+
+      allAssignments match {
+        case Nil => throw new Exception("Can not construct Physical Metal Forward from zero trade assignments")
+        case _ => {
+          val tradeID = singleAttribute(_.titanTradeID)
+
+          val quotas: List[PhysicalMetalQuota] = allAssignmentsWithAttributes.groupBy(a => a._2.quotaID).map {
+            case (quotaID, assignmentsWithAttributes) => {
+              val assignments = assignmentsWithAttributes.map(_._1)
+              val quotaAssignments = assignments.collect {
+                case p: PhysicalMetalAssignment => p
+              }
+              val unallocatedSalesAssignments = assignments.collect {
+                case p: UnallocatedSalesQuota => p
+              }
+              PhysicalMetalQuota(
+                quotaID,
+                quotaAssignments,
+                unallocatedSalesAssignments.headOption
+              )
+            }
+          }.toList
+
+          Right(PhysicalMetalForward(tradeID, quotas))
+        }
+      }
+    } catch {
+      case ex => {
+        Left(ex.getMessage)
+      }
+    }
+  }
+}
+

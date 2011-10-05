@@ -1,8 +1,16 @@
 package starling.titan
 
 import starling.curves.Environment
-import starling.instrument.physical.PhysicalMetalForward
-
+import com.trafigura.edm.shared.types.TitanId
+import com.trafigura.edm.trades.{PhysicalTrade => EDMPhysicalTrade}
+import com.trafigura.edm.logistics.inventory.{EDMInventoryItem, EDMLogisticsQuota}
+import starling.instrument.Trade
+import starling.instrument.physical.{PhysicalMetalAssignmentOrUnassignedSalesQuota, PhysicalMetalForward}
+import starling.daterange.Timestamp
+import starling.utils.Log
+import EDMConversions._
+import collection.immutable.Map
+import collection.mutable.Set
 
 /**
  * Manage the trade store trades via changes at trade, quota, inventory and assignment level
@@ -11,68 +19,151 @@ case class TitanTradeStoreManager(
   refData : TitanTacticalRefData,
   titanTradeStore : TitanTradeStore,
   edmTradeServices : TitanEdmTradeService,
-  logisticsServices : TitanLogisticsServices) {
+  logisticsServices : TitanLogisticsServices) extends Log {
 
-  def forward(id : String) : PhysicalMetalForward = {
+  type InventoryID = String
 
-    val allTrades = titanTradeStore.readLatestVersionOfAllTrades()
-
-    val trades = allTrades.filter(t => t._1 == id)
-
-//    val forward = forwardBuilder.mkForward(trades)
-
-    titanTradeStore.getForward(id)
+  private val edmTrades = {
+    scala.collection.mutable.Set[EDMPhysicalTrade]() ++ edmTradeServices.getAllCompletedTrades()
+  }
+  private val edmInventoryItems = {
+    scala.collection.mutable.Map[InventoryID, EDMInventoryItem]() ++ logisticsServices.inventoryService.service.getAllInventory().associatedInventory.map{inv => inv.id -> inv}
+  }
+  private def edmInventoryLeaves : List[EDMInventoryItem] = {
+    val allInventoryIds = edmInventoryItems.keySet
+    val parentIds = edmInventoryItems.values.flatMap{inv => inv.parentId.map(_.toString)}.toSet
+    allInventoryIds.filterNot(parentIds).map(edmInventoryItems).toList
   }
 
-  def forwardsByInventory(inventoryID : String) : List[PhysicalMetalForward] = {
+  private val edmLogisticsQuotas = scala.collection.mutable.Set[EDMLogisticsQuota]()
 
-//    val allTrades = titanTradeStore.readLatestVersionOfAllTrades()
-//
-//    val trades = allTrades.filter(t => t._2.trade.inventoryID == inventoryID)groupBy(t => t._1)
-//
-//    val fwds = trades.map((k, v) => forwardBuilder(v))
-//
-//    titanTradeStore.getForwardsByInventory(inventoryID)
-    null
+  def inventoryByQuotaID : Map[TitanId, List[EDMInventoryItem]] = {
+    def quotaNames(inventory : EDMInventoryItem) : List[String] = inventory.purchaseAssignment.quotaName :: Option(inventory.salesAssignment).map(_.quotaName).toList
+    def quotaNamesForInventory : List[(List[TitanId], EDMInventoryItem)] = edmInventoryItems.toList.map{case (id, inv) => (quotaNames(inv), inv)}.map(i => i._1.map(qn => TitanId(qn)) -> i._2)
+    def quotaToInventory : List[(TitanId, EDMInventoryItem)] = quotaNamesForInventory.flatMap(i => i._1.map(x => (x -> i._2)))
+    quotaToInventory.groupBy(_._1).map(x => x._1 -> x._2.map(_._2))
+  }
+
+  private def tradeForwardBuilder: PhysicalMetalForwardBuilder = {
+    def logisticsQuotaByQuotaID : Map[TitanId, EDMLogisticsQuota] = Map() // this isn't currently implemented, probably best to complete after refactoring is completed
+    new PhysicalMetalForwardBuilder(refData, inventoryByQuotaID, logisticsQuotaByQuotaID)
+  }
+
+  private def getTradeAndUpdateCache(titanTradeID : String) = {
+    val newTrade = edmTradeServices.getTrade(TitanId(titanTradeID))
+    edmTrades += newTrade
+    newTrade
+  }
+
+  def allStarlingTrades = titanTradeStore.allStarlingTrades()
+  def removeTrade(titanTradeID : String) {
+    edmTrades -= edmTrades.find(e => e.titanId != titanTradeID).head
+  }
+
+  def updateInventoryCache(inventoryID : String){
+    val logisticsResponse = logisticsServices.inventoryService.service.getInventoryById(inventoryID.toInt)
+    assert(logisticsResponse.associatedInventory.size == 1, "Expected a single piece of inventory")
+    val newInventory = logisticsResponse.associatedInventory.head
+
+    val newQuotas = logisticsResponse.associatedQuota
+    assert(newQuotas.size >= 1 && newQuotas.size <= 2, "Expected one or two quotas")
+    edmInventoryItems += (newInventory.id -> newInventory)
+    edmLogisticsQuotas ++= newQuotas
+  }
+
+  def removeInventory(inventoryID : String) {
+    edmInventoryItems -= inventoryID
   }
 
   /**
-   * Returns list of trade ids that have changed
+   * Returns list of trade ids that have changed value
    */
   def updateInventory(env : Environment, inventoryID : String) : List[String] = {
-    val oldTrades = forwardsByInventory(inventoryID).map{fwd => fwd.tradeID -> fwd}.toMap
-    // val newTrades = oldTrades.map{trade => trade.copy(tradeable = tradeable.updateInventory(...))}
-    // update trade store
-    val newForwards = forwardsByInventory(inventoryID).map{fwd => fwd.tradeID -> fwd}.toMap
 
-    (oldTrades.keySet ++ newForwards.keySet).filter {
-      id =>
-        (oldTrades.get(id), newForwards.get(id)) match {
-          case (Some(fwd1), Some(fwd2)) => fwd1.costsAndIncomeQuotaValueBreakdown(env) != fwd2.costsAndIncomeQuotaValueBreakdown(env)
-          case _ => true
-        }
-    }.toList
+    try {
+
+      val existingFwds = titanTradeStore.getAllForwards()
+      updateInventoryCache(inventoryID)
+      updateTradeStore()
+      val updatedFwds = titanTradeStore.getAllForwards()
+
+      val changedTitanTradeIds = (existingFwds.keySet ++ updatedFwds.keySet).flatMap{
+        titanTradeId =>
+          (existingFwds.get(titanTradeId), updatedFwds.get(titanTradeId)) match {
+            case (Some(Right(oldFwd)), Some(Right(newFwd))) if oldFwd.costsAndIncomeQuotaValueBreakdown(env) != newFwd.costsAndIncomeQuotaValueBreakdown(env) => Some(titanTradeId)
+            case _ => None
+          }
+      }.toList
+
+      changedTitanTradeIds
+    }
+    catch {
+      case ex => {
+        Log.error("update trade failed ", ex)
+        throw ex
+      }
+    }
+  }
+
+  def updateTradeStore() {
+    val updatedStarlingTrades = edmTrades.flatMap(tradeForwardBuilder.apply)
+    titanTradeStore.storeTrades(
+      {trade : Trade => true},
+      updatedStarlingTrades,
+      new Timestamp
+    )
+  }
+  /**
+   * update / create a new trade, returns true if update changes valuation
+   */
+  def updateTrade(env : Environment, titanTradeID : String) : Boolean = {
+
+    try {
+
+      val existingFwd = titanTradeStore.getForward(titanTradeID)
+      val newEDMTrade = getTradeAndUpdateCache(titanTradeID)
+
+      val newStarlingTrades : List[Trade] = tradeForwardBuilder(newEDMTrade)
+
+      titanTradeStore.storeTrades(
+        {trade : Trade => trade.attributes match {
+          case t : TitanTradeAttributes => t.titanTradeID == titanTradeID
+          case _ => throw new Exception("Unexpected trade attributes type for trade " + trade)
+
+        }},
+        newStarlingTrades,
+        new Timestamp
+      )
+
+      val updatedFwd = titanTradeStore.getForward(titanTradeID)
+
+      val valueChanged = (existingFwd, updatedFwd) match {
+        case (Right(oldFwd), Right(newFwd)) => oldFwd.costsAndIncomeQuotaValueBreakdown(env) != newFwd.costsAndIncomeQuotaValueBreakdown(env)
+        case (Left(_), Left(_)) => false
+        case _ => true
+      }
+
+      valueChanged
+    }
+    catch {
+      case ex => {
+        Log.error("update trade failed ", ex)
+        throw ex
+      }
+    }
+  }
+
+  def deleteTrade(titanTradeID : String) {
+
+    titanTradeStore.storeTrades(
+      {trade => trade.titanTradeID == titanTradeID},
+      Nil,
+      new Timestamp
+    )
   }
 
   def deleteInventory(id : String) {
 
   }
 
-  /**
-   * Returns true if update changes valuation
-   */
-  def updateTrade(env : Environment, id : String) : Boolean = {
-
-    val oldForward = titanTradeStore.getForward(id)
-    // update trade store  - filter if not completed in Titan
-    val newForward = titanTradeStore.getForward(id)
-
-    (oldForward.costsAndIncomeQuotaValueBreakdown(env) != newForward.costsAndIncomeQuotaValueBreakdown(env))
-  }
-
-
-  def deleteTrade(id : String) {
-
-  }
 }
-
