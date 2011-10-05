@@ -28,12 +28,12 @@ class ValuationService(
 
     log.info("valueAllTradeQuotas called with market identifier %s".format(marketDataIdentifier))
     val sw = new Stopwatch()
-    val forwards : List[PhysicalMetalForward] = titanTradeStore.getAllForwards()
+    val forwards : List[PhysicalMetalForward] = titanTradeStore.getAllForwards().collect{case (_, Right(fwd)) => fwd}.toList
     log.info("Got Edm Trade results, trade result count = " + forwards.size)
     val env = environmentProvider.environment(marketDataIdentifier)
     val valuations = forwards.map{
       fwd =>
-        (fwd.tradeID, fwd.costsAndIncomeQuotaValueBreakdown(env))
+        (fwd.titanTradeID, fwd.costsAndIncomeQuotaValueBreakdown(env))
     }.toMap
 
     log.info("Valuation took " + sw)
@@ -50,10 +50,11 @@ class ValuationService(
   }
 
   def valueSingleTradeQuotas(tradeId : String, env : Environment): Either[String, List[QuotaValuation]] = {
-    val forward : PhysicalMetalForward = titanTradeStore.getForward(tradeId)
-    forward.costsAndIncomeQuotaValueBreakdown(env)
+    titanTradeStore.getForward(tradeId) match {
+      case Right(forward) => forward.costsAndIncomeQuotaValueBreakdown(env)
+      case Left(err) => Left(err)
+    }
   }
-
 
   /**
    * Return all snapshots that are valid for a given observation day, ordered from most recent to oldest

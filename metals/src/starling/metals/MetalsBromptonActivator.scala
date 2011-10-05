@@ -83,8 +83,9 @@ class MetalsBromptonActivator extends BromptonActivator {
         new FileMockedTitanLogisticsServices()
         )
     }
+    val titanTradeStoreManager: TitanTradeStoreManager = TitanTradeStoreManager(titanServices, titanTradeStore, titanServices, logisticsServices)
 
-    val titanSystemOfRecord = new TitanSystemOfRecord(titanServices, logisticsServices)
+    val titanSystemOfRecord = new TitanSystemOfRecord(titanTradeStoreManager)
     val titanTradeImporter = new TradeImporter(TitanTradeSystem, titanSystemOfRecord, titanTradeStore)
 
     context.registerService(classOf[TradeImporter], titanTradeImporter)
@@ -111,7 +112,7 @@ class MetalsBromptonActivator extends BromptonActivator {
 
     val eventHandler = new TitanEventHandler(
       titanRabbitEventServices,
-      TitanTradeStoreManager(titanServices, titanTradeStore, titanServices, logisticsServices),
+      titanTradeStoreManager,
       environmentProvider,
       rabbitEventDatabase)
 

@@ -1,14 +1,14 @@
 package starling.titan
 
-import starling.tradestore.TradeStore
-import starling.instrument.TradeableType
 import starling.pivot.{DrillDownInfo, PivotAxis, PivotFieldsState, Field}
 import starling.richdb.{RichDB, RichInstrumentResultSetRow}
 import starling.utils.Broadcaster
-import starling.instrument.TradeSystem
 import starling.pivot.FieldDetails
 import starling.gui.api.{Desk, TradesUpdated}
 import starling.instrument.physical.PhysicalMetalForward
+import starling.tradestore.{TradeRow, TradeStore}
+import starling.instrument.{Trade, TradeableType, TradeSystem}
+import EDMConversions._
 
 object TitanTradeStore {
   val quotaID_str = "Quota ID"
@@ -64,14 +64,28 @@ class TitanTradeStore(db: RichDB, broadcaster:Broadcaster, tradeSystem:TradeSyst
   override def tradesChanged() = {
    broadcaster.broadcast(TradesUpdated(Desk.Titan, cachedLatestTimestamp.get))
   }
-  def getAllForwards() : List[PhysicalMetalForward] = {
-    null
+
+  def allStarlingTrades() = {
+    readLatestVersionOfAllTrades().values.map(_.trade)
   }
-  def getForward(titanTradeID : String) : PhysicalMetalForward = {
-    null
+
+  def getAllForwards() : Map[String, Either[String, PhysicalMetalForward]] = {
+    val trades = allStarlingTrades().collect{t : Trade => t.titanTradeID match { case Some(id) => t }}
+    trades.groupBy{trade : Trade => trade.titanTradeID.get}.map{
+      case (titanTradeID, trades) => titanTradeID -> PhysicalMetalForwardBuilder(trades.toList)
+    }.toMap
   }
-  def updateForward(fwd : PhysicalMetalForward){
-//    fwd.asStarlingTrades...
+
+  def getTradesForTitanTradeID(titanTradeID : String) : List[Trade] = {
+    readLatestVersionOfAllTrades().flatMap{
+      case (_, TradeRow(_, _, trade)) if trade.titanTradeID == titanTradeID => Some(trade)
+      case _ => None
+    }.toList
   }
+
+  def getForward(titanTradeID : String) : Either[String, PhysicalMetalForward] = {
+    PhysicalMetalForwardBuilder(getTradesForTitanTradeID(titanTradeID))
+  }
+
 }
 
