@@ -14,8 +14,7 @@ import starling.instrument.physical._
 import starling.quantity.{Quantity, Percentage}
 import starling.instrument.TradeID._
 import starling.db.TitanTradeSystem
-import starling.instrument.{TradeID, Trade}
-
+import starling.instrument.{ErrorInstrument, TradeID, Trade}
 
 class PhysicalMetalForwardBuilder(refData: TitanTacticalRefData,
             inventoryByQuotaID: Map[TitanId, List[EDMInventoryItem]],
@@ -198,10 +197,11 @@ class PhysicalMetalForwardBuilder(refData: TitanTacticalRefData,
       trades
     }
     catch {
-      case ex => {
-        log.debug("Failed to construct PhysicalMetalForward from EDM ", ex) //.getStackTrace.map(_.toString).mkString(",\n"))
-        throw new Exception("Trade with id " + getTitanTradeId(trade) + " failed to construct from EDM. " + ex.getMessage, ex)
-      }
+      case e => {
+            List(Trade(TradeID(trade.titanId.value, TitanTradeSystem),
+                TitanTradeAttributes.dummyDate, "Unknown", TitanTradeAttributes.errorAttributes(trade),
+                new ErrorInstrument(e.getMessage)))
+        }
     }
   }
 

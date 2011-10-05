@@ -173,6 +173,10 @@ object EDMConversions {
       case tta : TitanTradeAttributes => Some(tta.titanTradeID)
       case _ => None
     }
+    def titanInventoryID : Option[String] = trade.attributes match {
+      case tta : TitanTradeAttributes => tta.inventoryID
+      case _ => None
+    }
   }
 
   val starlingCurrencyToEdmCurrency = Map(

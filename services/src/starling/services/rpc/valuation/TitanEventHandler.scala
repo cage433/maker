@@ -42,7 +42,7 @@ class TitanEventHandler(rabbitEventServices : TitanRabbitEventServices,
         log.warn("Got a null event")
       else {
         db.saveEvent(ev)
-        if (TrademgmtSource == ev.source && (TradeSubject == ev.subject || NeptuneTradeSubject == ev.subject)) {
+        if (TrademgmtSource == ev.source && (TradeSubject == ev.subject )) {
           // Must be some form of trade event from trademgmt source
           tradeMgmtTradeEventHander(ev)
         }
@@ -78,27 +78,21 @@ class TitanEventHandler(rabbitEventServices : TitanRabbitEventServices,
       case TradeSubject => {
         ev.verb match {
           case UpdatedEventVerb => {
-            val changedIDs = tradeIds.filter(titanTradeStoreManager.updateTrade(env, _))
-            if (changedIDs != Nil)
-              rabbitPublishChangedValueEvents(changedIDs, RefinedMetalTradeIdPayload)
+            val completed = ev.content.body.payloads.filter(p => TradeStatusPayload == p.payloadType).filter(p => p.key.identifier == "completed").size > 0
+            if (completed) {
 
-            log.info("Trades revalued for received event using snapshot %s number of changed valuations %d".format(snapshotIDString, changedIDs.size))
+              val changedIDs = tradeIds.filter(titanTradeStoreManager.updateTrade(env, _))
+              if (changedIDs != Nil)
+                rabbitPublishChangedValueEvents(changedIDs, RefinedMetalTradeIdPayload)
+
+              log.info("Trades revalued for received event using snapshot %s number of changed valuations %d".format(snapshotIDString, changedIDs.size))
+            }
           }
           case CreatedEventVerb =>
           case CancelledEventVerb | RemovedEventVerb => {
             Log.info("Cancelled / deleted event received for %s".format(titanIds))
             tradeIds.foreach(titanTradeStoreManager.deleteTrade)
           }
-        }
-      }
-      // handle publishing of valuation status events (events saying if a new (completed) trade can be valued successfully or not)
-      case NeptuneTradeSubject => {
-        val completed = ev.content.body.payloads.filter(p => TradeStatusPayload == p.payloadType).filter(p => p.key.identifier == "completed").size > 0
-        if (completed) {
-          Log.info("Completed event received for %s".format(tradeIds))
-          val changedIDs: List[(String, Boolean)] = tradeIds.map{titanTradeID => (titanTradeID -> titanTradeStoreManager.updateTrade(env, titanTradeID))}
-          if (!changedIDs.isEmpty)
-            rabbitPublishNewValuationEvents(changedIDs)
         }
       }
     }

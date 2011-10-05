@@ -115,7 +115,7 @@ trait Instrument extends Ordered[Instrument] with Greeks with PnlExplanation {
       }
     }
 
-    assert(explained.isAlmostEqual(mtm(env), 1e-6), "Explanation not the same as the mtm: " + (explained, mtm(env)))
+    assert(explained.isAlmostEqual(mtm(env, ccy), 1e-6), "Explanation not the same as the mtm: " + (explained, mtm(env, ccy)))
     explained
   }
 

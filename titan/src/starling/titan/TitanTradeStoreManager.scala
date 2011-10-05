@@ -5,12 +5,11 @@ import com.trafigura.edm.shared.types.TitanId
 import com.trafigura.edm.trades.{PhysicalTrade => EDMPhysicalTrade}
 import com.trafigura.edm.logistics.inventory.{EDMInventoryItem, EDMLogisticsQuota}
 import starling.instrument.Trade
-import starling.instrument.physical.{PhysicalMetalAssignmentOrUnassignedSalesQuota, PhysicalMetalForward}
 import starling.daterange.Timestamp
 import starling.utils.Log
 import EDMConversions._
 import collection.immutable.Map
-import collection.mutable.Set
+
 
 /**
  * Manage the trade store trades via changes at trade, quota, inventory and assignment level
@@ -56,8 +55,8 @@ case class TitanTradeStoreManager(
   }
 
   def allStarlingTrades = titanTradeStore.allStarlingTrades()
-  def removeTrade(titanTradeID : String) {
-    edmTrades -= edmTrades.find(e => e.titanId != titanTradeID).head
+  def removeTradeFromCache(titanTradeID : String) {
+    edmTrades.retain(_.titanId.value != titanTradeID)
   }
 
   def updateInventoryCache(inventoryID : String){
@@ -71,7 +70,7 @@ case class TitanTradeStoreManager(
     edmLogisticsQuotas ++= newQuotas
   }
 
-  def removeInventory(inventoryID : String) {
+  def removeInventoryFromCache(inventoryID : String) {
     edmInventoryItems -= inventoryID
   }
 
@@ -127,7 +126,7 @@ case class TitanTradeStoreManager(
 
       titanTradeStore.storeTrades(
         {trade : Trade => trade.attributes match {
-          case t : TitanTradeAttributes => t.titanTradeID == titanTradeID
+          case t : TitanTradeAttributes => t.titanTradeID == Some(titanTradeID)
           case _ => throw new Exception("Unexpected trade attributes type for trade " + trade)
 
         }},
@@ -154,16 +153,20 @@ case class TitanTradeStoreManager(
   }
 
   def deleteTrade(titanTradeID : String) {
-
+    removeTradeFromCache(titanTradeID)
     titanTradeStore.storeTrades(
-      {trade => trade.titanTradeID == titanTradeID},
+      {trade => trade.titanTradeID == Some(titanTradeID)},
       Nil,
       new Timestamp
     )
   }
 
-  def deleteInventory(id : String) {
-
+  def deleteInventory(titanInventoryID : String) {
+    removeInventoryFromCache(titanInventoryID)
+    titanTradeStore.storeTrades(
+      {trade => trade.titanInventoryID == Some(titanInventoryID)},
+      Nil,
+      new Timestamp
+    )
   }
-
 }

@@ -72,7 +72,7 @@ case class AveragePricingSpec(index: IndexWithDailyPrices, period: DateRange,
 
   def price(env: Environment) = addPremiumConvertingIfNecessary(env, env.averagePrice(index, period), premium)
 
-  def dummyTransferPricingSpec = copy(premium = Quantity.NULL)
+  def dummyTransferPricingSpec = copy(premium = premium.copy(value = 0))
 
   def fixedQuantity(marketDay: DayAndTime,
                     totalQuantity: Quantity): Quantity = totalQuantity * observedDays(marketDay).size / observationDays.size
@@ -269,7 +269,7 @@ case class UnknownPricingSpecification(
     addPremiumConvertingIfNecessary(env, fixedPayment + unfixedPayment, premium)
   }
 
-  def dummyTransferPricingSpec = copy(premium = Quantity.NULL)
+  def dummyTransferPricingSpec = copy(premium = premium.copy(value = 0))
 
   def fixedQuantity(marketDay: DayAndTime, totalQuantity: Quantity) = totalQuantity * fixations.map(_.fraction).sum
 
