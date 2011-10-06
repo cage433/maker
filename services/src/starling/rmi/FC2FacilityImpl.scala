@@ -80,7 +80,7 @@ class FC2FacilityImpl(
       case Some(mdt) => Some(realTypeFor(mdt))
     }
     marketDataType match {
-      case Some(mdt) => new MarketDataPivotTableDataSource(reader, edits, Some(snapshotDatabase),
+      case Some(mdt) => new MarketDataPivotTableDataSource(reader, edits, snapshotDatabase,
         marketDataIdentifier.marketDataIdentifier, mdt, referenceDataLookup)
       case None => NullPivotTableDataSource
     }

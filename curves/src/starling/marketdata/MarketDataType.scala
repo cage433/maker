@@ -8,8 +8,6 @@ import starling.pivot.{Row, Field, PivotFieldsState, FieldDetails}
  * There is one of these for each time of market data. eg. prices, spotfx, forward rates...
  */
 trait MarketDataType {
-  val readonly: Boolean = false
-
   type dataType <: MarketData
 
   val name: String = getClass.getName.substring(getClass.getName.lastIndexOf(".") + 1).stripSuffix("DataType$")

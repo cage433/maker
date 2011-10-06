@@ -3,6 +3,7 @@ package starling.marketdata
 import starling.quantity.Quantity
 import starling.market.Commodity
 import starling.pivot._
+import pivotparsers.DayPivotParser
 import scalaz.Scalaz._
 import starling.utils.ImplicitConversions._
 import starling.daterange.Day
@@ -47,18 +48,17 @@ case class GradeAreaBenchmarkMarketDataKey(commodity : Commodity) extends Market
 
 object GradeAreaBenchmarkDataType extends MarketDataType {
   type dataType = GradeAreaBenchmarkData
-  override val readonly = true
 
-  val commodityField = FieldDetails("Commodity")
+  val commodityField = FieldDetails("Commodity", FixedPivotParser(Commodity.metalsCommodities.map(_.name).toSet))
   val areaField = FieldDetails("Area")
   val gradeField = FieldDetails("Grade")
-  val effectiveFromField = FieldDetails("Effective From")
-  val benchmarkPriceField = FieldDetails.createMeasure("Benchmark Price")
+  val effectiveFromField = FieldDetails("Effective From", DayPivotParser)
+  val benchmarkPriceField = FieldDetails.createMeasure("Benchmark Price", parser0 = PivotQuantityPivotParser)
 
   def marketDataKeyFields = keyFields
-  override def keyFields = Set(commodityField, areaField, gradeField).map(_.field)
+  override def keyFields = Set(commodityField, areaField, gradeField, effectiveFromField).map(_.field)
   override def valueFields = List(benchmarkPriceField.field)
-  val fields = List(commodityField, areaField, gradeField, benchmarkPriceField)
+  val fields = List(commodityField, areaField, gradeField, effectiveFromField, benchmarkPriceField)
 
   val initialPivotState = PivotFieldsState(
     dataFields=List(benchmarkPriceField.field),

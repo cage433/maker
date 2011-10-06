@@ -4,12 +4,12 @@ import starling.db.{MarketDataEntry, MarketDataSource}
 import starling.dbx.QueryBuilder._
 import starling.daterange.{ObservationPoint, Day}
 import starling.richdb.RichDB
-import starling.utils.Log
-
 import starling.utils.ImplicitConversions._
 import scalaz.Scalaz._
 import collection.immutable.Map
 import starling.marketdata._
+import starling.utils.{ImplicitConversions, Log}
+import starling.quantity.Quantity
 
 
 class NeptuneGradeAreaBenchmarkUtil(neptuneDB:RichDB) extends Log {
@@ -30,7 +30,8 @@ class NeptuneGradeAreaBenchmarkUtil(neptuneDB:RichDB) extends Log {
       rows.map { case (neptuneCommodity, values) =>
         val data = values.map { case (grade, area, price) => (grade, area) → (day → neptuneCommodity.toQuantity(price)) }
 
-        MarketDataEntry(ObservationPoint(today), neptuneCommodity.gradeAreaBenchmarkKey, GradeAreaBenchmarkData(data.toNestedMap))
+        val nestedData: ImplicitConversions.NestedMap[(GradeCode, AreaCode), Day, Quantity] = data.toNestedMap
+        MarketDataEntry(ObservationPoint(today), neptuneCommodity.gradeAreaBenchmarkKey, GradeAreaBenchmarkData(nestedData))
       }.toList
     }
 

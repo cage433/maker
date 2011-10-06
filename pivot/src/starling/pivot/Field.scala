@@ -5,6 +5,7 @@ import model.UndefinedValue
 import java.io.Serializable
 import starling.quantity._
 import starling.utils.ImplicitConversions._
+import starling.utils.StarlingEnum
 
 class Field(val name: String) extends Serializable {
   override val hashCode = name.hashCode
@@ -86,6 +87,15 @@ trait PivotParser extends Serializable {
   def parse(text:String, extraFormatInfo:ExtraFormatInfo):(Any,String)
   def acceptableValues:Set[String] = Set.empty
 }
+
+case class FixedPivotParser(override val acceptableValues:Set[String]) extends PivotParser {
+  def parse(text: String, extraFormatInfo: ExtraFormatInfo) = {
+    require(acceptableValues.contains(text), "Invalid value: " + text)
+
+    (text, text)
+  }
+}
+
 object TextPivotParser extends PivotParser {
   def parse(text:String, extraFormatInfo:ExtraFormatInfo) = (text,text)
 }

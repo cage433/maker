@@ -410,7 +410,7 @@ class DBMarketDataStore(db: MdDB, tags: MarketDataTags, val marketDataSources: M
       val reader = new NormalMarketDataReader(this, marketDataIdentifier)
       val validatingReader = validate(reader)
 
-      new MarketDataPivotTableDataSource(validatingReader, PivotEdits.Null, Some(this), marketDataIdentifier, marketDataType,
+      new MarketDataPivotTableDataSource(validatingReader, PivotEdits.Null, this, marketDataIdentifier, marketDataType,
         referenceDataLookup)
     })
   }

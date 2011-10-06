@@ -291,7 +291,7 @@ class PivotJTable(tableModel:PivotJTableModel, pivotTableView:PivotTableView, mo
         val r = getEditingRow
         val c = getEditingColumn
 
-        val t = textField.getText.trim().toLowerCase
+        val t = textField.getText.trim()
 
         val parser = tableModel.parser(r, c)
         val myRes = try {

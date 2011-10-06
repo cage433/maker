@@ -3,6 +3,7 @@ package starling.marketdata
 import starling.daterange.Day
 import starling.market.Commodity
 import starling.pivot._
+import pivotparsers.DayPivotParser
 import starling.quantity.Quantity
 import scalaz.Scalaz._
 import starling.utils.ImplicitConversions._
@@ -13,17 +14,16 @@ case class CountryBenchmarkData(countryData: NestedMap[NeptuneCountryCode, Day, 
 
 object CountryBenchmarkDataType extends MarketDataType {
   type dataType = CountryBenchmarkData
-  override val readonly = true
 
-  val commodityField = FieldDetails("Commodity")
+  val commodityField = FieldDetails("Commodity", FixedPivotParser(Commodity.metalsCommodities.map(_.name).toSet))
   val countryField = FieldDetails("Country")
-  val effectiveFromField = FieldDetails("Effective From")
-  val benchmarkPriceField = FieldDetails.createMeasure("Benchmark Price")
+  val effectiveFromField = FieldDetails("Effective From", DayPivotParser)
+  val benchmarkPriceField = FieldDetails.createMeasure("Benchmark Price", parser0 = PivotQuantityPivotParser)
 
   def marketDataKeyFields = keyFields
-  override def keyFields = Set(commodityField, countryField).map(_.field)
+  override def keyFields = Set(commodityField, countryField, effectiveFromField).map(_.field)
   override def valueFields = List(benchmarkPriceField.field)
-  val fields = List(commodityField, countryField, benchmarkPriceField)
+  val fields = List(commodityField, countryField, effectiveFromField, benchmarkPriceField)
 
   val initialPivotState = PivotFieldsState(
     dataFields = List(benchmarkPriceField.field),
@@ -55,7 +55,7 @@ case class CountryBenchmarkMarketDataKey(commodity: Commodity) extends MarketDat
     marketData.countryData.mapNested { case (countryCode, effectiveFrom, price) => Row(
       commodityField.field → commodity.name,
       countryField.field → referenceDataLookup.countryFor(countryCode),
-      effectiveFromField.field → effectiveFromField,
+      effectiveFromField.field → effectiveFrom,
       benchmarkPriceField.field → price
     ) }
   }
