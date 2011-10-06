@@ -136,7 +136,15 @@ trait TitanEdmTradeService extends Log {
       edmTrades
     }
     catch {
-      case e : Throwable => throw new ExternalTitanServiceFailed(e)
+      case e : Throwable => {
+        e.getCause match {
+          case _ : TradeManagementCacheNotReady => {
+            Log.info("Trade management cache not ready")
+            Nil
+          }
+          case _ => throw new ExternalTitanServiceFailed(e)
+        }
+      }
     }
   }
 }
