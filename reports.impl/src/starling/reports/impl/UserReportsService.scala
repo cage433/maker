@@ -106,7 +106,8 @@ class UserReportsService(
 
         val tradeTS = bookCloseOffset match {
           case Left(offset) => createTradeTimestamp(desk, applyOffset(baseDay, offset))
-          case Right(_) if desk.isDefined => tradeStores.closedDesks.latestTradeTimestamp(desk.get)
+          case Right(true) if desk.isDefined => tradeStores.closedDesks.latestTradeTimestamp(desk.get)
+          case Right(false) if desk.isDefined => tradeStores.titanCurrentTimestamp
           case _ => createTradeTimestamp(desk, baseDay) // this doesn't matter as it'll never be used
         }
 
@@ -172,7 +173,7 @@ class UserReportsService(
     if (ts.closeDay == latestClose.closeDay) {
       Right(true)
     } else if (ts.closeDay == TradeTimestamp.magicLatestTimestampDay) {
-      Right(true)
+      Right(false)
     } else {
       Left(businessDaysBetween(baseDay, ts.closeDay))
     }
@@ -203,7 +204,8 @@ class UserReportsService(
   def bookCloseDay(desk:Option[Desk], tradeVersionOffSetOrLive:Either[Int,Boolean], baseDay:Day) = {
     tradeVersionOffSetOrLive match {
       case Left(offset) if desk.isDefined => Some(createTradeTimestamp(desk, applyOffset(baseDay, offset)))
-      case Right(_) if desk.isDefined => Some(tradeStores.closedDesks.latestTradeTimestamp(desk.get))
+      case Right(true) if desk.isDefined => Some(tradeStores.closedDesks.latestTradeTimestamp(desk.get))
+      case Right(false) if desk.isDefined => Some(tradeStores.titanCurrentTimestamp)
       case _ => None
     }
   }

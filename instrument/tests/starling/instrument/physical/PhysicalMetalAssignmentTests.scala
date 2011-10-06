@@ -32,7 +32,7 @@ class PhysicalMetalAssignmentTests extends StarlingTest {
   )
 
 
-  ///@Test
+  @Test
   def testAverageExplanation{
     val monthSpec = AveragePricingSpec(LmeSingleIndices.cuCashBid, Month(2011, 8), Quantity(1.5, USD/MT))
 
@@ -44,13 +44,13 @@ class PhysicalMetalAssignmentTests extends StarlingTest {
     )
 
     val explanation = assignment.explanation(env)
-    assertEquals(explanation.name, "((-F * Volume) * Discount)")
-    assertEquals(explanation.format(1), "((-(Average(LME Copper cash Bid.AUGUST 2011) + Premium) * 100.00 MT) * USD.02Sep2011)")
-    val ex = "((-(Average(01Aug2011, 02Aug2011, 03Aug2011, 04Aug2011, 05Aug2011, 08Aug2011, 09Aug2011, 10Aug2011, 11Aug2011, 12Aug2011, 15Aug2011, 16Aug2011, 17Aug2011, 18Aug2011, 19Aug2011, 22Aug2011, 23Aug2011, 24Aug2011, 25Aug2011, 26Aug2011, 29Aug2011, 30Aug2011, 31Aug2011) + 1.50 USD/MT) * 100.00 MT) * 0.99)"
+    assertEquals(explanation.name, "-((Contract Price * Volume) * Discount)")
+    assertEquals(explanation.format(1), "-(((Average(LME Copper cash Bid.AUGUST 2011) + Premium) * 100.00 MT) * 0.99)")
+    val ex = "-(((Average(01Aug2011, 02Aug2011, 03Aug2011, 04Aug2011, 05Aug2011, 08Aug2011, 09Aug2011, 10Aug2011, 11Aug2011, 12Aug2011, 15Aug2011, 16Aug2011, 17Aug2011, 18Aug2011, 19Aug2011, 22Aug2011, 23Aug2011, 24Aug2011, 25Aug2011, 26Aug2011, 29Aug2011, 30Aug2011, 31Aug2011) + 1.50 USD/MT) * 100.00 MT) * 0.99)"
     assertEquals(explanation.format(2), ex)
-    val ex2 = "((-(Average(LME Copper.03Aug2011 Fixed, LME Copper.04Aug2011 Fixed, LME Copper.05Aug2011 Fixed, LME Copper.08Aug2011 Fixed, LME Copper.09Aug2011 Fixed, LME Copper.10Aug2011 Fixed, LME Copper.11Aug2011 Fixed, LME Copper.12Aug2011 Fixed, LME Copper.15Aug2011, LME Copper.16Aug2011, LME Copper.17Aug2011, LME Copper.18Aug2011, LME Copper.19Aug2011, LME Copper.22Aug2011, LME Copper.23Aug2011, LME Copper.24Aug2011, LME Copper.25Aug2011, LME Copper.26Aug2011, LME Copper.29Aug2011, LME Copper.30Aug2011, LME Copper.31Aug2011, LME Copper.01Sep2011, LME Copper.02Sep2011) + 1.50 USD/MT) * 100.00 MT) * 0.99)"
+    val ex2 = "-(((Average(LME Copper.03Aug2011 Fixed, LME Copper.04Aug2011 Fixed, LME Copper.05Aug2011 Fixed, LME Copper.08Aug2011 Fixed, LME Copper.09Aug2011 Fixed, LME Copper.10Aug2011 Fixed, LME Copper.11Aug2011 Fixed, LME Copper.12Aug2011 Fixed, LME Copper.15Aug2011, LME Copper.16Aug2011, LME Copper.17Aug2011, LME Copper.18Aug2011, LME Copper.19Aug2011, LME Copper.22Aug2011, LME Copper.23Aug2011, LME Copper.24Aug2011, LME Copper.25Aug2011, LME Copper.26Aug2011, LME Copper.29Aug2011, LME Copper.30Aug2011, LME Copper.31Aug2011, LME Copper.01Sep2011, LME Copper.02Sep2011) + 1.50 USD/MT) * 100.00 MT) * 0.99)"
     assertEquals(explanation.format(3), ex2)
-    val lastExplanation = "((-(Average(98.00 USD/MT, 98.00 USD/MT, 98.00 USD/MT, 98.00 USD/MT, 98.00 USD/MT, 98.00 USD/MT, 98.00 USD/MT, 98.00 USD/MT, 97.00 USD/MT, 97.00 USD/MT, 97.00 USD/MT, 97.00 USD/MT, 97.00 USD/MT, 97.00 USD/MT, 97.00 USD/MT, 97.00 USD/MT, 97.00 USD/MT, 97.00 USD/MT, 97.00 USD/MT, 97.00 USD/MT, 97.00 USD/MT, 97.00 USD/MT, 97.00 USD/MT) + 1.50 USD/MT) * 100.00 MT) * 0.99)"
+    val lastExplanation = "-(((Average(98.00 USD/MT, 98.00 USD/MT, 98.00 USD/MT, 98.00 USD/MT, 98.00 USD/MT, 98.00 USD/MT, 98.00 USD/MT, 98.00 USD/MT, 97.00 USD/MT, 97.00 USD/MT, 97.00 USD/MT, 97.00 USD/MT, 97.00 USD/MT, 97.00 USD/MT, 97.00 USD/MT, 97.00 USD/MT, 97.00 USD/MT, 97.00 USD/MT, 97.00 USD/MT, 97.00 USD/MT, 97.00 USD/MT, 97.00 USD/MT, 97.00 USD/MT) + 1.50 USD/MT) * 100.00 MT) * 0.99)"
     assertEquals(explanation.format(4), lastExplanation)
     assertEquals(explanation.format(5), lastExplanation)
   }

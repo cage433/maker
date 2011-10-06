@@ -104,11 +104,12 @@ case class TradeStores(
     }
   }
 
-  def closedDesksByDay: Map[Desk, Map[Day, List[TradeTimestamp]]] = {
-    val closes = closedDesks.closedDesksByDay
-    val titanLatestTradeTimestamp = TradeTimestamp.makeMagicLatestTimestamp(
+  def titanCurrentTimestamp = TradeTimestamp.makeMagicLatestTimestamp(
       titanTradeStore.cachedLatestTimestamp.get()
     )
+  def closedDesksByDay: Map[Desk, Map[Day, List[TradeTimestamp]]] = {
+    val closes = closedDesks.closedDesksByDay
+    val titanLatestTradeTimestamp = titanCurrentTimestamp
     closes + (Desk.Titan -> (closes.getOrElse(Desk.Titan, Map()) + (TradeTimestamp.magicLatestTimestampDay -> List(titanLatestTradeTimestamp))))
   }
 
