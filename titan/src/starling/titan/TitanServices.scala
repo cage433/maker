@@ -122,7 +122,7 @@ trait TitanEdmTradeService extends Log {
       val sw = new Stopwatch()
       val edmTradeResult = titanGetEdmTradesService.getAll()
       log.info("Are EDM Trades available " + edmTradeResult.cached + ", took " + sw)
-      if (!edmTradeResult.cached) throw new TradeManagementCacheNotReady
+      //if (!edmTradeResult.cached) throw new TradeManagementCacheNotReady
       log.info("Got Edm Trade results " + edmTradeResult.cached + ", trade result count = " + edmTradeResult.results.size)
       val edmTrades = edmTradeResult.results.map(_.trade.asInstanceOf[EDMPhysicalTrade]).flatMap(Option(_)).filter(pt => pt.state == CompletedTradeState)
 
@@ -136,7 +136,15 @@ trait TitanEdmTradeService extends Log {
       edmTrades
     }
     catch {
-      case e : Throwable => throw new ExternalTitanServiceFailed(e)
+      case e : Throwable => {
+        e.getCause match {
+          case _ : TradeManagementCacheNotReady => {
+            Log.info("Trade management cache not ready")
+            Nil
+          }
+          case _ => throw new ExternalTitanServiceFailed(e)
+        }
+      }
     }
   }
 }

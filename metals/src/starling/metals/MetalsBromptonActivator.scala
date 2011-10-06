@@ -102,7 +102,7 @@ class MetalsBromptonActivator extends BromptonActivator {
 
     val trinityService = new TrinityService(ResteasyServiceApi(props.TrinityServiceUrl()))
 
-    val rabbitEventDatabase = new DefaultRabbitEventDatabase(starlingDB, broadcaster)
+    val rabbitEventDatabase = new DefaultRabbitEventDatabase(starlingDB, osgiBroadcaster)
 
     val environmentProvider = new DefaultEnvironmentProvider(marketDataStore, referenceDataLookup)
     val valuationService = new ValuationService(
