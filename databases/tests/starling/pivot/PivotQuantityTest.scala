@@ -26,7 +26,7 @@ class PivotQuantityTest extends StarlingTest with ShouldMatchers {
   def testAdditionDifferentUnits {
     val a = PivotQuantity(Quantity(50, UOM.USD))
     val b = PivotQuantity(Quantity(20, UOM.GBP))
-    val expected = new PivotQuantity(Map(UOM.USD -> 50.0, UOM.GBP -> 20.0), Map[String,List[StackTrace]]())
+    val expected = new PivotQuantity(Map(UOM.USD -> 50.0, UOM.GBP -> 20.0), MultiMap[String, StackTrace]())
     assertEquals(a + b, expected)
   }
 
@@ -105,7 +105,7 @@ class PivotQuantityTest extends StarlingTest with ShouldMatchers {
 
   @Test
   def testNull{
-    assertEquals(new PivotQuantity(Map[UOM, Double](), Map[String, List[StackTrace]]()),
+    assertEquals(new PivotQuantity(Map[UOM, Double](), MultiMap[String, StackTrace]()),
                  PivotQuantity(Quantity.NULL).filterNulls)
   }
 

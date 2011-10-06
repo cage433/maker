@@ -28,11 +28,12 @@ class NeptuneCountryBenchmarksUtil(neptuneDB: RichDB) extends Log {
       invalidRows.ifDefined { logInvalid("Cannot import contry benchmarks for neptune commodities: ", _) }
 
       rows.map { case (neptuneCommodity, values) =>
-        val data = values.map { case (countryCode, price) => countryCode → neptuneCommodity.toQuantity(price) }
+        val data = values.map { case (countryCode, price) => countryCode → (day → neptuneCommodity.toQuantity(price)) }
 
-        MarketDataEntry(ObservationPoint(today), neptuneCommodity.countryBenchmarkKey, CountryBenchmarkData(data.toMap))
+        MarketDataEntry(ObservationPoint(today), neptuneCommodity.countryBenchmarkKey, CountryBenchmarkData(data.toNestedMap))
       }.toList
     }
+
     Map((today, today, CountryBenchmarkDataType) → entries)
   }
 

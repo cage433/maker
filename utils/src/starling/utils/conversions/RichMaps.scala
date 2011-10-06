@@ -5,17 +5,16 @@ import starling.utils.Pattern.Extractor
 import collection.mutable.{Map => MMap}
 import scalaz.Scalaz._
 import collection.immutable.{Map, TreeMap}
+import starling.utils.ImplicitConversions
 
 trait RichMaps {
   type MultiMap[K, V] = Map[K, List[V]]
+  type NestedMap[K1, K2, V] = Map[K1, Map[K2, V]]
 
-  implicit def enrichMap[K, V](value : Map[K,V]) = new RichMap(value)
-  implicit def enrichMultiMap[K, V](value : MultiMap[K, V]) = new RichMultiMap[K, V](value)
-  implicit def enrichNestedMap[K1, K2, V](value: Map[K1, Map[K2, V]]) = new RichMap[K1, Map[K2, V]](value) {
-    def flipNesting = value.toList.flatMap { case (k1, k2vs) => k2vs.map { case (k2, v) => (k2, (k1, v)) } }
-      .groupInto(_.head, _.tail).mapValues(_.toMap)
-  }
-  implicit def enrichMutableMap[K, V](value: MMap[K, V]) = new RichMutableMap(value)
+  implicit def enrichMap[K, V](map: Map[K,V]) = new RichMap(map)
+  implicit def enrichMultiMap[K, V](multi : MultiMap[K, V]) = new RichMultiMap[K, V](multi)
+  implicit def enrichNestedMap[K1, K2, V](nested: NestedMap[K1, K2, V]) = new RichNestedMap(nested)
+  implicit def enrichMutableMap[K, V](mutable: MMap[K, V]) = new RichMutableMap(mutable)
 
   def MultiMap[K, V](entries: (K, List[V])*): MultiMap[K, V] = entries.toMap
 }
@@ -73,6 +72,15 @@ class RichMutableMap[K, V](map: MMap[K, V]) {
   def removeValues(f: V => Boolean): MMap[K, V] = remove((k, v) => f(v))
   def retainKeys(f: K => Boolean): MMap[K, V] = map.retain((k, v) => f(k))
   def retainValues(f: V => Boolean): MMap[K, V] = map.retain((k, v) => f(v))
+}
+
+class RichNestedMap[K1, K2, V](nested: NestedMap[K1, K2, V]) extends RichMap[K1, Map[K2, V]](nested) {
+  lazy val nestedSize: Int = nested.values.map(_.size).sum
+
+  def mapNested[T](f: (K1, K2, V) => T): Iterable[T] =
+    nested.flatMap { case (k1, values) => values.map { case (k2, value) => f(k1, k2, value) } }
+
+  def flipNesting: NestedMap[K2, K1, V] = mapNested { case (k1, k2, v) => (k2, (k1, v)) }.toNestedMap
 }
 
 class MapView[K, V, C](map: Map[K, V], keyProjection: C => K) {

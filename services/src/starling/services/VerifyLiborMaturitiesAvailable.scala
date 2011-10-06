@@ -16,7 +16,7 @@ class VerifyLiborMaturitiesAvailable(marketDataStore: MarketDataStore, broadcast
   extends EmailingScheduledTask(broadcaster, from, to) {
 
   protected def eventFor(observationDay: Day, email: EmailEvent) = {
-    val liborFixings: Map[UOM, Map[Tenor, (Percentage, Day)]] = latestLiborFixings(marketDataStore, observationDay)
+    val liborFixings: NestedMap[UOM, Tenor, (Percentage, Day)] = latestLiborFixings(marketDataStore, observationDay)
     val tenorsByCurrency = liborFixings.mapValues(_.keys.toList).withDefaultValue(Nil)
     val missingTenorsByCurrency = currencies.toMapWithValues(currency => tenorsFor(currency) \\ tenorsByCurrency(currency))
       .filterValuesNot(_.isEmpty).sortBy(_.toString)

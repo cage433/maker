@@ -34,7 +34,7 @@ object XRTGenerator {
   private val commonTenors = List(OneWeek, TwoWeeks, OneMonth, TwoMonths, ThreeMonths, SixMonths, NineMonths, TwelveMonths)
   private val periods = (ON :: SN :: commonTenors).map(tenor => (Level.Close, StoredFixingPeriod.tenor(tenor)))
 
-  def latestLiborFixings(marketDataStore: MarketDataStore, observationDay: Day): Map[UOM, Map[Tenor, (Percentage, Day)]] = {
+  def latestLiborFixings(marketDataStore: MarketDataStore, observationDay: Day): NestedMap[UOM, Tenor, (Percentage, Day)] = {
     liborFixingsHistoryData(marketDataStore, observationDay).mapValues(_.fixingsFor(periods).collect {
       case ((Level.Close, StoredFixingPeriod.Tenor(tenor)), MarketValue.Percentage(percentage)) => {
         tenor → (percentage, observationDay)

@@ -46,12 +46,12 @@ abstract class PricingGroupMarketDataEventSource extends MarketDataEventSource {
   def matches(selection: MarketDataSelection) = selection.pricingGroup == pricingGroup
 
   def eventsFor(previousSnapshot: Option[SnapshotIDLabel], newSnapshot: SnapshotIDLabel, observationDays: List[Day]) = {
-    val previousCurves: Map[Key, Map[MarketType, CurveType]] =
+    val previousCurves: NestedMap[Key, MarketType, CurveType] =
       previousSnapshot.map(marketDataProvider.marketDataFor(pricingGroup, _, observationDays)).getOrElse(Map.empty)
-    val curves: Map[Key, Map[MarketType, CurveType]] = marketDataProvider.marketDataFor(pricingGroup, newSnapshot, observationDays)
+    val curves: NestedMap[Key, MarketType, CurveType] = marketDataProvider.marketDataFor(pricingGroup, newSnapshot, observationDays)
 
     val events: List[MarketDataEvent] = curves.flatMap { case (key, curveByMarketType) => {
-      val groupedRates : Map[String, Map[MarketType, CurveType]]= curveByMarketType.groupBy{
+      val groupedRates : NestedMap[String, MarketType, CurveType]= curveByMarketType.groupBy{
         case (marketType, curve) => previousCurves.getOrElse(key, Map[MarketType, CurveType]()).get(marketType) match {
           case None => "New Curve"
           case Some(curve2) if curve == curve2 => "Unchanged"
@@ -79,7 +79,7 @@ case class SpotFXDataEventSource(pricingGroup: PricingGroup, marketDataProvider:
 
 
 trait DataFlowDataProvider[K, MarketType, CurveType]{
-  def marketDataFor(pricingGroup : PricingGroup, label: SnapshotIDLabel, observationDays: List[Day]): Map[K, Map[MarketType, CurveType]]
+  def marketDataFor(pricingGroup : PricingGroup, label: SnapshotIDLabel, observationDays: List[Day]): NestedMap[K, MarketType, CurveType]
 }
 
 case class SpotFXDataProvider (marketDataStore : MarketDataStore) extends DataFlowDataProvider[Day, UOM, Quantity] {

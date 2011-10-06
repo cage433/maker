@@ -118,7 +118,7 @@ class Quantity(val value : Double, val uom : UOM) extends Ordered[Quantity] with
   def this(value : Double, uom : String) = this(value, UOM.fromString(uom))
   def this(value : Double) = this(value, UOM.SCALAR)
 
-  def pq : PivotQuantity = PivotQuantity(Map(uom -> value), Map[String, List[StackTrace]]())
+  def pq : PivotQuantity = PivotQuantity(Map(uom → value), MultiMap[String, StackTrace]())
 
   def in(otherUOM : UOM)(implicit conv: Conversions = Conversions.default): Option[Quantity] = {
     conv.convert(uom, otherUOM).map {

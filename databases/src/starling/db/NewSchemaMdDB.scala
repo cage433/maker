@@ -329,7 +329,7 @@ class NewSchemaMdDB(db: DBTrait[RichResultSetRow], referenceDataLookup: Referenc
           } }
         }.getOrElse(Nil).toMap
 
-        val deletes: Map[MarketDataValueKey, Map[String, Any]] = existingValueKeys.toMapWithValues(valueKey =>
+        val deletes: NestedMap[MarketDataValueKey, String, Any] = existingValueKeys.toMapWithValues(valueKey =>
           template + ("valueKey" → valueKey.id)) -- inserts.keySet
 
         //log.info("%s: inserts: %s\ndeletes: %s" % (marketDataSet.name, inserts, deletes.keySet))

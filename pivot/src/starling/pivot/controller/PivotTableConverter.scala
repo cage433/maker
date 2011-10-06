@@ -130,7 +130,7 @@ case class ServerAxisNode(axisValue:AxisValue, children:Map[ChildKey,Map[AxisVal
           axisValues.head
         }
       }
-      val childNodes:Map[ChildKey, Map[AxisValue, ServerAxisNode]] = nodes.flatMap(_.children.toList).toMap
+      val childNodes:NestedMap[ChildKey, AxisValue, ServerAxisNode] = nodes.flatMap(_.children.toList).toMap
       ServerAxisNode(joinedValue, childNodes)
     } }.toList
 

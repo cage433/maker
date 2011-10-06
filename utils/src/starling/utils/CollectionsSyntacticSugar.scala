@@ -3,7 +3,9 @@ package starling.utils
 import collection.generic.CanBuildFrom
 import starling.utils.ImplicitConversions._
 import collection.{IterableLike, TraversableLike, SeqLike}
+import collection.mutable.{Map => MMap}
 import scalaz.Scalaz._
+
 
 
 trait CollectionsSyntacticSugar {
@@ -59,5 +61,15 @@ trait CollectionsSyntacticSugar {
     def mapSecond[C, That](f: B => C)(implicit cbf: CanBuildFrom[Repr, (A, C), That]): That = tl.map(_.mapSecond(f))
     def _1[That](implicit cbf: CanBuildFrom[Repr, A, That]): That = tl.map(_._1)
     def _2[That](implicit cbf: CanBuildFrom[Repr, B, That]): That = tl.map(_._2)
+    def swap[That](implicit cbf: CanBuildFrom[Repr, (B, A), That]): That = tl.map(_.swap)
+    def toMutableMap: MMap[A, B] = MMap.empty[A, B] ++ tl
+
+    def toMultiMap: MultiMap[A, B] = MMap.empty[A, List[B]].updateIt { map =>
+      tl.foreach { case (key, value) => map.put(key, value :: map.getOrElse(key, List.empty[B])) }
+    }.toMap
+  }
+
+  implicit def enrichNestedPairTraversableLIke[A, B, C, Repr](t: TraversableLike[(A, (B, C)), Repr]) = new RichTraversableLike(t) {
+    def toNestedMap: NestedMap[A, B, C] = t.toMultiMap.mapValues(_.toMap)
   }
 }
