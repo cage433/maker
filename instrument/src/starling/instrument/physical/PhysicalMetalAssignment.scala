@@ -353,9 +353,10 @@ trait PhysicalMetalAssignmentOrUnassignedSalesQuota extends UTP with Tradeable {
   private def discount(env: Environment, spec : TitanPricingSpec) = env.discount(valuationCCY, spec.settlementDay(env.marketDay)).named("Discount")
 
   private def pricingSpecPaymentExplained(env : Environment, spec : TitanPricingSpec) : NamedQuantity = {
+    val namedEnv = env.withNaming()
     val isContractSpec = spec == contractPricingSpec
     val priceName = if (isContractSpec) "Contract Price" else "Benchmark Price"
-    val price = spec.price(env).named(priceName)
+    val price = spec.price(namedEnv).named(priceName)
     val quantityInMarketUOM = quantity.inUOM(price.denominatorUOM).named("Volume")
     val d = discount(env, contractPricingSpec)
 
@@ -367,7 +368,7 @@ trait PhysicalMetalAssignmentOrUnassignedSalesQuota extends UTP with Tradeable {
     if (benchmarkPricingSpec.isDefined)
       exp = exp - pricingSpecPaymentExplained(env, benchmarkPricingSpec.get)
     if (isPurchase)
-      exp = exp * -1
+      exp = -exp
     exp
   }
 
