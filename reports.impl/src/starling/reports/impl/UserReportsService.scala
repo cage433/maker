@@ -204,7 +204,8 @@ class UserReportsService(
   def bookCloseDay(desk:Option[Desk], tradeVersionOffSetOrLive:Either[Int,Boolean], baseDay:Day) = {
     tradeVersionOffSetOrLive match {
       case Left(offset) if desk.isDefined => Some(createTradeTimestamp(desk, applyOffset(baseDay, offset)))
-      case Right(_) if desk.isDefined => Some(tradeStores.closedDesks.latestTradeTimestamp(desk.get))
+      case Right(true) if desk.isDefined => Some(tradeStores.closedDesks.latestTradeTimestamp(desk.get))
+      case Right(false) if desk.isDefined => Some(tradeStores.titanCurrentTimestamp)
       case _ => None
     }
   }
