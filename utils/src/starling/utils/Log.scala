@@ -64,13 +64,13 @@ class ExtendedLog(adapted: VarLogger) extends AdaptingLogger(adapted) {
     }
   }
 
-  def infoWithTimeGapTop[T](message:String)(f: =>T) = {
+  def debugWithTimeGapTop[T](message:String)(f: =>T) = {
     println("")
     println("")
     infoWithTime(message){f}
   }
-  def infoWithTimeGapBottom[T](message:String)(f: =>T) = {
-    val r = infoWithTime(message){f}
+  def debugWithTimeGapBottom[T](message:String)(f: =>T) = {
+    val r = debugWithTime(message){f}
     println("")
     println("")
     r

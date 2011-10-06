@@ -141,7 +141,7 @@ class PhysicalMetalForwardBuilder(refData: TitanTacticalRefData,
                   val assignment = makeAssignment(inv.item.purchaseAssignment, inv, true)
                   val attributes = makeTradeAttributes(Some(inv.id))
                   Trade(
-                    TradeID(inv.item.purchaseAssignment.oid.contents.toString, TitanTradeSystem),
+                    TradeID("A-" + inv.item.purchaseAssignment.oid.contents.toString, TitanTradeSystem),
                     submittedDay,
                     counterparty,
                     attributes,
@@ -158,7 +158,7 @@ class PhysicalMetalForwardBuilder(refData: TitanTacticalRefData,
                   val assignment = makeAssignment(inv.item.salesAssignment, inv, false)
                   val attributes = makeTradeAttributes(Some(inv.id))
                   Trade(
-                    TradeID(inv.item.salesAssignment.oid.contents.toString, TitanTradeSystem),
+                    TradeID("A-" + inv.item.salesAssignment.oid.contents.toString, TitanTradeSystem),
                     submittedDay,
                     counterparty,
                     attributes,
@@ -198,7 +198,7 @@ class PhysicalMetalForwardBuilder(refData: TitanTacticalRefData,
     }
     catch {
       case e => {
-            List(Trade(TradeID(trade.titanId.value, TitanTradeSystem),
+            List(Trade(TradeID("T-"+trade.titanId.value, TitanTradeSystem),
                 TitanTradeAttributes.dummyDate, "Unknown", TitanTradeAttributes.errorAttributes(trade),
                 new ErrorInstrument(e.getMessage)))
         }

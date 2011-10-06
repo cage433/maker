@@ -710,9 +710,9 @@ object PivotTableModel {
       val allEditableInfo0 = allEditableInfo(fieldDetailsLookup, dataSource.editable, pivotState)
       val treeDepths = Map() ++ dataSource.fieldDetails.filter(_.isInstanceOf[TreeFieldDetails]).map(_.field).map(field => field -> pivotState.treeDepths.getOrElse(field, (3, 7)))
 
-      val pivotResult = Log.infoWithTimeGapTop("Data from data source"){dataSource.data(pivotState)}
+      val pivotResult = Log.debugWithTimeGapTop("Data from data source"){dataSource.data(pivotState)}
       val (mainTableBucket, rowAxisRoot, columnAxisRoot, maxDepths) = Log.infoWithTime("Generating bucket"){generateMainData(pivotState, pivotResult, fieldDetailsLookup, treeDepths, allEditableInfo0)}
-      val mainTableBucketWithSubtotals = Log.infoWithTimeGapBottom("Adding subtotals"){withSubtotals(mainTableBucket)}
+      val mainTableBucketWithSubtotals = Log.debugWithTimeGapBottom("Adding subtotals"){withSubtotals(mainTableBucket)}
       val compressedMap = compress(mainTableBucketWithSubtotals)
       val possibleValuesConvertedToTree = possibleValuesToTree(pivotResult, fieldDetailsLookup)
       val rowFieldHeadingCount = fieldIndexes(pivotState.rowFields, treeDepths, fieldDetailsLookup)
