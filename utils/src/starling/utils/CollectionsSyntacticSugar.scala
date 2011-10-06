@@ -70,6 +70,6 @@ trait CollectionsSyntacticSugar {
   }
 
   implicit def enrichNestedPairTraversableLIke[A, B, C, Repr](t: TraversableLike[(A, (B, C)), Repr]) = new RichTraversableLike(t) {
-    def toNestedMap: NestedMap[A, B, C] = t.toMultiMap.mapValues(_.toMap)
+    def toNestedMap: NestedMap[A, B, C] = t.toMultiMap.mapValuesEagerly(_.toMap)
   }
 }

@@ -22,10 +22,10 @@ case class TitanTradeStoreManager(
 
   type InventoryID = String
 
-  private val edmTrades = {
+  private lazy val edmTrades = {
     scala.collection.mutable.Set[EDMPhysicalTrade]() ++ edmTradeServices.getAllCompletedTrades()
   }
-  private val edmInventoryItems = {
+  private lazy val edmInventoryItems = {
     scala.collection.mutable.Map[InventoryID, EDMInventoryItem]() ++ logisticsServices.inventoryService.service.getAllInventory().associatedInventory.map{inv => inv.id -> inv}
   }
   private def edmInventoryLeaves : List[EDMInventoryItem] = {
