@@ -28,11 +28,12 @@ class NeptuneGradeAreaBenchmarkUtil(neptuneDB:RichDB) extends Log {
       invalidRows.ifDefined { logInvalid("Cannot import grade-area benchmarks for neptune commodities: ", _) }
 
       rows.map { case (neptuneCommodity, values) =>
-        val data = values.map { case (grade, area, price) => (grade, area) → neptuneCommodity.toQuantity(price) }
+        val data = values.map { case (grade, area, price) => (grade, area) → (day → neptuneCommodity.toQuantity(price)) }
 
-        MarketDataEntry(ObservationPoint(today), neptuneCommodity.gradeAreaBenchmarkKey, GradeAreaBenchmarkData(data.toMap))
+        MarketDataEntry(ObservationPoint(today), neptuneCommodity.gradeAreaBenchmarkKey, GradeAreaBenchmarkData(data.toNestedMap))
       }.toList
     }
+
     Map((today, today, GradeAreaBenchmarkDataType) → entries)
   }
 

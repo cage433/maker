@@ -25,6 +25,7 @@ class NeptuneFreightParityUtil(neptuneDB: RichDB) {
           IncotermCode(rs.getString("del_term_code")), NeptuneCountryCode(rs.getString("del_area_code"))),
         FreightParityData(rs.getDouble("parity_rate"), rs.getString("narrative") ?? ""))
     }
+
     Map((today, today, FreightParityDataType) → data)
   }
 }

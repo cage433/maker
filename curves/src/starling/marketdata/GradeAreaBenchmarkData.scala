@@ -5,6 +5,7 @@ import starling.market.Commodity
 import starling.pivot._
 import scalaz.Scalaz._
 import starling.utils.ImplicitConversions._
+import starling.daterange.Day
 
 case class AreaCode(code:String)
 case class Area(code:AreaCode, name:String) {
@@ -18,11 +19,9 @@ case class Grade(code:GradeCode, name:String) {
   override def toString = name
 }
 
-case class Material(commodity:Commodity, grade:Grade)
-
 /** benchmark data for (grade, area) to quantity */
-case class GradeAreaBenchmarkData(areaData : Map[(GradeCode, AreaCode), Quantity]) extends MarketData {
-  def size = areaData.size
+case class GradeAreaBenchmarkData(areaData : NestedMap[(GradeCode, AreaCode), Day, Quantity]) extends MarketData {
+  def size = areaData.nestedSize
 }
 
 /** Benchmark area market data key represents a list of grade, area market data rows keyed per commodity */
@@ -36,10 +35,11 @@ case class GradeAreaBenchmarkMarketDataKey(commodity : Commodity) extends Market
   def fieldValues(referenceDataLookup: ReferenceDataLookup) = Map(commodityField.field → commodity.name)
 
   override def rows(marketData: GradeAreaBenchmarkData, referenceDataLookup: ReferenceDataLookup) = {
-    marketData.areaData.map { case ((gradeCode, areaCode), price) => Row(
+    marketData.areaData.mapNested { case ((gradeCode, areaCode), effectiveFrom, price) => Row(
       commodityField.field → commodity.name,
       gradeField.field → referenceDataLookup.gradeFor(gradeCode),
       areaField.field → referenceDataLookup.areaFor(areaCode),
+      effectiveFromField.field → effectiveFrom,
       benchmarkPriceField.field → price
     ) }
   }
@@ -52,6 +52,7 @@ object GradeAreaBenchmarkDataType extends MarketDataType {
   val commodityField = FieldDetails("Commodity")
   val areaField = FieldDetails("Area")
   val gradeField = FieldDetails("Grade")
+  val effectiveFromField = FieldDetails("Effective From")
   val benchmarkPriceField = FieldDetails.createMeasure("Benchmark Price")
 
   def marketDataKeyFields = keyFields
@@ -68,8 +69,10 @@ object GradeAreaBenchmarkDataType extends MarketDataType {
   def createKey(row: Row) = GradeAreaBenchmarkMarketDataKey(Commodity.fromName(row.string(commodityField)))
 
   def createValue(rows: List[Row]) = {
-    val data = rows.map { row => (row[Grade](gradeField).code, row[Area](areaField).code) → row.quantity(benchmarkPriceField) }
+    val data = rows.map { row =>
+      (row[Grade](gradeField).code, row[Area](areaField).code) → (row[Day](effectiveFromField), row.quantity(benchmarkPriceField))
+    }
 
-    GradeAreaBenchmarkData(data.toMap)
+    GradeAreaBenchmarkData(data.toNestedMap)
   }
 }

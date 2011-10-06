@@ -1,19 +1,18 @@
 package starling.curves
 
 import starling.market.Commodity
-import starling.daterange.Period
 import starling.quantity.Quantity
-import starling.daterange.DayAndTime
 import starling.marketdata._
 import starling.utils.ImplicitConversions._
+import starling.daterange.{Day, Period, DayAndTime}
 
 /**
  * Class for atomic benchmark data
  */
-case class AreaBenchmarkAtomicKey(area: AreaCode, commodity: Commodity, grade: GradeCode,
+case class AreaBenchmarkAtomicKey(area: AreaCode, commodity: Commodity, grade: GradeCode, day : Day,
   override val ignoreShiftsIfPermitted : Boolean = false
 ) 
-  extends AtomicDatumKey(AreaBenchmarkCurveKey(commodity), (area, grade), ignoreShiftsIfPermitted)
+  extends AtomicDatumKey(AreaBenchmarkCurveKey(commodity), (area, grade, day), ignoreShiftsIfPermitted)
 {
   def periodKey : Option[Period] = None
   def nullValue = Quantity(0.0, commodity.representativeMarket.priceUOM)
@@ -38,22 +37,22 @@ case class AreaBenchmarkCurveKey(commodity : Commodity) extends NonHistoricalCur
  * Benchmark Location Curve for benchmarks using grade and area location as keys
  */
 case class AreaBenchmarkCurveObject(marketDayAndTime : DayAndTime, marketData : GradeAreaBenchmarkData) extends CurveObject {
-  val marketDataMap = marketData.areaData.withDefaultValue(Quantity.NULL)
+  val marketDataMap = marketData.areaData.withDefaultValue(Map.empty[Day, Quantity])
   type CurveValuesType = Quantity
 
   def apply(point : AnyRef) = point match {
-    case (area: AreaCode, grade: GradeCode) => {
-      val benchmark: Quantity = marketDataMap((grade, area))
+    case (area: AreaCode, grade: GradeCode, day: Day) => {
+      val (days, benchmarks) = marketDataMap((grade, area)).sorted.unzip
 
-      benchmark
+      InverseConstantInterpolation.interpolate(days.toArray, benchmarks.toArray, day)
     }
   }
 }
 
-case class CountryBenchmarkAtomicKey(commodity: Commodity, country: NeptuneCountryCode,
+case class CountryBenchmarkAtomicKey(commodity: Commodity, country: NeptuneCountryCode, day: Day,
   override val ignoreShiftsIfPermitted: Boolean = false
 )
-  extends AtomicDatumKey(CountryBenchmarkCurveKey(commodity), country, ignoreShiftsIfPermitted)
+  extends AtomicDatumKey(CountryBenchmarkCurveKey(commodity), (country, day), ignoreShiftsIfPermitted)
 {
   def periodKey : Option[Period] = None
   def nullValue = Quantity(0.0, commodity.representativeMarket.priceUOM)
@@ -79,14 +78,14 @@ case class CountryBenchmarkCurveKey(commodity : Commodity) extends NonHistorical
  * Benchmark Location Curve for benchmarks using grade and location as keys
  */
 case class CountryBenchmarkCurveObject(marketDayAndTime : DayAndTime, marketData : CountryBenchmarkData) extends CurveObject {
-  val countryData = marketData.countryData.withDefaultValue(Quantity.NULL)
+  val countryData = marketData.countryData.withDefaultValue(Map.empty[Day, Quantity])
   type CurveValuesType = Quantity
 
   def apply(point : AnyRef) = point match {
-    case country : NeptuneCountryCode => {
-      val benchmark: Quantity = countryData(country)
+    case (country: NeptuneCountryCode, day: Day) => {
+      val (days, benchmarks) = countryData(country).sorted.unzip
 
-      benchmark
+      InverseConstantInterpolation.interpolate(days.toArray, benchmarks.toArray, day)
     }
   }
 }

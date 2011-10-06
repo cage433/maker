@@ -1,12 +1,14 @@
 package starling.marketdata
 
-import starling.quantity.Quantity
+import starling.daterange.Day
 import starling.market.Commodity
 import starling.pivot._
+import starling.quantity.Quantity
 import scalaz.Scalaz._
+import starling.utils.ImplicitConversions._
 
-case class CountryBenchmarkData(countryData : Map[NeptuneCountryCode, Quantity]) extends MarketData {
-  def size = countryData.size
+case class CountryBenchmarkData(countryData: NestedMap[NeptuneCountryCode, Day, Quantity]) extends MarketData {
+  def size = countryData.nestedSize
 }
 
 object CountryBenchmarkDataType extends MarketDataType {
@@ -15,6 +17,7 @@ object CountryBenchmarkDataType extends MarketDataType {
 
   val commodityField = FieldDetails("Commodity")
   val countryField = FieldDetails("Country")
+  val effectiveFromField = FieldDetails("Effective From")
   val benchmarkPriceField = FieldDetails.createMeasure("Benchmark Price")
 
   def marketDataKeyFields = keyFields
@@ -31,13 +34,15 @@ object CountryBenchmarkDataType extends MarketDataType {
   def createKey(row: Row) = CountryBenchmarkMarketDataKey(Commodity.fromName(row.string(commodityField)))
 
   def createValue(rows: List[Row]) = {
-    val data = rows.map { row => row[NeptuneCountry](countryField).code → row.quantity(benchmarkPriceField) }
+    val data = rows.map { row =>
+      row[NeptuneCountry](countryField).code → (row[Day](effectiveFromField), row.quantity(benchmarkPriceField))
+    }
 
-    CountryBenchmarkData(data.toMap)
+    CountryBenchmarkData(data.toNestedMap)
   }
 }
 
-case class CountryBenchmarkMarketDataKey(commodity : Commodity) extends MarketDataKey {
+case class CountryBenchmarkMarketDataKey(commodity: Commodity) extends MarketDataKey {
   import CountryBenchmarkDataType._
 
   type marketDataType = CountryBenchmarkData
@@ -47,9 +52,10 @@ case class CountryBenchmarkMarketDataKey(commodity : Commodity) extends MarketDa
   def fieldValues(referenceDataLookup: ReferenceDataLookup) = Map(commodityField.field → commodity.name)
 
   override def rows(marketData: CountryBenchmarkData, referenceDataLookup: ReferenceDataLookup) = {
-    marketData.countryData.map { case (countryCode, price) => Row(
+    marketData.countryData.mapNested { case (countryCode, effectiveFrom, price) => Row(
       commodityField.field → commodity.name,
       countryField.field → referenceDataLookup.countryFor(countryCode),
+      effectiveFromField.field → effectiveFromField,
       benchmarkPriceField.field → price
     ) }
   }

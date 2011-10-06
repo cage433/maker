@@ -1,18 +1,10 @@
 package starling.utils.conversions
 
 import starling.utils.ImplicitConversions._
-import collection.mutable.{Map => MMap}
 
 
 trait RichTraversables {
   implicit def enrichTraversable[A](traversable: Traversable[A]): RichTraversable[A] = new RichTraversable(traversable)
-  implicit def enrichPairTraversable[A, B](traversable: Traversable[(A, B)]) = new RichTraversable(traversable) {
-    def toMultiMap: MultiMap[A, B] = MMap.empty[A, List[B]].updateIt { map =>
-      traversable.foreach { case (key, value) => map.put(key, value :: map.getOrElse(key, List.empty[B])) }
-    }.toMap
-    def swap: Traversable[(B, A)] = traversable.map(_.swap)
-    def toMutableMap: MMap[A, B] = MMap.empty[A, B] ++ traversable
-  }
 }
 
 class RichTraversable[A](traversable: Traversable[A]) {

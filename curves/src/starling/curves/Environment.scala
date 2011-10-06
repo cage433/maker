@@ -73,17 +73,17 @@ case class Environment(
 
   def atomicEnv = instrumentLevelEnv.atomicEnv
 
-  def benchmark(countryCode: NeptuneCountryCode, commodity: Commodity, gradeCode: GradeCode): Quantity =
-    areaBenchmark(countryCode, commodity, gradeCode) + countryBenchmark(commodity, countryCode)
+  def benchmark(countryCode: NeptuneCountryCode, commodity: Commodity, gradeCode: GradeCode, day: Day): Quantity =
+    areaBenchmark(countryCode, commodity, gradeCode, day) + countryBenchmark(commodity, countryCode, day)
 
-  private def areaBenchmark(countryCode: NeptuneCountryCode, commodity: Commodity, gradeCode: GradeCode): Quantity =
-    atomicEnv.referenceDataLookup.areaCodeFor(countryCode).fold(areaBenchmark(_, commodity, gradeCode), Quantity.NULL)
+  private def areaBenchmark(countryCode: NeptuneCountryCode, commodity: Commodity, gradeCode: GradeCode, day: Day): Quantity =
+    atomicEnv.referenceDataLookup.areaCodeFor(countryCode).fold(areaBenchmark(_, commodity, gradeCode, day), Quantity.NULL)
 
-  private def areaBenchmark(areaCode: AreaCode, commodity: Commodity, gradeCode: GradeCode): Quantity =
-    instrumentLevelEnv.quantity(AreaBenchmarkAtomicKey(areaCode, commodity, gradeCode))
+  private def areaBenchmark(areaCode: AreaCode, commodity: Commodity, gradeCode: GradeCode, day: Day): Quantity =
+    instrumentLevelEnv.quantity(AreaBenchmarkAtomicKey(areaCode, commodity, gradeCode, day))
 
-  private def countryBenchmark(commodity: Commodity, countryCode: NeptuneCountryCode): Quantity =
-    instrumentLevelEnv.quantity(CountryBenchmarkAtomicKey(commodity, countryCode))
+  private def countryBenchmark(commodity: Commodity, countryCode: NeptuneCountryCode, day: Day): Quantity =
+    instrumentLevelEnv.quantity(CountryBenchmarkAtomicKey(commodity, countryCode, day))
 
   def freightParity(contractualIncoterm: IncotermCode, contractualLocation: ContractualLocationCode,
                     destinationIncoterm: IncotermCode, destinationLocation: NeptuneCountryCode) = {
