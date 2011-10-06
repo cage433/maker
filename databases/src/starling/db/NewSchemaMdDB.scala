@@ -222,7 +222,7 @@ class NewSchemaMdDB(db: DBTrait[RichResultSetRow], referenceDataLookup: Referenc
 //    log.infoWithTime("query(%d, (%s), %s, %s, %s, %s)" %
 //      (version, mds.map(_.name), marketDataType.name, observationDays, observationTimes, marketDataKeys)) {
 
-    val mostRecentValues = log.infoWithTime("query.mostRecentValues") {
+    val mostRecentValues = log.debugWithTime("query.mostRecentValues") {
       val commitClause = "commitId" lte version
       val observationDayClause = observationDays.fold(Clause.optIn("observationDay", _), TrueClause)
 
