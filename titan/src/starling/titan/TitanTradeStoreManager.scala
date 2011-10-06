@@ -22,19 +22,23 @@ case class TitanTradeStoreManager(
 
   type InventoryID = String
 
-  private val edmTrades = {
+  lazy private val edmTrades = {
     scala.collection.mutable.Set[EDMPhysicalTrade]() ++ edmTradeServices.getAllCompletedTrades()
   }
-  private val edmInventoryItems = {
-    scala.collection.mutable.Map[InventoryID, EDMInventoryItem]() ++ logisticsServices.inventoryService.service.getAllInventory().associatedInventory.map{inv => inv.id -> inv}
+
+  lazy private val allInventory = logisticsServices.inventoryService.service.getAllInventory()
+
+  lazy private val edmInventoryItems = {
+    scala.collection.mutable.Map[InventoryID, EDMInventoryItem]() ++ allInventory.associatedInventory.map{inv => inv.id -> inv}
   }
+
+  private val edmLogisticsQuotas = scala.collection.mutable.Set[EDMLogisticsQuota]()
+
   private def edmInventoryLeaves : List[EDMInventoryItem] = {
     val allInventoryIds = edmInventoryItems.keySet
     val parentIds = edmInventoryItems.values.flatMap{inv => inv.parentId.map(_.toString)}.toSet
     allInventoryIds.filterNot(parentIds).map(edmInventoryItems).toList
   }
-
-  private val edmLogisticsQuotas = scala.collection.mutable.Set[EDMLogisticsQuota]()
 
   def inventoryByQuotaID : Map[TitanId, List[EDMInventoryItem]] = {
     def quotaNames(inventory : EDMInventoryItem) : List[String] = inventory.purchaseAssignment.quotaName :: Option(inventory.salesAssignment).map(_.quotaName).toList
@@ -44,9 +48,11 @@ case class TitanTradeStoreManager(
   }
 
   private def tradeForwardBuilder: PhysicalMetalForwardBuilder = {
-    def logisticsQuotaByQuotaID : Map[TitanId, EDMLogisticsQuota] = Map() // this isn't currently implemented, probably best to complete after refactoring is completed
+    val logisticsQuotaByQuotaID = edmLogisticsQuotas.map(q => TitanId(q.quotaName) -> q).toMap
     new PhysicalMetalForwardBuilder(refData, inventoryByQuotaID, logisticsQuotaByQuotaID)
   }
+
+  def allStarlingTrades = titanTradeStore.allStarlingTrades()
 
   private def getTradeAndUpdateCache(titanTradeID : String) = {
     val newTrade = edmTradeServices.getTrade(TitanId(titanTradeID))
@@ -54,12 +60,11 @@ case class TitanTradeStoreManager(
     newTrade
   }
 
-  def allStarlingTrades = titanTradeStore.allStarlingTrades()
   def removeTradeFromCache(titanTradeID : String) {
     edmTrades.retain(_.titanId.value != titanTradeID)
   }
 
-  def updateInventoryCache(inventoryID : String){
+  def updateInventoryCache(inventoryID : String) {
     val logisticsResponse = logisticsServices.inventoryService.service.getInventoryById(inventoryID.toInt)
     assert(logisticsResponse.associatedInventory.size == 1, "Expected a single piece of inventory")
     val newInventory = logisticsResponse.associatedInventory.head

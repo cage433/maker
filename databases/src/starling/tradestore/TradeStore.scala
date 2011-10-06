@@ -847,8 +847,6 @@ abstract class TradeStore(db: RichDB, broadcaster:Broadcaster, tradeSystem: Trad
       flushToDB
     }
   }
-
-
 }
 
 object TradeStore {

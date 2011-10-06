@@ -3,12 +3,10 @@ package starling.titan
 import starling.systemofrecord.SystemOfRecord
 import starling.daterange.Day
 import starling.pivot.Field
-import starling.instrument.{Trade, TradeID, TradeAttributes}
-import starling.db.TitanTradeSystem
+import starling.instrument.{Trade, TradeAttributes}
 import java.lang.UnsupportedOperationException
 import starling.instrument.ErrorInstrument
 import com.trafigura.edm.logistics.inventory._
-import com.trafigura.edm.shared.types.TitanId
 import starling.utils.Log
 import com.trafigura.edm.trades.{PhysicalTrade => EDMPhysicalTrade}
 import starling.instrument.physical._
@@ -36,33 +34,6 @@ class TitanSystemOfRecord(manager : TitanTradeStoreManager)
   def allTrades(f: (Trade) => Unit) : (Int, Set[String]) = {
     manager.updateTradeStore
     val allTrades = manager.allStarlingTrades
-//    // manager.readAll
-//    // val allTrades = manager.allTrades
-//    val edmTrades : List[EDMPhysicalTrade] = titanTradeServices.getAllCompletedTrades()
-//    val inventory = logisticsServices.inventoryService.service.getAllInventoryLeaves()
-//    println("No of edm trades = " + edmTrades.size + ", number of inventory items " + inventory.size)
-//
-//    def quotaNames(inventory : EDMInventoryItem) : List[String] = inventory.purchaseAssignment.quotaName :: Option(inventory.salesAssignment).map(_.quotaName).toList
-//
-//    val quotaNamesForInventory : List[(List[TitanId], EDMInventoryItem)] = inventory.map(i => (quotaNames(i), i)).map(i => i._1.map(qn => TitanId(qn)) -> i._2)
-//    val quotaToInventory : List[(TitanId, EDMInventoryItem)] = quotaNamesForInventory.flatMap(i => i._1.map(x => (x -> i._2)))
-//    val inventoryByQuotaID : Map[TitanId, List[EDMInventoryItem]] = quotaToInventory.groupBy(_._1).map(x => x._1 -> x._2.map(_._2))
-//    val logisticsQuotaByQuotaID : Map[TitanId, EDMLogisticsQuota] = Map() // this isn't currently implemented, probably best to complete after refactoring is completed
-//
-//    val tradeForwardBuilder = new PhysicalMetalForwardBuilder(titanTradeServices, inventoryByQuotaID, logisticsQuotaByQuotaID)
-//
-//    val allTrades : List[Trade] = edmTrades.flatMap {
-//      edmTrade =>
-//        try {
-//          tradeForwardBuilder(edmTrade)
-//        }
-//        catch {
-//          case e =>
-//            List(Trade(TradeID(edmTrade.titanId.value, TitanTradeSystem),
-//                TitanTradeAttributes.dummyDate, "Unknown", TitanTradeAttributes.errorAttributes(edmTrade),
-//                new ErrorInstrument(e.getMessage)))
-//        }
-//    }
 
     val (worked, failed) = allTrades.map(_.tradeable).partition{ case a : PhysicalMetalAssignment => true; case _ => false }
 

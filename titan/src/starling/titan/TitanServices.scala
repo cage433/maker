@@ -2,14 +2,12 @@ package starling.titan
 
 import com.trafigura.edm.logistics.inventory._
 import com.trafigura.edm.shared.types.TitanId
-import com.trafigura.edm.physicaltradespecs.PhysicalTradeQuota
 import com.trafigura.tradinghub.support.GUID
 import com.trafigura.tradecapture.internal.refinedmetal._
 import com.trafigura.edm.tradeservice.EdmGetTrades
 import starling.utils.{Stopwatch, Log}
 import com.trafigura.services.valuation.TradeManagementCacheNotReady
 import com.trafigura.edm.trades.{CompletedTradeState, PhysicalTrade => EDMPhysicalTrade}
-import starling.utils.conversions.RichMapWithErrors._
 
 
 // for some strange reason EDM trade service converts titan quota ID with prefix NEPTUNE:
@@ -54,39 +52,6 @@ trait TitanLogisticsServices {
   val assignmentService : TitanLogisticsAssignmentServices
   val inventoryService : TitanLogisticsInventoryServices
 }
-
-/**
- * Trade cache provide trade map lookup by trade id and also a quota id to trade map lookup
-
-trait TitanTradeCache {
-  protected var tradeMap: Map[TitanId, EDMPhysicalTrade]
-  protected var quotaIDToTradeIDMap: Map[String, TitanId]
-  def getTrade(id: TitanId): EDMPhysicalTrade
-  def getAllTrades(): List[EDMPhysicalTrade]
-  def removeTrade(id : TitanId) {
-    tradeMap = tradeMap - id
-    quotaIDToTradeIDMap = quotaIDToTradeIDMap.filter{ case (_, value) => value != id}
-  }
-
-  def addTrade(id : TitanId) {
-    tradeMap += id -> getTrade(id)
-    addTradeQuotas(id)
-  }
-
-  def addTradeQuotas(id : TitanId) {
-    val trade = tradeMap(id)
-    quotaIDToTradeIDMap ++= trade.quotas.map{quota => (quota.detail.identifier.value, id)}
-  }
-
-  def tradeIDFromQuotaID(quotaID: String): TitanId
-
-  def quotaNameToTradeMap : Map[String, EDMPhysicalTrade] =
-    getAllTrades().flatMap{trade =>  trade.asInstanceOf[EDMPhysicalTrade].quotas.map{q => NeptuneId(q.detail.identifier.value).identifier -> trade}}.toMap.withException()
-  def quotaNameToQuotaMap : Map[String, PhysicalTradeQuota] =
-    getAllTrades().flatMap{trade =>  trade.asInstanceOf[EDMPhysicalTrade].quotas.map{q => NeptuneId(q.detail.identifier.value).identifier -> q}}.toMap.withException()
-}
-*/
-
 
 
 /**
