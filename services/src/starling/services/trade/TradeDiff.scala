@@ -57,19 +57,13 @@ class TradeDiff(val fields: List[FieldDetailsGroup], aTrades: List[TradeAndField
       }
       case _ => None
     }
-    val near = distances.flatMap {
-      case (a, b, 1) if !done.contains(a) && !done.contains(b) => {
+    val near = (1 to 4).toList.flatMap(d => distances.flatMap {
+      case (a, b, distance) if distance < d && !done.contains(a) && !done.contains(b) => {
         done ++= Set(a, b)
         Some((a, b))
       }
       case _ => None
-    } ++ distances.flatMap {
-      case (a, b, 2) if !done.contains(a) && !done.contains(b) => {
-        done ++= Set(a, b)
-        Some((a, b))
-      }
-      case _ => None
-    }
+    })
 
     val unmatchedTrades = ((aTradesWithLegs ++ bTradesWithLegs).toSet -- done).toList
     Diff(same, near, unmatchedTrades)
