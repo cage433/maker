@@ -2,13 +2,13 @@ package starling.titan
 
 import starling.curves.Environment
 import com.trafigura.edm.shared.types.TitanId
-import com.trafigura.edm.trades.{PhysicalTrade => EDMPhysicalTrade}
 import com.trafigura.edm.logistics.inventory.{EDMInventoryItem, EDMLogisticsQuota}
 import starling.instrument.Trade
 import starling.daterange.Timestamp
 import starling.utils.Log
 import EDMConversions._
 import collection.immutable.Map
+import com.trafigura.edm.trades.{CompletedTradeState, PhysicalTrade => EDMPhysicalTrade}
 
 
 /**
@@ -56,6 +56,12 @@ case class TitanTradeStoreManager(
 
   private def getTradeAndUpdateCache(titanTradeID : String) = {
     val newTrade = edmTradeServices.getTrade(TitanId(titanTradeID))
+
+    log.info("trade state = " + newTrade.state)
+    if (newTrade.state != CompletedTradeState) {
+      log.error("Wrong state for trade " + newTrade.state)
+    }
+
     edmTrades += newTrade
     newTrade
   }

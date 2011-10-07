@@ -78,9 +78,8 @@ class TitanEventHandler(rabbitEventServices : TitanRabbitEventServices,
       case TradeSubject => {
         ev.verb match {
           case UpdatedEventVerb => {
-            val completed = ev.content.body.payloads.filter(p => TradeStatusPayload == p.payloadType).filter(p => p.key.identifier == "completed").size > 0
+            val completed = ev.content.body.payloads.filter(p => TradeStatusPayload == p.payloadType).filter(p => p.key.identifier.equalsIgnoreCase("completed")).size > 0
             if (completed) {
-
               val changedIDs = tradeIds.filter(titanTradeStoreManager.updateTrade(env, _))
               if (changedIDs != Nil)
                 rabbitPublishChangedValueEvents(changedIDs, RefinedMetalTradeIdPayload)
