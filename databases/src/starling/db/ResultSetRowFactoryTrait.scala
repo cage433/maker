@@ -164,6 +164,21 @@ class ResultSetRow(resultSet: ResultSet, val count: Int) {
     }
   }
 
+  val OptionRegex = """Some\((.+)\)""".r
+  def getFromOption[T](name: String)(implicit m: Manifest[T]): Option[T] = getString(name) match {
+    case "" | null => None
+    case "None" => {
+      None
+    }
+    case OptionRegex(value) => {
+      m.toString match {
+        case "Int" => Some(value.toInt).asInstanceOf[Option[T]]
+        case "Double" => Some(value.toDouble).asInstanceOf[Option[T]]
+        case "java.lang.String" => Some(value).asInstanceOf[Option[T]]
+      }
+    }
+  }
+
   def getPercentage(column: String): Percentage = {
     val valueAsDouble =getDouble(column)
      Percentage(valueAsDouble / 100.0)

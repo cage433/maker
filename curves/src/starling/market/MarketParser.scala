@@ -37,7 +37,7 @@ class MarketParser(businessCalendars: BusinessCalendars, futuresExpiryRules: Fut
     lines.map {
       line => try { {
         val name = line.get("name")
-        val eaiQuoteID = line.getFromOption[Int]("eaiQuoteID")
+        val eaiQuoteID = line.getIntOption("eaiQuoteID")
         val className = line.get("type")
 
         val defaultPrec = line.getFromOption[Int]("defaultPrecision")
@@ -155,11 +155,15 @@ object MarketParser {
     def get(name: String): String
 
     def getInt(name: String) = get(name).toInt
+    def getIntOption(name: String) = get(name) match {
+      case "" | null => None
+      case s => Some(s.toInt)
+    }
 
     val OptionRegex = """Some\((.+)\)""".r
 
     def getFromOption[T](name: String)(implicit m: Manifest[T]): Option[T] = get(name) match {
-      case "" => None
+      case "" | null | "NULL" => None
       case "None" => {
         None
       }

@@ -129,6 +129,7 @@ class StarlingInit( val props: Props,
       BarryEckstein ->> new FwdCurveDbMarketDataSource(varSqlServerDB, businessCalendars, 3),
       GasolineRoW ->> new FwdCurveDbMarketDataSource(varSqlServerDB, businessCalendars, 21),
       GasOil ->> new FwdCurveDbMarketDataSource(varSqlServerDB, businessCalendars, 7),
+      Naphtha ->> new FwdCurveDbMarketDataSource(varSqlServerDB, businessCalendars, 10),
       LondonDerivativesOptions ->> new FwdCurveDbMarketDataSource(varSqlServerDB, businessCalendars, 45)
 //      Neptune ->> (new NeptuneGradeAreaBenchmarksMarketDataSource(neptuneRichDB),
 //                   new NeptuneCountryBenchmarksMarketDataSource(neptuneRichDB),

@@ -9,6 +9,7 @@ import starling.curves.VolKey
 import starling.instrument.utils.AtomicDatumKeyUtils._
 import starling.utils.ImplicitConversions._
 import starling.utils.cache.CacheFactory
+import starling.market.KnownConversions
 
 
 trait UTP extends Instrument {
@@ -81,6 +82,14 @@ trait UTP extends Instrument {
 
   // Used in the GreeksPivotReport to display an associated price
   def price(env : Environment) : Quantity
+
+  /**
+   * Implement if the conversion for this UTP is not what might be expected. e.g. a Formula swap index can
+   * have its own conversion that is different from using the conversion for each component risk market.
+   * This doesn't make a lot of sense but is specifically implemented this way in Aspect, so we need to copy
+   * it in order to match position.
+   */
+  def knownConversion: Option[KnownConversions] = None
 }
 
 object UTP{

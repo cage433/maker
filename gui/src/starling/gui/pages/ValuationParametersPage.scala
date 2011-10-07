@@ -160,29 +160,33 @@ class ValuationParametersPageComponent(context:PageContext, pageData:PageData) e
     }
 
     val pnl = data.tradeValuation.tradeValuation.explanation
-     
-    val valuationParametersExplainPanel = new MigPanel("insets 0", "[" + StandardLeftIndent + "][p]") {
-      val extraFormatInfo = context.getSetting(StandardUserSettingKeys.ExtraFormattingInfo, PivotFormatter.DefaultExtraFormatInfo)
-      val explanationComponent = new TopNamedQuantityComponent(pnl, extraFormatInfo) {
-        reactions += {
-          case UserSettingUpdated(StandardUserSettingKeys.ExtraFormattingInfo) => {
-            val extraFormatInfo = context.getSetting(StandardUserSettingKeys.ExtraFormattingInfo)
-            updateExtraInfo(extraFormatInfo)
+
+    pnl match {
+      case Right(explanation) => {
+        val valuationParametersExplainPanel = new MigPanel("insets 0", "[" + StandardLeftIndent + "][p]") {
+          val extraFormatInfo = context.getSetting(StandardUserSettingKeys.ExtraFormattingInfo, PivotFormatter.DefaultExtraFormatInfo)
+          val explanationComponent = new TopNamedQuantityComponent(explanation, extraFormatInfo) {
+            reactions += {
+              case UserSettingUpdated(StandardUserSettingKeys.ExtraFormattingInfo) => {
+                val extraFormatInfo = context.getSetting(StandardUserSettingKeys.ExtraFormattingInfo)
+                updateExtraInfo(extraFormatInfo)
+              }
+            }
+            listenTo(context.remotePublisher)
           }
+          val explanationScrollPane = new ScrollPane(explanationComponent) {
+            verticalScrollBar.unitIncrement = 10
+            horizontalScrollBar.unitIncrement = 10
+          }
+
+          add(LabelWithSeparator("Valuation Parameters"), "spanx, growx, wrap")
+          add(explanationScrollPane, "skip 1, push, grow, gapright " + RightPanelSpace)
         }
-        listenTo(context.remotePublisher)
-      }
-      val explanationScrollPane = new ScrollPane(explanationComponent) {
-        verticalScrollBar.unitIncrement = 10
-        horizontalScrollBar.unitIncrement = 10
-      }
 
-      add(LabelWithSeparator("Valuation Parameters"), "spanx, growx, wrap")
-      add(explanationScrollPane, "skip 1, push, grow, gapright " + RightPanelSpace)
+        add(valuationParametersExplainPanel, "push, grow")
+      }
+      case _ =>
     }
-
-    add(infoPanel, "pushx, wrap")
-    add(valuationParametersExplainPanel, "push, grow")
   }
   add(mainPanel, "push, grow")
 }

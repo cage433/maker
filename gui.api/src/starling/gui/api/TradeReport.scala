@@ -64,7 +64,10 @@ object MarketDataIdentifier {
     new MarketDataIdentifier(selection, new SpecificMarketDataVersion(version))
 }
 
-case class TradeValuation(explanation:NamedQuantity)
+/**
+ * explanation is Either a String (of an exception) indicating an error, or the named quantity explanation
+ */
+case class TradeValuation(explanation: Either[String, NamedQuantity])
 case class TradeValuationAndDetails(tradeValuation:TradeValuation, tradeRow:List[Any], fieldDetailsGroups:List[FieldDetailsGroupLabel], columns:List[SColumn])
 
 case class PricingGroup(name:String) {
@@ -81,6 +84,7 @@ object PricingGroup extends StarlingEnum(classOf[PricingGroup], (pg: PricingGrou
   val BarryEckstein = PricingGroup("Barry Eckstein")
   val GasolineRoW = PricingGroup("Gasoline RoW")
   val GasOil = PricingGroup("Gas Oil")
+  val Naphtha = PricingGroup("Naphtha")
 }
 
 case class FieldDetailsGroupLabel(groupName:String, childNames:List[String])
@@ -115,6 +119,8 @@ object Desk extends StarlingEnum(classOf[Desk], (d: Desk) => d.name, ignoreCase 
   val GasolineSpec = Desk("Gasoline Spec Global", List(PricingGroup.GasolineRoW, LimOnly), Some(EAIDeskInfo(149)))
   val CrudeSpecNorthSea = Desk("Crude Spec North Sea", List(Crude, LimOnly), Some(EAIDeskInfo(197)))
   val HoustonDerivatives = Desk("Houston Derivatives", List(BarryEckstein, LimOnly), Some(EAIDeskInfo(190)))
+  val NaphthaSpec = Desk("Naphtha Spec", List(PricingGroup.Naphtha, LimOnly), Some(EAIDeskInfo(20)))
+
   val Titan = Desk("Titan", List(Metals))
 
   val pricingGroups = values.flatMap(_.pricingGroups).distinct

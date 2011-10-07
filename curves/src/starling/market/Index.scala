@@ -15,7 +15,7 @@ import java.lang.IllegalStateException
 
 case class UnknownIndexException(msg: String, eaiQuoteID: Option[Int] = None) extends Exception(msg)
 
-trait Index {
+trait Index extends KnownConversions {
   val name : String
   val eaiQuoteID: Option[Int] = None
 
@@ -37,13 +37,6 @@ trait Index {
   def reportDisplayName = name
 
   def convert(value: Quantity, uom: UOM): Option[Quantity]
-
-  def convertUOM(value: Quantity, uom : UOM) : Quantity = {
-    convert(value, uom) match {
-      case Some(beqv) => beqv
-      case None => throw new Exception(this + ": Couldn't convert from " + value + " to " + uom)
-    }
-  }
 
   override def equals(obj: Any): Boolean = obj match {
     case other: Index => name.equalsIgnoreCase(other.name)

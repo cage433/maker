@@ -8,6 +8,7 @@ import starling.pivot.{PivotQuantity => PQ}
 import starling.reports.pivot._
 import greeks.{RiskPrices, VolatilityMeasure, RiskVols}
 import starling.reports.impl.pivot.RiskPivotReportRow
+import starling.market.KnownConversions
 
 object GreekValues {
   def fields = List("Market Price", "Current Price", "Volatility", PositionText, "Gamma", "Vega", "Vomma", "DeltaBleed", "GammaBleed")
@@ -69,6 +70,7 @@ case class GreekValues(
     "scale -> " + scale
   }
 
+  def conversion: Option[KnownConversions] = utp.knownConversion
   def *(volume: Double) = copy(scale = scale * volume)
   def riskType = diff.map(_.riskType)
   def riskCommodity = diff.map(_.riskCommodity)

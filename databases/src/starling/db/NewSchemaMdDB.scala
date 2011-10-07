@@ -111,8 +111,8 @@ class NewSchemaMdDB(db: DBTrait[RichResultSetRow], referenceDataLookup: Referenc
 //    }
   }
 
-  def latestExcelVersions(): Map[String, Int] = {
-    latestVersionForAllMarketDataSets.filterKeys(_.isExcel).mapKeys(_.name)
+  def latestExcelVersions(): Map[MarketDataSet, Int] = {
+    latestVersionForAllMarketDataSets.filterKeys(_.isExcel)
 
 //    Map() ++ db.queryWithResult("""
 //      SELECT marketDataSet COLLATE sql_latin1_general_cp1_cs_as AS mds, MAX(commitId) AS maxCommitId

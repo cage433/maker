@@ -190,9 +190,8 @@ class TradeFacilityImpl(
   }
 
   def bookClose(desk: Desk) {
-    val valid = List(Desk.GasolineSpec, Desk.LondonDerivatives).map(_.name)
     val bookID = desk match {
-      case Desk(name, _, Some(info:EAIDeskInfo)) if valid.contains(name) => info.book
+      case Desk(name, _, Some(info:EAIDeskInfo)) => info.book
       case _ => throw new Exception("Book close is not enabled for " + desk)
     }
     val uuid = UUID.randomUUID.toString

@@ -49,6 +49,7 @@ case class NoMarketDataForDayException(observationDay: Day, m: String) extends E
 
 case class MarketDataSet(name: String, priority: Int) {
   def isExcel = name.startsWith(MarketDataSet.excelPrefix)
+  def stripExcel = name.stripPrefix(MarketDataSet.excelPrefix)
 }
 
 object MarketDataSet extends StarlingEnum(classOf[MarketDataSet], (m: MarketDataSet) => m.name) {
@@ -72,6 +73,7 @@ object MarketDataSet extends StarlingEnum(classOf[MarketDataSet], (m: MarketData
   val LondonDerivatives = MarketDataSet("London Derivatives", 400)
   val GasolineRoW = MarketDataSet("Gasoline RoW", 500)
   val GasOil = MarketDataSet("Gas Oil", 501)
+  val Naphtha = MarketDataSet("Naphtha", 502)
   val BarryEckstein = MarketDataSet("Barry Eckstein", 600)
   val LondonDerivativesOptions = MarketDataSet("London Derivatives Options", 700)
   val LimMetals = MarketDataSet("LimMetals", 800) //Refined Metals
@@ -92,6 +94,7 @@ object MarketDataStore {
     PricingGroup.LondonDerivatives ->> (Starling, LondonDerivatives, LIM),
     PricingGroup.GasolineRoW ->> (Starling, GasolineRoW, LIM),
     PricingGroup.GasOil ->> (Starling, GasOil, LIM),
+    PricingGroup.Naphtha ->> (Starling, Naphtha, GasolineRoW, LIM),
     PricingGroup.BarryEckstein ->> (Starling, BarryEckstein, System, LIM),
     PricingGroup.LondonDerivativesOptions ->> (Starling, LondonDerivativesOptions, System, LIM)
   )
@@ -133,7 +136,7 @@ trait MarketDataStore {
 
   def latest(selection: MarketDataSelection): Int
 
-  def latestExcelVersions: Map[String, Int]
+  def latestExcelVersions: Map[MarketDataSet, Int]
 
   def latestMarketDataIdentifier(selection: MarketDataSelection): MarketDataIdentifier
   def identifierFor(selection: MarketDataSelection, version: Option[MarketDataVersion]) = version.fold(
@@ -437,13 +440,13 @@ class DBMarketDataStore(db: MdDB, tags: MarketDataTags, val marketDataSources: M
     }
   }
 
-  def latestExcelVersions: Map[String, Int] = db.latestExcelVersions
+  def latestExcelVersions: Map[MarketDataSet, Int] = db.latestExcelVersions
 
   def latestMarketDataIdentifier(selection: MarketDataSelection) = MarketDataIdentifier(selection, latest(selection))
 
   def latest(selection: MarketDataSelection): Int = {
     val versions = latestPricingGroupVersions.get(selection.pricingGroup).toList :::
-      latestExcelVersions.get(selection.excel).toList
+      latestExcelVersions.get(selection.excel.map(MarketDataSet.excel(_))).toList
 
     if (versions.isEmpty) 0 else versions.max
   }

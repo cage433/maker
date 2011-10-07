@@ -8,6 +8,7 @@ import org.joda.time.format.{DateTimeFormatter, DateTimeFormat}
 import starling.utils.StringToDouble
 import org.joda.time.{LocalTime, DateTime, LocalDate}
 import starling.calendar.{BusinessCalendar}
+import annotation.tailrec
 
 /**
  * calendar day.
@@ -149,7 +150,8 @@ class Day private (@transient val year : Int, @transient val month : Int, @trans
     nextBusinessDay(BusinessCalendar.NONE)
   }
 
-  def addBusinessDays(bc : BusinessCalendar, n: Int): Day = {
+  @tailrec
+  final def addBusinessDays(bc : BusinessCalendar, n: Int): Day = {
     if (n > 0) {
       nextBusinessDay(bc).addBusinessDays(bc, n - 1)
     } else if (n < 0) {

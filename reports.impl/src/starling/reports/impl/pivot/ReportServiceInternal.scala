@@ -190,9 +190,13 @@ class ReportServiceInternal(reportContextBuilder:ReportContextBuilder, tradeStor
   def clearCache() {cache.clear}
 
   def singleTradeReport(trade: Trade, curveIdentifier: CurveIdentifier): TradeValuation = {
-    val defaultContext = reportContextBuilder.contextFromCurveIdentifier(curveIdentifier)
-    val explanation = trade.explain(defaultContext.environment)
-    TradeValuation(explanation)
+    try {
+      val defaultContext = reportContextBuilder.contextFromCurveIdentifier(curveIdentifier)
+      val explanation = trade.explain(defaultContext.environment)
+      TradeValuation(Right(explanation))
+    } catch {
+      case t: Throwable => TradeValuation(Left(StackTraceToString(t)))
+    }
   }
 
   def pnlReconciliation(curveIdentifier: CurveIdentifier, tradeSet: TradeSet, timestamp: Timestamp, eaiDB: DB): PivotTableDataSource = {
