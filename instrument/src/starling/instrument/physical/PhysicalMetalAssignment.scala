@@ -596,8 +596,8 @@ object PhysicalMetalAssignment extends InstrumentType[PhysicalMetalAssignment] w
       val deliveryDay = row.getDay(contractDeliveryDayLabel)
       val pricingSpec = row.getObject[TitanPricingSpec](contractPricingSpecLabel)
       val contractDeliveryLocation = row.getString(contractDeliveryLocationLabel)
-      val benchmarkDeliveryDay = Option(row.getDay(benchmarkDeliveryDayLabel))
-      val benchmarkDeliveryLocation = Option(row.getString(benchmarkDeliveryLocationLabel))
+      val benchmarkDeliveryDay = if (!row.isNull(benchmarkDeliveryDayLabel)) Some(row.getDay(benchmarkDeliveryDayLabel)) else None
+      val benchmarkDeliveryLocation = if (!row.isNull(benchmarkDeliveryLocationLabel)) Some(row.getString(benchmarkDeliveryLocationLabel)) else None
       val isPurchase = row.getBoolean(isPurchaseLabel)
       val inventoryQuantity = row.getQuantity(inventoryQuantityLabel)
       val inventoryID = row.getString(inventoryIDLabel)

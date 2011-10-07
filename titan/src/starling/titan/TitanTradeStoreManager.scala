@@ -71,7 +71,11 @@ case class TitanTradeStoreManager(
 
     val newQuotas = logisticsResponse.associatedQuota
     assert(newQuotas.size >= 1 && newQuotas.size <= 2, "Expected one or two quotas")
+
+    log.info("inventory update, got inventory:\n %s, \n%s \nwith quotas \n%s\n".format(inventoryID, newInventory, newQuotas.map(q => (q.quotaName, q.fullyAllocated))))
+
     edmInventoryItems += (newInventory.id -> newInventory)
+    edmLogisticsQuotas --= newQuotas
     edmLogisticsQuotas ++= newQuotas
   }
 

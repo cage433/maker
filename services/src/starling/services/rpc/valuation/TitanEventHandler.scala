@@ -98,7 +98,6 @@ class TitanEventHandler(rabbitEventServices : TitanRabbitEventServices,
     }
   }
 
-
   private def getID(payload : Payload) = payload.key.identifier
 
   /**
@@ -107,16 +106,14 @@ class TitanEventHandler(rabbitEventServices : TitanRabbitEventServices,
   def logisticsInventoryEventHander(ev: Event) = {
     log.info("handler: Got a logistics event to process %s".format(ev.toString))
 
+    // get inventory ids from inventory or sales assignment subjects (sales assignment is what is raised when a sales quota is fully allocated/deallocated)
     val payloads = ev.content.body.payloads
-    val inventoryIds: List[String] = if (Event.EDMLogisticsInventorySubject.equalsIgnoreCase(ev.subject)) {
-      payloads.map(p => getID(p))
+    val inventoryIds: List[String] = if (Event.EDMLogisticsInventorySubject.equalsIgnoreCase(ev.subject) || EDMLogisticsSalesAssignmentSubject.equalsIgnoreCase(ev.subject)) {
+      payloads.filter(p => Event.EDMLogisticsInventoryIdPayload.equalsIgnoreCase(p.payloadType)).map(p => getID(p))
     }
     else Nil
 
     log.info("Logistics event received for ids { %s }".format(inventoryIds.mkString(", ")))
-
-
-    // todo, need to remove logistics quota somehow here, since we can't reliably do it from inventory (can we?)
 
     val marketDay = Day.today.previousWeekday
 
@@ -137,7 +134,7 @@ class TitanEventHandler(rabbitEventServices : TitanRabbitEventServices,
       }
       case CreatedEventVerb => {
         Log.info("New event received for %s".format(inventoryIds))
-        if (Event.EDMLogisticsInventorySubject == ev.subject) {
+        if (Event.EDMLogisticsInventorySubject == ev.subject || EDMLogisticsSalesAssignmentSubject == ev.subject) {
           val changedForwardIDs = inventoryIds.flatMap(titanTradeStoreManager.updateInventory(Environment(NullAtomicEnvironment(marketDay.startOfDay)), _))
           if (changedForwardIDs != Nil) {
             rabbitPublishChangedValueEvents(changedForwardIDs, RefinedMetalTitanIdPayload)

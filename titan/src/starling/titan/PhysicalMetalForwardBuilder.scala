@@ -151,7 +151,8 @@ class PhysicalMetalForwardBuilder(refData: TitanTacticalRefData,
               trades
             }
             else {
-              val logisticsQuota: Option[EDMLogisticsQuota] = logisticsQuotaByQuotaID.get(detail.identifier)
+              val logisticsQuota: Option[EDMLogisticsQuota] = logisticsQuotaByQuotaID.get(NeptuneId(detail.identifier).titanId)
+              log.info("detail.identifier %s logistics quota was %s ".format(NeptuneId(detail.identifier).identifier, logisticsQuota))
               val isFullyAllocated = logisticsQuota.map(_.fullyAllocated).getOrElse(false)
               val assignmentTrades = inventoryItems.map {
                 inv =>
