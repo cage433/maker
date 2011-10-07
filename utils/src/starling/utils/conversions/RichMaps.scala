@@ -24,7 +24,7 @@ class RichMap[K,V](map : Map[K,V]) {
   def getOrThrow(key: K, msg: String) = map.getOrElse(key, throw new Exception(msg))
   def either(key: K): Either[K, V] = map.get(key).either(key, identity)
   def getOrUpdate(k: K, f: (V) => V) = map.get(k).fold(v => map.updated(k, f(v)), map)
-  def slice(keys : Any*) : Map[K,V] = if (keys.isEmpty) map else map.filterKeys(key => keys.contains(key))
+  def &(keys:Set[K]) : Map[K,V] = if (keys.isEmpty) map else map.filterKeys(key => keys.contains(key)).toList.toMap
   def mapValue(key: K, f: V => V): Map[K,V] = map.updated(key, f(map(key)))
   def mapKeys[C](f: K => C): Map[C, V] = map.map(kv => (f(kv._1), kv._2))
   def composeKeys[C](f: C => K) = new MapView(map, f)

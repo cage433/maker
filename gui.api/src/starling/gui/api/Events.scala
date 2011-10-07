@@ -55,7 +55,7 @@ abstract class RabbitEvent(val queueName : String) extends StarlingEvent {
 
   def toMessage = RabbitMessage(toJSON, toMap("userName", "subGroupName"))
   def toJSON = new String(Serializer.SJSON.out(toMap()))
-  def toMap(keys : String*) : Map[String, Object] = toMap.slice(keys : _*)
+  def toMap(keys : String*) : Map[String, Object] = toMap & keys.toSet
   def toMap : Map[String, Object]
 
   protected def priceEventMap(user : User, label : String, observationDate : Option[Day], dates : Array[_]) = Map(

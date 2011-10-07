@@ -15,6 +15,7 @@ import swing.event.{MouseClicked, KeyPressed, KeyTyped}
 import starling.pivot.EditableCellState._
 import scala.collection.mutable.{HashMap => MMap}
 import collection.immutable.Map
+import starling.utils.ImplicitConversions._
 
 case class OverrideDetails(text:String, state:EditableCellState)
 case class TableValue(value:AnyRef, row:Int, column:Int)
@@ -571,7 +572,7 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
         (cell.value.field -> SomeSelection(Set(cell.value.value.value)))
       }).filterNot{case (field,_) => (measureInfo.value.field == field) || (field == Field.NullField)}
 
-      rowHeaderFieldToValues ++ colHeaderFieldToValues ++ filterFieldToValues
+      (rowHeaderFieldToValues ++ colHeaderFieldToValues ++ filterFieldToValues) & keyFields
     }
 
     override def parser(row:Int, col:Int) = {
