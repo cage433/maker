@@ -11,7 +11,7 @@ import scalaz.Scalaz._
 import starling.utils.ImplicitConversions._
 
 
-class Patch121_ImportFreightParityFromNeptune extends Patch {
+class Patch999_ImportFreightParityFromNeptune extends Patch {
   override def deferredReason(context: PatchContext) =
     context.props.ImportFreightParityFromNeptune() ? none[String] | some("Awaiting cutover from Neptune to Starling")
 

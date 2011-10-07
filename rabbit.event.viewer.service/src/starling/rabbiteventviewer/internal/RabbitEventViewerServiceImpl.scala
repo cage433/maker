@@ -21,7 +21,8 @@ class RabbitEventViewerServiceImpl(eventDatabase:RabbitEventDatabase) extends Ra
     val host = "Host"
     val pid = "PID"
     val body = "Body"
-    val payloads = "Payloads"
+    val payloadType = "Payload Type"
+    val payloadValue = "Payload Value"
 
     val columns = {
       List(("Event Fields", List(
@@ -67,7 +68,8 @@ class RabbitEventViewerServiceImpl(eventDatabase:RabbitEventDatabase) extends Ra
         StringColumnDefinition(host, "host", table),
         new IntColumnDefinition(pid, "pid", table),
         StringColumnDefinition(body, "body", table),
-        StringColumnDefinition(payloads, "payloads", table)
+        StringColumnDefinition(payloadType, "payloadType", table),
+        StringColumnDefinition(payloadValue, "payloadValue", table)
       )))
     }
 

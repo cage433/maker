@@ -40,7 +40,6 @@ class DefaultRabbitEventDatabase(val db:DB, broadcaster:Broadcaster) extends Rab
   def latestID = synchronized {maxID}
 
   def saveEvent(e:Event) {synchronized {
-    maxID += 1
     val verb:String = e.verb.toJson.take(colSize)
     val subject:String = e.subject.take(colSize)
     val id:String = e.key.identifier.take(colSize)
@@ -49,24 +48,29 @@ class DefaultRabbitEventDatabase(val db:DB, broadcaster:Broadcaster) extends Rab
     val host:String = e.content.header.host.take(colSize)
     val pid:Int = e.content.header.pid
     val body = e.content.body.toJson.toString
-
-    val payloads = e.content.body.payloads.map{p => p.payloadType +": " + p.key.identifier}.mkString(", ")
+    val starlingTimestamp = new Timestamp
 
     db.inTransaction{
       writer => {
-        writer.insert(TableName, Map(
-          "starlingID" -> maxID,
-          "verb" -> verb,
-          "subject" -> subject,
-          "id" -> id,
-          "source" -> source,
-          "timestamp" -> timestamp,
-          "host" -> host,
-          "pid" -> pid,
-          "body" -> body,
-          "starlingtimestamp" -> new Timestamp(),
-          "payloads" -> payloads
-        ))
+        e.content.body.payloads.foreach{
+          p =>
+            maxID += 1
+            writer.insert(TableName, Map(
+              "starlingID" -> maxID,
+              "verb" -> verb,
+              "subject" -> subject,
+              "id" -> id,
+              "source" -> source,
+              "timestamp" -> timestamp,
+              "host" -> host,
+              "pid" -> pid,
+              "body" -> body,
+              "starlingtimestamp" -> starlingTimestamp,
+              "payloadType" -> p.payloadType.trim,
+              "payloadValue" -> p.key.identifier.trim
+            ))
+        }
+
       }
     }
 
