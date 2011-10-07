@@ -17,13 +17,14 @@ object CountryBenchmarkDataType extends MarketDataType {
 
   val commodityField = FieldDetails("Commodity", FixedPivotParser(Commodity.metalsCommodities.map(_.name).toSet))
   val countryField = FieldDetails("Country")
+  val countryCodeField = FieldDetails("Country Code")
   val effectiveFromField = FieldDetails("Effective From", DayPivotParser)
   val benchmarkPriceField = FieldDetails.createMeasure("Benchmark Price", parser0 = PivotQuantityPivotParser)
 
   def marketDataKeyFields = keyFields
-  override def keyFields = Set(commodityField, countryField, effectiveFromField).map(_.field)
+  override def keyFields = Set(commodityField, countryCodeField, effectiveFromField).map(_.field)
   override def valueFields = List(benchmarkPriceField.field)
-  val fields = List(commodityField, countryField, effectiveFromField, benchmarkPriceField)
+  val fields = List(commodityField, countryField, countryCodeField, effectiveFromField, benchmarkPriceField)
 
   val initialPivotState = PivotFieldsState(
     dataFields = List(benchmarkPriceField.field),
@@ -35,7 +36,7 @@ object CountryBenchmarkDataType extends MarketDataType {
 
   def createValue(rows: List[Row]) = {
     val data = rows.map { row =>
-      row[NeptuneCountry](countryField).code → (row[Day](effectiveFromField), row.quantity(benchmarkPriceField))
+      NeptuneCountryCode(row.string(countryCodeField)) → (row[Day](effectiveFromField), row.quantity(benchmarkPriceField))
     }
 
     CountryBenchmarkData(data.toNestedMap)
@@ -54,7 +55,8 @@ case class CountryBenchmarkMarketDataKey(commodity: Commodity) extends MarketDat
   override def rows(marketData: CountryBenchmarkData, referenceDataLookup: ReferenceDataLookup) = {
     marketData.countryData.mapNested { case (countryCode, effectiveFrom, price) => Row(
       commodityField.field → commodity.name,
-      countryField.field → referenceDataLookup.countryFor(countryCode),
+      countryCodeField.field → countryCode.code,
+      countryField.field → referenceDataLookup.countryFor(countryCode).name,
       effectiveFromField.field → effectiveFrom,
       benchmarkPriceField.field → price
     ) }
