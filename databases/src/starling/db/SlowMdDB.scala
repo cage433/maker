@@ -118,9 +118,9 @@ class SlowMdDB(db: DBTrait[RichResultSetRow]) extends MdDB with Log {
           and("md.marketDataSet" in marketDataSets.map(_.name)))
     { rs => rs.getDay("maxObservationDay") }
 
-  def latestExcelVersions(): Map[String, Int] = {
+  def latestExcelVersions(): Map[MarketDataSet, Int] = {
     Map() ++ db.queryWithResult("select marketDataSet, max(version) m from MarketData where marketDataSet like 'Excel:%' group by marketDataSet ", Map()) {
-      rs => rs.getString("marketDataSet").stripPrefix("Excel:") → rs.getInt("m")
+      rs => MarketDataSet.fromName(rs.getString("marketDataSet")) → rs.getInt("m")
     }
   }
 

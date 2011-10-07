@@ -29,7 +29,7 @@ trait MdDB {
   def observationDaysByMarketDataSet: MultiMap[String, Day]
   def latestVersionForMarketDataSets(): Map[MarketDataSet, Int]
   def latestObservationDaysFor(marketDataSets: List[MarketDataSet], marketDataType: MarketDataType): Option[Day]
-  def latestExcelVersions(): Map[String, Int]
+  def latestExcelVersions(): Map[MarketDataSet, Int]
   def store(data: Iterable[MarketDataUpdate], marketDataSet: MarketDataSet): SaveResult
   def maxVersionForMarketDataSetNames(names: List[String]): Option[Int]
   def marketDataTypes(version: Int, mds: List[MarketDataSet]): Set[MarketDataType]
@@ -43,7 +43,5 @@ trait MdDB {
             marketDataKeys: Option[Set[MarketDataKey]]): List[(TimedMarketDataKey, MarketData)]
 
   def readLatest(id: MarketDataID): Option[VersionedMarketData]
-
-  def latestVersionForAllMarketDataSets(): Map[MarketDataSet, Int] =
-    latestVersionForMarketDataSets() ++ latestExcelVersions().mapKeys(MarketDataSet.excel(_))
+  def latestVersionForAllMarketDataSets(): Map[MarketDataSet, Int] = latestVersionForMarketDataSets() ++ latestExcelVersions()
 }

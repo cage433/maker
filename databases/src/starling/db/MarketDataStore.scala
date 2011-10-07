@@ -49,6 +49,7 @@ case class NoMarketDataForDayException(observationDay: Day, m: String) extends E
 
 case class MarketDataSet(name: String, priority: Int) {
   def isExcel = name.startsWith(MarketDataSet.excelPrefix)
+  def stripExcel = name.stripPrefix(MarketDataSet.excelPrefix)
 }
 
 object MarketDataSet extends StarlingEnum(classOf[MarketDataSet], (m: MarketDataSet) => m.name) {
@@ -135,7 +136,7 @@ trait MarketDataStore {
 
   def latest(selection: MarketDataSelection): Int
 
-  def latestExcelVersions: Map[String, Int]
+  def latestExcelVersions: Map[MarketDataSet, Int]
 
   def latestMarketDataIdentifier(selection: MarketDataSelection): MarketDataIdentifier
   def identifierFor(selection: MarketDataSelection, version: Option[MarketDataVersion]) = version.fold(
@@ -439,13 +440,13 @@ class DBMarketDataStore(db: MdDB, tags: MarketDataTags, val marketDataSources: M
     }
   }
 
-  def latestExcelVersions: Map[String, Int] = db.latestExcelVersions
+  def latestExcelVersions: Map[MarketDataSet, Int] = db.latestExcelVersions
 
   def latestMarketDataIdentifier(selection: MarketDataSelection) = MarketDataIdentifier(selection, latest(selection))
 
   def latest(selection: MarketDataSelection): Int = {
     val versions = latestPricingGroupVersions.get(selection.pricingGroup).toList :::
-      latestExcelVersions.get(selection.excel).toList
+      latestExcelVersions.get(selection.excel.map(MarketDataSet.excel(_))).toList
 
     if (versions.isEmpty) 0 else versions.max
   }

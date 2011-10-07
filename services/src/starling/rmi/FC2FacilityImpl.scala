@@ -100,7 +100,7 @@ class FC2FacilityImpl(
     snapshotDatabase.snapshot(marketDataSelection, true, observationDay).map(label)
   }
 
-  def excelLatestMarketDataVersions = snapshotDatabase.latestExcelVersions
+  def excelLatestMarketDataVersions = snapshotDatabase.latestExcelVersions.mapKeys(_.stripExcel)
   def pricingGroupLatestMarketDataVersions = Map() ++ snapshotDatabase.latestPricingGroupVersions.filterKeys(pricingGroups()).toMap
 
   def latestSnapshotID(pricingGroup:PricingGroup, observationDay:Day) = {
