@@ -60,8 +60,8 @@ case class AmendKeyEdit(amends:Map[Field,Option[Any]]) extends KeyEdits {
 case class PivotEdits(edits:Map[KeyFilter,KeyEdits], newRows:List[Map[Field,Any]]) {
   def size = edits.size + newRows.size
 
-  def editFor(key:Map[Field,Any], field:Field) = {
-    val filterKeys:Map[KeyFilter, KeyEdits] = edits.filterKeys(_.matches(key))
+  def editFor(row: Row, field:Field): Option[(KeyFilter, KeyEdits)] = {
+    val filterKeys:Map[KeyFilter, KeyEdits] = edits.filterKeys(_.matches(row))
     filterKeys.toList match {
       case Nil => None
       case many => {

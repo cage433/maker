@@ -7,8 +7,8 @@ import starling.utils.ImplicitConversions._
 import collection.mutable.ListBuffer
 import collection.Set
 import collection.immutable.Map
-import starling.utils.{STable, SColumn}
 import scalaz.Scalaz._
+import starling.utils.{ImplicitConversions, STable, SColumn}
 
 
 object AxisNode {
@@ -130,7 +130,9 @@ case class ServerAxisNode(axisValue:AxisValue, children:Map[ChildKey,Map[AxisVal
           axisValues.head
         }
       }
-      val childNodes:NestedMap[ChildKey, AxisValue, ServerAxisNode] = nodes.flatMap(_.children.toList).toMap
+
+      val childNodes: NestedMap[ChildKey, AxisValue, ServerAxisNode] = toNestedMap(nodes.flatMap(_.children.toList))
+
       ServerAxisNode(joinedValue, childNodes)
     } }.toList
 

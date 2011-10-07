@@ -166,7 +166,7 @@ class MarketDataPivotTableDataSource(reader: MarketDataReader, edits:PivotEdits,
       private val keyFields = Set(observationDayField.field, observationTimeField.field) +++ marketDataType.keyFields
       private val keyAndValueFields = (keyFields +++ marketDataType.valueFields.toSet)
       def editableToKeyFields = Map() ++ marketDataType.valueFields.map((_ -> keyFields))
-      def withEdits(edits:PivotEdits):PivotTableDataSource = new MarketDataPivotTableDataSource(reader, edits,
+      def withEdits(edits:PivotEdits) = new MarketDataPivotTableDataSource(reader, edits,
         marketDataStore, marketDataIdentifier, marketDataType, referenceDataLookup)
 
       def save(edits:PivotEdits) = {
@@ -200,11 +200,12 @@ class MarketDataPivotTableDataSource(reader: MarketDataReader, edits:PivotEdits,
     }
   }
 
-  private def dataWithoutEdits(pfs : PivotFieldsState) = cache.memoize( (pfs, marketDataType, marketDataIdentifier), {
+  private def dataWithoutEdits(pfs : PivotFieldsState): (Map[Field, List[Any]], List[Row]) =
+//    cache.memoize( (pfs, marketDataType, marketDataIdentifier), {
     generateDataWithoutEdits(pfs)
-  } )
+//  } )
 
-  private def generateDataWithoutEdits(pfs : PivotFieldsState) = {
+  private def generateDataWithoutEdits(pfs : PivotFieldsState): (Map[Field, List[Any]], List[Row]) = {
 
     val filtersUpToFirstMarketDataField = pfs.allFilterPaths.chopUpToFirstNon(inMemoryFields)
     //FIXME toSet.toList probably means the filtering is incorrect when there is more than one filter path
@@ -255,7 +256,7 @@ class MarketDataPivotTableDataSource(reader: MarketDataReader, edits:PivotEdits,
       }
 
       val observationDays = selectedValues[Day](observationDayField.field)
-      val observationTimes = selectedValues[String](observationTimeField.field).map(_.map(t=>ObservationTimeOfDay.fromName(t.get)))
+      val observationTimes: Option[Set[ObservationTimeOfDay]] = selectedValues[String](observationTimeField.field).map(_.map(t=>ObservationTimeOfDay.fromName(t.get)))
 
       val allData = reader.read(marketDataType, observationDays, observationTimes, keyClause)
       allData.flatMap { case (timedKey, data) => {
@@ -278,9 +279,9 @@ class MarketDataPivotTableDataSource(reader: MarketDataReader, edits:PivotEdits,
 
     val editedData = if(edits == PivotEdits.Null) data else {
       data.map { row => {
-        val key = row.filterKeys(f => keyFields.contains(f))
-        row.map { case (field, value) => {
-          edits.editFor(key.value, field) match {
+        val rowKeys = row.filterKeys(f => keyFields.contains(f)) /// Area → Asia, Com → Zinc, Grade → HG
+        row.map { case (field, value) => {  // field: Area, value: Asia
+          edits.editFor(rowKeys, field) match {
             case None => {
               field → value
             }

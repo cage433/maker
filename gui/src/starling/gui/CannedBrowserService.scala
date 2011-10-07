@@ -279,9 +279,9 @@ class EditableSpecifiedCannedDataSource extends UnfilteredPivotTableDataSource {
             println("")
 
             val dWithDeletesAndAmends = d.map(m => {
-              val key = Map(Field("Trader") -> m(Field("Trader")), Field("Market") -> m(Field("Market")), Field("Single Value") -> m(Field("Single Value")))
+              val row = Row(Field("Trader") → m(Field("Trader")), Field("Market") → m(Field("Market")), Field("Single Value") → m(Field("Single Value")))
               m.map { case (field, value) => {
-                edits.editFor(key, field) match {
+                edits.editFor(row, field) match {
                   case None => field -> value
                   case Some((matchedKey, edit)) => field -> edit.applyEdit(matchedKey, field, value)
                 }

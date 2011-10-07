@@ -157,7 +157,7 @@ trait MarketDataStore {
   def observationDaysByExcel(): Map[String, Set[Day]]
   def observationDaysByPricingGroup(): Map[PricingGroup, Set[Day]]
 
-  def pivot(marketDataIdentifier: MarketDataIdentifier, marketDataType: MarketDataType): PivotTableDataSource
+  def pivot(marketDataIdentifier: MarketDataIdentifier, marketDataType: MarketDataType, pivotEdits:PivotEdits=PivotEdits.Null): PivotTableDataSource
 
   def pivot(selection: MarketDataSelection, marketDataType: MarketDataType): PivotTableDataSource
 
@@ -406,14 +406,14 @@ class DBMarketDataStore(db: MdDB, tags: MarketDataTags, val marketDataSources: M
     new ValidatingMarketDataReader(reader, RollingAveragePriceValidator, new DayChangePriceValidator(reader))
   }
 
-  def pivot(marketDataIdentifier: MarketDataIdentifier, marketDataType: MarketDataType): PivotTableDataSource = {
+  def pivot(marketDataIdentifier: MarketDataIdentifier, marketDataType: MarketDataType, pivotEdits:PivotEdits=PivotEdits.Null): PivotTableDataSource = {
     //    val mds = marketDataSets(marketDataIdentifier.selection)
     //    val version = versionForMarketDataVersion(marketDataIdentifier.marketDataVersion)
-    pivotCache.memoize((marketDataIdentifier, marketDataType), {
+    pivotCache.memoize((marketDataIdentifier, marketDataType, pivotEdits), {
       val reader = new NormalMarketDataReader(this, marketDataIdentifier)
       val validatingReader = validate(reader)
 
-      new MarketDataPivotTableDataSource(validatingReader, PivotEdits.Null, this, marketDataIdentifier, marketDataType,
+      new MarketDataPivotTableDataSource(validatingReader, pivotEdits, this, marketDataIdentifier, marketDataType,
         referenceDataLookup)
     })
   }

@@ -43,7 +43,7 @@ case class GradeAreaBenchmarkMarketDataKey(commodity : Commodity) extends Market
       areaCodeField.field → areaCode.code,
       areaField.field → referenceDataLookup.areaFor(areaCode).name,
       effectiveFromField.field → effectiveFrom,
-      benchmarkPriceField.field → price
+      benchmarkPriceField.field → price.pq
     ) }
   }
 }
@@ -57,7 +57,8 @@ object GradeAreaBenchmarkDataType extends MarketDataType {
   val gradeField = FieldDetails("Grade")
   val gradeCodeField = FieldDetails("Grade Code")
   val effectiveFromField = FieldDetails("Effective From", DayPivotParser)
-  val benchmarkPriceField = FieldDetails.createMeasure("Benchmark Price", parser0 = PivotQuantityPivotParser)
+  val benchmarkPriceField = FieldDetails.createMeasure("Benchmark Price",
+    parser0 = PivotQuantityPivotParser, formatter0 = PivotQuantitySetPivotFormatter)
 
   def marketDataKeyFields = keyFields
   override def keyFields = Set(commodityField, areaCodeField, gradeCodeField, effectiveFromField).map(_.field)

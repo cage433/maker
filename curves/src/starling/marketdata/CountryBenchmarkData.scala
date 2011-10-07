@@ -19,7 +19,8 @@ object CountryBenchmarkDataType extends MarketDataType {
   val countryField = FieldDetails("Country")
   val countryCodeField = FieldDetails("Country Code")
   val effectiveFromField = FieldDetails("Effective From", DayPivotParser)
-  val benchmarkPriceField = FieldDetails.createMeasure("Benchmark Price", parser0 = PivotQuantityPivotParser)
+  val benchmarkPriceField = FieldDetails.createMeasure("Benchmark Price",
+    parser0 = PivotQuantityPivotParser, formatter0 = PivotQuantitySetPivotFormatter)
 
   def marketDataKeyFields = keyFields
   override def keyFields = Set(commodityField, countryCodeField, effectiveFromField).map(_.field)
@@ -58,7 +59,7 @@ case class CountryBenchmarkMarketDataKey(commodity: Commodity) extends MarketDat
       countryCodeField.field → countryCode.code,
       countryField.field → referenceDataLookup.countryFor(countryCode).name,
       effectiveFromField.field → effectiveFrom,
-      benchmarkPriceField.field → price
+      benchmarkPriceField.field → price.pq
     ) }
   }
 }
