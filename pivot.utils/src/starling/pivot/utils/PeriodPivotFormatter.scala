@@ -44,6 +44,11 @@ object PeriodPivotFormatter extends PivotFormatter {
   }
 }
 
+object TimeOnlyTimestampPivotFormatter extends PivotFormatter {
+  def format(value:Any, formatInfo:ExtraFormatInfo) = {
+    new TableCell(value, value.asInstanceOf[Timestamp].timeStringWithSeconds)
+  }
+}
 object TimestampPivotFormatter extends PivotFormatter {
   def format(value:Any, formatInfo:ExtraFormatInfo) = {
     value match {

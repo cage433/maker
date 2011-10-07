@@ -52,7 +52,7 @@ object ColumnDefinition {
 
 case class DayColumnDefinition(override val name:String, override val table:String) extends FieldBasedColumnDefinition(name, ColumnDefinition.toSql(name), table) {
   def read(resultSet: ResultSetRow) = { if (resultSet.isNull(alias)) NullableDay(null) else NullableDay(resultSet.getDay(alias)) }
-  override def fieldDetails = new FieldDetails(name) {
+  override def fieldDetails:FieldDetails = new FieldDetails(name) {
     override def nullValue() = NullableDay.Null
   }
   override def filterClauses(values:Set[Any]):List[Clause] = {
@@ -112,7 +112,7 @@ case class TimestampColumnDefinition(override val name:String, override val sqlN
   def read(resultSet:ResultSetRow) = {
     resultSet.getTimestamp(alias)
   }
-  override def fieldDetails = new FieldDetails(name) {
+  override def fieldDetails:FieldDetails = new FieldDetails(name) {
     override def formatter = TimestampPivotFormatter
   }
 }
