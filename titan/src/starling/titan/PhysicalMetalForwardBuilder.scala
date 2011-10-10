@@ -12,7 +12,6 @@ import org.joda.time.LocalDate
 import starling.daterange.Day
 import starling.instrument.physical._
 import starling.quantity.{Quantity, Percentage}
-import starling.instrument.TradeID._
 import starling.db.TitanTradeSystem
 import starling.instrument.{ErrorInstrument, TradeID, Trade}
 
@@ -20,6 +19,10 @@ class PhysicalMetalForwardBuilder(refData: TitanTacticalRefData,
             inventoryByQuotaID: Map[TitanId, List[EDMInventoryItem]],
             logisticsQuotaByQuotaID: Map[TitanId, EDMLogisticsQuota]) extends Log {
   import refData._
+
+  private val QUOTA_PREFIX = "Q-"
+  private val ASSIGNMENT_PREFIX = "A-"
+  private val TRADE_PREFIX = "T-"
 
   private def getTitanTradeId(t: EDMPhysicalTrade): String = NeptuneId(t.titanId).identifier
 
@@ -29,8 +32,7 @@ class PhysicalMetalForwardBuilder(refData: TitanTacticalRefData,
     case _ => throw new Exception(" Invalid direction " + direction)
   }
 
-
-  def apply(trade: EDMPhysicalTrade) : List[Trade] = {
+  def apply(trade: EDMPhysicalTrade, eventID : String) : List[Trade] = {
     val groupCompany = groupCompaniesByGUID.get(trade.groupCompany).map(_.name).getOrElse("Unknown Group Company")
     val counterparty = counterpartiesByGUID(trade.counterparty.counterparty).name
     val comments = trade.comments
@@ -132,7 +134,8 @@ class PhysicalMetalForwardBuilder(refData: TitanTacticalRefData,
                   shape.name,
                   contractFinalised,
                   tolerancePlus,
-                  toleranceMinus
+                  toleranceMinus,
+                  eventID
               )
             }
             if (isPurchaseTrade) {
@@ -141,7 +144,7 @@ class PhysicalMetalForwardBuilder(refData: TitanTacticalRefData,
                   val assignment = makeAssignment(inv.item.purchaseAssignment, inv, true)
                   val attributes = makeTradeAttributes(Some(inv.id))
                   Trade(
-                    TradeID("A-" + inv.item.purchaseAssignment.oid.contents.toString, TitanTradeSystem),
+                    TradeID(ASSIGNMENT_PREFIX + inv.item.purchaseAssignment.oid.contents.toString, TitanTradeSystem),
                     submittedDay,
                     counterparty,
                     attributes,
@@ -159,7 +162,7 @@ class PhysicalMetalForwardBuilder(refData: TitanTacticalRefData,
                   val assignment = makeAssignment(inv.item.salesAssignment, inv, false)
                   val attributes = makeTradeAttributes(Some(inv.id))
                   Trade(
-                    TradeID("A-" + inv.item.salesAssignment.oid.contents.toString, TitanTradeSystem),
+                    TradeID(ASSIGNMENT_PREFIX + inv.item.salesAssignment.oid.contents.toString, TitanTradeSystem),
                     submittedDay,
                     counterparty,
                     attributes,
@@ -183,7 +186,7 @@ class PhysicalMetalForwardBuilder(refData: TitanTacticalRefData,
                 )
                 val attributes = makeTradeAttributes(None)
                 Some(Trade(
-                  TradeID("Q-" + quotaID, TitanTradeSystem),
+                  TradeID(QUOTA_PREFIX + quotaID, TitanTradeSystem),
                   submittedDay,
                   counterparty,
                   attributes,
@@ -199,13 +202,12 @@ class PhysicalMetalForwardBuilder(refData: TitanTacticalRefData,
     }
     catch {
       case e => {
-            List(Trade(TradeID("T-"+trade.titanId.value, TitanTradeSystem),
-                TitanTradeAttributes.dummyDate, "Unknown", TitanTradeAttributes.errorAttributes(trade),
+            List(Trade(TradeID(TRADE_PREFIX + trade.titanId.value, TitanTradeSystem),
+                TitanTradeAttributes.dummyDate, "Unknown", TitanTradeAttributes.errorAttributes(trade, eventID),
                 new ErrorInstrument(e.getMessage)))
         }
     }
   }
-
 }
 
 object PhysicalMetalForwardBuilder{

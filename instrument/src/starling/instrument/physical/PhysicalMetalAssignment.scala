@@ -304,7 +304,7 @@ trait PhysicalMetalAssignmentOrUnassignedSalesQuota extends UTP with Tradeable {
   def benchmarkDeliveryDay : Option[Day]
   def benchmarkDeliveryLocation : Option[String]
   def grade : String
-  def isPurchase: Boolean
+  def isPurchase : Boolean
 
   val benchmarkPricingSpec = benchmarkDeliveryDay.map(_ => contractPricingSpec.dummyTransferPricingSpec)
 
@@ -333,9 +333,12 @@ trait PhysicalMetalAssignmentOrUnassignedSalesQuota extends UTP with Tradeable {
   def valuationCCY = contractPricingSpec.valuationCCY
 
   def persistedTradeableDetails: Map[String, Any] = Map(
-    contractDeliveryDayLabel -> contractDeliveryDay, quantityLabel -> quantity,
-    contractPricingSpecLabel -> PersistAsBlob(contractPricingSpec), isPurchaseLabel -> isPurchase,
-    commodityLabel -> commodityName, contractDeliveryLocationLabel -> contractDeliveryLocation,
+    contractDeliveryDayLabel -> contractDeliveryDay,
+    quantityLabel -> quantity,
+    contractPricingSpecLabel -> PersistAsBlob(contractPricingSpec),
+    isPurchaseLabel -> isPurchase,
+    commodityLabel -> commodityName,
+    contractDeliveryLocationLabel -> contractDeliveryLocation,
     gradeLabel -> grade
   ) ++ benchmarkDeliveryDay.map(benchmarkDeliveryDayLabel -> _)  ++
         benchmarkDeliveryLocation.map(benchmarkDeliveryLocationLabel -> _)

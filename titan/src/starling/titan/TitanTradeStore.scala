@@ -23,8 +23,12 @@ object TitanTradeStore {
   val contractFinalised_str = "Contract Finalised"
   val tolerancePlus_str = "Tolerance Plus"
   val toleranceMinus_str = "Tolerance Minus"
+  val eventID_str = "Event ID" // this is the unique id of the event that resulted in this version of the trade
 
-  val labels = List(quotaID_str, assignmentID_str, titanTradeID_str, inventoryID_str, groupCompany_str, comment_str, submitted_str, shape_str, contractFinalised_str, tolerancePlus_str, toleranceMinus_str)
+  val labels = List(quotaID_str, assignmentID_str, titanTradeID_str,
+                    inventoryID_str, groupCompany_str, comment_str,
+                    submitted_str, shape_str, contractFinalised_str,
+                    tolerancePlus_str, toleranceMinus_str, eventID_str)
 }
 
 class TitanTradeStore(db: RichDB, broadcaster:Broadcaster, tradeSystem:TradeSystem)
@@ -42,8 +46,9 @@ class TitanTradeStore(db: RichDB, broadcaster:Broadcaster, tradeSystem:TradeSyst
     val contractFinalised = row.getString("ContractFinalised")
     val tolerancePlus = row.getPercentage("TolerancePlus")
     val toleranceMinus = row.getPercentage("ToleranceMinus")
+    val eventID = row.getString("EventID")
 
-    TitanTradeAttributes(quotaID, quotaQuantity, titanTradeID, Option(inventoryID), groupCompany, comment, submitted, shape, contractFinalised, tolerancePlus, toleranceMinus)
+    TitanTradeAttributes(quotaID, quotaQuantity, titanTradeID, Option(inventoryID), groupCompany, comment, submitted, shape, contractFinalised, tolerancePlus, toleranceMinus, eventID)
   }
 
   def pivotInitialState(tradeableTypes:Set[TradeableType[_]]) = {

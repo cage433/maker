@@ -32,7 +32,7 @@ class TitanSystemOfRecord(manager : TitanTradeStoreManager)
   extends SystemOfRecord with Log {
 
   def allTrades(f: (Trade) => Unit) : (Int, Set[String]) = {
-    manager.updateTradeStore
+    manager.updateTradeStore("allTrade import request")
     val allTrades = manager.allStarlingTrades
 
     val (worked, failed) = allTrades.map(_.tradeable).partition{ case a : PhysicalMetalAssignment => true; case _ => false }
@@ -66,8 +66,8 @@ case class TitanTradeAttributes(
   shape : String,
   contractFinalised : String,
   tolerancePlus : Percentage,
-  toleranceMinus : Percentage
-) extends TradeAttributes {
+  toleranceMinus : Percentage,
+  eventID : String) extends TradeAttributes {
 
   if (quotaID == null) {
     println("quota was null")
@@ -87,7 +87,8 @@ case class TitanTradeAttributes(
     shape_str -> shape,
     contractFinalised_str -> contractFinalised,
     tolerancePlus_str -> tolerancePlus,
-    toleranceMinus_str -> toleranceMinus
+    toleranceMinus_str -> toleranceMinus,
+    eventID_str -> eventID
   ) ++  inventoryID.map{id => inventoryID_str -> id}
 
   override def createFieldValues = details.map{
@@ -97,7 +98,7 @@ case class TitanTradeAttributes(
 
 object TitanTradeAttributes{
   val dummyDate = Day(1980, 1, 1)
-  def errorAttributes(edmTrade : EDMPhysicalTrade) = {
+  def errorAttributes(edmTrade : EDMPhysicalTrade, evntID : String) = {
     val titanTradeID = edmTrade.titanId.value
 
     TitanTradeAttributes(
@@ -111,7 +112,8 @@ object TitanTradeAttributes{
       shape = "",
       contractFinalised = "",
       tolerancePlus = Percentage(0),
-      toleranceMinus = Percentage(0)
+      toleranceMinus = Percentage(0),
+      eventID = evntID
     )
   }
 }

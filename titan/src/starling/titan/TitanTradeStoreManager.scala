@@ -22,6 +22,8 @@ case class TitanTradeStoreManager(
 
   type InventoryID = String
 
+  def allStarlingTrades = titanTradeStore.allStarlingTrades()
+
   private lazy val edmTrades = {
     scala.collection.mutable.Set[EDMPhysicalTrade]() ++ edmTradeServices.getAllCompletedTrades()
   }
@@ -40,7 +42,7 @@ case class TitanTradeStoreManager(
     allInventoryIds.filterNot(parentIds).map(edmInventoryItems).toList
   }
 
-  def inventoryByQuotaID : Map[TitanId, List[EDMInventoryItem]] = {
+  private def inventoryByQuotaID : Map[TitanId, List[EDMInventoryItem]] = {
     def quotaNames(inventory : EDMInventoryItem) : List[String] = inventory.purchaseAssignment.quotaName :: Option(inventory.salesAssignment).map(_.quotaName).toList
     def quotaNamesForInventory : List[(List[TitanId], EDMInventoryItem)] = edmInventoryItems.toList.map{case (id, inv) => (quotaNames(inv), inv)}.map(i => i._1.map(qn => TitanId(qn)) -> i._2)
     def quotaToInventory : List[(TitanId, EDMInventoryItem)] = quotaNamesForInventory.flatMap(i => i._1.map(x => (x -> i._2)))
@@ -51,8 +53,6 @@ case class TitanTradeStoreManager(
     val logisticsQuotaByQuotaID = edmLogisticsQuotas.map(q => TitanId(q.quotaName) -> q).toMap
     new PhysicalMetalForwardBuilder(refData, inventoryByQuotaID, logisticsQuotaByQuotaID)
   }
-
-  def allStarlingTrades = titanTradeStore.allStarlingTrades()
 
   private def getTradeAndUpdateCache(titanTradeID : String) = {
     val newTrade = edmTradeServices.getTrade(TitanId(titanTradeID))
@@ -66,11 +66,11 @@ case class TitanTradeStoreManager(
     newTrade
   }
 
-  def removeTradeFromCache(titanTradeID : String) {
+  private def removeTradeFromCache(titanTradeID : String) {
     edmTrades.retain(_.titanId.value != titanTradeID)
   }
 
-  def updateInventoryCache(inventoryID : String) {
+  private def updateInventoryCache(inventoryID : String) {
     val logisticsResponse = logisticsServices.inventoryService.service.getInventoryById(inventoryID.toInt)
     assert(logisticsResponse.associatedInventory.size == 1, "Expected a single piece of inventory")
     val newInventory = logisticsResponse.associatedInventory.head
@@ -85,7 +85,7 @@ case class TitanTradeStoreManager(
     edmLogisticsQuotas ++= newQuotas
   }
 
-  def removeInventoryFromCache(inventoryID : String) {
+  private def removeInventoryFromCache(inventoryID : String) {
 
     val salesQuota = edmInventoryItems.get(inventoryID) match {
       case Some(inv) => {
@@ -95,6 +95,7 @@ case class TitanTradeStoreManager(
       case None => None
     }
 
+    // remove the associates sales quota, it will be repopulated next time it's allocated
     salesQuota match {
       case Some(lsq) => edmLogisticsQuotas.retain(lq => lq.quotaName  != lsq.quotaName)
       case None =>
@@ -104,13 +105,13 @@ case class TitanTradeStoreManager(
   /**
    * Returns list of trade ids that have changed value
    */
-  def updateInventory(env : Environment, inventoryID : String) : List[String] = {
+  def updateInventory(env : Environment, inventoryID : String, eventId : String) : List[String] = {
 
     try {
 
       val existingFwds = titanTradeStore.getAllForwards()
       updateInventoryCache(inventoryID)
-      updateTradeStore()
+      updateTradeStore(eventId)
       val updatedFwds = titanTradeStore.getAllForwards()
 
       val changedTitanTradeIds = (existingFwds.keySet ++ updatedFwds.keySet).flatMap{
@@ -131,8 +132,8 @@ case class TitanTradeStoreManager(
     }
   }
 
-  def updateTradeStore() {
-    val updatedStarlingTrades = edmTrades.flatMap(tradeForwardBuilder.apply)
+  def updateTradeStore(eventId : String) {
+    val updatedStarlingTrades = edmTrades.flatMap(trade => tradeForwardBuilder.apply(trade, eventId))
     titanTradeStore.storeTrades(
       {trade : Trade => true},
       updatedStarlingTrades,
@@ -142,14 +143,14 @@ case class TitanTradeStoreManager(
   /**
    * update / create a new trade, returns true if update changes valuation
    */
-  def updateTrade(env : Environment, titanTradeID : String) : Boolean = {
+  def updateTrade(env : Environment, titanTradeID : String, eventId : String) : Boolean = {
 
     try {
 
       val existingFwd = titanTradeStore.getForward(titanTradeID)
       val newEDMTrade = getTradeAndUpdateCache(titanTradeID)
 
-      val newStarlingTrades : List[Trade] = tradeForwardBuilder(newEDMTrade)
+      val newStarlingTrades : List[Trade] = tradeForwardBuilder(newEDMTrade, eventId)
 
       titanTradeStore.storeTrades(
         {trade : Trade => trade.attributes match {
@@ -179,7 +180,7 @@ case class TitanTradeStoreManager(
     }
   }
 
-  def deleteTrade(titanTradeID : String) {
+  def deleteTrade(titanTradeID : String, eventId : String) {
     removeTradeFromCache(titanTradeID)
     titanTradeStore.storeTrades(
       {trade => trade.titanTradeID == Some(titanTradeID)},
@@ -188,7 +189,7 @@ case class TitanTradeStoreManager(
     )
   }
 
-  def deleteInventory(titanInventoryID : String) {
+  def deleteInventory(titanInventoryID : String, eventId : String) {
     removeInventoryFromCache(titanInventoryID)
     titanTradeStore.storeTrades(
       {trade => trade.titanInventoryID == Some(titanInventoryID)},
