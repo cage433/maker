@@ -30,6 +30,7 @@ case class Row(value: Map[Field, Any]) {
   def +?(entry: (Field, Option[Any])): Row = entry._2.fold(any => this + (entry._1 → any), this)
   def +?(entry: Option[(Field, Any)]): Row = entry.fold(this + _, this)
   def ++(other: Map[Field, Any]): Row = copy(value ++ other)
+  def :::?(other: Option[Row]): Row = other.fold(this + _, this)
 
   def map(f: (Field, Any) => (Field, Any)): Row = copy(value.map(kv => f(kv._1, kv._2)))
   def filterKeys(p: (Field) => Boolean): Row = copy(value.filterKeys(p))

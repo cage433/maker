@@ -690,6 +690,17 @@ class PivotFieldsState(
   }
 
   def addChoice(choice : (String, Any)) = copy(reportSpecificChoices = reportSpecificChoices + choice)
+
+  def rowFilters = Map() ++ filters.collect{case (f,s:SomeSelection) if rowFields.contains(f) => (f -> s)}
+  def columnFilters = Map() ++ filters.collect{case (f,s:SomeSelection) if columns.allFields.contains(f) => (f -> s)}
+
+  def singleValueFilterAreaFilters(): Map[Field, SomeSelection] = Map() ++ filterAreaFields.flatMap(f => {
+    val (field, selection) = filters.find{case (f0,sel) => f == f0}.get
+    selection match {
+      case s@SomeSelection(v) if v.size == 1 => Some((field → s))
+      case _ => None
+    }
+  })
 }
 
 object PivotFieldsState {

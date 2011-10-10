@@ -55,6 +55,7 @@ class RichMap[K,V](map : Map[K,V]) {
 }
 
 class RichMultiMap[K, V](map : Map[K, List[V]]) extends RichMap[K, List[V]](map) {
+  def multiMapValues[W](f: (V) => W): MultiMap[K, W] = map.mapValues(_.map(f))
   def contains(key : K, value : V) : Boolean = map.get(key).map(_.contains(value)).getOrElse(false)
   def contains(pair : (K, V)) : Boolean = contains(pair._1, pair._2)
   def allValues: List[V] = map.values.flatten.toList
@@ -64,6 +65,7 @@ class RichMultiMap[K, V](map : Map[K, List[V]]) extends RichMap[K, List[V]](map)
 }
 
 class RichMutableMap[K, V](map: MMap[K, V]) {
+  def collectValues[W](pf: PartialFunction[V, W]): MMap[K, W] = map.collect(identity[K] _ *** pf)
   def findOrUpdate(p: ((K, V)) => Boolean, newEntry: => (K, V)): (K, V) = map.find(p).getOrElse(newEntry.update(map.update(_)))
   def update(kv: (K, V)) = map.update(kv._1, kv._2)
   def filterValues(f: V => Boolean): MMap[K, V] = map.filter(p => f(p._2))

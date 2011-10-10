@@ -14,11 +14,11 @@ import starling.quantity.{Quantity, UOM, Percentage}
 import scalaz.Scalaz._
 import starling.auth.User
 import starling.richdb.RichResultSetRow
-import collection.mutable.{ListBuffer, Map => MMap}
 import concurrent.SyncVar
 import starling.pivot.{Row, Field => PField}
 import collection.immutable._
 import collection.Iterator
+import collection.mutable.{ListBuffer, Map => MMap}
 
 
 class NewSchemaMdDB(db: DBTrait[RichResultSetRow], referenceDataLookup: ReferenceDataLookup) extends MdDB with Log {
@@ -194,24 +194,20 @@ class NewSchemaMdDB(db: DBTrait[RichResultSetRow], referenceDataLookup: Referenc
 //    require(marketDataType.valueFields.size == 1, "Market data type %s has multiple value field keys: %s "
 //      % (marketDataType, marketDataType.valueFields))
 
-    val extendedKeyIds = extendedKeyIdsFor(marketDataType, List(marketDataSet))
-
-    val values = queryUsingExtendedKeys(extendedKeyIds,
+    val values = queryUsingExtendedKeys(extendedKeyIdsFor(marketDataType, List(marketDataSet)),
       select("*")
         from("MarketDataValue")
        where("observationDay" gte from, "observationDay" lte to)) { marketDataValue(_) }
 
     values.groupBy(_.timedKey).mapValuesEagerly { valuesForTimeKey => {
       val latestValuesByValueKey = valuesForTimeKey.groupBy(_.valueKey).mapValues(_.maxBy(_.commitId))
-      val latestValuesByValueKeyWithoutDeletes = latestValuesByValueKey.filter(_._2.isNotDelete)
-      if (latestValuesByValueKeyWithoutDeletes.isEmpty) {
-        None
-      } else {
-        val maxCommitId = latestValuesByValueKey.values.map(_.commitId).maxOr(0)
-        val valueRows = latestValuesByValueKey.map { case (valKey, dayValue) => valKey.row + dayValue.row.get }.toList
 
-        Some( VersionedMarketData(maxCommitId, marketDataType.createValue(valueRows)) )
-      }
+      latestValuesByValueKey.filterValues(_.isSave).ifDefined { _ => {
+        val maxCommitId = latestValuesByValueKey.values.map(_.commitId).maxOr(0)
+        val valueRows = latestValuesByValueKey.map { case (valKey, value) => valKey.row :::? value.row }.toList
+
+        VersionedMarketData(maxCommitId, marketDataType.createValue(valueRows))
+      } }
     } }.collectValues { case Some(v) => v }
   }
 
@@ -238,14 +234,10 @@ class NewSchemaMdDB(db: DBTrait[RichResultSetRow], referenceDataLookup: Referenc
       values.values
     }
 
-    val timedData: MultiMap[TimedMarketDataKey, Row] = {
-      val filteredRows = mostRecentValues.toList.filter(_._2._2.isDefined)
-      filteredRows.groupInto(kv => (kv._1._1), kv => (kv._1._2.row + kv._2._2.get)).mapValues(_.toList)
-    }
+    val timedData: MultiMap[TimedMarketDataKey, Row] =
+      mostRecentValues.toList.collect { case ((tmdk, mdvk), (_, Some(row), _)) => tmdk → (mdvk.row + row) }.toMultiMap
 
-    val nonEmptyTimedData = timedData.filter(_._2.nonEmpty)
-
-    nonEmptyTimedData.mapValues(marketDataType.createValue(_)).toList
+    timedData.collectValues { case rows if (rows.nonEmpty) => marketDataType.createValue(rows) }.toList
   }
 
   def queryForObservationDayAndMarketDataKeys(version: Int, mds: List[MarketDataSet], marketDataType: MarketDataType) = {
@@ -277,7 +269,7 @@ class NewSchemaMdDB(db: DBTrait[RichResultSetRow], referenceDataLookup: Referenc
     ) { rs => marketDataValue(rs) }
 
     val latestValuesByValueKey = values.groupBy(_.valueKey).mapValues(_.maxBy(_.commitId))
-    val filteredLatestValues = latestValuesByValueKey.filter(_._2.isNotDelete)
+    val filteredLatestValues = latestValuesByValueKey.filter(_._2.isSave)
     if (filteredLatestValues.isEmpty) {
       None
     } else {
@@ -381,7 +373,7 @@ class NewSchemaMdDB(db: DBTrait[RichResultSetRow], referenceDataLookup: Referenc
         map.update(combinedKey, combinedValue)
       }
     }
-    def isNotDelete = row.isDefined
+    def isSave = row.isDefined
     val marketDataSet = extendedKey.marketDataSet
     val timedKey = TimedMarketDataKey(ObservationPoint(observationDay, extendedKey.time), extendedKey.marketDataKey)
     val valueFields = extendedKey.marketDataType.valueFields
