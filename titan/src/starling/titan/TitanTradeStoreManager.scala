@@ -153,11 +153,7 @@ case class TitanTradeStoreManager(
       val newStarlingTrades : List[Trade] = tradeForwardBuilder(newEDMTrade, eventId)
 
       titanTradeStore.storeTrades(
-        {trade : Trade => trade.attributes match {
-          case t : TitanTradeAttributes => t.titanTradeID == Some(titanTradeID)
-          case _ => throw new Exception("Unexpected trade attributes type for trade " + trade)
-
-        }},
+        {trade : Trade => trade.titanTradeID == Some(titanTradeID)},
         newStarlingTrades,
         new Timestamp
       )

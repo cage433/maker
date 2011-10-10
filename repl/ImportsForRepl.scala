@@ -15,6 +15,7 @@ import starling.utils._
 import starling.gui.api._
 import starling.curves.Environment
 import starling.curves.MarketDataCurveObjectEnvironment
+import starling.richdb._
 
 def setNullHolidays{
   import starling.calendar._
@@ -50,3 +51,12 @@ def makeEnv(pricingGroup : PricingGroup, marketDay : Day) : Environment = {
       ReferenceDataLookup.Null
     ))
 }
+lazy val titanTradeStore = {
+  val ts = new starling.titan.TitanTradeStore(new RichDB(devInstance.props.StarlingDatabase(), new RichResultSetRowFactory), Broadcaster.Null, TitanTradeSystem)
+  ts.readAll
+  ts
+}
+
+
+
+
