@@ -21,9 +21,11 @@ def setNullHolidays{
   import starling.market._
   HolidayTablesFactory.registerHolidayTablesImpl(NullHolidays)
   FuturesExpiryRuleFactory.registerRulesImpl(new FuturesExpiryRules(new BusinessCalendars(NullHolidays)){
-    def rule(eaiQuoteID: Int) = new FuturesExpiryRule{
+    def ruleOption(eaiQuoteID: Int) = Some(new FuturesExpiryRule{
       def lastTradingDay(d: DateRange) = d.firstDay - 1
-    }
+      val name = "Null holiday expiry rule"
+    })
+
   })
 
 }
@@ -40,5 +42,11 @@ def makeEnv(pricingGroup : PricingGroup, marketDay : Day) : Environment = {
   val reader = new NormalMarketDataReader(marketDataStore, marketDataID)
 
   val marketDataSlice = new MarketDataReaderMarketDataSlice(reader, ObservationPoint(marketDay, ObservationTimeOfDay.LMEClose))
-  Environment(MarketDataCurveObjectEnvironment(marketDay.endOfDay, marketDataSlice))
+  Environment(
+    MarketDataCurveObjectEnvironment(
+      marketDay.endOfDay,
+      marketDataSlice,
+      shiftsCanBeIgnored=false,
+      ReferenceDataLookup.Null
+    ))
 }
