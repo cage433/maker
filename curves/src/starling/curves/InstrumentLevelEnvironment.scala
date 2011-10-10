@@ -126,44 +126,14 @@ class DefaultInstrumentLevelEnvironment(underlyingAtomicEnv : AtomicEnvironment)
       atmVol + skewVol
     }
 
-    def impliedMetalVol(market: CommodityMarket, period: DateRange): Percentage = {
-      atomicEnv.percentage(BradyMetalVolAtomicDatumKey(market, period))
-    }
-
-    def impliedFXVol(mkt : FXMarket, day : Day) : Percentage = {
-      // this is ugly. we want to try to find the fx vols as USD/EUR or EUR/USD
-      val smile = try {
-        atomicEnv.volMap(new BradyFXVolSmileAtomicDatumKey(mkt, day))
-      } catch {
-        case m: MissingMarketDataException => try {
-          atomicEnv.volMap(new BradyFXVolSmileAtomicDatumKey(mkt.inverse, day))
-        }
-        catch {
-          case _: MissingMarketDataException => throw m
-        }
-      }
-      // HACK - returning the atm vol instead of interpolating. this
-      // means that this class doesn't need to access the forward fx method
-      // in Environment - I'd rather not move it here if possible.
-      // Justified by the fact that the vols in trinity are stale, often meaningless
-      // and fx options are rarely traded at Traf
-      val smilePoly = LeastSquaresFit.fitVolSmile(3, smile)
-      smilePoly(0.5)
-    }
-
     (market, period) match {
       case (mkt : CommodityMarket, period : DateRange) => {
         mkt.commodity match {
           case _: OilCommodity | NatGas => {
             impliedOilVol(mkt, period)
           }
-          case _ => impliedMetalVol(mkt, period)
         }
       }
-      case (mkt : FXMarket, forwardDay : Day) => {
-        impliedFXVol(mkt, forwardDay)
-      }
-
     }
   }
 

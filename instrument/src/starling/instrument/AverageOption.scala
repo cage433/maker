@@ -117,7 +117,6 @@ abstract class SingleAverageOption(
       }
     }
     volKey match {
-      case BradyMetalVolAtomicDatumKey(market, period) => futuresVol(market, period)
       case OilAtmVolAtomicDatumKey(market, _, period, _) => futuresVol(market, period)
       case SwapVol(`index`, period) => env.swapVol(index, period, strike)
       case _ => throw new Exception("Unexpected vol key " + volKey)

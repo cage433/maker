@@ -47,8 +47,6 @@ trait MarketDataKey {
 
   private def cast(marketData:MarketData):marketDataType = marketData.asInstanceOf[marketDataType]
 
-  def dataTypeKey = dataType.name
-
   def unmarshallDB(dbValue: Any): marketDataType = dbValue.asInstanceOf[marketDataType]
 
   def valueKey(row: Row): MarketDataValueKey = {

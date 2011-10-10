@@ -172,26 +172,6 @@ case class AtomicEnvironmentWithPerturbationMap(
   }
 }
 
-case class ShiftEquityPrice(env : AtomicEnvironment, ric : RIC, dP : Quantity)
-  extends PerturbedAtomicEnvironment(env)
-{
-  def applyWithShiftIfAppropriate(key : AtomicDatumKey) : Any = {
-    key match {
-      case EquityPriceKey(`ric`) => {
-        val price = env.quantity(key)
-        if (price.uom != dP.uom) {
-          throw new Exception("Price units differ for " + ric + " price: " + price + " shift: " + dP)
-        }
-        price + dP
-      }
-      case _ => env(key)
-    }
-  }
-  def makeCopyWithNewChildEnvironment(newChildEnv : AtomicEnvironment) ={
-   copy(env = newChildEnv)
-  }
-}
-
 case class ShiftSpotFX(env : AtomicEnvironment, ccy : UOM, dP : Quantity)
   extends PerturbedAtomicEnvironment(env)
 {
@@ -247,10 +227,8 @@ case class ZeroVols(env : AtomicEnvironment)
 {
   def applyWithShiftIfAppropriate(key : AtomicDatumKey) : Any = {
     key match {
-      case _ : BradyFXVolSmileAtomicDatumKey => Map(0.5 -> Percentage(0))
       case _ : OilAtmVolAtomicDatumKey => Percentage(0)
       case _ : OilVolSkewAtomicDatumKey => Map[Double, Percentage]()
-      case _ : BradyMetalVolAtomicDatumKey => Percentage(0)
       case k : SpreadAtmStdDevAtomicDatumKey => new Quantity(0.0, k.market.priceUOM)
       case _ : SpreadSkewStdDevAtomicDatumKey => Map(0.2 -> Percentage(0), 0.5 -> Percentage(0), 0.8 -> Percentage(0))
       case _ => env(key)

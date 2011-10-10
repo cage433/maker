@@ -1,6 +1,5 @@
 package starling.marketdata
 
-import starling.market.EquityPricesDataType
 import starling.curves.SpreadStdDevSurfaceDataType
 import starling.pivot.{Row, Field, PivotFieldsState, FieldDetails}
 
@@ -47,15 +46,11 @@ object MarketDataTypes {
   // list in the market data viewer but is reported not to be anymore).
   val types = List(
     PriceDataType,
-    BradyFXVolSurfaceDataType,
-    BradyMetalVolsDataType,
     OilVolSurfaceDataType,
     ForwardRateDataType,
     SpotFXDataType,
     PriceFixingsHistoryDataType,
     SpreadStdDevSurfaceDataType,
-    EquityPricesDataType,
-    ImpliedVolDataType,
     GradeAreaBenchmarkDataType,
     CountryBenchmarkDataType,
     FreightParityDataType

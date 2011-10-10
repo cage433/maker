@@ -8,7 +8,6 @@ import starling.instrument._
 import starling.utils._
 import starling.utils.ImplicitConversions._
 import starling.curves._
-import starling.bradyvarcalculator._
 import starling.db._
 import starling.pivot._
 import collection.immutable.{Set}

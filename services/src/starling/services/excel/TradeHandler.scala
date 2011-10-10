@@ -4,7 +4,7 @@ import java.lang.String
 import org.boris.xlloop.reflect.XLFunction
 import starling.auth.User
 import starling.eai._
-import starling.services.trade.{ExcelTradesRange, ExcelTradeReader}
+import starling.services.trade.ExcelTradeReader
 import collection.immutable.List
 import starling.utils.ImplicitConversions._
 import starling.utils.Broadcaster

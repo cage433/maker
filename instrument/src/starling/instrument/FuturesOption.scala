@@ -87,7 +87,6 @@ case class FuturesOption(
 
   override def interpolatedVol(env : Environment, volKey : EnvironmentDifferentiable with VolKey) : Quantity = {
     volKey match {
-      case _ : BradyMetalVolAtomicDatumKey =>
       case _ : OilAtmVolAtomicDatumKey =>
       case _ => throw new Exception("Unexpected vol key " + volKey)
     }
