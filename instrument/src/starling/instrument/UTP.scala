@@ -15,15 +15,6 @@ import starling.market.KnownConversions
 trait UTP extends Instrument {
   def instrumentType : InstrumentType[_]
 
-  def detailsForUTPNOTUSED : Map[String, Any]
-
-  def fields:List[String] = {
-    val tradeableFields = detailsForUTPNOTUSED.keySet.map(_.removeWhiteSpace.toLowerCase).toList
-    val allConvertedFields = InstrumentType.fields.map(_.removeWhiteSpace.toLowerCase)
-    val matchingFields = allConvertedFields.intersect(tradeableFields)
-    matchingFields.map(field => InstrumentType.fields(allConvertedFields.indexOf(field)))
-  }
-
   /**
    * For the provided environment what will this be on the provided future date.
    * For example, for an forward option if it is in the money after the exercise day it will be a forward.

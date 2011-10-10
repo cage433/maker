@@ -12,7 +12,6 @@ import starling.quantity.{SimpleNamedQuantity, Quantity, UOM}
  * report values for this UTP across the associated Future's risk rows
  */
 case class BankAccount(volume : Quantity, market : Option[FuturesMarket], index : Option[Index], delivery : Period) extends UTP {
-  def detailsForUTPNOTUSED = Map[String, Any]("Amount" -> volume, "Period" -> delivery) ++ market.map("Market" -> _).toMap ++ index.map("Market" -> _).toMap
   def instrumentType = BankAccount
   def isLive(dayAndTime: DayAndTime) = true
   def valuationCCY = volume.uom

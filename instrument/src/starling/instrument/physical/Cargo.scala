@@ -67,8 +67,6 @@ case class Cargo(quantity: Quantity, incoterm: IncotermCode, blDate: Day, index:
 
   def volume = quantity
 
-  def detailsForUTPNOTUSED = Map()
-
   def persistedTradeableDetails = Map()
 
   def tradeableType = Cargo

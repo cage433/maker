@@ -103,13 +103,6 @@ case class SinglePeriodSwap(
 
   def liveAveragingDays(marketDay : DayAndTime) = averagingDays.filter(_.endOfDay > marketDay)
 
-  def detailsForUTPNOTUSED: Map[String, Any] = Map(
-    "Market" -> index,
-    "Period" -> period,
-    "Strike" -> strike,
-    "Cleared" -> cleared,
-    "PricingRule" -> pricingRule)
-
   def daysForPositionReport(marketDay : DayAndTime) : Seq[Day] = {
     val live = liveAveragingDays(marketDay)
     if (live.isEmpty)

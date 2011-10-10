@@ -34,9 +34,6 @@ case class CashInstrument(
 	def valuationCCY : UOM = volume.uom
 	def isLive(dayAndTime : DayAndTime) : Boolean = dayAndTime <= settlementDate.startOfDay
   
-  def detailsForUTPNOTUSED :Map[String, Any] = persistedTradeableDetails
-
-
   def instrumentType = CashInstrument
 
   def daysForPositionReport(marketDay : DayAndTime) : Seq[Day] = List(settlementDate)

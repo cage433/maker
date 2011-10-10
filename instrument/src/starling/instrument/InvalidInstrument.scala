@@ -32,9 +32,7 @@ case class ErrorInstrument(exception : String) extends InvalidInstrument with UT
     case _ => false
   }
 
-  def detailsForUTPNOTUSED = persistedTradeableDetails
   def instrumentType = ErrorInstrument
-
 
   def valuationCCY = throw new Exception("Error Instrument")
   def assets(env: Environment) = throw new Exception("Error Instrument")

@@ -46,9 +46,6 @@ abstract class SingleAverageOption(
         volume: Quantity,
         callPut: CallOrPut
         ) extends UTP {
-  def detailsForUTPNOTUSED: Map[String, Any] = Map("Market" -> index,
-    "Period" -> averagingPeriod,
-    "Strike" -> strike, "CallPut" -> callPut)
 
   def explanation(env : Environment) : NamedQuantity = {
     if (!isLive(env.marketDay))

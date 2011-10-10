@@ -35,8 +35,6 @@ abstract class SingleSpreadOption(
                                callPut: CallOrPut
                                ) extends UTP {
 
-  def detailsForUTPNOTUSED = Map("Market" -> market, "Period" -> period, "Strike" -> strike, "CallPut" -> callPut)
-
   def isLive(dayAndTime: DayAndTime) = dayAndTime < exerciseDay.endOfDay
 
   def assets(env: Environment) = {

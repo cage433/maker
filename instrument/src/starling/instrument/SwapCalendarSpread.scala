@@ -58,8 +58,6 @@ case class SwapCalendarSpread(index: SingleIndex,
       liveAveragingDays
   }
 
-  def detailsForUTPNOTUSED = super.persistedTradeableDetails
-
   def instrumentType = SwapCalendarSpread
 
   override def priceAndVolKeys(marketDay: DayAndTime) = {

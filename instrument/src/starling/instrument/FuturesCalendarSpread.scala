@@ -47,8 +47,6 @@ case class FuturesCalendarSpread(market: FuturesMarket, firstMonth: Month, secon
 
   def instrumentType = FuturesCalendarSpread
 
-  def detailsForUTPNOTUSED = persistedTradeableDetails - "Quantity"
-
   def persistedTradeableDetails = Map("Market" -> market, "Period" -> Spread(firstMonth, secondMonth), "InitialPrice" -> SpreadQuantity(firstStrike, secondStrike), "Quantity" -> volume)
 
   def tradeableType = FuturesCalendarSpread

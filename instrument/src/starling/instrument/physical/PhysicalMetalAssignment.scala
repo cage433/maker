@@ -349,7 +349,6 @@ trait PhysicalMetalAssignmentOrUnassignedSalesQuota extends UTP with Tradeable {
 
   def volume = quantity
   def isAllocated = ! benchmarkPricingSpec.isDefined
-  def detailsForUTPNOTUSED: Map[String, Any] = shownTradeableDetails
   def daysForPositionReport(marketDay: DayAndTime) = contractPricingSpec.daysForPositionReport(marketDay)
   override def expiryDay() = Some(contractPricingSpec.expiryDay)
 

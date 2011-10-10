@@ -58,7 +58,6 @@ case class FuturesOption(
 
 	def isLive(dayAndTime : DayAndTime) : Boolean = dayAndTime < exerciseDay.endOfDay
   
-  def detailsForUTPNOTUSED :Map[String, Any] = Map("Market" -> market, "ExerciseDay" -> exerciseDay, "Period" -> delivery, "Strike" -> strike, "CallPut" -> callPut, "ExerciseType" -> exerciseType)
   def persistedTradeableDetails:Map[String, Any] = Map("Market" -> market, "ExerciseDay" -> exerciseDay, "Period" -> delivery, "Strike" -> strike, "Quantity" -> volume, "CallPut" -> callPut, "ExerciseType" -> exerciseType)
 
   def asUtpPortfolio(tradeDay:Day) = UTP_Portfolio(Map(new FuturesOption(market, exerciseDay, delivery, strike, Quantity(1.0, volume.uom), callPut, exerciseType) -> volume.value))
