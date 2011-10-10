@@ -1,11 +1,10 @@
 package starling.pivot
 
-import model.UndefinedValue
+import model.{NoValue, UndefinedValue}
 import starling.quantity._
+import starling.utils.sql.PersistAsBlob
 import scalaz.Scalaz._
 import starling.utils.ImplicitConversions._
-import collection.SortedMap
-import starling.utils.sql.PersistAsBlob
 
 
 object Row {
@@ -31,6 +30,8 @@ case class Row(value: Map[Field, Any]) {
   def +?(entry: Option[(Field, Any)]): Row = entry.fold(this + _, this)
   def ++(other: Map[Field, Any]): Row = copy(value ++ other)
   def :::?(other: Option[Row]): Row = other.fold(this + _, this)
+  def -(key: Field): Row = copy(value - key)
+  def updated(key: Field, v: Any): Row = copy(value.updated(key, v))
 
   def map(f: (Field, Any) => (Field, Any)): Row = copy(value.map(kv => f(kv._1, kv._2)))
   def filterKeys(p: (Field) => Boolean): Row = copy(value.filterKeys(p))
@@ -43,6 +44,8 @@ case class Row(value: Map[Field, Any]) {
     case Some(UndefinedValue) => false
     case Some(_) => true
   }
+
+  def isMeaningful = value.exists { v => v != UndefinedValue && v != NoValue }
 
   def apply[T](fieldDetails: FieldDetails): T = apply(fieldDetails.field)
   def apply[T](field: Field): T = value(field).asInstanceOf[T]
