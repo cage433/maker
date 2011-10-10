@@ -490,7 +490,7 @@ class TradeIDGroupingSumPivotQuantityFieldDetails(name:String) extends FieldDeta
     a match {
       case q:Quantity => q
       case map:Map[_,_] => {
-        assert(map.size == 1, "Map should only have one value")
+        assert(map.size == 1, "Map should only have one value: " + map)
         map.valuesIterator.next
       }
       case UndefinedValue => UndefinedValue

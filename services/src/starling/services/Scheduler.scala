@@ -7,7 +7,7 @@ import starling.db.MarketDataStore
 import starling.gui.api.{PricingGroup, MarketDataSelection}
 import starling.props.Props
 import starling.services.trinity.TrinityUploader
-import starling.utils.{Broadcaster, ObservingBroadcaster, Log, Stopable}
+import starling.utils.{ObservingBroadcaster, Log, Stopable}
 
 import starling.market.FuturesExchangeFactory._
 import starling.utils.ImplicitConversions._
@@ -18,7 +18,7 @@ class Scheduler(props: Props, forwardCurveTasks: List[TaskDescription] = Nil) ex
   val tasks = if (props.ServerType() == "FC2") forwardCurveTasks else Nil
 
   override def start = log.infoF("%s tasks for ServerType: %s" % (tasks.size, props.ServerType())) {
-    super.start; tasks.map { case task => task.schedule(timer) }
+    super.start; tasks.map(_.schedule(timer))
   }
 
   override def stop = { super.stop; timer.cancel }
@@ -62,6 +62,8 @@ object Scheduler extends Log {
 
     def tasks(time: ScheduledTime, tasks: (String, ScheduledTask)*) =
       tasks.toList.map(nameTask => TaskDescription(nameTask._1, time, nameTask._2))
+
+    log.info("instantiating...")
 
     new Scheduler(props, forwardCurveTasks =
       TaskDescription("Import LIM", everyFiveMinutes(businessCalendars.LME), importMarketData(Metals)) ::-

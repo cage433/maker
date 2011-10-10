@@ -8,8 +8,11 @@ import starling.props.Props
 import starling.daterange.Timestamp
 import starling.richdb.{RichDB}
 import starling.db.DBWriter
-import starling.utils.sql.QueryBuilder._
+import starling.dbx.QueryBuilder._
 import starling.services.StarlingInit
+import org.apache.commons.io.IOUtils
+import starling.utils.ImplicitConversions._
+import collection.immutable.Map
 
 //Note although there is a lot of error checking in this class one thing it does not check for is the possibility that
 //there are more patches applied then actually exist in the patch package.  This is on purpose just in case we want to
@@ -45,21 +48,24 @@ class PatchRunner(starling: RichDB, readOnlyMode: Boolean, startlingInit: Starli
     val sortedPatchesToApply = patchesToApply.sortWith(_.patchNumber < _.patchNumber)
 
     //Apply the patches
-    sortedPatchesToApply.foreach {
-      patch => {
-        Log.infoWithTime("Applying any patches (" + sortedPatchesToApply.size + ")") {
-          applyPatch(startlingInit, starling, patch)
-        }
+    val deferredPatches: Map[Patch, String] = sortedPatchesToApply.flatMap { patch => {
+      Log.infoWithTime("Applying any patches (" + sortedPatchesToApply.size + ")") {
+        applyPatch(startlingInit, starling, patch).map { deferredReason => (patch, deferredReason) }
       }
+    } }.toMap
+
+    deferredPatches.foreach { case (patch, deferredReason) =>
+      Log.warn("====== PATCH: %s DEFERRED BECAUSE: %s ======" % (patch, deferredReason))
     }
 
     //Check that all the patches are applied now
     val currentlyAppliedPatches = Set() ++ getListOfAlreadyAppliedPatches(starling)
     val unAppliedPatches = patchesToApply.filter(patch => !currentlyAppliedPatches.contains(patch.patchName)).sortWith(_.patchNumber > _.patchNumber)
+      .filterNot(deferredPatches.contains(_))
+
     if(unAppliedPatches.size != 0) {
       throw new RuntimeException("SCHEMAEVOLUTION: The following patches have not been applied correctly, cannot continue [" + unAppliedPatches + "]")
     }
-
   }
 
   private def getListOfAlreadyAppliedPatches(starlingDB:RichDB) = {
@@ -74,7 +80,10 @@ class PatchRunner(starling: RichDB, readOnlyMode: Boolean, startlingInit: Starli
     val packageDirectoryURL = getClass.getResource(packageDirectoryToSearch)
 
     //Get a list of the contents
-    val packageDirectoryContents = new File(packageDirectoryURL.toURI()).list().toList
+    val packageDirectoryContents = {
+      IOUtils.readLines(packageDirectoryURL.openConnection().getInputStream).toArray(new Array[String](0)).toList
+      //new File(packageDirectoryURL.toURI()).list().toList
+    }
 
     //Remove anything which is not a class
     val packageDirectoryClasses = packageDirectoryContents.filter(className => className.endsWith(".class"))
@@ -111,20 +120,20 @@ class PatchRunner(starling: RichDB, readOnlyMode: Boolean, startlingInit: Starli
                                           "dateApplied" -> new Timestamp))
   }
 
-  private def applyPatch(startlingInit: StarlingInit, starling: RichDB, patch: Patch) {
+  private def applyPatch(starlingInit: StarlingInit, starling: RichDB, patch: Patch): Option[String] = {
+    val deferredReason = patch.deferredReason(starlingInit.props)
 
-    //Put a message out on the screen
-    Log.infoWithTime("SCHEMAEVOLUTION: About to apply patch [" + patch.patchNumber + "] with name [" + patch.patchName + "]") {
-
-      starling.inTransaction {
-        writer => {
-          //Apply the patch
-          patch.applyPatch(startlingInit, starling, writer)
+    if (deferredReason.isEmpty) {
+      Log.infoWithTime("SCHEMAEVOLUTION: About to apply patch [%d] with name [%s]" % (patch.patchNumber, patch.patchName)) {
+        starling.inTransaction { writer => {
+          patch.applyPatch(starlingInit, starling, writer)
 
           //Update the patch table to say this one is done
           markPatchAsApplied(writer, patch)
-        }
+        } }
       }
     }
+
+    deferredReason
   }
 }

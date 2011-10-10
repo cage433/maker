@@ -1,7 +1,7 @@
 package starling.eai
 
 import starling.db.DB
-import starling.utils.sql.QueryBuilder._
+import starling.dbx.QueryBuilder._
 
 class EAIBookDB(db: DB) {
   lazy val books: List[(TreeID, String, Option[TreeID])] = {

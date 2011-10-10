@@ -5,12 +5,13 @@ import intraday.{IntradayTradeAttributes, IntradayTradeStore}
 import starling.db._
 import starling.neptune.{RefinedFixationTradeStore, RefinedAssignmentTradeStore}
 import starling.daterange.{Day, Timestamp}
-import starling.trade.{Trade, TradeID, TradeSystem}
+import starling.instrument.{Trade, TradeID, TradeSystem}
 import starling.pivot._
-import starling.gui.api.{TradeTimestamp, Desk, TradeSelectionWithTimestamp}
 import starling.tradeimport.{ClosedDesks, TradeImporter}
 import starling.eai.instrumentreaders.EAISystemOfRecord
-import starling.eai.{Book, TreeID}
+import starling.eai.{TreeID}
+import starling.utils.STable
+import starling.gui.api._
 
 trait DeskDefinition {
   def tradeSets(predicate:TradePredicate):List[TradeSet]
@@ -24,91 +25,48 @@ trait DeskDefinition {
 case class TradeStores(
   tradeImporters:Map[TradeSystem,TradeImporter],
   closedDesks: ClosedDesks,
-  eaiTradeStores: Map[Book,EAITradeStore],
+  eaiTradeStores: Map[Desk,EAITradeStore],
   intradayTradeStore: IntradayTradeStore,
   refinedAssignmentTradeStore: RefinedAssignmentTradeStore,
   refinedFixationTradeStore : RefinedFixationTradeStore,
   titanTradeStore : TradeStore
 ) {
 
+  private def label(fieldDetailsGroup:FieldDetailsGroup):FieldDetailsGroupLabel = FieldDetailsGroupLabel(fieldDetailsGroup.name, fieldDetailsGroup.fields.map(_.field.name))
+
+  def readTradeVersions(tradeID:TradeID):(STable,List[FieldDetailsGroupLabel],List[CostsLabel]) = {
+    storesFor(tradeID.tradeSystem).foreach { tradeStore => {
+      tradeStore.tradeHistory(tradeID) match {
+        case Some(res) => return (res._1, res._2.map(label(_)), res._3)
+        case None =>
+      }
+    }}
+    throw new Exception("Trade " + tradeID + " not found")
+
+  }
+
+
   def all = eaiTradeStores.values.toList ::: List(intradayTradeStore, refinedAssignmentTradeStore, refinedFixationTradeStore, titanTradeStore)
 
+  private def eaiDesk(desk: Desk) = {
+    desk -> new DeskDefinition() {
+      def tradeSets(predicate: TradePredicate) = List(
+        new TradeSet(EAITradeSystem, eaiStoreFor(desk), tradeImporters.get(EAITradeSystem),
+          predicate.addFilter(Field("Desk"), Set(desk.name)))
+      )
+      override def initialState = Some(PivotFieldsState(
+        dataFields=List( Field("Trade Count") ),
+        rowFields=List( Field("Instrument"), Field("Market")),
+        filters=List( (Field("Strategy"), AllSelection))
+      ))
+
+      override def tradeTimestampForOffset(closeDay: Day) = {
+        closedDesks.closedDesksByOffset(desk, closeDay)
+      }
+    }
+  }
+
   val deskDefinitions = Map[Desk,DeskDefinition](
-    Desk.LondonDerivativesOptions -> new DeskDefinition() {
-      def tradeSets(predicate: TradePredicate) = List(
-        new TradeSet(EAITradeSystem, eaiStoreFor(Book.LondonDerivativesOptions), tradeImporters.get(EAITradeSystem),
-          predicate.addFilter(Field("Book"), Set(TreeID(EAISystemOfRecord.LONDON_DERIVS_OPTIONS_BOOK))))
-      )
-      override def initialState = Some(PivotFieldsState(
-        dataFields=List( Field("Trade Count") ),
-        rowFields=List( Field("Instrument"), Field("Market")),
-        filters=List( (Field("Strategy"), AllSelection))
-      ))
-
-      override def tradeTimestampForOffset(closeDay: Day) = {
-        closedDesks.closedDesksByOffset(Desk.LondonDerivativesOptions, closeDay)
-      }
-    },
-    Desk.GasolineSpec -> new DeskDefinition() {
-      def tradeSets(predicate: TradePredicate) = List(
-        new TradeSet(EAITradeSystem, eaiStoreFor(Book.GasolineSpec), tradeImporters.get(EAITradeSystem),
-          predicate.addFilter(Field("Book"), Set(TreeID(EAISystemOfRecord.GasolineSpec))))
-      )
-      override def initialState = Some(PivotFieldsState(
-        dataFields=List( Field("Trade Count") ),
-        rowFields=List( Field("Instrument"), Field("Market")),
-        filters=List( (Field("Strategy"), new SomeSelection(Set(PivotTreePath("Strategies/Spec/London/Seetal")))))
-      ))
-
-      override def tradeTimestampForOffset(closeDay: Day) = {
-        closedDesks.closedDesksByOffset(Desk.GasolineSpec, closeDay)
-      }
-    },
-    Desk.LondonDerivatives -> new DeskDefinition() {
-      def tradeSets(predicate: TradePredicate) = List(
-        new TradeSet(EAITradeSystem, eaiStoreFor(Book.LondonDerivatives), tradeImporters.get(EAITradeSystem),
-          predicate.addFilter(Field("Book"), Set(TreeID(EAISystemOfRecord.LONDON_DERIVS_BOOK))))
-      )
-      override def initialState = Some(PivotFieldsState(
-        dataFields=List( Field("Trade Count") ),
-        rowFields=List( Field("Instrument"), Field("Market")),
-        filters=List( (Field("Strategy"), AllSelection))
-      ))
-
-      override def tradeTimestampForOffset(closeDay: Day) = {
-        closedDesks.closedDesksByOffset(Desk.LondonDerivatives, closeDay)
-      }
-    },
-    Desk.CrudeSpecNorthSea -> new DeskDefinition() {
-      def tradeSets(predicate: TradePredicate) = List(
-        new TradeSet(EAITradeSystem, eaiStoreFor(Book.CrudeSpecNorthSea), tradeImporters.get(EAITradeSystem),
-          predicate.addFilter(Field("Book"), Set(TreeID(EAISystemOfRecord.CrudeSpecNorthSea))))
-      )
-      override def initialState = Some(PivotFieldsState(
-        dataFields=List( Field("Trade Count") ),
-        rowFields=List( Field("Instrument"), Field("Market")),
-        filters=List( (Field("Strategy"), AllSelection))
-      ))
-
-      override def tradeTimestampForOffset(closeDay: Day) = {
-        closedDesks.closedDesksByOffset(Desk.CrudeSpecNorthSea, closeDay)
-      }
-    },
-    Desk.HoustonDerivatives -> new DeskDefinition() {
-      def tradeSets(predicate: TradePredicate) = List(
-        new TradeSet(EAITradeSystem, eaiStoreFor(Book.HoustonDerivatives), tradeImporters.get(EAITradeSystem),
-          predicate.addFilter(Field("Book"), Set(TreeID(EAISystemOfRecord.HoustonDerivatives))))
-      )
-      override def initialState = Some(PivotFieldsState(
-        dataFields=List( Field("Trade Count") ),
-        rowFields=List( Field("Instrument"), Field("Market")),
-        filters=List( (Field("Strategy"), AllSelection))
-      ))
-
-      override def tradeTimestampForOffset(closeDay: Day) = {
-        closedDesks.closedDesksByOffset(Desk.HoustonDerivatives, closeDay)
-      }
-    },
     Desk.Refined -> new DeskDefinition() {
       def tradeSets(predicate: TradePredicate) = List(
         new TradeSet(RefinedAssignmentTradeSystem, standardStoreFor(RefinedAssignmentTradeSystem), tradeImporters.get(RefinedAssignmentTradeSystem), predicate),
@@ -120,9 +78,9 @@ case class TradeStores(
         new TradeSet(TitanTradeSystem, standardStoreFor(TitanTradeSystem), tradeImporters.get(TitanTradeSystem), predicate)
       )
     }
-  )
+  ) ++ Desk.eaiDesks.map(eaiDesk)
 
-  def eaiStoreFor(book:Book) = eaiTradeStores(book)
+  def eaiStoreFor(desk:Desk) = eaiTradeStores(desk)
 
   def standardStoreFor(tradeSystemName: TradeSystem):TradeStore = tradeSystemName match {
     case IntradayTradeSystem => intradayTradeStore
@@ -142,10 +100,19 @@ case class TradeStores(
     }
   }
 
+  def closedDesksByDay: Map[Desk, Map[Day, List[TradeTimestamp]]] = {
+    val closes = closedDesks.closedDesksByDay
+    val titanLatestTradeTimestamp = TradeTimestamp.makeMagicLatestTimestamp(
+      titanTradeStore.cachedLatestTimestamp.get()
+    )
+    closes + (Desk.Titan -> (closes.getOrElse(Desk.Titan, Map()) + (TradeTimestamp.magicLatestTimestampDay -> List(titanLatestTradeTimestamp))))
+  }
+
   def toTradeSets(tradeSelection: TradeSelectionWithTimestamp): List[(TradeSet, Timestamp)] = {
     val currentGroups = intradayTradeStore.intradayLatest.keySet
     val intradayTradesetsAndTimestamps = tradeSelection.intradaySubgroupAndTimestamp.toList.flatMap {
       case (subgroups, ts) => {
+
         val subgroupsToUse = subgroups.subgroups.flatMap(subgroup => {
           if (currentGroups.contains(subgroup)) {
             List(subgroup)
@@ -153,9 +120,11 @@ case class TradeStores(
             currentGroups.filter(_.startsWith(subgroup + "/")).toList
           }
         })
-        val predicate = tradeSelection.deskAndTimestamp.toList.map {
-          case (desk, tradeTimestamp) => (Field("Entry Date"), GreaterThanSelection(tradeTimestamp.closeDay))
-        } ::: List((Field(IntradayTradeAttributes.subgroupName_str), SomeSelection(subgroupsToUse.toSet)))
+        val predicate = tradeSelection.deskAndTimestamp.toList.flatMap {
+          case (desk, tradeTimestamp) => {
+            List((Field("Entry Date"), GreaterThanSelection(tradeTimestamp.closeDay)), (Field("Desk"), SomeSelection(Set(desk.name))))
+          }
+        }:::List((Field(IntradayTradeAttributes.subgroupName_str), SomeSelection(subgroupsToUse.toSet)))
 
         List((new TradeSet(IntradayTradeSystem, intradayTradeStore, None,
           TradePredicate(predicate ::: tradeSelection.tradePredicate.filter, tradeSelection.tradePredicate.selection)),

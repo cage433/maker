@@ -9,7 +9,6 @@ import starling.services.trinity.XRTGenerator._
 import starling.utils.ImplicitConversions._
 import collection.immutable.Map
 import starling.daterange.{Tenor, Day}
-import starling.curves.readers.LIBORFixing
 import starling.quantity.{Percentage, UOM}
 
 
@@ -19,8 +18,8 @@ class VerifyLiborMaturitiesAvailable(marketDataStore: MarketDataStore, broadcast
   protected def eventFor(observationDay: Day, email: EmailEvent) = {
     val liborFixings: Map[UOM, Map[Tenor, (Percentage, Day)]] = latestLiborFixings(marketDataStore, observationDay)
     val tenorsByCurrency = liborFixings.mapValues(_.keys.toList).withDefaultValue(Nil)
-    val missingTenorsByCurrency =
-      currencies.toMapWithValues(currency => tenorsFor(currency) \\ tenorsByCurrency(currency)).sortBy(_.toString)
+    val missingTenorsByCurrency = currencies.toMapWithValues(currency => tenorsFor(currency) \\ tenorsByCurrency(currency))
+      .filterValuesNot(_.isEmpty).sortBy(_.toString)
 
     (missingTenorsByCurrency.size > 0).toOption {
       email.copy(subject = "Missing Libor Maturities in LIM, observation day: " + observationDay,

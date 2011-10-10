@@ -1,0 +1,48 @@
+package starling.db
+
+import starling.marketdata._
+import starling.utils.ImplicitConversions._
+import starling.daterange._
+import java.lang.String
+import starling.utils._
+import collection.immutable.{Iterable, Map}
+import scalaz.Scalaz._
+import starling.richdb.RichResultSetRow
+
+object MdDB {
+  def apply(db: DBTrait[RichResultSetRow]): MdDB = if (false) {
+    val fast = VersionTransformingMdDB(new NewSchemaMdDB(db), db).toIdentity // removes timing differences between slow & fast
+    val slow = VersionTransformingMdDB(new SlowMdDB(db), db).reverse
+
+    VerifyingDynamicProxy.create(fast, slow, throwFailures = false)
+  } else {
+
+    new SlowMdDB(db)
+//    new NewSchemaMdDB(db)
+  }
+}
+
+trait MdDB {
+  def checkIntegrity(): Unit
+  def readAll(): Unit
+  def marketDataSetNames(): List[String]
+  def observationDaysByMarketDataSet: Map[String, Set[Day]]
+  def latestVersionForMarketDataSets(): Map[MarketDataSet, Int]
+  def latestExcelVersions(): Map[String, Int]
+  def store(data: Iterable[MarketDataUpdate], marketDataSet: MarketDataSet): SaveResult
+  def maxVersionForMarketDataSetNames(names: List[String]): Option[Int]
+  def marketDataTypes(version: Int, mds: List[MarketDataSet]): Set[MarketDataType]
+
+  def latestMarketData(from: Day, to: Day, marketDataType: MarketDataType, marketDataSet: MarketDataSet): Map[TimedMarketDataKey, VersionedMarketData]
+
+  def queryForObservationDayAndMarketDataKeys(version: Int, mds: List[MarketDataSet], marketDataType: MarketDataType): Set[TimedMarketDataKey]
+
+  def query(version: Int, mds: List[MarketDataSet], marketDataType: MarketDataType,
+            observationDays: Option[Set[Option[Day]]], observationTimes: Option[Set[ObservationTimeOfDay]],
+            marketDataKeys: Option[Set[MarketDataKey]]): List[(TimedMarketDataKey, MarketData)]
+
+  def readLatest(id: MarketDataID): Option[VersionedMarketData]
+
+  def latestVersionForAllMarketDataSets(): Map[MarketDataSet, Int] =
+    latestVersionForMarketDataSets() ++ latestExcelVersions().mapKeys(MarketDataSet.excel(_))
+}

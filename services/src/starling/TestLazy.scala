@@ -2,7 +2,7 @@ package starling
 
 import calendar.{HolidayTablesFactory, BusinessCalendars, NullHolidays}
 import daterange.{Timestamp, DateRange, Day}
-import eai.Book
+import gui.api.Desk
 import market.{FuturesExpiryRuleFactory, FuturesExpiryRules, FuturesExpiryRule}
 import pivot._
 import pivot.controller.PivotTableConverter
@@ -12,8 +12,8 @@ import tradestore.TradePredicate
 
 object TestLazy extends App {
 
-  val in = starling.services.StarlingInit.devInstance
-  val ts = in.eaiTradeStores(Book.LondonDerivativesOptions)
+  val in = starling.services.StarlingInit.runningDevInstance
+  val ts = in.eaiTradeStores(Desk.LondonDerivativesOptions)
 
   val pfs = PivotFieldsState(rowFields=List(Field("Strategy")), columnFields=List(Field("Instrument"), Field("Market")), dataFields=List(Field("Trade Count")))
 

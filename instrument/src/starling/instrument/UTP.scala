@@ -6,7 +6,7 @@ import starling.daterange._
 import starling.curves.EnvironmentDifferentiable
 import starling.curves.PriceKey
 import starling.curves.VolKey
-import starling.utils.AtomicDatumKeyUtils._
+import starling.instrument.utils.AtomicDatumKeyUtils._
 import starling.utils.ImplicitConversions._
 import starling.utils.cache.CacheFactory
 

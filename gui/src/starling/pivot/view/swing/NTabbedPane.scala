@@ -211,7 +211,12 @@ class NTabbedPane(configPanels:ConfigPanels, initiallyExpanded:Boolean)
   def state = NTabbedPaneState(currentIndex, expanded)
   def state_=(s:NTabbedPaneState) {
     expanded = s.expanded
-    changeTab(s.index)
+    val indexToUse = if (s.index < configPanels.configPanels.size) {
+      s.index
+    } else {
+      0
+    }
+    changeTab(indexToUse)
   }
 }
 

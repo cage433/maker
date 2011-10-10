@@ -1,0 +1,10 @@
+HKEY_CLASSES_ROOT
+     starling
+          (Default) = "URL:Starling Protocol"
+          URL Protocol = ""
+          DefaultIcon
+               (Default) = "Starling-dev.exe,1"
+          shell
+               open
+                    command
+                         (Default) = "C:\Program Files\Trafigura\Starling-dev.exe" "%1"

@@ -60,7 +60,7 @@ class RowComponent(model:PivotTableModel,  otherLayoutInfo:OtherLayoutInfo, view
       add(l)
     }
     case _ => {
-      setAlignment("al right")
+      setAlignment("al right bottom")
       fields.fields.zipWithIndex.foreach{case (f,i) => {
         if (i == 0) {
           val dropPanel = DropPanel((f, Position.Left) :: Nil)

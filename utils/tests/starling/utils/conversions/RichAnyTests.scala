@@ -6,6 +6,7 @@ import org.testng.annotations.Test
 import starling.utils.ImplicitConversions._
 import scalaz._
 import Scalaz._
+import starling.utils.Log
 
 
 class RichAnyTests extends TestNGSuite with ShouldMatchers {

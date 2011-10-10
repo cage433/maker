@@ -1,7 +1,7 @@
 package starling.schemaevolution
 
 import system.Patch
-import starling.utils.StarlingXStream
+import starling.instrument.utils.StarlingXStream
 import xstream.{Fields, Reader, MapBasedConverter, ConvertMarketData}
 import starling.quantity.Percentage
 import starling.marketdata.{ImpliedVolEntryKey, ImpliedVolData}
