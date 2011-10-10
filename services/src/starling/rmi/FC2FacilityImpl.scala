@@ -31,33 +31,33 @@ class BromptonTrackerBasedMarketDataPageIdentifierReaderProviders(context:Brompt
 }
 
 class FC2FacilityImpl(
-                      snapshotDatabase:MarketDataStore,
+                      marketDataStore:MarketDataStore,
                       curveViewer : CurveViewer,
                       marketDataReaderProviders:MarketDataPageIdentifierReaderProviders,
                       referenceDataLookup: ReferenceDataLookup,
                       environmentRules: EnvironmentRules) extends FC2Facility {
 
   private def unLabel(pricingGroup:PricingGroup) = pricingGroup
-  private def unLabel(snapshotID:SnapshotIDLabel) = snapshotDatabase.snapshotFromID(snapshotID.id).get
+  private def unLabel(snapshotID:SnapshotIDLabel) = marketDataStore.snapshotFromID(snapshotID.id).get
   private def label(pricingGroup:PricingGroup):PricingGroup = pricingGroup
   private def label(snapshot:SnapshotID):SnapshotIDLabel = snapshot.label
 
   def pricingGroups = {
     //val allPricingGroups = desks.flatMap(_.pricingGroups).toSet
-    snapshotDatabase.pricingGroups//.filter(allPricingGroups.contains(_))
+    marketDataStore.pricingGroups//.filter(allPricingGroups.contains(_))
   }
-  def excelDataSets() = snapshotDatabase.excelDataSets
+  def excelDataSets() = marketDataStore.excelDataSets
 
   def environmentRuleLabels = pricingGroups.toMapWithValues(environmentRules.forPricingGroup(_).map(_.label))
 
   val curveTypes = curveViewer.curveTypes
 
   def snapshots():Map[MarketDataSelection,List[SnapshotIDLabel]] = {
-    snapshotDatabase.snapshotsByMarketDataSelection
+    marketDataStore.snapshotsByMarketDataSelection
   }
 
   def observationDays():(Map[PricingGroup,Set[Day]],Map[String,Set[Day]]) = {
-    (Map() ++ snapshotDatabase.observationDaysByPricingGroup(), Map() ++ snapshotDatabase.observationDaysByExcel())
+    (Map() ++ marketDataStore.observationDaysByPricingGroup(), Map() ++ marketDataStore.observationDaysByExcel())
   }
 
   private def realTypeFor(label:MarketDataTypeLabel) = {
@@ -80,7 +80,7 @@ class FC2FacilityImpl(
       case Some(mdt) => Some(realTypeFor(mdt))
     }
     marketDataType match {
-      case Some(mdt) => new MarketDataPivotTableDataSource(reader, edits, snapshotDatabase,
+      case Some(mdt) => new MarketDataPivotTableDataSource(reader, edits, marketDataStore,
         marketDataIdentifier.marketDataIdentifier, mdt, referenceDataLookup)
       case None => NullPivotTableDataSource
     }
@@ -97,19 +97,19 @@ class FC2FacilityImpl(
   }
 
   def snapshot(marketDataSelection:MarketDataSelection, observationDay:Day): Option[SnapshotIDLabel] = {
-    snapshotDatabase.snapshot(marketDataSelection, true, observationDay).map(label)
+    marketDataStore.snapshot(marketDataSelection, true, observationDay).map(label)
   }
 
-  def excelLatestMarketDataVersions = snapshotDatabase.latestExcelVersions.mapKeys(_.stripExcel)
-  def pricingGroupLatestMarketDataVersions = Map() ++ snapshotDatabase.latestPricingGroupVersions.filterKeys(pricingGroups()).toMap
+  def excelLatestMarketDataVersions = marketDataStore.latestExcelVersions.mapKeys(_.stripExcel)
+  def pricingGroupLatestMarketDataVersions = Map() ++ marketDataStore.latestPricingGroupVersions.filterKeys(pricingGroups()).toMap
 
   def latestSnapshotID(pricingGroup:PricingGroup, observationDay:Day) = {
-    snapshotDatabase.latestSnapshot(pricingGroup, observationDay) map(label)
+    marketDataStore.latestSnapshot(pricingGroup, observationDay) map(label)
   }
 
   private def marketDataReaderFor(marketDataIdentifier:MarketDataPageIdentifier) = {
     val reader = marketDataIdentifier match {
-      case StandardMarketDataPageIdentifier(mdi) => new NormalMarketDataReader(snapshotDatabase, mdi)
+      case StandardMarketDataPageIdentifier(mdi) => new NormalMarketDataReader(marketDataStore, mdi)
       case _ => {
         val readers = marketDataReaderProviders.providers.flatMap( provider => {
           provider.readerFor(marketDataIdentifier)
@@ -134,6 +134,6 @@ class FC2FacilityImpl(
 
   private def sortMarketDataTypes(types:List[MarketDataType]) = types.sortWith(_.name < _.name)
 
-  def latestMarketDataIdentifier(selection:MarketDataSelection):MarketDataIdentifier = snapshotDatabase.latestMarketDataIdentifier(selection)
+  def latestMarketDataIdentifier(selection:MarketDataSelection):MarketDataIdentifier = marketDataStore.latestMarketDataIdentifier(selection)
 
 }

@@ -22,16 +22,16 @@ import scalaz.Scalaz._
 import PivotTableType._
 
 class PivotJTableRowModel(helper: PivotJTableModelHelper, var rowHeaderData0:Array[Array[AxisCell]]) extends PivotJTableModel {
-  val extraLine = helper.extraLine
-  val fieldState = helper.fieldState
-  val keyFields = helper.keyFields
-  val pivotEdits = helper.pivotEdits
-  val updateEdits = helper.updateEdits
-  val editableInfo = helper.editableInfo
-  val formatInfo = helper.formatInfo
-  val extraFormatInfo = helper.extraFormatInfo
-  val popupListView = helper.popupListView
-  val popupMenu = helper.popupMenu
+  lazy val extraLine = helper.extraLine
+  lazy val fieldState = helper.fieldState
+  lazy val keyFields = helper.keyFields
+  lazy val pivotEdits = helper.pivotEdits
+  lazy val updateEdits = helper.updateEdits
+  lazy val editableInfo = helper.editableInfo
+  lazy val formatInfo = helper.formatInfo
+  lazy val extraFormatInfo = helper.extraFormatInfo
+  lazy val popupListView = helper.popupListView
+  lazy val popupMenu = helper.popupMenu
 
   private val addedRows0 = new ListBuffer[Array[AxisCell]]
   private val blankCells = rowHeaderData0(0).map(av => {
@@ -100,7 +100,7 @@ class PivotJTableRowModel(helper: PivotJTableModelHelper, var rowHeaderData0:Arr
     val rowFilters = fieldState.rowFilters
     val columnFilters = fieldState.columnFilters
 
-    (rowHeaderFieldToValues(rowIndex, Some(columnIndex)) ++ filterFieldToValues ++ rowFilters ++ columnFilters) & keyFields
+    (rowHeaderFieldToValues(rowIndex, Some(columnIndex)) ++ filterFieldToValues ++ rowFilters ++ columnFilters) //& keyFields
   }
 
   override def deleteCells(cells:List[(Int,Int)], fireChange:Boolean) = {
@@ -218,9 +218,9 @@ class PivotJTableRowModel(helper: PivotJTableModelHelper, var rowHeaderData0:Arr
     newPivotEdits
   }
 
-  private def initializedBlankRow() = {
+  private def initializedBlankRow() = Row(
     (Map() ++ (keyFields.map(f => {f → UndefinedValue}))) ++ fieldState.singleValueFilterAreaFilters.mapValues(_.values.iterator.next)
-  }
+  )
 
   override def setValueAt(value:AnyRef, rowIndex:Int, columnIndex:Int) {
     setValuesAt(List(TableValue(value, rowIndex, columnIndex)), Some(pivotEdits), true)

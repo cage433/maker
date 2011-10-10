@@ -62,5 +62,6 @@ trait RichString {
     def uncapitalize: String = if (s == null || s.isEmpty) s else s.charAt(0).toLower + s.substring(1)
     def strip(toRemove: String*): String = (s /: toRemove)((acc, itemToRemove) => acc.replaceAll(itemToRemove, ""))
     def prefixWith(prefix: String) = if (s.startsWith(prefix)) s else prefix + s
+    def trimHereDoc: String = s.split("\n").map(_.trim).mkString("\n")
 	}
 }

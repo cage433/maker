@@ -86,9 +86,9 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
     resizeRowHeaderTableColumns
   }
 
-  private def initializedBlankRow() = {
-    (Map() ++ (keyFields.map(f => {f -> UndefinedValue}))) ++ fieldState.singleValueFilterAreaFilters
-  }
+  private def initializedBlankRow = Row(
+    (Map() ++ (keyFields.map(f => {f → UndefinedValue}))) ++ fieldState.singleValueFilterAreaFilters
+  )
 
   private def removeAddedRowsIfBlank(edits:PivotEdits):PivotEdits = {
 
@@ -314,7 +314,7 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
 
       val filterFieldToValues = fieldState.singleValueFilterAreaFilters()
 
-      (rowHeaderFieldToValues ++ colHeaderFieldToValues ++ filterFieldToValues) & keyFields
+      (rowHeaderFieldToValues ++ colHeaderFieldToValues ++ filterFieldToValues) //& keyFields
     }
 
     override def parser(row:Int, col:Int) = {
@@ -363,7 +363,7 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
               overrideMap((rowIndex, columnIndex)) = OverrideDetails(newLabel, EditableCellState.Added)
               newValue.foreach(nv => {
                 val row = key(rowIndex, columnIndex, measureInfo).mapValues(_.values.head) + (measureInfo.value.field -> nv)
-                newPivotEdits = newPivotEdits.withAddedRow(row)
+                newPivotEdits = newPivotEdits.withAddedRow(Row(row))
               })
             } else {
               val stateToOverride = if (currentCell.state == EditableCellState.Added) EditableCellState.Added else EditableCellState.Edited
@@ -401,23 +401,15 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
     }
     def rowHeader(row:Int,col:Int) = false
     def mapCellToFields(row:Int, col:Int) = {
-      val rowFilters = (0 until rowHeaderTableModel.getColumnCount).flatMap {
-        i => {
-          val axisCell = rowHeaderTableModel.getValueAt(row, i).asInstanceOf[AxisCell]
-          axisCell.value.value match {
-            case ValueAxisValueType(v) => Some(axisCell.value.field -> SomeSelection(Set() + v))
-            case _ => None
-          }
-        }
+      def valueAxisValue(axisValue: AxisValue) = axisValue.value partialMatch {
+        case ValueAxisValueType(v) => axisValue.field → SomeSelection(Set(v))
       }
-      val columnFilters = (0 until colHeaderTableModel.getRowCount).flatMap {
-        i => {
-          val axisCell = colHeaderTableModel.getValueAt(i, col).asInstanceOf[AxisCell]
-          axisCell.value.value match {
-            case ValueAxisValueType(v) => Some(axisCell.value.field -> SomeSelection(Set() + v))
-            case _ => None
-          }
-        }
+
+      val rowFilters = (0 until rowHeaderTableModel.getColumnCount).flatMap { i =>
+        valueAxisValue(rowHeaderTableModel.getValueAt(row, i).value)
+      }
+      val columnFilters = (0 until colHeaderTableModel.getRowCount).flatMap { i =>
+        valueAxisValue(colHeaderTableModel.getValueAt(i, col).value)
       }
       rowFilters.toMap.toList ::: columnFilters.toMap.toList
     }

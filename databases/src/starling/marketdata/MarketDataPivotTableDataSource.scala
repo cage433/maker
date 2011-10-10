@@ -27,13 +27,18 @@ import scalaz.Scalaz._
  * The implementation relies on methods on MarketDataType and MarketDataKey for the market data specific behaviour 
  */
 
+object MarketDataPivotTableDataSource {
+  val observationTimeField = FieldDetails("Observation Time")
+  val observationDayField = FieldDetails("Observation Day", DayPivotParser)
+}
+
 class MarketDataPivotTableDataSource(reader: MarketDataReader, edits:PivotEdits, marketDataStore: MarketDataStore,
   marketDataIdentifier: MarketDataIdentifier, val marketDataType:MarketDataType, referenceDataLookup: ReferenceDataLookup)
 
   extends PivotTableDataSource {
 
-  val observationTimeField = FieldDetails("Observation Time")
-  val observationDayField = FieldDetails("Observation Day", DayPivotParser)
+  import MarketDataPivotTableDataSource._
+
   val keyAndDataFields = marketDataType.fields.map(_.field).toSet
   val fieldDetailsGroups = List(
     FieldDetailsGroup("Market Data Fields", observationDayField :: observationTimeField :: marketDataType.fields)
@@ -123,6 +128,12 @@ class MarketDataPivotTableDataSource(reader: MarketDataReader, edits:PivotEdits,
     MarketDataEntry(key.observationPoint, key.key, newMarketData).toUpdate(existingData)
   }
 
+  def createRows(timedKey:TimedMarketDataKey, marketData:MarketData, referenceDataLookup: ReferenceDataLookup) ={
+    timedKey.key.castRows(marketData, referenceDataLookup).map { _ + (observationTimeField.field → timedKey.timeName) +?
+     (observationDayField.field → timedKey.day)}
+  }
+
+
   def buildUpdates(timedKey: TimedMarketDataKey, editableSet: MarketDataSet,
                    maybeEdits: Option[scala.List[(KeyFilter, KeyEdits)]], newRows: scala.List[Row]): List[MarketDataUpdate] = {
 
@@ -130,11 +141,14 @@ class MarketDataPivotTableDataSource(reader: MarketDataReader, edits:PivotEdits,
 
     latest match {
       case Some(v@VersionedMarketData(_, Some(readData))) => {
-        val currentRows = timedKey.key.castRows(readData, referenceDataLookup)
+        val currentRows = createRows(timedKey, readData, referenceDataLookup)
         val modifiedRows = buildModifiedRows(currentRows, maybeEdits)
 
         val keysForNewData: Map[TimedMarketDataKey, List[Row]] = (modifiedRows ::: newRows).groupBy { row => {
-          timedKey.copy(key = marketDataType.createKey(row))
+          val observationPoint = ObservationPoint(row[Day](observationDayField.field),
+            ObservationTimeOfDay.fromName(row.string(observationTimeField)))
+
+          TimedMarketDataKey(observationPoint, marketDataType.createKey(row))
         } }
 
         val updates = keysForNewData.map { case (key, rows) => buildUpdateForNewKey(key, timedKey, v, rows, editableSet) }.toList
@@ -178,20 +192,20 @@ class MarketDataPivotTableDataSource(reader: MarketDataReader, edits:PivotEdits,
         } }.groupBy(_._1).mapValues(_.map(_._2))
 
         val newRowsWithAllFieldsPresent = edits.newRows.filter { row =>
-          keyAndValueFields.forall{ field => Row(row).isDefined(field) }
+          keyAndValueFields.forall{ field => row.isDefined(field) }
         }
 
-        val groupedNewRows: Map[TimedMarketDataKey, List[Map[Field, Any]]] = newRowsWithAllFieldsPresent.groupBy { row => {
+        val groupedNewRows: Map[TimedMarketDataKey, List[Row]] = newRowsWithAllFieldsPresent.groupBy { row => {
           val observationPoint = ObservationPoint(
             row(observationDayField.field).asInstanceOf[Day],
-            ObservationTimeOfDay.fromName(row(observationTimeField.field).asInstanceOf[String])
+            ObservationTimeOfDay.fromName(row.string(observationTimeField))
           )
-          val key: MarketDataKey = marketDataType.createKey(Row(row))
+          val key: MarketDataKey = marketDataType.createKey(row)
           TimedMarketDataKey(observationPoint, key)
         }}
 
         val newEntries = (groupedNewRows.keySet +++ editsByTimedKeys.keySet).flatMap { timedKey =>
-          buildUpdates(timedKey, editableSet, editsByTimedKeys.get(timedKey), Row.create(groupedNewRows.getOrElse(timedKey, Nil)))
+          buildUpdates(timedKey, editableSet, editsByTimedKeys.get(timedKey), groupedNewRows.getOrElse(timedKey, Nil))
         }
 
         val r:SaveResult = marketDataStore.update(Map(editableSet → newEntries.toList))
@@ -277,27 +291,12 @@ class MarketDataPivotTableDataSource(reader: MarketDataReader, edits:PivotEdits,
 
     possibleValuesBuilder.init(initialPossibleValues)
 
-    val editedData = if(edits == PivotEdits.Null) data else {
-      data.map { row => {
-        val rowKeys = row.filterKeys(f => keyFields.contains(f)) /// Area → Asia, Com → Zinc, Grade → HG
-        row.map { case (field, value) => {  // field: Area, value: Asia
-          edits.editFor(rowKeys, field) match {
-            case None => {
-              field → value
-            }
-            case Some((matchedKey, edit)) => {
-              field → edit.applyEdit(matchedKey, field, value)
-            }
-          }
-        } }
-      } }
-    }
-
+    val editedData = edits.applyTo(data)
     val allFields = pfs.allFieldsUsed
 
     val addedRows = edits.newRows.zipWithIndex.map{case (row,index) => {
-      val fixedRow = if (marketDataType.marketDataKeyFields.forall(f => row.contains(f) && row(f) != UndefinedValue)) {
-        row ++ marketDataType.createKey(Row(row)).fieldValues(referenceDataLookup)
+      val fixedRow = if (marketDataType.marketDataKeyFields.forall(f => row.isDefined(f))) {
+        row ++ marketDataType.createKey(row).fieldValues(referenceDataLookup)
       } else {
         row
       }

@@ -7,7 +7,7 @@ import starling.utils.ImplicitConversions._
 import scalaz.Scalaz._
 import starling.utils.sql.PersistAsBlob
 import starling.pivot.{Row, Field}
-import starling.daterange.{Day, ObservationPoint}
+import starling.daterange.{ObservationTimeOfDay, Day, ObservationPoint}
 
 /**
  * The key used to look up market data from the database.

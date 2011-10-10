@@ -57,19 +57,29 @@ case class AmendKeyEdit(amends:Map[Field,Option[Any]]) extends KeyEdits {
   }
 }
 
-case class PivotEdits(edits:Map[KeyFilter,KeyEdits], newRows:List[Map[Field,Any]]) {
+case class PivotEdits(edits:Map[KeyFilter,KeyEdits], newRows:List[Row]) {
+  def applyTo(rows: List[Row]): List[Row] = if (this == PivotEdits.Null) rows else rows.map(applyTo(_))
+
+  def applyTo(row: Row) = row.map { case (field, value) => {
+    editFor(row, field) match {
+      case None => {
+        field → value
+      }
+      case Some((matchedKey, edit)) => {
+        field → edit.applyEdit(matchedKey, field, value)
+      }
+    }
+  } }
+
   def size = edits.size + newRows.size
 
   def editFor(row: Row, field:Field): Option[(KeyFilter, KeyEdits)] = {
     val filterKeys:Map[KeyFilter, KeyEdits] = edits.filterKeys(_.matches(row))
-    filterKeys.toList match {
-      case Nil => None
-      case many => {
-        val editsForField = many.filter { case (matchedKey,edit) => edit.affects(matchedKey, field) }
-        if (editsForField.size > 1) throw new Exception("More than one edit matches " + editsForField)
-        editsForField.headOption
-      }
-    }
+    filterKeys.toList.ifDefined { many =>
+      val editsForField = many.filter { case (matchedKey,edit) => edit.affects(matchedKey, field) }
+      if (editsForField.size > 1) throw new Exception("More than one edit matches " + editsForField)
+      editsForField.headOption
+    }.flatOpt
   }
   def fixValues( f:(Field,Any)=>Any ) = {
     PivotEdits(
@@ -145,9 +155,7 @@ case class PivotEdits(edits:Map[KeyFilter,KeyEdits], newRows:List[Map[Field,Any]
       }
     }}
 
-    val filteredFixedNewRows = fixedNewRows.filterNot(m => {
-      m.forall{case (_,v) => (v == UndefinedValue || v == NoValue)}
-    })
+    val filteredFixedNewRows = fixedNewRows.filter(_.isMeaningful)
 
     copy(newRows = filteredFixedNewRows)
   }
@@ -173,7 +181,7 @@ case class PivotEdits(edits:Map[KeyFilter,KeyEdits], newRows:List[Map[Field,Any]
     }
   }
 
-  def withAddedRow(row:Map[Field,Any]) = {
+  def withAddedRow(row:Row) = {
     copy(newRows = newRows ::: List(row))
   }
 

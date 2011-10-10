@@ -197,22 +197,59 @@ class MarketDataStoreTest extends TestMarketTest with ShouldMatchers {
 
   def delete(deletes: (FieldDetails, Any)*): PivotEdits = {
     val filter = KeyFilter(deletes.toMap.mapKeys(_.field).mapValues(v => SomeSelection(Set(v))))
-
-    PivotEdits(Map(filter → DeleteKeyEdit), Nil)
+    PivotEdits.Null.withDelete(filter)
   }
 
+  def amend(field:Field, from:Any, to:Any): PivotEdits = {
+    PivotEdits.Null.withAmend(KeyFilter(Map(field → SomeSelection(Set(from)))), field, Some(to))
+  }
+  val (jan, feb) = (Month(2010, 1), Month(2010, 2))
 
   @Test
-  def deletingWorks {
+  def deleteWorks {
+    assertEditChangesGrid(delete(PriceDataType.periodField → feb),
+      """Market, Observation Time, Period, Price (USD/MT)
+         LME Lead, LME Close, JAN 2010, 50.00 USD/MT Normal
+         LME Lead, LME Close, FEB 2010, 60.00 USD/MT Deleted
+         LME Lead, SHFE Close, JAN 2010, 50.00 USD/MT Normal
+         LME Lead, SHFE Close, FEB 2010, 60.00 USD/MT Deleted""",
+
+      """Market, Observation Time, Period, Price (USD/MT)
+         LME Lead, LME Close, JAN 2010, 50.00 USD/MT Normal
+         LME Lead, SHFE Close, JAN 2010, 50.00 USD/MT Normal""")
+  }
+
+  @Test(groups = Array("run-me"))
+  def renameTimeOfDayWorks {
+    assertEditChangesGrid(amend(Field("Observation Time"), "LME Close", "London Close"),
+      """Market, Observation Time, Period, Price (USD/MT)
+         LME Lead, London Close, JAN 2010, 50.00 USD/MT Normal
+         LME Lead, London Close, FEB 2010, 60.00 USD/MT Normal
+         LME Lead, SHFE Close, JAN 2010, 50.00 USD/MT Normal
+         LME Lead, SHFE Close, FEB 2010, 60.00 USD/MT Normal""")
+  }
+
+  @Test
+  def renameMarketWorks {
+    assertEditChangesGrid(amend(PriceDataType.marketField.field, "LME Lead", "LME Zinc"),
+      """Market, Observation Time, Period, Price (USD/MT)
+         LME Zinc, LME Close, JAN 2010, 50.00 USD/MT Normal
+         LME Zinc, LME Close, FEB 2010, 60.00 USD/MT Normal
+         LME Zinc, SHFE Close, JAN 2010, 50.00 USD/MT Normal
+         LME Zinc, SHFE Close, FEB 2010, 60.00 USD/MT Normal""")
+  }
+
+  private def assertEditChangesGrid(edits: PivotEdits, expectedEditPreview: String) {
+    assertEditChangesGrid(edits, expectedEditPreview, expectedEditPreview)
+  }
+
+  private def assertEditChangesGrid(edits: PivotEdits, expectedEditPreview: String, expectedSaveResult: String) {
     import PriceDataType._
     clearMarketData()
     val observationDay = Day(2011, 1, 1)
     val key = PriceDataKey(Market.LME_LEAD)
 
-
     def priceData(prices: Map[Month, Double]) = PriceData.create(prices, key.market.priceUOM)
-
-    val (jan, feb) = (Month(2010, 1), Month(2010, 2))
 
     List(ObservationTimeOfDay.LMEClose, ObservationTimeOfDay.SHFEClose).map { timeOfDay => {
       val observationPoint = observationDay.atTimeOfDay(timeOfDay)
@@ -225,28 +262,28 @@ class MarketDataStoreTest extends TestMarketTest with ShouldMatchers {
       dataFields =List(priceField.field),
       rowFields = List(marketField, FieldDetails("Observation Time"), periodField).map(_.field)
     )
-    val marketDataIdentifier = MarketDataIdentifier(MarketDataSelection(Some(PricingGroup.Metals)),
+
+    def latestMarketDataIdentifier = MarketDataIdentifier(MarketDataSelection(Some(PricingGroup.Metals)),
       marketDataStore.latestPricingGroupVersions(PricingGroup.Metals)
     )
 
-    val grid = pivotGrid(marketDataIdentifier, pfs)
-    grid should (
-      include ("Market, Observation Time, Period, Price (USD/MT)")    and
-      include ("LME Lead, LME Close, JAN 2010, 50.00 USD/MT Normal")  and
-      include ("LME Lead, LME Close, FEB 2010, 60.00 USD/MT Normal")  and
-      include ("LME Lead, SHFE Close, JAN 2010, 50.00 USD/MT Normal") and
-      include ("LME Lead, SHFE Close, FEB 2010, 60.00 USD/MT Normal")
-    )
+//    val grid = pivotGrid(latestMarketDataIdentifier, pfs)
+//    grid should (
+//      include ("Market, Observation Time, Period, Price (USD/MT)")    and
+//      include ("LME Lead, LME Close, JAN 2010, 50.00 USD/MT Normal")  and
+//      include ("LME Lead, LME Close, FEB 2010, 60.00 USD/MT Normal")  and
+//      include ("LME Lead, SHFE Close, JAN 2010, 50.00 USD/MT Normal") and
+//      include ("LME Lead, SHFE Close, FEB 2010, 60.00 USD/MT Normal")
+//    )
 
-    val gridWithEdits = pivotGrid(marketDataIdentifier, pfs, delete(periodField → feb))
+    val gridWithEdits = pivotGrid(latestMarketDataIdentifier, pfs, edits)
 
-    gridWithEdits should (
-      include ("Market, Observation Time, Period, Price (USD/MT)")     and
-      include ("LME Lead, LME Close, JAN 2010, 50.00 USD/MT Normal")   and
-      include ("LME Lead, LME Close, FEB 2010, 60.00 USD/MT Deleted")  and
-      include ("LME Lead, SHFE Close, JAN 2010, 50.00 USD/MT Normal")  and
-      include ("LME Lead, SHFE Close, FEB 2010, 60.00 USD/MT Deleted")
-    )
+    gridWithEdits should be === expectedEditPreview.trimHereDoc
+
+    marketDataStore.pivot(latestMarketDataIdentifier, PriceDataType).editable.get.save(edits)
+
+    val gridAfterDelete = pivotGrid(latestMarketDataIdentifier, pfs)
+    gridAfterDelete should be === expectedSaveResult.trimHereDoc
   }
 
   @Test def noPricingGroupContainsConflictingPriorityMarketDataSets {
