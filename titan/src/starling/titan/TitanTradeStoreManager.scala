@@ -11,6 +11,46 @@ import collection.immutable.Map
 import com.trafigura.edm.trades.{CompletedTradeState, PhysicalTrade => EDMPhysicalTrade}
 
 
+trait SimpleCache[K, V] {
+  val name : String
+  def flush() : Unit
+  def getAll() : Set[V]
+  def get(id : K) : V
+}
+
+class DefaultSimpleCache[K, V]( val name : String,
+                                idFn : V => K,
+                                getAllFn : () => Set[V],
+                                getFn : K => V) extends SimpleCache[K, V] {
+
+  lazy val cacheItems = scala.collection.mutable.Set[V]() ++ getAllFn()
+
+  def get(id : K) : V = {
+    val item = getFn(id)
+    cacheItems.retain(i => idFn(i) != id)
+    cacheItems += item
+    item
+  }
+  def getAll() : Set[V] = cacheItems.toSet
+
+  def flush() {
+    cacheItems.clear()
+    cacheItems ++= getAll()
+  }
+}
+
+
+class DefaultTitanTradeCache(edmTradeServices : TitanEdmTradeService)
+  extends DefaultSimpleCache[TitanId, EDMPhysicalTrade](
+      "EDM Trade cache",
+      (t : EDMPhysicalTrade) => t.titanId,
+      () => edmTradeServices.getAllCompletedTrades().toSet,
+      (id : TitanId) => edmTradeServices.getTrade(id)) {
+
+}
+
+
+
 /**
  * Manage the trade store trades via changes at trade, quota, inventory and assignment level
  */
@@ -95,7 +135,7 @@ case class TitanTradeStoreManager(
       case None => None
     }
 
-    // remove the associates sales quota, it will be repopulated next time it's allocated
+    // remove the associated sales quota, it will be repopulated next time it's allocated
     salesQuota match {
       case Some(lsq) => edmLogisticsQuotas.retain(lq => lq.quotaName  != lsq.quotaName)
       case None =>
