@@ -1,3 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project version="4" />
+<project version="4">
+  <component name="ScalacSettings">
+    <option name="COMPILER_LIBRARY_NAME" value="scala-compiler" />
+    <option name="COMPILER_LIBRARY_LEVEL" value="Project" />
+    <option name="VM_PARAMETERS" value="-Xms768m -Xss1m -server -XX:ReservedCodeCacheSize=1024m -Xmx4048M -XX:+CMSClassUnloadingEnabled -XX:MaxPermSize=650m " />
+  </component>
+</project>
 

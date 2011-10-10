@@ -61,7 +61,7 @@ class PhysicalMetalForwardBuilder(refData: TitanTacticalRefData,
           case _ => throw new Exception("Unsupported tolerance")
         }
         def getTolerancePercentage(percentage: Option[Double]): Percentage = percentage match {
-          case Some(percentage) => Percentage(percentage)
+          case Some(percentage) => Percentage(percentage * 0.01) // scale since 1% in titan is 1.00 which is 100% in Starling
           case _ => Percentage(0.0)
         }
         (getTolerancePercentage(tolerance.plus.amount), getTolerancePercentage(tolerance.minus.amount))
