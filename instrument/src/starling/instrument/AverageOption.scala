@@ -46,9 +46,6 @@ abstract class SingleAverageOption(
         volume: Quantity,
         callPut: CallOrPut
         ) extends UTP {
-  def detailsForUTPNOTUSED: Map[String, Any] = Map("Market" -> index,
-    "Period" -> averagingPeriod,
-    "Strike" -> strike, "CallPut" -> callPut)
 
   def explanation(env : Environment) : NamedQuantity = {
     if (!isLive(env.marketDay))
@@ -117,7 +114,6 @@ abstract class SingleAverageOption(
       }
     }
     volKey match {
-      case BradyMetalVolAtomicDatumKey(market, period) => futuresVol(market, period)
       case OilAtmVolAtomicDatumKey(market, _, period, _) => futuresVol(market, period)
       case SwapVol(`index`, period) => env.swapVol(index, period, strike)
       case _ => throw new Exception("Unexpected vol key " + volKey)

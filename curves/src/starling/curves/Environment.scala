@@ -127,8 +127,6 @@ case class Environment(
     forwardFXRate(fxUnit.numeratorUOM, fxUnit.denominatorUOM, maturityDate)
   }
 
-  def equityPrice(ric: RIC) = instrumentLevelEnv.quantity(EquityPriceKey(ric)) 
-
   def forwardFXRate(ccy1 : UOM, ccy2 : UOM, maturityDate : Day) : Quantity = {
     if (ccy1 == ccy2)
       new Quantity(1.0)
@@ -359,12 +357,6 @@ case class Environment(
    */
   def parallelShiftVols(market: HasImpliedVol, dP: Percentage): Environment = {
     applyAtomicShift(original => GenericPerturbedAtomicEnvironment("shiftVolsPar" + (market, dP), original, {
-      case key@BradyFXVolSmileAtomicDatumKey(`market`, _) => {
-        original.percentage(key) + dP
-      }
-      case key@BradyMetalVolAtomicDatumKey(`market`, _) => {
-        original.percentage(key) + dP
-      }
       case key@OilAtmVolAtomicDatumKey(`market`, _, _, _) => {
         original.percentage(key) + dP
       }
@@ -373,12 +365,6 @@ case class Environment(
 
   def shiftVol(market: HasImpliedVol, shiftedObservationDays: Option[DateRange], period: DateRange, dP: Percentage): Environment = {
     applyAtomicShift(original => GenericPerturbedAtomicEnvironment("shiftVols" + (market, shiftedObservationDays, period, dP), original, {
-      case key@BradyFXVolSmileAtomicDatumKey(`market`, p) if period.contains(p) => {
-        original.percentage(key) + dP
-      }
-      case key@BradyMetalVolAtomicDatumKey(`market`, p) if period.contains(p) => {
-        original.percentage(key) + dP
-      }
       case key@OilAtmVolAtomicDatumKey(`market`, observationDays, p, _) if period.contains(p) => {
         val isShiftedObservationDay = (shiftedObservationDays, observationDays) match {
           case (Some(dr1), Some(dr2)) => dr1.contains(dr2)
@@ -394,9 +380,6 @@ case class Environment(
 
   def parallelShiftVols(commodity: Commodity, dP: Percentage): Environment = {
     applyAtomicShift(original => GenericPerturbedAtomicEnvironment("shiftVolsPar" + (commodity, dP), original, {
-      case key@BradyMetalVolAtomicDatumKey(market, _) if market.commodity == commodity => {
-        original.percentage(key) + dP
-      }
       case key@OilAtmVolAtomicDatumKey(market, _, _, _) if market.commodity == commodity => {
         original.percentage(key) + dP
       }
@@ -405,9 +388,6 @@ case class Environment(
 
   def shiftVol(commodity: Commodity, period: DateRange, dP: Percentage): Environment = {
     applyAtomicShift(original => GenericPerturbedAtomicEnvironment("shiftVols" + (commodity, period, dP), original, {
-      case key@BradyMetalVolAtomicDatumKey(market, p) if period.contains(p) && market.commodity == commodity => {
-        original.percentage(key) + dP
-      }
       case key@OilAtmVolAtomicDatumKey(market, _, p, _)
         if period.contains(p) && market.commodity == commodity => {
         original.percentage(key) + dP
@@ -456,7 +436,6 @@ case class Environment(
   def undiscounted : Environment = applyAtomicShift(Undiscounted(_))
   def zeroVols : Environment = applyAtomicShift(ZeroVols(_))
   def shiftSpotFX(ccy : UOM, dP : Quantity) : Environment = applyAtomicShift(ShiftSpotFX(_, ccy, dP))
-  def shiftEquityPrice(ric : RIC, dP : Quantity) : Environment = applyAtomicShift(ShiftEquityPrice(_, ric, dP))
   def forwardState(forwardDayAndTime : DayAndTime) : Environment = applyAtomicShift(ForwardStateEnvironment(_, forwardDayAndTime))
   def forwardDiscounting(forwardDay : Day) = applyAtomicShift(ForwardDiscountingEnvironment(_, forwardDay))
 

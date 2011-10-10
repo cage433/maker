@@ -44,8 +44,6 @@ case class RefinedAssignment(
 
   }
 
-  def detailsForUTPNOTUSED : Map[String, Any] = persistedTradeableDetails - "Quantity"
-
   def instrumentType = RefinedAssignment
 
   def persistedTradeableDetails : Map[String, Any] = Map("EstimatedDelivery" -> estimatedDeliveryDate, "Market" -> market, "Quantity" -> volume)

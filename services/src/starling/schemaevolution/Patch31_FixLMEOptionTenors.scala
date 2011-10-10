@@ -2,7 +2,6 @@ package starling.schemaevolution
 
 import system.Patch
 import starling.richdb.RichDB
-import starling.marketdata.BradyMetalVolsData
 import starling.db.{UpdateableResultSetRow, DBWriter}
 import starling.market.{FuturesMarket, FuturesExchangeFactory, Market}
 import starling.market.FuturesExchangeFactory._

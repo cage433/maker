@@ -43,62 +43,18 @@ object InstrumentType {
     CalendarSpreadOption,
     CommoditySpreadOption,
     AsianOption,
-    FXOption,
     ErrorInstrument,
     CashInstrument,
     BankAccount,
     RefinedAssignment,
     RefinedFixation,
-    NetEquityPosition,
     FuturesCalendarSpread,
     FuturesCommoditySpread,
     PhysicalMetalAssignment
   )
 
   def fromName(name : String) = types.find(_.name.toLowerCase == name.toLowerCase)
-
-  //the union of the keys in the Instrument#details method
-  val fieldsWithType = List(
-    ("Market", classOf[String]),
-    ("Exercise Day",classOf[Day]),
-    ("Strike",classOf[Quantity]),
-//    ("Spread", classOf[Quantity]),
-    ("Cleared", classOf[Boolean]),
-    ("PricingRule", classOf[SwapPricingRule]),
-    ("Quantity", classOf[Quantity]),
-    ("Period", classOf[DateRange]),
-//    ("Settlement Date", classOf[Day]),
-    ("Delivery Day", classOf[Day]),
-    ("Amount", classOf[Quantity]),
-    ("Maturity Day", classOf[Day]),
-    ("Call Put", classOf[String]),
-    ("Exercise Type", classOf[String]),
-    ("RIC", classOf[String]),
-    ("Error", classOf[String]),
-    ("Estimated Delivery", classOf[Day]),
-    ("Fixation Date", classOf[Day]),
-    ("Is Average Fixation", classOf[String]),
-    ("Cash Instrument Type", classOf[String]),
-    ("Premium", classOf[String]),
-    ("Contract Pricing Spec Name", classOf[String]),
-    ("Contract Index", classOf[String]),
-    ("Commodity", classOf[String]),
-    ("Exchange", classOf[FuturesExchange]),
-    ("Inventory ID", classOf[String]),
-    ("Inventory Quantity", classOf[Quantity]),
-    ("Assignment ID", classOf[String]),
-    ("Benchmark Delivery Day", classOf[Day]),
-    ("Direction", classOf[String]),
-    ("Grade", classOf[String]),
-    ("Benchmark Delivery Location", classOf[String]),
-    ("Contract Delivery Day", classOf[Day]),
-    ("Contract Delivery Location", classOf[String])
-
-  )
-  val fields = fieldsWithType.map(_._1)
-  val lowercaseNoSpaceFields = fieldsWithType.map(_._1.toLowerCase.replaceAll(" ", ""))
 }
-
 /** The supertype of all instruments, including trades, which in turn contain instruments.
  */
 trait Instrument extends Ordered[Instrument] with Greeks with PnlExplanation {

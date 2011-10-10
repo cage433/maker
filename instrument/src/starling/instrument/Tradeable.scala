@@ -67,10 +67,8 @@ object TradeableType {
     CommoditySpreadOption,
     AsianOption,
     FXForward,
-    FXOption,
     RefinedAssignment,
     RefinedFixationsForSplit,
-    NetEquityPosition,
     CashInstrument,
     PhysicalMetalAssignment,
     UnallocatedSalesQuota
@@ -95,7 +93,6 @@ object TradeableType {
     ("Cleared", classOf[Boolean]),
     ("PricingRule", classOf[SwapPricingRule]),
     //("Fixed Rate", classOf[String]),
-    ("RIC", classOf[String]),
     ("Error", classOf[String]),
     ("Estimated Delivery", classOf[Day]),
     ("Fixations", classOf[List[RefinedFixation]]),

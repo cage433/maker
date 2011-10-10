@@ -24,29 +24,10 @@ import QueryBuilder._
 import starling.pivot.Row._
 import starling.pivot.{Row, KeyEdits, KeyFilter, PivotEdits, PivotTableDataSource, Field => PField}
 
-// TODO [07 Sep 2010] move me somewhere proper
-case class RelativeImpliedVolData(vols: Map[DateRange, Map[Double, Percentage]]) {
-  def absolute(prices: PriceData): ImpliedVolData = {
-    val data = vols.flatMap {
-      case (period, row) => {
-        // lame hack - why, trinity? WHY???
-        val exerciseDay = period.firstDay - 2
-        val strike: Double = prices.prices(exerciseDay).quantityValue.get.value
-        row.map((tuple: (Double, Percentage)) => {
-          (ImpliedVolEntryKey(period, strike + tuple._1, exerciseDay), tuple._2)
-        })
-      }
-    }
-    ImpliedVolData(TreeMap.empty[ImpliedVolEntryKey, Percentage](ImpliedVolEntryKey) ++ data)
-  }
-}
-
 /**
  * Thrown when there is no market data available for a particular day
  */
 case class NoMarketDataForDayException(observationDay: Day, m: String) extends Exception(m)
-
-
 
 case class MarketDataSet(name: String, priority: Int) {
   def isExcel = name.startsWith(MarketDataSet.excelPrefix)

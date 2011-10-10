@@ -29,6 +29,7 @@ class UTPTests extends IndexTest {
 
   val zeroRates = Map(USD -> 0.05, GBP -> 0.02, EUR -> 0.08)
   val xRates = Map(GBP -> 0.7,EUR -> 0.9)
+  lazy val wtiMarket = Market.NYMEX_WTI
   lazy val leadMarket = Market.LME_LEAD
   val unlIndex = Index.PREM_UNL_EURO_BOB_OXY_NWE_BARGES
   lazy val brentIndex = Index.DATED_BRENT
@@ -49,11 +50,8 @@ class UTPTests extends IndexTest {
           case ForwardPriceKey(market, day, _) => 96 (market.priceUOM)
           case IndexFixingKey(`brentIndex`, _) => 97(USD/BBL)
           case IndexFixingKey(index, _) => 96(index.priceUOM)
-          case _ : BradyMetalVolAtomicDatumKey => Percentage(0.3)
-          case _ : BradyFXVolSmileAtomicDatumKey => Map(0.5 -> Percentage(0.3))
           case _ : OilAtmVolAtomicDatumKey => Percentage(0.10)
           case _ : OilVolSkewAtomicDatumKey => Map(0.1 -> Percentage(0.05))
-          case _ : EquityPriceKey => 100 (USD/SHARE)
           case USDFXRateKey(ccy) => xRates(ccy)(USD/ccy)
           case SpreadAtmStdDevAtomicDatumKey(market, period, ignoreShifts) => 10 (market.priceUOM)
           case SpreadSkewStdDevAtomicDatumKey(market, period) => {
@@ -69,32 +67,29 @@ class UTPTests extends IndexTest {
   @DataProvider(name = "tradeableProvider")
   def tradeableProvider : Array[Array[Tradeable]] = {
     Array[Tradeable](
-      Future(leadMarket, Day(2009, 8, 3), 123(USD/MT), 550 (MT)),
+      Future(wtiMarket, Month(2009, 8), 123(USD/BBL), 550 (BBL)),
       CommoditySwap(unlIndex, 123(USD/MT), 777(MT), Month(2010, 1), cleared = false),
       // multiple months
       CommoditySwap(unlIndex, 123(USD/MT), 777(MT), Quarter(2010, 1), cleared = false),
       // mid period
       CommoditySwap(unlIndex, 123(USD/MT), 777(MT), Quarter(2009, 1), cleared = false),
 
-      new FuturesOption(leadMarket, Day(2009, 8, 1), Day(2009, 8, 20), 90(USD/MT), 333(MT), Call, European),
+      new FuturesOption(wtiMarket, Day(2009, 8, 1), Month(2009, 9), 90(USD/BBL), 333(BBL), Call, European),
       AsianOption(unlIndex, Month(2009, 2), 98(USD/MT), 222(MT), Put),
       AsianOption(unlIndex, Strip(Month(2009, 1), Month(2009, 10)), 98(USD/MT), 222(MT), Put),
-      Future(leadMarket, Day(2009, 9, 9), 77(USD/MT), 111(MT)),
+      Future(wtiMarket, Month(2009, 9), 77(USD/BBL), 111(BBL)),
       FXForward(1.5(EUR/USD), 999(USD), Day(2009, 9, 8)),
-      FXOption(1.3(EUR/USD), 999(USD), Day(2009, 9, 8), Day(2009, 10, 10), Put),
-      new CalendarSpreadOption(Market.NYMEX_WTI, Spread(Month(2010, 11), Month(2010, 12)), Quantity(-1, USD/BBL), Quantity(10000, BBL), Call),
-      new CalendarSpreadOption(Market.NYMEX_WTI, Spread(Month(2011, 1), Month(2011, 2)), Quantity(-1, USD/BBL), Quantity(10000, BBL), Call),
-      new CalendarSpreadOption(Market.NYMEX_WTI, Spread(Month(2010, 10), Month(2010, 11)), Quantity(0.2, USD/BBL), Quantity(10000, BBL), Call),
-      new FuturesOption(Market.LME_ALUMINIUM, Day(2009, 8, 1), Day(2009, 8, 20),
-        Quantity(90, USD/MT), Quantity(100, MT), Call, European),
-      new NetEquityPosition(RIC("Foo"), Quantity(100, UOM.SHARE)),
+      new CalendarSpreadOption(wtiMarket, Spread(Month(2010, 11), Month(2010, 12)), Quantity(-1, USD/BBL), Quantity(10000, BBL), Call),
+      new CalendarSpreadOption(wtiMarket, Spread(Month(2011, 1), Month(2011, 2)), Quantity(-1, USD/BBL), Quantity(10000, BBL), Call),
+      new CalendarSpreadOption(wtiMarket, Spread(Month(2010, 10), Month(2010, 11)), Quantity(0.2, USD/BBL), Quantity(10000, BBL), Call),
+      new FuturesOption(wtiMarket, Day(2009, 8, 1), Month(2009, 9), Quantity(90, USD/BBL), Quantity(100, BBL), Call, European),
 
       // Future Spreads
-      new FuturesCalendarSpread(Market.NYMEX_WTI, Month(2011, 1), Month(2011, 2), Quantity(55, USD/BBL), Quantity(56, USD/BBL), Quantity(1000, BBL)),
-      new FuturesCalendarSpread(Market.NYMEX_WTI, Month(2011, 1), Month(2011, 2), Quantity(1, USD/BBL), Quantity(1000, BBL)),
+      new FuturesCalendarSpread(wtiMarket, Month(2011, 1), Month(2011, 2), Quantity(55, USD/BBL), Quantity(56, USD/BBL), Quantity(1000, BBL)),
+      new FuturesCalendarSpread(wtiMarket, Month(2011, 1), Month(2011, 2), Quantity(1, USD/BBL), Quantity(1000, BBL)),
 
       // TAS
-      new TAS(Market.NYMEX_WTI, Month(2011, 1), Day(2008, 12, 1), Quantity(1000, BBL)),
+      new TAS(wtiMarket, Month(2011, 1), Day(2008, 12, 1), Quantity(1000, BBL)),
 
 
       new FuturesCommoditySpread(FuturesSpreadMarket.RB_CRACKS, Month(2011, 1), Quantity(55, USD/BBL), Quantity(56, USD/BBL), Quantity(1000, BBL)),
@@ -208,34 +203,10 @@ class UTPTests extends IndexTest {
   }
 
   @Test(dataProvider = "tradeableProvider")
-  def testUTPDetailsFieldsAreInInstrumentTypeKeysList(tradeable : Tradeable) {
-    val utps = tradeable.asUtpPortfolio(Day(2009, 1, 1)).instruments
-    for (utp <- utps) {
-      val detailsKeys = normaliseDetails(utp.detailsForUTPNOTUSED).keySet
-      val undeclaredFields = detailsKeys.toList.filterNot(InstrumentType.lowercaseNoSpaceFields contains _)
-      assertTrue(undeclaredFields.isEmpty, "There are undeclared fields in " + utp.instrumentType + " " + undeclaredFields + " -- " +  InstrumentType.lowercaseNoSpaceFields)
-    }
-  }
-
-  @Test(dataProvider = "tradeableProvider")
   def testTradeableDetailsFieldsAreInTradeableTypeKeysList(tradeable : Tradeable) {
     val detailsKeys = normaliseDetails(tradeable.shownTradeableDetails).keySet
     val undeclaredFields = detailsKeys.toList.filterNot(TradeableType.lowercaseNoSpaceFields contains _)
     assertTrue(undeclaredFields.isEmpty, "There are undeclared fields in " + tradeable + " " + undeclaredFields)
-  }
-
-  @Test
-  def testThereAreNoSurplusKeysInInstrumentTypeFieldsList() {
-    val instruments : Seq[UTP] = tradeableProvider.flatMap(tradeables=>tradeables).flatMap{tradeable=>tradeable.asUtpPortfolio(Day(2009, 1, 1)).instruments}
-    val allFields = (TreeSet[String]() ++ instruments.flatMap(_.fields.map(_.replaceAll(" ", "").toLowerCase))) + "error"
-    val actual = TreeSet[String]() ++ InstrumentType.fields.map(_.replaceAll(" ", "").toLowerCase)
-    if (actual != allFields){
-      println("All - actual")
-      (allFields -- actual).foreach(println)
-      println("actual - all")
-      (actual -- allFields).foreach(println)
-    }
-    assertEquals(actual, allFields)
   }
 
   @Test

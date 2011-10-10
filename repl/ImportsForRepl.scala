@@ -15,15 +15,18 @@ import starling.utils._
 import starling.gui.api._
 import starling.curves.Environment
 import starling.curves.MarketDataCurveObjectEnvironment
+import starling.richdb._
 
 def setNullHolidays{
   import starling.calendar._
   import starling.market._
   HolidayTablesFactory.registerHolidayTablesImpl(NullHolidays)
   FuturesExpiryRuleFactory.registerRulesImpl(new FuturesExpiryRules(new BusinessCalendars(NullHolidays)){
-    def rule(eaiQuoteID: Int) = new FuturesExpiryRule{
+    def ruleOption(eaiQuoteID: Int) = Some(new FuturesExpiryRule{
       def lastTradingDay(d: DateRange) = d.firstDay - 1
-    }
+      val name = "Null holiday expiry rule"
+    })
+
   })
 
 }
@@ -40,5 +43,20 @@ def makeEnv(pricingGroup : PricingGroup, marketDay : Day) : Environment = {
   val reader = new NormalMarketDataReader(marketDataStore, marketDataID)
 
   val marketDataSlice = new MarketDataReaderMarketDataSlice(reader, ObservationPoint(marketDay, ObservationTimeOfDay.LMEClose))
-  Environment(MarketDataCurveObjectEnvironment(marketDay.endOfDay, marketDataSlice))
+  Environment(
+    MarketDataCurveObjectEnvironment(
+      marketDay.endOfDay,
+      marketDataSlice,
+      shiftsCanBeIgnored=false,
+      ReferenceDataLookup.Null
+    ))
 }
+lazy val titanTradeStore = {
+  val ts = new starling.titan.TitanTradeStore(new RichDB(devInstance.props.StarlingDatabase(), new RichResultSetRowFactory), Broadcaster.Null, TitanTradeSystem)
+  ts.readAll
+  ts
+}
+
+
+
+

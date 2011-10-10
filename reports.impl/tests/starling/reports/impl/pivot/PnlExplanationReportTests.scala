@@ -58,7 +58,6 @@ class PnlExplanationReportTests extends JonTestEnv {
 
     protected def explanation(env: Environment) = throw new Exception
 
-    def detailsForUTPNOTUSED = throw new Exception
     def instrumentType = throw new Exception
     def asUtpPortfolio = throw new Exception
     def isLive(dayAndTime: DayAndTime) = true
@@ -222,7 +221,6 @@ class PnlExplanationReportTests extends JonTestEnv {
 
       def applyOrMatchError(key: AtomicDatumKey) = key match {
         case _ : ForwardPriceKey => Quantity(10, market.priceUOM)
-        case _ : BradyMetalVolAtomicDatumKey => Percentage(0.2)
       }
     }).undiscounted
     val forwardDay = env.marketDay.day + 20

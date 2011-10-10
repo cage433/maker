@@ -101,14 +101,12 @@ class MarketChangesPnl(d1: AtomicEnvironment, d2: AtomicEnvironment, utps : Map[
 
     case (_: ForwardCurveKey, Some(1)) => ("Delta", "Price")
     case (_: OilAtmVolCurveKey, Some(1)) => ("Vega", "Vol")
-    case (_: BradyMetalVolCurveKey, Some(1)) => ("Vega", "Vol")
     case (_: USDFXRateCurveKey, Some(1)) => ("USD FX Delta", "FX")
     case (_: SpreadAtmStdDevCurveKey, Some(1)) => ("Spread StdDev Delta", "Vol")
     case (_: OilVolSkewCurveKey, Some(1)) => ("Vol skew Delta", "Vol")
 
     case (_: ForwardCurveKey, Some(2)) => ("Gamma", "Price")
     case (_: OilAtmVolCurveKey, Some(2)) => ("Vomma", "Vol")
-    case (_: BradyMetalVolCurveKey, Some(2)) => ("Vomma", "Vol")
     case (_: USDFXRateCurveKey, Some(2)) => ("USD FX Gamma", "FX")
     case (_: SpreadAtmStdDevCurveKey, Some(2)) => ("Spread StdDev Gamma", "Vol")
     case (_: OilVolSkewCurveKey, Some(2)) => ("Vol skew Gamma", "Vol")

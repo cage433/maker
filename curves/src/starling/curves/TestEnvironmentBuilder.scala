@@ -22,9 +22,6 @@ case class TestEnvironmentBuilder(marketDay : DayAndTime) {  builder =>
 	def setConstantPrice(market : CommodityMarket, days : List[Day], price : Quantity){
 	  setPrices(market, days, List.fill(days.size)(price.value))
 	}
-  def setEquityPrice(ric : RIC, price : Quantity){
-    curves += EquityPriceCurveKey(ric) -> EquityPriceCurveObject(marketDay, ric,  price) 
-  }
 
 	def setPrices(market : CommodityMarket, days : List[Day], prices : List[Double]){
 	  curves += 
@@ -37,25 +34,9 @@ case class TestEnvironmentBuilder(marketDay : DayAndTime) {  builder =>
   def setImpliedVol(market : CommodityMarket, vol : Double) {
     setImpliedVol(market, Percentage(vol))
   }
-  def setImpliedVol(market : CommodityMarket, vol : Percentage) {
-    curves = curves + (BradyMetalVolCurveKey(market) -> new CurveObject {
-      type CurveValuesType = Percentage
-      val marketDayAndTime = TestEnvironmentBuilder.this.marketDay
 
-      def apply(point: AnyRef) = vol
-    })
-  }
- 
   def setAsianVol(market : CommodityMarket, vol : Double) {
     setAsianVol(market, Percentage(vol))
-  }
-  def setAsianVol(market : CommodityMarket, vol : Percentage) {
-    curves = curves + (BradyMetalVolCurveKey(market) -> new CurveObject {
-      type CurveValuesType = Percentage
-      val marketDayAndTime = TestEnvironmentBuilder.this.marketDay
-
-      def apply(point: AnyRef) = vol
-    })
   }
 
 	def setZeroRate(ccy : UOM, z : Double){

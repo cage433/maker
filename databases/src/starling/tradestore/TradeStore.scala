@@ -354,7 +354,7 @@ abstract class TradeStore(db: RichDB, broadcaster:Broadcaster, tradeSystem: Trad
     db.query(q)(addTradeRowToHistory)
   }
 
-  private def getHistoryOrNone(tradeID : TradeID) = {
+  private def getHistoryOrNone(tradeID : TradeID): Option[SingleTradeIDTradeVersions] = {
     tradeHistories.versionedTrades.get(tradeID)
   }
 

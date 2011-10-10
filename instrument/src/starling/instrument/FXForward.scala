@@ -102,8 +102,6 @@ case class FXForward(
     Asset.knownCash(maturityDate, receiveAmount, env),
     Asset.knownCash(maturityDate, payAmount, env))
 
-  def detailsForUTPNOTUSED = throw new IllegalStateException("This should only be used as a UTP in the context of an FXOption forwardState so it should not be persisted")
-
   def pivotUTPType = null
 
   def * (scale : Double) = copy(volume = volume * scale)

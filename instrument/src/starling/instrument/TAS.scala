@@ -60,8 +60,6 @@ case class TAS(market: FuturesMarket, delivery: DateRange, maturityDay: Day, vol
 
   def instrumentType = TAS
 
-  def detailsForUTPNOTUSED = Map()
-
   def daysForPositionReport(marketDay: DayAndTime) = List(market.lastTradingDay(delivery).min(delivery.firstDay))
 
   def *(x : Double) = copy(volume = volume * x)

@@ -139,11 +139,7 @@ case class RefinedFixation(
     }
   }
 
-  def detailsForUTPNOTUSED : Map[String, Any] = Map("Fixation Date" -> fixationDate, "Market" -> market, "Is Average Fixation" -> isAverage)
-
-
   def instrumentType = RefinedFixation
-
 
   def daysForPositionReport(marketDay : DayAndTime) : Seq[Day] = List(fixationDate)
 

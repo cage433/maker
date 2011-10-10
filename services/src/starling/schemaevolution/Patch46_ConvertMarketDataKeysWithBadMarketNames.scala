@@ -4,7 +4,7 @@ import starling.db.DBWriter
 import starling.richdb.RichDB
 import system.{PatchUtils, Patch}
 import starling.utils.sql.PersistAsBlob
-import starling.marketdata.{BradyMetalVolsDataKey, PriceDataKey}
+import starling.marketdata.PriceDataKey
 import starling.market.{FuturesMarket, Market}
 import starling.services.StarlingInit
 

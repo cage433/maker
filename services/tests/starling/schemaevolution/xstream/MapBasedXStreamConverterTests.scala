@@ -6,7 +6,6 @@ import com.thoughtworks.xstream.XStream
 import starling.instrument.utils.StarlingXStream
 import org.testng.Assert
 import starling.quantity.Percentage
-import starling.marketdata.{ImpliedVolEntryKey, ImpliedVolData}
 import starling.daterange.Day
 import scala.collection.SortedMap
 import java.lang.Class
