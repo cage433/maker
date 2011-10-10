@@ -81,12 +81,24 @@ case class TitanTradeStoreManager(
     log.info("inventory update, got inventory:\n %s, \n%s \nwith quotas \n%s\n".format(inventoryID, newInventory, newQuotas.map(q => (q.quotaName, q.fullyAllocated))))
 
     edmInventoryItems += (newInventory.id -> newInventory)
-    edmLogisticsQuotas --= newQuotas
+    edmLogisticsQuotas.retain(lq => !newQuotas.map(_.quotaName).contains(lq.quotaName))
     edmLogisticsQuotas ++= newQuotas
   }
 
   def removeInventoryFromCache(inventoryID : String) {
-    edmInventoryItems -= inventoryID
+
+    val salesQuota = edmInventoryItems.get(inventoryID) match {
+      case Some(inv) => {
+        edmInventoryItems -= inventoryID
+        Option(inv.salesAssignment)
+      }
+      case None => None
+    }
+
+    salesQuota match {
+      case Some(lsq) => edmLogisticsQuotas.retain(lq => lq.quotaName  != lsq.quotaName)
+      case None =>
+    }
   }
 
   /**

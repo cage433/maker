@@ -142,7 +142,7 @@ class TitanEventHandler(rabbitEventServices : TitanRabbitEventServices,
       }
       case CancelledEventVerb | RemovedEventVerb => {
         Log.info("Cancelled / deleted event received for %s".format(inventoryIds))
-        if (Event.EDMLogisticsInventorySubject == ev.subject) {
+        if (Event.EDMLogisticsInventorySubject == ev.subject || EDMLogisticsSalesAssignmentSubject == ev.subject) {
           inventoryIds.foreach(titanTradeStoreManager.deleteInventory)
         }
       }
