@@ -186,7 +186,7 @@ case class FwdCurveDbMarketDataSource(varSqlDB: DB, businessCalendars: BusinessC
         }
         val cashLogic = cashDayLogic(index.market, Some(index))
         eaiQuoteID.map(eai => (index.market, (eai, cashLogic, index.level)))
-      }}.groupInto(_.head, _.tail)
+      }}.toMultiMap
 
       val entries = a.flatMap { case (market, otherDetails) => readSingle(otherDetails, market) }
 
@@ -198,7 +198,7 @@ case class FwdCurveDbMarketDataSource(varSqlDB: DB, businessCalendars: BusinessC
         case (eaiQuoteID, cash, level) :: Nil => readSingle(market, cash, level, eaiQuoteID)
         case rules => throw new Exception("This market has more than one eai/cash rule " + market + ", " + rules)
       })
-        .groupInto(_.head, _.tail).mapValues(PriceFixingsHistoryData.sum)
+        .toMultiMap.mapValues(PriceFixingsHistoryData.sum)
         .map { case (day, data) => MarketDataEntry(ObservationPoint(day), PriceFixingsHistoryDataKey(market), data) }.toList
         .update(duplicateTimedKeys(_).require(_.isEmpty, "Duplicate 'timed' keys: "))
     }

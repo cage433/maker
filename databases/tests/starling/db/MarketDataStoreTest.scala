@@ -62,8 +62,6 @@ class MarketDataStoreTest extends TestMarketTest with ShouldMatchers {
     }
   }
 
-  /*
-
   @Test
   def testDeletingPricesIsPersistent() {
     clearMarketData()
@@ -188,8 +186,6 @@ class MarketDataStoreTest extends TestMarketTest with ShouldMatchers {
     check(pfs2, ",Default (EUR per USD),LME Close (EUR per USD)\nCurrency,Rate,Rate\nEUR,3.0000 ,7.0000 ")
   }
 
-  */
-
   def pivotGrid(marketDataIdentifier: MarketDataIdentifier, pfs: PivotFieldsState, edits: PivotEdits = PivotEdits.Null): String = {
     val pivotData = marketDataStore.pivot(marketDataIdentifier, PriceDataType, edits).flattenedGridFor(Some(pfs))
 
@@ -216,22 +212,20 @@ class MarketDataStoreTest extends TestMarketTest with ShouldMatchers {
 
     def priceData(prices: Map[Month, Double]) = PriceData.create(prices, key.market.priceUOM)
 
-    val (jan, feb, mar) = (Month(2010, 1), Month(2010, 2), Month(2010, 3))
-    val basePrices = Map(jan → 50.0, feb → 60.0)
+    val (jan, feb) = (Month(2010, 1), Month(2010, 2))
 
     List(ObservationTimeOfDay.LMEClose, ObservationTimeOfDay.SHFEClose).map { timeOfDay => {
       val observationPoint = observationDay.atTimeOfDay(timeOfDay)
       val timedKey = TimedMarketDataKey(observationPoint, key)
 
-      marketDataStore.save(MarketDataSet.ManualMetals, timedKey, priceData(basePrices))
+      marketDataStore.save(MarketDataSet.ManualMetals, timedKey, priceData(Map(jan → 50.0, feb → 60.0)))
     }}
 
     val pfs = PivotFieldsState(
-      dataFields=List(priceField.field),
-      rowFields= List(marketField, FieldDetails("Observation Time"), periodField).map(_.field)
+      dataFields =List(priceField.field),
+      rowFields = List(marketField, FieldDetails("Observation Time"), periodField).map(_.field)
     )
-    val marketDataIdentifier = MarketDataIdentifier(
-      MarketDataSelection(Some(PricingGroup.Metals)),
+    val marketDataIdentifier = MarketDataIdentifier(MarketDataSelection(Some(PricingGroup.Metals)),
       marketDataStore.latestPricingGroupVersions(PricingGroup.Metals)
     )
 
@@ -255,8 +249,6 @@ class MarketDataStoreTest extends TestMarketTest with ShouldMatchers {
     )
   }
 
-  /*
-
   @Test def noPricingGroupContainsConflictingPriorityMarketDataSets {
     pricingGroupsDefinitions.filterValues(_.toMultiMapWithKeys(_.priority).valueExists(_.size > 1)) should be === Map.empty
   }
@@ -272,8 +264,6 @@ class MarketDataStoreTest extends TestMarketTest with ShouldMatchers {
   @Test def everyPricingGroupHasASetOfMarketDataSets {
     pricingGroupsDefinitions.keySet should be === PricingGroup.values.toSet
   }
-
-  // */
 
   private val createMarketDataCommit = """
   create table MarketDataCommit (

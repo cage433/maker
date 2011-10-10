@@ -14,6 +14,7 @@ case class AxisCell(value:AxisValue, span:Option[Int], label:String, collapsible
       case _ => value.state
     }
   }
+  def selection = value.field → SomeSelection(Set(value.value.originalValue.getOrElse(value.value.value)))
   def edits = value.pivotEdits
   def shown = !hidden
   def changeLabel(label:String) = copy(label=label)

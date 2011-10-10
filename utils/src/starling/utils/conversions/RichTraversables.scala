@@ -42,6 +42,8 @@ class RichTraversable[A](traversable: Traversable[A]) {
     traversable.map(keyAndValueF).groupBy(_._1).mapValues(_.map(_._2))
   }
 
+  def toMultiMapPF[B, C](pf: PartialFunction[A, (B, C)]): MultiMap[B, C] = traversable.flatMapO(pf.lift).toMultiMap
+
   def maxOr(alternative: => A)(implicit cmp: Ordering[A]) = if (traversable.isEmpty) alternative else traversable.max
 }
 

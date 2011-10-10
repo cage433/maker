@@ -30,7 +30,7 @@ class OilAndMetalsVARLimMarketDataSource(limServer: LIMServer) extends MarketDat
     }
 
     val fixingsForPublishedIndex = {
-      val pubMarkets = publishedIndexes.map(index => (index.market, index.level)).groupInto(_._1, _._2)
+      val pubMarkets = publishedIndexes.map(index => (index.market, index.level)).toMultiMap
 
       pubMarkets.flatMap { case (market, levels) => {
         val pricesByObservationDay: Map[Day, Traversable[(Level, Double)]] = levels.flatMap { level => {
@@ -45,7 +45,7 @@ class OilAndMetalsVARLimMarketDataSource(limServer: LIMServer) extends MarketDat
           spotData.map {
             case (d: Day, p: Double) => (d, (level, MathUtil.roundToNdp(p * market.limSymbol.get.multiplier, 6)))
           }
-        } }.groupInto(_._1, _._2)
+        } }.toMultiMap
 
         pricesByObservationDay.map { case (day, prices) =>
           MarketDataEntry(ObservationPoint(day), PriceFixingsHistoryDataKey(market),
