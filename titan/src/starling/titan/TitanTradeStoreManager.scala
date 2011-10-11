@@ -9,6 +9,7 @@ import starling.utils.Log
 import EDMConversions._
 import collection.immutable.Map
 import com.trafigura.edm.trades.{CompletedTradeState, PhysicalTrade => EDMPhysicalTrade}
+import starling.tradestore.TradeStore.StoreResults
 
 
 trait SimpleCache[K, V] {
@@ -145,13 +146,13 @@ case class TitanTradeStoreManager(
   /**
    * Returns list of trade ids that have changed value
    */
-  def updateInventory(env : Environment, inventoryID : String, eventId : String) : List[String] = {
+  def updateInventory(env : Environment, inventoryID : String, eventId : String) : TitanTradeUpdateResult = {
 
     try {
 
       val existingFwds = titanTradeStore.getAllForwards()
       updateInventoryCache(inventoryID)
-      updateTradeStore(eventId)
+      val tradeStoreResult = updateTradeStore(eventId)
       val updatedFwds = titanTradeStore.getAllForwards()
 
       val changedTitanTradeIds = (existingFwds.keySet ++ updatedFwds.keySet).flatMap{
@@ -162,7 +163,7 @@ case class TitanTradeStoreManager(
           }
       }.toList
 
-      changedTitanTradeIds
+      TitanTradeUpdateResult(tradeStoreResult, changedTitanTradeIds, changedTitanTradeIds.size > 0)
     }
     catch {
       case ex => {
@@ -172,7 +173,7 @@ case class TitanTradeStoreManager(
     }
   }
 
-  def updateTradeStore(eventId : String) {
+  def updateTradeStore(eventId : String) : StoreResults = {
     val updatedStarlingTrades = edmTrades.flatMap(trade => tradeForwardBuilder.apply(trade, eventId))
     titanTradeStore.storeTrades(
       {trade : Trade => true},
@@ -180,10 +181,11 @@ case class TitanTradeStoreManager(
       new Timestamp
     )
   }
+
   /**
    * update / create a new trade, returns true if update changes valuation
    */
-  def updateTrade(env : Environment, titanTradeID : String, eventId : String) : Boolean = {
+  def updateTrade(env : Environment, titanTradeID : String, eventId : String) : TitanTradeUpdateResult = {
 
     try {
 
@@ -192,7 +194,7 @@ case class TitanTradeStoreManager(
 
       val newStarlingTrades : List[Trade] = tradeForwardBuilder(newEDMTrade, eventId)
 
-      titanTradeStore.storeTrades(
+      val tradeStoreResult = titanTradeStore.storeTrades(
         {trade : Trade => trade.titanTradeID == Some(titanTradeID)},
         newStarlingTrades,
         new Timestamp
@@ -206,7 +208,7 @@ case class TitanTradeStoreManager(
         case _ => true
       }
 
-      valueChanged
+      TitanTradeUpdateResult(tradeStoreResult, if (valueChanged) List(titanTradeID) else Nil, valueChanged)
     }
     catch {
       case ex => {
@@ -216,21 +218,32 @@ case class TitanTradeStoreManager(
     }
   }
 
-  def deleteTrade(titanTradeID : String, eventId : String) {
+  def deleteTrade(titanTradeID : String, eventId : String) : TitanTradeUpdateResult = {
     removeTradeFromCache(titanTradeID)
-    titanTradeStore.storeTrades(
-      {trade => trade.titanTradeID == Some(titanTradeID)},
-      Nil,
-      new Timestamp
-    )
+    TitanTradeUpdateResult(
+      titanTradeStore.storeTrades(
+        {trade => trade.titanTradeID == Some(titanTradeID)},
+        Nil,
+        new Timestamp
+      ), Nil, false)
   }
 
-  def deleteInventory(titanInventoryID : String, eventId : String) {
+  def deleteInventory(titanInventoryID : String, eventId : String) : TitanTradeUpdateResult = {
     removeInventoryFromCache(titanInventoryID)
-    titanTradeStore.storeTrades(
-      {trade => trade.titanInventoryID == Some(titanInventoryID)},
-      Nil,
-      new Timestamp
-    )
+    TitanTradeUpdateResult(
+      titanTradeStore.storeTrades(
+        {trade => trade.titanInventoryID == Some(titanInventoryID)},
+        Nil,
+        new Timestamp
+      ), Nil, false)
   }
+}
+
+case class TitanTradeUpdateResult(
+      tradeStoreResults : StoreResults,
+      changedValueTitanTradeIds : List[String],
+      hasValue : Boolean) {
+
+  override def toString : String =
+    "tradeStoreResults {%s}, changedValueTitanTradeIds {%s}, hasValue {%s}".format(tradeStoreResults.toString, changedValueTitanTradeIds.mkString(", "), hasValue)
 }

@@ -24,6 +24,13 @@ class RabbitEventViewerServiceImpl(eventDatabase:RabbitEventDatabase) extends Ra
     val payloadType = "Payload Type"
     val payloadValue = "Payload Value"
 
+    val status = "Status"
+    val errorMsg = "Error Message"
+    val result = "Result"
+    val tradeInsertedCount = "Trade inserted count"
+    val tradeUpdatedCount = "Trade update count"
+    val tradeDeletedCount = "Trade deleted count"
+
     val columns = {
       List(("Event Fields", List(
         new LongColumnDefinition(starlingID, "starlingID", table) {
@@ -69,7 +76,13 @@ class RabbitEventViewerServiceImpl(eventDatabase:RabbitEventDatabase) extends Ra
         new IntColumnDefinition(pid, "pid", table),
         StringColumnDefinition(body, "body", table),
         StringColumnDefinition(payloadType, "payloadType", table),
-        StringColumnDefinition(payloadValue, "payloadValue", table)
+        StringColumnDefinition(payloadValue, "payloadValue", table),
+        StringColumnDefinition(status, "status", table),
+        StringColumnDefinition(errorMsg, "errorMsg", table),
+        StringColumnDefinition(result, "result", table),
+        StringColumnDefinition(tradeInsertedCount, "tradeInsertedCount", table),
+        StringColumnDefinition(tradeUpdatedCount, "tradeUpdatedCount", table),
+        StringColumnDefinition(tradeDeletedCount, "tradeDeletedCount", table)
       )))
     }
 
