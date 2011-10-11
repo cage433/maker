@@ -1,29 +1,17 @@
 package starling.marketdata
 
 import starling.market._
+import starling.quantity.UOM
 import starling.utils.ImplicitConversions._
-import starling.quantity.{UOMSymbol, UOM}
-import starling.utils.Log
 import starling.pivot.Row
+
 
 case class PriceFixingsHistoryDataKey(marketName: String, exchangeName: Option[String] = None) extends MarketDataKey {
   type marketDataType = PriceFixingsHistoryData
   type marketDataDBType = PriceFixingsHistoryData
   def dataType = PriceFixingsHistoryDataType
   def subTypeKey = marketName
-
-  override def rows(data : PriceFixingsHistoryData, referenceDataLookup: ReferenceDataLookup) = {
-    data.fixings.map { case ((level, period), fixing) =>
-      Row(
-        PriceFixingsHistoryDataType.marketField.field → marketName,
-        PriceFixingsHistoryDataType.levelField.field → level.name,
-        PriceFixingsHistoryDataType.periodField.field → period,
-        PriceFixingsHistoryDataType.priceField.field → fixing.pivotValue
-      ) +? (PriceFixingsHistoryDataType.exchangeField.field → exchangeName)
-    }
-  }
-
-  def fieldValues(referenceDataLookup: ReferenceDataLookup) = Map(PriceFixingsHistoryDataType.marketField.field → marketName)
+  def fieldValues(referenceDataLookup: ReferenceDataLookup) = Row(PriceFixingsHistoryDataType.marketField.field → marketName)
 }
 
 object PriceFixingsHistoryDataKey {
@@ -43,4 +31,3 @@ object PriceFixingsHistoryDataKey {
     case _ => market.name
   }
 }
-

@@ -2,12 +2,9 @@ package starling.marketdata
 
 import starling.curves.MarketDataSlice
 import starling.db.MarketDataReader
-import collection.immutable.TreeMap
-import starling.utils.ImplicitConversions._
 import scalaz.Scalaz._
-import starling.utils.sql.PersistAsBlob
 import starling.pivot.{Row, Field}
-import starling.daterange.{ObservationTimeOfDay, Day, ObservationPoint}
+import starling.daterange.{Day, ObservationPoint}
 
 /**
  * The key used to look up market data from the database.
@@ -29,9 +26,7 @@ trait MarketDataKey {
   //the fields used as keys must be consistent with the fields defined by the associated MarketDataType
   // The fields include those in field values, plus market data fields. E.g. for price data the market
   // data fields are Month, price
-  def rows(t : marketDataType, referenceDataLookup: ReferenceDataLookup): Iterable[Row]
-
-  def castRows(marketData:MarketData, referenceDataLookup: ReferenceDataLookup) = rows(cast(marketData), referenceDataLookup)
+//  final def rows(t : marketDataType, referenceDataLookup: ReferenceDataLookup): Iterable[Row] = throw new Exception("Replace")
 
   //def create(rows:Iterable[Map[Field,Any]]):marketDataType = throw new Exception
 
@@ -39,7 +34,7 @@ trait MarketDataKey {
   // E.g. for price data this would have commodity, market, Exchange
   // Used as an optimisation. The gui first gets the markets from this function to display in
   // the field chooser - base on the choice 'rows' is called to get the actual market data to display.
-  def fieldValues(referenceDataLookup: ReferenceDataLookup = ReferenceDataLookup.Null) :Map[Field,Any]
+  def fieldValues(referenceDataLookup: ReferenceDataLookup = ReferenceDataLookup.Null): Row
 
   def read(slice:MarketDataSlice):marketDataType = cast(slice.read(this))
   def read(observationPoint: ObservationPoint, reader: MarketDataReader): marketDataType =
@@ -48,18 +43,6 @@ trait MarketDataKey {
   private def cast(marketData:MarketData):marketDataType = marketData.asInstanceOf[marketDataType]
 
   def unmarshallDB(dbValue: Any): marketDataType = dbValue.asInstanceOf[marketDataType]
-
-  def valueKey(row: Row): MarketDataValueKey = {
-    val fields = dataType.keyFields -- fieldValues().keySet
-
-    MarketDataValueKey(-1, row.filterKeys(fields.contains))
-  }
-
-  def valueKeys(data: Option[MarketData], referenceDataLookup: ReferenceDataLookup): List[MarketDataValueKey] =
-    data.fold(valueKeys(_, referenceDataLookup: ReferenceDataLookup), Nil)
-
-  def valueKeys(data: MarketData, referenceDataLookup: ReferenceDataLookup) =
-    castRows(data, referenceDataLookup).map(row => valueKey(row)).toList
 }
 
 case class TimedMarketDataKey(observationPoint: ObservationPoint, key: MarketDataKey) {
@@ -69,7 +52,10 @@ case class TimedMarketDataKey(observationPoint: ObservationPoint, key: MarketDat
 
   def dataType = key.dataType
   def fieldValues(referenceDataLookup: ReferenceDataLookup) = key.fieldValues(referenceDataLookup)
-  def castRows(marketData: MarketData, referenceDataLookup: ReferenceDataLookup) = key.castRows(marketData, referenceDataLookup)
+
+  def castRows(marketData: MarketData, referenceDataLookup: ReferenceDataLookup) =
+    key.dataType.castRows(key, marketData, referenceDataLookup)
+
   def unmarshallDB(dbValue: Any) = key.unmarshallDB(dbValue)
 
   def asTuple = (observationPoint, key)

@@ -8,6 +8,7 @@ import scalaz.Scalaz._
 
 object PriceFixingsHistoryDataType extends MarketDataType {
   type dataType = PriceFixingsHistoryData
+  type keyType = PriceFixingsHistoryDataKey
   val marketField = FieldDetails("Market")
   val levelField = FieldDetails("Level")
   val periodField = new FieldDetails("Period") {
@@ -35,6 +36,18 @@ object PriceFixingsHistoryDataType extends MarketDataType {
     }
 
     PriceFixingsHistoryData.create(prices)
+  }
+
+
+  def rows(key: PriceFixingsHistoryDataKey, data: PriceFixingsHistoryData, referenceDataLookup: ReferenceDataLookup) = {
+    data.fixings.map { case ((level, period), fixing) =>
+      Row(
+        PriceFixingsHistoryDataType.marketField.field → key.marketName,
+        PriceFixingsHistoryDataType.levelField.field → level.name,
+        PriceFixingsHistoryDataType.periodField.field → period,
+        PriceFixingsHistoryDataType.priceField.field → fixing.pivotValue
+      ) +? (PriceFixingsHistoryDataType.exchangeField.field → key.exchangeName)
+    }
   }
 
   private def marketValue(value: Any) = value match {

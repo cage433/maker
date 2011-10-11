@@ -13,6 +13,7 @@ class VolSurfaceData
 
 object OilVolSurfaceDataType extends MarketDataType{
   type dataType = OilVolSurfaceData
+  type keyType = OilVolSurfaceDataKey
   lazy val keys : List[OilVolSurfaceDataKey] = Market.all.filter(_.volatilityID.isDefined).map(OilVolSurfaceDataKey)
 
   def marketDataKeyFields = Set(marketField.field)
@@ -49,6 +50,22 @@ object OilVolSurfaceDataType extends MarketDataType{
     rowFields=List(periodField.field),
     columnFields=List(deltaField.field)
   )
+
+  def rows(key: OilVolSurfaceDataKey, data: OilVolSurfaceData, referenceDataLookup: ReferenceDataLookup) = {
+    (data.periods zipWithIndex).flatMap { case (period, index) => {
+      val atmVol = data.atmVols(index)
+      (data.skewDeltas zip data.skews).map { case (delta, vols) => Row(
+        OilVolSurfaceDataType.marketField.field → key.market.name,
+        OilVolSurfaceDataType.periodField.field → period,
+        OilVolSurfaceDataType.deltaField.field → delta.toString,
+        OilVolSurfaceDataType.volatilityField.field → vols(index))
+      } ++ List(Row(
+        OilVolSurfaceDataType.marketField.field → key.market.name,
+        OilVolSurfaceDataType.periodField.field → period,
+        OilVolSurfaceDataType.deltaField.field → "ATM",
+        OilVolSurfaceDataType.volatilityField.field → atmVol))
+    } }
+  }
 }
 
 case class OilVolSurfaceDataKey(market: CommodityMarket) extends MarketDataKey {
@@ -56,24 +73,7 @@ case class OilVolSurfaceDataKey(market: CommodityMarket) extends MarketDataKey {
   type marketDataDBType = OilVolSurfaceData
   def dataType = OilVolSurfaceDataType
   def subTypeKey = market.toString
-  override def rows(data : OilVolSurfaceData, referenceDataLookup: ReferenceDataLookup) = (data.periods zipWithIndex).flatMap {
-    case (period, index) => {
-      val atmVol = data.atmVols(index)
-      (data.skewDeltas zip data.skews).map { case (delta, vols) => {
-        Row(
-          OilVolSurfaceDataType.marketField.field -> market.name,
-          OilVolSurfaceDataType.periodField.field -> period,
-          OilVolSurfaceDataType.deltaField.field -> delta.toString,
-          OilVolSurfaceDataType.volatilityField.field -> vols(index))
-      }} ++ List(Row(
-          OilVolSurfaceDataType.marketField.field -> market.name,
-          OilVolSurfaceDataType.periodField.field -> period,
-          OilVolSurfaceDataType.deltaField.field -> "ATM",
-          OilVolSurfaceDataType.volatilityField.field -> atmVol))
-    }
-  }
-
-  def fieldValues(referenceDataLookup: ReferenceDataLookup) = Map(OilVolSurfaceDataType.marketField.field → market.name)
+  def fieldValues(referenceDataLookup: ReferenceDataLookup) = Row(OilVolSurfaceDataType.marketField.field → market.name)
 }
 
 

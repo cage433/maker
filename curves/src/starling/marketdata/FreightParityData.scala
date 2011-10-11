@@ -3,6 +3,7 @@ package starling.marketdata
 import starling.pivot._
 import scalaz.Scalaz._
 import starling.quantity.{Quantity, UOM}
+import starling.pivot.Row._
 
 case class FreightParityData(parityRate: Double, comment: String) extends MarketData {
   def size = 1
@@ -17,26 +18,17 @@ case class FreightParityDataKey(contractualIncoterm: IncotermCode, contractualLo
   type marketDataDBType = FreightParityData
   def dataType = FreightParityDataType
   def subTypeKey = ""
-  def fieldValues(referenceDataLookup: ReferenceDataLookup) = Map(
+  def fieldValues(referenceDataLookup: ReferenceDataLookup) = Row(
     contractualIncotermField.field → referenceDataLookup.incotermFor(contractualIncoterm).name,
     contractualLocationField.field → referenceDataLookup.contractLocationFor(contractualLocation).name,
     destinationIncotermField.field → referenceDataLookup.incotermFor(destinationIncoterm).name,
     destinationLocationField.field → referenceDataLookup.countryFor(destinationLocation).name
   )
-
-  override def rows(marketData: FreightParityData, referenceDataLookup: ReferenceDataLookup): List[Row] = List(Row(
-    fieldValues(referenceDataLookup),
-    contractualIncotermCodeField.field → contractualIncoterm.code,
-    contractualLocationCodeField.field → contractualLocation.code,
-    destinationIncotermCodeField.field → destinationIncoterm.code,
-    destinationLocationCodeField.field → destinationLocation.code,
-    parityRateField.field → Quantity(marketData.parityRate, UOM.USD / UOM.MT),
-    commentField.field → marketData.comment
-  ))
 }
 
 object FreightParityDataType extends MarketDataType {
   type dataType = FreightParityData
+  type keyType = FreightParityDataKey
 
   val keys@List(contractualIncotermCodeField, contractualLocationCodeField, destinationIncotermCodeField, destinationLocationCodeField) =
     List("Contractual Incoterm Code", "Contractual Location Code", "Destination Incoterm Code", "Destination Location Code").map(FieldDetails(_))
@@ -61,6 +53,16 @@ object FreightParityDataType extends MarketDataType {
   def createValue(rows: List[Row]): dataType = Row.singleRow(rows, "freight parity rate") |> { row =>
     FreightParityData(row.quantity(parityRateField).value, row.string(commentField))
   }
+
+  def rows(key: FreightParityDataKey, data: FreightParityData, referenceDataLookup: ReferenceDataLookup) =  List(
+    key.fieldValues(referenceDataLookup) +
+    (contractualIncotermCodeField.field → key.contractualIncoterm.code) +
+    (contractualLocationCodeField.field → key.contractualLocation.code) +
+    (destinationIncotermCodeField.field → key.destinationIncoterm.code) +
+    (destinationLocationCodeField.field → key.destinationLocation.code) +
+    (parityRateField.field → Quantity(data.parityRate, UOM.USD / UOM.MT)) +
+    (commentField.field → data.comment)
+  )
 }
 
 case class ContractualLocationCode(code: String)

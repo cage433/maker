@@ -55,13 +55,13 @@ class MarketDataPivotTableDataSource(reader: MarketDataReader, edits:PivotEdits,
 
   val observationDayAndMarketDataKeys = reader.readAllObservationDayAndMarketDataKeys(marketDataType)
 
-  val observationDayAndMarketDataKeyRows: Map[Map[Field, Any],TimedMarketDataKey] = observationDayAndMarketDataKeys.map { timedKey =>
+  val observationDayAndMarketDataKeyRows: Map[Row, TimedMarketDataKey] = observationDayAndMarketDataKeys.map { timedKey =>
     (timedKey.fieldValues(referenceDataLookup) + (observationTimeField.field → timedKey.timeName)
-      addSome (observationDayField.field → timedKey.day)) → timedKey
+      +? (observationDayField.field → timedKey.day)) → timedKey
   }.toMap
   val allMarketDataKeys = observationDayAndMarketDataKeys.map(_.key).toSet
 
-  val inMemoryFields = observationDayAndMarketDataKeyRows.keys.flatMap(_.keySet).toSet
+  val inMemoryFields = observationDayAndMarketDataKeyRows.keys.flatMap(_.fields).toSet
 
   override val initialState = {
     val observationDaySelection = if (observationDayAndMarketDataKeyRows.isEmpty) {
@@ -119,7 +119,7 @@ class MarketDataPivotTableDataSource(reader: MarketDataReader, edits:PivotEdits,
       marketDataStore.readLatest(editableSet, key) match {
         case vmd@Some(VersionedMarketData(_, Some(existingMarketData))) => {
           // TODO [6 Oct 2011] Detect collisions between rows & existingRows
-          (vmd, marketDataType.createValue(rows ::: key.key.castRows(existingMarketData, referenceDataLookup).toList))
+          (vmd, marketDataType.createValue(rows ::: key.key.dataType.castRows(key.key, existingMarketData, referenceDataLookup).toList))
         }
         case _ => (None, marketDataType.createValue(rows))
       }
@@ -129,7 +129,7 @@ class MarketDataPivotTableDataSource(reader: MarketDataReader, edits:PivotEdits,
   }
 
   def createRows(timedKey:TimedMarketDataKey, marketData:MarketData, referenceDataLookup: ReferenceDataLookup) ={
-    timedKey.key.castRows(marketData, referenceDataLookup).map { _ + (observationTimeField.field → timedKey.timeName) +?
+    timedKey.castRows(marketData, referenceDataLookup).map { _ + (observationTimeField.field → timedKey.timeName) +?
      (observationDayField.field → timedKey.day)}
   }
 
@@ -231,21 +231,16 @@ class MarketDataPivotTableDataSource(reader: MarketDataReader, edits:PivotEdits,
 
     val possibleValuesBuilder = new PossibleValuesBuilder(fieldDetails, filtersUpToFirstMarketDataField)
     for ((row,_) <- observationDayAndMarketDataKeyRows) {
-      possibleValuesBuilder += row
+      possibleValuesBuilder += row.value
     }
 
-    val marketDataKeyFields = allMarketDataKeys.headOption match {
-      case Some(mdf) => mdf.fieldValues().keySet.toList
-      case None => List()
-    }
+    val marketDataKeyFields = allMarketDataKeys.headOption.fold(_.fieldValues().fields.toList, Nil)
 
     val allFields = pfs.allFieldsUsed
 
     val marketDataFields = allFields.toList filterNot( f => (observationDayField.field :: observationTimeField.field :: marketDataKeyFields).contains(f) )
 
-    val data = if (marketDataFields.isEmpty) {
-      Row.create(observationDayAndMarketDataKeyRows.keys)
-    } else {
+    val data = if (marketDataFields.isEmpty) observationDayAndMarketDataKeyRows.keys.toList else {
 
       def selectedValues[T : Manifest](f: Field): Option[Set[Option[T]]] = {
         filters.find { case (field, selection) => field == f && selection.isInstanceOf[SomeSelection] }
@@ -260,7 +255,7 @@ class MarketDataPivotTableDataSource(reader: MarketDataReader, edits:PivotEdits,
 
       val keyClause: Option[Set[MarketDataKey]] = if(keyFilters.isEmpty) None else {
         val filterKeys: Set[MarketDataKey] = allMarketDataKeys.filter { key => {
-          val fieldValuesForkey: Map[starling.pivot.Field,Any] = key.fieldValues(referenceDataLookup)
+          val fieldValuesForkey: Row = key.fieldValues(referenceDataLookup)
           keyFilters.forall { case (field, values) =>
             fieldValuesForkey.get(field).map(value => values.contains(value)).getOrElse(true)
           }
@@ -296,7 +291,7 @@ class MarketDataPivotTableDataSource(reader: MarketDataReader, edits:PivotEdits,
 
     val addedRows = edits.newRows.zipWithIndex.map{case (row,index) => {
       val fixedRow = if (marketDataType.marketDataKeyFields.forall(f => row.isDefined(f))) {
-        row ++ marketDataType.createKey(row).fieldValues(referenceDataLookup)
+        row + marketDataType.createKey(row).fieldValues(referenceDataLookup)
       } else {
         row
       }

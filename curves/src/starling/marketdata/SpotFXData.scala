@@ -6,6 +6,7 @@ import starling.pivot._
 
 object SpotFXDataType extends MarketDataType {
   type dataType = SpotFXData
+  type keyType = SpotFXDataKey
   val keys = UOM.currencies.filterNot(_ == UOM.USD).map(s=>SpotFXDataKey(s))
   val currencyField = FieldDetails("Currency")
   val rateField = new PivotQuantityFieldDetails("Rate")
@@ -20,6 +21,11 @@ object SpotFXDataType extends MarketDataType {
   def keyFields = Set(currencyField.field)
   def valueFields = List(rateField.field)
   val fields = List(currencyField, rateField)
+
+  def rows(key: SpotFXDataKey, data: SpotFXData, referenceDataLookup: ReferenceDataLookup) = List(Row(
+    currencyField.field → key.ccy.toString,
+    rateField.field → PivotQuantity(data.rate)
+  ))
 }
 
 /**
@@ -30,12 +36,7 @@ case class SpotFXDataKey(ccy: UOM) extends MarketDataKey {
   type marketDataDBType = SpotFXData
   def dataType = SpotFXDataType
   def subTypeKey = ccy.toString
-  override def rows(data : SpotFXData, referenceDataLookup: ReferenceDataLookup) = List(Row(
-    SpotFXDataType.currencyField.field → ccy.toString,
-    SpotFXDataType.rateField.field → PivotQuantity(data.rate)
-   ))
-
-  def fieldValues(referenceDataLookup: ReferenceDataLookup) = Map(SpotFXDataType.currencyField.field → ccy.toString)
+  def fieldValues(referenceDataLookup: ReferenceDataLookup) = Row(SpotFXDataType.currencyField.field → ccy.toString)
 }
 
 //For Example 0.0125 USD / JPY

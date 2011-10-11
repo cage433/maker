@@ -6,9 +6,11 @@ import starling.quantity.{Percentage, UOMSymbol, UOM}
 import starling.utils.ImplicitConversions._
 
 import starling.pivot._
+import starling.quantity.Percentage._
 
 object ForwardRateDataType extends MarketDataType {
   type dataType = ForwardRateData
+  type keyType = ForwardRateDataKey
   val keys = UOM.currencies.map(s => ForwardRateDataKey(s))
 
   def marketDataKeyFields = Set(currencyField.field)
@@ -33,6 +35,16 @@ object ForwardRateDataType extends MarketDataType {
   )
 
   val fields = List(currencyField, formatField, instrumentTypeField, dayField, rateField)
+
+  def rows(key: ForwardRateDataKey, data: ForwardRateData, referenceDataLookup: ReferenceDataLookup) = data.entries.map { entry =>
+    Row(
+        ForwardRateDataType.currencyField.field → key.ccy,
+        ForwardRateDataType.formatField.field → (if (entry.format== null) "" else entry.format),
+        ForwardRateDataType.instrumentTypeField.field → entry.trinityInstrumentType,
+        ForwardRateDataType.dayField.field → entry.forwardDay,
+        ForwardRateDataType.rateField.field → Percentage(entry.rate)
+    )
+  }
 }
 
 case class ForwardRateDataEntry(forwardDay : Day, format : String, trinityInstrumentType : String, rate : Double) {
@@ -48,19 +60,7 @@ case class ForwardRateDataKey(ccy : UOM) extends MarketDataKey {
   type marketDataDBType = ForwardRateData
   def dataType = ForwardRateDataType
   def subTypeKey = ccy.toString
-
-  override def rows(data : ForwardRateData, referenceDataLookup: ReferenceDataLookup) = data.entries.map { entry =>
-    val rateField = ForwardRateDataType.rateField.field -> Percentage(entry.rate)
-
-    Row(
-        ForwardRateDataType.currencyField.field -> ccy,
-        ForwardRateDataType.formatField.field -> (if (entry.format== null) "" else entry.format),
-        ForwardRateDataType.instrumentTypeField.field -> entry.trinityInstrumentType,
-        ForwardRateDataType.dayField.field -> entry.forwardDay,
-        rateField
-    )
-  }
-  def fieldValues(referenceDataLookup: ReferenceDataLookup) = Map(ForwardRateDataType.currencyField.field → ccy)
+  def fieldValues(referenceDataLookup: ReferenceDataLookup) = Row(ForwardRateDataType.currencyField.field → ccy)
 }
 
 case class ForwardRateData(entries : List[ForwardRateDataEntry]) extends MarketData {

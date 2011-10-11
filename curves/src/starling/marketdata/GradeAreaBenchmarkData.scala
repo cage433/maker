@@ -27,29 +27,16 @@ case class GradeAreaBenchmarkData(areaData : NestedMap[(GradeCode, AreaCode), Da
 
 /** Benchmark area market data key represents a list of grade, area market data rows keyed per commodity */
 case class GradeAreaBenchmarkMarketDataKey(commodity : Commodity) extends MarketDataKey {
-  import GradeAreaBenchmarkDataType._
-
   type marketDataType = GradeAreaBenchmarkData
   type marketDataDBType = GradeAreaBenchmarkData
   def dataType = GradeAreaBenchmarkDataType
   def subTypeKey = commodity.toString
-  def fieldValues(referenceDataLookup: ReferenceDataLookup) = Map(commodityField.field → commodity.name)
-
-  override def rows(marketData: GradeAreaBenchmarkData, referenceDataLookup: ReferenceDataLookup) = {
-    marketData.areaData.mapNested { case ((gradeCode, areaCode), effectiveFrom, price) => Row(
-      commodityField.field → commodity.name,
-      gradeCodeField.field → gradeCode.code,
-      gradeField.field → referenceDataLookup.gradeFor(gradeCode).name,
-      areaCodeField.field → areaCode.code,
-      areaField.field → referenceDataLookup.areaFor(areaCode).name,
-      effectiveFromField.field → effectiveFrom,
-      benchmarkPriceField.field → price.pq
-    ) }
-  }
+  def fieldValues(referenceDataLookup: ReferenceDataLookup) = Row(GradeAreaBenchmarkDataType.commodityField.field → commodity.name)
 }
 
 object GradeAreaBenchmarkDataType extends MarketDataType {
   type dataType = GradeAreaBenchmarkData
+  type keyType = GradeAreaBenchmarkMarketDataKey
 
   val commodityField = FieldDetails("Commodity", FixedPivotParser(Commodity.metalsCommodities.map(_.name).toSet))
   val areaField = FieldDetails("Area")
@@ -79,5 +66,17 @@ object GradeAreaBenchmarkDataType extends MarketDataType {
     }
 
     GradeAreaBenchmarkData(data.toNestedMap)
+  }
+
+  def rows(key: GradeAreaBenchmarkMarketDataKey, data: GradeAreaBenchmarkData, referenceDataLookup: ReferenceDataLookup) = {
+    data.areaData.mapNested { case ((gradeCode, areaCode), effectiveFrom, price) => Row(
+      commodityField.field → key.commodity.name,
+      gradeCodeField.field → gradeCode.code,
+      gradeField.field → referenceDataLookup.gradeFor(gradeCode).name,
+      areaCodeField.field → areaCode.code,
+      areaField.field → referenceDataLookup.areaFor(areaCode).name,
+      effectiveFromField.field → effectiveFrom,
+      benchmarkPriceField.field → price.pq
+    ) }
   }
 }

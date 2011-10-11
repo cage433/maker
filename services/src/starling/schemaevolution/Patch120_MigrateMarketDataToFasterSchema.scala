@@ -283,11 +283,11 @@ case class MigrateMarketDataSchema(writer: DBWriter, db: DB) extends Log {
       case e => log.fatal(xml); log.fatal("broken version: " + version); throw e
     }
 
-    key.castRows(key.unmarshallDB(refactoredData), ReferenceDataLookup.Null)
+    key.dataType.castRows(key, key.unmarshallDB(refactoredData), ReferenceDataLookup.Null)
   }
 
   private def getValueKey(key: MarketDataKey, row: Row): MarketDataValueKey = {
-    val fields = key.dataType.keyFields -- key.fieldValues().keySet
+    val fields = key.dataType.keyFields -- key.fieldValues().fields
 
     MarketDataValueKey(-1, row.filterKeys(fields.contains))
   }
@@ -544,7 +544,8 @@ case class MigrateMarketDataSchema(writer: DBWriter, db: DB) extends Log {
       val obj = StarlingXStream.read(cleanUpXml(xml))
 
       obj.safeCast[PriceFixingsHistoryData].map { priceFixingsHistoryData => {
-        val rows: Iterable[Row] = PriceFixingsHistoryDataKey("", Some("")).castRows(priceFixingsHistoryData, ReferenceDataLookup.Null)
+        val rows: Iterable[Row] = PriceFixingsHistoryDataType.castRows(
+          PriceFixingsHistoryDataKey("", Some("")), priceFixingsHistoryData, ReferenceDataLookup.Null)
 
         println(rows)
       } }

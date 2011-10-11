@@ -308,7 +308,7 @@ class NewSchemaMdDB(db: DBTrait[RichResultSetRow], referenceDataLookup: Referenc
         val extendedKey = findOrUpdateExtendedKey(id.extendedKey, commitId)
         val observationDay = id.observationPoint.day.getOrElse(null)
 
-        val existingValueKeys = id.subTypeKey.valueKeys(existingData.flatMap(_.data), referenceDataLookup).
+        val existingValueKeys = existingData.flatMap(_.data).fold(id.valueKeys(_, referenceDataLookup), Nil).
           map(findOrUpdateValueKey(_))
 
         val template = Map("observationDay" → observationDay, "extendedKey" → extendedKey.id, "commitId" → commitId,
