@@ -19,6 +19,7 @@ import starling.auth.{User, LdapUserLookup}
 import starling.manager._
 import starling.rmi.StarlingServer
 import starling.trade.facility.TradeFacility
+import starling.marketdata.DBReferenceDataLookup
 
 class TradeBromptonActivator extends BromptonActivator {
 
@@ -33,6 +34,8 @@ class TradeBromptonActivator extends BromptonActivator {
     val starlingRichDB = new RichDB(props.StarlingDatabase(), new RichResultSetRowFactory)
     val starlingDB = starlingRichDB.db
 
+    val neptuneRichDB = new RichDB(props.NeptuneDatabase(), new RichResultSetRowFactory)
+
     val eaiSqlServerDB = DB(props.EAIReplica())
     val strategyDB = new EAIStrategyDB(eaiSqlServerDB)
     val eaiTradeStores = Desk.eaiDesks.map{case desk@Desk(_, _, Some(_:EAIDeskInfo)) => desk ->
@@ -42,7 +45,8 @@ class TradeBromptonActivator extends BromptonActivator {
     val eaiStarlingDB = DB(props.EAIStarlingSqlServer())
     val eaiDealBookMapping = new EAIDealBookMapping(eaiSqlServerDB)
 
-    val titanTradeStore = new TitanTradeStore(starlingRichDB, broadcaster, TitanTradeSystem)
+    val neptuneReferenceDataLookup = DBReferenceDataLookup(neptuneRichDB)
+    val titanTradeStore = new TitanTradeStore(starlingRichDB, broadcaster, TitanTradeSystem, neptuneReferenceDataLookup)
 
     val enabledDesks: Set[Desk] = props.EnabledDesks().trim.toLowerCase match {
       case "" => throw new Exception("EnabledDesks property not set, valid values: all, none, " + Desk.names.mkString(", "))

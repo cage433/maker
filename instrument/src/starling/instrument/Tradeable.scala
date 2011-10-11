@@ -21,7 +21,7 @@ trait Tradeable extends AsUtpPortfolio {
   def explanation(env: Environment): NamedQuantity
 
   /**
-   * Hack so that for Jons option the premium has an associated market/index + period
+   * Hack so that for Jons option the premium has an associated mEnvironmentarket/index + period
    * so P&L and Theta have a Risk Market and Risk Period
    */
   def fixUpCashInstruments(ci: CashInstrument): CashInstrument = {
@@ -85,7 +85,6 @@ object TradeableType {
     ("Initial Price",classOf[SpreadOrQuantity]),
     ("Strike",classOf[Quantity]),
     ("Exercise Day",classOf[Day]),
-//    ("Spread", classOf[Quantity]),
     ("Maturity Day", classOf[Day]),
     ("Delivery Day", classOf[Day]),
     ("Call Put", classOf[String]),
@@ -93,7 +92,6 @@ object TradeableType {
     ("Cleared", classOf[Boolean]),
     ("PricingRule", classOf[SwapPricingRule]),
     ("RoundingMethodRule", classOf[RoundingMethodRule]),
-    //("Fixed Rate", classOf[String]),
     ("Error", classOf[String]),
     ("Estimated Delivery", classOf[Day]),
     ("Fixations", classOf[List[RefinedFixation]]),

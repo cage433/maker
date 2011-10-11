@@ -563,6 +563,13 @@ abstract class TradeStore(db: RichDB, broadcaster:Broadcaster, tradeSystem: Trad
     )
   }
 
+  /**
+   * Add fields whose value we don't know at the time of trade field construction. E.g. the country name
+   * corresponding to a titan country code
+   */
+  protected def addExtraInstrumentFields(map : Map[PField, Any]) = map
+  protected def addExtraInstrumentFieldDetails(list : List[FieldDetails]) = list
+
   private def createPivot(
                            timestamp : Timestamp,
                            marketDay : Option[Day],
@@ -578,12 +585,13 @@ abstract class TradeStore(db: RichDB, broadcaster:Broadcaster, tradeSystem: Trad
       private val tradeableTypes = new scala.collection.mutable.HashSet[TradeableType[_]]
       val pivotData = {
         val versions = tradeHistories.tradeRowsAsOf(timestamp, Some(expiryDay), marketDay=marketDay)
-        println("There are " + versions.size + " versions")
         Log.infoWithTime("Building pivot data") {
           versions.flatMap { case TradeAndFields(_, trade, details) => {
             tradeableTypes += trade.tradeable.tradeableType
             val joinedTradeAttributeDetails = joiningTradeAttributeFieldValues(trade.attributes)
-            val tradeFields = new AppendingMap(Map("Join"->joinedTradeAttributeDetails) ++ details.namedMaps)
+
+            val namedFieldMaps: Map[String, Map[Field, Any]] = Map("Join" -> joinedTradeAttributeDetails) ++ details.namedMaps
+            val tradeFields = new AppendingMap(namedFieldMaps.mapValues(addExtraInstrumentFields))
             if (filter(tradeFields)) {
               val utps = tradeHistories.tradeUTPs(trade)
               utps.map {
@@ -594,12 +602,11 @@ abstract class TradeStore(db: RichDB, broadcaster:Broadcaster, tradeSystem: Trad
                     new UTPIdentifier(id.asInstanceOf[Int], partitions)
                   }
                   new AppendingMap(Map(
-                    "UTP"->Map(
+                    "UTP" -> Map(
                       PField(instrumentID_str) -> utpID,
                       PField(tradeCount_str) -> details(PField(tradeID_str)),
                       PField(utpVolume_str) -> volume
-                    )) ++ tradeFields.namedMaps //++tradeHistories.utpDetails(utp),
-                  )
+                    )) ++ tradeFields.namedMaps)
                 }
 
               }
@@ -622,10 +629,15 @@ abstract class TradeStore(db: RichDB, broadcaster:Broadcaster, tradeSystem: Trad
 
   private def createFieldDetailGroups(tradeableTypes:Set[TradeableType[_]]) = {
     val allFieldNames = Set() ++ tradeableTypes.flatMap(_.fields)
+    val instrumentFieldDetails: List[FieldDetails] = addExtraInstrumentFieldDetails(
+      TradeableFields.fieldDetails.filter(
+        fd => allFieldNames.contains(fd.field.name)
+      )
+    )
     List(
       FieldDetailsGroup("Trade Fields", JustTradeFields.fieldDetails),
       FieldDetailsGroup("Trade System Fields", tradeAttributeFieldDetails),
-      FieldDetailsGroup("Instrument Fields", TradeableFields.fieldDetails.filter(fd=>allFieldNames.contains(fd.field.name)))
+      FieldDetailsGroup("Instrument Fields", instrumentFieldDetails)
     ).filter(_.fields.nonEmpty)
   }
 

@@ -1,14 +1,15 @@
 package starling.titan
 
-import starling.pivot.{DrillDownInfo, PivotAxis, PivotFieldsState, Field}
 import starling.richdb.{RichDB, RichInstrumentResultSetRow}
 import starling.utils.Broadcaster
-import starling.pivot.FieldDetails
 import starling.gui.api.{Desk, TradesUpdated}
-import starling.instrument.physical.PhysicalMetalForward
 import starling.tradestore.{TradeRow, TradeStore}
 import starling.instrument.{Trade, TradeableType, TradeSystem}
 import EDMConversions._
+import collection.immutable.Map
+import starling.instrument.physical.{PhysicalMetalAssignmentOrUnassignedSalesQuota, PhysicalMetalForward}
+import starling.pivot._
+import starling.marketdata.{GradeCode, ContractualLocationCode, NeptuneCountryCode, ReferenceDataLookup}
 
 object TitanTradeStore {
   val quotaID_str = "Quota ID"
@@ -31,7 +32,7 @@ object TitanTradeStore {
                     tolerancePlus_str, toleranceMinus_str, eventID_str)
 }
 
-class TitanTradeStore(db: RichDB, broadcaster:Broadcaster, tradeSystem:TradeSystem)
+class TitanTradeStore(db: RichDB, broadcaster:Broadcaster, tradeSystem:TradeSystem, refDataLookup : ReferenceDataLookup)
         extends TradeStore(db, broadcaster, tradeSystem) {
   val tableName = "TitanTrade"
   def createTradeAttributes(row:RichInstrumentResultSetRow) = {
@@ -92,5 +93,32 @@ class TitanTradeStore(db: RichDB, broadcaster:Broadcaster, tradeSystem:TradeSyst
     PhysicalMetalForwardBuilder(getTradesForTitanTradeID(titanTradeID))
   }
 
+  override protected def addExtraInstrumentFields(map: Map[Field, Any]) = {
+    import PhysicalMetalAssignmentOrUnassignedSalesQuota._
+    val extraFields = map.flatMap {
+      case (field, value) =>
+        println("Field name = " + field.name + ", " + (field.name == "Benchmark Country Code"))
+        (field.name, value) match {
+          case ("Benchmark Country Code", code: String) => Some(Field("Benchmark Country") -> refDataLookup.countryFor(NeptuneCountryCode(code)).name)
+          case ("Contract Location Code", code: String) => Some(Field("Contract Location") -> refDataLookup.contractLocationFor(ContractualLocationCode(code)).name)
+          case ("Grade Code", code: String) => Some(Field("Grade") -> refDataLookup.gradeFor(GradeCode(code)).name)
+          case _ => None
+        }
+    }
+    println("Extra fields")
+    extraFields.foreach(println)
+    map ++ extraFields
+  }
+
+  override protected def addExtraInstrumentFieldDetails(list: List[FieldDetails]) = {
+    val map = Map(
+      "Benchmark Country Code" -> FieldDetails("Benchmark Country"),
+      "Contract Location Code" -> FieldDetails("Contract Location"),
+      "Grade Code" -> FieldDetails("Grade")
+     )
+    val extraDetails = list.flatMap{fd => map.get(fd.field.name)}
+    list ::: extraDetails
+
+  }
 }
 
