@@ -28,5 +28,4 @@ class CannedActivator extends BromptonActivator {
     context.registerService(classOf[BrowserService], CannedBrowserService)
     context.registerService(classOf[BrowserBundle], CannedBrowserBundle)
   }
-  def stop(context: BromptonContext) = {}
 }

@@ -58,11 +58,11 @@ class TradeBromptonActivator extends BromptonActivator {
       eaiTradeStores, intradayTradesDB,
       titanTradeStore)
 
-    context.createServiceTracker(Some(classOf[TradeImporter]), Nil, new BromptonServiceCallback[TradeImporter] {
-      def serviceAdded(ref: BromptonServiceReference, importer: TradeImporter) {
+    context.createServiceTracker(Some(classOf[TradeImporter]), ServiceProperties(), new BromptonServiceCallback[TradeImporter] {
+      def serviceAdded(ref: BromptonServiceReference, properties:ServiceProperties, importer: TradeImporter) {
         tradeStores.registerTradeImporter(ref, importer)
       }
-      def serviceRemoved(ref: BromptonServiceReference) {
+      override def serviceRemoved(ref: BromptonServiceReference) {
         tradeStores.unregister(ref)
       }
     })
@@ -82,9 +82,7 @@ class TradeBromptonActivator extends BromptonActivator {
     )
 
     context.registerService(classOf[TradeStores], tradeStores)
-    context.registerService(classOf[AnyRef], tradeHandler, ExportXlloopProperty::ExportLoopyProperty::Nil)
-    context.registerService(classOf[TradeFacility], tradeService, ExportGuiRMIProperty::Nil)
+    context.registerService(classOf[AnyRef], tradeHandler, ServiceProperties(ExportXlloopProperty, ExportLoopyProperty))
+    context.registerService(classOf[TradeFacility], tradeService, ServiceProperties(ExportGuiRMIProperty))
   }
-
-  def stop(context: BromptonContext) {}
 }

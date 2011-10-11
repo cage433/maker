@@ -21,6 +21,7 @@ import starling.daterange.{ObservationPoint, TimeOfDay, ObservationTimeOfDay}
 import starling.gui.api.{PricingGroup, EnvironmentRuleLabel}
 import starling.marketdata.ReferenceDataLookup
 import starling.utils.ImplicitConversions._
+import javax.servlet.http.HttpServlet
 
 class ServicesBromptonActivator extends BromptonActivator {
 
@@ -43,9 +44,9 @@ class ServicesBromptonActivator extends BromptonActivator {
       startEAIAutoImportThread=props.ImportsBookClosesFromEAI(),
       marketDataReadersProviders = bromptonMarketDataReaderProviders
     )
-    context.registerService(classOf[StarlingServer], starlingInit.starlingServer,ExportGuiRMIProperty::Nil)
-    context.registerService(classOf[FC2Facility], starlingInit.fc2Service,ExportGuiRMIProperty::Nil)
-    context.registerService(classOf[BrowserService], starlingInit.browserService,ExportGuiRMIProperty::Nil)
+    context.registerService(classOf[StarlingServer], starlingInit.starlingServer,ServiceProperties(ExportGuiRMIProperty))
+    context.registerService(classOf[FC2Facility], starlingInit.fc2Service,ServiceProperties(ExportGuiRMIProperty))
+    context.registerService(classOf[BrowserService], starlingInit.browserService,ServiceProperties(ExportGuiRMIProperty))
 
 
     context.registerService(classOf[UserSettingsDatabase], starlingInit.userSettingsDatabase)
@@ -54,18 +55,18 @@ class ServicesBromptonActivator extends BromptonActivator {
     context.registerService(classOf[CurveViewer], starlingInit.curveViewer)
 
     starlingInit.xlloopAndloopyReceivers.foreach { receiver => {
-      context.registerService(classOf[AnyRef], receiver, ExportLoopyProperty::ExportXlloopProperty::Nil)
+      context.registerService(classOf[AnyRef], receiver, ServiceProperties(ExportLoopyProperty, ExportXlloopProperty))
     }}
-    context.registerService(classOf[AnyRef], starlingInit.curveHandler, ExportXlloopProperty::Nil)
+    context.registerService(classOf[AnyRef], starlingInit.curveHandler, ServiceProperties(ExportXlloopProperty))
 
     { // Environment Rules
       context.registerService(classOf[EnvironmentRules], starlingInit.environmentRules)
       context.createServiceTracker(Some(classOf[EnvironmentRule]), serviceTracker = new BromptonServiceCallback[EnvironmentRule] {
-        def serviceAdded(ref: BromptonServiceReference, environmentRule: EnvironmentRule) = {
+        def serviceAdded(ref: BromptonServiceReference, properties:ServiceProperties, environmentRule: EnvironmentRule) = {
           starlingInit.environmentRules.add(environmentRule)
         }
 
-        def serviceRemoved(ref: BromptonServiceReference) = {
+        override def serviceRemoved(ref: BromptonServiceReference) = {
           throw new Exception("Not implemented")
         }
       })
@@ -84,21 +85,21 @@ class ServicesBromptonActivator extends BromptonActivator {
     context.registerService(classOf[ReferenceDataLookup], starlingInit.referenceDataLookup)
 
     excelLoopReceiver = new ExcelLoopReceiver(starlingInit.ldapUserLookup, props.XLLoopPort())
-    context.createServiceTracker(None,  ExportXlloopProperty::Nil, new BromptonServiceCallback[AnyRef] {
-      def serviceAdded(ref: BromptonServiceReference, service: AnyRef) = {
+    context.createServiceTracker(None,  ServiceProperties(ExportXlloopProperty), new BromptonServiceCallback[AnyRef] {
+      def serviceAdded(ref: BromptonServiceReference, properties:ServiceProperties, service: AnyRef) = {
         excelLoopReceiver.register(ref, service)
       }
-      def serviceRemoved(ref: BromptonServiceReference) = {
+      override def serviceRemoved(ref: BromptonServiceReference) = {
         excelLoopReceiver.unregister(ref)
       }
     })
     excelLoopReceiver.start
 
     starlingInit.start
-    //starlingInit.servlets.foreach { case (name, servlet) => context.registerService(classOf[HttpServlet], servlet, List(HttpContext(name)))}
+    starlingInit.servlets.foreach { case (name, servlet) => context.registerService(classOf[HttpServlet], servlet, ServiceProperties(HttpContext(name))) }
   }
 
-  def stop(context: BromptonContext) {
+  override def stop(context: BromptonContext) {
     if (starlingInit != null) {
       starlingInit.stop
     }

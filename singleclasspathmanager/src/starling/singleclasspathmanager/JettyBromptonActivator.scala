@@ -1,9 +1,6 @@
 package starling.singleclasspathmanager
 
 import starling.manager.{BromptonServiceReference, BromptonServiceCallback, BromptonContext, BromptonActivator}
-import javax.servlet.http.HttpServlet
-import org.mortbay.jetty.servlet.{Context, ServletHolder}
-import org.mortbay.jetty.{Server => JettyServer}
 
 class JettyBromptonActivator extends BromptonActivator {
   def start(context:BromptonContext) {
@@ -19,6 +16,4 @@ class JettyBromptonActivator extends BromptonActivator {
 //
 //    server.start()
   }
-
-  def stop(context:BromptonContext) {}
 }

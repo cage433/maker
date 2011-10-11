@@ -1,27 +1,51 @@
 package starling.manager
 
+import java.util.{Hashtable, Dictionary}
+
 class Brompton
 
 trait BromptonActivator {
   def start(context:BromptonContext)
-  def stop(context:BromptonContext)
+  def stop(context:BromptonContext) {}
 }
 
 class ServiceProperty(val name:String, val value:AnyRef)
+
+case class ServiceProperties(properties: ServiceProperty*) {
+  def get[T <: ServiceProperty : Manifest]: T = {
+    val propertyType = implicitly[Manifest[T]].erasure
+
+    properties.find(property => propertyType.isAssignableFrom(property.getClass)).getOrElse(
+      throw new Exception("No property of type: " + propertyType)).asInstanceOf[T]
+  }
+
+  def toDictionary: Dictionary[_, _] = mapToDictionary(properties.map(p => p.name → p.value).toMap)
+  def toFilters: List[String] = properties.map { sp => "("+sp.name+"="+sp.value+")"}.toList
+  def contains(serviceProperties: ServiceProperties) = serviceProperties.properties.forall(p => properties.contains(p))
+
+  private def mapToDictionary(map:Map[String,AnyRef]):Dictionary[_,_] = {
+    val table = new Hashtable[String,AnyRef]()
+    map.foreach ( kv => table.put(kv._1, kv._2))
+    table
+  }
+}
+
 
 case class ServiceName(serviceName:String) extends ServiceProperty("name", serviceName)
 case class HttpContext(context:String) extends ServiceProperty("alias", "/"+context)
 object ExportGuiRMIProperty extends ServiceProperty("export.rmi.gui", java.lang.Boolean.TRUE)
 object ExportTitanRMIProperty extends ServiceProperty("export.rmi.titan", java.lang.Boolean.TRUE)
+object ExportTitanHTTPProperty extends ServiceProperty("export.http.titan", java.lang.Boolean.TRUE)
 object ExportXlloopProperty extends ServiceProperty("export.xlloop", java.lang.Boolean.TRUE)
 object ExportLoopyProperty extends ServiceProperty("export.loopy", java.lang.Boolean.TRUE)
+
 
 class NoServiceFoundException(message:String) extends RuntimeException(message)
 case class BromptonServiceReference(id:String, klasses:List[String])
 
 trait BromptonServiceCallback[T] {
-  def serviceAdded(ref:BromptonServiceReference, service:T)
-  def serviceRemoved(ref:BromptonServiceReference)
+  def serviceAdded(ref:BromptonServiceReference, properties:ServiceProperties, service:T)
+  def serviceRemoved(ref:BromptonServiceReference) {}
 }
 
 trait BromptonServiceTracker[T] {
@@ -41,14 +65,13 @@ trait BromptonContext {
   def registerService[T](
       klass:Class[T],
       service:T,
-      properties:List[ServiceProperty]=List()):BromptonServiceRegistration
+      properties:ServiceProperties=ServiceProperties()):BromptonServiceRegistration
   def awaitService[T](klass:Class[T]):T
   def createServiceTracker[T](
     klass:Option[Class[T]],
-    properties:List[ServiceProperty]=Nil,
+    properties:ServiceProperties=ServiceProperties(),
     serviceTracker:BromptonServiceCallback[T]=new BromptonServiceCallback[T] {
-      def serviceAdded(ref: BromptonServiceReference, service: T) {}
-      def serviceRemoved(ref: BromptonServiceReference) {}
+      def serviceAdded(ref: BromptonServiceReference, properties:ServiceProperties, service: T) {}
     }):BromptonServiceTracker[T]
 }
 

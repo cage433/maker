@@ -220,7 +220,7 @@ object StarlingBuild extends Build{
   lazy val gui = Project(
     "gui", 
     file("./gui"),
-    settings = standardSettings
+    settings = standardSettings ++ libJar("servlet-api-jar-2.5.jar")
   ) dependsOn(fc2Facility, tradeFacility, reportsFacility, browser, rabbitEventViewerApi, singleClasspathManager)
 
   lazy val tradeFacility = Project(
@@ -272,6 +272,13 @@ object StarlingBuild extends Build{
 	}
 
   def titanBinaryJars(base : File) : Seq[Attributed[File]] = (((base / "../lib/titan-model-jars") ** "*.jar")).getFiles.map{f : File => Attributed.blank(f)}
+  def libJar(jarName: String): Seq[Setting[_]] = {
+    def jars(base : File) : Seq[Attributed[File]] = (((base / "../lib/") ** jarName)).getFiles.map{f : File => Attributed.blank(f)}
+
+    Seq(unmanagedJars in Compile <++= (baseDirectory) map jars) ++
+    Seq(unmanagedJars in Runtime <++= (baseDirectory) map jars) ++
+    Seq(unmanagedJars in Test <++= (baseDirectory) map jars)
+  }
 
   lazy val services = Project(
     "services", 
@@ -302,13 +309,19 @@ object StarlingBuild extends Build{
     "startserver",
     file("./startserver"),
     settings = standardSettings
-  ) dependsOn(services, reportsImpl, tradeImpl, metals, starlingClient, singleClasspathManager, rabbitEventViewerService)
+  ) dependsOn(services, reportsImpl, tradeImpl, metals, starlingClient, singleClasspathManager, rabbitEventViewerService, webservice)
 
   lazy val launcher = Project(
     "launcher", 
     file("./launcher"),
     settings = standardSettings
   ) dependsOn(startserver, gui, singleClasspathManager)
+
+  lazy val webservice = Project(
+    "webservice",
+    file("./webservice"),
+    settings = standardSettings ++ libJar("servlet-api-jar-2.5.jar")
+  ) dependsOn(utils, manager, props)
 
   // Evil hack so that I can get a classpath exported including the test-classes of all projects.
   // See bin/write-classpath-script.sh
@@ -363,7 +376,8 @@ object StarlingBuild extends Build{
     dbx,
     startserver,
     starlingApi,
-    starlingClient
+    starlingClient,
+    webservice
   )
 
   val childProjects : List[ProjectReference] =  otherProjectRefereneces ::: titanModelReference

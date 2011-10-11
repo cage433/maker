@@ -12,6 +12,4 @@ class AuthBromptonActivator extends BromptonActivator {
     context.registerService(classOf[AuthHandler], auth)
     context.registerService(classOf[LdapUserLookup], ldapUserLookup)
   }
-  def stop(context: BromptonContext) {
-  }
 }

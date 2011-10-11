@@ -87,7 +87,7 @@ object DataSourceFactory {
 //    context.registerService(classOf[DataSourceFactory], datasourceFactory)
 //  }
 //
-//  def stop(context: BromptonContext) = {
+//  override def stop(context: BromptonContext) = {
 //    datasourceFactory.shutdown
 //  }
 //}
