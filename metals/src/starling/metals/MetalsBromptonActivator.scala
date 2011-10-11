@@ -17,7 +17,6 @@ import com.trafigura.services.ResteasyServiceApi._
 import com.trafigura.services.{ResteasyServiceApi, WebServiceFactory}
 import starling.utils.ObservingBroadcaster._
 import starling.databases.utils.{RabbitMessageSender, RabbitBroadcaster}
-import starling.services.{EmailBroadcaster, Scheduler}
 import starling.services.rabbit.TitanRabbitIdBroadcaster._
 import starling.services.rabbit.{TitanRabbitIdBroadcaster, MockTitanRabbitEventServices, DefaultTitanRabbitEventServices}
 import org.springframework.mail.javamail.JavaMailSenderImpl
@@ -39,6 +38,7 @@ import starling.titan.TitanTradeStoreManager._
 import starling.titan.{TitanTradeStoreManager, TitanSystemOfRecord, TitanTradeStore}
 import com.trafigura.services.marketdata.{ExampleServiceApi, MarketDataServiceApi, ExampleService}
 import starling.manager._
+import starling.services.{ReferenceData, ReferenceDataService, EmailBroadcaster, Scheduler}
 
 class MetalsBromptonActivator extends BromptonActivator {
 
@@ -127,6 +127,9 @@ class MetalsBromptonActivator extends BromptonActivator {
 
     val scheduler = Scheduler.create(businessCalendars, marketDataStore, broadcaster, trinityUploader, props)
     scheduler.start
+
+    context.registerService(classOf[ReferenceData], new ReferenceData("Schedules", ReferenceDataService.schedules(scheduler)))
+
 
     new StarlingJMX(scheduler).start
 

@@ -178,11 +178,13 @@ class StarlingInit( val props: Props,
   val environmentRules = new EnvironmentRules
   val curveViewer = new CurveViewer(marketDataStore, environmentRules)
 
-  val referenceData = new ReferenceData(businessCalendars, marketDataStore/*, scheduler*/) //add scheduler
+  val referenceDataService = new ReferenceDataService()
+  referenceDataService.add(new ReferenceData("Calendars", ReferenceDataService.calendars(businessCalendars)))
+  referenceDataService.add(new ReferenceData("Pricing Groups", ReferenceDataService.pricingGroups(marketDataStore)))
 
   val starlingServer = new StarlingServerImpl(name,
     userSettingsDatabase,
-    version, referenceData, businessCalendars.UK)
+    version, referenceDataService, businessCalendars.UK)
 
   val fc2Service = new FC2FacilityImpl(marketDataStore, curveViewer, marketDataReadersProviders, referenceDataLookup,
     environmentRules)

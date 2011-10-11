@@ -5,38 +5,46 @@ import collection.immutable.List
 import starling.calendar.BusinessCalendars
 import starling.daterange.Day
 import starling.db.MarketDataStore
-import starling.eai.EAIStrategyDB
 import starling.gui.api.ReferenceDataLabel
 import starling.market._
 import starling.market.formula.FormulaIndex
 import starling.pivot._
 import starling.pivot.model.PivotTableModel
 import starling.utils.ImplicitConversions._
+import scala.collection.JavaConversions._
+
+class ReferenceData(val name:String, val pivot:PivotTableDataSource)
 
 /**
  * Represents reference data (calendars, markets, ...) as pivots where possible
  */
-class ReferenceData(businessCalendars: BusinessCalendars,
-                    marketDataStore: MarketDataStore
-                    /*scheduler: Scheduler FIXME*/) {
+class ReferenceDataService() {
 
-  val referenceDatas = List(
-    "Futures Markets"   → futuresMarketPivot(),
-    "Futures Front Period Indexes" → futuresFronPeriodIndexes(),
-    "Formula Indexes"   → formulaIndexes(),
-    "Published Indexes" → publishedIndexes(),
-    "Pricing Groups"    → pricingGroups(),
-    //"Schedules"         → schedules(scheduler),
-    "Calendars"         → calendars(businessCalendars)
-//    "Strategies"        → strategies(strategyDB))
-    )
+  def add(referenceData:ReferenceData) {
+    referenceDatas.put(referenceData.name, referenceData.pivot)
+  }
 
-  def referenceDataTables():List[ReferenceDataLabel] = referenceDatas.map{ t => ReferenceDataLabel(t._1) }
+  private val referenceDatas = new java.util.concurrent.ConcurrentHashMap[String,PivotTableDataSource]()
+
+  //Built in reference data - only static dependencies
+  add(new ReferenceData("Futures Markets", ReferenceDataService.futuresMarketPivot()))
+  add(new ReferenceData("Futures Front Period Indexes", ReferenceDataService.futuresFronPeriodIndexes()))
+  add(new ReferenceData("Formula Indexes", ReferenceDataService.formulaIndexes()))
+  add(new ReferenceData("Published Indexes", ReferenceDataService.publishedIndexes()))
+
+
+  def referenceDataTables():List[ReferenceDataLabel] = {
+    referenceDatas.map{ t => ReferenceDataLabel(t._1) }.toList.sortWith(_.name.toLowerCase < _.name.toLowerCase)
+  }
 
   def referencePivot(table: ReferenceDataLabel, pivotFieldParams: PivotFieldParams) = {
     val dataSource = referenceDatas.find(_._1==table.name).get._2
     PivotTableModel.createPivotData(dataSource, pivotFieldParams)
   }
+
+}
+
+object ReferenceDataService {
 
   def futuresMarketPivot() = {
     new UnfilteredPivotTableDataSource() {
@@ -223,7 +231,7 @@ class ReferenceData(businessCalendars: BusinessCalendars,
     }
   }
 
-  def pricingGroups() = {
+  def pricingGroups(marketDataStore:MarketDataStore) = {
     new UnfilteredPivotTableDataSource() {
       val pricingGroup = FieldDetails("Pricing Group")
       val source       = FieldDetails("Source")

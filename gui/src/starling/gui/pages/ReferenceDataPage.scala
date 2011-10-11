@@ -36,7 +36,7 @@ class ReferenceDataIndexPageComponent(context:PageContext, pageData:PageData) ex
       } else {
         calendarImage
       }
-      val shouldSkip2 = (table.name.toLowerCase.trim == "calendars")
+      val shouldSkip2 = false//(table.name.toLowerCase.trim == "calendars")
       val numberString = (index + 1).toString + "."
       def gotoPage(modifiers:Modifiers) {context.goTo(ReferenceDataPage(table, PivotPageState(false, PivotFieldParams(true, None))), modifiers)}
       val tableButton = new NumberedButton(table.name, imageToUse,

@@ -20,7 +20,7 @@ class StarlingServerImpl(
         val name:String,
         userSettingsDatabase:UserSettingsDatabase,
         versionInfo:Version,
-        referenceData:ReferenceData,
+        referenceData:ReferenceDataService,
         ukHolidayCalendar: BusinessCalendarSet
       ) extends StarlingServer with Log {
 

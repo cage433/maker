@@ -1,7 +1,6 @@
 package starling.services.osgi
 
 import starling.props.PropsHelper
-import starling.services.{StarlingInit}
 import starling.auth.AuthHandler
 import com.trafigura.services.valuation.ValuationServiceApi
 import com.trafigura.services.marketdata.MarketDataServiceApi
@@ -22,6 +21,7 @@ import starling.gui.api.{PricingGroup, EnvironmentRuleLabel}
 import starling.marketdata.ReferenceDataLookup
 import starling.utils.ImplicitConversions._
 import javax.servlet.http.HttpServlet
+import starling.services.{ReferenceData, StarlingInit}
 
 class ServicesBromptonActivator extends BromptonActivator {
 
@@ -83,6 +83,12 @@ class ServicesBromptonActivator extends BromptonActivator {
     }
 
     context.registerService(classOf[ReferenceDataLookup], starlingInit.referenceDataLookup)
+
+    context.createServiceTracker(Some(classOf[ReferenceData]),  ServiceProperties(), new BromptonServiceCallback[ReferenceData] {
+      def serviceAdded(ref: BromptonServiceReference, properties:ServiceProperties, referenceData: ReferenceData) = {
+        starlingInit.referenceDataService.add(referenceData)
+      }
+    })
 
     excelLoopReceiver = new ExcelLoopReceiver(starlingInit.ldapUserLookup, props.XLLoopPort())
     context.createServiceTracker(None,  ServiceProperties(ExportXlloopProperty), new BromptonServiceCallback[AnyRef] {
