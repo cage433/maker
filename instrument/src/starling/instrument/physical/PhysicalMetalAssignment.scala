@@ -8,305 +8,61 @@ import starling.utils.sql.PersistAsBlob
 import starling.market._
 import starling.titan.valuation.{CostsAndIncomeAllocatedSaleAssignmentValuation, CostsAndIncomeAllocatedPurchaseAssignmentValuation, PricingValuationDetails, CostsAndIncomeUnallocatedAssignmentValuation}
 import starling.quantity._
+import starling.marketdata.{GradeCode, ContractualLocationCode, NeptuneCountryCode}
 
-trait TitanPricingSpec {
+object PhysicalMetalAssignmentOrUnassignedSalesQuota{
+  val contractDeliveryDayLabel = "contractDeliveryDay"
+  val quantityLabel = "Quantity"
+  val commodityLabel = "Commodity"
+  val contractPricingSpecNameLabel = "contractPricingSpecName"
+  val contractPricingSpecLabel = "contractPricingSpec"
+  val contractLocationCodeLabel = "contractLocationCode"
+  val benchmarkPricingSpecNameLabel = "benchmarkPricingSpecName"
+  val benchmarkDeliveryDayLabel = "benchmarkDeliveryDay"
+  val benchmarkCountryCodeLabel = "benchmarkCountryCode"
+  val premiumLabel = "premium"
+  val exchangeLabel = "exchange"
+  val contractIndexLabel = "contractIndex"
+  val benchmarkIndexLabel = "benchmarkIndex"
+  val isPurchaseLabel = "isPurchase"
+  val directionLabel = "direction"
+  val gradeCodeLabel = "gradeCode"
 
-  def price(env: Environment): Quantity
-  def settlementDay(marketDay: DayAndTime): Day
+  def detailsFromRow(row: RichInstrumentResultSetRow) = new PhysicalMetalAssignmentOrUnassignedSalesQuota(){
+    val quantity = row.getQuantity(quantityLabel)
+    val commodityName = row.getString(commodityLabel)
+    val deliveryDay = row.getDay(contractDeliveryDayLabel)
+    val pricingSpec = row.getObject[TitanPricingSpec](contractPricingSpecLabel)
+    val contractLocationCode = ContractualLocationCode(row.getString(contractLocationCodeLabel))
+    val benchmarkDeliveryDay = if (!row.isNull(benchmarkDeliveryDayLabel)) Some(row.getDay(benchmarkDeliveryDayLabel)) else None
+    val benchmarkCountryCode = (if (!row.isNull(benchmarkCountryCodeLabel)) Some(row.getString(benchmarkCountryCodeLabel)) else None).map(NeptuneCountryCode)
+    val grade = GradeCode(row.getString(gradeCodeLabel))
+    val isPurchase = row.getBoolean(isPurchaseLabel)
 
-  def premiumCCY: Option[UOM] = {
-    premium.uom.numeratorUOM match {
-      case UOM.NULL => None
-      case ccy => Some(ccy)
-    }
+    def instrumentType = throw new UnsupportedOperationException
+    def tradeableType = throw new UnsupportedOperationException
+    def asUtpPortfolio(tradeDay: Day) = throw new UnsupportedOperationException
+    def *(scale: Double) = throw new UnsupportedOperationException
+    def contractDeliveryDay = throw new UnsupportedOperationException
+    def contractPricingSpec = throw new UnsupportedOperationException
   }
 
-  def valuationCCY: UOM
 
-  def addPremiumConvertingIfNecessary(env: Environment, price: Quantity, premium: Quantity): Quantity = {
-    if (premium == Quantity.NULL)
-      price
-    else {
-      val premiumCurrency = premium.uom.numeratorUOM
-      val priceCurrency = price.uom.numeratorUOM
-      price * env.forwardFXRate(premiumCurrency, priceCurrency, settlementDay(env.marketDay)) + premium.named("Premium")
-    }
-  }
-
-  // This will go once EDM trades have both pricing specs
-  def dummyTransferPricingSpec: TitanPricingSpec
-
-  def fixedQuantity(marketDay: DayAndTime, totalQuantity: Quantity): Quantity
-
-  def isComplete(marketDay: DayAndTime): Boolean
-
-  def pricingType: String
-
-  def daysForPositionReport(marketDay: DayAndTime): List[Day]
-
-  def quotationPeriod: Option[DateRange]
-
-  def premium: Quantity
-
-  def indexOption: Option[IndexWithDailyPrices]
-
-  def expiryDay: Day
 }
-
-object TitanPricingSpec {
-  def calcSettlementDay(index: IndexWithDailyPrices, day: Day) = {
-    val lme = FuturesExchangeFactory.LME
-    val market: CommodityMarket = index.market
-    market.asInstanceOf[FuturesMarket].exchange match {
-      case `lme` => day.addBusinessDays(market.businessCalendar, 2)
-      case _ => day
-    }
-  }
-}
-
-case class AveragePricingSpec(index: IndexWithDailyPrices, period: DateRange,
-                              premium: Quantity) extends TitanPricingSpec {
-  val observationDays = index.observationDays(period)
-  // Just a guess
-  def settlementDay(marketDay: DayAndTime) = TitanPricingSpec.calcSettlementDay(index, period.lastDay)
-
-  def price(env: Environment) = addPremiumConvertingIfNecessary(env, env.averagePrice(index, period), premium)
-
-  def dummyTransferPricingSpec = copy(premium = premium.copy(value = 0))
-
-  def fixedQuantity(marketDay: DayAndTime,
-                    totalQuantity: Quantity): Quantity = totalQuantity * observedDays(marketDay).size / observationDays.size
-
-  def pricingType: String = "Month Average"
-
-  protected def observedDays(marketDay: DayAndTime) = observationDays.filter(_.endOfDay <= marketDay)
-
-  def isComplete(marketDay: DayAndTime) = observedDays(marketDay).size == observationDays.size
-
-  def indexOption = Some(index)
-
-  def quotationPeriod = Some(period)
-
-  def daysForPositionReport(marketDay: DayAndTime) = observationDays.filter(_.endOfDay > marketDay)
-
-  def valuationCCY = premiumCCY.getOrElse(index.currency)
-
-  def expiryDay = TitanPricingSpec.calcSettlementDay(index, period.lastDay)
-}
-
-
-case class OptionalPricingSpec(choices: List[TitanPricingSpec], declarationDay: Day,
-                               chosenSpec: Option[TitanPricingSpec]) extends TitanPricingSpec {
-
-  private val specToUse = chosenSpec.getOrElse(choices.head)
-
-  def settlementDay(marketDay: DayAndTime) = specToUse.settlementDay(marketDay)
-
-  def price(env: Environment) = {
-    assert(chosenSpec.isDefined || env.marketDay < declarationDay.endOfDay, "Optional pricing spec must be fixed by " + declarationDay)
-    specToUse.price(env)
-  }
-
-  def dummyTransferPricingSpec = OptionalPricingSpec(choices.map(_.dummyTransferPricingSpec), declarationDay, chosenSpec.map(_.dummyTransferPricingSpec))
-
-  def fixedQuantity(marketDay: DayAndTime, totalQuantity: Quantity) = specToUse.fixedQuantity(marketDay, totalQuantity)
-
-  def isComplete(marketDay: DayAndTime) = specToUse.isComplete(marketDay)
-
-  def pricingType: String = chosenSpec match {
-    case Some(spec) => spec.pricingType;
-    case None => "Optional"
-  }
-
-  def premium = specToUse.premium
-
-  def daysForPositionReport(marketDay: DayAndTime) = specToUse.daysForPositionReport(marketDay)
-
-  def valuationCCY = specToUse.valuationCCY
-
-  def quotationPeriod = specToUse.quotationPeriod
-
-  def indexOption = specToUse.indexOption
-
-  def expiryDay = specToUse.expiryDay
-}
-
-case class WeightedPricingSpec(specs: List[(Double, TitanPricingSpec)]) extends TitanPricingSpec {
-  def settlementDay(marketDay: DayAndTime) = specs.flatMap(_._2.settlementDay(marketDay)).sortWith(_ > _).head
-
-  def price(env: Environment) = Quantity.sum(specs.map {
-    case (weight, spec) => spec.price(env) * weight
-  })
-
-  def dummyTransferPricingSpec = WeightedPricingSpec(specs.map {
-    case (wt, spec) => (wt, spec.dummyTransferPricingSpec)
-  })
-
-  def fixedQuantity(marketDay: DayAndTime, totalQuantity: Quantity) = specs.map {
-    case (wt, spec) => spec.fixedQuantity(marketDay, totalQuantity) * wt
-  }.sum
-
-  def isComplete(marketDay: DayAndTime) = specs.forall {
-    _._2.isComplete(marketDay)
-  }
-
-  def pricingType: String = "Weighted"
-
-  private def quotationPeriodStart: Option[Day] = specs.map(_._2.quotationPeriod).collect {
-    case Some(period) => period.firstDay
-  }.sortWith(_ < _).headOption
-
-  private def quotationPeriodEnd: Option[Day] = specs.map(_._2.quotationPeriod).collect {
-    case Some(period) => period.lastDay
-  }.sortWith(_ < _).lastOption
-
-  def premium = specs.map {
-    case (wt, spec) => spec.premium * wt
-  }.sum
-
-  def daysForPositionReport(marketDay: DayAndTime) = specs.flatMap {
-    case (amt, spec) => spec.daysForPositionReport(marketDay)
-  }.distinct
-
-  def valuationCCY = {
-    val ccys = specs.map(_._2.valuationCCY).distinct
-    assert(ccys.size == 1, "No unique valuation currency")
-    ccys.head
-  }
-
-  def quotationPeriod = (quotationPeriodStart, quotationPeriodEnd) match {
-    case (Some(d1), Some(d2)) => Some(DateRange(d1, d2))
-    case _ => None
-  }
-
-  def indexOption = None
-
-  def expiryDay = specs.map(_._2.expiryDay).max
-}
-
-case class InvalidTitanPricingSpecException(msg: String) extends Exception(msg)
-
-case class FixedPricingSpec(settDay: Day, pricesByFraction: List[(Double, Quantity)],
-                            premium: Quantity) extends TitanPricingSpec {
-
-  def settlementDay(marketDay: DayAndTime) = settDay
-
-  def price(env: Environment) = {
-    val totalFraction = pricesByFraction.map(_._1).sum
-    if (totalFraction == 0) {
-      throw new InvalidTitanPricingSpecException("Fixed Pricing Spec with no fixed prices")
-    } else {
-      val fixedPriceComponent = Quantity.sum(pricesByFraction.zipWithIndex.map {
-        case ((qty, prc), i) => prc.named("F_" + i) * qty
-      }) / totalFraction
-      addPremiumConvertingIfNecessary(env, fixedPriceComponent, premium)
-    }
-  }
-
-  def dummyTransferPricingSpec = copy()
-
-  def fixedQuantity(marketDay: DayAndTime, totalQuantity: Quantity) = totalQuantity
-
-  def isComplete(marketDay: DayAndTime) = true
-
-  def pricingType: String = "Fixed"
-
-  def quotationPeriodStart: Option[Day] = None
-
-  def quotationPeriodEnd: Option[Day] = None
-
-  def indexName: String = "No Index"
-
-  def daysForPositionReport(marketDay: DayAndTime) = List(marketDay.day)
-
-  def valuationCCY = {
-    val ccys = pricesByFraction.map(_._2.numeratorUOM).distinct
-    assert(ccys.size == 1, "No unique valuation currency")
-    ccys.head
-  }
-
-  def quotationPeriod = None
-
-  def indexOption = None
-
-  def expiryDay = settDay
-}
-
-case class UnknownPricingFixation(fraction: Double, price: Quantity)
-
-case class UnknownPricingSpecification(
-                                        index: IndexWithDailyPrices,
-                                        month: Month,
-                                        fixations: List[UnknownPricingFixation],
-                                        declarationDay: Day,
-                                        premium: Quantity
-                                        )
-  extends TitanPricingSpec {
-
-  def settlementDay(marketDay: DayAndTime) = TitanPricingSpec.calcSettlementDay(index, unfixedPriceDay(marketDay))
-
-
-  private def unfixedPriceDay(marketDay : DayAndTime) = {
-    val lme = FuturesExchangeFactory.LME
-    index.market.asInstanceOf[FuturesMarket].exchange match {
-      case `lme` => {
-        val thirdWednesday = month.firstDay.dayOnOrAfter(DayOfWeek.wednesday) + 14
-        if (marketDay >= thirdWednesday.endOfDay)
-          month.lastDay.thisOrPreviousBusinessDay(index.businessCalendar)
-        else
-          thirdWednesday
-      }
-      case _ => month.lastDay.thisOrPreviousBusinessDay(index.market.businessCalendar)
-    }}
-
-  def price(env: Environment) = {
-    val totalFixed = fixations.map(_.fraction).sum
-    val unfixedFraction = 1.0 - totalFixed
-    val fixedPayment = Quantity.sum(fixations.zipWithIndex.map {
-      case (f, i) => f.price.named("Fix_" + i) * f.fraction
-    }).named("Fixed")
-    val unfixedPayment = (index.fixingOrForwardPrice(env, unfixedPriceDay(env.marketDay)) * unfixedFraction).named("Unfixed")
-    addPremiumConvertingIfNecessary(env, fixedPayment + unfixedPayment, premium)
-  }
-
-  def dummyTransferPricingSpec = copy(premium = premium.copy(value = 0))
-
-  def fixedQuantity(marketDay: DayAndTime, totalQuantity: Quantity) = totalQuantity * fixations.map(_.fraction).sum
-
-  def isComplete(marketDay: DayAndTime) = declarationDay.endOfDay >= marketDay
-
-  def pricingType: String = "Unknown"
-
-  def quotationPeriodStart: Option[Day] = Some(month.firstDay)
-
-  def quotationPeriodEnd: Option[Day] = Some(month.lastDay)
-
-  def indexName: String = index.name
-
-  def daysForPositionReport(marketDay: DayAndTime) = index.observationDays(month).filter(_.endOfDay > marketDay)
-
-  def valuationCCY = premiumCCY.getOrElse(index.currency)
-
-  def quotationPeriod = Some(month)
-
-  def indexOption = Some(index)
-
-  def expiryDay = TitanPricingSpec.calcSettlementDay(index, index.observationDays(month).last)
-}
-
 
 trait PhysicalMetalAssignmentOrUnassignedSalesQuota extends UTP with Tradeable {
   def quantity: Quantity
   def commodityName : String
   def contractDeliveryDay: Day
   def contractPricingSpec: TitanPricingSpec
-  def contractDeliveryLocation : String
+  def contractLocationCode : ContractualLocationCode
   def benchmarkDeliveryDay : Option[Day]
-  def benchmarkDeliveryLocation : Option[String]
-  def grade : String
+  def benchmarkCountryCode : Option[NeptuneCountryCode]
+  def grade : GradeCode
   def isPurchase : Boolean
 
-  val benchmarkPricingSpec = benchmarkDeliveryDay.map(_ => contractPricingSpec.dummyTransferPricingSpec)
+
+  lazy val benchmarkPricingSpec = benchmarkDeliveryDay.map(_ => contractPricingSpec.dummyTransferPricingSpec)
 
 
   import PhysicalMetalAssignmentOrUnassignedSalesQuota._
@@ -315,15 +71,15 @@ trait PhysicalMetalAssignmentOrUnassignedSalesQuota extends UTP with Tradeable {
       commodityLabel -> commodityName,
       contractDeliveryDayLabel -> contractDeliveryDay,
       contractPricingSpecNameLabel -> contractPricingSpec.pricingType,
-      contractDeliveryLocationLabel -> contractDeliveryLocation,
+      contractLocationCodeLabel -> contractLocationCode.code,
       quantityLabel -> quantity,
       premiumLabel -> contractPricingSpec.premium,
-      gradeLabel -> grade,
+      gradeCodeLabel -> grade.code,
       directionLabel -> (if (isPurchase) "P" else "S")
     ) ++ contractPricingSpec.indexOption.map(contractIndexLabel -> _) ++
       contractPricingSpec.indexOption.flatMap(_.market.exchangeOption).map(exchangeLabel -> _.name) ++
       benchmarkDeliveryDay.map(benchmarkDeliveryDayLabel -> _) ++
-      benchmarkDeliveryLocation.map(benchmarkDeliveryLocationLabel -> _)
+      benchmarkCountryCode.map(benchmarkCountryCodeLabel -> _.code)
 
   def isLive(dayAndTime: DayAndTime) = !contractPricingSpec.isComplete(dayAndTime) && (benchmarkPricingSpec match {
     case Some(spec) => !spec.isComplete(dayAndTime)
@@ -338,10 +94,10 @@ trait PhysicalMetalAssignmentOrUnassignedSalesQuota extends UTP with Tradeable {
     contractPricingSpecLabel -> PersistAsBlob(contractPricingSpec),
     isPurchaseLabel -> isPurchase,
     commodityLabel -> commodityName,
-    contractDeliveryLocationLabel -> contractDeliveryLocation,
-    gradeLabel -> grade
+    contractLocationCodeLabel -> contractLocationCode.code,
+    gradeCodeLabel -> grade.code
   ) ++ benchmarkDeliveryDay.map(benchmarkDeliveryDayLabel -> _)  ++
-        benchmarkDeliveryLocation.map(benchmarkDeliveryLocationLabel -> _)
+        benchmarkCountryCode.map(benchmarkCountryCodeLabel -> _.code)
 
   def price(env: Environment) = contractPricingSpec.price(env)
 
@@ -397,10 +153,10 @@ case class UnallocatedSalesQuota(
                                   commodityName : String,
                                   contractDeliveryDay: Day,
                                   contractPricingSpec: TitanPricingSpec,
-                                  contractDeliveryLocation: String,
+                                  contractLocationCode: ContractualLocationCode,
                                   benchmarkDeliveryDay: Option[Day],
-                                  benchmarkDeliveryLocation: Option[String],
-                                  grade: String
+                                  benchmarkCountryCode: Option[NeptuneCountryCode],
+                                  grade: GradeCode
                                   ) extends PhysicalMetalAssignmentOrUnassignedSalesQuota with UTP with Tradeable {
 
   assert(benchmarkPricingSpec.isDefined, "Unassigned sale requires a benchmark pricing spec")
@@ -425,26 +181,21 @@ object UnallocatedSalesQuota extends InstrumentType[UnallocatedSalesQuota] with 
   val name = "Unassigned Sales Quota"
 
   def createTradeable(row: RichInstrumentResultSetRow) = {
-    val quantity = row.getQuantity(quantityLabel)
-    val commodityName = row.getString(commodityLabel)
-    val deliveryDay = row.getDay(contractDeliveryDayLabel)
-    val pricingSpec = row.getObject[TitanPricingSpec](contractPricingSpecLabel)
-    val contractDeliveryLocation = row.getString(contractDeliveryLocationLabel)
-    val benchmarkDeliveryDay = Option(row.getDay(benchmarkDeliveryDayLabel))
-    val benchmarkDeliveryLocation = Option(row.getString(benchmarkDeliveryLocationLabel))
+    val details = detailsFromRow(row)
+    import details._
 
 
     UnallocatedSalesQuota(quantity, commodityName,
-      deliveryDay, pricingSpec, contractDeliveryLocation,
-      benchmarkDeliveryDay, benchmarkDeliveryLocation,
-      grade = "grade"
+      deliveryDay, pricingSpec, contractLocationCode,
+      benchmarkDeliveryDay, benchmarkCountryCode,
+      grade
     )
   }
 
   def sample = UnallocatedSalesQuota(Quantity(100, MT), "Copper", Day(2012, 10, 12),
-    AveragePricingSpec(LmeSingleIndices.alCashBid, Month(2011, 10), Quantity(0.5, USD / MT)), "France",
-    Some(Day(2012, 11, 1)), Some("Italy"),
-    grade = "grade"
+    AveragePricingSpec(LmeSingleIndices.alCashBid, Month(2011, 10), Quantity(0.5, USD / MT)), ContractualLocationCode("France"),
+    Some(Day(2012, 11, 1)), Some(NeptuneCountryCode("Italy")),
+    grade = GradeCode("grade")
   )
 }
 
@@ -453,13 +204,13 @@ case class PhysicalMetalAssignment( assignmentID : String,
                                     commodityName : String,
                                     contractDeliveryDay: Day,
                                     contractPricingSpec: TitanPricingSpec,
-                                    contractDeliveryLocation : String,
+                                    contractLocationCode : ContractualLocationCode,
                                     benchmarkDeliveryDay : Option[Day],
-                                    benchmarkDeliveryLocation : Option[String],
+                                    benchmarkCountryCode : Option[NeptuneCountryCode],
                                     isPurchase: Boolean,
                                     inventoryID: String,
                                     inventoryQuantity : Quantity,
-                                    grade : String
+                                    grade : GradeCode
                                     ) extends PhysicalMetalAssignmentOrUnassignedSalesQuota with UTP with Tradeable {
 
   import PhysicalMetalAssignment._
@@ -540,6 +291,46 @@ case class PhysicalMetalAssignment( assignmentID : String,
   }
 }
 
+
+
+object PhysicalMetalAssignment extends InstrumentType[PhysicalMetalAssignment] with TradeableType[PhysicalMetalAssignment] {
+    import PhysicalMetalAssignmentOrUnassignedSalesQuota._
+    val inventoryQuantityLabel = "inventoryQuantity"
+    val inventoryIDLabel = "inventoryID"
+    val assignmentIDLabel = "assignmentID"
+
+    val name = "Physical Metal Assignment"
+
+    def createTradeable(row: RichInstrumentResultSetRow) = {
+      val commonDetails = detailsFromRow(row)
+      import commonDetails._
+      val inventoryQuantity = row.getQuantity(inventoryQuantityLabel)
+      val inventoryID = row.getString(inventoryIDLabel)
+      val assignmentID = row.getString(assignmentIDLabel)
+
+      PhysicalMetalAssignment(
+        assignmentID,
+        quantity,
+        commodityName,
+        deliveryDay, pricingSpec, contractLocationCode,
+        benchmarkDeliveryDay, benchmarkCountryCode,
+        isPurchase, inventoryID, inventoryQuantity,
+        grade
+      )
+    }
+
+    import UOM._
+    def sample = PhysicalMetalAssignment(
+      "12345", Quantity(100, UOM.MT), "Aluminium",
+      Day(2011, 10, 10), AveragePricingSpec(LmeSingleIndices.alCashBid, Month(2011, 10), Quantity(0.5, USD/MT)), ContractualLocationCode("France"),
+      Some(Day(2011, 11, 1)), Some(NeptuneCountryCode("Italy")),
+      isPurchase = false, inventoryID = "abcde", inventoryQuantity = Quantity(99, UOM.MT),
+      grade = GradeCode("grade")
+    )
+}
+
+
+
 object CostsAndIncomeValuation{
   def build(env : Environment, quantity : Quantity, pricingSpec : TitanPricingSpec) = {
     PricingValuationDetails(
@@ -563,66 +354,4 @@ object CostsAndIncomeValuation{
         Left(e.getMessage)
     }
   }
-}
-
-object PhysicalMetalAssignmentOrUnassignedSalesQuota{
-  val contractDeliveryDayLabel = "contractDeliveryDay"
-  val quantityLabel = "Quantity"
-  val commodityLabel = "Commodity"
-  val contractPricingSpecNameLabel = "contractPricingSpecName"
-  val contractPricingSpecLabel = "contractPricingSpec"
-  val contractDeliveryLocationLabel = "contractDeliveryLocation"
-  val benchmarkPricingSpecNameLabel = "benchmarkPricingSpecName"
-  val benchmarkDeliveryDayLabel = "benchmarkDeliveryDay"
-  val benchmarkDeliveryLocationLabel = "benchmarkDeliveryLocation"
-  val premiumLabel = "premium"
-  val exchangeLabel = "exchange"
-  val contractIndexLabel = "contractIndex"
-  val benchmarkIndexLabel = "benchmarkIndex"
-  val isPurchaseLabel = "isPurchase"
-  val directionLabel = "direction"
-  val gradeLabel = "grade"
-}
-
-object PhysicalMetalAssignment extends InstrumentType[PhysicalMetalAssignment] with TradeableType[PhysicalMetalAssignment] {
-    import PhysicalMetalAssignmentOrUnassignedSalesQuota._
-    val inventoryQuantityLabel = "inventoryQuantity"
-    val inventoryIDLabel = "inventoryID"
-    val assignmentIDLabel = "assignmentID"
-
-    val name = "Physical Metal Assignment"
-
-    def createTradeable(row: RichInstrumentResultSetRow) = {
-      val quantity = row.getQuantity(quantityLabel)
-      val commodityName = row.getString(commodityLabel)
-      val deliveryDay = row.getDay(contractDeliveryDayLabel)
-      val pricingSpec = row.getObject[TitanPricingSpec](contractPricingSpecLabel)
-      val contractDeliveryLocation = row.getString(contractDeliveryLocationLabel)
-      val benchmarkDeliveryDay = if (!row.isNull(benchmarkDeliveryDayLabel)) Some(row.getDay(benchmarkDeliveryDayLabel)) else None
-      val benchmarkDeliveryLocation = if (!row.isNull(benchmarkDeliveryLocationLabel)) Some(row.getString(benchmarkDeliveryLocationLabel)) else None
-      val isPurchase = row.getBoolean(isPurchaseLabel)
-      val inventoryQuantity = row.getQuantity(inventoryQuantityLabel)
-      val inventoryID = row.getString(inventoryIDLabel)
-      val assignmentID = row.getString(assignmentIDLabel)
-      val grade = row.getString(gradeLabel)
-
-      PhysicalMetalAssignment(
-        assignmentID,
-        quantity,
-        commodityName,
-        deliveryDay, pricingSpec, contractDeliveryLocation,
-        benchmarkDeliveryDay, benchmarkDeliveryLocation,
-        isPurchase, inventoryID, inventoryQuantity,
-        grade
-      )
-    }
-
-    import UOM._
-    def sample = PhysicalMetalAssignment(
-      "12345", Quantity(100, UOM.MT), "Aluminium",
-      Day(2011, 10, 10), AveragePricingSpec(LmeSingleIndices.alCashBid, Month(2011, 10), Quantity(0.5, USD/MT)), "France",
-      Some(Day(2011, 11, 1)), Some("Italy"),
-      isPurchase = false, inventoryID = "abcde", inventoryQuantity = Quantity(99, UOM.MT),
-      grade = "grade"
-    )
 }

@@ -107,10 +107,10 @@ object TradeableType {
     ("Direction", classOf[String]),
     ("Contract Delivery Day", classOf[Day]),
     ("Benchmark Delivery Day", classOf[Day]),
-    ("Contract Delivery Location", classOf[String]),
-    ("Benchmark Delivery Location", classOf[String]),
+    ("Contract Location Code", classOf[String]),
+    ("Benchmark Country Code", classOf[String]),
     ("Contract Pricing Spec Name", classOf[String]),
-    ("Grade", classOf[String])
+    ("Grade Code", classOf[String])
 
 
   )
