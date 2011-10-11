@@ -29,6 +29,7 @@
     <orderEntry type="module" module-name="rabbit.event.viewer.service" />
     <orderEntry type="module" module-name="trade.impl" />
     <orderEntry type="module" module-name="metals" />
+    <orderEntry type="module" module-name="webservice" />
   </component>
 </module>
 

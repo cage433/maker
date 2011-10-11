@@ -14,13 +14,13 @@ class LoopyxlBromptonActivator extends BromptonActivator {
     val auth = context.awaitService(classOf[AuthHandler])
     val methodsByService = new java.util.concurrent.ConcurrentHashMap[BromptonServiceReference,List[DynamicMethod]]()
     val methodsById = new java.util.concurrent.ConcurrentHashMap[Int,DynamicMethod]()
-    context.createServiceTracker(None,  ExportLoopyProperty::Nil, new BromptonServiceCallback[AnyRef] {
-      def serviceAdded(ref: BromptonServiceReference, service: AnyRef) = {
+    context.createServiceTracker(None, ServiceProperties(ExportLoopyProperty), new BromptonServiceCallback[AnyRef] {
+      def serviceAdded(ref: BromptonServiceReference, properties:ServiceProperties, service: AnyRef) = {
         val methods = new ReflectiveMethodSource(service).getMethods
         methods.foreach { method => methodsById.put(method.id, method) }
         methodsByService.put(ref, methods)
       }
-      def serviceRemoved(ref: BromptonServiceReference) = {
+     override def serviceRemoved(ref: BromptonServiceReference) = {
         val methods = methodsByService.get(ref)
         methodsByService.remove(ref)
         methods.foreach { method => methodsById.remove(method.id) }
@@ -44,7 +44,7 @@ class LoopyxlBromptonActivator extends BromptonActivator {
     receiver.start
   }
 
-  def stop(context: BromptonContext) = {
+  override def stop(context: BromptonContext) = {
     if (receiver != null) receiver.stop
   }
 }

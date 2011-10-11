@@ -8,6 +8,7 @@ import starling.pivot.{Row, Field, PivotFieldsState, FieldDetails}
  */
 trait MarketDataType {
   type dataType <: MarketData
+  type keyType <: MarketDataKey
 
   val name: String = getClass.getName.substring(getClass.getName.lastIndexOf(".") + 1).stripSuffix("DataType$")
 
@@ -39,6 +40,21 @@ trait MarketDataType {
   val initialPivotState: PivotFieldsState
 
   def splitByFieldType[T](map: Map[Field, T]) = map.filterKeys(keyFields) → map.filterKeys(f => !keyFields.contains(f))
+
+  def valueKeys(key: MarketDataKey, data: MarketData, referenceDataLookup: ReferenceDataLookup) = {
+    val fieldKeys = key.fieldValues(referenceDataLookup).fields
+
+    castRows(key, data, referenceDataLookup).map(valueKey(_, fieldKeys)).toList
+  }
+
+  def valueKey(row: Row, fieldKeys: Set[Field]): MarketDataValueKey =
+    MarketDataValueKey(-1, row.filterKeys(keyFields -- fieldKeys))
+
+  def castRows(key: MarketDataKey, data: MarketData, referenceDataLookup: ReferenceDataLookup): Iterable[Row] = {
+    rows(key.asInstanceOf[keyType], data.asInstanceOf[dataType], referenceDataLookup)
+  }
+
+  def rows(key: keyType, data: dataType, referenceDataLookup: ReferenceDataLookup): Iterable[Row]
 }
 
 object MarketDataTypes {

@@ -101,7 +101,7 @@ class BromptonOSGIActivator extends OSGIBundleActivator {
     context.registerService(classOf[Broadcaster].getName, broadcaster, null)
   }
 
-  def stop(context:OSGIBundleContext) {
+  override def stop(context:OSGIBundleContext) {
     if (bundleTracker != null) {
       bundleTracker.getBundles.foreach { bundle =>
         bundleTracker.getObject(bundle) match {
@@ -113,28 +113,23 @@ class BromptonOSGIActivator extends OSGIBundleActivator {
   }
 }
 
-object Util {
-  def mapToDictionary(map:Map[String,AnyRef]):Dictionary[_,_] = {
-    val table = new Hashtable[String,AnyRef]()
-    map.foreach ( kv => table.put(kv._1, kv._2))
-    table
-  }
-  def dictionaryToMap[K,V](dictionary:Dictionary[_,_]):Map[K,V] = {
-    var map = Map[K,V]()
-    val enumeration = dictionary.keys
-    while (enumeration.hasMoreElements) {
-      val key = enumeration.nextElement
-      val value = dictionary.get(key)
-      map = map.updated(key.asInstanceOf[K], value.asInstanceOf[V])
-    }
-    map
-  }
-
-  def servicePropertiesToDictionary(properties:List[ServiceProperty]) = {
-    mapToDictionary(properties.map(p => p.name -> p.value).toMap)
-  }
-
-}
+//object Util {
+//  def mapToDictionary(map:Map[String,AnyRef]):Dictionary[_,_] = {
+//    val table = new Hashtable[String,AnyRef]()
+//    map.foreach ( kv => table.put(kv._1, kv._2))
+//    table
+//  }
+//  def dictionaryToMap[K,V](dictionary:Dictionary[_,_]):Map[K,V] = {
+//    var map = Map[K,V]()
+//    val enumeration = dictionary.keys
+//    while (enumeration.hasMoreElements) {
+//      val key = enumeration.nextElement
+//      val value = dictionary.get(key)
+//      map = map.updated(key.asInstanceOf[K], value.asInstanceOf[V])
+//    }
+//    map
+//  }
+//}
 
 
 class ServiceProxy[T](context:OSGIBundleContext, klass:Class[T], properties:List[ServiceProperty]) {
@@ -187,10 +182,10 @@ class ServiceProxy[T](context:OSGIBundleContext, klass:Class[T], properties:List
 //        }
 //      }).asInstanceOf[T]
 }
-class ServiceTracker[T](val serviceIDSequence : AtomicInteger, context:OSGIBundleContext, klass:Option[Class[T]], properties:List[ServiceProperty], tracker:BromptonServiceCallback[T])
+class ServiceTracker[T](val serviceIDSequence : AtomicInteger, context:OSGIBundleContext, klass:Option[Class[T]], properties:ServiceProperties, tracker:BromptonServiceCallback[T])
   extends BromptonServiceTracker[T] {
 
-  val filters = klass.map(k => "(objectClass="+k.getName+")").toList ::: properties.map { sp => "("+sp.name+"="+sp.value+")"}
+  val filters = klass.map(k => "(objectClass="+k.getName+")").toList ::: properties.toFilters
   val filter = context.createFilter(filters.head)
   private val osgiTracker:OSGIServiceTracker = new OSGIServiceTracker(context, filter, new ServiceTrackerCustomizer {
     def addingService(ref: ServiceReference) = {
@@ -198,7 +193,7 @@ class ServiceTracker[T](val serviceIDSequence : AtomicInteger, context:OSGIBundl
       val serviceID = serviceIDSequence.getAndIncrement
       val service = context.getService(ref)
       val bromptonRef = BromptonServiceReference(serviceID.toString, klassNames)
-      tracker.serviceAdded(bromptonRef, service.asInstanceOf[T])
+      tracker.serviceAdded(bromptonRef, ServiceProperties(), service.asInstanceOf[T])
       osgiTracker.addingService(ref)
       bromptonRef
     }
@@ -226,7 +221,7 @@ class OSGIBromptonContext(val serviceIDSequence : AtomicInteger, val context:OSG
     Thread.currentThread.setName(currentName)
     r
   }
-  def createServiceTracker[T](klass:Option[Class[T]], properties:List[ServiceProperty], tracker:BromptonServiceCallback[T]) = {
+  def createServiceTracker[T](klass:Option[Class[T]], properties:ServiceProperties, tracker:BromptonServiceCallback[T]) = {
     new ServiceTracker[T](serviceIDSequence, context, klass, properties, tracker)
   }
   def awaitService[T](klass:Class[T]):T = {
@@ -241,14 +236,14 @@ class OSGIBromptonContext(val serviceIDSequence : AtomicInteger, val context:OSG
     serviceProxy.await
     serviceProxy.proxy.asInstanceOf[T]
   }
-  def registerService[T](klass:Class[T], service:T, properties:List[ServiceProperty]=List()) = {
+  def registerService[T](klass:Class[T], service:T, properties:ServiceProperties=ServiceProperties()) = {
     if (service == null) throw new Exception("Service is null")
     if (klass== null) throw new Exception("class is null")
     val cachingService = ThreadSafeCachingProxy.createProxy(klass, service)
     val ref = context.registerService(
         klass.getName,
         cachingService.asInstanceOf[Object],
-        Util.servicePropertiesToDictionary(properties)
+        properties.toDictionary
     )
     new BromptonServiceRegistration() {
       def unregister() {

@@ -22,8 +22,6 @@ import starling.services.rabbit.TitanRabbitIdBroadcaster._
 import starling.services.rabbit.{TitanRabbitIdBroadcaster, MockTitanRabbitEventServices, DefaultTitanRabbitEventServices}
 import org.springframework.mail.javamail.JavaMailSenderImpl
 import com.trafigura.services.valuation.ValuationServiceApi
-import starling.manager.{ExportTitanRMIProperty, BromptonContext, BromptonActivator}
-import com.trafigura.services.marketdata.{MarketDataServiceApi, ExampleService}
 import starling.tradeimport.TradeImporter
 import starling.richdb.{RichResultSetRowFactory, RichDB}
 import starling.db.{DB, TitanTradeSystem, MarketDataStore}
@@ -39,6 +37,8 @@ import starling.gui.api.{PricingGroup, EnvironmentRuleLabel}
 import starling.marketdata.ReferenceDataLookup
 import starling.titan.TitanTradeStoreManager._
 import starling.titan.{TitanTradeStoreManager, TitanSystemOfRecord, TitanTradeStore}
+import com.trafigura.services.marketdata.{ExampleServiceApi, MarketDataServiceApi, ExampleService}
+import starling.manager._
 
 class MetalsBromptonActivator extends BromptonActivator {
 
@@ -132,21 +132,22 @@ class MetalsBromptonActivator extends BromptonActivator {
 
     val serverName = props.ServerName()
 
-    lazy val webServiceServer = locally {
-      val webXmlUrl = "services/resources/webapp/WEB-INF/web.xml"//classOf[StarlingInit].getResource("../../webapp/WEB-INF/web.xml").toExternalForm
-
-      new HttpServer(props.HttpServicePort(), props.HttpServiceExternalUrl(), serverName, Some(webXmlUrl), Nil) {
-        override def start =
-          log.infoF("HTTP web service external url = '%s', server name = '%s'" % (props.HttpServiceExternalUrl(), serverName)) {
-            super.start; /*DocumentationService.registerInstances(webServices : _*) */
-          }
-      }
-    }
+//    lazy val webServiceServer = locally {
+//      val webXmlUrl = "services/resources/webapp/WEB-INF/web.xml"//classOf[StarlingInit].getResource("../../webapp/WEB-INF/web.xml").toExternalForm
+//
+//      new HttpServer(props.HttpServicePort(), props.HttpServiceExternalUrl(), serverName, Some(webXmlUrl), Nil) {
+//        override def start =
+//          log.infoF("HTTP web service external url = '%s', server name = '%s'" % (props.HttpServiceExternalUrl(), serverName)) {
+//            super.start; /*DocumentationService.registerInstances(webServices : _*) */
+//          }
+//      }
+//    }
 
     StarlingWebServices.webServices = List(marketDataService, valuationService, /*DocumentationService, */ExampleService)
 
-    context.registerService(classOf[ValuationServiceApi], valuationService, ExportTitanRMIProperty::Nil)
-    context.registerService(classOf[MarketDataServiceApi], marketDataService,ExportTitanRMIProperty::Nil)
+    context.registerService(classOf[ValuationServiceApi], valuationService, ServiceProperties(ExportTitanRMIProperty, ExportTitanHTTPProperty))
+    context.registerService(classOf[MarketDataServiceApi], marketDataService, ServiceProperties(ExportTitanRMIProperty, ExportTitanHTTPProperty))
+    context.registerService(classOf[ExampleServiceApi], ExampleService, ServiceProperties(ExportTitanHTTPProperty))
 
     context.registerService(classOf[RabbitEventDatabase], rabbitEventDatabase)
 
@@ -166,9 +167,6 @@ class MetalsBromptonActivator extends BromptonActivator {
 
     }
 
-  }
-
-  def stop(context: BromptonContext) {
   }
 }
 

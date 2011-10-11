@@ -89,47 +89,12 @@ class SpreadStdDevSurfaceDataBuilder(var uom:Option[UOM] = None) {
 
 }
 
-case class SpreadStdDevSurfaceDataKey(market : FuturesMarket)
-        extends MarketDataKey {
+case class SpreadStdDevSurfaceDataKey(market : FuturesMarket) extends MarketDataKey {
   type marketDataType = SpreadStdDevSurfaceData
   type marketDataDBType = SpreadStdDevSurfaceData
   def dataType = SpreadStdDevSurfaceDataType
   def subTypeKey = market.toString
-
-  override def rows(data: SpreadStdDevSurfaceData, referenceDataLookup: ReferenceDataLookup) = {
-    val periods = data.periods zipWithIndex
-    val dataRows = periods.flatMap {
-      case (period, index) => {
-        Map("ATM" -> data.atm(index), "Call" -> data.call(index), "Put" -> data.put(index)).map {
-          case (label, sd) => {
-            val (gap, first, last) = period match {
-              case SpreadPeriod(first: Month, last: Month) => {
-                val gap = (last - first) match {
-                  case 1 => "Month"
-                  case 6 => "Half-Year"
-                  case 12 => "Year"
-                  case n => n + " Month"
-                }
-                (gap, first, last)
-              }
-              case DateRangePeriod(dr: Month) => ("None", dr, dr)
-            }
-            Row(
-              SpreadStdDevSurfaceDataType.marketField.field -> market.name,
-              SpreadStdDevSurfaceDataType.spreadTypeField.field -> gap,
-              SpreadStdDevSurfaceDataType.firstPeriodField.field -> first,
-              SpreadStdDevSurfaceDataType.lastPeriodField.field -> last,
-              SpreadStdDevSurfaceDataType.periodField.field -> period,
-              SpreadStdDevSurfaceDataType.deltaField.field -> label,
-              SpreadStdDevSurfaceDataType.stdDevField.field -> Quantity(sd, data.uom))
-          }
-        }.toList
-      }
-    }
-    dataRows
-  }
-
-  def fieldValues(referenceDataLookup: ReferenceDataLookup) = Map(SpreadStdDevSurfaceDataType.marketField.field → market.name)
+  def fieldValues(referenceDataLookup: ReferenceDataLookup) = Row(SpreadStdDevSurfaceDataType.marketField.field → market.name)
 }
 
 object SpreadStdDevSurfaceDataType extends MarketDataType {
@@ -177,6 +142,40 @@ object SpreadStdDevSurfaceDataType extends MarketDataType {
 
   val keys = List(SpreadStdDevSurfaceDataKey(Market.NYMEX_WTI))
   type dataType = SpreadStdDevSurfaceData
+  type keyType = SpreadStdDevSurfaceDataKey
+
+  def rows(key: SpreadStdDevSurfaceDataKey, data: SpreadStdDevSurfaceData, referenceDataLookup: ReferenceDataLookup) = {
+    val periods = data.periods zipWithIndex
+    val dataRows = periods.flatMap {
+      case (period, index) => {
+        Map("ATM" -> data.atm(index), "Call" -> data.call(index), "Put" -> data.put(index)).map {
+          case (label, sd) => {
+            val (gap, first, last) = period match {
+              case SpreadPeriod(first: Month, last: Month) => {
+                val gap = (last - first) match {
+                  case 1 => "Month"
+                  case 6 => "Half-Year"
+                  case 12 => "Year"
+                  case n => n + " Month"
+                }
+                (gap, first, last)
+              }
+              case DateRangePeriod(dr: Month) => ("None", dr, dr)
+            }
+            Row(
+              SpreadStdDevSurfaceDataType.marketField.field -> key.market.name,
+              SpreadStdDevSurfaceDataType.spreadTypeField.field -> gap,
+              SpreadStdDevSurfaceDataType.firstPeriodField.field -> first,
+              SpreadStdDevSurfaceDataType.lastPeriodField.field -> last,
+              SpreadStdDevSurfaceDataType.periodField.field -> period,
+              SpreadStdDevSurfaceDataType.deltaField.field -> label,
+              SpreadStdDevSurfaceDataType.stdDevField.field -> Quantity(sd, data.uom))
+          }
+        }.toList
+      }
+    }
+    dataRows
+  }
 }
 
 case class SpreadAtmStdDevAtomicDatumKey (

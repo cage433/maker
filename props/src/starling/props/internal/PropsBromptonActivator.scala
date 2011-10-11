@@ -9,6 +9,4 @@ class PropsBromptonActivator extends BromptonActivator {
     val props = PropsHelper.defaultProps
     context.registerService(classOf[starling.props.Props], props)
   }
-
-  def stop(context: BromptonContext) {}
 }

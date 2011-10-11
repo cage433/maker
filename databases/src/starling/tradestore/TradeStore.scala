@@ -26,8 +26,8 @@ import starling.quantity._
 import starling.gui.api._
 import starling.tradestore.TradeStore.StoreResults
 import starling.marketdata.PeriodFieldDetails
-import collection.immutable.{TreeMap, Set, List}
 import starling.dbx.{LiteralString, Clause, Query}
+import collection.immutable.{Map, TreeMap, Set, List}
 
 //This is the code which maps from TradeableType.fields to FieldDetails
 object TradeableFields {
@@ -462,7 +462,13 @@ abstract class TradeStore(db: RichDB, broadcaster:Broadcaster, tradeSystem: Trad
   /**
    * Given two timestamps and a filter it identifies the changes in de al population:
    *  movedIn    the trade existed at time t1 but did not match the predicate
-   *  movedOut   the trade matched the predicate at t1 but not at t2
+   *  movedOut   the trade matched the predicate at t1 but not at t2new AppendingMap(Map(
+                    "UTP"->Map(
+                      PField(instrumentID_str) -> utpID,
+                      PField(tradeCount_str) -> details(PField(tradeID_str)),
+                      PField(utpVolume_str) -> volume
+                    )) ++ tradeFields.namedMaps //++tradeHistories.utpDetails(utp),
+                  )
    *  created    the trade did not exist at t1
    *  deleted    the trade existed and matchedval trad the predicate at t1 but at t2 it was deleted
    *  undeleted  the trade was deleted at t1 but was not deleted at t2
@@ -584,7 +590,7 @@ abstract class TradeStore(db: RichDB, broadcaster:Broadcaster, tradeSystem: Trad
                 case (utp, volume) => {
                   val utpID = {
                     val id = tradeHistories.utps(utp)
-                    val partitions = utpPartitioningFields.map {field => (field.name, joinedTradeAttributeDetails(field).toString)}.toMap
+                    val partitions: Map[String, String] = utpPartitioningFields.map {field => (field.name, joinedTradeAttributeDetails(field).toString)}.toMap
                     new UTPIdentifier(id.asInstanceOf[Int], partitions)
                   }
                   new AppendingMap(Map(
@@ -866,7 +872,7 @@ object TradeStore {
       val costs: List[Costs] = row.getObjectOrElse("costs", List())
       Trade(tradeID, tradeDay, counterparty.intern, tradeAttributes, instrument, costs)
     } catch {
-      case e: Throwable => throw new Exception(e.getMessage + " in row " + row.toString, e)
+      case e: Throwable => throw new Exception(e.getMessage + ", " + e.getClass + " in row " + row.toString, e)
     }
   }
 }

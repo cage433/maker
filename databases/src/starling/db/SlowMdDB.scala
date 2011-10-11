@@ -287,7 +287,7 @@ class SlowMdDB(db: DBTrait[RichResultSetRow]) extends MdDB with Log {
 
     def addEntry(timeOfDay: String, day: Option[Day], key: MarketDataKey) {
       val allDataForKeyAndDay: List[Row] = mds.reverse.flatMap(mds => {
-        latestValues.get(mds.name).toList.flatMap(data => key.castRows(data, ReferenceDataLookup.Null))
+        latestValues.get(mds.name).toList.flatMap(data => key.dataType.castRows(key, data, ReferenceDataLookup.Null))
       })
       MarketDataStore.applyOverrideRule(marketDataType, allDataForKeyAndDay.map(_.value)).ifDefined { rowsFromOneMap =>
         val marketData = marketDataType.createValue(Row.create(rowsFromOneMap))

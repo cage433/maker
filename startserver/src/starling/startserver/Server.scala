@@ -13,6 +13,7 @@ import starling.rabbiteventviewer.internal.RabbitEventViewerServiceBromptonActiv
 import starling.trade.impl.osgi.TradeBromptonActivator
 import starling.props.internal.PropsBromptonActivator
 import starling.metals.MetalsBromptonActivator
+import starling.webservice.HttpWebserviceBromptonActivator
 
 
 /**
@@ -37,7 +38,8 @@ object Server {
       classOf[ReportsBromptonActivator],
       classOf[BouncyRMIServerBromptonActivator],
       classOf[MetalsBromptonActivator],
-      classOf[RabbitEventViewerServiceBromptonActivator]
+      classOf[RabbitEventViewerServiceBromptonActivator],
+      classOf[HttpWebserviceBromptonActivator]
     )
     val single = new SingleClasspathManager(false, activators)
     writePIDFile()

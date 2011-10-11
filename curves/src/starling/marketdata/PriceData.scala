@@ -48,6 +48,7 @@ object PeriodFieldDetails {
 
 object PriceDataType extends MarketDataType {
   type dataType = PriceData
+  type keyType = PriceDataKey
   lazy val keys = Market.all.map(PriceDataKey)
   lazy val exchangeField = FieldDetails("Exchange")
   lazy val marketField = FieldDetails("Market", ValidMarketParserObject.Parser)
@@ -75,6 +76,15 @@ object PriceDataType extends MarketDataType {
   }
 
   override def createKey(row: Row) = PriceDataKey(Market.fromName(row.string(marketField)))
+
+  def rows(key: PriceDataKey, data: PriceData, referenceDataLookup: ReferenceDataLookup) = data.prices.map { case (period, price) => {
+    Row(marketField.field → key.market.name,
+      marketCommodityField.field → key.market.commodity.toString,
+      marketTenorField.field → key.market.tenor.toString,
+      periodField.field → period,
+      validity.field → price.warning.isEmpty,
+      priceField.field → price) +? (exchangeField.field → key.market.safeCast[FuturesMarket].map(_.exchange.name))
+  } }
 }
 
 case class PriceDataKey(market: CommodityMarket) extends MarketDataKey {
@@ -86,24 +96,14 @@ case class PriceDataKey(market: CommodityMarket) extends MarketDataKey {
   def dataType = PriceDataType
   def subTypeKey = market.name
 
-  override def rows(data : PriceData, referenceDataLookup: ReferenceDataLookup) = data.prices.map { case (period, price) => {
-    Row(marketField.field → market.name,
-        marketCommodityField.field → market.commodity.toString,
-        marketTenorField.field → market.tenor.toString,
-        periodField.field → period,
-        validity.field → price.warning.isEmpty,
-        priceField.field → price) +?
-      (exchangeField.field → market.safeCast[FuturesMarket].map(_.exchange.name))
-  } }
-
   override def unmarshallDB(dbValue: Any): marketDataType =
     PriceData.fromSorted(dbValue.asInstanceOf[marketDataDBType].prices, market.priceUOM)
 
-  def fieldValues(referenceDataLookup: ReferenceDataLookup) = Map(
+  def fieldValues(referenceDataLookup: ReferenceDataLookup) = Row(
     PriceDataType.marketField.field → market.name,
     PriceDataType.marketCommodityField.field → market.commodity.toString,
-    PriceDataType.marketTenorField.field → market.tenor.toString).addSome(
-      exchangeField.field → market.safeCast[FuturesMarket].map(_.exchange.name))
+    PriceDataType.marketTenorField.field → market.tenor.toString) +?
+    (exchangeField.field → market.safeCast[FuturesMarket].map(_.exchange.name))
 }
 
 case class PriceDataDTO(prices: SortedMap[DateRange, Double])

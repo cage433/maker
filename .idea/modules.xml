@@ -43,6 +43,7 @@
       <module fileurl="file://$PROJECT_DIR$/trade.facility/trade.facility.iml" filepath="$PROJECT_DIR$/trade.facility/trade.facility.iml" />
       <module fileurl="file://$PROJECT_DIR$/trade.impl/trade.impl.iml" filepath="$PROJECT_DIR$/trade.impl/trade.impl.iml" />
       <module fileurl="file://$PROJECT_DIR$/utils/utils.iml" filepath="$PROJECT_DIR$/utils/utils.iml" />
+      <module fileurl="file://$PROJECT_DIR$/webservice/webservice.iml" filepath="$PROJECT_DIR$/webservice/webservice.iml" />
     </modules>
   </component>
 </project>

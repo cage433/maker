@@ -58,7 +58,7 @@ class StarlingInit( val props: Props,
                     rmiBroadcaster:Broadcaster = Broadcaster.Null,
                     dbMigration: Boolean = true,
                     startRMI: Boolean = true, //not used
-                    startHttp: Boolean = true,
+                    startHttp: Boolean = true, //not used
                     startStarlingJMX: Boolean = true,
                     forceGUICompatability: Boolean = true,
                     startEAIAutoImportThread: Boolean = true,
@@ -68,7 +68,6 @@ class StarlingInit( val props: Props,
 
   private lazy val services = CompositeStopable(
     true                     → List(Stopable(userSettingsDatabase.readAll _)),
-    startHttp                → List(httpServer),
     startEAIAutoImportThread → List(/*eaiAutoImport, */fwdCurveAutoImport), //FIXME
     true                     → List(Stopable(stopF = DataSourceFactory.shutdown _))
   )
@@ -190,19 +189,18 @@ class StarlingInit( val props: Props,
 
   val browserService = new BrowserServiceImpl(name, version, userSettingsDatabase, rmiBroadcaster)
 
-  lazy val httpServer = locally {
+  val servlets = {
     val externalURL = props.ExternalUrl()
     val externalHostname = props.ExternalHostname()
     val xlloopUrl = props.XLLoopUrl()
     val rmiPort = props.RmiPort()
+
     val webStartServlet = new WebStartServlet("webstart", serverName, externalURL, "starling.launcher.Launcher",
       List(externalHostname, rmiPort.toString), xlloopUrl)
     val cannedWebStartServlet = new WebStartServlet("cannedwebstart", serverName, externalURL,
       "starling.gui.CannedLauncher", List(), xlloopUrl)
 
-    new HttpServer(props.HttpPort(), props.ExternalUrl(), props.ServerName(), None, Nil,
-      "webstart"       → webStartServlet,
-      "cannedwebstart" → cannedWebStartServlet)
+    Map("webstart"       → webStartServlet, "cannedwebstart" → cannedWebStartServlet)
   }
 
 }

@@ -14,6 +14,7 @@ case class CountryBenchmarkData(countryData: NestedMap[NeptuneCountryCode, Day, 
 
 object CountryBenchmarkDataType extends MarketDataType {
   type dataType = CountryBenchmarkData
+  type keyType = CountryBenchmarkMarketDataKey
 
   val commodityField = FieldDetails("Commodity", FixedPivotParser(Commodity.metalsCommodities.map(_.name).toSet))
   val countryField = FieldDetails("Country")
@@ -42,26 +43,24 @@ object CountryBenchmarkDataType extends MarketDataType {
 
     CountryBenchmarkData(data.toNestedMap)
   }
-}
 
-case class CountryBenchmarkMarketDataKey(commodity: Commodity) extends MarketDataKey {
-  import CountryBenchmarkDataType._
-
-  type marketDataType = CountryBenchmarkData
-  type marketDataDBType = CountryBenchmarkData
-  def dataType = CountryBenchmarkDataType
-  def subTypeKey = commodity.toString
-  def fieldValues(referenceDataLookup: ReferenceDataLookup) = Map(commodityField.field → commodity.name)
-
-  override def rows(marketData: CountryBenchmarkData, referenceDataLookup: ReferenceDataLookup) = {
-    marketData.countryData.mapNested { case (countryCode, effectiveFrom, price) => Row(
-      commodityField.field → commodity.name,
+  def rows(key: CountryBenchmarkMarketDataKey, data: CountryBenchmarkData, referenceDataLookup: ReferenceDataLookup) = {
+    data.countryData.mapNested { case (countryCode, effectiveFrom, price) => Row(
+      commodityField.field → key.commodity.name,
       countryCodeField.field → countryCode.code,
       countryField.field → referenceDataLookup.countryFor(countryCode).name,
       effectiveFromField.field → effectiveFrom,
       benchmarkPriceField.field → price.pq
     ) }
   }
+}
+
+case class CountryBenchmarkMarketDataKey(commodity: Commodity) extends MarketDataKey {
+  type marketDataType = CountryBenchmarkData
+  type marketDataDBType = CountryBenchmarkData
+  def dataType = CountryBenchmarkDataType
+  def subTypeKey = commodity.toString
+  def fieldValues(referenceDataLookup: ReferenceDataLookup) = Row(CountryBenchmarkDataType.commodityField.field → commodity.name)
 }
 
 // Prefixing these classes with 'Neptune' because they aren't really countries, they are Country + Location

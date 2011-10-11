@@ -203,6 +203,17 @@
     <orderEntry type="module" module-name="gui" exported="" />
     <orderEntry type="module" module-name="loopyxl" exported="" />
     <orderEntry type="module" module-name="titan.return.types" />
+    <orderEntry type="module-library">
+      <library>
+        <CLASSES>
+          <root url="jar://$MODULE_DIR$/../lib/servlet-api-jar-2.5.jar!/" />
+        </CLASSES>
+        <JAVADOC />
+        <SOURCES>
+          <root url="jar://$MODULE_DIR$/../lib/servlet-api-source-2.5.jar!/" />
+        </SOURCES>
+      </library>
+    </orderEntry>
   </component>
 </module>
 

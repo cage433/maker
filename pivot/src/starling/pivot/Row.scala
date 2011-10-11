@@ -22,6 +22,8 @@ object Row {
 }
 
 case class Row(value: Map[Field, Any]) {
+  def fields = value.keySet
+
   lazy val dbValue = new PersistAsBlob(value.mapKeys(_.name).sorted)
 
   def +(entry: (Field, Any)): Row = copy(value + entry)

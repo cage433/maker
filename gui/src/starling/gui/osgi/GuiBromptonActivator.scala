@@ -11,7 +11,6 @@ import api._
 import pages.{ValuationParametersPage, UserDetailsPage}
 import swing.Publisher
 import starling.bouncyrmi.{BouncyRMI, BouncyRMIClient}
-import starling.manager.{HttpContext, BromptonContext, BromptonActivator}
 import javax.servlet.http.{HttpServletResponse, HttpServletRequest, HttpServlet}
 import starling.pivot.{Field, SomeSelection}
 import starling.tradestore.TradePredicate
@@ -20,6 +19,7 @@ import collection.immutable.TreeSet
 import starling.rabbiteventviewer.api.RabbitEventViewerService
 import starling.trade.facility.TradeFacility
 import starling.reports.facility.ReportFacility
+import starling.manager.{ServiceProperties, HttpContext, BromptonContext, BromptonActivator}
 
 case class GuiLaunchParameters(serverRmiHost:String, serverRmiPort:Int, principalName:String, runAs:Option[String])
 
@@ -79,10 +79,10 @@ class GuiBromptonActivator extends BromptonActivator {
 
         client.remotePublisher.publish(GotoPageEvent(ValuationParametersPage(tradeIDLabel, rp)))
       }
-    }, List(HttpContext("gotoValuationScreen")))
+    }, ServiceProperties(HttpContext("gotoValuationScreen")))
   }
 
-  def stop(context: BromptonContext) {
+  override def stop(context: BromptonContext) {
     if (client != null) client.stop()
   }
 }

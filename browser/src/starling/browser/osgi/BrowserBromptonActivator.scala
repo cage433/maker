@@ -7,13 +7,13 @@ import starling.browser.internal.HomePage.StarlingHomePage
 import starling.browser.internal._
 import javax.swing.UIManager
 import com.jgoodies.looks.plastic.PlasticXPLookAndFeel
-import starling.manager.{BromptonServiceReference, BromptonServiceCallback, BromptonContext, BromptonActivator}
 import swing.Swing._
 import starling.browser.common.GuiUtils
 import starling.browser._
 import swing.event.Event
 import java.io.{File, FileInputStream}
 import java.util.{Hashtable, Properties}
+import starling.manager._
 
 case class BundleAdded(bundle:BrowserBundle) extends StarlingEvent
 case class BundleRemoved(bundle:BrowserBundle) extends StarlingEvent
@@ -55,8 +55,8 @@ class BrowserBromptonActivator extends BromptonActivator {
       }
     }
     var bookmarks = serverContext.browserService.bookmarks
-    context.createServiceTracker(Some(classOf[BrowserBundle]), Nil, new BromptonServiceCallback[BrowserBundle] {
-      def serviceAdded(ref: BromptonServiceReference, bundle: BrowserBundle) {
+    context.createServiceTracker(Some(classOf[BrowserBundle]), ServiceProperties(), new BromptonServiceCallback[BrowserBundle] {
+      def serviceAdded(ref: BromptonServiceReference, properties:ServiceProperties, bundle: BrowserBundle) {
         onEDT {
           val bundlesPublisher = new Publisher() {}
           bundlesPublisher.listenTo(localCachePublisher)
@@ -67,7 +67,7 @@ class BrowserBromptonActivator extends BromptonActivator {
           cacheMap(LocalCache.Bookmarks) = toBookmarks(bookmarks)
         }
       }
-      def serviceRemoved(ref: BromptonServiceReference) {
+      override def serviceRemoved(ref: BromptonServiceReference) {
         onEDT {
           val (bundle, bundlesPublisher) = bundlesByRef(ref)
           bundlesPublisher.deafTo(localCachePublisher)
@@ -138,7 +138,7 @@ class BrowserBromptonActivator extends BromptonActivator {
 
   }
 
-  def stop(context: BromptonContext) {
+  override def stop(context: BromptonContext) {
     System.exit(0) //TODO handle proper restart of browser so that users do not need to restart starling gui on upgrade
   }
 }

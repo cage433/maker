@@ -31,11 +31,18 @@ case class MarketDataID(observationPoint: ObservationPoint, marketDataSet: Marke
   }
 
   def extractValues(marketData: MarketData, referenceDataLookup: ReferenceDataLookup) = {
-    subTypeKey.castRows(marketData, referenceDataLookup)
-      .flatMap(row => extractValue(row).map { case (uom, value, comment) => (subTypeKey.valueKey(row), uom, value, comment) })
+    subTypeKey.dataType.castRows(subTypeKey, marketData, referenceDataLookup)
+      .flatMap(row => extractValue(row).map { case (uom, value, comment) => (valueKey(row, referenceDataLookup), uom, value, comment) })
   }
 
   val extendedKey = MarketDataExtendedKey(-1, marketDataSet, subTypeKey.dataType, observationPoint.timeOfDay, subTypeKey)
+
+  def valueKeys(data: MarketData, referenceDataLookup: ReferenceDataLookup) = {
+    subTypeKey.dataType.valueKeys(subTypeKey, data, referenceDataLookup)
+  }
+
+  private def valueKey(row: Row, referenceDataLookup: ReferenceDataLookup) =
+    subTypeKey.dataType.valueKey(row, subTypeKey.fieldValues(referenceDataLookup).fields)
 }
 
 object MarketDataID {
