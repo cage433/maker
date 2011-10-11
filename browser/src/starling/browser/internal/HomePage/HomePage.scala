@@ -67,6 +67,9 @@ class StarlingHomePageComponent(context:PageContext, browserSize:Dimension, page
       add(new Label("<html><b>Production</b></html>"), "ax center, gapleft 100lp, gapright 100lp")
     } else {
       add(new Label("<html><b>" + data.version.name + " (" + data.version.hostname + ")</b></html>"), "ax center, wrap")
+      add(new TextField(data.version.gitCommit) {
+        editable = false
+      }, "ax center, wrap")
       add(new Label(data.version.database), "span, ax center")
     }
   }

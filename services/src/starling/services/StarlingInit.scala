@@ -52,6 +52,8 @@ import starling.titan._
 import starling.auth.internal.{LdapUserLookupImpl, KerberosAuthHandler}
 import starling.marketdata.DBReferenceDataLookup
 import starling.curves._
+import org.apache.commons.io.IOUtils
+import java.io.{FileInputStream, File}
 
 class StarlingInit( val props: Props,
                     authHandler:AuthHandler = AuthHandler.Dev,
@@ -108,6 +110,16 @@ class StarlingInit( val props: Props,
 
   val eaiStarlingRichSqlServerDB = new RichDB(props.EAIStarlingSqlServer(), richResultSetRowFactory)
 
+  if (dbMigration) log.infoWithTime("DB Migration") {
+    //Ensure the schema is up to date
+    val requiresRestart = new PatchRunner(starlingRichDB, props.ReadonlyMode(), this).updateSchemaIfRequired
+    if(requiresRestart) {
+      Log.warn("A patch applied required a restart. Exiting Starling")
+      System.exit(1)
+    }
+  }
+
+
   // The Market data store needs some of it's own xstream converters
   MarketDataXStreamConverters.converters.foreach(StarlingXStream.registerConverter)
 
@@ -145,15 +157,6 @@ class StarlingInit( val props: Props,
     (fwdCurveAutoImport, mds)
   }
 
-  if (dbMigration) log.infoWithTime("DB Migration") {
-    //Ensure the schema is up to date
-    val requiresRestart = new PatchRunner(starlingRichDB, props.ReadonlyMode(), this).updateSchemaIfRequired
-    if(requiresRestart) {
-      Log.warn("A patch applied required a restart. Exiting Starling")
-      System.exit(1)
-    }
-  }
-
   val userSettingsDatabase = new UserSettingsDatabase(starlingDB, rmiBroadcaster)
 
   val hostname = try {
@@ -165,7 +168,12 @@ class StarlingInit( val props: Props,
   private val production = props.Production()
   private val serverName = props.ServerName()
   private val guiColour = if (production || props.UseProductionColour()) None else Some(PropsHelper.createColour(serverName))
-  val version = Version(serverName, hostname, props.StarlingDatabase().url, production, guiColour)
+  val gitCommit = {
+    val gitRoot = new File(".").getAbsoluteFile.getParentFile.getParentFile.getParentFile
+    val origHead = new File(new File(gitRoot, ".git"), "ORIG_HEAD")
+    if (origHead.exists) IOUtils.toString(new FileInputStream(origHead)) else origHead + " not found"
+  }
+  val version = Version(serverName, hostname, props.StarlingDatabase().url, gitCommit, production, guiColour)
 
   val environmentRules = new EnvironmentRules
   val curveViewer = new CurveViewer(marketDataStore, environmentRules)

@@ -116,7 +116,7 @@ class PatchRunner(starling: RichDB, readOnlyMode: Boolean, starlingInit: Starlin
     //Create the list of patch classes
     val patches = createListOfPatchClasses(List(), patchClasses)
     patches.groupBy(_.patchName).foreach{ case (name, patches) =>
-      assert(patches.size == 1, "Patch " + name + " used more than once")
+      assert(patches.size == 1, "Patch " + name + " used more than once: " + patches)
     }
     patches
   }

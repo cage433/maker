@@ -26,7 +26,7 @@ object CannedBrowserService extends BrowserService {
   def saveBookmark(bookmark: BookmarkLabel) {println("We don't save canned bookmarks")}
   def deleteBookmark(name: String) {println("We don't delete canned bookmarks")}
   def bookmarks = Nil
-  def version = Version("name", "hostname", "db", false, None)
+  def version = Version("name", "hostname", "db", "gitcommit", false, None)
   def logPageView(info: PageLogInfo) { /*skip*/ }
   def userDetails = UserDetails("Dev", "dev user")
   def testEvent() {}
