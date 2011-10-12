@@ -8,9 +8,9 @@ import com.trafigura.services._
 
 
 @Path("/Example")
-trait ExampleServiceApi extends DocumentedService {
+trait ExampleServiceApi {
   @Path("ReferenceInterestRate/{source}") @Example("LIBOR")
-  @GET @Produces(Array("application/json"))
+  @GET @Produces(Array("application/json", "application/xml"))
   def getReferenceInterestRate(@PathParam("source") source: ReferenceRateSource): ReferenceInterestRate
 
   @Path("ReferenceInterestRates/{source}")
@@ -26,17 +26,19 @@ trait ExampleServiceApi extends DocumentedService {
   def setReferenceInterestRates(rates: List[ReferenceInterestRate]): List[ReferenceInterestRate]
 
   @Path("ReferenceInterestRate/{source}")
-  @DELETE @Consumes(Array("application/json")) @Produces(Array("application/json"))
+  @DELETE @Produces(Array("application/json"))
   def deleteReferenceInterestRate(@PathParam("source") source: ReferenceRateSource): Boolean
 }
 
 object ExampleService extends ExampleServiceApi {
   private val rates: HashMap[ReferenceRateSource, ReferenceInterestRate] = new HashMap
 
-  def getReferenceInterestRate(source: ReferenceRateSource) = rates.getOrElseUpdate(source,
-    ReferenceInterestRate(
-      TitanSerializableDate(Day.today.toLocalDate), source, RelativeMaturity.get("1D"),
-      TitanSerializableCurrency("GBP"), TitanSerializablePercentage(0.123)))
+  def getReferenceInterestRate(source: ReferenceRateSource) = {
+    rates.getOrElseUpdate(source,
+      ReferenceInterestRate(
+        TitanSerializableDate(Day.today.toLocalDate), source, RelativeMaturity.get("1D"),
+        TitanSerializableCurrency("GBP"), TitanSerializablePercentage(0.123)))
+  }
 
   def getReferenceInterestRates(source: ReferenceRateSource) =
     List(getReferenceInterestRate(source), getReferenceInterestRate(source))
@@ -61,9 +63,9 @@ object ExampleClient {
     val services = {
       val trinityTest   = ResteasyServiceApi("http://ttraflon2k196:9100")
       val windows       = ResteasyServiceApi("http://localhost:9100/")
-      val starlingLocal = ResteasyServiceApi("http://localhost:37220/RPC")
+      val starlingLocal = ResteasyServiceApi("http://localhost:37214/RPC")
 
-      windows
+      starlingLocal
     }
 
     val exampleService = services.create[ExampleServiceApi]

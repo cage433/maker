@@ -1,10 +1,10 @@
-package starling.client
+package starling.startserver.apps
 
-import org.joda.time.LocalDate
 import com.trafigura.services._
 import com.trafigura.services.marketdata._
 import starling.daterange.Day
 import valuation.TitanMarketDataIdentifier
+import starling.client.BouncyRMIServiceApi
 
 
 object MarketDataClient {

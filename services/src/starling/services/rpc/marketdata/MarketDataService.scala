@@ -19,7 +19,7 @@ import valuation.TitanMarketDataIdentifier
 
 
 class MarketDataService(marketDataStore: MarketDataStore, environmentProvider: EnvironmentProvider)
-  extends MarketDataServiceApi with DocumentedService with Log {
+  extends MarketDataServiceApi with Log {
 
   /** Return all snapshots for a given observation day, or every snapshot if no day is supplied */
   def marketDataSnapshotIDs(observationDay: Option[Day] = None) =
@@ -78,7 +78,7 @@ class MarketDataService(marketDataStore: MarketDataStore, environmentProvider: E
       fixingsForKey.fixings.collect { case ((level, StoredFixingPeriod.Tenor(tenor)), MarketValue.Percentage(rate)) =>
         ReferenceInterestRate(obsDay.toTitan, ReferenceRateSource(source), tenor.toTitan, ccy, rate.toSerializable)
       }
-    }.flatten
+    }.flatten.sortBy(_.observationDate.fromSerializable)
   }
 
   private def spotFXRatesFor(marketDataID : TitanMarketDataIdentifier, keys: MarketDataKey*) = {

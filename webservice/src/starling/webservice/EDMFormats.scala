@@ -1,4 +1,4 @@
-package starling.services.rpc
+package starling.webservice
 
 import net.liftweb.json.JsonAST.JValue
 import net.liftweb.json._
@@ -20,11 +20,11 @@ object EDMFormats extends DefaultFormats {
   }
 
   override val customSerializers = List(localDateSerializer)
-}
 
-object EDMHints extends TypeHints {
-  def classFor(hint: String) = Some(Class.forName(hint))
-  def hintFor(clazz: Class[_]) = clazz.getName
-  val hints = Nil
-  override def containsHint_?(clazz: Class[_]) = true
+  object EDMHints extends TypeHints {
+    def classFor(hint: String) = Some(Class.forName(hint))
+    def hintFor(clazz: Class[_]) = clazz.getName
+    val hints = Nil
+    override def containsHint_?(clazz: Class[_]) = true
+  }
 }

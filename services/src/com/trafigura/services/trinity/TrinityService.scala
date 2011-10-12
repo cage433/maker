@@ -1,10 +1,9 @@
 package com.trafigura.services.trinity
 
-import starling.services.rpc.{EDMFormats, JsonSerializer}
 import javax.ws.rs._
-import com.trafigura.services.{DocumentedService, ServiceApi, ResteasyServiceApi}
-import org.jboss.resteasy.spi.interception.{MessageBodyWriterContext, MessageBodyWriterInterceptor}
+import com.trafigura.services.{ServiceApi, ResteasyServiceApi}
 import starling.utils.{Log, Stopable}
+
 
 class TrinityService(service: => ServiceApi) extends Stopable with Log {
   lazy val profile = service.create[ProfileService]
@@ -17,7 +16,7 @@ class TrinityService(service: => ServiceApi) extends Stopable with Log {
 }
 
 @Path("/Profile")
-trait ProfileService extends DocumentedService {
+trait ProfileService {
   @Path("{name}/{visibility}")
   @GET @Produces(Array("application/json"))
   def get(@PathParam("name") name: String, @PathParam("visibility") visibility: String): Profile
@@ -28,7 +27,7 @@ trait ProfileService extends DocumentedService {
 }
 
 @Path("/DepoRate")
-trait DepoRatesService extends DocumentedService {
+trait DepoRatesService {
   @Path("{commodity}/{profileName}")
   @GET @Produces(Array("application/json"))
   def getRates(@PathParam("commodity") commodity: String, @PathParam("profileName") profileName: String): List[DepoRate]
@@ -51,7 +50,7 @@ trait DepoRatesService extends DocumentedService {
 }
 
 @Path("/CommodityRate")
-trait CommodityRatesService extends DocumentedService {
+trait CommodityRatesService {
   @Path("{exchange}/{commodity}/{currency}/{profileName}")
   @GET @Produces(Array("application/json"))
   def getRates(@PathParam("exchange") exchange: String, @PathParam("commodity") commodity: String,

@@ -1,6 +1,7 @@
-package com.trafigura.services
+package starling.webservice
 
 import java.lang.annotation.Annotation
+import meta.ResteasyTypes
 import org.jboss.resteasy.util.FindAnnotation._
 import javax.ws.rs._
 import core.Context
@@ -11,7 +12,7 @@ import org.jboss.resteasy.spi.{HttpResponse, HttpRequest, ResteasyProviderFactor
 
 
 class ScalaInjectorFactory extends InjectorFactoryImpl(ResteasyProviderFactory.getInstance) {
-  ResteasyServiceApi.registerProviderInstance
+//  ResteasyServiceApi.registerProviderInstance
   private val factory = ResteasyProviderFactory.getInstance
 
   override def createParameterExtractor(targetClass: Class[_], target: AccessibleObject, clazz : Class[_], genericType: Type,
@@ -60,9 +61,3 @@ class ScalaInjectorFactory extends InjectorFactoryImpl(ResteasyProviderFactory.g
       `type`.isAnnotationPresent(classOf[Encoded])
 }
 
-object ResteasyTypes {
-  def matchingAnnotation(annotation: Annotation) =  annotationTypes.contains(annotation.annotationType())
-
-  val annotationTypes = Set(classOf[PathParam], classOf[QueryParam], classOf[HeaderParam], classOf[FormParam],
-    classOf[CookieParam], classOf[MatrixParam], classOf[Form], classOf[Suspend], classOf[Context]).asInstanceOf[Set[Class[_ <: Annotation]]]
-}

@@ -14,7 +14,7 @@ import starling.auth.User
 import starling.services.trinity.{XRTGenerator, FCLGenerator, TrinityUploader}
 import com.trafigura.services.trinity.TrinityService
 import com.trafigura.services.ResteasyServiceApi._
-import com.trafigura.services.{ResteasyServiceApi, WebServiceFactory}
+import com.trafigura.services.ResteasyServiceApi
 import starling.utils.ObservingBroadcaster._
 import starling.databases.utils.{RabbitMessageSender, RabbitBroadcaster}
 import starling.services.rabbit.TitanRabbitIdBroadcaster._
@@ -133,21 +133,6 @@ class MetalsBromptonActivator extends BromptonActivator {
 
     new StarlingJMX(scheduler).start
 
-    val serverName = props.ServerName()
-
-//    lazy val webServiceServer = locally {
-//      val webXmlUrl = "services/resources/webapp/WEB-INF/web.xml"//classOf[StarlingInit].getResource("../../webapp/WEB-INF/web.xml").toExternalForm
-//
-//      new HttpServer(props.HttpServicePort(), props.HttpServiceExternalUrl(), serverName, Some(webXmlUrl), Nil) {
-//        override def start =
-//          log.infoF("HTTP web service external url = '%s', server name = '%s'" % (props.HttpServiceExternalUrl(), serverName)) {
-//            super.start; /*DocumentationService.registerInstances(webServices : _*) */
-//          }
-//      }
-//    }
-
-    StarlingWebServices.webServices = List(marketDataService, valuationService, /*DocumentationService, */ExampleService)
-
     context.registerService(classOf[ValuationServiceApi], valuationService, ServiceProperties(ExportTitanRMIProperty, ExportTitanHTTPProperty))
     context.registerService(classOf[MarketDataServiceApi], marketDataService, ServiceProperties(ExportTitanRMIProperty, ExportTitanHTTPProperty))
     context.registerService(classOf[ExampleServiceApi], ExampleService, ServiceProperties(ExportTitanHTTPProperty))
@@ -166,23 +151,7 @@ class MetalsBromptonActivator extends BromptonActivator {
       )
 
       metalRules.foreach(context.registerService(classOf[EnvironmentRule], _))
-
-
     }
 
   }
-}
-
-class StarlingWebServices extends WebServiceFactory {
-  override val services = {
-    if (StarlingWebServices.webServices == null) {
-      throw new Exception("StarlingWebServices.services has not been initialised")
-    } else {
-      StarlingWebServices.webServices
-    }
-  }
-}
-
-object StarlingWebServices {
-  var webServices:List[AnyRef] = _
 }

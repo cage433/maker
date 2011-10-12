@@ -1,23 +1,24 @@
-package com.trafigura.services.meta
+package starling.webservice.meta
 
 import javax.ws.rs._
 
 
+import core.Context
 import scalaz._
 import Scalaz._
 import starling.utils.ImplicitConversions._
 import java.lang.annotation.Annotation
 import com.thoughtworks.paranamer.BytecodeReadingParanamer
 import java.lang.reflect.{Type, Method}
-import com.trafigura.services.{ResteasyTypes, Example}
+import com.trafigura.services.Example
+import org.jboss.resteasy.annotations.{Suspend, Form}
 
 case class WebService(uri: String, serviceType: String, methods: List[WebMethod])
 
 object WebService {
   def fromClass(serviceClass: Class[_]): WebService = {
     val map: List[Path] = allClasses(serviceClass).map(_.getAnnotation(classOf[Path])).filterNot(_ == null)
-    val uri = map.headOption.getOrElse(
-      throw new Exception("Missing Path annotation")).value
+    val uri = map.headOption.getOrThrow("Missing Path annotation").value
 
     val methods: List[Method] = allMethods(serviceClass)
     val mapO: List[WebMethod] = methods.flatMapO(webMethods)
@@ -96,3 +97,10 @@ case class WebMethod(id: Int, uri: String, verb: String, name: String, returnTyp
                      example: String)
 
 case class WebMethodParameter(name: String, parameterType: String, binding: String)
+
+object ResteasyTypes {
+  def matchingAnnotation(annotation: Annotation) =  annotationTypes.contains(annotation.annotationType())
+
+  val annotationTypes = Set(classOf[PathParam], classOf[QueryParam], classOf[HeaderParam], classOf[FormParam],
+    classOf[CookieParam], classOf[MatrixParam], classOf[Form], classOf[Suspend], classOf[Context]).asInstanceOf[Set[Class[_ <: Annotation]]]
+}

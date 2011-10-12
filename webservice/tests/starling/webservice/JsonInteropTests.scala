@@ -1,4 +1,4 @@
-package starling.services.rpc
+package starling.webservice
 
 import org.scalatest.testng.TestNGSuite
 import org.scalatest.matchers.ShouldMatchers

@@ -1,8 +1,7 @@
-package com.trafigura.services
+package starling.webservice.meta
 
 import javax.ws.rs._
 import javax.ws.rs.core._
-import meta.WebService
 
 
 @Path("/Doc")

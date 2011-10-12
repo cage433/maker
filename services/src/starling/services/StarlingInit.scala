@@ -37,7 +37,7 @@ import com.trafigura.services.marketdata.{ExampleService, MarketDataServiceApi}
 import starling.fc2.api.FC2Facility
 import starling.dbx.DataSourceFactory
 import java.util.UUID
-import com.trafigura.services.{DocumentationService, WebServiceFactory, ResteasyServiceApi}
+import com.trafigura.services.ResteasyServiceApi
 import starling.instrument.utils.StarlingXStream
 import java.util.concurrent.{Executors, ConcurrentHashMap}
 import swing.event.Event

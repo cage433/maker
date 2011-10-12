@@ -1,4 +1,4 @@
-package starling.services.rpc
+package starling.webservice
 
 import net.liftweb.json._
 import starling.utils.ImplicitConversions._

@@ -220,7 +220,7 @@ object StarlingBuild extends Build{
   lazy val gui = Project(
     "gui", 
     file("./gui"),
-    settings = standardSettings ++ libJar("servlet-api-jar-2.5.jar")
+    settings = standardSettings ++ libJars("servlet-api-jar-2.5.jar")
   ) dependsOn(fc2Facility, tradeFacility, reportsFacility, browser, rabbitEventViewerApi, singleClasspathManager)
 
   lazy val tradeFacility = Project(
@@ -272,12 +272,16 @@ object StarlingBuild extends Build{
 	}
 
   def titanBinaryJars(base : File) : Seq[Attributed[File]] = (((base / "../lib/titan-model-jars") ** "*.jar")).getFiles.map{f : File => Attributed.blank(f)}
-  def libJar(jarName: String): Seq[Setting[_]] = {
-    def jars(base : File) : Seq[Attributed[File]] = (((base / "../lib/") ** jarName)).getFiles.map{f : File => Attributed.blank(f)}
+  def libJars(jarNames: String*): Seq[Setting[_]] = {
+    def libJar(jarName: String): Seq[Setting[_]] = {
+      def jars(base : File) : Seq[Attributed[File]] = (((base / "../lib/") ** jarName)).getFiles.map{f : File => Attributed.blank(f)}
 
-    Seq(unmanagedJars in Compile <++= (baseDirectory) map jars) ++
-    Seq(unmanagedJars in Runtime <++= (baseDirectory) map jars) ++
-    Seq(unmanagedJars in Test <++= (baseDirectory) map jars)
+      Seq(unmanagedJars in Compile <++= (baseDirectory) map jars) ++
+      Seq(unmanagedJars in Runtime <++= (baseDirectory) map jars) ++
+      Seq(unmanagedJars in Test <++= (baseDirectory) map jars)
+    }
+
+    jarNames.flatMap(libJar(_))
   }
 
   lazy val services = Project(
@@ -320,8 +324,8 @@ object StarlingBuild extends Build{
   lazy val webservice = Project(
     "webservice",
     file("./webservice"),
-    settings = standardSettings ++ libJar("servlet-api-jar-2.5.jar")
-  ) dependsOn(utils, manager, props)
+    settings = standardSettings ++ libJars("servlet-api-jar-2.5.jar", "jaxrs-api-1.2.GA.jar", "lift-json_2.9.0-jar-2.4-M2.jar")
+  ) dependsOn(utils, manager, props, daterange, starlingApi)
 
   // Evil hack so that I can get a classpath exported including the test-classes of all projects.
   // See bin/write-classpath-script.sh

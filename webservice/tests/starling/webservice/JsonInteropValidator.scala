@@ -1,4 +1,4 @@
-package starling.services.rpc
+package starling.webservice
 
 import org.apache.commons.io.{FileUtils => ApacheFileUtils}
 import org.apache.commons.io.filefilter.TrueFileFilter

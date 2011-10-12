@@ -381,6 +381,8 @@ object Day extends TenorType {
 
   def apply(year: String, month: String, day: String): Day = apply(year.toInt, month.toInt, day.toInt)
 
+  def valueOf(string: String) = parse(string) // Used by Resteasy
+
   def fromExcel(double : Double): Day = {
     Day(1899, 12, 30) + double.toInt
   }

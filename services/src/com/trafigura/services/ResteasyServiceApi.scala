@@ -1,6 +1,5 @@
 package com.trafigura.services
 
-import starling.services.rpc.{JsonSerializerMessageBodyWriter, JsonDeserializerMessageBodyReader}
 import org.jboss.resteasy.client.core.ClientErrorInterceptor
 import org.jboss.resteasy.client.{ClientResponse, ProxyFactory}
 
@@ -21,7 +20,7 @@ import javax.ws.rs.core.{MediaType, Response}
 import java.lang.reflect.InvocationTargetException
 
 case class ResteasyServiceApi(baseUri: String) extends ServiceApi {
-  ResteasyServiceApi.registerProviderInstance
+//  ResteasyServiceApi.registerProviderInstance
 
   override def create[T: ClassManifest] = ProxyFactory.create(classManifest[T].erasure, baseUri).asInstanceOf[T]
 }
@@ -34,11 +33,8 @@ object ResteasyServiceApi {
 
   lazy val registerProviderInstance = {
     val providerFactory = ResteasyProviderFactory.getInstance
-    providerFactory.registerProviderInstance(new JsonDeserializerMessageBodyReader)
-    providerFactory.registerProviderInstance(new JsonSerializerMessageBodyWriter)
-    providerFactory.addClientErrorInterceptor(RethrowDotNetServerErrorsClientErrorInterceptor)
-    providerFactory.registerProviderInstance(LocalDateConverter)
-    providerFactory.addExceptionMapper(BadRequestExceptionMapper)
+//    providerFactory.addClientErrorInterceptor(RethrowDotNetServerErrorsClientErrorInterceptor)
+//    providerFactory.addExceptionMapper(BadRequestExceptionMapper)
   }
 
   class BaseExceptionMapper[T <: Throwable](status: Status = Status.BAD_REQUEST) extends ExceptionMapper[T] {

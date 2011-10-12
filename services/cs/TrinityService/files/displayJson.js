@@ -83,7 +83,7 @@ function importsImpl(serviceType, methods, prefix, suffix) {
 function Form(form) {
     var service = $("body").attr("href")
     var root = document.location.pathname.substring(0, document.location.pathname.indexOf(service))
-    var action = document.location.href.replace($("body").attr("href"), "") + "/" + form.attr("action")
+    var action = document.location.href.replace($("body").attr("href"), "").stripSuffix("/") + "/" + form.attr("action")
 
     form.attr("action", action).prepend(action).append("<img style='display: none;' src='" + root + "/Doc/Files/ajax-loader.gif'/><code/><p/>")
 
