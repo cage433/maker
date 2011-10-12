@@ -101,7 +101,7 @@ object StarlingBuild extends Build{
 
 
   lazy val titanReturnTypes = Project(
-    "titan.return.types",
+    "titan-return-types",
     file("./titan.return.types"),
     settings = standardSettings
   ) dependsOn(daterange, quantity)
@@ -130,7 +130,7 @@ object StarlingBuild extends Build{
 
   lazy val starlingApi = if (useTitanModelBinaries) {
     Project(
-      "starlingApi", 
+      "starling-api", 
       file("./starling.api"),
       settings = standardSettings ++ 
         Seq(unmanagedJars in Compile <++= (baseDirectory) map titanBinaryJars) ++ 
@@ -139,7 +139,7 @@ object StarlingBuild extends Build{
     ) dependsOn(titanReturnTypes)
   } else {
     Project(
-      "starlingApi", 
+      "starling-api", 
       file("./starling.api"),
       settings = standardSettings 
     ) dependsOn(titanModel, titanReturnTypes)
@@ -170,7 +170,7 @@ object StarlingBuild extends Build{
   ) dependsOn(manager, auth)
 
   lazy val browserService = Project(
-    "browserService",
+    "browser-service",
     file("./browser.service"),
     settings = standardSettings
   ) dependsOn(manager)
@@ -182,13 +182,13 @@ object StarlingBuild extends Build{
   ) dependsOn(browserService, manager)
 
   lazy val guiapi = Project(
-    "gui.api", 
+    "gui-api", 
     file("./gui.api"),
     settings = standardSettings
   ) dependsOn(pivotUtils, quantity, auth, bouncyrmi, browserService, manager)
 
   lazy val fc2Facility = Project(
-    "fc2.facility",
+    "fc2-facility",
     file("./fc2.facility"),
     settings = standardSettings
   ) dependsOn(daterange, guiapi)
@@ -206,13 +206,13 @@ object StarlingBuild extends Build{
   ) dependsOn(curves % testDependency, daterange % testDependency, titanReturnTypes)
 
   lazy val reportsFacility = Project(
-    "reports.facility",
+    "reports-facility",
     file("./reports.facility"),
     settings = standardSettings
   ) dependsOn(guiapi)
 
   lazy val rabbitEventViewerApi = Project(
-    "rabbit.event.viewer.api",
+    "rabbit-event-viewer-api",
     file("./rabbit.event.viewer.api"),
     settings = standardSettings
   ) dependsOn(pivot, manager)
@@ -231,7 +231,7 @@ object StarlingBuild extends Build{
 
  
   lazy val starlingClient = Project(
-    "starlingClient",
+    "starling-client",
     file("./starling.client"),
     settings = standardSettings
   ) dependsOn(starlingApi, bouncyrmi)
@@ -249,7 +249,7 @@ object StarlingBuild extends Build{
   ) dependsOn(curves % "test->test", pivot , guiapi , concurrent , auth , starlingApi, dbx, props)
 
   lazy val rabbitEventViewerService = Project(
-    "rabbit.event.viewer.service",
+    "rabbit-event-viewer-service",
     file("./rabbit.event.viewer.service"),
     settings = standardSettings
   ) dependsOn(rabbitEventViewerApi, pivot, databases, manager)
@@ -287,7 +287,7 @@ object StarlingBuild extends Build{
   ) dependsOn(curves % "test->test", concurrent, loopyxl, titan, gui, fc2Facility, browser, titanReturnTypes)
 
   lazy val tradeImpl = Project(
-    "trade.impl",
+    "trade-impl",
     file("./trade.impl"),
     settings = standardSettings
   ) dependsOn(services, tradeFacility, manager)
@@ -299,7 +299,7 @@ object StarlingBuild extends Build{
   ) dependsOn(services, tradeImpl)
 
   lazy val reportsImpl = Project(
-    "reports.impl",
+    "reports-impl",
     file("./reports.impl"),
     settings = standardSettings
   ) dependsOn(services)
