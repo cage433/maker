@@ -25,7 +25,7 @@ object TitanTradeStore {
   val toleranceMinus_str = "Tolerance Minus"
   val eventID_str = "Event ID" // this is the unique id of the event that resulted in this version of the trade
 
-  val labels = List(quotaID_str, assignmentID_str, titanTradeID_str,
+  val labels = List(quotaID_str, quotaQuantity_str, assignmentID_str, titanTradeID_str,
                     inventoryID_str, groupCompany_str, comment_str,
                     submitted_str, shape_str, contractFinalised_str,
                     tolerancePlus_str, toleranceMinus_str, eventID_str)

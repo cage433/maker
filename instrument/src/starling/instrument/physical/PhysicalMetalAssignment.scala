@@ -46,8 +46,6 @@ object PhysicalMetalAssignmentOrUnassignedSalesQuota{
     def contractDeliveryDay = throw new UnsupportedOperationException
     def contractPricingSpec = throw new UnsupportedOperationException
   }
-
-
 }
 
 trait PhysicalMetalAssignmentOrUnassignedSalesQuota extends UTP with Tradeable {
