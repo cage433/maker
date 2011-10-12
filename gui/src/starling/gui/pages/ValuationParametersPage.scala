@@ -160,6 +160,7 @@ class ValuationParametersPageComponent(context:PageContext, pageData:PageData) e
     }
 
     val pnl = data.tradeValuation.tradeValuation.explanation
+    add(infoPanel, "pushx, wrap")
 
     pnl match {
       case Right(explanation) => {
