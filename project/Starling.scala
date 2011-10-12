@@ -375,6 +375,7 @@ object StarlingBuild extends Build{
     osgiRun,
     dbx,
     startserver,
+    titanReturnTypes,
     starlingApi,
     starlingClient,
     webservice
