@@ -483,8 +483,7 @@ class CommoditySwapTests extends JonTestEnv {
     val volume1 = Quantity(1000, BBL)
 
     val cs1 = new CommoditySwap(index, strike1, volume1, period, cleared = true, pricingRule = CommonPricingRule, roundingMethodRule = PerFormulaRule)
-    val blah = cs1.asUtpPortfolio(2 Jan 2011)
-    val mtm1 = blah.mtm(env)
+    val mtm1 = cs1.asUtpPortfolio(2 Jan 2011).mtm(env)
     val scsA1 = new SinglePeriodSwap(mogas, strike1, volume1, period, cleared = true)
     val scsA2 = new SinglePeriodSwap(brent, strike1.copy(value = 0.0), -volume1, period, cleared = true)
     val scsA1Mtm = scsA1.mtm(env)

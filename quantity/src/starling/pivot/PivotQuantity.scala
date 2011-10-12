@@ -136,6 +136,11 @@ case class PivotQuantity(values:Map[UOM,Double], errors:MultiMap[String,StackTra
     case None => this
   }
 
+  def inUOM(other: UOM) = quantityValue match {
+    case Some(q) => PivotQuantity(q.inUOM(other))
+    case None => this
+  }
+
   def isAlmostZero = quantityValue match {
     case Some(qty) => qty.isAlmostZero
     case None => false
