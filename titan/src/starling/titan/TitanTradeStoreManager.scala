@@ -237,6 +237,16 @@ case class TitanTradeStoreManager(
         new Timestamp
       ), Nil, false)
   }
+
+  /**
+   * removal of a sales assignment only, we need to remove and refresh the inventory in the trade store
+   * removal of inventory from cache will purge associated logistics quota and it will get updated
+   * during the inventory update
+   */
+  def removeSalesAssignment(env : Environment, titanInventoryID : String, eventId : String) : TitanTradeUpdateResult = {
+    removeInventoryFromCache(titanInventoryID)
+    updateInventory(env, titanInventoryID, eventId)
+  }
 }
 
 case class TitanTradeUpdateResult(

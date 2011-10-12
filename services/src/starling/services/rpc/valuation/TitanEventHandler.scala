@@ -156,23 +156,33 @@ class TitanEventHandler(rabbitEventServices : TitanRabbitEventServices,
       }
       case CreatedEventVerb => {
         Log.info("New event received for %s".format(inventoryIds))
-        if (Event.EDMLogisticsInventorySubject == ev.subject || EDMLogisticsSalesAssignmentSubject == ev.subject) {
-
-          val results = inventoryIds.map(id => titanTradeStoreManager.updateInventory(Environment(NullAtomicEnvironment(marketDay.startOfDay)), id, eventId))
-          val changedForwardIDs = results.flatMap(_.changedValueTitanTradeIds)
-          if (changedForwardIDs != Nil) {
-            rabbitPublishChangedValueEvents(changedForwardIDs, RefinedMetalTitanIdPayload)
+        ev.subject match {
+          case EDMLogisticsInventorySubject | EDMLogisticsSalesAssignmentSubject => {
+            val results = inventoryIds.map(id => titanTradeStoreManager.updateInventory(Environment(NullAtomicEnvironment(marketDay.startOfDay)), id, eventId))
+            val changedForwardIDs = results.flatMap(_.changedValueTitanTradeIds)
+            if (changedForwardIDs != Nil) {
+              rabbitPublishChangedValueEvents(changedForwardIDs, RefinedMetalTitanIdPayload)
+            }
+            Some(results)
           }
-          Some(results)
+          case _ => None
         }
-        else None
       }
       case CancelledEventVerb | RemovedEventVerb => {
         Log.info("Cancelled / deleted event received for %s".format(inventoryIds))
-        if (Event.EDMLogisticsInventorySubject == ev.subject || EDMLogisticsSalesAssignmentSubject == ev.subject) {
-          Some(inventoryIds.map(id => titanTradeStoreManager.deleteInventory(id, eventId)))
+        ev.subject match {
+          case EDMLogisticsInventorySubject => {
+            Some(inventoryIds.map(id => titanTradeStoreManager.deleteInventory(id, eventId)))
+          }
+          case EDMLogisticsSalesAssignmentSubject => {
+            val (snapshotIDString, env) = environmentProvider.mostRecentSnapshotIdentifierBeforeToday match {
+              case Some(snapshotId) => (snapshotId, environmentProvider.environment(snapshotId, marketDay))
+              case None => ("No Snapshot found", Environment(NullAtomicEnvironment(marketDay.startOfDay)))
+            }
+            Some(inventoryIds.map(inventoryID => titanTradeStoreManager.removeSalesAssignment(env, inventoryID, eventId)))
+          }
+          case _ => None
         }
-        else None
       }
       case _ => None
     }
