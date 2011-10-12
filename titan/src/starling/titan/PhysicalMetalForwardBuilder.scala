@@ -15,7 +15,7 @@ import starling.quantity.{Quantity, Percentage}
 import starling.db.TitanTradeSystem
 import starling.instrument.{ErrorInstrument, TradeID, Trade}
 import com.trafigura.tradecapture.internal.refinedmetal.{DestinationLocation, Location}
-import starling.marketdata.{GradeCode, ContractualLocationCode, NeptuneCountryCode, ContractualLocation}
+import starling.marketdata._
 
 class PhysicalMetalForwardBuilder(refData: TitanTacticalRefData,
             inventoryByQuotaID: Map[TitanId, List[EDMInventoryItem]],
@@ -68,9 +68,16 @@ class PhysicalMetalForwardBuilder(refData: TitanTacticalRefData,
         }
         (getTolerancePercentage(tolerance.plus.amount), getTolerancePercentage(tolerance.minus.amount))
       }
-      def locations(spec : DeliverySpec): (Location, DestinationLocation) = {
-        (locationsByGUID(spec.deliveryLocations.head.location), destLocationsByGUID(spec.destinationLocation))
+      def deliveryLocation(detail : QuotaDetails) = {
+        val deliveryLocations = deliverySpec_(detail).deliveryLocations
+        assert(deliveryLocations.size == 1, "Expect a single delivery location")
+        deliveryLocations.head
       }
+      def locations(detail : QuotaDetails): (Location, DestinationLocation) = {
+        val spec = deliverySpec_(detail)
+        (locationsByGUID(deliveryLocation(detail).location), destLocationsByGUID(spec.destinationLocation))
+      }
+
       def deliverySpec_(detail : QuotaDetails) = {
         assert(detail.deliverySpecs.size == 1, "Requires there to be a single delivery spec")
         detail.deliverySpecs.head
@@ -105,7 +112,9 @@ class PhysicalMetalForwardBuilder(refData: TitanTacticalRefData,
 
             val (tolerancePlus, toleranceMinus) = tolerance(deliverySpec)
 
-            val (contractLocation, benchmarkCountry) = locations(deliverySpec)
+            val (contractLocation, benchmarkCountry) = locations(detail)
+            val contractIncoTerm = IncotermCode(deliveryLocation(detail).incoterm)
+            val benchmarkIncoTerm = Option(detail.benchmark).map(IncotermCode)
             val quotaQuantity : Quantity = deliverySpec.quantity
             val quotaID = NeptuneId(detail.identifier).identifier
             def makeAssignment(ass: EDMAssignment, inv: Inventory, isPurchase: Boolean) = {
@@ -116,8 +125,10 @@ class PhysicalMetalForwardBuilder(refData: TitanTacticalRefData,
                 contractDeliveryDay,
                 contractPricingSpec,
                 ContractualLocationCode(contractLocation.code),
+                contractIncoTerm,
                 if (inv.isAllocated) None else Some(benchmarkDeliveryDay),
                 if (inv.isAllocated) None else Some(NeptuneCountryCode(benchmarkCountry.countryCode)),
+                if (inv.isAllocated) None else benchmarkIncoTerm,
                 isPurchase,
                 inventoryID = ass.inventoryId.toString,
                 inventoryQuantity = inv.currentQuantity,
@@ -182,8 +193,10 @@ class PhysicalMetalForwardBuilder(refData: TitanTacticalRefData,
                   contractDeliveryDay,
                   contractPricingSpec,
                   ContractualLocationCode(contractLocation.code),
+                  contractIncoTerm,
                   Some(benchmarkDeliveryDay),
                   Some(NeptuneCountryCode(benchmarkCountry.countryCode)),
+                  benchmarkIncoTerm,
                   GradeCode(grade.code)
                 )
                 val attributes = makeTradeAttributes(None)

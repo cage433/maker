@@ -104,11 +104,13 @@ object TradeableType {
     ("Inventory Quantity", classOf[Quantity]),
     ("Assignment ID", classOf[String]) ,
     ("Direction", classOf[String]),
-    ("Contract Delivery Day", classOf[Day]),
-    ("Benchmark Delivery Day", classOf[Day]),
-    ("Contract Location Code", classOf[String]),
-    ("Benchmark Country Code", classOf[String]),
     ("Contract Pricing Spec Name", classOf[String]),
+    ("Contract Delivery Day", classOf[Day]),
+    ("Contract Location Code", classOf[String]),
+    ("Contract Inco Term Code", classOf[String]),
+    ("Benchmark Delivery Day", classOf[Day]),
+    ("Benchmark Country Code", classOf[String]),
+    ("Benchmark Inco Term Code", classOf[String]),
     ("Grade Code", classOf[String])
 
 

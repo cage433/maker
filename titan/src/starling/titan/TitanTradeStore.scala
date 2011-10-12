@@ -9,7 +9,7 @@ import EDMConversions._
 import collection.immutable.Map
 import starling.instrument.physical.{PhysicalMetalAssignmentOrUnassignedSalesQuota, PhysicalMetalForward}
 import starling.pivot._
-import starling.marketdata.{GradeCode, ContractualLocationCode, NeptuneCountryCode, ReferenceDataLookup}
+import starling.marketdata._
 
 object TitanTradeStore {
   val quotaID_str = "Quota ID"
@@ -102,11 +102,11 @@ class TitanTradeStore(db: RichDB, broadcaster:Broadcaster, tradeSystem:TradeSyst
           case ("Benchmark Country Code", code: String) => Some(Field("Benchmark Country") -> refDataLookup.countryFor(NeptuneCountryCode(code)).name)
           case ("Contract Location Code", code: String) => Some(Field("Contract Location") -> refDataLookup.contractLocationFor(ContractualLocationCode(code)).name)
           case ("Grade Code", code: String) => Some(Field("Grade") -> refDataLookup.gradeFor(GradeCode(code)).name)
+          case ("Contract Inco Term Code", code: String) => Some(Field("Contract Inco Term") -> refDataLookup.incotermFor(IncotermCode(code)).name)
+          case ("Benchmark Inco Term Code", code: String) => Some(Field("Benchmark Inco Term") -> refDataLookup.incotermFor(IncotermCode(code)).name)
           case _ => None
         }
     }
-    println("Extra fields")
-    extraFields.foreach(println)
     map ++ extraFields
   }
 
@@ -114,6 +114,8 @@ class TitanTradeStore(db: RichDB, broadcaster:Broadcaster, tradeSystem:TradeSyst
     val map = Map(
       "Benchmark Country Code" -> FieldDetails("Benchmark Country"),
       "Contract Location Code" -> FieldDetails("Contract Location"),
+      "Benchmark Inco Term Code" -> FieldDetails("Benchmark Inco Term"),
+      "Contract Inco Term Code" -> FieldDetails("Contract Inco Term"),
       "Grade Code" -> FieldDetails("Grade")
      )
     val extraDetails = list.flatMap{fd => map.get(fd.field.name)}

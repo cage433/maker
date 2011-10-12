@@ -51,8 +51,9 @@ def makeEnv(pricingGroup : PricingGroup, marketDay : Day) : Environment = {
       ReferenceDataLookup.Null
     ))
 }
+lazy val neptuneRefData = devInstance.referenceDataLookup
 lazy val titanTradeStore = {
-  val ts = new starling.titan.TitanTradeStore(new RichDB(devInstance.props.StarlingDatabase(), new RichResultSetRowFactory), Broadcaster.Null, TitanTradeSystem)
+  val ts = new starling.titan.TitanTradeStore(new RichDB(devInstance.props.StarlingDatabase(), new RichResultSetRowFactory), Broadcaster.Null, TitanTradeSystem, neptuneRefData)
   ts.readAll
   ts
 }

@@ -8,7 +8,7 @@ import starling.utils.sql.PersistAsBlob
 import starling.market._
 import starling.titan.valuation.{CostsAndIncomeAllocatedSaleAssignmentValuation, CostsAndIncomeAllocatedPurchaseAssignmentValuation, PricingValuationDetails, CostsAndIncomeUnallocatedAssignmentValuation}
 import starling.quantity._
-import starling.marketdata.{GradeCode, ContractualLocationCode, NeptuneCountryCode}
+import starling.marketdata.{IncotermCode, GradeCode, ContractualLocationCode, NeptuneCountryCode}
 
 object PhysicalMetalAssignmentOrUnassignedSalesQuota{
   val contractDeliveryDayLabel = "contractDeliveryDay"
@@ -17,9 +17,11 @@ object PhysicalMetalAssignmentOrUnassignedSalesQuota{
   val contractPricingSpecNameLabel = "contractPricingSpecName"
   val contractPricingSpecLabel = "contractPricingSpec"
   val contractLocationCodeLabel = "contractLocationCode"
+  val contractIncoTermCodeLabel = "contractIncoTermCode"
   val benchmarkPricingSpecNameLabel = "benchmarkPricingSpecName"
   val benchmarkDeliveryDayLabel = "benchmarkDeliveryDay"
   val benchmarkCountryCodeLabel = "benchmarkCountryCode"
+  val benchmarkIncoTermCodeLabel = "benchmarkIncoTermCode"
   val premiumLabel = "premium"
   val exchangeLabel = "exchange"
   val contractIndexLabel = "contractIndex"
@@ -34,8 +36,10 @@ object PhysicalMetalAssignmentOrUnassignedSalesQuota{
     val deliveryDay = row.getDay(contractDeliveryDayLabel)
     val pricingSpec = row.getObject[TitanPricingSpec](contractPricingSpecLabel)
     val contractLocationCode = ContractualLocationCode(row.getString(contractLocationCodeLabel))
+    val contractIncoTermCode = IncotermCode(row.getString(contractIncoTermCodeLabel))
     val benchmarkDeliveryDay = if (!row.isNull(benchmarkDeliveryDayLabel)) Some(row.getDay(benchmarkDeliveryDayLabel)) else None
     val benchmarkCountryCode = (if (!row.isNull(benchmarkCountryCodeLabel)) Some(row.getString(benchmarkCountryCodeLabel)) else None).map(NeptuneCountryCode)
+    val benchmarkIncoTermCode = (if (!row.isNull(benchmarkIncoTermCodeLabel)) Some(row.getString(benchmarkIncoTermCodeLabel)) else None).map(IncotermCode)
     val grade = GradeCode(row.getString(gradeCodeLabel))
     val isPurchase = row.getBoolean(isPurchaseLabel)
 
@@ -54,8 +58,10 @@ trait PhysicalMetalAssignmentOrUnassignedSalesQuota extends UTP with Tradeable {
   def contractDeliveryDay: Day
   def contractPricingSpec: TitanPricingSpec
   def contractLocationCode : ContractualLocationCode
+  def contractIncoTermCode : IncotermCode
   def benchmarkDeliveryDay : Option[Day]
   def benchmarkCountryCode : Option[NeptuneCountryCode]
+  def benchmarkIncoTermCode : Option[IncotermCode]
   def grade : GradeCode
   def isPurchase : Boolean
 
@@ -70,6 +76,7 @@ trait PhysicalMetalAssignmentOrUnassignedSalesQuota extends UTP with Tradeable {
       contractDeliveryDayLabel -> contractDeliveryDay,
       contractPricingSpecNameLabel -> contractPricingSpec.pricingType,
       contractLocationCodeLabel -> contractLocationCode.code,
+      contractIncoTermCodeLabel -> contractIncoTermCode.code,
       quantityLabel -> quantity,
       premiumLabel -> contractPricingSpec.premium,
       gradeCodeLabel -> grade.code,
@@ -77,7 +84,8 @@ trait PhysicalMetalAssignmentOrUnassignedSalesQuota extends UTP with Tradeable {
     ) ++ contractPricingSpec.indexOption.map(contractIndexLabel -> _) ++
       contractPricingSpec.indexOption.flatMap(_.market.exchangeOption).map(exchangeLabel -> _.name) ++
       benchmarkDeliveryDay.map(benchmarkDeliveryDayLabel -> _) ++
-      benchmarkCountryCode.map(benchmarkCountryCodeLabel -> _.code)
+      benchmarkCountryCode.map(benchmarkCountryCodeLabel -> _.code) ++
+      benchmarkIncoTermCode.map(benchmarkIncoTermCodeLabel -> _.code)
 
   def isLive(dayAndTime: DayAndTime) = !contractPricingSpec.isComplete(dayAndTime) && (benchmarkPricingSpec match {
     case Some(spec) => !spec.isComplete(dayAndTime)
@@ -93,9 +101,11 @@ trait PhysicalMetalAssignmentOrUnassignedSalesQuota extends UTP with Tradeable {
     isPurchaseLabel -> isPurchase,
     commodityLabel -> commodityName,
     contractLocationCodeLabel -> contractLocationCode.code,
+    contractIncoTermCodeLabel -> contractIncoTermCode.code,
     gradeCodeLabel -> grade.code
   ) ++ benchmarkDeliveryDay.map(benchmarkDeliveryDayLabel -> _)  ++
-        benchmarkCountryCode.map(benchmarkCountryCodeLabel -> _.code)
+        benchmarkCountryCode.map(benchmarkCountryCodeLabel -> _.code) ++
+       benchmarkIncoTermCode.map(benchmarkIncoTermCodeLabel -> _.code)
 
   def price(env: Environment) = contractPricingSpec.price(env)
 
@@ -152,8 +162,10 @@ case class UnallocatedSalesQuota(
                                   contractDeliveryDay: Day,
                                   contractPricingSpec: TitanPricingSpec,
                                   contractLocationCode: ContractualLocationCode,
+                                  contractIncoTermCode : IncotermCode,
                                   benchmarkDeliveryDay: Option[Day],
                                   benchmarkCountryCode: Option[NeptuneCountryCode],
+                                  benchmarkIncoTermCode : Option[IncotermCode],
                                   grade: GradeCode
                                   ) extends PhysicalMetalAssignmentOrUnassignedSalesQuota with UTP with Tradeable {
 
@@ -184,15 +196,16 @@ object UnallocatedSalesQuota extends InstrumentType[UnallocatedSalesQuota] with 
 
 
     UnallocatedSalesQuota(quantity, commodityName,
-      deliveryDay, pricingSpec, contractLocationCode,
-      benchmarkDeliveryDay, benchmarkCountryCode,
+      deliveryDay, pricingSpec, contractLocationCode, contractIncoTermCode,
+      benchmarkDeliveryDay, benchmarkCountryCode, benchmarkIncoTermCode,
       grade
     )
   }
 
   def sample = UnallocatedSalesQuota(Quantity(100, MT), "Copper", Day(2012, 10, 12),
-    AveragePricingSpec(LmeSingleIndices.alCashBid, Month(2011, 10), Quantity(0.5, USD / MT)), ContractualLocationCode("France"),
-    Some(Day(2012, 11, 1)), Some(NeptuneCountryCode("Italy")),
+    AveragePricingSpec(LmeSingleIndices.alCashBid, Month(2011, 10), Quantity(0.5, USD / MT)),
+    ContractualLocationCode("France"), IncotermCode("CIF"),
+    Some(Day(2012, 11, 1)), Some(NeptuneCountryCode("Italy")), Some(IncotermCode("CFR")),
     grade = GradeCode("grade")
   )
 }
@@ -203,8 +216,10 @@ case class PhysicalMetalAssignment( assignmentID : String,
                                     contractDeliveryDay: Day,
                                     contractPricingSpec: TitanPricingSpec,
                                     contractLocationCode : ContractualLocationCode,
+                                    contractIncoTermCode : IncotermCode,
                                     benchmarkDeliveryDay : Option[Day],
                                     benchmarkCountryCode : Option[NeptuneCountryCode],
+                                    benchmarkIncoTermCode : Option[IncotermCode],
                                     isPurchase: Boolean,
                                     inventoryID: String,
                                     inventoryQuantity : Quantity,
@@ -310,8 +325,10 @@ object PhysicalMetalAssignment extends InstrumentType[PhysicalMetalAssignment] w
         assignmentID,
         quantity,
         commodityName,
-        deliveryDay, pricingSpec, contractLocationCode,
-        benchmarkDeliveryDay, benchmarkCountryCode,
+        deliveryDay, pricingSpec,
+        contractLocationCode,
+        contractIncoTermCode,
+        benchmarkDeliveryDay, benchmarkCountryCode, benchmarkIncoTermCode,
         isPurchase, inventoryID, inventoryQuantity,
         grade
       )
@@ -320,8 +337,9 @@ object PhysicalMetalAssignment extends InstrumentType[PhysicalMetalAssignment] w
     import UOM._
     def sample = PhysicalMetalAssignment(
       "12345", Quantity(100, UOM.MT), "Aluminium",
-      Day(2011, 10, 10), AveragePricingSpec(LmeSingleIndices.alCashBid, Month(2011, 10), Quantity(0.5, USD/MT)), ContractualLocationCode("France"),
-      Some(Day(2011, 11, 1)), Some(NeptuneCountryCode("Italy")),
+      Day(2011, 10, 10), AveragePricingSpec(LmeSingleIndices.alCashBid, Month(2011, 10), Quantity(0.5, USD/MT)),
+      ContractualLocationCode("France"), IncotermCode("CIF"),
+      Some(Day(2011, 11, 1)), Some(NeptuneCountryCode("Italy")), Some(IncotermCode("CIF")),
       isPurchase = false, inventoryID = "abcde", inventoryQuantity = Quantity(99, UOM.MT),
       grade = GradeCode("grade")
     )

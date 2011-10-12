@@ -14,7 +14,7 @@ import starling.curves.IndexFixingKey
 import scala.collection.immutable.TreeMap
 import starling.daterange.DateRange
 import starling.quantity.{Percentage, UOM, Quantity}
-import starling.marketdata.{GradeCode, NeptuneCountryCode, ContractualLocationCode}
+import starling.marketdata.{IncotermCode, GradeCode, NeptuneCountryCode, ContractualLocationCode}
 
 /**
  * Commenting out until everything settles down - AMc 29/9/11
@@ -38,8 +38,8 @@ class PhysicalMetalAssignmentTests extends StarlingTest {
     val monthSpec = AveragePricingSpec(LmeSingleIndices.cuCashBid, Month(2011, 8), Quantity(1.5, USD/MT))
 
     val assignment = PhysicalMetalAssignment(
-      "1234", Quantity(100, MT), "Lead", Day(2011, 9, 1), monthSpec, ContractualLocationCode("France"),
-      benchmarkDeliveryDay = None, benchmarkCountryCode = Some(NeptuneCountryCode("Italy")),
+      "1234", Quantity(100, MT), "Lead", Day(2011, 9, 1), monthSpec, ContractualLocationCode("France"), IncotermCode("CIF"),
+      benchmarkDeliveryDay = None, benchmarkCountryCode = Some(NeptuneCountryCode("Italy")), benchmarkIncoTermCode = Some(IncotermCode("CIF")),
       isPurchase = true, inventoryID = "inventory id", inventoryQuantity = Quantity(90, MT),
       grade = GradeCode("grade")
     )
@@ -74,8 +74,8 @@ class PhysicalMetalAssignmentTests extends StarlingTest {
     val weightedAverageSpec = WeightedPricingSpec(List((0.4, monthSpec), (0.6, monthSpec2)))
 
     val assignment = PhysicalMetalAssignment(
-      "1234", Quantity(100, MT), "Lead", Day(2011, 9, 1), weightedAverageSpec, ContractualLocationCode("France"),
-      benchmarkDeliveryDay = None, benchmarkCountryCode = Some(NeptuneCountryCode("Italy")),
+      "1234", Quantity(100, MT), "Lead", Day(2011, 9, 1), weightedAverageSpec, ContractualLocationCode("France"),IncotermCode("CIF"),
+      benchmarkDeliveryDay = None, benchmarkCountryCode = Some(NeptuneCountryCode("Italy")), benchmarkIncoTermCode = Some(IncotermCode("CIF")),
       isPurchase = true, inventoryID = "inventory id", inventoryQuantity = Quantity(90, MT),
       grade = GradeCode("grade")
     )
@@ -102,9 +102,11 @@ class PhysicalMetalAssignmentTests extends StarlingTest {
     val monthSpec = AveragePricingSpec(LmeSingleIndices.cuCashBid, Month(2011, 8), Quantity(1.5, USD/MT))
     val partialSpec = AveragePricingSpec(LmeSingleIndices.cuCashBid, DateRange(Day(2011, 9, 1), Day(2011, 9, 10)), Quantity(4.5, USD/MT))
     val optionalSpec = OptionalPricingSpec(List(monthSpec, partialSpec), Day(2011, 8, 25), chosenSpec = None)
-    val optAssignment = PhysicalMetalAssignment("123", Quantity(100, MT), "Lead", Day(2011, 9, 1), optionalSpec, ContractualLocationCode("France"), benchmarkDeliveryDay = None, benchmarkCountryCode = Some(NeptuneCountryCode("Italy")), isPurchase = true, inventoryID = "inventory id", inventoryQuantity = Quantity(90, MT),
+    val optAssignment = PhysicalMetalAssignment("123", Quantity(100, MT), "Lead", Day(2011, 9, 1), optionalSpec, ContractualLocationCode("France"), IncotermCode("CIF"),
+      benchmarkDeliveryDay = None, benchmarkCountryCode = Some(NeptuneCountryCode("Italy")), benchmarkIncoTermCode = Some(IncotermCode("CIF")), isPurchase = true, inventoryID = "inventory id", inventoryQuantity = Quantity(90, MT),
       grade = GradeCode("grade"))
-    val monthAssignment = PhysicalMetalAssignment("123", Quantity(100, MT), "Lead", Day(2011, 9, 1), monthSpec, ContractualLocationCode("France"), benchmarkDeliveryDay = None, benchmarkCountryCode = Some(NeptuneCountryCode("Italy")), isPurchase = true, inventoryID = "inventory id", inventoryQuantity = Quantity(90, MT),
+    val monthAssignment = PhysicalMetalAssignment("123", Quantity(100, MT), "Lead", Day(2011, 9, 1), monthSpec, ContractualLocationCode("France"), IncotermCode("CIF"), benchmarkDeliveryDay = None,
+      benchmarkCountryCode = Some(NeptuneCountryCode("Italy")), benchmarkIncoTermCode = Some(IncotermCode("CIF")), isPurchase = true, inventoryID = "inventory id", inventoryQuantity = Quantity(90, MT),
       grade = GradeCode("grade"))
     val optExp = optAssignment.explanation(env)
     val monthExp = monthAssignment.explanation(env)
@@ -115,7 +117,8 @@ class PhysicalMetalAssignmentTests extends StarlingTest {
   //@Test
   def testFixedPrixingSpec{
     val fixedSpec = FixedPricingSpec(Day(2011, 8, 31), List((0.5, Quantity(98, USD/MT)), (0.8, Quantity(103, USD/MT))), Quantity(1.5, USD/MT))
-    val assignment = PhysicalMetalAssignment("abc", Quantity(100, MT), "Lead", Day(2011, 9, 1), fixedSpec, ContractualLocationCode("France"), benchmarkDeliveryDay = None, benchmarkCountryCode = Some(NeptuneCountryCode("Italy")), isPurchase = true, inventoryID = "inventory id", inventoryQuantity = Quantity(90, MT),
+    val assignment = PhysicalMetalAssignment("abc", Quantity(100, MT), "Lead", Day(2011, 9, 1), fixedSpec, ContractualLocationCode("France"), IncotermCode("CIF"),
+      benchmarkDeliveryDay = None, benchmarkCountryCode = Some(NeptuneCountryCode("Italy")), benchmarkIncoTermCode = Some(IncotermCode("CIF")), isPurchase = true, inventoryID = "inventory id", inventoryQuantity = Quantity(90, MT),
       grade = GradeCode("grade"))
     val explanation = assignment.explanation(env)
     assertEquals(explanation.name, "((-F * Volume) * Discount)")
@@ -137,7 +140,8 @@ class PhysicalMetalAssignmentTests extends StarlingTest {
       Day(2011, 8, 31),
       Quantity(1.5, USD/MT)
     )
-    val assignment = PhysicalMetalAssignment("123", Quantity(100, MT), "Lead", Day(2011, 9, 1), unknownPricingSpec, ContractualLocationCode("France"), benchmarkDeliveryDay = None, benchmarkCountryCode = Some(NeptuneCountryCode("Italy")), isPurchase = true, inventoryID = "inventory id", inventoryQuantity = Quantity(90, MT),
+    val assignment = PhysicalMetalAssignment("123", Quantity(100, MT), "Lead", Day(2011, 9, 1), unknownPricingSpec, ContractualLocationCode("France"), IncotermCode("CIF"),
+      benchmarkDeliveryDay = None, benchmarkCountryCode = Some(NeptuneCountryCode("Italy")), benchmarkIncoTermCode = Some(IncotermCode("CIF")), isPurchase = true, inventoryID = "inventory id", inventoryQuantity = Quantity(90, MT),
       grade = GradeCode("grade"))
     val explanation = assignment.explanation(env)
     assertEquals(explanation.name, "((-F * Volume) * Discount)")
