@@ -9,10 +9,10 @@ object TestMarketCreator extends MarketLookupCreator {
 }
 
 case object TestMarketLookup extends MarketLookup {
-  val file = Source.fromURL(getClass.getResource("/starling/market/Markets.csv")).getLines.toList
+  lazy val file = Source.fromURL(getClass.getResource("/starling/market/Markets.csv")).getLines.toList
 //  val file = StringIO.lines("/starling/market/Markets.csv").toList
-  val header = file.head.split('\t').map(_.toLowerCase).zipWithIndex.toMap
-  val lines = file.tail.map {
+  lazy val header = file.head.split('\t').map(_.toLowerCase).zipWithIndex.toMap
+  lazy val lines = file.tail.map {
     line => {
       val entries = line.split('\t')
       new MarketParser.Line {
@@ -26,17 +26,17 @@ case object TestMarketLookup extends MarketLookup {
     }
   }
 
-  val businessCalendars = new BusinessCalendars(HolidayTablesFactory.holidayTables)
-  val expiryRules = FuturesExpiryRuleFactory.expiryRules
+  lazy val businessCalendars = new BusinessCalendars(HolidayTablesFactory.holidayTables)
+  lazy val expiryRules = FuturesExpiryRuleFactory.expiryRules
 
-  val marketParser = new MarketParser(businessCalendars, expiryRules)
-  val all = marketParser.fromLines(lines)
+  lazy val marketParser = new MarketParser(businessCalendars, expiryRules)
+  lazy val all = marketParser.fromLines(lines)
 
-  val allIndexes = all.flatMap {
+  lazy val allIndexes = all.flatMap {
     case Right(i: Index) => Some(i)
     case _ => None
   }
-  val allMarkets = all.flatMap {
+  lazy val allMarkets = all.flatMap {
     case Left(m: FuturesMarket) => Some(m)
     case _ => None
   }

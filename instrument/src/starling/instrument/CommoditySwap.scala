@@ -7,7 +7,7 @@ import starling.utils.ImplicitConversions._
 import starling.richdb.RichInstrumentResultSetRow
 import starling.curves._
 import starling.market._
-import rules.{Precision, NoPricingRule, CommonPricingRule, SwapPricingRule}
+import rules._
 import starling.market.formula._
 import starling.daterange._
 import starling.daterange.DateRangePeriod
@@ -27,9 +27,10 @@ case class CommoditySwap(
   _volume: Quantity,
   averagingPeriod: Period,
   cleared: Boolean,
-  pricingRule: SwapPricingRule = NoPricingRule
+  pricingRule: SwapPricingRule = NoPricingRule,
+  roundingMethodRule: RoundingMethodRule = PerQuoteRule
 )
-  extends Swap(index, strike, _volume, averagingPeriod, cleared, pricingRule) with MultiLeg 
+  extends Swap(index, strike, _volume, averagingPeriod, cleared, pricingRule, roundingMethodRule) with MultiLeg
 {
 
   require(index.convert(_volume, strike.denominatorUOM).isDefined, "Couldn't convert volume into strike uom: " + (_volume, strike) + ", " + index)
@@ -87,7 +88,8 @@ case class SinglePeriodSwap(
   period: DateRange,
   cleared: Boolean,
   pricingRule: SwapPricingRule = NoPricingRule,
-  settlementDayOption : Option[Day] = None
+  settlementDayOption : Option[Day] = None,
+  roundingMethodRule: RoundingMethodRule = PerQuoteRule
 )
   extends UTP 
 {
@@ -141,7 +143,7 @@ case class SinglePeriodSwap(
     val bom = liveAveragingDays(env.marketDay)
     if(!bom.isEmpty) {
       val bomPeriod = DateRange(bom.head, bom.last)
-      env.averagePrice(index, bomPeriod, pricingRule, priceUOM)
+      env.averagePrice(index, bomPeriod, pricingRule, priceUOM, priceRounding, roundingMethodRule)
     } else {
       Quantity(0, priceUOM)
     }
@@ -150,7 +152,7 @@ case class SinglePeriodSwap(
 
   def explanation(env : Environment) : NamedQuantity = {
     val namedEnv = env.withNaming()
-    val price = SimpleNamedQuantity("F_Avg", namedEnv.averagePrice(index, period, pricingRule, priceUOM, priceRounding))
+    val price = SimpleNamedQuantity("F_Avg", namedEnv.averagePrice(index, period, pricingRule, priceUOM, priceRounding, roundingMethodRule))
     val undiscounted = (price - strike.named("K")) * convertedVolume.named("Volume")
     if(cleared) {
       undiscounted
@@ -182,7 +184,7 @@ case class SinglePeriodSwap(
       if (days.isEmpty) {
         List()
       } else {
-        val price = env.averagePrice(index, period, pricingRule, priceUOM, priceRounding)
+        val price = env.averagePrice(index, period, pricingRule, priceUOM, priceRounding, roundingMethodRule)
 
         val payment = (price - strike) * convertedVolume
         if (env.marketDay < days.last.endOfDay) {
@@ -223,7 +225,8 @@ object CommoditySwap extends InstrumentType[SinglePeriodSwap] with TradeableType
   def createTradeable(row: RichInstrumentResultSetRow) = {
     val index = row.getIndexFromName("Market")
     CommoditySwap(index, row.getQuantity("InitialPrice"), row.getQuantity("Quantity"),
-      row.getPeriod("Period"), row.getBoolean("Cleared"), row.getSwapPricingRule("PricingRule"))
+      row.getPeriod("Period"), row.getBoolean("Cleared"), row.getSwapPricingRule("PricingRule"),
+      row.getRoundingMethodRule("RoundingMethodRule"))
   }
 
   def sample: CommoditySwap = {

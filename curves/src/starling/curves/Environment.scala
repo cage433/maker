@@ -3,7 +3,7 @@ package starling.curves
 import interestrate.{DayCountActual365, DayCount}
 import models.SpreadVolatilitySkew
 import starling.market._
-import rules.{Precision, SwapPricingRule}
+import rules.{RoundingMethodRule, Precision, SwapPricingRule}
 import starling.quantity.UOM._
 import starling.quantity.RichQuantity._
 import starling.maths._
@@ -206,24 +206,34 @@ case class Environment(
    * uom or against multi-indexes so need the conversion. The conversion is very simple for the moment, it converts each
    * price independently, using its own market, into the requested priceUOM.
    */
-  def averagePrice(index: Index, averagingPeriod: DateRange, rule: SwapPricingRule, priceUOM: UOM, rounding: Option[Int] = None): Quantity = {
-    val value = index match {
+  def averagePrice(index: Index, averagingPeriod: DateRange, pricingRule: SwapPricingRule, priceUOM: UOM, rounding: Option[Int], roundingMethodRule: RoundingMethodRule): Quantity = {
+    index match {
       case si: SingleIndex => {
         val price = averagePrice(si, averagingPeriod)
-        index.convert(price, priceUOM) match {
+        val value = index.convert(price, priceUOM) match {
           case Some(p) => p
           case None => throw new Exception(this + ": Couldn't convert from " + price.uom + " to " + priceUOM + " with " + index)
+
+        }
+        rounding match {
+          case Some(dp) if environmentParameters.swapRoundingOK => {
+            value.round(dp)
+          }
+          case _ => value
         }
       }
       case mi: MultiIndex => {
-        averagePriceCache.memoize((index, averagingPeriod, rule, priceUOM), mi.averagePrice(this, averagingPeriod, rule, priceUOM))
+        val roundTo = rounding match {
+          case Some(dp) if environmentParameters.swapRoundingOK => {
+            rounding
+          }
+          case _ => None
+        }
+        averagePriceCache.memoize(
+          (index, averagingPeriod, pricingRule, priceUOM, roundTo, roundingMethodRule),
+          mi.averagePrice(this, averagingPeriod, pricingRule, priceUOM, roundTo, roundingMethodRule)
+        )
       }
-    }
-    rounding match {
-      case Some(dp) if environmentParameters.swapRoundingOK => {
-        value.round(dp)
-      }
-      case _ => value
     }
   }
 

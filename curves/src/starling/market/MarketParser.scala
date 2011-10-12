@@ -112,7 +112,8 @@ class MarketParser(businessCalendars: BusinessCalendars, futuresExpiryRules: Fut
             if (lotSize.isDefined) {
               val tenor = TenorType.parseTenorName(line.get("tenor"))
 
-              val MarketParser = """1\.0[ ]*\*[ ]*MKT\((\d+)\)[ ]*\-[ ]*1\.0[ ]*\*[ ]*MKT\((\d+)\)""".r
+              // We expect futures spread markets to be in the format 1*A - 1*B
+              val MarketParser = """Quote\(1\.0[ ]*\*[ ]*MKT\((\d+)\)\)[ ]*\-[ ]*Quote\(1\.0[ ]*\*[ ]*MKT\((\d+)\)\)""".r
               val MarketParser(mkt1, mkt2) = formula.formula
               val market1 = futuresMarketFromID(mkt1.toInt)
               val market2 = futuresMarketFromID(mkt2.toInt)

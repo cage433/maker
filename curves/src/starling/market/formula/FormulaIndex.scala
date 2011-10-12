@@ -5,8 +5,8 @@ import starling.utils.CaseInsensitive
 import starling.curves.Environment
 import starling.utils.cache.CacheFactory
 import starling.daterange.{TenorType, Day, DateRange}
-import rules.{Precision, NonCommonPricingRule, SwapPricingRule}
 import starling.quantity._
+import rules.{RoundingMethodRule, Precision, NonCommonPricingRule, SwapPricingRule}
 
 class InvalidFormulaIndexException(msg: String, t: Throwable) extends Exception(msg, t)
 class InvalidFormulaException(msg: String, t: Throwable) extends Exception(msg, t)
@@ -21,25 +21,44 @@ case class FormulaIndex(formulaName: String, formula: Formula, ccy: UOM, uom: UO
 
   def formulaString = formula.toString
 
-  def averagePrice(env: Environment, averagingPeriod: DateRange, rule: SwapPricingRule, priceUOM: UOM) = {
+  def averagePrice(env: Environment, averagingPeriod: DateRange, rule: SwapPricingRule,
+                   priceUOM: UOM, rounding: Option[Int], roundingMethodRule: RoundingMethodRule) = {
     val naming = env.namingPrefix.isDefined
-    val evaledPrice = formula.price(naming) {
-      case index: SingleIndex => {
+
+    def round(q: Quantity) = rounding match {
+      case Some(dP) => q.round(dP)
+      case _ => q
+    }
+
+    def priceForIndex(i: Index) = i match {
+      case index: SingleIndex =>
         val observationDays = index.observationDays(averagingPeriod).intersect(rule.observationDays(calendars, averagingPeriod))
         val prices = observationDays.map(env.fixingOrForwardPrice(index, _))
         val price = Quantity.average(prices) match {
-          case nq : NamedQuantity => {
+          case nq: NamedQuantity => {
             assert(naming)
             SimpleNamedQuantity("Average(" + index + "." + averagingPeriod + ")", nq)
           }
-          case q : Quantity => q
+          case q: Quantity => q
         }
         val converted = checkedConvert(index, price, priceUOM)
         converted
-      }
       case _ => throw new Exception("Couldn't work out price for formula index on complex indices: " + this)
     }
-    evaledPrice
+
+    def quoteRounding(q: Quantity): Quantity = if (roundingMethodRule.roundPerQuote) {
+      round(q)
+    } else {
+      q
+    }
+
+    val evaledPrice = formula.price(naming, priceForIndex, quoteRounding)
+    
+    if (roundingMethodRule.roundFormula) {
+      round(evaledPrice)
+    } else {
+      evaledPrice
+    }
   }
 
   def priceUOM = ccy / uom
@@ -79,14 +98,13 @@ case class Formula(formula: String) {
 
   import Formula._
 
-  def price(named: Boolean)(pr: (Index) => Quantity): Quantity = {
+  def price(named: Boolean, price: (Index) => Quantity, quote: (Quantity) => Quantity): Quantity = {
     def mkt(eaiQuoteID: Quantity): Quantity = {
       assert(eaiQuoteID.isScalar)
       val index = Index.singleIndexFromEAIQuoteID(eaiQuoteID.value.toInt)
-      val price = pr(index)
-      price
+      price(index)
     }
-    val parser = new FormulaParser(Map("mkt" -> mkt), named)
+    val parser = new FormulaParser(Map("mkt" -> mkt, "quote" -> quote), named)
     try {
       val evaled = parser.eval(formula)
       evaled
@@ -99,12 +117,14 @@ case class Formula(formula: String) {
 
   lazy val indexes: Set[SingleIndex] = {
     var indexes = Set[SingleIndex]()
-    price(false){
-      index:Index => {
+    price(false, {
+      index: Index => {
         indexes ++= index.indexes
         Quantity.NULL
       }
-    }
+    }, {
+      q: Quantity => q
+    })
     indexes
   }
 

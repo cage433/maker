@@ -15,7 +15,6 @@ case class CurveSpecification(curveType: CurveType, marketDataIdentifier: Market
 
 class CurveViewer(marketDataStore : MarketDataStore, environmentRules: EnvironmentRules) {
   val curveTypeLookup = Map(CurveTypeLabel("Price") → PriceCurveFactory,
-                            CurveTypeLabel("Pricing Schedule") → PricingScheduleFactory,
                             CurveTypeLabel("Implied Vol") -> ImpliedVolCurveTypeFactory,
                             CurveTypeLabel("Swap Vol") -> SwapVolScheduleFactory,
                             CurveTypeLabel("Discount") -> DiscountCurveType,

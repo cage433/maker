@@ -4,11 +4,11 @@ import physical.{UnallocatedSalesQuota, PhysicalMetalAssignment}
 import starling.daterange.{DateRange, DayAndTime, Day}
 import starling.richdb.RichInstrumentResultSetRow
 import starling.utils.ImplicitConversions._
-import starling.market.rules.SwapPricingRule
 import starling.curves.Environment
 import starling.quantity.{NamedQuantity, SpreadOrQuantity, Quantity}
 import starling.quantity.UOM
 import starling.market.{FuturesExchange, IndexWithDailyPrices}
+import starling.market.rules.{RoundingMethodRule, SwapPricingRule}
 
 trait Tradeable extends AsUtpPortfolio {
   def tradeableType : TradeableType[_]
@@ -92,6 +92,7 @@ object TradeableType {
     ("Exercise Type", classOf[String]),
     ("Cleared", classOf[Boolean]),
     ("PricingRule", classOf[SwapPricingRule]),
+    ("RoundingMethodRule", classOf[RoundingMethodRule]),
     //("Fixed Rate", classOf[String]),
     ("Error", classOf[String]),
     ("Estimated Delivery", classOf[Day]),

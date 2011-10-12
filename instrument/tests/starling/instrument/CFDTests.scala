@@ -7,8 +7,8 @@ import starling.quantity.Quantity
 import starling.utils.ScalaTestUtils._
 import starling.quantity.utils.QuantityTestUtils._
 import starling.market._
+import rules.{PerQuoteRule, CommonPricingRule}
 import starling.market.Index._
-import rules.CommonPricingRule
 import starling.curves._
 import starling.market.formula._
 import starling.calendar.BrentMonth
@@ -99,7 +99,7 @@ class CFDTests extends TestMarketTest {
     val swapSingle2Mtm = swapSingle2.mtm(environment)
     val swapSpreadMtm = swapSpread.mtm(environment)
 
-    val envPrice = environment.averagePrice(spreadIndex, period, CommonPricingRule, spreadIndex.priceUOM)
+    val envPrice = environment.averagePrice(spreadIndex, period, CommonPricingRule, spreadIndex.priceUOM, None, PerQuoteRule)
     val price = ((fixed1 - fixed2) * numFixed + (fwdPrice1 - fwdPrice2) * numUnfixed) / observationDays.size
 
     assertQtyEquals(envPrice, price, 1e-5)
@@ -117,7 +117,7 @@ class CFDTests extends TestMarketTest {
     val swapSingle2Mtm = swapSingle2.mtm(environment)
     val swapSpreadMtm = swapSpread.mtm(environment)
 
-    val envPrice = environment.averagePrice(spreadIndex, period, CommonPricingRule, spreadIndex.priceUOM)
+    val envPrice = environment.averagePrice(spreadIndex, period, CommonPricingRule, spreadIndex.priceUOM, None, PerQuoteRule)
     val price = fixed1 - fixed2
 
     assertQtyEquals(envPrice, price, 1e-5)

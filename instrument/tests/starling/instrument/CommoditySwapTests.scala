@@ -7,7 +7,7 @@ import starling.quantity.RichQuantity._
 import starling.utils.ScalaTestUtils._
 import starling.quantity.utils.QuantityTestUtils._
 import starling.market._
-import rules.{Precision, CommonPricingRule}
+import rules.{PerFormulaRule, PerQuoteRule, Precision, CommonPricingRule}
 import starling.curves._
 import starling.market.formula._
 import starling.daterange._
@@ -300,7 +300,7 @@ class CommoditySwapTests extends JonTestEnv {
     val volume = Quantity(1000, BBL)
     val marketDay = Day(2010, 12, 1).endOfDay
     val env = makeEnv(marketDay).ignoreSwapRounding
-    val price1 = env.averagePrice(formulaIndex, period, CommonPricingRule, formulaIndex.priceUOM)
+    val price1 = env.averagePrice(formulaIndex, period, CommonPricingRule, formulaIndex.priceUOM, None, PerQuoteRule)
     val swap1 = new SinglePeriodSwap(formulaIndex, strike, volume, period, true, pricingRule = CommonPricingRule)
     val tradeDay = Day(2009, 1, 1)
     val mtm1 = swap1.mtm(env)
@@ -416,7 +416,8 @@ class CommoditySwapTests extends JonTestEnv {
       val env = makeEnv(marketDayAndTime)
       val liveDays = cs.liveAveragingDays(marketDayAndTime).toList
       val expectedPrice = if (!liveDays.isEmpty) {
-        Quantity.average(liveDays.map(d => env.forwardPrice(index.market, index.observedPeriod(d))))
+        val avg = Quantity.average(liveDays.map(d => env.forwardPrice(index.market, index.observedPeriod(d))))
+        avg.round(cs.priceRounding.get)
       } else {
         Quantity(0, USD / BBL)
       }
@@ -481,16 +482,19 @@ class CommoditySwapTests extends JonTestEnv {
     val strike1 = Quantity(10, USD / BBL)
     val volume1 = Quantity(1000, BBL)
 
-    val cs1 = new CommoditySwap(index, strike1, volume1, period, cleared = true, CommonPricingRule)
-    val mtm1 = cs1.asUtpPortfolio(2 Jan 2011).mtm(env)
+    val cs1 = new CommoditySwap(index, strike1, volume1, period, cleared = true, pricingRule = CommonPricingRule, roundingMethodRule = PerFormulaRule)
+    val blah = cs1.asUtpPortfolio(2 Jan 2011)
+    val mtm1 = blah.mtm(env)
     val scsA1 = new SinglePeriodSwap(mogas, strike1, volume1, period, cleared = true)
     val scsA2 = new SinglePeriodSwap(brent, strike1.copy(value = 0.0), -volume1, period, cleared = true)
-    assertQtyEquals(mtm1, scsA1.mtm(env) + scsA2.mtm(env), 1e-7)
+    val scsA1Mtm = scsA1.mtm(env)
+    val scsA2Mtm = scsA2.mtm(env)
+    assertQtyEquals(mtm1, scsA1Mtm + scsA2Mtm, 1e-7)
 
     val strike2 = Quantity(10, USD / MT)
     val volume2 = Quantity(1000, MT)
 
-    val cs2 = new CommoditySwap(index, strike2, volume2, period, cleared = true, CommonPricingRule)
+    val cs2 = new CommoditySwap(index, strike2, volume2, period, cleared = true, pricingRule = CommonPricingRule)
     val mtm2 = cs2.asUtpPortfolio(2 Jan 2011).mtm(env)
     val scsB1 = new SinglePeriodSwap(mogas, strike2, volume2, period, cleared = true)
     val scsB2 = new SinglePeriodSwap(brent, strike2.copy(value = 0.0), -volume2, period, cleared = true)
@@ -717,7 +721,7 @@ class CommoditySwapTests extends JonTestEnv {
     val marketDay1 = day.startOfDay
     val env1 = make(marketDay1).ignoreSwapRounding
 
-    val pr = index.averagePrice(env1, oct, CommonPricingRule, USD / BBL)
+    val pr = index.averagePrice(env1, oct, CommonPricingRule, USD / BBL, None, PerQuoteRule)
     assertQtyEquals(pr, fOxy - fBrent, 1e-6)
 
     val mtmActual = ((pr - K) * (index.convert(volume, BBL).get))

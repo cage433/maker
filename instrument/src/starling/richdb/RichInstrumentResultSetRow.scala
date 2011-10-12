@@ -2,7 +2,7 @@ package starling.richdb
 
 import starling.curves.interestrate.{DayCount}
 import starling.market._
-import rules.{NoPricingRule, SwapPricingRule}
+import rules.{RoundingMethodRule, NoPricingRule, SwapPricingRule}
 import starling.models._
 import starling.daterange._
 import starling.quantity._
@@ -44,6 +44,9 @@ trait RichInstrumentResultSetRow {
   }
   def getSwapPricingRule(name: String): SwapPricingRule = getString(name) match {
     case SwapPricingRule(r) => r
+  }
+  def getRoundingMethodRule(name: String): RoundingMethodRule = getString(name) match {
+    case RoundingMethodRule(r) => r
   }
   def getSwapPricingRule(name: String, default: String): SwapPricingRule = getString(name) match {
     case null => getString(default) match {

@@ -20,7 +20,12 @@ object EAITradeStore {
   val tradedFor_str = "Traded For"
   val broker_str = "Broker"
   val clearing_str = "Clearing House"
+
+  def tables: List[String] = Desk.eaiDesks.map {
+    case Desk(_, _, Some(d:EAIDeskInfo)) => "EAITrade_book_" + d.book
+  }
 }
+
 case class EAITradeAttributes(strategyID: TreeID, bookID: TreeID, dealID: TreeID,
                               trader: String, tradedFor: String, broker: String, clearingHouse: String) extends TradeAttributes {
   require(strategyID != null)

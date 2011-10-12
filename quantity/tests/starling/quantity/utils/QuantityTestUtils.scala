@@ -9,7 +9,7 @@ object QuantityTestUtils{
    */
   def assertQtyEquals(actual : Quantity, expected : Quantity, tol : Double = 0.0, message : String = ""){
     if(!actual.isAlmostEqual(expected, tol)) {
-      throw new java.lang.AssertionError("assertion failed: " + message + "(" + actual + " != " + expected + " )")
+      throw new java.lang.AssertionError("assertion failed: " + message + "(" + actual.toStringAllDecimalPlaces() + " != " + expected.toStringAllDecimalPlaces() + " )")
     }
   }
 
