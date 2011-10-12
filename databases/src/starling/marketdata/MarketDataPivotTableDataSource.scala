@@ -257,7 +257,7 @@ class MarketDataPivotTableDataSource(reader: MarketDataReader, edits:PivotEdits,
         val filterKeys: Set[MarketDataKey] = allMarketDataKeys.filter { key => {
           val fieldValuesForkey: Row = key.fieldValues(referenceDataLookup)
           keyFilters.forall { case (field, values) =>
-            fieldValuesForkey.get(field).map(value => values.contains(value)).getOrElse(true)
+            fieldValuesForkey.get[Any](field).map(value => values.contains(value)).getOrElse(true)
           }
         } }
 
