@@ -42,7 +42,11 @@ class HttpWebserviceBromptonActivator extends BromptonActivator with Log {
   private def addWebServiceServlet(rootContext: Context, rootServlet: RootServlet, context: BromptonContext) {
     rootContext.addServlet(new RichServletHolder(new WebServiceServlet(context, rootServlet),
       "resteasy.injector.factory" → className[ScalaInjectorFactory],
-      "resteasy.providers" → (className[JsonSerializerMessageBodyWriter] + ", " + className[JsonDeserializerMessageBodyReader]),
+      "resteasy.providers" → List(
+        className[JsonSerializerMessageBodyWriter],
+        className[JsonDeserializerMessageBodyReader],
+        className[XmlSerializerMessageBodyWriter]
+      ).mkString(", "),
       "resteasy.servlet.mapping.prefix" → "/RPC",
       "log4jConfigLocation" → "/utils/resources/log4j.properties"), "/RPC/*")
   }

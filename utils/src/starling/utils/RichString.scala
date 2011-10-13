@@ -58,10 +58,15 @@ trait RichString {
     }
 
     def containsOneOf(searchFor: String*) = searchFor.exists(s.contains(_))
-    def emptyTo(alternative: String) = if (s == null || s.trim.isEmpty) alternative else s
-    def uncapitalize: String = if (s == null || s.isEmpty) s else s.charAt(0).toLower + s.substring(1)
+    def emptyTo(alternative: String) = fold(identity, alternative)
+    def uncapitalize: String = fold(_.charAt(0).toLower + s.substring(1))
+    def hyphenate: String = splitByCase("-").toLowerCase
+    def unhyphenate: String = s.split("-").map(_.capitalize).mkString("")
     def strip(toRemove: String*): String = (s /: toRemove)((acc, itemToRemove) => acc.replaceAll(itemToRemove, ""))
     def prefixWith(prefix: String) = if (s.startsWith(prefix)) s else prefix + s
     def trimHereDoc: String = s.split("\n").map(_.trim).mkString("\n")
+    def splitByCase(sep: String = " ") = fold(_.replaceAll(String.format("%s|%s|%s",
+         "(?<=[A-Z])(?=[A-Z][a-z])", "(?<=[^A-Z])(?=[A-Z])", "(?<=[A-Za-z])(?=[^A-Za-z])"), sep))
+    private def fold(nonEmpty: (String) => String, empty: String = s) = if (s == null || s.isEmpty) empty else nonEmpty(s)
 	}
 }
