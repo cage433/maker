@@ -18,6 +18,6 @@ case class DBReferenceDataLookup(neptuneDB: RichDB) extends ReferenceDataLookup 
   def countryFor(code: NeptuneCountryCode) = NeptuneCountry(code, countries(code.code), areaFor(code))
   def incotermFor(code: IncotermCode) = Incoterm(code, deliveryTerms(code.code))
 
-  private def areaFor(code: NeptuneCountryCode): Option[Area] = countryToArea.get(code.code).flatMap(areaFor(_))
+  def areaFor(code: NeptuneCountryCode): Option[Area] = countryToArea.get(code.code).flatMap(areaFor(_))
   private def areaFor(code: String): Option[Area] = areas.get(code).map(Area(AreaCode(code), _))
 }

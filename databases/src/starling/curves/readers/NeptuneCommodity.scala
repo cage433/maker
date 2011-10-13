@@ -8,12 +8,12 @@ import starling.utils.ImplicitConversions._
 import scalaz.Scalaz._
 
 
-object NeptuneCommodity {
+object NeptuneCommodity2 {
   val CommodityNameToCommodity = Commodity.CommodityNameToCommodity + ("Primary Aluminium" → Aluminium)
 }
 
-case class NeptuneCommodity(name: String) {
-  import NeptuneCommodity._
+case class NeptuneCommodity2(name: String) {
+  import NeptuneCommodity2._
 
   def countryBenchmarkKey: MarketDataKey = CountryBenchmarkMarketDataKey(commodity)
   def gradeAreaBenchmarkKey: MarketDataKey = GradeAreaBenchmarkMarketDataKey(commodity)

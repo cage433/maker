@@ -9,6 +9,13 @@ import starling.utils.ImplicitConversions._
 import starling.daterange.Day
 
 case class AreaCode(code:String)
+object AreaCode{
+  val EUR = AreaCode("EUR")
+  val SAM = AreaCode("SAM")
+  val NAM = AreaCode("NAM")
+  val ASI = AreaCode("ASI")
+  val CHN = AreaCode("CHN")
+}
 case class Area(code:AreaCode, name:String) {
   override def toString = name
 }

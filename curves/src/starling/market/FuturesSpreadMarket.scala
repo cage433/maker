@@ -47,7 +47,7 @@ object FuturesSpreadMarket {
 
   val NoExchangeMonthly = FuturesExchange("NoExchange", MonthlyDelivery, Default)
 
-  val SpreadCommodity = new Commodity
+  val SpreadCommodity = new Commodity{}
 
   /**
    * Futures Commodity Spread Markets

@@ -9,12 +9,13 @@ import starling.quantity.Quantity
 import starling.market.{FuturesExchangeFactory, Market, FuturesMarket}
 import starling.marketdata._
 import starling.gui.api.{PricingGroup, EnvironmentRuleLabel}
+import starling.market.FuturesExchange
 
 class TimeShiftToLMECloseEnvironmentRule(referenceDataLookup: ReferenceDataLookup) extends EnvironmentRule {
   val pricingGroups = List(PricingGroup.Metals)
   val observationTimeOfDay = ObservationTimeOfDay.LMEClose
   val label = EnvironmentRuleLabel("Time shift to " + observationTimeOfDay.name)
-  val exchanges = Set(FuturesExchangeFactory.SFS, FuturesExchangeFactory.LME)
+  val exchanges : Set[FuturesExchange] = Set(FuturesExchangeFactory.SFS, FuturesExchangeFactory.LME)
   def createEnv(observationDay: Day, reader: MarketDataReader) = {
     val pricesForLastClose = Market.futuresMarkets.filter(m => exchanges.contains(m.exchange)).flatMap { market => {
       val closeDay = market.businessCalendar.thisOrPreviousBusinessDay(observationDay)

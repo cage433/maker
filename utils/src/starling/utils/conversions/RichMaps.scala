@@ -6,6 +6,7 @@ import collection.mutable.{Map => MMap}
 import scalaz.Scalaz._
 import collection.immutable.{Map, TreeMap}
 import starling.utils.ImplicitConversions
+import scala.collection.MapProxy
 
 trait RichMaps {
   type MultiMap[K, V] = Map[K, List[V]]
@@ -20,6 +21,7 @@ trait RichMaps {
 }
 
 class RichMap[K,V](map : Map[K,V]) {
+  thisMap => 
   def get(key: Option[K]) = key.map(map.get(_)).flatOpt
   def getOrThrow(key: K, msg: String) = map.getOrElse(key, throw new Exception(msg))
   def either(key: K): Either[K, V] = map.get(key).either(key, identity)
@@ -52,6 +54,7 @@ class RichMap[K,V](map : Map[K,V]) {
   def mutable: MMap[K, V] = MMap.empty[K, V] ++ map
   def partitionKeys(p: K => Boolean): (Map[K, V], Map[K, V]) = map.partition(kv => p(kv._1))
   def ifDefined[B](f: (Map[K, V] => B)): Option[B] = map.isEmpty ? none[B] | some(f(map))
+  def withDefault(f : K => V) = new MapProxy[K, V]{val self = thisMap.map; override def default(k : K) = f(k)}
 }
 
 class RichMultiMap[K, V](map : Map[K, List[V]]) extends RichMap[K, List[V]](map) {

@@ -9,6 +9,9 @@ import starling.market._
 import starling.titan.valuation.{CostsAndIncomeAllocatedSaleAssignmentValuation, CostsAndIncomeAllocatedPurchaseAssignmentValuation, PricingValuationDetails, CostsAndIncomeUnallocatedAssignmentValuation}
 import starling.quantity._
 import starling.marketdata.{IncotermCode, GradeCode, ContractualLocationCode, NeptuneCountryCode}
+import starling.market.{Commodity, NeptuneCommodity}
+import starling.market.Copper
+import starling.market.Aluminium
 
 object PhysicalMetalAssignmentOrUnassignedSalesQuota{
   val contractDeliveryDayLabel = "contractDeliveryDay"
@@ -32,7 +35,7 @@ object PhysicalMetalAssignmentOrUnassignedSalesQuota{
 
   def detailsFromRow(row: RichInstrumentResultSetRow) = new PhysicalMetalAssignmentOrUnassignedSalesQuota(){
     val quantity = row.getQuantity(quantityLabel)
-    val commodityName = row.getString(commodityLabel)
+    val commodity= Commodity.neptuneCommodityFromNeptuneCode(row.getString(commodityLabel))
     val deliveryDay = row.getDay(contractDeliveryDayLabel)
     val pricingSpec = row.getObject[TitanPricingSpec](contractPricingSpecLabel)
     val contractLocationCode = ContractualLocationCode(row.getString(contractLocationCodeLabel))
@@ -54,7 +57,7 @@ object PhysicalMetalAssignmentOrUnassignedSalesQuota{
 
 trait PhysicalMetalAssignmentOrUnassignedSalesQuota extends UTP with Tradeable {
   def quantity: Quantity
-  def commodityName : String
+  def commodity : NeptuneCommodity
   def contractDeliveryDay: Day
   def contractPricingSpec: TitanPricingSpec
   def contractLocationCode : ContractualLocationCode
@@ -72,7 +75,7 @@ trait PhysicalMetalAssignmentOrUnassignedSalesQuota extends UTP with Tradeable {
   import PhysicalMetalAssignmentOrUnassignedSalesQuota._
 
   override def shownTradeableDetails = Map(
-      commodityLabel -> commodityName,
+      commodityLabel -> commodity.neptuneName,
       contractDeliveryDayLabel -> contractDeliveryDay,
       contractPricingSpecNameLabel -> contractPricingSpec.pricingType,
       contractLocationCodeLabel -> contractLocationCode.code,
@@ -99,7 +102,7 @@ trait PhysicalMetalAssignmentOrUnassignedSalesQuota extends UTP with Tradeable {
     quantityLabel -> quantity,
     contractPricingSpecLabel -> PersistAsBlob(contractPricingSpec),
     isPurchaseLabel -> isPurchase,
-    commodityLabel -> commodityName,
+    commodityLabel -> commodity.neptuneCode,
     contractLocationCodeLabel -> contractLocationCode.code,
     contractIncoTermCodeLabel -> contractIncoTermCode.code,
     gradeCodeLabel -> grade.code
@@ -141,7 +144,7 @@ trait PhysicalMetalAssignmentOrUnassignedSalesQuota extends UTP with Tradeable {
   def assets(env: Environment) = {
     def asset(spec : TitanPricingSpec) = Asset(
       known = true,
-      assetType = commodityName,
+      assetType = commodity.neptuneName,
       settlementDay = contractDeliveryDay,
       amount = quantity,
       mtm = pricingSpecPaymentExplained(env, spec)
@@ -158,7 +161,7 @@ trait PhysicalMetalAssignmentOrUnassignedSalesQuota extends UTP with Tradeable {
 
 case class UnallocatedSalesQuota(
                                   quantity: Quantity,
-                                  commodityName : String,
+                                  commodity : NeptuneCommodity,
                                   contractDeliveryDay: Day,
                                   contractPricingSpec: TitanPricingSpec,
                                   contractLocationCode: ContractualLocationCode,
@@ -195,14 +198,14 @@ object UnallocatedSalesQuota extends InstrumentType[UnallocatedSalesQuota] with 
     import details._
 
 
-    UnallocatedSalesQuota(quantity, commodityName,
+    UnallocatedSalesQuota(quantity, commodity,
       deliveryDay, pricingSpec, contractLocationCode, contractIncoTermCode,
       benchmarkDeliveryDay, benchmarkCountryCode, benchmarkIncoTermCode,
       grade
     )
   }
 
-  def sample = UnallocatedSalesQuota(Quantity(100, MT), "Copper", Day(2012, 10, 12),
+  def sample = UnallocatedSalesQuota(Quantity(100, MT), Copper, Day(2012, 10, 12),
     AveragePricingSpec(LmeSingleIndices.alCashBid, Month(2011, 10), Quantity(0.5, USD / MT)),
     ContractualLocationCode("France"), IncotermCode("CIF"),
     Some(Day(2012, 11, 1)), Some(NeptuneCountryCode("Italy")), Some(IncotermCode("CFR")),
@@ -212,7 +215,7 @@ object UnallocatedSalesQuota extends InstrumentType[UnallocatedSalesQuota] with 
 
 case class PhysicalMetalAssignment( assignmentID : String,
                                     quantity: Quantity,
-                                    commodityName : String,
+                                    commodity : NeptuneCommodity,
                                     contractDeliveryDay: Day,
                                     contractPricingSpec: TitanPricingSpec,
                                     contractLocationCode : ContractualLocationCode,
@@ -324,7 +327,7 @@ object PhysicalMetalAssignment extends InstrumentType[PhysicalMetalAssignment] w
       PhysicalMetalAssignment(
         assignmentID,
         quantity,
-        commodityName,
+        commodity,
         deliveryDay, pricingSpec,
         contractLocationCode,
         contractIncoTermCode,
@@ -336,7 +339,7 @@ object PhysicalMetalAssignment extends InstrumentType[PhysicalMetalAssignment] w
 
     import UOM._
     def sample = PhysicalMetalAssignment(
-      "12345", Quantity(100, UOM.MT), "Aluminium",
+      "12345", Quantity(100, UOM.MT), Aluminium,
       Day(2011, 10, 10), AveragePricingSpec(LmeSingleIndices.alCashBid, Month(2011, 10), Quantity(0.5, USD/MT)),
       ContractualLocationCode("France"), IncotermCode("CIF"),
       Some(Day(2011, 11, 1)), Some(NeptuneCountryCode("Italy")), Some(IncotermCode("CIF")),

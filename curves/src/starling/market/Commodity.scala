@@ -5,9 +5,10 @@ import starling.market.Market._
 import starling.quantity.UOM
 import starling.utils.ClosureUtil._
 import starling.utils.ImplicitConversions._
+import starling.marketdata.{GradeAreaBenchmarkMarketDataKey, MarketDataKey, CountryBenchmarkMarketDataKey}
 
 
-class Commodity {
+trait Commodity {
   def hasRepresentativeMarket = Commodity.hasStandardFuturesMarket(this)
   lazy val representativeMarket = Commodity.standardFuturesMarket(this)
   lazy val standardFuturesUOM = Commodity.standardFuturesUOM(this)
@@ -23,21 +24,57 @@ class Commodity {
   override def toString = name
 }
 
-sealed abstract class MetalCommodity extends Commodity
+trait NeptuneCommodity extends MetalCommodity{
+  def neptuneCode : String
+  def neptuneName : String
+  def countryBenchmarkKey: MarketDataKey = CountryBenchmarkMarketDataKey(this)
+  def gradeAreaBenchmarkKey: MarketDataKey = GradeAreaBenchmarkMarketDataKey(this)
+}
+
+sealed trait MetalCommodity extends Commodity
+
+object Lead extends NeptuneCommodity{
+  val neptuneName = "Lead"
+  val neptuneCode = "PB"
+}
+object Aluminium extends NeptuneCommodity{
+  val neptuneName = "Primary Aluminium"
+  val neptuneCode = "AHD"
+}
+object NASAAC extends NeptuneCommodity{
+  val neptuneName = "NASAAC"
+  val neptuneCode = "NAS"
+}
+object AluminiumAlloy extends NeptuneCommodity{
+  val neptuneName = "Aluminum Alloy"
+  val neptuneCode = "AA"
+}
+object Copper extends NeptuneCommodity{
+  val neptuneName = "Copper"
+  val neptuneCode = "CAD"
+}
+object Nickel extends NeptuneCommodity{
+  val neptuneName = "Nickel"
+  val neptuneCode = "NI"
+}
+object Zinc extends NeptuneCommodity{
+  val neptuneName = "Zinc"
+  val neptuneCode = "ZN"
+}
+object Tin extends NeptuneCommodity{
+  val neptuneName = "Tin"
+  val neptuneCode = "SN"
+}
+object Steel extends NeptuneCommodity{
+  val neptuneName = "Steel"
+  val neptuneCode = "STL"
+}
+
 object Gold extends MetalCommodity
-object Lead extends MetalCommodity
 object Silver extends MetalCommodity
-object Aluminium extends MetalCommodity
-object Alumina extends MetalCommodity
-object NASAAC extends MetalCommodity
-object AluminiumAlloy extends MetalCommodity
 object Cobalt extends MetalCommodity
-object Copper extends MetalCommodity
-object Nickel extends MetalCommodity
-object Zinc extends MetalCommodity
-object Tin extends MetalCommodity
 object Palladium extends MetalCommodity
-object Steel extends MetalCommodity
+object Alumina extends MetalCommodity
 object IronOre extends MetalCommodity
 object Indium extends MetalCommodity
 object Platinum extends MetalCommodity
@@ -77,6 +114,12 @@ object Commodity{
   lazy val otherCommodities = List(Coal, Rubber, Freight)
 
   lazy val all = metalsCommodities ::: oilCommodities ::: gasCommodities ::: otherCommodities
+
+  lazy val neptuneCommodities = metalsCommodities.collect{case c : NeptuneCommodity => c}
+  lazy val neptuneCommodityFromNeptuneCode : Map[String, NeptuneCommodity] = neptuneCommodities.toMapWithKeys(_.neptuneCode).withDefault{
+    code: String => throw new Exception("Unrecognized neptune commodity code " + code + ", known codes are " + neptuneCommodities.map(_.neptuneCode).mkString(", "))
+  }
+  def neptuneCommodityFromNeptuneName(name : String) = neptuneCommodities.find(_.neptuneName == name)
 
   def standardFuturesMarket(commodity : Commodity) : FuturesMarket = commodity match {
     case Gold => COMEX_GOLD

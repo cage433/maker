@@ -18,7 +18,7 @@ object ClosesEnvironmentRule {
 
 case class ClosesEnvironmentRule(referenceDataLookup: ReferenceDataLookup, allowOldPricesToBeUsed : Boolean = false) extends EnvironmentRule {
   val pricingGroups = List(PricingGroup.Metals)
-  val exchangeCloses = Map(SFS → SHFEClose, LME → LMEClose, COMEX → COMEXClose)
+  val exchangeCloses : Map[FuturesExchange, ObservationTimeOfDay] = Map(SFS → SHFEClose, LME → LMEClose, COMEX → COMEXClose)
   val marketCloses = exchangeCloses.composeKeys((market: FuturesMarket) => market.exchange)
 
   val label = ClosesEnvironmentRule.label(allowOldPricesToBeUsed)

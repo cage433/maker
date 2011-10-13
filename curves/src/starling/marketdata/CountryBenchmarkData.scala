@@ -18,6 +18,7 @@ object CountryBenchmarkDataType extends MarketDataType {
 
   val commodityField = FieldDetails("Commodity", FixedPivotParser(Commodity.metalsCommodities.map(_.name).toSet))
   val countryField = FieldDetails("Country")
+  val areaField = FieldDetails("Area")
   val countryCodeField = FieldDetails("Country Code")
   val effectiveFromField = FieldDetails("Effective From", DayPivotParser)
   val benchmarkPriceField = FieldDetails.createMeasure("Benchmark Price",
@@ -26,7 +27,7 @@ object CountryBenchmarkDataType extends MarketDataType {
   def marketDataKeyFields = keyFields
   override def keyFields = Set(commodityField, countryCodeField, effectiveFromField).map(_.field)
   override def valueFields = List(benchmarkPriceField.field)
-  val fields = List(commodityField, countryField, countryCodeField, effectiveFromField, benchmarkPriceField)
+  val fields = List(commodityField, countryField, countryCodeField, effectiveFromField, benchmarkPriceField, areaField)
 
   val initialPivotState = PivotFieldsState(
     dataFields = List(benchmarkPriceField.field),
@@ -49,6 +50,7 @@ object CountryBenchmarkDataType extends MarketDataType {
       commodityField.field → key.commodity.name,
       countryCodeField.field → countryCode.code,
       countryField.field → referenceDataLookup.countryFor(countryCode).name,
+      areaField.field → referenceDataLookup.areaFor(countryCode).map(_.name).getOrElse("Unknown"),
       effectiveFromField.field → effectiveFrom,
       benchmarkPriceField.field → price.pq
     ) }

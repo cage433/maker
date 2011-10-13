@@ -16,6 +16,7 @@ import starling.db.TitanTradeSystem
 import starling.instrument.{ErrorInstrument, TradeID, Trade}
 import com.trafigura.tradecapture.internal.refinedmetal.{DestinationLocation, Location}
 import starling.marketdata._
+import starling.market.Commodity
 
 class PhysicalMetalForwardBuilder(refData: TitanTacticalRefData,
             inventoryByQuotaID: Map[TitanId, List[EDMInventoryItem]],
@@ -106,7 +107,7 @@ class PhysicalMetalForwardBuilder(refData: TitanTacticalRefData,
 
             val inventoryItems = inventoryByQuotaID.get(NeptuneId(detail.identifier).titanId).flatten.toList.map(i => Inventory(i))
 
-            val commodityName = edmMetalByGUID(commodityGUIDs.head).name
+            val commodity = Commodity.neptuneCommodityFromNeptuneName(edmMetalByGUID(commodityGUIDs.head).name).get
             val deliverySpec = deliverySpec_(detail)
             val (shape, grade) = shapeAndGrade(deliverySpec)
 
@@ -121,7 +122,7 @@ class PhysicalMetalForwardBuilder(refData: TitanTacticalRefData,
               PhysicalMetalAssignment(
                 ass.oid.contents.toString,
                 inv.assignmentQuantity,
-                commodityName,
+                commodity,
                 contractDeliveryDay,
                 contractPricingSpec,
                 ContractualLocationCode(contractLocation.code),
@@ -189,7 +190,7 @@ class PhysicalMetalForwardBuilder(refData: TitanTacticalRefData,
 
                 val unallocatedQuota = UnallocatedSalesQuota(
                   unallocatedQuantity,
-                  commodityName,
+                  commodity,
                   contractDeliveryDay,
                   contractPricingSpec,
                   ContractualLocationCode(contractLocation.code),
