@@ -44,6 +44,7 @@ class MarketParser(businessCalendars: BusinessCalendars, futuresExpiryRules: Fut
         val clearPortPrec = line.getFromOption[Int]("clearPortPrecision")
         val precision = (defaultPrec, clearPortPrec) match {
           case (Some(s), Some(m)) => Some(Precision(s, m))
+          case (Some(s), None) => Some(Precision(s, s))
           case _ => None
         }
 

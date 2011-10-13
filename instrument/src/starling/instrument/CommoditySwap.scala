@@ -37,7 +37,7 @@ case class CommoditySwap(
   require(pricingRule.isValid(index.calendars), "Invalid pricing rule for " + index)
 
   def subPeriodSwaps : List[SinglePeriodSwap] = {
-    dateRanges.map(SinglePeriodSwap(index, strike, volume, _, cleared, pricingRule))
+    dateRanges.map(SinglePeriodSwap(index, roundedStrike, volume, _, cleared, pricingRule))
   }
 
   def explanation(env : Environment) : NamedQuantity = {
@@ -50,6 +50,16 @@ case class CommoditySwap(
 
   // volume converted so everything is in the context of the strike uom
   val volume = index.convert(_volume, strike.denominatorUOM).get
+
+  private def priceRounding = CommoditySwap.priceRounding(index, cleared)
+
+  /**
+   * In aspect the strike (or price) is rounded before multiplying it by the volume in order to work out
+   * the fixed part. Aspect thinks you can specify different rounding for the fixed and floating parts
+   * of the trade but because of limitations in EAI you can't.
+   * So this is wrong, and recognised as wrong, but we want to copy it to match Aspect.
+   */
+  def roundedStrike = priceRounding.map(strike.round).getOrElse(strike)
 
   private val dateRanges: List[DateRange] = averagingPeriod.toList
 
@@ -67,7 +77,7 @@ case class CommoditySwap(
         } else {
           BankAccount(1.0(valuationCCY), None, Some(index), subPeriod)
         }
-        cash -> (-strike * volume).checkedValue(valuationCCY)
+        cash -> (-roundedStrike * volume).checkedValue(valuationCCY)
       }
     }.toMap
 
@@ -149,7 +159,6 @@ case class SinglePeriodSwap(
     }
   }
 
-
   def explanation(env : Environment) : NamedQuantity = {
     val namedEnv = env.withNaming()
     val price = SimpleNamedQuantity("F_Avg", namedEnv.averagePrice(index, period, pricingRule, priceUOM, priceRounding, roundingMethodRule))
@@ -168,15 +177,7 @@ case class SinglePeriodSwap(
 
   val settlementDay = settlementDayOption.getOrElse(CommoditySwap.swapSettlementDate(period.lastDay))
 
-  override def priceRounding = index.precision.map {
-    case Precision(defaultRounding, clearportRounding) => {
-      if (cleared) {
-        clearportRounding
-      } else {
-        defaultRounding
-      }
-    }
-  }
+  override def priceRounding = CommoditySwap.priceRounding(index, cleared)
 
   def assets(env: Environment) = {
     val assets = {
@@ -211,6 +212,16 @@ case class SinglePeriodSwap(
 
 object CommoditySwap extends InstrumentType[SinglePeriodSwap] with TradeableType[CommoditySwap] {
   val name = "Commodity Swap"
+
+  def priceRounding(index: Index, cleared: Boolean) = index.precision.map {
+    case Precision(defaultRounding, clearportRounding) => {
+      if (cleared) {
+        clearportRounding
+      } else {
+        defaultRounding
+      }
+    }
+  }
 
   /**
    * The default settlement date for swaps is (I believe) generally the

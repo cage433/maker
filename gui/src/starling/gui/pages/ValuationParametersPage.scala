@@ -186,7 +186,19 @@ class ValuationParametersPageComponent(context:PageContext, pageData:PageData) e
 
         add(valuationParametersExplainPanel, "push, grow")
       }
-      case _ =>
+      case Left(error) => {
+        val valuationParametersExplainPanel = new MigPanel("insets 0", "[" + StandardLeftIndent + "][p]") {
+          val errorScrollPane = new ScrollPane(starling.browser.common.GuiUtils.LabelTextArea(error)) {
+            verticalScrollBar.unitIncrement = 10
+            horizontalScrollBar.unitIncrement = 10
+          }
+
+          add(LabelWithSeparator("Error explaining valuation"), "spanx, growx, wrap")
+          add(errorScrollPane, "skip 1, push, grow, gapright " + RightPanelSpace)
+        }
+
+        add(valuationParametersExplainPanel, "push, grow")
+      }
     }
   }
   add(mainPanel, "push, grow")
