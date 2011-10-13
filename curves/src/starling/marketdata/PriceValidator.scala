@@ -88,17 +88,21 @@ class DayChangePriceValidator(reader: MarketDataReader) extends PriceValidator {
   def anotate(previous: PriceData, current: PriceData): PriceData = {
 
     val anotatedPrices = current.prices.map {
-      case (period, currentPrice) => {
-        val previousPrice = previous.prices.getOrElse(period, currentPrice)
+      case (period, currentPrice) => period → {
+        val previousPrice = previous.prices.getOrElse(period, currentPrice).quantityValue.get
+        val currentQuantity = currentPrice.quantityValue.get
 
-        val difference = previousPrice.quantityValue.get percentageDifference currentPrice.quantityValue.get
-        val anotated = if (difference > 0.2) {
-          currentPrice.copy(warning = Some("percent diff to " + previousPrice.quantityValue.get.value + " > 20%"))
+        if (currentQuantity.uom != previousPrice.uom) {
+          currentPrice.copy(warning = Some("unit has changed from: " + previousPrice.uom))
         } else {
-          currentPrice
-        }
+          val difference = previousPrice percentageDifference currentQuantity
 
-        (period, anotated)
+          if (difference > 0.2) {
+            currentPrice.copy(warning = Some("percent diff to " + previousPrice.value + " > 20%"))
+          } else {
+            currentPrice
+          }
+        }
       }
     }
 
