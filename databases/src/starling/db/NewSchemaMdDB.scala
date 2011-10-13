@@ -202,9 +202,9 @@ class NewSchemaMdDB(db: DBTrait[RichResultSetRow], referenceDataLookup: Referenc
     values.groupBy(_.timedKey).mapValuesEagerly { valuesForTimeKey => {
       val latestValuesByValueKey = valuesForTimeKey.groupBy(_.valueKey).mapValues(_.maxBy(_.commitId))
 
-      latestValuesByValueKey.filterValues(_.isSave).ifDefined { _ => {
+      latestValuesByValueKey.filterValues(_.isSave).ifDefined { latestSavesByValueKey => {
         val maxCommitId = latestValuesByValueKey.values.map(_.commitId).maxOr(0)
-        val valueRows = latestValuesByValueKey.map { case (valKey, value) => valKey.row :::? value.row }.toList
+        val valueRows = latestSavesByValueKey.map { case (valKey, value) => valKey.row :::? value.row }.toList
 
         VersionedMarketData(maxCommitId, marketDataType.createValue(valueRows))
       } }

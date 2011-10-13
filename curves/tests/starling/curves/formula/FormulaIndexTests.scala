@@ -16,7 +16,7 @@ import starling.market._
 import org.scalatest.matchers.ShouldMatchers
 import org.mockito.Mockito._
 import collection.immutable.List
-import rules.{NoPricingRule, NonCommonPricingRule, CommonPricingRule}
+import rules._
 import starling.quantity.{Conversions, Quantity}
 
 class FormulaIndexTests extends TestMarketTest with ShouldMatchers {
@@ -43,7 +43,7 @@ class FormulaIndexTests extends TestMarketTest with ShouldMatchers {
 
   @Test
   def testSimpleNonCommon {
-    val index = FormulaIndex("WTI vs BRT11", Formula("1.2 * MKT(7) - 0.8*MKT(28)"), USD, BBL, None, None, None)
+    val index = FormulaIndex("WTI vs BRT11", Formula("QUOTE(1.2 * MKT(7)) - Quote(0.8*MKT(28))"), USD, BBL, Some(Precision(2, 2)), None, None)
     index.verify
 
     val index1 = WTI10
@@ -52,8 +52,8 @@ class FormulaIndexTests extends TestMarketTest with ShouldMatchers {
     val rule = NonCommonPricingRule
     val period = Month(2010, 2)
 
-    val forwardPrice = index.averagePrice(env, period, rule, index.priceUOM)
-    assertEquals(env.averagePrice(index, period, rule, index.priceUOM), forwardPrice)
+    val forwardPrice = index.averagePrice(env, period, rule, index.priceUOM, Some(2), PerQuoteRule)
+    assertEquals(env.averagePrice(index, period, rule, index.priceUOM, Some(2), PerQuoteRule), forwardPrice)
 
     assertNotSame(rule.observationDays(index.calendars, period), index1.observationDays(period))
     assertEquals(rule.observationDays(index.calendars, period), index2.observationDays(period))
@@ -61,12 +61,12 @@ class FormulaIndexTests extends TestMarketTest with ShouldMatchers {
     val avg1 = Quantity.average(index1.observationDays(period).map(env.fixingOrForwardPrice(index1, _)))
     val avg2 = Quantity.average(index2.observationDays(period).map(env.fixingOrForwardPrice(index2, _)))
 
-    assertQtyEquals(forwardPrice, avg1 * 1.2 - avg2 * 0.8)
+    assertQtyEquals(forwardPrice, (avg1 * 1.2).round(2) - (avg2 * 0.8).round(2))
   }
 
   @Test
   def testSimple {
-    val index = FormulaIndex("WTI vs BRT11", Formula("1.2 * MKT(7) - 0.8*MKT(28)"), USD, BBL, None, None, None)
+    val index = FormulaIndex("WTI vs BRT11", Formula("1.2 * MKT(7) - 0.8*MKT(28)"), USD, BBL, Some(Precision(2, 2)), None, None)
     index.verify
 
     val index1 = WTI10
@@ -75,7 +75,7 @@ class FormulaIndexTests extends TestMarketTest with ShouldMatchers {
     val rule = CommonPricingRule
     val period = Month(2010, 2)
 
-    val forwardPrice = index.averagePrice(env, period, rule, index.priceUOM)
+    val forwardPrice = index.averagePrice(env, period, rule, index.priceUOM, Some(2), PerQuoteRule)
 
     val avg1 = Quantity.average(rule.observationDays(index.calendars, period).map(env.fixingOrForwardPrice(index1, _)))
     val avg2 = Quantity.average(rule.observationDays(index.calendars, period).map(env.fixingOrForwardPrice(index2, _)))
@@ -89,7 +89,7 @@ class FormulaIndexTests extends TestMarketTest with ShouldMatchers {
 
   @Test
   def testComplex {
-    val index = FormulaIndex("0.5 WTI - 0.4 BRT11 - 1.2 GO", Formula("0.5*MKT(7) - 0.4*MKT(28) - 1.2*MKT(58)"), USD, BBL, None, None, None)
+    val index = FormulaIndex("0.5 WTI - 0.4 BRT11 - 1.2 GO", Formula("0.5*MKT(7) - 0.4*MKT(28) - 1.2*MKT(58)"), USD, BBL, Some(Precision(2, 2)), None, None)
     index.verify
 
     val index1 = WTI10
@@ -98,7 +98,7 @@ class FormulaIndexTests extends TestMarketTest with ShouldMatchers {
 
     val rule = CommonPricingRule
     val period = Month(2010, 2)
-    val forwardPrice = index.averagePrice(env, period, rule, index.priceUOM)
+    val forwardPrice = index.averagePrice(env, period, rule, index.priceUOM, Some(2), PerQuoteRule)
 
     val avg1 = Quantity.average(rule.observationDays(index.calendars, period).map(env.fixingOrForwardPrice(index1, _)))
     val avg2 = Quantity.average(rule.observationDays(index.calendars, period).map(env.fixingOrForwardPrice(index2, _)))

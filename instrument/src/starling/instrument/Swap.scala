@@ -8,7 +8,7 @@ import starling.utils.ImplicitConversions._
 import starling.richdb.RichInstrumentResultSetRow
 import starling.curves._
 import starling.market._
-import rules.{NoPricingRule, CommonPricingRule, SwapPricingRule}
+import rules._
 import starling.daterange._
 import starling.daterange.DateRangePeriod
 
@@ -22,10 +22,11 @@ abstract class Swap(
                      volume: Quantity,
                      averagingPeriod: Period,
                      cleared: Boolean,
-                     pricingRule: SwapPricingRule = NoPricingRule
+                     pricingRule: SwapPricingRule = NoPricingRule,
+                     roundingMethodRule: RoundingMethodRule = PerQuoteRule
                      )
-	extends Tradeable
-{
+  extends Tradeable {
+
   def isLive(dayAndTime: DayAndTime): Boolean = dayAndTime < expiryDay.get.endOfDay
 
   def persistedTradeableDetails :Map[String, Any] = Map(
@@ -34,7 +35,8 @@ abstract class Swap(
     "Initial Price" -> strike,
     "Quantity" -> volume,
     "Cleared" -> cleared,
-    "PricingRule" -> pricingRule)
+    "PricingRule" -> pricingRule,
+    "RoundingMethodRule" -> roundingMethodRule)
 
   def valuationCCY: UOM = strike.numeratorUOM.inBaseCurrency
 

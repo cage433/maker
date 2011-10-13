@@ -283,7 +283,8 @@ abstract class MultiIndex(override val name: String) extends Index {
    */
   lazy val arbitraryIndexToAssignCashTo = indexes.toList.sortWith(_.toString < _.toString).head
 
-  def averagePrice(env : Environment, averagingPeriod: DateRange, rule: SwapPricingRule, priceUOM: UOM): Quantity
+  def averagePrice(env : Environment, averagingPeriod: DateRange, pricingRule: SwapPricingRule, priceUOM: UOM,
+                   rounding: Option[Int], roundingMethodRule: RoundingMethodRule): Quantity
 
   def calendars = indexes.flatMap(_.calendars)
 

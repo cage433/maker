@@ -27,7 +27,7 @@ case class SpreadStdDevSurfaceData(
   assert(periods.length == atm.length, "Spread periods must correspond to std.dev. data")
   assert(periods.length == call.length, "Spread periods must correspond to std.dev. data")
   assert(periods.length == put.length, "Spread periods must correspond to std.dev. data")
-  assert(periods.toList == periods.toList.sortWith(_ < _))
+//  assert(periods.toList == periods.toList.sortWith(_ < _))
   assert(!uom.isNull, "UOM can not be null for spread std devs")
 
   //hashCode and equals are overridden because arrays uses reference equality
@@ -281,4 +281,5 @@ case class SpreadSkewStdDevs(
     }
   }
 }
+
 

@@ -105,7 +105,9 @@ trait PnlExplanation {
                   } else {
                     val foDeriv = PivotQuantity.calcOrCatch(firstOrderDerivative(d1EnvFwd, envDiff, ccy, shiftInterpolatedVols = !atmVega))
                     val soDeriv = PivotQuantity.calcOrCatch(secondOrderDerivativeWithCrossTerm(d1EnvFwd, envDiff, ccy, diffsForThisCurveKey.toList, shiftInterpolatedVols = !atmVega))
-                    (foDeriv * valueChange, soDeriv * (valueChange * valueChange) / 2, PivotQuantity(valueChange), d1Price.map(p => PivotQuantity(p)))
+                    val foExplained = (foDeriv * valueChange) inUOM ccy
+                    val soExplained = (soDeriv * (valueChange * valueChange) / 2) inUOM ccy
+                    (foExplained, soExplained, PivotQuantity(valueChange), d1Price.map(p => PivotQuantity(p)))
                   }
                 } catch {
                   case e => {
@@ -171,6 +173,11 @@ trait PnlExplanation {
 
     val pnlExplanationTotal = explainedTotal + crossTerms + rounding + unexplained
 
+    if(!plainPnl.hasWarningOrErrors && !pnlExplanationTotal.hasWarningOrErrors && !(plainPnl - pnlExplanationTotal).isAlmostZero){
+      println("?????????/**/")
+      println("?????????/**/" + (plainPnl + " != " + pnlExplanationTotal))
+      println("?????????/**/")
+    }
     // if we have no warnings or errors this is just a sanity check to make sure we have explained the actual pnl.
     if(!plainPnl.hasWarningOrErrors && !pnlExplanationTotal.hasWarningOrErrors)
       assume((plainPnl - pnlExplanationTotal).isAlmostZero, plainPnl + " != " + pnlExplanationTotal)

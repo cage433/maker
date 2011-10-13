@@ -7,7 +7,7 @@ import starling.quantity.Quantity._
 import starling.curves._
 import interestrate.{DayCountActual365, DayCountActualActual}
 import starling.market._
-import rules.SwapPricingRule
+import rules.{RoundingMethodRule, SwapPricingRule}
 import starling.daterange._
 import starling.varcalculator._
 import starling.utils.ImplicitConversions._

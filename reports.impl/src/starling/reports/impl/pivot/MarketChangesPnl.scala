@@ -128,6 +128,7 @@ class MarketChangesPnl(d1: AtomicEnvironment, d2: AtomicEnvironment, utps : Map[
   override def combine(rows : List[MarketChangesPnlRow], reportSpecificChoices : ReportSpecificChoices): List[MarketChangesPnlRow] = {
 //    require(!reportSpecificChoices.getOrElse(futuresAsSwaps_str, false), "Can't do day change report with futures as swaps")
 //    require(!reportSpecificChoices.getOrElse(futuresAsSpreads_str, false), "Can't do day change report with futures as spreads")
+    val ccy = UOM.USD
 
     val showEqFutures = reportSpecificChoices.getOrElse(showEqFutures_str, false)
     val useSkew = reportSpecificChoices.getOrElse(useSkew_str, true)
@@ -141,10 +142,10 @@ class MarketChangesPnl(d1: AtomicEnvironment, d2: AtomicEnvironment, utps : Map[
         val (unitUTP, volume) = utp.asUnitUTP
 
         val (envDiffs, curveKeys) = environmentDiffsAndCurveKeys(unitUTP, reportSpecificChoices)
-        val pnlBreakDown = unitUTP.explain(d1EnvFwd, d2Env, environmentFor, UOM.USD, envDiffs, curveKeys, atmVega = atmVega)
+        val pnlBreakDown = unitUTP.explain(d1EnvFwd, d2Env, environmentFor, ccy, envDiffs, curveKeys, atmVega = atmVega)
         val explainedTotal = pnlBreakDown.map {_.value}.toList.sum
 
-        val (crossTerms, rounding, unexplained) = unitUTP.components(d1EnvFwd, d2Env, environmentFor, UOM.USD, explainedTotal, curveKeys)
+        val (crossTerms, rounding, unexplained) = unitUTP.components(d1EnvFwd, d2Env, environmentFor, ccy, explainedTotal, curveKeys)
 
         def makeRow(groupName: String,
           componentName : String, riskType : Option[String], 

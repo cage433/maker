@@ -4,12 +4,12 @@ import starling.quantity.UOM._
 import starling.market.formula.FormulaIndex
 import starling.curves.Environment
 import starling.pricingschedule.{PricingSchedule}
-import starling.market.rules.SwapPricingRule
 import starling.daterange.{DateRange, DayAndTime, Day}
 import starling.instrument._
 import starling.richdb.RichInstrumentResultSetRow
 import starling.quantity.{SimpleNamedQuantity, NamedQuantity, Quantity}
 import starling.marketdata.IncotermCode
+import starling.market.rules.{PerQuoteRule, SwapPricingRule}
 
 case class Cargo(quantity: Quantity, incoterm: IncotermCode, blDate: Day, index: FormulaIndex, pricingSchedule: PricingSchedule, pricingRule: SwapPricingRule)
   extends UTP with Tradeable {
@@ -52,7 +52,7 @@ case class Cargo(quantity: Quantity, incoterm: IncotermCode, blDate: Day, index:
   def price(env: Environment) = {
     val prices = pricingDaysAndRatios.map {
       case (day, ratio) => {
-        val price = env.averagePrice(index, day, pricingRule, USD / BBL)
+        val price = env.averagePrice(index, day, pricingRule, USD / BBL, None, PerQuoteRule)
         (day, price * ratio)
       }
     }

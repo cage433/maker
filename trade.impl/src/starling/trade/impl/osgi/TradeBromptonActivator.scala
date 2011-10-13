@@ -69,7 +69,7 @@ class TradeBromptonActivator extends BromptonActivator {
 
     val eaiStarlingRichSqlServerDB = new RichDB(props.EAIStarlingSqlServer(), new RichResultSetRowFactory)
     val eaiAutoImport = new EAIAutoImport(15, starlingRichDB, eaiStarlingRichSqlServerDB, strategyDB, eaiTradeStores, closedDesks, enabledDesks)
-
+    eaiAutoImport.start // TODO Thomas -- move this somewhere sensible
 
     val allTraders = new Traders(ldapUserLookup.user _)
 
