@@ -34,19 +34,16 @@ class MarketDataStoreTest extends TestMarketTest with ShouldMatchers {
     new DBMarketDataStore(mddb, new MarketDataTags(db), Map(), Broadcaster.Null, ReferenceDataLookup.Null)
   }
 
-  var db : RichDB = _
-  var connection : Connection = _
-
-  @BeforeTest
-  def initialise {
-    connection = DBTest.getConnection("jdbc:h2:mem:marketDataStoreTest;create=true")
+  lazy val connection : Connection = DBTest.getConnection("jdbc:h2:mem:marketDataStoreTest;create=true")
+  lazy val db : RichDB = {
     val ds = new SingleConnectionDataSource(connection, true)
-    db = new TestDB(ds, new RichResultSetRowFactory)
+    val db = new TestDB(ds, new RichResultSetRowFactory)
     db.inTransaction{
       writer => {
         writer.updateMany(createMarketDataCommit, createMarketDataExtendedKey, createMarketDataValueKey, createMarketDataValue)
       }
     }
+    db
   }
 
   @AfterTest
