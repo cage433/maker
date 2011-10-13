@@ -110,6 +110,9 @@ class StarlingInit( val props: Props,
 
   val eaiStarlingRichSqlServerDB = new RichDB(props.EAIStarlingSqlServer(), richResultSetRowFactory)
 
+  // The Market data store needs some of it's own xstream converters
+  MarketDataXStreamConverters.converters.foreach(StarlingXStream.registerConverter)
+
   if (dbMigration) log.infoWithTime("DB Migration") {
     //Ensure the schema is up to date
     val requiresRestart = new PatchRunner(starlingRichDB, props.ReadonlyMode(), this).updateSchemaIfRequired
@@ -118,10 +121,6 @@ class StarlingInit( val props: Props,
       System.exit(1)
     }
   }
-
-
-  // The Market data store needs some of it's own xstream converters
-  MarketDataXStreamConverters.converters.foreach(StarlingXStream.registerConverter)
 
   val revalSnapshotDb = new RevalSnapshotDB(starlingDB)
   val limServer = new LIMServer(props.LIMHost(), props.LIMPort())
