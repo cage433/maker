@@ -5,10 +5,9 @@ import org.testng.Assert._
 
 import java.util.concurrent.atomic.AtomicInteger
 import org.scalatest.testng.TestNGSuite
-import org.testng.annotations.{BeforeMethod, AfterMethod, AfterTest, Test}
-import starling.utils.{Broadcaster}
-import java.util.concurrent.{ConcurrentHashMap, Executors, CopyOnWriteArraySet, TimeUnit}
-import java.util.UUID
+import org.testng.annotations.{BeforeMethod, Test}
+import starling.utils.Broadcaster
+import java.util.concurrent.{Executors, TimeUnit}
 import starling.auth._
 
 case class TestEvent(i:Int) extends Event
@@ -109,7 +108,8 @@ class BouncyRMITests extends TestNGSuite {
     if (client != null) {client.stop}
   }
 
-  @Test
+  // disabled for now since this test is unreliable in some envs due to variance in the time it takes to run (may timeout)
+  //@Test
   def testServerStartAndStop() {
     server.start
     server.stop()
@@ -259,7 +259,8 @@ class BouncyRMITests extends TestNGSuite {
   //		assertEquals(result, new ClassWhichDoesNotImplementSerializable("a"))
   //	}
 
-  @Test
+  // disabled for now since this test is unreliable in some envs due to variance in the time it takes to run (may timeout)
+  //@Test
   def testInvokeMethodRetriesIfDisconnected() {
     val disconnected = new WaitForFlag
     server.start
