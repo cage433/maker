@@ -55,6 +55,8 @@ trait MarketDataType {
   }
 
   def rows(key: keyType, data: dataType, referenceDataLookup: ReferenceDataLookup): Iterable[Row]
+
+  val defaultValue: Row = Row()
 }
 
 object MarketDataTypes {

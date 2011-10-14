@@ -191,7 +191,7 @@ class MarketDataPivotTableDataSource(reader: MarketDataReader, edits:PivotEdits,
           matchingTimedKeys.pair((keyFilter.remove(inMemoryFields), keyEdit))
         } }.groupBy(_._1).mapValues(_.map(_._2))
 
-        val newRowsWithAllFieldsPresent = edits.newRows.filter { row =>
+        val newRowsWithAllFieldsPresent = edits.newRows.map(marketDataType.defaultValue + _).filter { row =>
           keyAndValueFields.forall{ field => row.isDefined(field) }
         }
 

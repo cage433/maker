@@ -63,6 +63,8 @@ object FreightParityDataType extends MarketDataType {
     (parityRateField.field → Quantity(data.parityRate, UOM.USD / UOM.MT)) +
     (commentField.field → data.comment)
   )
+
+  override val defaultValue = Row(parityRateField.field → Quantity(0, UOM.USD / UOM.MT), commentField.field → "")
 }
 
 case class ContractualLocationCode(code: String)
