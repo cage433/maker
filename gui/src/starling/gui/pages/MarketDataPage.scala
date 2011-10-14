@@ -2,7 +2,6 @@ package starling.gui.pages
 
 import starling.gui._
 import api._
-import starling.pivot._
 import starling.browser.common.GuiUtils._
 import java.awt.Dimension
 import swing.event.{Event, ButtonClicked, SelectionChanged}
@@ -20,6 +19,9 @@ import starling.browser._
 import common.RoundedBorder
 import starling.fc2.api.FC2Facility
 import starling.reports.facility.ReportFacility
+import starling.pivot.model.UndefinedValue
+import starling.pivot.Field._
+import starling.pivot._
 
 
 class FC2Context(val service:FC2Facility)
@@ -121,11 +123,11 @@ case class MarketDataPage(
 
   override def bookmark(serverContext:ServerContext, pd:PageData):Bookmark = {
     val starlingServer = serverContext.lookup(classOf[ReportFacility])
-
     val singleObservationDay = pd match {
       case PivotTablePageData(pivotData,_) => {
         pivotData.pivotFieldsState.fieldSelection(Field("Observation Day")) match {
           case Some(s) if s.size == 1 => Some(s.head)
+          case Some(s) if s.size == 2 && s.contains(UndefinedValue) => Some(s.filterNot(_ == UndefinedValue))
           case _ => None
         }
       }
@@ -133,14 +135,10 @@ case class MarketDataPage(
     }
     
     if (singleObservationDay.isDefined && marketDataIdentifier.isCurrent) {
-      val pfs = pd.asInstanceOf[PivotTablePageData].pivotData.pivotFieldsState
-      val newPivotFieldState = pfs.removeFilter(Field("Observation Day"))
-      val newPivotPageState = pageState.pivotPageState.copyPivotFieldsState(newPivotFieldState)
-      val newPageState = pageState.copy(pivotPageState = newPivotPageState)
       marketDataIdentifier match {
-        case x:StandardMarketDataPageIdentifier => MarketDataBookmark(marketDataIdentifier.selection, newPageState)
+        case x:StandardMarketDataPageIdentifier => MarketDataBookmark(marketDataIdentifier.selection, pageState)
         case x:ReportMarketDataPageIdentifier if x.reportParameters.curveIdentifier.tradesUpToDay == singleObservationDay.get => {
-          ReportMarketDataBookmark(marketDataIdentifier.selection, newPageState, starlingServer.createUserReport(x.reportParameters))
+          ReportMarketDataBookmark(marketDataIdentifier.selection, pageState, starlingServer.createUserReport(x.reportParameters))
         }
         case _ => PageBookmark(this)
       }
@@ -309,8 +307,16 @@ case class ReportMarketDataBookmark(selection:MarketDataSelection, pageState:Mar
 case class MarketDataBookmark(selection:MarketDataSelection, pageState:MarketDataPageState) extends FC2Bookmark {
   def daySensitive = true
   def createFC2Page(day:Option[Day], serverContext:FC2Context, context:PageContext) = {
+    val ObDay = Field("Observation Day")
     val newPFS = pageState.pivotPageState.pivotFieldParams.pivotFieldState.map(pfs => {
-      pfs.addFilter((Field("Observation Day"), Set(day.get)))
+      pfs.mapFilters {
+        case c@(ObDay, selection) => selection match {
+          case SomeSelection(v) if v.size == 1 => ObDay -> SomeSelection(Set(day.get))
+          case SomeSelection(v) if v.size == 2 && v.contains(UndefinedValue) => ObDay -> SomeSelection(Set(UndefinedValue, day.get))
+          case _ => ObDay -> selection
+        }
+        case o => o
+      }
     })
     val newPivotPageState = pageState.pivotPageState.copyPivotFieldsState(newPFS)
     val newSelection = StandardMarketDataPageIdentifier(serverContext.service.latestMarketDataIdentifier(selection))

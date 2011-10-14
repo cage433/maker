@@ -251,8 +251,17 @@ case class ReportBookmark(showParameters:Boolean, userReportData:UserReportData,
       case None => Day.today // Real time
       case Some(d) => d
     }
+    val newPFS = pivotPageState.pivotFieldParams.pivotFieldState.map(pfs => {
+      pfs.changeFilterIfExistsAndMeetsPredicate((Field("Trade Day"), Set(dayToUse)), {
+        s => s match {
+          case SomeSelection(v) => v.size == 1
+          case _ => false
+        }
+      })
+    })
+    val newPivotPageState = pivotPageState.copyPivotFieldsState(newPFS)
     val reportParameters = serverContext.reportService.createReportParameters(userReportData, dayToUse)
-    MainPivotReportPage(showParameters, reportParameters, pivotPageState)
+    MainPivotReportPage(showParameters, reportParameters, newPivotPageState)
   }
 }
 
