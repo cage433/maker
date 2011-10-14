@@ -37,7 +37,7 @@ object GUICode {
     "jxlayer" -> new File("browser/lib/jxlayer-4.0.jar"),
     "looks" -> new File("browser/lib/looks-2.3.1.jar"),
     "jfreechart" -> new File("gui/lib_managed/jfreechart-jar-1.0.0.jar"),
-    "servlet-api" -> new File("/lib/servlet-api-jar-2.5.jar"),
+    "servlet-api" -> new File("lib/servlet-api-jar-2.5.jar"),
     "jetty" -> new File("services/lib_managed/jetty-jar-6.1.26.jar"),
     "jetty-utls" -> new File("services/lib_managed/jetty-util-jar-6.1.26.jar"),
     "browser-lib-miglayout-4.0-swing.jar" -> new File("browser/lib/miglayout-4.0-swing.jar"),
