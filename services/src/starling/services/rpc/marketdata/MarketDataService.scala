@@ -92,7 +92,10 @@ class MarketDataService(marketDataStore: MarketDataStore, environmentProvider: E
   private def query[MD <: MarketData : Manifest](snapshotId: TitanSnapshotIdentifier, observationDates: DateRange,
     marketDataType: MarketDataType, keys: MarketDataKey*): List[(Option[Day], MarketDataKey, MD)] = {
 
-    marketDataStore.query(identifierFor(snapshotId), marketDataType, some(observationDates.days.map(some(_)).toSet), None, some(keys.toSet))
+    val observationDays: Option[Set[Option[Day]]] = observationDates.days.ifDefined(_.map(some(_)).toSet)
+    val marketDataKeys: Option[Set[MarketDataKey]] = keys.ifDefined(_.toSet)
+
+    marketDataStore.query(identifierFor(snapshotId), marketDataType, observationDays, None, marketDataKeys)
       .map { case (timedKey, data) => (timedKey.day, timedKey.key, data) }
       .filterCast[(Option[Day], MarketDataKey, MD)]
   }

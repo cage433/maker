@@ -9,12 +9,12 @@ import com.trafigura.services._
 
 @Path("/Example")
 trait ExampleServiceApi {
-  @Path("ReferenceInterestRate/{source}") @Example("LIBOR")
+  @Path("ReferenceInterestRate/{source}") //@Example("LIBOR")
   @GET @Produces(Array("application/json", "application/xml"))
   def getReferenceInterestRate(@PathParam("source") source: ReferenceRateSource): ReferenceInterestRate
 
   @Path("ReferenceInterestRates/{source}")
-  @GET @Produces(Array("application/json")) @Example("JIBAR")
+  @GET @Produces(Array("application/json")) //@Example("JIBAR")
   def getReferenceInterestRates(@PathParam("source") source: ReferenceRateSource): List[ReferenceInterestRate]
 
   @Path("ReferenceInterestRate/{source}")

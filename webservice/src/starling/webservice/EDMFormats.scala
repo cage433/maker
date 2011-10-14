@@ -1,9 +1,11 @@
 package starling.webservice
 
-import net.liftweb.json.JsonAST.JValue
 import net.liftweb.json._
 import starling.daterange.Day
 import org.joda.time.LocalDate
+import edu.oswego.cs.dl.util.concurrent.FJTask.Par
+import scala.Any
+import net.liftweb.json.JsonAST.JValue
 
 object EDMFormats extends DefaultFormats {
   override val typeHintFieldName = "type"
@@ -19,7 +21,17 @@ object EDMFormats extends DefaultFormats {
     }
   }
 
-  override val customSerializers = List(localDateSerializer)
+  private val daySerializer = new Serializer[Day] {
+    def serialize(implicit format: Formats): PartialFunction[Any, JValue] = {
+      case (day: Day) => JString(day.toString)
+    }
+
+    def deserialize(implicit format: Formats): PartialFunction[(TypeInfo, JValue), Day] = {
+      case (typeInfo, JString(Day(day))) => day
+    }
+  }
+
+  override val customSerializers = List(localDateSerializer, daySerializer)
 
   object EDMHints extends TypeHints {
     def classFor(hint: String) = Some(Class.forName(hint))
