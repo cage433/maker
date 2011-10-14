@@ -1,5 +1,8 @@
 package starling.marketdata
 
+import starling.market.{Commodity, FuturesMarket, NeptuneCommodity, NeptunePricingExchange}
+
+
 trait ReferenceDataLookup {
   def areaCodeFor(code: NeptuneCountryCode): Option[AreaCode]
   def areaFor(code: AreaCode): Area
@@ -8,6 +11,12 @@ trait ReferenceDataLookup {
   def contractLocationFor(code: ContractualLocationCode): ContractualLocation
   def countryFor(code: NeptuneCountryCode): NeptuneCountry
   def incotermFor(code: IncotermCode): Incoterm
+  def marketFor(commodity : NeptuneCommodity, countryCode : NeptuneCountryCode) : FuturesMarket = {
+    areaFor(countryCode).map{area => marketFor(commodity, area.code)}.getOrElse(Commodity.standardFuturesMarket(commodity))
+  }
+  def marketFor(commodity : NeptuneCommodity, areaCode : AreaCode) : FuturesMarket = {
+    NeptunePricingExchange.fromArea(areaCode).flatMap(_.marketFor(commodity)).getOrElse(Commodity.standardFuturesMarket(commodity))
+  }
 }
 
 case class Incoterm(code: IncotermCode, name: String) {

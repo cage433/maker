@@ -27,10 +27,10 @@ trait TitanPricingSpec {
       val priceUOMInBaseUOM = price.numeratorUOM.inBaseCurrency
       val priceInBase = price inUOM (priceUOMInBaseUOM / price.denominatorUOM)
       val premiumUOMInBaseUOM = premium.numeratorUOM.inBaseCurrency
-      val premiumInBase = premium inUOM (premiumUOMInBaseUOM / premium.denominatorUOM)
+      val premiumInBase = premium inUOM (premiumUOMInBaseUOM / price.denominatorUOM)
 
-      val priceInValuationCcy = priceInBase * env.forwardFXRate(priceUOMInBaseUOM, valuationCCY, settlementDay(env.marketDay))
-      val premiumInValuationCcy = premiumInBase * env.forwardFXRate(premiumUOMInBaseUOM, valuationCCY, settlementDay(env.marketDay))
+      val priceInValuationCcy = priceInBase * env.forwardFXRate(valuationCCY, priceUOMInBaseUOM, settlementDay(env.marketDay))
+      val premiumInValuationCcy = premiumInBase * env.forwardFXRate(valuationCCY, premiumUOMInBaseUOM, settlementDay(env.marketDay))
 
       priceInValuationCcy + premiumInValuationCcy
     }
@@ -63,6 +63,24 @@ object TitanPricingSpec {
     market.asInstanceOf[FuturesMarket].exchange match {
       case `lme` => day.addBusinessDays(market.businessCalendar, 2)
       case _ => day
+    }
+  }
+
+  /**
+   * Used for unknown pricing spec and also benchmarks
+   * Nothing in common really and its use for the latter is probably wrong
+   */
+  def representativeDay(index :IndexWithDailyPrices, month : Month, marketDay : DayAndTime) : Day = {
+    val lme = FuturesExchangeFactory.LME
+    index.market.asInstanceOf[FuturesMarket].exchange match {
+      case `lme` => {
+        val thirdWednesday = month.firstDay.dayOnOrAfter(DayOfWeek.wednesday) + 14
+        if (marketDay >= thirdWednesday.endOfDay)
+          month.lastDay.thisOrPreviousBusinessDay(index.businessCalendar)
+        else
+          thirdWednesday
+      }
+      case _ => month.lastDay.thisOrPreviousBusinessDay(index.market.businessCalendar)
     }
   }
 }
@@ -250,18 +268,7 @@ case class UnknownPricingSpecification(
   def settlementDay(marketDay: DayAndTime) = TitanPricingSpec.calcSettlementDay(index, unfixedPriceDay(marketDay))
 
 
-  private def unfixedPriceDay(marketDay : DayAndTime) = {
-    val lme = FuturesExchangeFactory.LME
-    index.market.asInstanceOf[FuturesMarket].exchange match {
-      case `lme` => {
-        val thirdWednesday = month.firstDay.dayOnOrAfter(DayOfWeek.wednesday) + 14
-        if (marketDay >= thirdWednesday.endOfDay)
-          month.lastDay.thisOrPreviousBusinessDay(index.businessCalendar)
-        else
-          thirdWednesday
-      }
-      case _ => month.lastDay.thisOrPreviousBusinessDay(index.market.businessCalendar)
-    }}
+  private def unfixedPriceDay(marketDay : DayAndTime) = TitanPricingSpec.representativeDay(index, month, marketDay)
 
   def price(env: Environment) = {
     val totalFixed = fixations.map(_.fraction).sum

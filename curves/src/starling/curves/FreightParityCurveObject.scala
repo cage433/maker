@@ -11,8 +11,8 @@ case class FreightParityAtomicKey(contractualIncoterm: IncotermCode, contractual
   override val ignoreShiftsIfPermitted: Boolean = false) extends AtomicDatumKey(FreightParityCurveKey(
     contractualIncoterm, contractualLocation, destinationIncoterm, destinationLocation), None, ignoreShiftsIfPermitted) {
 
-  def forwardStateValue(originalAtomicEnv: AtomicEnvironment, forwardDayAndTime: DayAndTime) = null
-  def nullValue = Quantity.NULL
+  def forwardStateValue(originalAtomicEnv: AtomicEnvironment, forwardDayAndTime: DayAndTime) = originalAtomicEnv(this)
+  def nullValue = new Quantity(0, UOM.USD / UOM.MT)
 }
 
 case class FreightParityCurveKey(contractualIncoterm: IncotermCode, contractualLocation: ContractualLocationCode,
@@ -29,5 +29,5 @@ case class FreightParityCurveKey(contractualIncoterm: IncotermCode, contractualL
 case class FreightParityCurveObject(marketDayAndTime: DayAndTime, marketData: FreightParityData) extends CurveObject {
   type CurveValuesType = Quantity
 
-  def apply(point: AnyRef) = Quantity(marketData.parityRate, UOM.SCALAR)
+  def apply(point: AnyRef) = marketData.parityQuantity
 }

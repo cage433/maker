@@ -15,7 +15,6 @@ trait Tradeable extends AsUtpPortfolio {
   def persistedTradeableDetails : Map[String, Any]
   def shownTradeableDetails: Map[String, Any] = persistedTradeableDetails
   def expiryDay():Option[Day] = None
-  def isLive(dayAndTime : DayAndTime) : Boolean
   def valuationCCY : UOM
 
   def explanation(env: Environment): NamedQuantity

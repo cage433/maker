@@ -25,6 +25,7 @@ class AsianOptionReader extends InstrumentReader {
     }
     val ccy = index.currency.inBaseCurrency
     val uom = index.uom
+    // Convert cents/USD
     val strike = Quantity(rs.getDouble("StrikePrice"), ccy / uom) inUOM index.priceUOM
     val amount = rs.getInt("TradeType") match {
       case ET_OPTION => {

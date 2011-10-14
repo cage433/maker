@@ -166,6 +166,12 @@ class FuturesMarket(
   val hasOptions = volatilityID.isDefined
 
   override def exchangeOption : Option[FuturesExchange] = Some(exchange)
+
+  /**
+   * The index we use for the benchmark price of an unallocated 
+   * physical metal trade
+   */
+  def physicalMetalBenchmarkIndex : IndexWithDailyPrices = FuturesFrontPeriodIndex(this)
 }
 
 class LMEFuturesMarket(
@@ -206,6 +212,7 @@ with HasInterpolation {
     period.containingMonth.thirdWednesday
   }
 
+  override def physicalMetalBenchmarkIndex = LmeCashSettlementIndex(this, level = Level.Ask)
 }
 
 

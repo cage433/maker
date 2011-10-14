@@ -22,7 +22,6 @@ class NeptuneCountryBenchmarksUtil(neptuneDB: RichDB) extends Log {
   def read(day: Day) = {
     val today = Day.today
     val badCommodityNames = MSet[String]()
-    val badCountryCodes = MSet[String]()
     var rows = List[(NeptuneCommodity, (NeptuneCountryCode, Quantity))]()
 
     neptuneDB.query(
@@ -33,20 +32,14 @@ class NeptuneCountryBenchmarksUtil(neptuneDB: RichDB) extends Log {
       val neptuneCommodityName = rs.getString("material_description")
       val commodityOption = Commodity.neptuneCommodityFromNeptuneName(neptuneCommodityName) 
       val countryCode = NeptuneCountryCode(rs.getString("country_code"))
-      val exchangeOption = refData.areaFor(countryCode).flatMap{a : Area => NeptunePricingExchange.fromArea(a.code)}
-      val rate = rs.getDouble("benchmark_rate")
-      (commodityOption, exchangeOption) match {
-        case (None, _) => badCommodityNames += neptuneCommodityName
-        case (_, None) => badCountryCodes += countryCode.code
-        case (Some(commodity), Some(exchange)) => {
-          val price = Quantity(rate, NeptunePriceUOM(commodity, exchange))
+      commodityOption match {
+        case None => badCommodityNames += neptuneCommodityName
+        case Some(commodity) => {
+          val price = Quantity(rs.getDouble("benchmark_rate"), refData.marketFor(commodity, countryCode).priceUOM)
           rows = (commodity → (countryCode, price)) :: rows
-        } 
+        }
       }
     }
-
-    if (! badCountryCodes.isEmpty)
-      log.warn("Unable to import country benchmarks for countries " + badCountryCodes.mkString(", ") + ", as area missing or unrecognised")
 
     if (! badCommodityNames.isEmpty)
       log.warn("Unable to import country benchmarks for unrecognised commodities " + badCommodityNames.mkString(", "))

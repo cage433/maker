@@ -59,6 +59,8 @@ class UTPTests extends IndexTest {
             matrix.set(0, 0, 0.0); matrix.set(0, 1, 5.0)
             matrix
           }
+          case _ : CountryBenchmarkAtomicKey => Quantity(1, USD/MT)
+          case _ : FreightParityAtomicKey => Quantity(22, USD/MT)
         }
       }
     }

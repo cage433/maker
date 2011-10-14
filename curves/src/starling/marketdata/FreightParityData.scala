@@ -7,6 +7,7 @@ import starling.pivot.Row._
 
 case class FreightParityData(parityRate: Double, comment: String) extends MarketData {
   def size = 1
+  def parityQuantity = Quantity(parityRate, UOM.USD / UOM.MT)
 }
 
 case class FreightParityDataKey(contractualIncoterm: IncotermCode, contractualLocation: ContractualLocationCode,
@@ -60,7 +61,7 @@ object FreightParityDataType extends MarketDataType {
     (contractualLocationCodeField.field → key.contractualLocation.code) +
     (destinationIncotermCodeField.field → key.destinationIncoterm.code) +
     (destinationLocationCodeField.field → key.destinationLocation.code) +
-    (parityRateField.field → Quantity(data.parityRate, UOM.USD / UOM.MT)) +
+    (parityRateField.field → data.parityQuantity) +
     (commentField.field → data.comment)
   )
 

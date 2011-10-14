@@ -12,6 +12,7 @@ import starling.marketdata.{IncotermCode, GradeCode, ContractualLocationCode, Ne
 import starling.market.{Commodity, NeptuneCommodity}
 import starling.market.Copper
 import starling.market.Aluminium
+import starling.utils.Log
 
 object PhysicalMetalAssignmentOrUnassignedSalesQuota{
   val contractDeliveryDayLabel = "contractDeliveryDay"
@@ -69,9 +70,6 @@ trait PhysicalMetalAssignmentOrUnassignedSalesQuota extends UTP with Tradeable {
   def isPurchase : Boolean
 
 
-  lazy val benchmarkPricingSpec = benchmarkDeliveryDay.map(_ => contractPricingSpec.dummyTransferPricingSpec)
-
-
   import PhysicalMetalAssignmentOrUnassignedSalesQuota._
 
   override def shownTradeableDetails = Map(
@@ -89,11 +87,6 @@ trait PhysicalMetalAssignmentOrUnassignedSalesQuota extends UTP with Tradeable {
       benchmarkDeliveryDay.map(benchmarkDeliveryDayLabel -> _) ++
       benchmarkCountryCode.map(benchmarkCountryCodeLabel -> _.code) ++
       benchmarkIncoTermCode.map(benchmarkIncoTermCodeLabel -> _.code)
-
-  def isLive(dayAndTime: DayAndTime) = !contractPricingSpec.isComplete(dayAndTime) && (benchmarkPricingSpec match {
-    case Some(spec) => !spec.isComplete(dayAndTime)
-    case None => true
-  })
 
   def valuationCCY = contractPricingSpec.valuationCCY
 
@@ -115,46 +108,114 @@ trait PhysicalMetalAssignmentOrUnassignedSalesQuota extends UTP with Tradeable {
   def periodKey = contractPricingSpec.quotationPeriod.map(DateRangePeriod)
 
   def volume = quantity
-  def isAllocated = ! benchmarkPricingSpec.isDefined
+  def isAllocated = ! benchmarkDeliveryDay.isDefined
   def daysForPositionReport(marketDay: DayAndTime) = contractPricingSpec.daysForPositionReport(marketDay)
-  override def expiryDay() = Some(contractPricingSpec.expiryDay)
+  override def expiryDay() = Some(benchmarkDeliveryDay.map(_.containingMonth.lastDay).foldLeft(contractPricingSpec.expiryDay)(_ max _))
 
   private def discount(env: Environment, spec : TitanPricingSpec) = env.discount(valuationCCY, spec.settlementDay(env.marketDay)).named("Discount")
 
-  private def pricingSpecPaymentExplained(env : Environment, spec : TitanPricingSpec) : NamedQuantity = {
-    val namedEnv = env.withNaming()
-    val isContractSpec = spec == contractPricingSpec
-    val priceName = if (isContractSpec) "Contract Price" else "Benchmark Price"
-    val price = spec.price(namedEnv).named(priceName)
-    val quantityInMarketUOM = quantity.inUOM(price.denominatorUOM).named("Volume")
-    val d = discount(env, contractPricingSpec)
 
-    price * quantityInMarketUOM * d
+  private def timesVolume(price : NamedQuantity) : NamedQuantity = {
+    val volume = quantity.named("Volume")
+    if (quantity.uom != price.denominatorUOM){
+      val volumeConversion = quantity.inUOM(price.denominatorUOM) / quantity
+      price * volumeConversion.named("Volume Conversion") * volume
+    } else {
+      price * volume
+    }
+  }
+
+  private def discounted(env : Environment, payment : NamedQuantity, settlementDay : Day) : NamedQuantity = {
+    val d = env.discount(payment.uom, settlementDay).named("Discount")
+    if (payment.uom == valuationCCY)
+      payment * d
+    else {
+      val fx = env.spotFXRate(valuationCCY, payment.uom).named("FX")
+      payment * fx * d
+    }
+  }
+  
+  private def contractPaymentExplained(env : Environment) : NamedQuantity = {
+    val price = contractPricingSpec.price(env) 
+    var exp : NamedQuantity = (if (isPurchase) price * -1 else price).named("Contract Price")
+    exp = timesVolume(exp)
+    discounted(env, exp, contractPricingSpec.settlementDay(env.marketDay))
+  }
+
+  private def benchmarkPaymentExplained(env : Environment) : NamedQuantity = {
+    val spec = benchmarkPricingSpec(env)
+    val price = spec.price(env) 
+    var exp : NamedQuantity = (if (isPurchase) price else price * -1).named("Benchmark Price")
+    exp = timesVolume(exp)
+    discounted(env, exp, spec.settlementDay(env.marketDay))
+  }
+
+  def benchmarkPricingSpec(env : Environment) : TitanPricingSpec = {
+    val namedEnv = env.withNaming()
+    val countryCode = benchmarkCountryCode.get
+    val month = benchmarkDeliveryDay.get.containingMonth
+    val futuresMarket = env.atomicEnv.referenceDataLookup.marketFor(commodity, countryCode)
+    val index = futuresMarket.physicalMetalBenchmarkIndex
+    val day = TitanPricingSpec.representativeDay(index, month, env.marketDay)
+    val areaBenchmark = env.areaBenchmark(countryCode, commodity, grade, day).named("Area Benchmark")
+    val countryBenchmark = env.countryBenchmark(commodity, countryCode, day).named("Country Benchmark")
+
+    AveragePricingSpec(
+      index,
+      day,
+      areaBenchmark + countryBenchmark
+    )
+  }
+
+  private def freightParityExplained(env : Environment) : NamedQuantity = {
+    var exp : NamedQuantity = (env.freightParity(
+      contractIncoTermCode, contractLocationCode, 
+      benchmarkIncoTermCode.get, benchmarkCountryCode.get
+    ) * -1).named("Freight Parity")
+    exp = timesVolume(exp)
+    discounted(env, exp, contractPricingSpec.settlementDay(env.marketDay))
   }
 
   def explanation(env: Environment): NamedQuantity = {
-    var exp = pricingSpecPaymentExplained(env, contractPricingSpec)
-    if (benchmarkPricingSpec.isDefined)
-      exp = exp - pricingSpecPaymentExplained(env, benchmarkPricingSpec.get)
-    if (isPurchase)
-      exp = -exp
-    exp
+    val namedEnv = env.withNaming()
+    var exp = contractPaymentExplained(namedEnv)
+    if (benchmarkDeliveryDay.isDefined){
+      exp = exp + benchmarkPaymentExplained(namedEnv) + freightParityExplained(namedEnv)
+    }
+    exp 
   }
 
   def assets(env: Environment) = {
-    def asset(spec : TitanPricingSpec) = Asset(
+    val contractPaymentAsset = Asset(
       known = true,
       assetType = commodity.neptuneName,
-      settlementDay = contractDeliveryDay,
+      settlementDay = contractPricingSpec.settlementDay(env.marketDay),
       amount = quantity,
-      mtm = pricingSpecPaymentExplained(env, spec)
+      mtm = contractPaymentExplained(env)
     )
-    Assets(
-      List(asset(contractPricingSpec) * (if (isPurchase) -1.0 else 1.0))
-        ::: benchmarkPricingSpec.map {
-          spec => List(asset(spec) * (if (isPurchase) 1.0 else -1.0))
-        }.getOrElse(Nil)
+    val assets = if (benchmarkDeliveryDay.isDefined){
+      val spec = benchmarkPricingSpec(env)
+      val benchmarkPaymentAsset = Asset(
+        known = false,
+        assetType = commodity.neptuneName,
+        settlementDay = spec.settlementDay(env.marketDay),
+        amount = quantity,
+        mtm = benchmarkPaymentExplained(env)
       )
+      val freightParityAsset = Asset(
+        known = false,
+        assetType = "Freight",
+        settlementDay = spec.settlementDay(env.marketDay),
+        amount = quantity,
+        mtm = freightParityExplained(env)
+      )
+      List(contractPaymentAsset, benchmarkPaymentAsset, freightParityAsset)
+
+    } else {
+      List(contractPaymentAsset)
+    }
+
+    Assets(assets)
   }
 }
 
@@ -172,7 +233,6 @@ case class UnallocatedSalesQuota(
                                   grade: GradeCode
                                   ) extends PhysicalMetalAssignmentOrUnassignedSalesQuota with UTP with Tradeable {
 
-  assert(benchmarkPricingSpec.isDefined, "Unassigned sale requires a benchmark pricing spec")
   assert(benchmarkDeliveryDay.isDefined, "Unassigned sale requires a benchmark delivery day")
 
   def instrumentType = UnallocatedSalesQuota
@@ -251,25 +311,26 @@ case class PhysicalMetalAssignment( assignmentID : String,
 
   def unallocatedPurchaseValue(env : Environment) : CostsAndIncomeUnallocatedAssignmentValuation = {
     require (isPurchase)
-    benchmarkPricingSpec match {
-      case Some(bp) => {
+    benchmarkDeliveryDay match {
+      case Some(bdd) => {
+        val bp = benchmarkPricingSpec(env)
         CostsAndIncomeUnallocatedAssignmentValuation(
-        assignmentID,
-        /*
-          Row 71
-          Defined using the same rule as CostsAndIncomeAllocatedAssignmentValuation, however note that unallocated
-          assignments only exist on the purchase side.
-         */
-        quantity,
-        CostsAndIncomeValuation.buildEither(env, quantity, contractPricingSpec),
-        CostsAndIncomeValuation.buildEither(env, quantity, bp),
-        /*
-          Rows 73, 75
-          current inventory quantity - assignmentQuantity
-         */
-        weightGain,
-        CostsAndIncomeValuation.buildEither(env, weightGain, bp),
-        freightParity = Quantity.NULL)
+          assignmentID,
+          /*
+            Row 71
+            Defined using the same rule as CostsAndIncomeAllocatedAssignmentValuation, however note that unallocated
+            assignments only exist on the purchase side.
+          */
+          quantity,
+          CostsAndIncomeValuation.buildEither(env, quantity, contractPricingSpec),
+          CostsAndIncomeValuation.buildEither(env, quantity, bp),
+          /*
+            Rows 73, 75
+            current inventory quantity - assignmentQuantity
+          */
+          weightGain,
+          CostsAndIncomeValuation.buildEither(env, weightGain, bp),
+          freightParity = Quantity.NULL)
       }
       case _ => throw new Exception("Missing benchmark pricing spec for unallocated purchase quota")
     }

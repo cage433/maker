@@ -17,22 +17,12 @@ import starling.market.NeptunePricingExchange
 import starling.market.Commodity
 import scala.collection.mutable.{Set => MSet}
 
-object NeptunePriceUOM{
-  def apply(commodity : NeptuneCommodity, exchange : NeptunePricingExchange) : UOM = {
-    val futuresMarket = exchange.marketFor(commodity) match {
-      case Some(futuresMarket) => futuresMarket
-      case None => Commodity.standardFuturesMarket(commodity)
-    }
-    futuresMarket.priceUOM
-  }
-}
-
 
 class NeptuneGradeAreaBenchmarkUtil(neptuneDB:RichDB) extends Log {
+  val refData = DBReferenceDataLookup(neptuneDB)
   def read(day: Day) = {
     val today = Day.today
     val badCommodityNames = MSet[String]()
-    val badAreaCodes = MSet[String]()
     var rows = List[(NeptuneCommodity, (GradeCode, AreaCode, Quantity))]()
     neptuneDB.query(
           select("material.description as material_description", "category_code", "location_code", "benchmark_price")
@@ -43,13 +33,11 @@ class NeptuneGradeAreaBenchmarkUtil(neptuneDB:RichDB) extends Log {
       val commodityOption = Commodity.neptuneCommodityFromNeptuneName(neptuneCommodityName) 
       val gradeCode = GradeCode(rs.getString("category_code"))
       val areaCode = AreaCode(rs.getString("location_code"))
-      val rate = rs.getDouble("benchmark_price")
 
-      (commodityOption, NeptunePricingExchange.fromArea(areaCode)) match {
-        case (None, _) => badCommodityNames += neptuneCommodityName
-        case (_, None) => badAreaCodes += areaCode.code
-        case (Some(commodity), Some(exchange)) => {
-          val price = Quantity(rate, NeptunePriceUOM(commodity, exchange))
+      commodityOption match {
+        case None => badCommodityNames += neptuneCommodityName
+        case Some(commodity) => {
+          val price = Quantity(rs.getDouble("benchmark_price"), refData.marketFor(commodity, areaCode).priceUOM)
           rows = (commodity → (gradeCode, areaCode, price)) :: rows
         }
       }
@@ -57,9 +45,6 @@ class NeptuneGradeAreaBenchmarkUtil(neptuneDB:RichDB) extends Log {
 
     if (! badCommodityNames.isEmpty)
       log.warn("Unable to import grade area benchmarks for unrecognised commodities " + badCommodityNames.mkString(", "))
-
-    if (! badAreaCodes.isEmpty)
-      log.warn("Unable to import grade area benchmarks for areas " + badAreaCodes.mkString(", "))
 
     val entries = {
       rows.toMultiMap.map { case (neptuneCommodity, values) =>

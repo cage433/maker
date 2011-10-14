@@ -36,14 +36,6 @@ case class Trade(
 
   def assets(env: Environment) = asUtpPortfolio.assets(env)
 
-  /**Determines if a trade is live. A trade is not live on a given day if either
-   * 		a) The trade day is AFTER the given day (time of day is not used in this comparison)
-   * 		b) the underlying instrument has expired on the given day and time of day
-   */
-  def isLive(dayAndTime: DayAndTime) = {
-    tradeDay <= dayAndTime.day && tradeable.isLive(dayAndTime)
-  }
-
   override def valuationCCY = tradeable.asUtpPortfolio(tradeDay).valuationCCY
 
   override def atomicMarketDataKeys(marketDay: DayAndTime, ccy : UOM = UOM.USD) = tradeable.asUtpPortfolio(tradeDay).atomicMarketDataKeys(marketDay, ccy)

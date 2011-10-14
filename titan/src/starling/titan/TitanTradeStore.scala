@@ -97,7 +97,6 @@ class TitanTradeStore(db: RichDB, broadcaster:Broadcaster, tradeSystem:TradeSyst
     import PhysicalMetalAssignmentOrUnassignedSalesQuota._
     val extraFields = map.flatMap {
       case (field, value) =>
-        println("Field name = " + field.name + ", " + (field.name == "Benchmark Country Code"))
         (field.name, value) match {
           case ("Benchmark Country Code", code: String) => Some(Field("Benchmark Country") -> refDataLookup.countryFor(NeptuneCountryCode(code)).name)
           case ("Contract Location Code", code: String) => Some(Field("Contract Location") -> refDataLookup.contractLocationFor(ContractualLocationCode(code)).name)
