@@ -335,7 +335,7 @@ class NewSchemaMdDB(db: DBTrait[RichResultSetRow], referenceDataLookup: Referenc
   }
 
   private def marketDataValue(rs: RichResultSetRow):MarketDataValue =
-    MarketDataValue(rs.getDay("observationDay"), extendedKeys(rs.getInt("extendedKey")), valueKeys(rs.getInt("valueKey")),
+    MarketDataValue(rs.getDayOption("observationDay"), extendedKeys(rs.getInt("extendedKey")), valueKeys(rs.getInt("valueKey")),
       rs.getDouble("value"), rs.getString("uom"), rs.getStringOption("comment"), rs.getInt("commitId"))
 
   private def extendedKeyIdsFor(marketDataType: MarketDataType, mds: List[MarketDataSet],
@@ -359,7 +359,7 @@ class NewSchemaMdDB(db: DBTrait[RichResultSetRow], referenceDataLookup: Referenc
     }
   }
 
-  case class MarketDataValue(observationDay: Day, extendedKey: MarketDataExtendedKey, valueKey: MarketDataValueKey,
+  case class MarketDataValue(observationDay: Option[Day], extendedKey: MarketDataExtendedKey, valueKey: MarketDataValueKey,
                              value: Double, uom: String, comment: Option[String], commitId: Int) {
 
     def update(map: MarketDataValueMap) = map.values.get(combinedKey) match {
@@ -375,7 +375,7 @@ class NewSchemaMdDB(db: DBTrait[RichResultSetRow], referenceDataLookup: Referenc
     }
     def isSave = row.isDefined
     val marketDataSet = extendedKey.marketDataSet
-    val timedKey = TimedMarketDataKey(ObservationPoint(observationDay, extendedKey.time), extendedKey.marketDataKey)
+    val timedKey = TimedMarketDataKey(observationDay.fold(d => ObservationPoint(d, extendedKey.time), ObservationPoint.RealTime), extendedKey.marketDataKey)
     val valueFields = extendedKey.marketDataType.valueFields
     val marketDataTypeValueKey: PField = extendedKey.marketDataType.valueFields.head
     val combinedKey = (timedKey, valueKey)
