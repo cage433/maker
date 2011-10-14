@@ -3,7 +3,6 @@ package starling.webservice
 import net.liftweb.json._
 import starling.daterange.Day
 import org.joda.time.LocalDate
-import edu.oswego.cs.dl.util.concurrent.FJTask.Par
 import scala.Any
 import net.liftweb.json.JsonAST.JValue
 

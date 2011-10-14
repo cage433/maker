@@ -8,8 +8,8 @@ import core.Context
 import org.jboss.resteasy.annotations.{Form, Suspend}
 import org.jboss.resteasy.core._
 import java.lang.reflect.{Type, AccessibleObject}
-import org.jboss.resteasy.spi.{HttpResponse, HttpRequest, ResteasyProviderFactory}
-
+import org.jboss.resteasy.spi.{Failure, HttpResponse, HttpRequest, ResteasyProviderFactory}
+import starling.utils.Pattern._
 
 class ScalaInjectorFactory extends InjectorFactoryImpl(ResteasyProviderFactory.getInstance) {
 //  ResteasyServiceApi.registerProviderInstance
@@ -38,8 +38,12 @@ class ScalaInjectorFactory extends InjectorFactoryImpl(ResteasyProviderFactory.g
   trait ConvertingValueInjector extends ValueInjector {
     val typeConverter: TypeConverter
 
-    abstract override def inject(request: HttpRequest, response: HttpResponse) =
+    abstract override def inject(request: HttpRequest, response: HttpResponse) = try {
       typeConverter.convert(super.inject(request, response))
+    } catch {
+      case NestedException(_, NestedException(_, nested)) => throw new Failure(nested)
+      case NestedException(_, nested) => throw new Failure(nested)
+    }
   }
 
   class ScalaPathParamInjector(val typeConverter: TypeConverter, target: AccessibleObject, paramName: String, annotations: Array[Annotation])

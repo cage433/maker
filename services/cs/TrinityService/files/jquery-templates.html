@@ -1,7 +1,7 @@
 <script id='scalaTemplate' type='text/x-jquery-tmpl'><pre>${ServiceType.packageClause()}<br/><br/>${imports(ServiceType, Methods)}@Path(""${Uri}"")<br/>trait ${ServiceType.packageless()} extends DocumentedService {<br/>{{tmpl(Methods) '#scalaMethod'}}}<br/></pre></script>
 
 <script id='scalaMethod' type='text/x-jquery-tmpl'>
-&nbsp;&nbsp;@Path(""${Uri}"")<br/>
+&nbsp;&nbsp;@Path("${Uri}")<br/>
 &nbsp;@${Verb}{{if Verb == 'POST' || Verb == 'PUT'}} @Consumes(Array(""application/json"")){{/if}} @Produces(Array(""application/json""))<br/>
 &nbsp;def ${Name.decapitalize()}({{each(i, param) Parameters}}${renderer.scalaParameter(i, param, Parameters.length)}{{/each}}): ${ReturnType.scalaType()}<br/>
 <br/>
@@ -22,6 +22,6 @@
 
 <script id='formTemplate' type='text/x-jquery-tmpl'>
     {{if Verb == 'GET'}}
-        <form id='${Id}' class='json' action='${renderer.parameterlessUri(Uri, Parameters.length)}' method='${Verb}'><input type='text' value='${Example}'/></form>
+        <form id='${Id}' class='json' action='${renderer.parameterlessUri(Uri, Parameters.length)}' method='${Verb}'><input type='text' value='${renderer.example(Example, Parameters)}'/></form>
     {{/if}}
 </script>

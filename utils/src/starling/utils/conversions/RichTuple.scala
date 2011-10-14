@@ -23,6 +23,7 @@ trait RichTuple {
 
     def mapFirst[C](f: A => C): (C, B) = (f(t._1), t._2)
     def mapSecond[C](f: B => C): (A, C) = (t._1, f(t._2))
+    def |>[C](f: (A, B) => C): C = f.tupled(t)
   }
 
   class RichTuple3[A, B, C](t: (A, B, C)) {

@@ -1,33 +1,27 @@
 package starling.utils
 
-import xml._
 import starling.utils.ImplicitConversions._
+import collection.Traversable
+import xml._
 
 object XmlUtil {
-  def elementToAttribute[N <: Node](xml: N): N = (xml match {
-    case elem: Elem => {
-      val (rest, textContainingChildren) = elem.child.map(elementsWithText(_)).partitionEithers
-
-      elem.copy(child = rest.map(elementToAttribute(_)), attributes = toAttributes(textContainingChildren).append(elem.attributes))
+  def elementToAttribute[N <: Node](xml: N): N = xml transform {
+    case elem: Elem => extractAttributes(elem) |> { (nodes, attributes) =>
+      elem.copy(child = nodes.map(elementToAttribute(_)), attributes = attributes.append(elem.attributes)).asInstanceOf[N]
     }
-    case other => other
-  }).asInstanceOf[N]
-
-  def attributeToElement[N <: Node](xml: N): N = (xml match {
-    case elem: Elem => elem.copy(attributes = Null, child = toElements(elem.attributes) ::: elem.child.toList)
-    case other => other
-  }).asInstanceOf[N]
-
-  private case class Attribute(prefix: String, label: String, value: String) {
-    def appendTo(next: MetaData) = new PrefixedAttribute(prefix, label, value, next)
   }
 
-  private def toAttributes(children: Seq[Attribute]): MetaData = {
-    (Null.asInstanceOf[MetaData] /: children)((next: MetaData, child: Attribute) => child.appendTo(next))
+  def attributeToElement[N <: Node](xml: N): N = xml transform {
+    case elem: Elem => elem.copy(attributes = Null, child = toElements(elem.attributes) ::: elem.child.toList).asInstanceOf[N]
   }
 
-  private def elementsWithText(xml: Node) = xml match {
-    case Elem(prefix, label, _, _, Text(text)) => Right(Attribute(prefix, label, text))
+  private def extractAttributes(xml: Node): (List[Node], MetaData) =
+    xml.child.toList.partitionEithers(elementsWithText(_)) |> ((nodes, attributes) => (nodes.toList, join(attributes)))
+
+  private def join(attributes: Traversable[MetaData]) = (Null.asInstanceOf[MetaData] /: attributes.toList.reverse)(_ append _)
+
+  private def elementsWithText(xml: Node): Either[Node, MetaData] = xml match {
+    case Elem(prefix, label, _, _, Text(text)) => Right(new PrefixedAttribute(prefix, label, text, Null))
     case other => Left(other)
   }
 

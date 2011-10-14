@@ -59,6 +59,8 @@ class RichAny[T](protected val value: T) {
   def ->>[V](vs: V*): (T, List[V]) = (value, vs.toList)
 
   def const[V] = (v:V) => value
+  def transform[T1 <: T](pf: PartialFunction[T, T1]): T = pf.asFunction(value)
+  def transformOne[T1 <: T : Manifest](f: (T1) => T1): T = safeCast[T1].fold(f, value)
 
   private def perform(action: => Unit): T = { action; value }
 }

@@ -24,36 +24,46 @@ var renderer = {
     csMethod: function(uri, verb) { return (verb == 'GET') ? "[WebGet UriTemplate='" + uri + "']" : "[WebInvoke UriTemplate = '" + uri + "' Method = '" + verb + "']"; },
     csParameter: function(index, param, length) { return param.ParameterType.packageless() + ' ' + param.Name + renderer.separator(", ", index, length) },
     parameterlessUri: function(uri, numParameters) {
-        var result = uri.indexOf('{') < 0 ? uri : uri.substring(0, uri.indexOf('{'))
+        return numParameters == 0 ? uri.takeUntil("{").stripSuffix('/') : uri.takeUntil("{")
+    },
+    example: function(example, parameters) { return (example != "") ? example : this.queryStructure(parameters) },
+    queryStructure: function(parameters) {
+        var pathParams = $(parameters).collect(function(i, param) { return (param.Binding == "Path") ? [param.Name] : [] }).toArray().join("/")
+        var queryParams = $(parameters).collect(function(i, param) { return (param.Binding == "Query") ? [param.Name + "=" + param.Name] : [] }).toArray().join("&")
 
-        return numParameters == 0 ? result.stripSuffix('/') : result
+        return (queryParams.length == 0) ? pathParams : pathParams + "?" + queryParams
     }
 }
 
+jQuery.fn.extend({
+    collect: function(f) { return this.map(function(i, e) { return f(i, e) }).filter(function(i, es) { return es.length > 0 }) }
+})
+
 $.extend(String.prototype, {
+    takeUntil:     function(char)      { return this.contains(char) ? this.substring(0, this.indexOf(char)): this.toString()             },
+    dropUntil:     function(char)      { return this.contains(char) ? this.substring(this.indexOf(char)) : ""                            },
+    dropUntilIncl: function(char)      { return this.contains(char) ? this.substring(this.indexOf(char) + 1) : ""                        },
     prefixWith:    function(prefix)    { return this.startsWith(prefix) ? this.toString() : prefix + this.toString()                     },
+    strip:         function(char)      { return this.split(char).join("")                                                                },
     stripSuffix:   function(suffix)    { return this.endsWith(suffix) ? this.substring(0, this.length - suffix.length) : this.toString() },
     stripPrefix:   function(prefix)    { return this.startsWith(prefix) ? this.substring(prefix.length) : this.toString()                },
     startsWith:    function(searchFor) { return this.indexOf(searchFor) == 0                                                             },
     endsWith:      function(searchFor) { return this.lastIndexOf(searchFor) == (this.length - searchFor.length)                          },
-    package:       function()          { return this.lastIndexOf(".") == -1 ? "" : this.substring(0, this.lastIndexOf("."))              },
-    packageClause: function()          { return this.lastIndexOf(".") == -1 ? "" : "package " + this.package()                           },
-    namespaceStart:function()          { return this.lastIndexOf(".") == -1 ? "" : "namespace " + this.package() + "\n{\n"               },
-    namespaceEnd:  function()          { return this.lastIndexOf(".") == -1 ? "" : "}\n"                                                 },
+    package:       function()          { return this.contains(".") ? this.substring(0, this.lastIndexOf(".")) : ""                       },
+    packageClause: function()          { return this.contains(".") ? "package " + this.package() : ""                                    },
+    namespaceStart:function()          { return this.contains(".") ? "namespace " + this.package() + "\n{\n" : ""                        },
+    namespaceEnd:  function()          { return this.contains(".") ? "}\n" : ""                                                          },
     decapitalize:  function()          { return this.substring(0, 1).toLowerCase() + this.substring(1)                                   },
     isCapitalized: function()          { return this.length > 0 && this.charAt(0).toUpperCase() == this.charAt(0)                        },
     scalaType:     function()          { return this.packageless().replace("<", "[").replace(">", "]").replace("Int32", "Int")           },
+    contains:      function(char)      { return this.indexOf(char) >= 0                                                                  },
 
-    packageless:   function()          { 
-        return this.indexOf("<") == -1 ? this.substring(this.lastIndexOf(".") + 1) : 
-            $(this.split("<")).map(function(i, element) {return element.packageless()}).toArray().join("<")
+    packageless:   function()          {
+        return this.contains("<") ? $(this.split("<")).map(function(i, e) { return e.packageless() }).toArray().join("<")
+            : this.substring(this.lastIndexOf(".") + 1)
     },
     packages: function() {
-        if (this.indexOf("<") == -1) {
-            return [this.package()] 
-        } else {
-            return [this.substring(0, this.indexOf("<")).package(), this.substring(this.indexOf("<") + 1).package()]
-        }
+        return this.contains("<") ? [this.takeUntil("<").package(), this.dropUntilIncl("<").package()] : [this.package()]
     }
 })
 
@@ -75,9 +85,9 @@ function importsImpl(serviceType, methods, prefix, suffix) {
         })
     })
 
-    return $(types.sort()).not($(serviceType.package()))
-        .filter(function(i, e) {return !e.isCapitalized() && e.length > 0})
-        .map(function (i, type) { return prefix + " " + type + suffix}).toArray().join("\n") + "\n\n"
+    return $(types.sort()).not($(serviceType.package())).collect(function(i, type) {
+        return (!type.isCapitalized() && type.length > 0) ? [prefix + " " + type + suffix] : []
+    }).toArray().join("\n") + "\n\n"
 }
 
 function Form(form) {

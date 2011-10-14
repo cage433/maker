@@ -99,5 +99,6 @@ object Pattern extends Log {
     None
   }
 
-  val NestedException = Extractor.from[Throwable](t => t.optPair(t.getCause.safeCast[Throwable]))
+  val NestedException: Extractor[Throwable, (Throwable, Throwable)] =
+    Extractor.from[Throwable](t => t.optPair(t.getCause.safeCast[Throwable]))
 }

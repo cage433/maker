@@ -12,7 +12,10 @@ object RichJValue {
   implicit def enrichJValue(jvalue: JValue) = new RichJValue(jvalue)
 
   class RichJValue(jvalue: JValue) {
-    def capitalize   = jvalue.transform { case jfield: JField => jfield.copy(jfield.name.capitalize)   }
+    def capitalize(implicit formats: Formats) = jvalue.transform {
+      case JObject(fields) if fields.exists(_.name == formats.typeHintFieldName) =>
+        JObject(fields.map(jfield => jfield.copy(jfield.name.capitalize)))
+    }
     def uncapitalize = jvalue.transform { case jfield: JField => jfield.copy(jfield.name.uncapitalize) }
     def hyphenate    = jvalue.transform { case jfield: JField => jfield.copy(jfield.name.hyphenate)    }
     def unhyphenate  = jvalue.transform { case jfield: JField => jfield.copy(jfield.name.unhyphenate)  }

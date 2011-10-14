@@ -12,6 +12,8 @@ import starling.marketdata.ReferenceDataLookup
 import starling.curves.NullAtomicEnvironment._
 import starling.curves._
 import com.trafigura.services.valuation.{TitanMarketDataIdentifier, SnapshotIDNotFound}
+import starling.utils.ImplicitConversions._
+import scalaz.Scalaz._
 
 trait EnvironmentProvider {
   def snapshots(observationDay : Option[Day] = None) : List[SnapshotID]
@@ -57,16 +59,11 @@ class DefaultEnvironmentProvider(marketDataStore : MarketDataStore, referenceDat
     }
   )
 
-  def snapshots(observationDay : Option[Day] = None) = marketDataStore.snapshots().filter {
-    starlingSnapshotID =>
-      starlingSnapshotID.marketDataSelection.pricingGroup == Some(PricingGroup.Metals)
-  }.filter {
-    starlingSnapshotID =>
-      observationDay match {
-        case Some(day) => starlingSnapshotID.observationDay >= day
-        case _ => true
-      }
-  }.toList.sortWith(_>_)
+  def snapshots(observationDay : Option[Day] = None) = observationDay.fold(
+    day => snapshotsFor(PricingGroup.Metals).filter(_.observationDay >= day), snapshotsFor(PricingGroup.Metals)).toList.sortWith(_>_)
+
+  private def snapshotsFor(pricingGroup: PricingGroup): List[SnapshotID] =
+    marketDataStore.snapshots().filter(_.marketDataSelection.pricingGroup == Some(pricingGroup))
 }
 
 class MockEnvironmentProvider() extends EnvironmentProvider {

@@ -2,18 +2,10 @@ package starling.services.rpc.valuation
 
 import starling.curves.Environment
 import com.trafigura.services.valuation._
-import com.trafigura.edm.trades.{PhysicalTrade => EDMPhysicalTrade}
-import starling.services.rabbit._
 import starling.titan._
-import com.trafigura.edm.shared.types.TitanId
 import starling.utils.{Log, Stopwatch}
-import starling.rmi.RabbitEventDatabase
-import starling.daterange.Day
 import starling.instrument.physical.PhysicalMetalForward
 import valuation.QuotaValuation
-import starling.db.SnapshotID
-import com.trafigura.services.TitanSnapshotIdentifier
-
 
 /**
  * Valuation service implementations
@@ -55,20 +47,5 @@ class ValuationService(
       case Left(err) => Left(err)
     }
   }
-
-  /**
-   * Return all snapshots that are valid for a given observation day, ordered from most recent to oldest
-   */
-  def marketDataSnapshotIDs(observationDay: Option[Day] = None): List[TitanSnapshotIdentifier] = {
-    environmentProvider.snapshots().filter {
-      snapshotID =>
-
-        observationDay match {
-          case Some(day) => day <= snapshotID.observationDay
-          case None => true
-        }
-    }.sortWith(_ > _).map{id => TitanSnapshotIdentifier(id.identifier)}
-  }
-
 }
 

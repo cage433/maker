@@ -32,6 +32,13 @@ trait CollectionsSyntacticSugar {
     def flatMapO[B, That](f: A => Option[B])(implicit cbf: CanBuildFrom[Repr, B, That]) = tl.flatMap(a => f(a).toList)
     def safeMap[B, That](f: A => B)(implicit cbf: CanBuildFrom[Repr, B, That]): That = flatMapO(f.option)
     def ifDefined[B](f: Repr => B): Option[B] = tl.isEmpty ? none[B] | some(f(tl.repr))
+    def partitionEithers[B, C, LThat, RThat](f: A => Either[B, C])(implicit cbl: CanBuildFrom[Repr, B, LThat], cbr: CanBuildFrom[Repr, C, RThat]): (LThat, RThat) = {
+      val (lbuilder, rbuilder) = (cbl(tl.repr), cbr(tl.repr))
+
+      tl.foreach(f(_).fold(lbuilder += _, rbuilder += _))
+
+      (lbuilder.result, rbuilder.result)
+    }
   }
 
   implicit def collectionExtras[A](xs: Iterable[A]) = new {

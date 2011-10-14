@@ -45,6 +45,9 @@ trait RichFunction {
   }
 
   implicit def enrichPartialFunction[A, B](pf: PartialFunction[A, B]) = new RichPartialFunction(pf)
+  implicit def enrichPartialTransformation[A, A1 <: A](pf: PartialFunction[A, A1]) = new RichPartialFunction(pf) {
+    lazy val asFunction = (a:A) => if (pf.isDefinedAt(a)) pf(a) else a
+  }
 
   class RichPartialFunction[A, B](pf1: PartialFunction[A, B]) {
     def ***[C, D](pf2: PartialFunction[C, D]) = new PartialFunction[(A, C), (B, D)] {

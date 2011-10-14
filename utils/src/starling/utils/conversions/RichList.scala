@@ -59,5 +59,7 @@ trait RichList {
 
       results.toList
     }
+
+    def transform[A1 <: A](pf: PartialFunction[A, A1]): List[A] = list.map(pf.asFunction)
   }
 }

@@ -2,16 +2,17 @@ package starling.client
 
 import starling.daterange.Day
 import com.trafigura.services.valuation.{TitanMarketDataIdentifier, ValuationServiceApi}
+import com.trafigura.services.marketdata.MarketDataServiceApi
 
 
 /**
  * Test main to check service operation and RMI etc
  */
 object ValuationServiceClient {
-  def main(args:Array[String]) {
+  def main(args:Array[String]) = BouncyRMIServiceApi().using { marketDataService: MarketDataServiceApi =>
     BouncyRMIServiceApi().using { valuationService: ValuationServiceApi =>
       println("Calling marketDataSnapshotIDs...")
-      val snapshotIdentifiers = valuationService.marketDataSnapshotIDs(Some(Day.today))
+      val snapshotIdentifiers = marketDataService.marketDataSnapshotIDs(Some(Day.today))
       snapshotIdentifiers.foreach(println)
 
       //valuationService.valueAllTradeQuotas(Some("4622"))

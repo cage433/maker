@@ -33,4 +33,9 @@ class JsonSerializerTests extends WordSpec with ShouldMatchers {
   "should be able to serialize lots of SpotFXRates" in {
     serializer.serialize(SpotFXRate(identifier, rate).replicate[List](100))
   }
+
+  "should not capitalize map keys" in {
+    serializer.serialize(Map("foo" → "bar")) should be === """{"foo":"bar"}"""
+    serializer.serialize(Map("foo" → (12 Oct 2011))) should be === """{"foo":"12Oct2011"}"""
+  }
 }

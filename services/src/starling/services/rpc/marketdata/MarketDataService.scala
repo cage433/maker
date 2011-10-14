@@ -27,18 +27,16 @@ class MarketDataService(marketDataStore: MarketDataStore, environmentProvider: E
 
   def latestSnapshotID() = marketDataStore.latestSnapshot(PricingGroup.Metals).map(_.toSerializable)
 
-  def getSpotFXRate(marketDataID : TitanMarketDataIdentifier,
-    fromTSC: TitanSerializableCurrency, toTSC: TitanSerializableCurrency) = {
+  def getSpotFXRate(marketDataID : TitanMarketDataIdentifier, from: TitanSerializableCurrency, to: TitanSerializableCurrency) = {
+    notNull("marketDataID" → marketDataID, "from" → from, "to" → to)
 
-    notNull("marketDataID" → marketDataID, "from" → fromTSC, "to" → toTSC)
-
-    val (uomFrom, uomTo) = (fromTSC.fromSerializable, toTSC.fromSerializable)
+    val (uomFrom, uomTo) = (from.fromSerializable, to.fromSerializable)
 
     val rates = spotFXRatesFor(marketDataID, SpotFXDataKey(uomFrom), SpotFXDataKey(uomTo))
       .toMapWithKeys(_.uom.denominatorUOM) + (UOM.USD → Quantity.ONE)
 
-    (for (from <- rates.get(uomFrom); to <- rates.get(uomTo)) yield SpotFXRate(marketDataID, (from / to).toSerializable))
-      .getOrElse(throw new IllegalArgumentException("No Spot FX Rate for %s/%s observed on %s" % (fromTSC, toTSC, marketDataID)))
+    (for (fromQ <- rates.get(uomFrom); toQ <- rates.get(uomTo)) yield SpotFXRate(marketDataID, (fromQ / toQ).toSerializable))
+      .getOrElse(throw new IllegalArgumentException("No Spot FX Rate for %s/%s observed on %s" % (from, to, marketDataID)))
   }
 
   def getSpotFXRates(marketDataID : TitanMarketDataIdentifier) = {

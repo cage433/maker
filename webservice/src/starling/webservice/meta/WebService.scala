@@ -17,15 +17,15 @@ case class WebService(uri: String, serviceType: String, methods: List[WebMethod]
 
 object WebService {
   def fromClass(serviceClass: Class[_]): WebService = {
-    val map: List[Path] = allClasses(serviceClass).map(_.getAnnotation(classOf[Path])).filterNot(_ == null)
-    val uri = map.headOption.getOrThrow("Missing Path annotation").value
+    val paths: List[Path] = allClasses(serviceClass).map(_.getAnnotation(classOf[Path])).filterNot(_ == null)
+    val path = paths.headOption.getOrThrow("Missing Path annotation")
 
     val methods: List[Method] = allMethods(serviceClass)
-    val mapO: List[WebMethod] = methods.flatMapO(webMethods)
-    WebService(uri, serviceClass.getName, mapO)
+    val webMethods: List[WebMethod] = methods.flatMapO(webMethod).distinct
+    WebService(path.value, serviceClass.getName, webMethods)
   }
 
-  private def webMethods(method: Method): Option[WebMethod] = try {
+  private def webMethod(method: Method): Option[WebMethod] = try {
     val matchingMethods = allClasses(method.getDeclaringClass)
       .safeMap(_.getMethod(method.getName, method.getParameterTypes : _*)).filterNot(_ == null)
 

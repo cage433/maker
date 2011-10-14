@@ -57,7 +57,7 @@ object ValuationServicePerformanceTest extends App {
     }
 
     BouncyRMIServiceApi().using { valuationServiceRMI : ValuationServiceApi =>
-      val snapshotID = vs.marketDataSnapshotIDs(Some(Day.today)).head
+      val snapshotID = mds.marketDataSnapshotIDs(Some(Day.today)).head
       val marketDataID = TitanMarketDataIdentifier(snapshotID, Day.today)
       val directQuotaResults = run("Quota (direct)", () => vs.valueAllTradeQuotas(marketDataID))
       val rmiQuotaResults = run("Quota (rmi)", () => valuationServiceRMI.valueAllTradeQuotas(marketDataID))
