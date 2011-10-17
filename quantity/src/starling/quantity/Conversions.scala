@@ -19,42 +19,48 @@ protected[quantity] class Conversions(val conversions: Map[UOM, BigDecimal]) ext
   /**
    * Don't ever call this directly. Use Quantity.in
    */
-  protected[quantity] def convert(from: UOM, to: UOM): Option[BigDecimal] = conversionCache.memoize((from, to), {if (from == to) {
-    Some(BigDecimal(1.0))
-  } else if (to.isScalar || to.isNull) {
-    Some(BigDecimal(1.0))
-  } else {
-    (from.div(to)) match {
-      case (UOM.SCALAR, v) => {
-        // e.g. USD -> US_CENT
-        Some(v)
-      }
-      case (convert, v) if v == 1.0 => {
-        val (num, numPow) = decomposePrime(convert.uType.numerator)
-        val (den, denPow) = decomposePrime(convert.uType.denominator)
-        val convertNoPowers = UOM.fromSymbolMap(convert.asSymbolMap.map{case (k, v) => (k -> (v/v.abs))})
-        assert(numPow == denPow, "Trying to convert with different powers: " + (from, to))
-        val lookup = Ratio(num, den)
-        baseConverions.get(lookup) match {
-          case Some(u) => {
-            val (SCALAR, c1) = u.div(convertNoPowers)
-            val c2 = conversions(u)
-            val conversion = BigDecimal("1") / (c2 * c1)
-            Some(conversion.pow(numPow))
+  protected[quantity] def convert(from: UOM, to: UOM): Option[BigDecimal] = {
+    if (from == to) {
+      Some(BigDecimal(1.0))
+    } else if (to.isScalar || to.isNull) {
+      Some(BigDecimal(1.0))
+    } else {
+      conversionCache.memoize((from, to), {
+        (from.div(to)) match {
+          case (UOM.SCALAR, v) => {
+            // e.g. USD -> US_CENT
+            Some(v)
           }
-          case _ => baseConverions.get(lookup.inverse) match {
-            case Some(u) => {
-              val (SCALAR, c1) = u.mult(convertNoPowers)
-              val c2 = conversions(u)
-              val conversion = c2 * c1
-              Some(conversion.pow(numPow))
+          case (convert, v) if v == 1.0 => {
+            val (num, numPow) = decomposePrime(convert.uType.numerator)
+            val (den, denPow) = decomposePrime(convert.uType.denominator)
+            val convertNoPowers = UOM.fromSymbolMap(convert.asSymbolMap.map {
+              case (k, v) => (k -> (v / v.abs))
+            })
+            assert(numPow == denPow, "Trying to convert with different powers: " +(from, to))
+            val lookup = Ratio(num, den)
+            baseConverions.get(lookup) match {
+              case Some(u) => {
+                val (SCALAR, c1) = u.div(convertNoPowers)
+                val c2 = conversions(u)
+                val conversion = BigDecimal("1") / (c2 * c1)
+                Some(conversion.pow(numPow))
+              }
+              case _ => baseConverions.get(lookup.inverse) match {
+                case Some(u) => {
+                  val (SCALAR, c1) = u.mult(convertNoPowers)
+                  val c2 = conversions(u)
+                  val conversion = c2 * c1
+                  Some(conversion.pow(numPow))
+                }
+                case None => None
+              }
             }
-            case None => None
           }
         }
-      }
+      })
     }
-  }})
+  }
 
   private def decomposePrime(long: Long): (Int, Int) = {
     UOM.decomposePrimes(long).toList match {

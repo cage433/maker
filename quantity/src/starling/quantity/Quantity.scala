@@ -120,7 +120,9 @@ class Quantity(val value : Double, val uom : UOM) extends Ordered[Quantity] with
 
   def pq : PivotQuantity = PivotQuantity(Map(uom → value), MultiMap[String, StackTrace]())
 
-  def in(otherUOM : UOM)(implicit conv: Conversions = Conversions.default): Option[Quantity] = {
+  def in(otherUOM: UOM)(implicit conv: Conversions = Conversions.default): Option[Quantity] = if (uom == otherUOM) {
+    Some(this)
+  } else {
     conv.convert(uom, otherUOM).map {
       (ratio) => {
         val newValue = (BigDecimal(this.value) * ratio).toDouble
@@ -140,7 +142,9 @@ class Quantity(val value : Double, val uom : UOM) extends Ordered[Quantity] with
   /**
    * E.g. 100 Cent would convert to 1 USD
    */
-  def inBaseCurrency = {
+  def inBaseCurrency = if (uom.isBaseCurrency) {
+    this
+  } else {
     assert(this.uom.isCurrency, "Can't convert this to currency: " + this)
     this.inUOM(uom.inBaseCurrency)
   }

@@ -140,4 +140,22 @@ class UOMTests extends TestNGSuite with ShouldMatchers {
     List("USD", "MT", "USD/MT").flatMap { _ partialMatch { case UOM.Parse(uom) => uom } } should be ===
       List(UOM.USD, UOM.MT, UOM.USD / UOM.MT)
   }
+
+  @Test
+  def testBase {
+    assertTrue (USD.isBaseUnit)
+    assertTrue (USD.inBaseUnit == USD)
+    assertTrue (USD.isBaseCurrency)
+    assertTrue (USD.inBaseCurrency == USD)
+
+    assertFalse (US_CENT.isBaseUnit)
+    assertTrue (US_CENT.inBaseUnit == USD)
+    assertFalse (US_CENT.isBaseCurrency)
+    assertTrue (US_CENT.inBaseCurrency == USD)
+
+    assertFalse(MT.isBaseUnit)
+    assertTrue(G.isBaseUnit)
+    assertFalse(G.isBaseCurrency)
+    assertTrue(MT.inBaseUnit == G)
+  }
 }
