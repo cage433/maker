@@ -1,9 +1,9 @@
 package starling.instrument.physical
 
 import starling.curves.Environment
-import starling.quantity.{UOM, Quantity}
 import starling.market.{FuturesMarket, CommodityMarket, FuturesExchangeFactory, IndexWithDailyPrices}
 import starling.daterange._
+import starling.quantity.{Ratio, UOM, Quantity}
 
 trait TitanPricingSpec {
 
@@ -20,12 +20,19 @@ trait TitanPricingSpec {
   def valuationCCY: UOM
 
   def addPremiumConvertingIfNecessary(env: Environment, price: Quantity, premium: Quantity): Quantity = {
-    if (premium == Quantity.NULL)
+    if (premium == Quantity.NULL) // no premium case
       price
     else {
-      val premiumCurrency = premium.uom.numeratorUOM
-      val priceCurrency = price.uom.numeratorUOM
-      price * env.forwardFXRate(premiumCurrency, priceCurrency, settlementDay(env.marketDay)) + premium.named("Premium")
+      // convert all to base currencies and convert to the valuationCCY as the target
+      val priceUOMInBaseUOM = price.numeratorUOM.inBaseCurrency
+      val priceInBase = price inUOM (priceUOMInBaseUOM / price.denominatorUOM)
+      val premiumUOMInBaseUOM = premium.numeratorUOM.inBaseCurrency
+      val premiumInBase = premium inUOM (premiumUOMInBaseUOM / premium.denominatorUOM)
+
+      val priceInValuationCcy = priceInBase * env.forwardFXRate(priceUOMInBaseUOM, valuationCCY, settlementDay(env.marketDay))
+      val premiumInValuationCcy = premiumInBase * env.forwardFXRate(premiumUOMInBaseUOM, valuationCCY, settlementDay(env.marketDay))
+
+      priceInValuationCcy + premiumInValuationCcy
     }
   }
 
