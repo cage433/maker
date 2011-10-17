@@ -20,6 +20,7 @@ trait TitanPricingSpec {
   def valuationCCY: UOM
 
   def addPremiumConvertingIfNecessary(env: Environment, price: Quantity, premium: Quantity): Quantity = {
+    val namedEnv = env.withNaming()
     if (premium == Quantity.NULL) // no premium case
       price
     else {
@@ -27,10 +28,10 @@ trait TitanPricingSpec {
       val priceUOMInBaseUOM = price.numeratorUOM.inBaseCurrency
       val priceInBase = price inUOM (priceUOMInBaseUOM / price.denominatorUOM)
       val premiumUOMInBaseUOM = premium.numeratorUOM.inBaseCurrency
-      val premiumInBase = premium inUOM (premiumUOMInBaseUOM / price.denominatorUOM)
+      val premiumInBase = premium.named("Premium") inUOM (premiumUOMInBaseUOM / price.denominatorUOM)
 
-      val priceInValuationCcy = priceInBase * env.forwardFXRate(valuationCCY, priceUOMInBaseUOM, settlementDay(env.marketDay))
-      val premiumInValuationCcy = premiumInBase * env.forwardFXRate(valuationCCY, premiumUOMInBaseUOM, settlementDay(env.marketDay))
+      val priceInValuationCcy = priceInBase * namedEnv.forwardFXRate(valuationCCY, priceUOMInBaseUOM, settlementDay(namedEnv.marketDay))
+      val premiumInValuationCcy = premiumInBase * namedEnv.forwardFXRate(valuationCCY, premiumUOMInBaseUOM, settlementDay(namedEnv.marketDay))
 
       priceInValuationCcy + premiumInValuationCcy
     }
