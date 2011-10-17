@@ -1,5 +1,6 @@
 package starling.daterange
 
+import starling.daterange.Day._
 import org.scalatest.testng.TestNGSuite
 import org.testng.annotations._
 import org.testng.Assert._
@@ -215,6 +216,12 @@ class DateRangeTests extends TestNGSuite {
   @Test(dataProvider = "testJodaRoundTripProvider")
   def testJodaRoundTrip(day : Day){
     assertEquals(day, Day.fromJodaDate(day.toJodaLocalDate))
+  }
+
+  @Test
+  def testUnapply = {
+    assertEquals(DateRange.unapply(" JUL11"), Some(Month(2011, 7)))
+    assertEquals(DateRange.unapply("14jun11-30jun11 "), Some(DateRange(14 Jun 2011, 30 Jun 2011)))
   }
 }
 

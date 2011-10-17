@@ -2,6 +2,7 @@ package starling.daterange
 import collection.IterableView
 import starling.calendar.BusinessCalendar
 import starling.utils.cache.CacheFactory
+import starling.utils.ImplicitConversions._
 
 /** the supertype of all date ranges
  *
@@ -153,15 +154,21 @@ object DateRange {
     })
   }
 
-  def parse(text : String):DateRange = {
-    val split = text.split("-")
-    if (split.size == 2) {
-      new SimpleDateRange(Day.parse(split(0).trim), Day.parse(split(1).trim))
-    } else {
-      TenorType.parseTenor(text)
+  private val RangeRegex = """(?i)([a-z0-9]+) ?->? ?([a-z0-9]+)""".r
+
+  def parse(text: String): DateRange = text.trim match {
+    case RangeRegex(start, end) if start.isInt => { // Allows 10-15Oct2011
+      val last = Day.parse(end.trim)
+      val first = Day(last.year, last.month, start.toInt)
+      require(first < last, first + " not before " + last)
+      new SimpleDateRange(first, last)
     }
+    case RangeRegex(start, end) => {
+      new SimpleDateRange(Day.parse(start.trim), Day.parse(end.trim))
+    }
+    case _ => TenorType.parseTenor(text)
   }
-  
+
   implicit object ordering extends Ordering[DateRange]{
     def compare(lhs : DateRange, rhs : DateRange) : Int = {
       val firstCompare = lhs.firstDay compare rhs.firstDay

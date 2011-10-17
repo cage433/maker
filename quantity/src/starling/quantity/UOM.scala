@@ -223,6 +223,19 @@ object UOM extends StarlingEnum(classOf[UOM], (u: UOM) => u.toString, ignoreCase
   }
 }
 
+/**
+ * uType - main unit type such as USD or Mass or Volume. Main types cannot be converted between each other
+ * without an additional converter.
+ *
+ * subType - sub type such as Cents or MT or L. Subtypes of the same main type are automattically converted
+ * between each other.
+ * 
+ * v - the multiple of the base unit -- if 1.0 this is the base unit -- so it's
+ *     important to put currencies in as:
+ *     USD - 1.0
+ *     Cent - .01
+ *     etc..
+ */
 case class UOM(uType: Ratio, subType: Ratio, v: BigDecimal) extends Ordered[UOM] {
 
   def plus(o: UOM): Option[BigDecimal] = o match {
@@ -391,8 +404,20 @@ case class UOM(uType: Ratio, subType: Ratio, v: BigDecimal) extends Ordered[UOM]
     inBaseUnit
   }
 
+  def isBaseCurrency: Boolean = {
+    isCurrency && v == BigDecimal("1.0")
+  }
 
-  def inBaseUnit: UOM = UOM.baseFor(this)
+  def isBaseUnit: Boolean = {
+    v == BigDecimal("1.0")
+  }
+
+
+  def inBaseUnit: UOM = if (isBaseUnit) {
+    this
+  } else {
+    UOM.baseFor(this)
+  }
 
   def isFX = numeratorUOM.isCurrency && denominatorUOM.isCurrency
 }

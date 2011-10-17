@@ -592,6 +592,8 @@ class PivotFieldsState(
     new PivotFieldsState(rFields, newColumnStructure, newFilters, treeDepths, reportSpecificChoices, newTransforms)
   }
 
+  def mapFilters(t: (Field, Selection) => (Field, Selection)) = copy(filters = filters.map{case (f, s) => t(f,s)})
+
   def mapSelectionValues(f:Any=>Any) = {
     val modifiedFilters = filters.map { case (field,selection) => {
       selection match {
@@ -649,6 +651,23 @@ class PivotFieldsState(
       filter._1 -> SomeSelection(filter._2) :: filters
     }
     copy(filters=newFilters)
+  }
+
+  def changeFilterIfExistsAndMeetsPredicate(filter: (Field, Set[Any]), s: Selection => Boolean) = {
+    if (filters.map(_._1).contains(filter._1)) {
+      val newFilters = filters.map {
+        case (field, selection) => {
+          if (field == filter._1 && s(selection)) {
+            field -> new SomeSelection(filter._2)
+          } else {
+            field -> selection
+          }
+        }
+      }
+      copy(filters = newFilters)
+    } else {
+      this
+    }
   }
 
   def allFilterPaths = {

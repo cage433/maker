@@ -1,5 +1,6 @@
 package starling.daterange
 
+import starling.daterange.Day._
 import org.scalatest.testng.TestNGSuite
 import org.testng.annotations.Test
 import org.testng.Assert._

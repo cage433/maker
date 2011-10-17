@@ -1,5 +1,6 @@
 package starling.daterange
 
+import starling.daterange.Day._
 import org.scalatest.testng.TestNGSuite
 import org.testng.annotations.Test
 import org.testng.Assert._
@@ -45,6 +46,7 @@ class SpreadTests extends TestNGSuite {
 
   @Test
   def testParse {
+    assertEquals(Spread.parse("14jun11-30jun11 / JUL11"), Some(Spread(DateRange(14 Jun 2011, 30 Jun 2011), Month(2011, 7))))
     assertEquals(Spread.parse("g10 / h0"), Some(Spread(Month(2010, 2), Month(2010, 3))))
     assertEquals(Spread.parse("feb10/h0"), Some(Spread(Month(2010, 2), Month(2010, 3))))
     assertEquals(Spread.parse("g0h0"), Some(Spread(Month(2010, 2), Month(2010, 3))))

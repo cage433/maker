@@ -41,18 +41,23 @@ class ExcelTradeReader(eaiStrategyDB: EAIStrategyDB, eaiDealBookMapping: EAIDeal
     val CounterPartySpread = """(\d+)[ ]*/[ ]*(\d+)""".r
     val explodedRows = rows.flatMap {
       map => map(StrategyColumn) match {
-        case CounterPartySpread(c1, c2) => {
+        case CounterPartySpread(c1, c2) => try {
           val row = new ExcelRow(map, traders, currentUser)
           val tradeID = row.formattedExcelColumnID
 
           // t1 is the same, just add 'a' to the row id
-          val t1 = map + (StrategyColumn -> c1, TradeIDColumn -> (tradeID + "a"))
+          val t1 = map +(StrategyColumn -> c1, TradeIDColumn -> (tradeID + "a"))
 
           // t2 has 'b' after its row id and the opposite volume
           val volume = row.volumeDouble * -1
-          val t2 = map + (ExcelRow.VolumeColumn -> volume, StrategyColumn -> c2, TradeIDColumn -> (tradeID + "b"))
-          
+          val t2 = map +(ExcelRow.VolumeColumn -> volume, StrategyColumn -> c2, TradeIDColumn -> (tradeID + "b"))
+
           List(t1, t2)
+        } catch {
+          case e => {
+            val eClass = e.getClass.toString.split('.').last
+            throw new Exception("Error on row with ID '" + map(TradeIDColumn) + "': " + eClass + ":" + e.getMessage, e)
+          }
         }
         case _ => List(map)
       }

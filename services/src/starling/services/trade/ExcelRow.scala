@@ -287,19 +287,19 @@ case class ExcelRow(row: Map[String, Any], traders: Traders, currentlyLoggedOn: 
 
   def checkInstrument {
     val name = string(InstrumentColumn)
-
+    assert(name.nonEmpty, "Empty instrument name is invalid")
     try {
       instrumentType
     } catch {
       case _ => {
         val names = InstrumentType.types.map(_.name.toLowerCase)
-          val closest = closestLevenshteinString(names, name, 4).map(new String(_))
-          if (closest.nonEmpty) {
-            val matches = closest.mkString(" or ")
-            throw new Exception("Unexpected instrument name: " + name + " maybe: '" + matches + "'?")
-          } else {
-            throw new Exception("Unexpected instrument name: " + name)
-          }
+        val closest = closestLevenshteinString(names, name, 4).map(new String(_))
+        if (closest.nonEmpty) {
+          val matches = closest.mkString(" or ")
+          throw new Exception("Unexpected instrument name: '" + name + "' maybe: '" + matches + "'?: ")
+        } else {
+          throw new Exception("Unexpected instrument name: '" + name + "'")
+        }
       }
     }
 

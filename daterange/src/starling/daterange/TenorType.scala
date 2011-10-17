@@ -53,7 +53,7 @@ object TenorType {
 
   private var periodsCache = CacheFactory.getCache("Tenor.periodsCache", unique = true)
 
-  def unapply(text: String) = periodsCache.memoize((text),
+  def unapply(text: String) = periodsCache.memoize((text.trim),
     (tuple: (String)) => {
       ALL.flatMap {
         t => try {
