@@ -188,6 +188,9 @@ class PhysicalMetalForwardBuilder(refData: TitanTacticalRefData,
               else {
                 val unallocatedQuantity = deliveryQuantity(detail) - assignmentTrades.map(_.tradeable.asInstanceOf[PhysicalMetalAssignment].quantity).sum
 
+                log.info("\n****** Unallocated quota %s unallocated qty %s from delivery qty %s - assignmentTrades qty sum %s \n".format(detail.identifier.value, unallocatedQuantity.toString,
+                    deliveryQuantity(detail).toString, assignmentTrades.map(_.tradeable.asInstanceOf[PhysicalMetalAssignment].quantity).sum.toString))
+
                 val unallocatedQuota = UnallocatedSalesQuota(
                   unallocatedQuantity,
                   commodity,

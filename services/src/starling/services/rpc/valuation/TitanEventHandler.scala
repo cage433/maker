@@ -82,7 +82,7 @@ class TitanEventHandler(rabbitEventServices : TitanRabbitEventServices,
    * handler for trademgmt trade events
    */
   def tradeMgmtTradeEventHander(ev: Event) : Option[List[TitanTradeUpdateResult]] = {
-    log.info("handler: Got a trade event to process %s".format(ev.toString))
+    log.info("handler: Got a trade event to process, ID %s event %s".format(ev.key.identifier, ev.toString))
 
     val tradePayloads = ev.content.body.payloads.filter(p => Event.RefinedMetalTradeIdPayload == p.payloadType)
     val tradeIds: List[String] = tradePayloads.map(p => p.key.identifier)
@@ -123,7 +123,7 @@ class TitanEventHandler(rabbitEventServices : TitanRabbitEventServices,
    * handler for logistics assignment events
    */
   def logisticsInventoryEventHander(ev: Event) : Option[List[TitanTradeUpdateResult]] = {
-    log.info("handler: Got a logistics event to process %s".format(ev.toString))
+    log.info("handler: Got a logistics event to process,  ID %s event %s".format(ev.key.identifier, ev.toString))
 
     // get inventory ids from inventory or sales assignment subjects (sales assignment is what is raised when a sales quota is fully allocated/deallocated)
     val payloads = ev.content.body.payloads
@@ -192,7 +192,7 @@ class TitanEventHandler(rabbitEventServices : TitanRabbitEventServices,
    * handler for market data snapshot events
    */
   def marketDataSnapshotEventHander(ev: Event) : Option[List[TitanTradeUpdateResult]] = {
-    log.info("handler: Got a snapshot event to process %s".format(ev.toString))
+    log.info("handler: Got a market data event to process %s".format(ev.toString))
 
     /**
      * logic:
