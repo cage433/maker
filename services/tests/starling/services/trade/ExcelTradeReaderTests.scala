@@ -76,34 +76,40 @@ class ExcelTradeReaderTests extends JonTestEnv {
 
   @Test
   def testBigBlotter {
-    val a = StringIO.lines("/starling/services/trade/SeetalBlotterTrades.csv").toList
+    val files = Array("/starling/services/trade/SeetalBlotterTrades1.csv", "/starling/services/trade/SeetalBlotterTrades2.csv")
 
-    val header: Array[String] = a.head.split('\t')
-    val rest = a.tail.map(_.split('\t').toSeq).asInstanceOf[List[Seq[Object]]]
-    val reader = new ExcelTradeReader(eAIStrategyDB, eaiDealBookMapping, traders, currentUser)
-    val all: List[Trade] = Log.infoWithTime("all trades") {
-      reader.allTrades(header, rest, "test")
-    }
+    files.map {
+      file => {
+        val a = StringIO.lines(file).toList
 
-    val marketDayAndTime = Day(2011, 8, 1).endOfDay
-    val env = Environment(
-      new TestingAtomicEnvironment() {
-        def applyOrMatchError(key: AtomicDatumKey) = key match {
-          case ForwardPriceKey(market, _, _) => Quantity(100, market.priceUOM)
-          case IndexFixingKey(index, _) => Quantity(100, index.priceUOM)
-          case MarketFixingKey(market, _, _) => Quantity(100, market.priceUOM)
+        val header: Array[String] = a.head.split('\t')
+        val rest = a.tail.map(_.split('\t').toSeq).asInstanceOf[List[Seq[Object]]]
+        val reader = new ExcelTradeReader(eAIStrategyDB, eaiDealBookMapping, traders, currentUser)
+        val all: List[Trade] = Log.infoWithTime("all trades") {
+          reader.allTrades(header, rest, "test")
         }
 
-        def marketDay = marketDayAndTime
-      }
-    ).undiscounted
+        val marketDayAndTime = Day(2011, 8, 1).endOfDay
+        val env = Environment(
+          new TestingAtomicEnvironment() {
+            def applyOrMatchError(key: AtomicDatumKey) = key match {
+              case ForwardPriceKey(market, _, _) => Quantity(100, market.priceUOM)
+              case IndexFixingKey(index, _) => Quantity(100, index.priceUOM)
+              case MarketFixingKey(market, _, _) => Quantity(100, market.priceUOM)
+            }
 
-    Log.infoWithTime("Valuing blotter trades") {
-      all.mpMap(trade => {
-        val explained = trade.explain(env)
-        val mtm = trade.assets(env).mtm(env, USD)
-        assertQtyClose(explained, mtm, 1e-4, message = trade.toString)
-      })
+            def marketDay = marketDayAndTime
+          }
+        ).undiscounted
+
+        Log.infoWithTime("Valuing blotter trades") {
+          all.mpMap(trade => {
+            val explained = trade.explain(env)
+            val mtm = trade.assets(env).mtm(env, USD)
+            assertQtyClose(explained, mtm, 1e-4, message = trade.toString)
+          })
+        }
+      }
     }
   }
 }

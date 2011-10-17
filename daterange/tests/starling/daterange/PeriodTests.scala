@@ -67,6 +67,7 @@ class PeriodTests extends TestNGSuite {
   def data3 = {
     constructArgs(
       ("q410/q311", SpreadPeriod(Quarter(2010, 4), Quarter(2011, 3))),
+      ("14jun11-30jun11 / JUL11", SpreadPeriod(DateRange(14 Jun 2011, 30 Jun 2011), Month(2011, 7))),
       ("jan11/x2", SpreadPeriod(Month(2011, 1), Month(2012, 11))),
       ("2011/2012", SpreadPeriod(Year(2011), Year(2012))),
       ("u1 / v1", SpreadPeriod(Month(2011, 9), Month(2011, 10))),
