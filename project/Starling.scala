@@ -387,6 +387,47 @@ object StarlingBuild extends Build{
 
   val childProjects : List[ProjectReference] =  otherProjectRefereneces ::: titanModelReference
 
+  val docProjects : List[ProjectReference] =  List(
+    manager, osgiRun, utils, concurrent, quantity, osgiManager, singleClasspathManager, pivot ,pivotUtils, daterange,
+    titanReturnTypes, maths, starlingApi, auth, props, bouncyrmi, rabbitEventViewerApi, rabbitEventViewerService, 
+    loopyxl, guiapi, reportsFacility, reportsImpl, tradeImpl, metals, titanModel, fc2Facility, curves, 
+    instrument, gui, browser, browserService, tradeFacility, databases, titan, services, launcher,
+    manager, osgiManager, singleClasspathManager, osgiRun, dbx, startserver, starlingApi,
+    starlingClient, webservice)
+
+  val sharedProjects : List[ProjectReference] =  List(
+      utils, quantity, daterange, titanReturnTypes, titan, titanModel, databases, starlingApi)
+  
+  val allPackagedArtifacts = TaskKey[Seq[Map[Artifact, File]]]("all-packaged-artifacts")
+  val allSources           = TaskKey[Seq[Seq[File]]]("all-sources")
+  val allSourceDirectories = SettingKey[Seq[Seq[File]]]("all-source-directories")
+  
+  val docSharedRoot = Project("doc-shared", file("doc.shared"), settings = standardSettings ++ Seq(
+      allSources <<= sharedProjects.map(sources in Compile in _).join, // join: Seq[Task[A]] => Task[Seq[A]]
+      //allSourceDirectories <<= childProjects.map(sourceDirectories in Compile in _).join,
+      //allPackagedArtifacts <<= childProjects.map(packagedArtifacts in _).join,
+
+      // Combine the sources of other modules to generate Scaladoc and SXR annotated sources
+      (sources in Compile) <<= (allSources).map(_.flatten),
+      (unmanagedJars in Compile) <<= ((childProjects.map(unmanagedJars in Compile in _).join).map(_.flatten)),
+
+      // Avoid compiling the sources here; we just are after scaladoc.
+      (compile in Compile) := inc.Analysis.Empty)
+    )
+  
+
+  val docAllRoot = Project("doc-all", file("doc.all"), settings = standardSettings ++ Seq(
+      allSources <<= docProjects.map(sources in Compile in _).join, // join: Seq[Task[A]] => Task[Seq[A]]
+      //allSourceDirectories <<= childProjects.map(sourceDirectories in Compile in _).join,
+      //allPackagedArtifacts <<= childProjects.map(packagedArtifacts in _).join,
+
+      // Combine the sources of other modules to generate Scaladoc and SXR annotated sources
+      (sources in Compile) <<= (allSources).map(_.flatten),
+      (unmanagedJars in Compile) <<= ((childProjects.map(unmanagedJars in Compile in _).join).map(_.flatten)),
+
+      // Avoid compiling the sources here; we just are after scaladoc.
+      (compile in Compile) := inc.Analysis.Empty)
+    )
 
   val root = Project("starling", file("."), settings = standardSettings) aggregate (childProjects : _*)
 
