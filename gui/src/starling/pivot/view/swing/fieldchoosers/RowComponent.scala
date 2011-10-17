@@ -9,6 +9,7 @@ import java.awt.{Point, Rectangle}
 import scala.Some
 import starling.pivot.model.{EditableInfo, PivotTableModel}
 import starling.browser.common.MigPanel
+import scalaz.Scalaz._
 
 class RowComponent(model:PivotTableModel,  otherLayoutInfo:OtherLayoutInfo, viewUI:PivotTableViewUI,
                    tableView:PivotTableView, editableInfo:Option[EditableInfo])
@@ -125,11 +126,13 @@ class RowComponent(model:PivotTableModel,  otherLayoutInfo:OtherLayoutInfo, view
       val (_, panel) = dropBoundsAndPanels(field).find{case (bound, _) => bound.contains(screenPoint)}.get
       panel.delayReset()
       val (nextToField, pos) = panel.fieldAndPositions.head
+      val draggedFieldPos = fields.position(field)
       val fieldPos = fields.position(nextToField)
-      pos match {
+      val offset = (draggedFieldPos < fieldPos) ? -1 | 0
+      offset + (pos match {
         case Position.Left => math.max(fieldPos - 1, 0)
         case Position.Right => fieldPos + 1
-      }
+      })
     }
   }
 
