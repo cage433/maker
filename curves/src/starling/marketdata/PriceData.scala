@@ -65,10 +65,10 @@ object PriceDataType extends MarketDataType {
     rowFields=List(periodField.field)
   )
 
-  lazy val fields = List(exchangeField, marketField, marketCommodityField, marketTenorField, periodField, priceField, validity)
-  def marketDataKeyFields = Set(marketField.field)
-  override def keyFields = Set(marketField, periodField).map(_.field)
-  override def valueFields = List(priceField.field)
+  def extendedKeys = List(marketField)
+  override def derivedFieldDetails = List(exchangeField, marketTenorField, validity)
+  override def valueKeys = List(periodField)
+  def valueFieldDetails = List(priceField)
 
   override def createValue(rows: List[Row]) = {
     val pairs = rows.map { row => row[DateRange](periodField) → row.pivotQuantity(priceField) }.toMap

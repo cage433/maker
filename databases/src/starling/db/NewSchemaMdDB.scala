@@ -214,12 +214,14 @@ class NewSchemaMdDB(db: DBTrait[RichResultSetRow], dataTypes: MarketDataTypes) e
     } }.collectValues { case Some(v) => v }
   }
 
-  def query(version: Int, mds: List[MarketDataSet], marketDataType: MarketDataTypeName,
+  def query(version: Int, mds: List[MarketDataSet], marketDataTypeName: MarketDataTypeName,
             observationDays: Option[Set[Option[Day]]], observationTimes: Option[Set[ObservationTimeOfDay]],
             marketDataKeys: Option[Set[MarketDataKey]]): List[(TimedMarketDataKey, MarketData)] = {
 
 //    log.infoWithTime("query(%d, (%s), %s, %s, %s, %s)" %
 //      (version, mds.map(_.name), marketDataType.name, observationDays, observationTimes, marketDataKeys)) {
+
+    val marketDataType = dataTypes.fromName(marketDataTypeName)
 
     val mostRecentValues = log.debugWithTime("query.mostRecentValues") {
       val commitClause = "commitId" lte version
@@ -227,7 +229,7 @@ class NewSchemaMdDB(db: DBTrait[RichResultSetRow], dataTypes: MarketDataTypes) e
 
       val values = new MarketDataValueMap()
 
-      queryUsingExtendedKeys(extendedKeyIdsFor(marketDataType, mds, observationTimes, marketDataKeys),
+      queryUsingExtendedKeys(extendedKeyIdsFor(marketDataTypeName, mds, observationTimes, marketDataKeys),
          select("*")
            from("MarketDataValue")
           where(commitClause, observationDayClause)
@@ -240,7 +242,7 @@ class NewSchemaMdDB(db: DBTrait[RichResultSetRow], dataTypes: MarketDataTypes) e
     val timedData: MultiMap[TimedMarketDataKey, Row] =
       mostRecentValues.toList.collect { case ((tmdk, mdvk), (_, Some(row), _)) => tmdk → (mdvk.row + row) }.toMultiMap
 
-    timedData.collectValues { case rows if (rows.nonEmpty) => dataTypes.fromName(marketDataType).createValue(rows) }.toList
+    timedData.collectValues { case rows if (rows.nonEmpty) => marketDataType.createValue(rows) }.toList
   }
 
   def queryForObservationDayAndMarketDataKeys(version: Int, mds: List[MarketDataSet], marketDataType: MarketDataTypeName) = {
@@ -297,7 +299,10 @@ class NewSchemaMdDB(db: DBTrait[RichResultSetRow], dataTypes: MarketDataTypes) e
       valueKeys.findOrUpdate(_._2.sameValuesAs(key), insertValueKey(key) |> (k => (k.id, k)))._2
 
     def insertExtendedKey(key: MarketDataExtendedKey) = key.copy(id = insertKey("MarketDataExtendedKey", key.dbMap))
-    def insertValueKey(key: MarketDataValueKey) = key.copy(id = insertKey("MarketDataValueKey", key.dbMap))
+    def insertValueKey(key: MarketDataValueKey) = {
+      key.row.fields.requireEqual(dataTypes.fromName(anUpdate.timedKey.typeName).valueKeyFields)
+      key.copy(id = insertKey("MarketDataValueKey", key.dbMap))
+    }
     def insertKey(table: String, values: Map[String, Any]) = writer.insertAndReturnKey(table, "id", values).asInstanceOf[Int]
 
     def nextCommitId(): Int = writer.insertAndReturnKey("MarketDataCommit", "id",

@@ -32,6 +32,7 @@ class RichAny[T](protected val value: T) {
   def assert(assertion: T => Boolean, message: => Any) : T = perform(Predef.assert(assertion(value), message))
   def deny(denial: T => Boolean, message: => Any) : T = perform(Predef.assert(!denial(value), message))
   def require(requirement: T => Boolean, message: => Any): T = perform(Predef.require(requirement(value), message + " " + trimmed))
+  def requireEqual(expected: T): T = perform(Predef.require(value == expected, value + " != " + expected))
   def desire(wish: T => Boolean, message: => Any): T = perform(if (!wish(value)) Log.warn(message + " " + trimmed))
 
   def isOneOf(values : T*) = values.contains(value)

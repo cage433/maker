@@ -56,10 +56,9 @@ class GradeAreaBenchmarkDataType(referenceData: ReferenceDataLookup = ReferenceD
   val benchmarkPriceField = FieldDetails.createMeasure("Benchmark Price",
     parser0 = PivotQuantityPivotParser, formatter0 = PivotQuantitySetPivotFormatter)
 
-  def marketDataKeyFields = keyFields
-  override def keyFields = Set(commodityField, areaCodeField, gradeCodeField, effectiveFromField).map(_.field)
-  override def valueFields = List(benchmarkPriceField.field)
-  val fields = List(commodityField, areaField, areaCodeField, gradeField, gradeCodeField, effectiveFromField, benchmarkPriceField)
+  def extendedKeys = List(commodityField)
+  override def valueKeys = List(areaField, areaCodeField, gradeField, gradeCodeField, effectiveFromField, benchmarkPriceField)
+  def valueFieldDetails = List(benchmarkPriceField)
 
   val initialPivotState = PivotFieldsState(
     dataFields=List(benchmarkPriceField.field),

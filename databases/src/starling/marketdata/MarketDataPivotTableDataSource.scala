@@ -36,7 +36,6 @@ class PrebuiltMarketDataPivotData(reader: MarketDataReader, marketDataStore: Mar
   marketDataIdentifier: MarketDataIdentifier, val marketDataType:MarketDataType, dataTypes: MarketDataTypes) {
 
   import MarketDataPivotTableDataSource._
-
   val keyAndDataFields = marketDataType.fields.map(_.field).toSet
 
   val fieldDetailsGroups = List(

@@ -24,10 +24,10 @@ class CountryBenchmarkDataType(referenceData: ReferenceDataLookup = ReferenceDat
   val benchmarkPriceField = FieldDetails.createMeasure("Benchmark Price",
     parser0 = PivotQuantityPivotParser, formatter0 = PivotQuantitySetPivotFormatter)
 
-  def marketDataKeyFields = keyFields
-  override def keyFields = Set(commodityField, countryCodeField, effectiveFromField).map(_.field)
-  override def valueFields = List(benchmarkPriceField.field)
-  val fields = List(commodityField, countryField, countryCodeField, effectiveFromField, benchmarkPriceField, areaField)
+  def extendedKeys = List(commodityField)
+  override def valueKeys = List(countryCodeField, effectiveFromField)
+  override def derivedFieldDetails = List(countryField, areaField)
+  def valueFieldDetails = List(benchmarkPriceField)
 
   val initialPivotState = PivotFieldsState(
     dataFields = List(benchmarkPriceField.field),
