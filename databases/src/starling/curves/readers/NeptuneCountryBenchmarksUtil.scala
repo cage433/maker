@@ -29,7 +29,7 @@ class NeptuneCountryBenchmarksUtil(neptuneDB: RichDB) extends Log {
           from("[live].[country_mat_benchmark] country_mat_benchmark")
       leftJoin("[live].[material] material", "material.code" eql "country_mat_benchmark.material_code")) { rs =>
 
-      val neptuneCommodityName = rs.getString("material_description")
+      val neptuneCommodityName = rs.getStringOption("material_description").getOrElse("<null>")
       val commodityOption = Commodity.neptuneCommodityFromNeptuneName(neptuneCommodityName) 
       val countryCode = NeptuneCountryCode(rs.getString("country_code"))
       commodityOption match {

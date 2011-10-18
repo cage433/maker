@@ -47,6 +47,13 @@ class MarketDataStoreTest extends TestMarketTest with ShouldMatchers {
   }
 
   lazy val dataTypes = new MarketDataTypes(ReferenceDataLookup.Null)
+  def pivot(marketDataStore:MarketDataStore, marketDataIdentifier:MarketDataIdentifier, marketDataType:MarketDataType, pivotEdits:PivotEdits=PivotEdits.Null) = {
+    val reader = new NormalMarketDataReader(marketDataStore, marketDataIdentifier)
+    new MarketDataPivotTableDataSource(
+      new PrebuiltMarketDataPivotData(reader, marketDataStore, marketDataIdentifier, marketDataType, ReferenceDataLookup.Null),
+      pivotEdits
+    )
+  }
 
   @AfterTest
   def tearDown() {
@@ -93,7 +100,7 @@ class MarketDataStoreTest extends TestMarketTest with ShouldMatchers {
       marketDataStore.latestPricingGroupVersions(PricingGroup.System)
     )
 
-    val pivotData = marketDataStore.pivot(marketDataIdentifier, SpotFXDataType).data(pfs)
+    val pivotData = pivot(marketDataStore, marketDataIdentifier, SpotFXDataType).data(pfs)
     pivotData.data should equal (Nil)
 
     val priceData = new NormalMarketDataReader(marketDataStore, marketDataIdentifier).readAllPrices(observationPoint)
@@ -157,7 +164,7 @@ class MarketDataStoreTest extends TestMarketTest with ShouldMatchers {
     marketDataStore.save(MarketDataSet.Starling, timedKey, data1)
     marketDataStore.save(MarketDataSet.Starling, timedKey2, data2)
 
-    val pivot = marketDataStore.pivot(MarketDataIdentifier(
+    val pds = pivot(marketDataStore, MarketDataIdentifier(
         MarketDataSelection(Some(PricingGroup.System)),
         marketDataStore.latestPricingGroupVersions(PricingGroup.System)
       ),
@@ -165,7 +172,7 @@ class MarketDataStoreTest extends TestMarketTest with ShouldMatchers {
     )
 
     def check(pfs:PivotFieldsState, expected:String) {
-      val data = PivotTableModel.createPivotData(pivot, new PivotFieldParams(true, Some(pfs)))
+      val data = PivotTableModel.createPivotData(pds, new PivotFieldParams(true, Some(pfs)))
       val csv = data.pivotTable.asCSV
       csv should equal( expected )
     }
@@ -186,7 +193,7 @@ class MarketDataStoreTest extends TestMarketTest with ShouldMatchers {
   }
 
   def pivotGrid(marketDataIdentifier: MarketDataIdentifier, pfs: PivotFieldsState, edits: PivotEdits = PivotEdits.Null): String = {
-    val pivotData = marketDataStore.pivot(marketDataIdentifier, PriceDataType, edits).flattenedGridFor(Some(pfs))
+    val pivotData = pivot(marketDataStore, marketDataIdentifier, PriceDataType, edits).flattenedGridFor(Some(pfs))
 
     pivotData.map { _.map { _ match {
       case cell: TableCell => "%s %s" % (cell.value.asInstanceOf[PivotQuantity].quantityValue.get, cell.state)
@@ -279,7 +286,7 @@ class MarketDataStoreTest extends TestMarketTest with ShouldMatchers {
 
     gridWithEdits should be === expectedEditPreview.trimHereDoc
 
-    marketDataStore.pivot(latestMarketDataIdentifier, PriceDataType).editable.get.save(edits)
+    pivot(marketDataStore, latestMarketDataIdentifier, PriceDataType).editable.get.save(edits)
 
     val gridAfterDelete = pivotGrid(latestMarketDataIdentifier, pfs)
     gridAfterDelete should be === expectedSaveResult.trimHereDoc

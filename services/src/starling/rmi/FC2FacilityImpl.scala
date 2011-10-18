@@ -3,13 +3,14 @@ package starling.rmi
 import starling.daterange.Day
 import starling.gui.api._
 import starling.pivot.model.PivotTableModel
-import starling.pivot.{NullPivotTableDataSource, PivotFieldParams, PivotEdits}
 import starling.marketdata._
 import starling.fc2.api.FC2Facility
 import starling.db._
 import starling.utils.ImplicitConversions._
 import starling.manager.BromptonContext
 import starling.curves.{EnvironmentRules, CurveViewer, EnvironmentRule}
+import starling.utils.cache.CacheFactory
+import starling.pivot.{PivotTableDataSource, NullPivotTableDataSource, PivotFieldParams, PivotEdits}
 
 
 trait MarketDataPageIdentifierReaderProvider {
@@ -43,6 +44,7 @@ class FC2FacilityImpl(
   private def label(snapshot:SnapshotID):SnapshotIDLabel = snapshot.label
 
   private val marketDataTypes = new MarketDataTypes(referenceDataLookup)
+  val cache = CacheFactory.getCache("FC2")
 
   def pricingGroups = {
     //val allPricingGroups = desks.flatMap(_.pricingGroups).toSet
@@ -70,20 +72,39 @@ class FC2FacilityImpl(
     PivotTableModel.createPivotData(curveViewer.curve(curveLabel), pivotFieldParams)
   }
 
-  private def marketDataSource(marketDataIdentifier:MarketDataPageIdentifier, marketDataTypeLabel:Option[MarketDataTypeLabel], edits:PivotEdits) = {
-    val reader = marketDataReaderFor(marketDataIdentifier)
-    val marketDataType = marketDataTypeLabel match {
-      case None => {
-        sortMarketDataTypes(reader.marketDataTypes) match {
-          case Nil => None
-          case many => many.headOption
+  def marketDataPivot(selection:MarketDataSelection, marketDataType:MarketDataType):PivotTableDataSource = {
+    marketDataPivot(marketDataStore.latestMarketDataIdentifier(selection), marketDataType)
+  }
+
+  def marketDataPivot(marketDataIdentifier:MarketDataIdentifier, marketDataType:MarketDataType):PivotTableDataSource = {
+    marketDataPivot(StandardMarketDataPageIdentifier(marketDataIdentifier), marketDataType)
+  }
+
+  def marketDataPivot(marketDataPageIdentifier:MarketDataPageIdentifier, marketDataType:MarketDataType):PivotTableDataSource = {
+    marketDataSource(marketDataPageIdentifier, Some(MarketDataTypeLabel(marketDataType.name.name)), PivotEdits.Null)
+  }
+
+  def latest(marketDataSelection:MarketDataSelection) = marketDataStore.latest(marketDataSelection)
+
+  def marketDataSource(marketDataPageIdentifier:MarketDataPageIdentifier, marketDataTypeLabel:Option[MarketDataTypeLabel], edits:PivotEdits) = {
+    val preBuilt = cache.memoize( (marketDataPageIdentifier, marketDataTypeLabel), {
+      val reader = marketDataReaderFor(marketDataPageIdentifier)
+      val marketDataType = marketDataTypeLabel match {
+        case None => {
+          sortMarketDataTypes(reader.marketDataTypes) match {
+            case Nil => None
+            case many => many.headOption
+          }
         }
+        case Some(mdt) => Some(realTypeFor(mdt))
       }
-      case Some(mdt) => Some(realTypeFor(mdt))
-    }
-    marketDataType match {
-      case Some(mdt) => new MarketDataPivotTableDataSource(reader, edits, marketDataStore,
-        marketDataIdentifier.marketDataIdentifier, mdt, referenceDataLookup)
+      marketDataType.map { mdt =>
+        new PrebuiltMarketDataPivotData(reader, marketDataStore,
+          marketDataPageIdentifier.marketDataIdentifier, mdt, referenceDataLookup)
+      }
+    })
+    preBuilt match {
+      case Some(preBuilt) => new MarketDataPivotTableDataSource(preBuilt, edits)
       case None => NullPivotTableDataSource
     }
   }

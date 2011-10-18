@@ -14,9 +14,9 @@ import starling.utils.Pattern._
 import scalaz._
 import Scalaz._
 import starling.marketdata.MarketDataTypes
+import starling.rmi.FC2FacilityImpl
 
-
-class MarketDataServlet(marketDataStore:MarketDataStore, marketDataTypes: MarketDataTypes) extends HttpServlet {
+class MarketDataServlet(fc2FacilityImpl:FC2FacilityImpl, marketDataTypes: MarketDataTypes) extends HttpServlet {
   private val FilterField = Extractor.when[String](_.startsWith("@"), _.stripPrefix("@").replaceAll("_", " "))
   private val ConcatenatedFields = Extractor.map[Array[String]](_.flatMap(_.split(":")).toList)
   private val decimalPlaces = PivotFormatter.DefaultDecimalPlaces.copy(percentageFormat = "#0.0000")
@@ -29,13 +29,13 @@ class MarketDataServlet(marketDataStore:MarketDataStore, marketDataTypes: Market
     val selection = MarketDataSelection(PricingGroup.fromName(params.getFirst("pricingGroup")), params.getFirst("excel"))
 
     params.getFirst("version") match {
-      case None => response.sendRedirect("?" + params.replace("version", marketDataStore.latest(selection)).toUrl)
+      case None => response.sendRedirect("?" + params.replace("version", fc2FacilityImpl.latest(selection)).toUrl)
       case Some(version) => {
         val mdi = MarketDataIdentifier(selection, version.toInt)
 
         val marketDataType = marketDataTypes.fromName(request.getParameter("type"))
 
-        val pivot = marketDataStore.pivot(mdi, marketDataType)
+        val pivot = fc2FacilityImpl.marketDataPivot(mdi, marketDataType)
 
         val data = fieldList("measures")
         val rows = fieldList("rows")

@@ -11,11 +11,13 @@ import starling.utils.Broadcaster
 
 import starling.utils.ImplicitConversions._
 import scalaz.Scalaz._
+import starling.rmi.FC2FacilityImpl
 
 
 object VerifyPricesValid {
-  def apply(marketDataStore: MarketDataStore, broadcaster: Broadcaster, dataFlow: DataFlow) = new VerifyPricesValid(
-    marketDataStore.pivot(MarketDataSelection(Some(dataFlow.pricingGroup)), PriceDataType), dataFlow.exchange, broadcaster, dataFlow.from, dataFlow.to)
+  def apply(fc2FacilityImpl:FC2FacilityImpl, broadcaster: Broadcaster, dataFlow: DataFlow) = new VerifyPricesValid(
+    fc2FacilityImpl.marketDataPivot(MarketDataSelection(Some(dataFlow.pricingGroup)), PriceDataType),
+    dataFlow.exchange, broadcaster, dataFlow.from, dataFlow.to)
 }
 
 class VerifyPricesValid(dataSource: PivotTableDataSource, exchange: FuturesExchange, broadcaster: Broadcaster,

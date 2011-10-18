@@ -15,6 +15,7 @@ import starling.gui.api.{MarketDataIdentifier, PricingGroup, MarketDataSelection
 import starling.marketdata.FreightParityDataType
 import starling.db.{MarketDataEntry, MarketDataSet, MarketDataStore}
 import starling.daterange.Day
+import starling.rmi.FC2FacilityImpl
 
 
 class Scheduler(props: Props, val tasks: List[TaskDescription] = Nil) extends Stopable with Log {
@@ -35,7 +36,7 @@ object Scheduler extends Log {
   import PricingGroup._
   import ScheduledTime._
 
-  def create(businessCalendars: BusinessCalendars, marketDataStore: MarketDataStore, observingBroadcaster: ObservingBroadcaster,
+  def create(businessCalendars: BusinessCalendars, fc2FacilityImpl:FC2FacilityImpl, marketDataStore: MarketDataStore, observingBroadcaster: ObservingBroadcaster,
              trinityUploader: TrinityUploader, props: Props): Scheduler = log.infoWithTime("Creating scheduler") {
     if (props.ServerType() == "FC2") {
       val broadcaster = observingBroadcaster.broadcaster
@@ -53,7 +54,7 @@ object Scheduler extends Log {
 
       implicit def enrichDataFlow(dataFlow: DataFlow with MarketDataEventSource) = new {
         val verifyPricesAvailable = ("Verify %s available" % dataFlow.sink) → VerifyPriceAvailable(marketDataAvailabilityBroadcaster, broadcaster, dataFlow)
-        val verifyPricesValid = ("Verify %s valid" % dataFlow.sink) → VerifyPricesValid(marketDataStore, broadcaster, dataFlow)
+        val verifyPricesValid = ("Verify %s valid" % dataFlow.sink) → VerifyPricesValid(fc2FacilityImpl, broadcaster, dataFlow)
       }
 
       def importMarketData(pricingGroup: PricingGroup) = new ImportMarketDataTask(marketDataStore, pricingGroup).
