@@ -8,8 +8,8 @@ import starling.instrument.{Trade, TradeableType, TradeSystem}
 import EDMConversions._
 import collection.immutable.Map
 import starling.instrument.physical.{PhysicalMetalAssignmentOrUnassignedSalesQuota, PhysicalMetalForward}
-import starling.pivot._
 import starling.marketdata._
+import starling.pivot._
 
 object TitanTradeStore {
   val quotaID_str = "Quota ID"
@@ -26,10 +26,12 @@ object TitanTradeStore {
   val toleranceMinus_str = "Tolerance Minus"
   val eventID_str = "Event ID" // this is the unique id of the event that resulted in this version of the trade
 
-  val labels = List(quotaID_str, quotaQuantity_str, assignmentID_str, titanTradeID_str,
+  val labels = List(quotaID_str, assignmentID_str, titanTradeID_str,
                     inventoryID_str, groupCompany_str, comment_str,
                     submitted_str, shape_str, contractFinalised_str,
                     tolerancePlus_str, toleranceMinus_str, eventID_str)
+
+  val qtyLabels = List(quotaQuantity_str)
 }
 
 class TitanTradeStore(db: RichDB, broadcaster:Broadcaster, tradeSystem:TradeSystem, refDataLookup : ReferenceDataLookup)
@@ -65,7 +67,7 @@ class TitanTradeStore(db: RichDB, broadcaster:Broadcaster, tradeSystem:TradeSyst
   }
 
   override val tradeAttributeFieldDetails =
-    TitanTradeStore.labels.map{ label => FieldDetails(label)}
+    TitanTradeStore.labels.map{ label => FieldDetails(label)} ++ TitanTradeStore.qtyLabels.map(lbl => new QuantityLabelFieldDetails(lbl))
 
   override def tradesChanged() = {
    broadcaster.broadcast(TradesUpdated(Desk.Titan, cachedLatestTimestamp.get))
