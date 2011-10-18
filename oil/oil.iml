@@ -6,6 +6,7 @@
         <option name="compilerLibraryLevel" value="Project" />
         <option name="compilerLibraryName" value="scala-compiler" />
         <option name="deprecationWarnings" value="true" />
+        <option name="fsc" value="true" />
         <option name="uncheckedWarnings" value="true" />
       </configuration>
     </facet>
