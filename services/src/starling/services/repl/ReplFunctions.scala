@@ -20,8 +20,7 @@ object ReplFunctions  {
     val marketDataSelection = MarketDataSelection(Some(pricingGroup), None)
     val marketDataID = marketDataStore.latestMarketDataIdentifier(marketDataSelection)
     val reader = new NormalMarketDataReader(marketDataStore, marketDataID)
-    val dataTypes: MarketDataTypes = new MarketDataTypes(ReferenceDataLookup.Null)
-    val marketDataSlice = new MarketDataReaderMarketDataSlice(reader, ObservationPoint(marketDay), dataTypes = dataTypes)
+    val marketDataSlice = new MarketDataReaderMarketDataSlice(reader, ObservationPoint(marketDay), dataTypes = devInstance.dataTypes)
     Environment(MarketDataCurveObjectEnvironment(marketDay.endOfDay, marketDataSlice, referenceDataLookup = ReferenceDataLookup.Null))
   }
 

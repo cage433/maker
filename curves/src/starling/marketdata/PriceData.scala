@@ -78,6 +78,12 @@ object PriceDataType extends MarketDataType {
 
   override def createKey(row: Row) = PriceDataKey(Market.fromName(row.string(marketField)))
 
+  protected def fieldValuesFor(key: PriceDataKey) = Row(
+    marketField.field → key.market.name,
+    marketCommodityField.field → key.market.commodity.toString,
+    marketTenorField.field → key.market.tenor.toString) +?
+    (exchangeField.field → key.market.safeCast[FuturesMarket].map(_.exchange.name))
+
   def rows(key: PriceDataKey, data: PriceData) = data.prices.map { case (period, price) => {
     Row(marketField.field → key.market.name,
       marketCommodityField.field → key.market.commodity.toString,
@@ -94,17 +100,11 @@ case class PriceDataKey(market: CommodityMarket) extends MarketDataKey {
 
   type marketDataType = PriceData
   type marketDataDBType = PriceDataDTO
-  def dataTypeName = PriceDataType.name
+  def typeName = PriceDataType.name
   def subTypeKey = market.name
 
   override def unmarshallDB(dbValue: Any): marketDataType =
     PriceData.fromSorted(dbValue.asInstanceOf[marketDataDBType].prices, market.priceUOM)
-
-  def fieldValues(referenceDataLookup: ReferenceDataLookup) = Row(
-    marketField.field → market.name,
-    marketCommodityField.field → market.commodity.toString,
-    marketTenorField.field → market.tenor.toString) +?
-    (exchangeField.field → market.safeCast[FuturesMarket].map(_.exchange.name))
 
   def fields = market.safeCast[FuturesMarket].fold(_ => Set(exchangeField.field), Set.empty[Field]) ++
     Set(marketField, marketCommodityField, marketTenorField).map(_.field)

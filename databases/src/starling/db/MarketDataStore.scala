@@ -181,7 +181,7 @@ object VersionedMarketData {
 }
 
 case class MarketDataEntry(observationPoint: ObservationPoint, key: MarketDataKey, data: MarketData, tag: Option[String] = None) {
-  val dataType = key.dataTypeName
+  val dataType = key.typeName
 
   def isEmpty = data.size == 0 // key.castRows(data, ReferenceDataLookup.Null).isEmpty
 
@@ -324,22 +324,8 @@ class MarketDataTags(db: DBTrait[RichResultSetRow]) {
   }
 }
 
-
-object DBMarketDataStore {
-  def apply(props: Props, db: DBTrait[RichResultSetRow], marketDataSources: MultiMap[MarketDataSet, MarketDataSource],
-    broadcaster: Broadcaster = Broadcaster.Null, referenceDataLookup: ReferenceDataLookup = ReferenceDataLookup.Null): DBMarketDataStore = {
-
-    val mddb = if (props.UseFasterMarketDataSchema()) new NewSchemaMdDB(db, referenceDataLookup) else new SlowMdDB(db)
-
-    new DBMarketDataStore(mddb, new MarketDataTags(db), marketDataSources, broadcaster, referenceDataLookup)
-  }
-}
-
-// TODO [12 May 2011] move me somewhere proper
 class DBMarketDataStore(db: MdDB, tags: MarketDataTags, val marketDataSources: MultiMap[MarketDataSet, MarketDataSource],
-  broadcaster: Broadcaster, referenceDataLookup: ReferenceDataLookup) extends MarketDataStore with Log {
-
-  private val dataTypes = new MarketDataTypes(referenceDataLookup)
+  broadcaster: Broadcaster, dataTypes: MarketDataTypes) extends MarketDataStore with Log {
 
   db.checkIntegrity()
 

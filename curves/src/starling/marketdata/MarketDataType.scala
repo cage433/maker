@@ -48,7 +48,9 @@ trait MarketDataType {
     castRows(key, data).map(valueKey(_, key.fields)).toList
   }
 
-  protected def fieldValues(key: MarketDataKey) = key.fieldValues(ReferenceDataLookup.Null)
+  def fieldValues(row: Row): Row = fieldValues(createKey(row))
+  def fieldValues(key: MarketDataKey): Row = fieldValuesFor(key.asInstanceOf[keyType])
+  protected def fieldValuesFor(key: keyType): Row
 
   def valueKey(row: Row, key: MarketDataKey): MarketDataValueKey = valueKey(row, fieldValues(key).fields)
 

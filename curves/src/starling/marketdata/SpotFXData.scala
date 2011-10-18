@@ -26,6 +26,8 @@ object SpotFXDataType extends MarketDataType {
     currencyField.field → key.ccy.toString,
     rateField.field → PivotQuantity(data.rate)
   ))
+
+  protected def fieldValuesFor(key: SpotFXDataKey) = Row(currencyField.field → key.ccy.toString)
 }
 
 /**
@@ -34,9 +36,8 @@ object SpotFXDataType extends MarketDataType {
 case class SpotFXDataKey(ccy: UOM) extends MarketDataKey {
   type marketDataType = SpotFXData
   type marketDataDBType = SpotFXData
-  def dataTypeName = SpotFXDataType.name
+  def typeName = SpotFXDataType.name
   def subTypeKey = ccy.toString
-  def fieldValues(referenceDataLookup: ReferenceDataLookup) = Row(SpotFXDataType.currencyField.field → ccy.toString)
   def fields = Set(SpotFXDataType.currencyField.field)
 }
 

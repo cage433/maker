@@ -11,8 +11,7 @@ import starling.marketdata._
 import starling.gui.api.{PricingGroup, EnvironmentRuleLabel}
 import starling.market.FuturesExchange
 
-class TimeShiftToLMECloseEnvironmentRule(referenceDataLookup: ReferenceDataLookup) extends EnvironmentRule {
-  val dataTypes = new MarketDataTypes(referenceDataLookup)
+class TimeShiftToLMECloseEnvironmentRule(referenceDataLookup: ReferenceDataLookup, dataTypes: MarketDataTypes) extends EnvironmentRule {
   val pricingGroups = List(PricingGroup.Metals)
   val observationTimeOfDay = ObservationTimeOfDay.LMEClose
   val label = EnvironmentRuleLabel("Time shift to " + observationTimeOfDay.name)

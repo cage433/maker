@@ -11,13 +11,12 @@ import starling.daterange.{Day, ObservationPoint}
  * Typically it is the market data type + the market/currency
  */
 trait MarketDataKey {
-
   //the type of MarketData returned when using this key
   type marketDataType <: MarketData
   type marketDataDBType
 
   //the MarketDataType object for this type
-  def dataTypeName:MarketDataTypeName
+  def typeName:MarketDataTypeName
 
   //a string to identify this key in the database (typically the market or currency)
   def subTypeKey : String
@@ -34,7 +33,6 @@ trait MarketDataKey {
   // E.g. for price data this would have commodity, market, Exchange
   // Used as an optimisation. The gui first gets the markets from this function to display in
   // the field chooser - base on the choice 'rows' is called to get the actual market data to display.
-  def fieldValues(referenceDataLookup: ReferenceDataLookup = ReferenceDataLookup.Null): Row
   def fields: Set[Field]
 
   def read(slice:MarketDataSlice):marketDataType = cast(slice.read(this))
@@ -51,8 +49,8 @@ case class TimedMarketDataKey(observationPoint: ObservationPoint, key: MarketDat
   def timeOfDay = observationPoint.timeOfDay
   def timeName = observationPoint.timeName
 
-  def dataTypeName = key.dataTypeName
-  def fieldValues(referenceDataLookup: ReferenceDataLookup) = key.fieldValues(referenceDataLookup)
+  def typeName = key.typeName
+  def fieldValues(marketDataType: MarketDataType) = marketDataType.fieldValues(key)
 
   def unmarshallDB(dbValue: Any) = key.unmarshallDB(dbValue)
 

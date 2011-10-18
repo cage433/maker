@@ -25,7 +25,7 @@ import system.{PatchContext, Patch}
 
 class Patch132_MigrateMarketDataToFasterSchema extends Patch {
   protected def runPatch(init: StarlingInit, starling: RichDB, writer: DBWriter) =
-    MigrateMarketDataSchema(writer, starling.db, init.neptuneRichDB).migrateData
+    MigrateMarketDataSchema(writer, starling.db, init.neptuneRichDB, init.dataTypes).migrateData
 }
 
 class Patch120_MakeVersionNullableInMarketDataComment extends Patch {
@@ -47,12 +47,12 @@ object MigrateMarketDataSchema extends Log {
     val init = new StarlingInit(props)
 
     log.infoWithTime("Migrating data") {
-      init.starlingDB.inTransaction(writer => MigrateMarketDataSchema(writer, init.starlingDB, init.neptuneRichDB).migrateData)
+      init.starlingDB.inTransaction(writer => MigrateMarketDataSchema(writer, init.starlingDB, init.neptuneRichDB, init.dataTypes).migrateData)
     }
   }
 }
 
-case class MigrateMarketDataSchema(writer: DBWriter, db: DB, neptuneDB: RichDB) extends Log {
+case class MigrateMarketDataSchema(writer: DBWriter, db: DB, neptuneDB: RichDB, dataTypes: MarketDataTypes) extends Log {
   private val tableNameMarketDataCommit = "MarketDataCommit"
   private val tableNameMarketDataExtendedKey = "MarketDataExtendedKey"
   private val tableNameMarketDataValue = "MarketDataValue"
@@ -213,7 +213,6 @@ case class MigrateMarketDataSchema(writer: DBWriter, db: DB, neptuneDB: RichDB) 
     if (rows > 0) log.info("Updated %d row(s) for commitId: %d to version: %d\n" % (rows, commitId, version))
   }
 
-  val dataTypes = new MarketDataTypes(new DBReferenceDataLookup(neptuneDB))
   val marketDataExtendedKeyHelper = new MarketDataExtendedKeyHelper(dataTypes)
   import marketDataExtendedKeyHelper._
 
@@ -270,7 +269,7 @@ case class MigrateMarketDataSchema(writer: DBWriter, db: DB, neptuneDB: RichDB) 
   }
 
   private def getValues(key: MarketDataKey, row: Row): List[Any] = {
-    dataTypes.fromName(key.dataTypeName).valueFields.toList.flatMap(f => row.get[Any](f))
+    dataTypes.fromName(key.typeName).valueFields.toList.flatMap(f => row.get[Any](f))
   }
 
   private def readRows(xml: String, key: MarketDataKey, version: Int): Iterable[Row] = {
@@ -280,11 +279,12 @@ case class MigrateMarketDataSchema(writer: DBWriter, db: DB, neptuneDB: RichDB) 
       case e => log.fatal(xml); log.fatal("broken version: " + version); throw e
     }
 
-    dataTypes.fromName(key.dataTypeName).castRows(key, key.unmarshallDB(refactoredData))
+    dataTypes.fromName(key.typeName).castRows(key, key.unmarshallDB(refactoredData))
   }
 
   private def getValueKey(key: MarketDataKey, row: Row): MarketDataValueKey = {
-    val fields = dataTypes.fromName(key.dataTypeName).keyFields -- key.fieldValues().fields
+    val dataType = dataTypes.fromName(key.typeName)
+    val fields = dataType.keyFields -- dataType.fieldValues(key).fields
 
     MarketDataValueKey(-1, row.filterKeys(fields.contains))
   }

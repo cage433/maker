@@ -15,14 +15,8 @@ case class FreightParityDataKey(contractualIncoterm: IncotermCode, contractualLo
 
   type marketDataType = FreightParityData
   type marketDataDBType = FreightParityData
-  def dataTypeName = MarketDataTypeName("FreightParity")
+  def typeName = MarketDataTypeName("FreightParity")
   def subTypeKey = ""
-  def fieldValues(referenceDataLookup: ReferenceDataLookup) = Row(
-    Field("Contractual Incoterm") → referenceDataLookup.incotermFor(contractualIncoterm).name,
-    Field("Contractual Location") → referenceDataLookup.contractLocationFor(contractualLocation).name,
-    Field("Destination Incoterm") → referenceDataLookup.incotermFor(destinationIncoterm).name,
-    Field("Destination Location") → referenceDataLookup.countryFor(destinationLocation).name
-  )
   def fields = Set("Contractual Incoterm", "Contractual Location", "Destination Incoterm", "Destination Location").map(Field(_))
 }
 
@@ -57,10 +51,15 @@ class FreightParityDataType(referenceData: ReferenceDataLookup = ReferenceDataLo
     FreightParityData(row.quantity(parityRateField).value, row.string(commentField))
   }
 
-  override protected def fieldValues(key: MarketDataKey) = key.fieldValues(referenceData)
+  protected def fieldValuesFor(key: FreightParityDataKey) = Row(
+    contractualIncotermField.field → referenceData.incotermFor(key.contractualIncoterm).name,
+    contractualLocationField.field → referenceData.contractLocationFor(key.contractualLocation).name,
+    destinationIncotermField.field → referenceData.incotermFor(key.destinationIncoterm).name,
+    destinationLocationField.field → referenceData.countryFor(key.destinationLocation).name
+  )
 
   def rows(key: FreightParityDataKey, data: FreightParityData) = List(
-    key.fieldValues(referenceData) +
+    fieldValues(key) +
     (contractualIncotermCodeField.field → key.contractualIncoterm.code) +
     (contractualLocationCodeField.field → key.contractualLocation.code) +
     (destinationIncotermCodeField.field → key.destinationIncoterm.code) +

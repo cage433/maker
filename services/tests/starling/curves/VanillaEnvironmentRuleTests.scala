@@ -13,7 +13,7 @@ import starling.gui.api.{EnvironmentRuleLabel, MarketDataSelection, MarketDataId
 
 
 class VanillaEnvironmentRuleTests extends StarlingTest with ShouldMatchers {
-  def rule = new VanillaEnvironmentRule(observationPoint.copyDay(_), TimeOfDay.EndOfDay, EnvironmentRuleLabel.COB, Nil, ReferenceDataLookup.Null)
+  def rule = new VanillaEnvironmentRule(observationPoint.copyDay(_), TimeOfDay.EndOfDay, EnvironmentRuleLabel.COB, Nil, ReferenceDataLookup.Null, new MarketDataTypes(ReferenceDataLookup.Null))
 
   var reader: MarketDataReader = _
 

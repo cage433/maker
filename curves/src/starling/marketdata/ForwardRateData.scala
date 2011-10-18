@@ -36,15 +36,15 @@ object ForwardRateDataType extends MarketDataType {
 
   val fields = List(currencyField, formatField, instrumentTypeField, dayField, rateField)
 
-  def rows(key: ForwardRateDataKey, data: ForwardRateData) = data.entries.map { entry =>
-    Row(
-        ForwardRateDataType.currencyField.field → key.ccy,
-        ForwardRateDataType.formatField.field → (if (entry.format== null) "" else entry.format),
-        ForwardRateDataType.instrumentTypeField.field → entry.trinityInstrumentType,
-        ForwardRateDataType.dayField.field → entry.forwardDay,
-        ForwardRateDataType.rateField.field → Percentage(entry.rate)
-    )
-  }
+  protected def fieldValuesFor(key: ForwardRateDataKey) = Row(currencyField.field → key.ccy)
+
+  def rows(key: ForwardRateDataKey, data: ForwardRateData) = data.entries.map { entry => Row(
+    ForwardRateDataType.currencyField.field → key.ccy,
+    ForwardRateDataType.formatField.field → (if (entry.format== null) "" else entry.format),
+    ForwardRateDataType.instrumentTypeField.field → entry.trinityInstrumentType,
+    ForwardRateDataType.dayField.field → entry.forwardDay,
+    ForwardRateDataType.rateField.field → Percentage(entry.rate)
+  ) }
 }
 
 case class ForwardRateDataEntry(forwardDay : Day, format : String, trinityInstrumentType : String, rate : Double) {
@@ -58,9 +58,8 @@ case class ForwardRateDataKey(ccy : UOM) extends MarketDataKey {
   }
   type marketDataType = ForwardRateData
   type marketDataDBType = ForwardRateData
-  def dataTypeName = ForwardRateDataType.name
+  def typeName = ForwardRateDataType.name
   def subTypeKey = ccy.toString
-  def fieldValues(referenceDataLookup: ReferenceDataLookup) = Row(ForwardRateDataType.currencyField.field → ccy)
   def fields = Set(ForwardRateDataType.currencyField.field)
 }
 

@@ -73,10 +73,10 @@ class ServicesBromptonActivator extends BromptonActivator {
 
       val everythingButMetals = PricingGroup.values - PricingGroup.Metals
       val Default = new VanillaEnvironmentRule(_.atTimeOfDay(ObservationTimeOfDay.Default), TimeOfDay.EndOfDay,
-        EnvironmentRuleLabel.COB, everythingButMetals, starlingInit.referenceDataLookup)
+        EnvironmentRuleLabel.COB, everythingButMetals, starlingInit.referenceDataLookup, starlingInit.dataTypes)
 
       val RealTime = new VanillaEnvironmentRule(_ => ObservationPoint.RealTime, TimeOfDay.StartOfDay,
-        EnvironmentRuleLabel.RealTime, everythingButMetals, starlingInit.referenceDataLookup)
+        EnvironmentRuleLabel.RealTime, everythingButMetals, starlingInit.referenceDataLookup, starlingInit.dataTypes)
 
       context.registerService(classOf[EnvironmentRule], Default)
       context.registerService(classOf[EnvironmentRule], RealTime)

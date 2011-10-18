@@ -51,6 +51,8 @@ object OilVolSurfaceDataType extends MarketDataType{
     columnFields=List(deltaField.field)
   )
 
+  protected def fieldValuesFor(key: OilVolSurfaceDataKey) = Row(marketField.field → key.market.name)
+
   def rows(key: OilVolSurfaceDataKey, data: OilVolSurfaceData) = {
     (data.periods zipWithIndex).flatMap { case (period, index) => {
       val atmVol = data.atmVols(index)
@@ -71,13 +73,10 @@ object OilVolSurfaceDataType extends MarketDataType{
 case class OilVolSurfaceDataKey(market: CommodityMarket) extends MarketDataKey {
   type marketDataType = OilVolSurfaceData
   type marketDataDBType = OilVolSurfaceData
-  def dataTypeName = OilVolSurfaceDataType.name
+  def typeName = OilVolSurfaceDataType.name
   def subTypeKey = market.toString
-  def fieldValues(referenceDataLookup: ReferenceDataLookup) = Row(OilVolSurfaceDataType.marketField.field → market.name)
   def fields = Set(OilVolSurfaceDataType.marketField.field)
 }
-
-
 
 class Builder {
   class MutableSurface(var atm:Option[Percentage], val deltas:HashMap[Double,Percentage])

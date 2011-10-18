@@ -10,7 +10,7 @@ class MarketDataReaderMarketDataSlice(reader: MarketDataReader, observationPoint
   observationTimeOverrides: Map[MarketDataType, ObservationTimeOfDay] = Map(), dataTypes: MarketDataTypes) extends MarketDataSlice {
 
   def read(key: MarketDataKey) = {
-    val point = observationPoint.copyTime(observationTimeOverrides.get(dataTypes.fromName(key.dataTypeName)))
+    val point = observationPoint.copyTime(observationTimeOverrides.get(dataTypes.fromName(key.typeName)))
     reader.read(TimedMarketDataKey(point, key))
   }
 

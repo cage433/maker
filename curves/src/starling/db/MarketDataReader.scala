@@ -29,7 +29,7 @@ trait MarketDataReader {
   def read(timedKey: TimedMarketDataKey): MarketData = {
     val key = timedKey.key
     val observationPoint = timedKey.observationPoint
-    read(key.dataTypeName, Some(Set(observationPoint.day)), Some(Set(observationPoint.timeOfDay)), Some(Set(key))).headOption match {
+    read(key.typeName, Some(Set(observationPoint.day)), Some(Set(observationPoint.timeOfDay)), Some(Set(key))).headOption match {
       case Some((_,marketData)) => marketData
       case None => throw new MissingMarketDataException(
         "No data found for " + identifier + " " + key + " for " + observationPoint)

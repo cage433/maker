@@ -9,8 +9,7 @@ import starling.gui.api.{PricingGroup, EnvironmentRuleLabel}
 
 
 class VanillaEnvironmentRule(pointRule:(Day)=>ObservationPoint, timeOfDay:TimeOfDay, val label: EnvironmentRuleLabel,
-  val pricingGroups: List[PricingGroup], referenceDataLookup: ReferenceDataLookup) extends EnvironmentRule {
-  val dataTypes = new MarketDataTypes(referenceDataLookup)
+  val pricingGroups: List[PricingGroup], referenceDataLookup: ReferenceDataLookup, dataTypes: MarketDataTypes) extends EnvironmentRule {
 
   override def createNullAtomicEnvironment(observationDay: Day) = new NullAtomicEnvironment(observationDay.atTimeOfDay(timeOfDay))
 

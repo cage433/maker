@@ -13,7 +13,7 @@ import starling.marketdata._
 import starling.market.{TestMarketTest, FuturesMarket, FuturesExchangeFactory, Market}
 
 class TimeShiftingEnvironmentRuleTests extends TestMarketTest with ShouldMatchers {
-  val timeShiftingRule = new TimeShiftToLMECloseEnvironmentRule(ReferenceDataLookup.Null)
+  val timeShiftingRule = new TimeShiftToLMECloseEnvironmentRule(ReferenceDataLookup.Null, new MarketDataTypes(ReferenceDataLookup.Null))
 
   val shanghaiPriceAtShanghaiClose = Quantity(16440, Market.SHANGHAI_COPPER.priceUOM)
   val lmePriceAtShanghaiClose = Quantity(2524, Market.LME_COPPER.priceUOM)

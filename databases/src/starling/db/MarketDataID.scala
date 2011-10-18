@@ -19,10 +19,10 @@ case class MarketDataID(observationPoint: ObservationPoint, marketDataSet: Marke
     "observationTime" -> observationPoint.timeName,
     "observationDay" -> observationPoint.day.getOrElse(null),
     "marketDataSet" -> marketDataSet.name,
-    "marketDataType" -> StarlingXStream.write(subTypeKey.dataTypeName),
+    "marketDataType" -> StarlingXStream.write(subTypeKey.typeName),
     "marketDataKey" -> StarlingXStream.write(subTypeKey))
 
-  def extractValue(row: Row): Option[(String, Double, String)] = types.fromName(subTypeKey.dataTypeName).getValues(row) match {
+  def extractValue(row: Row): Option[(String, Double, String)] = types.fromName(subTypeKey.typeName).getValues(row) match {
     case List(Quantity(value, uom)) => Some((uom.toString, value, noComment))
     case List(pq: PivotQuantity) => pq.quantityValue.map(q => (q.uom.toString, q.value, noComment))
     case List(Percentage(pc)) => Some(("%", pc, noComment))
@@ -30,14 +30,14 @@ case class MarketDataID(observationPoint: ObservationPoint, marketDataSet: Marke
     case other => log.warn("Couldn't extract: %s, key: %s" % (other, subTypeKey)); None
   }
 
-  def extractValues(marketData: MarketData) = types.fromName(subTypeKey.dataTypeName).castRows(subTypeKey, marketData)
+  def extractValues(marketData: MarketData) = types.fromName(subTypeKey.typeName).castRows(subTypeKey, marketData)
     .flatMap(row => extractValue(row).map { case (uom, value, comment) => (valueKey(row), uom, value, comment) })
 
-  val extendedKey = MarketDataExtendedKey(-1, marketDataSet, types.fromName(subTypeKey.dataTypeName), observationPoint.timeOfDay, subTypeKey)
+  val extendedKey = MarketDataExtendedKey(-1, marketDataSet, types.fromName(subTypeKey.typeName), observationPoint.timeOfDay, subTypeKey)
 
-  def valueKeys(data: MarketData) = types.fromName(subTypeKey.dataTypeName).valueKeys(subTypeKey, data)
+  def valueKeys(data: MarketData) = types.fromName(subTypeKey.typeName).valueKeys(subTypeKey, data)
 
-  private def valueKey(row: Row) = types.fromName(subTypeKey.dataTypeName).valueKey(row, subTypeKey)
+  private def valueKey(row: Row) = types.fromName(subTypeKey.typeName).valueKey(row, subTypeKey)
 }
 
 object MarketDataID {

@@ -45,7 +45,7 @@ class CountryBenchmarkDataType(referenceData: ReferenceDataLookup = ReferenceDat
     CountryBenchmarkData(data.toNestedMap)
   }
 
-  override protected def fieldValues(key: MarketDataKey) = key.fieldValues(referenceData)
+  protected def fieldValuesFor(key: CountryBenchmarkMarketDataKey) = Row(commodityField.field → key.commodity.name)
 
   def rows(key: CountryBenchmarkMarketDataKey, data: CountryBenchmarkData) = data.countryData.mapNested {
     case (countryCode, effectiveFrom, price) => Row(
@@ -62,9 +62,8 @@ class CountryBenchmarkDataType(referenceData: ReferenceDataLookup = ReferenceDat
 case class CountryBenchmarkMarketDataKey(commodity: Commodity) extends MarketDataKey {
   type marketDataType = CountryBenchmarkData
   type marketDataDBType = CountryBenchmarkData
-  def dataTypeName = MarketDataTypeName("CountryBenchmark")
+  def typeName = MarketDataTypeName("CountryBenchmark")
   def subTypeKey = commodity.toString
-  def fieldValues(referenceDataLookup: ReferenceDataLookup) = Row(Field("Commodity") → commodity.name)
   def fields = Set(Field("Commodity"))
 }
 

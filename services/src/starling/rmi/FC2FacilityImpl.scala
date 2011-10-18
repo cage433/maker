@@ -35,7 +35,7 @@ class FC2FacilityImpl(
                       marketDataStore:MarketDataStore,
                       curveViewer : CurveViewer,
                       marketDataReaderProviders:MarketDataPageIdentifierReaderProviders,
-                      referenceDataLookup: ReferenceDataLookup,
+                      marketDataTypes: MarketDataTypes,
                       environmentRules: EnvironmentRules) extends FC2Facility {
 
   private def unLabel(pricingGroup:PricingGroup) = pricingGroup
@@ -43,9 +43,7 @@ class FC2FacilityImpl(
   private def label(pricingGroup:PricingGroup):PricingGroup = pricingGroup
   private def label(snapshot:SnapshotID):SnapshotIDLabel = snapshot.label
 
-  private val marketDataTypes = new MarketDataTypes(referenceDataLookup)
   val cache = CacheFactory.getCache("FC2")
-
   def pricingGroups = {
     //val allPricingGroups = desks.flatMap(_.pricingGroups).toSet
     marketDataStore.pricingGroups//.filter(allPricingGroups.contains(_))
@@ -100,7 +98,7 @@ class FC2FacilityImpl(
       }
       marketDataType.map { mdt =>
         new PrebuiltMarketDataPivotData(reader, marketDataStore,
-          marketDataPageIdentifier.marketDataIdentifier, mdt, referenceDataLookup)
+          marketDataPageIdentifier.marketDataIdentifier, mdt, marketDataTypes)
       }
     })
     preBuilt match {

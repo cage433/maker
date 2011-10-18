@@ -43,7 +43,7 @@ trait NonHistoricalCurveKey[T <: MarketData] extends CurveKey {
 
   def marketDataKey: MarketDataKey
 
-  def typeName = marketDataKey.dataTypeName
+  def typeName = marketDataKey.typeName
 }
 
 trait VolCurveKey {

@@ -50,10 +50,10 @@ import starling.utils._
 import starling.eai.{EAIDealBookMapping, Traders, EAIAutoImport, EAIStrategyDB}
 import starling.titan._
 import starling.auth.internal.{LdapUserLookupImpl, KerberosAuthHandler}
-import starling.marketdata.DBReferenceDataLookup
 import starling.curves._
 import org.apache.commons.io.IOUtils
 import java.io.{FileInputStream, File}
+import starling.marketdata.{MarketDataTypes, DBReferenceDataLookup}
 
 class StarlingInit( val props: Props,
                     authHandler:AuthHandler = AuthHandler.Dev,
@@ -125,6 +125,7 @@ class StarlingInit( val props: Props,
   val revalSnapshotDb = new RevalSnapshotDB(starlingDB)
 
   lazy val referenceDataLookup = DBReferenceDataLookup(neptuneRichDB)
+  lazy val dataTypes = new MarketDataTypes(referenceDataLookup)
 
   lazy val (fwdCurveAutoImport, marketDataStore) = log.infoWithTime("Creating Market Data Store") {
     import MarketDataSet._
@@ -147,7 +148,8 @@ class StarlingInit( val props: Props,
     ).withDefaultValue(Nil)
 
     lazy val mds = Log.infoWithTime("Creating DBMarketDataStore") {
-      DBMarketDataStore(props, starlingRichDB, marketDataSources, rmiBroadcaster, referenceDataLookup)
+      new DBMarketDataStore(new NewSchemaMdDB(starlingRichDB, dataTypes), new MarketDataTags(starlingRichDB),
+        marketDataSources, rmiBroadcaster, dataTypes)
     }
 
     val fwdCurveAutoImport = new FwdCurveAutoImport(60*15, mds,
@@ -185,8 +187,7 @@ class StarlingInit( val props: Props,
     userSettingsDatabase,
     version, referenceDataService, businessCalendars.UK)
 
-  val fc2Service = new FC2FacilityImpl(marketDataStore, curveViewer, marketDataReadersProviders, referenceDataLookup,
-    environmentRules)
+  val fc2Service = new FC2FacilityImpl(marketDataStore, curveViewer, marketDataReadersProviders, dataTypes, environmentRules)
 
   def currentUser() = User.currentlyLoggedOn
 

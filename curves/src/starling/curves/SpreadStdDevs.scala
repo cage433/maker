@@ -92,9 +92,8 @@ class SpreadStdDevSurfaceDataBuilder(var uom:Option[UOM] = None) {
 case class SpreadStdDevSurfaceDataKey(market : FuturesMarket) extends MarketDataKey {
   type marketDataType = SpreadStdDevSurfaceData
   type marketDataDBType = SpreadStdDevSurfaceData
-  def dataTypeName = SpreadStdDevSurfaceDataType.name
+  def typeName = SpreadStdDevSurfaceDataType.name
   def subTypeKey = market.toString
-  def fieldValues(referenceDataLookup: ReferenceDataLookup) = Row(SpreadStdDevSurfaceDataType.marketField.field → market.name)
   def fields = Set(SpreadStdDevSurfaceDataType.marketField.field)
 }
 
@@ -164,19 +163,21 @@ object SpreadStdDevSurfaceDataType extends MarketDataType {
               case DateRangePeriod(dr: Month) => ("None", dr, dr)
             }
             Row(
-              SpreadStdDevSurfaceDataType.marketField.field -> key.market.name,
-              SpreadStdDevSurfaceDataType.spreadTypeField.field -> gap,
-              SpreadStdDevSurfaceDataType.firstPeriodField.field -> first,
-              SpreadStdDevSurfaceDataType.lastPeriodField.field -> last,
-              SpreadStdDevSurfaceDataType.periodField.field -> period,
-              SpreadStdDevSurfaceDataType.deltaField.field -> label,
-              SpreadStdDevSurfaceDataType.stdDevField.field -> Quantity(sd, data.uom))
+              marketField.field → key.market.name,
+              spreadTypeField.field → gap,
+              firstPeriodField.field → first,
+              lastPeriodField.field → last,
+              periodField.field → period,
+              deltaField.field → label,
+              stdDevField.field → Quantity(sd, data.uom))
           }
         }.toList
       }
     }
     dataRows
   }
+
+  protected def fieldValuesFor(key: SpreadStdDevSurfaceDataKey) = Row(marketField.field → key.market.name)
 }
 
 case class SpreadAtmStdDevAtomicDatumKey (

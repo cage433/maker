@@ -38,9 +38,8 @@ case class GradeAreaBenchmarkData(areaData : NestedMap[(GradeCode, AreaCode), Da
 case class GradeAreaBenchmarkMarketDataKey(commodity : Commodity) extends MarketDataKey {
   type marketDataType = GradeAreaBenchmarkData
   type marketDataDBType = GradeAreaBenchmarkData
-  def dataTypeName = MarketDataTypeName("GradeAreaBenchmark")
+  def typeName = MarketDataTypeName("GradeAreaBenchmark")
   def subTypeKey = commodity.toString
-  def fieldValues(referenceDataLookup: ReferenceDataLookup) = Row(Field("Commodity") → commodity.name)
   def fields = Set(Field("Commodity"))
 }
 
@@ -78,7 +77,7 @@ class GradeAreaBenchmarkDataType(referenceData: ReferenceDataLookup = ReferenceD
     GradeAreaBenchmarkData(data.toNestedMap)
   }
 
-  override protected def fieldValues(key: MarketDataKey) = key.fieldValues(referenceData)
+  protected def fieldValuesFor(key: GradeAreaBenchmarkMarketDataKey) = Row(commodityField.field → key.commodity.name)
 
   def rows(key: GradeAreaBenchmarkMarketDataKey, data: GradeAreaBenchmarkData) = data.areaData.mapNested {
     case ((gradeCode, areaCode), effectiveFrom, price) => Row(

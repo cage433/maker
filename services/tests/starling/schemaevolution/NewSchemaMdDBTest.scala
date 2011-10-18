@@ -24,7 +24,7 @@ object NewSchemaMdDBTestUtil {
     HolidayTablesFactory.registerNewHolidayTablesImplForTesting(None)
     val init = new StarlingInit(PropsHelper.defaultProps)
 
-    (new NewSchemaMdDB(init.starlingRichDB, ReferenceDataLookup.Null), new SlowMdDB(init.starlingRichDB))
+    (new NewSchemaMdDB(init.starlingRichDB, init.dataTypes), new SlowMdDB(init.starlingRichDB))
   }
 
 
@@ -81,9 +81,9 @@ object NewSchemaMdDBTest extends Checkers with Log {
   private var db: RichDB = _
   private var connection: Connection = _
   // new SlowMdDB(db), new MarketDataTags(db), marketDataSources, broadcaster
-  lazy val newSchemaMdDB = new NewSchemaMdDB(db, ReferenceDataLookup.Null)
+  lazy val dataTypes = new MarketDataTypes(ReferenceDataLookup.Null)
+  lazy val newSchemaMdDB = new NewSchemaMdDB(db, dataTypes)
   lazy val slowMdDB = new SlowMdDB(db)
-  lazy val dataTypes = newSchemaMdDB.dataTypes
 
 //  @BeforeTest
   def initialise() = try {

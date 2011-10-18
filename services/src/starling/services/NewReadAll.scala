@@ -18,7 +18,7 @@ object NewReadAll {
 
     val init = new StarlingInit(props)
 
-    val marketDataExtendedKeyHelper = new MarketDataExtendedKeyHelper(new MarketDataTypes(new DBReferenceDataLookup(init.neptuneRichDB)))
+    val marketDataExtendedKeyHelper = new MarketDataExtendedKeyHelper(init.dataTypes)
     import marketDataExtendedKeyHelper._
 
     Log.infoWithTime("values") {

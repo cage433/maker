@@ -32,7 +32,6 @@ import starling.daterange.ObservationPoint._
 import starling.daterange.{ObservationPoint, TimeOfDay}
 import starling.curves._
 import starling.gui.api.{PricingGroup, EnvironmentRuleLabel}
-import starling.marketdata.ReferenceDataLookup
 import starling.titan.TitanTradeStoreManager._
 import starling.titan.{TitanTradeStoreManager, TitanSystemOfRecord, TitanTradeStore}
 import com.trafigura.services.marketdata.{ExampleServiceApi, MarketDataServiceApi, ExampleService}
@@ -40,6 +39,7 @@ import starling.manager._
 import starling.services.{ReferenceData, ReferenceDataService, EmailBroadcaster, Scheduler}
 import starling.fc2.api.FC2Facility
 import starling.rmi.{FC2FacilityImpl, RabbitEventDatabase, DefaultRabbitEventDatabase}
+import starling.marketdata.{MarketDataTypes, ReferenceDataLookup}
 
 class MetalsBromptonActivator extends BromptonActivator {
 
@@ -51,6 +51,7 @@ class MetalsBromptonActivator extends BromptonActivator {
     val marketDataStore = context.awaitService(classOf[MarketDataStore])
     val tradeStores = context.awaitService(classOf[TradeStores])
     val referenceDataLookup = context.awaitService(classOf[ReferenceDataLookup])
+    val dataTypes = new MarketDataTypes(referenceDataLookup)
 
     val titanTradeStore = tradeStores.titanTradeStore.asInstanceOf[TitanTradeStore]
 
@@ -149,8 +150,8 @@ class MetalsBromptonActivator extends BromptonActivator {
         ClosesEnvironmentRule(referenceDataLookup),
         ClosesEnvironmentRule(referenceDataLookup, allowOldPricesToBeUsed = true),
         new VanillaEnvironmentRule(_.atTimeOfDay(SHFEClose), TimeOfDay.EndOfDay, new EnvironmentRuleLabel(SHFEClose.name),
-          List(PricingGroup.Metals), referenceDataLookup),
-        new TimeShiftToLMECloseEnvironmentRule(referenceDataLookup)
+          List(PricingGroup.Metals), referenceDataLookup, dataTypes),
+        new TimeShiftToLMECloseEnvironmentRule(referenceDataLookup, dataTypes)
       )
 
       metalRules.foreach(context.registerService(classOf[EnvironmentRule], _))

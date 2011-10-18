@@ -21,8 +21,7 @@ import collection.Iterator
 import collection.mutable.{ListBuffer, Map => MMap}
 
 
-class NewSchemaMdDB(db: DBTrait[RichResultSetRow], referenceDataLookup: ReferenceDataLookup) extends MdDB with Log {
-  val dataTypes = new MarketDataTypes(referenceDataLookup)
+class NewSchemaMdDB(db: DBTrait[RichResultSetRow], dataTypes: MarketDataTypes) extends MdDB with Log {
   val marketDataExtendedKeyHelper = new MarketDataExtendedKeyHelper(dataTypes)
   import marketDataExtendedKeyHelper._
 
@@ -263,7 +262,7 @@ class NewSchemaMdDB(db: DBTrait[RichResultSetRow], referenceDataLookup: Referenc
   }.toSet
 
   def readLatest(id: MarketDataID): Option[VersionedMarketData] = {
-    val keys = extendedKeyIdsFor(id.subTypeKey.dataTypeName, List(id.marketDataSet), Some(Set(id.observationPoint.timeOfDay)),
+    val keys = extendedKeyIdsFor(id.subTypeKey.typeName, List(id.marketDataSet), Some(Set(id.observationPoint.timeOfDay)),
       Some(Set(id.subTypeKey)))
 
     val values = if (keys.isEmpty) Nil else queryUsingExtendedKeys(keys,
@@ -280,7 +279,7 @@ class NewSchemaMdDB(db: DBTrait[RichResultSetRow], referenceDataLookup: Referenc
       val maxCommitId = filteredLatestValues.values.map(_.commitId).maxOr(0)
       val valueRows = filteredLatestValues.map { case (valKey, dayValue) => valKey.row + dayValue.row.get }.toList
 
-      Some(VersionedMarketData(maxCommitId, Option(dataTypes.fromName(id.subTypeKey.dataTypeName).createValue(valueRows))))
+      Some(VersionedMarketData(maxCommitId, Option(dataTypes.fromName(id.subTypeKey.typeName).createValue(valueRows))))
     }
   }
 

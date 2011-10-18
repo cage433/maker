@@ -22,8 +22,9 @@ import collection.Traversable
 class MarketDataStoreTest extends TestMarketTest with ShouldMatchers {
   import MarketDataStore._
 
+  lazy val dataTypes = new MarketDataTypes(ReferenceDataLookup.Null)
   lazy val marketDataStore = {
-    val mddb = new NewSchemaMdDB(db, ReferenceDataLookup.Null) {
+    val mddb = new NewSchemaMdDB(db, dataTypes) {
       override def marketDataSetNames() = {
         db.queryWithResult("SELECT DISTINCT marketDataSet AS mds FROM MarketDataExtendedKey ORDER BY mds", Map()) {
           rs => rs.getString("mds")
@@ -31,7 +32,7 @@ class MarketDataStoreTest extends TestMarketTest with ShouldMatchers {
       }
     }
 
-    new DBMarketDataStore(mddb, new MarketDataTags(db), Map(), Broadcaster.Null, ReferenceDataLookup.Null)
+    new DBMarketDataStore(mddb, new MarketDataTags(db), Map(), Broadcaster.Null, dataTypes)
   }
 
   lazy val connection : Connection = DBTest.getConnection("jdbc:h2:mem:marketDataStoreTest;create=true")
@@ -46,11 +47,10 @@ class MarketDataStoreTest extends TestMarketTest with ShouldMatchers {
     db
   }
 
-  lazy val dataTypes = new MarketDataTypes(ReferenceDataLookup.Null)
   def pivot(marketDataStore:MarketDataStore, marketDataIdentifier:MarketDataIdentifier, marketDataType:MarketDataType, pivotEdits:PivotEdits=PivotEdits.Null) = {
     val reader = new NormalMarketDataReader(marketDataStore, marketDataIdentifier)
     new MarketDataPivotTableDataSource(
-      new PrebuiltMarketDataPivotData(reader, marketDataStore, marketDataIdentifier, marketDataType, ReferenceDataLookup.Null),
+      new PrebuiltMarketDataPivotData(reader, marketDataStore, marketDataIdentifier, marketDataType, dataTypes),
       pivotEdits
     )
   }

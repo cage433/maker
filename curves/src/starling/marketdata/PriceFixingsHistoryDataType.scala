@@ -38,6 +38,7 @@ object PriceFixingsHistoryDataType extends MarketDataType {
     PriceFixingsHistoryData.create(prices)
   }
 
+  protected def fieldValuesFor(key: PriceFixingsHistoryDataKey) = Row(marketField.field → key.marketName)
 
   def rows(key: PriceFixingsHistoryDataKey, data: PriceFixingsHistoryData) = {
     data.fixings.map { case ((level, period), fixing) =>
