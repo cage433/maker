@@ -121,7 +121,7 @@ class PhysicalMetalForwardBuilder(refData: TitanTacticalRefData,
             def makeAssignment(ass: EDMAssignment, inv: Inventory, isPurchase: Boolean) = {
               PhysicalMetalAssignment(
                 ass.oid.contents.toString,
-                inv.assignmentQuantity,
+                if (isPurchase) inv.purchaseAssignmentQuantity else inv.currentQuantity,
                 commodity,
                 contractDeliveryDay,
                 contractPricingSpec,

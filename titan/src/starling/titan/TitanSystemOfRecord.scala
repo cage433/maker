@@ -22,7 +22,7 @@ case class Inventory(item: EDMInventoryItem) {
       case _ => Some(item.purchaseAssignment.quantity)
     }
   }
-  def assignmentQuantity: Quantity = receivedQuantity.getOrElse(item.quantity)
+  def purchaseAssignmentQuantity: Quantity = receivedQuantity.getOrElse(item.quantity)
   def isAllocated = Option(item.salesAssignment).isDefined
   def currentQuantity = item.quantity
   def id = item.oid.toString
