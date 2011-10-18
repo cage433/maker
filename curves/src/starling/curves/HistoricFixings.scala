@@ -4,6 +4,7 @@ import starling.market._
 import starling.quantity.Quantity
 import starling.daterange.ObservationPoint
 import starling.daterange._
+import starling.marketdata.PriceFixingsHistoryDataType
 
 
 /** A history of fixings for a given market -
@@ -34,7 +35,7 @@ case class FixingsHistoryKey(fixing: FixingHistoryLookup)
 
   def underlying = toString
 
-  def typeName = "PriceFixingsHistory"
+  def typeName = PriceFixingsHistoryDataType.name
 }
 
 

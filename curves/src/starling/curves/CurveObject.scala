@@ -1,9 +1,9 @@
 package starling.curves
 
-import starling.marketdata.{MarketDataKey, MarketData}
 import starling.daterange.DayAndTime
 import starling.utils.cache.CacheFactory
 import starling.market.HasImpliedVol
+import starling.marketdata.{MarketDataTypeName, MarketDataKey, MarketData}
 
 
 /**
@@ -31,7 +31,7 @@ trait CurveKey {
   /**
    * The type of key, e.g. "Price", "Vol", "Vol Skew" .. etc.
    */
-  def typeName: String
+  def typeName: MarketDataTypeName
 }
 
 trait NonHistoricalCurveKey[T <: MarketData] extends CurveKey {
@@ -43,7 +43,7 @@ trait NonHistoricalCurveKey[T <: MarketData] extends CurveKey {
 
   def marketDataKey: MarketDataKey
 
-  def typeName = marketDataKey.dataType.name
+  def typeName = marketDataKey.dataTypeName
 }
 
 trait VolCurveKey {

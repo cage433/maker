@@ -93,7 +93,7 @@ class MarketDataService(marketDataStore: MarketDataStore, environmentProvider: E
     val observationDays: Option[Set[Option[Day]]] = observationDates.days.ifDefined(_.map(some(_)).toSet)
     val marketDataKeys: Option[Set[MarketDataKey]] = keys.ifDefined(_.toSet)
 
-    marketDataStore.query(identifierFor(snapshotId), marketDataType, observationDays, None, marketDataKeys)
+    marketDataStore.query(identifierFor(snapshotId), marketDataType.name, observationDays, None, marketDataKeys)
       .map { case (timedKey, data) => (timedKey.day, timedKey.key, data) }
       .filterCast[(Option[Day], MarketDataKey, MD)]
   }

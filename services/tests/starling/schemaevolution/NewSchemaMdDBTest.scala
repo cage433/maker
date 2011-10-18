@@ -83,6 +83,7 @@ object NewSchemaMdDBTest extends Checkers with Log {
   // new SlowMdDB(db), new MarketDataTags(db), marketDataSources, broadcaster
   lazy val newSchemaMdDB = new NewSchemaMdDB(db, ReferenceDataLookup.Null)
   lazy val slowMdDB = new SlowMdDB(db)
+  lazy val dataTypes = newSchemaMdDB.dataTypes
 
 //  @BeforeTest
   def initialise() = try {
@@ -202,7 +203,7 @@ object NewSchemaMdDBTest extends Checkers with Log {
     // LIKE [DM] to base the query on known data and try more periods/type combinations
     val from = Day.parse("01JAN2011")
     val to = Day.parse("10AUG2011")
-    val mdt = MarketDataTypes.fromName("Price")
+    val mdt = PriceDataType
     val mdSets = newSchemaMdDB.marketDataSetNames().map(MarketDataSet.fromName(_))
 
     mdSets.foreach(mds => doTestLatestMarketData(from, to, mdt, mds))
@@ -254,15 +255,15 @@ object NewSchemaMdDBTest extends Checkers with Log {
       observationTime <- Gen.oneOf(observationTimesFor(commitId));
       observationPoint <- Gen.oneOf(observationDay.map(_.atTimeOfDay(observationTime)).toList)
     )
-      yield MarketDataID(observationPoint, marketDataSet, marketDataKey)
+      yield MarketDataID(observationPoint, marketDataSet, marketDataKey, dataTypes)
   }
 
 //  @Test
   def testQuery = check((params: QueryParams) => log.infoWithTime(params.toString) {
-    val fast = newSchemaMdDB.query(params.commitId, params.marketDataSets, params.marketDataType, params.observationDays,
+    val fast = newSchemaMdDB.query(params.commitId, params.marketDataSets, params.marketDataType.name, params.observationDays,
       params.observationTimes, params.marketDataKeys)
 
-    val slow = slowMdDB.query(params.version, params.marketDataSets, params.marketDataType, params.observationDays,
+    val slow = slowMdDB.query(params.version, params.marketDataSets, params.marketDataType.name, params.observationDays,
       params.observationTimes, params.marketDataKeys)
 
     (fast == slow) :| ("fast: %s\n!=\nslow: %s" % (fast, slow))
@@ -270,8 +271,8 @@ object NewSchemaMdDBTest extends Checkers with Log {
 
 //  @Test
   def testQueryForObservationDayAndMarketDataKeys = check((qp: QueryParams) => {
-    val fast = newSchemaMdDB.queryForObservationDayAndMarketDataKeys(qp.commitId, qp.marketDataSets, qp.marketDataType)
-    val slow = slowMdDB.queryForObservationDayAndMarketDataKeys(qp.version, qp.marketDataSets, qp.marketDataType)
+    val fast = newSchemaMdDB.queryForObservationDayAndMarketDataKeys(qp.commitId, qp.marketDataSets, qp.marketDataType.name)
+    val slow = slowMdDB.queryForObservationDayAndMarketDataKeys(qp.version, qp.marketDataSets, qp.marketDataType.name)
 
     (fast == slow) :| ("fast: %s\n!=\nslow: %s" % (fast, slow))
   })
@@ -286,9 +287,9 @@ object NewSchemaMdDBTest extends Checkers with Log {
 
   private def doTestLatestMarketData(from: Day, to: Day, marketDataType: MarketDataType, marketDataSet: MarketDataSet) = {
     val fast: Map[TimedMarketDataKey, Option[MarketData]] =
-      newSchemaMdDB.latestMarketData(from, to, marketDataType, marketDataSet).mapValuesEagerly(_.data)
+      newSchemaMdDB.latestMarketData(from, to, marketDataType.name, marketDataSet).mapValuesEagerly(_.data)
     val slow: Map[TimedMarketDataKey, Option[MarketData]] =
-      slowMdDB.latestMarketData(from, to, marketDataType, marketDataSet).mapValuesEagerly(_.data).filterValues(data => {
+      slowMdDB.latestMarketData(from, to, marketDataType.name, marketDataSet).mapValuesEagerly(_.data).filterValues(data => {
         data.map(_.size).getOrElse(1) > 0 // retain None & Some containing non-empty market data
       })
 

@@ -12,14 +12,14 @@ case class CountryBenchmarkData(countryData: NestedMap[NeptuneCountryCode, Day, 
   def size = countryData.nestedSize
 }
 
-object CountryBenchmarkDataType extends MarketDataType {
+class CountryBenchmarkDataType(referenceData: ReferenceDataLookup = ReferenceDataLookup.Null) extends MarketDataType {
   type dataType = CountryBenchmarkData
   type keyType = CountryBenchmarkMarketDataKey
 
   val commodityField = FieldDetails("Commodity", FixedPivotParser(Commodity.metalsCommodities.map(_.name).toSet))
   val countryField = FieldDetails("Country")
   val areaField = FieldDetails("Area")
-  val countryCodeField = FieldDetails("Country Code")
+  val countryCodeField = FieldDetails("Country Code", FixedPivotParser(referenceData.countryCodes))
   val effectiveFromField = FieldDetails("Effective From", DayPivotParser)
   val benchmarkPriceField = FieldDetails.createMeasure("Benchmark Price",
     parser0 = PivotQuantityPivotParser, formatter0 = PivotQuantitySetPivotFormatter)
@@ -45,28 +45,33 @@ object CountryBenchmarkDataType extends MarketDataType {
     CountryBenchmarkData(data.toNestedMap)
   }
 
-  def rows(key: CountryBenchmarkMarketDataKey, data: CountryBenchmarkData, referenceDataLookup: ReferenceDataLookup) = {
-    data.countryData.mapNested { case (countryCode, effectiveFrom, price) => Row(
+  override protected def fieldValues(key: MarketDataKey) = key.fieldValues(referenceData)
+
+  def rows(key: CountryBenchmarkMarketDataKey, data: CountryBenchmarkData) = data.countryData.mapNested {
+    case (countryCode, effectiveFrom, price) => Row(
       commodityField.field → key.commodity.name,
       countryCodeField.field → countryCode.code,
-      countryField.field → referenceDataLookup.countryFor(countryCode).name,
-      areaField.field → referenceDataLookup.areaFor(countryCode).map(_.name).getOrElse("Unknown"),
+      countryField.field → referenceData.countryFor(countryCode).name,
+      areaField.field → referenceData.areaFor(countryCode).map(_.name).getOrElse("Unknown"),
       effectiveFromField.field → effectiveFrom,
       benchmarkPriceField.field → price.pq
-    ) }
+    )
   }
 }
 
 case class CountryBenchmarkMarketDataKey(commodity: Commodity) extends MarketDataKey {
   type marketDataType = CountryBenchmarkData
   type marketDataDBType = CountryBenchmarkData
-  def dataType = CountryBenchmarkDataType
+  def dataTypeName = MarketDataTypeName("CountryBenchmark")
   def subTypeKey = commodity.toString
-  def fieldValues(referenceDataLookup: ReferenceDataLookup) = Row(CountryBenchmarkDataType.commodityField.field → commodity.name)
+  def fieldValues(referenceDataLookup: ReferenceDataLookup) = Row(Field("Commodity") → commodity.name)
+  def fields = Set(Field("Commodity"))
 }
 
 // Prefixing these classes with 'Neptune' because they aren't really countries, they are Country + Location
-case class NeptuneCountryCode(code: String)
+case class NeptuneCountryCode(code: String) {
+  override def toString = code
+}
 case class NeptuneCountry(code: NeptuneCountryCode, name: String, area: Option[Area]) {
   override def toString = name
 }

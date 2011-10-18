@@ -29,6 +29,7 @@ import starling.pivot.{Row, PivotQuantity, PivotEdits, PivotTableDataSource, Fie
 
 // TODO [07 Sep 2010] move me somewhere proper
 class SlowMdDB(db: DBTrait[RichResultSetRow]) extends MdDB with Log {
+  private val dataTypes = new MarketDataTypes(ReferenceDataLookup.Null)
 
   private val currentVersion = new AtomicInteger(
     db.queryWithOneResult[Int]("SELECT MAX(version) as version from MarketData")(_.getInt("version")).getOrElse(1))
@@ -111,12 +112,16 @@ class SlowMdDB(db: DBTrait[RichResultSetRow]) extends MdDB with Log {
     }
   }
 
-  def latestObservationDaysFor(marketDataSets: List[MarketDataSet], marketDataType: MarketDataType) = db.queryWithOneResult(
-       select("max(md.observationDay) as maxObservationDay")
-         from("MarketData md")
+  def latestObservationDaysFor(marketDataSets: List[MarketDataSet], marketDataTypeName: MarketDataTypeName) = {
+    val marketDataType = dataTypes.fromName(marketDataTypeName)
+
+    db.queryWithOneResult(
+      select("max(md.observationDay) as maxObservationDay")
+        from("MarketData md")
         where("md.marketDataType" eql PersistAsBlob(marketDataType))
-          and("md.marketDataSet" in marketDataSets.map(_.name)))
+        and("md.marketDataSet" in marketDataSets.map(_.name)))
     { rs => rs.getDay("maxObservationDay") }
+  }
 
   def latestExcelVersions(): Map[MarketDataSet, Int] = {
     Map() ++ db.queryWithResult("select marketDataSet, max(version) m from MarketData where marketDataSet like 'Excel:%' group by marketDataSet ", Map()) {
@@ -129,7 +134,7 @@ class SlowMdDB(db: DBTrait[RichResultSetRow]) extends MdDB with Log {
     var innerMaxVersion = 0
 
     db.inTransaction(dbWriter => data.map { action =>
-      updateIt(dbWriter, action.dataIdFor(marketDataSet), action.existingData, action.data).foreach {
+      updateIt(dbWriter, action.dataIdFor(marketDataSet, dataTypes), action.existingData, action.data).foreach {
         result =>
           if (result._1) update = true
           innerMaxVersion = scala.math.max(innerMaxVersion, result._2)
@@ -192,7 +197,8 @@ class SlowMdDB(db: DBTrait[RichResultSetRow]) extends MdDB with Log {
     )
   }.toSet
 
-  def latestMarketData(from: Day, to: Day, marketDataType: MarketDataType, marketDataSet: MarketDataSet) = {
+  def latestMarketData(from: Day, to: Day, marketDataTypeName: MarketDataTypeName, marketDataSet: MarketDataSet) = {
+    val marketDataType = dataTypes.fromName(marketDataTypeName)
     val query = (
       select("observationDay, observationTime, marketDataKey, data, timestamp, version")
         from "MarketData"
@@ -239,11 +245,11 @@ class SlowMdDB(db: DBTrait[RichResultSetRow]) extends MdDB with Log {
     }
   }
 
-  def queryForObservationDayAndMarketDataKeys(version: Int, mds: List[MarketDataSet], marketDataType: MarketDataType): Set[TimedMarketDataKey] = {
+  def queryForObservationDayAndMarketDataKeys(version: Int, mds: List[MarketDataSet], marketDataType: MarketDataTypeName): Set[TimedMarketDataKey] = {
     db.queryWithResult(
       (select("distinct observationTime, observationDay, marketDataKey")
         from ("MarketData")
-        where typeAndSnapshotClauses(version, mds, marketDataType))) {
+        where typeAndSnapshotClauses(version, mds, dataTypes.fromName(marketDataType)))) {
       rs => {
         val observationPoint = {
           val observationTime = ObservationTimeOfDay.fromName(rs.getString("observationTime"))
@@ -265,10 +271,11 @@ class SlowMdDB(db: DBTrait[RichResultSetRow]) extends MdDB with Log {
       and ("marketDataType" eql LiteralString(StarlingXStream.write(marketDataType))))
   }
 
-  def query(version: Int, mds: List[MarketDataSet], marketDataType: MarketDataType,
+  def query(version: Int, mds: List[MarketDataSet], marketDataTypeName: MarketDataTypeName,
             observationDays: Option[Set[Option[Day]]], observationTimes: Option[Set[ObservationTimeOfDay]],
             marketDataKeys: Option[Set[MarketDataKey]]): List[(TimedMarketDataKey, MarketData)] = {
 
+    val marketDataType = dataTypes.fromName(marketDataTypeName)
     val observationDayClause = observationDays.map(Clause.optIn("observationDay", _))
     val observationTimeClause = observationTimes.map(times => In(Field("observationTime"), times.map(_.name)))
     val keyClause = marketDataKeys.map(keys => In(Field("marketDataKey"), keys.map(StarlingXStream.write(_))))
@@ -287,7 +294,7 @@ class SlowMdDB(db: DBTrait[RichResultSetRow]) extends MdDB with Log {
 
     def addEntry(timeOfDay: String, day: Option[Day], key: MarketDataKey) {
       val allDataForKeyAndDay: List[Row] = mds.reverse.flatMap(mds => {
-        latestValues.get(mds.name).toList.flatMap(data => key.dataType.castRows(key, data, ReferenceDataLookup.Null))
+        latestValues.get(mds.name).toList.flatMap(data => dataTypes.fromName(key.dataTypeName).castRows(key, data))
       })
       MarketDataStore.applyOverrideRule(marketDataType, allDataForKeyAndDay.map(_.value)).ifDefined { rowsFromOneMap =>
         val marketData = marketDataType.createValue(Row.create(rowsFromOneMap))

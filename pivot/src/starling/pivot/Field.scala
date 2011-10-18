@@ -88,7 +88,9 @@ trait PivotParser extends Serializable {
   def acceptableValues:Set[String] = Set.empty
 }
 
-case class FixedPivotParser(override val acceptableValues:Set[String]) extends PivotParser {
+case class FixedPivotParser(acceptableValues0:Set[_]) extends PivotParser {
+  override val acceptableValues = acceptableValues0.map(_.toString)
+
   def parse(text: String, extraFormatInfo: ExtraFormatInfo) = {
     require(acceptableValues.contains(text), "Invalid value: " + text)
 

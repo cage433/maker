@@ -11,7 +11,7 @@ import starling.marketdata._
 
 class MarketDataIDTests extends WordSpec with TestMarketSpec with ShouldMatchers {
   val priceMarketDataID = new MarketDataID(ObservationPoint(Day.today, ObservationTimeOfDay.LMEClose), MarketDataSet.LimMetals,
-    PriceDataKey(Market.LME_COPPER))
+    PriceDataKey(Market.LME_COPPER), new MarketDataTypes(ReferenceDataLookup.Null))
   val freightMarketDataID = priceMarketDataID.copy(subTypeKey =
     FreightParityDataKey(IncotermCode("IC"), ContractualLocationCode("CLC"), IncotermCode("IC"), NeptuneCountryCode("NCC")))
 
@@ -36,5 +36,5 @@ class MarketDataIDTests extends WordSpec with TestMarketSpec with ShouldMatchers
 
   private def extractValueFromPrice(value: Any) = priceMarketDataID.extractValue(Row(PriceDataType.priceField.field → value))
   private def extractValueFromFreight(value: Any, comment: String) = freightMarketDataID.extractValue(Row(
-    FreightParityDataType.parityRateField.field → value, FreightParityDataType.commentField.field → comment))
+    new FreightParityDataType().parityRateField.field → value, new FreightParityDataType().commentField.field → comment))
 }

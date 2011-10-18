@@ -119,7 +119,7 @@ class DayChangePriceValidator(reader: MarketDataReader) extends PriceValidator {
   private def readPrevious(day: Day, key: MarketDataKey): Option[PriceData] = {
     try {
       val recentDays: Set[Option[Day]] = (day - 5 until day).map(d => Some(d)).toSet
-      val days = reader.read(PriceDataType, Some(recentDays), None, Some(Set(key))).sortBy(_.head.day)
+      val days = reader.read(PriceDataType.name, Some(recentDays), None, Some(Set(key))).sortBy(_.head.day)
       days.lastOption.map(_.last.asInstanceOf[PriceData])
     } catch {
       case e: MissingMarketDataException => None

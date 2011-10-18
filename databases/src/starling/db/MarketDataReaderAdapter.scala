@@ -1,7 +1,7 @@
 package starling.db
 
 import starling.daterange.{Day, ObservationTimeOfDay, ObservationPoint}
-import starling.marketdata.{MarketDataType, PriceValidator, MarketDataKey, PriceData}
+import starling.marketdata._
 
 class MarketDataReaderAdapter(reader: MarketDataReader) extends MarketDataReader {
 
@@ -9,10 +9,10 @@ class MarketDataReaderAdapter(reader: MarketDataReader) extends MarketDataReader
 
   def marketDataTypes = reader.marketDataTypes
 
-  def readAllObservationDayAndMarketDataKeys(marketDataType: MarketDataType) =
+  def readAllObservationDayAndMarketDataKeys(marketDataType: MarketDataTypeName) =
     reader.readAllObservationDayAndMarketDataKeys(marketDataType)
 
-  def read(marketDataType: MarketDataType, observationDays: Option[Set[Option[Day]]], observationTimes: Option[Set[ObservationTimeOfDay]],
+  def read(marketDataType: MarketDataTypeName, observationDays: Option[Set[Option[Day]]], observationTimes: Option[Set[ObservationTimeOfDay]],
            keys: Option[Set[MarketDataKey]]) = reader.read(marketDataType, observationDays, observationTimes, keys)
 
 }

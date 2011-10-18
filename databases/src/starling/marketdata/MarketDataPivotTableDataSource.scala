@@ -39,6 +39,8 @@ class MarketDataPivotTableDataSource(reader: MarketDataReader, edits:PivotEdits,
 
   import MarketDataPivotTableDataSource._
 
+  val dataTypes = new MarketDataTypes(referenceDataLookup)
+
   val keyAndDataFields = marketDataType.fields.map(_.field).toSet
   val fieldDetailsGroups = List(
     FieldDetailsGroup("Market Data Fields", observationDayField :: observationTimeField :: marketDataType.fields)
@@ -53,7 +55,7 @@ class MarketDataPivotTableDataSource(reader: MarketDataReader, edits:PivotEdits,
 
   val cache = CacheFactory.getCache("marketDataCache")
 
-  val observationDayAndMarketDataKeys = reader.readAllObservationDayAndMarketDataKeys(marketDataType)
+  val observationDayAndMarketDataKeys = reader.readAllObservationDayAndMarketDataKeys(marketDataType.name)
 
   val observationDayAndMarketDataKeyRows: Map[Row, TimedMarketDataKey] = observationDayAndMarketDataKeys.map { timedKey =>
     (timedKey.fieldValues(referenceDataLookup) + (observationTimeField.field → timedKey.timeName)
@@ -119,7 +121,7 @@ class MarketDataPivotTableDataSource(reader: MarketDataReader, edits:PivotEdits,
       marketDataStore.readLatest(editableSet, key) match {
         case vmd@Some(VersionedMarketData(_, Some(existingMarketData))) => {
           // TODO [6 Oct 2011] Detect collisions between rows & existingRows
-          (vmd, marketDataType.createValue(rows ::: key.key.dataType.castRows(key.key, existingMarketData, referenceDataLookup).toList))
+          (vmd, marketDataType.createValue(rows ::: dataType(key.key).castRows(key.key, existingMarketData).toList))
         }
         case _ => (None, marketDataType.createValue(rows))
       }
@@ -128,8 +130,10 @@ class MarketDataPivotTableDataSource(reader: MarketDataReader, edits:PivotEdits,
     MarketDataEntry(key.observationPoint, key.key, newMarketData).toUpdate(existingData)
   }
 
+  private def dataType(key: MarketDataKey): MarketDataType = dataTypes.fromName(key.dataTypeName)
+
   def createRows(timedKey:TimedMarketDataKey, marketData:MarketData, referenceDataLookup: ReferenceDataLookup) ={
-    timedKey.castRows(marketData, referenceDataLookup).map { _ + (observationTimeField.field → timedKey.timeName) +?
+    dataType(timedKey.key).castRows(timedKey.key, marketData).map { _ + (observationTimeField.field → timedKey.timeName) +?
      (observationDayField.field → timedKey.day)}
   }
 
@@ -234,7 +238,7 @@ class MarketDataPivotTableDataSource(reader: MarketDataReader, edits:PivotEdits,
       possibleValuesBuilder += row.value
     }
 
-    val marketDataKeyFields = allMarketDataKeys.headOption.fold(_.fieldValues().fields.toList, Nil)
+    val marketDataKeyFields = allMarketDataKeys.headOption.fold(_.fields.toList, Nil)
 
     val allFields = pfs.allFieldsUsed
 
@@ -267,9 +271,9 @@ class MarketDataPivotTableDataSource(reader: MarketDataReader, edits:PivotEdits,
       val observationDays = selectedValues[Day](observationDayField.field)
       val observationTimes: Option[Set[ObservationTimeOfDay]] = selectedValues[String](observationTimeField.field).map(_.map(t=>ObservationTimeOfDay.fromName(t.get)))
 
-      val allData = reader.read(marketDataType, observationDays, observationTimes, keyClause)
+      val allData = reader.read(marketDataType.name, observationDays, observationTimes, keyClause)
       allData.flatMap { case (timedKey, data) => {
-        timedKey.castRows(data, referenceDataLookup).map { row => {
+        dataType(timedKey.key).castRows(timedKey.key, data).map { row => {
           row + (observationTimeField.field → timedKey.timeName) +? (observationDayField.field → timedKey.day)
         } }
       } }

@@ -22,7 +22,7 @@ class MarketDataImporterTests extends StarlingSpec with ShouldMatchers with Befo
   val observationDay: Day = Day.today
   val observationPoint = observationDay.atTimeOfDay(ObservationTimeOfDay.LMEClose)
   val marketDataSet = LIM
-  val marketDataType: MarketDataType = PriceDataType
+  val marketDataType: MarketDataTypeName = PriceDataType.name
   val noUpdates = Map(LIM → Nil)
   val zincWithNoPrices = MarketDataEntry(observationPoint, PriceDataKey(Market.LME_ZINC), PriceData(Map()))
   val zincWithPrices = MarketDataEntry(observationPoint, PriceDataKey(Market.LME_ZINC), PriceData(Map(observationDay → PivotQuantity(1))))
@@ -124,7 +124,7 @@ class MarketDataImporterTests extends StarlingSpec with ShouldMatchers with Befo
         when(marketDataStore.sourcesFor(marketDataSet)) thenReturn List(marketDataSource)
       }
 
-      private val noData: MultiMap[(Day, Day, MarketDataType), MarketDataEntry] = Map()
+      private val noData: MultiMap[(Day, Day, MarketDataTypeName), MarketDataEntry] = Map()
       private val noEntries: List[MarketDataEntry] = Nil
 
       private val noDataOnObservationDay = Map((observationDay, observationDay, marketDataType) → noEntries)

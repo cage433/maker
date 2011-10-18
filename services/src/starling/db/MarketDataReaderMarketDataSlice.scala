@@ -6,10 +6,11 @@ import starling.curves.MarketDataSlice
 import starling.market.CommodityMarket
 
 
-class MarketDataReaderMarketDataSlice(
-    reader:MarketDataReader, observationPoint:ObservationPoint, observationTimeOverrides:Map[MarketDataType,ObservationTimeOfDay]=Map()) extends MarketDataSlice {
+class MarketDataReaderMarketDataSlice(reader: MarketDataReader, observationPoint: ObservationPoint,
+  observationTimeOverrides: Map[MarketDataType, ObservationTimeOfDay] = Map(), dataTypes: MarketDataTypes) extends MarketDataSlice {
+
   def read(key: MarketDataKey) = {
-    val point = observationPoint.copyTime(observationTimeOverrides.get(key.dataType))
+    val point = observationPoint.copyTime(observationTimeOverrides.get(dataTypes.fromName(key.dataTypeName)))
     reader.read(TimedMarketDataKey(point, key))
   }
 

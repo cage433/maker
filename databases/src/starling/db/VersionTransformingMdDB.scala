@@ -31,13 +31,13 @@ case class VersionTransformingMdDB(adapted: MdDB, db: DBTrait[RichResultSetRow],
   override def maxVersionForMarketDataSetNames(names: List[String]) = super.maxVersionForMarketDataSetNames(names).map(out)
   override def marketDataTypes(version: Int, mds: List[MarketDataSet]) = super.marketDataTypes(in(version), mds)
 
-  override def latestMarketData(from: Day, to: Day, marketDataType: MarketDataType, marketDataSet: MarketDataSet) =
+  override def latestMarketData(from: Day, to: Day, marketDataType: MarketDataTypeName, marketDataSet: MarketDataSet) =
     super.latestMarketData(from, to, marketDataType, marketDataSet).mapValuesEagerly(out)
 
-  override def queryForObservationDayAndMarketDataKeys(version: Int, mds: List[MarketDataSet], marketDataType: MarketDataType) =
+  override def queryForObservationDayAndMarketDataKeys(version: Int, mds: List[MarketDataSet], marketDataType: MarketDataTypeName) =
     super.queryForObservationDayAndMarketDataKeys(in(version), mds, marketDataType)
 
-  override def query(version: Int, mds: List[MarketDataSet], marketDataType: MarketDataType,
+  override def query(version: Int, mds: List[MarketDataSet], marketDataType: MarketDataTypeName,
                      observationDays: Option[Set[Option[Day]]], observationTimes: Option[Set[ObservationTimeOfDay]],
                      marketDataKeys: Option[Set[MarketDataKey]]) = {
 

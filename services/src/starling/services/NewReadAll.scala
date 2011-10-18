@@ -8,9 +8,9 @@ import starling.daterange.ObservationTimeOfDay
 import collection.SortedMap
 import starling.quantity.UOM
 import collection.immutable.Map
-import starling.marketdata.{MarketDataValueKey, MarketDataTypes, MarketDataKey}
 import starling.utils.ImplicitConversions._
 import starling.pivot.{Row, Field}
+import starling.marketdata._
 
 object NewReadAll {
   def main(args: Array[String]) {
@@ -18,6 +18,8 @@ object NewReadAll {
 
     val init = new StarlingInit(props)
 
+    val marketDataExtendedKeyHelper = new MarketDataExtendedKeyHelper(new MarketDataTypes(new DBReferenceDataLookup(init.neptuneRichDB)))
+    import marketDataExtendedKeyHelper._
 
     Log.infoWithTime("values") {
       init.starlingDB.query("select observationDay, extendedKey, valueKey, value, commitid from MarketDataValues") {
@@ -39,7 +41,7 @@ object NewReadAll {
 
     Log.infoWithTime("Readall") {
       val extendedKeys = Log.infoWithTime("extendedKeys") {
-        init.starlingDB.queryWithResult("select * from ExtendedMarketDataKey") { MarketDataExtendedKey(_) }.toMapWithKeys(_.id)
+        init.starlingDB.queryWithResult("select * from ExtendedMarketDataKey") { marketDataExtendedKey(_) }.toMapWithKeys(_.id)
       }
 
       val valueKeys = Log.infoWithTime("valueKeys") {

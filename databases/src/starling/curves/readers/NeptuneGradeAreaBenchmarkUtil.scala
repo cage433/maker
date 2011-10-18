@@ -55,7 +55,7 @@ class NeptuneGradeAreaBenchmarkUtil(neptuneDB:RichDB) extends Log {
       }.toList
     }
 
-    Map((today, today, GradeAreaBenchmarkDataType) → entries)
+    Map((today, today, new GradeAreaBenchmarkDataType) → entries)
   }
 
   private def logInvalid(msg: String, commodities: Map[NeptuneCommodity, _]) = log.warn(msg + commodities.keys.mkString(", "))

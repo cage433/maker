@@ -97,7 +97,7 @@ class MarketChangesPnl(d1: AtomicEnvironment, d2: AtomicEnvironment, utps : Map[
     case (_: OilAtmVolCurveKey, None) => ("Vega", "Vol")
     case (_: DiscountCurveKey, None) => ("Rho", "Time")
     case (_: FixingsHistoryKey, None) => ("Fixings", "Price")
-    case (k, None) => (curveKey.typeName, curveKey.typeName)
+    case (k, None) => (curveKey.typeName.name, curveKey.typeName.name)
 
     case (_: ForwardCurveKey, Some(1)) => ("Delta", "Price")
     case (_: OilAtmVolCurveKey, Some(1)) => ("Vega", "Vol")

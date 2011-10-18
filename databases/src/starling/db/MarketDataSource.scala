@@ -10,16 +10,16 @@ import collection.immutable.Map
 trait MarketDataSource { self =>
   val name: String = getClass.getSimpleName
 
-  def read(day: Day): MultiMap[(Day, Day, MarketDataType), MarketDataEntry]
+  def read(day: Day): MultiMap[(Day, Day, MarketDataTypeName), MarketDataEntry]
 
   def asserting(): MarketDataSource = new MarketDataSource {
     def read(day: Day) = {
-      val map: MultiMap[(Day, Day, MarketDataType), MarketDataEntry] = self.read(day)
+      val map: MultiMap[(Day, Day, MarketDataTypeName), MarketDataEntry] = self.read(day)
       val result = map.updateIt(r => duplicateTimedKeys(r).require(_.isEmpty, "source: %s produced duplicate 'timed' keys: " % self))
       result
     }
 
-    def duplicateTimedKeys(map: MultiMap[(Day, Day, MarketDataType), MarketDataEntry]): List[TimedMarketDataKey] =
+    def duplicateTimedKeys(map: MultiMap[(Day, Day, MarketDataTypeName), MarketDataEntry]): List[TimedMarketDataKey] =
       map.values.flatMap(duplicateTimedKeys).toList
   }
 

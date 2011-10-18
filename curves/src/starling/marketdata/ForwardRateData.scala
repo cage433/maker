@@ -36,7 +36,7 @@ object ForwardRateDataType extends MarketDataType {
 
   val fields = List(currencyField, formatField, instrumentTypeField, dayField, rateField)
 
-  def rows(key: ForwardRateDataKey, data: ForwardRateData, referenceDataLookup: ReferenceDataLookup) = data.entries.map { entry =>
+  def rows(key: ForwardRateDataKey, data: ForwardRateData) = data.entries.map { entry =>
     Row(
         ForwardRateDataType.currencyField.field → key.ccy,
         ForwardRateDataType.formatField.field → (if (entry.format== null) "" else entry.format),
@@ -58,9 +58,10 @@ case class ForwardRateDataKey(ccy : UOM) extends MarketDataKey {
   }
   type marketDataType = ForwardRateData
   type marketDataDBType = ForwardRateData
-  def dataType = ForwardRateDataType
+  def dataTypeName = ForwardRateDataType.name
   def subTypeKey = ccy.toString
   def fieldValues(referenceDataLookup: ReferenceDataLookup) = Row(ForwardRateDataType.currencyField.field → ccy)
+  def fields = Set(ForwardRateDataType.currencyField.field)
 }
 
 case class ForwardRateData(entries : List[ForwardRateDataEntry]) extends MarketData {

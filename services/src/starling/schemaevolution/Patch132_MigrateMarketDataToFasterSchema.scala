@@ -24,8 +24,8 @@ import system.{PatchContext, Patch}
 
 
 class Patch132_MigrateMarketDataToFasterSchema extends Patch {
-  protected def runPatch(starlingInit: StarlingInit, starling: RichDB, writer: DBWriter) =
-    MigrateMarketDataSchema(writer, starling.db).migrateData
+  protected def runPatch(init: StarlingInit, starling: RichDB, writer: DBWriter) =
+    MigrateMarketDataSchema(writer, starling.db, init.neptuneRichDB).migrateData
 }
 
 class Patch120_MakeVersionNullableInMarketDataComment extends Patch {
@@ -47,12 +47,12 @@ object MigrateMarketDataSchema extends Log {
     val init = new StarlingInit(props)
 
     log.infoWithTime("Migrating data") {
-      init.starlingDB.inTransaction(writer => MigrateMarketDataSchema(writer, init.starlingDB).migrateData)
+      init.starlingDB.inTransaction(writer => MigrateMarketDataSchema(writer, init.starlingDB, init.neptuneRichDB).migrateData)
     }
   }
 }
 
-case class MigrateMarketDataSchema(writer: DBWriter, db: DB) extends Log {
+case class MigrateMarketDataSchema(writer: DBWriter, db: DB, neptuneDB: RichDB) extends Log {
   private val tableNameMarketDataCommit = "MarketDataCommit"
   private val tableNameMarketDataExtendedKey = "MarketDataExtendedKey"
   private val tableNameMarketDataValue = "MarketDataValue"
@@ -213,6 +213,10 @@ case class MigrateMarketDataSchema(writer: DBWriter, db: DB) extends Log {
     if (rows > 0) log.info("Updated %d row(s) for commitId: %d to version: %d\n" % (rows, commitId, version))
   }
 
+  val dataTypes = new MarketDataTypes(new DBReferenceDataLookup(neptuneDB))
+  val marketDataExtendedKeyHelper = new MarketDataExtendedKeyHelper(dataTypes)
+  import marketDataExtendedKeyHelper._
+
   private def migrateSchema: Int = {
     testReadingOfCleanedUpXml
 
@@ -229,7 +233,7 @@ case class MigrateMarketDataSchema(writer: DBWriter, db: DB) extends Log {
       writer.updateMany(createTableMarketDataExtendedKeySql, createTableMarketDataValueKeySql, createTableMarketDataValueSql,
         createTableMarketDataCommitSql)
     } else {
-      extendedKeys ++= db.queryWithResult("SELECT * FROM MarketDataExtendedKey") { MarketDataExtendedKey(_) }.toMapWithValues(_.id)
+      extendedKeys ++= db.queryWithResult("SELECT * FROM MarketDataExtendedKey") { marketDataExtendedKey(_) }.toMapWithValues(_.id)
       valueKeys ++= db.queryWithResult("SELECT * FROM MarketDataValueKey") { rs =>
         MarketDataValueKey(rs.getInt("id"), Row(rs.getObject[Map[String, Any]]("valueKey").mapKeys(Field(_))))
       }.toMapWithValues(_.id)
@@ -266,7 +270,7 @@ case class MigrateMarketDataSchema(writer: DBWriter, db: DB) extends Log {
   }
 
   private def getValues(key: MarketDataKey, row: Row): List[Any] = {
-    key.dataType.valueFields.toList.flatMap(f => row.get[Any](f))
+    dataTypes.fromName(key.dataTypeName).valueFields.toList.flatMap(f => row.get[Any](f))
   }
 
   private def readRows(xml: String, key: MarketDataKey, version: Int): Iterable[Row] = {
@@ -276,11 +280,11 @@ case class MigrateMarketDataSchema(writer: DBWriter, db: DB) extends Log {
       case e => log.fatal(xml); log.fatal("broken version: " + version); throw e
     }
 
-    key.dataType.castRows(key, key.unmarshallDB(refactoredData), ReferenceDataLookup.Null)
+    dataTypes.fromName(key.dataTypeName).castRows(key, key.unmarshallDB(refactoredData))
   }
 
   private def getValueKey(key: MarketDataKey, row: Row): MarketDataValueKey = {
-    val fields = key.dataType.keyFields -- key.fieldValues().fields
+    val fields = dataTypes.fromName(key.dataTypeName).keyFields -- key.fieldValues().fields
 
     MarketDataValueKey(-1, row.filterKeys(fields.contains))
   }
@@ -538,7 +542,7 @@ case class MigrateMarketDataSchema(writer: DBWriter, db: DB) extends Log {
 
       obj.safeCast[PriceFixingsHistoryData].map { priceFixingsHistoryData => {
         val rows: Iterable[Row] = PriceFixingsHistoryDataType.castRows(
-          PriceFixingsHistoryDataKey("", Some("")), priceFixingsHistoryData, ReferenceDataLookup.Null)
+          PriceFixingsHistoryDataKey("", Some("")), priceFixingsHistoryData)
 
         println(rows)
       } }

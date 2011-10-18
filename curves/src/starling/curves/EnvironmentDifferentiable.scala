@@ -25,7 +25,7 @@ trait EnvironmentDifferentiable{
     val (dnEnv, upEnv) = other.shiftedEnvs(env, dP)
     (quantityValue(upEnv) - quantityValue(dnEnv)) / (dP * 2.0)
   }
-  def riskType : String = curveKey.typeName
+  def riskType : String = curveKey.typeName.name
   def riskCommodity : String = curveKey.higherUnderlying
   def riskMarket : String = curveKey.underlying
   def periods : List[DateRange] = periodKey.toList.flatMap(_.toList)

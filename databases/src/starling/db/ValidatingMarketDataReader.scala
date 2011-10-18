@@ -6,7 +6,7 @@ import starling.marketdata._
 class ValidatingMarketDataReader(reader: MarketDataReader, validators: PriceValidator*) extends MarketDataReaderAdapter(reader) {
   val validator = new CompositePriceValidator(validators)
 
-  override def read(marketDataType: MarketDataType, observationDays: Option[Set[Option[Day]]],
+  override def read(marketDataType: MarketDataTypeName, observationDays: Option[Set[Option[Day]]],
                     observationTimes: Option[Set[ObservationTimeOfDay]], keys: Option[Set[MarketDataKey]]) = {
     super.read(marketDataType, observationDays, observationTimes, keys).map {
       case (timedKey, data) => (timedKey, validate(timedKey, data))
