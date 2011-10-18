@@ -41,7 +41,7 @@ class TitanTradeStore(db: RichDB, broadcaster:Broadcaster, tradeSystem:TradeSyst
     val titanTradeID = row.getString("titanTradeID")
     val inventoryID = row.getString("inventoryID")
     val groupCompany = row.getString("groupCompany")
-    val comment = row.getString("Comment")
+    val comment = Option(row.getString("Comment")).getOrElse("")
     val submitted = row.getDay("Submitted")
     val shape = row.getString("Shape")
     val contractFinalised = row.getString("ContractFinalised")
