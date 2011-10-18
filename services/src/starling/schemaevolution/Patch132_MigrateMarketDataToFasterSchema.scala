@@ -24,23 +24,16 @@ import system.{PatchContext, Patch}
 
 
 class Patch132_MigrateMarketDataToFasterSchema extends Patch {
-  override def deferredReason(context: PatchContext) =
-    context.props.UseFasterMarketDataSchema() ? none[String] | some("takes ~40 minutes")
-
   protected def runPatch(starlingInit: StarlingInit, starling: RichDB, writer: DBWriter) =
     MigrateMarketDataSchema(writer, starling.db).migrateData
 }
 
 class Patch120_MakeVersionNullableInMarketDataComment extends Patch {
-  override def deferredReason(context: PatchContext) = context.dependsOn[Patch132_MigrateMarketDataToFasterSchema]
-
   protected def runPatch(starlingInit: StarlingInit, starling: RichDB, writer: DBWriter) =
     writer.update("ALTER TABLE MarketDataCommit ALTER COLUMN version int NULL")
 }
 
 class Patch120_Add_Comment_To_MarketDataValue extends Patch {
-  override def deferredReason(context: PatchContext) = context.dependsOn[Patch132_MigrateMarketDataToFasterSchema]
-
   protected def runPatch(starlingInit: StarlingInit, starling: RichDB, writer: DBWriter) =
     writer.update("ALTER TABLE MarketDataValue ADD comment varchar(128) NULL")
 }

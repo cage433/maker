@@ -3,21 +3,11 @@ package starling.schemaevolution
 import starling.services.StarlingInit
 import starling.richdb.RichDB
 import starling.db.DBWriter
-import system.{PatchContext, Patch}
+import system.Patch
 import starling.dbx.QueryBuilder._
 
 
-class Patch133_DontStoreMarketDataAgainstTransientNames_OldSchema extends Patch {
-  protected def runPatch(starlingInit: StarlingInit, starling: RichDB, writer: DBWriter) = {
-    writer.delete("MarketData", "marketDataType" like "%FreightParityDataType%")
-    writer.delete("MarketData", "marketDataType" like "%CountryBenchmarkDataType%")
-    writer.delete("MarketData", "marketDataType" like "%GradeAreaBenchmarkDataType%")
-  }
-}
-
 class Patch133_DontStoreMarketDataAgainstTransientNames_NewSchema extends Patch {
-  override def deferredReason(context: PatchContext) = context.dependsOn[Patch132_MigrateMarketDataToFasterSchema]
-
   protected def runPatch(starlingInit: StarlingInit, starling: RichDB, writer: DBWriter) = {
     writer.update("""
       DELETE FROM MarketDataValue

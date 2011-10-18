@@ -55,17 +55,11 @@ class PatchRunner(starling: RichDB, readOnlyMode: Boolean, starlingInit: Starlin
       })
     }
 
-    val deferredPatches: Map[Patch, String] = allPatches.collectValues { case Left(Some(deferredReason)) => deferredReason }
-    val requiresRestart = allPatches.exists { case (_, Right(true)) => true; case _ => false }
-
-    deferredPatches.foreach { case (patch, deferredReason) =>
-      Log.warn("====== PATCH DEFERRED: %s BECAUSE: %s ======" % (patch, deferredReason))
-    }
+    val requiresRestart = allPatches.values.exists(identity _)
 
     //Check that all the patches are applied now
     val currentlyAppliedPatches = Set() ++ getListOfAlreadyAppliedPatches(starling)
     val unAppliedPatches = patchesToApply.filter(patch => !currentlyAppliedPatches.contains(patch.patchName)).sortWith(_.patchNumber > _.patchNumber)
-      .filterNot(deferredPatches.contains(_))
 
     if(unAppliedPatches.size != 0) {
       throw new RuntimeException("SCHEMAEVOLUTION: The following patches have not been applied correctly, cannot continue [" + unAppliedPatches + "]")
@@ -130,22 +124,17 @@ class PatchRunner(starling: RichDB, readOnlyMode: Boolean, starlingInit: Starlin
                                           "dateApplied" -> new Timestamp))
   }
 
-  private def applyPatch(starlingInit: StarlingInit, starling: RichDB, patch: Patch, context: PatchContext): Either[Option[String], Boolean] = {
-    val deferredReason = patch.deferredReason(context)
+  private def applyPatch(starlingInit: StarlingInit, starling: RichDB, patch: Patch, context: PatchContext): Boolean = {
+    Log.infoWithTime("SCHEMAEVOLUTION: About to apply patch [%d] with name [%s]" % (patch.patchNumber, patch.patchName)) {
+      starling.inTransaction { writer => {
+        patch.applyPatch(starlingInit, starling, writer)
 
-    if (deferredReason.isEmpty) {
-      Log.infoWithTime("SCHEMAEVOLUTION: About to apply patch [%d] with name [%s]" % (patch.patchNumber, patch.patchName)) {
-        starling.inTransaction { writer => {
-          patch.applyPatch(starlingInit, starling, writer)
-
-          //Update the patch table to say this one is done
-          markPatchAsApplied(writer, patch)
-        } }
-      }
-      Right(patch.requiresRestart)
-    } else {
-      Left(deferredReason)
+        //Update the patch table to say this one is done
+        markPatchAsApplied(writer, patch)
+      } }
     }
+
+    patch.requiresRestart
   }
 
 

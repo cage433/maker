@@ -39,7 +39,7 @@ trait Patch {
 
   val (patchNumber, patchName) = Patch.patchProps(getClass)
 
-  def deferredReason(context: PatchContext): Option[String] = None
+  def deferredReason(context: PatchContext): Exception = throw new Exception("Removed")
 
   final def applyPatch(starlingInit: StarlingInit, starling: RichDB, writer: DBWriter) = {
     //Run the actual SQL script to update the schema and check completed successfully

@@ -12,9 +12,6 @@ import starling.utils.ImplicitConversions._
 
 
 class Patch999_ImportBenchmarksFromNeptune extends Patch {
-  override def deferredReason(context: PatchContext) =
-    context.props.ImportBenchmarksFromNeptune() ? none[String] | some("Awaiting cutover from Neptune to Starling")
-
   protected def runPatch(init: StarlingInit, starling: RichDB, writer: DBWriter) = init.marketDataStore.save(Map(
     MarketDataSet.ManualMetals → read(init.neptuneRichDB, Day.today).allValues))
 
