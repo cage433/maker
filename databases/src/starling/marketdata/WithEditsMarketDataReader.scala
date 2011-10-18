@@ -41,7 +41,7 @@ class WithEditsMarketDataReader(reader:MarketDataReader, marketDataType:MarketDa
 
   def marketDataTypes = reader.marketDataTypes
 
-  def read(marketDataType:MarketDataType,
+  def read(marketDataType:MarketDataTypeName,
            observationDays:Option[Set[Option[Day]]],
            observationTimes:Option[Set[ObservationTimeOfDay]],
            keys:Option[Set[MarketDataKey]]): List[(TimedMarketDataKey, MarketData)] = {
@@ -85,7 +85,7 @@ class WithEditsMarketDataReader(reader:MarketDataReader, marketDataType:MarketDa
     throw new Exception("bla")
   }
 
-  def readAllObservationDayAndMarketDataKeys(marketDataType:MarketDataType):List[TimedMarketDataKey] = {
+  def readAllObservationDayAndMarketDataKeys(marketDataType:MarketDataTypeName):List[TimedMarketDataKey] = {
     /*assert(marketDataType == WithEditsMarketDataReader.this.marketDataType, "The market data types have to be the same: " +
             (marketDataType, WithEditsMarketDataReader.this.marketDataType))
 

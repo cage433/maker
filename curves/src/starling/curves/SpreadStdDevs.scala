@@ -92,9 +92,10 @@ class SpreadStdDevSurfaceDataBuilder(var uom:Option[UOM] = None) {
 case class SpreadStdDevSurfaceDataKey(market : FuturesMarket) extends MarketDataKey {
   type marketDataType = SpreadStdDevSurfaceData
   type marketDataDBType = SpreadStdDevSurfaceData
-  def dataType = SpreadStdDevSurfaceDataType
+  def dataTypeName = SpreadStdDevSurfaceDataType.name
   def subTypeKey = market.toString
   def fieldValues(referenceDataLookup: ReferenceDataLookup) = Row(SpreadStdDevSurfaceDataType.marketField.field → market.name)
+  def fields = Set(SpreadStdDevSurfaceDataType.marketField.field)
 }
 
 object SpreadStdDevSurfaceDataType extends MarketDataType {
@@ -144,7 +145,7 @@ object SpreadStdDevSurfaceDataType extends MarketDataType {
   type dataType = SpreadStdDevSurfaceData
   type keyType = SpreadStdDevSurfaceDataKey
 
-  def rows(key: SpreadStdDevSurfaceDataKey, data: SpreadStdDevSurfaceData, referenceDataLookup: ReferenceDataLookup) = {
+  def rows(key: SpreadStdDevSurfaceDataKey, data: SpreadStdDevSurfaceData) = {
     val periods = data.periods zipWithIndex
     val dataRows = periods.flatMap {
       case (period, index) => {

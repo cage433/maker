@@ -42,6 +42,8 @@ class FC2FacilityImpl(
   private def label(pricingGroup:PricingGroup):PricingGroup = pricingGroup
   private def label(snapshot:SnapshotID):SnapshotIDLabel = snapshot.label
 
+  private val marketDataTypes = new MarketDataTypes(referenceDataLookup)
+
   def pricingGroups = {
     //val allPricingGroups = desks.flatMap(_.pricingGroups).toSet
     marketDataStore.pricingGroups//.filter(allPricingGroups.contains(_))
@@ -61,7 +63,7 @@ class FC2FacilityImpl(
   }
 
   private def realTypeFor(label:MarketDataTypeLabel) = {
-    MarketDataTypes.types.find(_.toString == label.name).getOrElse(throw new Exception("Can't find market data type '" + label.name + "' in " + MarketDataTypes.types))
+    marketDataTypes.types.find(_.toString == label.name).getOrElse(throw new Exception("Can't find market data type '" + label.name + "' in " + marketDataTypes.types))
   }
 
   def curvePivot(curveLabel: CurveLabel, pivotFieldParams: PivotFieldParams) = {
@@ -129,10 +131,10 @@ class FC2FacilityImpl(
   }
 
   def marketDataTypeLabels(marketDataIdentifier:MarketDataPageIdentifier) = {
-    sortMarketDataTypes(marketDataReaderFor(marketDataIdentifier).marketDataTypes).map(t=>MarketDataTypeLabel(t.name))
+    sortMarketDataTypes(marketDataReaderFor(marketDataIdentifier).marketDataTypes).map(t=>MarketDataTypeLabel(t.name.name))
   }
 
-  private def sortMarketDataTypes(types:List[MarketDataType]) = types.sortWith(_.name < _.name)
+  private def sortMarketDataTypes(types:List[MarketDataType]) = types.sortWith(_.name.name < _.name.name)
 
   def latestMarketDataIdentifier(selection:MarketDataSelection):MarketDataIdentifier = marketDataStore.latestMarketDataIdentifier(selection)
 

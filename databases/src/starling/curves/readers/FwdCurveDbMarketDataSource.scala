@@ -58,13 +58,13 @@ case class FwdCurveDbMarketDataSource(varSqlDB: DB, businessCalendars: BusinessC
 
     val range = (observationDay, observationDay)
 
-    val spotMDEs = range.add(SpotFXDataType) → readSomething[SpotFXDataKey](spotFXKeys, SpotFXReader(observationDay).read)
-    val prices = range.add(PriceDataType) → readSomething[PriceDataKey](priceKeys, PricesReader(observationDay).read)
+    val spotMDEs = range.add(SpotFXDataType.name) → readSomething[SpotFXDataKey](spotFXKeys, SpotFXReader(observationDay).read)
+    val prices = range.add(PriceDataType.name) → readSomething[PriceDataKey](priceKeys, PricesReader(observationDay).read)
     val fixings = FixingsReader(observationDay).read(indexes)
 //    val fixings = range.add(PriceFixingsHistoryDataType)  → readSomething[SingleIndex](indexes, FixingsReader(observationDay).read)
-    val forwardRates = range.add(ForwardRateDataType) → readSomething[ForwardRateDataKey](forwardRateKeys, ForwardRateReader(observationDay).read)
-    val volSurfaces = range.add(OilVolSurfaceDataType) → readSomething[OilVolSurfaceDataKey](volSurfaceKeys, OilVolSurfacesReader(observationDay).read)
-    val spreadsStdDevs = range.add(SpreadStdDevSurfaceDataType) → readSomething[SpreadStdDevSurfaceDataKey](spredStdKeys, SpreadStdDevReader(observationDay).read)
+    val forwardRates = range.add(ForwardRateDataType.name) → readSomething[ForwardRateDataKey](forwardRateKeys, ForwardRateReader(observationDay).read)
+    val volSurfaces = range.add(OilVolSurfaceDataType.name) → readSomething[OilVolSurfaceDataKey](volSurfaceKeys, OilVolSurfacesReader(observationDay).read)
+    val spreadsStdDevs = range.add(SpreadStdDevSurfaceDataType.name) → readSomething[SpreadStdDevSurfaceDataKey](spredStdKeys, SpreadStdDevReader(observationDay).read)
 
     List(spotMDEs, prices, fixings, forwardRates, volSurfaces, spreadsStdDevs).toMap
   }
@@ -177,7 +177,7 @@ case class FwdCurveDbMarketDataSource(varSqlDB: DB, businessCalendars: BusinessC
   }
 
   case class FixingsReader(observationDay: Day) {
-    def read(indexes: List[SingleIndex]): ((Day, Day, MarketDataType), List[MarketDataEntry]) = {
+    def read(indexes: List[SingleIndex]): ((Day, Day, MarketDataTypeName), List[MarketDataEntry]) = {
 
       val a = indexes.flatMap { index => {
         val eaiQuoteID : Option[Int] = index match {
@@ -190,7 +190,7 @@ case class FwdCurveDbMarketDataSource(varSqlDB: DB, businessCalendars: BusinessC
 
       val entries = a.flatMap { case (market, otherDetails) => readSingle(otherDetails, market) }
 
-      (observationDay.startOfFinancialYear, observationDay, PriceFixingsHistoryDataType) → entries.toList
+      (observationDay.startOfFinancialYear, observationDay, PriceFixingsHistoryDataType.name) → entries.toList
     }
 
     def readSingle(otherDetails: Traversable[(Int, String, Level)], market: CommodityMarket): List[MarketDataEntry] = {

@@ -9,6 +9,7 @@ import starling.gui.api.{ReportMarketDataPageIdentifier, MarketDataPageIdentifie
 import starling.db.{DB, MarketDataStore}
 import starling.curves.EnvironmentRules
 import starling.manager._
+import starling.marketdata.{MarketDataTypes, ReferenceDataLookup}
 
 class ReportsBromptonActivator extends BromptonActivator {
 
@@ -19,6 +20,7 @@ class ReportsBromptonActivator extends BromptonActivator {
     val businessCalendars = context.awaitService(classOf[BusinessCalendars])
     val userSettingsDatabase = context.awaitService(classOf[UserSettingsDatabase])
     val curveIdentifierFactory = new CurveIdentifierFactory(context.awaitService(classOf[EnvironmentRules]))
+    val dataTypes = new MarketDataTypes(context.awaitService(classOf[ReferenceDataLookup]))
     val eaiStarlingDB = DB(props.StarlingDatabase())
 
     val reportContextBuilder = new ReportContextBuilder(marketDataStore)
@@ -30,7 +32,7 @@ class ReportsBromptonActivator extends BromptonActivator {
     val reportRecordingMarketDataReaderProvider = new MarketDataPageIdentifierReaderProvider() {
       def readerFor(identifier: MarketDataPageIdentifier) = {
         identifier match {
-          case ReportMarketDataPageIdentifier(rp) => Some(reportServiceInternal.recordedMarketDataReader(rp))
+          case ReportMarketDataPageIdentifier(rp) => Some(reportServiceInternal.recordedMarketDataReader(rp, dataTypes))
           case _ => None
         }
       }

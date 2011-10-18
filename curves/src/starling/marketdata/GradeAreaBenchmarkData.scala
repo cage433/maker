@@ -8,7 +8,9 @@ import scalaz.Scalaz._
 import starling.utils.ImplicitConversions._
 import starling.daterange.Day
 
-case class AreaCode(code:String)
+case class AreaCode(code:String) {
+  override def toString = code
+}
 object AreaCode{
   val EUR = AreaCode("EUR")
   val SAM = AreaCode("SAM")
@@ -21,7 +23,7 @@ case class Area(code:AreaCode, name:String) {
 }
 
 case class GradeCode(code : String) {
-  require(code != "ReferenceDataLookup.Null")
+  override def toString = code
 }
 case class Grade(code:GradeCode, name:String) {
   override def toString = name
@@ -36,20 +38,21 @@ case class GradeAreaBenchmarkData(areaData : NestedMap[(GradeCode, AreaCode), Da
 case class GradeAreaBenchmarkMarketDataKey(commodity : Commodity) extends MarketDataKey {
   type marketDataType = GradeAreaBenchmarkData
   type marketDataDBType = GradeAreaBenchmarkData
-  def dataType = GradeAreaBenchmarkDataType
+  def dataTypeName = MarketDataTypeName("GradeAreaBenchmark")
   def subTypeKey = commodity.toString
-  def fieldValues(referenceDataLookup: ReferenceDataLookup) = Row(GradeAreaBenchmarkDataType.commodityField.field → commodity.name)
+  def fieldValues(referenceDataLookup: ReferenceDataLookup) = Row(Field("Commodity") → commodity.name)
+  def fields = Set(Field("Commodity"))
 }
 
-object GradeAreaBenchmarkDataType extends MarketDataType {
+class GradeAreaBenchmarkDataType(referenceData: ReferenceDataLookup = ReferenceDataLookup.Null) extends MarketDataType {
   type dataType = GradeAreaBenchmarkData
   type keyType = GradeAreaBenchmarkMarketDataKey
 
   val commodityField = FieldDetails("Commodity", FixedPivotParser(Commodity.metalsCommodities.map(_.name).toSet))
   val areaField = FieldDetails("Area")
-  val areaCodeField = FieldDetails("Area Code")
+  val areaCodeField = FieldDetails("Area Code", FixedPivotParser(referenceData.areaCodes))
   val gradeField = FieldDetails("Grade")
-  val gradeCodeField = FieldDetails("Grade Code")
+  val gradeCodeField = FieldDetails("Grade Code", FixedPivotParser(referenceData.gradeCodes))
   val effectiveFromField = FieldDetails("Effective From", DayPivotParser)
   val benchmarkPriceField = FieldDetails.createMeasure("Benchmark Price",
     parser0 = PivotQuantityPivotParser, formatter0 = PivotQuantitySetPivotFormatter)
@@ -75,15 +78,17 @@ object GradeAreaBenchmarkDataType extends MarketDataType {
     GradeAreaBenchmarkData(data.toNestedMap)
   }
 
-  def rows(key: GradeAreaBenchmarkMarketDataKey, data: GradeAreaBenchmarkData, referenceDataLookup: ReferenceDataLookup) = {
-    data.areaData.mapNested { case ((gradeCode, areaCode), effectiveFrom, price) => Row(
+  override protected def fieldValues(key: MarketDataKey) = key.fieldValues(referenceData)
+
+  def rows(key: GradeAreaBenchmarkMarketDataKey, data: GradeAreaBenchmarkData) = data.areaData.mapNested {
+    case ((gradeCode, areaCode), effectiveFrom, price) => Row(
       commodityField.field → key.commodity.name,
       gradeCodeField.field → gradeCode.code,
-      gradeField.field → referenceDataLookup.gradeFor(gradeCode).name,
+      gradeField.field → referenceData.gradeFor(gradeCode).name,
       areaCodeField.field → areaCode.code,
-      areaField.field → referenceDataLookup.areaFor(areaCode).name,
+      areaField.field → referenceData.areaFor(areaCode).name,
       effectiveFromField.field → effectiveFrom,
       benchmarkPriceField.field → price.pq
-    ) }
+    )
   }
 }

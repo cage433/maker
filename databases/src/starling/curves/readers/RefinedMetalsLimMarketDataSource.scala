@@ -20,12 +20,12 @@ import starling.utils.ImplicitConversions._
 
 
 case class RefinedMetalsLimMarketDataSource(limServer: LIMServer) extends MarketDataSource with Log {
-  private val fixingsSources = PriceFixingsHistoryDataType → (List(LMEFixings, LIBORFixings, BloombergTokyoCompositeFXRates,
+  private val fixingsSources = PriceFixingsHistoryDataType.name → (List(LMEFixings, LIBORFixings, BloombergTokyoCompositeFXRates,
     BalticFixings,
     new MonthlyFuturesFixings(Trafigura.Bloomberg.Futures.Shfe, FuturesExchangeFactory.SFS.fixingLevel),
     new MonthlyFuturesFixings(Trafigura.Bloomberg.Futures.Comex, FuturesExchangeFactory.COMEX.fixingLevel)) ::: SpotFXFixings.all)
-  private val spotFXSources = SpotFXDataType → List(BloombergGenericFXRates, CFETSSpotFXFixings)
-  private val priceSources = PriceDataType → List(
+  private val spotFXSources = SpotFXDataType.name → List(BloombergGenericFXRates, CFETSSpotFXFixings)
+  private val priceSources = PriceDataType.name → List(
     new PriceLimSource(new LMELIMRelation(Trafigura.Bloomberg.Metals.Lme, LMEClose)),
     new PriceLimSource(new MonthlyLIMRelation(Trafigura.Bloomberg.Futures.Comex, COMEXClose)),
     new PriceLimSource(new MonthlyLIMRelation(Trafigura.Bloomberg.Futures.Shfe, SHFEClose))
@@ -35,12 +35,12 @@ case class RefinedMetalsLimMarketDataSource(limServer: LIMServer) extends Market
     { case (marketDataType, sources) => marketDataType.name.pair(sources.flatMap(_.description)).map("%s → %s" % _) }
 
   def read(day: Day) = log.infoWithTime("Getting data from LIM") {
-    Map(getValuesForType(PriceDataType, day.startOfFinancialYear, day, priceSources),
-                           getValuesForType(SpotFXDataType, day.startOfFinancialYear, day, spotFXSources),
-                           getValuesForType(PriceFixingsHistoryDataType, day.startOfFinancialYear, day, fixingsSources))
+    Map(getValuesForType(PriceDataType.name, day.startOfFinancialYear, day, priceSources),
+                           getValuesForType(SpotFXDataType.name, day.startOfFinancialYear, day, spotFXSources),
+                           getValuesForType(PriceFixingsHistoryDataType.name, day.startOfFinancialYear, day, fixingsSources))
   }
 
-  private def getValuesForType(m: Any, start: Day, end: Day, sources: (MarketDataType, List[LimSource])) =
+  private def getValuesForType(m: MarketDataTypeName, start: Day, end: Day, sources: (MarketDataTypeName, List[LimSource])) =
     (start, end, sources.head) → sources.tail.flatMap(source => getValues(source, start, end).toList)
       .require(containsDistinctTimedKeys, "concatenated sources: %s, produced duplicate MarketDataKeys: " % sources)
 

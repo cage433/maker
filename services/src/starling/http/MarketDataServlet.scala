@@ -5,7 +5,6 @@ import scala.collection.JavaConversions
 
 import starling.db.MarketDataStore
 import starling.gui.api.{MarketDataIdentifier, MarketDataSelection, PricingGroup}
-import starling.marketdata.MarketDataTypes
 import starling.pivot.model.PivotTableModel
 import starling.utils.Utils
 
@@ -14,9 +13,10 @@ import starling.utils.ImplicitConversions._
 import starling.utils.Pattern._
 import scalaz._
 import Scalaz._
+import starling.marketdata.MarketDataTypes
 
 
-class MarketDataServlet(marketDataStore:MarketDataStore) extends HttpServlet {
+class MarketDataServlet(marketDataStore:MarketDataStore, marketDataTypes: MarketDataTypes) extends HttpServlet {
   private val FilterField = Extractor.when[String](_.startsWith("@"), _.stripPrefix("@").replaceAll("_", " "))
   private val ConcatenatedFields = Extractor.map[Array[String]](_.flatMap(_.split(":")).toList)
   private val decimalPlaces = PivotFormatter.DefaultDecimalPlaces.copy(percentageFormat = "#0.0000")
@@ -33,7 +33,7 @@ class MarketDataServlet(marketDataStore:MarketDataStore) extends HttpServlet {
       case Some(version) => {
         val mdi = MarketDataIdentifier(selection, version.toInt)
 
-        val marketDataType = MarketDataTypes.fromName(request.getParameter("type"))
+        val marketDataType = marketDataTypes.fromName(request.getParameter("type"))
 
         val pivot = marketDataStore.pivot(mdi, marketDataType)
 

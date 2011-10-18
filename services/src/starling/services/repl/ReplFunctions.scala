@@ -4,7 +4,7 @@ import starling.daterange.{ObservationPoint, Day}
 import starling.db.{MarketDataReaderMarketDataSlice, NormalMarketDataReader}
 import starling.gui.api.{MarketDataSelection, PricingGroup}
 import starling.curves.{MarketDataCurveObjectEnvironment, Environment}
-import starling.marketdata.ReferenceDataLookup
+import starling.marketdata.{MarketDataTypes, ReferenceDataLookup}
 
 /**
  * A place to put functions to make live from the command line easier
@@ -17,11 +17,11 @@ object ReplFunctions  {
 
   def makeEnv(pricingGroup : PricingGroup, marketDay : Day) : Environment = {
     val marketDataStore = devInstance.marketDataStore
-
     val marketDataSelection = MarketDataSelection(Some(pricingGroup), None)
     val marketDataID = marketDataStore.latestMarketDataIdentifier(marketDataSelection)
     val reader = new NormalMarketDataReader(marketDataStore, marketDataID)
-    val marketDataSlice = new MarketDataReaderMarketDataSlice(reader, ObservationPoint(marketDay))
+    val dataTypes: MarketDataTypes = new MarketDataTypes(ReferenceDataLookup.Null)
+    val marketDataSlice = new MarketDataReaderMarketDataSlice(reader, ObservationPoint(marketDay), dataTypes = dataTypes)
     Environment(MarketDataCurveObjectEnvironment(marketDay.endOfDay, marketDataSlice, referenceDataLookup = ReferenceDataLookup.Null))
   }
 

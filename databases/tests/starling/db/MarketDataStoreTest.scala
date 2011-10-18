@@ -46,6 +46,8 @@ class MarketDataStoreTest extends TestMarketTest with ShouldMatchers {
     db
   }
 
+  lazy val dataTypes = new MarketDataTypes(ReferenceDataLookup.Null)
+
   @AfterTest
   def tearDown() {
     connection.close()
@@ -69,11 +71,11 @@ class MarketDataStoreTest extends TestMarketTest with ShouldMatchers {
 
     val data1 = SpotFXData(Quantity(1, UOM.EUR / UOM.USD))
 
-    val existingVersion = marketDataStore.readLatest(MarketDataID(timedKey, MarketDataSet.Starling))
+    val existingVersion = marketDataStore.readLatest(MarketDataID(timedKey, MarketDataSet.Starling, dataTypes))
     existingVersion should be === None
 
     marketDataStore.update(Map(MarketDataSet.Starling -> List(MarketDataUpdate(timedKey, Some(data1), None))))
-    val versionAfterDelete = marketDataStore.readLatest(MarketDataID(timedKey, MarketDataSet.Starling))
+    val versionAfterDelete = marketDataStore.readLatest(MarketDataID(timedKey, MarketDataSet.Starling, dataTypes))
     versionAfterDelete should not be === (None)
 
     val versionInt = versionAfterDelete.get.version
@@ -97,7 +99,7 @@ class MarketDataStoreTest extends TestMarketTest with ShouldMatchers {
     val priceData = new NormalMarketDataReader(marketDataStore, marketDataIdentifier).readAllPrices(observationPoint)
     priceData should equal (Nil)
 
-    marketDataStore.query(marketDataIdentifier, PriceDataType) should equal (Nil)
+    marketDataStore.query(marketDataIdentifier, PriceDataType.name) should equal (Nil)
   }
 
   @Test

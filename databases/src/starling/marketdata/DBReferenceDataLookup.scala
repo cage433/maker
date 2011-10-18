@@ -17,7 +17,12 @@ case class DBReferenceDataLookup(neptuneDB: RichDB) extends ReferenceDataLookup 
   def contractLocationFor(code: ContractualLocationCode) = ContractualLocation(code, contractLocations(code.code))
   def countryFor(code: NeptuneCountryCode) = NeptuneCountry(code, countries(code.code), areaFor(code))
   def incotermFor(code: IncotermCode) = Incoterm(code, deliveryTerms(code.code))
-
   def areaFor(code: NeptuneCountryCode): Option[Area] = countryToArea.get(code.code).flatMap(areaFor(_))
+  lazy val contractLocationCodes = contractLocations.keySet.map(ContractualLocationCode(_))
+  lazy val incotermCodes = deliveryTerms.keySet.map(IncotermCode(_))
+  lazy val countryCodes = countries.keySet.map(NeptuneCountryCode(_))
+  lazy val areaCodes = areas.keySet.map(AreaCode(_))
+  lazy val gradeCodes = grades.keySet.map(GradeCode(_))
+
   private def areaFor(code: String): Option[Area] = areas.get(code).map(Area(AreaCode(code), _))
 }

@@ -39,7 +39,7 @@ object PriceFixingsHistoryDataType extends MarketDataType {
   }
 
 
-  def rows(key: PriceFixingsHistoryDataKey, data: PriceFixingsHistoryData, referenceDataLookup: ReferenceDataLookup) = {
+  def rows(key: PriceFixingsHistoryDataKey, data: PriceFixingsHistoryData) = {
     data.fixings.map { case ((level, period), fixing) =>
       Row(
         PriceFixingsHistoryDataType.marketField.field → key.marketName,

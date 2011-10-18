@@ -9,9 +9,10 @@ import starling.pivot.Row
 case class PriceFixingsHistoryDataKey(marketName: String, exchangeName: Option[String] = None) extends MarketDataKey {
   type marketDataType = PriceFixingsHistoryData
   type marketDataDBType = PriceFixingsHistoryData
-  def dataType = PriceFixingsHistoryDataType
+  def dataTypeName = PriceFixingsHistoryDataType.name
   def subTypeKey = marketName
   def fieldValues(referenceDataLookup: ReferenceDataLookup) = Row(PriceFixingsHistoryDataType.marketField.field → marketName)
+  def fields = Set(PriceFixingsHistoryDataType.marketField.field)
 }
 
 object PriceFixingsHistoryDataKey {

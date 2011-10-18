@@ -12,6 +12,7 @@ import starling.gui.api.{PricingGroup, EnvironmentRuleLabel}
 import starling.market.FuturesExchange
 
 class TimeShiftToLMECloseEnvironmentRule(referenceDataLookup: ReferenceDataLookup) extends EnvironmentRule {
+  val dataTypes = new MarketDataTypes(referenceDataLookup)
   val pricingGroups = List(PricingGroup.Metals)
   val observationTimeOfDay = ObservationTimeOfDay.LMEClose
   val label = EnvironmentRuleLabel("Time shift to " + observationTimeOfDay.name)
@@ -32,13 +33,13 @@ class TimeShiftToLMECloseEnvironmentRule(referenceDataLookup: ReferenceDataLooku
     }}
 
     def previousEnv(day:Day, timeOfDay:ObservationTimeOfDay, overrides:Map[MarketDataType,ObservationTimeOfDay]) = {
-      val slice = new MarketDataReaderMarketDataSlice(reader, ObservationPoint(day, timeOfDay), overrides)
+      val slice = new MarketDataReaderMarketDataSlice(reader, ObservationPoint(day, timeOfDay), overrides, dataTypes)
       Environment(new NamingAtomicEnvironment(new MarketDataCurveObjectEnvironment(day.endOfDay, slice, referenceDataLookup = referenceDataLookup), timeOfDay.name))
     }
 
     val env = {
       val envDayAndTime = observationDay.endOfDay
-      val slice = new MarketDataReaderMarketDataSlice(reader, ObservationPoint(observationDay, observationTimeOfDay), Map(SpotFXDataType -> LondonClose))
+      val slice = new MarketDataReaderMarketDataSlice(reader, ObservationPoint(observationDay, observationTimeOfDay), Map(SpotFXDataType → LondonClose), dataTypes)
       new MarketDataCurveObjectEnvironment(envDayAndTime, slice, referenceDataLookup = referenceDataLookup) {
         override def curve(curveKey: CurveKey) = {
           curveKey match {
@@ -74,7 +75,7 @@ class TimeShiftToLMECloseEnvironmentRule(referenceDataLookup: ReferenceDataLooku
     new EnvironmentWithDomain {
       def environment = Environment(env)
       def markets = marketsX.toList
-      override def discounts = reader.readAll(ForwardRateDataType, observationDay.atTimeOfDay(ObservationTimeOfDay.Default)).map {
+      override def discounts = reader.readAll(ForwardRateDataType.name, observationDay.atTimeOfDay(ObservationTimeOfDay.Default)).map {
         case (key:ForwardRateDataKey, data:ForwardRateData) => key.ccy -> data
       }
 

@@ -28,17 +28,17 @@ trait MdDB {
   def marketDataSetNames(): List[String]
   def observationDaysByMarketDataSet: MultiMap[String, Day]
   def latestVersionForMarketDataSets(): Map[MarketDataSet, Int]
-  def latestObservationDaysFor(marketDataSets: List[MarketDataSet], marketDataType: MarketDataType): Option[Day]
+  def latestObservationDaysFor(marketDataSets: List[MarketDataSet], marketDataType: MarketDataTypeName): Option[Day]
   def latestExcelVersions(): Map[MarketDataSet, Int]
   def store(data: Iterable[MarketDataUpdate], marketDataSet: MarketDataSet): SaveResult
   def maxVersionForMarketDataSetNames(names: List[String]): Option[Int]
   def marketDataTypes(version: Int, mds: List[MarketDataSet]): Set[MarketDataType]
 
-  def latestMarketData(from: Day, to: Day, marketDataType: MarketDataType, marketDataSet: MarketDataSet): Map[TimedMarketDataKey, VersionedMarketData]
+  def latestMarketData(from: Day, to: Day, marketDataType: MarketDataTypeName, marketDataSet: MarketDataSet): Map[TimedMarketDataKey, VersionedMarketData]
 
-  def queryForObservationDayAndMarketDataKeys(version: Int, mds: List[MarketDataSet], marketDataType: MarketDataType): Set[TimedMarketDataKey]
+  def queryForObservationDayAndMarketDataKeys(version: Int, mds: List[MarketDataSet], marketDataType: MarketDataTypeName): Set[TimedMarketDataKey]
 
-  def query(version: Int, mds: List[MarketDataSet], marketDataType: MarketDataType,
+  def query(version: Int, mds: List[MarketDataSet], marketDataType: MarketDataTypeName,
             observationDays: Option[Set[Option[Day]]], observationTimes: Option[Set[ObservationTimeOfDay]],
             marketDataKeys: Option[Set[MarketDataKey]]): List[(TimedMarketDataKey, MarketData)]
 

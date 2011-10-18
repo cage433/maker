@@ -27,6 +27,7 @@ class TimeShiftingEnvironmentRuleTests extends TestMarketTest with ShouldMatcher
     (lmePriceAtLmeClose + shift) / fxAtLmeClose
   }
 
+  val dataTypes = new MarketDataTypes(ReferenceDataLookup.Null)
 
   def priceEntry(day:Day, timeOfDay:ObservationTimeOfDay, market:FuturesMarket, price:Quantity) = {
     val prices = PriceData.fromMap(Map(market.frontPeriod(day) → price))
@@ -48,7 +49,7 @@ class TimeShiftingEnvironmentRuleTests extends TestMarketTest with ShouldMatcher
         priceEntry(environmentDay, LMEClose, Market.LME_COPPER, lmePriceAtLmeClose),
         fxEntry(environmentDay, LondonClose, fxAtLmeClose),
         fxEntry(environmentDay, SHFEClose, fxAtShanghaiClose)
-      )
+      ), dataTypes
     )
 
     val frontPeriod = Market.LME_COPPER.frontPeriod(environmentDay)
@@ -74,7 +75,7 @@ class TimeShiftingEnvironmentRuleTests extends TestMarketTest with ShouldMatcher
         priceEntry(environmentDay, LMEClose, Market.LME_COPPER, lmePriceAtLmeClose),
         fxEntry(environmentDay, LondonClose, fxAtLmeClose),
         fxEntry(lastShanghaiDay, SHFEClose, fxAtShanghaiClose)
-      )
+      ), dataTypes
     )
 
     val shiftedEnvironment = timeShiftingRule.createEnv(environmentDay, reader).environment

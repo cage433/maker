@@ -91,7 +91,7 @@ case class SpotFXDataProvider (marketDataStore : MarketDataStore) extends DataFl
   def marketDataFor(pricingGroup: PricingGroup, label: SnapshotIDLabel, observationDays: List[Day]) = {
     val selection = MarketDataSelection(Some(pricingGroup))
 
-    val data = marketDataStore.query(MarketDataIdentifier(selection, SnapshotMarketDataVersion(label)), SpotFXDataType,
+    val data = marketDataStore.query(MarketDataIdentifier(selection, SnapshotMarketDataVersion(label)), SpotFXDataType.name,
       observationDays = Some(observationDays.map(some(_)).toSet),
       marketDataKeys = marketDataKeys).map { case (timedKey, data) =>
 
@@ -111,7 +111,7 @@ case class ReferenceInterestDataProvider (marketDataStore : MarketDataStore) ext
     val identifier = MarketDataIdentifier(MarketDataSelection(Some(pricingGroup)), SnapshotMarketDataVersion(label))
 
     val fixings: List[(Option[Day], Option[String], String, PriceFixingsHistoryData)] =
-      marketDataStore.query(identifier, PriceFixingsHistoryDataType, observationDays = Some(observationDays.map(some(_)).toSet))
+      marketDataStore.query(identifier, PriceFixingsHistoryDataType.name, observationDays = Some(observationDays.map(some(_)).toSet))
         .map { case (timedKey, data) => {
           val key = timedKey.key.asInstanceOf[PriceFixingsHistoryDataKey]
           val fixingsForKey = data.asInstanceOf[PriceFixingsHistoryData]

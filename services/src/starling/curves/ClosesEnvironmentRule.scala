@@ -86,11 +86,11 @@ case class ClosesEnvironmentRule(referenceDataLookup: ReferenceDataLookup, allow
     new EnvironmentWithDomain {
       val environment = environmentX
       def markets = marketsX
-      override def discounts = marketDataReader.readAll(ForwardRateDataType, observationDay.atTimeOfDay(ObservationTimeOfDay.Default)).map {
+      override def discounts = marketDataReader.readAll(ForwardRateDataType.name, observationDay.atTimeOfDay(ObservationTimeOfDay.Default)).map {
         case (key:ForwardRateDataKey, data:ForwardRateData) => key.ccy -> data
       }
 
-      override def spotFX = marketDataReader.readAll(SpotFXDataType, observationDay.atTimeOfDay(ObservationTimeOfDay.LondonClose)).map {
+      override def spotFX = marketDataReader.readAll(SpotFXDataType.name, observationDay.atTimeOfDay(ObservationTimeOfDay.LondonClose)).map {
         case (key:SpotFXDataKey, _) => key.ccy
       }
     }

@@ -62,7 +62,7 @@ class OilAndMetalsVARLimMarketDataSource(limServer: LIMServer) extends MarketDat
 
     val fixings = fixingsForPublishedIndex ::: fixingsForFrontMonthIndexes
 
-    Map((day - daysInThePast, day, PriceFixingsHistoryDataType) → fixings)
+    Map((day - daysInThePast, day, PriceFixingsHistoryDataType.name) → fixings)
   }
 
 

@@ -13,26 +13,28 @@ case class FreightParityData(parityRate: Double, comment: String) extends Market
 case class FreightParityDataKey(contractualIncoterm: IncotermCode, contractualLocation: ContractualLocationCode,
   destinationIncoterm: IncotermCode, destinationLocation: NeptuneCountryCode) extends MarketDataKey {
 
-  import FreightParityDataType._
-
   type marketDataType = FreightParityData
   type marketDataDBType = FreightParityData
-  def dataType = FreightParityDataType
+  def dataTypeName = MarketDataTypeName("FreightParity")
   def subTypeKey = ""
   def fieldValues(referenceDataLookup: ReferenceDataLookup) = Row(
-    contractualIncotermField.field → referenceDataLookup.incotermFor(contractualIncoterm).name,
-    contractualLocationField.field → referenceDataLookup.contractLocationFor(contractualLocation).name,
-    destinationIncotermField.field → referenceDataLookup.incotermFor(destinationIncoterm).name,
-    destinationLocationField.field → referenceDataLookup.countryFor(destinationLocation).name
+    Field("Contractual Incoterm") → referenceDataLookup.incotermFor(contractualIncoterm).name,
+    Field("Contractual Location") → referenceDataLookup.contractLocationFor(contractualLocation).name,
+    Field("Destination Incoterm") → referenceDataLookup.incotermFor(destinationIncoterm).name,
+    Field("Destination Location") → referenceDataLookup.countryFor(destinationLocation).name
   )
+  def fields = Set("Contractual Incoterm", "Contractual Location", "Destination Incoterm", "Destination Location").map(Field(_))
 }
 
-object FreightParityDataType extends MarketDataType {
+class FreightParityDataType(referenceData: ReferenceDataLookup = ReferenceDataLookup.Null) extends MarketDataType {
   type dataType = FreightParityData
   type keyType = FreightParityDataKey
 
-  val keys@List(contractualIncotermCodeField, contractualLocationCodeField, destinationIncotermCodeField, destinationLocationCodeField) =
-    List("Contractual Incoterm Code", "Contractual Location Code", "Destination Incoterm Code", "Destination Location Code").map(FieldDetails(_))
+  val contractualIncotermCodeField = FieldDetails("Contractual Incoterm Code", FixedPivotParser(referenceData.incotermCodes))
+  val contractualLocationCodeField = FieldDetails("Contractual Location Code", FixedPivotParser(referenceData.contractLocationCodes))
+  val destinationIncotermCodeField = FieldDetails("Destination Incoterm Code", FixedPivotParser(referenceData.incotermCodes))
+  val destinationLocationCodeField = FieldDetails("Destination Location Code", FixedPivotParser(referenceData.countryCodes))
+  val keys = List(contractualIncotermCodeField, contractualLocationCodeField, destinationIncotermCodeField, destinationLocationCodeField)
 
   val names@List(contractualIncotermField, contractualLocationField, destinationIncotermField, destinationLocationField) =
     List("Contractual Incoterm", "Contractual Location", "Destination Incoterm", "Destination Location").map(FieldDetails(_))
@@ -55,8 +57,10 @@ object FreightParityDataType extends MarketDataType {
     FreightParityData(row.quantity(parityRateField).value, row.string(commentField))
   }
 
-  def rows(key: FreightParityDataKey, data: FreightParityData, referenceDataLookup: ReferenceDataLookup) =  List(
-    key.fieldValues(referenceDataLookup) +
+  override protected def fieldValues(key: MarketDataKey) = key.fieldValues(referenceData)
+
+  def rows(key: FreightParityDataKey, data: FreightParityData) = List(
+    key.fieldValues(referenceData) +
     (contractualIncotermCodeField.field → key.contractualIncoterm.code) +
     (contractualLocationCodeField.field → key.contractualLocation.code) +
     (destinationIncotermCodeField.field → key.destinationIncoterm.code) +
@@ -68,7 +72,9 @@ object FreightParityDataType extends MarketDataType {
   override val defaultValue = Row(parityRateField.field → Quantity(0, UOM.USD / UOM.MT), commentField.field → "")
 }
 
-case class ContractualLocationCode(code: String)
+case class ContractualLocationCode(code: String) {
+  override def toString = code
+}
 case class ContractualLocation(code: ContractualLocationCode, name: String) {
   override def toString = name
 }

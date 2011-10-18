@@ -125,14 +125,14 @@ trait MarketDataStore {
     v => MarketDataIdentifier(selection, v), latestMarketDataIdentifier(selection))
 
   def latestObservationDayForMarketDataSet(marketDataSet: MarketDataSet): Option[Day]
-  def latestObservationDayFor(pricingGroup: PricingGroup, marketDataType: MarketDataType): Day
+  def latestObservationDayFor(pricingGroup: PricingGroup, marketDataType: MarketDataTypeName): Day
 
   def latestPricingGroupVersions: Map[PricingGroup, Int]
 
   def latestSnapshot(pricingGroup: PricingGroup, observationDay: Day): Option[SnapshotID]
   def latestSnapshot(pricingGroup: PricingGroup): Option[SnapshotID]
 
-  def marketData(from: Day, to: Day, marketDataType: MarketDataType, marketDataSet: MarketDataSet): Map[TimedMarketDataKey, VersionedMarketData]
+  def marketData(from: Day, to: Day, marketDataType: MarketDataTypeName, marketDataSet: MarketDataSet): Map[TimedMarketDataKey, VersionedMarketData]
 
   def marketDataTypes(marketDataIdentifier: MarketDataIdentifier): List[MarketDataType]
 
@@ -143,11 +143,11 @@ trait MarketDataStore {
 
   def pivot(selection: MarketDataSelection, marketDataType: MarketDataType): PivotTableDataSource
 
-  def query(marketDataIdentifier: MarketDataIdentifier, marketDataType: MarketDataType,
+  def query(marketDataIdentifier: MarketDataIdentifier, marketDataType: MarketDataTypeName,
             observationDays: Option[Set[Option[Day]]] = None, observationTimes: Option[Set[ObservationTimeOfDay]] = None,
             marketDataKeys: Option[Set[MarketDataKey]] = None): List[(TimedMarketDataKey, MarketData)]
 
-  def queryForObservationDayAndMarketDataKeys(marketDataIdentifier: MarketDataIdentifier, marketDataType: MarketDataType): List[TimedMarketDataKey]
+  def queryForObservationDayAndMarketDataKeys(marketDataIdentifier: MarketDataIdentifier, marketDataType: MarketDataTypeName): List[TimedMarketDataKey]
 
   def readLatest(marketDataSet: MarketDataSet, timedKey: TimedMarketDataKey): Option[VersionedMarketData]
 
@@ -185,7 +185,7 @@ object VersionedMarketData {
 }
 
 case class MarketDataEntry(observationPoint: ObservationPoint, key: MarketDataKey, data: MarketData, tag: Option[String] = None) {
-  val dataType = key.dataType
+  val dataType = key.dataTypeName
 
   def isEmpty = data.size == 0 // key.castRows(data, ReferenceDataLookup.Null).isEmpty
 
@@ -195,7 +195,7 @@ case class MarketDataEntry(observationPoint: ObservationPoint, key: MarketDataKe
 
   def timedKey = TimedMarketDataKey(observationPoint, key)
 
-  def dataIdFor(marketDataSet: MarketDataSet) = MarketDataID(timedKey, marketDataSet)
+  def dataIdFor(marketDataSet: MarketDataSet, types: MarketDataTypes) = MarketDataID(timedKey, marketDataSet, types)
 }
 
 case class MarketDataUpdate(timedKey: TimedMarketDataKey, data: Option[MarketData], existingData: Option[VersionedMarketData],
@@ -203,8 +203,7 @@ case class MarketDataUpdate(timedKey: TimedMarketDataKey, data: Option[MarketDat
 
   def observationPoint = timedKey.observationPoint
   def marketDataKey = timedKey.key
-  def dataIdFor(marketDataSet: MarketDataSet) = MarketDataID(timedKey, marketDataSet)
-  def indexedData(marketDataSet: MarketDataSet) = dataIdFor(marketDataSet) → data
+  def dataIdFor(marketDataSet: MarketDataSet, types: MarketDataTypes) = MarketDataID(timedKey, marketDataSet, types)
 }
 
 
@@ -344,6 +343,8 @@ object DBMarketDataStore {
 class DBMarketDataStore(db: MdDB, tags: MarketDataTags, val marketDataSources: MultiMap[MarketDataSet, MarketDataSource],
   broadcaster: Broadcaster, referenceDataLookup: ReferenceDataLookup) extends MarketDataStore with Log {
 
+  private val dataTypes = new MarketDataTypes(referenceDataLookup)
+
   db.checkIntegrity()
 
   val importer = new MarketDataImporter(this)
@@ -411,7 +412,7 @@ class DBMarketDataStore(db: MdDB, tags: MarketDataTags, val marketDataSources: M
   }
 
   def readLatest(marketDataSet: MarketDataSet, timedKey: TimedMarketDataKey): Option[VersionedMarketData] =
-    readLatest(MarketDataID(timedKey.observationPoint, marketDataSet, timedKey.key))
+    readLatest(MarketDataID(timedKey.observationPoint, marketDataSet, timedKey.key, dataTypes))
 
   def readLatest[T <: MarketData](id: MarketDataID) = db.readLatest(id)
 
@@ -447,7 +448,7 @@ class DBMarketDataStore(db: MdDB, tags: MarketDataTags, val marketDataSources: M
 
   def save(marketDataSetToData: MultiMap[MarketDataSet, MarketDataEntry]): SaveResult = {
     val setToUpdates = marketDataSetToData.map { case (marketDataSet, values) => {
-      (marketDataSet, values.map(entry => entry.toUpdate(db.readLatest(entry.dataIdFor(marketDataSet)))))
+      (marketDataSet, values.map(entry => entry.toUpdate(db.readLatest(entry.dataIdFor(marketDataSet, dataTypes)))))
     } }
 
     update(setToUpdates)
@@ -579,7 +580,7 @@ class DBMarketDataStore(db: MdDB, tags: MarketDataTags, val marketDataSources: M
     days.toList.sortWith(_ > _).headOption
   }
 
-  def latestObservationDayFor(pricingGroup: PricingGroup, marketDataType: MarketDataType) = {
+  def latestObservationDayFor(pricingGroup: PricingGroup, marketDataType: MarketDataTypeName) = {
     db.latestObservationDaysFor(pricingGroupsDefinitions(pricingGroup), marketDataType)
       .getOrThrow("No observation days for: " + marketDataType)
   }
@@ -599,17 +600,17 @@ class DBMarketDataStore(db: MdDB, tags: MarketDataTags, val marketDataSources: M
     db.marketDataTypes(version, mds).toList
   }
 
-  def marketData(from: Day, to: Day, marketDataType: MarketDataType, marketDataSet: MarketDataSet) = {
+  def marketData(from: Day, to: Day, marketDataType: MarketDataTypeName, marketDataSet: MarketDataSet) = {
     db.latestMarketData(from, to, marketDataType, marketDataSet)
   }
 
-  def queryForObservationDayAndMarketDataKeys(marketDataIdentifier: MarketDataIdentifier, marketDataType: MarketDataType): List[TimedMarketDataKey] = {
+  def queryForObservationDayAndMarketDataKeys(marketDataIdentifier: MarketDataIdentifier, marketDataType: MarketDataTypeName): List[TimedMarketDataKey] = {
     val version = versionForMarketDataVersion(marketDataIdentifier.marketDataVersion)
     val mds = marketDataSets(marketDataIdentifier)
     db.queryForObservationDayAndMarketDataKeys(version, mds, marketDataType).toList
   }
 
-  def query(marketDataIdentifier: MarketDataIdentifier, marketDataType: MarketDataType,
+  def query(marketDataIdentifier: MarketDataIdentifier, marketDataType: MarketDataTypeName,
             observationDays: Option[Set[Option[Day]]] = None, observationTimes: Option[Set[ObservationTimeOfDay]] = None,
             marketDataKeys: Option[Set[MarketDataKey]] = None): List[(TimedMarketDataKey, MarketData)] = {
     val version = versionForMarketDataVersion(marketDataIdentifier.marketDataVersion)

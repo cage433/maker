@@ -264,12 +264,12 @@ class ReportServiceInternal(reportContextBuilder:ReportContextBuilder, tradeStor
     })
   }
 
-  def recordedMarketDataReader(reportParameters: ReportParameters) = {
+  def recordedMarketDataReader(reportParameters: ReportParameters, dataTypes: MarketDataTypes) = {
     cache.memoize( ("recordMarketData", reportParameters), {
       val recorded = reportPivotTableDataSource(reportParameters)._1.map {
         case (observationPoint, key, data) => TimedMarketDataKey(observationPoint, key) → data
       }
-      new RecordedMarketDataReader("Recorded from report using " + reportParameters.curveIdentifier.marketDataIdentifier, recorded.toList)
+      new RecordedMarketDataReader("Recorded from report using " + reportParameters.curveIdentifier.marketDataIdentifier, recorded.toList, dataTypes)
     } )
   }
 

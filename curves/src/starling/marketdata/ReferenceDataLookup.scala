@@ -17,6 +17,12 @@ trait ReferenceDataLookup {
   def marketFor(commodity : NeptuneCommodity, areaCode : AreaCode) : FuturesMarket = {
     NeptunePricingExchange.fromArea(areaCode).flatMap(_.marketFor(commodity)).getOrElse(Commodity.standardFuturesMarket(commodity))
   }
+
+  def areaCodes: Set[AreaCode]
+  def contractLocationCodes: Set[ContractualLocationCode]
+  def countryCodes: Set[NeptuneCountryCode]
+  def gradeCodes: Set[GradeCode]
+  def incotermCodes: Set[IncotermCode]
 }
 
 case class Incoterm(code: IncotermCode, name: String) {
@@ -32,6 +38,11 @@ object ReferenceDataLookup {
     def contractLocationFor(code: ContractualLocationCode) = ContractualLocation(code, unknownName)
     def countryFor(code: NeptuneCountryCode) = NeptuneCountry(code, unknownName, None)
     def incotermFor(code: IncotermCode) = Incoterm(code, unknownName)
+    def contractLocationCodes = Set()
+    def incotermCodes = Set()
+    def countryCodes = Set()
+    def gradeCodes = Set()
+    def areaCodes = Set()
 
     private val unknownName = "ReferenceDataLookup.Null"
   }

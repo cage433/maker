@@ -25,7 +25,7 @@ case class AreaBenchmarkAtomicKey(area: AreaCode, commodity: Commodity, grade: G
  * Benchmark curve key for benchmark area data
  */
 case class AreaBenchmarkCurveKey(commodity : Commodity) extends NonHistoricalCurveKey[GradeAreaBenchmarkData]{
-  override def typeName = "Price"
+  override def typeName = PriceDataType.name
   def marketDataKey = GradeAreaBenchmarkMarketDataKey(commodity)
   def underlying = commodity.toString + " Benchmark"
   def buildFromMarketData(marketDay : DayAndTime, marketData : GradeAreaBenchmarkData) : CurveObject = {
@@ -65,7 +65,7 @@ case class CountryBenchmarkAtomicKey(commodity: Commodity, country: NeptuneCount
  * Benchmark curve key for benchmark location data
  */
 case class CountryBenchmarkCurveKey(commodity : Commodity) extends NonHistoricalCurveKey[CountryBenchmarkData]{
-  override def typeName = "Price"
+  override def typeName = PriceDataType.name
   def marketDataKey = CountryBenchmarkMarketDataKey(commodity)
   def underlying = commodity.toString + " Benchmark"
   def buildFromMarketData(marketDay : DayAndTime, marketData : CountryBenchmarkData) : CurveObject = {

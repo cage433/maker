@@ -12,13 +12,13 @@ class NormalMarketDataReader(marketDataStore: MarketDataStore, marketDataIdentif
 
   def marketDataTypes = marketDataStore.marketDataTypes(marketDataIdentifier)
 
-  def read(marketDataType: MarketDataType, observationDays: Option[Set[Option[Day]]], observationTimes: Option[Set[ObservationTimeOfDay]],
+  def read(marketDataType: MarketDataTypeName, observationDays: Option[Set[Option[Day]]], observationTimes: Option[Set[ObservationTimeOfDay]],
            keys: Option[Set[MarketDataKey]]) = {
 
     marketDataStore.query(marketDataIdentifier, marketDataType, observationDays, observationTimes, keys)
   }
 
-  def readAllObservationDayAndMarketDataKeys(marketDataType: MarketDataType) = {
+  def readAllObservationDayAndMarketDataKeys(marketDataType: MarketDataTypeName) = {
     marketDataStore.queryForObservationDayAndMarketDataKeys(marketDataIdentifier, marketDataType)
   }
 }

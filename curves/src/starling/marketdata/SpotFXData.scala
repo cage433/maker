@@ -22,7 +22,7 @@ object SpotFXDataType extends MarketDataType {
   def valueFields = List(rateField.field)
   val fields = List(currencyField, rateField)
 
-  def rows(key: SpotFXDataKey, data: SpotFXData, referenceDataLookup: ReferenceDataLookup) = List(Row(
+  def rows(key: SpotFXDataKey, data: SpotFXData) = List(Row(
     currencyField.field → key.ccy.toString,
     rateField.field → PivotQuantity(data.rate)
   ))
@@ -34,9 +34,10 @@ object SpotFXDataType extends MarketDataType {
 case class SpotFXDataKey(ccy: UOM) extends MarketDataKey {
   type marketDataType = SpotFXData
   type marketDataDBType = SpotFXData
-  def dataType = SpotFXDataType
+  def dataTypeName = SpotFXDataType.name
   def subTypeKey = ccy.toString
   def fieldValues(referenceDataLookup: ReferenceDataLookup) = Row(SpotFXDataType.currencyField.field → ccy.toString)
+  def fields = Set(SpotFXDataType.currencyField.field)
 }
 
 //For Example 0.0125 USD / JPY

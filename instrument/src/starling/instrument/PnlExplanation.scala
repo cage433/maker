@@ -13,7 +13,7 @@ import starling.pivot.PivotQuantity
 
 case class CurveKeyExplanation(curveKeys: List[CurveKey], riskMarket : String, period: Option[Period], order: Option[Int], value: PivotQuantity, priceChange : Option[PivotQuantity], d1Price : Option[PivotQuantity], volChange : Option[PivotQuantity]){
   def riskCommodity = Some(curveKeys.head.higherUnderlying)
-  def riskType = Some(curveKeys.head.typeName)
+  def riskType = Some(curveKeys.head.typeName.name)
 }
 
 trait PnlExplanation {

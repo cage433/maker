@@ -26,7 +26,7 @@ class NeptuneFreightParityUtil(neptuneDB: RichDB) {
         FreightParityData(rs.getDouble("parity_rate"), rs.getString("narrative") ?? ""))
     }
 
-    Map((today, today, FreightParityDataType) → data)
+    Map((today, today, new FreightParityDataType) → data)
   }
 }
 

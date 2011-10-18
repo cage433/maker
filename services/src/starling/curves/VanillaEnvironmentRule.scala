@@ -10,6 +10,7 @@ import starling.gui.api.{PricingGroup, EnvironmentRuleLabel}
 
 class VanillaEnvironmentRule(pointRule:(Day)=>ObservationPoint, timeOfDay:TimeOfDay, val label: EnvironmentRuleLabel,
   val pricingGroups: List[PricingGroup], referenceDataLookup: ReferenceDataLookup) extends EnvironmentRule {
+  val dataTypes = new MarketDataTypes(referenceDataLookup)
 
   override def createNullAtomicEnvironment(observationDay: Day) = new NullAtomicEnvironment(observationDay.atTimeOfDay(timeOfDay))
 
@@ -17,7 +18,7 @@ class VanillaEnvironmentRule(pointRule:(Day)=>ObservationPoint, timeOfDay:TimeOf
     val observationPoint = pointRule(observationDay)
 
     val environmentX = {
-      val slice = new MarketDataReaderMarketDataSlice(marketDataReader, observationPoint)
+      val slice = new MarketDataReaderMarketDataSlice(marketDataReader, observationPoint, dataTypes = dataTypes)
       val dayAndTime = observationDay.atTimeOfDay(timeOfDay)
       Environment(new MarketDataCurveObjectEnvironment(dayAndTime, slice, referenceDataLookup = referenceDataLookup))
     }
@@ -41,12 +42,12 @@ class VanillaEnvironmentRule(pointRule:(Day)=>ObservationPoint, timeOfDay:TimeOf
         }
       }
 
-      override def discounts = marketDataReader.readAll(ForwardRateDataType, observationPoint).map {
+      override def discounts = marketDataReader.readAll(ForwardRateDataType.name, observationPoint).map {
         case (key:ForwardRateDataKey, data:ForwardRateData) => key.ccy -> data
       }
 
 
-      override def spotFX = marketDataReader.readAll(SpotFXDataType, observationPoint).map {
+      override def spotFX = marketDataReader.readAll(SpotFXDataType.name, observationPoint).map {
         case (key:SpotFXDataKey, _) => key.ccy
       }
     }
