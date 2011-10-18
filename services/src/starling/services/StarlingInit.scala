@@ -123,12 +123,12 @@ class StarlingInit( val props: Props,
   }
 
   val revalSnapshotDb = new RevalSnapshotDB(starlingDB)
-  val limServer = new LIMServer(props.LIMHost(), props.LIMPort())
 
   lazy val referenceDataLookup = DBReferenceDataLookup(neptuneRichDB)
 
   lazy val (fwdCurveAutoImport, marketDataStore) = log.infoWithTime("Creating Market Data Store") {
     import MarketDataSet._
+    val limServer = new LIMServer(props.LIMHost(), props.LIMPort())
 
     val marketDataSources = MultiMap[MarketDataSet, MarketDataSource](
       LimMetals ->> new RefinedMetalsLimMarketDataSource(limServer),
