@@ -28,12 +28,12 @@ class Patch132_MigrateMarketDataToFasterSchema extends Patch {
     MigrateMarketDataSchema(writer, starling.db, init.neptuneRichDB, init.dataTypes).migrateData
 }
 
-class Patch120_MakeVersionNullableInMarketDataComment extends Patch {
+class Patch133_MakeVersionNullableInMarketDataComment extends Patch {
   protected def runPatch(starlingInit: StarlingInit, starling: RichDB, writer: DBWriter) =
     writer.update("ALTER TABLE MarketDataCommit ALTER COLUMN version int NULL")
 }
 
-class Patch120_Add_Comment_To_MarketDataValue extends Patch {
+class Patch133_Add_Comment_To_MarketDataValue extends Patch {
   protected def runPatch(starlingInit: StarlingInit, starling: RichDB, writer: DBWriter) =
     writer.update("ALTER TABLE MarketDataValue ADD comment varchar(128) NULL")
 }
