@@ -462,12 +462,6 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
     action = refreshAction
     peer.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke(KeyEvent.VK_F5, 0), "refreshAction")
     peer.getActionMap.put("refreshAction", refreshAction.peer)
-    var fadeColour = GuiUtils.ClearColour
-    override protected def paintComponent(g:Graphics2D) {
-      super.paintComponent(g)
-      g.setColor(fadeColour)
-      g.fillRect(0,0,size.width,size.height)
-    }
   }
   val stopButton = new NavigationButton {
     icon = BrowserIcons.icon("/icons/22x22/actions/process-stop.png")
@@ -1103,8 +1097,6 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
     }
   }
 
-  private var refreshButtonAnimator:Animator = null
-
   def refresh() {
     genericLockedUI.setLocked(true)
     tabComponent.setBusy(true)
@@ -1148,14 +1140,6 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
         showPage(pageInfo, current)
         setScreenLocked(false)
         refreshButtonStatus()
-        if (refreshButtonAnimator != null) refreshButtonAnimator.stop()
-        refreshButtonAnimator = new Animator(StarlingBrowser.RefreshTime, new TimingTargetAdapter {
-          override def timingEvent(fraction:Float) {
-            refreshButton.fadeColour = new Color(255,255,0,math.round((1.0f-fraction) * 128))
-            refreshButton.repaint()
-          }
-        })
-        refreshButtonAnimator.start()
       }
     })
   }
