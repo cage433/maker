@@ -13,6 +13,7 @@ class FutureReader extends ExcelInstrumentReader {
 
     row.period match {
       case DateRangePeriod(period: Month) if row.isSpreadMarket => {
+        assert(period.y > 2000, "period is invalid: " + period)
         val market = row.futuresSpreadMarket
         row.prices match {
           case firstPrice :: lastPrice :: Nil => new FuturesCommoditySpread(market, period, firstPrice, lastPrice, volume)
@@ -24,11 +25,13 @@ class FutureReader extends ExcelInstrumentReader {
         throw new ExcelInstrumentReaderException("Invalid period for a crack market: " + period)
       }
       case DateRangePeriod(period) => {
+        assert(period.firstDay.year > 2000, "period is invalid: " + period)
         val strike = row.price
         val market = row.futuresMarket
         Future(market, period, strike, volume)
       }
-      case SpreadPeriod(first: Month, last: Month) => {
+      case s@SpreadPeriod(first: Month, last: Month) => {
+        assert(first.y > 2000, "period is invalid: " + s)
         val market = row.futuresMarket
         row.prices match {
           case firstPrice :: lastPrice :: Nil => new FuturesCalendarSpread(market, first, last, firstPrice, lastPrice, volume)

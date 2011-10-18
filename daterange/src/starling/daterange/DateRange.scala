@@ -154,12 +154,12 @@ object DateRange {
     })
   }
 
-  private val RangeRegex = """(?i)([a-z0-9]+) ?->? ?([a-z0-9]+)""".r
+  private val RangeRegex = """(?i)([a-z0-9 \/]+) ?->? ?([a-z0-9 \/]+)""".r
 
   def parse(text: String): DateRange = text.trim match {
-    case RangeRegex(start, end) if start.isInt => { // Allows 10-15Oct2011
+    case RangeRegex(start, end) if start.trim.isInt => { // Allows 10-15Oct2011
       val last = Day.parse(end.trim)
-      val first = Day(last.year, last.month, start.toInt)
+      val first = Day(last.year, last.month, start.trim.toInt)
       require(first < last, first + " not before " + last)
       new SimpleDateRange(first, last)
     }

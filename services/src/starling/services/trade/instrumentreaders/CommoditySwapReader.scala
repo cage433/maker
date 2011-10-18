@@ -17,6 +17,7 @@ class CommoditySwapReader extends ExcelInstrumentReader {
 
     row.period match {
       case dr@DateRangePeriod(period) => {
+        assert(period.firstDay.year > 2000, "period is invalid: " + dr)
         val swapPeriod = if(period.canSplitIntoMonths && period.toListOfMonths.size > 1) {
           // break period into monthly intervals
           val months: List[DateRange] = period.map(_.containingMonth).toList.distinct

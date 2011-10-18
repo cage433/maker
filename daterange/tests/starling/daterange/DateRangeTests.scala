@@ -142,6 +142,7 @@ class DateRangeTests extends TestNGSuite {
     assertEquals(Day.parse("11Dec2009"), Day(2009, 12, 11))
     assertEquals(Day.parse("31Oct2019"), Day(2019, 10, 31))
     assertEquals(Day.parse("1Feb2009"), Day(2009, 2, 1))
+    assertEquals(Day.parse("9/10/11"), Day(2011, 10, 9))
   }
 
   /**
@@ -222,6 +223,8 @@ class DateRangeTests extends TestNGSuite {
   def testUnapply = {
     assertEquals(DateRange.unapply(" JUL11"), Some(Month(2011, 7)))
     assertEquals(DateRange.unapply("14jun11-30jun11 "), Some(DateRange(14 Jun 2011, 30 Jun 2011)))
+    assertEquals(DateRange.unapply("14 jun 11 -> 30 jun 11 "), Some(DateRange(14 Jun 2011, 30 Jun 2011)))
+    assertEquals(DateRange.unapply("25/10/11 - 31/10/11"), Some(DateRange(25 Oct 2011, 31 Oct 2011)))
   }
 }
 
