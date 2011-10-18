@@ -25,7 +25,6 @@ import starling.tradeimport.TradeImporter
 import starling.richdb.{RichResultSetRowFactory, RichDB}
 import starling.db.{DB, TitanTradeSystem, MarketDataStore}
 import starling.calendar.BusinessCalendars
-import starling.rmi.{RabbitEventDatabase, DefaultRabbitEventDatabase}
 import swing.event.Event
 import starling.utils._
 import starling.curves.ClosesEnvironmentRule._
@@ -39,6 +38,8 @@ import starling.titan.{TitanTradeStoreManager, TitanSystemOfRecord, TitanTradeSt
 import com.trafigura.services.marketdata.{ExampleServiceApi, MarketDataServiceApi, ExampleService}
 import starling.manager._
 import starling.services.{ReferenceData, ReferenceDataService, EmailBroadcaster, Scheduler}
+import starling.fc2.api.FC2Facility
+import starling.rmi.{FC2FacilityImpl, RabbitEventDatabase, DefaultRabbitEventDatabase}
 
 class MetalsBromptonActivator extends BromptonActivator {
 
@@ -125,7 +126,9 @@ class MetalsBromptonActivator extends BromptonActivator {
     val trinityUploader = new TrinityUploader(new FCLGenerator(businessCalendars, curveViewer),
       new XRTGenerator(marketDataStore), trinityService, props)
 
-    val scheduler = Scheduler.create(businessCalendars, marketDataStore, broadcaster, trinityUploader, props)
+    val fc2Facility = context.awaitService(classOf[FC2Facility])
+
+    val scheduler = Scheduler.create(businessCalendars, fc2Facility.asInstanceOf[FC2FacilityImpl], marketDataStore, broadcaster, trinityUploader, props)
     scheduler.start
 
     context.registerService(classOf[ReferenceData], new ReferenceData("Schedules", ReferenceDataService.schedules(scheduler)))

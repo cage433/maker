@@ -22,7 +22,7 @@ import starling.props.Props
 import scala.concurrent.SyncVar
 import QueryBuilder._
 import starling.pivot.Row._
-import starling.pivot.{Row, KeyEdits, KeyFilter, PivotEdits, PivotTableDataSource, Field => PField}
+import starling.pivot.{NullPivotTableDataSource, Row, KeyEdits, KeyFilter, PivotEdits, PivotTableDataSource, Field => PField}
 
 /**
  * Thrown when there is no market data available for a particular day
@@ -138,10 +138,6 @@ trait MarketDataStore {
 
   def observationDaysByExcel(): Map[String, Set[Day]]
   def observationDaysByPricingGroup(): Map[PricingGroup, Set[Day]]
-
-  def pivot(marketDataIdentifier: MarketDataIdentifier, marketDataType: MarketDataType, pivotEdits:PivotEdits=PivotEdits.Null): PivotTableDataSource
-
-  def pivot(selection: MarketDataSelection, marketDataType: MarketDataType): PivotTableDataSource
 
   def query(marketDataIdentifier: MarketDataIdentifier, marketDataType: MarketDataTypeName,
             observationDays: Option[Set[Option[Day]]] = None, observationTimes: Option[Set[ObservationTimeOfDay]] = None,
@@ -388,21 +384,6 @@ class DBMarketDataStore(db: MdDB, tags: MarketDataTags, val marketDataSources: M
   def validate(reader: MarketDataReader): MarketDataReader = {
     new ValidatingMarketDataReader(reader, RollingAveragePriceValidator, new DayChangePriceValidator(reader))
   }
-
-  def pivot(marketDataIdentifier: MarketDataIdentifier, marketDataType: MarketDataType, pivotEdits:PivotEdits=PivotEdits.Null): PivotTableDataSource = {
-    //    val mds = marketDataSets(marketDataIdentifier.selection)
-    //    val version = versionForMarketDataVersion(marketDataIdentifier.marketDataVersion)
-    pivotCache.memoize((marketDataIdentifier, marketDataType, pivotEdits), {
-      val reader = new NormalMarketDataReader(this, marketDataIdentifier)
-      val validatingReader = validate(reader)
-
-      new MarketDataPivotTableDataSource(validatingReader, pivotEdits, this, marketDataIdentifier, marketDataType,
-        referenceDataLookup)
-    })
-  }
-
-  def pivot(selection: MarketDataSelection, marketDataType: MarketDataType): PivotTableDataSource =
-    pivot(latestMarketDataIdentifier(selection), marketDataType)
 
   def versionForMarketDataVersion(marketDataVersion: MarketDataVersion): Int = {
     marketDataVersion match {

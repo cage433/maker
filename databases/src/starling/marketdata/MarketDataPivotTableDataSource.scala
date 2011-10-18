@@ -32,28 +32,27 @@ object MarketDataPivotTableDataSource {
   val observationDayField = FieldDetails("Observation Day", DayPivotParser)
 }
 
-class MarketDataPivotTableDataSource(reader: MarketDataReader, edits:PivotEdits, marketDataStore: MarketDataStore,
-  marketDataIdentifier: MarketDataIdentifier, val marketDataType:MarketDataType, referenceDataLookup: ReferenceDataLookup)
-
-  extends PivotTableDataSource {
+class PrebuiltMarketDataPivotData(reader: MarketDataReader, marketDataStore: MarketDataStore,
+  marketDataIdentifier: MarketDataIdentifier, val marketDataType:MarketDataType, val referenceDataLookup: ReferenceDataLookup) {
 
   import MarketDataPivotTableDataSource._
 
   val dataTypes = new MarketDataTypes(referenceDataLookup)
 
   val keyAndDataFields = marketDataType.fields.map(_.field).toSet
+
   val fieldDetailsGroups = List(
     FieldDetailsGroup("Market Data Fields", observationDayField :: observationTimeField :: marketDataType.fields)
   )
+  lazy val fieldDetails:List[FieldDetails] = fieldDetailsGroups.flatMap(_.fields)
 
   val keyFields = marketDataType.keyFields + observationTimeField.field + observationDayField.field
-  private val fieldToFieldDetails : Map[Field, FieldDetails]= Map() ++ fieldDetails.map(f=>f.field->f)
 
   import QueryBuilder._
 
   import scala.collection.mutable.{HashSet=>MSet}
 
-  val cache = CacheFactory.getCache("marketDataCache")
+  val cache = CacheFactory.getCache("marketDataCache", unique=true)
 
   val observationDayAndMarketDataKeys = reader.readAllObservationDayAndMarketDataKeys(marketDataType.name)
 
@@ -65,7 +64,7 @@ class MarketDataPivotTableDataSource(reader: MarketDataReader, edits:PivotEdits,
 
   val inMemoryFields = observationDayAndMarketDataKeyRows.keys.flatMap(_.fields).toSet
 
-  override val initialState = {
+  val initialState = {
     val observationDaySelection = if (observationDayAndMarketDataKeyRows.isEmpty) {
       new SomeSelection(Set())
     } else {
@@ -179,13 +178,12 @@ class MarketDataPivotTableDataSource(reader: MarketDataReader, edits:PivotEdits,
     }
   }
 
-  override def editable = editableMarketDataSet.map { editableSet =>
+  def editable = editableMarketDataSet.map { editableSet =>
     new EditPivot {
       private val keyFields = Set(observationDayField.field, observationTimeField.field) +++ marketDataType.keyFields
       private val keyAndValueFields = (keyFields +++ marketDataType.valueFields.toSet)
       def editableToKeyFields = Map() ++ marketDataType.valueFields.map((_ -> keyFields))
-      def withEdits(edits:PivotEdits) = new MarketDataPivotTableDataSource(reader, edits,
-        marketDataStore, marketDataIdentifier, marketDataType, referenceDataLookup)
+      def withEdits(edits:PivotEdits) = new MarketDataPivotTableDataSource(PrebuiltMarketDataPivotData.this, edits)
 
       def save(edits:PivotEdits) = {
         val editsByTimedKeys: Map[TimedMarketDataKey, List[(KeyFilter, KeyEdits)]] = edits.edits.toList.flatMap { case(keyFilter, keyEdit) => {
@@ -218,10 +216,10 @@ class MarketDataPivotTableDataSource(reader: MarketDataReader, edits:PivotEdits,
     }
   }
 
-  private def dataWithoutEdits(pfs : PivotFieldsState): (Map[Field, List[Any]], List[Row]) =
-//    cache.memoize( (pfs, marketDataType, marketDataIdentifier), {
-    generateDataWithoutEdits(pfs)
-//  } )
+  def dataWithoutEdits(pfs : PivotFieldsState): (Map[Field, List[Any]], List[Row]) =
+    cache.memoize( (pfs), {
+      generateDataWithoutEdits(pfs)
+    } )
 
   private def generateDataWithoutEdits(pfs : PivotFieldsState): (Map[Field, List[Any]], List[Row]) = {
 
@@ -280,12 +278,23 @@ class MarketDataPivotTableDataSource(reader: MarketDataReader, edits:PivotEdits,
     }
     (possibleValuesBuilder.build, data)
   }
+}
+
+class MarketDataPivotTableDataSource(preBuilt:PrebuiltMarketDataPivotData, edits:PivotEdits) extends PivotTableDataSource {
+
+  val marketDataType = preBuilt.marketDataType
+  val fieldDetailsGroups = preBuilt.fieldDetailsGroups
+
+  override def zeroFields = marketDataType.zeroFields.toSet
+
+  override def initialState = preBuilt.initialState
+  override def editable = preBuilt.editable
 
   def data(pfs : PivotFieldsState):PivotResult = {
 
-    val (initialPossibleValues, data) = dataWithoutEdits(pfs)
+    val (initialPossibleValues, data) = preBuilt.dataWithoutEdits(pfs)
 
-    val filtersUpToFirstMarketDataField = pfs.allFilterPaths.chopUpToFirstNon(inMemoryFields)
+    val filtersUpToFirstMarketDataField = pfs.allFilterPaths.chopUpToFirstNon(preBuilt.inMemoryFields)
     val possibleValuesBuilder = new PossibleValuesBuilder(fieldDetails, filtersUpToFirstMarketDataField)
 
     possibleValuesBuilder.init(initialPossibleValues)
@@ -295,7 +304,7 @@ class MarketDataPivotTableDataSource(reader: MarketDataReader, edits:PivotEdits,
 
     val addedRows = edits.newRows.zipWithIndex.map{case (row,index) => {
       val fixedRow = if (marketDataType.marketDataKeyFields.forall(f => row.isDefined(f))) {
-        row + marketDataType.createKey(row).fieldValues(referenceDataLookup)
+        row + marketDataType.createKey(row).fieldValues(preBuilt.referenceDataLookup)
       } else {
         row
       }
@@ -315,5 +324,4 @@ class MarketDataPivotTableDataSource(reader: MarketDataReader, edits:PivotEdits,
     PivotResult(result.data, result.possibleValues ++ possibleValuesBuilder.build)
   }
 
-  override def zeroFields = marketDataType.zeroFields.toSet
 }

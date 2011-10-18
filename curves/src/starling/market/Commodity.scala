@@ -141,6 +141,7 @@ object Commodity{
     case HeatingOil => NYMEX_HEATING
     case FuelOil => NYMEX_SINGAPORE_FUEL_OIL
     case NatGas => NYMEX_NAT_GAS
+    case NASAAC => LME_NASAAC
     case _ => throw new Exception("Unknown Standard Futures Market for: " + commodity)
   }
 
