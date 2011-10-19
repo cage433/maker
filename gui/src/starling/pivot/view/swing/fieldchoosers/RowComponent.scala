@@ -128,7 +128,7 @@ class RowComponent(model:PivotTableModel,  otherLayoutInfo:OtherLayoutInfo, view
       val (nextToField, pos) = panel.fieldAndPositions.head
       val draggedFieldPos = fields.position(field)
       val fieldPos = fields.position(nextToField)
-      val offset = (draggedFieldPos < fieldPos) ? -1 | 0
+      val offset = (draggedFieldPos != -1 && draggedFieldPos < fieldPos) ? -1 | 0
       offset + (pos match {
         case Position.Left => math.max(fieldPos - 1, 0)
         case Position.Right => fieldPos + 1
