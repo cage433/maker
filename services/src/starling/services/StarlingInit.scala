@@ -1,58 +1,27 @@
 package starling.services
 
 import excel._
-import jmx.StarlingJMX
-import rpc.logistics.{FileMockedTitanLogisticsServices, DefaultTitanLogisticsServices}
-import rpc.marketdata.MarketDataService
-import rpc.valuation._
 import starling.schemaevolution.system.PatchRunner
 import starling.db._
 import starling.richdb.{RichDB, RichResultSetRowFactory}
 import starling.market._
 import starling.props.{PropsHelper, Props}
-import starling.tradestore.eai.EAITradeStore
 import java.net.InetAddress
-import starling.tradestore.intraday.IntradayTradeStore
-import starling.neptune.{RefinedFixationSystemOfRecord, RefinedFixationTradeStore, RefinedAssignmentSystemOfRecord, RefinedAssignmentTradeStore}
 import starling.curves.readers._
-import trade.ExcelTradeReader
-import trinity.{TrinityUploader, XRTGenerator, FCLGenerator}
 import starling.utils.ImplicitConversions._
-import starling.tradeimport.{ClosedDesks, TradeImporterFactory, TradeImporter}
-import starling.tradestore.TradeStores
 import starling.http._
-import starling.instrument.TradeSystem
 import starling.LIMServer
-import starling.gui.api._
-import starling.eai.{Traders, EAIAutoImport, EAIStrategyDB}
-import org.springframework.mail.javamail.JavaMailSenderImpl
 import starling.rmi._
 import starling.calendar._
-import com.trafigura.services.valuation.{ValuationServiceApi, TradeManagementCacheNotReady}
-import starling.services.rpc.refdata._
-import starling.services.rabbit._
 import collection.immutable.Map
-import com.trafigura.services.trinity.TrinityService
-import com.trafigura.services.marketdata.{ExampleService, MarketDataServiceApi}
-import starling.fc2.api.FC2Facility
 import starling.dbx.DataSourceFactory
-import java.util.UUID
-import com.trafigura.services.ResteasyServiceApi
 import starling.instrument.utils.StarlingXStream
-import java.util.concurrent.{Executors, ConcurrentHashMap}
-import swing.event.Event
-import starling.utils.ClosureUtil._
-import starling.browser.service.{BrowserService, UserLoggedIn, Version}
-import starling.databases.utils.{RabbitBroadcaster, RabbitMessageSender}
-import starling.auth.{AuthHandler, LdapUserLookup, User}
-import starling.manager.BromptonContext
+import starling.browser.service.Version
+import starling.auth.{AuthHandler, User}
 import starling.utils._
-import starling.eai.{EAIDealBookMapping, Traders, EAIAutoImport, EAIStrategyDB}
-import starling.titan._
-import starling.auth.internal.{LdapUserLookupImpl, KerberosAuthHandler}
+import starling.auth.internal.LdapUserLookupImpl
 import starling.curves._
 import org.apache.commons.io.IOUtils
-import java.io.{FileInputStream, File}
 import starling.marketdata.{MarketDataTypes, DBReferenceDataLookup}
 
 class StarlingInit( val props: Props,
@@ -170,9 +139,23 @@ class StarlingInit( val props: Props,
   private val serverName = props.ServerName()
   private val guiColour = if (production || props.UseProductionColour()) None else Some(PropsHelper.createColour(serverName))
   val gitCommit = {
-    val gitRoot = new File(".").getAbsoluteFile.getParentFile.getParentFile.getParentFile
-    val origHead = new File(new File(gitRoot, ".git"), "ORIG_HEAD")
-    if (origHead.exists) IOUtils.toString(new FileInputStream(origHead)) else origHead + " not found"
+    try {
+      val process = Runtime.getRuntime.exec("git log -1")
+      val stdOut = IOUtils.toByteArray(process.getInputStream)
+      IOUtils.toByteArray(process.getErrorStream)
+      process.waitFor
+      if (process.exitValue == 0) {
+        val lines = new String(stdOut).split("\n")
+        lines.headOption match {
+          case None => "Can't find commit id from log"
+          case Some(t) => t.replaceFirst("commit ", "")
+        }
+      } else {
+        "git returned non zero exit code"
+      }
+    } catch {
+      case e => "git not found on path"
+    }
   }
   val version = Version(serverName, hostname, props.StarlingDatabase().url, gitCommit, production, guiColour)
 

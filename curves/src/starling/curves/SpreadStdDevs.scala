@@ -113,9 +113,10 @@ object SpreadStdDevSurfaceDataType extends MarketDataType {
   }
   val stdDevField: FieldDetails = new QuantityLabelFieldDetails("Standard Deviation")
 
-  def marketDataKeyFields = Set(marketField.field)
-  override def keyFields = Set(marketField.field, firstPeriodField.field, lastPeriodField.field, periodField.field, deltaField.field, spreadTypeField.field)
-  override def valueFields = List(stdDevField.field)
+  def extendedKeys = List(marketField)
+  override def valueKeys = List(firstPeriodField, lastPeriodField, periodField, deltaField, spreadTypeField)
+  def valueFieldDetails = List(stdDevField)
+
   override def createKey(row: Row) = SpreadStdDevSurfaceDataKey(Market.futuresMarketFromName(row.string(marketField)))
   def createValue(rows: List[Row]) = {
     val builder = new SpreadStdDevSurfaceDataBuilder()
@@ -130,8 +131,6 @@ object SpreadStdDevSurfaceDataType extends MarketDataType {
     }}
     builder.build
   }
-
-  val fields = List(marketField, firstPeriodField, lastPeriodField, periodField, deltaField, stdDevField, spreadTypeField)
 
   val initialPivotState = PivotFieldsState(
     filters=List((marketField.field,SomeSelection(Set()))),

@@ -14,7 +14,6 @@ import starling.curves.IndexFixingKey
 import scala.collection.immutable.TreeMap
 import starling.daterange.DateRange
 import starling.quantity.{Percentage, UOM, Quantity}
-import starling.marketdata.{IncotermCode, GradeCode, NeptuneCountryCode, ContractualLocationCode}
 import starling.market.Lead
 import starling.market.Commodity
 import starling.market.Copper
@@ -22,6 +21,8 @@ import starling.quantity.utils.QuantityTestUtils._
 import starling.curves.USDFXRateKey
 import starling.curves.CountryBenchmarkAtomicKey
 import starling.curves.FreightParityAtomicKey
+import starling.gui.api.{GradeCode, ContractualLocationCode, IncotermCode, NeptuneCountryCode}
+
 /**
  * Commenting out until everything settles down - AMc 29/9/11
  */

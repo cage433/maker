@@ -319,3 +319,8 @@ case class ReferenceDataLabel(name:String)
 case class MarketDataTypeLabel(name:String) {
   override def toString = name
 }
+
+// Prefixing these classes with 'Neptune' because they aren't really countries, they are Country + Location
+case class NeptuneCountryCode(code: String) {
+  override def toString = code
+}

@@ -1,7 +1,7 @@
 package starling.marketdata
 
 import starling.market.{Commodity, FuturesMarket, NeptuneCommodity, NeptunePricingExchange}
-
+import starling.gui.api._
 
 trait ReferenceDataLookup {
   def areaCodeFor(code: NeptuneCountryCode): Option[AreaCode]

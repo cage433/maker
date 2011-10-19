@@ -2,7 +2,6 @@ package starling.titan
 
 import starling.richdb.{RichDB, RichInstrumentResultSetRow}
 import starling.utils.Broadcaster
-import starling.gui.api.{Desk, TradesUpdated}
 import starling.tradestore.{TradeRow, TradeStore}
 import starling.instrument.{Trade, TradeableType, TradeSystem}
 import EDMConversions._
@@ -10,6 +9,7 @@ import collection.immutable.Map
 import starling.instrument.physical.{PhysicalMetalAssignmentOrUnassignedSalesQuota, PhysicalMetalForward}
 import starling.marketdata._
 import starling.pivot._
+import starling.gui.api._
 
 object TitanTradeStore {
   val quotaID_str = "Quota ID"

@@ -15,14 +15,19 @@ trait MarketDataType {
     getClass.getName.substring(getClass.getName.lastIndexOf(".") + 1).stripSuffix("$").stripSuffix("DataType")
   )
 
+  def extendedKeys:List[FieldDetails]
+  def valueKeys:List[FieldDetails] = Nil
+  def valueFieldDetails:List[FieldDetails]
+  def derivedFieldDetails:List[FieldDetails] = Nil
+  def valueKeyFields = valueKeys.map(_.field).toSet
   // Fields needed to uniquely define a MarketDataKey. For prices it would be market
-  def marketDataKeyFields: Set[Field]
+  def marketDataKeyFields: Set[Field] = extendedKeys.map(_.field).toSet
 
   // Fields needed to uniquely define some market datum. For prices it would be market and period.
-  def keyFields: Set[Field]
+  final def keyFields: Set[Field] = (extendedKeys.map(_.field) ++ valueKeys.map(_.field)).toSet
 
   // The field (always one?) for the market data - e.g. price
-  def valueFields: List[Field] // TODO [08 Jun 2011] Shouldn't valueFields be everything other than the keyFields ?
+  final def valueFields: List[Field] = valueFieldDetails.map(_.field)
   def zeroFields: List[Field] = valueFields
   def createKey(row: Row): MarketDataKey
 
@@ -37,25 +42,20 @@ trait MarketDataType {
 
   //The fields to show in the market data viewer when pivoting on this type of market data
   //must be consistent with the rows method in the associated MarketDataKey
-  val fields: List[FieldDetails]
+  def fields: List[FieldDetails] = extendedKeys ::: valueKeys ::: valueFieldDetails ::: derivedFieldDetails
 
   //The initial state to use in the market data viewer for this type of market data
   val initialPivotState: PivotFieldsState
 
   def splitByFieldType[T](map: Map[Field, T]) = map.filterKeys(keyFields) → map.filterKeys(f => !keyFields.contains(f))
 
-  def valueKeys(key: MarketDataKey, data: MarketData) = {
-    castRows(key, data).map(valueKey(_, key.fields)).toList
-  }
+  def valueKeys(key: MarketDataKey, data: MarketData) = castRows(key, data).map(valueKey(_)).toList
 
   def fieldValues(row: Row): Row = fieldValues(createKey(row))
   def fieldValues(key: MarketDataKey): Row = fieldValuesFor(key.asInstanceOf[keyType])
   protected def fieldValuesFor(key: keyType): Row
 
-  def valueKey(row: Row, key: MarketDataKey): MarketDataValueKey = valueKey(row, fieldValues(key).fields)
-
-  private def valueKey(row: Row, fieldKeys: Set[Field]): MarketDataValueKey =
-    MarketDataValueKey(-1, row.filterKeys(keyFields -- fieldKeys))
+  def valueKey(row: Row): MarketDataValueKey = MarketDataValueKey(-1, row.filterKeys(valueKeyFields))
 
   def castRows(key: MarketDataKey, data: MarketData): Iterable[Row] = {
     rows(key.asInstanceOf[keyType], data.asInstanceOf[dataType])

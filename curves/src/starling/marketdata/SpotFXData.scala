@@ -2,6 +2,7 @@ package starling.marketdata
 
 import starling.quantity.{UOMSymbol, Quantity, UOM}
 import starling.pivot._
+import starling.utils.ImplicitConversions._
 
 
 object SpotFXDataType extends MarketDataType {
@@ -13,14 +14,13 @@ object SpotFXDataType extends MarketDataType {
   def createKey(row: Row) = SpotFXDataKey(UOM.parseCurrency(row.string(currencyField)))
   def createValue(rows: List[Row]) = SpotFXData(Row.singleRow(rows, "spot fx rate").pivotQuantity(rateField).quantityValue.get)
 
+  def extendedKeys = List(currencyField)
+  def valueFieldDetails = List(rateField)
+
   val initialPivotState = PivotFieldsState(
     dataFields=List(rateField.field),
     rowFields=List(currencyField.field)
   )
-  def marketDataKeyFields = Set(currencyField.field)
-  def keyFields = Set(currencyField.field)
-  def valueFields = List(rateField.field)
-  val fields = List(currencyField, rateField)
 
   def rows(key: SpotFXDataKey, data: SpotFXData) = List(Row(
     currencyField.field → key.ccy.toString,

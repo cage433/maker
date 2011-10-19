@@ -1,6 +1,6 @@
 package starling.browser.internal.HomePage
 
-import java.awt.{Font, Color, Dimension, Cursor, RenderingHints}
+import java.awt.{Font, Color, Dimension, Cursor, RenderingHints, Toolkit}
 import java.awt.event.KeyEvent
 import scala.swing._
 import swing.event._
@@ -11,6 +11,7 @@ import common._
 import internal.{HelpPage, RootBrowserBundle, BookmarksPanel, BrowserIcons}
 import osgi.{BundleRemoved, BundleAdded}
 import scala.util.Random
+import java.awt.datatransfer.StringSelection
 
 class HomePage
 
@@ -66,10 +67,18 @@ class StarlingHomePageComponent(context:PageContext, browserSize:Dimension, page
     if (ver.production) {
       add(new Label("<html><b>Production</b></html>"), "ax center, gapleft 100lp, gapright 100lp")
     } else {
+      val gitCommitLabel = new Label(data.version.gitCommit) {
+        tooltip = "Click on me to copy my contents to the clipboard"
+        reactions += {
+          case MouseClicked(_,_,_,_,_) => {
+            val stringSelection = new StringSelection(data.version.gitCommit)
+            Toolkit.getDefaultToolkit.getSystemClipboard.setContents(stringSelection, stringSelection)
+          }
+        }
+        listenTo(mouse.clicks)
+      }
       add(new Label("<html><b>" + data.version.name + " (" + data.version.hostname + ")</b></html>"), "ax center, wrap")
-      add(new TextField(data.version.gitCommit) {
-        editable = false
-      }, "ax center, wrap")
+      add(gitCommitLabel, "ax center, wrap")
       add(new Label(data.version.database), "span, ax center")
     }
   }

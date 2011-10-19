@@ -4,6 +4,7 @@ import starling.pivot._
 import scalaz.Scalaz._
 import starling.quantity.{Quantity, UOM}
 import starling.pivot.Row._
+import starling.gui.api.{ContractualLocationCode, IncotermCode, NeptuneCountryCode}
 
 case class FreightParityData(parityRate: Double, comment: String) extends MarketData {
   def size = 1
@@ -28,20 +29,20 @@ class FreightParityDataType(referenceData: ReferenceDataLookup = ReferenceDataLo
   val contractualLocationCodeField = FieldDetails("Contractual Location Code", FixedPivotParser(referenceData.contractLocationCodes))
   val destinationIncotermCodeField = FieldDetails("Destination Incoterm Code", FixedPivotParser(referenceData.incotermCodes))
   val destinationLocationCodeField = FieldDetails("Destination Location Code", FixedPivotParser(referenceData.countryCodes))
-  val keys = List(contractualIncotermCodeField, contractualLocationCodeField, destinationIncotermCodeField, destinationLocationCodeField)
+  val extendedKeys = List(contractualIncotermCodeField, contractualLocationCodeField, destinationIncotermCodeField, destinationLocationCodeField)
 
   val names@List(contractualIncotermField, contractualLocationField, destinationIncotermField, destinationLocationField) =
     List("Contractual Incoterm", "Contractual Location", "Destination Incoterm", "Destination Location").map(FieldDetails(_))
 
+  override def derivedFieldDetails = names
+
   val values@List(parityRateField, commentField) =
     List(FieldDetails.createMeasure("Parity Rate", parser0 = PivotQuantityPivotParser), FieldDetails.createMeasure("Comment"))
 
-  val fields = keys ::: names ::: values
-  override val keyFields = keys.map(_.field).toSet
-  override val valueFields = values.map(_.field)
-  val marketDataKeyFields = keyFields
+  def valueFieldDetails = values
+
   override val zeroFields = List(parityRateField.field)
-  val initialPivotState = PivotFieldsState(dataFields = values.map(_.field), rowFields = names.map(_.field), columnFields = Nil)
+  val initialPivotState = PivotFieldsState(dataFields = valueFields, rowFields = keyFields.toList, columnFields = Nil)
 
   def createKey(row: Row) = FreightParityDataKey(
     IncotermCode(row.string(contractualIncotermCodeField)), ContractualLocationCode(row.string(contractualLocationCodeField)),
@@ -68,12 +69,9 @@ class FreightParityDataType(referenceData: ReferenceDataLookup = ReferenceDataLo
     (commentField.field → data.comment)
   )
 
-  override val defaultValue = Row(parityRateField.field → Quantity(0, UOM.USD / UOM.MT), commentField.field → "")
+  override val defaultValue = Row(parityRateField.field → Quantity(0, UOM.USD / UOM.MT), commentField.field → "XXDefault")
 }
 
-case class ContractualLocationCode(code: String) {
-  override def toString = code
-}
 case class ContractualLocation(code: ContractualLocationCode, name: String) {
   override def toString = name
 }

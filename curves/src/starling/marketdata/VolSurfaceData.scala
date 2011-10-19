@@ -16,9 +16,10 @@ object OilVolSurfaceDataType extends MarketDataType{
   type keyType = OilVolSurfaceDataKey
   lazy val keys : List[OilVolSurfaceDataKey] = Market.all.filter(_.volatilityID.isDefined).map(OilVolSurfaceDataKey)
 
-  def marketDataKeyFields = Set(marketField.field)
-  override def keyFields = Set(marketField.field, periodField.field, deltaField.field)
-  override def valueFields = List(volatilityField.field)
+  def extendedKeys = List(marketField)
+  override def valueKeys = List(periodField, deltaField)
+  def valueFieldDetails = List(volatilityField)
+
   def createKey(row: Row) = OilVolSurfaceDataKey(Market.fromName(row.string(marketField)))
   def createValue(rows: List[Row]) = {
     val builder = new Builder()
@@ -41,8 +42,6 @@ object OilVolSurfaceDataType extends MarketDataType{
     }
   }
   val volatilityField: FieldDetails = new PercentageLabelFieldDetails("Volatility")
-
-  val fields = List(marketField, periodField, deltaField, volatilityField)
 
   val initialPivotState = PivotFieldsState(
     filters=List((marketField.field,SomeSelection(Set()))),

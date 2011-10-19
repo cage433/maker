@@ -76,7 +76,7 @@ class Props(starlingProps:Map[String,String], trafiguraProps : Map[String, Strin
 
   object KerberosPassword extends StringProperty("suvmerinWiv0")
   object ServerPrincipalName extends StringProperty("STARLING-TEST/dave-linux")
-  object UseAuth extends BooleanProperty(false)
+  object UseAuth extends BooleanProperty(true)
   object NoMP extends BooleanProperty(false)
   object ImportsBookClosesFromEAI extends BooleanProperty(true)
 

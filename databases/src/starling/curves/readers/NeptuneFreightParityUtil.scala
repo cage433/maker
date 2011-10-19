@@ -10,6 +10,7 @@ import starling.db.{DB, MarketDataEntry, MarketDataSource}
 import starling.richdb.{RichResultSetRowFactory, RichDB}
 
 import starling.utils.ImplicitConversions._
+import starling.gui.api.{ContractualLocationCode, IncotermCode, NeptuneCountryCode}
 
 class NeptuneFreightParityUtil(neptuneDB: RichDB) {
   def read(day: Day):MultiMap[(Day, Day, MarketDataType), MarketDataEntry] = readAll()

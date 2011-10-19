@@ -37,7 +37,7 @@ case class MarketDataID(observationPoint: ObservationPoint, marketDataSet: Marke
 
   def valueKeys(data: MarketData) = types.fromName(subTypeKey.typeName).valueKeys(subTypeKey, data)
 
-  private def valueKey(row: Row) = types.fromName(subTypeKey.typeName).valueKey(row, subTypeKey)
+  private def valueKey(row: Row) = types.fromName(subTypeKey.typeName).valueKey(row)
 }
 
 object MarketDataID {

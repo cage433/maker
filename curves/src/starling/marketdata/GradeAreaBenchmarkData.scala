@@ -7,24 +7,12 @@ import pivotparsers.DayPivotParser
 import scalaz.Scalaz._
 import starling.utils.ImplicitConversions._
 import starling.daterange.Day
+import starling.gui.api.{AreaCode, GradeCode}
 
-case class AreaCode(code:String) {
-  override def toString = code
-}
-object AreaCode{
-  val EUR = AreaCode("EUR")
-  val SAM = AreaCode("SAM")
-  val NAM = AreaCode("NAM")
-  val ASI = AreaCode("ASI")
-  val CHN = AreaCode("CHN")
-}
 case class Area(code:AreaCode, name:String) {
   override def toString = name
 }
 
-case class GradeCode(code : String) {
-  override def toString = code
-}
 case class Grade(code:GradeCode, name:String) {
   override def toString = name
 }
@@ -56,10 +44,9 @@ class GradeAreaBenchmarkDataType(referenceData: ReferenceDataLookup = ReferenceD
   val benchmarkPriceField = FieldDetails.createMeasure("Benchmark Price",
     parser0 = PivotQuantityPivotParser, formatter0 = PivotQuantitySetPivotFormatter)
 
-  def marketDataKeyFields = keyFields
-  override def keyFields = Set(commodityField, areaCodeField, gradeCodeField, effectiveFromField).map(_.field)
-  override def valueFields = List(benchmarkPriceField.field)
-  val fields = List(commodityField, areaField, areaCodeField, gradeField, gradeCodeField, effectiveFromField, benchmarkPriceField)
+  def extendedKeys = List(commodityField)
+  override def valueKeys = List(areaField, areaCodeField, gradeField, gradeCodeField, effectiveFromField, benchmarkPriceField)
+  def valueFieldDetails = List(benchmarkPriceField)
 
   val initialPivotState = PivotFieldsState(
     dataFields=List(benchmarkPriceField.field),

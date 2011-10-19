@@ -13,9 +13,9 @@ object ForwardRateDataType extends MarketDataType {
   type keyType = ForwardRateDataKey
   val keys = UOM.currencies.map(s => ForwardRateDataKey(s))
 
-  def marketDataKeyFields = Set(currencyField.field)
-  override def keyFields:Set[Field] = Set(currencyField.field, formatField.field, dayField.field, instrumentTypeField.field)
-  override def valueFields = List(rateField.field)
+  def extendedKeys = List(currencyField)
+  override def valueKeys = List(formatField, dayField, instrumentTypeField)
+  def valueFieldDetails = List(rateField)
 
   val currencyField = FieldDetails("Currency")
   val formatField = FieldDetails("Format")
@@ -33,8 +33,6 @@ object ForwardRateDataType extends MarketDataType {
     rowFields=List(dayField.field),
     columnFields=List(currencyField.field)
   )
-
-  val fields = List(currencyField, formatField, instrumentTypeField, dayField, rateField)
 
   protected def fieldValuesFor(key: ForwardRateDataKey) = Row(currencyField.field → key.ccy)
 
