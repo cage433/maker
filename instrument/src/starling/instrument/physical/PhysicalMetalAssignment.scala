@@ -13,6 +13,7 @@ import starling.market.{Commodity, NeptuneCommodity}
 import starling.market.Copper
 import starling.market.Aluminium
 import starling.utils.Log
+import starling.titan.valuation.AssignmentValuation
 
 object PhysicalMetalAssignmentOrUnassignedSalesQuota{
   val contractDeliveryDayLabel = "contractDeliveryDay"
@@ -309,6 +310,16 @@ case class PhysicalMetalAssignment( assignmentID : String,
 
   def *(scale: Double) = this.copy(quantity = quantity * scale, inventoryQuantity = inventoryQuantity * scale)
 
+  def costsAndIncomeValuation(env : Environment) : AssignmentValuation = {
+    if (isPurchase & isAllocated)
+      allocatedPurchaseValue(env)
+    else if (isPurchase)
+      unallocatedPurchaseValue(env)
+    else
+      allocatedSaleValue(env)
+  }
+
+      
   def unallocatedPurchaseValue(env : Environment) : CostsAndIncomeUnallocatedAssignmentValuation = {
     require (isPurchase)
     benchmarkDeliveryDay match {
