@@ -5,6 +5,7 @@ import starling.quantity.Quantity
 import starling.marketdata._
 import starling.utils.ImplicitConversions._
 import starling.daterange.{Day, Period, DayAndTime}
+import starling.gui.api.{AreaCode, GradeCode, NeptuneCountryCode}
 
 /**
  * Class for atomic benchmark data

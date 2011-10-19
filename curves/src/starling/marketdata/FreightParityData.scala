@@ -4,6 +4,7 @@ import starling.pivot._
 import scalaz.Scalaz._
 import starling.quantity.{Quantity, UOM}
 import starling.pivot.Row._
+import starling.gui.api.{ContractualLocationCode, IncotermCode, NeptuneCountryCode}
 
 case class FreightParityData(parityRate: Double, comment: String) extends MarketData {
   def size = 1
@@ -71,9 +72,6 @@ class FreightParityDataType(referenceData: ReferenceDataLookup = ReferenceDataLo
   override val defaultValue = Row(parityRateField.field → Quantity(0, UOM.USD / UOM.MT), commentField.field → "XXDefault")
 }
 
-case class ContractualLocationCode(code: String) {
-  override def toString = code
-}
 case class ContractualLocation(code: ContractualLocationCode, name: String) {
   override def toString = name
 }

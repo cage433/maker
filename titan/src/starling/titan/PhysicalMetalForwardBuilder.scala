@@ -17,6 +17,7 @@ import starling.instrument.{ErrorInstrument, TradeID, Trade}
 import com.trafigura.tradecapture.internal.refinedmetal.{DestinationLocation, Location}
 import starling.marketdata._
 import starling.market.Commodity
+import starling.gui.api.{GradeCode, ContractualLocationCode, IncotermCode, NeptuneCountryCode}
 
 class PhysicalMetalForwardBuilder(refData: TitanTacticalRefData,
             inventoryByQuotaID: Map[TitanId, List[EDMInventoryItem]],

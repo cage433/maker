@@ -5,6 +5,7 @@ import starling.marketdata._
 
 import starling.utils.ImplicitConversions._
 import starling.quantity.{Quantity, UOM}
+import starling.gui.api.{ContractualLocationCode, IncotermCode, NeptuneCountryCode}
 
 case class FreightParityAtomicKey(contractualIncoterm: IncotermCode, contractualLocation: ContractualLocationCode,
   destinationIncoterm: IncotermCode, destinationLocation: NeptuneCountryCode,

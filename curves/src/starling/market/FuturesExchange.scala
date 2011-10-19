@@ -5,7 +5,8 @@ import starling.daterange.ObservationTimeOfDay._
 import starling.utils.StarlingEnum
 import starling.utils.ImplicitConversions._
 import starling.daterange.{Day, ObservationTimeOfDay}
-import starling.marketdata.{AreaCode, Area}
+import starling.marketdata.Area
+import starling.gui.api.AreaCode
 
 trait DeliveryType {
   val name: String
