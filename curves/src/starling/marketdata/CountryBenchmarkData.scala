@@ -7,7 +7,6 @@ import pivotparsers.DayPivotParser
 import starling.quantity.Quantity
 import scalaz.Scalaz._
 import starling.utils.ImplicitConversions._
-import starling.gui.api.NeptuneCountryCode
 
 case class CountryBenchmarkData(countryData: NestedMap[NeptuneCountryCode, Day, Quantity]) extends MarketData {
   def size = countryData.nestedSize
@@ -69,6 +68,9 @@ case class CountryBenchmarkMarketDataKey(commodity: Commodity) extends MarketDat
 }
 
 // Prefixing these classes with 'Neptune' because they aren't really countries, they are Country + Location
+case class NeptuneCountryCode(code: String) {
+  override def toString = code
+}
 case class NeptuneCountry(code: NeptuneCountryCode, name: String, area: Option[Area]) {
   override def toString = name
 }

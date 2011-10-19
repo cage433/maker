@@ -7,12 +7,24 @@ import pivotparsers.DayPivotParser
 import scalaz.Scalaz._
 import starling.utils.ImplicitConversions._
 import starling.daterange.Day
-import starling.gui.api.{AreaCode, GradeCode}
 
+case class AreaCode(code:String) {
+  override def toString = code
+}
+object AreaCode{
+  val EUR = AreaCode("EUR")
+  val SAM = AreaCode("SAM")
+  val NAM = AreaCode("NAM")
+  val ASI = AreaCode("ASI")
+  val CHN = AreaCode("CHN")
+}
 case class Area(code:AreaCode, name:String) {
   override def toString = name
 }
 
+case class GradeCode(code : String) {
+  override def toString = code
+}
 case class Grade(code:GradeCode, name:String) {
   override def toString = name
 }

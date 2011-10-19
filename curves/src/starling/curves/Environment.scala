@@ -19,7 +19,6 @@ import stress.CommodityPriceStress
 import starling.quantity._
 import starling.marketdata._
 import scalaz.Scalaz._
-import starling.gui.api._
 
 /**
  * Throw this if a curve object is incapable of providing a value
