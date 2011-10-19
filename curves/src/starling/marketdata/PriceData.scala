@@ -2,7 +2,7 @@ package starling.marketdata
 
 import collection.SortedMap
 import starling.pivot._
-import starling.pivot.pivotparsers.{ValidMarketParser, PeriodPivotParser}
+import starling.pivot.pivotparsers.{SpecifiedValuesParser, PeriodPivotParser}
 import starling.utils.ImplicitConversions._
 import starling.quantity.{UOM, Quantity}
 import collection.immutable.TreeMap
@@ -12,7 +12,7 @@ import starling.daterange._
 import scalaz.Scalaz._
 
 object ValidMarketParserObject {
-  lazy val Parser = new ValidMarketParser(Market.all.map(_.name).toSet)
+  lazy val Parser = new SpecifiedValuesParser(Market.all.map(_.name).toSet)
 }
 
 object PeriodComparator extends Ordering[Any] {
