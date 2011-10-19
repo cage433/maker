@@ -4,12 +4,12 @@ import starling.gui._
 import api._
 import namedquantitycomponents.TopNamedQuantityComponent
 import java.awt.{Color, Dimension}
-import swing.{ScrollPane, Label}
 import starling.pivot.PivotFormatter
 import starling.browser.common.GuiUtils._
 import starling.browser._
 import common.{ButtonClickedEx, NewPageButton, MigPanel}
 import starling.daterange.{DayAndNoTime, DayAndTime, Day}
+import swing.{TextArea, ScrollPane, Label}
 
 case class ValuationParametersPage(tradeID:TradeIDLabel, reportParameters:ReportParameters) extends StarlingServerPage {
   def text = "Valuation Parameters for " + tradeID.id
@@ -188,12 +188,8 @@ class ValuationParametersPageComponent(context:PageContext, pageData:PageData) e
       }
       case Left(error) => {
         val valuationParametersExplainPanel = new MigPanel("insets 0", "[" + StandardLeftIndent + "][p]") {
-          val errorScrollPane = new ScrollPane(starling.browser.common.GuiUtils.LabelTextArea(error)) {
-            verticalScrollBar.unitIncrement = 10
-            horizontalScrollBar.unitIncrement = 10
-          }
-
-          add(LabelWithSeparator("Error explaining valuation"), "spanx, growx, wrap")
+          val errorScrollPane = new ScrollPane(new TextArea(error))
+          add(LabelWithSeparator("Error Explaining Valuation"), "spanx, growx, wrap")
           add(errorScrollPane, "skip 1, push, grow, gapright " + RightPanelSpace)
         }
 
