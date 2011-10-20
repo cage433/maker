@@ -15,7 +15,7 @@ $(document).ready(function () {
 });
 
 var renderer = {
-    show: function(class) { $(".rendering").hide(); $("." + class).show() },
+    show: function(clazz) { $(".rendering").hide(); $("." + clazz).show() },
     pathParam: function(param) { return param.Binding == "Path" ? '@PathParam("' + param.Name + '") ' : '' },
     separator: function(sep, index, length) { return (index < length - 1) ? sep : ""},
     scalaParameter: function(index, param, length) {
