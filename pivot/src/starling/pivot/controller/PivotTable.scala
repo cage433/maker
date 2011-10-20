@@ -31,7 +31,7 @@ object TreePivotFilterNode {
 
 case class PivotTable(rowFields:List[Field], rowFieldHeadingCount:Array[Int], rowNode:AxisNode,
                       columnNode:AxisNode, possibleValues:Map[Field,TreePivotFilter], treeDetails:TreeDetails,
-                      editableInfo:Option[EditableInfo], formatInfo:FormatInfo,
+                      editableInfo:Option[EditableInfo], fieldInfo:FieldInfo,
                       aggregatedMainBucket:Map[(List[ChildKey],List[ChildKey]),MeasureCell] = Map(),
                       zeroFields:Set[Field]=Set()) {
 
@@ -49,7 +49,7 @@ case class PivotTable(rowFields:List[Field], rowFieldHeadingCount:Array[Int], ro
         val field = childKey.field
         val tc = childKey.value match {
           case UndefinedValue => TableCell.Undefined
-          case v => formatInfo.fieldToFormatter(field).format(v, PivotFormatter.DefaultExtraFormatInfo)
+          case v => fieldInfo.fieldToFormatter(field).format(v, PivotFormatter.DefaultExtraFormatInfo)
         }
         tc.text.equalsIgnoreCase(value.toString()) }}
         .deny(_.isEmpty, "No %s found for %s %s" % (measure, name, value))
@@ -124,6 +124,6 @@ case class PivotTable(rowFields:List[Field], rowFieldHeadingCount:Array[Int], ro
 object PivotTable {
   def singleCellPivotTable(text:String) = {
     val bucket = Map( (List(AxisValue.Null.childKey), List(AxisValue.Null.childKey)) -> MeasureCell(Some(text), EditableCellState.Normal))
-    PivotTable(List(), Array(), AxisNode.Null, AxisNode.Null, Map(), TreeDetails(Map(), Map()), None, FormatInfo.Blank, bucket)
+    PivotTable(List(), Array(), AxisNode.Null, AxisNode.Null, Map(), TreeDetails(Map(), Map()), None, FieldInfo.Blank, bucket)
   }
 }

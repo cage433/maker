@@ -532,7 +532,7 @@ class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSiz
 
   private val tableModelsHelper = new PivotJTableModelHelper(mainData, data.pivotTable.editableInfo,
     rowHeaderData, colHeaderData, colUOMs, resizeColumnHeaderAndMainTableColumns(), resizeRowHeaderTableColumns(),
-    data.pivotFieldsState, extraFormatInfo, edits, (edits0, tableType) => updatePivotEdits(edits0, tableType), data.pivotTable.formatInfo)
+    data.pivotFieldsState, extraFormatInfo, edits, (edits0, tableType) => updatePivotEdits(edits0, tableType), data.pivotTable.fieldInfo)
 
   def extraFormatInfoUpdated(extraFormatInfo:ExtraFormatInfo) {
     val newConverter = viewConverter.copy(extraFormatInfo = extraFormatInfo)
@@ -1221,12 +1221,12 @@ class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSiz
     val r = if (otherLayoutInfo.frozen) {
       (filtersWithSome, mainTable.getSelectedCells.map(tup => {
         val (row,col) = tup
-        tableModelsHelper.mainTableModel.mapCellToFields(row, col)
+        tableModelsHelper.mainTableModel.mapCellToFieldsForMainTable(row, col)
       }))
     } else {
       (filtersWithSome, fullTable.getSelectedCells.map(tup => {
         val (row,col) = tup
-        tableModelsHelper.fullTableModel.mapCellToFields(row, col)
+        tableModelsHelper.fullTableModel.mapCellToFieldsForMainTable(row, col)
       }))
     }
     TableSelection(r)

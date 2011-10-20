@@ -716,14 +716,14 @@ object PivotTableModel {
       val compressedMap = compress(mainTableBucketWithSubtotals)
       val possibleValuesConvertedToTree = possibleValuesToTree(pivotResult, fieldDetailsLookup)
       val rowFieldHeadingCount = fieldIndexes(pivotState.rowFields, treeDepths, fieldDetailsLookup)
-      val formatInfo = FormatInfo(Map() ++ fieldDetailsLookup.map{case (f,fd) => (f -> fd.formatter)})
+      val fieldInfo = FieldInfo(Map() ++ fieldDetailsLookup.map{case (f,fd) => (f -> fd.formatter)}, treeDepths.keySet.toList)
 
       // determine how long it runs for
       val now = System.currentTimeMillis
       Log.debug("Pivot Table Model generated in " + (now - then) + "ms")
       PivotTable(pivotState.rowFields, rowFieldHeadingCount, rowAxisRoot.toGUIAxisNode(fieldDetailsLookup),
         columnAxisRoot.toGUIAxisNode(fieldDetailsLookup), possibleValuesConvertedToTree,
-        TreeDetails(treeDepths, maxDepths), allEditableInfo0.editableInfo, formatInfo, compressedMap, dataSource.zeroFields.toSet)
+        TreeDetails(treeDepths, maxDepths), allEditableInfo0.editableInfo, fieldInfo, compressedMap, dataSource.zeroFields.toSet)
     }
   }
 
@@ -756,9 +756,9 @@ object PivotTableModel {
 case class TreeDetails(treeDepths:Map[Field, (Int, Int)], maxTreeDepths:Map[Field, Int])
 
 case class EditableInfo(keyFields:Set[Field], measureFields:Set[Field], fieldToParser:Map[Field,PivotParser], extraLine:Boolean, blankCellsEditable:Boolean)
-case class FormatInfo(fieldToFormatter:Map[Field,PivotFormatter])
-object FormatInfo {
-  val Blank = FormatInfo(Map())
+case class FieldInfo(fieldToFormatter:Map[Field,PivotFormatter], treeFields:List[Field])
+object FieldInfo {
+  val Blank = FieldInfo(Map(), Nil)
 }
 
 case class AllEditableInfo(editableInfo:Option[EditableInfo], editableMeasures:Set[Field], blankCellsEditable:Boolean)
