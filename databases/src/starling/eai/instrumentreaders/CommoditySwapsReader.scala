@@ -30,6 +30,7 @@ class CommoditySwapsReader extends InstrumentReader {
       rs.getSwapPricingRule("PricingRule", "PricingRuleDefault")
     }
     val averaging = DateRange(start, end)
+    val roundingOverride = rs.getIntOption("RoundingID")
 
     // From Ed Kennard - 7/10/11
     // This field is now always defaulted to ‘Per Quote’ for all swaps and derived trade types (e.g. FFAs, CFDs, Clearport Swaps),
@@ -42,6 +43,6 @@ class CommoditySwapsReader extends InstrumentReader {
       PerQuoteRule
     }
 
-    CommoditySwap(index, strike, amount, averaging, cleared, rule, roundingMethodRule = roundingRule)
+    CommoditySwap(index, strike, amount, averaging, cleared, rule, roundingMethodRule = roundingRule, roundingOverride = roundingOverride)
   }
 }

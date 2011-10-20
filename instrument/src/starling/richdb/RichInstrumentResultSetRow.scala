@@ -9,6 +9,7 @@ import starling.quantity._
 
 trait RichInstrumentResultSetRow {
   def getInt(name:String):Int
+  def getIntOption(name:String):Option[Int]
   def getDouble(name:String):Double
   def getBoolean(name:String):Boolean
   def getTimestamp(name:String):Timestamp

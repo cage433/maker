@@ -153,6 +153,7 @@ class EAITradeStoreTest extends TestMarketTest {
 	InitialPriceUOM varchar(20) NULL,
 	PricingRule varchar(25) NULL,
 	RoundingMethodRule varchar(25) NULL,
+	roundingOverride tinyint NULL,
 	CashInstrumentType varchar(255) NULL)
   """
 }

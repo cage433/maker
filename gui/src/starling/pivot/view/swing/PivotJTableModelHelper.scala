@@ -65,31 +65,6 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
   val keyFields = editableInfo.map(_.keyFields).getOrElse(Set())
   val extraLine = editableInfo.fold(_.extraLine, false)
 
-  val rowHeaderTableModel = new PivotJTableRowModel(this, rowHeaderData0X)
-
-  private var mainColCount0 = data0(0).length
-  private var rowHeaderColCount0 = rowHeaderData0(0).length
-  private var colHeaderRowCount0 = colHeaderData0.length
-
-  def rowHeaderData0 = rowHeaderTableModel.rowHeaderData0
-
-  def setData(rd:Array[Array[AxisCell]], cd:Array[Array[AxisCell]], d:Array[Array[TableCell]], extraFormatInfo:ExtraFormatInfo) {
-    this.extraFormatInfo = extraFormatInfo
-    data0 = d
-    rowHeaderTableModel.rowHeaderData0 = rd
-    colHeaderData0 = cd
-    mainTableModel.fireTableRowsUpdated(0, mainTableModel.getRowCount-1)
-    rowHeaderTableModel.fireTableRowsUpdated(0, rowHeaderTableModel.getRowCount-1)
-    colHeaderTableModel.fireTableRowsUpdated(0, colHeaderTableModel.getRowCount-1)
-    fullTableModel.fireTableRowsUpdated(0, fullTableModel.getRowCount-1)
-    resizeMainTableColumns
-    resizeRowHeaderTableColumns
-  }
-
-  private def initializedBlankRow = Row(
-    (Map() ++ (keyFields.map(f => {f → UndefinedValue}))) ++ fieldState.singleValueFilterAreaFilters
-  )
-
   private def removeAddedRowsIfBlank(edits:PivotEdits):PivotEdits = {
 
     val totalRows = fullTableModel.getRowCount
@@ -122,6 +97,31 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
       }
     }
   }
+
+  val rowHeaderTableModel = new PivotJTableRowModel(this, rowHeaderData0X, (edits) => removeAddedRowsIfBlank(edits))
+
+  private var mainColCount0 = data0(0).length
+  private var rowHeaderColCount0 = rowHeaderData0(0).length
+  private var colHeaderRowCount0 = colHeaderData0.length
+
+  def rowHeaderData0 = rowHeaderTableModel.rowHeaderData0
+
+  def setData(rd:Array[Array[AxisCell]], cd:Array[Array[AxisCell]], d:Array[Array[TableCell]], extraFormatInfo:ExtraFormatInfo) {
+    this.extraFormatInfo = extraFormatInfo
+    data0 = d
+    rowHeaderTableModel.rowHeaderData0 = rd
+    colHeaderData0 = cd
+    mainTableModel.fireTableRowsUpdated(0, mainTableModel.getRowCount-1)
+    rowHeaderTableModel.fireTableRowsUpdated(0, rowHeaderTableModel.getRowCount-1)
+    colHeaderTableModel.fireTableRowsUpdated(0, colHeaderTableModel.getRowCount-1)
+    fullTableModel.fireTableRowsUpdated(0, fullTableModel.getRowCount-1)
+    resizeMainTableColumns
+    resizeRowHeaderTableColumns
+  }
+
+  private def initializedBlankRow = Row(
+    (Map() ++ (keyFields.map(f => {f → UndefinedValue}))) ++ fieldState.singleValueFilterAreaFilters
+  )
 
   val colHeaderTableModel = new PivotJTableModel {
     def getRowCount = colHeaderData0.length

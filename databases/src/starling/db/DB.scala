@@ -166,7 +166,12 @@ object DBConvert {
   def convertTypes(params: Map[String, Any]): java.util.Map[String, AnyRef] = {
     var convertedMap = scala.collection.mutable.Map[String, AnyRef]()
     for ((key, value) <- params) {
-      value match {
+      val actualValue = value match {
+        case Some(s) => s
+        case None => null
+        case o => o
+      }
+      actualValue match {
         case d: Day => convertedMap += (key -> d.toSqlDate)
         case t: Timestamp => convertedMap += (key -> new java.util.Date(t.instant))
         case q: Quantity if (Strike == key || InitialPrice == key) => convertedMap += (key -> q.value.toString, key + "UOM" -> q.uom.toString)
@@ -182,7 +187,7 @@ object DBConvert {
         case p: Percentage => convertedMap += (key -> double2Double(100.0 * p.value))
         case o: PersistAsBlob => convertedMap += (key -> StarlingXStream.write(o.obj))
         case null => convertedMap += (key -> null)
-        case _ => convertedMap += (key -> value.toString)
+        case _ => convertedMap += (key -> actualValue.toString)
       }
     }
     convertedMap

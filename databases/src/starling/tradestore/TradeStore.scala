@@ -396,9 +396,9 @@ abstract class TradeStore(db: RichDB, broadcaster:Broadcaster, tradeSystem: Trad
     tradeHistories.tradesAsOf(timestamp, marketDay, fromPredicate(tradePredicate))
   }
 
-  def readAll(timestamp:Timestamp, tradePredicate : TradePredicate, expiryDay: Option[Day]) = {
+  def readAll(timestamp:Timestamp, tradePredicate : TradePredicate, expiryDay: Option[Day], marketDay: Option[Day]) = {
     updateTradeHistories(timestamp, None)
-    val trades = tradeHistories.tradeRowsAsOf(timestamp, expiryDay)
+    val trades = tradeHistories.tradeRowsAsOf(timestamp, expiryDay, marketDay = marketDay)
     val filter = fromPredicate(tradePredicate)
     var allTradeableTypes = new scala.collection.mutable.HashSet[TradeableType[_]]()
     val rows = trades.flatMap { tradeAndFields =>

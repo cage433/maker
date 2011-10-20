@@ -29,6 +29,7 @@
       <entry name="?*.properties" />
       <entry name="?*.csv" />
       <entry name="?*.zip" />
+      <entry name="?*.gz" />
     </wildcardResourcePatterns>
     <annotationProcessing enabled="false" useClasspath="true" />
   </component>

@@ -63,25 +63,7 @@ object SingleTradePageComponent {
       }
       panelBuffer += ((group.groupName, groupPanel))
     }
-
-    val tradeFields = panelBuffer.find(_._1 == "Trade Fields")
-    val instrumentFields = panelBuffer.find(_._1 == "Instrument Fields")
-
-    (tradeFields, instrumentFields) match {
-      case (Some(tf), Some(iFields)) => {
-        val combinedPanel = new MigPanel("insets 0") {
-          add(tf._2, "wrap unrel, growx")
-          add(iFields._2, "growx")
-        }
-        val newPB = panelBuffer.filterNot{case (n, _) => (n == "Trade Fields" || n == "Instrument Fields")}
-        panelBuffer.clear()
-        panelBuffer += (("Combined", combinedPanel))
-        panelBuffer ++= newPB
-      }
-      case _ => 
-    }
-    
-    panelBuffer.map(_._2).toList
+    panelBuffer.toList
   }
 
   def generateCostsPanel(costs:CostsLabel) = {
@@ -247,8 +229,11 @@ class SingleTradePageComponent(context:PageContext, pageData:PageData) extends M
         tradePanel.clear()
         val row = stable.data(selection)
         val panels = SingleTradePageComponent.generateTradePanels(row, fieldDetailsGroups, stable.columns)
-        panels.foreach(tradePanel.addPanel)
-        tradePanel.addComp(SingleTradePageComponent.generateCostsPanel(costs(selection)), "newline, split, spanx, growx")
+        panels.map(_._2).foreach(tradePanel.addPanel)
+        // Only show costs panel if there are any.
+        if (costs.head.costInfo.nonEmpty) {
+          tradePanel.addComp(SingleTradePageComponent.generateCostsPanel(costs(selection)), "newline, split, spanx, growx")
+        }
         tradePanel.revalidate()
         tradePanel.repaint()
       }
