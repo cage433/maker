@@ -4,8 +4,6 @@ import starling.quantity.Quantity
 import starling.daterange.Day
 
 
-
-
 case class PricingValuationDetails(
   // currently excludes premium - need to check with business
   price : Quantity,
@@ -28,12 +26,13 @@ trait CostsAndIncomeValuation {
   def freightParity : Quantity
 }
 
-trait AssignmentValuation{
+trait AssignmentValuation {
   def assignmentID : String
+  def assignmentQuantity : Quantity
+  def valuationDetails : Either[String, PricingValuationDetails]
 }
 
-case class CostsAndIncomeAllocatedPurchaseAssignmentValuation
-(
+case class CostsAndIncomeAllocatedPurchaseAssignmentValuation(
   assignmentID : String,
   /*
      Rows 71, 72, 7/home/alex/workspace/dev/services/starling/titan/src/starling/titan/valuation4
@@ -44,8 +43,7 @@ case class CostsAndIncomeAllocatedPurchaseAssignmentValuation
   valuationDetails : Either[String, PricingValuationDetails]
 ) extends AssignmentValuation
 
-case class CostsAndIncomeAllocatedSaleAssignmentValuation
-(
+case class CostsAndIncomeAllocatedSaleAssignmentValuation(
   assignmentID : String,
   /*
      Rows 71, 72, 74
@@ -61,6 +59,7 @@ case class CostsAndIncomeAllocatedSaleAssignmentValuation
 /**
 * A valuation for a particular inventory assigments and snapshot
 */
+/*
 case class CostsAndIncomeInventoryValuation(
   snapshotID : String,
   // These come from the pricing spec of the quota associated with the purchaseAssignmentID
@@ -74,9 +73,9 @@ case class CostsAndIncomeInventoryValuation(
   saleAssignmentID : Option[String],
   purchaseQuantity : Quantity,
   saleQuantity : Quantity) extends CostsAndIncomeValuation
+  */
 
-case class CostsAndIncomeUnallocatedAssignmentValuation
-(
+case class CostsAndIncomeUnallocatedAssignmentValuation(
   assignmentID : String,
   /*
     Row 71

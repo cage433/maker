@@ -36,6 +36,7 @@ def init() = starling.services.StarlingInit.devInstance
 
 lazy val devInstance = init()
 
+lazy val neptuneRefData = devInstance.referenceDataLookup
 def makeEnv(pricingGroup : PricingGroup, marketDay : Day) : Environment = {
   val marketDataStore = devInstance.marketDataStore
 
@@ -43,7 +44,7 @@ def makeEnv(pricingGroup : PricingGroup, marketDay : Day) : Environment = {
   val marketDataID = marketDataStore.latestMarketDataIdentifier(marketDataSelection)
   val reader = new NormalMarketDataReader(marketDataStore, marketDataID)
 
-  val marketDataSlice = new MarketDataReaderMarketDataSlice(reader, ObservationPoint(marketDay, ObservationTimeOfDay.LMEClose))
+  val marketDataSlice = new MarketDataReaderMarketDataSlice(reader, ObservationPoint(marketDay, ObservationTimeOfDay.LMEClose), Map(), new MarketDataTypes(neptuneRefData))
   Environment(
     MarketDataCurveObjectEnvironment(
       marketDay.endOfDay,
@@ -52,7 +53,6 @@ def makeEnv(pricingGroup : PricingGroup, marketDay : Day) : Environment = {
       ReferenceDataLookup.Null
     ))
 }
-lazy val neptuneRefData = devInstance.referenceDataLookup
 lazy val titanTradeStore = {
   val ts = new starling.titan.TitanTradeStore(new RichDB(devInstance.props.StarlingDatabase(), new RichResultSetRowFactory), Broadcaster.Null, TitanTradeSystem, neptuneRefData)
   ts.init
