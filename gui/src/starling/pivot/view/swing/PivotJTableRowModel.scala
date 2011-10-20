@@ -21,7 +21,7 @@ import scalaz.Scalaz._
 
 import PivotTableType._
 
-class PivotJTableRowModel(helper: PivotJTableModelHelper, var rowHeaderData0:Array[Array[AxisCell]]) extends PivotJTableModel {
+class PivotJTableRowModel(helper: PivotJTableModelHelper, var rowHeaderData0:Array[Array[AxisCell]], removeAddedRowsIfBlank:(PivotEdits) => PivotEdits) extends PivotJTableModel {
   lazy val extraLine = helper.extraLine
   lazy val fieldState = helper.fieldState
   lazy val keyFields = helper.keyFields
@@ -130,11 +130,6 @@ class PivotJTableRowModel(helper: PivotJTableModelHelper, var rowHeaderData0:Arr
       updateEdits(editsToUse, RowHeader)
     }
     editsToUse
-  }
-
-  private def removeAddedRowsIfBlank(edits:PivotEdits):PivotEdits = {
-    //fullTableModel.removeAddedRowsIfBlank(edits)
-    edits
   }
 
   override def resetCells(cells:List[(Int,Int)], fireChange:Boolean) = {
