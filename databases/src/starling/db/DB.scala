@@ -56,14 +56,20 @@ trait DBTrait[RSR <: ResultSetRow] extends Log {
     tt.setPropagationBehavior(TransactionDefinition.PROPAGATION_NESTED)
     tt.execute(new TransactionCallback[Object] {
       def doInTransaction(status: TransactionStatus) = {
-        try {
+        log.info(">>in transaction for thread %s".format(Thread.currentThread()))
+        val r = try {
           f
         }
         catch {
           // transaction only rolls back on non-checked exceptions which is great for Java but
           // not so good for Scala. This fixes it.
-          case e: Exception => throw new RuntimeException(e)
+          case th: Throwable => {
+            log.error("******************* DB **************** doInTransaction caught throwable", th)
+            throw new RuntimeException(th)
+          }
         }
+        log.info("<<in transaction for thread %s".format(Thread.currentThread()))
+        r
       }
     })
   }

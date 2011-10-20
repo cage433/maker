@@ -5,8 +5,8 @@ import com.trafigura.shared.events.Event
 import starling.dbx.QueryBuilder._
 import starling.daterange.Timestamp
 import starling.gui.api.RabbitEventReceived
-import starling.utils.Broadcaster
 import starling.tradestore.TradeStore.StoreResults
+import starling.utils.{Stopwatch, Log, Broadcaster}
 
 object DefaultRabbitEventDatabase {
   val TableName = "RabbitMessages"
@@ -33,7 +33,7 @@ object NullRabbitEventDatabase extends RabbitEventDatabase {
   def db : DB = null
 }
 
-class DefaultRabbitEventDatabase(val db : DB, broadcaster : Broadcaster) extends RabbitEventDatabase {
+class DefaultRabbitEventDatabase(val db : DB, broadcaster : Broadcaster) extends RabbitEventDatabase with Log {
   private val colSize = 300
   private var maxID = {
     val q = (
@@ -97,48 +97,50 @@ class DefaultRabbitEventDatabase(val db : DB, broadcaster : Broadcaster) extends
                   ex : Option[Throwable] = None,
                   result : Option[String] = None,
                   tradeStoreResults : Option[StoreResults]) = {
-    synchronized {
-      val verb:String = e.verb.toJson.take(colSize)
-      val subject:String = e.subject.take(colSize)
-      val id:String = e.key.identifier.take(colSize)
-      val source:String = e.source.take(colSize)
-      val timestamp:Timestamp = Timestamp(e.content.header.timestamp.getMillis)
-      val host:String = e.content.header.host.take(colSize)
-      val pid:Int = e.content.header.pid
-      val body = e.content.body.toJson.toString
-      val starlingTimestamp = new Timestamp
 
-      val tradeStoreUpdate = tradeStoreResults.map(tsr =>
-                                Map("tradeInsertedCount" -> tsr.inserted,
-                                    "tradeUpdatedCount" -> tsr.updated,
-                                    "tradeDeletedCount" -> tsr.deleted))
+    val verb:String = e.verb.toJson.take(colSize)
+    val subject:String = e.subject.take(colSize)
+    val id:String = e.key.identifier.take(colSize)
+    val source:String = e.source.take(colSize)
+    val timestamp:Timestamp = Timestamp(e.content.header.timestamp.getMillis)
+    val host:String = e.content.header.host.take(colSize)
+    val pid:Int = e.content.header.pid
+    val body = e.content.body.toJson.toString
+    val starlingTimestamp = new Timestamp
 
-      db.inTransaction {
-        writer => {
-          e.content.body.payloads.foreach{
-            p =>
-              writer.update(
-                TableName,
-                Map(
-                  "verb" -> verb,
-                  "subject" -> subject,
-                  "id" -> id,
-                  "source" -> source,
-                  "timestamp" -> timestamp,
-                  "host" -> host,
-                  "pid" -> pid,
-                  "body" -> body,
-                  "starlingtimestamp" -> starlingTimestamp,
-                  "payloadType" -> p.payloadType.trim,
-                  "payloadValue" -> p.key.identifier.trim,
-                  "status" -> status.code
-                ) ++ result.map("result" -> _)
-                  ++ ex.map("errorMsg" -> _.getMessage) ++ tradeStoreUpdate.flatten,
-                ("id" eql id))
-          }
+    val tradeStoreUpdate = tradeStoreResults.map(tsr =>
+                              Map("tradeInsertedCount" -> tsr.inserted,
+                                  "tradeUpdatedCount" -> tsr.updated,
+                                  "tradeDeletedCount" -> tsr.deleted))
+
+    val sw = new Stopwatch()
+    Log.debug(">>calling update for RabbitMessages")
+    db.inTransaction {
+      writer => {
+        e.content.body.payloads.foreach{
+          p =>
+            writer.update(
+              TableName,
+              Map(
+                "verb" -> verb,
+                "subject" -> subject,
+                "id" -> id,
+                "source" -> source,
+                "timestamp" -> timestamp,
+                "host" -> host,
+                "pid" -> pid,
+                "body" -> body,
+                "starlingtimestamp" -> starlingTimestamp,
+                "payloadType" -> p.payloadType.trim,
+                "payloadValue" -> p.key.identifier.trim,
+                "status" -> status.code
+              ) ++ result.map("result" -> _)
+                ++ ex.map("errorMsg" -> _.getMessage) ++ tradeStoreUpdate.flatten,
+              ("id" eql id))
         }
       }
 
+      Log.info("<<calling update for RabbitMessages, took %d".format(sw.reset()))
       broadcaster.broadcast(RabbitEventReceived(maxID))
     }
   }

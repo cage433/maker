@@ -57,6 +57,7 @@ class CostAndIncomeValuationReport(@transient env:Environment, @transient utps :
           val valuation = ass.costsAndIncomeValuation(env)
           List(
             valuation.valuationDetails match {
+
               case Right(value) => {
                 valuation match {
                   case ass : CostsAndIncomeAllocatedPurchaseAssignmentValuation => {
@@ -82,6 +83,12 @@ class CostAndIncomeValuationReport(@transient env:Environment, @transient utps :
                     )
                   }
                   case ass : CostsAndIncomeUnallocatedAssignmentValuation => {
+                    val (benchmarkPremium, benchmarkPrice) = ass.benchmarkDetails match {
+                      case Right(bm) => {
+                        (bm.premium, bm.price)
+                      }
+                      case Left(err) => (Quantity.NULL, Quantity.NULL)
+                    }
                     CostsAndIncomeValuationRow(
                       id,
                       utp,
