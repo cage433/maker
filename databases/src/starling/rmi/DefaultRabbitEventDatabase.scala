@@ -112,7 +112,7 @@ class DefaultRabbitEventDatabase(val db : DB, broadcaster : Broadcaster) extends
                               Map("tradeInsertedCount" -> tsr.inserted,
                                   "tradeUpdatedCount" -> tsr.updated,
                                   "tradeDeletedCount" -> tsr.deleted))
-
+/*
     val sw = new Stopwatch()
     Log.debug(">>calling update for RabbitMessages")
     db.inTransaction {
@@ -139,9 +139,12 @@ class DefaultRabbitEventDatabase(val db : DB, broadcaster : Broadcaster) extends
               ("id" eql id))
         }
       }
-
+*/
       Log.info("<<calling update for RabbitMessages, took %d".format(sw.reset()))
-      broadcaster.broadcast(RabbitEventReceived(maxID))
+
+      synchronized {
+        broadcaster.broadcast(RabbitEventReceived(maxID))
+      }
     }
   }
 }
