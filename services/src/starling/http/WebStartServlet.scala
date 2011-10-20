@@ -16,9 +16,6 @@ import starling.daterange.Timestamp
 object GUICode {
 
   val dirPrefix = ""//if (getClass.getClassLoader.toString.charAt(0).isDigit) "../" else ""
-
-  println("DIR prefix " + dirPrefix)
-
   val scalaLibraryJar = new File(dirPrefix + "lib/scala/lib_managed/scala-library-jar-2.9.1.jar")
 
   // The order of this list matters. It is the order things are attempted to be loaded so ensure it is optimised.
@@ -131,6 +128,7 @@ class WebStartServlet(prefix:String, serverName:String, externalURL:String, main
     val kerberosName = "kerberos.reg"
     val starlingInstallerName = "Starling-" + serverName + "-InstallScript.nsi"
     val createInstallerName = "CreateInstallerInstructions.txt"
+    val classesPath = "/target/scala-2.9.1/classes/"
 
     var url = request.getRequestURI
     var path = url.substring(prefix.length + 1)
@@ -205,7 +203,7 @@ class WebStartServlet(prefix:String, serverName:String, externalURL:String, main
         if (moduleJarFile.exists) {
           moduleJarFile
         } else {
-          val outputPath = new File(module + "/target/scala-2.9.1/classes/")
+          val outputPath = new File(module + classesPath)
           generateJar(moduleJarFile, outputPath)
           moduleJarFile.setLastModified(lastModified)
           moduleJarFile
@@ -227,18 +225,19 @@ class WebStartServlet(prefix:String, serverName:String, externalURL:String, main
       val (booterJarFile, _) = generateBooterJar
       writeFileToStream(booterJarFile, response)
     } else if (path == "/" + starlingExeName) {
-      println("Generate the exe!")
-
       val iconFile = new File("project/deployment/starling.ico")
       val splashFile = new File("project/deployment/splash_screen.bmp")
-      val (booterJarFile,timestamp) = generateBooterJar
+      val (booterJarFile,booterTimestamp) = generateBooterJar
+      val timestamp = math.max(booterTimestamp, new File("services" + classesPath + "starling/http/InstallationHelper.class").lastModified())
       val exeName = "Starling-" + serverName + "_" + timestamp + ".exe"
 
       def getOrGenerateFile = {
         val exeFile = new File(fileCacheDir, exeName)
         if (exeFile.exists) {
+          println("Returning the exe")
           exeFile
         } else {
+          println("Generating the exe")
           val configFile = new File(fileCacheDir, "launch4j.xml")
           val configXML = InstallationHelper.generateL4JXML(externalURL, serverName, booterJarFile.getAbsolutePath, iconFile.getAbsolutePath, splashFile.getAbsolutePath, timestamp).toString
           val bufferedWriter = new BufferedWriter(new FileWriter(configFile))
