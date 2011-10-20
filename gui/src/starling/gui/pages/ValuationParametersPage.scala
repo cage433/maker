@@ -3,13 +3,14 @@ package starling.gui.pages
 import starling.gui._
 import api._
 import namedquantitycomponents.TopNamedQuantityComponent
-import java.awt.{Color, Dimension}
 import starling.pivot.PivotFormatter
 import starling.browser.common.GuiUtils._
 import starling.browser._
-import common.{ButtonClickedEx, NewPageButton, MigPanel}
+import common.{ImageButton, ButtonClickedEx, NewPageButton, MigPanel}
 import starling.daterange.{DayAndNoTime, DayAndTime, Day}
-import swing.{TextArea, ScrollPane, Label}
+import swing.{Component, TextArea, ScrollPane, Label}
+import java.awt.{Dimension, Color}
+import swing.event.MouseClicked
 
 case class ValuationParametersPage(tradeID:TradeIDLabel, reportParameters:ReportParameters) extends StarlingServerPage {
   def text = "Valuation Parameters for " + tradeID.id
@@ -153,15 +154,68 @@ class ValuationParametersPageComponent(context:PageContext, pageData:PageData) e
     }
     val tradePanels = SingleTradePageComponent.generateTradePanels(data.tradeValuation.tradeRow,
       data.tradeValuation.fieldDetailsGroups, data.tradeValuation.columns)
-    val infoPanel = new MigPanel("insets 0") {
-      tradePanels.foreach(add(_, "ay top, gapright unrel"))
-      add(ValuationParametersPageComponent.reportParametersPanel(data.reportParameters), "ay top, gapright unrel")
-      add(versionsButton, "ay top")
+
+    var collapsed = true
+
+    val infoPanelHolder = new MigPanel("insets 0") {
+      def update(comp:Component) {
+        removeAll
+        add(comp, "push, grow")
+        revalidate()
+        repaint()
+      }
+
+      reactions += {case MouseClicked(_,_,_,2,_) => toggleCollapsedPanel()}
+      listenTo(mouse.clicks)
     }
 
-    val pnl = data.tradeValuation.tradeValuation.explanation
-    add(infoPanel, "pushx, wrap")
+    def toggleCollapsedPanel() {
+      if (collapsed) {
+        infoPanelHolder.update(infoPanel)
+      } else {
+        collapsedInfoPanel.preferredSize = new Dimension(infoPanel.preferredSize.width, collapsedInfoPanel.preferredSize.height)
+        infoPanelHolder.update(collapsedInfoPanel)
+      }
+      collapsed = !collapsed
+    }
 
+    val infoPanel = new MigPanel("insets 0") {
+      val (tradeFieldsPanel, otherPanels) = tradePanels.partition(_._1 == "Trade Fields")
+      val reportsPanel = ValuationParametersPageComponent.reportParametersPanel(data.reportParameters)
+      if (tradeFieldsPanel.nonEmpty) {
+        val combinedPanel = new MigPanel("insets 0") {
+          add(tradeFieldsPanel.head._2, "growx, wrap")
+          add(reportsPanel, "growx")
+        }
+        add(combinedPanel, "ay top, gapright unrel")
+        otherPanels.reverse.tail.reverse.map(_._2).foreach(add(_, "ay top, gapright unrel"))
+        add(otherPanels.last._2, "ay top, split, gapright 0")
+      } else {
+        tradePanels.reverse.tail.reverse.map(_._2).foreach(add(_, "ay top, gapright unrel"))
+        add(tradePanels.last._2, "ay top, split, gapright 0")
+      }
+
+      val collapseButton = new ImageButton(StarlingIcons.im("/icons/scroll_up.png"), toggleCollapsedPanel())
+      add(collapseButton, "ay top")
+    }
+
+    val collapsedInfoPanel = new MigPanel("insets 0") {
+      val labelWithSeparator = LabelWithSeparator("Trade, Intrument and Market Data Parameters")
+      labelWithSeparator.enabled = false
+      val expandButton = new ImageButton(StarlingIcons.im("/icons/scroll_down.png"), toggleCollapsedPanel())
+
+      add(labelWithSeparator, "ay top, pushx, growx, split, gapright 0")
+      add(expandButton, "ay top")
+
+      preferredSize = new Dimension(infoPanel.preferredSize.width, preferredSize.height)
+    }
+
+    toggleCollapsedPanel()
+
+    add(infoPanelHolder, "ay top, split")
+    add(versionsButton, "ay top, wrap")
+
+    val pnl = data.tradeValuation.tradeValuation.explanation
     pnl match {
       case Right(explanation) => {
         val valuationParametersExplainPanel = new MigPanel("insets 0", "[" + StandardLeftIndent + "][p]") {
