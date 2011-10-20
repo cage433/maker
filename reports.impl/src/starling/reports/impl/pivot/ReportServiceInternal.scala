@@ -342,8 +342,12 @@ class ReportServiceInternal(reportContextBuilder:ReportContextBuilder, tradeStor
         }
       }
     }
+    val yearToDates = {
+      val ytd = new YearToDateReport
+      ytd.report(reportContextBuilder, curveIdentifierFactory, tradeSets, reportParameters)
+    }
     val allRecorded = reportData.recorded ++ pnlRecordedPlusPivots.flatMap(_._1)
-    val allPivots = pivots ::: pnlRecordedPlusPivots.map(_._2)
+    val allPivots = pivots ::: pnlRecordedPlusPivots.map(_._2) ::: yearToDates
     (allRecorded, UnionPivotTableDataSource.join(allPivots))
   }
 

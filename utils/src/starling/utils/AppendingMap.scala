@@ -37,6 +37,8 @@ class AppendingMap[A, B](val namedMaps : Map[String,Map[A, B]]) extends scala.co
 
   def +[B1 >: B](kv: (A, B1)) = throw new UnsupportedOperationException()
 
+  def add(name:String, other:Map[A,B]) = new AppendingMap(namedMaps + (name -> other))
+
   val maps: List[Map[A, B]] = namedMaps.values.toList
 
   def iterator = new Iterator[(A,B)] {

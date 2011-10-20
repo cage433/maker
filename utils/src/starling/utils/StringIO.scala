@@ -94,4 +94,10 @@ object StringIO {
     u
   }
   def lines(resource: String): Iterator[String] = Source.fromURL(getClass.getResource(resource)).getLines
+
+  def linesFromZipped(resource: String): Iterator[String] = {
+    val is = new GZIPInputStream(new FileInputStream(new File(getClass.getResource(resource).toURI)))
+    Source.fromInputStream(is).getLines
+  }
+
 }
