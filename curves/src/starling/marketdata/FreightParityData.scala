@@ -1,10 +1,10 @@
 package starling.marketdata
 
 import starling.pivot._
+import pivotparsers.SpecifiedValuesParser
 import scalaz.Scalaz._
 import starling.quantity.{Quantity, UOM}
 import starling.pivot.Row._
-import starling.gui.api.{ContractualLocationCode, IncotermCode, NeptuneCountryCode}
 
 case class FreightParityData(parityRate: Double, comment: String) extends MarketData {
   def size = 1
@@ -25,10 +25,10 @@ class FreightParityDataType(referenceData: ReferenceDataLookup = ReferenceDataLo
   type dataType = FreightParityData
   type keyType = FreightParityDataKey
 
-  val contractualIncotermCodeField = FieldDetails("Contractual Incoterm Code", FixedPivotParser(referenceData.incotermCodes))
-  val contractualLocationCodeField = FieldDetails("Contractual Location Code", FixedPivotParser(referenceData.contractLocationCodes))
-  val destinationIncotermCodeField = FieldDetails("Destination Incoterm Code", FixedPivotParser(referenceData.incotermCodes))
-  val destinationLocationCodeField = FieldDetails("Destination Location Code", FixedPivotParser(referenceData.countryCodes))
+  val contractualIncotermCodeField = FieldDetails("Contractual Incoterm Code", new SpecifiedValuesParser(referenceData.incotermCodes.map(_.code)))
+  val contractualLocationCodeField = FieldDetails("Contractual Location Code", new SpecifiedValuesParser(referenceData.contractLocationCodes.map(_.code)))
+  val destinationIncotermCodeField = FieldDetails("Destination Incoterm Code", new SpecifiedValuesParser(referenceData.incotermCodes.map(_.code)))
+  val destinationLocationCodeField = FieldDetails("Destination Location Code", new SpecifiedValuesParser(referenceData.countryCodes.map(_.code)))
   val extendedKeys = List(contractualIncotermCodeField, contractualLocationCodeField, destinationIncotermCodeField, destinationLocationCodeField)
 
   val names@List(contractualIncotermField, contractualLocationField, destinationIncotermField, destinationLocationField) =
@@ -72,6 +72,9 @@ class FreightParityDataType(referenceData: ReferenceDataLookup = ReferenceDataLo
   override val defaultValue = Row(parityRateField.field → Quantity(0, UOM.USD / UOM.MT), commentField.field → "XXDefault")
 }
 
+case class ContractualLocationCode(code: String) {
+  override def toString = code
+}
 case class ContractualLocation(code: ContractualLocationCode, name: String) {
   override def toString = name
 }

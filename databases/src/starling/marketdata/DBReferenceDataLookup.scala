@@ -1,7 +1,7 @@
 package starling.marketdata
 
 import starling.richdb.RichDB
-import starling.gui.api._
+
 
 case class DBReferenceDataLookup(neptuneDB: RichDB) extends ReferenceDataLookup {
   private lazy val areas             = neptuneDB.lookupTable("live.geographical_location", "code",         "description")

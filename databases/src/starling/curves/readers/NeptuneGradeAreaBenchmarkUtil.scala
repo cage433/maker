@@ -16,7 +16,7 @@ import starling.market.NeptuneCommodity
 import starling.market.NeptunePricingExchange
 import starling.market.Commodity
 import scala.collection.mutable.{Set => MSet}
-import starling.gui.api.{AreaCode, GradeCode}
+
 
 class NeptuneGradeAreaBenchmarkUtil(neptuneDB:RichDB) extends Log {
   val refData = DBReferenceDataLookup(neptuneDB)

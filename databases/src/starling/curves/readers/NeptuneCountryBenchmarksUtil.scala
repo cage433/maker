@@ -15,7 +15,6 @@ import starling.market.Commodity
 import starling.quantity.Quantity
 import starling.market.NeptunePricingExchange
 import starling.market.NeptuneCommodity
-import starling.gui.api.NeptuneCountryCode
 
 
 class NeptuneCountryBenchmarksUtil(neptuneDB: RichDB) extends Log {

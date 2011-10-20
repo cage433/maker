@@ -5,11 +5,11 @@ import starling.richdb.RichResultSetRow
 import starling.quantity.UOM._
 import starling.eai.instrumentreaders.EAISystemOfRecord
 import starling.market.formula.FormulaIndex
+import starling.marketdata.IncotermCode
 import starling.instrument.physical.Cargo
 import starling.market.Index
 import starling.pricingschedule.PricingScheduleXMLParser
 import starling.market.rules.Precision
-import starling.gui.api.IncotermCode
 
 class CargoReader extends InstrumentReader {
 

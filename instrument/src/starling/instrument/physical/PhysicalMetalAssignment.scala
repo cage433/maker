@@ -8,12 +8,12 @@ import starling.utils.sql.PersistAsBlob
 import starling.market._
 import starling.titan.valuation.{CostsAndIncomeAllocatedSaleAssignmentValuation, CostsAndIncomeAllocatedPurchaseAssignmentValuation, PricingValuationDetails, CostsAndIncomeUnallocatedAssignmentValuation}
 import starling.quantity._
+import starling.marketdata.{IncotermCode, GradeCode, ContractualLocationCode, NeptuneCountryCode}
 import starling.market.{Commodity, NeptuneCommodity}
 import starling.market.Copper
 import starling.market.Aluminium
 import starling.utils.Log
 import starling.titan.valuation.AssignmentValuation
-import starling.gui.api.{GradeCode, ContractualLocationCode, IncotermCode, NeptuneCountryCode}
 
 
 object PhysicalMetalAssignmentOrUnassignedSalesQuota{

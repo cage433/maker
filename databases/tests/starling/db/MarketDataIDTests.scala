@@ -8,7 +8,6 @@ import starling.pivot.{PivotQuantity, Row}
 import starling.quantity.{Percentage, UOM, Quantity}
 import starling.market.{TestMarketSpec, Market}
 import starling.marketdata._
-import starling.gui.api.{ContractualLocationCode, IncotermCode, NeptuneCountryCode}
 
 class MarketDataIDTests extends WordSpec with TestMarketSpec with ShouldMatchers {
   val priceMarketDataID = new MarketDataID(ObservationPoint(Day.today, ObservationTimeOfDay.LMEClose), MarketDataSet.LimMetals,

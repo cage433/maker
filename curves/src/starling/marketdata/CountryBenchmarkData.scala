@@ -3,11 +3,10 @@ package starling.marketdata
 import starling.daterange.Day
 import starling.market.Commodity
 import starling.pivot._
-import pivotparsers.DayPivotParser
+import pivotparsers.{SpecifiedValuesParser, DayPivotParser}
 import starling.quantity.Quantity
 import scalaz.Scalaz._
 import starling.utils.ImplicitConversions._
-import starling.gui.api.NeptuneCountryCode
 
 case class CountryBenchmarkData(countryData: NestedMap[NeptuneCountryCode, Day, Quantity]) extends MarketData {
   def size = countryData.nestedSize
@@ -17,10 +16,10 @@ class CountryBenchmarkDataType(referenceData: ReferenceDataLookup = ReferenceDat
   type dataType = CountryBenchmarkData
   type keyType = CountryBenchmarkMarketDataKey
 
-  val commodityField = FieldDetails("Commodity", FixedPivotParser(Commodity.metalsCommodities.map(_.name).toSet))
+  val commodityField = FieldDetails("Commodity", new SpecifiedValuesParser(Commodity.metalsCommodities.map(_.name).toSet))
   val countryField = FieldDetails("Country")
   val areaField = FieldDetails("Area")
-  val countryCodeField = FieldDetails("Country Code", FixedPivotParser(referenceData.countryCodes))
+  val countryCodeField = FieldDetails("Country Code", new SpecifiedValuesParser(referenceData.countryCodes.map(_.code)))
   val effectiveFromField = FieldDetails("Effective From", DayPivotParser)
   val benchmarkPriceField = FieldDetails.createMeasure("Benchmark Price",
     parser0 = PivotQuantityPivotParser, formatter0 = PivotQuantitySetPivotFormatter)
@@ -69,6 +68,9 @@ case class CountryBenchmarkMarketDataKey(commodity: Commodity) extends MarketDat
 }
 
 // Prefixing these classes with 'Neptune' because they aren't really countries, they are Country + Location
+case class NeptuneCountryCode(code: String) {
+  override def toString = code
+}
 case class NeptuneCountry(code: NeptuneCountryCode, name: String, area: Option[Area]) {
   override def toString = name
 }

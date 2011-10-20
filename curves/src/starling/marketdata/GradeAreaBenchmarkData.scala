@@ -3,16 +3,28 @@ package starling.marketdata
 import starling.quantity.Quantity
 import starling.market.Commodity
 import starling.pivot._
-import pivotparsers.DayPivotParser
+import pivotparsers.{SpecifiedValuesParser, DayPivotParser}
 import scalaz.Scalaz._
 import starling.utils.ImplicitConversions._
 import starling.daterange.Day
-import starling.gui.api.{AreaCode, GradeCode}
 
+case class AreaCode(code:String) {
+  override def toString = code
+}
+object AreaCode{
+  val EUR = AreaCode("EUR")
+  val SAM = AreaCode("SAM")
+  val NAM = AreaCode("NAM")
+  val ASI = AreaCode("ASI")
+  val CHN = AreaCode("CHN")
+}
 case class Area(code:AreaCode, name:String) {
   override def toString = name
 }
 
+case class GradeCode(code : String) {
+  override def toString = code
+}
 case class Grade(code:GradeCode, name:String) {
   override def toString = name
 }
@@ -35,11 +47,11 @@ class GradeAreaBenchmarkDataType(referenceData: ReferenceDataLookup = ReferenceD
   type dataType = GradeAreaBenchmarkData
   type keyType = GradeAreaBenchmarkMarketDataKey
 
-  val commodityField = FieldDetails("Commodity", FixedPivotParser(Commodity.metalsCommodities.map(_.name).toSet))
+  val commodityField = FieldDetails("Commodity", new SpecifiedValuesParser(Commodity.metalsCommodities.map(_.name).toSet))
   val areaField = FieldDetails("Area")
-  val areaCodeField = FieldDetails("Area Code", FixedPivotParser(referenceData.areaCodes))
+  val areaCodeField = FieldDetails("Area Code", new SpecifiedValuesParser(referenceData.areaCodes.map(_.code)))
   val gradeField = FieldDetails("Grade")
-  val gradeCodeField = FieldDetails("Grade Code", FixedPivotParser(referenceData.gradeCodes))
+  val gradeCodeField = FieldDetails("Grade Code", new SpecifiedValuesParser(referenceData.gradeCodes.map(_.code)))
   val effectiveFromField = FieldDetails("Effective From", DayPivotParser)
   val benchmarkPriceField = FieldDetails.createMeasure("Benchmark Price",
     parser0 = PivotQuantityPivotParser, formatter0 = PivotQuantitySetPivotFormatter)
