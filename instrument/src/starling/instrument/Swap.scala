@@ -23,7 +23,8 @@ abstract class Swap(
                      averagingPeriod: Period,
                      cleared: Boolean,
                      pricingRule: SwapPricingRule = NoPricingRule,
-                     roundingMethodRule: RoundingMethodRule = PerQuoteRule
+                     roundingMethodRule: RoundingMethodRule = PerQuoteRule,
+                     roundingOverride: Option[Int] = None
                      )
   extends Tradeable {
 
@@ -36,7 +37,9 @@ abstract class Swap(
     "Quantity" -> volume,
     "Cleared" -> cleared,
     "PricingRule" -> pricingRule,
-    "RoundingMethodRule" -> roundingMethodRule)
+    "RoundingMethodRule" -> roundingMethodRule,
+    "RoundingOverride" -> roundingOverride
+  )
 
   def valuationCCY: UOM = strike.numeratorUOM.inBaseCurrency
 

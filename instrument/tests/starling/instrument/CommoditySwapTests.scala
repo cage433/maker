@@ -22,7 +22,7 @@ import starling.models.DefaultRiskParameters
 
 class CommoditySwapTests extends JonTestEnv {
 
-  //@Test
+  @Test
   def testMTM {
     val marketDayAndTime = Day(2009, 9, 15).startOfDay
     val forwardPrice = Quantity(200, USD / MT)
@@ -778,14 +778,21 @@ class CommoditySwapTests extends JonTestEnv {
     val volume = Quantity(16000, BBL)
     val strike = Quantity(112.2, USD / BBL)
 
-    val cs = new CommoditySwap(index, strike, volume, period, true)
+    val roundingByRule = index.precision.map(_.clearPort)
+    val roundingOverride = Some(1)
 
-    val rounding = index.precision.map(_.clearPort)
-    val avg = env.averagePrice(index, period, rounding)
+    val cs = new CommoditySwap(index, strike, volume, period, true, roundingOverride = roundingOverride)
+
+    val avgBR = env.averagePrice(index, period, roundingByRule)
+    val avgOR = env.averagePrice(index, period, roundingOverride)
+
+    assertNotSame(avgBR, avgOR)
 
     val mtm = cs.asUtpPortfolio(Day(2011, 4, 15)).mtm(env)
 
-    assertQtyEquals(mtm, Quantity(171040, USD), 1e-5)
+    val expected = (avgOR - strike) * volume
+
+    assertQtyEquals(mtm, expected, 1e-5)
   }
 
 

@@ -180,7 +180,7 @@ class TradeSet(
     tradeStore.tradeChanges(t1, t2, expiryDay, tradePredicate)
   }
 
-  def readAll(t:Timestamp, expiryDay: Option[Day] = None) = tradeStore.readAll(t, tradePredicate, expiryDay)
+  def readAll(t:Timestamp, expiryDay: Option[Day] = None, marketDay: Option[Day] = None) = tradeStore.readAll(t, tradePredicate, expiryDay, marketDay)
 
   def pivot(expiryDay: Day, timestamp: Timestamp) = {
     tradeStore.pivot(timestamp, None, expiryDay, tradePredicate)

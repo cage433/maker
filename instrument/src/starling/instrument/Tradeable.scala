@@ -91,6 +91,7 @@ object TradeableType {
     ("Cleared", classOf[Boolean]),
     ("PricingRule", classOf[SwapPricingRule]),
     ("RoundingMethodRule", classOf[RoundingMethodRule]),
+    ("RoundingOverride", classOf[Option[Int]]),
     ("Error", classOf[String]),
     ("Estimated Delivery", classOf[Day]),
     ("Fixations", classOf[List[RefinedFixation]]),

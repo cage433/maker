@@ -146,8 +146,8 @@ case class Environment(
   def averagePrice(index: IndexWithDailyPrices, averagingPeriod: DateRange): Quantity = averagePrice(index, averagingPeriod, None)
 
   def averagePrice(index: IndexWithDailyPrices, averagingPeriod: DateRange, rounding: Option[Int]): Quantity = averagePriceCache.memoize(
-    (index, averagingPeriod),
-    (tuple: (Index, DateRange)) => {
+    (index, averagingPeriod, rounding),
+    (tuple: (Index, DateRange, Option[Int])) => {
       val observationDays = index.observationDays(averagingPeriod)
       val price = Quantity.average(observationDays.map(index.fixingOrForwardPrice(this, _))) match {
         case nq : NamedQuantity => SimpleNamedQuantity("Average(" + index + "." + averagingPeriod + ")", nq)

@@ -28,16 +28,17 @@ case class CommoditySwap(
   averagingPeriod: Period,
   cleared: Boolean,
   pricingRule: SwapPricingRule = NoPricingRule,
-  roundingMethodRule: RoundingMethodRule = PerQuoteRule
+  roundingMethodRule: RoundingMethodRule = PerQuoteRule,
+  roundingOverride: Option[Int] = None
 )
-  extends Swap(index, strike, _volume, averagingPeriod, cleared, pricingRule, roundingMethodRule) with MultiLeg
+  extends Swap(index, strike, _volume, averagingPeriod, cleared, pricingRule, roundingMethodRule, roundingOverride) with MultiLeg
 {
 
   require(index.convert(_volume, strike.denominatorUOM).isDefined, "Couldn't convert volume into strike uom: " + (_volume, strike) + ", " + index)
   require(pricingRule.isValid(index.calendars), "Invalid pricing rule for " + index)
 
   def subPeriodSwaps : List[SinglePeriodSwap] = {
-    dateRanges.map(SinglePeriodSwap(index, roundedStrike, volume, _, cleared, pricingRule))
+    dateRanges.map(SinglePeriodSwap(index, roundedStrike, volume, _, cleared, pricingRule, roundingMethodRule, roundingOverride))
   }
 
   def explanation(env : Environment) : NamedQuantity = {
@@ -51,7 +52,7 @@ case class CommoditySwap(
   // volume converted so everything is in the context of the strike uom
   val volume = index.convert(_volume, strike.denominatorUOM).get
 
-  private def priceRounding = CommoditySwap.priceRounding(index, cleared)
+  private def priceRounding = CommoditySwap.priceRounding(index, cleared, roundingOverride)
 
   /**
    * In aspect the strike (or price) is rounded before multiplying it by the volume in order to work out
@@ -98,8 +99,9 @@ case class SinglePeriodSwap(
   period: DateRange,
   cleared: Boolean,
   pricingRule: SwapPricingRule = NoPricingRule,
-  settlementDayOption : Option[Day] = None,
-  roundingMethodRule: RoundingMethodRule = PerQuoteRule
+  roundingMethodRule: RoundingMethodRule = PerQuoteRule,
+  roundingOverride: Option[Int] = None,
+  settlementDayOption : Option[Day] = None
 )
   extends UTP 
 {
@@ -177,7 +179,7 @@ case class SinglePeriodSwap(
 
   val settlementDay = settlementDayOption.getOrElse(CommoditySwap.swapSettlementDate(period.lastDay))
 
-  override def priceRounding = CommoditySwap.priceRounding(index, cleared)
+  override def priceRounding = CommoditySwap.priceRounding(index, cleared, roundingOverride)
 
   def assets(env: Environment) = {
     val assets = {
@@ -213,12 +215,17 @@ case class SinglePeriodSwap(
 object CommoditySwap extends InstrumentType[SinglePeriodSwap] with TradeableType[CommoditySwap] {
   val name = "Commodity Swap"
 
-  def priceRounding(index: Index, cleared: Boolean) = index.precision.map {
-    case Precision(defaultRounding, clearportRounding) => {
-      if (cleared) {
-        clearportRounding
-      } else {
-        defaultRounding
+  def priceRounding(index: Index, cleared: Boolean, roundingOverride: Option[Int]): Option[Int] = roundingOverride match {
+    case Some(r) => Some(r)
+    case _ => {
+      index.precision.map {
+        case Precision(defaultRounding, clearportRounding) => {
+          if (cleared) {
+            clearportRounding
+          } else {
+            defaultRounding
+          }
+        }
       }
     }
   }
@@ -237,7 +244,8 @@ object CommoditySwap extends InstrumentType[SinglePeriodSwap] with TradeableType
     val index = row.getIndexFromName("Market")
     CommoditySwap(index, row.getQuantity("InitialPrice"), row.getQuantity("Quantity"),
       row.getPeriod("Period"), row.getBoolean("Cleared"), row.getSwapPricingRule("PricingRule"),
-      row.getRoundingMethodRule("RoundingMethodRule"))
+      row.getRoundingMethodRule("RoundingMethodRule"),
+      row.getIntOption("RoundingOverride"))
   }
 
   def sample: CommoditySwap = {

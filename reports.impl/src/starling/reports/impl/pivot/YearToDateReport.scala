@@ -39,6 +39,9 @@ class YearToDateReport {
     }.flatten.distinct.map {
       case d => Desk.fromName(d.toString)
     }
+
+    val tradesUpToDay = reportParameters.curveIdentifier.tradesUpToDay
+    val expiryDay = reportParameters.expiryDay
     val startOfFinancialYear = Day(2011, 10, 1) // we only do 2011 at the moment
 
     if (desks.forall(deskFileMap.contains)) {
@@ -46,29 +49,31 @@ class YearToDateReport {
 
       val env = reportContextBuilder.contextFromCurveIdentifier(curveIdentifierFactory.unLabel(reportParameters.curveIdentifier)).environment
       val yearToDateField = new SumPivotQuantityFieldDetails("Ytd")
+      val aspectCOY = new SumPivotQuantityFieldDetails("Aspect Close Of Year")
+      val aspectCOYC = new SumPivotQuantityFieldDetails("Aspect Close Of Year Costs")
       //      val marketDay = reportParameters.curveIdentifier.valuationDayAndTime
       tradeSets.map {
         case (tradeSet, ts) => {
-          val (fieldGroups, trades) = tradeSet.readAll(ts)
+          val (fieldGroups, trades) = tradeSet.readAll(ts, Some(expiryDay), Some(tradesUpToDay))
           val rows = trades.map {
             tradeAndFields => {
               val trade = tradeAndFields.trade
-              val costs = if(trade.tradeDay < startOfFinancialYear) {
+              val costs = if (trade.tradeDay < startOfFinancialYear) {
                 PivotQuantity.sum(trade.costs.map(c => PivotQuantity.calcOrCatch(c.mtm(env, USD))))
               } else {
                 PivotQuantity.NULL
               }
 
               val mtm = PivotQuantity.calcOrCatch(trade.mtm(env))
-              val aspectMtm = endOfYear.getOrElse(trade.tradeID.toString, Quantity.NULL)
-              val yearToDate = mtm - aspectMtm.pq - costs
-              tradeAndFields.fields.add("ytd", Map(yearToDateField.field -> yearToDate))
+              val aspectMtm = endOfYear.getOrElse(trade.tradeID.toString, Quantity.NULL).pq
+              val yearToDate = mtm - aspectMtm - costs
+              tradeAndFields.fields.add("ytd", Map(yearToDateField.field -> yearToDate, aspectCOY.field -> aspectMtm, aspectCOYC.field -> costs))
             }
           }
           new UnfilteredPivotTableDataSource() {
             def unfilteredData(pfs: PivotFieldsState) = rows
 
-            def fieldDetailsGroups = FieldDetailsGroup("Report Fields", yearToDateField :: Nil) :: fieldGroups
+            def fieldDetailsGroups = FieldDetailsGroup("Report Fields", yearToDateField :: aspectCOY :: aspectCOYC :: Nil) :: fieldGroups
           }
         }
       }
