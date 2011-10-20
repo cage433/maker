@@ -139,12 +139,11 @@ class DefaultRabbitEventDatabase(val db : DB, broadcaster : Broadcaster) extends
               ("id" eql id))
         }
       }
-*/
-      Log.info("<<calling update for RabbitMessages, took %d".format(sw.reset()))
 
-      synchronized {
-        broadcaster.broadcast(RabbitEventReceived(maxID))
-      }
+    Log.info("<<calling update for RabbitMessages, took %d".format(sw.reset()))
+*/
+    synchronized {
+      broadcaster.broadcast(RabbitEventReceived(maxID))
     }
   }
 }
