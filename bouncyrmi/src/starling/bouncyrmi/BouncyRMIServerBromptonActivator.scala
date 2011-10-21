@@ -5,19 +5,38 @@ import org.jboss.netty.channel.{ChannelLocal, Channel}
 import java.util.concurrent.Executors
 import swing.event.Event
 import starling.manager._
-import starling.utils.{Receiver, Log, Broadcaster, ThreadUtils}
+import starling.utils._
 
 class BouncyRMIServerBromptonActivator extends BromptonActivator {
 
   var rmiServerForGUI:BouncyRMIServer = _
   var rmiServerForTitan : BouncyRMIServer = _
 
+  private def isGui(eventClass:Class[_]) = {
+    val allEventTypes = Reflection.allTypes(eventClass).flatMap { klass => {
+      klass.getAnnotation(classOf[EventType]) match {
+        case null => None
+        case a => Some(a.value)
+      }
+    }}.toSet
+    if (allEventTypes.size > 1) throw new Exception(eventClass + " defines more than one event type: " + allEventTypes)
+    allEventTypes.contains("GUI")
+  }
+
   def start(context: BromptonContext) {
     val props = context.awaitService(classOf[starling.props.Props])
     val authHandler = context.awaitService(classOf[AuthHandler])
+
+    val eventTypes = new java.util.concurrent.ConcurrentHashMap[Class[_],Boolean]()
     val receiver = new Receiver {
       def event(event: Event) = {
-        rmiServerForGUI.publish(event)
+        val eventClass = event.getClass
+        if (!eventTypes.contains(eventClass)) {
+           eventTypes.put(eventClass, isGui(eventClass))
+        }
+        if (eventTypes.get(eventClass)) {
+          rmiServerForGUI.publish(event)
+        }
       }
     }
     context.registerService(classOf[Receiver], receiver)

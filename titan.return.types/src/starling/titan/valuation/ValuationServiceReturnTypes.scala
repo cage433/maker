@@ -28,6 +28,7 @@ trait CostsAndIncomeValuation {
 
 trait AssignmentValuation {
   def assignmentID : String
+  def hasError:Boolean
   def assignmentQuantity : Quantity
   def valuationDetails : Either[String, PricingValuationDetails]
 }
@@ -41,7 +42,9 @@ case class CostsAndIncomeAllocatedPurchaseAssignmentValuation(
    */
   assignmentQuantity : Quantity,
   valuationDetails : Either[String, PricingValuationDetails]
-) extends AssignmentValuation
+) extends AssignmentValuation {
+  def hasError = valuationDetails.isLeft
+}
 
 case class CostsAndIncomeAllocatedSaleAssignmentValuation(
   assignmentID : String,
@@ -54,7 +57,9 @@ case class CostsAndIncomeAllocatedSaleAssignmentValuation(
   valuationDetails : Either[String, PricingValuationDetails],
   weightGainOrLoss : Quantity,
   weightGainOrLossDetails : Either[String, PricingValuationDetails]
-) extends AssignmentValuation
+) extends AssignmentValuation {
+  def hasError = valuationDetails.isLeft || weightGainOrLossDetails.isLeft
+}
 
 /**
 * A valuation for a particular inventory assigments and snapshot
@@ -92,10 +97,13 @@ case class CostsAndIncomeUnallocatedAssignmentValuation(
   weightGainOrLoss : Quantity,
   weightGainOrLossDetails : Either[String, PricingValuationDetails],
   freightParity : Quantity
-) extends AssignmentValuation
+) extends AssignmentValuation {
+  def hasError = valuationDetails.isLeft || benchmarkDetails.isLeft || weightGainOrLossDetails.isLeft
+}
 
 trait QuotaValuation {
   def quotaID: String
+  def hasError:Boolean
 }
 
 case class PurchaseQuotaValuation(
@@ -114,7 +122,9 @@ case class PurchaseQuotaValuation(
  weightGainOrLoss : Quantity,
  unallocatedValuations: Map[String, CostsAndIncomeUnallocatedAssignmentValuation], // Keys are assignment ID
  assignmentValuations: Map[String, CostsAndIncomeAllocatedPurchaseAssignmentValuation] // Keys are assignment ID
-) extends QuotaValuation
+) extends QuotaValuation {
+  def hasError:Boolean = (unallocatedValuations.values ++ assignmentValuations.values).exists(_.hasError)
+}
 
 
 case class SalesQuotaValuation(
@@ -150,6 +160,9 @@ case class SalesQuotaValuation(
     For unallocated assignments, sum of weight gain/loss
    */
   weightGainOrLoss : Quantity
-) extends QuotaValuation
+) extends QuotaValuation {
+  def hasError = unallocatedValuationDetails.isLeft || benchmarkDetails.isLeft ||
+        assignmentValuations.values.exists(_.hasError)
+}
 
 

@@ -113,13 +113,15 @@ class MetalsBromptonActivator extends BromptonActivator {
     val marketDataService = new MarketDataService(marketDataStore, environmentProvider)
 
     val eventHandler = new TitanEventHandler(
-      titanRabbitEventServices,
+      osgiBroadcaster,
       titanTradeStoreManager,
       environmentProvider,
       rabbitEventDatabase)
 
     titanRabbitEventServices.addClient(eventHandler)
 
+    val valuationSnapshotCreator = new MetalValuationSnapshotCreator(osgiBroadcaster, environmentProvider, titanTradeStore)
+    context.registerService(classOf[Receiver], valuationSnapshotCreator)
 
     val businessCalendars = context.awaitService(classOf[BusinessCalendars])
     val curveViewer = context.awaitService(classOf[CurveViewer])

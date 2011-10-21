@@ -10,7 +10,7 @@ import starling.auth.AuthHandler
 import starling.utils.ThreadUtils
 import starling.utils.Broadcaster
 import starling.utils.ImplicitConversions._
-import starling.db.{MarketDataTags, NewSchemaMdDB, DBMarketDataStore}
+import starling.db.{MarketDataSnapshots, NewSchemaMdDB, DBMarketDataStore}
 
 object RefinedMetalsLimMarketDataSourceTests {
   def main(args:Array[String]) {
@@ -40,7 +40,7 @@ object RefinedMetalsLimMarketDataSourceTests {
     else {
       val source = new RefinedMetalsLimMarketDataSource(new LIMServer("ttraflonrh221", 6400))
       val updates = new DBMarketDataStore(new NewSchemaMdDB(init.starlingRichDB, init.dataTypes),
-        new MarketDataTags(init.starlingRichDB), MultiMap(LIM ->> source), Broadcaster.Null, init.dataTypes).importer.getUpdates(12 Sep 2011, LIM)
+        new MarketDataSnapshots(init.starlingRichDB), MultiMap(LIM ->> source), Broadcaster.Null, init.dataTypes).importer.getUpdates(12 Sep 2011, LIM)
 
       updates.get(LIM)
       source.read(12 Apr 2011)

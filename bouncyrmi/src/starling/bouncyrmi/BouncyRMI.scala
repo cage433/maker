@@ -14,6 +14,7 @@ import java.util.concurrent.{TimeUnit, Executors, ThreadFactory}
 import java.lang.Boolean
 import java.io._
 import org.jboss.netty.handler.codec.serialization.{ObjectEncoderOutputStream, ObjectDecoderInputStream, ObjectDecoder, ObjectEncoder}
+import starling.utils.NamedDaemonThreadFactory
 
 //Message classes
 case class MethodInvocationRequest(version: String, id: Int, declaringClass: String, method: String, parameters: Array[String], arguments: Array[Array[Byte]])
@@ -106,16 +107,5 @@ class ServerPipelineFactory[User](classLoader:ClassLoader, authHandler: ServerAu
     if (secured == true) pipeline.addLast("authHandler", authHandler)
     pipeline.addLast("handler", handler)
     pipeline
-  }
-}
-
-class NamedDaemonThreadFactory(name: String) extends ThreadFactory {
-  val sequence = new java.util.concurrent.atomic.AtomicInteger(0)
-
-  def newThread(r: Runnable) = {
-    val t = new Thread(r)
-    t.setDaemon(true)
-    t.setName(sequence.getAndIncrement + " " + name)
-    t
   }
 }

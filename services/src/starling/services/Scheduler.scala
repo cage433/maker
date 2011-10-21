@@ -49,7 +49,7 @@ object Scheduler extends Log {
       val spotfx = SpotFXDataEventSource(Metals, SpotFXDataProvider(marketDataStore))
       val libor = new PriceFixingDataEventSource(Metals, ReferenceInterestDataProvider(marketDataStore))
 
-      val marketDataAvailabilityBroadcaster = new MarketDataAvailabilityBroadcaster(observingBroadcaster,
+      val marketDataAvailabilityBroadcaster = new MarketDataAvailabilityBroadcaster(marketDataStore, observingBroadcaster,
         exbxgMetals :: spotfx :: libor :: limFlows)
 
       implicit def enrichDataFlow(dataFlow: DataFlow with MarketDataEventSource) = new {

@@ -23,8 +23,19 @@ case class MarketDataSelection(pricingGroup:Option[PricingGroup] = None, excel:O
 
   def pricingGroupMatches(predicate : PricingGroup => Boolean) = pricingGroup.exists(predicate)
 }
+object MarketDataSelection {
+  val Null = MarketDataSelection(None, None)
+}
 trait MarketDataVersion {
   def label:String
+}
+
+case class SnapshotType(name:String)
+
+object SnapshotType extends StarlingEnum(classOf[SnapshotType], (st:SnapshotType) => st.name) {
+  val Manual = new SnapshotType("Manual")
+  val Email = new SnapshotType("Email")
+  val Valuation = new SnapshotType("Valuation")
 }
 case class SpecificMarketDataVersion(version:Int) extends MarketDataVersion {
   def label = "v" + version
@@ -89,16 +100,10 @@ object PricingGroup extends StarlingEnum(classOf[PricingGroup], (pg: PricingGrou
 
 case class FieldDetailsGroupLabel(groupName:String, childNames:List[String])
 
-case class SnapshotIDLabel(observationDay: Day, id: Int, timestamp : Timestamp, version: Int) extends Ordered[SnapshotIDLabel] {
-  def compare(rhs: SnapshotIDLabel) = {
-    if (observationDay == rhs.observationDay) {
-      id - rhs.id
-    } else {
-      observationDay.compareTo(rhs.observationDay)
-    }
-  }
-  def shortString = observationDay + " (s" + id + ")"
-  def identifier() = observationDay+"-"+id + "-" + timestamp
+case class SnapshotIDLabel(id: Int, timestamp : Timestamp, marketDataSelection:MarketDataSelection, snapshotType:SnapshotType, version: Int) extends Ordered[SnapshotIDLabel] {
+  def compare(rhs: SnapshotIDLabel) = id - rhs.id
+  def shortString = timestamp + " (s" + id + ")"
+  def snapshotDay = timestamp.day
 }
 
 trait DeskInfo

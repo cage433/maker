@@ -44,7 +44,7 @@ class MarketDataChooser(maybeDesk:Option[Desk], pageContext:PageContext, snapsho
   }
 
   private def generateSnapshots(observationDay:Day, marketDataSelection:MarketDataSelection) = {
-    val snapshotsForDayAndSelection = snapshots.getOrElse(marketDataSelection, List()).filter(_.observationDay==observationDay).sortWith(_.id > _.id)
+    val snapshotsForDayAndSelection = snapshots.getOrElse(marketDataSelection, List()).filter(_.snapshotDay <= observationDay).sortWith(_ > _)
     CurrentEntry :: ImportAndSnapshotEntry ::snapshotsForDayAndSelection.map(SnapshotVersionEntry(_))
   }
 
@@ -115,8 +115,8 @@ class MarketDataChooser(maybeDesk:Option[Desk], pageContext:PageContext, snapsho
       case Some(CurrentEntry) => invokeAction(SpecificMarketDataVersion(pageContext.localCache.latestMarketDataVersion(snapshotSelection.marketDataSelection)))
       case Some(SnapshotVersionEntry(ss)) => invokeAction(SnapshotMarketDataVersion(ss))
       case Some(ImportAndSnapshotEntry) => pageContext.submit(
-        SnapshotSubmitRequest(snapshotSelection.marketDataSelection, snapshotSelection.observationDay),
-        (snapshot: Option[SnapshotIDLabel])=>{SnapshotMarketDataVersion(snapshot).map(invokeAction)}, true)
+        ImportAndSnapshotMarketDataRequest(snapshotSelection.marketDataSelection, snapshotSelection.observationDay),
+        (snapshot: SnapshotIDLabel)=>{invokeAction(SnapshotMarketDataVersion(snapshot))}, true)
     }
   }
 
@@ -160,7 +160,7 @@ class MarketDataChooser(maybeDesk:Option[Desk], pageContext:PageContext, snapsho
     case PricingGroupObservationDay(pricingGroup, day) => {
       updatePopulatedObservationDays(marketDataSelection.selection)
     }
-    case _: MarketDataSnapshotSet => {
+    case _: MarketDataSnapshot => {
       this.snapshots = snapshots
       val selected = snapshotView.selected
       updateSnapshotList(marketDataSelection.selection)
@@ -252,7 +252,6 @@ abstract class MarketDataVersionEntry {
 }
 
 case class SnapshotVersionEntry(d:SnapshotIDLabel) extends MarketDataVersionEntry {
-  def observationDay = d.observationDay
   override def toString = label
   def label = d.timestamp.toStringSeconds + " (s" + d.id+")"
 }

@@ -17,4 +17,15 @@ object Reflection {
          .collect { case someClass if isT(someClass) => someClass.asInstanceOf[Class[T]]
     }
   }
+
+  def allTypes(klass:Class[_]) = {
+    var allClasses = new scala.collection.mutable.ArrayBuffer[Class[_]]()
+    var k = klass
+    do {
+      allClasses += k
+      allClasses ++= (k.getInterfaces)
+      k = k.getSuperclass
+    } while ( k != null)
+    allClasses.toList
+  }
 }

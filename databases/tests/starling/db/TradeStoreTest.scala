@@ -31,7 +31,7 @@ import starling.marketdata.{MarketDataTypes, ReferenceDataLookup}
 
 class EAITradeStoreTest extends TestMarketTest {
   lazy val dataTypes = new MarketDataTypes(ReferenceDataLookup.Null)
-  lazy val marketDataStore = new DBMarketDataStore(new NewSchemaMdDB(db, dataTypes), new MarketDataTags(db), Map(), Broadcaster.Null, dataTypes)
+  lazy val marketDataStore = new DBMarketDataStore(new NewSchemaMdDB(db, dataTypes), new MarketDataSnapshots(db), Map(), Broadcaster.Null, dataTypes)
 
   var db : RichDB = _
   var connection : Connection = _

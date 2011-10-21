@@ -6,6 +6,8 @@ import starling.titan._
 import starling.utils.{Log, Stopwatch}
 import starling.instrument.physical.PhysicalMetalForward
 import valuation.QuotaValuation
+import com.trafigura.services.TitanSnapshotIdentifier
+import starling.daterange.Day
 
 /**
  * Valuation service implementations
@@ -47,5 +49,20 @@ class ValuationService(
       case Left(err) => Left(err)
     }
   }
+
+  /**
+   * Return all snapshots that are valid for a given observation day, ordered from most recent to oldest
+   */
+  def marketDataSnapshotIDs(observationDay: Option[Day] = None): List[TitanSnapshotIdentifier] = {
+    environmentProvider.snapshots().filter {
+      snapshotID =>
+
+        observationDay match {
+          case Some(day) => day <= snapshotID.snapshotDay
+          case None => true
+        }
+    }.sortWith(_ > _).map{id => TitanSnapshotIdentifier(id.identifier)}
+  }
+
 }
 

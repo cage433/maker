@@ -621,10 +621,23 @@ class TimestampChooser(initialSelection:Option[TradeTimestamp], desk: Option[Des
   }
 }
 
-case class SnapshotSubmitRequest(marketDataSelection:MarketDataSelection, observationDay:Day)
-  extends FC2SubmitRequest[Option[SnapshotIDLabel]] {
+case class SnapshotMarketDataRequest(marketDataIdentifier:MarketDataIdentifier) extends FC2SubmitRequest[Unit] {
+  def submit(fc2Context:FC2Context) = fc2Context.service.snapshot(marketDataIdentifier, SnapshotType.Manual)
+}
 
-  def submit(fc2Context:FC2Context) = fc2Context.service.snapshot(marketDataSelection, observationDay)
+case class ImportAndSnapshotMarketDataRequest(marketDataSelection:MarketDataSelection, observationDay:Day)
+  extends FC2SubmitRequest[SnapshotIDLabel] {
+
+  def submit(fc2Context:FC2Context) = {
+    val version = fc2Context.service.importData(marketDataSelection, observationDay)
+    fc2Context.service.snapshot(MarketDataIdentifier(marketDataSelection, version), SnapshotType.Manual)
+  }
+}
+
+case class ImportMarketDataRequest(marketDataSelection:MarketDataSelection, observationDay:Day)
+  extends FC2SubmitRequest[Unit] {
+
+  def submit(fc2Context:FC2Context) = fc2Context.service.importData(marketDataSelection, observationDay)
 }
 
 case class BookCloseRequest(desk:Desk) extends StarlingSubmitRequest[Unit] {

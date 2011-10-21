@@ -32,7 +32,7 @@ class MarketDataStoreTest extends TestMarketTest with ShouldMatchers {
       }
     }
 
-    new DBMarketDataStore(mddb, new MarketDataTags(db), Map(), Broadcaster.Null, dataTypes)
+    new DBMarketDataStore(mddb, new MarketDataSnapshots(db), Map(), Broadcaster.Null, dataTypes)
   }
 
   lazy val connection : Connection = DBTest.getConnection("jdbc:h2:mem:marketDataStoreTest;create=true")

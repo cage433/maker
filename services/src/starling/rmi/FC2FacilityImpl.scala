@@ -117,16 +117,17 @@ class FC2FacilityImpl(
     dataSource.editable.get.save(pivotEdits)
   }
 
-  def snapshot(marketDataSelection:MarketDataSelection, observationDay:Day): Option[SnapshotIDLabel] = {
-    marketDataStore.snapshot(marketDataSelection, true, observationDay).map(label)
+  def snapshot(marketDataIdentifier: MarketDataIdentifier, snapshotType: SnapshotType) = {
+    marketDataStore.snapshot(marketDataIdentifier, snapshotType).label
+  }
+
+  def importData(marketDataSelection:MarketDataSelection, observationDay:Day) = {
+    val saveResult = marketDataStore.importData(marketDataSelection, observationDay)
+    SpecificMarketDataVersion(saveResult.maxVersion)
   }
 
   def excelLatestMarketDataVersions = marketDataStore.latestExcelVersions.mapKeys(_.stripExcel)
   def pricingGroupLatestMarketDataVersions = Map() ++ marketDataStore.latestPricingGroupVersions.filterKeys(pricingGroups()).toMap
-
-  def latestSnapshotID(pricingGroup:PricingGroup, observationDay:Day) = {
-    marketDataStore.latestSnapshot(pricingGroup, observationDay) map(label)
-  }
 
   private def marketDataReaderFor(marketDataIdentifier:MarketDataPageIdentifier) = {
     val reader = marketDataIdentifier match {

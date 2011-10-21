@@ -15,8 +15,8 @@ import java.io.{File, FileInputStream}
 import java.util.{Hashtable, Properties}
 import starling.manager._
 
-case class BundleAdded(bundle:BrowserBundle) extends StarlingEvent
-case class BundleRemoved(bundle:BrowserBundle) extends StarlingEvent
+case class BundleAdded(bundle:BrowserBundle) extends StarlingGUIEvent
+case class BundleRemoved(bundle:BrowserBundle) extends StarlingGUIEvent
 
 class BrowserBromptonActivator extends BromptonActivator {
 

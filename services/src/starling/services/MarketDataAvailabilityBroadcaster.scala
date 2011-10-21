@@ -5,15 +5,15 @@ import starling.utils.ImplicitConversions._
 import starling.utils.ObservingBroadcaster
 import swing.event.Event
 import collection.mutable.ListBuffer
-import starling.gui.api.{MarketDataSnapshotSet, MarketDataSelection}
-
+import collection.immutable.Map
+import starling.gui.api._
 
 trait MarketDataAvailabilityChecker {
   def dataAvailable(source: MarketDataEventSource): Boolean
   def await(source: MarketDataEventSource)
 }
 
-class MarketDataAvailabilityBroadcaster(observingBroadcaster: ObservingBroadcaster, sources: List[MarketDataEventSource])
+class MarketDataAvailabilityBroadcaster(marketDataStore: MarketDataStore, observingBroadcaster: ObservingBroadcaster, sources: List[MarketDataEventSource])
   extends MarketDataAvailabilityChecker {
 
   private val waitiingSources = new ListBuffer[MarketDataEventSource]; waitiingSources ++= sources
@@ -21,23 +21,31 @@ class MarketDataAvailabilityBroadcaster(observingBroadcaster: ObservingBroadcast
   observingBroadcaster += eventReceived
 
   def eventReceived(event: Event): Unit = event partialMatch {
-    case MarketDataSnapshotSet(selection, previousSnapshot, newSnapshot, Some(affectedObservationDays)) => {
-      val dataAvailableEventByDataFlow = waitingDataEventSourcesFor(selection)
-        .toMapWithValues(_.eventsFor(previousSnapshot, newSnapshot, affectedObservationDays))
+    case PricingGroupMarketDataUpdate(pricingGroup, newVersion, previousVersion, affectedObservationDays) => {
+      val changesByDataFlow = waitingDataEventSourcesFor(pricingGroup)
+        .toMapWithValues(_.changesFor(previousVersion, newVersion, affectedObservationDays))
         .filterValues(_.size > 0)
 
-      waitiingSources -- dataAvailableEventByDataFlow.keySet
+      waitiingSources -- changesByDataFlow.keySet
 
-      dataAvailableEventByDataFlow.values.flatten.map(dataAvailableEvent =>
-        observingBroadcaster.broadcaster.broadcast(dataAvailableEvent))
+      if (changesByDataFlow.nonEmpty) {
+        val marketDataIdentifier = MarketDataIdentifier(MarketDataSelection(Some(pricingGroup)), newVersion)
+        val snapshot:SnapshotIDLabel = marketDataStore.snapshot(marketDataIdentifier, SnapshotType.Email).label
+        changesByDataFlow.foreach{ case(source, changes) => {
+          changes.foreach { change => {
+            val realEvent = change.marketDataEvent(snapshot)
+            observingBroadcaster.broadcaster.broadcast(realEvent)
+          }}
+        } }
+      }
     }
   }
 
   def dataAvailable(source: MarketDataEventSource) = { validateAreMonitoring(source); !waitiingSources.contains(source) }
   def await(source: MarketDataEventSource) =         { validateAreMonitoring(source); waitiingSources += source         }
 
-  private def waitingDataEventSourcesFor(selection: MarketDataSelection) =
-    waitiingSources.filter(source => source.matches(selection)).toList
+  private def waitingDataEventSourcesFor(pricingGroup: PricingGroup) =
+    waitiingSources.filter(source => source.matches(pricingGroup)).toList
 
   private def validateAreMonitoring(source: MarketDataEventSource) = if (!sources.contains(source)) {
     throw new Exception("The availability of: %s is not being monitored" % source)
