@@ -958,6 +958,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
               currentPageInfo.pageComponent match {
                 case Some(pc) => {
                   pc.resetDynamicState()
+                  pc.restoreToCorrectViewForBack()
                 }
                 case None =>
               }
