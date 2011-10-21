@@ -73,7 +73,10 @@ object Groups {
   val StarlingLucerne = "Starling Lucerne".i
   val StarlingLucerneAdmin = "Starling Lucerne Admin".i
   val StarlingTesters = "Starling Testers".i
+
   val StarlingLondonDerivatives = "Starling London derivatives".i
+  val StarlingGasoilSpec = "Starling Gasoil Spec".i
+  val StarlingNaphthaSpec = "Starling Naphtha Spec".i
   val StarlingGasolineSpec = "Starling Gasoline Spec Global".i
   val StarlingHoustonDerivatives = "Starling Houston Derivatives".i
 }

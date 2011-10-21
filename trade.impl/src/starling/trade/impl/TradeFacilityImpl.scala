@@ -25,13 +25,11 @@ import starling.tradestore.{TradeStores, TradePredicate, TradeSet}
 import starling.services.trade.TradeDiff
 import starling.rmi.{PivotData, TradeReconciliation, Permission}
 import starling.db.{DB, TitanTradeSystem, IntradayTradeSystem, TradeSystems}
-import starling.eai.Traders
 import starling.trade.facility.TradeFacility
 
 class TradeFacilityImpl(
                         tradeStores:TradeStores,
                         enabledDesks: Set[Desk],
-                        val allTraders: Traders,
                         eaiStarlingDB: DB,
                         isProduction:Boolean
                         ) extends TradeFacility with Log {
@@ -249,5 +247,4 @@ class TradeFacilityImpl(
     deskTradeSets(Some(desk), tradePredicate).flatMap(_.selectLiveAndErrorTrades(day, timestamp))
   }
 
-  def traders = allTraders.deskMap
 }

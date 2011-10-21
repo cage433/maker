@@ -23,6 +23,5 @@ trait TradeFacility {
   @DoNotCache def deskCloses: Map[Desk, Map[Day, List[TradeTimestamp]]]
   @DoNotCache def latestTradeTimestamp(desk:Desk):TradeTimestamp
   @DoNotCache def intradayLatest: Map[String, (User, Timestamp)]
-  def traders: Map[User, List[Desk]]
 
 }

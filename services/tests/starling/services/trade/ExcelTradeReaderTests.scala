@@ -50,12 +50,6 @@ class ExcelTradeReaderTests extends JonTestEnv {
   val jf = Some(User("jon.fox", "Jon Fox", None, None, Nil, "", "", ""))
   val sp = Some(User("seetal.patel", "Seetal Patel", None, None, Nil, "", "", ""))
   def currentUser() = jf.get
-  val traders = new Traders({
-    s => s match {
-      case "jon.fox" => jf
-      case "seetal.patel" => sp
-      case _ => sp
-    }})
 
   @Test
   def testRow {
@@ -64,7 +58,7 @@ class ExcelTradeReaderTests extends JonTestEnv {
       "broker" -> "ice", "strategy" -> "54418", "comment" -> "a test", "clearing house" -> "", "entry date" -> "")
 
 
-    val reader = new ExcelTradeReader(eAIStrategyDB, eaiDealBookMapping, traders, currentUser)
+    val reader = new ExcelTradeReader(eAIStrategyDB, eaiDealBookMapping, currentUser)
 
     val prefix = "Oil Derivatives/Scratch/London Derivatives Options/Jon Fox/"
 
@@ -84,7 +78,7 @@ class ExcelTradeReaderTests extends JonTestEnv {
 
         val header: Array[String] = a.head.split('\t')
         val rest = a.tail.map(_.split('\t').toSeq).asInstanceOf[List[Seq[Object]]]
-        val reader = new ExcelTradeReader(eAIStrategyDB, eaiDealBookMapping, traders, currentUser)
+        val reader = new ExcelTradeReader(eAIStrategyDB, eaiDealBookMapping, currentUser)
         val all: List[Trade] = Log.infoWithTime("all trades") {
           reader.allTrades(header, rest, "test")
         }
