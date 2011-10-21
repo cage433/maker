@@ -8,25 +8,25 @@ import collection.immutable.Map
 import starling.pivot.PivotLayout
 import starling.daterange._
 import starling.quantity.UOM
-import starling.browser.service.StarlingEvent
+import starling.browser.service.StarlingGUIEvent
 
-class Events //The is just here as I find this class using "^n Events"
+class Events //This is just here as I find this class using "^n Events"
 
-case class IntradayUpdated(group: String, user: User, timestamp:Timestamp) extends StarlingEvent
-case class TradesUpdated(desk : Desk, timestamp :Timestamp) extends StarlingEvent
-case class DeskClosed(desk: Desk, timestamp:TradeTimestamp) extends StarlingEvent
-case class DeskCloseFailed(desk: Desk, timestamp:TradeTimestamp, error: Throwable) extends StarlingEvent
-case class MarketDataSnapshotSet(selection: MarketDataSelection, previousSnapshot: Option[SnapshotIDLabel],
-                                 newSnapshot: SnapshotIDLabel, affectedObservationDays: Option[List[Day]]) extends StarlingEvent
-case class MarketDataSnapshot(snapshotIDs : List[String]) extends StarlingEvent
-case class PricingGroupMarketDataUpdate(pricingGroup:PricingGroup, version:Int) extends StarlingEvent
-case class ExcelObservationDay(name:String, day:Day) extends StarlingEvent
-case class PricingGroupObservationDay(pricingGroup:PricingGroup, day:Day) extends StarlingEvent
-case class PivotLayoutUpdate(user:String, userLayouts:List[PivotLayout]) extends StarlingEvent
-case class ExcelMarketListUpdate(values:List[String]) extends StarlingEvent
-case class ExcelMarketDataUpdate(name:String, version:Int) extends StarlingEvent
-case class TestEvent(text:String) extends StarlingEvent
-case class RabbitEventReceived(latestTimestamp:Long) extends StarlingEvent
+case class IntradayUpdated(group: String, user: User, timestamp:Timestamp) extends StarlingGUIEvent
+case class TradesUpdated(desk : Desk, timestamp :Timestamp) extends StarlingGUIEvent
+case class DeskClosed(desk: Desk, timestamp:TradeTimestamp) extends StarlingGUIEvent
+case class DeskCloseFailed(desk: Desk, timestamp:TradeTimestamp, error: Throwable) extends StarlingGUIEvent
+case class MarketDataSnapshot(snapshotID:SnapshotIDLabel) extends StarlingGUIEvent
+case class PricingGroupMarketDataUpdate(pricingGroup:PricingGroup, version:Int,
+                                        previousVersion:Int, affectedObservationDays: List[Day]) extends StarlingGUIEvent
+case class ExcelObservationDay(name:String, day:Day) extends StarlingGUIEvent
+case class PricingGroupObservationDay(pricingGroup:PricingGroup, day:Day) extends StarlingGUIEvent
+case class PivotLayoutUpdate(user:String, userLayouts:List[PivotLayout]) extends StarlingGUIEvent
+case class ExcelMarketListUpdate(values:List[String]) extends StarlingGUIEvent
+case class ExcelMarketDataUpdate(name:String, version:Int) extends StarlingGUIEvent
+case class TestEvent(text:String) extends StarlingGUIEvent
+case class RabbitEventReceived(latestTimestamp:Long) extends StarlingGUIEvent
+case class RefinedMetalsValuationChanged(observationDay:Day, snapshotID:SnapshotIDLabel, changedTrades:Set[String]) extends Event
 
 object PricingGroupMarketDataUpdate {
   def matching(pricingGroupOption : Option[PricingGroup]) : PartialFunction[Event, PricingGroupMarketDataUpdate] = {
@@ -34,7 +34,7 @@ object PricingGroupMarketDataUpdate {
   }
 
   def matching(pricingGroup : PricingGroup) : PartialFunction[Event, PricingGroupMarketDataUpdate] = {
-    case update@PricingGroupMarketDataUpdate(`pricingGroup`, _) => update
+    case update@PricingGroupMarketDataUpdate(`pricingGroup`, _, _, _) => update
   }
 }
 
@@ -50,7 +50,7 @@ object ExcelMarketDataUpdate {
 
 case class RabbitMessage(body:String, headers:Map[String,Object])
 
-abstract class RabbitEvent(val queueName : String) extends StarlingEvent {
+abstract class RabbitEvent(val queueName : String) extends Event {
   import sjson.json._
 
   def toMessage = RabbitMessage(toJSON, toMap("userName", "subGroupName"))
@@ -104,9 +104,9 @@ case class UploadInterestRatesUpdate(user : User, label : String, observationDat
     Map("currency" → currency, "interestRates" → interestRates.map(_.toString))
 }
 
-case class EmailEvent(from: String = "", to: String = "", subject: String = "", body: String = "") extends StarlingEvent
+case class EmailEvent(from: String = "", to: String = "", subject: String = "", body: String = "") extends Event
 
-abstract class MarketDataEvent(val observationDay: Day, val label: SnapshotIDLabel, isCorrection: Boolean) extends StarlingEvent
+abstract class MarketDataEvent(val observationDay: Day, val label: SnapshotIDLabel, isCorrection: Boolean) extends Event
 case class SpotFXDataEvent(override val observationDay: Day, currencies: List[UOM],
                            override val label: SnapshotIDLabel, isCorrection: Boolean)
   extends MarketDataEvent(observationDay, label, isCorrection)

@@ -34,20 +34,22 @@ class PricingGroupMarketDataEventSourceTests extends WordSpec with ShouldMatcher
     }
   }
 
-  val lastSnapshot = SnapshotIDLabel(Day.yesterday, 1, Timestamp.now, 1)
-  val currentSnapshot = SnapshotIDLabel(lastSnapshot.observationDay.nextDay, 2, Timestamp.now, 2)
+  val lastVersion = 1//SnapshotIDLabel(1, Timestamp.now, MarketDataSelection.Null, SnapshotType.Manual, 1)
+  val observationDay = Day(2011, 3, 1)
+  val currentVersion = 2
+  val newSnapshot = SnapshotIDLabel(currentVersion, Timestamp.now, MarketDataSelection.Null, SnapshotType.Manual, 2)
 
-  val someData = Map(currentSnapshot.observationDay → Map("Market" → 1.2))
-  val differentData = Map(currentSnapshot.observationDay → Map("Market" → 2.1))
-  val someEvents = List(TestMarketDataEvent(List("Market"), currentSnapshot.observationDay, currentSnapshot, isCorrection = false))
-  val someCorrections = List(TestMarketDataEvent(List("Market"), currentSnapshot.observationDay, currentSnapshot, isCorrection = true))
+  val someData = Map(observationDay → Map("Market" → 1.2))
+  val differentData = Map(observationDay → Map("Market" → 2.1))
+  val someEvents = List(TestMarketDataEvent(List("Market"), observationDay, newSnapshot, isCorrection = false))
+  val someCorrections = List(TestMarketDataEvent(List("Market"), observationDay, newSnapshot, isCorrection = true))
 
   case class TestMarketDataEvent(merkets: List[String], override val observationDay: Day, override val label: SnapshotIDLabel, isCorrection: Boolean)
     extends MarketDataEvent(observationDay, label, isCorrection)
 
   def pricingGroupMarketDataEventSource() = {
     val dataFlowDataProvider = mock(classOf[DataFlowDataProvider[Day, String, Double]])
-    val observationDays = List(lastSnapshot.observationDay, currentSnapshot.observationDay)
+    val observationDays = List(observationDay)
 
     new PricingGroupMarketDataEventSource {
       type Key = Day
@@ -58,11 +60,12 @@ class PricingGroupMarketDataEventSourceTests extends WordSpec with ShouldMatcher
       def marketDataProvider = dataFlowDataProvider
       val pricingGroup = PricingGroup.Metals
 
-      def marketDataEvent(observationDay : Day, markets: List[String], snapshot: SnapshotIDLabel, isCorrection: Boolean) = {
-        TestMarketDataEvent(markets, observationDay, snapshot, isCorrection)
+
+      def marketDataEvent(change: MarketDataChange, key:Day, marketTypes: List[String], snapshot: SnapshotIDLabel) = {
+        TestMarketDataEvent(marketTypes, change.observationDay, snapshot, change.isCorrection)
       }
 
-      def events() = eventsFor(some(lastSnapshot), currentSnapshot, observationDays)
+      def events() = changesFor(lastVersion, currentVersion, observationDays).map(change => change.marketDataEvent(newSnapshot))
 
       def receivingNoData() = receivingChangingData(Map.empty, Map.empty)
       def receivingUnchangingData(data: Map[Key, Value]) = receivingChangingData(data, data)
@@ -70,8 +73,8 @@ class PricingGroupMarketDataEventSourceTests extends WordSpec with ShouldMatcher
       def receivingDeletedData(deleted: Map[Key, Value]) = receivingChangingData(deleted, Map.empty)
 
       def receivingChangingData(oldData: Map[Key, Value], newData: Map[Key, Value]) = {
-        when(dataFlowDataProvider.marketDataFor(any[PricingGroup], same(lastSnapshot), any[List[Day]])) thenReturn oldData
-        when(dataFlowDataProvider.marketDataFor(any[PricingGroup], same(currentSnapshot), any[List[Day]])) thenReturn newData
+        when(dataFlowDataProvider.marketDataFor(PricingGroup.Metals, lastVersion, observationDay)) thenReturn oldData
+        when(dataFlowDataProvider.marketDataFor(PricingGroup.Metals, currentVersion, observationDay)) thenReturn newData
 
         this
       }

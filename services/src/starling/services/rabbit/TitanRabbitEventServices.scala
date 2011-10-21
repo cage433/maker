@@ -16,7 +16,8 @@ import starling.quantity.UOM
 import starling.daterange.Day
 import com.trafigura.services.TitanSerializableCurrency
 import starling.titan.EDMConversions._
-import starling.gui.api.{ReferenceInterestRateDataEvent, MarketDataSnapshot, SpotFXDataEvent}
+import starling.db.SnapshotID
+import starling.gui.api._
 
 /**
  * Titan RabbitMQ event module
@@ -28,10 +29,11 @@ trait TitanRabbitEventServices extends Stopable with Log {
 }
 
 object Payloads extends PayloadFactory {
-  def forSnapshotId(snapshotId: String) = createPayload(Event.StarlingSnapshotIdPayload, snapshotId)
+  def forSnapshotId(snapshotId: SnapshotIDLabel) = createPayload(Event.StarlingSnapshotIdPayload, snapshotId.id.toString)
   def forSpotFXCurrency(currency: TitanSerializableCurrency) = createPayload(Event.StarlingSpotFXCurrency, currency.toString)
   def forObservationDay(observationDay: Day) = createPayload(Event.StarlingObservationDay, observationDay.toString) // ddMMMyyyy ok ?
   def forReferenceRateSource(source: String) = createPayload(Event.StarlingReferenceRateSource, source)
+  def forTitanTradeId(id:String) = createPayload(Event.RefinedMetalTradeIdPayload, id)
 
   private def createPayload(payloadType: String, keyId: String): Payload = createPayload(payloadType, Event.StarlingSource, keyId)
 }
@@ -46,18 +48,25 @@ case class TitanRabbitIdBroadcaster(
 
   def verbFor(isCorrection: Boolean): EventVerbEnum = if (isCorrection) UpdatedEventVerb else CreatedEventVerb
 
+  import Event._
+
   def broadcast(event: swing.event.Event) = try {
     val events: Option[JSONArray] = event partialMatch {
-      case MarketDataSnapshot(snapshotIDs) => createEvents(subject, CreatedEventVerb, snapshotIDs.map(Payloads.forSnapshotId))
+      case RefinedMetalsValuationChanged(observationDay, snapshotID, changedTrades) => {
+        createEvents(StarlingValuationServiceSubject, UpdatedEventVerb,
+          Payloads.forObservationDay(observationDay) ::
+          Payloads.forSnapshotId(snapshotID) :: changedTrades.toList.map(Payloads.forTitanTradeId))
+      }
+      case MarketDataSnapshot(snapshotID) => createEvents(subject, CreatedEventVerb, Payloads.forSnapshotId(snapshotID) :: Nil)
       case SpotFXDataEvent(observationDay, currencies, snapshotIDLabel, isCorrection) => {
         createEvents("SpotFXData", verbFor(isCorrection),
           Payloads.forObservationDay(observationDay) ::
-          Payloads.forSnapshotId(snapshotIDLabel.id.toString) :: toTitan(currencies).map(Payloads.forSpotFXCurrency))
+          Payloads.forSnapshotId(snapshotIDLabel) :: toTitan(currencies).map(Payloads.forSpotFXCurrency))
       }
       case ReferenceInterestRateDataEvent(observationDay, exchangeName, currencies, snapshotIDLabel, isCorrection) => {
         createEvents("ReferenceSomething", verbFor(isCorrection),
           Payloads.forObservationDay(observationDay) :: Payloads.forReferenceRateSource(exchangeName) ::
-          Payloads.forSnapshotId(snapshotIDLabel.id.toString) :: toTitan(currencies).map(Payloads.forSpotFXCurrency))
+          Payloads.forSnapshotId(snapshotIDLabel) :: toTitan(currencies).map(Payloads.forSpotFXCurrency))
       }
     }
 

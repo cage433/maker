@@ -17,11 +17,11 @@ import java.util.concurrent.{ConcurrentHashMap, Executors}
 import org.jboss.netty.channel._
 import java.net.{URL, InetSocketAddress}
 import java.lang.ThreadLocal
-import starling.utils.ThreadUtils
 import java.util.{UUID, Set => JSet, Map => JMap}
 import management.ManagementFactory
 import javax.management.ObjectName
 import collection.JavaConversions._
+import starling.utils.{NamedDaemonThreadFactory, ThreadUtils}
 
 trait UsersMBean {
   def getUserDetails:JSet[String]

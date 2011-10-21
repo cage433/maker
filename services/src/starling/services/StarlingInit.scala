@@ -117,7 +117,7 @@ class StarlingInit( val props: Props,
     ).withDefaultValue(Nil)
 
     lazy val mds = Log.infoWithTime("Creating DBMarketDataStore") {
-      new DBMarketDataStore(new NewSchemaMdDB(starlingRichDB, dataTypes), new MarketDataTags(starlingRichDB),
+      new DBMarketDataStore(new NewSchemaMdDB(starlingRichDB, dataTypes), new MarketDataSnapshots(starlingRichDB),
         marketDataSources, rmiBroadcaster, dataTypes)
     }
 

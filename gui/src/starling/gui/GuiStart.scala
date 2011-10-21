@@ -138,19 +138,19 @@ object GuiStart extends Log {
       case ExcelMarketListUpdate(values) => {
         cacheMap(ExcelDataSets) = values
       }
-      case mdss: MarketDataSnapshotSet => {
+      case mds:MarketDataSnapshot=> {
         val snapshotsBySelection = cacheMap(Snapshots)
 
-        val snapshots = snapshotsBySelection.get(mdss.selection)
+        val snapshots = snapshotsBySelection.get(mds.snapshotID.marketDataSelection)
 
         val newLabels = snapshots match {
-          case None => List(mdss.newSnapshot)
-          case Some(labels) => mdss.newSnapshot :: labels
+          case None => List(mds.snapshotID)
+          case Some(labels) => mds.snapshotID :: labels
         }
 
-        cacheMap(Snapshots) = snapshotsBySelection.updated(mdss.selection, newLabels)
+        cacheMap(Snapshots) = snapshotsBySelection.updated(mds.snapshotID.marketDataSelection, newLabels)
       }
-      case PricingGroupMarketDataUpdate(pg, version) => {
+      case PricingGroupMarketDataUpdate(pg, version, _, _) => {
         cacheMap(PricingGroupLatestMarketDataVersion) =
                 cacheMap(PricingGroupLatestMarketDataVersion) + (pg -> version)
       }
@@ -308,7 +308,10 @@ object StarlingUtilButtons {
     def rabbitEventPage = new PageFactory {
       def create(serverContext:ServerContext) = {
         val latestRabbitEvent = context.localCache.localCache(LocalCacheKeys.LatestRabbitEvent)
-        RabbitEventViewerPage(PivotPageState(), RabbitEventViewerPageState(latestRabbitEvent))
+        val initialLayout = PivotFieldsState(
+          filters = List(Field("Day") -> SomeSelection(Set(NullableDay(Day.today)))),
+          rowFields = List(Field("Starling ID"), Field("Source"), Field("Message Time (UTC)"), Field("Subject")))
+        RabbitEventViewerPage(PivotPageState.default(initialLayout), RabbitEventViewerPageState(latestRabbitEvent))
       }
     }
 

@@ -16,7 +16,8 @@ trait FC2Facility {
   @DoNotCache def excelLatestMarketDataVersions:Map[String,Int]
   @DoNotCache def pricingGroupLatestMarketDataVersions:Map[PricingGroup,Int]
 
-  @DoNotCache def snapshot(marketDataSelection:MarketDataSelection, observationDay:Day): Option[SnapshotIDLabel]
+  @DoNotCache def importData(marketDataSelection:MarketDataSelection, observationDay:Day):MarketDataVersion
+  @DoNotCache def snapshot(marketDataIdentifier:MarketDataIdentifier, snapshotType:SnapshotType):SnapshotIDLabel
 
   @DoNotCache def latestMarketDataIdentifier(selection:MarketDataSelection):MarketDataIdentifier
 

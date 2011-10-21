@@ -66,7 +66,7 @@ class ManualReportConfigPanel(context:PageContext, reportParameters:ReportParame
       icon = StarlingIcons.icon("/icons/14x14_download_data.png")
       reactions += {
         case ButtonClicked(_) => {
-          context.submit(SnapshotSubmitRequest(generateMarketDataSelection, observationDayChooser.day))
+          context.submit(ImportMarketDataRequest(generateMarketDataSelection, observationDayChooser.day))
         }
       }
     }

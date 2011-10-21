@@ -10,7 +10,7 @@ import swing.event.MouseClicked
 import javax.swing.ImageIcon
 import starling.browser.common.RoundedBorder
 import starling.browser.LocalCacheKey
-import starling.browser.service.StarlingEvent
+import starling.browser.service.StarlingGUIEvent
 import swing.Swing._
 
 object NotificationType extends Enumeration {
@@ -90,8 +90,8 @@ class NotificationPanel(frameWidth: => Int, cache:LocalCache, containerMethods:C
   add(closeButton)
 }
 
-case class NotificationLabelClosed(source:NotificationLabel) extends StarlingEvent
-case class NotificationLabelAction(source:NotificationLabel) extends StarlingEvent
+case class NotificationLabelClosed(source:NotificationLabel) extends StarlingGUIEvent
+case class NotificationLabelAction(source:NotificationLabel) extends StarlingGUIEvent
 
 class NotificationLabel(val notification:Notification) extends MigPanel("") {
   border = RoundedBorder()

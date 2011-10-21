@@ -86,11 +86,11 @@ case class MarketDataPage(
 
   override def postSave(i:Int, context:PageContext) {
     marketDataIdentifier match {
-      case StandardMarketDataPageIdentifier(mi) => {
-        context.localCache.latestMarketDataVersionIfValid(mi.selection) match {
+      case mdpi:MarketDataPageIdentifier => {
+        context.localCache.latestMarketDataVersionIfValid(mdpi.selection) match {
           case Some(v) => {
             val maxVersion = math.max(i, v)
-            val newPage = copy(marketDataIdentifier=StandardMarketDataPageIdentifier(mi.copyVersion(maxVersion)), pageState = pageState.copy(edits = PivotEdits.Null))
+            val newPage = copy(marketDataIdentifier=StandardMarketDataPageIdentifier(MarketDataIdentifier(mdpi.selection, maxVersion)), pageState = pageState.copy(edits = PivotEdits.Null))
             context.goTo(newPage)
           }
           case None =>
@@ -168,13 +168,13 @@ case class MarketDataPage(
         private val importButton = new Button {
           val observationDay = Day.today.previousWeekday
           enabled = !marketDataIdentifier.selection.isNull
-          tooltip = "Import and snapshot market data for previous weekday"
+          tooltip = "Import market data for previous weekday"
           icon = StarlingIcons.icon("/icons/14x14_download_data.png")
 
           reactions += {
             case ButtonClicked(_) => {
               val day = observationDay
-              context.submit(SnapshotSubmitRequest(marketDataIdentifier.selection, day.asInstanceOf[Day]))
+              context.submit(ImportMarketDataRequest(marketDataIdentifier.selection, day.asInstanceOf[Day]))
             }
           }
         }
@@ -188,6 +188,13 @@ case class MarketDataPage(
 
           {val snapshots = context.localCache.snapshots(None).getOrElse(marketDataIdentifier.selection, List())
             SnapshotComboValue(None) :: snapshots.map(ss=>SnapshotComboValue(Some(ss))).toList}.foreach(snapshotsComboBoxModel.addElement(_))
+
+          listenTo(context.remotePublisher)
+          reactions += {
+            case MarketDataSnapshot(snapshotID) if (snapshotID.marketDataSelection == marketDataIdentifier.selection) => {
+              snapshotsComboBoxModel.insertElementAt(SnapshotComboValue(Some(snapshotID)), 1)
+            }
+          }
 
           def initialize() {
             selection.item = {
@@ -211,9 +218,21 @@ case class MarketDataPage(
           add(snapshotsComboBox)
         }
 
+        private val snapshotButton = new Button {
+          enabled = !marketDataIdentifier.selection.isNull
+          tooltip = "Snapshot this market data"
+          icon = StarlingIcons.icon("/icons/14x14_download_data.png")
+          reactions += {
+            case ButtonClicked(_) => {
+              context.submit(SnapshotMarketDataRequest(marketDataIdentifier.marketDataIdentifier))
+            }
+          }
+        }
+
         add(importButton)
         add(pricingGroupSelector)
         add(snapshotsPanel)
+        add(snapshotButton)
       }
 
       val extraPanel = new MigPanel("hidemode 3") {
@@ -244,14 +263,6 @@ case class MarketDataPage(
         add(typeLabel)
         add(dataTypeCombo)
         add(filterDataCheckbox, "gapleft unrel")
-      }
-
-      context.remotePublisher.reactions += {
-        case mdss: MarketDataSnapshotSet => if (marketDataIdentifier.selection == mdss.selection) {
-          this.suppressing(pricingGroupPanel.snapshotsComboBox.selection) {
-            pricingGroupPanel.snapshotsComboBoxModel.addElement(SnapshotComboValue(Some(mdss.newSnapshot)))
-          }
-        }
       }
 
       add(pricingGroupPanel, "wrap")

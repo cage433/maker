@@ -17,6 +17,7 @@ import org.jboss.netty.handler.timeout.{IdleStateEvent, IdleStateAwareChannelHan
 import org.jboss.netty.util.{HashedWheelTimer, Timeout, TimerTask}
 import java.lang.reflect.{InvocationHandler, Method}
 import starling.auth.Client
+import starling.utils.NamedDaemonThreadFactory
 
 
 case class StateChangeEvent(previous: State, current: State) extends Event

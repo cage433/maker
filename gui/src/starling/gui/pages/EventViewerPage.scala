@@ -5,7 +5,7 @@ import starling.browser.internal.RootBrowserBundle
 import java.awt.Dimension
 import starling.browser._
 import common.MigPanel
-import service.StarlingEvent
+import service.StarlingGUIEvent
 import swing.event.{Event, ButtonClicked}
 import swing._
 import collection.mutable.{Stack => MStack}
@@ -49,7 +49,7 @@ class EventViewerPageComponent(context:PageContext) extends MigPanel() with Page
 
   listenTo(context.remotePublisher)
   reactions += {
-    case event:StarlingEvent => {
+    case event:StarlingGUIEvent => {
       eventStack push event
       updateData()
     }

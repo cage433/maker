@@ -23,6 +23,7 @@ object Broadcaster {
 }
 
 class ReceiversBroadcaster extends Broadcaster {
+  val executor = Executors.newCachedThreadPool(new NamedDaemonThreadFactory("StarlingBroadcaster"))
   val receivers = new java.util.concurrent.ConcurrentHashMap[AnyRef,Receiver]()
   def addReceiver(ref:AnyRef, receiver:Receiver) {
     receivers.put(ref, receiver)
@@ -33,7 +34,7 @@ class ReceiversBroadcaster extends Broadcaster {
   def broadcast(event: Event) = {
     import JavaConversions._
     receivers.values().iterator().foreach { receiver => {
-      receiver.event(event)
+      executor.execute(new Runnable() { def run() { receiver.event(event) } })
     }}
   }
 }

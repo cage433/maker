@@ -3,7 +3,7 @@ package starling.browser.internal
 import collection.mutable.ArrayBuffer
 import starling.browser._
 import osgi.BundleAdded
-import service.{StarlingEvent, BookmarkLabel}
+import service.{StarlingGUIEvent, BookmarkLabel}
 import starling.browser.common._
 import java.util.concurrent.{ThreadFactory, Executors}
 import scala.swing.Swing._
@@ -111,7 +111,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
       }
       publisherForPageContext.publish(e)
     }
-    case e:StarlingEvent => {
+    case e:StarlingGUIEvent => {
       publisherForPageContext.publish(e)
 
       if (history.nonEmpty) {
