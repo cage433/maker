@@ -274,7 +274,7 @@ class PivotTablePageComponent(
           def baseSubmit(serverContext:ServerContext) = {
             save(serverContext, edits)
           }
-        }, onComplete = (r:Int) => postSave(r, pageContext))
+        }, onComplete = (r:Int) => postSave(r, pageContext), keepScreenLocked = true)
       }
       reactions += {case ButtonClicked(b) => saveEdits()}
 
