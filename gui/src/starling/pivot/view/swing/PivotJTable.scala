@@ -38,7 +38,6 @@ class PivotJTable(tableModel:PivotJTableModel, pivotTableView:PivotTableView, mo
   setDefaultRenderer(classOf[Object], new DefaultTableRenderer(new PivotCellProvider(indentColumns, columnDetails, tableModel)))
   setRowHeight(PivotJTable.RowHeight)
 
-  // If the delete key is pressed when more than one cell is selected, delete all deletable cells.
   addKeyListener(new KeyAdapter {
     override def keyPressed(e:KeyEvent) {
       if (e.getKeyCode == KeyEvent.VK_DELETE) {
@@ -131,11 +130,7 @@ class PivotJTable(tableModel:PivotJTableModel, pivotTableView:PivotTableView, mo
         val textToInsert = support.getTransferable.getTransferData(DataFlavor.stringFlavor).asInstanceOf[String]
         val rows = textToInsert.split("\n").toList
         val cells = rows.map(rowText => {
-          val tokenizer = if (rowText.contains("\t")) {
-            new StringTokenizer(rowText, "\t")
-          } else {
-            new StringTokenizer(rowText)
-          }
+          val tokenizer = new StringTokenizer(rowText, "\t")
           val colBuffer = new ListBuffer[String]()
           while (tokenizer.hasMoreTokens) {
             val text = tokenizer.nextToken.trim().toLowerCase
@@ -206,11 +201,7 @@ class PivotJTable(tableModel:PivotJTableModel, pivotTableView:PivotTableView, mo
           if (rows.nonEmpty) {
             rows.zipWithIndex.foreach{case (rowText,rowIndex) => {
               val realRow = startRow + rowIndex
-              val tokenizer = if (rowText.contains("\t")) {
-                new StringTokenizer(rowText, "\t")
-              } else {
-                new StringTokenizer(rowText)
-              }
+              val tokenizer = new StringTokenizer(rowText, "\t")
               var colCount = 0
               while (tokenizer.hasMoreTokens) {
                 val text = tokenizer.nextToken
