@@ -44,14 +44,14 @@ class DocumentationService extends DocumentationServiceApi {
 <html>
   <head>
     <title>{serviceUri}</title>
-    <link rel='stylesheet' type='text/css' href={prefix("Doc/Files/jsonVisualization.css")} />
-	  <script type='text/javascript' src={prefix("Doc/Files/yuiloader-dom-event.js")}></script>
-	  <script type='text/javascript' src={prefix("Doc/Files/json-min.js")}></script>
-    <script type='text/javascript' src={prefix("Doc/Files/jsonVisualization.js")}></script>
-    <script type='text/javascript' src={prefix("Doc/Files/jquery-1.6.2.min.js")}></script>
-    <script type='text/javascript' src={prefix("Doc/Files/jquery.tmpl.js")}></script>
-    <script type='text/javascript' src={prefix("Doc/Files/auto-grow.js")}></script>
-    <script type='text/javascript' src={prefix("Doc/Files/displayJson.js")}></script>
+    <link rel='stylesheet' type='text/css' href={prefix("jsonVisualization.css")} />
+    <script type='text/javascript' src={prefix("yuiloader-dom-event.js")}></script>
+    <script type='text/javascript' src={prefix("json-min.js")}></script>
+    <script type='text/javascript' src={prefix("jsonVisualization.js")}></script>
+    <script type='text/javascript' src={prefix("jquery-1.6.2.min.js")}></script>
+    <script type='text/javascript' src={prefix("jquery.tmpl.js")}></script>
+    <script type='text/javascript' src={prefix("auto-grow.js")}></script>
+    <script type='text/javascript' src={prefix("displayJson.js")}></script>
   </head>
   <body href="/Doc/Forms">
     <label><input type='radio' name='renderingStyle' id='html' value='json2HTML' checked='checked' />HTML</label>
@@ -70,6 +70,6 @@ class DocumentationService extends DocumentationServiceApi {
 </html>.toString.replace("jquery-templates", StringIO.readStringFromFile(files("jquery-templates.html")))
 
   private def mediaType(filename: String): MediaType = mediaTypes(filename.substring(filename.lastIndexOf(".")))
-  private def prefix(input: String) = "/RPC/" + input
+  private def prefix(input: String) = "../../Files/" + input
   private def bytes(filename: String) = if (!files.contains(filename)) None else Some(StringIO.readBytesFromFile(files(filename)))
 }

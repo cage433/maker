@@ -4,7 +4,7 @@ $(document).ready(function () {
     $('input[name=renderingStyle]').click(function () { renderer.show($(this).attr("id")) })
     $('#html').attr('checked', 'checked'); renderer.show("json")
     $('#service').each(function (index, service) {
-        $.getJSON("/RPC/Doc/Meta" + $(service).attr('href').prefixWith("/"))
+        $.getJSON("../../Meta" + $(service).attr('href').prefixWith("/"))
             .success(function (serviceMetaData) {
                 $('#scalaTemplate').tmpl(serviceMetaData).appendTo('.scala')
                 $('#csTemplate').tmpl(serviceMetaData).appendTo('.cs')
@@ -106,7 +106,6 @@ function Form(form) {
     function getJson() {
         spinner.show()
         var url = form.attr("action") + inputs.map(function (index, element) { return element.value }).get().join("/")
-//        console.log(url)
         $.getJSON(url).complete(function () { spinner.hide() }).success(showJson).error(showError)
 
         return false
@@ -121,13 +120,10 @@ function Form(form) {
     }
 
     function showError(detail) {
-//        console.log("showError.detail: ", detail)
         var responseText = errorText(detail)
-//        console.log("showError.responseText: ", responseText)
         $(formId + " > code > code > input[type=checkbox][name=keep]").not(':checked').parent().remove()
         inputs.addClass("bad"); errors.hide().empty().append(responseText).fadeIn("fast")
         errors.append(detail.responseText)
-//        console.log("showError.done")
     }
 
     function errorText(detail) {
