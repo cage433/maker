@@ -13,7 +13,7 @@ class StarlingJMX(scheduler: Scheduler) extends Stopable {
 
   override def start {
     super.start
-    scheduler.tasks.foreach(task =>
+    scheduler.getTasks.foreach(task =>
       mbs.registerMBean(new Task(task.task), new ObjectName("Starling.ScheduledTasks:name=" + task.name)))
   }
 

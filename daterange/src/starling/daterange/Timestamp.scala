@@ -9,6 +9,7 @@ case class Timestamp(instant : Long) extends Ordered[Timestamp] {
   def this() = this(new Date().getTime)
 
   private val dt = new DateTime(instant)
+  def toDateTime = dt
 
   def toJavaDate = new Date(instant)
 

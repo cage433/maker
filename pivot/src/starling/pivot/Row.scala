@@ -18,6 +18,7 @@ object Row {
     case _ => throw new Exception("Can't create " + dataTypeName + " from more than one row " + rows)
   }
 
+  def create(map: Map[String, Any]): Row = new Row(map.mapKeys(Field(_)))
   def create(rows: Traversable[Map[Field, Any]]): List[Row] = rows.map(Row(_)).toList
 }
 

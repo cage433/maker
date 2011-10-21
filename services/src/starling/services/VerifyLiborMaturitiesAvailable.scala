@@ -23,14 +23,14 @@ class VerifyLiborMaturitiesAvailable(marketDataStore: MarketDataStore, broadcast
 
     (missingTenorsByCurrency.size > 0).option {
       email.copy(subject = "Missing Libor Maturities in LIM, observation day: " + observationDay,
-        body = <html>
+        body = <span>
                  <p>The following LIBOR tenors are required by Trinity but are missing in LIM</p>
                  <table>
                    { for ((currency, missingTenors) <- missingTenorsByCurrency) yield
                      <tr><td><b>{currency}: </b></td><td>{missingTenors.mkString(", ")}</td></tr>
                    }
                  </table>
-               </html>.toString)
+               </span>.toString)
     }
   }
 }

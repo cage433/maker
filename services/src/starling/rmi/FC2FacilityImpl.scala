@@ -8,7 +8,7 @@ import starling.fc2.api.FC2Facility
 import starling.db._
 import starling.utils.ImplicitConversions._
 import starling.manager.BromptonContext
-import starling.curves.{EnvironmentRules, CurveViewer, EnvironmentRule}
+import starling.curves.{EnvironmentRules, CurveViewer}
 import starling.utils.cache.CacheFactory
 import starling.pivot.{PivotTableDataSource, NullPivotTableDataSource, PivotFieldParams, PivotEdits}
 
@@ -31,44 +31,10 @@ class BromptonTrackerBasedMarketDataPageIdentifierReaderProviders(context:Brompt
   def providers = tracker.flatMap( s => List(s) ).toList
 }
 
-class FC2FacilityImpl(
-                      marketDataStore:MarketDataStore,
-                      curveViewer : CurveViewer,
-                      marketDataReaderProviders:MarketDataPageIdentifierReaderProviders,
-                      marketDataTypes: MarketDataTypes,
-                      environmentRules: EnvironmentRules) extends FC2Facility {
+class FC2Service(marketDataStore: MarketDataStore, marketDataTypes: MarketDataTypes, marketDataReaderProviders:MarketDataPageIdentifierReaderProviders) {
+  private val cache = CacheFactory.getCache("FC2")
 
-  private def unLabel(pricingGroup:PricingGroup) = pricingGroup
-  private def unLabel(snapshotID:SnapshotIDLabel) = marketDataStore.snapshotFromID(snapshotID.id).get
-  private def label(pricingGroup:PricingGroup):PricingGroup = pricingGroup
-  private def label(snapshot:SnapshotID):SnapshotIDLabel = snapshot.label
-
-  val cache = CacheFactory.getCache("FC2")
-  def pricingGroups = {
-    //val allPricingGroups = desks.flatMap(_.pricingGroups).toSet
-    marketDataStore.pricingGroups//.filter(allPricingGroups.contains(_))
-  }
-  def excelDataSets() = marketDataStore.excelDataSets
-
-  def environmentRuleLabels = pricingGroups.toMapWithValues(environmentRules.forPricingGroup(_).map(_.label))
-
-  val curveTypes = curveViewer.curveTypes
-
-  def snapshots():Map[MarketDataSelection,List[SnapshotIDLabel]] = {
-    marketDataStore.snapshotsByMarketDataSelection
-  }
-
-  def observationDays():(Map[PricingGroup,Set[Day]],Map[String,Set[Day]]) = {
-    (Map() ++ marketDataStore.observationDaysByPricingGroup(), Map() ++ marketDataStore.observationDaysByExcel())
-  }
-
-  private def realTypeFor(label:MarketDataTypeLabel) = {
-    marketDataTypes.types.find(_.toString == label.name).getOrElse(throw new Exception("Can't find market data type '" + label.name + "' in " + marketDataTypes.types))
-  }
-
-  def curvePivot(curveLabel: CurveLabel, pivotFieldParams: PivotFieldParams) = {
-    PivotTableModel.createPivotData(curveViewer.curve(curveLabel), pivotFieldParams)
-  }
+  def latest(marketDataSelection:MarketDataSelection) = marketDataStore.latest(marketDataSelection)
 
   def marketDataPivot(selection:MarketDataSelection, marketDataType:MarketDataType):PivotTableDataSource = {
     marketDataPivot(marketDataStore.latestMarketDataIdentifier(selection), marketDataType)
@@ -81,8 +47,6 @@ class FC2FacilityImpl(
   def marketDataPivot(marketDataPageIdentifier:MarketDataPageIdentifier, marketDataType:MarketDataType):PivotTableDataSource = {
     marketDataSource(marketDataPageIdentifier, Some(MarketDataTypeLabel(marketDataType.name.name)), PivotEdits.Null)
   }
-
-  def latest(marketDataSelection:MarketDataSelection) = marketDataStore.latest(marketDataSelection)
 
   def marketDataSource(marketDataPageIdentifier:MarketDataPageIdentifier, marketDataTypeLabel:Option[MarketDataTypeLabel], edits:PivotEdits) = {
     val preBuilt = cache.memoize( (marketDataPageIdentifier, marketDataTypeLabel), {
@@ -107,29 +71,7 @@ class FC2FacilityImpl(
     }
   }
 
-  def readAllMarketData(marketDataIdentifier:MarketDataPageIdentifier, marketDataTypeLabel:Option[MarketDataTypeLabel], edits:PivotEdits, pivotFieldParams:PivotFieldParams):PivotData = {
-    val dataSource = marketDataSource(marketDataIdentifier, marketDataTypeLabel, edits)
-    PivotTableModel.createPivotData(dataSource, pivotFieldParams)
-  }
-
-  def saveMarketData(marketDataIdentifier:MarketDataPageIdentifier, marketDataTypeLabel:Option[MarketDataTypeLabel], pivotEdits:PivotEdits) = {
-    val dataSource = marketDataSource(marketDataIdentifier, marketDataTypeLabel, PivotEdits.Null)
-    dataSource.editable.get.save(pivotEdits)
-  }
-
-  def snapshot(marketDataIdentifier: MarketDataIdentifier, snapshotType: SnapshotType) = {
-    marketDataStore.snapshot(marketDataIdentifier, snapshotType).label
-  }
-
-  def importData(marketDataSelection:MarketDataSelection, observationDay:Day) = {
-    val saveResult = marketDataStore.importData(marketDataSelection, observationDay)
-    SpecificMarketDataVersion(saveResult.maxVersion)
-  }
-
-  def excelLatestMarketDataVersions = marketDataStore.latestExcelVersions.mapKeys(_.stripExcel)
-  def pricingGroupLatestMarketDataVersions = Map() ++ marketDataStore.latestPricingGroupVersions.filterKeys(pricingGroups()).toMap
-
-  private def marketDataReaderFor(marketDataIdentifier:MarketDataPageIdentifier) = {
+  def marketDataReaderFor(marketDataIdentifier:MarketDataPageIdentifier) = {
     val reader = marketDataIdentifier match {
       case StandardMarketDataPageIdentifier(mdi) => new NormalMarketDataReader(marketDataStore, mdi)
       case _ => {
@@ -146,16 +88,74 @@ class FC2FacilityImpl(
     validate(reader)
   }
 
+  private def realTypeFor(label:MarketDataTypeLabel) = {
+    marketDataTypes.types.find(_.toString == label.name).getOrElse(throw new Exception("Can't find market data type '" + label.name + "' in " + marketDataTypes.types))
+  }
+
   private def validate(reader: MarketDataReader): MarketDataReader = {
     new ValidatingMarketDataReader(reader, RollingAveragePriceValidator, new DayChangePriceValidator(reader))
   }
 
-  def marketDataTypeLabels(marketDataIdentifier:MarketDataPageIdentifier) = {
-    sortMarketDataTypes(marketDataReaderFor(marketDataIdentifier).marketDataTypes).map(t=>MarketDataTypeLabel(t.name.name))
+  private def sortMarketDataTypes(types:List[MarketDataType]) = types.sortWith(_.name.name < _.name.name)
+}
+
+class FC2FacilityImpl(service: FC2Service,
+                      marketDataStore:MarketDataStore,
+                      curveViewer : CurveViewer,
+                      environmentRules: EnvironmentRules) extends FC2Facility {
+
+
+  val cache = CacheFactory.getCache("FC2")
+  def pricingGroups = {
+    //val allPricingGroups = desks.flatMap(_.pricingGroups).toSet
+    marketDataStore.pricingGroups//.filter(allPricingGroups.contains(_))
+  }
+  def excelDataSets() = marketDataStore.excelDataSets
+
+  def environmentRuleLabels = pricingGroups.toMapWithValues(environmentRules.forPricingGroup(_).map(_.label))
+
+  val curveTypes = curveViewer.curveTypes
+
+  def snapshots():Map[MarketDataSelection,List[SnapshotIDLabel]] = {
+    marketDataStore.snapshotsByMarketDataSelection
   }
 
-  private def sortMarketDataTypes(types:List[MarketDataType]) = types.sortWith(_.name.name < _.name.name)
+  def observationDays():(Map[PricingGroup,Set[Day]],Map[String,Set[Day]]) = {
+    (Map() ++ marketDataStore.observationDaysByPricingGroup(), Map() ++ marketDataStore.observationDaysByExcel())
+  }
+
+  def curvePivot(curveLabel: CurveLabel, pivotFieldParams: PivotFieldParams) = {
+    PivotTableModel.createPivotData(curveViewer.curve(curveLabel), pivotFieldParams)
+  }
+
+  def readAllMarketData(marketDataIdentifier:MarketDataPageIdentifier, marketDataTypeLabel:Option[MarketDataTypeLabel], edits:PivotEdits, pivotFieldParams:PivotFieldParams):PivotData = {
+    val dataSource = service.marketDataSource(marketDataIdentifier, marketDataTypeLabel, edits)
+    PivotTableModel.createPivotData(dataSource, pivotFieldParams)
+  }
+
+  def saveMarketData(marketDataIdentifier:MarketDataPageIdentifier, marketDataTypeLabel:Option[MarketDataTypeLabel], pivotEdits:PivotEdits) = {
+    val dataSource = service.marketDataSource(marketDataIdentifier, marketDataTypeLabel, PivotEdits.Null)
+    dataSource.editable.get.save(pivotEdits)
+  }
+
+  def snapshot(marketDataIdentifier: MarketDataIdentifier, snapshotType: SnapshotType) = {
+    marketDataStore.snapshot(marketDataIdentifier, snapshotType).label
+  }
+
+  def importData(marketDataSelection:MarketDataSelection, observationDay:Day) = {
+    val saveResult = marketDataStore.importData(marketDataSelection, observationDay)
+    SpecificMarketDataVersion(saveResult.maxVersion)
+  }
+
+  def excelLatestMarketDataVersions = marketDataStore.latestExcelVersions.mapKeys(_.stripExcel)
+  def pricingGroupLatestMarketDataVersions = Map() ++ marketDataStore.latestPricingGroupVersions.filterKeys(pricingGroups()).toMap
+
+  def marketDataTypeLabels(marketDataIdentifier:MarketDataPageIdentifier) = {
+    sortMarketDataTypes(service.marketDataReaderFor(marketDataIdentifier).marketDataTypes).map(t=>MarketDataTypeLabel(t.name.name))
+  }
 
   def latestMarketDataIdentifier(selection:MarketDataSelection):MarketDataIdentifier = marketDataStore.latestMarketDataIdentifier(selection)
 
+  private def label(snapshot:SnapshotID):SnapshotIDLabel = snapshot.label
+  private def sortMarketDataTypes(types:List[MarketDataType]) = types.sortWith(_.name.name < _.name.name)
 }

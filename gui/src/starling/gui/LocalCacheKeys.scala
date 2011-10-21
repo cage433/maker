@@ -7,6 +7,7 @@ import starling.auth.User
 import starling.calendar.BusinessCalendar
 import starling.utils.CaseInsensitive
 import starling.browser.LocalCacheKey
+import org.joda.time.DateTime
 
 object LocalCacheKeys {
   val PricingGroups                       = new LocalCacheKey[List[PricingGroup]]("PricingGroups")
@@ -26,6 +27,7 @@ object LocalCacheKeys {
   val EnvironmentRules                    = new LocalCacheKey[Map[PricingGroup,List[EnvironmentRuleLabel]]]("EnvironmentRules")
   val CurveTypes                          = new LocalCacheKey[List[CurveTypeLabel]]("CurveTypes")
   val CurrentUser                         = new LocalCacheKey[User]("currentUser")
-  val LatestRabbitEvent                    = new LocalCacheKey[Long]("LatestRabbitEvent")
+  val LatestRabbitEvent                   = new LocalCacheKey[Long]("LatestRabbitEvent")
+  val LatestEmailEvent                    = new LocalCacheKey[Timestamp]("LatestEmailEvent")
 }
 

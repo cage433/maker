@@ -20,6 +20,7 @@ import starling.rabbiteventviewer.api.RabbitEventViewerService
 import starling.trade.facility.TradeFacility
 import starling.reports.facility.ReportFacility
 import starling.manager.{ServiceProperties, HttpContext, BromptonContext, BromptonActivator}
+import starling.services.EmailService
 
 case class GuiLaunchParameters(serverRmiHost:String, serverRmiPort:Int, principalName:String, runAs:Option[String])
 
@@ -39,6 +40,7 @@ class GuiBromptonActivator extends BromptonActivator {
     val fc2Service = client.proxy(classOf[FC2Facility])
     val reportService = client.proxy(classOf[ReportFacility])
     val rabbitEventViewerService = client.proxy(classOf[RabbitEventViewerService])
+    val emailService = client.proxy(classOf[EmailService])
 
     context.registerService(classOf[Publisher], client.remotePublisher)
     context.registerService(classOf[StarlingServer], starlingServer)
@@ -48,7 +50,7 @@ class GuiBromptonActivator extends BromptonActivator {
     context.registerService(classOf[TradeFacility], tradeService)
     context.registerService(classOf[BrowserService], client.proxy(classOf[BrowserService]))
     context.registerService(classOf[BrowserBundle], new StarlingBrowserBundle(starlingServer, reportService, fc2Service, rabbitEventViewerService, tradeService))
-
+    context.registerService(classOf[EmailService], emailService)
 
     context.registerService(classOf[HttpServlet], new HttpServlet {
       override def doGet(req:HttpServletRequest, resp:HttpServletResponse) {

@@ -43,6 +43,7 @@ class SingleClasspathManager(cacheServices:Boolean, activators:List[Class[_ <: B
   private val instances = activators.map(_.newInstance)
   private val registry = new scala.collection.mutable.ArrayBuffer[ServiceEntry]()
   private val trackers = new scala.collection.mutable.ArrayBuffer[TrackerEntry[_]]()
+  private val onStartedActions = new scala.collection.mutable.ArrayBuffer[() => Unit]()
 
   initialServices.foreach { case (klass,instance) => register(klass, instance, ServiceProperties())}
 
@@ -70,6 +71,8 @@ class SingleClasspathManager(cacheServices:Boolean, activators:List[Class[_ <: B
         }
       }
     }
+
+    def onStarted(action: => Unit) = onStartedActions += (() => action)
   }
 
 
@@ -81,6 +84,7 @@ class SingleClasspathManager(cacheServices:Boolean, activators:List[Class[_ <: B
       instances.foreach { activator => {
         activator.start(context)
       } }
+      onStartedActions.foreach(_())
     }
   }
   def stop() {

@@ -5,6 +5,8 @@ import java.net.{URLDecoder, URLEncoder}
 import starling.utils.Pattern._
 import scalaz.Scalaz._
 import collection.Seq
+import java.security.MessageDigest
+import starling.utils.ImplicitConversions._
 
 
 trait RichString {
@@ -75,6 +77,11 @@ trait RichString {
     def trimHereDoc: String = s.split("\n").map(_.trim).mkString("\n")
     def splitByCase(sep: String = " ") = fold(_.replaceAll(String.format("%s|%s|%s",
          "(?<=[A-Z])(?=[A-Z][a-z])", "(?<=[^A-Z])(?=[A-Z])", "(?<=[A-Za-z])(?=[^A-Za-z])"), sep))
+    def md5: String = {
+      val md5 = MessageDigest.getInstance("MD5").updateIt(_.reset(), _.update(s.getBytes))
+
+      md5.digest().map(0xFF & _).map { "%02x".format(_) }.foldLeft(""){_ + _}
+    }
     private def fold(nonEmpty: (String) => String, empty: String = s) = if (s == null || s.isEmpty) empty else nonEmpty(s)
 	}
 }

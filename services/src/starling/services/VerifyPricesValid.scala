@@ -1,7 +1,6 @@
 package starling.services
 
 import starling.daterange.Day
-import starling.db.MarketDataStore
 import starling.gui.api.{EmailEvent, MarketDataSelection}
 import starling.market.FuturesExchange
 import starling.marketdata.PriceDataType
@@ -11,12 +10,11 @@ import starling.utils.Broadcaster
 
 import starling.utils.ImplicitConversions._
 import scalaz.Scalaz._
-import starling.rmi.FC2FacilityImpl
-
+import starling.rmi.FC2Service
 
 object VerifyPricesValid {
-  def apply(fc2FacilityImpl:FC2FacilityImpl, broadcaster: Broadcaster, dataFlow: DataFlow) = new VerifyPricesValid(
-    fc2FacilityImpl.marketDataPivot(MarketDataSelection(Some(dataFlow.pricingGroup)), PriceDataType),
+  def apply(fc2Service:FC2Service, broadcaster: Broadcaster, dataFlow: DataFlow) = new VerifyPricesValid(
+    fc2Service.marketDataPivot(MarketDataSelection(Some(dataFlow.pricingGroup)), PriceDataType),
     dataFlow.exchange, broadcaster, dataFlow.from, dataFlow.to)
 }
 
@@ -31,14 +29,14 @@ class VerifyPricesValid(dataSource: PivotTableDataSource, exchange: FuturesExcha
 
     (grid.hasData).option {
       email.copy(subject = "Validation errors for: %s" % filterToString(filter),
-        body = <html>
+        body = <span>
                  <p>Validation errors for: { filterToString(filter) }</p>
                  <table border="1">
                    {for (row <- grid.combinedData) yield
                      <tr>{ row.map(createCell) }</tr>
                    }
                  </table>
-               </html>.toString)
+               </span>.toString)
     }
   }
 

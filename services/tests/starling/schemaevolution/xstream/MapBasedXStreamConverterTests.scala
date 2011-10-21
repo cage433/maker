@@ -1,6 +1,5 @@
 package starling.schemaevolution.xstream
 
-import starling.utils.StarlingTest
 import org.testng.annotations.Test
 import com.thoughtworks.xstream.XStream
 import starling.instrument.utils.StarlingXStream
@@ -9,6 +8,7 @@ import starling.quantity.Percentage
 import starling.daterange.Day
 import scala.collection.SortedMap
 import java.lang.Class
+import starling.utils.{Log, StarlingTest}
 
 case class Foo(x : String, y : Int)
 case class Bar(x : String)
@@ -18,7 +18,7 @@ case class Dave(x : String)
 class MapBasedXStreamConverterTests extends StarlingTest {
 
   @Test
-  def testWeCanAddAField{
+  def testWeCanAddAField = Log.off {
     /*
       The following xml was created an instance of 'case class Foo(x : String)'.
       We have then changed the class to be 'case class Foo(x : String, y : Int)' and
@@ -50,7 +50,7 @@ class MapBasedXStreamConverterTests extends StarlingTest {
 
   }
   @Test
-  def testTheConverterRecurses{
+  def testTheConverterRecurses = Log.off {
 
     val convertingXStream = StarlingXStream.createXStream
     convertingXStream.registerConverter(
@@ -74,7 +74,7 @@ class MapBasedXStreamConverterTests extends StarlingTest {
   }
 
   @Test
-  def testThatWeCanDropAField{
+  def testThatWeCanDropAField = Log.off {
     // Test we can convert a Foo to a Foo2
     val originalXStream = StarlingXStream.createXStream
 
@@ -111,7 +111,7 @@ class MapBasedXStreamConverterTests extends StarlingTest {
   }
 
   @Test
-  def testConvertClassWhichCanBeRead {
+  def testConvertClassWhichCanBeRead = Log.off {
     val original = StarlingXStream.write(Bar("OriginalValue"))
     val convertingXStream = StarlingXStream.createXStream
     convertingXStream.registerConverter(new ModifyClassWhichCanBeReadConverter() {

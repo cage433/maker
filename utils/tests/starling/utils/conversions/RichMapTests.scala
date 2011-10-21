@@ -7,6 +7,7 @@ import starling.utils.BidirectionalHashMap
 import java.util.concurrent.atomic.AtomicInteger
 import org.testng.annotations.{BeforeMethod, Test}
 
+
 class RichMapTests extends TestNGSuite with ShouldMatchers with RichMaps {
   val nothing: Map[Int, String] = Map[Int, String]()
   val map = Map(1 → "2")
@@ -27,6 +28,10 @@ class RichMapTests extends TestNGSuite with ShouldMatchers with RichMaps {
 
   @Test def aMapMinusAMapWithADifferentValueShouldEqualItself {
     map difference mapWithDifferentValue should be === map
+  }
+
+  @Test def canJoinTwoMaps {
+    Map(1 → "foo", 2 → "bar") >>> Map("foo" → 3, "baz" → 4) should be === Map(1 → 3)
   }
 }
 

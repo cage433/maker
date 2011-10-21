@@ -170,7 +170,8 @@ class StarlingInit( val props: Props,
     userSettingsDatabase,
     version, referenceDataService, businessCalendars.UK)
 
-  val fc2Service = new FC2FacilityImpl(marketDataStore, curveViewer, marketDataReadersProviders, dataTypes, environmentRules)
+  val fC2Service = new FC2Service(marketDataStore, dataTypes, marketDataReadersProviders)
+  val fCFacility = new FC2FacilityImpl(fC2Service, marketDataStore, curveViewer, environmentRules)
 
   def currentUser() = User.currentlyLoggedOn
 

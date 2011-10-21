@@ -8,7 +8,7 @@ import starling.dbx.QueryBuilder._
 import org.springframework.transaction.support.{TransactionCallback, TransactionTemplate}
 import org.springframework.transaction.{TransactionStatus, TransactionDefinition}
 import starling.daterange._
-import scala.collection.mutable.ListBuffer
+import scala.collection.mutable.{ListBuffer, HashMap => MMap}
 import scala.collection.JavaConversions._
 import scala.collection.JavaConversions
 import java.sql.{PreparedStatement, Connection, ResultSet}
@@ -22,6 +22,7 @@ import starling.utils.{CaseInsensitive, Log}
 import starling.instrument.utils.StarlingXStream
 import starling.dbx._
 import starling.props.ConnectionParams
+import starling.utils.ImplicitConversions._
 import scalaz.Scalaz._
 
 
@@ -151,6 +152,17 @@ trait DBTrait[RSR <: ResultSetRow] extends Log {
   def lookupTable(table: String, from: String, to: String) = queryWithResult(select(from + ", " + to) from(table)) { rs =>
     rs.getString(from) → rs.getString(to)
   }.toMap
+
+  lazy val tables: scala.List[TableMeta] = {
+    val rs = dataSource.getConnection.getMetaData.getColumns(null, "%", "%", "%")
+    val tables = MMap[String, TableMeta]().withDefault(tableName => TableMeta(tableName, Nil))
+
+    while (rs.next) {
+      tables.updateValue(rs.getString(3), _ + rs.getString(4))
+    }
+
+    tables.values.toList.sortBy(_.name)
+  }
 
   protected def createWriter: DBWriter = new DBWriter(DBTrait.this, dataSource)
 }
@@ -332,10 +344,11 @@ class DBWriter protected[db](dbTrait: DBTrait[_ <: ResultSetRow], dataSource: Da
   /**
    * Inserts into tableName. The keys from params provide the column names.
    */
-  def insert(tableName: String, params: Map[String, Any]) {
+  def insert(tableName: String, params: Map[String, Any]): Boolean = {
     val convertedMap: java.util.Map[String, AnyRef] = dbTrait.convertTypes(params)
     val query = new SimpleJdbcInsert(dataSource).withTableName(tableName).usingColumns(convertedMap.keysIterator.toList.toArray: _*)
     query.execute(convertedMap)
+    true
   }
 
   /**
@@ -400,4 +413,8 @@ object DB {
   def apply(connectionParams: ConnectionParams) = new DB(DataSourceFactory.getDataSource(connectionParams.url, connectionParams.username, connectionParams.password))
 
   val DefaultIsolationLevel = TRANSACTION_READ_COMMITTED
+}
+
+case class TableMeta(name: String, columns: List[String]) {
+  def +(column: String) = copy(columns = column :: columns)
 }

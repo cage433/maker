@@ -30,7 +30,7 @@ class NewSchemaMdDB(db: DBTrait[RichResultSetRow], dataTypes: MarketDataTypes) e
 
   val valueKeys = JConcurrentMapWrapper(new java.util.concurrent.ConcurrentHashMap[Int, MarketDataValueKey](
     db.queryWithResult("SELECT * FROM MarketDataValueKey") { rs =>
-      MarketDataValueKey(rs.getInt("id"), Row(rs.getObject[Map[String, Any]]("valueKey").mapKeys(PField(_))))
+      MarketDataValueKey(rs.getObject[Map[String, Any]]("valueKey")).copy(id = rs.getInt("id"))
     }.toMapWithKeys(_.id)))
 
   log.debug("Loaded %s extended keys, %s value keys" % (extendedKeys.size, valueKeys.size))

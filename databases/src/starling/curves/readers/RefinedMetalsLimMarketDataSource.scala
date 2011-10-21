@@ -20,25 +20,16 @@ import starling.utils.ImplicitConversions._
 
 
 case class RefinedMetalsLimMarketDataSource(limServer: LIMServer) extends MarketDataSource with Log {
-  private val fixingsSources = PriceFixingsHistoryDataType.name → (List(LMEFixings, LIBORFixings, BloombergTokyoCompositeFXRates,
-    BalticFixings,
-    new MonthlyFuturesFixings(Trafigura.Bloomberg.Futures.Shfe, FuturesExchangeFactory.SFS.fixingLevel),
-    new MonthlyFuturesFixings(Trafigura.Bloomberg.Futures.Comex, FuturesExchangeFactory.COMEX.fixingLevel)) ::: SpotFXFixings.all)
-  private val spotFXSources = SpotFXDataType.name → List(BloombergGenericFXRates, CFETSSpotFXFixings)
-  private val priceSources = PriceDataType.name → List(
-    new PriceLimSource(new LMELIMRelation(Trafigura.Bloomberg.Metals.Lme, LMEClose)),
-    new PriceLimSource(new MonthlyLIMRelation(Trafigura.Bloomberg.Futures.Comex, COMEXClose)),
-    new PriceLimSource(new MonthlyLIMRelation(Trafigura.Bloomberg.Futures.Shfe, SHFEClose))
-  )
+  import LimSources._
 
   override def description = List(fixingsSources, spotFXSources, priceSources).flatMap
     { case (marketDataType, sources) => marketDataType.name.pair(sources.flatMap(_.description)).map("%s → %s" % _) }
 
   def read(day: Day) = log.infoWithTime("Getting data from LIM") {
     Map(getValuesForType(PriceDataType.name, day.startOfFinancialYear, day, priceSources),
-                           getValuesForType(SpotFXDataType.name, day.startOfFinancialYear, day, spotFXSources),
-                           getValuesForType(PriceFixingsHistoryDataType.name, day.startOfFinancialYear, day, fixingsSources))
-  }
+        getValuesForType(SpotFXDataType.name, day.startOfFinancialYear, day, spotFXSources),
+        getValuesForType(PriceFixingsHistoryDataType.name, day.startOfFinancialYear, day, fixingsSources))
+}
 
   private def getValuesForType(m: MarketDataTypeName, start: Day, end: Day, sources: (MarketDataTypeName, List[LimSource])) =
     (start, end, sources.head) → sources.tail.flatMap(source => getValues(source, start, end).toList)
@@ -62,6 +53,19 @@ case class RefinedMetalsLimMarketDataSource(limServer: LIMServer) extends Market
   }
 
   private def countData(entries: List[MarketDataEntry]) = entries.map(_.data.size).sum
+}
+
+object LimSources {
+  val priceSources = PriceDataType.name → List(
+    new PriceLimSource(new LMELIMRelation(Trafigura.Bloomberg.Metals.Lme, LMEClose)),
+    new PriceLimSource(new MonthlyLIMRelation(Trafigura.Bloomberg.Futures.Comex, COMEXClose)),
+    new PriceLimSource(new MonthlyLIMRelation(Trafigura.Bloomberg.Futures.Shfe, SHFEClose)))
+
+  val fixingsSources = PriceFixingsHistoryDataType.name → (List(LMEFixings, LIBORFixings, BloombergTokyoCompositeFXRates, BalticFixings,
+    new MonthlyFuturesFixings(Trafigura.Bloomberg.Futures.Shfe, FuturesExchangeFactory.SFS.fixingLevel),
+    new MonthlyFuturesFixings(Trafigura.Bloomberg.Futures.Comex, FuturesExchangeFactory.COMEX.fixingLevel)) ::: SpotFXFixings.all)
+
+  val spotFXSources = SpotFXDataType.name → List(BloombergGenericFXRates, CFETSSpotFXFixings)
 }
 
 case class Prices[Relation](relation: Relation, priceByLevel: Map[Level, Double], observationDay: Day) {
@@ -88,12 +92,13 @@ abstract class HierarchicalLimSource(val parentNodes: List[LimNode], levels: Lis
   } catch { case exception => { log.debug("Malformed LIM relation: " + childRelation, exception); None } }
 }
 
-class PriceLimSource(relations: LIMRelation*) extends LimSource(List(Close)) {
+class PriceLimSource(relation: LIMRelation) extends LimSource(List(Close)) {
+  val nodes = List(relation.node)
   type Relation = LimPrice
-  def description = relations.map(_.node.name).toList.map(name => name + " " + levelDescription)
+  def description = nodes.map(_.name + " " + levelDescription)
 
-  def relationsFrom(connection: LIMConnection) = relations.toList.flatMap(relation =>
-    connection.getAllRelChildren(relation.node).flatMap(childRelation => relation.parse(childRelation).optPair(childRelation)))
+  def relationsFrom(connection: LIMConnection) =
+    connection.getAllRelChildren(relation.node).flatMap(childRelation => relation.parse(childRelation).optPair(childRelation))
 
   def marketDataEntriesFrom(allPrices: List[Prices[LimPrice]]) = allPrices.groupBy(group _)
     .map { case ((market, observationPeriod), prices) => MarketDataEntry(observationPeriod, PriceDataKey(market),

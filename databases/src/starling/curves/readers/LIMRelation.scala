@@ -13,7 +13,7 @@ import Scalaz._
 trait LIMRelation extends Log {
   val node: LimNode
 
-  def parse(childRelation: String) = try {
+  def parse(childRelation: String): Option[LimPrice] = try {
     extractor.unapply(childRelation).flatOpt
   } catch {
     case _ => debug[LimPrice](getClass.getSimpleName + " could not parse: " + childRelation)

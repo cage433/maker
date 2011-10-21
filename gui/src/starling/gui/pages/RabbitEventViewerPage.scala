@@ -17,7 +17,6 @@ case class RabbitEventViewerPage(pps:PivotPageState, pageState:RabbitEventViewer
   type SC = RabbitEventViewerContext
   def createServerContext(sc:ServerContext) = new RabbitEventViewerContext(sc.lookup(classOf[RabbitEventViewerService]))
 
-
   def selfPage(pivotPageState:PivotPageState, edits:PivotEdits) = copy(pps = pivotPageState)
   def dataRequest(pageBuildingContext:RabbitEventViewerContext) = pageBuildingContext.service.rabbitEvents(pps.pivotFieldParams, pageState.latest)
   override def latestPage(localCache:LocalCache) = {RabbitEventViewerPage(pps, RabbitEventViewerPageState(localCache.localCache(LocalCacheKeys.LatestRabbitEvent)))}

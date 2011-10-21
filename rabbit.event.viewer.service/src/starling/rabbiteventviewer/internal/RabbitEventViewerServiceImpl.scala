@@ -44,34 +44,9 @@ class RabbitEventViewerServiceImpl(eventDatabase:RabbitEventDatabase) extends Ra
         StringColumnDefinition(subject, "subject", table),
         StringColumnDefinition(id, "id", table),
         StringColumnDefinition(source, "source", table),
-        new TimestampColumnDefinition(timestamp, "timestamp", table) {
-          override def fieldDetails:FieldDetails = new FieldDetails(name) {
-            override def formatter = TimeOnlyTimestampPivotFormatter
-            override def comparator = new Ordering[Any]() {
-              def compare(x: Any, y: Any) = y.asInstanceOf[Timestamp].compare(x.asInstanceOf[Timestamp])
-            }
-          }
-        },
-        new TimestampColumnDefinition(starlingTimestamp, "starlingTimestamp", table) {
-          override def fieldDetails:FieldDetails = new FieldDetails(name) {
-            override def formatter = TimestampPivotFormatter
-            override def comparator = new Ordering[Any]() {
-              def compare(x: Any, y: Any) = y.asInstanceOf[Timestamp].compare(x.asInstanceOf[Timestamp])
-            }
-          }
-        },
-        new DayColumnDefinition("Day", table) {
-          override val fullSqlName = "timestamp"
-          override def filterClauses(values:Set[Any]):List[Clause] = values.toList.map { value => {
-            val day = value.asInstanceOf[NullableDay].day
-            (starling.dbx.Field("timestamp") gt day.toSqlDate) and (starling.dbx.Field("timestamp") lte day.nextDay.toSqlDate)
-          } }
-          override def fieldDetails:FieldDetails = new FieldDetails(name) {
-            override def comparator = new Ordering[Any]() {
-              def compare(x: Any, y: Any) = y.asInstanceOf[NullableDay].day.compare(x.asInstanceOf[NullableDay].day)
-            }
-          }
-        },
+        new TimestampAsTimeColumnDefinition(timestamp, "timestamp", table),
+        new TimestampColumnDefinition(starlingTimestamp, "starlingTimestamp", table),
+        new TimestampAsDayColumnDefinition("Day", table),
         StringColumnDefinition(host, "host", table),
         new IntColumnDefinition(pid, "pid", table),
         StringColumnDefinition(body, "body", table),
@@ -85,6 +60,7 @@ class RabbitEventViewerServiceImpl(eventDatabase:RabbitEventDatabase) extends Ra
         StringColumnDefinition(tradeDeletedCount, "tradeDeletedCount", table)
       )))
     }
+
 
     PivotTableModel.createPivotData(new OnTheFlySQLPivotTableDataSource(
       eventDatabase.db,

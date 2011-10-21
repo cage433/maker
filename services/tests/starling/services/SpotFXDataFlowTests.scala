@@ -57,15 +57,14 @@ class PricingGroupMarketDataEventSourceTests extends WordSpec with ShouldMatcher
       type CurveType = Double
       type Value = Map[String, Double]
 
-      def marketDataProvider = dataFlowDataProvider
+      def marketDataProvider = Some(dataFlowDataProvider)
       val pricingGroup = PricingGroup.Metals
 
-
       def marketDataEvent(change: MarketDataChange, key:Day, marketTypes: List[String], snapshot: SnapshotIDLabel) = {
-        TestMarketDataEvent(marketTypes, change.observationDay, snapshot, change.isCorrection)
+        Some(TestMarketDataEvent(marketTypes, change.observationDay, snapshot, change.isCorrection))
       }
 
-      def events() = changesFor(lastVersion, currentVersion, observationDays).map(change => change.marketDataEvent(newSnapshot))
+      def events() = changesFor(lastVersion, currentVersion, observationDays).flatMap(_.marketDataEvent(newSnapshot))
 
       def receivingNoData() = receivingChangingData(Map.empty, Map.empty)
       def receivingUnchangingData(data: Map[Key, Value]) = receivingChangingData(data, data)

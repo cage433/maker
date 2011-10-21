@@ -3,7 +3,6 @@ package starling.http
 import javax.servlet.http.{HttpServletResponse, HttpServletRequest, HttpServlet}
 import scala.collection.JavaConversions
 
-import starling.db.MarketDataStore
 import starling.gui.api.{MarketDataIdentifier, MarketDataSelection, PricingGroup}
 import starling.pivot.model.PivotTableModel
 import starling.utils.Utils
@@ -14,9 +13,9 @@ import starling.utils.Pattern._
 import scalaz._
 import Scalaz._
 import starling.marketdata.MarketDataTypes
-import starling.rmi.FC2FacilityImpl
+import starling.rmi.FC2Service
 
-class MarketDataServlet(fc2FacilityImpl:FC2FacilityImpl, marketDataTypes: MarketDataTypes) extends HttpServlet {
+class MarketDataServlet(fc2Service:FC2Service, marketDataTypes: MarketDataTypes) extends HttpServlet {
   private val FilterField = Extractor.when[String](_.startsWith("@"), _.stripPrefix("@").replaceAll("_", " "))
   private val ConcatenatedFields = Extractor.map[Array[String]](_.flatMap(_.split(":")).toList)
   private val decimalPlaces = PivotFormatter.DefaultDecimalPlaces.copy(percentageFormat = "#0.0000")
@@ -29,13 +28,13 @@ class MarketDataServlet(fc2FacilityImpl:FC2FacilityImpl, marketDataTypes: Market
     val selection = MarketDataSelection(PricingGroup.fromName(params.getFirst("pricingGroup")), params.getFirst("excel"))
 
     params.getFirst("version") match {
-      case None => response.sendRedirect("?" + params.replace("version", fc2FacilityImpl.latest(selection)).toUrl)
+      case None => response.sendRedirect("?" + params.replace("version", fc2Service.latest(selection)).toUrl)
       case Some(version) => {
         val mdi = MarketDataIdentifier(selection, version.toInt)
 
         val marketDataType = marketDataTypes.fromName(request.getParameter("type"))
 
-        val pivot = fc2FacilityImpl.marketDataPivot(mdi, marketDataType)
+        val pivot = fc2Service.marketDataPivot(mdi, marketDataType)
 
         val data = fieldList("measures")
         val rows = fieldList("rows")

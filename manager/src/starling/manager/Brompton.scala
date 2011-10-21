@@ -62,6 +62,8 @@ trait BromptonServiceRegistration {
 }
 
 trait BromptonContext {
+  def onStarted(action: => Unit)
+
   def registerService[T](
       klass:Class[T],
       service:T,

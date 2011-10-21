@@ -3,6 +3,7 @@ package starling.daterange
 import org.testng.annotations.{AfterTest, BeforeSuite, AfterSuite}
 import starling.calendar.{BusinessCalendarSet, HolidayTablesFactory, HolidayTables}
 import org.scalatest.testng.TestNGSuite
+import org.scalatest.{Suite, BeforeAndAfter}
 
 class TestHolidays extends TestNGSuite with HolidaysSpec
 

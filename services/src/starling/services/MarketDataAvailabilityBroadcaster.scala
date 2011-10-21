@@ -1,26 +1,24 @@
 package starling.services
 
-import starling.db.MarketDataStore
 import starling.utils.ImplicitConversions._
-import starling.utils.ObservingBroadcaster
 import swing.event.Event
 import collection.mutable.ListBuffer
-import collection.immutable.Map
 import starling.gui.api._
+import starling.gui.api.MarketDataSelection
+import starling.utils.{Broadcaster, Receiver}
+import starling.db.MarketDataStore
 
 trait MarketDataAvailabilityChecker {
   def dataAvailable(source: MarketDataEventSource): Boolean
   def await(source: MarketDataEventSource)
 }
 
-class MarketDataAvailabilityBroadcaster(marketDataStore: MarketDataStore, observingBroadcaster: ObservingBroadcaster, sources: List[MarketDataEventSource])
-  extends MarketDataAvailabilityChecker {
+class MarketDataAvailabilityBroadcaster(marketDataStore: MarketDataStore, broadcaster: Broadcaster, sources: List[MarketDataEventSource])
+  extends MarketDataAvailabilityChecker with Receiver {
 
   private val waitiingSources = new ListBuffer[MarketDataEventSource]; waitiingSources ++= sources
 
-  observingBroadcaster += eventReceived
-
-  def eventReceived(event: Event): Unit = event partialMatch {
+  def event(event: Event): Unit = event partialMatch {
     case PricingGroupMarketDataUpdate(pricingGroup, newVersion, previousVersion, affectedObservationDays) => {
       val changesByDataFlow = waitingDataEventSourcesFor(pricingGroup)
         .toMapWithValues(_.changesFor(previousVersion, newVersion, affectedObservationDays))
@@ -33,8 +31,7 @@ class MarketDataAvailabilityBroadcaster(marketDataStore: MarketDataStore, observ
         val snapshot:SnapshotIDLabel = marketDataStore.snapshot(marketDataIdentifier, SnapshotType.Email).label
         changesByDataFlow.foreach{ case(source, changes) => {
           changes.foreach { change => {
-            val realEvent = change.marketDataEvent(snapshot)
-            observingBroadcaster.broadcaster.broadcast(realEvent)
+            change.marketDataEvent(snapshot).foreach { realEvent => broadcaster.broadcast(realEvent) }
           }}
         } }
       }

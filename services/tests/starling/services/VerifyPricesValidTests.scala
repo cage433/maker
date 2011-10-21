@@ -14,7 +14,7 @@ import starling.gui.api.EmailEvent
 
 class VerifyPricesValidTests extends StarlingSpec with ShouldMatchers {
   "should send no emails when no prices available" in {
-    verifier.withNoPrices.eventFor(Day.today, EmailEvent()) should be === None
+    verifier.withNoPrices.eventFor(Day.today, new EmailEvent()) should be === None
   }
 
   def verifier() = {

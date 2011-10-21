@@ -17,7 +17,8 @@ import starling.instrument.{DeletedInstrument}
 import starling.gui.api.UTPIdentifier
 import starling.daterange.{Timestamp, DateRange, Day}
 import starling.dbx.{Clause, Query}
-import utils.TimestampPivotFormatter
+import utils.{TimeOnlyTimestampPivotFormatter, TimestampPivotFormatter}
+import scalaz.Scalaz._
 
 /**
  * An implementation of PivotTableDataSource backed by a database
@@ -71,6 +72,32 @@ case class DayColumnDefinition(override val name:String, override val table:Stri
   }
 }
 
+class TimestampAsDayColumnDefinition(name: String, table: String) extends DayColumnDefinition(name, table) {
+  override val fullSqlName = "timestamp"
+  override def filterClauses(values:Set[Any]):List[Clause] = values.toList.map { value => {
+    val day = value.asInstanceOf[NullableDay].day
+    (starling.dbx.Field("timestamp") gt day.toSqlDate) and (starling.dbx.Field("timestamp") lte day.nextDay.toSqlDate)
+  } }
+  override def fieldDetails:FieldDetails = new FieldDetails(name) {
+    override def comparator = new Ordering[Any]() {
+      def compare(x: Any, y: Any) = y.asInstanceOf[NullableDay].day.compare(x.asInstanceOf[NullableDay].day)
+    }
+  }
+}
+
+class TimestampAsTimeColumnDefinition(name: String, sqlName: String, table: String, newestFirst: Boolean = true)
+  extends TimestampColumnDefinition(name, sqlName, table, newestFirst) {
+
+  override def fieldDetails:FieldDetails = {
+    val superComparator = super.fieldDetails.comparator
+
+    new FieldDetails(name) {
+      override def formatter = TimeOnlyTimestampPivotFormatter
+      override def comparator = superComparator
+    }
+  }
+}
+
 case class PeriodColumnDefinition(override val name:String, override val table:String) extends FieldBasedColumnDefinition(name, ColumnDefinition.toSql(name), table) {
   def read(resultSet:ResultSetRow) = if (resultSet.isNull(alias)) NullablePeriod.Null else NullablePeriod.parse(resultSet.getString(alias))
   override def fieldDetails = new FieldDetails(name) {
@@ -108,12 +135,18 @@ case class StringColumnDefinition(override val name:String, override val sqlName
     }
   }
 }
-case class TimestampColumnDefinition(override val name:String, override val sqlName:String, override val table:String) extends FieldBasedColumnDefinition(name, sqlName, table) {
+case class TimestampColumnDefinition(override val name:String, override val sqlName:String, override val table:String, newestFirst: Boolean = true)
+  extends FieldBasedColumnDefinition(name, sqlName, table) {
+
   def read(resultSet:ResultSetRow) = {
     resultSet.getTimestamp(alias)
   }
   override def fieldDetails:FieldDetails = new FieldDetails(name) {
     override def formatter = TimestampPivotFormatter
+    override def comparator = new Ordering[Any]() {
+      def compare(x: Any, y: Any) = compare(x.asInstanceOf[Timestamp], y.asInstanceOf[Timestamp])
+      private def compare(x: Timestamp, y: Timestamp): Int = newestFirst ? y.compare(x) | x.compare(y)
+    }
   }
 }
 case class QuantityStringColumnDefinition(override val name:String, override val table:String) extends FieldBasedColumnDefinition(name, ColumnDefinition.toSql(name), table) {

@@ -104,7 +104,20 @@ case class UploadInterestRatesUpdate(user : User, label : String, observationDat
     Map("currency" → currency, "interestRates" → interestRates.map(_.toString))
 }
 
-case class EmailEvent(from: String = "", to: String = "", subject: String = "", body: String = "") extends Event
+case class Email(from: String = "", to: String = "", subject: String = "", body: String = "", footers: Map[String, String] = Map()) {
+  val hash = (from + to + subject + body).md5
+
+  def +(footer: (String, String)) = copy(footers = this.footers + footer)
+  def +(footers: Map[String, String]) = copy(footers = this.footers ++ footers)
+
+  def bodyWithFooters = "<html><body>" + body + "\n\n<br/><br/><i>" + footers.map(kv => "%s: %s" % (kv._1, kv._2)).mkString(", ") + "</i>" + "</body></html>"
+}
+
+case class EmailEvent(from: String = "", to: String = "", subject: String = "", body: String = "") extends Event {
+  val email = Email(from, to, subject, body)
+}
+
+case class EmailSent(timeSent: Timestamp) extends StarlingGUIEvent
 
 abstract class MarketDataEvent(val observationDay: Day, val label: SnapshotIDLabel, isCorrection: Boolean) extends Event
 case class SpotFXDataEvent(override val observationDay: Day, currencies: List[UOM],

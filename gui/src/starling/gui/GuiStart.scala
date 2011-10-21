@@ -19,7 +19,6 @@ import starling.bouncyrmi.{BouncyRMIClient}
 import javax.security.auth.login.LoginException
 import starling.utils.{StackTraceToString, Log}
 import starling.gui.LocalCacheKeys._
-import starling.daterange.Day
 import management.ManagementFactory
 import xstream.GuiStarlingXStream
 import starling.browser._
@@ -40,6 +39,8 @@ import starling.trade.facility.TradeFacility
 import starling.browser.internal.{NotificationKeys, NotificationType, Notification}
 import starling.rabbiteventviewer.api.RabbitEventViewerService
 import starling.reports.facility.ReportFacility
+import org.joda.time.DateTime
+import starling.daterange.{Timestamp, Day}
 
 object StarlingServerNotificationHandlers {
   def notificationHandler = {
@@ -186,6 +187,9 @@ object GuiStart extends Log {
       case RabbitEventReceived(latestTimestamp) => {
         cacheMap(LatestRabbitEvent) = latestTimestamp
       }
+      case EmailSent(timeSent) => {
+        cacheMap(LatestEmailEvent) = timeSent
+      }
     }
 
     import LocalCache._
@@ -210,6 +214,7 @@ object GuiStart extends Log {
       cacheMap(EnvironmentRules) = fc2Service.environmentRuleLabels
       cacheMap(CurveTypes) = fc2Service.curveTypes
       cacheMap(LatestRabbitEvent) = rabbitEventService.latestRabbitEvent
+      cacheMap(LatestEmailEvent) = new Timestamp
     } catch {
       case e : Throwable =>
         e.printStackTrace()
@@ -300,11 +305,11 @@ object GuiStart extends Log {
 
 object StarlingUtilButtons {
   def create(context:PageContext) = {
-    def userStatsPage = {new PageFactory {def create(serverContext:ServerContext) = UserStatsPage(PivotPageState())}}
-    def runAsUserPage = {new PageFactory {def create(serverContext:ServerContext) = RunAsUserPage()}}
-    def cannedHomePage = {new PageFactory {def create(serverContext:ServerContext) = CannedHomePage()}}
-    def eventViewerPage = {new PageFactory {def create(serverContext:ServerContext) = EventViewerPage()}}
-    def gitLogPage = {new PageFactory {def create(serverContext:ServerContext) = GitLogPage(PivotPageState())}}
+    def userStatsPage = PageFactory(_ => UserStatsPage(PivotPageState()))
+    def runAsUserPage = PageFactory(_ => RunAsUserPage())
+    def cannedHomePage = PageFactory(_ => CannedHomePage())
+    def eventViewerPage = PageFactory(_ => EventViewerPage())
+    def gitLogPage = PageFactory(_ => GitLogPage(PivotPageState()))
     def rabbitEventPage = new PageFactory {
       def create(serverContext:ServerContext) = {
         val latestRabbitEvent = context.localCache.localCache(LocalCacheKeys.LatestRabbitEvent)
@@ -314,6 +319,8 @@ object StarlingUtilButtons {
         RabbitEventViewerPage(PivotPageState.default(initialLayout), RabbitEventViewerPageState(latestRabbitEvent))
       }
     }
+
+    def emailsSentPage = PageFactory(_ => EmailsSentPage(PivotPageState(), context.localCache.localCache(LatestEmailEvent)))
 
     val tradesButton = new PageButton(
       "View User Stats",
@@ -357,7 +364,14 @@ object StarlingUtilButtons {
       Some( KeyStroke.getKeyStroke(KeyEvent.VK_R, 0) )
     )
 
-    List(tradesButton, runAsUserButton, cannedButton, eventViewerButton, gitLogButton, rabbitEventButton)
+    val emailsSentButton = new PageButton(
+      "Emails Sent",
+      emailsSentPage,
+      StarlingIcons.im("/icons/32x32_mail.png"),
+      Some( KeyStroke.getKeyStroke(KeyEvent.VK_M, 0) )
+    )
+
+    List(tradesButton, runAsUserButton, cannedButton, eventViewerButton, gitLogButton, rabbitEventButton, emailsSentButton)
   }
 }
 

@@ -11,7 +11,6 @@ import starling.utils.{Broadcaster}
 import starling.db.{MarketDataStore, DB}
 import starling.tradestore.TradeStores
 import starling.calendar.BusinessCalendars
-import starling.rmi.{RabbitEventDatabase, UserSettingsDatabase, BromptonTrackerBasedMarketDataPageIdentifierReaderProviders, StarlingServer}
 import starling.services.excel.ExcelLoopReceiver
 import starling.loopyxl.ReflectiveMethodSource
 import starling.curves.{VanillaEnvironmentRule, EnvironmentRule, EnvironmentRules, CurveViewer}
@@ -22,6 +21,7 @@ import starling.marketdata.ReferenceDataLookup
 import starling.utils.ImplicitConversions._
 import javax.servlet.http.HttpServlet
 import starling.services.{ReferenceData, StarlingInit}
+import starling.rmi._
 
 class ServicesBromptonActivator extends BromptonActivator {
 
@@ -45,7 +45,8 @@ class ServicesBromptonActivator extends BromptonActivator {
       marketDataReadersProviders = bromptonMarketDataReaderProviders
     )
     context.registerService(classOf[StarlingServer], starlingInit.starlingServer,ServiceProperties(ExportGuiRMIProperty))
-    context.registerService(classOf[FC2Facility], starlingInit.fc2Service,ServiceProperties(ExportGuiRMIProperty))
+    context.registerService(classOf[FC2Facility], starlingInit.fCFacility,ServiceProperties(ExportGuiRMIProperty))
+    context.registerService(classOf[FC2Service], starlingInit.fC2Service)
     context.registerService(classOf[BrowserService], starlingInit.browserService,ServiceProperties(ExportGuiRMIProperty))
 
 

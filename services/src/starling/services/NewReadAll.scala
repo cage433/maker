@@ -12,6 +12,21 @@ import starling.utils.ImplicitConversions._
 import starling.pivot.{Row, Field}
 import starling.marketdata._
 
+object DescribeEAI {
+  def main(args: Array[String]) {
+    val props = PropsHelper.defaultProps
+    val init = new StarlingInit(props)
+    val eai: DB = init.eaiSqlServerDB
+//    val rs = eai.dataSource.getConnection.getMetaData.getTables(null, null, "%", null)
+//
+//    while (rs.next) {
+//      println(rs.getString(3))
+//    }
+
+    eai.tables.foreach(println)
+  }
+}
+
 object NewReadAll {
   def main(args: Array[String]) {
     val props = PropsHelper.defaultProps

@@ -24,12 +24,12 @@ trait MarketDataEventSource { source =>
   type MarketType
   type CurveType
   case class MarketDataChange(observationDay:Day, value: Key, marketTypes: List[MarketType], isCorrection: Boolean) {
-    def marketDataEvent(snapshot:SnapshotIDLabel): MarketDataEvent = source.marketDataEvent(this, value, marketTypes, snapshot)
+    def marketDataEvent(snapshot:SnapshotIDLabel): Option[MarketDataEvent] = source.marketDataEvent(this, value, marketTypes, snapshot)
   }
-  def marketDataProvider: DataFlowDataProvider[Key, MarketType, CurveType]
+  def marketDataProvider: Option[DataFlowDataProvider[Key, MarketType, CurveType]]
   def matches(pricingGroup: PricingGroup): Boolean
   def changesFor(previousVersion: Int, newVersion: Int, observationDays: List[Day]): List[MarketDataChange]
-  def marketDataEvent(change:MarketDataChange, key:Key, marketTypes: List[MarketType], snapshot:SnapshotIDLabel): MarketDataEvent
+  def marketDataEvent(change:MarketDataChange, key:Key, marketTypes: List[MarketType], snapshot:SnapshotIDLabel): Option[MarketDataEvent]
 }
 
 trait NullMarketDataEventSource extends MarketDataEventSource {
@@ -37,10 +37,10 @@ trait NullMarketDataEventSource extends MarketDataEventSource {
   type MarketType = Nothing
   type CurveType = Nothing
 
-  def marketDataProvider: DataFlowDataProvider[Key, MarketType, CurveType] = null
+  def marketDataProvider: Option[DataFlowDataProvider[Key, MarketType, CurveType]] = None
   def matches(pricingGroup:PricingGroup) = false
   def changesFor(previousVersion: Int, newVersion: Int, observationDays: List[Day]): List[MarketDataChange] = Nil
-  def marketDataEvent(change:MarketDataChange, key:Nothing, marketTypes: List[Nothing], snapshot:SnapshotIDLabel): MarketDataEvent = null
+  def marketDataEvent(change:MarketDataChange, key:Nothing, marketTypes: List[Nothing], snapshot:SnapshotIDLabel) = None
 }
 
 
@@ -48,11 +48,11 @@ abstract class PricingGroupMarketDataEventSource extends MarketDataEventSource {
   val pricingGroup: PricingGroup
   def matches(pg: PricingGroup) = (pg == pricingGroup)
 
-  def changesFor(previousVersion: Int, newVersion: Int, observationDays: List[Day]) = {
+  def changesFor(previousVersion: Int, newVersion: Int, observationDays: List[Day]) = marketDataProvider.map { provider => {
     val changes = observationDays.flatMap { day =>
       val previousCurves: NestedMap[Key, MarketType, CurveType] =
-        marketDataProvider.marketDataFor(pricingGroup, previousVersion, day)
-      val curves: NestedMap[Key, MarketType, CurveType] = marketDataProvider.marketDataFor(pricingGroup, newVersion, day)
+        provider.marketDataFor(pricingGroup, previousVersion, day)
+      val curves: NestedMap[Key, MarketType, CurveType] = provider.marketDataFor(pricingGroup, newVersion, day)
 
       curves.flatMap { case (key, curveByMarketType) => {
         val groupedRates = curveByMarketType.groupBy{
@@ -67,20 +67,23 @@ abstract class PricingGroupMarketDataEventSource extends MarketDataEventSource {
         groupedRates.get("Correction").map{newCurves => MarketDataChange(day, key, newCurves.keySet.toList, isCorrection = true)}.toList
       }}.toList
     }
+
     changes
-  }
+  } } | Nil
 }
 
-case class SpotFXDataEventSource(pricingGroup: PricingGroup, marketDataProvider: DataFlowDataProvider[Day, UOM, Quantity])
+case class SpotFXDataEventSource(pricingGroup: PricingGroup, provider: DataFlowDataProvider[Day, UOM, Quantity])
   extends PricingGroupMarketDataEventSource {
 
   type Key = Day
   type MarketType = UOM
   type CurveType = Quantity
 
-  def marketDataEvent(change:MarketDataChange, key:Day, marketTypes: List[UOM], snapshot:SnapshotIDLabel): MarketDataEvent = {
-    SpotFXDataEvent(change.observationDay, marketTypes, snapshot, change.isCorrection)
+  def marketDataEvent(change:MarketDataChange, key:Day, marketTypes: List[UOM], snapshot:SnapshotIDLabel) = {
+    Some(SpotFXDataEvent(change.observationDay, marketTypes, snapshot, change.isCorrection))
   }
+
+  def marketDataProvider = Some(provider)
 }
 
 
@@ -136,14 +139,16 @@ case class ReferenceInterestDataProvider (marketDataStore : MarketDataStore) ext
 }
 
 
-case class PriceFixingDataEventSource(
-  pricingGroup: PricingGroup,
-  marketDataProvider : DataFlowDataProvider[(Day, String), UOM, PriceFixingsHistoryData]) extends PricingGroupMarketDataEventSource {
+case class PriceFixingDataEventSource(pricingGroup: PricingGroup,
+  provider: DataFlowDataProvider[(Day, String), UOM, PriceFixingsHistoryData]) extends PricingGroupMarketDataEventSource {
+
   type Key = (Day, String)
   type MarketType = UOM
   type CurveType = PriceFixingsHistoryData
 
-  def marketDataEvent(change:MarketDataChange, key:(Day,String), marketTypes: List[UOM], snapshot:SnapshotIDLabel): MarketDataEvent = {
-    ReferenceInterestRateDataEvent(change.observationDay, key._2, marketTypes, snapshot, change.isCorrection)
+  def marketDataEvent(change:MarketDataChange, key:(Day,String), marketTypes: List[UOM], snapshot:SnapshotIDLabel) = {
+    Some(ReferenceInterestRateDataEvent(change.observationDay, key._2, marketTypes, snapshot, change.isCorrection))
   }
+
+  def marketDataProvider = Some(provider)
 }

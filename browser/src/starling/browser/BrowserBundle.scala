@@ -14,6 +14,11 @@ case class HelpEntry(markup:String, icons:Map[String,ImageIcon], links:Map[Strin
 trait PageFactory {
   def create(serverContext:ServerContext):Page
 }
+object PageFactory {
+  def apply(f: (ServerContext) => Page) = new PageFactory {
+    def create(serverContext: ServerContext) = f(serverContext)
+  }
+}
 class PagePageFactory(page:Page) extends PageFactory {
   def create(serverContext: ServerContext) = page
 }
