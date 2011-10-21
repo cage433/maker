@@ -21,14 +21,17 @@ import scalaz.Scalaz._
 
 import PivotTableType._
 
-class PivotJTableRowModel(helper: PivotJTableModelHelper, var rowHeaderData0:Array[Array[AxisCell]], removeAddedRowsIfBlank:(PivotEdits) => PivotEdits) extends PivotJTableModel {
+case class TreeFieldInformation(field:Field, selectedValue:Any)
+
+class PivotJTableRowModel(helper: PivotJTableModelHelper, var rowHeaderData0:Array[Array[AxisCell]],
+                          removeAddedRowsIfBlank:(PivotEdits) => PivotEdits) extends PivotJTableModel {
   lazy val extraLine = helper.extraLine
   lazy val fieldState = helper.fieldState
   lazy val keyFields = helper.keyFields
   lazy val pivotEdits = helper.pivotEdits
   lazy val updateEdits = helper.updateEdits
   lazy val editableInfo = helper.editableInfo
-  lazy val formatInfo = helper.formatInfo
+  lazy val fieldInfo = helper.fieldInfo
   lazy val extraFormatInfo = helper.extraFormatInfo
   lazy val popupListView = helper.popupListView
   lazy val popupMenu = helper.popupMenu
@@ -83,10 +86,19 @@ class PivotJTableRowModel(helper: PivotJTableModelHelper, var rowHeaderData0:Arr
     PivotTableUI.rowHeaderPaintCells(g, table, rendererPane, rMin, rMax, cMin, cMax)
   }
   def rowHeader(row:Int,col:Int) = true
-  def mapCellToFields(row:Int, col:Int) = List()
   def collapseOrExpand(row:Int, col:Int, pivotTableView:PivotTableView) {
     val path = (0 to col).map(colIndex => {getValueAt(row, colIndex).value}).toList
     pivotTableView.collapseOrExpandRow(path)
+  }
+
+  override def rowHeaderStrategySelection(row:Int, col:Int) = {
+    val selectedValue:AxisCell = getValueAt(row, col)
+    val field = selectedValue.value.field
+    if (fieldInfo.treeFields.contains(field)) {
+      Some(TreeFieldInformation(field, selectedValue.value.value.value))
+    } else {
+      None
+    }
   }
 
   def rowHeaderFieldToValues(rowIndex: Int, columnIndex: Option[Int] = None) = {
@@ -112,7 +124,7 @@ class PivotJTableRowModel(helper: PivotJTableModelHelper, var rowHeaderData0:Arr
         if (value.state != EditableCellState.Added) {
           val labelToUse = value.value.value.originalValue match {
             case Some(origValue) => {
-              formatInfo.fieldToFormatter(value.value.field).format(origValue, extraFormatInfo).text
+              fieldInfo.fieldToFormatter(value.value.field).format(origValue, extraFormatInfo).text
             }
             case None => value.label
           }
@@ -138,7 +150,7 @@ class PivotJTableRowModel(helper: PivotJTableModelHelper, var rowHeaderData0:Arr
       val v = getValueAt(r, c)
       val labelToUse = v.value.value.originalValue match {
         case None => v.label
-        case Some(origVal) => formatInfo.fieldToFormatter(v.value.field).format(origVal, extraFormatInfo).text
+        case Some(origVal) => fieldInfo.fieldToFormatter(v.value.field).format(origVal, extraFormatInfo).text
       }
       overrideMap((r,c)) = OverrideDetails(labelToUse, Normal)
       val editsForCell = v.value.pivotEdits
@@ -185,7 +197,7 @@ class PivotJTableRowModel(helper: PivotJTableModelHelper, var rowHeaderData0:Arr
 
         val originalLabel = currentCell.value.value.originalValue match {
           case None => "sfkjfhxcjkvuivyruvhrzzasaf$%£$££"
-          case Some(origVal) => formatInfo.fieldToFormatter(currentCell.value.field).format(origVal, extraFormatInfo).text
+          case Some(origVal) => fieldInfo.fieldToFormatter(currentCell.value.field).format(origVal, extraFormatInfo).text
         }
 
         if (originalLabel == newLabel) {

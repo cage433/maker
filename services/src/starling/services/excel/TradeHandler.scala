@@ -15,8 +15,7 @@ import starling.tradestore.intraday.{IntradayTradeAttributes, IntradayTradeStore
 
 class TradeHandler(broadcaster : Broadcaster,
                    tradeReader : ExcelTradeReader,
-                   intradayTradeStore: IntradayTradeStore,
-                   traders : Traders) {
+                   intradayTradeStore: IntradayTradeStore) {
 
   @ExcelMethod
   @XLFunction(

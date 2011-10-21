@@ -18,8 +18,8 @@ import swing.{MenuItem, Action}
 import starling.pivot.model.{AxisCell, PivotTableModel}
 import org.jdesktop.swingx.renderer.DefaultTableRenderer
 import starling.browser.Modifiers
-import starling.pivot.{ColumnDetails, PivotFormatter, EditableCellState, TableCell}
 import java.awt.event._
+import starling.pivot._
 
 object PivotJTable {
   val RowHeight = 16
@@ -363,10 +363,33 @@ class PivotJTable(tableModel:PivotJTableModel, pivotTableView:PivotTableView, mo
       if ((row != -1) && (col != -1)) {
         if (SwingUtilities.isLeftMouseButton(e)) {
           if (e.getClickCount == 2) {
-            val tableSelection = tableModel.mapCellToFields(row, col)
+            val tableSelection = tableModel.mapCellToFieldsForMainTable(row, col)
             if (tableSelection.nonEmpty) {
               val modifiers = Modifiers.modifiersEX(e.getModifiersEx)
               pivotTableView.publish(TableDoubleClickEvent(model.getCurrentPivotFieldsState.filters, tableSelection, modifiers))
+            } else {
+              // We are doing a hack here that if we have double clicked on a strategy value in the row header table, change the strategy.
+              tableModel.rowHeaderStrategySelection(row, col) match {
+                case None =>
+                case Some(stratInfo) => {
+
+                  val currentFieldState = model.getCurrentPivotFieldsState
+                  val filtersWithoutStrategy = currentFieldState.filters.filterNot(_._1 == stratInfo.field)
+                  val newFilters = (stratInfo.field, SomeSelection(Set(stratInfo.selectedValue))) :: filtersWithoutStrategy
+                  val strategyDepth:(Field, (Int, Int)) = currentFieldState.treeDepths.find(_._1 == stratInfo.field).get
+                  val maxDepth = model.treeDetails.maxTreeDepths(stratInfo.field)
+                  val min = strategyDepth._2._1
+                  val max = strategyDepth._2._2
+                  if (max != maxDepth) {
+                    val newStrategyDepth = (stratInfo.field, (min + 1, max + 1))
+                    val newTreeDepths = currentFieldState.treeDepths + newStrategyDepth
+
+                    val newFieldState = currentFieldState.copy(filters = newFilters, treeDepths = newTreeDepths)
+                    pivotTableView.publish(FieldsChangedEvent(newFieldState))
+                  }
+
+                }
+              }
             }
           } else if (e.getClickCount == 1) {
             val cellRect = table.getCellRect(row, col, true)

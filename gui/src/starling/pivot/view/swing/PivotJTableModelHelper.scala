@@ -31,7 +31,8 @@ import PivotTableType._
 abstract class PivotJTableModel extends AbstractTableModel {
   def paintTable(g:Graphics, table:JTable, rendererPane:CellRendererPane, rMin:Int, rMax:Int, cMin:Int, cMax:Int)
   def rowHeader(row:Int, col:Int):Boolean
-  def mapCellToFields(row:Int, col:Int):List[(Field, Selection)]
+  def mapCellToFieldsForMainTable(row:Int, col:Int):List[(Field, Selection)] = Nil
+  def rowHeaderStrategySelection(row:Int, col:Int):Option[TreeFieldInformation] = None
   def collapseOrExpand(row:Int, col:Int, pivotTableView:PivotTableView)
   def deleteCells(cells:List[(Int,Int)], fireChange:Boolean):PivotEdits = PivotEdits.Null
   def resetCells(cells:List[(Int,Int)], fireChange:Boolean):PivotEdits = PivotEdits.Null
@@ -60,7 +61,7 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
                      var extraFormatInfo:ExtraFormatInfo,
                      val pivotEdits:PivotEdits,
                      val updateEdits:(PivotEdits, PivotTableType) => Unit,
-                     val formatInfo:FormatInfo) {
+                     val fieldInfo:FieldInfo) {
 
   val keyFields = editableInfo.map(_.keyFields).getOrElse(Set())
   val extraLine = editableInfo.fold(_.extraLine, false)
@@ -139,7 +140,6 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
       PivotTableUI.colHeaderPaintCells(g, table, rendererPane, rMin, rMax, cMin, cMax)
     }
     def rowHeader(row:Int,col:Int) = false
-    def mapCellToFields(row:Int, col:Int) = List()
     def collapseOrExpand(row:Int, col:Int, pivotTableView:PivotTableView) {
       val path = (0 to row).map(rowIndex => {getValueAt(rowIndex, col).asInstanceOf[AxisCell].value}).toList
       pivotTableView.collapseOrExpandCol(path)
@@ -150,7 +150,7 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
         val v = getValueAt(r, c)
         val labelToUse = v.value.value.originalValue match {
           case None => v.label
-          case Some(origVal) => formatInfo.fieldToFormatter(v.value.field).format(origVal, extraFormatInfo).text
+          case Some(origVal) => fieldInfo.fieldToFormatter(v.value.field).format(origVal, extraFormatInfo).text
         }
         overrideMap((r,c)) = OverrideDetails(labelToUse, Normal)
         val editsForCell = v.value.pivotEdits
@@ -177,7 +177,6 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
     def getValueAt(rowIndex:Int, columnIndex:Int) = AxisCell.Null
     def paintTable(g:Graphics, table:JTable, rendererPane:CellRendererPane, rMin:Int, rMax:Int, cMin:Int, cMax:Int) {}
     def rowHeader(row:Int,col:Int) = false
-    def mapCellToFields(row:Int, col:Int) = List()
     def collapseOrExpand(row:Int, col:Int, pivotTableView:PivotTableView) {}
     def textTyped(textField:JTextField, cellEditor:CellEditor, r:Int, c:Int, focusOwner:Option[AWTComp], tableFrom:AWTComp) {}
     def finishedEditing() {popupMenu setVisible false}
@@ -260,7 +259,7 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
               case None => cell.text
               case Some(arr) => {
                 val measureInfo = arr(c)
-                formatInfo.fieldToFormatter(measureInfo.value.field).format(origValue, extraFormatInfo).text
+                fieldInfo.fieldToFormatter(measureInfo.value.field).format(origValue, extraFormatInfo).text
               }
             }
           }
@@ -284,7 +283,7 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
             if (value.state != EditableCellState.Added) {
               val labelToUse = value.originalValue match {
                 case Some(origValue) => {
-                  formatInfo.fieldToFormatter(measureInfo.value.field).format(origValue, extraFormatInfo).text
+                  fieldInfo.fieldToFormatter(measureInfo.value.field).format(origValue, extraFormatInfo).text
                 }
                 case None => value.text
               }
@@ -354,7 +353,7 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
 
           val originalLabel = currentCell.originalValue match {
             case None => "sfkjfhxcjkvuivyruvhrzzasaf$%£$££"
-            case Some(origVal) => formatInfo.fieldToFormatter(measureInfo.value.field).format(origVal, extraFormatInfo).text
+            case Some(origVal) => fieldInfo.fieldToFormatter(measureInfo.value.field).format(origVal, extraFormatInfo).text
           }
           if (originalLabel == newLabel) {
             newPivotEdits = resetCells(List((rowIndex, columnIndex)), false)
@@ -400,8 +399,8 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
       PivotTableUI.rowHeaderPaintCells(g,table,rendererPane,rMin,rMax,cMin,cMax)
     }
     def rowHeader(row:Int,col:Int) = false
-    def mapCellToFields(row:Int, col:Int) = {
-      def valueAxisValue(axisValue: AxisValue) = axisValue.value partialMatch {
+    override def mapCellToFieldsForMainTable(row:Int, col:Int) = {
+      def valueAxisValue(axisValue: AxisValue):Option[(Field, SomeSelection)] = axisValue.value partialMatch {
         case ValueAxisValueType(v) => axisValue.field → SomeSelection(Set(v))
       }
 
@@ -645,15 +644,25 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
       }
     }
     def rowHeader(row:Int,col:Int) = ((col < rowHeaderColCount0) && (row >= colHeaderRowCount0))
-    def mapCellToFields(row:Int, col:Int) = {
+    override def mapCellToFieldsForMainTable(row:Int, col:Int) = {
       val offsetRow = row - colHeaderRowCount0
       val offsetCol = col - rowHeaderColCount0
       if ((offsetRow >= 0) && (offsetCol >= 0)) {
-        mainTableModel.mapCellToFields(offsetRow, offsetCol)
+        mainTableModel.mapCellToFieldsForMainTable(offsetRow, offsetCol)
       } else {
         List()
       }
     }
+
+    override def rowHeaderStrategySelection(row:Int, col:Int) = {
+      val offsetRow = row - colHeaderRowCount0
+      if (offsetRow >= 0) {
+        rowHeaderTableModel.rowHeaderStrategySelection(offsetRow, col)
+      } else {
+        None
+      }
+    }
+
     def collapseOrExpand(row:Int, col:Int, pivotTableView:PivotTableView) {
       if (col < rowHeaderColCount0) {
         rowHeaderTableModel.collapseOrExpand(row - colHeaderRowCount0, col, pivotTableView)

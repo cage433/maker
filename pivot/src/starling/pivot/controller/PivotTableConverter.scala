@@ -14,7 +14,7 @@ import starling.utils.{ImplicitConversions, STable, SColumn}
 object AxisNode {
   val Null = AxisNode(AxisValue.Null, List(AxisNode(AxisValue.Null)))
 
-  def textAndAlignment(value:AxisValue, formatInfo:FormatInfo, extraFormatInfo:ExtraFormatInfo) = {
+  def textAndAlignment(value:AxisValue, formatInfo:FieldInfo, extraFormatInfo:ExtraFormatInfo) = {
 
     def tableCell(valueType:AxisValueType) = {
       val formatter = formatInfo.fieldToFormatter(value.field)
@@ -198,7 +198,7 @@ case class AxisNode(axisValue:AxisValue, children:List[AxisNode]=Nil) {
   }
 
   def flatten(previous:Option[AxisNode], refresh:Boolean, path:List[AxisValue], subTotals:Boolean, recursiveCollapsed:Boolean, collapsedState:CollapsedState,
-              disabledSubTotals:List[Field], formatInfo:FormatInfo, extraFormatInfo:ExtraFormatInfo):List[List[AxisCell]] = {
+              disabledSubTotals:List[Field], formatInfo:FieldInfo, extraFormatInfo:ExtraFormatInfo):List[List[AxisCell]] = {
     val pathToHere = axisValue :: path
     val collapsed = recursiveCollapsed || collapsedState.collapsed(pathToHere.reverse.tail) || (subTotals && axisValue.isTotal)
     def createFilteredChildren(node:AxisNode):List[AxisNode] = {
@@ -260,7 +260,7 @@ case class AxisNode(axisValue:AxisValue, children:List[AxisNode]=Nil) {
 
 object AxisNodeBuilder {
   def flatten(node:AxisNode, grandTotals:Boolean, subTotals:Boolean, collapsedState:CollapsedState,
-              disabledSubTotals:List[Field], formatInfo:FormatInfo, extraFormatInfo:ExtraFormatInfo,
+              disabledSubTotals:List[Field], formatInfo:FieldInfo, extraFormatInfo:ExtraFormatInfo,
               grandTotalsOnEachSide:Boolean, previousNode:Option[AxisNode]=None):List[List[AxisCell]] = {
     val disabledSubTotalsToUse = Field.NullField :: Field.RootField :: disabledSubTotals
     val cells = node.flatten(previousNode, previousNode.isDefined, List(), subTotals, false, collapsedState, disabledSubTotalsToUse, formatInfo, extraFormatInfo)
@@ -328,7 +328,7 @@ case class PivotTableConverter(otherLayoutInfo:OtherLayoutInfo = OtherLayoutInfo
     })
 
     val rowData = AxisNodeBuilder.flatten(table.rowNode.purge(rowsToRemove).getOrElse(AxisNode.Null), totals.rowGrandTotal,
-      totals.rowSubTotals, collapsedRowState, otherLayoutInfo.disabledSubTotals, table.formatInfo, extraFormatInfo, true, previousPageData.map(_.rowNode))
+      totals.rowSubTotals, collapsedRowState, otherLayoutInfo.disabledSubTotals, table.fieldInfo, extraFormatInfo, true, previousPageData.map(_.rowNode))
 
     def insertNullWhenNoRowValues(grid:List[List[AxisCell]], nullCount:Int) = {
       grid.map{ r=> {
@@ -365,7 +365,7 @@ case class PivotTableConverter(otherLayoutInfo:OtherLayoutInfo = OtherLayoutInfo
       table.columnAxis.flatMap(an => findFieldsWithNullChildren(an)).distinct
     }
     val cdX = AxisNodeBuilder.flatten(table.columnNode, totals.columnGrandTotal, totals.columnSubTotals, collapsedColState,
-       extraDisabledSubTotals ::: otherLayoutInfo.disabledSubTotals, table.formatInfo, extraFormatInfo, false, previousPageData.map(_.columnNode))
+       extraDisabledSubTotals ::: otherLayoutInfo.disabledSubTotals, table.fieldInfo, extraFormatInfo, false, previousPageData.map(_.columnNode))
     
     val cd = {
       val r = insertNullWhenNoRowValues(cdX, 1)
@@ -525,7 +525,7 @@ case class PivotTableConverter(otherLayoutInfo:OtherLayoutInfo = OtherLayoutInfo
                     case None => TableCell.Undefined
                     case Some(UndefinedValue) if measureCell.cellType == EditableCellState.Added => TableCell.UndefinedNew
                     case Some(UndefinedValue) => TableCell.Undefined
-                    case Some(other) => table.formatInfo.fieldToFormatter(measureAxisCell.value.field).format(other, extraFormatInfo)
+                    case Some(other) => table.fieldInfo.fieldToFormatter(measureAxisCell.value.field).format(other, extraFormatInfo)
                   }
                   tc.copy(state = measureCell.cellType, edits = measureCell.edits, originalValue = measureCell.originalValue, editable = measureCell.editable)
                 }

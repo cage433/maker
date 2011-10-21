@@ -69,8 +69,6 @@ case class StarlingLocalCache(localCache:HeterogeneousMap[LocalCacheKey]) {
     localCache(DeskCloses).get(desk).map(closes => closes.values.flatten.toList.sortWith(_ > _)).getOrElse(Nil)
   }
 
-  def traderBookLookup: Map[User, List[Desk]] = localCache(TradersBookLookup)
-
   def curveTypes = localCache(CurveTypes)
 
   def intradaySubgroups = localCache(IntradayLatest)

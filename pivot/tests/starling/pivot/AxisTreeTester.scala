@@ -16,7 +16,7 @@ class AxisTreeTester extends TestNGSuite {
   private def av(value:Any) = AxisValue(Field("F"), ValueAxisValueType(value), 0)
   val formatInfo = {
     val m = Map(Field("F") -> DefaultPivotFormatter)
-    FormatInfo(m)
+    FieldInfo(m, Nil)
   }
 
   @Test

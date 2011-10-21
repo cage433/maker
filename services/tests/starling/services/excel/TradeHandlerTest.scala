@@ -10,12 +10,11 @@ import starling.instrument.Trade
 import starling.gui.api.BlotterTradeUpdate
 import starling.utils.{Broadcaster, StarlingTest}
 import starling.utils.StarlingMatchers._
-import starling.eai.Traders
 import org.testng.annotations.{AfterClass, BeforeClass, BeforeTest, Test}
 import starling.tradestore.TradeStore.StoreResults
 
 class TradeHandlerTest extends StarlingTest {
-  lazy val tradeHandler = new TradeHandler(broadcaster, tradeReader, intradayTradeStore, traders)
+  lazy val tradeHandler = new TradeHandler(broadcaster, tradeReader, intradayTradeStore)
 
   // Collaborators
   var broadcaster: Broadcaster = _
@@ -28,7 +27,6 @@ class TradeHandlerTest extends StarlingTest {
   val optionalAdditionalTrades: Array[Array[Object]] = Array(Array("<optionalAdditionalTrade>"))
   val tradesHash: Long = 123
   val user = User("<userName>", "<name>", None, None, Nil, "<phoneNumber>", "<email>", "<departments>")
-  var traders: Traders = new Traders((s) => Some(user))
 
   @BeforeClass
   def initialise {

@@ -5,15 +5,14 @@ import instrumentreaders.ExcelInstrumentReader
 import starling.utils.Reflection
 import starling.instrument._
 import starling.instrument.Trade
-import starling.eai.{EAIStrategyDB, Traders}
 import collection.mutable.ArraySeq
 import starling.daterange.Day
 import starling.market.{CommodityMarket, FuturesSpreadMarket}
 import starling.auth.User
 import starling.concurrent.MP._
-import starling.eai.{EAIDealBookMapping, EAIStrategyDB, Traders}
+import starling.eai.{EAIDealBookMapping, EAIStrategyDB}
 
-class ExcelTradeReader(eaiStrategyDB: EAIStrategyDB, eaiDealBookMapping: EAIDealBookMapping, traders: Traders, currentlyLoggedOn: () => User) {
+class ExcelTradeReader(eaiStrategyDB: EAIStrategyDB, eaiDealBookMapping: EAIDealBookMapping, currentlyLoggedOn: () => User) {
   import ExcelRow._
 
   def allTrades(header: Array[String], trades: List[Seq[Object]], subgroupNamePrefix: String): List[Trade] = {
@@ -42,7 +41,7 @@ class ExcelTradeReader(eaiStrategyDB: EAIStrategyDB, eaiDealBookMapping: EAIDeal
     val explodedRows = rows.flatMap {
       map => map(StrategyColumn) match {
         case CounterPartySpread(c1, c2) => try {
-          val row = new ExcelRow(map, traders, currentUser)
+          val row = new ExcelRow(map, currentUser)
           val tradeID = row.formattedExcelColumnID
 
           // t1 is the same, just add 'a' to the row id
@@ -63,12 +62,12 @@ class ExcelTradeReader(eaiStrategyDB: EAIStrategyDB, eaiDealBookMapping: EAIDeal
       }
     }
 
-    val dups = explodedRows.map(ExcelRow(_, traders, currentUser).formattedExcelColumnID).groupBy(a => a).filter(_._2.size > 1).keys
+    val dups = explodedRows.map(ExcelRow(_, currentUser).formattedExcelColumnID).groupBy(a => a).filter(_._2.size > 1).keys
     assert(dups.isEmpty, "Duplicate IDs aren't allowed: " + dups.mkString(", "))
 
     explodedRows.map {
       row =>
-      val excelRow = ExcelRow(row, traders, currentUser)
+      val excelRow = ExcelRow(row, currentUser)
       try {
         val tradeDay = excelRow.tradeDay
         val counterParty = excelRow.counterParty

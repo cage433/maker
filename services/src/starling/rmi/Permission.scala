@@ -23,7 +23,9 @@ object Permission {
   private val productionGroupToDesksMap0: Map[CaseInsensitive, Set[Desk]] =
     Map(
       StarlingLondonDerivatives -> Set(Desk.LondonDerivativesOptions, Desk.LondonDerivatives),
+      StarlingGasoilSpec -> Set(Desk.GasoilSpec),
       StarlingGasolineSpec -> Set(Desk.GasolineSpec, Desk.GasoilSpec, Desk.GasolinePhysicalBargesAndARABlending),
+      StarlingNaphthaSpec -> Set(Desk.NaphthaSpec),
       StarlingHoustonDerivatives -> Set(Desk.HoustonDerivatives),
       StarlingProductionAdmin -> Desk.values.toSet
     )

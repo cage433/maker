@@ -203,7 +203,6 @@ object GuiStart extends Log {
       cacheMap(LocalCacheKeys.ReportOptionsAvailable) = reportService.reportOptionsAvailable
       cacheMap(DeskCloses) = tradeService.deskCloses
       cacheMap(IntradayLatest) = tradeService.intradayLatest
-      cacheMap(TradersBookLookup) = tradeService.traders
       cacheMap(UKBusinessCalendar) = starlingServer.ukBusinessCalendar
       cacheMap(Desks) = tradeService.desks
       cacheMap(GroupToDesksMap) = tradeService.groupToDesksMap

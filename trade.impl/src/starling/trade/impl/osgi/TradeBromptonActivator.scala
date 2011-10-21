@@ -13,7 +13,7 @@ import starling.tradeimport.{ClosedDesks, TradeImporterFactory, TradeImporter}
 import starling.titan.{TitanSystemOfRecord, TitanTradeStore}
 import starling.instrument.TradeSystem
 import starling.db.{RefinedFixationTradeSystem, RefinedAssignmentTradeSystem, TitanTradeSystem, DB}
-import starling.eai.{EAIAutoImport, EAIDealBookMapping, EAIStrategyDB, Traders}
+import starling.eai.{EAIAutoImport, EAIDealBookMapping, EAIStrategyDB}
 import starling.richdb.{RichDB, RichResultSetRowFactory}
 import starling.auth.{User, LdapUserLookup}
 import starling.manager._
@@ -75,14 +75,12 @@ class TradeBromptonActivator extends BromptonActivator {
     val eaiAutoImport = new EAIAutoImport(15, starlingRichDB, eaiStarlingRichSqlServerDB, strategyDB, eaiTradeStores, closedDesks, enabledDesks)
     eaiAutoImport.start // TODO Thomas -- move this somewhere sensible
 
-    val allTraders = new Traders(ldapUserLookup.user _)
-
-    val tradeService = new TradeFacilityImpl(tradeStores, enabledDesks, allTraders, eaiStarlingDB, props.Production())
+    val tradeService = new TradeFacilityImpl(tradeStores, enabledDesks, eaiStarlingDB, props.Production())
 
     val tradeHandler = new TradeHandler(
       broadcaster,
-      new ExcelTradeReader(strategyDB, eaiDealBookMapping, allTraders, User.currentlyLoggedOn _),
-      tradeStores.intradayTradeStore, allTraders
+      new ExcelTradeReader(strategyDB, eaiDealBookMapping, User.currentlyLoggedOn _),
+      tradeStores.intradayTradeStore
     )
 
     context.registerService(classOf[TradeStores], tradeStores)

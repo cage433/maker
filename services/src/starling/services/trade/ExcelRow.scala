@@ -17,7 +17,7 @@ import starling.market._
 import starling.eai._
 import starling.gui.api.Desk
 
-case class ExcelRow(row: Map[String, Any], traders: Traders, currentlyLoggedOn: User) {
+case class ExcelRow(row: Map[String, Any], currentlyLoggedOn: User) {
 
   import ExcelInstrumentReader._
   import ExcelRow._
@@ -371,8 +371,6 @@ case class ExcelRow(row: Map[String, Any], traders: Traders, currentlyLoggedOn: 
       case s => s
     }
 
-    assert(traders.trader(trader).isDefined, "Don't recognised name of trader: '" + string(TraderColumn) + "', used: " + traders.traders.map(_.name))
-
     val bookID = TreeID(eaiDealBookMapping.book(dealID.get.id))
     Desk.eaiDeskFromID(bookID.id) match {
       case None => { // sanity check
@@ -398,19 +396,14 @@ case class ExcelRow(row: Map[String, Any], traders: Traders, currentlyLoggedOn: 
 
   private def generateSubgroupName(user:User, subgroupNamePrefix:String, bookID: Int) = {
     val subgroup = subgroupNamePrefix.trim
-    val traderUsers = traders.traders
 
     val s = "Oil Derivatives/"
-    if (traderUsers.contains(user) && ("live" == subgroup.toLowerCase)) {
-      val desk = Desk.eaiDeskFromID(bookID).get
+    val desk = Desk.eaiDeskFromID(bookID).get
+    if ("live" == subgroup.toLowerCase) {
       s + "Live/" + desk.name + "/" + user.username
     } else {
-      s + "Scratch/" + (if (traderUsers.contains(user)) {
-        val desk = Desk.eaiDeskFromID(bookID).get
+      s + "Scratch/" +
         desk.name + "/" + user.name + "/" + subgroup
-      } else {
-        "No Desk/" + user.name + "/" + subgroup
-      })
     }
   }
 }

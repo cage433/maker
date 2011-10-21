@@ -17,7 +17,6 @@ object LocalCacheKeys {
   val PricingGroupLatestMarketDataVersion = new LocalCacheKey[Map[PricingGroup,Int]]("PricingGroupLatestMarketDataVersion")
   val ExcelLatestMarketDataVersion        = new LocalCacheKey[Map[String,Int]]("ExcelLatestMarketDataVersion")
   val ReportOptionsAvailable              = new LocalCacheKey[ReportOptionsAvailable]("ReportOptionsAvailable")
-  val TradersBookLookup                   = new LocalCacheKey[Map[User,List[Desk]]]("TradersBookLookup")
   val DeskCloses                          = new LocalCacheKey[Map[Desk, Map[Day,List[TradeTimestamp]]]]("DeskCloses")
   val IntradayLatest                      = new LocalCacheKey[Map[String, (User, Timestamp)]]("IntradayLatest")
   val UKBusinessCalendar                  = new LocalCacheKey[BusinessCalendar]("UKHolidays")
