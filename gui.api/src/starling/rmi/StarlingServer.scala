@@ -5,7 +5,6 @@ import starling.services.{ForwardCurveCommitResponse, ForwardCurveInfo}
 import starling.pivot._
 import starling.auth.User
 import starling.calendar.BusinessCalendar
-import starling.eai.{Traders}
 import starling.daterange.{ObservationPoint, Day, Timestamp}
 import starling.browser.service.{PageLogInfo, BookmarkLabel, UserSettingsLabel, Version}
 import starling.utils.{CaseInsensitive, STable}
