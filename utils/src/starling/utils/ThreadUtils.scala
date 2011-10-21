@@ -9,7 +9,7 @@ import java.lang.reflect.{InvocationTargetException, Method}
  */
 object ThreadUtils {
 
-  def withNamedThread[T <: Object](name:String)(f: => T):T = {
+  def withNamedThread[T](name:String)(f: => T):T = {
     val originalName = Thread.currentThread.getName
     try {
       Thread.currentThread.setName(originalName + " > " + name)

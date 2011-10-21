@@ -22,6 +22,7 @@ import starling.utils.{CaseInsensitive, Log}
 import starling.instrument.utils.StarlingXStream
 import starling.dbx._
 import starling.props.ConnectionParams
+import scalaz.Scalaz._
 
 
 trait DBTrait[RSR <: ResultSetRow] extends Log {
@@ -55,9 +56,8 @@ trait DBTrait[RSR <: ResultSetRow] extends Log {
     tt.setIsolationLevel(isolationLevel)
     tt.setPropagationBehavior(TransactionDefinition.PROPAGATION_NESTED)
     tt.execute(new TransactionCallback[Object] {
-      def doInTransaction(status: TransactionStatus) = {
-        log.info(">>in transaction for thread %s".format(Thread.currentThread()))
-        val r = try {
+      def doInTransaction(status: TransactionStatus) = log.debugWithTime(status.isNewTransaction ? "TXN" | "OLD TXN") {
+        try {
           f
         }
         catch {
@@ -68,8 +68,6 @@ trait DBTrait[RSR <: ResultSetRow] extends Log {
             throw new RuntimeException(th)
           }
         }
-        log.info("<<in transaction for thread %s".format(Thread.currentThread()))
-        r
       }
     })
   }

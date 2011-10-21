@@ -50,17 +50,16 @@ class ExtendedLog(adapted: VarLogger) extends AdaptingLogger(adapted) {
   def infoWithTime[T](message: String)(f: => T): T = withTime(message, msg => info(msg), f)
   def debugWithTime[T](message: String)(f: => T): T = withTime(message, msg => debug(msg), f)
 
+  def withName[T](name: String)(f: => T): T = ThreadUtils.withNamedThread(name)(f)
+
   private def withTime[T](message: String, logger: AnyRef => Unit, f: => T) = {
     val stopwatch = new Stopwatch()
-    val oldThreadName = Thread.currentThread.getName
-    try {
-      Thread.currentThread.setName(oldThreadName + " > " + message)
+
+    withName(message) {
       logger(message + " Start")
       val result = f;
       logger(message + " Complete. Time: " + stopwatch)
       result
-    } finally {
-      Thread.currentThread.setName(oldThreadName)
     }
   }
 
@@ -234,7 +233,10 @@ class Log4JLogger(val logger: Logger, levelTransformer: DynamicVariable[(Levels.
 
   override def isInfoEnabled = isEnabledFor(Levels.Info)
 
-  override def info(msg: => AnyRef) = if (isInfoEnabled) logger.info(msg)
+  override def info(msg: => AnyRef) = {
+    if (msg.toString.trim == "") throw new Exception("Don't log blank lines")
+    if (isInfoEnabled) logger.info(msg)
+  }
 
   override def info(msg: => AnyRef, t: => Throwable) = if (isInfoEnabled) logger.info(msg, t)
 
