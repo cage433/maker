@@ -79,6 +79,7 @@ class Props(starlingProps:Map[String,String], trafiguraProps : Map[String, Strin
   object UseAuth extends BooleanProperty(true)
   object NoMP extends BooleanProperty(false)
   object ImportsBookClosesFromEAI extends BooleanProperty(true)
+  object ImportMarketDataAutomatically extends BooleanProperty(true)
 
   object LIMHost extends StringProperty("lim-london-live")
   object LIMPort extends IntProperty(6400)

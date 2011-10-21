@@ -76,16 +76,18 @@ case class TitanTradeStoreManager(
 
   private val LogisticsQuotas = scala.collection.mutable.Set[LogisticsQuota]()
 
-  private def edmInventoryLeaves : List[InventoryItem] = {
-    val allInventoryIds = InventoryItems.keySet
-    val parentIds = InventoryItems.values.flatMap{inv => inv.parentId.map(_.toString)}.toSet
-    allInventoryIds.filterNot(parentIds).map(InventoryItems).toList
+  def edmInventoryLeaves : List[EDMInventoryItem] = {
+    val allInventoryIds = edmInventoryItems.keySet
+    val parentIds = edmInventoryItems.values.flatMap{inv => inv.parentId.map(_.toString)}.toSet
+    allInventoryIds.filterNot(parentIds).map(edmInventoryItems).toList
   }
 
-  private def inventoryByQuotaID : Map[TitanId, List[InventoryItem]] = {
-    def quotaNames(inventory : InventoryItem) : List[String] = inventory.purchaseAssignment.quotaName :: Option(inventory.salesAssignment).map(_.quotaName).toList
-    def quotaNamesForInventory : List[(List[TitanId], InventoryItem)] = InventoryItems.toList.map{case (id, inv) => (quotaNames(inv), inv)}.map(i => i._1.map(qn => TitanId(qn)) -> i._2)
-    def quotaToInventory : List[(TitanId, InventoryItem)] = quotaNamesForInventory.flatMap(i => i._1.map(x => (x -> i._2)))
+  def edmInventoryItems_ = Map() ++ edmInventoryItems
+  def edmLogisticsQuotas_ = Set() ++ edmLogisticsQuotas
+  def inventoryByQuotaID : Map[TitanId, List[EDMInventoryItem]] = {
+    def quotaNames(inventory : EDMInventoryItem) : List[String] = inventory.purchaseAssignment.quotaName :: Option(inventory.salesAssignment).map(_.quotaName).toList
+    def quotaNamesForInventory : List[(List[TitanId], EDMInventoryItem)] = edmInventoryItems.toList.map{case (id, inv) => (quotaNames(inv), inv)}.map(i => i._1.map(qn => TitanId(qn)) -> i._2)
+    def quotaToInventory : List[(TitanId, EDMInventoryItem)] = quotaNamesForInventory.flatMap(i => i._1.map(x => (x -> i._2)))
     quotaToInventory.groupBy(_._1).map(x => x._1 -> x._2.map(_._2))
   }
 

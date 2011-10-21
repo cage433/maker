@@ -17,6 +17,9 @@ import starling.curves.Environment
 import starling.curves.MarketDataCurveObjectEnvironment
 import starling.richdb._
 import starling.instrument.physical._
+import starling.services.rpc.refdata._
+import starling.services.rpc.logistics._
+import starling.titan._
 
 def setNullHolidays{
   import starling.calendar._
@@ -65,5 +68,15 @@ def titanTradeables = titanTrades.map(_.tradeable).flatMap{
   case _ : ErrorInstrument => None
 }
 
+lazy val titanServices = new DefaultTitanServices(devInstance.props)
+lazy val logisticsServices = new DefaultTitanLogisticsServices(devInstance.props)
 
+lazy val edmTrades = titanServices.getAllCompletedTrades
+
+lazy val titanTradeStoreManager = TitanTradeStoreManager(
+  titanServices,
+  titanTradeStore,
+  titanServices,
+  logisticsServices
+)
 
