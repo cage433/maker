@@ -280,7 +280,8 @@ class ReportServiceInternal(reportContextBuilder:ReportContextBuilder, tradeStor
 
   def createReportPivotDataSource(reportData:ReportData, reportParameters: ReportParameters) = {
     val tradeSets: List[(TradeSet, Timestamp)] = tradeStores.toTradeSets(reportParameters.tradeSelectionWithTimestamp)
-    val pivots = if (reportParameters.reportOptions.isEmpty) List() else tradeSets.map {
+    val runReports = !reportParameters.reportOptions.isEmpty
+    val pivots = if (!runReports) List() else tradeSets.map {
       case (tradeSet, timestamp) => {
         val tradesPivot = tradeSet.reportPivot(
           reportParameters.curveIdentifier.tradesUpToDay, reportParameters.expiryDay,
@@ -322,6 +323,7 @@ class ReportServiceInternal(reportContextBuilder:ReportContextBuilder, tradeStor
     }
     val pnlRecordedPlusPivots = reportParameters.pnlParameters match {
       case None => List()
+      case Some(pnlFromParameters) if !runReports => List()
       case Some(pnlFromParameters) => {
         for ((tradeSet,timestamp) <- tradeSets) yield {
 
@@ -342,9 +344,11 @@ class ReportServiceInternal(reportContextBuilder:ReportContextBuilder, tradeStor
         }
       }
     }
-    val yearToDates = {
+    val yearToDates = if (runReports) {
       val ytd = new YearToDateReport
       ytd.report(reportContextBuilder, curveIdentifierFactory, tradeSets, reportParameters)
+    } else {
+      List()
     }
     val allRecorded = reportData.recorded ++ pnlRecordedPlusPivots.flatMap(_._1)
     val allPivots = pivots ::: pnlRecordedPlusPivots.map(_._2) ::: yearToDates

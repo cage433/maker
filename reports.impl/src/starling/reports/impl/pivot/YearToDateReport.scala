@@ -17,7 +17,10 @@ class YearToDateReport {
 
   private val cache = CacheFactory.getCache("YearToDateReportAspectValuesCache")
 
-  private val deskFileMap = Map(Desk.GasoilSpec -> "/starling/reports/impl/GasOilSpec_Yearly_1011.txt.gz")
+  private val deskFileMap = Map(
+    Desk.GasoilSpec -> "/starling/reports/impl/GasOilSpec_Yearly_1011.txt.gz",
+    Desk.NaphthaSpec -> "/starling/reports/impl/NaphthaSpec_Yearly_1011.txt.gz"
+  )
 
   private def aspectValues(desk: Desk) = cache.memoize((desk), {
     val file = deskFileMap.get(desk)
