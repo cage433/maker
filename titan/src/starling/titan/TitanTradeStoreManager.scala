@@ -2,7 +2,7 @@ package starling.titan
 
 import starling.curves.Environment
 import com.trafigura.edm.shared.types.TitanId
-import com.trafigura.edm.logistics.inventory.{EDMInventoryItem, EDMLogisticsQuota}
+import com.trafigura.edm.logistics.inventory.{InventoryItem, LogisticsQuota}
 import starling.instrument.Trade
 import starling.daterange.Timestamp
 import starling.utils.Log
@@ -70,27 +70,27 @@ case class TitanTradeStoreManager(
 
   private lazy val allInventory = logisticsServices.inventoryService.service.getAllInventory()
 
-  private lazy val edmInventoryItems = {
-    scala.collection.mutable.Map[InventoryID, EDMInventoryItem]() ++ allInventory.associatedInventory.map{inv => inv.id -> inv}
+  private lazy val InventoryItems = {
+    scala.collection.mutable.Map[InventoryID, InventoryItem]() ++ allInventory.associatedInventory.map{inv => inv.id -> inv}
   }
 
-  private val edmLogisticsQuotas = scala.collection.mutable.Set[EDMLogisticsQuota]()
+  private val LogisticsQuotas = scala.collection.mutable.Set[LogisticsQuota]()
 
-  private def edmInventoryLeaves : List[EDMInventoryItem] = {
-    val allInventoryIds = edmInventoryItems.keySet
-    val parentIds = edmInventoryItems.values.flatMap{inv => inv.parentId.map(_.toString)}.toSet
-    allInventoryIds.filterNot(parentIds).map(edmInventoryItems).toList
+  private def edmInventoryLeaves : List[InventoryItem] = {
+    val allInventoryIds = InventoryItems.keySet
+    val parentIds = InventoryItems.values.flatMap{inv => inv.parentId.map(_.toString)}.toSet
+    allInventoryIds.filterNot(parentIds).map(InventoryItems).toList
   }
 
-  private def inventoryByQuotaID : Map[TitanId, List[EDMInventoryItem]] = {
-    def quotaNames(inventory : EDMInventoryItem) : List[String] = inventory.purchaseAssignment.quotaName :: Option(inventory.salesAssignment).map(_.quotaName).toList
-    def quotaNamesForInventory : List[(List[TitanId], EDMInventoryItem)] = edmInventoryItems.toList.map{case (id, inv) => (quotaNames(inv), inv)}.map(i => i._1.map(qn => TitanId(qn)) -> i._2)
-    def quotaToInventory : List[(TitanId, EDMInventoryItem)] = quotaNamesForInventory.flatMap(i => i._1.map(x => (x -> i._2)))
+  private def inventoryByQuotaID : Map[TitanId, List[InventoryItem]] = {
+    def quotaNames(inventory : InventoryItem) : List[String] = inventory.purchaseAssignment.quotaName :: Option(inventory.salesAssignment).map(_.quotaName).toList
+    def quotaNamesForInventory : List[(List[TitanId], InventoryItem)] = InventoryItems.toList.map{case (id, inv) => (quotaNames(inv), inv)}.map(i => i._1.map(qn => TitanId(qn)) -> i._2)
+    def quotaToInventory : List[(TitanId, InventoryItem)] = quotaNamesForInventory.flatMap(i => i._1.map(x => (x -> i._2)))
     quotaToInventory.groupBy(_._1).map(x => x._1 -> x._2.map(_._2))
   }
 
   private def tradeForwardBuilder: PhysicalMetalForwardBuilder = {
-    val logisticsQuotaByQuotaID = edmLogisticsQuotas.map(q => TitanId(q.quotaName) -> q).toMap
+    val logisticsQuotaByQuotaID = LogisticsQuotas.map(q => TitanId(q.quotaName) -> q).toMap
     new PhysicalMetalForwardBuilder(refData, inventoryByQuotaID, logisticsQuotaByQuotaID)
   }
 
@@ -120,16 +120,16 @@ case class TitanTradeStoreManager(
 
     log.info("inventory update, got inventory:\n %s, \n%s \nwith quotas \n%s\n".format(inventoryID, newInventory, newQuotas.map(q => (q.quotaName, q.fullyAllocated))))
 
-    edmInventoryItems += (newInventory.id -> newInventory)
-    edmLogisticsQuotas.retain(lq => !newQuotas.map(_.quotaName).contains(lq.quotaName))
-    edmLogisticsQuotas ++= newQuotas
+    InventoryItems += (newInventory.id -> newInventory)
+    LogisticsQuotas.retain(lq => !newQuotas.map(_.quotaName).contains(lq.quotaName))
+    LogisticsQuotas ++= newQuotas
   }
 
   private def removeInventoryFromCache(inventoryID : String) {
 
-    val salesQuota = edmInventoryItems.get(inventoryID) match {
+    val salesQuota = InventoryItems.get(inventoryID) match {
       case Some(inv) => {
-        edmInventoryItems -= inventoryID
+        InventoryItems -= inventoryID
         Option(inv.salesAssignment)
       }
       case None => None
@@ -137,7 +137,7 @@ case class TitanTradeStoreManager(
 
     // remove the associated sales quota, it will be repopulated next time it's allocated
     salesQuota match {
-      case Some(lsq) => edmLogisticsQuotas.retain(lq => lq.quotaName  != lsq.quotaName)
+      case Some(lsq) => LogisticsQuotas.retain(lq => lq.quotaName  != lsq.quotaName)
       case None =>
     }
   }

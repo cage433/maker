@@ -14,13 +14,13 @@ import starling.utils.Pattern.Extractor
 import starling.db.{MarketDataStore, SnapshotID}
 import starling.gui.api.{SnapshotMarketDataVersion, SpecificMarketDataVersion, MarketDataVersion}
 import com.trafigura.services.valuation.TitanMarketDataIdentifier
-import com.trafigura.edm.logistics.inventory.EDMInventoryItem
+import com.trafigura.edm.logistics.inventory.InventoryItem
 import starling.instrument.Trade
 
 case class InvalidUomException(msg : String) extends Exception(msg)
 
 object EDMConversions {
-  implicit def enrichEDMInventoryItem(inv : EDMInventoryItem) = new {
+  implicit def enrichEDMInventoryItem(inv : InventoryItem) = new {
     val id = inv.oid.contents.toString
   }
   // Starling implicits

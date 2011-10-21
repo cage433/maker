@@ -7,7 +7,7 @@ import starling.services.rpc.logistics._
 import starling.daterange.Timestamp
 import starling.instrument.Trade
 import starling.utils.conversions.RichMapWithErrors._
-import com.trafigura.edm.logistics.inventory.{EDMLogisticsQuota, EDMInventoryItem}
+import com.trafigura.edm.logistics.inventory.{LogisticsQuota, InventoryItem}
 import starling.utils.{Log, Stopwatch}
 import starling.tradestore.TradeStore
 
@@ -27,9 +27,9 @@ trait GenericServiceDataCache[T, K] {
 }
 
 trait logisticsQuotaCache {
-  def getAll() : List[EDMLogisticsQuota]
-  def getByID(id : String) : List[EDMLogisticsQuota]
-  def addQuota(quota : EDMLogisticsQuota)
+  def getAll() : List[LogisticsQuota]
+  def getByID(id : String) : List[LogisticsQuota]
+  def addQuota(quota : LogisticsQuota)
   def addQuota(quotaID : String)
   def removeQuota(id : String)
 }
@@ -39,12 +39,12 @@ case class DefaultTitanLogisticsInventoryCache(
     titanLogisticsServices : TitanLogisticsServices,
     titanTradeCache : TitanTradeCache,
     refData : TitanTacticalRefData,
-    titanTradeStore : Option[TradeStore]) extends GenericServiceDataCache[EDMInventoryItem, String] with Log {
+    titanTradeStore : Option[TradeStore]) extends GenericServiceDataCache[InventoryItem, String] with Log {
 
   // internal maps that for the cache lookup
-  protected var inventoryMap : Map[String, EDMInventoryItem] = Map[String, EDMInventoryItem]().withException()
+  protected var inventoryMap : Map[String, InventoryItem] = Map[String, InventoryItem]().withException()
   protected var assignmentIDtoInventoryIDMap : Map[String, String] = Map[String, String]().withException()
-  protected var logisticsIDtoQuotaMap : Map[String, EDMLogisticsQuota] = Map[String, EDMLogisticsQuota]().withException()
+  protected var logisticsIDtoQuotaMap : Map[String, LogisticsQuota] = Map[String, LogisticsQuota]().withException()
 
   private def getAllInventory() = try {
     //titanLogisticsServices.inventoryService.service.getAllInventoryLeaves()
@@ -113,7 +113,7 @@ case class DefaultTitanLogisticsInventoryCache(
     inventoryMap.keySet.foreach(addInventoryAssignments)
   }
 
-  def getAll() : List[EDMInventoryItem] = {
+  def getAll() : List[InventoryItem] = {
     if (inventoryMap.size > 0) {
       inventoryMap.values.toList
     }
@@ -123,7 +123,7 @@ case class DefaultTitanLogisticsInventoryCache(
     }
   }
 
-  def getByID(id: String) : EDMInventoryItem = {
+  def getByID(id: String) : InventoryItem = {
     if (inventoryMap.contains(id)) {
       inventoryMap(id)
     }

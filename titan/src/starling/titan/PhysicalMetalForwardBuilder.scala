@@ -4,7 +4,7 @@ import starling.utils.Log
 import com.trafigura.edm.trades.{Trade => EDMTrade, PhysicalTrade => EDMPhysicalTrade}
 import com.trafigura.edm.physicaltradespecs.{DeliverySpec, QuotaDetails}
 import com.trafigura.edm.materialspecification.CommoditySpec
-import com.trafigura.edm.logistics.inventory.{EDMAssignment, EDMLogisticsQuota, EDMInventoryItem}
+import com.trafigura.edm.logistics.inventory.{Assignment, LogisticsQuota, InventoryItem}
 import com.trafigura.edm.shared.types.{DateSpec, PercentageTolerance, TitanId}
 import starling.titan.EDMConversions._
 import com.trafigura.tradinghub.support.GUID
@@ -19,8 +19,8 @@ import starling.marketdata._
 import starling.market.Commodity
 
 class PhysicalMetalForwardBuilder(refData: TitanTacticalRefData,
-            inventoryByQuotaID: Map[TitanId, List[EDMInventoryItem]],
-            logisticsQuotaByQuotaID: Map[TitanId, EDMLogisticsQuota]) extends Log {
+            inventoryByQuotaID: Map[TitanId, List[InventoryItem]],
+            logisticsQuotaByQuotaID: Map[TitanId, LogisticsQuota]) extends Log {
   import refData._
 
   private val QUOTA_PREFIX = "Q-"
@@ -118,7 +118,7 @@ class PhysicalMetalForwardBuilder(refData: TitanTacticalRefData,
             val benchmarkIncoTerm = Option(detail.benchmark).map(IncotermCode)
             val quotaQuantity : Quantity = deliverySpec.quantity
             val quotaID = NeptuneId(detail.identifier).identifier
-            def makeAssignment(ass: EDMAssignment, inv: Inventory, isPurchase: Boolean) = {
+            def makeAssignment(ass: Assignment, inv: Inventory, isPurchase: Boolean) = {
               PhysicalMetalAssignment(
                 ass.oid.contents.toString,
                 if (isPurchase) inv.purchaseAssignmentQuantity else inv.currentQuantity,
@@ -168,7 +168,7 @@ class PhysicalMetalForwardBuilder(refData: TitanTacticalRefData,
               trades
             }
             else {
-              val logisticsQuota: Option[EDMLogisticsQuota] = logisticsQuotaByQuotaID.get(NeptuneId(detail.identifier).titanId)
+              val logisticsQuota: Option[LogisticsQuota] = logisticsQuotaByQuotaID.get(NeptuneId(detail.identifier).titanId)
               log.info("detail.identifier %s, fullyAllocated %s, logistics quota was %s ".format(NeptuneId(detail.identifier).identifier, logisticsQuota.map(_.fullyAllocated), logisticsQuota))
               val isFullyAllocated = logisticsQuota.map(_.fullyAllocated).getOrElse(false)
               val assignmentTrades = inventoryItems.map {

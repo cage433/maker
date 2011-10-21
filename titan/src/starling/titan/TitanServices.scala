@@ -32,9 +32,9 @@ object NeptuneId {
  * logistics service interface
  */
 object LogisticsServices {
-  type EdmAssignmentServiceWithGetAllAssignments = EdmAssignmentService with Object { def getAllAssignments() : List[EDMAssignment] }
+  type EdmAssignmentServiceWithGetAllAssignments = EdmAssignmentService with Object { def getAllAssignments() : List[Assignment] }
   type EdmInventoryServiceWithGetAllInventory = EdmInventoryService with Object {
-    def getAllInventoryLeaves() : List[EDMInventoryItem]
+    def getAllInventoryLeaves() : List[InventoryItem]
     def getAllInventory() : LogisticsInventoryResponse
   }
 }

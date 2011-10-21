@@ -14,11 +14,11 @@ import starling.quantity.{Quantity, Percentage}
 import starling.titan.EDMConversions._
 
 
-case class Inventory(item: EDMInventoryItem) {
+case class Inventory(item: InventoryItem) {
   val receivedQuantity: Option[Quantity] = {
     item.status match {
-      case ExpectedEDMInventoryItemStatus => None
-      case SplitEDMInventoryItemStatus | CancelledEDMInventoryItemStatus => throw new Exception("Unexpected inventory status " + item.status)
+      case ExpectedInventoryItemStatus => None
+      case SplitInventoryItemStatus | CancelledInventoryItemStatus => throw new Exception("Unexpected inventory status " + item.status)
       case _ => Some(item.purchaseAssignment.quantity)
     }
   }
