@@ -5,6 +5,10 @@ import starling.utils.ImplicitConversions._
 
 trait RichTraversables {
   implicit def enrichTraversable[A](traversable: Traversable[A]): RichTraversable[A] = new RichTraversable(traversable)
+  // Convert List((1, 2), (1, 3), (2, 4)) to Map(1 → List(2, 3), 2 → List(4))
+  implicit def enrichListsOfPairs[A, B](traversable : Traversable[(A, B)]) = new {
+    def groupValues : Map[A, Traversable[B]] = traversable.groupInto(identity)
+  }
 }
 
 class RichTraversable[A](traversable: Traversable[A]) {

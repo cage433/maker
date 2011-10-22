@@ -19,8 +19,9 @@ import starling.marketdata._
 import starling.market.Commodity
 
 class PhysicalMetalForwardBuilder(refData: TitanTacticalRefData,
-            inventoryByQuotaID: Map[TitanId, List[InventoryItem]],
-            logisticsQuotaByQuotaID: Map[TitanId, LogisticsQuota]) extends Log {
+            inventoryByQuotaID: Map[TitanId, Traversable[InventoryItem]],
+            isQuotaFullyAllocated : Map[TitanId, Boolean]) extends Log {
+            //logisticsQuotaByQuotaID: Map[TitanId, LogisticsQuota]) extends Log {
   import refData._
 
   private val QUOTA_PREFIX = "Q-"
@@ -168,9 +169,11 @@ class PhysicalMetalForwardBuilder(refData: TitanTacticalRefData,
               trades
             }
             else {
-              val logisticsQuota: Option[LogisticsQuota] = logisticsQuotaByQuotaID.get(NeptuneId(detail.identifier).titanId)
-              log.info("detail.identifier %s, fullyAllocated %s, logistics quota was %s ".format(NeptuneId(detail.identifier).identifier, logisticsQuota.map(_.fullyAllocated), logisticsQuota))
-              val isFullyAllocated = logisticsQuota.map(_.fullyAllocated).getOrElse(false)
+              val quotaId = NeptuneId(detail.identifier).titanId
+              val isFullyAllocated = isQuotaFullyAllocated.getOrElse(quotaId, false)
+              //val logisticsQuota: Option[LogisticsQuota] = logisticsQuotaByQuotaID.get(NeptuneId(detail.identifier).titanId)
+              log.info("detail.identifier %s, fullyAllocated %s".format(quotaId, isFullyAllocated))
+              //val isFullyAllocated = logisticsQuota.map(_.fullyAllocated).getOrElse(false)
               val assignmentTrades = inventoryItems.map {
                 inv =>
                   val assignment = makeAssignment(inv.item.salesAssignment, inv, false)
