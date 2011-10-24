@@ -10,7 +10,7 @@ import org.testng.Assert._
 import com.trafigura.edm.trades.{PhysicalTrade => EDMPhysicalTrade}
 import com.trafigura.shared.events._
 import starling.services.rpc.logistics.FileMockedTitanLogisticsServices
-import com.trafigura.edm.logistics.inventory.EDMInventoryItem
+import com.trafigura.edm.logistics.inventory.InventoryItem
 import starling.utils.{Stopwatch, StarlingTest, Log}
 import org.testng.annotations.{BeforeClass, Test}
 import starling.utils.Levels
@@ -202,7 +202,7 @@ class ValuationServiceTest extends StarlingTest {
 
       assertTrue(updatedValuationIdList.size == 0, "Valuation service raised valuation changed events for unchanged inventory")
 
-      val updatedInventory = EDMInventoryItem.fromJson(firstInventoryItem.toJson())
+      val updatedInventory = InventoryItem.fromJson(firstInventoryItem.toJson())
 
       updatedInventory.salesAssignment = null
 

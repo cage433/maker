@@ -2,7 +2,7 @@ in_namespace('EDM') {
   in_namespace('Logistics') {
   	in_namespace('Inventory') {
 
-     define('EDMAssignment') {
+     define('Assignment') {
        constant 'PURCHASE', 'P'
        constant 'SALE', 'S'
        field 'oid',                        :integer_id
@@ -21,7 +21,7 @@ in_namespace('EDM') {
        field 'warrantDate',                :datetime
      }
 
-     define('EDMInventoryItem') {
+     define('InventoryItem') {
        field 'oid',                        :integer_id
        field 'tradeId',                    :integer
        field 'parentId',                   :integer, :optional => true
@@ -39,7 +39,7 @@ in_namespace('EDM') {
        field 'warehouse',                  :string, :optional => true
      }
                                  
-     define('EDMAssignmentItem', :extends => 'EDMAssignment') {
+     define('AssignmentItem', :extends => 'Assignment') {
        field 'quantity',	           :EQuantity
        field 'productSpec',                :ProductSpec
      }
