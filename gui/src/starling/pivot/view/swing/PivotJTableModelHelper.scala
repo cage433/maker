@@ -493,9 +493,10 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
       case e@KeyPressed(_,scala.swing.event.Key.Escape,_,_) => {
         e.consume()
         selectIndices(-1)
-        popupMenu.editor.requestFocusInWindow()
+        KeyboardFocusManager.getCurrentKeyboardFocusManager.focusNextComponent(popupMenu.editor)
         onEDT({
-          popupMenu.editor.setCaretPosition(popupMenu.editor.getText.length())
+          popupMenu.editor.requestFocusInWindow()
+          onEDT(popupMenu.editor.setCaretPosition(popupMenu.editor.getText.length()))
         })
       }
       case KeyPressed(_,scala.swing.event.Key.Up,_,_) if selection.indices.head == 0 => {
@@ -503,9 +504,7 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
         KeyboardFocusManager.getCurrentKeyboardFocusManager.focusNextComponent(popupMenu.editor)
         onEDT({
           popupMenu.editor.requestFocusInWindow()
-          onEDT({
-            popupMenu.editor.setCaretPosition(popupMenu.editor.getText.length())
-          })
+          onEDT(popupMenu.editor.setCaretPosition(popupMenu.editor.getText.length()))
         })
       }
       case e@KeyPressed(_,scala.swing.event.Key.Z,scala.swing.event.Key.Modifier.Control,_) => {
