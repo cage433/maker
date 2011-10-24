@@ -4,11 +4,8 @@ import starling.daterange._
 
 import collection.immutable.List
 import starling.utils.ImplicitConversions._
-import starling.marketdata.{PriceFixingsHistoryDataKey, MarketDataKey}
-import starling.market.{CommodityMarket, FuturesMarket}
-import starling.db.{SnapshotID, MarketDataReaderMarketDataSlice, MarketDataReader}
+import starling.db.MarketDataReader
 import starling.gui.api.{PricingGroup, EnvironmentRuleLabel}
-import scalaz.Scalaz._
 import collection.mutable.{Map => MMap}
 
 trait EnvironmentRule {
@@ -28,6 +25,8 @@ class EnvironmentRules {
   }
 
   def forName(name: String): EnvironmentRule = forLabel(EnvironmentRuleLabel(name))
-  def forLabel(rule: EnvironmentRuleLabel): EnvironmentRule = rules(rule)
+  def forLabel(rule: EnvironmentRuleLabel): EnvironmentRule =
+    rules.getOrThrow(rule, "No such rule: %s, valid values: %s" % (rule, rules.keySet.mkString(", ")))
+
   def forPricingGroup(pricingGroup: PricingGroup) = rules.filterValues(_.pricingGroups.contains(pricingGroup)).values.toList
 }

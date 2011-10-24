@@ -5,19 +5,24 @@ import com.trafigura.edm.shared.types.TitanId
 import com.trafigura.edm.logistics.inventory.{InventoryItem, LogisticsQuota}
 import starling.instrument.Trade
 import starling.daterange.Timestamp
-import starling.utils.Log
 import EDMConversions._
 import collection.immutable.Map
 import com.trafigura.edm.trades.{CompletedTradeState, PhysicalTrade => EDMPhysicalTrade}
 import starling.tradestore.TradeStore.StoreResults
 import starling.utils.ImplicitConversions._
+import starling.utils.{Startable, Log}
 
-case class TitanServiceCache(private val refData : TitanTacticalRefData, private val edmTradeServices : TitanEdmTradeService, private val logisticsServices : TitanLogisticsServices) extends Log {
+case class TitanServiceCache(private val refData : TitanTacticalRefData,
+                             private val edmTradeServices : TitanEdmTradeService,
+                             private val logisticsServices : TitanLogisticsServices) extends Log with Startable {
   import scala.collection.mutable
   type InventoryID = String
   val edmTrades = mutable.Set[EDMPhysicalTrade]()
   val edmInventoryItems = mutable.Map[InventoryID, InventoryItem]()
   val edmLogisticsQuotas = scala.collection.mutable.Set[LogisticsQuota]()
+
+  override def start = initialiseCaches
+
   def initialiseCaches{
     edmTrades.clear
     edmTrades ++= edmTradeServices.getAllCompletedTrades()
@@ -29,7 +34,7 @@ case class TitanServiceCache(private val refData : TitanTacticalRefData, private
     edmLogisticsQuotas.clear
     edmLogisticsQuotas ++= allInventory.associatedQuota
   }
-  initialiseCaches
+
   def tradeForwardBuilder: PhysicalMetalForwardBuilder = {
     val inventoryByQuotaID : Map[TitanId, Traversable[InventoryItem]] = edmInventoryLeaves.flatMap{
       inv : InventoryItem => 
@@ -95,7 +100,9 @@ case class TitanServiceCache(private val refData : TitanTacticalRefData, private
 /**
  * Manage the trade store trades via changes at trade, quota, inventory and assignment level
  */
-case class TitanTradeStoreManager(cache : TitanServiceCache, titanTradeStore : TitanTradeStore) extends Log {
+case class TitanTradeStoreManager(cache : TitanServiceCache, titanTradeStore : TitanTradeStore) extends Log with Startable {
+
+  override def start = cache.start
 
   def allStarlingTrades = titanTradeStore.allStarlingTrades()
 

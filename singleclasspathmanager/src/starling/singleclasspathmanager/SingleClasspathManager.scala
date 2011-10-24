@@ -84,7 +84,12 @@ class SingleClasspathManager(cacheServices:Boolean, activators:List[Class[_ <: B
       instances.foreach { activator => {
         activator.start(context)
       } }
-      onStartedActions.foreach(_())
+
+      onStartedActions.foreach { action => try {
+        action()
+      } catch {
+        case t => t.printStackTrace(Console.err)
+      } }
     }
   }
   def stop() {

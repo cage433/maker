@@ -87,7 +87,11 @@ class MetalsBromptonActivator extends BromptonActivator with Log {
         new FileMockedTitanLogisticsServices()
       )
 
-      TitanTradeStoreManager(titanServices, titanTradeStore, titanServices, logisticsServices)
+      val manager = TitanTradeStoreManager(titanServices, titanTradeStore, titanServices, logisticsServices)
+
+      context.onStarted { manager.start }
+
+      manager
     }
 
     val valuationSnapshotCreator = new MetalValuationSnapshotCreator(osgiBroadcaster, environmentProvider, titanTradeStore)

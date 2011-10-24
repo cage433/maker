@@ -80,6 +80,7 @@ class RichMutableMap[K, V](map: MMap[K, V]) {
   def removeValues(f: V => Boolean): MMap[K, V] = remove((k, v) => f(v))
   def retainKeys(f: K => Boolean): MMap[K, V] = map.retain((k, v) => f(k))
   def retainValues(f: V => Boolean): MMap[K, V] = map.retain((k, v) => f(v))
+  def getOrThrow(key: K, msg: String) = map.getOrElse(key, throw new Exception(msg))
 }
 
 class RichNestedMap[K1, K2, V](nested: NestedMap[K1, K2, V]) extends RichMap[K1, Map[K2, V]](nested) {
