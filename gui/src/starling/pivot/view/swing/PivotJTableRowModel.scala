@@ -236,6 +236,7 @@ class PivotJTableRowModel(helper: PivotJTableModelHelper, var rowHeaderData0:Arr
   def acceptableValues(r:Int, c:Int) = {
     val rowHeaderField = rowHeaderData0(0)(c).value.field
     val parser = editableInfo.get.fieldToParser(rowHeaderField)
+//    val filteredValues = fieldState.fieldSelection(rowHeaderField)
     parser.acceptableValues
   }
 

@@ -63,10 +63,12 @@ class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSiz
   private val model = new starling.pivot.model.PivotTableModel(data)
   private var reverseToolBarState:()=>Unit = null
 
-  private val fieldListComponent = new FieldListComponent(model, otherLayoutInfo, viewUI, this, data.pivotTable.editableInfo)
-  private val columnAndMeasureComponent = new ColumnAndMeasureComponent(model, otherLayoutInfo, viewUI, this, data.pivotTable.editableInfo)
-  private val filterComponent = new FilterComponent(model, otherLayoutInfo, viewUI, this, data.pivotTable.editableInfo)
-  private val rowComponent = new RowComponent(model, otherLayoutInfo, viewUI, this, data.pivotTable.editableInfo)
+  var currentExtraFormatInfo = extraFormatInfo
+
+  private val fieldListComponent = new FieldListComponent(model, otherLayoutInfo, viewUI, this, data.pivotTable)
+  private val columnAndMeasureComponent = new ColumnAndMeasureComponent(model, otherLayoutInfo, viewUI, this, data.pivotTable)
+  private val filterComponent = new FilterComponent(model, otherLayoutInfo, viewUI, this, data.pivotTable)
+  private val rowComponent = new RowComponent(model, otherLayoutInfo, viewUI, this, data.pivotTable)
 
   private val allDropTargets = List(fieldListComponent, columnAndMeasureComponent, filterComponent, rowComponent)
 
@@ -535,6 +537,8 @@ class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSiz
     data.pivotFieldsState, extraFormatInfo, edits, (edits0, tableType) => updatePivotEdits(edits0, tableType), data.pivotTable.fieldInfo)
 
   def extraFormatInfoUpdated(extraFormatInfo:ExtraFormatInfo) {
+    currentExtraFormatInfo = extraFormatInfo
+    allDropTargets.foreach(_.extraFormatInfoUpdated())
     val newConverter = viewConverter.copy(extraFormatInfo = extraFormatInfo)
     val (newRowData,newColumnData,newMainTableCells,_,_,_,_) = newConverter.allTableCellsAndUOMs
     tableModelsHelper.setData(newRowData, newColumnData, newMainTableCells, extraFormatInfo)

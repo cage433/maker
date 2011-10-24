@@ -194,6 +194,7 @@ object TreePivotFormatter extends PivotFormatter {
         }
         new TableCell(s, s.size + " values", longText = Some(longText))
       }
+      case s:String => new TableCell(s, s)
     }
   }
 }

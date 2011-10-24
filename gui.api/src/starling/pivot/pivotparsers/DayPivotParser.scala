@@ -21,8 +21,8 @@ object PeriodPivotParser extends PivotParser {
 
 class SpecifiedValuesParser(allAcceptableValues:Set[String]) extends PivotParser {
   def parse(text:String, extraFormatInfo:ExtraFormatInfo) = {
-    val lowerCaseMarkets = allAcceptableValues.map(_.trim.toLowerCase)
-    if (lowerCaseMarkets(text.trim.toLowerCase)) {
+    val lowerCaseValues = allAcceptableValues.map(_.trim.toLowerCase)
+    if (lowerCaseValues(text.trim.toLowerCase)) {
       (text, text)
     } else {
       throw new Exception("Unknown value")

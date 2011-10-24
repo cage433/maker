@@ -8,13 +8,12 @@ import collection.immutable.List._
 import java.lang.Boolean
 
 case class TreePivotFilter(root:TreePivotFilterNode)
-case class TreePivotFilterNode(value:Any, label:String, children:List[TreePivotFilterNode]) {
-  def this(value:Any) = this(value, value.toString, List())
-  def this(value:Any, children:List[TreePivotFilterNode]) = this(value, value.toString, children)
+case class TreePivotFilterNode(value:Any, children:List[TreePivotFilterNode]) {
+  def this(value:Any) = this(value, List())
 }
 
 object TreePivotFilterNode {
-  def mergeForests(forest: List[TreePivotFilterNode]) = mergeForestsBy(forest, _.label)
+  def mergeForests(forest: List[TreePivotFilterNode]) = mergeForestsBy(forest, _.value.asInstanceOf[PivotTreePath].lastElement)
   def mergeForestsValues(forest: List[TreePivotFilterNode]) = mergeForestsBy(forest, _.value)
 
   private def mergeForestsBy[A](forest: List[TreePivotFilterNode], prop: TreePivotFilterNode => A): List[TreePivotFilterNode] = {

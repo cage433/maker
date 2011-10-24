@@ -21,12 +21,9 @@ object TreePanel {
   val CheckBoxWidth = new CheckBox("") {
     border = CheckBoxBorder
   }.preferredSize.width
-
-  def apply(initialValuesAndSelection:(TreePivotFilter, Selection),
-                     showOther:Boolean=false, transforms:Option[FilterWithOtherTransform]=None) = new TreePanel(initialValuesAndSelection, showOther, transforms)
 }
 
-class TreePanel(initialValuesAndSelection:(TreePivotFilter, Selection),
+class TreePanel(initialValuesAndSelection:(TreePivotFilter, Selection), valueToLabel:Any => String,
                      showOther:Boolean=false, transforms:Option[FilterWithOtherTransform]=None)
         extends MigPanel("insets 0", "[fill]", "[p]2lp[fill]2lp[p]") {
   val filterPanel = new TreePanelFilterPanel
@@ -130,7 +127,7 @@ class TreePanel(initialValuesAndSelection:(TreePivotFilter, Selection),
   }
   listenTo(filterPanel, buttonPanel, treeComponent.keys, treeComponent.mouse.clicks, treeComponent.mouse.moves)
 
-  val filterHelper = FilterHelper(treeComponent, showOther)
+  val filterHelper = FilterHelper(treeComponent, showOther, valueToLabel)
   filterHelper.resetPopup(initialValuesAndSelection, transforms)
   makeTreeValid(selectedNodes)
 
@@ -430,7 +427,7 @@ class TreePanel(initialValuesAndSelection:(TreePivotFilter, Selection),
   }
 }
 
-case class FilterHelper(tree:Tree, showOther:Boolean) {
+case class FilterHelper(tree:Tree, showOther:Boolean, valueToLabel:Any => String) {
   val valueToLabelMap = new HashMap[Any, String]
   private var otherValueElement:Option[CheckBoxListElement] = None
 
@@ -467,7 +464,7 @@ case class FilterHelper(tree:Tree, showOther:Boolean) {
                                                       transforms:Option[FilterWithOtherTransform]) = {
     def getDefaultMutableTreeNodeFromTreePivotFilterNode(treePivotFilterNode:TreePivotFilterNode) = {
       val value = treePivotFilterNode.value
-      val label = treePivotFilterNode.label
+      val label = valueToLabel(value)
       valueToLabelMap(value) = label
 
       val selected = transforms match {

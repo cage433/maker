@@ -28,7 +28,8 @@ case class GuiFieldComponentProps(field:Field, locationOfField:FieldChooserType,
                                   onMeasureChange:(Field, FieldChooserType) => Unit,
                                   filterData:FilterData, transformData:TransformData,
                                   otherLayoutInfo:OtherLayoutInfo, onSubTotalToggle:(Field, FieldChooserType) => Unit,
-                                  showSubTotalToggle:Boolean, viewUI:PivotTableViewUI, tableView:PivotTableView, editableInfo:Option[EditableInfo]) {
+                                  showSubTotalToggle:Boolean, viewUI:PivotTableViewUI, tableView:PivotTableView,
+                                  editableInfo:Option[EditableInfo], formatter:PivotFormatter) {
   val react = (otherLayoutInfo.hiddenType != AllHidden)
 }
 
@@ -84,15 +85,20 @@ class GuiFieldComponent(val props:GuiFieldComponentProps) extends MigPanel("inse
   val filterLabelPanel = new FilterLabelPanel(props)
   val filterButtonPanel = FilterButtonPanel(props)
 
+  private val hackyPublisher = new Publisher {}
+  case object ExtraFormatInfoUpdatedEvent extends Event
+  def extraFormatInfoUpdated() {hackyPublisher.publish(ExtraFormatInfoUpdatedEvent)}
+
   // Only need the filter if we are not a measure field. It is quite an expensive operation.
   if (!props.measureField) {
     def getPossibleValuesAndSelection = props.filterData.possibleValuesAndSelection match {
-      case None => (TreePivotFilter(TreePivotFilterNode("All", "All", List())), AllSelection)
+      case None => (TreePivotFilter(TreePivotFilterNode("All", Nil)), AllSelection)
       case Some(d) => d
     }
     val possibleValuesAndSelectionToUse = getPossibleValuesAndSelection
     val transformData = props.transformData
-    val filterPopupPanel = new TreePanel(possibleValuesAndSelectionToUse, transformData.showOther, transformData.transforms)
+    def valueToLabel(v:Any):String = props.formatter.format(v, props.tableView.currentExtraFormatInfo).text
+    val filterPopupPanel = new TreePanel(possibleValuesAndSelectionToUse, valueToLabel, transformData.showOther, transformData.transforms)
 
     val popupMenu = new JPopupMenu {
       add(filterPopupPanel.peer)
@@ -108,18 +114,21 @@ class GuiFieldComponent(val props:GuiFieldComponentProps) extends MigPanel("inse
     }
     popupMenu.setBorder(CompoundBorder(LineBorder(GuiUtils.BorderColour), LineBorder(GuiUtils.PanelBackgroundColour, 2)))
 
-    val (values, selection) = possibleValuesAndSelectionToUse
-    val (textToUse, numberTextToUse) = selection match {
-      case AllSelection => {(filterPopupPanel.treeComponent.rootNode.getUserObject.asInstanceOf[CheckBoxListElement].label,"")}
-      case SomeSelection(selectedValues) if selectedValues.isEmpty => {(TreePanelComboBox.NONE.toString, "0")}
-      case SomeSelection(selectedValues) => {
-        // Need to use the label
-        (selectedValues.toList.map(v => {
-          val s = filterPopupPanel.filterHelper.valueToLabelMap.getOrElse(v, "Unknown:" + v)
-          if (s.length == 0) " " else s
-        }).mkString(","), selectedValues.size.toString)
+    val (_, selection) = possibleValuesAndSelectionToUse
+    def textAndNumber:(String,String) = {
+      selection match {
+        case AllSelection => {(filterPopupPanel.treeComponent.rootNode.getUserObject.asInstanceOf[CheckBoxListElement].label,"")}
+        case SomeSelection(selectedValues) if selectedValues.isEmpty => {(TreePanelComboBox.NONE.toString, "0")}
+        case SomeSelection(selectedValues) => {
+          // Need to use the label
+          (selectedValues.toList.map(v => {
+            val s = filterPopupPanel.filterHelper.valueToLabelMap.getOrElse(v, "Unknown:" + v)
+            if (s.length == 0) " " else s
+          }).mkString(","), selectedValues.size.toString)
+        }
       }
     }
+    val (textToUse, numberTextToUse) = textAndNumber
     filterLabelPanel.label.text = textToUse
     filterButtonPanel.numberText = numberTextToUse
 
@@ -147,8 +156,15 @@ class GuiFieldComponent(val props:GuiFieldComponentProps) extends MigPanel("inse
         }
       }
       case CancelEvent(`filterPopupPanel`) => popupMenu.setVisible(false)
+      case ExtraFormatInfoUpdatedEvent => {
+        filterPopupPanel.filterHelper.resetPopup(getPossibleValuesAndSelection, props.transformData.transforms)
+        if (filterLabelPanel.visible) {
+          val (textToUse, _) = textAndNumber
+          filterLabelPanel.label.text = textToUse
+        }
+      }
     }
-    listenTo(filterButtonPanel, filterPopupPanel)
+    listenTo(filterButtonPanel, filterPopupPanel, hackyPublisher)
   }
 
   // If the tree level panel is available, we want to grow this so the buttons are on the left rather than growing the name panel and putting the

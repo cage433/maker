@@ -14,8 +14,8 @@ class PivotTreePathTest extends TestNG with ShouldMatchers {
     val xyzTree = xyz.toTree
 
     abcTree should be ===
-      TreePivotFilterNode(null, "a",
-        List(TreePivotFilterNode(null, "b",
-          List(TreePivotFilterNode(null, "c", Nil)))))
+      TreePivotFilterNode("a",
+        List(TreePivotFilterNode("b",
+          List(TreePivotFilterNode("c", Nil)))))
   }
 }

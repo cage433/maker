@@ -2,6 +2,7 @@ package starling.pivot.view.swing
 
 import fieldchoosers.{EmptyDropLabel, DropPanel, DropTarget}
 import starling.pivot._
+import controller.PivotTable
 import model.{EditableInfo, PivotTableModel}
 import starling.pivot.FieldChooserType._
 import collection.mutable.ListBuffer
@@ -160,9 +161,10 @@ class ColumnStructureComponent(columnStructure:ColumnTrees, guiFieldsMap:Map[Fie
 }
 
 class ColumnAndMeasureComponent(model:PivotTableModel, otherLayoutInfo:OtherLayoutInfo,
-                        viewUI:PivotTableViewUI, tableView:PivotTableView, editableInfo:Option[EditableInfo]) extends MigPanel("insets 0") with DropTarget {
+                        viewUI:PivotTableViewUI, tableView:PivotTableView, pivotTable:PivotTable) extends MigPanel("insets 0") with DropTarget {
   opaque = false
   private val cs = model.columns
+  private val editableInfo:Option[EditableInfo] = pivotTable.editableInfo
   
   private def switchMeasureField(field:Field, from:FieldChooserType) {
     val newCS = model.columns.flipIsData(field)
@@ -206,7 +208,8 @@ class ColumnAndMeasureComponent(model:PivotTableModel, otherLayoutInfo:OtherLayo
       currentlyActingAsMeasure, realMeasureField,
       model.treeDetails, (_field,depth) => {model.setDepth(_field,depth)},
       (_field, from) => switchMeasureField(_field, from), filterData, transformData, otherLayoutInfo,
-      (_field, from) => subTotalSubTotalToggle(_field, from), subTotalToggleVisible, viewUI, tableView, editableInfo)
+      (_field, from) => subTotalSubTotalToggle(_field, from), subTotalToggleVisible, viewUI, tableView, editableInfo,
+      pivotTable.fieldInfo.fieldToFormatter.getOrElse(field, DefaultPivotFormatter))
     (field -> new GuiFieldComponent(props))
   })
 
@@ -319,6 +322,7 @@ class ColumnAndMeasureComponent(model:PivotTableModel, otherLayoutInfo:OtherLayo
       dropPanels(2).forceTintedPaint()
     }
   }
+  def extraFormatInfoUpdated() {guiFieldsMap.values.foreach(_.extraFormatInfoUpdated())}
 }
 
 case class SubTotalToggled(field:Field, location:FieldChooserType) extends Event

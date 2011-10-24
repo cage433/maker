@@ -3,12 +3,13 @@ package starling.pivot.view.swing.fieldchoosers
 import starling.pivot.view.swing._
 import starling.gui.StarlingIcons
 import starling.browser.common.GuiUtils._
-import starling.pivot.{Field, OtherLayoutInfo}
 import starling.pivot.FieldChooserType._
 import swing.event.{Event, MouseClicked}
 import java.awt.{Dimension, Rectangle}
 import starling.pivot.model.{EditableInfo, PivotTableModel}
 import starling.browser.common.{ImageButton, MigPanel}
+import starling.pivot.controller.PivotTable
+import starling.pivot.{DefaultPivotFormatter, PivotFormatter, Field, OtherLayoutInfo}
 
 class FieldGroupSeparator(group:String, collapsed:Boolean, onCollapseOrExpand:(String,Boolean)=>Unit) extends MigPanel("insets 2lp 2lp 3lp 0", "[p]0[p]") {
   private val expandButton = new ImageButton(StarlingIcons.im("/icons/scroll_down.png"), {onCollapseOrExpand(group, true)})
@@ -23,9 +24,11 @@ class FieldGroupSeparator(group:String, collapsed:Boolean, onCollapseOrExpand:(S
 }
 
 class FieldListComponent(model:PivotTableModel, otherLayoutInfo:OtherLayoutInfo,
-                         viewUI:PivotTableViewUI, mainComponent:PivotTableView, editableInfo:Option[EditableInfo])
+                         viewUI:PivotTableViewUI, mainComponent:PivotTableView, pivotTable:PivotTable)
         extends MigPanel("insets 1, wrap 1, gap 0px", "fill, grow") with DropTarget {
   opaque = false
+
+  private val editableInfo:Option[EditableInfo] = pivotTable.editableInfo
   
   private val fields = model.getFields(FieldList)
 
@@ -42,7 +45,8 @@ class FieldListComponent(model:PivotTableModel, otherLayoutInfo:OtherLayoutInfo,
       currentlyActingAsMeasure, realMeasureField, treeDetails,
       (_field,depth) => {model.setDepth(_field,depth)},
       (_field, from) => (), filterData, transformData, otherLayoutInfo,
-      (_field, from) => (), subTotalToggleVisible, viewUI, mainComponent, editableInfo)
+      (_field, from) => (), subTotalToggleVisible, viewUI, mainComponent, editableInfo,
+      pivotTable.fieldInfo.fieldToFormatter.getOrElse(field, DefaultPivotFormatter))
     (field -> new GuiFieldNamePanel(props))
   })
 
@@ -101,6 +105,7 @@ class FieldListComponent(model:PivotTableModel, otherLayoutInfo:OtherLayoutInfo,
   def show(draggedField:Field) {}
   def hide() {}
   def reset() {guiFieldsMap.values.foreach(_.reset())}
+  def extraFormatInfoUpdated() {}
 }
 
 class SpacerPanel(constraints:String) extends MigPanel(constraints) {

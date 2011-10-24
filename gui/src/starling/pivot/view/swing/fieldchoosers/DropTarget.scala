@@ -11,4 +11,5 @@ trait DropTarget {
   def show(draggedField:Field)
   def hide()
   def reset()
+  def extraFormatInfoUpdated()
 }

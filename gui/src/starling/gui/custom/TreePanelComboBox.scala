@@ -19,7 +19,8 @@ object TreePanelComboBox {
   }
 }
 
-class TreePanelComboBox(initialValuesAndSelection:(TreePivotFilter, Selection)) extends MigPanel("insets 0", "[p]0[p]") {
+class TreePanelComboBox(initialValuesAndSelection:(TreePivotFilter, Selection), valueToLabel:Any => String)
+        extends MigPanel("insets 0", "[p]0[p]") {
   opaque = false
   background = ClearColour
 
@@ -34,7 +35,7 @@ class TreePanelComboBox(initialValuesAndSelection:(TreePivotFilter, Selection)) 
     button.numberText = numberTextToUse
   }
   
-  val treePanel = new TreePanel(currentValuesAndSelection)
+  val treePanel = new TreePanel(currentValuesAndSelection, valueToLabel)
   val popup = new JPopupMenu {
     add(treePanel.peer)
     addPopupMenuListener(new PopupMenuListener {

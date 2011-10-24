@@ -397,6 +397,10 @@ object PivotTableModel {
                   !rowAreaFiltersPresent
         }}
 
+        /*val extraLine = editPivot.editableToKeyFields.exists{case (editableField,kFields) => {
+          pivotState.columns.contains(editableField) && keyFieldsInColumnArea(kFields.toSet, pivotState).isEmpty
+        }}*/
+
         val allEditableMeasures = editPivot.editableToKeyFields.keySet
 
         val blankEditable = keyFields.forall(f => {
@@ -681,7 +685,7 @@ object PivotTableModel {
                   throw e
               }
             }
-            field -> TreePivotFilter(TreePivotFilterNode("All", "All", values.map(v => TreePivotFilterNode(v, v.toString, List()))))
+            field -> TreePivotFilter(TreePivotFilterNode("All", values.map(v => TreePivotFilterNode(v, Nil))))
           }
         }
       }
@@ -746,7 +750,7 @@ object PivotTableModel {
     val merged = TreePivotFilterNode.mergeForests(sortedPaths.map(_.toTree))
 
     merged.size match {
-      case 0 => TreePivotFilter(TreePivotFilterNode("None", "None", List()))
+      case 0 => TreePivotFilter(TreePivotFilterNode("None", Nil))
       case 1 => TreePivotFilter(merged.head.copy(children = merged))
       case _ => throw new Exception("Expect all paths to have a common root node: " + sortedPaths.map(_.path.head))
     }

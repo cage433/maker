@@ -3,13 +3,14 @@ package starling.pivot.view.swing.fieldchoosers
 import starling.pivot.FieldChooserType.Filter
 import starling.pivot.view.swing._
 import swing.Label
-import starling.pivot.{Position, Field, OtherLayoutInfo}
 import collection.mutable.ListBuffer
 import java.awt.{Point, Dimension, Color, Rectangle, Graphics2D, RenderingHints}
 import swing.event.{MouseExited, MouseEntered}
 import swing.Swing._
 import starling.pivot.model.{EditableInfo, PivotTableModel}
 import starling.browser.common.{RoundedBorder, MigPanel, GuiUtils}
+import starling.pivot.controller.PivotTable
+import starling.pivot.{DefaultPivotFormatter, Position, Field, OtherLayoutInfo}
 
 object DropPanel {
   val NormalBorder = RoundedBorder(Color.LIGHT_GRAY)
@@ -131,11 +132,12 @@ class EmptyDropLabel(text0:String, view:PivotTableView) extends Label(text0) {
 }
 
 class FilterComponent(model:PivotTableModel, otherLayoutInfo:OtherLayoutInfo,
-                         viewUI:PivotTableViewUI, tableView:PivotTableView, editableInfo:Option[EditableInfo])
+                         viewUI:PivotTableViewUI, tableView:PivotTableView, pivotTable:PivotTable)
         extends MigPanel("insets 1, gap 0px") with DropTarget {
   opaque = false
   border = MatteBorder(0,0,1,0,GuiUtils.BorderColour)
 
+  private val editableInfo:Option[EditableInfo] = pivotTable.editableInfo
   private val fields = model.getFields(Filter)
 
   private val guiFieldsMap = Map() ++ fields.fields.map(field => {
@@ -150,7 +152,7 @@ class FilterComponent(model:PivotTableModel, otherLayoutInfo:OtherLayoutInfo,
       currentlyActingAsMeasure, realMeasureField,
       model.treeDetails, (_field,depth) => {model.setDepth(_field,depth)},
       (_field, from) => (), filterData, transformData, otherLayoutInfo,
-      (_field, from) => (), subTotalToggleVisible, viewUI, tableView, editableInfo)
+      (_field, from) => (), subTotalToggleVisible, viewUI, tableView, editableInfo, pivotTable.fieldInfo.fieldToFormatter.getOrElse(field, DefaultPivotFormatter))
     (field -> new GuiFieldComponent(props))
   })
 
@@ -232,5 +234,9 @@ class FilterComponent(model:PivotTableModel, otherLayoutInfo:OtherLayoutInfo,
         case Position.Right => fieldPos + 1
       }
     }
+  }
+  def extraFormatInfoUpdated() {
+    guiFieldsMap.values.foreach(_.extraFormatInfoUpdated())
+
   }
 }

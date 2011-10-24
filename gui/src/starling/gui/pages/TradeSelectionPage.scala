@@ -149,7 +149,8 @@ case class TradeSelectionPage(
         }
       }
 
-      val intradayTradesCombo = new TreePanelComboBox(generateIntradayTradesSelection) {
+      def valueToLabel(v:Any):String = v.asInstanceOf[String].split("/").last
+      val intradayTradesCombo = new TreePanelComboBox(generateIntradayTradesSelection, valueToLabel) {
         def selectedSubgroups = {
           val vAndS = valuesAndSelection
           vAndS._2 match {

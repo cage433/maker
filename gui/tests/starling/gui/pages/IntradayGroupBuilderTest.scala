@@ -9,18 +9,18 @@ class IntradayGroupBuilderTest {
   def subgroupsToPathsTest() {
     val paths = List("one/two/three", "one/two/four", "two/three")
     val expected = List(
-      TreePivotFilterNode("one", "one", List(
-        TreePivotFilterNode("one/two", "two", List(
-          TreePivotFilterNode("one/two/three", "three", List())
+      TreePivotFilterNode("one", List(
+        TreePivotFilterNode("one/two", List(
+          TreePivotFilterNode("one/two/three", List())
         ))
       )),
-      TreePivotFilterNode("one", "one", List(
-        TreePivotFilterNode("one/two", "two", List(
-          TreePivotFilterNode("one/two/four", "four", List())
+      TreePivotFilterNode("one", List(
+        TreePivotFilterNode("one/two", List(
+          TreePivotFilterNode("one/two/four", List())
         ))
       )),
-      TreePivotFilterNode("two", "two", List(
-        TreePivotFilterNode("two/three", "three", List())
+      TreePivotFilterNode("two", List(
+        TreePivotFilterNode("two/three", List())
       ))
     )
 
