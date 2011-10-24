@@ -12,7 +12,9 @@ trait ReferenceDataLookup {
   def countryFor(code: NeptuneCountryCode): NeptuneCountry
   def incotermFor(code: IncotermCode): Incoterm
   def marketFor(commodity : NeptuneCommodity, countryCode : NeptuneCountryCode) : FuturesMarket = {
-    areaFor(countryCode).map{area => marketFor(commodity, area.code)}.getOrElse(Commodity.standardFuturesMarket(commodity))
+    areaFor(countryCode).map{area => marketFor(commodity, area.code)}.getOrElse{
+      throw new Exception("Don't know what futures market to use for " + commodity + ", " + countryCode)
+    }
   }
   def marketFor(commodity : NeptuneCommodity, areaCode : AreaCode) : FuturesMarket = {
     NeptunePricingExchange.fromArea(areaCode).flatMap(_.marketFor(commodity)).getOrElse(Commodity.standardFuturesMarket(commodity))

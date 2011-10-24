@@ -50,7 +50,7 @@ object NeptunePricingExchange{
   def fromArea(area : AreaCode) : Option[NeptunePricingExchange] = {
     import AreaCode._ 
 
-    area.code partialMatch {
+    area partialMatch {
       case `EUR` => FuturesExchangeFactory.LME
       case `ASI` | `CHN` => FuturesExchangeFactory.SFS
       case `SAM` | `NAM` => FuturesExchangeFactory.COMEX

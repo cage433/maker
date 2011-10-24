@@ -86,7 +86,7 @@ class TitanTradeStore(db: RichDB, broadcaster:Broadcaster, tradeSystem:TradeSyst
 
   def getTradesForTitanTradeID(titanTradeID : String) : List[Trade] = {
     readLatestVersionOfAllTrades().flatMap{
-      case (_, TradeRow(_, _, trade)) if trade.titanTradeID == titanTradeID => Some(trade)
+      case (_, TradeRow(_, _, trade)) if trade.titanTradeID == Some(titanTradeID) => Some(trade)
       case _ => None
     }.toList
   }
