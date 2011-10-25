@@ -38,7 +38,7 @@ import starling.rmi.RabbitEventDatabase
 
 //import com.trafigura.services.marketdata.MarketDataServiceApi
 import starling.tradestore.TradeStore
-import com.trafigura.edm.logistics.inventory.{EDMAssignmentItem, EDMInventoryItem}
+import com.trafigura.edm.logistics.inventory.{AssignmentItem, InventoryItem}
 import starling.daterange.{Timestamp, Day}
 import starling.instrument.Trade
 
@@ -123,10 +123,10 @@ trait TitanLogisticsInventoryCache {
     val inventory = getInventory(id)
     inventory.purchaseAssignment :: Option(inventory.salesAssignment).toList
   }
-  protected var inventoryMap: Map[String, EDMInventoryItem]
+  protected var inventoryMap: Map[String, InventoryItem]
   protected var assignmentIDtoInventoryIDMap : Map[String, String]
-  def getInventory(id: String): EDMInventoryItem
-  def getAllInventory(): List[EDMInventoryItem]
+  def getInventory(id: String): InventoryItem
+  def getAllInventory(): List[InventoryItem]
   def removeInventory(id : String) {
     inventoryMap = inventoryMap - id
     assignmentIDtoInventoryIDMap.filter{ case (_, value) => value != id}
@@ -149,7 +149,7 @@ trait TitanLogisticsInventoryCache {
 
 
 case class DefaultTitanLogisticsInventoryCache(props : Props) extends TitanLogisticsInventoryCache {
-  protected var inventoryMap : Map[String, EDMInventoryItem] = Map[String, EDMInventoryItem]()
+  protected var inventoryMap : Map[String, InventoryItem] = Map[String, InventoryItem]()
   protected var assignmentIDtoInventoryIDMap : Map[String, String] = Map[String, String]()
 
   private val titanLogisticsServices = DefaultTitanLogisticsServices(props)
@@ -172,7 +172,7 @@ case class DefaultTitanLogisticsInventoryCache(props : Props) extends TitanLogis
     inventoryMap.keySet.foreach(addInventoryAssignments)
   }
 
-  def getAllInventory() : List[EDMInventoryItem] = {
+  def getAllInventory() : List[InventoryItem] = {
     if (inventoryMap.size > 0) {
       inventoryMap.values.toList
     }
@@ -182,7 +182,7 @@ case class DefaultTitanLogisticsInventoryCache(props : Props) extends TitanLogis
     }
   }
 
-  def getInventory(id: String) : EDMInventoryItem = {
+  def getInventory(id: String) : InventoryItem = {
     if (inventoryMap.contains(id)) {
       inventoryMap(id)
     }
@@ -206,7 +206,7 @@ case class DefaultTitanLogisticsInventoryCache(props : Props) extends TitanLogis
 }
 
 case class TitanLogisticsServiceBasedInventoryCache(titanLogisticsServices : TitanLogisticsServices) extends TitanLogisticsInventoryCache {
-  protected var inventoryMap: Map[String, EDMInventoryItem] = Map[String, EDMInventoryItem]()
+  protected var inventoryMap: Map[String, InventoryItem] = Map[String, InventoryItem]()
   protected var assignmentIDtoInventoryIDMap : Map[String, String] = Map[String, String]()
 
   // Read from Titan and blast our cache
@@ -216,7 +216,7 @@ case class TitanLogisticsServiceBasedInventoryCache(titanLogisticsServices : Tit
     inventoryMap = edmInventoryResult.map(i => (i.oid.contents.toString, i)).toMap
   }
 
-  def getAllInventory() : List[EDMInventoryItem] = {
+  def getAllInventory() : List[InventoryItem] = {
     if (inventoryMap.size > 0) {
       inventoryMap.values.toList
     }
@@ -226,7 +226,7 @@ case class TitanLogisticsServiceBasedInventoryCache(titanLogisticsServices : Tit
     }
   }
 
-  def getInventory(id: String) : EDMInventoryItem = {
+  def getInventory(id: String) : InventoryItem = {
     if (inventoryMap.contains(id)) {
       inventoryMap(id)
     }

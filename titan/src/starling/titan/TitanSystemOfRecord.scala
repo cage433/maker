@@ -93,9 +93,9 @@ class TradeConverter(refData : TitanTacticalRefData,
                      quotaNameToQuotaMap : Map[String, PhysicalTradeQuota]) {
 
   /**
-   * convert EDMAssignmentItem to a Starling Trade
+   * convert Assignment to a Starling Trade
    */
-  implicit def toTrade(edmAssignment : EDMAssignment) : Trade = {
+  implicit def toTrade(edmAssignment : Assignment) : Trade = {
 
     val quotaDetail = quotaNameToQuotaMap(edmAssignment.quotaName).detail
     require(quotaDetail.deliverySpecs.size == 1, "Require exactly one delivery spec")
@@ -240,7 +240,7 @@ case class TitanTradeAttributes(
 }
 
 object TitanTradeAttributes{
-  def errorAttributes(edmAssignment : EDMAssignment, edmTrade : Option[EDMPhysicalTrade]) = {
+  def errorAttributes(edmAssignment : Assignment, edmTrade : Option[EDMPhysicalTrade]) = {
     val dummyDate = Day(1980, 1, 1)
     val titanTradeID = edmTrade match {
       case Some(trade) => trade.titanId.value
@@ -273,9 +273,9 @@ object TitanTradeAttributes{
  * logistics service interface
  */
 object LogisticsServices {
-  type EdmAssignmentServiceWithGetAllAssignments = EdmAssignmentService with Object { def getAllAssignments() : List[EDMAssignment] }
+  type EdmAssignmentServiceWithGetAllAssignments = EdmAssignmentService with Object { def getAllAssignments() : List[Assignment] }
   type EdmInventoryServiceWithGetAllInventory = EdmInventoryService with Object {
-    def getAllInventoryLeaves() : List[EDMInventoryItem]
+    def getAllInventoryLeaves() : List[InventoryItem]
     def getAllInventory() : LogisticsInventoryResponse
   }
 }
