@@ -8,6 +8,7 @@ import scalaz._
 import Scalaz._
 import starling.daterange.{Timestamp, Day}
 import starling.gui.api._
+import starling.databases.{PricingGroupMarketDataEventSource, MarketDataChange, DataFlowDataProvider}
 
 class PricingGroupMarketDataEventSourceTests extends WordSpec with ShouldMatchers { test =>
   "PriceFixingDataFlow" should {
@@ -64,7 +65,7 @@ class PricingGroupMarketDataEventSourceTests extends WordSpec with ShouldMatcher
         Some(TestMarketDataEvent(marketTypes, change.observationDay, snapshot, change.isCorrection))
       }
 
-      def events() = changesFor(lastVersion, currentVersion, observationDays).flatMap(_.marketDataEvent(newSnapshot))
+      def events() = changesFor(lastVersion, currentVersion, observationDays).flatMap(_.eventFor(newSnapshot))
 
       def receivingNoData() = receivingChangingData(Map.empty, Map.empty)
       def receivingUnchangingData(data: Map[Key, Value]) = receivingChangingData(data, data)

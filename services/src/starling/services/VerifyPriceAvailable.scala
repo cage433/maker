@@ -5,6 +5,8 @@ import starling.utils.{Log, Broadcaster}
 import starling.gui.api.EmailEvent
 
 import starling.utils.ImplicitConversions._
+import starling.scheduler.{ScheduledTaskAttribute, EmailingScheduledTask}
+import starling.databases.MarketDataEventSource
 
 
 case class VerifyPriceAvailable(marketDataAvailability: MarketDataAvailabilityChecker, broadcaster: Broadcaster,

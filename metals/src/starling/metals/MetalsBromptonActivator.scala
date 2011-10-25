@@ -2,11 +2,9 @@ package starling.metals
 
 import swing.event.Event
 
-import starling.calendar.BusinessCalendars
 import starling.curves._
 import starling.databases.utils.{RabbitMessageSender, RabbitBroadcaster}
 import starling.daterange.TimeOfDay
-import starling.db.{DB, TitanTradeSystem, MarketDataStore}
 import starling.manager._
 import starling.marketdata.{MarketDataTypes, ReferenceDataLookup}
 import starling.services._
@@ -19,14 +17,17 @@ import starling.titan.{TitanTradeStoreManager, TitanSystemOfRecord, TitanTradeSt
 import starling.tradestore.TradeStores
 import starling.utils._
 import starling.utils.ImplicitConversions._
-import starling.services.ScheduledTime._
-import starling.rmi.FC2Service
+import starling.scheduler.ScheduledTime._
 import com.trafigura.services.trinity.TrinityService
 import com.trafigura.services.ResteasyServiceApi
 import starling.gui.api.{MarketDataSelection, PricingGroup}
+import org.joda.time.Period
+import starling.calendar.BusinessCalendars
+import starling.scheduler.{TaskDescription, Scheduler}
+import starling.db.{DB, TitanTradeSystem, MarketDataStore}
 
 
-class MetalsBromptonActivator extends BromptonActivator with Log {
+class MetalsBromptonActivator extends BromptonActivator with Log with scalaz.Identitys {
 
   def start(context: BromptonContext) {
 
@@ -193,43 +194,17 @@ class MetalsBromptonActivator extends BromptonActivator with Log {
     TaskDescription("Copy Freight Parity & Benchmarks", hourly(businessCalendars.weekDay()), CopyManualData(marketDataStore))
 
   private def registerDataValidationTasks(context: BromptonContext, broadcaster: Broadcaster) {
-    import PricingGroup._
-    import starling.market.FuturesExchangeFactory._
-    val props = context.awaitService(classOf[starling.props.Props])
     val marketDataStore = context.awaitService(classOf[MarketDataStore])
 
-    val limFlows@List(lmeMetals, sfsMetals, comexMetals): List[DataFlow with MarketDataEventSource] = List(LME, SFS, COMEX)
-      .map(new DataFlow(_, Metals, Nil, props.MetalsEmailAddress(), props.LimEmailAddress(), "LIM") with NullMarketDataEventSource)
+    val marketDataSources = marketDataStore.sourcesFor(PricingGroup.Metals)
 
-    val balticMetals = new DataFlow(BALTIC, Metals, List("Panamax T/C Average (Baltic)"), props.MetalsEmailAddress(), props.WuXiEmailAddress(), "Excel") with NullMarketDataEventSource
-    val exbxgMetals = new DataFlow(EXBXG, Metals, Nil, props.MetalsEmailAddress(), props.WuXiEmailAddress(), "Excel") with NullMarketDataEventSource
-    val spotfx = SpotFXDataEventSource(Metals, SpotFXDataProvider(marketDataStore))
-    val libor = new PriceFixingDataEventSource(Metals, ReferenceInterestDataProvider(marketDataStore))
+    val marketDataAvailabilityBroadcaster = new MarketDataAvailabilityBroadcaster(marketDataStore, broadcaster,
+      marketDataSources.flatMap(_.eventSources(marketDataStore)))
 
-    val availabilityBroadcaster = new MarketDataAvailabilityBroadcaster(marketDataStore, broadcaster,
-      exbxgMetals :: spotfx :: libor :: limFlows)
+    marketDataSources.flatMap(_.availabilityTasks(marketDataStore)).map(_.offset(Period.minutes(30)))
+      .foreach(context.registerService(classOf[TaskDescription], _))
 
-    context.registerService(classOf[Receiver], availabilityBroadcaster)
-
-    val fc2Service = context.awaitService(classOf[FC2Service])
-
-    implicit def enrichDataFlow(dataFlow: DataFlow with MarketDataEventSource) = new {
-      val verifyPricesAvailable = ("Verify %s available" % dataFlow.sink) → VerifyPriceAvailable(availabilityBroadcaster, broadcaster, dataFlow)
-      val verifyPricesValid = ("Verify %s valid" % dataFlow.sink) → VerifyPricesValid(fc2Service, broadcaster, dataFlow)
-    }
-
-    val verifyLiborMaturities = new VerifyLiborMaturitiesAvailable(marketDataStore, broadcaster, props.MetalsEmailAddress(),
-      props.LimEmailAddress()).withSource("LIM")
-
-    val businessCalendars = context.awaitService(classOf[BusinessCalendars])
-
-    (TaskDescription("Verify Libor maturities available", daily(businessCalendars.LME, 13 H 00), verifyLiborMaturities) ::-
-     tasks(daily(businessCalendars.LME, 18 H 30), balticMetals.verifyPricesAvailable) ::-
-     tasks(daily(businessCalendars.SFE, 16 H 30), exbxgMetals.verifyPricesAvailable, exbxgMetals.verifyPricesValid) ::-
-     tasks(daily(businessCalendars.LME, 23 H 30),
-       lmeMetals.verifyPricesAvailable, sfsMetals.verifyPricesAvailable, comexMetals.verifyPricesAvailable,
-       lmeMetals.verifyPricesValid, sfsMetals.verifyPricesValid, comexMetals.verifyPricesValid
-    )).foreach { task => context.registerService(classOf[TaskDescription], task) }
+    context.registerService(classOf[Receiver], marketDataAvailabilityBroadcaster)
   }
 
   private def registerTrinityTask(context: BromptonContext) {
@@ -251,7 +226,4 @@ class MetalsBromptonActivator extends BromptonActivator with Log {
     //val uploadLibor = SimpleScheduledTask(trinityUploader.uploadLibor).withSink("Trinity")
     //TaskDescription("Upload Libor to Trinity", daily(businessCalendars.LME, 23 H 45), uploadLibor)
   }
-
-  private def tasks(time: ScheduledTime, tasks: (String, ScheduledTask)*) =
-    tasks.toList.map(nameTask => TaskDescription(nameTask._1, time, nameTask._2))
 }

@@ -1,4 +1,4 @@
-package starling.services
+package starling.scheduler
 
 import java.util.{TimerTask, Timer}
 import org.joda.time._
@@ -11,6 +11,8 @@ import starling.utils.ImplicitConversions._
 
 
 case class ScheduledTime(description: String, time: DateTime, period: Period, cal: BusinessCalendar) {
+  def offset(period: Period) = copy(time = time.plus(period))
+
   private val periodInSeconds = period.toStandardSeconds.getSeconds.require(_ > 0, "Period cannot be 0")
   def schedule(task: TimerTask, timer: Timer) = timer.scheduleAtFixedRate(task, time.toDate, periodInSeconds * 1000)
   val prettyTime = time.toString(DateTimeFormat.forPattern("HH:mm"))

@@ -128,3 +128,7 @@ case class ReferenceInterestRateDataEvent(override val observationDay: Day, exch
                                           override val label: SnapshotIDLabel, isCorrection: Boolean)
   extends MarketDataEvent(observationDay, label, isCorrection)
 
+case class PriceDataEvent(override val observationDay: Day, market: String, periods: List[DateRange],
+                          override val label: SnapshotIDLabel, isCorrection: Boolean)
+  extends MarketDataEvent(observationDay, label, isCorrection)
+

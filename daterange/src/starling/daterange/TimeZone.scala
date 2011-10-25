@@ -15,7 +15,8 @@ object TimeZone {
 }
 
 case class TimeZone(name: String, id0: Option[String] = None) extends DateTimeZone(id0 | name) {
-  private val delegate = DateTimeZone.forID(this.getID)
+  val id = this.getID
+  private val delegate = DateTimeZone.forID(id)
 
   def getNameKey(instant: Long) = delegate.getNameKey(instant)
   def getOffset(instant: Long) = delegate.getOffset(instant)

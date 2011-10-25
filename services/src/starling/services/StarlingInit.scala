@@ -99,9 +99,13 @@ class StarlingInit( val props: Props,
   lazy val (fwdCurveAutoImport, marketDataStore) = log.infoWithTime("Creating Market Data Store") {
     import MarketDataSet._
     val limServer = new LIMServer(props.LIMHost(), props.LIMPort())
+    val metalsEmail = props.MetalsEmailAddress()
+    val limEmail = props.LimEmailAddress()
 
     val marketDataSources = MultiMap[MarketDataSet, MarketDataSource](
-      LimMetals ->> new RefinedMetalsLimMarketDataSource(limServer),
+      LimMetals ->> (new PriceLimMarketDataSource(limServer, businessCalendars),
+                     new SpotFXLimMarketDataSource(limServer, businessCalendars),
+                     new PriceFixingLimMarketDataSource(limServer, businessCalendars, rmiBroadcaster, metalsEmail, limEmail)),
       LIM ->> new OilAndMetalsVARLimMarketDataSource(limServer),
       System ->> new FwdCurveDbMarketDataSource(varSqlServerDB, businessCalendars, 1),
       Crude ->> new FwdCurveDbMarketDataSource(varSqlServerDB, businessCalendars, 5),

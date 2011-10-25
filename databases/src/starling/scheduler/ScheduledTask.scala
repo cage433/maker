@@ -1,12 +1,12 @@
-package starling.services
+package starling.scheduler
 
 import swing.event.Event
 
 import starling.daterange.Day
 import starling.pivot._
 import starling.utils.ImplicitConversions._
-import starling.gui.api.EmailEvent
 import starling.utils.{Stopable, Broadcaster}
+import starling.gui.api.EmailEvent
 
 
 trait ScheduledTaskAttributes {
@@ -36,6 +36,12 @@ trait ScheduledTask extends ScheduledTaskAttributes with Stopable { self =>
 
   def withSource(name: String, details: String*) = withAttributes(DataSource → ScheduledTaskAttribute(name, details : _*))
   def withSink(name: String) = withAttributes(DataSink → ScheduledTaskAttribute(name))
+}
+
+object ScheduledTask {
+  object Null extends ScheduledTask {
+    protected def execute(observationDay: Day) {}
+  }
 }
 
 case class SimpleScheduledTask(task: Day => Unit) extends ScheduledTask {

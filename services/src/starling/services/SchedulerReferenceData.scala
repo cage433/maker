@@ -1,6 +1,7 @@
 package starling.services
 
 import starling.pivot._
+import starling.scheduler.{Scheduler, ScheduledTaskAttributes}
 
 
 class SchedulerReferenceData(scheduler: Scheduler) extends UnfilteredPivotTableDataSource with ScheduledTaskAttributes {

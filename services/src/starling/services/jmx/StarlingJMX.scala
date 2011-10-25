@@ -2,11 +2,9 @@ package starling.services.jmx
 
 import management.ManagementFactory
 import javax.management.ObjectName
-import starling.auth.User
-import starling.services.{ScheduledTask, Scheduler}
 import starling.daterange.Day
 import starling.utils.Stopable
-import java.util.{UUID, Map => JMap}
+import starling.scheduler.{ScheduledTask, Scheduler}
 
 class StarlingJMX(scheduler: Scheduler) extends Stopable {
   val mbs = ManagementFactory.getPlatformMBeanServer
@@ -14,7 +12,7 @@ class StarlingJMX(scheduler: Scheduler) extends Stopable {
   override def start {
     super.start
     scheduler.getTasks.foreach(task =>
-      mbs.registerMBean(new Task(task.task), new ObjectName("Starling.ScheduledTasks:name=" + task.name)))
+      mbs.registerMBean(new Task(task.task), new ObjectName("Starling.ScheduledTasks:name=" + task.name.replace(',', ';'))))
   }
 
   trait TaskMBean {
