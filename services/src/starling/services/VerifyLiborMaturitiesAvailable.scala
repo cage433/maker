@@ -4,16 +4,18 @@ import starling.db.MarketDataStore
 import starling.gui.api.EmailEvent
 import starling.utils.Broadcaster
 
-import starling.curves.readers.LIBORFixing._
 import starling.services.trinity.XRTGenerator._
 import starling.utils.ImplicitConversions._
-import collection.immutable.Map
 import starling.daterange.{Tenor, Day}
 import starling.quantity.{Percentage, UOM}
+import starling.scheduler.EmailingScheduledTask
 import scalaz.Scalaz._
+
 
 class VerifyLiborMaturitiesAvailable(marketDataStore: MarketDataStore, broadcaster: Broadcaster, from: String, to: String)
   extends EmailingScheduledTask(broadcaster, from, to) {
+
+  import starling.curves.readers.LIBORFixing._
 
   protected def eventFor(observationDay: Day, email: EmailEvent) = {
     val liborFixings: NestedMap[UOM, Tenor, (Percentage, Day)] = latestLiborFixings(marketDataStore, observationDay)

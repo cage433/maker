@@ -1,4 +1,4 @@
-package starling.services
+package starling.scheduler
 
 import java.util.Timer
 

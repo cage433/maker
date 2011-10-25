@@ -2,7 +2,7 @@ package starling.calendar
 
 import starling.daterange.Day._
 import java.lang.String
-import starling.daterange.{Location, Day}
+import starling.daterange.Day
 import starling.daterange.Location._
 
 trait HolidayTables {
@@ -19,7 +19,7 @@ trait HolidayTables {
   // of the exchange then finding the correct calendar ID. There's lots of near matches so it can't be automated.
   val LME: BusinessCalendarSet = financialHolidays("LME").copy(location = London)
   val SFE: BusinessCalendarSet = financialHolidays("SFS").copy(location = Shanghai)
-  val NYMEX: BusinessCalendarSet = financialHolidays("NYM")
+  val NYMEX: BusinessCalendarSet = financialHolidays("NYM").copy(location = NewYork)
   val ICE: BusinessCalendarSet = financialHolidays("IPE")
   val BALTIC: BusinessCalendarSet = financialHolidays("IcS")
 

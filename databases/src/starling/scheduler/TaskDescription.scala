@@ -1,13 +1,16 @@
-package starling.services
+package starling.scheduler
 
 import java.util.{TimerTask, Timer}
 import starling.daterange.Day
 import starling.utils.Log
 
 import starling.utils.ImplicitConversions._
+import org.joda.time.Period
 
 
 case class TaskDescription(name: String, time: ScheduledTime, task: ScheduledTask) extends TimerTask {
+  def offset(period: Period) = copy(time = time.offset(period))
+
   def isRunning = task.isRunning
   val log = Log.forClass[Scheduler]
   val cal = time.cal

@@ -4,6 +4,7 @@ import starling.daterange.Day
 import starling.gui.api._
 import starling.curves.ClosesEnvironmentRule
 import starling.services.trinity.TrinityUploader
+import starling.scheduler.{ScheduledTaskAttribute, ScheduledTask}
 
 
 class UploadCurveToTrinityTask(uploader: TrinityUploader, marketDataIdentifier: => MarketDataIdentifier) extends ScheduledTask {

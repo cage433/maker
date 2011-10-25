@@ -21,6 +21,10 @@ object Location extends StarlingEnum(classOf[Location], (location:Location) => l
     def timeZoneOn(day: Day) = TimeZone.Shanghai
   }
 
+  object NewYork extends Location("New York") {
+    def timeZoneOn(day: Day) = TimeZone.USEastern
+  }
+
   object Unknown extends Location("Unknown") {
     def timeZoneOn(day: Day) = throw new Exception("Unknown time zone")
   }

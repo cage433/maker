@@ -90,6 +90,8 @@ case class LIBORFixing(value: Quantity, fixingDay: Day) {
 }
 
 object LIBORFixing {
+  import Tenor._
+
   val overnightCalendars = Map(
     CAD → BusinessCalendarSet("CAD LIBOR", Location.Unknown, Set(21 Feb 2011, 23 May 2011, 1 Jul 2011, 1 Aug 2011, 5 Sep 2011, 10 Oct 2011, 11 Nov 2011)),
     //// TARGET calendar (Trans-European Automated Real-time Gross settlement Express Transfer)
@@ -109,5 +111,9 @@ object LIBORFixing {
 
   val calendars = overnightCalendars ++ spotNextCalendars
   val currencies = calendars.keySet
-  def firstTenorFor(currency: UOM) = if (overnightCalendars.contains(currency)) Tenor.ON else Tenor.SN
+  def firstTenorFor(currency: UOM) = if (overnightCalendars.contains(currency)) ON else SN
+
+  def tenorsFor(currency: UOM) = LIBORFixing.firstTenorFor(currency) :: commonTenors
+  private val commonTenors = List(OneWeek, TwoWeeks, OneMonth, TwoMonths, ThreeMonths, SixMonths, NineMonths, TwelveMonths)
+  val periods = (ON :: SN :: commonTenors).map(tenor => (Level.Close, StoredFixingPeriod.tenor(tenor)))
 }

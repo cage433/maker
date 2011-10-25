@@ -179,15 +179,7 @@ object EDMConversions {
     }
   }
 
-  val starlingCurrencyToEdmCurrency = Map(
-    aed -> "AED",
-    gbp -> "GBP",
-    eur -> "EUR",
-    zar -> "ZAR",
-    usd -> "USD",
-    jpy -> "JPY",
-    cny -> "RMB"
-  )
+  val starlingCurrencyToEdmCurrency = edmCurrencies.toMapWithValues(_.name.toString) + (UOMSymbol.cny → "RMB")
 
   val starlingUomSymbolToEdmUom = starlingCurrencyToEdmCurrency ++ Map(
     TONNE_SYMBOL -> "MTS",

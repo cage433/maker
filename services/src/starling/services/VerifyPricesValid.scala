@@ -11,6 +11,7 @@ import starling.utils.Broadcaster
 import starling.utils.ImplicitConversions._
 import scalaz.Scalaz._
 import starling.rmi.FC2Service
+import starling.scheduler.EmailingScheduledTask
 
 object VerifyPricesValid {
   def apply(fc2Service:FC2Service, broadcaster: Broadcaster, dataFlow: DataFlow) = new VerifyPricesValid(

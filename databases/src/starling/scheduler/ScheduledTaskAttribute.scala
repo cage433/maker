@@ -1,4 +1,4 @@
-package starling.services
+package starling.scheduler
 
 import starling.pivot.HasLongText
 

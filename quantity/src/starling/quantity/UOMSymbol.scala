@@ -21,6 +21,8 @@ object UOMSymbol{
 
   val zCurrencies3@List(sgd, thb, trySymbol, usd, zar) = currencies("SGD", "THB", "TRY", "USD", "ZAR")
 
+  val edmCurrencies = List(aed, eur, cny, gbp, jpy, usd, zar)
+
   private def currencies(symbols: String*): List[UOMSymbol] = symbols.toList.map(symbol => UOMSymbol(symbol.split("/").map(new CaseInsensitive(_)) :_*))
 
   // this isn't a currency, but a kind of index for shipping. it's used in place of a currency in

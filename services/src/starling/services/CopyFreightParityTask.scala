@@ -5,6 +5,7 @@ import starling.db.{MarketDataEntry, MarketDataSet, MarketDataStore}
 import starling.daterange.Day
 import starling.gui.api.{PricingGroup, MarketDataSelection}
 import starling.marketdata.{GradeAreaBenchmarkDataType, CountryBenchmarkDataType, FreightParityDataType}
+import starling.scheduler.ScheduledTask
 
 
 case class CopyManualData(marketDataStore: MarketDataStore) extends ScheduledTask {
