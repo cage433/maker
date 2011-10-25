@@ -122,7 +122,6 @@ object Commodity extends Log {
   }
 
   def neptuneCommodityFromNeptuneName(name : String) = {
-    //val neptuneName = name.replaceAll(" ", "")
     neptuneCommodities.find(_.neptuneName == name) match {
       case nco @ Some(nc) => nco
       case None => {

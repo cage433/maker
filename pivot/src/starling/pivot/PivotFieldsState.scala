@@ -42,6 +42,8 @@ case class GreaterThanSelection(selection: Comparable[_]) extends Selection{
   def description = "Greater than: " + selection
 }
 
+case object AllFilterSelection
+
 case class Totals(rowGrandTotal:Boolean, rowSubTotals:Boolean, columnGrandTotal:Boolean, columnSubTotals:Boolean) {
   def toggleRowGrandTotal = copy(rowGrandTotal = !rowGrandTotal)
   def toggleColumnGrandTotal = copy(columnGrandTotal = !columnGrandTotal)

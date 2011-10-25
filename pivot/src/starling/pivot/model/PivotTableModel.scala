@@ -685,7 +685,7 @@ object PivotTableModel {
                   throw e
               }
             }
-            field -> TreePivotFilter(TreePivotFilterNode("All", values.map(v => TreePivotFilterNode(v, Nil))))
+            field -> TreePivotFilter(TreePivotFilterNode(AllFilterSelection, values.map(v => TreePivotFilterNode(v, Nil))))
           }
         }
       }

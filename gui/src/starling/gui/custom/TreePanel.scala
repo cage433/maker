@@ -464,7 +464,7 @@ case class FilterHelper(tree:Tree, showOther:Boolean, valueToLabel:Any => String
                                                       transforms:Option[FilterWithOtherTransform]) = {
     def getDefaultMutableTreeNodeFromTreePivotFilterNode(treePivotFilterNode:TreePivotFilterNode) = {
       val value = treePivotFilterNode.value
-      val label = valueToLabel(value)
+      val label = if (value == AllFilterSelection) "All" else valueToLabel(value)
       valueToLabelMap(value) = label
 
       val selected = transforms match {
