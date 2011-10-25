@@ -57,13 +57,12 @@ class GradeAreaBenchmarkDataType(referenceData: ReferenceDataLookup = ReferenceD
     parser0 = PivotQuantityPivotParser, formatter0 = PivotQuantitySetPivotFormatter)
 
   def extendedKeys = List(commodityField)
-  override def valueKeys = List(areaField, areaCodeField, gradeField, gradeCodeField, effectiveFromField, benchmarkPriceField)
+  override def valueKeys = List(areaCodeField, gradeCodeField, effectiveFromField)
+  override def derivedFieldDetails = List(areaField, gradeField)
   def valueFieldDetails = List(benchmarkPriceField)
 
-  val initialPivotState = PivotFieldsState(
-    dataFields=List(benchmarkPriceField.field),
-    rowFields=List(areaField.field, gradeField.field),
-    columnFields=List(commodityField.field)
+  val initialPivotState = PivotFieldsState(dataFields = List(benchmarkPriceField.field),
+    rowFields = List(commodityField, areaCodeField, gradeCodeField, effectiveFromField).map(_.field)
   )
 
   def createKey(row: Row) = GradeAreaBenchmarkMarketDataKey(Commodity.fromName(row.string(commodityField)))

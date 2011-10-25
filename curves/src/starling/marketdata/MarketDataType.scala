@@ -19,6 +19,7 @@ trait MarketDataType {
   def valueKeys:List[FieldDetails] = Nil
   def valueFieldDetails:List[FieldDetails]
   def derivedFieldDetails:List[FieldDetails] = Nil
+
   def valueKeyFields = valueKeys.map(_.field).toSet
   // Fields needed to uniquely define a MarketDataKey. For prices it would be market
   def marketDataKeyFields: Set[Field] = extendedKeys.map(_.field).toSet
@@ -28,6 +29,8 @@ trait MarketDataType {
 
   // The field (always one?) for the market data - e.g. price
   final def valueFields: List[Field] = valueFieldDetails.map(_.field)
+  final def derivedFields: List[Field] = derivedFieldDetails.map(_.field)
+  final def extendedKeyFields = extendedKeys.map(_.field)
   def zeroFields: List[Field] = valueFields
   def createKey(row: Row): MarketDataKey
 
