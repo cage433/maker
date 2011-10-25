@@ -4,6 +4,7 @@ import starling.richdb.RichDB
 
 
 case class DBReferenceDataLookup(neptuneDB: RichDB) extends ReferenceDataLookup {
+  def name = "Neptune DB Reference Data Lookup"
   private lazy val areas             = neptuneDB.lookupTable("live.geographical_location", "code",         "description")
   private lazy val contractLocations = neptuneDB.lookupTable("live.contract_location",     "code",         "description")
   private lazy val countries         = neptuneDB.lookupTable("live.country",               "code",         "name"       )

@@ -52,7 +52,7 @@ class ThetaPivotReport(context: ReportContext, utps: Map[UTPIdentifier, UTP]) ex
 
   def fields = ThetaPivotReport.fields
 
-  def marketDay = context.environment.marketDay
+  def envForSplitting = context.environment
 
   override def reportSpecificOptions = super.reportSpecificOptions :+ 
       (atmVega_str -> List(false, true)) :+

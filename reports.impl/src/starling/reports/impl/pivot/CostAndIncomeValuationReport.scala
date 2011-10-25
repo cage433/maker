@@ -48,8 +48,7 @@ object CostsAndIncomeValuationRow{
 
 class CostAndIncomeValuationReport(@transient env:Environment, @transient utps : Map[UTPIdentifier, UTP]) extends RiskFactorSplittingPivotReport[CostsAndIncomeValuationRow] {
 
-  def marketDay = env.marketDay
-
+  def envForSplitting = env
   def rows(id : UTPIdentifier, utp: UTP): List[CostsAndIncomeValuationRow] = {
     try {
       utp match {

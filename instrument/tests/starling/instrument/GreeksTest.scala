@@ -25,8 +25,8 @@ class GreeksTest extends JonTestEnv {
     val p = env.forwardPrice(market, month)
     val option = new FuturesOption(market, market.optionExpiry(month), month, p, Quantity(1000, BBL), Call, American)
 
-    val pfs = priceKeys(option, env.marketDay, USD).map(rf => (rf.periodKey.get -> rf)).toMap
-    val vfs = volKeys(option, env.marketDay, USD).map(rf => (rf.periodKey.get -> rf)).toMap
+    val pfs = priceKeys(option, env, USD).map(rf => (rf.periodKey.get -> rf)).toMap
+    val vfs = volKeys(option, env, USD).map(rf => (rf.periodKey.get -> rf)).toMap
 
     val delta1 = option.firstOrderDerivative(env, PriceDifferentiable(market, month), USD)
     val delta2 = option.delta(env, pfs(month), USD)
@@ -42,8 +42,8 @@ class GreeksTest extends JonTestEnv {
     val p = env.forwardPrice(market, month)
     val option = new FuturesOption(market, market.optionExpiry(month), month, p, Quantity(1000, BBL), Call, American)
 
-    val pfs = priceKeys(option, env.marketDay, USD).map(rf => (rf.periodKey.get -> rf)).toMap
-    val vfs = volKeys(option, env.marketDay, USD).map(rf => (rf.periodKey.get -> rf)).toMap
+    val pfs = priceKeys(option, env, USD).map(rf => (rf.periodKey.get -> rf)).toMap
+    val vfs = volKeys(option, env, USD).map(rf => (rf.periodKey.get -> rf)).toMap
 
     val vega1 = option.firstOrderDerivative(env, OilAtmVolAtomicDatumKey(market, None, month, true), USD)
     val vega2 = option.vega(env, vfs(month))
@@ -60,8 +60,8 @@ class GreeksTest extends JonTestEnv {
     val option = new FuturesOption(market, market.optionExpiry(month), month, p, Quantity(1000, BBL), Call, American)
     val vomma1 = option.secondOrderDerivative(env, OilAtmVolAtomicDatumKey(market, None, month, true), USD)
 
-    val pfs = priceKeys(option, env.marketDay, USD).map(rf => (rf.periodKey.get -> rf)).toMap
-    val vfs = volKeys(option, env.marketDay, USD).map(rf => (rf.periodKey.get -> rf)).toMap
+    val pfs = priceKeys(option, env, USD).map(rf => (rf.periodKey.get -> rf)).toMap
+    val vfs = volKeys(option, env, USD).map(rf => (rf.periodKey.get -> rf)).toMap
     
     val vomma2 = option.vomma(env, vfs(month), List(vfs(month)))
     assertQtyEquals(vomma1 / (100.0 * 100.0), vomma2)
@@ -76,8 +76,8 @@ class GreeksTest extends JonTestEnv {
     val p = env.forwardPrice(market, month) - Quantity(-1, USD/BBL)
     val option = new FuturesOption(market, market.optionExpiry(month), month, p, Quantity(1000, BBL), Call, European)
 
-    val pfs = priceKeys(option, env.marketDay, USD).map(rf => (rf.periodKey.get -> rf)).toMap
-    val vfs = volKeys(option, env.marketDay, USD).map(rf => (rf.periodKey.get -> rf)).toMap
+    val pfs = priceKeys(option, env, USD).map(rf => (rf.periodKey.get -> rf)).toMap
+    val vfs = volKeys(option, env, USD).map(rf => (rf.periodKey.get -> rf)).toMap
 
     val deltaBleed = option.deltaBleed(env, pfs(month), md + 1, USD)
     // a little out of the money and close to expiry means delta is decreasing

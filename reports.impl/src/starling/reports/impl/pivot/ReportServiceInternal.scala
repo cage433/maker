@@ -149,7 +149,7 @@ class PivotReportRunner(reportContextBuilder:ReportContextBuilder) {
 
       val report : PivotReport[_ <: PivotReportRow] = reportType.run(context, forwardUTPsIfNecessary)
 
-      PivotReportData.run(report, forwardUTPsIfNecessary, slideDetails, reportType.availablePages)
+      PivotReportData.run(report, forwardUTPsIfNecessary, slideDetails, reportType.availablePages, context.baseEnvironment.referenceDataLookup)
         .asInstanceOf[PivotReportData[_ <: PivotReportRow]] //compiler crashes without this cast
     }
   }

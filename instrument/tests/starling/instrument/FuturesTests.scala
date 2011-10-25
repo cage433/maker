@@ -147,7 +147,7 @@ class FuturesTests extends TestMarketTest {
 
     assertPivotQtyEquals(explainedTotal, change)
 
-    val curveKeys = AtomicDatumKeyUtils.curveKeys(future, d1.marketDay, USD)
+    val curveKeys = AtomicDatumKeyUtils.curveKeys(future, env1, USD)
 
     val (crossTerms, rounding, unexplained) = future.components(env1, env2, environmentFor, USD, explainedTotal, curveKeys)
 

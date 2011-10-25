@@ -168,6 +168,6 @@ class MtmPivotReport(@transient environment:Environment, @transient utps : Map[U
     }
     super.combine(combinedRows, reportSpecificChoices)
   }
-  def marketDay = environment.marketDay
+  def envForSplitting = environment
   override def zeroFields = Set(Field(MtmPivotReport.pnlFieldName))
 }

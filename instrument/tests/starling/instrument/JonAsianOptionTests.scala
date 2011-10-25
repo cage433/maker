@@ -34,8 +34,8 @@ class JonAsianOptionTests extends JonTestEnv {
 
     assertEquals(asian.mtm(env).value, 8.24536658, 1e-8)
 
-    val pfs = priceKeys(asian, env.marketDay, USD).map(rf => (rf.periodKey.get -> rf)).toMap
-    val vfs = volKeys(asian, env.marketDay, USD).map(rf => (rf.periodKey.get -> rf)).toMap
+    val pfs = priceKeys(asian, env, USD).map(rf => (rf.periodKey.get -> rf)).toMap
+    val vfs = volKeys(asian, env, USD).map(rf => (rf.periodKey.get -> rf)).toMap
 
     assertEquals(asian.parallelVega(env, shiftInterpolatedVols = true).value, 0.16308301, 1e-8)
     assertEquals(asian.oneDayTheta(env, USD, changeOnlyTimeAndDiscounts = true).value, -0.0320945578618, 1e-4) // Can't get closer to Jon's value than this - but IIRC there were bugs in Kudu
@@ -151,8 +151,8 @@ class JonAsianOptionTests extends JonTestEnv {
     val index = Index.WTI10
     val asian = SingleAsianOption(index, Month(2010, 12), Quantity(82.50, market.priceUOM), Quantity(1, market.uom), Call)
 
-    val pfs = priceKeys(asian, env.marketDay, USD).map(rf => (rf.periodKey.get -> rf)).toMap
-    val vfs = volKeys(asian, env.marketDay, USD).map(rf => (rf.periodKey.get -> rf)).toMap
+    val pfs = priceKeys(asian, env, USD).map(rf => (rf.periodKey.get -> rf)).toMap
+    val vfs = volKeys(asian, env, USD).map(rf => (rf.periodKey.get -> rf)).toMap
 
     val sumDelta = Quantity.sum(pfs.map(q => asian.delta(env, q._2, USD)))
     val pDelta = asian.delta(env, USD)

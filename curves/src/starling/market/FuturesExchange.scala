@@ -123,6 +123,17 @@ object FuturesExchangeFactory extends StarlingEnum(classOf[FuturesExchange], (f:
 
   val COMEX = new FuturesExchange("COMEX", MonthlyDelivery, COMEXClose) with NeptunePricingExchange{
     def inferMarketFromCommodityName(neptuneCommodityName: String) = neptuneCommodityName match {
+      case "Copper"	            => Market.COMEX_HIGH_GRADE_COPPER
+      case _ => throw new IllegalStateException("No known COMEX market for Neptune commodity " + neptuneCommodityName)
+    }
+    def inferMarketFromCommodityCode(neptuneCommodityCode: String) = neptuneCommodityCode match {
+      case "CAD"	            => Market.COMEX_HIGH_GRADE_COPPER
+      case _ => throw new IllegalStateException("No known COMEX market for Neptune commodity code " + neptuneCommodityCode)
+    }
+  }
+  val NYMEX = new FuturesExchange("NYMEX", MonthlyDelivery, Default)
+  val SFS = new FuturesExchange("SFS", MonthlyDelivery, SHFEClose, fixingLevel = Level.Settle) with NeptunePricingExchange{
+    def inferMarketFromCommodityName(neptuneCommodityName: String) = neptuneCommodityName match {
       case "Copper"	            => Market.SHANGHAI_COPPER
       case "Zinc"	              => Market.SHANGHAI_ZINC
       case "Primary Aluminium"	=> Market.SHANGHAI_ALUMINUIUM
@@ -132,22 +143,11 @@ object FuturesExchangeFactory extends StarlingEnum(classOf[FuturesExchange], (f:
     def inferMarketFromCommodityCode(neptuneCommodityCode: String) = neptuneCommodityCode match {
       case "CAD"	            => Market.SHANGHAI_COPPER
       case "ZN"	              => Market.SHANGHAI_ZINC
-      case "ALD"	=> Market.SHANGHAI_ALUMINUIUM
+      case "AHD"	=> Market.SHANGHAI_ALUMINUIUM
       case "STL"	            => Market.STEEL_REBAR_SHANGHAI
       case _ => throw new IllegalStateException("No known SFS market for Neptune commodity code " + neptuneCommodityCode)
     }
-  }
-  val NYMEX = new FuturesExchange("NYMEX", MonthlyDelivery, Default)
-  val SFS = new FuturesExchange("SFS", MonthlyDelivery, SHFEClose, fixingLevel = Level.Settle) with NeptunePricingExchange{
     
-    def inferMarketFromCommodityName(neptuneCommodityName: String) = neptuneCommodityName match {
-      case "Copper"	            => Market.COMEX_HIGH_GRADE_COPPER
-      case _ => throw new IllegalStateException("No known COMEX market for Neptune commodity " + neptuneCommodityName)
-    }
-    def inferMarketFromCommodityCode(neptuneCommodityCode: String) = neptuneCommodityCode match {
-      case "CAD"	            => Market.COMEX_HIGH_GRADE_COPPER
-      case _ => throw new IllegalStateException("No known COMEX market for Neptune commodity code " + neptuneCommodityCode)
-    }
   }
   val BALTIC = new FuturesExchange("Baltic Exchange", MonthlyDelivery, Default)
   val ICE = new FuturesExchange("ICE", MonthlyDelivery, Default)

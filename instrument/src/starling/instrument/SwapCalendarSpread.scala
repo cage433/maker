@@ -60,8 +60,8 @@ case class SwapCalendarSpread(index: SingleIndex,
 
   def instrumentType = SwapCalendarSpread
 
-  override def priceAndVolKeys(marketDay: DayAndTime) = {
-    (asUtpPortfolio(marketDay.day).instruments.flatMap(_.priceAndVolKeys(marketDay)._1), Set())
+  override def priceAndVolKeys(env : Environment) = {
+    (asUtpPortfolio(env.marketDay.day).instruments.flatMap(_.priceAndVolKeys(env)._1), Set())
   }
 }
 

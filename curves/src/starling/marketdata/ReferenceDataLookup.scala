@@ -4,6 +4,7 @@ import starling.market.{Commodity, FuturesMarket, NeptuneCommodity, NeptunePrici
 
 
 trait ReferenceDataLookup {
+  def name : String
   def areaCodeFor(code: NeptuneCountryCode): Option[AreaCode]
   def areaFor(code: AreaCode): Area
   def areaFor(code: NeptuneCountryCode): Option[Area] 
@@ -12,12 +13,19 @@ trait ReferenceDataLookup {
   def countryFor(code: NeptuneCountryCode): NeptuneCountry
   def incotermFor(code: IncotermCode): Incoterm
   def marketFor(commodity : NeptuneCommodity, countryCode : NeptuneCountryCode) : FuturesMarket = {
-    areaFor(countryCode).map{area => marketFor(commodity, area.code)}.getOrElse{
-      throw new Exception("Don't know what futures market to use for " + commodity + ", " + countryCode)
+    val area = areaFor(countryCode).getOrElse{
+      throw new Exception("Can't find area for country code *" + countryCode
+       + "*, in this " + this.getClass)
     }
+    marketFor(commodity, area.code)
   }
   def marketFor(commodity : NeptuneCommodity, areaCode : AreaCode) : FuturesMarket = {
-    NeptunePricingExchange.fromArea(areaCode).flatMap(_.marketFor(commodity)).getOrElse(Commodity.standardFuturesMarket(commodity))
+    val exchange = NeptunePricingExchange.fromArea(areaCode).getOrElse{
+      throw new Exception("Can't find exchange for area code " + areaCode)
+    }
+    exchange.marketFor(commodity).getOrElse{
+      throw new Exception("Don't know what futures market to use for " + commodity + ", exchange " + exchange)
+    }
   }
 
   def areaCodes: Set[AreaCode]
@@ -32,10 +40,12 @@ case class Incoterm(code: IncotermCode, name: String) {
 }
 
 object ReferenceDataLookup {
-  object Null extends ReferenceDataLookup {
+  val Null = new NullReferenceDataLookup()
+  class NullReferenceDataLookup extends ReferenceDataLookup{
+    def name = "Null Reference Data Lookup"
     def areaCodeFor(code: NeptuneCountryCode) = None
     def areaFor(code: AreaCode) = Area(code, unknownName)
-    def areaFor(code: NeptuneCountryCode) = None
+    def areaFor(code: NeptuneCountryCode) : Option[Area] = None
     def gradeFor(code: GradeCode) = Grade(code, unknownName)
     def contractLocationFor(code: ContractualLocationCode) = ContractualLocation(code, unknownName)
     def countryFor(code: NeptuneCountryCode) = NeptuneCountry(code, unknownName, None)

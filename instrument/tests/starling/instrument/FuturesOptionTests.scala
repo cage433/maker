@@ -97,10 +97,10 @@ class FuturesOptionTests extends StarlingTest {
 
     val timeValue = option.mtm(env, UOM.USD) - option.mtm(env.zeroVols, USD)
     val thetaToExerciseDay = option.theta(env, exerciseDay.endOfDay, USD)
-    assertEquals(timeValue * -1, thetaToExerciseDay)
+    assertQtyEquals(timeValue * -1, thetaToExerciseDay, 1e-6)
 
     val thetaAfterExerciseDay = option.theta(env, (exerciseDay + 20).startOfDay, USD)
-    assertEquals(thetaToExerciseDay, thetaAfterExerciseDay)
+    assertQtyEquals(thetaToExerciseDay, thetaAfterExerciseDay, 1e-6)
   }
 
 

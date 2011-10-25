@@ -51,10 +51,11 @@ import starling.quantity.Percentage
 import starling.curves.DiscountRateKey
 import starling.curves.OilVolSkewAtomicDatumKey
 import starling.market.rules.CommonPricingRule
+import starling.marketdata.ReferenceDataLookup
 
 class GreeksPivotReportTests extends StarlingTest {
   val marketDay = Day(2010, 1, 1)
-  val env = Environment(new NullAtomicEnvironment(marketDay.endOfDay))
+  val env = Environment(new NullAtomicEnvironment(marketDay.endOfDay, ReferenceDataLookup.Null))
 
   private def allSameClass(klass : Class[_])(seq : Seq[AnyRef]) = {
     seq.forall{
@@ -220,7 +221,7 @@ class GreeksPivotReportTests extends StarlingTest {
       val combinedPortfolio = CompositeInstrument(combinedUTPs)
       val originalPortfolioFromRows = CompositeInstrument(rows.map{row => row.utp * row.scale})
       for (
-        key <- CollectionUtils.filterOnType[PriceDifferentiable](portfolio.atomicMarketDataKeys(env.marketDay))
+        key <- CollectionUtils.filterOnType[PriceDifferentiable](portfolio.atomicMarketDataKeys(env.marketDay, ReferenceDataLookup.Null))
       ){
         val delta = portfolio.firstOrderDerivative(env, key, UOM.USD)
         val combinedDelta = combinedPortfolio.firstOrderDerivative(env, key, UOM.USD)
@@ -276,7 +277,7 @@ class GreeksPivotReportTests extends StarlingTest {
       val combinedPortfolio = CompositeInstrument(combinedUTPs)
       val originalPortfolioFromRows = CompositeInstrument(rows.map{row => row.utp * row.scale})
       for (
-        key <- CollectionUtils.filterOnType[PriceDifferentiable](portfolio.atomicMarketDataKeys(env.marketDay))
+        key <- CollectionUtils.filterOnType[PriceDifferentiable](portfolio.atomicMarketDataKeys(env.marketDay, ReferenceDataLookup.Null))
       ){
         val delta = portfolio.firstOrderDerivative(env, key, UOM.USD)
         val combinedDelta = combinedPortfolio.firstOrderDerivative(env, key, UOM.USD)

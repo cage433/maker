@@ -27,8 +27,8 @@ trait PnlExplanation {
   def explain(d1EnvFwd: Environment, d2Env: Environment,
               environmentFor: (Set[CurveKey]) => Environment,
               ccy: UOM): List[CurveKeyExplanation] = {
-    val envDiffs = AtomicDatumKeyUtils.environmentDifferentiables(this, d1EnvFwd.marketDay, ccy)
-    val curveKeys = AtomicDatumKeyUtils.curveKeys(this, d1EnvFwd.marketDay, ccy)
+    val envDiffs = AtomicDatumKeyUtils.environmentDifferentiables(this, d1EnvFwd, ccy)
+    val curveKeys = AtomicDatumKeyUtils.curveKeys(this, d1EnvFwd, ccy)
     explain(d1EnvFwd, d2Env, environmentFor, ccy, envDiffs, curveKeys)
   }
 
@@ -162,7 +162,7 @@ trait PnlExplanation {
       val term = allCurvesPnl - explainedTotal
       priceRounding match {
         case Some(_) => {
-          assert(isLinear(d1EnvFwd.marketDay), "This wasn't designed for explaining options that have rounding. Needs to be re-visited.")
+          assert(isLinear(d1EnvFwd), "This wasn't designed for explaining options that have rounding. Needs to be re-visited.")
           // we're assuming the cross term is due to rounding which is true for linear instruments with rounding.
           (term, PivotQuantity(0 (USD)))
         }

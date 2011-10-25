@@ -64,7 +64,7 @@ object Hedge{
       val futuresComp = CompositeInstrument(futures)
       val spreadComp = CompositeInstrument(spreadHedgeUTPs)
       for (
-        key <- CollectionUtils.filterOnType[PriceDifferentiable](futuresComp.environmentDifferentiables(env.marketDay) ++ spreadComp.environmentDifferentiables(env.marketDay))
+        key <- CollectionUtils.filterOnType[PriceDifferentiable](futuresComp.environmentDifferentiables(env) ++ spreadComp.environmentDifferentiables(env))
       ) {
         val delta = futuresComp.firstOrderDerivative(env, key, USD)
         val hedgeDelta = spreadComp.firstOrderDerivative(env, key, USD)

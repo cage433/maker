@@ -10,6 +10,7 @@ import starling.quantity.{Percentage, Quantity}
 import starling.daterange.{Month, Day, DayAndTime}
 import starling.models.{Call, European}
 import starling.market._
+import starling.marketdata.ReferenceDataLookup
 
 class AtomicMarketDataKeysTests extends TestMarketTest {
   val market = Market.NYMEX_WTI
@@ -31,7 +32,7 @@ class AtomicMarketDataKeysTests extends TestMarketTest {
   def testFuture {
     val delivery = Month(2010, 1)
     val future = new Future(market, delivery, Quantity(20, USD / BBL), Quantity(1, BBL))
-    assertEquals(future.atomicMarketDataKeys(env.marketDay), Set(ForwardPriceKey(market, delivery)))
+    assertEquals(future.atomicMarketDataKeys(env), Set(ForwardPriceKey(market, delivery)))
   }
 
   @Test
@@ -39,7 +40,7 @@ class AtomicMarketDataKeysTests extends TestMarketTest {
     val delivery = Month(2010, 1)
     val oilMarket = market
     val option = new FuturesOption(market, market.optionExpiry(delivery), delivery, Quantity(20, USD / BBL), Quantity(1, BBL), Call, European)
-    assertEquals(option.atomicMarketDataKeys(env.marketDay), Set(ForwardPriceKey(market, delivery), OilVolSkewAtomicDatumKey(oilMarket, delivery),
+    assertEquals(option.atomicMarketDataKeys(env), Set(ForwardPriceKey(market, delivery), OilVolSkewAtomicDatumKey(oilMarket, delivery),
       OilAtmVolAtomicDatumKey(oilMarket, None, delivery, false),
       DiscountRateKey(USD,market.optionExpiry(delivery))))
   }
@@ -59,7 +60,7 @@ class AtomicMarketDataKeysTests extends TestMarketTest {
       ) ++ oilVolAtmKeys 
 
 
-    assertEquals(option.atomicMarketDataKeys(env.marketDay), keys)
+    assertEquals(option.atomicMarketDataKeys(env), keys)
   }
 
   @Test
@@ -67,7 +68,7 @@ class AtomicMarketDataKeysTests extends TestMarketTest {
     val delivery = Month(2010, 1)
     val swap = new SinglePeriodSwap(index, Quantity(20, USD / BBL), Quantity(1, BBL), delivery, false)
     val settlement = CommoditySwap.swapSettlementDate(delivery.lastDay)
-    assertEquals(swap.atomicMarketDataKeys(env.marketDay), Set(ForwardPriceKey(market, delivery + 1), ForwardPriceKey(market, delivery + 2), DiscountRateKey(USD, settlement)))
+    assertEquals(swap.atomicMarketDataKeys(env), Set(ForwardPriceKey(market, delivery + 1), ForwardPriceKey(market, delivery + 2), DiscountRateKey(USD, settlement)))
   }
 
 }

@@ -108,8 +108,8 @@ case class SingleCalendarSpreadOption(
 
   def * (scale : Double) = copy(volume = volume * scale)
 
-  override def priceAndVolKeys(marketDay : DayAndTime) = {
-    var (pk, vk) = super.priceAndVolKeys(marketDay)
+  override def priceAndVolKeys(env: Environment) = {
+    var (pk, vk) = super.priceAndVolKeys(env)
     pk = if (pk.isEmpty) pk else Set(FuturesSpreadPrice(market, period))
     (pk, vk)
   }

@@ -27,10 +27,11 @@ object PnlExplanationReport {
       val marketChanges = new MarketChangesPnl(d1Fwd, d2, utps)
       val timeChanges = new TimeChangesPnl(Environment(d1), d2.marketDay, utps)
       val priceChange = new CurrentPriceChangeReport(Environment(d1), Environment(d2), utps)
+      val referenceDataLookup = d1Fwd.referenceDataLookup
       val list = List(
-        PivotReportData.run(marketChanges, utps, SlideDetails.Null, List()),
-        PivotReportData.run(priceChange, utps, SlideDetails.Null, List()),
-        PivotReportData.run(timeChanges, utps, SlideDetails.Null, List())
+        PivotReportData.run(marketChanges, utps, SlideDetails.Null, List(), referenceDataLookup),
+        PivotReportData.run(priceChange, utps, SlideDetails.Null, List(), referenceDataLookup),
+        PivotReportData.run(timeChanges, utps, SlideDetails.Null, List(), referenceDataLookup)
       )
       val tradePivot = tradeSet.reportPivot(curveIdentifierDm1.tradesUpToDay, expiryDay, t, addRows)
       new ReportPivotTableDataSource(tradePivot, list)
@@ -39,7 +40,7 @@ object PnlExplanationReport {
       val newTradesTradeSet = tradeSet.forTradeDays((d1.marketDay.day upto d2.marketDay.day).toSet - d1.marketDay.day)
       val utps = newTradesTradeSet.utps(curveIdentifierD.tradesUpToDay, expiryDay, t)
       val newTradesReport = new NewTradesPivotReport(Environment(d2), UOM.USD, utps)
-      val list = List(PivotReportData.run(newTradesReport, utps, SlideDetails.Null, List()))
+      val list = List(PivotReportData.run(newTradesReport, utps, SlideDetails.Null, List(), d1.referenceDataLookup))
       val tradePivot = newTradesTradeSet.reportPivot(curveIdentifierD.tradesUpToDay, expiryDay, t, addRows)
       new ReportPivotTableDataSource(tradePivot, list) {
         val dayChangeText = "Day Change"

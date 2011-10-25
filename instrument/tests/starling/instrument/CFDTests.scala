@@ -134,7 +134,7 @@ class CFDTests extends TestMarketTest {
 
     val environment = env(marketDay)
 
-    val differentiables = AtomicDatumKeyUtils.environmentDifferentiables(swapSpread, marketDay.endOfDay, USD)
+    val differentiables = AtomicDatumKeyUtils.environmentDifferentiables(swapSpread, environment.forwardState(marketDay.endOfDay), USD)
 
     val platts_brent_april = Index.publishedIndexFromName("Platts Brent (April)")
     val diffs = Set(

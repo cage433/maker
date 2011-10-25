@@ -37,7 +37,7 @@ class PnlExplanationTests extends JonTestEnv  with StarlingTest{
     val explanation = option.explain(env1Fwd, env2, environmentFor, USD)
     val explainedPnlPQ = explanation.map(_.value).sum
     val explainedPnl = explanation.map(_.value).sum.quantityValue.get
-    val curveKeys = AtomicDatumKeyUtils.curveKeys(option, md2, USD)
+    val curveKeys = AtomicDatumKeyUtils.curveKeys(option, env1Fwd, USD)
     val (crossTerms, _, unexplained) = option.components(env1Fwd, env2, environmentFor, USD, explainedPnlPQ, curveKeys)
 
     val volMarket = market
@@ -86,7 +86,7 @@ class PnlExplanationTests extends JonTestEnv  with StarlingTest{
     val volMarket = market
 
     val explainedPnlPQ = explanation.map(_.value).sum
-    val curveKeys = AtomicDatumKeyUtils.curveKeys(option, md2, USD)
+    val curveKeys = AtomicDatumKeyUtils.curveKeys(option, env1Fwd, USD)
     val (crossTerms, _, unexplained) = option.components(env1Fwd, env2, environmentFor, USD, explainedPnlPQ, curveKeys)
 
     val d1Mtm = option.mtm(env1Fwd, USD)
@@ -135,7 +135,7 @@ class PnlExplanationTests extends JonTestEnv  with StarlingTest{
     val volMarket = market
 
     val explainedPnlPQ = explanation.map(_.value).sum
-    val curveKeys = AtomicDatumKeyUtils.curveKeys(option, md2, USD)
+    val curveKeys = AtomicDatumKeyUtils.curveKeys(option, env1Fwd, USD)
     val (crossTerms, _, unexplained) = option.components(env1Fwd, env2, environmentFor, USD, explainedPnlPQ, curveKeys)
 
     val d1Mtm = option.mtm(env1Fwd, USD)

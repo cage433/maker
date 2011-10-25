@@ -95,10 +95,11 @@ class BlackScholes(F : Double, X : Double, callPut : CallOrPut, T : Double, vol 
 
 object BlackScholes extends OptionValuation{
   def undiscountedOptionPrice(F : Quantity, X : Quantity, callPut : CallOrPut, T : Double, vol : Double) : Quantity = {
-    assert(F.uom == X.uom, "Unit mismatch")
+    val (baseF, baseX) = (F.inBaseUOM, X.inBaseUOM)
+    assert(baseF.uom == baseX.uom, "Unit mismatch, F = " + baseF + ", X = " + baseX)
     Quantity(
-      undiscountedOptionPrice(F.value, X.value, callPut, T, vol),
-      F.uom
+      undiscountedOptionPrice(baseF.value, baseX.value, callPut, T, vol),
+      baseF.uom
     )
   }
   def undiscountedOptionPrice(F : Double, X : Double, callPut : CallOrPut, T : Double, vol : Double) : Double = {

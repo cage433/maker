@@ -321,10 +321,10 @@ class CommoditySwapTests extends JonTestEnv {
 
     val priceKeys = Set() ++ rbob.observationDays(period).map(SwapPrice(rbob, _)) ++ wti.observationDays(period).map(SwapPrice(wti, _))
 
-    val diff1 = swap1.priceAndVolKeys(marketDay)._1 -- priceKeys
-    val diff2 = priceKeys.filterNot(swap1.priceAndVolKeys(marketDay)._1.toSet.contains)
+    val diff1 = swap1.priceAndVolKeys(env)._1 -- priceKeys
+    val diff2 = priceKeys.filterNot(swap1.priceAndVolKeys(env)._1.toSet.contains)
 
-    assertEquals(swap1.priceAndVolKeys(marketDay), (priceKeys, Set.empty))
+    assertEquals(swap1.priceAndVolKeys(env), (priceKeys, Set.empty))
   }
 
   @Test
@@ -605,7 +605,7 @@ class CommoditySwapTests extends JonTestEnv {
     val d1 = env1.atomicEnv
     val d2 = env2.atomicEnv
 
-    val curveKeys = AtomicDatumKeyUtils.curveKeys(swap, d1.marketDay, USD)
+    val curveKeys = AtomicDatumKeyUtils.curveKeys(swap, env1, USD)
 
     def environmentFor(curveKeys: Set[CurveKey]) = Environment(OverrideForCurveKeysEnvironment(d1, curveKeys, d2)).ignoreSwapRounding
     val explanation = swap.explain(env1, env2, environmentFor, USD)
@@ -663,7 +663,7 @@ class CommoditySwapTests extends JonTestEnv {
       swap.mtm(env2)
     })
 
-    val curveKeys = AtomicDatumKeyUtils.curveKeys(swap, d1.marketDay, USD)
+    val curveKeys = AtomicDatumKeyUtils.curveKeys(swap, env1Fwd, USD)
 
     def environmentFor(curveKeys: Set[CurveKey]) = Environment(OverrideForCurveKeysEnvironment(d1, curveKeys, d2))
     val explanation = swap.explain(env1Fwd, env2, environmentFor, USD)

@@ -125,8 +125,8 @@ case class SinglePeriodSwap(
       live
   }
 
-  override def priceAndVolKeys(marketDay : DayAndTime) = {
-    var (pk, _) = super.priceAndVolKeys(marketDay)
+  override def priceAndVolKeys(env: Environment) = {
+    var (pk, _) = super.priceAndVolKeys(env)
     pk = if (pk.isEmpty)
       pk
     else {
@@ -136,7 +136,7 @@ case class SinglePeriodSwap(
       }
       singleIndices(index).flatMap{
         si =>
-          val periods = liveAveragingDays(marketDay).filter(si.isObservationDay)
+          val periods = liveAveragingDays(env.marketDay).filter(si.isObservationDay)
           periods.map(SwapPrice(si, _))
       }.toSet
     }

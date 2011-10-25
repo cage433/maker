@@ -196,11 +196,11 @@ class PivotUTPRestructurer(
 
 object PivotReportUtils{
 
-  def priceAndVolKeys(utp : UTP, marketDay : DayAndTime, reportSpecificChoices : ReportSpecificChoices)
+  def priceAndVolKeys(utp : UTP, env : Environment, reportSpecificChoices : ReportSpecificChoices)
     : (
       Set[EnvironmentDifferentiable with PriceKey], Set[EnvironmentDifferentiable with VolKey]
       ) = {
-      UTP.priceAndVolKeys(utp, marketDay, reportSpecificChoices.getOrElse(showEqFutures_str, true), reportSpecificChoices.getOrElse(tenor_str, Month))
+      UTP.priceAndVolKeys(utp, env, reportSpecificChoices.getOrElse(showEqFutures_str, true), reportSpecificChoices.getOrElse(tenor_str, Month))
   }
 
 

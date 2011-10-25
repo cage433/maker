@@ -71,8 +71,8 @@ class SwapCalendarSpreadTests extends TestMarketTest {
 
       assertQtyEquals(mtm, expectedMTM, 1e-6)
 
-      val keys = swap.priceAndVolKeys(marketDayAndTime)
-      val expectedKeys = swapFront.priceAndVolKeys(marketDayAndTime)._1 ++ swapBack.priceAndVolKeys(marketDayAndTime)._1
+      val keys = swap.priceAndVolKeys(env)
+      val expectedKeys = swapFront.priceAndVolKeys(env)._1 ++ swapBack.priceAndVolKeys(env)._1
       assertEquals(keys, (expectedKeys, Set()))
       for (k <- keys._1) {
         val position = swap.position(env, k)
@@ -172,7 +172,7 @@ class SwapCalendarSpreadTests extends TestMarketTest {
     ).undiscounted
 
     val keys = swap.asUtpPortfolio(md).portfolio.keys.map {
-      utp => utp.priceAndVolKeys(md.endOfDay)
+      utp => utp.priceAndVolKeys(environment)
     }
 
     assertFalse(keys.isEmpty)

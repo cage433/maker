@@ -22,6 +22,10 @@ import starling.quantity.utils.QuantityTestUtils._
 import starling.curves.USDFXRateKey
 import starling.curves.CountryBenchmarkAtomicKey
 import starling.curves.FreightParityAtomicKey
+import starling.marketdata.AreaCode
+import starling.marketdata.NeptuneCountryCode
+import starling.marketdata.Area
+import starling.marketdata.ReferenceDataLookup
 /**
  * Commenting out until everything settles down - AMc 29/9/11
  */
@@ -35,7 +39,11 @@ class PhysicalMetalAssignmentTests extends StarlingTest {
         case _: IndexFixingKey => Quantity(98, USD/MT)
         case DiscountRateKey(_, day, _) => new Quantity(math.exp(- 0.1 * day.endOfDay.timeSince(marketDay)))
       }
-    )
+    ){
+      override def referenceDataLookup = new ReferenceDataLookup.NullReferenceDataLookup(){
+        override def areaFor(code : NeptuneCountryCode) = Some(Area(AreaCode.EUR, "Dummy"))
+      }
+  }
   )
 
 
@@ -185,7 +193,11 @@ class PhysicalMetalAssignmentTests extends StarlingTest {
           case _ : FreightParityAtomicKey => Quantity(5, CNY / LB)
 
         }
-      )
+      ){
+        override def referenceDataLookup = new ReferenceDataLookup.NullReferenceDataLookup(){
+          override def areaFor(code : NeptuneCountryCode) = Some(Area(AreaCode.EUR, "Dummy"))
+        }
+      }
     )
     val pma = PhysicalMetalAssignment(
       "Assignment ID",

@@ -49,9 +49,9 @@ class FutureCommoditySpreadsTests extends JonTestEnv {
     val f2 = Future(market2, period, -spread, (-1)(BBL))
     val fs = new FuturesCommoditySpread(crack, period, spread, 1(BBL))
 
-    val f1ds = AtomicDatumKeyUtils.environmentDifferentiables(f1, mdt, USD)
-    val f2ds = AtomicDatumKeyUtils.environmentDifferentiables(f2, mdt, USD)
-    val fsds = AtomicDatumKeyUtils.environmentDifferentiables(fs, mdt, USD)
+    val f1ds = AtomicDatumKeyUtils.environmentDifferentiables(f1, env, USD)
+    val f2ds = AtomicDatumKeyUtils.environmentDifferentiables(f2, env, USD)
+    val fsds = AtomicDatumKeyUtils.environmentDifferentiables(fs, env, USD)
 
     assertEquals(fsds, f1ds ++ f2ds)
 

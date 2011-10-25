@@ -119,7 +119,7 @@ trait Greeks {
    * Parallel delta
    */
   def delta(env: Environment, ccy: UOM): Quantity = {
-    val fpks = priceKeys(this, env.marketDay, ccy).toList
+    val fpks = priceKeys(this, env, ccy).toList
     assert(fpks.groupBy(_.market).size == 1, "Can't get parallel delta when there are multiple underyling markets: " + fpks)
     firstOrderParallelDerivative(env, fpks.head.curveKey, ccy, shiftInterpolatedVols = false)
   }
@@ -145,7 +145,7 @@ trait Greeks {
    * This is just parallel gamma
    */
   def centreGamma(env: Environment, ccy: UOM): Quantity = {
-    val fpks = priceKeys(this, env.marketDay, ccy).toList
+    val fpks = priceKeys(this, env, ccy).toList
     assert(fpks.groupBy(_.market).size == 1, "Can't get centreGamma when there are multiple underyling markets: " + fpks)
     secondOrderParallelDerivative(env, fpks.head.curveKey, ccy, shiftInterpolatedVols = false)
   }
@@ -203,7 +203,7 @@ trait Greeks {
    * overridden in AverageOption.
    **/
   def parallelVega(env: Environment, shiftInterpolatedVols : Boolean): Quantity = {
-    val vks = volKeys(this, env.marketDay, valuationCCY).toList
+    val vks = volKeys(this, env, valuationCCY).toList
     assert(vks.groupBy(_.curveKey).size == 1, "Can't get parallel vega when there are multiple underyling curve keys: " + vks)
     firstOrderParallelDerivative(env, vks.head.curveKey, valuationCCY, shiftInterpolatedVols = shiftInterpolatedVols) / 100.0
   }
@@ -250,9 +250,6 @@ trait Greeks {
       Greeks.parallelShift(env, curveKey, shiftInterpolatedVols = shiftInterpolatedVols, multiple = multiple)
     })
   }
-  def priceKeysForTime(marketDay : DayAndTime) : Set[EnvironmentDifferentiable with PriceKey] = priceKeys(this, marketDay, valuationCCY).map(_.asInstanceOf[EnvironmentDifferentiable with PriceKey])
-
-  def volKeysForTime(marketDay : DayAndTime) : Set[EnvironmentDifferentiable with VolKey] = volKeys(this, marketDay, valuationCCY).map(_.asInstanceOf[EnvironmentDifferentiable with VolKey])
 }
 object Greeks {
   val dVol = Percentage(0.0050)

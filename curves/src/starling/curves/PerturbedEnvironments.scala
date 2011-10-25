@@ -1,7 +1,6 @@
 package starling.curves
 
 import starling.varcalculator.ForwardRateRiskFactor
-import starling.marketdata.MarketData
 import starling.quantity.{Percentage, UOM, Quantity}
 import starling.quantity.UOM._
 import starling.utils.cache.CacheFactory
@@ -12,6 +11,7 @@ import starling.utils.Log
 import java.util.concurrent.{ConcurrentHashMap, FutureTask}
 import starling.market._
 import starling.daterange._
+import starling.marketdata.{ReferenceDataLookup, MarketData}
 
 abstract class DerivedAtomicEnvironment(
   originalEnv : AtomicEnvironment
@@ -25,6 +25,8 @@ abstract class DerivedAtomicEnvironment(
     makeCopyWithNewChildEnvironment(originalEnv.setShiftsCanBeIgnored(canBeIgnored))
   }
   def makeCopyWithNewChildEnvironment(newEnv : AtomicEnvironment) : AtomicEnvironment
+
+  override def referenceDataLookup = originalEnv.referenceDataLookup
 }
 
 abstract class PerturbedAtomicEnvironment(
@@ -257,9 +259,10 @@ case class CachingAtomicEnvironment(
 
 }
 
-case class NullAtomicEnvironment(marketDay:DayAndTime, shiftsCanBeIgnored : Boolean = false) extends AtomicEnvironment {
+case class NullAtomicEnvironment(marketDay:DayAndTime, referenceDataLookup : ReferenceDataLookup, shiftsCanBeIgnored : Boolean = false) extends AtomicEnvironment {
   def apply(key : AtomicDatumKey) : Any = key.nullValue
   def setShiftsCanBeIgnored(canBeIgnored : Boolean) = copy(shiftsCanBeIgnored = canBeIgnored)
+
 }
 
 /**
@@ -335,6 +338,8 @@ case class ForwardStateEnvironment(
   def shiftsCanBeIgnored = originalEnv.shiftsCanBeIgnored
 
   def setShiftsCanBeIgnored(canBeIgnored : Boolean) : AtomicEnvironment = copy(originalEnv = originalEnv.setShiftsCanBeIgnored(canBeIgnored))
+
+  def referenceDataLookup = originalEnv.referenceDataLookup
 }
 
 /**

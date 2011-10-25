@@ -91,8 +91,8 @@ abstract class SingleAverageOption(
       liveAveragingDays
   }
 
-  override def priceAndVolKeys(marketDay : DayAndTime) = {
-    val days = averagingDays.filter(_.endOfDay > marketDay).toSet
+  override def priceAndVolKeys(env : Environment) = {
+    val days = averagingDays.filter(_.endOfDay > env.marketDay).toSet
     val priceKeys : Set[EnvironmentDifferentiable with PriceKey] = days.map(SwapPrice(index, _))
     val volKeys : Set[EnvironmentDifferentiable with VolKey] = days.map(SwapVol(index, _))
     (priceKeys, volKeys)

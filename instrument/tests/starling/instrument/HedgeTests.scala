@@ -19,6 +19,7 @@ import org.testng.Assert._
 import javax.management.remote.rmi._RMIConnection_Stub
 import starling.market.{TestMarketTest, Market}
 import starling.curves._
+import starling.marketdata.ReferenceDataLookup
 
 class HedgeTests extends TestMarketTest {
 
@@ -90,7 +91,7 @@ class HedgeTests extends TestMarketTest {
     val hedgeComp = CompositeInstrument(hedges)
 
     for(
-      key <- CollectionUtils.filterOnType[PriceDifferentiable](futuresComp.environmentDifferentiables(env.marketDay) ++ hedgeComp.environmentDifferentiables(env.marketDay))
+      key <- CollectionUtils.filterOnType[PriceDifferentiable](futuresComp.environmentDifferentiables(env) ++ hedgeComp.environmentDifferentiables(env))
     ){
       val delta = futuresComp.firstOrderDerivative(env, key, USD)
       val hedgeDelta = hedgeComp.firstOrderDerivative(env, key, USD)
@@ -102,7 +103,7 @@ class HedgeTests extends TestMarketTest {
 
   @Test
   def testFuturesSpreadDecompositionIsAsExpected{
-    val nullEnv = Environment(new NullAtomicEnvironment(Day(2010, 4, 1).endOfDay))
+    val nullEnv = Environment(new NullAtomicEnvironment(Day(2010, 4, 1).endOfDay, ReferenceDataLookup.Null))
     buildMonthGroups().foreach{
       months =>
         val futures = makeRandomFutures(months).filter(_.isLive(nullEnv.marketDay))
@@ -151,7 +152,7 @@ class HedgeTests extends TestMarketTest {
     }.toList
     val hedgePortfolio = CompositeInstrument(hedges)
     for (
-      key <- CollectionUtils.filterOnType[PriceDifferentiable](portfolio.atomicMarketDataKeys(env.marketDay))
+      key <- CollectionUtils.filterOnType[PriceDifferentiable](portfolio.atomicMarketDataKeys(env))
     ){
       val delta = portfolio.firstOrderDerivative(env, key, USD)
       val hedgeDelta = hedgePortfolio.firstOrderDerivative(env, key, USD)
@@ -170,7 +171,7 @@ class HedgeTests extends TestMarketTest {
       Future(mkt, _, Quantity(10.0, mkt.priceUOM), Quantity(-20.0, mkt.uom))
     }
     val futures = longFutures ::: shortFutures
-    val nullEnv = Environment(new NullAtomicEnvironment(Day(2010, 4, 1).endOfDay))
+    val nullEnv = Environment(new NullAtomicEnvironment(Day(2010, 4, 1).endOfDay, ReferenceDataLookup.Null))
 
     val hedges = Hedge.swapHedgeUTPs(nullEnv, futures)
     val futuresMonths = CollectionUtils.filterOnType[Future](hedges).map(_.delivery).toList.distinct.sortWith(_<_)

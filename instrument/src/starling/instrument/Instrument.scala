@@ -15,6 +15,7 @@ import starling.models.DefaultRiskParameters
 import starling.utils.CollectionUtils
 import starling.instrument.physical.PhysicalMetalAssignment
 import starling.quantity.{NamedQuantity, Quantity, UOM}
+import starling.marketdata.ReferenceDataLookup
 
 trait AsUtpPortfolio {
   def asUtpPortfolio(tradeDay:Day): UTP_Portfolio
@@ -104,18 +105,18 @@ trait Instrument extends Ordered[Instrument] with Greeks with PnlExplanation {
    * i.e. the only difference is the boolean `ignoreShiftsIfPermitted`
    * @see AtomicDatumKeyUtils for a distinct version
   */
-  def atomicMarketDataKeys(marketDay: DayAndTime, ccy : UOM = UOM.USD): Set[AtomicDatumKey] = {
-    val record = KeyRecordingCurveObjectEnvironment(new NullAtomicEnvironment(marketDay))
+  def atomicMarketDataKeys(env : Environment, ccy : UOM = UOM.USD): Set[AtomicDatumKey] = {
+    val record = KeyRecordingCurveObjectEnvironment(env.atomicEnv)
     mtm(Environment(record), ccy)
     record.keys.map(_.clearProperties)
   }
 
-  def environmentDifferentiables(marketDay: DayAndTime, ccy : UOM = UOM.USD): Set[EnvironmentDifferentiable] = {
-    atomicMarketDataKeys(marketDay, ccy).flatMap(EnvironmentDifferentiable.toEnvironmentDifferentiable)
+  def environmentDifferentiables(env : Environment, ccy : UOM = UOM.USD): Set[EnvironmentDifferentiable] = {
+    atomicMarketDataKeys(env, ccy).flatMap(EnvironmentDifferentiable.toEnvironmentDifferentiable)
   }
 
-  def pricePeriods(marketDay : DayAndTime) : Map[CommodityMarket, DateRange] = {
-    CollectionUtils.filterOnType[ForwardPriceKey](atomicMarketDataKeys(marketDay)).toList.groupBy(_.market).map{
+  def pricePeriods(env : Environment) : Map[CommodityMarket, DateRange] = {
+    CollectionUtils.filterOnType[ForwardPriceKey](atomicMarketDataKeys(env)).toList.groupBy(_.market).map{
       case (market, keys) =>
         val periods = keys.map(_.period).sortWith(_<_)
         market -> SimpleDateRange(periods.head.firstDay, periods.last.lastDay)
@@ -201,7 +202,7 @@ trait Instrument extends Ordered[Instrument] with Greeks with PnlExplanation {
    * True if this instrument is a linear instrument on this market day. So it will return true
    * for an expired option, for example. 
    */
-  def isLinear(marketDay: DayAndTime) = !environmentDifferentiables(marketDay).exists(_.isInstanceOf[VolKey])
+  def isLinear(env: Environment) = !environmentDifferentiables(env).exists(_.isInstanceOf[VolKey])
 }
 
 

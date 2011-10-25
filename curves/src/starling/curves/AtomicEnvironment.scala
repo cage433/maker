@@ -46,6 +46,8 @@ abstract class TestingAtomicEnvironment(var shiftsCanBeIgnored : Boolean = false
   }
   def applyOrMatchError(key : AtomicDatumKey) : Any
   def setShiftsCanBeIgnored(canBeIgnored : Boolean) = {shiftsCanBeIgnored = canBeIgnored; this}
+
+  def referenceDataLookup : ReferenceDataLookup = ReferenceDataLookup.Null
 }
 
 /**
@@ -62,7 +64,7 @@ abstract class TestingAtomicEnvironment(var shiftsCanBeIgnored : Boolean = false
  * @see Environment
  */
 trait AtomicEnvironment extends AtomicEnvironmentHelper{
-  def referenceDataLookup: ReferenceDataLookup = ReferenceDataLookup.Null
+  def referenceDataLookup: ReferenceDataLookup
 
   /**	Returns the value of a market datum
    * 	@param key Specifies an item of market data
@@ -115,6 +117,8 @@ case class UnitTestingAtomicEnvironment(marketDay : DayAndTime, data: PartialFun
     }
   }
   def setShiftsCanBeIgnored(canBeIgnored : Boolean) = copy(shiftsCanBeIgnored = canBeIgnored)
+
+  def referenceDataLookup = ReferenceDataLookup.Null
 }
 
 /**
@@ -232,6 +236,8 @@ case class MappingAtomicEnvironment(
   }
 
   def setShiftsCanBeIgnored(canBeIgnored : Boolean) = copy(shiftsCanBeIgnored = canBeIgnored)
+
+  def referenceDataLookup = ReferenceDataLookup.Null
 }
 
 /** Currently only used in unit tests, this implementation maintains
@@ -251,6 +257,8 @@ case class MappingCurveObjectEnvironment(
   }
 
   def setShiftsCanBeIgnored(canBeIgnored : Boolean) = copy(shiftsCanBeIgnored = canBeIgnored)
+
+  def referenceDataLookup = ReferenceDataLookup.Null
 }
 
 
@@ -261,7 +269,7 @@ case class MarketDataCurveObjectEnvironment(
   marketDayAndTime:DayAndTime,
   marketDataSlice:MarketDataSlice,
   shiftsCanBeIgnored : Boolean = false,
-  override val referenceDataLookup: ReferenceDataLookup
+  val referenceDataLookup: ReferenceDataLookup
 ) extends CurveObjectEnvironment {
 
   def marketDay = marketDayAndTime

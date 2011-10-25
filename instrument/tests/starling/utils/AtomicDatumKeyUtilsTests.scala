@@ -12,6 +12,9 @@ import starling.instrument.{SingleAsianOption, AsianOption, FuturesOption}
 import starling.instrument.UTP
 import starling.market._
 import starling.instrument.utils._
+import starling.marketdata.ReferenceDataLookup
+import starling.curves.Environment
+import starling.curves.NullAtomicEnvironment
 
 class AtomicDatumKeyUtilsTests extends TestMarketTest {
   @Test
@@ -23,7 +26,7 @@ class AtomicDatumKeyUtilsTests extends TestMarketTest {
     val jan11 = Month(2011, 1)
     val option = new SingleAsianOption(index, dec10, Quantity(100, USD / MT), Quantity(100, MT), Call)
 
-    val (priceKeys, volKeys) = UTP.priceAndVolKeys(option, (1 Nov 2010).endOfDay, showEquivalentFutures = false, tenor = Day)
+    val (priceKeys, volKeys) = UTP.priceAndVolKeys(option, Environment(NullAtomicEnvironment((1 Nov 2010).endOfDay, ReferenceDataLookup.Null)), showEquivalentFutures = false, tenor = Day)
     val keys = priceKeys ++ volKeys
 
     val expectedKeys = Set() ++ index.observationDays(dec10).map(SwapPrice(index, _)) ++ index.observationDays(dec10).map(SwapVol(index, _))
@@ -38,8 +41,8 @@ class AtomicDatumKeyUtilsTests extends TestMarketTest {
     val exerciseDay = market.optionExpiry(dec10)
     val option = new FuturesOption(market, exerciseDay, dec10, Quantity(100, USD / BBL), Quantity(100, BBL), Call, European)
 
-    val keys = AtomicDatumKeyUtils.atomicDatumKeys(option, (1 Nov 2010).endOfDay, USD)
-    val bkeys = EnvironmentDifferentiable.applyBucketing(AtomicDatumKeyUtils.environmentDifferentiables(option, (1 Nov 2010).endOfDay, USD))
+    val keys = AtomicDatumKeyUtils.atomicDatumKeys(option, Environment(NullAtomicEnvironment((1 Nov 2010).endOfDay, ReferenceDataLookup.Null)), USD)
+    val bkeys = EnvironmentDifferentiable.applyBucketing(AtomicDatumKeyUtils.environmentDifferentiables(option, Environment(NullAtomicEnvironment((1 Nov 2010).endOfDay, ReferenceDataLookup.Null)), USD))
     assertEquals(bkeys,
       Set(OilAtmVolAtomicDatumKey(market, None, dec10, false), PriceDifferentiable(market, dec10)))
   }

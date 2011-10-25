@@ -11,6 +11,9 @@ import starling.market.{CommodityMarket, FuturesSpreadMarket}
 import starling.auth.User
 import starling.concurrent.MP._
 import starling.eai.{EAIDealBookMapping, EAIStrategyDB}
+import starling.curves.Environment
+import starling.curves.NullAtomicEnvironment
+import starling.marketdata.ReferenceDataLookup
 
 class ExcelTradeReader(eaiStrategyDB: EAIStrategyDB, eaiDealBookMapping: EAIDealBookMapping, currentlyLoggedOn: () => User) {
   import ExcelRow._
@@ -81,7 +84,7 @@ class ExcelTradeReader(eaiStrategyDB: EAIStrategyDB, eaiDealBookMapping: EAIDeal
         // exception it will throw an error here rather than when trying to value it later
         val testDay = Day(2011, 1, 1).endOfDay
         trade.asUtpPortfolio.portfolio.keys.map {
-          utp => utp.priceAndVolKeys(testDay)
+          utp => utp.priceAndVolKeys(Environment(NullAtomicEnvironment(testDay, ReferenceDataLookup.Null)))
         }
         
         trade

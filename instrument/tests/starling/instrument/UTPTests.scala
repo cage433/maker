@@ -24,6 +24,10 @@ import starling.calendar.BrentMonth
 import starling.instrument.utils.StarlingXStream
 import starling.utils.{StarlingTest, Reflection}
 import starling.utils.sql.PersistAsBlob
+import starling.marketdata.ReferenceDataLookup
+import starling.marketdata.NeptuneCountryCode
+import starling.marketdata.Area
+import starling.marketdata.AreaCode
 
 class UTPTests extends IndexTest {
 
@@ -63,8 +67,12 @@ class UTPTests extends IndexTest {
           case _ : FreightParityAtomicKey => Quantity(22, USD/MT)
         }
       }
+
+      override def referenceDataLookup = new ReferenceDataLookup.NullReferenceDataLookup{
+        override def areaFor(code : NeptuneCountryCode) = Some(Area(AreaCode.EUR, "Dummy Area"))
+      }
     }
-    )
+  )
 
   @DataProvider(name = "tradeableProvider")
   def tradeableProvider : Array[Array[Tradeable]] = {
@@ -246,10 +254,10 @@ class UTPTests extends IndexTest {
 
   @Test(dataProvider = "instrumentProvider")
   def testInstrumentLevelPriceKeysCorrespondToExpectedAtomicOnes(utp : UTP){
-    val (atomicPriceKeys, _) = UTP.priceAndVolKeys(utp, env.marketDay, showEquivalentFutures = true, tenor = Day)
-    val (instLevelPriceKeys, _) = UTP.priceAndVolKeys(utp, env.marketDay, showEquivalentFutures = false, tenor = Day)
+    val (atomicPriceKeys, _) = UTP.priceAndVolKeys(utp, env, showEquivalentFutures = true, tenor = Day)
+    val (instLevelPriceKeys, _) = UTP.priceAndVolKeys(utp, env, showEquivalentFutures = false, tenor = Day)
     def getAtomicPriceKeys(diff : EnvironmentDifferentiable with PriceKey) : Set[EnvironmentDifferentiable with PriceKey] = {
-      val record = KeyRecordingCurveObjectEnvironment(new NullAtomicEnvironment(env.marketDay))
+      val record = KeyRecordingCurveObjectEnvironment(new NullAtomicEnvironment(env.marketDay, ReferenceDataLookup.Null))
       val value = diff.quantityValue(Environment(record))
       record.keys.map(_.clearProperties).flatMap(EnvironmentDifferentiable.toEnvironmentDifferentiable).filter(_.isInstanceOf[EnvironmentDifferentiable with PriceKey]).asInstanceOf[Set[EnvironmentDifferentiable with PriceKey]]
     }

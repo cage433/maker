@@ -12,6 +12,7 @@ import starling.market.FuturesMarket
 import starling.instrument.SingleCalendarSpreadOption
 import starling.market.FuturesFrontPeriodIndex
 import starling.marketdata.{MarketDataKey, MarketData}
+import starling.marketdata.ReferenceDataLookup
 
 /**
  * Holds the general pivot report code.
@@ -79,16 +80,16 @@ trait PivotReport[R <: PivotReportRow] {
  */
 // TODO [01 Dec 2010] move this to an objects static method, as all reports which extend it
 trait RiskFactorSplittingPivotReport[R <: RiskPivotReportRow[R] with PivotRowShareableByRiskFactor[R]] extends PivotReport[R]{
-  def marketDay : DayAndTime
+  def envForSplitting : Environment
   override def combine(rows : List[R], reportSpecificChoices : ReportSpecificChoices) = {
     val collapseOptions = reportSpecificChoices.getOrElse(PivotReport.collapseOptions_str, true)
     var combinedRows = rows.flatMap{row => 
-      row.splitByEnvironmentDifferentiable(marketDay, reportSpecificChoices)
+      row.splitByEnvironmentDifferentiable(envForSplitting, reportSpecificChoices)
     }
     combinedRows = combinedRows.map(_.setCollapseOptions(collapseOptions).asOriginalType)
     combinedRows = combinedRows.map(_.setPeriodForDisplay(reportSpecificChoices.getOrElse(PivotReport.tenor_str, Month)))
     combinedRows
-  }                                                                                                                                                                                                                                              ;
+  }
 }
 
 
@@ -210,11 +211,11 @@ class PivotReportData[R <: PivotReportRow](data: Map[UTPIdentifier, Either[List[
 }
 object PivotReportData {
   def run[T <: PivotReportRow](report: PivotReport[T], instruments: Map[UTPIdentifier, UTP], slideDetails: SlideDetails,
-    availablePages: List[String]): PivotReportData[T] = {
+    availablePages: List[String], referenceDataLookup : ReferenceDataLookup): PivotReportData[T] = {
 
     val data = Map[UTPIdentifier, Either[List[T], Throwable]]() ++ (for ((instrumentid, utp) <- instruments) yield {
       instrumentid -> (try {
-        utp.priceAndVolKeys(Day(2001, 1, 1).endOfDay)
+        utp.priceAndVolKeys(Environment(NullAtomicEnvironment(Day(2001, 1, 1).endOfDay, referenceDataLookup)))
         Left(report.rows(instrumentid, utp))
       } catch {
         case t: Throwable => {

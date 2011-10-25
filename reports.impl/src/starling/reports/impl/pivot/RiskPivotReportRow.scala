@@ -77,7 +77,7 @@ trait PivotRowShareableByRiskFactor[T]{
 
   def setDiff(diff : EnvironmentDifferentiable) : PivotRowShareableByRiskFactor[T]
 
-  def splitByEnvironmentDifferentiable(marketDay : DayAndTime, reportSpecificChoices : ReportSpecificChoices) : List[T] = {
+  def splitByEnvironmentDifferentiable(env : Environment, reportSpecificChoices : ReportSpecificChoices) : List[T] = {
     val utp : UTP = self.utp match {
       case BankAccount(_, Some(mkt : FuturesMarket), None, period : DateRangePeriod) => Future(mkt, period.period, 0.0(mkt.priceUOM), 1.0(mkt.uom))
       case BankAccount(_, Some(mkt : FuturesMarket), None, SpreadPeriod(front : Month, back : Month)) => 
@@ -103,11 +103,11 @@ trait PivotRowShareableByRiskFactor[T]{
       }
       case _ => self.utp
     }
-    splitByEnvironmentDifferentiable(utp, marketDay, reportSpecificChoices)
+    splitByEnvironmentDifferentiable(utp, env, reportSpecificChoices)
   }
 
-  private def splitByEnvironmentDifferentiable(utp :UTP, marketDay : DayAndTime, reportSpecificChoices : ReportSpecificChoices) : List[T] = {
-    val (priceDiffs, volDiffs) = PivotReportUtils.priceAndVolKeys(utp, marketDay, reportSpecificChoices)
+  private def splitByEnvironmentDifferentiable(utp :UTP, env : Environment, reportSpecificChoices : ReportSpecificChoices) : List[T] = {
+    val (priceDiffs, volDiffs) = PivotReportUtils.priceAndVolKeys(utp, env, reportSpecificChoices)
     val diffs = (priceDiffs ++ volDiffs).toList
     if (diffs.isEmpty)
       utp match {

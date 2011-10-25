@@ -7,6 +7,7 @@ import starling.quantity.utils.QuantityTestUtils._
 import starling.quantity.{UOM, Quantity}
 import starling.market._
 import starling.daterange.{DayAndTime, Day, Month}
+import starling.marketdata.ReferenceDataLookup
 
 class TASTests extends TestMarketTest {
 
@@ -48,8 +49,8 @@ class TASTests extends TestMarketTest {
     val maturityDay = Day(2008, 1, 1)
     val tas = TAS(market, period, maturityDay, v)
 
-    val beforeKeys = tas.atomicMarketDataKeys(maturityDay.startOfDay, USD)
-    val afterKeys = tas.atomicMarketDataKeys(maturityDay.endOfDay, USD)
+    val beforeKeys = tas.atomicMarketDataKeys(environment(maturityDay.startOfDay), USD)
+    val afterKeys = tas.atomicMarketDataKeys(environment(maturityDay.endOfDay), USD)
 
     // we're not actually sensitive to the forward price before the maturity day but it makes the report look a lot better. see comment in TAS
     assertEquals(beforeKeys, Set(ForwardPriceKey(market, period)))

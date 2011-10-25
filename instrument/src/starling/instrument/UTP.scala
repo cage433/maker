@@ -47,8 +47,8 @@ trait UTP extends Instrument {
    * The EnvironmentDifferentiables used in greeks, p&l pivot reports
    * Some UTPs will override this, e.g. swaps and APOs will return the SwapPrice, rather than the underlying futures prices
    */
-  def priceAndVolKeys(marketDay : DayAndTime) : (Set[EnvironmentDifferentiable with PriceKey], Set[EnvironmentDifferentiable with VolKey]) = {
-    UTP.priceAndVolKeys(this, marketDay)
+  def priceAndVolKeys(env : Environment) : (Set[EnvironmentDifferentiable with PriceKey], Set[EnvironmentDifferentiable with VolKey]) = {
+    UTP.priceAndVolKeys(this, env)
   }
 
   /**
@@ -90,7 +90,7 @@ object UTP{
 
   def priceAndVolKeys(
     utp : UTP, 
-    marketDay : DayAndTime, 
+    env : Environment,
     showEquivalentFutures : Boolean = true, 
     tenor : TenorType = Day
   )
@@ -99,19 +99,21 @@ object UTP{
     priceAndVolKeysCache.memoize(
       (
         // for options the strike price is immaterial - to save unnecessary recaclulation we set the strike to 1
+        // Note the assumption that the reference data will never change after start up
         cachingUTP,
-        marketDay, 
+        env.marketDay, 
+        env.referenceDataLookup.name,
         showEquivalentFutures, 
         tenor
       ),
-    (_ : (UTP, DayAndTime, Boolean, TenorType)) => {
+    (_ : (UTP, DayAndTime, String, Boolean, TenorType)) => {
       var (pKeys, vKeys) = (utp, showEquivalentFutures) match {
-        case (_, true) => (priceKeys(utp, marketDay, UOM.USD), volKeys(utp, marketDay, UOM.USD))
-        case (_, false) => cachingUTP.priceAndVolKeys(marketDay)
+        case (_, true) => (priceKeys(utp, env, UOM.USD), volKeys(utp, env, UOM.USD))
+        case (_, false) => cachingUTP.priceAndVolKeys(env)
       }
 
-      pKeys = pKeys.map(_.containingDifferentiable(marketDay, tenor).asInstanceOf[EnvironmentDifferentiable with PriceKey])
-      vKeys = vKeys.map(_.containingDifferentiable(marketDay, tenor).asInstanceOf[EnvironmentDifferentiable with VolKey])
+      pKeys = pKeys.map(_.containingDifferentiable(env.marketDay, tenor).asInstanceOf[EnvironmentDifferentiable with PriceKey])
+      vKeys = vKeys.map(_.containingDifferentiable(env.marketDay, tenor).asInstanceOf[EnvironmentDifferentiable with VolKey])
       (pKeys, vKeys)
     })
   }

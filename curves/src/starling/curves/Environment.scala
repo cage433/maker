@@ -62,6 +62,8 @@ case class Environment(
   namingPrefix : Option[String] = None
 )
 {
+  def referenceDataLookup = instrumentLevelEnv.atomicEnv().referenceDataLookup
+  
   val instrumentLevelEnv = namingPrefix match {
     case None => instrumentLevelEnv_
     case Some(prefix) => instrumentLevelEnv_.withNaming(prefix)

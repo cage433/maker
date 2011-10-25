@@ -64,7 +64,7 @@ class CurrentPriceChangeReport(d1:Environment, d2:Environment, utps : Map[UTPIde
     }
     super.combine(combinedRows, reportSpecificChoices)
   }
-  def marketDay = d1.marketDay
+  def envForSplitting = d1
   override def reportSpecificOptions = super.reportSpecificOptions :+
       (atmVega_str -> List(false, true))
 }

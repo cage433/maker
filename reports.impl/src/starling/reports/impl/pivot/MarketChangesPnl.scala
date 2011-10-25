@@ -22,6 +22,8 @@ import starling.daterange.Month
 import starling.utils.ImplicitConversions._
 import starling.reports.pivot.greeks.{VolatilityMeasure, RiskVols, RiskPrices}
 import starling.reports.pivot.OptionalPeriodLabel
+import starling.marketdata.ReferenceDataLookup
+import starling.curves.NullAtomicEnvironment
 
 object MarketChangesRiskFields extends RiskPivotFields[MarketChangesPnlRow]
 
@@ -119,8 +121,8 @@ class MarketChangesPnl(d1: AtomicEnvironment, d2: AtomicEnvironment, utps : Map[
   } 
 
   private def environmentDiffsAndCurveKeys(utp : UTP, reportSpecificChoices : ReportSpecificChoices) : (Set[EnvironmentDifferentiable], Set[CurveKey]) = {
-    val curveKeys = AtomicDatumKeyUtils.curveKeys(utp, d1EnvFwd.marketDay, UOM.USD)
-    val (priceKeys, volKeys) = PivotReportUtils.priceAndVolKeys(utp, d1EnvFwd.marketDay, reportSpecificChoices)
+    val curveKeys = AtomicDatumKeyUtils.curveKeys(utp, d1EnvFwd, UOM.USD)
+    val (priceKeys, volKeys) = PivotReportUtils.priceAndVolKeys(utp, d1EnvFwd, reportSpecificChoices)
     val envDiffs = priceKeys ++ volKeys
     (envDiffs, curveKeys)
   }
@@ -168,7 +170,7 @@ class MarketChangesPnl(d1: AtomicEnvironment, d2: AtomicEnvironment, utps : Map[
           )
         }
         
-        val (priceDiffs, volDiffs) = PivotReportUtils.priceAndVolKeys(unitUTP, d1EnvFwd.marketDay, reportSpecificChoices)
+        val (priceDiffs, volDiffs) = PivotReportUtils.priceAndVolKeys(unitUTP, d1EnvFwd, reportSpecificChoices)
         val diffs = (priceDiffs ++ volDiffs).toList
 
         def shareAcrossDiff(groupName: String, name : String, value : PivotQuantity) : List[MarketChangesPnlRow] = {
@@ -207,7 +209,7 @@ class MarketChangesPnl(d1: AtomicEnvironment, d2: AtomicEnvironment, utps : Map[
             case _ => "OTHER"
           }
         }
-        val cashComponents = pnlComponentsByCashOrNot.getOrElse("CASH", Nil).flatMap(_.splitByEnvironmentDifferentiable(d1EnvFwd.marketDay, reportSpecificChoices))
+        val cashComponents = pnlComponentsByCashOrNot.getOrElse("CASH", Nil).flatMap(_.splitByEnvironmentDifferentiable(d1EnvFwd, reportSpecificChoices))
         val nonCashComponents = pnlComponentsByCashOrNot.getOrElse("OTHER", Nil)
         cashComponents ::: nonCashComponents
     }
@@ -326,7 +328,7 @@ class TimeChangesPnl(d1:Environment, forwardDayAndTime:DayAndTime, utps : Map[UT
     }
     super.combine(combinedRows, reportSpecificChoices)
   }
-  def marketDay = d1.marketDay
+  def envForSplitting = d1
   override def reportSpecificOptions = super.reportSpecificOptions :+ 
       (atmVega_str -> List(false, true))
 }
@@ -390,7 +392,7 @@ class TradeChangesPnlPivotTableDataSource(tradeChangesFields:List[FieldDetailsGr
     def priceAndVolKeys(trade : Trade) = {
       trade.asUtpPortfolio.portfolio.keySet.toList.flatMap{
         utp =>
-          val (priceKeys, volKeys) = PivotReportUtils.priceAndVolKeys(utp, Day(2000, 1, 1).startOfDay,
+          val (priceKeys, volKeys) = PivotReportUtils.priceAndVolKeys(utp, Environment(NullAtomicEnvironment(Day(2000, 1, 1).startOfDay, ReferenceDataLookup.Null)),
             ReportSpecificChoices.create(pfs.reportSpecificChoices.toMap))
           (priceKeys ++ volKeys).toList
       }
@@ -444,7 +446,7 @@ case class NewTradesRow(
 object NewTradesRiskFields extends RiskPivotFields[NewTradesRow]
 
 class NewTradesPivotReport(environment: Environment, currency: UOM, utps : Map[UTPIdentifier, UTP]) extends RiskFactorSplittingPivotReport[NewTradesRow] {
-  def marketDay = environment.marketDay
+  def envForSplitting = environment
 
   val spreadMonthsByStrategyAndMarket = PivotReport.spreadMonthsByStrategyAndMarket(utps)
   val swapIndices = PivotReport.swapIndicesByStrategy(utps)

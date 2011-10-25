@@ -28,7 +28,7 @@ class GreeksPivotReport(@transient environment : Environment, thetaDayAndTime : 
       val positionOnly = reportSpecificChoices.getOrElse(positionOnly_str, false)
       val collapseOptions = reportSpecificChoices.getOrElse(collapseOptions_str, true)
       val atmVega = reportSpecificChoices.getOrElse(atmVega_str, false)
-      val (priceDiffs, volDiffs) = PivotReportUtils.priceAndVolKeys(utp, environment.marketDay, reportSpecificChoices)
+      val (priceDiffs, volDiffs) = PivotReportUtils.priceAndVolKeys(utp, environment, reportSpecificChoices)
 
       val actualEnv = if (useSkew)
         environment

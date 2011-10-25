@@ -38,7 +38,7 @@ case class Trade(
 
   override def valuationCCY = tradeable.asUtpPortfolio(tradeDay).valuationCCY
 
-  override def atomicMarketDataKeys(marketDay: DayAndTime, ccy : UOM = UOM.USD) = tradeable.asUtpPortfolio(tradeDay).atomicMarketDataKeys(marketDay, ccy)
+  override def atomicMarketDataKeys(env : Environment, ccy : UOM = UOM.USD) = tradeable.asUtpPortfolio(tradeDay).atomicMarketDataKeys(env, ccy)
 
   def asUtpPortfolio = {
     val utpPortfolio = (new UTP_Portfolio() /: (tradeable:: costs).map(_.asUtpPortfolio(tradeDay)))(_ ++ _)
