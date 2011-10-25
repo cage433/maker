@@ -108,7 +108,12 @@ class PhysicalMetalForwardBuilder(refData: TitanTacticalRefData,
 
             val inventoryItems = inventoryByQuotaID.get(NeptuneId(detail.identifier).titanId).flatten.toList.map(i => Inventory(i))
 
-            val commodity = Commodity.neptuneCommodityFromNeptuneName(edmMetalByGUID(commodityGUIDs.head).name).get
+            val commodityName = edmMetalByGUID(commodityGUIDs.head)
+            val commodity = Commodity.neptuneCommodityFromNeptuneName(commodityName.name) match {
+              case Some(c) => c
+              case _ => throw new Exception("Missing neptune commodity %s (edm commodity %s)".format(commodityGUIDs.head, commodityName))
+            }
+
             val deliverySpec = deliverySpec_(detail)
             val (shape, grade) = shapeAndGrade(deliverySpec)
 
@@ -224,10 +229,11 @@ class PhysicalMetalForwardBuilder(refData: TitanTacticalRefData,
     }
     catch {
       case e => {
-            List(Trade(TradeID(TRADE_PREFIX + trade.titanId.value, TitanTradeSystem),
-                TitanTradeAttributes.dummyDate, "Unknown", TitanTradeAttributes.errorAttributes(trade, eventID),
-                new ErrorInstrument(e.getMessage)))
-        }
+        log.error("error converting trade %s".format(trade.identifier), e)
+        List(Trade(TradeID(TRADE_PREFIX + trade.titanId.value, TitanTradeSystem),
+            TitanTradeAttributes.dummyDate, "Unknown", TitanTradeAttributes.errorAttributes(trade, eventID),
+            new ErrorInstrument(e.getMessage)))
+      }
     }
   }
 }

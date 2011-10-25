@@ -6,6 +6,7 @@ import starling.quantity.UOM
 import starling.utils.ClosureUtil._
 import starling.utils.ImplicitConversions._
 import starling.marketdata.{GradeAreaBenchmarkMarketDataKey, MarketDataKey, CountryBenchmarkMarketDataKey}
+import starling.utils.Log
 
 
 trait Commodity {
@@ -46,7 +47,7 @@ object NASAAC extends NeptuneCommodity{
   val neptuneCode = "NAS"
 }
 object AluminiumAlloy extends NeptuneCommodity{
-  val neptuneName = "Aluminum Alloy"
+  val neptuneName = "Aluminium Alloy"
   val neptuneCode = "AA"
 }
 object Copper extends NeptuneCommodity{
@@ -103,7 +104,7 @@ object JetKero extends OilCommodity
 object Naphtha extends OilCommodity
 object VegetableOil extends OilCommodity
 
-object Commodity{
+object Commodity extends Log {
   lazy val metalsCommodities = List(Gold, Lead, Silver, Aluminium, Alumina, NASAAC, AluminiumAlloy, Copper, Cobalt,
     Nickel, Zinc, Tin, Palladium, Steel, IronOre, Platinum, Indium, Molybdenum, Ferromolybdenum)
 
@@ -119,7 +120,17 @@ object Commodity{
   lazy val neptuneCommodityFromNeptuneCode : Map[String, NeptuneCommodity] = neptuneCommodities.toMapWithKeys(_.neptuneCode).withDefault{
     code: String => throw new Exception("Unrecognized neptune commodity code " + code + ", known codes are " + neptuneCommodities.map(_.neptuneCode).mkString(", "))
   }
-  def neptuneCommodityFromNeptuneName(name : String) = neptuneCommodities.find(_.neptuneName == name)
+
+  def neptuneCommodityFromNeptuneName(name : String) = {
+    //val neptuneName = name.replaceAll(" ", "")
+    neptuneCommodities.find(_.neptuneName == name) match {
+      case nco @ Some(nc) => nco
+      case None => {
+        log.error("Missing neptune commodity, name %s from \n%s".format(name, neptuneCommodities.mkString("\n")))
+        None
+      }
+    }
+  }
 
   def standardFuturesMarket(commodity : Commodity) : FuturesMarket = commodity match {
     case Gold => COMEX_GOLD
