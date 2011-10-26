@@ -22,6 +22,7 @@ class NeptuneCountryBenchmarksUtil(neptuneDB: RichDB) extends Log {
   def read(day: Day) = {
     val today = Day.today
     val badCommodityNames = MSet[String]()
+    val badCommodityCountryPairs = MSet[(Commodity, NeptuneCountryCode)]()
     var rows = List[(NeptuneCommodity, (NeptuneCountryCode, Quantity))]()
 
     neptuneDB.query(
@@ -35,14 +36,21 @@ class NeptuneCountryBenchmarksUtil(neptuneDB: RichDB) extends Log {
       commodityOption match {
         case None => badCommodityNames += neptuneCommodityName
         case Some(commodity) => {
-          val price = Quantity(rs.getDouble("benchmark_rate"), refData.marketFor(commodity, countryCode).priceUOM)
-          rows = (commodity → (countryCode, price)) :: rows
+          try {
+            val price = Quantity(rs.getDouble("benchmark_rate"), refData.marketFor(commodity, countryCode).priceUOM)
+            rows = (commodity → (countryCode, price)) :: rows
+          } catch {
+            case _ =>
+              badCommodityCountryPairs += ((commodity, countryCode))
+          }
         }
       }
     }
 
     if (! badCommodityNames.isEmpty)
       log.warn("Unable to import country benchmarks for unrecognised commodities " + badCommodityNames.mkString(", "))
+    if (! badCommodityCountryPairs.isEmpty)
+      log.warn("Unable to import country benchmarks for unrecognised commodity/country pairs " + badCommodityCountryPairs.mkString(", "))
 
     val entries = rows.toMultiMap.map { case (neptuneCommodity, values) =>
         val data = values.map { case (countryCode, price) => countryCode → (day → price) }
