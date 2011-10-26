@@ -39,18 +39,14 @@ class GuiBromptonActivator extends BromptonActivator {
 
     val fc2Service = client.proxy(classOf[FC2Facility])
     val reportService = client.proxy(classOf[ReportFacility])
-    val rabbitEventViewerService = client.proxy(classOf[RabbitEventViewerService])
-    val emailService = client.proxy(classOf[EmailService])
-
+    context.registerService(classOf[BouncyRMIClient], client) //Needed by MetalsGuiBromptonActivator
     context.registerService(classOf[Publisher], client.remotePublisher)
     context.registerService(classOf[StarlingServer], starlingServer)
     context.registerService(classOf[FC2Facility], fc2Service)
-    context.registerService(classOf[RabbitEventViewerService], rabbitEventViewerService)
     context.registerService(classOf[ReportFacility], reportService)
     context.registerService(classOf[TradeFacility], tradeService)
     context.registerService(classOf[BrowserService], client.proxy(classOf[BrowserService]))
-    context.registerService(classOf[BrowserBundle], new StarlingBrowserBundle(starlingServer, reportService, fc2Service, rabbitEventViewerService, tradeService))
-    context.registerService(classOf[EmailService], emailService)
+    context.registerService(classOf[BrowserBundle], new StarlingBrowserBundle(starlingServer, reportService, fc2Service, tradeService))
 
     context.registerService(classOf[HttpServlet], new HttpServlet {
       override def doGet(req:HttpServletRequest, resp:HttpServletResponse) {
@@ -94,14 +90,13 @@ class StarlingBrowserBundle(
                              starlingServer:StarlingServer,
                              reportService:ReportFacility,
                              fc2Service:FC2Facility,
-                             rabbitEventService:RabbitEventViewerService,
                              tradeService:TradeFacility) extends BrowserBundle {
   def bundleName = "StarlingServer"
   def marshal(obj: AnyRef) = GuiStarlingXStream.write(obj)
   override def userPage(context:PageContext) = Some( UserDetailsPage(context.localCache.currentUser) )
 
   def initCache(cache: HeterogeneousMap[LocalCacheKey], publisher:Publisher) {
-    GuiStart.initCacheMap(cache, starlingServer, reportService, fc2Service, tradeService, rabbitEventService, publisher)
+    GuiStart.initCacheMap(cache, starlingServer, reportService, fc2Service, tradeService, publisher)
   }
 
   override def notificationHandlers = StarlingServerNotificationHandlers.notificationHandler :: Nil

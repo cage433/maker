@@ -128,7 +128,6 @@ object GuiStart extends Log {
                       reportService:ReportFacility,
                       fc2Service:FC2Facility,
                       tradeService:TradeFacility,
-                      rabbitEventService:RabbitEventViewerService,
                       publisher: Publisher) {
     val localCacheUpdatePublisher = new scala.swing.Publisher() {}
     publisher.reactions += {
@@ -184,9 +183,6 @@ object GuiStart extends Log {
         val current = cacheMap(DeskCloses)
         cacheMap(DeskCloses) = current + (Desk.Titan -> (current(Desk.Titan) + (TradeTimestamp.magicLatestTimestampDay -> List(TradeTimestamp.makeMagicLatestTimestamp(timestamp)))))
       }
-      case RabbitEventReceived(latestTimestamp) => {
-        cacheMap(LatestRabbitEvent) = latestTimestamp
-      }
       case EmailSent(timeSent) => {
         cacheMap(LatestEmailEvent) = timeSent
       }
@@ -213,7 +209,6 @@ object GuiStart extends Log {
       cacheMap(IsStarlingDeveloper) = starlingServer.isStarlingDeveloper
       cacheMap(EnvironmentRules) = fc2Service.environmentRuleLabels
       cacheMap(CurveTypes) = fc2Service.curveTypes
-      cacheMap(LatestRabbitEvent) = rabbitEventService.latestRabbitEvent
       cacheMap(LatestEmailEvent) = new Timestamp
     } catch {
       case e : Throwable =>
@@ -310,17 +305,6 @@ object StarlingUtilButtons {
     def cannedHomePage = PageFactory(_ => CannedHomePage())
     def eventViewerPage = PageFactory(_ => EventViewerPage())
     def gitLogPage = PageFactory(_ => GitLogPage(PivotPageState()))
-    def rabbitEventPage = new PageFactory {
-      def create(serverContext:ServerContext) = {
-        val latestRabbitEvent = context.localCache.localCache(LocalCacheKeys.LatestRabbitEvent)
-        val initialLayout = PivotFieldsState(
-          filters = List(Field("Day") -> SomeSelection(Set(NullableDay(Day.today)))),
-          rowFields = List(Field("Starling ID"), Field("Source"), Field("Message Time (UTC)"), Field("Subject")))
-        RabbitEventViewerPage(PivotPageState.default(initialLayout), RabbitEventViewerPageState(latestRabbitEvent))
-      }
-    }
-
-    def emailsSentPage = PageFactory(_ => EmailsSentPage(PivotPageState(), context.localCache.localCache(LatestEmailEvent)))
 
     val tradesButton = new PageButton(
       "View User Stats",
@@ -357,21 +341,7 @@ object StarlingUtilButtons {
       Some( KeyStroke.getKeyStroke(KeyEvent.VK_G, 0) )
     )
 
-    val rabbitEventButton = new PageButton(
-      "Rabbit Event Viewer",
-      rabbitEventPage,
-      StarlingIcons.im("/icons/32x32_event.png"),
-      Some( KeyStroke.getKeyStroke(KeyEvent.VK_R, 0) )
-    )
-
-    val emailsSentButton = new PageButton(
-      "Emails Sent",
-      emailsSentPage,
-      StarlingIcons.im("/icons/32x32_mail.png"),
-      Some( KeyStroke.getKeyStroke(KeyEvent.VK_M, 0) )
-    )
-
-    List(tradesButton, runAsUserButton, cannedButton, eventViewerButton, gitLogButton, rabbitEventButton, emailsSentButton)
+    List(tradesButton, runAsUserButton, cannedButton, eventViewerButton, gitLogButton)
   }
 }
 

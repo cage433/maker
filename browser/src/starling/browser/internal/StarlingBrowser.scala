@@ -97,7 +97,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
 
   reactions += {
     case e@BundleAdded(bundle) => {
-      if (bundle.bundleName == history(current).bundle) {
+      if (current != -1 && bundle.bundleName == history(current).bundle) {
         val currentPageInfo = history(current)
         require(bundle.getClass.getClassLoader != currentPageInfo.page.getClass.getClassLoader)
         val newPage = StarlingBrowser.reflectionCloningStrategy.cloneObjectUsingClassLoader(

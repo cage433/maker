@@ -52,7 +52,7 @@ class SingleClasspathManager(cacheServices:Boolean, activators:List[Class[_ <: B
       klass:Class[T],
       service:T,
       properties:ServiceProperties = ServiceProperties()) = {
-      val cachingService = if (cacheServices) ThreadSafeCachingProxy.createProxy(klass, service) else service
+      val cachingService = if (cacheServices && klass.isInterface) ThreadSafeCachingProxy.createProxy(klass, service) else service
       register(klass, cachingService.asInstanceOf[AnyRef], properties)
       new BromptonServiceRegistration() {
         def unregister() { throw new Exception("Unsupported") }

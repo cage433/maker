@@ -14,11 +14,11 @@ case class DBReferenceDataLookup(neptuneDB: RichDB) extends ReferenceDataLookup 
   val contractLocations = neptuneDB.lookupTable("live.contract_location", "code", "description",
     ContractualLocationCode.apply, ContractualLocation.apply)
 
-  val countries = neptuneDB.lookupTable[NeptuneCountryCode, NeptuneCountry]("live.country", "code", "name",
-    NeptuneCountryCode.apply, (code, name) => NeptuneCountry(code, name, countryToAreaLT.get(code).flatMap(areas.get)))
-
   private val countryToAreaLT = neptuneDB.lookupTable("live.location_area_link", "country_code", "area_code")
     .mapKeys(NeptuneCountryCode(_)).mapValues(AreaCode(_))
+
+  val countries = neptuneDB.lookupTable[NeptuneCountryCode, NeptuneCountry]("live.country", "code", "name",
+    NeptuneCountryCode.apply, (code, name) => NeptuneCountry(code, name, countryToAreaLT.get(code).flatMap(areas.get)))
 
   require((areas.keySet & AreaCode.hardCoded) == AreaCode.hardCoded, "Reference data has changed, hard coded values are invalid")
 }

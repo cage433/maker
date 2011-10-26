@@ -14,6 +14,7 @@ import starling.trade.impl.osgi.TradeBromptonActivator
 import starling.props.internal.PropsBromptonActivator
 import starling.metals.MetalsBromptonActivator
 import starling.webservice.HttpWebserviceBromptonActivator
+import starling.manager.BromptonActivator
 
 
 /**
@@ -28,8 +29,9 @@ object Server {
   def run() {
     System.setProperty("log4j.configuration", "utils/resources/log4j.properties")
     PropsHelper.writeDefaults
+    val props = PropsHelper.defaultProps
     writePIDFile()
-    val activators = List(
+    val baseActivators = List[Class[_ <: BromptonActivator]](
       classOf[PropsBromptonActivator],
       classOf[SingleClasspathBroadcasterActivator],
       classOf[AuthBromptonActivator],
@@ -37,10 +39,13 @@ object Server {
       classOf[TradeBromptonActivator],
       classOf[ReportsBromptonActivator],
       classOf[BouncyRMIServerBromptonActivator],
-      classOf[MetalsBromptonActivator],
-      classOf[RabbitEventViewerServiceBromptonActivator],
       classOf[HttpWebserviceBromptonActivator]
     )
+    val metalsActivators = List[Class[_ <: BromptonActivator]](
+      classOf[MetalsBromptonActivator],
+      classOf[RabbitEventViewerServiceBromptonActivator]
+    )
+    val activators = baseActivators ::: (if (props.ServerType() == "FC2") metalsActivators else Nil)
     val single = new SingleClasspathManager(false, activators)
     writePIDFile()
     Log.infoWithTime("Launching starling server") {
