@@ -71,6 +71,11 @@ object Steel extends NeptuneCommodity{
   val neptuneCode = "STL"
 }
 
+object NeptuneCommodity{
+  val commodities = List(Lead, Aluminium, NASAAC, AluminiumAlloy, Copper, Nickel, Zinc, Tin, Steel)
+  def fromNeptuneName(name : String) = commodities.find(_.neptuneName == name)
+  def fromNeptuneCode(code : String) = commodities.find(_.neptuneCode == code)
+}
 object Gold extends MetalCommodity
 object Silver extends MetalCommodity
 object Cobalt extends MetalCommodity

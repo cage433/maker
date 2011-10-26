@@ -6,7 +6,7 @@ import starling.quantity.{UOM, Quantity}
 import starling.instrument._
 import starling.richdb.{RichDB, RichResultSetRow}
 import starling.db.{RefinedAssignmentTradeSystem}
-import starling.market.{Commodity, NeptunePricingExchange, FuturesMarket}
+import starling.market.{Commodity, FuturesExchange, FuturesMarket}
 import starling.utils.Reflection
 import starling.instrument.{Trade, TradeID}
 import starling.systemofrecord.{SystemOfRecordBackedByADatabase, InstrumentReader, SystemOfRecord}
@@ -86,7 +86,7 @@ class RefinedAssignmentSystemOfRecord(externalDB : RichDB) extends SystemOfRecor
        SA.ARB_IND,
        sa.assignment_date,
        SA.ASSIGNMENT_NO,
-       SA.ASSIGNMENT_QTY,
+       SA.ASSIGNMENT_QTYCOMMODITY_DESCRIP,
        SA.ASSIGNMENT_SPREAD_PRICE,
        SA.COMPANY_CODE,
        SA.CONTACT_NAME,

@@ -221,7 +221,7 @@ class GreeksPivotReportTests extends StarlingTest {
       val combinedPortfolio = CompositeInstrument(combinedUTPs)
       val originalPortfolioFromRows = CompositeInstrument(rows.map{row => row.utp * row.scale})
       for (
-        key <- CollectionUtils.filterOnType[PriceDifferentiable](portfolio.atomicMarketDataKeys(env.marketDay, ReferenceDataLookup.Null))
+        key <- CollectionUtils.filterOnType[PriceDifferentiable](portfolio.atomicMarketDataKeys(env))
       ){
         val delta = portfolio.firstOrderDerivative(env, key, UOM.USD)
         val combinedDelta = combinedPortfolio.firstOrderDerivative(env, key, UOM.USD)
@@ -277,7 +277,7 @@ class GreeksPivotReportTests extends StarlingTest {
       val combinedPortfolio = CompositeInstrument(combinedUTPs)
       val originalPortfolioFromRows = CompositeInstrument(rows.map{row => row.utp * row.scale})
       for (
-        key <- CollectionUtils.filterOnType[PriceDifferentiable](portfolio.atomicMarketDataKeys(env.marketDay, ReferenceDataLookup.Null))
+        key <- CollectionUtils.filterOnType[PriceDifferentiable](portfolio.atomicMarketDataKeys(env))
       ){
         val delta = portfolio.firstOrderDerivative(env, key, UOM.USD)
         val combinedDelta = combinedPortfolio.firstOrderDerivative(env, key, UOM.USD)

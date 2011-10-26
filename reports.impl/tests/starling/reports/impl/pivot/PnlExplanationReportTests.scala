@@ -63,7 +63,7 @@ class PnlExplanationReportTests extends JonTestEnv {
     def isLive(dayAndTime: DayAndTime) = true
     def valuationCCY = UOM.USD
 
-    override def atomicMarketDataKeys(marketDay: DayAndTime, ccy : UOM): Set[AtomicDatumKey] = Set()
+    override def atomicMarketDataKeys(env : Environment, ccy : UOM): Set[AtomicDatumKey] = Set()
     def assets(env: Environment) = {
       val market = Market.LME_LEAD
       Assets(Asset.estimatedCash(day, env.forwardPrice(market, day) * Quantity(1, market.uom), env))

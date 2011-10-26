@@ -2,9 +2,9 @@ package starling.neptune.instrumentreaders
 
 import starling.richdb.RichResultSetRow
 import starling.quantity.Quantity
-import starling.market.NeptunePricingExchange
 import starling.instrument.RefinedAssignment
 import starling.systemofrecord.InstrumentReader
+import starling.market.{FuturesExchange, NeptuneCommodity}
 
 object RefinedAssignmentReader extends InstrumentReader{
   def create(row: RichResultSetRow) : RefinedAssignment = {
@@ -15,8 +15,10 @@ object RefinedAssignmentReader extends InstrumentReader{
       case "Y" => Map("LME" -> "CMX", "CMX" -> "LME")(exchangeCode)
       case "N" => exchangeCode
     }
-    val commodity = row.getString("COMMODITY_DESCRIPTION")
-    val market = NeptunePricingExchange.fromNeptuneCode(riskExchangeCode).inferMarketFromCommodityName(commodity)
+    val commodityName = row.getString("COMMODITY_DESCRIPTION")
+    val commodity = NeptuneCommodity.fromNeptuneName(commodityName).get
+    val exchange = FuturesExchange.fromNeptuneCode(riskExchangeCode)
+    val market = exchange.inferMarketFromCommodity(commodity).get
     val estimatedDeliveryDate = row.getDay("ASSIGNMENT_EST_DEL_DATE")
     val purchaseOrSaleMultiplier = row.getString("PORS") match {
       case "P" => 1.0

@@ -2,9 +2,9 @@ package starling.neptune.instrumentreaders
 
 import starling.systemofrecord.InstrumentReader
 import starling.richdb.RichResultSetRow
-import starling.market.NeptunePricingExchange
 import starling.quantity.Quantity
 import starling.instrument.{RefinedFixation, RefinedAssignment}
+import starling.market.{FuturesExchange, NeptuneCommodity}
 
 /**
  * Note that this doesn't extends InstrumentReader (which should really be TradeableReader) as it doesn't return a Tradeable
@@ -15,7 +15,9 @@ object RefinedFixationReader{
 
     val exchangeCode = row.getString("EXCHANGE")
     val commodityCode = row.getString("MATERIALCODE")
-    val market = NeptunePricingExchange.fromNeptuneCode(exchangeCode).inferMarketFromCommodityCode(commodityCode)
+    val commodity = NeptuneCommodity.fromNeptuneCode(commodityCode).get
+    val exchange = FuturesExchange.fromNeptuneCode(exchangeCode)
+    val market = exchange.inferMarketFromCommodity(commodity).get
     val fixationDate = row.getDay("FIXATIONDATE")
     val purchaseOrSaleMultiplier = row.getString("PORS") match {
       case "P" => -1.0

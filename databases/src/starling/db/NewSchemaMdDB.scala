@@ -228,6 +228,7 @@ class NewSchemaMdDB(db: DBTrait[RichResultSetRow], dataTypes: MarketDataTypes) e
       val observationDayClause = observationDays.fold(Clause.optIn("observationDay", _), TrueClause)
 
       val values = new MarketDataValueMap()
+      Log.warn("Market data keys " + marketDataKeys)
 
       queryUsingExtendedKeys(extendedKeyIdsFor(marketDataTypeName, mds, observationTimes, marketDataKeys),
          select("*")

@@ -327,13 +327,6 @@ object Market {
     }
   }
 
-  private def fromCommodityEither(exchangeName: String, commodityName: String) = futuresMarkets.find(market =>
-    market.exchange.name.equalsIgnoreCase(exchangeName) && market.commodity.name.equalsIgnoreCase(commodityName))
-      .toRight(Failure("Exchange: %s does not have a market for commodity: %s" % (exchangeName, commodityName)))
-
-  def fromNameOrCommodity(exchangeName: String, name: String): CommodityMarket =
-    fromNameEither(name).orElse(fromCommodityEither(exchangeName, name)).getOrThrow
-
   def fromExchangeAndLimSymbol(exchange: String, limSymbol: String) =
     Market.futuresMarkets.find(market => market.exchange.name == exchange && market.limSymbol.map(_.name) == Some(limSymbol))
 

@@ -5,7 +5,7 @@ import java.lang.String
 import starling.richdb.{RichInstrumentResultSetRow, RichDB}
 import starling.eai.TreeID
 import starling.db.RefinedAssignmentTradeSystem
-import starling.market.NeptunePricingExchange
+import starling.market.FuturesExchange
 import starling.utils.ImplicitConversions._
 import starling.tradestore.TradeStore
 import starling.instrument.TradeAttributes

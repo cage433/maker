@@ -1,7 +1,6 @@
 package starling.marketdata
 
-import starling.market.{Commodity, FuturesMarket, NeptuneCommodity, NeptunePricingExchange}
-
+import starling.market.{FuturesExchange, Commodity, FuturesMarket, NeptuneCommodity}
 
 trait ReferenceDataLookup {
   def name : String
@@ -20,10 +19,10 @@ trait ReferenceDataLookup {
     marketFor(commodity, area.code)
   }
   def marketFor(commodity : NeptuneCommodity, areaCode : AreaCode) : FuturesMarket = {
-    val exchange = NeptunePricingExchange.fromArea(areaCode).getOrElse{
+    val exchange = FuturesExchange.fromArea(areaCode).getOrElse{
       throw new Exception("Can't find exchange for area code " + areaCode)
     }
-    exchange.marketFor(commodity).getOrElse{
+    exchange.inferMarketFromCommodity(commodity).getOrElse{
       throw new Exception("Don't know what futures market to use for " + commodity + ", exchange " + exchange)
     }
   }

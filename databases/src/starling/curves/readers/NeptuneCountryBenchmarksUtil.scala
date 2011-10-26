@@ -13,7 +13,7 @@ import starling.marketdata._
 import scala.collection.mutable.{Set => MSet}
 import starling.market.Commodity
 import starling.quantity.Quantity
-import starling.market.NeptunePricingExchange
+import starling.market.FuturesExchange
 import starling.market.NeptuneCommodity
 
 

@@ -172,7 +172,7 @@ class MetalsBromptonActivator extends BromptonActivator with Log with scalaz.Ide
       }
     })
 
-    if (props.ServerType() == "FC2") registerFC2Tasks(context, broadcaster)
+    if (props.ServerType() == "FC2" && props.ImportMarketDataAutomatically()) registerFC2Tasks(context, broadcaster)
   }
 
   private def registerFC2Tasks(context: BromptonContext, broadcaster: Broadcaster) {
