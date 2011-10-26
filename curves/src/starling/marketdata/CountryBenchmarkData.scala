@@ -19,7 +19,7 @@ class CountryBenchmarkDataType(referenceData: ReferenceDataLookup = ReferenceDat
   val commodityField = FieldDetails("Commodity", new SpecifiedValuesParser(Commodity.metalsCommodities.map(_.name).toSet))
   val countryField = FieldDetails("Country")
   val areaField = FieldDetails("Area")
-  val countryCodeField = FieldDetails("Country Code", new SpecifiedValuesParser(referenceData.countryCodes.map(_.code)))
+  val countryCodeField = FieldDetails("Country Code", new SpecifiedValuesParser(referenceData.countries.keySet.map(_.code)))
   val effectiveFromField = FieldDetails("Effective From", DayPivotParser)
   val benchmarkPriceField = FieldDetails.createMeasure("Benchmark Price",
     parser0 = PivotQuantityPivotParser, formatter0 = PivotQuantitySetPivotFormatter)

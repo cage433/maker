@@ -1,29 +1,24 @@
 package starling.marketdata
 
 import starling.richdb.RichDB
+import starling.utils.ImplicitConversions._
 
 
 case class DBReferenceDataLookup(neptuneDB: RichDB) extends ReferenceDataLookup {
   def name = "Neptune DB Reference Data Lookup"
-  private lazy val areas             = neptuneDB.lookupTable("live.geographical_location", "code",         "description")
-  private lazy val contractLocations = neptuneDB.lookupTable("live.contract_location",     "code",         "description")
-  private lazy val countries         = neptuneDB.lookupTable("live.country",               "code",         "name"       )
-  private lazy val countryToArea     = neptuneDB.lookupTable("live.location_area_link",    "country_code", "area_code"  )
-  private lazy val deliveryTerms     = neptuneDB.lookupTable("live.delivery_term",         "code",         "description")
-  private lazy val grades            = neptuneDB.lookupTable("live.category",              "code",         "description")
 
-  def areaCodeFor(code: NeptuneCountryCode): Option[AreaCode] = areaFor(code).map(_.code)
-  def areaFor(code: AreaCode) = Area(code, areas(code.code))
-  def gradeFor(code: GradeCode) = Grade(code, grades(code.code))
-  def contractLocationFor(code: ContractualLocationCode) = ContractualLocation(code, contractLocations(code.code))
-  def countryFor(code: NeptuneCountryCode) = NeptuneCountry(code, countries(code.code), areaFor(code))
-  def incotermFor(code: IncotermCode) = Incoterm(code, deliveryTerms(code.code))
-  def areaFor(code: NeptuneCountryCode): Option[Area] = countryToArea.get(code.code).flatMap(areaFor(_))
-  lazy val contractLocationCodes = contractLocations.keySet.map(ContractualLocationCode(_))
-  lazy val incotermCodes = deliveryTerms.keySet.map(IncotermCode(_))
-  lazy val countryCodes = countries.keySet.map(NeptuneCountryCode(_))
-  lazy val areaCodes = areas.keySet.map(AreaCode(_))
-  lazy val gradeCodes = grades.keySet.map(GradeCode(_))
+  val areas = neptuneDB.lookupTable("live.geographical_location", "code", "description", AreaCode.apply, Area.apply)
+  val incoterms = neptuneDB.lookupTable("live.delivery_term", "code", "description", IncotermCode.apply, Incoterm.apply)
+  val grades = neptuneDB.lookupTable("live.category", "code", "description", GradeCode.apply, Grade.apply)
 
-  private def areaFor(code: String): Option[Area] = areas.get(code).map(Area(AreaCode(code), _))
+  val contractLocations = neptuneDB.lookupTable("live.contract_location", "code", "description",
+    ContractualLocationCode.apply, ContractualLocation.apply)
+
+  val countries = neptuneDB.lookupTable[NeptuneCountryCode, NeptuneCountry]("live.country", "code", "name",
+    NeptuneCountryCode.apply, (code, name) => NeptuneCountry(code, name, countryToAreaLT.get(code).flatMap(areas.get)))
+
+  private val countryToAreaLT = neptuneDB.lookupTable("live.location_area_link", "country_code", "area_code")
+    .mapKeys(NeptuneCountryCode(_)).mapValues(AreaCode(_))
+
+  require((areas.keySet & AreaCode.hardCoded) == AreaCode.hardCoded, "Reference data has changed, hard coded values are invalid")
 }

@@ -17,6 +17,7 @@ object AreaCode{
   val NAM = AreaCode("NAM")
   val ASI = AreaCode("ASI")
   val CHN = AreaCode("CHN")
+  val hardCoded = Set(EUR, SAM, NAM, ASI, CHN)
 }
 case class Area(code:AreaCode, name:String) {
   override def toString = name
@@ -49,9 +50,9 @@ class GradeAreaBenchmarkDataType(referenceData: ReferenceDataLookup = ReferenceD
 
   val commodityField = FieldDetails("Commodity", new SpecifiedValuesParser(Commodity.metalsCommodities.map(_.name).toSet))
   val areaField = FieldDetails("Area")
-  val areaCodeField = FieldDetails("Area Code", new SpecifiedValuesParser(referenceData.areaCodes.map(_.code)))
+  val areaCodeField = FieldDetails("Area Code", new SpecifiedValuesParser(referenceData.areas.keySet.map(_.code)))
   val gradeField = FieldDetails("Grade")
-  val gradeCodeField = FieldDetails("Grade Code", new SpecifiedValuesParser(referenceData.gradeCodes.map(_.code)))
+  val gradeCodeField = FieldDetails("Grade Code", new SpecifiedValuesParser(referenceData.grades.keySet.map(_.code)))
   val effectiveFromField = FieldDetails("Effective From", DayPivotParser)
   val benchmarkPriceField = FieldDetails.createMeasure("Benchmark Price",
     parser0 = PivotQuantityPivotParser, formatter0 = PivotQuantitySetPivotFormatter)

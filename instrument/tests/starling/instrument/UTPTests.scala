@@ -24,10 +24,8 @@ import starling.calendar.BrentMonth
 import starling.instrument.utils.StarlingXStream
 import starling.utils.{StarlingTest, Reflection}
 import starling.utils.sql.PersistAsBlob
-import starling.marketdata.ReferenceDataLookup
-import starling.marketdata.NeptuneCountryCode
-import starling.marketdata.Area
-import starling.marketdata.AreaCode
+import starling.marketdata._
+import starling.marketdata.NeptuneCountry._
 
 class UTPTests extends IndexTest {
 
@@ -63,13 +61,15 @@ class UTPTests extends IndexTest {
             matrix.set(0, 0, 0.0); matrix.set(0, 1, 5.0)
             matrix
           }
+          case _ : AreaBenchmarkAtomicKey => Quantity(0, USD/MT)
           case _ : CountryBenchmarkAtomicKey => Quantity(1, USD/MT)
           case _ : FreightParityAtomicKey => Quantity(22, USD/MT)
         }
       }
 
       override def referenceDataLookup = new ReferenceDataLookup.NullReferenceDataLookup{
-        override def areaFor(code : NeptuneCountryCode) = Some(Area(AreaCode.EUR, "Dummy Area"))
+        override val countries = Map.empty[NeptuneCountryCode, NeptuneCountry].withDefaultValue(
+          NeptuneCountry(NeptuneCountryCode("DummyCountryCode"), "DummyCountry", Some(Area(AreaCode.EUR, "Dummy Area"))))
       }
     }
   )

@@ -13,7 +13,7 @@ import starling.pivot.model.PivotTableModel
 import starling.utils.ImplicitConversions._
 import scala.collection.JavaConversions._
 
-class ReferenceData(val name:String, val pivot:PivotTableDataSource)
+case class ReferenceData(name:String, pivot:PivotTableDataSource)
 
 /**
  * Represents reference data (calendars, markets, ...) as pivots where possible
@@ -27,10 +27,10 @@ class ReferenceDataService() {
   private val referenceDatas = new java.util.concurrent.ConcurrentHashMap[String,PivotTableDataSource]()
 
   //Built in reference data - only static dependencies
-  add(new ReferenceData("Futures Markets", ReferenceDataService.futuresMarketPivot()))
-  add(new ReferenceData("Futures Front Period Indexes", ReferenceDataService.futuresFronPeriodIndexes()))
-  add(new ReferenceData("Formula Indexes", ReferenceDataService.formulaIndexes()))
-  add(new ReferenceData("Published Indexes", ReferenceDataService.publishedIndexes()))
+  add(ReferenceData("Futures Markets", ReferenceDataService.futuresMarketPivot()))
+  add(ReferenceData("Futures Front Period Indexes", ReferenceDataService.futuresFronPeriodIndexes()))
+  add(ReferenceData("Formula Indexes", ReferenceDataService.formulaIndexes()))
+  add(ReferenceData("Published Indexes", ReferenceDataService.publishedIndexes()))
 
 
   def referenceDataTables():List[ReferenceDataLabel] = {

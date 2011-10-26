@@ -6,26 +6,16 @@ import org.testng.Assert._
 import starling.quantity.UOM._
 import starling.market.LmeSingleIndices
 import starling.daterange.{Month, Day}
-import starling.curves.Environment
-import starling.curves.UnitTestingAtomicEnvironment
-import starling.curves.ForwardPriceKey
-import starling.curves.DiscountRateKey
-import starling.curves.IndexFixingKey
 import scala.collection.immutable.TreeMap
 import starling.daterange.DateRange
 import starling.quantity.{Percentage, UOM, Quantity}
-import starling.marketdata.{IncotermCode, GradeCode, NeptuneCountryCode, ContractualLocationCode}
 import starling.market.Lead
 import starling.market.Commodity
 import starling.market.Copper
 import starling.quantity.utils.QuantityTestUtils._
-import starling.curves.USDFXRateKey
-import starling.curves.CountryBenchmarkAtomicKey
-import starling.curves.FreightParityAtomicKey
-import starling.marketdata.AreaCode
-import starling.marketdata.NeptuneCountryCode
-import starling.marketdata.Area
-import starling.marketdata.ReferenceDataLookup
+import starling.marketdata._
+import starling.curves._
+
 /**
  * Commenting out until everything settles down - AMc 29/9/11
  */
@@ -40,8 +30,9 @@ class PhysicalMetalAssignmentTests extends StarlingTest {
         case DiscountRateKey(_, day, _) => new Quantity(math.exp(- 0.1 * day.endOfDay.timeSince(marketDay)))
       }
     ){
-      override def referenceDataLookup = new ReferenceDataLookup.NullReferenceDataLookup(){
-        override def areaFor(code : NeptuneCountryCode) = Some(Area(AreaCode.EUR, "Dummy"))
+      override def referenceDataLookup = new ReferenceDataLookup.NullReferenceDataLookup() {
+        override val countries = Map.empty[NeptuneCountryCode, NeptuneCountry].withDefaultValue(
+          NeptuneCountry(NeptuneCountryCode("DummyCountryCode"), "DummyCountry", Some(Area(AreaCode.EUR, "Dummy"))))
       }
   }
   )
@@ -190,12 +181,15 @@ class PhysicalMetalAssignmentTests extends StarlingTest {
           case DiscountRateKey(_, day, _) => new Quantity(math.exp(- 0.1 * day.endOfDay.timeSince(marketDay)))
           case USDFXRateKey(ccy) => fxRates(ccy)
           case _ : CountryBenchmarkAtomicKey => Quantity(115, GBP / G)
+          case _ : AreaBenchmarkAtomicKey => Quantity(0, GBP / G)
           case _ : FreightParityAtomicKey => Quantity(5, CNY / LB)
 
         }
       ){
         override def referenceDataLookup = new ReferenceDataLookup.NullReferenceDataLookup(){
-          override def areaFor(code : NeptuneCountryCode) = Some(Area(AreaCode.EUR, "Dummy"))
+          override val countries = Map.empty[NeptuneCountryCode, NeptuneCountry].withDefaultValue(
+            NeptuneCountry(NeptuneCountryCode("DummyCountryCode"), "DummyCountry", Some(Area(AreaCode.EUR, "Dummy"))))
+//          override val areas = Map.empty[AreaCode, Area]
         }
       }
     )

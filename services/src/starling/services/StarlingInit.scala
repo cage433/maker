@@ -167,8 +167,8 @@ class StarlingInit( val props: Props,
   val curveViewer = new CurveViewer(marketDataStore, environmentRules)
 
   val referenceDataService = new ReferenceDataService()
-  referenceDataService.add(new ReferenceData("Calendars", ReferenceDataService.calendars(businessCalendars)))
-  referenceDataService.add(new ReferenceData("Pricing Groups", ReferenceDataService.pricingGroups(marketDataStore)))
+  referenceDataService.add(ReferenceData("Calendars", ReferenceDataService.calendars(businessCalendars)))
+  referenceDataService.add(ReferenceData("Pricing Groups", ReferenceDataService.pricingGroups(marketDataStore)))
 
   val starlingServer = new StarlingServerImpl(name,
     userSettingsDatabase,

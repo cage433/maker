@@ -1,16 +1,16 @@
 package starling.marketdata
 
-import starling.market.{FuturesExchange, Commodity, FuturesMarket, NeptuneCommodity}
+import starling.market.{FuturesExchange, FuturesMarket, NeptuneCommodity}
 
 trait ReferenceDataLookup {
   def name : String
-  def areaCodeFor(code: NeptuneCountryCode): Option[AreaCode]
-  def areaFor(code: AreaCode): Area
-  def areaFor(code: NeptuneCountryCode): Option[Area] 
-  def gradeFor(code: GradeCode): Grade
-  def contractLocationFor(code: ContractualLocationCode): ContractualLocation
-  def countryFor(code: NeptuneCountryCode): NeptuneCountry
-  def incotermFor(code: IncotermCode): Incoterm
+  final def areaCodeFor(code: NeptuneCountryCode): Option[AreaCode] = countries(code).area.map(_.code)
+  final def areaFor(code: AreaCode): Area = areas(code)
+  final def areaFor(code: NeptuneCountryCode): Option[Area] = countries(code).area
+  final def gradeFor(code: GradeCode): Grade = grades(code)
+  final def contractLocationFor(code: ContractualLocationCode): ContractualLocation = contractLocations(code)
+  final def countryFor(code: NeptuneCountryCode): NeptuneCountry = countries(code)
+  final def incotermFor(code: IncotermCode): Incoterm = incoterms(code)
   def marketFor(commodity : NeptuneCommodity, countryCode : NeptuneCountryCode) : FuturesMarket = {
     val area = areaFor(countryCode).getOrElse{
       throw new Exception("Can't find area for country code *" + countryCode
@@ -27,11 +27,11 @@ trait ReferenceDataLookup {
     }
   }
 
-  def areaCodes: Set[AreaCode]
-  def contractLocationCodes: Set[ContractualLocationCode]
-  def countryCodes: Set[NeptuneCountryCode]
-  def gradeCodes: Set[GradeCode]
-  def incotermCodes: Set[IncotermCode]
+  val areas: Map[AreaCode, Area]
+  val contractLocations: Map[ContractualLocationCode, ContractualLocation]
+  val countries: Map[NeptuneCountryCode, NeptuneCountry]
+  val grades: Map[GradeCode, Grade]
+  val incoterms: Map[IncotermCode, Incoterm]
 }
 
 case class Incoterm(code: IncotermCode, name: String) {
@@ -40,21 +40,15 @@ case class Incoterm(code: IncotermCode, name: String) {
 
 object ReferenceDataLookup {
   val Null = new NullReferenceDataLookup()
-  class NullReferenceDataLookup extends ReferenceDataLookup{
+  class NullReferenceDataLookup extends ReferenceDataLookup {
     def name = "Null Reference Data Lookup"
-    def areaCodeFor(code: NeptuneCountryCode) = None
-    def areaFor(code: AreaCode) = Area(code, unknownName)
-    def areaFor(code: NeptuneCountryCode) : Option[Area] = None
-    def gradeFor(code: GradeCode) = Grade(code, unknownName)
-    def contractLocationFor(code: ContractualLocationCode) = ContractualLocation(code, unknownName)
-    def countryFor(code: NeptuneCountryCode) = NeptuneCountry(code, unknownName, None)
-    def incotermFor(code: IncotermCode) = Incoterm(code, unknownName)
-    def contractLocationCodes = Set()
-    def incotermCodes = Set()
-    def countryCodes = Set()
-    def gradeCodes = Set()
-    def areaCodes = Set()
+    val areas = unknown(Area.apply)
+    val contractLocations = unknown(ContractualLocation.apply)
+    val incoterms = unknown(Incoterm.apply)
+    val grades = unknown(Grade.apply)
+    val countries = Map.empty[NeptuneCountryCode, NeptuneCountry].withDefault(NeptuneCountry(_, unknownName, None))
 
+    private def unknown[K, V](default: (K, String) => V) = Map.empty[K, V].withDefault(k => default(k, unknownName))
     private val unknownName = "ReferenceDataLookup.Null"
   }
 }

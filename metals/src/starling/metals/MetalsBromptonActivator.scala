@@ -7,7 +7,6 @@ import starling.databases.utils.{RabbitMessageSender, RabbitBroadcaster}
 import starling.daterange.TimeOfDay
 import starling.manager._
 import starling.marketdata.{MarketDataTypes, ReferenceDataLookup}
-import starling.services._
 import starling.services.jmx.StarlingJMX
 import starling.services.rabbit.{TitanRabbitIdBroadcaster, MockTitanRabbitEventServices, DefaultTitanRabbitEventServices}
 import starling.services.rpc.logistics.{FileMockedTitanLogisticsServices, DefaultTitanLogisticsServices}
@@ -25,7 +24,7 @@ import org.joda.time.Period
 import starling.calendar.BusinessCalendars
 import starling.scheduler.{TaskDescription, Scheduler}
 import starling.db.{DB, TitanTradeSystem, MarketDataStore}
-
+import starling.services._
 
 class MetalsBromptonActivator extends BromptonActivator with Log with scalaz.Identitys {
 
@@ -120,7 +119,14 @@ class MetalsBromptonActivator extends BromptonActivator with Log with scalaz.Ide
 
     registerScheduler(context, broadcaster)
 
-    context.registerService(classOf[ReferenceData], new ReferenceData("Bloomberg → LIM", new BloombergImportsReferenceData(DB(props.EAIReplica()))))
+    Map(
+      "Bloomberg → LIM"    → new BloombergImportsReferenceData(DB(props.EAIReplica())),
+      "Areas"              → NeptuneReferenceData.areas(referenceDataLookup),
+      "Contract Locations" → NeptuneReferenceData.contractLocations(referenceDataLookup),
+      "Countries"          → NeptuneReferenceData.countries(referenceDataLookup),
+      "Grades"             → NeptuneReferenceData.grades(referenceDataLookup),
+      "Incoterms"          → NeptuneReferenceData.incoterms(referenceDataLookup)
+    ).map(ReferenceData.tupled).map(context.registerService(classOf[ReferenceData], _))
 
     {
       import com.trafigura.services.valuation.ValuationServiceApi
@@ -165,7 +171,7 @@ class MetalsBromptonActivator extends BromptonActivator with Log with scalaz.Ide
     val jmx = new StarlingJMX(scheduler)
 
     context.onStarted { scheduler.start; jmx.start }
-    context.registerService(classOf[ReferenceData], new ReferenceData("Schedules", new SchedulerReferenceData(scheduler)))
+    context.registerService(classOf[ReferenceData], ReferenceData("Schedules", new SchedulerReferenceData(scheduler)))
     context.createServiceTracker(Some(classOf[TaskDescription]), serviceTracker = new BromptonServiceCallback[TaskDescription] {
       def serviceAdded(ref: BromptonServiceReference, properties: ServiceProperties, task: TaskDescription) = {
         scheduler += task

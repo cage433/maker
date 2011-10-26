@@ -153,6 +153,9 @@ trait DBTrait[RSR <: ResultSetRow] extends Log {
     rs.getString(from) → rs.getString(to)
   }.toMap
 
+  def lookupTable[K, V](table: String, from: String, to: String, k: String => K, v: (K, String) => V): Map[K, V] =
+    lookupTable(table, from, to).mapKeys(k).map(kv => kv._1 → v(kv._1, kv._2))
+
   lazy val tables: scala.List[TableMeta] = {
     val rs = dataSource.getConnection.getMetaData.getColumns(null, "%", "%", "%")
     val tables = MMap[String, TableMeta]().withDefault(tableName => TableMeta(tableName, Nil))

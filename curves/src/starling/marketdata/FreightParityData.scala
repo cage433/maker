@@ -25,10 +25,10 @@ class FreightParityDataType(referenceData: ReferenceDataLookup = ReferenceDataLo
   type dataType = FreightParityData
   type keyType = FreightParityDataKey
 
-  val contractualIncotermCodeField = FieldDetails("Contractual Incoterm Code", new SpecifiedValuesParser(referenceData.incotermCodes.map(_.code)))
-  val contractualLocationCodeField = FieldDetails("Contractual Location Code", new SpecifiedValuesParser(referenceData.contractLocationCodes.map(_.code)))
-  val destinationIncotermCodeField = FieldDetails("Destination Incoterm Code", new SpecifiedValuesParser(referenceData.incotermCodes.map(_.code)))
-  val destinationLocationCodeField = FieldDetails("Destination Location Code", new SpecifiedValuesParser(referenceData.countryCodes.map(_.code)))
+  val contractualIncotermCodeField = FieldDetails("Contractual Incoterm Code", new SpecifiedValuesParser(referenceData.incoterms.keySet.map(_.code)))
+  val contractualLocationCodeField = FieldDetails("Contractual Location Code", new SpecifiedValuesParser(referenceData.contractLocations.keySet.map(_.code)))
+  val destinationIncotermCodeField = FieldDetails("Destination Incoterm Code", new SpecifiedValuesParser(referenceData.incoterms.keySet.map(_.code)))
+  val destinationLocationCodeField = FieldDetails("Destination Location Code", new SpecifiedValuesParser(referenceData.countries.keySet.map(_.code)))
   val extendedKeys = List(contractualIncotermCodeField, contractualLocationCodeField, destinationIncotermCodeField, destinationLocationCodeField)
 
   val names@List(contractualIncotermField, contractualLocationField, destinationIncotermField, destinationLocationField) =
