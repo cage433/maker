@@ -18,7 +18,7 @@ class KerberosAuthHandler(serverPassword:String, ldap:LdapUserLookup) extends Au
     }
     val subject = login.login
     try {
-      Server.verify(subject, ticket).flatMap { ticketUsername =>
+      AuthenticationServer.verify(subject, ticket).flatMap { ticketUsername =>
         val UserName(username) = ticketUsername
 
         ldap.user(username) match {
