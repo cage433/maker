@@ -40,7 +40,7 @@ class Patch126_FixOilCentMarkets extends Patch {
       starling.inTransaction {
         writer => {
           val updated = writer.update("update Markets set limMultiplier = 'Some(1.0)', ccy = 'USC' where Name = :name and limMultiplier = :lm and ccy = :ccy",
-            Map("name" -> name, "lm" -> Some(.01), "ccy" -> USD))
+            Map("name" -> name, "lm" -> "Some(0.01)", "ccy" -> USD))
 
           assert(updated == 1, "Failed for " + name)
 
