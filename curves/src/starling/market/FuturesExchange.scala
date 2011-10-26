@@ -19,9 +19,11 @@ case object MonthlyDelivery extends DeliveryType {
 }
 
 case class FuturesExchange(name: String, deliveryType: DeliveryType, closeTime:ObservationTimeOfDay, fixingLevel : Level = Level.Close) {
-  lazy val markets = Market.futuresMarkets.filterNot(_.name.contains("London close")).filter(_.exchange == this)
+  // The presence of 'London Close' markets meant that the pair exchange/commodity could map to more than one market
+  private lazy val futuresMarkets: List[FuturesMarket] = Market.futuresMarkets.filterNot(_.name.contains("London close"))
+  lazy val markets = futuresMarkets.filter(_.exchange == this)
   lazy val marketsByCommodityName = markets.toMapWithKeys(_.commodity.name.toLowerCase)
-  def inferMarketFromCommodity(commodity : Commodity) : Option[FuturesMarket] = Market.futuresMarkets.filter(_.exchange == this).find(_.commodity == commodity)
+  def inferMarketFromCommodity(commodity : Commodity) : Option[FuturesMarket] = futuresMarkets.filter(_.exchange == this).find(_.commodity == commodity)
 }
 
 
