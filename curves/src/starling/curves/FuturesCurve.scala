@@ -44,9 +44,6 @@ case class ForwardCurveKey(market : CommodityMarket) extends NonHistoricalCurveK
         }))
       }
       market match {
-        case p:PublishedIndex if p.commodity == Freight => {
-          new FreightForwardCurve(marketDayAndTime, FreightCurve.calcMonthlyPricesFromArbitraryPeriods(priceData.prices))
-        }
         case brent : IsBrentMonth => {
           val monthNumber = brent.month.month
           createForwardCurve(
@@ -113,16 +110,6 @@ trait ForwardCurveTrait{
     }
   }
   def price(dateRange : DateRange) : Quantity
-}
-
-class FreightForwardCurve(val marketDayAndTime:DayAndTime, prices:Map[Month,Quantity]) extends CurveObject with ForwardCurveTrait {
-  type CurveValuesType = Quantity
-  def price(dateRange: DateRange) = {
-    dateRange match {
-      case month:Month => prices.getOrElse(month, throw new Exception("No freight price found for " + dateRange))
-      case _ => throw new Exception("Can only supply monthly prices for freight")
-    }
-  }
 }
 
 case class ConstantForwardCurve(

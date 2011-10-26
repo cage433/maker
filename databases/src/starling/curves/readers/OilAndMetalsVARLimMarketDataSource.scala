@@ -7,10 +7,14 @@ import collection.immutable.Map
 import starling.daterange._
 import java.lang.String
 import starling.pivot.MarketValue
-import starling.curves.MissingMarketDataException
 import starling.utils.{MathUtil, Log}
 import starling.lim.LIMService
 import starling.db.{MarketDataSet, MarketDataEntry, MarketDataSource}
+import starling.quantity.UOM._
+import starling.db.{NoMarketDataForDayException, MarketDataEntry, MarketDataSource}
+import starling.curves.MissingMarketDataException
+import starling.utils.{MathUtil, Log}
+import starling.quantity.Percentage
 
 class OilAndMetalsVARLimMarketDataSource(service: LIMService, override val marketDataSet: MarketDataSet) extends MarketDataSource {
   val daysInThePast = 365
@@ -45,12 +49,19 @@ class OilAndMetalsVARLimMarketDataSource(service: LIMService, override val marke
           }
         } }.toMultiMap
 
-        pricesByObservationDay.map { case (day, prices) =>
-          MarketDataEntry(ObservationPoint(day), PriceFixingsHistoryDataKey(market),
-            PriceFixingsHistoryData.create(prices.map { case (level, price) =>
-              (level, StoredFixingPeriod.dateRange(day)) → MarketValue.quantity(price, market.priceUOM)
+        pricesByObservationDay.map {
+          case (day, prices) => {
+            val fixingsHistoryData = PriceFixingsHistoryData.create(prices.map {
+              case (level, price) => (level, StoredFixingPeriod.dateRange(day)) → (market.priceUOM match {
+                case SCALAR => {
+                  val percentage = MarketValue.percentage(Percentage.fromPercentage(price))
+                  percentage
+                }
+                case _ => MarketValue.quantity(price, market.priceUOM)
+              })
             }.toMap)
-          )
+            MarketDataEntry(ObservationPoint(day), PriceFixingsHistoryDataKey(market), fixingsHistoryData)
+          }
         }
       } }
     }.toList

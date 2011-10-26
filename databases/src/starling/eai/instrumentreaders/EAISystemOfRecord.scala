@@ -32,10 +32,11 @@ case class EAISystemOfRecord(externalDB: RichDB, bookID: Int, downloadID: Int) e
   private val otcOptions = ((select("tradeType =  " + OTC_OPTION + ",*") from ("tblPlutoOTCOptions t")), ("expiryDate" gt (31 Sep 2009)))
   private val cfds = ((select("tradeType =  " + CFD_SWAP + ",*") from ("tblPlutoCFDTrades t")), ("1" eql "1"))
   private val cargos = ((select("tradeType =  " + CARGO + ",*") from ("tblPlutoCargos t")), ("1" eql "1"))
+  private val ffas = ((select("tradeType =  " + FFA_TRADE + ",*") from ("tblPlutoFFAs t")), ("1" eql "1"))
   private val costs = ((select("tradeType =  " + COST + ",*") from ("tblPlutoCosts t")), ("1" eql "1"))
 
-  private def queries = generateQueriesWithCosts(List(swaps, clearportSwaps, otcOptions, etOptions, futures, cfds, swapSpreads/*, cargos*/)) :::
-    generateQueries(List(costs))
+  private def queries = generateQueriesWithCosts(List(swaps, clearportSwaps, otcOptions, etOptions, futures, cfds, swapSpreads, ffas)) :::
+    generateQueries(List(cargos, costs))
 
   private def generateQueriesWithCosts(list: List[(Query, Clause)]): List[Query] = {
     list.map {
@@ -155,7 +156,9 @@ object EAISystemOfRecord {
   val CFD_SWAP = 6
   val SWAP_SPREAD = 7
   val CARGO = 8
-  val COST = 9
+  val FFA_TRADE = 9
+
+  val COST = 99
 
   val CALENDAR_SPREAD_TYPE = "Calendar Spread"
   val ASIAN_TYPE = "Asian"

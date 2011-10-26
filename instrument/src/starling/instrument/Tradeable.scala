@@ -1,14 +1,13 @@
 package starling.instrument
 
-import physical.{UnallocatedSalesQuota, PhysicalMetalAssignment}
-import starling.daterange.{DateRange, DayAndTime, Day}
+import physical.{Cargo, UnallocatedSalesQuota, PhysicalMetalAssignment}
 import starling.richdb.RichInstrumentResultSetRow
 import starling.utils.ImplicitConversions._
 import starling.curves.Environment
-import starling.quantity.{NamedQuantity, SpreadOrQuantity, Quantity}
-import starling.quantity.UOM
 import starling.market.{FuturesExchange, IndexWithDailyPrices}
 import starling.market.rules.{RoundingMethodRule, SwapPricingRule}
+import starling.quantity._
+import starling.daterange.{Year, DateRange, DayAndTime, Day}
 
 trait Tradeable extends AsUtpPortfolio {
   def tradeableType : TradeableType[_]
@@ -57,6 +56,7 @@ object TradeableType {
     ErrorInstrument,
     Future,
     TAS,
+    FFA,
     FuturesCalendarSpread,
     FuturesCommoditySpread,
     CommoditySwap,
@@ -92,6 +92,10 @@ object TradeableType {
     ("PricingRule", classOf[SwapPricingRule]),
     ("RoundingMethodRule", classOf[RoundingMethodRule]),
     ("RoundingOverride", classOf[Option[Int]]),
+    ("Fixed Leg Flat Rate", classOf[Option[Quantity]]),
+    ("Fixed Rate", classOf[Percentage]),
+    ("Fixed Leg Flat Rate Year", classOf[Year]),
+    ("Floating Leg Flat Rate Year", classOf[Year]),
     ("Error", classOf[String]),
     ("Estimated Delivery", classOf[Day]),
     ("Fixations", classOf[List[RefinedFixation]]),

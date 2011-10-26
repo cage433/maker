@@ -37,6 +37,7 @@ trait InstrumentLevelEnvironment extends AtomicEnvironmentHelper {
   def spreadStdDev(market: FuturesMarket, period: Period, exerciseDay: Day, strike: Quantity) : Quantity
   def indexVol(index : SingleIndex, observationDay : Day, strike : Quantity, averagePrice : Quantity) : Percentage
   def spreadPrice(market : FuturesMarket, period: Period) : Quantity
+  def worldScaleFlatRate(market: CommodityMarket, year: Year): Quantity
 
   def shiftAtomicEnv(fn : AtomicEnvironment => AtomicEnvironment) : InstrumentLevelEnvironment
   def copy(newAtomicEnv : AtomicEnvironment) : InstrumentLevelEnvironment
@@ -71,6 +72,8 @@ class DefaultInstrumentLevelEnvironment(underlyingAtomicEnv : AtomicEnvironment)
   def forwardPrice(underlying: CommodityMarket, period: DateRange, ignoreShiftsIfPermitted: Boolean) = {
     underlying.forwardPrice(this, period, ignoreShiftsIfPermitted)
   }
+
+  def worldScaleFlatRate(market: CommodityMarket, year: Year) = quantity(FreightFlatRateKey(market, year))
 
   def spreadPrice(market : FuturesMarket, period: Period) = {
     (market, period) match {
@@ -225,7 +228,7 @@ object ShiftInstrumentLevelVol{
             }
             case (`interpolatedVol`, OilAtmVolAtomicDatumKey(market, None, periodToShift, _)) => {
               args match {
-                case Array(`market`, period : DateRange, _, _, _, _) if periodToShift.contains(period) => resultOnSelf.asInstanceOf[Percentage] + Percentage(dV)
+                case Array(`market`, period : DateRange, _, _, _, _) if periodToShift.contains(period) => resultOnSelf.asInstanceOf[Percentage] + dV.toPercentage
                 case Array(_, _, _, _, _, _) => resultOnSelf
               }
             }

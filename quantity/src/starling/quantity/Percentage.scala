@@ -14,6 +14,15 @@ import starling.utils.Pattern._
 case class Percentage(value : Double) {
   import Percentage._
 
+  if(value > 150) {
+    println("!!!!!!!!!!!")
+    println("!!!!!!!!!!!")
+    println("!!!!!!!!!!!")
+    println("!!!!!!!!!!!")
+    println("!!!!!!!!!!!")
+    println("!!!!!!!!!!!d")
+  }
+
   assert(!value.isInfinite, "Percentage is infinite")
   assert(!value.isNaN, "Percentage is NaN")
 
@@ -40,6 +49,7 @@ case class Percentage(value : Double) {
   def unary_- : Percentage = Percentage(-value)
 
   def decimalValue = value
+  def percentageValue = value * 100
 
   /**
    * If `this` is 0.0 then returns EPSILON, otherwise returns `this`
@@ -51,7 +61,7 @@ case class Percentage(value : Double) {
 
   def isAlmostZero : Boolean = value.abs < MathUtil.EPSILON
 
-  def toQuantity = new Quantity(value)
+  def toQuantity = new Quantity(percentageValue, UOM.PERCENT)
 }
 
 object Percentage {
@@ -62,10 +72,7 @@ object Percentage {
     case _ => Percentage(sum(values).value / values.size)
   }
   val EPSILON = Percentage(MathUtil.EPSILON)
-  def apply(q : Quantity) : Percentage = {
-    assert(q.uom == UOM.SCALAR, "Percentage cannot be constructed from quantity " + q)
-    Percentage(q.value)
-  }
+  def apply(q : Quantity) : Percentage = q.toPercentage
   val Regex = """(.*) ?%""".r
 
   val Parse: Extractor[String, Percentage] = Extractor.from[String](text => text partialMatch {
@@ -73,5 +80,15 @@ object Percentage {
   })
 
   val DefaultFormat = "#0.00"
+
+  /**
+   * Where value is 100.0 for 100%
+   */
+  def fromPercentage(value: Double) = new Percentage(value / 100.0)
+
+  /**
+   * Where value is 1.0 for 100%
+   */
+  def fromDecimal(value: Double) = new Percentage(value)
 }
 

@@ -22,7 +22,7 @@ class MarketDataIDTests extends WordSpec with TestMarketSpec with ShouldMatchers
   }
 
   "should be able to extract Percentages" in {
-    extractValueFromPrice(Percentage(1.234)) should be === Some(("%", 1.234, noComment))
+    extractValueFromPrice(Percentage(1.234)) should be === Some(("%", 123.4, noComment))
   }
 
   "should be able to extract PivotQuantities" in {

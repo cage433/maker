@@ -154,7 +154,7 @@ trait SingleIndex extends IndexWithDailyPrices with FixingHistoryLookup {
     val firstObservedDay : Day = averagingDays.map{d => observedPeriod(d).firstDay}.sortWith(_<_).head
     val lastObservedDay : Day = averagingDays.map{d => observedPeriod(d).lastDay}.sortWith(_>_).head
     val observedPeriodsUnion = DateRange(firstObservedDay, lastObservedDay)
-    val dV = Percentage(dP.checkedValue(UOM.SCALAR))
+    val dV = dP.toPercentage
     val upEnv = env.shiftVol(market, Some(averagingPeriod), observedPeriodsUnion, dV)
     val downEnv = env.shiftVol(market, Some(averagingPeriod), observedPeriodsUnion, -dV)
     (downEnv, upEnv)
@@ -225,7 +225,7 @@ case class PublishedIndex(
 
   def observedOptionPeriod(observationDay: Day) = observationDay
 
-  override val priceUOM = currency / uom
+  override def priceUOM =  super[CommodityMarket].priceUOM
 
   def market: CommodityMarket = this
 
@@ -344,6 +344,8 @@ object Index {
   lazy val MOGAS_95_UNL_10PPM_NWE_BARGES_VS_IPE_BRENT = formulaIndexFromName("Mogas 95 Unl 10ppm NWE Barges (Argus) vs IPE Brent")
   lazy val NYMEX_WTI_VS_IPE_BRENT = formulaIndexFromName("NYMEX WTI vs IPE Brent")
   lazy val NYMEX_RBOB_1ST_MONTH_VS_IPE_BRENT_1ST_MONTH = formulaIndexFromName("nymex rbob 1st month vs ipe brent 1st month (bbls)")
+
+  lazy val TC6_CROSS_MEDITERRANEAN_30KT_BALTIC = publishedIndexFromName("TC6 Cross Mediterranean 30KT (Baltic)")
 
   lazy val allFuturesFrontPeriodIndexes = provider.allIndexes.flatMap{case f:FuturesFrontPeriodIndex => Some(f); case _ => None}
   lazy val allPublishedIndexes = provider.allIndexes.flatMap{case p:PublishedIndex => Some(p); case _ => None}

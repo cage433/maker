@@ -15,6 +15,7 @@ import starling.dbx.Query
 import starling.pivot.MarketValue
 import starling.daterange.ObservationPoint._
 import starling.utils.MathUtil
+import scala.unchecked
 
 case class FwdCurveDbMarketDataSource(varSqlDB: DB, businessCalendars: BusinessCalendars, pricingGroupID: Int,
   override val marketDataSet: MarketDataSet) extends MarketDataSource {
@@ -35,16 +36,10 @@ case class FwdCurveDbMarketDataSource(varSqlDB: DB, businessCalendars: BusinessC
 
     val spotFXKeys: List[SpotFXDataKey] = FwdCurveAppExternalMarketDataReader.currencyCurveIDs.keysIterator.map{ccy=>SpotFXDataKey(ccy)}.toList
     val priceKeys: List[PriceDataKey] = PriceDataType.keys.filter(m => m.market.eaiQuoteID.isDefined)
-    val indexes: List[SingleIndex] = Index.indicesToImportFixingsForFromEAI.filter { index => {
-      index match {
-        case publishedIndex: PublishedIndex => publishedIndex.market.limSymbol.isEmpty
-        case futuresFrontPeriodIndex: FuturesFrontPeriodIndex => futuresFrontPeriodIndex.market.limSymbol.isEmpty
-        case _ => true
-      }
-    } }
     val forwardRateKeys: List[ForwardRateDataKey] = List(ForwardRateDataKey(UOM.USD)) // TODO [05 Apr 2011] We only have USD at the moment. Fix this once we have more
     val volSurfaceKeys: scala.List[OilVolSurfaceDataKey] = OilVolSurfaceDataType.keys
     val spredStdKeys: List[SpreadStdDevSurfaceDataKey] = SpreadStdDevSurfaceDataType.keys
+    val freightRateKeys = FreightFlatRateDataType.keys.filter(m => m.market.eaiQuoteID.isDefined)
 
     def readSomething[T](data: List[T], fn: T => (MarketDataKey, MarketData)): List[MarketDataEntry] = {
       data.flatMap { datum =>
@@ -61,13 +56,12 @@ case class FwdCurveDbMarketDataSource(varSqlDB: DB, businessCalendars: BusinessC
 
     val spotMDEs = range.add(SpotFXDataType.name) → readSomething[SpotFXDataKey](spotFXKeys, SpotFXReader(observationDay).read)
     val prices = range.add(PriceDataType.name) → readSomething[PriceDataKey](priceKeys, PricesReader(observationDay).read)
-    val fixings = FixingsReader(observationDay).read(indexes)
-//    val fixings = range.add(PriceFixingsHistoryDataType)  → readSomething[SingleIndex](indexes, FixingsReader(observationDay).read)
     val forwardRates = range.add(ForwardRateDataType.name) → readSomething[ForwardRateDataKey](forwardRateKeys, ForwardRateReader(observationDay).read)
     val volSurfaces = range.add(OilVolSurfaceDataType.name) → readSomething[OilVolSurfaceDataKey](volSurfaceKeys, OilVolSurfacesReader(observationDay).read)
     val spreadsStdDevs = range.add(SpreadStdDevSurfaceDataType.name) → readSomething[SpreadStdDevSurfaceDataKey](spredStdKeys, SpreadStdDevReader(observationDay).read)
+    val freightRates = range.add(FreightFlatRateDataType.name) → readSomething[FreightFlatRateDataKey](freightRateKeys, FreightFlatRatesReader(observationDay).read)
 
-    List(spotMDEs, prices, fixings, forwardRates, volSurfaces, spreadsStdDevs).toMap
+    List(spotMDEs, prices, forwardRates, volSurfaces, spreadsStdDevs, freightRates).toMap
   }
 
   private def readSpreadStdDevSurfaceCurve(market: FuturesMarket, curveID : Int, observationDay : Day, pricingGroupID : Int) : PriceData = {
@@ -98,10 +92,9 @@ case class FwdCurveDbMarketDataSource(varSqlDB: DB, businessCalendars: BusinessC
   /**
    * There are some convoluted rules involving isCashDay that determine whether we want to include this price point
    */
-  private def cashDayLogic(market: CommodityMarket, index: Option[Index] = None) = (market.tenor, index) match {
-    case (Month,_) => "and ((isCashDay = 0) or (isCashDay = 1 and isMonthDay = 1))"
-    case (_,Some(_: PublishedIndex)) => "and isCashDay = 0"
-    case _ => "and isCashDay in (0,1)"
+  private def cashDayLogic(market: CommodityMarket) = (market.tenor : @unchecked) match {
+    case Month => "and ((isCashDay = 0) or (isCashDay = 1 and isMonthDay = 1))"
+    case Day => "and isCashDay = 0"
   }
 
   private def deliveryPeriod(market: CommodityMarket, rs: ResultSetRow): DateRange = {
@@ -150,6 +143,25 @@ case class FwdCurveDbMarketDataSource(varSqlDB: DB, businessCalendars: BusinessC
     }
   }
 
+  case class FreightFlatRatesReader(observationDay: Day) {
+    def read(key: FreightFlatRateDataKey) = {
+
+      val query = """
+                      select FlatRate, ObservationDate
+                      from EAI.dbo.tblFreightFlatRates
+                      where quoteID = :quoteID
+                      """
+      val prices = varSqlDB.queryWithResult(query, Map("quoteID" -> key.market.eaiQuoteID.get)) {
+        rs => {
+          val price = Quantity(rs.getDouble("FlatRate"), FreightFlatRateForwardCurve.priceUOM).pq
+          val year = rs.getDay("ObservationDate").containingYear
+          (year, price)
+        }
+      }.toMap
+      (key, new FreightFlatRateData(prices))
+    }
+  }
+
   case class SpotFXReader(observationDay: Day) {
     def read(sdk: SpotFXDataKey) = {
       val ccy = sdk.ccy
@@ -177,75 +189,6 @@ case class FwdCurveDbMarketDataSource(varSqlDB: DB, businessCalendars: BusinessC
     }
   }
 
-  case class FixingsReader(observationDay: Day) {
-    def read(indexes: List[SingleIndex]): ((Day, Day, MarketDataTypeName), List[MarketDataEntry]) = {
-
-      val a = indexes.flatMap { index => {
-        val eaiQuoteID : Option[Int] = index match {
-          case p:PublishedIndex => p.eaiQuoteID
-          case _ => index.market.eaiQuoteID
-        }
-        val cashLogic = cashDayLogic(index.market, Some(index))
-        eaiQuoteID.map(eai => (index.market, (eai, cashLogic, index.level)))
-      }}.toMultiMap
-
-      val entries = a.flatMap { case (market, otherDetails) => readSingle(otherDetails, market) }
-
-      (observationDay.startOfFinancialYear, observationDay, PriceFixingsHistoryDataType.name) → entries.toList
-    }
-
-    def readSingle(otherDetails: Traversable[(Int, String, Level)], market: CommodityMarket): List[MarketDataEntry] = {
-      (otherDetails.toSet.toList match {
-        case (eaiQuoteID, cash, level) :: Nil => readSingle(market, cash, level, eaiQuoteID)
-        case rules => throw new Exception("This market has more than one eai/cash rule " + market + ", " + rules)
-      })
-        .toMultiMap.mapValues(PriceFixingsHistoryData.sum)
-        .map { case (day, data) => MarketDataEntry(ObservationPoint(day), PriceFixingsHistoryDataKey(market), data) }.toList
-        .update(duplicateTimedKeys(_).require(_.isEmpty, "Duplicate 'timed' keys: "))
-    }
-
-    def readSingle(market:CommodityMarket, crazyCashLogic:String, level:Level, eaiQuoteID:Int): List[(Day, PriceFixingsHistoryData)] = {
-      val tableName = table(market)
-
-      varSqlDB.queryWithResult(
-        """     select op.CurveID, op.ObservationDate, op.ForwardDate, op.Price, op.ForwardYear, op.IntervalNumber, op.isMonthDay from
-                %s op
-        join
-                (select EAIQuoteID, ObservationDate, min(ForwardDate) as MinForwardDate
-                        from %s
-                        where
-                        EAIQuoteID = :EAIQuoteID
-                        and PricingGroupID = :PricingGroupID
-                        and ObservationDate >= :DateFrom
-                        and ObservationDate <= :DateTo
-                        %s
-                        group by EAIQuoteID, ObservationDate) op2
-        on
-                op.EAIQuoteID = op2.EAIQuoteID and op.ObservationDate = op2.ObservationDate and op.ForwardDate = op2.MinForwardDate
-        where
-                op.EAIQuoteID = :EAIQuoteID
-                and op.PricingGroupID = :PricingGroupID
-        order by op.ObservationDate
-
-        """ % (tableName, tableName, crazyCashLogic)
-        , Map("EAIQuoteID" → eaiQuoteID,
-              "PricingGroupID" → pricingGroupID,
-              "DateFrom" → observationDay.startOfFinancialYear,
-              "DateTo" -> observationDay))
-      {
-        rs => {
-          val observationDate = rs.getDay("ObservationDate")
-          val delivery = deliveryPeriod(market, rs)
-          val price = MarketValue.quantity(MathUtil.roundToNdp(rs.getDouble("Price"), 8), market.priceUOM)
-
-          (observationDate, PriceFixingsHistoryData.create(Map((level, StoredFixingPeriod.dateRange(delivery)) → price)))
-        }
-      }
-    }
-
-    private def duplicateTimedKeys(entries: List[MarketDataEntry]) = entries.map(_.timedKey).duplicates
-  }
-
   case class PricesReader(observationDay: Day) {
     def read(pdk: PriceDataKey) = {
       val market = pdk.market match {
@@ -270,10 +213,21 @@ case class FwdCurveDbMarketDataSource(varSqlDB: DB, businessCalendars: BusinessC
           rs => {
             val delivery = deliveryPeriod(market, rs)
 
-            // FC app always has the price in a base currency. e.g. Rbob is in USD/GAL but should be in C/GAL
-            val fcaPrimeUOM = market.currency.inBaseCurrency / market.uom
-            val priceUOM = market.priceUOM // correct unit
-            val price = Quantity(rs.getDouble("Price"), fcaPrimeUOM) inUOM priceUOM
+            val price = market.priceUOM match {
+              case PERCENT => Percentage.fromPercentage(rs.getDouble("Price")).toQuantity
+              case _ => {
+                // FC app always has the price in a base currency. e.g. Rbob is in USD/GAL but should be in C/GAL
+                val fcaPriceUOM = market.currency.inBaseCurrency / market.uom
+                val priceUOM = market.priceUOM // correct unit
+                Quantity(rs.getDouble("Price"), fcaPriceUOM) inUOM priceUOM
+              }
+            }
+            pricePoints.get(delivery) match {
+              case Some(p) if p != price.value => {
+                throw new MissingMarketDataException("Failed reading for " + pdk + " on " + observationDay + " multiple date entries: " + delivery)
+              }
+              case _ =>
+            }
             pricePoints += (delivery -> price.value)
           }
         }

@@ -25,7 +25,7 @@ case class MarketDataID(observationPoint: ObservationPoint, marketDataSet: Marke
   def extractValue(row: Row): Option[(String, Double, String)] = types.fromName(subTypeKey.typeName).getValues(row) match {
     case List(Quantity(value, uom)) => Some((uom.toString, value, noComment))
     case List(pq: PivotQuantity) => pq.quantityValue.map(q => (q.uom.toString, q.value, noComment))
-    case List(Percentage(pc)) => Some(("%", pc, noComment))
+    case List(p: Percentage) => Some(("%", p.percentageValue, noComment))
     case List(Quantity(value, uom), comment: String) => Some((uom.toString, value, comment))
     case other => log.warn("Couldn't extract: %s, key: %s" % (other, subTypeKey)); None
   }

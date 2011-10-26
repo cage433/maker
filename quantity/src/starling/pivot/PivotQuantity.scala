@@ -92,7 +92,12 @@ case class PivotQuantity(values:Map[UOM,Double], errors:MultiMap[String,StackTra
   }
   def *(amount:Double) : PivotQuantity = this * new Quantity(amount)
   def *(q : Quantity) : PivotQuantity = {
-    new PivotQuantity(Map() ++ (for((uom,value) <- values) yield (uom * q.uom)->(value * q.value)), errors)
+    val vs = for ((uom, value) <- values) yield {
+      uom.mult(q.uom) match {
+        case (uom, times) => (uom, (times * value * q.value).doubleValue())
+      }
+    }
+    new PivotQuantity(vs.toMap, errors)
   }
   def <(other: PivotQuantity): Boolean = quantityValue < other.quantityValue
   def >(other: PivotQuantity): Boolean = quantityValue > other.quantityValue

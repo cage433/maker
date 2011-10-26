@@ -22,6 +22,7 @@ object UOM extends StarlingEnum(classOf[UOM], (u: UOM) => u.toString, ignoreCase
 
   val NULL = new UOM(Ratio(0, 1), Ratio(0, 1), 1.0)
   val SCALAR = new UOM(Ratio(1, 1), Ratio(1, 1), 1.0)
+  val PERCENT = new UOM(Ratio(1, 1), Ratio(PERCENT_SYMBOL.prime, 1), .01)
 
   val AED = UOM(Currencies.AED, aed, 1.0)
   val AUD = UOM(Currencies.AUD, aud, 1.0)
@@ -128,7 +129,7 @@ object UOM extends StarlingEnum(classOf[UOM], (u: UOM) => u.toString, ignoreCase
   val BUSHEL_WHEAT = UOM(BUSHEL_WHEAT_SYMBOL)
 
   val uoms = values filterNot List(NULL, SCALAR).contains
-  val primes = uoms.flatMap{case UOM(Ratio(p1, _), Ratio(p2, _), _) => Set(p1.toInt, p2.toInt)}.distinct
+  val primes = uoms.flatMap{case UOM(Ratio(p1, _), Ratio(p2, _), _) => Set(p1.toInt, p2.toInt)}.distinct.filterNot(_ == 1)
 
   lazy val currencies: List[UOM] = uoms.filter(_.isCurrency)
   val uomMap: Map[(Long, Long), UOM] = uoms.map(u => (u.uType.numerator, u.subType.numerator) -> u).toMap
@@ -139,12 +140,12 @@ object UOM extends StarlingEnum(classOf[UOM], (u: UOM) => u.toString, ignoreCase
    */
   protected[quantity] val baseMap: Map[UOMSymbol, UOMSymbol] = {
     val bases: Map[Ratio, UOMSymbol] = uoms.flatMap {
-      case u@UOM(uType, subType, v) if v == 1.0 => Some((uType -> UOMSymbol.symbolForPrime(subType.numerator)))
+      case UOM(uType, subType, v) if v == 1.0 => Some((uType -> UOMSymbol.symbolForPrime(subType.numerator)))
       case _ => None
     }.toMap
-    uoms.map {
-      case UOM(uType, subType, _) => (UOMSymbol.symbolForPrime(subType.numerator) -> bases(uType))
-    }.toMap
+    uoms.flatMap {
+      case UOM(uType, subType, _) => bases.get(uType).map(b => (UOMSymbol.symbolForPrime(subType.numerator) -> b))
+    }.toMap + (PERCENT_SYMBOL -> PERCENT_SYMBOL)
   }
 
   private val baseConversionCache = CacheFactory.getCache("UOM.baseConversionCache", unique = true)
@@ -257,42 +258,48 @@ case class UOM(uType: Ratio, subType: Ratio, v: BigDecimal) extends Ordered[UOM]
   def div(o: UOM) = this.mult(o.inverse)
 
   def mult(o: UOM): (UOM, BigDecimal) = {
-    val notReduced = UOM(uType * o.uType, subType * o.subType, v * o.v)
-    val uGCD = notReduced.uType.gcd
-    if (uGCD > 1) {
-      val sGCD = notReduced.subType.gcd
-      val decomposedU = UOM.decomposePrimes(uGCD)
-      val decomposedS = UOM.decomposePrimes(sGCD)
-      if (decomposedU.values.sum == decomposedS.values.sum) {
-        val reduced = notReduced.copy(uType = notReduced.uType.reduce, subType = notReduced.subType.reduce)
+    (this, o) match {
+      case (UOM(Ratio(1, 1), _, c), _) => (o, c)
+      case (_, UOM(Ratio(1, 1), _, c)) => (this, c)
+      case _ => {
+        val notReduced = UOM(uType * o.uType, subType * o.subType, v * o.v)
+        val uGCD = notReduced.uType.gcd
+        if (uGCD > 1) {
+          val sGCD = notReduced.subType.gcd
+          val decomposedU = UOM.decomposePrimes(uGCD)
+          val decomposedS = UOM.decomposePrimes(sGCD)
+          if (decomposedU.values.sum == decomposedS.values.sum) {
+            val reduced = notReduced.copy(uType = notReduced.uType.reduce, subType = notReduced.subType.reduce)
 
-        (reduced, 1.0)
-      } else {
-        def remove(pp: Long, primes: List[Long], removed: Int, max: Int): Long = if (removed < max) {
-          val prime = primes.find(p => pp % p == 0).get
-          val newPP = pp / prime
-          remove(newPP, primes, removed + 1, max)
-        } else {
-          pp
-        }
-        var subType = notReduced.subType
-        decomposedU.map {
-          case (u, num) => {
-            val matches = UOM.uomMap.keySet.filter {
-              case (a, _) => a == u
-            }.map(_._2).toList
-            subType = Ratio(remove(subType.numerator, matches, 0, num), remove(subType.denominator, matches, 0, num))
+            (reduced, 1.0)
+          } else {
+            def remove(pp: Long, primes: List[Long], removed: Int, max: Int): Long = if (removed < max) {
+              val prime = primes.find(p => pp % p == 0).get
+              val newPP = pp / prime
+              remove(newPP, primes, removed + 1, max)
+            } else {
+              pp
+            }
+            var subType = notReduced.subType
+            decomposedU.map {
+              case (u, num) => {
+                val matches = UOM.uomMap.keySet.filter {
+                  case (a, _) => a == u
+                }.map(_._2).toList
+                subType = Ratio(remove(subType.numerator, matches, 0, num), remove(subType.denominator, matches, 0, num))
+              }
+            }
+
+            val uType = notReduced.uType.reduce
+            val reducedWrongV = notReduced.copy(uType, subType)
+            val reduced = UOM.fromSymbolMap(reducedWrongV.asSymbolMap, UOM.SCALAR)
+            val multiplier = (reducedWrongV.v / reduced.v)
+            (reduced, multiplier)
           }
+        } else {
+          (notReduced, 1.0)
         }
-
-        val uType = notReduced.uType.reduce
-        val reducedWrongV = notReduced.copy(uType, subType)
-        val reduced = UOM.fromSymbolMap(reducedWrongV.asSymbolMap, UOM.SCALAR)
-        val multiplier = (reducedWrongV.v / reduced.v)
-        (reduced, multiplier)
       }
-    } else {
-      (notReduced, 1.0)
     }
   }
 
@@ -347,7 +354,8 @@ case class UOM(uType: Ratio, subType: Ratio, v: BigDecimal) extends Ordered[UOM]
 
     (num, den) match {
       case (num, "") => num
-      case ("", den) => den
+      case ("", den) if den.contains('^') => den.replace("^", "^-")
+      case ("", den) => den + "^-1"
       case _ => num + sep + den
     }
   }

@@ -187,6 +187,7 @@ object DBConvert {
       }
       actualValue match {
         case d: Day => convertedMap += (key -> d.toSqlDate)
+        case y: Year => convertedMap += (key -> y.yearNumber.asInstanceOf[java.lang.Integer])
         case t: Timestamp => convertedMap += (key -> new java.util.Date(t.instant))
         case q: Quantity if (Strike == key || InitialPrice == key) => convertedMap += (key -> q.value.toString, key + "UOM" -> q.uom.toString)
         case q: Quantity => convertedMap += (key -> q.value.asInstanceOf[java.lang.Double], key + "UOM" -> q.uom.toString)

@@ -10,6 +10,7 @@ import starling.quantity._
 trait RichInstrumentResultSetRow {
   def getInt(name:String):Int
   def getIntOption(name:String):Option[Int]
+  def getQuantityOption(name:String):Option[Quantity]
   def getDouble(name:String):Double
   def getBoolean(name:String):Boolean
   def getTimestamp(name:String):Timestamp
@@ -28,6 +29,7 @@ trait RichInstrumentResultSetRow {
   }
   def getStrikes: SpreadQuantity
   def getMonth(name : String) : Month
+  def getYear(name : String) : Year
   def getDeliveryDay(name : String) : Day = getDateRange(name) match {
     case d: Day => d
     case o => throw new Exception(o + " is not a day")

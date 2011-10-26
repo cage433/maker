@@ -56,6 +56,7 @@ class ResultSetRow(resultSet: ResultSet, val count: Int) {
 
   def getInt(column: String) = resultSet.getInt(column)
   def getIntOption(column: String) = notNull(column) option(getInt(column))
+  def getQuantityOption(column: String) = notNull(column) option(getQuantity(column))
 
   def getXML(column: String) = {
     val text = getString(column)
@@ -142,6 +143,8 @@ class ResultSetRow(resultSet: ResultSet, val count: Int) {
   }
 
   def getMonth(name : String) : Month = Month.parse(getString(name))
+
+  def getYear(name : String) : Year = Year.parse(getString(name))
 
   def getDateRange(startDayColumn: String, endDayColumn : String) = DateRange(getDay(startDayColumn), getDay(endDayColumn))
 

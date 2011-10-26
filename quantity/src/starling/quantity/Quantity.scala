@@ -280,6 +280,11 @@ class Quantity(val value : Double, val uom : UOM) extends Ordered[Quantity] with
 
   def named(name: String) = SimpleNamedQuantity(name, this)
 
+  def toPercentage = {
+    require(uom == PERCENT, "Can't convert " + this + " to percentage")
+    Percentage.fromPercentage(value)
+  }
+
   def round(dp: Int) = copy(value = MathUtil.roundToNdp(value, dp))
 }
 

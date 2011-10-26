@@ -85,6 +85,8 @@ object UOMSymbol{
 
   val MILLISECONDS_SYMBOL = UOMSymbol("ms")
 
+  val PERCENT_SYMBOL = UOMSymbol("%")
+
   val symbols: List[UOMSymbol] = List(
     SHORT_TONNE_SYMBOL,
     TONNE_SYMBOL,
@@ -138,7 +140,8 @@ object UOMSymbol{
     SHORT_TON_SYMBOL,
     MILLISECONDS_SYMBOL,
     SHARE_SYMBOL,
-    US_CENT_SYMBOL
+    US_CENT_SYMBOL,
+    PERCENT_SYMBOL
   ) ++ zCurrencies ++ zCurrencies2 ++ zCurrencies3
 
   // Map of name and altname to symbol
@@ -148,6 +151,7 @@ object UOMSymbol{
   // quantities with fast arithmetic
   val primeForSymbol : Map[UOMSymbol, Long] = symbols.map(s => (s -> s.prime.toLong)).toMap
   private val symbolForPrimeMap : Map[Long, UOMSymbol] = primeForSymbol.map{case (s, p) => p -> s}
+  def symbolForPrimeOption(prime: Long) = symbolForPrimeMap.get(prime)
   def symbolForPrime(prime: Long) = symbolForPrimeMap.get(prime) match {
     case Some(s) => s
     case None => throw new Exception("Can't find symbol for prime " + prime + ", this happens if you add a new symbol but don't add it to the 'symbols' list.")

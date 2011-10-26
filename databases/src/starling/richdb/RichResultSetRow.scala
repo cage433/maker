@@ -12,11 +12,11 @@ import starling.market._
 import rules.SwapPricingRule
 import scala.collection.JavaConversions._
 import starling.models._
-import starling.daterange.{Day, Spread, DateRange}
 import starling.quantity.{SpreadQuantity, Quantity, UOM}
 import starling.instrument.TradeSystem
 import starling.dbx.DataSourceFactory
 import starling.props.ConnectionParams
+import starling.daterange.{Year, Day, Spread, DateRange}
 
 class RichDB(val dataSource : DataSource, factory : RichResultSetRowFactory) extends DBTrait[RichResultSetRow] {
   def this(connectionParams: ConnectionParams, factory : RichResultSetRowFactory) =
@@ -47,6 +47,7 @@ object RichConversions {
         // "period" in our tables are varchars so we don't want days being converted to sql dates.
         case (Period(_, _), d : Day) => convertedMap +=  (key -> d.toString)
         case (_, d : Day) => convertedMap +=  (key -> d.toSqlDate)
+        case (_, y : Year) => convertedMap +=  (key -> y.yearNumber.asInstanceOf[java.lang.Integer])
         case (_, d : DateRange) => convertedMap +=  (key -> d.toString)
         case (_, s : Spread[_]) => convertedMap +=  (key -> s.toString)
         case _ => convertedMap ++= mapAsScalaMap(fallBack(Map(key -> value)))

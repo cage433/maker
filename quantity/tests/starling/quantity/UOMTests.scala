@@ -30,6 +30,8 @@ class UOMTests extends TestNGSuite with ShouldMatchers {
     assertEquals((USD / MT * EUR / (OZ * MT)).toString, "EURUSD/MT^2oz")
     assertEquals( KG.toString, "kg")
     assertEquals( (CNY / KG).toString, "CNY/kg")
+    assertEquals( (SCALAR / USD).toString, "USD^-1")
+    assertEquals( (SCALAR / (USD*USD)).toString, "USD^-2")
   }
 
   @Test
@@ -137,8 +139,8 @@ class UOMTests extends TestNGSuite with ShouldMatchers {
   }
 
   @Test def extractorTest {
-    List("USD", "MT", "USD/MT").flatMap { _ partialMatch { case UOM.Parse(uom) => uom } } should be ===
-      List(UOM.USD, UOM.MT, UOM.USD / UOM.MT)
+    List("USD", "MT", "USD/MT", "%").flatMap { _ partialMatch { case UOM.Parse(uom) => uom } } should be ===
+      List(UOM.USD, UOM.MT, UOM.USD / UOM.MT, UOM.PERCENT)
   }
 
   @Test

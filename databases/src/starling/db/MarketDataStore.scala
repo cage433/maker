@@ -69,7 +69,7 @@ object MarketDataStore {
     PricingGroup.LondonDerivatives ->> (Starling, LondonDerivatives, LIM),
     PricingGroup.GasolineRoW ->> (Starling, GasolineRoW, LIM),
     PricingGroup.GasOil ->> (Starling, GasOil, LIM),
-    PricingGroup.Naphtha ->> (Starling, Naphtha, GasolineRoW, LIM),
+    PricingGroup.Naphtha ->> (Starling, Naphtha, LIM),
     PricingGroup.BarryEckstein ->> (Starling, BarryEckstein, System, LIM),
     PricingGroup.LondonDerivativesOptions ->> (Starling, LondonDerivativesOptions, System, LIM)
   )

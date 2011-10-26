@@ -20,7 +20,7 @@ case class SwapVol(index : SingleIndex, averagingPeriod : DateRange) extends Vol
         env.swapVol(index, SimpleDateRange.containingRange(daysInFuture), strike)
       }
     }
-    Quantity(vol.decimalValue, UOM.SCALAR)
+    vol.toQuantity
   }
 
   val periodKey = Some(DateRangePeriod(averagingPeriod))

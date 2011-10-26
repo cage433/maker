@@ -1,6 +1,7 @@
 package starling.instrument
 
 
+import physical.{Cargo, PhysicalMetalAssignment}
 import starling.quantity.UOM.{USD, BBL}
 import starling.richdb.RichInstrumentResultSetRow
 import starling.quantity.Quantity._
@@ -13,7 +14,6 @@ import starling.varcalculator._
 import starling.utils.ImplicitConversions._
 import starling.models.DefaultRiskParameters
 import starling.utils.CollectionUtils
-import starling.instrument.physical.PhysicalMetalAssignment
 import starling.quantity.{NamedQuantity, Quantity, UOM}
 import starling.marketdata.ReferenceDataLookup
 
@@ -38,6 +38,7 @@ object InstrumentType {
   val types = List[InstrumentType[_ <: UTP]](
     Future,
     TAS,
+    FFA,
     CommoditySwap,
     SwapCalendarSpread,
     FuturesOption,

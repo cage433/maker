@@ -52,6 +52,7 @@ class UTPTests extends IndexTest {
           case ForwardPriceKey(market, day, _) => 96 (market.priceUOM)
           case IndexFixingKey(`brentIndex`, _) => 97(USD/BBL)
           case IndexFixingKey(index, _) => 96(index.priceUOM)
+          case FreightFlatRateKey(index, Year(2011), _) => 4 (USD/MT)
           case _ : OilAtmVolAtomicDatumKey => Percentage(0.10)
           case _ : OilVolSkewAtomicDatumKey => Map(0.1 -> Percentage(0.05))
           case USDFXRateKey(ccy) => xRates(ccy)(USD/ccy)
@@ -100,6 +101,8 @@ class UTPTests extends IndexTest {
 
       // TAS
       new TAS(wtiMarket, Month(2011, 1), Day(2008, 12, 1), Quantity(1000, BBL)),
+
+      new FFA(Index.TC6_CROSS_MEDITERRANEAN_30KT_BALTIC, Quantity(10000, MT), Percentage.fromPercentage(150), Month(2011, 1), Year(2011), None, Year(2011)),
 
 
       new FuturesCommoditySpread(FuturesSpreadMarket.RB_CRACKS, Month(2011, 1), Quantity(55, USD/BBL), Quantity(56, USD/BBL), Quantity(1000, BBL)),

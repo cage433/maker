@@ -87,6 +87,7 @@ class MarketDataTypes(referenceDataLookup: ReferenceDataLookup) {
     PriceDataType,
     OilVolSurfaceDataType,
     ForwardRateDataType,
+    FreightFlatRateDataType,
     SpotFXDataType,
     PriceFixingsHistoryDataType,
     SpreadStdDevSurfaceDataType,

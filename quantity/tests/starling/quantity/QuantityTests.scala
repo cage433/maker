@@ -270,6 +270,25 @@ import starling.quantity.RichQuantity._
     value / one should be === value.copy()
   }
 
+  @Test
+  def testPercent {
+    val tenP = Percentage.fromPercentage(10)
+    val tenQ = Quantity(10, UOM.PERCENT)
+    val oneD = Quantity(1, UOM.USD)
+
+    assertQtyEquals(tenP.toQuantity, tenQ)
+    assertEquals(tenP.percentageValue, tenQ.value)
+
+    assertQtyEquals(oneD * tenP, oneD * tenQ)
+    assertQtyEquals(oneD * tenQ, Quantity(10, US_CENT))
+    assertQtyEquals(oneD / tenQ, Quantity(10, USD))
+    assertQtyEquals(tenQ / oneD, Quantity(.1, SCALAR/USD))
+
+    assertQtyEquals(tenQ * tenQ, Quantity(1, PERCENT))
+    assertQtyEquals(tenQ + tenQ, Quantity(20, PERCENT))
+    assertQtyEquals(tenQ - tenQ, Quantity(0, PERCENT))
+  }
+
   private def values = Quantity(12.34, UOM.USD) :: multiplicativeZeros ::: additiveZeros
   private def additiveZeros = List(Quantity.NULL, Quantity(0, UOM.NULL))
   private def multiplicativeZeros = List(Quantity.ONE, Quantity(1, UOM.SCALAR))

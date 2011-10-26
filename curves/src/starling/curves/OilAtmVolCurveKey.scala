@@ -38,9 +38,9 @@ case class OilAtmVolAtomicDatumKey(
 
   def periodKey = Some(period)
 
-  def calc_dP(env : Environment) = new Quantity(0.0050)
+  def calc_dP(env : Environment) = new Quantity(0.50, UOM.PERCENT)
   def shiftedEnvs(env : Environment, dV_asQty : Quantity) : (Environment, Environment) = {
-    val dV = Percentage(dV_asQty.checkedValue(UOM.SCALAR))
+    val dV = dV_asQty.toPercentage
     val upEnv = env.shiftVol(market, observationOrExerciseDay, period, dV)
     val downEnv = env.shiftVol(market, observationOrExerciseDay, period, -dV)
     (downEnv, upEnv)

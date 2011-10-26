@@ -10,6 +10,7 @@ import starling.richdb.RichInstrumentResultSetRow
 import starling.quantity.{SimpleNamedQuantity, NamedQuantity, Quantity}
 import starling.marketdata.IncotermCode
 import starling.market.rules.{PerQuoteRule, SwapPricingRule}
+import starling.market.Index
 
 case class Cargo(quantity: Quantity, incoterm: IncotermCode, blDate: Day, index: FormulaIndex, pricingSchedule: PricingSchedule, pricingRule: SwapPricingRule)
   extends UTP with Tradeable {
@@ -72,6 +73,8 @@ case class Cargo(quantity: Quantity, incoterm: IncotermCode, blDate: Day, index:
   def tradeableType = Cargo
 
   def instrumentType = Cargo
+
+  override def expiryDay() = Some(pricingDays.last)
 }
 
 object Cargo extends InstrumentType[Cargo] with TradeableType[Cargo] {

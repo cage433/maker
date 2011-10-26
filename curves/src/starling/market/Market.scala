@@ -53,7 +53,11 @@ abstract class CommodityMarket(
 
   def positionUOM = uom
 
-  @transient val priceUOM = currency / uom
+  def priceUOM = if (currency == WSC) {
+    PERCENT // Worldscale markets (such as TC6) are quoted as percentages of Worldscale
+  } else {
+    currency / uom
+  }
 
   def standardShift = {
     commodity match {

@@ -15,7 +15,7 @@ class CargoReader extends InstrumentReader {
 
   import EAISystemOfRecord._
 
-  def canHandle(rs: RichResultSetRow) = rs.getInt("TradeType") == CARGO
+  def canHandle(rs: RichResultSetRow) = /*rs.getInt("TradeType") == CARGO*/ false
 
   override def create(rs: RichResultSetRow) = {
     val pricingXML = rs.isNull("PricingFormulaXML") match {
@@ -41,6 +41,7 @@ class CargoReader extends InstrumentReader {
       case true => {
         val xml = rs.getString("UnderlyingScheduleDefaultXML")
         assert(xml == rs.getString("UnderlyingSchedulePlutoXML"), xml + " != " + rs.getString("UnderlyingScheduleDefaultXML"))
+        assert(xml != null, "No schedules defined - All schedules for this trade are null")
         xml
       }
       case false => rs.getString("UnderlyingScheduleXML")
@@ -50,7 +51,6 @@ class CargoReader extends InstrumentReader {
     }
     catch {
       case e => {
-        e.printStackTrace
         throw e
       }
     }

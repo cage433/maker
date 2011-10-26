@@ -414,7 +414,8 @@ class NewSchemaMdDB(db: DBTrait[RichResultSetRow], dataTypes: MarketDataTypes) e
         (valueFields, List(Some(value), comment).flatten))
       Some(Row(valueFields.head, uom match {
         case "" => Quantity(value, UOM.SCALAR)
-        case "%" => Percentage(value)
+        case "%" if extendedKey.marketDataType != PriceDataType => Percentage.fromPercentage(value)
+        case "%" => Quantity(value, UOM.PERCENT)// HAck - UOM.Parse(unit) below doesn't work for some reason
         case UOM.Parse(unit) => Quantity(value, unit)
         case _ => throw new Exception("Unrecognized uom: " + uom + " in row " + timedKey + " " + valueFields + " " + value)
       }) +? comment.map(valueFields.tail.head → _))

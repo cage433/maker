@@ -62,7 +62,7 @@ object Launcher {
 
     val baseActivators = List[Class[_ <: BromptonActivator]](classOf[JettyBromptonActivator], classOf[GuiBromptonActivator], classOf[BrowserBromptonActivator])
     val extraActivators = serverType match {
-      case "FC2" => List[Class[_ <: BromptonActivator]](classOf[MetalsGuiBromptonActivator])
+      case "FC2"|"Dev" => List[Class[_ <: BromptonActivator]](classOf[MetalsGuiBromptonActivator])
       case "Oil" => List[Class[_ <: BromptonActivator]]()
     }
     val activators = baseActivators ::: extraActivators

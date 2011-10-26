@@ -151,7 +151,8 @@ case class Environment(
     (index, averagingPeriod, rounding),
     (tuple: (Index, DateRange, Option[Int])) => {
       val observationDays = index.observationDays(averagingPeriod)
-      val price = Quantity.average(observationDays.map(index.fixingOrForwardPrice(this, _))) match {
+      val prices = observationDays.map(index.fixingOrForwardPrice(this, _))
+      val price = Quantity.average(prices) match {
         case nq : NamedQuantity => SimpleNamedQuantity("Average(" + index + "." + averagingPeriod + ")", nq)
         case q : Quantity => q
       }
@@ -257,7 +258,7 @@ case class Environment(
     if (T == 0.0)
       Percentage(0.0)
     else
-      Percentage((d1 / d2 - 1.0) / T)
+      Percentage.fromDecimal(((d1 / d2 - 1.0) / T).checkedValue(UOM.SCALAR))
   }
 
   def zeroRate(currency: UOM, day: Day): Percentage = {
@@ -322,6 +323,10 @@ case class Environment(
 
   def spreadStdDev(market: FuturesMarket, period: Period, exerciseDay: Day, strike: Quantity) = {
     instrumentLevelEnv.spreadStdDev(market, period, exerciseDay, strike)
+  }
+
+  def worldScaleFlatRate(market: CommodityMarket, year: Year): Quantity = {
+    instrumentLevelEnv.worldScaleFlatRate(market, year)
   }
 
   /**
