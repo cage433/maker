@@ -45,7 +45,7 @@ class BrokerCostTests extends TestMarketTest {
     val period = Year(2011)
     val mkt = Index.CAPSIZE_TC_AVG
     val vol = 15(DAY)
-    val volume = new FreightVolume(mkt.uom, vol, period)
+    val volume = new FreightVolume(mkt.uom, Left(vol), period)
     val atMonthEnd = new AtMonthEndFreight(period, volume)
     val percentage = new Percentage(0.00125)
     val strike = 14000(USD / DAY)
@@ -65,9 +65,9 @@ class BrokerCostTests extends TestMarketTest {
   def testAtMonthEndPercentVolume {
     val period = Year(2011)
     val mkt = Index.CAPSIZE_TC_AVG
-    val vol = 100(PERCENT)
+    val vol = new Percentage(1)
     val strike = 14000(USD / DAY)
-    val volume = new FreightVolume(mkt.uom, vol, period)
+    val volume = new FreightVolume(mkt.uom, Right(vol), period)
     val atMonthEnd = new AtMonthEndFreight(period, volume)
     val percentage = new Percentage(0.005)
     val commission = new CommissionPercent(percentage, strike, USD)
@@ -86,7 +86,7 @@ class BrokerCostTests extends TestMarketTest {
     val period = Year(2011)
     val mkt = Index.CAPSIZE_TC_AVG
     val vol = 100(DAY)
-    val volume = new FreightVolume(mkt.uom, vol, period)
+    val volume = new FreightVolume(mkt.uom, Left(vol), period)
     val singlePayment = new SingleFreightPayment(Day.today, volume)
     val commission = new CommissionLumpSum(30(USD))
 

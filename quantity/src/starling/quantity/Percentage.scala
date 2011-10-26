@@ -49,12 +49,13 @@ case class Percentage(value : Double) {
     case _ => this
   }
 
+  def isAlmostZero : Boolean = value.abs < MathUtil.EPSILON
+
   def toQuantity = new Quantity(value)
 }
 
 object Percentage {
-  implicit def convertToDouble(p : Percentage) : Double = p.value
-  implicit def convertToQuantity(p : Percentage) : Quantity = Quantity(p.value, UOM.SCALAR)
+  implicit def convertToDouble(p : Percentage) : Double = p.decimalValue
   def sum(values : Iterable[Percentage]) = (Percentage(0) /: values)(_+_)
   def average(values : Iterable[Percentage]) = values match {
     case Nil => throw new Exception("Can't get average of empty sequence")

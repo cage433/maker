@@ -63,7 +63,7 @@ class SwapVolSchedulePivotDataSource(context: EnvironmentWithDomain) extends Unf
   private def averageUnfixedPrice(index: SingleIndex, averagingPeriod: DateRange): Quantity = {
     val unfixedDays = index.observationDays(averagingPeriod).filter(_.endOfDay > marketDay)
     if (unfixedDays.isEmpty) {
-      return Percentage(0)
+      return Percentage(0).toQuantity
     }
     env.averagePrice(index, DateRange(unfixedDays))
   }

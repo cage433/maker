@@ -2,8 +2,8 @@ package starling.pivot
 
 import java.io.Serializable
 
-import starling.quantity.{Percentage => APercentage, UOM, Quantity => AQuantity}
 import starling.utils.Pattern._
+import starling.quantity.{Percentage => APercentage, UOM, Quantity => AQuantity}
 
 
 case class MarketValue(value: Either[AQuantity, APercentage]) extends Serializable {

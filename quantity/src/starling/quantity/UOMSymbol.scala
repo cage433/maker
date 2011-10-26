@@ -55,8 +55,6 @@ object UOMSymbol{
   val BUSHEL_WHEAT_SYMBOL = UOMSymbol("bus", "BUSHEL (WHEAT)", "Bushel (BUS)")
   val SHORT_TON_SYMBOL = UOMSymbol("st", "SHORT TON")
 
-  val PERCENT_SYMBOL = UOMSymbol("%")
-
   val DAY_SYMBOL = UOMSymbol("DAY", "days")
   val MONTH_SYMBOL = UOMSymbol("MONTH")
   val YEAR_SYMBOL = UOMSymbol("YEAR")
@@ -139,7 +137,6 @@ object UOMSymbol{
     BUSHEL_WHEAT_SYMBOL,
     SHORT_TON_SYMBOL,
     MILLISECONDS_SYMBOL,
-    PERCENT_SYMBOL,
     SHARE_SYMBOL,
     US_CENT_SYMBOL
   ) ++ zCurrencies ++ zCurrencies2 ++ zCurrencies3

@@ -64,7 +64,7 @@ class MarketDataHandler(broadcaster : Broadcaster,
         }
       }
       // if all the ATM vols are over 100% we should scale then by diving by 100
-      val multiplier = if(vols("ATM").forall(p => p.isAlmostZero || p.value > 1.0)) {
+      val multiplier = if(vols("ATM").forall(p => p.isAlmostZero || p.decimalValue > 1.0)) {
         0.01
       } else {
         1.0

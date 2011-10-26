@@ -149,7 +149,7 @@ abstract class AtomicDatumKey(val curveKey : CurveKey, val point : AnyRef, val i
   def quantityValue(env : Environment) : Quantity = {
     env.instrumentLevelEnv.apply(this) match {
       case q : Quantity => q
-      case p : Percentage => p : Quantity
+      case p : Percentage => p.toQuantity
       case x => throw new Exception("Don't support quantityValue for " + x)
     }
   }

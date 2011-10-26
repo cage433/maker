@@ -101,7 +101,7 @@ abstract class SingleAverageOption(
   def periodKey = Some(DateRangePeriod(averagingPeriod))
 
   override def interpolatedVol(env : Environment, volKey : EnvironmentDifferentiable with VolKey) : Quantity = {
-    def futuresVol(market : CommodityMarket, period : DateRange) : Quantity = {
+    def futuresVol(market : CommodityMarket, period : DateRange) = {
       index match {
         case f : FuturesFrontPeriodIndex => {
           assert(f.market == market, "Unexpected vol key " + volKey)
@@ -114,8 +114,8 @@ abstract class SingleAverageOption(
       }
     }
     volKey match {
-      case OilAtmVolAtomicDatumKey(market, _, period, _) => futuresVol(market, period)
-      case SwapVol(`index`, period) => env.swapVol(index, period, strike)
+      case OilAtmVolAtomicDatumKey(market, _, period, _) => futuresVol(market, period).toQuantity
+      case SwapVol(`index`, period) => env.swapVol(index, period, strike).toQuantity
       case _ => throw new Exception("Unexpected vol key " + volKey)
     }
   }

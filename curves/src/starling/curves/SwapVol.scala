@@ -9,7 +9,7 @@ import starling.market.SingleIndex
 case class SwapVol(index : SingleIndex, averagingPeriod : DateRange) extends VolKey with EnvironmentDifferentiable{
   private val averagingDays : List[Day] = index.observationDays(averagingPeriod)
 
-  def calc_dP(env : Environment)  = Percentage(0.005)
+  def calc_dP(env : Environment)  = Percentage(0.005).toQuantity
 
   def quantityValue (env : Environment) : Quantity = {
     val daysInFuture = averagingDays.filter(_.endOfDay > env.marketDay)

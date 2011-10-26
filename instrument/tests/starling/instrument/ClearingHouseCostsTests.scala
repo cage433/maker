@@ -16,7 +16,7 @@ class ClearingHouseCostsTests extends TestMarketTest {
     val period = Year(2011)
     val mkt = Market.LME_NASAAC
     val vol = 100(DAY)
-    val volume = new FreightVolume(mkt.uom, vol, period)
+    val volume = new FreightVolume(mkt.uom, Left(vol), period)
     val singlePayment = new SingleFreightPayment(Day.today, volume)
     // fees for clearing houses are per day
     val fee = .30 (USD) / 1.0 (mkt.uom)

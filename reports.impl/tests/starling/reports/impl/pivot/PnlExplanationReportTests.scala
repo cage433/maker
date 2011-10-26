@@ -23,11 +23,11 @@ class PnlExplanationReportTests extends JonTestEnv {
   @Test
   def testZeroPnlComponentsAreRemoved() {
     //don't change the interest rate so there is 0 pnl due to interest rates
-    val market = Market.LME_LEAD
+    val market = Market.NYMEX_WTI
     val env1 = TestEnvironmentBuilder.curveObjectEnvironment(Day(2009, 9, 15).endOfDay, market, 20, 0.0)
     val env2 = TestEnvironmentBuilder.curveObjectEnvironment(Day(2009, 9, 15).endOfDay, market, 30, 0.0)
 
-    val forward = new Future(market, Day(2010, 1, 1), Quantity(0, market.priceUOM), Quantity(1, market.uom))
+    val forward = new Future(market, Month(2010, 5), Quantity(0, market.priceUOM), Quantity(1, market.uom))
 
     val plainPnl = forward.mtm(Environment(env2)) - forward.mtm(Environment(env1))
     val marketChangesPnl = new MarketChangesPnl(env1, env2, Map(UTPIdentifier(1) -> forward))
@@ -40,11 +40,11 @@ class PnlExplanationReportTests extends JonTestEnv {
   @Test
   def testMarketChangesForFutureCrossTerms() {
     //make a huge interest rate change to get a price vs interest rate cross term
-    val market = Market.LME_LEAD
+    val market = Market.NYMEX_WTI
     val env1 = TestEnvironmentBuilder.curveObjectEnvironment(Day(2009, 9, 15).endOfDay, market, 20, 0.01)
     val env2 = TestEnvironmentBuilder.curveObjectEnvironment(Day(2009, 9, 15).endOfDay, market, 30, 0.10)
 
-    val forward = new Future(market, Day(2010, 1, 1), Quantity(0, market.priceUOM), Quantity(1, market.uom))
+    val forward = new Future(market, Month(2010, 1), Quantity(0, market.priceUOM), Quantity(1, market.uom))
 
     val plainPnl = forward.mtm(Environment(env2)) - forward.mtm(Environment(env1))
     val marketChangesPnl = new MarketChangesPnl(env1, env2, Map(UTPIdentifier(1) -> forward))
@@ -53,60 +53,15 @@ class PnlExplanationReportTests extends JonTestEnv {
     assertEquals(explanationSum, plainPnl)
   }
 
-  class InstrumentWithIncorrectAtomicKeys(day:Day) extends UTP {
-    def pivotUTPType = throw new Exception
-
-    protected def explanation(env: Environment) = throw new Exception
-
-    def instrumentType = throw new Exception
-    def asUtpPortfolio = throw new Exception
-    def isLive(dayAndTime: DayAndTime) = true
-    def valuationCCY = UOM.USD
-
-    override def atomicMarketDataKeys(env : Environment, ccy : UOM): Set[AtomicDatumKey] = Set()
-    def assets(env: Environment) = {
-      val market = Market.LME_LEAD
-      Assets(Asset.estimatedCash(day, env.forwardPrice(market, day) * Quantity(1, market.uom), env))
-    }
-
-    def deltaStepType() = throw new Exception
-
-    def price(env: Environment) = throw new Exception
-
-    def volume = new Quantity(1.0)
-
-    def daysForPositionReport(marketDay : DayAndTime) : Seq[Day] = throw new Exception
-
-    def * (scale : Double) = this
-    def periodKey = None
-  }
-
-  @Test
-  def testUnexplainedRowUsedWhenInstrumentsKeysAreWrong() {
-    //Use the InstrumentWithIncorrectAtomicKeys which does not report its atomicMarketDataKeys so the pnl is unexplained
-    val market = Market.LME_LEAD
-    val env1 = TestEnvironmentBuilder.curveObjectEnvironment(Day(2009, 9, 15).endOfDay, market, 20, 0.00)
-    val env2 = TestEnvironmentBuilder.curveObjectEnvironment(Day(2009, 9, 15).endOfDay, market, 30, 0.00)
-
-    val instrument = new InstrumentWithIncorrectAtomicKeys(Day(2010, 1, 1))
-
-    val plainPnl = instrument.mtm(Environment(env2)) - instrument.mtm(Environment(env1))
-    val marketChangesPnl = new MarketChangesPnl(env1, env2, Map(UTPIdentifier(1) -> instrument))
-    val pnlExplanation = marketChangesPnl.combine(marketChangesPnl.rows(UTPIdentifier(1), instrument), noChoices)
-    val explanationSum = Quantity.sum(pnlExplanation.map(_.pnl.quantityValue.get))
-    assertEquals(explanationSum, plainPnl)
-    assertTrue(pnlExplanation.map{_.componentName}.contains("Other changes"))
-  }
-
   @Test
   def testDeltaPnlOnForward() {
-    val market = Market.LME_LEAD
+    val market = Market.NYMEX_WTI
     val env1 = TestEnvironmentBuilder.curveObjectEnvironment(Day(2009, 9, 15).endOfDay, market, 20, 0.0)
     val env2 = TestEnvironmentBuilder.curveObjectEnvironment(Day(2009, 9, 15).endOfDay, market, 30, 0.0)
 
     val volume = Quantity(1, market.uom)
     val priceChange = Quantity(30 - 20, market.priceUOM)
-    val forward = new Future(market, Day(2010, 1, 1), Quantity(0, market.priceUOM), volume)
+    val forward = new Future(market, Month(2010, 5), Quantity(0, market.priceUOM), volume)
 
     val deltaPnl = volume * priceChange
 
@@ -133,13 +88,12 @@ class PnlExplanationReportTests extends JonTestEnv {
 
   @Test
   def testDeltaPnlOnForwardOption() {
-    val market = Market.LME_LEAD
+    val market = Market.NYMEX_WTI
     val env1 = TestEnvironmentBuilder.curveObjectEnvironment(Day(2008, 9, 15).endOfDay, market, 20, 0.0, 0.2)
     val env2 = TestEnvironmentBuilder.curveObjectEnvironment(Day(2008, 9, 15).endOfDay, market, 30, 0.0, 0.2)
 
-    val option = new FuturesOption(market, Day(2009, 10, 1), Day(2009, 10, 5), Quantity(10, market.priceUOM), Quantity(1000, market.uom), Call, European)
+    val option = new FuturesOption(market, Day(2009, 10, 1), Month(2009, 12), Quantity(10, market.priceUOM), Quantity(1000, market.uom), Call, European)
 
-    val plainPnl = option.mtm(Environment(env2)) - option.mtm(Environment(env1))
     val marketChangesPnl = new MarketChangesPnl(env1, env2, Map(UTPIdentifier(1) -> option))
     val pnlExplanation = marketChangesPnl.combine(marketChangesPnl.rows(UTPIdentifier(1), option), noChoices)
     //There was a large price change so there should be cross terms
@@ -149,11 +103,11 @@ class PnlExplanationReportTests extends JonTestEnv {
 
    @Test
   def testGammaPnlOnForwardOption() {
-    val market = Market.LME_LEAD
+    val market = Market.NYMEX_WTI
     val env1 = TestEnvironmentBuilder.curveObjectEnvironment(Day(2008, 9, 15).endOfDay, market, 20, 0.0, 0.2)
     val env2 = TestEnvironmentBuilder.curveObjectEnvironment(Day(2008, 9, 15).endOfDay, market, 21, 0.0, 0.2)
 
-    val option = new FuturesOption(market, Day(2009, 10, 1), Day(2009, 10, 5), Quantity(10, market.priceUOM), Quantity(1000, market.uom), Call, European)
+    val option = new FuturesOption(market, Day(2009, 10, 1), Month(2010, 5), Quantity(10, market.priceUOM), Quantity(1000, market.uom), Call, European)
 
     val plainPnl = option.mtm(Environment(env2)) - option.mtm(Environment(env1))
     val marketChangesPnl = new MarketChangesPnl(env1, env2, Map(UTPIdentifier(1) -> option))
@@ -164,11 +118,11 @@ class PnlExplanationReportTests extends JonTestEnv {
 
   @Test
   def testTimePnlOnForward() {
-    val market = Market.LME_LEAD
+    val market = Market.NYMEX_WTI
     val env = Environment(TestEnvironmentBuilder.curveObjectEnvironment(Day(2009, 9, 15).endOfDay, market, 20, 0.20))
     val forwardDay = env.marketDay.day.nextDay
 
-    val forward = new Future(market, Day(2012, 1, 1), Quantity(0, market.priceUOM), Quantity(1000, market.uom))
+    val forward = new Future(market, Month(2012, 1), Quantity(0, market.priceUOM), Quantity(1000, market.uom))
 
     val expectedInterest = forward.mtm(env) * (1-env.discount(market.currency, forwardDay))
 
@@ -182,7 +136,7 @@ class PnlExplanationReportTests extends JonTestEnv {
   }
 
   def testTimePnlOnForwardOverDeliveryDay() {
-    val market = Market.LME_LEAD
+    val market = Market.NYMEX_WTI
     val env = Environment(TestEnvironmentBuilder.curveObjectEnvironment(Day(2009, 9, 15).endOfDay, market, 20, 0.20))
     val forwardDay = env.marketDay.day.nextDay
 
@@ -215,17 +169,15 @@ class PnlExplanationReportTests extends JonTestEnv {
 
   @Test
   def testTimePnlOnForwardOption() {
-    val market = Market.LME_LEAD
-    val env = Environment(new TestingAtomicEnvironment(){
-      def marketDay = Day(2009, 9, 1).endOfDay
-
-      def applyOrMatchError(key: AtomicDatumKey) = key match {
-        case _ : ForwardPriceKey => Quantity(10, market.priceUOM)
-      }
-    }).undiscounted
-    val forwardDay = env.marketDay.day + 20
-
-    val option = new FuturesOption(market, Day(2009, 10, 1), Day(2009, 10, 5), Quantity(10, market.priceUOM), Quantity(1000, market.uom), Call, European)
+    val market = Market.NYMEX_WTI
+    val env = Environment(
+      new UnitTestingAtomicEnvironment(Day(2009, 9, 1).endOfDay, {
+        case ForwardPriceKey(`market`, _, _) => Quantity(10, market.priceUOM)
+        case _: OilAtmVolAtomicDatumKey => Percentage(.10)
+        case _: OilVolSkewAtomicDatumKey => Map[Double, Percentage]()
+      })
+    ).undiscounted
+    val option = new FuturesOption(market, Day(2010, 10, 15), Month(2010, 11), Quantity(10, market.priceUOM), Quantity(1000, market.uom), Call, European)
 
 
     val timeChangesPnl = new TimeChangesPnl(env, env.marketDay.nextDay, Map(UTPIdentifier(1) -> option))
@@ -240,7 +192,7 @@ class PnlExplanationReportTests extends JonTestEnv {
 
   @Test
   def testTimePnlOnForwardOptionOverOptionExpiry() {
-    val market = Market.LME_LEAD
+    val market = Market.NYMEX_WTI
     val env = Environment(new TestingAtomicEnvironment(){
       def marketDay = Day(2009, 9, 1).endOfDay
 
@@ -252,7 +204,7 @@ class PnlExplanationReportTests extends JonTestEnv {
     //An in the money call option expiring during the pnl period
     //Payoff is 10-5 * 1000 which will be lost after expiry
     //In practise a new forward should be created but for this trade there is an expiry pnl of -5000
-    val option = new FuturesOption(market, Day(2009, 9, 10), Day(2009, 10, 5), Quantity(5, market.priceUOM), Quantity(1000, market.uom), Call, European)
+    val option = new FuturesOption(market, Day(2009, 9, 10), Month(2009, 10), Quantity(5, market.priceUOM), Quantity(1000, market.uom), Call, European)
 
   val timeChangesPnl = new TimeChangesPnl(env, env.marketDay + 20, Map(UTPIdentifier(1) -> option))
     val pnlExplanation = timeChangesPnl.combine(timeChangesPnl.rows(UTPIdentifier(1), option), noChoices)

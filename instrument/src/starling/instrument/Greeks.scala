@@ -289,12 +289,12 @@ object Greeks {
       case o: VolCurveKey => {
         val dV = dVol * multiple
         if (shiftInterpolatedVols){
-          (riskEnv.parallelShiftInterpolatedVols(curveKey, dV),
-          riskEnv.parallelShiftInterpolatedVols(curveKey, -dV),
-          dV : Quantity
+          (riskEnv.parallelShiftInterpolatedVols(curveKey, dV.toQuantity),
+          riskEnv.parallelShiftInterpolatedVols(curveKey, -dV.toQuantity),
+          dV.toQuantity
         )
         } else {
-          (riskEnv.parallelShiftVols(o.volMarket, dV), riskEnv.parallelShiftVols(o.volMarket, -dV), dV : Quantity)
+          (riskEnv.parallelShiftVols(o.volMarket, dV), riskEnv.parallelShiftVols(o.volMarket, -dV), dV.toQuantity)
         }
       }
       case u: USDFXRateCurveKey => {

@@ -23,7 +23,7 @@ class InterpolatedVolShiftedEnvironmentTests extends TestMarketTest {
 
   @Test
   def testFuturesVolPerturbations{
-    val shiftedEnv = env.shiftInterpolatedVol(OilAtmVolAtomicDatumKey(NYMEX_WTI, None, june), Percentage(dV))
+    val shiftedEnv = env.shiftInterpolatedVol(OilAtmVolAtomicDatumKey(NYMEX_WTI, None, june), Percentage(dV).toQuantity)
     val vol = env.atmImpliedVol(NYMEX_WTI, june).decimalValue
     assertEquals(shiftedEnv.atmImpliedVol(NYMEX_WTI, june), vol + dV, 1e-6)
     assertEquals(shiftedEnv.atmImpliedVol(NYMEX_WTI, july), vol, 1e-6)
@@ -42,7 +42,7 @@ class InterpolatedVolShiftedEnvironmentTests extends TestMarketTest {
   @Test
   def testSwapVolPerturbations{
 
-    val shiftedEnv = env.shiftInterpolatedVol(SwapVol(WTI10, may), Percentage(dV))
+    val shiftedEnv = env.shiftInterpolatedVol(SwapVol(WTI10, may), Percentage(dV).toQuantity)
     //val shiftedEnv = InterpolatedVolShiftedEnvironment(env, SwapVol(WTI10, may), Percentage(dV))
     val strike: Quantity = 97.0(WTI10.priceUOM)
     val vol = env.swapVol(WTI10, may, strike)

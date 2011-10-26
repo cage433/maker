@@ -95,8 +95,6 @@ object UOM extends StarlingEnum(classOf[UOM], (u: UOM) => u.toString, ignoreCase
   // Other
   val SHARE = UOM(SHARE_SYMBOL)
 
-  val PERCENT = UOM(PERCENT_SYMBOL)
-
   val DAY = UOM(DAY_SYMBOL)
   val MONTH = UOM(MONTH_SYMBOL)
   val YEAR = UOM(YEAR_SYMBOL)

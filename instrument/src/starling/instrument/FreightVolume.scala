@@ -1,19 +1,19 @@
 package starling.instrument
 
 import starling.daterange.{Month, DateRange}
-import starling.quantity.{UOM, Quantity}
 import starling.market.{CommodityMarket, FuturesMarket}
+import starling.quantity.{Percentage, UOM, Quantity}
 
 case class FreightVolume(
         marketUOM: UOM,
-        volume: Quantity,
+        volume: Either[Quantity, Percentage],
         period: DateRange
         ) {
   def months = (Set.empty ++ period.map(_.containingMonth)).toList
 
-  def amount(month: Month): Quantity = volume.uom match {
-    case UOM.PERCENT => Quantity(volume.value / 100.0 * month.days.size, marketUOM)
-    case _ => volume
+  def amount(month: Month): Quantity = volume match {
+    case Right(p) => Quantity(p.decimalValue * month.days.size, marketUOM)
+    case Left(q) => q
   }
 
   def totalAmount = months.map(amount).reduceLeft(_+_)

@@ -182,6 +182,7 @@ class Quantity(val value : Double, val uom : UOM) extends Ordered[Quantity] with
 
   def * (rhs : Percentage) : Quantity = this * rhs.value
   def / (rhs : Double) : Quantity = Quantity(value / rhs, uom)
+  def / (rhs : Percentage) : Quantity = Quantity(value / rhs.value, uom)
   def / (rhs : Quantity) = this * (rhs.invert)
   def abs = Quantity(mabs(value), uom)
   def negate = unary_-
@@ -318,6 +319,7 @@ abstract class NamedQuantity(val quantity : Quantity) extends Quantity(quantity.
   override def * (rhs: Percentage) = guard(isAlmostOne(rhs), BinOpNamedQuantity("*", this, asNamedQuantity(rhs), quantity * rhs))
   override def * (rhs: Quantity)   = guard(rhs == Quantity.ONE, BinOpNamedQuantity("*", this, asNamedQuantity(rhs), quantity * rhs))
   override def / (rhs: Double)     = guard(isAlmostOne(rhs), BinOpNamedQuantity("/", this, asNamedQuantity(rhs), quantity / rhs))
+  override def / (rhs: Percentage)     = guard(isAlmostOne(rhs), BinOpNamedQuantity("/", this, asNamedQuantity(rhs), quantity / rhs))
   override def / (rhs: Quantity)   = guard(rhs == Quantity.ONE, BinOpNamedQuantity("/", this, asNamedQuantity(rhs), quantity / rhs))
   override def + (rhs: Quantity)   = BinOpNamedQuantity("+", this, asNamedQuantity(rhs), quantity + rhs)
   override def - (rhs: Quantity)   = BinOpNamedQuantity("-", this, asNamedQuantity(rhs), quantity - rhs)

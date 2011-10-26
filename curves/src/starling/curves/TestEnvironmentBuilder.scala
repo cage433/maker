@@ -5,9 +5,11 @@ import starling.quantity.UOM._
 import starling.daterange.{DayAndTime, Day, DateRange}
 import starling.utils.CollectionUtils
 import starling.quantity.Percentage._
-import starling.marketdata.MarketData
 import starling.market._
 import collection.immutable.TreeMap
+import starling.marketdata.{OilVolSurfaceData, MarketData}
+import cern.colt.matrix.DoubleMatrix2D
+import cern.colt.matrix.impl.DenseDoubleMatrix2D
 
 case class TestEnvironmentBuilder(marketDay : DayAndTime) {  builder =>
 	var curves = Map.empty[CurveKey, CurveObject]
@@ -31,13 +33,51 @@ case class TestEnvironmentBuilder(marketDay : DayAndTime) {  builder =>
      	)
 	}
 
-  def setImpliedVol(market : CommodityMarket, vol : Double) {
-    setImpliedVol(market, Percentage(vol))
+  def setImpliedVol(market: CommodityMarket, vol: Double) {
+    curves +=
+      (OilAtmVolCurveKey(market) -> new CurveObject {
+        type CurveValuesType = Percentage
+        val marketDayAndTime = TestEnvironmentBuilder.this.marketDay
+
+        def apply(point: AnyRef) = new Percentage(vol)
+      })
+
+    curves +=(OilVolSkewCurveKey(market) ->  new CurveObject {
+        type CurveValuesType = DoubleMatrix2D
+        val marketDayAndTime = TestEnvironmentBuilder.this.marketDay
+
+        def apply(point: AnyRef) = {
+          val matrix = new DenseDoubleMatrix2D(1, 2)
+          matrix.set(0, 0, 0)
+          matrix.set(0, 1, 0)
+          matrix
+        }
+      })
   }
 
-  def setAsianVol(market : CommodityMarket, vol : Double) {
-    setAsianVol(market, Percentage(vol))
-  }
+//  def setImpliedVol(market : CommodityMarket, vol : Double) {
+//    setImpliedVol(market, Percentage(vol))
+//  }
+//  def setImpliedVol(market : CommodityMarket, vol : Percentage) {
+//    curves = curves + (BradyMetalVolCurveKey(market) -> new CurveObject {
+//      type CurveValuesType = Percentage
+//      val marketDayAndTime = TestEnvironmentBuilder.this.marketDay
+//
+//      def apply(point: AnyRef) = vol
+//    })
+//  }
+//
+//  def setAsianVol(market : CommodityMarket, vol : Double) {
+//    setAsianVol(market, Percentage(vol))
+//  }
+//  def setAsianVol(market : CommodityMarket, vol : Percentage) {
+//    curves = curves + (BradyMetalVolCurveKey(market) -> new CurveObject {
+//      type CurveValuesType = Percentage
+//      val marketDayAndTime = TestEnvironmentBuilder.this.marketDay
+//
+//      def apply(point: AnyRef) = vol
+//    })
+//  }
 
 	def setZeroRate(ccy : UOM, z : Double){
 	  curves += DiscountCurveKey(ccy) -> ConstantDiscountCurve(marketDay, ccy, z)
