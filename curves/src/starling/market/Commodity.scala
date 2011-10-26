@@ -136,6 +136,7 @@ object Commodity extends Log {
     case Lead => LME_LEAD
     case Silver => COMEX_SILVER
     case Aluminium => LME_ALUMINIUM
+    case AluminiumAlloy => LME_ALUMINIUM_ALLOY
     case Copper => LME_COPPER
     case Nickel => LME_NICKEL
     case Zinc => LME_ZINC
