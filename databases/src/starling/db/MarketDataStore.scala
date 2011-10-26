@@ -332,7 +332,7 @@ class DBMarketDataStore(db: MdDB, tags: MarketDataSnapshots, val marketDataSourc
   val pivotCache = CacheFactory.getCache("MarketDataStore.pivotCache")
 
   def readAll() {
-    snapshotsByMarketDataSelection() //read MarketDataTag table
+    snapshotsByMarketDataSelection() //read MarketDataSnapshots table
     db.readAll()
   }
 

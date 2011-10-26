@@ -9,6 +9,7 @@ import starling.quantity._
 import java.sql.{ResultSetMetaData, ResultSet}
 import starling.utils.cache.CacheFactory
 import scalaz.Scalaz._
+import xml.XML
 
 trait ResultSetRowFactoryTrait[RSR <: ResultSetRow] {
   def create(resultSet: ResultSet, count: Int): RSR
@@ -55,6 +56,11 @@ class ResultSetRow(resultSet: ResultSet, val count: Int) {
 
   def getInt(column: String) = resultSet.getInt(column)
   def getIntOption(column: String) = notNull(column) option(getInt(column))
+
+  def getXML(column: String) = {
+    val text = getString(column)
+    XML.loadString(text)
+  }
 
   def getString(column: String) = try{
     resultSet.getString(column) match {

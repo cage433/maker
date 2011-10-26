@@ -61,6 +61,7 @@ case class TimedMarketDataKey(observationPoint: ObservationPoint, key: MarketDat
 case class MarketDataValueKey(id: Int, row: Row) {
   lazy val dbMap: Map[String, Any] = Map("valueKey" → row.dbValue)
   def sameValuesAs(that: MarketDataValueKey) = that.copy(id = id) == this
+  def fields = row.fields
 }
 object MarketDataValueKey {
   def apply(dbMap: Map[String, Any]): MarketDataValueKey = MarketDataValueKey(-1, Row.create(dbMap))

@@ -24,7 +24,7 @@ import starling.dbx._
 import starling.props.ConnectionParams
 import starling.utils.ImplicitConversions._
 import scalaz.Scalaz._
-
+import xml.{Elem, PrettyPrinter}
 
 trait DBTrait[RSR <: ResultSetRow] extends Log {
   val dataSource: DataSource
@@ -175,6 +175,7 @@ object DBConvert {
   // same for initial price
   val Strike = CaseInsensitive("strike")
   val InitialPrice = CaseInsensitive("initialprice")
+  val prettyPrinter = new PrettyPrinter(100, 2)
 
   def convertTypes(params: Map[String, Any]): java.util.Map[String, AnyRef] = {
     var convertedMap = scala.collection.mutable.Map[String, AnyRef]()
@@ -191,6 +192,7 @@ object DBConvert {
         case q: Quantity => convertedMap += (key -> q.value.asInstanceOf[java.lang.Double], key + "UOM" -> q.uom.toString)
         case s: SpreadQuantity => convertedMap += (key -> s.valueString, key + "UOM" -> s.uom.toString)
         case d: DateRange => convertedMap += (key -> d.toString)
+        case x: Elem => convertedMap += (key -> prettyPrinter.format(x))
         case c: java.lang.Character => convertedMap += (key -> c.toString)
         case s: Iterable[_] => convertedMap += (key -> JavaConversions.bufferAsJavaList(ListBuffer() ++= convertValuesForIn(s).toList))
         case d: java.util.Date => convertedMap += (key -> d)

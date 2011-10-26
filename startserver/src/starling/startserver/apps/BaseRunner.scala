@@ -7,6 +7,8 @@ import starling.reports.impl.ReportsBromptonActivator
 import starling.singleclasspathmanager.SingleClasspathManager
 import starling.utils.ThreadUtils
 import starling.manager.BromptonActivator
+import starling.props.internal.PropsBromptonActivator
+import starling.trade.impl.osgi.TradeBromptonActivator
 
 trait Lookup {
   def apply[T](klass:Class[T]):T
@@ -28,8 +30,10 @@ object BaseRunner {
   def runWithoutListening[T]()(lookup:Lookup=>Unit) {
     runWith(List(
       classOf[SingleClasspathBroadcasterActivator],
+      classOf[PropsBromptonActivator],
       classOf[AuthBromptonActivator],
       classOf[ServicesBromptonActivator],
+      classOf[TradeBromptonActivator],
       classOf[ReportsBromptonActivator]
     ))(lookup)
   }

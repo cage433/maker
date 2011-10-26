@@ -43,7 +43,18 @@ class NewSchemaMdDB(db: DBTrait[RichResultSetRow], dataTypes: MarketDataTypes) e
   }
 
   def readAll(): Unit = {
-    throw new Exception("Not implemented")
+
+    val extendedKeyTypePairs = db.queryWithResult("select * from MarketDataValue") { rs => {
+      val mdv = marketDataValue(rs)
+      (mdv.valueKey.id, mdv.valueKey.row, mdv.extendedKey.marketDataType)
+    } }.toSet
+    extendedKeyTypePairs.foreach { case (id, row, marketDataType) => {
+      if (row.fields != marketDataType.valueKeyFields) {
+        println(id + " has incorrect fields. expected: " + marketDataType.valueKeyFields + " got " + row.fields)
+        println(id + " => " + valueKeys(id))
+      }
+    } }
+
   }
 
   def marketDataSetNames(): List[String] = {
@@ -61,6 +72,8 @@ class NewSchemaMdDB(db: DBTrait[RichResultSetRow], dataTypes: MarketDataTypes) e
   )
 
   def observationDaysByMarketDataSet = observationDaysByMarketDataSetCache.get
+
+  private def typeFor(marketDataTypeName:MarketDataTypeName) = dataTypes.fromName(marketDataTypeName)
 
 //  def observationDaysFor(marketDataSets: List[MarketDataSet]): Set[Option[Day]] = db.queryWithResult(
 //    select("DISTINCT observationDay")
@@ -221,14 +234,13 @@ class NewSchemaMdDB(db: DBTrait[RichResultSetRow], dataTypes: MarketDataTypes) e
 //    log.infoWithTime("query(%d, (%s), %s, %s, %s, %s)" %
 //      (version, mds.map(_.name), marketDataType.name, observationDays, observationTimes, marketDataKeys)) {
 
-    val marketDataType = dataTypes.fromName(marketDataTypeName)
+    val marketDataType = typeFor(marketDataTypeName)
 
     val mostRecentValues = log.debugWithTime("query.mostRecentValues") {
       val commitClause = "commitId" lte version
       val observationDayClause = observationDays.fold(Clause.optIn("observationDay", _), TrueClause)
 
       val values = new MarketDataValueMap()
-      Log.warn("Market data keys " + marketDataKeys)
 
       queryUsingExtendedKeys(extendedKeyIdsFor(marketDataTypeName, mds, observationTimes, marketDataKeys),
          select("*")
@@ -379,6 +391,11 @@ class NewSchemaMdDB(db: DBTrait[RichResultSetRow], dataTypes: MarketDataTypes) e
 
       case oldData => log.debugF("Old data: %s has lower commitId (or lower priority) than: %s" % (oldData, this)) {
         map.update(combinedKey, combinedValue)
+      }
+    }
+    def checkConsistency() = {
+      if (extendedKey.marketDataType.valueKeyFields == valueKey.fields) None else {
+        Some("" + extendedKey.marketDataType.valueKeyFields + " != x" + valueKey.fields)
       }
     }
     def isSave = row.isDefined

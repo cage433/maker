@@ -1,9 +1,6 @@
 package starling.startserver.apps
 
-import starling.services.StarlingInit
 import starling.utils.Log
-import starling.props.PropsHelper
-import starling.services.StarlingInit._
 import starling.db.MarketDataStore
 import starling.rmi.UserSettingsDatabase
 import starling.tradestore.TradeStores
