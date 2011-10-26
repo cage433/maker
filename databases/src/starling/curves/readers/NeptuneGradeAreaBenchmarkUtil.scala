@@ -23,6 +23,7 @@ class NeptuneGradeAreaBenchmarkUtil(neptuneDB:RichDB) extends Log {
   def read(day: Day) = {
     val today = Day.today
     val badCommodityNames = MSet[String]()
+    val badCommodityAreaPairs = MSet[(Commodity, AreaCode)]()
     var rows = List[(NeptuneCommodity, (GradeCode, AreaCode, Quantity))]()
     neptuneDB.query(
           select("material.description as material_description", "category_code", "location_code", "benchmark_price")
@@ -37,14 +38,21 @@ class NeptuneGradeAreaBenchmarkUtil(neptuneDB:RichDB) extends Log {
       commodityOption match {
         case None => badCommodityNames += neptuneCommodityName
         case Some(commodity) => {
-          val price = Quantity(rs.getDouble("benchmark_price"), refData.marketFor(commodity, areaCode).priceUOM)
-          rows = (commodity → (gradeCode, areaCode, price)) :: rows
+          try {
+            val price = Quantity(rs.getDouble("benchmark_price"), refData.marketFor(commodity, areaCode).priceUOM)
+            rows = (commodity → (gradeCode, areaCode, price)) :: rows
+          } catch {
+            case e =>
+              badCommodityAreaPairs += ((commodity, areaCode))
+          }
         }
       }
     }
 
     if (! badCommodityNames.isEmpty)
       log.warn("Unable to import grade area benchmarks for unrecognised commodities " + badCommodityNames.mkString(", "))
+    if (! badCommodityAreaPairs.isEmpty)
+      log.warn("Unable to import grade area benchmarks for unrecognised commodity/area pairs " + badCommodityAreaPairs.mkString(", "))
 
     val entries = {
       rows.toMultiMap.map { case (neptuneCommodity, values) =>
