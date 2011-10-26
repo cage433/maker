@@ -230,8 +230,8 @@ object Market {
   private def provider = MarketProvider.provider
   lazy val cals: BusinessCalendars = new BusinessCalendars(HolidayTablesFactory.holidayTables)
 
-  lazy val all: List[CommodityMarket] = provider.allFuturesMarkets ::: Index.publishedIndexes
   lazy val futuresMarkets = provider.allFuturesMarkets
+  lazy val all: List[CommodityMarket] = futuresMarkets ::: Index.publishedIndexes
 
   lazy val COMEX_GOLD : FuturesMarket = futuresMarketFromName("COMEX Gold")
   lazy val COMEX_SILVER : FuturesMarket = futuresMarketFromName("COMEX Silver")
