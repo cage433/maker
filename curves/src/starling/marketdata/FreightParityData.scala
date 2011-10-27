@@ -42,7 +42,11 @@ class FreightParityDataType(referenceData: ReferenceDataLookup = ReferenceDataLo
   def valueFieldDetails = values
 
   override val zeroFields = List(parityRateField.field)
-  val initialPivotState = PivotFieldsState(dataFields = valueFields, rowFields = keyFields.toList, columnFields = Nil)
+  val initialPivotState = PivotFieldsState(
+    dataFields = valueFields,
+    rowFields = keyFields.toList,
+    filters = List( Field("Observation Time") -> SomeSelection(Set("Default")))
+  )
 
   def createKey(row: Row) = FreightParityDataKey(
     IncotermCode(row.string(contractualIncotermCodeField)), ContractualLocationCode(row.string(contractualLocationCodeField)),

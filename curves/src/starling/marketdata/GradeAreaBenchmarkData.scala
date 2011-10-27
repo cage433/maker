@@ -62,8 +62,10 @@ class GradeAreaBenchmarkDataType(referenceData: ReferenceDataLookup = ReferenceD
   override def derivedFieldDetails = List(areaField, gradeField)
   def valueFieldDetails = List(benchmarkPriceField)
 
-  val initialPivotState = PivotFieldsState(dataFields = List(benchmarkPriceField.field),
-    rowFields = List(commodityField, areaCodeField, gradeCodeField, effectiveFromField).map(_.field)
+  val initialPivotState = PivotFieldsState(
+    dataFields = List(benchmarkPriceField.field),
+    rowFields = List(areaCodeField, commodityField, gradeCodeField, effectiveFromField).map(_.field),
+    filters = List( Field("Observation Time") -> SomeSelection(Set("Default")) )
   )
 
   def createKey(row: Row) = GradeAreaBenchmarkMarketDataKey(Commodity.fromName(row.string(commodityField)))

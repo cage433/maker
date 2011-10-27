@@ -31,8 +31,8 @@ class CountryBenchmarkDataType(referenceData: ReferenceDataLookup = ReferenceDat
 
   val initialPivotState = PivotFieldsState(
     dataFields = List(benchmarkPriceField.field),
-    rowFields = List(countryField.field),
-    columnFields = List(commodityField.field)
+    rowFields = List(commodityField.field, countryCodeField.field, effectiveFromField.field),
+    filters = List( Field("Observation Time") -> SomeSelection(Set("Default")) )
   )
 
   def createKey(row: Row) = CountryBenchmarkMarketDataKey(Commodity.fromName(row.string(commodityField)))

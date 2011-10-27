@@ -347,6 +347,7 @@ object PivotTableModel {
     val reportSpecificOptions = dataSource.reportSpecificOptions
     val fsToUse = setDefaultReportSpecificChoices(reportSpecificOptions, fs)
 
+    val initialState = dataSource.initialState
     PivotData(
       allFields = dataSource.fieldDetails.map(_.field),
       fieldGroups = dataSource.fieldDetailsGroups.map(_.toFieldGroup),
@@ -355,6 +356,7 @@ object PivotTableModel {
       drillDownGroups = dataSource.drillDownGroups,
       pivotTable = pivotTable,
       availablePages = dataSource.availablePages,
+      if (initialState == PivotFieldsState.Blank) None else Some(initialState),
       reportSpecificOptions = reportSpecificOptions)
   }
 
