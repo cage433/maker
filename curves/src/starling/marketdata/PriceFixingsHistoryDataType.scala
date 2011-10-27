@@ -27,7 +27,7 @@ object PriceFixingsHistoryDataType extends MarketDataType {
   override def valueKeys = List(levelField, periodField)
   def valueFieldDetails = List(priceField)
 
-  def createKey(row: Row) = PriceFixingsHistoryDataKey(row.string(marketField), row[Option[String]](exchangeField))
+  def createKey(row: Row) = PriceFixingsHistoryDataKey(row.string(marketField), row.get[String](exchangeField))
 
   def createValue(rows: List[Row]) = {
     val prices = rows.map { row =>
@@ -37,7 +37,8 @@ object PriceFixingsHistoryDataType extends MarketDataType {
     PriceFixingsHistoryData.create(prices)
   }
 
-  protected def fieldValuesFor(key: PriceFixingsHistoryDataKey) = Row(marketField.field → key.marketName)
+  protected def fieldValuesFor(key: PriceFixingsHistoryDataKey) = Row(marketField.field → key.marketName) +?
+      (PriceFixingsHistoryDataType.exchangeField.field → key.exchangeName)
 
   def rows(key: PriceFixingsHistoryDataKey, data: PriceFixingsHistoryData) = {
     data.fixings.map { case ((level, period), fixing) =>
