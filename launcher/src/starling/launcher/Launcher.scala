@@ -10,7 +10,7 @@ import starling.manager.BromptonActivator
 object Launcher {
   def main(args: Array[String]) {
     if (args.length < 4) {
-      throw new IllegalArgumentException("You need to specify 3 arguments: hostname, rmi port, servicePrincipalName and serverType")
+      throw new IllegalArgumentException("You need to specify 4 arguments: hostname, rmi port, servicePrincipalName and serverType")
     }
     println("Args: " + args.toList)
     val rmiHost = args(0)
@@ -18,7 +18,7 @@ object Launcher {
     val servicePrincipalName = args(2)
     val serverType = args(3)
 
-    if (args.length == 4) {
+    if (args.length == 5) {
       try {
         val socket = new Socket("localhost", 7777)
         socket.close()
