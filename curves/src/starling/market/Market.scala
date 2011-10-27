@@ -330,6 +330,8 @@ object Market {
   def fromExchangeAndLimSymbol(exchange: String, limSymbol: String) =
     Market.futuresMarkets.find(market => market.exchange.name == exchange && market.limSymbol.map(_.name) == Some(limSymbol))
 
+  def marketsWithExchange(exchange: FuturesExchange): List[CommodityMarket] = all.filter(_.exchangeOption == Some(exchange))
+
   /**
    * For testing
    */

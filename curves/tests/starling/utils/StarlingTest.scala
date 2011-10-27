@@ -6,6 +6,8 @@ import starling.market._
 
 trait StarlingTest extends TestMarketTest with ExpiryRulesSpec with TestNGSuite
 
-trait StarlingSpec extends ExpiryRulesSpec with WordSpec {
+trait StarlingSpec extends StarlingFixture with WordSpec
+
+trait StarlingFixture extends ExpiryRulesSpec {
   MarketProvider.registerCreator(TestMarketCreator)
 }

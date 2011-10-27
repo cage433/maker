@@ -2,7 +2,6 @@ package starling.curves.readers
 
 import collection.immutable.List
 
-import starling.{LIMConnection, LimNode, LIMServer}
 import starling.daterange._
 import starling.db.{MarketDataEntry, MarketDataSource}
 import starling.market._
@@ -11,14 +10,15 @@ import starling.scheduler.SimpleScheduledTask
 import starling.utils.{Pattern, Log}
 import Pattern._
 import starling.utils.ImplicitConversions._
+import starling.lim.{LIMService, LIMConnection, LimNode}
 
 
-abstract class LimMarketDataSource(limServer: LIMServer) extends MarketDataSource with Log {
+abstract class LimMarketDataSource(service: LIMService) extends MarketDataSource with Log {
   protected def getValuesForType(m: MarketDataTypeName, start: Day, end: Day, sources: (MarketDataTypeName, List[LimSource])) =
     (start, end, sources.head) → sources.tail.flatMap(source => getValues(source, start, end).toList)
       .require(containsDistinctTimedKeys, "concatenated sources: %s, produced duplicate MarketDataKeys: " % sources)
 
-  protected def getValues(source: LimSource, start: Day, end: Day): List[MarketDataEntry] = limServer.query { connection =>
+  protected def getValues(source: LimSource, start: Day, end: Day): List[MarketDataEntry] = service.query { connection =>
     val relations = source.relationsFrom(connection)
 
     val prices = relations.flatMap { case (fixingRelation, childRelation) => {

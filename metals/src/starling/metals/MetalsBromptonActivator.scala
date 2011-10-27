@@ -21,13 +21,12 @@ import com.trafigura.services.trinity.TrinityService
 import com.trafigura.services.ResteasyServiceApi
 import starling.gui.api.{MarketDataSelection, PricingGroup}
 import org.joda.time.Period
-import starling.calendar.BusinessCalendars
 import starling.scheduler.{TaskDescription, Scheduler}
 import starling.db.{DB, TitanTradeSystem, MarketDataStore}
 import starling.services._
+import starling.calendar.{BusinessCalendars}
 
 class MetalsBromptonActivator extends BromptonActivator with Log with scalaz.Identitys {
-
   def start(context: BromptonContext) {
 
     val props = context.awaitService(classOf[starling.props.Props])

@@ -85,7 +85,14 @@ class ExtendedLog(adapted: VarLogger) extends AdaptingLogger(adapted) {
   def never(msg: => AnyRef) {}
   def neverF(msg: => AnyRef) {}
   def never(msg: => AnyRef, t: => Throwable) {}
-  def logException[T](msg: String = "")(action: => T): Either[Throwable, T] = ClosureUtil.safely { action }.update(t => error(msg, t), identity)
+  def logException[T](msg: String = "")(action: => T): Either[Throwable, T] = {
+    val res = ClosureUtil.safely { action }.update(t => error(msg, t), identity)
+    res match {
+      case Left(e) => throw e
+      case _ => {}
+    }
+    res
+  }
 }
 
 trait VarLogger {

@@ -10,7 +10,6 @@ import java.net.InetAddress
 import starling.curves.readers._
 import starling.utils.ImplicitConversions._
 import starling.http._
-import starling.LIMServer
 import starling.rmi._
 import starling.calendar._
 import collection.immutable.Map
@@ -23,6 +22,8 @@ import starling.auth.internal.LdapUserLookupImpl
 import starling.curves._
 import org.apache.commons.io.IOUtils
 import starling.marketdata.{MarketDataTypes, DBReferenceDataLookup}
+import starling.lim.LIMService
+
 
 class StarlingInit( val props: Props,
                     authHandler:AuthHandler = AuthHandler.Dev,
@@ -98,15 +99,15 @@ class StarlingInit( val props: Props,
 
   lazy val (fwdCurveAutoImport, marketDataStore) = log.infoWithTime("Creating Market Data Store") {
     import MarketDataSet._
-    val limServer = new LIMServer(props.LIMHost(), props.LIMPort())
+    val limService = LIMService(props.LIMHost(), props.LIMPort())
     val metalsEmail = props.MetalsEmailAddress()
     val limEmail = props.LimEmailAddress()
 
     val marketDataSources = MultiMap[MarketDataSet, MarketDataSource](
-      LimMetals ->> (new PriceLimMarketDataSource(limServer, businessCalendars),
-                     new SpotFXLimMarketDataSource(limServer, businessCalendars),
-                     new PriceFixingLimMarketDataSource(limServer, businessCalendars, rmiBroadcaster, metalsEmail, limEmail)),
-      LIM ->> new OilAndMetalsVARLimMarketDataSource(limServer),
+      LimMetals ->> (new PriceLimMarketDataSource(limService, businessCalendars, rmiBroadcaster, metalsEmail, limEmail),
+                     new SpotFXLimMarketDataSource(limService, businessCalendars),
+                     new PriceFixingLimMarketDataSource(limService, businessCalendars, rmiBroadcaster, metalsEmail, limEmail)),
+      LIM ->> new OilAndMetalsVARLimMarketDataSource(limService),
       System ->> new FwdCurveDbMarketDataSource(varSqlServerDB, businessCalendars, 1),
       Crude ->> new FwdCurveDbMarketDataSource(varSqlServerDB, businessCalendars, 5),
       LondonDerivatives ->> new FwdCurveDbMarketDataSource(varSqlServerDB, businessCalendars, 4),
