@@ -26,10 +26,10 @@ class NewSchemaMdDB(db: DBTrait[RichResultSetRow], dataTypes: MarketDataTypes) e
   import marketDataExtendedKeyHelper._
 
   val extendedKeys = JConcurrentMapWrapper(new java.util.concurrent.ConcurrentHashMap[Int, MarketDataExtendedKey](
-    db.queryWithResult("SELECT * FROM MarketDataExtendedKey") { rs => marketDataExtendedKey(rs) }.toMapWithKeys(_.id)))
+    db.queryWithResult("SELECT * FROM MarketDataExtendedKey", Map()) { rs => marketDataExtendedKey(rs) }.toMapWithKeys(_.id)))
 
   val valueKeys = JConcurrentMapWrapper(new java.util.concurrent.ConcurrentHashMap[Int, MarketDataValueKey](
-    db.queryWithResult("SELECT * FROM MarketDataValueKey") { rs =>
+    db.queryWithResult("SELECT * FROM MarketDataValueKey", Map()) { rs =>
       MarketDataValueKey(rs.getObject[Map[String, Any]]("valueKey")).copy(id = rs.getInt("id"))
     }.toMapWithKeys(_.id)))
 
@@ -44,7 +44,7 @@ class NewSchemaMdDB(db: DBTrait[RichResultSetRow], dataTypes: MarketDataTypes) e
 
   def readAll(): Unit = {
 
-    val extendedKeyTypePairs = db.queryWithResult("select * from MarketDataValue") { rs => {
+    val extendedKeyTypePairs = db.queryWithResult("select * from MarketDataValue", Map()) { rs => {
       val mdv = marketDataValue(rs)
       (mdv.valueKey.id, mdv.valueKey.row, mdv.extendedKey.marketDataType)
     } }.toSet
@@ -58,7 +58,7 @@ class NewSchemaMdDB(db: DBTrait[RichResultSetRow], dataTypes: MarketDataTypes) e
   }
 
   def marketDataSetNames(): List[String] = {
-    db.queryWithResult("SELECT DISTINCT marketDataSet COLLATE sql_latin1_general_cp1_cs_as AS mds FROM MarketDataExtendedKey ORDER BY mds") {
+    db.queryWithResult("SELECT DISTINCT marketDataSet COLLATE sql_latin1_general_cp1_cs_as AS mds FROM MarketDataExtendedKey ORDER BY mds", Map()) {
       rs => rs.getString("mds")
     }
   }
@@ -96,7 +96,7 @@ class NewSchemaMdDB(db: DBTrait[RichResultSetRow], dataTypes: MarketDataTypes) e
 
 
   override def latestVersionForAllMarketDataSets() = {
-    db.queryWithResult("SELECT extendedKey, MAX(commitid) AS maxCommitId FROM MarketDataValue GROUP BY extendedKey ORDER BY maxCommitId") { rs =>
+    db.queryWithResult("SELECT extendedKey, MAX(commitid) AS maxCommitId FROM MarketDataValue GROUP BY extendedKey ORDER BY maxCommitId", Map()) { rs =>
       (extendedKeys(rs.getInt("extendedKey")).marketDataSet, rs.getInt("maxCommitId"))
     }.toMap
   }
