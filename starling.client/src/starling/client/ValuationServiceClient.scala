@@ -12,10 +12,13 @@ object ValuationServiceClient {
   def main(args:Array[String]) = BouncyRMIServiceApi().using { marketDataService: MarketDataServiceApi =>
     BouncyRMIServiceApi().using { valuationService: ValuationServiceApi =>
       println("Calling marketDataSnapshotIDs...")
-      val snapshotIdentifiers = marketDataService.marketDataSnapshotIDs(Some(Day.today))
+
+      val observationDay = None // Some(Day.today)
+      val snapshotIdentifiers = marketDataService.marketDataSnapshotIDs(observationDay)
       snapshotIdentifiers.foreach(println)
 
-      //valuationService.valueAllTradeQuotas(Some("4622"))
+      val latestSnapshotIdentifier = snapshotIdentifiers.head
+      println("using snapshotId " + latestSnapshotIdentifier)
 
       def testQuotaValuation() {
         println("Calling valueAllQuotas...")
@@ -23,7 +26,7 @@ object ValuationServiceClient {
 
         //val x = valuationService.valueSingleTradeQuotas("306")
 
-        val valuationResult = valuationService.valueAllTradeQuotas(TitanMarketDataIdentifier(snapshotIdentifiers.head, Day.today)) // (snapshots.map(_.id).headOption)
+        val valuationResult = valuationService.valueAllTradeQuotas(TitanMarketDataIdentifier(latestSnapshotIdentifier, Day.today))
         val (worked, errors) = valuationResult.values.partition(_ isRight)
         println("Worked " + worked.size + ", failed " + errors.size)
         println("Errors: ")
@@ -42,7 +45,6 @@ object ValuationServiceClient {
 
         println("Valuation service result, valued quotas, total size %d, worked %d, failed %d, using snapshot %s, took %d ms".format(valuationResult.size, worked.size, errors.size, snapshotIdentifiers.head, System.currentTimeMillis() - sw))
       }
-
 
       testQuotaValuation()
     }

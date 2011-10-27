@@ -75,7 +75,7 @@ class DefaultEnvironmentProvider(marketDataStore : MarketDataStore, referenceDat
   private def metalValuationSnapshots(): List[SnapshotID] =
     marketDataStore.snapshots().filter(ss =>
       ss.marketDataSelection.pricingGroup == Some(PricingGroup.Metals) &&
-      ss.snapshotType == SnapshotType.Valuation
+      (ss.snapshotType == SnapshotType.Valuation || ss.snapshotType == SnapshotType.Manual)
     )
 
   def snapshot(version: Int) = {
