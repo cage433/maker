@@ -2,7 +2,7 @@ package starling.curves.readers
 
 import collection.immutable.List
 
-import starling.LIMServer
+import starling.lim.LIMService
 import starling.calendar.BusinessCalendarSet
 import starling.daterange._
 import starling.db.MarketDataEntry
@@ -12,7 +12,7 @@ import starling.pivot.MarketValue
 import starling.quantity.{Quantity, UOM}
 
 import Day._
-import LIMServer._
+import LIMService._
 import UOM._
 import starling.utils.ImplicitConversions._
 import java.text.DecimalFormat

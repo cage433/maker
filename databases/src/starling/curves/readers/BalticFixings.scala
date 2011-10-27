@@ -2,14 +2,13 @@ package starling.curves.readers
 
 import collection.immutable.List
 
-import starling.LIMServer
 import starling.daterange._
 import starling.db.MarketDataEntry
 import starling.market._
 import starling.pivot.MarketValue
 import starling.quantity.UOM
 
-import LIMServer._
+import starling.lim.LIMService._
 import starling.utils.ImplicitConversions._
 import starling.utils.Pattern._
 import starling.marketdata.{PriceFixingsHistoryData, PriceFixingsHistoryDataKey}

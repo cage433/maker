@@ -10,8 +10,8 @@ import starling.quantity.{Quantity, UOM}
 import starling.utils.Pattern
 
 import Level._
-import starling.{LIMServer, LimNode}
-import LIMServer.TopRelation._
+import starling.lim.{LIMService, LimNode}
+import LIMService.TopRelation._
 import ObservationTimeOfDay._
 import Pattern._
 

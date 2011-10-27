@@ -12,7 +12,7 @@ import starling.quantity.{Percentage, UOM, Quantity}
 import starling.utils.cache.CacheFactory
 import starling.props.Props
 import starling.market._
-import starling.LIMServer
+import starling.lim.LIMService
 import collection.SortedMap
 import starling.gui.api.MarketDataIdentifier
 import collection.immutable.{Iterable, TreeMap}

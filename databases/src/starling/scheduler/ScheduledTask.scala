@@ -5,8 +5,8 @@ import swing.event.Event
 import starling.daterange.Day
 import starling.pivot._
 import starling.utils.ImplicitConversions._
-import starling.utils.{Stopable, Broadcaster}
 import starling.gui.api.EmailEvent
+import starling.utils.{Enableable, Broadcaster}
 
 
 trait ScheduledTaskAttributes {
@@ -16,10 +16,12 @@ trait ScheduledTaskAttributes {
   val EmailTo    = "EmailTo"
 }
 
-trait ScheduledTask extends ScheduledTaskAttributes with Stopable { self =>
+trait ScheduledTask extends ScheduledTaskAttributes with Enableable { self =>
+  enable
+
   def attribute(name: String, alternative: String = ""): ScheduledTaskAttribute = attributes.getOrElse(name, ScheduledTaskAttribute(alternative))
   def attributes: Map[String, ScheduledTaskAttribute] = Map()
-  def perform(observationDay: Day) { if (isRunning) execute(observationDay) }
+  def perform(observationDay: Day) { if (isEnabled) execute(observationDay) }
   protected def execute(observationDay: Day)
 
   protected def fields(names: String*) = names.map(Field(_)).toList

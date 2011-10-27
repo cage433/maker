@@ -5,7 +5,6 @@ import starling.marketdata._
 import starling.richdb.RichDB
 import starling.dbx.QueryBuilder
 import starling.db._
-import starling.LIMServer
 import starling.quantity.{Percentage, UOM}
 import collection.SortedMap
 import collection.immutable.{TreeMap, TreeSet}

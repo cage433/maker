@@ -13,7 +13,7 @@ trait MarketDataEventSource {
   type CurveType
   def matches(pricingGroup: PricingGroup): Boolean
   def changesFor(previousVersion: Int, newVersion: Int, observationDays: List[Day]): List[MarketDataChange]
-  protected def marketDataProvider: Option[DataFlowDataProvider[Key, MarketType, CurveType]]
+  protected def marketDataProvider: Option[MarketDataProvider[Key, MarketType, CurveType]]
   protected def marketDataEvent(change:MarketDataChange, key:Key, marketTypes: List[MarketType], snapshot:SnapshotIDLabel): Option[MarketDataEvent]
 
   protected final def change(day: Day, key: Key, marketTypes: Traversable[MarketType], isCorrection: Boolean = false) =
@@ -29,7 +29,7 @@ trait NullMarketDataEventSource extends MarketDataEventSource {
 
   def matches(pricingGroup:PricingGroup) = false
   def changesFor(previousVersion: Int, newVersion: Int, observationDays: List[Day]): List[MarketDataChange] = Nil
-  protected def marketDataProvider: Option[DataFlowDataProvider[Key, MarketType, CurveType]] = None
+  protected def marketDataProvider: Option[MarketDataProvider[Key, MarketType, CurveType]] = None
   protected def marketDataEvent(change:MarketDataChange, key:Nothing, marketTypes: List[Nothing], snapshot:SnapshotIDLabel) = None
 }
 
@@ -37,12 +37,12 @@ abstract class MarketDataChange(val observationDay: Day, val isCorrection: Boole
   def eventFor(snapshot: SnapshotIDLabel): Option[MarketDataEvent]
 }
 
-trait DataFlowDataProvider[Key, MarketType, CurveType] {
+trait MarketDataProvider[Key, MarketType, CurveType] {
   def marketDataFor(pricingGroup : PricingGroup, version: Int, observationDay: Day): NestedMap[Key, MarketType, CurveType]
 }
 
-abstract class AbstractDataFlowDataProvider[Key, MarketType, CurveType](marketDataStore: MarketDataStore)
-  extends DataFlowDataProvider[Key, MarketType, CurveType] {
+abstract class AbstractMarketDataProvider[Key, MarketType, CurveType](marketDataStore: MarketDataStore)
+  extends MarketDataProvider[Key, MarketType, CurveType] {
 
   val marketDataType: MarketDataTypeName
   val marketDataKeys: Option[Set[MarketDataKey]]

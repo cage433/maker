@@ -7,8 +7,8 @@ import starling.utils.Log
 import org.joda.time.format.{DateTimeFormatter, DateTimeFormat}
 import starling.utils.StringToDouble
 import org.joda.time.{LocalTime, DateTime, LocalDate}
-import starling.calendar.{BusinessCalendar}
 import annotation.tailrec
+import starling.calendar.{Clock, BusinessCalendar}
 
 /**
  * calendar day.
@@ -387,7 +387,7 @@ object Day extends TenorType {
     Day(1899, 12, 30) + double.toInt
   }
 
-  def today = fromMillis(System.currentTimeMillis)
+  def today = Clock.today
 
   def yesterday = today - 1
   def tomorrow = today + 1
@@ -535,4 +535,3 @@ object Day extends TenorType {
 
   override def shortName = "D"
 }
-

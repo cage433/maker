@@ -1,6 +1,5 @@
 package starling.manual
 
-import starling.LIMServer
 import starling.props.PropsHelper
 import starling.daterange.Day._
 import starling.services.StarlingInit
@@ -11,6 +10,8 @@ import starling.utils.Broadcaster
 import starling.utils.ImplicitConversions._
 import starling.db.{MarketDataSnapshots, NewSchemaMdDB, DBMarketDataStore}
 import starling.curves.readers.PriceFixingLimMarketDataSource
+import starling.lim.LIMService
+
 
 object RefinedMetalsLimMarketDataSourceTests {
   def main(args:Array[String]) {
@@ -39,7 +40,7 @@ object RefinedMetalsLimMarketDataSourceTests {
     }
     else {
       val source = new PriceFixingLimMarketDataSource(
-        new LIMServer("ttraflonrh221", 6400), init.businessCalendars, Broadcaster.Null, "from", "to")
+        LIMService("ttraflonrh221", 6400), init.businessCalendars, Broadcaster.Null, "from", "to")
 
       val updates = new DBMarketDataStore(new NewSchemaMdDB(init.starlingRichDB, init.dataTypes),
         new MarketDataSnapshots(init.starlingRichDB), MultiMap(LIM ->> source), Broadcaster.Null, init.dataTypes).importer.getUpdates(12 Sep 2011, LIM)

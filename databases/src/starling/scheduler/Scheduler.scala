@@ -23,6 +23,7 @@ class Scheduler(props: Props, initialTasks: List[TaskDescription] = Nil) extends
   override def stop = {
     super.stop; timer.cancel
   }
+
   def +=(task: TaskDescription) = {
     tasks += task
 

@@ -2,29 +2,30 @@ package starling.scheduler
 
 import java.util.{TimerTask, Timer}
 import starling.daterange.Day
-import starling.utils.Log
-
 import starling.utils.ImplicitConversions._
 import org.joda.time.Period
+import starling.utils.{Enableable, Log}
 
 
-case class TaskDescription(name: String, time: ScheduledTime, task: ScheduledTask) extends TimerTask {
+case class TaskDescription(name: String, time: ScheduledTime, task: ScheduledTask) extends TimerTask with Enableable {
   def offset(period: Period) = copy(time = time.offset(period))
 
-  def isRunning = task.isRunning
+  override def enable = task.enable
+  override def disable = task.disable
+  override def isEnabled = task.isEnabled
   val log = Log.forClass[Scheduler]
   val cal = time.cal
   def attribute(name: String, alternative: String = ""): ScheduledTaskAttribute = task.attribute(name, alternative)
 
   def schedule(timer: Timer) = log.infoF("%s @ %s @ %s, %s" % (name, time.prettyTime, time.cal.name, time.description)) {
-    task.start; time.schedule(this, timer)
+    task.enable; time.schedule(this, timer)
   }
 
   def run = log.logException("Task %s failed" % name) {
     if (!Day.today.isBusinessDay(cal)) {
       log.info("Not a business day in calendar: %s, thus skipping: %s" % (cal.name, name))
-    } else if (!task.isRunning) {
-      log.info("Skipping deactivated 'scheduled' task: " + name)
+    } else if (!isEnabled) {
+      log.info("Skipping disabled 'scheduled' task: " + name)
     } else log.infoWithTime("Executing scheduled task: " + name) {
       task.perform(Day.today)
     }

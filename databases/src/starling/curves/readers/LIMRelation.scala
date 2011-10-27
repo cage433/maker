@@ -5,7 +5,7 @@ import starling.utils.ImplicitConversions._
 import java.lang.String
 import starling.daterange._
 import starling.utils.Log
-import starling.{LIMServer, LimNode}
+import starling.lim.{LIMService, LimNode}
 import starling.utils.Pattern.Extractor
 import scalaz._
 import Scalaz._
@@ -26,7 +26,7 @@ trait LIMRelation extends Log {
 case class LimPrice(market: CommodityMarket, period: DateRange, observationTimeOfDay: ObservationTimeOfDay)
 
 object CMPTLIMRelation extends LIMRelation {
-  val node = LIMServer.TopRelation.Trafigura.Bloomberg.Currencies.Composite
+  val node = LIMService.TopRelation.Trafigura.Bloomberg.Currencies.Composite
 
   // TODO [10 Jun 2011] Change PriceDataKey so that it uses a market name
   private val limPriceTemplate = LimPrice(null, null, ObservationTimeOfDay.SHFEClose)

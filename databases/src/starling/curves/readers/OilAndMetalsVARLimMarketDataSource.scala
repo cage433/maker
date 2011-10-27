@@ -1,20 +1,18 @@
 package starling.curves.readers
 
-import starling.LIMServer
 import starling.market._
-import collection.SortedMap
 import starling.marketdata._
 import starling.utils.ImplicitConversions._
 import collection.immutable.Map
 import starling.daterange._
 import java.lang.String
 import starling.pivot.MarketValue
-import starling.concurrent.MP._
-import starling.db.{NoMarketDataForDayException, MarketDataEntry, MarketDataSource}
+import starling.db.{MarketDataEntry, MarketDataSource}
 import starling.curves.MissingMarketDataException
 import starling.utils.{MathUtil, Log}
+import starling.lim.LIMService
 
-class OilAndMetalsVARLimMarketDataSource(limServer: LIMServer) extends MarketDataSource {
+class OilAndMetalsVARLimMarketDataSource(service: LIMService) extends MarketDataSource {
   val daysInThePast = 365
 
   def read(day:Day) = {
@@ -35,7 +33,7 @@ class OilAndMetalsVARLimMarketDataSource(limServer: LIMServer) extends MarketDat
       pubMarkets.flatMap { case (market, levels) => {
         val pricesByObservationDay: Map[Day, Traversable[(Level, Double)]] = levels.flatMap { level => {
           val spotData: Map[Day, Double] = try {
-            limServer.getSpotData(market.limSymbol.get, level, day - daysInThePast, day)
+            service.getSpotData(market.limSymbol.get, level, day - daysInThePast, day)
           } catch {
             case m: MissingMarketDataException => {
               Log.warn("No market data for " + market.limSymbol)
@@ -74,7 +72,7 @@ class OilAndMetalsVARLimMarketDataSource(limServer: LIMServer) extends MarketDat
 
       ReutersDeliveryMonthCodes.parse(monthPart).map(month => relation → month.asInstanceOf[DateRange])
     }
-    val pricesByObservationPoint = limServer.query {
+    val pricesByObservationPoint = service.query {
       connection =>
         val relationToDeliveryMonth = connection.getAllRelChildren(limSymbol.name).flatMapO(parseRelation).toMap
 
