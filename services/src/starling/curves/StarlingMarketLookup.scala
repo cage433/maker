@@ -15,7 +15,7 @@ class StarlingMarketLookup(db: DB, businessCalendars: BusinessCalendars, expiryR
 
   val loading = new AtomicBoolean(false)
 
-  lazy val allMarkets = table.flatMap {
+  protected lazy val allMarketsImpl = table.flatMap {
     case Left(m: Market) => Some(m)
     case _ => None
   } ::: Market.EXBXG_MARKETS

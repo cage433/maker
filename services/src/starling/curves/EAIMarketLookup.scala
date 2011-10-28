@@ -16,7 +16,7 @@ class EAIMarketLookup(eai: DB, expiryRules: FuturesExpiryRules) extends MarketLo
    */
   lazy val table: List[Either[CommodityMarket, Index]] = load
 
-  lazy val allMarkets = table.flatMap {
+  protected lazy val allMarketsImpl = table.flatMap {
     case Left(m: FuturesMarket) => Some(m)
     case _ => None
   }
