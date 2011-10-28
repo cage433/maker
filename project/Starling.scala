@@ -7,10 +7,10 @@ object StarlingBuild extends Build{
 
   import Utils._
 
-  val starlingVersion = System.getProperty("system.build.version")
+  val starlingVersion = System.getProperty("build.number")
 
   println("")
-  println("This is the build version: " + starlingVersion)
+  println("This is the build number: " + starlingVersion)
   println("")
 
   val useTitanModelBinaries = false/*{

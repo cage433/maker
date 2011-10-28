@@ -15,6 +15,7 @@ free -m
 echo "------------------------------------------------------"
 echo
 echo "##teamcity[progressStart 'compile']"
+echo "version = $1"
 #java -Xmx4048M -XX:+CMSClassUnloadingEnabled -XX:MaxPermSize=650m -jar -Dsbt.ivy.home=.ivy -Dhttp.nonProxyHosts=nexus.global.trafigura.com sbt/sbt-launch-0.10.jar 'project devLauncher' "test"
-java -Xmx4048M -XX:+CMSClassUnloadingEnabled -XX:MaxPermSize=650m -jar -Dsbt.ivy.home=.ivy -Dsbt.log.noformat=true -Dhttp.nonProxyHosts=nexus.global.trafigura.com sbt/sbt-launch-0.11.0.jar ";clean ;test ;publish ;project doc-all; doc"
+java -Dbuild.version=$1 -Xmx4048M -XX:+CMSClassUnloadingEnabled -XX:MaxPermSize=650m -jar -Dsbt.ivy.home=.ivy -Dsbt.log.noformat=true -Dhttp.nonProxyHosts=nexus.global.trafigura.com sbt/sbt-launch-0.11.0.jar ";clean ;test ;publish ;project doc-all; doc"
 
