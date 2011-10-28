@@ -7,7 +7,10 @@ object StarlingBuild extends Build{
 
   import Utils._
 
-  val starlingVersion = System.getProperty("build.number")
+  val starlingVersion = {
+    val r = System.getProperty("build.number")
+    if (r == null) "0.1" else r
+  }
 
   println("")
   println("This is the build number: " + starlingVersion)
@@ -54,7 +57,7 @@ object StarlingBuild extends Build{
     unmanagedSourceDirectories in Test <+= baseDirectory(_/"tests"),
     unmanagedResourceDirectories in Test <+= baseDirectory(_/"test-resources"),
     unmanagedResourceDirectories in Compile <+= baseDirectory(_/"resources"),
-    unmanagedBase <<= baseDirectory( (base: File) => base /"lib"),
+//    unmanagedBase <<= baseDirectory( (base: File) => base /"lib"),
     unmanagedClasspath in Test <+= (baseDirectory) map { bd => Attributed.blank(bd / "resources") },
 //    unmanagedJars in Compile <++= (baseDirectory) map lib_managed_jars,
 //    unmanagedJars in Test <++= (baseDirectory) map lib_managed_jars,
@@ -105,22 +108,22 @@ object StarlingBuild extends Build{
   ) 
 
   val utilsDependencies = Seq(
-    "cglib" % "cglib-nodep" % "2.2" /*withSources()*/,
-    "joda-time" % "joda-time" % "1.6" /*withSources()*/,
-    "com.rabbitmq" % "amqp-client" % "1.7.2" /*withSources()*/,
-    "log4j" % "log4j" % "1.2.16" /*withSources()*/,
-    "org.slf4j" % "slf4j-log4j12" % "1.6.1" /*withSources()*/,
-    "com.google.collections" % "google-collections" % "1.0" /*withSources()*/,
-    "commons-codec" % "commons-codec" % "1.4" /*withSources()*/,
-    "commons-io" % "commons-io" % "1.3.2" /*withSources()*/,
+    "cglib" % "cglib-nodep" % "2.2" withSources(),
+    "joda-time" % "joda-time" % "1.6" withSources(),
+    "com.rabbitmq" % "amqp-client" % "1.7.2" withSources(),
+    "log4j" % "log4j" % "1.2.16" withSources(),
+    "org.slf4j" % "slf4j-log4j12" % "1.6.1" withSources(),
+    "com.google.collections" % "google-collections" % "1.0" withSources(),
+    "commons-codec" % "commons-codec" % "1.4" withSources(),
+    "commons-io" % "commons-io" % "1.3.2" withSources(),
     "colt" % "colt" % "1.0.3",
-    "com.thoughtworks.xstream" % "xstream" % "1.3.1" /*withSources()*/,
-    "org.testng" % "testng" % "6.1.1",
+    "com.thoughtworks.xstream" % "xstream" % "1.3.1" withSources(),
+    "org.testng" % "testng" % "5.8" classifier "jdk15",
     "org.scala-tools" %% "scala-stm" % "0.3",
-    "org.scala-lang" % "scala-swing" % "2.9.1" /*withSources()*/,
-    "org.scalaz" %% "scalaz-core" % "6.0.3" /*withSources()*/,
-    "spy" % "spymemcached" % "2.7.3" /*withSources()*/,
-    "org.scalatest" %% "scalatest" % "1.6.1" /*withSources()*/,
+    "org.scala-lang" % "scala-swing" % "2.9.1" withSources(),
+    "org.scalaz" %% "scalaz-core" % "6.0.3" withSources(),
+    "spy" % "spymemcached" % "2.7.3" withSources(),
+    "org.scalatest" %% "scalatest" % "1.6.1" withSources(),
     "org.mockito" % "mockito-all" % "1.8.2"
   )
 
@@ -410,7 +413,7 @@ object StarlingBuild extends Build{
     "reports-impl",
     file("./reports.impl"),
     settings = standardSettings
-  ) dependsOn(services)
+  ) dependsOn(services % "compile;test->test")
 
 
   lazy val startserver = Project(
