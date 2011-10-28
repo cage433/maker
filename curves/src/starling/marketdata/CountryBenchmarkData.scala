@@ -7,7 +7,6 @@ import pivotparsers.{SpecifiedValuesParser, DayPivotParser}
 import starling.quantity.Quantity
 import scalaz.Scalaz._
 import starling.utils.ImplicitConversions._
-
 case class CountryBenchmarkData(countryData: NestedMap[NeptuneCountryCode, Day, Quantity]) extends MarketData {
   def size = countryData.nestedSize
 }
@@ -17,16 +16,15 @@ class CountryBenchmarkDataType(referenceData: ReferenceDataLookup = ReferenceDat
   type keyType = CountryBenchmarkMarketDataKey
 
   val commodityField = FieldDetails("Commodity", new SpecifiedValuesParser(Commodity.metalsCommodities.map(_.name).toSet))
-  val countryField = FieldDetails("Country")
   val areaField = FieldDetails("Area")
-  val countryCodeField = FieldDetails("Country Code", new SpecifiedValuesParser(referenceData.countries.keySet.map(_.code)))
+  val countryCodeField = FieldDetails.coded("Country", referenceData.countries.values.map(_.tuple))
   val effectiveFromField = FieldDetails("Effective From", DayPivotParser)
   val benchmarkPriceField = FieldDetails.createMeasure("Benchmark Price",
     parser0 = PivotQuantityPivotParser, formatter0 = PivotQuantitySetPivotFormatter)
 
   def extendedKeys = List(commodityField)
   override def valueKeys = List(countryCodeField, effectiveFromField)
-  override def derivedFieldDetails = List(countryField, areaField)
+  override def derivedFieldDetails = List(areaField)
   def valueFieldDetails = List(benchmarkPriceField)
 
   val initialPivotState = PivotFieldsState(
@@ -51,7 +49,6 @@ class CountryBenchmarkDataType(referenceData: ReferenceDataLookup = ReferenceDat
     case (countryCode, effectiveFrom, price) => Row(
       commodityField.field → key.commodity.name,
       countryCodeField.field → countryCode.code,
-      countryField.field → referenceData.countryFor(countryCode).name,
       areaField.field → referenceData.areaFor(countryCode).map(_.name).getOrElse("Unknown"),
       effectiveFromField.field → effectiveFrom,
       benchmarkPriceField.field → price.pq
@@ -72,5 +69,6 @@ case class NeptuneCountryCode(code: String) {
   override def toString = code
 }
 case class NeptuneCountry(code: NeptuneCountryCode, name: String, area: Option[Area]) {
+  def tuple = (code.code, name)
   override def toString = name
 }

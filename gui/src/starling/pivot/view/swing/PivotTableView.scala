@@ -628,7 +628,7 @@ class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSiz
           case (row, col) :: Nil => {
             table.getValueAt(row, col) partialMatch {
               case tc:TableCell => (tc.longText.getOrElse(tc.text), false)
-              case ac:AxisCell => (ac.text, false)
+              case ac:AxisCell => (ac.longLabel, false)
             }
           }
           case many => {

@@ -1,7 +1,6 @@
 package starling.marketdata
 
 import starling.market.{FuturesExchange, FuturesMarket, NeptuneCommodity}
-
 trait ReferenceDataLookup {
   def name : String
   final def areaCodeFor(code: NeptuneCountryCode): Option[AreaCode] = countries(code).area.map(_.code)
@@ -35,6 +34,7 @@ trait ReferenceDataLookup {
 }
 
 case class Incoterm(code: IncotermCode, name: String) {
+  def tuple = (code.code, name)
   override def toString = name
 }
 

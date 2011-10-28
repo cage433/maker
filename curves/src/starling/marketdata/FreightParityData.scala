@@ -1,11 +1,9 @@
 package starling.marketdata
 
 import starling.pivot._
-import pivotparsers.SpecifiedValuesParser
 import scalaz.Scalaz._
 import starling.quantity.{Quantity, UOM}
 import starling.pivot.Row._
-
 case class FreightParityData(parityRate: Double, comment: String) extends MarketData {
   def size = 1
   def parityQuantity = Quantity(parityRate, UOM.USD / UOM.MT)
@@ -25,16 +23,11 @@ class FreightParityDataType(referenceData: ReferenceDataLookup = ReferenceDataLo
   type dataType = FreightParityData
   type keyType = FreightParityDataKey
 
-  val contractualIncotermCodeField = FieldDetails("Contractual Incoterm Code", new SpecifiedValuesParser(referenceData.incoterms.keySet.map(_.code)))
-  val contractualLocationCodeField = FieldDetails("Contractual Location Code", new SpecifiedValuesParser(referenceData.contractLocations.keySet.map(_.code)))
-  val destinationIncotermCodeField = FieldDetails("Destination Incoterm Code", new SpecifiedValuesParser(referenceData.incoterms.keySet.map(_.code)))
-  val destinationLocationCodeField = FieldDetails("Destination Location Code", new SpecifiedValuesParser(referenceData.countries.keySet.map(_.code)))
+  val contractualIncotermCodeField = FieldDetails.coded("Contractual Incoterm", referenceData.incoterms.values.map(_.tuple))
+  val contractualLocationCodeField = FieldDetails.coded("Contractual Location", referenceData.contractLocations.values.map(_.tuple))
+  val destinationIncotermCodeField = FieldDetails.coded("Destination Incoterm", referenceData.incoterms.values.map(_.tuple))
+  val destinationLocationCodeField = FieldDetails.coded("Destination Location", referenceData.countries.values.map(_.tuple))
   val extendedKeys = List(contractualIncotermCodeField, contractualLocationCodeField, destinationIncotermCodeField, destinationLocationCodeField)
-
-  val names@List(contractualIncotermField, contractualLocationField, destinationIncotermField, destinationLocationField) =
-    List("Contractual Incoterm", "Contractual Location", "Destination Incoterm", "Destination Location").map(FieldDetails(_))
-
-  override def derivedFieldDetails = names
 
   val values@List(parityRateField, commentField) =
     List(FieldDetails.createMeasure("Parity Rate", parser0 = PivotQuantityPivotParser), FieldDetails.createMeasure("Comment"))
@@ -57,10 +50,6 @@ class FreightParityDataType(referenceData: ReferenceDataLookup = ReferenceDataLo
   }
 
   protected def fieldValuesFor(key: FreightParityDataKey) = Row(
-    contractualIncotermField.field → referenceData.incotermFor(key.contractualIncoterm).name,
-    contractualLocationField.field → referenceData.contractLocationFor(key.contractualLocation).name,
-    destinationIncotermField.field → referenceData.incotermFor(key.destinationIncoterm).name,
-    destinationLocationField.field → referenceData.countryFor(key.destinationLocation).name,
     contractualIncotermCodeField.field → key.contractualIncoterm.code,
     contractualLocationCodeField.field → key.contractualLocation.code,
     destinationIncotermCodeField.field → key.destinationIncoterm.code,
@@ -80,5 +69,6 @@ case class ContractualLocationCode(code: String) {
   override def toString = code
 }
 case class ContractualLocation(code: ContractualLocationCode, name: String) {
+  def tuple = (code.code, name)
   override def toString = name
 }

@@ -19,14 +19,14 @@ object PivotChartViewTest {
   private def ac(field:String, value:Any) = {
     AxisCell(
       AxisValue(Field(field), ValueAxisValueType(value), 0),
-      Some(1), value.toString, None, false, NotTotal, 0, LeftTextPosition
+      Some(1), value.toString, "", None, false, NotTotal, 0, LeftTextPosition
     )
   }
 
   private def ac(field:String) = {
     AxisCell(
       AxisValue(Field("F"), MeasureAxisValueType(Field(field)), 0),
-      Some(1), field, None, false, NotTotal, 0, LeftTextPosition
+      Some(1), field, "", None, false, NotTotal, 0, LeftTextPosition
     )
   }
 

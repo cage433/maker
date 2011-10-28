@@ -23,7 +23,7 @@ class AxisTreeTester extends TestNGSuite {
   def testFlattenSingle {
     val node = AxisNode(av("P"), List())
     val flatten = node.flatten(None, false, List(), false, false, CollapsedState.None, List(), formatInfo, PivotFormatter.DefaultExtraFormatInfo)
-    assertEquals(flatten, List(List(AxisCell(av("P"), Some(1), "P", None, false, NotTotal, 0, LeftTextPosition))))
+    assertEquals(flatten, List(List(AxisCell(av("P"), Some(1), "P", "P", None, false, NotTotal, 0, LeftTextPosition))))
   }
 
   @Test
@@ -33,10 +33,10 @@ class AxisTreeTester extends TestNGSuite {
     assertEquals(
       flatten,
       List(
-        List(AxisCell(av("P"), Some(2), "P", Some(false), false, NotTotal, 0, LeftTextPosition),
-          AxisCell(av("c1"), Some(1), "c1", None, false, NotTotal, 0, LeftTextPosition)),
-        List(AxisCell(av("P"), None, "P", None, true, NotTotal, 1, LeftTextPosition),
-          AxisCell(av("c2"), Some(1), "c2", None, false, NotTotal, 0, LeftTextPosition))
+        List(AxisCell(av("P"), Some(2), "P", "P", Some(false), false, NotTotal, 0, LeftTextPosition),
+          AxisCell(av("c1"), Some(1), "c1", "c1", None, false, NotTotal, 0, LeftTextPosition)),
+        List(AxisCell(av("P"), None, "P", "P", None, true, NotTotal, 1, LeftTextPosition),
+          AxisCell(av("c2"), Some(1), "c2", "c2", None, false, NotTotal, 0, LeftTextPosition))
       )
     )
   }

@@ -20,6 +20,7 @@ object AreaCode{
   val hardCoded = Set(EUR, SAM, NAM, ASI, CHN)
 }
 case class Area(code:AreaCode, name:String) {
+  def tuple = (code.code, name)
   override def toString = name
 }
 
@@ -27,6 +28,7 @@ case class GradeCode(code : String) {
   override def toString = code
 }
 case class Grade(code:GradeCode, name:String) {
+  def tuple = (code.code, name)
   override def toString = name
 }
 
@@ -49,17 +51,14 @@ class GradeAreaBenchmarkDataType(referenceData: ReferenceDataLookup = ReferenceD
   type keyType = GradeAreaBenchmarkMarketDataKey
 
   val commodityField = FieldDetails("Commodity", new SpecifiedValuesParser(Commodity.metalsCommodities.map(_.name).toSet))
-  val areaField = FieldDetails("Area")
-  val areaCodeField = FieldDetails("Area Code", new SpecifiedValuesParser(referenceData.areas.keySet.map(_.code)))
-  val gradeField = FieldDetails("Grade")
-  val gradeCodeField = FieldDetails("Grade Code", new SpecifiedValuesParser(referenceData.grades.keySet.map(_.code)))
+  val areaCodeField = FieldDetails.coded("Area", referenceData.areas.values.map(_.tuple))
+  val gradeCodeField = FieldDetails.coded("Grade", referenceData.grades.values.map(_.tuple))
   val effectiveFromField = FieldDetails("Effective From", DayPivotParser)
   val benchmarkPriceField = FieldDetails.createMeasure("Benchmark Price",
     parser0 = PivotQuantityPivotParser, formatter0 = PivotQuantitySetPivotFormatter)
 
   def extendedKeys = List(commodityField)
   override def valueKeys = List(areaCodeField, gradeCodeField, effectiveFromField)
-  override def derivedFieldDetails = List(areaField, gradeField)
   def valueFieldDetails = List(benchmarkPriceField)
 
   val initialPivotState = PivotFieldsState(
@@ -84,9 +83,7 @@ class GradeAreaBenchmarkDataType(referenceData: ReferenceDataLookup = ReferenceD
     case ((gradeCode, areaCode), effectiveFrom, price) => Row(
       commodityField.field → key.commodity.name,
       gradeCodeField.field → gradeCode.code,
-      gradeField.field → referenceData.gradeFor(gradeCode).name,
       areaCodeField.field → areaCode.code,
-      areaField.field → referenceData.areaFor(areaCode).name,
       effectiveFromField.field → effectiveFrom,
       benchmarkPriceField.field → price.pq
     )
