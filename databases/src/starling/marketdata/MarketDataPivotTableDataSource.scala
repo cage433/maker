@@ -164,7 +164,7 @@ class PrebuiltMarketDataPivotData(reader: MarketDataReader, marketDataStore: Mar
                 if (amends.values.toSet.contains(None)) {
                   Nil //Ignore, we can't override existing values with a 'delete'
                 } else {
-                  Row(keyFilter.keys.mapValues(_.values.iterator.next) ++ amends.mapValues(_.get)) :: Nil
+                  Row(keyFilter.keys.mapValues(_.values.iterator.next) ++ marketDataType.defaultValue.value ++ amends.mapValues(_.get)) :: Nil
                 }
               }
             }

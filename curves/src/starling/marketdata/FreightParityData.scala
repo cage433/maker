@@ -60,20 +60,20 @@ class FreightParityDataType(referenceData: ReferenceDataLookup = ReferenceDataLo
     contractualIncotermField.field → referenceData.incotermFor(key.contractualIncoterm).name,
     contractualLocationField.field → referenceData.contractLocationFor(key.contractualLocation).name,
     destinationIncotermField.field → referenceData.incotermFor(key.destinationIncoterm).name,
-    destinationLocationField.field → referenceData.countryFor(key.destinationLocation).name
+    destinationLocationField.field → referenceData.countryFor(key.destinationLocation).name,
+    contractualIncotermCodeField.field → key.contractualIncoterm.code,
+    contractualLocationCodeField.field → key.contractualLocation.code,
+    destinationIncotermCodeField.field → key.destinationIncoterm.code,
+    destinationLocationCodeField.field → key.destinationLocation.code
   )
 
   def rows(key: FreightParityDataKey, data: FreightParityData) = List(
     fieldValues(key) +
-    (contractualIncotermCodeField.field → key.contractualIncoterm.code) +
-    (contractualLocationCodeField.field → key.contractualLocation.code) +
-    (destinationIncotermCodeField.field → key.destinationIncoterm.code) +
-    (destinationLocationCodeField.field → key.destinationLocation.code) +
     (parityRateField.field → data.parityQuantity) +
     (commentField.field → data.comment)
   )
 
-  override val defaultValue = Row(parityRateField.field → Quantity(0, UOM.USD / UOM.MT), commentField.field → "XXDefault")
+  override val defaultValue = Row(parityRateField.field → Quantity(0, UOM.USD / UOM.MT), commentField.field → "")
 }
 
 case class ContractualLocationCode(code: String) {
