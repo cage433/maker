@@ -7,7 +7,7 @@ object StarlingBuild extends Build{
 
   import Utils._
 
-  val starlingVersion = System.getProperty("build.version")
+  val starlingVersion = System.getProperty("system.build.version")
 
   println("")
   println("This is the build version: " + starlingVersion)
