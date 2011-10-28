@@ -24,8 +24,8 @@ class Props(starlingProps:Map[String,String], trafiguraProps : Map[String, Strin
   object MalachiteEmailAddress extends EmailProperty
   object GMFEmailAddress extends EmailProperty
   object GSAEmailAddress extends EmailProperty
-  object WuXiEmailAddress extends StringProperty("stacy.curl@trafigura.com")
-  object LimEmailAddress extends StringProperty("stacy.curl@trafigura.com")
+  object WuXiEmailAddress extends EmailProperty
+  object LimEmailAddress extends EmailProperty
 
   object EnabledDesks extends StringProperty("")
   object EnableVerificationEmails extends BooleanProperty(true)

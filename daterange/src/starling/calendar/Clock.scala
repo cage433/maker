@@ -2,6 +2,7 @@ package starling.calendar
 
 import starling.daterange.{Day, Timestamp}
 import scalaz.Scalaz._
+import util.DynamicVariable
 
 trait Clock {
   def timestamp: Timestamp
@@ -9,20 +10,20 @@ trait Clock {
 }
 
 object Clock extends Clock {
-  private var clock: Clock = SystemClock
+  private val clock: DynamicVariable[Clock] = new DynamicVariable(SystemClock)
 
   def freezeTo(day: Option[Day]) {
-    clock = FrozenClock(day.fold(_.millis, System.currentTimeMillis()))
+    clock.value = FrozenClock(day.fold(_.millis, System.currentTimeMillis()))
   }
 
   def freeze = freezeTo(None)
 
   def thaw {
-    clock = SystemClock
+    clock.value = SystemClock
   }
 
-  def timestamp = clock.timestamp
-  def today = clock.today
+  def timestamp = clock.value.timestamp
+  def today = clock.value.today
 
   private case object SystemClock extends Clock {
     def timestamp = Timestamp.now
