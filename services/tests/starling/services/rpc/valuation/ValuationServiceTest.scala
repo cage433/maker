@@ -115,7 +115,7 @@ class ValuationServiceTest extends StarlingTest {
       */
       
       // publish trade updated events...
-      val eventArray = createTradeUpdatedEvent(firstTrade.titanId.value.toString)
+      val eventArray = createTradeUpdatedEvent(firstTrade.identifier.value.toString)
 
       // publish our change event
       updatedValuationIdList = Nil
@@ -123,7 +123,7 @@ class ValuationServiceTest extends StarlingTest {
 
       // check the updated valuation event is sent...
 
-      assertTrue(!updatedValuationIdList.contains(firstTrade.titanId.value.toString), "Valuation service raised valuation changed events for unchanged trades")
+      assertTrue(!updatedValuationIdList.contains(firstTrade.identifier.value.toString), "Valuation service raised valuation changed events for unchanged trades")
 
       /**
       * Test changing a trade value causes valuation update events for those trades
@@ -141,7 +141,7 @@ class ValuationServiceTest extends StarlingTest {
       mockRabbitEventServices.rabbitEventPublisher.publish(eventArray)
 
       // check the updated valuation event is sent...
-      assertTrue(updatedValuationIdList.contains(updatedTrade.titanId.value.toString), "Valuation service failed to raise valuation changed events for the changed trades")
+      assertTrue(updatedValuationIdList.contains(updatedTrade.identifier.value.toString), "Valuation service failed to raise valuation changed events for the changed trades")
     }
   }
 
