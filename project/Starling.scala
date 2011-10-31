@@ -16,7 +16,7 @@ object StarlingBuild extends Build{
   println("This is the build number: " + starlingVersion)
   println("")
 
-  val useTitanModelBinaries = false/*{
+  val useTitanModelBinaries = {
     if (!new File("props.conf").exists)
       false
     else {
@@ -28,7 +28,7 @@ object StarlingBuild extends Build{
         case _ => true
       }
     }
-  }*/
+  }
   def lib_managed_jars(base : File) : Seq[Attributed[File]] = (((base / "lib_managed") ** "*.jar")).getFiles.map{f : File => Attributed.blank(f)}
   lazy val standardSettings = Defaults.defaultSettings ++ Seq(
     unmanagedSourceDirectories in Compile <+= baseDirectory(_/"src"),
@@ -52,16 +52,12 @@ object StarlingBuild extends Build{
     version := starlingVersion
   )
 
-  lazy val standardSettingsTest = Defaults.defaultSettings ++ Seq(
+  lazy val standardSettingsNexus = Defaults.defaultSettings ++ Seq(
     unmanagedSourceDirectories in Compile <+= baseDirectory(_/"src"),
     unmanagedSourceDirectories in Test <+= baseDirectory(_/"tests"),
     unmanagedResourceDirectories in Test <+= baseDirectory(_/"test-resources"),
     unmanagedResourceDirectories in Compile <+= baseDirectory(_/"resources"),
-//    unmanagedBase <<= baseDirectory( (base: File) => base /"lib"),
     unmanagedClasspath in Test <+= (baseDirectory) map { bd => Attributed.blank(bd / "resources") },
-//    unmanagedJars in Compile <++= (baseDirectory) map lib_managed_jars,
-//    unmanagedJars in Test <++= (baseDirectory) map lib_managed_jars,
-//    unmanagedJars in Runtime <++= (baseDirectory) map lib_managed_jars,
     ivyXML := <dependencies><exclude artifact="jcl-over-slf4j"/><exclude artifact="junit"/></dependencies>,
     scalaVersion := "2.9.1",
     showLibsTask,
@@ -104,7 +100,7 @@ object StarlingBuild extends Build{
   lazy val manager = Project(
     "manager",
     file("./manager"),
-    settings = standardSettingsTest  ++ Seq(libraryDependencies ++= managerDependencies)
+    settings = standardSettingsNexus  ++ Seq(libraryDependencies ++= managerDependencies)
   ) 
 
   val utilsDependencies = Seq(
@@ -130,7 +126,7 @@ object StarlingBuild extends Build{
   lazy val utils = Project(
     "utils", 
     file("./utils"), 
-    settings = standardSettingsTest ++ Seq(libraryDependencies ++= utilsDependencies)
+    settings = standardSettingsNexus ++ Seq(libraryDependencies ++= utilsDependencies)
   )
 
   lazy val osgiRun = Project(
@@ -148,7 +144,7 @@ object StarlingBuild extends Build{
   lazy val quantity = Project(
     "quantity", 
     file("./quantity"),
-    settings = standardSettingsTest
+    settings = standardSettingsNexus
   ) dependsOn (utils)
 
   lazy val osgiManager = Project(
@@ -178,14 +174,14 @@ object StarlingBuild extends Build{
   lazy val daterange = Project(
     "daterange", 
     file("./daterange"),
-    settings = standardSettingsTest
+    settings = standardSettingsNexus
   ) dependsOn(utils)
 
 
   lazy val titanReturnTypes = Project(
     "titan-return-types",
     file("./titan.return.types"),
-    settings = standardSettingsTest
+    settings = standardSettingsNexus
   ) dependsOn(daterange, quantity)
 
   lazy val maths = Project(
@@ -211,7 +207,7 @@ object StarlingBuild extends Build{
   lazy val titanModel = Project(
     "titan-model", 
     modelRoot,
-    settings = standardSettingsTest ++ Seq(
+    settings = standardSettingsNexus ++ Seq(
       unmanagedSourceDirectories in Compile <+= baseDirectory(_/"model-src"),
       cleanGenSrcTask := cleanGenSrc, 
       cleanCopiedSrcTask := cleanCopiedSrc, 
@@ -236,25 +232,28 @@ object StarlingBuild extends Build{
     Project(
       "starling-api", 
       file("./starling.api"),
-      settings = standardSettingsTest
+      settings = standardSettingsNexus
     ) dependsOn(titanModel, titanReturnTypes)
   }
 
   lazy val props = Project(
     "props",
     file("./props"),
-    settings = standardSettingsTest
+    settings = standardSettingsNexus
   ) dependsOn(utils, manager)
 
   val authDependencies = Seq(
-    "net.java.dev.jna" % "jna" % "3.3.0",
+//    "net.java.dev.jna" % "jna" % "3.3.0", Put this back in once sbt can handle classifiers properly
+    "sbt/bug/net/java/dev/jna" % "jna" % "3.3.0",
     "net.java.dev.jna" % "jna" % "3.3.0" classifier "platform"
+  
   )
 
   lazy val auth = Project(
     "auth", 
     file("./auth"),
-    settings = standardSettingsTest ++ Seq(libraryDependencies ++= authDependencies)
+    settings = standardSettingsNexus ++ Seq(libraryDependencies ++= authDependencies)
+//    settings = standardSettingsNexus ++ Seq(ivyXML := authIvyXML)
   ) dependsOn (utils, manager, props)
 
   val bouncyrmiDependencies = Seq(
@@ -267,7 +266,7 @@ object StarlingBuild extends Build{
   lazy val bouncyrmi = Project(
     "bouncyrmi", 
     file("./bouncyrmi"),
-    settings = standardSettingsTest ++ Seq(libraryDependencies ++= bouncyrmiDependencies)
+    settings = standardSettingsNexus ++ Seq(libraryDependencies ++= bouncyrmiDependencies)
   ) dependsOn(manager, auth, props)
 
   lazy val loopyxl = Project(
@@ -340,7 +339,7 @@ object StarlingBuild extends Build{
   lazy val starlingClient = Project(
     "starling-client",
     file("./starling.client"),
-    settings = standardSettingsTest
+    settings = standardSettingsNexus
   ) dependsOn(starlingApi, bouncyrmi)
 
   lazy val dbx = Project(
