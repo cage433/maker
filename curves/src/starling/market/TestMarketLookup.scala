@@ -36,7 +36,7 @@ case object TestMarketLookup extends MarketLookup {
     case Right(i: Index) => Some(i)
     case _ => None
   }
-  protected lazy val allMarketsImpl = all.flatMap {
+  lazy val allMarkets = all.flatMap {
     case Left(m: FuturesMarket) => Some(m)
     case _ => None
   }

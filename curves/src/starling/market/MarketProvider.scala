@@ -22,9 +22,7 @@ trait MarketLookup {
 
   def index(eaiQuoteID: Int): Option[Index] = indexEAIMap.get(eaiQuoteID)
 
-  // The presence of 'London Close' markets meant that the pair exchange/commodity could map to more than one market
-  protected def allMarketsImpl: List[Market]
-  final val allMarkets: List[Market] = allMarketsImpl.filterNot(_.name.contains("London close"))
+  val allMarkets: List[Market]
 
   lazy val allFuturesMarkets: List[FuturesMarket] = allMarkets.flatMap{
     case f:FuturesMarket => Some(f)
