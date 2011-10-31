@@ -569,6 +569,7 @@ object StarlingBuild extends Build{
       // Combine the sources of other modules to generate Scaladoc and SXR annotated sources
       (sources in Compile) <<= (allSources).map(_.flatten),
       (unmanagedJars in Compile) <<= ((childProjects.map(unmanagedJars in Compile in _).join).map(_.flatten)),
+      (managedClasspath in Compile) <<= ((childProjects.map(managedClasspath in Compile in _).join).map(_.flatten)),
 
       // Avoid compiling the sources here; we just are after scaladoc.
       (compile in Compile) := inc.Analysis.Empty)
