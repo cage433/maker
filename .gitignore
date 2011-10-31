@@ -51,3 +51,4 @@ osgi-gui-cache/*
 osgi-server-cache/*
 set-classpath.sh
 project/deployment/artifacts
+.ivy/
