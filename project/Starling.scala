@@ -126,7 +126,8 @@ object StarlingBuild extends Build{
     "org.scalaz" %% "scalaz-core" % "6.0.3" withSources(),
     "spy" % "spymemcached" % "2.7.3" withSources(),
     "org.scalatest" %% "scalatest" % "1.6.1" withSources(),
-    "org.mockito" % "mockito-all" % "1.8.2"
+    "org.mockito" % "mockito-all" % "1.8.2",
+    "org.jmock" % "jmock" % "2.5.1"
   )
 
   lazy val utils = Project(
