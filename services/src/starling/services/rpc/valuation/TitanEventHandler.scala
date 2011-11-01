@@ -2,13 +2,8 @@ package starling.services.rpc.valuation
 
 import com.trafigura.events.DemultiplexerClient
 import starling.daterange.Day
-import com.trafigura.services.rabbit.Publisher
 import com.trafigura.shared.events._
-import org.codehaus.jettison.json.JSONArray
-import com.trafigura.common.control.PipedControl._
 import com.trafigura.edm.shared.types.TitanId
-import starling.curves.{NullAtomicEnvironment, Environment}
-import starling.services.rabbit.{EventPayloadFactory, EventFactory, TitanRabbitEventServices}
 import starling.rmi.{ProcessedEventStatus, RabbitEventDatabase}
 import starling.titan.{TitanTradeUpdateResult, TitanTradeStoreManager}
 import starling.tradestore.TradeStore.StoreResults

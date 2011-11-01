@@ -125,6 +125,7 @@ class PhysicalMetalForwardBuilder(refData: TitanTacticalRefData,
             val quotaQuantity : Quantity = deliverySpec.quantity
             val quotaID = NeptuneId(detail.identifier).identifier
             def makeAssignment(ass: Assignment, inv: Inventory, isPurchase: Boolean) = {
+
               PhysicalMetalAssignment(
                 ass.oid.contents.toString,
                 if (isPurchase) inv.purchaseAssignmentQuantity else inv.currentQuantity,

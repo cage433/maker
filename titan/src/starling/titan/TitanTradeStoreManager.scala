@@ -2,7 +2,6 @@ package starling.titan
 
 import starling.curves.Environment
 import com.trafigura.edm.shared.types.TitanId
-import com.trafigura.edm.logistics.inventory.{InventoryItem, LogisticsQuota}
 import starling.instrument.Trade
 import starling.daterange.Timestamp
 import EDMConversions._
@@ -11,6 +10,7 @@ import com.trafigura.edm.trades.{CompletedTradeState, PhysicalTrade => EDMPhysic
 import starling.tradestore.TradeStore.StoreResults
 import starling.utils.ImplicitConversions._
 import starling.utils.{Startable, Log}
+import com.trafigura.edm.logistics.inventory.{CancelledInventoryItemStatus, InventoryItem, LogisticsQuota}
 
 case class TitanServiceCache(private val refData : TitanTacticalRefData,
                              private val edmTradeServices : TitanEdmTradeService,
@@ -30,7 +30,7 @@ case class TitanServiceCache(private val refData : TitanTacticalRefData,
     val allInventory = logisticsServices.inventoryService.service.getAllInventory()
 
     edmInventoryItems.clear
-    edmInventoryItems ++= allInventory.associatedInventory.map{inv => inv.id -> inv}
+    edmInventoryItems ++= allInventory.associatedInventory.filter(i => i.status != CancelledInventoryItemStatus).map{inv => inv.id -> inv}
     edmLogisticsQuotas.clear
     edmLogisticsQuotas ++= allInventory.associatedQuota
   }

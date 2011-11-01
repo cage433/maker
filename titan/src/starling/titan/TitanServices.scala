@@ -75,7 +75,13 @@ trait TitanEdmTradeService extends Log {
 
  def getTrade(id : TitanId) : EDMPhysicalTrade = {
     try {
-      titanGetEdmTradesService.get(id).asInstanceOf[EDMPhysicalTrade]
+      val trade = titanGetEdmTradesService.get(id).asInstanceOf[EDMPhysicalTrade]
+
+      if (trade.state != CompletedTradeState) {
+        log.error("fetched single trade %s and it was in an unexpected state %s".format(trade.titanId.value, trade.state))
+        throw new Exception("Incorrect trade state for trade " + trade.titanId.value)
+      }
+      trade
     }
     catch {
       case e : Throwable => throw new ExternalTitanServiceFailed(e)
