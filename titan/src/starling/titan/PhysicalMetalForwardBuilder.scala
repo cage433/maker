@@ -4,7 +4,6 @@ import starling.utils.Log
 import com.trafigura.edm.trades.{Trade => EDMTrade, PhysicalTrade => EDMPhysicalTrade}
 import com.trafigura.edm.physicaltradespecs.{DeliverySpec, QuotaDetails}
 import com.trafigura.edm.materialspecification.CommoditySpec
-import com.trafigura.edm.logistics.inventory.{Assignment, LogisticsQuota, InventoryItem}
 import com.trafigura.edm.shared.types.{DateSpec, PercentageTolerance, TitanId}
 import starling.titan.EDMConversions._
 import com.trafigura.tradinghub.support.GUID
@@ -17,6 +16,7 @@ import starling.instrument.{ErrorInstrument, TradeID, Trade}
 import com.trafigura.tradecapture.internal.refinedmetal.{DestinationLocation, Location}
 import starling.marketdata._
 import starling.market.Commodity
+import com.trafigura.edm.logistics.inventory.{CancelledInventoryItemStatus, Assignment, LogisticsQuota, InventoryItem}
 
 class PhysicalMetalForwardBuilder(refData: TitanTacticalRefData,
             inventoryByQuotaID: Map[TitanId, Traversable[InventoryItem]],
@@ -106,7 +106,8 @@ class PhysicalMetalForwardBuilder(refData: TitanTacticalRefData,
             val (contractDeliveryDay, benchmarkDeliveryDay) = deliveryDays(detail)
             val contractPricingSpec = EDMPricingSpecConverter(edmMetalByGUID(commodityGUIDs.head), futuresExchangeByID).fromEdmPricingSpec(contractDeliveryDay, deliveryQuantity(detail), detail.pricingSpec)
 
-            val inventoryItems = inventoryByQuotaID.get(NeptuneId(detail.identifier).titanId).flatten.toList.map(i => Inventory(i))
+            val inventoryItems = inventoryByQuotaID.get(NeptuneId(detail.identifier).titanId)
+              .flatten.filter(i => i.status != CancelledInventoryItemStatus).toList.map(i => Inventory(i))
 
             val commodityName = edmMetalByGUID(commodityGUIDs.head)
             val commodity = Commodity.neptuneCommodityFromNeptuneName(commodityName.name) match {
