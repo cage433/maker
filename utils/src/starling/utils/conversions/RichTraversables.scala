@@ -47,5 +47,8 @@ class RichTraversable[A](traversable: Traversable[A]) {
   }
 
   def maxOr(alternative: => A)(implicit cmp: Ordering[A]) = if (traversable.isEmpty) alternative else traversable.max
+
+  def mkHtml(outer: String = "ul", inner: String = "li"): String =
+    traversable.mkString("<%s>\n  <%s>" % (outer, inner), "</%s>\n  <%s>" % (inner, inner), "</%s>\n</%s>" % (inner, outer))
 }
 

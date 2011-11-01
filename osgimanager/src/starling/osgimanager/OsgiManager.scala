@@ -253,6 +253,7 @@ class OSGIBromptonContext(val serviceIDSequence : AtomicInteger, val context:OSG
   }
 
   def onStarted(action: => Unit) = throw new Exception("Not implemented")
+  def onStopped(action: => Unit) = throw new Exception("Not implemented")
 }
 class BundleActivatorHolder(activator:BromptonActivator, context:OSGIBromptonContext, latch:CountDownLatch) {
   private var thread:Thread = _

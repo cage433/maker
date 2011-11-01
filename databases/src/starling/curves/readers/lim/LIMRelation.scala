@@ -1,4 +1,4 @@
-package starling.curves.readers
+package starling.curves.readers.lim
 
 import starling.market._
 import starling.utils.ImplicitConversions._
@@ -11,6 +11,7 @@ import scalaz._
 import Scalaz._
 
 trait LIMRelation extends Log {
+  val exchange: FuturesExchange
   val node: LimNode
 
   def parse(childRelation: String): Option[LimPrice] = try {
@@ -27,9 +28,10 @@ case class LimPrice(market: CommodityMarket, period: DateRange, observationTimeO
 
 object CMPTLIMRelation extends LIMRelation {
   val node = LIMService.TopRelation.Trafigura.Bloomberg.Currencies.Composite
+  val exchange = FuturesExchangeFactory.SFS
 
   // TODO [10 Jun 2011] Change PriceDataKey so that it uses a market name
-  private val limPriceTemplate = LimPrice(null, null, ObservationTimeOfDay.SHFEClose)
+  private val limPriceTemplate = LimPrice(null, null, exchange.closeTime)
 
   protected val extractor = Extractor.regex[Option[LimPrice]]("""TRAF\.CFETS\.CNY\.(\w+)""") { case List(reutersDeliveryMonth) =>
     ReutersDeliveryMonthCodes.parse(reutersDeliveryMonth).map(month => limPriceTemplate.copy(period = month))

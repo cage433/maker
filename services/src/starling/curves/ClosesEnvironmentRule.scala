@@ -6,7 +6,6 @@ import starling.utils.ImplicitConversions._
 import starling.db.MarketDataReader
 import starling.quantity.UOM
 import starling.market._
-import starling.utils.ClosureUtil._
 
 import starling.gui.api.{PricingGroup, EnvironmentRuleLabel}
 
@@ -46,7 +45,6 @@ case class ClosesEnvironmentRule(referenceDataLookup: ReferenceDataLookup, allow
             case key: CountryBenchmarkMarketDataKey => read_(ObservationTimeOfDay.Default, key)
             case key: GradeAreaBenchmarkMarketDataKey => read_(ObservationTimeOfDay.Default, key)
             case key: FreightParityDataKey => read_(ObservationTimeOfDay.Default, key)
-            // TODO [31 Oct 2011]: Make 'reading' of SpotFXData less brittle by falling back to other ObservationTimeOfDay's
             case key@SpotFXDataKey(UOM.CNY) => read_(ObservationTimeOfDay.SHFEClose, key)
             case key: SpotFXDataKey => read_(ObservationTimeOfDay.LondonClose, key)
             case _ => throw new Exception(name + " Closes Rule has no rule for " + key)

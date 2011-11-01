@@ -5,7 +5,9 @@ import starling.daterange.ObservationTimeOfDay._
 import starling.utils.StarlingEnum
 import starling.utils.ImplicitConversions._
 import starling.daterange.{Day, ObservationTimeOfDay}
-import starling.marketdata.{AreaCode, Area}
+import starling.marketdata.AreaCode
+import scalaz.Scalaz._
+
 
 trait DeliveryType {
   val name: String
@@ -21,9 +23,10 @@ case object MonthlyDelivery extends DeliveryType {
 case class FuturesExchange(name: String, deliveryType: DeliveryType, closeTime:ObservationTimeOfDay, fixingLevel : Level = Level.Close) {
   // The presence of 'London Close' markets meant that the pair exchange/commodity could map to more than one market
   private lazy val futuresMarkets: List[FuturesMarket] = Market.futuresMarkets.filterNot(_.name.contains("London close"))
-  lazy val markets = futuresMarkets.filter(_.exchange == this)
+  lazy val markets = Market.marketsWithExchange(this)
   lazy val marketsByCommodityName = markets.toMapWithKeys(_.commodity.name.toLowerCase)
   def inferMarketFromCommodity(commodity : Commodity) : Option[FuturesMarket] = futuresMarkets.filter(_.exchange == this).find(_.commodity == commodity)
+  def limName = (this == FuturesExchangeFactory.SFS) ? "SHFE" | name
 }
 
 
@@ -48,7 +51,8 @@ object FuturesExchange{
 }
 
 object FuturesExchangeFactory extends StarlingEnum(classOf[FuturesExchange], (f: FuturesExchange) => f.name, otherTypes = Nil) {
-  val LME = new FuturesExchange("LME", DailyDelivery, LME_Official){
+  val LME = new FuturesExchange("LME", DailyDelivery, LME_Official) {
+    lazy val calendar = Market.cals.LME
 
     /**
      * The month dates follows something like this rule
@@ -65,18 +69,17 @@ object FuturesExchangeFactory extends StarlingEnum(classOf[FuturesExchange], (f:
     def monthDate(marketDay : Day, nMonthsAhead : Int) : Day = {
       val month = marketDay.containingMonth + nMonthsAhead
       val d : Int = month.lastDay.dayNumber min marketDay.dayNumber
-      val cal = Market.cals.LME
-      val firstBusDayInMonth = cal.thisOrNextBusinessDay(month.firstDay)
-      val lastBusDayInMonth = cal.thisOrPreviousBusinessDay(month.lastDay)
+      val firstBusDayInMonth = calendar.thisOrNextBusinessDay(month.firstDay)
+      val lastBusDayInMonth = calendar.thisOrPreviousBusinessDay(month.lastDay)
 
       var day = Day(month.y, month.m, d)
-      if (!cal.isBusinessDay(day)) {
+      if (!calendar.isBusinessDay(day)) {
         if (day.isSaturday || day.isFriday)
-          day = cal.previousBusinessDay(day)
+          day = calendar.previousBusinessDay(day)
         else if (day.isSunday || day.isMonday)
-          day = cal.nextBusinessDay(day)
+          day = calendar.nextBusinessDay(day)
         else
-          day = cal.previousBusinessDay(day)
+          day = calendar.previousBusinessDay(day)
       }
       (day max firstBusDayInMonth) min lastBusDayInMonth
     }
@@ -86,9 +89,15 @@ object FuturesExchangeFactory extends StarlingEnum(classOf[FuturesExchange], (f:
 
   }
 
-  val COMEX = new FuturesExchange("COMEX", MonthlyDelivery, COMEXClose)
-  val NYMEX = new FuturesExchange("NYMEX", MonthlyDelivery, Default)
-  val SFS = new FuturesExchange("SFS", MonthlyDelivery, SHFEClose, fixingLevel = Level.Settle)
+  val COMEX = new FuturesExchange("COMEX", MonthlyDelivery, COMEXClose) {
+    lazy val calendar = Market.cals.COMEX
+  }
+  val NYMEX = new FuturesExchange("NYMEX", MonthlyDelivery, Default) {
+    lazy val calendar = Market.cals.NYMEX
+  }
+  val SFS = new FuturesExchange("SFS", MonthlyDelivery, SHFEClose, fixingLevel = Level.Settle) {
+    lazy val calendar = Market.cals.SFS
+  }
     
   val BALTIC = new FuturesExchange("Baltic Exchange", MonthlyDelivery, Default)
   val ICE = new FuturesExchange("ICE", MonthlyDelivery, Default)

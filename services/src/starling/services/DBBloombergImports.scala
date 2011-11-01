@@ -5,12 +5,13 @@ import starling.dbx.QueryBuilder._
 import starling.utils.ImplicitConversions._
 import scalaz.Scalaz._
 import collection.immutable.Map
-import starling.daterange.{TimeZone, Day}
-import org.joda.time.{LocalTime, DateTime}
+import starling.daterange.TimeZone
+import org.joda.time.LocalTime
+import starling.curves.readers.lim.{BloombergImport, BloombergImports}
 
 
-object BloombergImport {
-  def importsFrom(eai: DB): List[BloombergImport] = getTimeZones(eai) |> { timeZones =>
+object DBBloombergImports {
+  def importsFrom(eai: DB) = BloombergImports(getTimeZones(eai) |> { timeZones =>
     eai.queryWithResult(select("*") from ("tblQuotesBloomberg")) { rs =>
       timeZones.get(rs.getInt("ExpectedAvailableTimeZoneID")).map { timeZone => BloombergImport(
         rs.getInt("QuoteID"),
@@ -19,11 +20,12 @@ object BloombergImport {
         rs.getStringOption("LimFolder"),
         rs.getStringOption("LimColumn"),
         rs.getStringOption("LimDescription"),
+        rs.getInt("ExportToLim") == 1,
         new LocalTime(rs.getInt("ExpectedAvailableHour"), rs.getInt("ExpectedAvailableMinute")),
         timeZone
       ) }
     }.flatten
-  }
+  })
 
   private def getTimeZones(eai: DB) = eai.lookupTable("tblTimezones", "ID", "WindowsID").mapKeys(_.toInt) >>> Map(
     "UTC"                      → TimeZone.UTC,
@@ -33,14 +35,4 @@ object BloombergImport {
     "Central Standard Time"    → TimeZone.USCentral,
     "Tokyo Standard Time"      → TimeZone.Tokyo
   )
-}
-
-case class BloombergImport(quoteId: Int, symbol: Option[String], limSymbol: Option[String], limFolder: Option[String],
-  limColumn: Option[String], limDescription: Option[String], expectedTime: LocalTime, timeZone: TimeZone) {
-
-  def expectedTime(other: TimeZone): DateTime = dateTime.withZone(other)
-
-  private lazy val dateTime = Day.today |> { today => new DateTime(today.year, today.month, today.dayNumber,
-    expectedTime.getHourOfDay, expectedTime.getMinuteOfHour, 0, 0, timeZone)
-  }
 }

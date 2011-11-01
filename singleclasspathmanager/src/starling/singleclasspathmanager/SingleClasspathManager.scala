@@ -44,6 +44,7 @@ class SingleClasspathManager(cacheServices:Boolean, activators:List[Class[_ <: B
   private val registry = new scala.collection.mutable.ArrayBuffer[ServiceEntry]()
   private val trackers = new scala.collection.mutable.ArrayBuffer[TrackerEntry[_]]()
   private val onStartedActions = new scala.collection.mutable.ArrayBuffer[() => Unit]()
+  private val onStoppedActions = new scala.collection.mutable.ArrayBuffer[() => Unit]()
 
   initialServices.foreach { case (klass,instance) => register(klass, instance, ServiceProperties())}
 
@@ -73,8 +74,8 @@ class SingleClasspathManager(cacheServices:Boolean, activators:List[Class[_ <: B
     }
 
     def onStarted(action: => Unit) = onStartedActions += (() => action)
+    def onStopped(action: => Unit) = onStoppedActions += (() => action)
   }
-
 
   def start() {
     this synchronized {
@@ -85,20 +86,25 @@ class SingleClasspathManager(cacheServices:Boolean, activators:List[Class[_ <: B
         activator.start(context)
       } }
 
-      onStartedActions.foreach { action => try {
-        action()
-      } catch {
-        case t => t.printStackTrace(Console.err)
-      } }
+      onStartedActions.foreach(printExceptions)
     }
   }
+
   def stop() {
     this synchronized {
       if (!started) throw new Exception("Not started yet")
       started = false
-	  instances.foreach { activator => {
-	    activator.stop(context)
-	  } }
+      onStoppedActions.foreach(printExceptions)
+
+	    instances.foreach { activator => {
+  	    activator.stop(context)
+  	  } }
     }
+  }
+
+  private def printExceptions(action: () => Unit) = try {
+    action()
+  } catch {
+    case t => t.printStackTrace(Console.err)
   }
 }

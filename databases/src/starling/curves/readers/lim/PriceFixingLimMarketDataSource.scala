@@ -1,4 +1,4 @@
-package starling.curves.readers
+package starling.curves.readers.lim
 
 import collection.immutable.List
 
@@ -23,6 +23,7 @@ import LIMService.TopRelation._
 import Pattern._
 import scalaz.Scalaz._
 import starling.calendar.{BusinessCalendars}
+import starling.services.EmailService
 
 
 object PriceFixingLimMarketDataSource {
@@ -31,8 +32,8 @@ object PriceFixingLimMarketDataSource {
     new MonthlyFuturesFixings(Trafigura.Bloomberg.Futures.Comex, FuturesExchangeFactory.COMEX.fixingLevel)) ::: SpotFXFixings.all)
 }
 
-case class PriceFixingLimMarketDataSource(service: LIMService, calendars: BusinessCalendars, broadcaster: Broadcaster,
-  sender: String, recipient: String) extends LimMarketDataSource(service) {
+case class PriceFixingLimMarketDataSource(service: LIMService, emailService: EmailService, template: Email)
+  extends LimMarketDataSource(service) {
 
   import PriceFixingLimMarketDataSource._
 
@@ -48,34 +49,34 @@ case class PriceFixingLimMarketDataSource(service: LIMService, calendars: Busine
   }
 
   override def availabilityTasks(marketDataStore: MarketDataStore) = List(
-    TaskDescription("Verify SIBOR Available", daily(calendars.LME, 4 H 30), notImplemented),
-    TaskDescription("Verify ROBOR Available", daily(calendars.LME, 9 H 00), notImplemented),
-    TaskDescription("Verify JIBAR Available", daily(calendars.LME, 10 H 30), notImplemented),
-    TaskDescription("Verify Libor maturities available", daily(calendars.LME, 12 H 00),
-      new VerifyLiborMaturitiesAvailable(marketDataStore, broadcaster, sender, recipient).withSource("LIM")),
-    TaskDescription("Verify LIBORFixings Available", daily(calendars.LME, 12 H 00), notImplemented),
-    TaskDescription("Verify LME AMR1 Fixings Available", daily(calendars.LME, 12 H 30), notImplemented),
-    TaskDescription("Verify LME OFFICIAL Fixings Available", daily(calendars.LME, 13 H 30), notImplemented),
-    TaskDescription("Verify LME PMR1 LMEFixings Available", daily(calendars.LME, 16 H 30), notImplemented),
-    TaskDescription("Verify LME UNOFFICIAL LMEFixings Available", daily(calendars.LME, 17 H 00), notImplemented),
-    TaskDescription("Verify IRS Available", daily(calendars.LME, 18 H 00), notImplemented),
-    TaskDescription("Verify BloombergTokyoCompositeFXRates Available", daily(calendars.LME, 20 H 00), notImplemented),
-    TaskDescription("Verify BalticFixings Available", daily(calendars.LME, 20 H 00), notImplemented),
+    TaskDescription("Verify SIBOR Available", daily(LME.calendar, 4 H 30), notImplemented),
+    TaskDescription("Verify ROBOR Available", daily(LME.calendar, 9 H 00), notImplemented),
+    TaskDescription("Verify JIBAR Available", daily(LME.calendar, 10 H 30), notImplemented),
+    TaskDescription("Verify Libor maturities available", daily(LME.calendar, 12 H 00),
+      new VerifyLiborMaturitiesAvailable(marketDataStore, emailService, template).withSource("LIM")),
+    TaskDescription("Verify LME AMR1 Fixings Available", daily(LME.calendar, 12 H 30), notImplemented),
+  //      registerTasks(tasks(daily(LME, 13 H 15), TRAF.LME.{EUR, GBP, JPY} SpotFX
+    TaskDescription("Verify LME OFFICIAL Fixings Available", daily(LME.calendar, 13 H 30), notImplemented),
+    TaskDescription("Verify LME PMR1 LMEFixings Available", daily(LME.calendar, 16 H 30), notImplemented),
+    TaskDescription("Verify LME UNOFFICIAL LMEFixings Available", daily(LME.calendar, 17 H 00), notImplemented),
+    TaskDescription("Verify IRS Available", daily(LME.calendar, 18 H 00), notImplemented),
+    TaskDescription("Verify BloombergTokyoCompositeFXRates Available", daily(LME.calendar, 20 H 00), notImplemented),
+    TaskDescription("Verify BalticFixings Available", daily(LME.calendar, 20 H 00), notImplemented),
 
-    TaskDescription("Verify SHIBOR Available", daily(calendars.NYMEX, 0 H 00), notImplemented),
-    TaskDescription("Verify MIBOR-1 Available", daily(calendars.NYMEX, 1 H 00), notImplemented),
-    TaskDescription("Verify AIDIBOR Available", daily(calendars.NYMEX, 3 H 00), notImplemented),
-    TaskDescription("Verify MIBOR-2 Available", daily(calendars.NYMEX, 5 H 00), notImplemented),
-    TaskDescription("Verify BUBOR Available", daily(calendars.NYMEX, 05 H 00), notImplemented),
-    TaskDescription("Verify SOFIBOR Available", daily(calendars.NYMEX, 05 H 00), notImplemented),
-    TaskDescription("Verify TRLIBOR Available", daily(calendars.NYMEX, 6 H 00), notImplemented),
-    TaskDescription("Verify NIBOR Available", daily(calendars.NYMEX, 7 H 00), notImplemented),
-    TaskDescription("Verify COMEX Fixings Available", daily(calendars.COMEX, 20 H 00), notImplemented),
-    TaskDescription("Verify KLIBOR Available", daily(calendars.NYMEX, 23 H 00), notImplemented),
+    TaskDescription("Verify SHIBOR Available", daily(NYMEX.calendar, 0 H 00), notImplemented),
+    TaskDescription("Verify MIBOR-1 Available", daily(NYMEX.calendar, 1 H 00), notImplemented),
+    TaskDescription("Verify AIDIBOR Available", daily(NYMEX.calendar, 3 H 00), notImplemented),
+    TaskDescription("Verify MIBOR-2 Available", daily(NYMEX.calendar, 5 H 00), notImplemented),
+    TaskDescription("Verify BUBOR Available", daily(NYMEX.calendar, 05 H 00), notImplemented),
+    TaskDescription("Verify SOFIBOR Available", daily(NYMEX.calendar, 05 H 00), notImplemented),
+    TaskDescription("Verify TRLIBOR Available", daily(NYMEX.calendar, 6 H 00), notImplemented),
+    TaskDescription("Verify NIBOR Available", daily(NYMEX.calendar, 7 H 00), notImplemented),
+    TaskDescription("Verify COMEX Fixings Available", daily(COMEX.calendar, 20 H 00), notImplemented),
+    TaskDescription("Verify KLIBOR Available", daily(NYMEX.calendar, 23 H 00), notImplemented),
 
-    TaskDescription("Verify HIBOR Available", daily(calendars.SFS, 11 H 00), notImplemented),
-    TaskDescription("Verify Shfe Fixings Available", daily(calendars.SFS, 20 H 00), notImplemented)
-  )
+    TaskDescription("Verify HIBOR Available", daily(SFS.calendar, 11 H 00), notImplemented),
+    TaskDescription("Verify Shfe Fixings Available", daily(SFS.calendar, 20 H 00), notImplemented)
+  ).filterNot(_.task == notImplemented)
 }
 
 object LMEFixings extends LimSource(List(Ask, Bid)) {
@@ -198,19 +199,19 @@ case class ReferenceInterestMarketDataProvider(marketDataStore : MarketDataStore
   }
 }
 
-class VerifyLiborMaturitiesAvailable(marketDataStore: MarketDataStore, broadcaster: Broadcaster, from: String, to: String)
-  extends EmailingScheduledTask(broadcaster, from, to) {
+class VerifyLiborMaturitiesAvailable(marketDataStore: MarketDataStore, emailService: EmailService, template: Email)
+  extends EmailingScheduledTask(emailService, template) {
 
-  import starling.curves.readers.LIBORFixing._
+  import starling.curves.readers.lim.LIBORFixing._
 
-  protected def eventFor(observationDay: Day, email: EmailEvent) = {
+  protected def emailFor(observationDay: Day) = {
     val liborFixings: NestedMap[UOM, Tenor, (Percentage, Day)] = latestLiborFixings(marketDataStore, observationDay)
     val tenorsByCurrency = liborFixings.mapValues(_.keys.toList).withDefaultValue(Nil)
     val missingTenorsByCurrency = currencies.toMapWithValues(currency => tenorsFor(currency) \\ tenorsByCurrency(currency))
       .filterValuesNot(_.isEmpty).sortBy(_.toString)
 
     (missingTenorsByCurrency.size > 0).option {
-      email.copy(subject = "Missing Libor Maturities in LIM, observation day: " + observationDay,
+      template.copy(subject = "Missing Libor Maturities in LIM, observation day: " + observationDay,
         body = <span>
                  <p>The following LIBOR tenors are required by Trinity but are missing in LIM</p>
                  <table>
