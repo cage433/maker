@@ -4,7 +4,7 @@ import starling.pivot._
 import starling.pivot.EditableCellState._
 import starling.utils.Pattern.Extractor
 
-case class AxisCell(value:AxisValue, span:Option[Int], label:String, collapsible:Option[Boolean],  hidden:Boolean,
+case class AxisCell(value:AxisValue, span:Option[Int], label:String, longLabel:String, collapsible:Option[Boolean],  hidden:Boolean,
                     totalState:TotalState, offset:Int, textPosition:TextPosition, editable:Boolean = false,
                     overrideState:Option[EditableCellState]=None) {
   def text = if (!hidden) label else ""
@@ -28,9 +28,9 @@ case class AxisCell(value:AxisValue, span:Option[Int], label:String, collapsible
   @transient var changed = false
 }
 object AxisCell {
-  val Null = AxisCell(AxisValue(Field.NullField, NullAxisValueType, 0), Some(1), "", None, true, NotTotal, 0, LeftTextPosition)
-  val NullTotal = AxisCell(AxisValue(Field.NullField, TotalAxisValueType, 0), Some(1), "", None, true, Total, 0, LeftTextPosition)
-  val Filler = AxisCell(AxisValue(Field.NullField, NullAxisValueType, 0), Some(1), "", None, true, NotTotal, 0, LeftTextPosition)
+  val Null = AxisCell(AxisValue(Field.NullField, NullAxisValueType, 0), Some(1), "", "", None, true, NotTotal, 0, LeftTextPosition)
+  val NullTotal = AxisCell(AxisValue(Field.NullField, TotalAxisValueType, 0), Some(1), "", "", None, true, Total, 0, LeftTextPosition)
+  val Filler = AxisCell(AxisValue(Field.NullField, NullAxisValueType, 0), Some(1), "", "", None, true, NotTotal, 0, LeftTextPosition)
   val ValueText: Extractor[AxisCell, String] = Extractor.from[AxisCell](cell => Some(cell.valueText))
   val Value: Extractor[AxisCell, Any] = Extractor.from[AxisCell](cell => Some(cell.value.value.value))
 }

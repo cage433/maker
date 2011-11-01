@@ -7,9 +7,9 @@ import java.awt.{GradientPaint, Graphics2D, Dimension, Color, RenderingHints, Po
 import java.awt.event.{ComponentEvent, ComponentAdapter}
 import org.jdesktop.swingx.image.ColorTintFilter
 import starling.browser.common.GuiUtils._
-import starling.pivot.model.TreeDetails
 import org.jdesktop.swingx.graphics.ShadowRenderer
 import swing._
+import starling.pivot.model.{UndefinedValue, TreeDetails, EditableInfo}
 import swing.event._
 import starling.pivot.controller.{TreePivotFilterNode, TreePivotFilter}
 import javax.swing.event.{PopupMenuListener, PopupMenuEvent}
@@ -18,7 +18,6 @@ import starling.gui.custom._
 import starling.pivot._
 import starling.gui.StarlingIcons
 import starling.gui.namedquantitycomponents.UnderLineDashedBorder
-import starling.pivot.model.EditableInfo
 import starling.pivot.HiddenType._
 import starling.browser.common.{FixedImagePanel, ImageButtonWithDisabledImageSupplied, MigPanel, GuiUtils}
 
@@ -97,7 +96,9 @@ class GuiFieldComponent(val props:GuiFieldComponentProps) extends MigPanel("inse
     }
     val possibleValuesAndSelectionToUse = getPossibleValuesAndSelection
     val transformData = props.transformData
-    def valueToLabel(v:Any):String = props.formatter.format(v, props.tableView.currentExtraFormatInfo).text
+    def valueToLabel(v:Any):String = {
+      if (v == UndefinedValue) "" else props.formatter.format(v, props.tableView.currentExtraFormatInfo).text
+    }
     val filterPopupPanel = new TreePanel(possibleValuesAndSelectionToUse, valueToLabel, transformData.showOther, transformData.transforms)
 
     val popupMenu = new JPopupMenu {

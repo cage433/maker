@@ -6,9 +6,8 @@ import starling.utils.ImplicitConversions._
 import starling.db.MarketDataReader
 import starling.quantity.UOM
 import starling.market._
+import starling.utils.ClosureUtil._
 
-import ObservationTimeOfDay._
-import starling.market.FuturesExchangeFactory._
 import starling.gui.api.{PricingGroup, EnvironmentRuleLabel}
 
 object ClosesEnvironmentRule {
@@ -18,13 +17,9 @@ object ClosesEnvironmentRule {
 
 case class ClosesEnvironmentRule(referenceDataLookup: ReferenceDataLookup, allowOldPricesToBeUsed : Boolean = false) extends EnvironmentRule {
   val pricingGroups = List(PricingGroup.Metals)
-  val exchangeCloses : Map[FuturesExchange, ObservationTimeOfDay] = Map(SFS → SHFEClose, LME → LMEClose, COMEX → COMEXClose)
-  val marketCloses = exchangeCloses.composeKeys((market: FuturesMarket) => market.exchange)
 
   val label = ClosesEnvironmentRule.label(allowOldPricesToBeUsed)
   private val numberOfDaysToLookBack = if (allowOldPricesToBeUsed) 7 else 0
-  
-  lazy val marketsWithCloseTimeOfDay = Market.futuresMarkets.optPair(marketCloses.get(_)).toList
 
   override def createNullAtomicEnvironment(observationDay: Day) = new NullAtomicEnvironment(observationDay.endOfDay, referenceDataLookup)
 
@@ -33,13 +28,9 @@ case class ClosesEnvironmentRule(referenceDataLookup: ReferenceDataLookup, allow
     def read_(timeOfDay : ObservationTimeOfDay, key : MarketDataKey) : MarketData = {
       marketDataReader.readMostRecent(numberOfDaysToLookBack, observationDay, timeOfDay, key)
     }
-    val priceDataMap = marketsWithCloseTimeOfDay.flatMap {
-      case (market, timeOfDay) => try {
-        val marketData = read_(timeOfDay, PriceDataKey(market))
-        Some(PriceDataKey(market) → marketData.asInstanceOf[PriceData])
-      } catch {
-        case e: MissingMarketDataException => None
-      }
+    val priceDataMap = Market.futuresMarkets.safeMap { market =>
+      val marketData = read_(market.closeTime, PriceDataKey(market))
+      PriceDataKey(market) → marketData.asInstanceOf[PriceData]
     }.toMap
 
     val reader = new MarketDataSlice {
@@ -54,7 +45,8 @@ case class ClosesEnvironmentRule(referenceDataLookup: ReferenceDataLookup, allow
             case key: ForwardRateDataKey => read_(ObservationTimeOfDay.Default, key)
             case key: CountryBenchmarkMarketDataKey => read_(ObservationTimeOfDay.Default, key)
             case key: GradeAreaBenchmarkMarketDataKey => read_(ObservationTimeOfDay.Default, key)
-            case key: FreightParityDataKey => FreightParityData(2, "")//read_(ObservationTimeOfDay.Default, key)
+            case key: FreightParityDataKey => read_(ObservationTimeOfDay.Default, key)
+            // TODO [31 Oct 2011]: Make 'reading' of SpotFXData less brittle by falling back to other ObservationTimeOfDay's
             case key@SpotFXDataKey(UOM.CNY) => read_(ObservationTimeOfDay.SHFEClose, key)
             case key: SpotFXDataKey => read_(ObservationTimeOfDay.LondonClose, key)
             case _ => throw new Exception(name + " Closes Rule has no rule for " + key)
@@ -74,7 +66,7 @@ case class ClosesEnvironmentRule(referenceDataLookup: ReferenceDataLookup, allow
 
     val marketsX = {
       priceDataMap.toList.map { case (PriceDataKey(futuresMarket: FuturesMarket), priceData) => {
-        UnderlyingDeliveryPeriods(marketCloses(futuresMarket), futuresMarket, priceData.sortedKeys)
+        UnderlyingDeliveryPeriods(futuresMarket.closeTime, futuresMarket, priceData.sortedKeys)
       }
       case (PriceDataKey(market: PublishedIndex), priceData) => {
         UnderlyingDeliveryPeriods(ObservationTimeOfDay.LondonClose, market, priceData.sortedKeys)

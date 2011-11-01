@@ -3,7 +3,6 @@ package starling.pivot.pivotparsers
 import starling.daterange.{Month, TenorType, Day}
 import starling.pivot.{ExtraFormatInfo, PivotParser}
 import starling.pivot.utils.PeriodPivotFormatter
-
 object DayPivotParser extends PivotParser {
   def parse(text:String, extraFormatInfo:ExtraFormatInfo) = {
     val day = Day.parse(text)

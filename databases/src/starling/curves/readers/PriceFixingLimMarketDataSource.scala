@@ -2,17 +2,13 @@ package starling.curves.readers
 
 import collection.immutable.List
 
-import starling.{LIMConnection, LimNode, LIMServer}
 import starling.daterange._
 import starling.market._
 import starling.marketdata._
 import starling.pivot.MarketValue
 import FuturesExchangeFactory._
-import Level._
-import LIMServer.TopRelation._
 import ObservationTimeOfDay._
 import starling.utils.ImplicitConversions._
-import starling.calendar.BusinessCalendars
 import starling.scheduler.ScheduledTime._
 import starling.gui.api._
 import starling.utils.{Broadcaster, Pattern}
@@ -20,9 +16,13 @@ import starling.scheduler.{EmailingScheduledTask, TaskDescription}
 import starling.quantity.{Percentage, UOM}
 import starling.utils.ClosureUtil._
 import starling.db.{NormalMarketDataReader, MarketDataStore, MarketDataEntry}
+import starling.databases.{AbstractMarketDataProvider, PricingGroupMarketDataEventSource, MarketDataChange, MarketDataProvider}
+import starling.lim.{LIMService, LIMConnection, LimNode}
+import Level._
+import LIMService.TopRelation._
 import Pattern._
 import scalaz.Scalaz._
-import starling.databases.{AbstractDataFlowDataProvider, PricingGroupMarketDataEventSource, MarketDataChange, DataFlowDataProvider}
+import starling.calendar.{BusinessCalendars}
 
 
 object PriceFixingLimMarketDataSource {
@@ -31,8 +31,8 @@ object PriceFixingLimMarketDataSource {
     new MonthlyFuturesFixings(Trafigura.Bloomberg.Futures.Comex, FuturesExchangeFactory.COMEX.fixingLevel)) ::: SpotFXFixings.all)
 }
 
-case class PriceFixingLimMarketDataSource(limServer: LIMServer, calendars: BusinessCalendars, broadcaster: Broadcaster,
-                                          sender: String, recipient: String) extends LimMarketDataSource(limServer) {
+case class PriceFixingLimMarketDataSource(service: LIMService, calendars: BusinessCalendars, broadcaster: Broadcaster,
+  sender: String, recipient: String) extends LimMarketDataSource(service) {
 
   import PriceFixingLimMarketDataSource._
 
@@ -44,7 +44,7 @@ case class PriceFixingLimMarketDataSource(limServer: LIMServer, calendars: Busin
   }
 
   override def eventSources(marketDataStore: MarketDataStore) = {
-    List(new PriceFixingDataEventSource(PricingGroup.Metals, ReferenceInterestDataProvider(marketDataStore)))
+    List(new PriceFixingDataEventSource(PricingGroup.Metals, ReferenceInterestMarketDataProvider(marketDataStore)))
   }
 
   override def availabilityTasks(marketDataStore: MarketDataStore) = List(
@@ -161,7 +161,7 @@ class MonthlyFuturesFixings(parentNodes: List[LimNode], levels: List[Level]) ext
 }
 
 case class PriceFixingDataEventSource(pricingGroup: PricingGroup,
-  provider: DataFlowDataProvider[(Day, String), UOM, PriceFixingsHistoryData]) extends PricingGroupMarketDataEventSource {
+  provider: MarketDataProvider[(Day, String), UOM, PriceFixingsHistoryData]) extends PricingGroupMarketDataEventSource {
 
   type Key = (Day, String)
   type MarketType = UOM
@@ -174,8 +174,8 @@ case class PriceFixingDataEventSource(pricingGroup: PricingGroup,
   protected def marketDataProvider = Some(provider)
 }
 
-case class ReferenceInterestDataProvider(marketDataStore : MarketDataStore)
-  extends AbstractDataFlowDataProvider[(Day, String), UOM, PriceFixingsHistoryData](marketDataStore) {
+case class ReferenceInterestMarketDataProvider(marketDataStore : MarketDataStore)
+  extends AbstractMarketDataProvider[(Day, String), UOM, PriceFixingsHistoryData](marketDataStore) {
 
   val marketDataType = PriceFixingsHistoryDataType.name
   val marketDataKeys = None

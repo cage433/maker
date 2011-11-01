@@ -32,3 +32,11 @@ case class CompositeStopable(stopables: (Boolean, List[Stopable])*) extends Stop
   override def start = { super.start; enabled.map(_.start)  }
   override def stop =  { super.stop;  enabled.map(_.stop)   }
 }
+
+trait Enableable {
+  private val enabled = new AtomicBoolean(false)
+
+  def enable = enabled.set(true)
+  def disable = enabled.set(false)
+  def isEnabled = enabled.get
+}

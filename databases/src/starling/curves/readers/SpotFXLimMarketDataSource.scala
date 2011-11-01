@@ -2,31 +2,31 @@ package starling.curves.readers
 
 import collection.immutable.List
 
-import starling.LIMServer
 import starling.daterange._
 import starling.market._
 import starling.marketdata._
 import starling.utils.Pattern
 
-import Level._
-import LIMServer.TopRelation._
-import ObservationTimeOfDay._
-import Pattern._
 import starling.utils.ImplicitConversions._
 import starling.scheduler.ScheduledTime._
 import starling.scheduler.TaskDescription
-import starling.calendar.BusinessCalendars
 import starling.db.{MarketDataStore, MarketDataEntry}
 import starling.gui.api._
 import starling.quantity.{UOMSymbol, Quantity, UOM}
-import starling.databases.{AbstractDataFlowDataProvider, MarketDataChange, PricingGroupMarketDataEventSource, DataFlowDataProvider}
+import starling.databases.{AbstractMarketDataProvider, MarketDataChange, PricingGroupMarketDataEventSource, MarketDataProvider}
+import starling.lim.LIMService
+import Level._
+import LIMService.TopRelation._
+import ObservationTimeOfDay._
+import Pattern._
+import starling.calendar.{BusinessCalendars}
 
 
 object SpotFXLimMarketDataSource {
   val spotFXSources = SpotFXDataType.name → List(BloombergGenericFXRates, CFETSSpotFXFixings)
 }
 
-case class SpotFXLimMarketDataSource(limServer: LIMServer, calendars: BusinessCalendars) extends LimMarketDataSource(limServer) {
+case class SpotFXLimMarketDataSource(service: LIMService, calendars: BusinessCalendars) extends LimMarketDataSource(service) {
   import SpotFXLimMarketDataSource._
 
   override def description = List(spotFXSources).flatMap
@@ -37,7 +37,7 @@ case class SpotFXLimMarketDataSource(limServer: LIMServer, calendars: BusinessCa
   }
 
   override def eventSources(marketDataStore: MarketDataStore) = {
-    val spotfx = SpotFXDataEventSource(PricingGroup.Metals, SpotFXDataProvider(marketDataStore))
+    val spotfx = SpotFXDataEventSource(PricingGroup.Metals, SpotFXMarketDataProvider(marketDataStore))
 
     List(spotfx)
   }
@@ -76,7 +76,7 @@ object CFETSSpotFXFixings extends SpotFXFixings("SFS", SHFEClose, Close, UOM.USD
   override protected def value(price: Double, currency: UOM) = SpotFXData(Quantity(price, currency / UOM.USD))
 }
 
-case class SpotFXDataEventSource(pricingGroup: PricingGroup, provider: DataFlowDataProvider[Day, UOM, Quantity])
+case class SpotFXDataEventSource(pricingGroup: PricingGroup, provider: MarketDataProvider[Day, UOM, Quantity])
   extends PricingGroupMarketDataEventSource {
 
   type Key = Day
@@ -90,8 +90,8 @@ case class SpotFXDataEventSource(pricingGroup: PricingGroup, provider: DataFlowD
   protected def marketDataProvider = Some(provider)
 }
 
-case class SpotFXDataProvider (marketDataStore : MarketDataStore) extends
-  AbstractDataFlowDataProvider[Day, UOM, Quantity](marketDataStore) {
+case class SpotFXMarketDataProvider(marketDataStore : MarketDataStore) extends
+  AbstractMarketDataProvider[Day, UOM, Quantity](marketDataStore) {
 
   private val titanCurrencies = UOMSymbol.edmCurrencies.map(UOM.asUOM(_)).filter(_ != UOM.USD)
 

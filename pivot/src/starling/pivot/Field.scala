@@ -5,7 +5,7 @@ import model.UndefinedValue
 import java.io.Serializable
 import starling.quantity._
 import starling.utils.ImplicitConversions._
-import starling.utils.StarlingEnum
+import starling.utils.{StarlingEnum}
 
 class Field(val name: String) extends Serializable {
   override val hashCode = name.hashCode
@@ -394,6 +394,28 @@ object FieldDetails {
     override def formatter = formatter0
     override def parser = parser0
   }
+  def coded(name:String, codesToNames:Iterable[(String,String)]) = {
+    val formatterParser = new CodedFormatterAndParser(codesToNames.toMap)
+    new FieldDetails(name) {
+      override def parser = formatterParser
+      override def formatter = formatterParser
+    }
+  }
+}
+
+class CodedFormatterAndParser(codesToName:Map[String,String]) extends PivotFormatter with PivotParser {
+  def format(value: Any, formatInfo: ExtraFormatInfo) = {
+    val label = codesToName.getOrElse(value.asInstanceOf[String], throw new Exception("Unknown code: " + value))
+    new TableCell(value, label, longText = Some(label + " [" + value + "]"))
+  }
+  def parse(text:String, extraFormatInfo:ExtraFormatInfo) = {
+    val lowerCaseNameToCode = codesToName.map(cn => cn._2.trim.toLowerCase -> cn._1)
+    lowerCaseNameToCode.get(text.trim.toLowerCase) match {
+      case Some(code) => (code, codesToName(code))
+      case None => throw new Exception("Unknown value: " + text)
+    }
+  }
+  override def acceptableValues = codesToName.values.toSet
 }
 
 case class Average(total:Double,count:Int) {

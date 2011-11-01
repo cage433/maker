@@ -1,23 +1,20 @@
 package starling.db
 
-import org.mockito.Mockito._
 import org.scalatest.matchers.ShouldMatchers
 import starling.daterange._
 import collection.immutable.{Nil, Map}
-import starling.utils.StarlingSpec
 import starling.utils.ImplicitConversions._
-import starling.calendar.Clock
 import starling.marketdata._
 import starling.pivot.PivotQuantity
-import org.scalatest.BeforeAndAfterAll
 import starling.market.{TestMarketSpec, Market}
+import org.jmock.Expectations._
+import starling.utils.{JMocker, StarlingSpec}
 
 
-class MarketDataImporterTests extends StarlingSpec with ShouldMatchers with BeforeAndAfterAll with TestMarketSpec {
+class MarketDataImporterTests extends StarlingSpec with ShouldMatchers with TestMarketSpec with JMocker with TemporalSpec {
+  import context._; import expectations._
+
   import MarketDataSet._
-
-  override def beforeAll() = Clock.freeze
-  override def afterAll() = Clock.thaw
 
   val observationDay: Day = Day.today
   val observationPoint = observationDay.atTimeOfDay(ObservationTimeOfDay.LMEClose)
@@ -89,46 +86,52 @@ class MarketDataImporterTests extends StarlingSpec with ShouldMatchers with Befo
   private def optVersioned(entry: MarketDataEntry) = if (entry == null) None else Some(versioned(entry))
 
   private def importer() = {
-    val (marketDataStore, marketDataSource) = (mock(classOf[MarketDataStore]), new AdaptingMarketDataSource(mock(classOf[MarketDataSource])))
+    val (marketDataStore, marketDataSource) = (mock[MarketDataStore], mock[MarketDataSource])
+
+    expecting {
+      allowing(marketDataSource).name
+      allowing(marketDataSource).asserting(); will(returnValue(marketDataSource))
+    }
 
     new MarketDataImporter(marketDataStore) {
       def updates = super.getUpdates(observationDay, LIM)
 
-      def withNoExistingData() = updateThis {
-        when(marketDataStore.marketData(observationDay, observationDay, marketDataType, marketDataSet)) thenReturn
-          Map.empty[TimedMarketDataKey, VersionedMarketData]
+      def withNoExistingData() = expecting {
+        oneOf(marketDataStore).marketData(observationDay, observationDay, marketDataType, marketDataSet)
+          will(returnValue(Map.empty[TimedMarketDataKey, VersionedMarketData]))
       }
 
-      def withExistingData(entries: MarketDataEntry*) = updateThis {
-        when(marketDataStore.marketData(observationDay, observationDay, marketDataType, marketDataSet))
-          .thenReturn(entries.map(entry => (TimedMarketDataKey(observationPoint, entry.key), versioned(entry))).toMap)
+      def withExistingData(entries: MarketDataEntry*) = expecting {
+        oneOf(marketDataStore).marketData(observationDay, observationDay, marketDataType, marketDataSet)
+          will(returnValue(entries.map(entry => (TimedMarketDataKey(observationPoint, entry.key), versioned(entry))).toMap))
       }
 
-      def withNoSource = updateThis {
-        when(marketDataStore.sourcesFor(marketDataSet)) thenReturn Nil
+      def withNoSource = expecting {
+        oneOf(marketDataStore).sourcesFor(marketDataSet); will(returnValue(Nil))
       }
 
-      def sourceWithNoData() = withSource.updateThis {
-        when(marketDataSource.read(observationDay)) thenReturn noData
+      def sourceWithNoData() = withSource.expecting {
+        oneOf(marketDataSource).read(observationDay); will(returnValue(noData))
       }
 
-      def sourceWithNoDataOnObservationDay() = withSource.updateThis {
-        when(marketDataSource.read(observationDay)) thenReturn noDataOnObservationDay
+      def sourceWithNoDataOnObservationDay() = withSource.expecting {
+        oneOf(marketDataSource).read(observationDay); will(returnValue(noDataOnObservationDay))
       }
 
-      def sourceWithData(entries: MarketDataEntry*) = withSource.updateThis {
-        when(marketDataSource.read(observationDay)) thenReturn Map((observationDay, observationDay, marketDataType) → entries.toList)
+      def sourceWithData(entries: MarketDataEntry*) = withSource.expecting {
+        oneOf(marketDataSource).read(observationDay);
+          will(returnValue(Map((observationDay, observationDay, marketDataType) → entries.toList)))
       }
 
-      private def withSource = updateThis {
-        when(marketDataStore.sourcesFor(marketDataSet)) thenReturn List(marketDataSource)
+      private def withSource = expecting {
+        oneOf(marketDataStore).sourcesFor(marketDataSet); will(returnValue(List(marketDataSource)))
       }
 
       private val noData: MultiMap[(Day, Day, MarketDataTypeName), MarketDataEntry] = Map()
       private val noEntries: List[MarketDataEntry] = Nil
 
       private val noDataOnObservationDay = Map((observationDay, observationDay, marketDataType) → noEntries)
-      private def updateThis(action: Any) = { action; this }
+      private def expecting(action: => Any) = { context.expecting(action); this }
     }
   }
 }

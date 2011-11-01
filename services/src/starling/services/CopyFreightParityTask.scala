@@ -11,16 +11,21 @@ import starling.scheduler.ScheduledTask
 case class CopyManualData(marketDataStore: MarketDataStore) extends ScheduledTask {
   protected def execute(today: Day) = {
     val identifier = marketDataStore.latestMarketDataIdentifier(MarketDataSelection(Some(PricingGroup.Metals)))
+    val today = Day.today
     val entries = List(new FreightParityDataType, new CountryBenchmarkDataType, new GradeAreaBenchmarkDataType).flatMap { marketDataType => {
-      val lastObservationDay = marketDataStore.queryForObservationDayAndMarketDataKeys(identifier, marketDataType.name)
-        .flatMap(_.observationPoint.day).optMax.filter(_ != today)
-
-      lastObservationDay.toList.flatMap { observationDay => {
-        val previousData = marketDataStore.query(identifier, marketDataType.name, Some(Set(Some(observationDay))))
-        val newData = previousData.mapFirst(_.copyDay(today))
-        newData.map { case (timedKey, marketData) => MarketDataEntry(timedKey.observationPoint, timedKey.key, marketData) }
+      marketDataStore.queryForObservationDayAndMarketDataKeys(identifier, marketDataType.name)
+      .flatMap(_.observationPoint.day).optMax.toList.flatMap { lastObservationDay => {
+        if (lastObservationDay < today) {
+          val previousData = marketDataStore.query(identifier, marketDataType.name, Some(Set(Some(lastObservationDay))))
+          (lastObservationDay upto today).toList.tail.filter(_.isWeekday).flatMap { dayToCopyTo => {
+            val newData = previousData.mapFirst(_.copyDay(dayToCopyTo))
+            newData.map { case (timedKey, marketData) => MarketDataEntry(timedKey.observationPoint, timedKey.key, marketData) }
+          } }
+        } else {
+          Nil
+        }
       } }
-    } }
+    }}
     marketDataStore.save(MultiMap(MarketDataSet.ManualMetals → entries))
   }
 }

@@ -169,6 +169,41 @@
         <SOURCES />
       </library>
     </orderEntry>
+    <orderEntry type="module-library" exported="" scope="TEST">
+      <library>
+        <CLASSES>
+          <root url="jar://$MODULE_DIR$/lib_managed/hamcrest-library-1.1.jar!/" />
+        </CLASSES>
+        <JAVADOC />
+        <SOURCES />
+      </library>
+    </orderEntry>
+    <orderEntry type="module-library" exported="" scope="TEST">
+      <library>
+        <CLASSES>
+          <root url="jar://$MODULE_DIR$/lib_managed/hamcrest-core-1.1.jar!/" />
+        </CLASSES>
+        <JAVADOC />
+        <SOURCES />
+      </library>
+    </orderEntry>
+    <orderEntry type="module-library" exported="" scope="TEST">
+      <library>
+        <CLASSES>
+          <root url="jar://$MODULE_DIR$/lib_managed/jmock-2.5.1.jar!/" />
+        </CLASSES>
+        <JAVADOC />
+        <SOURCES>
+          <root url="jar://$MODULE_DIR$/lib_managed/jmock-2.5.1.jar!/" />
+          <root url="jar://$MODULE_DIR$/lib_managed/jmock-2.5.1.jar!/" />
+          <root url="jar://$MODULE_DIR$/lib_managed/jmock-2.5.1.jar!/" />
+          <root url="jar://$MODULE_DIR$/lib_managed/jmock-2.5.1.jar!/" />
+          <root url="jar://$MODULE_DIR$/lib_managed/jmock-2.5.1.jar!/" />
+          <root url="jar://$MODULE_DIR$/lib_managed/jmock-2.5.1.jar!/" />
+          <root url="jar://$MODULE_DIR$/lib_managed/jmock-2.5.1.jar!/" />
+        </SOURCES>
+      </library>
+    </orderEntry>
   </component>
 </module>
 

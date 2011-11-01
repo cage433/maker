@@ -25,19 +25,20 @@ object AxisNode {
       }
     }
 
-    value.value match {
-      case t@TotalAxisValueType => (t.value.toString, LeftTextPosition)
-      case n@NullAxisValueType => (n.value, LeftTextPosition)
-      case m:MeasureAxisValueType => (m.value, LeftTextPosition)
+    val (text, longText, alignment) = value.value match {
+      case t@TotalAxisValueType => (t.value.toString, None, LeftTextPosition)
+      case n@NullAxisValueType => (n.value, None, LeftTextPosition)
+      case m:MeasureAxisValueType => (m.value, None, LeftTextPosition)
       case v:ValueAxisValueType => {
         val tc = tableCell(v)
-        (tc.text, (if (tc.textPosition == CenterTextPosition) LeftTextPosition else tc.textPosition))
+        (tc.text, tc.longText, (if (tc.textPosition == CenterTextPosition) LeftTextPosition else tc.textPosition))
       }
       case t:CellTypeSpecifiedAxisValueType => {
         val tc = tableCell(t)
-        (tc.text, (if (tc.textPosition == CenterTextPosition) LeftTextPosition else tc.textPosition))
+        (tc.text, tc.longText, (if (tc.textPosition == CenterTextPosition) LeftTextPosition else tc.textPosition))
       }
     }
+    (text, longText.getOrElse(text), alignment)
   }
 }
 
@@ -221,8 +222,8 @@ case class AxisNode(axisValue:AxisValue, children:List[AxisNode]=Nil) {
     val changed = refresh && (Some(axisValue) != previous.map(_.axisValue))
     val childCellsWithoutTotals:List[List[AxisCell]] = childCells match {
       case Nil => {
-        val (text, alignment) = AxisNode.textAndAlignment(axisValue, formatInfo, extraFormatInfo)
-        val ac = AxisCell(axisValue, Some(1), text, None, false, NotTotal, 0, alignment)
+        val (text, longText, alignment) = AxisNode.textAndAlignment(axisValue, formatInfo, extraFormatInfo)
+        val ac = AxisCell(axisValue, Some(1), text, longText, None, false, NotTotal, 0, alignment)
         ac.changed = changed
         List(List(ac))
       }
@@ -236,11 +237,11 @@ case class AxisNode(axisValue:AxisValue, children:List[AxisNode]=Nil) {
           }
           case _ => head
         }
-        val (text, alignment) = AxisNode.textAndAlignment(axisValue, formatInfo, extraFormatInfo)
-        val ac = AxisCell(axisValue, Some(totalSpan), text, collapsible, false, NotTotal, 0, alignment)
+        val (text, longText, alignment) = AxisNode.textAndAlignment(axisValue, formatInfo, extraFormatInfo)
+        val ac = AxisCell(axisValue, Some(totalSpan), text, longText, collapsible, false, NotTotal, 0, alignment)
         ac.changed = changed
         List(ac :: fixedHead) ::: tail.zipWithIndex.map{ case(c,index) => {
-          val ac0 = AxisCell(axisValue, None, text, None, true, NotTotal, index + 1, alignment)
+          val ac0 = AxisCell(axisValue, None, text, longText, None, true, NotTotal, index + 1, alignment)
           ac0.changed = changed
           ac0 :: c
         }}

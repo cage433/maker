@@ -306,6 +306,17 @@ class PivotTablePageComponent(
       }}
     }
 
+    val resetLayoutButton = pivotTablePageData.pivotData.resetLayout.map { resetPfs => {
+      new ToolBarButton {
+        icon = StarlingIcons.icon("/icons/left_arrow_scroll.png")
+        tooltip = "Use the default layout"
+        enabled = currentFieldState != resetPfs
+        reactions += {
+          case ButtonClicked(b) => pageContext.goTo(selfPage(PivotPageState.default(resetPfs), edits))
+        }
+      }
+    } }
+
     val clearPivotButton = new ToolBarButton {
       icon = StarlingIcons.icon("/icons/16x16_clear_pivot.png")
       tooltip = "Remove all fields from the pivot table"
@@ -325,6 +336,7 @@ class PivotTablePageComponent(
     add(removeZerosButton)
     addSeparator()
     add(clearPivotButton)
+    resetLayoutButton.foreach(add(_))
     add(rotateButton)
     addSeparator()
     add(bottomTotalsButton)

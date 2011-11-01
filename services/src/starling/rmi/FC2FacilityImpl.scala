@@ -85,7 +85,11 @@ class FC2Service(marketDataStore: MarketDataStore, marketDataTypes: MarketDataTy
         }
       }
     }
-    validate(reader)
+    if (marketDataIdentifier.selection.pricingGroup == Some(PricingGroup.Metals)) {
+      validate(reader)
+    } else {
+      reader
+    }
   }
 
   private def realTypeFor(label:MarketDataTypeLabel) = {

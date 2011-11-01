@@ -163,6 +163,7 @@ class TradeFacilityImpl(
       pivot.drillDownGroups,
       pivotTable,
       pivot.availablePages,
+      Some(initialPivotState),
       reportSpecificOptions)
     tradeSelection.deskAndTimestamp match {
       case Some((d,t)) if t.error != None => {

@@ -8,7 +8,7 @@ import scalaz._
 import Scalaz._
 import starling.daterange.{Timestamp, Day}
 import starling.gui.api._
-import starling.databases.{PricingGroupMarketDataEventSource, MarketDataChange, DataFlowDataProvider}
+import starling.databases.{PricingGroupMarketDataEventSource, MarketDataChange, MarketDataProvider}
 
 class PricingGroupMarketDataEventSourceTests extends WordSpec with ShouldMatchers { test =>
   "PriceFixingDataFlow" should {
@@ -49,7 +49,7 @@ class PricingGroupMarketDataEventSourceTests extends WordSpec with ShouldMatcher
     extends MarketDataEvent(observationDay, label, isCorrection)
 
   def pricingGroupMarketDataEventSource() = {
-    val dataFlowDataProvider = mock(classOf[DataFlowDataProvider[Day, String, Double]])
+    val dataFlowDataProvider = mock(classOf[MarketDataProvider[Day, String, Double]])
     val observationDays = List(observationDay)
 
     new PricingGroupMarketDataEventSource {

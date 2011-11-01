@@ -5,19 +5,20 @@ import collection.immutable.List
 import starling.daterange._
 import starling.marketdata._
 import starling.utils.ImplicitConversions._
-import starling.{LimNode, LIMConnection, LIMServer}
 import starling.utils.Pattern.Extractor
-import starling.calendar.BusinessCalendars
-import starling.scheduler.{ScheduledTime, TaskDescription}
 import starling.db.{MarketDataStore, MarketDataEntry}
-import starling.market.{CommodityMarket, Market, FuturesExchangeFactory, Level}
 import starling.pivot.PivotQuantity
-import Level._
-import starling.gui.api.{PriceDataEvent, SnapshotIDLabel, PricingGroup}
 import starling.databases._
+import starling.market._
+import starling.utils.Broadcaster
+import starling.gui.api._
+import scalaz.Scalaz._
+import starling.scheduler.{ScheduledTask, ScheduledTime, TaskDescription}
+import starling.lim.{LIMService, LimNode, LIMConnection}
+import starling.calendar.{BusinessCalendars}
 
 object PriceLimMarketDataSource extends scalaz.Options {
-  import LIMServer.TopRelation._
+  import LIMService.TopRelation._
   import ObservationTimeOfDay._
 
   val priceSources = PriceDataType.name → List(
@@ -50,9 +51,12 @@ object PriceLimMarketDataSource extends scalaz.Options {
   }
 }
 
-case class PriceLimMarketDataSource(limServer: LIMServer, calendars: BusinessCalendars) extends LimMarketDataSource(limServer) {
+case class PriceLimMarketDataSource(service: LIMService, calendars: BusinessCalendars, broadcaster: Broadcaster,
+  sender: String, recipient: String) extends LimMarketDataSource(service) {
+
   import PriceLimMarketDataSource._
   import ScheduledTime._
+  import FuturesExchangeFactory._
 
   override def description = List(priceSources).flatMap
     { case (marketDataType, sources) => marketDataType.name.pair(sources.flatMap(_.description)).map("%s → %s" % _) }
@@ -61,28 +65,31 @@ case class PriceLimMarketDataSource(limServer: LIMServer, calendars: BusinessCal
     Map(getValuesForType(PriceDataType.name, day.startOfFinancialYear, day, priceSources))
   }
 
-  override def eventSources(marketDataStore: MarketDataStore) = List(
-    priceDataSource(marketDataStore, List(Market.LME_ALUMINIUM)),
-    priceDataSource(marketDataStore, List(Market.COMEX_GOLD)),
-    priceDataSource(marketDataStore, List(Market.SHANGHAI_ZINC))
+  override def eventSources(marketDataStore: MarketDataStore) = marketsForExchanges.map(markets =>
+    PriceDataEventSource(PricingGroup.Metals, PriceMarketDataProvider(marketDataStore, markets)))
+
+  override def availabilityTasks(marketDataStore: MarketDataStore) = List(
+    task("LME Metals", daily(calendars.LME, 20 H 00), lme, marketDataStore),
+    task("COMEX Metals", daily(calendars.COMEX, 15 H 30), comex, marketDataStore),
+    task("SHFE Metals", daily(calendars.SFS, 15 H 00), shfe, marketDataStore)
   )
 
 //  val exbxgMetals = new DataFlow(FuturesExchangeFactory.EXBXG, PricingGroup.Metals, Nil, metalsEmail, wuXiEmail, "Excel",
 //    "WuXi Metals") with NullMarketDataEventSource
-
-  override def availabilityTasks(marketDataStore: MarketDataStore) = List(
-    TaskDescription("Verify Lme Metals Prices Available", daily(calendars.LME, 20 H 00), notImplemented),
-    TaskDescription("Verify Comex Metals Prices Available", daily(calendars.COMEX, 15 H 30), notImplemented),
-    TaskDescription("Verify Shfe Metals Prices Available", daily(calendars.SFS, 15 H 00), notImplemented)
-  )
 //      tasks(daily(SFE, 16 H 30), availabilityBroadcaster.verifyPricesAvailable(exbxgMetals), verifyPricesValid(exbxgMetals))
 
+  private val marketsForExchanges@List(lme, comex, shfe) =
+    List(LME, COMEX, SFS).map(exchange => Market.marketsWithExchange(exchange).filter(_.limSymbol.isDefined))
 
-  private def priceDataSource(marketDataStore: MarketDataStore, markets: List[CommodityMarket]) =
-    PriceDataEventSource(PricingGroup.Metals, PriceDataFlowDataProvider(marketDataStore, markets))
+  private def task(name: String, time: ScheduledTime, markets: List[CommodityMarket], marketDataStore: MarketDataStore): TaskDescription =
+    TaskDescription("Verify %s Prices Available" % name, time, task(name, marketDataStore, markets))
+
+  private def task(name: String, marketDataStore: MarketDataStore, markets: List[CommodityMarket]): ScheduledTask =
+    new VerifyAnyMarketDataAvailable(name, marketDataStore, MarketDataSelection(Some(PricingGroup.Metals)), PriceDataType.name,
+      markets.map(PriceDataKey(_)).toSet, broadcaster, sender, recipient)
 }
 
-class PriceLimSource(relation: LIMRelation) extends LimSource(List(Close)) {
+class PriceLimSource(relation: LIMRelation) extends LimSource(List(Level.Close)) {
   val nodes = List(relation.node)
   type Relation = LimPrice
   def description = nodes.map(_.name + " " + levelDescription)
@@ -97,7 +104,7 @@ class PriceLimSource(relation: LIMRelation) extends LimSource(List(Close)) {
             case Some(ls) => ls.multiplier
             case None => 1.0
           }
-          price.relation.period → (price.priceFor(Close) * limMultiplier)
+          price.relation.period → (price.priceFor(Level.Close) * limMultiplier)
         }), market.priceUOM))
     }
 
@@ -105,7 +112,7 @@ class PriceLimSource(relation: LIMRelation) extends LimSource(List(Close)) {
     prices.relation.market → prices.atTimeOfDay(prices.relation.observationTimeOfDay)
 }
 
-case class PriceDataEventSource(pricingGroup: PricingGroup, provider: DataFlowDataProvider[CommodityMarket, DateRange, PivotQuantity])
+case class PriceDataEventSource(pricingGroup: PricingGroup, provider: MarketDataProvider[CommodityMarket, DateRange, PivotQuantity])
   extends PricingGroupMarketDataEventSource {
 
   type Key = CommodityMarket
@@ -119,8 +126,8 @@ case class PriceDataEventSource(pricingGroup: PricingGroup, provider: DataFlowDa
   protected def marketDataProvider = Some(provider)
 }
 
-case class PriceDataFlowDataProvider(marketDataStore: MarketDataStore, markets: List[CommodityMarket])
-  extends AbstractDataFlowDataProvider[CommodityMarket, DateRange, PivotQuantity](marketDataStore) {
+case class PriceMarketDataProvider(marketDataStore: MarketDataStore, markets: List[CommodityMarket])
+  extends AbstractMarketDataProvider[CommodityMarket, DateRange, PivotQuantity](marketDataStore) {
 
   val marketDataType = PriceDataType.name
   val marketDataKeys = markets.ifDefined(_.map(PriceDataKey(_).asInstanceOf[MarketDataKey]).toSet)

@@ -3,8 +3,8 @@ package starling.services.jmx
 import management.ManagementFactory
 import javax.management.ObjectName
 import starling.daterange.Day
-import starling.utils.Stopable
 import starling.scheduler.{ScheduledTask, Scheduler}
+import starling.utils.{Enableable, Stopable}
 
 class StarlingJMX(scheduler: Scheduler) extends Stopable {
   val mbs = ManagementFactory.getPlatformMBeanServer
@@ -16,17 +16,17 @@ class StarlingJMX(scheduler: Scheduler) extends Stopable {
   }
 
   trait TaskMBean {
-    def activate
-    def deactivate
-    def isActive: Boolean
+    def enable
+    def disable
+    def isEnabled: Boolean
     def runNow
     def runNow(observationDay: String)
   }
 
-  class Task(task: ScheduledTask) extends TaskMBean {
-    def activate   { task.start }
-    def deactivate { task.stop  }
-    def isActive   = task.isRunning
+  class Task(task: ScheduledTask) extends TaskMBean with Enableable {
+    override def enable  = task.enable
+    override def disable = task.disable
+    override def isEnabled  = task.isEnabled
     def runNow = task.perform(Day.today)
     def runNow(observationDay: String) = task.perform(Day.parse(observationDay))
   }
