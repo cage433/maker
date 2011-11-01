@@ -70,6 +70,7 @@ trait PhysicalMetalAssignmentOrUnassignedSalesQuota extends UTP with Tradeable {
   def benchmarkIncoTermCode : Option[IncotermCode]
   def grade : GradeCode
   def isPurchase : Boolean
+  def valuationCurrency : UOM = contractPricingSpec.valuationCCY
 
 
   import PhysicalMetalAssignmentOrUnassignedSalesQuota._
@@ -159,13 +160,15 @@ trait PhysicalMetalAssignmentOrUnassignedSalesQuota extends UTP with Tradeable {
     val futuresMarket = env.atomicEnv.referenceDataLookup.marketFor(commodity, countryCode)
     val index = futuresMarket.physicalMetalBenchmarkIndex
     val day = TitanPricingSpec.representativeDay(index, month, env.marketDay)
-    val areaBenchmark = env.areaBenchmark(countryCode, commodity, grade, day).named("Area Benchmark")
-    val countryBenchmark = env.countryBenchmark(commodity, countryCode, day).named("Country Benchmark")
+      //val areaBenchmark = env.areaBenchmark(countryCode, commodity, grade, day).named("Area Benchmark")
+    //val countryBenchmark = env.countryBenchmark(commodity, countryCode, day).named("Country Benchmark")
 
     AveragePricingSpec(
       index,
       day,
-      areaBenchmark + countryBenchmark
+      Quantity.NULL,
+      //areaBenchmark + countryBenchmark,
+      valuationCCY
     )
   }
 
@@ -268,7 +271,7 @@ object UnallocatedSalesQuota extends InstrumentType[UnallocatedSalesQuota] with 
   }
 
   def sample = UnallocatedSalesQuota(Quantity(100, MT), Copper, Day(2012, 10, 12),
-    AveragePricingSpec(LmeSingleIndices.alCashBid, Month(2011, 10), Quantity(0.5, USD / MT)),
+    AveragePricingSpec(LmeSingleIndices.alCashBid, Month(2011, 10), Quantity(0.5, USD / MT), USD),
     ContractualLocationCode("France"), IncotermCode("CIF"),
     Some(Day(2012, 11, 1)), Some(NeptuneCountryCode("Italy")), Some(IncotermCode("CFR")),
     grade = GradeCode("grade")
@@ -413,7 +416,7 @@ object PhysicalMetalAssignment extends InstrumentType[PhysicalMetalAssignment] w
     import UOM._
     def sample = PhysicalMetalAssignment(
       "12345", Quantity(100, UOM.MT), Aluminium,
-      Day(2011, 10, 10), AveragePricingSpec(LmeSingleIndices.alCashBid, Month(2011, 10), Quantity(0.5, USD/MT)),
+      Day(2011, 10, 10), AveragePricingSpec(LmeSingleIndices.alCashBid, Month(2011, 10), Quantity(0.5, USD/MT), USD),
       ContractualLocationCode("France"), IncotermCode("CIF"),
       Some(Day(2011, 11, 1)), Some(NeptuneCountryCode("Italy")), Some(IncotermCode("CIF")),
       isPurchase = false, inventoryID = "abcde", inventoryQuantity = Quantity(99, UOM.MT),

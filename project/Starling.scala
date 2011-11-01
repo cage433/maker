@@ -413,7 +413,7 @@ object StarlingBuild extends Build{
     "metals",
     file("./metals"),
     settings = standardSettingsNexus
-  ) dependsOn(services, tradeImpl)
+  ) dependsOn(services % "compile;test->test", tradeImpl)
 
   lazy val reportsImpl = Project(
     "reports-impl",
@@ -506,7 +506,7 @@ object StarlingBuild extends Build{
     tradeImpl
   )
 
-  val childProjects : List[ProjectReference] =  otherProjectRefereneces ::: titanModelReference
+  def childProjects : List[ProjectReference] =  otherProjectRefereneces ::: titanModelReference
 
   val docProjects : List[ProjectReference] =  List(
     utils, 
@@ -691,6 +691,7 @@ object StarlingBuild extends Build{
     val writeClasspathScriptTask = writeClasspathScript <<= (target, fullClasspath in Test) map { (target, cp) =>
       import java.io._
       val file = new PrintWriter(new FileOutputStream(new File("set-classpath.sh")))
+      cp.map(_.data).getFiles.toList.foreach(println)
       val resourceDirs = cp.map(_.data).getFiles.toList.map(_.getPath).filter(_.endsWith("/classes")).map{s => s.replace("/classes", "/resources")}
       file.println("export CLASSPATH=" + (cp.map(_.data).getFiles.toList ::: resourceDirs).mkString(":"))
       file.println("export JAVA_OPTS='-server -XX:MaxPermSize=1024m -Xss512k -Xmx6000m'")

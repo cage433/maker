@@ -1,4 +1,4 @@
-package starling.manual
+package starling.metals.datasources
 
 import starling.props.PropsHelper
 import starling.daterange.Day._
@@ -7,7 +7,7 @@ import starling.auth.AuthHandler
 import starling.utils.ThreadUtils
 import starling.utils.Broadcaster
 import starling.utils.ImplicitConversions._
-import starling.curves.readers.lim.PriceFixingLimMarketDataSource
+
 import starling.lim.LIMService
 import starling.services.{EmailService, StarlingInit}
 import starling.gui.api.Email

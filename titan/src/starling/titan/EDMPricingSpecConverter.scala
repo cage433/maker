@@ -69,7 +69,8 @@ case class EDMPricingSpecConverter(metal : Metal, exchanges : String => Market) 
           AveragePricingSpec(
             getIndex(spec.market, spec.index),
             Day.fromJodaDate(spec.qpMonth).containingMonth,
-            spec.premium
+            spec.premium,
+            spec.currency
           )
         }
         case spec : PartialAveragePricingSpecification => {
@@ -77,7 +78,8 @@ case class EDMPricingSpecConverter(metal : Metal, exchanges : String => Market) 
           AveragePricingSpec(
             getIndex(spec.market, spec.index),
             DateRange(days.head, days.last),
-            spec.premium
+            spec.premium,
+            spec.currency
           )
         }
         case spec : OptionalPricingSpecification => {
@@ -87,7 +89,8 @@ case class EDMPricingSpecConverter(metal : Metal, exchanges : String => Market) 
             if (spec.chosenSpec == null)
               None
             else
-              Some(fromEdmPricingSpec(deliveryDay, deliveryQuantity, spec.chosenSpec))
+              Some(fromEdmPricingSpec(deliveryDay, deliveryQuantity, spec.chosenSpec)),
+            spec.currency
           )
         }
         case spec : WeightedPricingSpecification => {
@@ -95,7 +98,8 @@ case class EDMPricingSpecConverter(metal : Metal, exchanges : String => Market) 
             spec.wtdSpecs.map{
               case weightedSpec =>
                  (weightedSpec.weight, fromEdmPricingSpec(deliveryDay, deliveryQuantity * weightedSpec.weight, weightedSpec.pricingSpec))
-            }
+            },
+            spec.currency
           )
         }
         case spec : UNKPricingSpecification => {
@@ -111,7 +115,8 @@ case class EDMPricingSpecConverter(metal : Metal, exchanges : String => Market) 
                  UnknownPricingFixation(fraction, fromTitanQuantity(fixation.observedPrice))
              },
              declarationBy,
-             spec.premium
+             spec.premium,
+             spec.currency
           )
         }
         case spec : FixedPricingSpecification => {
@@ -126,7 +131,8 @@ case class EDMPricingSpecConverter(metal : Metal, exchanges : String => Market) 
                 (fraction, fromTitanQuantity(comp.price))
               }
             },
-            spec.premium
+            spec.premium,
+            spec.currency
           )
         }
         case _ => throw new Exception("Unsupported pricing spec type " + edmPricingSpec)

@@ -4,6 +4,7 @@ import starling.curves.Environment
 import starling.market.{FuturesMarket, CommodityMarket, FuturesExchangeFactory, IndexWithDailyPrices}
 import starling.daterange._
 import starling.quantity.{Ratio, UOM, Quantity}
+import starling.quantity.UOM._
 
 trait TitanPricingSpec {
 
@@ -19,26 +20,22 @@ trait TitanPricingSpec {
 
   def valuationCCY: UOM
 
-  def addPremiumConvertingIfNecessary(env: Environment, price: Quantity, premium: Quantity): Quantity = {
+  def inValuationCurrency(env : Environment, p : Quantity) = {
     val namedEnv = env.withNaming()
-    if (premium == Quantity.NULL) // no premium case
-      price
-    else {
-      // convert all to base currencies and convert to the valuationCCY as the target
-      val priceUOMInBaseUOM = price.numeratorUOM.inBaseCurrency
-      val priceInBase = price inUOM (priceUOMInBaseUOM / price.denominatorUOM)
-      val premiumUOMInBaseUOM = premium.numeratorUOM.inBaseCurrency
-      val premiumInBase = premium.named("Premium") inUOM (premiumUOMInBaseUOM / price.denominatorUOM)
+    val baseCurrency = p.numeratorUOM.inBaseCurrency
+    val priceInBaseCurrency = p inUOM (baseCurrency / p.denominatorUOM)
+    val fxRate = namedEnv.forwardFXRate(valuationCCY, priceInBaseCurrency.numeratorUOM, settlementDay(namedEnv.marketDay)) 
 
-      val priceInValuationCcy = priceInBase * namedEnv.forwardFXRate(valuationCCY, priceUOMInBaseUOM, settlementDay(namedEnv.marketDay))
-      val premiumInValuationCcy = premiumInBase * namedEnv.forwardFXRate(valuationCCY, premiumUOMInBaseUOM, settlementDay(namedEnv.marketDay))
-
-      priceInValuationCcy + premiumInValuationCcy
-    }
+    priceInBaseCurrency * fxRate
   }
+  def addPremiumConvertingIfNecessary(env: Environment, price: Quantity, premium: Quantity): Quantity = {
+    val priceInValuationCurrency = inValuationCurrency(env, price)
 
-  // This will go once EDM trades have both pricing specs
-  def dummyTransferPricingSpec: TitanPricingSpec
+    if (premium == Quantity.NULL) // no premium case
+      priceInValuationCurrency 
+    else 
+      priceInValuationCurrency + inValuationCurrency(env, premium.named("Premium"))
+  }
 
   def fixedQuantity(marketDay: DayAndTime, totalQuantity: Quantity): Quantity
 
@@ -87,14 +84,12 @@ object TitanPricingSpec {
 }
 
 case class AveragePricingSpec(index: IndexWithDailyPrices, period: DateRange,
-                              premium: Quantity) extends TitanPricingSpec {
+                              premium: Quantity, valuationCCY : UOM) extends TitanPricingSpec {
   val observationDays = index.observationDays(period)
   // Just a guess
   def settlementDay(marketDay: DayAndTime) = TitanPricingSpec.calcSettlementDay(index, period.lastDay)
 
   def price(env: Environment) = addPremiumConvertingIfNecessary(env, env.averagePrice(index, period), premium)
-
-  def dummyTransferPricingSpec = copy(premium = premium.copy(value = 0))
 
   def fixedQuantity(marketDay: DayAndTime,
                     totalQuantity: Quantity): Quantity = totalQuantity * observedDays(marketDay).size / observationDays.size
@@ -111,13 +106,12 @@ case class AveragePricingSpec(index: IndexWithDailyPrices, period: DateRange,
 
   def daysForPositionReport(marketDay: DayAndTime) = observationDays.filter(_.endOfDay > marketDay)
 
-  def valuationCCY = premiumCCY.getOrElse(index.currency)
 
   def expiryDay = TitanPricingSpec.calcSettlementDay(index, period.lastDay)
 }
 
 case class OptionalPricingSpec(choices: List[TitanPricingSpec], declarationDay: Day,
-                               chosenSpec: Option[TitanPricingSpec]) extends TitanPricingSpec {
+                               chosenSpec: Option[TitanPricingSpec], valuationCCY : UOM) extends TitanPricingSpec {
 
   private val specToUse = chosenSpec.getOrElse(choices.head)
 
@@ -127,8 +121,6 @@ case class OptionalPricingSpec(choices: List[TitanPricingSpec], declarationDay: 
     assert(chosenSpec.isDefined || env.marketDay < declarationDay.endOfDay, "Optional pricing spec must be fixed by " + declarationDay)
     specToUse.price(env)
   }
-
-  def dummyTransferPricingSpec = OptionalPricingSpec(choices.map(_.dummyTransferPricingSpec), declarationDay, chosenSpec.map(_.dummyTransferPricingSpec))
 
   def fixedQuantity(marketDay: DayAndTime, totalQuantity: Quantity) = specToUse.fixedQuantity(marketDay, totalQuantity)
 
@@ -143,8 +135,6 @@ case class OptionalPricingSpec(choices: List[TitanPricingSpec], declarationDay: 
 
   def daysForPositionReport(marketDay: DayAndTime) = specToUse.daysForPositionReport(marketDay)
 
-  def valuationCCY = specToUse.valuationCCY
-
   def quotationPeriod = specToUse.quotationPeriod
 
   def indexOption = specToUse.indexOption
@@ -152,15 +142,11 @@ case class OptionalPricingSpec(choices: List[TitanPricingSpec], declarationDay: 
   def expiryDay = specToUse.expiryDay
 }
 
-case class WeightedPricingSpec(specs: List[(Double, TitanPricingSpec)]) extends TitanPricingSpec {
+case class WeightedPricingSpec(specs: List[(Double, TitanPricingSpec)], valuationCCY : UOM) extends TitanPricingSpec {
   def settlementDay(marketDay: DayAndTime) = specs.flatMap(_._2.settlementDay(marketDay)).sortWith(_ > _).head
 
   def price(env: Environment) = Quantity.sum(specs.map {
     case (weight, spec) => spec.price(env) * weight
-  })
-
-  def dummyTransferPricingSpec = WeightedPricingSpec(specs.map {
-    case (wt, spec) => (wt, spec.dummyTransferPricingSpec)
   })
 
   def fixedQuantity(marketDay: DayAndTime, totalQuantity: Quantity) = specs.map {
@@ -189,12 +175,6 @@ case class WeightedPricingSpec(specs: List[(Double, TitanPricingSpec)]) extends 
     case (amt, spec) => spec.daysForPositionReport(marketDay)
   }.distinct
 
-  def valuationCCY = {
-    val ccys = specs.map(_._2.valuationCCY).distinct
-    assert(ccys.size == 1, "No unique valuation currency")
-    ccys.head
-  }
-
   def quotationPeriod = (quotationPeriodStart, quotationPeriodEnd) match {
     case (Some(d1), Some(d2)) => Some(DateRange(d1, d2))
     case _ => None
@@ -208,7 +188,7 @@ case class WeightedPricingSpec(specs: List[(Double, TitanPricingSpec)]) extends 
 case class InvalidTitanPricingSpecException(msg: String) extends Exception(msg)
 
 case class FixedPricingSpec(settDay: Day, pricesByFraction: List[(Double, Quantity)],
-                            premium: Quantity) extends TitanPricingSpec {
+                            premium: Quantity, valuationCCY : UOM) extends TitanPricingSpec {
 
   def settlementDay(marketDay: DayAndTime) = settDay
 
@@ -224,8 +204,6 @@ case class FixedPricingSpec(settDay: Day, pricesByFraction: List[(Double, Quanti
     }
   }
 
-  def dummyTransferPricingSpec = copy()
-
   def fixedQuantity(marketDay: DayAndTime, totalQuantity: Quantity) = totalQuantity
 
   def isComplete(marketDay: DayAndTime) = true
@@ -239,12 +217,6 @@ case class FixedPricingSpec(settDay: Day, pricesByFraction: List[(Double, Quanti
   def indexName: String = "No Index"
 
   def daysForPositionReport(marketDay: DayAndTime) = List(marketDay.day)
-
-  def valuationCCY = {
-    val ccys = pricesByFraction.map(_._2.numeratorUOM).distinct
-    assert(ccys.size == 1, "No unique valuation currency")
-    ccys.head
-  }
 
   def quotationPeriod = None
 
@@ -262,7 +234,8 @@ case class UnknownPricingSpecification(
                                         month: Month,
                                         fixations: List[UnknownPricingFixation],
                                         declarationDay: Day,
-                                        premium: Quantity
+                                        premium: Quantity,
+                                        valuationCCY : UOM
                                         )
   extends TitanPricingSpec {
 
@@ -281,8 +254,6 @@ case class UnknownPricingSpecification(
     addPremiumConvertingIfNecessary(env, fixedPayment + unfixedPayment, premium)
   }
 
-  def dummyTransferPricingSpec = copy(premium = premium.copy(value = 0))
-
   def fixedQuantity(marketDay: DayAndTime, totalQuantity: Quantity) = totalQuantity * fixations.map(_.fraction).sum
 
   def isComplete(marketDay: DayAndTime) = declarationDay.endOfDay >= marketDay
@@ -296,8 +267,6 @@ case class UnknownPricingSpecification(
   def indexName: String = index.name
 
   def daysForPositionReport(marketDay: DayAndTime) = index.observationDays(month).filter(_.endOfDay > marketDay)
-
-  def valuationCCY = premiumCCY.getOrElse(index.currency)
 
   def quotationPeriod = Some(month)
 

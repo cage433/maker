@@ -13,9 +13,8 @@ import starling.gui.api.{PricingGroup, EnvironmentRuleLabel}
 import starling.marketdata.ReferenceDataLookup
 import javax.servlet.http.HttpServlet
 import starling.rmi._
-import starling.curves.readers.lim.BloombergImports
 import starling.services.{EmailService, ReferenceData, StarlingInit}
-import starling.db.{MarketDataSet, MarketDataSource, MarketDataStore}
+import starling.db.{MarketDataSource, MarketDataStore}
 
 class ServicesBromptonActivator extends BromptonActivator {
   def start(context: BromptonContext) {
@@ -75,7 +74,6 @@ class ServicesBromptonActivator extends BromptonActivator {
 
     context.registerService(classOf[ReferenceDataLookup], starlingInit.referenceDataLookup)
     context.registerService(classOf[EmailService], starlingInit.emailService, ServiceProperties(ExportGuiRMIProperty))
-    context.registerService(classOf[BloombergImports], starlingInit.bloombergImports)
 
     context.createServiceTracker(Some(classOf[ReferenceData]), ServiceProperties(), new BromptonServiceCallback[ReferenceData] {
       def serviceAdded(ref: BromptonServiceReference, properties:ServiceProperties, referenceData: ReferenceData) = {

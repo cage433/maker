@@ -180,6 +180,9 @@ object EDMConversions {
   }
 
   val starlingCurrencyToEdmCurrency = edmCurrencies.toMapWithValues(_.name.toString) + (UOMSymbol.cny → "RMB")
+  val edmCurrencyToStarlingCurrency : Map[String, UOMSymbol] = starlingCurrencyToEdmCurrency.map(_.swap)
+
+  implicit def toStarlingCurrency(edmCurrency : TitanCurrency) : UOM = UOM(edmCurrencyToStarlingCurrency(edmCurrency.name))
 
   val starlingUomSymbolToEdmUom = starlingCurrencyToEdmCurrency ++ Map(
     TONNE_SYMBOL -> "MTS",

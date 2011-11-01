@@ -1,4 +1,4 @@
-package starling.curves.readers.lim
+package starling.metals.datasources
 
 import collection.immutable.List
 
@@ -12,12 +12,10 @@ import starling.gui.api._
 import starling.quantity.{UOMSymbol, Quantity, UOM}
 import starling.databases.{AbstractMarketDataProvider, MarketDataChange, PricingGroupMarketDataEventSource, MarketDataProvider}
 import starling.lim.LIMService
-import starling.calendar.{BusinessCalendars}
-import starling.utils.{Broadcaster, Pattern}
+import starling.utils.Pattern._
 import Level._
 import LIMService.TopRelation._
 import ObservationTimeOfDay._
-import Pattern._
 import starling.scheduler.{ScheduledTime, ScheduledTask, TaskDescription}
 import starling.services.EmailService
 import starling.market.FuturesExchangeFactory._
