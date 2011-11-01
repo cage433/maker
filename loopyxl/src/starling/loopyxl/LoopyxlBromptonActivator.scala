@@ -7,8 +7,6 @@ import starling.props.Props
 
 class LoopyxlBromptonActivator extends BromptonActivator {
 
-  var receiver : LoopyXLReceiver = _
-
   def start(context: BromptonContext) = {
     val props = context.awaitService(classOf[Props])
     val auth = context.awaitService(classOf[AuthHandler])
@@ -40,11 +38,10 @@ class LoopyxlBromptonActivator extends BromptonActivator {
         method
       }
     }
-    receiver = new LoopyXLReceiver(props.LoopyXLPort(), auth, osgiMethodSource)
-    receiver.start
-  }
 
-  override def stop(context: BromptonContext) = {
-    if (receiver != null) receiver.stop
+    val receiver = new LoopyXLReceiver(props.LoopyXLPort(), auth, osgiMethodSource)
+    receiver.start
+
+    context.onStopped { receiver.stop }
   }
 }

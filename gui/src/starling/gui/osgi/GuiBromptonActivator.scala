@@ -25,13 +25,11 @@ import starling.services.EmailService
 case class GuiLaunchParameters(serverRmiHost:String, serverRmiPort:Int, principalName:String, runAs:Option[String])
 
 class GuiBromptonActivator extends BromptonActivator {
-  var client:BouncyRMIClient = _
-
   def start(context: BromptonContext) {
     val guiLaunchParameters = context.awaitService(classOf[GuiLaunchParameters])
     System.setProperty(BouncyRMI.CodeVersionKey, BouncyRMI.CodeVersionUndefined)
     val overriddenUser = guiLaunchParameters.runAs
-    client = new BouncyRMIClient(guiLaunchParameters.serverRmiHost, guiLaunchParameters.serverRmiPort, GuiStart.auth(guiLaunchParameters.principalName), overriddenUser = overriddenUser)
+    val client = new BouncyRMIClient(guiLaunchParameters.serverRmiHost, guiLaunchParameters.serverRmiPort, GuiStart.auth(guiLaunchParameters.principalName), overriddenUser = overriddenUser)
     client.startBlocking
     val starlingServer = client.proxy(classOf[StarlingServer])
     val tradeService = client.proxy(classOf[TradeFacility])
@@ -78,10 +76,8 @@ class GuiBromptonActivator extends BromptonActivator {
         client.remotePublisher.publish(GotoPageEvent(ValuationParametersPage(tradeIDLabel, rp)))
       }
     }, ServiceProperties(HttpContext("gotoValuationScreen")))
-  }
 
-  override def stop(context: BromptonContext) {
-    if (client != null) client.stop()
+    context.onStopped { client.stop }
   }
 }
 

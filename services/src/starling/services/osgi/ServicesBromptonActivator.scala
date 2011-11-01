@@ -5,7 +5,6 @@ import starling.fc2.api.FC2Facility
 import starling.browser.service.BrowserService
 import starling.manager._
 import starling.utils.Broadcaster
-import starling.db.MarketDataStore
 import starling.calendar.BusinessCalendars
 import starling.services.excel.ExcelLoopReceiver
 import starling.curves.{VanillaEnvironmentRule, EnvironmentRule, EnvironmentRules, CurveViewer}
@@ -16,7 +15,7 @@ import javax.servlet.http.HttpServlet
 import starling.rmi._
 import starling.curves.readers.lim.BloombergImports
 import starling.services.{EmailService, ReferenceData, StarlingInit}
-
+import starling.db.{MarketDataSet, MarketDataSource, MarketDataStore}
 
 class ServicesBromptonActivator extends BromptonActivator {
   def start(context: BromptonContext) {
@@ -53,7 +52,7 @@ class ServicesBromptonActivator extends BromptonActivator {
 
     { // Environment Rules
       context.registerService(classOf[EnvironmentRules], starlingInit.environmentRules)
-      context.createServiceTracker(Some(classOf[EnvironmentRule]), serviceTracker = new BromptonServiceCallback[EnvironmentRule] {
+      context.createServiceTracker(Some(classOf[EnvironmentRule]), tracker = new BromptonServiceCallback[EnvironmentRule] {
         def serviceAdded(ref: BromptonServiceReference, properties:ServiceProperties, environmentRule: EnvironmentRule) = {
           starlingInit.environmentRules.add(environmentRule)
         }
@@ -78,9 +77,15 @@ class ServicesBromptonActivator extends BromptonActivator {
     context.registerService(classOf[EmailService], starlingInit.emailService, ServiceProperties(ExportGuiRMIProperty))
     context.registerService(classOf[BloombergImports], starlingInit.bloombergImports)
 
-    context.createServiceTracker(Some(classOf[ReferenceData]),  ServiceProperties(), new BromptonServiceCallback[ReferenceData] {
+    context.createServiceTracker(Some(classOf[ReferenceData]), ServiceProperties(), new BromptonServiceCallback[ReferenceData] {
       def serviceAdded(ref: BromptonServiceReference, properties:ServiceProperties, referenceData: ReferenceData) = {
         starlingInit.referenceDataService.add(referenceData)
+      }
+    })
+
+    context.createServiceTracker(Some(classOf[MarketDataSource]), tracker = new BromptonServiceCallback[MarketDataSource] {
+      def serviceAdded(ref: BromptonServiceReference, properties:ServiceProperties, marketDataSource: MarketDataSource) = {
+        starlingInit.marketDataSources += marketDataSource
       }
     })
 

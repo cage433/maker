@@ -21,6 +21,6 @@ class Patch86_MoveFixingsToSeparateRows extends Patch {
       }
     }
 
-    starlingInit.marketDataStore.importFor(Day.today.previousWeekday, starlingInit.marketDataStore.marketDataSources.keys.toSeq : _*)
+    starlingInit.marketDataStore.importFor(Day.today.previousWeekday, starlingInit.marketDataStore.marketDataSets.toSeq : _*)
   }
 }

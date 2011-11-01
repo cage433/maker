@@ -136,9 +136,7 @@ class BrowserBromptonActivator extends BromptonActivator {
       }        
     } })
 
-  }
-
-  override def stop(context: BromptonContext) {
-    System.exit(0) //TODO handle proper restart of browser so that users do not need to restart starling gui on upgrade
+    //TODO handle proper restart of browser so that users do not need to restart starling gui on upgrade
+    context.onStopped { System.exit(0) }
   }
 }

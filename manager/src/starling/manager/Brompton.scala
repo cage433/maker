@@ -6,7 +6,6 @@ class Brompton
 
 trait BromptonActivator {
   def start(context:BromptonContext)
-  def stop(context:BromptonContext) {}
 }
 
 class ServiceProperty(val name:String, val value:AnyRef)
@@ -73,7 +72,7 @@ trait BromptonContext {
   def createServiceTracker[T](
     klass:Option[Class[T]],
     properties:ServiceProperties=ServiceProperties(),
-    serviceTracker:BromptonServiceCallback[T]=new BromptonServiceCallback[T] {
+    tracker:BromptonServiceCallback[T]=new BromptonServiceCallback[T] {
       def serviceAdded(ref: BromptonServiceReference, properties:ServiceProperties, service: T) {}
     }):BromptonServiceTracker[T]
 }

@@ -16,7 +16,8 @@ import starling.pivot.MarketValue
 import starling.daterange.ObservationPoint._
 import starling.utils.MathUtil
 
-case class FwdCurveDbMarketDataSource(varSqlDB: DB, businessCalendars: BusinessCalendars, pricingGroupID: Int) extends MarketDataSource {
+case class FwdCurveDbMarketDataSource(varSqlDB: DB, businessCalendars: BusinessCalendars, pricingGroupID: Int,
+  override val marketDataSet: MarketDataSet) extends MarketDataSource {
 
   def table(market: CommodityMarket) = market.commodity match {
     case _: MetalCommodity => MetalsPriceTable

@@ -95,10 +95,6 @@ class SingleClasspathManager(cacheServices:Boolean, activators:List[Class[_ <: B
       if (!started) throw new Exception("Not started yet")
       started = false
       onStoppedActions.foreach(printExceptions)
-
-	    instances.foreach { activator => {
-  	    activator.stop(context)
-  	  } }
     }
   }
 

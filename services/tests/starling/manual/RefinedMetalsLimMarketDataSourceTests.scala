@@ -7,13 +7,13 @@ import starling.auth.AuthHandler
 import starling.utils.ThreadUtils
 import starling.utils.Broadcaster
 import starling.utils.ImplicitConversions._
-import starling.db.{MarketDataSnapshots, NewSchemaMdDB, DBMarketDataStore}
 import starling.curves.readers.lim.PriceFixingLimMarketDataSource
 import starling.lim.LIMService
 import starling.services.{EmailService, StarlingInit}
 import starling.gui.api.Email
 import starling.daterange.Timestamp
 import starling.pivot.PivotFieldParams
+import starling.db.{ImmutableMarketDataSources, MarketDataSnapshots, NewSchemaMdDB, DBMarketDataStore}
 
 object RefinedMetalsLimMarketDataSourceTests {
 
@@ -51,7 +51,7 @@ object RefinedMetalsLimMarketDataSourceTests {
       val source = new PriceFixingLimMarketDataSource(LIMService("ttraflonrh221", 6400), nullEmailService, Email("from", "to"))
 
       val updates = new DBMarketDataStore(new NewSchemaMdDB(init.starlingRichDB, init.dataTypes),
-        new MarketDataSnapshots(init.starlingRichDB), MultiMap(LIM ->> source), Broadcaster.Null, init.dataTypes).importer.getUpdates(12 Sep 2011, LIM)
+        new MarketDataSnapshots(init.starlingRichDB), new ImmutableMarketDataSources(List(source)), Broadcaster.Null, init.dataTypes).importer.getUpdates(12 Sep 2011, LIM)
 
       updates.get(LIM)
       source.read(12 Apr 2011)

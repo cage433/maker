@@ -9,6 +9,7 @@ import starling.databases.MarketDataEventSource
 
 trait MarketDataSource { self =>
   val name: String = getClass.getSimpleName
+  val marketDataSet: MarketDataSet
 
   def read(day: Day): MultiMap[(Day, Day, MarketDataTypeName), MarketDataEntry]
 
@@ -18,6 +19,8 @@ trait MarketDataSource { self =>
       val result = map.updateIt(r => duplicateTimedKeys(r).require(_.isEmpty, "source: %s produced duplicate 'timed' keys: " % self))
       result
     }
+
+    val marketDataSet = self.marketDataSet
 
     def duplicateTimedKeys(map: MultiMap[(Day, Day, MarketDataTypeName), MarketDataEntry]): List[TimedMarketDataKey] =
       map.values.flatMap(duplicateTimedKeys).toList
@@ -36,4 +39,5 @@ trait MarketDataSource { self =>
 class AdaptingMarketDataSource(adaptee: MarketDataSource) extends MarketDataSource {
   override val name = adaptee.name
   def read(day: Day) = adaptee.read(day)
+  val marketDataSet = adaptee.marketDataSet
 }

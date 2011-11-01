@@ -3,7 +3,7 @@ package starling.metals
 import swing.event.Event
 
 import starling.curves._
-import readers.lim.BloombergImports
+import readers.lim.{PriceLimMarketDataSource, PriceFixingLimMarketDataSource, SpotFXLimMarketDataSource, BloombergImports}
 import starling.databases.utils.{RabbitMessageSender, RabbitBroadcaster}
 import starling.daterange.TimeOfDay
 import starling.manager._
@@ -20,12 +20,14 @@ import starling.utils.ImplicitConversions._
 import starling.scheduler.ScheduledTime._
 import com.trafigura.services.trinity.TrinityService
 import com.trafigura.services.ResteasyServiceApi
-import starling.gui.api.{MarketDataSelection, PricingGroup}
 import org.joda.time.Period
 import starling.scheduler.{TaskDescription, Scheduler}
-import starling.db.{DB, TitanTradeSystem, MarketDataStore}
 import starling.services._
 import starling.calendar.{BusinessCalendars}
+import starling.db._
+import starling.lim.LIMService
+import starling.gui.api.Email._
+import starling.gui.api.{Email, MarketDataSelection, PricingGroup}
 
 class MetalsBromptonActivator extends BromptonActivator with Log with scalaz.Identitys {
   def start(context: BromptonContext) {
@@ -109,6 +111,19 @@ class MetalsBromptonActivator extends BromptonActivator with Log with scalaz.Ide
       context.registerService(classOf[TradeImporter], tradeImporter)
     }
 
+    {
+      val limService = LIMService(props.LIMHost(), props.LIMPort())
+      val template = Email(props.MetalsEmailAddress(), props.LimEmailAddress())
+      val emailService = context.awaitService(classOf[EmailService]).enabledIf(props.EnableVerificationEmails())
+      val bloombergImports = context.awaitService(classOf[BloombergImports])
+
+      List(
+        new PriceLimMarketDataSource(limService, bloombergImports, emailService, template),
+        new SpotFXLimMarketDataSource(limService, emailService, template),
+        new PriceFixingLimMarketDataSource(limService, emailService, template)
+      ).foreach(context.registerService(classOf[MarketDataSource], _))
+    }
+
     registerScheduler(context, broadcaster)
 
     Map(
@@ -164,7 +179,7 @@ class MetalsBromptonActivator extends BromptonActivator with Log with scalaz.Ide
 
     context.onStarted { scheduler.start; jmx.start }
     context.registerService(classOf[ReferenceData], ReferenceData("Schedules", new SchedulerReferenceData(scheduler)))
-    context.createServiceTracker(Some(classOf[TaskDescription]), serviceTracker = new BromptonServiceCallback[TaskDescription] {
+    context.createServiceTracker(Some(classOf[TaskDescription]), tracker = new BromptonServiceCallback[TaskDescription] {
       def serviceAdded(ref: BromptonServiceReference, properties: ServiceProperties, task: TaskDescription) = {
         scheduler += task
       }

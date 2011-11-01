@@ -280,6 +280,6 @@ class BundleActivatorHolder(activator:BromptonActivator, context:OSGIBromptonCon
   }
   def stop() {
     thread.interrupt()
-    activator.stop(context)
+    throw new Exception("Not implemented. No stop method, call onStoppedActions ?")
   }
 }

@@ -24,7 +24,6 @@ import starling.curves._
 import org.apache.commons.io.IOUtils
 import starling.marketdata.{MarketDataTypes, DBReferenceDataLookup}
 import starling.lim.LIMService
-import starling.gui.api.Email
 
 
 class StarlingInit( val props: Props,
@@ -107,39 +106,26 @@ class StarlingInit( val props: Props,
 
   lazy val bloombergImports = DBBloombergImports.importsFrom(DB(props.EAIReplica()))
 
-  lazy val (fwdCurveAutoImport, marketDataStore) = log.infoWithTime("Creating Market Data Store") {
+  lazy val (fwdCurveAutoImport, marketDataStore, marketDataSources) = log.infoWithTime("Creating Market Data Store") {
     import MarketDataSet._
-    val limService = LIMService(props.LIMHost(), props.LIMPort())
-    val template = Email(props.MetalsEmailAddress(), props.LimEmailAddress())
-    val verificationEmailService = emailService.enabledIf(props.EnableVerificationEmails())
 
-    val marketDataSources = MultiMap[MarketDataSet, MarketDataSource](
-      LimMetals ->> (new PriceLimMarketDataSource(limService, bloombergImports, verificationEmailService, template),
-                     new SpotFXLimMarketDataSource(limService, verificationEmailService, template),
-                     new PriceFixingLimMarketDataSource(limService,verificationEmailService, template)),
-      LIM ->> new OilAndMetalsVARLimMarketDataSource(limService),
-      System ->> new FwdCurveDbMarketDataSource(varSqlServerDB, businessCalendars, 1),
-      Crude ->> new FwdCurveDbMarketDataSource(varSqlServerDB, businessCalendars, 5),
-      LondonDerivatives ->> new FwdCurveDbMarketDataSource(varSqlServerDB, businessCalendars, 4),
-      BarryEckstein ->> new FwdCurveDbMarketDataSource(varSqlServerDB, businessCalendars, 3),
-      GasolineRoW ->> new FwdCurveDbMarketDataSource(varSqlServerDB, businessCalendars, 21),
-      GasOil ->> new FwdCurveDbMarketDataSource(varSqlServerDB, businessCalendars, 7),
-      Naphtha ->> new FwdCurveDbMarketDataSource(varSqlServerDB, businessCalendars, 10),
-      LondonDerivativesOptions ->> new FwdCurveDbMarketDataSource(varSqlServerDB, businessCalendars, 45)
-//      Neptune ->> (new NeptuneGradeAreaBenchmarksMarketDataSource(neptuneRichDB),
-//                   new NeptuneCountryBenchmarksMarketDataSource(neptuneRichDB),
-//                   new NeptuneFreightParityMarketDataSource(neptuneRichDB))
-    ).withDefaultValue(Nil)
+    val marketDataSources = new MutableMarketDataSources(
+      new OilAndMetalsVARLimMarketDataSource(LIMService(props.LIMHost(), props.LIMPort()), LIM) ::
+      List((1, System), (5, Crude), (4, LondonDerivatives), (3, BarryEckstein), (21, GasolineRoW), (7, GasOil), (10, Naphtha),
+           (45, LondonDerivativesOptions)).map { case (pricingGroupId, marketDataSet) =>
+        new FwdCurveDbMarketDataSource(varSqlServerDB, businessCalendars, pricingGroupId, marketDataSet) }
+    )
 
     lazy val mds = Log.infoWithTime("Creating DBMarketDataStore") {
       new DBMarketDataStore(new NewSchemaMdDB(starlingRichDB, dataTypes), new MarketDataSnapshots(starlingRichDB),
-        marketDataSources, rmiBroadcaster, dataTypes)
+        marketDataSources, rmiBroadcaster, dataTypes).asInstanceOf[MarketDataStore]
     }
 
-    val fwdCurveAutoImport = new FwdCurveAutoImport(60*15, mds,
-      marketDataSources.filterValues(_.isInstanceOf[FwdCurveDbMarketDataSource]).keySet, businessCalendars.US_UK)
+    // TODO: [1 Nov 2011]: Defer creating the FwdCurveAutoImport until all marketDataSources have been registered (and use Scheduler instead ?)
+    val fwdCurveAutoImport = new FwdCurveAutoImport(60*15, mds, marketDataSources.marketDataSetsFor[FwdCurveDbMarketDataSource],
+      businessCalendars.US_UK)
 
-    (fwdCurveAutoImport, mds)
+    (fwdCurveAutoImport, mds, marketDataSources)
   }
 
   val userSettingsDatabase = new UserSettingsDatabase(starlingDB, rmiBroadcaster)

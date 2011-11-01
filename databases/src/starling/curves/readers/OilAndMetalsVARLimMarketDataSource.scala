@@ -7,12 +7,12 @@ import collection.immutable.Map
 import starling.daterange._
 import java.lang.String
 import starling.pivot.MarketValue
-import starling.db.{MarketDataEntry, MarketDataSource}
 import starling.curves.MissingMarketDataException
 import starling.utils.{MathUtil, Log}
 import starling.lim.LIMService
+import starling.db.{MarketDataSet, MarketDataEntry, MarketDataSource}
 
-class OilAndMetalsVARLimMarketDataSource(service: LIMService) extends MarketDataSource {
+class OilAndMetalsVARLimMarketDataSource(service: LIMService, override val marketDataSet: MarketDataSet) extends MarketDataSource {
   val daysInThePast = 365
 
   def read(day:Day) = {
