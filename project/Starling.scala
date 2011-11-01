@@ -145,7 +145,7 @@ object StarlingBuild extends Build{
   lazy val concurrent = Project(
     "concurrent", 
     file("./concurrent"),
-    settings = standardSettings
+    settings = standardSettingsNexus
   ) dependsOn (utils) 
 
   lazy val quantity = Project(
@@ -163,19 +163,19 @@ object StarlingBuild extends Build{
   lazy val singleClasspathManager = Project(
     "singleclasspathmanager",
     file("./singleclasspathmanager"),
-    settings = standardSettings
+    settings = standardSettingsNexus
   ) dependsOn(manager, utils, osgiManager)
 
   lazy val pivot = Project(
     "pivot", 
     file("./pivot"),
-    settings = standardSettings
+    settings = standardSettingsNexus
   ) dependsOn(quantity)
 
   lazy val pivotUtils = Project(
     "pivot.utils", 
     file("./pivot.utils"),
-    settings = standardSettings
+    settings = standardSettingsNexus
   ) dependsOn(daterange, pivot)
 
   lazy val daterange = Project(
@@ -230,7 +230,7 @@ object StarlingBuild extends Build{
     Project(
       "starling-api", 
       file("./starling.api"),
-      settings = standardSettings ++ 
+      settings = standardSettingsNexus ++
         Seq(unmanagedJars in Compile <++= (baseDirectory) map titanBinaryJars) ++ 
         Seq(unmanagedJars in Runtime <++= (baseDirectory) map titanBinaryJars) ++ 
         Seq(unmanagedJars in Test <++= (baseDirectory) map titanBinaryJars)
@@ -303,7 +303,7 @@ object StarlingBuild extends Build{
   lazy val fc2Facility = Project(
     "fc2-facility",
     file("./fc2.facility"),
-    settings = standardSettings
+    settings = standardSettingsNexus
   ) dependsOn(daterange, guiapi)
 
   lazy val curves = Project(
@@ -315,19 +315,19 @@ object StarlingBuild extends Build{
   lazy val instrument = Project(
     "instrument", 
     file("./instrument"),
-    settings = standardSettings
+    settings = standardSettingsNexus
   ) dependsOn(curves % testDependency, daterange % testDependency, titanReturnTypes)
 
   lazy val reportsFacility = Project(
     "reports-facility",
     file("./reports.facility"),
-    settings = standardSettings
+    settings = standardSettingsNexus
   ) dependsOn(guiapi)
 
   lazy val rabbitEventViewerApi = Project(
     "rabbit-event-viewer-api",
     file("./rabbit.event.viewer.api"),
-    settings = standardSettings
+    settings = standardSettingsNexus
   ) dependsOn(pivot, manager)
 
   lazy val gui = Project(
@@ -339,7 +339,7 @@ object StarlingBuild extends Build{
   lazy val tradeFacility = Project(
     "trade", 
     file("./trade.facility"),
-    settings = standardSettings 
+    settings = standardSettingsNexus
   ) dependsOn(auth, guiapi, manager)
 
  
@@ -364,14 +364,14 @@ object StarlingBuild extends Build{
   lazy val rabbitEventViewerService = Project(
     "rabbit-event-viewer-service",
     file("./rabbit.event.viewer.service"),
-    settings = standardSettings
+    settings = standardSettingsNexus
   ) dependsOn(rabbitEventViewerApi, pivot, databases, manager)
 
   lazy val titan = if (useTitanModelBinaries){
 		Project(
 				"titan", 
 				file("./titan"),
-					settings = standardSettings ++ 
+					settings = standardSettingsNexus ++
 						Seq(unmanagedJars in Compile <++= (baseDirectory) map titanBinaryJars) ++ 
 						Seq(unmanagedJars in Runtime <++= (baseDirectory) map titanBinaryJars) ++ 
 						Seq(unmanagedJars in Test <++= (baseDirectory) map titanBinaryJars)
@@ -380,7 +380,7 @@ object StarlingBuild extends Build{
 		Project(
 				"titan", 
 				file("./titan"),
-				settings = standardSettings 
+				settings = standardSettingsNexus
 			) dependsOn(curves % "test->test", titanModel, databases)
 	}
 
@@ -406,32 +406,32 @@ object StarlingBuild extends Build{
   lazy val tradeImpl = Project(
     "trade-impl",
     file("./trade.impl"),
-    settings = standardSettings
+    settings = standardSettingsNexus
   ) dependsOn(services, tradeFacility, manager)
 
   lazy val metals = Project(
     "metals",
     file("./metals"),
-    settings = standardSettings
+    settings = standardSettingsNexus
   ) dependsOn(services, tradeImpl)
 
   lazy val reportsImpl = Project(
     "reports-impl",
     file("./reports.impl"),
-    settings = standardSettings
+    settings = standardSettingsNexus
   ) dependsOn(services % "compile;test->test")
 
 
   lazy val startserver = Project(
     "startserver",
     file("./startserver"),
-    settings = standardSettings
+    settings = standardSettingsNexus
   ) dependsOn(services, reportsImpl, tradeImpl, metals, starlingClient, singleClasspathManager, rabbitEventViewerService, webservice)
 
   lazy val launcher = Project(
     "launcher", 
     file("./launcher"),
-    settings = standardSettings
+    settings = standardSettingsNexus
   ) dependsOn(startserver, gui, singleClasspathManager)
 
   lazy val webservice = Project(
