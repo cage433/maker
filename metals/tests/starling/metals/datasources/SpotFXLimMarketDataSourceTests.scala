@@ -1,4 +1,4 @@
-package starling.curves.readers.lim
+package starling.metals.datasources
 
 import org.jmock.Expectations._
 import starling.services.EmailService

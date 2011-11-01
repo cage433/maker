@@ -1,9 +1,9 @@
 package starling.metals
 
+import datasources.{DBBloombergImports, PriceFixingLimMarketDataSource, PriceLimMarketDataSource, SpotFXLimMarketDataSource}
 import swing.event.Event
 
 import starling.curves._
-import readers.lim.{PriceLimMarketDataSource, PriceFixingLimMarketDataSource, SpotFXLimMarketDataSource, BloombergImports}
 import starling.databases.utils.{RabbitMessageSender, RabbitBroadcaster}
 import starling.daterange.TimeOfDay
 import starling.manager._
@@ -12,7 +12,8 @@ import starling.services.jmx.StarlingJMX
 import starling.services.rabbit.{TitanRabbitIdBroadcaster, MockTitanRabbitEventServices, DefaultTitanRabbitEventServices}
 import starling.services.rpc.logistics.{FileMockedTitanLogisticsServices, DefaultTitanLogisticsServices}
 import starling.services.rpc.valuation._
-import starling.services.trinity.{XRTGenerator, FCLGenerator, TrinityUploader}
+import starling.metals.trinity.XRTGenerator
+import starling.services.trinity.{FCLGenerator}
 import starling.titan.{TitanTradeStoreManager, TitanSystemOfRecord, TitanTradeStore}
 import starling.tradestore.TradeStores
 import starling.utils._
@@ -28,6 +29,7 @@ import starling.db._
 import starling.lim.LIMService
 import starling.gui.api.Email._
 import starling.gui.api.{Email, MarketDataSelection, PricingGroup}
+import starling.metals.tasks.{UploadCurveToTrinityTask, TrinityUploader}
 
 class MetalsBromptonActivator extends BromptonActivator with Log with scalaz.Identitys {
   def start(context: BromptonContext) {
@@ -111,11 +113,12 @@ class MetalsBromptonActivator extends BromptonActivator with Log with scalaz.Ide
       context.registerService(classOf[TradeImporter], tradeImporter)
     }
 
+    val bloombergImports = DBBloombergImports.importsFrom(DB(props.EAIReplica()))
+
     {
       val limService = LIMService(props.LIMHost(), props.LIMPort())
       val template = Email(props.MetalsEmailAddress(), props.LimEmailAddress())
       val emailService = context.awaitService(classOf[EmailService]).enabledIf(props.EnableVerificationEmails())
-      val bloombergImports = context.awaitService(classOf[BloombergImports])
 
       List(
         new PriceLimMarketDataSource(limService, bloombergImports, emailService, template),
@@ -127,7 +130,7 @@ class MetalsBromptonActivator extends BromptonActivator with Log with scalaz.Ide
     registerScheduler(context, broadcaster)
 
     Map(
-      "Bloomberg → LIM"    → new BloombergImportsReferenceData(context.awaitService(classOf[BloombergImports])),
+      "Bloomberg → LIM"    → new BloombergImportsReferenceData(bloombergImports),
       "Areas"              → NeptuneReferenceData.areas(referenceDataLookup),
       "Contract Locations" → NeptuneReferenceData.contractLocations(referenceDataLookup),
       "Countries"          → NeptuneReferenceData.countries(referenceDataLookup),

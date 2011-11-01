@@ -1,9 +1,8 @@
-package starling.services
+package starling.metals.tasks
 
 import starling.daterange.Day
 import starling.gui.api._
 import starling.curves.ClosesEnvironmentRule
-import starling.services.trinity.TrinityUploader
 import starling.scheduler.ScheduledTask
 
 

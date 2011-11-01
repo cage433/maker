@@ -27,7 +27,7 @@
     <orderEntry type="module-library" exported="">
       <library>
         <CLASSES>
-          <root url="jar://$MODULE_DIR$/../.ivy/cache/net.java.dev.jna/jna/jars/jna-3.3.0-platform.jar!/" />
+          <root url="jar://$USER_HOME$/.ivy2/cache/net.java.dev.jna/jna/jars/jna-3.3.0-platform.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />
@@ -36,7 +36,7 @@
     <orderEntry type="module-library">
       <library>
         <CLASSES>
-          <root url="jar://$MODULE_DIR$/../.ivy/cache/sbt/bug/net/java/dev/jna/jna/jars/jna-3.3.0.jar!/" />
+          <root url="jar://$USER_HOME$/.ivy2/cache/sbt/bug/net/java/dev/jna/jna/jars/jna-3.3.0.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />

@@ -1,9 +1,9 @@
-package starling.services
+package starling.metals
 
+import datasources.BloombergImports
 import starling.pivot._
 import scalaz.Scalaz._
 import starling.daterange.TimeZone
-import starling.curves.readers.lim.BloombergImports
 
 
 class BloombergImportsReferenceData(bloombergImports: BloombergImports) extends UnfilteredPivotTableDataSource {

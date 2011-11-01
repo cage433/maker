@@ -1,4 +1,4 @@
-package starling.curves.readers.lim
+package starling.metals.datasources
 
 import collection.immutable.List
 
@@ -202,7 +202,7 @@ case class ReferenceInterestMarketDataProvider(marketDataStore : MarketDataStore
 class VerifyLiborMaturitiesAvailable(marketDataStore: MarketDataStore, emailService: EmailService, template: Email)
   extends EmailingScheduledTask(emailService, template) {
 
-  import starling.curves.readers.lim.LIBORFixing._
+  import LIBORFixing._
 
   protected def emailFor(observationDay: Day) = {
     val liborFixings: NestedMap[UOM, Tenor, (Percentage, Day)] = latestLiborFixings(marketDataStore, observationDay)

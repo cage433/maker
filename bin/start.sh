@@ -51,7 +51,6 @@ else
       -Dcom.sun.management.jmxremote.port=$JMX_PORT \
       -Dcom.sun.management.jmxremote.authenticate=false \
       -Dcom.sun.management.jmxremote.ssl=false \
-      -Dsbt.ivy.home=.ivy \
       -Dhttp.nonProxyHosts=nexus.global.trafigura.com \
       -jar sbt/sbt-launch.jar "project launcher" "run-main starling.startserver.Server" >> logs/stdouterr.log 2>&1 &
 

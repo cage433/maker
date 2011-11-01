@@ -26,7 +26,7 @@
     <orderEntry type="module-library">
       <library>
         <CLASSES>
-          <root url="jar://$MODULE_DIR$/../.ivy/cache/cglib/cglib-nodep/jars/cglib-nodep-2.2.jar!/" />
+          <root url="jar://$USER_HOME$/.ivy2/cache/cglib/cglib-nodep/jars/cglib-nodep-2.2.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />

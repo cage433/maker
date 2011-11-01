@@ -1,4 +1,4 @@
-package starling.services.trinity
+package starling.metals.tasks
 
 import collection.immutable.List
 import java.io.{PrintWriter, FileWriter}
@@ -11,6 +11,8 @@ import starling.utils._
 import starling.utils.ClosureUtil._
 import starling.utils.ImplicitConversions._
 import com.trafigura.services.trinity.TrinityService
+import starling.metals.trinity.XRTGenerator
+import starling.services.trinity.FCLGenerator
 
 class TrinityUploader(fclGenerator: FCLGenerator, xrtGenerator: XRTGenerator, trinityService: TrinityService, props: Props) extends Log {
   def uploadCurve(label: CurveLabel) = {

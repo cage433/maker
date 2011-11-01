@@ -1,4 +1,4 @@
-package starling.curves.readers.lim
+package starling.metals.datasources
 
 import starling.marketdata._
 import starling.quantity.Quantity
@@ -11,6 +11,7 @@ import starling.daterange.TimeZone
 import Market._
 import collection.immutable.Map
 import starling.lim.{LimNode, LIMService}
+
 
 class PriceLimMarketDataSourceTests extends LimMarketDataSourceTests[PriceLimMarketDataSource] {
   import context._; import expectations._
