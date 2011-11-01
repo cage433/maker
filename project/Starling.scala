@@ -72,11 +72,17 @@ object StarlingBuild extends Build{
 
   lazy val publishSetting = publishTo <<= (version) {
     version: String =>
-      def repo(name: String) = name at "http://nexus.global.trafigura.com:8081/nexus/content/repositories/starling-test/" + name
+      def repo(name: String) = {
+        if (starlingVersion.trim.toLowerCase == "snapshot") {
+          name at "http://nexus.global.trafigura.com:8081/nexus/content/repositories/starling-test/" + name
+        } else {
+          name at "http://nexus.global.trafigura.com:8081/nexus/content/repositories/starling-releases/" + name
+        }
+      }
 //      val isSnapshot = version.trim.endsWith("SNAPSHOT")
 //      val repoName   = if(isSnapshot) "snapshots" else "releases"
 //      Some(repo(repoName))
-      Some(repo("starling-releases"))
+     Some(repo("starling-releases"))
   }
 
   lazy val credentialsSetting = credentials += {
