@@ -1,4 +1,4 @@
-package starling.curves.readers
+package starling.curves.readers.lim
 
 import collection.immutable.List
 

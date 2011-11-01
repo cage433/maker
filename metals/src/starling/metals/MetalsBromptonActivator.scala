@@ -3,6 +3,7 @@ package starling.metals
 import swing.event.Event
 
 import starling.curves._
+import readers.lim.BloombergImports
 import starling.databases.utils.{RabbitMessageSender, RabbitBroadcaster}
 import starling.daterange.TimeOfDay
 import starling.manager._
@@ -55,18 +56,10 @@ class MetalsBromptonActivator extends BromptonActivator with Log with scalaz.Ide
 
     val osgiBroadcaster = context.awaitService(classOf[Broadcaster])
 
-    val broadcaster = {
-      val emailService = new PersistingEmailService(
-        osgiBroadcaster, DB(props.StarlingDatabase()), props.SmtpServerHost(), props.SmtpServerPort())
-
-      context.registerService(classOf[EmailService], emailService, ServiceProperties(ExportGuiRMIProperty))
-
-      new CompositeBroadcaster(
-        props.rabbitHostSet                       → new RabbitBroadcaster(new RabbitMessageSender(props.RabbitHost())),
-        props.EnableVerificationEmails()          → new EmailBroadcaster(emailService, props),
-        (startRabbit && props.titanRabbitHostSet) → TitanRabbitIdBroadcaster(titanRabbitEventServices.rabbitEventPublisher)
-      )
-    }
+    val broadcaster = new CompositeBroadcaster(
+      props.rabbitHostSet                       → new RabbitBroadcaster(new RabbitMessageSender(props.RabbitHost())),
+      (startRabbit && props.titanRabbitHostSet) → TitanRabbitIdBroadcaster(titanRabbitEventServices.rabbitEventPublisher)
+    )
 
     context.registerService(classOf[Receiver], new Receiver() {
       def event(event: Event) = broadcaster.broadcast(event)
@@ -119,7 +112,7 @@ class MetalsBromptonActivator extends BromptonActivator with Log with scalaz.Ide
     registerScheduler(context, broadcaster)
 
     Map(
-      "Bloomberg → LIM"    → new BloombergImportsReferenceData(DB(props.EAIReplica())),
+      "Bloomberg → LIM"    → new BloombergImportsReferenceData(context.awaitService(classOf[BloombergImports])),
       "Areas"              → NeptuneReferenceData.areas(referenceDataLookup),
       "Contract Locations" → NeptuneReferenceData.contractLocations(referenceDataLookup),
       "Countries"          → NeptuneReferenceData.countries(referenceDataLookup),

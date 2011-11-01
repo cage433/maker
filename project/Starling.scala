@@ -7,6 +7,15 @@ object StarlingBuild extends Build{
 
   import Utils._
 
+  val starlingVersion = {
+    val r = System.getProperty("build.number")
+    if (r == null) "0.1" else r
+  }
+
+  println("")
+  println("This is the build number: " + starlingVersion)
+  println("")
+
   val useTitanModelBinaries = {
     if (!new File("props.conf").exists)
       false
@@ -34,21 +43,97 @@ object StarlingBuild extends Build{
     ivyXML := <dependencies><exclude artifact="jcl-over-slf4j"/><exclude artifact="junit"/></dependencies>, 
     scalaVersion := "2.9.1",
     showLibsTask,
-    writeClasspathScriptTask
+    writeClasspathScriptTask,
+    credentialsSetting,
+    publishSetting,
+    resolvers += "Non-Trafigura Public Repositories" at "http://nexus.global.trafigura.com:8081/nexus/content/groups/mirror/",
+    resolvers += "trafigura" at "http://nexus.global.trafigura.com:8081/nexus/content/repositories/tooling-releases/",
+    organizationName := "Trafigura",
+    version := starlingVersion
   )
 
+  lazy val standardSettingsNexus = Defaults.defaultSettings ++ Seq(
+    unmanagedSourceDirectories in Compile <+= baseDirectory(_/"src"),
+    unmanagedSourceDirectories in Test <+= baseDirectory(_/"tests"),
+    unmanagedResourceDirectories in Test <+= baseDirectory(_/"test-resources"),
+    unmanagedResourceDirectories in Compile <+= baseDirectory(_/"resources"),
+    unmanagedClasspath in Test <+= (baseDirectory) map { bd => Attributed.blank(bd / "resources") },
+    ivyXML := <dependencies><exclude artifact="jcl-over-slf4j"/><exclude artifact="junit"/></dependencies>,
+    scalaVersion := "2.9.1",
+    showLibsTask,
+    writeClasspathScriptTask,
+    credentialsSetting,
+    publishSetting,
+    resolvers += "Non-Trafigura Public Repositories" at "http://nexus.global.trafigura.com:8081/nexus/content/groups/mirror/",
+    resolvers += "trafigura" at "http://nexus.global.trafigura.com:8081/nexus/content/repositories/tooling-releases/",
+    organizationName := "Trafigura",
+    version := starlingVersion
+  )
+
+  lazy val publishSetting = publishTo <<= (version) {
+    version: String =>
+      def repo(name: String) = {
+        if (starlingVersion.trim.toLowerCase == "snapshot") {
+          name at "http://nexus.global.trafigura.com:8081/nexus/content/repositories/starling-test/" + name
+        } else {
+          name at "http://nexus.global.trafigura.com:8081/nexus/content/repositories/starling-releases/" + name
+        }
+      }
+//      val isSnapshot = version.trim.endsWith("SNAPSHOT")
+//      val repoName   = if(isSnapshot) "snapshots" else "releases"
+//      Some(repo(repoName))
+     Some(repo("starling-releases"))
+  }
+
+  lazy val credentialsSetting = credentials += {
+    /*Seq("admin", "admin123").map(k => Option(System.getProperty(k))) match {
+      case Seq(Some(user), Some(pass)) =>
+        Credentials("Sonatype Nexus Repository Manager", "nexus-direct.scala-tools.org", user, pass)
+      case _ =>
+        Credentials(Path.userHome / ".ivy2" / ".credentials")
+    }*/
+    Credentials("Sonatype Nexus Repository Manager", "nexus.global.trafigura.com", "admin", "admin123")
+  }
+
+
   val testDependency = "compile;test->test"
+
+  val managerDependencies = Seq(
+    "org.scala-lang" % "scala-swing" % "2.9.1" /*/*withSources()*/*/,
+    "cglib" % "cglib-nodep" % "2.2"
+  )
 
   lazy val manager = Project(
     "manager",
     file("./manager"),
-    settings = standardSettings 
+    settings = standardSettingsNexus  ++ Seq(libraryDependencies ++= managerDependencies)
   ) 
+
+  val utilsDependencies = Seq(
+    "cglib" % "cglib-nodep" % "2.2" withSources(),
+    "joda-time" % "joda-time" % "1.6" withSources(),
+    "com.rabbitmq" % "amqp-client" % "1.7.2" withSources(),
+    "log4j" % "log4j" % "1.2.16" withSources(),
+    "org.slf4j" % "slf4j-log4j12" % "1.6.1" withSources(),
+    "com.google.collections" % "google-collections" % "1.0" withSources(),
+    "commons-codec" % "commons-codec" % "1.4" withSources(),
+    "commons-io" % "commons-io" % "1.3.2" withSources(),
+    "colt" % "colt" % "1.0.3",
+    "com.thoughtworks.xstream" % "xstream" % "1.3.1" withSources(),
+    "org.testng" % "testng" % "5.8" classifier "jdk15",
+    "org.scala-tools" %% "scala-stm" % "0.3",
+    "org.scala-lang" % "scala-swing" % "2.9.1" withSources(),
+    "org.scalaz" %% "scalaz-core" % "6.0.3" withSources(),
+    "spy" % "spymemcached" % "2.7.3" withSources(),
+    "org.scalatest" %% "scalatest" % "1.6.1" withSources(),
+    "org.mockito" % "mockito-all" % "1.8.2",
+    "org.jmock" % "jmock" % "2.5.1"
+  )
 
   lazy val utils = Project(
     "utils", 
     file("./utils"), 
-    settings = standardSettings 
+    settings = standardSettingsNexus ++ Seq(libraryDependencies ++= utilsDependencies)
   )
 
   lazy val osgiRun = Project(
@@ -66,7 +151,7 @@ object StarlingBuild extends Build{
   lazy val quantity = Project(
     "quantity", 
     file("./quantity"),
-    settings = standardSettings
+    settings = standardSettingsNexus
   ) dependsOn (utils)
 
   lazy val osgiManager = Project(
@@ -96,14 +181,14 @@ object StarlingBuild extends Build{
   lazy val daterange = Project(
     "daterange", 
     file("./daterange"),
-    settings = standardSettings
+    settings = standardSettingsNexus
   ) dependsOn(utils)
 
 
   lazy val titanReturnTypes = Project(
     "titan-return-types",
     file("./titan.return.types"),
-    settings = standardSettings
+    settings = standardSettingsNexus
   ) dependsOn(daterange, quantity)
 
   lazy val maths = Project(
@@ -113,17 +198,30 @@ object StarlingBuild extends Build{
   ) dependsOn(quantity % testDependency, daterange % testDependency)
 
 
+  val titanModelDependencies = Seq(
+    "org.slf4j" % "slf4j-api" % "1.6.1",
+    "dom4j" % "dom4j" % "1.6.1",
+    "com.rabbitmq" % "amqp-client" % "1.7.2",
+    "joda-time" % "joda-time" % "1.6",
+    "org.codehaus.jettison" % "jettison" % "1.1",
+    "commons-httpclient" % "commons-httpclient" % "3.1",
+    "com.trafigura.tradinghub" % "scala-hub-support" % "2.17",
+    "com.trafigura.tradinghub" % "persistence-support" % "2.17",
+    "org.jboss.resteasy" % "jaxrs-api" % "1.2.GA"
+  )
+
   import TitanModel._
   lazy val titanModel = Project(
     "titan-model", 
     modelRoot,
-    settings = standardSettings ++ Seq(
+    settings = standardSettingsNexus ++ Seq(
       unmanagedSourceDirectories in Compile <+= baseDirectory(_/"model-src"),
       cleanGenSrcTask := cleanGenSrc, 
       cleanCopiedSrcTask := cleanCopiedSrc, 
       clean <<= clean.dependsOn(cleanGenSrcTask, cleanCopiedSrcTask),
       buildSrcTask := buildSource,
-      compile in Compile <<= (compile in Compile).dependsOn(buildSrcTask)
+      compile in Compile <<= (compile in Compile).dependsOn(buildSrcTask),
+      libraryDependencies ++= titanModelDependencies
     ) 
     ++ copyModelSettings
   )
@@ -141,26 +239,41 @@ object StarlingBuild extends Build{
     Project(
       "starling-api", 
       file("./starling.api"),
-      settings = standardSettings 
+      settings = standardSettingsNexus
     ) dependsOn(titanModel, titanReturnTypes)
   }
 
   lazy val props = Project(
     "props",
     file("./props"),
-    settings = standardSettings
+    settings = standardSettingsNexus
   ) dependsOn(utils, manager)
+
+  val authDependencies = Seq(
+//    "net.java.dev.jna" % "jna" % "3.3.0", Put this back in once sbt can handle classifiers properly
+    "sbt/bug/net/java/dev/jna" % "jna" % "3.3.0",
+    "net.java.dev.jna" % "jna" % "3.3.0" classifier "platform"
+  
+  )
 
   lazy val auth = Project(
     "auth", 
     file("./auth"),
-    settings = standardSettings
+    settings = standardSettingsNexus ++ Seq(libraryDependencies ++= authDependencies)
+//    settings = standardSettingsNexus ++ Seq(ivyXML := authIvyXML)
   ) dependsOn (utils, manager, props)
+
+  val bouncyrmiDependencies = Seq(
+    "cglib" % "cglib-nodep" % "2.2",
+    "org.jboss.netty" % "netty" % "3.2.5.Final",
+    "commons-io" % "commons-io" % "1.3.2",
+    "commons-logging" % "commons-logging" % "1.1.1"
+  )
 
   lazy val bouncyrmi = Project(
     "bouncyrmi", 
     file("./bouncyrmi"),
-    settings = standardSettings
+    settings = standardSettingsNexus ++ Seq(libraryDependencies ++= bouncyrmiDependencies)
   ) dependsOn(manager, auth, props)
 
   lazy val loopyxl = Project(
@@ -233,7 +346,7 @@ object StarlingBuild extends Build{
   lazy val starlingClient = Project(
     "starling-client",
     file("./starling.client"),
-    settings = standardSettings
+    settings = standardSettingsNexus
   ) dependsOn(starlingApi, bouncyrmi)
 
   lazy val dbx = Project(
@@ -287,7 +400,7 @@ object StarlingBuild extends Build{
   lazy val services = Project(
     "services", 
     file("./services"),
-    settings = standardSettings 
+    settings = standardSettings
   ) dependsOn(curves % "test->test", concurrent, loopyxl, titan, gui, fc2Facility, browser, titanReturnTypes)
 
   lazy val tradeImpl = Project(
@@ -306,7 +419,7 @@ object StarlingBuild extends Build{
     "reports-impl",
     file("./reports.impl"),
     settings = standardSettings
-  ) dependsOn(services)
+  ) dependsOn(services % "compile;test->test")
 
 
   lazy val startserver = Project(
@@ -382,7 +495,15 @@ object StarlingBuild extends Build{
     titanReturnTypes,
     starlingApi,
     starlingClient,
-    webservice
+    webservice,
+    metals,
+    props,
+    rabbitEventViewerApi,
+    rabbitEventViewerService,
+    reportsFacility,
+    reportsImpl,
+    tradeFacility,
+    tradeImpl
   )
 
   val childProjects : List[ProjectReference] =  otherProjectRefereneces ::: titanModelReference
@@ -455,6 +576,7 @@ object StarlingBuild extends Build{
       // Combine the sources of other modules to generate Scaladoc and SXR annotated sources
       (sources in Compile) <<= (allSources).map(_.flatten),
       (unmanagedJars in Compile) <<= ((childProjects.map(unmanagedJars in Compile in _).join).map(_.flatten)),
+      (managedClasspath in Compile) <<= ((childProjects.map(managedClasspath in Compile in _).join).map(_.flatten)),
 
       // Avoid compiling the sources here; we just are after scaladoc.
       (compile in Compile) := inc.Analysis.Empty)

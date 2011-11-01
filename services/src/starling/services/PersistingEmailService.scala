@@ -51,3 +51,9 @@ class PersistingEmailService(broadcaster: Broadcaster, db: DB, jSender: JavaMail
 
   private def stringColumns(columns: String*) = columns.map(c => StringColumnDefinition(c.capitalize, c, "EmailsSent")).toList
 }
+
+trait FooterAppendingEmailService extends EmailService {
+  abstract override def send(message: Email) = super.send(message + footer)
+
+  def footer: Map[String, String]
+}

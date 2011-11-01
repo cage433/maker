@@ -1,32 +1,39 @@
-package starling.curves.readers
+package starling.curves.readers.lim
 
 import collection.immutable.List
 
 import starling.daterange._
 import starling.market._
 import starling.marketdata._
-import starling.utils.Pattern
-
 import starling.utils.ImplicitConversions._
 import starling.scheduler.ScheduledTime._
-import starling.scheduler.TaskDescription
 import starling.db.{MarketDataStore, MarketDataEntry}
 import starling.gui.api._
 import starling.quantity.{UOMSymbol, Quantity, UOM}
 import starling.databases.{AbstractMarketDataProvider, MarketDataChange, PricingGroupMarketDataEventSource, MarketDataProvider}
 import starling.lim.LIMService
+import starling.calendar.{BusinessCalendars}
+import starling.utils.{Broadcaster, Pattern}
 import Level._
 import LIMService.TopRelation._
 import ObservationTimeOfDay._
 import Pattern._
-import starling.calendar.{BusinessCalendars}
+import starling.scheduler.{ScheduledTime, ScheduledTask, TaskDescription}
+import starling.services.EmailService
+import starling.market.FuturesExchangeFactory._
+import starling.curves.readers.VerifyMarketDataAvailable
+import scalaz.Scalaz._
 
 
 object SpotFXLimMarketDataSource {
   val spotFXSources = SpotFXDataType.name → List(BloombergGenericFXRates, CFETSSpotFXFixings)
+
+  val titanCurrencies = UOMSymbol.edmCurrencies.map(UOM.asUOM(_)).filter(_ != UOM.USD)
 }
 
-case class SpotFXLimMarketDataSource(service: LIMService, calendars: BusinessCalendars) extends LimMarketDataSource(service) {
+case class SpotFXLimMarketDataSource(service: LIMService, emailService: EmailService, template: Email)
+  extends LimMarketDataSource(service) {
+
   import SpotFXLimMarketDataSource._
 
   override def description = List(spotFXSources).flatMap
@@ -43,10 +50,35 @@ case class SpotFXLimMarketDataSource(service: LIMService, calendars: BusinessCal
   }
 
   override def availabilityTasks(marketDataStore: MarketDataStore) = List(
-  //      registerTasks(tasks(daily(LME, 13 H 15), TRAF.LME.{EUR, GBP, JPY} SpotFX
-    TaskDescription("Verify Bloomberg Generic FX Rates Available", daily(calendars.LME, 18 H 00), notImplemented),
-    TaskDescription("Verify CFETSSpotFXFixings Available", daily(calendars.SFS, 15 H 30), notImplemented)
+    task("Bloomberg Generic Rate", daily(LME.calendar, 18 H 00), (titanCurrencies - UOM.CNY), marketDataStore),
+    task("CFETS", daily(SFS.calendar, 15 H 30), List(UOM.CNY), marketDataStore)
   )
+
+  private def task(name: String, time: ScheduledTime, currencies: List[UOM], marketDataStore: MarketDataStore): TaskDescription =
+    TaskDescription("Verify %s Spot FX Available" % name, time, task(name, marketDataStore, currencies))
+
+  private def task(name: String, marketDataStore: MarketDataStore, currencies: List[UOM]): ScheduledTask =
+    new VerifyMarketDataAvailable(marketDataStore, MarketDataSelection(Some(PricingGroup.Metals)), SpotFXDataType.name,
+      currencies.map(SpotFXDataKey(_)).toSet, emailService, template) {
+
+      protected def emailFor(observationDay: Day) = queryLatest(observationDay) match {
+        case Nil => Some(template.copy(subject = "No Spot FX for: %s on %s" % (name, observationDay),
+                                       body = currencies.map("MISSING: " + _).sorted.mkHtml()))
+
+        case rates => {
+          val rateAvailability = {
+            val availableRates = rates.map(_._1.key.asInstanceOf[SpotFXDataKey].ccy).toSet
+
+            currencies.groupBy(availableRates.contains(_) ? "Present" | "MISSING")
+          }
+
+          rateAvailability.contains("MISSING").option {
+            template.copy(subject = "Missing Spot FX for: %s on %s" % (name, observationDay),
+                          body = rateAvailability.flatMultiMap { _.format("%s: %s") }.toList.sorted.mkHtml())
+          }
+        }
+      }
+    }
 }
 
 object BloombergGenericFXRates extends HierarchicalLimSource(List(Trafigura.Bloomberg.Currencies.Composite), List(Close)) {
@@ -93,10 +125,9 @@ case class SpotFXDataEventSource(pricingGroup: PricingGroup, provider: MarketDat
 case class SpotFXMarketDataProvider(marketDataStore : MarketDataStore) extends
   AbstractMarketDataProvider[Day, UOM, Quantity](marketDataStore) {
 
-  private val titanCurrencies = UOMSymbol.edmCurrencies.map(UOM.asUOM(_)).filter(_ != UOM.USD)
 
   val marketDataType = SpotFXDataType.name
-  val marketDataKeys: Some[Set[MarketDataKey]] = Some(titanCurrencies.map(SpotFXDataKey(_)).toSet)
+  val marketDataKeys: Some[Set[MarketDataKey]] = Some(SpotFXLimMarketDataSource.titanCurrencies.map(SpotFXDataKey(_)).toSet)
 
   def marketDataFor(timedData: List[(TimedMarketDataKey, MarketData)]) = timedData.collect {
     case (TimedMarketDataKey(ObservationPoint(Some((observationDay, _))), SpotFXDataKey(currency)), SpotFXData(rate)) =>

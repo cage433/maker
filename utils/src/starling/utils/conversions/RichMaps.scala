@@ -4,9 +4,9 @@ import collection.SortedMap
 import starling.utils.Pattern.Extractor
 import collection.mutable.{Map => MMap}
 import scalaz.Scalaz._
-import collection.immutable.{Map, TreeMap}
 import starling.utils.ImplicitConversions
 import scala.collection.MapProxy
+import collection.immutable.{Iterable, Map, TreeMap}
 
 trait RichMaps {
   type MultiMap[K, V] = Map[K, List[V]]
@@ -67,6 +67,7 @@ class RichMultiMap[K, V](map : Map[K, List[V]]) extends RichMap[K, List[V]](map)
   def union(k: K, v: List[V]): Map[K, List[V]] = map.getOrUpdate(k, old => (old ++ v).distinct)
   def union(kv: (K, List[V])): Map[K, List[V]] = union(kv._1, kv._2)
   def union(other: Map[K, List[V]]): Map[K, List[V]] = (map ++ other).mapValues(_.distinct)
+  def flatMultiMap[W](f: ((K, V)) => W): Iterable[W] = map.flatMap(kvs => kvs._2.map(v => f(kvs._1, v)))
 }
 
 class RichMutableMap[K, V](map: MMap[K, V]) {

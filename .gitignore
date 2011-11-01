@@ -50,5 +50,5 @@ dummy-sbt-vim-hack
 osgi-gui-cache/*
 osgi-server-cache/*
 set-classpath.sh
-.ivy
 project/deployment/artifacts
+.ivy/

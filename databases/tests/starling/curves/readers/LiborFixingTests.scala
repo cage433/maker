@@ -1,5 +1,6 @@
 package starling.curves.readers
 
+import lim.LIBORFixing
 import org.scalatest.matchers.ShouldMatchers
 import org.scalatest.WordSpec
 import starling.quantity.{Quantity, UOM}

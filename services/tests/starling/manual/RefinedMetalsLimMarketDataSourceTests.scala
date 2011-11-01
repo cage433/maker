@@ -2,18 +2,22 @@ package starling.manual
 
 import starling.props.PropsHelper
 import starling.daterange.Day._
-import starling.services.StarlingInit
 import starling.db.MarketDataSet._
 import starling.auth.AuthHandler
 import starling.utils.ThreadUtils
 import starling.utils.Broadcaster
 import starling.utils.ImplicitConversions._
 import starling.db.{MarketDataSnapshots, NewSchemaMdDB, DBMarketDataStore}
-import starling.curves.readers.PriceFixingLimMarketDataSource
+import starling.curves.readers.lim.PriceFixingLimMarketDataSource
 import starling.lim.LIMService
-
+import starling.services.{EmailService, StarlingInit}
+import starling.gui.api.Email
+import starling.daterange.Timestamp
+import starling.pivot.PivotFieldParams
 
 object RefinedMetalsLimMarketDataSourceTests {
+
+
   def main(args:Array[String]) {
     val init = new StarlingInit(PropsHelper.defaultProps, AuthHandler.Dev, Broadcaster.Null, false, false, false, false)
 
@@ -39,8 +43,12 @@ object RefinedMetalsLimMarketDataSourceTests {
 //      days.foreach(println)
     }
     else {
-      val source = new PriceFixingLimMarketDataSource(
-        LIMService("ttraflonrh221", 6400), init.businessCalendars, Broadcaster.Null, "from", "to")
+      val nullEmailService = new EmailService {
+        def emailsSent(mostRecent: Timestamp, pivotFieldParams: PivotFieldParams) = throw new Exception("Not implemented")
+        def send(message: Email) {}
+      }
+
+      val source = new PriceFixingLimMarketDataSource(LIMService("ttraflonrh221", 6400), nullEmailService, Email("from", "to"))
 
       val updates = new DBMarketDataStore(new NewSchemaMdDB(init.starlingRichDB, init.dataTypes),
         new MarketDataSnapshots(init.starlingRichDB), MultiMap(LIM ->> source), Broadcaster.Null, init.dataTypes).importer.getUpdates(12 Sep 2011, LIM)
