@@ -308,7 +308,7 @@ class PivotTablePageComponent(
 
     val resetLayoutButton = pivotTablePageData.pivotData.resetLayout.map { resetPfs => {
       new ToolBarButton {
-        icon = StarlingIcons.icon("/icons/left_arrow_scroll.png")
+        icon = StarlingIcons.icon("/icons/16x16_contract.png")
         tooltip = "Use the default layout"
         enabled = currentFieldState != resetPfs
         reactions += {
