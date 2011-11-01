@@ -139,9 +139,9 @@ trait Instrument extends Ordered[Instrument] with Greeks with PnlExplanation {
    */
   def position(env : Environment, diff : EnvironmentDifferentiable) : Quantity = {
     val hedge = hedgingInstrument(env, diff)
-    val delta = firstOrderDerivative(env, diff, USD)
+    val delta = firstOrderDerivative(env, diff, valuationCCY)
     val hedgeDelta = hedge match{
-      case Some(inst) => inst.firstOrderDerivative(env, diff, USD)
+      case Some(inst) => inst.firstOrderDerivative(env, diff, valuationCCY)
       case None => 1.0(delta.uom)
     }
     val hedgeRatio = if (delta.isZero && hedgeDelta.isZero) 0.0 else (delta / hedgeDelta).checkedValue(UOM.SCALAR)

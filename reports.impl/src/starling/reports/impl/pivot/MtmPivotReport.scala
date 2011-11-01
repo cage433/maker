@@ -132,9 +132,10 @@ class MtmPivotReport(@transient environment:Environment, @transient utps : Map[U
     (utp),
     (tuple : (UTP)) => {
       try {
-        utp.assets(environment).assets.map{asset => {
-          Left(asset.copyMtm(asset.mtm * environment.spotFXRate(UOM.USD, asset.mtm.uom)))
-        }}
+        utp.assets(environment).assets.map(Left(_))
+        //.map{asset => {
+          //Left(asset.copyMtm(asset.mtm * environment.spotFXRate(UOM.USD, asset.mtm.uom)))
+          //}}
       } catch {
         case e => List(Right(e))
       }
