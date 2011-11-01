@@ -8,7 +8,6 @@ import starling.market._
 import starling.props.{PropsHelper, Props}
 import java.net.InetAddress
 import starling.curves.readers._
-import lim.{PriceFixingLimMarketDataSource, SpotFXLimMarketDataSource, PriceLimMarketDataSource}
 import starling.utils.ImplicitConversions._
 import starling.http._
 import starling.rmi._
@@ -103,8 +102,6 @@ class StarlingInit( val props: Props,
 
     val footer = Map("Sent by" → props.ServerType(), "Name" → props.ServerName(), "Host" → props.ExternalHostname())
   }
-
-  lazy val bloombergImports = DBBloombergImports.importsFrom(DB(props.EAIReplica()))
 
   lazy val (fwdCurveAutoImport, marketDataStore, marketDataSources) = log.infoWithTime("Creating Market Data Store") {
     import MarketDataSet._

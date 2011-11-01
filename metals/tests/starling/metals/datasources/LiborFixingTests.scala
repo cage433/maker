@@ -1,6 +1,5 @@
-package starling.curves.readers
+package starling.metals.datasources
 
-import lim.LIBORFixing
 import org.scalatest.matchers.ShouldMatchers
 import org.scalatest.WordSpec
 import starling.quantity.{Quantity, UOM}

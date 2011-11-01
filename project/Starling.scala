@@ -413,7 +413,7 @@ object StarlingBuild extends Build{
     "metals",
     file("./metals"),
     settings = standardSettingsNexus
-  ) dependsOn(services, tradeImpl)
+  ) dependsOn(services % "compile;test->test", tradeImpl)
 
   lazy val reportsImpl = Project(
     "reports-impl",

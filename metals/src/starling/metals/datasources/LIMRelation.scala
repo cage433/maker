@@ -1,4 +1,4 @@
-package starling.curves.readers.lim
+package starling.metals.datasources
 
 import starling.market._
 import starling.utils.ImplicitConversions._

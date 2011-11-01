@@ -1,4 +1,4 @@
-package starling.services
+package starling.metals.datasources
 
 import starling.db.DB
 import starling.dbx.QueryBuilder._
@@ -7,7 +7,6 @@ import scalaz.Scalaz._
 import collection.immutable.Map
 import starling.daterange.TimeZone
 import org.joda.time.LocalTime
-import starling.curves.readers.lim.{BloombergImport, BloombergImports}
 
 
 object DBBloombergImports {
