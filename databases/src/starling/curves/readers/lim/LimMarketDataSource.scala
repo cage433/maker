@@ -1,4 +1,4 @@
-package starling.curves.readers
+package starling.curves.readers.lim
 
 import collection.immutable.List
 
@@ -35,7 +35,7 @@ abstract class LimMarketDataSource(service: LIMService) extends MarketDataSource
       .debugV(entries => "%s (%s): %s values" % (source.getClass.getSimpleName, source.description.mkString(", "), countData(entries)))
   }
 
-  protected val notImplemented = SimpleScheduledTask(_ => println("Task Not Implemented"))
+  protected val notImplemented = SimpleScheduledTask(_ => println("Task Not Implemented")).update(_.disable)
 
   private def countData(entries: List[MarketDataEntry]) = entries.map(_.data.size).sum
 }

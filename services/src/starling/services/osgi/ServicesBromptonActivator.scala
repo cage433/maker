@@ -1,33 +1,24 @@
 package starling.services.osgi
 
-import starling.props.PropsHelper
 import starling.auth.AuthHandler
-import com.trafigura.services.valuation.ValuationServiceApi
-import com.trafigura.services.marketdata.MarketDataServiceApi
 import starling.fc2.api.FC2Facility
 import starling.browser.service.BrowserService
 import starling.manager._
-import starling.utils.{Broadcaster}
-import starling.db.{MarketDataStore, DB}
-import starling.tradestore.TradeStores
+import starling.utils.Broadcaster
+import starling.db.MarketDataStore
 import starling.calendar.BusinessCalendars
 import starling.services.excel.ExcelLoopReceiver
-import starling.loopyxl.ReflectiveMethodSource
 import starling.curves.{VanillaEnvironmentRule, EnvironmentRule, EnvironmentRules, CurveViewer}
-import starling.daterange.ObservationPoint._
 import starling.daterange.{ObservationPoint, TimeOfDay, ObservationTimeOfDay}
 import starling.gui.api.{PricingGroup, EnvironmentRuleLabel}
 import starling.marketdata.ReferenceDataLookup
-import starling.utils.ImplicitConversions._
 import javax.servlet.http.HttpServlet
-import starling.services.{ReferenceData, StarlingInit}
 import starling.rmi._
+import starling.curves.readers.lim.BloombergImports
+import starling.services.{EmailService, ReferenceData, StarlingInit}
+
 
 class ServicesBromptonActivator extends BromptonActivator {
-
-  var starlingInit:StarlingInit = _
-  var excelLoopReceiver:ExcelLoopReceiver = _
-
   def start(context: BromptonContext) {
     val authHandler = context.awaitService(classOf[AuthHandler])
     val osgiBroadcaster = context.awaitService(classOf[Broadcaster])
@@ -36,7 +27,7 @@ class ServicesBromptonActivator extends BromptonActivator {
 
     val bromptonMarketDataReaderProviders = new BromptonTrackerBasedMarketDataPageIdentifierReaderProviders(context)
 
-    starlingInit = new StarlingInit(
+    val starlingInit = new StarlingInit(
       props,
       authHandler, osgiBroadcaster,
       true, true, true,
@@ -84,6 +75,8 @@ class ServicesBromptonActivator extends BromptonActivator {
     }
 
     context.registerService(classOf[ReferenceDataLookup], starlingInit.referenceDataLookup)
+    context.registerService(classOf[EmailService], starlingInit.emailService, ServiceProperties(ExportGuiRMIProperty))
+    context.registerService(classOf[BloombergImports], starlingInit.bloombergImports)
 
     context.createServiceTracker(Some(classOf[ReferenceData]),  ServiceProperties(), new BromptonServiceCallback[ReferenceData] {
       def serviceAdded(ref: BromptonServiceReference, properties:ServiceProperties, referenceData: ReferenceData) = {
@@ -91,7 +84,7 @@ class ServicesBromptonActivator extends BromptonActivator {
       }
     })
 
-    excelLoopReceiver = new ExcelLoopReceiver(starlingInit.ldapUserLookup, props.XLLoopPort())
+    val excelLoopReceiver = new ExcelLoopReceiver(starlingInit.ldapUserLookup, props.XLLoopPort())
     context.createServiceTracker(None,  ServiceProperties(ExportXlloopProperty), new BromptonServiceCallback[AnyRef] {
       def serviceAdded(ref: BromptonServiceReference, properties:ServiceProperties, service: AnyRef) = {
         excelLoopReceiver.register(ref, service)
@@ -104,13 +97,9 @@ class ServicesBromptonActivator extends BromptonActivator {
 
     starlingInit.start
     starlingInit.servlets.foreach { case (name, servlet) => context.registerService(classOf[HttpServlet], servlet, ServiceProperties(HttpContext(name))) }
-  }
 
-  override def stop(context: BromptonContext) {
-    if (starlingInit != null) {
+    context.onStopped {
       starlingInit.stop
-    }
-    if (excelLoopReceiver != null) {
       excelLoopReceiver.stop
     }
   }

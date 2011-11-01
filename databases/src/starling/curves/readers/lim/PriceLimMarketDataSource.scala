@@ -1,4 +1,4 @@
-package starling.curves.readers
+package starling.curves.readers.lim
 
 import collection.immutable.List
 
@@ -16,43 +16,43 @@ import scalaz.Scalaz._
 import starling.scheduler.{ScheduledTask, ScheduledTime, TaskDescription}
 import starling.lim.{LIMService, LimNode, LIMConnection}
 import starling.calendar.{BusinessCalendars}
+import starling.services.EmailService
+import starling.curves.readers.VerifyMarketDataAvailable
+import org.joda.time.{DateTime, LocalTime}
 
 object PriceLimMarketDataSource extends scalaz.Options {
-  import LIMService.TopRelation._
-  import ObservationTimeOfDay._
+  import LIMService.TopRelation.Trafigura.Bloomberg._
 
   val priceSources = PriceDataType.name → List(
-    new PriceLimSource(new LMELIMRelation(Trafigura.Bloomberg.Metals.Lme, LMEClose)),
-    new PriceLimSource(new MonthlyLIMRelation(Trafigura.Bloomberg.Futures.Comex, COMEXClose)),
-    new PriceLimSource(new MonthlyLIMRelation(Trafigura.Bloomberg.Futures.Shfe, SHFEClose)))
+    new PriceLimSource(new LMELIMRelation(Metals.Lme, FuturesExchangeFactory.LME)),
+    new PriceLimSource(new MonthlyLIMRelation(Futures.Comex, FuturesExchangeFactory.COMEX)),
+    new PriceLimSource(new MonthlyLIMRelation(Futures.Shfe, FuturesExchangeFactory.SFS)))
 
-  class LMELIMRelation(val node: LimNode, observationTimeOfDay: ObservationTimeOfDay) extends LIMRelation {
+  class LMELIMRelation(val node: LimNode, override val exchange: FuturesExchange) extends LIMRelation {
     private lazy val lmeMarkets = FuturesExchangeFactory.LME.marketsByCommodityName + "steelbillet" → Market.LME_STEEL_BILLETS
 
     protected val extractor = Extractor.regex[Option[LimPrice]]("""TRAF\.LME\.(\w+)\.(\d+)\.(\d+)\.(\d+)""") {
-      case List(commodity, y, m, d) => some(LimPrice(lmeMarkets(commodity.toLowerCase), Day(y, m, d), observationTimeOfDay))
+      case List(commodity, y, m, d) => some(LimPrice(lmeMarkets(commodity.toLowerCase), Day(y, m, d), exchange.closeTime))
     }
   }
 
-  class MonthlyLIMRelation(val node: LimNode, observationTimeOfDay: ObservationTimeOfDay) extends LIMRelation {
-    protected val extractor = Extractor.regex[Option[LimPrice]]("""TRAF\.(\w+)\.(\w+)_(\w+)""") {
-      case List(exchange, lim, deliveryMonth) =>
-      val optMarket = Market.fromExchangeAndLimSymbol(exchangeLookup(exchange), lim)
+  class MonthlyLIMRelation(val node: LimNode, override val exchange: FuturesExchange) extends LIMRelation {
+    protected val extractor = Extractor.regex[Option[LimPrice]]("""TRAF\.%s\.(\w+)_(\w+)""" % exchange.limName) {
+      case List(lim, deliveryMonth) =>
+      val optMarket = exchange.markets.find(_.limSymbol == Some(lim))
       val optMonth = ReutersDeliveryMonthCodes.parse(deliveryMonth)
 
       (optMarket, optMonth) match {
-        case (Some(market), Some(month)) => Some(LimPrice(market, month, observationTimeOfDay))
-        case (None, _) => debug("No Market with exchange: %s and LIM Symbol: %s" % (exchange, lim))
+        case (Some(market), Some(month)) => Some(LimPrice(market, month, exchange.closeTime))
+        case (None, _) => debug("No Market with exchange: %s and LIM Symbol: %s" % (exchange.limName, lim))
         case (_, None) => debug("Cannot parse Reuters delivery month: " + deliveryMonth)
       }
     }
-
-    def exchangeLookup(exchange: String) = if (exchange == "SHFE") "SFS" else exchange
   }
 }
 
-case class PriceLimMarketDataSource(service: LIMService, calendars: BusinessCalendars, broadcaster: Broadcaster,
-  sender: String, recipient: String) extends LimMarketDataSource(service) {
+case class PriceLimMarketDataSource(service: LIMService, bloombergImports: BloombergImports, emailService: EmailService, template: Email)
+  extends LimMarketDataSource(service) {
 
   import PriceLimMarketDataSource._
   import ScheduledTime._
@@ -65,32 +65,61 @@ case class PriceLimMarketDataSource(service: LIMService, calendars: BusinessCale
     Map(getValuesForType(PriceDataType.name, day.startOfFinancialYear, day, priceSources))
   }
 
-  override def eventSources(marketDataStore: MarketDataStore) = marketsForExchanges.map(markets =>
+  override def eventSources(marketDataStore: MarketDataStore) = limMetalMarketsForExchanges.map(markets =>
     PriceDataEventSource(PricingGroup.Metals, PriceMarketDataProvider(marketDataStore, markets)))
 
   override def availabilityTasks(marketDataStore: MarketDataStore) = List(
-    task("LME Metals", daily(calendars.LME, 20 H 00), lme, marketDataStore),
-    task("COMEX Metals", daily(calendars.COMEX, 15 H 30), comex, marketDataStore),
-    task("SHFE Metals", daily(calendars.SFS, 15 H 00), shfe, marketDataStore)
+    task("LME Metals", daily(LME.calendar, 20 H 00), lme, marketDataStore),
+    task("COMEX Metals", daily(COMEX.calendar, 15 H 30), comex, marketDataStore),
+    task("SHFE Metals", daily(SFS.calendar, 15 H 00), shfe, marketDataStore)
   )
 
 //  val exbxgMetals = new DataFlow(FuturesExchangeFactory.EXBXG, PricingGroup.Metals, Nil, metalsEmail, wuXiEmail, "Excel",
 //    "WuXi Metals") with NullMarketDataEventSource
 //      tasks(daily(SFE, 16 H 30), availabilityBroadcaster.verifyPricesAvailable(exbxgMetals), verifyPricesValid(exbxgMetals))
 
-  private val marketsForExchanges@List(lme, comex, shfe) =
-    List(LME, COMEX, SFS).map(exchange => Market.marketsWithExchange(exchange).filter(_.limSymbol.isDefined))
+  private lazy val limMetalMarketsForExchanges@List(lme, comex, shfe) = priceSources._2.map(pricesSource => {
+    val one: List[FuturesMarket] = pricesSource.exchange.markets
+    val two: List[FuturesMarket] = one.filter(_.limSymbol.isDefined)
+    val three = two.filter(isMetal)
+    val four = three.filter(correspondsToBloombergImport(pricesSource.node))
+
+    four
+  } )
+
+  //require(lme != Nil, "LME"); require(comex != Nil, "COMEX"); require(shfe != Nil, "SHFE")
+
+  private def isMetal(market: FuturesMarket) = Commodity.metalsCommodities.contains(market.commodity)
+  private def correspondsToBloombergImport(node: LimNode)(market: FuturesMarket) = bloombergImports.matches(node.name, market)
 
   private def task(name: String, time: ScheduledTime, markets: List[CommodityMarket], marketDataStore: MarketDataStore): TaskDescription =
     TaskDescription("Verify %s Prices Available" % name, time, task(name, marketDataStore, markets))
 
   private def task(name: String, marketDataStore: MarketDataStore, markets: List[CommodityMarket]): ScheduledTask =
-    new VerifyAnyMarketDataAvailable(name, marketDataStore, MarketDataSelection(Some(PricingGroup.Metals)), PriceDataType.name,
-      markets.map(PriceDataKey(_)).toSet, broadcaster, sender, recipient)
+    new VerifyMarketDataAvailable(marketDataStore, MarketDataSelection(Some(PricingGroup.Metals)), PriceDataType.name,
+      markets.map(PriceDataKey(_)).toSet, emailService, template) {
+
+      override protected def emailFor(observationDay: Day) = queryLatest(observationDay) |> { _ match {
+        case Nil => Some(template.copy(subject = "No Prices for: %s on %s" % (name, observationDay),
+                                       body = markets.map("MISSING: " + _).sorted.mkHtml()))
+        case prices => {
+          val marketAvailability = {
+            val availableMarkets = prices.map(_._1.key.asInstanceOf[PriceDataKey].market).toSet
+
+            markets.groupBy(availableMarkets.contains(_) ? "Present" | "MISSING")
+          }
+
+          marketAvailability.contains("MISSING").option {
+            template.copy(subject = "Missing Prices for: %s on %s" % (name, observationDay),
+                          body = marketAvailability.flatMultiMap { _.format("%s: %s") }.toList.sorted.mkHtml())
+          }
+        }
+      } }
+    }
 }
 
 class PriceLimSource(relation: LIMRelation) extends LimSource(List(Level.Close)) {
-  val nodes = List(relation.node)
+  val (node, nodes, exchange) = (relation.node, List(relation.node), relation.exchange)
   type Relation = LimPrice
   def description = nodes.map(_.name + " " + levelDescription)
 

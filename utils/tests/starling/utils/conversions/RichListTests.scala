@@ -4,7 +4,7 @@ import org.scalatest.testng.TestNGSuite
 import org.scalatest.matchers.ShouldMatchers
 import org.testng.annotations.Test
 import starling.utils.ImplicitConversions._
-
+import xml.{Node, XML, Utility}
 
 class RichListTests extends TestNGSuite with ShouldMatchers {
   @Test def duplicates {
@@ -28,4 +28,15 @@ class RichListTests extends TestNGSuite with ShouldMatchers {
     e ::- l ::- l ::- e should be === e :: l ::: l ::: List(e)
     l ::- e ::- l ::- l ::- e ::- e should be === l ::: List(e) ::: l ::: l ::: List(e) ::: List(e)
   }
+
+  @Test def shouldProduceNestedHtml {
+    trimXML(List(1,2,3).mkHtml()) should be === <ul><li>1</li><li>2</li><li>3</li></ul>
+  }
+
+  @Test def x {
+    val universe = Set(1,2,3,4,5)
+    val a = Set(1,2,3)
+  }
+
+  private def trimXML(s: String): Node = Utility.trim(XML.loadString(s))
 }

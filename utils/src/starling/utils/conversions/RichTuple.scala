@@ -24,6 +24,8 @@ trait RichTuple {
     def mapFirst[C](f: A => C): (C, B) = (f(t._1), t._2)
     def mapSecond[C](f: B => C): (A, C) = (t._1, f(t._2))
     def |>[C](f: (A, B) => C): C = f.tupled(t)
+
+    def format(pattern: String) = pattern.format(t._1, t._2)
   }
 
   class RichTuple3[A, B, C](t: (A, B, C)) {
@@ -32,6 +34,8 @@ trait RichTuple {
     def tail: (B, C) = (t._2, t._3)
     def init: (A, B) = (t._1, t._2)
     def last: C = t._3
+
+    def format(pattern: String) = pattern.format(t._1, t._2, t._2)
   }
 }
 

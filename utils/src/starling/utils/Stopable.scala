@@ -33,6 +33,12 @@ case class CompositeStopable(stopables: (Boolean, List[Stopable])*) extends Stop
   override def stop =  { super.stop;  enabled.map(_.stop)   }
 }
 
+case class AdaptingStopable(var adapted: Stopable) extends Stopable {
+  override def isRunning = adapted != null && adapted.isRunning
+  override def start = if (adapted != null) adapted.start
+  override def stop = if (adapted != null) adapted.stop
+}
+
 trait Enableable {
   private val enabled = new AtomicBoolean(false)
 

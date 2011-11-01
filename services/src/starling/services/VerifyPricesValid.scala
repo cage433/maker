@@ -1,35 +1,34 @@
 package starling.services
 
 import starling.daterange.Day
-import starling.gui.api.{EmailEvent, MarketDataSelection}
 import starling.market.FuturesExchange
 import starling.marketdata.PriceDataType
 import starling.pivot._
 import controller.CombinedCell
-import starling.utils.Broadcaster
 
 import starling.utils.ImplicitConversions._
 import scalaz.Scalaz._
 import starling.rmi.FC2Service
 import starling.scheduler.EmailingScheduledTask
+import starling.gui.api.{Email, MarketDataSelection}
 
 object VerifyPricesValid {
-  def apply(fc2Service:FC2Service, broadcaster: Broadcaster, dataFlow: DataFlow) = new VerifyPricesValid(
+  def apply(fc2Service:FC2Service, emailService: EmailService, dataFlow: DataFlow) = new VerifyPricesValid(
     fc2Service.marketDataPivot(MarketDataSelection(Some(dataFlow.pricingGroup)), PriceDataType),
-    dataFlow.exchange, broadcaster, dataFlow.from, dataFlow.to)
+    dataFlow.exchange, emailService, Email(dataFlow.from, dataFlow.to))
 }
 
-class VerifyPricesValid(dataSource: PivotTableDataSource, exchange: FuturesExchange, broadcaster: Broadcaster,
-                        from: String, to: String) extends EmailingScheduledTask(broadcaster, from, to) {
+class VerifyPricesValid(dataSource: PivotTableDataSource, exchange: FuturesExchange, emailService: EmailService,
+                        template: Email) extends EmailingScheduledTask(emailService, template) {
 
   private val pfs = PivotFieldsState(rowFields = fields("Market", "Period"), dataFields = fields("Price"))
 
-  def eventFor(observationDay: Day, email: EmailEvent): Option[EmailEvent] = {
+  def emailFor(observationDay: Day): Option[Email] = {
     val filter = filters("Exchange" → exchange.name, "Observation Day" → observationDay)
     val grid = dataSource.gridFor(Some(pfs.copy(filters = filter ++ filters("Validity" → "Invalid"))))
 
     (grid.hasData).option {
-      email.copy(subject = "Validation errors for: %s" % filterToString(filter),
+      template.copy(subject = "Validation errors for: %s" % filterToString(filter),
         body = <span>
                  <p>Validation errors for: { filterToString(filter) }</p>
                  <table border="1">

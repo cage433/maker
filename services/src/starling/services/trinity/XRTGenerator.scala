@@ -10,12 +10,12 @@ import starling.market.Level
 import starling.marketdata.{TimedMarketDataKey, PriceFixingsHistoryData, PriceFixingsHistoryDataKey}
 import starling.pivot.MarketValue
 import Tenor._
-import starling.curves.readers.LIBORFixing._
+import starling.curves.readers.lim.LIBORFixing._
 import starling.utils.ClosureUtil._
 import starling.utils.ImplicitConversions._
 import starling.utils.Log
 import starling.quantity.{Percentage, UOM}
-import starling.curves.readers.{LIBORFixings, LIBORFixing}
+import starling.curves.readers.lim.{LIBORFixings, LIBORFixing}
 
 
 class XRTGenerator(marketDataStore: MarketDataStore) {

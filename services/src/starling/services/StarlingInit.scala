@@ -8,6 +8,7 @@ import starling.market._
 import starling.props.{PropsHelper, Props}
 import java.net.InetAddress
 import starling.curves.readers._
+import lim.{PriceFixingLimMarketDataSource, SpotFXLimMarketDataSource, PriceLimMarketDataSource}
 import starling.utils.ImplicitConversions._
 import starling.http._
 import starling.rmi._
@@ -23,6 +24,7 @@ import starling.curves._
 import org.apache.commons.io.IOUtils
 import starling.marketdata.{MarketDataTypes, DBReferenceDataLookup}
 import starling.lim.LIMService
+import starling.gui.api.Email
 
 
 class StarlingInit( val props: Props,
@@ -97,16 +99,24 @@ class StarlingInit( val props: Props,
   lazy val referenceDataLookup = DBReferenceDataLookup(neptuneRichDB)
   lazy val dataTypes = new MarketDataTypes(referenceDataLookup)
 
+  lazy val emailService = new PersistingEmailService(
+    rmiBroadcaster, DB(props.StarlingDatabase()), props.SmtpServerHost(), props.SmtpServerPort()) with FooterAppendingEmailService {
+
+    val footer = Map("Sent by" → props.ServerType(), "Name" → props.ServerName(), "Host" → props.ExternalHostname())
+  }
+
+  lazy val bloombergImports = DBBloombergImports.importsFrom(DB(props.EAIReplica()))
+
   lazy val (fwdCurveAutoImport, marketDataStore) = log.infoWithTime("Creating Market Data Store") {
     import MarketDataSet._
     val limService = LIMService(props.LIMHost(), props.LIMPort())
-    val metalsEmail = props.MetalsEmailAddress()
-    val limEmail = props.LimEmailAddress()
+    val template = Email(props.MetalsEmailAddress(), props.LimEmailAddress())
+    val verificationEmailService = emailService.enabledIf(props.EnableVerificationEmails())
 
     val marketDataSources = MultiMap[MarketDataSet, MarketDataSource](
-      LimMetals ->> (new PriceLimMarketDataSource(limService, businessCalendars, rmiBroadcaster, metalsEmail, limEmail),
-                     new SpotFXLimMarketDataSource(limService, businessCalendars),
-                     new PriceFixingLimMarketDataSource(limService, businessCalendars, rmiBroadcaster, metalsEmail, limEmail)),
+      LimMetals ->> (new PriceLimMarketDataSource(limService, bloombergImports, verificationEmailService, template),
+                     new SpotFXLimMarketDataSource(limService, verificationEmailService, template),
+                     new PriceFixingLimMarketDataSource(limService,verificationEmailService, template)),
       LIM ->> new OilAndMetalsVARLimMarketDataSource(limService),
       System ->> new FwdCurveDbMarketDataSource(varSqlServerDB, businessCalendars, 1),
       Crude ->> new FwdCurveDbMarketDataSource(varSqlServerDB, businessCalendars, 5),

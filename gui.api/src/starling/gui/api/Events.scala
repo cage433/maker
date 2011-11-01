@@ -113,10 +113,6 @@ case class Email(from: String = "", to: String = "", subject: String = "", body:
   def bodyWithFooters = "<html><body>" + body + "\n\n<br/><br/><i>" + footers.map(kv => "%s: %s" % (kv._1, kv._2)).mkString(", ") + "</i>" + "</body></html>"
 }
 
-case class EmailEvent(from: String = "", to: String = "", subject: String = "", body: String = "") extends Event {
-  val email = Email(from, to, subject, body)
-}
-
 case class EmailSent(timeSent: Timestamp) extends StarlingGUIEvent
 
 abstract class MarketDataEvent(val observationDay: Day, val label: SnapshotIDLabel, isCorrection: Boolean) extends Event

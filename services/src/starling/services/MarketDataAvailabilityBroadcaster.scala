@@ -43,12 +43,6 @@ class MarketDataAvailabilityBroadcaster(marketDataStore: MarketDataStore, broadc
   def dataAvailable(source: MarketDataEventSource) = { validateAreMonitoring(source); !waitingSources.contains(source) }
   def await(source: MarketDataEventSource) =         { validateAreMonitoring(source); waitingSources += source         }
 
-  def verifyPricesAvailable(dataFlow: DataFlow with MarketDataEventSource) =
-    ("Verify Price %s available" % dataFlow.sink) → VerifyPriceAvailable(this, broadcaster, dataFlow)
-
-  def verifyFixingsAvailable(dataFlow: DataFlow with MarketDataEventSource) =
-    ("Verify Fixing %s available" % dataFlow.sink) → ScheduledTask.Null
-
   private def waitingDataEventSourcesFor(pricingGroup: PricingGroup) =
     waitingSources.filter(source => source.matches(pricingGroup)).toList
 

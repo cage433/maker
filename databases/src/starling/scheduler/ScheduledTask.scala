@@ -5,8 +5,9 @@ import swing.event.Event
 import starling.daterange.Day
 import starling.pivot._
 import starling.utils.ImplicitConversions._
-import starling.gui.api.EmailEvent
 import starling.utils.{Enableable, Broadcaster}
+import starling.services.EmailService
+import starling.gui.api.Email
 
 
 trait ScheduledTaskAttributes {
@@ -56,12 +57,11 @@ abstract class BroadcastingScheduledTask(broadcaster: Broadcaster) extends Sched
   protected def eventFor(observationDay: Day): Option[Event]
 }
 
-abstract class EmailingScheduledTask(broadcaster: Broadcaster, from: String, to: String)
-  extends BroadcastingScheduledTask(broadcaster) {
+abstract class EmailingScheduledTask(service: EmailService, template: Email) extends ScheduledTask {
+  final protected def execute(observationDay: Day) = emailFor(observationDay).map(service.send)
 
-  final protected def eventFor(observationDay: Day) = eventFor(observationDay, new EmailEvent(from, to))
   override def attributes =
-    super.attributes + (EmailFrom → ScheduledTaskAttribute(from)) + (EmailTo → ScheduledTaskAttribute(to))
+    super.attributes + (EmailFrom → ScheduledTaskAttribute(template.from)) + (EmailTo → ScheduledTaskAttribute(template.to))
 
-  protected def eventFor(observationDay: Day, email: EmailEvent): Option[Event]
+  protected def emailFor(observationDay: Day): Option[Email]
 }

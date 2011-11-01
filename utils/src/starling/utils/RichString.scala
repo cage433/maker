@@ -82,6 +82,8 @@ trait RichString {
 
       md5.digest().map(0xFF & _).map { "%02x".format(_) }.foldLeft(""){_ + _}
     }
+
+
     private def fold(nonEmpty: (String) => String, empty: String = s) = if (s == null || s.isEmpty) empty else nonEmpty(s)
 	}
 }
