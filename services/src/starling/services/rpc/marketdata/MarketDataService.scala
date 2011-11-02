@@ -32,13 +32,16 @@ class MarketDataService(marketDataStore: MarketDataStore)
   def getSpotFXRate(marketDataID : TitanMarketDataIdentifier, from: TitanSerializableCurrency, to: TitanSerializableCurrency) = {
     notNull("marketDataID" → marketDataID, "from" → from, "to" → to)
 
-    val (uomFrom, uomTo) = (from.fromSerializable, to.fromSerializable)
+    if (from == to) SpotFXRate(marketDataID, unitRate) else {
+      val (uomFrom, uomTo) = (from.fromSerializable, to.fromSerializable)
 
-    val rates = spotFXRatesFor(marketDataID, SpotFXDataKey(uomFrom), SpotFXDataKey(uomTo))
-      .toMapWithKeys(_.uom.denominatorUOM) + (UOM.USD → Quantity.ONE)
+      val rates = spotFXRatesFor(marketDataID, SpotFXDataKey(uomFrom), SpotFXDataKey(uomTo)).toMapWithKeys(_.uom)
 
-    (for (fromQ <- rates.get(uomFrom); toQ <- rates.get(uomTo)) yield SpotFXRate(marketDataID, (fromQ / toQ).toSerializable))
-      .getOrElse(throw new IllegalArgumentException("No Spot FX Rate for %s/%s observed on %s" % (from, to, marketDataID)))
+      val rate = rates.getOrElse(uomFrom / uomTo,
+        throw new IllegalArgumentException("No Spot FX Rate for %s/%s observed on %s" % (from, to, marketDataID)))
+
+      SpotFXRate(marketDataID, rate.toSerializable)
+    }
   }
 
   def getSpotFXRates(marketDataID : TitanMarketDataIdentifier) = {
@@ -84,9 +87,15 @@ class MarketDataService(marketDataStore: MarketDataStore)
   private def spotFXRatesFor(marketDataID : TitanMarketDataIdentifier, keys: MarketDataKey*) = {
     val rates = query[SpotFXData](marketDataID.snapshotIdentifier, marketDataID.observationDay, SpotFXDataType, keys : _*)
 
-    rates.collect { case (Some(_), SpotFXDataKey(UOMToTitanCurrency(_)), SpotFXData(rate)) =>
+    val toUSD = rates.collect { case (Some(_), SpotFXDataKey(UOMToTitanCurrency(_)), SpotFXData(rate)) =>
       if (rate.denominatorUOM == UOM.USD) rate.invert else rate
     }
+
+    val crosses = (toUSD <|*|> toUSD).map { case (first, second) => first / second }.filterNot(_.isScalar)
+
+    val allCrosses = toUSD ::: toUSD.map(_.invert) ::: crosses
+
+    allCrosses
   }
 
   private def query[MD <: MarketData : Manifest](snapshotId: TitanSnapshotIdentifier, observationDates: DateRange,
@@ -105,4 +114,6 @@ class MarketDataService(marketDataStore: MarketDataStore)
 
   private def snapshotIDFor(snapshotId: TitanSnapshotIdentifier): SnapshotID =
     snapshotId.fromTitan(marketDataStore).getOrThrow("No such snapshot: " + snapshotId)
+
+  private val unitRate = TitanSerializableQuantity(1.0, Map.empty)
 }
