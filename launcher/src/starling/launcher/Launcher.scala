@@ -1,7 +1,7 @@
 package starling.launcher
 
 import starling.browser.osgi.BrowserBromptonActivator
-import starling.singleclasspathmanager.{JettyBromptonActivator, SingleClasspathManager}
+import starling.singleclasspathmanager.{SingleClasspathManager}
 import java.net.{ConnectException, Socket, URL}
 import starling.gui.osgi.{MetalsGuiBromptonActivator, GuiLaunchParameters, GuiBromptonActivator}
 import starling.manager.BromptonActivator

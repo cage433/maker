@@ -48,36 +48,48 @@ class GuiBromptonActivator extends BromptonActivator {
 
     context.registerService(classOf[HttpServlet], new HttpServlet {
       override def doGet(req:HttpServletRequest, resp:HttpServletResponse) {
-        val tradeID = req.getParameter("tradeID")
-        val snapshotID = req.getParameter("snapshotID")
-
-        val desk = Desk.Titan
-        val tradeTimestamp = tradeService.deskCloses.get(desk).map(closes => closes.values.flatten.toList.sortWith(_.timestamp > _.timestamp)).get.head
-        val tradePredicate = TradePredicate(List(), List(List((Field("Trade ID"), SomeSelection(Set(tradeID))))))
-        val tradeSelection = TradeSelectionWithTimestamp(Some((desk, tradeTimestamp)), tradePredicate, None)
-
-        val curveIdentifier = {
-          val pricingGroup = PricingGroup.Metals
-          val marketDataSelection = MarketDataSelection(Some(pricingGroup))
-          val version = snapshotID.toInt
-          val enRule = EnvironmentRuleLabel.AllCloses
-          import EnvironmentModifierLabel._
-          val envMods = TreeSet[EnvironmentModifierLabel]() + zeroInterestRates
-          val ci = CurveIdentifierLabel.defaultLabelFromSingleDay(MarketDataIdentifier(marketDataSelection, version), starlingServer.ukBusinessCalendar)
-          ci.copy(thetaDayAndTime = ci.thetaDayAndTime.copyTimeOfDay(TimeOfDay.EndOfDay), environmentRule = enRule, envModifiers = envMods)
+        (req.getParameter("tradeID"), req.getParameter("snapshotID")) match {
+          case (tradeID:String, snapshotID:String) => {
+            showTrade(tradeID, snapshotID)
+            resp.setContentType("text/plain")
+            resp.setStatus(200)
+            resp.getWriter.println("Openned valuation page for " + tradeID + " " + snapshotID)
+          }
+          case _ => {
+            resp.setContentType("text/plain")
+            resp.setStatus(404)
+            resp.getWriter.println("Missing required parameter(s). Need tradeID and snapshotID")
+          }
         }
-
-        val slidableReportOptions = reportService.reportOptionsAvailable.options.filter(_.slidable)
-        val reportOptions = new ReportOptions(slidableReportOptions, None, None)
-
-        val tradeIDLabel = TradeIDLabel(tradeID, TradeSystemLabel("Titan", "ti"))
-        val rp = ReportParameters(tradeSelection, curveIdentifier, reportOptions, Day.today, None, true)
-
-        client.remotePublisher.publish(GotoPageEvent(ValuationParametersPage(tradeIDLabel, rp)))
       }
     }, ServiceProperties(HttpContext("gotoValuationScreen")))
 
     context.onStopped { client.stop }
+    def showTrade(tradeID:String, snapshotID:String) {
+      val desk = Desk.Titan
+      val tradeTimestamp = tradeService.deskCloses.get(desk).map(closes => closes.values.flatten.toList.sortWith(_.timestamp > _.timestamp)).get.head
+      val tradePredicate = TradePredicate(List(), List(List((Field("Trade ID"), SomeSelection(Set(tradeID))))))
+      val tradeSelection = TradeSelectionWithTimestamp(Some((desk, tradeTimestamp)), tradePredicate, None)
+
+      val curveIdentifier = {
+        val pricingGroup = PricingGroup.Metals
+        val marketDataSelection = MarketDataSelection(Some(pricingGroup))
+        val version = snapshotID.toInt
+        val enRule = EnvironmentRuleLabel.AllCloses
+        import EnvironmentModifierLabel._
+        val envMods = TreeSet[EnvironmentModifierLabel]() + zeroInterestRates
+        val ci = CurveIdentifierLabel.defaultLabelFromSingleDay(MarketDataIdentifier(marketDataSelection, version), starlingServer.ukBusinessCalendar)
+        ci.copy(thetaDayAndTime = ci.thetaDayAndTime.copyTimeOfDay(TimeOfDay.EndOfDay), environmentRule = enRule, envModifiers = envMods)
+      }
+
+      val slidableReportOptions = reportService.reportOptionsAvailable.options.filter(_.slidable)
+      val reportOptions = new ReportOptions(slidableReportOptions, None, None)
+
+      val tradeIDLabel = TradeIDLabel(tradeID, TradeSystemLabel("Titan", "ti"))
+      val rp = ReportParameters(tradeSelection, curveIdentifier, reportOptions, Day.today, None, true)
+
+      client.remotePublisher.publish(GotoPageEvent(ValuationParametersPage(tradeIDLabel, rp)))
+    }
   }
 }
 
