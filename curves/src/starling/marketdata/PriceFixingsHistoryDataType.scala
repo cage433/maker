@@ -38,16 +38,16 @@ object PriceFixingsHistoryDataType extends MarketDataType {
   }
 
   protected def fieldValuesFor(key: PriceFixingsHistoryDataKey) = Row(marketField.field → key.marketName) +?
-      (PriceFixingsHistoryDataType.exchangeField.field → key.exchangeName)
+    (exchangeField.field → key.exchangeName)
 
   def rows(key: PriceFixingsHistoryDataKey, data: PriceFixingsHistoryData) = {
     data.fixings.map { case ((level, period), fixing) =>
       Row(
-        PriceFixingsHistoryDataType.marketField.field → key.marketName,
-        PriceFixingsHistoryDataType.levelField.field → level.name,
-        PriceFixingsHistoryDataType.periodField.field → period,
-        PriceFixingsHistoryDataType.priceField.field → fixing.pivotValue
-      ) +? (PriceFixingsHistoryDataType.exchangeField.field → key.exchangeName)
+        marketField.field → key.marketName,
+        levelField.field → level.name,
+        periodField.field → period,
+        priceField.field → fixing.pivotValue
+      ) +? (exchangeField.field → key.exchangeName)
     }
   }
 

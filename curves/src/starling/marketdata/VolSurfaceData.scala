@@ -1,11 +1,8 @@
 package starling.marketdata
 
-import starling.daterange.{Month, TenorType, DateRange, Day}
-import starling.quantity.{UOM, Percentage}
+import starling.daterange.{Month, DateRange, Day}
+import starling.quantity.Percentage
 import starling.market._
-import starling.curves.{MissingMarketDataException}
-import collection.SortedMap
-import collection.immutable.TreeMap
 import starling.pivot._
 import collection.mutable.HashMap
 
@@ -56,15 +53,15 @@ object OilVolSurfaceDataType extends MarketDataType{
     (data.periods zipWithIndex).flatMap { case (period, index) => {
       val atmVol = data.atmVols(index)
       (data.skewDeltas zip data.skews).map { case (delta, vols) => Row(
-        OilVolSurfaceDataType.marketField.field → key.market.name,
-        OilVolSurfaceDataType.periodField.field → period,
-        OilVolSurfaceDataType.deltaField.field → delta.toString,
-        OilVolSurfaceDataType.volatilityField.field → vols(index))
+        marketField.field → key.market.name,
+        periodField.field → period,
+        deltaField.field → delta.toString,
+        volatilityField.field → vols(index))
       } ++ List(Row(
-        OilVolSurfaceDataType.marketField.field → key.market.name,
-        OilVolSurfaceDataType.periodField.field → period,
-        OilVolSurfaceDataType.deltaField.field → "ATM",
-        OilVolSurfaceDataType.volatilityField.field → atmVol))
+        marketField.field → key.market.name,
+        periodField.field → period,
+        deltaField.field → "ATM",
+        volatilityField.field → atmVol))
     } }
   }
 }

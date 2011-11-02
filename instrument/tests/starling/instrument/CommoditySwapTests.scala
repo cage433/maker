@@ -19,6 +19,7 @@ import starling.utils.{StarlingTest}
 import starling.quantity.{Conversions, Quantity}
 import java.util.Random
 import starling.models.DefaultRiskParameters
+import collection.immutable.Map
 
 class CommoditySwapTests extends JonTestEnv {
 
@@ -590,7 +591,8 @@ class CommoditySwapTests extends JonTestEnv {
     def make(md: DayAndTime, price: Quantity) = Environment(UnitTestingAtomicEnvironment(
     md, {
       case ForwardPriceKey(`market`, d, _) => {
-        val outPrice = ForwardCurve(market, md, Map(md.day -> price.value)).price(d)
+        val map: Map[DateRange, Quantity] = Map(md.day -> price)
+        val outPrice = ForwardCurve(market, md, map).price(d)
         outPrice
       }
       case _: IndexFixingKey => Quantity(0, USD / MT)

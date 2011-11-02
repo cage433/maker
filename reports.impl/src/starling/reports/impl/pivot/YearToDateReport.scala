@@ -2,13 +2,13 @@ package starling.reports.impl.pivot
 
 import starling.quantity.Quantity
 import starling.quantity.UOM._
-import starling.pivot.FieldDetailsGroup._
 import starling.tradestore.TradeSet
 import starling.pivot._
 import starling.gui.api.{Desk, ReportParameters}
 import starling.utils.cache.CacheFactory
 import starling.utils.{StringIO, AppendingMap}
 import starling.daterange.{Day, Timestamp}
+import starling.pivot.FieldDetailsGroup._
 
 /**
  * Report producing: YTD = (MTM - Aspect MTM at year end).
@@ -31,57 +31,69 @@ class YearToDateReport {
     }.toMap)
   })
 
-  def report(reportContextBuilder: ReportContextBuilder, curveIdentifierFactory: CurveIdentifierFactory, tradeSets: List[(TradeSet, Timestamp)], reportParameters: ReportParameters): List[UnfilteredPivotTableDataSource {def unfilteredData(pfs: PivotFieldsState): List[AppendingMap[Field, Any]]; def fieldDetailsGroups: List[FieldDetailsGroup]}] = {
-    val desks = tradeSets.flatMap {
-      case (ts, _) => {
-        ts.tradePredicate.filter.flatMap {
-          case (field, SomeSelection(values)) if field == new Field("Desk") => Some(values)
-          case _ => None
-        }
-      }
-    }.flatten.distinct.map {
-      case d => Desk.fromName(d.toString)
-    }
+  def report(reportContextBuilder: ReportContextBuilder,
+             curveIdentifierFactory: CurveIdentifierFactory,
+             tradeSets: List[(TradeSet, Timestamp)],
+             reportParameters: ReportParameters) = {
+
+    val yearToDateField = new SumPivotQuantityFieldDetails("Ytd")
+    val aspectCOY = new SumPivotQuantityFieldDetails("Aspect Close Of Year")
+    val aspectCOYC = new SumPivotQuantityFieldDetails("Aspect Close Of Year Costs")
 
     val tradesUpToDay = reportParameters.curveIdentifier.tradesUpToDay
     val expiryDay = reportParameters.expiryDay
-    val startOfFinancialYear = Day(2011, 10, 1) // we only do 2011 at the moment
 
-    if (desks.forall(deskFileMap.contains)) {
-      val endOfYear = (Map[String, Quantity]() /: desks.map(aspectValues(_).get))(_ ++ _)
-
-      val env = reportContextBuilder.contextFromCurveIdentifier(curveIdentifierFactory.unLabel(reportParameters.curveIdentifier)).environment
-      val yearToDateField = new SumPivotQuantityFieldDetails("Ytd")
-      val aspectCOY = new SumPivotQuantityFieldDetails("Aspect Close Of Year")
-      val aspectCOYC = new SumPivotQuantityFieldDetails("Aspect Close Of Year Costs")
-      //      val marketDay = reportParameters.curveIdentifier.valuationDayAndTime
-      tradeSets.map {
-        case (tradeSet, ts) => {
-          val (fieldGroups, trades) = tradeSet.readAll(ts, Some(expiryDay), Some(tradesUpToDay))
-          val rows = trades.map {
-            tradeAndFields => {
-              val trade = tradeAndFields.trade
-              val costs = if (trade.tradeDay < startOfFinancialYear) {
-                PivotQuantity.sum(trade.costs.map(c => PivotQuantity.calcOrCatch(c.mtm(env, USD))))
-              } else {
-                PivotQuantity.NULL
-              }
-
-              val mtm = PivotQuantity.calcOrCatch(trade.mtm(env))
-              val aspectMtm = endOfYear.getOrElse(trade.tradeID.toString, Quantity.NULL).pq
-              val yearToDate = mtm - aspectMtm - costs
-              tradeAndFields.fields.add("ytd", Map(yearToDateField.field -> yearToDate, aspectCOY.field -> aspectMtm, aspectCOYC.field -> costs))
-            }
+    def rows(tradeSet: TradeSet, ts: Timestamp): List[AppendingMap[Field, Any]] = {
+      val desks = tradeSets.flatMap {
+        case (ts, _) => {
+          ts.tradePredicate.filter.flatMap {
+            case (field, SomeSelection(values)) if field == new Field("Desk") => Some(values)
+            case _ => None
           }
-          new UnfilteredPivotTableDataSource() {
-            def unfilteredData(pfs: PivotFieldsState) = rows
+        }
+      }.flatten.distinct.map {
+        case d => Desk.fromName(d.toString)
+      }
 
-            def fieldDetailsGroups = FieldDetailsGroup("Report Fields", yearToDateField :: aspectCOY :: aspectCOYC :: Nil) :: fieldGroups
+      val startOfFinancialYear = Day(2011, 10, 1) // we only do 2011 at the moment
+
+      if (desks.forall(deskFileMap.contains)) {
+        val endOfYear = (Map[String, Quantity]() /: desks.map(aspectValues(_).get))(_ ++ _)
+
+        val env = reportContextBuilder.contextFromCurveIdentifier(curveIdentifierFactory.unLabel(reportParameters.curveIdentifier)).environment
+
+        //      val marketDay = reportParameters.curveIdentifier.valuationDayAndTime
+        val (fieldGroups, trades) = tradeSet.readAll(ts, Some(expiryDay), Some(tradesUpToDay))
+        trades.map {
+          tradeAndFields => {
+            val trade = tradeAndFields.trade
+            val costs = if (trade.tradeDay < startOfFinancialYear) {
+              PivotQuantity.sum(trade.costs.map(c => PivotQuantity.calcOrCatch(c.mtm(env, USD))))
+            } else {
+              PivotQuantity.NULL
+            }
+
+            val mtm = PivotQuantity.calcOrCatch(trade.mtm(env))
+            val aspectMtm = endOfYear.getOrElse(trade.tradeID.toString, Quantity.NULL).pq
+            val yearToDate = mtm - aspectMtm - costs
+            tradeAndFields.fields.add("ytd", Map(yearToDateField.field -> yearToDate, aspectCOY.field -> aspectMtm, aspectCOYC.field -> costs))
+          }
+        }
+      } else {
+        Nil
+      }
+    }
+
+    tradeSets.map {
+      case (tradeSet, ts) => {
+        new UnfilteredPivotTableDataSource() {
+          def unfilteredData(pfs: PivotFieldsState) = rows(tradeSet, ts)
+
+          def fieldDetailsGroups = {
+            List(FieldDetailsGroup("Report Fields", yearToDateField :: aspectCOY :: aspectCOYC :: Nil))
           }
         }
       }
-    } else {
-      Nil
     }
   }
 }

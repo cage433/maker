@@ -36,7 +36,7 @@ abstract class CommodityMarket(
   @transient val limSymbol : Option[LimSymbol] = None,
   @transient val precision : Option[Precision] = None
 )
-  extends Market with HasImpliedVol with KnownObservation with FixingHistoryLookup with KnownConversions
+  extends Market with HasImpliedVol with KnownObservation with ForwardCurveLookup with FixingHistoryLookup with KnownConversions
 {
   override def equals(p1: Any) = p1 match {
     case et: CommodityMarket => eaiQuoteID == et.eaiQuoteID && name.equalsIgnoreCase(et.name)
@@ -176,6 +176,8 @@ class FuturesMarket(
    * physical metal trade
    */
   def physicalMetalBenchmarkIndex : IndexWithDailyPrices = FuturesFrontPeriodIndex(this)
+
+  def priceFromForwardPrices(prices: Map[DateRange, Quantity], dateRange: DateRange) = prices(dateRange)
 }
 
 class LMEFuturesMarket(
@@ -193,9 +195,17 @@ class LMEFuturesMarket(
         @transient volatilityID : Option[Int] = None,
         @transient limSymbol: Option[LimSymbol] = None,
         @transient precision: Option[Precision] = None
-                        ) extends FuturesMarket(name, lotSize, uom, currency, businessCalendar, eaiQuoteID, tenor, expiryRule, exchange, commodity, conversions, volatilityID, limSymbol, precision)
-with HasInterpolation {
-  def interpolation = LinearInterpolation
+                        ) extends FuturesMarket(name, lotSize, uom, currency, businessCalendar, eaiQuoteID, tenor, expiryRule, exchange, commodity, conversions, volatilityID, limSymbol, precision) {
+
+  override def priceFromForwardPrices(prices: Map[DateRange, Quantity], dateRange: DateRange) = dateRange match {
+    case day: Day => {
+      val orderedDays = prices.keySet.asInstanceOf[Set[Day]].toList.sortWith(_ < _).toArray
+      val orderedPrices = orderedDays.map(prices).toArray
+
+      LinearInterpolation.interpolate(orderedDays, orderedPrices, day)
+    }
+    case _ => throw new Exception("Market " + this + " is daily so does not directly support prices for " + dateRange)
+  }
 
   /**
    * 2 days to cash
@@ -354,14 +364,6 @@ object Market {
       def lastTradingDay(d: DateRange) = d.firstDay - 1
       override def expiryDay(d: DateRange) = d.firstDay - 1
     }, FuturesExchangeFactory.COMEX, Brent, (Conversions.default + ((BBL/MT, 7.57))))
-  }
-   def testMarketWithInterpolation(name : String, currency : UOM, uom : UOM) : FuturesMarket = {
-    new FuturesMarket(name, Some(1.0), uom, currency, NilCalendar, None, Day, new FuturesExpiryRule {
-      val name = "Test"
-      def lastTradingDay(d: DateRange) = d.firstDay - 1
-    }, FuturesExchangeFactory.COMEX, Brent, (Conversions.default + ((BBL/MT, 7.57)))) with HasInterpolation {
-      def interpolation = LinearInterpolation
-    }
   }
 }
 

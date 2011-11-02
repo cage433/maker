@@ -1,6 +1,8 @@
 package starling.marketdata
 
 import starling.market.{FuturesExchange, FuturesMarket, NeptuneCommodity}
+import starling.pivot.Tupleable
+
 trait ReferenceDataLookup {
   def name : String
   final def areaCodeFor(code: NeptuneCountryCode): Option[AreaCode] = countries(code).area.map(_.code)
@@ -33,7 +35,8 @@ trait ReferenceDataLookup {
   val incoterms: Map[IncotermCode, Incoterm]
 }
 
-case class Incoterm(code: IncotermCode, name: String) {
+
+case class Incoterm(code: IncotermCode, name: String) extends Tupleable {
   def tuple = (code.code, name)
   override def toString = name
 }

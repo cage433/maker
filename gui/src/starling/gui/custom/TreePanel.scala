@@ -367,7 +367,7 @@ class TreePanel(initialValuesAndSelection:(TreePivotFilter, Selection), valueToL
   }
 
   private def filterPopup(text:String, regex:Boolean) {
-    val testText = if (regex) text else text.trim.toLowerCase
+    val testText = if (regex) "(?i)"+text else text.trim.toLowerCase
 
     val rootNode = treeComponent.rootNode
     if (testText == "") {
@@ -388,7 +388,6 @@ class TreePanel(initialValuesAndSelection:(TreePivotFilter, Selection), valueToL
             // Don't add the node if it doesn't have any children.
             val t = newParent.getUserObject.asInstanceOf[CheckBoxListElement].label
             val match1 = if (regex) {
-              t.replaceAll(testText, "azqw") != t
               t.matches(testText)
             } else {
               t.trim.toLowerCase.contains(testText)

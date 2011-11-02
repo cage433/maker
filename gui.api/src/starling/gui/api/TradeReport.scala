@@ -7,6 +7,7 @@ import starling.daterange._
 import starling.tradestore.TradePredicate
 import starling.utils.{StarlingEnum, ImplicitConversions, SColumn}
 import starling.varcalculator.NAhead
+import scalaz.Scalaz._
 
 import ImplicitConversions._
 import starling.quantity.{NamedQuantity, Quantity}
@@ -34,7 +35,7 @@ case class SnapshotType(name:String)
 
 object SnapshotType extends StarlingEnum(classOf[SnapshotType], (st:SnapshotType) => st.name) {
   val Manual = new SnapshotType("Manual")
-  val Email = new SnapshotType("Email")
+  val MarketData = new SnapshotType("Market Data")
   val Valuation = new SnapshotType("Valuation")
 }
 case class SpecificMarketDataVersion(version:Int) extends MarketDataVersion {
@@ -102,7 +103,7 @@ case class FieldDetailsGroupLabel(groupName:String, childNames:List[String])
 
 case class SnapshotIDLabel(id: Int, timestamp : Timestamp, marketDataSelection:MarketDataSelection, snapshotType:SnapshotType, version: Int) extends Ordered[SnapshotIDLabel] {
   def compare(rhs: SnapshotIDLabel) = id - rhs.id
-  def shortString = timestamp + " (s" + id + ", type " + snapshotType.name +")"
+  def shortString = timestamp.toStringSeconds + " (s" + id + ", type " + snapshotType.name + ")"
   def snapshotDay = timestamp.day
 }
 
