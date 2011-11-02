@@ -339,10 +339,16 @@ object StarlingBuild extends Build{
     settings = standardSettingsNexus
   ) dependsOn(pivot, manager)
 
+  val guiDependencies = Seq(
+    "jfree" % "jfreechart" % "1.0.0",
+    "jfree" % "jcommon" % "1.0.0",
+    "javax.servlet" % "servlet-api" % "2.5"
+  )
+
   lazy val gui = Project(
     "gui", 
     file("./gui"),
-    settings = standardSettings ++ libJars("servlet-api-jar-2.5.jar")
+    settings = standardSettingsNexus ++ (libraryDependencies ++= guiDependencies)
   ) dependsOn(fc2Facility, tradeFacility, reportsFacility, browser, rabbitEventViewerApi, singleClasspathManager)
 
   lazy val tradeFacility = Project(
