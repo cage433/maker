@@ -1,11 +1,11 @@
 package starling.services.rpc.valuation
 
-import com.trafigura.edm.shared.types.TitanId
 import starling.titan.TitanServices
 import starling.utils.{Stopwatch, Log}
 import com.trafigura.services.valuation.TradeManagementCacheNotReady
-import com.trafigura.edm.trades.{PhysicalTrade => EDMPhysicalTrade}
+import com.trafigura.edm.trademgmt.trades.{PhysicalTrade => EDMPhysicalTrade}
 import starling.titan.ExternalTitanServiceFailed
+import com.trafigura.edm.common.units.TitanId
 
 
 /**
@@ -37,7 +37,7 @@ class DefaultTitanTradeService(titanServices : TitanServices) extends TitanTrade
       val edmTrades = edmTradeResult.results.map(_.trade.asInstanceOf[EDMPhysicalTrade])
 
       // temporary code, trademgmt are sending us null titan ids
-      val (nullIds, validIds) = edmTrades.span(_.titanId == null)
+      val (nullIds, validIds) = edmTrades.span(_.identifier == null)
       if (nullIds.size > 0) {
         log.error("Null Titan trade IDs found!")
         log.error("null ids \n%s\n%s".format(nullIds, validIds))

@@ -8,7 +8,7 @@ import java.lang.UnsupportedOperationException
 import starling.instrument.ErrorInstrument
 import com.trafigura.edm.logistics.inventory._
 import starling.utils.Log
-import com.trafigura.edm.trades.{PhysicalTrade => EDMPhysicalTrade}
+import com.trafigura.edm.trademgmt.trades.{PhysicalTrade => EDMPhysicalTrade}
 import starling.instrument.physical._
 import starling.quantity.{Quantity, Percentage}
 import starling.titan.EDMConversions._
@@ -99,7 +99,7 @@ case class TitanTradeAttributes(
 object TitanTradeAttributes{
   val dummyDate = Day(1980, 1, 1)
   def errorAttributes(edmTrade : EDMPhysicalTrade, evntID : String) = {
-    val titanTradeID = edmTrade.titanId.value
+    val titanTradeID = edmTrade.identifier.value
 
     TitanTradeAttributes(
       quotaID = "",

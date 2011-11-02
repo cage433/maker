@@ -3,12 +3,12 @@ package starling.services.rpc.valuation
 import com.trafigura.events.DemultiplexerClient
 import starling.daterange.Day
 import com.trafigura.shared.events._
-import com.trafigura.edm.shared.types.TitanId
 import starling.rmi.{ProcessedEventStatus, RabbitEventDatabase}
 import starling.titan.{TitanTradeUpdateResult, TitanTradeStoreManager}
 import starling.tradestore.TradeStore.StoreResults
 import starling.utils.{Broadcaster, Log}
 import starling.gui.api.{SnapshotIDLabel, RefinedMetalsValuationChanged}
+import com.trafigura.edm.common.units.TitanId
 
 /**
  * top level received event handler for Titan Rabbit events

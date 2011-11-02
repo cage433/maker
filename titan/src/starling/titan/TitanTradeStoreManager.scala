@@ -1,16 +1,16 @@
 package starling.titan
 
 import starling.curves.Environment
-import com.trafigura.edm.shared.types.TitanId
 import starling.instrument.Trade
 import starling.daterange.Timestamp
 import EDMConversions._
 import collection.immutable.Map
-import com.trafigura.edm.trades.{CompletedTradeState, PhysicalTrade => EDMPhysicalTrade}
+import com.trafigura.edm.trademgmt.trades.{CompletedTradeState, PhysicalTrade => EDMPhysicalTrade}
 import starling.tradestore.TradeStore.StoreResults
 import starling.utils.ImplicitConversions._
 import starling.utils.{Startable, Log}
 import com.trafigura.edm.logistics.inventory.{CancelledInventoryItemStatus, InventoryItem, LogisticsQuota}
+import com.trafigura.edm.common.units.TitanId
 
 case class TitanServiceCache(private val refData : TitanTacticalRefData,
                              private val edmTradeServices : TitanEdmTradeService,
@@ -45,7 +45,7 @@ case class TitanServiceCache(private val refData : TitanTacticalRefData,
     new PhysicalMetalForwardBuilder(refData, inventoryByQuotaID, fullyAllocatedQuotaMap)
   }
   def removeTrade(titanTradeID : String) {
-    edmTrades.retain(_.titanId.value != titanTradeID)
+    edmTrades.retain(_.identifier.value != titanTradeID)
   }
   def edmInventoryLeaves : List[InventoryItem] = {
     val allInventoryIds = edmInventoryItems.keySet

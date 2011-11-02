@@ -3,7 +3,7 @@ package starling.titan
 import starling.quantity.UOMSymbol._
 import starling.utils.ImplicitConversions._
 import starling.quantity.{UOMSymbol, Percentage, UOM, Quantity}
-import com.trafigura.edm.shared.types.{Currency => TitanCurrency, Date => TitanDate,
+import com.trafigura.edm.common.units.{Currency => TitanCurrency, Date => TitanDate,
                                        Percentage => TitanPercentage, Quantity => TitanQuantity, EQuantity,
                                        CompoundUOM, UnitComponent, FundamentalUOM}
 import com.trafigura.services._
@@ -12,7 +12,6 @@ import starling.daterange.{DateRange, Tenor, SimpleDateRange, Day}
 import com.trafigura.edm.common.types.datespecifications.{DateRange => TitanDateRange}
 import starling.utils.Pattern.Extractor
 import starling.db.{MarketDataStore, SnapshotID}
-import starling.gui.api.{SnapshotMarketDataVersion, SpecificMarketDataVersion, MarketDataVersion}
 import com.trafigura.services.valuation.TitanMarketDataIdentifier
 import com.trafigura.edm.logistics.inventory.InventoryItem
 import starling.instrument.Trade
