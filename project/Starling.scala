@@ -318,7 +318,7 @@ object StarlingBuild extends Build{
   lazy val curves = Project(
     "curves", 
     file("./curves"),
-    settings = standardSettings
+    settings = standardSettingsNexus
   ) dependsOn(utils % testDependency, daterange % testDependency, maths, pivotUtils, guiapi, quantity % testDependency)
 
   lazy val instrument = Project(
