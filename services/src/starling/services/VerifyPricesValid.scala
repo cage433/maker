@@ -12,12 +12,6 @@ import starling.rmi.FC2Service
 import starling.scheduler.EmailingScheduledTask
 import starling.gui.api.{Email, MarketDataSelection}
 
-object VerifyPricesValid {
-  def apply(fc2Service:FC2Service, emailService: EmailService, dataFlow: DataFlow) = new VerifyPricesValid(
-    fc2Service.marketDataPivot(MarketDataSelection(Some(dataFlow.pricingGroup)), PriceDataType),
-    dataFlow.exchange, emailService, Email(dataFlow.from, dataFlow.to))
-}
-
 class VerifyPricesValid(dataSource: PivotTableDataSource, exchange: FuturesExchange, emailService: EmailService,
                         template: Email) extends EmailingScheduledTask(emailService, template) {
 

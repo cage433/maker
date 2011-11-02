@@ -20,7 +20,7 @@ class PersistingEmailService(broadcaster: Broadcaster, db: DB, jSender: JavaMail
       "hash"      → email.hash,
       "timestamp" → now,
       "sender"    → email.from,
-      "recipient" → email.to,
+      "recipient" → email.combinedTo,
       "subject"   → email.subject,
       "body"      → email.bodyWithFooters
     ) ) catch {
@@ -46,7 +46,7 @@ class PersistingEmailService(broadcaster: Broadcaster, db: DB, jSender: JavaMail
   )
 
   private def toMessage(email: Email) = jSender.createMimeMessage.update { message => new MimeMessageHelper(message, true).update(
-    _.setFrom(email.from), _.setTo(email.to), _.setSubject(email.subject), _.setText(email.bodyWithFooters, true)
+    _.setFrom(email.from), _.setTo(email.to.toArray), _.setSubject(email.subject), _.setText(email.bodyWithFooters, true)
   ) }
 
   private def stringColumns(columns: String*) = columns.map(c => StringColumnDefinition(c.capitalize, c, "EmailsSent")).toList

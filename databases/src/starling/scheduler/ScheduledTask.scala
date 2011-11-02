@@ -60,8 +60,8 @@ abstract class BroadcastingScheduledTask(broadcaster: Broadcaster) extends Sched
 abstract class EmailingScheduledTask(service: EmailService, template: Email) extends ScheduledTask {
   final protected def execute(observationDay: Day) = emailFor(observationDay).map(service.send)
 
-  override def attributes =
-    super.attributes + (EmailFrom → ScheduledTaskAttribute(template.from)) + (EmailTo → ScheduledTaskAttribute(template.to))
+  override def attributes = super.attributes +
+    (EmailFrom → ScheduledTaskAttribute(template.from)) + (EmailTo → ScheduledTaskAttribute(template.combinedTo))
 
   protected def emailFor(observationDay: Day): Option[Email]
 }
