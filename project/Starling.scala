@@ -289,7 +289,7 @@ object StarlingBuild extends Build{
   lazy val browserService = Project(
     "browser-service",
     file("./browser.service"),
-    settings = standardSettings
+    settings = standardSettingsNexus
   ) dependsOn(manager)
 
   lazy val browser = Project(
