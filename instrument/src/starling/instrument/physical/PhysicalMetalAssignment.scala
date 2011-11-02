@@ -14,6 +14,7 @@ import starling.market.Copper
 import starling.market.Aluminium
 import starling.utils.Log
 import starling.titan.valuation.AssignmentValuation
+import starling.quantity.UOM._
 
 
 object PhysicalMetalAssignmentOrUnassignedSalesQuota{
@@ -155,21 +156,27 @@ trait PhysicalMetalAssignmentOrUnassignedSalesQuota extends UTP with Tradeable {
 
   def benchmarkPricingSpec(env : Environment) : TitanPricingSpec = {
     val namedEnv = env.withNaming()
-    val countryCode = benchmarkCountryCode.get
+    //val countryCode = benchmarkCountryCode.get
     val month = benchmarkDeliveryDay.get.containingMonth
-    val futuresMarket = env.atomicEnv.referenceDataLookup.marketFor(commodity, countryCode)
-    val index = futuresMarket.physicalMetalBenchmarkIndex
-    val day = TitanPricingSpec.representativeDay(index, month, env.marketDay)
-      //val areaBenchmark = env.areaBenchmark(countryCode, commodity, grade, day).named("Area Benchmark")
+    //val futuresMarket = env.atomicEnv.referenceDataLookup.marketFor(commodity, countryCode)
+    //val index = futuresMarket.physicalMetalBenchmarkIndex
+    //val day = TitanPricingSpec.representativeDay(index, month, env.marketDay)
+    //val areaBenchmark = env.areaBenchmark(countryCode, commodity, grade, day).named("Area Benchmark")
     //val countryBenchmark = env.countryBenchmark(commodity, countryCode, day).named("Country Benchmark")
 
-    AveragePricingSpec(
-      index,
-      day,
+    FixedPricingSpec(
+      month.lastDay.nextWeekday,
+      List((1.0, Quantity(1234, USD/MT))),
       Quantity.NULL,
-      //areaBenchmark + countryBenchmark,
       valuationCCY
     )
+  //AveragePricingSpec(
+    //index,
+    //day,
+    //Quantity.NULL,
+    ////areaBenchmark + countryBenchmark,
+    //valuationCCY
+    //)
   }
 
   private def freightParityExplained(env : Environment) : NamedQuantity = {
