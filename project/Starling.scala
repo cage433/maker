@@ -298,10 +298,15 @@ object StarlingBuild extends Build{
     settings = standardSettings
   ) dependsOn(browserService, manager)
 
+  val guiapiDependencies = Seq(
+    "net.debasishg" % "sjson_2.8.0" % "0.8",
+    "net.databinder" % "dispatch-json_2.8.0" % "0.7.4"
+  )
+
   lazy val guiapi = Project(
-    "gui-api", 
+    "gui-api",
     file("./gui.api"),
-    settings = standardSettings
+    settings = standardSettingsNexus ++ (libraryDependencies ++= guiapiDependencies)
   ) dependsOn(pivotUtils, quantity, auth, bouncyrmi, browserService, manager)
 
   lazy val fc2Facility = Project(
