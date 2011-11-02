@@ -10,16 +10,6 @@ import starling.utils.ImplicitConversions._
 import collection.immutable.Map
 import starling.pivot.PivotQuantity
 
-
-trait HasInterpolation {
-  def interpolation: InterpolationMethod
-}
-
-
-
-
-
-
 case class ForwardCurveKey(market : CommodityMarket) extends NonHistoricalCurveKey[PriceData] {
 
   def marketDataKey = {
@@ -79,9 +69,6 @@ case class ForwardPriceKey(
   def forwardStateValue(originalAtomicEnv: AtomicEnvironment, forwardDayAndTime: DayAndTime) = {
     market match {
       case f: FuturesMarket => {
-        if(period < f.frontPeriod(forwardDayAndTime.day)) {
-          println("???!?")
-        }
         assert(
         period >= f.frontPeriod(forwardDayAndTime.day),
         "Future " + this + " has already expired on " + forwardDayAndTime
@@ -127,6 +114,11 @@ object ForwardCurve {
     new ForwardCurve(market, marketDayAndTime, prices.mapValues(Quantity(_, market.priceUOM)))
   }
 }
+
+trait ForwardCurveLookup {
+  def priceFromForwardPrices(prices: Map[DateRange, Quantity], dateRange: DateRange): Quantity
+}
+
 /** A simple forward curve. Interpolation between the supplied day prices is handled by the market.
  * <p>
  */
@@ -139,46 +131,19 @@ case class ForwardCurve(
 {
   type CurveValuesType = Quantity
   require(prices.keySet.forall(_.lastDay >= marketDayAndTime.day), "Forward curve for " + market + ", " + marketDayAndTime + " has prices in the past")
+  require(prices.values.forall(_.uom == market.priceUOM))
 
   private lazy val memoizedPrices = CacheFactory.getCache("ForwardCurve", unique = true)
 
-  private lazy val orderedDays = prices.asInstanceOf[Map[Day, Double]].keySet.toList.sortWith(_ < _).toArray
-  private lazy val orderedPrices = orderedDays.map(prices(_).value).toArray
-
   def price(dateRange: DateRange) = {
     assert(!prices.isEmpty, "No available prices for market " + market + " on " + marketDayAndTime)
-    def p = {
-      market match {
-        case m: HasInterpolation => dateRange match {
-          case day: Day => Quantity(interpolate(m, day), market.priceUOM)
-          case _ => throw new Exception("Market " + market + " is daily so does not directly support prices for " + dateRange)
-
-        }
-        case _ => prices.get(dateRange) match {
-          case Some(p) => p
-          case None => {
-            // OK this sucks. There occasionally appear to be missing monthly prices in Trinity. Unfortunately at this
-            // point we don't know if the data came from Trinity or FC. So... if the commodity is a metal we are adding
-            // a hack to simply use a proxy price
-            market.commodity match {
-              case _ : MetalCommodity => {
-                val periods = prices.keySet.toList.sortWith(_.firstDay < _.firstDay)
-                periods.find(_.firstDay >= dateRange.firstDay) match {
-                  case Some(period) => prices(period)
-                  case _ => prices(periods.last)
-                }
-              }
-              case _ =>throw new MissingPriceException(market.toString, dateRange, marketDayAndTime+": No price for " + dateRange + " on market " + market + ". Prices " + prices)
-
-            }
-          }
-        }
-      }
+    val p: Quantity = try {
+      market.priceFromForwardPrices(prices, dateRange)
+    } catch {
+      case e => throw new MissingPriceException(market.toString, dateRange, marketDayAndTime + ": Failed to get price for " + dateRange + " on market " + market + ". Prices " + prices, e)
     }
     memoizedPrices.memoize(dateRange, p)
   }
-
-  def interpolate(market: HasInterpolation, day: Day) = market.interpolation.interpolate(orderedDays, orderedPrices, day)
 
   def applyShifts(shifts : Array[Double]) : ForwardCurve = {
     assert(shifts.size == prices.size, "Shifts and prices are not the same size")

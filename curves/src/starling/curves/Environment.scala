@@ -26,7 +26,7 @@ import scalaz.Scalaz._
  */
 
 class MissingMarketDataException(s : String = "Missing data", cause : Throwable = null) extends RuntimeException(s, cause)
-class MissingPriceException(val marketName: String, val period: DateRange, msg : => String) extends MissingMarketDataException(msg)
+class MissingPriceException(val marketName: String, val period: DateRange, msg : => String, cause : Throwable = null) extends MissingMarketDataException(msg, cause)
 class MissingForwardFXException(val ccy: UOM, val forwardDay: Day, msg : => String) extends MissingMarketDataException(msg)
 
 class NoConstructorArgsEnvironment extends Environment(null, null)

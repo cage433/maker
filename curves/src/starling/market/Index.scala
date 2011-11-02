@@ -200,7 +200,7 @@ case class PublishedIndex(
   override val precision : Option[Precision] = None,
   override val level: Level = Level.Mid
 )
-  extends CommodityMarket(name, lotSize, uom, currency, businessCalendar, eaiQuoteID, Day, commodity, conversions, limSymbol, precision) with SingleIndex with HasInterpolation
+  extends CommodityMarket(name, lotSize, uom, currency, businessCalendar, eaiQuoteID, Day, commodity, conversions, limSymbol, precision) with SingleIndex
 {
   type marketType = CommodityMarket
   override def isObservationDay(day: Day): Boolean = super[SingleIndex].isObservationDay(day)
@@ -233,7 +233,15 @@ case class PublishedIndex(
 
   override def fixing(env: InstrumentLevelEnvironment, observationDay: Day) = super[SingleIndex].fixing(env, observationDay)
 
-  def interpolation = InverseConstantInterpolation
+  override def priceFromForwardPrices(prices: Map[DateRange, Quantity], dateRange: DateRange) = dateRange match {
+    case day: Day => {
+      val orderedDays = prices.keySet.asInstanceOf[Set[Day]].toList.sortWith(_ < _).toArray
+      val orderedPrices = orderedDays.map(prices).toArray
+
+      InverseConstantInterpolation.interpolate(orderedDays, orderedPrices, day)
+    }
+    case _ => throw new Exception("Market " + this + " is daily so does not directly support prices for " + dateRange)
+  }
 }
 
 case class FuturesFrontPeriodIndex(
@@ -346,6 +354,7 @@ object Index {
   lazy val NYMEX_RBOB_1ST_MONTH_VS_IPE_BRENT_1ST_MONTH = formulaIndexFromName("nymex rbob 1st month vs ipe brent 1st month (bbls)")
 
   lazy val TC6_CROSS_MEDITERRANEAN_30KT_BALTIC = publishedIndexFromName("TC6 Cross Mediterranean 30KT (Baltic)")
+  lazy val NAPHTHA_CFR_JAPAN = publishedIndexFromName("Naphtha CFR Japan")
 
   lazy val allFuturesFrontPeriodIndexes = provider.allIndexes.flatMap{case f:FuturesFrontPeriodIndex => Some(f); case _ => None}
   lazy val allPublishedIndexes = provider.allIndexes.flatMap{case p:PublishedIndex => Some(p); case _ => None}

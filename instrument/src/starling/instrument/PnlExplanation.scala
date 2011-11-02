@@ -8,8 +8,8 @@ import starling.quantity.{Percentage, UOM, Quantity}
 import starling.quantity.UOM._
 import starling.quantity.RichQuantity._
 import starling.curves._
-import starling.utils.CollectionUtils
 import starling.pivot.PivotQuantity
+import starling.utils.{Log, CollectionUtils}
 
 case class CurveKeyExplanation(curveKeys: List[CurveKey], riskMarket : String, period: Option[Period], order: Option[Int], value: PivotQuantity, priceChange : Option[PivotQuantity], d1Price : Option[PivotQuantity], volChange : Option[PivotQuantity]){
   def riskCommodity = Some(curveKeys.head.higherUnderlying)
@@ -174,9 +174,7 @@ trait PnlExplanation {
     val pnlExplanationTotal = explainedTotal + crossTerms + rounding + unexplained
 
     if(!plainPnl.hasWarningOrErrors && !pnlExplanationTotal.hasWarningOrErrors && !(plainPnl - pnlExplanationTotal).isAlmostZero){
-      println("?????????/**/")
-      println("?????????/**/" + (plainPnl + " != " + pnlExplanationTotal))
-      println("?????????/**/")
+      Log.warn("PnL explanation problem: " + plainPnl + " != " + pnlExplanationTotal)
     }
     // if we have no warnings or errors this is just a sanity check to make sure we have explained the actual pnl.
     if(!plainPnl.hasWarningOrErrors && !pnlExplanationTotal.hasWarningOrErrors)

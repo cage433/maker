@@ -13,16 +13,6 @@ import starling.utils.Pattern._
  */
 case class Percentage(value : Double) {
   import Percentage._
-
-  if(value > 150) {
-    println("!!!!!!!!!!!")
-    println("!!!!!!!!!!!")
-    println("!!!!!!!!!!!")
-    println("!!!!!!!!!!!")
-    println("!!!!!!!!!!!")
-    println("!!!!!!!!!!!d")
-  }
-
   assert(!value.isInfinite, "Percentage is infinite")
   assert(!value.isNaN, "Percentage is NaN")
 

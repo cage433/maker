@@ -211,7 +211,6 @@ class EAIMarketLookup(eai: DB, expiryRules: FuturesExpiryRules) extends MarketLo
           Commodity.fromNameOption(product.replace("Jet / Kero", "JetKero").replace(" ", "")) match {
             case Some(c) => c
             case None => {
-              println("???")
               throw new Exception("no match for : " + product)
             }
           }
