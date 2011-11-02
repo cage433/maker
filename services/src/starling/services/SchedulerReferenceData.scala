@@ -16,10 +16,10 @@ class SchedulerReferenceData(scheduler: Scheduler) extends UnfilteredPivotTableD
     timing     → task.time.prettyTime,
     period     → task.time.description,
     calendar   → task.cal.name,
-    producer   → task.attribute(DataSource),
+    producer   → task.attribute(DataSource).longText,
     enabled    → task.isEnabled,
-    consumer   → task.attribute(DataSink),
-    sender     → task.attribute(EmailFrom),
-    recipients → task.attribute(EmailTo))
+    consumer   → task.attribute(DataSink).longText,
+    sender     → task.attribute(EmailFrom).longText,
+    recipients → task.attribute(EmailTo).longText)
   }
 }

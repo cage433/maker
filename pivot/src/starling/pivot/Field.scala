@@ -271,7 +271,7 @@ object DefaultPivotFormatter extends PivotFormatter {
         }
         new TableCell(s, s.size + " values", longText = Some(longText))
       }
-      case l:HasLongText => new TableCell(l, l.toString, longText = Some(l.longText))
+      case HasLongText(text, longText) => new TableCell(text, text, longText = Some(longText))
       case v => new TableCell(v)
     }
   } catch {
@@ -279,9 +279,7 @@ object DefaultPivotFormatter extends PivotFormatter {
   }
 }
 
-trait HasLongText extends Serializable {
-  def longText: String
-}
+case class HasLongText(text:String, longText:String)
 
 case class FieldDetails(field:Field) {
   def this(name:String) = this(Field(name))

@@ -3,7 +3,6 @@ package starling.scheduler
 import starling.pivot.HasLongText
 
 
-case class ScheduledTaskAttribute(value: String, details: String*) extends HasLongText {
-  val longText = if (details.isEmpty) value else details.mkString("\n")
-  override def toString = value
+case class ScheduledTaskAttribute(value: String, details: String*) {
+  def longText = HasLongText(value, if (details.isEmpty) value else details.mkString("\n"))
 }

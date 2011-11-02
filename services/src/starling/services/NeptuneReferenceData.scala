@@ -7,18 +7,18 @@ import starling.marketdata.ReferenceDataLookup
 
 object NeptuneReferenceData {
   def areas(referenceDataLookup: ReferenceDataLookup) = ReferenceDataLookupTable(
-    "Area Code", "Area", referenceDataLookup.areas)
+    "Area Code", "Area", referenceDataLookup.areas.values.map(_.tuple).toMap)
 
   def contractLocations(referenceDataLookup: ReferenceDataLookup) = ReferenceDataLookupTable(
-    "Contract Location Code", "Contract Location", referenceDataLookup.contractLocations)
+    "Contract Location Code", "Contract Location", referenceDataLookup.contractLocations.values.map(_.tuple).toMap)
 
   def countries(referenceDataLookup: ReferenceDataLookup) = new NeptuneCountryReferenceData(referenceDataLookup)
 
   def grades(referenceDataLookup: ReferenceDataLookup) = ReferenceDataLookupTable(
-    "Grade Code", "Grade", referenceDataLookup.grades)
+    "Grade Code", "Grade", referenceDataLookup.grades.values.map(_.tuple).toMap)
 
   def incoterms(referenceDataLookup: ReferenceDataLookup) = ReferenceDataLookupTable(
-    "Incoterm Code", "Incoterm", referenceDataLookup.incoterms)
+    "Incoterm Code", "Incoterm", referenceDataLookup.incoterms.values.map(_.tuple).toMap)
 }
 
 class NeptuneCountryReferenceData(referenceDataLookup: ReferenceDataLookup) extends UnfilteredPivotTableDataSource {
