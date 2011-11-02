@@ -278,10 +278,9 @@ class ReportServiceInternal(reportContextBuilder:ReportContextBuilder, tradeStor
     createReportPivotDataSource(reportData, reportParameters)
   })
 
-  def createReportPivotDataSource(reportData:ReportData, reportParameters: ReportParameters) = {
+  def createReportPivotDataSource(reportData:ReportData, reportParameters: ReportParameters): (Set[(ObservationPoint, MarketDataKey, MarketData)], PivotTableDataSource) = {
     val tradeSets: List[(TradeSet, Timestamp)] = tradeStores.toTradeSets(reportParameters.tradeSelectionWithTimestamp)
-    val runReports = !reportParameters.reportOptions.isEmpty
-    val pivots = if (!runReports) List() else tradeSets.map {
+    val pivots = if (reportParameters.reportOptions.isEmpty) List() else tradeSets.map {
       case (tradeSet, timestamp) => {
         val tradesPivot = tradeSet.reportPivot(
           reportParameters.curveIdentifier.tradesUpToDay, reportParameters.expiryDay,
@@ -323,7 +322,6 @@ class ReportServiceInternal(reportContextBuilder:ReportContextBuilder, tradeStor
     }
     val pnlRecordedPlusPivots = reportParameters.pnlParameters match {
       case None => List()
-      case Some(pnlFromParameters) if !runReports => List()
       case Some(pnlFromParameters) => {
         for ((tradeSet,timestamp) <- tradeSets) yield {
 
@@ -344,15 +342,18 @@ class ReportServiceInternal(reportContextBuilder:ReportContextBuilder, tradeStor
         }
       }
     }
-    val yearToDates = if (runReports) {
+    val yearToDates = if (reportParameters.runReports) {
       val ytd = new YearToDateReport
       ytd.report(reportContextBuilder, curveIdentifierFactory, tradeSets, reportParameters)
     } else {
-      List()
+      Nil
     }
     val allRecorded = reportData.recorded ++ pnlRecordedPlusPivots.flatMap(_._1)
     val allPivots = pivots ::: pnlRecordedPlusPivots.map(_._2) ::: yearToDates
-    (allRecorded, UnionPivotTableDataSource.join(allPivots))
+    if (allPivots.isEmpty)
+      (allRecorded, NullPivotTableDataSource)
+    else
+      (allRecorded, UnionPivotTableDataSource.join(allPivots))
   }
 
   private def pnlReport(
