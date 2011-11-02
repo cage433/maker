@@ -1,10 +1,9 @@
 package starling.marketdata
 
 import starling.pivot._
-import pivotparsers.{PeriodPivotParser, SpecifiedValuesParser}
+import pivotparsers.{PeriodPivotParser}
 import scalaz.Scalaz._
 import starling.quantity.{Quantity, UOM}
-import starling.pivot.Row._
 import collection.immutable.TreeMap
 import starling.daterange.{Year}
 import collection.SortedMap

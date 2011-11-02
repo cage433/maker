@@ -23,10 +23,10 @@ class FreightParityDataType(referenceData: ReferenceDataLookup = ReferenceDataLo
   type dataType = FreightParityData
   type keyType = FreightParityDataKey
 
-  val contractualIncotermCodeField = FieldDetails.coded("Contractual Incoterm", referenceData.incoterms.values.map(_.tuple))
-  val contractualLocationCodeField = FieldDetails.coded("Contractual Location", referenceData.contractLocations.values.map(_.tuple))
-  val destinationIncotermCodeField = FieldDetails.coded("Destination Incoterm", referenceData.incoterms.values.map(_.tuple))
-  val destinationLocationCodeField = FieldDetails.coded("Destination Location", referenceData.countries.values.map(_.tuple))
+  val contractualIncotermCodeField = FieldDetails.coded("Contractual Incoterm", referenceData.incoterms.values)
+  val contractualLocationCodeField = FieldDetails.coded("Contractual Location", referenceData.contractLocations.values)
+  val destinationIncotermCodeField = FieldDetails.coded("Destination Incoterm", referenceData.incoterms.values)
+  val destinationLocationCodeField = FieldDetails.coded("Destination Location", referenceData.countries.values)
   val extendedKeys = List(contractualIncotermCodeField, contractualLocationCodeField, destinationIncotermCodeField, destinationLocationCodeField)
 
   val values@List(parityRateField, commentField) =
@@ -68,7 +68,7 @@ class FreightParityDataType(referenceData: ReferenceDataLookup = ReferenceDataLo
 case class ContractualLocationCode(code: String) {
   override def toString = code
 }
-case class ContractualLocation(code: ContractualLocationCode, name: String) {
+case class ContractualLocation(code: ContractualLocationCode, name: String) extends Tupleable {
   def tuple = (code.code, name)
   override def toString = name
 }

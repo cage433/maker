@@ -2,7 +2,7 @@ package starling.marketdata
 
 
 import starling.daterange.Day
-import starling.quantity.{Percentage, UOMSymbol, UOM}
+import starling.quantity.{Percentage, UOM}
 import starling.utils.ImplicitConversions._
 
 import starling.pivot._
@@ -37,11 +37,11 @@ object ForwardRateDataType extends MarketDataType {
   protected def fieldValuesFor(key: ForwardRateDataKey) = Row(currencyField.field → key.ccy)
 
   def rows(key: ForwardRateDataKey, data: ForwardRateData) = data.entries.map { entry => Row(
-    ForwardRateDataType.currencyField.field → key.ccy,
-    ForwardRateDataType.formatField.field → (if (entry.format== null) "" else entry.format),
-    ForwardRateDataType.instrumentTypeField.field → entry.trinityInstrumentType,
-    ForwardRateDataType.dayField.field → entry.forwardDay,
-    ForwardRateDataType.rateField.field → Percentage(entry.rate)
+    currencyField.field → key.ccy,
+    formatField.field → (if (entry.format== null) "" else entry.format),
+    instrumentTypeField.field → entry.trinityInstrumentType,
+    dayField.field → entry.forwardDay,
+    rateField.field → Percentage(entry.rate)
   ) }
 }
 

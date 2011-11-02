@@ -19,7 +19,7 @@ object AreaCode{
   val CHN = AreaCode("CHN")
   val hardCoded = Set(EUR, SAM, NAM, ASI, CHN)
 }
-case class Area(code:AreaCode, name:String) {
+case class Area(code:AreaCode, name:String) extends Tupleable {
   def tuple = (code.code, name)
   override def toString = name
 }
@@ -27,7 +27,7 @@ case class Area(code:AreaCode, name:String) {
 case class GradeCode(code : String) {
   override def toString = code
 }
-case class Grade(code:GradeCode, name:String) {
+case class Grade(code:GradeCode, name:String) extends Tupleable {
   def tuple = (code.code, name)
   override def toString = name
 }
@@ -51,8 +51,8 @@ class GradeAreaBenchmarkDataType(referenceData: ReferenceDataLookup = ReferenceD
   type keyType = GradeAreaBenchmarkMarketDataKey
 
   val commodityField = FieldDetails("Commodity", new SpecifiedValuesParser(Commodity.metalsCommodities.map(_.name).toSet))
-  val areaCodeField = FieldDetails.coded("Area", referenceData.areas.values.map(_.tuple))
-  val gradeCodeField = FieldDetails.coded("Grade", referenceData.grades.values.map(_.tuple))
+  val areaCodeField = FieldDetails.coded("Area", referenceData.areas.values)
+  val gradeCodeField = FieldDetails.coded("Grade", referenceData.grades.values)
   val effectiveFromField = FieldDetails("Effective From", DayPivotParser)
   val benchmarkPriceField = FieldDetails.createMeasure("Benchmark Price",
     parser0 = PivotQuantityPivotParser, formatter0 = PivotQuantitySetPivotFormatter)

@@ -17,7 +17,7 @@ class CountryBenchmarkDataType(referenceData: ReferenceDataLookup = ReferenceDat
 
   val commodityField = FieldDetails("Commodity", new SpecifiedValuesParser(Commodity.metalsCommodities.map(_.name).toSet))
   val areaField = FieldDetails("Area")
-  val countryCodeField = FieldDetails.coded("Country", referenceData.countries.values.map(_.tuple))
+  val countryCodeField = FieldDetails.coded("Country", referenceData.countries.values)
   val effectiveFromField = FieldDetails("Effective From", DayPivotParser)
   val benchmarkPriceField = FieldDetails.createMeasure("Benchmark Price",
     parser0 = PivotQuantityPivotParser, formatter0 = PivotQuantitySetPivotFormatter)
@@ -68,7 +68,7 @@ case class CountryBenchmarkMarketDataKey(commodity: Commodity) extends MarketDat
 case class NeptuneCountryCode(code: String) {
   override def toString = code
 }
-case class NeptuneCountry(code: NeptuneCountryCode, name: String, area: Option[Area]) {
+case class NeptuneCountry(code: NeptuneCountryCode, name: String, area: Option[Area]) extends Tupleable {
   def tuple = (code.code, name)
   override def toString = name
 }

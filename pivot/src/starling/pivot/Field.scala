@@ -380,6 +380,10 @@ class StrategyFieldDetails(comparator0: Ordering[PivotTreePath]) extends TreeFie
   override def comparator = comparator0.asserting.untyped
 }
 
+trait Tupleable {
+  def tuple: (String, String)
+}
+
 object FieldDetails {
   def apply(name:String) = new FieldDetails(name)
   def apply(name:String, parser0:PivotParser) = new FieldDetails(name) {override def parser = parser0}
@@ -392,8 +396,8 @@ object FieldDetails {
     override def formatter = formatter0
     override def parser = parser0
   }
-  def coded(name:String, codesToNames:Iterable[(String,String)]) = {
-    val formatterParser = new CodedFormatterAndParser(codesToNames.toMap)
+  def coded(name:String, codesToNames:Iterable[Tupleable]) = {
+    val formatterParser = new CodedFormatterAndParser(codesToNames.map(_.tuple).toMap)
     new FieldDetails(name) {
       override def parser = formatterParser
       override def formatter = formatterParser
