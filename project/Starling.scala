@@ -191,10 +191,14 @@ object StarlingBuild extends Build{
     settings = standardSettingsNexus
   ) dependsOn(daterange, quantity)
 
+  val mathsDependencies = Seq(
+    "org.apache.commons" % "commons-math" % "2.1"
+  )
+
   lazy val maths = Project(
-    "maths", 
+    "maths",
     file("./maths"),
-    settings = standardSettings
+    settings = standardSettingsNexus ++ (libraryDependencies ++= mathsDependencies)
   ) dependsOn(quantity % testDependency, daterange % testDependency)
 
 
