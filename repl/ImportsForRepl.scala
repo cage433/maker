@@ -22,6 +22,7 @@ import starling.services.rpc.logistics._
 import starling.services.rpc.valuation._
 import starling.services.rpc.marketdata._
 import starling.titan._
+import com.trafigura.services.valuation.TitanMarketDataIdentifier
 
 def setNullHolidays{
   import starling.calendar._
@@ -84,4 +85,4 @@ lazy val titanTradeStoreManager = TitanTradeStoreManager(
 
 lazy val environmentProvider = new DefaultEnvironmentProvider(devInstance.marketDataStore, neptuneRefData)
 lazy val valuationService = new ValuationService(environmentProvider, titanTradeStore)
-lazy val marketDataService = new MarketDataService(devInstance.marketDataStore, environmentProvider)
+lazy val marketDataService = new MarketDataService(devInstance.marketDataStore)

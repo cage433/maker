@@ -9,7 +9,7 @@ case class PricingValuationDetails(
   price : Quantity,
   premium : Quantity,
   // currently excludes premium - need to check with business
-  value: Quantity,
+  value : Quantity,
   isComplete : Boolean,
   fixedQuantity : Quantity,
   pricingType : String,

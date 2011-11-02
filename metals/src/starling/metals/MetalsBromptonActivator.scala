@@ -150,7 +150,7 @@ class MetalsBromptonActivator extends BromptonActivator with Log with scalaz.Ide
       import com.trafigura.services.marketdata._
       import starling.services.rpc.marketdata._
 
-      val marketDataService = new MarketDataService(marketDataStore, environmentProvider)
+      val marketDataService = new MarketDataService(marketDataStore)
 
       context.registerService(classOf[MarketDataServiceApi], marketDataService, ServiceProperties(ExportTitanRMIProperty, ExportTitanHTTPProperty))
       context.registerService(classOf[ExampleServiceApi], ExampleService, ServiceProperties(ExportTitanHTTPProperty))

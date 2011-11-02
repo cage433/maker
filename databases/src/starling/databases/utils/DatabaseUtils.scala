@@ -76,9 +76,10 @@ object DatabaseUtils {
 }
 
 object RefreshDatabase {
+  System.setProperty("log4j.configuration", "utils/resources/log4j.properties")
   def main(args:Array[String]) {
-    val from = args(0)
-    val to = args(1)
+    val from = "starling_richard_h"
+    val to = "starling_thomasr2"
     Log.infoWithTime("Backup") { DatabaseUtils.backupDatabase(from) }
     Log.infoWithTime("Copy") { DatabaseUtils.refreshDatabase(from, to) }
   }

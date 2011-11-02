@@ -18,7 +18,7 @@ trait JMocker extends BeforeAndAfter { self: Suite =>
   trait JMockery {
     def mock[T <: AnyRef](implicit manifest: Manifest[T]): T
     def expecting(f: => Any)
-    def whenExecuting(fun: => Unit)
+    def whenExecuting[T](fun: => T): T
   }
 
   class AdaptingJMockery extends JMockery {
@@ -26,7 +26,7 @@ trait JMocker extends BeforeAndAfter { self: Suite =>
     def pop = stack.pop
     def mock[T <: AnyRef](implicit manifest: Manifest[T]): T = adapted.mock[T]
     def expecting(f: => Any) = adapted.expecting(f)
-    def whenExecuting(fun: => Unit) = adapted.whenExecuting(fun)
+    def whenExecuting[T](fun: => T) = adapted.whenExecuting(fun)
 
     private val stack = new Stack[JMockery]
     private def adapted = stack.top
@@ -41,9 +41,10 @@ trait JMocker extends BeforeAndAfter { self: Suite =>
       context.checking(e)
     }
 
-    def whenExecuting(fun: => Unit) = {
-      fun
+    def whenExecuting[T](fun: => T): T = {
+      val res = fun
       context.assertIsSatisfied()
+      res
     }
   }
 

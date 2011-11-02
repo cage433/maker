@@ -16,27 +16,32 @@ import starling.daterange.{StoredFixingPeriod, DateRange, Day}
 import scalaz.Scalaz._
 import starling.db.{SnapshotID, MarketDataStore}
 import valuation.TitanMarketDataIdentifier
+import com.trafigura.services.valuation.TitanMarketDataIdentifier
 
 
-class MarketDataService(marketDataStore: MarketDataStore, environmentProvider: EnvironmentProvider)
+class MarketDataService(marketDataStore: MarketDataStore)
   extends MarketDataServiceApi with Log {
 
   /** Return all snapshots for a given observation day, or every snapshot if no day is supplied */
-  def marketDataSnapshotIDs(observationDay: Option[Day] = None) =
-    environmentProvider.snapshots(observationDay).map(_.toSerializable)
+  def marketDataSnapshotIDs(observationDay: Option[Day] = None) : List[TitanSnapshotIdentifier] = marketDataStore.snapshots.filter(ss =>
+      ss.marketDataSelection.pricingGroup == Some(PricingGroup.Metals) 
+    ).toList.sortWith(_>_).map(_.toSerializable)
 
-  def latestSnapshotID() = marketDataStore.latestSnapshot(PricingGroup.Metals).map(_.toSerializable)
+  def latestSnapshotID() : Option[TitanSnapshotIdentifier] = marketDataStore.latestSnapshot(PricingGroup.Metals).map(_.toSerializable)
 
   def getSpotFXRate(marketDataID : TitanMarketDataIdentifier, from: TitanSerializableCurrency, to: TitanSerializableCurrency) = {
     notNull("marketDataID" → marketDataID, "from" → from, "to" → to)
 
-    val (uomFrom, uomTo) = (from.fromSerializable, to.fromSerializable)
+    if (from == to) SpotFXRate(marketDataID, unitRate) else {
+      val (uomFrom, uomTo) = (from.fromSerializable, to.fromSerializable)
 
-    val rates = spotFXRatesFor(marketDataID, SpotFXDataKey(uomFrom), SpotFXDataKey(uomTo))
-      .toMapWithKeys(_.uom.denominatorUOM) + (UOM.USD → Quantity.ONE)
+      val rates = spotFXRatesFor(marketDataID, SpotFXDataKey(uomFrom), SpotFXDataKey(uomTo)).toMapWithKeys(_.uom)
 
-    (for (fromQ <- rates.get(uomFrom); toQ <- rates.get(uomTo)) yield SpotFXRate(marketDataID, (fromQ / toQ).toSerializable))
-      .getOrElse(throw new IllegalArgumentException("No Spot FX Rate for %s/%s observed on %s" % (from, to, marketDataID)))
+      val rate = rates.getOrElse(uomFrom / uomTo,
+        throw new IllegalArgumentException("No Spot FX Rate for %s/%s observed on %s" % (from, to, marketDataID)))
+
+      SpotFXRate(marketDataID, rate.toSerializable)
+    }
   }
 
   def getSpotFXRates(marketDataID : TitanMarketDataIdentifier) = {
@@ -82,9 +87,15 @@ class MarketDataService(marketDataStore: MarketDataStore, environmentProvider: E
   private def spotFXRatesFor(marketDataID : TitanMarketDataIdentifier, keys: MarketDataKey*) = {
     val rates = query[SpotFXData](marketDataID.snapshotIdentifier, marketDataID.observationDay, SpotFXDataType, keys : _*)
 
-    rates.collect { case (Some(_), SpotFXDataKey(UOMToTitanCurrency(_)), SpotFXData(rate)) =>
+    val toUSD = rates.collect { case (Some(_), SpotFXDataKey(UOMToTitanCurrency(_)), SpotFXData(rate)) =>
       if (rate.denominatorUOM == UOM.USD) rate.invert else rate
     }
+
+    val crosses = (toUSD <|*|> toUSD).map { case (first, second) => first / second }.filterNot(_.isScalar)
+
+    val allCrosses = toUSD ::: toUSD.map(_.invert) ::: crosses
+
+    allCrosses
   }
 
   private def query[MD <: MarketData : Manifest](snapshotId: TitanSnapshotIdentifier, observationDates: DateRange,
@@ -103,4 +114,6 @@ class MarketDataService(marketDataStore: MarketDataStore, environmentProvider: E
 
   private def snapshotIDFor(snapshotId: TitanSnapshotIdentifier): SnapshotID =
     snapshotId.fromTitan(marketDataStore).getOrThrow("No such snapshot: " + snapshotId)
+
+  private val unitRate = TitanSerializableQuantity(1.0, Map.empty)
 }
