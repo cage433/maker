@@ -104,8 +104,13 @@ case class UploadInterestRatesUpdate(user : User, label : String, observationDat
     Map("currency" → currency, "interestRates" → interestRates.map(_.toString))
 }
 
-case class Email(from: String = "", to: String = "", subject: String = "", body: String = "", footers: Map[String, String] = Map()) {
+object Email {
+  def apply(from: String, to: String): Email = Email(from, to.split(";").map(_.trim).toList)
+}
+
+case class Email(from: String = "", to: List[String]= Nil, subject: String = "", body: String = "", footers: Map[String, String] = Map()) {
   val hash = (from + to + subject + body).md5
+  def combinedTo = to.mkString("; ")
 
   def +(footer: (String, String)) = copy(footers = this.footers + footer)
   def +(footers: Map[String, String]) = copy(footers = this.footers ++ footers)

@@ -28,7 +28,7 @@
     <orderEntry type="module-library" exported="">
       <library>
         <CLASSES>
-          <root url="jar://$MODULE_DIR$/lib/commons-math-2.1.jar!/" />
+          <root url="jar://$USER_HOME$/.ivy2/cache/org.apache.commons/commons-math/jars/commons-math-2.1.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />

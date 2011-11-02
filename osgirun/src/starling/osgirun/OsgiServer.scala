@@ -81,8 +81,7 @@ object ServerBundles extends BundleDefinitions {
 
     val mergeJars = Map(
       ("titan-hub-persistence-model", "") -> List("scala-hub-support-2.14.jar", /*"persistence-support-2.3.jar",*/
-        "scala-model-with-persistence.jar", "titan-core.jar", "titan-security.jar", "titan-utils.jar"),
-      ("jeksparser-calculator", "") -> List("jeksparser.jar", "calculator.jar")
+        "scala-model-with-persistence.jar", "titan-core.jar", "titan-security.jar", "titan-utils.jar")
     )
 
     val (includes, excludes) = (

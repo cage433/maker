@@ -23,19 +23,20 @@ object GUICode {
     "pivot", "pivot.utils", "browser", "browser.service", "fc2.facility", "launcher", "manager", "singleclasspathmanager",
     "reports.facility", "rabbit.event.viewer.api", "trade.facility", "osgimanager")
 
-  val ivyDir = System.getProperty("user.home") + "/.ivy2/"
+  val ivyDir = System.getProperty("user.home") + "/.ivy2/cache/"
 
   val libJarNames = Map(
     "scala-library" -> scalaLibraryJar,
     "scala-swing" -> new File("lib/scala/lib_managed/scala-swing-jar-2.9.1.jar"),
-    "jna" -> new File(ivyDir + "cache/sbt/bug/net/java/dev/jna/jna/jars/jna-3.3.0.jar"),
-    "platform" -> new File(ivyDir + "cache/net.java.dev.jna/jna/jars/jna-3.3.0-platform.jar"),
-    "cglib-nodep" -> new File(ivyDir + "cache/cglib/cglib-nodep/jars/cglib-nodep-2.2.jar"),
-    "commons-io" -> new File(ivyDir + "cache/commons-io/commons-io/jars/commons-io-1.3.2.jar"),
-    "netty" -> new File(ivyDir + "cache/org.jboss.netty/netty/bundles/netty-3.2.5.Final.jar"),
+    "jna" -> new File(ivyDir + "sbt/bug/net/java/dev/jna/jna/jars/jna-3.3.0.jar"),
+    "platform" -> new File(ivyDir + "net.java.dev.jna/jna/jars/jna-3.3.0-platform.jar"),
+    "cglib-nodep" -> new File(ivyDir + "cglib/cglib-nodep/jars/cglib-nodep-2.2.jar"),
+    "commons-io" -> new File(ivyDir + "commons-io/commons-io/jars/commons-io-1.3.2.jar"),
+    "netty" -> new File(ivyDir + "org.jboss.netty/netty/bundles/netty-3.2.5.Final.jar"),
     "jxlayer" -> new File("browser/lib/jxlayer-4.0.jar"),
     "looks" -> new File("browser/lib/looks-2.3.1.jar"),
-    "jfreechart" -> new File("gui/lib_managed/jfreechart-jar-1.0.0.jar"),
+    "jfreechart" -> new File(ivyDir + "jfree/jfreechart/jars/jfreechart-1.0.0.jar"),
+    "jcommon" -> new File(ivyDir + "jfree/jcommon/jars/jcommon-1.0.0.jar"),
     "servlet-api" -> new File("lib/servlet-api-jar-2.5.jar"),
     "jetty" -> new File("services/lib_managed/jetty-jar-6.1.26.jar"),
     "jetty-utls" -> new File("services/lib_managed/jetty-util-jar-6.1.26.jar"),
@@ -44,15 +45,15 @@ object GUICode {
     "eclipse.mylyn.wikitext.textile.core_1.4.0.I20100805-0500-e3x" -> new File("browser/lib/org.eclipse.mylyn.wikitext.textile.core_1.4.0.I20100805-0500-e3x.jar"),
     "swingx-core" -> new File("browser/lib/swingx-core-1.6.2.jar"),
     "timingframework" -> new File("browser/lib/timingframework-1.0.jar"),
-    "commons-codec" -> new File(ivyDir + "cache/commons-codec/commons-codec/jars/commons-codec-1.4.jar"),
-    "google-collections" -> new File(ivyDir + "cache/com.google.collections/google-collections/jars/google-collections-1.0.jar"),
-    "joda-time" -> new File(ivyDir + "cache/joda-time/joda-time/jars/joda-time-1.6.jar"),
-    "log4j" -> new File(ivyDir + "cache/log4j/log4j/jars/log4j-1.2.16.jar"),
+    "commons-codec" -> new File(ivyDir + "commons-codec/commons-codec/jars/commons-codec-1.4.jar"),
+    "google-collections" -> new File(ivyDir + "com.google.collections/google-collections/jars/google-collections-1.0.jar"),
+    "joda-time" -> new File(ivyDir + "joda-time/joda-time/jars/joda-time-1.6.jar"),
+    "log4j" -> new File(ivyDir + "log4j/log4j/jars/log4j-1.2.16.jar"),
     "slf4j-api" -> new File("databases/lib_managed/slf4j-api-jar-1.6.1.jar"),
-    "slf4j-log4j12" -> new File(ivyDir + "cache/org.slf4j/slf4j-log4j12/jars/slf4j-log4j12-1.6.1.jar"),
-    "xstream" -> new File(ivyDir + "cache/com.thoughtworks.xstream/xstream/jars/xstream-1.3.1.jar"),
-    "memcached" -> new File(ivyDir + "cache/spy/spymemcached/jars/spymemcached-2.7.3.jar"),
-    "scalaz-core" -> new File(ivyDir + "cache/org.scalaz/scalaz-core_2.9.1/jars/scalaz-core_2.9.1-6.0.3.jar"),
+    "slf4j-log4j12" -> new File(ivyDir + "org.slf4j/slf4j-log4j12/jars/slf4j-log4j12-1.6.1.jar"),
+    "xstream" -> new File(ivyDir + "com.thoughtworks.xstream/xstream/jars/xstream-1.3.1.jar"),
+    "memcached" -> new File(ivyDir + "spy/spymemcached/jars/spymemcached-2.7.3.jar"),
+    "scalaz-core" -> new File(ivyDir + "org.scalaz/scalaz-core_2.9.1/jars/scalaz-core_2.9.1-6.0.3.jar"),
     "transloader" -> new File("browser/lib/transloader-0.4.jar")
   )
 
