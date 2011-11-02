@@ -30,7 +30,7 @@ class MetalValuationSnapshotCreator( broadcaster:Broadcaster,
 
   private def doCheck(version:Int) {
     val observationDaysToCheck = (Day.today.addWeekdays(-2) until Day.today).filter(_.isWeekday)
-    val latestSnapshot = SnapshotMarketDataVersion(environmentProvider.latestSnapshot.label)
+    val latestSnapshot = SnapshotMarketDataVersion(environmentProvider.latestMetalsValuationSnapshot.label)
     val currentVersion = SpecificMarketDataVersion(version)
 
     observationDaysToCheck.foreach { observationDay => {
@@ -43,14 +43,14 @@ class MetalValuationSnapshotCreator( broadcaster:Broadcaster,
         case (MissingMarketDataResults,MissingMarketDataResults) =>
         case (MissingMarketDataResults,SuccessResults(_)) => {
           log.info("Snapshoting because first Metals valuation succeeded for " + observationDay)
-          environmentProvider.snapshot(version)
+          environmentProvider.makeValuationSnapshot(version)
         }
         case (SuccessResults(_),MissingMarketDataResults) =>
         case (SuccessResults(v1),SuccessResults(v2)) => {
           val changedTrades = v1.filter{ case (tradeID, quotaValues) => quotaValues != v2(tradeID) }
           if (!changedTrades.isEmpty) {
             log.info("Snapshoting because Metals valuation changed for " + changedTrades.size + " trades")
-            val snapshotID = environmentProvider.snapshot(version)
+            val snapshotID = environmentProvider.makeValuationSnapshot(version)
             broadcaster.broadcast(RefinedMetalsValuationChanged(observationDay, snapshotID.label, changedTrades.keySet))
           }
         }

@@ -8,6 +8,7 @@ import starling.instrument.physical.PhysicalMetalForward
 import valuation.QuotaValuation
 import com.trafigura.services.TitanSnapshotIdentifier
 import starling.daterange.Day
+import starling.titan.EDMConversions._
 
 /**
  * Valuation service implementations
@@ -17,6 +18,8 @@ class ValuationService(
   titanTradeStore : TitanTradeStore
 )
   extends ValuationServiceApi with Log {
+
+  def latestSnapshotID() : TitanSnapshotIdentifier = environmentProvider.latestMetalsValuationSnapshot.toSerializable
 
   def valueAllTradeQuotas(marketDataIdentifier : TitanMarketDataIdentifier) : Map[String, Either[String, List[QuotaValuation]]] = {
 
@@ -54,7 +57,7 @@ class ValuationService(
    * Return all snapshots that are valid for a given observation day, ordered from most recent to oldest
    */
   def marketDataSnapshotIDs(observationDay: Option[Day] = None): List[TitanSnapshotIdentifier] = {
-    environmentProvider.snapshots().filter {
+    environmentProvider.metalsValuationSnapshots().filter {
       snapshotID =>
 
         observationDay match {

@@ -16,16 +16,18 @@ import starling.daterange.{StoredFixingPeriod, DateRange, Day}
 import scalaz.Scalaz._
 import starling.db.{SnapshotID, MarketDataStore}
 import valuation.TitanMarketDataIdentifier
+import com.trafigura.services.valuation.TitanMarketDataIdentifier
 
 
-class MarketDataService(marketDataStore: MarketDataStore, environmentProvider: EnvironmentProvider)
+class MarketDataService(marketDataStore: MarketDataStore)
   extends MarketDataServiceApi with Log {
 
   /** Return all snapshots for a given observation day, or every snapshot if no day is supplied */
-  def marketDataSnapshotIDs(observationDay: Option[Day] = None) =
-    environmentProvider.snapshots(observationDay).map(_.toSerializable)
+  def marketDataSnapshotIDs(observationDay: Option[Day] = None) : List[TitanSnapshotIdentifier] = marketDataStore.snapshots.filter(ss =>
+      ss.marketDataSelection.pricingGroup == Some(PricingGroup.Metals) 
+    ).toList.sortWith(_>_).map(_.toSerializable)
 
-  def latestSnapshotID() = marketDataStore.latestSnapshot(PricingGroup.Metals).map(_.toSerializable)
+  def latestSnapshotID() : Option[TitanSnapshotIdentifier] = marketDataStore.latestSnapshot(PricingGroup.Metals).map(_.toSerializable)
 
   def getSpotFXRate(marketDataID : TitanMarketDataIdentifier, from: TitanSerializableCurrency, to: TitanSerializableCurrency) = {
     notNull("marketDataID" → marketDataID, "from" → from, "to" → to)
