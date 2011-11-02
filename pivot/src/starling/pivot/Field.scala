@@ -183,15 +183,7 @@ object TreePivotFormatter extends PivotFormatter {
     value match {
       case pivotTreePath:PivotTreePath => new TableCell(pivotTreePath, pivotTreePath.lastElement, LeftTextPosition)
       case s:Set[_] => {
-        val longText = {
-          val list = s.toList
-          if (list.size <= 20) {
-            list.map(_.toString).mkString(", ")
-          } else {
-            val firstTwenty = list.slice(0, 20)
-            s.size + " values: " + firstTwenty.map(_.toString).mkString(", ") + " ..."
-          }
-        }
+        val longText = DefaultPivotFormatter.limitedMkString(s, _.toString)
         new TableCell(s, s.size + " values", longText = Some(longText))
       }
       case s:String => new TableCell(s, s)
@@ -255,27 +247,31 @@ object EmptySetOrQuantityPivotFormatter extends PivotFormatter {
 }
 
 object DefaultPivotFormatter extends PivotFormatter {
-  def format(value:Any, formatInfo:ExtraFormatInfo) = try {
-    value match {
-      case s:Set[_] if s.isEmpty => TableCell.Null
-      case s:Set[_] if s.size == 1 => new TableCell(value)
-      case s:Set[_] => {
-        val longText = {
-          val list = s.toList
-          if (list.size <= 20) {
-            list.map(_.toString).mkString(", ")
-          } else {
-            val firstTwenty = list.slice(0, 20)
-            s.size + " values: " + firstTwenty.map(_.toString).mkString(", ") + " ..."
-          }
-        }
-        new TableCell(s, s.size + " values", longText = Some(longText))
-      }
-      case HasLongText(text, longText) => new TableCell(text, text, longText = Some(longText))
-      case v => new TableCell(v)
+  def limitedMkString(values:Iterable[_], format:Any=>String) = {
+    val list = values.toList
+    if (list.size <= 20) {
+      list.map(format(_)).mkString(", ")
+    } else {
+      val firstTwenty = list.slice(0, 20)
+      values.size + " values: " + firstTwenty.map(format(_)).mkString(", ") + " ..."
     }
-  } catch {
-    case t:Throwable => TableCell("Error during formatting:" + t.getMessage)
+  }
+  def formatMany(s:Set[_], format:Any=>String) = {
+    val longText = limitedMkString(s, format)
+    new TableCell(s, s.size + " values", longText = Some(longText))
+  }
+  def format(value:Any, formatInfo:ExtraFormatInfo) = {
+    try {
+       value match {
+         case s:Set[_] if s.isEmpty => TableCell.Null
+         case s:Set[_] if s.size == 1 => new TableCell(value)
+         case s:Set[_] => formatMany(s, _.toString)
+         case HasLongText(text, longText) => new TableCell(text, text, longText = Some(longText))
+         case v => new TableCell(v)
+       }
+     } catch {
+       case t:Throwable => TableCell("Error during formatting:" + t.getMessage)
+     }
   }
 }
 
@@ -407,8 +403,17 @@ object FieldDetails {
 
 class CodedFormatterAndParser(codesToName:Map[String,String]) extends PivotFormatter with PivotParser {
   def format(value: Any, formatInfo: ExtraFormatInfo) = {
-    val label = codesToName.getOrElse(value.asInstanceOf[String], throw new Exception("Unknown code: " + value))
-    new TableCell(value, label, longText = Some(label + " [" + value + "]"))
+    value match {
+      case values:Set[_] if values.isEmpty => TableCell.Null
+      case values:Set[_] if values.size == 1 => singleValue(values.iterator.next.asInstanceOf[String])
+      case values:Set[_] => DefaultPivotFormatter.formatMany(values, v => codeToName(v.asInstanceOf[String]))
+      case code:String => singleValue(code)
+    }
+  }
+  private def codeToName(code:String) = codesToName.getOrElse(code, throw new Exception("Unknown code: " + code))
+  private def singleValue(code:String) = {
+    val name = codeToName(code)
+    new TableCell(code, name, longText = Some(name+ " [" + code+ "]"))
   }
   def parse(text:String, extraFormatInfo:ExtraFormatInfo) = {
     val lowerCaseNameToCode = codesToName.map(cn => cn._2.trim.toLowerCase -> cn._1)
