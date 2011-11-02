@@ -51,7 +51,7 @@ object FuturesExchange{
 }
 
 object FuturesExchangeFactory extends StarlingEnum(classOf[FuturesExchange], (f: FuturesExchange) => f.name, otherTypes = Nil) {
-  val LME = new FuturesExchange("LME", DailyDelivery, LME_Official) {
+  val LME = new FuturesExchange("LME", DailyDelivery, LMEClose) {
     lazy val calendar = Market.cals.LME
 
     /**
