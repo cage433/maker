@@ -135,6 +135,7 @@ class Day private (@transient val year : Int, @transient val month : Int, @trans
   def dayOfWeek = DayOfWeek(julianDayNumber % 7)
 
   def previousBusinessDay(bc : BusinessCalendar) : Day = bc.previousBusinessDay(this)
+  def businessDays(bc: BusinessCalendar, days: Seq[Int]): Seq[Day] = days.map(addBusinessDays(bc, _))
 
   def thisOrPreviousBusinessDay(bc : BusinessCalendar) : Day = bc.thisOrPreviousBusinessDay(this)
 
