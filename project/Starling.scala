@@ -136,6 +136,7 @@ object StarlingBuild extends Build{
     settings = standardSettingsNexus ++ Seq(libraryDependencies ++= utilsDependencies)
   )
 
+  // Not uploading this to nexus at the moment.
   lazy val osgiRun = Project(
     "osgirun",
     file("./osgirun"),
@@ -285,10 +286,14 @@ object StarlingBuild extends Build{
     settings = standardSettingsNexus ++ Seq(libraryDependencies ++= bouncyrmiDependencies)
   ) dependsOn(manager, auth, props)
 
+  val loopyxlDependencies = Seq(
+    "com.google.protobuf" % "protobuf-java" % "2.3.0"
+  )
+
   lazy val loopyxl = Project(
     "loopyxl", 
     file("./loopyxl"),
-    settings = standardSettings
+    settings = standardSettingsNexus ++ Seq(libraryDependencies ++= loopyxlDependencies)
   ) dependsOn(manager, auth)
 
   lazy val browserService = Project(
