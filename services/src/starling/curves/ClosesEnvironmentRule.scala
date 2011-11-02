@@ -56,9 +56,7 @@ case class ClosesEnvironmentRule(referenceDataLookup: ReferenceDataLookup, allow
       }
 
       def fixings(key : PriceFixingsHistoryDataKey, observationPoint: ObservationPoint): PriceFixingsHistoryData = {
-        val closeTime = FuturesExchangeFactory.fromName(key.exchangeName).map(_.closeTime)
-
-        key.read(observationPoint.copyTime(closeTime), marketDataReader)
+        key.read(observationPoint, marketDataReader)
       }
     }
 
