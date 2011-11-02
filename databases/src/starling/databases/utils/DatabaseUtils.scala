@@ -2,24 +2,28 @@ package starling.databases.utils
 
 import starling.db.DB
 import starling.dbx.DataSourceFactory
+import starling.utils.Log
 
 
 object DatabaseUtils {
-  private val DefaultDatabase = "jdbc:jtds:sqlserver://TTRAFLOCOSQL08.global.trafigura.com;instance=DB08"
-  private val DefaultUser = "starling"
-  private val DefaultPass = "ng1lr4ts123!Y^%&$"
+  private val database = "jdbc:jtds:sqlserver://TTRAFLOCOSQL08.global.trafigura.com;instance=DB08"
+  private val user = "starling"
+  private val password = "ng1lr4ts123!Y^%&$"
 
-  private val DefaultBackupName = "starling_test"
-
-  def refreshDatabase(databaseName:String, database:String = DefaultDatabase, user:String = DefaultUser, pass:String = DefaultPass) {
+  def refreshDatabase(fromDatabase:String, toDatabaseName:String) {
     println("")
-    println("Refreshing " + databaseName)
+    println("Refreshing " + fromDatabase + " => " + toDatabaseName)
     println("")
-    val dataSource = DataSourceFactory.getDataSource(database, user, pass)
+    val dataSource = DataSourceFactory.getDataSource(database, user, password)
     val starlingDB = new DB(dataSource)
     // Copy the database from the last backup.
     starlingDB.inTransaction {
-      writer => writer.update("EXEC SQLAdmin.SelfServe.RefreshDB @TargetDatabase = '" + databaseName + "'")
+      writer => writer.update(
+        "EXEC SQLAdmin.SelfServe.RefreshDB " +
+          "@SourceServer = 'ttraflocosql08\\db08', " +
+          "@SourceDatabase = '" + fromDatabase + "', " +
+          "@TargetDatabase = '" + toDatabaseName + "'"
+        )
     }
     // Poll until the database refresh has finished.
     var refreshed = false
@@ -36,14 +40,14 @@ object DatabaseUtils {
         }
       }
     }
-    println("Refresh of " + databaseName + " complete")
+    println("Refresh of " + fromDatabase + " => " + toDatabaseName + " complete")
   }
 
-  def backupDatabase(backupName:String = DefaultBackupName, database:String = DefaultDatabase, user:String = DefaultUser, pass:String = DefaultPass) {
+  def backupDatabase(backupName:String) {
     println("")
     println("Backing up " + backupName)
     println("")
-    val dataSource = DataSourceFactory.getDataSource(database, user, pass)
+    val dataSource = DataSourceFactory.getDataSource(database, user, password)
     val starlingDB = new DB(dataSource)
     // Copy the database from the last backup.
     starlingDB.inTransaction {
@@ -73,15 +77,9 @@ object DatabaseUtils {
 
 object RefreshDatabase {
   def main(args:Array[String]) {
-    if ((args.size == 0) || ((args.size > 1) && (args.size != 4))) {
-      println("Please specify either just the name of the database you want to refresh, or the 4 parameters shown below")
-      println("Usage: name database user pass")
-      return
-    }
-    if (args.size == 1) {
-      DatabaseUtils.refreshDatabase(args(0))
-    } else {
-      DatabaseUtils.refreshDatabase(args(0), args(1), args(2), args(3))
-    }
+    val from = args(0)
+    val to = args(1)
+    Log.infoWithTime("Backup") { DatabaseUtils.backupDatabase(from) }
+    Log.infoWithTime("Copy") { DatabaseUtils.refreshDatabase(from, to) }
   }
 }
