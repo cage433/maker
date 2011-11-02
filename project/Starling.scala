@@ -154,10 +154,15 @@ object StarlingBuild extends Build{
     settings = standardSettingsNexus
   ) dependsOn (utils)
 
+  val osgiManagerDependencies = Seq(
+    "org.osgi" % "org.osgi.compendium" % "4.2.0",
+    "org.osgi" % "org.osgi.core" % "4.2.0"
+  )
+
   lazy val osgiManager = Project(
     "osgimanager",
     file("./osgimanager"),
-    settings = standardSettings 
+    settings = standardSettingsNexus ++  Seq(libraryDependencies ++= osgiManagerDependencies)
   ) dependsOn(manager, utils)
 
   lazy val singleClasspathManager = Project(

@@ -27,7 +27,7 @@
     <orderEntry type="module-library">
       <library>
         <CLASSES>
-          <root url="jar://$MODULE_DIR$/lib/org.osgi.core-4.2.0.jar!/" />
+          <root url="jar://$USER_HOME$/.ivy2/cache/org.osgi/org.osgi.core/jars/org.osgi.core-4.2.0.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />
@@ -36,7 +36,7 @@
     <orderEntry type="module-library">
       <library>
         <CLASSES>
-          <root url="jar://$MODULE_DIR$/lib/org.osgi.compendium-4.2.0.jar!/" />
+          <root url="jar://$USER_HOME$/.ivy2/cache/org.osgi/org.osgi.compendium/jars/org.osgi.compendium-4.2.0.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />
