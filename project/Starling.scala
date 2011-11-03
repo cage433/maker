@@ -424,18 +424,7 @@ object StarlingBuild extends Build{
 	}
 
   def titanBinaryJars(base : File) : Seq[Attributed[File]] = (((base / "../lib/titan-model-jars") ** "*.jar")).getFiles.map{f : File => Attributed.blank(f)}
-  def libJars(jarNames: String*): Seq[Setting[_]] = {
-    def libJar(jarName: String): Seq[Setting[_]] = {
-      def jars(base : File) : Seq[Attributed[File]] = (((base / "../lib/") ** jarName)).getFiles.map{f : File => Attributed.blank(f)}
-
-      Seq(unmanagedJars in Compile <++= (baseDirectory) map jars) ++
-      Seq(unmanagedJars in Runtime <++= (baseDirectory) map jars) ++
-      Seq(unmanagedJars in Test <++= (baseDirectory) map jars)
-    }
-
-    jarNames.flatMap(libJar(_))
-  }
-
+  
   val servicesDependencies = Seq(
     "net.liftweb" % "lift-json_2.9.0" % "2.4-M2",
     "javax.mail" % "mail" % "1.4",
@@ -516,7 +505,7 @@ object StarlingBuild extends Build{
     Project(
       "dummy",
       file("./dummy-sbt-vim-hack"),
-      settings = standardSettings ++
+      settings = standardSettingsNexus ++
         Seq(unmanagedClasspath in Compile <++= (baseDirectory) map titanBinaryJars) ++ 
         Seq(unmanagedClasspath in Test <++= (baseDirectory) map titanBinaryJars)
     ) dependsOn(
@@ -526,7 +515,7 @@ object StarlingBuild extends Build{
     Project(
       "dummy",
       file("./dummy-sbt-vim-hack"),
-      settings = standardSettings
+      settings = standardSettingsNexus
     ) dependsOn(
       childProjects.map(_ % "test->test") : _*
     )
@@ -624,7 +613,7 @@ object StarlingBuild extends Build{
   val allSources           = TaskKey[Seq[Seq[File]]]("all-sources")
   val allSourceDirectories = SettingKey[Seq[Seq[File]]]("all-source-directories")
   
-  val docSharedRoot = Project("doc-shared", file("doc.shared"), settings = standardSettings ++ Seq(
+  val docSharedRoot = Project("doc-shared", file("doc.shared"), settings = standardSettingsNexus ++ Seq(
       allSources <<= sharedProjects.map(sources in Compile in _).join, // join: Seq[Task[A]] => Task[Seq[A]]
       //allSourceDirectories <<= childProjects.map(sourceDirectories in Compile in _).join,
       //allPackagedArtifacts <<= childProjects.map(packagedArtifacts in _).join,
@@ -638,7 +627,7 @@ object StarlingBuild extends Build{
     )
   
 
-  val docAllRoot = Project("doc-all", file("doc.all"), settings = standardSettings ++ Seq(
+  val docAllRoot = Project("doc-all", file("doc.all"), settings = standardSettingsNexus ++ Seq(
       allSources <<= docProjects.map(sources in Compile in _).join, // join: Seq[Task[A]] => Task[Seq[A]]
       //allSourceDirectories <<= childProjects.map(sourceDirectories in Compile in _).join,
       //allPackagedArtifacts <<= childProjects.map(packagedArtifacts in _).join,
@@ -652,7 +641,7 @@ object StarlingBuild extends Build{
       (compile in Compile) := inc.Analysis.Empty)
     )
 
-  val root = Project("starling", file("."), settings = standardSettings) aggregate (childProjects : _*)
+  val root = Project("starling", file("."), settings = standardSettingsNexus) aggregate (childProjects : _*)
 
   object TitanModel {
     import IO._
