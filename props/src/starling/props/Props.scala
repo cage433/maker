@@ -41,7 +41,9 @@ class Props(starlingProps:Map[String,String], trafiguraProps : Map[String, Strin
   object HttpServicePort extends LocalPort(1024 + ((ServerName().hashCode.abs % 6400) * 10) + 6)
   object StarlingServiceRmiPort extends LocalPort(1024 + ((ServerName().hashCode.abs % 6400) * 10) + 7)
 
-  object ExternalHostname extends StringProperty(InetAddress.getLocalHost().getHostName)
+  object ExternalHostname extends StringProperty(
+    InetAddress.getLocalHost().getHostName.ensuring(_.trim.toLowerCase != "localhost", "Could not determine ExternalHostname"))
+
   object ExternalUrl extends StringProperty("http://" + ExternalHostname() + ":" + HttpPort())
   object HttpServiceExternalUrl extends StringProperty("http://" + ExternalHostname() + ":" + HttpServicePort())
   object XLLoopUrl extends StringProperty(ExternalHostname() + ":" + XLLoopPort())
