@@ -49,7 +49,7 @@ object GUICode {
     "google-collections" -> new File(ivyDir + "com.google.collections/google-collections/jars/google-collections-1.0.jar"),
     "joda-time" -> new File(ivyDir + "joda-time/joda-time/jars/joda-time-1.6.jar"),
     "log4j" -> new File(ivyDir + "log4j/log4j/jars/log4j-1.2.16.jar"),
-    "slf4j-api" -> new File("databases/lib_managed/slf4j-api-jar-1.6.1.jar"),
+    "slf4j-api" -> new File(ivyDir + "org.slf4j/slf4j-api/jars/slf4j-api-1.6.1.jar"),
     "slf4j-log4j12" -> new File(ivyDir + "org.slf4j/slf4j-log4j12/jars/slf4j-log4j12-1.6.1.jar"),
     "xstream" -> new File(ivyDir + "com.thoughtworks.xstream/xstream/jars/xstream-1.3.1.jar"),
     "memcached" -> new File(ivyDir + "spy/spymemcached/jars/spymemcached-2.7.3.jar"),

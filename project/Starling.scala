@@ -388,16 +388,37 @@ object StarlingBuild extends Build{
     settings = standardSettingsNexus
   ) dependsOn(starlingApi, bouncyrmi)
 
+  val dbxDependencies = Seq(
+    "com.jolbox" % "bonecp" % "0.7.1.RELEASE",
+    "org.springframework" % "spring-jdbc" % "3.0.5.RELEASE",
+    "jtds" % "jtds" % "1.2.5",
+    "com.oracle" % "ojdbc6" % "11.2.0.1.0"
+  )
+
   lazy val dbx = Project(
     "dbx",
     file("./dbx"),
-    settings = standardSettings
+    settings = standardSettingsNexus ++ (libraryDependencies ++= dbxDependencies)
   ) dependsOn(manager, utils, instrument)
+
+  val databaseDependencies = Seq(
+    "org.slf4j" % "slf4j-api" % "1.6.1",
+    "org.scala-tools.testing" %% "scalacheck" % "1.9",
+    "org.apache.derby" % "derby" % "10.5.3.0_1",
+    "hsqldb" % "hsqldb" % "1.8.0.10"/*  conf="default->master"*/,
+    "com.h2database" % "h2" % "1.2.131",
+    "org.springframework" % "spring-tx" % "3.0.5.RELEASE",
+    "org.springframework" % "spring-core" % "3.0.5.RELEASE",
+    "org.springframework" % "spring-beans" % "3.0.5.RELEASE",
+    "commons-logging" % "commons-logging" % "1.1.1",
+    "starling-external-jars" % "mimapi" % "2.2.0",
+    "org.acplt" % "oncrpc" % "1.0.7"
+  )
 
   lazy val databases = Project(
     "databases", 
     file("./databases"),
-    settings = standardSettings 
+    settings = standardSettingsNexus ++  (libraryDependencies ++= databaseDependencies)
   ) dependsOn(curves % "test->test", pivot , guiapi , concurrent , auth , starlingApi, dbx, props)
 
   lazy val rabbitEventViewerService = Project(
