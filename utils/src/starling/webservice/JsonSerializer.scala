@@ -8,6 +8,7 @@ import java.lang.{String, Class}
 
 case class JsonSerializer(clazz: Class[_])(implicit formats: Formats) {
   def serialize(value: Any): String = Printer.compact(render(toJValue(value)))
+  def pretty(value: Any): String = Printer.pretty(render(toJValue(value)))
   def toJValue(value: Any): JValue = Extraction.decompose(value).capitalize
 }
 

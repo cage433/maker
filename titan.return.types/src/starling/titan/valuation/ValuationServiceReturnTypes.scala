@@ -1,7 +1,9 @@
 package starling.titan.valuation
 
-import starling.quantity.Quantity
 import starling.daterange.Day
+import starling.quantity.Quantity
+import starling.utils.ImplicitConversions._
+import starling.webservice.{EDMFormats, JsonSerializer}
 
 
 case class PricingValuationDetails(
@@ -16,7 +18,10 @@ case class PricingValuationDetails(
   quotationPeriodStart : Option[Day],
   quotationPeriodEnd : Option[Day],
   index : String
-)
+){
+  private implicit val formats = EDMFormats
+  override def toString = JsonSerializer(classOf[PricingValuationDetails]).pretty(this)
+}
 
 trait CostsAndIncomeValuation {
   def snapshotID : String
@@ -124,6 +129,8 @@ case class PurchaseQuotaValuation(
  assignmentValuations: Map[String, CostsAndIncomeAllocatedPurchaseAssignmentValuation] // Keys are assignment ID
 ) extends QuotaValuation {
   def hasError:Boolean = (unallocatedValuations.values ++ assignmentValuations.values).exists(_.hasError)
+  private implicit val formats = EDMFormats
+  override def toString = JsonSerializer(classOf[PurchaseQuotaValuation]).pretty(this)
 }
 
 

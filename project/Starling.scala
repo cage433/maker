@@ -111,6 +111,7 @@ object StarlingBuild extends Build{
   ) 
 
   val utilsDependencies = Seq(
+    "net.liftweb" % "lift-json_2.9.0" % "2.4-M2",
     "cglib" % "cglib-nodep" % "2.2" withSources(),
     "joda-time" % "joda-time" % "1.6" withSources(),
     "com.rabbitmq" % "amqp-client" % "1.7.2" withSources(),
@@ -203,7 +204,7 @@ object StarlingBuild extends Build{
     "titan-return-types",
     file("./titan.return.types"),
     settings = standardSettingsNexus
-  ) dependsOn(daterange, quantity)
+  ) dependsOn(daterange, quantity, utils)
 
   val mathsDependencies = Seq(
     "org.apache.commons" % "commons-math" % "2.1"
@@ -454,7 +455,6 @@ object StarlingBuild extends Build{
   def titanBinaryJars(base : File) : Seq[Attributed[File]] = (((base / "../lib/titan-model-jars") ** "*.jar")).getFiles.map{f : File => Attributed.blank(f)}
   
   val servicesDependencies = Seq(
-    "net.liftweb" % "lift-json_2.9.0" % "2.4-M2",
     "javax.mail" % "mail" % "1.4",
     "org.mortbay.jetty" % "jetty" % "6.1.26",
     "org.mortbay.jetty" % "jetty-util" % "6.1.26",
@@ -512,9 +512,9 @@ object StarlingBuild extends Build{
   ) dependsOn(startserver, gui, singleClasspathManager)
 
   val webserviceDependencies = Seq(
+    "net.liftweb" % "lift-json_2.9.0" % "2.4-M2",
     "javax.servlet" % "servlet-api" % "2.5",
     "org.jboss.resteasy" % "jaxrs-api" % "1.2.GA",
-    "net.liftweb" % "lift-json_2.9.0" % "2.4-M2",
     "org.mortbay.jetty" % "jetty" % "6.1.26",
     "org.mortbay.jetty" % "jetty-util" % "6.1.26",
     "com.thoughtworks.paranamer" % "paranamer" % "2.3",
