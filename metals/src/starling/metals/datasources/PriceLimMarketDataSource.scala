@@ -77,12 +77,7 @@ case class PriceLimMarketDataSource(service: LIMService, bloombergImports: Bloom
 //      tasks(daily(SFE, 16 H 30), availabilityBroadcaster.verifyPricesAvailable(exbxgMetals), verifyPricesValid(exbxgMetals))
 
   private lazy val limMetalMarketsForExchanges@List(lme, comex, shfe) = priceSources._2.map(pricesSource => {
-    val one: List[FuturesMarket] = pricesSource.exchange.markets
-    val two: List[FuturesMarket] = one.filter(_.limSymbol.isDefined)
-    val three = two.filter(isMetal)
-    val four = three.filter(correspondsToBloombergImport(pricesSource.node))
-
-    four
+    pricesSource.exchange.markets.filter(_.limSymbol.isDefined).filter(isMetal).filter(correspondsToBloombergImport(pricesSource.node))
   } )
 
   //require(lme != Nil, "LME"); require(comex != Nil, "COMEX"); require(shfe != Nil, "SHFE")

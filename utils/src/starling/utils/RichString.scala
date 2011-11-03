@@ -66,7 +66,8 @@ trait RichString {
     catch {
       case n: NumberFormatException => false
     }
-    
+
+    def quote = "'" + s + "'"
     def containsOneOf(searchFor: String*) = searchFor.exists(s.contains(_))
     def emptyTo(alternative: String) = fold(identity, alternative)
     def uncapitalize: String = fold(_.charAt(0).toLower + s.substring(1))

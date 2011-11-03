@@ -41,11 +41,9 @@ case class SpotFXLimMarketDataSource(service: LIMService, emailService: EmailSer
     Map(getValuesForType(SpotFXDataType.name, day.startOfFinancialYear, day, spotFXSources))
   }
 
-  override def eventSources(marketDataStore: MarketDataStore) = {
-    val spotfx = SpotFXDataEventSource(PricingGroup.Metals, SpotFXMarketDataProvider(marketDataStore))
-
-    List(spotfx)
-  }
+  override def eventSources(marketDataStore: MarketDataStore) = List(
+    SpotFXDataEventSource(PricingGroup.Metals, SpotFXMarketDataProvider(marketDataStore))
+  )
 
   override def availabilityTasks(marketDataStore: MarketDataStore) = List(
     task("Bloomberg Generic Rate", daily(LME.calendar, 18 H 00), (titanCurrencies - UOM.CNY), marketDataStore),

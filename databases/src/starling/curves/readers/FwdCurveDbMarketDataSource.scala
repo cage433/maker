@@ -207,7 +207,7 @@ case class FwdCurveDbMarketDataSource(varSqlDB: DB, businessCalendars: BusinessC
                            %s
                       """ % (table(market), cashDayLogic(market))
 
-
+      var error = ""
       try {
         varSqlDB.query(query, Map("EAIQuoteID" -> eaiQuoteID.get, "PricingGroupID" -> pricingGroupID, "ObservationDate" -> observationDay)) {
           rs => {
@@ -224,7 +224,7 @@ case class FwdCurveDbMarketDataSource(varSqlDB: DB, businessCalendars: BusinessC
             }
             pricePoints.get(delivery) match {
               case Some(p) if p != price.value => {
-                throw new MissingMarketDataException("Failed reading for " + pdk + " on " + observationDay + " multiple date entries: " + delivery)
+                error = "Failed reading for " + pdk + " on " + observationDay + " multiple date entries: " + delivery
               }
               case _ =>
             }
@@ -239,6 +239,9 @@ case class FwdCurveDbMarketDataSource(varSqlDB: DB, businessCalendars: BusinessC
       }
       if (pricePoints.isEmpty) {
         throw new MissingMarketDataException("No forward curve prices for " + market.name + "(" + market.eaiQuoteID + ") pg: " + pricingGroupID + " on " + observationDay)
+      }
+      if (error.nonEmpty) {
+        throw new MissingMarketDataException(error)
       }
       (pdk, PriceData.create(pricePoints, market.priceUOM))
     }

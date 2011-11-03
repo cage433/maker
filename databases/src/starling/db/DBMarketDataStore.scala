@@ -26,8 +26,12 @@ object MarketDataSources {
 
 class ImmutableMarketDataSources(sources: List[MarketDataSource]) extends MarketDataSources {
   def marketDataSets = sourcesBySet.keySet
-  def marketDataSetsFor[T <: MarketDataSource : Manifest] = sourcesBySet.filterValues(_.isInstanceOf[T]).keySet
-  def sourcesFor(marketDataSet: MarketDataSet) = sourcesBySet(marketDataSet)
+  def marketDataSetsFor[T <: MarketDataSource : Manifest] = {
+    sourcesBySet.filterValues(l => l.find(_.isInstanceOf[T]).isDefined).keySet
+  }
+  def sourcesFor(marketDataSet: MarketDataSet) = {
+    sourcesBySet(marketDataSet)
+  }
 
   def +(marketDataSource: MarketDataSource) = new ImmutableMarketDataSources(marketDataSource :: sources)
 

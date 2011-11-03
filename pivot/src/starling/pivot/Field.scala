@@ -410,7 +410,7 @@ class CodedFormatterAndParser(codesToName:Map[String,String]) extends PivotForma
       case code:String => singleValue(code)
     }
   }
-  private def codeToName(code:String) = codesToName.getOrElse(code, throw new Exception("Unknown code: " + code))
+  private def codeToName(code:String) = codesToName.getOrElse(code, code)
   private def singleValue(code:String) = {
     val name = codeToName(code)
     new TableCell(code, name, longText = Some(name+ " [" + code+ "]"))

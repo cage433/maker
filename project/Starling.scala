@@ -66,6 +66,7 @@ object StarlingBuild extends Build{
     publishSetting,
     resolvers += "Non-Trafigura Public Repositories" at "http://nexus.global.trafigura.com:8081/nexus/content/groups/mirror/",
     resolvers += "trafigura" at "http://nexus.global.trafigura.com:8081/nexus/content/repositories/tooling-releases/",
+    resolvers += "Titan Cross Stream Snapshots" at "http://nexus.global.trafigura.com:8081/nexus/content/repositories/titan-cross-stream-snapshots/",
     organizationName := "Trafigura",
     version := starlingVersion
   )
@@ -136,6 +137,7 @@ object StarlingBuild extends Build{
     settings = standardSettingsNexus ++ Seq(libraryDependencies ++= utilsDependencies)
   )
 
+  // Not uploading this to nexus at the moment.
   lazy val osgiRun = Project(
     "osgirun",
     file("./osgirun"),
@@ -154,10 +156,15 @@ object StarlingBuild extends Build{
     settings = standardSettingsNexus
   ) dependsOn (utils)
 
+  val osgiManagerDependencies = Seq(
+    "org.osgi" % "org.osgi.compendium" % "4.2.0",
+    "org.osgi" % "org.osgi.core" % "4.2.0"
+  )
+
   lazy val osgiManager = Project(
     "osgimanager",
     file("./osgimanager"),
-    settings = standardSettings 
+    settings = standardSettingsNexus ++  Seq(libraryDependencies ++= osgiManagerDependencies)
   ) dependsOn(manager, utils)
 
   lazy val singleClasspathManager = Project(
@@ -280,10 +287,14 @@ object StarlingBuild extends Build{
     settings = standardSettingsNexus ++ Seq(libraryDependencies ++= bouncyrmiDependencies)
   ) dependsOn(manager, auth, props)
 
+  val loopyxlDependencies = Seq(
+    "com.google.protobuf" % "protobuf-java" % "2.3.0"
+  )
+
   lazy val loopyxl = Project(
     "loopyxl", 
     file("./loopyxl"),
-    settings = standardSettings
+    settings = standardSettingsNexus ++ Seq(libraryDependencies ++= loopyxlDependencies)
   ) dependsOn(manager, auth)
 
   lazy val browserService = Project(
@@ -292,10 +303,23 @@ object StarlingBuild extends Build{
     settings = standardSettingsNexus
   ) dependsOn(manager)
 
+  val browserDependencies = Seq(
+    "com.thoughtworks.xstream" % "xstream" % "1.3.1",
+    "com.google.collections" % "google-collections" % "1.0",
+    "jxlayer" % "jxlayer" % "4.0",
+    "jgoodies" % "looks" % "2.3.1",
+    "org.swinglabs" % "swingx-core" % "1.6.2-2",
+    "mig" % "miglayout" % "4.0" classifier "swing",
+    "net.java.dev.timingframework" % "timingframework" % "1.0",
+    "transloader" % "transloader" % "0.4",
+    "starling-external-jars" % "org.eclipse.mylyn.wikitext.core" % "1.4" classifier "e3x",
+    "starling-external-jars" % "org.eclipse.mylyn.wikitext.textile.core" % "1.4"
+  )
+
   lazy val browser = Project(
     "browser",
     file("./browser"),
-    settings = standardSettings
+    settings = standardSettingsNexus ++ (libraryDependencies ++= browserDependencies)
   ) dependsOn(browserService, manager)
 
   val guiapiDependencies = Seq(
@@ -364,16 +388,37 @@ object StarlingBuild extends Build{
     settings = standardSettingsNexus
   ) dependsOn(starlingApi, bouncyrmi)
 
+  val dbxDependencies = Seq(
+    "com.jolbox" % "bonecp" % "0.7.1.RELEASE",
+    "org.springframework" % "spring-jdbc" % "3.0.5.RELEASE",
+    "jtds" % "jtds" % "1.2.5",
+    "com.oracle" % "ojdbc6" % "11.2.0.1.0"
+  )
+
   lazy val dbx = Project(
     "dbx",
     file("./dbx"),
-    settings = standardSettings
+    settings = standardSettingsNexus ++ (libraryDependencies ++= dbxDependencies)
   ) dependsOn(manager, utils, instrument)
+
+  val databaseDependencies = Seq(
+    "org.slf4j" % "slf4j-api" % "1.6.1",
+    "org.scala-tools.testing" %% "scalacheck" % "1.9",
+    "org.apache.derby" % "derby" % "10.5.3.0_1",
+    "hsqldb" % "hsqldb" % "1.8.0.10"/*  conf="default->master"*/,
+    "com.h2database" % "h2" % "1.2.131",
+    "org.springframework" % "spring-tx" % "3.0.5.RELEASE",
+    "org.springframework" % "spring-core" % "3.0.5.RELEASE",
+    "org.springframework" % "spring-beans" % "3.0.5.RELEASE",
+    "commons-logging" % "commons-logging" % "1.1.1",
+    "starling-external-jars" % "mimapi" % "2.2.0",
+    "org.acplt" % "oncrpc" % "1.0.7"
+  )
 
   lazy val databases = Project(
     "databases", 
     file("./databases"),
-    settings = standardSettings 
+    settings = standardSettingsNexus ++  (libraryDependencies ++= databaseDependencies)
   ) dependsOn(curves % "test->test", pivot , guiapi , concurrent , auth , starlingApi, dbx, props)
 
   lazy val rabbitEventViewerService = Project(
@@ -400,22 +445,32 @@ object StarlingBuild extends Build{
 	}
 
   def titanBinaryJars(base : File) : Seq[Attributed[File]] = (((base / "../lib/titan-model-jars") ** "*.jar")).getFiles.map{f : File => Attributed.blank(f)}
-  def libJars(jarNames: String*): Seq[Setting[_]] = {
-    def libJar(jarName: String): Seq[Setting[_]] = {
-      def jars(base : File) : Seq[Attributed[File]] = (((base / "../lib/") ** jarName)).getFiles.map{f : File => Attributed.blank(f)}
-
-      Seq(unmanagedJars in Compile <++= (baseDirectory) map jars) ++
-      Seq(unmanagedJars in Runtime <++= (baseDirectory) map jars) ++
-      Seq(unmanagedJars in Test <++= (baseDirectory) map jars)
-    }
-
-    jarNames.flatMap(libJar(_))
-  }
+  
+  val servicesDependencies = Seq(
+    "net.liftweb" % "lift-json_2.9.0" % "2.4-M2",
+    "javax.mail" % "mail" % "1.4",
+    "org.mortbay.jetty" % "jetty" % "6.1.26",
+    "org.mortbay.jetty" % "jetty-util" % "6.1.26",
+    "org.subethamail" % "subethasmtp-wiser" % "1.2",
+    "org.subethamail" % "subethasmtp-smtp" % "1.2",
+    "org.springframework" % "spring-context-support" % "3.0.5.RELEASE",
+    "com.thoughtworks.paranamer" % "paranamer" % "2.3",
+    "starling-external-jars" % "xlloop" % "0.3.1",
+    "commons-httpclient" % "commons-httpclient" % "3.1",
+    "org.jboss.resteasy" % "jaxrs-api" % "1.2.GA",
+    "org.jboss.resteasy" % "resteasy-jaxrs" % "2.2.2.GA",
+    "org.scannotation" % "scannotation" % "1.0.2",
+    "javax.servlet" % "servlet-api" % "2.5",
+  
+    "com.trafigura.titan.shared-libs" % "titan-core" % "1.0-SNAPSHOT" notTransitive(),
+    "com.trafigura.titan.shared-libs" % "titan-security" % "1.0-SNAPSHOT" notTransitive(),
+    "com.trafigura.titan.shared-libs" % "titan-utils" % "1.0-SNAPSHOT" notTransitive()
+  )
 
   lazy val services = Project(
     "services", 
     file("./services"),
-    settings = standardSettings
+    settings = standardSettingsNexus ++ (libraryDependencies ++= servicesDependencies)
   ) dependsOn(curves % "test->test", concurrent, loopyxl, titan, gui, fc2Facility, browser, titanReturnTypes)
 
   lazy val tradeImpl = Project(
@@ -449,10 +504,20 @@ object StarlingBuild extends Build{
     settings = standardSettingsNexus
   ) dependsOn(startserver, gui, singleClasspathManager)
 
+  val webserviceDependencies = Seq(
+    "javax.servlet" % "servlet-api" % "2.5",
+    "org.jboss.resteasy" % "jaxrs-api" % "1.2.GA",
+    "net.liftweb" % "lift-json_2.9.0" % "2.4-M2",
+    "org.mortbay.jetty" % "jetty" % "6.1.26",
+    "org.mortbay.jetty" % "jetty-util" % "6.1.26",
+    "com.thoughtworks.paranamer" % "paranamer" % "2.3",
+    "org.jboss.resteasy" % "resteasy-jaxrs" % "2.2.2.GA"
+  )
+
   lazy val webservice = Project(
     "webservice",
     file("./webservice"),
-    settings = standardSettings ++ libJars("servlet-api-jar-2.5.jar", "jaxrs-api-1.2.GA.jar", "lift-json_2.9.0-jar-2.4-M2.jar")
+    settings = standardSettingsNexus ++ (libraryDependencies ++= webserviceDependencies)
   ) dependsOn(utils, manager, props, daterange, starlingApi)
 
   // Evil hack so that I can get a classpath exported including the test-classes of all projects.
@@ -461,7 +526,7 @@ object StarlingBuild extends Build{
     Project(
       "dummy",
       file("./dummy-sbt-vim-hack"),
-      settings = standardSettings ++
+      settings = standardSettingsNexus ++
         Seq(unmanagedClasspath in Compile <++= (baseDirectory) map titanBinaryJars) ++ 
         Seq(unmanagedClasspath in Test <++= (baseDirectory) map titanBinaryJars)
     ) dependsOn(
@@ -471,7 +536,7 @@ object StarlingBuild extends Build{
     Project(
       "dummy",
       file("./dummy-sbt-vim-hack"),
-      settings = standardSettings
+      settings = standardSettingsNexus
     ) dependsOn(
       childProjects.map(_ % "test->test") : _*
     )
@@ -569,7 +634,7 @@ object StarlingBuild extends Build{
   val allSources           = TaskKey[Seq[Seq[File]]]("all-sources")
   val allSourceDirectories = SettingKey[Seq[Seq[File]]]("all-source-directories")
   
-  val docSharedRoot = Project("doc-shared", file("doc.shared"), settings = standardSettings ++ Seq(
+  val docSharedRoot = Project("doc-shared", file("doc.shared"), settings = standardSettingsNexus ++ Seq(
       allSources <<= sharedProjects.map(sources in Compile in _).join, // join: Seq[Task[A]] => Task[Seq[A]]
       //allSourceDirectories <<= childProjects.map(sourceDirectories in Compile in _).join,
       //allPackagedArtifacts <<= childProjects.map(packagedArtifacts in _).join,
@@ -583,7 +648,7 @@ object StarlingBuild extends Build{
     )
   
 
-  val docAllRoot = Project("doc-all", file("doc.all"), settings = standardSettings ++ Seq(
+  val docAllRoot = Project("doc-all", file("doc.all"), settings = standardSettingsNexus ++ Seq(
       allSources <<= docProjects.map(sources in Compile in _).join, // join: Seq[Task[A]] => Task[Seq[A]]
       //allSourceDirectories <<= childProjects.map(sourceDirectories in Compile in _).join,
       //allPackagedArtifacts <<= childProjects.map(packagedArtifacts in _).join,
@@ -597,7 +662,7 @@ object StarlingBuild extends Build{
       (compile in Compile) := inc.Analysis.Empty)
     )
 
-  val root = Project("starling", file("."), settings = standardSettings) aggregate (childProjects : _*)
+  val root = Project("starling", file("."), settings = standardSettingsNexus) aggregate (childProjects : _*)
 
   object TitanModel {
     import IO._
