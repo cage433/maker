@@ -58,7 +58,7 @@ object StarlingBuild extends Build{
     unmanagedResourceDirectories in Test <+= baseDirectory(_/"test-resources"),
     unmanagedResourceDirectories in Compile <+= baseDirectory(_/"resources"),
     unmanagedClasspath in Test <+= (baseDirectory) map { bd => Attributed.blank(bd / "resources") },
-    ivyXML := <dependencies><exclude artifact="jcl-over-slf4j"/><exclude artifact="junit"/></dependencies><settings><settings name="default" transitive="false"/></settings>,
+    ivyXML := <dependencies><exclude artifact="jcl-over-slf4j"/><exclude artifact="junit"/></dependencies>,
     scalaVersion := "2.9.1",
     showLibsTask,
     writeClasspathScriptTask,
@@ -303,10 +303,23 @@ object StarlingBuild extends Build{
     settings = standardSettingsNexus
   ) dependsOn(manager)
 
+  val browserDependencies = Seq(
+    "com.thoughtworks.xstream" % "xstream" % "1.3.1",
+    "com.google.collections" % "google-collections" % "1.0",
+    "jxlayer" % "jxlayer" % "4.0",
+    "jgoodies" % "looks" % "2.3.1",
+    "org.swinglabs" % "swingx-core" % "1.6.2-2",
+    "mig" % "miglayout" % "4.0" classifier "swing",
+    "net.java.dev.timingframework" % "timingframework" % "1.0",
+    "transloader" % "transloader" % "0.4",
+    "starling-external-jars" % "org.eclipse.mylyn.wikitext.core" % "1.4" classifier "e3x",
+    "starling-external-jars" % "org.eclipse.mylyn.wikitext.textile.core" % "1.4"
+  )
+
   lazy val browser = Project(
     "browser",
     file("./browser"),
-    settings = standardSettings
+    settings = standardSettingsNexus ++ (libraryDependencies ++= browserDependencies)
   ) dependsOn(browserService, manager)
 
   val guiapiDependencies = Seq(

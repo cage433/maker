@@ -33,18 +33,18 @@ object GUICode {
     "cglib-nodep" -> new File(ivyDir + "cglib/cglib-nodep/jars/cglib-nodep-2.2.jar"),
     "commons-io" -> new File(ivyDir + "commons-io/commons-io/jars/commons-io-1.3.2.jar"),
     "netty" -> new File(ivyDir + "org.jboss.netty/netty/bundles/netty-3.2.5.Final.jar"),
-    "jxlayer" -> new File("browser/lib/jxlayer-4.0.jar"),
-    "looks" -> new File("browser/lib/looks-2.3.1.jar"),
+    "jxlayer" -> new File(ivyDir + "jxlayer/jxlayer/jars/jxlayer-4.0.jar"),
+    "looks" -> new File(ivyDir + "jgoodies/looks/jars/looks-2.3.1.jar"),
     "jfreechart" -> new File(ivyDir + "jfree/jfreechart/jars/jfreechart-1.0.0.jar"),
     "jcommon" -> new File(ivyDir + "jfree/jcommon/jars/jcommon-1.0.0.jar"),
     "servlet-api" -> new File(ivyDir + "javax.servlet/servlet-api/jars/servlet-api-2.5.jar"),
     "jetty" -> new File(ivyDir + "org.mortbay.jetty/jetty/jars/jetty-6.1.26.jar"),
     "jetty-utls" -> new File(ivyDir + "org.mortbay.jetty/jetty-util/jars/jetty-util-6.1.26.jar"),
-    "browser-lib-miglayout-4.0-swing.jar" -> new File("browser/lib/miglayout-4.0-swing.jar"),
-    "org.eclipse.mylyn.wikitext.core_1.4.0.I20100805-0500-e3x" -> new File("browser/lib/org.eclipse.mylyn.wikitext.core_1.4.0.I20100805-0500-e3x.jar"),
-    "eclipse.mylyn.wikitext.textile.core_1.4.0.I20100805-0500-e3x" -> new File("browser/lib/org.eclipse.mylyn.wikitext.textile.core_1.4.0.I20100805-0500-e3x.jar"),
-    "swingx-core" -> new File("browser/lib/swingx-core-1.6.2.jar"),
-    "timingframework" -> new File("browser/lib/timingframework-1.0.jar"),
+    "browser-lib-miglayout-4.0-swing.jar" -> new File(ivyDir + "mig/miglayout/jars/miglayout-4.0-swing.jar"),
+    "org.eclipse.mylyn.wikitext.core_1.4.0.I20100805-0500-e3x" -> new File(ivyDir + "starling-external-jars/org.eclipse.mylyn.wikitext.core/jars/org.eclipse.mylyn.wikitext.core-1.4-e3x.jar"),
+    "eclipse.mylyn.wikitext.textile.core_1.4.0.I20100805-0500-e3x" -> new File(ivyDir + "starling-external-jars/org.eclipse.mylyn.wikitext.textile.core/jars/org.eclipse.mylyn.wikitext.textile.core-1.4.jar"),
+    "swingx-core" -> new File(ivyDir + "org.swinglabs/swingx-core/jars/swingx-core-1.6.2-2.jar"),
+    "timingframework" -> new File(ivyDir + "net.java.dev.timingframework/timingframework/jars/timingframework-1.0.jar"),
     "commons-codec" -> new File(ivyDir + "commons-codec/commons-codec/jars/commons-codec-1.4.jar"),
     "google-collections" -> new File(ivyDir + "com.google.collections/google-collections/jars/google-collections-1.0.jar"),
     "joda-time" -> new File(ivyDir + "joda-time/joda-time/jars/joda-time-1.6.jar"),
@@ -54,7 +54,7 @@ object GUICode {
     "xstream" -> new File(ivyDir + "com.thoughtworks.xstream/xstream/jars/xstream-1.3.1.jar"),
     "memcached" -> new File(ivyDir + "spy/spymemcached/jars/spymemcached-2.7.3.jar"),
     "scalaz-core" -> new File(ivyDir + "org.scalaz/scalaz-core_2.9.1/jars/scalaz-core_2.9.1-6.0.3.jar"),
-    "transloader" -> new File("browser/lib/transloader-0.4.jar")
+    "transloader" -> new File(ivyDir + "transloader/transloader/jars/transloader-0.4.jar")
   )
 
   def dependencies = {
