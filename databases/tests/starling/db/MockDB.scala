@@ -3,8 +3,9 @@ package starling.db
 import org.springframework.jdbc.datasource.SingleConnectionDataSource
 import starling.richdb.{RichResultSetRowFactory, RichDB}
 import starling.market.TestMarketTest
+import org.scalatest.testng.TestNGSuite
 
-trait MockDB extends TestMarketTest {
+trait MockDB extends TestMarketTest with TestNGSuite {
 
   /**
    * Creates a fresh db and allows it to be used with access through a RichDB. Then cleans it up later.

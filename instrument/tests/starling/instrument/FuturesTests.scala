@@ -9,8 +9,9 @@ import starling.daterange.{DayAndTime, DayAndNoTime, Day, Month}
 import utils.AtomicDatumKeyUtils
 import starling.pivot.PivotQuantity
 import starling.quantity.Quantity._
+import org.scalatest.testng.TestNGSuite
 
-class FuturesTests extends TestMarketTest {
+class FuturesTests extends TestMarketTest with TestNGSuite {
 	import org.testng.annotations._
 	import org.testng.Assert._
 

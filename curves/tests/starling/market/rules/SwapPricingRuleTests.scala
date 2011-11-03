@@ -6,8 +6,9 @@ import starling.daterange.Month
 import org.testng.Assert._
 import org.testng.annotations.Test
 import starling.calendar.BusinessCalendarSet
+import org.scalatest.testng.TestNGSuite
 
-class SwapPricingRuleTests extends TestMarketTest {
+class SwapPricingRuleTests extends TestMarketTest with TestNGSuite {
 
   @Test
   def testCommon {

@@ -11,8 +11,9 @@ import starling.daterange.Day._
 import starling.curves.{USDFXRateKey, AtomicDatumKey, Environment, TestingAtomicEnvironment}
 import starling.instrument.CashInstrumentType._
 import starling.market.{Index, TestMarketTest, Market}
+import org.scalatest.testng.TestNGSuite
 
-class BrokerCostTests extends TestMarketTest {
+class BrokerCostTests extends TestMarketTest with TestNGSuite {
   val env = Environment(
     new TestingAtomicEnvironment() {
       def marketDay = (1 Jan 2010).endOfDay

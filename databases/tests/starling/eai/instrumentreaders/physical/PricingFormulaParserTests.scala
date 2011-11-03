@@ -7,8 +7,9 @@ import starling.quantity.Quantity
 import starling.quantity.UOM._
 import starling.quantity.utils.QuantityTestUtils._
 import starling.market.{TestMarketTest, Index, FuturesFrontPeriodIndex, PublishedIndex}
+import org.scalatest.testng.TestNGSuite
 
-class PricingFormulaParserTests extends TestMarketTest {
+class PricingFormulaParserTests extends TestMarketTest with TestNGSuite {
 
 //  @Test
 //  def testSimple1 {

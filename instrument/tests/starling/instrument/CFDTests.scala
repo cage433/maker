@@ -16,8 +16,9 @@ import starling.daterange._
 import starling.daterange.Day._
 import starling.instrument.utils._
 import starling.utils.{StarlingTest}
+import org.scalatest.testng.TestNGSuite
 
-class CFDTests extends TestMarketTest {
+class CFDTests extends TestMarketTest with TestNGSuite {
   val platts_brent = Index.publishedIndexFromName("Platts Brent (April)")
   val spreadIndex = BrentCFDSpreadIndex.indexFor(new BrentMonth(4))
 

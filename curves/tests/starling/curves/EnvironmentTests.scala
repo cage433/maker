@@ -8,8 +8,9 @@ import starling.market.{TestMarketTest, Market}
 import starling.quantity.{Percentage, Quantity}
 import cern.colt.matrix.impl.DenseDoubleMatrix2D
 import starling.daterange.{SpreadPeriod, Spread, Day, Month}
+import org.scalatest.testng.TestNGSuite
 
-class EnvironmentTests extends TestMarketTest {
+class EnvironmentTests extends TestMarketTest with TestNGSuite {
 
   @Test
   def testPriceShifts = {

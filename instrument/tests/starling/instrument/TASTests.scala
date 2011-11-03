@@ -8,8 +8,9 @@ import starling.quantity.{UOM, Quantity}
 import starling.market._
 import starling.daterange.{DayAndTime, Day, Month}
 import starling.marketdata.ReferenceDataLookup
+import org.scalatest.testng.TestNGSuite
 
-class TASTests extends TestMarketTest {
+class TASTests extends TestMarketTest with TestNGSuite {
 
   import org.testng.annotations._
   import org.testng.Assert._

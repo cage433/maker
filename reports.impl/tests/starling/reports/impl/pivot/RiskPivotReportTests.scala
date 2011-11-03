@@ -14,8 +14,9 @@ import starling.instrument.{SingleAsianOption, FuturesOption}
 import starling.reports.impl.pivot.PivotReport._
 import org.testng.annotations.Test
 import starling.gui.api.{ReportSpecificChoices, UTPIdentifier}
+import org.scalatest.testng.TestNGSuite
 
-class RiskPivotReportTests extends TestMarketTest with StarlingTest{
+class RiskPivotReportTests extends TestMarketTest with TestNGSuite with StarlingTest{
   @Test
   def testFuturesOption {
     val market = Market.NYMEX_WTI

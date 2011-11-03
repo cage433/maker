@@ -18,8 +18,9 @@ import starling.props.PropsHelper
 import org.scalatest.matchers.{Matcher, ShouldMatchers}
 import collection.Traversable
 import starling.marketdata._
+import org.scalatest.testng.TestNGSuite
 
-class MarketDataStoreTest extends TestMarketTest with ShouldMatchers {
+class MarketDataStoreTest extends TestMarketTest with TestNGSuite with ShouldMatchers {
   import MarketDataStore._
 
   lazy val dataTypes = new MarketDataTypes(ReferenceDataLookup.Null)
