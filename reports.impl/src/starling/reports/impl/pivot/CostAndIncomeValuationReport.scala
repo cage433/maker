@@ -64,7 +64,7 @@ class CostAndIncomeValuationReport(@transient env:Environment, @transient utps :
                       id,
                       utp,
                       value.value,
-                      value.premium,
+                      value.premium.getOrElse(Quantity.NULL),
                       value.fixedQuantity,
                       Quantity.NULL,
                       Quantity.NULL
@@ -75,7 +75,7 @@ class CostAndIncomeValuationReport(@transient env:Environment, @transient utps :
                       id,
                       utp,
                       value.value,
-                      value.premium,
+                      value.premium.getOrElse(Quantity.NULL),
                       value.fixedQuantity,
                       ass.weightGainOrLoss,
                       Quantity.NULL
@@ -92,10 +92,10 @@ class CostAndIncomeValuationReport(@transient env:Environment, @transient utps :
                       id,
                       utp,
                       value.value,
-                      value.premium,
+                      value.premium.getOrElse(Quantity.NULL),
                       value.fixedQuantity,
                       ass.weightGainOrLoss,
-                      ass.freightParity
+                      ass.freightParity.getOrElse(Quantity.NULL)
                     )
                   }
                 }

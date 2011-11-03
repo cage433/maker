@@ -7,7 +7,7 @@ import starling.daterange.Day
 case class PricingValuationDetails(
   // currently excludes premium - need to check with business
   price : Quantity,
-  premium : Quantity,
+  premium : Option[Quantity],
   // currently excludes premium - need to check with business
   value : Quantity,
   isComplete : Boolean,
@@ -96,7 +96,7 @@ case class CostsAndIncomeUnallocatedAssignmentValuation(
   benchmarkDetails : Either[String, PricingValuationDetails],
   weightGainOrLoss : Quantity,
   weightGainOrLossDetails : Either[String, PricingValuationDetails],
-  freightParity : Quantity
+  freightParity : Option[Quantity]
 ) extends AssignmentValuation {
   def hasError = valuationDetails.isLeft || benchmarkDetails.isLeft || weightGainOrLossDetails.isLeft
 }
