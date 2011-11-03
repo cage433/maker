@@ -37,7 +37,7 @@
     <orderEntry type="module-library" exported="">
       <library>
         <CLASSES>
-          <root url="jar://$MODULE_DIR$/lib/xlloop-0.3.1.jar!/" />
+          <root url="jar://$USER_HOME$/.ivy2/cache/starling-external-jars/xlloop/jars/xlloop-0.3.1.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />
@@ -46,7 +46,7 @@
     <orderEntry type="module-library" exported="">
       <library>
         <CLASSES>
-          <root url="jar://$MODULE_DIR$/../lib/titan-other-jars/titan-security.jar!/" />
+          <root url="jar://$USER_HOME$/.ivy2/cache/com.trafigura.titan.shared-libs/titan-security/jars/titan-security-1.0-SNAPSHOT.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />
@@ -55,7 +55,7 @@
     <orderEntry type="module-library" exported="">
       <library>
         <CLASSES>
-          <root url="jar://$MODULE_DIR$/../lib/titan-other-jars/titan-core.jar!/" />
+          <root url="jar://$USER_HOME$/.ivy2/cache/com.trafigura.titan.shared-libs/titan-utils/jars/titan-utils-1.0-SNAPSHOT.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />
@@ -64,7 +64,16 @@
     <orderEntry type="module-library" exported="">
       <library>
         <CLASSES>
-          <root url="jar://$MODULE_DIR$/../lib/titan-other-jars/titan-utils.jar!/" />
+          <root url="jar://$USER_HOME$/.ivy2/cache/com.trafigura.titan.shared-libs/titan-core/jars/titan-core-1.0-SNAPSHOT.jar!/" />
+        </CLASSES>
+        <JAVADOC />
+        <SOURCES />
+      </library>
+    </orderEntry>
+    <orderEntry type="module-library">
+      <library>
+        <CLASSES>
+          <root url="jar://$USER_HOME$/.ivy2/cache/org.scannotation/scannotation/jars/scannotation-1.0.2.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />
@@ -73,7 +82,7 @@
     <orderEntry type="module-library" exported="">
       <library>
         <CLASSES>
-          <root url="jar://$MODULE_DIR$/lib/commons-httpclient-3.1.jar!/" />
+          <root url="jar://$USER_HOME$/.ivy2/cache/org.jboss.resteasy/resteasy-jaxrs/jars/resteasy-jaxrs-2.2.2.GA.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />
@@ -82,16 +91,7 @@
     <orderEntry type="module-library" exported="">
       <library>
         <CLASSES>
-          <root url="jar://$MODULE_DIR$/lib/jaxrs-api-1.2.GA.jar!/" />
-        </CLASSES>
-        <JAVADOC />
-        <SOURCES />
-      </library>
-    </orderEntry>
-    <orderEntry type="module-library" scope="RUNTIME">
-      <library>
-        <CLASSES>
-          <root url="jar://$MODULE_DIR$/lib/scannotation-1.0.2.jar!/" />
+          <root url="jar://$USER_HOME$/.ivy2/cache/org.jboss.resteasy/jaxrs-api/jars/jaxrs-api-1.2.GA.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />
@@ -100,30 +100,63 @@
     <orderEntry type="module-library" exported="">
       <library>
         <CLASSES>
-          <root url="jar://$MODULE_DIR$/lib/resteasy-jaxrs-2.2.2.GA.jar!/" />
+          <root url="jar://$USER_HOME$/.ivy2/cache/commons-httpclient/commons-httpclient/jars/commons-httpclient-3.1.jar!/" />
         </CLASSES>
         <JAVADOC />
-        <SOURCES>
-          <root url="jar://$MODULE_DIR$/lib/sources/resteasy-jaxrs-2.2.2.GA-src.zip!/resteasy-jaxrs-2.2.2.GA/providers/jettison/src/main/java" />
-          <root url="jar://$MODULE_DIR$/lib/sources/resteasy-jaxrs-2.2.2.GA-src.zip!/resteasy-jaxrs-2.2.2.GA/resteasy-jaxrs/src/main/java" />
-          <root url="jar://$MODULE_DIR$/lib/sources/resteasy-jaxrs-2.2.2.GA-src.zip!/resteasy-jaxrs-2.2.2.GA/resteasy-jsapi/src/main/java" />
-          <root url="jar://$MODULE_DIR$/lib/sources/resteasy-jaxrs-2.2.2.GA-src.zip!/resteasy-jaxrs-2.2.2.GA/providers/multipart/src/main/java" />
-          <root url="jar://$MODULE_DIR$/lib/sources/resteasy-jaxrs-2.2.2.GA-src.zip!/resteasy-jaxrs-2.2.2.GA/resteasy-cdi/src/main/java" />
-          <root url="jar://$MODULE_DIR$/lib/sources/resteasy-jaxrs-2.2.2.GA-src.zip!/resteasy-jaxrs-2.2.2.GA/resteasy-jaxrs-war/src/main/java" />
-          <root url="jar://$MODULE_DIR$/lib/sources/resteasy-jaxrs-2.2.2.GA-src.zip!/resteasy-jaxrs-2.2.2.GA/providers/resteasy-html/src/main/java" />
-          <root url="jar://$MODULE_DIR$/lib/sources/resteasy-jaxrs-2.2.2.GA-src.zip!/resteasy-jaxrs-2.2.2.GA/async-http-servlet-3.0/async-http-servlet-3.0/src/main/java" />
-          <root url="jar://$MODULE_DIR$/lib/sources/resteasy-jaxrs-2.2.2.GA-src.zip!/resteasy-jaxrs-2.2.2.GA/providers/jackson/src/main/java" />
-          <root url="jar://$MODULE_DIR$/lib/sources/resteasy-jaxrs-2.2.2.GA-src.zip!/resteasy-jaxrs-2.2.2.GA/jaxrs-api/src/main/java" />
-          <root url="jar://$MODULE_DIR$/lib/sources/resteasy-jaxrs-2.2.2.GA-src.zip!/resteasy-jaxrs-2.2.2.GA/providers/resteasy-atom/src/main/java" />
-        </SOURCES>
+        <SOURCES />
       </library>
     </orderEntry>
     <orderEntry type="module" module-name="manager" exported="" />
     <orderEntry type="module" module-name="fc2.facility" exported="" />
+    <orderEntry type="module-library" exported="">
+      <library>
+        <CLASSES>
+          <root url="jar://$USER_HOME$/.ivy2/cache/org.springframework/spring-context-support/jars/spring-context-support-3.0.5.RELEASE.jar!/" />
+        </CLASSES>
+        <JAVADOC />
+        <SOURCES />
+      </library>
+    </orderEntry>
+    <orderEntry type="module-library" exported="">
+      <library>
+        <CLASSES>
+          <root url="jar://$USER_HOME$/.ivy2/cache/org.mortbay.jetty/jetty-util/jars/jetty-util-6.1.26.jar!/" />
+        </CLASSES>
+        <JAVADOC />
+        <SOURCES />
+      </library>
+    </orderEntry>
+    <orderEntry type="module-library" exported="">
+      <library>
+        <CLASSES>
+          <root url="jar://$USER_HOME$/.ivy2/cache/net.liftweb/lift-json_2.9.0/jars/lift-json_2.9.0-2.4-M2.jar!/" />
+        </CLASSES>
+        <JAVADOC />
+        <SOURCES />
+      </library>
+    </orderEntry>
     <orderEntry type="module-library">
       <library>
         <CLASSES>
-          <root url="jar://$MODULE_DIR$/lib_managed/subethasmtp-smtp-jar-1.2.jar!/" />
+          <root url="jar://$USER_HOME$/.ivy2/cache/org.subethamail/subethasmtp-smtp/jars/subethasmtp-smtp-1.2.jar!/" />
+        </CLASSES>
+        <JAVADOC />
+        <SOURCES />
+      </library>
+    </orderEntry>
+    <orderEntry type="module-library" exported="">
+      <library>
+        <CLASSES>
+          <root url="jar://$USER_HOME$/.ivy2/cache/javax.mail/mail/jars/mail-1.4.jar!/" />
+        </CLASSES>
+        <JAVADOC />
+        <SOURCES />
+      </library>
+    </orderEntry>
+    <orderEntry type="module-library" exported="">
+      <library>
+        <CLASSES>
+          <root url="jar://$USER_HOME$/.ivy2/cache/org.mortbay.jetty/jetty/jars/jetty-6.1.26.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />
@@ -132,61 +165,7 @@
     <orderEntry type="module-library">
       <library>
         <CLASSES>
-          <root url="jar://$MODULE_DIR$/lib_managed/subethasmtp-wiser-jar-1.2.jar!/" />
-        </CLASSES>
-        <JAVADOC />
-        <SOURCES />
-      </library>
-    </orderEntry>
-    <orderEntry type="module-library" exported="">
-      <library>
-        <CLASSES>
-          <root url="jar://$MODULE_DIR$/lib_managed/lift-json_2.9.0-jar-2.4-M2.jar!/" />
-        </CLASSES>
-        <JAVADOC />
-        <SOURCES />
-      </library>
-    </orderEntry>
-    <orderEntry type="module-library" exported="">
-      <library>
-        <CLASSES>
-          <root url="jar://$MODULE_DIR$/lib_managed/jetty-jar-6.1.26.jar!/" />
-        </CLASSES>
-        <JAVADOC />
-        <SOURCES />
-      </library>
-    </orderEntry>
-    <orderEntry type="module-library" exported="">
-      <library>
-        <CLASSES>
-          <root url="jar://$MODULE_DIR$/lib_managed/jetty-util-jar-6.1.26.jar!/" />
-        </CLASSES>
-        <JAVADOC />
-        <SOURCES />
-      </library>
-    </orderEntry>
-    <orderEntry type="module-library" exported="">
-      <library>
-        <CLASSES>
-          <root url="jar://$MODULE_DIR$/lib_managed/spring-context-support-jar-3.0.5.RELEASE.jar!/" />
-        </CLASSES>
-        <JAVADOC />
-        <SOURCES />
-      </library>
-    </orderEntry>
-    <orderEntry type="module-library" exported="">
-      <library>
-        <CLASSES>
-          <root url="jar://$MODULE_DIR$/lib_managed/spring-context-support-source-3.0.5.RELEASE.jar!/" />
-        </CLASSES>
-        <JAVADOC />
-        <SOURCES />
-      </library>
-    </orderEntry>
-    <orderEntry type="module-library" exported="">
-      <library>
-        <CLASSES>
-          <root url="jar://$MODULE_DIR$/lib_managed/mail-jar-1.4.jar!/" />
+          <root url="jar://$USER_HOME$/.ivy2/cache/org.subethamail/subethasmtp-wiser/jars/subethasmtp-wiser-1.2.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />
@@ -198,12 +177,10 @@
     <orderEntry type="module-library" exported="">
       <library>
         <CLASSES>
-          <root url="jar://$MODULE_DIR$/../lib/servlet-api-jar-2.5.jar!/" />
+          <root url="jar://$USER_HOME$/.ivy2/cache/javax.servlet/servlet-api/jars/servlet-api-2.5.jar!/" />
         </CLASSES>
         <JAVADOC />
-        <SOURCES>
-          <root url="jar://$MODULE_DIR$/../lib/servlet-api-source-2.5.jar!/" />
-        </SOURCES>
+        <SOURCES />
       </library>
     </orderEntry>
   </component>

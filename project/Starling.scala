@@ -58,7 +58,7 @@ object StarlingBuild extends Build{
     unmanagedResourceDirectories in Test <+= baseDirectory(_/"test-resources"),
     unmanagedResourceDirectories in Compile <+= baseDirectory(_/"resources"),
     unmanagedClasspath in Test <+= (baseDirectory) map { bd => Attributed.blank(bd / "resources") },
-    ivyXML := <dependencies><exclude artifact="jcl-over-slf4j"/><exclude artifact="junit"/></dependencies>,
+    ivyXML := <dependencies><exclude artifact="jcl-over-slf4j"/><exclude artifact="junit"/></dependencies><settings><settings name="default" transitive="false"/></settings>,
     scalaVersion := "2.9.1",
     showLibsTask,
     writeClasspathScriptTask,
@@ -66,6 +66,7 @@ object StarlingBuild extends Build{
     publishSetting,
     resolvers += "Non-Trafigura Public Repositories" at "http://nexus.global.trafigura.com:8081/nexus/content/groups/mirror/",
     resolvers += "trafigura" at "http://nexus.global.trafigura.com:8081/nexus/content/repositories/tooling-releases/",
+    resolvers += "Titan Cross Stream Snapshots" at "http://nexus.global.trafigura.com:8081/nexus/content/repositories/titan-cross-stream-snapshots/",
     organizationName := "Trafigura",
     version := starlingVersion
   )
@@ -422,10 +423,31 @@ object StarlingBuild extends Build{
     jarNames.flatMap(libJar(_))
   }
 
+  val servicesDependencies = Seq(
+    "net.liftweb" % "lift-json_2.9.0" % "2.4-M2",
+    "javax.mail" % "mail" % "1.4",
+    "org.mortbay.jetty" % "jetty" % "6.1.26",
+    "org.mortbay.jetty" % "jetty-util" % "6.1.26",
+    "org.subethamail" % "subethasmtp-wiser" % "1.2",
+    "org.subethamail" % "subethasmtp-smtp" % "1.2",
+    "org.springframework" % "spring-context-support" % "3.0.5.RELEASE",
+    "com.thoughtworks.paranamer" % "paranamer" % "2.3",
+    "starling-external-jars" % "xlloop" % "0.3.1",
+    "commons-httpclient" % "commons-httpclient" % "3.1",
+    "org.jboss.resteasy" % "jaxrs-api" % "1.2.GA",
+    "org.jboss.resteasy" % "resteasy-jaxrs" % "2.2.2.GA",
+    "org.scannotation" % "scannotation" % "1.0.2",
+    "javax.servlet" % "servlet-api" % "2.5",
+  
+    "com.trafigura.titan.shared-libs" % "titan-core" % "1.0-SNAPSHOT" notTransitive(),
+    "com.trafigura.titan.shared-libs" % "titan-security" % "1.0-SNAPSHOT" notTransitive(),
+    "com.trafigura.titan.shared-libs" % "titan-utils" % "1.0-SNAPSHOT" notTransitive()
+  )
+
   lazy val services = Project(
     "services", 
     file("./services"),
-    settings = standardSettings
+    settings = standardSettingsNexus ++ (libraryDependencies ++= servicesDependencies)
   ) dependsOn(curves % "test->test", concurrent, loopyxl, titan, gui, fc2Facility, browser, titanReturnTypes)
 
   lazy val tradeImpl = Project(
@@ -459,10 +481,20 @@ object StarlingBuild extends Build{
     settings = standardSettingsNexus
   ) dependsOn(startserver, gui, singleClasspathManager)
 
+  val webserviceDependencies = Seq(
+    "javax.servlet" % "servlet-api" % "2.5",
+    "org.jboss.resteasy" % "jaxrs-api" % "1.2.GA",
+    "net.liftweb" % "lift-json_2.9.0" % "2.4-M2",
+    "org.mortbay.jetty" % "jetty" % "6.1.26",
+    "org.mortbay.jetty" % "jetty-util" % "6.1.26",
+    "com.thoughtworks.paranamer" % "paranamer" % "2.3",
+    "org.jboss.resteasy" % "resteasy-jaxrs" % "2.2.2.GA"
+  )
+
   lazy val webservice = Project(
     "webservice",
     file("./webservice"),
-    settings = standardSettings ++ libJars("servlet-api-jar-2.5.jar", "jaxrs-api-1.2.GA.jar", "lift-json_2.9.0-jar-2.4-M2.jar")
+    settings = standardSettingsNexus ++ (libraryDependencies ++= webserviceDependencies)
   ) dependsOn(utils, manager, props, daterange, starlingApi)
 
   // Evil hack so that I can get a classpath exported including the test-classes of all projects.
