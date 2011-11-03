@@ -119,8 +119,9 @@ class StarlingInit( val props: Props,
     }
 
     // TODO: [1 Nov 2011]: Defer creating the FwdCurveAutoImport until all marketDataSources have been registered (and use Scheduler instead ?)
-    val fwdCurveAutoImport = new FwdCurveAutoImport(60*15, mds, marketDataSources.marketDataSetsFor[FwdCurveDbMarketDataSource],
-      businessCalendars.US_UK)
+    val sources = marketDataSources.marketDataSetsFor[FwdCurveDbMarketDataSource]
+    require(sources.nonEmpty, "No market data sources for FwdCurveDbMarketDataSource")
+    val fwdCurveAutoImport = new FwdCurveAutoImport(60 * 15, mds, sources, businessCalendars.US_UK)
 
     (fwdCurveAutoImport, mds, marketDataSources)
   }
