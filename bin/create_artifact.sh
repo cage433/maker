@@ -10,6 +10,10 @@ FILE_NAME=starling_$COMMIT_ID.tar.gz
 
 echo $FILE_NAME
 
-tar --exclude 'starling/project/deployment/artifacts/*' --exclude 'starling/props.conf' -zcvf $FILE_NAME starling
+tar \
+  --exclude 'starling/project/deployment/artifacts/*' \
+  --exclude 'starling/props.conf' \
+  --exclude 'starling/modulejarcache/*' \
+  -zcvf $FILE_NAME starling
 
 mv $FILE_NAME starling/project/deployment/artifacts/$FILE_NAME
