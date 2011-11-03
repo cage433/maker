@@ -9,6 +9,10 @@ case class FreightParityData(parityRate: Double, comment: String) extends Market
   def parityQuantity = Quantity(parityRate, UOM.USD / UOM.MT)
 }
 
+object FreightParityData{
+  val ZERO = FreightParityData(0, "No freight parity exists")
+}
+
 case class FreightParityDataKey(contractualIncoterm: IncotermCode, contractualLocation: ContractualLocationCode,
   destinationIncoterm: IncotermCode, destinationLocation: NeptuneCountryCode) extends MarketDataKey {
 

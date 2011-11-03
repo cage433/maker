@@ -24,6 +24,15 @@ case class FreightParityCurveKey(contractualIncoterm: IncotermCode, contractualL
 
   def buildFromMarketData(marketDayAndTime: DayAndTime, marketData: FreightParityData): FreightParityCurveObject =
     FreightParityCurveObject(marketDayAndTime, marketData)
+
+  override def buildFromMarketData(marketDayAndTime: DayAndTime, marketDataSlice: MarketDataSlice): CurveObject = {
+    try {
+      super.buildFromMarketData(marketDayAndTime, marketDataSlice)
+    } catch {
+      case _ : MissingMarketDataException =>
+        buildFromMarketData(marketDayAndTime, FreightParityData.ZERO)
+    }
+  }
 }
 
 case class FreightParityCurveObject(marketDayAndTime: DayAndTime, marketData: FreightParityData) extends CurveObject {
