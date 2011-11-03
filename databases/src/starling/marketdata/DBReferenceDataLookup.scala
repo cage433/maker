@@ -17,7 +17,8 @@ case class DBReferenceDataLookup(neptuneDB: RichDB) extends ReferenceDataLookup 
     ContractualLocationCode.apply, ContractualLocation.apply)
 
   val countries = neptuneDB.lookupTable[NeptuneCountryCode, NeptuneCountry]("live.country", "code", "name",
-    NeptuneCountryCode.apply, (code, name) => NeptuneCountry(code, name, countryToAreaLT.get(code).flatMap(areas.get)))
+    NeptuneCountryCode.apply, (code, name) => NeptuneCountry(code, name, countryToAreaLT.get(code).flatMap(areas.get))).
+      withDefault { code => NeptuneCountry(code, code + " not found in neptune", None) }
 
   require((areas.keySet & AreaCode.hardCoded) == AreaCode.hardCoded, "Reference data has changed, hard coded values are invalid")
 }
