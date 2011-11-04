@@ -8,12 +8,12 @@ import starling.webservice.{EDMFormats, JsonSerializer}
 
 case class PricingValuationDetails(
   // currently excludes premium - need to check with business
-  price : Quantity,
-  priceExcludingVAT : Option[Quantity],
+  priceExcludingVAT : Quantity,
+  priceIncludingVAT : Option[Quantity],
   premium : Option[Quantity],
   // currently excludes premium - need to check with business
-  value : Quantity,
-  valueExcludingVAT : Option[Quantity],
+  valueExcludingVAT : Quantity,
+  valueIncludingVAT : Option[Quantity],
   isComplete : Boolean,
   fixedQuantity : Quantity,
   pricingType : String,
@@ -172,6 +172,8 @@ case class SalesQuotaValuation(
 ) extends QuotaValuation {
   def hasError = unallocatedValuationDetails.isLeft || benchmarkDetails.isLeft ||
         assignmentValuations.values.exists(_.hasError)
+  private implicit val formats = EDMFormats
+  override def toString = JsonSerializer(classOf[SalesQuotaValuation]).pretty(this)
 }
 
 

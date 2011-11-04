@@ -63,7 +63,7 @@ class CostAndIncomeValuationReport(@transient env:Environment, @transient utps :
                     CostsAndIncomeValuationRow(
                       id,
                       utp,
-                      value.value,
+                      value.valueExcludingVAT,
                       value.premium.getOrElse(Quantity.NULL),
                       value.fixedQuantity,
                       Quantity.NULL,
@@ -74,7 +74,7 @@ class CostAndIncomeValuationReport(@transient env:Environment, @transient utps :
                     CostsAndIncomeValuationRow(
                       id,
                       utp,
-                      value.value,
+                      value.valueExcludingVAT,
                       value.premium.getOrElse(Quantity.NULL),
                       value.fixedQuantity,
                       ass.weightGainOrLoss,
@@ -84,14 +84,14 @@ class CostAndIncomeValuationReport(@transient env:Environment, @transient utps :
                   case ass : CostsAndIncomeUnallocatedAssignmentValuation => {
                     val (benchmarkPremium, benchmarkPrice) = ass.benchmarkDetails match {
                       case Right(bm) => {
-                        (bm.premium, bm.price)
+                        (bm.premium, bm.priceExcludingVAT)
                       }
                       case Left(err) => (Quantity.NULL, Quantity.NULL)
                     }
                     CostsAndIncomeValuationRow(
                       id,
                       utp,
-                      value.value,
+                      value.valueExcludingVAT,
                       value.premium.getOrElse(Quantity.NULL),
                       value.fixedQuantity,
                       ass.weightGainOrLoss,
