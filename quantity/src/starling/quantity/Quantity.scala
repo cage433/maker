@@ -43,6 +43,10 @@ object Quantity {
   def average(quantities : Seq[Quantity]) = quantities match {
     case Nil => throw new Exception("Can't get average of empty sequence")
     case _ => {
+      val distinctUoms = quantities.map(_.uom).distinctBy(_.inBaseUnit).toSet
+      if (distinctUoms.size > 1)
+        throw new IllegalArgumentException("Can't get average of quantities with different units: " + distinctUoms.mkString(", "))
+
       val (sum, uom) = sumAsBigDecimal(quantities)
       val result = Quantity((sum(mc) / quantities.size).toDouble, uom)
 

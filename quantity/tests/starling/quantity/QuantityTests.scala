@@ -299,8 +299,18 @@ import starling.quantity.RichQuantity._
       } 
       println("Round trip = " + roundTripQ)
       roundTripQ should be === Some(q)
+    }
   }
-}
+
+  @Test def shouldNotBeAbleToAverageQuantitiesOfDifferentUnits {
+    intercept[IllegalArgumentException] {
+      Quantity.average(List(1.5 (USD/MT), 1.5 (MT/USD)))
+    }.getMessage should be === "Can't get average of quantities with different units: USD/MT, MT/USD"
+  }
+
+  @Test def averageOfQuantitiesWithSameBaseUnit {
+    Quantity.average(List(1 (USD), 50 (US_CENT))) should be === (75 (US_CENT))
+  }
 
   private def values = Quantity(12.34, UOM.USD) :: multiplicativeZeros ::: additiveZeros
   private def additiveZeros = List(Quantity.NULL, Quantity(0, UOM.NULL))
