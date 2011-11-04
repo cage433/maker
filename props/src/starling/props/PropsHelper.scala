@@ -104,8 +104,8 @@ class PropsHelper(starlingProps : Map[String,PropertyValue], trafiguraProps : Ma
     }
     def validate(value: String): Option[String] = None
 
-    private def applyValidation(propValue: PropertyValue): String =
-      validate(propValue.value).fold(error => throw new Exception(propValue.namePrefix + name + "=" + propValue.value + " " + error + ", source: " + propValue.source), value)
+    private def applyValidation(pv: PropertyValue): String = validate(pv.value).fold(error =>
+      throw new Exception("%s%s=%s %s, source: %s" % (pv.namePrefix, name, pv.value, error, pv.source)), pv.value)
   }
 
   abstract class LocalPort(defaultValue: Int) extends IntProperty(defaultValue)
