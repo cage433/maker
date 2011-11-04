@@ -290,7 +290,7 @@ class WebStartServlet(prefix:String, serverName:String, externalURL:String, main
     }
 
     def generateBooterJar = {
-      val classes = new File("booter/out")
+      val classes = new File("booter/target/scala-2.9.1/classes")
       val timestamp = GUICode.findLastModified(classes)
       val booterJarName = "booter_" + timestamp + ".jar"
 

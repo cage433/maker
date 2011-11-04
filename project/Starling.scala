@@ -143,7 +143,13 @@ object StarlingBuild extends Build{
     "osgirun",
     file("./osgirun"),
     settings = standardSettings
-  ) 
+  )
+
+  lazy val booter = Project(
+    "booter",
+    file("./booter"),
+    settings = standardSettingsNexus
+  )
 
   lazy val concurrent = Project(
     "concurrent", 
@@ -545,6 +551,7 @@ object StarlingBuild extends Build{
 
   def titanModelReference : List[ProjectReference] = if (useTitanModelBinaries) Nil else List(titanModel) 
   def otherProjectRefereneces : List[ProjectReference] = List(
+    booter,
     utils, 
     bouncyrmi, 
     auth, 
