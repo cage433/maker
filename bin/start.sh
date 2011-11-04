@@ -34,13 +34,6 @@ else
 
     SERVERNAME=`cat props.conf | grep -i ServerName | sed -r 's/ServerName\s*=\s*//i'`
 
-    mkdir -p booter/out/
-
-    # Want to compile the booter module (and jar it). It is written in java and used in the exe generation. This should
-    # probably be done in SBT.
-    echo "Compile booter"
-    nohup javac -d booter/out/ booter/src/starling/booter/Booter.java >> logs/booter.log 2>&1 &&
-
     echo "Starting..."
     nohup java \
        -DserverName=$SERVERNAME \

@@ -143,7 +143,13 @@ object StarlingBuild extends Build{
     "osgirun",
     file("./osgirun"),
     settings = standardSettings
-  ) 
+  )
+
+  lazy val booter = Project(
+    "booter",
+    file("./booter"),
+    settings = standardSettingsNexus
+  )
 
   lazy val concurrent = Project(
     "concurrent", 
@@ -512,7 +518,8 @@ object StarlingBuild extends Build{
     "org.mortbay.jetty" % "jetty" % "6.1.26",
     "org.mortbay.jetty" % "jetty-util" % "6.1.26",
     "com.thoughtworks.paranamer" % "paranamer" % "2.3",
-    "org.jboss.resteasy" % "resteasy-jaxrs" % "2.2.2.GA"
+    "org.jboss.resteasy" % "resteasy-jaxrs" % "2.2.2.GA",
+    "org.scannotation" % "scannotation" % "1.0.2"
   )
 
   lazy val webservice = Project(
@@ -545,6 +552,7 @@ object StarlingBuild extends Build{
 
   def titanModelReference : List[ProjectReference] = if (useTitanModelBinaries) Nil else List(titanModel) 
   def otherProjectRefereneces : List[ProjectReference] = List(
+    booter,
     utils, 
     bouncyrmi, 
     auth, 
