@@ -17,6 +17,6 @@ case class MarketDataPatchUtil(writer: DBWriter) {
 
     // Remove all orphaned MarketDataValueKeys, a more efficient alternative could be to query for them before removing the
     // MarketDataValues, but that could result in a large 'in clause'
-    writer.update("DELECT FROM MarketDataValueKey WHERE valueKey NOT IN (SELECT DISTINCT valueKey FROM MarketDataValue)")
+    writer.update("DELETE FROM MarketDataValueKey WHERE id NOT IN (SELECT DISTINCT valueKey FROM MarketDataValue)")
   }
 }
