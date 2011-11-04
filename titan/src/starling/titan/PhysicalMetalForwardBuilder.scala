@@ -87,8 +87,8 @@ class PhysicalMetalForwardBuilder(refData: TitanTacticalRefData,
       }
       def deliveryDays(detail : QuotaDetails) = {
         def getDate(ds : DateSpec) : LocalDate = ds match {
-          case date : com.trafigura.edm.common.types.datespecifications.Date => date.dateValue
-          case _ => throw new Exception("Unsupported DateSpec type")
+          case date : com.trafigura.edm.common.units.Date => date.value
+          case _ => throw new Exception("Unsupported DateSpec type " + ds + ", " + ds.getClass)
         }
         val contractDeliveryDay = Day.fromLocalDate(getDate(deliverySpec_(detail).schedule))
         val benchmarkDeliveryDay = Day.fromLocalDate(getDate(detail.expectedSales))
