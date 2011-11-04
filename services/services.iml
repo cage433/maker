@@ -73,7 +73,7 @@
     <orderEntry type="module-library">
       <library>
         <CLASSES>
-          <root url="jar://$USER_HOME$/.ivy2/cache/org.scannotation/scannotation/jars/scannotation-1.0.2.jar!/" />
+          <root url="jar://$USER_HOME$/.ivy2/cache/org.scannotation/scannotation/jars/scannotation-1.0.3.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />
@@ -91,7 +91,7 @@
     <orderEntry type="module-library" exported="">
       <library>
         <CLASSES>
-          <root url="jar://$USER_HOME$/.ivy2/cache/org.jboss.resteasy/jaxrs-api/jars/jaxrs-api-1.2.GA.jar!/" />
+          <root url="jar://$USER_HOME$/.ivy2/cache/org.jboss.resteasy/jaxrs-api/jars/jaxrs-api-2.2.2.GA.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />

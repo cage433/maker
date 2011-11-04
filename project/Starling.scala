@@ -118,7 +118,7 @@ object StarlingBuild extends Build{
     "log4j" % "log4j" % "1.2.16" withSources(),
     "org.slf4j" % "slf4j-log4j12" % "1.6.1" withSources(),
     "com.google.collections" % "google-collections" % "1.0" withSources(),
-    "commons-codec" % "commons-codec" % "1.4" withSources(),
+    "commons-codec" % "commons-codec" % "1.5" withSources(),
     "commons-io" % "commons-io" % "1.3.2" withSources(),
     "colt" % "colt" % "1.0.3",
     "com.thoughtworks.xstream" % "xstream" % "1.3.1" withSources(),
@@ -464,9 +464,9 @@ object StarlingBuild extends Build{
     "com.thoughtworks.paranamer" % "paranamer" % "2.3",
     "starling-external-jars" % "xlloop" % "0.3.1",
     "commons-httpclient" % "commons-httpclient" % "3.1",
-    "org.jboss.resteasy" % "jaxrs-api" % "1.2.GA",
+    "org.jboss.resteasy" % "jaxrs-api" % "2.2.2.GA",
     "org.jboss.resteasy" % "resteasy-jaxrs" % "2.2.2.GA",
-    "org.scannotation" % "scannotation" % "1.0.2",
+    "org.scannotation" % "scannotation" % "1.0.3",
     "javax.servlet" % "servlet-api" % "2.5",
   
     "com.trafigura.titan.shared-libs" % "titan-core" % "1.0-SNAPSHOT" notTransitive(),
@@ -514,12 +514,12 @@ object StarlingBuild extends Build{
   val webserviceDependencies = Seq(
     "net.liftweb" % "lift-json_2.9.0" % "2.4-M2",
     "javax.servlet" % "servlet-api" % "2.5",
-    "org.jboss.resteasy" % "jaxrs-api" % "1.2.GA",
+    "org.jboss.resteasy" % "jaxrs-api" % "2.2.2.GA",
+    "net.liftweb" % "lift-json_2.9.0" % "2.4-M2",
     "org.mortbay.jetty" % "jetty" % "6.1.26",
     "org.mortbay.jetty" % "jetty-util" % "6.1.26",
     "com.thoughtworks.paranamer" % "paranamer" % "2.3",
-    "org.jboss.resteasy" % "resteasy-jaxrs" % "2.2.2.GA",
-    "org.scannotation" % "scannotation" % "1.0.2"
+    "org.jboss.resteasy" % "resteasy-jaxrs" % "2.2.2.GA"
   )
 
   lazy val webservice = Project(

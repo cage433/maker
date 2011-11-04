@@ -91,15 +91,6 @@
     <orderEntry type="module" module-name="props" />
     <orderEntry type="module" module-name="daterange" />
     <orderEntry type="module" module-name="starling.api" />
-    <orderEntry type="module-library">
-      <library>
-        <CLASSES>
-          <root url="jar://$USER_HOME$/.ivy2/cache/org.scannotation/scannotation/jars/scannotation-1.0.2.jar!/" />
-        </CLASSES>
-        <JAVADOC />
-        <SOURCES />
-      </library>
-    </orderEntry>
   </component>
 </module>
 
