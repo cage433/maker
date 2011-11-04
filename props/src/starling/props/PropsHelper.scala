@@ -9,6 +9,7 @@ import scala.collection.JavaConversions
 import java.awt.Color
 import starling.utils.ImplicitConversions._
 import starling.api.utils.PropertiesMapBuilder
+import scalaz.Scalaz._
 
 /**
  * Holds the code to manage properties. The properties are listed in Props
@@ -86,8 +87,10 @@ class PropsHelper(starlingProps : Map[String,String], trafiguraProps : Map[Strin
     })
 
   abstract class Property(defaultGenerator:()=>String) {
+    applyValidation(defaultGenerator())
+
     def this(defaultValue:String) = this(()=>defaultValue)
-    def value() : String = MyPropertiesFile.getProperty(name, defaultGenerator())
+    def value() : String = applyValidation(MyPropertiesFile.getProperty(name, defaultGenerator()))
     def name() = {
       val objectName = getClass.getName
       objectName.substring(objectName.indexOf("$")+1, objectName.length()-1)
@@ -96,6 +99,8 @@ class PropsHelper(starlingProps : Map[String,String], trafiguraProps : Map[Strin
     override def toString = {
       name + " = " + value
     }
+    def validate(value: String): Option[String] = None
+    private def applyValidation(value: String): String = validate(value).fold(error => throw new Exception(error), value)
   }
 
   abstract class LocalPort(defaultValue: Int) extends IntProperty(defaultValue)
