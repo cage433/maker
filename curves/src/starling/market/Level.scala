@@ -26,6 +26,10 @@ object Level extends StarlingEnum(classOf[Level], (l: Level) => l.name, ignoreCa
   val Asia1Minute = Level("Asia1Minute")
   val RecentWklyIndices = Level("RecentWklyIndices")
   val RecentMthlyIndices = Level("RecentMthlyIndices")
+  val FwdMid1day = Level("FwdMid1day")
+  val FwdMid1wkn = Level("FwdMid1wkn")
+  val FwdMid01mo = Level("FwdMid01mo")
+  val PencePerTherm = Level("PencePerTherm")
   val Unknown = Level("Unknown")
 }
 

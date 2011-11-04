@@ -78,9 +78,9 @@ class EAIMarketLookup(eai: DB, expiryRules: FuturesExpiryRules) extends MarketLo
             (rs.getUOM("units"), lots)
           }
 
-          val default = rs.getInt("defaultPrecision")
-          val clearport = rs.getInt("clearportdefaultprecision")
-          val precision = Some(Precision(default, clearport))
+          val default = rs.getIntOption("defaultPrecision")
+          val clearport = rs.getIntOption("clearportdefaultprecision")
+          val precision = default.map(d => Precision(d, clearport.getOrElse(d)))
           val limMultiplier = rs.getDouble("LIMPriceMultiplier")
           val limSymbol = rs.getStringOption("LimSymbol").map(LimSymbol(_, limMultiplier))
           val calendarCode = rs.getString("calendarCode")
@@ -94,6 +94,7 @@ class EAIMarketLookup(eai: DB, expiryRules: FuturesExpiryRules) extends MarketLo
           val commodity = getCommodity(nameLower, product)
           val conversion: Conversions = rs.getDouble("conversionFactor") match {
             case 0 => Conversions.default
+            case 1 => Conversions.default
             case v => commodity match {
               case _: OilCommodity => Conversions.default + ((BBL / MT, v))
               case _: Gas => Conversions.default + ((BBL / MT, v))
@@ -177,11 +178,13 @@ class EAIMarketLookup(eai: DB, expiryRules: FuturesExpiryRules) extends MarketLo
                 }
               }))
             }
+            case o => throw new Exception("Don't have logic for dealing with " + o)
           }
           quote
         } catch {
           case e => {
             println("failed with market " + (name, quoteId) + ", " + e)
+            e.printStackTrace
             None
           }
         }
@@ -265,6 +268,7 @@ class EAIMarketLookup(eai: DB, expiryRules: FuturesExpiryRules) extends MarketLo
       case "dme" => DME
       case "tocom" => TOCOM
       case "nyse" => TOCOM
+      case "henry" => ICE
     }
   }
 }
