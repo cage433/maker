@@ -3,8 +3,8 @@ package starling.launcher
 import starling.http.GUICode
 import starling.props.{PropsHelper, Props}
 import java.net.{BindException, ServerSocket}
-import starling.api.utils.PropertiesMapBuilder
 import starling.startserver.Server
+import starling.api.utils.{PropertyValue, PropertiesMapBuilder}
 
 object DevLauncher {
   def main(args:Array[String]) {
@@ -39,7 +39,8 @@ object DevLauncher {
     val serverName = props.ServerName()
     while (!rmiPortAvailable(props)) {
       counter += 1
-      props = new Props(fileProps.filterKeys(p=>{!localPorts.contains(p.toLowerCase)}) + ("ServerName"->(serverName + " " + counter)), trafiguraProps)
+      val propValue = PropertyValue("generated from ServerName", serverName + " " + counter)
+      props = new Props(fileProps.filterKeys(p=>{!localPorts.contains(p.toLowerCase)}) + ("ServerName"->(propValue)), trafiguraProps)
     }
     props
   }

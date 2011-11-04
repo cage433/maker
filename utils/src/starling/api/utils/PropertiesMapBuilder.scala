@@ -4,6 +4,8 @@ import java.util.Properties
 import java.io.{FileInputStream, File}
 import collection.JavaConversions
 
+case class PropertyValue(source: String, value: String, namePrefix: String = "")
+
 object PropertiesMapBuilder{
   val defaultPropsFile = new File("props.conf")
 
@@ -17,9 +19,9 @@ object PropertiesMapBuilder{
 
   val trafiguraProps = {
     val starlingPrefix = "Starling"
-    val trafiguraProps = propsFromFile(trafiguraPropertiesFile)
+    val trafiguraProps: Map[String, PropertyValue] = propsFromFile(trafiguraPropertiesFile)
     val starlingPropsInTrafiguraProperties = trafiguraProps.filterKeys(_.startsWith(starlingPrefix)).map{
-      case (key, value) => key.substring(starlingPrefix.length) -> value
+      case (key, value) => key.substring(starlingPrefix.length) -> value.copy(namePrefix = starlingPrefix)
     }
 
     val HostURI = """\s*rmi://([^:/ \t]+):(\d+)/\s*""".r
@@ -32,8 +34,8 @@ object PropertiesMapBuilder{
       case ("trafigura.service.referencedata.internal", value) => List(("RefDataServiceLocation", value))
       case ("trafigura.service.starling.internal", value) => { 
         try {
-          val HostURI(hostName, portNo) = value;  
-          List(("ExternalHostname", hostName), ("StarlingServiceRmiPort", portNo)) 
+          val HostURI(hostName, portNo) = value.value;
+          List(("ExternalHostname", value.copy(value = hostName)), ("StarlingServiceRmiPort", value.copy(value = portNo)))
         } catch {
           case _ : MatchError => throw new Exception("malformed starling rmi url - parameter 'trafigura.service.starling.internal' should match '" + HostURI.toString + "'")
         }
@@ -47,14 +49,17 @@ object PropertiesMapBuilder{
   }
 
   val allProps = trafiguraProps ++ starlingProps
-  def property(name : String) : Option[String] = allProps.get(name)
+  def property(name : String): Option[String] = allProps.get(name).map(_.value)
 
-  def propsFromFile(propsFile:File) : Map[String, String] = {
-    println("Attempting to use props from: " + propsFile.getAbsolutePath)
+  def propsFromFile(propsFile:File) : Map[String, PropertyValue] = {
+    val path = propsFile.getAbsolutePath
+    println("Attempting to use props from: " + path)
     val p = new Properties()
     if(propsFile.exists) {
       p.load(new FileInputStream(propsFile))
     }
+
     Map() ++ JavaConversions.mapAsScalaMap(p.asInstanceOf[java.util.Map[String,String]])
+      .map { case (key, value) => (key, PropertyValue(path, value)) }
   }
 }

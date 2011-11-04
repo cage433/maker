@@ -8,22 +8,25 @@ import org.apache.commons.io.IOUtils
 import scala.collection.JavaConversions
 import java.awt.Color
 import starling.utils.ImplicitConversions._
-import starling.api.utils.PropertiesMapBuilder
 import scalaz.Scalaz._
+import collection.immutable.Map
+import starling.api.utils.{PropertyValue, PropertiesMapBuilder}
+
 
 /**
  * Holds the code to manage properties. The properties are listed in Props
  */
-class PropsHelper(starlingProps : Map[String,String], trafiguraProps : Map[String, String]) {
+class PropsHelper(starlingProps : Map[String,PropertyValue], trafiguraProps : Map[String, PropertyValue]) {
 
   val props = trafiguraProps ++ starlingProps
 
   object MyPropertiesFile {
-    def toLowerCase(propsMap : Map[String, String]) = propsMap.map( (e) => (e._1.toLowerCase() -> e._2) )
+    def toLowerCase[T](propsMap : Map[String, T]): Map[String, T] = propsMap.mapKeys(_.toLowerCase)
     val lowercaseProps = toLowerCase(props)
     def hasProperty(name:String) = lowercaseProps.contains(name.toLowerCase)
     def starlingPropertyNames = toLowerCase(starlingProps).keySet
-    def getProperty(name:String, defaultValue:String) : String = lowercaseProps.getOrElse(name.toLowerCase, defaultValue)
+    def getProperty(name:String, defaultValue:String) : PropertyValue =
+      lowercaseProps.getOrElse(name.toLowerCase, PropertyValue("default", defaultValue))
   }
 
   {
@@ -87,7 +90,7 @@ class PropsHelper(starlingProps : Map[String,String], trafiguraProps : Map[Strin
     })
 
   abstract class Property(defaultGenerator:()=>String) {
-    applyValidation(defaultGenerator())
+    applyValidation(PropertyValue("hard-coded-value", defaultGenerator()))
 
     def this(defaultValue:String) = this(()=>defaultValue)
     def value() : String = applyValidation(MyPropertiesFile.getProperty(name, defaultGenerator()))
@@ -100,7 +103,9 @@ class PropsHelper(starlingProps : Map[String,String], trafiguraProps : Map[Strin
       name + " = " + value
     }
     def validate(value: String): Option[String] = None
-    private def applyValidation(value: String): String = validate(value).fold(error => throw new Exception(error), value)
+
+    private def applyValidation(propValue: PropertyValue): String =
+      validate(propValue.value).fold(error => throw new Exception(propValue.namePrefix + name + "=" + propValue.value + " " + error + ", source: " + propValue.source), value)
   }
 
   abstract class LocalPort(defaultValue: Int) extends IntProperty(defaultValue)

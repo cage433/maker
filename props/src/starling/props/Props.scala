@@ -4,8 +4,9 @@ import java.net.InetAddress
 import starling.props.PropsHelper._
 import java.io.File
 import scalaz.Scalaz._
+import starling.api.utils.PropertyValue
 
-class Props(starlingProps:Map[String,String], trafiguraProps : Map[String, String]) extends PropsHelper(starlingProps, trafiguraProps) {
+class Props(starlingProps:Map[String,PropertyValue], trafiguraProps : Map[String, PropertyValue]) extends PropsHelper(starlingProps, trafiguraProps) {
   object ServerName extends ServerNameStringProperty()
   object ServerType extends EnumProperty("Dev", "FC2", "Oil")
   object ServerNameOrBlank extends StringProperty(ServerName())
@@ -42,8 +43,8 @@ class Props(starlingProps:Map[String,String], trafiguraProps : Map[String, Strin
   object HttpServicePort extends LocalPort(1024 + ((ServerName().hashCode.abs % 6400) * 10) + 6)
   object StarlingServiceRmiPort extends LocalPort(1024 + ((ServerName().hashCode.abs % 6400) * 10) + 7)
 
-  object ExternalHostname extends StringProperty(InetAddress.getLocalHost().getHostName) {
-    override def validate(value: String) = Set("localhost", "127.0.0.1").contains(value.trim.toLowerCase).option(value + " is not a valid " + name)
+  object ExternalHostname extends StringProperty(InetAddress.getLocalHost.getHostName) {
+    override def validate(value: String) = Set("localhost", "127.0.0.1").contains(value.trim.toLowerCase).option("is not valid")
   }
 
   object ExternalUrl extends StringProperty("http://" + ExternalHostname() + ":" + HttpPort())
