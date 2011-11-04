@@ -33,10 +33,5 @@ class RichListTests extends TestNGSuite with ShouldMatchers {
     trimXML(List(1,2,3).mkHtml()) should be === <ul><li>1</li><li>2</li><li>3</li></ul>
   }
 
-  @Test def x {
-    val universe = Set(1,2,3,4,5)
-    val a = Set(1,2,3)
-  }
-
   private def trimXML(s: String): Node = Utility.trim(XML.loadString(s))
 }

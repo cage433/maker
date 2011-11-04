@@ -152,6 +152,7 @@ case class Environment(
     (tuple: (Index, DateRange, Option[Int])) => {
       val observationDays = index.observationDays(averagingPeriod)
       val prices = observationDays.map(index.fixingOrForwardPrice(this, _))
+
       val price = Quantity.average(prices) match {
         case nq : NamedQuantity => SimpleNamedQuantity("Average(" + index + "." + averagingPeriod + ")", nq)
         case q : Quantity => q

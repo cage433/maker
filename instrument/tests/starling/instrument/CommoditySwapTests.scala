@@ -705,7 +705,8 @@ class CommoditySwapTests extends JonTestEnv {
     val K = 4.95(USD / BBL)
     val swap = CommoditySwap(index, K, volume, period, cleared = true, pricingRule = CommonPricingRule)
 
-    val fOxy = 117.17(USD / BBL)
+    val fOxy = 117.17(USD / MT)
+    val fOxyInBBL = oxy.convertUOM(fOxy, USD / BBL)
     val fBrent = 112.23(USD / BBL)
     def make(md: DayAndTime) = Environment(UnitTestingAtomicEnvironment(
     md, {
@@ -723,7 +724,7 @@ class CommoditySwapTests extends JonTestEnv {
     val env1 = make(marketDay1).ignoreSwapRounding
 
     val pr = index.averagePrice(env1, oct, CommonPricingRule, USD / BBL, None, PerQuoteRule)
-    assertQtyEquals(pr, fOxy - fBrent, 1e-6)
+    assertQtyEquals(pr, fOxyInBBL - fBrent, 1e-6)
 
     val mtmActual = ((pr - K) * (index.convert(volume, BBL).get))
 
@@ -736,7 +737,7 @@ class CommoditySwapTests extends JonTestEnv {
     val s2 = new SinglePeriodSwap(Index.BRT11, -K, -volumeBBL, period, cleared = true)
 
     val s1mtm = s1.mtm(env1)
-    assertQtyEquals(s1mtm, fOxy * volumeBBL, 1e-5)
+    assertQtyEquals(s1mtm, fOxyInBBL * volumeBBL, 1e-5)
     val s2mtm = s2.mtm(env1)
     assertQtyEquals(s2mtm, -volumeBBL * (fBrent - -K), 1e-5)
 
