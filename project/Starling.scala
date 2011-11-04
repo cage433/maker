@@ -49,7 +49,8 @@ object StarlingBuild extends Build{
     resolvers += "Non-Trafigura Public Repositories" at "http://nexus.global.trafigura.com:8081/nexus/content/groups/mirror/",
     resolvers += "trafigura" at "http://nexus.global.trafigura.com:8081/nexus/content/repositories/tooling-releases/",
     organizationName := "Trafigura",
-    version := starlingVersion
+    version := starlingVersion,
+    shellPrompt  := ShellPrompt.buildShellPrompt
   )
 
   lazy val standardSettingsNexus = Defaults.defaultSettings ++ Seq(
@@ -68,7 +69,8 @@ object StarlingBuild extends Build{
     resolvers += "trafigura" at "http://nexus.global.trafigura.com:8081/nexus/content/repositories/tooling-releases/",
     resolvers += "Titan Cross Stream Snapshots" at "http://nexus.global.trafigura.com:8081/nexus/content/repositories/titan-cross-stream-snapshots/",
     organizationName := "Trafigura",
-    version := starlingVersion
+    version := starlingVersion,
+    shellPrompt  := ShellPrompt.buildShellPrompt
   )
 
   lazy val publishSetting = publishTo <<= (version) {
@@ -778,6 +780,27 @@ object StarlingBuild extends Build{
       file.println("export JAVA_OPTS='-server -XX:MaxPermSize=1024m -Xss512k -Xmx6000m'")
       file.close()
       None
+    }
+  }
+
+  object ShellPrompt {
+ 
+    object devnull extends ProcessLogger {
+      def info (s: => String) {}
+      def error (s: => String) { }
+      def buffer[T] (f: => T): T = f
+    }
+  
+    val current = """\*\s+([^\s]+)""".r
+  
+    def gitBranches = ("git branch --no-color" lines_! devnull mkString)
+  
+    val buildShellPrompt = { 
+      (state: State) => {
+        val currBranch = current findFirstMatchIn gitBranches map (_ group(1)) getOrElse "-"
+        val currProject = Project.extract (state).currentProject.id
+        "%s::%s>".format (currBranch, currProject)
+      }
     }
   }
 }
