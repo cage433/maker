@@ -36,6 +36,8 @@ object TitanIndexName {
       case `lowestOfFourAverageIndex` => LowestOfFourIndex
       case `averageOfFourAverageIndex` => AverageOfFourIndex
       case `maxSettlementAverageIndex` => Ave4MaxSettIndex
+      case null => CashIndex // Hack to work around  broken trade management service
+      case _ => throw new Exception("Unrecognised index " + index)
     }
   }
 
@@ -52,6 +54,8 @@ object TitanIndexName {
       case `lowestOfFourUnknownIndex` => LowestOfFourIndex
       case `averageOfFourUnknownIndex` => AverageOfFourIndex
       case `maxSettlementUnknownIndex` => Ave4MaxSettIndex
+      case null => CashIndex // Hack to work around  broken trade management service
+      case _ => throw new Exception("Unrecognised index " + index)
     }
   }
 }
