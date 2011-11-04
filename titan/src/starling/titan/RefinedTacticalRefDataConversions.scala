@@ -1,17 +1,9 @@
 package starling.titan
 
-import com.trafigura.tradecapture.internal.refinedmetal.{Metal, Market => RefMarket}
-import com.trafigura.tradecapture.internal.refinedmetal.Market._
+import com.trafigura.trademgmt.internal.refinedmetal.{Metal, Market => RefMarket}
+import com.trafigura.trademgmt.internal.refinedmetal.Market._
 import starling.market._
-import java.lang.Exception
 
-/**
- * Created by IntelliJ IDEA.
- * User: louis
- * Date: 22/06/11
- * Time: 14:03
- * To change this template use File | Settings | File Templates.
- */
 
 object  RefinedTacticalRefDataConversions {
 

@@ -1,22 +1,23 @@
 package starling.titan
 
-import starling.utils.Log
-import com.trafigura.edm.trades.{Trade => EDMTrade, PhysicalTrade => EDMPhysicalTrade}
-import com.trafigura.edm.physicaltradespecs.{DeliverySpec, QuotaDetails}
-import com.trafigura.edm.materialspecification.CommoditySpec
-import com.trafigura.edm.shared.types.{DateSpec, PercentageTolerance, TitanId}
-import starling.titan.EDMConversions._
-import com.trafigura.tradinghub.support.GUID
 import org.joda.time.LocalDate
+import com.trafigura.edm.trademgmt.trades.{Trade => EDMTrade, PhysicalTrade => EDMPhysicalTrade}
+import com.trafigura.edm.trademgmt.physicaltradespecs.{DeliverySpec, QuotaDetails}
+import com.trafigura.edm.trademgmt.materialspecification.CommoditySpec
+import com.trafigura.trademgmt.internal.refinedmetal.{DestinationLocation, Location}
+import com.trafigura.tradinghub.support.GUID
+import com.trafigura.edm.common.units.{DateSpec, PercentageTolerance, TitanId}
+import com.trafigura.edm.logistics.inventory.{CancelledInventoryItemStatus, Assignment, InventoryItem}
+import starling.titan.EDMConversions._
+import starling.utils.Log
 import starling.daterange.Day
 import starling.instrument.physical._
 import starling.quantity.{Quantity, Percentage}
 import starling.db.TitanTradeSystem
 import starling.instrument.{ErrorInstrument, TradeID, Trade}
-import com.trafigura.tradecapture.internal.refinedmetal.{DestinationLocation, Location}
 import starling.marketdata._
 import starling.market.Commodity
-import com.trafigura.edm.logistics.inventory.{CancelledInventoryItemStatus, Assignment, LogisticsQuota, InventoryItem}
+
 
 class PhysicalMetalForwardBuilder(refData: TitanTacticalRefData,
             inventoryByQuotaID: Map[TitanId, Traversable[InventoryItem]],
@@ -28,7 +29,7 @@ class PhysicalMetalForwardBuilder(refData: TitanTacticalRefData,
   private val ASSIGNMENT_PREFIX = "A-"
   private val TRADE_PREFIX = "T-"
 
-  private def getTitanTradeId(t: EDMPhysicalTrade): String = NeptuneId(t.titanId).identifier
+  private def getTitanTradeId(t: EDMPhysicalTrade): String = NeptuneId(t.identifier).identifier
 
   private def isPurchase(direction: String) = direction match {
     case EDMTrade.PURCHASE => true
@@ -52,7 +53,7 @@ class PhysicalMetalForwardBuilder(refData: TitanTacticalRefData,
       }
       def shapeAndGrade(spec : DeliverySpec) = {
         spec.materialSpec match {
-          case rms: com.trafigura.edm.materialspecification.RefinedMetalSpec => (
+          case rms: com.trafigura.edm.trademgmt.materialspecification.RefinedMetalSpec => (
             shapesByGUID(rms.shape),
             gradeByGUID(rms.grade)
             )
@@ -86,7 +87,7 @@ class PhysicalMetalForwardBuilder(refData: TitanTacticalRefData,
       }
       def deliveryDays(detail : QuotaDetails) = {
         def getDate(ds : DateSpec) : LocalDate = ds match {
-          case date : com.trafigura.edm.shared.types.Date => date.value
+          case date : com.trafigura.edm.common.types.datespecifications.Date => date.dateValue
           case _ => throw new Exception("Unsupported DateSpec type")
         }
         val contractDeliveryDay = Day.fromLocalDate(getDate(deliverySpec_(detail).schedule))
@@ -232,7 +233,7 @@ class PhysicalMetalForwardBuilder(refData: TitanTacticalRefData,
     catch {
       case e => {
         log.error("error converting trade %s".format(trade.identifier), e)
-        List(Trade(TradeID(TRADE_PREFIX + trade.titanId.value, TitanTradeSystem),
+        List(Trade(TradeID(TRADE_PREFIX + trade.identifier.value, TitanTradeSystem),
             TitanTradeAttributes.dummyDate, "Unknown", TitanTradeAttributes.errorAttributes(trade, eventID),
             new ErrorInstrument(e.getMessage)))
       }

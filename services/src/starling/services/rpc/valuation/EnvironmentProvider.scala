@@ -1,7 +1,7 @@
 package starling.services.rpc.valuation
 
 import starling.db.{NormalMarketDataReader, SnapshotID, MarketDataStore}
-import com.trafigura.edm.trades.{PhysicalTrade => EDMPhysicalTrade}
+import com.trafigura.edm.trademgmt.trades.{PhysicalTrade => EDMPhysicalTrade}
 import starling.utils.cache.CacheFactory
 import starling.quantity.Quantity
 import com.trafigura.services.{TitanSerializableDate}

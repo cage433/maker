@@ -1,13 +1,13 @@
 package starling.titan
 
 import com.trafigura.edm.logistics.inventory._
-import com.trafigura.edm.shared.types.TitanId
 import com.trafigura.tradinghub.support.GUID
-import com.trafigura.tradecapture.internal.refinedmetal._
-import com.trafigura.edm.tradeservice.EdmGetTrades
+import com.trafigura.trademgmt.internal.refinedmetal._
+import com.trafigura.edm.trademgmt.trade.EdmGetTrades
 import starling.utils.{Stopwatch, Log}
 import com.trafigura.services.valuation.TradeManagementCacheNotReady
-import com.trafigura.edm.trades.{CompletedTradeState, PhysicalTrade => EDMPhysicalTrade}
+import com.trafigura.edm.trademgmt.trades.{CompletedTradeState, PhysicalTrade => EDMPhysicalTrade}
+import com.trafigura.edm.common.units.TitanId
 
 
 // for some strange reason EDM trade service converts titan quota ID with prefix NEPTUNE:
@@ -22,8 +22,8 @@ case class NeptuneId(id : String) {
 
 object NeptuneId {
   val NeptuneIdFormat = "NEPTUNE:(.*)".r
-  def apply(titanId : TitanId) : NeptuneId = {
-    NeptuneId(Option(titanId).map(_.value).getOrElse("No Titan ID"))
+  def apply(identifier : TitanId) : NeptuneId = {
+    NeptuneId(Option(identifier).map(_.value).getOrElse("No Titan ID"))
   }
 }
 
@@ -78,8 +78,8 @@ trait TitanEdmTradeService extends Log {
       val trade = titanGetEdmTradesService.get(id).asInstanceOf[EDMPhysicalTrade]
 
       if (trade.state != CompletedTradeState) {
-        log.error("fetched single trade %s and it was in an unexpected state %s".format(trade.titanId.value, trade.state))
-        throw new Exception("Incorrect trade state for trade " + trade.titanId.value)
+        log.error("fetched single trade %s and it was in an unexpected state %s".format(trade.identifier.value, trade.state))
+        throw new Exception("Incorrect trade state for trade " + trade.identifier.value)
       }
       trade
     }
@@ -98,7 +98,7 @@ trait TitanEdmTradeService extends Log {
       val edmTrades = edmTradeResult.results.map(_.trade.asInstanceOf[EDMPhysicalTrade]).flatMap(Option(_)).filter(pt => pt.state == CompletedTradeState)
 
       // temporary code, trademgmt are sending us null titan ids
-      val (nullIds, validIds) = edmTrades.span(_.titanId == null)
+      val (nullIds, validIds) = edmTrades.span(_.identifier == null)
       if (nullIds.size > 0) {
         log.error("Null Titan trade IDs found!")
         log.error("null ids \n%s\n%s".format(nullIds, validIds))

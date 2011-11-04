@@ -3,22 +3,17 @@ package starling.services.rpc.refdata
 import starling.props.Props
 import com.trafigura.services.security.ComponentTestClientExecutor
 import org.jboss.resteasy.client.{ProxyFactory, ClientExecutor}
-import com.trafigura.tradecapture.internal.refinedmetalreferencedataservice._
-import com.trafigura.edm.tradeservice.{EdmGetTradesResource, EdmGetTradesResourceProxy, EdmGetTrades}
-import com.trafigura.edm.trades.{PhysicalTrade => EDMPhysicalTrade}
 import org.codehaus.jettison.json.JSONObject
-import com.trafigura.edm.tradeservice.TradeResults
-import com.trafigura.edm.trades.Trade
-import com.trafigura.edm.tradeservice.TradeResult
-import starling.services.StarlingInit
+import com.trafigura.edm.trademgmt.trade._
+import com.trafigura.edm.trademgmt.trades.{Trade, PhysicalTrade => EDMPhysicalTrade}
 import com.trafigura.tradinghub.support.GUID
-import starling.services.rpc.valuation.ValuationService
-import starling.services.rpc.FileUtils
-import starling.titan.{TitanEdmTradeService, TitanServices}
-import com.trafigura.tradecapture.internal.refinedmetal.{Counterparty, Metal, Market, Shape, Grade, Location, DestinationLocation, GroupCompany}
+import starling.titan.TitanServices
+import com.trafigura.trademgmt.internal.refinedmetal.{Counterparty, Metal, Market, Shape, Grade, Location, DestinationLocation, GroupCompany}
 import com.trafigura.timer.Timer
-import com.trafigura.edm.shared.types.TitanId
+import com.trafigura.edm.common.units.TitanId
 import starling.utils.conversions.RichMapWithErrors._
+import com.trafigura.trademgmt.internal.refinedmetalreferencedata._
+import org.joda.time.DateTime
 
 /**
  * Tactical ref data, service proxies / data
@@ -71,8 +66,7 @@ case class DefaultTitanServices(props: Props) extends TitanServices {
  * Looks like real ref-data, but really it comes from static data for testing purposes
  */
 case class FileMockedTitanServices() extends TitanServices {
-   
-  import com.trafigura.edm.trades.{PhysicalTrade => EDMPhysicalTrade}
+
   import starling.services.rpc.FileUtils._
 
   val resourcePath = "/tests/valuationservice/testdata"
@@ -92,8 +86,15 @@ case class FileMockedTitanServices() extends TitanServices {
       case Some(trade) => trade.asInstanceOf[EDMPhysicalTrade]
       case _ => throw new Exception("Trade does not exist in mock data %s".format(id))
     }
-    def getQuota(id : TitanId) = throw new Exception("Not implemented yet") // todo... implement if/when needed
-    def getByGuid(guid : GUID) = throw new Exception("Not implemented yet") // todo... implement if/when needed
+
+    // not used... implement if/when needed
+    def getQuota(id : TitanId) = throw new Exception("Not implemented yet")
+    def getByGuid(guid : GUID) = throw new Exception("Not implemented yet")
+    def getVersions(identifier: TitanId) = throw new Exception("Not implemented yet")
+    def getVersion(identifier: TitanId, asOf: DateTime) = throw new Exception("Not implemented yet")
+    def getQuotaVersion(identifier: TitanId, asOf: DateTime) = throw new Exception("Not implemented yet")
+    def getTradeByQuotaId(identifier: TitanId) = throw new Exception("Not implemented yet")
+    def getAllCompletedWithQuotasAfter(asOf: DateTime) = throw new Exception("Not implemented yet")
   }
 
   lazy val edmMetalByGUID: Map[GUID, Metal] = loadedMetals.map(m => m.guid -> m).toMap
@@ -120,10 +121,10 @@ case class FileMockedTitanServices() extends TitanServices {
   val loadedTrades = time(loadJsonValuesFromFileUrl(tradesFile, true).map(s => EDMPhysicalTrade.fromJson(new JSONObject(s)).asInstanceOf[EDMPhysicalTrade]), t => println("took %dms to get trades".format(t)))
   println("trades loaded with quotas %d".format(loadedTrades.filter(_.quotas.size > 0).size))
 
-  var tradeMap = loadedTrades.map(t => t.titanId  -> t).toMap
+  var tradeMap = loadedTrades.map(t => t.identifier -> t).toMap
 
   def updateTrade(trade : EDMPhysicalTrade) {
-    tradeMap = tradeMap.updated(trade.titanId, trade)
+    tradeMap = tradeMap.updated(trade.identifier, trade)
   }
 }
 

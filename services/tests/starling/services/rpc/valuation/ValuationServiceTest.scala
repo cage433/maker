@@ -7,7 +7,7 @@ import org.codehaus.jettison.json.JSONArray
 import com.trafigura.events.{DemultiplexerClient, EventFactory, PayloadFactory}
 import com.trafigura.shared.events.Event._
 import org.testng.Assert._
-import com.trafigura.edm.trades.{PhysicalTrade => EDMPhysicalTrade}
+import com.trafigura.edm.trademgmt.trades.{PhysicalTrade => EDMPhysicalTrade}
 import com.trafigura.shared.events._
 import starling.services.rpc.logistics.FileMockedTitanLogisticsServices
 import com.trafigura.edm.logistics.inventory.InventoryItem
