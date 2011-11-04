@@ -512,10 +512,8 @@ object StarlingBuild extends Build{
   ) dependsOn(startserver, gui, singleClasspathManager)
 
   val webserviceDependencies = Seq(
-    "net.liftweb" % "lift-json_2.9.0" % "2.4-M2",
     "javax.servlet" % "servlet-api" % "2.5",
     "org.jboss.resteasy" % "jaxrs-api" % "2.2.2.GA",
-    "net.liftweb" % "lift-json_2.9.0" % "2.4-M2",
     "org.mortbay.jetty" % "jetty" % "6.1.26",
     "org.mortbay.jetty" % "jetty-util" % "6.1.26",
     "com.thoughtworks.paranamer" % "paranamer" % "2.3",
