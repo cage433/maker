@@ -131,7 +131,7 @@ case class PurchaseQuotaValuation(
  assignmentValuations: Map[String, CostsAndIncomeAllocatedPurchaseAssignmentValuation] // Keys are assignment ID
 ) extends QuotaValuation {
   def hasError:Boolean = (unallocatedValuations.values ++ assignmentValuations.values).exists(_.hasError)
-  private implicit val formats = EDMFormats
+  @transient private implicit val formats = EDMFormats
   override def toString = JsonSerializer(classOf[PurchaseQuotaValuation]).pretty(this)
 }
 
@@ -172,7 +172,8 @@ case class SalesQuotaValuation(
 ) extends QuotaValuation {
   def hasError = unallocatedValuationDetails.isLeft || benchmarkDetails.isLeft ||
         assignmentValuations.values.exists(_.hasError)
-  private implicit val formats = EDMFormats
+
+  @transient private implicit  val formats = EDMFormats
   override def toString = JsonSerializer(classOf[SalesQuotaValuation]).pretty(this)
 }
 
