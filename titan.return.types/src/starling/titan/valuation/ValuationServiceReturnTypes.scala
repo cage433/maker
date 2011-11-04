@@ -1,22 +1,29 @@
 package starling.titan.valuation
 
-import starling.quantity.Quantity
 import starling.daterange.Day
+import starling.quantity.Quantity
+import starling.utils.ImplicitConversions._
+import starling.webservice.{EDMFormats, JsonSerializer}
 
 
 case class PricingValuationDetails(
   // currently excludes premium - need to check with business
-  price : Quantity,
-  premium : Quantity,
+  priceExcludingVAT : Quantity,
+  priceIncludingVAT : Option[Quantity],
+  premium : Option[Quantity],
   // currently excludes premium - need to check with business
-  value : Quantity,
+  valueExcludingVAT : Quantity,
+  valueIncludingVAT : Option[Quantity],
   isComplete : Boolean,
   fixedQuantity : Quantity,
   pricingType : String,
   quotationPeriodStart : Option[Day],
   quotationPeriodEnd : Option[Day],
   index : String
-)
+){
+  private implicit val formats = EDMFormats
+  override def toString = JsonSerializer(classOf[PricingValuationDetails]).pretty(this)
+}
 
 trait CostsAndIncomeValuation {
   def snapshotID : String
@@ -96,7 +103,7 @@ case class CostsAndIncomeUnallocatedAssignmentValuation(
   benchmarkDetails : Either[String, PricingValuationDetails],
   weightGainOrLoss : Quantity,
   weightGainOrLossDetails : Either[String, PricingValuationDetails],
-  freightParity : Quantity
+  freightParity : Option[Quantity]
 ) extends AssignmentValuation {
   def hasError = valuationDetails.isLeft || benchmarkDetails.isLeft || weightGainOrLossDetails.isLeft
 }
@@ -124,6 +131,8 @@ case class PurchaseQuotaValuation(
  assignmentValuations: Map[String, CostsAndIncomeAllocatedPurchaseAssignmentValuation] // Keys are assignment ID
 ) extends QuotaValuation {
   def hasError:Boolean = (unallocatedValuations.values ++ assignmentValuations.values).exists(_.hasError)
+  @transient private implicit val formats = EDMFormats
+  override def toString = JsonSerializer(classOf[PurchaseQuotaValuation]).pretty(this)
 }
 
 
@@ -163,6 +172,9 @@ case class SalesQuotaValuation(
 ) extends QuotaValuation {
   def hasError = unallocatedValuationDetails.isLeft || benchmarkDetails.isLeft ||
         assignmentValuations.values.exists(_.hasError)
+
+  @transient private implicit  val formats = EDMFormats
+  override def toString = JsonSerializer(classOf[SalesQuotaValuation]).pretty(this)
 }
 
 

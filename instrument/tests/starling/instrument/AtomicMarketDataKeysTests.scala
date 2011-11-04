@@ -11,8 +11,9 @@ import starling.daterange.{Month, Day, DayAndTime}
 import starling.models.{Call, European}
 import starling.market._
 import starling.marketdata.ReferenceDataLookup
+import org.scalatest.testng.TestNGSuite
 
-class AtomicMarketDataKeysTests extends TestMarketTest {
+class AtomicMarketDataKeysTests extends TestMarketTest with TestNGSuite {
   val market = Market.NYMEX_WTI
   val index = Index.WTI10
 

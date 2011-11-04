@@ -8,8 +8,9 @@ import starling.quantity.Percentage
 import starling.market.{TestMarketTest, Market}
 import starling.daterange.{Day, Year}
 import starling.instrument.CashInstrumentType._
+import org.scalatest.testng.TestNGSuite
 
-class ClearingHouseCostsTests extends TestMarketTest {
+class ClearingHouseCostsTests extends TestMarketTest with TestNGSuite {
 
   @Test
   def testSinglePayment {

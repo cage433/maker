@@ -1,57 +1,29 @@
 package starling.reports.impl.pivot
 
 import greeks.{GreekValues, GreeksPivotReport}
-import starling.utils.StarlingTest
-import starling.curves.Environment
-import starling.curves.NullAtomicEnvironment
-import org.testng.annotations._
-import starling.market.Market
-import starling.quantity.Quantity
-import starling.quantity.Quantity._
-import starling.models.Call
 import org.testng.Assert._
-import starling.instrument.FuturesCalendarSpread
-import starling.instrument.UTP
-import starling.market.Index
-import starling.instrument.Future
-import starling.models.European
-import starling.instrument.FuturesOption
-import starling.instrument.CompositeInstrument
-import starling.quantity.UOM
-import starling.quantity.UOM._
-import starling.quantity.utils.QuantityTestUtils._
-import starling.curves.USDFXRateKey
-import starling.curves.ForwardPriceKey
-import starling.market.SingleIndex
-import starling.curves.PriceDifferentiable
-import starling.curves.ForwardCurveKey
-import starling.curves.USDFXRateCurveKey
-import starling.maths.RandomVariables
-import starling.maths.RandomThing
-import starling.market.PublishedIndex
-import starling.instrument.SingleAsianOption
-import starling.instrument.SingleCalendarSpreadOption
-import starling.instrument.SinglePeriodSwap
-import starling.utils.CollectionUtils
-import starling.reports.impl.pivot.PivotReport._
-import starling.reports.impl.pivot.greeks.GreeksPivotReport._
-import starling.concurrent.MP
-import starling.daterange.{Week, Day, Month, DateRange}
-import starling.daterange.Day._
-import starling.market.BrentCFDSpreadIndex
+import org.testng.annotations._
 import starling.calendar.BrentMonth
-import starling.quantity.utils.SummingMap
-import starling.daterange.Period
-import starling.daterange.TenorType
+import starling.concurrent.MP
+import starling.curves._
+import starling.daterange._
+import starling.daterange.Day._
 import starling.gui.api.{ReportSpecificChoices, UTPIdentifier}
-import starling.curves.UnitTestingAtomicEnvironment
-import starling.curves.OilAtmVolCurveKey
-import starling.curves.OilAtmVolAtomicDatumKey
-import starling.quantity.Percentage
-import starling.curves.DiscountRateKey
-import starling.curves.OilVolSkewAtomicDatumKey
+import starling.instrument._
+import starling.market.{BrentCFDSpreadIndex, Index, Market, PublishedIndex, SingleIndex}
 import starling.market.rules.CommonPricingRule
 import starling.marketdata.ReferenceDataLookup
+import starling.maths.{RandomThing, RandomVariables}
+import starling.models.{Call, European}
+import starling.quantity.{Percentage, Quantity, UOM}
+import starling.quantity.Quantity._
+import starling.quantity.UOM._
+import starling.quantity.utils.SummingMap
+import starling.quantity.utils.QuantityTestUtils._
+import starling.reports.impl.pivot.PivotReport._
+import starling.reports.impl.pivot.greeks.GreeksPivotReport._
+import starling.utils.{CollectionUtils, StarlingTest}
+
 
 class GreeksPivotReportTests extends StarlingTest {
   val marketDay = Day(2010, 1, 1)

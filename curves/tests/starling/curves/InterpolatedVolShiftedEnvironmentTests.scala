@@ -11,8 +11,9 @@ import starling.daterange.{Spread, Month, Day}
 import starling.quantity.{UOM, Quantity, Percentage}
 import starling.market.{TestMarketTest, FuturesFrontPeriodIndex, Index}
 import starling.marketdata.ReferenceDataLookup
+import org.scalatest.testng.TestNGSuite
 
-class InterpolatedVolShiftedEnvironmentTests extends TestMarketTest {
+class InterpolatedVolShiftedEnvironmentTests extends TestMarketTest with TestNGSuite {
 
   val marketDay = Day(2010, 1, 1).endOfDay
   val env = Environment(new NullAtomicEnvironment(marketDay, ReferenceDataLookup.Null))

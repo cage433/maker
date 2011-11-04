@@ -77,7 +77,7 @@ class TitanEventHandler(broadcaster:Broadcaster,
   def tradeMgmtTradeEventHander(ev: Event) : Option[List[TitanTradeUpdateResult]] = {
     log.info("handler: Got a trade event to process, ID %s event %s".format(ev.key.identifier, ev.toString))
 
-    val tradePayloads = ev.content.body.payloads.filter(p => Event.RefinedMetalTradeIdPayload == p.payloadType)
+    val tradePayloads = ev.content.body.payloads.filter(p => Event.RefinedMetalTitanIdPayload == p.payloadType)
     val tradeIds: List[String] = tradePayloads.map(p => p.key.identifier)
     val titanIds: List[TitanId] = tradeIds.map(id => TitanId(id))
     val eventId = ev.key.identifier

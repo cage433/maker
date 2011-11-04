@@ -18,8 +18,9 @@ import org.mockito.Mockito._
 import collection.immutable.List
 import rules._
 import starling.quantity.{Conversions, Quantity}
+import org.scalatest.testng.TestNGSuite
 
-class FormulaIndexTests extends TestMarketTest with ShouldMatchers {
+class FormulaIndexTests extends TestMarketTest with TestNGSuite with ShouldMatchers {
 
   val env = Environment(
     new TestingAtomicEnvironment() {

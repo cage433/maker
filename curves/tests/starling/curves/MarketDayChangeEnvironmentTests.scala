@@ -9,8 +9,9 @@ import starling.quantity.Percentage
 import starling.daterange.Month
 import starling.quantity.Quantity
 import starling.market.{TestMarketTest, Index, FuturesFrontPeriodIndex, Market}
+import org.scalatest.testng.TestNGSuite
 
-class MarketDayChangeEnvironmentTests extends TestMarketTest {
+class MarketDayChangeEnvironmentTests extends TestMarketTest with TestNGSuite {
   @Test
   def testMarketDayChanges{
     val marketDay = Day(2010, 1, 1).endOfDay

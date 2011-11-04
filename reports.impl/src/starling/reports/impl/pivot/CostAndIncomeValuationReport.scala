@@ -63,8 +63,8 @@ class CostAndIncomeValuationReport(@transient env:Environment, @transient utps :
                     CostsAndIncomeValuationRow(
                       id,
                       utp,
-                      value.value,
-                      value.premium,
+                      value.valueExcludingVAT,
+                      value.premium.getOrElse(Quantity.NULL),
                       value.fixedQuantity,
                       Quantity.NULL,
                       Quantity.NULL
@@ -74,8 +74,8 @@ class CostAndIncomeValuationReport(@transient env:Environment, @transient utps :
                     CostsAndIncomeValuationRow(
                       id,
                       utp,
-                      value.value,
-                      value.premium,
+                      value.valueExcludingVAT,
+                      value.premium.getOrElse(Quantity.NULL),
                       value.fixedQuantity,
                       ass.weightGainOrLoss,
                       Quantity.NULL
@@ -84,18 +84,18 @@ class CostAndIncomeValuationReport(@transient env:Environment, @transient utps :
                   case ass : CostsAndIncomeUnallocatedAssignmentValuation => {
                     val (benchmarkPremium, benchmarkPrice) = ass.benchmarkDetails match {
                       case Right(bm) => {
-                        (bm.premium, bm.price)
+                        (bm.premium, bm.priceExcludingVAT)
                       }
                       case Left(err) => (Quantity.NULL, Quantity.NULL)
                     }
                     CostsAndIncomeValuationRow(
                       id,
                       utp,
-                      value.value,
-                      value.premium,
+                      value.valueExcludingVAT,
+                      value.premium.getOrElse(Quantity.NULL),
                       value.fixedQuantity,
                       ass.weightGainOrLoss,
-                      ass.freightParity
+                      ass.freightParity.getOrElse(Quantity.NULL)
                     )
                   }
                 }

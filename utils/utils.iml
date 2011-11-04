@@ -82,7 +82,7 @@
     <orderEntry type="module-library" exported="">
       <library>
         <CLASSES>
-          <root url="jar://$USER_HOME$/.ivy2/cache/commons-codec/commons-codec/jars/commons-codec-1.4.jar!/" />
+          <root url="jar://$USER_HOME$/.ivy2/cache/commons-codec/commons-codec/jars/commons-codec-1.5.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />
@@ -200,6 +200,15 @@
       <library>
         <CLASSES>
           <root url="jar://$USER_HOME$/.ivy2/cache/org.hamcrest/hamcrest-library/jars/hamcrest-library-1.1.jar!/" />
+        </CLASSES>
+        <JAVADOC />
+        <SOURCES />
+      </library>
+    </orderEntry>
+    <orderEntry type="module-library" exported="">
+      <library>
+        <CLASSES>
+          <root url="jar://$USER_HOME$/.ivy2/cache/net.liftweb/lift-json_2.9.0/jars/lift-json_2.9.0-2.4-M2.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />

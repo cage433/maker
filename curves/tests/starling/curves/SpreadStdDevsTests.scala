@@ -12,8 +12,9 @@ import starling.daterange._
 import cern.colt.matrix.impl.DenseDoubleMatrix2D
 import starling.models.{Call, BlackScholes}
 import starling.maths.{LeastSquaresFit, BisectSolve}
+import org.scalatest.testng.TestNGSuite
 
-class SpreadStdDevsTests extends TestMarketTest {
+class SpreadStdDevsTests extends TestMarketTest with TestNGSuite {
 
   @DataProvider(name = "zeroSkewProvider")
   def zeroSkewProvider = {

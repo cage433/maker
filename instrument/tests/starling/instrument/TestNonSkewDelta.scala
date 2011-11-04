@@ -9,8 +9,9 @@ import starling.calendar.{HolidayTablesFactory, BusinessCalendars, NullHolidays}
 import starling.market._
 import starling.quantity.utils.QuantityTestUtils._
 import org.testng.Assert
+import org.scalatest.testng.TestNGSuite
 
-class TestNonSkewDelta extends TestMarketTest{
+class TestNonSkewDelta extends TestMarketTest with TestNGSuite{
   @Test
   def testVolatilityDoesntChange{
     val env = Environment{

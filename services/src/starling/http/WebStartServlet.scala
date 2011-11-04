@@ -45,7 +45,7 @@ object GUICode {
     "eclipse.mylyn.wikitext.textile.core_1.4.0.I20100805-0500-e3x" -> new File(ivyDir + "starling-external-jars/org.eclipse.mylyn.wikitext.textile.core/jars/org.eclipse.mylyn.wikitext.textile.core-1.4.jar"),
     "swingx-core" -> new File(ivyDir + "org.swinglabs/swingx-core/jars/swingx-core-1.6.2-2.jar"),
     "timingframework" -> new File(ivyDir + "net.java.dev.timingframework/timingframework/jars/timingframework-1.0.jar"),
-    "commons-codec" -> new File(ivyDir + "commons-codec/commons-codec/jars/commons-codec-1.4.jar"),
+    "commons-codec" -> new File(ivyDir + "commons-codec/commons-codec/jars/commons-codec-1.5.jar"),
     "google-collections" -> new File(ivyDir + "com.google.collections/google-collections/jars/google-collections-1.0.jar"),
     "joda-time" -> new File(ivyDir + "joda-time/joda-time/jars/joda-time-1.6.jar"),
     "log4j" -> new File(ivyDir + "log4j/log4j/jars/log4j-1.2.16.jar"),
@@ -290,7 +290,7 @@ class WebStartServlet(prefix:String, serverName:String, externalURL:String, main
     }
 
     def generateBooterJar = {
-      val classes = new File("booter/out")
+      val classes = new File("booter/target/scala-2.9.1/classes")
       val timestamp = GUICode.findLastModified(classes)
       val booterJarName = "booter_" + timestamp + ".jar"
 

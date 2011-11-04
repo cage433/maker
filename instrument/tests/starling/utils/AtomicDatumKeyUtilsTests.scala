@@ -15,8 +15,9 @@ import starling.instrument.utils._
 import starling.marketdata.ReferenceDataLookup
 import starling.curves.Environment
 import starling.curves.NullAtomicEnvironment
+import org.scalatest.testng.TestNGSuite
 
-class AtomicDatumKeyUtilsTests extends TestMarketTest {
+class AtomicDatumKeyUtilsTests extends TestMarketTest with TestNGSuite {
   @Test
   def testBucketing {
     val index = Index.PREM_UNL_EURO_BOB_OXY_NWE_BARGES

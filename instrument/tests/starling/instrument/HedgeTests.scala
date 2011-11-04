@@ -20,8 +20,9 @@ import javax.management.remote.rmi._RMIConnection_Stub
 import starling.market.{TestMarketTest, Market}
 import starling.curves._
 import starling.marketdata.ReferenceDataLookup
+import org.scalatest.testng.TestNGSuite
 
-class HedgeTests extends TestMarketTest {
+class HedgeTests extends TestMarketTest with TestNGSuite {
 
   def buildMonthGroups(
     u : Uniform = RandomVariables.standardUniform(12345),

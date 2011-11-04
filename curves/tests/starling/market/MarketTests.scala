@@ -10,8 +10,9 @@ import org.testng.Assert._
 import starling.quantity.Quantity
 import starling.quantity.UOM._
 import starling.quantity.utils.QuantityTestUtils._
+import org.scalatest.testng.TestNGSuite
 
-class MarketTests extends TestMarketTest {
+class MarketTests extends TestMarketTest with TestNGSuite {
   @Test
   def testExpiry {
     val march = Month(2010, 3)

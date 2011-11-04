@@ -10,8 +10,9 @@ import starling.curves._
 import starling.daterange._
 import starling.daterange.Day._
 import starling.utils.TestTimer
+import org.scalatest.testng.TestNGSuite
 
-class SwapCalendarSpreadTests extends TestMarketTest {
+class SwapCalendarSpreadTests extends TestMarketTest with TestNGSuite {
 
   @Test
   def testSameAsTwoSwaps {

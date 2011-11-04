@@ -19,6 +19,7 @@ trait TitanPricingSpec {
   }
 
   def valuationCCY: UOM
+  assert(valuationCCY != null, "Valuation currency is null")
 
   def inValuationCurrency(env : Environment, p : Quantity) = {
     val namedEnv = env.withNaming()

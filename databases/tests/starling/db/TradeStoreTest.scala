@@ -28,8 +28,9 @@ import java.sql.Connection
 import starling.props.PropsHelper
 import starling.gui.api.{Desk, EAIDeskInfo}
 import starling.marketdata.{MarketDataTypes, ReferenceDataLookup}
+import org.scalatest.testng.TestNGSuite
 
-class EAITradeStoreTest extends TestMarketTest {
+class EAITradeStoreTest extends TestMarketTest with TestNGSuite {
   lazy val dataTypes = new MarketDataTypes(ReferenceDataLookup.Null)
   lazy val marketDataStore = new DBMarketDataStore(new NewSchemaMdDB(db, dataTypes), new MarketDataSnapshots(db), MarketDataSources.Null, Broadcaster.Null, dataTypes)
 

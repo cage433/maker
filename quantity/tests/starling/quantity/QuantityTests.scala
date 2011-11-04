@@ -9,6 +9,7 @@ import starling.quantity.{Quantity => Qty}
 import starling.quantity.utils.QuantityTestUtils._
 import org.scalatest.matchers.ShouldMatchers
 import java.lang.String
+import starling.utils.ImplicitConversions._
 
 class QuantityTests extends TestNGSuite with ShouldMatchers {
 
@@ -288,6 +289,18 @@ import starling.quantity.RichQuantity._
     assertQtyEquals(tenQ + tenQ, Quantity(20, PERCENT))
     assertQtyEquals(tenQ - tenQ, Quantity(0, PERCENT))
   }
+
+  @Test
+  def testExtractor {
+    List(1.5 (USD/MT), 0.7 (GBP)).foreach {q => 
+      println("text = " + q.toString)
+      val roundTripQ = q.toString partialMatch {
+        case Quantity.Parse(q2) => q2
+      } 
+      println("Round trip = " + roundTripQ)
+      roundTripQ should be === Some(q)
+  }
+}
 
   private def values = Quantity(12.34, UOM.USD) :: multiplicativeZeros ::: additiveZeros
   private def additiveZeros = List(Quantity.NULL, Quantity(0, UOM.NULL))

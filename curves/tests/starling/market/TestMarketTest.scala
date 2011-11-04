@@ -5,7 +5,7 @@ import org.testng.annotations.{AfterTest, AfterSuite, BeforeSuite}
 import org.scalatest.testng.TestNGSuite
 import starling.daterange._
 
-trait TestMarketTest extends TestMarketSpec with TestNGSuite
+trait TestMarketTest extends TestMarketSpec
 
 trait TestMarketSpec extends ExpiryRulesSpec {
   MarketProvider.registerCreator(TestMarketCreator)
@@ -350,7 +350,7 @@ case object DummyFuturesExpiryRules extends FuturesExpiryRules(new BusinessCalen
   import SomeMarketRules._
   val emptyRule = new FuturesExpiryRule {
     val name = "Test"
-
+  
     def lastTradingDay(d: DateRange) = d.firstDay - 3
 
     override def expiryDay(d: DateRange) = lastTradingDay(d) - 1

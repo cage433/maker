@@ -352,7 +352,7 @@ case class PhysicalMetalAssignment( assignmentID : String,
           */
           weightGain,
           CostsAndIncomeValuation.buildEither(env, weightGain, bp),
-          freightParity = Quantity.NULL)
+          freightParity = None)
       }
       case _ => throw new Exception("Missing benchmark pricing spec for unallocated purchase quota")
     }
@@ -435,10 +435,19 @@ object PhysicalMetalAssignment extends InstrumentType[PhysicalMetalAssignment] w
 
 object CostsAndIncomeValuation{
   def build(env : Environment, quantity : Quantity, pricingSpec : TitanPricingSpec) = {
+    // C&I asked that premiums equal to null quantity - which in TM means no premium
+    // are represented by None
+    val premium = if (pricingSpec.premium == Quantity.NULL)
+      None
+    else
+      Some(pricingSpec.premium)
+
     PricingValuationDetails(
       pricingSpec.price(env),
-      pricingSpec.premium,
+      Some(pricingSpec.price(env)),
+      premium,
       pricingSpec.price(env) * quantity,
+      Some(pricingSpec.price(env) * quantity),
       pricingSpec.isComplete(env.marketDay),
       pricingSpec.fixedQuantity(env.marketDay, quantity),
       pricingSpec.pricingType,

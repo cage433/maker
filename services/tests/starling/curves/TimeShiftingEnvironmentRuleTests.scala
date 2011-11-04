@@ -11,8 +11,9 @@ import org.mockito.Mockito._
 import starling.daterange._
 import starling.marketdata._
 import starling.market.{TestMarketTest, FuturesMarket, FuturesExchangeFactory, Market}
+import org.scalatest.testng.TestNGSuite
 
-class TimeShiftingEnvironmentRuleTests extends TestMarketTest with ShouldMatchers {
+class TimeShiftingEnvironmentRuleTests extends TestMarketTest with TestNGSuite with ShouldMatchers {
   val timeShiftingRule = new TimeShiftToLMECloseEnvironmentRule(ReferenceDataLookup.Null, new MarketDataTypes(ReferenceDataLookup.Null))
 
   val shanghaiPriceAtShanghaiClose = Quantity(16440, Market.SHANGHAI_COPPER.priceUOM)

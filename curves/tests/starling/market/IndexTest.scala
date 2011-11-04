@@ -6,8 +6,9 @@ import org.testng.Assert._
 import starling.quantity.UOM._
 import scala.collection.JavaConversions._
 import starling.utils.CaseInsensitive._
+import org.scalatest.testng.TestNGSuite
 
-class IndexTest extends TestMarketTest{
+class IndexTest extends TestMarketTest with TestNGSuite{
   @Test
   def caseInsenstive {
     val testMarket = Market.LME_LEAD

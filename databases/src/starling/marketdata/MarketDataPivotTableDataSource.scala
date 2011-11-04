@@ -18,6 +18,7 @@ import starling.gui.api.{MarketDataIdentifier, MarketDataSelection, MarketDataVe
 import starling.utils.cache.CacheFactory
 import collection.immutable.{Map, Iterable}
 import scalaz.Scalaz._
+import java.lang.IllegalStateException
 
 /**
  * Represents raw market data as pivot data
@@ -111,15 +112,31 @@ class PrebuiltMarketDataPivotData(reader: MarketDataReader, marketDataStore: Mar
     modifiedRows.toList
   }
 
+  def checkForDuplicates(key:TimedMarketDataKey, rows:List[Row], message:String) {
+    val keys: List[FieldDetails] = marketDataType.valueKeys.toList
+    val rowsForKey = rows.groupBy(r => keys.map(r[Any](_)))
+    rowsForKey.foreach { case (k, rows) => {
+      if (rows.size > 1) {
+        throw new IllegalStateException(message + " " + key.fieldValues(marketDataType) + " " + k)
+      }
+    }}
+  }
+
   def buildUpdateForNewKey(key: TimedMarketDataKey, originalKey: TimedMarketDataKey, currentMarketData: VersionedMarketData, rows: scala.List[Row], editableSet: MarketDataSet): MarketDataUpdate = {
-    val (existingData, newMarketData) = if (key == originalKey) (Some(currentMarketData), marketDataType.createValue(rows))
-    else {
+    val (existingData, newMarketData) = if (key == originalKey) {
+      checkForDuplicates(key, rows, "You can't create a new row because there is already an existing row for ")
+      (Some(currentMarketData), marketDataType.createValue(rows)) //adding new rows or amending values for originalKey
+    } else {
       marketDataStore.readLatest(editableSet, key) match {
-        case vmd@Some(VersionedMarketData(_, Some(existingMarketData))) => {
-          // TODO [6 Oct 2011] Detect collisions between rows & existingRows
-          (vmd, marketDataType.createValue(rows ::: dataType(key.key).castRows(key.key, existingMarketData).toList))
+        case vmd@Some(VersionedMarketData(_, Some(existingMarketData))) => { //edited an 'originalKey' value so that it is stored under 'key'
+          val joinedRows = rows ::: dataType(key.key).castRows(key.key, existingMarketData).toList
+          checkForDuplicates(key, joinedRows, "You can't make this edit because it will override existing values for ")
+          (vmd, marketDataType.createValue(joinedRows))
         }
-        case _ => (None, marketDataType.createValue(rows))
+        case _ => { //edited a value which makes it create a new TimedMarketDataKey
+          checkForDuplicates(key, rows, "The new rows define more than one value for ")
+          (None, marketDataType.createValue(rows))
+        }
       }
     }
 
@@ -142,9 +159,9 @@ class PrebuiltMarketDataPivotData(reader: MarketDataReader, marketDataStore: Mar
     latest match {
       case Some(v@VersionedMarketData(_, Some(readData))) => {
         val currentRows = createRows(timedKey, readData)
-        val modifiedRows = buildModifiedRows(currentRows, maybeEdits)
+        val modifiedCurrentRows = buildModifiedRows(currentRows, maybeEdits)
 
-        val keysForNewData: Map[TimedMarketDataKey, List[Row]] = (modifiedRows ::: newRows).groupBy { row => {
+        val keysForNewData: Map[TimedMarketDataKey, List[Row]] = (modifiedCurrentRows ::: newRows).groupBy { row => {
           val observationPoint = ObservationPoint(row[Day](observationDayField.field),
             ObservationTimeOfDay.fromName(row.string(observationTimeField)))
 
