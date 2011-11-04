@@ -444,8 +444,10 @@ object CostsAndIncomeValuation{
 
     PricingValuationDetails(
       pricingSpec.price(env),
+      Some(pricingSpec.price(env)),
       premium,
       pricingSpec.price(env) * quantity,
+      Some(pricingSpec.price(env) * quantity),
       pricingSpec.isComplete(env.marketDay),
       pricingSpec.fixedQuantity(env.marketDay, quantity),
       pricingSpec.pricingType,

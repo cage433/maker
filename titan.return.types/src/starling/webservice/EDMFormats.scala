@@ -5,6 +5,9 @@ import starling.daterange.Day
 import org.joda.time.LocalDate
 import scala.Any
 import net.liftweb.json.JsonAST.JValue
+import starling.quantity.Quantity
+import starling.quantity.UOM
+import starling.quantity.UOM._
 
 object EDMFormats extends DefaultFormats {
   override val typeHintFieldName = "type"
@@ -30,7 +33,16 @@ object EDMFormats extends DefaultFormats {
     }
   }
 
-  override val customSerializers = List(localDateSerializer, daySerializer)
+  val quantitySerializer = new Serializer[Quantity] {
+    def serialize(implicit format: Formats): PartialFunction[Any, JValue] = {
+      case (q : Quantity) => JString(q.toString)
+    }
+
+    def deserialize(implicit format: Formats): PartialFunction[(TypeInfo, JValue), Quantity] = {
+      case (typeInfo, JString(Quantity.Parse(q))) => q
+    }
+  }
+  override val customSerializers = List(localDateSerializer, daySerializer, quantitySerializer)
 
   object EDMHints extends TypeHints {
     def classFor(hint: String) = Some(Class.forName(hint))

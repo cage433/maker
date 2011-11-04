@@ -8,6 +8,12 @@ import com.trafigura.services.TitanSerializableQuantity
 import scalaz.Scalaz._
 import starling.webservice.{EDMFormats, JsonSerializer}
 import starling.daterange.Day._
+import starling.quantity.Quantity._
+import starling.quantity.UOM._
+import starling.webservice.JsonDeserializer
+import starling.quantity.Quantity
+import starling.utils.ImplicitConversions._
+import net.liftweb.json._
 
 
 class JsonSerializerTests extends WordSpec with ShouldMatchers {
@@ -36,6 +42,14 @@ class JsonSerializerTests extends WordSpec with ShouldMatchers {
 
   "should not capitalize map keys" in {
     serializer.serialize(Map("foo" → "bar")) should be === """{"foo":"bar"}"""
-    serializer.serialize(Map("foo" → (12 Oct 2011))) should be === """{"foo":"12Oct2011"}"""
+      serializer.serialize(Map("foo" → (12 Oct 2011))) should be === """{"foo":"12Oct2011"}"""
+      }
+
+  "should be able to serialize a quantity" in {
+
+    case class Container(q : Quantity)
+    val q = Container(1.5 (USD))
+    JsonDeserializer.deserialize(serializer.serialize(q)) should be === q
+
   }
 }
