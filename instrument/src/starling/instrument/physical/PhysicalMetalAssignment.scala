@@ -107,7 +107,7 @@ trait PhysicalMetalAssignmentOrUnassignedSalesQuota extends UTP with Tradeable {
         benchmarkCountryCode.map(benchmarkCountryCodeLabel -> _.code) ++
        benchmarkIncoTermCode.map(benchmarkIncoTermCodeLabel -> _.code)
 
-  def price(env: Environment) = contractPricingSpec.price(env)
+  def price(env: Environment) = contractPricingSpec.priceExcludingVAT(env)
 
   def periodKey = contractPricingSpec.quotationPeriod.map(DateRangePeriod)
 
@@ -140,7 +140,7 @@ trait PhysicalMetalAssignmentOrUnassignedSalesQuota extends UTP with Tradeable {
   }
   
   private def contractPaymentExplained(env : Environment) : NamedQuantity = {
-    val price = contractPricingSpec.price(env) 
+    val price = contractPricingSpec.priceIncludingVAT(env).getOrElse(contractPricingSpec.priceExcludingVAT(env))
     var exp : NamedQuantity = (if (isPurchase) price * -1 else price).named("Contract Price")
     exp = timesVolume(exp)
     discounted(env, exp, contractPricingSpec.settlementDay(env.marketDay))
@@ -148,7 +148,7 @@ trait PhysicalMetalAssignmentOrUnassignedSalesQuota extends UTP with Tradeable {
 
   private def benchmarkPaymentExplained(env : Environment) : NamedQuantity = {
     val spec = benchmarkPricingSpec(env)
-    val price = spec.price(env) 
+    val price = spec.priceIncludingVAT(env).getOrElse(spec.priceExcludingVAT(env))
     var exp : NamedQuantity = (if (isPurchase) price else price * -1).named("Benchmark Price")
     exp = timesVolume(exp)
     discounted(env, exp, spec.settlementDay(env.marketDay))
@@ -443,11 +443,11 @@ object CostsAndIncomeValuation{
       Some(pricingSpec.premium)
 
     PricingValuationDetails(
-      pricingSpec.price(env),
-      Some(pricingSpec.price(env)),
+      pricingSpec.priceExcludingVAT(env),
+      pricingSpec.priceIncludingVAT(env),
       premium,
-      pricingSpec.price(env) * quantity,
-      Some(pricingSpec.price(env) * quantity),
+      pricingSpec.priceExcludingVAT(env) * quantity,
+      pricingSpec.priceIncludingVAT(env).map(_ * quantity),
       pricingSpec.isComplete(env.marketDay),
       pricingSpec.fixedQuantity(env.marketDay, quantity),
       pricingSpec.pricingType,

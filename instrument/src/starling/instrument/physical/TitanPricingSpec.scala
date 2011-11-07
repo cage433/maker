@@ -8,7 +8,13 @@ import starling.quantity.UOM._
 
 trait TitanPricingSpec {
 
-  def price(env: Environment): Quantity
+  def priceExcludingVAT(env : Environment) : Quantity
+  def priceIncludingVAT(env : Environment) : Option[Quantity] = {
+    if (isLiableToShanghaiVAT)
+      Some(priceExcludingVAT(env) * (Quantity(100, PERCENT) + env.shanghaiVATRate))
+    else
+      None
+  }
   def settlementDay(marketDay: DayAndTime): Day
 
   def premiumCCY: Option[UOM] = {
@@ -52,6 +58,22 @@ trait TitanPricingSpec {
 
   def indexOption: Option[IndexWithDailyPrices]
 
+  private def isLiableToShanghaiVAT = {
+    indexOption match {
+      case Some(index) => index.market match{
+        case fm : FuturesMarket => fm.exchange == FuturesExchangeFactory.SFS 
+        case _ => false
+      }
+      case None => false
+    }
+  }
+  protected def subtractVATIfLiable(env : Environment, price : Quantity) = {
+    if (isLiableToShanghaiVAT)
+      price / (Quantity(100, PERCENT) + env.shanghaiVATRate)
+    else
+      price
+  }
+
   def expiryDay: Day
 }
 
@@ -90,8 +112,6 @@ case class AveragePricingSpec(index: IndexWithDailyPrices, period: DateRange,
   // Just a guess
   def settlementDay(marketDay: DayAndTime) = TitanPricingSpec.calcSettlementDay(index, period.lastDay)
 
-  def price(env: Environment) = addPremiumConvertingIfNecessary(env, env.averagePrice(index, period), premium)
-
   def fixedQuantity(marketDay: DayAndTime,
                     totalQuantity: Quantity): Quantity = totalQuantity * observedDays(marketDay).size / observationDays.size
 
@@ -109,6 +129,10 @@ case class AveragePricingSpec(index: IndexWithDailyPrices, period: DateRange,
 
 
   def expiryDay = TitanPricingSpec.calcSettlementDay(index, period.lastDay)
+  def priceExcludingVAT(env : Environment) = {
+    val priceExclVAT = subtractVATIfLiable(env, env.averagePrice(index, period))
+    addPremiumConvertingIfNecessary(env, priceExclVAT, premium)
+  }
 }
 
 case class OptionalPricingSpec(choices: List[TitanPricingSpec], declarationDay: Day,
@@ -118,9 +142,9 @@ case class OptionalPricingSpec(choices: List[TitanPricingSpec], declarationDay: 
 
   def settlementDay(marketDay: DayAndTime) = specToUse.settlementDay(marketDay)
 
-  def price(env: Environment) = {
+  def priceExcludingVAT(env: Environment) = {
     assert(chosenSpec.isDefined || env.marketDay < declarationDay.endOfDay, "Optional pricing spec must be fixed by " + declarationDay)
-    specToUse.price(env)
+    specToUse.priceExcludingVAT(env)
   }
 
   def fixedQuantity(marketDay: DayAndTime, totalQuantity: Quantity) = specToUse.fixedQuantity(marketDay, totalQuantity)
@@ -146,10 +170,9 @@ case class OptionalPricingSpec(choices: List[TitanPricingSpec], declarationDay: 
 case class WeightedPricingSpec(specs: List[(Double, TitanPricingSpec)], valuationCCY : UOM) extends TitanPricingSpec {
   def settlementDay(marketDay: DayAndTime) = specs.flatMap(_._2.settlementDay(marketDay)).sortWith(_ > _).head
 
-  def price(env: Environment) = Quantity.sum(specs.map {
-    case (weight, spec) => spec.price(env) * weight
+  def priceExcludingVAT(env: Environment) = Quantity.sum(specs.map {
+    case (weight, spec) => spec.priceExcludingVAT(env) * weight
   })
-
   def fixedQuantity(marketDay: DayAndTime, totalQuantity: Quantity) = specs.map {
     case (wt, spec) => spec.fixedQuantity(marketDay, totalQuantity) * wt
   }.sum
@@ -193,16 +216,18 @@ case class FixedPricingSpec(settDay: Day, pricesByFraction: List[(Double, Quanti
 
   def settlementDay(marketDay: DayAndTime) = settDay
 
-  def price(env: Environment) = {
+  private def priceExclPremium(env : Environment) : Quantity = {
     val totalFraction = pricesByFraction.map(_._1).sum
     if (totalFraction == 0) {
       throw new InvalidTitanPricingSpecException("Fixed Pricing Spec with no fixed prices")
     } else {
-      val fixedPriceComponent = Quantity.sum(pricesByFraction.zipWithIndex.map {
+      Quantity.sum(pricesByFraction.zipWithIndex.map {
         case ((qty, prc), i) => prc.named("F_" + i) * qty
       }) / totalFraction
-      addPremiumConvertingIfNecessary(env, fixedPriceComponent, premium)
     }
+  }
+  def priceExcludingVAT(env : Environment) = {
+    addPremiumConvertingIfNecessary(env, priceExclPremium(env), premium)
   }
 
   def fixedQuantity(marketDay: DayAndTime, totalQuantity: Quantity) = totalQuantity
@@ -245,14 +270,19 @@ case class UnknownPricingSpecification(
 
   private def unfixedPriceDay(marketDay : DayAndTime) = TitanPricingSpec.representativeDay(index, month, marketDay)
 
-  def price(env: Environment) = {
+  private def priceExclPremium(env : Environment) = {
     val totalFixed = fixations.map(_.fraction).sum
     val unfixedFraction = 1.0 - totalFixed
     val fixedPayment = Quantity.sum(fixations.zipWithIndex.map {
       case (f, i) => f.price.named("Fix_" + i) * f.fraction
     }).named("Fixed")
     val unfixedPayment = (index.fixingOrForwardPrice(env, unfixedPriceDay(env.marketDay)) * unfixedFraction).named("Unfixed")
-    addPremiumConvertingIfNecessary(env, fixedPayment + unfixedPayment, premium)
+    fixedPayment + unfixedPayment
+  }
+
+  def priceExcludingVAT(env: Environment) = {
+    val price = priceExclPremium(env)
+    addPremiumConvertingIfNecessary(env, subtractVATIfLiable(env, price), premium)
   }
 
   def fixedQuantity(marketDay: DayAndTime, totalQuantity: Quantity) = totalQuantity * fixations.map(_.fraction).sum
