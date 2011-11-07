@@ -63,6 +63,7 @@ object StarlingBuild extends Build{
     scalaVersion := "2.9.1",
     showLibsTask,
     writeClasspathScriptTask,
+    deployClasspathTask,
     credentialsSetting,
     publishSetting,
     resolvers += "Non-Trafigura Public Repositories" at "http://nexus.global.trafigura.com:8081/nexus/content/groups/mirror/",
@@ -784,6 +785,22 @@ object StarlingBuild extends Build{
       val resourceDirs = cp.map(_.data).getFiles.toList.map(_.getPath).filter(_.endsWith("/classes")).map{s => s.replace("/classes", "/resources")}
       file.println("export CLASSPATH=" + (cp.map(_.data).getFiles.toList ::: resourceDirs).mkString(":"))
       file.println("export JAVA_OPTS='-server -XX:MaxPermSize=1024m -Xss512k -Xmx6000m'")
+      file.close()
+      None
+    }
+
+    val deployClasspath = TaskKey[Unit]("deploy-classpath")
+    val deployClasspathTask = deployClasspath <<= (fullClasspath in Compile) map { cp =>
+      import java.io._
+      val file = new PrintWriter(new FileOutputStream(new File("project/deployment/artifacts/deploy-classpath.sh")))
+
+      val classpathFiles = cp.map(_.data).getFiles.map(_.getPath).toList
+      val resourcesFiles = classpathFiles.filter(_.endsWith("/classes")).map{s => s.replace("/classes", "/resources")}.toList
+      val allPaths = classpathFiles ::: resourcesFiles
+
+      file.println("export CLASSPATH=" + allPaths.mkString(":"))
+      file.println("export JAVA_OPTS='-server -XX:MaxPermSize=256 -Xmx6000m'")
+                  
       file.close()
       None
     }
