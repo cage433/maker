@@ -319,7 +319,7 @@ object StarlingBuild extends Build{
     "jxlayer" % "jxlayer" % "4.0",
     "jgoodies" % "looks" % "2.3.1",
     "org.swinglabs" % "swingx-core" % "1.6.2-2",
-    "mig" % "miglayout" % "4.0" classifier "swing",
+    "mig-swing" % "miglayout" % "4.0",
     "net.java.dev.timingframework" % "timingframework" % "1.0",
     "transloader" % "transloader" % "0.4",
     "starling-external-jars" % "org.eclipse.mylyn.wikitext.core" % "1.4" classifier "e3x",

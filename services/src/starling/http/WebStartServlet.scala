@@ -40,7 +40,7 @@ object GUICode {
     "servlet-api" -> new File(ivyDir + "javax.servlet/servlet-api/jars/servlet-api-2.5.jar"),
     "jetty" -> new File(ivyDir + "org.mortbay.jetty/jetty/jars/jetty-6.1.26.jar"),
     "jetty-utls" -> new File(ivyDir + "org.mortbay.jetty/jetty-util/jars/jetty-util-6.1.26.jar"),
-    "browser-lib-miglayout-4.0-swing.jar" -> new File(ivyDir + "mig/miglayout/jars/miglayout-4.0-swing.jar"),
+    "browser-lib-miglayout-4.0-swing.jar" -> new File(ivyDir + "mig-swing/miglayout/jars/miglayout-4.0.jar"),
     "org.eclipse.mylyn.wikitext.core_1.4.0.I20100805-0500-e3x" -> new File(ivyDir + "starling-external-jars/org.eclipse.mylyn.wikitext.core/jars/org.eclipse.mylyn.wikitext.core-1.4-e3x.jar"),
     "eclipse.mylyn.wikitext.textile.core_1.4.0.I20100805-0500-e3x" -> new File(ivyDir + "starling-external-jars/org.eclipse.mylyn.wikitext.textile.core/jars/org.eclipse.mylyn.wikitext.textile.core-1.4.jar"),
     "swingx-core" -> new File(ivyDir + "org.swinglabs/swingx-core/jars/swingx-core-1.6.2-2.jar"),
