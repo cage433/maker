@@ -93,7 +93,8 @@ class MarketDataTypes(referenceDataLookup: ReferenceDataLookup) {
     SpreadStdDevSurfaceDataType,
     new GradeAreaBenchmarkDataType(referenceDataLookup),
     new CountryBenchmarkDataType(referenceDataLookup),
-    new FreightParityDataType(referenceDataLookup)
+    new FreightParityDataType(referenceDataLookup),
+    ShanghaiVATDataType
   )
 
   val lookup = types.toMapWithKeys(_.name.name)

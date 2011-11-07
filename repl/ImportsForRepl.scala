@@ -13,8 +13,7 @@ import starling.db._
 import starling.models._
 import starling.utils._
 import starling.gui.api._
-import starling.curves.Environment
-import starling.curves.MarketDataCurveObjectEnvironment
+import starling.curves._
 import starling.richdb._
 import starling.instrument.physical._
 import starling.services.rpc.refdata._
@@ -51,14 +50,16 @@ def makeEnv(pricingGroup : PricingGroup, marketDay : Day) : Environment = {
   val marketDataID = marketDataStore.latestMarketDataIdentifier(marketDataSelection)
   val reader = new NormalMarketDataReader(marketDataStore, marketDataID)
 
-  val marketDataSlice = new MarketDataReaderMarketDataSlice(reader, ObservationPoint(marketDay, ObservationTimeOfDay.LMEClose), Map(), new MarketDataTypes(neptuneRefData))
-  Environment(
-    MarketDataCurveObjectEnvironment(
-      marketDay.endOfDay,
-      marketDataSlice,
-      shiftsCanBeIgnored=false,
-      ReferenceDataLookup.Null
-    ))
+  val rule = new ClosesEnvironmentRule(neptuneRefData, allowOldPricesToBeUsed = true)
+  rule.createEnv(marketDay, reader).environment
+//  val marketDataSlice = new MarketDataReaderMarketDataSlice(reader, ObservationPoint(marketDay, ObservationTimeOfDay.LMEClose), Map(), new MarketDataTypes(neptuneRefData))
+//  Environment(
+//    MarketDataCurveObjectEnvironment(
+//      marketDay.endOfDay,
+//      marketDataSlice,
+//      shiftsCanBeIgnored=false,
+//      ReferenceDataLookup.Null
+//    ))
 }
 lazy val titanTradeStore = {
   val ts = new starling.titan.TitanTradeStore(new RichDB(devInstance.props.StarlingDatabase(), new RichResultSetRowFactory), Broadcaster.Null, TitanTradeSystem, neptuneRefData)

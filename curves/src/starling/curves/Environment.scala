@@ -74,6 +74,7 @@ case class Environment(
   def this() = this(null)
 
   def atomicEnv = instrumentLevelEnv.atomicEnv
+  def shanghaiVATRate = instrumentLevelEnv.shanghaiVATRate
 
   def benchmark(countryCode: NeptuneCountryCode, commodity: Commodity, gradeCode: GradeCode, day: Day): Quantity =
     areaBenchmark(countryCode, commodity, gradeCode, day) + countryBenchmark(commodity, countryCode, day)
