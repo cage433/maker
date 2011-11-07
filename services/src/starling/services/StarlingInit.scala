@@ -201,6 +201,7 @@ class StarlingInit( val props: Props,
 object StarlingInit {
 
   lazy val devInstance = new StarlingInit(PropsHelper.defaultProps, AuthHandler.Dev, Broadcaster.Null, false, false, false, false, false, false)
+  lazy val rmiInstance = new StarlingInit(PropsHelper.defaultProps, AuthHandler.Dev, Broadcaster.Null, false, true, false, false, false, false)
 
   lazy val runningDevInstance = {
     devInstance.update(_.start)

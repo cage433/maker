@@ -41,6 +41,7 @@ def setNullHolidays{
 def init() = starling.services.StarlingInit.devInstance
 
 lazy val devInstance = init()
+lazy val rmiInstance = starling.services.StarlingInit.rmiInstance
 
 lazy val neptuneRefData = devInstance.referenceDataLookup
 def makeEnv(pricingGroup : PricingGroup, marketDay : Day) : Environment = {
