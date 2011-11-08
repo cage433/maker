@@ -16,7 +16,7 @@ class MarketDayChangeEnvironmentTests extends TestMarketTest with TestNGSuite {
   def testMarketDayChanges{
     val marketDay = Day(2010, 1, 1).endOfDay
     val mkt = Market.NYMEX_WTI
-    val env = Environment(UnitTestingAtomicEnvironment(
+    val env = UnitTestingEnvironment(
       marketDay, 
       {
         case DiscountRateKey(_, d, _) => new Quantity(math.exp(-0.05 * d.daysSinceInYears(marketDay.day)))
@@ -24,7 +24,7 @@ class MarketDayChangeEnvironmentTests extends TestMarketTest with TestNGSuite {
         case _ : OilAtmVolAtomicDatumKey => Percentage(0.2)
         case _ : ForwardPriceKey => Quantity(100.0, mkt.priceUOM)
       }
-    ))
+    )
     val newMarketDay = (marketDay.day + 10).endOfDay
     val shiftedEnv = env.shiftMarketDayAtInstrumentLevel(newMarketDay)
     val day = Day(2010, 10, 10)

@@ -80,12 +80,12 @@ class HedgeTests extends TestMarketTest with TestNGSuite {
   def testFuturesSpreadHedgeDeltasAreConsistent(futures : List[Future]){
     val months = futures.map(_.delivery.asInstanceOf[Month])
     val marketDay = Day(2010, 1, 1).endOfDay
-    val env = Environment(new UnitTestingAtomicEnvironment(marketDay, {
+    val env = UnitTestingEnvironment(marketDay, {
         case ForwardPriceKey(mkt, mth : Month, _) => Quantity(100 + mth.m, mkt.priceUOM)
         case DiscountRateKey(_, day, _) => new Quantity(math.exp(0.05 * day.daysSinceInYears(marketDay.day)))
         case MarketFixingKey(key, _, _) => Quantity(20, key.priceUOM)
       }
-    ))
+    )
     val hedges = Hedge.futuresSpreadHedgeUTPs(env, futures, months.toSet)
     assert(hedges.exists(_.isInstanceOf[FuturesCalendarSpread]), "At least one futures spread should be created")
     val futuresComp = CompositeInstrument(futures)
@@ -129,13 +129,13 @@ class HedgeTests extends TestMarketTest with TestNGSuite {
       seed = 345)
     val u = RandomVariables.standardUniform(43434)
     val marketDay = Day(2010, 3, 13).endOfDay
-    val env = Environment(new UnitTestingAtomicEnvironment(marketDay, {
+    val env = UnitTestingEnvironment(marketDay, {
         case ForwardPriceKey(mkt, mth : Month, _) => Quantity(100 + mth.m, mkt.priceUOM)
         case ForwardPriceKey(mkt, d : Day, _) => Quantity(100 + d.dayNumber, mkt.priceUOM)
         case DiscountRateKey(_, day, _) => new Quantity(math.exp(0.05 * day.daysSinceInYears(marketDay.day)))
         case IndexFixingKey(key, _) => Quantity(20, key.priceUOM)
       }
-    ))
+    )
     val futures = (for (i <- 0 to 200)  yield{
       val mkt = randomMarkets.next
       val period = if (mkt.tenor == Month) randomMonths.next else randomMonths.next.firstDay + 15

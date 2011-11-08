@@ -257,16 +257,14 @@ class AsianOptionTests extends JonTestEnv {
 
   @Test
   def testTheFuturesMonthVegaWhenATMVegaIsUncheckedIsTheSameAsScalingTheSwapVegaByTheObservationDays {
-    val env = Environment(
-      new UnitTestingAtomicEnvironment(DayAndTime(Day(2010, 1, 1), TimeOfDay.EndOfDay), {
-        key => key match {
-          case _ : DiscountRateKey => new Quantity(1.0)
-          case ForwardPriceKey(market, _, _) => Quantity(100.0, market.priceUOM)
-          case _ : OilAtmVolAtomicDatumKey => Percentage(0.10)
-          case _ : OilVolSkewAtomicDatumKey => Map(0.5 -> Percentage(0.01), 0.1 -> Percentage(0.02), 0.9 -> Percentage(0.03))
-        }
-      })
-    )
+    val env = UnitTestingEnvironment(DayAndTime(Day(2010, 1, 1), TimeOfDay.EndOfDay), {
+      key => key match {
+        case _ : DiscountRateKey => new Quantity(1.0)
+        case ForwardPriceKey(market, _, _) => Quantity(100.0, market.priceUOM)
+        case _ : OilAtmVolAtomicDatumKey => Percentage(0.10)
+        case _ : OilVolSkewAtomicDatumKey => Map(0.5 -> Percentage(0.01), 0.1 -> Percentage(0.02), 0.9 -> Percentage(0.03))
+      }
+    })
 
     val nonSkewEnv = env.setShiftsCanBeIgnored(true)
 

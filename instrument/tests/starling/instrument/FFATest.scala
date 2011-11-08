@@ -31,13 +31,13 @@ class FFATest extends JonTestEnv {
     (25, 153.3300))
 
   def makeEnv(md: DayAndTime) = {
-    Environment(new UnitTestingAtomicEnvironment(md, {
+    UnitTestingEnvironment(md, {
       key => key match {
         case FreightFlatRateKey(_, _, _) => 5.66 (USD/MT)
         case ForwardPriceKey(_, _, _) => 157.5 (PERCENT)
         case IndexFixingKey(_, Day(2011, 10, d)) => Percentage.fromPercentage(fixings(d)).toQuantity
       }
-    })).undiscounted
+    }).undiscounted
   }
 
   @Test

@@ -13,16 +13,14 @@ class CashInstrumentTest extends StarlingTest {
     val cashInstrument = CashInstrument(CashInstrumentType.General, Quantity(100.0, UOM.USD), Day(2011, 1, 20), None, None)
 
     val marketDay = DayAndTime(Day(2010, 1, 1), TimeOfDay.EndOfDay)
-    val env = Environment(
-      new UnitTestingAtomicEnvironment(marketDay, {
-        key => key match {
-          case DiscountRateKey(_, day, _) => {
-            val timeBetween = day.endOfDay.timeSince(marketDay)
-            new Quantity(math.exp(-0.05 * timeBetween))
-          }
+    val env = UnitTestingEnvironment(marketDay, {
+      key => key match {
+        case DiscountRateKey(_, day, _) => {
+          val timeBetween = day.endOfDay.timeSince(marketDay)
+          new Quantity(math.exp(-0.05 * timeBetween))
         }
-      })
-    )
+      }
+    })
 
     val explan = cashInstrument.explanation(env)
 

@@ -113,7 +113,9 @@ class CostAndIncomeValuationReport(@transient env:Environment, @transient utps :
     }
   }
 
-//  def combine(rows: List[CostsAndIncomeValuationRow], reportSpecificChoices : ReportSpecificChoices): List[CostsAndIncomeValuationRow] = rows
+  override def combine(rows: List[CostsAndIncomeValuationRow], reportSpecificChoices : ReportSpecificChoices): List[CostsAndIncomeValuationRow] = {
+    super.combine(rows, reportSpecificChoices)
+  }
 
   def scale(row: CostsAndIncomeValuationRow, volume: Double): CostsAndIncomeValuationRow = row
 

@@ -86,24 +86,26 @@ case class EDMPricingSpecConverter(metal : Metal, exchanges : String => Market) 
           )
         }
         case spec : OptionalPricingSpecification => {
-          OptionalPricingSpec(
-            spec.choices.map(fromEdmPricingSpec(deliveryDay, deliveryQuantity, _)),
-            Day.fromJodaDate(spec.declarationBy),
-            if (spec.chosenSpec == null)
-              None
-            else
-              Some(fromEdmPricingSpec(deliveryDay, deliveryQuantity, spec.chosenSpec)),
-            spec.currency
-          )
+          throw new Exception("Optional pricing specs no currently supported")
+          //OptionalPricingSpec(
+            //spec.choices.map(fromEdmPricingSpec(deliveryDay, deliveryQuantity, _)),
+            //Day.fromJodaDate(spec.declarationBy),
+            //if (spec.chosenSpec == null)
+            //None
+            //else
+            //Some(fromEdmPricingSpec(deliveryDay, deliveryQuantity, spec.chosenSpec)),
+            //spec.currency
+            //)
         }
         case spec : WeightedPricingSpecification => {
-          WeightedPricingSpec(
-            spec.wtdSpecs.map{
-              case weightedSpec =>
-                 (weightedSpec.weight, fromEdmPricingSpec(deliveryDay, deliveryQuantity * weightedSpec.weight, weightedSpec.pricingSpec))
-            },
-            spec.currency
-          )
+          throw new Exception("Weighted pricing specs no currently supported")
+          //WeightedPricingSpec(
+            //spec.wtdSpecs.map{
+              //case weightedSpec =>
+              //(weightedSpec.weight, fromEdmPricingSpec(deliveryDay, deliveryQuantity * weightedSpec.weight, weightedSpec.pricingSpec))
+              //},
+              //spec.currency
+              //)
         }
         case spec : UNKPricingSpecification => {
           val qpMonth = Day.fromJodaDate(spec.qpMonth).containingMonth

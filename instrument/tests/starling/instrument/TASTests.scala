@@ -22,10 +22,10 @@ class TASTests extends TestMarketTest with TestNGSuite {
   val v = Quantity(1000, BBL)
 
   def environment(day: DayAndTime) = {
-    Environment(UnitTestingAtomicEnvironment(day, {
+    UnitTestingEnvironment(day, {
       case ForwardPriceKey(market, period, _) => forward
       case MarketFixingKey(market, ltd, period) => fixed
-    }))
+    })
   }
 
   @Test

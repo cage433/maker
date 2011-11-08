@@ -474,11 +474,12 @@ class CommoditySwapTests extends JonTestEnv {
     val index = Index.MOGAS_95_UNL_10PPM_NWE_BARGES_VS_IPE_BRENT
 
     val period = Month(2011, 10)
-    val env = Environment(new UnitTestingAtomicEnvironment(DayAndTime(1 Jan 2011, TimeOfDay.EndOfDay), {
+    val env = UnitTestingEnvironment(DayAndTime(1 Jan 2011, TimeOfDay.EndOfDay), {
       key => key match {
         case ForwardPriceKey(market, _, _) => Quantity(10, market.priceUOM)
       }
-    }))
+    })
+
 
     val strike1 = Quantity(10, USD / BBL)
     val volume1 = Quantity(1000, BBL)
@@ -570,12 +571,12 @@ class CommoditySwapTests extends JonTestEnv {
     val volume = 100(index.uom)
     val swap = SinglePeriodSwap(index, 50(index.priceUOM), volume, period, cleared = true)
     val z = 0.1
-    val env = Environment(UnitTestingAtomicEnvironment(
+    val env = UnitTestingEnvironment(
     marketDay, {
       case _: ForwardPriceKey => 70(index.priceUOM)
       case DiscountRateKey(_, day, _) => new Quantity(math.exp(-z * (day.daysSinceInYears(marketDay.day))))
     }
-    ))
+    )
     assertQtyEquals(volume, swap.position(env, PriceDifferentiable(index.market, period)), 1e-6)
     assertQtyEquals(volume, swap.position(env, SwapPrice(index, period)), 1e-6)
   }
@@ -588,7 +589,7 @@ class CommoditySwapTests extends JonTestEnv {
     val volume = 10000(index.uom)
     val swap = SinglePeriodSwap(index, 0(index.priceUOM), volume, period, cleared = true)
 
-    def make(md: DayAndTime, price: Quantity) = Environment(UnitTestingAtomicEnvironment(
+    def make(md: DayAndTime, price: Quantity) = UnitTestingEnvironment(
     md, {
       case ForwardPriceKey(`market`, d, _) => {
         val map: Map[DateRange, Quantity] = Map(md.day -> price)
@@ -597,7 +598,7 @@ class CommoditySwapTests extends JonTestEnv {
       }
       case _: IndexFixingKey => Quantity(0, USD / MT)
     }
-    )).undiscounted
+    ).undiscounted
 
     val marketDay1 = (13 Apr 2011).endOfDay
     val marketDay2 = (14 Apr 2011).startOfDay
@@ -642,14 +643,14 @@ class CommoditySwapTests extends JonTestEnv {
     val volume = 10000(index.uom)
     val swap = SinglePeriodSwap(index, 0(index.priceUOM), volume, period, cleared = true)
 
-    def make(md: DayAndTime, price: Quantity, fixing: Quantity) = Environment(UnitTestingAtomicEnvironment(
+    def make(md: DayAndTime, price: Quantity, fixing: Quantity) = UnitTestingEnvironment(
     md, {
       case ForwardPriceKey(`market`, d, _) => {
         price
       }
       case IndexFixingKey(_, d) => fixing
     }
-    )).undiscounted
+    ).undiscounted
 
     val marketDay1 = (13 Apr 2011).endOfDay
     val marketDay2 = (14 Apr 2011).endOfDay
@@ -708,7 +709,7 @@ class CommoditySwapTests extends JonTestEnv {
     val fOxy = 117.17(USD / MT)
     val fOxyInBBL = oxy.convertUOM(fOxy, USD / BBL)
     val fBrent = 112.23(USD / BBL)
-    def make(md: DayAndTime) = Environment(UnitTestingAtomicEnvironment(
+    def make(md: DayAndTime) = UnitTestingEnvironment(
     md, {
       case ForwardPriceKey(`oxy`, _, _) => {
         fOxy
@@ -717,7 +718,7 @@ class CommoditySwapTests extends JonTestEnv {
         fBrent
       }
     }
-    )).undiscounted
+    ).undiscounted
 
     val day = 10 May 2011
     val marketDay1 = day.startOfDay

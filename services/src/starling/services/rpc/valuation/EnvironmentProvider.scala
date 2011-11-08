@@ -93,15 +93,13 @@ class MockEnvironmentProvider() extends EnvironmentProvider {
   def allSnapshots = metalsValuationSnapshots
   def metalsValuationSnapshots() : List[SnapshotID] = snapshotsAndData.keySet.toList
 
-  def environment(snapshotID : SnapshotID, marketDay : Day) : Environment = Environment(
-    new UnitTestingAtomicEnvironment(
-      marketDay.endOfDay,
-      {
-        case IndexFixingKey(index, _) => Quantity(snapshotsAndData(snapshotID)._2, index.priceUOM)
-        case ForwardPriceKey(market, _, _) => Quantity(snapshotsAndData(snapshotID)._1, market.priceUOM)
-        case _: DiscountRateKey => new Quantity(1.0)
-      }
-    )
+  def environment(snapshotID : SnapshotID, marketDay : Day) : Environment = UnitTestingEnvironment(
+    marketDay.endOfDay,
+    {
+      case IndexFixingKey(index, _) => Quantity(snapshotsAndData(snapshotID)._2, index.priceUOM)
+      case ForwardPriceKey(market, _, _) => Quantity(snapshotsAndData(snapshotID)._1, market.priceUOM)
+      case _: DiscountRateKey => new Quantity(1.0)
+    }
   )
   def snapshotIDs(observationDay : Option[Day]) : List[SnapshotID] = throw new UnsupportedOperationException
 

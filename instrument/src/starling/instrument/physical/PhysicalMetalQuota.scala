@@ -69,7 +69,7 @@ case class PhysicalMetalQuota(
           fullyAllocated,
           /*
             Row 67 and Row 70
-            Contactual quantity - allocated quantity when not fully allocated, otherwise 0
+            Contractual quantity - allocated quantity when not fully allocated, otherwise 0
            */
           unallocatedQuotaQuantity,
           unallocatedValuationDetails,

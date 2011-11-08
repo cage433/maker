@@ -21,21 +21,15 @@ import starling.curves._
  */
 class PhysicalMetalAssignmentTests extends StarlingTest {
   val marketDay = Day(2011, 8, 10).endOfDay
-  val env = Environment(
-    new UnitTestingAtomicEnvironment(
+  val env = UnitTestingEnvironment(
       marketDay, 
       {
         case _: ForwardPriceKey => Quantity(97, USD/MT)
         case _: IndexFixingKey => Quantity(98, USD/MT)
         case DiscountRateKey(_, day, _) => new Quantity(math.exp(- 0.1 * day.endOfDay.timeSince(marketDay)))
       }
-    ){
-      override def referenceDataLookup = new ReferenceDataLookup.NullReferenceDataLookup() {
-        override val countries = Map.empty[NeptuneCountryCode, NeptuneCountry].withDefaultValue(
-          NeptuneCountry(NeptuneCountryCode("DummyCountryCode"), "DummyCountry", Some(Area(AreaCode.EUR, "Dummy"))))
-      }
-  }
-  )
+    )
+  
   
 
   @Test
@@ -53,25 +47,17 @@ class PhysicalMetalAssignmentTests extends StarlingTest {
       GBP → 0.8(USD/GBP),
       CNY → 0.1(USD/CNY)
     )
-    val env = Environment(
-      new UnitTestingAtomicEnvironment(
-        marketDay, 
-        {
-          case ForwardPriceKey(mkt, _, _) => Quantity(97, mkt.priceUOM)
-          case IndexFixingKey(index, _) => Quantity(98, index.priceUOM)
-          case DiscountRateKey(_, day, _) => new Quantity(math.exp(- 0.1 * day.endOfDay.timeSince(marketDay)))
-          case USDFXRateKey(ccy) => fxRates(ccy)
-          case _ : CountryBenchmarkAtomicKey => Quantity(115, GBP / G)
-          case _ : AreaBenchmarkAtomicKey => Quantity(0, GBP / G)
-          case _ : FreightParityAtomicKey => Quantity(5, CNY / LB)
+    val env = UnitTestingEnvironment(
+      marketDay, 
+      {
+        case ForwardPriceKey(mkt, _, _) => Quantity(97, mkt.priceUOM)
+        case IndexFixingKey(index, _) => Quantity(98, index.priceUOM)
+        case DiscountRateKey(_, day, _) => new Quantity(math.exp(- 0.1 * day.endOfDay.timeSince(marketDay)))
+        case USDFXRateKey(ccy) => fxRates(ccy)
+        case _ : CountryBenchmarkAtomicKey => Quantity(115, GBP / G)
+        case _ : AreaBenchmarkAtomicKey => Quantity(0, GBP / G)
+        case _ : FreightParityAtomicKey => Quantity(5, CNY / LB)
 
-        }
-      ){
-        override def referenceDataLookup = new ReferenceDataLookup.NullReferenceDataLookup(){
-          override val countries = Map.empty[NeptuneCountryCode, NeptuneCountry].withDefaultValue(
-            NeptuneCountry(NeptuneCountryCode("DummyCountryCode"), "DummyCountry", Some(Area(AreaCode.EUR, "Dummy"))))
-//          override val areas = Map.empty[AreaCode, Area]
-        }
       }
     )
     val pma = PhysicalMetalAssignment(

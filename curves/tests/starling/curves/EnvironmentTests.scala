@@ -22,14 +22,14 @@ class EnvironmentTests extends TestMarketTest with TestNGSuite {
     val Mar = Month(2011, 3)
 
     val priceUOM = USD / BBL
-    val env = Environment(new UnitTestingAtomicEnvironment(Day(2011, 1, 1).endOfDay, {
+    val env = UnitTestingEnvironment(Day(2011, 1, 1).endOfDay, {
       case ForwardPriceKey(NymexWTI, Feb, _) => Quantity(100, priceUOM)
       case ForwardPriceKey(NymexWTI, Mar, _) => Quantity(110, priceUOM)
       case ForwardPriceKey(IceWTI, Feb, _) => Quantity(101, priceUOM)
       case ForwardPriceKey(IceWTI, Mar, _) => Quantity(111, priceUOM)
       case ForwardPriceKey(IceBrent, _, _) => Quantity(115, priceUOM)
     }
-    ))
+    )
 
     assertQtyEquals(env.forwardPrice(NymexWTI, Feb), Quantity(100, priceUOM))
     assertQtyEquals(env.forwardPrice(NymexWTI, Mar), Quantity(110, priceUOM))
@@ -72,14 +72,14 @@ class EnvironmentTests extends TestMarketTest with TestNGSuite {
     val Mar = Month(2011, 3)
 
     val priceUOM = USD / BBL
-    val env = Environment(new UnitTestingAtomicEnvironment(Day(2011, 1, 1).endOfDay, {
+    val env = UnitTestingEnvironment(Day(2011, 1, 1).endOfDay, {
       case OilAtmVolAtomicDatumKey(NymexWTI, _, Feb, _) => Percentage(.2)
       case OilAtmVolAtomicDatumKey(NymexWTI, _, Mar, _) => Percentage(.25)
       case OilAtmVolAtomicDatumKey(IceWTI, _, Feb, _) => Percentage(.21)
       case OilAtmVolAtomicDatumKey(IceWTI, _, Mar, _) => Percentage(.26)
       case OilAtmVolAtomicDatumKey(IceBrent, _, _, _) => Percentage(.3)
     }
-    ))
+    )
 
     assertEquals(env.atmImpliedVol(NymexWTI, Feb), Percentage(.2))
     assertEquals(env.atmImpliedVol(NymexWTI, Mar), Percentage(.25))
@@ -122,7 +122,7 @@ class EnvironmentTests extends TestMarketTest with TestNGSuite {
     val Spread2 = SpreadPeriod(Mar, Apr)
 
     val priceUOM = USD / BBL
-    val env = Environment(new UnitTestingAtomicEnvironment(Day(2011, 1, 1).endOfDay, {
+    val env = UnitTestingEnvironment(Day(2011, 1, 1).endOfDay, {
       case ForwardPriceKey(_, _, _) => Quantity(10, priceUOM)
       case SpreadAtmStdDevAtomicDatumKey(NymexWTI, Spread1, _) => Quantity(.2, priceUOM)
       case SpreadAtmStdDevAtomicDatumKey(NymexWTI, Spread2, _) => Quantity(.25, priceUOM)
@@ -136,7 +136,7 @@ class EnvironmentTests extends TestMarketTest with TestNGSuite {
         matrix
       }
     }
-    )).undiscounted
+    ).undiscounted
 
     assertQtyEquals(env.spreadStdDev(NymexWTI, Spread1, Day(2011, 1, 3), Quantity(1, priceUOM)), Quantity(.2, priceUOM))
     assertQtyEquals(env.spreadStdDev(NymexWTI, Spread2, Day(2011, 1, 3), Quantity(1, priceUOM)), Quantity(.25, priceUOM))

@@ -32,19 +32,17 @@ class CommoditySpreadOptionTests extends JonTestEnv with TestNGSuite{
     val FWTI = 101.0
     val FBrent = 111.0
     val K = 0.2333
-    val env = Environment(
-      new UnitTestingAtomicEnvironment(
-        md,
-        {key =>
-          key match {
-            case ForwardPriceKey(`mkt1`, `june`, _) => FWTI(mkt.priceUOM)
-            case ForwardPriceKey(`mkt2`, `june`, _) => FBrent(mkt.priceUOM)
-            case _ : DiscountRateKey => new Quantity(1.0)
-            case _ : SpreadAtmStdDevAtomicDatumKey => stdDev(mkt.priceUOM)
-            case _ : SpreadSkewStdDevAtomicDatumKey => new DenseDoubleMatrix1D(Array(0.0, 0.0)).asRowMatrix
-          }
+    val env = UnitTestingEnvironment(
+      md,
+      {key =>
+        key match {
+          case ForwardPriceKey(`mkt1`, `june`, _) => FWTI(mkt.priceUOM)
+          case ForwardPriceKey(`mkt2`, `june`, _) => FBrent(mkt.priceUOM)
+          case _ : DiscountRateKey => new Quantity(1.0)
+          case _ : SpreadAtmStdDevAtomicDatumKey => stdDev(mkt.priceUOM)
+          case _ : SpreadSkewStdDevAtomicDatumKey => new DenseDoubleMatrix1D(Array(0.0, 0.0)).asRowMatrix
         }
-      )
+      }
     )
     val exerciseDay = mkt.spreadOptionExpiry(june)
     val T = exerciseDay.endOfDay.timeSince(md)
@@ -75,19 +73,17 @@ class CommoditySpreadOptionTests extends JonTestEnv with TestNGSuite{
     val FBrent = 111.0
     val K = 0.2333
     val zeroRate = 0.1
-    val env = Environment(
-      new UnitTestingAtomicEnvironment(
-        md,
-        {key =>
-          key match {
-            case ForwardPriceKey(`mkt1`, `june`, _) => FWTI(mkt.priceUOM)
-            case ForwardPriceKey(`mkt2`, `june`, _) => FBrent(mkt.priceUOM)
-            case DiscountRateKey(_, day, _) => new Quantity(math.exp(- zeroRate * day.endOfDay.timeSince(md)))
-            case _ : SpreadAtmStdDevAtomicDatumKey => stdDev(mkt.priceUOM)
-            case _ : SpreadSkewStdDevAtomicDatumKey => new DenseDoubleMatrix1D(Array(0.0, 0.0)).asRowMatrix
-          }
+    val env = UnitTestingEnvironment(
+      md,
+      {key =>
+        key match {
+          case ForwardPriceKey(`mkt1`, `june`, _) => FWTI(mkt.priceUOM)
+          case ForwardPriceKey(`mkt2`, `june`, _) => FBrent(mkt.priceUOM)
+          case DiscountRateKey(_, day, _) => new Quantity(math.exp(- zeroRate * day.endOfDay.timeSince(md)))
+          case _ : SpreadAtmStdDevAtomicDatumKey => stdDev(mkt.priceUOM)
+          case _ : SpreadSkewStdDevAtomicDatumKey => new DenseDoubleMatrix1D(Array(0.0, 0.0)).asRowMatrix
         }
-      )
+      }
     )
     val exerciseDay = mkt.spreadOptionExpiry(june)
     val T = exerciseDay.endOfDay.timeSince(md)
