@@ -792,13 +792,27 @@ object StarlingBuild extends Build{
     val deployClasspath = TaskKey[Unit]("deploy-classpath")
     val deployClasspathTask = deployClasspath <<= (fullClasspath in Compile) map { cp =>
       import java.io._
-      val file = new PrintWriter(new FileOutputStream(new File("project/deployment/artifacts/deploy-classpath.sh")))
+      val file = new PrintWriter(new FileOutputStream(new File("bin/deploy-classpath.sh")))
 
-      val classpathFiles = cp.map(_.data).getFiles.map(_.getPath).toList
+      val workingDirectory = System.getProperty("user.dir") + "/"
+      val userHome = System.getProperty("user.home")
+      val ivyHome = userHome + "/.ivy2"
+
+      val classpathFiles = cp.map(_.data).getFiles.map(_.getPath).toList.filterNot(p => {
+        p.endsWith("/lib/scala-library.jar") || p.endsWith("/lib/scala-compiler.jar")
+      })
       val resourcesFiles = classpathFiles.filter(_.endsWith("/classes")).map{s => s.replace("/classes", "/resources")}.toList
       val allPaths = classpathFiles ::: resourcesFiles
 
-      file.println("export CLASSPATH=" + allPaths.mkString(":"))
+      val (externalLibraryJarPaths, starlingPaths) = allPaths.partition(_.startsWith(ivyHome))
+
+      val relativeStarlingPaths = starlingPaths.map(_.replaceFirst(workingDirectory, ""))
+
+      val relativeExternalLibraryJarPaths = externalLibraryJarPaths.map(_.replaceFirst(userHome, "\\$HOME"))
+
+      val allRelativePaths = "lib/scala/lib_managed/scala-library-jar-2.9.1.jar" :: "lib/scala/lib_managed/scala-swing-jar-2.9.1.jar" :: relativeStarlingPaths ::: relativeExternalLibraryJarPaths
+
+      file.println("export CLASSPATH=" + allRelativePaths.mkString(":"))
       file.println("export JAVA_OPTS='-server -XX:MaxPermSize=256 -Xmx6000m'")
                   
       file.close()

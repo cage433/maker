@@ -6,7 +6,6 @@ generated.props.conf
 props*.conf
 /.idea/workspace.xml
 /.idea/dataSources.*
-starling.running
 /.idea/copyright/*
 **/*.log
 *.scala~
@@ -51,3 +50,5 @@ osgi-gui-cache/*
 osgi-server-cache/*
 set-classpath.sh
 project/deployment/artifacts
+bin/deploy-classpath.sh
+
