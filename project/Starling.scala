@@ -512,7 +512,7 @@ object StarlingBuild extends Build{
     "launcher", 
     file("./launcher"),
     settings = standardSettingsNexus
-  ) dependsOn(startserver, gui, singleClasspathManager)
+  ) dependsOn(startserver, gui, singleClasspathManager, booter)
 
   val webserviceDependencies = Seq(
     "javax.servlet" % "servlet-api" % "2.5",
