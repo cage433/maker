@@ -1,5 +1,13 @@
 #!/bin/bash
 
+if [ $# -lt 1 ]
+then
+   echo ""
+   echo "Must pass in the version number"
+   echo ""
+   exit 1
+fi
+
 BUILD_PATH=$(dirname $0)
 cd $BUILD_PATH
 cd ../..
@@ -19,4 +27,37 @@ tar \
   --exclude 'starling/logs/*' \
   -zcvf $FILE_NAME starling
 
-mv $FILE_NAME starling/project/deployment/artifacts/$FILE_NAME
+#mv $FILE_NAME starling/project/deployment/artifacts/$FILE_NAME
+
+if [ $1 == "SNAPSHOT" ]; then
+  REPO_URL=http://nexus.global.trafigura.com:8081/nexus/content/repositories/starling-test
+else
+  REPO_URL=http://nexus.global.trafigura.com:8081/nexus/content/repositories/starling-releases
+fi
+
+REPO_ID=nexus
+
+mvn deploy:deploy-file \
+    -Durl=$REPO_URL \
+    -DrepositoryId=$REPO_ID \
+    -DgroupId=starling-releases \
+    -DartifactId=starling-server \
+    -Dversion=$1 \
+    -Dpackaging=gz \
+    -DuniqueVersion=false \
+    -DgeneratePom=false \
+    -Dfile=$FILE_NAME
+
+mvn deploy:deploy-file \
+    -Durl=$REPO_URL \
+    -DrepositoryId=$REPO_ID \
+    -DgroupId=starling-releases \
+    -DartifactId=starling-server \
+    -Dclassifier=deploy \
+    -Dversion=$1 \
+    -Dpackaging=sh \
+    -DuniqueVersion=false \
+    -DgeneratePom=false \
+    -Dfile=starling/bin/deploy.sh
+
+rm $FILE_NAME

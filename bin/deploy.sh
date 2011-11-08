@@ -12,7 +12,13 @@ VERSION=$1
 
 ARTIFACT=starling-server-$VERSION.gz
 
-wget http://nexus.global.trafigura.com:8081/nexus/content/repositories/starling-releases/starling-releases/starling-server/$VERSION/$ARTIFACT
+if [ $1 == "SNAPSHOT" ]; then
+  ARTIFACT_URL=http://nexus.global.trafigura.com:8081/nexus/content/repositories/starling-test/starling-releases/starling-server/$VERSION/$ARTIFACT
+else
+  ARTIFACT_URL=http://nexus.global.trafigura.com:8081/nexus/content/repositories/starling-releases/starling-releases/starling-server/$VERSION/$ARTIFACT
+fi
+
+wget $ARTIFACT_URL
 
 tar xfz $ARTIFACT
 
