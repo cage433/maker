@@ -520,7 +520,12 @@ object StarlingBuild extends Build{
     "org.mortbay.jetty" % "jetty" % "6.1.26",
     "org.mortbay.jetty" % "jetty-util" % "6.1.26",
     "com.thoughtworks.paranamer" % "paranamer" % "2.3",
-    "org.jboss.resteasy" % "resteasy-jaxrs" % "2.2.2.GA"
+    "org.jboss.resteasy" % "resteasy-jaxrs" % "2.2.2.GA",
+    "net.databinder" %% "dispatch-http" % "0.8.6" withSources(),
+    "net.databinder" %% "dispatch-core" % "0.8.6" withSources(),
+    "org.apache.httpcomponents" % "httpclient" % "4.1.2",
+    "org.apache.httpcomponents" % "httpcore" % "4.1.2",
+    "commons-logging" % "commons-logging" % "1.1.1"
   )
 
   lazy val webservice = Project(
