@@ -208,12 +208,12 @@ class AsianOptionTests extends JonTestEnv {
 
     assertEquals(explanation.format(1), ex0)
 
-    val ex = "((Curran-Call(Average(IPE Gas Oil.JAN 2010, IPE Gas Oil.JAN 2010, IPE Gas Oil.JAN 2010, " +
-            "IPE Gas Oil.JAN 2010, IPE Gas Oil.JAN 2010, IPE Gas Oil.JAN 2010, IPE Gas Oil.JAN 2010, " +
-            "IPE Gas Oil.FEB 2010, IPE Gas Oil.FEB 2010, IPE Gas Oil.FEB 2010, IPE Gas Oil.FEB 2010, " +
-            "IPE Gas Oil.FEB 2010, IPE Gas Oil.FEB 2010, IPE Gas Oil.FEB 2010, IPE Gas Oil.FEB 2010, " +
-            "IPE Gas Oil.FEB 2010, IPE Gas Oil.FEB 2010, IPE Gas Oil.FEB 2010, IPE Gas Oil.FEB 2010, " +
-            "IPE Gas Oil.FEB 2010, IPE Gas Oil.FEB 2010), 0.20, 100.00 USD/MT) * 123.00 MT) * 0.95)"
+    val ex = "((Curran-Call(Average(JAN 2010, JAN 2010, JAN 2010, " +
+            "JAN 2010, JAN 2010, JAN 2010, JAN 2010, " +
+            "FEB 2010, FEB 2010, FEB 2010, FEB 2010, " +
+            "FEB 2010, FEB 2010, FEB 2010, FEB 2010, " +
+            "FEB 2010, FEB 2010, FEB 2010, FEB 2010, " +
+            "FEB 2010, FEB 2010), 0.20, 100.00 USD/MT) * 123.00 MT) * 0.95)"
 
     val ex1 = "((Curran-Call(Average(101.00 USD/MT, 101.00 USD/MT, 101.00 USD/MT, 101.00 USD/MT, 101.00 USD/MT," +
             " 101.00 USD/MT, 101.00 USD/MT, 101.00 USD/MT, 101.00 USD/MT, 101.00 USD/MT, 101.00 USD/MT, 101.00 USD/MT, " +

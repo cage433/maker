@@ -360,6 +360,7 @@ abstract class NamedQuantity(val quantity : Quantity) extends Quantity(quantity.
   private def guard(condition: Boolean, fn: => NamedQuantity) = if (condition) this else fn
 
   override def round(dp:Int) = RoundedNamedQuantity(this, dp)
+  def withNewName(newName : String) = SimpleNamedQuantity(newName, quantity)
 }
 
 object NamedQuantity{
