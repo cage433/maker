@@ -14,6 +14,7 @@ echo $FILE_NAME
 tar \
   --exclude 'starling/project/deployment/artifacts/*' \
   --exclude 'starling/props.conf' \
+  --exclude 'starling/generated.props.conf' \
   --exclude 'starling/modulejarcache/*' \
   --exclude 'starling/logs/*' \
   -zcvf $FILE_NAME starling

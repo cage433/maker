@@ -16,7 +16,5 @@ else
     
     echo "Starting starling..."
 
-    echo $CLASSPATH
-
     nohup java starling.startserver.Server >> logs/stdouterr.log 2>&1 &
 fi
