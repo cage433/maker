@@ -25,7 +25,7 @@ tar \
   --exclude 'starling/generated.props.conf' \
   --exclude 'starling/modulejarcache/*' \
   --exclude 'starling/logs/*' \
-  -zcvf $FILE_NAME starling
+  -zcf $FILE_NAME starling
 
 #mv $FILE_NAME starling/project/deployment/artifacts/$FILE_NAME
 
@@ -45,7 +45,6 @@ mvn -e deploy:deploy-file \
     -Dversion=$1 \
     -Dpackaging=gz \
     -DuniqueVersion=false \
-    -DgeneratePom=false \
     -Dfile=$FILE_NAME
 
 mvn -e deploy:deploy-file \
@@ -57,7 +56,6 @@ mvn -e deploy:deploy-file \
     -Dversion=$1 \
     -Dpackaging=sh \
     -DuniqueVersion=false \
-    -DgeneratePom=false \
     -Dfile=starling/bin/deploy.sh
 
 rm $FILE_NAME
