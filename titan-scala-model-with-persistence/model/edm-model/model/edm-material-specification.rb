@@ -1,4 +1,4 @@
-in_namespace('EDM.TradeMgmt.MaterialSpecification') {
+in_namespace('EDM.MaterialSpecification') {
 
   define('MaterialSpec') {
     constant 'commentsLength', 255

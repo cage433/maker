@@ -1,40 +1,40 @@
 #// This is the Permission service interface
-in_namespace('TradeMgmt.Internal.Permission') {
+in_namespace('TradeCapture.Internal.PermissionService') {
 
   #/// Permission Management Service
   service('PermissionService') {
 
     #/// permission checking/retrieval functions
-    operation('GetAll', :returns => list('TradeMgmt.Internal.Permission.Permission')) {
+    operation('GetAll', :returns => list('TradeCapture.Internal.PermissionService.Permission')) {
     }
 
-    operation('GetAllUser', :returns => list('TradeMgmt.Internal.Permission.Permission')) {
+    operation('GetAllUser', :returns => list('TradeCapture.Internal.PermissionService.Permission')) {
       parameter 'sid', :string
     }
 
-    operation('GetEffective', :returns => list('TradeMgmt.Internal.Permission.Permission')) {
+    operation('GetEffective', :returns => list('TradeCapture.Internal.PermissionService.Permission')) {
       parameter 'sid', :string
-      parameter 'requiredPermissions' , list('TradeMgmt.Internal.Permission.Permission')
+      parameter 'requiredPermissions' , list('TradeCapture.Internal.PermissionService.Permission')
     }
 
     operation('CheckPermission', :returns => :boolean) {
       parameter 'sid', :string
-      parameter 'requiredPermissions' , list('TradeMgmt.Internal.Permission.Permission')
+      parameter 'requiredPermissions' , list('TradeCapture.Internal.PermissionService.Permission')
     }
 
     operation('CheckPermissionForRequester', :returns => :boolean) {
-      parameter 'requiredPermissions' , list('TradeMgmt.Internal.Permission.Permission')
+      parameter 'requiredPermissions' , list('TradeCapture.Internal.PermissionService.Permission')
     }
 
     #/// Permission management
     #/// Create a new permission
-    operation('Create', :returns => :'TradeMgmt.Internal.Permission.Permission') {
-      parameter 'permission', :'TradeMgmt.Internal.Permission.Permission'
+    operation('Create', :returns => :'TradeCapture.Internal.PermissionService.Permission') {
+      parameter 'permission', :'TradeCapture.Internal.PermissionService.Permission'
     }
 
     #/// Delete a new permission
     operation('Delete', :returns => :boolean) {
-      parameter 'permission', :'TradeMgmt.Internal.Permission.Permission'
+      parameter 'permission', :'TradeCapture.Internal.PermissionService.Permission'
     }
   }
   
@@ -48,33 +48,33 @@ in_namespace('TradeMgmt.Internal.Permission') {
   service('UserService') {
 
     operation('Create', :returns => :PermissionResult) {
-      parameter 'user', :'TradeMgmt.Internal.Permission.User'
+      parameter 'user', :'TradeCapture.Internal.PermissionService.User'
     }
 
     #/// get by sid
-    operation('GetBySid', :returns => :'TradeMgmt.Internal.Permission.User') {
+    operation('GetBySid', :returns => :'TradeCapture.Internal.PermissionService.User') {
       parameter 'sid', :string
     }
 
     #/// get by userId
-    operation('GetByUserId', :returns => :'TradeMgmt.Internal.Permission.User') {
+    operation('GetByUserId', :returns => :'TradeCapture.Internal.PermissionService.User') {
       parameter 'userId', :UserId
     }
 
     #/// get by oid
-    operation('Get', :returns => :'TradeMgmt.Internal.Permission.User') {
+    operation('Get', :returns => :'TradeCapture.Internal.PermissionService.User') {
       parameter 'oid', :integer
     }
 
-    operation('TryGet', :returns => list('TradeMgmt.Internal.Permission.User')) {
+    operation('TryGet', :returns => list('TradeCapture.Internal.PermissionService.User')) {
       parameter 'oid', :integer
     }
 
-    operation('GetAll', :returns => list('TradeMgmt.Internal.Permission.User')) {
+    operation('GetAll', :returns => list('TradeCapture.Internal.PermissionService.User')) {
     }
 
     operation('Update', :returns => :PermissionResult) {
-      parameter 'user', :'TradeMgmt.Internal.Permission.User'
+      parameter 'user', :'TradeCapture.Internal.PermissionService.User'
     }
 
     operation('Delete', :returns => :boolean) {
@@ -92,15 +92,15 @@ in_namespace('TradeMgmt.Internal.Permission') {
       parameter 'roleOid', :integer
     }
 
-    operation('GetUserRoles', :returns => list('TradeMgmt.Internal.Permission.Role')) {
+    operation('GetUserRoles', :returns => list('TradeCapture.Internal.PermissionService.Role')) {
       parameter 'oid', :integer
     }
 
-    operation('GetUserGroups', :returns => list('TradeMgmt.Internal.Permission.Group')) {
+    operation('GetUserGroups', :returns => list('TradeCapture.Internal.PermissionService.Group')) {
       parameter 'oid', :integer
     }
 
-    operation('GetUserGroupRoles', :returns => list('TradeMgmt.Internal.Permission.Role')) {
+    operation('GetUserGroupRoles', :returns => list('TradeCapture.Internal.PermissionService.Role')) {
       parameter 'oid', :integer
     }
   }
@@ -112,11 +112,11 @@ in_namespace('TradeMgmt.Internal.Permission') {
       parameter 'group', :Group
     }
 
-    operation('Get', :returns => :'TradeMgmt.Internal.Permission.Group') {
+    operation('Get', :returns => :'TradeCapture.Internal.PermissionService.Group') {
       parameter 'oid', :integer
     }
 
-    operation('GetAll', :returns => list('TradeMgmt.Internal.Permission.Group')) {
+    operation('GetAll', :returns => list('TradeCapture.Internal.PermissionService.Group')) {
     }
 
     operation('Update', :returns => :PermissionResult) {
@@ -138,11 +138,11 @@ in_namespace('TradeMgmt.Internal.Permission') {
       parameter 'userOid', :integer
     }
 
-    operation('GetGroupUsers', :returns => list('TradeMgmt.Internal.Permission.User')) {
+    operation('GetGroupUsers', :returns => list('TradeCapture.Internal.PermissionService.User')) {
       parameter 'oid', :integer
     }
 
-    operation('GetGroupRoles', :returns => list('TradeMgmt.Internal.Permission.Role')) {
+    operation('GetGroupRoles', :returns => list('TradeCapture.Internal.PermissionService.Role')) {
       parameter 'oid', :integer
     }
 
@@ -162,25 +162,25 @@ in_namespace('TradeMgmt.Internal.Permission') {
   service('RoleService') {
 
     operation('Create', :returns => :PermissionResult) {
-      parameter 'role', :'TradeMgmt.Internal.Permission.Role'
+      parameter 'role', :'TradeCapture.Internal.PermissionService.Role'
     }
 
-    operation('Get', :returns => :'TradeMgmt.Internal.Permission.Role') {
+    operation('Get', :returns => :'TradeCapture.Internal.PermissionService.Role') {
       parameter 'oid', :integer
     }
 
-    operation('GetAll', :returns => list('TradeMgmt.Internal.Permission.Role')) {
+    operation('GetAll', :returns => list('TradeCapture.Internal.PermissionService.Role')) {
     }
 
     operation('Update', :returns => :PermissionResult) {
-      parameter 'role', :'TradeMgmt.Internal.Permission.Role'
+      parameter 'role', :'TradeCapture.Internal.PermissionService.Role'
     }
 
     operation('Delete', :returns => :boolean) {
       parameter 'oid', :integer
     }
 
-    operation('GetRoleGroups', :returns => list('TradeMgmt.Internal.Permission.Group')) {
+    operation('GetRoleGroups', :returns => list('TradeCapture.Internal.PermissionService.Group')) {
       parameter 'oid', :integer
     }
 
@@ -188,7 +188,7 @@ in_namespace('TradeMgmt.Internal.Permission') {
     #/// Add a permission role association
     operation('AddPermissionRole', :returns => :PermissionRole) {
       parameter 'permission', :Permission
-      parameter 'role', :'TradeMgmt.Internal.Permission.Role'
+      parameter 'role', :'TradeCapture.Internal.PermissionService.Role'
     }
 
     #/// Remove a permission role association
@@ -197,11 +197,11 @@ in_namespace('TradeMgmt.Internal.Permission') {
       parameter 'role', :Role
     }
 
-    operation('GetRoleUsers', :returns => list('TradeMgmt.Internal.Permission.User')) {
+    operation('GetRoleUsers', :returns => list('TradeCapture.Internal.PermissionService.User')) {
       parameter 'oid', :integer
     }
 
-    operation('GetDirectRoleUsers', :returns => list('TradeMgmt.Internal.Permission.User')) {
+    operation('GetDirectRoleUsers', :returns => list('TradeCapture.Internal.PermissionService.User')) {
       parameter 'oid', :integer
     }
   }

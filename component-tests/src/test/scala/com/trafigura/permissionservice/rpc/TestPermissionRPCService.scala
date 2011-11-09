@@ -1,6 +1,6 @@
 package com.trafigura.permissionservice.rpc
 
-import com.trafigura.trademgmt.internal.permission._
+import com.trafigura.tradecapture.internal.permissionservice._
 import _root_.com.trafigura.services.permission.{TestUserToSidMap, PermissionCreatorForTests}
 import com.trafigura.services.log.Logger
 import org.jboss.resteasy.client.ProxyFactory

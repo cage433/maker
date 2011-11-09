@@ -1,11 +1,11 @@
 expose 'RefinedMetalTrade'
 expose 'TradeBlotterRow'
-expose 'TradeMgmt.Internal.RefinedMetal.Quota'
+expose 'TradeCapture.Internal.RefinedMetal.Quota'
 expose 'TradeBlotterQuotaRow'
 expose 'TradeWarning'
 
 # this is the model as used for Release 1 of RMET
-in_namespace('TradeMgmt.Internal.RefinedMetal') {
+in_namespace('TradeCapture.Internal.RefinedMetal') {
 
   define('PaymentMethod') {
     field 'oid',                            :integer, :identifier => true
@@ -23,7 +23,7 @@ in_namespace('TradeMgmt.Internal.RefinedMetal') {
   }
   
   define('Guarantee') {
-    field 'amount',                         :'EDM.Common.Units.Quantity'
+    field 'amount',                         :'EDM.shared.types.Quantity'
     field 'requiredBy',                     :date
   }
      
@@ -35,13 +35,13 @@ in_namespace('TradeMgmt.Internal.RefinedMetal') {
 
   define('PresentedDocument') {
     field 'oid',                            :integer, :identifier => true
-    field 'documentType',                   :integer_key, :references => 'TradeMgmt.Internal.RefinedMetal.DocumentType(oid)'
+    field 'documentType',                   :integer_key, :references => 'TradeCapture.Internal.RefinedMetal.DocumentType(oid)'
     field 'copy',                           :boolean
   }
   
   define('PaymentSpec') {
     constant 'notesLength', 4000
-    field 'paymentCurrency',                   :integer_key, :optional => true, :references => 'TradeMgmt.Internal.RefinedMetal.Currency(oid)'
+    field 'paymentCurrency',                   :integer_key, :optional => true, :references => 'TradeCapture.Internal.RefinedMetal.Currency(oid)'
     field 'sellerChargesRechargedToBuyer',     :boolean, :optional => true
     field 'riskApproved',                      :boolean, :optional => true
     field 'notes',                             :string, :optional => true, :max_length => PaymentSpec::NOTESLENGTH
@@ -66,19 +66,19 @@ in_namespace('TradeMgmt.Internal.RefinedMetal') {
     field 'oid',                      :integer, :identifier => true
     field 'quotaNumber',              :integer
     field 'quotaName',                :string
-    field 'quantity',                 'TradeMgmt.Internal.RefinedMetal.Quantity'
+    field 'quantity',                 'TradeCapture.Internal.RefinedMetal.Quantity'
     field 'quality',                  'Quality'
     field 'contractualLocation',      :integer_key, :optional => true, :references => 'Location(oid)'
     field 'contractualTerms',         :integer_key, :optional => true, :references => 'ContractualTerms(oid)'
     field 'securityTerms',            :integer_key, :optional => true, :references => 'SecurityTerms(oid)'
     field 'paymentTerms',             :integer_key, :optional => true, :references => 'PaymentTerms(oid)'
-    field 'qpType',                   :integer_key, :optional => true, :references => 'TradeMgmt.Internal.RefinedMetal.QPType(oid)'
+    field 'qpType',                   :integer_key, :optional => true, :references => 'TradeCapture.Internal.RefinedMetal.QPType(oid)'
     field 'market',                   :integer_key, :optional => true, :references => 'Market(oid)'
-    field 'currency',                 :integer_key, :optional => true, :references => 'TradeMgmt.Internal.RefinedMetal.Currency(oid)'
+    field 'currency',                 :integer_key, :optional => true, :references => 'TradeCapture.Internal.RefinedMetal.Currency(oid)'
     field 'shipment',                 :monthYear
     field 'expectedSales',            :monthYear
-    field 'premium',                  'TradeMgmt.Internal.RefinedMetal.Quantity'
-    field 'premiumCcy',               :integer_key, :optional => true, :references => 'TradeMgmt.Internal.RefinedMetal.Currency(oid)'
+    field 'premium',                  'TradeCapture.Internal.RefinedMetal.Quantity'
+    field 'premiumCcy',               :integer_key, :optional => true, :references => 'TradeCapture.Internal.RefinedMetal.Currency(oid)'
     field 'materialGradeComments',    :string
     field 'premiumComments',          :string
     field 'destinationLocation',      :integer_key, :optional => true, :references => 'Location(oid)'
@@ -89,7 +89,7 @@ in_namespace('TradeMgmt.Internal.RefinedMetal') {
     field 'vatInvoiceDate',           :date, :optional => true
     field 'vatInvoiceType',           :enum, :enumerated => ['Issued', 'Received'], :optional => true
     field 'deferredCreditDays',       :integer, :optional => true
-    field 'paySp',                    'TradeMgmt.Internal.RefinedMetal.PaymentSpec'
+    field 'paySp',                    'TradeCapture.Internal.RefinedMetal.PaymentSpec'
   }
   
   # as displayed in the trade blotter grid
@@ -158,15 +158,15 @@ in_namespace('TradeMgmt.Internal.RefinedMetal') {
     field 'neptuneId',                :string
     field 'metal',                    :integer_key, :optional => true, :references => 'Metal(oid)'
     field 'ctpty_holder',             'CounterpartyAndTypeHolder'
-    field 'trader',                   :integer_key, :optional => true, :references => 'TradeMgmt.Internal.Permission.User(oid)'
-    field 'trafficOperator',          :integer_key, :optional => true, :references => 'TradeMgmt.Internal.Permission.User(oid)'
+    field 'trader',                   :integer_key, :optional => true, :references => 'TradeCapture.Internal.PermissionService.User(oid)'
+    field 'trafficOperator',          :integer_key, :optional => true, :references => 'TradeCapture.Internal.PermissionService.User(oid)'
     field 'contractDate',             :date
-    field 'submittedBy',              :integer_key, :references => 'TradeMgmt.Internal.Permission.User(oid)'
+    field 'submittedBy',              :integer_key, :references => 'TradeCapture.Internal.PermissionService.User(oid)'
     field 'comments',                 :string, :max_length => RefinedMetalTrade::COMMENTLENGTH
-    field 'groupCompany',             :integer_key, :optional => true, :references => 'TradeMgmt.Internal.RefinedMetal.GroupCompany(oid)'
+    field 'groupCompany',             :integer_key, :optional => true, :references => 'TradeCapture.Internal.RefinedMetal.GroupCompany(oid)'
     field 'trafficHub',               :integer_key, :optional => true, :references => 'TrafficHub(oid)'
     field 'creditDays',               :integer
-    field 'quotas',                   :list, :element_type => 'TradeMgmt.Internal.RefinedMetal.Quota'
+    field 'quotas',                   :list, :element_type => 'TradeCapture.Internal.RefinedMetal.Quota'
     field 'submittedDate',            :datetime
     field 'state',                    :enum, :enumerated => ['Scratch', 'Completed', 'Cancelled', 'Completing']
     field 'tolerance',                :real
@@ -181,11 +181,11 @@ in_namespace('TradeMgmt.Internal.RefinedMetal') {
     field 'neptuneId',                :string
     field 'nonKYCCounterparty',       :boolean
     field 'counterpartyId',           :integer, :optional => true 
-    field 'trader',                   :integer_key, :optional => true, :references => 'TradeMgmt.Internal.Permission.User(oid)'
-    field 'trafficOperator',          :integer_key, :optional => true, :references => 'TradeMgmt.Internal.Permission.User(oid)'
+    field 'trader',                   :integer_key, :optional => true, :references => 'TradeCapture.Internal.PermissionService.User(oid)'
+    field 'trafficOperator',          :integer_key, :optional => true, :references => 'TradeCapture.Internal.PermissionService.User(oid)'  
     field 'directionId',              :integer_key, :optional => true, :references => 'Direction(oid)'
     field 'contractDate',             :date
-    field 'submittedBy',              :integer_key, :references => 'TradeMgmt.Internal.Permission.User(oid)'
+    field 'submittedBy',              :integer_key, :references => 'TradeCapture.Internal.PermissionService.User(oid)'
     field 'quotas',                   :integer
     field 'comments',                 :string, :max_length => 4000
     field 'groupCompanyId',           :integer, :optional => true
@@ -195,7 +195,7 @@ in_namespace('TradeMgmt.Internal.RefinedMetal') {
     field 'tradeState',               :string
     field 'trafficHubId',             :integer, :optional => true
     field 'sourceSystem',             :string
-    field 'auditModifiedById',        :integer_key, :optional => true, :references => 'TradeMgmt.Internal.Permission.User(oid)'
+    field 'auditModifiedById',        :integer_key, :optional => true, :references => 'TradeCapture.Internal.PermissionService.User(oid)'
     field 'submittedDate',            :datetime
   }
 

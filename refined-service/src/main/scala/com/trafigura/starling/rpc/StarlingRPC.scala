@@ -3,12 +3,12 @@ package com.trafigura.starling.rpc
 //import com.trafigura.starling.Starling
 //import org.springframework.context.support.ClassPathXmlApplicationContext
 //import org.jboss.resteasy.client.ProxyFactory
-//import com.trafigura.edm.trademgmt.trade.{EdmGetTrades, EdmGetTradesResource, EdmGetTradesResourceProxy}
-//import com.trafigura.edm.trademgmt.trades._
+//import com.trafigura.edm.tradeservice.{EdmGetTrades, EdmGetTradesResource, EdmGetTradesResourceProxy}
+//import com.trafigura.edm.trades._
 //import com.trafigura.starling.{StarlingResourceProxy, StarlingResource}
 //import com.trafigura.services.security._
 //import starling.utils.MathUtil._
-//import com.trafigura.trademgmt.internal.refinedmetalreferencedata._
+//import com.trafigura.tradecapture.internal.refinedmetalreferencedataservice._
 //import starling.services.StarlingInit
 //import starling.props.Props
 //

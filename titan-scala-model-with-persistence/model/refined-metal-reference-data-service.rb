@@ -1,7 +1,7 @@
-in_namespace('TradeMgmt.Internal.RefinedMetalReferenceData') {
+in_namespace('TradeCapture.Internal.RefinedMetalReferenceDataService') {
 
   service('UOMService') {
-    operation('GetUOMs', :returns => list('TradeMgmt.Internal.RefinedMetal.UOM')) {
+    operation('GetUOMs', :returns => list('TradeCapture.Internal.RefinedMetal.UOM')) {
     }
   }
 
@@ -16,7 +16,7 @@ in_namespace('TradeMgmt.Internal.RefinedMetalReferenceData') {
   }
 
   service('DocumentTypeService') {
-    operation('GetDocumentTypes', :returns => list('TradeMgmt.Internal.RefinedMetal.DocumentType')) {
+    operation('GetDocumentTypes', :returns => list('TradeCapture.Internal.RefinedMetal.DocumentType')) {
     }
   }
 
@@ -54,7 +54,7 @@ in_namespace('TradeMgmt.Internal.RefinedMetalReferenceData') {
   }
 
   service('CurrencyService') {
-    operation('GetCurrencies', :returns => list('TradeMgmt.Internal.RefinedMetal.Currency')) {
+    operation('GetCurrencies', :returns => list('TradeCapture.Internal.RefinedMetal.Currency')) {
     }
   }
 
@@ -73,7 +73,7 @@ in_namespace('TradeMgmt.Internal.RefinedMetalReferenceData') {
     }
     operation('CheckNonKYCCounterpartyExistsForGroupCompany', :returns => :boolean) {
       parameter 'oid', :integer
-      parameter 'groupCompany', :'TradeMgmt.Internal.RefinedMetal.GroupCompany'
+      parameter 'groupCompany', :'TradeCapture.Internal.RefinedMetal.GroupCompany'
     }
     operation('GetCounterpartyForCode', :returns => list('Counterparty')) {
       parameter 'counterpartyCode', :string
@@ -82,12 +82,12 @@ in_namespace('TradeMgmt.Internal.RefinedMetalReferenceData') {
       parameter 'includeTemporary', :boolean     
     }
     operation('GetCounterpartiesForGroupCompany', :returns => list('Counterparty')) {
-      parameter 'company', 'TradeMgmt.Internal.RefinedMetal.GroupCompany'
+      parameter 'company', 'TradeCapture.Internal.RefinedMetal.GroupCompany'
     }
   }
 
   service('GroupCompanyService') {
-    operation('GetGroupCompanies', :returns => list('TradeMgmt.Internal.RefinedMetal.GroupCompany')) {
+    operation('GetGroupCompanies', :returns => list('TradeCapture.Internal.RefinedMetal.GroupCompany')) {
     }
   }
 
@@ -131,7 +131,7 @@ in_namespace('TradeMgmt.Internal.RefinedMetalReferenceData') {
   }
 
   service('QPTypeService') {
-    operation('GetQPTypes', :returns => list('TradeMgmt.Internal.RefinedMetal.QPType')) {
+    operation('GetQPTypes', :returns => list('TradeCapture.Internal.RefinedMetal.QPType')) {
     }
   }
 
@@ -154,17 +154,17 @@ in_namespace('TradeMgmt.Internal.RefinedMetalReferenceData') {
   service('TranslationsService') {
 
     # get all translations
-    operation('GetAllTranslations', :returns => list('TradeMgmt.Internal.RefinedMetal.Translation')) {
+    operation('GetAllTranslations', :returns => list('TradeCapture.Internal.RefinedMetal.Translation')) {
     }
 
     # get all translations for a given language
-    operation('GetTranslationsForLanguage', :returns => list('TradeMgmt.Internal.RefinedMetal.Translation')) {
+    operation('GetTranslationsForLanguage', :returns => list('TradeCapture.Internal.RefinedMetal.Translation')) {
       parameter 'languageCode', :string
     }
 
     # create / update translations
-    operation('SaveTranslations', :returns => list('TradeMgmt.Internal.RefinedMetal.Translation')) {
-      parameter 'translations', list('TradeMgmt.Internal.RefinedMetal.Translation')
+    operation('SaveTranslations', :returns => list('TradeCapture.Internal.RefinedMetal.Translation')) {
+      parameter 'translations', list('TradeCapture.Internal.RefinedMetal.Translation')
     }
 
     # delete all translations from the given list
@@ -173,13 +173,13 @@ in_namespace('TradeMgmt.Internal.RefinedMetalReferenceData') {
     }
 
     # get all available languages
-    operation('GetAllLanguages', :returns => list("TradeMgmt.Internal.RefinedMetal.Language")) {
+    operation('GetAllLanguages', :returns => list("TradeCapture.Internal.RefinedMetal.Language")) {
     }
 
     # translation operation, return lists of translated items / missing translations
-    operation('GetTranslations', :returns => 'TradeMgmt.Internal.RefinedMetal.Translations') {
+    operation('GetTranslations', :returns => 'TradeCapture.Internal.RefinedMetal.Translations') {
       parameter 'languageCode', :string
-      parameter 'regTranslations', list('TradeMgmt.Internal.RefinedMetal.Translation')
+      parameter 'regTranslations', list('TradeCapture.Internal.RefinedMetal.Translation')
     }
   }
 }

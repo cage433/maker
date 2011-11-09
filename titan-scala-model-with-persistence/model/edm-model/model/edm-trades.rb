@@ -33,14 +33,14 @@ in_namespace('EDM') {
     define('Trade', :extends => 'Transaction') {
       constant 'PURCHASE', 'P'
       constant 'SALE', 'S'
-      field 'contractHandler',                  :integer_key, :optional => true, :references => 'TradeMgmt.Internal.Permission.User(oid)'
+      field 'contractHandler',                  :integer_key, :optional => true, :references => 'TradeCapture.Internal.PermissionService.User(oid)'
       field 'groupCompany',                     :guid, :optional => true
       field 'tstate',                            :enum, :enumerated => ['Scratch', 'Completed', 'Cancelled', 'Completing'] 
       field 'originatingOffice',                :guid
-      field 'analyst',                          :integer_key, :optional => true, :references => 'TradeMgmt.Internal.Permission.User(oid)'
-      field 'trader',                           :integer_key, :optional => true, :references => 'TradeMgmt.Internal.Permission.User(oid)'
-      field 'submitter',                        :integer_key, :optional => true, :references => 'TradeMgmt.Internal.Permission.User(oid)'
-      field 'operator',                         :integer_key, :optional => true, :references => 'TradeMgmt.Internal.Permission.User(oid)'
+      field 'analyst',                          :integer_key, :optional => true, :references => 'TradeCapture.Internal.PermissionService.User(oid)'
+      field 'trader',                           :integer_key, :optional => true, :references => 'TradeCapture.Internal.PermissionService.User(oid)'
+      field 'submitter',                        :integer_key, :optional => true, :references => 'TradeCapture.Internal.PermissionService.User(oid)'
+      field 'operator',                         :integer_key, :optional => true, :references => 'TradeCapture.Internal.PermissionService.User(oid)'
       field 'direction',                        :string
 
       field 'contractDraftedDate',              :date
@@ -62,7 +62,7 @@ in_namespace('EDM') {
 
     define('OTCTrade', :extends => 'Trade') {
       field 'counterparty',                     'CounterpartyAndTypeHolder'
-      field 'counterpartyContact',              :integer_key, :optional => true, :references => 'EDM.TradeMgmt.Trades.Contact(oid)'
+      field 'counterpartyContact',              :integer_key, :optional => true, :references => 'EDM.Trades.Contact(oid)'
     }
   }
 }

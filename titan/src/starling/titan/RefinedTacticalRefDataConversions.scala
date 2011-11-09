@@ -1,7 +1,7 @@
 package starling.titan
 
-import com.trafigura.trademgmt.internal.refinedmetal.{Metal, Market => RefMarket}
-import com.trafigura.trademgmt.internal.refinedmetal.Market._
+import com.trafigura.tradecapture.internal.refinedmetal.{Metal, Market => RefMarket}
+import com.trafigura.tradecapture.internal.refinedmetal.Market._
 import starling.market._
 import java.lang.Exception
 

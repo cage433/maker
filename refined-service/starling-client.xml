@@ -11,7 +11,7 @@
   <import resource="classpath:system-users.xml"/>
 
   <bean id="clientExecutor" class="com.trafigura.services.security.ClientUserExecutor" scope="prototype">
-    <constructor-arg index="0" value="${titan.tradecapture.username:titan.tradecapture}"/>
+    <constructor-arg index="0" value="titan.tradecapture"/>
     <constructor-arg index="1" ref="securityComponent"/>
   </bean>
 

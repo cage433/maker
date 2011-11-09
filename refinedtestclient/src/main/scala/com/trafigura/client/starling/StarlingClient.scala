@@ -1,7 +1,7 @@
 package com.trafigura.client.starling
 
 import org.springframework.context.support.ClassPathXmlApplicationContext
-import com.trafigura.edm.trademgmt.trade.{EdmGetTrades, EdmGetTradesResource, EdmGetTradesResourceProxy}
+import com.trafigura.edm.tradeservice.{EdmGetTrades, EdmGetTradesResource, EdmGetTradesResourceProxy}
 import com.trafigura.starling.{StarlingResourceProxy, StarlingResource}
 import org.jboss.resteasy.client.ProxyFactory
 import com.trafigura.services.security._

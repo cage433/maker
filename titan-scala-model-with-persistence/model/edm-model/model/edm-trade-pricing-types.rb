@@ -4,21 +4,21 @@ expose 'EDMPricingSpec'
 # EDM model for initial FPC implementation
 
 # Initial fragment of the EDM namespace for the Titan 1.3 FPC implementation
-in_namespace('EDM.TradeMgmt.PhysicalTradeSpecs') {
+in_namespace('EDM.PhysicalTradeSpecs') {
 
   # Represents a single hedge request element
   define('EDMHedgeRequest', :abstract => true) {
     field 'oid',                            :integer, :identifier => true
     field 'ordinal',                  :integer
     field 'contractMonthName',        :string
-    field 'hedgePrice',               'EDM.Common.Units.Quantity'
+    field 'hedgePrice',               'EDM.shared.types.Quantity'
     field 'market',                   :guid
     field 'direction',                :string
   }
 
   # Represents a FX based hedge request for a specified amount
   define('EDMFxHedgeRequest', :extends => 'EDMHedgeRequest') {
-    field 'amount',                   'EDM.Common.Units.Quantity'
+    field 'amount',                   'EDM.shared.types.Quantity'
   }
 
   # Represents a physical hedge request (in lots)
@@ -31,7 +31,7 @@ in_namespace('EDM.TradeMgmt.PhysicalTradeSpecs') {
   define('EDMFxOverride'){
     field 'oid',                            :integer, :identifier => true
     field 'date',                      :date
-    field 'rate',                      'EDM.Common.Units.Quantity'
+    field 'rate',                      'EDM.shared.types.Quantity'
   }
   # A pricing specification determines a rule for calculating a price
   # in the context of some market data snapshot and a shipping month.
@@ -44,13 +44,13 @@ in_namespace('EDM.TradeMgmt.PhysicalTradeSpecs') {
     field 'oid',                      :integer, :identifier => true
     field 'ordinal',                  :integer
     field 'comments',                 :string, :optional => true, :max_length => EDMPricingSpec::COMMENTLENGTH
-    field 'quantity',                 'EDM.Common.Units.Quantity'
+    field 'quantity',                 'EDM.shared.types.Quantity'
     # If a pricing spec has a currency that is different to the associated market
     # then conversions will be done using ECB rate, unless there is an override.
     # Currency and fx overrides make no sense for anything other than unknown
     # and average pricing specs - however I'm not going to make the type hierarchy
     # any deeper
-    field 'currency',                 :'EDM.Common.Units.Currency'
+    field 'currency',                 :'EDM.shared.types.Currency'
     field 'fxOverrides',              :list, :element_type => 'EDMFxOverride'
   }
 
@@ -59,8 +59,8 @@ in_namespace('EDM.TradeMgmt.PhysicalTradeSpecs') {
    constant 'brandLength', 50
    # Do we need a date field - the data always appears to have the contract date here
    field 'date',                     :date, :optional => true
-   field 'quantity',                 'EDM.Common.Units.Quantity'
-   field 'price',                    'EDM.Common.Units.Quantity'
+   field 'quantity',                 'EDM.shared.types.Quantity'
+   field 'price',                    'EDM.shared.types.Quantity'
    field 'brand',                    :string, :max_length => EDMFixedPrcComponent::BRANDLENGTH # ultimately referring to some ref-data but for now this is unavailable so we're capturing free-form text
   }
 
@@ -69,7 +69,7 @@ in_namespace('EDM.TradeMgmt.PhysicalTradeSpecs') {
   define('EDMFixedPricingSpec', :extends => 'EDMPricingSpec') {
     field 'comps',               :list, :element_type => 'EDMFixedPrcComponent'
     field 'hedges',            :list, :element_type => 'EDMHedgeRequest'
-    field 'premium',              'EDM.Common.Units.Quantity'
+    field 'premium',              'EDM.shared.types.Quantity'
   }
 
   # Some trades have their price fixed by one party exercising their right
@@ -80,8 +80,8 @@ in_namespace('EDM.TradeMgmt.PhysicalTradeSpecs') {
   # counterparty uses this mechanism to punt.
   define('EDMUnkPricingFixation') {
     field 'oid',                            :integer, :identifier => true
-    field 'fixedQuantity',            'EDM.Common.Units.Quantity'
-    field 'observedPrice',        'EDM.Common.Units.Quantity'  # Note that this is the market price - the premium
+    field 'fixedQuantity',            'EDM.shared.types.Quantity'
+    field 'observedPrice',        'EDM.shared.types.Quantity'  # Note that this is the market price - the premium
   }
 
   define('EDMUnkPricingSpec', :extends => 'EDMPricingSpec') {
@@ -91,15 +91,15 @@ in_namespace('EDM.TradeMgmt.PhysicalTradeSpecs') {
     # declarationBy might need to be a rule that maps a shipping month to a date
     field 'declarationBy',        :date
     field 'optionality',          :enum, :enumerated => ['Buyer', 'Seller', 'None'], :optional => true
-    field 'premium',              'EDM.Common.Units.Quantity'
+    field 'premium',              'EDM.shared.types.Quantity'
   }
   
   # Remarkable similar to EDMUnkPricingFixation, however that is trade data. The
   # below is market data and should eventually stop being stored with the trade
   define('EDMAvePriceFixation') {
     field 'oid',                            :integer, :identifier => true
-    field 'oneDayFixingQuantity',           'EDM.Common.Units.Quantity'
-    field 'price',           'EDM.Common.Units.Quantity'
+    field 'oneDayFixingQuantity',           'EDM.shared.types.Quantity'
+    field 'price',           'EDM.shared.types.Quantity'
   }
 
   define('EDMAvePricingSpec', :extends => 'EDMPricingSpec') {
@@ -113,21 +113,21 @@ in_namespace('EDM.TradeMgmt.PhysicalTradeSpecs') {
   define('EDMMonthAveragePricingSpec', :extends => 'EDMAvePricingSpec') {
     field 'market',               :guid
     field 'qpMonth',              :date
-    field 'premium',              'EDM.Common.Units.Quantity'
+    field 'premium',              'EDM.shared.types.Quantity'
   }
   
   # Partial averages may have different quantities for each day of averaging
   define('EDMPartialAveDayQty'){
     field 'oid',                            :integer, :identifier => true
     field 'date',                 :date
-    field 'quantity',             'EDM.Common.Units.Quantity'
+    field 'quantity',             'EDM.shared.types.Quantity'
   }
 
   # Similar to the more usual monthly average, however
   # averaging is done over some sub-period
   define('EDMPartAvePrcSpec', :extends => 'EDMAvePricingSpec'){
     field 'market',               :guid
-    field 'premium',              'EDM.Common.Units.Quantity'
+    field 'premium',              'EDM.shared.types.Quantity'
     # Note that the sum of quantities in this map should equal the pricing spec's own quantity
     field 'dayQtyMap',       :list, :element_type => 'EDMPartialAveDayQty'
   }

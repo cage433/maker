@@ -10,7 +10,7 @@ import starling.services.StarlingInit
 import com.trafigura.services.valuation._
 import starling.services.rpc.refdata._
 import com.trafigura.tradinghub.support.ModelObject
-import com.trafigura.edm.trademgmt.trades.{PhysicalTrade => EDMPhysicalTrade}
+import com.trafigura.edm.trades.{PhysicalTrade => EDMPhysicalTrade}
 import java.lang.Exception
 import com.trafigura.shared.events._
 import org.joda.time.LocalDate
@@ -19,7 +19,8 @@ import com.trafigura.common.control.PipedControl._
 import starling.utils.cache.CacheFactory
 import starling.curves.NullAtomicEnvironment
 import starling.services.rabbit._
-import com.trafigura.trademgmt.internal.refinedmetal.{Market, Metal}
+import com.trafigura.tradecapture.internal.refinedmetal.Market
+import com.trafigura.tradecapture.internal.refinedmetal.Metal
 import com.trafigura.services.rabbit.Publisher
 import starling.quantity.Quantity
 import starling.curves.DiscountRateKey
@@ -29,10 +30,10 @@ import starling.curves.IndexFixingKey
 import starling.titan._
 import starling.services.rpc.logistics._
 import com.trafigura.events.DemultiplexerClient
-import com.trafigura.edm.common.units.TitanId
-import java.io.{FileWriter, BufferedWriter}
+import com.trafigura.edm.shared.types.TitanId
+import java.io.{PrintWriter, FileWriter, BufferedWriter}
 import com.trafigura.services.{TitanSerializableDate}
-import starling.utils.{Log, Stopwatch}
+import starling.utils.{Broadcaster, Log, Stopwatch}
 import starling.rmi.RabbitEventDatabase
 
 //import com.trafigura.services.marketdata.MarketDataServiceApi
@@ -75,13 +76,13 @@ case class DefaultTitanTradeCache(props : Props) extends TitanTradeCache with Lo
     val validTrades = edmTradeResult.results.filter(tr => tr.trade != null).map(_.trade.asInstanceOf[EDMPhysicalTrade])
 
     // temporary code, trademgmt are sending us null titan ids
-    val (nullIds, validIds) = validTrades.span(_.identifier == null)
+    val (nullIds, validIds) = validTrades.span(_.titanId == null)
     if (nullIds.size > 0) {
       log.error("Null Titan trade IDs found!")
       log.error("null ids \n%s\n%s".format(nullIds, validIds))
       //assert(false, "Null titan ids found - fatal error")
     }
-    tradeMap = validTrades/*.filter(pt => pt.tstate == CompletedTradeTstate)*/.map(t => (t.identifier, t)).toMap
+    tradeMap = validTrades/*.filter(pt => pt.tstate == CompletedTradeTstate)*/.map(t => (t.titanId, t)).toMap
     tradeMap.keySet.foreach(addTradeQuotas)
   }
 
@@ -101,7 +102,7 @@ case class DefaultTitanTradeCache(props : Props) extends TitanTradeCache with Lo
     }
     else {
       val trade = getById(id)
-      tradeMap += trade.identifier -> trade.asInstanceOf[EDMPhysicalTrade]
+      tradeMap += trade.titanId -> trade.asInstanceOf[EDMPhysicalTrade]
       addTradeQuotas(id)
       tradeMap(id)
     }
@@ -279,7 +280,7 @@ case class TitanTradeServiceBasedTradeCache(titanTradesService : TitanTradeServi
 
   // Read all trades from Titan and blast our cache
   def updateTradeMap() {
-    tradeMap = titanTradesService.getAllTrades()/*.filter(pt => pt.tstate == CompletedTradeTstate)*/.map(t => (t.identifier , t)).toMap
+    tradeMap = titanTradesService.getAllTrades()/*.filter(pt => pt.tstate == CompletedTradeTstate)*/.map(t => (t.titanId, t)).toMap
     tradeMap.keySet.foreach(addTradeQuotas)
   }
 
@@ -299,7 +300,7 @@ case class TitanTradeServiceBasedTradeCache(titanTradesService : TitanTradeServi
     }
     else {
       val trade = titanTradesService.getTrade(id)
-      tradeMap += trade.identifier -> trade
+      tradeMap += trade.titanId -> trade
       tradeMap(id)
     }
   }
@@ -426,7 +427,7 @@ class ValuationService(
     log.info("Got %d completed physical trades".format(edmTrades.size))
     sw.reset()
     val valuations = edmTrades.map {
-      trade => (trade.identifier.value, tradeValuer(trade))
+      trade => (trade.titanId.value, tradeValuer(trade))
     }.toMap
     log.info("Valuation took " + sw)
     val (worked, errors) = valuations.values.partition(_ isRight)
@@ -450,7 +451,7 @@ class ValuationService(
     log.info("Got %d completed physical trades".format(edmTrades.size))
     sw.reset()
     val valuations = edmTrades.map {
-      trade => (trade.identifier.value, tradeValuer(trade))
+      trade => (trade.titanId.value, tradeValuer(trade))
     }.toMap
     log.info("Valuation took " + sw)
     val (worked, errors) = valuations.values.partition(_ isRight)
@@ -496,7 +497,7 @@ class ValuationService(
 
     // value all trades (and therefor all quotas) keyed by trade ids
     val idsToUse = costableIds match {
-      case Nil | null => titanTradeCache.getAllTrades().map{trade => trade.identifier.value}
+      case Nil | null => titanTradeCache.getAllTrades().map{trade => trade.titanId.value}
       case list => list
     }
 
