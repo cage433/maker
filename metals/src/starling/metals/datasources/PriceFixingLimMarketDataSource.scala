@@ -28,7 +28,7 @@ import starling.services.EmailService
 
 object PriceFixingLimMarketDataSource {
   val fixingsSources = PriceFixingsHistoryDataType.name → (List(LMEFixings, LIBORFixings, BloombergTokyoCompositeFXRates, BalticFixings,
-    new MonthlyFuturesFixings(Trafigura.Bloomberg.Futures.Shfe, FuturesExchangeFactory.SFS.fixingLevel),
+    new MonthlyFuturesFixings(Trafigura.Bloomberg.Futures.Shfe, FuturesExchangeFactory.SHFE.fixingLevel),
     new MonthlyFuturesFixings(Trafigura.Bloomberg.Futures.Comex, FuturesExchangeFactory.COMEX.fixingLevel)) ::: SpotFXFixings.all)
 }
 
@@ -74,8 +74,8 @@ case class PriceFixingLimMarketDataSource(service: LIMService, emailService: Ema
     TaskDescription("Verify COMEX Fixings Available", daily(COMEX.calendar, 20 H 00), notImplemented),
     TaskDescription("Verify KLIBOR Available", daily(NYMEX.calendar, 23 H 00), notImplemented),
 
-    TaskDescription("Verify HIBOR Available", daily(SFS.calendar, 11 H 00), notImplemented),
-    TaskDescription("Verify Shfe Fixings Available", daily(SFS.calendar, 20 H 00), notImplemented)
+    TaskDescription("Verify HIBOR Available", daily(SHFE.calendar, 11 H 00), notImplemented),
+    TaskDescription("Verify Shfe Fixings Available", daily(SHFE.calendar, 20 H 00), notImplemented)
   ).filterNot(_.task == notImplemented)
 }
 
@@ -137,7 +137,7 @@ class MonthlyFuturesFixings(parentNodes: List[LimNode], levels: List[Level]) ext
   case class MonthlyFuturesRelation(market: FuturesMarket, month: Month)
 
   def relationExtractor = Extractor.regex("""TRAF\.(\w+)\.(\w+)_(\w+)""") { case List(exchange, limSymbol, deliveryMonth) => {
-    val optMarket = Market.fromExchangeAndLimSymbol(exchangeLookup(exchange), limSymbol)
+    val optMarket = Market.fromExchangeAndLimSymbol(exchange, limSymbol)
     val optMonth = ReutersDeliveryMonthCodes.parse(deliveryMonth)
 
     (optMarket, optMonth) partialMatch { case (Some(market), Some(month)) => MonthlyFuturesRelation(market, month) }

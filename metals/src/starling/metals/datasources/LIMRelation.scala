@@ -28,7 +28,7 @@ case class LimPrice(market: CommodityMarket, period: DateRange, observationTimeO
 
 object CMPTLIMRelation extends LIMRelation {
   val node = LIMService.TopRelation.Trafigura.Bloomberg.Currencies.Composite
-  val exchange = FuturesExchangeFactory.SFS
+  val exchange = FuturesExchangeFactory.SHFE
 
   // TODO [10 Jun 2011] Change PriceDataKey so that it uses a market name
   private val limPriceTemplate = LimPrice(null, null, exchange.closeTime)

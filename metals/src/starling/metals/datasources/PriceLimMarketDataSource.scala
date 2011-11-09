@@ -24,7 +24,7 @@ object PriceLimMarketDataSource extends scalaz.Options {
   val priceSources = PriceDataType.name → List(
     new PriceLimSource(new LMELIMRelation(Metals.Lme, FuturesExchangeFactory.LME)),
     new PriceLimSource(new MonthlyLIMRelation(Futures.Comex, FuturesExchangeFactory.COMEX)),
-    new PriceLimSource(new MonthlyLIMRelation(Futures.Shfe, FuturesExchangeFactory.SFS)))
+    new PriceLimSource(new MonthlyLIMRelation(Futures.Shfe, FuturesExchangeFactory.SHFE)))
 
   class LMELIMRelation(val node: LimNode, override val exchange: FuturesExchange) extends LIMRelation {
     private lazy val lmeMarkets = FuturesExchangeFactory.LME.marketsByCommodityName + "steelbillet" → Market.LME_STEEL_BILLETS
@@ -69,7 +69,7 @@ case class PriceLimMarketDataSource(service: LIMService, bloombergImports: Bloom
   override def availabilityTasks(marketDataStore: MarketDataStore) = List(
     task("LME Metals", daily(LME.calendar, 20 H 00), lme, marketDataStore),
     task("COMEX Metals", daily(COMEX.calendar, 15 H 30), comex, marketDataStore),
-    task("SHFE Metals", daily(SFS.calendar, 15 H 00), shfe, marketDataStore)
+    task("SHFE Metals", daily(SHFE.calendar, 15 H 00), shfe, marketDataStore)
   )
 
 //  val exbxgMetals = new DataFlow(FuturesExchangeFactory.EXBXG, PricingGroup.Metals, Nil, metalsEmail, wuXiEmail, "Excel",

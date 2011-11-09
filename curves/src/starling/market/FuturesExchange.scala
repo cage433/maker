@@ -26,7 +26,7 @@ case class FuturesExchange(name: String, deliveryType: DeliveryType, closeTime:O
   lazy val markets = Market.marketsWithExchange(this)
   lazy val marketsByCommodityName = markets.toMapWithKeys(_.commodity.name.toLowerCase)
   def inferMarketFromCommodity(commodity : Commodity) : Option[FuturesMarket] = futuresMarkets.filter(_.exchange == this).find(_.commodity == commodity)
-  def limName = (this == FuturesExchangeFactory.SFS) ? "SHFE" | name
+  def limName = name
 }
 
 
@@ -34,7 +34,7 @@ object FuturesExchange{
   def fromNeptuneCode(code : String) : FuturesExchange = Map(
     "CMX" → FuturesExchangeFactory.COMEX,
     "LME" → FuturesExchangeFactory.LME,
-    "SFS" → FuturesExchangeFactory.SFS
+    "SFS" → FuturesExchangeFactory.SHFE
   ).get(code) match {
     case Some(exchange) => exchange
     case None => throw new IllegalStateException("No exchange for Neptune code " + code)
@@ -44,7 +44,7 @@ object FuturesExchange{
 
     area partialMatch {
       case `EUR` => FuturesExchangeFactory.LME
-      case `ASI` | `CHN` => FuturesExchangeFactory.SFS
+      case `ASI` | `CHN` => FuturesExchangeFactory.SHFE
       case `SAM` | `NAM` => FuturesExchangeFactory.COMEX
     }
   }
@@ -95,7 +95,7 @@ object FuturesExchangeFactory extends StarlingEnum(classOf[FuturesExchange], (f:
   val NYMEX = new FuturesExchange("NYMEX", MonthlyDelivery, Default) {
     lazy val calendar = Market.cals.NYMEX
   }
-  val SFS = new FuturesExchange("SFS", MonthlyDelivery, SHFEClose, fixingLevel = Level.Settle) {
+  val SHFE = new FuturesExchange("SHFE", MonthlyDelivery, SHFEClose, fixingLevel = Level.Settle) {
     lazy val calendar = Market.cals.SFS
   }
     

@@ -47,7 +47,7 @@ case class SpotFXLimMarketDataSource(service: LIMService, emailService: EmailSer
 
   override def availabilityTasks(marketDataStore: MarketDataStore) = List(
     task("Bloomberg Generic Rate", daily(LME.calendar, 18 H 00), (titanCurrencies - UOM.CNY), marketDataStore),
-    task("CFETS", daily(SFS.calendar, 15 H 30), List(UOM.CNY), marketDataStore)
+    task("CFETS", daily(SHFE.calendar, 15 H 30), List(UOM.CNY), marketDataStore)
   )
 
   private def task(name: String, time: ScheduledTime, currencies: List[UOM], marketDataStore: MarketDataStore): TaskDescription =

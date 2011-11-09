@@ -62,7 +62,7 @@ trait TitanPricingSpec {
   protected def isLiableToShanghaiVAT = {
     indexOption match {
       case Some(index) => index.market match{
-        case fm : FuturesMarket => fm.exchange == FuturesExchangeFactory.SFS  || fm.exchange == FuturesExchangeFactory.EXBXG
+        case fm : FuturesMarket => fm.exchange == FuturesExchangeFactory.SHFE  || fm.exchange == FuturesExchangeFactory.EXBXG
         case _ => false
       }
       case None => false

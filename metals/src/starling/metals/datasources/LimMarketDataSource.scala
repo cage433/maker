@@ -53,7 +53,6 @@ abstract class LimSource(val levels: List[Level]) {
   def marketDataEntriesFrom(fixings: List[Prices[Relation]]): Iterable[MarketDataEntry]
   def description: List[String]
   protected def levelDescription = "(" + levels.map(_.name).mkString(", ") + ")"
-  protected def exchangeLookup(exchange: String) = if (exchange == "SHFE") "SFS" else exchange
 }
 
 abstract class HierarchicalLimSource(val parentNodes: List[LimNode], levels: List[Level]) extends LimSource(levels) with Log {

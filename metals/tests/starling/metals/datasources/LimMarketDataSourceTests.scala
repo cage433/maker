@@ -32,7 +32,7 @@ abstract class LimMarketDataSourceTests[DS <: MarketDataSource] extends Starling
   observationDay.toString should {
     "be a business day in all calendars" in {
       import ShouldMatchers._
-      List(LME.calendar, COMEX.calendar, SFS.calendar).filterNot(_.isBusinessDay(observationDay)) should be === Nil
+      List(LME.calendar, COMEX.calendar, SHFE.calendar).filterNot(_.isBusinessDay(observationDay)) should be === Nil
     }
   }
 
