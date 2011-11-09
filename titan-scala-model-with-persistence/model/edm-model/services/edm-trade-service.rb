@@ -1,6 +1,6 @@
 #// This is the EDM trade service interface definition
 
-in_namespace('EDM.TradeService') {
+in_namespace('EDM.TradeMgmt.Trade') {
 
   define('TradeSubmissionResult') {
     field 'trade',                    'Trade'
