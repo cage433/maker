@@ -5,6 +5,8 @@ import java.io.File
 
 object StarlingBuild extends Build{
 
+  val amqpVersion = "1.7.2"
+
   import Utils._
 
   val starlingVersion = {
@@ -69,6 +71,13 @@ object StarlingBuild extends Build{
     resolvers += "Non-Trafigura Public Repositories" at "http://nexus.global.trafigura.com:8081/nexus/content/groups/mirror/",
     resolvers += "trafigura" at "http://nexus.global.trafigura.com:8081/nexus/content/repositories/tooling-releases/",
     resolvers += "Titan Cross Stream Snapshots" at "http://nexus.global.trafigura.com:8081/nexus/content/repositories/titan-cross-stream-snapshots/",
+    resolvers += "Tooling Snapshots" at "http://nexus.global.trafigura.com:8081/nexus/content/repositories/tooling-snapshots/",
+    resolvers += "Trade Mgmt Releases (Bin Deps)" at "http://nexus.global.trafigura.com:8081/nexus/content/repositories/trademgmt-bindeps-releases/",
+    resolvers += "Trade Mgmt Snapshots (Bin Deps)" at "http://nexus.global.trafigura.com:8081/nexus/content/repositories/trademgmt-bindeps-snapshots/",
+    resolvers += "Logistics Releases (Bin Deps)" at "http://nexus.global.trafigura.com:8081/nexus/content/repositories/logistics-bindeps-releases/",
+    resolvers += "Logistics Snapshots (Bin Deps)" at "http://nexus.global.trafigura.com:8081/nexus/content/repositories/logistics-bindeps-snapshots/",
+    resolvers += "Reference Data Releases (Bin Deps)" at "http://nexus.global.trafigura.com:8081/nexus/content/repositories/referencedata-bindeps-releases/",
+    resolvers += "Reference Data Snapshots (Bin Deps)" at "http://nexus.global.trafigura.com:8081/nexus/content/repositories/referencedata-bindeps-snapshots/",
     organizationName := "Trafigura",
     version := starlingVersion,
     shellPrompt  := ShellPrompt.buildShellPrompt
@@ -117,7 +126,7 @@ object StarlingBuild extends Build{
     "net.liftweb" % "lift-json_2.9.0" % "2.4-M2",
     "cglib" % "cglib-nodep" % "2.2" withSources(),
     "joda-time" % "joda-time" % "1.6" withSources(),
-    "com.rabbitmq" % "amqp-client" % "1.7.2" withSources(),
+    "com.rabbitmq" % "amqp-client" % amqpVersion withSources(),
     "log4j" % "log4j" % "1.2.16" withSources(),
     "org.slf4j" % "slf4j-log4j12" % "1.6.1" withSources(),
     "com.google.collections" % "google-collections" % "1.0" withSources(),
@@ -219,51 +228,25 @@ object StarlingBuild extends Build{
     settings = standardSettingsNexus ++ (libraryDependencies ++= mathsDependencies)
   ) dependsOn(quantity % testDependency, daterange % testDependency)
 
-
-  val titanModelDependencies = Seq(
+  val starlingApiDependencies = Seq(
+    "com.trafigura.titan" % "model-logistics-public-scala-bindings" % "1.0",
+    "com.trafigura.titan" % "model-trademgmt-public-scala-bindings" % "1.0",
     "org.slf4j" % "slf4j-api" % "1.6.1",
     "dom4j" % "dom4j" % "1.6.1",
-    "com.rabbitmq" % "amqp-client" % "1.7.2",
+    "com.rabbitmq" % "amqp-client" % amqpVersion,
     "joda-time" % "joda-time" % "1.6",
     "org.codehaus.jettison" % "jettison" % "1.1",
     "commons-httpclient" % "commons-httpclient" % "3.1",
     "com.trafigura.tradinghub" % "scala-hub-support" % "2.17",
     "com.trafigura.tradinghub" % "persistence-support" % "2.17",
-    "org.jboss.resteasy" % "jaxrs-api" % "1.2.GA"
+    "org.jboss.resteasy" % "jaxrs-api" % "2.2.2.GA"
   )
 
-  import TitanModel._
-  lazy val titanModel = Project(
-    "titan-model", 
-    modelRoot,
-    settings = standardSettingsNexus ++ Seq(
-      unmanagedSourceDirectories in Compile <+= baseDirectory(_/"model-src"),
-      cleanGenSrcTask := cleanGenSrc, 
-      cleanCopiedSrcTask := cleanCopiedSrc, 
-      clean <<= clean.dependsOn(cleanGenSrcTask, cleanCopiedSrcTask),
-      buildSrcTask := buildSource,
-      compile in Compile <<= (compile in Compile).dependsOn(buildSrcTask),
-      libraryDependencies ++= titanModelDependencies
-    ) 
-    ++ copyModelSettings
-  )
-
-  lazy val starlingApi = if (useTitanModelBinaries) {
-    Project(
-      "starling-api", 
-      file("./starling.api"),
-      settings = standardSettingsNexus ++
-        Seq(unmanagedJars in Compile <++= (baseDirectory) map titanBinaryJars) ++ 
-        Seq(unmanagedJars in Runtime <++= (baseDirectory) map titanBinaryJars) ++ 
-        Seq(unmanagedJars in Test <++= (baseDirectory) map titanBinaryJars)
-    ) dependsOn(titanReturnTypes)
-  } else {
-    Project(
-      "starling-api", 
-      file("./starling.api"),
-      settings = standardSettingsNexus
-    ) dependsOn(titanModel, titanReturnTypes)
-  }
+  lazy val starlingApi = Project(
+    "starling-api",
+    file("./starling.api"),
+    settings = standardSettingsNexus ++ Seq(libraryDependencies ++= starlingApiDependencies)
+  ) dependsOn(titanReturnTypes)
 
   lazy val props = Project(
     "props",
@@ -396,7 +379,7 @@ object StarlingBuild extends Build{
   lazy val starlingClient = Project(
     "starling-client",
     file("./starling.client"),
-    settings = standardSettingsNexus
+    settings = standardSettingsNexus ++ Seq(libraryDependencies ++= starlingApiDependencies)
   ) dependsOn(starlingApi, bouncyrmi)
 
   val dbxDependencies = Seq(
@@ -438,25 +421,12 @@ object StarlingBuild extends Build{
     settings = standardSettingsNexus
   ) dependsOn(rabbitEventViewerApi, pivot, databases, manager)
 
-  lazy val titan = if (useTitanModelBinaries){
-		Project(
-				"titan", 
+  lazy val titan = Project(
+				"titan",
 				file("./titan"),
-					settings = standardSettingsNexus ++
-						Seq(unmanagedJars in Compile <++= (baseDirectory) map titanBinaryJars) ++ 
-						Seq(unmanagedJars in Runtime <++= (baseDirectory) map titanBinaryJars) ++ 
-						Seq(unmanagedJars in Test <++= (baseDirectory) map titanBinaryJars)
+				settings = standardSettingsNexus ++ Seq(libraryDependencies ++= starlingApiDependencies)
 			) dependsOn(curves % "test->test", databases)
-	} else {
-		Project(
-				"titan", 
-				file("./titan"),
-				settings = standardSettingsNexus
-			) dependsOn(curves % "test->test", titanModel, databases)
-	}
 
-  def titanBinaryJars(base : File) : Seq[Attributed[File]] = (((base / "../lib/titan-model-jars") ** "*.jar")).getFiles.map{f : File => Attributed.blank(f)}
-  
   val servicesDependencies = Seq(
     "javax.mail" % "mail" % "1.4",
     "org.mortbay.jetty" % "jetty" % "6.1.26",
@@ -536,27 +506,12 @@ object StarlingBuild extends Build{
 
   // Evil hack so that I can get a classpath exported including the test-classes of all projects.
   // See bin/write-classpath-script.sh
-  lazy val dummy = if (useTitanModelBinaries) {
-    Project(
-      "dummy",
-      file("./dummy-sbt-vim-hack"),
-      settings = standardSettingsNexus ++
-        Seq(unmanagedClasspath in Compile <++= (baseDirectory) map titanBinaryJars) ++ 
-        Seq(unmanagedClasspath in Test <++= (baseDirectory) map titanBinaryJars)
-    ) dependsOn(
-      childProjects.map(_ % "test->test") : _*
-    )
-  } else {
-    Project(
-      "dummy",
-      file("./dummy-sbt-vim-hack"),
-      settings = standardSettingsNexus
-    ) dependsOn(
-      childProjects.map(_ % "test->test") : _*
-    )
-  }
+  lazy val dummy = Project(
+    "dummy",
+    file("./dummy-sbt-vim-hack"),
+    settings = standardSettingsNexus
+  ) dependsOn(childProjects.map(_ % "test->test") : _*)
 
-  def titanModelReference : List[ProjectReference] = if (useTitanModelBinaries) Nil else List(titanModel) 
   def otherProjectRefereneces : List[ProjectReference] = List(
     booter,
     utils, 
@@ -601,7 +556,7 @@ object StarlingBuild extends Build{
     tradeImpl
   )
 
-  def childProjects : List[ProjectReference] =  otherProjectRefereneces ::: titanModelReference
+  def childProjects : List[ProjectReference] =  otherProjectRefereneces
 
   val docProjects : List[ProjectReference] =  List(
     utils, 
@@ -639,11 +594,10 @@ object StarlingBuild extends Build{
     props,
     rabbitEventViewerApi, rabbitEventViewerService, 
     reportsFacility, reportsImpl, tradeImpl, metals,
-    titanModel, 
     tradeFacility)
 
   val sharedProjects : List[ProjectReference] =  List(
-      utils, quantity, daterange, titanReturnTypes, titan, titanModel, databases, starlingApi)
+      utils, quantity, daterange, titanReturnTypes, titan, databases, starlingApi)
   
   val allPackagedArtifacts = TaskKey[Seq[Map[Artifact, File]]]("all-packaged-artifacts")
   val allSources           = TaskKey[Seq[Seq[File]]]("all-sources")
@@ -678,75 +632,6 @@ object StarlingBuild extends Build{
     )
 
   val root = Project("starling", file("."), settings = standardSettingsNexus) aggregate (childProjects : _*)
-
-  object TitanModel {
-    import IO._
-    val modelGenSrcDir = file("titan-scala-model/model-src/main/scala/")
-    val copiedSrcDir = file("titan-scala-model/src")
-    val modelRoot = file("titan-scala-model")
-    def cleanGenSrc = IO.delete(modelGenSrcDir)
-    def cleanCopiedSrc = IO.delete(copiedSrcDir) 
-    val cleanGenSrcTask = TaskKey[Unit]("clean-src", "Clean model generated sources")
-    val cleanCopiedSrcTask = TaskKey[Unit]("clean-copied-src", "Clean sources copied from model")
-    val buildSrcTask = TaskKey[Unit]("build-src", "Build sources from model")
-     
-    val copyModelJarForIdea = TaskKey[Unit]("copy-model", "copy the edm model to the stored location in Git that is referenced by IntelliJ IDEA")
-
-    lazy val copyModelSettings : Seq[sbt.Project.Setting[_]] = Seq(
-      copyModelJarForIdea <<= (packageBin in Compile) map(_ => copyModelJar)
-    )
-
-    def copyModelJar {
-      val srcFile = new File(modelRoot + "/target/scala-2.9.1/titan-model_2.9.1-0.1.jar")
-      val destFile = new File("./lib/titan-model-jars/scala-model-with-persistence.jar")
-      println("copying target jar %s to %s".format(srcFile, destFile))
-      val r = copyFile(srcFile, destFile)
-      println("copied model jar")
-      r
-    }
-
-    def buildSource {
-      lazy val buildUsingBinaryTooling = true
-      lazy val rubyModelPathFinder = {
-        (new File(modelRoot, "/../../../model/model/")** "*.rb")
-      }
-      
-      def latestRubyFileTime = {
-        val files = rubyModelPathFinder.getFiles
-        if (files.isEmpty)
-          throw new Exception("No ruby files found")
-        files.map(_.lastModified).toList.sort(_>_).head
-      }
-      
-      def earliestScalaFileTime = {
-        (modelGenSrcDir ** "*.scala").getFiles.toList.map(_.lastModified).sort(_<_) match {
-          case Nil => None
-          case t :: _ => Some(t)
-        }
-      }
-
-      val toolingLauncher = if (buildUsingBinaryTooling == true) new File(modelRoot, "../../../mdl/bindinggen.rb") else new File(modelRoot, "/model/tooling/binding-generator/thubc.rb")
-
-      val generateModelMainSourceCmd = new java.lang.ProcessBuilder("ruby", toolingLauncher.getAbsolutePath, "-o", modelGenSrcDir.getAbsolutePath, "-b", "../../../mdl/starling/bindings.rb", "../../../mdl/starling/model.rb") directory modelRoot
-
-      lazy val nonModelSourcePath = new File(modelRoot, "src")
-      def copyNonModelSource  = {
-        if (! (nonModelSourcePath.exists)) {
-          val originalSourcePath = new File(modelRoot, "../../../model/model/scala-model-with-persistence/src/")
-          copyDirectory(originalSourcePath, nonModelSourcePath)
-          val hibernateBean = new File (modelRoot, "/src/main/scala/com/trafigura/refinedmetals/persistence/CustomAnnotationSessionFactoryBean.scala")
-          //println("***** DEBUG ***** path " + hibernateBean.getAbsolutePath + ", " + hibernateBean.exists + ", " + hibernateBean.canWrite) 
-          if (hibernateBean.exists && hibernateBean.canWrite) hibernateBean.delete()
-        }
-        None
-      }
-
-      (latestRubyFileTime, earliestScalaFileTime) match {
-        case (t_ruby, Some(t_scala)) if t_ruby < t_scala => 
-        case _ => copyNonModelSource; generateModelMainSourceCmd !; 
-      }      
-    }
-  }
 
   /**
    * Some utils to help abstract from the unintuitive SBT DSL, for more "common" cases/patterns
