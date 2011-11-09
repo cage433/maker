@@ -37,7 +37,7 @@ fi
 
 REPO_ID=nexus
 
-mvn deploy:deploy-file \
+mvn -e deploy:deploy-file \
     -Durl=$REPO_URL \
     -DrepositoryId=$REPO_ID \
     -DgroupId=starling-releases \
@@ -48,7 +48,7 @@ mvn deploy:deploy-file \
     -DgeneratePom=false \
     -Dfile=$FILE_NAME
 
-mvn deploy:deploy-file \
+mvn -e deploy:deploy-file \
     -Durl=$REPO_URL \
     -DrepositoryId=$REPO_ID \
     -DgroupId=starling-releases \
