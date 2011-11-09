@@ -6,7 +6,11 @@
 # git bisect start bad-revision good-revision
 # git bisect run bin/regression.sh
 
-java -XX:MaxPermSize=256m -Xmx6000m -jar sbt/sbt-launch.jar compile || exit 125 # skip revision if it doesn't build
+BUILD_PATH=$(dirname $0)
+cd $BUILD_PATH
+cd ..
 
-java -XX:MaxPermSize=256m -Xmx6000m -jar sbt/sbt-launch.jar "project services" run-regression
+sbt/sbt compile || exit 125 # skip revision if it doesn't build
+
+sbt/sbt "project services" run-regression
 

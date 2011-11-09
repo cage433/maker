@@ -45,7 +45,7 @@ else
       -Dcom.sun.management.jmxremote.authenticate=false \
       -Dcom.sun.management.jmxremote.ssl=false \
       -Dhttp.nonProxyHosts=nexus.global.trafigura.com \
-      -jar sbt/sbt-launch.jar "project launcher" "run-main starling.startserver.Server" >> logs/stdouterr.log 2>&1 &
+      -jar sbt/sbt-launch-0.11.0.jar "project launcher" "run-main starling.startserver.Server" >> logs/stdouterr.log 2>&1 &
 
     #Note: OutputPIDToFile.scala is used to write pid.txt
 fi
