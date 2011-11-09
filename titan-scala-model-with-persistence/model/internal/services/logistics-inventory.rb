@@ -27,15 +27,15 @@ in_namespace('Internal.Logistics.Inventory') {
       parameter 'eventDate',        :datetime
       parameter 'confirmed',        :boolean
       parameter 'inventoryWeights', list('InventoryWeight')
-      parameter 'splitQuantity',     :'TradeCapture.Internal.RefinedMetal.Quantity'
-      parameter 'gainLossQuantity',  :'TradeCapture.Internal.RefinedMetal.Quantity'
+      parameter 'splitQuantity',     :'TradeMgmt.Internal.RefinedMetal.Quantity'
+      parameter 'gainLossQuantity',  :'TradeMgmt.Internal.RefinedMetal.Quantity'
     }
 
     operation('Weigh', :returns => :LogisticsResponse) {
       parameter 'inventoryId', :integer
       parameter 'eventDate',   :datetime
       parameter 'confirmed',   :boolean
-      parameter 'quantity',    :'TradeCapture.Internal.RefinedMetal.Quantity'
+      parameter 'quantity',    :'TradeMgmt.Internal.RefinedMetal.Quantity'
     }
 
     operation('GoodsReceipted', :returns => :LogisticsSplitResult) {
@@ -44,7 +44,7 @@ in_namespace('Internal.Logistics.Inventory') {
       parameter 'confirmed',               :boolean
       parameter 'quality',                 :Quality
       parameter 'brand',                   :string
-      parameter 'quantity',                :'TradeCapture.Internal.RefinedMetal.Quantity'
+      parameter 'quantity',                :'TradeMgmt.Internal.RefinedMetal.Quantity'
       parameter 'trafficOperatorId',       :integer
       parameter 'comments',                :string
       parameter 'warehouseId',             :integer
@@ -52,14 +52,14 @@ in_namespace('Internal.Logistics.Inventory') {
       parameter 'cargoStatus',             :string
       parameter 'receiptDate',             :date
       parameter 'transferredAdjustments',  :list, :element_type => :InventoryWeight, :optional => true
-      parameter 'splitAdjustmentQuantity', :'TradeCapture.Internal.RefinedMetal.Quantity', :optional => true
+      parameter 'splitAdjustmentQuantity', :'TradeMgmt.Internal.RefinedMetal.Quantity', :optional => true
     }
 
     operation('Split', :returns => :LogisticsSplitResult) {
       parameter 'inventoryId', :integer
       parameter 'eventDate',   :datetime
       parameter 'confirmed',   :boolean
-      parameter 'quantities',  list('TradeCapture.Internal.RefinedMetal.Quantity')
+      parameter 'quantities',  list('TradeMgmt.Internal.RefinedMetal.Quantity')
     }
 
     operation('Delivery', :returns => :LogisticsSplitResult) {
@@ -68,8 +68,8 @@ in_namespace('Internal.Logistics.Inventory') {
       parameter 'confirmed',         :boolean
       parameter 'deliveredDate',     :date
       parameter 'inventoryWeights',  list('InventoryWeight')
-      parameter 'splitQuantity',     :'TradeCapture.Internal.RefinedMetal.Quantity'
-      parameter 'gainLossQuantity',  :'TradeCapture.Internal.RefinedMetal.Quantity'
+      parameter 'splitQuantity',     :'TradeMgmt.Internal.RefinedMetal.Quantity'
+      parameter 'gainLossQuantity',  :'TradeMgmt.Internal.RefinedMetal.Quantity'
     }
 
     operation('GetEventsByEventType', :returns => list('InventoryEvent')) {

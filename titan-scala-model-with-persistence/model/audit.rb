@@ -1,7 +1,7 @@
-in_namespace('TradeCapture.Internal.Auditing') {
+in_namespace('TradeMgmt.Internal.Auditing') {
   # this defines standard auditing requirements of objects 
   define('Audit') {
       field 'ver',              :integer
-      field 'modifiedby',       :integer_key, :references => 'TradeCapture.Internal.PermissionService.User(oid)'
+      field 'modifiedby',       :integer_key, :references => 'TradeMgmt.Internal.Permission.User(oid)'
   }
 }

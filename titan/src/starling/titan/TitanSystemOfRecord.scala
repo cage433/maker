@@ -1,13 +1,12 @@
 package starling.titan
 
 import com.trafigura.tradinghub.support.GUID
-import com.trafigura.edm.tradeservice.EdmGetTrades
-import com.trafigura.edm.physicaltradespecs.PhysicalTradeQuota
-import com.trafigura.edm.materialspecification.CommoditySpec
-import com.trafigura.edm.trades.{PhysicalTrade => EDMPhysicalTrade}
+import com.trafigura.edm.trademgmt.trade.EdmGetTrades
+import com.trafigura.edm.trademgmt.physicaltradespecs.PhysicalTradeQuota
+import com.trafigura.edm.trademgmt.materialspecification.CommoditySpec
+import com.trafigura.edm.trademgmt.trades.{PhysicalTrade => EDMPhysicalTrade}
 import starling.systemofrecord.SystemOfRecord
 import starling.daterange.Day
-import starling.daterange.Day._
 import starling.pivot.Field
 import starling.instrument.{Trade, TradeID, TradeAttributes}
 import starling.instrument.physical.PhysicalMetalAssignment
@@ -16,10 +15,10 @@ import java.lang.UnsupportedOperationException
 import starling.utils.StackTraceToString
 import starling.instrument.{ErrorInstrument, Costs, Tradeable}
 import com.trafigura.edm.logistics.inventory._
-import com.trafigura.edm.shared.types.{TitanId, Date, DateSpec, PercentageTolerance}
+import com.trafigura.edm.common.units.{TitanId, Date, DateSpec, PercentageTolerance}
 import starling.quantity.Percentage
 import org.joda.time.LocalDate
-import com.trafigura.tradecapture.internal.refinedmetal._
+import com.trafigura.trademgmt.internal.refinedmetal._
 
 class ExternalTitanServiceFailed(cause : Throwable) extends Exception(cause)
 
@@ -93,9 +92,9 @@ class TradeConverter(refData : TitanTacticalRefData,
                      quotaNameToQuotaMap : Map[String, PhysicalTradeQuota]) {
 
   /**
-   * convert EDMAssignmentItem to a Starling Trade
+   * convert Assignment to a Starling Trade
    */
-  implicit def toTrade(edmAssignment : EDMAssignment) : Trade = {
+  implicit def toTrade(edmAssignment : Assignment) : Trade = {
 
     val quotaDetail = quotaNameToQuotaMap(edmAssignment.quotaName).detail
     require(quotaDetail.deliverySpecs.size == 1, "Require exactly one delivery spec")
@@ -105,7 +104,7 @@ class TradeConverter(refData : TitanTacticalRefData,
     val counterparty = refData.counterpartiesByGUID(edmTrade.counterparty.counterparty).name
     val deliverySpec = quotaDetail.deliverySpecs.head
     val (shape, grade) = deliverySpec.materialSpec match {
-      case rms : com.trafigura.edm.materialspecification.RefinedMetalSpec => (
+      case rms : com.trafigura.edm.trademgmt.materialspecification.RefinedMetalSpec => (
         refData.shapesByGUID(rms.shape), 
         refData.gradeByGUID(rms.grade)
       )
@@ -130,7 +129,7 @@ class TradeConverter(refData : TitanTacticalRefData,
     val toleranceMinus = getTolerancePercentage(tolerance.minus.amount)
     
     def getDate(ds : DateSpec) : LocalDate = ds match {
-      case date : com.trafigura.edm.shared.types.Date => date.value 
+      case date : com.trafigura.edm.common.types.datespecifications.Date => date.dateValue
       case _ => throw new Exception("Unsupported DateSpec type")
     }
 
@@ -142,7 +141,7 @@ class TradeConverter(refData : TitanTacticalRefData,
     val attributes : TradeAttributes = TitanTradeAttributes(
       assignmentId.toString,
       quotaId,
-      Option(edmTrade.titanId.value).getOrElse("NULL TITAN TRADE ID"),
+      Option(edmTrade.identifier.value).getOrElse("NULL TITAN TRADE ID"),
       edmAssignment.inventoryId.toString,
       groupCompany,
       edmTrade.comments,
@@ -177,7 +176,7 @@ class TradeConverter(refData : TitanTacticalRefData,
     val costs : List[Costs] = Nil // todo
 
     if (edmTrade.submitted == null) {
-      println("NULL DATE  " + edmTrade.titanId)
+      println("NULL DATE  " + edmTrade.identifier)
     }
 
     Trade(
@@ -240,10 +239,10 @@ case class TitanTradeAttributes(
 }
 
 object TitanTradeAttributes{
-  def errorAttributes(edmAssignment : EDMAssignment, edmTrade : Option[EDMPhysicalTrade]) = {
+  def errorAttributes(edmAssignment : Assignment, edmTrade : Option[EDMPhysicalTrade]) = {
     val dummyDate = Day(1980, 1, 1)
     val titanTradeID = edmTrade match {
-      case Some(trade) => trade.titanId.value
+      case Some(trade) => trade.identifier.value
       case None => "Unknown"
     }
 
@@ -273,9 +272,9 @@ object TitanTradeAttributes{
  * logistics service interface
  */
 object LogisticsServices {
-  type EdmAssignmentServiceWithGetAllAssignments = EdmAssignmentService with Object { def getAllAssignments() : List[EDMAssignment] }
+  type EdmAssignmentServiceWithGetAllAssignments = EdmAssignmentService with Object { def getAllAssignments() : List[Assignment] }
   type EdmInventoryServiceWithGetAllInventory = EdmInventoryService with Object {
-    def getAllInventoryLeaves() : List[EDMInventoryItem]
+    def getAllInventoryLeaves() : List[InventoryItem]
     def getAllInventory() : LogisticsInventoryResponse
   }
 }

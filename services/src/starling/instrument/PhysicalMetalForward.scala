@@ -5,30 +5,29 @@ import starling.quantity.Quantity
 import starling.curves.Environment
 import starling.daterange.Day
 import com.trafigura.tradinghub.support.GUID
-import com.trafigura.tradecapture.internal.refinedmetal.{Market => EDMMarket, Metal => EDMMetal}
+import com.trafigura.trademgmt.internal.refinedmetal.{Market => EDMMarket, Metal => EDMMetal}
 import starling.titan.{EDMPricingSpecConverter, EDMConversions}
 import starling.titan.EDMConversions._
-import com.trafigura.edm.materialspecification.CommoditySpec
-import com.trafigura.edm.trades.{Trade => EDMTrade, PhysicalTrade => EDMPhysicalTrade}
-import com.trafigura.edm.physicaltradespecs.PhysicalTradeQuota
+import com.trafigura.edm.trademgmt.materialspecification.CommoditySpec
+import com.trafigura.edm.trademgmt.trades.{Trade => EDMTrade, PhysicalTrade => EDMPhysicalTrade}
+import com.trafigura.edm.trademgmt.physicaltradespecs.PhysicalTradeQuota
 import java.lang.Exception
 import EDMConversions._
 import starling.utils.Log
-import com.trafigura.edm.shared.types.{TitanId, Date, Quantity => EDMQuantity}
+import com.trafigura.edm.common.units.{TitanId, Date, Quantity => EDMQuantity}
 import com.trafigura.edm.logistics.inventory._
 import com.trafigura.services.valuation._
-import com.trafigura.services.TitanSerializableQuantity
 
 
 /**
  * Represents a logics inventory (+ associated assignments) and the rules around how to get quanties depending on state and direction
  */
-case class Inventory(item : EDMInventoryItem) {
+case class Inventory(item : InventoryItem) {
 
   val receivedQuantity : Option[Quantity] = {
     item.status match {
-      case ExpectedEDMInventoryItemStatus => None
-      case SplitEDMInventoryItemStatus | CancelledEDMInventoryItemStatus => throw new Exception("Unexpected inventory status " + item.status)
+      case ExpectedInventoryItemStatus => None
+      case SplitInventoryItemStatus | CancelledInventoryItemStatus => throw new Exception("Unexpected inventory status " + item.status)
       case _ => Some(item.purchaseAssignment.quantity)
     }
   }
@@ -42,7 +41,7 @@ case class Inventory(item : EDMInventoryItem) {
   def currentQuantity = item.quantity
 }
 
-case class PhysicalMetalAssignment(assignment : EDMAssignment, inventory : Inventory, pricingSpec : TitanPricingSpec, benchmarkPricingSpec : TitanPricingSpec){
+case class PhysicalMetalAssignment(assignment : Assignment, inventory : Inventory, pricingSpec : TitanPricingSpec, benchmarkPricingSpec : TitanPricingSpec){
   val assignmentQuantity: Quantity = inventory.assignmentQuantity
   val isPurchase = PhysicalMetalForward.isPurchase(assignment.direction)
   val assignmentID: String = assignment.oid.contents.toString
@@ -146,7 +145,7 @@ case class PhysicalMetalQuota(
     allocatedAssignments.map{a => fromTitanQuantity(a.assignmentQuantity)}.sum
   }
 
-  private def makeAssignment(a : EDMAssignment, i : Inventory) = PhysicalMetalAssignment(a, i, contractPricingSpec, benchmarkPricingSpec)
+  private def makeAssignment(a : Assignment, i : Inventory) = PhysicalMetalAssignment(a, i, contractPricingSpec, benchmarkPricingSpec)
   private def allocatedAssignments : List[PhysicalMetalAssignment] = {
     if (isPurchase) {
       // return purchase assignments that have been allocated to a corresponding sales assignment via the assigned inventory
@@ -222,7 +221,7 @@ case class PhysicalMetalQuota(
 
 object PhysicalMetalForward extends Log {
 
-  private def getTradeId(t : EDMPhysicalTrade) : String = Option(t.titanId).map(_.value).getOrElse("<null>")
+  private def getTradeId(t : EDMPhysicalTrade) : String = Option(t.identifier).map(_.value).getOrElse("<null>")
 
   // **********
   // very temporary, until we merge from master (with logistics updates)
@@ -243,8 +242,8 @@ object PhysicalMetalForward extends Log {
   def apply(
             exchangesByID : Map[String, EDMMarket],
             edmMetalByGUID : Map[GUID, EDMMetal],
-            inventoryByQuotaID : Map[TitanId, List[EDMInventoryItem]] = Map(),
-            logisticsQuotaByQuotaID : Map[TitanId, EDMLogisticsQuota] = Map())
+            inventoryByQuotaID : Map[TitanId, List[InventoryItem]] = Map(),
+            logisticsQuotaByQuotaID : Map[TitanId, LogisticsQuota] = Map())
             (trade : EDMPhysicalTrade) : PhysicalMetalForward = {
 
     try {
@@ -269,10 +268,10 @@ object PhysicalMetalForward extends Log {
             if (isPurchaseTrade)
               assert(inventoryItems.size > 0, "Purchase quota %s with no logistics inventory".format(detail.identifier.value))
             
-            //def getLogisticsQuota(quotaName : String) : Option[EDMLogisticsQuota] = inventory.associatedQuota.find(_.quotaName == detail.quotaName)
-            //val logisticsQuota : Option[EDMLogisticsQuota] = getLogisticsQuota(details.quotaName)
+            //def getLogisticsQuota(quotaName : String) : Option[LogisticsQuota] = inventory.associatedQuota.find(_.quotaName == detail.quotaName)
+            //val logisticsQuota : Option[LogisticsQuota] = getLogisticsQuota(details.quotaName)
             
-            val logisticsQuota : Option[EDMLogisticsQuota] = logisticsQuotaByQuotaID.get(detail.identifier)
+            val logisticsQuota : Option[LogisticsQuota] = logisticsQuotaByQuotaID.get(detail.identifier)
             
             val isFullyAllocated = logisticsQuota.map(_.fullyAllocated).getOrElse(false)
 
@@ -422,14 +421,14 @@ object PhysicalMetalAssignmentForward extends Log {
   def apply(exchangesByID : Map[String, EDMMarket],
             edmMetalByGUID : Map[GUID, EDMMetal],
             quotaNameToQuotaMap : Map[String, PhysicalTradeQuota])
-            (inventory : EDMInventoryItem) : PhysicalMetalAssignmentForward = {
+            (inventory : InventoryItem) : PhysicalMetalAssignmentForward = {
     try {
       val quotaMap : Map[String, PhysicalTradeQuota] = quotaNameToQuotaMap.withDefault(k => throw new Exception("Missing key '%s' for quota lookup".format(k)))
       val purchaseQuota = quotaMap(inventory.purchaseAssignment.quotaName)
       val edmPurchasePricingSpec = purchaseQuota.detail.pricingSpec
       val edmSalePricingSpec = inventory.salesAssignment match {
         case null => edmPurchasePricingSpec
-        case salesAssignment : EDMAssignment => {
+        case salesAssignment : Assignment => {
           quotaMap(salesAssignment.quotaName).detail.pricingSpec
         }
       }
@@ -465,7 +464,7 @@ object PhysicalMetalAssignmentForward extends Log {
             edmMetalByGUID : Map[GUID, EDMMetal],
             quotaNameToQuotaMap : Map[String, PhysicalTradeQuota],
             env : Environment, snapshotID : String)
-            (inventory : EDMInventoryItem) : Either[String, List[CostsAndIncomeInventoryValuation]] =  {
+            (inventory : InventoryItem) : Either[String, List[CostsAndIncomeInventoryValuation]] =  {
 
     try {
       val forward = PhysicalMetalAssignmentForward(exchangesByID, edmMetalByGUID, quotaNameToQuotaMap)(inventory)
@@ -477,7 +476,7 @@ object PhysicalMetalAssignmentForward extends Log {
   }
 }
 
-case class PhysicalMetalAssignmentForward(id : String, inventoryItem : EDMInventoryItem, quota : PhysicalMetalQuota) {
+case class PhysicalMetalAssignmentForward(id : String, inventoryItem : InventoryItem, quota : PhysicalMetalQuota) {
 
   def costsAndIncomeAssignmentValueBreakdown(env : Environment, snapshotId : String) : List[CostsAndIncomeInventoryValuation] = {
     val purchaseQty = fromTitanQuantity(inventoryItem.purchaseAssignment.quantity)
@@ -499,7 +498,7 @@ case class PhysicalMetalAssignmentForward(id : String, inventoryItem : EDMInvent
       benchmarkPremium = Quantity.NULL,
       freightParity = Quantity.NULL,
       purchaseAssignmentID = inventoryItem.purchaseAssignment.oid.contents.toString,
-      saleAssignmentID = inventoryItem.salesAssignment match { case null => None; case salesAssignment : EDMAssignment => Some(salesAssignment.oid.contents.toString) },
+      saleAssignmentID = inventoryItem.salesAssignment match { case null => None; case salesAssignment : Assignment => Some(salesAssignment.oid.contents.toString) },
       purchaseQuantity = toTitanSerializableQuantity(purchaseQty),
       saleQuantity = toTitanSerializableQuantity(saleQty))
     )

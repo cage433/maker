@@ -1,6 +1,6 @@
 # This is the Permission service data model as used for Release 1 of RMET
 
-in_namespace('TradeCapture.Internal.PermissionService') {
+in_namespace('TradeMgmt.Internal.Permission') {
 
   # Unique User identifier (e.g. AD SID)
   define('UserId') {
@@ -53,20 +53,20 @@ in_namespace('TradeCapture.Internal.PermissionService') {
   # ideally the binding-gen dsl would support this but it needs implementing
   define('UserRoles') {
     field 'oid', :integer, :identifier => true
-    field 'user', :integer_key, :references => 'TradeCapture.Internal.PermissionService.User(oid)'
-    field 'role', :integer_key, :references => 'TradeCapture.Internal.PermissionService.Role(oid)'
+    field 'user', :integer_key, :references => 'TradeMgmt.Internal.Permission.User(oid)'
+    field 'role', :integer_key, :references => 'TradeMgmt.Internal.Permission.Role(oid)'
   }
 
   define('GroupRoles') {
     field 'oid', :integer, :identifier => true
-    field 'group', :integer_key, :references => 'TradeCapture.Internal.PermissionService.Group(oid)'
-    field 'role', :integer_key, :references => 'TradeCapture.Internal.PermissionService.Role(oid)'
+    field 'group', :integer_key, :references => 'TradeMgmt.Internal.Permission.Group(oid)'
+    field 'role', :integer_key, :references => 'TradeMgmt.Internal.Permission.Role(oid)'
   }
 
   define('UserGroups') {
     field 'oid', :integer, :identifier => true
-    field 'user', :integer_key, :references => 'TradeCapture.Internal.PermissionService.User(oid)'
-    field 'group', :integer_key, :references => 'TradeCapture.Internal.PermissionService.Group(oid)'
+    field 'user', :integer_key, :references => 'TradeMgmt.Internal.Permission.User(oid)'
+    field 'group', :integer_key, :references => 'TradeMgmt.Internal.Permission.Group(oid)'
   }
 
   # permission entity (permission name and oid)
@@ -78,8 +78,8 @@ in_namespace('TradeCapture.Internal.PermissionService') {
   # permission <-> role association
   define('PermissionRole') {
     field 'oid', :integer, :identifier => true
-    field 'permission', :integer # :integer_key , :references => 'TradeCapture.Internal.PermissionService.Permission(oid)'
-    field 'role', :integer_key, :references => 'TradeCapture.Internal.PermissionService.Role(oid)'
+    field 'permission', :integer # :integer_key , :references => 'TradeMgmt.Internal.Permission.Permission(oid)'
+    field 'role', :integer_key, :references => 'TradeMgmt.Internal.Permission.Role(oid)'
   }
   
     define('TrafficOperatorAndTradersForGC') {

@@ -6,7 +6,7 @@ in_namespace('EDM') {
     define('UOM', :abstract => true) {
       field 'oid',                      :integer, :identifier => true
     }
-    define('FundamentalUOM', :extends => 'EDM.shared.types.UOM') {
+    define('FundamentalUOM', :extends => 'EDM.Common.Units.UOM') {
       field 'name', :string
     }
     define('Currency', :extends => 'FundamentalUOM') {
@@ -16,7 +16,7 @@ in_namespace('EDM') {
       field 'exponent', :integer
       field 'fundamental', :'FundamentalUOM'
     }
-    define('CompoundUOM', :extends => 'EDM.shared.types.UOM') {
+    define('CompoundUOM', :extends => 'EDM.Common.Units.UOM') {
       field 'components', :list, :element_type => 'UnitComponent'
     }
 
@@ -26,16 +26,16 @@ in_namespace('EDM') {
     #    - so further reconciliation will be needed here in the future)
     define('EDM_Quantity') {
       field 'amount',                   :real, :optional => true
-      field 'currency',                 :integer_key, :optional => true, :references => 'TradeCapture.Internal.RefinedMetal.Currency(oid)' # 'Currency'
-      field 'uom',                      :integer_key, :optional => true, :references => 'TradeCapture.Internal.RefinedMetal.UOM(oid)'
+      field 'currency',                 :integer_key, :optional => true, :references => 'TradeMgmt.Internal.RefinedMetal.Currency(oid)' # 'Currency'
+      field 'uom',                      :integer_key, :optional => true, :references => 'TradeMgmt.Internal.RefinedMetal.UOM(oid)'
     }
     define('EQuantity') {
-      field 'uom',                      :integer_key, :optional => true, :references => 'TradeCapture.Internal.RefinedMetal.UOM(oid)'
+      field 'uom',                      :integer_key, :optional => true, :references => 'TradeMgmt.Internal.RefinedMetal.UOM(oid)'
       field 'amount',                   :real, :optional => true
     }
     define('Quantity') {
       field 'amount',                   :real, :optional => true
-      field 'uom',                      :'EDM.shared.types.CompoundUOM', :optional => true
+      field 'uom',                      :'EDM.Common.Units.CompoundUOM', :optional => true
     }
 
     # EDM has a more comprehensive date model, simple minimal daterange defined here initially

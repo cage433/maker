@@ -1,6 +1,6 @@
 #// This is the Refined metal trade service interface
 
-in_namespace('TradeCapture.Internal.RefinedMetalTradeService') {
+in_namespace('TradeMgmt.Internal.RefinedMetalTrade') {
   service('CaptureTrades') {
 
     operation('Update', :returns => :RefinedMetalTradeSubmissionResult) {

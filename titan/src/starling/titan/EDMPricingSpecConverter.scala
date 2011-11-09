@@ -1,9 +1,9 @@
 package starling.titan
 
 import starling.daterange.Day
-import com.trafigura.edm.physicaltradespecs.{PricingSpecification, FixedPricingSpecification, MonthAveragePricingSpecification, PartialAveragePricingSpecification,OptionalPricingSpecification,WeightedPricingSpecification,UnknownPricingSpecification => UNKPricingSpecification}
-import com.trafigura.edm.physicaltradespecs.{CashAveragePricingSpecificationIndex, ThreeMonthAveragePricingSpecificationIndex, LowestOfFourAveragePricingSpecificationIndex, AverageOfFourAveragePricingSpecificationIndex, MaxSettlementAveragePricingSpecificationIndex, CashUnknownPricingSpecificationIndex, ThreeMonthUnknownPricingSpecificationIndex, LowestOfFourUnknownPricingSpecificationIndex, AverageOfFourUnknownPricingSpecificationIndex, MaxSettlementUnknownPricingSpecificationIndex, AveragePricingSpecificationIndexEnum, UnknownPricingSpecificationIndexEnum, PartialAverageDayQuantity}
-import com.trafigura.tradecapture.internal.refinedmetal.{Metal, Market}
+import com.trafigura.edm.trademgmt.physicaltradespecs.{PricingSpecification, FixedPricingSpecification, MonthAveragePricingSpecification, PartialAveragePricingSpecification,OptionalPricingSpecification,WeightedPricingSpecification,UnknownPricingSpecification => UNKPricingSpecification}
+import com.trafigura.edm.trademgmt.physicaltradespecs.{CashAveragePricingSpecificationIndex, ThreeMonthAveragePricingSpecificationIndex, LowestOfFourAveragePricingSpecificationIndex, AverageOfFourAveragePricingSpecificationIndex, MaxSettlementAveragePricingSpecificationIndex, CashUnknownPricingSpecificationIndex, ThreeMonthUnknownPricingSpecificationIndex, LowestOfFourUnknownPricingSpecificationIndex, AverageOfFourUnknownPricingSpecificationIndex, MaxSettlementUnknownPricingSpecificationIndex, AveragePricingSpecificationIndexEnum, UnknownPricingSpecificationIndexEnum, PartialAverageDayQuantity}
+import com.trafigura.trademgmt.internal.refinedmetal.{Metal, Market}
 import starling.instrument._
 import physical._
 import starling.quantity.{UOM, Quantity}
@@ -73,10 +73,9 @@ case class EDMPricingSpecConverter(metal : Metal, exchanges : String => Market) 
           )
         }
         case spec : PartialAveragePricingSpecification => {
-          val days = spec.dayQtyMap.map{dq : PartialAverageDayQuantity => Day.fromJodaDate(dq.date)}.sortWith(_<_)
           AveragePricingSpec(
             getIndex(spec.market, spec.index),
-            DateRange(days.head, days.last),
+            DateRange(Day.fromJodaDate(spec.firstAvgDate), Day.fromJodaDate(spec.lastAvgDate)),
             spec.premium
           )
         }
