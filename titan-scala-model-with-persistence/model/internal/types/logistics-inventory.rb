@@ -14,7 +14,7 @@ in_namespace('Internal.Logistics.Inventory') {
     field 'metalId',                    :integer        # :references => 'Metal(oid)'
     field 'brand',                      :string
     field 'quality',                    'Quality'
-    field 'quantity',                   'TradeCapture.Internal.RefinedMetal.Quantity'
+    field 'quantity',                   'TradeMgmt.Internal.RefinedMetal.Quantity'
     field 'receiptDate',                :datetime, :optional => true
     field 'expectedReceiptDate',        :date, :optional => true
     field 'status',                     :enum, :enumerated => ['Expected', 'Split', 'Received', 'InTransit', 'Confirmed', 'Delivered', 'Cancelled']
@@ -38,7 +38,7 @@ in_namespace('Internal.Logistics.Inventory') {
 
   define('InventoryWeight') {
     field 'inventoryId',                :integer_key, :references => 'InventoryItem(inventoryId)'
-    field 'quantity',                   'TradeCapture.Internal.RefinedMetal.Quantity'
+    field 'quantity',                   'TradeMgmt.Internal.RefinedMetal.Quantity'
   }
 
   define('LogisticsEvent', :abstract => true) {
@@ -66,11 +66,11 @@ in_namespace('Internal.Logistics.Inventory') {
   }
 
   define('QuantityAttribute', :extends => 'InventoryAttribute') {
-    field 'quantity',                   'TradeCapture.Internal.RefinedMetal.Quantity'
+    field 'quantity',                   'TradeMgmt.Internal.RefinedMetal.Quantity'
   }
 
   define('GainLossAttribute', :extends => 'InventoryAttribute') {
-    field 'quantity',                   'TradeCapture.Internal.RefinedMetal.Quantity'
+    field 'quantity',                   'TradeMgmt.Internal.RefinedMetal.Quantity'
   }
 
   define('QualityAttribute',  :extends => 'InventoryAttribute') {

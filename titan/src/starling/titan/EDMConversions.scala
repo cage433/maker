@@ -3,7 +3,7 @@ package starling.titan
 import starling.quantity.UOMSymbol._
 import starling.utils.ImplicitConversions._
 import starling.quantity.{UOMSymbol, Percentage, UOM, Quantity}
-import com.trafigura.edm.shared.types.{Currency => TitanCurrency, Date => TitanDate,
+import com.trafigura.edm.common.units.{Currency => TitanCurrency, Date => TitanDate,
                                        Percentage => TitanPercentage, Quantity => TitanQuantity, EQuantity,
                                        CompoundUOM, UnitComponent, FundamentalUOM}
 import com.trafigura.services._

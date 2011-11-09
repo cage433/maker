@@ -1,4 +1,4 @@
-in_namespace('TradeCapture.Internal.TradeDocumentService') {
+in_namespace('TradeMgmt.Internal.TradeDocument') {
   service('TradeDocumentService') {
 
     # get doc params in the required lang / generate a list of missing translations

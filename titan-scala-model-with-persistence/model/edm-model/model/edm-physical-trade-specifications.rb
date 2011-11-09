@@ -1,4 +1,4 @@
-in_namespace('EDM.PhysicalTradeSpecs') {
+in_namespace('EDM.TradeMgmt.PhysicalTradeSpecs') {
 
   define('DeliveryLocation') {
     field 'oid',                            :integer, :identifier => true
@@ -9,7 +9,7 @@ in_namespace('EDM.PhysicalTradeSpecs') {
 
   define('DeliverySpec') {
     field 'oid',                            :integer, :identifier => true
-    field 'quantity',                        :'EDM.shared.types.Quantity'
+    field 'quantity',                        :'EDM.Common.Units.Quantity'
     field 'tolerance',                       :'Tolerance'
     field 'schedule',                        :'DateSpec'
     field 'deliveryLocations',               :list, :element_type => 'DeliveryLocation'
@@ -44,7 +44,7 @@ in_namespace('EDM.PhysicalTradeSpecs') {
   }
 
   define('PhysicalTradeExecution', :extends => 'Execution') {
-    field 'quota',                          :'EDM.PhysicalTradeSpecs.EDMQuota'
+    field 'quota',                          :'EDM.TradeMgmt.PhysicalTradeSpecs.EDMQuota'
   }
   
   define('PhysicalTradeSpec', :extends => 'TradeSpec') {
@@ -54,11 +54,11 @@ in_namespace('EDM.PhysicalTradeSpecs') {
   }
 }
 
-in_namespace('EDM.Trades') {
-    define('PhysicalTrade', :extends => 'EDM.Trades.OTCTrade') {
+in_namespace('EDM.TradeMgmt.Trades') {
+    define('PhysicalTrade', :extends => 'EDM.TradeMgmt.Trades.OTCTrade') {
       constant 'NEPTUNE_PREFIX', 'NEPTUNE:'
       field 'id',                               :string
-      field 'quotas',                           :list, :element_type => 'EDM.PhysicalTradeSpecs.EDMQuota' #1..*
+      field 'quotas',                           :list, :element_type => 'EDM.TradeMgmt.PhysicalTradeSpecs.EDMQuota' #1..*
     }
 
     # used internally by the trade service to record metadata
@@ -71,6 +71,6 @@ in_namespace('EDM.Trades') {
 #      field 'oid',                               :integer, :identifier => true
       field 'tradeOid',                          :integer
       field 'source',                            :enum, :enumerated => ['Neptune', 'Titan'] 
-      field 'quotas',                            :list, :element_type => 'EDM.Trades.QuotaMetadata'
+      field 'quotas',                            :list, :element_type => 'EDM.TradeMgmt.Trades.QuotaMetadata'
     }
 }

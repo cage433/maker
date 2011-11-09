@@ -2,7 +2,7 @@ in_namespace('Internal.Logistics.Allocation') {
   service('LogisticsAllocationService') {
     operation('Allocate', :returns => :LogisticsAllocateResult) {
       parameter 'inventoryId', :integer
-      parameter 'quantity',           'TradeCapture.Internal.RefinedMetal.Quantity'
+      parameter 'quantity',           'TradeMgmt.Internal.RefinedMetal.Quantity'
       parameter 'quotaId',   :integer
       parameter 'fullyAllocated',   :boolean
       parameter 'confirmed',   :boolean

@@ -1,5 +1,5 @@
 # this is the model as used for Release 1 of RMET
-in_namespace('TradeCapture.Internal.RefinedMetal') {
+in_namespace('TradeMgmt.Internal.RefinedMetal') {
 
   define('UOM') {
     constant 'LBS', 'LBS'
@@ -300,6 +300,6 @@ in_namespace('TradeCapture.Internal.RefinedMetal') {
          field 'qptypes',  :list, :element_type => 'QPType'
          field 'directions',  :list, :element_type => 'Direction'
          field 'marketLotSizes',  :list, :element_type => 'MarketLotSize'
-         field 'DocumentTypes',  :list, :element_type => 'TradeCapture.Internal.RefinedMetal.DocumentType'
+         field 'DocumentTypes',  :list, :element_type => 'TradeMgmt.Internal.RefinedMetal.DocumentType'
   }
 }
