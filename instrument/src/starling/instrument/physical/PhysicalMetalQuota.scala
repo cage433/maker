@@ -60,7 +60,7 @@ case class PhysicalMetalQuota(
                 case Left(errorMessage) => Left(errorMessage)
               }
             }
-            (valueSpec(s.contractPricingSpec), valueSpec(s.benchmarkPricingSpec(env)))
+            (valueSpec(s.contractPricingSpec), valueSpec(s.benchmarkPricingSpec))
           }
           case None => (Right(None), Right(None))
         }

@@ -10,11 +10,6 @@ trait TitanPricingSpec {
 
   def priceExcludingVAT(env : Environment) : Quantity
   def priceIncludingVAT(env : Environment) : Option[Quantity] 
-  //if (isLiableToShanghaiVAT)
-  //Some(priceExcludingVAT(env) * (Quantity(100, PERCENT) + env.shanghaiVATRate))
-  //else
-  //None
-  //}
   def settlementDay(marketDay: DayAndTime): Day
 
   def premiumCCY: Option[UOM] = {
@@ -28,13 +23,18 @@ trait TitanPricingSpec {
   assert(valuationCCY != null, "Valuation currency is null")
 
   protected def inValuationCurrency(env : Environment, p : Quantity) = {
-    val namedEnv = env.withNaming()
-    val baseCurrency = p.numeratorUOM.inBaseCurrency
-    val priceInBaseCurrency = p inUOM (baseCurrency / p.denominatorUOM)
-    val fxRate = namedEnv.forwardFXRate(valuationCCY, priceInBaseCurrency.numeratorUOM, settlementDay(namedEnv.marketDay)) 
+    if (p == Quantity.NULL)
+      p
+    else {
+      val namedEnv = env.withNaming()
+      val baseCurrency = p.numeratorUOM.inBaseCurrency
+      val priceInBaseCurrency = p inUOM (baseCurrency / p.denominatorUOM)
+      val fxRate = namedEnv.forwardFXRate(valuationCCY, priceInBaseCurrency.numeratorUOM, settlementDay(namedEnv.marketDay)) 
 
-    priceInBaseCurrency * fxRate
+      priceInBaseCurrency * fxRate
+    }
   }
+
   def addPremiumConvertingIfNecessary(env: Environment, price: Quantity, premium: Quantity): Quantity = {
     val priceInValuationCurrency = inValuationCurrency(env, price)
 
@@ -82,6 +82,7 @@ trait TitanPricingSpec {
       price
   }
   def expiryDay: Day
+  def futuresMarket : FuturesMarket 
 }
 
 object TitanPricingSpec {
@@ -148,11 +149,12 @@ case class AveragePricingSpec(index: IndexWithDailyPrices, period: DateRange,
       None
     }
   }
+  def futuresMarket : FuturesMarket = index.market.asInstanceOf[FuturesMarket]
 }
 
 case class InvalidTitanPricingSpecException(msg: String) extends Exception(msg)
 
-case class FixedPricingSpec(settDay: Day, pricesByFraction: List[(Double, Quantity)],
+case class FixedPricingSpec(futuresMarket : FuturesMarket, settDay: Day, pricesByFraction: List[(Double, Quantity)],
                             premium: Quantity, valuationCCY : UOM) extends TitanPricingSpec {
 
   def settlementDay(marketDay: DayAndTime) = settDay
@@ -255,6 +257,8 @@ case class UnknownPricingSpecification(
   def indexOption = Some(index)
 
   def expiryDay = TitanPricingSpec.calcSettlementDay(index, index.observationDays(month).last)
+
+  def futuresMarket : FuturesMarket = index.market.asInstanceOf[FuturesMarket]
 }
 
 

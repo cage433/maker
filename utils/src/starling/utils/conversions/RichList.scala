@@ -61,5 +61,11 @@ trait RichList {
     }
 
     def transform[A1 <: A](pf: PartialFunction[A, A1]): List[A] = list.map(pf.asFunction)
+
+    def uniqueElement(errorMsg : String = "Expected unique element") = list match {
+      case elt :: Nil => elt
+      case Nil => throw new Exception(errorMsg + " - list was empty") 
+      case _ => throw new Exception(errorMsg + " - list had more than one element " + list.take(2) + " ....") 
+    }
   }
 }

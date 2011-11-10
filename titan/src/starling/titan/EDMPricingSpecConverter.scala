@@ -10,6 +10,8 @@ import starling.quantity.{UOM, Quantity}
 import starling.titan.EDMConversions._
 import starling.daterange.DateRange
 import starling.market.IndexWithDailyPrices
+import starling.utils.ImplicitConversions._
+import starling.market.FuturesMarket
 
 
 trait TitanIndexName {
@@ -65,6 +67,9 @@ case class EDMPricingSpecConverter(metal : Metal, exchanges : String => Market) 
   def getIndex(exchangeID : String, indexName : TitanIndexName) : IndexWithDailyPrices = {
     RefinedTacticalRefDataConversions.index(exchanges(exchangeID), metal, indexName)
   }
+  def getFuturesMarket(exchangeID : String) : FuturesMarket = {
+    RefinedTacticalRefDataConversions.market(exchanges(exchangeID), metal)
+  }
 
   def fromEdmPricingSpec(deliveryDay : Day, deliveryQuantity : Quantity, edmPricingSpec : PricingSpecification) : TitanPricingSpec = {
     Option(edmPricingSpec) match {
@@ -87,25 +92,9 @@ case class EDMPricingSpecConverter(metal : Metal, exchanges : String => Market) 
         }
         case spec : OptionalPricingSpecification => {
           throw new Exception("Optional pricing specs no currently supported")
-          //OptionalPricingSpec(
-            //spec.choices.map(fromEdmPricingSpec(deliveryDay, deliveryQuantity, _)),
-            //Day.fromJodaDate(spec.declarationBy),
-            //if (spec.chosenSpec == null)
-            //None
-            //else
-            //Some(fromEdmPricingSpec(deliveryDay, deliveryQuantity, spec.chosenSpec)),
-            //spec.currency
-            //)
         }
         case spec : WeightedPricingSpecification => {
           throw new Exception("Weighted pricing specs no currently supported")
-          //WeightedPricingSpec(
-            //spec.wtdSpecs.map{
-              //case weightedSpec =>
-              //(weightedSpec.weight, fromEdmPricingSpec(deliveryDay, deliveryQuantity * weightedSpec.weight, weightedSpec.pricingSpec))
-              //},
-              //spec.currency
-              //)
         }
         case spec : UNKPricingSpecification => {
           val qpMonth = Day.fromJodaDate(spec.qpMonth).containingMonth
@@ -126,9 +115,12 @@ case class EDMPricingSpecConverter(metal : Metal, exchanges : String => Market) 
         }
         case spec : FixedPricingSpecification => {
           assert(spec.comps.nonEmpty, "Fixed pricing spec with no fixed prices")
+          val exchangeName = spec.hedges.map(_.market).uniqueElement("Hedges should all have the same exchange")
+          val market = getFuturesMarket(exchangeName)
           // Reasonable guess - The settlement day should live in trade management but doesn't yet
           val settlementDay = spec.comps.flatMap{comp => if (comp.date == null) None else Some(Day.fromLocalDate(comp.date))}.sortWith(_>_).headOption.getOrElse(deliveryDay).addWeekdays(2)
           FixedPricingSpec(
+            market,
             settlementDay,
             spec.comps.map{
               case comp => {
