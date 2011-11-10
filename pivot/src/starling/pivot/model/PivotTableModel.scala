@@ -384,7 +384,7 @@ object PivotTableModel {
   }
 
   private def allEditableInfo(fieldDetailsLookup:Map[Field,FieldDetails], editPivot0:Option[EditPivot],
-                              pivotState:PivotFieldsState):AllEditableInfo = {
+                              pivotState:PivotFieldsState, pivotResult:PivotResult):AllEditableInfo = {
     editPivot0 match {
       case None => {
         val em:Set[Field] = Set.empty
@@ -396,7 +396,7 @@ object PivotTableModel {
         val keyFieldsToParser = editPivot.editableToKeyFields.values.toSet.flatten.map(f => f -> fieldDetailsLookup(f).parser).toMap
 
         val extraLine = editPivot.editableToKeyFields.exists{case (editableField,kFields) => {
-          pivotState.columns.contains(editableField) && keyFieldsInColumnArea(kFields.toSet, pivotState).isEmpty
+          pivotState.columns.contains(editableField) && keyFieldsInAStateThatWouldStopAnExtraLineFromAppearing(kFields.toSet, pivotState, pivotResult).isEmpty
         }}
 
         val allEditableMeasures = editPivot.editableToKeyFields.keySet
@@ -709,10 +709,10 @@ object PivotTableModel {
       val then = System.currentTimeMillis
 
       val fieldDetailsLookup = Map() ++ dataSource.fieldDetails.map(fd => fd.field -> fd) + (Field.NullField -> FieldDetails("Null"))
-      val allEditableInfo0 = allEditableInfo(fieldDetailsLookup, dataSource.editable, pivotState)
+      val pivotResult = Log.debugWithTimeGapTop("Data from data source"){dataSource.data(pivotState)}
+      val allEditableInfo0 = allEditableInfo(fieldDetailsLookup, dataSource.editable, pivotState, pivotResult)
       val treeDepths = Map() ++ dataSource.fieldDetails.filter(_.isInstanceOf[TreeFieldDetails]).map(_.field).map(field => field -> pivotState.treeDepths.getOrElse(field, (3, 7)))
 
-      val pivotResult = Log.debugWithTimeGapTop("Data from data source"){dataSource.data(pivotState)}
       val (mainTableBucket, rowAxisRoot, columnAxisRoot, maxDepths) = Log.infoWithTime("Generating bucket"){generateMainData(pivotState, pivotResult, fieldDetailsLookup, treeDepths, allEditableInfo0)}
       val mainTableBucketWithSubtotals = Log.debugWithTimeGapBottom("Adding subtotals"){withSubtotals(mainTableBucket)}
       val compressedMap = compress(mainTableBucketWithSubtotals)
@@ -729,14 +729,21 @@ object PivotTableModel {
     }
   }
 
-  private def keyFieldsInColumnArea(keyFields:Set[Field], pfs:PivotFieldsState): Set[Field] = {
+  private def keyFieldsInAStateThatWouldStopAnExtraLineFromAppearing(keyFields:Set[Field], pfs:PivotFieldsState,
+                                                                     pivotResult:PivotResult): Set[Field] = {
     val filterAreaFieldsMap = Map() ++ pfs.filtersInTheFilterArea
     val keyFieldsNotInRowArea = keyFields.filterNot(pfs.rowFields.contains)
     keyFieldsNotInRowArea.filterNot(f => {
-      filterAreaFieldsMap.contains(f) && (filterAreaFieldsMap(f) match {
-        case SomeSelection(v) if v.size == 1 => true
-        case _ => false
-      })
+      pivotResult.possibleValues.get(f) match {
+        case None => false
+        case Some(l) if l.size == 1 => true
+        case Some(l) => {
+          filterAreaFieldsMap.get(f) match {
+            case Some(SomeSelection(v)) if v.size == 1 => true
+            case _ => false
+          }
+        }
+      }
     })
   }
 

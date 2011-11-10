@@ -38,7 +38,7 @@ class PivotJTableRowModel(helper: PivotJTableModelHelper, var rowHeaderData0:Arr
   private val addedRows0 = new ListBuffer[Array[AxisCell]]
   private val blankCells = rowHeaderData0(0).map(av => {
     val newAV = av.value.copy(value = BlankAddedAxisValueType)
-    av.copy(value = newAV, label = "", collapsible = None)
+    av.copy(value = newAV, label = "", collapsible = None, longLabel = "")
   })
   if (extraLine) {
     addedRows0 += blankCells
@@ -107,7 +107,7 @@ class PivotJTableRowModel(helper: PivotJTableModelHelper, var rowHeaderData0:Arr
   }
 
   private def key(rowIndex:Int, columnIndex:Int): Map[Field, SomeSelection] = {
-    val filterFieldToValues = fieldState.singleValueFilterAreaFilters()
+    val filterFieldToValues = helper.createSingleSelectionForKeyFields()
     val rowFilters = fieldState.rowFilters
     val columnFilters = fieldState.columnFilters
 
@@ -212,7 +212,7 @@ class PivotJTableRowModel(helper: PivotJTableModelHelper, var rowHeaderData0:Arr
       } else {
         overrideMap((rowIndex, columnIndex)) = OverrideDetails(newLabel, EditableCellState.Added)
         newValue.foreach { nv => {
-          val row = initializedBlankRow + (rowHeaderField -> nv)
+          val row = helper.initializedBlankRow + (rowHeaderField -> nv)
           helper.addRowToTables()
           newPivotEdits = newPivotEdits.withAddedRow(row)
         } }
@@ -223,10 +223,6 @@ class PivotJTableRowModel(helper: PivotJTableModelHelper, var rowHeaderData0:Arr
     }
     newPivotEdits
   }
-
-  private def initializedBlankRow() = Row(
-    (Map() ++ (keyFields.map(f => {f → UndefinedValueNew}))) ++ fieldState.singleValueFilterAreaFilters.mapValues(_.values.iterator.next)
-  )
 
   override def setValueAt(value:AnyRef, rowIndex:Int, columnIndex:Int) {
     setValuesAt(List(TableValue(value, rowIndex, columnIndex)), Some(pivotEdits), true)

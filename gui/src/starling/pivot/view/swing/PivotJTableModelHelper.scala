@@ -3,6 +3,7 @@ package starling.pivot.view.swing
 import fieldchoosers.RowComponent
 import starling.quantity.UOM
 import starling.pivot._
+import controller.{TreePivotFilter, PivotTable}
 import javax.swing.table.AbstractTableModel
 import java.awt.{Dimension, Graphics, Component => AWTComp, Color, KeyboardFocusManager}
 import collection.mutable.{ListBuffer, HashMap}
@@ -51,7 +52,7 @@ abstract class PivotJTableModel extends AbstractTableModel {
 }
 
 class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
-                     val editableInfo:Option[EditableInfo],
+                     val pivotTable:PivotTable,
                      val rowHeaderData0X:Array[Array[AxisCell]],
                      var colHeaderData0:Array[Array[AxisCell]],
                      uoms0:Array[UOM],
@@ -60,9 +61,10 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
                      val fieldState:PivotFieldsState,
                      var extraFormatInfo:ExtraFormatInfo,
                      val pivotEdits:PivotEdits,
-                     val updateEdits:(PivotEdits, PivotTableType) => Unit,
-                     val fieldInfo:FieldInfo) {
+                     val updateEdits:(PivotEdits, PivotTableType) => Unit) {
 
+  val editableInfo:Option[EditableInfo] = pivotTable.editableInfo
+  val fieldInfo:FieldInfo = pivotTable.fieldInfo
   val keyFields = editableInfo.map(_.keyFields).getOrElse(Set())
   val extraLine = editableInfo.fold(_.extraLine, false)
 
@@ -121,8 +123,22 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
     resizeRowHeaderTableColumns
   }
 
-  private def initializedBlankRow = Row(
-    (Map() ++ (keyFields.map(f => {f → UndefinedValueNew}))) ++ fieldState.singleValueFilterAreaFilters.mapValues(_.values.iterator.next)
+  def createSingleSelectionForKeyFields(): Map[Field, SomeSelection] = Map() ++ (keyFields -- fieldState.rowFields.toSet).flatMap(f => {
+    val possibleValues = pivotTable.possibleValues
+    fieldState.filters.find{case (f0,sel) => f == f0} match {
+      case Some((field, selection)) => {
+        selection match {
+          case s@SomeSelection(v) if v.size == 1 => Some((field → s))
+          case AllSelection => Some((field -> SomeSelection(Set(possibleValues(field).singleValue))))
+          case _ => None
+        }
+      }
+      case None => {Some( f -> SomeSelection(Set(possibleValues(f).singleValue)) )}
+    }
+  })
+
+  def initializedBlankRow = Row(
+    (Map() ++ (keyFields.map(f => {f → UndefinedValueNew}))) ++ createSingleSelectionForKeyFields().mapValues(_.values.iterator.next)
   )
 
   val colHeaderTableModel = new PivotJTableModel {
@@ -204,7 +220,7 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
 
   val mainTableModel = new PivotJTableModel {
     private val addedRows0 = new ListBuffer[Array[TableCell]]
-    private val blankCells = data0(0).map(_.copy(state = AddedBlank, text = ""))
+    private val blankCells = data0(0).map(_.copy(state = AddedBlank, text = "", longText = None))
     if (extraLine) {
       addedRows0 += blankCells
     }
@@ -312,7 +328,7 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
       val colHeaderFieldToValues = colHeaderData0.map(_(columnIndex).selection).toMap
         .filterKeysNot{case field => (measureInfo.value.field == field) || (field == Field.NullField)}
 
-      val filterFieldToValues = fieldState.singleValueFilterAreaFilters()
+      val filterFieldToValues = createSingleSelectionForKeyFields()
 
       (rowHeaderFieldToValues ++ colHeaderFieldToValues ++ filterFieldToValues) //& keyFields
     }

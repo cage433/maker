@@ -194,7 +194,7 @@ class PrebuiltMarketDataPivotData(reader: MarketDataReader, marketDataStore: Mar
 
   def editable = editableMarketDataSet.map { editableSet =>
     new EditPivot {
-      private val keyFields = Set(observationDayField.field, observationTimeField.field) +++ marketDataType.keyFields
+      val keyFields = Set(observationDayField.field, observationTimeField.field) +++ marketDataType.keyFields
       private val keyAndValueFields = (keyFields +++ marketDataType.valueFields.toSet)
       def editableToKeyFields = Map() ++ marketDataType.valueFields.map((_ -> keyFields))
       def withEdits(edits:PivotEdits) = new MarketDataPivotTableDataSource(PrebuiltMarketDataPivotData.this, edits)
@@ -306,15 +306,18 @@ class MarketDataPivotTableDataSource(preBuilt:PrebuiltMarketDataPivotData, edits
 
   def data(pfs : PivotFieldsState):PivotResult = {
 
-    val (initialPossibleValues, data) = preBuilt.dataWithoutEdits(pfs)
+    val missingKeyFields = preBuilt.editable.get.keyFields -- pfs.allFieldsUsed.toSet
+    val pfsWithAddedKeyFields = pfs.copy(filters = missingKeyFields.toList.map(f => f -> AllSelection) ::: pfs.filters)
 
-    val filtersUpToFirstMarketDataField = pfs.allFilterPaths.chopUpToFirstNon(preBuilt.inMemoryFields)
+    val (initialPossibleValues, data) = preBuilt.dataWithoutEdits(pfsWithAddedKeyFields)
+
+    val filtersUpToFirstMarketDataField = pfsWithAddedKeyFields.allFilterPaths.chopUpToFirstNon(preBuilt.inMemoryFields)
     val possibleValuesBuilder = new PossibleValuesBuilder(fieldDetails, filtersUpToFirstMarketDataField)
 
     possibleValuesBuilder.init(initialPossibleValues)
 
     val editedData = edits.applyTo(data)
-    val allFields = pfs.allFieldsUsed
+    val allFields = pfsWithAddedKeyFields.allFieldsUsed
 
     val addedRows = edits.newRows.zipWithIndex.map{case (row,index) => {
       val fixedRow = if (marketDataType.marketDataKeyFields.forall(f => row.isDefined(f))) {
@@ -333,7 +336,7 @@ class MarketDataPivotTableDataSource(preBuilt:PrebuiltMarketDataPivotData, edits
 
     val allRows = editedData.map(_.value) ::: addedRows
 
-    val result = UnfilteredPivotTableDataSource.applyFiltersAndCalculatePossibleValues(fieldDetails, allRows, pfs)//.removeAll(filtersUpToFirstMarketDataField.allFields))
+    val result = UnfilteredPivotTableDataSource.applyFiltersAndCalculatePossibleValues(fieldDetails, allRows, pfsWithAddedKeyFields)
 
     PivotResult(result.data, result.possibleValues ++ possibleValuesBuilder.build)
   }
