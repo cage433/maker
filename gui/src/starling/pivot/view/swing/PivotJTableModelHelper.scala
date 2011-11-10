@@ -122,7 +122,7 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
   }
 
   private def initializedBlankRow = Row(
-    (Map() ++ (keyFields.map(f => {f → UndefinedValue}))) ++ fieldState.singleValueFilterAreaFilters
+    (Map() ++ (keyFields.map(f => {f → UndefinedValueNew}))) ++ fieldState.singleValueFilterAreaFilters.mapValues(_.values.iterator.next)
   )
 
   val colHeaderTableModel = new PivotJTableModel {

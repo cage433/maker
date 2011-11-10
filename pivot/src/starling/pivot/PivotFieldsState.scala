@@ -30,7 +30,7 @@ object AllSelection extends Selection with StarlingObject {
   def description = "All"
 }
 case class SomeSelection(values:Set[Any]) extends Selection{
-  def matches(fieldDetails:FieldDetails, value: Any) = fieldDetails.matches(values, value)
+  def matches(fieldDetails:FieldDetails, value: Any) = value == UndefinedValueNew || fieldDetails.matches(values, value)
   def description = values.mkString(", ").replaceLast(", ", ", or ")
 }
 
@@ -66,7 +66,7 @@ case class MeasurePossibleValuesFilter(field:Field) extends PossibleValuesFilter
   def matches(fieldDetails:FieldDetails, value : Any) : Boolean = (value != UndefinedValue)
 }
 case class SelectionPossibleValuesFilter(selection:Selection) extends PossibleValuesFilter {
-  def matches(fieldDetails:FieldDetails, value : Any) : Boolean = value == UndefinedValueNew || selection.matches(fieldDetails, value)
+  def matches(fieldDetails:FieldDetails, value : Any) : Boolean = selection.matches(fieldDetails, value)
 }
 case class FiltersList(filters:List[List[(Field,PossibleValuesFilter)]]) extends Iterable[List[(Field,PossibleValuesFilter)]] {
   private def toFilterSet = filters.flatten.toSet
