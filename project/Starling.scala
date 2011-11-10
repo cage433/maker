@@ -1,3 +1,9 @@
+import _root_.sbt._
+import _root_.sbt._
+import _root_.sbt.IvyActions
+import _root_.sbt.IvySbt
+import _root_.sbt.Logger
+import _root_.sbt.MakePom
 import sbt._
 import Keys._
 import java.io.File
@@ -11,7 +17,7 @@ object StarlingBuild extends Build{
 
   val starlingVersion = {
     val r = System.getProperty("build.number")
-    if (r == null) "0.1" else r
+    if (r == null) "SNAPSHOT" else r
   }
 
   println("")
@@ -55,7 +61,20 @@ object StarlingBuild extends Build{
     shellPrompt  := ShellPrompt.buildShellPrompt
   )
 
+  class OverrideMakePom extends MakePom {
+    override def isValidIDCharacter(c: Char) = true
+  }
+
+  def overrideMakePom(module: IvySbt#Module, configuration: MakePomConfiguration, log: Logger) {
+		import configuration.{allRepositories, moduleInfo, configurations, extra, file, filterRepositories, process}
+		module.withModule(log) { (ivy, md, default) =>
+			(new OverrideMakePom()).write(ivy, md, moduleInfo, configurations, extra, process, filterRepositories, allRepositories, file)
+			log.info("Wrote " + file.getAbsolutePath)
+		}
+	}
+
   lazy val standardSettingsNexus = Defaults.defaultSettings ++ Seq(
+    makePom <<= (ivyModule, makePomConfiguration, streams) map { (module, config, s) => overrideMakePom(module, config, s.log); config.file },
     unmanagedSourceDirectories in Compile <+= baseDirectory(_/"src"),
     unmanagedSourceDirectories in Test <+= baseDirectory(_/"tests"),
     unmanagedResourceDirectories in Test <+= baseDirectory(_/"test-resources"),
@@ -70,14 +89,14 @@ object StarlingBuild extends Build{
     publishSetting,
     resolvers += "Non-Trafigura Public Repositories" at "http://nexus.global.trafigura.com:8081/nexus/content/groups/mirror/",
     resolvers += "trafigura" at "http://nexus.global.trafigura.com:8081/nexus/content/repositories/tooling-releases/",
-    resolvers += "Titan Cross Stream Snapshots" at "http://nexus.global.trafigura.com:8081/nexus/content/repositories/titan-cross-stream-snapshots/",
-    resolvers += "Tooling Snapshots" at "http://nexus.global.trafigura.com:8081/nexus/content/repositories/tooling-snapshots/",
-    resolvers += "Trade Mgmt Releases (Bin Deps)" at "http://nexus.global.trafigura.com:8081/nexus/content/repositories/trademgmt-bindeps-releases/",
-    resolvers += "Trade Mgmt Snapshots (Bin Deps)" at "http://nexus.global.trafigura.com:8081/nexus/content/repositories/trademgmt-bindeps-snapshots/",
-    resolvers += "Logistics Releases (Bin Deps)" at "http://nexus.global.trafigura.com:8081/nexus/content/repositories/logistics-bindeps-releases/",
-    resolvers += "Logistics Snapshots (Bin Deps)" at "http://nexus.global.trafigura.com:8081/nexus/content/repositories/logistics-bindeps-snapshots/",
-    resolvers += "Reference Data Releases (Bin Deps)" at "http://nexus.global.trafigura.com:8081/nexus/content/repositories/referencedata-bindeps-releases/",
-    resolvers += "Reference Data Snapshots (Bin Deps)" at "http://nexus.global.trafigura.com:8081/nexus/content/repositories/referencedata-bindeps-snapshots/",
+    resolvers += "titan-cross-stream-snapshots" at "http://nexus.global.trafigura.com:8081/nexus/content/repositories/titan-cross-stream-snapshots/",
+    resolvers += "tooling-snapshots" at "http://nexus.global.trafigura.com:8081/nexus/content/repositories/tooling-snapshots/",
+    resolvers += "trademgmt-bindeps-releases" at "http://nexus.global.trafigura.com:8081/nexus/content/repositories/trademgmt-bindeps-releases/",
+    resolvers += "trademgmt-bindeps-snapshots" at "http://nexus.global.trafigura.com:8081/nexus/content/repositories/trademgmt-bindeps-snapshots/",
+    resolvers += "logistics-bindeps-releases" at "http://nexus.global.trafigura.com:8081/nexus/content/repositories/logistics-bindeps-releases/",
+    resolvers += "logistics-bindeps-snapshots" at "http://nexus.global.trafigura.com:8081/nexus/content/repositories/logistics-bindeps-snapshots/",
+    resolvers += "referencedata-bindeps-releases" at "http://nexus.global.trafigura.com:8081/nexus/content/repositories/referencedata-bindeps-releases/",
+    resolvers += "referencedata-bindeps-snapshots" at "http://nexus.global.trafigura.com:8081/nexus/content/repositories/referencedata-bindeps-snapshots/",
     organizationName := "Trafigura",
     version := starlingVersion,
     shellPrompt  := ShellPrompt.buildShellPrompt
