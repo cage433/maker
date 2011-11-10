@@ -23,7 +23,7 @@ class TitanPricingSpecTests extends FunSuite with TestMarketTest{
       UnknownPricingSpecification(
         FuturesFrontPeriodIndex(Market.SHANGHAI_COPPER),
         Month(2012, 1),
-        List(UnknownPricingFixation(0.4, Quantity(100, CNY/MT))),
+        List(UnknownPricingFixation(0.4, Quantity(100, USD/MT))),
         Day(2012, 1, 31),
         Quantity(15, GBP/MT),
         EUR

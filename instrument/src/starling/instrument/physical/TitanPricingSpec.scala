@@ -27,7 +27,7 @@ trait TitanPricingSpec {
   def valuationCCY: UOM
   assert(valuationCCY != null, "Valuation currency is null")
 
-  def inValuationCurrency(env : Environment, p : Quantity) = {
+  protected def inValuationCurrency(env : Environment, p : Quantity) = {
     val namedEnv = env.withNaming()
     val baseCurrency = p.numeratorUOM.inBaseCurrency
     val priceInBaseCurrency = p inUOM (baseCurrency / p.denominatorUOM)
@@ -220,7 +220,7 @@ case class UnknownPricingSpecification(
       case (f, i) => f.price.named("Fix_" + i) * f.fraction
     }).named("Fixed")
     val unfixedPayment = (index.fixingOrForwardPrice(env, unfixedPriceDay(env.marketDay)) * unfixedFraction).named("Unfixed")
-    fixedPayment + unfixedPayment
+    inValuationCurrency(env, fixedPayment) + inValuationCurrency(env, unfixedPayment)
   }
 
   def priceExcludingVAT(env: Environment) = {
