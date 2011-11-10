@@ -95,7 +95,9 @@ object IntPivotParser extends PivotParser {
   def parse(text:String, extraFormatInfo:ExtraFormatInfo) = (text.toInt, text)
 }
 object PivotQuantityPivotParser extends PivotParser {
-  def parse(text:String, extraFormatInfo:ExtraFormatInfo) = {
+  def parse(text:String, extraFormatInfo:ExtraFormatInfo) = typedParse(text, extraFormatInfo)
+
+  def typedParse(text: String, extraFormatInfo: ExtraFormatInfo) = {
     val textNoCommas = text.replaceAll(",", "").trim()
     val cleanTextMaybeWithUOM = if (textNoCommas.startsWith("(")) {
       "-" + textNoCommas.replaceAll("\\(", "").replaceAll("\\)", "")

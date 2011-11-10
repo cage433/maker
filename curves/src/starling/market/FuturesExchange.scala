@@ -26,7 +26,6 @@ case class FuturesExchange(name: String, deliveryType: DeliveryType, closeTime:O
   lazy val markets = Market.marketsWithExchange(this)
   lazy val marketsByCommodityName = markets.toMapWithKeys(_.commodity.name.toLowerCase)
   def inferMarketFromCommodity(commodity : Commodity) : Option[FuturesMarket] = futuresMarkets.filter(_.exchange == this).find(_.commodity == commodity)
-  def limName = name
 }
 
 

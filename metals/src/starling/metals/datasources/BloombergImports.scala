@@ -11,10 +11,10 @@ import starling.market.{LimSymbol, FuturesMarket}
 
 case class BloombergImports(imports: List[BloombergImport]) {
   def matches(folder: String, market: FuturesMarket): Boolean = market.limSymbol.fold(matches(folder, market, _), false) ||
-    matchesLimSymbol(folder, "TRAF.%s.%s" % (market.exchange.limName, market.commodity.name.toUpperCase))
+    matchesLimSymbol(folder, "TRAF.%s.%s" % (market.exchange.name, market.commodity.name.toUpperCase))
 
   def matches(folder: String, market: FuturesMarket, symbol: LimSymbol): Boolean =
-    matchesLimSymbol(folder, "TRAF.%s.%s" % (market.exchange.limName, symbol.name)) || containsLimSymbol(folder, symbol.name)
+    matchesLimSymbol(folder, "TRAF.%s.%s" % (market.exchange.name, symbol.name)) || containsLimSymbol(folder, symbol.name)
 
   def containsLimSymbol(folder: String, symbol: String) = forFolder(folder).exists(_.limSymbol == Some(symbol))
   def matchesLimSymbol(folder: String, pattern: String) = forFolder(folder).exists(_.matchesLimSymbol(pattern))

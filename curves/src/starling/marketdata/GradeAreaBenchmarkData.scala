@@ -1,12 +1,12 @@
 package starling.marketdata
 
-import starling.quantity.Quantity
-import starling.market.Commodity
 import starling.pivot._
 import pivotparsers.{SpecifiedValuesParser, DayPivotParser}
 import scalaz.Scalaz._
 import starling.utils.ImplicitConversions._
 import starling.daterange.Day
+import starling.quantity.{UOM, Quantity}
+import starling.market.{FuturesMarket, NeptuneCommodity, Commodity}
 
 case class AreaCode(code:String) {
   override def toString = code
@@ -55,7 +55,7 @@ class GradeAreaBenchmarkDataType(referenceData: ReferenceDataLookup = ReferenceD
   val gradeCodeField = FieldDetails.coded("Grade", referenceData.grades.values)
   val effectiveFromField = FieldDetails("Effective From", DayPivotParser)
   val benchmarkPriceField = FieldDetails.createMeasure("Benchmark Price",
-    parser0 = PivotQuantityPivotParser, formatter0 = PivotQuantitySetPivotFormatter)
+    parser0 = BenchmarkPricePivotParser, formatter0 = PivotQuantitySetPivotFormatter)
 
   def extendedKeys = List(commodityField)
   override def valueKeys = List(areaCodeField, gradeCodeField, effectiveFromField)
@@ -64,7 +64,7 @@ class GradeAreaBenchmarkDataType(referenceData: ReferenceDataLookup = ReferenceD
   val initialPivotState = PivotFieldsState(
     dataFields = List(benchmarkPriceField.field),
     rowFields = List(areaCodeField, commodityField, gradeCodeField, effectiveFromField).map(_.field),
-    filters = List( Field("Observation Time") -> SomeSelection(Set("Default")) )
+    filters = List( Field("Observation Time") → SomeSelection(Set("Default")) )
   )
 
   def createKey(row: Row) = GradeAreaBenchmarkMarketDataKey(Commodity.fromName(row.string(commodityField)))

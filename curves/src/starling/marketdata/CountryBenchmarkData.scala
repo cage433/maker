@@ -20,7 +20,7 @@ class CountryBenchmarkDataType(referenceData: ReferenceDataLookup = ReferenceDat
   val countryCodeField = FieldDetails.coded("Country", referenceData.countries.values)
   val effectiveFromField = FieldDetails("Effective From", DayPivotParser)
   val benchmarkPriceField = FieldDetails.createMeasure("Benchmark Price",
-    parser0 = PivotQuantityPivotParser, formatter0 = PivotQuantitySetPivotFormatter)
+    parser0 = BenchmarkPricePivotParser, formatter0 = PivotQuantitySetPivotFormatter)
 
   def extendedKeys = List(commodityField)
   override def valueKeys = List(countryCodeField, effectiveFromField)

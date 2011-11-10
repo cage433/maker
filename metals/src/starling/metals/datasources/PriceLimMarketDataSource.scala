@@ -35,14 +35,14 @@ object PriceLimMarketDataSource extends scalaz.Options {
   }
 
   class MonthlyLIMRelation(val node: LimNode, override val exchange: FuturesExchange) extends LIMRelation {
-    protected val extractor = Extractor.regex[Option[LimPrice]]("""TRAF\.%s\.(\w+)_(\w+)""" % exchange.limName) {
+    protected val extractor = Extractor.regex[Option[LimPrice]]("""TRAF\.%s\.(\w+)_(\w+)""" % exchange.name) {
       case List(lim, deliveryMonth) =>
       val optMarket = exchange.markets.find(_.limSymbol.map(_.name) == Some(lim))
       val optMonth = ReutersDeliveryMonthCodes.parse(deliveryMonth)
 
       (optMarket, optMonth) match {
         case (Some(market), Some(month)) => Some(LimPrice(market, month, exchange.closeTime))
-        case (None, _) => debug("No Market with exchange: %s and LIM Symbol: %s" % (exchange.limName, lim))
+        case (None, _) => debug("No Market with exchange: %s and LIM Symbol: %s" % (exchange.name, lim))
         case (_, None) => debug("Cannot parse Reuters delivery month: " + deliveryMonth)
       }
     }
