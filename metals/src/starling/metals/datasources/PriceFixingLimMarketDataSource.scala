@@ -49,33 +49,33 @@ case class PriceFixingLimMarketDataSource(service: LIMService, emailService: Ema
   }
 
   override def availabilityTasks(marketDataStore: MarketDataStore) = List(
-    TaskDescription("Verify SIBOR Available", daily(LME.calendar, 4 H 30), notImplemented),
-    TaskDescription("Verify ROBOR Available", daily(LME.calendar, 9 H 00), notImplemented),
-    TaskDescription("Verify JIBAR Available", daily(LME.calendar, 10 H 30), notImplemented),
-    TaskDescription("Verify Libor maturities available", daily(LME.calendar, 12 H 00),
+    TaskDescription("Verify SIBOR Available", limDaily(LME.calendar, 4 H 30), notImplemented),
+    TaskDescription("Verify ROBOR Available", limDaily(LME.calendar, 9 H 00), notImplemented),
+    TaskDescription("Verify JIBAR Available", limDaily(LME.calendar, 10 H 30), notImplemented),
+    TaskDescription("Verify Libor maturities available", limDaily(LME.calendar, 12 H 00),
       new VerifyLiborMaturitiesAvailable(marketDataStore, emailService, template).withSource("LIM")),
-    TaskDescription("Verify LME AMR1 Fixings Available", daily(LME.calendar, 12 H 30), notImplemented),
-  //      registerTasks(tasks(daily(LME, 13 H 15), TRAF.LME.{EUR, GBP, JPY} SpotFX
-    TaskDescription("Verify LME OFFICIAL Fixings Available", daily(LME.calendar, 13 H 30), notImplemented),
-    TaskDescription("Verify LME PMR1 LMEFixings Available", daily(LME.calendar, 16 H 30), notImplemented),
-    TaskDescription("Verify LME UNOFFICIAL LMEFixings Available", daily(LME.calendar, 17 H 00), notImplemented),
-    TaskDescription("Verify IRS Available", daily(LME.calendar, 18 H 00), notImplemented),
-    TaskDescription("Verify BloombergTokyoCompositeFXRates Available", daily(LME.calendar, 20 H 00), notImplemented),
-    TaskDescription("Verify BalticFixings Available", daily(LME.calendar, 20 H 00), notImplemented),
+    TaskDescription("Verify LME AMR1 Fixings Available", limDaily(LME.calendar, 12 H 30), notImplemented),
+  //      registerTasks(tasks(limDaily(LME, 13 H 15), TRAF.LME.{EUR, GBP, JPY} SpotFX
+    TaskDescription("Verify LME OFFICIAL Fixings Available", limDaily(LME.calendar, 13 H 30), notImplemented),
+    TaskDescription("Verify LME PMR1 LMEFixings Available", limDaily(LME.calendar, 16 H 30), notImplemented),
+    TaskDescription("Verify LME UNOFFICIAL LMEFixings Available", limDaily(LME.calendar, 17 H 00), notImplemented),
+    TaskDescription("Verify IRS Available", limDaily(LME.calendar, 18 H 00), notImplemented),
+    TaskDescription("Verify BloombergTokyoCompositeFXRates Available", limDaily(LME.calendar, 20 H 00), notImplemented),
+    TaskDescription("Verify BalticFixings Available", limDaily(LME.calendar, 20 H 00), notImplemented),
 
-    TaskDescription("Verify SHIBOR Available", daily(NYMEX.calendar, 0 H 00), notImplemented),
-    TaskDescription("Verify MIBOR-1 Available", daily(NYMEX.calendar, 1 H 00), notImplemented),
-    TaskDescription("Verify AIDIBOR Available", daily(NYMEX.calendar, 3 H 00), notImplemented),
-    TaskDescription("Verify MIBOR-2 Available", daily(NYMEX.calendar, 5 H 00), notImplemented),
-    TaskDescription("Verify BUBOR Available", daily(NYMEX.calendar, 05 H 00), notImplemented),
-    TaskDescription("Verify SOFIBOR Available", daily(NYMEX.calendar, 05 H 00), notImplemented),
-    TaskDescription("Verify TRLIBOR Available", daily(NYMEX.calendar, 6 H 00), notImplemented),
-    TaskDescription("Verify NIBOR Available", daily(NYMEX.calendar, 7 H 00), notImplemented),
-    TaskDescription("Verify COMEX Fixings Available", daily(COMEX.calendar, 20 H 00), notImplemented),
-    TaskDescription("Verify KLIBOR Available", daily(NYMEX.calendar, 23 H 00), notImplemented),
+    TaskDescription("Verify SHIBOR Available", limDaily(NYMEX.calendar, 0 H 00), notImplemented),
+    TaskDescription("Verify MIBOR-1 Available", limDaily(NYMEX.calendar, 1 H 00), notImplemented),
+    TaskDescription("Verify AIDIBOR Available", limDaily(NYMEX.calendar, 3 H 00), notImplemented),
+    TaskDescription("Verify MIBOR-2 Available", limDaily(NYMEX.calendar, 5 H 00), notImplemented),
+    TaskDescription("Verify BUBOR Available", limDaily(NYMEX.calendar, 05 H 00), notImplemented),
+    TaskDescription("Verify SOFIBOR Available", limDaily(NYMEX.calendar, 05 H 00), notImplemented),
+    TaskDescription("Verify TRLIBOR Available", limDaily(NYMEX.calendar, 6 H 00), notImplemented),
+    TaskDescription("Verify NIBOR Available", limDaily(NYMEX.calendar, 7 H 00), notImplemented),
+    TaskDescription("Verify COMEX Fixings Available", limDaily(COMEX.calendar, 20 H 00), notImplemented),
+    TaskDescription("Verify KLIBOR Available", limDaily(NYMEX.calendar, 23 H 00), notImplemented),
 
-    TaskDescription("Verify HIBOR Available", daily(SHFE.calendar, 11 H 00), notImplemented),
-    TaskDescription("Verify Shfe Fixings Available", daily(SHFE.calendar, 20 H 00), notImplemented)
+    TaskDescription("Verify HIBOR Available", limDaily(SHFE.calendar, 11 H 00), notImplemented),
+    TaskDescription("Verify Shfe Fixings Available", limDaily(SHFE.calendar, 20 H 00), notImplemented)
   ).filterNot(_.task == notImplemented)
 }
 

@@ -9,8 +9,6 @@ import scalaz.Scalaz._
 
 
 case class TaskDescription(name: String, time: ScheduledTime, task: ScheduledTask) extends TimerTask with Enableable {
-  def offset(period: Period) = copy(time = time.offset(period))
-
   override def enable = task.enable
   override def disable = task.disable
   override def isEnabled = task.isEnabled

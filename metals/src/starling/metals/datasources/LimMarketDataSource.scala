@@ -5,12 +5,15 @@ import collection.immutable.List
 import starling.daterange._
 import starling.market._
 import starling.marketdata._
-import starling.scheduler.SimpleScheduledTask
 import starling.utils.{Pattern, Log}
 import Pattern._
 import starling.utils.ImplicitConversions._
 import starling.lim.{LIMService, LIMConnection, LimNode}
 import starling.db.{MarketDataSet, MarketDataEntry, MarketDataSource}
+import starling.calendar.BusinessCalendar
+import org.joda.time.LocalTime
+import starling.scheduler.{ScheduledTime, SimpleScheduledTask}
+import org.joda.time.{Period => JodaPeriod}
 
 
 abstract class LimMarketDataSource(service: LIMService) extends MarketDataSource with Log {
@@ -38,6 +41,9 @@ abstract class LimMarketDataSource(service: LIMService) extends MarketDataSource
   }
 
   protected val notImplemented = SimpleScheduledTask(_ => println("Task Not Implemented")).update(_.disable)
+
+  protected def limDaily(cal: BusinessCalendar, bloombergToLimTime: LocalTime): ScheduledTime =
+    ScheduledTime.daily(cal, bloombergToLimTime.plus(JodaPeriod.minutes(30))) // 5 minutes for Lim import, 25 to allow for the lim team to discover & fix
 
   private def countData(entries: List[MarketDataEntry]) = entries.map(_.data.size).sum
 }

@@ -53,7 +53,6 @@ case class PriceLimMarketDataSource(service: LIMService, bloombergImports: Bloom
   extends LimMarketDataSource(service) {
 
   import PriceLimMarketDataSource._
-  import ScheduledTime._
   import FuturesExchangeFactory._
 
   override def description = List(priceSources).flatMap
@@ -67,9 +66,9 @@ case class PriceLimMarketDataSource(service: LIMService, bloombergImports: Bloom
     PriceDataEventSource(PricingGroup.Metals, PriceMarketDataProvider(marketDataStore, markets)))
 
   override def availabilityTasks(marketDataStore: MarketDataStore) = List(
-    task("LME Metals", daily(LME.calendar, 20 H 00), lme, marketDataStore),
-    task("COMEX Metals", daily(COMEX.calendar, 15 H 30), comex, marketDataStore),
-    task("SHFE Metals", daily(SHFE.calendar, 15 H 00), shfe, marketDataStore)
+    task("LME Metals", limDaily(LME.calendar, 20 H 00), lme, marketDataStore),
+    task("COMEX Metals", limDaily(COMEX.calendar, 15 H 30), comex, marketDataStore),
+    task("SHFE Metals", limDaily(SHFE.calendar, 15 H 00), shfe, marketDataStore)
   )
 
 //  val exbxgMetals = new DataFlow(FuturesExchangeFactory.EXBXG, PricingGroup.Metals, Nil, metalsEmail, wuXiEmail, "Excel",
