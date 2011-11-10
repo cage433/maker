@@ -1,8 +1,8 @@
 package starling.pivot
 
-import model.UndefinedValue
 
 import java.io.Serializable
+import model.{UndefinedValueNew, UndefinedValue}
 import starling.quantity._
 import starling.utils.ImplicitConversions._
 import starling.utils.{StarlingEnum}
@@ -323,7 +323,7 @@ case class FieldDetails(field:Field) {
   private def setToValue(set:Set[Any]) = {
     if (set.size == 1) {
       val value = set.toList.head
-      if (value == UndefinedValue) { //If we only have n/a just show blank
+      if (value == UndefinedValue || value == UndefinedValueNew) { //If we only have n/a just show blank
         Set()
       } else {
         value

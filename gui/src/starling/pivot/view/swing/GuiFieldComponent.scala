@@ -9,7 +9,7 @@ import org.jdesktop.swingx.image.ColorTintFilter
 import starling.browser.common.GuiUtils._
 import org.jdesktop.swingx.graphics.ShadowRenderer
 import swing._
-import starling.pivot.model.{UndefinedValue, TreeDetails, EditableInfo}
+import starling.pivot.model.{UndefinedValueNew, UndefinedValue, TreeDetails, EditableInfo}
 import swing.event._
 import starling.pivot.controller.{TreePivotFilterNode, TreePivotFilter}
 import javax.swing.event.{PopupMenuListener, PopupMenuEvent}
@@ -97,7 +97,7 @@ class GuiFieldComponent(val props:GuiFieldComponentProps) extends MigPanel("inse
     val possibleValuesAndSelectionToUse = getPossibleValuesAndSelection
     val transformData = props.transformData
     def valueToLabel(v:Any):String = {
-      if (v == UndefinedValue) "" else props.formatter.format(v, props.tableView.currentExtraFormatInfo).text
+      if (v == UndefinedValue || v == UndefinedValueNew) "" else props.formatter.format(v, props.tableView.currentExtraFormatInfo).text
     }
     val filterPopupPanel = new TreePanel(possibleValuesAndSelectionToUse, valueToLabel, transformData.showOther, transformData.transforms)
 

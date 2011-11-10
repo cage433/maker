@@ -19,6 +19,7 @@ object AxisNode {
     def tableCell(valueType:AxisValueType) = {
       val formatter = formatInfo.fieldToFormatter(value.field)
       valueType.value match {
+        case UndefinedValueNew => TableCell.UndefinedNew
         case UndefinedValue if valueType.cellType == EditableCellState.Added => TableCell.UndefinedNew
         case UndefinedValue => TableCell.Undefined
         case other => formatter.format(other, extraFormatInfo)
@@ -150,7 +151,7 @@ case class ServerAxisNode(axisValue:AxisValue, children:Map[ChildKey,Map[AxisVal
             value match {
               //case n:NewRowValue => 4
               case TotalValue=> 0
-              case UndefinedValue => 1
+              case UndefinedValue | UndefinedValueNew => 1
               case FilterWithOtherTransform.OtherValue => 3
               case ptp:PivotTreePath if ptp.isOther => 3
               case _ => 2
@@ -524,6 +525,7 @@ case class PivotTableConverter(otherLayoutInfo:OtherLayoutInfo = OtherLayoutInfo
                   val tc = measureCell.value match {
                     case None if measureCell.cellType == EditableCellState.Added => TableCell.UndefinedNew
                     case None => TableCell.Undefined
+                    case Some(UndefinedValueNew) => TableCell.UndefinedNew
                     case Some(UndefinedValue) if measureCell.cellType == EditableCellState.Added => TableCell.UndefinedNew
                     case Some(UndefinedValue) => TableCell.Undefined
                     case Some(other) => table.fieldInfo.fieldToFormatter(measureAxisCell.value.field).format(other, extraFormatInfo)

@@ -49,7 +49,7 @@ case class CellTypeSpecifiedAxisValueType(override val cellType:EditableCellStat
 }
 
 case object BlankAddedAxisValueType extends AxisValueType {
-  def value = ""
+  def value = UndefinedValueNew
   override def cellType:EditableCellState = AddedBlank
 }
 
@@ -94,6 +94,10 @@ case class AxisValue(field:Field, value:AxisValueType, position:Int, newRowsAtBo
 
 case object UndefinedValue {
   override def toString = "n/a"
+}
+
+case object UndefinedValueNew {
+  override def toString = ""
 }
 
 case object NoValue {}
@@ -391,17 +395,9 @@ object PivotTableModel {
         val measureFieldsToParser = editPivot.editableToKeyFields.keySet.map(f => f -> fieldDetailsLookup(f).parser).toMap
         val keyFieldsToParser = editPivot.editableToKeyFields.values.toSet.flatten.map(f => f -> fieldDetailsLookup(f).parser).toMap
 
-        val filterFields = pivotState.filters.filterNot(_._2 == AllSelection).map(_._1).toSet
-        val rowAreaFiltersPresent = pivotState.rowFields.exists(f => filterFields.contains(f))
-        val extraLine = editPivot.editableToKeyFields.exists{case (editableField,keyFields) => {
-          pivotState.columns.contains(editableField) &&
-                  keyFieldsInColumnArea(keyFields.toSet, pivotState).isEmpty &&
-                  !rowAreaFiltersPresent
-        }}
-
-        /*val extraLine = editPivot.editableToKeyFields.exists{case (editableField,kFields) => {
+        val extraLine = editPivot.editableToKeyFields.exists{case (editableField,kFields) => {
           pivotState.columns.contains(editableField) && keyFieldsInColumnArea(kFields.toSet, pivotState).isEmpty
-        }}*/
+        }}
 
         val allEditableMeasures = editPivot.editableToKeyFields.keySet
 
@@ -671,7 +667,7 @@ object PivotTableModel {
                 val v1 = PivotValue.create(value)
                 v1.originalValue.getOrElse(v1.value.getOrElse(UndefinedValue))
               } }
-              val (normalValues, nullValues) = unsortedPivotValuesOrUndefined.partition(_ != UndefinedValue)
+              val (nullValues, normalValues) = unsortedPivotValuesOrUndefined.partition(v => {v == UndefinedValue || v == UndefinedValueNew})
               val arrayOfObjects = normalValues.toArray.asInstanceOf[Array[Object]]
               try {
                 val sorted = arrayOfObjects.sorted(new Ordering[Any]() {

@@ -99,7 +99,7 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
     }
   }
 
-  val rowHeaderTableModel = new PivotJTableRowModel(this, rowHeaderData0X, (edits) => removeAddedRowsIfBlank(edits))
+  val rowHeaderTableModel = new PivotJTableRowModel(this, rowHeaderData0X, (edits) => removeAddedRowsIfBlank(edits), extraFormatInfo)
 
   private var mainColCount0 = data0(0).length
   private var rowHeaderColCount0 = rowHeaderData0(0).length
@@ -109,6 +109,7 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
 
   def setData(rd:Array[Array[AxisCell]], cd:Array[Array[AxisCell]], d:Array[Array[TableCell]], extraFormatInfo:ExtraFormatInfo) {
     this.extraFormatInfo = extraFormatInfo
+    rowHeaderTableModel.extraFormatInfo = extraFormatInfo
     data0 = d
     rowHeaderTableModel.rowHeaderData0 = rd
     colHeaderData0 = cd

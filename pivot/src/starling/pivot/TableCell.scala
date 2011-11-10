@@ -1,7 +1,7 @@
 package starling.pivot
 
 import java.io.Serializable
-import model.{NoValue, UndefinedValue}
+import model.{UndefinedValueNew, NoValue, UndefinedValue}
 import starling.quantity.{Percentage, Quantity}
 import starling.utils.Pattern._
 import starling.utils.ImplicitConversions._
@@ -63,7 +63,7 @@ object TableCell {
   val Null = new TableCell(NoValue, "")
   val EditableNull = new TableCell(NoValue, "", editable = true)
   val Undefined = new TableCell(UndefinedValue, "n/a")
-  val UndefinedNew = new TableCell(UndefinedValue, "")
+  val UndefinedNew = new TableCell(UndefinedValueNew, "")
 
   def longText(pq: PivotQuantity) =
     (pq.explanation, pq.warning) match {

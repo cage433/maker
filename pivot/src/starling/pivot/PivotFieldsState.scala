@@ -1,7 +1,7 @@
 package starling.pivot
 
 import java.io.Serializable
-import model.UndefinedValue
+import model.{UndefinedValueNew, UndefinedValue}
 import starling.utils.StarlingObject
 import collection.SortedMap
 import starling.utils.ImplicitConversions._
@@ -66,7 +66,7 @@ case class MeasurePossibleValuesFilter(field:Field) extends PossibleValuesFilter
   def matches(fieldDetails:FieldDetails, value : Any) : Boolean = (value != UndefinedValue)
 }
 case class SelectionPossibleValuesFilter(selection:Selection) extends PossibleValuesFilter {
-  def matches(fieldDetails:FieldDetails, value : Any) : Boolean = selection.matches(fieldDetails, value)
+  def matches(fieldDetails:FieldDetails, value : Any) : Boolean = value == UndefinedValueNew || selection.matches(fieldDetails, value)
 }
 case class FiltersList(filters:List[List[(Field,PossibleValuesFilter)]]) extends Iterable[List[(Field,PossibleValuesFilter)]] {
   private def toFilterSet = filters.flatten.toSet

@@ -2,7 +2,7 @@ package starling.pivot
 
 import controller.PivotTableConverter._
 import controller.{PivotTableConverter, PivotGrid, TreePivotFilterNode}
-import model.{NoValue, NewRowValue, UndefinedValue, PivotTableModel}
+import model._
 import starling.utils.ImplicitConversions._
 import starling.pivot.FilterWithOtherTransform.OtherValue
 import starling.pivot.EditableCellState._
@@ -337,8 +337,8 @@ case class EditedValue(value0:Any, original:Any, edits:PivotEdits) extends Pivot
 case class NewValue(value:Option[Any], rowIndex:Int, edits:PivotEdits) extends PivotValue {
   val cellType = Added
   val originalValue = None
-  val axisValueValue = value.getOrElse(UndefinedValue)
-  def valueForGrouping(newRowsAtBottom:Boolean) = if (newRowsAtBottom) NewRowValue(rowIndex) else value.getOrElse(UndefinedValue)
+  val axisValueValue = value.getOrElse(UndefinedValueNew)
+  def valueForGrouping(newRowsAtBottom:Boolean) = if (newRowsAtBottom) NewRowValue(rowIndex) else value.getOrElse(UndefinedValueNew)
 }
 
 case class MeasureCell(value:Option[Any], cellType:EditableCellState, edits:PivotEdits=PivotEdits.Null, originalValue:Option[Any]=None, editable:Boolean=false) {
