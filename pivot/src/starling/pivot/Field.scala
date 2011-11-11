@@ -593,6 +593,19 @@ object MarketValuePivotParser extends PivotParser {
   def parse(text: String, extraFormatInfo:ExtraFormatInfo) = (MarketValue.fromString(text).pivotValue, text)
 }
 
+object BenchmarkPricePivotParser extends PivotParser {
+  def parse(text: String, extraFormatInfo: ExtraFormatInfo) = {
+    val (pq, v) = PivotQuantityPivotParser.typedParse(text, extraFormatInfo)
+
+    val benchmark = pq.quantityValue.get
+
+    require(benchmark.uom.numeratorUOM.isCurrency && !benchmark.uom.denominatorUOM.isCurrency,
+      benchmark + " does not have a valid unit of measure")
+
+    (pq, v)
+  }
+}
+
 class PivotQuantityFieldDetails(name:String) extends FieldDetails(Field(name)) {
   override def value(a:Any):Any = a.asInstanceOf[Set[Any]]
   override def formatter = PivotQuantitySetPivotFormatter
