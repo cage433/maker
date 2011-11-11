@@ -14,6 +14,7 @@ case class CountryBenchmarkData(countryData: NestedMap[NeptuneCountryCode, Day, 
 class CountryBenchmarkDataType(referenceData: ReferenceDataLookup = ReferenceDataLookup.Null) extends MarketDataType {
   type dataType = CountryBenchmarkData
   type keyType = CountryBenchmarkMarketDataKey
+  val humanName = "country benchmarks"
 
   val commodityField = FieldDetails("Commodity", new SpecifiedValuesParser(Commodity.metalsCommodities.map(_.name).toSet))
   val areaField = FieldDetails("Area")
@@ -60,7 +61,7 @@ case class CountryBenchmarkMarketDataKey(commodity: Commodity) extends MarketDat
   type marketDataType = CountryBenchmarkData
   type marketDataDBType = CountryBenchmarkData
   def typeName = MarketDataTypeName("CountryBenchmark")
-  def subTypeKey = commodity.toString
+  def humanName = commodity.toString
   def fields = Set(Field("Commodity"))
 }
 

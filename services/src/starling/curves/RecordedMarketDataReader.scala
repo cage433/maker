@@ -10,10 +10,10 @@ import scalaz.Scalaz._
  * A MarketDataReader which only holds data which was recorded
  */
 
-class RecordedMarketDataReader(val identifier:String, recorded:List[(TimedMarketDataKey, MarketData)], dataTypes: MarketDataTypes)
+class RecordedMarketDataReader(val identifier:String, recorded:List[(TimedMarketDataKey, MarketData)], val marketDataTypes: MarketDataTypes)
   extends MarketDataReader {
 
-  def marketDataTypes = recorded.map(_.head.typeName |> (dataTypes.fromName _)).toSet.toList
+  def availableMarketDataTypes = recorded.map(_.head.typeName |> (marketDataTypes.fromName _)).toSet.toList
 
   def readAllObservationDayAndMarketDataKeys(marketDataType: MarketDataTypeName): List[TimedMarketDataKey] = {
     recorded.filter(_.head.typeName == marketDataType).map(_.head)

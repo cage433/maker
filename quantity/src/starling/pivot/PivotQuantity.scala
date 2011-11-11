@@ -14,13 +14,19 @@ case class PivotPercentage(percent:Option[Percentage]) {
   }
 }
 
+abstract class UserException(val shortMessage:String, val longMessage:Option[String], cause:Throwable) extends RuntimeException(longMessage.getOrElse(shortMessage), cause)
+
 //We don't want to serialize the StackTraces as exceptions can sometimes contain references to
 //unserializable classes (eg CommodityMarket) so we turn exceptions into strings
-case class StackTrace(message:String, stackTrace:String)
+case class StackTrace(message:String, longMessage:Option[String], stackTrace:String) {
+}
 object StackTrace {
   def apply(t:Throwable) = {
-    val message = if (t.getMessage == null) t.toString else t.getMessage
-    new StackTrace(message, StackTraceToString.string(t))
+    val (message, longMessage) = t match {
+      case ue:UserException => (ue.shortMessage, ue.longMessage)
+      case _ => (if (t.getMessage == null) t.toString else t.getMessage, None)
+    }
+    new StackTrace(message, longMessage, StackTraceToString.string(t))
   }
 }
 
@@ -68,6 +74,7 @@ case class PivotQuantity(values:Map[UOM,Double], errors:MultiMap[String,StackTra
       },
       errors)
   }
+  def isOnlyErrors = values.isEmpty && errors.nonEmpty
   def uoms:Set[UOM] = values.keySet.toSet
   def percentageDifference(other:PivotQuantity) = {
     if (
@@ -150,6 +157,8 @@ case class PivotQuantity(values:Map[UOM,Double], errors:MultiMap[String,StackTra
     case Some(qty) => qty.isAlmostZero
     case None => false
   }
+
+  def isEmpty = values.isEmpty && errors.isEmpty
 
   def explanation : Option[String] = quantityValue.map { q => q.toStringAllDecimalPlaces(false)}
 

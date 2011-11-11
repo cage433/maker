@@ -577,7 +577,7 @@ case class PivotTableConverter(otherLayoutInfo:OtherLayoutInfo = OtherLayoutInfo
           val uomSet = allUnits(colIndex)
           if (uomSet.size == 1) {
             val newText = value.value match {
-              case q:PivotQuantity => PivotFormatter.formatPivotQuantity(q, extraFormatInfo, false)
+              case q:PivotQuantity => PivotFormatter.shortAndLongText(q, extraFormatInfo, false)._1
               case q:Quantity => q.value.format(extraFormatInfo.decimalPlaces.format(q.uom))
               case _ => value.text
             }

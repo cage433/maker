@@ -342,7 +342,7 @@ case class ReportCellErrorsPage(errors:List[StackTrace]) extends StarlingServerP
     }
     new ReportCellErrorsPageComponent(errorsToUse, browserSize, previousPageData)
   }
-  def build(pageBuildingContext:StarlingServerContext) = {ReportCellErrorData(errors.map(d => ErrorViewElement(d.message, d.stackTrace)))}
+  def build(pageBuildingContext:StarlingServerContext) = {ReportCellErrorData(errors.map(d => ErrorViewElement(d.longMessage.getOrElse(d.message), d.stackTrace)))}
 }
 case class ReportCellErrorData(errors:List[ErrorViewElement]) extends PageData
 

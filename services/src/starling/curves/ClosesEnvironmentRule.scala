@@ -39,7 +39,10 @@ case class ClosesEnvironmentRule(referenceDataLookup: ReferenceDataLookup, allow
         try {
           key match {
             case priceDataKey@PriceDataKey(market) => {
-              priceDataMap.getOrElse(priceDataKey, throw new Exception("No prices for " + market))
+              priceDataMap.getOrElse(priceDataKey, throw new MissingMarketDataException(
+                "No " + market + " prices",
+                "No " + market + " prices on " + observationDay + " at " + market.asInstanceOf[FuturesMarket].closeTime
+              ))
             }
             case key: ForwardRateDataKey => read_(ObservationTimeOfDay.Default, key)
             case key: CountryBenchmarkMarketDataKey => read_(ObservationTimeOfDay.Default, key)

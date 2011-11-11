@@ -8,8 +8,8 @@ import starling.reports.pivot.OptionalPeriodLabel
 import starling.gui.{StarlingIcons}
 import starling.quantity.{Quantity, Percentage}
 import java.awt.Font
-import org.jdesktop.swingx.renderer.{CellContext, LabelProvider}
 import starling.daterange.{Period, DateRange}
+import org.jdesktop.swingx.renderer.{ComponentProvider, CellContext, LabelProvider}
 
 object PivotCellRenderer {
   val ErrorIcon = StarlingIcons.icon("/icons/12x12_error.png")

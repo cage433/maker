@@ -112,7 +112,7 @@ object PivotQuantityPivotParser extends PivotParser {
       val (number, uomString) = cleanTextMaybeWithUOM.splitAt(letterIndex)
       val uom = UOM.fromString(uomString)
       val pq = PivotQuantity(new Quantity(number.toDouble, uom))
-      (pq, PivotFormatter.formatPivotQuantity(pq, extraFormatInfo, false) + uom.asString)
+      (pq, PivotFormatter.shortAndLongText(pq, extraFormatInfo, false)._1 + uom.asString)
     }
   }
 }
@@ -158,24 +158,31 @@ object PivotFormatter {
   val DefaultDecimalPlaces = DecimalPlaces(DefaultFormat, LotsFormat, PriceFormat, CurrencyFormat, PercentFormat)
   val DefaultExtraFormatInfo = ExtraFormatInfo(DefaultDecimalPlaces, DefaultDateRangeFormat)
 
-  def formatPivotQuantity(pq:PivotQuantity, formatInfo:ExtraFormatInfo, includeUOM:Boolean=true) = {
-    import starling.utils.ImplicitConversions._
-    if (pq.values.isEmpty && pq.errors.isEmpty) {
-      ""
+  def longText(pq: PivotQuantity) =
+    (pq.explanation, pq.warning) match {
+      case (None, None) => None
+      case (Some(e), None) => Some(e)
+      case (None, Some(w)) => Some("Validation Error: " + w)
+      case (Some(e), Some(w)) => Some(e + " Validation Error: " + w)
+    }
+  def shortAndLongText(pq:PivotQuantity, formatInfo:ExtraFormatInfo, includeUOM:Boolean=true):(String,Option[String]) = {
+    if (pq.isEmpty) {
+      ("", None)
     } else if (pq.values.isEmpty) {
       if (pq.errors.size == 1) {
-        "E " + pq.errors.keys.iterator.next
+        val stackTrace = pq.errors.values.iterator.next.iterator.next
+        (stackTrace.message, stackTrace.longMessage)
       } else {
-        "E (" + pq.errors.size + ")"
+        (pq.errors.size + " errors", None)
       }
     } else {
-      val warning = pq.warning.isDefined
       val l = pq.values.size - 1
-      (for (((uom, value), i) <- pq.values.zipWithIndex) yield {
+      val text = (for (((uom, value), i) <- pq.values.zipWithIndex) yield {
         val format = formatInfo.decimalPlaces.format(uom)
-        val space = if (warning && i == l) false else true
+        val space = if (pq.warning.isDefined && i == l) false else true
         value.format(format, space)  + (if (includeUOM) uom else "")
       }).mkString(", ")
+      (text, longText(pq))
     }
   }
 }

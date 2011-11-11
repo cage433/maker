@@ -8,9 +8,13 @@ import starling.daterange._
 class NormalMarketDataReader(marketDataStore: MarketDataStore, marketDataIdentifier: MarketDataIdentifier)
   extends MarketDataReader {
 
+  def marketDataTypes = marketDataStore.marketDataTypes
+
+  val cachedMarketDataTypes = marketDataStore.availableMarketDataTypes(marketDataIdentifier)
+
   def identifier = marketDataIdentifier.toString
 
-  def marketDataTypes = marketDataStore.marketDataTypes(marketDataIdentifier)
+  def availableMarketDataTypes = cachedMarketDataTypes
 
   def read(marketDataType: MarketDataTypeName, observationDays: Option[Set[Option[Day]]], observationTimes: Option[Set[ObservationTimeOfDay]],
            keys: Option[Set[MarketDataKey]]) = {

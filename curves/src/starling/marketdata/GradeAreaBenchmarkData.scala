@@ -42,13 +42,14 @@ case class GradeAreaBenchmarkMarketDataKey(commodity : Commodity) extends Market
   type marketDataType = GradeAreaBenchmarkData
   type marketDataDBType = GradeAreaBenchmarkData
   def typeName = MarketDataTypeName("GradeAreaBenchmark")
-  def subTypeKey = commodity.toString
+  def humanName = commodity.toString
   def fields = Set(Field("Commodity"))
 }
 
 class GradeAreaBenchmarkDataType(referenceData: ReferenceDataLookup = ReferenceDataLookup.Null) extends MarketDataType {
   type dataType = GradeAreaBenchmarkData
   type keyType = GradeAreaBenchmarkMarketDataKey
+  val humanName = "Grade Area Benchmarks"
 
   val commodityField = FieldDetails("Commodity", new SpecifiedValuesParser(Commodity.metalsCommodities.map(_.name).toSet))
   val areaCodeField = FieldDetails.coded("Area", referenceData.areas.values)

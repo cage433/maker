@@ -18,8 +18,8 @@ trait MarketDataKey {
   //the MarketDataType object for this type
   def typeName:MarketDataTypeName
 
-  //a string to identify this key in the database (typically the market or currency)
-  def subTypeKey : String
+  //the string used in error messages
+  def humanName : String
 
   //represents the MarketData passed in as rows for use in the market data viewer pivot
   //the fields used as keys must be consistent with the fields defined by the associated MarketDataType

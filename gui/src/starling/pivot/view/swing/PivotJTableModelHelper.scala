@@ -359,7 +359,7 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
               val uom = uoms0(columnIndex)
               val dv = pq.doubleValue.get
               val newPQ = new PivotQuantity(dv, uom)
-              (Some(newPQ), PivotFormatter.formatPivotQuantity(newPQ, extraFormatInfo, false))
+              (Some(newPQ), PivotFormatter.shortAndLongText(newPQ, extraFormatInfo, false)._1)
             }
             case _ => (Some(v),l)
           }

@@ -53,7 +53,7 @@ class FC2Service(marketDataStore: MarketDataStore, marketDataTypes: MarketDataTy
       val reader = marketDataReaderFor(marketDataPageIdentifier)
       val marketDataType = marketDataTypeLabel match {
         case None => {
-          sortMarketDataTypes(reader.marketDataTypes) match {
+          sortMarketDataTypes(reader.availableMarketDataTypes) match {
             case Nil => None
             case many => many.headOption
           }
@@ -155,7 +155,7 @@ class FC2FacilityImpl(service: FC2Service,
   def pricingGroupLatestMarketDataVersions = Map() ++ marketDataStore.latestPricingGroupVersions.filterKeys(pricingGroups()).toMap
 
   def marketDataTypeLabels(marketDataIdentifier:MarketDataPageIdentifier) = {
-    sortMarketDataTypes(service.marketDataReaderFor(marketDataIdentifier).marketDataTypes).map(t=>MarketDataTypeLabel(t.name.name))
+    sortMarketDataTypes(service.marketDataReaderFor(marketDataIdentifier).availableMarketDataTypes).map(t=>MarketDataTypeLabel(t.name.name))
   }
 
   def latestMarketDataIdentifier(selection:MarketDataSelection):MarketDataIdentifier = marketDataStore.latestMarketDataIdentifier(selection)

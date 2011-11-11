@@ -14,6 +14,7 @@ trait MarketDataType {
   val name: MarketDataTypeName = MarketDataTypeName(
     getClass.getName.substring(getClass.getName.lastIndexOf(".") + 1).stripSuffix("$").stripSuffix("DataType")
   )
+  val humanName:String
 
   def extendedKeys:List[FieldDetails]
   def valueKeys:List[FieldDetails] = Nil

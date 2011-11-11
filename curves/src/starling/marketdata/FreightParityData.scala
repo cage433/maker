@@ -19,13 +19,14 @@ case class FreightParityDataKey(contractualIncoterm: IncotermCode, contractualLo
   type marketDataType = FreightParityData
   type marketDataDBType = FreightParityData
   def typeName = MarketDataTypeName("FreightParity")
-  def subTypeKey = ""
+  def humanName = ""
   def fields = Set("Contractual Incoterm", "Contractual Location", "Destination Incoterm", "Destination Location").map(Field(_))
 }
 
 class FreightParityDataType(referenceData: ReferenceDataLookup = ReferenceDataLookup.Null) extends MarketDataType {
   type dataType = FreightParityData
   type keyType = FreightParityDataKey
+  val humanName = "Freight parity rates"
 
   val contractualIncotermCodeField = FieldDetails.coded("Contractual Incoterm", referenceData.incoterms.values)
   val contractualLocationCodeField = FieldDetails.coded("Contractual Location", referenceData.contractLocations.values)

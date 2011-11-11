@@ -6,6 +6,7 @@ import starling.pivot._
 object ShanghaiVATDataType extends MarketDataType{
   type dataType = ShanghaiVATData
   type keyType = ShanghaiVATDataKey
+  val humanName = "Shanghai vat rate"
   val rateField = new PivotQuantityFieldDetails("Rate")
   def rows(key : ShanghaiVATDataKey, data : ShanghaiVATData) = List(Row(
     rateField.field → PivotQuantity(data.rate)
@@ -25,7 +26,7 @@ object ShanghaiVATDataType extends MarketDataType{
 
 case class ShanghaiVATDataKey() extends MarketDataKey{
   def typeName = ShanghaiVATDataType.name
-  def subTypeKey = "Shanghai VAT"
+  def humanName = ""
   def fields = Set()
 }
 

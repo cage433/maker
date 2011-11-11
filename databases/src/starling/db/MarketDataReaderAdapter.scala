@@ -9,6 +9,8 @@ class MarketDataReaderAdapter(reader: MarketDataReader) extends MarketDataReader
 
   def marketDataTypes = reader.marketDataTypes
 
+  def availableMarketDataTypes = reader.availableMarketDataTypes
+
   def readAllObservationDayAndMarketDataKeys(marketDataType: MarketDataTypeName) =
     reader.readAllObservationDayAndMarketDataKeys(marketDataType)
 

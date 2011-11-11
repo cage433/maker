@@ -74,8 +74,8 @@ object TableCell {
     }
 
   def fromPivotQuantity(pq: PivotQuantity, formatInfo: ExtraFormatInfo): TableCell = {
-    val t = longText(pq)
-    new TableCell(pq, PivotFormatter.formatPivotQuantity(pq, formatInfo), RightTextPosition, pq.hasErrors, longText = t, warning = pq.warning)
+    val (shortText, longText) = PivotFormatter.shortAndLongText(pq, formatInfo)
+    new TableCell(pq, shortText, if (pq.isOnlyErrors) RightTextPosition else RightTextPosition, pq.hasErrors, longText = longText, warning = pq.warning)
   }
 
   val PivotQuantity: Extractor[TableCell, PivotQuantity] = Extractor.from[TableCell](_.pivotQuantityValue)
