@@ -55,7 +55,7 @@ class GradeAreaBenchmarkDataType(referenceData: ReferenceDataLookup = ReferenceD
   val gradeCodeField = FieldDetails.coded("Grade", referenceData.grades.values)
   val effectiveFromField = FieldDetails("Effective From", DayPivotParser)
   val benchmarkPriceField = FieldDetails.createMeasure("Benchmark Price",
-    parser0 = BenchmarkPricePivotParser, formatter0 = PivotQuantitySetPivotFormatter)
+    parser0 = PricePivotParser, formatter0 = PivotQuantitySetPivotFormatter)
 
   def extendedKeys = List(commodityField)
   override def valueKeys = List(areaCodeField, gradeCodeField, effectiveFromField)

@@ -593,7 +593,7 @@ object MarketValuePivotParser extends PivotParser {
   def parse(text: String, extraFormatInfo:ExtraFormatInfo) = (MarketValue.fromString(text).pivotValue, text)
 }
 
-object BenchmarkPricePivotParser extends PivotParser {
+object PricePivotParser extends PivotParser {
   def parse(text: String, extraFormatInfo: ExtraFormatInfo) = {
     val (pq, v) = PivotQuantityPivotParser.typedParse(text, extraFormatInfo)
 
