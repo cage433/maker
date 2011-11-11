@@ -321,7 +321,7 @@ object StarlingBuild extends Build{
     "com.google.collections" % "google-collections" % "1.0",
     "jxlayer" % "jxlayer" % "4.0",
     "jgoodies" % "looks" % "2.3.1",
-    "org.swinglabs" % "swingx-core" % "1.6.2-2",
+    "org.swinglabs" % "swingx-core" % "1.6.2-2" withSources(),
     "mig-swing" % "miglayout" % "4.0",
     "net.java.dev.timingframework" % "timingframework" % "1.0",
     "transloader" % "transloader" % "0.4",

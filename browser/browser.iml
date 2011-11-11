@@ -48,7 +48,9 @@
           <root url="jar://$USER_HOME$/.ivy2/cache/org.swinglabs/swingx-core/jars/swingx-core-1.6.2-2.jar!/" />
         </CLASSES>
         <JAVADOC />
-        <SOURCES />
+        <SOURCES>
+          <root url="jar://$USER_HOME$/.ivy2/cache/org.swinglabs/swingx-core/srcs/swingx-core-1.6.2-2-sources.jar!/" />
+        </SOURCES>
       </library>
     </orderEntry>
     <orderEntry type="module-library" exported="">
