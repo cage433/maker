@@ -51,4 +51,4 @@ osgi-server-cache/*
 set-classpath.sh
 project/deployment/artifacts
 bin/deploy-classpath.sh
-
+.idea/misc.xml
