@@ -317,7 +317,7 @@ case class ReportErrorsPage(reportParameters:ReportParameters) extends StarlingS
   def createComponent(context: PageContext, data: PageData, bookmark:Bookmark, browserSize:Dimension, previousPageData:Option[PreviousPageData]) = new PivotReportErrorPageComponent(context, data, browserSize, previousPageData)
   def build(pageBuildingContext: StarlingServerContext) = {
     val errors = pageBuildingContext.reportService.reportErrors(reportParameters)
-    val errorsToUse = errors.errors.map(e => ErrorViewElement(e.instrumentText, e.message))
+    val errorsToUse = errors.errors.map(e => ErrorViewElement(e.instrumentText, e.stackTrace))
     PivotReportErrorPageData(errorsToUse)
   }
   def icon = StarlingIcons.im("/icons/error.png")
@@ -342,7 +342,7 @@ case class ReportCellErrorsPage(errors:List[StackTrace]) extends StarlingServerP
     }
     new ReportCellErrorsPageComponent(errorsToUse, browserSize, previousPageData)
   }
-  def build(pageBuildingContext:StarlingServerContext) = {ReportCellErrorData(errors.map(d => ErrorViewElement(d.longMessage.getOrElse(d.message), d.stackTrace)))}
+  def build(pageBuildingContext:StarlingServerContext) = {ReportCellErrorData(errors.map(d => ErrorViewElement(d.longMessage.getOrElse(d.message), d)))}
 }
 case class ReportCellErrorData(errors:List[ErrorViewElement]) extends PageData
 
@@ -351,10 +351,10 @@ class ReportCellErrorsPageComponent(errors:List[ErrorViewElement], browserSize:D
   add(errorView, "push, grow")
 }
 
-case class ErrorViewElement(message:String, text:String)
+case class ErrorViewElement(message:String, stackTrace:StackTrace)
 class ErrorView(errors:List[ErrorViewElement], dividerLocation0:Option[Int] = None) extends MigPanel("insets 0") {
   val errorMessages = errors.map(_.message)
-  val errorTexts = Map() ++ errors.map(e => (e.message -> e.text))
+  val errorTexts = Map() ++ errors.map(e => (e.message -> e.stackTrace.stackTrace))
   val messagesView = new NListView(errorMessages)
   val messagesScroll = new ScrollPane(messagesView)
   val textArea = new TextArea {

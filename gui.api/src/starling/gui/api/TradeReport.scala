@@ -11,6 +11,7 @@ import scalaz.Scalaz._
 
 import ImplicitConversions._
 import starling.quantity.{NamedQuantity, Quantity}
+import starling.pivot.StackTrace
 
 class TradeReport
 
@@ -286,7 +287,7 @@ case class UTPIdentifier(id : Int, attributes : Map[String, String] = Map()){
 }
 
 case class ReportErrors(errors:List[ReportError])
-case class ReportError(instrumentID:Int , instrumentText:String, message:String)
+case class ReportError(instrumentID:Int , instrumentText:String, stackTrace:StackTrace)
 
 case class PriceHistory(prices:List[PriceEntry])
 case class PriceEntry(observationDay:Day, market:String, ahead:NAhead, price:Quantity, forwardStatePrice : Quantity)
