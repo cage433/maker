@@ -107,7 +107,7 @@ class PivotJTableRowModel(helper: PivotJTableModelHelper, var rowHeaderData0:Arr
   }
 
   private def key(rowIndex:Int, columnIndex:Int): Map[Field, SomeSelection] = {
-    val filterFieldToValues = helper.createSingleSelectionForKeyFields()
+    val filterFieldToValues = fieldState.filtersInTheFilterArea.collect{case (f, SomeSelection(v)) => (f, SomeSelection(v))}
     val rowFilters = fieldState.rowFilters
     val columnFilters = fieldState.columnFilters
 

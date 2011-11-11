@@ -328,7 +328,7 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
       val colHeaderFieldToValues = colHeaderData0.map(_(columnIndex).selection).toMap
         .filterKeysNot{case field => (measureInfo.value.field == field) || (field == Field.NullField)}
 
-      val filterFieldToValues = createSingleSelectionForKeyFields()
+      val filterFieldToValues = fieldState.filtersInTheFilterArea.collect{case (f, SomeSelection(v)) => (f, SomeSelection(v))}
 
       (rowHeaderFieldToValues ++ colHeaderFieldToValues ++ filterFieldToValues) //& keyFields
     }
