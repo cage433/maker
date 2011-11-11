@@ -147,23 +147,25 @@ trait PhysicalMetalAssignmentOrUnassignedSalesQuota extends UTP with Tradeable {
   }
 
   private def benchmarkPaymentExplained(env : Environment) : NamedQuantity = {
-    val spec = benchmarkPricingSpec
+    val spec = benchmarkPricingSpec(env)
     val price = spec.priceIncludingVAT(env).getOrElse(spec.priceExcludingVAT(env))
     var exp : NamedQuantity = (if (isPurchase) price else price * -1).named("Benchmark Price")
     exp = timesVolume(exp)
     discounted(env, exp, spec.settlementDay(env.marketDay))
   }
 
-  lazy val benchmarkPricingSpec : TitanPricingSpec = {
+  def benchmarkPricingSpec(env : Environment) : TitanPricingSpec = {
     val month = benchmarkDeliveryDay.get.containingMonth
     val futuresMarket = contractPricingSpec.futuresMarket
     val index = futuresMarket.physicalMetalBenchmarkIndex
+    val benchmarkLookupDay = TitanPricingSpec.representativeDay(index, month, env.marketDay)
+    val benchmark = env.benchmarkPremium(commodity, benchmarkCountryCode.get, grade, benchmarkLookupDay)
     UnknownPricingSpecification(
       index,
       month,
       Nil,
       month.lastDay,
-      Quantity(0, index.priceUOM),
+      benchmark,
       valuationCCY
     )
   }
@@ -198,14 +200,14 @@ trait PhysicalMetalAssignmentOrUnassignedSalesQuota extends UTP with Tradeable {
       val benchmarkPaymentAsset = Asset(
         known = false,
         assetType = commodity.neptuneName,
-        settlementDay = benchmarkPricingSpec.settlementDay(env.marketDay),
+        settlementDay = benchmarkPricingSpec(env).settlementDay(env.marketDay),
         amount = quantity,
         mtm = benchmarkPaymentExplained(env)
       )
       val freightParityAsset = Asset(
         known = false,
         assetType = "Freight",
-        settlementDay = benchmarkPricingSpec.settlementDay(env.marketDay),
+        settlementDay = benchmarkPricingSpec(env).settlementDay(env.marketDay),
         amount = quantity,
         mtm = freightParityExplained(env)
       )
@@ -323,7 +325,7 @@ case class PhysicalMetalAssignment( assignmentID : String,
     require (isPurchase)
     benchmarkDeliveryDay match {
       case Some(bdd) => {
-        val bp = benchmarkPricingSpec
+        val bp = benchmarkPricingSpec(env)
         CostsAndIncomeUnallocatedAssignmentValuation(
           assignmentID,
           /*

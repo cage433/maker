@@ -49,10 +49,10 @@ case class AreaBenchmarkCurveObject(marketDayAndTime : DayAndTime, marketData : 
   }
 }
 
-case class CountryBenchmarkAtomicKey(commodity: Commodity, country: NeptuneCountryCode, day: Day,
+case class CountryBenchmarkAtomicKey(commodity: Commodity, country: NeptuneCountryCode, grade : GradeCode, day: Day,
   override val ignoreShiftsIfPermitted: Boolean = false
 )
-  extends AtomicDatumKey(CountryBenchmarkCurveKey(commodity), (country, day), ignoreShiftsIfPermitted)
+  extends AtomicDatumKey(CountryBenchmarkCurveKey(commodity), (country, grade, day), ignoreShiftsIfPermitted)
 {
   def periodKey : Option[Period] = None
   def nullValue = Quantity(0.0, commodity.representativeMarket.priceUOM)
@@ -82,8 +82,8 @@ case class CountryBenchmarkCurveObject(marketDayAndTime : DayAndTime, marketData
   type CurveValuesType = Quantity
 
   def apply(point : AnyRef) = point match {
-    case (country: NeptuneCountryCode, day: Day) => {
-      val (days, benchmarks) = countryData(country).sorted.unzip
+    case (country: NeptuneCountryCode, grade : GradeCode, day: Day) => {
+      val (days, benchmarks) = countryData((country, grade)).sorted.unzip
 
       InverseConstantInterpolation.interpolate(days.toArray, benchmarks.toArray, day)
     }

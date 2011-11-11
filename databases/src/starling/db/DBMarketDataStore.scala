@@ -271,7 +271,11 @@ class DBMarketDataStore(db: MdDB, tags: MarketDataSnapshots, val marketDataSourc
   def availableMarketDataTypes(marketDataIdentifier: MarketDataIdentifier): List[MarketDataType] = {
     val version = versionForMarketDataVersion(marketDataIdentifier.marketDataVersion)
     val mds = marketDataSets(marketDataIdentifier)
-    db.marketDataTypes(version, mds).toList
+    marketDataIdentifier.selection.pricingGroup match {
+      case Some(PricingGroup.Metals) => (new CountryBenchmarkDataType() :: db.marketDataTypes(version, mds).toList).distinct
+      case _ => db.marketDataTypes(version, mds).toList
+    }
+
   }
 
   def marketData(from: Day, to: Day, marketDataType: MarketDataTypeName, marketDataSet: MarketDataSet) = {
