@@ -472,7 +472,7 @@ case class TradeSelectionPage(
       add(tradeSystemConfig.reconciliationReportButton)
       add(tradeSystemConfig.tradeChangesReportButton)
       add(tradeSystemConfig.newReportButton)
-      if (context.localCache.currentUser.groups.contains("Starling Developers")) {
+      if (context.localCache.currentUser.isDeveloper) {
         add(tradeSystemConfig.reportButton)
       }
     }
