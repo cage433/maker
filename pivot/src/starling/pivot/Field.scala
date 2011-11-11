@@ -286,7 +286,7 @@ object DefaultPivotFormatter extends PivotFormatter {
 
 case class HasLongText(text:String, longText:String)
 
-case class FieldDetails(field:Field) {
+class FieldDetails(val field:Field) {
   def this(name:String) = this(Field(name))
   def name = field.name
   def nullValue():Any = "n/a"
@@ -390,6 +390,7 @@ trait Tupleable {
 }
 
 object FieldDetails {
+  def apply(field:Field) = new FieldDetails(field)
   def apply(name:String) = new FieldDetails(name)
   def apply(name:String, parser0:PivotParser) = new FieldDetails(name) {override def parser = parser0}
   def apply(name:String, parser0:PivotParser, formatter0:PivotFormatter) = new FieldDetails(name) {
@@ -401,13 +402,13 @@ object FieldDetails {
     override def formatter = formatter0
     override def parser = parser0
   }
-  def coded(name:String, codesToNames:Iterable[Tupleable]) = {
-    val formatterParser = new CodedFormatterAndParser(codesToNames.map(_.tuple).toMap)
-    new FieldDetails(name) {
-      override def parser = formatterParser
-      override def formatter = formatterParser
-    }
-  }
+  def coded(name:String, codesToNames:Iterable[Tupleable]) = new CodedFieldDetails(name, codesToNames)
+}
+
+class CodedFieldDetails(name:String,codesToNames:Iterable[Tupleable]) extends FieldDetails(name) {
+  val formatterParser = new CodedFormatterAndParser(codesToNames.map(_.tuple).toMap)
+  override def parser = formatterParser
+  override def formatter = formatterParser
 }
 
 class CodedFormatterAndParser(codesToName:Map[String,String]) extends PivotFormatter with PivotParser {
