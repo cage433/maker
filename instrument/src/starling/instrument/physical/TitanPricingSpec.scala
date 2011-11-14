@@ -148,6 +148,95 @@ case class AveragePricingSpec(index: IndexWithDailyPrices, period: DateRange,
   def futuresMarket : FuturesMarket = index.market.asInstanceOf[FuturesMarket]
 }
 
+case class OptionalPricingSpec(choices: List[TitanPricingSpec], declarationDay: Day,
+                               chosenSpec: Option[TitanPricingSpec]) extends TitanPricingSpec {
+
+  lazy val specToUse = chosenSpec.getOrElse(choices.head)
+
+  def futuresMarket = specToUse.futuresMarket
+
+  def settlementDay(marketDay: DayAndTime) = specToUse.settlementDay(marketDay)
+
+  def priceExcludingVAT(env: Environment) = {
+    assert(chosenSpec.isDefined || env.marketDay < declarationDay.endOfDay, "Optional pricing spec must be fixed by " + declarationDay)
+    specToUse.priceExcludingVAT(env)
+  }
+
+  def fixedQuantity(marketDay: DayAndTime, totalQuantity: Quantity) = specToUse.fixedQuantity(marketDay, totalQuantity)
+
+  def isComplete(marketDay: DayAndTime) = specToUse.isComplete(marketDay)
+
+  def pricingType: String = chosenSpec match {
+    case Some(spec) => spec.pricingType;
+    case None => "Optional"
+  }
+
+  def premium = specToUse.premium
+
+  def daysForPositionReport(marketDay: DayAndTime) = specToUse.daysForPositionReport(marketDay)
+
+  def valuationCCY = specToUse.valuationCCY
+
+  def quotationPeriod = specToUse.quotationPeriod
+
+  def indexOption = specToUse.indexOption
+
+  def expiryDay = specToUse.expiryDay
+}
+
+case class WeightedPricingSpec(specs: List[(Double, TitanPricingSpec)], valuationCCY : UOM) extends TitanPricingSpec {
+  def settlementDay(marketDay: DayAndTime) = specs.flatMap(_._2.settlementDay(marketDay)).sortWith(_ > _).head
+
+  def priceExcludingVAT(env: Environment) = Quantity.sum(specs.map {
+    case (weight, spec) => inValuationCurrency(env, spec.priceExcludingVAT(env)) * weight
+  })
+
+  def fixedQuantity(marketDay: DayAndTime, totalQuantity: Quantity) = specs.map {
+    case (wt, spec) => spec.fixedQuantity(marketDay, totalQuantity) * wt
+  }.sum
+
+  def isComplete(marketDay: DayAndTime) = specs.forall {
+    _._2.isComplete(marketDay)
+  }
+
+  def pricingType: String = "Weighted"
+
+  private def quotationPeriodStart: Option[Day] = specs.map(_._2.quotationPeriod).collect {
+    case Some(period) => period.firstDay
+  }.sortWith(_ < _).headOption
+
+  private def quotationPeriodEnd: Option[Day] = specs.map(_._2.quotationPeriod).collect {
+    case Some(period) => period.lastDay
+  }.sortWith(_ < _).lastOption
+
+  def premium = specs.map {
+    case (wt, spec) => spec.premium * wt
+  }.sum
+
+  def daysForPositionReport(marketDay: DayAndTime) = specs.flatMap {
+    case (amt, spec) => spec.daysForPositionReport(marketDay)
+  }.distinct
+
+
+  def quotationPeriod = (quotationPeriodStart, quotationPeriodEnd) match {
+    case (Some(d1), Some(d2)) => Some(DateRange(d1, d2))
+    case _ => None
+  }
+
+  def indexOption = None
+
+  def expiryDay = specs.map(_._2.expiryDay).max
+
+  def futuresMarket = {
+    val markets = specs.map(_._2.futuresMarket).distinct
+    assert(markets.size == 1, "Expected a single associated futures market - got " + markets.mkString(", "))
+    markets.head
+  }
+
+  override def isLiableToShanghaiVAT = isExchangeLiableToVAT(futuresMarket.exchange)
+
+}
+
 case class InvalidTitanPricingSpecException(msg: String) extends Exception(msg)
 
 case class FixedPricingSpec(futuresMarket : FuturesMarket, settDay: Day, pricesByFraction: List[(Double, Quantity)],
