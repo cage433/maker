@@ -8,6 +8,6 @@ import starling.db.DBWriter
 
 class Patch143_DeleteBenchmarkData extends Patch{
   protected def runPatch(starlingInit: StarlingInit, starling: RichDB, writer: DBWriter) = {
-    MarketDataPatchUtil(writer).deleteMarketData(List("GradeAreaBenchmark", "CountryBenchmark"))
+    MarketDataPatchUtil(writer).deleteMarketData(true, List("GradeAreaBenchmark", "CountryBenchmark"))
   }
 }

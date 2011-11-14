@@ -68,6 +68,7 @@ case class FormulaIndex(formulaName: String, formula: Formula, ccy: UOM, uom: UO
     true
   } catch {
     case e: UnknownIndexException => false
+    case e: InvalidFormulaException => false
     case e: InvalidFormulaIndexException => false
   }
 
@@ -95,6 +96,12 @@ case class FormulaIndex(formulaName: String, formula: Formula, ccy: UOM, uom: UO
  * A formula can give a price and can list the indexes that make it up.
  */
 case class Formula(formula: String) {
+  def canParse: Boolean = try {
+    new FormulaParser(Map("mkt" → identity _, "quote" → identity _), false).eval(formula)
+    true
+  } catch { case _ => false }
+
+  //require(canParse, "Cannot parse: " + formula)
 
   import Formula._
 
