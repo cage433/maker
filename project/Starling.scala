@@ -24,19 +24,6 @@ object StarlingBuild extends Build{
   println("This is the build number: " + starlingVersion)
   println("")
 
-  val useTitanModelBinaries = {
-    if (!new File("props.conf").exists)
-      false
-    else {
-      val serverSettingRegexp = """^ServerType\s*=\s*(\w+)\s*$""".r
-      scala.io.Source.fromFile("props.conf").getLines.toList.collect {
-        case serverSettingRegexp(serverType) => serverType
-      } match {
-        case List("FC2") => false
-        case _ => true
-      }
-    }
-  }
   def lib_managed_jars(base : File) : Seq[Attributed[File]] = (((base / "lib_managed") ** "*.jar")).getFiles.map{f : File => Attributed.blank(f)}
   lazy val standardSettings = Defaults.defaultSettings ++ Seq(
     unmanagedSourceDirectories in Compile <+= baseDirectory(_/"src"),
