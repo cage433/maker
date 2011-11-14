@@ -1,14 +1,19 @@
 package starling.curves
 
-import interestrate.{DayCountActual365, DayCountActualActual}
-import starling.marketdata.{ForwardRateDataKey, ForwardRateDataEntry, ForwardRateData}
+import interestrate.DayCountActual365
+import starling.marketdata.{ForwardRateDataKey, ForwardRateData}
 import math._
 import starling.daterange.{DateRange, Day, DayAndTime}
 import starling.quantity.{Percentage, UOM, Quantity}
-import starling.quantity.Quantity._
 import starling.utils.ImplicitConversions._
+import collection.immutable.Map
+import collection.mutable.{Map => MMap}
+import collection.SortedMap
+import starling.marketdata.ForwardRateSource._
+import starling.metals.datasources.LIBORFixing
+import scalaz.Scalaz._
 
-/** The parent of all DiscountCurve implementations. 
+/** The parent of all DiscountCurve implementations.
  */
 trait DiscountCurve extends CurveObject{
   type CurveValuesType = Quantity
@@ -121,15 +126,23 @@ case class SimpleDiscountCurve(
 
 
 /**
- * An implementation of DiscountCurve using forward forward rates
+ * Builds discounts using a contiguous set of forward forward rates. These must
+ * begin at the market day.
+ * The assumption is the continuously compounded rate is equal to the forward rate for
+ * any consecutive days in the same forward rate period. This allows us to determine 'relative' or 'forward; discount
+ * rates between two consecutive days. The discount rate between the market day and any day in the future can be
+ * calculated as a product of these daily discounts.
  */
 class ForwardForwardDiscountCurve(
   ccy : UOM,
   val marketDayAndTime : DayAndTime,
-  rates : Map[DateRange, Percentage]
+  rates : Map[DateRange, Quantity]
 )
   extends DiscountCurve
 {
+  require(rates.values.forall(rate => rate.isScalar || rate.isPercent),
+    "Require scalar or percentage rates but have: " + rates.values.map(_.uom).toSet.mkString(", "))
+
   if (! rates.isEmpty){
     val periods = rates.keySet.toList.sortWith(_<_)
     val expectedFirstDay = marketDayAndTime
@@ -142,7 +155,8 @@ class ForwardForwardDiscountCurve(
   val zippedData = rates.keySet.toList.sortWith(_<_).map{
     p =>
       val time = DayCountActual365.factor(p)
-      val rate = rates(p).value
+      val rate = rates(p).in(UOM.SCALAR).get.value
+      println(rates(p) + ", " + rates(p).in(UOM.SCALAR).get + ", " + rate)
       val z = math.log(1 + rate * time) / time
       (p, time, z)
   }
@@ -166,31 +180,34 @@ class ForwardForwardDiscountCurve(
 
 case class DiscountCurveKey(ccy : UOM) extends NonHistoricalCurveKey[ForwardRateData]{
   def marketDataKey = ForwardRateDataKey(ccy)
-  def buildFromMarketData(marketDayAndTime: DayAndTime, forwardRateData: ForwardRateData):SimpleDiscountCurve = {
-    // put the results in date order
-    var results = forwardRateData.entries.sortWith(_.forwardDay < _.forwardDay)
-    /* 	As the different products (futures, swaps, deposits) may trade at reasonably sized spreads to each other,
-    * 	bootstrapping a curve from a combination can lead to unrealistic forward rates. To avoid this we look at
-    * 	the product type at the latest point on the curve, and then remove data for all other product types. This
-    * 	wouldn't be acceptable for an interest rate system, but should be 'good enough' for commodities.
-    * 	@todo [17 Dec 2009] check the above assumption is OK
-    */
-    var points = Map.empty[Day, Double]
-    val lastType = results.last.trinityInstrumentType
-    results.filter(_.trinityInstrumentType == lastType).foreach{
-      case ForwardRateDataEntry(day, format, _, rate) => {
-        val z = SimpleDiscountCurve.convertRateToCCZeroRate(marketDayAndTime.day, day, format, lastType, rate)
-        points = points + (day -> z)
+
+
+
+  def buildFromMarketData(marketDayAndTime: DayAndTime, forwardRateData: ForwardRateData): DiscountCurve = {
+    var lastMaturityDay: Day = marketDayAndTime.day
+
+    val forwardForwardRates: MMap[DateRange, Quantity] = MMap()
+
+    forwardRateData.rates(LIBOR).map { case (tenor, rate) =>
+      LIBORFixing(ccy, marketDayAndTime.day, tenor, rate)
+    }.toList.sortWith(_ < _).foreach { case fixing =>
+      import fixing._
+      if (valueDay >= lastMaturityDay) {
+        forwardForwardRates.updated(lastMaturityDay upto maturityDay, rate)
+      } else {
+        assert(maturityDay > lastMaturityDay,  "Require maturity days to be strictly increasing")
+        val discountCurve = new ForwardForwardDiscountCurve(ccy, marketDayAndTime, Map() ++ forwardForwardRates)
+        val valueDayDiscount = discountCurve.discount(valueDay)
+        val lastMaturityDayDiscount = discountCurve.discount(lastMaturityDay)
+        val maturityDayDiscount = valueDayDiscount * forwardDiscount
+        val forwardRateTime = dcc.factor(lastMaturityDay, maturityDay) 
+        val forwardRate = - math.log(maturityDayDiscount / lastMaturityDayDiscount) / forwardRateTime
+        forwardForwardRates.updated(lastMaturityDay upto maturityDay, forwardRate)
       }
+      lastMaturityDay = maturityDay
+
     }
-    val days = points.keySet.toList.sortWith(_<_).filter(_ >= marketDayAndTime.day)
-    days match {
-      case Nil => throw new MissingMarketDataException("No forward rate data for " + ccy)
-      case _ => {
-        val ccZeroRates = days.toArray.map(points)
-          SimpleDiscountCurve(ccy, marketDayAndTime, days.toArray, ccZeroRates)
-      }
-    }
+    new ForwardForwardDiscountCurve(ccy, marketDayAndTime, Map() ++ forwardForwardRates)
   }
 
   def underlying = ccy.toString

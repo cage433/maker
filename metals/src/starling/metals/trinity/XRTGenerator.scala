@@ -10,12 +10,12 @@ import starling.market.Level
 import starling.marketdata.{TimedMarketDataKey, PriceFixingsHistoryData, PriceFixingsHistoryDataKey}
 import starling.pivot.MarketValue
 import Tenor._
-import starling.metals.datasources.LIBORFixing._
+import starling.metals.datasources.LIBORCalculator._
 import starling.utils.ClosureUtil._
 import starling.utils.ImplicitConversions._
 import starling.utils.Log
 import starling.quantity.{Percentage, UOM}
-import starling.metals.datasources.{LIBORFixings, LIBORFixing}
+import starling.metals.datasources.{LIBORFixings, LIBORCalculator}
 
 
 class XRTGenerator(marketDataStore: MarketDataStore) {
@@ -29,7 +29,7 @@ class XRTGenerator(marketDataStore: MarketDataStore) {
 }
 
 object XRTGenerator {
-  def tenorsFor(currency: UOM) = LIBORFixing.firstTenorFor(currency) :: commonTenors
+  def tenorsFor(currency: UOM) = LIBORCalculator.firstTenorFor(currency) :: commonTenors
 //  val format = new DecimalFormat("000.000000")
   private val commonTenors = List(OneWeek, TwoWeeks, OneMonth, TwoMonths, ThreeMonths, SixMonths, NineMonths, TwelveMonths)
   private val periods = (ON :: SN :: commonTenors).map(tenor => (Level.Close, StoredFixingPeriod.tenor(tenor)))

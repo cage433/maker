@@ -1,23 +1,19 @@
 package starling.services.rpc.marketdata
 
 import starling.titan.EDMConversions._
-import starling.pivot._
 import starling.utils.ImplicitConversions._
 import com.trafigura.services._
 import marketdata._
 import starling.utils.Log
-import org.joda.time.LocalDate
-import starling.services.rpc.valuation.EnvironmentProvider
 import starling.gui.api._
 import starling.marketdata._
 import scalaz.Scalaz._
 import starling.db.{SnapshotID, MarketDataStore}
-import valuation.TitanMarketDataIdentifier
 import com.trafigura.services.valuation.TitanMarketDataIdentifier
 import starling.calendar.WeekdayBusinessCalendar
-import starling.daterange.{Location, StoredFixingPeriod, Day}
+import starling.daterange.{Location, Day}
 import collection.immutable.Map
-import starling.quantity.{UOMSymbol, Quantity, UOM}
+import starling.quantity.{Quantity, UOM}
 import starling.titan.EDMConversions
 
 
@@ -84,7 +80,7 @@ class MarketDataService(marketDataStore: MarketDataStore)
     notNull("snapshotId" → snapshotId, "from" → from, "to" → to, "source" → source, "maturity" → maturity, "currency" → currency)
 
     getReferenceInterestRates(snapshotId, from upto to,
-      PriceFixingsHistoryDataKey(currency.fromSerializable.toString, Some(source.name))).filter(_.maturity == maturity)
+      ForwardRateDataKey(currency.fromSerializable)).filter(rate => rate.maturity == maturity && rate.source == source)
   }
 
   def getReferenceInterestRates(marketDataID : TitanMarketDataIdentifier) = {
@@ -94,12 +90,12 @@ class MarketDataService(marketDataStore: MarketDataStore)
   }
 
   private def getReferenceInterestRates(snapshotId: TitanSnapshotIdentifier, observationDates: Iterable[Day], keys: MarketDataKey*) = {
-    val fixings = query[PriceFixingsHistoryData](snapshotId, observationDates, PriceFixingsHistoryDataType, keys : _*)
+    val fixings: List[(Option[Day], MarketDataKey, ForwardRateData)] = query[ForwardRateData](snapshotId, observationDates, ForwardRateDataType, keys : _*)
 
-    fixings.collect { case (Some(obsDay), PriceFixingsHistoryDataKey(StringToTitanCurrency(ccy), Some(source)), fixingsForKey) =>
-      fixingsForKey.fixings.collect { case ((level, StoredFixingPeriod.Tenor(tenor)), MarketValue.Percentage(rate)) =>
-        ReferenceInterestRate(obsDay.toTitan, ReferenceRateSource(source), tenor.toTitan, ccy, rate.toSerializable)
-      }
+    fixings.collect { case (Some(obsDay), ForwardRateDataKey(UOMToTitanCurrency(ccy)), forwardRates) => forwardRates.rates.mapNested {
+      case (source, tenor, rate) =>
+        ReferenceInterestRate(obsDay.toTitan, ReferenceRateSource(source.value), tenor.toTitan, ccy, rate.toSerializablePercentage)
+    }
     }.flatten.sortBy(_.observationDate.fromSerializable)
   }
 

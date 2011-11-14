@@ -1,6 +1,7 @@
 package starling.utils.conversions
 
 import starling.utils.{ImplicitConversions, Log}
+import scalaz.Scalaz._
 
 
 trait RichOrdering {
@@ -31,13 +32,19 @@ trait RichOrdering {
       def compare(x: T, y: T) = ordering.compare(x, y)
     }
 
-    def extendTo[S](f: S => T): Ordering[S] = new Ordering[S] {
-      def compare(x: S, y: S) = ordering.compare(f(x), f(y))
-    }
+    def contraMap[S](f: S => T): Ordering[S] = ordering contramap(f)
 
     abstract class NamedOrdering[A](name : String, ordering : Ordering[_]) extends Ordering[A] {
       override def toString = "%s (%s)" % (name, ordering.toString)
     }
+  }
+
+  def lexicographicalOrdering[T](orderings: Ordering[T]*): Ordering[T] = new Ordering[T] {
+    def compare(x: T, y: T) = orderings.foldLeft(0)((res, ordering) => (res == 0) ? 0 | ordering.compare(x, y))
+  }
+
+  class OrderedOrdering[T <: Ordered[T]] extends Ordering[T] {
+    def compare(x: T, y: T) = x.compare(y)
   }
 }
 

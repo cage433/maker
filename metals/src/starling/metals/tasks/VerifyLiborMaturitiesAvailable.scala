@@ -14,13 +14,13 @@ import starling.services.EmailService
 class VerifyLiborMaturitiesAvailable(marketDataStore: MarketDataStore, emailService: EmailService, template: Email)
   extends EmailingScheduledTask(emailService, template) {
 
-  import starling.metals.datasources.LIBORFixing._
+  import starling.metals.datasources.LIBORCalculator._
 
   protected def emailFor(observationDay: Day) = {
     val liborFixings: NestedMap[UOM, Tenor, (Percentage, Day)] = latestLiborFixings(marketDataStore, observationDay)
     val tenorsByCurrency = liborFixings.mapValues(_.keys.toList).withDefaultValue(Nil)
     val missingTenorsByCurrency = currencies.toMapWithValues(currency => tenorsFor(currency) \\ tenorsByCurrency(currency))
-      .filterValuesNot(_.isEmpty).sortBy(_.toString)
+      .filterValuesNot(_.isEmpty).sortKeysBy(_.toString)
 
     (missingTenorsByCurrency.size > 0).option {
       template.copy(subject = "Missing Libor Maturities in LIM, observation day: " + observationDay,

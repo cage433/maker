@@ -17,6 +17,8 @@ class RichTraversable[A](traversable: Traversable[A]) {
   def minimum[B](f: A => B)(implicit cmp: Ordering[B]): B = traversable.map(f).min
   def optMax(implicit cmd: Ordering[A]): Option[A] = traversable.ifDefined(_.max)
   def optMaxBy[B](f: A => B)(implicit cmp: Ordering[B]): Option[A] = traversable.ifDefined(_.maxBy(f))
+  def optMin(implicit cmd: Ordering[A]): Option[A] = traversable.ifDefined(_.max)
+  def optMinBy[B](f: A => B)(implicit cmp: Ordering[B]): Option[A] = traversable.ifDefined(_.minBy(f))
   def mapDistinct[B](f: A => B): Set[B] = traversable.map(f).toSeq.distinct.toSet
 
   def findEnsureOnlyOne(p: A => Boolean) = traversable.filter(p) match {

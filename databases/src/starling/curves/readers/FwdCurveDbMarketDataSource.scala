@@ -56,12 +56,11 @@ case class FwdCurveDbMarketDataSource(varSqlDB: DB, businessCalendars: BusinessC
 
     val spotMDEs = range.add(SpotFXDataType.name) → readSomething[SpotFXDataKey](spotFXKeys, SpotFXReader(observationDay).read)
     val prices = range.add(PriceDataType.name) → readSomething[PriceDataKey](priceKeys, PricesReader(observationDay).read)
-    val forwardRates = range.add(ForwardRateDataType.name) → readSomething[ForwardRateDataKey](forwardRateKeys, ForwardRateReader(observationDay).read)
     val volSurfaces = range.add(OilVolSurfaceDataType.name) → readSomething[OilVolSurfaceDataKey](volSurfaceKeys, OilVolSurfacesReader(observationDay).read)
     val spreadsStdDevs = range.add(SpreadStdDevSurfaceDataType.name) → readSomething[SpreadStdDevSurfaceDataKey](spredStdKeys, SpreadStdDevReader(observationDay).read)
     val freightRates = range.add(FreightFlatRateDataType.name) → readSomething[FreightFlatRateDataKey](freightRateKeys, FreightFlatRatesReader(observationDay).read)
 
-    List(spotMDEs, prices, forwardRates, volSurfaces, spreadsStdDevs, freightRates).toMap
+    List(spotMDEs, prices, volSurfaces, spreadsStdDevs, freightRates).toMap
   }
 
   private def readSpreadStdDevSurfaceCurve(market: FuturesMarket, curveID : Int, observationDay : Day, pricingGroupID : Int) : PriceData = {
@@ -117,29 +116,6 @@ case class FwdCurveDbMarketDataSource(varSqlDB: DB, businessCalendars: BusinessC
       case _ => {
         throw new Exception("Unknown market/tenor combo " + (market, market.tenor))
       }
-    }
-  }
-
-  case class ForwardRateReader(ignoredObservationDay: Day) {
-    def read(frdk: ForwardRateDataKey) = {
-      val ccy = frdk.ccy
-      val curveID = FwdCurveAppExternalMarketDataReader.forwardRateCurveIDs(ccy)
-      val query = """
-                      select ForwardDate, Price
-                      from %s
-                      where CurveID = :CurveID
-                            and PricingGroupID = 1
-                           and ObservationDate = '2010-01-26'
-                      """ % (NonMetalsPriceTable) // TODO [05 Apr 2011] magic table knowledge
-      // TODO [05 Apr 2011] hard coded observation date until we get full data from LIM
-
-      val entries = varSqlDB.queryWithResult(query, Map("CurveID" -> curveID, "PricingGroupID" -> pricingGroupID)) {
-        rs => {
-          // TODO [05 Apr 2011] this needs to be looked at when we have real data in the FCA
-          new ForwardRateDataEntry(rs.getDay("ForwardDate"), "Annual", "SWAP", rs.getDouble("price"))
-        }
-      }
-      (frdk, ForwardRateData(entries))
     }
   }
 

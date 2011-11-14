@@ -6,7 +6,7 @@ import collection.mutable.{Map => MMap}
 import scalaz.Scalaz._
 import starling.utils.ImplicitConversions
 import scala.collection.MapProxy
-import collection.immutable.{Iterable, Map, TreeMap}
+import scala.collection.immutable.{Map, TreeMap}
 
 trait RichMaps {
   type MultiMap[K, V] = Map[K, List[V]]
@@ -20,16 +20,16 @@ trait RichMaps {
   def MultiMap[K, V](entries: (K, List[V])*): MultiMap[K, V] = entries.toMap
 }
 
-class RichMap[K,V](map : Map[K,V]) {
-  thisMap => 
+class RichMap[K,V](map : Map[K,V]) { thisMap =>
   def get(key: Option[K]) = key.map(map.get(_)).flatOpt
-  def getOrThrow(key: K, msg: String) = map.getOrElse(key, throw new Exception(msg))
+  def getOrThrow(k: K): V = getOrThrow(k, "key not found: %s, available: %s" % (k, map.keySet.mkString(", ")))
+  def getOrThrow(key: K, msg: => String) = map.getOrElse(key, throw new NoSuchElementException(msg))
   def either(key: K): Either[K, V] = map.get(key).either(key, identity)
   def getOrUpdate(k: K, f: (V) => V) = map.get(k).fold(v => map.updated(k, f(v)), map)
   def &(keys:Set[K]) : Map[K,V] = if (keys.isEmpty) map else map.filterKeys(key => keys.contains(key)).toList.toMap
   def mapValue(key: K, f: V => V): Map[K,V] = map.updated(key, f(map(key)))
   def mapKeys[C](f: K => C): Map[C, V] = map.map(kv => (f(kv._1), kv._2))
-  def composeKeys[C](f: C => K) = new MapView(map, f)
+  def contraMapKeys[C](f: C => K) = new MapView(map, f)
   def castKeys[C >: K]() = map.asInstanceOf[Map[C, V]]
   def addSome(key: K, value: Option[V]): Map[K,V] = value.map(v => map + key → v).getOrElse(map)
   def addSome(keyValue: (K, Option[V])): Map[K,V] = addSome(keyValue._1, keyValue._2)
@@ -42,7 +42,8 @@ class RichMap[K,V](map : Map[K,V]) {
     m.map { case (key, value) => (key, (value, o(key)))}.toMap
   }
   def sorted(implicit ordering: Ordering[K]): SortedMap[K, V] = TreeMap.empty[K, V](ordering) ++ map
-  def sortBy[S](f: K => S)(implicit ordering: Ordering[S]): SortedMap[K, V] = sorted(ordering.extendTo(f))
+  def sortKeysBy[S](f: K => S)(implicit ordering: Ordering[S]): SortedMap[K, V] = sorted(ordering.contraMap(f))
+  def sortKeysWith(lt: (K, K) => Boolean): SortedMap[K, V] = sorted(Ordering fromLessThan lt)
   def filterKeysNot(f: K => Boolean): Map[K, V] = map.filterKeys(!f(_))
   def filterValues(f: V => Boolean): Map[K, V] = map.filter(p => f(p._2))
   def filterValuesNot(f: V => Boolean): Map[K, V] = map.filter(p => !f(p._2))
@@ -84,13 +85,17 @@ class RichMutableMap[K, V](map: MMap[K, V]) {
   def getOrThrow(key: K, msg: String) = map.getOrElse(key, throw new Exception(msg))
 }
 
-class RichNestedMap[K1, K2, V](nested: NestedMap[K1, K2, V]) extends RichMap[K1, Map[K2, V]](nested) {
+class RichNestedMap[K1, K2, V](nested: Map[K1, Map[K2, V]]) extends RichMap[K1, Map[K2, V]](nested) {
   lazy val nestedSize: Int = nested.values.map(_.size).sum
 
   def mapNested[T](f: (K1, K2, V) => T): Iterable[T] =
     nested.flatMap { case (k1, values) => values.map { case (k2, value) => f(k1, k2, value) } }
 
+  def mapOuter[K](f: (K1, K2, V) => K): NestedMap[K, K2, V] = mapNested { case (k1, k2, v) => (f(k1, k2, v), (k2, v)) }.toNestedMap
+  def mapInner[K](f: (K1, K2, V) => K): NestedMap[K1, K, V] = mapNested { case (k1, k2, v) => (k1, (f(k1, k2, v), v)) }.toNestedMap
+  def extractKeys: MultiMap[K1, K2] = mapNested { case (k1, k2, _) => (k1, k2) }.toMultiMap
   def flipNesting: NestedMap[K2, K1, V] = mapNested { case (k1, k2, v) => (k2, (k1, v)) }.toNestedMap
+  def allValues: Iterable[V] = nested.values.flatMap(_.values)
 }
 
 class MapView[K, V, C](map: Map[K, V], keyProjection: C => K) {

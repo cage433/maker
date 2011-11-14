@@ -24,21 +24,20 @@ import scalaz.Scalaz._
 
 
 object SpotFXLimMarketDataSource {
-  val spotFXSources = SpotFXDataType.name → List(BloombergGenericFXRates, CFETSSpotFXFixings)
+  val sources = List(BloombergGenericFXRates, CFETSSpotFXFixings)
 
   val titanCurrencies = UOMSymbol.edmCurrencies.map(UOM.asUOM(_)).filter(_ != UOM.USD)
 }
 
 case class SpotFXLimMarketDataSource(service: LIMService, emailService: EmailService, template: Email)
-  extends LimMarketDataSource(service) {
+  extends LimMarketDataSource(service, SpotFXDataType.name) {
 
   import SpotFXLimMarketDataSource._
 
-  override def description = List(spotFXSources).flatMap
-    { case (marketDataType, sources) => marketDataType.name.pair(sources.flatMap(_.description)).map("%s → %s" % _) }
+  override def description = descriptionFor(sources)
 
   def read(day: Day) = log.infoWithTime("Getting data from LIM") {
-    Map(getValuesForType(SpotFXDataType.name, day.startOfFinancialYear, day, spotFXSources))
+    Map(getValuesForType(day.startOfFinancialYear, day, sources))
   }
 
   override def eventSources(marketDataStore: MarketDataStore) = List(

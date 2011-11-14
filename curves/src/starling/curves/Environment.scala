@@ -20,6 +20,7 @@ import starling.quantity._
 import starling.marketdata._
 import scalaz.Scalaz._
 import starling.pivot.UserException
+import starling.utils.ImplicitConversions._
 
 /**
  * Throw this if a curve object is incapable of providing a value
@@ -257,15 +258,16 @@ case class Environment(
   /**Returns a forward rate using the appropriate daycount convention.
    * default daycount = DayCountActual365
    */
-  def forwardRate(ccy : UOM, day1 : Day, day2 : Day, dayCount : DayCount= DayCountActual365) : Percentage = {
+  def forwardRate(ccy : UOM, day1 : Day, day2 : Day, dayCount : DayCount= DayCountActual365) : Quantity = {
     assert(day1 <= day2, "Forward rate day2 " + day2 + " is before day1 " + day1)
     val d1 = discount(ccy, day1)
     val d2 = discount(ccy, day2)
     val T = dayCount.factor(day1, day2)
     if (T == 0.0)
-      Percentage(0.0)
-    else
-      Percentage.fromDecimal(((d1 / d2 - 1.0) / T).checkedValue(UOM.SCALAR))
+      Quantity(0.0, UOM.PERCENT)
+    else {
+      (((d1 / d2 - 1.0) / T) * 100).copy(uom = UOM.PERCENT)
+    }
   }
 
   def zeroRate(currency: UOM, day: Day): Percentage = {
@@ -280,18 +282,19 @@ case class Environment(
     }
   }
 
-  def forwardRate(ccy : UOM, period : DateRange, dayCount : DayCount) : Percentage =
+  def forwardRate(ccy : UOM, period : DateRange, dayCount : DayCount): Quantity =
     forwardRate(ccy, period.firstDay, period.lastDay, dayCount)
 
-  def forwardCCRate(ccy : UOM, day1 : Day, day2 : Day, dayCount : DayCount) = {
+  def forwardCCRate(ccy : UOM, day1 : Day, day2 : Day, dayCount : DayCount): Quantity = {
     assert(day1 <= day2, "Forward rate day2 " + day2 + " is before day1 " + day1)
     val d1 = discount(ccy, day1)
     val d2 = discount(ccy, day2)
     val T = dayCount.factor(day1, day2)
     if (T == 0.0)
-      Percentage(0.0)
-    else
-      Percentage(log((d1 / d2).checkedValue(UOM.SCALAR)) / T)
+      Quantity(0.0, UOM.PERCENT)
+    else {
+      Quantity(100 * log((d1 / d2).checkedValue(UOM.SCALAR)) / T, UOM.PERCENT)
+    }
   }
 
 
