@@ -33,10 +33,10 @@
         <SOURCES />
       </library>
     </orderEntry>
-    <orderEntry type="module-library">
+    <orderEntry type="module-library" exported="">
       <library>
         <CLASSES>
-          <root url="jar://$USER_HOME$/.ivy2/cache/sbt/bug/net/java/dev/jna/jna/jars/jna-3.3.0.jar!/" />
+          <root url="jar://$USER_HOME$/.ivy2/cache/sbt.bug.jna/jna/jars/jna-3.3.0.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />

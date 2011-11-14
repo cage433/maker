@@ -262,7 +262,7 @@ object StarlingBuild extends Build{
 
   val authDependencies = Seq(
 //    "net.java.dev.jna" % "jna" % "3.3.0", Put this back in once sbt can handle classifiers properly
-    "sbt/bug/net/java/dev/jna" % "jna" % "3.3.0",
+    "sbt.bug.jna" % "jna" % "3.3.0",
     "net.java.dev.jna" % "jna" % "3.3.0" classifier "platform"
   
   )
